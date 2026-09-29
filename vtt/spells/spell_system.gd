@@ -401,6 +401,16 @@ func _activate_selected_spell() -> void:
 		return
 
 	_pending_spell_id = _selected_spell_id
+
+	var measurement_tool: Node = board_root.get_node_or_null("MeasurementTool")
+	if measurement_tool != null:
+		measurement_tool.call("set_measurement_mode", false)
+	var measurement_label: Label = board_root.get_node_or_null(
+		"UI/MeasurementModeLabel"
+	) as Label
+	if measurement_label != null:
+		measurement_label.hide()
+
 	panel.hide()
 	board_root.set("_ui_owns_mouse", false)
 	Input.mouse_mode = Input.MOUSE_MODE_VISIBLE
