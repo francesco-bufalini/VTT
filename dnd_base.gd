@@ -286,11 +286,17 @@ func _show_context_menu(screen_position: Vector2) -> void:
 			_has_pending_spawn_position = true
 
 	context_menu.clear()
-	context_menu.add_item("AoE: sfera", 20)
-	context_menu.add_item("AoE: cubo", 21)
-	context_menu.add_item("AoE: cono", 22)
-	context_menu.add_item("AoE: linea", 23)
-	context_menu.add_item("Cancella tutte le AoE", 24)
+
+	# Area templates are measurement tools, so keep them out of the normal
+	# interaction menu. They appear only after entering measurement mode with R.
+	if measurement_tool.is_measurement_mode():
+		context_menu.add_item("AoE: sfera", 20)
+		context_menu.add_item("AoE: cubo", 21)
+		context_menu.add_item("AoE: cono", 22)
+		context_menu.add_item("AoE: linea", 23)
+		context_menu.add_item("Cancella tutte le AoE", 24)
+		context_menu.add_separator()
+
 	context_menu.add_item("Condividi mappa / Tailscale", 25)
 	context_menu.add_separator()
 
