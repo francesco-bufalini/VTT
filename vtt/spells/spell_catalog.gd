@@ -91,6 +91,58 @@ const SPELLS: Dictionary = {
 		"aoe_radius_feet": 15,
 		"persistent": true
 	},
+	"lightning_bolt": {
+		"id": "lightning_bolt",
+		"name": "Lightning Bolt",
+		"level": 3,
+		"school": "Evocation",
+		"casting_time": "1 action",
+		"range": "Self",
+		"target": "Self",
+		"area": "100-foot-long, 5-foot-wide line",
+		"components": "V, S, M (a bit of fur and a crystal rod)",
+		"duration": "Instantaneous",
+		"classes": ["Stregone", "Mago"],
+		"description": (
+			"A stroke of lightning forming a 100-foot-long, 5-foot-wide Line "
+			+ "blasts out from you in a direction you choose. Each creature in "
+			+ "the Line makes a Dexterity saving throw, taking 8d6 Lightning "
+			+ "damage on a failed save or half as much damage on a successful one."
+		),
+		"higher_levels": (
+			"The damage increases by 1d6 for each spell slot level above 3rd."
+		),
+		"target_mode": "self_token",
+		"aoe_shape": "line",
+		"aoe_length_cells": 20,
+		"transient_seconds": 5.0
+	},
+	"chromatic_orb": {
+		"id": "chromatic_orb",
+		"name": "Chromatic Orb",
+		"level": 1,
+		"school": "Evocation",
+		"casting_time": "1 action",
+		"range": "90 feet",
+		"target": "One creature within range",
+		"area": "Single target",
+		"components": "V, S, M (a diamond worth 50+ GP)",
+		"duration": "Instantaneous",
+		"classes": ["Stregone", "Mago"],
+		"description": (
+			"You hurl an orb of energy at a target within range. Choose Acid, "
+			+ "Cold, Fire, Lightning, Poison, or Thunder for the type of orb you "
+			+ "create, and then make a ranged spell attack against the target. "
+			+ "On a hit, the target takes 3d8 damage of the chosen type."
+		),
+		"higher_levels": (
+			"The damage increases by 1d8 for each spell slot level above 1st."
+		),
+		"target_mode": "token_then_token",
+		"range_feet": 90,
+		"projectile_style": "chromatic_orb",
+		"transient_seconds": 5.0
+	},
 	"fireball": {
 		"id": "fireball",
 		"name": "Fireball",
