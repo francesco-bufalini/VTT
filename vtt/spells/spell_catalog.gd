@@ -83,7 +83,7 @@ static func all_spells() -> Array[Dictionary]:
 
 
 static func spells_for_class_and_level(
-	class_name: String,
+	class_label: String,
 	level: int
 ) -> Array[Dictionary]:
 	var result: Array[Dictionary] = []
@@ -92,7 +92,7 @@ static func spells_for_class_and_level(
 		if not classes_value is Array:
 			continue
 		if (
-			class_name in (classes_value as Array)
+			class_label in (classes_value as Array)
 			and int(entry.get("level", -1)) == level
 		):
 			result.append(entry)
