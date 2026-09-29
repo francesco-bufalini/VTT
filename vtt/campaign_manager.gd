@@ -120,6 +120,67 @@ func create_campaign(display_name: String = "") -> String:
 	return campaign_id
 
 
+func rename_campaign(campaign_id: String, new_name: String) -> Error:
+	var cleaned_name: String = new_name.strip_edges()
+	if cleaned_name.is_empty():
+		return ERR_INVALID_PARAMETER
+
+	var campaign: Dictionary = get_campaign(campaign_id)
+	if campaign.is_empty():
+		return ERR_DOES_NOT_EXIST
+	if bool(campaign.get("builtin", false)):
+		return ERR_UNAVAILABLE
+
+	campaign["name"] = cleaned_name
+	var metadata_path: String = (
+		_campaign_directory(campaign_id)
+		.path_join(CAMPAIGN_METADATA_FILE)
+	)
+	var error: Error = _write_json(metadata_path, campaign)
+	if error == OK and active_campaign_id == campaign_id:
+		active_campaign = campaign.duplicate(true)
+	return error
+
+
+func delete_campaign(campaign_id: String) -> Error:
+	var campaign: Dictionary = get_campaign(campaign_id)
+	if campaign.is_empty():
+		return ERR_DOES_NOT_EXIST
+	if bool(campaign.get("builtin", false)):
+		return ERR_UNAVAILABLE
+
+	var directory_path: String = _campaign_directory(campaign_id)
+	var absolute_path: String = ProjectSettings.globalize_path(directory_path)
+	var error: Error = _remove_directory_recursive(absolute_path)
+	if error == OK and active_campaign_id == campaign_id:
+		active_campaign_id = ""
+		active_campaign = {}
+	return error
+
+
+func _remove_directory_recursive(absolute_path: String) -> Error:
+	var directory := DirAccess.open(absolute_path)
+	if directory == null:
+		return ERR_DOES_NOT_EXIST
+
+	directory.list_dir_begin()
+	var entry_name: String = directory.get_next()
+	while not entry_name.is_empty():
+		if entry_name != "." and entry_name != "..":
+			var child_path: String = absolute_path.path_join(entry_name)
+			var child_error: Error = OK
+			if directory.current_is_dir():
+				child_error = _remove_directory_recursive(child_path)
+			else:
+				child_error = DirAccess.remove_absolute(child_path)
+			if child_error != OK:
+				directory.list_dir_end()
+				return child_error
+		entry_name = directory.get_next()
+	directory.list_dir_end()
+	return DirAccess.remove_absolute(absolute_path)
+
+
 func open_campaign(campaign_id: String) -> Error:
 	var data := get_campaign(campaign_id)
 	if data.is_empty():
