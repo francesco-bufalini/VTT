@@ -6,7 +6,6 @@ const CONTEXT_ROTATE_LEFT := 3
 const CONTEXT_ROTATE_RIGHT := 4
 const CONTEXT_TOGGLE_GRID := 5
 const CONTEXT_TOGGLE_VISION_CONES := 6
-const CONTEXT_TOGGLE_GRID_3D := 7
 const CONTEXT_FLYING := 8
 const CONTEXT_MAIN_MENU := 9
 const CONTEXT_DISSOLVE_AOT := 10
@@ -31,7 +30,6 @@ const TOKEN_SIZES := [
 @export var token_spawn_height: float = 4.0
 @export var token_scene: PackedScene
 
-@onready var grid: MeshInstance3D = $Board/Grid
 @onready var volumetric_grid: Node3D = $VolumetricGrid
 @onready var camera: Camera3D = $Camera3D
 @onready var tokens_root: Node3D = $Tokens
@@ -49,8 +47,6 @@ var _context_token: CharacterBody3D = null
 var _selected_tokens: Array[CharacterBody3D] = []
 var _ui_owns_mouse: bool = false
 var _vision_cones_visible: bool = false
-var _grid_visible: bool = false
-var surface_grid: Node
 var board_sync: Node
 var share_dialog: AcceptDialog
 var share_host: LineEdit
@@ -58,20 +54,14 @@ var share_key: LineEdit
 var share_status: Label
 var token_drag: Node
 var spell_system: Node
+var minecraft_lights: Node
 
 
 func _ready() -> void:
-	surface_grid = preload("res://surface_grid.gd").new()
-	surface_grid.name = "SurfaceGrid"
-	add_child(surface_grid)
-	surface_grid.setup(self, cell_size)
-
-	# Board/Grid is kept only as a compatibility/style source for older
-	# encounter scripts. The visible 2D grid now comes from solid surfaces.
-	grid.visible = false
-
-	set_grid_visible(grid_visible_on_start)
-	set_grid_3d_visible(grid_3d_visible_on_start)
+	# Unica griglia tattica: la VolumetricGrid collision-aware.
+	# grid_3d_visible_on_start resta come alias di compatibilita per scene
+	# create prima della rimozione della SurfaceGrid.
+	set_grid_visible(grid_visible_on_start or grid_3d_visible_on_start)
 	set_vision_cones_visible(vision_cones_visible_on_start)
 
 	context_menu.id_pressed.connect(_on_context_menu_id_pressed)
@@ -87,6 +77,14 @@ func _ready() -> void:
 	size_selector.select(2)
 
 	volumetric_grid.call("set_camera", camera)
+
+	# Best-effort: le superfici Minecraft luminose importate da Mineways/
+	# Blender vengono convertite in OmniLight3D leggere quando riconoscibili.
+	minecraft_lights = preload("res://minecraft_lights.gd").new()
+	minecraft_lights.name = "MinecraftLightImporter"
+	add_child(minecraft_lights)
+	minecraft_lights.setup(self, cell_size)
+
 	measurement_tool.call("set_camera", camera)
 	measurement_tool.call("set_volumetric_grid", volumetric_grid)
 	measurement_tool.call("set_measurement_mode", false)
@@ -173,7 +171,44 @@ func _unhandled_input(event: InputEvent) -> void:
 	if _ui_owns_mouse:
 		return
 
+	# Click sinistro su una AoE persistente: la dissolve immediatamente.
+	if (
+		event is InputEventMouseButton
+		and event.button_index == MOUSE_BUTTON_LEFT
+		and event.pressed
+	):
+		var aoe_screen_position: Vector2 = (
+			_screen_center()
+			if Input.mouse_mode == Input.MOUSE_MODE_CAPTURED
+			else event.position
+		)
+		if measurement_tool.remove_aoe_at_screen(aoe_screen_position):
+			get_viewport().set_input_as_handled()
+			return
+
 	if event is InputEventMouseButton and measurement_tool.is_measurement_mode():
+		if (
+			event.pressed
+			and event.button_index in [
+				MOUSE_BUTTON_WHEEL_UP,
+				MOUSE_BUTTON_WHEEL_DOWN
+			]
+		):
+			var wheel_step: int = (
+				-1
+				if event.button_index == MOUSE_BUTTON_WHEEL_UP
+				else 1
+			)
+			if (
+				measurement_tool.is_aoe_mode()
+				and measurement_tool.is_dragging()
+			):
+				measurement_tool.adjust_aoe_color(wheel_step)
+			else:
+				measurement_tool.adjust_air_depth(float(wheel_step))
+			get_viewport().set_input_as_handled()
+			return
+
 		if event.button_index == MOUSE_BUTTON_LEFT:
 			if event.pressed:
 				measurement_tool.begin_measurement()
@@ -187,11 +222,6 @@ func _unhandled_input(event: InputEvent) -> void:
 	if event is InputEventKey and event.pressed and not event.echo:
 		if event.keycode == KEY_G:
 			toggle_grid()
-			get_viewport().set_input_as_handled()
-			return
-
-		if event.keycode == KEY_3 or event.keycode == KEY_KP_3:
-			toggle_grid_3d()
 			get_viewport().set_input_as_handled()
 			return
 
@@ -259,25 +289,6 @@ func _unhandled_input(event: InputEvent) -> void:
 				_show_context_menu(event.position)
 			return
 
-		if bool(measurement_tool.call("is_measurement_mode")):
-			if event.pressed \
-			and event.button_index == MOUSE_BUTTON_WHEEL_UP:
-				measurement_tool.call("adjust_air_depth", -1.0)
-				get_viewport().set_input_as_handled()
-				return
-			elif event.pressed \
-			and event.button_index == MOUSE_BUTTON_WHEEL_DOWN:
-				measurement_tool.call("adjust_air_depth", 1.0)
-				get_viewport().set_input_as_handled()
-				return
-			elif event.button_index == MOUSE_BUTTON_LEFT:
-				if event.pressed:
-					measurement_tool.call("begin_measurement")
-				else:
-					measurement_tool.call("end_measurement")
-				get_viewport().set_input_as_handled()
-				return
-
 		if not event.pressed:
 			return
 
@@ -302,22 +313,20 @@ func toggle_spell_menu() -> void:
 
 
 func toggle_grid() -> void:
-	set_grid_visible(not _grid_visible)
+	set_grid_visible(not volumetric_grid.visible)
 
 
 func set_grid_visible(is_visible: bool) -> void:
-	_grid_visible = is_visible
-	grid.visible = false
-	if surface_grid != null and is_instance_valid(surface_grid):
-		surface_grid.set_grid_visible(is_visible)
+	volumetric_grid.visible = is_visible
 
 
+# Alias di compatibilita: ora esiste una sola griglia volumetrica.
 func toggle_grid_3d() -> void:
-	set_grid_3d_visible(not volumetric_grid.visible)
+	toggle_grid()
 
 
 func set_grid_3d_visible(is_visible: bool) -> void:
-	volumetric_grid.visible = is_visible
+	set_grid_visible(is_visible)
 
 
 func toggle_vision_cones() -> void:
@@ -403,15 +412,10 @@ func _show_context_menu(screen_position: Vector2) -> void:
 		context_menu.add_item("Torna al menu VTT", CONTEXT_MAIN_MENU)
 	context_menu.add_separator()
 
-	if _grid_visible:
-		context_menu.add_item("Nascondi griglia 2D", CONTEXT_TOGGLE_GRID)
-	else:
-		context_menu.add_item("Mostra griglia 2D", CONTEXT_TOGGLE_GRID)
-
 	if volumetric_grid.visible:
-		context_menu.add_item("Nascondi griglia 3D", CONTEXT_TOGGLE_GRID_3D)
+		context_menu.add_item("Nascondi griglia", CONTEXT_TOGGLE_GRID)
 	else:
-		context_menu.add_item("Mostra griglia 3D", CONTEXT_TOGGLE_GRID_3D)
+		context_menu.add_item("Mostra griglia", CONTEXT_TOGGLE_GRID)
 
 	if _vision_cones_visible:
 		context_menu.add_item(
@@ -503,10 +507,6 @@ func _on_context_menu_id_pressed(id: int) -> void:
 			_close_context_menu_to_game()
 		CONTEXT_TOGGLE_GRID:
 			toggle_grid()
-			_close_context_menu_to_game()
-
-		CONTEXT_TOGGLE_GRID_3D:
-			toggle_grid_3d()
 			_close_context_menu_to_game()
 
 		CONTEXT_TOGGLE_VISION_CONES:

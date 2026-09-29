@@ -26,8 +26,7 @@ const MEASURE_CONE := 403
 const MEASURE_LINE := 404
 const MEASURE_CLEAR := 405
 
-const VIEW_GRID_2D := 500
-const VIEW_GRID_3D := 501
+const VIEW_GRID := 500
 const VIEW_VISION := 502
 
 const SHARE_OPEN := 600
@@ -61,7 +60,7 @@ func _ready() -> void:
 		return
 
 	# I nodi figli ricevono _ready prima del parent. Rimandiamo quindi
-	# l'inizializzazione a quando dnd_base ha gia' creato SurfaceGrid,
+	# l'inizializzazione a quando dnd_base ha creato la griglia volumetrica,
 	# BoardSync, token drag e gli altri servizi runtime.
 	call_deferred("_initialize_editor")
 
@@ -147,8 +146,7 @@ func _build_toolbar() -> void:
 	], _on_measurement_selected))
 
 	row.add_child(_make_menu_button("Vista", [
-		["Mostra / nascondi griglia 2D", VIEW_GRID_2D],
-		["Mostra / nascondi griglia 3D", VIEW_GRID_3D],
+		["Mostra / nascondi griglia", VIEW_GRID],
 		["Mostra / nascondi coni visivi", VIEW_VISION]
 	], _on_view_selected))
 
@@ -291,10 +289,8 @@ func _on_measurement_selected(id: int) -> void:
 
 func _on_view_selected(id: int) -> void:
 	match id:
-		VIEW_GRID_2D:
+		VIEW_GRID:
 			board_root.call("toggle_grid")
-		VIEW_GRID_3D:
-			board_root.call("toggle_grid_3d")
 		VIEW_VISION:
 			board_root.call("toggle_vision_cones")
 
@@ -459,7 +455,7 @@ func _resize_primary_grid(width_cells: int, depth_cells: int) -> void:
 	mesh.material = _platform_material()
 	visual.mesh = mesh
 
-	_refresh_surface_grid()
+	_refresh_volumetric_grid()
 
 
 func _create_extra_grid(data: Dictionary) -> void:
@@ -508,7 +504,7 @@ func _create_extra_grid(data: Dictionary) -> void:
 	collision.shape = shape
 	body.add_child(collision)
 
-	_refresh_surface_grid()
+	_refresh_volumetric_grid()
 
 
 func _remove_last_extra_grid() -> void:
@@ -525,14 +521,14 @@ func _remove_last_extra_grid() -> void:
 	)
 	var target: Node3D = grids[grids.size() - 1]
 	target.free()
-	_refresh_surface_grid()
+	_refresh_volumetric_grid()
 	_set_status("Ultima griglia aggiuntiva rimossa")
 
 
 func _remove_all_extra_grids() -> void:
 	for node: Node3D in _campaign_grid_nodes():
 		node.free()
-	_refresh_surface_grid()
+	_refresh_volumetric_grid()
 
 
 func _campaign_grid_nodes() -> Array[Node3D]:
@@ -645,15 +641,14 @@ func _board_sync() -> Node:
 
 
 func _serialize_view_state() -> Dictionary:
-	var surface: Variant = board_root.get("surface_grid")
-	var grid_visible := false
-	if is_instance_valid(surface) and surface is Node:
-		grid_visible = bool(surface.call("is_grid_visible"))
-
 	var volumetric := board_root.get_node_or_null("VolumetricGrid") as Node3D
+	var grid_visible := volumetric != null and volumetric.visible
 	return {
+		"grid": grid_visible,
+		# Legacy keys are kept so existing campaign saves stay readable by
+		# older builds; both now represent the same unified grid.
 		"grid_2d": grid_visible,
-		"grid_3d": volumetric != null and volumetric.visible,
+		"grid_3d": grid_visible,
 		"vision_cones": bool(board_root.get("_vision_cones_visible"))
 	}
 
@@ -662,8 +657,13 @@ func _apply_view_state(value: Variant) -> void:
 	if not value is Dictionary:
 		return
 	var data := value as Dictionary
-	board_root.call("set_grid_visible", bool(data.get("grid_2d", true)))
-	board_root.call("set_grid_3d_visible", bool(data.get("grid_3d", false)))
+	var grid_visible := bool(
+		data.get(
+			"grid",
+			data.get("grid_3d", data.get("grid_2d", true))
+		)
+	)
+	board_root.call("set_grid_visible", grid_visible)
 	board_root.call(
 		"set_vision_cones_visible",
 		bool(data.get("vision_cones", false))
@@ -691,10 +691,10 @@ func _platform_material() -> StandardMaterial3D:
 	return material
 
 
-func _refresh_surface_grid() -> void:
-	var surface: Variant = board_root.get("surface_grid")
-	if is_instance_valid(surface) and surface is Node:
-		surface.call_deferred("refresh")
+func _refresh_volumetric_grid() -> void:
+	var grid := board_root.get_node_or_null("VolumetricGrid") as Node3D
+	if grid != null and grid.has_method("refresh"):
+		grid.call_deferred("refresh")
 
 
 func _cell_size() -> float:

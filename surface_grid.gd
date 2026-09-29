@@ -84,6 +84,10 @@ func _consider_collision_shape(collision: CollisionShape3D) -> void:
 	var body := _find_collision_body(collision)
 	if body == null:
 		return
+	# Areas are interaction/trigger volumes, not physical walkable surfaces.
+	# In particular this excludes the invisible pick colliders used by AoEs.
+	if body is Area3D:
+		return
 	if body is CharacterBody3D:
 		return
 	if _has_group_in_ancestry(body, EXCLUDED_GROUP):

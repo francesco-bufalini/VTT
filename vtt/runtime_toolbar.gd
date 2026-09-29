@@ -1,7 +1,6 @@
 extends Node
 
-const GRID_2D := 10
-const GRID_3D := 11
+const GRID := 10
 
 const TOKEN_CREATE := 20
 const TOKEN_FLYING := 21
@@ -66,8 +65,7 @@ func _build_toolbar() -> void:
 	panel.add_child(row)
 
 	row.add_child(_menu("Griglia", [
-		["Griglia 2D", GRID_2D],
-		["Griglia 3D", GRID_3D]
+		["Mostra / nascondi griglia", GRID]
 	], _on_grid))
 
 	row.add_child(_menu("Token", [
@@ -148,11 +146,8 @@ func _menu(label_text: String, items: Array, callback: Callable) -> MenuButton:
 
 
 func _on_grid(id: int) -> void:
-	match id:
-		GRID_2D:
-			board_root.call("toggle_grid")
-		GRID_3D:
-			board_root.call("toggle_grid_3d")
+	if id == GRID:
+		board_root.call("toggle_grid")
 
 
 func _on_token(id: int) -> void:

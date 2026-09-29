@@ -29,7 +29,7 @@ func setup(distance_tool: Node) -> void:
 		collision.shape = shape
 		collision.position = Vector3(side * (size.x * 0.5 + gap) * 0.5, -0.2, 0)
 		add_child(collision)
-	# SurfaceGrid creates one overlay for each enabled solid collision.
+	# The unified volumetric grid discovers this layer-4 platform by raycast.
 
 func open_head_space(enabled: bool) -> void:
 	_head_floor.set_deferred("disabled", not enabled)
