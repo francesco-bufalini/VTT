@@ -1,15 +1,12 @@
 extends Node3D
 
 @export var cell_size: float = 1.0
-@export_range(1, 200) var radius_cells: int = 30
-@export_range(1, 20) var vertical_offset_cells: int = 2
+@export_range(3, 21, 2) var cells_per_side: int = 5
 
 var _camera: Camera3D = null
-var _upper_grid: MeshInstance3D = null
-var _lower_grid: MeshInstance3D = null
-var _last_follow_position: Vector3 = Vector3.INF
-var _cells_per_side: int = 61
-var _half_extent_world: float = 30.0
+var _grid_mesh_instance: MeshInstance3D = null
+var _last_snapped_center: Vector3 = Vector3.INF
+var _half_extent_world: float = 2.5
 
 
 func _ready() -> void:
@@ -32,20 +29,42 @@ func set_camera(new_camera: Camera3D) -> void:
 
 
 func get_half_extent_world() -> float:
-	# Manteniamo un volume logico per il targeting 3D anche se la
-	# rappresentazione visiva ora usa soltanto due piani orizzontali.
 	return _half_extent_world
 
 
 func contains_world_point(point: Vector3) -> bool:
-	# Compatibilità con MeasurementTool: la griglia visiva non deve limitare
-	# il targeting soltanto ai due piani disegnati.
 	var local_point: Vector3 = to_local(point)
+	var epsilon := maxf(cell_size * 0.001, 0.0001)
 	return (
-		absf(local_point.x) <= _half_extent_world
-		and absf(local_point.y) <= _half_extent_world
-		and absf(local_point.z) <= _half_extent_world
+		absf(local_point.x) <= _half_extent_world + epsilon
+		and absf(local_point.y) <= _half_extent_world + epsilon
+		and absf(local_point.z) <= _half_extent_world + epsilon
 	)
+
+
+func get_ray_exit_distance(origin: Vector3, direction: Vector3) -> float:
+	# The camera normally sits inside the cube. Return the forward distance
+	# at which its ray exits the currently displayed grid.
+	var local_origin := to_local(origin)
+	var local_direction := global_basis.inverse() * direction.normalized()
+	var t_exit := INF
+
+	for axis in range(3):
+		var o: float = local_origin[axis]
+		var d: float = local_direction[axis]
+		if absf(d) < 0.000001:
+			continue
+
+		var t_a := (-_half_extent_world - o) / d
+		var t_b := (_half_extent_world - o) / d
+		var far_t := maxf(t_a, t_b)
+		if far_t >= 0.0:
+			t_exit = minf(t_exit, far_t)
+
+	if is_inf(t_exit):
+		return 0.0
+
+	return maxf(0.0, t_exit)
 
 
 func _update_position_around_camera() -> void:
@@ -53,19 +72,15 @@ func _update_position_around_camera() -> void:
 		return
 
 	var camera_position: Vector3 = _camera.global_position
-
-	# I piani restano allineati alla griglia sul piano X/Z, ma seguono
-	# continuamente l'altezza della camera. In questo modo sono sempre
-	# esattamente due celle sopra e due celle sotto la camera.
-	var follow_position := Vector3(
+	var snapped_center := Vector3(
 		_snap_axis_to_cell_center(camera_position.x),
-		camera_position.y,
+		_snap_axis_to_cell_center(camera_position.y),
 		_snap_axis_to_cell_center(camera_position.z)
 	)
 
-	if follow_position != _last_follow_position:
-		global_position = follow_position
-		_last_follow_position = follow_position
+	if snapped_center != _last_snapped_center:
+		global_position = snapped_center
+		_last_snapped_center = snapped_center
 
 
 func _snap_axis_to_cell_center(value: float) -> float:
@@ -77,64 +92,64 @@ func _snap_axis_to_cell_center(value: float) -> float:
 
 
 func _rebuild() -> void:
-	if _upper_grid != null and is_instance_valid(_upper_grid):
-		_upper_grid.queue_free()
-	if _lower_grid != null and is_instance_valid(_lower_grid):
-		_lower_grid.queue_free()
+	if _grid_mesh_instance != null and is_instance_valid(_grid_mesh_instance):
+		_grid_mesh_instance.queue_free()
 
 	var safe_cell_size := maxf(cell_size, 0.001)
-	var safe_radius := maxi(radius_cells, 1)
-	_cells_per_side = safe_radius * 2 + 1
-	_half_extent_world = float(safe_radius) * safe_cell_size
+	cells_per_side = maxi(3, cells_per_side)
+	if cells_per_side % 2 == 0:
+		cells_per_side += 1
 
-	var visual_half_extent := (
-		float(_cells_per_side) * safe_cell_size * 0.5
-	)
+	_half_extent_world = float(cells_per_side) * safe_cell_size * 0.5
 
 	var material := StandardMaterial3D.new()
-	material.albedo_color = Color(0.42, 0.75, 1.0, 0.22)
+	material.albedo_color = Color(0.42, 0.75, 1.0, 0.18)
 	material.emission_enabled = true
 	material.emission = Color(0.04, 0.22, 0.38, 1.0)
-	material.emission_energy_multiplier = 0.42
+	material.emission_energy_multiplier = 0.40
 	material.transparency = BaseMaterial3D.TRANSPARENCY_ALPHA
 	material.shading_mode = BaseMaterial3D.SHADING_MODE_UNSHADED
 
 	var mesh := ImmediateMesh.new()
 	mesh.surface_begin(Mesh.PRIMITIVE_LINES, material)
 
-	var min_value := -visual_half_extent
-	var max_value := visual_half_extent
+	var min_value := -_half_extent_world
+	var max_value := _half_extent_world
 
-	# 61 x 61 celle con radius_cells = 30:
-	# 62 linee parallele a X e 62 parallele a Z.
-	for index in range(_cells_per_side + 1):
-		var coordinate := (
-			min_value + float(index) * safe_cell_size
-		)
+	# Full lattice: with 5 cells there are only 6 grid coordinates per axis.
+	for a in range(cells_per_side + 1):
+		var coordinate_a := min_value + float(a) * safe_cell_size
 
-		mesh.surface_add_vertex(Vector3(min_value, 0.0, coordinate))
-		mesh.surface_add_vertex(Vector3(max_value, 0.0, coordinate))
+		for b in range(cells_per_side + 1):
+			var coordinate_b := min_value + float(b) * safe_cell_size
 
-		mesh.surface_add_vertex(Vector3(coordinate, 0.0, min_value))
-		mesh.surface_add_vertex(Vector3(coordinate, 0.0, max_value))
+			mesh.surface_add_vertex(
+				Vector3(min_value, coordinate_a, coordinate_b)
+			)
+			mesh.surface_add_vertex(
+				Vector3(max_value, coordinate_a, coordinate_b)
+			)
+
+			mesh.surface_add_vertex(
+				Vector3(coordinate_a, min_value, coordinate_b)
+			)
+			mesh.surface_add_vertex(
+				Vector3(coordinate_a, max_value, coordinate_b)
+			)
+
+			mesh.surface_add_vertex(
+				Vector3(coordinate_a, coordinate_b, min_value)
+			)
+			mesh.surface_add_vertex(
+				Vector3(coordinate_a, coordinate_b, max_value)
+			)
 
 	mesh.surface_end()
 
-	var vertical_offset := (
-		float(maxi(vertical_offset_cells, 1)) * safe_cell_size
-	)
+	_grid_mesh_instance = MeshInstance3D.new()
+	_grid_mesh_instance.name = "LocalGrid3DLines"
+	_grid_mesh_instance.mesh = mesh
+	add_child(_grid_mesh_instance)
 
-	_upper_grid = MeshInstance3D.new()
-	_upper_grid.name = "UpperGridPlane"
-	_upper_grid.mesh = mesh
-	_upper_grid.position.y = vertical_offset
-	add_child(_upper_grid)
-
-	_lower_grid = MeshInstance3D.new()
-	_lower_grid.name = "LowerGridPlane"
-	_lower_grid.mesh = mesh
-	_lower_grid.position.y = -vertical_offset
-	add_child(_lower_grid)
-
-	_last_follow_position = Vector3.INF
+	_last_snapped_center = Vector3.INF
 	_update_position_around_camera()
