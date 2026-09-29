@@ -1,0 +1,2752 @@
+{
+  "format_version": 1,
+  "generated_by": "vtt/spells/parse_5etools_areas.py",
+  "walls_ignored": true,
+  "spells": {
+    "AU::Aura of Evasion": {
+      "name": "Aura of Evasion",
+      "source": "AU",
+      "areas": [
+        {
+          "shape": "emanation",
+          "radius_feet": 30,
+          "area_tag": "E",
+          "dimension_source": "text"
+        }
+      ]
+    },
+    "AU::Detonate": {
+      "name": "Detonate",
+      "source": "AU",
+      "areas": [
+        {
+          "shape": "emanation",
+          "radius_feet": 60,
+          "area_tag": "E",
+          "dimension_source": "text"
+        }
+      ]
+    },
+    "AU::Disruptive Tune": {
+      "name": "Disruptive Tune",
+      "source": "AU",
+      "areas": [
+        {
+          "shape": "sphere",
+          "radius_feet": 20,
+          "area_tag": "S",
+          "dimension_source": "text"
+        }
+      ]
+    },
+    "AU::Distorted Distance": {
+      "name": "Distorted Distance",
+      "source": "AU",
+      "areas": [
+        {
+          "shape": "sphere",
+          "radius_feet": 60,
+          "area_tag": "S",
+          "dimension_source": "text"
+        }
+      ]
+    },
+    "AU::Dueling Ground": {
+      "name": "Dueling Ground",
+      "source": "AU",
+      "areas": [
+        {
+          "shape": "sphere",
+          "radius_feet": 15,
+          "area_tag": "S",
+          "dimension_source": "text"
+        }
+      ]
+    },
+    "AU::Festering Blast": {
+      "name": "Festering Blast",
+      "source": "AU",
+      "areas": [
+        {
+          "shape": "line",
+          "length_feet": 60,
+          "width_feet": 10,
+          "area_tag": "L",
+          "dimension_source": "text"
+        }
+      ]
+    },
+    "AU::Grave Ground": {
+      "name": "Grave Ground",
+      "source": "AU",
+      "areas": [
+        {
+          "shape": "square",
+          "side_feet": 10,
+          "area_tag": "Q",
+          "dimension_source": "text"
+        }
+      ]
+    },
+    "AU::Illusory Dragon": {
+      "name": "Illusory Dragon",
+      "source": "AU",
+      "areas": [
+        {
+          "shape": "cone",
+          "length_feet": 60,
+          "area_tag": "N",
+          "dimension_source": "text"
+        }
+      ]
+    },
+    "AU::Lightning Ring": {
+      "name": "Lightning Ring",
+      "source": "AU",
+      "areas": [
+        {
+          "shape": "emanation",
+          "radius_feet": 10,
+          "area_tag": "E",
+          "dimension_source": "text"
+        },
+        {
+          "shape": "line",
+          "length_feet": 60,
+          "width_feet": 5,
+          "area_tag": "L",
+          "dimension_source": "text"
+        }
+      ]
+    },
+    "AU::Waves of Exhaustion": {
+      "name": "Waves of Exhaustion",
+      "source": "AU",
+      "areas": [
+        {
+          "shape": "cone",
+          "length_feet": 60,
+          "area_tag": "N",
+          "dimension_source": "text"
+        }
+      ]
+    },
+    "AU::Wither and Bloom": {
+      "name": "Wither and Bloom",
+      "source": "AU",
+      "areas": [
+        {
+          "shape": "sphere",
+          "radius_feet": 10,
+          "area_tag": "S",
+          "dimension_source": "text"
+        }
+      ]
+    },
+    "AU::Zone of Amicability": {
+      "name": "Zone of Amicability",
+      "source": "AU",
+      "areas": [
+        {
+          "shape": "emanation",
+          "radius_feet": 60,
+          "area_tag": "E",
+          "dimension_source": "text"
+        }
+      ]
+    },
+    "EGW::Dark Star": {
+      "name": "Dark Star",
+      "source": "EGW",
+      "areas": [
+        {
+          "shape": "sphere",
+          "radius_feet": 40,
+          "area_tag": "S",
+          "dimension_source": "text"
+        }
+      ]
+    },
+    "EGW::Gravity Fissure": {
+      "name": "Gravity Fissure",
+      "source": "EGW",
+      "areas": [
+        {
+          "shape": "line",
+          "length_feet": 100,
+          "width_feet": 5,
+          "area_tag": "L",
+          "dimension_source": "text"
+        }
+      ]
+    },
+    "EGW::Gravity Sinkhole": {
+      "name": "Gravity Sinkhole",
+      "source": "EGW",
+      "areas": [
+        {
+          "shape": "sphere",
+          "radius_feet": 20,
+          "area_tag": "S",
+          "dimension_source": "text"
+        }
+      ]
+    },
+    "EGW::Magnify Gravity": {
+      "name": "Magnify Gravity",
+      "source": "EGW",
+      "areas": [
+        {
+          "shape": "sphere",
+          "radius_feet": 10,
+          "area_tag": "S",
+          "dimension_source": "text"
+        }
+      ]
+    },
+    "EGW::Pulse Wave": {
+      "name": "Pulse Wave",
+      "source": "EGW",
+      "areas": [
+        {
+          "shape": "cone",
+          "length_feet": 30,
+          "area_tag": "N",
+          "dimension_source": "text"
+        }
+      ]
+    },
+    "EGW::Ravenous Void": {
+      "name": "Ravenous Void",
+      "source": "EGW",
+      "areas": [
+        {
+          "shape": "sphere",
+          "radius_feet": 20,
+          "area_tag": "S",
+          "dimension_source": "text"
+        }
+      ]
+    },
+    "FRHoF::Alustriel's Mooncloak": {
+      "name": "Alustriel's Mooncloak",
+      "source": "FRHoF",
+      "areas": [
+        {
+          "shape": "emanation",
+          "radius_feet": 20,
+          "area_tag": "S",
+          "dimension_source": "text"
+        }
+      ]
+    },
+    "FRHoF::Cacophonic Shield": {
+      "name": "Cacophonic Shield",
+      "source": "FRHoF",
+      "areas": [
+        {
+          "shape": "emanation",
+          "radius_feet": 10,
+          "area_tag": "S",
+          "dimension_source": "text"
+        }
+      ]
+    },
+    "FRHoF::Dirge": {
+      "name": "Dirge",
+      "source": "FRHoF",
+      "areas": [
+        {
+          "shape": "emanation",
+          "radius_feet": 60,
+          "area_tag": "S",
+          "dimension_source": "text"
+        }
+      ]
+    },
+    "FRHoF::Doomtide": {
+      "name": "Doomtide",
+      "source": "FRHoF",
+      "areas": [
+        {
+          "shape": "sphere",
+          "radius_feet": 20,
+          "area_tag": "S",
+          "dimension_source": "text"
+        }
+      ]
+    },
+    "FRHoF::Laeral's Silver Lance": {
+      "name": "Laeral's Silver Lance",
+      "source": "FRHoF",
+      "areas": [
+        {
+          "shape": "line",
+          "length_feet": 120,
+          "width_feet": 5,
+          "area_tag": "L",
+          "dimension_source": "text"
+        }
+      ]
+    },
+    "FRHoF::Spellfire Storm": {
+      "name": "Spellfire Storm",
+      "source": "FRHoF",
+      "areas": [
+        {
+          "shape": "cylinder",
+          "radius_feet": 20,
+          "height_feet": 20,
+          "area_tag": "Y",
+          "dimension_source": "text"
+        }
+      ]
+    },
+    "FTD::Rime's Binding Ice": {
+      "name": "Rime's Binding Ice",
+      "source": "FTD",
+      "areas": [
+        {
+          "shape": "cone",
+          "length_feet": 30,
+          "area_tag": "N",
+          "dimension_source": "text"
+        }
+      ]
+    },
+    "IDRotF::Frost Fingers": {
+      "name": "Frost Fingers",
+      "source": "IDRotF",
+      "areas": [
+        {
+          "shape": "cone",
+          "length_feet": 15,
+          "area_tag": "N",
+          "dimension_source": "text"
+        }
+      ]
+    },
+    "PHB::Alarm": {
+      "name": "Alarm",
+      "source": "PHB",
+      "areas": [
+        {
+          "shape": "cube",
+          "side_feet": 20,
+          "area_tag": "C",
+          "dimension_source": "text"
+        }
+      ]
+    },
+    "PHB::Antilife Shell": {
+      "name": "Antilife Shell",
+      "source": "PHB",
+      "areas": [
+        {
+          "shape": "sphere",
+          "radius_feet": 10,
+          "area_tag": "S",
+          "dimension_source": "text"
+        }
+      ]
+    },
+    "PHB::Antipathy/Sympathy": {
+      "name": "Antipathy/Sympathy",
+      "source": "PHB",
+      "areas": [
+        {
+          "shape": "cube",
+          "side_feet": 200,
+          "area_tag": "C",
+          "dimension_source": "text"
+        }
+      ]
+    },
+    "PHB::Aura of Life": {
+      "name": "Aura of Life",
+      "source": "PHB",
+      "areas": [
+        {
+          "shape": "sphere",
+          "radius_feet": 30,
+          "area_tag": "S",
+          "dimension_source": "text"
+        }
+      ]
+    },
+    "PHB::Aura of Purity": {
+      "name": "Aura of Purity",
+      "source": "PHB",
+      "areas": [
+        {
+          "shape": "sphere",
+          "radius_feet": 30,
+          "area_tag": "S",
+          "dimension_source": "text"
+        }
+      ]
+    },
+    "PHB::Aura of Vitality": {
+      "name": "Aura of Vitality",
+      "source": "PHB",
+      "areas": [
+        {
+          "shape": "sphere",
+          "radius_feet": 30,
+          "area_tag": "S",
+          "dimension_source": "text"
+        }
+      ]
+    },
+    "PHB::Burning Hands": {
+      "name": "Burning Hands",
+      "source": "PHB",
+      "areas": [
+        {
+          "shape": "cone",
+          "length_feet": 15,
+          "area_tag": "N",
+          "dimension_source": "text"
+        }
+      ]
+    },
+    "PHB::Call Lightning": {
+      "name": "Call Lightning",
+      "source": "PHB",
+      "areas": [
+        {
+          "shape": "cylinder",
+          "radius_feet": 60,
+          "height_feet": 10,
+          "area_tag": "Y",
+          "dimension_source": "text"
+        }
+      ]
+    },
+    "PHB::Calm Emotions": {
+      "name": "Calm Emotions",
+      "source": "PHB",
+      "areas": [
+        {
+          "shape": "sphere",
+          "radius_feet": 20,
+          "area_tag": "S",
+          "dimension_source": "text"
+        }
+      ]
+    },
+    "PHB::Circle of Death": {
+      "name": "Circle of Death",
+      "source": "PHB",
+      "areas": [
+        {
+          "shape": "sphere",
+          "radius_feet": 60,
+          "area_tag": "S",
+          "dimension_source": "text"
+        }
+      ]
+    },
+    "PHB::Cloud of Daggers": {
+      "name": "Cloud of Daggers",
+      "source": "PHB",
+      "areas": [
+        {
+          "shape": "cube",
+          "side_feet": 5,
+          "area_tag": "C",
+          "dimension_source": "text"
+        }
+      ]
+    },
+    "PHB::Cloudkill": {
+      "name": "Cloudkill",
+      "source": "PHB",
+      "areas": [
+        {
+          "shape": "sphere",
+          "radius_feet": 20,
+          "area_tag": "S",
+          "dimension_source": "text"
+        }
+      ]
+    },
+    "PHB::Color Spray": {
+      "name": "Color Spray",
+      "source": "PHB",
+      "areas": [
+        {
+          "shape": "cone",
+          "length_feet": 15,
+          "area_tag": "N",
+          "dimension_source": "text"
+        }
+      ]
+    },
+    "PHB::Cone of Cold": {
+      "name": "Cone of Cold",
+      "source": "PHB",
+      "areas": [
+        {
+          "shape": "cone",
+          "length_feet": 60,
+          "area_tag": "N",
+          "dimension_source": "text"
+        }
+      ]
+    },
+    "PHB::Confusion": {
+      "name": "Confusion",
+      "source": "PHB",
+      "areas": [
+        {
+          "shape": "sphere",
+          "radius_feet": 10,
+          "area_tag": "S",
+          "dimension_source": "text"
+        }
+      ]
+    },
+    "PHB::Conjure Barrage": {
+      "name": "Conjure Barrage",
+      "source": "PHB",
+      "areas": [
+        {
+          "shape": "cone",
+          "length_feet": 60,
+          "area_tag": "N",
+          "dimension_source": "text"
+        }
+      ]
+    },
+    "PHB::Conjure Volley": {
+      "name": "Conjure Volley",
+      "source": "PHB",
+      "areas": [
+        {
+          "shape": "cylinder",
+          "radius_feet": 40,
+          "height_feet": 20,
+          "area_tag": "Y",
+          "dimension_source": "text"
+        }
+      ]
+    },
+    "PHB::Control Water": {
+      "name": "Control Water",
+      "source": "PHB",
+      "areas": [
+        {
+          "shape": "cube",
+          "side_feet": 100,
+          "area_tag": "C",
+          "dimension_source": "text"
+        }
+      ]
+    },
+    "PHB::Create or Destroy Water": {
+      "name": "Create or Destroy Water",
+      "source": "PHB",
+      "areas": [
+        {
+          "shape": "cube",
+          "side_feet": 30,
+          "area_tag": "C",
+          "dimension_source": "text"
+        }
+      ]
+    },
+    "PHB::Crusader's Mantle": {
+      "name": "Crusader's Mantle",
+      "source": "PHB",
+      "areas": [
+        {
+          "shape": "sphere",
+          "radius_feet": 30,
+          "area_tag": "S",
+          "dimension_source": "text"
+        }
+      ]
+    },
+    "PHB::Darkness": {
+      "name": "Darkness",
+      "source": "PHB",
+      "areas": [
+        {
+          "shape": "sphere",
+          "radius_feet": 15,
+          "area_tag": "S",
+          "dimension_source": "text"
+        }
+      ]
+    },
+    "PHB::Daylight": {
+      "name": "Daylight",
+      "source": "PHB",
+      "areas": [
+        {
+          "shape": "sphere",
+          "radius_feet": 60,
+          "area_tag": "S",
+          "dimension_source": "text"
+        }
+      ]
+    },
+    "PHB::Delayed Blast Fireball": {
+      "name": "Delayed Blast Fireball",
+      "source": "PHB",
+      "areas": [
+        {
+          "shape": "sphere",
+          "radius_feet": 20,
+          "area_tag": "S",
+          "dimension_source": "text"
+        }
+      ]
+    },
+    "PHB::Earthquake": {
+      "name": "Earthquake",
+      "source": "PHB",
+      "areas": [
+        {
+          "shape": "circle",
+          "radius_feet": 100,
+          "area_tag": "R",
+          "dimension_source": "text"
+        }
+      ]
+    },
+    "PHB::Entangle": {
+      "name": "Entangle",
+      "source": "PHB",
+      "areas": [
+        {
+          "shape": "square",
+          "side_feet": 20,
+          "area_tag": "Q",
+          "dimension_source": "text"
+        }
+      ]
+    },
+    "PHB::Evard's Black Tentacles": {
+      "name": "Evard's Black Tentacles",
+      "source": "PHB",
+      "areas": [
+        {
+          "shape": "square",
+          "side_feet": 20,
+          "area_tag": "Q",
+          "dimension_source": "text"
+        }
+      ]
+    },
+    "PHB::Faerie Fire": {
+      "name": "Faerie Fire",
+      "source": "PHB",
+      "areas": [
+        {
+          "shape": "cube",
+          "side_feet": 20,
+          "area_tag": "C",
+          "dimension_source": "text"
+        }
+      ]
+    },
+    "PHB::Fear": {
+      "name": "Fear",
+      "source": "PHB",
+      "areas": [
+        {
+          "shape": "cone",
+          "length_feet": 30,
+          "area_tag": "N",
+          "dimension_source": "text"
+        }
+      ]
+    },
+    "PHB::Fire Storm": {
+      "name": "Fire Storm",
+      "source": "PHB",
+      "areas": [
+        {
+          "shape": "cube",
+          "side_feet": 10,
+          "area_tag": "C",
+          "dimension_source": "text"
+        }
+      ]
+    },
+    "PHB::Fireball": {
+      "name": "Fireball",
+      "source": "PHB",
+      "areas": [
+        {
+          "shape": "sphere",
+          "radius_feet": 20,
+          "area_tag": "S",
+          "dimension_source": "text"
+        }
+      ]
+    },
+    "PHB::Flame Strike": {
+      "name": "Flame Strike",
+      "source": "PHB",
+      "areas": [
+        {
+          "shape": "cylinder",
+          "radius_feet": 10,
+          "height_feet": 40,
+          "area_tag": "Y",
+          "dimension_source": "text"
+        }
+      ]
+    },
+    "PHB::Flaming Sphere": {
+      "name": "Flaming Sphere",
+      "source": "PHB",
+      "areas": [
+        {
+          "shape": "sphere",
+          "diameter_feet": 5,
+          "radius_feet": 2.5,
+          "area_tag": "S",
+          "dimension_source": "text"
+        }
+      ]
+    },
+    "PHB::Fog Cloud": {
+      "name": "Fog Cloud",
+      "source": "PHB",
+      "areas": [
+        {
+          "shape": "sphere",
+          "radius_feet": 20,
+          "area_tag": "S",
+          "dimension_source": "text"
+        }
+      ]
+    },
+    "PHB::Globe of Invulnerability": {
+      "name": "Globe of Invulnerability",
+      "source": "PHB",
+      "areas": [
+        {
+          "shape": "sphere",
+          "radius_feet": 10,
+          "area_tag": "S",
+          "dimension_source": "text"
+        }
+      ]
+    },
+    "PHB::Glyph of Warding": {
+      "name": "Glyph of Warding",
+      "source": "PHB",
+      "areas": [
+        {
+          "shape": "sphere",
+          "radius_feet": 20,
+          "area_tag": "S",
+          "dimension_source": "text"
+        }
+      ]
+    },
+    "PHB::Grease": {
+      "name": "Grease",
+      "source": "PHB",
+      "areas": [
+        {
+          "shape": "square",
+          "side_feet": 10,
+          "area_tag": "Q",
+          "dimension_source": "text"
+        }
+      ]
+    },
+    "PHB::Guards and Wards": {
+      "name": "Guards and Wards",
+      "source": "PHB",
+      "areas": [
+        {
+          "shape": "square",
+          "side_feet": 5,
+          "area_tag": "Q",
+          "dimension_source": "text"
+        }
+      ]
+    },
+    "PHB::Gust of Wind": {
+      "name": "Gust of Wind",
+      "source": "PHB",
+      "areas": [
+        {
+          "shape": "line",
+          "length_feet": 60,
+          "width_feet": 10,
+          "area_tag": "L",
+          "dimension_source": "text"
+        }
+      ]
+    },
+    "PHB::Hallucinatory Terrain": {
+      "name": "Hallucinatory Terrain",
+      "source": "PHB",
+      "areas": [
+        {
+          "shape": "cube",
+          "side_feet": 150,
+          "area_tag": "C",
+          "dimension_source": "text"
+        }
+      ]
+    },
+    "PHB::Holy Aura": {
+      "name": "Holy Aura",
+      "source": "PHB",
+      "areas": [
+        {
+          "shape": "sphere",
+          "radius_feet": 30,
+          "area_tag": "S",
+          "dimension_source": "text"
+        }
+      ]
+    },
+    "PHB::Hunger of Hadar": {
+      "name": "Hunger of Hadar",
+      "source": "PHB",
+      "areas": [
+        {
+          "shape": "sphere",
+          "radius_feet": 20,
+          "area_tag": "S",
+          "dimension_source": "text"
+        }
+      ]
+    },
+    "PHB::Hypnotic Pattern": {
+      "name": "Hypnotic Pattern",
+      "source": "PHB",
+      "areas": [
+        {
+          "shape": "cube",
+          "side_feet": 30,
+          "area_tag": "C",
+          "dimension_source": "text"
+        }
+      ]
+    },
+    "PHB::Ice Storm": {
+      "name": "Ice Storm",
+      "source": "PHB",
+      "areas": [
+        {
+          "shape": "cylinder",
+          "radius_feet": 20,
+          "height_feet": 40,
+          "area_tag": "Y",
+          "dimension_source": "text"
+        }
+      ]
+    },
+    "PHB::Incendiary Cloud": {
+      "name": "Incendiary Cloud",
+      "source": "PHB",
+      "areas": [
+        {
+          "shape": "sphere",
+          "radius_feet": 20,
+          "area_tag": "S",
+          "dimension_source": "text"
+        }
+      ]
+    },
+    "PHB::Insect Plague": {
+      "name": "Insect Plague",
+      "source": "PHB",
+      "areas": [
+        {
+          "shape": "sphere",
+          "radius_feet": 20,
+          "area_tag": "S",
+          "dimension_source": "text"
+        }
+      ]
+    },
+    "PHB::Leomund's Tiny Hut": {
+      "name": "Leomund's Tiny Hut",
+      "source": "PHB",
+      "areas": [
+        {
+          "shape": "hemisphere",
+          "radius_feet": 10,
+          "area_tag": "H",
+          "dimension_source": "text"
+        }
+      ]
+    },
+    "PHB::Lightning Bolt": {
+      "name": "Lightning Bolt",
+      "source": "PHB",
+      "areas": [
+        {
+          "shape": "line",
+          "length_feet": 100,
+          "width_feet": 5,
+          "area_tag": "L",
+          "dimension_source": "text"
+        }
+      ]
+    },
+    "PHB::Magic Circle": {
+      "name": "Magic Circle",
+      "source": "PHB",
+      "areas": [
+        {
+          "shape": "cylinder",
+          "radius_feet": 10,
+          "area_tag": "Y",
+          "dimension_source": "text"
+        }
+      ]
+    },
+    "PHB::Mass Cure Wounds": {
+      "name": "Mass Cure Wounds",
+      "source": "PHB",
+      "areas": [
+        {
+          "shape": "sphere",
+          "radius_feet": 30,
+          "area_tag": "S",
+          "dimension_source": "text"
+        }
+      ]
+    },
+    "PHB::Meteor Swarm": {
+      "name": "Meteor Swarm",
+      "source": "PHB",
+      "areas": [
+        {
+          "shape": "sphere",
+          "radius_feet": 40,
+          "area_tag": "S",
+          "dimension_source": "text"
+        }
+      ]
+    },
+    "PHB::Moonbeam": {
+      "name": "Moonbeam",
+      "source": "PHB",
+      "areas": [
+        {
+          "shape": "cylinder",
+          "radius_feet": 5,
+          "height_feet": 40,
+          "area_tag": "Y",
+          "dimension_source": "text"
+        }
+      ]
+    },
+    "PHB::Mordenkainen's Private Sanctum": {
+      "name": "Mordenkainen's Private Sanctum",
+      "source": "PHB",
+      "areas": [
+        {
+          "shape": "cube",
+          "side_feet": 100,
+          "area_tag": "C",
+          "dimension_source": "text"
+        }
+      ]
+    },
+    "PHB::Move Earth": {
+      "name": "Move Earth",
+      "source": "PHB",
+      "areas": [
+        {
+          "shape": "square",
+          "side_feet": 40,
+          "area_tag": "Q",
+          "dimension_source": "text"
+        }
+      ]
+    },
+    "PHB::Otiluke's Freezing Sphere": {
+      "name": "Otiluke's Freezing Sphere",
+      "source": "PHB",
+      "areas": [
+        {
+          "shape": "sphere",
+          "radius_feet": 60,
+          "area_tag": "S",
+          "dimension_source": "text"
+        }
+      ]
+    },
+    "PHB::Prismatic Spray": {
+      "name": "Prismatic Spray",
+      "source": "PHB",
+      "areas": [
+        {
+          "shape": "cone",
+          "length_feet": 60,
+          "area_tag": "N",
+          "dimension_source": "text"
+        }
+      ]
+    },
+    "PHB::Purify Food and Drink": {
+      "name": "Purify Food and Drink",
+      "source": "PHB",
+      "areas": [
+        {
+          "shape": "sphere",
+          "radius_feet": 5,
+          "area_tag": "S",
+          "dimension_source": "text"
+        }
+      ]
+    },
+    "PHB::Reverse Gravity": {
+      "name": "Reverse Gravity",
+      "source": "PHB",
+      "areas": [
+        {
+          "shape": "cylinder",
+          "radius_feet": 50,
+          "height_feet": 100,
+          "area_tag": "Y",
+          "dimension_source": "text"
+        }
+      ]
+    },
+    "PHB::Shatter": {
+      "name": "Shatter",
+      "source": "PHB",
+      "areas": [
+        {
+          "shape": "sphere",
+          "radius_feet": 10,
+          "area_tag": "S",
+          "dimension_source": "text"
+        }
+      ]
+    },
+    "PHB::Silence": {
+      "name": "Silence",
+      "source": "PHB",
+      "areas": [
+        {
+          "shape": "sphere",
+          "radius_feet": 20,
+          "area_tag": "S",
+          "dimension_source": "text"
+        }
+      ]
+    },
+    "PHB::Sleet Storm": {
+      "name": "Sleet Storm",
+      "source": "PHB",
+      "areas": [
+        {
+          "shape": "cylinder",
+          "radius_feet": 40,
+          "area_tag": "Y",
+          "dimension_source": "text"
+        }
+      ]
+    },
+    "PHB::Slow": {
+      "name": "Slow",
+      "source": "PHB",
+      "areas": [
+        {
+          "shape": "cube",
+          "side_feet": 40,
+          "area_tag": "C",
+          "dimension_source": "text"
+        }
+      ]
+    },
+    "PHB::Spike Growth": {
+      "name": "Spike Growth",
+      "source": "PHB",
+      "areas": [
+        {
+          "shape": "circle",
+          "radius_feet": 20,
+          "area_tag": "R",
+          "dimension_source": "text"
+        }
+      ]
+    },
+    "PHB::Stinking Cloud": {
+      "name": "Stinking Cloud",
+      "source": "PHB",
+      "areas": [
+        {
+          "shape": "sphere",
+          "radius_feet": 20,
+          "area_tag": "S",
+          "dimension_source": "text"
+        }
+      ]
+    },
+    "PHB::Sunbeam": {
+      "name": "Sunbeam",
+      "source": "PHB",
+      "areas": [
+        {
+          "shape": "line",
+          "length_feet": 60,
+          "width_feet": 5,
+          "area_tag": "L",
+          "dimension_source": "text"
+        }
+      ]
+    },
+    "PHB::Sunburst": {
+      "name": "Sunburst",
+      "source": "PHB",
+      "areas": [
+        {
+          "shape": "sphere",
+          "radius_feet": 60,
+          "area_tag": "S",
+          "dimension_source": "text"
+        }
+      ]
+    },
+    "PHB::Symbol": {
+      "name": "Symbol",
+      "source": "PHB",
+      "areas": [
+        {
+          "shape": "sphere",
+          "radius_feet": 60,
+          "area_tag": "S",
+          "dimension_source": "text"
+        }
+      ]
+    },
+    "PHB::Thunderwave": {
+      "name": "Thunderwave",
+      "source": "PHB",
+      "areas": [
+        {
+          "shape": "cube",
+          "side_feet": 15,
+          "area_tag": "C",
+          "dimension_source": "text"
+        }
+      ]
+    },
+    "PHB::Web": {
+      "name": "Web",
+      "source": "PHB",
+      "areas": [
+        {
+          "shape": "cube",
+          "side_feet": 20,
+          "area_tag": "C",
+          "dimension_source": "text"
+        }
+      ]
+    },
+    "PHB::Weird": {
+      "name": "Weird",
+      "source": "PHB",
+      "areas": [
+        {
+          "shape": "sphere",
+          "radius_feet": 30,
+          "area_tag": "S",
+          "dimension_source": "text"
+        }
+      ]
+    },
+    "PHB::Zone of Truth": {
+      "name": "Zone of Truth",
+      "source": "PHB",
+      "areas": [
+        {
+          "shape": "sphere",
+          "radius_feet": 15,
+          "area_tag": "S",
+          "dimension_source": "text"
+        }
+      ]
+    },
+    "XGE::Abi-Dalzim's Horrid Wilting": {
+      "name": "Abi-Dalzim's Horrid Wilting",
+      "source": "XGE",
+      "areas": [
+        {
+          "shape": "cube",
+          "side_feet": 30,
+          "area_tag": "C",
+          "dimension_source": "text"
+        }
+      ]
+    },
+    "XGE::Aganazzar's Scorcher": {
+      "name": "Aganazzar's Scorcher",
+      "source": "XGE",
+      "areas": [
+        {
+          "shape": "line",
+          "length_feet": 30,
+          "width_feet": 5,
+          "area_tag": "L",
+          "dimension_source": "text"
+        }
+      ]
+    },
+    "XGE::Control Flames": {
+      "name": "Control Flames",
+      "source": "XGE",
+      "areas": [
+        {
+          "shape": "cube",
+          "side_feet": 5,
+          "area_tag": "C",
+          "dimension_source": "text"
+        }
+      ]
+    },
+    "XGE::Control Winds": {
+      "name": "Control Winds",
+      "source": "XGE",
+      "areas": [
+        {
+          "shape": "cube",
+          "side_feet": 100,
+          "area_tag": "C",
+          "dimension_source": "text"
+        }
+      ]
+    },
+    "XGE::Create Bonfire": {
+      "name": "Create Bonfire",
+      "source": "XGE",
+      "areas": [
+        {
+          "shape": "cube",
+          "side_feet": 5,
+          "area_tag": "C",
+          "dimension_source": "text"
+        }
+      ]
+    },
+    "XGE::Dawn": {
+      "name": "Dawn",
+      "source": "XGE",
+      "areas": [
+        {
+          "shape": "cylinder",
+          "radius_feet": 30,
+          "height_feet": 40,
+          "area_tag": "Y",
+          "dimension_source": "text"
+        }
+      ]
+    },
+    "XGE::Dragon's Breath": {
+      "name": "Dragon's Breath",
+      "source": "XGE",
+      "areas": [
+        {
+          "shape": "cone",
+          "length_feet": 15,
+          "area_tag": "N",
+          "dimension_source": "text"
+        }
+      ]
+    },
+    "XGE::Druid Grove": {
+      "name": "Druid Grove",
+      "source": "XGE",
+      "areas": [
+        {
+          "shape": "cube",
+          "variants": [
+            {
+              "side_feet": 30
+            },
+            {
+              "side_feet": 90
+            }
+          ],
+          "area_tag": "C",
+          "dimension_source": "text"
+        },
+        {
+          "shape": "square",
+          "side_feet": 5,
+          "area_tag": "Q",
+          "dimension_source": "text"
+        }
+      ]
+    },
+    "XGE::Erupting Earth": {
+      "name": "Erupting Earth",
+      "source": "XGE",
+      "areas": [
+        {
+          "shape": "cube",
+          "side_feet": 20,
+          "area_tag": "C",
+          "dimension_source": "text"
+        }
+      ]
+    },
+    "XGE::Healing Spirit": {
+      "name": "Healing Spirit",
+      "source": "XGE",
+      "areas": [
+        {
+          "shape": "cube",
+          "side_feet": 5,
+          "area_tag": "C",
+          "dimension_source": "text"
+        }
+      ]
+    },
+    "XGE::Illusory Dragon": {
+      "name": "Illusory Dragon",
+      "source": "XGE",
+      "areas": [
+        {
+          "shape": "cone",
+          "length_feet": 60,
+          "area_tag": "N",
+          "dimension_source": "text"
+        }
+      ]
+    },
+    "XGE::Investiture of Flame": {
+      "name": "Investiture of Flame",
+      "source": "XGE",
+      "areas": [
+        {
+          "shape": "line",
+          "length_feet": 15,
+          "width_feet": 5,
+          "area_tag": "L",
+          "dimension_source": "text"
+        }
+      ]
+    },
+    "XGE::Investiture of Ice": {
+      "name": "Investiture of Ice",
+      "source": "XGE",
+      "areas": [
+        {
+          "shape": "cone",
+          "length_feet": 15,
+          "area_tag": "N",
+          "dimension_source": "text"
+        },
+        {
+          "shape": "sphere",
+          "radius_feet": 10,
+          "area_tag": "S",
+          "dimension_source": "text"
+        }
+      ]
+    },
+    "XGE::Investiture of Stone": {
+      "name": "Investiture of Stone",
+      "source": "XGE",
+      "areas": [
+        {
+          "shape": "sphere",
+          "radius_feet": 15,
+          "area_tag": "S",
+          "dimension_source": "text"
+        }
+      ]
+    },
+    "XGE::Investiture of Wind": {
+      "name": "Investiture of Wind",
+      "source": "XGE",
+      "areas": [
+        {
+          "shape": "cube",
+          "side_feet": 15,
+          "area_tag": "C",
+          "dimension_source": "text"
+        }
+      ]
+    },
+    "XGE::Maddening Darkness": {
+      "name": "Maddening Darkness",
+      "source": "XGE",
+      "areas": [
+        {
+          "shape": "sphere",
+          "radius_feet": 60,
+          "area_tag": "S",
+          "dimension_source": "text"
+        }
+      ]
+    },
+    "XGE::Maelstrom": {
+      "name": "Maelstrom",
+      "source": "XGE",
+      "areas": [
+        {
+          "shape": "circle",
+          "radius_feet": 30,
+          "area_tag": "R",
+          "dimension_source": "text"
+        }
+      ]
+    },
+    "XGE::Mold Earth": {
+      "name": "Mold Earth",
+      "source": "XGE",
+      "areas": [
+        {
+          "shape": "cube",
+          "side_feet": 5,
+          "area_tag": "C",
+          "dimension_source": "text"
+        }
+      ]
+    },
+    "XGE::Pyrotechnics": {
+      "name": "Pyrotechnics",
+      "source": "XGE",
+      "areas": [
+        {
+          "shape": "cube",
+          "side_feet": 5,
+          "area_tag": "C",
+          "dimension_source": "text"
+        },
+        {
+          "shape": "sphere",
+          "radius_feet": 20,
+          "area_tag": "S",
+          "dimension_source": "text"
+        }
+      ]
+    },
+    "XGE::Shape Water": {
+      "name": "Shape Water",
+      "source": "XGE",
+      "areas": [
+        {
+          "shape": "cube",
+          "side_feet": 5,
+          "area_tag": "C",
+          "dimension_source": "text"
+        }
+      ]
+    },
+    "XGE::Sickening Radiance": {
+      "name": "Sickening Radiance",
+      "source": "XGE",
+      "areas": [
+        {
+          "shape": "sphere",
+          "radius_feet": 30,
+          "area_tag": "S",
+          "dimension_source": "text"
+        }
+      ]
+    },
+    "XGE::Snilloc's Snowball Swarm": {
+      "name": "Snilloc's Snowball Swarm",
+      "source": "XGE",
+      "areas": [
+        {
+          "shape": "sphere",
+          "radius_feet": 5,
+          "area_tag": "S",
+          "dimension_source": "text"
+        }
+      ]
+    },
+    "XGE::Storm Sphere": {
+      "name": "Storm Sphere",
+      "source": "XGE",
+      "areas": [
+        {
+          "shape": "sphere",
+          "radius_feet": 20,
+          "area_tag": "S",
+          "dimension_source": "text"
+        }
+      ]
+    },
+    "XGE::Synaptic Static": {
+      "name": "Synaptic Static",
+      "source": "XGE",
+      "areas": [
+        {
+          "shape": "sphere",
+          "radius_feet": 20,
+          "area_tag": "S",
+          "dimension_source": "text"
+        }
+      ]
+    },
+    "XGE::Transmute Rock": {
+      "name": "Transmute Rock",
+      "source": "XGE",
+      "areas": [
+        {
+          "shape": "cube",
+          "side_feet": 40,
+          "area_tag": "C",
+          "dimension_source": "text"
+        }
+      ]
+    },
+    "XGE::Vitriolic Sphere": {
+      "name": "Vitriolic Sphere",
+      "source": "XGE",
+      "areas": [
+        {
+          "shape": "sphere",
+          "radius_feet": 20,
+          "area_tag": "S",
+          "dimension_source": "text"
+        }
+      ]
+    },
+    "XGE::Watery Sphere": {
+      "name": "Watery Sphere",
+      "source": "XGE",
+      "areas": [
+        {
+          "shape": "sphere",
+          "radius_feet": 5,
+          "area_tag": "S",
+          "dimension_source": "text"
+        }
+      ]
+    },
+    "XGE::Whirlwind": {
+      "name": "Whirlwind",
+      "source": "XGE",
+      "areas": [
+        {
+          "shape": "cylinder",
+          "radius_feet": 10,
+          "height_feet": 30,
+          "area_tag": "Y",
+          "dimension_source": "text"
+        }
+      ]
+    },
+    "XGE::Wrath of Nature": {
+      "name": "Wrath of Nature",
+      "source": "XGE",
+      "areas": [
+        {
+          "shape": "cube",
+          "side_feet": 60,
+          "area_tag": "C",
+          "dimension_source": "text"
+        }
+      ]
+    },
+    "XPHB::Alarm": {
+      "name": "Alarm",
+      "source": "XPHB",
+      "areas": [
+        {
+          "shape": "cube",
+          "side_feet": 20,
+          "area_tag": "C",
+          "dimension_source": "text"
+        }
+      ]
+    },
+    "XPHB::Antilife Shell": {
+      "name": "Antilife Shell",
+      "source": "XPHB",
+      "areas": [
+        {
+          "shape": "emanation",
+          "radius_feet": 10,
+          "area_tag": "S",
+          "dimension_source": "text"
+        }
+      ]
+    },
+    "XPHB::Antimagic Field": {
+      "name": "Antimagic Field",
+      "source": "XPHB",
+      "areas": [
+        {
+          "shape": "emanation",
+          "radius_feet": 10,
+          "area_tag": "S",
+          "dimension_source": "text"
+        }
+      ]
+    },
+    "XPHB::Arms of Hadar": {
+      "name": "Arms of Hadar",
+      "source": "XPHB",
+      "areas": [
+        {
+          "shape": "emanation",
+          "radius_feet": 10,
+          "area_tag": "S",
+          "dimension_source": "text"
+        }
+      ]
+    },
+    "XPHB::Aura of Life": {
+      "name": "Aura of Life",
+      "source": "XPHB",
+      "areas": [
+        {
+          "shape": "emanation",
+          "radius_feet": 30,
+          "area_tag": "S",
+          "dimension_source": "text"
+        }
+      ]
+    },
+    "XPHB::Aura of Purity": {
+      "name": "Aura of Purity",
+      "source": "XPHB",
+      "areas": [
+        {
+          "shape": "emanation",
+          "radius_feet": 30,
+          "area_tag": "S",
+          "dimension_source": "text"
+        }
+      ]
+    },
+    "XPHB::Aura of Vitality": {
+      "name": "Aura of Vitality",
+      "source": "XPHB",
+      "areas": [
+        {
+          "shape": "emanation",
+          "radius_feet": 30,
+          "area_tag": "S",
+          "dimension_source": "text"
+        }
+      ]
+    },
+    "XPHB::Burning Hands": {
+      "name": "Burning Hands",
+      "source": "XPHB",
+      "areas": [
+        {
+          "shape": "cone",
+          "length_feet": 15,
+          "area_tag": "N",
+          "dimension_source": "text"
+        }
+      ]
+    },
+    "XPHB::Call Lightning": {
+      "name": "Call Lightning",
+      "source": "XPHB",
+      "areas": [
+        {
+          "shape": "cylinder",
+          "radius_feet": 60,
+          "height_feet": 10,
+          "area_tag": "Y",
+          "dimension_source": "text"
+        }
+      ]
+    },
+    "XPHB::Calm Emotions": {
+      "name": "Calm Emotions",
+      "source": "XPHB",
+      "areas": [
+        {
+          "shape": "sphere",
+          "radius_feet": 20,
+          "area_tag": "S",
+          "dimension_source": "text"
+        }
+      ]
+    },
+    "XPHB::Circle of Death": {
+      "name": "Circle of Death",
+      "source": "XPHB",
+      "areas": [
+        {
+          "shape": "sphere",
+          "radius_feet": 60,
+          "area_tag": "S",
+          "dimension_source": "text"
+        }
+      ]
+    },
+    "XPHB::Circle of Power": {
+      "name": "Circle of Power",
+      "source": "XPHB",
+      "areas": [
+        {
+          "shape": "emanation",
+          "radius_feet": 30,
+          "area_tag": "S",
+          "dimension_source": "text"
+        }
+      ]
+    },
+    "XPHB::Cloud of Daggers": {
+      "name": "Cloud of Daggers",
+      "source": "XPHB",
+      "areas": [
+        {
+          "shape": "cube",
+          "side_feet": 5,
+          "area_tag": "C",
+          "dimension_source": "text"
+        }
+      ]
+    },
+    "XPHB::Cloudkill": {
+      "name": "Cloudkill",
+      "source": "XPHB",
+      "areas": [
+        {
+          "shape": "sphere",
+          "radius_feet": 20,
+          "area_tag": "S",
+          "dimension_source": "text"
+        }
+      ]
+    },
+    "XPHB::Color Spray": {
+      "name": "Color Spray",
+      "source": "XPHB",
+      "areas": [
+        {
+          "shape": "cone",
+          "length_feet": 15,
+          "area_tag": "N",
+          "dimension_source": "text"
+        }
+      ]
+    },
+    "XPHB::Cone of Cold": {
+      "name": "Cone of Cold",
+      "source": "XPHB",
+      "areas": [
+        {
+          "shape": "cone",
+          "length_feet": 60,
+          "area_tag": "N",
+          "dimension_source": "text"
+        }
+      ]
+    },
+    "XPHB::Confusion": {
+      "name": "Confusion",
+      "source": "XPHB",
+      "areas": [
+        {
+          "shape": "sphere",
+          "radius_feet": 10,
+          "area_tag": "S",
+          "dimension_source": "text"
+        }
+      ]
+    },
+    "XPHB::Conjure Barrage": {
+      "name": "Conjure Barrage",
+      "source": "XPHB",
+      "areas": [
+        {
+          "shape": "cone",
+          "length_feet": 60,
+          "area_tag": "N",
+          "dimension_source": "text"
+        }
+      ]
+    },
+    "XPHB::Conjure Celestial": {
+      "name": "Conjure Celestial",
+      "source": "XPHB",
+      "areas": [
+        {
+          "shape": "cylinder",
+          "radius_feet": 10,
+          "height_feet": 40,
+          "area_tag": "Y",
+          "dimension_source": "text"
+        }
+      ]
+    },
+    "XPHB::Conjure Minor Elementals": {
+      "name": "Conjure Minor Elementals",
+      "source": "XPHB",
+      "areas": [
+        {
+          "shape": "emanation",
+          "radius_feet": 15,
+          "area_tag": "S",
+          "dimension_source": "text"
+        }
+      ]
+    },
+    "XPHB::Conjure Volley": {
+      "name": "Conjure Volley",
+      "source": "XPHB",
+      "areas": [
+        {
+          "shape": "cylinder",
+          "radius_feet": 40,
+          "height_feet": 20,
+          "area_tag": "Y",
+          "dimension_source": "text"
+        }
+      ]
+    },
+    "XPHB::Control Water": {
+      "name": "Control Water",
+      "source": "XPHB",
+      "areas": [
+        {
+          "shape": "cube",
+          "side_feet": 100,
+          "area_tag": "C",
+          "dimension_source": "text"
+        }
+      ]
+    },
+    "XPHB::Create or Destroy Water": {
+      "name": "Create or Destroy Water",
+      "source": "XPHB",
+      "areas": [
+        {
+          "shape": "cube",
+          "side_feet": 30,
+          "area_tag": "C",
+          "dimension_source": "text"
+        }
+      ]
+    },
+    "XPHB::Crusader's Mantle": {
+      "name": "Crusader's Mantle",
+      "source": "XPHB",
+      "areas": [
+        {
+          "shape": "emanation",
+          "radius_feet": 30,
+          "area_tag": "S",
+          "dimension_source": "text"
+        }
+      ]
+    },
+    "XPHB::Darkness": {
+      "name": "Darkness",
+      "source": "XPHB",
+      "areas": [
+        {
+          "shape": "sphere",
+          "radius_feet": 15,
+          "area_tag": "S",
+          "dimension_source": "text"
+        }
+      ]
+    },
+    "XPHB::Daylight": {
+      "name": "Daylight",
+      "source": "XPHB",
+      "areas": [
+        {
+          "shape": "sphere",
+          "radius_feet": 60,
+          "area_tag": "S",
+          "dimension_source": "text"
+        }
+      ]
+    },
+    "XPHB::Delayed Blast Fireball": {
+      "name": "Delayed Blast Fireball",
+      "source": "XPHB",
+      "areas": [
+        {
+          "shape": "sphere",
+          "radius_feet": 20,
+          "area_tag": "S",
+          "dimension_source": "text"
+        }
+      ]
+    },
+    "XPHB::Destructive Wave": {
+      "name": "Destructive Wave",
+      "source": "XPHB",
+      "areas": [
+        {
+          "shape": "emanation",
+          "radius_feet": 30,
+          "area_tag": "S",
+          "dimension_source": "text"
+        }
+      ]
+    },
+    "XPHB::Dragon's Breath": {
+      "name": "Dragon's Breath",
+      "source": "XPHB",
+      "areas": [
+        {
+          "shape": "cone",
+          "length_feet": 15,
+          "area_tag": "N",
+          "dimension_source": "text"
+        }
+      ]
+    },
+    "XPHB::Earthquake": {
+      "name": "Earthquake",
+      "source": "XPHB",
+      "areas": [
+        {
+          "shape": "circle",
+          "radius_feet": 100,
+          "area_tag": "R",
+          "dimension_source": "text"
+        }
+      ]
+    },
+    "XPHB::Elementalism": {
+      "name": "Elementalism",
+      "source": "XPHB",
+      "areas": [
+        {
+          "shape": "cube",
+          "side_feet": 5,
+          "area_tag": "C",
+          "dimension_source": "text"
+        },
+        {
+          "shape": "square",
+          "side_feet": 5,
+          "area_tag": "Q",
+          "dimension_source": "text"
+        }
+      ]
+    },
+    "XPHB::Entangle": {
+      "name": "Entangle",
+      "source": "XPHB",
+      "areas": [
+        {
+          "shape": "square",
+          "side_feet": 20,
+          "area_tag": "Q",
+          "dimension_source": "text"
+        }
+      ]
+    },
+    "XPHB::Evard's Black Tentacles": {
+      "name": "Evard's Black Tentacles",
+      "source": "XPHB",
+      "areas": [
+        {
+          "shape": "square",
+          "side_feet": 20,
+          "area_tag": "Q",
+          "dimension_source": "text"
+        }
+      ]
+    },
+    "XPHB::Faerie Fire": {
+      "name": "Faerie Fire",
+      "source": "XPHB",
+      "areas": [
+        {
+          "shape": "cube",
+          "side_feet": 20,
+          "area_tag": "C",
+          "dimension_source": "text"
+        }
+      ]
+    },
+    "XPHB::Fear": {
+      "name": "Fear",
+      "source": "XPHB",
+      "areas": [
+        {
+          "shape": "cone",
+          "length_feet": 30,
+          "area_tag": "N",
+          "dimension_source": "text"
+        }
+      ]
+    },
+    "XPHB::Fire Storm": {
+      "name": "Fire Storm",
+      "source": "XPHB",
+      "areas": [
+        {
+          "shape": "cube",
+          "side_feet": 10,
+          "area_tag": "C",
+          "dimension_source": "text"
+        }
+      ]
+    },
+    "XPHB::Fireball": {
+      "name": "Fireball",
+      "source": "XPHB",
+      "areas": [
+        {
+          "shape": "sphere",
+          "radius_feet": 20,
+          "area_tag": "S",
+          "dimension_source": "text"
+        }
+      ]
+    },
+    "XPHB::Flame Strike": {
+      "name": "Flame Strike",
+      "source": "XPHB",
+      "areas": [
+        {
+          "shape": "cylinder",
+          "radius_feet": 10,
+          "height_feet": 40,
+          "area_tag": "Y",
+          "dimension_source": "text"
+        }
+      ]
+    },
+    "XPHB::Flaming Sphere": {
+      "name": "Flaming Sphere",
+      "source": "XPHB",
+      "areas": [
+        {
+          "shape": "sphere",
+          "diameter_feet": 5,
+          "radius_feet": 2.5,
+          "area_tag": "S",
+          "dimension_source": "text"
+        }
+      ]
+    },
+    "XPHB::Fog Cloud": {
+      "name": "Fog Cloud",
+      "source": "XPHB",
+      "areas": [
+        {
+          "shape": "sphere",
+          "radius_feet": 20,
+          "area_tag": "S",
+          "dimension_source": "text"
+        }
+      ]
+    },
+    "XPHB::Globe of Invulnerability": {
+      "name": "Globe of Invulnerability",
+      "source": "XPHB",
+      "areas": [
+        {
+          "shape": "emanation",
+          "radius_feet": 10,
+          "area_tag": "S",
+          "dimension_source": "text"
+        }
+      ]
+    },
+    "XPHB::Glyph of Warding": {
+      "name": "Glyph of Warding",
+      "source": "XPHB",
+      "areas": [
+        {
+          "shape": "sphere",
+          "radius_feet": 20,
+          "area_tag": "S",
+          "dimension_source": "text"
+        }
+      ]
+    },
+    "XPHB::Grease": {
+      "name": "Grease",
+      "source": "XPHB",
+      "areas": [
+        {
+          "shape": "square",
+          "side_feet": 10,
+          "area_tag": "Q",
+          "dimension_source": "text"
+        }
+      ]
+    },
+    "XPHB::Guards and Wards": {
+      "name": "Guards and Wards",
+      "source": "XPHB",
+      "areas": [
+        {
+          "shape": "square",
+          "side_feet": 50,
+          "area_tag": "Q",
+          "dimension_source": "text"
+        }
+      ]
+    },
+    "XPHB::Gust of Wind": {
+      "name": "Gust of Wind",
+      "source": "XPHB",
+      "areas": [
+        {
+          "shape": "line",
+          "length_feet": 60,
+          "width_feet": 10,
+          "area_tag": "L",
+          "dimension_source": "text"
+        }
+      ]
+    },
+    "XPHB::Hallucinatory Terrain": {
+      "name": "Hallucinatory Terrain",
+      "source": "XPHB",
+      "areas": [
+        {
+          "shape": "cube",
+          "side_feet": 150,
+          "area_tag": "C",
+          "dimension_source": "text"
+        }
+      ]
+    },
+    "XPHB::Heroes' Feast": {
+      "name": "Heroes' Feast",
+      "source": "XPHB",
+      "areas": [
+        {
+          "shape": "cube",
+          "side_feet": 10,
+          "area_tag": "C",
+          "dimension_source": "text"
+        }
+      ]
+    },
+    "XPHB::Holy Aura": {
+      "name": "Holy Aura",
+      "source": "XPHB",
+      "areas": [
+        {
+          "shape": "emanation",
+          "radius_feet": 30,
+          "area_tag": "S",
+          "dimension_source": "text"
+        }
+      ]
+    },
+    "XPHB::Hunger of Hadar": {
+      "name": "Hunger of Hadar",
+      "source": "XPHB",
+      "areas": [
+        {
+          "shape": "sphere",
+          "radius_feet": 20,
+          "area_tag": "S",
+          "dimension_source": "text"
+        }
+      ]
+    },
+    "XPHB::Hypnotic Pattern": {
+      "name": "Hypnotic Pattern",
+      "source": "XPHB",
+      "areas": [
+        {
+          "shape": "cube",
+          "side_feet": 30,
+          "area_tag": "C",
+          "dimension_source": "text"
+        }
+      ]
+    },
+    "XPHB::Ice Storm": {
+      "name": "Ice Storm",
+      "source": "XPHB",
+      "areas": [
+        {
+          "shape": "cylinder",
+          "radius_feet": 20,
+          "height_feet": 40,
+          "area_tag": "Y",
+          "dimension_source": "text"
+        }
+      ]
+    },
+    "XPHB::Incendiary Cloud": {
+      "name": "Incendiary Cloud",
+      "source": "XPHB",
+      "areas": [
+        {
+          "shape": "sphere",
+          "radius_feet": 20,
+          "area_tag": "S",
+          "dimension_source": "text"
+        }
+      ]
+    },
+    "XPHB::Insect Plague": {
+      "name": "Insect Plague",
+      "source": "XPHB",
+      "areas": [
+        {
+          "shape": "sphere",
+          "radius_feet": 20,
+          "area_tag": "S",
+          "dimension_source": "text"
+        }
+      ]
+    },
+    "XPHB::Jallarzi's Storm of Radiance": {
+      "name": "Jallarzi's Storm of Radiance",
+      "source": "XPHB",
+      "areas": [
+        {
+          "shape": "cylinder",
+          "radius_feet": 10,
+          "height_feet": 40,
+          "area_tag": "Y",
+          "dimension_source": "text"
+        }
+      ]
+    },
+    "XPHB::Leomund's Tiny Hut": {
+      "name": "Leomund's Tiny Hut",
+      "source": "XPHB",
+      "areas": [
+        {
+          "shape": "emanation",
+          "radius_feet": 10,
+          "area_tag": "S",
+          "dimension_source": "text"
+        }
+      ]
+    },
+    "XPHB::Lightning Bolt": {
+      "name": "Lightning Bolt",
+      "source": "XPHB",
+      "areas": [
+        {
+          "shape": "line",
+          "length_feet": 100,
+          "width_feet": 5,
+          "area_tag": "L",
+          "dimension_source": "text"
+        }
+      ]
+    },
+    "XPHB::Magic Circle": {
+      "name": "Magic Circle",
+      "source": "XPHB",
+      "areas": [
+        {
+          "shape": "cylinder",
+          "radius_feet": 10,
+          "area_tag": "Y",
+          "dimension_source": "text"
+        }
+      ]
+    },
+    "XPHB::Mass Cure Wounds": {
+      "name": "Mass Cure Wounds",
+      "source": "XPHB",
+      "areas": [
+        {
+          "shape": "sphere",
+          "radius_feet": 30,
+          "area_tag": "S",
+          "dimension_source": "text"
+        }
+      ]
+    },
+    "XPHB::Meteor Swarm": {
+      "name": "Meteor Swarm",
+      "source": "XPHB",
+      "areas": [
+        {
+          "shape": "sphere",
+          "radius_feet": 40,
+          "area_tag": "S",
+          "dimension_source": "text"
+        }
+      ]
+    },
+    "XPHB::Moonbeam": {
+      "name": "Moonbeam",
+      "source": "XPHB",
+      "areas": [
+        {
+          "shape": "cylinder",
+          "radius_feet": 5,
+          "height_feet": 40,
+          "area_tag": "Y",
+          "dimension_source": "text"
+        }
+      ]
+    },
+    "XPHB::Mordenkainen's Private Sanctum": {
+      "name": "Mordenkainen's Private Sanctum",
+      "source": "XPHB",
+      "areas": [
+        {
+          "shape": "cube",
+          "side_feet": 100,
+          "area_tag": "C",
+          "dimension_source": "text"
+        }
+      ]
+    },
+    "XPHB::Move Earth": {
+      "name": "Move Earth",
+      "source": "XPHB",
+      "areas": [
+        {
+          "shape": "square",
+          "side_feet": 40,
+          "area_tag": "Q",
+          "dimension_source": "text"
+        }
+      ]
+    },
+    "XPHB::Otiluke's Freezing Sphere": {
+      "name": "Otiluke's Freezing Sphere",
+      "source": "XPHB",
+      "areas": [
+        {
+          "shape": "sphere",
+          "radius_feet": 60,
+          "area_tag": "S",
+          "dimension_source": "text"
+        }
+      ]
+    },
+    "XPHB::Prismatic Spray": {
+      "name": "Prismatic Spray",
+      "source": "XPHB",
+      "areas": [
+        {
+          "shape": "cone",
+          "length_feet": 60,
+          "area_tag": "N",
+          "dimension_source": "text"
+        }
+      ]
+    },
+    "XPHB::Purify Food and Drink": {
+      "name": "Purify Food and Drink",
+      "source": "XPHB",
+      "areas": [
+        {
+          "shape": "sphere",
+          "radius_feet": 5,
+          "area_tag": "S",
+          "dimension_source": "text"
+        }
+      ]
+    },
+    "XPHB::Reverse Gravity": {
+      "name": "Reverse Gravity",
+      "source": "XPHB",
+      "areas": [
+        {
+          "shape": "cylinder",
+          "radius_feet": 50,
+          "area_tag": "Y",
+          "dimension_source": "text"
+        }
+      ]
+    },
+    "XPHB::Shatter": {
+      "name": "Shatter",
+      "source": "XPHB",
+      "areas": [
+        {
+          "shape": "sphere",
+          "radius_feet": 10,
+          "area_tag": "S",
+          "dimension_source": "text"
+        }
+      ]
+    },
+    "XPHB::Silence": {
+      "name": "Silence",
+      "source": "XPHB",
+      "areas": [
+        {
+          "shape": "sphere",
+          "radius_feet": 20,
+          "area_tag": "S",
+          "dimension_source": "text"
+        }
+      ]
+    },
+    "XPHB::Sleep": {
+      "name": "Sleep",
+      "source": "XPHB",
+      "areas": [
+        {
+          "shape": "sphere",
+          "radius_feet": 5,
+          "area_tag": "S",
+          "dimension_source": "text"
+        }
+      ]
+    },
+    "XPHB::Sleet Storm": {
+      "name": "Sleet Storm",
+      "source": "XPHB",
+      "areas": [
+        {
+          "shape": "cylinder",
+          "radius_feet": 20,
+          "area_tag": "Y",
+          "dimension_source": "text"
+        }
+      ]
+    },
+    "XPHB::Slow": {
+      "name": "Slow",
+      "source": "XPHB",
+      "areas": [
+        {
+          "shape": "cube",
+          "side_feet": 40,
+          "area_tag": "C",
+          "dimension_source": "text"
+        }
+      ]
+    },
+    "XPHB::Spike Growth": {
+      "name": "Spike Growth",
+      "source": "XPHB",
+      "areas": [
+        {
+          "shape": "sphere",
+          "radius_feet": 20,
+          "area_tag": "S",
+          "dimension_source": "text"
+        }
+      ]
+    },
+    "XPHB::Spirit Guardians": {
+      "name": "Spirit Guardians",
+      "source": "XPHB",
+      "areas": [
+        {
+          "shape": "emanation",
+          "radius_feet": 15,
+          "area_tag": "S",
+          "dimension_source": "text"
+        }
+      ]
+    },
+    "XPHB::Stinking Cloud": {
+      "name": "Stinking Cloud",
+      "source": "XPHB",
+      "areas": [
+        {
+          "shape": "sphere",
+          "radius_feet": 20,
+          "area_tag": "S",
+          "dimension_source": "text"
+        }
+      ]
+    },
+    "XPHB::Sunbeam": {
+      "name": "Sunbeam",
+      "source": "XPHB",
+      "areas": [
+        {
+          "shape": "line",
+          "length_feet": 60,
+          "width_feet": 5,
+          "area_tag": "L",
+          "dimension_source": "text"
+        }
+      ]
+    },
+    "XPHB::Sunburst": {
+      "name": "Sunburst",
+      "source": "XPHB",
+      "areas": [
+        {
+          "shape": "sphere",
+          "radius_feet": 60,
+          "area_tag": "S",
+          "dimension_source": "text"
+        }
+      ]
+    },
+    "XPHB::Symbol": {
+      "name": "Symbol",
+      "source": "XPHB",
+      "areas": [
+        {
+          "shape": "sphere",
+          "radius_feet": 60,
+          "area_tag": "S",
+          "dimension_source": "text"
+        }
+      ]
+    },
+    "XPHB::Synaptic Static": {
+      "name": "Synaptic Static",
+      "source": "XPHB",
+      "areas": [
+        {
+          "shape": "sphere",
+          "radius_feet": 20,
+          "area_tag": "S",
+          "dimension_source": "text"
+        }
+      ]
+    },
+    "XPHB::Thunderclap": {
+      "name": "Thunderclap",
+      "source": "XPHB",
+      "areas": [
+        {
+          "shape": "emanation",
+          "radius_feet": 5,
+          "area_tag": "S",
+          "dimension_source": "text"
+        }
+      ]
+    },
+    "XPHB::Thunderwave": {
+      "name": "Thunderwave",
+      "source": "XPHB",
+      "areas": [
+        {
+          "shape": "cube",
+          "side_feet": 15,
+          "area_tag": "C",
+          "dimension_source": "text"
+        }
+      ]
+    },
+    "XPHB::Vitriolic Sphere": {
+      "name": "Vitriolic Sphere",
+      "source": "XPHB",
+      "areas": [
+        {
+          "shape": "sphere",
+          "radius_feet": 20,
+          "area_tag": "S",
+          "dimension_source": "text"
+        }
+      ]
+    },
+    "XPHB::Web": {
+      "name": "Web",
+      "source": "XPHB",
+      "areas": [
+        {
+          "shape": "cube",
+          "side_feet": 20,
+          "area_tag": "C",
+          "dimension_source": "text"
+        }
+      ]
+    },
+    "XPHB::Weird": {
+      "name": "Weird",
+      "source": "XPHB",
+      "areas": [
+        {
+          "shape": "sphere",
+          "radius_feet": 30,
+          "area_tag": "S",
+          "dimension_source": "text"
+        }
+      ]
+    },
+    "XPHB::Yolande's Regal Presence": {
+      "name": "Yolande's Regal Presence",
+      "source": "XPHB",
+      "areas": [
+        {
+          "shape": "emanation",
+          "radius_feet": 10,
+          "area_tag": "S",
+          "dimension_source": "text"
+        }
+      ]
+    },
+    "XPHB::Zone of Truth": {
+      "name": "Zone of Truth",
+      "source": "XPHB",
+      "areas": [
+        {
+          "shape": "sphere",
+          "radius_feet": 15,
+          "area_tag": "S",
+          "dimension_source": "text"
+        }
+      ]
+    }
+  },
+  "unresolved": [
+    {
+      "name": "Conjure Constructs",
+      "source": "FRHoF",
+      "area_tag": "C",
+      "reason": "no regular dimension pattern found in matching sentence"
+    },
+    {
+      "name": "Death Armor",
+      "source": "FRHoF",
+      "area_tag": "S",
+      "reason": "no regular dimension pattern found in matching sentence"
+    },
+    {
+      "name": "Arms of Hadar",
+      "source": "PHB",
+      "area_tag": "S",
+      "reason": "no regular dimension pattern found in matching sentence"
+    },
+    {
+      "name": "Call Lightning",
+      "source": "PHB",
+      "area_tag": "S",
+      "reason": "no regular dimension pattern found in matching sentence"
+    },
+    {
+      "name": "Circle of Power",
+      "source": "PHB",
+      "area_tag": "S",
+      "reason": "no regular dimension pattern found in matching sentence"
+    },
+    {
+      "name": "Cordon of Arrows",
+      "source": "PHB",
+      "area_tag": "S",
+      "reason": "no regular dimension pattern found in matching sentence"
+    },
+    {
+      "name": "Destructive Wave",
+      "source": "PHB",
+      "area_tag": "S",
+      "reason": "no regular dimension pattern found in matching sentence"
+    },
+    {
+      "name": "Forcecage",
+      "source": "PHB",
+      "area_tag": "C",
+      "reason": "no regular dimension pattern found in matching sentence"
+    },
+    {
+      "name": "Hail of Thorns",
+      "source": "PHB",
+      "area_tag": "S",
+      "reason": "no regular dimension pattern found in matching sentence"
+    },
+    {
+      "name": "Lightning Arrow",
+      "source": "PHB",
+      "area_tag": "S",
+      "reason": "no regular dimension pattern found in matching sentence"
+    },
+    {
+      "name": "Sleep",
+      "source": "PHB",
+      "area_tag": "S",
+      "reason": "no regular dimension pattern found in matching sentence"
+    },
+    {
+      "name": "Spirit Guardians",
+      "source": "PHB",
+      "area_tag": "S",
+      "reason": "no regular dimension pattern found in matching sentence"
+    },
+    {
+      "name": "Storm of Vengeance",
+      "source": "PHB",
+      "area_tag": "Y",
+      "reason": "no regular dimension pattern found in matching sentence"
+    },
+    {
+      "name": "Sword Burst",
+      "source": "TCE",
+      "area_tag": "S",
+      "reason": "no regular dimension pattern found in matching sentence"
+    },
+    {
+      "name": "Earth Tremor",
+      "source": "XGE",
+      "area_tag": "R",
+      "reason": "no regular dimension pattern found in matching sentence"
+    },
+    {
+      "name": "Melf's Minute Meteors",
+      "source": "XGE",
+      "area_tag": "S",
+      "reason": "no regular dimension pattern found in matching sentence"
+    },
+    {
+      "name": "Shadow of Moil",
+      "source": "XGE",
+      "area_tag": "S",
+      "reason": "no regular dimension pattern found in matching sentence"
+    },
+    {
+      "name": "Thunder Step",
+      "source": "XGE",
+      "area_tag": "S",
+      "reason": "no regular dimension pattern found in matching sentence"
+    },
+    {
+      "name": "Thunderclap",
+      "source": "XGE",
+      "area_tag": "S",
+      "reason": "no regular dimension pattern found in matching sentence"
+    },
+    {
+      "name": "Call Lightning",
+      "source": "XPHB",
+      "area_tag": "S",
+      "reason": "no regular dimension pattern found in matching sentence"
+    },
+    {
+      "name": "Conjure Animals",
+      "source": "XPHB",
+      "area_tag": "C",
+      "reason": "no regular dimension pattern found in matching sentence"
+    },
+    {
+      "name": "Cordon of Arrows",
+      "source": "XPHB",
+      "area_tag": "S",
+      "reason": "no regular dimension pattern found in matching sentence"
+    },
+    {
+      "name": "Forcecage",
+      "source": "XPHB",
+      "area_tag": "C",
+      "reason": "no regular dimension pattern found in matching sentence"
+    },
+    {
+      "name": "Hail of Thorns",
+      "source": "XPHB",
+      "area_tag": "S",
+      "reason": "no regular dimension pattern found in matching sentence"
+    },
+    {
+      "name": "Lightning Arrow",
+      "source": "XPHB",
+      "area_tag": "S",
+      "reason": "no regular dimension pattern found in matching sentence"
+    },
+    {
+      "name": "Storm of Vengeance",
+      "source": "XPHB",
+      "area_tag": "Y",
+      "reason": "no regular dimension pattern found in matching sentence"
+    }
+  ]
+}
