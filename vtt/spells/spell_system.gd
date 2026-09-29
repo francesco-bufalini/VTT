@@ -31,6 +31,7 @@ func setup(root: Node3D) -> void:
 func _process(_delta: float) -> void:
 	if _pending_spell_id.is_empty():
 		_hide_spell_preview()
+		_hide_spell_range_preview()
 		return
 	_update_spell_preview()
 
@@ -103,7 +104,7 @@ func handle_input(event: InputEvent) -> bool:
 
 			if (
 				_targeting_phase == "caster"
-				and _pending_spell_id in ["burning_hands", "lightning_bolt"]
+				and _pending_spell_id == "burning_hands"
 				and key_event.keycode in [KEY_UP, KEY_DOWN]
 			):
 				_adjust_directional_pitch(
@@ -120,7 +121,7 @@ func handle_input(event: InputEvent) -> bool:
 			_cancel_pending_cast()
 			return true
 
-		if _targeting_phase == "point":
+		if _targeting_phase in ["point", "direction_point"]:
 			if mouse_event.button_index == MOUSE_BUTTON_WHEEL_UP:
 				_adjust_point_depth(-1.0)
 				return true
@@ -144,6 +145,9 @@ func handle_input(event: InputEvent) -> bool:
 				return true
 			"target_token":
 				_try_select_target_token(screen_position)
+				return true
+			"direction_point":
+				_try_select_direction_point(screen_position)
 				return true
 
 	return false
@@ -212,6 +216,21 @@ func _try_select_caster(screen_position: Vector2) -> void:
 				% [
 					String(spell_data.get("name", "Incantesimo")),
 					token_range_feet
+				]
+			)
+		"token_then_direction":
+			_pending_caster = caster
+			_targeting_phase = "direction_point"
+			_hide_spell_preview()
+			var direction_range_feet: int = int(
+				spell_data.get("range_feet", 0)
+			)
+			_set_instruction(
+				"%s: mira un punto o un token entro %d ft per scegliere la direzione · la linea arriva sempre a %d ft · clicca per confermare · Esc per annullare"
+				% [
+					String(spell_data.get("name", "Incantesimo")),
+					direction_range_feet,
+					direction_range_feet
 				]
 			)
 		_:
@@ -318,6 +337,47 @@ func _try_select_target_token(screen_position: Vector2) -> void:
 	_finish_cast()
 
 
+func _try_select_direction_point(screen_position: Vector2) -> void:
+	if _pending_caster == null or not is_instance_valid(_pending_caster):
+		_cancel_pending_cast()
+		return
+
+	var spell_data: Dictionary = SpellCatalog.spell(_pending_spell_id)
+	if spell_data.is_empty():
+		_cancel_pending_cast()
+		return
+
+	var direction_data: Dictionary = _direction_target_data(
+		screen_position,
+		spell_data
+	)
+	if not bool(direction_data.get("valid", false)):
+		if bool(direction_data.get("out_of_range", false)):
+			_set_instruction(
+				"Punto fuori gittata: %d ft / %d ft. Mira più vicino al caster."
+				% [
+					int(direction_data.get("distance_feet", 0)),
+					int(spell_data.get("range_feet", 0))
+				]
+			)
+		else:
+			_set_instruction(
+				"Mira una superficie, una cella della griglia 3D o un altro token."
+			)
+		return
+
+	var target_point: Vector3 = direction_data.get(
+		"point",
+		Vector3.ZERO
+	)
+	_cast_directional_spell_to_point(
+		_pending_caster,
+		target_point,
+		spell_data
+	)
+	_finish_cast()
+
+
 func _update_spell_preview() -> void:
 	var measurement_tool: Node = _measurement_tool()
 	if measurement_tool == null:
@@ -332,9 +392,11 @@ func _update_spell_preview() -> void:
 		get_viewport().get_visible_rect().size * 0.5
 	)
 
+	_update_spell_range_preview(spell_data)
+
 	match _targeting_phase:
 		"caster":
-			if _pending_spell_id not in ["burning_hands", "lightning_bolt"]:
+			if _pending_spell_id != "burning_hands":
 				_hide_spell_preview()
 				return
 
@@ -410,6 +472,32 @@ func _update_spell_preview() -> void:
 				"chromatic_orb"
 			)
 
+		"direction_point":
+			var direction_data: Dictionary = _direction_target_data(
+				screen_position,
+				spell_data
+			)
+			if not bool(direction_data.get("valid", false)):
+				_hide_spell_preview()
+				return
+
+			var geometry: Dictionary = _direction_geometry_from_point(
+				_pending_caster,
+				direction_data.get("point", Vector3.ZERO),
+				spell_data
+			)
+			if geometry.is_empty():
+				_hide_spell_preview()
+				return
+
+			measurement_tool.call(
+				"show_spell_preview",
+				geometry.get("start", Vector3.ZERO),
+				geometry.get("end", Vector3.ZERO),
+				String(spell_data.get("aoe_shape", "line")),
+				String(spell_data.get("id", "lightning_bolt"))
+			)
+
 		_:
 			_hide_spell_preview()
 
@@ -441,6 +529,105 @@ func _token_at_screen(screen_position: Vector2) -> Node3D:
 		return null
 
 	return target as Node3D
+
+
+func _update_spell_range_preview(spell_data: Dictionary) -> void:
+	var measurement_tool: Node = _measurement_tool()
+	if measurement_tool == null:
+		return
+
+	if (
+		_pending_caster == null
+		or not is_instance_valid(_pending_caster)
+		or _targeting_phase not in [
+			"point",
+			"target_token",
+			"direction_point"
+		]
+	):
+		measurement_tool.call("hide_spell_range_preview")
+		return
+
+	var range_feet: float = float(spell_data.get("range_feet", 0.0))
+	if range_feet <= 0.0:
+		measurement_tool.call("hide_spell_range_preview")
+		return
+
+	measurement_tool.call(
+		"show_spell_range_preview",
+		_pending_caster.global_position,
+		range_feet / 5.0 * _cell_size()
+	)
+
+
+func _direction_target_data(
+	screen_position: Vector2,
+	spell_data: Dictionary
+) -> Dictionary:
+	if _pending_caster == null or not is_instance_valid(_pending_caster):
+		return {"valid": false}
+
+	var token_target: Node3D = _token_at_screen(screen_position)
+	if token_target != null:
+		if token_target == _pending_caster:
+			return {"valid": false}
+		return _validate_direction_point(
+			_token_spell_origin(token_target),
+			spell_data
+		)
+
+	var measurement_tool: Node = _measurement_tool()
+	if measurement_tool == null:
+		return {"valid": false}
+
+	var point_value: Variant = measurement_tool.call(
+		"get_spell_target_point",
+		screen_position
+	)
+	if not point_value is Dictionary:
+		return {"valid": false}
+
+	var point_data: Dictionary = point_value as Dictionary
+	if not bool(point_data.get("valid", false)):
+		return {"valid": false}
+
+	return _validate_direction_point(
+		point_data.get("point", Vector3.ZERO),
+		spell_data
+	)
+
+
+func _validate_direction_point(
+	point: Vector3,
+	spell_data: Dictionary
+) -> Dictionary:
+	if _pending_caster == null or not is_instance_valid(_pending_caster):
+		return {"valid": false}
+
+	var cell_size: float = _cell_size()
+	var range_feet: float = float(spell_data.get("range_feet", 0.0))
+	var max_world_distance: float = range_feet / 5.0 * cell_size
+	var actual_world_distance: float = (
+		_pending_caster.global_position.distance_to(point)
+	)
+	if actual_world_distance > max_world_distance + cell_size * 0.01:
+		return {
+			"valid": false,
+			"out_of_range": true,
+			"point": point,
+			"distance_feet": int(
+				round(actual_world_distance / cell_size * 5.0)
+			)
+		}
+
+	var origin: Vector3 = _token_spell_origin(_pending_caster)
+	if origin.distance_squared_to(point) < 0.0001:
+		return {"valid": false}
+
+	return {
+		"valid": true,
+		"point": point
+	}
 
 
 func _target_token_data(
@@ -581,6 +768,32 @@ func _directional_spell_geometry(
 	}
 
 
+func _direction_geometry_from_point(
+	caster: Node3D,
+	target_point: Vector3,
+	spell_data: Dictionary
+) -> Dictionary:
+	if caster == null or not is_instance_valid(caster):
+		return {}
+
+	var origin: Vector3 = _token_spell_origin(caster)
+	var direction: Vector3 = target_point - origin
+	if direction.length_squared() < 0.0001:
+		return {}
+	direction = direction.normalized()
+
+	var length_cells: int = int(
+		spell_data.get("aoe_length_cells", 1)
+	)
+	return {
+		"start": origin,
+		"end": (
+			origin
+			+ direction * float(length_cells) * _cell_size()
+		)
+	}
+
+
 func _token_spell_origin(token: Node3D) -> Vector3:
 	if token == null or not is_instance_valid(token):
 		return Vector3.ZERO
@@ -595,6 +808,12 @@ func _hide_spell_preview() -> void:
 	var measurement_tool: Node = _measurement_tool()
 	if measurement_tool != null:
 		measurement_tool.call("hide_spell_preview")
+
+
+func _hide_spell_range_preview() -> void:
+	var measurement_tool: Node = _measurement_tool()
+	if measurement_tool != null:
+		measurement_tool.call("hide_spell_range_preview")
 
 
 func _adjust_point_depth(step_cells: float) -> void:
@@ -875,7 +1094,12 @@ func _activate_selected_spell() -> void:
 	var target_mode: String = String(
 		spell_data.get("target_mode", "")
 	)
-	if target_mode not in ["self_token", "token_then_point", "token_then_token"]:
+	if target_mode not in [
+		"self_token",
+		"token_then_point",
+		"token_then_token",
+		"token_then_direction"
+	]:
 		return
 
 	_pending_spell_id = _selected_spell_id
@@ -905,7 +1129,7 @@ func _activate_selected_spell() -> void:
 	board_root.set("_ui_owns_mouse", false)
 	Input.mouse_mode = Input.MOUSE_MODE_CAPTURED
 
-	if _selected_spell_id in ["burning_hands", "lightning_bolt"]:
+	if _selected_spell_id == "burning_hands":
 		_update_directional_instruction(spell_data)
 	else:
 		_set_instruction(
@@ -920,8 +1144,6 @@ func _cast_spell_from_caster(
 ) -> void:
 	var spell_id: String = String(spell_data.get("id", ""))
 	if spell_id == "burning_hands":
-		_cast_directional_aoe(caster, spell_data)
-	elif spell_id == "lightning_bolt":
 		_cast_directional_aoe(caster, spell_data)
 
 
@@ -963,6 +1185,33 @@ func _cast_directional_aoe(
 		String(spell_data.get("aoe_shape", "cone")),
 		duration,
 		String(spell_data.get("id", ""))
+	)
+
+
+func _cast_directional_spell_to_point(
+	caster: Node3D,
+	target_point: Vector3,
+	spell_data: Dictionary
+) -> void:
+	var measurement_tool: Node = _measurement_tool()
+	if measurement_tool == null:
+		return
+
+	var geometry: Dictionary = _direction_geometry_from_point(
+		caster,
+		target_point,
+		spell_data
+	)
+	if geometry.is_empty():
+		return
+
+	measurement_tool.call(
+		"show_transient_aoe",
+		geometry.get("start", Vector3.ZERO),
+		geometry.get("end", Vector3.ZERO),
+		String(spell_data.get("aoe_shape", "line")),
+		float(spell_data.get("transient_seconds", 5.0)),
+		String(spell_data.get("id", "lightning_bolt"))
 	)
 
 
@@ -1047,6 +1296,7 @@ func _cast_persistent_sphere(
 
 func _finish_cast() -> void:
 	_hide_spell_preview()
+	_hide_spell_range_preview()
 	_pending_spell_id = ""
 	_targeting_phase = ""
 	_pending_caster = null
@@ -1057,6 +1307,7 @@ func _finish_cast() -> void:
 
 func _cancel_pending_cast(restore_mouse: bool = true) -> void:
 	_hide_spell_preview()
+	_hide_spell_range_preview()
 	_pending_spell_id = ""
 	_targeting_phase = ""
 	_pending_caster = null
