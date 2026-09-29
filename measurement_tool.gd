@@ -1439,8 +1439,106 @@ func add_aoe(
 	_draw_aoe(mesh, start, end, shape, style, selected_color)
 	SpellVFX.attach(root, start, end, shape, style, cell_size)
 
-	_add_aoe_pick_area(root, start, end, shape)
+	_add_aoe_pick_area(root, start, end, shape, style)
 	_aoe_nodes.append(root)
+
+
+func _aoe_line_radius(style: String) -> float:
+	# Manual line templates represent a normal 5-ft-wide D&D line. Spell
+	# projectiles keep their deliberately thin preview, while true line AoEs
+	# retain the width encoded by their spell style.
+	if style.is_empty():
+		return cell_size * 0.5
+	if style == "gust_of_wind":
+		return cell_size
+	if style in ["lightning_bolt", "sunbeam"]:
+		return cell_size * 0.5
+	return cell_size * 0.06
+
+
+func _aoe_geometry(
+	start: Vector3,
+	end: Vector3,
+	shape: String,
+	style: String = ""
+) -> Dictionary:
+	var base_cells: int = _dnd_grid_distance_cells(end - start)
+	var reach_world: float = maxf(
+		cell_size * 0.5,
+		start.distance_to(end)
+		if not style.is_empty()
+		else float(base_cells) * cell_size
+	)
+	var direction: Vector3 = (
+		(end - start).normalized()
+		if not start.is_equal_approx(end)
+		else Vector3.FORWARD
+	)
+	var geometry: Dictionary = {
+		"shape": shape,
+		"reach": reach_world,
+		"position": start,
+		"basis": Basis.IDENTITY
+	}
+
+	match shape:
+		"cube":
+			geometry["size"] = Vector3.ONE * reach_world * 2.0
+
+		"cone":
+			geometry["radius"] = reach_world * 0.5
+			geometry["height"] = reach_world
+			geometry["basis"] = Basis(
+				Quaternion(Vector3.UP, direction)
+			)
+			geometry["position"] = (
+				start + direction * reach_world * 0.5
+			)
+
+		"cylinder":
+			var delta: Vector3 = end - start
+			var radius: float = maxf(
+				absf(delta.x),
+				cell_size * 0.5
+			)
+			var height: float = maxf(
+				absf(delta.y),
+				cell_size * 0.5
+			)
+			geometry["radius"] = radius
+			geometry["height"] = height
+			geometry["position"] = (
+				start + Vector3.UP * height * 0.5
+			)
+
+		"flat_square":
+			var thickness: float = maxf(
+				cell_size * 0.035,
+				0.01
+			)
+			geometry["size"] = Vector3(
+				reach_world * 2.0,
+				thickness,
+				reach_world * 2.0
+			)
+			geometry["position"] = (
+				start + Vector3.UP * thickness * 0.5
+			)
+
+		"line":
+			geometry["radius"] = _aoe_line_radius(style)
+			geometry["height"] = reach_world
+			geometry["basis"] = Basis(
+				Quaternion(Vector3.UP, direction)
+			)
+			geometry["position"] = (
+				start + direction * reach_world * 0.5
+			)
+
+		_:
+			geometry["radius"] = reach_world
+
+	return geometry
 
 
 func _draw_aoe(
@@ -1451,12 +1549,16 @@ func _draw_aoe(
 	style: String = "",
 	color: Color = Color(0.0, 0.0, 0.0, -1.0)
 ) -> void:
-	var base_cells: int = _dnd_grid_distance_cells(end - start)
-	var reach_world: float = maxf(
-		cell_size * 0.5,
-		start.distance_to(end)
-		if not style.is_empty()
-		else float(base_cells) * cell_size
+	var geometry: Dictionary = _aoe_geometry(
+		start,
+		end,
+		shape,
+		style
+	)
+
+	node.global_transform = Transform3D(
+		geometry.get("basis", Basis.IDENTITY),
+		geometry.get("position", start)
 	)
 	var material: StandardMaterial3D = StandardMaterial3D.new()
 	material.transparency = BaseMaterial3D.TRANSPARENCY_ALPHA
@@ -1489,98 +1591,47 @@ func _draw_aoe(
 	material.cull_mode = BaseMaterial3D.CULL_DISABLED
 	node.global_transform = Transform3D(Basis.IDENTITY, start)
 
+
 	match shape:
-		"cube":
-			var mesh := BoxMesh.new()
-			# The dragged distance is centre-to-face; the displayed D&D measure
-			# is therefore the full side, twice this reach.
-			mesh.size = Vector3.ONE * reach_world * 2.0
-			node.mesh = mesh
+		"cube", "flat_square":
+			var box_mesh: BoxMesh = BoxMesh.new()
+			box_mesh.size = geometry.get(
+				"size",
+				Vector3.ONE * cell_size
+			)
+			node.mesh = box_mesh
 
 		"cone":
-			var mesh := CylinderMesh.new()
-			mesh.top_radius = reach_world * 0.5
-			mesh.bottom_radius = 0.0
-			mesh.height = reach_world
-			node.mesh = mesh
-			var direction := (
-				(end - start).normalized()
-				if start != end
-				else Vector3.FORWARD
+			var cone_mesh: CylinderMesh = CylinderMesh.new()
+			cone_mesh.top_radius = float(
+				geometry.get("radius", cell_size * 0.5)
 			)
-			node.global_basis = Basis(
-				Quaternion(Vector3.UP, direction)
+			cone_mesh.bottom_radius = 0.0
+			cone_mesh.height = float(
+				geometry.get("height", cell_size)
 			)
-			node.global_position = (
-				start + direction * reach_world * 0.5
-			)
+			node.mesh = cone_mesh
 
-		"cylinder":
-			var cylinder_delta: Vector3 = end - start
-			var cylinder_radius: float = maxf(
-				absf(cylinder_delta.x),
-				cell_size * 0.5
-			)
-			var cylinder_height: float = maxf(
-				absf(cylinder_delta.y),
-				cell_size * 0.5
-			)
+		"cylinder", "line":
 			var cylinder_mesh: CylinderMesh = CylinderMesh.new()
-			cylinder_mesh.top_radius = cylinder_radius
-			cylinder_mesh.bottom_radius = cylinder_radius
-			cylinder_mesh.height = cylinder_height
+			var radius: float = float(
+				geometry.get("radius", cell_size * 0.5)
+			)
+			cylinder_mesh.top_radius = radius
+			cylinder_mesh.bottom_radius = radius
+			cylinder_mesh.height = float(
+				geometry.get("height", cell_size)
+			)
 			node.mesh = cylinder_mesh
-			node.global_position = (
-				start + Vector3.UP * cylinder_height * 0.5
-			)
-
-		"flat_square":
-			var flat_mesh: BoxMesh = BoxMesh.new()
-			flat_mesh.size = Vector3(
-				reach_world * 2.0,
-				maxf(cell_size * 0.035, 0.01),
-				reach_world * 2.0
-			)
-			node.mesh = flat_mesh
-			node.global_position = (
-				start
-				+ Vector3.UP * maxf(cell_size * 0.018, 0.005)
-			)
-
-		"line":
-			var mesh := CylinderMesh.new()
-			# D&D line spells are one square / 5 ft wide. Projectile previews
-			# deliberately use a thin trajectory instead of an AoT volume.
-			var thick_line_styles: Array[String] = [
-				"lightning_bolt",
-				"sunbeam"
-			]
-			var line_radius: float = cell_size * 0.06
-			if style in thick_line_styles:
-				line_radius = cell_size * 0.5
-			elif style == "gust_of_wind":
-				line_radius = cell_size
-			mesh.top_radius = line_radius
-			mesh.bottom_radius = line_radius
-			mesh.height = reach_world
-			node.mesh = mesh
-			var direction := (
-				(end - start).normalized()
-				if start != end
-				else Vector3.FORWARD
-			)
-			node.global_basis = Basis(
-				Quaternion(Vector3.UP, direction)
-			)
-			node.global_position = (
-				start + direction * reach_world * 0.5
-			)
 
 		_:
-			var mesh := SphereMesh.new()
-			mesh.radius = reach_world
-			mesh.height = reach_world * 2.0
-			node.mesh = mesh
+			var sphere_mesh: SphereMesh = SphereMesh.new()
+			var radius: float = float(
+				geometry.get("radius", cell_size * 0.5)
+			)
+			sphere_mesh.radius = radius
+			sphere_mesh.height = radius * 2.0
+			node.mesh = sphere_mesh
 
 	node.material_override = material
 
@@ -1642,105 +1693,84 @@ func _add_aoe_pick_area(
 	root: Node3D,
 	start: Vector3,
 	end: Vector3,
-	shape_name: String
+	shape_name: String,
+	style: String = ""
 ) -> void:
-	var base_cells := _dnd_grid_distance_cells(end - start)
-	var reach_world := maxf(
-		cell_size * 0.5,
-		float(base_cells) * cell_size
-	)
-	var direction := (
-		(end - start).normalized()
-		if start != end
-		else Vector3.FORWARD
+	var geometry: Dictionary = _aoe_geometry(
+		start,
+		end,
+		shape_name,
+		style
 	)
 
-	var area := Area3D.new()
+	var area: Area3D = Area3D.new()
 	area.name = "PickArea"
 	area.collision_layer = AOE_PICK_LAYER
 	area.collision_mask = 0
 	area.set_meta("aoe_root", root)
 	root.add_child(area)
+	area.global_transform = Transform3D(
+		geometry.get("basis", Basis.IDENTITY),
+		geometry.get("position", start)
+	)
 
-	var collision := CollisionShape3D.new()
+	var collision: CollisionShape3D = CollisionShape3D.new()
 	area.add_child(collision)
 
 	match shape_name:
 		"sphere":
-			var sphere := SphereShape3D.new()
-			sphere.radius = reach_world
+			var sphere: SphereShape3D = SphereShape3D.new()
+			sphere.radius = float(
+				geometry.get("radius", cell_size * 0.5)
+			)
 			collision.shape = sphere
-			area.global_position = start
 
-		"cube":
-			var box := BoxShape3D.new()
-			box.size = Vector3.ONE * reach_world * 2.0
+		"cube", "flat_square":
+			var box: BoxShape3D = BoxShape3D.new()
+			box.size = geometry.get(
+				"size",
+				Vector3.ONE * cell_size
+			)
 			collision.shape = box
-			area.global_position = start
 
 		"cone":
-			var cone := ConvexPolygonShape3D.new()
-			var points := PackedVector3Array()
-			points.append(Vector3(0.0, -reach_world * 0.5, 0.0))
-			for index in range(20):
-				var angle := TAU * float(index) / 20.0
+			var radius: float = float(
+				geometry.get("radius", cell_size * 0.5)
+			)
+			var height: float = float(
+				geometry.get("height", cell_size)
+			)
+			var cone: ConvexPolygonShape3D = ConvexPolygonShape3D.new()
+			var points: PackedVector3Array = PackedVector3Array()
+			points.append(Vector3(0.0, -height * 0.5, 0.0))
+			for index: int in range(20):
+				var angle: float = TAU * float(index) / 20.0
 				points.append(
 					Vector3(
-						cos(angle) * reach_world * 0.5,
-						reach_world * 0.5,
-						sin(angle) * reach_world * 0.5
+						cos(angle) * radius,
+						height * 0.5,
+						sin(angle) * radius
 					)
 				)
 			cone.points = points
 			collision.shape = cone
-			area.global_basis = Basis(
-				Quaternion(Vector3.UP, direction)
-			)
-			area.global_position = (
-				start + direction * reach_world * 0.5
-			)
 
-		"cylinder":
-			var cylinder_delta: Vector3 = end - start
-			var cylinder_radius: float = maxf(
-				absf(cylinder_delta.x),
-				cell_size * 0.5
+		"cylinder", "line":
+			var cylinder: CylinderShape3D = CylinderShape3D.new()
+			cylinder.radius = float(
+				geometry.get("radius", cell_size * 0.5)
 			)
-			var cylinder_height: float = maxf(
-				absf(cylinder_delta.y),
-				cell_size * 0.5
+			cylinder.height = float(
+				geometry.get("height", cell_size)
 			)
-			var cylinder_shape: CylinderShape3D = CylinderShape3D.new()
-			cylinder_shape.radius = cylinder_radius
-			cylinder_shape.height = cylinder_height
-			collision.shape = cylinder_shape
-			area.global_position = (
-				start + Vector3.UP * cylinder_height * 0.5
-			)
-
-		"flat_square":
-			var flat_box: BoxShape3D = BoxShape3D.new()
-			flat_box.size = Vector3(
-				reach_world * 2.0,
-				maxf(cell_size * 0.12, 0.05),
-				reach_world * 2.0
-			)
-			collision.shape = flat_box
-			area.global_position = (
-				start + Vector3.UP * maxf(cell_size * 0.06, 0.025)
-			)
-
-		"line":
-			var cylinder := CylinderShape3D.new()
-			cylinder.radius = cell_size * 0.5
-			cylinder.height = reach_world
 			collision.shape = cylinder
-			area.global_basis = Basis(
-				Quaternion(Vector3.UP, direction)
+
+		_:
+			var sphere: SphereShape3D = SphereShape3D.new()
+			sphere.radius = float(
+				geometry.get("radius", cell_size * 0.5)
 			)
-			area.global_position = (
-				start + direction * reach_world * 0.5
-			)
+			collision.shape = sphere
 
 
 func clear_persistent_aoes() -> void:
