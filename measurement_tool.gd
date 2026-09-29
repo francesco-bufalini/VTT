@@ -650,7 +650,7 @@ func _hide_measurement() -> void:
 func set_aoe_mode(shape: String) -> void:
 	if not _measurement_mode:
 		return
-	if shape not in ["sphere", "cube", "cone", "line", "flat_square"]:
+	if shape not in ["sphere", "cube", "cone", "line", "flat_square", "cylinder"]:
 		return
 
 	cancel_measurement()
@@ -689,7 +689,7 @@ func show_spell_preview(
 	shape: String,
 	style: String = ""
 ) -> void:
-	if shape not in ["sphere", "cube", "cone", "line", "flat_square"]:
+	if shape not in ["sphere", "cube", "cone", "line", "flat_square", "cylinder"]:
 		hide_spell_preview()
 		return
 
@@ -795,7 +795,7 @@ func show_transient_aoe(
 	duration_seconds: float = 5.0,
 	style: String = ""
 ) -> void:
-	if shape not in ["sphere", "cube", "cone", "line", "flat_square"]:
+	if shape not in ["sphere", "cube", "cone", "line", "flat_square", "cylinder"]:
 		return
 
 	var root: Node3D = Node3D.new()
@@ -981,6 +981,25 @@ func _draw_aoe(
 				start + direction * reach_world * 0.5
 			)
 
+		"cylinder":
+			var cylinder_delta: Vector3 = end - start
+			var cylinder_radius: float = maxf(
+				absf(cylinder_delta.x),
+				cell_size * 0.5
+			)
+			var cylinder_height: float = maxf(
+				absf(cylinder_delta.y),
+				cell_size * 0.5
+			)
+			var cylinder_mesh: CylinderMesh = CylinderMesh.new()
+			cylinder_mesh.top_radius = cylinder_radius
+			cylinder_mesh.bottom_radius = cylinder_radius
+			cylinder_mesh.height = cylinder_height
+			node.mesh = cylinder_mesh
+			node.global_position = (
+				start + Vector3.UP * cylinder_height * 0.5
+			)
+
 		"flat_square":
 			var flat_mesh: BoxMesh = BoxMesh.new()
 			flat_mesh.size = Vector3(
@@ -998,10 +1017,14 @@ func _draw_aoe(
 			var mesh := CylinderMesh.new()
 			# D&D line spells are one square / 5 ft wide. Projectile previews
 			# deliberately use a thin trajectory instead of an AoT volume.
+			var thick_line_styles: Array[String] = [
+				"lightning_bolt",
+				"sunbeam"
+			]
 			var line_radius: float = (
-				cell_size * 0.06
-				if style == "chromatic_orb"
-				else cell_size * 0.5
+				cell_size * 0.5
+				if style in thick_line_styles
+				else cell_size * 0.06
 			)
 			mesh.top_radius = line_radius
 			mesh.bottom_radius = line_radius
@@ -1142,6 +1165,24 @@ func _add_aoe_pick_area(
 				start + direction * reach_world * 0.5
 			)
 
+		"cylinder":
+			var cylinder_delta: Vector3 = end - start
+			var cylinder_radius: float = maxf(
+				absf(cylinder_delta.x),
+				cell_size * 0.5
+			)
+			var cylinder_height: float = maxf(
+				absf(cylinder_delta.y),
+				cell_size * 0.5
+			)
+			var cylinder_shape: CylinderShape3D = CylinderShape3D.new()
+			cylinder_shape.radius = cylinder_radius
+			cylinder_shape.height = cylinder_height
+			collision.shape = cylinder_shape
+			area.global_position = (
+				start + Vector3.UP * cylinder_height * 0.5
+			)
+
 		"flat_square":
 			var flat_box: BoxShape3D = BoxShape3D.new()
 			flat_box.size = Vector3(
@@ -1211,7 +1252,9 @@ func valid_aoes(data: Variant) -> bool:
 				"sphere",
 				"cube",
 				"cone",
-				"line"
+				"line",
+				"flat_square",
+				"cylinder"
 			]
 		):
 			return false
