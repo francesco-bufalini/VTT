@@ -33,6 +33,9 @@ var _spell_preview_start: Vector3 = Vector3.INF
 var _spell_preview_end: Vector3 = Vector3.INF
 var _spell_preview_shape: String = ""
 var _spell_preview_style: String = ""
+var _spell_range_preview: MeshInstance3D
+var _spell_range_center: Vector3 = Vector3.INF
+var _spell_range_radius: float = -1.0
 
 var _camera: Camera3D = null
 var _volumetric_grid: Node3D = null
@@ -713,6 +716,52 @@ func show_spell_preview(
 func hide_spell_preview() -> void:
 	if is_instance_valid(_spell_preview):
 		_spell_preview.hide()
+
+
+func show_spell_range_preview(
+	center: Vector3,
+	radius_world: float
+) -> void:
+	var safe_radius: float = maxf(radius_world, cell_size * 0.5)
+	if (
+		is_instance_valid(_spell_range_preview)
+		and _spell_range_center.is_equal_approx(center)
+		and is_equal_approx(_spell_range_radius, safe_radius)
+	):
+		_spell_range_preview.show()
+		return
+
+	if not is_instance_valid(_spell_range_preview):
+		_spell_range_preview = MeshInstance3D.new()
+		_spell_range_preview.name = "SpellRangePreview"
+		add_child(_spell_range_preview)
+
+	var sphere: SphereMesh = SphereMesh.new()
+	sphere.radius = safe_radius
+	sphere.height = safe_radius * 2.0
+	sphere.radial_segments = 48
+	sphere.rings = 24
+	_spell_range_preview.mesh = sphere
+	_spell_range_preview.global_position = center
+
+	var material: StandardMaterial3D = StandardMaterial3D.new()
+	material.transparency = BaseMaterial3D.TRANSPARENCY_ALPHA
+	material.shading_mode = BaseMaterial3D.SHADING_MODE_UNSHADED
+	material.cull_mode = BaseMaterial3D.CULL_DISABLED
+	material.albedo_color = Color(0.18, 0.58, 1.0, 0.055)
+	material.emission_enabled = true
+	material.emission = Color(0.08, 0.28, 0.72, 1.0)
+	material.emission_energy_multiplier = 0.14
+	_spell_range_preview.material_override = material
+
+	_spell_range_center = center
+	_spell_range_radius = safe_radius
+	_spell_range_preview.show()
+
+
+func hide_spell_range_preview() -> void:
+	if is_instance_valid(_spell_range_preview):
+		_spell_range_preview.hide()
 
 
 func show_transient_aoe(
