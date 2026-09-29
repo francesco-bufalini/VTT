@@ -112,7 +112,8 @@ const SPELLS: Dictionary = {
 		"higher_levels": (
 			"The damage increases by 1d6 for each spell slot level above 3rd."
 		),
-		"target_mode": "self_token",
+		"target_mode": "token_then_direction",
+		"range_feet": 100,
 		"aoe_shape": "line",
 		"aoe_length_cells": 20,
 		"transient_seconds": 5.0
