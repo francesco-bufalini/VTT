@@ -141,6 +141,28 @@ func _unhandled_input(event: InputEvent) -> void:
 			return
 
 	if event is InputEventMouseButton and measurement_tool.is_measurement_mode():
+		if (
+			event.pressed
+			and event.button_index in [
+				MOUSE_BUTTON_WHEEL_UP,
+				MOUSE_BUTTON_WHEEL_DOWN
+			]
+		):
+			var wheel_step: int = (
+				-1
+				if event.button_index == MOUSE_BUTTON_WHEEL_UP
+				else 1
+			)
+			if (
+				measurement_tool.is_aoe_mode()
+				and measurement_tool.is_dragging()
+			):
+				measurement_tool.adjust_aoe_color(wheel_step)
+			else:
+				measurement_tool.adjust_air_depth(float(wheel_step))
+			get_viewport().set_input_as_handled()
+			return
+
 		if event.button_index == MOUSE_BUTTON_LEFT:
 			if event.pressed:
 				measurement_tool.begin_measurement()
@@ -225,37 +247,6 @@ func _unhandled_input(event: InputEvent) -> void:
 			elif event.pressed and event.button_index == MOUSE_BUTTON_RIGHT:
 				_show_context_menu(event.position)
 			return
-
-		if bool(measurement_tool.call("is_measurement_mode")):
-			if event.pressed \
-			and event.button_index == MOUSE_BUTTON_WHEEL_UP:
-				if (
-					bool(measurement_tool.call("is_aoe_mode"))
-					and bool(measurement_tool.call("is_dragging"))
-				):
-					measurement_tool.call("adjust_aoe_color", -1)
-				else:
-					measurement_tool.call("adjust_air_depth", -1.0)
-				get_viewport().set_input_as_handled()
-				return
-			elif event.pressed \
-			and event.button_index == MOUSE_BUTTON_WHEEL_DOWN:
-				if (
-					bool(measurement_tool.call("is_aoe_mode"))
-					and bool(measurement_tool.call("is_dragging"))
-				):
-					measurement_tool.call("adjust_aoe_color", 1)
-				else:
-					measurement_tool.call("adjust_air_depth", 1.0)
-				get_viewport().set_input_as_handled()
-				return
-			elif event.button_index == MOUSE_BUTTON_LEFT:
-				if event.pressed:
-					measurement_tool.call("begin_measurement")
-				else:
-					measurement_tool.call("end_measurement")
-				get_viewport().set_input_as_handled()
-				return
 
 		if not event.pressed:
 			return
