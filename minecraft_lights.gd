@@ -87,10 +87,14 @@ func _collect_mesh_sources(
 	sources: Dictionary
 ) -> void:
 	var mesh := mesh_instance.mesh
+	if not mesh is ArrayMesh:
+		return
 
-	for surface_index in range(mesh.get_surface_count()):
+	var array_mesh := mesh as ArrayMesh
+
+	for surface_index in range(array_mesh.get_surface_count()):
 		if (
-			mesh.surface_get_primitive_type(surface_index)
+			array_mesh.surface_get_primitive_type(surface_index)
 			!= Mesh.PRIMITIVE_TRIANGLES
 		):
 			continue
@@ -100,7 +104,7 @@ func _collect_mesh_sources(
 		if profile.is_empty():
 			continue
 
-		var arrays := mesh.surface_get_arrays(surface_index)
+		var arrays := array_mesh.surface_get_arrays(surface_index)
 		if arrays.is_empty():
 			continue
 
@@ -199,7 +203,8 @@ func _collect_triangle(
 		return
 
 	var source: Dictionary = sources[key]
-	source["sum"] = (source.get("sum", Vector3.ZERO) as Vector3) + candidate
+	var accumulated: Vector3 = source.get("sum", Vector3.ZERO)
+	source["sum"] = accumulated + candidate
 	source["count"] = int(source.get("count", 0)) + 1
 	sources[key] = source
 
@@ -216,10 +221,8 @@ func _spawn_sources(sources: Dictionary) -> void:
 
 		var source: Dictionary = source_value
 		var count := maxi(1, int(source.get("count", 1)))
-		var position: Vector3 = (
-			(source.get("sum", Vector3.ZERO) as Vector3)
-			/ float(count)
-		)
+		var accumulated: Vector3 = source.get("sum", Vector3.ZERO)
+		var position: Vector3 = accumulated / float(count)
 
 		var light := OmniLight3D.new()
 		light.name = "MinecraftLight_%03d_%s" % [
@@ -245,14 +248,19 @@ func _surface_signature(
 ) -> String:
 	var parts: Array[String] = [
 		String(mesh_instance.name),
-		mesh_instance.mesh.resource_name
+		String(mesh_instance.mesh.resource_name)
 	]
 
 	var mesh := mesh_instance.mesh
-	if mesh.has_method("surface_get_name"):
-		parts.append(String(mesh.surface_get_name(surface_index)))
+	if not mesh is ArrayMesh:
+		return " ".join(parts).to_lower()
 
-	var material := mesh.surface_get_material(surface_index)
+	var array_mesh := mesh as ArrayMesh
+	parts.append(String(array_mesh.surface_get_name(surface_index)))
+
+	var material := mesh_instance.get_surface_override_material(surface_index)
+	if material == null:
+		material = array_mesh.surface_get_material(surface_index)
 	if material != null:
 		parts.append(material.resource_name)
 		parts.append(material.resource_path)
