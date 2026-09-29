@@ -5,7 +5,7 @@ static func attach(
 	root: Node3D,
 	start: Vector3,
 	end: Vector3,
-	shape: String,
+	_shape: String,
 	style: String,
 	cell_size: float
 ) -> void:
@@ -139,11 +139,11 @@ static func _add_cone_fire_layer(
 	particles.lifetime = 0.85
 	particles.preprocess = 0.85
 	particles.randomness = 0.65
+	root.add_child(particles)
 	particles.global_position = origin
 	particles.global_basis = Basis(
 		Quaternion(Vector3.UP, direction)
 	)
-	root.add_child(particles)
 
 	var process: ParticleProcessMaterial = ParticleProcessMaterial.new()
 	process.direction = Vector3.UP
@@ -181,8 +181,8 @@ static func _add_sphere_layer(
 	particles.lifetime = lifetime
 	particles.preprocess = lifetime
 	particles.randomness = 0.85
-	particles.global_position = center
 	root.add_child(particles)
+	particles.global_position = center
 
 	var process: ParticleProcessMaterial = ParticleProcessMaterial.new()
 	process.emission_shape = ParticleProcessMaterial.EMISSION_SHAPE_SPHERE
