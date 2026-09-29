@@ -95,16 +95,16 @@ func _show_wall_orientation_menu(spell_data: Dictionary) -> void:
 	board_root.set("_ui_owns_mouse", true)
 	Input.mouse_mode = Input.MOUSE_MODE_VISIBLE
 
-	var mode_label: String = (
-		"circolare"
+	var orientation_help: String = (
+		"Intradosso = verso il centro; Estradosso = verso l'esterno."
 		if _wall_mode == "circle"
-		else "lineare"
+		else "Intradosso = lato sinistro rispetto al verso di disegno; Estradosso = lato destro."
 	)
 	_set_instruction(
-		"%s: scegli orientamento del muro %s: Intradosso o Estradosso."
+		"%s: scegli Intradosso o Estradosso. %s"
 		% [
 			String(spell_data.get("name", "Muro")),
-			mode_label
+			orientation_help
 		]
 	)
 
@@ -883,8 +883,10 @@ func _undo_wall_step() -> void:
 
 	if wall_orientation_menu != null and wall_orientation_menu.visible:
 		wall_orientation_menu.hide()
-		board_root.set("_ui_owns_mouse", false)
-		Input.mouse_mode = Input.MOUSE_MODE_CAPTURED
+	if wall_mode_menu != null and wall_mode_menu.visible:
+		wall_mode_menu.hide()
+	board_root.set("_ui_owns_mouse", false)
+	Input.mouse_mode = Input.MOUSE_MODE_CAPTURED
 
 	match _targeting_phase:
 		"wall_orientation":
@@ -2552,6 +2554,7 @@ func _finish_cast() -> void:
 		wall_mode_menu.hide()
 	if wall_orientation_menu != null and wall_orientation_menu.visible:
 		wall_orientation_menu.hide()
+	board_root.set("_ui_owns_mouse", false)
 	_pending_spell_id = ""
 	_targeting_phase = ""
 	_pending_caster = null
@@ -2575,6 +2578,9 @@ func _cancel_pending_cast(restore_mouse: bool = true) -> void:
 	_hide_wall_preview()
 	if wall_mode_menu != null and wall_mode_menu.visible:
 		wall_mode_menu.hide()
+	if wall_orientation_menu != null and wall_orientation_menu.visible:
+		wall_orientation_menu.hide()
+	board_root.set("_ui_owns_mouse", false)
 	_pending_spell_id = ""
 	_targeting_phase = ""
 	_pending_caster = null
