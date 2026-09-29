@@ -2,7 +2,7 @@ extends "res://token.gd"
 
 var deck: AnimatableBody3D
 
-func setup_chariot(template_grid: MeshInstance3D) -> void:
+func setup_chariot() -> void:
 	configure(Color(.72,.61,.35),cell_size,"Large",2.0)
 	for child in visuals.get_children():
 		child.hide()
@@ -28,20 +28,7 @@ func setup_chariot(template_grid: MeshInstance3D) -> void:
 	collider.position.y = -.06*cell_size
 	deck.add_child(collider)
 	add_collision_exception_with(deck)
-	var plane := PlaneMesh.new()
-	plane.size = Vector2(2,2)*cell_size
-	var material: ShaderMaterial = template_grid.mesh.material.duplicate()
-	material.shader = material.shader.duplicate()
-	material.shader.code = material.shader.code.replace("grid_pos = (MODEL_MATRIX * vec4(VERTEX, 1.0)).xz;","grid_pos = VERTEX.xz;")
-	material.set_shader_parameter("cell_size",cell_size)
-	material.set_shader_parameter("interaction_strength",1.0)
-	material.set_shader_parameter("shoulder_gap",0.0)
-	plane.material = material
-	var grid := MeshInstance3D.new()
-	grid.name = "ChariotGrid"
-	grid.mesh = plane
-	grid.position.y = .01*cell_size
-	deck.add_child(grid)
+	# The shared SurfaceGrid service detects the deck collision automatically.
 	set_meta("compound_chariot",true)
 	process_physics_priority = -10
 
