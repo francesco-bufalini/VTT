@@ -1556,9 +1556,17 @@ func _draw_aoe(
 		style
 	)
 
+	var geometry_basis: Basis = geometry.get(
+		"basis",
+		Basis.IDENTITY
+	)
+	var geometry_position: Vector3 = geometry.get(
+		"position",
+		start
+	)
 	node.global_transform = Transform3D(
-		geometry.get("basis", Basis.IDENTITY),
-		geometry.get("position", start)
+		geometry_basis,
+		geometry_position
 	)
 	var material: StandardMaterial3D = StandardMaterial3D.new()
 	material.transparency = BaseMaterial3D.TRANSPARENCY_ALPHA
@@ -1707,9 +1715,17 @@ func _add_aoe_pick_area(
 	area.collision_mask = 0
 	area.set_meta("aoe_root", root)
 	root.add_child(area)
+	var geometry_basis: Basis = geometry.get(
+		"basis",
+		Basis.IDENTITY
+	)
+	var geometry_position: Vector3 = geometry.get(
+		"position",
+		start
+	)
 	area.global_transform = Transform3D(
-		geometry.get("basis", Basis.IDENTITY),
-		geometry.get("position", start)
+		geometry_basis,
+		geometry_position
 	)
 
 	var collision: CollisionShape3D = CollisionShape3D.new()
