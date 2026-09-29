@@ -60,6 +60,37 @@ const SPELLS: Dictionary = {
 		"aoe_length_cells": 3,
 		"transient_seconds": 5.0
 	},
+	"darkness": {
+		"id": "darkness",
+		"name": "Darkness",
+		"level": 2,
+		"school": "Evocation",
+		"casting_time": "1 action",
+		"range": "60 feet",
+		"target": "A point you choose within range",
+		"area": "15-foot-radius sphere",
+		"components": "V, M (bat fur and a piece of coal)",
+		"duration": "Concentration, up to 10 minutes",
+		"classes": ["Stregone", "Warlock", "Mago"],
+		"description": (
+			"For the duration, magical Darkness spreads from a point within range "
+			+ "and fills a 15-foot-radius Sphere. Darkvision can't see through it, "
+			+ "and nonmagical light can't illuminate it.\n\n"
+			+ "Alternatively, you cast the spell on an object that isn't being worn "
+			+ "or carried, causing the Darkness to fill a 15-foot Emanation originating "
+			+ "from that object. Covering that object with something opaque blocks "
+			+ "the Darkness.\n\n"
+			+ "If any of this spell's area overlaps with an area of Bright Light or "
+			+ "Dim Light created by a spell of level 2 or lower, that other spell "
+			+ "is dispelled."
+		),
+		"higher_levels": "",
+		"target_mode": "token_then_point",
+		"range_feet": 60,
+		"aoe_shape": "sphere",
+		"aoe_radius_feet": 15,
+		"persistent": true
+	},
 	"fireball": {
 		"id": "fireball",
 		"name": "Fireball",
