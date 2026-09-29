@@ -117,8 +117,8 @@ func _build_toolbar() -> void:
 		["Libreria token · prossimamente", TOKEN_LIBRARY],
 		["Crea token nel punto osservato…", TOKEN_CREATE],
 		["Volante · token selezionati", TOKEN_FLYING],
-		["Ruota 90° a sinistra", TOKEN_ROTATE_LEFT],
-		["Ruota 90° a destra", TOKEN_ROTATE_RIGHT],
+		["Ruota 45° a sinistra", TOKEN_ROTATE_LEFT],
+		["Ruota 45° a destra", TOKEN_ROTATE_RIGHT],
 		["Elimina token selezionati", TOKEN_DELETE]
 	], _on_token_selected)
 	token_menu.get_popup().set_item_disabled(
