@@ -28,6 +28,13 @@ func setup(root: Node3D) -> void:
 	call_deferred("_initialize")
 
 
+func _process(_delta: float) -> void:
+	if _pending_spell_id.is_empty():
+		_hide_spell_preview()
+		return
+	_update_spell_preview()
+
+
 func _initialize() -> void:
 	if board_root == null or not is_instance_valid(board_root):
 		return
@@ -183,6 +190,7 @@ func _try_select_caster(screen_position: Vector2) -> void:
 		"token_then_point":
 			_pending_caster = caster
 			_targeting_phase = "point"
+			_hide_spell_preview()
 			var range_feet: int = int(spell_data.get("range_feet", 0))
 			_set_instruction(
 				"%s: mira un punto entro %d ft e clicca · WASD + mouse per muoverti · rotellina per profondità 3D · Esc per annullare"
@@ -252,6 +260,220 @@ func _try_select_point(screen_position: Vector2) -> void:
 		spell_data
 	)
 	_finish_cast()
+
+
+func _update_spell_preview() -> void:
+	var measurement_tool: Node = _measurement_tool()
+	if measurement_tool == null:
+		return
+
+	var spell_data: Dictionary = SpellCatalog.spell(_pending_spell_id)
+	if spell_data.is_empty():
+		_hide_spell_preview()
+		return
+
+	var screen_position: Vector2 = (
+		get_viewport().get_visible_rect().size * 0.5
+	)
+
+	match _targeting_phase:
+		"caster":
+			if _pending_spell_id != "burning_hands":
+				_hide_spell_preview()
+				return
+
+			var hovered_caster: Node3D = _token_at_screen(screen_position)
+			if hovered_caster == null:
+				_hide_spell_preview()
+				return
+
+			var geometry: Dictionary = _burning_hands_geometry(
+				hovered_caster,
+				spell_data
+			)
+			if geometry.is_empty():
+				_hide_spell_preview()
+				return
+
+			measurement_tool.call(
+				"show_spell_preview",
+				geometry.get("start", Vector3.ZERO),
+				geometry.get("end", Vector3.ZERO),
+				String(spell_data.get("aoe_shape", "cone")),
+				String(spell_data.get("id", "burning_hands"))
+			)
+
+		"point":
+			if _pending_caster == null or not is_instance_valid(_pending_caster):
+				_hide_spell_preview()
+				return
+
+			var point_data: Dictionary = _point_target_data(
+				screen_position,
+				spell_data
+			)
+			if not bool(point_data.get("valid", false)):
+				_hide_spell_preview()
+				return
+
+			var target_point: Vector3 = point_data.get(
+				"point",
+				Vector3.ZERO
+			)
+			var endpoint: Vector3 = _area_endpoint(
+				target_point,
+				spell_data
+			)
+			measurement_tool.call(
+				"show_spell_preview",
+				target_point,
+				endpoint,
+				String(spell_data.get("aoe_shape", "sphere")),
+				String(spell_data.get("id", ""))
+			)
+
+		_:
+			_hide_spell_preview()
+
+
+func _token_at_screen(screen_position: Vector2) -> Node3D:
+	var hit_value: Variant = board_root.call(
+		"_raycast_from_screen",
+		screen_position,
+		ALL_COLLISION_LAYERS,
+		true
+	)
+	if not hit_value is Dictionary:
+		return null
+
+	var hit: Dictionary = hit_value as Dictionary
+	var collider: Node = hit.get("collider") as Node
+	if collider == null:
+		return null
+
+	var target_value: Variant = board_root.call(
+		"_find_interaction_target",
+		collider
+	)
+	if not target_value is Node:
+		return null
+
+	var target: Node = target_value as Node
+	if not target.is_in_group("dnd_token") or not target is Node3D:
+		return null
+
+	return target as Node3D
+
+
+func _point_target_data(
+	screen_position: Vector2,
+	spell_data: Dictionary
+) -> Dictionary:
+	if _pending_caster == null or not is_instance_valid(_pending_caster):
+		return {"valid": false}
+
+	var measurement_tool: Node = _measurement_tool()
+	if measurement_tool == null:
+		return {"valid": false}
+
+	var point_value: Variant = measurement_tool.call(
+		"get_spell_target_point",
+		screen_position
+	)
+	if not point_value is Dictionary:
+		return {"valid": false}
+
+	var point_data: Dictionary = point_value as Dictionary
+	if not bool(point_data.get("valid", false)):
+		return {"valid": false}
+
+	var target_point: Vector3 = point_data.get("point", Vector3.ZERO)
+	var cell_size: float = _cell_size()
+	var range_feet: float = float(spell_data.get("range_feet", 0.0))
+	var max_world_distance: float = range_feet / 5.0 * cell_size
+	var actual_world_distance: float = (
+		_pending_caster.global_position.distance_to(target_point)
+	)
+	if actual_world_distance > max_world_distance + cell_size * 0.01:
+		return {
+			"valid": false,
+			"out_of_range": true,
+			"point": target_point,
+			"distance_feet": int(
+				round(actual_world_distance / cell_size * 5.0)
+			)
+		}
+
+	return {
+		"valid": true,
+		"point": target_point
+	}
+
+
+func _area_endpoint(
+	origin: Vector3,
+	spell_data: Dictionary
+) -> Vector3:
+	var shape: String = String(spell_data.get("aoe_shape", "sphere"))
+	if shape == "sphere":
+		var radius_feet: float = float(
+			spell_data.get("aoe_radius_feet", 5.0)
+		)
+		return (
+			origin
+			+ Vector3.RIGHT
+			* (radius_feet / 5.0 * _cell_size())
+		)
+
+	var length_cells: int = int(
+		spell_data.get("aoe_length_cells", 1)
+	)
+	return origin + Vector3.FORWARD * float(length_cells) * _cell_size()
+
+
+func _burning_hands_geometry(
+	caster: Node3D,
+	spell_data: Dictionary
+) -> Dictionary:
+	if caster == null or not is_instance_valid(caster):
+		return {}
+
+	var direction: Vector3 = -caster.global_transform.basis.z
+	direction.y = 0.0
+	if direction.length_squared() < 0.0001:
+		direction = Vector3.FORWARD
+	else:
+		direction = direction.normalized()
+
+	var right_axis: Vector3 = direction.cross(Vector3.UP).normalized()
+	if right_axis.length_squared() < 0.0001:
+		right_axis = Vector3.RIGHT
+
+	direction = (
+		Basis(
+			right_axis,
+			deg_to_rad(float(_burning_hands_pitch_degrees))
+		)
+		* direction
+	).normalized()
+
+	var origin: Vector3 = caster.global_position
+	var length_cells: int = int(
+		spell_data.get("aoe_length_cells", 3)
+	)
+	return {
+		"start": origin,
+		"end": (
+			origin
+			+ direction * float(length_cells) * _cell_size()
+		)
+	}
+
+
+func _hide_spell_preview() -> void:
+	var measurement_tool: Node = _measurement_tool()
+	if measurement_tool != null:
+		measurement_tool.call("hide_spell_preview")
 
 
 func _adjust_point_depth(step_cells: float) -> void:
@@ -599,39 +821,21 @@ func _cast_burning_hands(
 	if measurement_tool == null:
 		return
 
-	var direction: Vector3 = -caster.global_transform.basis.z
-	direction.y = 0.0
-	if direction.length_squared() < 0.0001:
-		direction = Vector3.FORWARD
-	else:
-		direction = direction.normalized()
-
-	var right_axis: Vector3 = direction.cross(Vector3.UP).normalized()
-	if right_axis.length_squared() < 0.0001:
-		right_axis = Vector3.RIGHT
-	direction = (
-		Basis(
-			right_axis,
-			deg_to_rad(float(_burning_hands_pitch_degrees))
-		)
-		* direction
-	).normalized()
-
-	var cell_size: float = _cell_size()
-	var length_cells: int = int(spell_data.get("aoe_length_cells", 3))
-	var origin: Vector3 = caster.global_position
-	var endpoint: Vector3 = (
-		origin
-		+ direction * float(length_cells) * cell_size
+	var geometry: Dictionary = _burning_hands_geometry(
+		caster,
+		spell_data
 	)
+	if geometry.is_empty():
+		return
+
 	var duration: float = float(
 		spell_data.get("transient_seconds", 5.0)
 	)
 
 	measurement_tool.call(
 		"show_transient_aoe",
-		origin,
-		endpoint,
+		geometry.get("start", Vector3.ZERO),
+		geometry.get("end", Vector3.ZERO),
 		String(spell_data.get("aoe_shape", "cone")),
 		duration,
 		String(spell_data.get("id", "burning_hands"))
@@ -697,6 +901,7 @@ func _cast_persistent_sphere(
 
 
 func _finish_cast() -> void:
+	_hide_spell_preview()
 	_pending_spell_id = ""
 	_targeting_phase = ""
 	_pending_caster = null
@@ -706,6 +911,7 @@ func _finish_cast() -> void:
 
 
 func _cancel_pending_cast(restore_mouse: bool = true) -> void:
+	_hide_spell_preview()
 	_pending_spell_id = ""
 	_targeting_phase = ""
 	_pending_caster = null
