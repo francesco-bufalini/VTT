@@ -633,7 +633,8 @@ func _cast_burning_hands(
 		origin,
 		endpoint,
 		String(spell_data.get("aoe_shape", "cone")),
-		duration
+		duration,
+		String(spell_data.get("id", "burning_hands"))
 	)
 
 
@@ -663,7 +664,8 @@ func _cast_fireball(
 		target_point,
 		endpoint,
 		String(spell_data.get("aoe_shape", "sphere")),
-		duration
+		duration,
+		String(spell_data.get("id", "fireball"))
 	)
 
 
