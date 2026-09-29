@@ -73,8 +73,8 @@ func list_campaigns() -> Array[Dictionary]:
 
 	var optional_ids := {}
 	for entry: Dictionary in OPTIONAL_BUILTIN_CAMPAIGNS:
-		var scene_path := String(entry.get("scene", ""))
-		var campaign_id := String(entry.get("id", ""))
+		var scene_path: String = String(entry.get("scene", ""))
+		var campaign_id: String = String(entry.get("id", ""))
 		if not optional_ids.has(campaign_id) and ResourceLoader.exists(scene_path):
 			campaigns.append(entry.duplicate(true))
 			optional_ids[campaign_id] = true
@@ -186,7 +186,7 @@ func open_campaign(campaign_id: String) -> Error:
 	if data.is_empty():
 		return ERR_DOES_NOT_EXIST
 
-	var scene_path := String(data.get("scene", ""))
+	var scene_path: String = String(data.get("scene", ""))
 	if scene_path.is_empty() or not ResourceLoader.exists(scene_path):
 		return ERR_FILE_NOT_FOUND
 
