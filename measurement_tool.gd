@@ -16,6 +16,10 @@ var persistent_aoes: Array = []
 var _aoe_nodes: Array[Node3D] = []
 var _aoe_preview: MeshInstance3D
 var _spell_preview: MeshInstance3D
+var _spell_preview_start: Vector3 = Vector3.INF
+var _spell_preview_end: Vector3 = Vector3.INF
+var _spell_preview_shape: String = ""
+var _spell_preview_style: String = ""
 
 var _camera: Camera3D = null
 var _volumetric_grid: Node3D = null
@@ -619,6 +623,16 @@ func show_spell_preview(
 		hide_spell_preview()
 		return
 
+	if (
+		is_instance_valid(_spell_preview)
+		and _spell_preview_start.is_equal_approx(start)
+		and _spell_preview_end.is_equal_approx(end)
+		and _spell_preview_shape == shape
+		and _spell_preview_style == style
+	):
+		_spell_preview.show()
+		return
+
 	if not is_instance_valid(_spell_preview):
 		_spell_preview = MeshInstance3D.new()
 		_spell_preview.name = "SpellAoEPreview"
@@ -642,6 +656,10 @@ func show_spell_preview(
 		preview_material.emission_energy_multiplier = 0.65
 
 	_spell_preview.material_override = preview_material
+	_spell_preview_start = start
+	_spell_preview_end = end
+	_spell_preview_shape = shape
+	_spell_preview_style = style
 	_spell_preview.show()
 
 
