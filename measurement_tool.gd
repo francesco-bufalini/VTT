@@ -680,98 +680,42 @@ func set_aoe_mode(shape: String) -> void:
 
 func _spell_style_color(style: String) -> Color:
 	match style:
-		"fire":
+		"fire", "fireball", "burning_hands", "fire_bolt", "scorching_ray", "wall_of_fire":
 			return Color(1.0, 0.24, 0.03, 1.0)
-		"cold":
-			return Color(0.48, 0.9, 1.0, 1.0)
-		"lightning":
-			return Color(0.3, 0.78, 1.0, 1.0)
-		"acid":
+		"cold", "ray_of_frost", "ice_knife", "ice_knife_burst", "gust_of_wind", "sleet_storm", "ice_storm", "cone_of_cold", "otilukes_freezing_sphere", "wall_of_ice":
+			return Color(0.5, 0.9, 1.0, 1.0)
+		"lightning", "lightning_bolt", "witch_bolt", "shocking_grasp", "thunderclap", "thunderwave", "chain_lightning":
+			return Color(0.3, 0.8, 1.0, 1.0)
+		"acid", "acid_splash", "vitriolic_sphere":
 			return Color(0.48, 0.96, 0.12, 1.0)
-		"poison":
-			return Color(0.34, 0.76, 0.12, 1.0)
-		"necrotic":
+		"poison", "poison_spray", "ray_of_sickness", "stinking_cloud", "cloudkill":
+			return Color(0.38, 0.78, 0.12, 1.0)
+		"necrotic", "blight", "circle_of_death":
 			return Color(0.22, 0.06, 0.28, 1.0)
-		"radiant":
+		"radiant", "sunbeam":
 			return Color(1.0, 0.94, 0.56, 1.0)
-		"force":
-			return Color(0.72, 0.66, 1.0, 1.0)
-		"psychic", "enchantment", "fear":
-			return Color(0.7, 0.3, 1.0, 1.0)
+		"force", "magic_missile", "globe_of_invulnerability", "shatter":
+			return Color(0.7, 0.82, 1.0, 1.0)
+		"psychic", "enchantment", "fear", "mind_sliver", "mind_spike", "sleep", "slow", "confusion", "synaptic_static", "hypnotic_pattern":
+			return Color(0.68, 0.3, 1.0, 1.0)
 		"thunder":
 			return Color(0.48, 0.78, 1.0, 1.0)
-		"arcane":
-			return Color(0.72, 0.34, 1.0, 1.0)
+		"arcane", "color_spray", "sorcerous_burst", "chromatic_orb":
+			return Color(0.82, 0.3, 1.0, 1.0)
 		"darkness":
 			return Color(0.03, 0.01, 0.07, 1.0)
-		"fireball", "burning_hands", "fire_bolt":
-			return Color(1.0, 0.24, 0.03, 1.0)
-		"lightning_bolt", "witch_bolt", "shocking_grasp", "thunderclap", "thunderwave":
-			return Color(0.25, 0.72, 1.0, 1.0)
-		"acid_splash", "poison_spray", "ray_of_sickness":
-			return Color(0.34, 0.9, 0.13, 1.0)
-		"ray_of_frost", "ice_knife", "ice_knife_burst":
-			return Color(0.46, 0.9, 1.0, 1.0)
-		"mind_sliver", "sleep":
-			return Color(0.68, 0.3, 1.0, 1.0)
-		"color_spray", "sorcerous_burst", "chromatic_orb":
-			return Color(0.86, 0.28, 1.0, 1.0)
-		"magic_missile":
-			return Color(0.88, 0.86, 1.0, 1.0)
 		"fog_cloud":
 			return Color(0.74, 0.78, 0.84, 1.0)
 		"cloud_of_daggers":
-			return Color(0.78, 0.82, 0.9, 1.0)
-		"gust_of_wind", "sleet_storm", "ice_storm", "cone_of_cold", "otilukes_freezing_sphere":
-			return Color(0.55, 0.9, 1.0, 1.0)
-		"web":
-			return Color(0.86, 0.86, 0.8, 1.0)
-		"fear", "confusion", "hypnotic_pattern", "synaptic_static":
-			return Color(0.62, 0.24, 0.9, 1.0)
-		"stinking_cloud", "cloudkill":
-			return Color(0.44, 0.72, 0.12, 1.0)
-		"shatter":
-			return Color(0.3, 0.7, 1.0, 1.0)
-		"vitriolic_sphere":
-			return Color(0.45, 1.0, 0.12, 1.0)
-		"insect_plague":
-			return Color(0.38, 0.3, 0.08, 1.0)
-		"circle_of_death", "blight":
-			return Color(0.24, 0.78, 0.34, 1.0)
-		"globe_of_invulnerability":
-			return Color(0.65, 0.78, 1.0, 1.0)
-		"sunbeam":
-			return Color(1.0, 0.94, 0.5, 1.0)
-		"grease":
-			return Color(0.64, 0.56, 0.18, 1.0)
-		"cloud_of_daggers":
 			return Color(0.82, 0.86, 0.92, 1.0)
-		"mind_spike", "synaptic_static", "confusion", "fear", "slow":
-			return Color(0.64, 0.26, 0.94, 1.0)
-		"scorching_ray":
-			return Color(1.0, 0.24, 0.02, 1.0)
-		"shatter", "sunbeam", "globe_of_invulnerability":
-			return Color(0.68, 0.86, 1.0, 1.0)
 		"web":
 			return Color(0.86, 0.88, 0.9, 1.0)
-		"hypnotic_pattern":
-			return Color(0.92, 0.32, 1.0, 1.0)
-		"sleet_storm", "ice_storm", "cone_of_cold", "otilukes_freezing_sphere":
-			return Color(0.52, 0.9, 1.0, 1.0)
-		"stinking_cloud":
-			return Color(0.52, 0.68, 0.12, 1.0)
-		"blight", "circle_of_death":
-			return Color(0.18, 0.05, 0.22, 1.0)
-		"vitriolic_sphere":
-			return Color(0.48, 0.92, 0.12, 1.0)
 		"insect_plague":
 			return Color(0.44, 0.34, 0.08, 1.0)
-		"chain_lightning":
-			return Color(0.42, 0.88, 1.0, 1.0)
+		"grease":
+			return Color(0.64, 0.56, 0.18, 1.0)
 		"disintegrate":
 			return Color(0.18, 1.0, 0.34, 1.0)
-		"wall_of_fire":
-			return Color(1.0, 0.22, 0.02, 1.0)
 		"wind_wall":
 			return Color(0.72, 0.9, 1.0, 1.0)
 		"blade_barrier":
@@ -780,8 +724,6 @@ func _spell_style_color(style: String) -> Color:
 			return Color(0.48, 0.74, 1.0, 1.0)
 		"wall_of_stone":
 			return Color(0.42, 0.4, 0.36, 1.0)
-		"wall_of_ice":
-			return Color(0.56, 0.9, 1.0, 1.0)
 		"wall_of_thorns":
 			return Color(0.18, 0.58, 0.12, 1.0)
 		"wall_of_sand":
@@ -791,7 +733,7 @@ func _spell_style_color(style: String) -> Color:
 		"prismatic_wall":
 			return Color(0.86, 0.3, 1.0, 1.0)
 		_:
-			return Color(1.0, 0.32, 0.04, 1.0)
+			return Color(0.72, 0.34, 1.0, 1.0)
 
 
 func show_spell_preview(
