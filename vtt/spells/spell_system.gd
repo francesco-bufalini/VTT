@@ -1326,7 +1326,8 @@ func _update_spell_preview() -> void:
 					geometry.get("start", Vector3.ZERO),
 					geometry.get("end", Vector3.ZERO),
 					String(spell_data.get("aoe_shape", "cone")),
-					_spell_style(spell_data)
+					_spell_style(spell_data),
+					_spell_line_width_world(spell_data)
 				)
 			elif caster_mode == "self_emanation":
 				var center: Vector3 = hovered_caster.global_position
@@ -1335,7 +1336,8 @@ func _update_spell_preview() -> void:
 					center,
 					_area_endpoint(center, spell_data),
 					String(spell_data.get("aoe_shape", "sphere")),
-					_spell_style(spell_data)
+					_spell_style(spell_data),
+					_spell_line_width_world(spell_data)
 				)
 			else:
 				_hide_spell_preview()
@@ -1366,7 +1368,8 @@ func _update_spell_preview() -> void:
 				target_point,
 				endpoint,
 				String(spell_data.get("aoe_shape", "sphere")),
-				_spell_style(spell_data)
+				_spell_style(spell_data),
+				_spell_line_width_world(spell_data)
 			)
 
 		"target_token":
@@ -1476,7 +1479,8 @@ func _update_spell_preview() -> void:
 				geometry.get("start", Vector3.ZERO),
 				geometry.get("end", Vector3.ZERO),
 				String(spell_data.get("aoe_shape", "line")),
-				_spell_style(spell_data)
+				_spell_style(spell_data),
+				_spell_line_width_world(spell_data)
 			)
 
 		_:
@@ -1755,6 +1759,15 @@ func _point_target_data(
 		"valid": true,
 		"point": target_point
 	}
+
+
+func _spell_line_width_world(spell_data: Dictionary) -> float:
+	var width_feet: float = float(
+		spell_data.get("line_width_feet", -1.0)
+	)
+	if width_feet <= 0.0:
+		return -1.0
+	return width_feet / 5.0 * _cell_size()
 
 
 func _area_endpoint(
@@ -2270,7 +2283,9 @@ func _cast_spell_at_point(
 			target_point,
 			endpoint,
 			shape,
-			style
+			style,
+			Color(0.0, 0.0, 0.0, -1.0),
+			_spell_line_width_world(spell_data)
 		)
 	else:
 		measurement_tool.call(
@@ -2279,7 +2294,8 @@ func _cast_spell_at_point(
 			endpoint,
 			shape,
 			float(spell_data.get("transient_seconds", 5.0)),
-			style
+			style,
+			_spell_line_width_world(spell_data)
 		)
 
 
@@ -2308,7 +2324,8 @@ func _cast_directional_aoe(
 		geometry.get("end", Vector3.ZERO),
 		String(spell_data.get("aoe_shape", "cone")),
 		duration,
-		_spell_style(spell_data)
+		_spell_style(spell_data),
+		_spell_line_width_world(spell_data)
 	)
 
 
@@ -2335,7 +2352,9 @@ func _cast_directional_spell_to_point(
 			geometry.get("start", Vector3.ZERO),
 			geometry.get("end", Vector3.ZERO),
 			String(spell_data.get("aoe_shape", "line")),
-			_spell_style(spell_data)
+			_spell_style(spell_data),
+			Color(0.0, 0.0, 0.0, -1.0),
+			_spell_line_width_world(spell_data)
 		)
 	else:
 		measurement_tool.call(
@@ -2344,7 +2363,8 @@ func _cast_directional_spell_to_point(
 			geometry.get("end", Vector3.ZERO),
 			String(spell_data.get("aoe_shape", "line")),
 			float(spell_data.get("transient_seconds", 5.0)),
-			_spell_style(spell_data)
+			_spell_style(spell_data),
+			_spell_line_width_world(spell_data)
 		)
 
 
@@ -2416,7 +2436,9 @@ func _cast_self_emanation(
 			center,
 			endpoint,
 			shape,
-			style
+			style,
+			Color(0.0, 0.0, 0.0, -1.0),
+			_spell_line_width_world(spell_data)
 		)
 	else:
 		measurement_tool.call(
@@ -2425,7 +2447,8 @@ func _cast_self_emanation(
 			endpoint,
 			shape,
 			float(spell_data.get("transient_seconds", 5.0)),
-			style
+			style,
+			_spell_line_width_world(spell_data)
 		)
 
 
