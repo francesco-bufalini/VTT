@@ -174,6 +174,39 @@ func _input(event: InputEvent) -> void:
 
 
 func _unhandled_input(event: InputEvent) -> void:
+	if bool(measurement_tool.call("is_movable_aoe_dragging")):
+		if event is InputEventMouseMotion:
+			measurement_tool.call(
+				"update_movable_aoe_drag",
+				event.position
+			)
+			get_viewport().set_input_as_handled()
+			return
+		if (
+			event is InputEventMouseButton
+			and event.button_index == MOUSE_BUTTON_LEFT
+			and not event.pressed
+		):
+			measurement_tool.call("finish_movable_aoe_drag", true)
+			get_viewport().set_input_as_handled()
+			return
+		if (
+			event is InputEventMouseButton
+			and event.button_index == MOUSE_BUTTON_RIGHT
+			and event.pressed
+		):
+			measurement_tool.call("finish_movable_aoe_drag", false)
+			get_viewport().set_input_as_handled()
+			return
+		if (
+			event is InputEventKey
+			and event.pressed
+			and event.keycode == KEY_ESCAPE
+		):
+			measurement_tool.call("finish_movable_aoe_drag", false)
+			get_viewport().set_input_as_handled()
+			return
+
 	if (
 		spell_system != null
 		and is_instance_valid(spell_system)
@@ -185,7 +218,8 @@ func _unhandled_input(event: InputEvent) -> void:
 	if _ui_owns_mouse:
 		return
 
-	# Click sinistro su una AoE persistente: la dissolve immediatamente.
+	# Le AoE mobili si trascinano come token, pur mantenendo la resa grafica
+	# dell'area. Le AoE statiche mantengono il comportamento precedente.
 	if (
 		event is InputEventMouseButton
 		and event.button_index == MOUSE_BUTTON_LEFT
@@ -196,9 +230,25 @@ func _unhandled_input(event: InputEvent) -> void:
 			if Input.mouse_mode == Input.MOUSE_MODE_CAPTURED
 			else event.position
 		)
-		if measurement_tool.remove_aoe_at_screen(aoe_screen_position):
-			get_viewport().set_input_as_handled()
-			return
+		var aoe_index: int = int(
+			measurement_tool.call(
+				"get_aoe_index_at_screen",
+				aoe_screen_position
+			)
+		)
+		if aoe_index >= 0:
+			if bool(measurement_tool.call("is_movable_aoe", aoe_index)):
+				if bool(
+					measurement_tool.call(
+						"begin_movable_aoe_drag",
+						aoe_index
+					)
+				):
+					get_viewport().set_input_as_handled()
+					return
+			elif bool(measurement_tool.call("dissolve_aoe", aoe_index)):
+				get_viewport().set_input_as_handled()
+				return
 
 	if event is InputEventMouseButton and measurement_tool.is_measurement_mode():
 		if (
