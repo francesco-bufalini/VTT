@@ -648,7 +648,7 @@ func _hide_measurement() -> void:
 func set_aoe_mode(shape: String) -> void:
 	if not _measurement_mode:
 		return
-	if shape not in ["sphere", "cube", "cone", "line"]:
+	if shape not in ["sphere", "cube", "cone", "line", "flat_square"]:
 		return
 
 	cancel_measurement()
@@ -661,7 +661,7 @@ func show_spell_preview(
 	shape: String,
 	style: String = ""
 ) -> void:
-	if shape not in ["sphere", "cube", "cone", "line"]:
+	if shape not in ["sphere", "cube", "cone", "line", "flat_square"]:
 		hide_spell_preview()
 		return
 
@@ -771,7 +771,7 @@ func show_transient_aoe(
 	duration_seconds: float = 5.0,
 	style: String = ""
 ) -> void:
-	if shape not in ["sphere", "cube", "cone", "line"]:
+	if shape not in ["sphere", "cube", "cone", "line", "flat_square"]:
 		return
 
 	var root: Node3D = Node3D.new()
@@ -923,6 +923,19 @@ func _draw_aoe(
 				start + direction * reach_world * 0.5
 			)
 
+		"flat_square":
+			var flat_mesh: BoxMesh = BoxMesh.new()
+			flat_mesh.size = Vector3(
+				reach_world * 2.0,
+				maxf(cell_size * 0.035, 0.01),
+				reach_world * 2.0
+			)
+			node.mesh = flat_mesh
+			node.global_position = (
+				start
+				+ Vector3.UP * maxf(cell_size * 0.018, 0.005)
+			)
+
 		"line":
 			var mesh := CylinderMesh.new()
 			# D&D line spells are one square / 5 ft wide. Projectile previews
@@ -1069,6 +1082,18 @@ func _add_aoe_pick_area(
 			)
 			area.global_position = (
 				start + direction * reach_world * 0.5
+			)
+
+		"flat_square":
+			var flat_box: BoxShape3D = BoxShape3D.new()
+			flat_box.size = Vector3(
+				reach_world * 2.0,
+				maxf(cell_size * 0.12, 0.05),
+				reach_world * 2.0
+			)
+			collision.shape = flat_box
+			area.global_position = (
+				start + Vector3.UP * maxf(cell_size * 0.06, 0.025)
 			)
 
 		"line":
