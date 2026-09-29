@@ -3,11 +3,6 @@ extends Node3D
 const GRID_3D_EXCLUDED_GROUP := "grid_3d_excluded"
 const GRID_2D_EXCLUDED_GROUP := "grid_2d_excluded"
 const TOKEN_GROUP := "dnd_token"
-const DYNAMIC_GRID_GROUPS: Array[String] = [
-	"dnd_token",
-	"tactical_platform",
-	"encounter_obstacle",
-]
 const INVALID_CELL := Vector3i(2147483647, 2147483647, 2147483647)
 
 @export var cell_size: float = 1.0
@@ -563,37 +558,32 @@ func _node_or_ancestor_in_group(
 
 func _compute_dynamic_signature() -> int:
 	var signature: int = 17
+	var board_root: Node = get_parent()
+	if board_root == null:
+		return signature
 
-	for group_name in DYNAMIC_GRID_GROUPS:
-		var nodes: Array[Node] = get_tree().get_nodes_in_group(
-			group_name
-		)
-		for node in nodes:
-			if not node is Node3D:
-				continue
-			var board_root: Node = get_parent()
-			if (
-				board_root != null
-				and node != board_root
-				and not board_root.is_ancestor_of(node)
-			):
-				continue
+	# Tracking transforms of physics bodies is far cheaper than raycasting.
+	# This catches moving tokens, Kaos platforms and any other runtime map
+	# geometry even when it was not assigned to a special VTT group.
+	for node in board_root.find_children(
+		"*",
+		"PhysicsBody3D",
+		true,
+		false
+	):
+		if not node is PhysicsBody3D:
+			continue
 
-			var node_3d := node as Node3D
-			signature = hash([
-				signature,
-				node_3d.get_instance_id(),
-				node_3d.global_transform,
-				node_3d.visible,
-			])
-			if node_3d is CollisionObject3D:
-				signature = hash([
-					signature,
-					(node_3d as CollisionObject3D).collision_layer,
-				])
+		var body := node as PhysicsBody3D
+		signature = hash([
+			signature,
+			body.get_instance_id(),
+			body.global_transform,
+			body.visible,
+			body.collision_layer,
+		])
 
 	return signature
-
 
 func _on_tree_node_added(node: Node) -> void:
 	if (
