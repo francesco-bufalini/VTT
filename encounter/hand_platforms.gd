@@ -19,16 +19,4 @@ func setup(scene: Node3D) -> void:
 		collision.shape = shape
 		collision.position.y = -.15
 		body.add_child(collision)
-		var grid := MeshInstance3D.new()
-		var plane := PlaneMesh.new()
-		plane.size = size
-		var material: ShaderMaterial = scene.grid.mesh.material.duplicate()
-		material.shader = material.shader.duplicate()
-		material.shader.code = material.shader.code.replace("grid_pos = (MODEL_MATRIX * vec4(VERTEX, 1.0)).xz;","grid_pos = VERTEX.xz;")
-		material.set_shader_parameter("shoulder_gap",0.0)
-		material.set_shader_parameter("base_color",Color(.07,.075,.08,.95))
-		material.set_shader_parameter("interaction_strength",1.0)
-		plane.material = material
-		grid.mesh = plane
-		grid.position.y = .01
-		body.add_child(grid)
+		# SurfaceGrid adds the grid from this solid collision automatically.
