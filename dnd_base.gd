@@ -55,7 +55,6 @@ var share_key: LineEdit
 var share_status: Label
 var token_drag: Node
 var spell_system: Node
-var minecraft_lights: Node
 var _undo_stack: Array[Dictionary] = []
 var _undo_restoring: bool = false
 
@@ -80,13 +79,6 @@ func _ready() -> void:
 	size_selector.select(2)
 
 	volumetric_grid.call("set_camera", camera)
-
-	# Best-effort: le superfici Minecraft luminose importate da Mineways/
-	# Blender vengono convertite in OmniLight3D leggere quando riconoscibili.
-	minecraft_lights = preload("res://minecraft_lights.gd").new()
-	minecraft_lights.name = "MinecraftLightImporter"
-	add_child(minecraft_lights)
-	minecraft_lights.setup(self, cell_size)
 
 	measurement_tool.call("set_camera", camera)
 	measurement_tool.call("set_volumetric_grid", volumetric_grid)
