@@ -8,10 +8,11 @@
 
 [sub_resource type="Environment" id="Environment_base"]
 background_mode = 1
-background_color = Color(0.018, 0.022, 0.03, 1)
+background_color = Color(0.23, 0.36, 0.58, 1)
 ambient_light_source = 3
-ambient_light_color = Color(0.45, 0.48, 0.55, 1)
-ambient_light_energy = 0.55
+ambient_light_color = Color(0.52, 0.60, 0.72, 1)
+ambient_light_energy = 0.38
+tonemap_mode = 3
 
 [sub_resource type="BoxShape3D" id="BoxShape3D_floor"]
 size = Vector3(30, 0.1, 30)
@@ -58,8 +59,19 @@ environment = SubResource("Environment_base")
 
 [node name="DirectionalLight3D" type="DirectionalLight3D" parent="." unique_id=1297342862]
 transform = Transform3D(0.81915206, 0.46984634, -0.32898995, 0, 0.57357645, 0.81915206, 0.57357645, -0.6710101, 0.46984634, 0, 0, 0)
-light_energy = 1.15
+light_color = Color(1, 0.92, 0.80, 1)
+light_energy = 1.30
+light_indirect_energy = 0.85
+light_angular_distance = 0.5
 shadow_enabled = true
+shadow_bias = 0.06
+shadow_normal_bias = 1.2
+shadow_blur = 1.05
+shadow_opacity = 0.92
+directional_shadow_mode = 2
+directional_shadow_max_distance = 180.0
+directional_shadow_fade_start = 0.9
+directional_shadow_blend_splits = true
 
 [node name="Board" type="Node3D" parent="." unique_id=98923575]
 
