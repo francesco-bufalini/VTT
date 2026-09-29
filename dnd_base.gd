@@ -6,7 +6,6 @@ const CONTEXT_ROTATE_LEFT := 3
 const CONTEXT_ROTATE_RIGHT := 4
 const CONTEXT_TOGGLE_GRID := 5
 const CONTEXT_TOGGLE_VISION_CONES := 6
-const CONTEXT_TOGGLE_GRID_3D := 7
 const CONTEXT_FLYING := 8
 
 const ALL_COLLISION_LAYERS := 0xFFFFFFFF
@@ -27,7 +26,6 @@ const TOKEN_SIZES := [
 @export var token_spawn_height: float = 4.0
 @export var token_scene: PackedScene
 
-@onready var grid: MeshInstance3D = $Board/Grid
 @onready var volumetric_grid: Node3D = $VolumetricGrid
 @onready var camera: Camera3D = $Camera3D
 @onready var tokens_root: Node3D = $Tokens
@@ -43,8 +41,6 @@ var _has_pending_spawn_position: bool = false
 var _selected_tokens: Array[CharacterBody3D] = []
 var _ui_owns_mouse: bool = false
 var _vision_cones_visible: bool = false
-var _grid_visible: bool = false
-var surface_grid: Node
 var board_sync: Node
 var share_dialog: AcceptDialog
 var share_host: LineEdit
@@ -54,17 +50,10 @@ var token_drag: Node
 
 
 func _ready() -> void:
-	surface_grid = preload("res://surface_grid.gd").new()
-	surface_grid.name = "SurfaceGrid"
-	add_child(surface_grid)
-	surface_grid.setup(self, cell_size)
-
-	# Board/Grid is kept only as a compatibility/style source for older
-	# encounter scripts. The visible 2D grid now comes from solid surfaces.
-	grid.visible = false
-
-	set_grid_visible(grid_visible_on_start)
-	set_grid_3d_visible(grid_3d_visible_on_start)
+	# Unica griglia tattica: la VolumetricGrid collision-aware.
+	# grid_3d_visible_on_start resta come alias di compatibilita per gli
+	# encounter creati prima della rimozione della SurfaceGrid.
+	set_grid_visible(grid_visible_on_start or grid_3d_visible_on_start)
 	set_vision_cones_visible(vision_cones_visible_on_start)
 
 	context_menu.id_pressed.connect(_on_context_menu_id_pressed)
@@ -179,11 +168,6 @@ func _unhandled_input(event: InputEvent) -> void:
 			get_viewport().set_input_as_handled()
 			return
 
-		if event.keycode == KEY_3 or event.keycode == KEY_KP_3:
-			toggle_grid_3d()
-			get_viewport().set_input_as_handled()
-			return
-
 		if event.keycode == KEY_R:
 			_toggle_measurement_mode()
 			get_viewport().set_input_as_handled()
@@ -266,22 +250,21 @@ func _unhandled_input(event: InputEvent) -> void:
 
 
 func toggle_grid() -> void:
-	set_grid_visible(not _grid_visible)
+	set_grid_visible(not volumetric_grid.visible)
 
 
 func set_grid_visible(is_visible: bool) -> void:
-	_grid_visible = is_visible
-	grid.visible = false
-	if surface_grid != null and is_instance_valid(surface_grid):
-		surface_grid.set_grid_visible(is_visible)
+	volumetric_grid.visible = is_visible
 
 
+# Alias mantenuti per gli encounter/script precedenti: ora puntano alla
+# stessa e unica griglia volumetrica.
 func toggle_grid_3d() -> void:
-	set_grid_3d_visible(not volumetric_grid.visible)
+	toggle_grid()
 
 
 func set_grid_3d_visible(is_visible: bool) -> void:
-	volumetric_grid.visible = is_visible
+	set_grid_visible(is_visible)
 
 
 func toggle_vision_cones() -> void:
@@ -334,15 +317,10 @@ func _show_context_menu(screen_position: Vector2) -> void:
 	context_menu.add_item("Condividi mappa / Tailscale", 25)
 	context_menu.add_separator()
 
-	if _grid_visible:
-		context_menu.add_item("Nascondi griglia 2D", CONTEXT_TOGGLE_GRID)
-	else:
-		context_menu.add_item("Mostra griglia 2D", CONTEXT_TOGGLE_GRID)
-
 	if volumetric_grid.visible:
-		context_menu.add_item("Nascondi griglia 3D", CONTEXT_TOGGLE_GRID_3D)
+		context_menu.add_item("Nascondi griglia", CONTEXT_TOGGLE_GRID)
 	else:
-		context_menu.add_item("Mostra griglia 3D", CONTEXT_TOGGLE_GRID_3D)
+		context_menu.add_item("Mostra griglia", CONTEXT_TOGGLE_GRID)
 
 	if _vision_cones_visible:
 		context_menu.add_item(
@@ -412,10 +390,6 @@ func _on_context_menu_id_pressed(id: int) -> void:
 			_close_context_menu_to_game()
 		CONTEXT_TOGGLE_GRID:
 			toggle_grid()
-			_close_context_menu_to_game()
-
-		CONTEXT_TOGGLE_GRID_3D:
-			toggle_grid_3d()
 			_close_context_menu_to_game()
 
 		CONTEXT_TOGGLE_VISION_CONES:
