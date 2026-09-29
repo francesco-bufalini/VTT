@@ -679,6 +679,32 @@ func _spell_style_color(style: String) -> Color:
 			return Color(0.74, 0.78, 0.84, 1.0)
 		"grease":
 			return Color(0.64, 0.56, 0.18, 1.0)
+		"cloud_of_daggers":
+			return Color(0.82, 0.86, 0.92, 1.0)
+		"mind_spike", "synaptic_static", "confusion", "fear", "slow":
+			return Color(0.64, 0.26, 0.94, 1.0)
+		"scorching_ray":
+			return Color(1.0, 0.24, 0.02, 1.0)
+		"shatter", "sunbeam", "globe_of_invulnerability":
+			return Color(0.68, 0.86, 1.0, 1.0)
+		"web":
+			return Color(0.86, 0.88, 0.9, 1.0)
+		"hypnotic_pattern":
+			return Color(0.92, 0.32, 1.0, 1.0)
+		"sleet_storm", "ice_storm", "cone_of_cold", "otilukes_freezing_sphere":
+			return Color(0.52, 0.9, 1.0, 1.0)
+		"stinking_cloud":
+			return Color(0.52, 0.68, 0.12, 1.0)
+		"blight", "circle_of_death":
+			return Color(0.18, 0.05, 0.22, 1.0)
+		"vitriolic_sphere":
+			return Color(0.48, 0.92, 0.12, 1.0)
+		"insect_plague":
+			return Color(0.44, 0.34, 0.08, 1.0)
+		"chain_lightning":
+			return Color(0.42, 0.88, 1.0, 1.0)
+		"disintegrate":
+			return Color(0.18, 1.0, 0.34, 1.0)
 		_:
 			return Color(1.0, 0.32, 0.04, 1.0)
 
@@ -726,7 +752,7 @@ func show_spell_preview(
 		1.0
 	)
 	preview_material.emission_energy_multiplier = (
-		0.48 if style in ["fog_cloud", "grease"] else 0.85
+		0.48 if style in ["fog_cloud", "grease", "web", "stinking_cloud"] else 0.85
 	)
 
 	_spell_preview.material_override = preview_material
@@ -939,7 +965,7 @@ func _draw_aoe(
 			1.0
 		)
 		material.emission_energy_multiplier = (
-			0.18 if style in ["fog_cloud", "grease"] else 0.8
+			0.18 if style in ["fog_cloud", "grease", "web", "stinking_cloud"] else 0.8
 		)
 	elif color.a >= 0.0:
 		var display_color: Color = color
