@@ -57,7 +57,6 @@ var token_drag: Node
 var spell_system: Node
 var minecraft_lights: Node
 var _undo_stack: Array[Dictionary] = []
-var _undo_last_fingerprint: String = ""
 var _undo_restoring: bool = false
 
 
@@ -346,12 +345,7 @@ func push_undo_state() -> void:
 		"grid_visible": volumetric_grid.visible,
 		"vision_visible": _vision_cones_visible
 	}
-	var fingerprint: String = JSON.stringify(state)
-	if fingerprint == _undo_last_fingerprint:
-		return
-
 	_undo_stack.append(state)
-	_undo_last_fingerprint = fingerprint
 	if _undo_stack.size() > UNDO_LIMIT:
 		_undo_stack.pop_front()
 
@@ -380,17 +374,6 @@ func undo_last_action() -> bool:
 			bool(state.get("vision_visible", _vision_cones_visible))
 		)
 	_undo_restoring = false
-
-	var current_value: Variant = board_sync.call("create_snapshot")
-	if current_value is Dictionary:
-		var current_state: Dictionary = {
-			"snapshot": (current_value as Dictionary).duplicate(true),
-			"grid_visible": volumetric_grid.visible,
-			"vision_visible": _vision_cones_visible
-		}
-		_undo_last_fingerprint = JSON.stringify(current_state)
-	else:
-		_undo_last_fingerprint = ""
 
 	return applied
 
