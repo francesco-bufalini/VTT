@@ -91,7 +91,7 @@ func _on_context_menu_id_pressed(id: int) -> void:
 			target = $KaosRoot/ShoulderPlatform.global_position
 			camera.position = target + Vector3(-18, 25, -24)
 		elif id == CONTEXT_BOARD:
-			target = Vector3(0, 0, measurement_tool.meters_to_world(85))
+			target = Vector3(0, 0, measurement_tool.meters_to_world(85.5))
 			camera.position = target + Vector3(35, 55, 60)
 		else:
 			target = Vector3(0, 225, -65) * measurement_tool.meters_to_world(1)
