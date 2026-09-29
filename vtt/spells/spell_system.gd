@@ -584,8 +584,11 @@ func _cast_spell_at_point(
 	target_point: Vector3,
 	spell_data: Dictionary
 ) -> void:
-	if String(spell_data.get("id", "")) == "fireball":
+	var spell_id: String = String(spell_data.get("id", ""))
+	if spell_id == "fireball":
 		_cast_fireball(target_point, spell_data)
+	elif spell_id == "darkness":
+		_cast_persistent_sphere(target_point, spell_data)
 
 
 func _cast_burning_hands(
@@ -661,6 +664,32 @@ func _cast_fireball(
 		endpoint,
 		String(spell_data.get("aoe_shape", "sphere")),
 		duration
+	)
+
+
+func _cast_persistent_sphere(
+	target_point: Vector3,
+	spell_data: Dictionary
+) -> void:
+	var measurement_tool: Node = _measurement_tool()
+	if measurement_tool == null:
+		return
+
+	var radius_feet: float = float(
+		spell_data.get("aoe_radius_feet", 15.0)
+	)
+	var radius_world: float = (
+		radius_feet / 5.0 * _cell_size()
+	)
+	var endpoint: Vector3 = (
+		target_point + Vector3.RIGHT * radius_world
+	)
+
+	measurement_tool.call(
+		"add_aoe",
+		target_point,
+		endpoint,
+		String(spell_data.get("aoe_shape", "sphere"))
 	)
 
 
