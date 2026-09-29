@@ -159,9 +159,11 @@ func _looked_cell() -> Dictionary:
 	if _camera == null or not is_instance_valid(_camera):
 		return {"valid": false}
 
-	var screen_center: Vector2 = _camera.get_viewport().get_visible_rect().size * 0.5
-	if Input.mouse_mode != Input.MOUSE_MODE_CAPTURED:
-		screen_center = _camera.get_viewport().get_mouse_position()
+	# Il righello usa sempre il centro della visuale, indipendentemente
+	# dal fatto che il mouse sia catturato o visibile per la UI.
+	var screen_center: Vector2 = (
+		_camera.get_viewport().get_visible_rect().size * 0.5
+	)
 	var origin: Vector3 = _camera.project_ray_origin(screen_center)
 	var direction: Vector3 = _camera.project_ray_normal(screen_center)
 	var ray_end: Vector3 = origin + direction * max_ray_distance
@@ -306,10 +308,9 @@ func _update_visuals() -> void:
 
 	var delta: Vector3 = _end_center - _start_center
 	var length_world: float = delta.length()
-	var length_cells: float = (
-		length_world / maxf(cell_size, 0.0001)
-	)
 	var dnd_cells: int = _dnd_grid_distance_cells(delta)
+	var distance_meters: float = float(dnd_cells) * meters_per_cell
+	var distance_feet: float = distance_meters * 3.280839895
 	var midpoint: Vector3 = (
 		(_start_center + _end_center) * 0.5
 	)
@@ -328,11 +329,12 @@ func _update_visuals() -> void:
 		midpoint + Vector3.UP * (0.22 * cell_size)
 	)
 	_distance_label.text = (
-        "D&D: %d %s\nEffettiva: %s"
+		"D&D: %d %s\n%.2f m\n%s ft"
 		% [
 			dnd_cells,
 			"quadretto" if dnd_cells == 1 else "quadretti",
-			_format_exact_distance(length_cells)
+			distance_meters,
+			_format_feet(distance_feet)
 		]
 	)
 
@@ -361,17 +363,11 @@ func _dnd_grid_distance_cells(delta: Vector3) -> int:
 	return largest + int(floor(float(middle) * 0.5))
 
 
-func _format_exact_distance(value: float) -> String:
-	var unit: String = (
-        "quadretto"
-		if is_equal_approx(value, 1.0)
-		else "quadretti"
-	)
-
+func _format_feet(value: float) -> String:
 	if is_equal_approx(value, round(value)):
-		return "%d %s" % [int(round(value)), unit]
+		return "%d" % int(round(value))
 
-	return "%.2f %s" % [value, unit]
+	return "%.2f" % value
 
 
 func _hide_measurement() -> void:
