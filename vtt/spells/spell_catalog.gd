@@ -507,6 +507,8 @@ const SPELLS: Dictionary = {
 		"aoe_shape": "cube",
 		"aoe_side_feet": 5,
 		"persistent": true,
+		"movable_aoe_feet": 30.0,
+		"movable_aoe_mode": "free",
 		"visual_style": "cloud_of_daggers"
 	},
 	"mind_spike": {
@@ -1351,30 +1353,6 @@ const SPELLS: Dictionary = {
 		"movable_aoe_feet": 30.0,
 		"movable_aoe_mode": "free",
 		"visual_style": "fire"
-	},
-	"cloud_of_daggers": {
-		"id": "cloud_of_daggers",
-		"name": "Cloud of Daggers",
-		"source": "XPHB",
-		"level": 2,
-		"school": "Conjuration",
-		"casting_time": "Action",
-		"range": "60 feet",
-		"target": "A point within range",
-		"area": "5-foot cube",
-		"components": "V, S, M",
-		"duration": "Concentration, up to 1 minute",
-		"classes": ["Bardo", "Stregone", "Warlock", "Mago"],
-		"description": "A persistent cube of spinning daggers appears within range and can later teleport up to 30 feet.",
-		"higher_levels": "Damage increases with higher-level slots.",
-		"target_mode": "token_then_point",
-		"range_feet": 60,
-		"aoe_shape": "cube",
-		"aoe_side_feet": 5,
-		"persistent": true,
-		"movable_aoe_feet": 30.0,
-		"movable_aoe_mode": "free",
-		"visual_style": "slashing"
 	},
 	"fireball": {
 		"id": "fireball",
