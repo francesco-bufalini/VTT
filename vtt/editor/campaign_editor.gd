@@ -497,7 +497,7 @@ func _create_extra_grid(data: Dictionary) -> void:
 
 
 func _remove_last_extra_grid() -> void:
-	var grids := _campaign_grid_nodes()
+	var grids: Array[Node3D] = _campaign_grid_nodes()
 	if grids.is_empty():
 		_set_status("Non ci sono griglie aggiuntive da rimuovere")
 		return
@@ -508,7 +508,7 @@ func _remove_last_extra_grid() -> void:
 				b.get_meta("campaign_grid_id", 0)
 			)
 	)
-	var target: Node3D = grids.back() as Node3D
+	var target: Node3D = grids[grids.size() - 1]
 	target.free()
 	_refresh_surface_grid()
 	_set_status("Ultima griglia aggiuntiva rimossa")
