@@ -377,22 +377,27 @@ static func attach_projectile(
 	sphere_mesh.rings = 10
 	sphere.mesh = sphere_mesh
 	var palette: Dictionary = _projectile_palette(style)
+	var primary: Color = palette.get("primary", Color.WHITE)
+	var secondary: Color = palette.get(
+		"secondary",
+		Color(0.5, 0.7, 1.0, 0.72)
+	)
 	sphere.material_override = _projectile_material(
 		style,
-		palette.get("primary", Color.WHITE)
+		primary
 	)
 	root.add_child(sphere)
 
 	_add_projectile_trail(
 		root,
 		cell_size,
-		palette.get("primary", Color.WHITE),
+		primary,
 		0.16
 	)
 	_add_projectile_trail(
 		root,
 		cell_size,
-		palette.get("secondary", Color(0.5, 0.7, 1.0, 0.72)),
+		secondary,
 		0.10
 	)
 
