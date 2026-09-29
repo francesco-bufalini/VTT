@@ -457,7 +457,7 @@ func _create_extra_grid(data: Dictionary) -> void:
 	if board == null:
 		return
 
-	var grid_id := int(data.get("id", next_grid_id))
+	var grid_id: int = int(data.get("id", next_grid_id))
 	next_grid_id = maxi(next_grid_id, grid_id + 1)
 
 	var body := StaticBody3D.new()
