@@ -20,7 +20,10 @@ static func attach(
 	"confusion", "ice_storm", "vitriolic_sphere", "cone_of_cold",
 	"insect_plague", "synaptic_static", "chain_lightning",
 	"circle_of_death", "globe_of_invulnerability",
-	"otilukes_freezing_sphere", "sunbeam"
+	"otilukes_freezing_sphere", "sunbeam",
+	"fire", "cold", "lightning", "acid", "poison", "necrotic",
+	"radiant", "force", "psychic", "thunder", "fear",
+	"enchantment", "arcane"
 ]:
 		return
 
@@ -95,6 +98,112 @@ static func attach(
 			_add_sphere_layer(root, start, reach_world * 0.96, cell_size, 360, 1.1, Color(0.55, 0.92, 1.0, 0.58), 0.30, reach_world * 0.07)
 		"sunbeam":
 			_attach_sunbeam(root, start, end, reach_world, cell_size)
+		"fire", "cold", "lightning", "acid", "poison", "necrotic", "radiant", "force", "psychic", "thunder", "fear", "enchantment", "arcane":
+			_attach_generic_area(
+				root,
+				start,
+				end,
+				_shape,
+				style,
+				reach_world,
+				cell_size
+			)
+
+
+static func _generic_style_color(style: String) -> Color:
+	match style:
+		"fire":
+			return Color(1.0, 0.24, 0.03, 0.62)
+		"cold":
+			return Color(0.48, 0.9, 1.0, 0.60)
+		"lightning":
+			return Color(0.36, 0.84, 1.0, 0.72)
+		"acid":
+			return Color(0.5, 0.96, 0.12, 0.60)
+		"poison":
+			return Color(0.3, 0.76, 0.1, 0.52)
+		"necrotic":
+			return Color(0.28, 0.06, 0.34, 0.56)
+		"radiant":
+			return Color(1.0, 0.94, 0.58, 0.66)
+		"force":
+			return Color(0.72, 0.66, 1.0, 0.58)
+		"psychic", "enchantment", "fear":
+			return Color(0.72, 0.28, 1.0, 0.58)
+		"thunder":
+			return Color(0.46, 0.78, 1.0, 0.58)
+		_:
+			return Color(0.72, 0.34, 1.0, 0.54)
+
+
+static func _attach_generic_area(
+	root: Node3D,
+	start: Vector3,
+	end: Vector3,
+	shape: String,
+	style: String,
+	reach_world: float,
+	cell_size: float
+) -> void:
+	var color: Color = _generic_style_color(style)
+	match shape:
+		"cone":
+			_attach_colored_cone(
+				root,
+				start,
+				end,
+				reach_world,
+				cell_size,
+				color
+			)
+		"line":
+			var direction: Vector3 = end - start
+			if direction.length_squared() < 0.0001:
+				direction = Vector3.FORWARD
+			else:
+				direction = direction.normalized()
+			_add_lightning_layer(
+				root,
+				start,
+				direction,
+				reach_world,
+				cell_size,
+				150,
+				color,
+				0.11
+			)
+		"cube", "flat_square":
+			_add_box_layer(
+				root,
+				start,
+				reach_world,
+				cell_size,
+				150,
+				color,
+				0.16,
+				0.08
+			)
+		"cylinder":
+			_attach_cylinder_weather(
+				root,
+				start,
+				end,
+				cell_size,
+				color,
+				220
+			)
+		_:
+			_add_sphere_layer(
+				root,
+				start,
+				reach_world * 0.94,
+				cell_size,
+				180,
+				1.1,
+				color,
+				0.22,
+				reach_world * 0.06
+			)
 
 
 static func _attach_burning_hands(
@@ -808,6 +917,22 @@ static func _add_projectile_trail(
 
 static func _projectile_palette(style: String) -> Dictionary:
 	match style:
+		"fire":
+			return {"primary": Color(1.0, 0.24, 0.03, 0.92), "secondary": Color(1.0, 0.78, 0.12, 0.76)}
+		"cold":
+			return {"primary": Color(0.48, 0.9, 1.0, 0.92), "secondary": Color(0.88, 0.98, 1.0, 0.78)}
+		"lightning", "thunder":
+			return {"primary": Color(0.4, 0.86, 1.0, 0.94), "secondary": Color(0.94, 1.0, 1.0, 0.82)}
+		"acid", "poison":
+			return {"primary": Color(0.42, 0.92, 0.12, 0.9), "secondary": Color(0.76, 1.0, 0.2, 0.72)}
+		"necrotic":
+			return {"primary": Color(0.34, 0.08, 0.42, 0.9), "secondary": Color(0.12, 0.04, 0.18, 0.72)}
+		"radiant":
+			return {"primary": Color(1.0, 0.94, 0.58, 0.96), "secondary": Color(1.0, 1.0, 0.9, 0.84)}
+		"force":
+			return {"primary": Color(0.76, 0.7, 1.0, 0.94), "secondary": Color(0.94, 0.9, 1.0, 0.78)}
+		"psychic", "enchantment", "fear", "arcane":
+			return {"primary": Color(0.74, 0.3, 1.0, 0.92), "secondary": Color(0.28, 0.76, 1.0, 0.74)}
 		"fire_bolt":
 			return {"primary": Color(1.0, 0.22, 0.02, 0.9), "secondary": Color(1.0, 0.75, 0.08, 0.75)}
 		"ray_of_frost", "ice_knife":
