@@ -571,7 +571,12 @@ func _compute_dynamic_signature() -> int:
 		for node in nodes:
 			if not node is Node3D:
 				continue
-			if not is_ancestor_of(node):
+			var board_root: Node = get_parent()
+			if (
+				board_root != null
+				and node != board_root
+				and not board_root.is_ancestor_of(node)
+			):
 				continue
 
 			var node_3d := node as Node3D
