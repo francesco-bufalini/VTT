@@ -17,7 +17,7 @@ var instruction_label: Label
 
 var _selected_spell_id: String = ""
 var _pending_spell_id: String = ""
-var _restore_mouse_mode: Input.MouseMode = Input.MOUSE_MODE_VISIBLE
+var _restore_mouse_mode: int = Input.MOUSE_MODE_VISIBLE
 
 
 func setup(root: Node3D) -> void:
@@ -281,9 +281,9 @@ func _populate_class_tree() -> void:
 	class_tree.clear()
 	var root: TreeItem = class_tree.create_item()
 
-	for class_name: String in SpellCatalog.CLASS_NAMES:
+	for class_label: String in SpellCatalog.CLASS_NAMES:
 		var class_item: TreeItem = class_tree.create_item(root)
-		class_item.set_text(0, class_name)
+		class_item.set_text(0, class_label)
 		class_item.set_collapsed(true)
 
 		for level: int in range(SpellCatalog.LEVEL_NAMES.size()):
@@ -296,7 +296,7 @@ func _populate_class_tree() -> void:
 
 			var spells: Array[Dictionary] = (
 				SpellCatalog.spells_for_class_and_level(
-					class_name,
+					class_label,
 					level
 				)
 			)
