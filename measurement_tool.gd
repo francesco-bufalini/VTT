@@ -1048,16 +1048,6 @@ func _draw_aoe(
 				start + Vector3.UP * cylinder_height * 0.5
 			)
 
-		"cylinder":
-			var cylinder_mesh: CylinderMesh = CylinderMesh.new()
-			cylinder_mesh.top_radius = reach_world
-			cylinder_mesh.bottom_radius = reach_world
-			cylinder_mesh.height = reach_world * 2.0
-			node.mesh = cylinder_mesh
-			node.global_position = (
-				start + Vector3.UP * reach_world
-			)
-
 		"flat_square":
 			var flat_mesh: BoxMesh = BoxMesh.new()
 			flat_mesh.size = Vector3(
@@ -1079,11 +1069,11 @@ func _draw_aoe(
 				"lightning_bolt",
 				"sunbeam"
 			]
-			var line_radius: float = (
-				cell_size * 0.5
-				if style in thick_line_styles
-				else cell_size * 0.06
-			)
+			var line_radius: float = cell_size * 0.06
+			if style in thick_line_styles:
+				line_radius = cell_size * 0.5
+			elif style == "gust_of_wind":
+				line_radius = cell_size
 			mesh.top_radius = line_radius
 			mesh.bottom_radius = line_radius
 			mesh.height = reach_world
