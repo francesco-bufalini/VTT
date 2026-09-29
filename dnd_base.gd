@@ -13,6 +13,7 @@ const CONTEXT_SPELLS := 11
 const CAMPAIGN_EDITOR_SCENE_PATH := "res://vtt/editor/campaign_editor.tscn"
 
 const ALL_COLLISION_LAYERS := 0xFFFFFFFF
+const UNDO_LIMIT := 50
 
 const TOKEN_SIZES := [
 	{"name": "Tiny", "footprint": 0.5},
@@ -55,6 +56,9 @@ var share_status: Label
 var token_drag: Node
 var spell_system: Node
 var minecraft_lights: Node
+var _undo_stack: Array[Dictionary] = []
+var _undo_last_fingerprint: String = ""
+var _undo_restoring: bool = false
 
 
 func _ready() -> void:
@@ -120,6 +124,25 @@ func _process(_delta: float) -> void:
 
 
 func _input(event: InputEvent) -> void:
+	if (
+		event is InputEventKey
+		and event.pressed
+		and not event.echo
+		and event.ctrl_pressed
+		and event.keycode == KEY_Z
+	):
+		if (
+			spell_system != null
+			and is_instance_valid(spell_system)
+			and bool(spell_system.call("is_targeting"))
+			and bool(spell_system.call("handle_input", event))
+		):
+			get_viewport().set_input_as_handled()
+			return
+		if undo_last_action():
+			get_viewport().set_input_as_handled()
+			return
+
 	if (
 		spell_system != null
 		and is_instance_valid(spell_system)
@@ -252,6 +275,7 @@ func _unhandled_input(event: InputEvent) -> void:
 		if not _selected_tokens.is_empty():
 			if event.shift_pressed:
 				if event.keycode == KEY_UP or event.keycode == KEY_DOWN:
+					push_undo_state()
 					for token in _selected_tokens:
 						token.nudge_vertical(1 if event.keycode == KEY_UP else -1)
 					get_viewport().set_input_as_handled()
@@ -306,6 +330,71 @@ func _unhandled_input(event: InputEvent) -> void:
 			get_viewport().set_input_as_handled()
 
 
+func push_undo_state() -> void:
+	if _undo_restoring or board_sync == null or not is_instance_valid(board_sync):
+		return
+
+	var snapshot_value: Variant = board_sync.call("create_snapshot")
+	if not snapshot_value is Dictionary:
+		return
+	var snapshot: Dictionary = snapshot_value as Dictionary
+	if snapshot.is_empty():
+		return
+
+	var state: Dictionary = {
+		"snapshot": snapshot.duplicate(true),
+		"grid_visible": volumetric_grid.visible,
+		"vision_visible": _vision_cones_visible
+	}
+	var fingerprint: String = JSON.stringify(state)
+	if fingerprint == _undo_last_fingerprint:
+		return
+
+	_undo_stack.append(state)
+	_undo_last_fingerprint = fingerprint
+	if _undo_stack.size() > UNDO_LIMIT:
+		_undo_stack.pop_front()
+
+
+func undo_last_action() -> bool:
+	if _undo_stack.is_empty():
+		return false
+	if board_sync == null or not is_instance_valid(board_sync):
+		return false
+
+	var state: Dictionary = _undo_stack.pop_back()
+	var snapshot_value: Variant = state.get("snapshot", {})
+	if not snapshot_value is Dictionary:
+		return false
+
+	_undo_restoring = true
+	var applied: bool = bool(
+		board_sync.call(
+			"apply_snapshot",
+			snapshot_value as Dictionary
+		)
+	)
+	if applied:
+		set_grid_visible(bool(state.get("grid_visible", volumetric_grid.visible)))
+		set_vision_cones_visible(
+			bool(state.get("vision_visible", _vision_cones_visible))
+		)
+	_undo_restoring = false
+
+	var current_value: Variant = board_sync.call("create_snapshot")
+	if current_value is Dictionary:
+		var current_state: Dictionary = {
+			"snapshot": (current_value as Dictionary).duplicate(true),
+			"grid_visible": volumetric_grid.visible,
+			"vision_visible": _vision_cones_visible
+		}
+		_undo_last_fingerprint = JSON.stringify(current_state)
+	else:
+		_undo_last_fingerprint = ""
+
+	return applied
+
+
 func toggle_spell_menu() -> void:
 	if spell_system == null or not is_instance_valid(spell_system):
 		return
@@ -313,6 +402,7 @@ func toggle_spell_menu() -> void:
 
 
 func toggle_grid() -> void:
+	push_undo_state()
 	set_grid_visible(not volumetric_grid.visible)
 
 
@@ -330,6 +420,7 @@ func set_grid_3d_visible(is_visible: bool) -> void:
 
 
 func toggle_vision_cones() -> void:
+	push_undo_state()
 	set_vision_cones_visible(not _vision_cones_visible)
 
 
@@ -501,7 +592,8 @@ func _on_context_menu_id_pressed(id: int) -> void:
 				campaign_manager.call("return_to_main_menu")
 
 		CONTEXT_FLYING:
-			var enabled := not _selected_tokens.all(func(token): return token.flying)
+			push_undo_state()
+			var enabled: bool = not _selected_tokens.all(func(token): return token.flying)
 			for token in _selected_tokens:
 				token.set_flying(enabled)
 			_close_context_menu_to_game()
@@ -595,6 +687,7 @@ func _spawn_token(
 		push_error("DnDBase: token_scene non assegnata.")
 		return
 
+	push_undo_state()
 	var token_instance: Node = token_scene.instantiate()
 	if not (token_instance is CharacterBody3D):
 		push_error(
@@ -724,6 +817,8 @@ func _clean_selection() -> void:
 
 func _move_selected(direction: Vector2i) -> void:
 	_clean_selection()
+	if not _selected_tokens.is_empty():
+		push_undo_state()
 
 	for token: CharacterBody3D in _selected_tokens:
 		if token.has_method("nudge_grid"):
@@ -732,6 +827,8 @@ func _move_selected(direction: Vector2i) -> void:
 
 func _rotate_selected(quarter_turns: int) -> void:
 	_clean_selection()
+	if not _selected_tokens.is_empty():
+		push_undo_state()
 
 	for token: CharacterBody3D in _selected_tokens:
 		if token.has_method("rotate_grid"):
@@ -740,6 +837,8 @@ func _rotate_selected(quarter_turns: int) -> void:
 
 func _delete_selected() -> void:
 	_clean_selection()
+	if not _selected_tokens.is_empty():
+		push_undo_state()
 
 	var deleting: Array[CharacterBody3D] = _selected_tokens.duplicate()
 	_selected_tokens.clear()
