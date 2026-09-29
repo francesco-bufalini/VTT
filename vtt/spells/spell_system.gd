@@ -279,16 +279,6 @@ func _try_select_caster(screen_position: Vector2) -> void:
 			_pending_caster = caster
 			_cast_self_emanation(caster, spell_data)
 			_finish_cast()
-		"chain_targets":
-			_pending_caster = caster
-			_chain_primary = null
-			_pending_targets.clear()
-			_targeting_phase = "chain_primary"
-			_hide_spell_preview()
-			_set_instruction(
-				"%s: scegli il bersaglio primario entro %d ft."
-				% [String(spell_data.get("name", "Incantesimo")), int(spell_data.get("range_feet", 0))]
-			)
 		"token_then_direction":
 			_pending_caster = caster
 			_targeting_phase = "direction_point"
