@@ -8,9 +8,20 @@ func run() -> void:
 	root.add_child(scene)
 	await process_frame
 	var measure: Node = scene.measurement_tool
-	for shape in ["sphere", "cube", "cone", "line"]:
+	for shape in ["sphere", "cube", "cone", "line", "cylinder"]:
 		measure.add_aoe(Vector3(1,2,3), Vector3(4,2,3), shape)
-	assert(measure.serialize_persistent_aoes().size() == 4)
+	measure.add_aoe(
+		Vector3(2, 0, 2),
+		Vector3(6, 0, 2),
+		"sphere",
+		"cloudkill",
+		Color(0.0, 0.0, 0.0, -1.0),
+		-1.0,
+		10.0,
+		"away_from_caster",
+		Vector3.ZERO
+	)
+	assert(measure.serialize_persistent_aoes().size() == 6)
 	var data: Array = JSON.parse_string(JSON.stringify(measure.serialize_persistent_aoes()))
 	measure.clear_persistent_aoes()
 	measure.apply_persistent_aoes(data)
@@ -43,9 +54,9 @@ func run() -> void:
 	assert(sync.send_snapshot("127.0.0.1", "test-key") == OK)
 	for frame in range(300):
 		await create_timer(0.01).timeout
-		if other.measurement_tool.serialize_persistent_aoes().size() == 254:
+		if other.measurement_tool.serialize_persistent_aoes().size() == 256:
 			break
-	assert(other.measurement_tool.serialize_persistent_aoes().size() == 254)
+	assert(other.measurement_tool.serialize_persistent_aoes().size() == 256)
 	assert(other.tokens_root.get_child_count() == scene.tokens_root.get_child_count())
 	assert(other.tokens_root.get_child(0).position == scene.tokens_root.get_child(0).position)
 	other.measurement_tool.clear_persistent_aoes()
@@ -55,7 +66,7 @@ func run() -> void:
 	scene.queue_free()
 	other.queue_free()
 	await process_frame
-	print("PASS: AoE round-trip, validation, scene isolation, TCP transfer, wrong key rejection")
+	print("PASS: AoE cylinder/movable round-trip, validation, scene isolation, TCP transfer, wrong key rejection")
 	quit()
 
 
