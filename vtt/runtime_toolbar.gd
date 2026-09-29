@@ -22,6 +22,7 @@ const CAMPAIGN_EDITOR_SCENE_PATH := "res://vtt/editor/campaign_editor.tscn"
 
 var board_root: Node3D
 var ui_root: CanvasLayer
+var status_label: Label
 
 
 func setup(root: Node3D) -> void:
@@ -41,7 +42,15 @@ func _initialize_toolbar() -> void:
 		queue_free()
 		return
 
+	var campaign_manager: Node = _campaign_manager()
+	if campaign_manager != null:
+		campaign_manager.call(
+			"activate_campaign_for_scene",
+			board_root.scene_file_path
+		)
+
 	_build_toolbar()
+	call_deferred("_load_saved_state")
 
 
 func _build_toolbar() -> void:
@@ -86,13 +95,29 @@ func _build_toolbar() -> void:
 		["Condividi / Tailscale", SHARE_OPEN]
 	], _on_share))
 
+	status_label = Label.new()
+	status_label.text = ""
+	status_label.custom_minimum_size = Vector2(90, 0)
+	status_label.horizontal_alignment = HORIZONTAL_ALIGNMENT_RIGHT
+	status_label.vertical_alignment = VERTICAL_ALIGNMENT_CENTER
+	status_label.add_theme_font_size_override("font_size", 11)
+	status_label.clip_text = true
+	row.add_child(status_label)
+
+	var save_button: Button = Button.new()
+	save_button.text = "Salva"
+	save_button.custom_minimum_size = Vector2(58, 30)
+	save_button.add_theme_font_size_override("font_size", 13)
+	save_button.pressed.connect(_save_current_state)
+	row.add_child(save_button)
+
 	var menu_button: Button = Button.new()
 	menu_button.text = "Menu"
 	menu_button.custom_minimum_size = Vector2(54, 30)
 	menu_button.add_theme_font_size_override("font_size", 13)
 	menu_button.pressed.connect(
 		func() -> void:
-			var campaign_manager: Node = get_node_or_null("/root/CampaignManager")
+			var campaign_manager: Node = _campaign_manager()
 			if campaign_manager != null:
 				campaign_manager.call("return_to_main_menu")
 	)
@@ -181,3 +206,72 @@ func _on_view(id: int) -> void:
 func _on_share(id: int) -> void:
 	if id == SHARE_OPEN:
 		board_root.call("_on_context_menu_id_pressed", 25)
+
+
+func _save_current_state() -> void:
+	var campaign_manager: Node = _campaign_manager()
+	var sync: Node = _board_sync()
+	if campaign_manager == null or sync == null:
+		_set_status("Salvataggio non disponibile")
+		return
+
+	var snapshot_value: Variant = sync.call("create_snapshot")
+	if not snapshot_value is Dictionary:
+		_set_status("Stato non disponibile")
+		return
+
+	var snapshot: Dictionary = snapshot_value as Dictionary
+	if snapshot.is_empty():
+		_set_status("Attendi la fine dell'azione")
+		return
+
+	var error: Error = int(
+		campaign_manager.call("save_active_runtime_state", snapshot)
+	)
+	if error == OK:
+		_set_status("Salvato")
+	else:
+		_set_status("Errore salvataggio")
+
+
+func _load_saved_state() -> void:
+	var campaign_manager: Node = _campaign_manager()
+	var sync: Node = _board_sync()
+	if campaign_manager == null or sync == null:
+		return
+
+	var state_value: Variant = campaign_manager.call(
+		"load_active_runtime_state"
+	)
+	if not state_value is Dictionary:
+		return
+
+	var state: Dictionary = state_value as Dictionary
+	if state.is_empty():
+		return
+
+	var applied: bool = bool(sync.call("apply_snapshot", state))
+	if applied:
+		_set_status("Salvataggio caricato")
+
+
+func _board_sync() -> Node:
+	if board_root == null or not is_instance_valid(board_root):
+		return null
+
+	var value: Variant = board_root.get("board_sync")
+	if is_instance_valid(value) and value is Node:
+		return value as Node
+	return null
+
+
+func _campaign_manager() -> Node:
+	var manager: Node = get_node_or_null("/root/CampaignManager")
+	if manager == null:
+		push_error("CampaignManager autoload non disponibile.")
+	return manager
+
+
+func _set_status(message: String) -> void:
+	if status_label != null:
+		status_label.text = message
