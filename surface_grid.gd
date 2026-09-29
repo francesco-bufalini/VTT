@@ -150,9 +150,11 @@ func _refresh_changed_collisions() -> void:
 	var rebuild: Array[CollisionShape3D] = []
 
 	for source in _overlays.keys():
-		if not source is CollisionShape3D:
-			continue
+		# A collision may have been queue_freed by encounter rebuilding.
+		# Never use "is" or "as" until the Object reference is confirmed alive.
 		if not is_instance_valid(source):
+			continue
+		if not source is CollisionShape3D:
 			continue
 
 		var collision := source as CollisionShape3D
