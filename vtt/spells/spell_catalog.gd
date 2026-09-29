@@ -14,6 +14,31 @@ const LEVEL_NAMES: Array[String] = [
 	"5° livello", "6° livello", "7° livello", "8° livello", "9° livello"
 ]
 
+# Runtime-only mechanics layered on top of the generated 5eTools catalog.
+# Keeping these here avoids modifying the generated file by hand.
+const RUNTIME_OVERRIDES: Dictionary = {
+	"cloudkill": {
+		"movable_aoe_feet": 10.0,
+		"movable_aoe_mode": "away_from_caster"
+	},
+	"doomtide": {
+		"movable_aoe_feet": 10.0,
+		"movable_aoe_mode": "away_from_caster"
+	},
+	"incendiary_cloud": {
+		"movable_aoe_feet": 10.0,
+		"movable_aoe_mode": "free_exact"
+	},
+	"whirlwind": {
+		"movable_aoe_feet": 30.0,
+		"movable_aoe_mode": "free"
+	},
+	"conjure_celestial": {
+		"movable_aoe_feet": 30.0,
+		"movable_aoe_mode": "free"
+	}
+}
+
 # Runtime fields used by the VTT:
 # target_mode:
 # - self_token: pick caster, then cast a directional self AoE.
@@ -1241,6 +1266,116 @@ const SPELLS: Dictionary = {
 		"visual_style": "lightning_bolt",
 		"transient_seconds": 5.0
 	},
+
+	"misty_step": {
+		"id": "misty_step",
+		"name": "Misty Step",
+		"source": "XPHB",
+		"level": 2,
+		"school": "Conjuration",
+		"casting_time": "Bonus Action",
+		"range": "Self",
+		"target": "Self",
+		"area": "Teleport",
+		"components": "V",
+		"duration": "Instantaneous",
+		"classes": ["Stregone", "Warlock", "Mago"],
+		"description": "The caster teleports to an unoccupied space they can see within 30 feet.",
+		"higher_levels": "No slot scaling.",
+		"target_mode": "teleport_self",
+		"teleport_distance_feet": 30,
+		"teleport_max_passengers": 0
+	},
+	"dimension_door": {
+		"id": "dimension_door",
+		"name": "Dimension Door",
+		"source": "XPHB",
+		"level": 4,
+		"school": "Conjuration",
+		"casting_time": "Action",
+		"range": "500 feet",
+		"target": "Self; optionally one nearby willing creature",
+		"area": "Teleport",
+		"components": "V",
+		"duration": "Instantaneous",
+		"classes": ["Bardo", "Stregone", "Warlock", "Mago"],
+		"description": "The caster teleports to a destination within 500 feet and can bring one nearby willing creature.",
+		"higher_levels": "No slot scaling.",
+		"target_mode": "teleport_self",
+		"teleport_distance_feet": 500,
+		"teleport_max_passengers": 1,
+		"teleport_passenger_range_feet": 5
+	},
+	"thunder_step": {
+		"id": "thunder_step",
+		"name": "Thunder Step",
+		"source": "XGE",
+		"level": 3,
+		"school": "Conjuration",
+		"casting_time": "Action",
+		"range": "90 feet",
+		"target": "Self; optionally one nearby willing creature",
+		"area": "Teleport; 10-foot-radius thunder burst at departure",
+		"components": "V",
+		"duration": "Instantaneous",
+		"classes": ["Stregone", "Warlock", "Mago"],
+		"description": "The caster teleports to an unoccupied space within 90 feet and can bring one nearby willing creature. A thunderous burst remains at the point of departure.",
+		"higher_levels": "The thunder damage increases with higher-level slots.",
+		"target_mode": "teleport_self",
+		"teleport_distance_feet": 90,
+		"teleport_max_passengers": 1,
+		"teleport_passenger_range_feet": 5,
+		"teleport_departure_aoe_radius_feet": 10,
+		"teleport_departure_style": "thunder_step"
+	},
+	"flaming_sphere": {
+		"id": "flaming_sphere",
+		"name": "Flaming Sphere",
+		"source": "XPHB",
+		"level": 2,
+		"school": "Conjuration",
+		"casting_time": "Action",
+		"range": "60 feet",
+		"target": "A point within range",
+		"area": "5-foot-diameter sphere",
+		"components": "V, S, M",
+		"duration": "Concentration, up to 1 minute",
+		"classes": ["Druido", "Mago"],
+		"description": "A persistent fiery sphere appears within range and can be moved up to 30 feet when directed.",
+		"higher_levels": "Damage increases with higher-level slots.",
+		"target_mode": "token_then_point",
+		"range_feet": 60,
+		"aoe_shape": "sphere",
+		"aoe_radius_feet": 2.5,
+		"persistent": true,
+		"movable_aoe_feet": 30.0,
+		"movable_aoe_mode": "free",
+		"visual_style": "fire"
+	},
+	"cloud_of_daggers": {
+		"id": "cloud_of_daggers",
+		"name": "Cloud of Daggers",
+		"source": "XPHB",
+		"level": 2,
+		"school": "Conjuration",
+		"casting_time": "Action",
+		"range": "60 feet",
+		"target": "A point within range",
+		"area": "5-foot cube",
+		"components": "V, S, M",
+		"duration": "Concentration, up to 1 minute",
+		"classes": ["Bardo", "Stregone", "Warlock", "Mago"],
+		"description": "A persistent cube of spinning daggers appears within range and can later teleport up to 30 feet.",
+		"higher_levels": "Damage increases with higher-level slots.",
+		"target_mode": "token_then_point",
+		"range_feet": 60,
+		"aoe_shape": "cube",
+		"aoe_side_feet": 5,
+		"persistent": true,
+		"movable_aoe_feet": 30.0,
+		"movable_aoe_mode": "free",
+		"visual_style": "slashing"
+	},
 	"fireball": {
 		"id": "fireball",
 		"name": "Fireball",
@@ -1265,14 +1400,24 @@ const SPELLS: Dictionary = {
 }
 
 
+static func _apply_runtime_overrides(data: Dictionary) -> Dictionary:
+	var result: Dictionary = data.duplicate(true)
+	var spell_id: String = String(result.get("id", ""))
+	var override_value: Variant = RUNTIME_OVERRIDES.get(spell_id, {})
+	if override_value is Dictionary:
+		for key: Variant in (override_value as Dictionary).keys():
+			result[key] = (override_value as Dictionary).get(key)
+	return result
+
+
 static func spell(spell_id: String) -> Dictionary:
 	var value: Variant = SPELLS.get(spell_id, {})
 	if value is Dictionary:
-		return (value as Dictionary).duplicate(true)
+		return _apply_runtime_overrides(value as Dictionary)
 
 	value = GeneratedCatalog.SPELLS.get(spell_id, {})
 	if value is Dictionary:
-		return (value as Dictionary).duplicate(true)
+		return _apply_runtime_overrides(value as Dictionary)
 	return {}
 
 
@@ -1300,7 +1445,9 @@ static func all_spells() -> Array[Dictionary]:
 	var result: Array[Dictionary] = []
 	for value: Variant in merged.values():
 		if value is Dictionary:
-			result.append((value as Dictionary).duplicate(true))
+			result.append(
+				_apply_runtime_overrides(value as Dictionary)
+			)
 
 	result.sort_custom(
 		func(a: Dictionary, b: Dictionary) -> bool:
