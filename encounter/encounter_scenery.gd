@@ -46,7 +46,11 @@ func build(scene: Node3D) -> void:
 	floor_shape.size = Vector3(120 * _units, 0.1, 180 * _units)
 	scene.get_node("Board/FloorCollision/CollisionShape3D").shape = floor_shape
 	scene.get_node("Board/FloorCollision").position.z = 85 * _units
-	scene.get_node("OrientationMarker").queue_free()
+	var orientation_marker := scene.get_node_or_null(
+		"Board/MapGeometry/OrientationMarker"
+	)
+	if orientation_marker != null:
+		orientation_marker.queue_free()
 	var environment: Environment = scene.get_node("WorldEnvironment").environment.duplicate()
 	environment.background_color = Color(0.014, 0.018, 0.023)
 	environment.ambient_light_color = Color(0.88, 0.72, 0.55)
