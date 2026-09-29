@@ -1309,7 +1309,7 @@ func _build_wall_globe_root(
 	mesh_instance.name = "WallGlobe"
 	var sphere: SphereMesh = SphereMesh.new()
 	sphere.radius = radius_world
-	sphere.height = radius_world * 2.0
+	sphere.height = radius_world if hemisphere else radius_world * 2.0
 	sphere.radial_segments = 48
 	sphere.rings = 24
 	sphere.is_hemisphere = hemisphere
@@ -1880,18 +1880,30 @@ func apply_persistent_aoes(data: Array) -> void:
 			var wall_points: Array[Vector3] = WallGeometry.deserialize_points(
 				item_data.get("points", [])
 			)
+			var wall_meta_value: Variant = item_data.get("wall_meta", {})
+			var wall_meta: Dictionary = (
+				wall_meta_value
+				if wall_meta_value is Dictionary
+				else {}
+			)
 			add_wall_path(
 				wall_points,
 				float(item_data.get("wall_height", cell_size)),
 				float(item_data.get("wall_thickness", cell_size * 0.1)),
 				style,
 				int(item_data.get("damage_side", 0)),
-				item_data.get("wall_meta", {}) as Dictionary
+				wall_meta
 			)
 			continue
 
 		if shape == "wall_globe":
 			var center_data: Array = item_data.get("center", [])
+			var globe_meta_value: Variant = item_data.get("wall_meta", {})
+			var globe_meta: Dictionary = (
+				globe_meta_value
+				if globe_meta_value is Dictionary
+				else {}
+			)
 			add_wall_globe(
 				Vector3(
 					float(center_data[0]),
@@ -1901,7 +1913,7 @@ func apply_persistent_aoes(data: Array) -> void:
 				float(item_data.get("radius", cell_size)),
 				style,
 				bool(item_data.get("hemisphere", false)),
-				item_data.get("wall_meta", {}) as Dictionary
+				globe_meta
 			)
 			continue
 
