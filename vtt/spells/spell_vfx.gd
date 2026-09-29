@@ -11,7 +11,12 @@ static func attach(
 ) -> void:
 	if root == null or not is_instance_valid(root):
 		return
-	if style not in ["burning_hands", "fireball", "darkness", "lightning_bolt"]:
+	if style not in [
+	"burning_hands", "fireball", "darkness", "lightning_bolt",
+	"acid_splash", "thunderclap", "color_spray", "fog_cloud",
+	"grease", "sleep", "thunderwave", "ice_knife_burst",
+	"witch_bolt"
+]:
 		return
 
 	var reach_world: float = maxf(
@@ -27,6 +32,24 @@ static func attach(
 		"darkness":
 			_attach_darkness(root, start, reach_world, cell_size)
 		"lightning_bolt":
+			_attach_lightning_bolt(root, start, end, reach_world, cell_size)
+		"acid_splash":
+			_add_sphere_layer(root, start, reach_world * 0.92, cell_size, 150, 1.0, Color(0.35, 1.0, 0.18, 0.58), 0.30, reach_world * 0.08)
+		"thunderclap":
+			_add_sphere_layer(root, start, reach_world * 0.94, cell_size, 170, 0.55, Color(0.5, 0.82, 1.0, 0.62), 0.24, reach_world * 0.12)
+		"color_spray":
+			_attach_color_spray(root, start, end, reach_world, cell_size)
+		"fog_cloud":
+			_attach_fog_cloud(root, start, reach_world, cell_size)
+		"grease":
+			_attach_grease(root, start, reach_world, cell_size)
+		"sleep":
+			_add_sphere_layer(root, start, reach_world * 0.9, cell_size, 130, 1.8, Color(0.62, 0.34, 1.0, 0.42), 0.26, reach_world * 0.035)
+		"thunderwave":
+			_attach_thunderwave(root, start, reach_world, cell_size)
+		"ice_knife_burst":
+			_add_sphere_layer(root, start, reach_world * 0.94, cell_size, 180, 0.75, Color(0.42, 0.9, 1.0, 0.62), 0.22, reach_world * 0.10)
+		"witch_bolt":
 			_attach_lightning_bolt(root, start, end, reach_world, cell_size)
 
 
@@ -123,6 +146,125 @@ static func _attach_darkness(
 		0.55,
 		radius_world * 0.025
 	)
+
+
+static func _attach_color_spray(
+	root: Node3D,
+	start: Vector3,
+	end: Vector3,
+	reach_world: float,
+	cell_size: float
+) -> void:
+	var direction: Vector3 = end - start
+	if direction.length_squared() < 0.0001:
+		direction = Vector3.FORWARD
+	else:
+		direction = direction.normalized()
+	var colors: Array[Color] = [
+		Color(1.0, 0.18, 0.22, 0.62),
+		Color(1.0, 0.72, 0.12, 0.62),
+		Color(0.18, 0.72, 1.0, 0.62),
+		Color(0.72, 0.22, 1.0, 0.62)
+	]
+	for color: Color in colors:
+		_add_cone_fire_layer(
+			root, start, direction, reach_world, cell_size,
+			54, color, 0.20
+		)
+
+
+static func _attach_fog_cloud(
+	root: Node3D,
+	center: Vector3,
+	radius_world: float,
+	cell_size: float
+) -> void:
+	_add_sphere_layer(
+		root, center, radius_world * 0.96, cell_size,
+		340, 4.6, Color(0.72, 0.76, 0.82, 0.30),
+		0.72, radius_world * 0.02
+	)
+	_add_sphere_layer(
+		root, center, radius_world * 0.82, cell_size,
+		220, 5.4, Color(0.9, 0.92, 0.96, 0.18),
+		0.56, radius_world * 0.015
+	)
+
+
+static func _attach_grease(
+	root: Node3D,
+	center: Vector3,
+	half_side_world: float,
+	cell_size: float
+) -> void:
+	var particles: GPUParticles3D = GPUParticles3D.new()
+	particles.name = "GreaseShimmer"
+	particles.amount = 90
+	particles.lifetime = 2.4
+	particles.preprocess = 2.4
+	particles.randomness = 0.9
+	root.add_child(particles)
+	particles.global_position = center + Vector3.UP * cell_size * 0.03
+
+	var process: ParticleProcessMaterial = ParticleProcessMaterial.new()
+	process.emission_shape = ParticleProcessMaterial.EMISSION_SHAPE_BOX
+	process.emission_box_extents = Vector3(
+		half_side_world,
+		cell_size * 0.02,
+		half_side_world
+	)
+	process.direction = Vector3.UP
+	process.spread = 20.0
+	process.gravity = Vector3.ZERO
+	process.initial_velocity_min = 0.0
+	process.initial_velocity_max = cell_size * 0.025
+	process.color = Color(0.72, 0.64, 0.22, 0.38)
+	particles.process_material = process
+
+	var quad: QuadMesh = QuadMesh.new()
+	quad.size = Vector2.ONE * cell_size * 0.13
+	quad.material = _billboard_material(
+		Color(0.8, 0.72, 0.28, 0.34),
+		Color(0.36, 0.28, 0.04, 1.0),
+		0.18
+	)
+	particles.draw_pass_1 = quad
+
+
+static func _attach_thunderwave(
+	root: Node3D,
+	center: Vector3,
+	half_side_world: float,
+	cell_size: float
+) -> void:
+	var particles: GPUParticles3D = GPUParticles3D.new()
+	particles.name = "ThunderwaveParticles"
+	particles.amount = 220
+	particles.lifetime = 0.5
+	particles.preprocess = 0.5
+	particles.randomness = 0.8
+	root.add_child(particles)
+	particles.global_position = center
+
+	var process: ParticleProcessMaterial = ParticleProcessMaterial.new()
+	process.emission_shape = ParticleProcessMaterial.EMISSION_SHAPE_BOX
+	process.emission_box_extents = Vector3.ONE * half_side_world
+	process.direction = Vector3.UP
+	process.spread = 180.0
+	process.gravity = Vector3.ZERO
+	process.initial_velocity_min = cell_size * 0.25
+	process.initial_velocity_max = cell_size * 1.0
+	process.color = Color(0.36, 0.72, 1.0, 0.58)
+	particles.process_material = process
+
+	var quad: QuadMesh = QuadMesh.new()
+	quad.size = Vector2.ONE * cell_size * 0.18
+	quad.material = _billboard_material(
+		Color(0.36, 0.72, 1.0, 0.58),
+		Color(0.18, 0.56, 1.0, 1.0),
+		1.4
+	)
+	particles.draw_pass_1 = quad
 
 
 static func _attach_lightning_bolt(
@@ -234,19 +376,23 @@ static func attach_projectile(
 	sphere_mesh.radial_segments = 20
 	sphere_mesh.rings = 10
 	sphere.mesh = sphere_mesh
-	sphere.material_override = _projectile_material(style)
+	var palette: Dictionary = _projectile_palette(style)
+	sphere.material_override = _projectile_material(
+		style,
+		palette.get("primary", Color.WHITE)
+	)
 	root.add_child(sphere)
 
 	_add_projectile_trail(
 		root,
 		cell_size,
-		Color(0.75, 0.22, 1.0, 0.78),
+		palette.get("primary", Color.WHITE),
 		0.16
 	)
 	_add_projectile_trail(
 		root,
 		cell_size,
-		Color(0.15, 0.8, 1.0, 0.72),
+		palette.get("secondary", Color(0.5, 0.7, 1.0, 0.72)),
 		0.10
 	)
 
@@ -296,22 +442,40 @@ static func _add_projectile_trail(
 	particles.draw_pass_1 = quad
 
 
-static func _projectile_material(style: String) -> StandardMaterial3D:
+static func _projectile_palette(style: String) -> Dictionary:
+	match style:
+		"fire_bolt":
+			return {"primary": Color(1.0, 0.22, 0.02, 0.9), "secondary": Color(1.0, 0.75, 0.08, 0.75)}
+		"ray_of_frost", "ice_knife":
+			return {"primary": Color(0.45, 0.9, 1.0, 0.9), "secondary": Color(0.82, 0.98, 1.0, 0.78)}
+		"poison_spray", "ray_of_sickness":
+			return {"primary": Color(0.28, 0.92, 0.16, 0.86), "secondary": Color(0.68, 1.0, 0.18, 0.68)}
+		"mind_sliver":
+			return {"primary": Color(0.76, 0.28, 1.0, 0.88), "secondary": Color(1.0, 0.48, 0.92, 0.72)}
+		"shocking_grasp":
+			return {"primary": Color(0.42, 0.86, 1.0, 0.94), "secondary": Color(0.94, 1.0, 1.0, 0.82)}
+		"magic_missile":
+			return {"primary": Color(0.92, 0.9, 1.0, 0.96), "secondary": Color(0.46, 0.34, 1.0, 0.74)}
+		"sorcerous_burst":
+			return {"primary": Color(0.9, 0.32, 1.0, 0.92), "secondary": Color(0.18, 0.82, 1.0, 0.76)}
+		"chill_touch":
+			return {"primary": Color(0.38, 0.76, 0.72, 0.82), "secondary": Color(0.16, 0.28, 0.34, 0.7)}
+		_:
+			return {"primary": Color(0.75, 0.22, 1.0, 0.88), "secondary": Color(0.15, 0.8, 1.0, 0.72)}
+
+
+static func _projectile_material(
+	_style: String,
+	primary: Color
+) -> StandardMaterial3D:
 	var material: StandardMaterial3D = StandardMaterial3D.new()
 	material.transparency = BaseMaterial3D.TRANSPARENCY_ALPHA
 	material.shading_mode = BaseMaterial3D.SHADING_MODE_UNSHADED
 	material.cull_mode = BaseMaterial3D.CULL_DISABLED
 	material.emission_enabled = true
-
-	if style == "chromatic_orb":
-		material.albedo_color = Color(0.68, 0.22, 1.0, 0.96)
-		material.emission = Color(0.42, 0.12, 1.0, 1.0)
-		material.emission_energy_multiplier = 3.0
-	else:
-		material.albedo_color = Color.WHITE
-		material.emission = Color.WHITE
-		material.emission_energy_multiplier = 2.0
-
+	material.albedo_color = primary
+	material.emission = Color(primary.r, primary.g, primary.b, 1.0)
+	material.emission_energy_multiplier = 2.8
 	return material
 
 
