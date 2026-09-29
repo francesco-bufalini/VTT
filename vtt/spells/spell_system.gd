@@ -689,7 +689,8 @@ func _cast_persistent_sphere(
 		"add_aoe",
 		target_point,
 		endpoint,
-		String(spell_data.get("aoe_shape", "sphere"))
+		String(spell_data.get("aoe_shape", "sphere")),
+		String(spell_data.get("id", ""))
 	)
 
 
