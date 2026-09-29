@@ -3,6 +3,7 @@ extends Node
 const CAMPAIGNS_DIR := "user://campaigns"
 const CAMPAIGN_METADATA_FILE := "campaign.json"
 const CAMPAIGN_STATE_FILE := "state.json"
+const BUILTIN_STATES_DIR := "user://campaigns/_builtin_states"
 
 const MAIN_MENU_SCENE := "res://vtt/menu/main_menu.tscn"
 const ACTIVE_CAMPAIGNS_SCENE := "res://vtt/menu/active_campaigns.tscn"
@@ -199,6 +200,52 @@ func get_campaign(campaign_id: String) -> Dictionary:
 	for campaign: Dictionary in list_campaigns():
 		if String(campaign.get("id", "")) == campaign_id:
 			return campaign
+	return {}
+
+
+func activate_campaign_for_scene(scene_path: String) -> void:
+	if (
+		not active_campaign.is_empty()
+		and String(active_campaign.get("scene", "")) == scene_path
+	):
+		return
+
+	for campaign: Dictionary in list_campaigns():
+		if String(campaign.get("scene", "")) == scene_path:
+			active_campaign_id = String(campaign.get("id", ""))
+			active_campaign = campaign.duplicate(true)
+			return
+
+
+func save_active_runtime_state(state: Dictionary) -> Error:
+	if active_campaign_id.is_empty() or active_campaign.is_empty():
+		return ERR_UNAVAILABLE
+
+	if not bool(active_campaign.get("builtin", false)):
+		return save_active_state(state)
+
+	var directory: String = BUILTIN_STATES_DIR.path_join(active_campaign_id)
+	DirAccess.make_dir_recursive_absolute(
+		ProjectSettings.globalize_path(directory)
+	)
+	return _write_json(directory.path_join(CAMPAIGN_STATE_FILE), state)
+
+
+func load_active_runtime_state() -> Dictionary:
+	if active_campaign_id.is_empty() or active_campaign.is_empty():
+		return {}
+
+	if not bool(active_campaign.get("builtin", false)):
+		return load_active_state()
+
+	var state_path: String = (
+		BUILTIN_STATES_DIR
+		.path_join(active_campaign_id)
+		.path_join(CAMPAIGN_STATE_FILE)
+	)
+	var value: Variant = _read_json(state_path)
+	if value is Dictionary:
+		return value as Dictionary
 	return {}
 
 
