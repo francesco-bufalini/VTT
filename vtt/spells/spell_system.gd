@@ -24,6 +24,7 @@ var _pending_caster: Node3D = null
 var _directional_pitch_degrees: int = 0
 var _selected_slot_level: int = 0
 var _pending_targets: Array[Node3D] = []
+var _pending_chain_primary: Node3D = null
 var _restore_mouse_mode: int = Input.MOUSE_MODE_VISIBLE
 
 
@@ -106,6 +107,21 @@ func handle_input(event: InputEvent) -> bool:
 				_cancel_pending_cast()
 				return true
 
+			if (
+				_targeting_phase == "chain_secondary"
+				and key_event.keycode in [KEY_ENTER, KEY_KP_ENTER]
+				and _pending_chain_primary != null
+				and is_instance_valid(_pending_chain_primary)
+			):
+				_cast_chain_lightning(
+					_pending_caster,
+					_pending_chain_primary,
+					_pending_targets,
+					SpellCatalog.spell(_pending_spell_id)
+				)
+				_finish_cast()
+				return true
+
 			var pending_data: Dictionary = SpellCatalog.spell(
 				_pending_spell_id
 			)
@@ -155,6 +171,12 @@ func handle_input(event: InputEvent) -> bool:
 				return true
 			"multi_target_tokens":
 				_try_select_multi_target(screen_position)
+				return true
+			"chain_primary":
+				_try_select_chain_primary(screen_position)
+				return true
+			"chain_secondary":
+				_try_select_chain_secondary(screen_position)
 				return true
 			"direction_point":
 				_try_select_direction_point(screen_position)
@@ -234,6 +256,19 @@ func _try_select_caster(screen_position: Vector2) -> void:
 			_targeting_phase = "multi_target_tokens"
 			_hide_spell_preview()
 			_update_multi_target_instruction(spell_data)
+		"token_then_chain":
+			_pending_caster = caster
+			_pending_targets.clear()
+			_pending_chain_primary = null
+			_targeting_phase = "chain_primary"
+			_hide_spell_preview()
+			_set_instruction(
+				"%s: scegli il bersaglio primario entro %d ft · Esc per annullare"
+				% [
+					String(spell_data.get("name", "Incantesimo")),
+					int(spell_data.get("range_feet", 0))
+				]
+			)
 		"self_emanation":
 			_pending_caster = caster
 			_cast_self_emanation(caster, spell_data)
@@ -379,6 +414,69 @@ func _try_select_multi_target(screen_position: Vector2) -> void:
 		return
 
 	_update_multi_target_instruction(spell_data)
+
+
+func _try_select_chain_primary(screen_position: Vector2) -> void:
+	if _pending_caster == null or not is_instance_valid(_pending_caster):
+		_cancel_pending_cast()
+		return
+
+	var spell_data: Dictionary = SpellCatalog.spell(_pending_spell_id)
+	var target_data: Dictionary = _target_token_data(
+		screen_position,
+		spell_data
+	)
+	if not bool(target_data.get("valid", false)):
+		_set_instruction("Scegli un bersaglio primario valido entro gittata.")
+		return
+
+	var primary: Node3D = target_data.get("target") as Node3D
+	if primary == null:
+		return
+
+	_pending_chain_primary = primary
+	_pending_targets.clear()
+	_targeting_phase = "chain_secondary"
+	_hide_spell_preview()
+	_update_chain_instruction(spell_data)
+
+
+func _try_select_chain_secondary(screen_position: Vector2) -> void:
+	if (
+		_pending_chain_primary == null
+		or not is_instance_valid(_pending_chain_primary)
+	):
+		_cancel_pending_cast()
+		return
+
+	var spell_data: Dictionary = SpellCatalog.spell(_pending_spell_id)
+	var target_data: Dictionary = _chain_secondary_target_data(
+		screen_position,
+		spell_data
+	)
+	if not bool(target_data.get("valid", false)):
+		_set_instruction(
+			"Scegli un bersaglio diverso entro %d ft dal bersaglio primario."
+			% int(spell_data.get("secondary_range_feet", 30))
+		)
+		return
+
+	var target: Node3D = target_data.get("target") as Node3D
+	if target == null:
+		return
+
+	_pending_targets.append(target)
+	if _pending_targets.size() >= _required_chain_secondaries(spell_data):
+		_cast_chain_lightning(
+			_pending_caster,
+			_pending_chain_primary,
+			_pending_targets,
+			spell_data
+		)
+		_finish_cast()
+		return
+
+	_update_chain_instruction(spell_data)
 
 
 func _try_select_direction_point(screen_position: Vector2) -> void:
@@ -548,6 +646,46 @@ func _update_spell_preview() -> void:
 				String(spell_data.get("projectile_style", "magic_missile"))
 			)
 
+		"chain_primary":
+			var primary_data: Dictionary = _target_token_data(
+				screen_position,
+				spell_data
+			)
+			if not bool(primary_data.get("valid", false)):
+				_hide_spell_preview()
+				return
+			var primary_target: Node3D = primary_data.get("target") as Node3D
+			if primary_target == null:
+				_hide_spell_preview()
+				return
+			measurement_tool.call(
+				"show_spell_preview",
+				_token_spell_origin(_pending_caster),
+				_token_spell_origin(primary_target),
+				"line",
+				"chain_lightning"
+			)
+
+		"chain_secondary":
+			var secondary_data: Dictionary = _chain_secondary_target_data(
+				screen_position,
+				spell_data
+			)
+			if not bool(secondary_data.get("valid", false)):
+				_hide_spell_preview()
+				return
+			var secondary_target: Node3D = secondary_data.get("target") as Node3D
+			if secondary_target == null:
+				_hide_spell_preview()
+				return
+			measurement_tool.call(
+				"show_spell_preview",
+				_token_spell_origin(_pending_chain_primary),
+				_token_spell_origin(secondary_target),
+				"line",
+				"chain_lightning"
+			)
+
 		"direction_point":
 			var direction_data: Dictionary = _direction_target_data(
 				screen_position,
@@ -619,6 +757,8 @@ func _update_spell_range_preview(spell_data: Dictionary) -> void:
 			"point",
 			"target_token",
 			"multi_target_tokens",
+			"chain_primary",
+			"chain_secondary",
 			"direction_point"
 		]
 	):
@@ -634,9 +774,20 @@ func _update_spell_range_preview(spell_data: Dictionary) -> void:
 		measurement_tool.call("hide_spell_range_preview")
 		return
 
+	var range_center: Vector3 = _pending_caster.global_position
+	if (
+		_targeting_phase == "chain_secondary"
+		and _pending_chain_primary != null
+		and is_instance_valid(_pending_chain_primary)
+	):
+		range_center = _pending_chain_primary.global_position
+		range_feet = float(
+			spell_data.get("secondary_range_feet", 30.0)
+		)
+
 	measurement_tool.call(
 		"show_spell_range_preview",
-		_pending_caster.global_position,
+		range_center,
 		range_feet / 5.0 * _cell_size()
 	)
 
@@ -709,6 +860,44 @@ func _validate_direction_point(
 		"valid": true,
 		"point": point
 	}
+
+
+func _chain_secondary_target_data(
+	screen_position: Vector2,
+	spell_data: Dictionary
+) -> Dictionary:
+	if (
+		_pending_chain_primary == null
+		or not is_instance_valid(_pending_chain_primary)
+	):
+		return {"valid": false}
+
+	var target: Node3D = _token_at_screen(screen_position)
+	if (
+		target == null
+		or target == _pending_chain_primary
+		or target in _pending_targets
+	):
+		return {"valid": false}
+
+	var cell_size: float = _cell_size()
+	var range_feet: float = float(
+		spell_data.get("secondary_range_feet", 30.0)
+	)
+	var max_world_distance: float = range_feet / 5.0 * cell_size
+	var actual_world_distance: float = (
+		_pending_chain_primary.global_position.distance_to(
+			target.global_position
+		)
+	)
+	if actual_world_distance > max_world_distance + cell_size * 0.01:
+		return {
+			"valid": false,
+			"out_of_range": true,
+			"target": target
+		}
+
+	return {"valid": true, "target": target}
 
 
 func _target_token_data(
@@ -811,7 +1000,7 @@ func _area_endpoint(
 			+ Vector3.RIGHT
 			* (radius_feet / 5.0 * _cell_size())
 		)
-	if shape == "flat_square":
+	if shape in ["cube", "flat_square"]:
 		var side_feet: float = float(
 			spell_data.get("aoe_side_feet", 10.0)
 		)
@@ -820,6 +1009,16 @@ func _area_endpoint(
 			+ Vector3.RIGHT
 			* (side_feet * 0.5 / 5.0 * _cell_size())
 		)
+	if shape == "cylinder":
+		var radius_world: float = (
+			float(spell_data.get("aoe_radius_feet", 5.0))
+			/ 5.0 * _cell_size()
+		)
+		var height_world: float = (
+			float(spell_data.get("aoe_height_feet", 5.0))
+			/ 5.0 * _cell_size()
+		)
+		return origin + Vector3(radius_world, height_world, 0.0)
 
 	var length_cells: int = int(
 		spell_data.get("aoe_length_cells", 1)
@@ -1232,6 +1431,7 @@ func _activate_selected_spell() -> void:
 		"token_then_point",
 		"token_then_token",
 		"token_then_multi_token",
+		"token_then_chain",
 		"token_then_direction"
 	]:
 		return
@@ -1240,6 +1440,7 @@ func _activate_selected_spell() -> void:
 	_targeting_phase = "caster"
 	_pending_caster = null
 	_pending_targets.clear()
+	_pending_chain_primary = null
 	_directional_pitch_degrees = 0
 
 	var measurement_tool: Node = _measurement_tool()
@@ -1426,14 +1627,26 @@ func _cast_self_emanation(
 	if measurement_tool == null:
 		return
 	var center: Vector3 = caster.global_position
-	measurement_tool.call(
-		"show_transient_aoe",
-		center,
-		_area_endpoint(center, spell_data),
-		String(spell_data.get("aoe_shape", "sphere")),
-		float(spell_data.get("transient_seconds", 5.0)),
-		_spell_style(spell_data)
-	)
+	var endpoint: Vector3 = _area_endpoint(center, spell_data)
+	var shape: String = String(spell_data.get("aoe_shape", "sphere"))
+	var style: String = _spell_style(spell_data)
+	if bool(spell_data.get("persistent", false)):
+		measurement_tool.call(
+			"add_aoe",
+			center,
+			endpoint,
+			shape,
+			style
+		)
+	else:
+		measurement_tool.call(
+			"show_transient_aoe",
+			center,
+			endpoint,
+			shape,
+			float(spell_data.get("transient_seconds", 5.0)),
+			style
+		)
 
 
 func _cast_multi_target_spell(
@@ -1457,6 +1670,43 @@ func _cast_multi_target_spell(
 			_token_spell_origin(target),
 			style,
 			float(spell_data.get("transient_seconds", 5.0))
+		)
+
+
+func _cast_chain_lightning(
+	caster: Node3D,
+	primary: Node3D,
+	secondaries: Array[Node3D],
+	spell_data: Dictionary
+) -> void:
+	var measurement_tool: Node = _measurement_tool()
+	if measurement_tool == null:
+		return
+
+	var duration: float = float(
+		spell_data.get("transient_seconds", 5.0)
+	)
+	var primary_start: Vector3 = _token_spell_origin(caster)
+	var primary_end: Vector3 = _token_spell_origin(primary)
+	measurement_tool.call(
+		"show_transient_aoe",
+		primary_start,
+		primary_end,
+		"line",
+		duration,
+		"chain_lightning"
+	)
+
+	for secondary: Node3D in secondaries:
+		if secondary == null or not is_instance_valid(secondary):
+			continue
+		measurement_tool.call(
+			"show_transient_aoe",
+			primary_end,
+			_token_spell_origin(secondary),
+			"line",
+			duration,
+			"chain_lightning"
 		)
 
 
@@ -1525,6 +1775,7 @@ func _finish_cast() -> void:
 	_targeting_phase = ""
 	_pending_caster = null
 	_pending_targets.clear()
+	_pending_chain_primary = null
 	_directional_pitch_degrees = 0
 	instruction_label.hide()
 	Input.mouse_mode = _restore_mouse_mode
@@ -1537,6 +1788,7 @@ func _cancel_pending_cast(restore_mouse: bool = true) -> void:
 	_targeting_phase = ""
 	_pending_caster = null
 	_pending_targets.clear()
+	_pending_chain_primary = null
 	_directional_pitch_degrees = 0
 	if instruction_label != null:
 		instruction_label.hide()
@@ -1628,6 +1880,34 @@ func _update_multi_target_instruction(spell_data: Dictionary) -> void:
 		"%s: scegli i bersagli dei dardi %d/%d · puoi selezionare più volte lo stesso token · Esc per annullare"
 		% [
 			String(spell_data.get("name", "Incantesimo")),
+			_pending_targets.size(),
+			required
+		]
+	)
+
+
+func _required_chain_secondaries(spell_data: Dictionary) -> int:
+	var base_count: int = int(
+		spell_data.get("base_secondary_targets", 3)
+	)
+	var base_level: int = int(spell_data.get("level", 6))
+	var per_slot: int = int(
+		spell_data.get("secondary_targets_per_slot_above_base", 0)
+	)
+	return maxi(
+		1,
+		base_count
+		+ per_slot * maxi(0, _selected_slot_level - base_level)
+	)
+
+
+func _update_chain_instruction(spell_data: Dictionary) -> void:
+	var required: int = _required_chain_secondaries(spell_data)
+	_set_instruction(
+		"%s: scegli bersagli secondari entro %d ft dal primo %d/%d · Invio per terminare prima · Esc per annullare"
+		% [
+			String(spell_data.get("name", "Incantesimo")),
+			int(spell_data.get("secondary_range_feet", 30)),
 			_pending_targets.size(),
 			required
 		]
