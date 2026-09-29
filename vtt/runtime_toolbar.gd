@@ -18,6 +18,7 @@ const MEASURE_CLEAR := 35
 
 const VIEW_VISION := 40
 const SHARE_OPEN := 50
+const CAMPAIGN_EDITOR_SCENE_PATH := "res://vtt/editor/campaign_editor.tscn"
 
 var board_root: Node3D
 var ui_root: CanvasLayer
@@ -31,7 +32,7 @@ func setup(root: Node3D) -> void:
 func _initialize_toolbar() -> void:
 	if board_root == null or not is_instance_valid(board_root):
 		return
-	if board_root.scene_file_path == CampaignManager.CAMPAIGN_EDITOR_SCENE:
+	if board_root.scene_file_path == CAMPAIGN_EDITOR_SCENE_PATH:
 		queue_free()
 		return
 
@@ -91,7 +92,9 @@ func _build_toolbar() -> void:
 	menu_button.add_theme_font_size_override("font_size", 13)
 	menu_button.pressed.connect(
 		func() -> void:
-			CampaignManager.return_to_main_menu()
+			var campaign_manager: Node = get_node_or_null("/root/CampaignManager")
+			if campaign_manager != null:
+				campaign_manager.call("return_to_main_menu")
 	)
 	row.add_child(menu_button)
 
