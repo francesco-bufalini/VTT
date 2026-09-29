@@ -307,6 +307,15 @@ func handle_input(event: InputEvent) -> bool:
 				_finish_cast()
 				return true
 
+			if (
+				_targeting_phase == "teleport_passengers"
+				and key_event.keycode == KEY_ENTER
+			):
+				_begin_teleport_destination(
+					SpellCatalog.spell(_pending_spell_id)
+				)
+				return true
+
 			var pending_data: Dictionary = SpellCatalog.spell(
 				_pending_spell_id
 			)
@@ -353,6 +362,12 @@ func handle_input(event: InputEvent) -> bool:
 				return true
 			"target_token":
 				_try_select_target_token(screen_position)
+				return true
+			"teleport_passengers":
+				_try_select_teleport_passenger(screen_position)
+				return true
+			"teleport_destination":
+				_try_select_teleport_destination(screen_position)
 				return true
 			"multi_target_tokens":
 				_try_select_multi_target(screen_position)
@@ -459,6 +474,25 @@ func _try_select_caster(screen_position: Vector2) -> void:
 			_targeting_phase = "multi_target_tokens"
 			_hide_spell_preview()
 			_update_multi_target_instruction(spell_data)
+		"teleport_self":
+			_pending_caster = caster
+			_pending_targets.clear()
+			_hide_spell_preview()
+			var max_passengers: int = int(
+				spell_data.get("teleport_max_passengers", 0)
+			)
+			if max_passengers > 0:
+				_targeting_phase = "teleport_passengers"
+				_set_instruction(
+					"%s: clicca fino a %d token aggiuntivi entro %d ft, oppure premi Invio per continuare senza/finire la selezione."
+					% [
+						String(spell_data.get("name", "Teletrasporto")),
+						max_passengers,
+						int(spell_data.get("teleport_passenger_range_feet", 5))
+					]
+				)
+			else:
+				_begin_teleport_destination(spell_data)
 		"token_then_chain":
 			_pending_caster = caster
 			_pending_targets.clear()
@@ -621,6 +655,264 @@ func _try_select_multi_target(screen_position: Vector2) -> void:
 		return
 
 	_update_multi_target_instruction(spell_data)
+
+
+
+func _begin_teleport_destination(spell_data: Dictionary) -> void:
+	if _pending_caster == null or not is_instance_valid(_pending_caster):
+		_cancel_pending_cast()
+		return
+	_targeting_phase = "teleport_destination"
+	_hide_spell_preview()
+	_set_instruction(
+		"%s: scegli una superficie solida libera entro %d ft."
+		% [
+			String(spell_data.get("name", "Teletrasporto")),
+			int(spell_data.get("teleport_distance_feet", 0))
+		]
+	)
+
+
+func _try_select_teleport_passenger(screen_position: Vector2) -> void:
+	if _pending_caster == null or not is_instance_valid(_pending_caster):
+		_cancel_pending_cast()
+		return
+
+	var spell_data: Dictionary = SpellCatalog.spell(_pending_spell_id)
+	var target: Node3D = _token_at_screen(screen_position)
+	if target == null or target == _pending_caster:
+		_set_instruction("Seleziona un altro token vicino al caster, oppure premi Invio.")
+		return
+
+	var passenger_range_feet: float = float(
+		spell_data.get("teleport_passenger_range_feet", 5.0)
+	)
+	var max_world_distance: float = (
+		passenger_range_feet / 5.0 * _cell_size()
+	)
+	if (
+		_pending_caster.global_position.distance_to(target.global_position)
+		> max_world_distance + _cell_size() * 0.01
+	):
+		_set_instruction(
+			"Il token deve trovarsi entro %d ft dal caster."
+			% int(passenger_range_feet)
+		)
+		return
+
+	if target in _pending_targets:
+		_pending_targets.erase(target)
+	else:
+		var max_passengers: int = int(
+			spell_data.get("teleport_max_passengers", 0)
+		)
+		if _pending_targets.size() >= max_passengers:
+			_set_instruction(
+				"Hai già selezionato il numero massimo di passeggeri. Premi Invio."
+			)
+			return
+		_pending_targets.append(target)
+
+	var max_passengers: int = int(
+		spell_data.get("teleport_max_passengers", 0)
+	)
+	if _pending_targets.size() >= max_passengers and max_passengers > 0:
+		_begin_teleport_destination(spell_data)
+		return
+
+	_set_instruction(
+		"%s: passeggeri %d/%d. Clicca per aggiungere/rimuovere, oppure premi Invio."
+		% [
+			String(spell_data.get("name", "Teletrasporto")),
+			_pending_targets.size(),
+			max_passengers
+		]
+	)
+
+
+func _try_select_teleport_destination(screen_position: Vector2) -> void:
+	if _pending_caster == null or not is_instance_valid(_pending_caster):
+		_cancel_pending_cast()
+		return
+
+	var spell_data: Dictionary = SpellCatalog.spell(_pending_spell_id)
+	var target_rules: Dictionary = spell_data.duplicate(true)
+	target_rules["range_feet"] = float(
+		spell_data.get("teleport_distance_feet", 0.0)
+	)
+	target_rules["requires_ground"] = true
+	var point_data: Dictionary = _point_target_data(
+		screen_position,
+		target_rules
+	)
+	if not bool(point_data.get("valid", false)):
+		if bool(point_data.get("out_of_range", false)):
+			_set_instruction(
+				"Destinazione fuori gittata: %d ft / %d ft."
+				% [
+					int(point_data.get("distance_feet", 0)),
+					int(target_rules.get("range_feet", 0))
+				]
+			)
+		else:
+			_set_instruction(
+				"Scegli una superficie solida orizzontale e libera."
+			)
+		return
+
+	var target_point: Vector3 = point_data.get("point", Vector3.ZERO)
+	if not _cast_teleport(
+		_pending_caster,
+		_pending_targets,
+		target_point,
+		spell_data
+	):
+		_set_instruction(
+			"La destinazione o una posizione dei passeggeri è occupata."
+		)
+		return
+	_finish_cast()
+
+
+func _token_half_height(token: Node3D) -> float:
+	if token == null:
+		return _cell_size()
+	var height_cells: float = 2.0
+	var value: Variant = token.get("token_height_cells")
+	if value is float or value is int:
+		height_cells = float(value)
+	return maxf(0.05, height_cells * _cell_size() * 0.5)
+
+
+func _snap_teleport_destination(
+	token: Node3D,
+	point: Vector3
+) -> Vector3:
+	var result: Vector3 = point
+	if token != null and token.has_method("snap_destination"):
+		var snapped_value: Variant = token.call(
+			"snap_destination",
+			point
+		)
+		if snapped_value is Vector3:
+			result = snapped_value
+	return result
+
+
+func _teleport_destination_is_free(
+	token: Node3D,
+	target: Vector3,
+	teleporting: Array[Node3D]
+) -> bool:
+	if token == null or not is_instance_valid(token):
+		return false
+
+	var collision: CollisionShape3D = token.get_node_or_null(
+		"CollisionShape3D"
+	) as CollisionShape3D
+	if collision == null or collision.shape == null:
+		return true
+
+	var query: PhysicsShapeQueryParameters3D = PhysicsShapeQueryParameters3D.new()
+	query.shape = collision.shape
+	query.transform = Transform3D(
+		token.global_basis,
+		target + Vector3.UP * 0.025
+	)
+	var mask_value: Variant = token.get("collision_mask")
+	if mask_value is int:
+		query.collision_mask = int(mask_value)
+	else:
+		query.collision_mask = ALL_COLLISION_LAYERS
+
+	var exclusions: Array[RID] = []
+	for moving_token: Node3D in teleporting:
+		if moving_token != null and is_instance_valid(moving_token):
+			if moving_token is CollisionObject3D:
+				exclusions.append((moving_token as CollisionObject3D).get_rid())
+	query.exclude = exclusions
+
+	return (
+		board_root.get_world_3d().direct_space_state.intersect_shape(query, 1).is_empty()
+	)
+
+
+func _cast_teleport(
+	caster: Node3D,
+	passengers: Array[Node3D],
+	target_surface: Vector3,
+	spell_data: Dictionary
+) -> bool:
+	if caster == null or not is_instance_valid(caster):
+		return false
+
+	var teleporting: Array[Node3D] = [caster]
+	for passenger: Node3D in passengers:
+		if passenger != null and is_instance_valid(passenger):
+			teleporting.append(passenger)
+
+	var caster_origin: Vector3 = caster.global_position
+	var caster_target: Vector3 = target_surface + Vector3.UP * _token_half_height(caster)
+	caster_target = _snap_teleport_destination(caster, caster_target)
+
+	var targets: Array[Vector3] = [caster_target]
+	for index: int in range(1, teleporting.size()):
+		var passenger: Node3D = teleporting[index]
+		var relative: Vector3 = passenger.global_position - caster_origin
+		var passenger_target: Vector3 = caster_target + relative
+		passenger_target = _snap_teleport_destination(
+			passenger,
+			passenger_target
+		)
+		targets.append(passenger_target)
+
+	for index: int in range(teleporting.size()):
+		if not _teleport_destination_is_free(
+			teleporting[index],
+			targets[index],
+			teleporting
+		):
+			return false
+
+	if board_root.has_method("push_undo_state"):
+		board_root.call("push_undo_state")
+
+	var departure_radius: float = float(
+		spell_data.get("teleport_departure_aoe_radius_feet", 0.0)
+	)
+	if departure_radius > 0.0:
+		var measurement_tool: Node = _measurement_tool()
+		if measurement_tool != null:
+			var departure_endpoint: Vector3 = (
+				caster_origin
+				+ Vector3.RIGHT
+				* (departure_radius / 5.0 * _cell_size())
+			)
+			measurement_tool.call(
+				"show_transient_aoe",
+				caster_origin,
+				departure_endpoint,
+				"sphere",
+				float(spell_data.get("transient_seconds", 5.0)),
+				String(
+					spell_data.get(
+						"teleport_departure_style",
+						"thunder_step"
+					)
+				)
+			)
+
+	for index: int in range(teleporting.size()):
+		var token: Node3D = teleporting[index]
+		token.global_position = targets[index]
+		var velocity_value: Variant = token.get("velocity")
+		if velocity_value is Vector3:
+			token.set("velocity", Vector3.ZERO)
+		var support_value: Variant = token.get("grid_support")
+		if support_value != null:
+			token.set("grid_support", null)
+
+	return true
 
 
 func _try_select_chain_primary(screen_position: Vector2) -> void:
@@ -2212,6 +2504,7 @@ func _activate_selected_spell() -> void:
 	if target_mode not in [
 		"self_token",
 		"self_emanation",
+		"teleport_self",
 		"token_then_point",
 		"token_then_token",
 		"token_then_multi_token",
@@ -2267,7 +2560,7 @@ func _cast_spell_from_caster(
 
 
 func _cast_spell_at_point(
-	_caster: Node3D,
+	caster: Node3D,
 	target_point: Vector3,
 	spell_data: Dictionary
 ) -> void:
@@ -2286,7 +2579,10 @@ func _cast_spell_at_point(
 			shape,
 			style,
 			Color(0.0, 0.0, 0.0, -1.0),
-			_spell_line_width_world(spell_data)
+			_spell_line_width_world(spell_data),
+			float(spell_data.get("movable_aoe_feet", 0.0)),
+			String(spell_data.get("movable_aoe_mode", "free")),
+			caster.global_position
 		)
 	else:
 		measurement_tool.call(
