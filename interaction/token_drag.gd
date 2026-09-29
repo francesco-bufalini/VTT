@@ -42,6 +42,8 @@ func handle_event(event: InputEvent) -> bool:
 			finish(false)
 			return true
 		if event is InputEventMouseButton and event.button_index == MOUSE_BUTTON_LEFT and not event.pressed:
+			if _moved and _valid and board.has_method("push_undo_state"):
+				board.call("push_undo_state")
 			finish(_moved and _valid)
 			return true
 		return event is InputEventKey or event is InputEventMouseButton
