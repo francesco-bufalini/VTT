@@ -784,6 +784,10 @@ func _spell_style_color(style: String) -> Color:
 			return Color(0.56, 0.9, 1.0, 1.0)
 		"wall_of_thorns":
 			return Color(0.18, 0.58, 0.12, 1.0)
+		"wall_of_sand":
+			return Color(0.72, 0.58, 0.28, 1.0)
+		"wall_of_water":
+			return Color(0.22, 0.62, 0.94, 1.0)
 		"prismatic_wall":
 			return Color(0.86, 0.3, 1.0, 1.0)
 		_:
