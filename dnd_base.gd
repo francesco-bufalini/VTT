@@ -9,6 +9,7 @@ const CONTEXT_TOGGLE_VISION_CONES := 6
 const CONTEXT_TOGGLE_GRID_3D := 7
 const CONTEXT_FLYING := 8
 const CONTEXT_MAIN_MENU := 9
+const CAMPAIGN_EDITOR_SCENE_PATH := "res://vtt/editor/campaign_editor.tscn"
 
 const ALL_COLLISION_LAYERS := 0xFFFFFFFF
 
@@ -338,7 +339,7 @@ func _show_context_menu(screen_position: Vector2) -> void:
 		context_menu.add_separator()
 
 	context_menu.add_item("Condividi mappa / Tailscale", 25)
-	if scene_file_path != CampaignManager.CAMPAIGN_EDITOR_SCENE:
+	if scene_file_path != CAMPAIGN_EDITOR_SCENE_PATH:
 		context_menu.add_item("Torna al menu VTT", CONTEXT_MAIN_MENU)
 	context_menu.add_separator()
 
@@ -416,7 +417,9 @@ func _on_context_menu_id_pressed(id: int) -> void:
 		CONTEXT_MAIN_MENU:
 			_ui_owns_mouse = false
 			context_menu.hide()
-			CampaignManager.return_to_main_menu()
+			var campaign_manager: Node = get_node_or_null("/root/CampaignManager")
+			if campaign_manager != null:
+				campaign_manager.call("return_to_main_menu")
 
 		CONTEXT_FLYING:
 			var enabled := not _selected_tokens.all(func(token): return token.flying)
