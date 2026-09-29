@@ -14,6 +14,10 @@ const GRID_REMOVE_LAST := 202
 
 const TOKEN_LIBRARY := 300
 const TOKEN_CREATE := 301
+const TOKEN_FLYING := 302
+const TOKEN_ROTATE_LEFT := 303
+const TOKEN_ROTATE_RIGHT := 304
+const TOKEN_DELETE := 305
 
 const MEASURE_RULER := 400
 const MEASURE_SPHERE := 401
@@ -111,7 +115,11 @@ func _build_toolbar() -> void:
 
 	var token_menu := _make_menu_button("Token", [
 		["Libreria token · prossimamente", TOKEN_LIBRARY],
-		["Crea token nel punto osservato…", TOKEN_CREATE]
+		["Crea token nel punto osservato…", TOKEN_CREATE],
+		["Volante · token selezionati", TOKEN_FLYING],
+		["Ruota 90° a sinistra", TOKEN_ROTATE_LEFT],
+		["Ruota 90° a destra", TOKEN_ROTATE_RIGHT],
+		["Elimina token selezionati", TOKEN_DELETE]
 	], _on_token_selected)
 	token_menu.get_popup().set_item_disabled(
 		token_menu.get_popup().get_item_index(TOKEN_LIBRARY),
@@ -209,13 +217,20 @@ func _on_grid_selected(id: int) -> void:
 
 
 func _on_token_selected(id: int) -> void:
-	if id != TOKEN_CREATE:
-		return
-
-	# Riutilizza il menu contestuale di dnd_base: il raycast al centro individua
-	# il punto della superficie e rende disponibile l'azione "Genera token".
-	var center := get_viewport().get_visible_rect().size * 0.5
-	board_root.call("_show_context_menu", center)
+	match id:
+		TOKEN_CREATE:
+			# Riutilizza il menu contestuale di dnd_base: il raycast al centro
+			# individua il punto della superficie e rende disponibile "Genera token".
+			var center := get_viewport().get_visible_rect().size * 0.5
+			board_root.call("_show_context_menu", center)
+		TOKEN_FLYING:
+			board_root.call("_on_context_menu_id_pressed", 8)
+		TOKEN_ROTATE_LEFT:
+			board_root.call("_on_context_menu_id_pressed", 3)
+		TOKEN_ROTATE_RIGHT:
+			board_root.call("_on_context_menu_id_pressed", 4)
+		TOKEN_DELETE:
+			board_root.call("_on_context_menu_id_pressed", 2)
 
 
 func _on_measurement_selected(id: int) -> void:
