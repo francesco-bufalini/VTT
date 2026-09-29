@@ -202,6 +202,82 @@ func _update_target_from_camera() -> void:
 	_update_visuals()
 
 
+func adjust_spell_target_depth(step_cells: float) -> void:
+	_air_depth_world = clampf(
+		_air_depth_world + step_cells * cell_size,
+		cell_size,
+		_maximum_air_depth()
+	)
+
+
+func get_spell_target_point(screen_position: Vector2) -> Dictionary:
+	if _camera == null or not is_instance_valid(_camera):
+		return {"valid": false}
+
+	var origin: Vector3 = _camera.project_ray_origin(screen_position)
+	var direction: Vector3 = _camera.project_ray_normal(screen_position)
+	var ray_end: Vector3 = origin + direction * max_ray_distance
+
+	var query: PhysicsRayQueryParameters3D = (
+		PhysicsRayQueryParameters3D.create(origin, ray_end)
+	)
+	query.collision_mask = collision_mask
+	query.collide_with_bodies = true
+	query.collide_with_areas = false
+
+	var hit: Dictionary = (
+		_camera.get_world_3d().direct_space_state.intersect_ray(query)
+	)
+	if not hit.is_empty():
+		var point: Vector3 = hit.get("position", Vector3.ZERO)
+		var normal: Vector3 = hit.get("normal", Vector3.UP)
+		point += (
+			normal.normalized()
+			* maxf(cell_size * 0.001, 0.0001)
+		)
+		return {
+			"valid": true,
+			"point": _snap_point_to_cell_center(point),
+			"in_air": false
+		}
+
+	var grid_active: bool = (
+		_volumetric_grid != null
+		and is_instance_valid(_volumetric_grid)
+		and _volumetric_grid.visible
+	)
+	if not grid_active:
+		return {"valid": false}
+
+	var effective_depth: float = _air_depth_world
+	if _volumetric_grid.has_method("get_ray_exit_distance"):
+		var exit_value: Variant = _volumetric_grid.call(
+			"get_ray_exit_distance",
+			origin,
+			direction
+		)
+		if exit_value is float:
+			var exit_distance: float = maxf(float(exit_value), 0.0)
+			effective_depth = minf(
+				effective_depth,
+				maxf(
+					cell_size * 0.5,
+					exit_distance - maxf(cell_size * 0.001, 0.0001)
+				)
+			)
+
+	var point_in_air: Vector3 = origin + direction * effective_depth
+	var snapped_point: Vector3 = _snap_point_to_cell_center(point_in_air)
+	if not _grid_contains(snapped_point):
+		return {"valid": false}
+
+	return {
+		"valid": true,
+		"point": snapped_point,
+		"in_air": true
+	}
+
+
 func _looked_cell() -> Dictionary:
 	if _camera == null or not is_instance_valid(_camera):
 		return {"valid": false}
@@ -535,7 +611,7 @@ func show_transient_aoe(
 	start: Vector3,
 	end: Vector3,
 	shape: String,
-	duration_seconds: float = 0.55
+	duration_seconds: float = 5.0
 ) -> void:
 	if shape not in ["sphere", "cube", "cone", "line"]:
 		return
