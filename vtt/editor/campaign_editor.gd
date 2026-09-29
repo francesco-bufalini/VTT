@@ -147,7 +147,7 @@ func _build_toolbar() -> void:
 	], _on_share_selected))
 
 	status_label = Label.new()
-	status_label.text = CampaignManager.get_active_campaign_name()
+	status_label.text = _campaign_name()
 	status_label.horizontal_alignment = HORIZONTAL_ALIGNMENT_RIGHT
 	status_label.vertical_alignment = VERTICAL_ALIGNMENT_CENTER
 	status_label.size_flags_horizontal = Control.SIZE_EXPAND_FILL
@@ -410,7 +410,7 @@ func _build_leave_dialog() -> void:
 	ui_root.add_child(leave_dialog)
 	leave_dialog.confirmed.connect(
 		func() -> void:
-			CampaignManager.return_to_main_menu()
+			_campaign_manager().call("return_to_main_menu")
 	)
 
 
@@ -552,7 +552,7 @@ func _serialize_extra_grids() -> Array:
 
 
 func _save_campaign() -> void:
-	if not CampaignManager.is_active_user_campaign():
+	if not _is_active_user_campaign():
 		_set_status("Questa scena non e' una campagna utente salvabile")
 		return
 
@@ -567,7 +567,7 @@ func _save_campaign() -> void:
 		"board_snapshot": _create_board_snapshot()
 	}
 
-	var error := CampaignManager.save_active_state(state)
+	var error: Error = int(_campaign_manager().call("save_active_state", state))
 	if error == OK:
 		_set_status(
 			"Salvato · %s" % Time.get_time_string_from_system()
@@ -577,13 +577,13 @@ func _save_campaign() -> void:
 
 
 func _load_active_campaign() -> void:
-	if not CampaignManager.is_active_user_campaign():
+	if not _is_active_user_campaign():
 		_set_status("Editor aperto senza una campagna utente attiva")
 		return
 
-	var state := CampaignManager.load_active_state()
+	var state: Dictionary = _load_active_state()
 	if state.is_empty():
-		_set_status("%s · nuovo salvataggio" % CampaignManager.get_active_campaign_name())
+		_set_status("%s · nuovo salvataggio" % _campaign_name())
 		return
 	if int(state.get("version", -1)) != SAVE_VERSION:
 		_set_status("Versione salvataggio non supportata")
@@ -615,7 +615,7 @@ func _load_active_campaign() -> void:
 		if sync != null:
 			sync.call("apply_snapshot", snapshot)
 
-	_set_status("%s · ultimo salvataggio caricato" % CampaignManager.get_active_campaign_name())
+	_set_status("%s · ultimo salvataggio caricato" % _campaign_name())
 
 
 func _create_board_snapshot() -> Dictionary:
@@ -689,6 +689,36 @@ func _refresh_surface_grid() -> void:
 
 func _cell_size() -> float:
 	return maxf(float(board_root.get("cell_size")), 0.001)
+
+
+
+func _campaign_manager() -> Node:
+	var manager: Node = get_node_or_null("/root/CampaignManager")
+	if manager == null:
+		push_error("CampaignManager autoload non disponibile.")
+	return manager
+
+
+func _campaign_name() -> String:
+	var manager: Node = _campaign_manager()
+	if manager == null:
+		return "Campagna"
+	return String(manager.call("get_active_campaign_name"))
+
+
+func _is_active_user_campaign() -> bool:
+	var manager: Node = _campaign_manager()
+	return manager != null and bool(manager.call("is_active_user_campaign"))
+
+
+func _load_active_state() -> Dictionary:
+	var manager: Node = _campaign_manager()
+	if manager == null:
+		return {}
+	var value: Variant = manager.call("load_active_state")
+	if value is Dictionary:
+		return value as Dictionary
+	return {}
 
 
 func _set_status(message: String) -> void:
