@@ -1,6 +1,7 @@
 extends Node3D
 
 const AOE_PICK_LAYER := 1 << 20
+const SpellVFX = preload("res://vtt/spells/spell_vfx.gd")
 
 @export var cell_size: float = 1.0
 # Existing template convention: one square = five feet.
@@ -611,7 +612,8 @@ func show_transient_aoe(
 	start: Vector3,
 	end: Vector3,
 	shape: String,
-	duration_seconds: float = 5.0
+	duration_seconds: float = 5.0,
+	style: String = ""
 ) -> void:
 	if shape not in ["sphere", "cube", "cone", "line"]:
 		return
@@ -623,7 +625,8 @@ func show_transient_aoe(
 	var mesh: MeshInstance3D = MeshInstance3D.new()
 	mesh.name = "Visual"
 	root.add_child(mesh)
-	_draw_aoe(mesh, start, end, shape)
+	_draw_aoe(mesh, start, end, shape, style)
+	SpellVFX.attach(root, start, end, shape, style, cell_size)
 
 	var timer: Timer = Timer.new()
 	timer.one_shot = true
@@ -659,6 +662,7 @@ func add_aoe(
 	mesh.name = "Visual"
 	root.add_child(mesh)
 	_draw_aoe(mesh, start, end, shape, style)
+	SpellVFX.attach(root, start, end, shape, style, cell_size)
 
 	_add_aoe_pick_area(root, start, end, shape)
 	_aoe_nodes.append(root)
