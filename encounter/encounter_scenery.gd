@@ -13,18 +13,6 @@ func build(scene: Node3D) -> void:
 	_marble = _material(Color(0.51, 0.53, 0.51))
 	_gold = _material(Color(0.62, 0.52, 0.35), 0.3)
 	_dark = _material(Color(0.11, 0.105, 0.10))
-	var grid_mesh: PlaneMesh = scene.grid.mesh.duplicate()
-	grid_mesh.size = Vector2(120, 180) * _units
-	var grid_material: ShaderMaterial = grid_mesh.material.duplicate()
-	grid_material.set_shader_parameter("base_color", Color(0.24, 0.26, 0.25))
-	grid_material.set_shader_parameter("minor_line_color", Color(0.43, 0.69, 0.72))
-	grid_material.set_shader_parameter("major_line_color", Color(0.78, 0.78, 0.59))
-	grid_material.set_shader_parameter("cell_size", scene.cell_size)
-	grid_mesh.material = grid_material
-	grid_material.shader = preload("res://encounter/grid_overlay.gdshader")
-	grid_material.set_shader_parameter("base_color", Color(0, 0, 0, 0))
-	scene.grid.mesh = grid_mesh
-	scene.grid.position.z = 85 * _units
 	var water_mesh := CylinderMesh.new()
 	water_mesh.top_radius = 337 * _units
 	water_mesh.bottom_radius = 337 * _units
@@ -38,10 +26,6 @@ func build(scene: Node3D) -> void:
 	water.mesh = water_mesh
 	water.position = Vector3(0, -0.18, -60) * _units
 	scene.get_node("Board").add_child(water)
-	# Shader coordinates must remain aligned with the template's world grid.
-	var shader: Shader = grid_material.shader.duplicate()
-	shader.code = shader.code.replace("grid_pos = VERTEX.xz;", "grid_pos = (MODEL_MATRIX * vec4(VERTEX, 1.0)).xz;")
-	grid_material.shader = shader
 	var floor_shape := BoxShape3D.new()
 	floor_shape.size = Vector3(120 * _units, 0.1, 180 * _units)
 	scene.get_node("Board/FloorCollision/CollisionShape3D").shape = floor_shape
