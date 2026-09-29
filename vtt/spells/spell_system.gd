@@ -2161,7 +2161,7 @@ func _select_spell(spell_id: String) -> void:
 			)
 
 	spell_meta.text = (
-		"%s · %s\n"
+		"%s · %s · %s\n"
 		+ "Tempo di lancio: %s | Range: %s\n"
 		+ "Bersaglio: %s | Area: %s\n"
 		+ "Componenti: %s | Durata: %s\n"
@@ -2169,6 +2169,7 @@ func _select_spell(spell_id: String) -> void:
 	) % [
 		SpellCatalog.LEVEL_NAMES[int(spell_data.get("level", 0))],
 		String(spell_data.get("school", "")),
+		String(spell_data.get("source", "")),
 		String(spell_data.get("casting_time", "")),
 		String(spell_data.get("range", "")),
 		target_text,
