@@ -660,6 +660,536 @@ func _try_select_direction_point(screen_position: Vector2) -> void:
 	_finish_cast()
 
 
+func _try_wall_start(screen_position: Vector2) -> void:
+	var spell_data: Dictionary = SpellCatalog.spell(_pending_spell_id)
+	var point_data: Dictionary = _wall_point_data(
+		screen_position,
+		spell_data,
+		true
+	)
+	if not bool(point_data.get("valid", false)):
+		_set_instruction("Scegli un punto iniziale valido entro gittata.")
+		return
+
+	var start: Vector3 = point_data.get("point", Vector3.ZERO)
+	_wall_points = [start]
+	_targeting_phase = "wall_segment"
+	_hide_spell_range_preview()
+	_update_wall_segment_instruction(spell_data)
+
+
+func _try_wall_segment(screen_position: Vector2) -> void:
+	var spell_data: Dictionary = SpellCatalog.spell(_pending_spell_id)
+	var target_data: Dictionary = _wall_segment_target_data(
+		screen_position,
+		spell_data
+	)
+	if not bool(target_data.get("valid", false)):
+		return
+
+	var endpoint: Vector3 = target_data.get("point", Vector3.ZERO)
+	if (
+		_wall_points.is_empty()
+		or _wall_points[_wall_points.size() - 1].distance_to(endpoint)
+			< _cell_size() * 0.05
+	):
+		return
+
+	_wall_points.append(endpoint)
+	if _wall_remaining_world(spell_data) <= _cell_size() * 0.01:
+		_prepare_or_commit_wall()
+		return
+
+	_update_wall_segment_instruction(spell_data)
+
+
+func _try_wall_center(screen_position: Vector2) -> void:
+	var spell_data: Dictionary = SpellCatalog.spell(_pending_spell_id)
+	var point_data: Dictionary = _wall_point_data(
+		screen_position,
+		spell_data,
+		true
+	)
+	if not bool(point_data.get("valid", false)):
+		_set_instruction("Scegli un centro valido entro gittata.")
+		return
+
+	_wall_center = point_data.get("point", Vector3.ZERO)
+	_targeting_phase = "wall_radius"
+	_hide_spell_range_preview()
+	var max_radius_feet: float = _wall_max_radius_feet(spell_data)
+	_set_instruction(
+		"%s: scegli il raggio (massimo %.0f ft)."
+		% [
+			String(spell_data.get("name", "Muro")),
+			max_radius_feet
+		]
+	)
+
+
+func _try_wall_radius(screen_position: Vector2) -> void:
+	var spell_data: Dictionary = SpellCatalog.spell(_pending_spell_id)
+	var radius_data: Dictionary = _wall_radius_data(
+		screen_position,
+		spell_data
+	)
+	if not bool(radius_data.get("valid", false)):
+		return
+
+	_wall_radius_world = float(
+		radius_data.get("radius_world", 0.0)
+	)
+	if _wall_radius_world <= _cell_size() * 0.05:
+		return
+
+	if _wall_mode in ["globe", "dome"]:
+		var measurement_tool: Node = _measurement_tool()
+		if measurement_tool != null:
+			measurement_tool.call(
+				"add_wall_globe",
+				_wall_center,
+				_wall_radius_world,
+				_spell_style(spell_data),
+				_wall_mode == "dome",
+				_wall_metadata()
+			)
+		_finish_cast()
+		return
+
+	_targeting_phase = "wall_arc_start"
+	_set_instruction(
+		"%s: scegli il punto iniziale dell'arco sulla circonferenza."
+		% String(spell_data.get("name", "Muro"))
+	)
+
+
+func _try_wall_arc_start(screen_position: Vector2) -> void:
+	var spell_data: Dictionary = SpellCatalog.spell(_pending_spell_id)
+	var point_data: Dictionary = _wall_point_data(
+		screen_position,
+		spell_data,
+		false
+	)
+	if not bool(point_data.get("valid", false)):
+		return
+
+	var projected: Vector3 = WallGeometry.project_to_circle(
+		_wall_center,
+		point_data.get("point", _wall_center + Vector3.RIGHT),
+		_wall_radius_world
+	)
+	_wall_start_angle = WallGeometry.angle_on_circle(
+		_wall_center,
+		projected
+	)
+	_wall_previous_cursor_angle = _wall_start_angle
+	_wall_sweep = 0.0
+	_targeting_phase = "wall_arc_end"
+	_set_instruction(
+		"%s: percorri la circonferenza e clicca il punto finale. Cliccando subito il punto iniziale crei il cerchio completo."
+		% String(spell_data.get("name", "Muro"))
+	)
+
+
+func _try_wall_arc_end(_screen_position: Vector2) -> void:
+	if absf(_wall_sweep) < 0.05:
+		_wall_sweep = TAU
+
+	_wall_points = WallGeometry.sample_arc(
+		_wall_center,
+		_wall_radius_world,
+		_wall_start_angle,
+		_wall_sweep
+	)
+	_prepare_or_commit_wall()
+
+
+func _prepare_or_commit_wall() -> void:
+	if _wall_points.size() < 2:
+		return
+	var spell_data: Dictionary = SpellCatalog.spell(_pending_spell_id)
+	if bool(spell_data.get("wall_choose_damage_side", false)):
+		_targeting_phase = "wall_side"
+		_wall_damage_side = 1
+		_set_instruction(
+			"%s: mira uno dei due lati del muro e clicca per scegliere il lato che irradia calore."
+			% String(spell_data.get("name", "Muro"))
+		)
+		return
+	_commit_wall_path(spell_data)
+
+
+func _confirm_wall_side() -> void:
+	var spell_data: Dictionary = SpellCatalog.spell(_pending_spell_id)
+	if _wall_damage_side == 0:
+		_wall_damage_side = 1
+	_commit_wall_path(spell_data)
+
+
+func _commit_wall_path(spell_data: Dictionary) -> void:
+	var measurement_tool: Node = _measurement_tool()
+	if measurement_tool == null or _wall_points.size() < 2:
+		return
+
+	measurement_tool.call(
+		"add_wall_path",
+		_wall_points,
+		_wall_height_world(spell_data),
+		_wall_thickness_world(spell_data),
+		_spell_style(spell_data),
+		_wall_damage_side,
+		_wall_metadata()
+	)
+	_finish_cast()
+
+
+func _wall_metadata() -> Dictionary:
+	return {
+		"spell_id": _pending_spell_id,
+		"mode": _wall_mode,
+		"slot_level": _selected_slot_level,
+		"circle_center": [
+			_wall_center.x,
+			_wall_center.y,
+			_wall_center.z
+		],
+		"circle_radius_world": _wall_radius_world,
+		"circle_sweep": _wall_sweep
+	}
+
+
+func _wall_point_data(
+	screen_position: Vector2,
+	spell_data: Dictionary,
+	require_range: bool
+) -> Dictionary:
+	var measurement_tool: Node = _measurement_tool()
+	if measurement_tool == null:
+		return {"valid": false}
+
+	var point_value: Variant = measurement_tool.call(
+		"get_spell_target_point",
+		screen_position
+	)
+	if not point_value is Dictionary:
+		return {"valid": false}
+
+	var point_data: Dictionary = point_value as Dictionary
+	if not bool(point_data.get("valid", false)):
+		return {"valid": false}
+
+	if bool(spell_data.get("wall_requires_ground", false)):
+		if bool(point_data.get("in_air", true)):
+			return {"valid": false}
+		var normal: Vector3 = point_data.get("normal", Vector3.ZERO)
+		if normal.dot(Vector3.UP) < 0.5:
+			return {"valid": false}
+
+	var point: Vector3 = point_data.get("point", Vector3.ZERO)
+	if require_range:
+		if _pending_caster == null or not is_instance_valid(_pending_caster):
+			return {"valid": false}
+		var max_distance: float = (
+			float(spell_data.get("range_feet", 0.0))
+			/ 5.0 * _cell_size()
+		)
+		if (
+			_pending_caster.global_position.distance_to(point)
+			> max_distance + _cell_size() * 0.01
+		):
+			return {"valid": false, "out_of_range": true}
+
+	return {
+		"valid": true,
+		"point": point
+	}
+
+
+func _wall_segment_target_data(
+	screen_position: Vector2,
+	spell_data: Dictionary
+) -> Dictionary:
+	if _wall_points.is_empty():
+		return {"valid": false}
+
+	var point_data: Dictionary = _wall_point_data(
+		screen_position,
+		spell_data,
+		false
+	)
+	if not bool(point_data.get("valid", false)):
+		return {"valid": false}
+
+	var last_point: Vector3 = _wall_points[_wall_points.size() - 1]
+	var target: Vector3 = point_data.get("point", last_point)
+	var remaining: float = _wall_remaining_world(spell_data)
+	var clamped: Vector3 = WallGeometry.clamp_endpoint(
+		last_point,
+		target,
+		remaining
+	)
+	return {
+		"valid": true,
+		"point": clamped
+	}
+
+
+func _wall_radius_data(
+	screen_position: Vector2,
+	spell_data: Dictionary
+) -> Dictionary:
+	var point_data: Dictionary = _wall_point_data(
+		screen_position,
+		spell_data,
+		false
+	)
+	if not bool(point_data.get("valid", false)):
+		return {"valid": false}
+
+	var point: Vector3 = point_data.get("point", _wall_center)
+	var horizontal: Vector3 = point - _wall_center
+	horizontal.y = 0.0
+	var max_radius_world: float = (
+		_wall_max_radius_feet(spell_data)
+		/ 5.0 * _cell_size()
+	)
+	return {
+		"valid": true,
+		"radius_world": clampf(
+			horizontal.length(),
+			_cell_size() * 0.25,
+			max_radius_world
+		)
+	}
+
+
+func _wall_remaining_world(spell_data: Dictionary) -> float:
+	var maximum: float = (
+		float(spell_data.get("wall_max_length_feet", 0.0))
+		/ 5.0 * _cell_size()
+	)
+	return maxf(
+		0.0,
+		maximum - WallGeometry.path_length(_wall_points)
+	)
+
+
+func _wall_max_radius_feet(spell_data: Dictionary) -> float:
+	if _wall_mode in ["globe", "dome"]:
+		return float(
+			spell_data.get("wall_globe_max_radius_feet", 10.0)
+		)
+	return float(
+		spell_data.get("wall_circle_max_radius_feet", 10.0)
+	)
+
+
+func _wall_height_world(spell_data: Dictionary) -> float:
+	var height_feet: float = float(
+		spell_data.get("wall_height_feet", 10.0)
+	)
+	if _wall_mode == "circle":
+		height_feet = float(
+			spell_data.get(
+				"wall_circle_height_feet",
+				height_feet
+			)
+		)
+	return height_feet / 5.0 * _cell_size()
+
+
+func _wall_thickness_world(spell_data: Dictionary) -> float:
+	return maxf(
+		float(spell_data.get("wall_thickness_feet", 1.0))
+		/ 5.0 * _cell_size(),
+		_cell_size() * 0.025
+	)
+
+
+func _update_wall_segment_instruction(spell_data: Dictionary) -> void:
+	var remaining_feet: float = (
+		_wall_remaining_world(spell_data)
+		/ _cell_size() * 5.0
+	)
+	_set_instruction(
+		"%s: clicca per aggiungere segmenti · %.1f ft rimasti · Invio per terminare."
+		% [
+			String(spell_data.get("name", "Muro")),
+			remaining_feet
+		]
+	)
+
+
+func _update_wall_preview(
+	screen_position: Vector2,
+	spell_data: Dictionary
+) -> void:
+	var measurement_tool: Node = _measurement_tool()
+	if measurement_tool == null:
+		return
+
+	match _targeting_phase:
+		"wall_start", "wall_center", "wall_mode":
+			_hide_wall_preview()
+
+		"wall_segment":
+			var target_data: Dictionary = _wall_segment_target_data(
+				screen_position,
+				spell_data
+			)
+			if not bool(target_data.get("valid", false)):
+				_hide_wall_preview()
+				return
+			var preview_points: Array[Vector3] = _wall_points.duplicate()
+			preview_points.append(
+				target_data.get("point", preview_points[-1])
+			)
+			measurement_tool.call(
+				"show_wall_path_preview",
+				preview_points,
+				_wall_height_world(spell_data),
+				_wall_thickness_world(spell_data),
+				_spell_style(spell_data),
+				0
+			)
+
+		"wall_radius":
+			var radius_data: Dictionary = _wall_radius_data(
+				screen_position,
+				spell_data
+			)
+			if not bool(radius_data.get("valid", false)):
+				_hide_wall_preview()
+				return
+			var radius_world: float = float(
+				radius_data.get("radius_world", 0.0)
+			)
+			if _wall_mode in ["globe", "dome"]:
+				measurement_tool.call(
+					"show_wall_globe_preview",
+					_wall_center,
+					radius_world,
+					_spell_style(spell_data),
+					_wall_mode == "dome"
+				)
+			else:
+				var circle_points: Array[Vector3] = (
+					WallGeometry.sample_full_circle(
+						_wall_center,
+						radius_world
+					)
+				)
+				measurement_tool.call(
+					"show_wall_path_preview",
+					circle_points,
+					_wall_height_world(spell_data),
+					_wall_thickness_world(spell_data),
+					_spell_style(spell_data),
+					0
+				)
+
+		"wall_arc_start":
+			var full_circle: Array[Vector3] = (
+				WallGeometry.sample_full_circle(
+					_wall_center,
+					_wall_radius_world
+				)
+			)
+			measurement_tool.call(
+				"show_wall_path_preview",
+				full_circle,
+				_wall_height_world(spell_data),
+				_wall_thickness_world(spell_data),
+				_spell_style(spell_data),
+				0
+			)
+
+		"wall_arc_end":
+			var point_data: Dictionary = _wall_point_data(
+				screen_position,
+				spell_data,
+				false
+			)
+			if bool(point_data.get("valid", false)):
+				var projected: Vector3 = WallGeometry.project_to_circle(
+					_wall_center,
+					point_data.get(
+						"point",
+						_wall_center + Vector3.RIGHT
+					),
+					_wall_radius_world
+				)
+				var angle: float = WallGeometry.angle_on_circle(
+					_wall_center,
+					projected
+				)
+				var delta: float = WallGeometry.unwrap_delta(
+					_wall_previous_cursor_angle,
+					angle
+				)
+				if absf(_wall_sweep) < TAU - 0.0001:
+					_wall_sweep = clampf(
+						_wall_sweep + delta,
+						-TAU,
+						TAU
+					)
+				_wall_previous_cursor_angle = angle
+
+			var arc_points: Array[Vector3] = WallGeometry.sample_arc(
+				_wall_center,
+				_wall_radius_world,
+				_wall_start_angle,
+				_wall_sweep
+			)
+			measurement_tool.call(
+				"show_wall_path_preview",
+				arc_points,
+				_wall_height_world(spell_data),
+				_wall_thickness_world(spell_data),
+				_spell_style(spell_data),
+				0
+			)
+
+		"wall_side":
+			if _wall_points.size() < 2:
+				return
+			var cursor_data: Dictionary = _wall_point_data(
+				screen_position,
+				spell_data,
+				false
+			)
+			if bool(cursor_data.get("valid", false)):
+				var direction: Vector3 = (
+					_wall_points[1] - _wall_points[0]
+				)
+				direction.y = 0.0
+				var toward_cursor: Vector3 = (
+					cursor_data.get(
+						"point",
+						_wall_points[0]
+					) - _wall_points[0]
+				)
+				toward_cursor.y = 0.0
+				var cross_y: float = direction.cross(
+					toward_cursor
+				).y
+				_wall_damage_side = 1 if cross_y >= 0.0 else -1
+			measurement_tool.call(
+				"show_wall_path_preview",
+				_wall_points,
+				_wall_height_world(spell_data),
+				_wall_thickness_world(spell_data),
+				_spell_style(spell_data),
+				_wall_damage_side
+			)
+
+
+func _hide_wall_preview() -> void:
+	var measurement_tool: Node = _measurement_tool()
+	if measurement_tool != null:
+		measurement_tool.call("hide_wall_preview", true)
+
+
 func _update_spell_preview() -> void:
 	var measurement_tool: Node = _measurement_tool()
 	if measurement_tool == null:
