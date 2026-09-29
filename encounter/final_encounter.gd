@@ -15,6 +15,10 @@ func _ready() -> void:
 	encounter.seals.setup($KlothisRoot/KlothisVisual, measurement_tool.meters_to_world(1))
 	encounter.seals.changed.connect(func(): encounter.state_changed.emit())
 	$KaosRoot/ShoulderPlatform.setup(measurement_tool)
+	# The unified volumetric grid must see both normal terrain (layer 1)
+	# and tactical platforms on Kaos/Klothis (layer 4).
+	volumetric_grid.collision_mask = 1 | 4
+	volumetric_grid.refresh()
 	measurement_tool.collision_mask = 1 | 4
 	var hand_grids = preload("res://encounter/hand_platforms.gd").new()
 	hand_grids.name = "HandPlatforms"
@@ -48,8 +52,12 @@ func _on_token_dialog_confirmed() -> void:
 
 func _set_grid_interaction(active: bool) -> void:
 	var strength := 1.0 if active or not _selected_tokens.is_empty() else 0.55
-	if surface_grid != null and is_instance_valid(surface_grid):
-		surface_grid.set_interaction_strength(strength)
+	if (
+		volumetric_grid != null
+		and is_instance_valid(volumetric_grid)
+		and volumetric_grid.has_method("set_interaction_strength")
+	):
+		volumetric_grid.call("set_interaction_strength", strength)
 
 func _replace_selection(token: CharacterBody3D) -> void:
 	super._replace_selection(token)
