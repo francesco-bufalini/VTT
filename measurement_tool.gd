@@ -1260,7 +1260,7 @@ func _add_wall_damage_band(
 		-direction.z,
 		0.0,
 		direction.x
-	) * float(signi(damage_side))
+	) * (1.0 if damage_side >= 0 else -1.0)
 	var band_width: float = cell_size * 2.0
 
 	var mesh_instance: MeshInstance3D = MeshInstance3D.new()
