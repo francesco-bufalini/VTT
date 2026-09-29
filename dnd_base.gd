@@ -356,7 +356,10 @@ func undo_last_action() -> bool:
 	if board_sync == null or not is_instance_valid(board_sync):
 		return false
 
-	var state: Dictionary = _undo_stack.pop_back()
+	var state_value: Variant = _undo_stack.pop_back()
+	if not state_value is Dictionary:
+		return false
+	var state: Dictionary = state_value as Dictionary
 	var snapshot_value: Variant = state.get("snapshot", {})
 	if not snapshot_value is Dictionary:
 		return false
