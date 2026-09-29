@@ -15,7 +15,12 @@ static func attach(
 	"burning_hands", "fireball", "darkness", "lightning_bolt",
 	"acid_splash", "thunderclap", "color_spray", "fog_cloud",
 	"grease", "sleep", "thunderwave", "ice_knife_burst",
-	"witch_bolt"
+	"witch_bolt", "cloud_of_daggers", "shatter", "web", "fear",
+	"hypnotic_pattern", "sleet_storm", "slow", "stinking_cloud",
+	"confusion", "ice_storm", "vitriolic_sphere", "cone_of_cold",
+	"insect_plague", "synaptic_static", "chain_lightning",
+	"circle_of_death", "globe_of_invulnerability",
+	"otilukes_freezing_sphere", "sunbeam"
 ]:
 		return
 
@@ -51,6 +56,45 @@ static func attach(
 			_add_sphere_layer(root, start, reach_world * 0.94, cell_size, 180, 0.75, Color(0.42, 0.9, 1.0, 0.62), 0.22, reach_world * 0.10)
 		"witch_bolt":
 			_attach_lightning_bolt(root, start, end, reach_world, cell_size)
+		"cloud_of_daggers":
+			_add_box_layer(root, start, reach_world, cell_size, 170, Color(0.84, 0.88, 0.96, 0.66), 0.16, 0.35)
+		"shatter":
+			_add_sphere_layer(root, start, reach_world * 0.95, cell_size, 180, 0.48, Color(0.62, 0.86, 1.0, 0.58), 0.24, reach_world * 0.14)
+		"web":
+			_add_box_layer(root, start, reach_world, cell_size, 220, Color(0.9, 0.92, 0.96, 0.32), 0.28, 0.035)
+		"fear":
+			_attach_colored_cone(root, start, end, reach_world, cell_size, Color(0.42, 0.08, 0.62, 0.55))
+		"hypnotic_pattern":
+			_add_box_layer(root, start, reach_world, cell_size, 130, Color(0.94, 0.2, 0.92, 0.56), 0.22, 0.09)
+			_add_box_layer(root, start, reach_world * 0.9, cell_size, 100, Color(0.16, 0.82, 1.0, 0.5), 0.18, 0.07)
+		"sleet_storm":
+			_attach_cylinder_weather(root, start, end, cell_size, Color(0.72, 0.9, 1.0, 0.42), 280)
+		"slow":
+			_add_box_layer(root, start, reach_world, cell_size, 150, Color(0.58, 0.26, 0.86, 0.44), 0.20, 0.035)
+		"stinking_cloud":
+			_add_sphere_layer(root, start, reach_world * 0.94, cell_size, 330, 4.2, Color(0.5, 0.66, 0.08, 0.34), 0.68, reach_world * 0.025)
+		"confusion":
+			_add_sphere_layer(root, start, reach_world * 0.92, cell_size, 170, 1.0, Color(0.7, 0.24, 0.95, 0.46), 0.24, reach_world * 0.08)
+		"ice_storm":
+			_attach_cylinder_weather(root, start, end, cell_size, Color(0.48, 0.84, 1.0, 0.62), 360)
+		"vitriolic_sphere":
+			_add_sphere_layer(root, start, reach_world * 0.94, cell_size, 240, 0.9, Color(0.44, 0.96, 0.08, 0.6), 0.34, reach_world * 0.09)
+		"cone_of_cold":
+			_attach_colored_cone(root, start, end, reach_world, cell_size, Color(0.52, 0.9, 1.0, 0.62))
+		"insect_plague":
+			_add_sphere_layer(root, start, reach_world * 0.94, cell_size, 420, 1.8, Color(0.34, 0.25, 0.04, 0.55), 0.14, reach_world * 0.07)
+		"synaptic_static":
+			_add_sphere_layer(root, start, reach_world * 0.94, cell_size, 210, 0.6, Color(0.72, 0.24, 1.0, 0.62), 0.2, reach_world * 0.13)
+		"chain_lightning":
+			_attach_lightning_bolt(root, start, end, reach_world, cell_size)
+		"circle_of_death":
+			_add_sphere_layer(root, start, reach_world * 0.96, cell_size, 300, 1.0, Color(0.16, 0.02, 0.2, 0.56), 0.3, reach_world * 0.08)
+		"globe_of_invulnerability":
+			_add_sphere_layer(root, start, reach_world * 0.98, cell_size, 260, 2.5, Color(0.56, 0.82, 1.0, 0.32), 0.26, reach_world * 0.018)
+		"otilukes_freezing_sphere":
+			_add_sphere_layer(root, start, reach_world * 0.96, cell_size, 360, 1.1, Color(0.55, 0.92, 1.0, 0.58), 0.30, reach_world * 0.07)
+		"sunbeam":
+			_attach_sunbeam(root, start, end, reach_world, cell_size)
 
 
 static func _attach_burning_hands(
@@ -267,6 +311,146 @@ static func _attach_thunderwave(
 	particles.draw_pass_1 = quad
 
 
+static func _attach_colored_cone(
+	root: Node3D,
+	start: Vector3,
+	end: Vector3,
+	reach_world: float,
+	cell_size: float,
+	color: Color
+) -> void:
+	var direction: Vector3 = end - start
+	if direction.length_squared() < 0.0001:
+		direction = Vector3.FORWARD
+	else:
+		direction = direction.normalized()
+	_add_cone_fire_layer(
+		root,
+		start,
+		direction,
+		reach_world,
+		cell_size,
+		220,
+		color,
+		0.24
+	)
+
+
+static func _add_box_layer(
+	root: Node3D,
+	center: Vector3,
+	half_extent: float,
+	cell_size: float,
+	amount: int,
+	color: Color,
+	particle_scale: float,
+	max_velocity_scale: float
+) -> void:
+	var particles: GPUParticles3D = GPUParticles3D.new()
+	particles.name = "SpellBoxParticles"
+	particles.amount = amount
+	particles.lifetime = 1.8
+	particles.preprocess = 1.8
+	particles.randomness = 0.9
+	root.add_child(particles)
+	particles.global_position = center
+
+	var process: ParticleProcessMaterial = ParticleProcessMaterial.new()
+	process.emission_shape = ParticleProcessMaterial.EMISSION_SHAPE_BOX
+	process.emission_box_extents = Vector3.ONE * half_extent
+	process.direction = Vector3.UP
+	process.spread = 180.0
+	process.gravity = Vector3.ZERO
+	process.initial_velocity_min = 0.0
+	process.initial_velocity_max = cell_size * max_velocity_scale
+	process.color = color
+	particles.process_material = process
+
+	var quad: QuadMesh = QuadMesh.new()
+	quad.size = Vector2.ONE * cell_size * particle_scale
+	quad.material = _billboard_material(color, color, 0.9)
+	particles.draw_pass_1 = quad
+
+
+static func _attach_cylinder_weather(
+	root: Node3D,
+	start: Vector3,
+	end: Vector3,
+	cell_size: float,
+	color: Color,
+	amount: int
+) -> void:
+	var delta: Vector3 = end - start
+	var radius_world: float = maxf(absf(delta.x), cell_size * 0.5)
+	var height_world: float = maxf(absf(delta.y), cell_size * 0.5)
+
+	var particles: GPUParticles3D = GPUParticles3D.new()
+	particles.name = "SpellCylinderParticles"
+	particles.amount = amount
+	particles.lifetime = 1.2
+	particles.preprocess = 1.2
+	particles.randomness = 0.85
+	root.add_child(particles)
+	particles.global_position = start + Vector3.UP * height_world * 0.5
+
+	var process: ParticleProcessMaterial = ParticleProcessMaterial.new()
+	process.emission_shape = ParticleProcessMaterial.EMISSION_SHAPE_BOX
+	process.emission_box_extents = Vector3(
+		radius_world,
+		height_world * 0.5,
+		radius_world
+	)
+	process.direction = Vector3.DOWN
+	process.spread = 8.0
+	process.gravity = Vector3(0.0, -cell_size * 1.8, 0.0)
+	process.initial_velocity_min = cell_size * 0.6
+	process.initial_velocity_max = cell_size * 1.5
+	process.color = color
+	particles.process_material = process
+
+	var quad: QuadMesh = QuadMesh.new()
+	quad.size = Vector2(
+		cell_size * 0.10,
+		cell_size * 0.28
+	)
+	quad.material = _billboard_material(color, color, 0.75)
+	particles.draw_pass_1 = quad
+
+
+static func _attach_sunbeam(
+	root: Node3D,
+	start: Vector3,
+	end: Vector3,
+	reach_world: float,
+	cell_size: float
+) -> void:
+	var direction: Vector3 = end - start
+	if direction.length_squared() < 0.0001:
+		direction = Vector3.FORWARD
+	else:
+		direction = direction.normalized()
+	_add_lightning_layer(
+		root,
+		start,
+		direction,
+		reach_world,
+		cell_size,
+		220,
+		Color(1.0, 0.96, 0.62, 0.92),
+		0.16
+	)
+	_add_lightning_layer(
+		root,
+		start,
+		direction,
+		reach_world,
+		cell_size,
+		100,
+		Color(1.0, 1.0, 1.0, 1.0),
+		0.08
+	)
+
+
 static func _attach_lightning_bolt(
 	root: Node3D,
 	start: Vector3,
@@ -465,6 +649,14 @@ static func _projectile_palette(style: String) -> Dictionary:
 			return {"primary": Color(0.9, 0.32, 1.0, 0.92), "secondary": Color(0.18, 0.82, 1.0, 0.76)}
 		"chill_touch":
 			return {"primary": Color(0.38, 0.76, 0.72, 0.82), "secondary": Color(0.16, 0.28, 0.34, 0.7)}
+		"mind_spike":
+			return {"primary": Color(0.7, 0.22, 1.0, 0.9), "secondary": Color(0.95, 0.46, 1.0, 0.72)}
+		"scorching_ray":
+			return {"primary": Color(1.0, 0.18, 0.015, 0.94), "secondary": Color(1.0, 0.72, 0.06, 0.78)}
+		"blight":
+			return {"primary": Color(0.16, 0.05, 0.2, 0.92), "secondary": Color(0.38, 0.12, 0.42, 0.72)}
+		"disintegrate":
+			return {"primary": Color(0.16, 1.0, 0.32, 0.94), "secondary": Color(0.72, 1.0, 0.18, 0.76)}
 		_:
 			return {"primary": Color(0.75, 0.22, 1.0, 0.88), "secondary": Color(0.15, 0.8, 1.0, 0.72)}
 
