@@ -43,6 +43,8 @@ var _has_pending_spawn_position: bool = false
 var _selected_tokens: Array[CharacterBody3D] = []
 var _ui_owns_mouse: bool = false
 var _vision_cones_visible: bool = false
+var _grid_visible: bool = false
+var surface_grid: Node
 var board_sync: Node
 var share_dialog: AcceptDialog
 var share_host: LineEdit
@@ -52,6 +54,15 @@ var token_drag: Node
 
 
 func _ready() -> void:
+	surface_grid = preload("res://surface_grid.gd").new()
+	surface_grid.name = "SurfaceGrid"
+	add_child(surface_grid)
+	surface_grid.setup(self, cell_size)
+
+	# Board/Grid is kept only as a compatibility/style source for older
+	# encounter scripts. The visible 2D grid now comes from solid surfaces.
+	grid.visible = false
+
 	set_grid_visible(grid_visible_on_start)
 	set_grid_3d_visible(grid_3d_visible_on_start)
 	set_vision_cones_visible(vision_cones_visible_on_start)
@@ -235,11 +246,14 @@ func _unhandled_input(event: InputEvent) -> void:
 
 
 func toggle_grid() -> void:
-	set_grid_visible(not grid.visible)
+	set_grid_visible(not _grid_visible)
 
 
 func set_grid_visible(is_visible: bool) -> void:
-	grid.visible = is_visible
+	_grid_visible = is_visible
+	grid.visible = false
+	if surface_grid != null and is_instance_valid(surface_grid):
+		surface_grid.set_grid_visible(is_visible)
 
 
 func toggle_grid_3d() -> void:
@@ -300,7 +314,7 @@ func _show_context_menu(screen_position: Vector2) -> void:
 	context_menu.add_item("Condividi mappa / Tailscale", 25)
 	context_menu.add_separator()
 
-	if grid.visible:
+	if _grid_visible:
 		context_menu.add_item("Nascondi griglia 2D", CONTEXT_TOGGLE_GRID)
 	else:
 		context_menu.add_item("Mostra griglia 2D", CONTEXT_TOGGLE_GRID)
