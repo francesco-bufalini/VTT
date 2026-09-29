@@ -2,6 +2,7 @@ extends Control
 
 const ACTION_RENAME := 1
 const ACTION_DELETE := 2
+const MAIN_MENU_SCENE_PATH := "res://vtt/menu/main_menu.tscn"
 
 var _status_label: Label
 var _rename_dialog: ConfirmationDialog
@@ -49,7 +50,7 @@ func _build_ui() -> void:
 	back.custom_minimum_size = Vector2(110, 38)
 	back.pressed.connect(
 		func() -> void:
-			get_tree().change_scene_to_file(CampaignManager.MAIN_MENU_SCENE)
+			get_tree().change_scene_to_file(MAIN_MENU_SCENE_PATH)
 	)
 	header.add_child(back)
 
@@ -69,7 +70,7 @@ func _build_ui() -> void:
 	cards.add_theme_constant_override("v_separation", 14)
 	scroll.add_child(cards)
 
-	var campaigns: Array[Dictionary] = CampaignManager.list_campaigns()
+	var campaigns: Array[Dictionary] = _list_campaigns()
 	if campaigns.is_empty():
 		_status_label.text = "Non ci sono campagne disponibili."
 		return
@@ -222,10 +223,11 @@ func _confirm_rename() -> void:
 		_set_status("Il nome della campagna non può essere vuoto.")
 		return
 
-	var error: Error = CampaignManager.rename_campaign(
+	var error: Error = int(_campaign_manager().call(
+		"rename_campaign",
 		_pending_campaign_id,
 		new_name
-	)
+	))
 	if error != OK:
 		_set_status("Errore rinomina: %s" % error_string(error))
 		return
@@ -234,7 +236,7 @@ func _confirm_rename() -> void:
 
 
 func _confirm_delete() -> void:
-	var error: Error = CampaignManager.delete_campaign(_pending_campaign_id)
+	var error: Error = int(_campaign_manager().call("delete_campaign", _pending_campaign_id))
 	if error != OK:
 		_set_status("Errore eliminazione: %s" % error_string(error))
 		return
@@ -243,9 +245,30 @@ func _confirm_delete() -> void:
 
 
 func _open_campaign(campaign_id: String) -> void:
-	var error: Error = CampaignManager.open_campaign(campaign_id)
+	var error: Error = int(_campaign_manager().call("open_campaign", campaign_id))
 	if error != OK:
 		_set_status("Errore apertura campagna: %s" % error_string(error))
+
+
+
+func _campaign_manager() -> Node:
+	var manager: Node = get_node_or_null("/root/CampaignManager")
+	if manager == null:
+		push_error("CampaignManager autoload non disponibile.")
+	return manager
+
+
+func _list_campaigns() -> Array[Dictionary]:
+	var manager: Node = _campaign_manager()
+	var result: Array[Dictionary] = []
+	if manager == null:
+		return result
+	var value: Variant = manager.call("list_campaigns")
+	if value is Array:
+		for item: Variant in value:
+			if item is Dictionary:
+				result.append(item as Dictionary)
+	return result
 
 
 func _set_status(message: String) -> void:
