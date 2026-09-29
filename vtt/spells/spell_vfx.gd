@@ -539,6 +539,181 @@ static func _add_lightning_layer(
 	particles.draw_pass_1 = quad
 
 
+static func attach_wall_segment(
+	root: Node3D,
+	start: Vector3,
+	finish: Vector3,
+	height_world: float,
+	thickness_world: float,
+	style: String,
+	cell_size: float
+) -> void:
+	if style == "wall_of_stone":
+		return
+
+	var delta: Vector3 = finish - start
+	delta.y = 0.0
+	var length: float = delta.length()
+	if length < 0.0001:
+		return
+	var direction: Vector3 = delta / length
+	var center: Vector3 = (
+		(start + finish) * 0.5
+		+ Vector3.UP * height_world * 0.5
+	)
+
+	match style:
+		"wall_of_fire":
+			_add_wall_particle_box(
+				root, center, direction, length, height_world,
+				maxf(thickness_world * 1.8, cell_size * 0.16),
+				220, 0.78, Color(1.0, 0.22, 0.02, 0.68),
+				cell_size * 0.22, Vector3.UP * cell_size * 0.9
+			)
+			_add_wall_particle_box(
+				root, center, direction, length, height_world,
+				maxf(thickness_world, cell_size * 0.08),
+				120, 0.62, Color(1.0, 0.78, 0.08, 0.72),
+				cell_size * 0.14, Vector3.UP * cell_size * 0.7
+			)
+		"wind_wall":
+			_add_wall_particle_box(
+				root, center, direction, length, height_world,
+				maxf(thickness_world * 2.0, cell_size * 0.15),
+				180, 1.1, Color(0.72, 0.9, 1.0, 0.32),
+				cell_size * 0.18, Vector3.UP * cell_size * 0.45
+			)
+		"blade_barrier":
+			_add_wall_particle_box(
+				root, center, direction, length, height_world,
+				maxf(thickness_world, cell_size * 0.2),
+				240, 0.42, Color(0.9, 0.94, 1.0, 0.72),
+				cell_size * 0.13, Vector3.UP * cell_size * 0.22
+			)
+		"wall_of_force":
+			_add_wall_particle_box(
+				root, center, direction, length, height_world,
+				maxf(thickness_world, cell_size * 0.04),
+				80, 1.8, Color(0.45, 0.72, 1.0, 0.18),
+				cell_size * 0.09, Vector3.ZERO
+			)
+		"wall_of_ice":
+			_add_wall_particle_box(
+				root, center, direction, length, height_world,
+				maxf(thickness_world, cell_size * 0.12),
+				140, 1.4, Color(0.58, 0.92, 1.0, 0.42),
+				cell_size * 0.12, Vector3.DOWN * cell_size * 0.08
+			)
+		"wall_of_thorns":
+			_add_wall_particle_box(
+				root, center, direction, length, height_world,
+				maxf(thickness_world, cell_size * 0.3),
+				180, 1.6, Color(0.18, 0.62, 0.12, 0.42),
+				cell_size * 0.14, Vector3.UP * cell_size * 0.05
+			)
+		"prismatic_wall":
+			var colors: Array[Color] = [
+				Color(1.0, 0.14, 0.14, 0.42),
+				Color(1.0, 0.54, 0.08, 0.40),
+				Color(1.0, 0.92, 0.12, 0.38),
+				Color(0.2, 0.9, 0.32, 0.38),
+				Color(0.22, 0.5, 1.0, 0.40),
+				Color(0.48, 0.22, 0.95, 0.40),
+				Color(0.8, 0.22, 1.0, 0.42)
+			]
+			for color: Color in colors:
+				_add_wall_particle_box(
+					root, center, direction, length, height_world,
+					maxf(thickness_world, cell_size * 0.05),
+					36, 1.0, color,
+					cell_size * 0.10, Vector3.UP * cell_size * 0.08
+				)
+
+
+static func attach_wall_globe(
+	root: Node3D,
+	center: Vector3,
+	radius_world: float,
+	style: String,
+	_hemisphere: bool,
+	cell_size: float
+) -> void:
+	var color: Color = Color(0.55, 0.82, 1.0, 0.28)
+	match style:
+		"wall_of_ice":
+			color = Color(0.56, 0.92, 1.0, 0.38)
+		"prismatic_wall":
+			color = Color(0.84, 0.3, 1.0, 0.38)
+		"wall_of_force":
+			color = Color(0.5, 0.76, 1.0, 0.16)
+
+	_add_sphere_layer(
+		root,
+		center,
+		radius_world * 0.98,
+		cell_size,
+		220 if style != "prismatic_wall" else 320,
+		2.0,
+		color,
+		0.14,
+		radius_world * 0.018
+	)
+
+
+static func _add_wall_particle_box(
+	root: Node3D,
+	center: Vector3,
+	direction: Vector3,
+	length: float,
+	height: float,
+	thickness: float,
+	amount: int,
+	lifetime: float,
+	color: Color,
+	particle_size: float,
+	velocity: Vector3
+) -> void:
+	var particles: GPUParticles3D = GPUParticles3D.new()
+	particles.name = "WallParticles"
+	particles.amount = amount
+	particles.lifetime = lifetime
+	particles.preprocess = lifetime
+	particles.randomness = 0.88
+	root.add_child(particles)
+	particles.global_position = center
+	particles.global_basis = Basis(
+		Quaternion(Vector3.FORWARD, direction)
+	)
+
+	var process: ParticleProcessMaterial = ParticleProcessMaterial.new()
+	process.emission_shape = ParticleProcessMaterial.EMISSION_SHAPE_BOX
+	process.emission_box_extents = Vector3(
+		thickness * 0.5,
+		height * 0.5,
+		length * 0.5
+	)
+	process.direction = (
+		velocity.normalized()
+		if velocity.length_squared() > 0.0001
+		else Vector3.UP
+	)
+	process.spread = 30.0 if velocity.length_squared() > 0.0001 else 180.0
+	process.gravity = Vector3.ZERO
+	process.initial_velocity_min = velocity.length() * 0.35
+	process.initial_velocity_max = velocity.length()
+	process.color = color
+	particles.process_material = process
+
+	var quad: QuadMesh = QuadMesh.new()
+	quad.size = Vector2.ONE * particle_size
+	quad.material = _billboard_material(
+		color,
+		Color(color.r, color.g, color.b, 1.0),
+		1.15
+	)
+	particles.draw_pass_1 = quad
+
+
 static func attach_projectile(
 	root: Node3D,
 	start: Vector3,
