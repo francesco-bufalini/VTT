@@ -1072,7 +1072,7 @@ const SPELLS: Dictionary = {
 		"description": "Sleet fills a 40-foot-high cylinder, heavily obscuring it and making the ground difficult terrain.",
 		"higher_levels": "No slot scaling.",
 		"target_mode": "token_then_point", "range_feet": 150,
-		"aoe_shape": "cylinder", "aoe_radius_feet": 20, "persistent": true,
+		"aoe_shape": "cylinder", "aoe_radius_feet": 20, "aoe_height_feet": 40, "persistent": true,
 		"visual_style": "sleet_storm"
 	},
 	"slow": {
@@ -1131,7 +1131,7 @@ const SPELLS: Dictionary = {
 		"description": "Hail crashes through a 40-foot-high cylinder and briefly leaves difficult terrain.",
 		"higher_levels": "Bludgeoning damage increases by 1d10 for each slot level above 4.",
 		"target_mode": "token_then_point", "range_feet": 300,
-		"aoe_shape": "cylinder", "aoe_radius_feet": 20,
+		"aoe_shape": "cylinder", "aoe_radius_feet": 20, "aoe_height_feet": 40,
 		"visual_style": "ice_storm", "transient_seconds": 5.0
 	},
 	"vitriolic_sphere": {
@@ -1201,7 +1201,7 @@ const SPELLS: Dictionary = {
 		"classes": ["Stregone", "Mago"],
 		"description": "Lightning strikes one target, then leaps from it to up to three different targets within 30 feet.",
 		"higher_levels": "One additional secondary bolt for each slot level above 6.",
-		"target_mode": "chain_targets", "range_feet": 150, "chain_range_feet": 30,
+		"target_mode": "token_then_chain", "range_feet": 150, "secondary_range_feet": 30,
 		"base_secondary_targets": 3, "secondary_targets_per_slot_above_base": 1,
 		"projectile_style": "chain_lightning", "transient_seconds": 5.0
 	},
