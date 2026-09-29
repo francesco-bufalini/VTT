@@ -644,6 +644,14 @@ func show_spell_preview(
 		preview_material.albedo_color = Color(0.14, 0.05, 0.24, 0.22)
 		preview_material.emission = Color(0.08, 0.02, 0.16, 1.0)
 		preview_material.emission_energy_multiplier = 0.55
+	elif style == "lightning_bolt":
+		preview_material.albedo_color = Color(0.16, 0.68, 1.0, 0.20)
+		preview_material.emission = Color(0.38, 0.86, 1.0, 1.0)
+		preview_material.emission_energy_multiplier = 0.9
+	elif style == "chromatic_orb":
+		preview_material.albedo_color = Color(0.7, 0.22, 1.0, 0.28)
+		preview_material.emission = Color(0.55, 0.12, 1.0, 1.0)
+		preview_material.emission_energy_multiplier = 1.0
 	else:
 		preview_material.albedo_color = Color(1.0, 0.32, 0.04, 0.18)
 		preview_material.emission = Color(1.0, 0.16, 0.01, 1.0)
@@ -690,6 +698,25 @@ func show_transient_aoe(
 	timer.start()
 
 
+func show_spell_projectile(
+	start: Vector3,
+	end: Vector3,
+	style: String,
+	duration_seconds: float = 5.0
+) -> void:
+	var root: Node3D = Node3D.new()
+	root.name = "TransientSpellProjectile"
+	add_child(root)
+	SpellVFX.attach_projectile(
+		root,
+		start,
+		end,
+		style,
+		maxf(duration_seconds, 0.05),
+		cell_size
+	)
+
+
 func add_aoe(
 	start: Vector3,
 	end: Vector3,
@@ -728,10 +755,12 @@ func _draw_aoe(
 	shape: String,
 	style: String = ""
 ) -> void:
-	var base_cells := _dnd_grid_distance_cells(end - start)
-	var reach_world := maxf(
+	var base_cells: int = _dnd_grid_distance_cells(end - start)
+	var reach_world: float = maxf(
 		cell_size * 0.5,
-		float(base_cells) * cell_size
+		start.distance_to(end)
+		if not style.is_empty()
+		else float(base_cells) * cell_size
 	)
 	var material: StandardMaterial3D = StandardMaterial3D.new()
 	material.transparency = BaseMaterial3D.TRANSPARENCY_ALPHA
@@ -740,6 +769,16 @@ func _draw_aoe(
 		material.emission_enabled = true
 		material.emission = Color(0.01, 0.005, 0.025, 1.0)
 		material.emission_energy_multiplier = 0.25
+	elif style == "lightning_bolt":
+		material.albedo_color = Color(0.2, 0.68, 1.0, 0.22)
+		material.emission_enabled = true
+		material.emission = Color(0.35, 0.82, 1.0, 1.0)
+		material.emission_energy_multiplier = 1.4
+	elif style == "chromatic_orb":
+		material.albedo_color = Color(0.72, 0.28, 1.0, 0.18)
+		material.emission_enabled = true
+		material.emission = Color(0.55, 0.16, 1.0, 1.0)
+		material.emission_energy_multiplier = 0.9
 	else:
 		material.albedo_color = Color(1, 0.3, 0.05, 0.28)
 	material.shading_mode = BaseMaterial3D.SHADING_MODE_UNSHADED
@@ -774,9 +813,15 @@ func _draw_aoe(
 
 		"line":
 			var mesh := CylinderMesh.new()
-			# Generic D&D line: one square / 5 ft wide.
-			mesh.top_radius = cell_size * 0.5
-			mesh.bottom_radius = cell_size * 0.5
+			# D&D line spells are one square / 5 ft wide. Projectile previews
+			# deliberately use a thin trajectory instead of an AoT volume.
+			var line_radius: float = (
+				cell_size * 0.06
+				if style == "chromatic_orb"
+				else cell_size * 0.5
+			)
+			mesh.top_radius = line_radius
+			mesh.bottom_radius = line_radius
 			mesh.height = reach_world
 			node.mesh = mesh
 			var direction := (
