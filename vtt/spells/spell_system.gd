@@ -47,6 +47,7 @@ func _process(_delta: float) -> void:
 	if _pending_spell_id.is_empty():
 		_hide_spell_preview()
 		_hide_spell_range_preview()
+		_hide_wall_preview()
 		return
 	_update_spell_preview()
 
@@ -1206,6 +1207,11 @@ func _update_spell_preview() -> void:
 
 	_update_spell_range_preview(spell_data)
 
+	if _targeting_phase.begins_with("wall_"):
+		_hide_spell_preview()
+		_update_wall_preview(screen_position, spell_data)
+		return
+
 	match _targeting_phase:
 		"caster":
 			var hovered_caster: Node3D = _token_at_screen(screen_position)
@@ -1429,7 +1435,9 @@ func _update_spell_range_preview(spell_data: Dictionary) -> void:
 			"multi_target_tokens",
 			"chain_primary",
 			"chain_secondary",
-			"direction_point"
+			"direction_point",
+			"wall_start",
+			"wall_center"
 		]
 	):
 		measurement_tool.call("hide_spell_range_preview")
@@ -2451,12 +2459,21 @@ func _cast_persistent_sphere(
 func _finish_cast() -> void:
 	_hide_spell_preview()
 	_hide_spell_range_preview()
+	_hide_wall_preview()
+	if wall_mode_menu != null and wall_mode_menu.visible:
+		wall_mode_menu.hide()
 	_pending_spell_id = ""
 	_targeting_phase = ""
 	_pending_caster = null
 	_pending_targets.clear()
 	_pending_chain_primary = null
 	_directional_pitch_degrees = 0
+	_wall_mode = ""
+	_wall_points.clear()
+	_wall_center = Vector3.ZERO
+	_wall_radius_world = 0.0
+	_wall_sweep = 0.0
+	_wall_damage_side = 0
 	instruction_label.hide()
 	Input.mouse_mode = _restore_mouse_mode
 
@@ -2464,12 +2481,21 @@ func _finish_cast() -> void:
 func _cancel_pending_cast(restore_mouse: bool = true) -> void:
 	_hide_spell_preview()
 	_hide_spell_range_preview()
+	_hide_wall_preview()
+	if wall_mode_menu != null and wall_mode_menu.visible:
+		wall_mode_menu.hide()
 	_pending_spell_id = ""
 	_targeting_phase = ""
 	_pending_caster = null
 	_pending_targets.clear()
 	_pending_chain_primary = null
 	_directional_pitch_degrees = 0
+	_wall_mode = ""
+	_wall_points.clear()
+	_wall_center = Vector3.ZERO
+	_wall_radius_world = 0.0
+	_wall_sweep = 0.0
+	_wall_damage_side = 0
 	if instruction_label != null:
 		instruction_label.hide()
 	if restore_mouse:
