@@ -53,6 +53,7 @@ var share_host: LineEdit
 var share_key: LineEdit
 var share_status: Label
 var token_drag: Node
+var spell_system: Node
 
 
 func _ready() -> void:
@@ -94,6 +95,11 @@ func _ready() -> void:
 	board_sync.setup(self, token_scene, tokens_root, measurement_tool)
 	_build_share_dialog()
 
+	spell_system = preload("res://vtt/spells/spell_system.gd").new()
+	spell_system.name = "SpellSystem"
+	add_child(spell_system)
+	spell_system.call("setup", self)
+
 	var runtime_toolbar: Node = (
 		preload("res://vtt/runtime_toolbar.gd").new() as Node
 	)
@@ -112,6 +118,12 @@ func _process(_delta: float) -> void:
 
 
 func _input(event: InputEvent) -> void:
+	if (
+		spell_system != null
+		and is_instance_valid(spell_system)
+		and bool(spell_system.call("is_panel_open"))
+	):
+		return
 	if event is InputEventKey and event.keycode in [KEY_UP,KEY_DOWN,KEY_LEFT,KEY_RIGHT] and not color_dialog.visible:
 		_clean_selection()
 		if not _selected_tokens.is_empty():
@@ -133,6 +145,14 @@ func _input(event: InputEvent) -> void:
 
 
 func _unhandled_input(event: InputEvent) -> void:
+	if (
+		spell_system != null
+		and is_instance_valid(spell_system)
+		and bool(spell_system.call("handle_input", event))
+	):
+		get_viewport().set_input_as_handled()
+		return
+
 	if _ui_owns_mouse:
 		return
 
@@ -270,6 +290,12 @@ func _unhandled_input(event: InputEvent) -> void:
 				event.ctrl_pressed
 			)
 			get_viewport().set_input_as_handled()
+
+
+func toggle_spell_menu() -> void:
+	if spell_system == null or not is_instance_valid(spell_system):
+		return
+	spell_system.call("toggle_panel")
 
 
 func toggle_grid() -> void:
