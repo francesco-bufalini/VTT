@@ -262,35 +262,40 @@ func _create_grid_overlay(size: Vector2, offset: Vector3) -> MeshInstance3D:
 	var z_start := int(ceil(min_z / cell_size))
 	var z_end := int(floor(max_z / cell_size))
 
-	mesh.surface_begin(Mesh.PRIMITIVE_LINES, minor_material)
-	for x_index in range(x_start, x_end + 1):
-		if posmod(x_index, 5) == 0:
-			continue
-		var x := float(x_index) * cell_size
-		mesh.surface_add_vertex(Vector3(x, 0.0, min_z))
-		mesh.surface_add_vertex(Vector3(x, 0.0, max_z))
-	for z_index in range(z_start, z_end + 1):
-		if posmod(z_index, 5) == 0:
-			continue
-		var z := float(z_index) * cell_size
-		mesh.surface_add_vertex(Vector3(min_x, 0.0, z))
-		mesh.surface_add_vertex(Vector3(max_x, 0.0, z))
-	mesh.surface_end()
+	var minor_vertices: Array[Vector3] = []
+	var major_vertices: Array[Vector3] = []
 
-	mesh.surface_begin(Mesh.PRIMITIVE_LINES, major_material)
 	for x_index in range(x_start, x_end + 1):
-		if posmod(x_index, 5) != 0:
-			continue
+		var target := (
+			major_vertices
+			if posmod(x_index, 5) == 0
+			else minor_vertices
+		)
 		var x := float(x_index) * cell_size
-		mesh.surface_add_vertex(Vector3(x, 0.0, min_z))
-		mesh.surface_add_vertex(Vector3(x, 0.0, max_z))
+		target.append(Vector3(x, 0.0, min_z))
+		target.append(Vector3(x, 0.0, max_z))
+
 	for z_index in range(z_start, z_end + 1):
-		if posmod(z_index, 5) != 0:
-			continue
+		var target := (
+			major_vertices
+			if posmod(z_index, 5) == 0
+			else minor_vertices
+		)
 		var z := float(z_index) * cell_size
-		mesh.surface_add_vertex(Vector3(min_x, 0.0, z))
-		mesh.surface_add_vertex(Vector3(max_x, 0.0, z))
-	mesh.surface_end()
+		target.append(Vector3(min_x, 0.0, z))
+		target.append(Vector3(max_x, 0.0, z))
+
+	if not minor_vertices.is_empty():
+		mesh.surface_begin(Mesh.PRIMITIVE_LINES, minor_material)
+		for vertex in minor_vertices:
+			mesh.surface_add_vertex(vertex)
+		mesh.surface_end()
+
+	if not major_vertices.is_empty():
+		mesh.surface_begin(Mesh.PRIMITIVE_LINES, major_material)
+		for vertex in major_vertices:
+			mesh.surface_add_vertex(vertex)
+		mesh.surface_end()
 
 	overlay.mesh = mesh
 	overlay.position = offset
@@ -301,6 +306,7 @@ func _create_grid_overlay(size: Vector2, offset: Vector3) -> MeshInstance3D:
 func _grid_material(color: Color) -> StandardMaterial3D:
 	var material := StandardMaterial3D.new()
 	material.albedo_color = color
+	material.set_meta("grid_base_alpha", color.a)
 	material.transparency = BaseMaterial3D.TRANSPARENCY_ALPHA
 	material.shading_mode = BaseMaterial3D.SHADING_MODE_UNSHADED
 	material.no_depth_test = false
@@ -316,9 +322,10 @@ func _apply_overlay_strength(overlay: MeshInstance3D) -> void:
 		if material is StandardMaterial3D:
 			var standard := material as StandardMaterial3D
 			var color := standard.albedo_color
-			color.a = (
-				0.68 if surface_index == 0 else 0.92
-			) * _interaction_strength
+			var base_alpha := float(
+				standard.get_meta("grid_base_alpha", color.a)
+			)
+			color.a = base_alpha * _interaction_strength
 			standard.albedo_color = color
 
 
