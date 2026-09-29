@@ -124,6 +124,13 @@ func _process(_delta: float) -> void:
 
 func _input(event: InputEvent) -> void:
 	if (
+		spell_system != null
+		and is_instance_valid(spell_system)
+		and bool(spell_system.call("is_panel_open"))
+	):
+		return
+
+	if (
 		event is InputEventKey
 		and event.pressed
 		and not event.echo
@@ -141,13 +148,6 @@ func _input(event: InputEvent) -> void:
 		if undo_last_action():
 			get_viewport().set_input_as_handled()
 			return
-
-	if (
-		spell_system != null
-		and is_instance_valid(spell_system)
-		and bool(spell_system.call("is_panel_open"))
-	):
-		return
 
 	if (
 		spell_system != null
