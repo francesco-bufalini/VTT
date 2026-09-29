@@ -17,6 +17,8 @@ var instruction_label: Label
 
 var _selected_spell_id: String = ""
 var _pending_spell_id: String = ""
+var _targeting_phase: String = ""
+var _pending_caster: Node3D = null
 var _restore_mouse_mode: int = Input.MOUSE_MODE_VISIBLE
 
 
@@ -58,7 +60,7 @@ func open_panel() -> void:
 	if panel == null:
 		return
 
-	_pending_spell_id = ""
+	_cancel_pending_cast(false)
 	_restore_mouse_mode = Input.mouse_mode
 	board_root.set("_ui_owns_mouse", true)
 	Input.mouse_mode = Input.MOUSE_MODE_VISIBLE
@@ -71,8 +73,8 @@ func close_panel() -> void:
 		return
 
 	panel.hide()
+	_cancel_pending_cast(false)
 	board_root.set("_ui_owns_mouse", false)
-	instruction_label.hide()
 	Input.mouse_mode = _restore_mouse_mode
 
 
@@ -94,9 +96,19 @@ func handle_input(event: InputEvent) -> bool:
 		var mouse_event: InputEventMouseButton = event as InputEventMouseButton
 		if not mouse_event.pressed:
 			return false
+
 		if mouse_event.button_index == MOUSE_BUTTON_RIGHT:
 			_cancel_pending_cast()
 			return true
+
+		if _targeting_phase == "point":
+			if mouse_event.button_index == MOUSE_BUTTON_WHEEL_UP:
+				_adjust_point_depth(-1.0)
+				return true
+			if mouse_event.button_index == MOUSE_BUTTON_WHEEL_DOWN:
+				_adjust_point_depth(1.0)
+				return true
+
 		if mouse_event.button_index != MOUSE_BUTTON_LEFT:
 			return false
 
@@ -104,47 +116,139 @@ func handle_input(event: InputEvent) -> bool:
 		if Input.mouse_mode == Input.MOUSE_MODE_CAPTURED:
 			screen_position = get_viewport().get_visible_rect().size * 0.5
 
-		var hit_value: Variant = board_root.call(
-			"_raycast_from_screen",
-			screen_position,
-			ALL_COLLISION_LAYERS,
-			true
-		)
-		if not hit_value is Dictionary:
-			_set_instruction(
-				"Seleziona un token come origine dell'incantesimo."
-			)
-			return true
-
-		var hit: Dictionary = hit_value as Dictionary
-		var collider: Node = hit.get("collider") as Node
-		if collider == null:
-			_set_instruction(
-				"Seleziona un token come origine dell'incantesimo."
-			)
-			return true
-
-		var target_value: Variant = board_root.call(
-			"_find_interaction_target",
-			collider
-		)
-		if not target_value is Node:
-			_set_instruction(
-				"Seleziona un token come origine dell'incantesimo."
-			)
-			return true
-
-		var target: Node = target_value as Node
-		if not target.is_in_group("dnd_token") or not target is Node3D:
-			_set_instruction(
-				"Seleziona un token come origine dell'incantesimo."
-			)
-			return true
-
-		_cast_pending_spell(target as Node3D)
-		return true
+		match _targeting_phase:
+			"caster":
+				_try_select_caster(screen_position)
+				return true
+			"point":
+				_try_select_point(screen_position)
+				return true
 
 	return false
+
+
+func _try_select_caster(screen_position: Vector2) -> void:
+	var hit_value: Variant = board_root.call(
+		"_raycast_from_screen",
+		screen_position,
+		ALL_COLLISION_LAYERS,
+		true
+	)
+	if not hit_value is Dictionary:
+		_set_instruction("Seleziona un token come origine dell'incantesimo.")
+		return
+
+	var hit: Dictionary = hit_value as Dictionary
+	var collider: Node = hit.get("collider") as Node
+	if collider == null:
+		_set_instruction("Seleziona un token come origine dell'incantesimo.")
+		return
+
+	var target_value: Variant = board_root.call(
+		"_find_interaction_target",
+		collider
+	)
+	if not target_value is Node:
+		_set_instruction("Seleziona un token come origine dell'incantesimo.")
+		return
+
+	var target: Node = target_value as Node
+	if not target.is_in_group("dnd_token") or not target is Node3D:
+		_set_instruction("Seleziona un token come origine dell'incantesimo.")
+		return
+
+	var caster: Node3D = target as Node3D
+	var spell_data: Dictionary = SpellCatalog.spell(_pending_spell_id)
+	if spell_data.is_empty():
+		_cancel_pending_cast()
+		return
+
+	var target_mode: String = String(spell_data.get("target_mode", ""))
+	match target_mode:
+		"self_token":
+			_cast_spell_from_caster(caster, spell_data)
+			_finish_cast()
+		"token_then_point":
+			_pending_caster = caster
+			_targeting_phase = "point"
+			var range_feet: int = int(spell_data.get("range_feet", 0))
+			_set_instruction(
+				"%s: scegli un punto entro %d ft · rotellina per profondità 3D · Esc per annullare"
+				% [
+					String(spell_data.get("name", "Incantesimo")),
+					range_feet
+				]
+			)
+		_:
+			_cancel_pending_cast()
+
+
+func _try_select_point(screen_position: Vector2) -> void:
+	if _pending_caster == null or not is_instance_valid(_pending_caster):
+		_cancel_pending_cast()
+		return
+
+	var spell_data: Dictionary = SpellCatalog.spell(_pending_spell_id)
+	if spell_data.is_empty():
+		_cancel_pending_cast()
+		return
+
+	var measurement_tool: Node = _measurement_tool()
+	if measurement_tool == null:
+		_set_instruction("Impossibile determinare il punto bersaglio.")
+		return
+
+	var point_value: Variant = measurement_tool.call(
+		"get_spell_target_point",
+		screen_position
+	)
+	if not point_value is Dictionary:
+		_set_instruction(
+			"Seleziona una superficie o una cella della griglia 3D."
+		)
+		return
+
+	var point_data: Dictionary = point_value as Dictionary
+	if not bool(point_data.get("valid", false)):
+		_set_instruction(
+			"Seleziona una superficie o una cella della griglia 3D."
+		)
+		return
+
+	var target_point: Vector3 = point_data.get("point", Vector3.ZERO)
+	var cell_size: float = _cell_size()
+	var range_feet: float = float(spell_data.get("range_feet", 0.0))
+	var max_world_distance: float = (
+		range_feet / 5.0 * cell_size
+	)
+	var actual_world_distance: float = (
+		_pending_caster.global_position.distance_to(target_point)
+	)
+	if actual_world_distance > max_world_distance + cell_size * 0.01:
+		var actual_feet: int = int(
+			round(actual_world_distance / cell_size * 5.0)
+		)
+		_set_instruction(
+			"Punto fuori range: %d ft / %d ft. Scegli un punto più vicino."
+			% [actual_feet, int(range_feet)]
+		)
+		return
+
+	_cast_spell_at_point(
+		_pending_caster,
+		target_point,
+		spell_data
+	)
+	_finish_cast()
+
+
+func _adjust_point_depth(step_cells: float) -> void:
+	var measurement_tool: Node = _measurement_tool()
+	if measurement_tool != null:
+		measurement_tool.call(
+			"adjust_spell_target_depth",
+			step_cells
+		)
 
 
 func _build_panel() -> void:
@@ -367,15 +471,31 @@ func _select_spell(spell_id: String) -> void:
 			class_names.append(String(class_value))
 		classes_text = ", ".join(class_names)
 
+	var target_text: String = String(
+		spell_data.get("target", "Self")
+	)
+	var area_text: String = String(
+		spell_data.get("area", "")
+	)
+	if area_text.is_empty():
+		if String(spell_data.get("aoe_shape", "")) == "cone":
+			area_text = "%d-foot cone" % (
+				int(spell_data.get("aoe_length_cells", 0)) * 5
+			)
+
 	spell_meta.text = (
 		"%s · %s\n"
-		+ "Tempo di lancio: %s | Range: %s | Componenti: %s\n"
-		+ "Durata: %s | Classi: %s"
+		+ "Tempo di lancio: %s | Range: %s\n"
+		+ "Bersaglio: %s | Area: %s\n"
+		+ "Componenti: %s | Durata: %s\n"
+		+ "Classi: %s"
 	) % [
 		SpellCatalog.LEVEL_NAMES[int(spell_data.get("level", 0))],
 		String(spell_data.get("school", "")),
 		String(spell_data.get("casting_time", "")),
 		String(spell_data.get("range", "")),
+		target_text,
+		area_text,
 		String(spell_data.get("components", "")),
 		String(spell_data.get("duration", "")),
 		classes_text
@@ -397,12 +517,17 @@ func _activate_selected_spell() -> void:
 	if spell_data.is_empty():
 		return
 
-	if String(spell_data.get("target_mode", "")) != "self_token":
+	var target_mode: String = String(
+		spell_data.get("target_mode", "")
+	)
+	if target_mode not in ["self_token", "token_then_point"]:
 		return
 
 	_pending_spell_id = _selected_spell_id
+	_targeting_phase = "caster"
+	_pending_caster = null
 
-	var measurement_tool: Node = board_root.get_node_or_null("MeasurementTool")
+	var measurement_tool: Node = _measurement_tool()
 	if measurement_tool != null:
 		measurement_tool.call("set_measurement_mode", false)
 	var measurement_label: Label = board_root.get_node_or_null(
@@ -420,27 +545,28 @@ func _activate_selected_spell() -> void:
 	)
 
 
-func _cast_pending_spell(caster: Node3D) -> void:
-	var spell_data: Dictionary = SpellCatalog.spell(_pending_spell_id)
-	if spell_data.is_empty():
-		_cancel_pending_cast()
-		return
-
-	if _pending_spell_id == "burning_hands":
+func _cast_spell_from_caster(
+	caster: Node3D,
+	spell_data: Dictionary
+) -> void:
+	if String(spell_data.get("id", "")) == "burning_hands":
 		_cast_burning_hands(caster, spell_data)
 
-	_pending_spell_id = ""
-	instruction_label.hide()
-	Input.mouse_mode = _restore_mouse_mode
+
+func _cast_spell_at_point(
+	_caster: Node3D,
+	target_point: Vector3,
+	spell_data: Dictionary
+) -> void:
+	if String(spell_data.get("id", "")) == "fireball":
+		_cast_fireball(target_point, spell_data)
 
 
 func _cast_burning_hands(
 	caster: Node3D,
 	spell_data: Dictionary
 ) -> void:
-	var measurement_tool: Node = board_root.get_node_or_null(
-		"MeasurementTool"
-	)
+	var measurement_tool: Node = _measurement_tool()
 	if measurement_tool == null:
 		return
 
@@ -451,7 +577,7 @@ func _cast_burning_hands(
 	else:
 		direction = direction.normalized()
 
-	var cell_size: float = maxf(float(board_root.get("cell_size")), 0.001)
+	var cell_size: float = _cell_size()
 	var length_cells: int = int(spell_data.get("aoe_length_cells", 3))
 	var origin: Vector3 = caster.global_position
 	var endpoint: Vector3 = (
@@ -459,7 +585,7 @@ func _cast_burning_hands(
 		+ direction * float(length_cells) * cell_size
 	)
 	var duration: float = float(
-		spell_data.get("transient_seconds", 0.55)
+		spell_data.get("transient_seconds", 5.0)
 	)
 
 	measurement_tool.call(
@@ -471,10 +597,62 @@ func _cast_burning_hands(
 	)
 
 
-func _cancel_pending_cast() -> void:
+func _cast_fireball(
+	target_point: Vector3,
+	spell_data: Dictionary
+) -> void:
+	var measurement_tool: Node = _measurement_tool()
+	if measurement_tool == null:
+		return
+
+	var radius_feet: float = float(
+		spell_data.get("aoe_radius_feet", 20.0)
+	)
+	var radius_world: float = (
+		radius_feet / 5.0 * _cell_size()
+	)
+	var endpoint: Vector3 = (
+		target_point + Vector3.RIGHT * radius_world
+	)
+	var duration: float = float(
+		spell_data.get("transient_seconds", 5.0)
+	)
+
+	measurement_tool.call(
+		"show_transient_aoe",
+		target_point,
+		endpoint,
+		String(spell_data.get("aoe_shape", "sphere")),
+		duration
+	)
+
+
+func _finish_cast() -> void:
 	_pending_spell_id = ""
+	_targeting_phase = ""
+	_pending_caster = null
 	instruction_label.hide()
 	Input.mouse_mode = _restore_mouse_mode
+
+
+func _cancel_pending_cast(restore_mouse: bool = true) -> void:
+	_pending_spell_id = ""
+	_targeting_phase = ""
+	_pending_caster = null
+	if instruction_label != null:
+		instruction_label.hide()
+	if restore_mouse:
+		Input.mouse_mode = _restore_mouse_mode
+
+
+func _measurement_tool() -> Node:
+	if board_root == null or not is_instance_valid(board_root):
+		return null
+	return board_root.get_node_or_null("MeasurementTool")
+
+
+func _cell_size() -> float:
+	return maxf(float(board_root.get("cell_size")), 0.001)
 
 
 func _set_instruction(message: String) -> void:
