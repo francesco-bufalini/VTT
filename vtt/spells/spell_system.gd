@@ -589,7 +589,7 @@ func _update_spell_preview() -> void:
 				geometry.get("start", Vector3.ZERO),
 				geometry.get("end", Vector3.ZERO),
 				String(spell_data.get("aoe_shape", "line")),
-				String(spell_data.get("id", "lightning_bolt"))
+				_spell_style(spell_data)
 			)
 
 		_:
@@ -640,6 +640,10 @@ func _update_spell_range_preview(spell_data: Dictionary) -> void:
 			"direction_point"
 		]
 	):
+		measurement_tool.call("hide_spell_range_preview")
+		return
+
+	if not bool(spell_data.get("show_range_preview", true)):
 		measurement_tool.call("hide_spell_range_preview")
 		return
 
@@ -1281,9 +1285,7 @@ func _cast_spell_from_caster(
 	caster: Node3D,
 	spell_data: Dictionary
 ) -> void:
-	var spell_id: String = String(spell_data.get("id", ""))
-	if spell_id == "burning_hands":
-		_cast_directional_aoe(caster, spell_data)
+	_cast_directional_aoe(caster, spell_data)
 
 
 func _cast_spell_at_point(
@@ -1342,7 +1344,7 @@ func _cast_directional_aoe(
 		geometry.get("end", Vector3.ZERO),
 		String(spell_data.get("aoe_shape", "cone")),
 		duration,
-		String(spell_data.get("id", ""))
+		_spell_style(spell_data)
 	)
 
 
@@ -1369,7 +1371,7 @@ func _cast_directional_spell_to_point(
 		geometry.get("end", Vector3.ZERO),
 		String(spell_data.get("aoe_shape", "line")),
 		float(spell_data.get("transient_seconds", 5.0)),
-		String(spell_data.get("id", "lightning_bolt"))
+		_spell_style(spell_data)
 	)
 
 
