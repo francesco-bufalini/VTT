@@ -124,6 +124,19 @@ func _input(event: InputEvent) -> void:
 		and bool(spell_system.call("is_panel_open"))
 	):
 		return
+
+	if (
+		spell_system != null
+		and is_instance_valid(spell_system)
+		and bool(spell_system.call("is_targeting"))
+		and event is InputEventKey
+		and event.keycode in [KEY_UP, KEY_DOWN, KEY_LEFT, KEY_RIGHT]
+	):
+		if bool(spell_system.call("handle_input", event)):
+			get_viewport().set_input_as_handled()
+		else:
+			get_viewport().set_input_as_handled()
+		return
 	if event is InputEventKey and event.keycode in [KEY_UP,KEY_DOWN,KEY_LEFT,KEY_RIGHT] and not color_dialog.visible:
 		_clean_selection()
 		if not _selected_tokens.is_empty():
@@ -403,11 +416,11 @@ func _show_context_menu(screen_position: Vector2) -> void:
 		context_menu.set_item_checked(context_menu.get_item_index(CONTEXT_FLYING), _selected_tokens.all(func(token): return token.flying))
 
 		context_menu.add_item(
-			"Ruota 90° a sinistra" + suffix,
+			"Ruota 45° a sinistra" + suffix,
 			CONTEXT_ROTATE_LEFT
 		)
 		context_menu.add_item(
-			"Ruota 90° a destra" + suffix,
+			"Ruota 45° a destra" + suffix,
 			CONTEXT_ROTATE_RIGHT
 		)
 		context_menu.add_separator()
