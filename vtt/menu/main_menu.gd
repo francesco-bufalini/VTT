@@ -1,5 +1,7 @@
 extends Control
 
+const ACTIVE_CAMPAIGNS_SCENE_PATH := "res://vtt/menu/active_campaigns.tscn"
+
 var _options_dialog: AcceptDialog
 var _new_campaign_dialog: ConfirmationDialog
 var _new_campaign_name: LineEdit
@@ -118,7 +120,7 @@ func _build_new_campaign_dialog() -> void:
 
 
 func _open_active_campaigns() -> void:
-	get_tree().change_scene_to_file(CampaignManager.ACTIVE_CAMPAIGNS_SCENE)
+	get_tree().change_scene_to_file(ACTIVE_CAMPAIGNS_SCENE_PATH)
 
 
 func _request_new_campaign() -> void:
@@ -133,14 +135,22 @@ func _confirm_new_campaign() -> void:
 		_show_error("Inserisci un nome per la campagna.")
 		return
 
-	var campaign_id: String = CampaignManager.create_campaign(campaign_name)
+	var campaign_id: String = String(_campaign_manager().call("create_campaign", campaign_name))
 	if campaign_id.is_empty():
 		_show_error("Impossibile creare la campagna.")
 		return
 
-	var error: Error = CampaignManager.open_campaign(campaign_id)
+	var error: Error = int(_campaign_manager().call("open_campaign", campaign_id))
 	if error != OK:
 		_show_error("Impossibile aprire la nuova campagna: %s" % error_string(error))
+
+
+
+func _campaign_manager() -> Node:
+	var manager: Node = get_node_or_null("/root/CampaignManager")
+	if manager == null:
+		push_error("CampaignManager autoload non disponibile.")
+	return manager
 
 
 func _show_options_placeholder() -> void:
