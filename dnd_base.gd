@@ -229,12 +229,24 @@ func _unhandled_input(event: InputEvent) -> void:
 		if bool(measurement_tool.call("is_measurement_mode")):
 			if event.pressed \
 			and event.button_index == MOUSE_BUTTON_WHEEL_UP:
-				measurement_tool.call("adjust_air_depth", -1.0)
+				if (
+					bool(measurement_tool.call("is_aoe_mode"))
+					and bool(measurement_tool.call("is_dragging"))
+				):
+					measurement_tool.call("adjust_aoe_color", -1)
+				else:
+					measurement_tool.call("adjust_air_depth", -1.0)
 				get_viewport().set_input_as_handled()
 				return
 			elif event.pressed \
 			and event.button_index == MOUSE_BUTTON_WHEEL_DOWN:
-				measurement_tool.call("adjust_air_depth", 1.0)
+				if (
+					bool(measurement_tool.call("is_aoe_mode"))
+					and bool(measurement_tool.call("is_dragging"))
+				):
+					measurement_tool.call("adjust_aoe_color", 1)
+				else:
+					measurement_tool.call("adjust_air_depth", 1.0)
 				get_viewport().set_input_as_handled()
 				return
 			elif event.button_index == MOUSE_BUTTON_LEFT:
