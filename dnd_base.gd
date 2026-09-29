@@ -132,7 +132,7 @@ func _unhandled_input(event: InputEvent) -> void:
 		and event.button_index == MOUSE_BUTTON_LEFT
 		and event.pressed
 	):
-		var aoe_screen_position := (
+		var aoe_screen_position: Vector2 = (
 			_screen_center()
 			if Input.mouse_mode == Input.MOUSE_MODE_CAPTURED
 			else event.position
