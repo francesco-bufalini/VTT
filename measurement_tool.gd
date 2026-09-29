@@ -728,42 +728,56 @@ func _draw_aoe(
 	node.material_override = material
 
 
-func remove_aoe_at_screen(screen_position: Vector2) -> bool:
+func get_aoe_index_at_screen(screen_position: Vector2) -> int:
 	if _camera == null or not is_instance_valid(_camera):
-		return false
+		return -1
 
-	var origin := _camera.project_ray_origin(screen_position)
-	var direction := _camera.project_ray_normal(screen_position)
-	var query := PhysicsRayQueryParameters3D.create(
-		origin,
-		origin + direction * max_ray_distance
+	var origin: Vector3 = _camera.project_ray_origin(screen_position)
+	var direction: Vector3 = _camera.project_ray_normal(screen_position)
+	var query: PhysicsRayQueryParameters3D = (
+		PhysicsRayQueryParameters3D.create(
+			origin,
+			origin + direction * max_ray_distance
+		)
 	)
 	query.collision_mask = AOE_PICK_LAYER
 	query.collide_with_bodies = false
 	query.collide_with_areas = true
 
-	var hit := _camera.get_world_3d().direct_space_state.intersect_ray(
-		query
+	var hit: Dictionary = (
+		_camera.get_world_3d().direct_space_state.intersect_ray(query)
 	)
 	if hit.is_empty():
-		return false
+		return -1
 
 	var area: Area3D = hit.get("collider") as Area3D
 	if area == null or not area.has_meta("aoe_root"):
+		return -1
+
+	var root_value: Variant = area.get_meta("aoe_root")
+	if not is_instance_valid(root_value):
+		return -1
+
+	return _aoe_nodes.find(root_value)
+
+
+func dissolve_aoe(index: int) -> bool:
+	if index < 0 or index >= _aoe_nodes.size():
+		return false
+	if index >= persistent_aoes.size():
 		return false
 
-	var root: Variant = area.get_meta("aoe_root")
-	if not is_instance_valid(root):
-		return false
-
-	var index := _aoe_nodes.find(root)
-	if index < 0:
-		return false
-
+	var root: Node3D = _aoe_nodes[index]
 	_aoe_nodes.remove_at(index)
 	persistent_aoes.remove_at(index)
-	(root as Node).queue_free()
+	if is_instance_valid(root):
+		root.queue_free()
 	return true
+
+
+func remove_aoe_at_screen(screen_position: Vector2) -> bool:
+	var index: int = get_aoe_index_at_screen(screen_position)
+	return dissolve_aoe(index)
 
 
 func _add_aoe_pick_area(
