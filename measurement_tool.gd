@@ -748,7 +748,7 @@ func remove_aoe_at_screen(screen_position: Vector2) -> bool:
 	if hit.is_empty():
 		return false
 
-	var area := hit.get("collider") as Area3D
+	var area: Area3D = hit.get("collider") as Area3D
 	if area == null or not area.has_meta("aoe_root"):
 		return false
 
