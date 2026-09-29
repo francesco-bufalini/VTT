@@ -256,30 +256,6 @@ const SPELLS: Dictionary = {
     "range_feet": 120,
     "persistent": true
   },
-  "enervation": {
-    "id": "enervation",
-    "name": "Enervation",
-    "source": "XGE",
-    "level": 5,
-    "school": "Necromancy",
-    "casting_time": "1 action",
-    "range": "60 feet",
-    "target": "One target",
-    "area": "Single/multiple target",
-    "components": "V, S",
-    "duration": "Concentration, up to 1 minute",
-    "classes": [
-      "Mago",
-      "Stregone",
-      "Warlock"
-    ],
-    "description": "A tendril of inky darkness reaches out from you, touching a creature you can see within range to drain life from it. The target must make a Dexterity saving throw. On a successful save, the target takes 2d8 necrotic damage, and the spell ends. On a failed save, the target takes 4d8 necrotic damage, and until the spell ends, you can use your action on each of your turns to automatically deal 4d8 necrotic damage to the target. The spell ends if you use your action to do anything else, if the target is ever outside the spell's range, or if the target has Cover from you. Whenever the spell deals damage to a target, you regain hit points equal to half the amount of necrotic damage the target takes.",
-    "higher_levels": "At Higher Levels When you cast this spell using a spell slot of 6th level or higher, the damage increases by 4d8;2d8 for each slot level above 5th.",
-    "visual_style": "necrotic",
-    "transient_seconds": 5,
-    "target_mode": "token_then_token",
-    "range_feet": 60
-  },
   "entrancing_mirrors": {
     "id": "entrancing_mirrors",
     "name": "Entrancing Mirrors",
@@ -1543,30 +1519,6 @@ const SPELLS: Dictionary = {
     "target_mode": "token_then_token",
     "range_feet": 5
   },
-  "control_water": {
-    "id": "control_water",
-    "name": "Control Water",
-    "source": "XPHB",
-    "level": 4,
-    "school": "Transmutation",
-    "casting_time": "1 action",
-    "range": "300 feet",
-    "target": "One target",
-    "area": "Single/multiple target",
-    "components": "V, S, M (a mixture of water and dust)",
-    "duration": "Concentration, up to 10 minutes",
-    "classes": [
-      "Chierico",
-      "Druido",
-      "Mago"
-    ],
-    "description": "Until the spell ends, you control any water inside an area you choose that is a Cube [Area of Effect] up to 100 feet on a side, using one of the following effects. As a Magic action on your later turns, you can repeat the same effect or choose a different one. Flood You cause the water level of all standing water in the area to rise by as much as 20 feet. If you choose an area in a large body of water, you instead create a 20-foot tall wave that travels from one side of the area to the other and then crashes. Any Huge or smaller vehicles in the wave's path are carried with it to the other side. Any Huge or smaller vehicles struck by the wave have a 25 chance of capsizing. The water level remains elevated until the spell ends or you choose a different effect. If this effect produced a wave, the wave repeats on the start of your next turn while the flood effect lasts. Part Water You part water in the area and create a trench. The trench extends across the spell's area, and the separated water forms a wall to either side. The trench remains until the spell ends or you choose a different effect. The water then slowly fills in the trench over the course of the next round until the normal water level is restored. Redirect Flow You cause flowing water in the area to move in a direction you choose, even if the water has to flow over obstacles, up walls, or in other unlikely directions.",
-    "higher_levels": "",
-    "visual_style": "arcane",
-    "transient_seconds": 5,
-    "target_mode": "token_then_token",
-    "range_feet": 300
-  },
   "cordon_of_arrows": {
     "id": "cordon_of_arrows",
     "name": "Cordon of Arrows",
@@ -2434,29 +2386,6 @@ const SPELLS: Dictionary = {
     "range_feet": 5,
     "persistent": true
   },
-  "grasping_vine": {
-    "id": "grasping_vine",
-    "name": "Grasping Vine",
-    "source": "XPHB",
-    "level": 4,
-    "school": "Conjuration",
-    "casting_time": "1 bonus action",
-    "range": "60 feet",
-    "target": "One target",
-    "area": "Single/multiple target",
-    "components": "V, S",
-    "duration": "Concentration, up to 1 minute",
-    "classes": [
-      "Druido",
-      "Ranger"
-    ],
-    "description": "You conjure a vine that sprouts from a surface in an unoccupied space that you can see within range. The vine lasts for the duration. Make a melee spell attack against a creature within 30 feet of the vine. On a hit, the target takes 4d8 Bludgeoning damage and is pulled up to 30 feet toward the vine; if the target is Huge or smaller, it has the Grappled condition (escape DC equal to your spell save DC). The vine can grapple only one creature at a time, and you can cause the vine to release a Grappled creature (no action required). As a Bonus Action on your later turns, you can repeat the attack against a creature within 30 feet of the vine.",
-    "higher_levels": "Using a Higher-Level Spell Slot The number of creatures the vine can grapple increases by one for each spell slot level above 4.",
-    "visual_style": "arcane",
-    "transient_seconds": 5,
-    "target_mode": "token_then_token",
-    "range_feet": 60
-  },
   "greater_invisibility": {
     "id": "greater_invisibility",
     "name": "Greater Invisibility",
@@ -2820,28 +2749,6 @@ const SPELLS: Dictionary = {
     "base_target_clicks": 1,
     "allow_repeat_targets": false,
     "target_clicks_per_slot_above_base": 1
-  },
-  "hex": {
-    "id": "hex",
-    "name": "Hex",
-    "source": "XPHB",
-    "level": 1,
-    "school": "Enchantment",
-    "casting_time": "1 bonus action",
-    "range": "90 feet",
-    "target": "One target",
-    "area": "Single/multiple target",
-    "components": "V, S, M (the petrified eye of a newt)",
-    "duration": "Concentration, up to 1 hour",
-    "classes": [
-      "Warlock"
-    ],
-    "description": "You place a curse on a creature that you can see within range. Until the spell ends, you deal an extra 1d6 Necrotic damage to the target whenever you hit it with an attack roll. Also, choose one ability when you cast the spell. The target has Disadvantage on ability checks made with the chosen ability. If the target drops to 0 Hit Points before this spell ends, you can take a Bonus Action on a later turn to curse a new creature.",
-    "higher_levels": "Using a Higher-Level Spell Slot Your Concentration can last longer with a spell slot of level 2 (up to 4 hours), 3-4 (up to 8 hours), or 5+ (24 hours).",
-    "visual_style": "necrotic",
-    "transient_seconds": 5,
-    "target_mode": "token_then_token",
-    "range_feet": 90
   },
   "hold_monster": {
     "id": "hold_monster",
@@ -3793,29 +3700,6 @@ const SPELLS: Dictionary = {
     "direction_limit_feet": 60,
     "show_range_preview": false
   },
-  "project_image": {
-    "id": "project_image",
-    "name": "Project Image",
-    "source": "PHB",
-    "level": 7,
-    "school": "Illusion",
-    "casting_time": "1 action",
-    "range": "Special",
-    "target": "One target",
-    "area": "Single/multiple target",
-    "components": "V, S, M",
-    "duration": "Concentration, up to 1 day",
-    "classes": [
-      "Bardo",
-      "Mago"
-    ],
-    "description": "You create an illusory copy of yourself that lasts for the duration. The copy can appear at any location within range that you have seen before, regardless of intervening obstacles. The illusion looks and sounds like you but is intangible. If the illusion takes any damage, it disappears, and the spell ends. You can use your action to move this illusion up to twice your speed, and make it gesture, speak, and behave in whatever way you choose. It mimics your mannerisms perfectly. You can see through its eyes and hear through its ears as if you were in its space. On your turn as a bonus action, you can switch from using its senses to using your own, or back again. While you are using its senses, you are blinded and deafened in regard to your own surroundings. Physical interaction with the image reveals it to be an illusion, because things can pass through it. A creature that uses its action to examine the image can determine that it is an illusion with a successful Intelligence (Investigation) check against your spell save DC. If a creature discerns the illusion for what it is, the creature can see through the image, and any noise it makes sounds hollow to the creature.",
-    "higher_levels": "",
-    "visual_style": "arcane",
-    "transient_seconds": 5,
-    "target_mode": "token_then_token",
-    "range_feet": 500
-  },
   "protection_from_energy": {
     "id": "protection_from_energy",
     "name": "Protection from Energy",
@@ -4470,29 +4354,6 @@ const SPELLS: Dictionary = {
     "base_target_clicks": 1,
     "allow_repeat_targets": false,
     "target_clicks_per_slot_above_base": 1
-  },
-  "telekinesis": {
-    "id": "telekinesis",
-    "name": "Telekinesis",
-    "source": "XPHB",
-    "level": 5,
-    "school": "Transmutation",
-    "casting_time": "1 action",
-    "range": "60 feet",
-    "target": "One target",
-    "area": "Single/multiple target",
-    "components": "V, S",
-    "duration": "Concentration, up to 10 minutes",
-    "classes": [
-      "Mago",
-      "Stregone"
-    ],
-    "description": "You gain the ability to move or manipulate creatures or objects by thought. When you cast the spell and as a Magic action on your later turns before the spell ends, you can exert your will on one creature or object that you can see within range, causing the appropriate effect below. You can affect the same target round after round or choose a new one at any time. If you switch targets, the prior target is no longer affected by the spell. Creature You can try to move a Huge or smaller creature. The target must succeed on a Strength saving throw, or you move it up to 30 feet in any direction within the spell's range. Until the end of your next turn, the creature has the Restrained condition, and if you lift it into the air, it is suspended there. It falls at the end of your next turn unless you use this option on it again and it fails the save. Object You can try to move a Huge or smaller object. If the object isn't being worn or carried, you automatically move it up to 30 feet in any direction within the spell's range. If the object is worn or carried by a creature, that creature must succeed on a Strength saving throw, or you pull the object away and move it up to 30 feet in any direction within the spell's range. You can exert fine control on objects with your telekinetic grip, such as manipulating a simple tool, opening a door or a container, stowing or retrieving an item fro",
-    "higher_levels": "",
-    "visual_style": "arcane",
-    "transient_seconds": 5,
-    "target_mode": "token_then_token",
-    "range_feet": 60
   },
   "telepathy": {
     "id": "telepathy",
@@ -5203,33 +5064,6 @@ const SPELLS: Dictionary = {
     "range_feet": 60,
     "level17_damage": "4d8 Fire"
   },
-  "dawn": {
-    "id": "dawn",
-    "name": "Dawn",
-    "source": "XGE",
-    "level": 5,
-    "school": "Evocation",
-    "casting_time": "1 action",
-    "range": "60 feet",
-    "target": "A point/direction within range",
-    "area": "cylinder",
-    "components": "V, S, M",
-    "duration": "Concentration, up to 1 minute",
-    "classes": [
-      "Chierico",
-      "Mago"
-    ],
-    "description": "The light of dawn shines down on a location you specify within range. Until the spell ends, a 30-foot-radius, 40-foot-high cylinder of bright light glimmers there. This light is sunlight. When the cylinder appears, each creature in it must make a Constitution saving throw, taking 4d10 radiant damage on a failed save, or half as much damage on a successful one. A creature must also make this saving throw whenever it ends its turn in the cylinder. If you're within 60 feet of the cylinder, you can move it up to 60 feet as a bonus action on your turn.",
-    "higher_levels": "",
-    "visual_style": "radiant",
-    "transient_seconds": 5,
-    "target_mode": "token_then_point",
-    "aoe_shape": "cylinder",
-    "aoe_radius_feet": 30,
-    "aoe_height_feet": 40,
-    "range_feet": 60,
-    "persistent": true
-  },
   "dragons_breath": {
     "id": "dragons_breath",
     "name": "Dragon's Breath",
@@ -5717,29 +5551,6 @@ const SPELLS: Dictionary = {
     "target_mode": "token_then_token",
     "range_feet": 30
   },
-  "melfs_minute_meteors": {
-    "id": "melfs_minute_meteors",
-    "name": "Melf's Minute Meteors",
-    "source": "XGE",
-    "level": 3,
-    "school": "Evocation",
-    "casting_time": "1 action",
-    "range": "Self",
-    "target": "One target",
-    "area": "Single/multiple target",
-    "components": "V, S, M (niter, sulfur, and pine tar formed into a bead)",
-    "duration": "Concentration, up to 10 minutes",
-    "classes": [
-      "Mago",
-      "Stregone"
-    ],
-    "description": "You create six tiny meteors in your space. They float in the air and orbit you for the spell's duration. When you cast the spell—and as a bonus action on each of your turns thereafter—you can expend one or two of the meteors, sending them streaking toward a point or points you choose within 120 feet of you. Once a meteor reaches its destination or impacts against a solid surface, the meteor explodes. Each creature within 5 feet of the point where the meteor explodes must make a Dexterity saving throw. A creature takes 2d6 fire damage on a failed save, or half as much damage on a successful one.",
-    "higher_levels": "At Higher Levels When you cast this spell using a spell slot of 4th level or higher, the number of meteors created increases by two for each slot level above 3rd.",
-    "visual_style": "fire",
-    "transient_seconds": 5,
-    "target_mode": "token_then_token",
-    "range_feet": 5
-  },
   "mental_prison": {
     "id": "mental_prison",
     "name": "Mental Prison",
@@ -5992,32 +5803,6 @@ const SPELLS: Dictionary = {
     "aoe_radius_feet": 5,
     "range_feet": 90
   },
-  "storm_sphere": {
-    "id": "storm_sphere",
-    "name": "Storm Sphere",
-    "source": "XGE",
-    "level": 4,
-    "school": "Evocation",
-    "casting_time": "1 action",
-    "range": "150 feet",
-    "target": "A point/direction within range",
-    "area": "sphere",
-    "components": "V, S",
-    "duration": "Concentration, up to 1 minute",
-    "classes": [
-      "Mago",
-      "Stregone"
-    ],
-    "description": "A 20-foot-radius sphere of whirling air springs into existence, centered on a point you choose within range. The sphere remains for the spell's duration. Each creature in the sphere when it appears or that ends its turn there must succeed on a Strength saving throw or take 2d6 bludgeoning damage. The sphere's space is difficult terrain. Until the spell ends, you can use a bonus action on each of your turns to cause a bolt of lightning to leap from the center of the sphere toward one creature you choose within 60 feet of the center. Make a ranged spell attack. You have advantage on the attack roll if the target is in the sphere. On a hit, the target takes 4d6 lightning damage. Creatures within 30 feet of the sphere have disadvantage on Wisdom (Perception) checks made to listen.",
-    "higher_levels": "At Higher Levels When you cast this spell using a spell slot of 5th level or higher, the damage for each of its effects increases by 2d6;4d6 for each slot level above 4th.",
-    "visual_style": "lightning",
-    "transient_seconds": 5,
-    "target_mode": "token_then_point",
-    "aoe_shape": "sphere",
-    "aoe_radius_feet": 20,
-    "range_feet": 150,
-    "persistent": true
-  },
   "toll_the_dead": {
     "id": "toll_the_dead",
     "name": "Toll the Dead",
@@ -6162,32 +5947,6 @@ const SPELLS: Dictionary = {
     "aoe_radius_feet": 5,
     "show_range_preview": false,
     "level17_damage": "4d6 Radiant"
-  },
-  "wrath_of_nature": {
-    "id": "wrath_of_nature",
-    "name": "Wrath of Nature",
-    "source": "XGE",
-    "level": 5,
-    "school": "Evocation",
-    "casting_time": "1 action",
-    "range": "120 feet",
-    "target": "A point/direction within range",
-    "area": "cube",
-    "components": "V, S",
-    "duration": "Concentration, up to 1 minute",
-    "classes": [
-      "Druido",
-      "Ranger"
-    ],
-    "description": "You call out to the spirits of nature to rouse them against your enemies. Choose a point you can see within range. The spirits cause trees, rocks, and grasses in a 60-foot cube centered on that point to become animated until the spell ends. Grasses and Undergrowth Any area of ground in the cube that is covered by grass or undergrowth is difficult terrain for your enemies. Trees At the start of each of your turns, each of your enemies within 10 feet of any tree in the cube must succeed on a Dexterity saving throw or take 4d6 slashing damage from whipping branches. Roots and Vines At the end of each of your turns, one creature of your choice that is on the ground in the cube must succeed on a Strength saving throw or become restrained until the spell ends. A restrained creature can use an action to make a Strength (Athletics) check against your spell save DC, ending the effect on itself on a success. Rocks As a bonus action on your turn, you can cause a loose rock in the cube to launch at a creature you can see in the cube. Make a ranged spell attack against the target. On a hit, the target takes 3d8 nonmagical bludgeoning damage, and it must succeed on a Strength saving throw or fall prone.",
-    "higher_levels": "",
-    "visual_style": "arcane",
-    "transient_seconds": 5,
-    "target_mode": "token_then_point",
-    "aoe_shape": "cube",
-    "aoe_side_feet": 60,
-    "range_feet": 120,
-    "persistent": true
   },
   "befuddlement": {
     "id": "befuddlement",
