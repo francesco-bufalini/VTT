@@ -116,7 +116,7 @@ func build(scene: Node3D) -> void:
 		chariot.cell_size = scene.cell_size
 		scene.tokens_root.add_child(chariot)
 		chariot.position = Vector3(-10+index*10,150,182)*_units
-		chariot.setup_chariot(scene.grid)
+		chariot.setup_chariot()
 		# Deck surface, rather than the collision body's centre, is exactly 150 m up.
 		chariot.position.y = 150*_units - chariot.deck.position.y
 		chariot.set_flying(true)
@@ -132,7 +132,7 @@ func build(scene: Node3D) -> void:
 	phenax_chariot.cell_size = scene.cell_size
 	scene.tokens_root.add_child(phenax_chariot)
 	phenax_chariot.position = Vector3(20,150,182)*_units
-	phenax_chariot.setup_chariot(scene.grid)
+	phenax_chariot.setup_chariot()
 	phenax_chariot.position.y = 150*_units-phenax_chariot.deck.position.y
 	phenax_chariot.set_flying(true)
 	var phenax = scene.token_scene.instantiate()
