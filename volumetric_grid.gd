@@ -6,15 +6,15 @@ const TOKEN_GROUP := "dnd_token"
 const INVALID_CELL := Vector3i(2147483647, 2147483647, 2147483647)
 
 @export var cell_size: float = 1.0
-# Circa 30 m di lato con celle da 1 m. Deve restare dispari per avere
-# sempre una cella centrale attorno alla camera.
-@export_range(3, 61, 2) var cells_per_side: int = 31
+# Volume locale della griglia collision-aware. Con cell_size = 1 il default
+# copre esattamente 70 x 70 x 70 metri/celle attorno alla camera.
+@export_range(4, 100, 1) var cells_per_side: int = 70
 @export_flags_3d_physics var collision_mask: int = 1
-# La prima scansione di un volume 31^3 viene distribuita su più physics frame
+# La prima scansione del volume viene distribuita su più physics frame
 # per evitare un picco di decine di migliaia di query nello stesso frame.
 @export_range(1, 4096, 1) var max_cell_tests_per_frame: int = 768
 @export_range(1, 64, 1) var max_query_results: int = 16
-@export_range(1000, 500000, 1000) var max_cached_cells: int = 120000
+@export_range(1000, 1000000, 1000) var max_cached_cells: int = 500000
 @export_range(0.1, 5.0, 0.1) var map_change_check_interval: float = 0.5
 # Un overlap minimo rende affidabile il rilevamento di collisioni trimesh
 # esattamente sul confine fra due celle.
@@ -27,12 +27,13 @@ var _cell_query_shape: BoxShape3D = null
 var _query_parameters: PhysicsShapeQueryParameters3D = null
 
 var _center_cell: Vector3i = INVALID_CELL
-var _half_cells: int = 15
-var _half_extent_world: float = 15.5
+var _lower_extent_cells: int = 35
+var _upper_extent_cells: int = 34
+var _half_extent_world: float = 35.0
 
 # Cache globale delle celle già testate: Vector3i -> bool.
 # Quando la camera si sposta di una cella, in genere bisogna interrogare solo
-# il nuovo "strato" entrato nel volume, non tutte le ~30k celle.
+# il nuovo "strato" entrato nel volume, non tutte le celle del 70^3.
 var _cell_cache: Dictionary = {}
 var _active_occupied: Dictionary = {}
 
@@ -176,11 +177,13 @@ func get_ray_exit_distance(origin: Vector3, direction: Vector3) -> float:
 
 func _configure_grid() -> void:
 	cell_size = maxf(cell_size, 0.001)
-	cells_per_side = maxi(3, cells_per_side)
-	if cells_per_side % 2 == 0:
-		cells_per_side += 1
+	cells_per_side = maxi(4, cells_per_side)
 
-	_half_cells = int(floor(float(cells_per_side) * 0.5))
+	# Supporta anche volumi pari (default 70x70x70). La cella della camera
+	# resta inclusa; con un numero pari c'e inevitabilmente una cella in piu
+	# su un lato rispetto all'altro.
+	_lower_extent_cells = int(floor(float(cells_per_side) * 0.5))
+	_upper_extent_cells = cells_per_side - _lower_extent_cells - 1
 	_half_extent_world = float(cells_per_side) * cell_size * 0.5
 
 	_cell_query_shape = BoxShape3D.new()
@@ -555,11 +558,11 @@ func _prune_cache_if_needed() -> void:
 
 
 func _volume_min_cell(center: Vector3i) -> Vector3i:
-	return center - Vector3i.ONE * _half_cells
+	return center - Vector3i.ONE * _lower_extent_cells
 
 
 func _volume_max_cell(center: Vector3i) -> Vector3i:
-	return center + Vector3i.ONE * _half_cells
+	return center + Vector3i.ONE * _upper_extent_cells
 
 
 func _cell_inside_current_volume(cell: Vector3i) -> bool:
