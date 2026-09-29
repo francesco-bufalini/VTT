@@ -1,6 +1,18 @@
 extends Node3D
 
 const AOE_PICK_LAYER := 1 << 20
+const AOE_COLORS: Array[Color] = [
+	Color(1.00, 0.24, 0.10, 1.0),
+	Color(1.00, 0.72, 0.08, 1.0),
+	Color(0.45, 0.90, 0.18, 1.0),
+	Color(0.10, 0.82, 0.52, 1.0),
+	Color(0.08, 0.78, 0.92, 1.0),
+	Color(0.18, 0.48, 1.00, 1.0),
+	Color(0.48, 0.28, 1.00, 1.0),
+	Color(0.78, 0.22, 0.92, 1.0),
+	Color(1.00, 0.28, 0.62, 1.0),
+	Color(0.95, 0.95, 0.95, 1.0),
+]
 
 @export var cell_size: float = 1.0
 # Existing template convention: one square = five feet.
@@ -14,6 +26,7 @@ var aoe_mode := false
 var persistent_aoes: Array = []
 var _aoe_nodes: Array[Node3D] = []
 var _aoe_preview: MeshInstance3D
+var _aoe_color_index: int = 0
 
 var _camera: Camera3D = null
 var _volumetric_grid: Node3D = null
@@ -76,6 +89,25 @@ func is_measurement_mode() -> bool:
 	return _measurement_mode
 
 
+func is_aoe_mode() -> bool:
+	return aoe_mode
+
+
+func adjust_aoe_color(step: int) -> void:
+	if not _measurement_mode or not aoe_mode or not _dragging:
+		return
+
+	_aoe_color_index = posmod(
+		_aoe_color_index + step,
+		AOE_COLORS.size()
+	)
+	_update_visuals()
+
+
+func _current_aoe_color() -> Color:
+	return AOE_COLORS[_aoe_color_index]
+
+
 func begin_measurement() -> bool:
 	if not _measurement_mode:
 		return false
@@ -116,7 +148,12 @@ func end_measurement() -> void:
 		return
 
 	if aoe_mode:
-		add_aoe(_start_center, _end_center, aoe_shape)
+		add_aoe(
+			_start_center,
+			_end_center,
+			aoe_shape,
+			_current_aoe_color()
+		)
 		_dragging = false
 		_hide_measurement()
 		return
@@ -413,7 +450,13 @@ func _update_visuals() -> void:
 		if not is_instance_valid(_aoe_preview):
 			_aoe_preview = MeshInstance3D.new()
 			add_child(_aoe_preview)
-		_draw_aoe(_aoe_preview, _start_center, _end_center, aoe_shape)
+		_draw_aoe(
+			_aoe_preview,
+			_start_center,
+			_end_center,
+			aoe_shape,
+			_current_aoe_color()
+		)
 		_aoe_preview.show()
 	_start_cube.visible = true
 	_end_cube.visible = true
@@ -531,14 +574,24 @@ func set_aoe_mode(shape: String) -> void:
 	aoe_mode = true
 	aoe_shape = shape
 
-func add_aoe(start: Vector3, end: Vector3, shape: String) -> void:
+func add_aoe(
+	start: Vector3,
+	end: Vector3,
+	shape: String,
+	color: Color = Color(0.0, 0.0, 0.0, -1.0)
+) -> void:
 	if persistent_aoes.size() >= 256:
 		return
 
-	var data := {
+	var selected_color: Color = color
+	if selected_color.a < 0.0:
+		selected_color = _current_aoe_color()
+
+	var data: Dictionary = {
 		"start": [start.x, start.y, start.z],
 		"end": [end.x, end.y, end.z],
-		"shape": shape
+		"shape": shape,
+		"color": _serialize_aoe_color(selected_color)
 	}
 	persistent_aoes.append(data)
 
@@ -549,16 +602,18 @@ func add_aoe(start: Vector3, end: Vector3, shape: String) -> void:
 	var mesh := MeshInstance3D.new()
 	mesh.name = "Visual"
 	root.add_child(mesh)
-	_draw_aoe(mesh, start, end, shape)
+	_draw_aoe(mesh, start, end, shape, selected_color)
 
 	_add_aoe_pick_area(root, start, end, shape)
 	_aoe_nodes.append(root)
+
 
 func _draw_aoe(
 	node: MeshInstance3D,
 	start: Vector3,
 	end: Vector3,
-	shape: String
+	shape: String,
+	color: Color
 ) -> void:
 	var base_cells := _dnd_grid_distance_cells(end - start)
 	var reach_world := maxf(
@@ -566,8 +621,13 @@ func _draw_aoe(
 		float(base_cells) * cell_size
 	)
 	var material := StandardMaterial3D.new()
+	var display_color: Color = color
+	display_color.a = 0.28
 	material.transparency = BaseMaterial3D.TRANSPARENCY_ALPHA
-	material.albedo_color = Color(1, 0.3, 0.05, 0.28)
+	material.albedo_color = display_color
+	material.emission_enabled = true
+	material.emission = Color(color.r, color.g, color.b, 1.0)
+	material.emission_energy_multiplier = 0.18
 	material.shading_mode = BaseMaterial3D.SHADING_MODE_UNSHADED
 	material.cull_mode = BaseMaterial3D.CULL_DISABLED
 	node.global_transform = Transform3D(Basis.IDENTITY, start)
@@ -575,8 +635,6 @@ func _draw_aoe(
 	match shape:
 		"cube":
 			var mesh := BoxMesh.new()
-			# The dragged distance is centre-to-face; the displayed D&D measure
-			# is therefore the full side, twice this reach.
 			mesh.size = Vector3.ONE * reach_world * 2.0
 			node.mesh = mesh
 
@@ -600,7 +658,6 @@ func _draw_aoe(
 
 		"line":
 			var mesh := CylinderMesh.new()
-			# Generic D&D line: one square / 5 ft wide.
 			mesh.top_radius = cell_size * 0.5
 			mesh.bottom_radius = cell_size * 0.5
 			mesh.height = reach_world
@@ -624,6 +681,28 @@ func _draw_aoe(
 			node.mesh = mesh
 
 	node.material_override = material
+
+
+func _serialize_aoe_color(color: Color) -> Dictionary:
+	return {
+		"r": color.r,
+		"g": color.g,
+		"b": color.b,
+		"a": color.a
+	}
+
+
+func _deserialize_aoe_color(value: Variant) -> Color:
+	if value is Dictionary:
+		var data: Dictionary = value
+		return Color(
+			float(data.get("r", 1.0)),
+			float(data.get("g", 0.24)),
+			float(data.get("b", 0.10)),
+			float(data.get("a", 1.0))
+		)
+
+	return AOE_COLORS[0]
 
 
 func remove_aoe_at_screen(screen_position: Vector2) -> bool:
@@ -753,20 +832,70 @@ func valid_aoes(data: Variant) -> bool:
 	if not data is Array or data.size() > 256:
 		return false
 	for item in data:
-		if not item is Dictionary or item.get("shape", "") not in ["sphere", "cube", "cone", "line"]:
+		if (
+			not item is Dictionary
+			or item.get("shape", "") not in [
+				"sphere",
+				"cube",
+				"cone",
+				"line"
+			]
+		):
 			return false
 		for key in ["start", "end"]:
 			var point: Variant = item.get(key)
 			if not point is Array or point.size() != 3:
 				return false
 			for value in point:
-				if not (value is float or value is int) or not is_finite(float(value)) or absf(float(value)) > 100000:
+				if (
+					not (value is float or value is int)
+					or not is_finite(float(value))
+					or absf(float(value)) > 100000
+				):
+					return false
+
+		if item.has("color"):
+			var color_value: Variant = item.get("color")
+			if not color_value is Dictionary:
+				return false
+			for channel in ["r", "g", "b", "a"]:
+				var channel_value: Variant = color_value.get(channel)
+				if (
+					not (
+						channel_value is float
+						or channel_value is int
+					)
+					or not is_finite(float(channel_value))
+					or float(channel_value) < 0.0
+					or float(channel_value) > 1.0
+				):
 					return false
 	return true
+
 
 func apply_persistent_aoes(data: Array) -> void:
 	if not valid_aoes(data):
 		return
 	clear_persistent_aoes()
+
 	for item in data:
-		add_aoe(Vector3(item.start[0],item.start[1],item.start[2]), Vector3(item.end[0],item.end[1],item.end[2]), item.shape)
+		var item_data: Dictionary = item
+		var start_data: Array = item_data.get("start", [])
+		var end_data: Array = item_data.get("end", [])
+		var color: Color = _deserialize_aoe_color(
+			item_data.get("color", {})
+		)
+		add_aoe(
+			Vector3(
+				float(start_data[0]),
+				float(start_data[1]),
+				float(start_data[2])
+			),
+			Vector3(
+				float(end_data[0]),
+				float(end_data[1]),
+				float(end_data[2])
+			),
+			String(item_data.get("shape", "sphere")),
+			color
+		)
