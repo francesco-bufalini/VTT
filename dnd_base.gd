@@ -9,6 +9,7 @@ const CONTEXT_TOGGLE_VISION_CONES := 6
 const CONTEXT_TOGGLE_GRID_3D := 7
 const CONTEXT_FLYING := 8
 const CONTEXT_MAIN_MENU := 9
+const CONTEXT_DISSOLVE_AOT := 10
 const CAMPAIGN_EDITOR_SCENE_PATH := "res://vtt/editor/campaign_editor.tscn"
 
 const ALL_COLLISION_LAYERS := 0xFFFFFFFF
@@ -42,6 +43,7 @@ const TOKEN_SIZES := [
 
 var _pending_spawn_position: Vector3 = Vector3.ZERO
 var _has_pending_spawn_position: bool = false
+var _pending_aoe_index: int = -1
 var _selected_tokens: Array[CharacterBody3D] = []
 var _ui_owns_mouse: bool = false
 var _vision_cones_visible: bool = false
@@ -168,20 +170,6 @@ func _unhandled_input(event: InputEvent) -> void:
 
 	if _ui_owns_mouse:
 		return
-
-	if (
-		event is InputEventMouseButton
-		and event.button_index == MOUSE_BUTTON_LEFT
-		and event.pressed
-	):
-		var aoe_screen_position: Vector2 = (
-			_screen_center()
-			if Input.mouse_mode == Input.MOUSE_MODE_CAPTURED
-			else event.position
-		)
-		if measurement_tool.remove_aoe_at_screen(aoe_screen_position):
-			get_viewport().set_input_as_handled()
-			return
 
 	if event is InputEventMouseButton and measurement_tool.is_measurement_mode():
 		if event.button_index == MOUSE_BUTTON_LEFT:
@@ -357,6 +345,19 @@ func _toggle_measurement_mode() -> void:
 func _show_context_menu(screen_position: Vector2) -> void:
 	_clean_selection()
 	_has_pending_spawn_position = false
+	_pending_aoe_index = int(
+		measurement_tool.call("get_aoe_index_at_screen", screen_position)
+	)
+
+	if _pending_aoe_index >= 0:
+		context_menu.clear()
+		context_menu.add_item("Dissolvi AoT", CONTEXT_DISSOLVE_AOT)
+		_ui_owns_mouse = true
+		_release_mouse()
+		context_menu.position = Vector2i(screen_position)
+		context_menu.popup()
+		call_deferred("_release_mouse")
+		return
 
 	var hit: Dictionary = _raycast_from_screen(screen_position, 1 | 4, false)
 	if not hit.is_empty():
@@ -437,6 +438,11 @@ func _show_context_menu(screen_position: Vector2) -> void:
 
 
 func _on_context_menu_id_pressed(id: int) -> void:
+	if id == CONTEXT_DISSOLVE_AOT:
+		measurement_tool.call("dissolve_aoe", _pending_aoe_index)
+		_pending_aoe_index = -1
+		_close_context_menu_to_game()
+		return
 	if id >= 20 and id <= 23:
 		measurement_tool.set_aoe_mode(["sphere", "cube", "cone", "line"][id - 20])
 		measurement_mode_label.text = "AoE: trascina clic sinistro | R per uscire"
@@ -513,6 +519,7 @@ func _on_context_menu_hidden() -> void:
 func _finish_context_menu_close() -> void:
 	if color_dialog.visible or (is_instance_valid(share_dialog) and share_dialog.visible):
 		return
+	_pending_aoe_index = -1
 	_ui_owns_mouse = false
 	_capture_mouse()
 
