@@ -1589,8 +1589,6 @@ func _draw_aoe(
 
 	material.shading_mode = BaseMaterial3D.SHADING_MODE_UNSHADED
 	material.cull_mode = BaseMaterial3D.CULL_DISABLED
-	node.global_transform = Transform3D(Basis.IDENTITY, start)
-
 
 	match shape:
 		"cube", "flat_square":
