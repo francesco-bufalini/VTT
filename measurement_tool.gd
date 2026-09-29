@@ -1705,15 +1705,6 @@ func _add_aoe_pick_area(
 				start + Vector3.UP * cylinder_height * 0.5
 			)
 
-		"cylinder":
-			var cylinder_shape: CylinderShape3D = CylinderShape3D.new()
-			cylinder_shape.radius = reach_world
-			cylinder_shape.height = reach_world * 2.0
-			collision.shape = cylinder_shape
-			area.global_position = (
-				start + Vector3.UP * reach_world
-			)
-
 		"flat_square":
 			var flat_box: BoxShape3D = BoxShape3D.new()
 			flat_box.size = Vector3(
