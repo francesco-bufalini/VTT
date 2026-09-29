@@ -319,6 +319,7 @@ const SPELLS: Dictionary = {
 		"higher_levels": "No slot scaling.",
 		"target_mode": "token_then_point",
 		"range_feet": 60,
+		"requires_ground": true,
 		"aoe_shape": "flat_square",
 		"aoe_side_feet": 10,
 		"persistent": true,
