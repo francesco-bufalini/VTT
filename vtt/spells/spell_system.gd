@@ -181,12 +181,6 @@ func handle_input(event: InputEvent) -> bool:
 			"direction_point":
 				_try_select_direction_point(screen_position)
 				return true
-			"chain_primary":
-				_try_select_chain_primary(screen_position)
-				return true
-			"chain_secondary":
-				_try_select_chain_secondary(screen_position)
-				return true
 
 	return false
 
