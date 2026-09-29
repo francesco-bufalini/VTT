@@ -19,4 +19,4 @@ func setup(scene: Node3D) -> void:
 		collision.shape = shape
 		collision.position.y = -.15
 		body.add_child(collision)
-		# SurfaceGrid adds the grid from this solid collision automatically.
+		# The unified volumetric grid discovers this layer-4 platform by raycast.
