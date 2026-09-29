@@ -1905,13 +1905,14 @@ func _adjust_point_depth(step_cells: float) -> void:
 func _build_panel() -> void:
 	panel = PanelContainer.new()
 	panel.name = "SpellPanel"
+	# Spell browser: fixed to the left side, almost half the viewport.
 	panel.anchor_left = 0.0
-	panel.anchor_top = 0.5
-	panel.anchor_right = 1.0
+	panel.anchor_top = 0.0
+	panel.anchor_right = 0.48
 	panel.anchor_bottom = 1.0
 	panel.offset_left = 8.0
-	panel.offset_top = 4.0
-	panel.offset_right = -8.0
+	panel.offset_top = 8.0
+	panel.offset_right = -4.0
 	panel.offset_bottom = -8.0
 	panel.mouse_filter = Control.MOUSE_FILTER_STOP
 	panel.hide()
@@ -1945,11 +1946,11 @@ func _build_panel() -> void:
 
 	var body: HSplitContainer = HSplitContainer.new()
 	body.size_flags_vertical = Control.SIZE_EXPAND_FILL
-	body.split_offset = 390
+	body.split_offset = 270
 	root_layout.add_child(body)
 
 	var browser: VBoxContainer = VBoxContainer.new()
-	browser.custom_minimum_size = Vector2(360, 0)
+	browser.custom_minimum_size = Vector2(250, 0)
 	browser.add_theme_constant_override("separation", 6)
 	body.add_child(browser)
 
