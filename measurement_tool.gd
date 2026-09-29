@@ -2,10 +2,10 @@ extends Node3D
 
 @export var cell_size: float = 1.0
 # Existing template convention: one square = five feet.
-@export_range(0.001, 100.0) var meters_per_cell: float = 1.524
+@export_range(0.001, 100.0) var meters_per_cell: float = 1.5
 @export_flags_3d_physics var collision_mask: int = 1
 @export var max_ray_distance: float = 500.0
-@export var default_air_depth_cells: float = 8.0
+@export var default_air_depth_cells: float = 2.0
 
 var aoe_shape: String = "sphere"
 var aoe_mode := false
@@ -59,6 +59,7 @@ func set_measurement_mode(enabled: bool) -> void:
 	_measurement_mode = enabled
 
 	if not enabled:
+		aoe_mode = false
 		cancel_measurement()
 
 
@@ -141,7 +142,7 @@ func _maximum_air_depth() -> float:
 		if extent_value is float:
 			return maxf(
 				cell_size,
-				float(extent_value) * 0.95
+				float(extent_value) * sqrt(3.0)
 			)
 
 	return maxf(cell_size, 15.0 * cell_size)
@@ -169,8 +170,15 @@ func _looked_cell() -> Dictionary:
 	var origin: Vector3 = _camera.project_ray_origin(screen_point)
 	var direction: Vector3 = _camera.project_ray_normal(screen_point)
 	var ray_end: Vector3 = origin + direction * max_ray_distance
+	var grid_active := (
+		_volumetric_grid != null
+		and is_instance_valid(_volumetric_grid)
+		and _volumetric_grid.visible
+	)
 
-	# Le superfici reali hanno priorità.
+	# Solid surfaces keep the same behavior as the 2D grid. When the 3D grid
+	# is active, however, the snapped cell must also belong to the currently
+	# displayed 5x5x5 volume.
 	var query: PhysicsRayQueryParameters3D = (
 		PhysicsRayQueryParameters3D.create(origin, ray_end)
 	)
@@ -189,41 +197,60 @@ func _looked_cell() -> Dictionary:
 			normal.normalized()
 			* maxf(cell_size * 0.001, 0.0001)
 		)
+		var snapped_surface := _snap_point_to_cell_center(point)
 
-		return {
-			"valid": true,
-			"center": _snap_point_to_cell_center(point)
-		}
+		if not grid_active or _grid_contains(snapped_surface):
+			return {
+				"valid": true,
+				"center": snapped_surface
+			}
 
-	# Nel vuoto, se la griglia 3D è visibile, usiamo una profondità
-	# lungo il raggio della camera. La rotellina la modifica durante il drag.
-	if (
-		_volumetric_grid != null
-		and is_instance_valid(_volumetric_grid)
-		and _volumetric_grid.visible
-	):
-		var point_in_air: Vector3 = (
-			origin + direction * _air_depth_world
-		)
-		var snapped_point: Vector3 = _snap_point_to_cell_center(
-			point_in_air
-		)
-
-		if _volumetric_grid.has_method("contains_world_point"):
-			var contained: Variant = _volumetric_grid.call(
-				"contains_world_point",
-				snapped_point
+	# In volumetric mode the only valid air targets are cells of the visible
+	# cube. Depth still selects a layer along the camera ray, but it is clamped
+	# to the current cube so an invisible external cell can never be selected.
+	if grid_active:
+		var effective_depth := _air_depth_world
+		if _volumetric_grid.has_method("get_ray_exit_distance"):
+			var exit_value: Variant = _volumetric_grid.call(
+				"get_ray_exit_distance",
+				origin,
+				direction
 			)
+			if exit_value is float:
+				var exit_distance := maxf(float(exit_value), 0.0)
+				effective_depth = minf(
+					effective_depth,
+					maxf(
+						cell_size * 0.5,
+						exit_distance - maxf(cell_size * 0.001, 0.0001)
+					)
+				)
 
-			if contained is bool and not bool(contained):
-				return {"valid": false}
+		var point_in_air := origin + direction * effective_depth
+		var snapped_point := _snap_point_to_cell_center(point_in_air)
 
-		return {
-			"valid": true,
-			"center": snapped_point
-		}
+		if _grid_contains(snapped_point):
+			return {
+				"valid": true,
+				"center": snapped_point
+			}
 
 	return {"valid": false}
+
+
+func _grid_contains(point: Vector3) -> bool:
+	if (
+		_volumetric_grid == null
+		or not is_instance_valid(_volumetric_grid)
+		or not _volumetric_grid.has_method("contains_world_point")
+	):
+		return false
+
+	var contained: Variant = _volumetric_grid.call(
+		"contains_world_point",
+		point
+	)
+	return contained is bool and bool(contained)
 
 
 func _snap_point_to_cell_center(point: Vector3) -> Vector3:
@@ -324,9 +351,10 @@ func _update_visuals() -> void:
 
 	var delta: Vector3 = _end_center - _start_center
 	var length_world: float = delta.length()
-	var dnd_cells: int = _dnd_grid_distance_cells(delta)
-	var distance_meters: float = float(dnd_cells) * meters_per_cell
-	var distance_feet: float = distance_meters * 3.280839895
+	var base_cells: int = _dnd_grid_distance_cells(delta)
+	var display_cells := _display_measurement_cells(base_cells)
+	var distance_meters := float(display_cells) * meters_per_cell
+	var distance_feet := display_cells * 5
 	var midpoint: Vector3 = (
 		(_start_center + _end_center) * 0.5
 	)
@@ -342,14 +370,38 @@ func _update_visuals() -> void:
 		_line.visible = false
 
 	_distance_label.text = (
-		"D&D: %d %s\n%.2f m\n%s ft"
+		"%s: %d %s\n%s m\n%d ft"
 		% [
-			dnd_cells,
-			"quadretto" if dnd_cells == 1 else "quadretti",
-			distance_meters,
-			_format_feet(distance_feet)
+			_measurement_title(),
+			display_cells,
+			"quadretto" if display_cells == 1 else "quadretti",
+			_format_meters(distance_meters),
+			distance_feet
 		]
 	)
+
+
+func _display_measurement_cells(base_cells: int) -> int:
+	if aoe_mode and aoe_shape == "cube":
+		# The drag defines centre-to-face distance; D&D names a cube by
+		# the length of one complete side.
+		return base_cells * 2
+	return base_cells
+
+
+func _measurement_title() -> String:
+	if not aoe_mode:
+		return "D&D"
+
+	match aoe_shape:
+		"sphere":
+			return "Raggio"
+		"cube":
+			return "Lato"
+		"cone", "line":
+			return "Lunghezza"
+		_:
+			return "D&D"
 
 
 func _dnd_grid_distance_cells(delta: Vector3) -> int:
@@ -376,11 +428,11 @@ func _dnd_grid_distance_cells(delta: Vector3) -> int:
 	return largest + int(floor(float(middle) * 0.5))
 
 
-func _format_feet(value: float) -> String:
+func _format_meters(value: float) -> String:
 	if is_equal_approx(value, round(value)):
 		return "%d" % int(round(value))
 
-	return "%.2f" % value
+	return "%.1f" % value
 
 
 func _hide_measurement() -> void:
@@ -397,10 +449,14 @@ func _hide_measurement() -> void:
 
 
 func set_aoe_mode(shape: String) -> void:
+	if not _measurement_mode:
+		return
+	if shape not in ["sphere", "cube", "cone", "line"]:
+		return
+
 	cancel_measurement()
 	aoe_mode = true
 	aoe_shape = shape
-	set_measurement_mode(true)
 
 func add_aoe(start: Vector3, end: Vector3, shape: String) -> void:
 	if persistent_aoes.size() >= 256:
@@ -412,34 +468,77 @@ func add_aoe(start: Vector3, end: Vector3, shape: String) -> void:
 	_draw_aoe(mesh, start, end, shape)
 	_aoe_nodes.append(mesh)
 
-func _draw_aoe(node: MeshInstance3D, start: Vector3, end: Vector3, shape: String) -> void:
-	var radius := maxf(cell_size * 0.5, start.distance_to(end))
+func _draw_aoe(
+	node: MeshInstance3D,
+	start: Vector3,
+	end: Vector3,
+	shape: String
+) -> void:
+	var base_cells := _dnd_grid_distance_cells(end - start)
+	var reach_world := maxf(
+		cell_size * 0.5,
+		float(base_cells) * cell_size
+	)
 	var material := StandardMaterial3D.new()
 	material.transparency = BaseMaterial3D.TRANSPARENCY_ALPHA
 	material.albedo_color = Color(1, 0.3, 0.05, 0.28)
 	material.shading_mode = BaseMaterial3D.SHADING_MODE_UNSHADED
 	material.cull_mode = BaseMaterial3D.CULL_DISABLED
 	node.global_transform = Transform3D(Basis.IDENTITY, start)
+
 	match shape:
 		"cube":
 			var mesh := BoxMesh.new()
-			mesh.size = Vector3.ONE * radius * 2.0
+			# The dragged distance is centre-to-face; the displayed D&D measure
+			# is therefore the full side, twice this reach.
+			mesh.size = Vector3.ONE * reach_world * 2.0
 			node.mesh = mesh
-		"cone", "line":
+
+		"cone":
 			var mesh := CylinderMesh.new()
-			mesh.top_radius = radius * 0.5 if shape == "cone" else cell_size * 0.15
-			mesh.bottom_radius = 0.0 if shape == "cone" else cell_size * 0.15
-			mesh.height = radius
+			mesh.top_radius = reach_world * 0.5
+			mesh.bottom_radius = 0.0
+			mesh.height = reach_world
 			node.mesh = mesh
-			var direction := (end - start).normalized() if start != end else Vector3.FORWARD
-			node.global_basis = Basis(Quaternion(Vector3.UP, direction))
-			node.global_position = start + direction * radius * 0.5
+			var direction := (
+				(end - start).normalized()
+				if start != end
+				else Vector3.FORWARD
+			)
+			node.global_basis = Basis(
+				Quaternion(Vector3.UP, direction)
+			)
+			node.global_position = (
+				start + direction * reach_world * 0.5
+			)
+
+		"line":
+			var mesh := CylinderMesh.new()
+			# Generic D&D line: one square / 5 ft wide.
+			mesh.top_radius = cell_size * 0.5
+			mesh.bottom_radius = cell_size * 0.5
+			mesh.height = reach_world
+			node.mesh = mesh
+			var direction := (
+				(end - start).normalized()
+				if start != end
+				else Vector3.FORWARD
+			)
+			node.global_basis = Basis(
+				Quaternion(Vector3.UP, direction)
+			)
+			node.global_position = (
+				start + direction * reach_world * 0.5
+			)
+
 		_:
 			var mesh := SphereMesh.new()
-			mesh.radius = radius
-			mesh.height = radius * 2.0
+			mesh.radius = reach_world
+			mesh.height = reach_world * 2.0
 			node.mesh = mesh
+
 	node.material_override = material
+
 
 func clear_persistent_aoes() -> void:
 	for node in _aoe_nodes:
