@@ -17,6 +17,7 @@ config/icon="res://icon.svg"
 
 [autoload]
 
+CampaignManager="*res://vtt/campaign_manager.gd"
 EncounterEvents="*res://encounter/encounter_events.gd"
 
 [display]
