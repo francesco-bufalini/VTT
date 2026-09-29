@@ -125,10 +125,27 @@ func _input(event: InputEvent) -> void:
 func _unhandled_input(event: InputEvent) -> void:
 	if _ui_owns_mouse:
 		return
+
+	if (
+		event is InputEventMouseButton
+		and event.button_index == MOUSE_BUTTON_LEFT
+		and event.pressed
+	):
+		var aoe_screen_position := (
+			_screen_center()
+			if Input.mouse_mode == Input.MOUSE_MODE_CAPTURED
+			else event.position
+		)
+		if measurement_tool.remove_aoe_at_screen(aoe_screen_position):
+			get_viewport().set_input_as_handled()
+			return
+
 	if event is InputEventMouseButton and measurement_tool.is_measurement_mode():
 		if event.button_index == MOUSE_BUTTON_LEFT:
-			if event.pressed: measurement_tool.begin_measurement()
-			else: measurement_tool.end_measurement()
+			if event.pressed:
+				measurement_tool.begin_measurement()
+			else:
+				measurement_tool.end_measurement()
 			get_viewport().set_input_as_handled()
 			return
 	if token_drag != null and token_drag.handle_event(event):
