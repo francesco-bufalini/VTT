@@ -549,6 +549,15 @@ func _activate_selected_spell() -> void:
 	if measurement_label != null:
 		measurement_label.hide()
 
+	var camera: Camera3D = board_root.get_node_or_null("Camera3D") as Camera3D
+	if (
+		camera != null
+		and camera.has_method("is_first_person")
+		and bool(camera.call("is_first_person"))
+		and camera.has_method("exit_first_person")
+	):
+		camera.call("exit_first_person")
+
 	panel.hide()
 	board_root.set("_ui_owns_mouse", false)
 	Input.mouse_mode = Input.MOUSE_MODE_CAPTURED
