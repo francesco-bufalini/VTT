@@ -1121,8 +1121,6 @@ func add_wall_path(
 		"damage_side": damage_side,
 		"wall_meta": metadata.duplicate(true)
 	}
-	if line_width_world > 0.0:
-		data["line_width_world"] = line_width_world
 	persistent_aoes.append(data)
 
 	var root: Node3D = Node3D.new()
@@ -1480,6 +1478,8 @@ func add_aoe(
 		data["style"] = style
 	elif selected_color.a >= 0.0:
 		data["color"] = _serialize_aoe_color(selected_color)
+	if line_width_world > 0.0:
+		data["line_width_world"] = line_width_world
 	persistent_aoes.append(data)
 
 	var root := Node3D.new()
