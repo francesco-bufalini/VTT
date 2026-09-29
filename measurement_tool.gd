@@ -94,7 +94,7 @@ func begin_measurement() -> bool:
 	_start_raw_point = cell.get("raw", _start_cell_center)
 	_start_center = _start_cell_center
 
-	if aoe_mode and aoe_shape == "sphere":
+	if aoe_mode:
 		_start_center = _snap_point_to_grid_intersection(
 			_start_raw_point
 		)
@@ -185,21 +185,15 @@ func _update_target_from_camera() -> void:
 	var target_raw: Vector3 = cell.get("raw", target_center)
 
 	if aoe_mode:
+		_start_center = _snap_point_to_grid_intersection(
+			_start_raw_point
+		)
 		match aoe_shape:
 			"sphere":
-				_start_center = _snap_point_to_grid_intersection(
-					_start_raw_point
-				)
 				_end_center = _snap_point_to_grid_intersection(
 					target_raw
 				)
-			"cone":
-				_end_center = target_center
-				_start_center = _cone_start_for_target(
-					target_center
-				)
 			_:
-				_start_center = _start_cell_center
 				_end_center = target_center
 	else:
 		_start_center = _start_cell_center
@@ -243,7 +237,7 @@ func get_spell_target_point(screen_position: Vector2) -> Dictionary:
 		)
 		return {
 			"valid": true,
-			"point": _snap_point_to_cell_center(point),
+			"point": _snap_point_to_grid_intersection(point),
 			"in_air": false
 		}
 
@@ -273,7 +267,7 @@ func get_spell_target_point(screen_position: Vector2) -> Dictionary:
 			)
 
 	var point_in_air: Vector3 = origin + direction * effective_depth
-	var snapped_point: Vector3 = _snap_point_to_cell_center(point_in_air)
+	var snapped_point: Vector3 = _snap_point_to_grid_intersection(point_in_air)
 	if not _grid_contains(snapped_point):
 		return {"valid": false}
 
