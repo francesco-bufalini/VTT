@@ -149,33 +149,6 @@ const SPELLS: Dictionary = {
     "target_mode": "token_then_token",
     "range_feet": 5
   },
-  "aura_of_evasion": {
-    "id": "aura_of_evasion",
-    "name": "Aura of Evasion",
-    "source": "AU",
-    "level": 7,
-    "school": "Abjuration",
-    "casting_time": "1 action",
-    "range": "Self (30-foot emanation)",
-    "target": "Self",
-    "area": "sphere",
-    "components": "V, S",
-    "duration": "Concentration, up to 1 minute",
-    "classes": [
-      "Mago",
-      "Stregone",
-      "Warlock"
-    ],
-    "description": "An aura of alacrity radiates from you in a 30-foot Emanation [Area of Effect] for the duration. While in the aura, you and your allies have Advantage on Dexterity saving throws. When an affected creature is subjected to an effect that allows it to make a Dexterity saving throw to take only half damage, it takes no damage if it succeeds on the save and only half damage if it fails. A creature with the Incapacitated condition doesn't gain any benefit from being in the aura.",
-    "higher_levels": "",
-    "visual_style": "arcane",
-    "transient_seconds": 5,
-    "target_mode": "self_emanation",
-    "aoe_shape": "sphere",
-    "aoe_radius_feet": 30,
-    "show_range_preview": false,
-    "persistent": true
-  },
   "catnap": {
     "id": "catnap",
     "name": "Catnap",
@@ -441,34 +414,6 @@ const SPELLS: Dictionary = {
     "target_mode": "token_then_token",
     "range_feet": 120
   },
-  "lightning_ring": {
-    "id": "lightning_ring",
-    "name": "Lightning Ring",
-    "source": "AU",
-    "level": 8,
-    "school": "Evocation",
-    "casting_time": "1 bonus action",
-    "range": "Self (10-foot emanation)",
-    "target": "Self",
-    "area": "sphere",
-    "components": "V, S, M (a bit of fur and a glass ring)",
-    "duration": "Concentration, up to 10 minutes",
-    "classes": [
-      "Druido",
-      "Mago",
-      "Stregone",
-      "Warlock"
-    ],
-    "description": "A ring of crackling electricity fills a 10-foot Emanation [Area of Effect] originating from you. Whenever the Emanation [Area of Effect] enters a creature's space and whenever a creature enters the Emanation [Area of Effect] or ends its turn there, you can force that creature to make a Constitution saving throw. On a failed save, the creature takes 3d6 Lightning damage plus 3d6 Thunder damage, and it has the Deafened condition for 1 minute. On a successful save, the creature takes half as much damage only. As a Magic action while the spell is active, you can emit a 60-foot-long, 5-foot-wide Line [Area of Effect] out from you in a direction you choose. Each creature in the Line [Area of Effect] makes a Dexterity saving throw, taking 6d6 Lightning damage on a failed save or half as much damage on a successful one.",
-    "higher_levels": "",
-    "visual_style": "lightning",
-    "transient_seconds": 5,
-    "target_mode": "self_emanation",
-    "aoe_shape": "sphere",
-    "aoe_radius_feet": 10,
-    "show_range_preview": false,
-    "persistent": true
-  },
   "negative_energy_flood": {
     "id": "negative_energy_flood",
     "name": "Negative Energy Flood",
@@ -672,32 +617,6 @@ const SPELLS: Dictionary = {
     "target_mode": "token_then_token",
     "range_feet": 60
   },
-  "zone_of_amicability": {
-    "id": "zone_of_amicability",
-    "name": "Zone of Amicability",
-    "source": "AU",
-    "level": 4,
-    "school": "Enchantment",
-    "casting_time": "1 action",
-    "range": "Self (60-foot emanation)",
-    "target": "Self",
-    "area": "sphere",
-    "components": "V, S",
-    "duration": "10 minutes",
-    "classes": [
-      "Bardo",
-      "Warlock"
-    ],
-    "description": "A magical zone of amicability radiates from you in a 60-foot Emanation [Area of Effect] for the duration. When you make an ability check to influence a creature in that area, you can treat a d20 roll of 9 or lower as a 10.",
-    "higher_levels": "",
-    "visual_style": "arcane",
-    "transient_seconds": 5,
-    "target_mode": "self_emanation",
-    "aoe_shape": "sphere",
-    "aoe_radius_feet": 60,
-    "show_range_preview": false,
-    "persistent": true
-  },
   "antagonize": {
     "id": "antagonize",
     "name": "Antagonize",
@@ -802,34 +721,6 @@ const SPELLS: Dictionary = {
     "direction_limit_feet": 30,
     "show_range_preview": false
   },
-  "alustriels_mooncloak": {
-    "id": "alustriels_mooncloak",
-    "name": "Alustriel's Mooncloak",
-    "source": "FRHoF",
-    "level": 5,
-    "school": "Abjuration",
-    "casting_time": "1 action",
-    "range": "Self (20-foot emanation)",
-    "target": "Self",
-    "area": "sphere",
-    "components": "V, S, M",
-    "duration": "Concentration, up to 1 minute",
-    "classes": [
-      "Bardo",
-      "Druido",
-      "Mago",
-      "Ranger"
-    ],
-    "description": "For the duration, moonlight fills a 20-foot Emanation [Area of Effect] originating from you with Dim Light. While in that area, you and your allies have Cover and Resistance to Cold, Lightning, and Radiant damage. While the spell lasts, you can use one of the following options, ending the spell immediately: Liberation When you fail a saving throw to avoid or end the Frightened, Grappled, or Restrained condition, you can take a Reaction to succeed on the save instead. Respite As a Magic action, you or an ally within the area regains Hit Points equal to 4d10 plus your spellcasting ability modifier.",
-    "higher_levels": "",
-    "visual_style": "arcane",
-    "transient_seconds": 5,
-    "target_mode": "self_emanation",
-    "aoe_shape": "sphere",
-    "aoe_radius_feet": 20,
-    "show_range_preview": false,
-    "persistent": true
-  },
   "backlash": {
     "id": "backlash",
     "name": "Backlash",
@@ -855,33 +746,6 @@ const SPELLS: Dictionary = {
     "target_mode": "token_then_token",
     "range_feet": 60
   },
-  "cacophonic_shield": {
-    "id": "cacophonic_shield",
-    "name": "Cacophonic Shield",
-    "source": "FRHoF",
-    "level": 3,
-    "school": "Evocation",
-    "casting_time": "1 action",
-    "range": "Self (10-foot emanation)",
-    "target": "Self",
-    "area": "sphere",
-    "components": "V, S",
-    "duration": "Concentration, up to 10 minutes",
-    "classes": [
-      "Bardo",
-      "Mago",
-      "Stregone"
-    ],
-    "description": "Thunderous reverberations fill a 10-foot Emanation [Area of Effect] originating from you for the duration. Whenever the Emanation [Area of Effect] enters a creature's space and whenever a creature enters the Emanation [Area of Effect] or ends its turn there, the creature makes a Constitution saving throw. On a failed save, the creature takes 3d6 Thunder damage and has the Deafened condition until the start of your next turn. On a successful save, the creature takes half as much damage only. A creature makes this save only once per turn. When you cast this spell, you can designate creatures to be unaffected by it. In addition, you have Resistance to Thunder damage, and ranged attack rolls against you are made with Disadvantage.",
-    "higher_levels": "Using a Higher-Level Spell Slot The damage increases by 3d6 for each spell slot level above 3.",
-    "visual_style": "thunder",
-    "transient_seconds": 5,
-    "target_mode": "self_emanation",
-    "aoe_shape": "sphere",
-    "aoe_radius_feet": 10,
-    "show_range_preview": false,
-    "persistent": true
-  },
   "death_armor": {
     "id": "death_armor",
     "name": "Death Armor",
@@ -904,32 +768,6 @@ const SPELLS: Dictionary = {
     "transient_seconds": 5,
     "target_mode": "token_then_token",
     "range_feet": 5
-  },
-  "dirge": {
-    "id": "dirge",
-    "name": "Dirge",
-    "source": "FRHoF",
-    "level": 6,
-    "school": "Enchantment",
-    "casting_time": "1 action",
-    "range": "Self (60-foot emanation)",
-    "target": "Self",
-    "area": "sphere",
-    "components": "V",
-    "duration": "Concentration, up to 1 minute",
-    "classes": [
-      "Bardo",
-      "Chierico"
-    ],
-    "description": "Deathly power fills a 60-foot Emanation [Area of Effect] originating from you for the duration. When you cast this spell, you can designate creatures to be unaffected by it. Any other creature can't regain Hit Points while in the Emanation [Area of Effect]. Whenever the Emanation [Area of Effect] enters a creature's space and whenever a creature enters the Emanation [Area of Effect] or ends its turn there, the creature makes a Constitution saving throw. On a failed save, the creature takes 3d10 Necrotic damage and has the Prone condition. On a successful save, the creature takes half as much damage and its Speed is halved. A creature makes this save only once per turn. Casting as a Circle Spell Casting this as a Circle spell requires a minimum of two secondary casters. If the spell is cast as a Circle spell, its duration becomes Concentration, up to 10 minutes. A creature that fails its save against the spell's effect also gains 1 Exhaustion level. While the creature has Exhaustion levels, finishing a Long Rest neither restores lost Hit Points nor reduces the creature's Exhaustion level. When the spell is cast, each secondary caster must expend a level 4+ spell slot; otherwise, the spell fails.",
-    "higher_levels": "",
-    "visual_style": "necrotic",
-    "transient_seconds": 5,
-    "target_mode": "self_emanation",
-    "aoe_shape": "sphere",
-    "aoe_radius_feet": 60,
-    "show_range_preview": false,
-    "persistent": true
   },
   "doomtide": {
     "id": "doomtide",
@@ -1237,31 +1075,6 @@ const SPELLS: Dictionary = {
     "target_mode": "token_then_token",
     "range_feet": 30
   },
-  "antilife_shell": {
-    "id": "antilife_shell",
-    "name": "Antilife Shell",
-    "source": "XPHB",
-    "level": 5,
-    "school": "Abjuration",
-    "casting_time": "1 action",
-    "range": "Self (10-foot emanation)",
-    "target": "Self",
-    "area": "sphere",
-    "components": "V, S",
-    "duration": "Concentration, up to 1 hour",
-    "classes": [
-      "Druido"
-    ],
-    "description": "An aura extends from you in a 10-foot Emanation [Area of Effect] for the duration. The aura prevents creatures other than Constructs and Undead from passing or reaching through it. An affected creature can cast spells or make attacks with Ranged or Reach weapons through the barrier. If you move so that an affected creature is forced to pass through the barrier, the spell ends.",
-    "higher_levels": "",
-    "visual_style": "arcane",
-    "transient_seconds": 5,
-    "target_mode": "self_emanation",
-    "aoe_shape": "sphere",
-    "aoe_radius_feet": 10,
-    "show_range_preview": false,
-    "persistent": true
-  },
   "antipathy_sympathy": {
     "id": "antipathy_sympathy",
     "name": "Antipathy/Sympathy",
@@ -1334,85 +1147,6 @@ const SPELLS: Dictionary = {
     "transient_seconds": 5,
     "target_mode": "token_then_token",
     "range_feet": 10
-  },
-  "aura_of_life": {
-    "id": "aura_of_life",
-    "name": "Aura of Life",
-    "source": "XPHB",
-    "level": 4,
-    "school": "Abjuration",
-    "casting_time": "1 action",
-    "range": "Self (30-foot emanation)",
-    "target": "Self",
-    "area": "sphere",
-    "components": "V",
-    "duration": "Concentration, up to 10 minutes",
-    "classes": [
-      "Chierico",
-      "Paladino"
-    ],
-    "description": "An aura radiates from you in a 30-foot Emanation [Area of Effect] for the duration. While in the aura, you and your allies have Resistance to Necrotic damage, and your Hit Points maximums can't be reduced. If an ally with 0 Hit Points starts its turn in the aura, that ally regains 1 Hit Points.",
-    "higher_levels": "",
-    "visual_style": "arcane",
-    "transient_seconds": 5,
-    "target_mode": "self_emanation",
-    "aoe_shape": "sphere",
-    "aoe_radius_feet": 30,
-    "show_range_preview": false,
-    "persistent": true
-  },
-  "aura_of_purity": {
-    "id": "aura_of_purity",
-    "name": "Aura of Purity",
-    "source": "XPHB",
-    "level": 4,
-    "school": "Abjuration",
-    "casting_time": "1 action",
-    "range": "Self (30-foot emanation)",
-    "target": "Self",
-    "area": "sphere",
-    "components": "V",
-    "duration": "Concentration, up to 10 minutes",
-    "classes": [
-      "Chierico",
-      "Paladino"
-    ],
-    "description": "An aura radiates from you in a 30-foot Emanation [Area of Effect] for the duration. While in the aura, you and your allies have Resistance to Poison damage and Advantage on saving throws to avoid or end effects that include the Blinded, Charmed, Deafened, Frightened, Paralyzed, Poisoned, or Stunned condition.",
-    "higher_levels": "",
-    "visual_style": "arcane",
-    "transient_seconds": 5,
-    "target_mode": "self_emanation",
-    "aoe_shape": "sphere",
-    "aoe_radius_feet": 30,
-    "show_range_preview": false,
-    "persistent": true
-  },
-  "aura_of_vitality": {
-    "id": "aura_of_vitality",
-    "name": "Aura of Vitality",
-    "source": "XPHB",
-    "level": 3,
-    "school": "Abjuration",
-    "casting_time": "1 action",
-    "range": "Self (30-foot emanation)",
-    "target": "Self",
-    "area": "sphere",
-    "components": "V",
-    "duration": "Concentration, up to 1 minute",
-    "classes": [
-      "Chierico",
-      "Druido",
-      "Paladino"
-    ],
-    "description": "An aura radiates from you in a 30-foot Emanation [Area of Effect] for the duration. When you create the aura and at the start of each of your turns while it persists, you can restore 2d6 Hit Points to one creature in it.",
-    "higher_levels": "",
-    "visual_style": "arcane",
-    "transient_seconds": 5,
-    "target_mode": "self_emanation",
-    "aoe_shape": "sphere",
-    "aoe_radius_feet": 30,
-    "show_range_preview": false,
-    "persistent": true
   },
   "awaken": {
     "id": "awaken",
@@ -1687,34 +1421,6 @@ const SPELLS: Dictionary = {
     "allow_repeat_targets": false,
     "target_clicks_per_slot_above_base": 1
   },
-  "circle_of_power": {
-    "id": "circle_of_power",
-    "name": "Circle of Power",
-    "source": "XPHB",
-    "level": 5,
-    "school": "Abjuration",
-    "casting_time": "1 action",
-    "range": "Self (30-foot emanation)",
-    "target": "Self",
-    "area": "sphere",
-    "components": "V",
-    "duration": "Concentration, up to 10 minutes",
-    "classes": [
-      "Artefice",
-      "Chierico",
-      "Mago",
-      "Paladino"
-    ],
-    "description": "An aura radiates from you in a 30-foot Emanation [Area of Effect] for the duration. While in the aura, you and your allies have Advantage on saving throws against spells and other magical effects. When an affected creature makes a saving throw against a spell or magical effect that allows a save to take only half damage, it takes no damage if it succeeds on the save.",
-    "higher_levels": "",
-    "visual_style": "arcane",
-    "transient_seconds": 5,
-    "target_mode": "self_emanation",
-    "aoe_shape": "sphere",
-    "aoe_radius_feet": 30,
-    "show_range_preview": false,
-    "persistent": true
-  },
   "command": {
     "id": "command",
     "name": "Command",
@@ -1861,33 +1567,6 @@ const SPELLS: Dictionary = {
     "target_mode": "token_then_token",
     "range_feet": 300
   },
-  "control_weather": {
-    "id": "control_weather",
-    "name": "Control Weather",
-    "source": "PHB",
-    "level": 8,
-    "school": "Transmutation",
-    "casting_time": "10 minute",
-    "range": "Self (5-foot radius)",
-    "target": "Self",
-    "area": "sphere",
-    "components": "V, S, M (burning incense and bits of earth and wood mixed in water)",
-    "duration": "Concentration, up to 8 hours",
-    "classes": [
-      "Chierico",
-      "Druido",
-      "Mago"
-    ],
-    "description": "You take control of the weather within 5 miles of you for the duration. You must be outdoors to cast this spell. Moving to a place where you don't have a clear path to the sky ends the spell early. When you cast the spell, you change the current weather conditions, which are determined by the DM based on the climate and season. You can change precipitation, temperature, and wind. It takes 1d4 × 10 minutes for the new conditions to take effect. Once they do so, you can change the conditions again. When the spell ends, the weather gradually returns to normal. When you change the weather conditions, find a current condition on the following tables and change its stage by one, up or down. When changing the wind, you can change its direction.",
-    "higher_levels": "",
-    "visual_style": "arcane",
-    "transient_seconds": 5,
-    "target_mode": "self_emanation",
-    "aoe_shape": "sphere",
-    "aoe_radius_feet": 5,
-    "show_range_preview": false,
-    "persistent": true
-  },
   "cordon_of_arrows": {
     "id": "cordon_of_arrows",
     "name": "Cordon of Arrows",
@@ -1934,31 +1613,6 @@ const SPELLS: Dictionary = {
     "aoe_shape": "cube",
     "aoe_side_feet": 30,
     "range_feet": 30
-  },
-  "crusaders_mantle": {
-    "id": "crusaders_mantle",
-    "name": "Crusader's Mantle",
-    "source": "XPHB",
-    "level": 3,
-    "school": "Evocation",
-    "casting_time": "1 action",
-    "range": "Self (30-foot emanation)",
-    "target": "Self",
-    "area": "sphere",
-    "components": "V",
-    "duration": "Concentration, up to 1 minute",
-    "classes": [
-      "Paladino"
-    ],
-    "description": "You radiate a magical aura in a 30-foot Emanation [Area of Effect]. While in the aura, you and your allies each deal an extra 1d4 Radiant damage when hitting with a weapon or an Unarmed Strike.",
-    "higher_levels": "",
-    "visual_style": "radiant",
-    "transient_seconds": 5,
-    "target_mode": "self_emanation",
-    "aoe_shape": "sphere",
-    "aoe_radius_feet": 30,
-    "show_range_preview": false,
-    "persistent": true
   },
   "cure_wounds": {
     "id": "cure_wounds",
@@ -3247,31 +2901,6 @@ const SPELLS: Dictionary = {
     "allow_repeat_targets": false,
     "target_clicks_per_slot_above_base": 1
   },
-  "holy_aura": {
-    "id": "holy_aura",
-    "name": "Holy Aura",
-    "source": "XPHB",
-    "level": 8,
-    "school": "Abjuration",
-    "casting_time": "1 action",
-    "range": "Self (30-foot emanation)",
-    "target": "Self",
-    "area": "sphere",
-    "components": "V, S, M",
-    "duration": "Concentration, up to 1 minute",
-    "classes": [
-      "Chierico"
-    ],
-    "description": "For the duration, you emit an aura in a 30-foot Emanation [Area of Effect]. While in the aura, creatures of your choice have Advantage on all saving throws, and other creatures have Disadvantage on attack rolls against them. In addition, when a Fiend or an Undead hits an affected creature with a melee attack roll, the attacker must succeed on a Constitution saving throw or have the Blinded condition until the end of its next turn.",
-    "higher_levels": "",
-    "visual_style": "arcane",
-    "transient_seconds": 5,
-    "target_mode": "self_emanation",
-    "aoe_shape": "sphere",
-    "aoe_radius_feet": 30,
-    "show_range_preview": false,
-    "persistent": true
-  },
   "hunger_of_hadar": {
     "id": "hunger_of_hadar",
     "name": "Hunger of Hadar",
@@ -3965,32 +3594,6 @@ const SPELLS: Dictionary = {
     "transient_seconds": 5,
     "target_mode": "token_then_token",
     "range_feet": 30
-  },
-  "pass_without_trace": {
-    "id": "pass_without_trace",
-    "name": "Pass without Trace",
-    "source": "XPHB",
-    "level": 2,
-    "school": "Abjuration",
-    "casting_time": "1 action",
-    "range": "Self (30-foot emanation)",
-    "target": "Self",
-    "area": "sphere",
-    "components": "V, S, M (ashes from burned mistletoe)",
-    "duration": "Concentration, up to 1 hour",
-    "classes": [
-      "Druido",
-      "Ranger"
-    ],
-    "description": "You radiate a concealing aura in a 30-foot Emanation [Area of Effect] for the duration. While in the aura, you and each creature you choose have a +10 bonus to Dexterity (Stealth) checks and leave no tracks.",
-    "higher_levels": "",
-    "visual_style": "arcane",
-    "transient_seconds": 5,
-    "target_mode": "self_emanation",
-    "aoe_shape": "sphere",
-    "aoe_radius_feet": 30,
-    "show_range_preview": false,
-    "persistent": true
   },
   "phantasmal_force": {
     "id": "phantasmal_force",
@@ -4713,31 +4316,6 @@ const SPELLS: Dictionary = {
     "range_feet": 150,
     "persistent": true
   },
-  "spirit_guardians": {
-    "id": "spirit_guardians",
-    "name": "Spirit Guardians",
-    "source": "XPHB",
-    "level": 3,
-    "school": "Conjuration",
-    "casting_time": "1 action",
-    "range": "Self (15-foot emanation)",
-    "target": "Self",
-    "area": "sphere",
-    "components": "V, S, M (a prayer scroll)",
-    "duration": "Concentration, up to 10 minutes",
-    "classes": [
-      "Chierico"
-    ],
-    "description": "Protective spirits flit around you in a 15-foot Emanation [Area of Effect] for the duration. If you are good or neutral, their spectral form appears angelic or fey (your choice). If you are evil, they appear fiendish. When you cast this spell, you can designate creatures to be unaffected by it. Any other creature's Speed is halved in the Emanation [Area of Effect], and whenever the Emanation [Area of Effect] enters a creature's space and whenever a creature enters the Emanation [Area of Effect] or ends its turn there, the creature must make a Wisdom saving throw. On a failed save, the creature takes 3d8 Radiant damage (if you are good or neutral) or 3d8 Necrotic damage (if you are evil). On a successful save, the creature takes half as much damage. A creature makes this save only once per turn.",
-    "higher_levels": "Using a Higher-Level Spell Slot The damage increases by 3d8 for each spell slot level above 3.",
-    "visual_style": "necrotic",
-    "transient_seconds": 5,
-    "target_mode": "self_emanation",
-    "aoe_shape": "sphere",
-    "aoe_radius_feet": 15,
-    "show_range_preview": false,
-    "persistent": true
-  },
   "stoneskin": {
     "id": "stoneskin",
     "name": "Stoneskin",
@@ -5208,35 +4786,6 @@ const SPELLS: Dictionary = {
     "transient_seconds": 5,
     "target_mode": "token_then_token",
     "range_feet": 60
-  },
-  "booming_blade": {
-    "id": "booming_blade",
-    "name": "Booming Blade",
-    "source": "TCE",
-    "level": 0,
-    "school": "Evocation",
-    "casting_time": "1 action",
-    "range": "Self (5-foot radius)",
-    "target": "Self",
-    "area": "sphere",
-    "components": "S, M",
-    "duration": "1 round",
-    "classes": [
-      "Artefice",
-      "Mago",
-      "Stregone",
-      "Warlock"
-    ],
-    "description": "You brandish the weapon used in the spell's casting and make a melee attack with it against one creature within 5 feet of you. On a hit, the target suffers the weapon attack's normal effects and then becomes sheathed in booming energy until the start of your next turn. If the target willingly moves 5 feet or more before then, the target takes 1d8 thunder damage, and the spell ends. This spell's damage increases when you reach certain levels. At 5th level, the melee attack deals an extra 1d8 thunder damage to the target on a hit, and the damage the target takes for moving increases to 2d8. Both damage rolls increase by 1d8 at 11th level (2d8 and 3d8) and again at 17th level (3d8 and 4d8).",
-    "higher_levels": "",
-    "visual_style": "thunder",
-    "transient_seconds": 5,
-    "target_mode": "self_emanation",
-    "aoe_shape": "sphere",
-    "aoe_radius_feet": 5,
-    "show_range_preview": false,
-    "persistent": true,
-    "level17_damage": "4d8 Thunder"
   },
   "green_flame_blade": {
     "id": "green_flame_blade",
@@ -6691,58 +6240,6 @@ const SPELLS: Dictionary = {
     "range_feet": 90,
     "persistent": true
   },
-  "conjure_minor_elementals": {
-    "id": "conjure_minor_elementals",
-    "name": "Conjure Minor Elementals",
-    "source": "XPHB",
-    "level": 4,
-    "school": "Conjuration",
-    "casting_time": "1 action",
-    "range": "Self (15-foot emanation)",
-    "target": "Self",
-    "area": "sphere",
-    "components": "V, S",
-    "duration": "Concentration, up to 10 minutes",
-    "classes": [
-      "Druido",
-      "Mago"
-    ],
-    "description": "You conjure spirits from the Elemental Planes that flit around you in a 15-foot Emanation [Area of Effect] for the duration. Until the spell ends, any attack you make deals an extra 2d8 damage when you hit a creature in the Emanation [Area of Effect]. This damage is Acid, Cold, Fire, or Lightning (your choice when you make the attack). In addition, the ground in the Emanation [Area of Effect] is Difficult Terrain for your enemies.",
-    "higher_levels": "Using a Higher-Level Spell Slot The damage increases by 2d8 for each spell slot level above 4.",
-    "visual_style": "fire",
-    "transient_seconds": 5,
-    "target_mode": "self_emanation",
-    "aoe_shape": "sphere",
-    "aoe_radius_feet": 15,
-    "show_range_preview": false,
-    "persistent": true
-  },
-  "conjure_woodland_beings": {
-    "id": "conjure_woodland_beings",
-    "name": "Conjure Woodland Beings",
-    "source": "XPHB",
-    "level": 4,
-    "school": "Conjuration",
-    "casting_time": "1 action",
-    "range": "Self (10-foot emanation)",
-    "target": "Self",
-    "area": "sphere",
-    "components": "V, S",
-    "duration": "Concentration, up to 10 minutes",
-    "classes": [
-      "Druido",
-      "Ranger"
-    ],
-    "description": "You conjure nature spirits that flit around you in a 10-foot Emanation [Area of Effect] for the duration. Whenever the Emanation [Area of Effect] enters the space of a creature you can see and whenever a creature you can see enters the Emanation [Area of Effect] or ends its turn there, you can force that creature to make a Wisdom saving throw. The creature takes 5d8 Force damage on a failed save or half as much damage on a successful one. A creature makes this save only once per turn. In addition, you can take the Disengage action as a Bonus Action for the spell's duration.",
-    "higher_levels": "Using a Higher-Level Spell Slot The damage increases by 5d8 for each spell slot level above 4.",
-    "visual_style": "force",
-    "transient_seconds": 5,
-    "target_mode": "self_emanation",
-    "aoe_shape": "sphere",
-    "aoe_radius_feet": 10,
-    "show_range_preview": false,
-    "persistent": true
-  },
   "elementalism": {
     "id": "elementalism",
     "name": "Elementalism",
@@ -6844,31 +6341,5 @@ const SPELLS: Dictionary = {
     "target_mode": "token_then_token",
     "range_feet": 60,
     "level17_damage": "4d8 Radiant"
-  },
-  "yolandes_regal_presence": {
-    "id": "yolandes_regal_presence",
-    "name": "Yolande's Regal Presence",
-    "source": "XPHB",
-    "level": 5,
-    "school": "Enchantment",
-    "casting_time": "1 action",
-    "range": "Self (10-foot emanation)",
-    "target": "Self",
-    "area": "sphere",
-    "components": "V, S, M (a miniature tiara)",
-    "duration": "Concentration, up to 1 minute",
-    "classes": [
-      "Bardo",
-      "Mago"
-    ],
-    "description": "You surround yourself with unearthly majesty in a 10-foot Emanation [Area of Effect]. Whenever the Emanation [Area of Effect] enters the space of a creature you can see and whenever a creature you can see enters the Emanation [Area of Effect] or ends its turn there, you can force that creature to make a Wisdom saving throw. On a failed save, the target takes 4d6 Psychic damage and has the Prone condition, and you can push it up to 10 feet away. On a successful save, the target takes half as much damage only. A creature makes this save only once per turn.",
-    "higher_levels": "",
-    "visual_style": "psychic",
-    "transient_seconds": 5,
-    "target_mode": "self_emanation",
-    "aoe_shape": "sphere",
-    "aoe_radius_feet": 10,
-    "show_range_preview": false,
-    "persistent": true
   }
 }
