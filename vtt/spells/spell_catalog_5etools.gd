@@ -5893,7 +5893,8 @@ const SPELLS: Dictionary = {
     "wall_globe_max_radius_feet": 10,
     "wall_requires_ground": true,
     "persistent": true,
-    "range_feet": 60
+    "range_feet": 60,
+    "wall_circle_height_feet": 20
   },
   "whirlwind": {
     "id": "whirlwind",
