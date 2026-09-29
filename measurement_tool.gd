@@ -633,15 +633,22 @@ func show_transient_aoe(
 	timer.start()
 
 
-func add_aoe(start: Vector3, end: Vector3, shape: String) -> void:
+func add_aoe(
+	start: Vector3,
+	end: Vector3,
+	shape: String,
+	style: String = ""
+) -> void:
 	if persistent_aoes.size() >= 256:
 		return
 
-	var data := {
+	var data: Dictionary = {
 		"start": [start.x, start.y, start.z],
 		"end": [end.x, end.y, end.z],
 		"shape": shape
 	}
+	if not style.is_empty():
+		data["style"] = style
 	persistent_aoes.append(data)
 
 	var root := Node3D.new()
@@ -651,7 +658,7 @@ func add_aoe(start: Vector3, end: Vector3, shape: String) -> void:
 	var mesh := MeshInstance3D.new()
 	mesh.name = "Visual"
 	root.add_child(mesh)
-	_draw_aoe(mesh, start, end, shape)
+	_draw_aoe(mesh, start, end, shape, style)
 
 	_add_aoe_pick_area(root, start, end, shape)
 	_aoe_nodes.append(root)
@@ -660,16 +667,23 @@ func _draw_aoe(
 	node: MeshInstance3D,
 	start: Vector3,
 	end: Vector3,
-	shape: String
+	shape: String,
+	style: String = ""
 ) -> void:
 	var base_cells := _dnd_grid_distance_cells(end - start)
 	var reach_world := maxf(
 		cell_size * 0.5,
 		float(base_cells) * cell_size
 	)
-	var material := StandardMaterial3D.new()
+	var material: StandardMaterial3D = StandardMaterial3D.new()
 	material.transparency = BaseMaterial3D.TRANSPARENCY_ALPHA
-	material.albedo_color = Color(1, 0.3, 0.05, 0.28)
+	if style == "darkness":
+		material.albedo_color = Color(0.015, 0.01, 0.035, 0.72)
+		material.emission_enabled = true
+		material.emission = Color(0.01, 0.005, 0.025, 1.0)
+		material.emission_energy_multiplier = 0.25
+	else:
+		material.albedo_color = Color(1, 0.3, 0.05, 0.28)
 	material.shading_mode = BaseMaterial3D.SHADING_MODE_UNSHADED
 	material.cull_mode = BaseMaterial3D.CULL_DISABLED
 	node.global_transform = Transform3D(Basis.IDENTITY, start)
@@ -885,4 +899,9 @@ func apply_persistent_aoes(data: Array) -> void:
 		return
 	clear_persistent_aoes()
 	for item in data:
-		add_aoe(Vector3(item.start[0],item.start[1],item.start[2]), Vector3(item.end[0],item.end[1],item.end[2]), item.shape)
+		add_aoe(
+			Vector3(item.start[0], item.start[1], item.start[2]),
+			Vector3(item.end[0], item.end[1], item.end[2]),
+			String(item.shape),
+			String(item.get("style", ""))
+		)
