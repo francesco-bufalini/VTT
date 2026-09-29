@@ -14,7 +14,7 @@ func _ready() -> void:
 	add_child(encounter.seals)
 	encounter.seals.setup($KlothisRoot/KlothisVisual, measurement_tool.meters_to_world(1))
 	encounter.seals.changed.connect(func(): encounter.state_changed.emit())
-	$KaosRoot/ShoulderPlatform.setup(measurement_tool, grid)
+	$KaosRoot/ShoulderPlatform.setup(measurement_tool)
 	measurement_tool.collision_mask = 1 | 4
 	var hand_grids = preload("res://encounter/hand_platforms.gd").new()
 	hand_grids.name = "HandPlatforms"
@@ -48,10 +48,8 @@ func _on_token_dialog_confirmed() -> void:
 
 func _set_grid_interaction(active: bool) -> void:
 	var strength := 1.0 if active or not _selected_tokens.is_empty() else 0.55
-	grid.mesh.material.set_shader_parameter("interaction_strength", strength)
-	for child in $KaosRoot/ShoulderPlatform.get_children():
-		if child is MeshInstance3D and child.mesh.material is ShaderMaterial:
-			child.mesh.material.set_shader_parameter("interaction_strength", strength)
+	if surface_grid != null and is_instance_valid(surface_grid):
+		surface_grid.set_interaction_strength(strength)
 
 func _replace_selection(token: CharacterBody3D) -> void:
 	super._replace_selection(token)
