@@ -1381,6 +1381,12 @@ func _cast_spell_at_token(
 	var style: String = String(
 		spell_data.get("projectile_style", _spell_style(spell_data))
 	)
+	var duration: float = float(
+		spell_data.get("transient_seconds", 5.0)
+	)
+	var impact_radius: float = float(
+		spell_data.get("impact_aoe_radius_feet", 0.0)
+	)
 
 	if bool(spell_data.get("persistent_link", false)):
 		measurement_tool.call(
@@ -1390,32 +1396,25 @@ func _cast_spell_at_token(
 			"line",
 			style
 		)
+	elif impact_radius > 0.0:
+		measurement_tool.call(
+			"show_spell_projectile_with_impact",
+			start,
+			finish,
+			style,
+			duration,
+			String(spell_data.get("impact_aoe_shape", "sphere")),
+			impact_radius / 5.0 * _cell_size(),
+			String(spell_data.get("impact_style", style)),
+			duration
+		)
 	else:
 		measurement_tool.call(
 			"show_spell_projectile",
 			start,
 			finish,
 			style,
-			float(spell_data.get("transient_seconds", 5.0))
-		)
-
-	var impact_radius: float = float(
-		spell_data.get("impact_aoe_radius_feet", 0.0)
-	)
-	if impact_radius > 0.0:
-		var impact_center: Vector3 = target.global_position
-		var impact_end: Vector3 = (
-			impact_center
-			+ Vector3.RIGHT
-			* (impact_radius / 5.0 * _cell_size())
-		)
-		measurement_tool.call(
-			"show_transient_aoe",
-			impact_center,
-			impact_end,
-			String(spell_data.get("impact_aoe_shape", "sphere")),
-			float(spell_data.get("transient_seconds", 5.0)),
-			String(spell_data.get("impact_style", style))
+			duration
 		)
 
 
