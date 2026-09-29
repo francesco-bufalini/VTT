@@ -10,6 +10,7 @@ const CONTEXT_TOGGLE_GRID_3D := 7
 const CONTEXT_FLYING := 8
 const CONTEXT_MAIN_MENU := 9
 const CONTEXT_DISSOLVE_AOT := 10
+const CONTEXT_SPELLS := 11
 const CAMPAIGN_EDITOR_SCENE_PATH := "res://vtt/editor/campaign_editor.tscn"
 
 const ALL_COLLISION_LAYERS := 0xFFFFFFFF
@@ -44,6 +45,7 @@ const TOKEN_SIZES := [
 var _pending_spawn_position: Vector3 = Vector3.ZERO
 var _has_pending_spawn_position: bool = false
 var _pending_aoe_index: int = -1
+var _context_token: CharacterBody3D = null
 var _selected_tokens: Array[CharacterBody3D] = []
 var _ui_owns_mouse: bool = false
 var _vision_cones_visible: bool = false
@@ -359,6 +361,24 @@ func _show_context_menu(screen_position: Vector2) -> void:
 		call_deferred("_release_mouse")
 		return
 
+	_context_token = null
+	var token_hit: Dictionary = _raycast_from_screen(
+		screen_position,
+		ALL_COLLISION_LAYERS,
+		true
+	)
+	if not token_hit.is_empty():
+		var token_collider: Node = token_hit.get("collider") as Node
+		if token_collider != null:
+			var token_target: Node = _find_interaction_target(token_collider)
+			if (
+				token_target != null
+				and token_target.is_in_group("dnd_token")
+				and token_target is CharacterBody3D
+			):
+				_context_token = token_target as CharacterBody3D
+				_replace_selection(_context_token)
+
 	var hit: Dictionary = _raycast_from_screen(screen_position, 1 | 4, false)
 	if not hit.is_empty():
 		var hit_normal: Vector3 = hit.get("normal", Vector3.UP)
@@ -411,6 +431,10 @@ func _show_context_menu(screen_position: Vector2) -> void:
 	if not _selected_tokens.is_empty():
 		context_menu.add_separator()
 
+		if _context_token != null and is_instance_valid(_context_token):
+			context_menu.add_item("Incantesimi", CONTEXT_SPELLS)
+			context_menu.add_separator()
+
 		var count: int = _selected_tokens.size()
 		var suffix: String = "" if count == 1 else " (%d)" % count
 		context_menu.add_check_item("Volante" + suffix, CONTEXT_FLYING)
@@ -438,6 +462,12 @@ func _show_context_menu(screen_position: Vector2) -> void:
 
 
 func _on_context_menu_id_pressed(id: int) -> void:
+	if id == CONTEXT_SPELLS:
+		if spell_system != null and is_instance_valid(spell_system):
+			spell_system.call("open_panel")
+		context_menu.hide()
+		return
+
 	if id == CONTEXT_DISSOLVE_AOT:
 		measurement_tool.call("dissolve_aoe", _pending_aoe_index)
 		_pending_aoe_index = -1
@@ -519,7 +549,18 @@ func _on_context_menu_hidden() -> void:
 func _finish_context_menu_close() -> void:
 	if color_dialog.visible or (is_instance_valid(share_dialog) and share_dialog.visible):
 		return
+	if (
+		spell_system != null
+		and is_instance_valid(spell_system)
+		and bool(spell_system.call("is_panel_open"))
+	):
+		_pending_aoe_index = -1
+		_context_token = null
+		_ui_owns_mouse = true
+		Input.mouse_mode = Input.MOUSE_MODE_VISIBLE
+		return
 	_pending_aoe_index = -1
+	_context_token = null
 	_ui_owns_mouse = false
 	_capture_mouse()
 
