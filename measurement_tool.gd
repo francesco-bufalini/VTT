@@ -100,10 +100,20 @@ func begin_measurement() -> bool:
 
 
 func end_measurement() -> void:
-	if _dragging and aoe_mode:
+	if not _dragging:
+		return
+
+	if aoe_mode:
 		add_aoe(_start_center, _end_center, aoe_shape)
+		_dragging = false
+		_hide_measurement()
+		return
+
+	# A completed ruler measurement remains visible while measurement mode
+	# stays active. Starting another valid measurement reuses these visuals,
+	# while leaving measurement mode calls cancel_measurement() and clears them.
 	_dragging = false
-	_hide_measurement()
+	_update_visuals()
 
 
 func cancel_measurement() -> void:
