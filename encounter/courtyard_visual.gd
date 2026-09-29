@@ -30,7 +30,7 @@ func build(root: Node3D, units: float, marble: Material) -> void:
 	plane.size = Vector2(120,180)*units
 	play_surface.mesh = plane
 	play_surface.material_override = material
-	play_surface.position = Vector3(0,-0.01,85*units)
+	play_surface.position = Vector3(0,-0.01,85.5*units)
 	root.add_child(play_surface)
 	# Low banks locate the playable area without filling it with decorative objects.
 	for side in [-1.0, 1.0]:
@@ -40,5 +40,5 @@ func build(root: Node3D, units: float, marble: Material) -> void:
 		box.size = Vector3(2, 0.35, 184) * units
 		bank.mesh = box
 		bank.material_override = marble
-		bank.position = Vector3(side * 62, -0.1, 85) * units
+		bank.position = Vector3(side * 62, -0.1, 85.5) * units
 		root.add_child(bank)
