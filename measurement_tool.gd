@@ -680,6 +680,28 @@ func set_aoe_mode(shape: String) -> void:
 
 func _spell_style_color(style: String) -> Color:
 	match style:
+		"fire":
+			return Color(1.0, 0.24, 0.03, 1.0)
+		"cold":
+			return Color(0.48, 0.9, 1.0, 1.0)
+		"lightning":
+			return Color(0.3, 0.78, 1.0, 1.0)
+		"acid":
+			return Color(0.48, 0.96, 0.12, 1.0)
+		"poison":
+			return Color(0.34, 0.76, 0.12, 1.0)
+		"necrotic":
+			return Color(0.22, 0.06, 0.28, 1.0)
+		"radiant":
+			return Color(1.0, 0.94, 0.56, 1.0)
+		"force":
+			return Color(0.72, 0.66, 1.0, 1.0)
+		"psychic", "enchantment", "fear":
+			return Color(0.7, 0.3, 1.0, 1.0)
+		"thunder":
+			return Color(0.48, 0.78, 1.0, 1.0)
+		"arcane":
+			return Color(0.72, 0.34, 1.0, 1.0)
 		"darkness":
 			return Color(0.03, 0.01, 0.07, 1.0)
 		"fireball", "burning_hands", "fire_bolt":
