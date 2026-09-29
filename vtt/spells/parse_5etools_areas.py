@@ -26,7 +26,7 @@ from pathlib import Path
 from typing import Any, Iterable
 
 
-OUTPUT_DEFAULT = Path("assets/spell_area_geometry.json")
+PROJECT_ROOT = Path(__file__).resolve().parents[2]\nOUTPUT_DEFAULT = PROJECT_ROOT / "assets/spell_area_geometry.json"
 
 # Walls are deliberately excluded for now.
 GEOMETRY_TAGS = {
@@ -607,7 +607,7 @@ def main() -> int:
         "--output",
         type=Path,
         default=OUTPUT_DEFAULT,
-        help=f"output JSON path (default: {OUTPUT_DEFAULT})",
+        help="output JSON path (default: project-root/assets/spell_area_geometry.json)",
     )
     args = parser.parse_args()
 
