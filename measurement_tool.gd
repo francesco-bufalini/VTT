@@ -738,6 +738,22 @@ func _spell_style_color(style: String) -> Color:
 			return Color(0.42, 0.88, 1.0, 1.0)
 		"disintegrate":
 			return Color(0.18, 1.0, 0.34, 1.0)
+		"wall_of_fire":
+			return Color(1.0, 0.22, 0.02, 1.0)
+		"wind_wall":
+			return Color(0.72, 0.9, 1.0, 1.0)
+		"blade_barrier":
+			return Color(0.88, 0.92, 1.0, 1.0)
+		"wall_of_force":
+			return Color(0.48, 0.74, 1.0, 1.0)
+		"wall_of_stone":
+			return Color(0.42, 0.4, 0.36, 1.0)
+		"wall_of_ice":
+			return Color(0.56, 0.9, 1.0, 1.0)
+		"wall_of_thorns":
+			return Color(0.18, 0.58, 0.12, 1.0)
+		"prismatic_wall":
+			return Color(0.86, 0.3, 1.0, 1.0)
 		_:
 			return Color(1.0, 0.32, 0.04, 1.0)
 
