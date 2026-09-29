@@ -92,6 +92,14 @@ func _ready() -> void:
 	add_child(board_sync)
 	board_sync.setup(self, token_scene, tokens_root, measurement_tool)
 	_build_share_dialog()
+
+	var runtime_toolbar: Node = (
+		preload("res://vtt/runtime_toolbar.gd").new() as Node
+	)
+	runtime_toolbar.name = "RuntimeToolbarController"
+	add_child(runtime_toolbar)
+	runtime_toolbar.call("setup", self)
+
 	_capture_mouse()
 
 
