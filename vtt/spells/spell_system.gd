@@ -784,6 +784,16 @@ func _point_target_data(
 	if not bool(point_data.get("valid", false)):
 		return {"valid": false}
 
+	if bool(spell_data.get("requires_ground", false)):
+		if bool(point_data.get("in_air", true)):
+			return {"valid": false}
+		var surface_normal: Vector3 = point_data.get(
+			"normal",
+			Vector3.ZERO
+		)
+		if surface_normal.dot(Vector3.UP) < 0.5:
+			return {"valid": false}
+
 	var target_point: Vector3 = point_data.get("point", Vector3.ZERO)
 	var cell_size: float = _cell_size()
 	var range_feet: float = float(spell_data.get("range_feet", 0.0))
