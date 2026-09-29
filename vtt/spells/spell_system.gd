@@ -181,6 +181,12 @@ func handle_input(event: InputEvent) -> bool:
 			"direction_point":
 				_try_select_direction_point(screen_position)
 				return true
+			"chain_primary":
+				_try_select_chain_primary(screen_position)
+				return true
+			"chain_secondary":
+				_try_select_chain_secondary(screen_position)
+				return true
 
 	return false
 
@@ -273,6 +279,16 @@ func _try_select_caster(screen_position: Vector2) -> void:
 			_pending_caster = caster
 			_cast_self_emanation(caster, spell_data)
 			_finish_cast()
+		"chain_targets":
+			_pending_caster = caster
+			_chain_primary = null
+			_pending_targets.clear()
+			_targeting_phase = "chain_primary"
+			_hide_spell_preview()
+			_set_instruction(
+				"%s: scegli il bersaglio primario entro %d ft."
+				% [String(spell_data.get("name", "Incantesimo")), int(spell_data.get("range_feet", 0))]
+			)
 		"token_then_direction":
 			_pending_caster = caster
 			_targeting_phase = "direction_point"
@@ -1558,14 +1574,23 @@ func _cast_directional_spell_to_point(
 	if geometry.is_empty():
 		return
 
-	measurement_tool.call(
-		"show_transient_aoe",
-		geometry.get("start", Vector3.ZERO),
-		geometry.get("end", Vector3.ZERO),
-		String(spell_data.get("aoe_shape", "line")),
-		float(spell_data.get("transient_seconds", 5.0)),
-		_spell_style(spell_data)
-	)
+	if bool(spell_data.get("persistent", false)):
+		measurement_tool.call(
+			"add_aoe",
+			geometry.get("start", Vector3.ZERO),
+			geometry.get("end", Vector3.ZERO),
+			String(spell_data.get("aoe_shape", "line")),
+			_spell_style(spell_data)
+		)
+	else:
+		measurement_tool.call(
+			"show_transient_aoe",
+			geometry.get("start", Vector3.ZERO),
+			geometry.get("end", Vector3.ZERO),
+			String(spell_data.get("aoe_shape", "line")),
+			float(spell_data.get("transient_seconds", 5.0)),
+			_spell_style(spell_data)
+		)
 
 
 func _cast_spell_at_token(
