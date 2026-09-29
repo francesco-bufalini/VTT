@@ -56,6 +56,16 @@ func _ready() -> void:
 		push_error("CampaignEditor: il controller deve essere figlio di DnDBase.")
 		return
 
+	# I nodi figli ricevono _ready prima del parent. Rimandiamo quindi
+	# l'inizializzazione a quando dnd_base ha gia' creato SurfaceGrid,
+	# BoardSync, token drag e gli altri servizi runtime.
+	call_deferred("_initialize_editor")
+
+
+func _initialize_editor() -> void:
+	if board_root == null or not is_instance_valid(board_root):
+		return
+
 	ui_root = board_root.get_node("UI") as CanvasLayer
 	_set_white_environment()
 	_resize_primary_grid(primary_width_cells, primary_depth_cells)
@@ -67,7 +77,7 @@ func _ready() -> void:
 	# L'editor deve essere utilizzabile subito con il mouse. ESC continua a
 	# catturare/liberare il cursore tramite la logica gia' presente in dnd_base.
 	Input.mouse_mode = Input.MOUSE_MODE_VISIBLE
-	call_deferred("_load_active_campaign")
+	_load_active_campaign()
 
 
 func _build_toolbar() -> void:
@@ -599,7 +609,7 @@ func _create_board_snapshot() -> Dictionary:
 
 func _board_sync() -> Node:
 	var value: Variant = board_root.get("board_sync")
-	if value is Node and is_instance_valid(value):
+	if is_instance_valid(value) and value is Node:
 		return value as Node
 	return null
 
@@ -607,7 +617,7 @@ func _board_sync() -> Node:
 func _serialize_view_state() -> Dictionary:
 	var surface: Variant = board_root.get("surface_grid")
 	var grid_visible := false
-	if surface is Node and is_instance_valid(surface):
+	if is_instance_valid(surface) and surface is Node:
 		grid_visible = bool(surface.call("is_grid_visible"))
 
 	var volumetric := board_root.get_node_or_null("VolumetricGrid") as Node3D
@@ -653,7 +663,7 @@ func _platform_material() -> StandardMaterial3D:
 
 func _refresh_surface_grid() -> void:
 	var surface: Variant = board_root.get("surface_grid")
-	if surface is Node and is_instance_valid(surface):
+	if is_instance_valid(surface) and surface is Node:
 		surface.call_deferred("refresh")
 
 
