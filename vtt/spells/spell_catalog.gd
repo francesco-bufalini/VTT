@@ -1,9 +1,12 @@
 extends RefCounted
 
+const GeneratedCatalog = preload(
+	"res://vtt/spells/spell_catalog_5etools.gd"
+)
+
 const CLASS_NAMES: Array[String] = [
-	"Barbaro", "Bardo", "Chierico", "Druido", "Guerriero", "Monaco",
-	"Paladino", "Ranger", "Ladro", "Stregone", "Warlock", "Mago",
-	"Spellblade"
+	"Artefice", "Bardo", "Chierico", "Druido", "Monaco",
+	"Paladino", "Ranger", "Stregone", "Warlock", "Mago"
 ]
 
 const LEVEL_NAMES: Array[String] = [
@@ -1266,15 +1269,39 @@ static func spell(spell_id: String) -> Dictionary:
 	var value: Variant = SPELLS.get(spell_id, {})
 	if value is Dictionary:
 		return (value as Dictionary).duplicate(true)
+
+	value = GeneratedCatalog.SPELLS.get(spell_id, {})
+	if value is Dictionary:
+		return (value as Dictionary).duplicate(true)
 	return {}
 
 
 static func all_spells() -> Array[Dictionary]:
-	var result: Array[Dictionary] = []
+	var merged: Dictionary = {}
+
+	for spell_id: Variant in GeneratedCatalog.SPELLS.keys():
+		var generated_value: Variant = GeneratedCatalog.SPELLS.get(
+			spell_id,
+			{}
+		)
+		if generated_value is Dictionary:
+			merged[String(spell_id)] = (
+				generated_value as Dictionary
+			).duplicate(true)
+
+	# Hand-authored spell definitions always win.
 	for spell_id: Variant in SPELLS.keys():
 		var value: Variant = SPELLS.get(spell_id, {})
 		if value is Dictionary:
+			merged[String(spell_id)] = (
+				value as Dictionary
+			).duplicate(true)
+
+	var result: Array[Dictionary] = []
+	for value: Variant in merged.values():
+		if value is Dictionary:
 			result.append((value as Dictionary).duplicate(true))
+
 	result.sort_custom(
 		func(a: Dictionary, b: Dictionary) -> bool:
 			return String(a.get("name", "")).naturalnocasecmp_to(
