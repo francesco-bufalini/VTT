@@ -29,7 +29,7 @@ func build(scene: Node3D) -> void:
 	var floor_shape := BoxShape3D.new()
 	floor_shape.size = Vector3(120 * _units, 0.1, 180 * _units)
 	scene.get_node("Board/FloorCollision/CollisionShape3D").shape = floor_shape
-	scene.get_node("Board/FloorCollision").position.z = 85 * _units
+	scene.get_node("Board/FloorCollision").position.z = 85.5 * _units
 	var orientation_marker := scene.get_node_or_null(
 		"Board/MapGeometry/OrientationMarker"
 	)
