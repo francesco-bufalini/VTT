@@ -1,5 +1,7 @@
 extends Node3D
 
+const AOE_PICK_LAYER := 1 << 20
+
 @export var cell_size: float = 1.0
 # Existing template convention: one square = five feet.
 @export_range(0.001, 100.0) var meters_per_cell: float = 1.5
@@ -18,6 +20,8 @@ var _volumetric_grid: Node3D = null
 var _measurement_mode: bool = false
 var _dragging: bool = false
 var _start_center: Vector3 = Vector3.ZERO
+var _start_cell_center: Vector3 = Vector3.ZERO
+var _start_raw_point: Vector3 = Vector3.ZERO
 var _end_center: Vector3 = Vector3.ZERO
 var _air_depth_world: float = 8.0
 
@@ -80,7 +84,15 @@ func begin_measurement() -> bool:
 	if not bool(cell.get("valid", false)):
 		return false
 
-	_start_center = cell.get("center", Vector3.ZERO)
+	_start_cell_center = cell.get("center", Vector3.ZERO)
+	_start_raw_point = cell.get("raw", _start_cell_center)
+	_start_center = _start_cell_center
+
+	if aoe_mode and aoe_shape == "sphere":
+		_start_center = _snap_point_to_grid_intersection(
+			_start_raw_point
+		)
+
 	_end_center = _start_center
 
 	if _camera != null and is_instance_valid(_camera):
@@ -163,7 +175,30 @@ func _update_target_from_camera() -> void:
 	if not bool(cell.get("valid", false)):
 		return
 
-	_end_center = cell.get("center", Vector3.ZERO)
+	var target_center: Vector3 = cell.get("center", Vector3.ZERO)
+	var target_raw: Vector3 = cell.get("raw", target_center)
+
+	if aoe_mode:
+		match aoe_shape:
+			"sphere":
+				_start_center = _snap_point_to_grid_intersection(
+					_start_raw_point
+				)
+				_end_center = _snap_point_to_grid_intersection(
+					target_raw
+				)
+			"cone":
+				_end_center = target_center
+				_start_center = _cone_start_for_target(
+					target_center
+				)
+			_:
+				_start_center = _start_cell_center
+				_end_center = target_center
+	else:
+		_start_center = _start_cell_center
+		_end_center = target_center
+
 	_update_visuals()
 
 
@@ -212,7 +247,8 @@ func _looked_cell() -> Dictionary:
 		if not grid_active or _grid_contains(snapped_surface):
 			return {
 				"valid": true,
-				"center": snapped_surface
+				"center": snapped_surface,
+				"raw": point
 			}
 
 	# In volumetric mode the only valid air targets are cells of the visible
@@ -242,7 +278,8 @@ func _looked_cell() -> Dictionary:
 		if _grid_contains(snapped_point):
 			return {
 				"valid": true,
-				"center": snapped_point
+				"center": snapped_point,
+				"raw": point_in_air
 			}
 
 	return {"valid": false}
@@ -275,6 +312,32 @@ func _snap_axis_to_center(value: float) -> float:
 	return (
 		floor(value / cell_size) * cell_size
 		+ cell_size * 0.5
+	)
+
+
+func _snap_point_to_grid_intersection(point: Vector3) -> Vector3:
+	return Vector3(
+		round(point.x / cell_size) * cell_size,
+		round(point.y / cell_size) * cell_size,
+		round(point.z / cell_size) * cell_size
+	)
+
+
+func _cone_start_for_target(target_center: Vector3) -> Vector3:
+	var delta := target_center - _start_cell_center
+	var dx := int(round(absf(delta.x) / maxf(cell_size, 0.0001)))
+	var dz := int(round(absf(delta.z) / maxf(cell_size, 0.0001)))
+
+	# Orthogonal cones retain the old centre-of-cell origin.
+	if dx == 0 or dz == 0:
+		return _start_cell_center
+
+	# A diagonal cone originates from the grid vertex in the direction
+	# of travel, matching tabletop placement from the corner of a square.
+	return Vector3(
+		_start_cell_center.x + signf(delta.x) * cell_size * 0.5,
+		_start_cell_center.y,
+		_start_cell_center.z + signf(delta.z) * cell_size * 0.5
 	)
 
 
@@ -471,12 +534,25 @@ func set_aoe_mode(shape: String) -> void:
 func add_aoe(start: Vector3, end: Vector3, shape: String) -> void:
 	if persistent_aoes.size() >= 256:
 		return
-	var data := {"start": [start.x,start.y,start.z], "end": [end.x,end.y,end.z], "shape": shape}
+
+	var data := {
+		"start": [start.x, start.y, start.z],
+		"end": [end.x, end.y, end.z],
+		"shape": shape
+	}
 	persistent_aoes.append(data)
+
+	var root := Node3D.new()
+	root.name = "PersistentAoE"
+	add_child(root)
+
 	var mesh := MeshInstance3D.new()
-	add_child(mesh)
+	mesh.name = "Visual"
+	root.add_child(mesh)
 	_draw_aoe(mesh, start, end, shape)
-	_aoe_nodes.append(mesh)
+
+	_add_aoe_pick_area(root, start, end, shape)
+	_aoe_nodes.append(root)
 
 func _draw_aoe(
 	node: MeshInstance3D,
@@ -548,6 +624,119 @@ func _draw_aoe(
 			node.mesh = mesh
 
 	node.material_override = material
+
+
+func remove_aoe_at_screen(screen_position: Vector2) -> bool:
+	if _camera == null or not is_instance_valid(_camera):
+		return false
+
+	var origin := _camera.project_ray_origin(screen_position)
+	var direction := _camera.project_ray_normal(screen_position)
+	var query := PhysicsRayQueryParameters3D.create(
+		origin,
+		origin + direction * max_ray_distance
+	)
+	query.collision_mask = AOE_PICK_LAYER
+	query.collide_with_bodies = false
+	query.collide_with_areas = true
+
+	var hit := _camera.get_world_3d().direct_space_state.intersect_ray(
+		query
+	)
+	if hit.is_empty():
+		return false
+
+	var area := hit.get("collider") as Area3D
+	if area == null or not area.has_meta("aoe_root"):
+		return false
+
+	var root: Variant = area.get_meta("aoe_root")
+	if not is_instance_valid(root):
+		return false
+
+	var index := _aoe_nodes.find(root)
+	if index < 0:
+		return false
+
+	_aoe_nodes.remove_at(index)
+	persistent_aoes.remove_at(index)
+	(root as Node).queue_free()
+	return true
+
+
+func _add_aoe_pick_area(
+	root: Node3D,
+	start: Vector3,
+	end: Vector3,
+	shape_name: String
+) -> void:
+	var base_cells := _dnd_grid_distance_cells(end - start)
+	var reach_world := maxf(
+		cell_size * 0.5,
+		float(base_cells) * cell_size
+	)
+	var direction := (
+		(end - start).normalized()
+		if start != end
+		else Vector3.FORWARD
+	)
+
+	var area := Area3D.new()
+	area.name = "PickArea"
+	area.collision_layer = AOE_PICK_LAYER
+	area.collision_mask = 0
+	area.set_meta("aoe_root", root)
+	root.add_child(area)
+
+	var collision := CollisionShape3D.new()
+	area.add_child(collision)
+
+	match shape_name:
+		"sphere":
+			var sphere := SphereShape3D.new()
+			sphere.radius = reach_world
+			collision.shape = sphere
+			area.global_position = start
+
+		"cube":
+			var box := BoxShape3D.new()
+			box.size = Vector3.ONE * reach_world * 2.0
+			collision.shape = box
+			area.global_position = start
+
+		"cone":
+			var cone := ConvexPolygonShape3D.new()
+			var points := PackedVector3Array()
+			points.append(Vector3(0.0, -reach_world * 0.5, 0.0))
+			for index in range(20):
+				var angle := TAU * float(index) / 20.0
+				points.append(
+					Vector3(
+						cos(angle) * reach_world * 0.5,
+						reach_world * 0.5,
+						sin(angle) * reach_world * 0.5
+					)
+				)
+			cone.points = points
+			collision.shape = cone
+			area.global_basis = Basis(
+				Quaternion(Vector3.UP, direction)
+			)
+			area.global_position = (
+				start + direction * reach_world * 0.5
+			)
+
+		"line":
+			var cylinder := CylinderShape3D.new()
+			cylinder.radius = cell_size * 0.5
+			cylinder.height = reach_world
+			collision.shape = cylinder
+			area.global_basis = Basis(
+				Quaternion(Vector3.UP, direction)
+			)
+			area.global_position = (
+				start + direction * reach_world * 0.5
+			)
 
 
 func clear_persistent_aoes() -> void:
