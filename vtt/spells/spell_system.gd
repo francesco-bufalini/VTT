@@ -267,51 +267,33 @@ func _try_select_point(screen_position: Vector2) -> void:
 		_cancel_pending_cast()
 		return
 
-	var measurement_tool: Node = _measurement_tool()
-	if measurement_tool == null:
-		_set_instruction("Impossibile determinare il punto bersaglio.")
-		return
-
-	var point_value: Variant = measurement_tool.call(
-		"get_spell_target_point",
-		screen_position
+	var point_data: Dictionary = _point_target_data(
+		screen_position,
+		spell_data
 	)
-	if not point_value is Dictionary:
-		_set_instruction(
-			"Seleziona una superficie o una cella della griglia 3D."
-		)
-		return
-
-	var point_data: Dictionary = point_value as Dictionary
 	if not bool(point_data.get("valid", false)):
-		_set_instruction(
-			"Seleziona una superficie o una cella della griglia 3D."
-		)
+		if bool(point_data.get("out_of_range", false)):
+			_set_instruction(
+				"Punto fuori range: %d ft / %d ft. Scegli un punto più vicino."
+				% [
+					int(point_data.get("distance_feet", 0)),
+					int(spell_data.get("range_feet", 0))
+				]
+			)
+		elif bool(spell_data.get("requires_ground", false)):
+			_set_instruction(
+				"Questo incantesimo richiede un punto su una superficie orizzontale."
+			)
+		else:
+			_set_instruction(
+				"Seleziona una superficie o una cella valida della griglia 3D."
+			)
 		return
 
-	var target_point: Vector3 = point_data.get("point", Vector3.ZERO)
-	var cell_size: float = _cell_size()
-	if not bool(spell_data.get("show_range_preview", true)):
-		measurement_tool.call("hide_spell_range_preview")
-		return
-
-	var range_feet: float = float(spell_data.get("range_feet", 0.0))
-	var max_world_distance: float = (
-		range_feet / 5.0 * cell_size
+	var target_point: Vector3 = point_data.get(
+		"point",
+		Vector3.ZERO
 	)
-	var actual_world_distance: float = (
-		_pending_caster.global_position.distance_to(target_point)
-	)
-	if actual_world_distance > max_world_distance + cell_size * 0.01:
-		var actual_feet: int = int(
-			round(actual_world_distance / cell_size * 5.0)
-		)
-		_set_instruction(
-			"Punto fuori range: %d ft / %d ft. Scegli un punto più vicino."
-			% [actual_feet, int(range_feet)]
-		)
-		return
-
 	_cast_spell_at_point(
 		_pending_caster,
 		target_point,
@@ -419,7 +401,7 @@ func _try_select_direction_point(screen_position: Vector2) -> void:
 				"Punto fuori gittata: %d ft / %d ft. Mira più vicino al caster."
 				% [
 					int(direction_data.get("distance_feet", 0)),
-					int(spell_data.get("range_feet", 0))
+					int(_direction_limit_feet(spell_data))
 				]
 			)
 		else:
