@@ -14,7 +14,8 @@ const INVALID_CELL := Vector3i(2147483647, 2147483647, 2147483647)
 # Screen-space sampling. At 1920x1080 and 20 px this is about 5k rays for a
 # complete sweep, spread over several physics frames.
 @export_range(8, 64, 1) var ray_spacing_pixels: int = 20
-@export_range(32, 2048, 1) var max_ray_tests_per_physics_frame: int = 384
+@export_range(1000, 12000, 250) var target_screen_samples: int = 4500
+@export_range(32, 2048, 1) var max_ray_tests_per_physics_frame: int = 192
 @export_range(0.15, 2.0, 0.05) var cell_retention_seconds: float = 0.65
 @export_range(0.02, 0.5, 0.01) var visual_update_interval: float = 0.08
 @export_range(0.01, 0.25, 0.01) var surface_inset_fraction: float = 0.06
@@ -282,7 +283,14 @@ func _rebuild_sample_pattern(viewport_size: Vector2i) -> void:
 	if viewport_size.x <= 0 or viewport_size.y <= 0:
 		return
 
-	var spacing := maxi(8, ray_spacing_pixels)
+	var area_pixels := maxf(
+		1.0,
+		float(viewport_size.x) * float(viewport_size.y)
+	)
+	var adaptive_spacing := int(ceil(sqrt(
+		area_pixels / float(maxi(1000, target_screen_samples))
+	)))
+	var spacing := maxi(8, maxi(ray_spacing_pixels, adaptive_spacing))
 	var half_spacing := int(floor(float(spacing) * 0.5))
 	var center := Vector2(viewport_size) * 0.5
 	var points_with_distance: Array[Dictionary] = []
