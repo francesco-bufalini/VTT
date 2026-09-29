@@ -8,6 +8,7 @@ const CONTEXT_TOGGLE_GRID := 5
 const CONTEXT_TOGGLE_VISION_CONES := 6
 const CONTEXT_TOGGLE_GRID_3D := 7
 const CONTEXT_FLYING := 8
+const CONTEXT_MAIN_MENU := 9
 
 const ALL_COLLISION_LAYERS := 0xFFFFFFFF
 
@@ -312,6 +313,8 @@ func _show_context_menu(screen_position: Vector2) -> void:
 		context_menu.add_separator()
 
 	context_menu.add_item("Condividi mappa / Tailscale", 25)
+	if scene_file_path != CampaignManager.CAMPAIGN_EDITOR_SCENE:
+		context_menu.add_item("Torna al menu VTT", CONTEXT_MAIN_MENU)
 	context_menu.add_separator()
 
 	if _grid_visible:
@@ -385,6 +388,11 @@ func _on_context_menu_id_pressed(id: int) -> void:
 		_release_mouse()
 		return
 	match id:
+		CONTEXT_MAIN_MENU:
+			_ui_owns_mouse = false
+			context_menu.hide()
+			CampaignManager.return_to_main_menu()
+
 		CONTEXT_FLYING:
 			var enabled := not _selected_tokens.all(func(token): return token.flying)
 			for token in _selected_tokens:
