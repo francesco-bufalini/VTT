@@ -12,6 +12,8 @@ var class_tree: Tree
 var spell_title: Label
 var spell_meta: Label
 var spell_description: RichTextLabel
+var slot_row: HBoxContainer
+var slot_selector: OptionButton
 var activate_button: Button
 var instruction_label: Label
 
@@ -20,6 +22,8 @@ var _pending_spell_id: String = ""
 var _targeting_phase: String = ""
 var _pending_caster: Node3D = null
 var _directional_pitch_degrees: int = 0
+var _selected_slot_level: int = 0
+var _pending_targets: Array[Node3D] = []
 var _restore_mouse_mode: int = Input.MOUSE_MODE_VISIBLE
 
 
@@ -102,9 +106,12 @@ func handle_input(event: InputEvent) -> bool:
 				_cancel_pending_cast()
 				return true
 
+			var pending_data: Dictionary = SpellCatalog.spell(
+				_pending_spell_id
+			)
 			if (
 				_targeting_phase == "caster"
-				and _pending_spell_id == "burning_hands"
+				and bool(pending_data.get("allow_pitch", false))
 				and key_event.keycode in [KEY_UP, KEY_DOWN]
 			):
 				_adjust_directional_pitch(
@@ -145,6 +152,9 @@ func handle_input(event: InputEvent) -> bool:
 				return true
 			"target_token":
 				_try_select_target_token(screen_position)
+				return true
+			"multi_target_tokens":
+				_try_select_multi_target(screen_position)
 				return true
 			"direction_point":
 				_try_select_direction_point(screen_position)
@@ -218,12 +228,22 @@ func _try_select_caster(screen_position: Vector2) -> void:
 					token_range_feet
 				]
 			)
+		"token_then_multi_token":
+			_pending_caster = caster
+			_pending_targets.clear()
+			_targeting_phase = "multi_target_tokens"
+			_hide_spell_preview()
+			_update_multi_target_instruction(spell_data)
+		"self_emanation":
+			_pending_caster = caster
+			_cast_self_emanation(caster, spell_data)
+			_finish_cast()
 		"token_then_direction":
 			_pending_caster = caster
 			_targeting_phase = "direction_point"
 			_hide_spell_preview()
 			var direction_range_feet: int = int(
-				spell_data.get("range_feet", 0)
+				_direction_limit_feet(spell_data)
 			)
 			_set_instruction(
 				"%s: mira un punto o un token entro %d ft per scegliere la direzione · la linea arriva sempre a %d ft · clicca per confermare · Esc per annullare"
@@ -271,6 +291,10 @@ func _try_select_point(screen_position: Vector2) -> void:
 
 	var target_point: Vector3 = point_data.get("point", Vector3.ZERO)
 	var cell_size: float = _cell_size()
+	if not bool(spell_data.get("show_range_preview", true)):
+		measurement_tool.call("hide_spell_range_preview")
+		return
+
 	var range_feet: float = float(spell_data.get("range_feet", 0.0))
 	var max_world_distance: float = (
 		range_feet / 5.0 * cell_size
@@ -337,6 +361,44 @@ func _try_select_target_token(screen_position: Vector2) -> void:
 	_finish_cast()
 
 
+func _try_select_multi_target(screen_position: Vector2) -> void:
+	if _pending_caster == null or not is_instance_valid(_pending_caster):
+		_cancel_pending_cast()
+		return
+
+	var spell_data: Dictionary = SpellCatalog.spell(_pending_spell_id)
+	var target_data: Dictionary = _target_token_data(
+		screen_position,
+		spell_data
+	)
+	if not bool(target_data.get("valid", false)):
+		_set_instruction("Seleziona un token valido entro gittata.")
+		return
+
+	var target: Node3D = target_data.get("target") as Node3D
+	if target == null:
+		return
+
+	var allow_repeat: bool = bool(
+		spell_data.get("allow_repeat_targets", false)
+	)
+	if not allow_repeat and target in _pending_targets:
+		_set_instruction("Questo bersaglio è già stato selezionato.")
+		return
+
+	_pending_targets.append(target)
+	if _pending_targets.size() >= _required_target_clicks(spell_data):
+		_cast_multi_target_spell(
+			_pending_caster,
+			_pending_targets,
+			spell_data
+		)
+		_finish_cast()
+		return
+
+	_update_multi_target_instruction(spell_data)
+
+
 func _try_select_direction_point(screen_position: Vector2) -> void:
 	if _pending_caster == null or not is_instance_valid(_pending_caster):
 		_cancel_pending_cast()
@@ -396,30 +458,40 @@ func _update_spell_preview() -> void:
 
 	match _targeting_phase:
 		"caster":
-			if _pending_spell_id != "burning_hands":
-				_hide_spell_preview()
-				return
-
 			var hovered_caster: Node3D = _token_at_screen(screen_position)
 			if hovered_caster == null:
 				_hide_spell_preview()
 				return
 
-			var geometry: Dictionary = _directional_spell_geometry(
-				hovered_caster,
-				spell_data
+			var caster_mode: String = String(
+				spell_data.get("target_mode", "")
 			)
-			if geometry.is_empty():
+			if caster_mode == "self_token":
+				var geometry: Dictionary = _directional_spell_geometry(
+					hovered_caster,
+					spell_data
+				)
+				if geometry.is_empty():
+					_hide_spell_preview()
+					return
+				measurement_tool.call(
+					"show_spell_preview",
+					geometry.get("start", Vector3.ZERO),
+					geometry.get("end", Vector3.ZERO),
+					String(spell_data.get("aoe_shape", "cone")),
+					_spell_style(spell_data)
+				)
+			elif caster_mode == "self_emanation":
+				var center: Vector3 = hovered_caster.global_position
+				measurement_tool.call(
+					"show_spell_preview",
+					center,
+					_area_endpoint(center, spell_data),
+					String(spell_data.get("aoe_shape", "sphere")),
+					_spell_style(spell_data)
+				)
+			else:
 				_hide_spell_preview()
-				return
-
-			measurement_tool.call(
-				"show_spell_preview",
-				geometry.get("start", Vector3.ZERO),
-				geometry.get("end", Vector3.ZERO),
-				String(spell_data.get("aoe_shape", "cone")),
-				String(spell_data.get("id", "burning_hands"))
-			)
 
 		"point":
 			if _pending_caster == null or not is_instance_valid(_pending_caster):
@@ -447,7 +519,7 @@ func _update_spell_preview() -> void:
 				target_point,
 				endpoint,
 				String(spell_data.get("aoe_shape", "sphere")),
-				String(spell_data.get("id", ""))
+				_spell_style(spell_data)
 			)
 
 		"target_token":
@@ -469,7 +541,29 @@ func _update_spell_preview() -> void:
 				_token_spell_origin(_pending_caster),
 				_token_spell_origin(target),
 				"line",
-				"chromatic_orb"
+				String(
+					spell_data.get("projectile_style", _spell_style(spell_data))
+				)
+			)
+
+		"multi_target_tokens":
+			var multi_data: Dictionary = _target_token_data(
+				screen_position,
+				spell_data
+			)
+			if not bool(multi_data.get("valid", false)):
+				_hide_spell_preview()
+				return
+			var multi_target: Node3D = multi_data.get("target") as Node3D
+			if multi_target == null:
+				_hide_spell_preview()
+				return
+			measurement_tool.call(
+				"show_spell_preview",
+				_token_spell_origin(_pending_caster),
+				_token_spell_origin(multi_target),
+				"line",
+				String(spell_data.get("projectile_style", "magic_missile"))
 			)
 
 		"direction_point":
@@ -542,6 +636,7 @@ func _update_spell_range_preview(spell_data: Dictionary) -> void:
 		or _targeting_phase not in [
 			"point",
 			"target_token",
+			"multi_target_tokens",
 			"direction_point"
 		]
 	):
@@ -605,7 +700,7 @@ func _validate_direction_point(
 		return {"valid": false}
 
 	var cell_size: float = _cell_size()
-	var range_feet: float = float(spell_data.get("range_feet", 0.0))
+	var range_feet: float = _direction_limit_feet(spell_data)
 	var max_world_distance: float = range_feet / 5.0 * cell_size
 	var actual_world_distance: float = (
 		_pending_caster.global_position.distance_to(point)
@@ -714,13 +809,20 @@ func _area_endpoint(
 ) -> Vector3:
 	var shape: String = String(spell_data.get("aoe_shape", "sphere"))
 	if shape == "sphere":
-		var radius_feet: float = float(
-			spell_data.get("aoe_radius_feet", 5.0)
-		)
+		var radius_feet: float = _effective_aoe_radius_feet(spell_data)
 		return (
 			origin
 			+ Vector3.RIGHT
 			* (radius_feet / 5.0 * _cell_size())
+		)
+	if shape == "flat_square":
+		var side_feet: float = float(
+			spell_data.get("aoe_side_feet", 10.0)
+		)
+		return (
+			origin
+			+ Vector3.RIGHT
+			* (side_feet * 0.5 / 5.0 * _cell_size())
 		)
 
 	var length_cells: int = int(
@@ -781,6 +883,17 @@ func _direction_geometry_from_point(
 	if direction.length_squared() < 0.0001:
 		return {}
 	direction = direction.normalized()
+
+	if bool(spell_data.get("directional_cube", false)):
+		var side_feet: float = float(
+			spell_data.get("aoe_side_feet", 15.0)
+		)
+		var half_world: float = side_feet * 0.5 / 5.0 * _cell_size()
+		var cube_center: Vector3 = origin + direction * half_world
+		return {
+			"start": cube_center,
+			"end": cube_center + Vector3.RIGHT * half_world
+		}
 
 	var length_cells: int = int(
 		spell_data.get("aoe_length_cells", 1)
@@ -917,6 +1030,18 @@ func _build_panel() -> void:
 	spell_meta.autowrap_mode = TextServer.AUTOWRAP_WORD_SMART
 	spell_meta.modulate = Color(0.76, 0.79, 0.86, 1.0)
 	details.add_child(spell_meta)
+
+	slot_row = HBoxContainer.new()
+	slot_row.add_theme_constant_override("separation", 8)
+	var slot_label: Label = Label.new()
+	slot_label.text = "Slot:"
+	slot_row.add_child(slot_label)
+	slot_selector = OptionButton.new()
+	slot_selector.custom_minimum_size = Vector2(150, 30)
+	slot_selector.item_selected.connect(_on_slot_selected)
+	slot_row.add_child(slot_selector)
+	details.add_child(slot_row)
+	slot_row.hide()
 
 	spell_description = RichTextLabel.new()
 	spell_description.size_flags_vertical = Control.SIZE_EXPAND_FILL
@@ -1075,10 +1200,21 @@ func _select_spell(spell_id: String) -> void:
 		classes_text
 	]
 
+	_configure_slot_selector(spell_data)
+	var level17_text: String = String(
+		spell_data.get("level17_damage", "")
+	)
+	var cantrip_note: String = ""
+	if int(spell_data.get("level", 0)) == 0:
+		cantrip_note = "\n\nVTT: trucchetto trattato come lanciato da un personaggio di livello 17."
+		if not level17_text.is_empty():
+			cantrip_note += " Danno di riferimento: " + level17_text + "."
+
 	spell_description.text = (
 		String(spell_data.get("description", ""))
 		+ "\n\nAi livelli superiori: "
 		+ String(spell_data.get("higher_levels", ""))
+		+ cantrip_note
 	)
 	activate_button.disabled = false
 
@@ -1096,8 +1232,10 @@ func _activate_selected_spell() -> void:
 	)
 	if target_mode not in [
 		"self_token",
+		"self_emanation",
 		"token_then_point",
 		"token_then_token",
+		"token_then_multi_token",
 		"token_then_direction"
 	]:
 		return
@@ -1105,6 +1243,7 @@ func _activate_selected_spell() -> void:
 	_pending_spell_id = _selected_spell_id
 	_targeting_phase = "caster"
 	_pending_caster = null
+	_pending_targets.clear()
 	_directional_pitch_degrees = 0
 
 	var measurement_tool: Node = _measurement_tool()
@@ -1129,7 +1268,7 @@ func _activate_selected_spell() -> void:
 	board_root.set("_ui_owns_mouse", false)
 	Input.mouse_mode = Input.MOUSE_MODE_CAPTURED
 
-	if _selected_spell_id == "burning_hands":
+	if bool(spell_data.get("allow_pitch", false)):
 		_update_directional_instruction(spell_data)
 	else:
 		_set_instruction(
@@ -1152,11 +1291,30 @@ func _cast_spell_at_point(
 	target_point: Vector3,
 	spell_data: Dictionary
 ) -> void:
-	var spell_id: String = String(spell_data.get("id", ""))
-	if spell_id == "fireball":
-		_cast_fireball(target_point, spell_data)
-	elif spell_id == "darkness":
-		_cast_persistent_sphere(target_point, spell_data)
+	var measurement_tool: Node = _measurement_tool()
+	if measurement_tool == null:
+		return
+
+	var endpoint: Vector3 = _area_endpoint(target_point, spell_data)
+	var shape: String = String(spell_data.get("aoe_shape", "sphere"))
+	var style: String = _spell_style(spell_data)
+	if bool(spell_data.get("persistent", false)):
+		measurement_tool.call(
+			"add_aoe",
+			target_point,
+			endpoint,
+			shape,
+			style
+		)
+	else:
+		measurement_tool.call(
+			"show_transient_aoe",
+			target_point,
+			endpoint,
+			shape,
+			float(spell_data.get("transient_seconds", 5.0)),
+			style
+		)
 
 
 func _cast_directional_aoe(
@@ -1220,20 +1378,93 @@ func _cast_spell_at_token(
 	target: Node3D,
 	spell_data: Dictionary
 ) -> void:
-	if String(spell_data.get("id", "")) != "chromatic_orb":
-		return
-
 	var measurement_tool: Node = _measurement_tool()
 	if measurement_tool == null:
 		return
 
-	measurement_tool.call(
-		"show_spell_projectile",
-		_token_spell_origin(caster),
-		_token_spell_origin(target),
-		String(spell_data.get("projectile_style", "chromatic_orb")),
-		float(spell_data.get("transient_seconds", 5.0))
+	var start: Vector3 = _token_spell_origin(caster)
+	var finish: Vector3 = _token_spell_origin(target)
+	var style: String = String(
+		spell_data.get("projectile_style", _spell_style(spell_data))
 	)
+
+	if bool(spell_data.get("persistent_link", false)):
+		measurement_tool.call(
+			"add_aoe",
+			start,
+			finish,
+			"line",
+			style
+		)
+	else:
+		measurement_tool.call(
+			"show_spell_projectile",
+			start,
+			finish,
+			style,
+			float(spell_data.get("transient_seconds", 5.0))
+		)
+
+	var impact_radius: float = float(
+		spell_data.get("impact_aoe_radius_feet", 0.0)
+	)
+	if impact_radius > 0.0:
+		var impact_center: Vector3 = target.global_position
+		var impact_end: Vector3 = (
+			impact_center
+			+ Vector3.RIGHT
+			* (impact_radius / 5.0 * _cell_size())
+		)
+		measurement_tool.call(
+			"show_transient_aoe",
+			impact_center,
+			impact_end,
+			String(spell_data.get("impact_aoe_shape", "sphere")),
+			float(spell_data.get("transient_seconds", 5.0)),
+			String(spell_data.get("impact_style", style))
+		)
+
+
+func _cast_self_emanation(
+	caster: Node3D,
+	spell_data: Dictionary
+) -> void:
+	var measurement_tool: Node = _measurement_tool()
+	if measurement_tool == null:
+		return
+	var center: Vector3 = caster.global_position
+	measurement_tool.call(
+		"show_transient_aoe",
+		center,
+		_area_endpoint(center, spell_data),
+		String(spell_data.get("aoe_shape", "sphere")),
+		float(spell_data.get("transient_seconds", 5.0)),
+		_spell_style(spell_data)
+	)
+
+
+func _cast_multi_target_spell(
+	caster: Node3D,
+	targets: Array[Node3D],
+	spell_data: Dictionary
+) -> void:
+	var measurement_tool: Node = _measurement_tool()
+	if measurement_tool == null:
+		return
+	var start: Vector3 = _token_spell_origin(caster)
+	var style: String = String(
+		spell_data.get("projectile_style", "magic_missile")
+	)
+	for target: Node3D in targets:
+		if target == null or not is_instance_valid(target):
+			continue
+		measurement_tool.call(
+			"show_spell_projectile",
+			start,
+			_token_spell_origin(target),
+			style,
+			float(spell_data.get("transient_seconds", 5.0))
+		)
 
 
 func _cast_fireball(
@@ -1300,6 +1531,7 @@ func _finish_cast() -> void:
 	_pending_spell_id = ""
 	_targeting_phase = ""
 	_pending_caster = null
+	_pending_targets.clear()
 	_directional_pitch_degrees = 0
 	instruction_label.hide()
 	Input.mouse_mode = _restore_mouse_mode
@@ -1311,6 +1543,7 @@ func _cancel_pending_cast(restore_mouse: bool = true) -> void:
 	_pending_spell_id = ""
 	_targeting_phase = ""
 	_pending_caster = null
+	_pending_targets.clear()
 	_directional_pitch_degrees = 0
 	if instruction_label != null:
 		instruction_label.hide()
@@ -1344,6 +1577,86 @@ func _update_directional_instruction(spell_data: Dictionary) -> void:
 	)
 
 
+
+
+func _configure_slot_selector(spell_data: Dictionary) -> void:
+	var base_level: int = int(spell_data.get("level", 0))
+	slot_selector.clear()
+	if base_level <= 0:
+		_selected_slot_level = 0
+		slot_row.hide()
+		return
+
+	for slot_level: int in range(base_level, 10):
+		slot_selector.add_item("%d° livello" % slot_level, slot_level)
+	slot_selector.select(0)
+	_selected_slot_level = base_level
+	slot_row.show()
+
+
+func _on_slot_selected(index: int) -> void:
+	if index < 0 or index >= slot_selector.item_count:
+		return
+	_selected_slot_level = slot_selector.get_item_id(index)
+
+
+func _effective_aoe_radius_feet(spell_data: Dictionary) -> float:
+	var base_radius: float = float(
+		spell_data.get("aoe_radius_feet", 5.0)
+	)
+	var base_level: int = int(spell_data.get("level", 0))
+	var per_slot: float = float(
+		spell_data.get("radius_per_slot_above_base", 0.0)
+	)
+	if base_level <= 0 or _selected_slot_level <= base_level:
+		return base_radius
+	return (
+		base_radius
+		+ per_slot * float(_selected_slot_level - base_level)
+	)
+
+
+func _required_target_clicks(spell_data: Dictionary) -> int:
+	var base_count: int = int(spell_data.get("base_target_clicks", 1))
+	var base_level: int = int(spell_data.get("level", 0))
+	var per_slot: int = int(
+		spell_data.get("target_clicks_per_slot_above_base", 0)
+	)
+	return maxi(
+		1,
+		base_count
+		+ per_slot * maxi(0, _selected_slot_level - base_level)
+	)
+
+
+func _update_multi_target_instruction(spell_data: Dictionary) -> void:
+	var required: int = _required_target_clicks(spell_data)
+	_set_instruction(
+		"%s: scegli i bersagli dei dardi %d/%d · puoi selezionare più volte lo stesso token · Esc per annullare"
+		% [
+			String(spell_data.get("name", "Incantesimo")),
+			_pending_targets.size(),
+			required
+		]
+	)
+
+
+func _direction_limit_feet(spell_data: Dictionary) -> float:
+	return float(
+		spell_data.get(
+			"direction_limit_feet",
+			spell_data.get("range_feet", 0.0)
+		)
+	)
+
+
+func _spell_style(spell_data: Dictionary) -> String:
+	return String(
+		spell_data.get(
+			"visual_style",
+			spell_data.get("id", "")
+		)
+	)
 
 
 func _measurement_tool() -> Node:
