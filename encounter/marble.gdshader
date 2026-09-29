@@ -13,13 +13,9 @@ void fragment() {
  vec2 p=world_position.xz;
  float n=noise(p*0.45)*0.65+noise(p*2.5)*0.35;
  float vein=pow(abs(sin(p.x*0.6+p.y*0.3+noise(p*0.15)*8.0)),18.0);
- vec2 tile=p/4.0; tile.x+=mod(floor(tile.y),2.0)*0.5;
- vec2 edge=min(fract(tile),1.0-fract(tile));
- float grout=1.0-smoothstep(0.005,0.018,min(edge.x,edge.y));
- float variation=hash(floor(tile));
  vec2 tex_uv=p*0.22;
  vec3 stone=texture(diff,tex_uv).rgb;
- ALBEDO=vec3(dot(stone,vec3(0.333)))*vec3(0.87,0.93,0.96)*(0.34+n*0.28)*(1.0-vein*0.10)*(1.0-grout*0.55);
+ ALBEDO=vec3(dot(stone,vec3(0.333)))*vec3(0.87,0.93,0.96)*(0.34+n*0.28)*(1.0-vein*0.10);
  NORMAL_MAP=texture(nor_gl,tex_uv).rgb;
  NORMAL_MAP_DEPTH=0.75;
  ROUGHNESS=max(0.6,texture(rough,tex_uv).r);
