@@ -37,6 +37,7 @@ var _spell_preview_style: String = ""
 var _spell_range_preview: MeshInstance3D
 var _spell_range_center: Vector3 = Vector3.INF
 var _spell_range_radius: float = -1.0
+var _suppress_undo_record: bool = false
 var _wall_preview_root: Node3D
 var _wall_preview_points: Array[Vector3] = []
 var _wall_preview_height: float = -1.0
@@ -71,6 +72,14 @@ func meters_to_world(meters: float) -> float:
 
 func world_to_meters(distance: float) -> float:
 	return distance / cell_size * meters_per_cell
+
+
+func _record_undo_state() -> void:
+	if _suppress_undo_record:
+		return
+	var board: Node = get_parent()
+	if board != null and board.has_method("push_undo_state"):
+		board.call("push_undo_state")
 
 
 func _ready() -> void:
@@ -1052,6 +1061,7 @@ func add_wall_path(
 	if persistent_aoes.size() >= 256 or points.size() < 2:
 		return
 
+	_record_undo_state()
 	var data: Dictionary = {
 		"shape": "wall_path",
 		"points": WallGeometry.serialize_points(points),
@@ -1088,6 +1098,7 @@ func add_wall_globe(
 	if persistent_aoes.size() >= 256:
 		return
 
+	_record_undo_state()
 	var safe_radius: float = maxf(radius_world, cell_size * 0.25)
 	var data: Dictionary = {
 		"shape": "wall_globe",
@@ -1402,6 +1413,7 @@ func add_aoe(
 	if persistent_aoes.size() >= 256:
 		return
 
+	_record_undo_state()
 	var selected_color: Color = color
 	if style.is_empty() and selected_color.a < 0.0:
 		selected_color = _current_aoe_color()
@@ -1612,6 +1624,7 @@ func dissolve_aoe(index: int) -> bool:
 	if index >= persistent_aoes.size():
 		return false
 
+	_record_undo_state()
 	var root: Node3D = _aoe_nodes[index]
 	_aoe_nodes.remove_at(index)
 	persistent_aoes.remove_at(index)
@@ -1731,6 +1744,8 @@ func _add_aoe_pick_area(
 
 
 func clear_persistent_aoes() -> void:
+	if not persistent_aoes.is_empty():
+		_record_undo_state()
 	for node in _aoe_nodes:
 		if is_instance_valid(node):
 			node.queue_free()
@@ -1869,6 +1884,7 @@ func apply_persistent_aoes(data: Array) -> void:
 	if not valid_aoes(data):
 		return
 
+	_suppress_undo_record = true
 	clear_persistent_aoes()
 
 	for item_value: Variant in data:
@@ -1938,3 +1954,4 @@ func apply_persistent_aoes(data: Array) -> void:
 			color
 		)
 
+	_suppress_undo_record = false
