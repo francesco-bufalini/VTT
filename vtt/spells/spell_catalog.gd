@@ -1,38 +1,224 @@
 extends RefCounted
 
 const CLASS_NAMES: Array[String] = [
-	"Barbaro",
-	"Bardo",
-	"Chierico",
-	"Druido",
-	"Guerriero",
-	"Monaco",
-	"Paladino",
-	"Ranger",
-	"Ladro",
-	"Stregone",
-	"Warlock",
-	"Mago",
+	"Barbaro", "Bardo", "Chierico", "Druido", "Guerriero", "Monaco",
+	"Paladino", "Ranger", "Ladro", "Stregone", "Warlock", "Mago",
 	"Spellblade"
 ]
 
 const LEVEL_NAMES: Array[String] = [
-	"Trucchetti",
-	"1° livello",
-	"2° livello",
-	"3° livello",
-	"4° livello",
-	"5° livello",
-	"6° livello",
-	"7° livello",
-	"8° livello",
-	"9° livello"
+	"Trucchetti", "1° livello", "2° livello", "3° livello", "4° livello",
+	"5° livello", "6° livello", "7° livello", "8° livello", "9° livello"
 ]
 
+# Runtime fields used by the VTT:
+# target_mode:
+# - self_token: pick caster, then cast a directional self AoE.
+# - self_emanation: pick caster, then cast an AoE centered on it.
+# - token_then_point: pick caster, then a point in range.
+# - token_then_token: pick caster, then one target token.
+# - token_then_multi_token: pick caster, then N target clicks.
+# - token_then_direction: pick caster, then a point/token which defines direction.
+#
+# All cantrips imported here are interpreted as cast by a level-17 character.
 const SPELLS: Dictionary = {
+	"acid_splash": {
+		"id": "acid_splash",
+		"name": "Acid Splash",
+		"source": "XPHB",
+		"level": 0,
+		"school": "Evocation",
+		"casting_time": "1 action",
+		"range": "60 feet",
+		"target": "A point within range",
+		"area": "5-foot-radius sphere",
+		"components": "V, S",
+		"duration": "Instantaneous",
+		"classes": ["Stregone", "Mago"],
+		"description": "An acidic bubble bursts at a chosen point, affecting creatures in a small sphere.",
+		"higher_levels": "Cantrip scaling: at character level 17 the damage is 4d6 Acid.",
+		"target_mode": "token_then_point",
+		"range_feet": 60,
+		"aoe_shape": "sphere",
+		"aoe_radius_feet": 5,
+		"visual_style": "acid_splash",
+		"transient_seconds": 5.0,
+		"level17_damage": "4d6 Acid"
+	},
+	"chill_touch": {
+		"id": "chill_touch",
+		"name": "Chill Touch",
+		"source": "XPHB",
+		"level": 0,
+		"school": "Necromancy",
+		"casting_time": "1 action",
+		"range": "Touch",
+		"target": "One creature within reach",
+		"area": "Single target",
+		"components": "V, S",
+		"duration": "Instantaneous",
+		"classes": ["Stregone", "Warlock", "Mago"],
+		"description": "A necrotic touch damages one nearby creature and briefly prevents healing.",
+		"higher_levels": "Cantrip scaling: at character level 17 the damage is 4d10 Necrotic.",
+		"target_mode": "token_then_token",
+		"range_feet": 5,
+		"projectile_style": "chill_touch",
+		"transient_seconds": 5.0,
+		"level17_damage": "4d10 Necrotic"
+	},
+	"fire_bolt": {
+		"id": "fire_bolt",
+		"name": "Fire Bolt",
+		"source": "XPHB",
+		"level": 0,
+		"school": "Evocation",
+		"casting_time": "1 action",
+		"range": "120 feet",
+		"target": "One creature or object",
+		"area": "Single target",
+		"components": "V, S",
+		"duration": "Instantaneous",
+		"classes": ["Stregone", "Mago"],
+		"description": "A mote of fire streaks toward one target.",
+		"higher_levels": "Cantrip scaling: at character level 17 the damage is 4d10 Fire.",
+		"target_mode": "token_then_token",
+		"range_feet": 120,
+		"projectile_style": "fire_bolt",
+		"transient_seconds": 5.0,
+		"level17_damage": "4d10 Fire"
+	},
+	"mind_sliver": {
+		"id": "mind_sliver",
+		"name": "Mind Sliver",
+		"source": "XPHB",
+		"level": 0,
+		"school": "Enchantment",
+		"casting_time": "1 action",
+		"range": "60 feet",
+		"target": "One creature",
+		"area": "Single target",
+		"components": "V",
+		"duration": "Instantaneous",
+		"classes": ["Stregone", "Warlock", "Mago"],
+		"description": "Psychic energy strikes one creature and hinders its next saving throw.",
+		"higher_levels": "Cantrip scaling: at character level 17 the damage is 4d6 Psychic.",
+		"target_mode": "token_then_token",
+		"range_feet": 60,
+		"projectile_style": "mind_sliver",
+		"transient_seconds": 5.0,
+		"level17_damage": "4d6 Psychic"
+	},
+	"poison_spray": {
+		"id": "poison_spray",
+		"name": "Poison Spray",
+		"source": "XPHB",
+		"level": 0,
+		"school": "Necromancy",
+		"casting_time": "1 action",
+		"range": "30 feet",
+		"target": "One creature",
+		"area": "Single target",
+		"components": "V, S",
+		"duration": "Instantaneous",
+		"classes": ["Druido", "Stregone", "Warlock", "Mago"],
+		"description": "Toxic magical mist is projected toward one creature.",
+		"higher_levels": "Cantrip scaling: at character level 17 the damage is 4d12 Poison.",
+		"target_mode": "token_then_token",
+		"range_feet": 30,
+		"projectile_style": "poison_spray",
+		"transient_seconds": 5.0,
+		"level17_damage": "4d12 Poison"
+	},
+	"ray_of_frost": {
+		"id": "ray_of_frost",
+		"name": "Ray of Frost",
+		"source": "XPHB",
+		"level": 0,
+		"school": "Evocation",
+		"casting_time": "1 action",
+		"range": "60 feet",
+		"target": "One creature",
+		"area": "Single target",
+		"components": "V, S",
+		"duration": "Instantaneous",
+		"classes": ["Stregone", "Mago"],
+		"description": "A freezing ray damages one creature and briefly reduces its speed.",
+		"higher_levels": "Cantrip scaling: at character level 17 the damage is 4d8 Cold.",
+		"target_mode": "token_then_token",
+		"range_feet": 60,
+		"projectile_style": "ray_of_frost",
+		"transient_seconds": 5.0,
+		"level17_damage": "4d8 Cold"
+	},
+	"shocking_grasp": {
+		"id": "shocking_grasp",
+		"name": "Shocking Grasp",
+		"source": "XPHB",
+		"level": 0,
+		"school": "Evocation",
+		"casting_time": "1 action",
+		"range": "Touch",
+		"target": "One creature within reach",
+		"area": "Single target",
+		"components": "V, S",
+		"duration": "Instantaneous",
+		"classes": ["Stregone", "Mago"],
+		"description": "Lightning jumps from the caster into a creature within reach.",
+		"higher_levels": "Cantrip scaling: at character level 17 the damage is 4d8 Lightning.",
+		"target_mode": "token_then_token",
+		"range_feet": 5,
+		"projectile_style": "shocking_grasp",
+		"transient_seconds": 5.0,
+		"level17_damage": "4d8 Lightning"
+	},
+	"sorcerous_burst": {
+		"id": "sorcerous_burst",
+		"name": "Sorcerous Burst",
+		"source": "XPHB",
+		"level": 0,
+		"school": "Evocation",
+		"casting_time": "1 action",
+		"range": "120 feet",
+		"target": "One creature or object",
+		"area": "Single target",
+		"components": "V, S",
+		"duration": "Instantaneous",
+		"classes": ["Stregone"],
+		"description": "Raw sorcerous energy strikes a target; its damage type is chosen when cast.",
+		"higher_levels": "At character level 17 the base damage is 4d8; rolled 8s can add further d8s up to the normal spell limit.",
+		"target_mode": "token_then_token",
+		"range_feet": 120,
+		"projectile_style": "sorcerous_burst",
+		"transient_seconds": 5.0,
+		"level17_damage": "4d8 chosen type"
+	},
+	"thunderclap": {
+		"id": "thunderclap",
+		"name": "Thunderclap",
+		"source": "XPHB",
+		"level": 0,
+		"school": "Evocation",
+		"casting_time": "1 action",
+		"range": "Self (5-foot emanation)",
+		"target": "Creatures around the caster",
+		"area": "5-foot emanation",
+		"components": "S",
+		"duration": "Instantaneous",
+		"classes": ["Bardo", "Druido", "Stregone", "Warlock", "Mago"],
+		"description": "A burst of thunder erupts around the caster.",
+		"higher_levels": "Cantrip scaling: at character level 17 the damage is 4d6 Thunder.",
+		"target_mode": "self_emanation",
+		"aoe_shape": "sphere",
+		"aoe_radius_feet": 5,
+		"visual_style": "thunderclap",
+		"transient_seconds": 5.0,
+		"level17_damage": "4d6 Thunder"
+	},
+
 	"burning_hands": {
 		"id": "burning_hands",
 		"name": "Burning Hands",
+		"source": "XPHB",
 		"level": 1,
 		"school": "Evocation",
 		"casting_time": "1 action",
@@ -42,24 +228,236 @@ const SPELLS: Dictionary = {
 		"components": "V, S",
 		"duration": "Instantaneous",
 		"classes": ["Stregone", "Mago"],
-		"description": (
-			"As you hold your hands with thumbs touching and fingers spread, "
-			+ "a thin sheet of flames shoots forth from your outstretched fingertips. "
-			+ "Each creature in a 15-foot cone must make a Dexterity saving throw. "
-			+ "A creature takes 3d6 fire damage on a failed save, or half as much "
-			+ "damage on a successful one.\n\n"
-			+ "The fire ignites any flammable objects in the area that aren't "
-			+ "being worn or carried."
-		),
-		"higher_levels": (
-			"When cast using a spell slot of 2nd level or higher, the damage "
-			+ "increases by 1d6 for each slot level above 1st."
-		),
+		"description": "A sheet of flame erupts in a 15-foot cone from the caster.",
+		"higher_levels": "Damage increases by 1d6 for each slot level above 1.",
 		"target_mode": "self_token",
 		"aoe_shape": "cone",
 		"aoe_length_cells": 3,
+		"allow_pitch": true,
+		"visual_style": "burning_hands",
 		"transient_seconds": 5.0
 	},
+	"chromatic_orb": {
+		"id": "chromatic_orb",
+		"name": "Chromatic Orb",
+		"source": "XPHB",
+		"level": 1,
+		"school": "Evocation",
+		"casting_time": "1 action",
+		"range": "90 feet",
+		"target": "One creature",
+		"area": "Single target",
+		"components": "V, S, M (a diamond worth 50+ GP)",
+		"duration": "Instantaneous",
+		"classes": ["Stregone", "Mago"],
+		"description": "A sphere of chosen elemental energy is hurled at one target. Matching damage dice can make the orb leap to another creature.",
+		"higher_levels": "Damage increases by 1d8 per slot above 1. The maximum number of possible leaps equals the slot level; a creature can be targeted only once.",
+		"target_mode": "token_then_token",
+		"range_feet": 90,
+		"projectile_style": "chromatic_orb",
+		"transient_seconds": 5.0
+	},
+	"color_spray": {
+		"id": "color_spray",
+		"name": "Color Spray",
+		"source": "XPHB",
+		"level": 1,
+		"school": "Illusion",
+		"casting_time": "1 action",
+		"range": "Self",
+		"target": "Creatures in the cone",
+		"area": "15-foot cone",
+		"components": "V, S, M (a pinch of colorful sand)",
+		"duration": "Instantaneous",
+		"classes": ["Bardo", "Stregone", "Mago"],
+		"description": "A fan of dazzling colors bursts from the caster and can briefly blind creatures in the cone.",
+		"higher_levels": "No slot scaling.",
+		"target_mode": "self_token",
+		"aoe_shape": "cone",
+		"aoe_length_cells": 3,
+		"allow_pitch": true,
+		"visual_style": "color_spray",
+		"transient_seconds": 5.0
+	},
+	"fog_cloud": {
+		"id": "fog_cloud",
+		"name": "Fog Cloud",
+		"source": "XPHB",
+		"level": 1,
+		"school": "Conjuration",
+		"casting_time": "1 action",
+		"range": "120 feet",
+		"target": "A point within range",
+		"area": "20-foot-radius sphere",
+		"components": "V, S",
+		"duration": "Concentration, up to 1 hour",
+		"classes": ["Druido", "Ranger", "Stregone", "Mago"],
+		"description": "A dense sphere of fog heavily obscures its area.",
+		"higher_levels": "The radius increases by 20 feet for each slot level above 1.",
+		"target_mode": "token_then_point",
+		"range_feet": 120,
+		"aoe_shape": "sphere",
+		"aoe_radius_feet": 20,
+		"radius_per_slot_above_base": 20,
+		"persistent": true,
+		"visual_style": "fog_cloud"
+	},
+	"grease": {
+		"id": "grease",
+		"name": "Grease",
+		"source": "XPHB",
+		"level": 1,
+		"school": "Conjuration",
+		"casting_time": "1 action",
+		"range": "60 feet",
+		"target": "A point on the ground",
+		"area": "10-foot square",
+		"components": "V, S, M (a bit of pork rind or butter)",
+		"duration": "1 minute",
+		"classes": ["Stregone", "Mago"],
+		"description": "A slick 10-foot square appears on the ground and becomes difficult terrain.",
+		"higher_levels": "No slot scaling.",
+		"target_mode": "token_then_point",
+		"range_feet": 60,
+		"aoe_shape": "flat_square",
+		"aoe_side_feet": 10,
+		"persistent": true,
+		"visual_style": "grease"
+	},
+	"ice_knife": {
+		"id": "ice_knife",
+		"name": "Ice Knife",
+		"source": "XPHB",
+		"level": 1,
+		"school": "Conjuration",
+		"casting_time": "1 action",
+		"range": "60 feet",
+		"target": "One creature",
+		"area": "5-foot-radius burst at the target",
+		"components": "S, M (a drop of water or a piece of ice)",
+		"duration": "Instantaneous",
+		"classes": ["Druido", "Stregone", "Mago"],
+		"description": "An ice shard is thrown at one creature and then bursts around the target whether the attack hits or misses.",
+		"higher_levels": "The burst's Cold damage increases by 1d6 for each slot level above 1.",
+		"target_mode": "token_then_token",
+		"range_feet": 60,
+		"projectile_style": "ice_knife",
+		"impact_aoe_shape": "sphere",
+		"impact_aoe_radius_feet": 5,
+		"impact_style": "ice_knife_burst",
+		"transient_seconds": 5.0
+	},
+	"magic_missile": {
+		"id": "magic_missile",
+		"name": "Magic Missile",
+		"source": "XPHB",
+		"level": 1,
+		"school": "Evocation",
+		"casting_time": "1 action",
+		"range": "120 feet",
+		"target": "One or more creatures",
+		"area": "Multiple targets",
+		"components": "V, S",
+		"duration": "Instantaneous",
+		"classes": ["Stregone", "Mago"],
+		"description": "Three force darts strike creatures chosen within range; multiple darts may hit the same creature.",
+		"higher_levels": "One additional dart is created for each slot level above 1.",
+		"target_mode": "token_then_multi_token",
+		"range_feet": 120,
+		"base_target_clicks": 3,
+		"target_clicks_per_slot_above_base": 1,
+		"allow_repeat_targets": true,
+		"projectile_style": "magic_missile",
+		"transient_seconds": 5.0
+	},
+	"ray_of_sickness": {
+		"id": "ray_of_sickness",
+		"name": "Ray of Sickness",
+		"source": "XPHB",
+		"level": 1,
+		"school": "Necromancy",
+		"casting_time": "1 action",
+		"range": "60 feet",
+		"target": "One creature",
+		"area": "Single target",
+		"components": "V, S",
+		"duration": "Instantaneous",
+		"classes": ["Stregone", "Mago"],
+		"description": "A sickly green ray damages and briefly poisons one creature.",
+		"higher_levels": "Damage increases by 1d8 for each slot level above 1.",
+		"target_mode": "token_then_token",
+		"range_feet": 60,
+		"projectile_style": "ray_of_sickness",
+		"transient_seconds": 5.0
+	},
+	"sleep": {
+		"id": "sleep",
+		"name": "Sleep",
+		"source": "XPHB",
+		"level": 1,
+		"school": "Enchantment",
+		"casting_time": "1 action",
+		"range": "60 feet",
+		"target": "Creatures in a chosen area",
+		"area": "5-foot-radius sphere",
+		"components": "V, S, M (a pinch of sand or rose petals)",
+		"duration": "Concentration, up to 1 minute",
+		"classes": ["Bardo", "Stregone", "Mago"],
+		"description": "Creatures chosen in a small sphere can become incapacitated and then unconscious.",
+		"higher_levels": "No slot scaling.",
+		"target_mode": "token_then_point",
+		"range_feet": 60,
+		"aoe_shape": "sphere",
+		"aoe_radius_feet": 5,
+		"visual_style": "sleep",
+		"transient_seconds": 5.0
+	},
+	"thunderwave": {
+		"id": "thunderwave",
+		"name": "Thunderwave",
+		"source": "XPHB",
+		"level": 1,
+		"school": "Evocation",
+		"casting_time": "1 action",
+		"range": "Self",
+		"target": "Creatures in the cube",
+		"area": "15-foot cube originating from the caster",
+		"components": "V, S",
+		"duration": "Instantaneous",
+		"classes": ["Bardo", "Druido", "Stregone", "Mago"],
+		"description": "A cube of thunderous force erupts from the caster and pushes creatures and unsecured objects away.",
+		"higher_levels": "Damage increases by 1d8 for each slot level above 1.",
+		"target_mode": "token_then_direction",
+		"direction_limit_feet": 15,
+		"show_range_preview": false,
+		"aoe_shape": "cube",
+		"aoe_side_feet": 15,
+		"directional_cube": true,
+		"visual_style": "thunderwave",
+		"transient_seconds": 5.0
+	},
+	"witch_bolt": {
+		"id": "witch_bolt",
+		"name": "Witch Bolt",
+		"source": "XPHB",
+		"level": 1,
+		"school": "Evocation",
+		"casting_time": "1 action",
+		"range": "60 feet",
+		"target": "One creature",
+		"area": "Single sustained link",
+		"components": "V, S, M (a twig struck by lightning)",
+		"duration": "Concentration, up to 1 minute",
+		"classes": ["Stregone", "Warlock", "Mago"],
+		"description": "A crackling arc links the caster to one creature for the spell's duration.",
+		"higher_levels": "Only the initial damage increases by 1d12 for each slot level above 1.",
+		"target_mode": "token_then_token",
+		"range_feet": 60,
+		"persistent_link": true,
+		"projectile_style": "witch_bolt",
+		"visual_style": "witch_bolt"
+	},
+
 	"darkness": {
 		"id": "darkness",
 		"name": "Darkness",
@@ -67,29 +465,19 @@ const SPELLS: Dictionary = {
 		"school": "Evocation",
 		"casting_time": "1 action",
 		"range": "60 feet",
-		"target": "A point you choose within range",
+		"target": "A point within range",
 		"area": "15-foot-radius sphere",
 		"components": "V, M (bat fur and a piece of coal)",
 		"duration": "Concentration, up to 10 minutes",
 		"classes": ["Stregone", "Warlock", "Mago"],
-		"description": (
-			"For the duration, magical Darkness spreads from a point within range "
-			+ "and fills a 15-foot-radius Sphere. Darkvision can't see through it, "
-			+ "and nonmagical light can't illuminate it.\n\n"
-			+ "Alternatively, you cast the spell on an object that isn't being worn "
-			+ "or carried, causing the Darkness to fill a 15-foot Emanation originating "
-			+ "from that object. Covering that object with something opaque blocks "
-			+ "the Darkness.\n\n"
-			+ "If any of this spell's area overlaps with an area of Bright Light or "
-			+ "Dim Light created by a spell of level 2 or lower, that other spell "
-			+ "is dispelled."
-		),
+		"description": "Magical darkness fills a 15-foot-radius sphere.",
 		"higher_levels": "",
 		"target_mode": "token_then_point",
 		"range_feet": 60,
 		"aoe_shape": "sphere",
 		"aoe_radius_feet": 15,
-		"persistent": true
+		"persistent": true,
+		"visual_style": "darkness"
 	},
 	"lightning_bolt": {
 		"id": "lightning_bolt",
@@ -98,50 +486,18 @@ const SPELLS: Dictionary = {
 		"school": "Evocation",
 		"casting_time": "1 action",
 		"range": "Self",
-		"target": "Self",
+		"target": "Self, then choose a direction",
 		"area": "100-foot-long, 5-foot-wide line",
 		"components": "V, S, M (a bit of fur and a crystal rod)",
 		"duration": "Instantaneous",
 		"classes": ["Stregone", "Mago"],
-		"description": (
-			"A stroke of lightning forming a 100-foot-long, 5-foot-wide Line "
-			+ "blasts out from you in a direction you choose. Each creature in "
-			+ "the Line makes a Dexterity saving throw, taking 8d6 Lightning "
-			+ "damage on a failed save or half as much damage on a successful one."
-		),
-		"higher_levels": (
-			"The damage increases by 1d6 for each spell slot level above 3rd."
-		),
+		"description": "A 100-foot line of lightning blasts from the caster in a chosen direction.",
+		"higher_levels": "Damage increases by 1d6 for each slot level above 3.",
 		"target_mode": "token_then_direction",
 		"range_feet": 100,
 		"aoe_shape": "line",
 		"aoe_length_cells": 20,
-		"transient_seconds": 5.0
-	},
-	"chromatic_orb": {
-		"id": "chromatic_orb",
-		"name": "Chromatic Orb",
-		"level": 1,
-		"school": "Evocation",
-		"casting_time": "1 action",
-		"range": "90 feet",
-		"target": "One creature within range",
-		"area": "Single target",
-		"components": "V, S, M (a diamond worth 50+ GP)",
-		"duration": "Instantaneous",
-		"classes": ["Stregone", "Mago"],
-		"description": (
-			"You hurl an orb of energy at a target within range. Choose Acid, "
-			+ "Cold, Fire, Lightning, Poison, or Thunder for the type of orb you "
-			+ "create, and then make a ranged spell attack against the target. "
-			+ "On a hit, the target takes 3d8 damage of the chosen type."
-		),
-		"higher_levels": (
-			"The damage increases by 1d8 for each spell slot level above 1st."
-		),
-		"target_mode": "token_then_token",
-		"range_feet": 90,
-		"projectile_style": "chromatic_orb",
+		"visual_style": "lightning_bolt",
 		"transient_seconds": 5.0
 	},
 	"fireball": {
@@ -151,29 +507,18 @@ const SPELLS: Dictionary = {
 		"school": "Evocation",
 		"casting_time": "1 action",
 		"range": "150 feet",
-		"target": "A point you choose within range",
+		"target": "A point within range",
 		"area": "20-foot-radius sphere",
-		"components": "V, S, M (A tiny ball of bat guano and sulfur)",
+		"components": "V, S, M (a tiny ball of bat guano and sulfur)",
 		"duration": "Instantaneous",
 		"classes": ["Stregone", "Mago", "Spellblade"],
-		"description": (
-			"A bright streak flashes from your pointing finger to a point you "
-			+ "choose within range and then blossoms with a low roar into an "
-			+ "explosion of flame. Each creature in a 20-foot-radius sphere "
-			+ "centered on that point must make a Dexterity saving throw. "
-			+ "A target takes 8d6 fire damage on a failed save, or half as much "
-			+ "damage on a successful one. The fire spreads around corners. "
-			+ "It ignites flammable objects in the area that aren't being worn "
-			+ "or carried."
-		),
-		"higher_levels": (
-			"When cast using a spell slot of 4th level or higher, the damage "
-			+ "increases by 1d6 for each slot level above 3rd."
-		),
+		"description": "A streak of fire detonates at a chosen point in a 20-foot-radius sphere.",
+		"higher_levels": "Damage increases by 1d6 for each slot level above 3.",
 		"target_mode": "token_then_point",
 		"range_feet": 150,
 		"aoe_shape": "sphere",
 		"aoe_radius_feet": 20,
+		"visual_style": "fireball",
 		"transient_seconds": 5.0
 	}
 }
