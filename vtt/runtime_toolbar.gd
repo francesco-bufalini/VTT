@@ -78,6 +78,16 @@ func _build_toolbar() -> void:
 		["Elimina", TOKEN_DELETE]
 	], _on_token))
 
+	var spells_button: Button = Button.new()
+	spells_button.text = "Incantesimi"
+	spells_button.custom_minimum_size = Vector2(82, 30)
+	spells_button.add_theme_font_size_override("font_size", 13)
+	spells_button.pressed.connect(
+		func() -> void:
+			board_root.call("toggle_spell_menu")
+	)
+	row.add_child(spells_button)
+
 	row.add_child(_menu("Misura", [
 		["Righello", MEASURE_RULER],
 		["AoE · Sfera", MEASURE_SPHERE],
