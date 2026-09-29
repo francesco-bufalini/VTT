@@ -677,6 +677,28 @@ func _spell_style_color(style: String) -> Color:
 			return Color(0.88, 0.86, 1.0, 1.0)
 		"fog_cloud":
 			return Color(0.74, 0.78, 0.84, 1.0)
+		"cloud_of_daggers":
+			return Color(0.78, 0.82, 0.9, 1.0)
+		"gust_of_wind", "sleet_storm", "ice_storm", "cone_of_cold", "otilukes_freezing_sphere":
+			return Color(0.55, 0.9, 1.0, 1.0)
+		"web":
+			return Color(0.86, 0.86, 0.8, 1.0)
+		"fear", "confusion", "hypnotic_pattern", "synaptic_static":
+			return Color(0.62, 0.24, 0.9, 1.0)
+		"stinking_cloud", "cloudkill":
+			return Color(0.44, 0.72, 0.12, 1.0)
+		"shatter":
+			return Color(0.3, 0.7, 1.0, 1.0)
+		"vitriolic_sphere":
+			return Color(0.45, 1.0, 0.12, 1.0)
+		"insect_plague":
+			return Color(0.38, 0.3, 0.08, 1.0)
+		"circle_of_death", "blight":
+			return Color(0.24, 0.78, 0.34, 1.0)
+		"globe_of_invulnerability":
+			return Color(0.65, 0.78, 1.0, 1.0)
+		"sunbeam":
+			return Color(1.0, 0.94, 0.5, 1.0)
 		"grease":
 			return Color(0.64, 0.56, 0.18, 1.0)
 		"cloud_of_daggers":
@@ -1026,6 +1048,16 @@ func _draw_aoe(
 				start + Vector3.UP * cylinder_height * 0.5
 			)
 
+		"cylinder":
+			var cylinder_mesh: CylinderMesh = CylinderMesh.new()
+			cylinder_mesh.top_radius = reach_world
+			cylinder_mesh.bottom_radius = reach_world
+			cylinder_mesh.height = reach_world * 2.0
+			node.mesh = cylinder_mesh
+			node.global_position = (
+				start + Vector3.UP * reach_world
+			)
+
 		"flat_square":
 			var flat_mesh: BoxMesh = BoxMesh.new()
 			flat_mesh.size = Vector3(
@@ -1207,6 +1239,15 @@ func _add_aoe_pick_area(
 			collision.shape = cylinder_shape
 			area.global_position = (
 				start + Vector3.UP * cylinder_height * 0.5
+			)
+
+		"cylinder":
+			var cylinder_shape: CylinderShape3D = CylinderShape3D.new()
+			cylinder_shape.radius = reach_world
+			cylinder_shape.height = reach_world * 2.0
+			collision.shape = cylinder_shape
+			area.global_position = (
+				start + Vector3.UP * reach_world
 			)
 
 		"flat_square":
