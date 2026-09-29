@@ -8,6 +8,7 @@ var cell_size: float = 1.0
 var _enabled := false
 var _interaction_strength := 0.55
 var _overlays: Dictionary = {}
+var _shape_signatures: Dictionary = {}
 
 
 func setup(root: Node3D, new_cell_size: float) -> void:
@@ -48,6 +49,7 @@ func refresh() -> void:
 
 
 func _process(_delta: float) -> void:
+	_refresh_changed_collisions()
 	_refresh_visibility()
 
 
@@ -100,6 +102,7 @@ func _consider_collision_shape(collision: CollisionShape3D) -> void:
 	overlay.name = "AutoGrid2D"
 	collision.add_child(overlay)
 	_overlays[collision] = overlay
+	_shape_signatures[collision] = _collision_signature(collision)
 	_apply_overlay_strength(overlay)
 
 
@@ -141,6 +144,51 @@ func _consider_visual_only(node: Node) -> void:
 	node.add_child(overlay)
 	_overlays[node] = overlay
 	_apply_overlay_strength(overlay)
+
+
+func _refresh_changed_collisions() -> void:
+	var rebuild: Array[CollisionShape3D] = []
+
+	for source in _overlays.keys():
+		if not source is CollisionShape3D:
+			continue
+		if not is_instance_valid(source):
+			continue
+
+		var collision := source as CollisionShape3D
+		var signature := _collision_signature(collision)
+		if _shape_signatures.get(collision, "") != signature:
+			rebuild.append(collision)
+
+	for collision in rebuild:
+		var overlay: Variant = _overlays.get(collision)
+		if is_instance_valid(overlay):
+			(overlay as Node).queue_free()
+		_overlays.erase(collision)
+		_shape_signatures.erase(collision)
+		_consider_collision_shape(collision)
+
+
+func _collision_signature(collision: CollisionShape3D) -> String:
+	if collision == null or not is_instance_valid(collision):
+		return "invalid"
+	if collision.shape == null:
+		return "none"
+
+	var shape := collision.shape
+	if shape is BoxShape3D:
+		var box := shape as BoxShape3D
+		return "box:%s" % str(box.size)
+
+	if shape.has_method("get_debug_mesh"):
+		var debug_mesh: Variant = shape.call("get_debug_mesh")
+		if debug_mesh is Mesh:
+			return "%s:%s" % [
+				shape.get_class(),
+				str((debug_mesh as Mesh).get_aabb())
+			]
+
+	return shape.get_class()
 
 
 func _find_collision_body(node: Node) -> CollisionObject3D:
@@ -294,3 +342,4 @@ func _refresh_visibility() -> void:
 
 	for source in stale:
 		_overlays.erase(source)
+		_shape_signatures.erase(source)
