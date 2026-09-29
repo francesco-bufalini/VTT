@@ -1041,7 +1041,9 @@ func _update_wall_preview(
 			if not bool(target_data.get("valid", false)):
 				_hide_wall_preview()
 				return
-			var preview_points: Array[Vector3] = _wall_points.duplicate()
+			var preview_points: Array[Vector3] = []
+			for wall_point: Vector3 in _wall_points:
+				preview_points.append(wall_point)
 			preview_points.append(
 				target_data.get("point", preview_points[-1])
 			)
