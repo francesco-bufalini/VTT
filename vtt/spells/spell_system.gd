@@ -215,6 +215,14 @@ func handle_input(event: InputEvent) -> bool:
 				return true
 
 			if (
+				_targeting_phase == "wall_segment"
+				and key_event.keycode == KEY_ENTER
+				and _wall_points.size() >= 2
+			):
+				_prepare_or_commit_wall()
+				return true
+
+			if (
 				_targeting_phase == "chain_secondary"
 				and key_event.keycode == KEY_ENTER
 				and _pending_chain_primary != null
@@ -287,6 +295,27 @@ func handle_input(event: InputEvent) -> bool:
 				return true
 			"direction_point":
 				_try_select_direction_point(screen_position)
+				return true
+			"wall_start":
+				_try_wall_start(screen_position)
+				return true
+			"wall_segment":
+				_try_wall_segment(screen_position)
+				return true
+			"wall_center":
+				_try_wall_center(screen_position)
+				return true
+			"wall_radius":
+				_try_wall_radius(screen_position)
+				return true
+			"wall_arc_start":
+				_try_wall_arc_start(screen_position)
+				return true
+			"wall_arc_end":
+				_try_wall_arc_end(screen_position)
+				return true
+			"wall_side":
+				_confirm_wall_side()
 				return true
 
 	return false
@@ -380,6 +409,10 @@ func _try_select_caster(screen_position: Vector2) -> void:
 			_pending_caster = caster
 			_cast_self_emanation(caster, spell_data)
 			_finish_cast()
+		"wall_design":
+			_pending_caster = caster
+			_hide_spell_preview()
+			_show_wall_mode_menu(spell_data)
 		"token_then_direction":
 			_pending_caster = caster
 			_targeting_phase = "direction_point"
@@ -1539,7 +1572,8 @@ func _activate_selected_spell() -> void:
 		"token_then_token",
 		"token_then_multi_token",
 		"token_then_chain",
-		"token_then_direction"
+		"token_then_direction",
+		"wall_design"
 	]:
 		return
 
