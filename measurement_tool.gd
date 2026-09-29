@@ -279,7 +279,8 @@ func get_spell_target_point(screen_position: Vector2) -> Dictionary:
 		return {
 			"valid": true,
 			"point": _snap_point_to_grid_intersection(point),
-			"in_air": false
+			"in_air": false,
+			"normal": normal
 		}
 
 	var grid_active: bool = (
@@ -315,7 +316,8 @@ func get_spell_target_point(screen_position: Vector2) -> Dictionary:
 	return {
 		"valid": true,
 		"point": snapped_point,
-		"in_air": true
+		"in_air": true,
+		"normal": Vector3.ZERO
 	}
 
 
