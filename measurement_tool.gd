@@ -1756,50 +1756,99 @@ func _deserialize_aoe_color(value: Variant) -> Color:
 	return Color(0.0, 0.0, 0.0, -1.0)
 
 
+func _valid_serialized_point(value: Variant) -> bool:
+	if not value is Array:
+		return false
+	var point: Array = value
+	if point.size() != 3:
+		return false
+	for coordinate: Variant in point:
+		if (
+			not (coordinate is float or coordinate is int)
+			or not is_finite(float(coordinate))
+			or absf(float(coordinate)) > 100000.0
+		):
+			return false
+	return true
+
+
 func valid_aoes(data: Variant) -> bool:
 	if not data is Array or data.size() > 256:
 		return false
 
-	for item in data:
-		if (
-			not item is Dictionary
-			or item.get("shape", "") not in [
-				"sphere",
-				"cube",
-				"cone",
-				"line",
-				"flat_square",
-				"cylinder"
-			]
-		):
+	for item_value: Variant in data:
+		if not item_value is Dictionary:
 			return false
+		var item: Dictionary = item_value
+		var shape: String = String(item.get("shape", ""))
 
-		for key in ["start", "end"]:
-			var point: Variant = item.get(key)
-			if not point is Array or point.size() != 3:
+		if shape == "wall_path":
+			var points_value: Variant = item.get("points", [])
+			if not points_value is Array:
 				return false
-			for value in point:
-				if (
-					not (value is float or value is int)
-					or not is_finite(float(value))
-					or absf(float(value)) > 100000
-				):
+			var points: Array = points_value
+			if points.size() < 2 or points.size() > 128:
+				return false
+			for point_value: Variant in points:
+				if not _valid_serialized_point(point_value):
 					return false
 
+			for numeric_key: String in ["wall_height", "wall_thickness"]:
+				var number_value: Variant = item.get(numeric_key)
+				if not (number_value is float or number_value is int):
+					return false
+				var number: float = float(number_value)
+				if not is_finite(number) or number <= 0.0 or number > 10000.0:
+					return false
+
+			if item.has("damage_side"):
+				var side_value: Variant = item.get("damage_side")
+				if not (side_value is int or side_value is float):
+					return false
+				if absi(int(side_value)) > 1:
+					return false
+
+		elif shape == "wall_globe":
+			if not _valid_serialized_point(item.get("center", [])):
+				return false
+			var radius_value: Variant = item.get("radius")
+			if not (radius_value is float or radius_value is int):
+				return false
+			var radius: float = float(radius_value)
+			if not is_finite(radius) or radius <= 0.0 or radius > 10000.0:
+				return false
+			if item.has("hemisphere") and not item.get("hemisphere") is bool:
+				return false
+
+		elif shape in [
+			"sphere",
+			"cube",
+			"cone",
+			"line",
+			"flat_square",
+			"cylinder"
+		]:
+			for key: String in ["start", "end"]:
+				if not _valid_serialized_point(item.get(key, [])):
+					return false
+		else:
+			return false
+
 		if item.has("style") and not item.get("style") is String:
+			return false
+
+		if item.has("wall_meta") and not item.get("wall_meta") is Dictionary:
 			return false
 
 		if item.has("color"):
 			var color_value: Variant = item.get("color")
 			if not color_value is Dictionary:
 				return false
-			for channel in ["r", "g", "b", "a"]:
-				var channel_value: Variant = color_value.get(channel)
+			var color_data: Dictionary = color_value
+			for channel: String in ["r", "g", "b", "a"]:
+				var channel_value: Variant = color_data.get(channel)
 				if (
-					not (
-						channel_value is float
-						or channel_value is int
-					)
+					not (channel_value is float or channel_value is int)
 					or not is_finite(float(channel_value))
 					or float(channel_value) < 0.0
 					or float(channel_value) > 1.0
@@ -1815,11 +1864,42 @@ func apply_persistent_aoes(data: Array) -> void:
 
 	clear_persistent_aoes()
 
-	for item in data:
-		var item_data: Dictionary = item
+	for item_value: Variant in data:
+		var item_data: Dictionary = item_value
+		var shape: String = String(item_data.get("shape", "sphere"))
+		var style: String = String(item_data.get("style", ""))
+
+		if shape == "wall_path":
+			var wall_points: Array[Vector3] = WallGeometry.deserialize_points(
+				item_data.get("points", [])
+			)
+			add_wall_path(
+				wall_points,
+				float(item_data.get("wall_height", cell_size)),
+				float(item_data.get("wall_thickness", cell_size * 0.1)),
+				style,
+				int(item_data.get("damage_side", 0)),
+				item_data.get("wall_meta", {}) as Dictionary
+			)
+			continue
+
+		if shape == "wall_globe":
+			var center_data: Array = item_data.get("center", [])
+			add_wall_globe(
+				Vector3(
+					float(center_data[0]),
+					float(center_data[1]),
+					float(center_data[2])
+				),
+				float(item_data.get("radius", cell_size)),
+				style,
+				bool(item_data.get("hemisphere", false)),
+				item_data.get("wall_meta", {}) as Dictionary
+			)
+			continue
+
 		var start_data: Array = item_data.get("start", [])
 		var end_data: Array = item_data.get("end", [])
-		var style: String = String(item_data.get("style", ""))
 		var color: Color = _deserialize_aoe_color(
 			item_data.get("color", {})
 		)
@@ -1834,7 +1914,8 @@ func apply_persistent_aoes(data: Array) -> void:
 				float(end_data[1]),
 				float(end_data[2])
 			),
-			String(item_data.get("shape", "sphere")),
+			shape,
 			style,
 			color
 		)
+
