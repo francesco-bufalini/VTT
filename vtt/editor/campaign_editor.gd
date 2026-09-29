@@ -88,15 +88,15 @@ func _build_toolbar() -> void:
 	var panel := PanelContainer.new()
 	panel.name = "CampaignToolbar"
 	panel.set_anchors_and_offsets_preset(Control.PRESET_TOP_WIDE)
-	panel.offset_left = 12
-	panel.offset_top = 10
-	panel.offset_right = -12
-	panel.offset_bottom = 62
+	panel.offset_left = 8
+	panel.offset_top = 6
+	panel.offset_right = -8
+	panel.offset_bottom = 44
 	panel.mouse_filter = Control.MOUSE_FILTER_STOP
 	ui_root.add_child(panel)
 
 	var row := HBoxContainer.new()
-	row.add_theme_constant_override("separation", 6)
+	row.add_theme_constant_override("separation", 2)
 	panel.add_child(row)
 
 	row.add_child(_make_menu_button("Preset", [
@@ -127,7 +127,7 @@ func _build_toolbar() -> void:
 	)
 	row.add_child(token_menu)
 
-	row.add_child(_make_menu_button("Misurazione", [
+	row.add_child(_make_menu_button("Misura", [
 		["Righello", MEASURE_RULER],
 		["AoE · Sfera", MEASURE_SPHERE],
 		["AoE · Cubo", MEASURE_CUBE],
@@ -142,7 +142,7 @@ func _build_toolbar() -> void:
 		["Mostra / nascondi coni visivi", VIEW_VISION]
 	], _on_view_selected))
 
-	row.add_child(_make_menu_button("Condivisione", [
+	row.add_child(_make_menu_button("Rete", [
 		["Condividi mappa / Tailscale…", SHARE_OPEN]
 	], _on_share_selected))
 
@@ -152,17 +152,20 @@ func _build_toolbar() -> void:
 	status_label.vertical_alignment = VERTICAL_ALIGNMENT_CENTER
 	status_label.size_flags_horizontal = Control.SIZE_EXPAND_FILL
 	status_label.clip_text = true
+	status_label.add_theme_font_size_override("font_size", 12)
 	row.add_child(status_label)
 
 	var save_button := Button.new()
 	save_button.text = "Salva"
-	save_button.custom_minimum_size = Vector2(92, 0)
+	save_button.custom_minimum_size = Vector2(64, 28)
+	save_button.add_theme_font_size_override("font_size", 13)
 	save_button.pressed.connect(_save_campaign)
 	row.add_child(save_button)
 
 	var menu_button := Button.new()
 	menu_button.text = "Menu"
-	menu_button.custom_minimum_size = Vector2(82, 0)
+	menu_button.custom_minimum_size = Vector2(56, 28)
+	menu_button.add_theme_font_size_override("font_size", 13)
 	menu_button.pressed.connect(
 		func() -> void:
 			leave_dialog.popup_centered(Vector2i(470, 190))
@@ -177,9 +180,11 @@ func _make_menu_button(
 ) -> MenuButton:
 	var button := MenuButton.new()
 	button.text = label_text
-	button.custom_minimum_size = Vector2(105, 0)
+	button.custom_minimum_size = Vector2(72, 28)
+	button.add_theme_font_size_override("font_size", 13)
 
 	var popup := button.get_popup()
+	popup.add_theme_font_size_override("font_size", 13)
 	for item: Array in items:
 		popup.add_item(String(item[0]), int(item[1]))
 	popup.id_pressed.connect(callback)
