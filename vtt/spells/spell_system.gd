@@ -19,6 +19,7 @@ var _selected_spell_id: String = ""
 var _pending_spell_id: String = ""
 var _targeting_phase: String = ""
 var _pending_caster: Node3D = null
+var _burning_hands_pitch_degrees: int = 0
 var _restore_mouse_mode: int = Input.MOUSE_MODE_VISIBLE
 
 
@@ -45,6 +46,10 @@ func _initialize() -> void:
 
 func is_panel_open() -> bool:
 	return panel != null and panel.visible
+
+
+func is_targeting() -> bool:
+	return not _pending_spell_id.is_empty()
 
 
 func toggle_panel() -> void:
@@ -84,13 +89,20 @@ func handle_input(event: InputEvent) -> bool:
 
 	if event is InputEventKey:
 		var key_event: InputEventKey = event as InputEventKey
-		if (
-			key_event.pressed
-			and not key_event.echo
-			and key_event.keycode == KEY_ESCAPE
-		):
-			_cancel_pending_cast()
-			return true
+		if key_event.pressed and not key_event.echo:
+			if key_event.keycode == KEY_ESCAPE:
+				_cancel_pending_cast()
+				return true
+
+			if (
+				_targeting_phase == "caster"
+				and _pending_spell_id == "burning_hands"
+				and key_event.keycode in [KEY_UP, KEY_DOWN]
+			):
+				_adjust_burning_hands_pitch(
+					45 if key_event.keycode == KEY_UP else -45
+				)
+				return true
 
 	if event is InputEventMouseButton:
 		var mouse_event: InputEventMouseButton = event as InputEventMouseButton
@@ -173,7 +185,7 @@ func _try_select_caster(screen_position: Vector2) -> void:
 			_targeting_phase = "point"
 			var range_feet: int = int(spell_data.get("range_feet", 0))
 			_set_instruction(
-				"%s: scegli un punto entro %d ft · rotellina per profondità 3D · Esc per annullare"
+				"%s: mira un punto entro %d ft e clicca · WASD + mouse per muoverti · rotellina per profondità 3D · Esc per annullare"
 				% [
 					String(spell_data.get("name", "Incantesimo")),
 					range_feet
@@ -526,6 +538,7 @@ func _activate_selected_spell() -> void:
 	_pending_spell_id = _selected_spell_id
 	_targeting_phase = "caster"
 	_pending_caster = null
+	_burning_hands_pitch_degrees = 0
 
 	var measurement_tool: Node = _measurement_tool()
 	if measurement_tool != null:
@@ -538,11 +551,15 @@ func _activate_selected_spell() -> void:
 
 	panel.hide()
 	board_root.set("_ui_owns_mouse", false)
-	Input.mouse_mode = Input.MOUSE_MODE_VISIBLE
-	_set_instruction(
-		"%s: clicca il token che lancia l'incantesimo · Esc per annullare"
-		% String(spell_data.get("name", "Incantesimo"))
-	)
+	Input.mouse_mode = Input.MOUSE_MODE_CAPTURED
+
+	if _selected_spell_id == "burning_hands":
+		_update_burning_hands_instruction(spell_data)
+	else:
+		_set_instruction(
+			"%s: mira un token e clicca per scegliere il caster · WASD + mouse per muoverti · Esc per annullare"
+			% String(spell_data.get("name", "Incantesimo"))
+		)
 
 
 func _cast_spell_from_caster(
@@ -576,6 +593,17 @@ func _cast_burning_hands(
 		direction = Vector3.FORWARD
 	else:
 		direction = direction.normalized()
+
+	var right_axis: Vector3 = direction.cross(Vector3.UP).normalized()
+	if right_axis.length_squared() < 0.0001:
+		right_axis = Vector3.RIGHT
+	direction = (
+		Basis(
+			right_axis,
+			deg_to_rad(float(_burning_hands_pitch_degrees))
+		)
+		* direction
+	).normalized()
 
 	var cell_size: float = _cell_size()
 	var length_cells: int = int(spell_data.get("aoe_length_cells", 3))
@@ -631,6 +659,7 @@ func _finish_cast() -> void:
 	_pending_spell_id = ""
 	_targeting_phase = ""
 	_pending_caster = null
+	_burning_hands_pitch_degrees = 0
 	instruction_label.hide()
 	Input.mouse_mode = _restore_mouse_mode
 
@@ -639,10 +668,37 @@ func _cancel_pending_cast(restore_mouse: bool = true) -> void:
 	_pending_spell_id = ""
 	_targeting_phase = ""
 	_pending_caster = null
+	_burning_hands_pitch_degrees = 0
 	if instruction_label != null:
 		instruction_label.hide()
 	if restore_mouse:
 		Input.mouse_mode = _restore_mouse_mode
+
+
+func _adjust_burning_hands_pitch(delta_degrees: int) -> void:
+	_burning_hands_pitch_degrees = clampi(
+		_burning_hands_pitch_degrees + delta_degrees,
+		-90,
+		90
+	)
+	var spell_data: Dictionary = SpellCatalog.spell("burning_hands")
+	_update_burning_hands_instruction(spell_data)
+
+
+func _update_burning_hands_instruction(spell_data: Dictionary) -> void:
+	var pitch_label: String = "frontale"
+	if _burning_hands_pitch_degrees > 0:
+		pitch_label = "+%d° verso l'alto" % _burning_hands_pitch_degrees
+	elif _burning_hands_pitch_degrees < 0:
+		pitch_label = "%d° verso il basso" % abs(_burning_hands_pitch_degrees)
+
+	_set_instruction(
+		"%s: mira un token e clicca · ↑/↓ inclinazione cono: %s · WASD + mouse per muoverti · Esc per annullare"
+		% [
+			String(spell_data.get("name", "Burning Hands")),
+			pitch_label
+		]
+	)
 
 
 func _measurement_tool() -> Node:
