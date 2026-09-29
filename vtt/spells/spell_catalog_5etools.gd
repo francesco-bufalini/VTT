@@ -441,30 +441,6 @@ const SPELLS: Dictionary = {
     "target_mode": "token_then_token",
     "range_feet": 120
   },
-  "iron_body": {
-    "id": "iron_body",
-    "name": "Iron Body",
-    "source": "AU",
-    "level": 8,
-    "school": "Transmutation",
-    "casting_time": "1 action",
-    "range": "Touch",
-    "target": "One target",
-    "area": "Single/multiple target",
-    "components": "V, S, M",
-    "duration": "Concentration, up to 1 hour",
-    "classes": [
-      "Mago",
-      "Stregone",
-      "Warlock"
-    ],
-    "description": "One willing creature you touch transforms into living metal. Until the spell ends, the target's Exhaustion level can't increase; the target has Resistance to Bludgeoning, Fire, Piercing, and Slashing damage; and it has Immunity to Poison damage and the Paralyzed, Petrified, and Poisoned conditions. If the target is Paralyzed, Petrified, or Poisoned when you cast the spell, those conditions immediately end for the target.",
-    "higher_levels": "",
-    "visual_style": "arcane",
-    "transient_seconds": 5,
-    "target_mode": "token_then_token",
-    "range_feet": 5
-  },
   "lightning_ring": {
     "id": "lightning_ring",
     "name": "Lightning Ring",
@@ -1256,28 +1232,6 @@ const SPELLS: Dictionary = {
     ],
     "description": "A Tiny Beast of your choice that you can see within range must succeed on a Charisma saving throw, or it attempts to deliver a message for you (if the target's Challenge Rating isn't 0, it automatically succeeds). You specify a location you have visited and a recipient who matches a general description, such as \"a person dressed in the uniform of the town guard\" or \"a red-haired dwarf wearing a pointed hat.\" You also communicate a message of up to twenty-five words. The Beast travels for the duration toward the specified location, covering about 25 miles per 24 hours or 50 miles if the Beast can fly. When the Beast arrives, it delivers your message to the creature that you described, mimicking your communication. If the Beast doesn't reach its destination before the spell ends, the message is lost, and the Beast returns to where you cast the spell.",
     "higher_levels": "Using a Higher-Level Spell Slot The spell's duration increases by 48 hours for each spell slot level above 2.",
-    "visual_style": "arcane",
-    "transient_seconds": 5,
-    "target_mode": "token_then_token",
-    "range_feet": 30
-  },
-  "animal_shapes": {
-    "id": "animal_shapes",
-    "name": "Animal Shapes",
-    "source": "XPHB",
-    "level": 8,
-    "school": "Transmutation",
-    "casting_time": "1 action",
-    "range": "30 feet",
-    "target": "One target",
-    "area": "Single/multiple target",
-    "components": "V, S",
-    "duration": "24 hours",
-    "classes": [
-      "Druido"
-    ],
-    "description": "Choose any number of willing creatures that you can see within range. Each target shape-shifts into a Large or smaller Beast of your choice that has a Challenge Rating of 4 or lower. You can choose a different form for each target. On later turns, you can take a Magic action to transform the targets again. A target's game statistics are replaced by the chosen Beast's statistics, but the target retains its creature type; Hit Points; Hit Point Dice; alignment; ability to communicate; and Intelligence, Wisdom, and Charisma scores. The target's actions are limited by the Beast form's anatomy, and it can't cast spells. The target's equipment melds into the new form, and the target can't use any of that equipment while in that form. The target gains a number of Temporary Hit Points equal to the Hit Points of the first form into which it shape-shifts. These Temporary Hit Points vanish if any remain when the spell ends. The transformation lasts for the duration or until the target ends it as a Bonus Action.",
-    "higher_levels": "",
     "visual_style": "arcane",
     "transient_seconds": 5,
     "target_mode": "token_then_token",
@@ -2161,31 +2115,6 @@ const SPELLS: Dictionary = {
     "aoe_radius_feet": 30,
     "show_range_preview": false
   },
-  "dimension_door": {
-    "id": "dimension_door",
-    "name": "Dimension Door",
-    "source": "XPHB",
-    "level": 4,
-    "school": "Conjuration",
-    "casting_time": "1 action",
-    "range": "500 feet",
-    "target": "One target",
-    "area": "Single/multiple target",
-    "components": "V",
-    "duration": "Instantaneous",
-    "classes": [
-      "Bardo",
-      "Mago",
-      "Stregone",
-      "Warlock"
-    ],
-    "description": "You teleport to a location within range. You arrive at exactly the spot desired. It can be a place you can see, one you can visualize, or one you can describe by stating distance and direction, such as \"200 feet straight downward\" or \"300 feet upward to the northwest at a 45-degree angle.\" You can also teleport one willing creature. The creature must be within 5 feet of you when you teleport, and it teleports to a space within 5 feet of your destination space. If you, the other creature, or both would arrive in a space occupied by a creature or completely filled by one or more objects, you and any creature traveling with you each take 4d6 Force damage, and the teleportation fails.",
-    "higher_levels": "",
-    "visual_style": "force",
-    "transient_seconds": 5,
-    "target_mode": "token_then_token",
-    "range_feet": 500
-  },
   "dispel_magic": {
     "id": "dispel_magic",
     "name": "Dispel Magic",
@@ -2355,31 +2284,6 @@ const SPELLS: Dictionary = {
     "target_mode": "token_then_token",
     "range_feet": 120,
     "level17_damage": "4d10 Force"
-  },
-  "elemental_weapon": {
-    "id": "elemental_weapon",
-    "name": "Elemental Weapon",
-    "source": "XPHB",
-    "level": 3,
-    "school": "Transmutation",
-    "casting_time": "1 action",
-    "range": "Touch",
-    "target": "One target",
-    "area": "Single/multiple target",
-    "components": "V, S",
-    "duration": "Concentration, up to 1 hour",
-    "classes": [
-      "Artefice",
-      "Druido",
-      "Paladino",
-      "Ranger"
-    ],
-    "description": "A nonmagical weapon you touch becomes a magic weapon. Choose one of the following damage types: Acid, Cold, Fire, Lightning, or Thunder. For the duration, the weapon has a +1 bonus to attack rolls and deals an extra 1d4 damage of the chosen type when it hits.",
-    "higher_levels": "Using a Higher-Level Spell Slot If you use a level 5-6 spell slot, the bonus to attack rolls increases to +2, and the extra damage increases to 2d4. If you use a level 7+ spell slot, the bonus increases to +3, and the extra damage increases to 3d4.",
-    "visual_style": "fire",
-    "transient_seconds": 5,
-    "target_mode": "token_then_token",
-    "range_feet": 5
   },
   "enhance_ability": {
     "id": "enhance_ability",
@@ -2743,28 +2647,6 @@ const SPELLS: Dictionary = {
     "allow_repeat_targets": false,
     "target_clicks_per_slot_above_base": 1
   },
-  "forbiddance": {
-    "id": "forbiddance",
-    "name": "Forbiddance",
-    "source": "XPHB",
-    "level": 6,
-    "school": "Abjuration",
-    "casting_time": "10 minute",
-    "range": "Touch",
-    "target": "One target",
-    "area": "Single/multiple target",
-    "components": "V, S, M",
-    "duration": "1 day",
-    "classes": [
-      "Chierico"
-    ],
-    "description": "You create a ward against magical travel that protects up to 40,000 square feet of floor space to a height of 30 feet above the floor. For the duration, creatures can't teleport into the area or use portals, such as those created by the Gate spell, to enter the area. The spell proofs the area against planar travel, and therefore prevents creatures from accessing the area by way of the Astral Plane, the Ethereal Plane, the Feywild, the Shadowfell, or the Plane Shift spell. In addition, the spell damages types of creatures that you choose when you cast it. Choose one or more of the following: Aberrations, Celestials, Elementals, Fey, Fiends, and Undead. When a creature of a chosen type enters the spell's area for the first time on a turn or ends its turn there, the creature takes 5d10 Radiant or Necrotic damage (your choice when you cast this spell). You can designate a password when you cast the spell. A creature that speaks the password as it enters the area takes no damage from the spell. The spell's area can't overlap with the area of another Forbiddance spell. If you cast Forbiddance every day for 30 days in the same location, the spell lasts until it is dispelled, and the Material components are consumed on the last casting.",
-    "higher_levels": "",
-    "visual_style": "necrotic",
-    "transient_seconds": 5,
-    "target_mode": "token_then_token",
-    "range_feet": 5
-  },
   "foresight": {
     "id": "foresight",
     "name": "Foresight",
@@ -2844,33 +2726,6 @@ const SPELLS: Dictionary = {
     "target_mode": "token_then_token",
     "range_feet": 10
   },
-  "gaseous_form": {
-    "id": "gaseous_form",
-    "name": "Gaseous Form",
-    "source": "XPHB",
-    "level": 3,
-    "school": "Transmutation",
-    "casting_time": "1 action",
-    "range": "Touch",
-    "target": "Multiple targets",
-    "area": "Single/multiple target",
-    "components": "V, S, M (a bit of gauze)",
-    "duration": "Concentration, up to 1 hour",
-    "classes": [
-      "Mago",
-      "Stregone",
-      "Warlock"
-    ],
-    "description": "A willing creature you touch shape-shifts, along with everything it's wearing and carrying, into a misty cloud for the duration. The spell ends on the target if it drops to 0 Hit Points or if it takes a Magic action to end the spell on itself. While in this form, the target's only method of movement is a Fly Speed of 10 feet, and it can hover. The target can enter and occupy the space of another creature. The target has Resistance to Bludgeoning, Piercing, and Slashing damage; it has Immunity to the Prone condition; and it has Advantage on Strength, Dexterity, and Constitution saving throws. The target can pass through narrow openings, but it treats liquids as though they were solid surfaces. The target can't talk or manipulate objects, and any objects it was carrying or holding can't be dropped, used, or otherwise interacted with. Finally, the target can't attack or cast spells.",
-    "higher_levels": "Using a Higher-Level Spell Slot You can target one additional creature for each spell slot level above 3.",
-    "visual_style": "arcane",
-    "transient_seconds": 5,
-    "target_mode": "token_then_multi_token",
-    "range_feet": 5,
-    "base_target_clicks": 1,
-    "allow_repeat_targets": false,
-    "target_clicks_per_slot_above_base": 1
-  },
   "geas": {
     "id": "geas",
     "name": "Geas",
@@ -2896,28 +2751,6 @@ const SPELLS: Dictionary = {
     "transient_seconds": 5,
     "target_mode": "token_then_token",
     "range_feet": 60
-  },
-  "giant_insect": {
-    "id": "giant_insect",
-    "name": "Giant Insect",
-    "source": "PHB",
-    "level": 4,
-    "school": "Transmutation",
-    "casting_time": "1 action",
-    "range": "30 feet",
-    "target": "One target",
-    "area": "Single/multiple target",
-    "components": "V, S",
-    "duration": "Concentration, up to 10 minutes",
-    "classes": [
-      "Druido"
-    ],
-    "description": "You transform up to ten centipedes, three spiders, five wasps, or one scorpion within range into giant versions of their natural forms for the duration. A centipede becomes a giant centipede, a spider becomes a giant spider, a wasp becomes a giant wasp, and a scorpion becomes a giant scorpion. Each creature obeys your verbal commands, and in combat, they act on your turn each round. The DM has the statistics for these creatures and resolves their actions and movement. A creature remains in its giant size for the duration, until it drops to 0 hit points, or until you use an action to dismiss the effect on it. The DM might allow you to choose different targets. For example, if you transform a bee, its giant version might have the same statistics as a giant wasp.",
-    "higher_levels": "",
-    "visual_style": "arcane",
-    "transient_seconds": 5,
-    "target_mode": "token_then_token",
-    "range_feet": 30
   },
   "glyph_of_warding": {
     "id": "glyph_of_warding",
@@ -3254,30 +3087,6 @@ const SPELLS: Dictionary = {
     "description": "A creature of your choice that you can see within range regains Hit Points equal to 2d4 plus your spellcasting ability modifier.",
     "higher_levels": "Using a Higher-Level Spell Slot The healing increases by 2d4 for each spell slot level above 1.",
     "visual_style": "arcane",
-    "transient_seconds": 5,
-    "target_mode": "token_then_token",
-    "range_feet": 60
-  },
-  "heat_metal": {
-    "id": "heat_metal",
-    "name": "Heat Metal",
-    "source": "XPHB",
-    "level": 2,
-    "school": "Transmutation",
-    "casting_time": "1 action",
-    "range": "60 feet",
-    "target": "One target",
-    "area": "Single/multiple target",
-    "components": "V, S, M (a piece of iron and a flame)",
-    "duration": "Concentration, up to 1 minute",
-    "classes": [
-      "Artefice",
-      "Bardo",
-      "Druido"
-    ],
-    "description": "Choose a manufactured metal object, such as a metal weapon or a suit of Heavy or Medium metal armor, that you can see within range. You cause the object to glow red-hot. Any creature in physical contact with the object takes 2d8 Fire damage when you cast the spell. Until the spell ends, you can take a Bonus Action on each of your later turns to deal this damage again if the object is within range. If a creature is holding or wearing the object and takes the damage from it, the creature must succeed on a Constitution saving throw or drop the object if it can. If it doesn't drop the object, it has Disadvantage on attack rolls and ability checks until the start of your next turn.",
-    "higher_levels": "Using a Higher-Level Spell Slot The damage increases by 2d8 for each spell slot level above 2.",
-    "visual_style": "fire",
     "transient_seconds": 5,
     "target_mode": "token_then_token",
     "range_feet": 60
@@ -4256,31 +4065,6 @@ const SPELLS: Dictionary = {
     "target_mode": "token_then_token",
     "range_feet": 60
   },
-  "polymorph": {
-    "id": "polymorph",
-    "name": "Polymorph",
-    "source": "XPHB",
-    "level": 4,
-    "school": "Transmutation",
-    "casting_time": "1 action",
-    "range": "60 feet",
-    "target": "One target",
-    "area": "Single/multiple target",
-    "components": "V, S, M (a caterpillar cocoon)",
-    "duration": "Concentration, up to 1 hour",
-    "classes": [
-      "Bardo",
-      "Druido",
-      "Mago",
-      "Stregone"
-    ],
-    "description": "You attempt to transform a creature that you can see within range into a Beast. The target must succeed on a Wisdom saving throw or shape-shift into Beast form for the duration. That form can be any Beast you choose that has a Challenge Rating equal to or less than the target's (or the target's level if it doesn't have a Challenge Rating). The target's game statistics are replaced by the stat block of the chosen Beast, but the target retains its alignment, personality, creature type, Hit Points, and Hit Point Dice. The target gains a number of Temporary Hit Points equal to the Hit Points of the Beast form. These Temporary Hit Points vanish if any remain when the spell ends. The spell ends early on the target if it has no Temporary Hit Points left. The target is limited in the actions it can perform by the anatomy of its new form, and it can't speak or cast spells. The target's gear melds into the new form. The creature can't use or otherwise benefit from any of that equipment.",
-    "higher_levels": "",
-    "visual_style": "arcane",
-    "transient_seconds": 5,
-    "target_mode": "token_then_token",
-    "range_feet": 60
-  },
   "power_word_heal": {
     "id": "power_word_heal",
     "name": "Power Word Heal",
@@ -4852,28 +4636,6 @@ const SPELLS: Dictionary = {
     "range_feet": 120,
     "persistent": true
   },
-  "simulacrum": {
-    "id": "simulacrum",
-    "name": "Simulacrum",
-    "source": "XPHB",
-    "level": 7,
-    "school": "Illusion",
-    "casting_time": "12 hour",
-    "range": "Touch",
-    "target": "One target",
-    "area": "Single/multiple target",
-    "components": "V, S, M",
-    "duration": "Until dispelled",
-    "classes": [
-      "Mago"
-    ],
-    "description": "You create a simulacrum of one Beast or Humanoid that is within 10 feet of you for the entire casting of the spell. You finish the casting by touching both the creature and a pile of ice or snow that is the same size as that creature, and the pile turns into the simulacrum, which is a creature. It uses the game statistics of the original creature at the time of casting, except it is a Construct, its Hit Points maximum is half as much, and it can't cast this spell. The simulacrum is Friendly [Attitude] to you and creatures you designate. It obeys your commands and acts on your turn in combat. The simulacrum can't gain levels, and it can't take Short or Long Rests. If the simulacrum takes damage, the only way to restore its Hit Points is to repair it as you take a Long Rest, during which you expend components worth 100 GP per Hit Points restored. The simulacrum must stay within 5 feet of you for the repair. The simulacrum lasts until it drops to 0 Hit Points, at which point it reverts to snow and melts away. If you cast this spell again, any simulacrum you created with this spell is instantly destroyed.",
-    "higher_levels": "",
-    "visual_style": "arcane",
-    "transient_seconds": 5,
-    "target_mode": "token_then_token",
-    "range_feet": 5
-  },
   "spare_the_dying": {
     "id": "spare_the_dying",
     "name": "Spare the Dying",
@@ -5177,30 +4939,6 @@ const SPELLS: Dictionary = {
     "range_feet": 100000,
     "show_range_preview": false
   },
-  "teleport": {
-    "id": "teleport",
-    "name": "Teleport",
-    "source": "XPHB",
-    "level": 7,
-    "school": "Conjuration",
-    "casting_time": "1 action",
-    "range": "10 feet",
-    "target": "One target",
-    "area": "Single/multiple target",
-    "components": "V",
-    "duration": "Instantaneous",
-    "classes": [
-      "Bardo",
-      "Mago",
-      "Stregone"
-    ],
-    "description": "This spell instantly transports you and up to eight willing creatures that you can see within range, or a single object that you can see within range, to a destination you select. If you target an object, it must be Large or smaller, and it can't be held or carried by an unwilling creature. The destination you choose must be known to you, and it must be on the same plane of existence as you. Your familiarity with the destination determines whether you arrive there successfully. The DM rolls 1d100 and consults the Teleportation Outcome table and the explanations after it. Familiarity Here are the meanings of the terms in the table's Familiarity column: \"Permanent circle\" means a permanent teleportation circle whose sigil sequence you know. \"Linked object\" means you possess an object taken from the desired destination within the last six months, such as a book from a wizard's library. \"Very familiar\" is a place you have visited often, a place you have carefully studied, or a place you can see when you cast the spell. \"Seen casually\" is a place you have seen more than once but with which you aren't very familiar. \"Viewed once or described\" is a place you have seen once, possibly using magic, or a place you know through someone else's description, perhaps from a map. \"False destination\" is a place that doesn't exist. Perhaps you tried to scry an enemy's sanctum but instead viewed a",
-    "higher_levels": "",
-    "visual_style": "force",
-    "transient_seconds": 5,
-    "target_mode": "token_then_token",
-    "range_feet": 10
-  },
   "thorn_whip": {
     "id": "thorn_whip",
     "name": "Thorn Whip",
@@ -5250,30 +4988,6 @@ const SPELLS: Dictionary = {
     "transient_seconds": 5,
     "target_mode": "token_then_token",
     "range_feet": 5
-  },
-  "true_polymorph": {
-    "id": "true_polymorph",
-    "name": "True Polymorph",
-    "source": "XPHB",
-    "level": 9,
-    "school": "Transmutation",
-    "casting_time": "1 action",
-    "range": "30 feet",
-    "target": "One target",
-    "area": "Single/multiple target",
-    "components": "V, S, M (a drop of mercury, a dollop of gum arabic, and a wisp of smoke)",
-    "duration": "Concentration, up to 1 hour",
-    "classes": [
-      "Bardo",
-      "Mago",
-      "Warlock"
-    ],
-    "description": "Choose one creature or nonmagical object that you can see within range. The creature shape-shifts into a different creature or a nonmagical object, or the object shape-shifts into a creature (the object must be neither worn nor carried). The transformation lasts for the duration or until the target dies or is destroyed, but if you maintain Concentration on this spell for the full duration, the spell lasts until dispelled. An unwilling creature can make a Wisdom saving throw, and if it succeeds, it isn't affected by this spell. Creature into Creature If you turn a creature into another kind of creature, the new form can be any kind you choose that has a Challenge Rating equal to or less than the target's Challenge Rating or level. The target's game statistics are replaced by the stat block of the new form, but it retains its Hit Points, Hit Point Dice, alignment, and personality. The target gains a number of Temporary Hit Points equal to the Hit Points of the new form. These Temporary Hit Points vanish if any remain when the spell ends. The target is limited in the actions it can perform by the anatomy of its new form, and it can't speak or cast spells. The target's gear melds into the new form. The creature can't use or otherwise benefit from any of that equipment. Object into Creature You can turn an object into any kind of creature, as long as the creature's size is no larger",
-    "higher_levels": "",
-    "visual_style": "arcane",
-    "transient_seconds": 5,
-    "target_mode": "token_then_token",
-    "range_feet": 30
   },
   "true_resurrection": {
     "id": "true_resurrection",
@@ -5759,30 +5473,6 @@ const SPELLS: Dictionary = {
     "target_mode": "token_then_token",
     "range_feet": 120
   },
-  "catapult": {
-    "id": "catapult",
-    "name": "Catapult",
-    "source": "XGE",
-    "level": 1,
-    "school": "Transmutation",
-    "casting_time": "1 action",
-    "range": "60 feet",
-    "target": "One target",
-    "area": "Single/multiple target",
-    "components": "S",
-    "duration": "Instantaneous",
-    "classes": [
-      "Artefice",
-      "Mago",
-      "Stregone"
-    ],
-    "description": "Choose one object weighing 1 to 5 pounds within range that isn't being worn or carried. The object flies in a straight line up to 90 feet in a direction you choose before falling to the ground, stopping early if it impacts against a solid surface. If the object would strike a creature, that creature must make a Dexterity saving throw. On a failed save, the object strikes the target and stops moving. When the object strikes something, the object and what it strikes each take 3d8 bludgeoning damage.",
-    "higher_levels": "At Higher Levels When you cast this spell using a spell slot of 2nd level or higher, the maximum weight of objects that you can target with this spell increases by 5 pounds, and the damage increases by 3d8, for each slot level above 1st.",
-    "visual_style": "arcane",
-    "transient_seconds": 5,
-    "target_mode": "token_then_token",
-    "range_feet": 60
-  },
   "cause_fear": {
     "id": "cause_fear",
     "name": "Cause Fear",
@@ -6225,29 +5915,6 @@ const SPELLS: Dictionary = {
     "target_mode": "token_then_token",
     "range_feet": 30
   },
-  "holy_weapon": {
-    "id": "holy_weapon",
-    "name": "Holy Weapon",
-    "source": "XGE",
-    "level": 5,
-    "school": "Evocation",
-    "casting_time": "1 bonus action",
-    "range": "Touch",
-    "target": "One target",
-    "area": "Single/multiple target",
-    "components": "V, S",
-    "duration": "Concentration, up to 1 hour",
-    "classes": [
-      "Chierico",
-      "Paladino"
-    ],
-    "description": "You imbue a weapon you touch with holy power. Until the spell ends, the weapon emits bright light in a 30-foot radius and dim light for an additional 30 feet. In addition, weapon attacks made with it deal an extra 2d8 radiant damage on a hit. If the weapon isn't already a magic weapon, it becomes one for the duration. As a bonus action on your turn, you can dismiss this spell and cause the weapon to emit a burst of radiance. Each creature of your choice that you can see within 30 feet of the weapon must make a Constitution saving throw. On a failed save, a creature takes 4d8 radiant damage, and it is blinded for 1 minute. On a successful save, a creature takes half as much damage and isn't blinded. At the end of each of its turns, a blinded creature can make a Constitution saving throw, ending the effect on itself on a success.",
-    "higher_levels": "",
-    "visual_style": "radiant",
-    "transient_seconds": 5,
-    "target_mode": "token_then_token",
-    "range_feet": 5
-  },
   "immolation": {
     "id": "immolation",
     "name": "Immolation",
@@ -6477,32 +6144,6 @@ const SPELLS: Dictionary = {
     "target_mode": "token_then_token",
     "range_feet": 5,
     "level17_damage": "1d6 Bludgeoning"
-  },
-  "mass_polymorph": {
-    "id": "mass_polymorph",
-    "name": "Mass Polymorph",
-    "source": "XGE",
-    "level": 9,
-    "school": "Transmutation",
-    "casting_time": "1 action",
-    "range": "120 feet",
-    "target": "Multiple targets",
-    "area": "Single/multiple target",
-    "components": "V, S, M (a caterpillar cocoon)",
-    "duration": "Concentration, up to 1 hour",
-    "classes": [
-      "Bardo",
-      "Mago",
-      "Stregone"
-    ],
-    "description": "You transform up to ten creatures of your choice that you can see within range. An unwilling target must succeed on a Wisdom saving throw to resist the transformation. An unwilling shapechanger automatically succeeds on the save. Each target assumes a beast form of your choice, and you can choose the same form or different ones for each target. The new form can be any beast you have seen whose challenge rating is equal to or less than the target's (or half the target's level, if the target doesn't have a challenge rating). The target's game statistics, including mental ability scores, are replaced by the statistics of the chosen beast, but the target retains its hit points, alignment, and personality. Each target gains a number of temporary hit points equal to the hit points of its new form. These temporary hit points can't be replaced by temporary hit points from another source. A target reverts to its normal form when it has no more temporary hit points or it dies. If the spell ends before then, the creature loses all its temporary hit points and reverts to its normal form. The creature is limited in the actions it can perform by the nature of its new form. It can't speak, cast spells, or do anything else that requires hands or speech. The target's gear melds into the new form. The target can't activate, use, wield, or otherwise benefit from any of its equipment.",
-    "higher_levels": "",
-    "visual_style": "arcane",
-    "transient_seconds": 5,
-    "target_mode": "token_then_multi_token",
-    "range_feet": 120,
-    "base_target_clicks": 10,
-    "allow_repeat_targets": false
   },
   "maximilians_earthen_grasp": {
     "id": "maximilians_earthen_grasp",
@@ -6802,31 +6443,6 @@ const SPELLS: Dictionary = {
     "aoe_radius_feet": 5,
     "range_feet": 90
   },
-  "steel_wind_strike": {
-    "id": "steel_wind_strike",
-    "name": "Steel Wind Strike",
-    "source": "XPHB",
-    "level": 5,
-    "school": "Conjuration",
-    "casting_time": "1 action",
-    "range": "30 feet",
-    "target": "Multiple targets",
-    "area": "Single/multiple target",
-    "components": "S, M",
-    "duration": "Instantaneous",
-    "classes": [
-      "Mago",
-      "Ranger"
-    ],
-    "description": "You flourish the weapon used in the casting and then vanish to strike like the wind. Choose up to five creatures you can see within range. Make a melee spell attack against each target. On a hit, a target takes 6d10 Force damage. You then teleport to an unoccupied space you can see within 5 feet of one of the targets.",
-    "higher_levels": "",
-    "visual_style": "force",
-    "transient_seconds": 5,
-    "target_mode": "token_then_multi_token",
-    "range_feet": 30,
-    "base_target_clicks": 5,
-    "allow_repeat_targets": false
-  },
   "storm_sphere": {
     "id": "storm_sphere",
     "name": "Storm Sphere",
@@ -6853,30 +6469,6 @@ const SPELLS: Dictionary = {
     "range_feet": 150,
     "persistent": true
   },
-  "thunder_step": {
-    "id": "thunder_step",
-    "name": "Thunder Step",
-    "source": "XGE",
-    "level": 3,
-    "school": "Conjuration",
-    "casting_time": "1 action",
-    "range": "90 feet",
-    "target": "One target",
-    "area": "Single/multiple target",
-    "components": "V",
-    "duration": "Instantaneous",
-    "classes": [
-      "Mago",
-      "Stregone",
-      "Warlock"
-    ],
-    "description": "You teleport yourself to an unoccupied space you can see within range. Immediately after you disappear, a thunderous boom sounds, and each creature within 10 feet of the space you left must make a Constitution saving throw, taking 3d10 thunder damage on a failed save, or half as much damage on a successful one. The thunder can be heard from up to 300 feet away. You can bring along objects as long as their weight doesn't exceed what you can carry. You can also teleport one willing creature of your size or smaller who is carrying gear up to its carrying capacity. The creature must be within 5 feet of you when you cast this spell, and there must be an unoccupied space within 5 feet of your destination space for the creature to appear in; otherwise, the creature is left behind.",
-    "higher_levels": "At Higher Levels When you cast this spell using a spell slot of 4th level or higher, the damage increases by 3d10 for each slot level above 3rd.",
-    "visual_style": "thunder",
-    "transient_seconds": 5,
-    "target_mode": "token_then_token",
-    "range_feet": 90
-  },
   "toll_the_dead": {
     "id": "toll_the_dead",
     "name": "Toll the Dead",
@@ -6902,32 +6494,6 @@ const SPELLS: Dictionary = {
     "range_feet": 60,
     "level17_damage": "4d8 Necrotic"
   },
-  "transmute_rock": {
-    "id": "transmute_rock",
-    "name": "Transmute Rock",
-    "source": "XGE",
-    "level": 5,
-    "school": "Transmutation",
-    "casting_time": "1 action",
-    "range": "120 feet",
-    "target": "A point/direction within range",
-    "area": "cube",
-    "components": "V, S, M (clay and water)",
-    "duration": "Until dispelled",
-    "classes": [
-      "Artefice",
-      "Druido",
-      "Mago"
-    ],
-    "description": "You choose an area of stone or mud that you can see that fits within a 40-foot cube and is within range, and choose one of the following effects. Transmute Rock to Mud Nonmagical rock of any sort in the area becomes an equal volume of thick, flowing mud that remains for the spell's duration. The ground in the spell's area becomes muddy enough that creatures can sink into it. Each foot that a creature moves through the mud costs 4 feet of movement, and any creature on the ground when you cast the spell must make a Strength saving throw. A creature must also make the saving throw when it moves into the area for the first time on a turn or ends its turn there. On a failed save, a creature sinks into the mud and is restrained, though it can use an action to end the restrained condition on itself by pulling itself free of the mud. If you cast the spell on a ceiling, the mud falls. Any creature under the mud when it falls must make a Dexterity saving throw. A creature takes 4d8 bludgeoning damage on a failed save, or half as much damage on a successful one. Transmute Mud to Rock Nonmagical mud or quicksand in the area no more than 10 feet deep transforms into soft stone for the spell's duration. Any creature in the mud when it transforms must make a Dexterity saving throw. On a successful save, a creature is shunted safely to the surface in an unoccupied space. On a failed save, a cr",
-    "higher_levels": "",
-    "visual_style": "arcane",
-    "transient_seconds": 5,
-    "target_mode": "token_then_point",
-    "aoe_shape": "cube",
-    "aoe_side_feet": 40,
-    "range_feet": 120
-  },
   "wall_of_sand": {
     "id": "wall_of_sand",
     "name": "Wall of Sand",
@@ -6945,7 +6511,7 @@ const SPELLS: Dictionary = {
     ],
     "description": "You create a wall of swirling sand on the ground at a point you can see within range. You can make the wall up to 30 feet long, 10 feet high, and 10 feet thick, and it vanishes when the spell ends. It blocks line of sight but not movement. A creature is blinded while in the wall's space and must spend 3 feet of movement for every 1 foot it moves there.",
     "higher_levels": "",
-    "visual_style": "arcane",
+    "visual_style": "wall_of_sand",
     "transient_seconds": 5,
     "target_mode": "wall_design",
     "wall_modes": [
@@ -6979,7 +6545,7 @@ const SPELLS: Dictionary = {
     ],
     "description": "You create a wall of water on the ground at a point you can see within range. You can make the wall up to 30 feet long, 10 feet high, and 1 foot thick, or you can make a ringed wall up to 20 feet in diameter, 20 feet high, and 1 foot thick. The wall vanishes when the spell ends. The wall's space is difficult terrain. Any ranged weapon attack that enters the wall's space has disadvantage on the attack roll, and fire damage is halved if the fire effect passes through the wall to reach its target. Spells that deal cold damage that pass through the wall cause the area of the wall they pass through to freeze solid (at least a 5-foot-square section is frozen). Each 5-foot-square frozen section has AC 5 and 15 hit points. Reducing a frozen section to 0 hit points destroys it. When a section is destroyed, the wall's water doesn't fill it.",
     "higher_levels": "",
-    "visual_style": "arcane",
+    "visual_style": "wall_of_water",
     "transient_seconds": 5,
     "target_mode": "wall_design",
     "wall_modes": [
@@ -7099,29 +6665,6 @@ const SPELLS: Dictionary = {
     "target_mode": "token_then_token",
     "range_feet": 150
   },
-  "conjure_animals": {
-    "id": "conjure_animals",
-    "name": "Conjure Animals",
-    "source": "XPHB",
-    "level": 3,
-    "school": "Conjuration",
-    "casting_time": "1 action",
-    "range": "60 feet",
-    "target": "One target",
-    "area": "Single/multiple target",
-    "components": "V, S",
-    "duration": "Concentration, up to 10 minutes",
-    "classes": [
-      "Druido",
-      "Ranger"
-    ],
-    "description": "You conjure nature spirits that appear as a Large pack of spectral, intangible animals in an unoccupied space you can see within range. The pack lasts for the duration, and you choose the spirits' animal form, such as wolves, serpents, or birds. You have Advantage on Strength saving throws while you're within 5 feet of the pack, and when you move on your turn, you can also move the pack up to 30 feet to an unoccupied space you can see. Whenever the pack moves within 10 feet of a creature you can see and whenever a creature you can see enters a space within 10 feet of the pack or ends its turn there, you can force that creature to make a Dexterity saving throw. On a failed save, the creature takes 3d10 Slashing damage. A creature makes this save only once per turn.",
-    "higher_levels": "Using a Higher-Level Spell Slot The damage increases by 3d10 for each spell slot level above 3.",
-    "visual_style": "arcane",
-    "transient_seconds": 5,
-    "target_mode": "token_then_token",
-    "range_feet": 60
-  },
   "conjure_celestial": {
     "id": "conjure_celestial",
     "name": "Conjure Celestial",
@@ -7147,52 +6690,6 @@ const SPELLS: Dictionary = {
     "aoe_height_feet": 40,
     "range_feet": 90,
     "persistent": true
-  },
-  "conjure_elemental": {
-    "id": "conjure_elemental",
-    "name": "Conjure Elemental",
-    "source": "XPHB",
-    "level": 5,
-    "school": "Conjuration",
-    "casting_time": "1 action",
-    "range": "60 feet",
-    "target": "One target",
-    "area": "Single/multiple target",
-    "components": "V, S",
-    "duration": "Concentration, up to 10 minutes",
-    "classes": [
-      "Druido",
-      "Mago"
-    ],
-    "description": "You conjure a Large, intangible spirit from the Elemental Planes that appears in an unoccupied space within range. Choose the spirit's element, which determines its damage type: air (Lightning), earth (Thunder), fire (Fire), or water (Cold). The spirit lasts for the duration. Whenever a creature you can see enters the spirit's space or starts its turn within 5 feet of the spirit, you can force that creature to make a Dexterity saving throw if the spirit has no creature Restrained. On a failed save, the target takes 8d8 damage of the spirit's type, and the target has the Restrained condition until the spell ends. At the start of each of its turns, the Restrained target repeats the save. On a failed save, the target takes 4d8 damage of the spirit's type. On a successful save, the target isn't Restrained by the spirit.",
-    "higher_levels": "Using a Higher-Level Spell Slot The damage increases by 8d8;4d8 for each spell slot level above 5.",
-    "visual_style": "fire",
-    "transient_seconds": 5,
-    "target_mode": "token_then_token",
-    "range_feet": 60
-  },
-  "conjure_fey": {
-    "id": "conjure_fey",
-    "name": "Conjure Fey",
-    "source": "XPHB",
-    "level": 6,
-    "school": "Conjuration",
-    "casting_time": "1 action",
-    "range": "60 feet",
-    "target": "One target",
-    "area": "Single/multiple target",
-    "components": "V, S",
-    "duration": "Concentration, up to 10 minutes",
-    "classes": [
-      "Druido",
-      "Warlock"
-    ],
-    "description": "You conjure a Medium spirit from the Feywild in an unoccupied space you can see within range. The spirit lasts for the duration, and it looks like a Fey creature of your choice. When the spirit appears, you can make one melee spell attack against a creature within 5 feet of it. On a hit, the target takes Psychic damage equal to 3d12 plus your spellcasting ability modifier, and the target has the Frightened condition until the start of your next turn, with both you and the spirit as the source of the fear. As a Bonus Action on your later turns, you can teleport the spirit to an unoccupied space you can see within 30 feet of the space it left and make the attack against a creature within 5 feet of it.",
-    "higher_levels": "Using a Higher-Level Spell Slot The damage increases by 3d12 for each spell slot level above 6.",
-    "visual_style": "psychic",
-    "transient_seconds": 5,
-    "target_mode": "token_then_token",
-    "range_feet": 60
   },
   "conjure_minor_elementals": {
     "id": "conjure_minor_elementals",
