@@ -508,7 +508,7 @@ func _remove_last_extra_grid() -> void:
 				b.get_meta("campaign_grid_id", 0)
 			)
 	)
-	var target := grids.back()
+	var target: Node3D = grids.back() as Node3D
 	target.free()
 	_refresh_surface_grid()
 	_set_status("Ultima griglia aggiuntiva rimossa")
