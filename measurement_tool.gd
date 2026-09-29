@@ -14,6 +14,7 @@ const AOE_COLORS: Array[Color] = [
 	Color(0.95, 0.95, 0.95, 1.0),
 ]
 const SpellVFX = preload("res://vtt/spells/spell_vfx.gd")
+const WallGeometry = preload("res://vtt/spells/wall_geometry.gd")
 
 @export var cell_size: float = 1.0
 # Existing template convention: one square = five feet.
@@ -36,6 +37,16 @@ var _spell_preview_style: String = ""
 var _spell_range_preview: MeshInstance3D
 var _spell_range_center: Vector3 = Vector3.INF
 var _spell_range_radius: float = -1.0
+var _wall_preview_root: Node3D
+var _wall_preview_points: Array[Vector3] = []
+var _wall_preview_height: float = -1.0
+var _wall_preview_thickness: float = -1.0
+var _wall_preview_style: String = ""
+var _wall_preview_damage_side: int = 0
+var _wall_globe_preview_center: Vector3 = Vector3.INF
+var _wall_globe_preview_radius: float = -1.0
+var _wall_globe_preview_style: String = ""
+var _wall_globe_preview_hemisphere: bool = false
 
 var _camera: Camera3D = null
 var _volumetric_grid: Node3D = null
@@ -916,6 +927,453 @@ func show_spell_projectile_with_impact(
 			timer.queue_free()
 	)
 	timer.start()
+
+
+func show_wall_path_preview(
+	points: Array[Vector3],
+	height_world: float,
+	thickness_world: float,
+	style: String,
+	damage_side: int = 0
+) -> void:
+	if points.size() < 2:
+		hide_wall_preview()
+		return
+
+	if (
+		is_instance_valid(_wall_preview_root)
+		and _wall_points_equal(_wall_preview_points, points)
+		and is_equal_approx(_wall_preview_height, height_world)
+		and is_equal_approx(_wall_preview_thickness, thickness_world)
+		and _wall_preview_style == style
+		and _wall_preview_damage_side == damage_side
+	):
+		_wall_preview_root.show()
+		return
+
+	hide_wall_preview(true)
+	_wall_preview_root = Node3D.new()
+	_wall_preview_root.name = "SpellWallPreview"
+	add_child(_wall_preview_root)
+	_build_wall_path_root(
+		_wall_preview_root,
+		points,
+		height_world,
+		thickness_world,
+		style,
+		true,
+		damage_side
+	)
+	_wall_preview_points = points.duplicate()
+	_wall_preview_height = height_world
+	_wall_preview_thickness = thickness_world
+	_wall_preview_style = style
+	_wall_preview_damage_side = damage_side
+
+
+func show_wall_globe_preview(
+	center: Vector3,
+	radius_world: float,
+	style: String,
+	hemisphere: bool = false
+) -> void:
+	var safe_radius: float = maxf(radius_world, cell_size * 0.25)
+	if (
+		is_instance_valid(_wall_preview_root)
+		and _wall_globe_preview_center.is_equal_approx(center)
+		and is_equal_approx(_wall_globe_preview_radius, safe_radius)
+		and _wall_globe_preview_style == style
+		and _wall_globe_preview_hemisphere == hemisphere
+	):
+		_wall_preview_root.show()
+		return
+
+	hide_wall_preview(true)
+	_wall_preview_root = Node3D.new()
+	_wall_preview_root.name = "SpellWallGlobePreview"
+	add_child(_wall_preview_root)
+	_build_wall_globe_root(
+		_wall_preview_root,
+		center,
+		safe_radius,
+		style,
+		hemisphere,
+		true
+	)
+	_wall_globe_preview_center = center
+	_wall_globe_preview_radius = safe_radius
+	_wall_globe_preview_style = style
+	_wall_globe_preview_hemisphere = hemisphere
+
+
+func hide_wall_preview(free_root: bool = false) -> void:
+	if is_instance_valid(_wall_preview_root):
+		if free_root:
+			_wall_preview_root.queue_free()
+			_wall_preview_root = null
+		else:
+			_wall_preview_root.hide()
+	if free_root:
+		_wall_preview_points.clear()
+		_wall_preview_height = -1.0
+		_wall_preview_thickness = -1.0
+		_wall_preview_style = ""
+		_wall_preview_damage_side = 0
+		_wall_globe_preview_center = Vector3.INF
+		_wall_globe_preview_radius = -1.0
+		_wall_globe_preview_style = ""
+		_wall_globe_preview_hemisphere = false
+
+
+func add_wall_path(
+	points: Array[Vector3],
+	height_world: float,
+	thickness_world: float,
+	style: String,
+	damage_side: int = 0,
+	metadata: Dictionary = {}
+) -> void:
+	if persistent_aoes.size() >= 256 or points.size() < 2:
+		return
+
+	var data: Dictionary = {
+		"shape": "wall_path",
+		"points": WallGeometry.serialize_points(points),
+		"wall_height": height_world,
+		"wall_thickness": thickness_world,
+		"style": style,
+		"damage_side": damage_side,
+		"wall_meta": metadata.duplicate(true)
+	}
+	persistent_aoes.append(data)
+
+	var root: Node3D = Node3D.new()
+	root.name = "PersistentWall"
+	add_child(root)
+	_build_wall_path_root(
+		root,
+		points,
+		height_world,
+		thickness_world,
+		style,
+		false,
+		damage_side
+	)
+	_aoe_nodes.append(root)
+
+
+func add_wall_globe(
+	center: Vector3,
+	radius_world: float,
+	style: String,
+	hemisphere: bool = false,
+	metadata: Dictionary = {}
+) -> void:
+	if persistent_aoes.size() >= 256:
+		return
+
+	var safe_radius: float = maxf(radius_world, cell_size * 0.25)
+	var data: Dictionary = {
+		"shape": "wall_globe",
+		"center": [center.x, center.y, center.z],
+		"radius": safe_radius,
+		"hemisphere": hemisphere,
+		"style": style,
+		"wall_meta": metadata.duplicate(true)
+	}
+	persistent_aoes.append(data)
+
+	var root: Node3D = Node3D.new()
+	root.name = "PersistentWallGlobe"
+	add_child(root)
+	_build_wall_globe_root(
+		root,
+		center,
+		safe_radius,
+		style,
+		hemisphere,
+		false
+	)
+	_aoe_nodes.append(root)
+
+
+func _build_wall_path_root(
+	root: Node3D,
+	points: Array[Vector3],
+	height_world: float,
+	thickness_world: float,
+	style: String,
+	preview: bool,
+	damage_side: int
+) -> void:
+	for index: int in range(1, points.size()):
+		var start: Vector3 = points[index - 1]
+		var finish: Vector3 = points[index]
+		if start.distance_squared_to(finish) < 0.0001:
+			continue
+		_add_wall_segment(
+			root,
+			start,
+			finish,
+			height_world,
+			thickness_world,
+			style,
+			preview
+		)
+		if not preview:
+			_add_wall_segment_pick_area(
+				root,
+				start,
+				finish,
+				height_world,
+				thickness_world
+			)
+			SpellVFX.attach_wall_segment(
+				root,
+				start,
+				finish,
+				height_world,
+				thickness_world,
+				style,
+				cell_size
+			)
+		if style == "wall_of_fire" and damage_side != 0:
+			_add_wall_damage_band(
+				root,
+				start,
+				finish,
+				thickness_world,
+				damage_side,
+				preview
+			)
+
+
+func _add_wall_segment(
+	root: Node3D,
+	start: Vector3,
+	finish: Vector3,
+	height_world: float,
+	thickness_world: float,
+	style: String,
+	preview: bool
+) -> void:
+	var delta: Vector3 = finish - start
+	delta.y = 0.0
+	var length: float = delta.length()
+	if length < 0.0001:
+		return
+
+	var mesh_instance: MeshInstance3D = MeshInstance3D.new()
+	mesh_instance.name = "WallSegment"
+	var box: BoxMesh = BoxMesh.new()
+	box.size = Vector3(
+		maxf(thickness_world, cell_size * 0.025),
+		maxf(height_world, cell_size * 0.1),
+		length
+	)
+	mesh_instance.mesh = box
+	mesh_instance.material_override = _wall_material(style, preview)
+	root.add_child(mesh_instance)
+
+	var direction: Vector3 = delta / length
+	mesh_instance.global_basis = Basis(
+		Quaternion(Vector3.FORWARD, direction)
+	)
+	mesh_instance.global_position = (
+		(start + finish) * 0.5
+		+ Vector3.UP * maxf(height_world, cell_size * 0.1) * 0.5
+	)
+
+
+func _add_wall_segment_pick_area(
+	root: Node3D,
+	start: Vector3,
+	finish: Vector3,
+	height_world: float,
+	thickness_world: float
+) -> void:
+	var delta: Vector3 = finish - start
+	delta.y = 0.0
+	var length: float = delta.length()
+	if length < 0.0001:
+		return
+
+	var area: Area3D = Area3D.new()
+	area.name = "WallPickArea"
+	area.collision_layer = AOE_PICK_LAYER
+	area.collision_mask = 0
+	area.set_meta("aoe_root", root)
+	root.add_child(area)
+
+	var collision: CollisionShape3D = CollisionShape3D.new()
+	var box: BoxShape3D = BoxShape3D.new()
+	box.size = Vector3(
+		maxf(thickness_world, cell_size * 0.12),
+		maxf(height_world, cell_size * 0.2),
+		length
+	)
+	collision.shape = box
+	area.add_child(collision)
+
+	var direction: Vector3 = delta / length
+	area.global_basis = Basis(
+		Quaternion(Vector3.FORWARD, direction)
+	)
+	area.global_position = (
+		(start + finish) * 0.5
+		+ Vector3.UP * maxf(height_world, cell_size * 0.2) * 0.5
+	)
+
+
+func _add_wall_damage_band(
+	root: Node3D,
+	start: Vector3,
+	finish: Vector3,
+	thickness_world: float,
+	damage_side: int,
+	preview: bool
+) -> void:
+	var delta: Vector3 = finish - start
+	delta.y = 0.0
+	var length: float = delta.length()
+	if length < 0.0001:
+		return
+
+	var direction: Vector3 = delta / length
+	var normal: Vector3 = Vector3(
+		-direction.z,
+		0.0,
+		direction.x
+	) * float(signi(damage_side))
+	var band_width: float = cell_size * 2.0
+
+	var mesh_instance: MeshInstance3D = MeshInstance3D.new()
+	mesh_instance.name = "WallDamageSide"
+	var box: BoxMesh = BoxMesh.new()
+	box.size = Vector3(
+		band_width,
+		maxf(cell_size * 0.025, 0.01),
+		length
+	)
+	mesh_instance.mesh = box
+	var material: StandardMaterial3D = StandardMaterial3D.new()
+	material.transparency = BaseMaterial3D.TRANSPARENCY_ALPHA
+	material.shading_mode = BaseMaterial3D.SHADING_MODE_UNSHADED
+	material.albedo_color = Color(
+		1.0,
+		0.18,
+		0.02,
+		0.10 if preview else 0.065
+	)
+	material.emission_enabled = true
+	material.emission = Color(1.0, 0.12, 0.01, 1.0)
+	material.emission_energy_multiplier = 0.25
+	mesh_instance.material_override = material
+	root.add_child(mesh_instance)
+
+	mesh_instance.global_basis = Basis(
+		Quaternion(Vector3.FORWARD, direction)
+	)
+	mesh_instance.global_position = (
+		(start + finish) * 0.5
+		+ normal * (band_width * 0.5 + thickness_world * 0.5)
+		+ Vector3.UP * maxf(cell_size * 0.012, 0.005)
+	)
+
+
+func _build_wall_globe_root(
+	root: Node3D,
+	center: Vector3,
+	radius_world: float,
+	style: String,
+	hemisphere: bool,
+	preview: bool
+) -> void:
+	var mesh_instance: MeshInstance3D = MeshInstance3D.new()
+	mesh_instance.name = "WallGlobe"
+	var sphere: SphereMesh = SphereMesh.new()
+	sphere.radius = radius_world
+	sphere.height = radius_world * 2.0
+	sphere.radial_segments = 48
+	sphere.rings = 24
+	sphere.is_hemisphere = hemisphere
+	mesh_instance.mesh = sphere
+	mesh_instance.material_override = _wall_material(style, preview)
+	root.add_child(mesh_instance)
+	mesh_instance.global_position = center
+
+	if not preview:
+		var area: Area3D = Area3D.new()
+		area.name = "WallGlobePickArea"
+		area.collision_layer = AOE_PICK_LAYER
+		area.collision_mask = 0
+		area.set_meta("aoe_root", root)
+		root.add_child(area)
+		var collision: CollisionShape3D = CollisionShape3D.new()
+		var sphere_shape: SphereShape3D = SphereShape3D.new()
+		sphere_shape.radius = radius_world
+		collision.shape = sphere_shape
+		area.add_child(collision)
+		area.global_position = center
+		SpellVFX.attach_wall_globe(
+			root,
+			center,
+			radius_world,
+			style,
+			hemisphere,
+			cell_size
+		)
+
+
+func _wall_material(
+	style: String,
+	preview: bool
+) -> StandardMaterial3D:
+	var material: StandardMaterial3D = StandardMaterial3D.new()
+	material.transparency = BaseMaterial3D.TRANSPARENCY_ALPHA
+	material.cull_mode = BaseMaterial3D.CULL_DISABLED
+	var color: Color = _spell_style_color(style)
+
+	var alpha: float = 0.42
+	if preview:
+		alpha = 0.20
+	elif style == "wall_of_force":
+		alpha = 0.07
+	elif style == "wall_of_stone":
+		alpha = 0.92
+	elif style == "wind_wall":
+		alpha = 0.16
+	elif style == "wall_of_ice":
+		alpha = 0.52
+	elif style == "wall_of_thorns":
+		alpha = 0.68
+	elif style == "blade_barrier":
+		alpha = 0.34
+	elif style == "prismatic_wall":
+		alpha = 0.48
+	elif style == "wall_of_fire":
+		alpha = 0.58
+
+	color.a = alpha
+	material.albedo_color = color
+	if style != "wall_of_stone":
+		material.shading_mode = BaseMaterial3D.SHADING_MODE_UNSHADED
+		material.emission_enabled = true
+		material.emission = Color(color.r, color.g, color.b, 1.0)
+		material.emission_energy_multiplier = 0.55 if preview else 0.9
+	return material
+
+
+func _wall_points_equal(
+	a: Array[Vector3],
+	b: Array[Vector3]
+) -> bool:
+	if a.size() != b.size():
+		return false
+	for index: int in range(a.size()):
+		if not a[index].is_equal_approx(b[index]):
+			return false
+	return true
 
 
 func add_aoe(
