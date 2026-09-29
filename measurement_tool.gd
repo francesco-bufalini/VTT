@@ -34,6 +34,7 @@ var _spell_preview_start: Vector3 = Vector3.INF
 var _spell_preview_end: Vector3 = Vector3.INF
 var _spell_preview_shape: String = ""
 var _spell_preview_style: String = ""
+var _spell_preview_line_width: float = -1.0
 var _spell_range_preview: MeshInstance3D
 var _spell_range_center: Vector3 = Vector3.INF
 var _spell_range_radius: float = -1.0
@@ -771,7 +772,8 @@ func show_spell_preview(
 	start: Vector3,
 	end: Vector3,
 	shape: String,
-	style: String = ""
+	style: String = "",
+	line_width_world: float = -1.0
 ) -> void:
 	if shape not in ["sphere", "cube", "cone", "line", "flat_square", "cylinder"]:
 		hide_spell_preview()
@@ -783,6 +785,10 @@ func show_spell_preview(
 		and _spell_preview_end.is_equal_approx(end)
 		and _spell_preview_shape == shape
 		and _spell_preview_style == style
+		and is_equal_approx(
+			_spell_preview_line_width,
+			line_width_world
+		)
 	):
 		_spell_preview.show()
 		return
@@ -792,7 +798,15 @@ func show_spell_preview(
 		_spell_preview.name = "SpellAoEPreview"
 		add_child(_spell_preview)
 
-	_draw_aoe(_spell_preview, start, end, shape, style)
+	_draw_aoe(
+		_spell_preview,
+		start,
+		end,
+		shape,
+		style,
+		Color(0.0, 0.0, 0.0, -1.0),
+		line_width_world
+	)
 
 	var preview_material: StandardMaterial3D = StandardMaterial3D.new()
 	preview_material.transparency = BaseMaterial3D.TRANSPARENCY_ALPHA
@@ -818,6 +832,7 @@ func show_spell_preview(
 	_spell_preview_end = end
 	_spell_preview_shape = shape
 	_spell_preview_style = style
+	_spell_preview_line_width = line_width_world
 	_spell_preview.show()
 
 
@@ -877,7 +892,8 @@ func show_transient_aoe(
 	end: Vector3,
 	shape: String,
 	duration_seconds: float = 5.0,
-	style: String = ""
+	style: String = "",
+	line_width_world: float = -1.0
 ) -> void:
 	if shape not in ["sphere", "cube", "cone", "line", "flat_square", "cylinder"]:
 		return
@@ -889,7 +905,15 @@ func show_transient_aoe(
 	var mesh: MeshInstance3D = MeshInstance3D.new()
 	mesh.name = "Visual"
 	root.add_child(mesh)
-	_draw_aoe(mesh, start, end, shape, style)
+	_draw_aoe(
+		mesh,
+		start,
+		end,
+		shape,
+		style,
+		Color(0.0, 0.0, 0.0, -1.0),
+		line_width_world
+	)
 	SpellVFX.attach(root, start, end, shape, style, cell_size)
 
 	var timer: Timer = Timer.new()
@@ -1071,6 +1095,8 @@ func add_wall_path(
 		"damage_side": damage_side,
 		"wall_meta": metadata.duplicate(true)
 	}
+	if line_width_world > 0.0:
+		data["line_width_world"] = line_width_world
 	persistent_aoes.append(data)
 
 	var root: Node3D = Node3D.new()
@@ -1408,7 +1434,8 @@ func add_aoe(
 	end: Vector3,
 	shape: String,
 	style: String = "",
-	color: Color = Color(0.0, 0.0, 0.0, -1.0)
+	color: Color = Color(0.0, 0.0, 0.0, -1.0),
+	line_width_world: float = -1.0
 ) -> void:
 	if persistent_aoes.size() >= 256:
 		return
@@ -1436,10 +1463,25 @@ func add_aoe(
 	var mesh := MeshInstance3D.new()
 	mesh.name = "Visual"
 	root.add_child(mesh)
-	_draw_aoe(mesh, start, end, shape, style, selected_color)
+	_draw_aoe(
+		mesh,
+		start,
+		end,
+		shape,
+		style,
+		selected_color,
+		line_width_world
+	)
 	SpellVFX.attach(root, start, end, shape, style, cell_size)
 
-	_add_aoe_pick_area(root, start, end, shape, style)
+	_add_aoe_pick_area(
+		root,
+		start,
+		end,
+		shape,
+		style,
+		line_width_world
+	)
 	_aoe_nodes.append(root)
 
 
@@ -1460,7 +1502,8 @@ func _aoe_geometry(
 	start: Vector3,
 	end: Vector3,
 	shape: String,
-	style: String = ""
+	style: String = "",
+	line_width_world: float = -1.0
 ) -> Dictionary:
 	var base_cells: int = _dnd_grid_distance_cells(end - start)
 	var reach_world: float = maxf(
@@ -1526,7 +1569,11 @@ func _aoe_geometry(
 			)
 
 		"line":
-			geometry["radius"] = _aoe_line_radius(style)
+			geometry["radius"] = (
+				line_width_world * 0.5
+				if line_width_world > 0.0
+				else _aoe_line_radius(style)
+			)
 			geometry["height"] = reach_world
 			geometry["basis"] = Basis(
 				Quaternion(Vector3.UP, direction)
@@ -1547,13 +1594,15 @@ func _draw_aoe(
 	end: Vector3,
 	shape: String,
 	style: String = "",
-	color: Color = Color(0.0, 0.0, 0.0, -1.0)
+	color: Color = Color(0.0, 0.0, 0.0, -1.0),
+	line_width_world: float = -1.0
 ) -> void:
 	var geometry: Dictionary = _aoe_geometry(
 		start,
 		end,
 		shape,
-		style
+		style,
+		line_width_world
 	)
 
 	var geometry_basis: Basis = geometry.get(
@@ -1700,13 +1749,15 @@ func _add_aoe_pick_area(
 	start: Vector3,
 	end: Vector3,
 	shape_name: String,
-	style: String = ""
+	style: String = "",
+	line_width_world: float = -1.0
 ) -> void:
 	var geometry: Dictionary = _aoe_geometry(
 		start,
 		end,
 		shape_name,
-		style
+		style,
+		line_width_world
 	)
 
 	var area: Area3D = Area3D.new()
@@ -1903,6 +1954,14 @@ func valid_aoes(data: Variant) -> bool:
 		if item.has("style") and not item.get("style") is String:
 			return false
 
+		if item.has("line_width_world"):
+			var width_value: Variant = item.get("line_width_world")
+			if not (width_value is float or width_value is int):
+				return false
+			var line_width: float = float(width_value)
+			if not is_finite(line_width) or line_width <= 0.0 or line_width > 10000.0:
+				return false
+
 		if item.has("wall_meta") and not item.get("wall_meta") is Dictionary:
 			return false
 
@@ -1995,7 +2054,8 @@ func apply_persistent_aoes(data: Array) -> void:
 			),
 			shape,
 			style,
-			color
+			color,
+			float(item_data.get("line_width_world", -1.0))
 		)
 
 	_suppress_undo_record = false
