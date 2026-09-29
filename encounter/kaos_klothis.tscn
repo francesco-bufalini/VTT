@@ -18,7 +18,7 @@ script = ExtResource("10")
 
 [node name="KaosKlothis" unique_id=1945937908 instance=ExtResource("1")]
 script = ExtResource("2")
-grid_visible_on_start = true
+grid_visible_on_start = false
 
 [node name="EncounterUI" type="VBoxContainer" parent="UI" parent_id_path=PackedInt32Array(1006666995) index="4" unique_id=1785147963]
 script = ExtResource("7")
