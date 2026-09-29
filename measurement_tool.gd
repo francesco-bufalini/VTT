@@ -29,6 +29,10 @@ var persistent_aoes: Array = []
 var _aoe_nodes: Array[Node3D] = []
 var _aoe_preview: MeshInstance3D
 var _aoe_color_index: int = 0
+var _movable_aoe_drag_index: int = -1
+var _movable_aoe_drag_root_origin: Vector3 = Vector3.ZERO
+var _movable_aoe_drag_delta: Vector3 = Vector3.ZERO
+var _movable_aoe_drag_was_captured: bool = false
 var _spell_preview: MeshInstance3D
 var _spell_preview_start: Vector3 = Vector3.INF
 var _spell_preview_end: Vector3 = Vector3.INF
@@ -1401,7 +1405,10 @@ func add_aoe(
 	shape: String,
 	style: String = "",
 	color: Color = Color(0.0, 0.0, 0.0, -1.0),
-	line_width_world: float = -1.0
+	line_width_world: float = -1.0,
+	movable_aoe_feet: float = 0.0,
+	movable_aoe_mode: String = "free",
+	caster_origin: Vector3 = Vector3(INF, INF, INF)
 ) -> void:
 	if persistent_aoes.size() >= 256:
 		return
@@ -1422,6 +1429,19 @@ func add_aoe(
 		data["color"] = _serialize_aoe_color(selected_color)
 	if line_width_world > 0.0:
 		data["line_width_world"] = line_width_world
+	if movable_aoe_feet > 0.0:
+		data["movable_aoe_feet"] = movable_aoe_feet
+		data["movable_aoe_mode"] = movable_aoe_mode
+		if (
+			is_finite(caster_origin.x)
+			and is_finite(caster_origin.y)
+			and is_finite(caster_origin.z)
+		):
+			data["caster_origin"] = [
+				caster_origin.x,
+				caster_origin.y,
+				caster_origin.z
+			]
 	persistent_aoes.append(data)
 
 	var root := Node3D.new()
@@ -1692,6 +1712,160 @@ func get_aoe_index_at_screen(screen_position: Vector2) -> int:
 	return _aoe_nodes.find(root_value)
 
 
+
+func is_movable_aoe(index: int) -> bool:
+	if index < 0 or index >= persistent_aoes.size():
+		return false
+	var data_value: Variant = persistent_aoes[index]
+	if not data_value is Dictionary:
+		return false
+	return float((data_value as Dictionary).get("movable_aoe_feet", 0.0)) > 0.0
+
+
+func is_movable_aoe_dragging() -> bool:
+	return _movable_aoe_drag_index >= 0
+
+
+func begin_movable_aoe_drag(index: int) -> bool:
+	if not is_movable_aoe(index):
+		return false
+	if index >= _aoe_nodes.size():
+		return false
+	var root: Node3D = _aoe_nodes[index]
+	if root == null or not is_instance_valid(root):
+		return false
+
+	_movable_aoe_drag_index = index
+	_movable_aoe_drag_root_origin = root.global_position
+	_movable_aoe_drag_delta = Vector3.ZERO
+	_movable_aoe_drag_was_captured = (
+		Input.mouse_mode == Input.MOUSE_MODE_CAPTURED
+	)
+	Input.mouse_mode = Input.MOUSE_MODE_VISIBLE
+	return true
+
+
+func _movable_aoe_drag_target(screen_position: Vector2) -> Dictionary:
+	if _movable_aoe_drag_index < 0:
+		return {"valid": false}
+	if _movable_aoe_drag_index >= persistent_aoes.size():
+		return {"valid": false}
+
+	var point_data: Dictionary = get_spell_target_point(screen_position)
+	if not bool(point_data.get("valid", false)):
+		return {"valid": false}
+
+	var data: Dictionary = persistent_aoes[_movable_aoe_drag_index]
+	var start_data: Array = data.get("start", [])
+	if start_data.size() != 3:
+		return {"valid": false}
+	var start: Vector3 = Vector3(
+		float(start_data[0]),
+		float(start_data[1]),
+		float(start_data[2])
+	)
+	var target: Vector3 = point_data.get("point", start)
+	var desired_delta: Vector3 = target - start
+
+	var max_feet: float = float(data.get("movable_aoe_feet", 0.0))
+	var max_world: float = max_feet / 5.0 * cell_size
+	var mode: String = String(data.get("movable_aoe_mode", "free"))
+
+	if mode == "away_from_caster":
+		var caster_data: Array = data.get("caster_origin", [])
+		if caster_data.size() != 3:
+			return {"valid": false}
+		var caster_origin: Vector3 = Vector3(
+			float(caster_data[0]),
+			float(caster_data[1]),
+			float(caster_data[2])
+		)
+		var away: Vector3 = start - caster_origin
+		away.y = 0.0
+		if away.length_squared() < 0.0001:
+			return {"valid": false}
+		desired_delta = away.normalized() * max_world
+	elif mode == "free_exact":
+		desired_delta.y = 0.0
+		if desired_delta.length_squared() < 0.0001:
+			return {"valid": false}
+		desired_delta = desired_delta.normalized() * max_world
+	else:
+		if desired_delta.length() > max_world:
+			desired_delta = desired_delta.normalized() * max_world
+
+	return {
+		"valid": true,
+		"delta": desired_delta
+	}
+
+
+func update_movable_aoe_drag(screen_position: Vector2) -> bool:
+	if not is_movable_aoe_dragging():
+		return false
+	if _movable_aoe_drag_index >= _aoe_nodes.size():
+		return false
+
+	var target_data: Dictionary = _movable_aoe_drag_target(
+		screen_position
+	)
+	if not bool(target_data.get("valid", false)):
+		return false
+
+	var root: Node3D = _aoe_nodes[_movable_aoe_drag_index]
+	if root == null or not is_instance_valid(root):
+		return false
+
+	_movable_aoe_drag_delta = target_data.get(
+		"delta",
+		Vector3.ZERO
+	)
+	root.global_position = (
+		_movable_aoe_drag_root_origin
+		+ _movable_aoe_drag_delta
+	)
+	return true
+
+
+func finish_movable_aoe_drag(commit: bool) -> bool:
+	if not is_movable_aoe_dragging():
+		return false
+
+	var index: int = _movable_aoe_drag_index
+	var changed: bool = _movable_aoe_drag_delta.length_squared() > 0.000001
+	if index >= 0 and index < _aoe_nodes.size():
+		var root: Node3D = _aoe_nodes[index]
+		if root != null and is_instance_valid(root):
+			if not commit:
+				root.global_position = _movable_aoe_drag_root_origin
+
+	if (
+		commit
+		and changed
+		and index >= 0
+		and index < persistent_aoes.size()
+	):
+		_record_undo_state()
+		var data: Dictionary = persistent_aoes[index]
+		for key: String in ["start", "end"]:
+			var point_data: Array = data.get(key, [])
+			if point_data.size() == 3:
+				var point: Vector3 = Vector3(
+					float(point_data[0]),
+					float(point_data[1]),
+					float(point_data[2])
+				) + _movable_aoe_drag_delta
+				data[key] = [point.x, point.y, point.z]
+		persistent_aoes[index] = data
+
+	_movable_aoe_drag_index = -1
+	_movable_aoe_drag_delta = Vector3.ZERO
+	if _movable_aoe_drag_was_captured:
+		Input.mouse_mode = Input.MOUSE_MODE_CAPTURED
+	_movable_aoe_drag_was_captured = false
+	return commit and changed
+
+
 func dissolve_aoe(index: int) -> bool:
 	if index < 0 or index >= _aoe_nodes.size():
 		return false
@@ -1807,6 +1981,8 @@ func _add_aoe_pick_area(
 
 
 func clear_persistent_aoes() -> void:
+	if is_movable_aoe_dragging():
+		finish_movable_aoe_drag(false)
 	if not persistent_aoes.is_empty():
 		_record_undo_state()
 	for node in _aoe_nodes:
@@ -1930,6 +2106,34 @@ func valid_aoes(data: Variant) -> bool:
 			if not is_finite(line_width) or line_width <= 0.0 or line_width > 10000.0:
 				return false
 
+		if item.has("movable_aoe_feet"):
+			var movement_value: Variant = item.get("movable_aoe_feet")
+			if not (movement_value is float or movement_value is int):
+				return false
+			var movement_feet: float = float(movement_value)
+			if (
+				not is_finite(movement_feet)
+				or movement_feet <= 0.0
+				or movement_feet > 10000.0
+			):
+				return false
+			var movement_mode: String = String(
+				item.get("movable_aoe_mode", "free")
+			)
+			if movement_mode not in [
+				"free",
+				"free_exact",
+				"away_from_caster"
+			]:
+				return false
+			if (
+				movement_mode == "away_from_caster"
+				and not _valid_serialized_point(
+					item.get("caster_origin", [])
+				)
+			):
+				return false
+
 		if item.has("wall_meta") and not item.get("wall_meta") is Dictionary:
 			return false
 
@@ -2009,6 +2213,17 @@ func apply_persistent_aoes(data: Array) -> void:
 		var color: Color = _deserialize_aoe_color(
 			item_data.get("color", {})
 		)
+		var caster_origin_data: Array = item_data.get(
+			"caster_origin",
+			[]
+		)
+		var caster_origin: Vector3 = Vector3(INF, INF, INF)
+		if caster_origin_data.size() == 3:
+			caster_origin = Vector3(
+				float(caster_origin_data[0]),
+				float(caster_origin_data[1]),
+				float(caster_origin_data[2])
+			)
 		add_aoe(
 			Vector3(
 				float(start_data[0]),
@@ -2023,7 +2238,10 @@ func apply_persistent_aoes(data: Array) -> void:
 			shape,
 			style,
 			color,
-			float(item_data.get("line_width_world", -1.0))
+			float(item_data.get("line_width_world", -1.0)),
+			float(item_data.get("movable_aoe_feet", 0.0)),
+			String(item_data.get("movable_aoe_mode", "free")),
+			caster_origin
 		)
 
 	_suppress_undo_record = false
