@@ -25,9 +25,9 @@ script = ExtResource("7")
 
 [node name="VolumetricGrid" parent="." index="5" unique_id=189170296]
 collision_mask = 5
-ray_spacing_pixels = 18
-target_screen_samples = 4000
-max_ray_tests_per_physics_frame = 160
+ray_spacing_pixels = 20
+target_screen_samples = 2800
+max_ray_tests_per_physics_frame = 112
 cell_retention_seconds = 0.85
 visual_update_interval = 0.08
 
