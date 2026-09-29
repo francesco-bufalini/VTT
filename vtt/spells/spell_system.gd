@@ -18,6 +18,7 @@ var slot_selector: OptionButton
 var activate_button: Button
 var instruction_label: Label
 var wall_mode_menu: PopupMenu
+var wall_orientation_menu: PopupMenu
 
 var _selected_spell_id: String = ""
 var _pending_spell_id: String = ""
@@ -36,6 +37,7 @@ var _wall_start_angle: float = 0.0
 var _wall_sweep: float = 0.0
 var _wall_previous_cursor_angle: float = 0.0
 var _wall_damage_side: int = 0
+var _wall_orientation: String = ""
 
 
 func setup(root: Node3D) -> void:
@@ -64,6 +66,7 @@ func _initialize() -> void:
 	_build_panel()
 	_build_instruction_label()
 	_build_wall_mode_menu()
+	_build_wall_orientation_menu()
 	_populate_class_tree()
 	_refresh_search_results("")
 	_select_spell("burning_hands")
@@ -74,6 +77,65 @@ func _build_wall_mode_menu() -> void:
 	wall_mode_menu.name = "WallModeMenu"
 	wall_mode_menu.id_pressed.connect(_on_wall_mode_selected)
 	ui_root.add_child(wall_mode_menu)
+
+
+func _build_wall_orientation_menu() -> void:
+	wall_orientation_menu = PopupMenu.new()
+	wall_orientation_menu.name = "WallOrientationMenu"
+	wall_orientation_menu.add_item("Intradosso", 0)
+	wall_orientation_menu.add_item("Estradosso", 1)
+	wall_orientation_menu.id_pressed.connect(
+		_on_wall_orientation_selected
+	)
+	ui_root.add_child(wall_orientation_menu)
+
+
+func _show_wall_orientation_menu(spell_data: Dictionary) -> void:
+	_targeting_phase = "wall_orientation"
+	board_root.set("_ui_owns_mouse", true)
+	Input.mouse_mode = Input.MOUSE_MODE_VISIBLE
+
+	var mode_label: String = (
+		"circolare"
+		if _wall_mode == "circle"
+		else "lineare"
+	)
+	_set_instruction(
+		"%s: scegli orientamento del muro %s: Intradosso o Estradosso."
+		% [
+			String(spell_data.get("name", "Muro")),
+			mode_label
+		]
+	)
+
+	var viewport_size: Vector2 = get_viewport().get_visible_rect().size
+	wall_orientation_menu.position = Vector2i(
+		int(viewport_size.x * 0.5 - 90.0),
+		int(viewport_size.y * 0.5 - 30.0)
+	)
+	wall_orientation_menu.popup()
+
+
+func _on_wall_orientation_selected(id: int) -> void:
+	_wall_orientation = "intradosso" if id == 0 else "estradosso"
+	_wall_damage_side = _wall_orientation_side()
+	board_root.set("_ui_owns_mouse", false)
+	Input.mouse_mode = Input.MOUSE_MODE_CAPTURED
+
+	var spell_data: Dictionary = SpellCatalog.spell(_pending_spell_id)
+	_commit_wall_path(spell_data)
+
+
+func _wall_orientation_side() -> int:
+	if _wall_mode != "circle":
+		# Per un percorso lineare, l'intradosso è il lato sinistro
+		# rispetto al verso con cui il muro è stato disegnato.
+		return 1 if _wall_orientation == "intradosso" else -1
+
+	var positive_sweep: bool = _wall_sweep >= 0.0
+	if _wall_orientation == "intradosso":
+		return 1 if positive_sweep else -1
+	return -1 if positive_sweep else 1
 
 
 func _show_wall_mode_menu(spell_data: Dictionary) -> void:
@@ -139,6 +201,7 @@ func _begin_wall_mode(mode: String) -> void:
 	_wall_sweep = 0.0
 	_wall_previous_cursor_angle = 0.0
 	_wall_damage_side = 0
+	_wall_orientation = ""
 	_hide_wall_preview()
 
 	var spell_data: Dictionary = SpellCatalog.spell(_pending_spell_id)
@@ -211,6 +274,12 @@ func handle_input(event: InputEvent) -> bool:
 	if event is InputEventKey:
 		var key_event: InputEventKey = event as InputEventKey
 		if key_event.pressed and not key_event.echo:
+			if key_event.ctrl_pressed and key_event.keycode == KEY_Z:
+				if _targeting_phase.begins_with("wall_"):
+					_undo_wall_step()
+					return true
+				return false
+
 			if key_event.keycode == KEY_ESCAPE:
 				_cancel_pending_cast()
 				return true
@@ -314,9 +383,6 @@ func handle_input(event: InputEvent) -> bool:
 				return true
 			"wall_arc_end":
 				_try_wall_arc_end(screen_position)
-				return true
-			"wall_side":
-				_confirm_wall_side()
 				return true
 
 	return false
@@ -809,22 +875,73 @@ func _prepare_or_commit_wall() -> void:
 	if _wall_points.size() < 2:
 		return
 	var spell_data: Dictionary = SpellCatalog.spell(_pending_spell_id)
-	if bool(spell_data.get("wall_choose_damage_side", false)):
-		_targeting_phase = "wall_side"
-		_wall_damage_side = 1
-		_set_instruction(
-			"%s: mira uno dei due lati del muro e clicca per scegliere il lato che irradia calore."
-			% String(spell_data.get("name", "Muro"))
-		)
-		return
-	_commit_wall_path(spell_data)
+	_show_wall_orientation_menu(spell_data)
 
 
-func _confirm_wall_side() -> void:
+func _undo_wall_step() -> void:
 	var spell_data: Dictionary = SpellCatalog.spell(_pending_spell_id)
-	if _wall_damage_side == 0:
-		_wall_damage_side = 1
-	_commit_wall_path(spell_data)
+
+	if wall_orientation_menu != null and wall_orientation_menu.visible:
+		wall_orientation_menu.hide()
+		board_root.set("_ui_owns_mouse", false)
+		Input.mouse_mode = Input.MOUSE_MODE_CAPTURED
+
+	match _targeting_phase:
+		"wall_orientation":
+			_wall_orientation = ""
+			_wall_damage_side = 0
+			_targeting_phase = (
+				"wall_arc_end"
+				if _wall_mode == "circle"
+				else "wall_segment"
+			)
+			_set_instruction(
+				"%s: orientamento annullato; modifica il muro o conferma di nuovo."
+				% String(spell_data.get("name", "Muro"))
+			)
+		"wall_segment":
+			if _wall_points.size() > 1:
+				_wall_points.pop_back()
+				_update_wall_segment_instruction(spell_data)
+			else:
+				_wall_points.clear()
+				_targeting_phase = "wall_start"
+				_set_instruction(
+					"%s: scegli di nuovo il punto iniziale."
+					% String(spell_data.get("name", "Muro"))
+				)
+		"wall_arc_end":
+			_wall_sweep = 0.0
+			_targeting_phase = "wall_arc_start"
+			_set_instruction(
+				"%s: scegli di nuovo il punto iniziale dell'arco."
+				% String(spell_data.get("name", "Muro"))
+			)
+		"wall_arc_start":
+			_wall_radius_world = 0.0
+			_targeting_phase = "wall_radius"
+			_set_instruction(
+				"%s: scegli di nuovo il raggio."
+				% String(spell_data.get("name", "Muro"))
+			)
+		"wall_radius":
+			_wall_center = Vector3.ZERO
+			_targeting_phase = "wall_center"
+			_set_instruction(
+				"%s: scegli di nuovo il centro."
+				% String(spell_data.get("name", "Muro"))
+			)
+		"wall_center", "wall_start", "wall_mode":
+			_wall_mode = ""
+			_wall_points.clear()
+			_pending_caster = null
+			_targeting_phase = "caster"
+			_set_instruction(
+				"%s: scegli di nuovo il caster."
+				% String(spell_data.get("name", "Muro"))
+			)
+
+	_hide_wall_preview()
 
 
 func _commit_wall_path(spell_data: Dictionary) -> void:
@@ -848,6 +965,7 @@ func _wall_metadata() -> Dictionary:
 	return {
 		"spell_id": _pending_spell_id,
 		"mode": _wall_mode,
+		"orientation": _wall_orientation,
 		"slot_level": _selected_slot_level,
 		"circle_center": [
 			_wall_center.x,
@@ -1153,38 +1271,6 @@ func _update_wall_preview(
 				0
 			)
 
-		"wall_side":
-			if _wall_points.size() < 2:
-				return
-			var cursor_data: Dictionary = _wall_point_data(
-				screen_position,
-				spell_data,
-				false
-			)
-			if bool(cursor_data.get("valid", false)):
-				var direction: Vector3 = (
-					_wall_points[1] - _wall_points[0]
-				)
-				direction.y = 0.0
-				var toward_cursor: Vector3 = (
-					cursor_data.get(
-						"point",
-						_wall_points[0]
-					) - _wall_points[0]
-				)
-				toward_cursor.y = 0.0
-				var cross_y: float = direction.cross(
-					toward_cursor
-				).y
-				_wall_damage_side = 1 if cross_y >= 0.0 else -1
-			measurement_tool.call(
-				"show_wall_path_preview",
-				_wall_points,
-				_wall_height_world(spell_data),
-				_wall_thickness_world(spell_data),
-				_spell_style(spell_data),
-				_wall_damage_side
-			)
 
 
 func _hide_wall_preview() -> void:
@@ -2464,6 +2550,8 @@ func _finish_cast() -> void:
 	_hide_wall_preview()
 	if wall_mode_menu != null and wall_mode_menu.visible:
 		wall_mode_menu.hide()
+	if wall_orientation_menu != null and wall_orientation_menu.visible:
+		wall_orientation_menu.hide()
 	_pending_spell_id = ""
 	_targeting_phase = ""
 	_pending_caster = null
@@ -2476,6 +2564,7 @@ func _finish_cast() -> void:
 	_wall_radius_world = 0.0
 	_wall_sweep = 0.0
 	_wall_damage_side = 0
+	_wall_orientation = ""
 	instruction_label.hide()
 	Input.mouse_mode = _restore_mouse_mode
 
@@ -2498,6 +2587,7 @@ func _cancel_pending_cast(restore_mouse: bool = true) -> void:
 	_wall_radius_world = 0.0
 	_wall_sweep = 0.0
 	_wall_damage_side = 0
+	_wall_orientation = ""
 	if instruction_label != null:
 		instruction_label.hide()
 	if restore_mouse:
