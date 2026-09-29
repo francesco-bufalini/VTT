@@ -1,6 +1,7 @@
 extends Node
 
 const SpellCatalog = preload("res://vtt/spells/spell_catalog.gd")
+const WallGeometry = preload("res://vtt/spells/wall_geometry.gd")
 const ALL_COLLISION_LAYERS := 0xFFFFFFFF
 
 var board_root: Node3D
@@ -16,6 +17,7 @@ var slot_row: HBoxContainer
 var slot_selector: OptionButton
 var activate_button: Button
 var instruction_label: Label
+var wall_mode_menu: PopupMenu
 
 var _selected_spell_id: String = ""
 var _pending_spell_id: String = ""
@@ -26,6 +28,14 @@ var _selected_slot_level: int = 0
 var _pending_targets: Array[Node3D] = []
 var _pending_chain_primary: Node3D = null
 var _restore_mouse_mode: int = Input.MOUSE_MODE_VISIBLE
+var _wall_mode: String = ""
+var _wall_points: Array[Vector3] = []
+var _wall_center: Vector3 = Vector3.ZERO
+var _wall_radius_world: float = 0.0
+var _wall_start_angle: float = 0.0
+var _wall_sweep: float = 0.0
+var _wall_previous_cursor_angle: float = 0.0
+var _wall_damage_side: int = 0
 
 
 func setup(root: Node3D) -> void:
@@ -52,9 +62,106 @@ func _initialize() -> void:
 
 	_build_panel()
 	_build_instruction_label()
+	_build_wall_mode_menu()
 	_populate_class_tree()
 	_refresh_search_results("")
 	_select_spell("burning_hands")
+
+
+func _build_wall_mode_menu() -> void:
+	wall_mode_menu = PopupMenu.new()
+	wall_mode_menu.name = "WallModeMenu"
+	wall_mode_menu.id_pressed.connect(_on_wall_mode_selected)
+	ui_root.add_child(wall_mode_menu)
+
+
+func _show_wall_mode_menu(spell_data: Dictionary) -> void:
+	wall_mode_menu.clear()
+	var modes_value: Variant = spell_data.get("wall_modes", ["polyline"])
+	if not modes_value is Array:
+		_cancel_pending_cast()
+		return
+
+	var modes: Array = modes_value
+	if modes.size() == 1:
+		_begin_wall_mode(String(modes[0]))
+		return
+
+	for mode_value: Variant in modes:
+		var mode: String = String(mode_value)
+		var label: String = mode
+		match mode:
+			"polyline":
+				label = "Muro lineare / segmentato"
+			"circle":
+				label = "Muro circolare / arco"
+			"globe":
+				label = "Globo"
+			"dome":
+				label = "Cupola emisferica"
+		var item_index: int = wall_mode_menu.item_count
+		wall_mode_menu.add_item(label, item_index)
+		wall_mode_menu.set_item_metadata(item_index, mode)
+
+	_targeting_phase = "wall_mode"
+	board_root.set("_ui_owns_mouse", true)
+	Input.mouse_mode = Input.MOUSE_MODE_VISIBLE
+	var viewport_size: Vector2 = get_viewport().get_visible_rect().size
+	wall_mode_menu.position = Vector2i(
+		int(viewport_size.x * 0.5 - 120.0),
+		int(viewport_size.y * 0.5 - 40.0)
+	)
+	wall_mode_menu.popup()
+
+
+func _on_wall_mode_selected(id: int) -> void:
+	if (
+		wall_mode_menu == null
+		or id < 0
+		or id >= wall_mode_menu.item_count
+	):
+		return
+	var mode: String = String(
+		wall_mode_menu.get_item_metadata(id)
+	)
+	board_root.set("_ui_owns_mouse", false)
+	Input.mouse_mode = Input.MOUSE_MODE_CAPTURED
+	_begin_wall_mode(mode)
+
+
+func _begin_wall_mode(mode: String) -> void:
+	_wall_mode = mode
+	_wall_points.clear()
+	_wall_center = Vector3.ZERO
+	_wall_radius_world = 0.0
+	_wall_start_angle = 0.0
+	_wall_sweep = 0.0
+	_wall_previous_cursor_angle = 0.0
+	_wall_damage_side = 0
+	_hide_wall_preview()
+
+	var spell_data: Dictionary = SpellCatalog.spell(_pending_spell_id)
+	match mode:
+		"polyline":
+			_targeting_phase = "wall_start"
+			_set_instruction(
+				"%s: scegli il punto iniziale del muro entro %d ft."
+				% [
+					String(spell_data.get("name", "Muro")),
+					int(spell_data.get("range_feet", 0))
+				]
+			)
+		"circle", "globe", "dome":
+			_targeting_phase = "wall_center"
+			_set_instruction(
+				"%s: scegli il centro entro %d ft."
+				% [
+					String(spell_data.get("name", "Muro")),
+					int(spell_data.get("range_feet", 0))
+				]
+			)
+		_:
+			_cancel_pending_cast()
 
 
 func is_panel_open() -> bool:
