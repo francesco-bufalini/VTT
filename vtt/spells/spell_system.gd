@@ -19,7 +19,7 @@ var _selected_spell_id: String = ""
 var _pending_spell_id: String = ""
 var _targeting_phase: String = ""
 var _pending_caster: Node3D = null
-var _burning_hands_pitch_degrees: int = 0
+var _directional_pitch_degrees: int = 0
 var _restore_mouse_mode: int = Input.MOUSE_MODE_VISIBLE
 
 
@@ -103,10 +103,10 @@ func handle_input(event: InputEvent) -> bool:
 
 			if (
 				_targeting_phase == "caster"
-				and _pending_spell_id == "burning_hands"
+				and _pending_spell_id in ["burning_hands", "lightning_bolt"]
 				and key_event.keycode in [KEY_UP, KEY_DOWN]
 			):
-				_adjust_burning_hands_pitch(
+				_adjust_directional_pitch(
 					45 if key_event.keycode == KEY_UP else -45
 				)
 				return true
@@ -141,6 +141,9 @@ func handle_input(event: InputEvent) -> bool:
 				return true
 			"point":
 				_try_select_point(screen_position)
+				return true
+			"target_token":
+				_try_select_target_token(screen_position)
 				return true
 
 	return false
@@ -194,6 +197,18 @@ func _try_select_caster(screen_position: Vector2) -> void:
 			var range_feet: int = int(spell_data.get("range_feet", 0))
 			_set_instruction(
 				"%s: mira un punto entro %d ft e clicca · WASD + mouse per muoverti · rotellina per profondità 3D · Esc per annullare"
+				% [
+					String(spell_data.get("name", "Incantesimo")),
+					range_feet
+				]
+			)
+		"token_then_token":
+			_pending_caster = caster
+			_targeting_phase = "target_token"
+			_hide_spell_preview()
+			var range_feet: int = int(spell_data.get("range_feet", 0))
+			_set_instruction(
+				"%s: mira un altro token entro %d ft e clicca · WASD + mouse per muoverti · Esc per annullare"
 				% [
 					String(spell_data.get("name", "Incantesimo")),
 					range_feet
@@ -262,6 +277,47 @@ func _try_select_point(screen_position: Vector2) -> void:
 	_finish_cast()
 
 
+func _try_select_target_token(screen_position: Vector2) -> void:
+	if _pending_caster == null or not is_instance_valid(_pending_caster):
+		_cancel_pending_cast()
+		return
+
+	var spell_data: Dictionary = SpellCatalog.spell(_pending_spell_id)
+	if spell_data.is_empty():
+		_cancel_pending_cast()
+		return
+
+	var target_data: Dictionary = _target_token_data(
+		screen_position,
+		spell_data
+	)
+	if not bool(target_data.get("valid", false)):
+		if bool(target_data.get("out_of_range", false)):
+			_set_instruction(
+				"Token fuori range: %d ft / %d ft. Scegli un token più vicino."
+				% [
+					int(target_data.get("distance_feet", 0)),
+					int(spell_data.get("range_feet", 0))
+				]
+			)
+		else:
+			_set_instruction(
+				"Seleziona un altro token valido come bersaglio."
+			)
+		return
+
+	var target: Node3D = target_data.get("target") as Node3D
+	if target == null:
+		return
+
+	_cast_spell_at_token(
+		_pending_caster,
+		target,
+		spell_data
+	)
+	_finish_cast()
+
+
 func _update_spell_preview() -> void:
 	var measurement_tool: Node = _measurement_tool()
 	if measurement_tool == null:
@@ -278,7 +334,7 @@ func _update_spell_preview() -> void:
 
 	match _targeting_phase:
 		"caster":
-			if _pending_spell_id != "burning_hands":
+			if _pending_spell_id not in ["burning_hands", "lightning_bolt"]:
 				_hide_spell_preview()
 				return
 
@@ -287,7 +343,7 @@ func _update_spell_preview() -> void:
 				_hide_spell_preview()
 				return
 
-			var geometry: Dictionary = _burning_hands_geometry(
+			var geometry: Dictionary = _directional_spell_geometry(
 				hovered_caster,
 				spell_data
 			)
@@ -332,6 +388,28 @@ func _update_spell_preview() -> void:
 				String(spell_data.get("id", ""))
 			)
 
+		"target_token":
+			var target_data: Dictionary = _target_token_data(
+				screen_position,
+				spell_data
+			)
+			if not bool(target_data.get("valid", false)):
+				_hide_spell_preview()
+				return
+
+			var target: Node3D = target_data.get("target") as Node3D
+			if target == null:
+				_hide_spell_preview()
+				return
+
+			measurement_tool.call(
+				"show_spell_preview",
+				_token_spell_origin(_pending_caster),
+				_token_spell_origin(target),
+				"line",
+				"chromatic_orb"
+			)
+
 		_:
 			_hide_spell_preview()
 
@@ -363,6 +441,39 @@ func _token_at_screen(screen_position: Vector2) -> Node3D:
 		return null
 
 	return target as Node3D
+
+
+func _target_token_data(
+	screen_position: Vector2,
+	spell_data: Dictionary
+) -> Dictionary:
+	if _pending_caster == null or not is_instance_valid(_pending_caster):
+		return {"valid": false}
+
+	var target: Node3D = _token_at_screen(screen_position)
+	if target == null or target == _pending_caster:
+		return {"valid": false}
+
+	var cell_size: float = _cell_size()
+	var range_feet: float = float(spell_data.get("range_feet", 0.0))
+	var max_world_distance: float = range_feet / 5.0 * cell_size
+	var actual_world_distance: float = (
+		_pending_caster.global_position.distance_to(target.global_position)
+	)
+	if actual_world_distance > max_world_distance + cell_size * 0.01:
+		return {
+			"valid": false,
+			"out_of_range": true,
+			"target": target,
+			"distance_feet": int(
+				round(actual_world_distance / cell_size * 5.0)
+			)
+		}
+
+	return {
+		"valid": true,
+		"target": target
+	}
 
 
 func _point_target_data(
@@ -431,7 +542,7 @@ func _area_endpoint(
 	return origin + Vector3.FORWARD * float(length_cells) * _cell_size()
 
 
-func _burning_hands_geometry(
+func _directional_spell_geometry(
 	caster: Node3D,
 	spell_data: Dictionary
 ) -> Dictionary:
@@ -452,12 +563,12 @@ func _burning_hands_geometry(
 	direction = (
 		Basis(
 			right_axis,
-			deg_to_rad(float(_burning_hands_pitch_degrees))
+			deg_to_rad(float(_directional_pitch_degrees))
 		)
 		* direction
 	).normalized()
 
-	var origin: Vector3 = caster.global_position
+	var origin: Vector3 = _token_spell_origin(caster)
 	var length_cells: int = int(
 		spell_data.get("aoe_length_cells", 3)
 	)
@@ -468,6 +579,16 @@ func _burning_hands_geometry(
 			+ direction * float(length_cells) * _cell_size()
 		)
 	}
+
+
+func _token_spell_origin(token: Node3D) -> Vector3:
+	if token == null or not is_instance_valid(token):
+		return Vector3.ZERO
+	if token.has_method("get_spell_origin_position"):
+		var origin_value: Variant = token.call("get_spell_origin_position")
+		if origin_value is Vector3:
+			return origin_value
+	return token.global_position
 
 
 func _hide_spell_preview() -> void:
@@ -754,13 +875,13 @@ func _activate_selected_spell() -> void:
 	var target_mode: String = String(
 		spell_data.get("target_mode", "")
 	)
-	if target_mode not in ["self_token", "token_then_point"]:
+	if target_mode not in ["self_token", "token_then_point", "token_then_token"]:
 		return
 
 	_pending_spell_id = _selected_spell_id
 	_targeting_phase = "caster"
 	_pending_caster = null
-	_burning_hands_pitch_degrees = 0
+	_directional_pitch_degrees = 0
 
 	var measurement_tool: Node = _measurement_tool()
 	if measurement_tool != null:
@@ -784,8 +905,8 @@ func _activate_selected_spell() -> void:
 	board_root.set("_ui_owns_mouse", false)
 	Input.mouse_mode = Input.MOUSE_MODE_CAPTURED
 
-	if _selected_spell_id == "burning_hands":
-		_update_burning_hands_instruction(spell_data)
+	if _selected_spell_id in ["burning_hands", "lightning_bolt"]:
+		_update_directional_instruction(spell_data)
 	else:
 		_set_instruction(
 			"%s: mira un token e clicca per scegliere il caster · WASD + mouse per muoverti · Esc per annullare"
@@ -797,8 +918,11 @@ func _cast_spell_from_caster(
 	caster: Node3D,
 	spell_data: Dictionary
 ) -> void:
-	if String(spell_data.get("id", "")) == "burning_hands":
-		_cast_burning_hands(caster, spell_data)
+	var spell_id: String = String(spell_data.get("id", ""))
+	if spell_id == "burning_hands":
+		_cast_directional_aoe(caster, spell_data)
+	elif spell_id == "lightning_bolt":
+		_cast_directional_aoe(caster, spell_data)
 
 
 func _cast_spell_at_point(
@@ -813,7 +937,7 @@ func _cast_spell_at_point(
 		_cast_persistent_sphere(target_point, spell_data)
 
 
-func _cast_burning_hands(
+func _cast_directional_aoe(
 	caster: Node3D,
 	spell_data: Dictionary
 ) -> void:
@@ -821,7 +945,7 @@ func _cast_burning_hands(
 	if measurement_tool == null:
 		return
 
-	var geometry: Dictionary = _burning_hands_geometry(
+	var geometry: Dictionary = _directional_spell_geometry(
 		caster,
 		spell_data
 	)
@@ -838,7 +962,28 @@ func _cast_burning_hands(
 		geometry.get("end", Vector3.ZERO),
 		String(spell_data.get("aoe_shape", "cone")),
 		duration,
-		String(spell_data.get("id", "burning_hands"))
+		String(spell_data.get("id", ""))
+	)
+
+
+func _cast_spell_at_token(
+	caster: Node3D,
+	target: Node3D,
+	spell_data: Dictionary
+) -> void:
+	if String(spell_data.get("id", "")) != "chromatic_orb":
+		return
+
+	var measurement_tool: Node = _measurement_tool()
+	if measurement_tool == null:
+		return
+
+	measurement_tool.call(
+		"show_spell_projectile",
+		_token_spell_origin(caster),
+		_token_spell_origin(target),
+		String(spell_data.get("projectile_style", "chromatic_orb")),
+		float(spell_data.get("transient_seconds", 5.0))
 	)
 
 
@@ -905,7 +1050,7 @@ func _finish_cast() -> void:
 	_pending_spell_id = ""
 	_targeting_phase = ""
 	_pending_caster = null
-	_burning_hands_pitch_degrees = 0
+	_directional_pitch_degrees = 0
 	instruction_label.hide()
 	Input.mouse_mode = _restore_mouse_mode
 
@@ -915,37 +1060,39 @@ func _cancel_pending_cast(restore_mouse: bool = true) -> void:
 	_pending_spell_id = ""
 	_targeting_phase = ""
 	_pending_caster = null
-	_burning_hands_pitch_degrees = 0
+	_directional_pitch_degrees = 0
 	if instruction_label != null:
 		instruction_label.hide()
 	if restore_mouse:
 		Input.mouse_mode = _restore_mouse_mode
 
 
-func _adjust_burning_hands_pitch(delta_degrees: int) -> void:
-	_burning_hands_pitch_degrees = clampi(
-		_burning_hands_pitch_degrees + delta_degrees,
+func _adjust_directional_pitch(delta_degrees: int) -> void:
+	_directional_pitch_degrees = clampi(
+		_directional_pitch_degrees + delta_degrees,
 		-90,
 		90
 	)
-	var spell_data: Dictionary = SpellCatalog.spell("burning_hands")
-	_update_burning_hands_instruction(spell_data)
+	var spell_data: Dictionary = SpellCatalog.spell(_pending_spell_id)
+	_update_directional_instruction(spell_data)
 
 
-func _update_burning_hands_instruction(spell_data: Dictionary) -> void:
+func _update_directional_instruction(spell_data: Dictionary) -> void:
 	var pitch_label: String = "frontale"
-	if _burning_hands_pitch_degrees > 0:
-		pitch_label = "+%d° verso l'alto" % _burning_hands_pitch_degrees
-	elif _burning_hands_pitch_degrees < 0:
-		pitch_label = "%d° verso il basso" % abs(_burning_hands_pitch_degrees)
+	if _directional_pitch_degrees > 0:
+		pitch_label = "+%d° verso l'alto" % _directional_pitch_degrees
+	elif _directional_pitch_degrees < 0:
+		pitch_label = "%d° verso il basso" % abs(_directional_pitch_degrees)
 
 	_set_instruction(
-		"%s: mira un token e clicca · ↑/↓ inclinazione cono: %s · WASD + mouse per muoverti · Esc per annullare"
+		"%s: mira un token e clicca · ↑/↓ inclinazione: %s · WASD + mouse per muoverti · Esc per annullare"
 		% [
-			String(spell_data.get("name", "Burning Hands")),
+			String(spell_data.get("name", "Incantesimo")),
 			pitch_label
 		]
 	)
+
+
 
 
 func _measurement_tool() -> Node:
