@@ -88,7 +88,7 @@ func _consider_collision_shape(collision: CollisionShape3D) -> void:
 		return
 	if _has_group_in_ancestry(body, EXCLUDED_GROUP):
 		return
-	if _has_group_in_ancestry(body, "dnd_token"):
+	if body.is_in_group("dnd_token"):
 		return
 
 	var rectangle := _collision_top_rectangle(collision.shape)
