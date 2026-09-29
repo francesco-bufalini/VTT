@@ -1,0 +1,4 @@
+# Replacement neutral material: the supplied archive contained an empty MTL.
+newmtl _21521_Greek_God_v121521_Greek_God
+Kd 0.5 0.5 0.5
+Ns 30

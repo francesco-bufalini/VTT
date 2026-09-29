@@ -1,0 +1,109 @@
+[gd_scene format=3 uid="uid://bdp3cjs2oeblw"]
+
+[ext_resource type="PackedScene" path="res://dnd_base.tscn" id="1"]
+[ext_resource type="Script" uid="uid://kx5r8vr4ddeb" path="res://encounter/final_encounter.gd" id="2"]
+[ext_resource type="Script" uid="uid://cfc6kt8njycfx" path="res://encounter/encounter_progress_controller.gd" id="3"]
+[ext_resource type="Script" uid="uid://bicdlnsd3w86e" path="res://encounter/kaos_controller.gd" id="4"]
+[ext_resource type="Script" uid="uid://bjtj3xjh2kfp0" path="res://encounter/hazard_controller.gd" id="5"]
+[ext_resource type="Script" uid="uid://4o4qxpav3n63" path="res://encounter/environment_collapse_controller.gd" id="6"]
+[ext_resource type="Script" uid="uid://cijn4r5noymb8" path="res://encounter/encounter_ui.gd" id="7"]
+[ext_resource type="Script" uid="uid://b6ekggykae83u" path="res://encounter/hazard_allowed_area.gd" id="8"]
+[ext_resource type="Script" uid="uid://l3shtlww4jwx" path="res://encounter/encounter_scenery.gd" id="9"]
+[ext_resource type="Script" uid="uid://c54a00k0k0cxx" path="res://encounter/encounter_config.gd" id="10"]
+[ext_resource type="Script" uid="uid://kmxo4ct3xg2m" path="res://encounter/shoulder_platform.gd" id="11"]
+
+[sub_resource type="Resource" id="Config"]
+resource_local_to_scene = true
+script = ExtResource("10")
+
+[node name="KaosKlothis" unique_id=1945937908 instance=ExtResource("1")]
+script = ExtResource("2")
+grid_visible_on_start = true
+
+[node name="DirectionalLight3D" parent="." index="1"]
+transform = Transform3D(0.81915206, 0.46984634, -0.32898995, 0, 0.57357645, 0.81915206, 0.57357645, -0.6710101, 0.46984634, 0, 0, 0)
+
+[node name="CollisionShape3D" parent="Board/FloorCollision" index="0"]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, -0.05, 0)
+
+[node name="Pillar" parent="OrientationMarker" index="0"]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 1, 0)
+
+[node name="PillarCollision" parent="OrientationMarker" index="1"]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 1, 0)
+
+[node name="NorthShaft" parent="OrientationMarker" index="2"]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 0.08, -1.45)
+
+[node name="NorthShaftCollision" parent="OrientationMarker" index="3"]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 0.08, -1.45)
+
+[node name="NorthTip" parent="OrientationMarker" index="4"]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 0.22, -2.72)
+
+[node name="NorthLabel" parent="OrientationMarker" index="5"]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 0.45, -3.05)
+
+[node name="EncounterUI" type="VBoxContainer" parent="UI" index="4" unique_id=1785147963]
+script = ExtResource("7")
+
+[node name="Camera3D" parent="." index="8"]
+transform = Transform3D(1, 0, 0, 0, 0.9659258, 0.25881904, 0, -0.25881904, 0.9659258, 0, 4, 8)
+
+[node name="EncounterProgressController" type="Node" parent="." index="9" unique_id=1152471232]
+script = ExtResource("3")
+config = SubResource("Config")
+
+[node name="HazardController" type="Node" parent="." index="10" unique_id=621635092]
+script = ExtResource("5")
+
+[node name="HazardAllowedArea" type="Node3D" parent="." index="11" unique_id=1464782154]
+script = ExtResource("8")
+
+[node name="EnvironmentCollapseController" type="Node3D" parent="." index="12" unique_id=455927824]
+script = ExtResource("6")
+
+[node name="Scenery" type="Node" parent="." index="13" unique_id=1418312276]
+script = ExtResource("9")
+
+[node name="KaosRoot" type="Node3D" parent="." index="14" unique_id=1121789659]
+script = ExtResource("4")
+
+[node name="KaosVisual" type="Node3D" parent="KaosRoot" index="0" unique_id=1270398279]
+
+[node name="ShoulderPlatform" type="AnimatableBody3D" parent="KaosRoot" index="1" unique_id=2045474843]
+script = ExtResource("11")
+
+[node name="Collision" type="Node3D" parent="KaosRoot" index="2" unique_id=30241668]
+
+[node name="KlothisRoot" type="Node3D" parent="." index="15" unique_id=286581159]
+
+[node name="KlothisVisual" type="Node3D" parent="KlothisRoot" index="0" unique_id=385221648]
+
+[node name="SphereVisual" type="Node3D" parent="KlothisRoot" index="1" unique_id=409181620]
+
+[node name="Collision" type="Node3D" parent="KlothisRoot" index="2" unique_id=609357449]
+
+[node name="KaosPositions" type="Node3D" parent="." index="16" unique_id=1006277366]
+
+[node name="KaosPosition_00" type="Marker3D" parent="KaosPositions" index="0" unique_id=242963071]
+
+[node name="KaosPosition_01" type="Marker3D" parent="KaosPositions" index="1" unique_id=1865347557]
+
+[node name="KaosPosition_02" type="Marker3D" parent="KaosPositions" index="2" unique_id=319243990]
+
+[node name="KaosPosition_03" type="Marker3D" parent="KaosPositions" index="3" unique_id=249569494]
+
+[node name="KaosPosition_04" type="Marker3D" parent="KaosPositions" index="4" unique_id=632247431]
+
+[node name="KaosPosition_05" type="Marker3D" parent="KaosPositions" index="5" unique_id=569077315]
+
+[node name="KaosPosition_06" type="Marker3D" parent="KaosPositions" index="6" unique_id=852649222]
+
+[node name="KaosPosition_07" type="Marker3D" parent="KaosPositions" index="7" unique_id=266269302]
+
+[node name="KaosPosition_08" type="Marker3D" parent="KaosPositions" index="8" unique_id=183585958]
+
+[node name="KaosPosition_09" type="Marker3D" parent="KaosPositions" index="9" unique_id=1373368702]
+
+[node name="KaosPosition_10" type="Marker3D" parent="KaosPositions" index="10" unique_id=267928310]

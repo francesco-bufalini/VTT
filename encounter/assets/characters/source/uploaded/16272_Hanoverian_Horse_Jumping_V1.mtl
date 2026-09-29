@@ -1,0 +1,4 @@
+# Replacement neutral material: the supplied archive contained an empty MTL.
+newmtl Material__0
+Kd 0.71 0.73 0.69
+Ns 30

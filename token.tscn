@@ -1,0 +1,127 @@
+[gd_scene load_steps=14 format=3]
+
+[ext_resource type="Script" path="res://token.gd" id="1_token"]
+[ext_resource type="Script" path="res://vision_cone.gd" id="2_vision"]
+
+[sub_resource type="CapsuleMesh" id="Mesh_torso"]
+radius = 0.23
+height = 0.82
+radial_segments = 16
+rings = 8
+
+[sub_resource type="SphereMesh" id="Mesh_head"]
+radius = 0.19
+height = 0.38
+radial_segments = 16
+rings = 8
+
+[sub_resource type="CapsuleMesh" id="Mesh_limb"]
+radius = 0.075
+height = 0.62
+radial_segments = 12
+rings = 6
+
+[sub_resource type="BoxShape3D" id="Shape_token"]
+size = Vector3(1, 2, 1)
+
+[sub_resource type="StandardMaterial3D" id="Material_selection"]
+albedo_color = Color(1, 0.78, 0.12, 0.88)
+shading_mode = 0
+transparency = 1
+emission_enabled = true
+emission = Color(0.7, 0.35, 0.02, 1)
+emission_energy_multiplier = 0.7
+
+[sub_resource type="CylinderMesh" id="Mesh_selection"]
+material = SubResource("Material_selection")
+top_radius = 0.47
+bottom_radius = 0.47
+height = 0.035
+radial_segments = 48
+
+[sub_resource type="StandardMaterial3D" id="Material_facing"]
+albedo_color = Color(1, 0.72, 0.2, 1)
+roughness = 0.3
+emission_enabled = true
+emission = Color(0.72, 0.28, 0.02, 1)
+emission_energy_multiplier = 1.15
+
+[sub_resource type="BoxMesh" id="Mesh_facing_shaft"]
+material = SubResource("Material_facing")
+size = Vector3(0.07, 0.035, 0.42)
+
+[sub_resource type="BoxMesh" id="Mesh_facing_wing"]
+material = SubResource("Material_facing")
+size = Vector3(0.06, 0.035, 0.28)
+
+[sub_resource type="BoxMesh" id="Mesh_facing_visor"]
+material = SubResource("Material_facing")
+size = Vector3(0.22, 0.075, 0.045)
+
+[node name="Token" type="CharacterBody3D"]
+collision_layer = 2
+collision_mask = 1
+script = ExtResource("1_token")
+
+[node name="Visuals" type="Node3D" parent="."]
+
+[node name="Torso" type="MeshInstance3D" parent="Visuals"]
+position = Vector3(0, 0.15, 0)
+mesh = SubResource("Mesh_torso")
+
+[node name="Head" type="MeshInstance3D" parent="Visuals"]
+position = Vector3(0, 0.78, 0)
+mesh = SubResource("Mesh_head")
+
+[node name="LeftArm" type="MeshInstance3D" parent="Visuals"]
+position = Vector3(-0.31, 0.18, 0)
+rotation_degrees = Vector3(0, 0, -12)
+mesh = SubResource("Mesh_limb")
+
+[node name="RightArm" type="MeshInstance3D" parent="Visuals"]
+position = Vector3(0.31, 0.18, 0)
+rotation_degrees = Vector3(0, 0, 12)
+mesh = SubResource("Mesh_limb")
+
+[node name="LeftLeg" type="MeshInstance3D" parent="Visuals"]
+position = Vector3(-0.13, -0.56, 0)
+rotation_degrees = Vector3(0, 0, -4)
+mesh = SubResource("Mesh_limb")
+
+[node name="RightLeg" type="MeshInstance3D" parent="Visuals"]
+position = Vector3(0.13, -0.56, 0)
+rotation_degrees = Vector3(0, 0, 4)
+mesh = SubResource("Mesh_limb")
+
+[node name="FacingVisor" type="MeshInstance3D" parent="Visuals"]
+position = Vector3(0, 0.79, -0.19)
+mesh = SubResource("Mesh_facing_visor")
+
+[node name="FacingMarker" type="Node3D" parent="."]
+position = Vector3(0, -0.955, 0)
+
+[node name="Shaft" type="MeshInstance3D" parent="FacingMarker"]
+position = Vector3(0, 0, -0.23)
+mesh = SubResource("Mesh_facing_shaft")
+
+[node name="LeftChevron" type="MeshInstance3D" parent="FacingMarker"]
+position = Vector3(-0.09, 0, -0.48)
+rotation_degrees = Vector3(0, -45, 0)
+mesh = SubResource("Mesh_facing_wing")
+
+[node name="RightChevron" type="MeshInstance3D" parent="FacingMarker"]
+position = Vector3(0.09, 0, -0.48)
+rotation_degrees = Vector3(0, 45, 0)
+mesh = SubResource("Mesh_facing_wing")
+
+[node name="VisionCone" type="Node3D" parent="."]
+visible = false
+script = ExtResource("2_vision")
+
+[node name="CollisionShape3D" type="CollisionShape3D" parent="."]
+shape = SubResource("Shape_token")
+
+[node name="SelectionMarker" type="MeshInstance3D" parent="."]
+position = Vector3(0, -0.98, 0)
+visible = false
+mesh = SubResource("Mesh_selection")

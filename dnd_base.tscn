@@ -1,0 +1,244 @@
+[gd_scene format=3 uid="uid://c2iuskp15jilc"]
+
+[ext_resource type="Script" uid="uid://dahxl1eqls71n" path="res://dnd_base.gd" id="1_dnd_base"]
+[ext_resource type="PackedScene" path="res://token.tscn" id="2_token"]
+[ext_resource type="Script" uid="uid://de2p0j1305tgf" path="res://camera_controller.gd" id="3_camera"]
+[ext_resource type="Script" uid="uid://cwakp2jrm7thd" path="res://measurement_tool.gd" id="4_measurement"]
+[ext_resource type="Script" uid="uid://bg4ibrd2inldl" path="res://volumetric_grid.gd" id="5_grid3d"]
+
+[sub_resource type="Environment" id="Environment_base"]
+background_mode = 1
+background_color = Color(0.018, 0.022, 0.03, 1)
+ambient_light_source = 3
+ambient_light_color = Color(0.45, 0.48, 0.55, 1)
+ambient_light_energy = 0.55
+
+[sub_resource type="Shader" id="Shader_grid"]
+code = "shader_type spatial;
+render_mode unshaded, cull_disabled;
+
+uniform vec4 base_color : source_color = vec4(0.075, 0.085, 0.105, 1.0);
+uniform vec4 minor_line_color : source_color = vec4(0.33, 0.36, 0.42, 1.0);
+uniform vec4 major_line_color : source_color = vec4(0.58, 0.62, 0.70, 1.0);
+uniform float cell_size = 1.0;
+uniform float major_every = 5.0;
+
+varying vec2 grid_pos;
+
+float grid_line(vec2 p, float scale) {
+	vec2 coord = p / scale;
+	vec2 grid = abs(fract(coord - 0.5) - 0.5) / fwidth(coord);
+	float line = min(grid.x, grid.y);
+	return 1.0 - min(line, 1.0);
+}
+
+void vertex() {
+	grid_pos = VERTEX.xz;
+}
+
+void fragment() {
+	float minor = grid_line(grid_pos, cell_size);
+	float major = grid_line(grid_pos, cell_size * major_every);
+	vec3 color = base_color.rgb;
+	color = mix(color, minor_line_color.rgb, minor * 0.78);
+	color = mix(color, major_line_color.rgb, major);
+	ALBEDO = color;
+	ROUGHNESS = 1.0;
+}
+"
+
+[sub_resource type="ShaderMaterial" id="ShaderMaterial_grid"]
+render_priority = 0
+shader = SubResource("Shader_grid")
+shader_parameter/base_color = Color(0.075, 0.085, 0.105, 1)
+shader_parameter/minor_line_color = Color(0.33, 0.36, 0.42, 1)
+shader_parameter/major_line_color = Color(0.58, 0.62, 0.7, 1)
+shader_parameter/cell_size = 1.0
+shader_parameter/major_every = 5.0
+
+[sub_resource type="PlaneMesh" id="PlaneMesh_grid"]
+material = SubResource("ShaderMaterial_grid")
+size = Vector2(30, 30)
+subdivide_width = 1
+subdivide_depth = 1
+
+[sub_resource type="BoxShape3D" id="BoxShape3D_floor"]
+size = Vector3(30, 0.1, 30)
+
+[sub_resource type="StandardMaterial3D" id="Material_pillar"]
+albedo_color = Color(0.18, 0.55, 0.95, 1)
+metallic = 0.15
+roughness = 0.45
+emission_enabled = true
+emission = Color(0.03, 0.12, 0.3, 1)
+emission_energy_multiplier = 0.8
+
+[sub_resource type="BoxMesh" id="Mesh_pillar"]
+material = SubResource("Material_pillar")
+size = Vector3(0.6, 2, 0.6)
+
+[sub_resource type="BoxShape3D" id="Shape_pillar"]
+size = Vector3(0.6, 2, 0.6)
+
+[sub_resource type="StandardMaterial3D" id="Material_north"]
+albedo_color = Color(0.95, 0.23, 0.12, 1)
+roughness = 0.5
+emission_enabled = true
+emission = Color(0.35, 0.025, 0.01, 1)
+
+[sub_resource type="BoxMesh" id="Mesh_north_shaft"]
+material = SubResource("Material_north")
+size = Vector3(0.18, 0.12, 2.4)
+
+[sub_resource type="BoxShape3D" id="Shape_north_shaft"]
+size = Vector3(0.18, 0.12, 2.4)
+
+[sub_resource type="SphereMesh" id="Mesh_north_tip"]
+material = SubResource("Material_north")
+radius = 0.26
+height = 0.52
+
+[node name="DnDBase" type="Node3D" unique_id=2144412818]
+script = ExtResource("1_dnd_base")
+token_scene = ExtResource("2_token")
+
+[node name="WorldEnvironment" type="WorldEnvironment" parent="." unique_id=1498499735]
+environment = SubResource("Environment_base")
+
+[node name="DirectionalLight3D" type="DirectionalLight3D" parent="." unique_id=1297342862]
+transform = Transform3D(0.81915206, 0.46984634, -0.32898995, 0, 0.57357645, 0.81915206, 0.57357645, -0.6710101, 0.46984634, 0, 0, 0)
+light_energy = 1.15
+shadow_enabled = true
+
+[node name="Board" type="Node3D" parent="." unique_id=98923575]
+
+[node name="Grid" type="MeshInstance3D" parent="Board" unique_id=2026068400]
+mesh = SubResource("PlaneMesh_grid")
+
+[node name="FloorCollision" type="StaticBody3D" parent="Board" unique_id=738682389]
+
+[node name="CollisionShape3D" type="CollisionShape3D" parent="Board/FloorCollision" unique_id=1963951743]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, -0.05, 0)
+shape = SubResource("BoxShape3D_floor")
+
+[node name="MapGeometry" type="Node3D" parent="Board" unique_id=791317577]
+
+[node name="OrientationMarker" type="StaticBody3D" parent="Board/MapGeometry" unique_id=984622914]
+
+[node name="Pillar" type="MeshInstance3D" parent="Board/MapGeometry/OrientationMarker" unique_id=2111560751]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 1, 0)
+mesh = SubResource("Mesh_pillar")
+
+[node name="PillarCollision" type="CollisionShape3D" parent="Board/MapGeometry/OrientationMarker" unique_id=1179509934]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 1, 0)
+shape = SubResource("Shape_pillar")
+
+[node name="NorthShaft" type="MeshInstance3D" parent="Board/MapGeometry/OrientationMarker" unique_id=1240080397]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 0.08, -1.45)
+mesh = SubResource("Mesh_north_shaft")
+
+[node name="NorthShaftCollision" type="CollisionShape3D" parent="Board/MapGeometry/OrientationMarker" unique_id=1123079822]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 0.08, -1.45)
+shape = SubResource("Shape_north_shaft")
+
+[node name="NorthTip" type="MeshInstance3D" parent="Board/MapGeometry/OrientationMarker" unique_id=549763889]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 0.22, -2.72)
+mesh = SubResource("Mesh_north_tip")
+
+[node name="NorthLabel" type="Label3D" parent="Board/MapGeometry/OrientationMarker" unique_id=1102099955]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 0.45, -3.05)
+billboard = 1
+no_depth_test = true
+modulate = Color(1, 0.3, 0.2, 1)
+text = "N"
+font_size = 72
+
+[node name="Tokens" type="Node3D" parent="." unique_id=217721837]
+
+[node name="MeasurementTool" type="Node3D" parent="." unique_id=243213983]
+script = ExtResource("4_measurement")
+
+[node name="VolumetricGrid" type="Node3D" parent="." unique_id=189170296]
+script = ExtResource("5_grid3d")
+
+[node name="UI" type="CanvasLayer" parent="." unique_id=1006666995]
+
+[node name="Crosshair" type="Label" parent="UI" unique_id=831449647]
+anchors_preset = 8
+anchor_left = 0.5
+anchor_top = 0.5
+anchor_right = 0.5
+anchor_bottom = 0.5
+offset_left = -9.0
+offset_top = -14.0
+offset_right = 9.0
+offset_bottom = 14.0
+grow_horizontal = 2
+grow_vertical = 2
+theme_override_font_sizes/font_size = 22
+text = "+"
+horizontal_alignment = 1
+vertical_alignment = 1
+
+[node name="MeasurementModeLabel" type="Label" parent="UI" unique_id=545080277]
+visible = false
+anchors_preset = 10
+anchor_right = 1.0
+offset_top = 18.0
+offset_bottom = 52.0
+grow_horizontal = 2
+theme_override_font_sizes/font_size = 20
+text = "MISURAZIONE  [R per uscire]"
+horizontal_alignment = 1
+
+[node name="ContextMenu" type="PopupMenu" parent="UI" unique_id=507034985]
+
+[node name="TokenColorDialog" type="ConfirmationDialog" parent="UI" unique_id=949543445]
+title = "Crea token"
+size = Vector2i(560, 590)
+min_size = Vector2i(360, 420)
+ok_button_text = "Crea"
+
+[node name="Content" type="ScrollContainer" parent="UI/TokenColorDialog" unique_id=1590725337]
+anchors_preset = 15
+anchor_right = 1.0
+anchor_bottom = 1.0
+offset_left = 14.0
+offset_top = 12.0
+offset_right = -14.0
+offset_bottom = -66.0
+grow_horizontal = 2
+grow_vertical = 2
+horizontal_scroll_mode = 0
+
+[node name="VBox" type="VBoxContainer" parent="UI/TokenColorDialog/Content" unique_id=1306921460]
+custom_minimum_size = Vector2(500, 500)
+layout_mode = 2
+size_flags_horizontal = 3
+theme_override_constants/separation = 8
+
+[node name="SizeLabel" type="Label" parent="UI/TokenColorDialog/Content/VBox" unique_id=1601104327]
+layout_mode = 2
+text = "Taglia D&D"
+
+[node name="SizeSelector" type="OptionButton" parent="UI/TokenColorDialog/Content/VBox" unique_id=1645671152]
+layout_mode = 2
+size_flags_horizontal = 3
+
+[node name="ColorLabel" type="Label" parent="UI/TokenColorDialog/Content/VBox" unique_id=1082564565]
+layout_mode = 2
+text = "Colore"
+
+[node name="ColorPicker" type="ColorPicker" parent="UI/TokenColorDialog/Content/VBox" unique_id=1454451651]
+custom_minimum_size = Vector2(480, 390)
+layout_mode = 2
+size_flags_horizontal = 3
+size_flags_vertical = 3
+
+[node name="Camera3D" type="Camera3D" parent="." unique_id=1822483437]
+transform = Transform3D(1, 0, 0, 0, 0.9659258, 0.25881904, 0, -0.25881904, 0.9659258, 0, 4, 8)
+current = true
+far = 500.0
+script = ExtResource("3_camera")
+speed = 20.0
+mouse_sensitivity = 0.006
