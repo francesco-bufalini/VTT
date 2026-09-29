@@ -739,7 +739,8 @@ func _try_wall_start(screen_position: Vector2) -> void:
 		return
 
 	var start: Vector3 = point_data.get("point", Vector3.ZERO)
-	_wall_points = [start]
+	_wall_points.clear()
+	_wall_points.append(start)
 	_targeting_phase = "wall_segment"
 	_hide_spell_range_preview()
 	_update_wall_segment_instruction(spell_data)
