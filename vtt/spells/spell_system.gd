@@ -194,24 +194,24 @@ func _try_select_caster(screen_position: Vector2) -> void:
 			_pending_caster = caster
 			_targeting_phase = "point"
 			_hide_spell_preview()
-			var range_feet: int = int(spell_data.get("range_feet", 0))
+			var point_range_feet: int = int(spell_data.get("range_feet", 0))
 			_set_instruction(
 				"%s: mira un punto entro %d ft e clicca · WASD + mouse per muoverti · rotellina per profondità 3D · Esc per annullare"
 				% [
 					String(spell_data.get("name", "Incantesimo")),
-					range_feet
+					point_range_feet
 				]
 			)
 		"token_then_token":
 			_pending_caster = caster
 			_targeting_phase = "target_token"
 			_hide_spell_preview()
-			var range_feet: int = int(spell_data.get("range_feet", 0))
+			var token_range_feet: int = int(spell_data.get("range_feet", 0))
 			_set_instruction(
 				"%s: mira un altro token entro %d ft e clicca · WASD + mouse per muoverti · Esc per annullare"
 				% [
 					String(spell_data.get("name", "Incantesimo")),
-					range_feet
+					token_range_feet
 				]
 			)
 		_:
