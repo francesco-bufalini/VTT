@@ -15,6 +15,7 @@ var aoe_mode := false
 var persistent_aoes: Array = []
 var _aoe_nodes: Array[Node3D] = []
 var _aoe_preview: MeshInstance3D
+var _spell_preview: MeshInstance3D
 
 var _camera: Camera3D = null
 var _volumetric_grid: Node3D = null
@@ -607,6 +608,47 @@ func set_aoe_mode(shape: String) -> void:
 	cancel_measurement()
 	aoe_mode = true
 	aoe_shape = shape
+
+func show_spell_preview(
+	start: Vector3,
+	end: Vector3,
+	shape: String,
+	style: String = ""
+) -> void:
+	if shape not in ["sphere", "cube", "cone", "line"]:
+		hide_spell_preview()
+		return
+
+	if not is_instance_valid(_spell_preview):
+		_spell_preview = MeshInstance3D.new()
+		_spell_preview.name = "SpellAoEPreview"
+		add_child(_spell_preview)
+
+	_draw_aoe(_spell_preview, start, end, shape, style)
+
+	var preview_material: StandardMaterial3D = StandardMaterial3D.new()
+	preview_material.transparency = BaseMaterial3D.TRANSPARENCY_ALPHA
+	preview_material.shading_mode = BaseMaterial3D.SHADING_MODE_UNSHADED
+	preview_material.cull_mode = BaseMaterial3D.CULL_DISABLED
+	preview_material.emission_enabled = true
+
+	if style == "darkness":
+		preview_material.albedo_color = Color(0.14, 0.05, 0.24, 0.22)
+		preview_material.emission = Color(0.08, 0.02, 0.16, 1.0)
+		preview_material.emission_energy_multiplier = 0.55
+	else:
+		preview_material.albedo_color = Color(1.0, 0.32, 0.04, 0.18)
+		preview_material.emission = Color(1.0, 0.16, 0.01, 1.0)
+		preview_material.emission_energy_multiplier = 0.65
+
+	_spell_preview.material_override = preview_material
+	_spell_preview.show()
+
+
+func hide_spell_preview() -> void:
+	if is_instance_valid(_spell_preview):
+		_spell_preview.hide()
+
 
 func show_transient_aoe(
 	start: Vector3,
