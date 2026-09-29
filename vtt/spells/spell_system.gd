@@ -109,7 +109,7 @@ func handle_input(event: InputEvent) -> bool:
 
 			if (
 				_targeting_phase == "chain_secondary"
-				and key_event.keycode in [KEY_ENTER, KEY_KP_ENTER]
+				and key_event.keycode == KEY_ENTER
 				and _pending_chain_primary != null
 				and is_instance_valid(_pending_chain_primary)
 			):
