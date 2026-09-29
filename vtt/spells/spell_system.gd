@@ -713,10 +713,10 @@ func _try_select_teleport_passenger(screen_position: Vector2) -> void:
 			return
 		_pending_targets.append(target)
 
-	var max_passengers: int = int(
+	var passenger_limit: int = int(
 		spell_data.get("teleport_max_passengers", 0)
 	)
-	if _pending_targets.size() >= max_passengers and max_passengers > 0:
+	if _pending_targets.size() >= passenger_limit and passenger_limit > 0:
 		_begin_teleport_destination(spell_data)
 		return
 
@@ -725,7 +725,7 @@ func _try_select_teleport_passenger(screen_position: Vector2) -> void:
 		% [
 			String(spell_data.get("name", "Teletrasporto")),
 			_pending_targets.size(),
-			max_passengers
+			passenger_limit
 		]
 	)
 
