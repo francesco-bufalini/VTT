@@ -237,8 +237,8 @@ func nudge_grid(grid_direction: Vector2i) -> void:
 	var world_step: Vector3 = global_transform.basis * local_step
 	world_step.y = 0.0
 
-	# Le rotazioni dei token sono a multipli di 90°, quindi arrotondare
-	# elimina soltanto gli inevitabili piccoli errori floating point.
+	# Il token può essere orientato anche a 45°. L'arrotondamento produce
+	# quindi il passo ortogonale o diagonale coerente con la direzione visiva.
 	world_step.x = round(world_step.x)
 	world_step.z = round(world_step.z)
 
@@ -249,9 +249,9 @@ func nudge_grid(grid_direction: Vector2i) -> void:
 		_snap_horizontal_to_grid()
 
 
-func rotate_grid(quarter_turns: int) -> void:
-	rotation.y += deg_to_rad(90.0 * float(quarter_turns))
-	rotation.y = snappedf(rotation.y, PI / 2.0)
+func rotate_grid(rotation_steps: int) -> void:
+	rotation.y += deg_to_rad(45.0 * float(rotation_steps))
+	rotation.y = snappedf(rotation.y, PI / 4.0)
 
 
 func _snap_horizontal_to_grid() -> void:
