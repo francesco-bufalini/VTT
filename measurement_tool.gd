@@ -531,6 +531,32 @@ func set_aoe_mode(shape: String) -> void:
 	aoe_mode = true
 	aoe_shape = shape
 
+func show_transient_aoe(
+	start: Vector3,
+	end: Vector3,
+	shape: String,
+	duration_seconds: float = 0.55
+) -> void:
+	if shape not in ["sphere", "cube", "cone", "line"]:
+		return
+
+	var root: Node3D = Node3D.new()
+	root.name = "TransientAoE"
+	add_child(root)
+
+	var mesh: MeshInstance3D = MeshInstance3D.new()
+	mesh.name = "Visual"
+	root.add_child(mesh)
+	_draw_aoe(mesh, start, end, shape)
+
+	var timer: Timer = Timer.new()
+	timer.one_shot = true
+	timer.wait_time = maxf(duration_seconds, 0.05)
+	root.add_child(timer)
+	timer.timeout.connect(root.queue_free)
+	timer.start()
+
+
 func add_aoe(start: Vector3, end: Vector3, shape: String) -> void:
 	if persistent_aoes.size() >= 256:
 		return
