@@ -209,6 +209,17 @@ func get_movement_exclusions() -> Array[RID]:
 	return [get_rid()]
 
 
+func get_spell_origin_position() -> Vector3:
+	var head: Node3D = get_node_or_null("Visuals/Head") as Node3D
+	if head != null:
+		return head.global_position
+
+	return (
+		global_position
+		+ Vector3.UP * token_height_cells * cell_size * 0.39
+	)
+
+
 func get_first_person_camera_position() -> Vector3:
 	var eye_height: float = token_height_cells * cell_size * 0.38
 	var forward: Vector3 = -global_transform.basis.z.normalized()
