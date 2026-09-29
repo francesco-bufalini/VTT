@@ -24,7 +24,8 @@ var _air_depth_world: float = 8.0
 var _line: MeshInstance3D
 var _start_cube: MeshInstance3D
 var _end_cube: MeshInstance3D
-var _distance_label: Label3D
+var _distance_canvas: CanvasLayer
+var _distance_label: Label
 
 
 func meters_to_world(meters: float) -> float:
@@ -159,13 +160,14 @@ func _looked_cell() -> Dictionary:
 	if _camera == null or not is_instance_valid(_camera):
 		return {"valid": false}
 
-	# Il righello usa sempre il centro della visuale, indipendentemente
-	# dal fatto che il mouse sia catturato o visibile per la UI.
-	var screen_center: Vector2 = (
+	var screen_point: Vector2 = (
 		_camera.get_viewport().get_visible_rect().size * 0.5
 	)
-	var origin: Vector3 = _camera.project_ray_origin(screen_center)
-	var direction: Vector3 = _camera.project_ray_normal(screen_center)
+	if Input.mouse_mode != Input.MOUSE_MODE_CAPTURED:
+		screen_point = _camera.get_viewport().get_mouse_position()
+
+	var origin: Vector3 = _camera.project_ray_origin(screen_point)
+	var direction: Vector3 = _camera.project_ray_normal(screen_point)
 	var ray_end: Vector3 = origin + direction * max_ray_distance
 
 	# Le superfici reali hanno priorità.
@@ -281,15 +283,29 @@ func _build_visuals() -> void:
 	_end_cube.mesh = cube_mesh
 	add_child(_end_cube)
 
-	_distance_label = Label3D.new()
+	_distance_canvas = CanvasLayer.new()
+	_distance_canvas.name = "MeasurementHUD"
+	add_child(_distance_canvas)
+
+	_distance_label = Label.new()
 	_distance_label.name = "MeasurementDistance"
-	_distance_label.billboard = BaseMaterial3D.BILLBOARD_ENABLED
-	_distance_label.no_depth_test = true
-	_distance_label.font_size = 38
-	_distance_label.outline_size = 10
-	_distance_label.modulate = Color(1.0, 0.82, 0.28, 1.0)
+	_distance_label.mouse_filter = Control.MOUSE_FILTER_IGNORE
+	_distance_label.set_anchors_preset(Control.PRESET_CENTER)
+	_distance_label.position = Vector2(-150.0, 34.0)
+	_distance_label.size = Vector2(300.0, 110.0)
 	_distance_label.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
-	add_child(_distance_label)
+	_distance_label.vertical_alignment = VERTICAL_ALIGNMENT_TOP
+	_distance_label.add_theme_font_size_override("font_size", 26)
+	_distance_label.add_theme_color_override(
+		"font_color",
+		Color(1.0, 0.82, 0.28, 1.0)
+	)
+	_distance_label.add_theme_color_override(
+		"font_outline_color",
+		Color(0.0, 0.0, 0.0, 0.9)
+	)
+	_distance_label.add_theme_constant_override("outline_size", 6)
+	_distance_canvas.add_child(_distance_label)
 
 
 func _update_visuals() -> void:
@@ -325,9 +341,6 @@ func _update_visuals() -> void:
 	else:
 		_line.visible = false
 
-	_distance_label.global_position = (
-		midpoint + Vector3.UP * (0.22 * cell_size)
-	)
 	_distance_label.text = (
 		"D&D: %d %s\n%.2f m\n%s ft"
 		% [
