@@ -720,6 +720,20 @@ static func attach_wall_segment(
 				180, 1.6, Color(0.18, 0.62, 0.12, 0.42),
 				cell_size * 0.14, Vector3.UP * cell_size * 0.05
 			)
+		"wall_of_sand":
+			_add_wall_particle_box(
+				root, center, direction, length, height_world,
+				maxf(thickness_world, cell_size * 0.25),
+				260, 1.0, Color(0.76, 0.62, 0.3, 0.46),
+				cell_size * 0.10, Vector3.UP * cell_size * 0.12
+			)
+		"wall_of_water":
+			_add_wall_particle_box(
+				root, center, direction, length, height_world,
+				maxf(thickness_world, cell_size * 0.12),
+				240, 0.9, Color(0.18, 0.66, 1.0, 0.42),
+				cell_size * 0.12, Vector3.UP * cell_size * 0.3
+			)
 		"prismatic_wall":
 			var colors: Array[Color] = [
 				Color(1.0, 0.14, 0.14, 0.42),
