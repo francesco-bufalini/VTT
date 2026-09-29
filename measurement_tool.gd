@@ -657,6 +657,32 @@ func set_aoe_mode(shape: String) -> void:
 	aoe_mode = true
 	aoe_shape = shape
 
+func _spell_style_color(style: String) -> Color:
+	match style:
+		"darkness":
+			return Color(0.03, 0.01, 0.07, 1.0)
+		"fireball", "burning_hands", "fire_bolt":
+			return Color(1.0, 0.24, 0.03, 1.0)
+		"lightning_bolt", "witch_bolt", "shocking_grasp", "thunderclap", "thunderwave":
+			return Color(0.25, 0.72, 1.0, 1.0)
+		"acid_splash", "poison_spray", "ray_of_sickness":
+			return Color(0.34, 0.9, 0.13, 1.0)
+		"ray_of_frost", "ice_knife", "ice_knife_burst":
+			return Color(0.46, 0.9, 1.0, 1.0)
+		"mind_sliver", "sleep":
+			return Color(0.68, 0.3, 1.0, 1.0)
+		"color_spray", "sorcerous_burst", "chromatic_orb":
+			return Color(0.86, 0.28, 1.0, 1.0)
+		"magic_missile":
+			return Color(0.88, 0.86, 1.0, 1.0)
+		"fog_cloud":
+			return Color(0.74, 0.78, 0.84, 1.0)
+		"grease":
+			return Color(0.64, 0.56, 0.18, 1.0)
+		_:
+			return Color(1.0, 0.32, 0.04, 1.0)
+
+
 func show_spell_preview(
 	start: Vector3,
 	end: Vector3,
@@ -690,22 +716,18 @@ func show_spell_preview(
 	preview_material.cull_mode = BaseMaterial3D.CULL_DISABLED
 	preview_material.emission_enabled = true
 
-	if style == "darkness":
-		preview_material.albedo_color = Color(0.14, 0.05, 0.24, 0.22)
-		preview_material.emission = Color(0.08, 0.02, 0.16, 1.0)
-		preview_material.emission_energy_multiplier = 0.55
-	elif style == "lightning_bolt":
-		preview_material.albedo_color = Color(0.16, 0.68, 1.0, 0.20)
-		preview_material.emission = Color(0.38, 0.86, 1.0, 1.0)
-		preview_material.emission_energy_multiplier = 0.9
-	elif style == "chromatic_orb":
-		preview_material.albedo_color = Color(0.7, 0.22, 1.0, 0.28)
-		preview_material.emission = Color(0.55, 0.12, 1.0, 1.0)
-		preview_material.emission_energy_multiplier = 1.0
-	else:
-		preview_material.albedo_color = Color(1.0, 0.32, 0.04, 0.18)
-		preview_material.emission = Color(1.0, 0.16, 0.01, 1.0)
-		preview_material.emission_energy_multiplier = 0.65
+	var preview_color: Color = _spell_style_color(style)
+	preview_color.a = 0.20 if style != "darkness" else 0.24
+	preview_material.albedo_color = preview_color
+	preview_material.emission = Color(
+		preview_color.r,
+		preview_color.g,
+		preview_color.b,
+		1.0
+	)
+	preview_material.emission_energy_multiplier = (
+		0.48 if style in ["fog_cloud", "grease"] else 0.85
+	)
 
 	_spell_preview.material_override = preview_material
 	_spell_preview_start = start
@@ -870,21 +892,20 @@ func _draw_aoe(
 	var material: StandardMaterial3D = StandardMaterial3D.new()
 	material.transparency = BaseMaterial3D.TRANSPARENCY_ALPHA
 
-	if style == "darkness":
-		material.albedo_color = Color(0.015, 0.01, 0.035, 0.72)
+	if not style.is_empty():
+		var style_color: Color = _spell_style_color(style)
+		style_color.a = 0.72 if style == "darkness" else 0.24
+		material.albedo_color = style_color
 		material.emission_enabled = true
-		material.emission = Color(0.01, 0.005, 0.025, 1.0)
-		material.emission_energy_multiplier = 0.25
-	elif style == "lightning_bolt":
-		material.albedo_color = Color(0.2, 0.68, 1.0, 0.22)
-		material.emission_enabled = true
-		material.emission = Color(0.35, 0.82, 1.0, 1.0)
-		material.emission_energy_multiplier = 1.4
-	elif style == "chromatic_orb":
-		material.albedo_color = Color(0.72, 0.28, 1.0, 0.18)
-		material.emission_enabled = true
-		material.emission = Color(0.55, 0.16, 1.0, 1.0)
-		material.emission_energy_multiplier = 0.9
+		material.emission = Color(
+			style_color.r,
+			style_color.g,
+			style_color.b,
+			1.0
+		)
+		material.emission_energy_multiplier = (
+			0.18 if style in ["fog_cloud", "grease"] else 0.8
+		)
 	elif color.a >= 0.0:
 		var display_color: Color = color
 		display_color.a = 0.28
