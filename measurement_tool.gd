@@ -835,6 +835,41 @@ func show_spell_projectile(
 	)
 
 
+func show_spell_projectile_with_impact(
+	start: Vector3,
+	end: Vector3,
+	projectile_style: String,
+	travel_seconds: float,
+	impact_shape: String,
+	impact_radius_world: float,
+	impact_style: String,
+	impact_seconds: float = 5.0
+) -> void:
+	show_spell_projectile(
+		start,
+		end,
+		projectile_style,
+		travel_seconds
+	)
+
+	var timer: Timer = Timer.new()
+	timer.one_shot = true
+	timer.wait_time = maxf(travel_seconds, 0.05)
+	add_child(timer)
+	timer.timeout.connect(
+		func() -> void:
+			show_transient_aoe(
+				end,
+				end + Vector3.RIGHT * impact_radius_world,
+				impact_shape,
+				impact_seconds,
+				impact_style
+			)
+			timer.queue_free()
+	)
+	timer.start()
+
+
 func add_aoe(
 	start: Vector3,
 	end: Vector3,
