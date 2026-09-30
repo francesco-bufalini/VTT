@@ -358,7 +358,11 @@ func handle_input(event: InputEvent) -> bool:
 			return true
 
 		var can_adjust_point_depth: bool = (
-			_targeting_phase in ["point", "direction_point"]
+			_targeting_phase in [
+				"point",
+				"direction_point",
+				"multi_target_points"
+			]
 		)
 		if _targeting_phase in ["target_token", "multi_target_tokens"]:
 			var point_target_spell: Dictionary = SpellCatalog.spell(
