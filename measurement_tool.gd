@@ -704,6 +704,10 @@ func _spell_style_color(style: String) -> Color:
 			return Color(0.68, 0.3, 1.0, 1.0)
 		"thunder":
 			return Color(0.48, 0.78, 1.0, 1.0)
+		"bludgeoning":
+			return Color(0.7, 0.72, 0.76, 1.0)
+		"piercing", "slashing":
+			return Color(0.88, 0.9, 0.94, 1.0)
 		"arcane", "color_spray", "sorcerous_burst", "chromatic_orb":
 			return Color(0.82, 0.3, 1.0, 1.0)
 		"darkness":
