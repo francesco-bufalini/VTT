@@ -1151,18 +1151,23 @@ static func _is_runtime_usable(spell_data: Dictionary) -> bool:
 					return true
 
 	if target_mode == "token_then_multi_token":
+		if not String(spell_data.get("projectile_style", "")).is_empty():
+			return true
+
 		var multi_spec_value: Variant = spell_data.get("map_effect_spec", {})
 		if multi_spec_value is Dictionary:
-			var multi_targeting_value: Variant = (
+			var multi_effect_value: Variant = (
 				multi_spec_value as Dictionary
-			).get("targeting", {})
-			if (
-				multi_targeting_value is Dictionary
-				and String(
-					(multi_targeting_value as Dictionary).get("type", "")
-				) == "multi_token"
-			):
-				return true
+			).get("effect", {})
+			if multi_effect_value is Dictionary:
+				var multi_geometry_value: Variant = (
+					multi_effect_value as Dictionary
+				).get("geometry", {})
+				if (
+					multi_geometry_value is Dictionary
+					and not (multi_geometry_value as Dictionary).is_empty()
+				):
+					return true
 
 	return false
 
