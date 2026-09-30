@@ -62,6 +62,8 @@ var _imported_visual_base_basis: Basis = Basis.IDENTITY
 var _visual_native_footprint_cells: float = 1.0
 var _uses_manifest_default: bool = false
 var _conditions: Array[String] = []
+var _reach_feet: float = 5.0
+var _reach_overridden: bool = false
 var _condition_rings_root: Node3D
 var _overlay_root: Node3D
 var _name_label: Label3D
@@ -80,6 +82,7 @@ func _ready() -> void:
 	)
 	_size_name = default_size_name
 	_footprint_cells = maxf(default_footprint_cells, 0.5)
+	_reach_feet = _default_reach_feet()
 	_load_configured_visual()
 	_ensure_token_overlay()
 	set_token_size(_footprint_cells)
@@ -250,6 +253,8 @@ func configure(
 
 	_size_name = resolved_size_name
 	_footprint_cells = resolved_footprint
+	if not _reach_overridden:
+		_reach_feet = _default_reach_feet()
 
 	set_token_size(_footprint_cells)
 	set_token_color(token_color)
@@ -916,6 +921,32 @@ func set_vision_cone_visible(value: bool) -> void:
 
 func is_vision_cone_visible() -> bool:
 	return is_instance_valid(vision_cone) and vision_cone.visible
+
+
+func _default_reach_feet() -> float:
+	# 5 ft per Medium o inferiore, poi +5 ft per ogni cella di footprint.
+	return maxf(5.0, _footprint_cells * 5.0)
+
+
+func set_reach_feet(value: float, overridden: bool = true) -> void:
+	if value <= 0.0:
+		reset_reach_to_default()
+		return
+	_reach_feet = clampf(value, 1.0, 1000.0)
+	_reach_overridden = overridden
+
+
+func reset_reach_to_default() -> void:
+	_reach_overridden = false
+	_reach_feet = _default_reach_feet()
+
+
+func get_reach_feet() -> float:
+	return _reach_feet
+
+
+func is_reach_overridden() -> bool:
+	return _reach_overridden
 
 
 func get_size_name() -> String:
