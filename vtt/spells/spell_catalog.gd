@@ -71,6 +71,7 @@ const RUNTIME_OVERRIDES: Dictionary = {
 		"projectile_style": "fire",
 		"projectile_travel_seconds": 0.8,
 		"meteor_drop_height_feet": 60.0,
+		"requires_ground": true,
 		"transient_seconds": 5.0
 	}
 }
