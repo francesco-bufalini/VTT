@@ -693,8 +693,17 @@ def process_package(
     if not all_objects:
         raise ValueError("Main source contains no mesh objects")
 
-    all_objects, base_low, base_high, base_reference = resolve_base(
-        package, main_source, all_objects
+    # Hidden printable parts/alternate variants must not determine the token
+    # ground plane if they are not exported. Resolve the base from the same
+    # visible geometry that will become the VTT miniature.
+    visible_main_objects = mesh_objects(visible_only=True)
+    if not visible_main_objects:
+        raise ValueError(
+            "The selected complete model has no visible mesh objects to export"
+        )
+
+    _resolved_objects, base_low, base_high, base_reference = resolve_base(
+        package, main_source, visible_main_objects
     )
     objects = mesh_objects(visible_only=True)
     if not objects:
