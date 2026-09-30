@@ -2,7 +2,8 @@ extends Node
 
 signal status_changed(message: String)
 const PORT := 45454
-const MAGIC := "DND_MAP_SYNC_V3"
+const SNAPSHOT_VERSION := 4
+const MAGIC := "DND_MAP_SYNC_V4"
 const BACKUP_DIR := "user://map_sync_backups"
 const MAX_BACKUPS := 20
 const MAX_BYTES := 4 * 1024 * 1024
@@ -35,6 +36,15 @@ func setup(root: Node, scene: PackedScene, tokens: Node, measure: Node) -> void:
 	token_scene = scene
 	tokens_root = tokens
 	measurement_tool = measure
+
+
+func _initiative_tracker() -> Node:
+	if board_root == null or not is_instance_valid(board_root):
+		return null
+	var property_value: Variant = board_root.get("initiative_tracker")
+	if property_value is Node and is_instance_valid(property_value):
+		return property_value as Node
+	return board_root.get_node_or_null("InitiativeTracker")
 
 func listen(enabled: bool, key: String) -> Error:
 	server.stop()
@@ -375,7 +385,11 @@ func _exit_tree() -> void:
 		item.peer.disconnect_from_host()
 
 func valid_snapshot(snapshot: Variant) -> bool:
-	if not snapshot is Dictionary or snapshot.get("version") != 3 or snapshot.get("scene") != board_root.scene_file_path:
+	if (
+		not snapshot is Dictionary
+		or int(snapshot.get("version", -1)) != SNAPSHOT_VERSION
+		or snapshot.get("scene") != board_root.scene_file_path
+	):
 		return false
 	if not snapshot.get("objects") is Array or snapshot.objects.size() > 4096 or not measurement_tool.valid_aoes(snapshot.get("aoes")):
 		return false
@@ -383,15 +397,18 @@ func valid_snapshot(snapshot: Variant) -> bool:
 	if controller != null:
 		if not snapshot.get("encounter") is Dictionary or not controller._valid_state(snapshot.encounter) or controller.is_advancing:
 			return false
-	var initiative_tracker: Node = board_root.get_node_or_null("InitiativeTracker")
-	if initiative_tracker != null and snapshot.has("initiative"):
-		if not bool(
-			initiative_tracker.call(
-				"valid_state",
-				snapshot.get("initiative")
-			)
-		):
-			return false
+	var initiative_tracker: Node = _initiative_tracker()
+	if initiative_tracker == null:
+		return false
+	if not snapshot.get("initiative") is Dictionary:
+		return false
+	if not bool(
+		initiative_tracker.call(
+			"valid_state",
+			snapshot.get("initiative")
+		)
+	):
+		return false
 	var ids := {}
 	for item in snapshot.objects:
 		if not item is Dictionary or not item.get("id") is String or item.id.is_empty() or ids.has(item.id):
@@ -424,25 +441,26 @@ func valid_snapshot(snapshot: Variant) -> bool:
 				return false
 			if item.has("gravity_applied") and not item.get("gravity_applied") is bool:
 				return false
-			if item.has("display_name"):
-				if not item.get("display_name") is String:
+			# V4 makes logical token state mandatory. This prevents an older
+			# client from silently accepting a snapshot without names/conditions
+			# and then broadcasting blank state back to the table.
+			if not item.get("display_name") is String:
+				return false
+			if String(item.get("display_name", "")).length() > 80:
+				return false
+			if not item.get("conditions") is Array:
+				return false
+			var condition_values: Array = item.get("conditions", [])
+			if condition_values.size() > TOKEN_CONDITIONS.size():
+				return false
+			var seen_conditions: Dictionary = {}
+			for condition_value: Variant in condition_values:
+				if not condition_value is String:
 					return false
-				if String(item.get("display_name", "")).length() > 80:
+				var condition_id := String(condition_value)
+				if not (condition_id in TOKEN_CONDITIONS) or seen_conditions.has(condition_id):
 					return false
-			if item.has("conditions"):
-				if not item.get("conditions") is Array:
-					return false
-				var condition_values: Array = item.get("conditions", [])
-				if condition_values.size() > TOKEN_CONDITIONS.size():
-					return false
-				var seen_conditions: Dictionary = {}
-				for condition_value: Variant in condition_values:
-					if not condition_value is String:
-						return false
-					var condition_id := String(condition_value)
-					if not (condition_id in TOKEN_CONDITIONS) or seen_conditions.has(condition_id):
-						return false
-					seen_conditions[condition_id] = true
+				seen_conditions[condition_id] = true
 			if item.has("height_cells"):
 				var height_value: Variant = item.get("height_cells")
 				if not (height_value is float or height_value is int):
@@ -478,13 +496,25 @@ func create_snapshot() -> Dictionary:
 	var controller := board_root.get_node_or_null("EncounterProgressController")
 	var state: Dictionary = controller.get_save_state() if controller != null else {}
 	if controller != null and state.is_empty(): return {}
-	var initiative: Dictionary = {}
-	var initiative_tracker: Node = board_root.get_node_or_null("InitiativeTracker")
-	if initiative_tracker != null:
-		var initiative_value: Variant = initiative_tracker.call("get_save_state")
-		if initiative_value is Dictionary:
-			initiative = (initiative_value as Dictionary).duplicate(true)
-	return {"version":3,"scene":board_root.scene_file_path,"objects":objects,"aoes":aoes,"encounter":state,"initiative":initiative}
+	var initiative_tracker: Node = _initiative_tracker()
+	if initiative_tracker == null:
+		status_changed.emit("Iniziativa non disponibile: sincronizzazione annullata")
+		return {}
+	var initiative_value: Variant = initiative_tracker.call("get_save_state")
+	if not initiative_value is Dictionary:
+		status_changed.emit("Stato iniziativa non valido: sincronizzazione annullata")
+		return {}
+	var initiative: Dictionary = (
+		initiative_value as Dictionary
+	).duplicate(true)
+	return {
+		"version": SNAPSHOT_VERSION,
+		"scene": board_root.scene_file_path,
+		"objects": objects,
+		"aoes": aoes,
+		"encounter": state,
+		"initiative": initiative
+	}
 
 func apply_snapshot(snapshot: Dictionary) -> bool:
 	if not valid_snapshot(snapshot): return false
@@ -500,22 +530,40 @@ func apply_snapshot(snapshot: Dictionary) -> bool:
 			var n: Node = existing[id]
 			if is_instance_valid(n) and n.is_in_group("dnd_token") and n.get_parent() == tokens_root: n.queue_free()
 	for id in wanted.keys():
-		var data: Dictionary = wanted[id]; var node: Node3D = existing.get(id) as Node3D
-		if node == null: node = _instantiate_from_data(data)
-		if node != null: _apply_node_data(node,data)
-	if is_instance_valid(measurement_tool) and measurement_tool.has_method("apply_persistent_aoes"): measurement_tool.call("apply_persistent_aoes", snapshot.get("aoes",[]))
-	var initiative_tracker: Node = board_root.get_node_or_null("InitiativeTracker")
-	if initiative_tracker != null:
-		if snapshot.has("initiative"):
-			if not bool(
-				initiative_tracker.call(
-					"load_state",
-					snapshot.get("initiative")
-				)
-			):
+		var data: Dictionary = wanted[id]
+		var node: Node3D = existing.get(id) as Node3D
+		if node == null:
+			node = _instantiate_from_data(data)
+		if node == null:
+			continue
+		_apply_node_data(node, data)
+		if data.get("kind", "") == "token":
+			if not node.has_method("get_display_name") or not node.has_method("get_conditions"):
 				return false
-		else:
-			initiative_tracker.call("clear_state")
+			if String(node.call("get_display_name")) != String(data.get("display_name", "")):
+				return false
+			var applied_conditions: Variant = node.call("get_conditions")
+			if not applied_conditions is Array:
+				return false
+			var expected_conditions: Array = data.get("conditions", [])
+			if (applied_conditions as Array) != expected_conditions:
+				return false
+	if is_instance_valid(measurement_tool) and measurement_tool.has_method("apply_persistent_aoes"): measurement_tool.call("apply_persistent_aoes", snapshot.get("aoes",[]))
+	var initiative_tracker: Node = _initiative_tracker()
+	if initiative_tracker == null:
+		return false
+	if not bool(
+		initiative_tracker.call(
+			"load_state",
+			snapshot.get("initiative")
+		)
+	):
+		return false
+	var token_list_value: Variant = board_root.get("token_list")
+	if token_list_value is Node and is_instance_valid(token_list_value):
+		var token_list_node := token_list_value as Node
+		if token_list_node.has_method("refresh"):
+			token_list_node.call("refresh")
 	return true
 
 func _current_nodes_by_id() -> Dictionary:
