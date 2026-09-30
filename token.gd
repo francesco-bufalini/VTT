@@ -7,21 +7,28 @@ const TOKEN_OVERLAY_NAME := "TokenOverlay"
 # Condizioni standard D&D 5e / SRD. Gli ID rimangono in inglese per essere
 # stabili nei salvataggi; etichette e pittogrammi sono solo presentazione.
 const CONDITION_DEFINITIONS := [
-	{"id": "blinded", "name": "Accecato", "icon": "◉̸"},
-	{"id": "charmed", "name": "Affascinato", "icon": "♥"},
-	{"id": "deafened", "name": "Assordato", "icon": "♪̸"},
-	{"id": "exhaustion", "name": "Sfinimento", "icon": "⌛"},
-	{"id": "frightened", "name": "Spaventato", "icon": "!"},
-	{"id": "grappled", "name": "Afferrato", "icon": "⌁"},
-	{"id": "incapacitated", "name": "Incapacitato", "icon": "⊘"},
-	{"id": "invisible", "name": "Invisibile", "icon": "◌"},
-	{"id": "paralyzed", "name": "Paralizzato", "icon": "║"},
-	{"id": "petrified", "name": "Pietrificato", "icon": "◆"},
-	{"id": "poisoned", "name": "Avvelenato", "icon": "☣"},
-	{"id": "prone", "name": "Prono", "icon": "▼"},
-	{"id": "restrained", "name": "Trattenuto", "icon": "⛓"},
-	{"id": "stunned", "name": "Stordito", "icon": "✹"},
-	{"id": "unconscious", "name": "Privo di sensi", "icon": "☾"},
+	# Le 15 condizioni ufficiali D&D 5e / SRD.
+	{"id": "blinded", "name": "Accecato", "icon": "[BL]", "official": true},
+	{"id": "charmed", "name": "Affascinato", "icon": "[CH]", "official": true},
+	{"id": "deafened", "name": "Assordato", "icon": "[DE]", "official": true},
+	{"id": "exhaustion", "name": "Sfinimento", "icon": "[EX]", "official": true},
+	{"id": "frightened", "name": "Spaventato", "icon": "[FR]", "official": true},
+	{"id": "grappled", "name": "Afferrato", "icon": "[GR]", "official": true},
+	{"id": "incapacitated", "name": "Incapacitato", "icon": "[IN]", "official": true},
+	{"id": "invisible", "name": "Invisibile", "icon": "[IV]", "official": true},
+	{"id": "paralyzed", "name": "Paralizzato", "icon": "[PA]", "official": true},
+	{"id": "petrified", "name": "Pietrificato", "icon": "[PE]", "official": true},
+	{"id": "poisoned", "name": "Avvelenato", "icon": "[PO]", "official": true},
+	{"id": "prone", "name": "Prono", "icon": "[PR]", "official": true},
+	{"id": "restrained", "name": "Trattenuto", "icon": "[RE]", "official": true},
+	{"id": "stunned", "name": "Stordito", "icon": "[ST]", "official": true},
+	{"id": "unconscious", "name": "Privo di sensi", "icon": "[UN]", "official": true},
+
+	# Marker tattici utili nel VTT. Non sono condizioni ufficiali SRD.
+	{"id": "concentrating", "name": "Concentrazione", "icon": "[CO]", "official": false},
+	{"id": "surprised", "name": "Sorpreso", "icon": "[SU]", "official": false},
+	{"id": "hidden", "name": "Nascosto", "icon": "[HI]", "official": false},
+	{"id": "dead", "name": "Morto", "icon": "[KO]", "official": false},
 ]
 
 @export var cell_size: float = 1.0
@@ -466,7 +473,7 @@ func _ensure_token_overlay() -> void:
 		_name_label = Label3D.new()
 		_name_label.name = "Name"
 		_name_label.billboard = BaseMaterial3D.BILLBOARD_ENABLED
-		_name_label.fixed_size = true
+		_name_label.fixed_size = false
 		_name_label.font_size = 32
 		_name_label.outline_size = 8
 		_name_label.modulate = Color(1.0, 0.97, 0.88, 1.0)
@@ -478,8 +485,8 @@ func _ensure_token_overlay() -> void:
 		_status_label = Label3D.new()
 		_status_label.name = "Statuses"
 		_status_label.billboard = BaseMaterial3D.BILLBOARD_ENABLED
-		_status_label.fixed_size = true
-		_status_label.font_size = 28
+		_status_label.fixed_size = false
+		_status_label.font_size = 24
 		_status_label.outline_size = 7
 		_status_label.modulate = Color(1.0, 0.82, 0.35, 1.0)
 		_status_label.visible = false
@@ -494,9 +501,14 @@ func _update_overlay_position() -> void:
 	var top_y := token_height_cells * cell_size * 0.5
 	_overlay_root.position = Vector3(0.0, top_y + 0.28 * cell_size, 0.0)
 	if is_instance_valid(_name_label):
+		# Label3D con fixed_size=false: la sua dimensione e' in unita' del
+		# mondo, quindi si comporta come il token e si rimpicciolisce con la
+		# distanza dalla camera.
+		_name_label.pixel_size = 0.012 * cell_size
 		_name_label.position = Vector3.ZERO
 	if is_instance_valid(_status_label):
-		_status_label.position = Vector3(0.0, -0.20 * cell_size, 0.0)
+		_status_label.pixel_size = 0.010 * cell_size
+		_status_label.position = Vector3(0.0, -0.22 * cell_size, 0.0)
 
 
 func _update_status_overlay() -> void:
