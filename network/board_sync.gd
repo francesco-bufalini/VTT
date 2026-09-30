@@ -433,6 +433,16 @@ func valid_snapshot(snapshot: Variant) -> bool:
 				return false
 			if float(item.footprint) <= 0 or float(item.footprint) > 100 or not item.get("color") is Dictionary:
 				return false
+			if item.has("reach_feet"):
+				var reach_value: Variant = item.get("reach_feet")
+				if not (reach_value is float or reach_value is int):
+					return false
+				if (
+					not is_finite(float(reach_value))
+					or float(reach_value) <= 0.0
+					or float(reach_value) > 1000.0
+				):
+					return false
 			for channel in ["r", "g", "b", "a"]:
 				var value: Variant = item.color.get(channel)
 				if not (value is int or value is float) or not is_finite(float(value)) or float(value) < 0 or float(value) > 1:
@@ -633,6 +643,11 @@ func _serialize_node(node: Node3D, group_name: String) -> Dictionary:
 			if node.has_method("get_conditions")
 			else []
 		)
+		data["reach_feet"] = (
+			float(node.call("get_reach_feet"))
+			if node.has_method("get_reach_feet")
+			else maxf(5.0, float(node.get("_footprint_cells")) * 5.0)
+		)
 		if node.has_method("get_visual_asset_path"):
 			data["visual_asset"] = String(node.call("get_visual_asset_path"))
 		data["visual_front_quarter_turns"] = (
@@ -678,6 +693,11 @@ func _apply_node_data(node: Node3D, data: Dictionary) -> void:
 				maxf(float(data.get("height_cells", 2.0)), 0.1)
 			)
 		if node.has_method("configure"): node.call("configure",_dict_color(data.get("color",{})),float(board_root.get("cell_size")),String(data.get("size_name","Medium")),float(data.get("footprint",1.0)))
+		if data.has("reach_feet") and node.has_method("set_reach_feet"):
+			node.call("set_reach_feet", float(data.get("reach_feet", 5.0)), true)
+		elif node.has_method("reset_reach_to_default"):
+			# Snapshot precedenti: migrazione trasparente dal footprint/taglia.
+			node.call("reset_reach_to_default")
 		var gravity_applied: bool = bool(data.get("gravity_applied", false))
 		if gravity_applied and node.has_method("apply_gravity"):
 			node.call("apply_gravity")
