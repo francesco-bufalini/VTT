@@ -4,42 +4,9 @@ const ACTIVE_CAMPAIGNS_SCENE_PATH := "res://vtt/menu/active_campaigns.tscn"
 const MENU_BACKGROUND_TEXTURE := (
 	"res://assets/menu/background/lithophane_background.webp"
 )
-# Legacy paths kept because the older helper functions below are retained
-# for reference, even though the main menu no longer instantiates them.
-const MENU_SKY_HDR := (
-	"res://assets/menu/environment/sky/"
-	+ "kloppenheim_06_puresky_1k.hdr"
-)
-const CASTLE_PATHS := [
-	"res://assets/menu/castle/Castle.glb",
-	"res://SFON VTST/castle/Castle.glb",
-	"res://SFON VTST/Castle.glb",
-	"res://castle/Castle.glb",
-	"res://Castle.glb"
-]
 const CAMERA_TARGET := Vector3(0.0, 0.0, 0.0)
 const CAMERA_BASE_RADIUS := 19.5
 const CAMERA_BASE_HEIGHT := 0.12
-const MENU_SKY_HDR := (
-	"res://assets/menu/environment/sky/"
-	+ "kloppenheim_06_puresky_1k.hdr"
-)
-const MENU_NATURE_DIR := "res://assets/menu/environment/kenney"
-const MOUNTAIN_MODEL_PATHS := [
-	MENU_NATURE_DIR + "/rock_tallA.glb",
-	MENU_NATURE_DIR + "/rock_tallB.glb",
-	MENU_NATURE_DIR + "/rock_tallH.glb"
-]
-const RIVER_ROCK_PATHS := [
-	MENU_NATURE_DIR + "/rock_largeA.glb",
-	MENU_NATURE_DIR + "/rock_largeB.glb",
-	MENU_NATURE_DIR + "/stone_largeA.glb",
-	MENU_NATURE_DIR + "/stone_largeB.glb"
-]
-const RIVER_TREE_PATHS := [
-	MENU_NATURE_DIR + "/tree_pineTallA.glb",
-	MENU_NATURE_DIR + "/tree_pineTallB.glb"
-]
 
 var _options_dialog: AcceptDialog
 var _new_campaign_dialog: ConfirmationDialog
