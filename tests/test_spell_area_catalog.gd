@@ -120,9 +120,10 @@ func run() -> void:
 	assert(bool(scorching_ray.get("allow_point_target", false)))
 	assert(String(scorching_ray.get("projectile_style", "")) == "scorching_ray")
 
-	# ST/MT alone is not enough to invent a projectile. Charm Person still
-	# appears in the browser, but has no supported map effect yet.
+	# ST/MT alone is not enough to invent a projectile. These spells still
+	# appear in the browser, but have no supported map effect yet.
 	assert(SpellCatalog.spell("charm_person").is_empty())
+	assert(SpellCatalog.spell("feather_fall").is_empty())
 
 	var entangle: Dictionary = SpellCatalog.spell("entangle")
 	assert(not entangle.is_empty())
