@@ -22,7 +22,7 @@ const CHUNK_SIZE := 8
 # New chunks are filled progressively. Empty 8x8x8 chunks cost only one broad
 # phase query; cell queries are performed only inside chunks that touch map
 # collision.
-@export_range(16, 2048, 1) var max_physics_queries_per_frame: int = 192
+@export_range(16, 2048, 1) var max_physics_queries_per_frame: int = 128
 @export_range(1, 32, 1) var max_query_results: int = 8
 @export_range(0.75, 0.99, 0.005) var collision_probe_scale: float = 0.90
 @export_range(0.25, 5.0, 0.25) var map_change_check_interval: float = 0.75
@@ -36,8 +36,6 @@ var _interaction_strength: float = 0.55
 
 var _cell_probe_shape: BoxShape3D = null
 var _cell_query: PhysicsShapeQueryParameters3D = null
-var _chunk_probe_shape: BoxShape3D = null
-var _chunk_query: PhysicsShapeQueryParameters3D = null
 
 var _center_cell: Vector3i = INVALID_CELL
 var _volume_transform: Transform3D = Transform3D.IDENTITY
@@ -216,17 +214,6 @@ func _configure_grid() -> void:
 	_cell_query.shape = _cell_probe_shape
 	_cell_query.collide_with_bodies = true
 	_cell_query.collide_with_areas = false
-
-	_chunk_probe_shape = BoxShape3D.new()
-	# Broad phase may be slightly generous: a false positive only causes one
-	# chunk to be scanned, while a false negative would hide valid grid cells.
-	_chunk_probe_shape.size = (
-		Vector3.ONE * float(CHUNK_SIZE) * cell_size * 1.01
-	)
-	_chunk_query = PhysicsShapeQueryParameters3D.new()
-	_chunk_query.shape = _chunk_probe_shape
-	_chunk_query.collide_with_bodies = true
-	_chunk_query.collide_with_areas = false
 
 
 func _build_multimesh() -> void:
@@ -429,16 +416,10 @@ func _process_chunk_scans() -> void:
 		if _scan_chunk == INVALID_CELL:
 			if not _start_next_chunk_scan():
 				break
-
-			queries += 1
-			if not _chunk_has_map_collision(_scan_chunk):
+			_build_current_chunk_cells()
+			if _scan_cells.is_empty():
 				_finish_current_chunk()
 				continue
-
-			_build_current_chunk_cells()
-
-		if _scan_chunk == INVALID_CELL:
-			continue
 
 		while _scan_index < _scan_cells.size() and queries < budget:
 			var cell: Vector3i = _scan_cells[_scan_index]
@@ -475,14 +456,48 @@ func _start_next_chunk_scan() -> bool:
 
 
 func _build_current_chunk_cells() -> void:
-	# Cache the whole chunk once. Future camera positions/orientations can then
-	# reuse it without any new physics work.
-	var min_cell := _chunk_min_cell(_scan_chunk)
-	var max_cell := min_cell + Vector3i.ONE * (CHUNK_SIZE - 1)
-	for y in range(min_cell.y, max_cell.y + 1):
-		for z in range(min_cell.z, max_cell.z + 1):
-			for x in range(min_cell.x, max_cell.x + 1):
-				_scan_cells.append(Vector3i(x, y, z))
+	# Use collision bounds as a cheap broad phase. Only cells close enough to
+	# an actual map CollisionShape reach the expensive physics query.
+	var chunk_min := _chunk_min_cell(_scan_chunk)
+	var chunk_max := chunk_min + Vector3i.ONE * (CHUNK_SIZE - 1)
+	var candidates: Dictionary = {}
+	var expand := Vector3.ONE * (cell_size * 0.51)
+
+	for value in _shape_bounds.values():
+		if not value is AABB:
+			continue
+		var bounds: AABB = value
+		if bounds.size.length_squared() <= 0.000001:
+			continue
+
+		var shape_min := _world_to_cell(bounds.position - expand)
+		var shape_max := _world_to_cell(
+			bounds.position + bounds.size + expand
+		)
+		var min_cell := Vector3i(
+			maxi(chunk_min.x, shape_min.x),
+			maxi(chunk_min.y, shape_min.y),
+			maxi(chunk_min.z, shape_min.z)
+		)
+		var max_cell := Vector3i(
+			mini(chunk_max.x, shape_max.x),
+			mini(chunk_max.y, shape_max.y),
+			mini(chunk_max.z, shape_max.z)
+		)
+		if (
+			min_cell.x > max_cell.x
+			or min_cell.y > max_cell.y
+			or min_cell.z > max_cell.z
+		):
+			continue
+
+		for y in range(min_cell.y, max_cell.y + 1):
+			for z in range(min_cell.z, max_cell.z + 1):
+				for x in range(min_cell.x, max_cell.x + 1):
+					candidates[Vector3i(x, y, z)] = true
+
+	for key in candidates.keys():
+		_scan_cells.append(key)
 
 
 func _finish_current_chunk() -> void:
@@ -501,27 +516,6 @@ func _finish_current_chunk() -> void:
 	_scan_cells.clear()
 	_scan_index = 0
 	_scan_occupied.clear()
-
-
-func _chunk_has_map_collision(chunk: Vector3i) -> bool:
-	if _chunk_query == null:
-		return false
-	_chunk_query.collision_mask = collision_mask
-	_chunk_query.transform = Transform3D(
-		Basis.IDENTITY,
-		_chunk_world_center(chunk)
-	)
-
-	var hits: Array[Dictionary] = (
-		get_world_3d().direct_space_state.intersect_shape(
-			_chunk_query,
-			maxi(1, max_query_results)
-		)
-	)
-	for hit in hits:
-		if _is_map_collider(hit.get("collider")):
-			return true
-	return false
 
 
 func _cell_intersects_map(cell: Vector3i) -> bool:
