@@ -6,19 +6,28 @@ const TOKEN_GROUP := "dnd_token"
 const INVALID_CELL := Vector3i(2147483647, 2147483647, 2147483647)
 
 @export var cell_size: float = 1.0
-# Volume locale della griglia collision-aware. Con cell_size = 1 il default
-# copre esattamente 70 x 70 x 70 metri/celle attorno alla camera.
+# Legacy: mantenuto per compatibilita con scene salvate prima del volume
+# orientato. Non determina piu direttamente il volume visualizzato.
 @export_range(4, 100, 1) var cells_per_side: int = 70
 @export_flags_3d_physics var collision_mask: int = 1
-# La prima scansione del volume viene distribuita su più physics frame
-# per evitare un picco di decine di migliaia di query nello stesso frame.
-@export_range(1, 4096, 1) var max_cell_tests_per_frame: int = 768
-@export_range(1, 64, 1) var max_query_results: int = 16
-@export_range(1000, 1000000, 1000) var max_cached_cells: int = 500000
-@export_range(0.1, 5.0, 0.1) var map_change_check_interval: float = 0.5
-# Un overlap minimo rende affidabile il rilevamento di collisioni trimesh
-# esattamente sul confine fra due celle.
-@export_range(1.0, 1.05, 0.001) var collision_probe_scale: float = 1.002
+
+# Volume di scansione orientato con la camera. Il prisma parte solo due celle
+# dietro la camera e si estende soprattutto nella direzione di vista.
+@export_range(8, 60, 1) var forward_cells: int = 30
+@export_range(0, 8, 1) var behind_cells: int = 2
+@export_range(2, 24, 1) var half_width_cells: int = 12
+@export_range(2, 20, 1) var half_height_cells: int = 8
+@export_range(1.0, 20.0, 0.5) var camera_rotation_threshold_degrees: float = 5.0
+
+# Query distribuite su piu physics frame: un budget piu basso evita picchi.
+@export_range(1, 2048, 1) var max_cell_tests_per_frame: int = 256
+@export_range(1, 32, 1) var max_query_results: int = 8
+@export_range(1000, 250000, 1000) var max_cached_cells: int = 120000
+@export_range(0.25, 5.0, 0.25) var map_change_check_interval: float = 1.0
+
+# Il probe e leggermente piu piccolo della cella: in questo modo il semplice
+# contatto con la collisione della cella adiacente non crea cubi d'aria.
+@export_range(0.80, 1.0, 0.005) var collision_probe_scale: float = 0.96
 
 var _camera: Camera3D = null
 var _grid_mesh_instance: MultiMeshInstance3D = null
@@ -29,9 +38,9 @@ var _cell_query_shape: BoxShape3D = null
 var _query_parameters: PhysicsShapeQueryParameters3D = null
 
 var _center_cell: Vector3i = INVALID_CELL
-var _lower_extent_cells: int = 35
-var _upper_extent_cells: int = 34
-var _half_extent_world: float = 35.0
+var _half_extent_world: float = 30.5
+var _volume_transform: Transform3D = Transform3D.IDENTITY
+var _has_volume_transform: bool = false
 
 # Cache globale delle celle già testate: Vector3i -> bool.
 # Quando la camera si sposta di una cella, in genere bisogna interrogare solo
@@ -76,9 +85,9 @@ func _physics_process(delta: float) -> void:
 		_signature_elapsed = 0.0
 		_check_map_shape_signatures(false)
 
-	var old_center := _center_cell
 	var next_center := _world_to_cell(_camera.global_position)
 	var center_changed := next_center != _center_cell
+	var rotation_changed := _camera_rotation_changed()
 	if center_changed:
 		_center_cell = next_center
 
@@ -86,9 +95,11 @@ func _physics_process(delta: float) -> void:
 		_cell_cache.clear()
 		_active_occupied.clear()
 		_map_dirty = false
+		_capture_volume_transform()
 		_schedule_full_volume()
-	elif center_changed:
-		_schedule_for_center_change(old_center, next_center)
+	elif center_changed or rotation_changed:
+		_capture_volume_transform()
+		_schedule_full_volume()
 
 	_process_pending_cells()
 
@@ -96,6 +107,7 @@ func _physics_process(delta: float) -> void:
 func set_camera(new_camera: Camera3D) -> void:
 	_camera = new_camera
 	_center_cell = INVALID_CELL
+	_has_volume_transform = false
 
 
 func mark_map_dirty() -> void:
@@ -131,85 +143,73 @@ func get_half_extent_world() -> float:
 
 
 func contains_world_point(point: Vector3) -> bool:
-	if _center_cell == INVALID_CELL:
+	if not _has_volume_transform:
 		return false
-
-	var bounds := _world_bounds()
-	var min_point: Vector3 = bounds["min"]
-	var max_point: Vector3 = bounds["max"]
-	var epsilon := maxf(cell_size * 0.001, 0.0001)
-
-	return (
-		point.x >= min_point.x - epsilon
-		and point.x <= max_point.x + epsilon
-		and point.y >= min_point.y - epsilon
-		and point.y <= max_point.y + epsilon
-		and point.z >= min_point.z - epsilon
-		and point.z <= max_point.z + epsilon
-	)
+	return _point_inside_volume(point)
 
 
 func get_ray_exit_distance(origin: Vector3, direction: Vector3) -> float:
-	if _center_cell == INVALID_CELL:
+	if not _has_volume_transform:
 		return 0.0
 
-	var normalized_direction := direction.normalized()
-	if normalized_direction.length_squared() < 0.000001:
+	var local_origin: Vector3 = _volume_transform.affine_inverse() * origin
+	var local_direction: Vector3 = (
+		_volume_transform.basis.inverse() * direction.normalized()
+	)
+	if local_direction.length_squared() < 0.000001:
 		return 0.0
 
-	var bounds := _world_bounds()
-	var min_point: Vector3 = bounds["min"]
-	var max_point: Vector3 = bounds["max"]
+	var width: float = (float(half_width_cells) + 0.5) * cell_size
+	var height: float = (float(half_height_cells) + 0.5) * cell_size
+	var front: float = (float(forward_cells) + 0.5) * cell_size
+	var behind: float = (float(behind_cells) + 0.5) * cell_size
+	var min_point := Vector3(-width, -height, -front)
+	var max_point := Vector3(width, height, behind)
 
 	var t_min := -INF
 	var t_max := INF
-
 	for axis in range(3):
-		var o: float = origin[axis]
-		var d: float = normalized_direction[axis]
+		var o: float = local_origin[axis]
+		var d: float = local_direction[axis]
 		var min_axis: float = min_point[axis]
 		var max_axis: float = max_point[axis]
-
 		if absf(d) < 0.000001:
 			if o < min_axis or o > max_axis:
 				return 0.0
 			continue
 
-		var t_a := (min_axis - o) / d
-		var t_b := (max_axis - o) / d
+		var t_a: float = (min_axis - o) / d
+		var t_b: float = (max_axis - o) / d
 		if t_a > t_b:
-			var swap := t_a
+			var swap: float = t_a
 			t_a = t_b
 			t_b = swap
-
 		t_min = maxf(t_min, t_a)
 		t_max = minf(t_max, t_b)
-
 		if t_min > t_max:
 			return 0.0
 
 	if t_max < 0.0:
 		return 0.0
-
 	return maxf(0.0, t_max)
 
 
 func _configure_grid() -> void:
 	cell_size = maxf(cell_size, 0.001)
-	cells_per_side = maxi(4, cells_per_side)
-
-	# Supporta anche volumi pari (default 70x70x70). La cella della camera
-	# resta inclusa; con un numero pari c'e inevitabilmente una cella in piu
-	# su un lato rispetto all'altro.
-	_lower_extent_cells = int(floor(float(cells_per_side) * 0.5))
-	_upper_extent_cells = cells_per_side - _lower_extent_cells - 1
-	_half_extent_world = float(cells_per_side) * cell_size * 0.5
+	forward_cells = maxi(1, forward_cells)
+	behind_cells = maxi(0, behind_cells)
+	half_width_cells = maxi(1, half_width_cells)
+	half_height_cells = maxi(1, half_height_cells)
+	_half_extent_world = (
+		float(maxi(forward_cells, half_width_cells, half_height_cells))
+		+ 0.5
+	) * cell_size
 
 	_cell_query_shape = BoxShape3D.new()
 	_cell_query_shape.size = (
 		Vector3.ONE
 		* cell_size
-		* maxf(collision_probe_scale, 1.0)
+		* clampf(collision_probe_scale, 0.80, 1.0)
 	)
 
 	_query_parameters = PhysicsShapeQueryParameters3D.new()
@@ -279,111 +279,95 @@ func _build_multimesh() -> void:
 	add_child(_grid_mesh_instance)
 
 
+func _capture_volume_transform() -> void:
+	if _camera == null or not is_instance_valid(_camera):
+		_has_volume_transform = false
+		return
+	_volume_transform = _camera.global_transform
+	_has_volume_transform = true
+
+
+func _camera_rotation_changed() -> bool:
+	if (
+		not _has_volume_transform
+		or _camera == null
+		or not is_instance_valid(_camera)
+	):
+		return true
+
+	var old_forward: Vector3 = -_volume_transform.basis.z.normalized()
+	var new_forward: Vector3 = -_camera.global_transform.basis.z.normalized()
+	var dot_value: float = clampf(old_forward.dot(new_forward), -1.0, 1.0)
+	var angle_degrees: float = rad_to_deg(acos(dot_value))
+	return angle_degrees >= camera_rotation_threshold_degrees
+
+
 func _schedule_full_volume() -> void:
 	_reset_pending_queue()
 	_active_occupied.clear()
+	if not _has_volume_transform:
+		_update_multimesh_instances()
+		return
 
-	var min_cell := _volume_min_cell(_center_cell)
-	var max_cell := _volume_max_cell(_center_cell)
+	var bounds: Dictionary = _volume_world_bounds()
+	var min_cell: Vector3i = _world_to_cell(bounds["min"])
+	var max_cell: Vector3i = _world_to_cell(bounds["max"])
 
 	for y in range(min_cell.y, max_cell.y + 1):
 		for z in range(min_cell.z, max_cell.z + 1):
 			for x in range(min_cell.x, max_cell.x + 1):
-				_enqueue_cell(Vector3i(x, y, z))
-
-	_update_multimesh_instances()
-
-
-func _schedule_for_center_change(
-	old_center: Vector3i,
-	new_center: Vector3i
-) -> void:
-	_remove_active_cells_outside_volume()
-
-	# Se la scansione precedente non era ancora finita, ricostruiamo la coda
-	# del volume corrente usando comunque la cache delle celle già testate.
-	if _has_pending_cells() or old_center == INVALID_CELL:
-		_schedule_full_volume()
-		return
-
-	var delta := new_center - old_center
-	if (
-		absi(delta.x) >= cells_per_side
-		or absi(delta.y) >= cells_per_side
-		or absi(delta.z) >= cells_per_side
-	):
-		_schedule_full_volume()
-		return
-
-	_reset_pending_queue()
-
-	var old_min := _volume_min_cell(old_center)
-	var old_max := _volume_max_cell(old_center)
-	var new_min := _volume_min_cell(new_center)
-	var new_max := _volume_max_cell(new_center)
-
-	if new_min.x < old_min.x:
-		_enqueue_x_slab(new_min.x, old_min.x - 1, new_min, new_max)
-	elif new_max.x > old_max.x:
-		_enqueue_x_slab(old_max.x + 1, new_max.x, new_min, new_max)
-
-	if new_min.y < old_min.y:
-		_enqueue_y_slab(new_min.y, old_min.y - 1, new_min, new_max)
-	elif new_max.y > old_max.y:
-		_enqueue_y_slab(old_max.y + 1, new_max.y, new_min, new_max)
-
-	if new_min.z < old_min.z:
-		_enqueue_z_slab(new_min.z, old_min.z - 1, new_min, new_max)
-	elif new_max.z > old_max.z:
-		_enqueue_z_slab(old_max.z + 1, new_max.z, new_min, new_max)
+				var cell := Vector3i(x, y, z)
+				if _cell_inside_current_volume(cell):
+					_enqueue_cell(cell)
 
 	_prune_cache_if_needed()
 	_update_multimesh_instances()
 
 
-func _enqueue_x_slab(
-	from_x: int,
-	to_x: int,
-	min_cell: Vector3i,
-	max_cell: Vector3i
-) -> void:
-	if from_x > to_x:
-		return
+func _volume_world_bounds() -> Dictionary:
+	var width: float = (float(half_width_cells) + 0.5) * cell_size
+	var height: float = (float(half_height_cells) + 0.5) * cell_size
+	var front: float = (float(forward_cells) + 0.5) * cell_size
+	var behind: float = (float(behind_cells) + 0.5) * cell_size
 
-	for x in range(from_x, to_x + 1):
-		for y in range(min_cell.y, max_cell.y + 1):
-			for z in range(min_cell.z, max_cell.z + 1):
-				_enqueue_cell(Vector3i(x, y, z))
+	var center_local := Vector3(0.0, 0.0, (behind - front) * 0.5)
+	var half_depth: float = (front + behind) * 0.5
+	var center_world: Vector3 = _volume_transform * center_local
+	var basis: Basis = _volume_transform.basis
+	var extents := Vector3(
+		absf(basis.x.x) * width
+			+ absf(basis.y.x) * height
+			+ absf(basis.z.x) * half_depth,
+		absf(basis.x.y) * width
+			+ absf(basis.y.y) * height
+			+ absf(basis.z.y) * half_depth,
+		absf(basis.x.z) * width
+			+ absf(basis.y.z) * height
+			+ absf(basis.z.z) * half_depth
+	)
 
-
-func _enqueue_y_slab(
-	from_y: int,
-	to_y: int,
-	min_cell: Vector3i,
-	max_cell: Vector3i
-) -> void:
-	if from_y > to_y:
-		return
-
-	for y in range(from_y, to_y + 1):
-		for x in range(min_cell.x, max_cell.x + 1):
-			for z in range(min_cell.z, max_cell.z + 1):
-				_enqueue_cell(Vector3i(x, y, z))
+	return {
+		"min": center_world - extents,
+		"max": center_world + extents
+	}
 
 
-func _enqueue_z_slab(
-	from_z: int,
-	to_z: int,
-	min_cell: Vector3i,
-	max_cell: Vector3i
-) -> void:
-	if from_z > to_z:
-		return
+func _point_inside_volume(point: Vector3) -> bool:
+	if not _has_volume_transform:
+		return false
 
-	for z in range(from_z, to_z + 1):
-		for x in range(min_cell.x, max_cell.x + 1):
-			for y in range(min_cell.y, max_cell.y + 1):
-				_enqueue_cell(Vector3i(x, y, z))
+	var local: Vector3 = _volume_transform.affine_inverse() * point
+	var width: float = (float(half_width_cells) + 0.5) * cell_size
+	var height: float = (float(half_height_cells) + 0.5) * cell_size
+	var front: float = (float(forward_cells) + 0.5) * cell_size
+	var behind: float = (float(behind_cells) + 0.5) * cell_size
+
+	return (
+		absf(local.x) <= width
+		and absf(local.y) <= height
+		and local.z >= -front
+		and local.z <= behind
+	)
 
 
 func _enqueue_cell(cell: Vector3i) -> void:
@@ -543,59 +527,19 @@ func _has_pending_cells() -> bool:
 
 
 func _prune_cache_if_needed() -> void:
-	if _cell_cache.size() <= maxi(max_cached_cells, cells_per_side):
+	if _cell_cache.size() <= max_cached_cells:
 		return
 
 	var retained: Dictionary = {}
-	var padding := 2
-
-	var min_cell := (
-		_volume_min_cell(_center_cell)
-		- Vector3i.ONE * padding
-	)
-	var max_cell := (
-		_volume_max_cell(_center_cell)
-		+ Vector3i.ONE * padding
-	)
-
 	for key in _cell_cache.keys():
 		var cell: Vector3i = key
-		if (
-			cell.x >= min_cell.x
-			and cell.x <= max_cell.x
-			and cell.y >= min_cell.y
-			and cell.y <= max_cell.y
-			and cell.z >= min_cell.z
-			and cell.z <= max_cell.z
-		):
+		if _cell_inside_current_volume(cell):
 			retained[cell] = _cell_cache[cell]
-
 	_cell_cache = retained
 
 
-func _volume_min_cell(center: Vector3i) -> Vector3i:
-	return center - Vector3i.ONE * _lower_extent_cells
-
-
-func _volume_max_cell(center: Vector3i) -> Vector3i:
-	return center + Vector3i.ONE * _upper_extent_cells
-
-
 func _cell_inside_current_volume(cell: Vector3i) -> bool:
-	if _center_cell == INVALID_CELL:
-		return false
-
-	var min_cell := _volume_min_cell(_center_cell)
-	var max_cell := _volume_max_cell(_center_cell)
-
-	return (
-		cell.x >= min_cell.x
-		and cell.x <= max_cell.x
-		and cell.y >= min_cell.y
-		and cell.y <= max_cell.y
-		and cell.z >= min_cell.z
-		and cell.z <= max_cell.z
-	)
+	return _point_inside_volume(_cell_to_world_center(cell))
 
 
 func _world_to_cell(point: Vector3) -> Vector3i:
@@ -616,21 +560,7 @@ func _cell_to_world_center(cell: Vector3i) -> Vector3:
 
 
 func _world_bounds() -> Dictionary:
-	var min_cell := _volume_min_cell(_center_cell)
-	var max_cell := _volume_max_cell(_center_cell)
-
-	return {
-		"min": Vector3(
-			float(min_cell.x) * cell_size,
-			float(min_cell.y) * cell_size,
-			float(min_cell.z) * cell_size
-		),
-		"max": Vector3(
-			float(max_cell.x + 1) * cell_size,
-			float(max_cell.y + 1) * cell_size,
-			float(max_cell.z + 1) * cell_size
-		)
-	}
+	return _volume_world_bounds()
 
 
 func _register_existing_map_shapes() -> void:
