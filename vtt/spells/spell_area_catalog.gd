@@ -131,11 +131,6 @@ static func _visual_style_from_entries(
 		+ String(spell_data.get("higher_levels", ""))
 	).to_lower()
 
-	# Multi-color families should remain visibly multicolored rather than
-	# arbitrarily selecting one of their possible damage types.
-	if "prismatic" in text or "chromatic" in text or "rainbow" in text:
-		return "prismatic"
-
 	# Preserve geometry-specific renderers that carry more information than
 	# a generic color family.
 	var existing_style: String = String(
@@ -152,6 +147,11 @@ static func _visual_style_from_entries(
 		"ice_knife_burst"
 	]:
 		return existing_style
+
+	# Multi-color families should remain visibly multicolored rather than
+	# arbitrarily selecting one of their possible damage types.
+	if "prismatic" in text or "chromatic" in text or "rainbow" in text:
+		return "prismatic"
 
 	if "silvery mist" in text or "silver mist" in text:
 		return "silver_mist"
