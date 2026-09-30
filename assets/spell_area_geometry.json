@@ -735,6 +735,12 @@
               "max_length_feet": 100,
               "height_feet": 20,
               "thickness_feet": 5
+            },
+            {
+              "type": "circle",
+              "radius_feet": 30,
+              "height_feet": 20,
+              "thickness_feet": 5
             }
           ]
         },
@@ -1848,6 +1854,10 @@
               "max_length_feet": 90,
               "height_feet": 30,
               "thickness_feet": 0.08333333333333333
+            },
+            {
+              "type": "globe",
+              "radius_feet": 15
             }
           ]
         },
@@ -2184,6 +2194,12 @@
             {
               "type": "path",
               "max_length_feet": 60,
+              "height_feet": 20,
+              "thickness_feet": 1
+            },
+            {
+              "type": "circle",
+              "radius_feet": 10,
               "height_feet": 20,
               "thickness_feet": 1
             }
@@ -3084,6 +3100,12 @@
               "max_length_feet": 30,
               "height_feet": 10,
               "thickness_feet": 1
+            },
+            {
+              "type": "circle",
+              "radius_feet": 10,
+              "height_feet": 20,
+              "thickness_feet": 1
             }
           ]
         },
@@ -3317,6 +3339,12 @@
             {
               "type": "path",
               "max_length_feet": 100,
+              "height_feet": 20,
+              "thickness_feet": 5
+            },
+            {
+              "type": "circle",
+              "radius_feet": 30,
               "height_feet": 20,
               "thickness_feet": 5
             }
@@ -4639,6 +4667,10 @@
               "max_length_feet": 90,
               "height_feet": 30,
               "thickness_feet": 0.08333333333333333
+            },
+            {
+              "type": "globe",
+              "radius_feet": 15
             }
           ]
         },
@@ -5084,6 +5116,12 @@
               "max_length_feet": 60,
               "height_feet": 20,
               "thickness_feet": 1
+            },
+            {
+              "type": "circle",
+              "radius_feet": 10,
+              "height_feet": 20,
+              "thickness_feet": 1
             }
           ]
         },
@@ -5275,6 +5313,160 @@
           "radius_feet": 15
         },
         "persistence": "persistent"
+      }
+    ]
+  },
+  "PHB::Wall of Force": {
+    "range": {
+      "type": "point",
+      "feet": 120
+    },
+    "targeting": {
+      "type": "wall",
+      "requires_ground": true,
+      "choose_damage_side": true
+    },
+    "effects": [
+      {
+        "anchor": "selected_path",
+        "geometry": {
+          "shape": "wall",
+          "variants": [
+            {
+              "type": "globe",
+              "radius_feet": 10
+            },
+            {
+              "type": "dome",
+              "radius_feet": 10
+            },
+            {
+              "type": "panels",
+              "max_panels": 10,
+              "panel_width_feet": 10,
+              "panel_height_feet": 10,
+              "thickness_feet": 0.020833333333333332
+            }
+          ]
+        },
+        "persistence": "persistent"
+      }
+    ]
+  },
+  "PHB::Wall of Ice": {
+    "range": {
+      "type": "point",
+      "feet": 120
+    },
+    "targeting": {
+      "type": "wall",
+      "requires_ground": true,
+      "choose_damage_side": true
+    },
+    "effects": [
+      {
+        "anchor": "selected_path",
+        "geometry": {
+          "shape": "wall",
+          "variants": [
+            {
+              "type": "globe",
+              "radius_feet": 10
+            },
+            {
+              "type": "dome",
+              "radius_feet": 10
+            },
+            {
+              "type": "panels",
+              "max_panels": 10,
+              "panel_width_feet": 10,
+              "panel_height_feet": 10,
+              "thickness_feet": 1
+            }
+          ]
+        },
+        "persistence": "persistent",
+        "damage_types": [
+          "cold"
+        ]
+      }
+    ]
+  },
+  "XPHB::Wall of Force": {
+    "range": {
+      "type": "point",
+      "feet": 120
+    },
+    "targeting": {
+      "type": "wall",
+      "requires_ground": true,
+      "choose_damage_side": true
+    },
+    "effects": [
+      {
+        "anchor": "selected_path",
+        "geometry": {
+          "shape": "wall",
+          "variants": [
+            {
+              "type": "globe",
+              "radius_feet": 10
+            },
+            {
+              "type": "dome",
+              "radius_feet": 10
+            },
+            {
+              "type": "panels",
+              "max_panels": 10,
+              "panel_width_feet": 10,
+              "panel_height_feet": 10,
+              "thickness_feet": 0.020833333333333332
+            }
+          ]
+        },
+        "persistence": "persistent"
+      }
+    ]
+  },
+  "XPHB::Wall of Ice": {
+    "range": {
+      "type": "point",
+      "feet": 120
+    },
+    "targeting": {
+      "type": "wall",
+      "requires_ground": true,
+      "choose_damage_side": true
+    },
+    "effects": [
+      {
+        "anchor": "selected_path",
+        "geometry": {
+          "shape": "wall",
+          "variants": [
+            {
+              "type": "globe",
+              "radius_feet": 10
+            },
+            {
+              "type": "dome",
+              "radius_feet": 10
+            },
+            {
+              "type": "panels",
+              "max_panels": 10,
+              "panel_width_feet": 10,
+              "panel_height_feet": 10,
+              "thickness_feet": 1
+            }
+          ]
+        },
+        "persistence": "persistent",
+        "damage_types": [
+          "cold"
+        ]
       }
     ]
   }
