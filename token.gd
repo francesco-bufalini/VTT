@@ -2,6 +2,27 @@ extends CharacterBody3D
 
 const TOKEN_LIBRARY_MANIFEST := "res://assets/tokens/token_library.json"
 const IMPORTED_VISUAL_NAME := "ImportedVisual"
+const TOKEN_OVERLAY_NAME := "TokenOverlay"
+
+# Condizioni standard D&D 5e / SRD. Gli ID rimangono in inglese per essere
+# stabili nei salvataggi; etichette e pittogrammi sono solo presentazione.
+const CONDITION_DEFINITIONS := [
+	{"id": "blinded", "name": "Accecato", "icon": "◉̸"},
+	{"id": "charmed", "name": "Affascinato", "icon": "♥"},
+	{"id": "deafened", "name": "Assordato", "icon": "♪̸"},
+	{"id": "exhaustion", "name": "Sfinimento", "icon": "⌛"},
+	{"id": "frightened", "name": "Spaventato", "icon": "!"},
+	{"id": "grappled", "name": "Afferrato", "icon": "⌁"},
+	{"id": "incapacitated", "name": "Incapacitato", "icon": "⊘"},
+	{"id": "invisible", "name": "Invisibile", "icon": "◌"},
+	{"id": "paralyzed", "name": "Paralizzato", "icon": "║"},
+	{"id": "petrified", "name": "Pietrificato", "icon": "◆"},
+	{"id": "poisoned", "name": "Avvelenato", "icon": "☣"},
+	{"id": "prone", "name": "Prono", "icon": "▼"},
+	{"id": "restrained", "name": "Trattenuto", "icon": "⛓"},
+	{"id": "stunned", "name": "Stordito", "icon": "✹"},
+	{"id": "unconscious", "name": "Privo di sensi", "icon": "☾"},
+]
 
 @export var cell_size: float = 1.0
 @export var gravity_multiplier: float = 1.0
@@ -9,6 +30,7 @@ const IMPORTED_VISUAL_NAME := "ImportedVisual"
 @export var token_height_cells: float = 2.0
 @export var flying: bool = false
 @export var visual_asset_path: String = ""
+@export var token_display_name: String = ""
 @export var default_size_name: String = "Medium"
 @export var default_footprint_cells: float = 1.0
 
@@ -28,6 +50,10 @@ var _footprint_cells: float = 1.0
 var _size_name: String = "Medium"
 var _loaded_visual_asset_path: String = ""
 var _uses_manifest_default: bool = false
+var _conditions: Array[String] = []
+var _overlay_root: Node3D
+var _name_label: Label3D
+var _status_label: Label3D
 var movement_validator: Callable
 var grid_support: Node3D
 var _support_transform: Transform3D
@@ -43,7 +69,10 @@ func _ready() -> void:
 	_size_name = default_size_name
 	_footprint_cells = maxf(default_footprint_cells, 0.5)
 	_load_configured_visual()
+	_ensure_token_overlay()
 	set_token_size(_footprint_cells)
+	set_display_name(token_display_name)
+	set_conditions(_conditions)
 	set_selected(false)
 	set_vision_cone_visible(false)
 
@@ -363,6 +392,129 @@ func set_token_size(footprint_cells: float) -> void:
 		)
 
 	_position_imported_visual()
+	_update_overlay_position()
+
+
+func set_display_name(value: String) -> void:
+	token_display_name = value.strip_edges()
+	_ensure_token_overlay()
+	if is_instance_valid(_name_label):
+		_name_label.text = token_display_name
+		_name_label.visible = not token_display_name.is_empty()
+
+
+func get_display_name() -> String:
+	return token_display_name
+
+
+func get_condition_definitions() -> Array:
+	return CONDITION_DEFINITIONS.duplicate(true)
+
+
+func get_conditions() -> Array[String]:
+	return _conditions.duplicate()
+
+
+func has_condition(condition_id: String) -> bool:
+	return condition_id.strip_edges().to_lower() in _conditions
+
+
+func set_condition(condition_id: String, enabled: bool) -> void:
+	var normalized := condition_id.strip_edges().to_lower()
+	if not _is_valid_condition(normalized):
+		return
+	if enabled:
+		if normalized not in _conditions:
+			_conditions.append(normalized)
+	else:
+		_conditions.erase(normalized)
+	_update_status_overlay()
+
+
+func set_conditions(value: Variant) -> void:
+	var resolved: Array[String] = []
+	if value is Array:
+		for item: Variant in value:
+			if not item is String:
+				continue
+			var normalized := String(item).strip_edges().to_lower()
+			if _is_valid_condition(normalized) and normalized not in resolved:
+				resolved.append(normalized)
+	_conditions = resolved
+	_update_status_overlay()
+
+
+func _is_valid_condition(condition_id: String) -> bool:
+	for definition: Dictionary in CONDITION_DEFINITIONS:
+		if String(definition.get("id", "")) == condition_id:
+			return true
+	return false
+
+
+func _ensure_token_overlay() -> void:
+	if is_instance_valid(_overlay_root):
+		return
+
+	_overlay_root = get_node_or_null(TOKEN_OVERLAY_NAME) as Node3D
+	if _overlay_root == null:
+		_overlay_root = Node3D.new()
+		_overlay_root.name = TOKEN_OVERLAY_NAME
+		add_child(_overlay_root)
+
+	_name_label = _overlay_root.get_node_or_null("Name") as Label3D
+	if _name_label == null:
+		_name_label = Label3D.new()
+		_name_label.name = "Name"
+		_name_label.billboard = BaseMaterial3D.BILLBOARD_ENABLED
+		_name_label.fixed_size = true
+		_name_label.no_depth_test = true
+		_name_label.font_size = 32
+		_name_label.outline_size = 8
+		_name_label.modulate = Color(1.0, 0.97, 0.88, 1.0)
+		_name_label.visible = false
+		_overlay_root.add_child(_name_label)
+
+	_status_label = _overlay_root.get_node_or_null("Statuses") as Label3D
+	if _status_label == null:
+		_status_label = Label3D.new()
+		_status_label.name = "Statuses"
+		_status_label.billboard = BaseMaterial3D.BILLBOARD_ENABLED
+		_status_label.fixed_size = true
+		_status_label.no_depth_test = true
+		_status_label.font_size = 28
+		_status_label.outline_size = 7
+		_status_label.modulate = Color(1.0, 0.82, 0.35, 1.0)
+		_status_label.visible = false
+		_overlay_root.add_child(_status_label)
+
+	_update_overlay_position()
+
+
+func _update_overlay_position() -> void:
+	if not is_instance_valid(_overlay_root):
+		return
+	var top_y := token_height_cells * cell_size * 0.5
+	_overlay_root.position = Vector3(0.0, top_y + 0.28 * cell_size, 0.0)
+	if is_instance_valid(_name_label):
+		_name_label.position = Vector3.ZERO
+	if is_instance_valid(_status_label):
+		_status_label.position = Vector3(0.0, -0.20 * cell_size, 0.0)
+
+
+func _update_status_overlay() -> void:
+	_ensure_token_overlay()
+	if not is_instance_valid(_status_label):
+		return
+	var icons: PackedStringArray = []
+	var names: PackedStringArray = []
+	for definition: Dictionary in CONDITION_DEFINITIONS:
+		var condition_id := String(definition.get("id", ""))
+		if condition_id in _conditions:
+			icons.append(String(definition.get("icon", "•")))
+			names.append(String(definition.get("name", condition_id)))
+	_status_label.text = "  ".join(icons)
+	_status_label.visible = not icons.is_empty()
+	_status_label.tooltip_text = ", ".join(names)
 
 
 func set_token_color(token_color: Color) -> void:
