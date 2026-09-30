@@ -16,6 +16,18 @@ func run() -> void:
 	assert(is_equal_approx(float(fireball.get("aoe_radius_feet", 0.0)), 20.0))
 	assert(String(fireball.get("visual_style", "")) == "fire")
 	assert(fireball.has("map_effect_spec"))
+	var fireball_spec: Dictionary = fireball.get("map_effect_spec", {})
+	assert(fireball_spec.has("range"))
+	assert(fireball_spec.has("targeting"))
+	assert(fireball_spec.has("effect"))
+	assert(not fireball_spec.has("effects"))
+	var fireball_effect: Dictionary = fireball_spec.get("effect", {})
+	var fireball_geometry: Dictionary = fireball_effect.get("geometry", {})
+	assert(String(fireball_geometry.get("shape", "")) == "sphere")
+	assert(is_equal_approx(
+		float(fireball_geometry.get("radius_feet", 0.0)),
+		20.0
+	))
 
 	var lightning: Dictionary = SpellCatalog.spell("lightning_bolt")
 	assert(not lightning.is_empty())
@@ -23,6 +35,29 @@ func run() -> void:
 	assert(int(lightning.get("aoe_length_cells", 0)) == 20)
 	assert(is_equal_approx(float(lightning.get("line_width_feet", 0.0)), 5.0))
 	assert(String(lightning.get("visual_style", "")) == "lightning")
+
+	var call_lightning: Dictionary = SpellCatalog.spell("call_lightning")
+	assert(not call_lightning.is_empty())
+	assert(String(call_lightning.get("target_mode", "")) == "token_then_point")
+	assert(String(call_lightning.get("aoe_shape", "")) == "cylinder")
+	assert(is_equal_approx(
+		float(call_lightning.get("aoe_radius_feet", 0.0)),
+		60.0
+	))
+	assert(is_equal_approx(
+		float(call_lightning.get("aoe_height_feet", 0.0)),
+		10.0
+	))
+
+	var detonate: Dictionary = SpellCatalog.spell("detonate")
+	assert(not detonate.is_empty())
+	assert(String(detonate.get("target_mode", "")) == "token_then_token")
+	assert(String(detonate.get("aoe_shape", "")) == "sphere")
+	assert(is_equal_approx(
+		float(detonate.get("aoe_radius_feet", 0.0)),
+		60.0
+	))
+	assert(String(detonate.get("visual_style", "")) == "fire")
 
 	var wall_fire: Dictionary = SpellCatalog.spell("wall_of_fire")
 	assert(not wall_fire.is_empty())
@@ -52,6 +87,6 @@ func run() -> void:
 	assert(String(wind_wall.get("visual_style", "")) == "bludgeoning")
 
 	print(
-		"PASS: runtime 5eTools spell geometry drives range, AoE, walls and generic VFX"
+		"PASS: compact 5eTools map spec drives range, AoE, walls and damage VFX"
 	)
 	quit()
