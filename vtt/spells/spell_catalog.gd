@@ -1106,10 +1106,27 @@ static func _is_runtime_usable(spell_data: Dictionary) -> bool:
 		return true
 
 	if target_mode == "token_then_token":
-		return (
+		if (
 			bool(spell_data.get("persistent_link", false))
 			or float(spell_data.get("impact_aoe_radius_feet", 0.0)) > 0.0
-		)
+		):
+			return true
+
+		var spec_value: Variant = spell_data.get("map_effect_spec", {})
+		if spec_value is Dictionary:
+			var spec: Dictionary = spec_value as Dictionary
+			var targeting_value: Variant = spec.get("targeting", {})
+			var effect_value: Variant = spec.get("effect", {})
+			if (
+				targeting_value is Dictionary
+				and String(
+					(targeting_value as Dictionary).get("type", "")
+				) == "token"
+				and effect_value is Dictionary
+			):
+				var effect: Dictionary = effect_value as Dictionary
+				if effect.get("geometry", {}) is Dictionary:
+					return true
 
 	return false
 
