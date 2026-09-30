@@ -51,6 +51,7 @@ func setup(root: Node3D) -> void:
 func _process(_delta: float) -> void:
 	if _pending_spell_id.is_empty():
 		_hide_spell_preview()
+		_clear_spell_fixed_previews()
 		_hide_spell_range_preview()
 		_hide_wall_preview()
 		return
@@ -523,6 +524,7 @@ func _try_select_caster(screen_position: Vector2) -> void:
 			_pending_target_points.clear()
 			_targeting_phase = "multi_target_points"
 			_hide_spell_preview()
+			_clear_spell_fixed_previews()
 			_update_multi_point_instruction(spell_data)
 		"teleport_self":
 			_pending_caster = caster
@@ -765,6 +767,7 @@ func _try_select_multi_point(screen_position: Vector2) -> void:
 		return
 
 	_pending_target_points.append(target_point)
+	_refresh_multi_point_previews(spell_data)
 	if _pending_target_points.size() >= _required_target_clicks(spell_data):
 		_cast_multi_point_spell(
 			_pending_caster,
@@ -787,6 +790,36 @@ func _update_multi_point_instruction(spell_data: Dictionary) -> void:
 			int(spell_data.get("range_feet", 0))
 		]
 	)
+
+
+func _refresh_multi_point_previews(spell_data: Dictionary) -> void:
+	var measurement_tool: Node = _measurement_tool()
+	if measurement_tool == null:
+		return
+
+	var starts: Array[Vector3] = []
+	var ends: Array[Vector3] = []
+	for point: Vector3 in _pending_target_points:
+		starts.append(point)
+		ends.append(_area_endpoint(point, spell_data))
+
+	measurement_tool.call(
+		"show_spell_fixed_previews",
+		starts,
+		ends,
+		String(spell_data.get("aoe_shape", "sphere")),
+		_spell_style(spell_data),
+		_spell_line_width_world(spell_data)
+	)
+
+
+func _clear_spell_fixed_previews() -> void:
+	var measurement_tool: Node = _measurement_tool()
+	if (
+		measurement_tool != null
+		and measurement_tool.has_method("clear_spell_fixed_previews")
+	):
+		measurement_tool.call("clear_spell_fixed_previews")
 
 
 func _begin_teleport_destination(spell_data: Dictionary) -> void:
@@ -3350,6 +3383,7 @@ func _cast_persistent_sphere(
 
 func _finish_cast() -> void:
 	_hide_spell_preview()
+	_clear_spell_fixed_previews()
 	_hide_spell_range_preview()
 	_hide_wall_preview()
 	if wall_mode_menu != null and wall_mode_menu.visible:
@@ -3378,6 +3412,7 @@ func _finish_cast() -> void:
 
 func _cancel_pending_cast(restore_mouse: bool = true) -> void:
 	_hide_spell_preview()
+	_clear_spell_fixed_previews()
 	_hide_spell_range_preview()
 	_hide_wall_preview()
 	if wall_mode_menu != null and wall_mode_menu.visible:
