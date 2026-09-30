@@ -218,8 +218,10 @@ func _configure_grid() -> void:
 	_cell_query.collide_with_areas = false
 
 	_chunk_probe_shape = BoxShape3D.new()
+	# Broad phase may be slightly generous: a false positive only causes one
+	# chunk to be scanned, while a false negative would hide valid grid cells.
 	_chunk_probe_shape.size = (
-		Vector3.ONE * float(CHUNK_SIZE) * cell_size * 0.995
+		Vector3.ONE * float(CHUNK_SIZE) * cell_size * 1.01
 	)
 	_chunk_query = PhysicsShapeQueryParameters3D.new()
 	_chunk_query.shape = _chunk_probe_shape
@@ -473,14 +475,14 @@ func _start_next_chunk_scan() -> bool:
 
 
 func _build_current_chunk_cells() -> void:
+	# Cache the whole chunk once. Future camera positions/orientations can then
+	# reuse it without any new physics work.
 	var min_cell := _chunk_min_cell(_scan_chunk)
 	var max_cell := min_cell + Vector3i.ONE * (CHUNK_SIZE - 1)
 	for y in range(min_cell.y, max_cell.y + 1):
 		for z in range(min_cell.z, max_cell.z + 1):
 			for x in range(min_cell.x, max_cell.x + 1):
-				var cell := Vector3i(x, y, z)
-				if _point_inside_volume(_cell_to_world_center(cell)):
-					_scan_cells.append(cell)
+				_scan_cells.append(Vector3i(x, y, z))
 
 
 func _finish_current_chunk() -> void:
@@ -852,7 +854,7 @@ func _collision_world_aabb(collision: CollisionShape3D) -> AABB:
 		or not is_instance_valid(collision)
 		or collision.shape == null
 	):
-		return AABB(collision.global_position, Vector3.ZERO)
+		return AABB(Vector3.ZERO, Vector3.ZERO)
 
 	var local_aabb := AABB(Vector3.ZERO, Vector3.ZERO)
 	var has_bounds := false
