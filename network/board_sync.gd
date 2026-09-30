@@ -172,6 +172,15 @@ func valid_snapshot(snapshot: Variant) -> bool:
 					return false
 			if not item.get("size_name") is String or not item.get("flying") is bool:
 				return false
+			if item.has("visual_asset"):
+				if not item.get("visual_asset") is String:
+					return false
+				var visual_asset := String(item.get("visual_asset", ""))
+				if (
+					not visual_asset.is_empty()
+					and not visual_asset.begins_with("res://assets/tokens/")
+				):
+					return false
 		if not item.get("name") is String or not item.get("visible") is bool:
 			return false
 	return true
@@ -244,6 +253,8 @@ func _serialize_node(node: Node3D, group_name: String) -> Dictionary:
 	var data := {"id":_sync_id(node),"group":group_name,"path":String(board_root.get_path_to(node)),"scene":node.scene_file_path,"name":node.name,"transform":_transform(node.global_transform),"visible":node.visible}
 	if group_name == "dnd_token":
 		data["kind"]="token"; data["flying"]=bool(node.get("flying")); data["footprint"]=float(node.get("_footprint_cells")); data["size_name"]=String(node.get("_size_name")); data["color"]=_token_color(node)
+		if node.has_method("get_visual_asset_path"):
+			data["visual_asset"] = String(node.call("get_visual_asset_path"))
 	else: data["kind"]="physical"
 	return data
 
@@ -263,7 +274,11 @@ func _instantiate_from_data(data: Dictionary) -> Node3D:
 func _apply_node_data(node: Node3D, data: Dictionary) -> void:
 	node.visible=bool(data.get("visible",true)); node.set_meta("sync_id",String(data.get("id","")))
 	if data.get("kind","") == "token":
-		if node.has_method("configure") and node.scene_file_path == "res://token.tscn": node.call("configure",_dict_color(data.get("color",{})),float(board_root.get("cell_size")),String(data.get("size_name","Medium")),float(data.get("footprint",1.0)))
+		if node.has_method("configure"): node.call("configure",_dict_color(data.get("color",{})),float(board_root.get("cell_size")),String(data.get("size_name","Medium")),float(data.get("footprint",1.0)))
+		if data.has("visual_asset") and node.has_method("set_visual_asset"):
+			var visual_asset := String(data.get("visual_asset", ""))
+			if not visual_asset.is_empty():
+				node.call("set_visual_asset", visual_asset)
 		if node.has_method("set_flying"): node.call("set_flying",bool(data.get("flying",false)))
 	# configure() snaps tokens; restore the exact shared transform afterwards.
 	node.global_transform = _dict_transform(data.get("transform", {}))
