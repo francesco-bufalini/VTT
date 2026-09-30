@@ -88,22 +88,35 @@ func _ready() -> void:
 
 
 func _physics_process(delta: float) -> void:
-	if is_instance_valid(grid_support) and not flying:
-		global_position = grid_support.global_transform * (_support_transform.affine_inverse() * global_position)
+	# L'aggancio a carro/piattaforma non dipende dalla gravita: un token
+	# sospeso ma appoggiato al carro continua a seguirne il transform.
+	if is_instance_valid(grid_support):
+		global_position = (
+			grid_support.global_transform
+			* (_support_transform.affine_inverse() * global_position)
+		)
 		_support_transform = grid_support.global_transform
 		if grid_support.has_meta("passenger_deck_extent"):
 			var local := grid_support.to_local(global_position)
 			var extent: Vector2 = grid_support.get_meta("passenger_deck_extent")
-			var half_height := token_height_cells*cell_size*.5
-			if absf(local.x)<extent.x*.5 and absf(local.z)<extent.y*.5 and absf(local.y-half_height)<cell_size*.12:
-				local.y = half_height+.01*cell_size
+			var half_height := token_height_cells * cell_size * 0.5
+			if (
+				absf(local.x) < extent.x * 0.5
+				and absf(local.z) < extent.y * 0.5
+				and absf(local.y - half_height) < cell_size * 0.12
+			):
+				local.y = half_height + 0.01 * cell_size
 				global_position = grid_support.to_global(local)
 				velocity = Vector3.ZERO
 				return
 			grid_support = null
+
 	if flying:
-		velocity.y = 0.0
-	elif is_on_floor():
+		_snap_horizontal_to_grid()
+		velocity = Vector3.ZERO
+		return
+
+	if is_on_floor():
 		velocity.y = -0.05
 	else:
 		velocity.y = maxf(
@@ -114,17 +127,25 @@ func _physics_process(delta: float) -> void:
 	velocity.x = 0.0
 	velocity.z = 0.0
 	move_and_slide()
-	grid_support = null
-	if not flying and is_on_floor():
+
+	if is_on_floor():
+		grid_support = null
 		for index in range(get_slide_collision_count()):
 			var hit := get_slide_collision(index)
 			var body := hit.get_collider() as Node3D
-			if body != null and body.is_in_group("tactical_platform") and hit.get_normal().dot(Vector3.UP) > 0.7:
+			if (
+				body != null
+				and body.is_in_group("tactical_platform")
+				and hit.get_normal().dot(Vector3.UP) > 0.7
+			):
 				grid_support = body
 				_support_transform = body.global_transform
+				break
 
-	if is_on_floor() and not flying:
+		# "Applica gravita" vale solo per questa caduta. Appena il token
+		# atterra torna sospeso, mantenendo l'eventuale supporto del carro.
 		_snap_horizontal_to_grid()
+		_finish_gravity_after_landing()
 
 
 func set_flying(enabled: bool) -> void:
@@ -141,13 +162,19 @@ func set_flying(enabled: bool) -> void:
 
 
 func apply_gravity() -> void:
+	# X/Z sono fissate prima della caduta: la gravita modifica solo Y.
+	_snap_horizontal_to_grid()
 	set_flying(false)
 
 
+func _finish_gravity_after_landing() -> void:
+	flying = true
+	velocity = Vector3.ZERO
+	platform_floor_layers = 0
+
+
 func is_motion_in_progress() -> bool:
-	if flying:
-		return false
-	return not is_on_floor() or absf(velocity.y) > 0.1
+	return not flying
 
 
 func nudge_vertical(steps: int) -> void:
@@ -722,28 +749,23 @@ func rotate_grid(rotation_steps: int) -> void:
 	rotation.y = snappedf(rotation.y, PI / 4.0)
 
 
+func snap_horizontal_to_grid() -> void:
+	_snap_horizontal_to_grid()
+
+
 func _snap_horizontal_to_grid() -> void:
-	if is_instance_valid(grid_support):
-		var local_point := grid_support.to_local(global_position)
-		local_point.x = _snap_coordinate(local_point.x)
-		local_point.z = _snap_coordinate(local_point.z)
-		global_position = grid_support.to_global(local_point)
-		return
+	# La griglia tattica e' globale: con cell_size == 1, X e Z sono
+	# coordinate intere anche quando il token e' sospeso.
 	global_position.x = _snap_coordinate(global_position.x)
 	global_position.z = _snap_coordinate(global_position.z)
 
 
 func _snap_coordinate(value: float) -> float:
-	var rounded_footprint: int = int(round(_footprint_cells))
+	return round(value / cell_size) * cell_size
 
-	if is_equal_approx(_footprint_cells, float(rounded_footprint)) \
-	and rounded_footprint % 2 == 0:
-		return round(value / cell_size) * cell_size
 
-	return floor(value / cell_size) * cell_size + (cell_size * 0.5)
-
-func snap_destination(point: Vector3, support: Node3D = null) -> Vector3:
-	var local_point := support.to_local(point) if is_instance_valid(support) else point
-	local_point.x = _snap_coordinate(local_point.x)
-	local_point.z = _snap_coordinate(local_point.z)
-	return support.to_global(local_point) if is_instance_valid(support) else local_point
+func snap_destination(point: Vector3, _support: Node3D = null) -> Vector3:
+	var snapped := point
+	snapped.x = _snap_coordinate(snapped.x)
+	snapped.z = _snap_coordinate(snapped.z)
+	return snapped
