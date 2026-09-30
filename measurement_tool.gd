@@ -41,6 +41,7 @@ var _spell_preview_shape: String = ""
 var _spell_preview_style: String = ""
 var _spell_preview_line_width: float = -1.0
 var _spell_fixed_previews: Array[MeshInstance3D] = []
+var _transient_spell_aoes: Array[Dictionary] = []
 var _spell_range_preview: MeshInstance3D
 var _spell_range_center: Vector3 = Vector3.INF
 var _spell_range_radius: float = -1.0
@@ -274,6 +275,14 @@ func _token_touched_by_current_geometry(token: Node3D) -> bool:
 			):
 				return true
 
+	for data_value: Variant in _transient_spell_aoes:
+		if data_value is Dictionary:
+			if _persistent_aoe_hits_token(
+				data_value as Dictionary,
+				token
+			):
+				return true
+
 	if (
 		is_instance_valid(_spell_preview)
 		and _spell_preview.visible
@@ -331,6 +340,7 @@ func _refresh_affected_token_highlight() -> void:
 	var tokens: Array[Node] = get_tree().get_nodes_in_group("dnd_token")
 	var signature_parts: PackedStringArray = PackedStringArray()
 	signature_parts.append(JSON.stringify(persistent_aoes))
+	signature_parts.append(JSON.stringify(_transient_spell_aoes))
 	signature_parts.append(
 		"%s|%s|%s|%s|%s|%s|%s" % [
 		str(_measurement_mode),
@@ -1312,6 +1322,7 @@ func hide_spell_range_preview() -> void:
 		_spell_range_preview.hide()
 
 
+
 func show_transient_aoe(
 	start: Vector3,
 	end: Vector3,
@@ -1343,13 +1354,38 @@ func show_transient_aoe(
 		root, start, end, shape, style, cell_size
 	)
 
+	var transient_id: int = root.get_instance_id()
+	_transient_spell_aoes.append({
+		"id": transient_id,
+		"start": [start.x, start.y, start.z],
+		"end": [end.x, end.y, end.z],
+		"shape": shape,
+		"style": style,
+		"line_width_world": line_width_world
+	})
+	_affected_tokens_signature = ""
+
 	var timer: Timer = Timer.new()
 	timer.one_shot = true
 	timer.wait_time = maxf(duration_seconds, 0.05)
 	root.add_child(timer)
-	timer.timeout.connect(root.queue_free)
+	timer.timeout.connect(
+		func() -> void:
+			for index: int in range(
+				_transient_spell_aoes.size() - 1,
+				-1,
+				-1
+			):
+				if int(
+					_transient_spell_aoes[index].get("id", -1)
+				) == transient_id:
+					_transient_spell_aoes.remove_at(index)
+					break
+			_affected_tokens_signature = ""
+			if is_instance_valid(root):
+				root.queue_free()
+	)
 	timer.start()
-
 
 func show_teleport_cloud(
 	position: Vector3,
@@ -1394,6 +1430,7 @@ func show_spell_projectile(
 	)
 
 
+
 func show_spell_projectile_with_impact(
 	start: Vector3,
 	end: Vector3,
@@ -1402,7 +1439,7 @@ func show_spell_projectile_with_impact(
 	impact_shape: String,
 	impact_radius_world: float,
 	impact_style: String,
-	_impact_seconds: float = 5.0
+	impact_seconds: float = 5.0
 ) -> void:
 	show_spell_projectile(
 		start,
@@ -1417,18 +1454,16 @@ func show_spell_projectile_with_impact(
 	add_child(timer)
 	timer.timeout.connect(
 		func() -> void:
-			# La parte finale dell'animazione resta come AoE cliccabile fino
-			# a quando il giocatore non la rimuove dalla mappa.
-			add_aoe(
+			show_transient_aoe(
 				end,
 				end + Vector3.RIGHT * impact_radius_world,
 				impact_shape,
+				impact_seconds,
 				impact_style
 			)
 			timer.queue_free()
 	)
 	timer.start()
-
 
 func show_wall_path_preview(
 	points: Array[Vector3],
