@@ -886,10 +886,20 @@ func valid_state(value: Variant) -> bool:
 	var round_value: Variant = state.get("round", 1)
 	var turns_value: Variant = state.get("turn_count", 0)
 	var next_id_value: Variant = state.get("next_entry_id", 1)
-	if not index_value is int or not round_value is int:
-		return false
-	if not turns_value is int or not next_id_value is int:
-		return false
+	for numeric_value: Variant in [
+		index_value,
+		round_value,
+		turns_value,
+		next_id_value
+	]:
+		# JSON has a single numeric type. After a network round-trip Godot
+		# parses integer-looking JSON values as floats, so accept either type
+		# but still require a finite whole number.
+		if not (numeric_value is int or numeric_value is float):
+			return false
+		var numeric_float := float(numeric_value)
+		if not is_finite(numeric_float) or numeric_float != floor(numeric_float):
+			return false
 	if int(round_value) < 1 or int(turns_value) < 0 or int(next_id_value) < 1:
 		return false
 	if state_entries.is_empty():
