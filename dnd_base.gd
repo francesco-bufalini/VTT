@@ -85,6 +85,10 @@ var _token_front_by_id: Dictionary = {}
 var _selection_grid_instance: MultiMeshInstance3D
 var _selection_grid_multimesh: MultiMesh
 var _selection_grid_signature: String = ""
+var _affected_grid_instance: MultiMeshInstance3D
+var _affected_grid_multimesh: MultiMesh
+var _affected_grid_signature: String = ""
+var _affected_tokens: Array[CharacterBody3D] = []
 var token_state_dialog: ConfirmationDialog
 var opportunity_dialog: AcceptDialog
 var token_state_name: LineEdit
@@ -166,6 +170,7 @@ func _ready() -> void:
 	runtime_toolbar.call("setup", self)
 
 	_build_selection_grid_highlight()
+	_build_affected_grid_highlight()
 	_capture_mouse()
 
 
@@ -628,6 +633,165 @@ func _build_selection_grid_highlight() -> void:
 	add_child(_selection_grid_instance)
 
 
+func _build_affected_grid_highlight() -> void:
+	var material := StandardMaterial3D.new()
+	material.transparency = BaseMaterial3D.TRANSPARENCY_ALPHA
+	material.shading_mode = BaseMaterial3D.SHADING_MODE_UNSHADED
+	material.albedo_color = Color(1.0, 0.12, 0.08, 0.98)
+	material.emission_enabled = true
+	material.emission = Color(1.0, 0.03, 0.01, 1.0)
+	material.emission_energy_multiplier = 1.7
+	material.no_depth_test = true
+
+	var wire_cube := ImmediateMesh.new()
+	wire_cube.surface_begin(Mesh.PRIMITIVE_LINES, material)
+	var half := cell_size * 0.49
+	var corners: Array[Vector3] = [
+		Vector3(-half, -half, -half),
+		Vector3(half, -half, -half),
+		Vector3(half, half, -half),
+		Vector3(-half, half, -half),
+		Vector3(-half, -half, half),
+		Vector3(half, -half, half),
+		Vector3(half, half, half),
+		Vector3(-half, half, half),
+	]
+	var edges: Array[Vector2i] = [
+		Vector2i(0, 1), Vector2i(1, 2), Vector2i(2, 3), Vector2i(3, 0),
+		Vector2i(4, 5), Vector2i(5, 6), Vector2i(6, 7), Vector2i(7, 4),
+		Vector2i(0, 4), Vector2i(1, 5), Vector2i(2, 6), Vector2i(3, 7),
+	]
+	for edge: Vector2i in edges:
+		wire_cube.surface_add_vertex(corners[edge.x])
+		wire_cube.surface_add_vertex(corners[edge.y])
+	wire_cube.surface_end()
+
+	_affected_grid_multimesh = MultiMesh.new()
+	_affected_grid_multimesh.transform_format = MultiMesh.TRANSFORM_3D
+	_affected_grid_multimesh.mesh = wire_cube
+	_affected_grid_multimesh.instance_count = 0
+
+	_affected_grid_instance = MultiMeshInstance3D.new()
+	_affected_grid_instance.name = "AffectedTokenGridHighlight"
+	_affected_grid_instance.multimesh = _affected_grid_multimesh
+	_affected_grid_instance.cast_shadow = (
+		GeometryInstance3D.SHADOW_CASTING_SETTING_OFF
+	)
+	add_child(_affected_grid_instance)
+
+
+func set_affected_token_highlight(tokens: Array) -> void:
+	var resolved: Array[CharacterBody3D] = []
+	for value: Variant in tokens:
+		if not value is CharacterBody3D:
+			continue
+		var token: CharacterBody3D = value as CharacterBody3D
+		if (
+			token != null
+			and is_instance_valid(token)
+			and token.is_in_group("dnd_token")
+			and not (token in resolved)
+		):
+			resolved.append(token)
+
+	var same: bool = resolved.size() == _affected_tokens.size()
+	if same:
+		for index: int in range(resolved.size()):
+			if resolved[index] != _affected_tokens[index]:
+				same = false
+				break
+	if same:
+		return
+
+	_affected_tokens = resolved
+	_affected_grid_signature = ""
+	_refresh_affected_grid_highlight()
+
+
+func _token_grid_highlight_centers(
+	tokens: Array[CharacterBody3D]
+) -> Array[Vector3]:
+	var centers: Array[Vector3] = []
+	for token: CharacterBody3D in tokens:
+		if token == null or not is_instance_valid(token):
+			continue
+
+		var footprint: float = (
+			float(token.call("get_footprint_cells"))
+			if token.has_method("get_footprint_cells")
+			else 1.0
+		)
+		var height_cells: float = maxf(
+			float(token.get("token_height_cells")),
+			0.1
+		)
+		var horizontal_count: int = maxi(1, int(ceil(footprint)))
+		var vertical_count: int = maxi(1, int(ceil(height_cells)))
+		var horizontal_start: float = (
+			-float(horizontal_count - 1) * cell_size * 0.5
+		)
+		var bottom_y: float = (
+			token.global_position.y
+			- height_cells * cell_size * 0.5
+		)
+
+		for y_index: int in range(vertical_count):
+			var world_y: float = (
+				bottom_y + (float(y_index) + 0.5) * cell_size
+			)
+			for z_index: int in range(horizontal_count):
+				for x_index: int in range(horizontal_count):
+					centers.append(
+						Vector3(
+							token.global_position.x
+							+ horizontal_start
+							+ float(x_index) * cell_size,
+							world_y,
+							token.global_position.z
+							+ horizontal_start
+							+ float(z_index) * cell_size
+						)
+					)
+	return centers
+
+
+func _refresh_affected_grid_highlight() -> void:
+	if _affected_grid_multimesh == null:
+		return
+
+	var signature_parts: PackedStringArray = PackedStringArray()
+	for token: CharacterBody3D in _affected_tokens:
+		if token == null or not is_instance_valid(token):
+			continue
+		signature_parts.append(
+			"%s|%s|%.4f|%.4f" % [
+				str(token.get_instance_id()),
+				str(token.global_position),
+				float(
+					token.call("get_footprint_cells")
+					if token.has_method("get_footprint_cells")
+					else 1.0
+				),
+				maxf(float(token.get("token_height_cells")), 0.1)
+			]
+		)
+	var next_signature: String = ";".join(signature_parts)
+	if next_signature == _affected_grid_signature:
+		return
+	_affected_grid_signature = next_signature
+
+	var centers: Array[Vector3] = _token_grid_highlight_centers(
+		_affected_tokens
+	)
+	_affected_grid_multimesh.instance_count = centers.size()
+	_affected_grid_multimesh.visible_instance_count = centers.size()
+	for index: int in range(centers.size()):
+		_affected_grid_multimesh.set_instance_transform(
+			index,
+			Transform3D(Basis.IDENTITY, to_local(centers[index]))
+		)
+
+
 func _refresh_selection_grid_highlight() -> void:
 	if _selection_grid_multimesh == null:
 		return
@@ -713,6 +877,7 @@ func _refresh_selection_grid_highlight() -> void:
 func _process(_delta: float) -> void:
 	_clean_selection()
 	_refresh_selection_grid_highlight()
+	_refresh_affected_grid_highlight()
 	_process_pending_history_action()
 
 	if _ui_owns_mouse and Input.mouse_mode != Input.MOUSE_MODE_VISIBLE:
