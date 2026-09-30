@@ -1,20 +1,21 @@
 #!/usr/bin/env python3
 """
-Deterministic 5e.tools area-geometry parser.
+Build the runtime spell-map catalogue used by the VTT.
 
-Usage:
-    python vtt/spells/parse_5etools_areas.py <path-to-data/spells>
-    python vtt/spells/parse_5etools_areas.py <normalized-candidates.json>
+The parser is deterministic: it uses 5e.tools structured fields plus regular
+expressions over the spell prose. No neural/LLM component is involved.
 
-The parser:
-- only reacts to spells that have geometry-relevant areaTags;
-- ignores ST/MT target tags and W (walls) for now;
-- finds a sentence containing the word associated with the tag;
-- extracts regular dimensional phrases with regexes;
-- writes a deterministic supplemental catalog to
-  assets/spell_area_geometry.json by default.
+Input:
+    python vtt/spells/parse_5etools_areas.py <5etools data/spells directory>
+    python vtt/spells/parse_5etools_areas.py <normalized spell JSON>
 
-No neural/LLM component is used.
+Output:
+    assets/spell_area_geometry.json
+
+The asset intentionally contains only information consumed to target and draw
+spell effects on the map: range, targeting, geometry, persistence, damage
+families, and map-relevant visual tags. Parser diagnostics are written to
+outputs/spell_area_parser_report.json instead.
 """
 
 from __future__ import annotations
@@ -23,12 +24,16 @@ import argparse
 import json
 import re
 from pathlib import Path
-from typing import Any, Iterable
+from typing import Any, Callable, Iterable
 
 
-PROJECT_ROOT = Path(__file__).resolve().parents[2]\nOUTPUT_DEFAULT = PROJECT_ROOT / "assets/spell_area_geometry.json"
+PROJECT_ROOT = Path(__file__).resolve().parents[2]
+OUTPUT_DEFAULT = PROJECT_ROOT / "assets/spell_area_geometry.json"
+REPORT_DEFAULT = PROJECT_ROOT / "outputs/spell_area_parser_report.json"
 
-# Walls are deliberately excluded for now.
+TAG_RE = re.compile(r"\{@([^\s{}]+)\s+([^{}]+)\}")
+SENTENCE_SPLIT_RE = re.compile(r"(?<=[.!?])\s+|\n+")
+
 GEOMETRY_TAGS = {
     "E": ("emanation",),
     "S": ("sphere", "emanation", "aura", "radius"),
@@ -39,11 +44,10 @@ GEOMETRY_TAGS = {
     "Y": ("cylinder",),
     "R": ("circle", "radius"),
     "H": ("hemisphere", "dome"),
+    "W": ("wall",),
 }
-IGNORED_AREA_TAGS = {"ST", "MT", "W"}
-
-TAG_RE = re.compile(r"\{@([^\s{}]+)\s+([^{}]+)\}")
-SENTENCE_SPLIT_RE = re.compile(r"(?<=[.!?])\s+|\n+")
+IGNORED_AREA_TAGS = {"ST", "MT"}
+MAP_VISUAL_TAGS = {"OBS", "LGT", "LGTS", "DFT"}
 
 
 def _number(value: str | float) -> int | float:
@@ -77,8 +81,6 @@ def _flatten_entries(value: Any) -> list[str]:
         for item in value:
             result.extend(_flatten_entries(item))
     elif isinstance(value, dict):
-        # Geometry descriptions live in prose/list entries. Avoid flattening
-        # metadata such as source/type fields, which can create false matches.
         for key in ("entry", "entries", "items", "rows"):
             if key in value:
                 result.extend(_flatten_entries(value[key]))
@@ -86,9 +88,8 @@ def _flatten_entries(value: Any) -> list[str]:
 
 
 def _spell_text(spell: dict[str, Any]) -> str:
-    normalized = spell.get("text")
-    if isinstance(normalized, str):
-        return normalized
+    if isinstance(spell.get("text"), str):
+        return str(spell["text"])
 
     parts: list[str] = []
     parts.extend(_flatten_entries(spell.get("entries", [])))
@@ -107,18 +108,8 @@ def _sentences(text: str) -> list[str]:
 
 def _contains_other_shape(text: str, allowed: set[str]) -> bool:
     shape_words = {
-        "sphere",
-        "emanation",
-        "aura",
-        "line",
-        "square",
-        "cube",
-        "cone",
-        "cylinder",
-        "circle",
-        "hemisphere",
-        "dome",
-        "wall",
+        "sphere", "emanation", "aura", "line", "square", "cube", "cone",
+        "cylinder", "circle", "hemisphere", "dome", "wall",
     }
     return any(
         re.search(rf"\b{re.escape(word)}s?\b", text)
@@ -144,7 +135,6 @@ def _parse_sphere(sentence: str) -> dict[str, Any] | None:
         diameter = float(match.group(1))
         return {
             "shape": "sphere",
-            "diameter_feet": _number(diameter),
             "radius_feet": _number(diameter / 2.0),
         }
 
@@ -164,17 +154,14 @@ def _parse_sphere(sentence: str) -> dict[str, Any] | None:
     if match:
         return {"shape": "sphere", "radius_feet": _number(match.group(1))}
 
-    # 2024 data frequently has areaTags=["S"] while the rules text explicitly
-    # calls the volume an Emanation. Trust the textual geometry.
+    # 2024 entries sometimes retain areaTags=["S"] while calling the actual
+    # volume an Emanation. The prose wins.
     match = re.search(
         r"(\d+(?:\.\d+)?)\s*-\s*foot\b[^.]{0,45}?\bemanation\b",
         text,
     )
     if match:
-        return {
-            "shape": "emanation",
-            "radius_feet": _number(match.group(1)),
-        }
+        return {"shape": "emanation", "radius_feet": _number(match.group(1))}
 
     match = re.search(
         r"\baura\b[^.]{0,100}?\b(?:with|in)\s+(?:a\s+)?"
@@ -184,9 +171,6 @@ def _parse_sphere(sentence: str) -> dict[str, Any] | None:
     if match:
         return {"shape": "sphere", "radius_feet": _number(match.group(1))}
 
-    # Older text often describes an S-tagged effect only as "a 30-foot
-    # radius around you." Do not use this fallback when the same sentence
-    # clearly describes another geometric primitive such as a cylinder.
     if not _contains_other_shape(
         text,
         {"sphere", "emanation", "aura", "circle"},
@@ -197,14 +181,12 @@ def _parse_sphere(sentence: str) -> dict[str, Any] | None:
         )
         if match:
             return {"shape": "sphere", "radius_feet": _number(match.group(1))}
-
         match = re.search(
             r"\bwithin\s+(\d+(?:\.\d+)?)\s+feet\s+of\b",
             text,
         )
         if match:
             return {"shape": "sphere", "radius_feet": _number(match.group(1))}
-
     return None
 
 
@@ -214,12 +196,9 @@ def _parse_emanation(sentence: str) -> dict[str, Any] | None:
         r"(\d+(?:\.\d+)?)\s*-\s*foot\b[^.]{0,45}?\bemanation\b",
         text,
     )
-    if match:
-        return {
-            "shape": "emanation",
-            "radius_feet": _number(match.group(1)),
-        }
-    return None
+    if not match:
+        return None
+    return {"shape": "emanation", "radius_feet": _number(match.group(1))}
 
 
 def _parse_cone(sentence: str) -> dict[str, Any] | None:
@@ -241,7 +220,6 @@ def _parse_cone(sentence: str) -> dict[str, Any] | None:
 
 def _parse_cube(sentence: str) -> dict[str, Any] | None:
     text = sentence.lower().replace("–", "-").replace("—", "-")
-
     matches = re.findall(
         r"(\d+(?:\.\d+)?)\s*-\s*foot\b[^.]{0,24}?\bcubes?\b",
         text,
@@ -255,27 +233,19 @@ def _parse_cube(sentence: str) -> dict[str, Any] | None:
             "variants": [{"side_feet": value} for value in distinct],
         }
 
-    side_matches = re.findall(
+    matches = re.findall(
         r"(?:cube|cage|box)\b[^.]{0,120}?(?:up\s+to\s+)?"
         r"(\d+(?:\.\d+)?)\s+feet\s+on\s+(?:each|a)\s+side\b",
         text,
     )
-    if side_matches:
-        distinct = sorted({_number(value) for value in side_matches}, key=float)
+    if matches:
+        distinct = sorted({_number(value) for value in matches}, key=float)
         if len(distinct) == 1:
             return {"shape": "cube", "side_feet": distinct[0]}
         return {
             "shape": "cube",
             "variants": [{"side_feet": value} for value in distinct],
         }
-
-    match = re.search(
-        r"\bcube\b[^.]{0,100}?(?:up\s+to\s+)?"
-        r"(\d+(?:\.\d+)?)\s+feet\s+on\s+(?:each|a)\s+side\b",
-        text,
-    )
-    if match:
-        return {"shape": "cube", "side_feet": _number(match.group(1))}
     return None
 
 
@@ -287,10 +257,7 @@ def _parse_square(sentence: str) -> dict[str, Any] | None:
     )
     if match:
         return {"shape": "square", "side_feet": _number(match.group(1))}
-    match = re.search(
-        r"(\d+(?:\.\d+)?)\s+feet\s+square\b",
-        text,
-    )
+    match = re.search(r"(\d+(?:\.\d+)?)\s+feet\s+square\b", text)
     if match:
         return {"shape": "square", "side_feet": _number(match.group(1))}
     return None
@@ -392,24 +359,14 @@ def _parse_cylinder(sentence: str) -> dict[str, Any] | None:
 
 def _parse_circle(sentence: str) -> dict[str, Any] | None:
     text = sentence.lower().replace("–", "-").replace("—", "-")
-    match = re.search(
+    for pattern in (
         r"(\d+(?:\.\d+)?)\s*-\s*foot-radius\b[^.]{0,90}?\bcircle\b",
-        text,
-    )
-    if match:
-        return {"shape": "circle", "radius_feet": _number(match.group(1))}
-    match = re.search(
         r"(\d+(?:\.\d+)?)\s*-\s*foot\s+radius\b",
-        text,
-    )
-    if match:
-        return {"shape": "circle", "radius_feet": _number(match.group(1))}
-    match = re.search(
         r"(\d+(?:\.\d+)?)\s+feet\s+in\s+radius\b",
-        text,
-    )
-    if match:
-        return {"shape": "circle", "radius_feet": _number(match.group(1))}
+    ):
+        match = re.search(pattern, text)
+        if match:
+            return {"shape": "circle", "radius_feet": _number(match.group(1))}
     return None
 
 
@@ -420,25 +377,164 @@ def _parse_hemisphere(sentence: str) -> dict[str, Any] | None:
         r"[^.]{0,80}?\b(?:hemisphere|dome)\b",
         text,
     )
-    if match:
-        return {
-            "shape": "hemisphere",
-            "radius_feet": _number(match.group(1)),
-        }
+    if not match:
+        match = re.search(
+            r"\b(?:hemisphere|dome)\b[^.]{0,120}?\bradius\s+"
+            r"(?:of\s+)?(?:up\s+to\s+)?(\d+(?:\.\d+)?)\s+feet\b",
+            text,
+        )
+    if not match:
+        return None
+    return {"shape": "hemisphere", "radius_feet": _number(match.group(1))}
+
+
+def _feet_from_inches(value: float) -> int | float:
+    return _number(value / 12.0)
+
+
+def _parse_wall(sentence: str) -> dict[str, Any] | None:
+    text = sentence.lower().replace("–", "-").replace("—", "-")
+    if "wall" not in text and "panels" not in text:
+        return None
+
+    variants: list[dict[str, Any]] = []
+
+    # Straight/path wall.
     match = re.search(
-        r"\b(?:hemisphere|dome)\b[^.]{0,120}?\bradius\s+"
-        r"(?:of\s+)?(?:up\s+to\s+)?(\d+(?:\.\d+)?)\s+feet\b",
+        r"(?:wall[^.]{0,120}?)?(?:up\s+to\s+)?"
+        r"(\d+(?:\.\d+)?)\s+feet\s+long\b"
+        r"[^.]{0,80}?(\d+(?:\.\d+)?)\s+feet\s+high\b"
+        r"[^.]{0,80}?(\d+(?:\.\d+)?)\s+(?:feet|foot)\s+thick\b",
         text,
     )
     if match:
-        return {
-            "shape": "hemisphere",
+        variants.append({
+            "type": "path",
+            "max_length_feet": _number(match.group(1)),
+            "height_feet": _number(match.group(2)),
+            "thickness_feet": _number(match.group(3)),
+        })
+    else:
+        # Inch-thick wall (e.g. Prismatic Wall).
+        match = re.search(
+            r"(?:up\s+to\s+)?(\d+(?:\.\d+)?)\s+feet\s+long\b"
+            r"[^.]{0,80}?(\d+(?:\.\d+)?)\s+feet\s+high\b"
+            r"[^.]{0,80}?(\d+(?:\.\d+)?)\s+inch(?:es)?\s+thick\b",
+            text,
+        )
+        if match:
+            variants.append({
+                "type": "path",
+                "max_length_feet": _number(match.group(1)),
+                "height_feet": _number(match.group(2)),
+                "thickness_feet": _feet_from_inches(float(match.group(3))),
+            })
+
+    # Ring/circle wall.
+    match = re.search(
+        r"(?:ringed\s+wall|circle)[^.]{0,80}?"
+        r"(?:up\s+to\s+)?(?:a\s+)?(\d+(?:\.\d+)?)\s*-?\s*foot\s+diameter\b"
+        r"[^.]{0,80}?(?:up\s+to\s+)?(\d+(?:\.\d+)?)\s+feet\s+high\b"
+        r"[^.]{0,80}?(\d+(?:\.\d+)?)\s+(?:feet|foot)\s+thick\b",
+        text,
+    )
+    if match:
+        variants.append({
+            "type": "circle",
+            "radius_feet": _number(float(match.group(1)) / 2.0),
+            "height_feet": _number(match.group(2)),
+            "thickness_feet": _number(match.group(3)),
+        })
+
+    # Globe/sphere.
+    match = re.search(
+        r"(?:sphere|globe)\b[^.]{0,100}?\bradius\s+of\s+(?:up\s+to\s+)?"
+        r"(\d+(?:\.\d+)?)\s+feet\b",
+        text,
+    )
+    if match:
+        variants.append({
+            "type": "globe",
             "radius_feet": _number(match.group(1)),
+        })
+    else:
+        match = re.search(
+            r"(?:sphere|globe)\b[^.]{0,100}?(?:up\s+to\s+)?"
+            r"(\d+(?:\.\d+)?)\s+feet\s+in\s+diameter\b",
+            text,
+        )
+        if match:
+            variants.append({
+                "type": "globe",
+                "radius_feet": _number(float(match.group(1)) / 2.0),
+            })
+
+    # Hemispherical dome.
+    match = re.search(
+        r"hemispherical\s+dome\b[^.]{0,120}?"
+        r"(?:radius\s+of\s+)?(?:up\s+to\s+)?"
+        r"(\d+(?:\.\d+)?)\s+feet\b",
+        text,
+    )
+    if match:
+        variants.append({
+            "type": "dome",
+            "radius_feet": _number(match.group(1)),
+        })
+
+    # Panel walls. Convert to the current path editor while preserving the
+    # actual panel dimensions in the asset for future panel-by-panel editing.
+    panel_match = re.search(
+        r"(\w+|\d+)\s+(\d+(?:\.\d+)?)\s*-\s*foot(?:-by-|\s+square\s+)"
+        r"(\d+(?:\.\d+)?)?\s*-?\s*foot?\s*panels?",
+        text,
+    )
+    if not panel_match:
+        panel_match = re.search(
+            r"(\w+|\d+)\s+(\d+(?:\.\d+)?)\s*-\s*foot-square\s+panels?",
+            text,
+        )
+    if panel_match:
+        words = {
+            "one": 1, "two": 2, "three": 3, "four": 4, "five": 5,
+            "six": 6, "seven": 7, "eight": 8, "nine": 9, "ten": 10,
         }
-    return None
+        raw_count = panel_match.group(1)
+        count = int(raw_count) if raw_count.isdigit() else words.get(raw_count, 0)
+        width = float(panel_match.group(2))
+        raw_height = panel_match.group(3)
+        height = float(raw_height) if raw_height else width
+
+        thickness_feet: int | float = 0.5
+        thick_match = re.search(
+            r"wall\s+is\s+(\d+(?:\.\d+)?)\s+feet?\s+thick\b",
+            text,
+        )
+        if thick_match:
+            thickness_feet = _number(thick_match.group(1))
+        else:
+            thick_match = re.search(
+                r"wall\s+is\s+(\d+(?:\.\d+)?)\s+inch(?:es)?\s+thick\b",
+                text,
+            )
+            if thick_match:
+                thickness_feet = _feet_from_inches(float(thick_match.group(1)))
+
+        variants.append({
+            "type": "panels",
+            "max_panels": count,
+            "panel_width_feet": _number(width),
+            "panel_height_feet": _number(height),
+            "thickness_feet": thickness_feet,
+        })
+
+    if not variants:
+        return None
+
+    return {"shape": "wall", "variants": variants}
 
 
-PARSERS = {
+PARSERS: dict[str, Callable[[str], dict[str, Any] | None]] = {
     "E": _parse_emanation,
     "S": _parse_sphere,
     "L": _parse_line,
@@ -448,6 +544,7 @@ PARSERS = {
     "Y": _parse_cylinder,
     "R": _parse_circle,
     "H": _parse_hemisphere,
+    "W": _parse_wall,
 }
 
 
@@ -457,7 +554,6 @@ def _parse_tag(
 ) -> dict[str, Any] | None:
     keywords = GEOMETRY_TAGS[tag]
     parser = PARSERS[tag]
-
     for sentence in sentences:
         lowered = sentence.lower()
         if not any(
@@ -465,16 +561,13 @@ def _parse_tag(
             for keyword in keywords
         ):
             continue
-
         geometry = parser(sentence)
         if geometry is not None:
-            geometry["area_tag"] = tag
-            geometry["dimension_source"] = "text"
             return geometry
     return None
 
 
-def _extract_spell_geometry(
+def _extract_geometries(
     spell: dict[str, Any],
 ) -> tuple[list[dict[str, Any]], list[str]]:
     area_tags = spell.get("areaTags", [])
@@ -490,19 +583,152 @@ def _extract_spell_geometry(
         tag = str(raw_tag)
         if tag in IGNORED_AREA_TAGS or tag not in GEOMETRY_TAGS:
             continue
-
         geometry = _parse_tag(tag, sentences)
         if geometry is None:
             unresolved.append(tag)
-        else:
+            continue
+        if geometry not in geometries:
             geometries.append(geometry)
 
     return geometries, unresolved
 
 
+def _range_spec(spell: dict[str, Any]) -> dict[str, Any]:
+    value = spell.get("range", {})
+    if not isinstance(value, dict):
+        return {}
+
+    range_type = str(value.get("type", "point"))
+    distance = value.get("distance", {})
+    result: dict[str, Any] = {"type": range_type}
+
+    if isinstance(distance, dict):
+        distance_type = str(distance.get("type", ""))
+        amount = distance.get("amount")
+        if distance_type == "feet" and isinstance(amount, (int, float)):
+            result["feet"] = _number(float(amount))
+        elif distance_type == "miles" and isinstance(amount, (int, float)):
+            result["feet"] = _number(float(amount) * 5280.0)
+        elif distance_type:
+            result["distance_type"] = distance_type
+    return result
+
+
+def _is_persistent(spell: dict[str, Any]) -> bool:
+    duration = spell.get("duration", [])
+    if not isinstance(duration, list) or not duration:
+        return False
+    for item in duration:
+        if isinstance(item, dict) and str(item.get("type", "")) != "instant":
+            return True
+    return False
+
+
+def _requires_ground(text: str) -> bool:
+    cleaned = _strip_5etools_tags(text).lower()
+    return bool(re.search(
+        r"\b(?:on|along)\s+(?:the\s+)?(?:ground|a\s+solid\s+surface|solid\s+surface)\b"
+        r"|\bpoint\s+on\s+the\s+ground\b",
+        cleaned,
+    ))
+
+
+def _targeting_spec(
+    range_spec: dict[str, Any],
+    geometries: list[dict[str, Any]],
+    text: str,
+) -> dict[str, Any]:
+    if not geometries:
+        return {}
+
+    if any(geometry.get("shape") == "wall" for geometry in geometries):
+        result: dict[str, Any] = {"type": "wall"}
+        if _requires_ground(text):
+            result["requires_ground"] = True
+        if re.search(
+            r"\bone\s+side\s+of\s+the\s+wall\b",
+            _strip_5etools_tags(text).lower(),
+        ):
+            result["choose_damage_side"] = True
+        return result
+
+    primary = geometries[0]
+    shape = str(primary.get("shape", ""))
+    range_type = str(range_spec.get("type", "point"))
+    distance_type = str(range_spec.get("distance_type", ""))
+
+    self_like = (
+        range_type in {"self", "radius", "emanation"}
+        or distance_type == "self"
+    )
+
+    result = {}
+    if self_like and shape in {"cone", "line", "cube"}:
+        result["type"] = "caster_direction"
+        result["allow_pitch"] = True
+    elif self_like:
+        result["type"] = "caster"
+    else:
+        result["type"] = "point"
+
+    if _requires_ground(text):
+        result["requires_ground"] = True
+    return result
+
+
+def _visual_tags(spell: dict[str, Any]) -> list[str]:
+    value = spell.get("miscTags", [])
+    if not isinstance(value, list):
+        return []
+    return sorted({
+        str(tag)
+        for tag in value
+        if str(tag) in MAP_VISUAL_TAGS
+    })
+
+
+def _damage_types(spell: dict[str, Any]) -> list[str]:
+    value = spell.get("damageInflict", [])
+    if not isinstance(value, list):
+        return []
+    return sorted({str(item).lower() for item in value if str(item)})
+
+
+def _build_effects(
+    spell: dict[str, Any],
+    geometries: list[dict[str, Any]],
+    targeting: dict[str, Any],
+) -> list[dict[str, Any]]:
+    effects: list[dict[str, Any]] = []
+    target_type = str(targeting.get("type", "point"))
+    anchor = {
+        "caster": "caster",
+        "caster_direction": "caster",
+        "wall": "selected_path",
+    }.get(target_type, "selected_point")
+
+    persistence = "persistent" if _is_persistent(spell) else "instant"
+    damage_types = _damage_types(spell)
+    visual_tags = _visual_tags(spell)
+
+    for geometry in geometries:
+        effect: dict[str, Any] = {
+            "anchor": "selected_path"
+            if geometry.get("shape") == "wall"
+            else anchor,
+            "geometry": geometry,
+            "persistence": persistence,
+        }
+        if damage_types:
+            effect["damage_types"] = damage_types
+        if visual_tags:
+            effect["visual_tags"] = visual_tags
+        effects.append(effect)
+    return effects
+
+
 def _load_spells_from_json(path: Path) -> list[dict[str, Any]]:
     data = json.loads(path.read_text(encoding="utf-8"))
-
     if isinstance(data, list):
         return [item for item in data if isinstance(item, dict)]
     if isinstance(data, dict):
@@ -515,7 +741,6 @@ def _load_spells_from_json(path: Path) -> list[dict[str, Any]]:
 def _load_spell_directory(directory: Path) -> list[dict[str, Any]]:
     index_path = directory / "index.json"
     files: list[Path] = []
-
     if index_path.exists():
         index_data = json.loads(index_path.read_text(encoding="utf-8"))
         if isinstance(index_data, dict):
@@ -524,13 +749,11 @@ def _load_spell_directory(directory: Path) -> list[dict[str, Any]]:
                     candidate = directory / value
                     if candidate.exists():
                         files.append(candidate)
-
     if not files:
         files = sorted(directory.glob("spells-*.json"))
 
-    unique_files = sorted(set(files))
     spells: list[dict[str, Any]] = []
-    for path in unique_files:
+    for path in sorted(set(files)):
         spells.extend(_load_spells_from_json(path))
     return spells
 
@@ -541,8 +764,10 @@ def _load_spells(input_path: Path) -> list[dict[str, Any]]:
     return _load_spells_from_json(input_path)
 
 
-def build_output(spells: list[dict[str, Any]]) -> dict[str, Any]:
-    parsed: dict[str, Any] = {}
+def build_output(
+    spells: list[dict[str, Any]],
+) -> tuple[dict[str, Any], dict[str, Any]]:
+    runtime: dict[str, Any] = {}
     unresolved: list[dict[str, str]] = []
 
     ordered_spells = sorted(
@@ -559,41 +784,52 @@ def build_output(spells: list[dict[str, Any]]) -> dict[str, Any]:
         if not name or not source:
             continue
 
-        geometries, missing_tags = _extract_spell_geometry(spell)
-        key = f"{source}::{name}"
-
-        if geometries:
-            parsed[key] = {
-                "name": name,
-                "source": source,
-                "areas": geometries,
-            }
-
-        for tag in missing_tags:
-            unresolved.append(
-                {
+        geometries, missing_tags = _extract_geometries(spell)
+        if not geometries:
+            for tag in missing_tags:
+                unresolved.append({
                     "name": name,
                     "source": source,
                     "area_tag": tag,
-                    "reason": "no regular dimension pattern found in matching sentence",
-                }
-            )
+                })
+            continue
 
-    unresolved.sort(
-        key=lambda item: (
-            item["source"],
-            item["name"],
-            item["area_tag"],
+        range_spec = _range_spec(spell)
+        targeting = _targeting_spec(
+            range_spec,
+            geometries,
+            _spell_text(spell),
         )
-    )
+        effects = _build_effects(spell, geometries, targeting)
+        if not effects:
+            continue
 
-    return {
-        "format_version": 1,
-        "generated_by": "vtt/spells/parse_5etools_areas.py",
-        "walls_ignored": True,
-        "spells": parsed,
-        "unresolved": unresolved,
+        entry: dict[str, Any] = {
+            "range": range_spec,
+            "targeting": targeting,
+            "effects": effects,
+        }
+        runtime[f"{source}::{name}"] = entry
+
+        for tag in missing_tags:
+            unresolved.append({
+                "name": name,
+                "source": source,
+                "area_tag": tag,
+            })
+
+    report = {
+        "spell_records": len(runtime),
+        "unresolved": sorted(
+            unresolved,
+            key=lambda item: (
+                item["source"],
+                item["name"],
+                item["area_tag"],
+            ),
+        ),
     }
+    return runtime, report
 
 
 def main() -> int:
@@ -601,13 +837,19 @@ def main() -> int:
     parser.add_argument(
         "input",
         type=Path,
-        help="5e.tools data/spells directory or a JSON file containing spells",
+        help="5e.tools data/spells directory or normalized spell JSON",
     )
     parser.add_argument(
         "--output",
         type=Path,
         default=OUTPUT_DEFAULT,
-        help="output JSON path (default: project-root/assets/spell_area_geometry.json)",
+        help="runtime map catalogue output path",
+    )
+    parser.add_argument(
+        "--report",
+        type=Path,
+        default=REPORT_DEFAULT,
+        help="parser diagnostics output path",
     )
     args = parser.parse_args()
 
@@ -615,24 +857,23 @@ def main() -> int:
     if not spells:
         raise SystemExit(f"No spells found in {args.input}")
 
-    output = build_output(spells)
+    runtime, report = build_output(spells)
+
     args.output.parent.mkdir(parents=True, exist_ok=True)
     args.output.write_text(
-        json.dumps(
-            output,
-            ensure_ascii=False,
-            indent=2,
-            sort_keys=True,
-        )
-        + "\n",
+        json.dumps(runtime, ensure_ascii=False, indent=2, sort_keys=True) + "\n",
+        encoding="utf-8",
+    )
+
+    args.report.parent.mkdir(parents=True, exist_ok=True)
+    args.report.write_text(
+        json.dumps(report, ensure_ascii=False, indent=2, sort_keys=True) + "\n",
         encoding="utf-8",
     )
 
     print(
-        "Parsed area geometry for "
-        f"{len(output['spells'])} spells; "
-        f"{len(output['unresolved'])} unresolved geometry tags. "
-        f"Wrote {args.output}."
+        f"Wrote {len(runtime)} runtime spell-map records to {args.output}; "
+        f"{len(report['unresolved'])} unresolved tags are listed in {args.report}."
     )
     return 0
 
