@@ -111,6 +111,15 @@ def parse_args() -> argparse.Namespace:
         default="",
         help="Token id/name/substring to use instead of the procedural default token.",
     )
+    parser.add_argument(
+        "--decimate-ratio",
+        type=float,
+        default=1.0,
+        help=(
+            "Simplify only the temporary imported mesh before OBJ export. "
+            "1.0 disables simplification; e.g. 0.65 keeps about 65%% of faces."
+        ),
+    )
     return parser.parse_args(argv)
 
 
@@ -668,6 +677,71 @@ def normalize_from_base(
     }
 
 
+def simplify_objects(
+    objects: list[bpy.types.Object],
+    decimate_ratio: float,
+) -> None:
+    """Simplify temporary imported meshes without ever writing source files."""
+    ratio = max(0.05, min(1.0, float(decimate_ratio)))
+    if ratio >= 0.999:
+        return
+
+    total_before = 0
+    total_after = 0
+    simplified = 0
+    skipped_bases = 0
+
+    for obj in objects:
+        if obj.type != "MESH" or obj.data is None:
+            continue
+
+        before = len(obj.data.polygons)
+        total_before += before
+
+        # Preserve authored D&D base/marker geometry so the footprint remains
+        # clean and circular even when the creature mesh is heavily reduced.
+        if base_candidate_score(obj) > 0:
+            total_after += before
+            skipped_bases += 1
+            continue
+
+        # Tiny meshes do not meaningfully affect file size and can degrade
+        # visibly when decimated.
+        if before < 500:
+            total_after += before
+            continue
+
+        bpy.ops.object.select_all(action="DESELECT")
+        obj.select_set(True)
+        bpy.context.view_layer.objects.active = obj
+
+        modifier = obj.modifiers.new(name="VTT_TemporaryDecimate", type="DECIMATE")
+        modifier.decimate_type = "COLLAPSE"
+        modifier.ratio = ratio
+        modifier.use_collapse_triangulate = True
+
+        try:
+            bpy.ops.object.modifier_apply(modifier=modifier.name)
+            simplified += 1
+        except Exception as exc:
+            print(f"WARNING: decimation skipped for {obj.name}: {exc}")
+            if modifier.name in obj.modifiers:
+                obj.modifiers.remove(modifier)
+
+        total_after += len(obj.data.polygons)
+
+    if total_before > 0:
+        reduction = 100.0 * (1.0 - (total_after / total_before))
+        print(
+            "Mesh simplification: "
+            f"ratio={ratio:.3f} | objects={simplified} | "
+            f"faces={total_before} -> {total_after} "
+            f"({reduction:.1f}% reduction)"
+        )
+        if skipped_bases:
+            print(f"Preserved D&D base/marker meshes: {skipped_bases}")
+
+
 def export_obj(objects: list[bpy.types.Object], destination: Path) -> None:
     destination.parent.mkdir(parents=True, exist_ok=True)
     bpy.ops.object.select_all(action="DESELECT")
@@ -812,6 +886,7 @@ def process_package(
     package: Path,
     source_root: Path,
     project_root: Path,
+    decimate_ratio: float,
 ) -> dict:
     clear_scene()
     main_source = choose_main_source(package)
@@ -868,6 +943,7 @@ def process_package(
         size_hint if size_hint is not None else size_from_diameter(diameter)
     )
 
+    simplify_objects(objects, decimate_ratio)
     metrics = normalize_from_base(objects, base_low, base_high, footprint)
     slug = slugify(package.name)
     token_dir = project_root / "assets" / "tokens" / "generated" / slug
@@ -942,6 +1018,10 @@ def main() -> int:
     source_root = Path(args.source).expanduser().resolve()
     project_root = Path(args.project_root).expanduser().resolve()
 
+    if not 0.05 <= args.decimate_ratio <= 1.0:
+        print("ERROR: --decimate-ratio must be between 0.05 and 1.0")
+        return 2
+
     if not source_root.is_dir():
         print(f"ERROR: source folder not found: {source_root}")
         return 2
@@ -967,7 +1047,14 @@ def main() -> int:
         )
         print(f"\n=== {relative_package} ===")
         try:
-            tokens.append(process_package(package, source_root, project_root))
+            tokens.append(
+                process_package(
+                    package,
+                    source_root,
+                    project_root,
+                    args.decimate_ratio,
+                )
+            )
         except Exception as exc:
             failures.append({"package": package.name, "error": str(exc)})
             print(f"FAILED: {package.name}: {exc}")
