@@ -1,6 +1,6 @@
 extends Camera3D
 
-@export_range(1.0, 30.0, 0.5) var speed: float = 5.0
+@export_range(1.0, 100.0, 0.5) var speed: float = 5.0
 @export_range(0.0002, 0.01, 0.0001) var mouse_sensitivity: float = 0.002
 
 var _first_person_target: CharacterBody3D = null
@@ -28,7 +28,7 @@ func get_move_speed() -> float:
 
 
 func set_move_speed(value: float) -> void:
-	speed = clampf(value, 1.0, 30.0)
+	speed = clampf(value, 1.0, 100.0)
 
 
 func adjust_move_speed(delta_speed: float) -> float:
