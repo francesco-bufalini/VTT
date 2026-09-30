@@ -1239,6 +1239,7 @@ func _interact_or_select_under_mouse(
 		ALL_COLLISION_LAYERS,
 		true
 	)
+	hit = _prefer_passenger_token_hit(screen_position, hit)
 
 	if hit.is_empty():
 		if not additive_selection:
@@ -1397,6 +1398,88 @@ func _delete_selected() -> void:
 	for token: CharacterBody3D in deleting:
 		if token != null and is_instance_valid(token):
 			token.queue_free()
+
+
+func _prefer_passenger_token_hit(
+	screen_position: Vector2,
+	first_hit: Dictionary
+) -> Dictionary:
+	if first_hit.is_empty():
+		return first_hit
+
+	var collider: Node = first_hit.get("collider") as Node
+	if collider == null:
+		return first_hit
+
+	var first_target: Node = _find_interaction_target(collider)
+	if (
+		first_target == null
+		or not first_target.is_in_group("dnd_token")
+		or not first_target.has_meta("compound_chariot")
+		or not bool(first_target.get_meta("compound_chariot"))
+	):
+		return first_hit
+
+	# Il collider principale del carro racchiude anche i passeggeri. Per il
+	# picking soltanto, attraversiamo corpo e ponte del carro e controlliamo
+	# se il cursore sta realmente intersecando un altro token.
+	var exclusions: Array[RID] = []
+	if first_target is CollisionObject3D:
+		exclusions.append((first_target as CollisionObject3D).get_rid())
+	if first_target.has_method("get_movement_exclusions"):
+		var movement_exclusions: Variant = first_target.call(
+			"get_movement_exclusions"
+		)
+		if movement_exclusions is Array:
+			for value: Variant in movement_exclusions:
+				if value is RID and not (value in exclusions):
+					exclusions.append(value)
+
+	var passenger_hit := _raycast_from_screen_excluding(
+		screen_position,
+		ALL_COLLISION_LAYERS,
+		exclusions,
+		true
+	)
+	if passenger_hit.is_empty():
+		return first_hit
+
+	var passenger_collider: Node = passenger_hit.get("collider") as Node
+	if passenger_collider == null:
+		return first_hit
+	var passenger_target: Node = _find_interaction_target(passenger_collider)
+	if (
+		passenger_target != null
+		and passenger_target != first_target
+		and passenger_target.is_in_group("dnd_token")
+	):
+		return passenger_hit
+
+	return first_hit
+
+
+func _raycast_from_screen_excluding(
+	screen_position: Vector2,
+	collision_mask: int,
+	exclusions: Array[RID],
+	collide_with_areas: bool = false
+) -> Dictionary:
+	if not is_instance_valid(camera):
+		return {}
+
+	var ray_origin: Vector3 = camera.project_ray_origin(screen_position)
+	var ray_direction: Vector3 = camera.project_ray_normal(screen_position)
+	var ray_end: Vector3 = ray_origin + ray_direction * camera.far
+
+	var query: PhysicsRayQueryParameters3D = (
+		PhysicsRayQueryParameters3D.create(ray_origin, ray_end)
+	)
+	query.collision_mask = collision_mask
+	query.collide_with_areas = collide_with_areas
+	query.collide_with_bodies = true
+	query.exclude = exclusions
+
+	return get_world_3d().direct_space_state.intersect_ray(query)
 
 
 func _raycast_from_screen(
