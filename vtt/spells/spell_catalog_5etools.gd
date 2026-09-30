@@ -172,7 +172,12 @@ const SPELLS: Dictionary = {
       "Wizard"
     ],
     "description": "You create a spectral globe around the head of a willing creature you can see within range. The globe is filled with fresh air that lasts until the spell ends. If the creature has more than one head, the globe of air appears around only one of its heads (which is all the creature needs to avoid suffocation, assuming that all its heads share the same respiratory system).",
-    "higher_levels": "At Higher Levels: When you cast this spell using a spell slot of 3rd level or higher, you can create two additional globes of fresh air for each slot level above 2nd."
+    "higher_levels": "At Higher Levels: When you cast this spell using a spell slot of 3rd level or higher, you can create two additional globes of fresh air for each slot level above 2nd.",
+    "condition_inflict": [],
+    "saving_throw": [],
+    "misc_tags": [
+      "SGT"
+    ]
   },
   "alarm": {
     "id": "alarm",
@@ -693,7 +698,12 @@ const SPELLS: Dictionary = {
       "Wizard"
     ],
     "description": "The billowing flames of a dragon blast from your feet, granting you explosive speed. For the duration, your speed increases by 20 feet and moving doesn't provoke opportunity attacks. When you move within 5 feet of a creature or an object that isn't being worn or carried, it takes 1d6 fire damage from your trail of heat. A creature or object can take this damage only once during a turn.",
-    "higher_levels": "At Higher Levels: When you cast this spell using a spell slot of 4th level or higher, increase your speed by 5 feet for each spell slot level above 3rd. The spell deals an additional 1d6 fire damage for each slot level above 3rd."
+    "higher_levels": "At Higher Levels: When you cast this spell using a spell slot of 4th level or higher, increase your speed by 5 feet for each spell slot level above 3rd. The spell deals an additional 1d6 fire damage for each slot level above 3rd.",
+    "condition_inflict": [],
+    "saving_throw": [],
+    "misc_tags": [
+      "OBJ"
+    ]
   },
   "astral_projection": {
     "id": "astral_projection",
@@ -3065,7 +3075,12 @@ const SPELLS: Dictionary = {
     "target_mode": "token_then_token",
     "range_feet": 5,
     "projectile_style": "create_magen",
-    "projectile_travel_seconds": 0.65
+    "projectile_travel_seconds": 0.65,
+    "condition_inflict": [],
+    "saving_throw": [],
+    "misc_tags": [
+      "PRM"
+    ]
   },
   "create_or_destroy_water": {
     "id": "create_or_destroy_water",
@@ -3114,7 +3129,10 @@ const SPELLS: Dictionary = {
       "Wizard"
     ],
     "description": "Holding the rod used in the casting of the spell, you touch a Large or smaller chair that is unoccupied. The rod disappears, and the chair is transformed into a spelljamming helm.",
-    "higher_levels": ""
+    "higher_levels": "",
+    "condition_inflict": [],
+    "saving_throw": [],
+    "misc_tags": []
   },
   "create_undead": {
     "id": "create_undead",
@@ -3349,7 +3367,18 @@ const SPELLS: Dictionary = {
     "duration": "Concentration, up to 1 minute",
     "classes": [],
     "description": "This spell creates a sphere centered on a point you choose within range. The sphere can have a radius of up to 40 feet. The area within this sphere is filled with magical darkness and crushing gravitational force. For the duration, the spell's area is 3. A creature with darkvision can't see through the magical darkness, and nonmagical light can't illuminate it. No sound can be created within or pass through the area. Any creature or object entirely inside the sphere is immune to thunder damage, and creatures are deafened while entirely inside it. Casting a spell that includes a verbal component is impossible there. Any creature that enters the spell's area for the first time on a turn or starts its turn there must make a Constitution saving throw. The creature takes 8d10 force damage on a failed save, or half as much damage on a successful one. A creature reduced to 0 hit points by this damage is disintegrated. A disintegrated creature and everything it is wearing and carrying, except magic items, are reduced to a pile of fine gray dust.",
-    "higher_levels": ""
+    "higher_levels": "",
+    "condition_inflict": [
+      "deafened"
+    ],
+    "saving_throw": [
+      "constitution"
+    ],
+    "misc_tags": [
+      "DFT",
+      "OBJ",
+      "OBS"
+    ]
   },
   "darkness": {
     "id": "darkness",
@@ -4009,7 +4038,10 @@ const SPELLS: Dictionary = {
       "Wizard"
     ],
     "description": "Do you need to squeeze a few more gold pieces out of a merchant as you try to sell that weird octopus statue you liberated from the chaos temple? Do you need to downplay the worth of some magical assets when the tax collector stops by? Distort value has you covered. You cast this spell on an object no more than 1 foot on a side, doubling the object's perceived value by adding illusory flourishes or polish to it, or reducing its perceived value by half with the help of illusory scratches, dents, and other unsightly features. Anyone examining the object can ascertain its true value with a successful Intelligence (Investigation) check against your spell save DC.",
-    "higher_levels": "At Higher Levels: When you cast this spell using a spell slot of 2nd level or higher, the maximum size of the object increases by 1 foot for each slot level above 1st."
+    "higher_levels": "At Higher Levels: When you cast this spell using a spell slot of 2nd level or higher, the maximum size of the object increases by 1 foot for each slot level above 1st.",
+    "condition_inflict": [],
+    "saving_throw": [],
+    "misc_tags": []
   },
   "distorted_distance": {
     "id": "distorted_distance",
@@ -4288,7 +4320,15 @@ const SPELLS: Dictionary = {
       "Wizard"
     ],
     "description": "With a roar, you draw on the magic of dragons to transform yourself, taking on draconic features. You gain the following benefits until the spell ends: Blindsight: You have blindsight with a range of 30 feet. Within that range, you can effectively see anything that isn't behind 3, even if you're blinded or in darkness. Moreover, you can see an invisible creature, unless the creature successfully hides from you. Breath Weapon: When you cast this spell, and as a bonus action on subsequent turns for the duration, you can exhale shimmering energy in a 60-foot cone. Each creature in that area must make a Dexterity saving throw, taking 6d8 force damage on a failed save, or half as much damage on a successful one. Wings: Incorporeal wings sprout from your back, giving you a flying speed of 60 feet.",
-    "higher_levels": ""
+    "higher_levels": "",
+    "condition_inflict": [],
+    "saving_throw": [
+      "dexterity"
+    ],
+    "misc_tags": [
+      "SGT",
+      "UBA"
+    ]
   },
   "dragons_breath": {
     "id": "dragons_breath",
@@ -4794,7 +4834,10 @@ const SPELLS: Dictionary = {
     "duration": "8 hour",
     "classes": [],
     "description": "Putting a finger to your head, you pull a memory, an idea, or a message from your mind and transform it into a tangible string of glowing energy called a thought strand, which persists for the duration or until you cast this spell again. The thought strand appears in an unoccupied space within 5 feet of you as a Tiny, weightless, semisolid object that can be held and carried like a ribbon. It is otherwise stationary. If you cast this spell while concentrating on a spell or an ability that allows you to read or manipulate the thoughts of others (such as detect thoughts or modify memory), you can transform the thoughts or memories you read, rather than your own, into a thought strand. Casting this spell while holding a thought strand allows you to instantly receive whatever memory, idea, or message the thought strand contains. (Casting detect thoughts on the strand has the same effect.)",
-    "higher_levels": ""
+    "higher_levels": "",
+    "condition_inflict": [],
+    "saving_throw": [],
+    "misc_tags": []
   },
   "enemies_abound": {
     "id": "enemies_abound",
@@ -5326,7 +5369,17 @@ const SPELLS: Dictionary = {
     "allow_repeat_targets": false,
     "target_clicks_per_slot_above_base": 1,
     "projectile_style": "fast_friends",
-    "projectile_travel_seconds": 0.65
+    "projectile_travel_seconds": 0.65,
+    "condition_inflict": [
+      "charmed"
+    ],
+    "saving_throw": [
+      "wisdom"
+    ],
+    "misc_tags": [
+      "SCT",
+      "SGT"
+    ]
   },
   "fear": {
     "id": "fear",
@@ -5766,7 +5819,12 @@ const SPELLS: Dictionary = {
       "Wizard"
     ],
     "description": "You create a field of silvery light that surrounds a creature of your choice within range (you can choose yourself). The field sheds dim light out to 5 feet. While surrounded by the field, a creature gains the following benefits: Cover: The creature has 3. Damage Resistance: The creature has resistance to acid, cold, fire, lightning, and poison damage. Evasion: If the creature is subjected to an effect that allows it to make a Dexterity saving throw to take only half damage, the creature instead takes no damage if it succeeds on the saving throw, and only half damage if it fails. As a bonus action on subsequent turns, you can move the field to another creature within 60 feet of the field.",
-    "higher_levels": ""
+    "higher_levels": "",
+    "condition_inflict": [],
+    "saving_throw": [],
+    "misc_tags": [
+      "UBA"
+    ]
   },
   "flame_arrows": {
     "id": "flame_arrows",
@@ -6093,7 +6151,13 @@ const SPELLS: Dictionary = {
     "target_mode": "token_then_token",
     "projectile_style": "fortunes_favor",
     "projectile_travel_seconds": 0.65,
-    "range_feet": 60
+    "range_feet": 60,
+    "condition_inflict": [],
+    "saving_throw": [],
+    "misc_tags": [
+      "SCT",
+      "SGT"
+    ]
   },
   "fount_of_moonlight": {
     "id": "fount_of_moonlight",
@@ -6239,7 +6303,12 @@ const SPELLS: Dictionary = {
     "aoe_shape": "cone",
     "aoe_length_cells": 3,
     "direction_limit_feet": 15,
-    "show_range_preview": false
+    "show_range_preview": false,
+    "condition_inflict": [],
+    "saving_throw": [
+      "constitution"
+    ],
+    "misc_tags": []
   },
   "frostbite": {
     "id": "frostbite",
@@ -6487,7 +6556,10 @@ const SPELLS: Dictionary = {
     "higher_levels": "",
     "target_mode": "token_then_token",
     "projectile_style": "gift_of_alacrity",
-    "projectile_travel_seconds": 0.65
+    "projectile_travel_seconds": 0.65,
+    "condition_inflict": [],
+    "saving_throw": [],
+    "misc_tags": []
   },
   "gift_of_gab": {
     "id": "gift_of_gab",
@@ -6506,7 +6578,10 @@ const SPELLS: Dictionary = {
       "Wizard"
     ],
     "description": "When I met Jim Darkmagic, I wondered how he got anything done in that outfit. I have since learned that most of his talents involve standing and talking. His outfit is perfect for that. Jim Darkmagic is said to have invented this spell, originally calling it I said what?! Have you ever been talking to the local monarch and accidentally mentioned how their son looks like your favorite hog from when you were growing up on the family farm? We've all been there! But rather than being beheaded for an honest slip of the tongue, you can pretend it never happened—by ensuring that no one knows it happened. When you cast this spell, you skillfully reshape the memories of listeners in your immediate area, so that each creature of your choice within 5 feet of you forgets everything you said within the last 6 seconds. Those creatures then remember that you actually said the words you speak as the verbal component of the spell.",
-    "higher_levels": ""
+    "higher_levels": "",
+    "condition_inflict": [],
+    "saving_throw": [],
+    "misc_tags": []
   },
   "glibness": {
     "id": "glibness",
@@ -6683,7 +6758,12 @@ const SPELLS: Dictionary = {
     "duration": "Instantaneous",
     "classes": [],
     "description": "You manifest a ravine of gravitational energy in a line originating from you that is 100 feet long and 5 feet wide. Each creature in that line must make a Constitution saving throw, taking 8d8 force damage on a failed save, or half as much damage on a successful one. Each creature within 10 feet of the line but not in it must succeed on a Constitution saving throw or take 8d8 force damage and be pulled toward the line until the creature is in its area.",
-    "higher_levels": "At Higher Levels: When you cast this spell using a spell slot of 7th level or higher, the damage increases by 1d8 for each slot level above 6th."
+    "higher_levels": "At Higher Levels: When you cast this spell using a spell slot of 7th level or higher, the damage increases by 1d8 for each slot level above 6th.",
+    "condition_inflict": [],
+    "saving_throw": [
+      "constitution"
+    ],
+    "misc_tags": []
   },
   "gravity_sinkhole": {
     "id": "gravity_sinkhole",
@@ -6699,7 +6779,14 @@ const SPELLS: Dictionary = {
     "duration": "Instantaneous",
     "classes": [],
     "description": "A 20-foot-radius sphere of crushing force forms at a point you can see within range and tugs at the creatures there. Each creature in the sphere must make a Constitution saving throw. On a failed save, the creature takes 5d10 force damage and is pulled in a straight line toward the center of the sphere, ending in an unoccupied space as close to the center as possible (even if that space is in the air). On a successful save, the creature takes half as much damage and isn't pulled.",
-    "higher_levels": "At Higher Levels: When you cast this spell using a spell slot of 5th level or higher, the damage increases by 1d10 for each slot level above 4th."
+    "higher_levels": "At Higher Levels: When you cast this spell using a spell slot of 5th level or higher, the damage increases by 1d10 for each slot level above 4th.",
+    "condition_inflict": [],
+    "saving_throw": [
+      "constitution"
+    ],
+    "misc_tags": [
+      "SGT"
+    ]
   },
   "grease": {
     "id": "grease",
@@ -7891,7 +7978,13 @@ const SPELLS: Dictionary = {
     "higher_levels": "At Higher Levels: If you cast this spell using a spell slot of 4th or 5th level, the DC to move the object increases by 5, it can carry up to 8,000 pounds of weight, and the duration increases to 24 hours. If you cast this spell using a spell slot of 6th level or higher, the DC to move the object increases by 10, it can carry up to 20,000 pounds of weight, and the effect is permanent until dispelled.",
     "target_mode": "token_then_token",
     "projectile_style": "immovable_object",
-    "projectile_travel_seconds": 0.65
+    "projectile_travel_seconds": 0.65,
+    "condition_inflict": [],
+    "saving_throw": [],
+    "misc_tags": [
+      "OBJ",
+      "PRM"
+    ]
   },
   "imprisonment": {
     "id": "imprisonment",
@@ -7981,7 +8074,16 @@ const SPELLS: Dictionary = {
     "higher_levels": "",
     "visual_style": "enchantment",
     "transient_seconds": 5,
-    "range_feet": 30
+    "range_feet": 30,
+    "condition_inflict": [
+      "charmed"
+    ],
+    "saving_throw": [
+      "wisdom"
+    ],
+    "misc_tags": [
+      "SGT"
+    ]
   },
   "infernal_calling": {
     "id": "infernal_calling",
@@ -8418,7 +8520,14 @@ const SPELLS: Dictionary = {
     "target_mode": "token_then_multi_token",
     "range_feet": 60,
     "projectile_style": "jims_glowing_coin",
-    "projectile_travel_seconds": 0.65
+    "projectile_travel_seconds": 0.65,
+    "condition_inflict": [],
+    "saving_throw": [
+      "wisdom"
+    ],
+    "misc_tags": [
+      "SGT"
+    ]
   },
   "jims_magic_missile": {
     "id": "jims_magic_missile",
@@ -8443,7 +8552,12 @@ const SPELLS: Dictionary = {
     "range_feet": 120,
     "projectile_style": "jims_magic_missile",
     "projectile_travel_seconds": 0.65,
-    "base_target_clicks": 3
+    "base_target_clicks": 3,
+    "condition_inflict": [],
+    "saving_throw": [],
+    "misc_tags": [
+      "SGT"
+    ]
   },
   "jump": {
     "id": "jump",
@@ -9314,7 +9428,15 @@ const SPELLS: Dictionary = {
     "duration": "1 round",
     "classes": [],
     "description": "The gravity in a 10-foot-radius sphere centered on a point you can see within range increases for a moment. Each creature in the sphere on the turn when you cast the spell must make a Constitution saving throw. On a failed save, a creature takes 2d8 force damage, and its speed is halved until the end of its next turn. On a successful save, a creature takes half as much damage and suffers no reduction to its speed. Until the start of your next turn, any object that isn't being worn or carried in the sphere requires a successful Strength check against your spell save DC to pick up or move.",
-    "higher_levels": "At Higher Levels: When you cast this spell using a spell slot of 2nd level or higher, the damage increases by 1d8 for each slot level above 1st."
+    "higher_levels": "At Higher Levels: When you cast this spell using a spell slot of 2nd level or higher, the damage increases by 1d8 for each slot level above 1st.",
+    "condition_inflict": [],
+    "saving_throw": [
+      "constitution"
+    ],
+    "misc_tags": [
+      "OBJ",
+      "SGT"
+    ]
   },
   "major_image": {
     "id": "major_image",
@@ -10259,7 +10381,14 @@ const SPELLS: Dictionary = {
     "base_target_clicks": 5,
     "allow_repeat_targets": false,
     "projectile_style": "motivational_speech",
-    "projectile_travel_seconds": 0.65
+    "projectile_travel_seconds": 0.65,
+    "condition_inflict": [],
+    "saving_throw": [],
+    "misc_tags": [
+      "ADV",
+      "SGT",
+      "THP"
+    ]
   },
   "move_earth": {
     "id": "move_earth",
@@ -10309,7 +10438,16 @@ const SPELLS: Dictionary = {
       "Wizard"
     ],
     "description": "You fill a 20-foot cube you can see within range with fey and draconic magic. Roll on the Mischievous Surge table to determine the magical effect produced, and roll again at the start of each of your turns until the spell ends. You can move the cube up to 10 feet before you roll. 1 The smell of apple pie fills the air, and each creature in the cube must succeed on a Wisdom saving throw or become charmed by you until the start of your next turn. 2 Bouquets of flowers appear all around, and each creature in the cube must succeed on a Dexterity saving throw or be blinded until the start of your next turn as the flowers spray water in their faces. 3 Each creature in the cube must succeed on a Wisdom saving throw or begin giggling until the start of your next turn. A giggling creature is incapacitated and uses all its movement to move in a random direction. 4 Drops of molasses hover in the cube, making it 3 until the start of your next turn.",
-    "higher_levels": ""
+    "higher_levels": "",
+    "condition_inflict": [],
+    "saving_throw": [
+      "dexterity",
+      "wisdom"
+    ],
+    "misc_tags": [
+      "RO",
+      "SGT"
+    ]
   },
   "negative_energy_flood": {
     "id": "negative_energy_flood",
@@ -11333,7 +11471,15 @@ const SPELLS: Dictionary = {
     "duration": "Instantaneous",
     "classes": [],
     "description": "You create intense pressure, unleash it in a 30-foot cone, and decide whether the pressure pulls or pushes creatures and objects. Each creature in that cone must make a Constitution saving throw. A creature takes 6d6 force damage on a failed save, or half as much damage on a successful one. And every creature that fails the save is either pulled 15 feet toward you or pushed 15 feet away from you, depending on the choice you made for the spell. In addition, unsecured objects that are completely within the cone are likewise pulled or pushed 15 feet.",
-    "higher_levels": "At Higher Levels: When you cast this spell using a spell slot of 4th level or higher, the damage increases by 1d6 and the distance pulled or pushed increases by 5 feet for each slot level above 3rd."
+    "higher_levels": "At Higher Levels: When you cast this spell using a spell slot of 4th level or higher, the damage increases by 1d6 and the distance pulled or pushed increases by 5 feet for each slot level above 3rd.",
+    "condition_inflict": [],
+    "saving_throw": [
+      "constitution"
+    ],
+    "misc_tags": [
+      "FMV",
+      "OBJ"
+    ]
   },
   "purify_food_and_drink": {
     "id": "purify_food_and_drink",
@@ -11475,7 +11621,16 @@ const SPELLS: Dictionary = {
     "higher_levels": "At Higher Levels: When you cast this spell using a spell slot of 5th level or higher, the damage increases by 1d6 for each slot level above 4th.",
     "visual_style": "psychic",
     "transient_seconds": 5,
-    "range_feet": 120
+    "range_feet": 120,
+    "condition_inflict": [
+      "incapacitated"
+    ],
+    "saving_throw": [
+      "intelligence"
+    ],
+    "misc_tags": [
+      "SGT"
+    ]
   },
   "ravenous_void": {
     "id": "ravenous_void",
@@ -11491,7 +11646,17 @@ const SPELLS: Dictionary = {
     "duration": "Concentration, up to 1 minute",
     "classes": [],
     "description": "You create a 20-foot-radius sphere of destructive gravitational force centered on a point you can see within range. For the spell's duration, the sphere and any space within 100 feet of it are 3, and nonmagical objects fully inside the sphere are destroyed if they aren't being worn or carried. When the sphere appears and at the start of each of your turns until the spell ends, unsecured objects within 100 feet of the sphere are pulled toward the sphere's center, ending in an unoccupied space as close to the center as possible. A creature that starts its turn within 100 feet of the sphere must succeed on a Strength saving throw or be pulled straight toward the sphere's center, ending in an unoccupied space as close to the center as possible. A creature that enters the sphere for the first time on a turn or starts its turn there takes 5d10 force damage and is restrained until it is no longer in the sphere. If the sphere is in the air, the restrained creature hovers inside the sphere. A creature can use its action to make a Strength check against your spell save DC, ending this restrained condition on itself or another creature in the sphere that it can reach. A creature reduced to 0 hit points by this spell is annihilated, along with any nonmagical items it is wearing or carrying.",
-    "higher_levels": ""
+    "higher_levels": "",
+    "condition_inflict": [
+      "restrained"
+    ],
+    "saving_throw": [
+      "strength"
+    ],
+    "misc_tags": [
+      "OBJ",
+      "SGT"
+    ]
   },
   "ray_of_enfeeblement": {
     "id": "ray_of_enfeeblement",
@@ -11600,7 +11765,20 @@ const SPELLS: Dictionary = {
     "target_mode": "token_then_token",
     "projectile_style": "reality_break",
     "projectile_travel_seconds": 0.65,
-    "range_feet": 60
+    "range_feet": 60,
+    "condition_inflict": [
+      "blinded",
+      "prone",
+      "stunned"
+    ],
+    "saving_throw": [
+      "dexterity",
+      "wisdom"
+    ],
+    "misc_tags": [
+      "RO",
+      "SGT"
+    ]
   },
   "regenerate": {
     "id": "regenerate",
@@ -11859,7 +12037,12 @@ const SPELLS: Dictionary = {
     "aoe_shape": "cone",
     "aoe_length_cells": 6,
     "direction_limit_feet": 30,
-    "show_range_preview": false
+    "show_range_preview": false,
+    "condition_inflict": [],
+    "saving_throw": [
+      "constitution"
+    ],
+    "misc_tags": []
   },
   "rope_trick": {
     "id": "rope_trick",
@@ -11964,7 +12147,17 @@ const SPELLS: Dictionary = {
     "target_mode": "token_then_token",
     "projectile_style": "sapping_sting",
     "projectile_travel_seconds": 0.65,
-    "range_feet": 30
+    "range_feet": 30,
+    "condition_inflict": [
+      "prone"
+    ],
+    "saving_throw": [
+      "constitution"
+    ],
+    "misc_tags": [
+      "SCL",
+      "SGT"
+    ]
   },
   "scatter": {
     "id": "scatter",
@@ -13681,7 +13874,15 @@ const SPELLS: Dictionary = {
       "Wizard"
     ],
     "description": "You call forth a draconic spirit. It manifests in an unoccupied space that you can see within range. This corporeal form uses the Draconic Spirit stat block. When you cast this spell, choose a family of dragon: chromatic, gem, or metallic. The creature resembles a dragon of the chosen family, which determines certain traits in its stat block. The creature disappears when it drops to 0 hit points or when the spell ends. The creature is an ally to you and your companions. In combat, the creature shares your initiative count, but it takes its turn immediately after yours. It obeys your verbal commands (no action required by you). If you don't issue any, it takes the Dodge action and uses its move to avoid danger.",
-    "higher_levels": "At Higher Levels: When you cast this spell using a spell slot of 6th level or higher, use the higher level wherever the spell's level appears in the stat block."
+    "higher_levels": "At Higher Levels: When you cast this spell using a spell slot of 6th level or higher, use the higher level wherever the spell's level appears in the stat block.",
+    "condition_inflict": [],
+    "saving_throw": [
+      "dexterity"
+    ],
+    "misc_tags": [
+      "SGT",
+      "SMN"
+    ]
   },
   "summon_dragon": {
     "id": "summon_dragon",
@@ -14445,7 +14646,14 @@ const SPELLS: Dictionary = {
     "target_mode": "token_then_token",
     "projectile_style": "temporal_shunt",
     "projectile_travel_seconds": 0.65,
-    "range_feet": 120
+    "range_feet": 120,
+    "condition_inflict": [],
+    "saving_throw": [
+      "wisdom"
+    ],
+    "misc_tags": [
+      "SCT"
+    ]
   },
   "tensers_floating_disk": {
     "id": "tensers_floating_disk",
@@ -14517,7 +14725,14 @@ const SPELLS: Dictionary = {
     "target_mode": "token_then_multi_token",
     "projectile_style": "tether_essence",
     "projectile_travel_seconds": 0.65,
-    "range_feet": 60
+    "range_feet": 60,
+    "condition_inflict": [],
+    "saving_throw": [
+      "constitution"
+    ],
+    "misc_tags": [
+      "SGT"
+    ]
   },
   "thaumaturgy": {
     "id": "thaumaturgy",
@@ -14734,7 +14949,14 @@ const SPELLS: Dictionary = {
     "target_mode": "token_then_token",
     "projectile_style": "time_ravage",
     "projectile_travel_seconds": 0.65,
-    "range_feet": 90
+    "range_feet": 90,
+    "condition_inflict": [],
+    "saving_throw": [
+      "constitution"
+    ],
+    "misc_tags": [
+      "SGT"
+    ]
   },
   "time_stop": {
     "id": "time_stop",
@@ -16120,7 +16342,12 @@ const SPELLS: Dictionary = {
     "duration": "Concentration, up to 1 hour",
     "classes": [],
     "description": "You flick your wrist, causing one object in your hand to vanish. The object, which only you can be holding and can weigh no more than 5 pounds, is transported to an extradimensional space, where it remains for the duration. Until the spell ends, you can use your action to summon the object to your free hand, and you can use your action to return the object to the extradimensional space. An object still in the pocket plane when the spell ends appears in your space, at your feet.",
-    "higher_levels": ""
+    "higher_levels": "",
+    "condition_inflict": [],
+    "saving_throw": [],
+    "misc_tags": [
+      "UA"
+    ]
   },
   "yolandes_regal_presence": {
     "id": "yolandes_regal_presence",
