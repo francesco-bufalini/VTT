@@ -753,8 +753,9 @@ def _is_projectile_targeting(spell: dict[str, Any]) -> bool:
     patterns = [
         r"\bmake\s+(?:an?\s+|one\s+)?ranged\s+spell\s+attack\b",
         r"\bmake\s+(?:an?\s+|one\s+)?ranged\s+attack(?:\s+roll)?\b",
-        rf"\b(?:hurl|hurls|fire|fires|launch|launches|shoot|shoots|"
-        rf"throw|throws|fling|flings)\b[^.]{{0,100}}\b(?:{projectile_nouns})\b",
+        rf"\b(?:create|creates|hurl|hurls|fire|fires|launch|launches|"
+        rf"shoot|shoots|throw|throws|fling|flings)\b[^.]{{0,100}}\b"
+        rf"(?:{projectile_nouns})\b",
         rf"\b(?:{projectile_nouns})\b[^.]{{0,100}}\b"
         rf"(?:strike|strikes|hit|hits|fly|flies|leap|leaps|streak|streaks)\b",
     ]
