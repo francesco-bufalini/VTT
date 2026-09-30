@@ -641,7 +641,7 @@ func _begin_summon_point_selection(spell_data: Dictionary) -> void:
 			String(spell_data.get("name", "Evocazione")),
 			_summon_created_count + 1,
 			_summon_total_count,
-			int(spell_data.get("range_feet", 0))
+			int(round(_effective_spell_range_feet(spell_data, _pending_caster)))
 		]
 	)
 
@@ -670,7 +670,7 @@ func _try_select_summon_point(screen_position: Vector2) -> void:
 				"Punto fuori range: %d ft / %d ft."
 				% [
 					int(point_data.get("distance_feet", 0)),
-					int(spell_data.get("range_feet", 0))
+					int(round(_effective_spell_range_feet(spell_data, _pending_caster)))
 				]
 			)
 		elif bool(spell_data.get("summon_requires_ground", false)):
