@@ -314,6 +314,16 @@ def _contains_word(text: str, word: str) -> bool:
 
 
 def is_print_part(path: Path, package_name: str) -> bool:
+    """Identify separate printable pieces, not complete authoring scenes.
+
+    In these miniature packs, split print parts are primarily STL files.
+    A .blend can legitimately contain objects named Body/Base/Marker together
+    with the complete assembled miniature, cameras and lights, so its filename
+    alone must never make it a "print part".
+    """
+    if path.suffix.lower() == ".blend":
+        return False
+
     name = path.stem.lower()
     if slugify(name) == slugify(package_name):
         return False
