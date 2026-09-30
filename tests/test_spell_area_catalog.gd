@@ -218,6 +218,45 @@ func run() -> void:
 		15.0
 	))
 
+	var find_familiar: Dictionary = SpellCatalog.spell("find_familiar")
+	assert(not find_familiar.is_empty())
+	assert(String(find_familiar.get("target_mode", "")) == "summon")
+	assert(int(find_familiar.get("summon_count", 0)) == 1)
+	assert(is_equal_approx(
+		float(find_familiar.get("range_feet", 0.0)),
+		10.0
+	))
+
+	var flock: Dictionary = SpellCatalog.spell("flock_of_familiars")
+	assert(not flock.is_empty())
+	assert(String(flock.get("target_mode", "")) == "summon")
+	assert(int(flock.get("summon_count", 0)) == 3)
+
+	var create_undead: Dictionary = SpellCatalog.spell("create_undead")
+	assert(not create_undead.is_empty())
+	assert(String(create_undead.get("target_mode", "")) == "summon")
+	assert(int(create_undead.get("summon_count_min", 0)) == 1)
+	assert(int(create_undead.get("summon_count_max", 0)) == 3)
+
+	var lesser_demons: Dictionary = SpellCatalog.spell(
+		"summon_lesser_demons"
+	)
+	assert(not lesser_demons.is_empty())
+	assert(String(lesser_demons.get("target_mode", "")) == "summon")
+	var lesser_options: Array = lesser_demons.get(
+		"summon_count_options",
+		[]
+	)
+	assert(2 in lesser_options)
+	assert(4 in lesser_options)
+	assert(8 in lesser_options)
+
+	# SMN can also tag conditional creation/transformation. Existing explicit
+	# targeting must win instead of opening the summon-token workflow.
+	var finger_of_death: Dictionary = SpellCatalog.spell("finger_of_death")
+	assert(not finger_of_death.is_empty())
+	assert(String(finger_of_death.get("target_mode", "")) != "summon")
+
 	var entangle: Dictionary = SpellCatalog.spell("entangle")
 	assert(not entangle.is_empty())
 	assert(String(entangle.get("target_mode", "")) == "token_then_point")
@@ -232,6 +271,6 @@ func run() -> void:
 	assert("strength" in entangle_saves)
 
 	print(
-		"PASS: 5eTools metadata drives range, projectile targets, flat areas, walls and VFX"
+		"PASS: 5eTools metadata drives projectiles, summon flows, conditions, areas, walls and VFX"
 	)
 	quit()
