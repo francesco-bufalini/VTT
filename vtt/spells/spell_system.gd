@@ -3764,12 +3764,12 @@ func _cast_spell_at_point(
 		)
 	else:
 		measurement_tool.call(
-			"show_transient_aoe",
+			"add_aoe",
 			target_point,
 			endpoint,
 			shape,
-			float(spell_data.get("transient_seconds", 5.0)),
 			style,
+			Color(0.0, 0.0, 0.0, -1.0),
 			_spell_line_width_world(spell_data)
 		)
 
@@ -3789,17 +3789,13 @@ func _cast_directional_aoe(
 	if geometry.is_empty():
 		return
 
-	var duration: float = float(
-		spell_data.get("transient_seconds", 5.0)
-	)
-
 	measurement_tool.call(
-		"show_transient_aoe",
+		"add_aoe",
 		geometry.get("start", Vector3.ZERO),
 		geometry.get("end", Vector3.ZERO),
 		String(spell_data.get("aoe_shape", "cone")),
-		duration,
 		_spell_style(spell_data),
+		Color(0.0, 0.0, 0.0, -1.0),
 		_spell_line_width_world(spell_data)
 	)
 
@@ -3833,12 +3829,12 @@ func _cast_directional_spell_to_point(
 		)
 	else:
 		measurement_tool.call(
-			"show_transient_aoe",
+			"add_aoe",
 			geometry.get("start", Vector3.ZERO),
 			geometry.get("end", Vector3.ZERO),
 			String(spell_data.get("aoe_shape", "line")),
-			float(spell_data.get("transient_seconds", 5.0)),
 			_spell_style(spell_data),
+			Color(0.0, 0.0, 0.0, -1.0),
 			_spell_line_width_world(spell_data)
 		)
 
@@ -3937,12 +3933,12 @@ func _cast_spell_at_token(
 		)
 	else:
 		measurement_tool.call(
-			"show_transient_aoe",
+			"add_aoe",
 			finish,
 			endpoint,
 			shape,
-			float(spell_data.get("transient_seconds", 5.0)),
 			style,
+			Color(0.0, 0.0, 0.0, -1.0),
 			_spell_line_width_world(spell_data)
 		)
 
@@ -4026,12 +4022,12 @@ func _cast_self_emanation(
 		)
 	else:
 		measurement_tool.call(
-			"show_transient_aoe",
+			"add_aoe",
 			center,
 			endpoint,
 			shape,
-			float(spell_data.get("transient_seconds", 5.0)),
 			style,
+			Color(0.0, 0.0, 0.0, -1.0),
 			_spell_line_width_world(spell_data)
 		)
 
@@ -4126,12 +4122,12 @@ func _cast_multi_point_spell(
 
 	for point: Vector3 in target_points:
 		measurement_tool.call(
-			"show_transient_aoe",
+			"add_aoe",
 			point,
 			point + Vector3.RIGHT * radius_world,
 			shape,
-			duration,
 			style,
+			Color(0.0, 0.0, 0.0, -1.0),
 			_spell_line_width_world(spell_data)
 		)
 
@@ -4163,16 +4159,11 @@ func _cast_fireball(
 	var endpoint: Vector3 = (
 		target_point + Vector3.RIGHT * radius_world
 	)
-	var duration: float = float(
-		spell_data.get("transient_seconds", 5.0)
-	)
-
 	measurement_tool.call(
-		"show_transient_aoe",
+		"add_aoe",
 		target_point,
 		endpoint,
 		String(spell_data.get("aoe_shape", "sphere")),
-		duration,
 		String(spell_data.get("id", "fireball"))
 	)
 
