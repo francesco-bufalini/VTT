@@ -1062,7 +1062,8 @@ func _capture_matching_history_state(target_state: Dictionary) -> Dictionary:
 	var target_tokens_value: Variant = target_state.get("tokens", [])
 	if not target_tokens_value is Array:
 		return {}
-	for item_value: Variant in target_tokens_value as Array:
+	var target_tokens: Array = target_tokens_value
+	for item_value: Variant in target_tokens:
 		if not item_value is Dictionary:
 			continue
 		var item: Dictionary = item_value as Dictionary
@@ -1104,7 +1105,8 @@ func _apply_token_move_history_state(state: Dictionary) -> bool:
 		token.set_physics_process(false)
 		if token.has_method("set_flying"):
 			token.call("set_flying", bool(item.get("flying", true)))
-		token.global_transform = item.get("transform") as Transform3D
+		var saved_transform: Transform3D = item.get("transform")
+		token.global_transform = saved_transform
 		token.velocity = Vector3.ZERO
 
 	for pair: Dictionary in resolved:
