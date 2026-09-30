@@ -401,6 +401,9 @@ func handle_input(event: InputEvent) -> bool:
 			"multi_target_tokens":
 				_try_select_multi_target(screen_position)
 				return true
+			"multi_target_points":
+				_try_select_multi_point(screen_position)
+				return true
 			"chain_primary":
 				_try_select_chain_primary(screen_position)
 				return true
@@ -510,6 +513,13 @@ func _try_select_caster(screen_position: Vector2) -> void:
 			_targeting_phase = "multi_target_tokens"
 			_hide_spell_preview()
 			_update_multi_target_instruction(spell_data)
+		"token_then_multi_point":
+			_pending_caster = caster
+			_pending_targets.clear()
+			_pending_target_points.clear()
+			_targeting_phase = "multi_target_points"
+			_hide_spell_preview()
+			_update_multi_point_instruction(spell_data)
 		"teleport_self":
 			_pending_caster = caster
 			_pending_targets.clear()
@@ -720,6 +730,59 @@ func _try_select_multi_target(screen_position: Vector2) -> void:
 
 	_update_multi_target_instruction(spell_data)
 
+
+
+func _try_select_multi_point(screen_position: Vector2) -> void:
+	if _pending_caster == null or not is_instance_valid(_pending_caster):
+		_cancel_pending_cast()
+		return
+
+	var spell_data: Dictionary = _pending_spell()
+	var point_data: Dictionary = _point_target_data(
+		screen_position,
+		spell_data
+	)
+	if not bool(point_data.get("valid", false)):
+		if bool(point_data.get("out_of_range", false)):
+			_set_instruction(
+				"Punto fuori range: %d ft / %d ft."
+				% [
+					int(point_data.get("distance_feet", 0)),
+					int(spell_data.get("range_feet", 0))
+				]
+			)
+		else:
+			_set_instruction("Seleziona un punto valido entro gittata.")
+		return
+
+	var target_point: Vector3 = point_data.get("point", Vector3.ZERO)
+	if _point_target_already_selected(target_point):
+		_set_instruction("Scegli un punto diverso.")
+		return
+
+	_pending_target_points.append(target_point)
+	if _pending_target_points.size() >= _required_target_clicks(spell_data):
+		_cast_multi_point_spell(
+			_pending_caster,
+			_pending_target_points,
+			spell_data
+		)
+		_finish_cast()
+		return
+
+	_update_multi_point_instruction(spell_data)
+
+
+func _update_multi_point_instruction(spell_data: Dictionary) -> void:
+	_set_instruction(
+		"%s: scegli punti diversi %d/%d entro %d ft · Esc per annullare"
+		% [
+			String(spell_data.get("name", "Incantesimo")),
+			_pending_target_points.size(),
+			_required_target_clicks(spell_data),
+			int(spell_data.get("range_feet", 0))
+		]
+	)
 
 
 func _begin_teleport_destination(spell_data: Dictionary) -> void:
@@ -1835,6 +1898,28 @@ func _update_spell_preview() -> void:
 				String(spell_data.get("projectile_style", "magic_missile"))
 			)
 
+		"multi_target_points":
+			var multi_point_data: Dictionary = _point_target_data(
+				screen_position,
+				spell_data
+			)
+			if not bool(multi_point_data.get("valid", false)):
+				_hide_spell_preview()
+				return
+
+			var multi_point: Vector3 = multi_point_data.get(
+				"point",
+				Vector3.ZERO
+			)
+			measurement_tool.call(
+				"show_spell_preview",
+				multi_point,
+				_area_endpoint(multi_point, spell_data),
+				String(spell_data.get("aoe_shape", "sphere")),
+				_spell_style(spell_data),
+				_spell_line_width_world(spell_data)
+			)
+
 		"chain_primary":
 			var primary_data: Dictionary = _target_token_data(
 				screen_position,
@@ -2651,6 +2736,8 @@ func _show_spell_data(spell_data: Dictionary) -> void:
 					if bool(spell_data.get("allow_point_target", false))
 					else "Più token entro gittata"
 				)
+			"token_then_multi_point":
+				target_text = "Più punti distinti entro gittata"
 			"token_then_point":
 				target_text = "Un punto entro gittata"
 			"self_token", "self_emanation":
@@ -2733,6 +2820,7 @@ func _activate_selected_spell() -> void:
 		"token_then_point",
 		"token_then_token",
 		"token_then_multi_token",
+		"token_then_multi_point",
 		"token_then_chain",
 		"token_then_direction",
 		"wall_design"
@@ -3125,6 +3213,63 @@ func _cast_multi_target_spell(
 			target_point,
 			style,
 			travel_seconds
+		)
+
+
+func _cast_multi_point_spell(
+	_caster: Node3D,
+	target_points: Array[Vector3],
+	spell_data: Dictionary
+) -> void:
+	var measurement_tool: Node = _measurement_tool()
+	if measurement_tool == null:
+		return
+
+	var style: String = _spell_style(spell_data)
+	var shape: String = String(spell_data.get("aoe_shape", "sphere"))
+	var radius_feet: float = float(
+		spell_data.get("aoe_radius_feet", 5.0)
+	)
+	var radius_world: float = radius_feet / 5.0 * _cell_size()
+	var duration: float = float(
+		spell_data.get("transient_seconds", 5.0)
+	)
+
+	if String(spell_data.get("id", "")) == "meteor_swarm":
+		var drop_height_world: float = (
+			float(spell_data.get("meteor_drop_height_feet", 60.0))
+			/ 5.0
+			* _cell_size()
+		)
+		var travel_seconds: float = float(
+			spell_data.get("projectile_travel_seconds", 0.8)
+		)
+		var projectile_style: String = String(
+			spell_data.get("projectile_style", style)
+		)
+		for point: Vector3 in target_points:
+			measurement_tool.call(
+				"show_spell_projectile_with_impact",
+				point + Vector3.UP * drop_height_world,
+				point,
+				projectile_style,
+				travel_seconds,
+				shape,
+				radius_world,
+				style,
+				duration
+			)
+		return
+
+	for point: Vector3 in target_points:
+		measurement_tool.call(
+			"show_transient_aoe",
+			point,
+			point + Vector3.RIGHT * radius_world,
+			shape,
+			duration,
+			style,
+			_spell_line_width_world(spell_data)
 		)
 
 
