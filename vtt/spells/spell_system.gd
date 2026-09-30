@@ -3539,6 +3539,14 @@ func _show_spell_data(spell_data: Dictionary) -> void:
 				target_text = "Più punti distinti entro gittata"
 			"summon":
 				target_text = "Punto/i di evocazione entro gittata"
+			"transform_self":
+				target_text = "Self"
+			"token_then_transform":
+				target_text = "Un token entro gittata"
+			"token_then_multi_transform":
+				target_text = "Più token entro gittata"
+			"resize_token":
+				target_text = "Un token entro gittata"
 			"token_then_point":
 				target_text = "Un punto entro gittata"
 			"self_token", "self_emanation":
