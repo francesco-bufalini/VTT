@@ -1,6 +1,7 @@
 extends SceneTree
 
 const SpellCatalog = preload("res://vtt/spells/spell_catalog.gd")
+const SpellSystem = preload("res://vtt/spells/spell_system.gd")
 
 
 func _initialize() -> void:
@@ -280,7 +281,6 @@ func run() -> void:
 	assert(String(finger_of_death.get("target_mode", "")) != "summon")
 
 	# Physical-form spells use reversible token transformations.
-	const SpellSystem = preload("res://vtt/spells/spell_system.gd")
 	for transformation_mode: String in [
 		"transform_self",
 		"token_then_transform",
