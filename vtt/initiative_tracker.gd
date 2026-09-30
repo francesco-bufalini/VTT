@@ -28,7 +28,7 @@ var participant_name: LineEdit
 var participant_token: OptionButton
 var token_popup: PopupMenu
 var _linking_entry_id: String = ""
-var _restore_mouse_mode: Input.MouseMode = Input.MOUSE_MODE_CAPTURED
+var _restore_mouse_mode: int = Input.MOUSE_MODE_CAPTURED
 
 var combat_active: bool = false
 var entries: Array[Dictionary] = []
@@ -376,6 +376,13 @@ func _render() -> void:
 	list_scroll.visible = combat_active
 	add_button.visible = combat_active
 	end_button.visible = combat_active
+	previous_button.disabled = (
+		not combat_active
+		or entries.is_empty()
+		or turn_count <= 0
+	)
+	next_button.disabled = not combat_active or entries.is_empty()
+	add_button.disabled = entries.size() >= MAX_ENTRIES
 
 	if not combat_active:
 		round_label.text = "Fuori dal combattimento"
@@ -545,7 +552,7 @@ func _remove_entry(entry_id: String) -> void:
 	if entries.is_empty():
 		active_index = 0
 	elif removing_active:
-		active_index = mini(index, entries.size() - 1)
+		active_index = index if index < entries.size() else 0
 	else:
 		active_index = maxi(0, _entry_index(active_id))
 	_render()
