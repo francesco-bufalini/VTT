@@ -56,11 +56,18 @@ func handle_event(event: InputEvent) -> bool:
 	if hit.is_empty():
 		return false
 	var target: Node = board._find_interaction_target(hit.collider)
-	if target == null or not target.is_in_group("dnd_token"):
+	if (
+		target == null
+		or not target.is_in_group("dnd_token")
+		or not (target is CharacterBody3D)
+		or not target.has_method("snap_destination")
+		or not target.has_method("get_footprint_extent")
+	):
 		return false
-	if not board._selected_tokens.has(target):
+	var target_token: CharacterBody3D = target as CharacterBody3D
+	if not board._selected_tokens.has(target_token):
 		board._interact_or_select_under_mouse(point, event.shift_pressed, false)
-	begin(board._selected_tokens, target)
+	begin(board._selected_tokens, target_token)
 	_press_position = point
 	if _was_captured:
 		board.get_viewport().warp_mouse(point)
@@ -96,7 +103,7 @@ func update_preview(screen_point: Vector2) -> void:
 	if _anchor_token.flying:
 		position = Plane(Vector3.UP, _anchor.y).intersects_ray(origin, direction)
 	elif not hit.is_empty() and Vector3(hit.normal).dot(Vector3.UP) > 0.7:
-		position = Vector3(hit.position) + Vector3.UP * _anchor_token.token_height_cells * board.cell_size * 0.5
+		position = Vector3(hit.position) + Vector3.UP * _token_half_height(_anchor_token)
 		support = hit.collider if hit.collider.is_in_group("tactical_platform") else null
 	else:
 		position = Plane(Vector3.UP, _anchor.y).intersects_ray(origin, direction)
@@ -130,11 +137,20 @@ func preview_at(position: Vector3, support: Node3D = null) -> bool:
 	for index in range(_targets.size()):
 		var token := _tokens[index]
 		var extent: Vector2 = token.get_footprint_extent()
-		var center: Vector3 = _targets[index] - Vector3.UP * (token.token_height_cells * board.cell_size * 0.5 - 0.04)
+		var center: Vector3 = _targets[index] - Vector3.UP * (_token_half_height(token) - 0.04)
 		_preview.multimesh.set_instance_transform(index, Transform3D(token.global_basis.scaled_local(Vector3(extent.x, 0.07, extent.y)),center))
 	_preview.visible = true
 	_support = support
 	return _valid
+
+func _token_half_height(token: CharacterBody3D) -> float:
+	if token == null or not is_instance_valid(token):
+		return board.cell_size * 0.5
+	var height_cells: Variant = token.get("token_height_cells")
+	if height_cells is float or height_cells is int:
+		return maxf(float(height_cells), 0.01) * board.cell_size * 0.5
+	return board.cell_size * 0.5
+
 
 func finish(commit: bool) -> void:
 	for index in range(_tokens.size()):
