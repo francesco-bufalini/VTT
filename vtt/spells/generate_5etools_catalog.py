@@ -191,8 +191,14 @@ def summon_runtime_fields(spell: dict[str, Any], runtime: dict) -> dict:
         text,
     )
     if up_to:
+        prefix=text[max(0,up_to.start()-80):up_to.start()]
         maximum=_number_value(up_to.group(1))
-        if maximum and maximum>1:
+        if (
+            maximum
+            and maximum>1
+            and "reassert" not in prefix
+            and "control over" not in prefix
+        ):
             result.pop("summon_count",None)
             result["summon_count_min"]=1
             result["summon_count_max"]=maximum
