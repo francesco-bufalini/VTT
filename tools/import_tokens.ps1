@@ -4,6 +4,9 @@ param(
 
     [string]$Default = "",
 
+    [ValidateRange(0.05, 1.0)]
+    [double]$DecimateRatio = 1.0,
+
     [string]$Blender = ""
 )
 
@@ -54,7 +57,8 @@ $arguments = @(
     "--python", $Converter,
     "--",
     "--source", $SourcePath,
-    "--project-root", $ProjectRoot
+    "--project-root", $ProjectRoot,
+    "--decimate-ratio", $DecimateRatio.ToString([System.Globalization.CultureInfo]::InvariantCulture)
 )
 
 if (-not [string]::IsNullOrWhiteSpace($Default)) {
@@ -65,6 +69,7 @@ Write-Host "Blender:  $Blender"
 Write-Host "Sorgente: $SourcePath"
 Write-Host "Progetto: $ProjectRoot"
 Write-Host "Scala:    ricavata automaticamente dalla base della miniatura"
+Write-Host "Decimate: $DecimateRatio (1.0 = nessuna semplificazione)"
 
 & $Blender @arguments
 if ($LASTEXITCODE -ne 0) {
