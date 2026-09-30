@@ -985,6 +985,140 @@ func begin_undo_transaction() -> Dictionary:
 	return _capture_history_state()
 
 
+func begin_token_move_transaction(tokens: Array) -> Dictionary:
+	if _undo_restoring:
+		return {}
+	return _capture_token_move_state(tokens)
+
+
+func _capture_token_move_state(tokens: Array) -> Dictionary:
+	var token_states: Array[Dictionary] = []
+	for value: Variant in tokens:
+		if not value is CharacterBody3D:
+			continue
+		var token: CharacterBody3D = value as CharacterBody3D
+		if token == null or not is_instance_valid(token):
+			continue
+
+		var support_id := ""
+		var support_value: Variant = token.get("grid_support")
+		if support_value is Node3D and is_instance_valid(support_value):
+			support_id = _history_node_id(support_value as Node3D)
+
+		token_states.append({
+			"id": _history_node_id(token),
+			"transform": token.global_transform,
+			"flying": bool(token.get("flying")),
+			"support_id": support_id
+		})
+
+	if token_states.is_empty():
+		return {}
+	return {
+		"kind": "token_move",
+		"tokens": token_states
+	}
+
+
+func _history_node_id(node: Node3D) -> String:
+	if node.has_meta("sync_id"):
+		return String(node.get_meta("sync_id"))
+	if board_sync != null and is_instance_valid(board_sync):
+		var value: Variant = board_sync.call("_sync_id", node)
+		if value is String and not String(value).is_empty():
+			return String(value)
+	var fallback := "path:" + String(get_path_to(node))
+	node.set_meta("sync_id", fallback)
+	return fallback
+
+
+func _find_history_node(node_id: String) -> Node3D:
+	if node_id.is_empty():
+		return null
+	for group_name: String in [
+		"dnd_token",
+		"tactical_platform",
+		"encounter_obstacle"
+	]:
+		for node: Node in get_tree().get_nodes_in_group(group_name):
+			if not node is Node3D:
+				continue
+			var node_3d: Node3D = node as Node3D
+			if not is_ancestor_of(node_3d):
+				continue
+			if _history_node_id(node_3d) == node_id:
+				return node_3d
+	return null
+
+
+func _capture_matching_history_state(target_state: Dictionary) -> Dictionary:
+	if String(target_state.get("kind", "")) != "token_move":
+		return _capture_history_state()
+
+	var tokens: Array = []
+	var target_tokens_value: Variant = target_state.get("tokens", [])
+	if not target_tokens_value is Array:
+		return {}
+	for item_value: Variant in target_tokens_value as Array:
+		if not item_value is Dictionary:
+			continue
+		var item: Dictionary = item_value as Dictionary
+		var token: Node3D = _find_history_node(String(item.get("id", "")))
+		if token is CharacterBody3D:
+			tokens.append(token)
+	return _capture_token_move_state(tokens)
+
+
+func _apply_token_move_history_state(state: Dictionary) -> bool:
+	var values: Variant = state.get("tokens", [])
+	if not values is Array:
+		return false
+
+	var token_states: Array = values as Array
+	if token_states.is_empty():
+		return false
+
+	var resolved: Array[Dictionary] = []
+	for item_value: Variant in token_states:
+		if not item_value is Dictionary:
+			return false
+		var item: Dictionary = item_value as Dictionary
+		var node: Node3D = _find_history_node(String(item.get("id", "")))
+		if not node is CharacterBody3D:
+			return false
+		var transform_value: Variant = item.get("transform")
+		if not transform_value is Transform3D:
+			return false
+		resolved.append({
+			"token": node,
+			"state": item
+		})
+
+	_undo_restoring = true
+	for pair: Dictionary in resolved:
+		var token: CharacterBody3D = pair.get("token") as CharacterBody3D
+		var item: Dictionary = pair.get("state", {}) as Dictionary
+		token.set_physics_process(false)
+		if token.has_method("set_flying"):
+			token.call("set_flying", bool(item.get("flying", true)))
+		token.global_transform = item.get("transform") as Transform3D
+		token.velocity = Vector3.ZERO
+
+	for pair: Dictionary in resolved:
+		var token: CharacterBody3D = pair.get("token") as CharacterBody3D
+		var item: Dictionary = pair.get("state", {}) as Dictionary
+		var support: Node3D = _find_history_node(
+			String(item.get("support_id", ""))
+		)
+		token.set("grid_support", support)
+		if support != null:
+			token.set("_support_transform", support.global_transform)
+		token.set_physics_process(true)
+
+	_undo_restoring = false
+	return true
+
+
 func commit_undo_transaction(state: Dictionary) -> void:
 	if _undo_restoring or state.is_empty():
 		return
@@ -999,6 +1133,9 @@ func push_undo_state() -> void:
 
 
 func _apply_history_state(state: Dictionary) -> bool:
+	if String(state.get("kind", "")) == "token_move":
+		return _apply_token_move_history_state(state)
+
 	var snapshot_value: Variant = state.get("snapshot", {})
 	if not snapshot_value is Dictionary:
 		return false
@@ -1034,10 +1171,11 @@ func _undo_last_action_now() -> bool:
 	if board_sync == null or not is_instance_valid(board_sync):
 		return false
 
-	var current_state: Dictionary = _capture_history_state()
-	if current_state.is_empty():
-		return false
 	var target_state: Dictionary = _undo_stack.pop_back()
+	var current_state: Dictionary = _capture_matching_history_state(target_state)
+	if current_state.is_empty():
+		_append_history_state(_undo_stack, target_state)
+		return false
 
 	if not _apply_history_state(target_state):
 		_append_history_state(_undo_stack, target_state)
@@ -1060,10 +1198,11 @@ func _redo_last_action_now() -> bool:
 	if board_sync == null or not is_instance_valid(board_sync):
 		return false
 
-	var current_state: Dictionary = _capture_history_state()
-	if current_state.is_empty():
-		return false
 	var target_state: Dictionary = _redo_stack.pop_back()
+	var current_state: Dictionary = _capture_matching_history_state(target_state)
+	if current_state.is_empty():
+		_append_history_state(_redo_stack, target_state)
+		return false
 
 	if not _apply_history_state(target_state):
 		_append_history_state(_redo_stack, target_state)
@@ -2117,7 +2256,7 @@ func _move_selected(direction: Vector2i) -> void:
 	if _selected_tokens.is_empty():
 		return
 
-	var before: Dictionary = begin_undo_transaction()
+	var before: Dictionary = begin_token_move_transaction(_selected_tokens)
 	var origins: Array[Vector3] = []
 	for token: CharacterBody3D in _selected_tokens:
 		origins.append(token.global_position)
@@ -2140,7 +2279,7 @@ func _move_selected_vertical(steps: int) -> void:
 	if _selected_tokens.is_empty():
 		return
 
-	var before: Dictionary = begin_undo_transaction()
+	var before: Dictionary = begin_token_move_transaction(_selected_tokens)
 	var origins: Array[Vector3] = []
 	for token: CharacterBody3D in _selected_tokens:
 		origins.append(token.global_position)
