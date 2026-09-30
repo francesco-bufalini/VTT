@@ -93,7 +93,8 @@ static func _primary_effect(spec: Dictionary) -> Dictionary:
 	if not effects_value is Array:
 		return {}
 
-	for item: Variant in effects_value as Array:
+	var effects: Array = effects_value as Array
+	for item: Variant in effects:
 		if item is Dictionary:
 			return (item as Dictionary).duplicate(true)
 	return {}
@@ -261,7 +262,8 @@ static func _apply_wall_geometry(
 		return
 
 	var modes: Array[String] = []
-	for item: Variant in variants_value as Array:
+	var variants: Array = variants_value as Array
+	for item: Variant in variants:
 		if not item is Dictionary:
 			continue
 		var variant: Dictionary = item as Dictionary
