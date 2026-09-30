@@ -22,6 +22,13 @@ var server := TCPServer.new()
 var connections: Array = []
 var receiving := false
 var session_key := ""
+var _tailscale_last_error := ""
+var _bulk_generation := 0
+var _bulk_pending := 0
+var _bulk_total := 0
+var _bulk_accepted := 0
+var _bulk_rejected := 0
+var _bulk_failed := 0
 
 func setup(root: Node, scene: PackedScene, tokens: Node, measure: Node) -> void:
 	board_root = root
@@ -70,7 +77,7 @@ func send_snapshot(host: String, key: String) -> Error:
 func send_snapshot_to_tailnet(key: String) -> Error:
 	var clean_key: String = key.strip_edges()
 	if clean_key.is_empty():
-		status_changed.emit("Inserisci un codice sessione condiviso")
+		status_changed.emit("Numero partita non valido")
 		return ERR_INVALID_PARAMETER
 
 	var payload: PackedByteArray = _snapshot_payload(clean_key)
@@ -80,27 +87,39 @@ func send_snapshot_to_tailnet(key: String) -> Error:
 	var hosts: Array[String] = _tailscale_peer_ipv4s()
 	if hosts.is_empty():
 		status_changed.emit(
-			"Nessun nodo Tailscale trovato o comando tailscale non disponibile"
+			"Nessun nodo Tailscale trovato. %s" % _tailscale_last_error
 		)
 		return ERR_DOES_NOT_EXIST
 
-	var queued: int = 0
+	_bulk_generation += 1
+	_bulk_total = hosts.size()
+	_bulk_pending = 0
+	_bulk_accepted = 0
+	_bulk_rejected = 0
+	_bulk_failed = 0
+
 	for host: String in hosts:
 		var error: Error = _queue_snapshot_payload(
 			host,
 			payload,
 			BULK_SEND_TIMEOUT_MS,
-			true
+			true,
+			_bulk_generation
 		)
 		if error == OK:
-			queued += 1
+			_bulk_pending += 1
+		else:
+			_bulk_failed += 1
 
-	if queued == 0:
-		status_changed.emit("Nessun invio Tailscale avviato")
+	if _bulk_pending == 0:
+		status_changed.emit(
+			"Trovati %d nodi Tailscale, ma nessuna connessione è partita"
+			% _bulk_total
+		)
 		return ERR_CANT_CONNECT
 
 	status_changed.emit(
-		"Invio mappa avviato verso %d nodi Tailscale" % queued
+		"Trovati %d nodi Tailscale · invio in corso…" % _bulk_total
 	)
 	return OK
 
@@ -128,7 +147,8 @@ func _queue_snapshot_payload(
 	host: String,
 	payload: PackedByteArray,
 	timeout_ms: int,
-	quiet: bool
+	quiet: bool,
+	bulk_id: int = -1
 ) -> Error:
 	var peer := StreamPeerTCP.new()
 	var error: Error = peer.connect_to_host(host, PORT)
@@ -147,6 +167,7 @@ func _queue_snapshot_payload(
 			"size": -1,
 			"sender": true,
 			"quiet": quiet,
+			"bulk_id": bulk_id,
 			"host": host,
 			"deadline": Time.get_ticks_msec() + timeout_ms
 		}
@@ -155,29 +176,59 @@ func _queue_snapshot_payload(
 
 
 func _tailscale_peer_ipv4s() -> Array[String]:
-	var output: Array = []
-	var executable: String = (
-		"tailscale.exe"
-		if OS.get_name() == "Windows"
-		else "tailscale"
-	)
-	var exit_code: int = OS.execute(
-		executable,
-		PackedStringArray(["status", "--json"]),
-		output
-	)
-	if exit_code != 0:
-		return []
+	_tailscale_last_error = ""
+	var candidates: Array[String] = []
 
-	var raw: String = ""
-	for chunk: Variant in output:
-		raw += String(chunk)
-	var parsed: Variant = JSON.parse_string(raw)
+	if OS.get_name() == "Windows":
+		var program_files: String = OS.get_environment("ProgramFiles")
+		if not program_files.is_empty():
+			candidates.append(
+				program_files.path_join("Tailscale").path_join("tailscale.exe")
+			)
+		var program_files_x86: String = OS.get_environment("ProgramFiles(x86)")
+		if not program_files_x86.is_empty():
+			candidates.append(
+				program_files_x86.path_join("Tailscale").path_join("tailscale.exe")
+			)
+		candidates.append("tailscale.exe")
+	else:
+		candidates.append("tailscale")
+		candidates.append("/usr/bin/tailscale")
+		candidates.append("/usr/local/bin/tailscale")
+
+	var parsed: Variant = null
+	var attempted: Array[String] = []
+	for executable: String in candidates:
+		if executable in attempted:
+			continue
+		attempted.append(executable)
+
+		var output: Array = []
+		var exit_code: int = OS.execute(
+			executable,
+			PackedStringArray(["status", "--json"]),
+			output
+		)
+		if exit_code != 0:
+			continue
+
+		var raw: String = ""
+		for chunk: Variant in output:
+			raw += String(chunk)
+		parsed = JSON.parse_string(raw)
+		if parsed is Dictionary:
+			break
+
 	if not parsed is Dictionary:
+		_tailscale_last_error = (
+			"Impossibile eseguire o leggere 'tailscale status --json'. "
+			+ "Controlla che Tailscale sia installato."
+		)
 		return []
 
 	var peers_value: Variant = (parsed as Dictionary).get("Peer", {})
 	if not peers_value is Dictionary:
+		_tailscale_last_error = "Il JSON di Tailscale non contiene Peer."
 		return []
 
 	var hosts: Array[String] = []
@@ -200,7 +251,35 @@ func _tailscale_peer_ipv4s() -> Array[String]:
 			seen[ip] = true
 			hosts.append(ip)
 
+	if hosts.is_empty():
+		_tailscale_last_error = "Il comando funziona, ma non ha restituito IPv4 peer."
 	return hosts
+
+
+func _finish_bulk_attempt(item: Dictionary, accepted: bool, rejected: bool) -> void:
+	if int(item.get("bulk_id", -1)) != _bulk_generation:
+		return
+	if _bulk_pending <= 0:
+		return
+
+	_bulk_pending -= 1
+	if accepted:
+		_bulk_accepted += 1
+	elif rejected:
+		_bulk_rejected += 1
+	else:
+		_bulk_failed += 1
+
+	if _bulk_pending == 0:
+		status_changed.emit(
+			"Sincronizzazione conclusa · ricevute %d/%d · rifiutate %d · non raggiungibili %d"
+			% [
+				_bulk_accepted,
+				_bulk_total,
+				_bulk_rejected,
+				_bulk_failed
+			]
+		)
 
 
 func _process(_delta: float) -> void:
@@ -215,8 +294,10 @@ func _process(_delta: float) -> void:
 		var peer: StreamPeerTCP = item.peer
 		peer.poll()
 		if Time.get_ticks_msec() > item.deadline or peer.get_status() in [StreamPeerTCP.STATUS_ERROR, StreamPeerTCP.STATUS_NONE]:
-			if item.sender and not bool(item.get("quiet", false)):
-				status_changed.emit("Invio non confermato: connessione interrotta o timeout")
+			if item.sender:
+				_finish_bulk_attempt(item, false, false)
+				if not bool(item.get("quiet", false)):
+					status_changed.emit("Invio non confermato: connessione interrotta o timeout")
 			peer.disconnect_from_host()
 			connections.remove_at(index)
 			continue
@@ -237,8 +318,14 @@ func _process(_delta: float) -> void:
 			item.buffer.append_array(result[1])
 		if item.sender:
 			if item.buffer.size() > 0:
+				var accepted_by_receiver: bool = item.buffer[0] == 1
+				_finish_bulk_attempt(
+					item,
+					accepted_by_receiver,
+					not accepted_by_receiver
+				)
 				if not bool(item.get("quiet", false)):
-					status_changed.emit("Mappa ricevuta e applicata" if item.buffer[0] == 1 else "Mappa rifiutata: controlla codice, scena e stato della partita")
+					status_changed.emit("Mappa ricevuta e applicata" if accepted_by_receiver else "Mappa rifiutata: controlla partita, scena e stato della mappa")
 				peer.disconnect_from_host()
 				connections.remove_at(index)
 			continue
@@ -249,15 +336,37 @@ func _process(_delta: float) -> void:
 				item.deadline = 0
 				continue
 		if item.size > 0 and item.buffer.size() >= item.size:
-			var message: Variant = JSON.parse_string(item.buffer.slice(0, item.size).get_string_from_utf8())
+			var message: Variant = JSON.parse_string(
+				item.buffer.slice(0, item.size).get_string_from_utf8()
+			)
 			var accepted := false
-			if message is Dictionary and message.get("magic") == MAGIC and message.get("key") == session_key:
-				var snapshot: Variant = message.get("snapshot")
-				if valid_snapshot(snapshot) and not create_snapshot().is_empty():
-					if _save_backup(create_snapshot(), "before_receive"):
+			var reject_reason := "messaggio non valido"
+			if message is Dictionary:
+				if message.get("magic") != MAGIC:
+					reject_reason = "protocollo non compatibile"
+				elif message.get("key") != session_key:
+					reject_reason = "numero partita diverso"
+				else:
+					var snapshot: Variant = message.get("snapshot")
+					if not valid_snapshot(snapshot):
+						reject_reason = "snapshot/scena non compatibile"
+					elif create_snapshot().is_empty():
+						reject_reason = "stato locale non sincronizzabile"
+					elif not _save_backup(
+						create_snapshot(),
+						"before_receive"
+					):
+						reject_reason = "backup locale fallito"
+					else:
 						accepted = apply_snapshot(snapshot)
+						if not accepted:
+							reject_reason = "applicazione snapshot fallita"
 			peer.put_data(PackedByteArray([1 if accepted else 0]))
-			status_changed.emit("Mappa ricevuta; backup locale salvato" if accepted else "Mappa rifiutata")
+			status_changed.emit(
+				"Mappa ricevuta; backup locale salvato"
+				if accepted
+				else "Mappa rifiutata: %s" % reject_reason
+			)
 			connections.remove_at(index)
 
 func _exit_tree() -> void:
