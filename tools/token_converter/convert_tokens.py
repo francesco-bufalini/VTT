@@ -897,6 +897,23 @@ def process_package(
     return profile
 
 
+def print_failure_summary(failures: list[dict]) -> None:
+    if not failures:
+        print("\n=== FAILED CONVERSIONS ===")
+        print("None")
+        return
+
+    print("\n" + "=" * 72)
+    print(f"FAILED CONVERSIONS ({len(failures)})")
+    print("=" * 72)
+    for index, failure in enumerate(failures, start=1):
+        package = str(failure.get("package", "Unknown package"))
+        error = str(failure.get("error", "Unknown error"))
+        print(f"{index:>3}. {package}")
+        print(f"     -> {error}")
+    print("=" * 72)
+
+
 def main() -> int:
     args = parse_args()
     source_root = Path(args.source).expanduser().resolve()
@@ -934,6 +951,7 @@ def main() -> int:
 
     if not tokens:
         print("ERROR: all conversions failed")
+        print_failure_summary(failures)
         return 4
 
     default_token = choose_default(tokens, args.default)
@@ -958,6 +976,7 @@ def main() -> int:
         f"({default_token['size_name']}, {default_token['footprint']:g} cells)"
     )
     print(f"Manifest:  {manifest_path}")
+    print_failure_summary(failures)
     return 0
 
 
