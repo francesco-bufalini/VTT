@@ -86,11 +86,19 @@ func run() -> void:
 	assert(not wind_wall.is_empty())
 	assert(String(wind_wall.get("visual_style", "")) == "bludgeoning")
 
+	var fire_bolt: Dictionary = SpellCatalog.spell("fire_bolt")
+	assert(not fire_bolt.is_empty())
+	assert(String(fire_bolt.get("target_mode", "")) == "token_then_token")
+	assert(is_equal_approx(float(fire_bolt.get("range_feet", 0.0)), 120.0))
+	assert(String(fire_bolt.get("projectile_style", "")) == "fire_bolt")
+	assert(bool(fire_bolt.get("allow_point_target", false)))
+
 	var chromatic_orb: Dictionary = SpellCatalog.spell("chromatic_orb")
 	assert(not chromatic_orb.is_empty())
 	assert(String(chromatic_orb.get("target_mode", "")) == "token_then_token")
 	assert(is_equal_approx(float(chromatic_orb.get("range_feet", 0.0)), 90.0))
 	assert(String(chromatic_orb.get("projectile_style", "")) == "chromatic_orb")
+	assert(bool(chromatic_orb.get("allow_point_target", false)))
 
 	var magic_missile: Dictionary = SpellCatalog.spell("magic_missile")
 	assert(not magic_missile.is_empty())
@@ -99,7 +107,22 @@ func run() -> void:
 	assert(int(magic_missile.get("base_target_clicks", 0)) == 3)
 	assert(int(magic_missile.get("target_clicks_per_slot_above_base", 0)) == 1)
 	assert(bool(magic_missile.get("allow_repeat_targets", false)))
+	assert(bool(magic_missile.get("allow_point_target", false)))
 	assert(String(magic_missile.get("projectile_style", "")) == "magic_missile")
+
+	var scorching_ray: Dictionary = SpellCatalog.spell("scorching_ray")
+	assert(not scorching_ray.is_empty())
+	assert(String(scorching_ray.get("target_mode", "")) == "token_then_multi_token")
+	assert(is_equal_approx(float(scorching_ray.get("range_feet", 0.0)), 120.0))
+	assert(int(scorching_ray.get("base_target_clicks", 0)) == 3)
+	assert(int(scorching_ray.get("target_clicks_per_slot_above_base", 0)) == 1)
+	assert(bool(scorching_ray.get("allow_repeat_targets", false)))
+	assert(bool(scorching_ray.get("allow_point_target", false)))
+	assert(String(scorching_ray.get("projectile_style", "")) == "scorching_ray")
+
+	# ST/MT alone is not enough to invent a projectile. Charm Person still
+	# appears in the browser, but has no supported map effect yet.
+	assert(SpellCatalog.spell("charm_person").is_empty())
 
 	var entangle: Dictionary = SpellCatalog.spell("entangle")
 	assert(not entangle.is_empty())
@@ -111,6 +134,6 @@ func run() -> void:
 	assert(not bool(entangle.get("requires_ground", false)))
 
 	print(
-		"PASS: 5eTools metadata drives range, targets, flat areas, walls and VFX"
+		"PASS: 5eTools metadata drives range, projectile targets, flat areas, walls and VFX"
 	)
 	quit()
