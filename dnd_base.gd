@@ -422,6 +422,19 @@ func undo_last_action() -> bool:
 	if not snapshot_value is Dictionary:
 		return false
 
+	var initiative_state: Dictionary = {}
+	if (
+		initiative_tracker != null
+		and is_instance_valid(initiative_tracker)
+	):
+		var initiative_value: Variant = initiative_tracker.call(
+			"get_save_state"
+		)
+		if initiative_value is Dictionary:
+			initiative_state = (
+				initiative_value as Dictionary
+			).duplicate(true)
+
 	_undo_restoring = true
 	var applied: bool = bool(
 		board_sync.call(
@@ -434,6 +447,13 @@ func undo_last_action() -> bool:
 		set_vision_cones_visible(
 			bool(state.get("vision_visible", _vision_cones_visible))
 		)
+		# Ctrl+Z annulla azioni sulla mappa, non il passaggio dei turni.
+		if (
+			initiative_tracker != null
+			and is_instance_valid(initiative_tracker)
+			and not initiative_state.is_empty()
+		):
+			initiative_tracker.call("load_state", initiative_state)
 	_undo_restoring = false
 
 	return applied
