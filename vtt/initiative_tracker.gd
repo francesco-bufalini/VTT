@@ -310,7 +310,7 @@ func _on_add_confirmed() -> void:
 	var name_value: String = participant_name.text.strip_edges()
 	var token_id: String = _selected_token_id_from_option()
 	if name_value.is_empty():
-		name_value = _token_name_by_id(token_id)
+		name_value = _token_display_name_by_id(token_id)
 	if name_value.is_empty():
 		name_value = "Partecipante %d" % (_next_entry_id)
 
