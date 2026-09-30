@@ -1554,7 +1554,7 @@ func check_opportunity_attacks_after_movement(
 		for node: Node in get_tree().get_nodes_in_group("dnd_token"):
 			if not node is CharacterBody3D:
 				continue
-			var attacker := node as CharacterBody3D
+			var attacker: CharacterBody3D = node as CharacterBody3D
 			if (
 				attacker == moved_token
 				or not is_instance_valid(attacker)
@@ -1576,15 +1576,15 @@ func check_opportunity_attacks_after_movement(
 				before_feet <= reach_feet + 0.05
 				and after_feet > reach_feet + 0.05
 			):
-				notices.append(
+				var notice: String = (
 					"%s può effettuare un attacco di opportunità contro %s "
 					+ "(uscita dalla gittata di %g ft)."
-					% [
-						_token_notice_name(attacker),
-						_token_notice_name(moved_token),
-						reach_feet
-					]
-				)
+				) % [
+					_token_notice_name(attacker),
+					_token_notice_name(moved_token),
+					reach_feet
+				]
+				notices.append(notice)
 
 	if notices.is_empty() or opportunity_dialog == null:
 		return
