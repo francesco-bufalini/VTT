@@ -14,6 +14,7 @@ const AOE_COLORS: Array[Color] = [
 	Color(0.95, 0.95, 0.95, 1.0),
 ]
 const DamageAreaParticles = preload("res://vtt/spells/damage_area_particles.gd")
+const SpellVFX = preload("res://vtt/spells/spell_vfx.gd")
 const WallGeometry = preload("res://vtt/spells/wall_geometry.gd")
 
 @export var cell_size: float = 1.0
@@ -899,6 +900,60 @@ func show_transient_aoe(
 	timer.wait_time = maxf(duration_seconds, 0.05)
 	root.add_child(timer)
 	timer.timeout.connect(root.queue_free)
+	timer.start()
+
+
+func show_spell_projectile(
+	start: Vector3,
+	end: Vector3,
+	style: String,
+	duration_seconds: float = 0.65
+) -> void:
+	var root: Node3D = Node3D.new()
+	root.name = "TransientSpellProjectile"
+	add_child(root)
+	SpellVFX.attach_projectile(
+		root,
+		start,
+		end,
+		style,
+		maxf(duration_seconds, 0.05),
+		cell_size
+	)
+
+
+func show_spell_projectile_with_impact(
+	start: Vector3,
+	end: Vector3,
+	projectile_style: String,
+	travel_seconds: float,
+	impact_shape: String,
+	impact_radius_world: float,
+	impact_style: String,
+	impact_seconds: float = 5.0
+) -> void:
+	show_spell_projectile(
+		start,
+		end,
+		projectile_style,
+		travel_seconds
+	)
+
+	var timer: Timer = Timer.new()
+	timer.one_shot = true
+	timer.wait_time = maxf(travel_seconds, 0.05)
+	add_child(timer)
+	timer.timeout.connect(
+		func() -> void:
+			show_transient_aoe(
+				end,
+				end + Vector3.RIGHT * impact_radius_world,
+				impact_shape,
+				impact_seconds,
+				impact_style
+			)
+			timer.queue_free()
+	)
 	timer.start()
 
 
