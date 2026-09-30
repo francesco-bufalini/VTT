@@ -6,77 +6,54 @@ const TOKEN_GROUP := "dnd_token"
 const INVALID_CELL := Vector3i(2147483647, 2147483647, 2147483647)
 
 @export var cell_size: float = 1.0
-# Logical/range volume. Rendering cost depends on screen samples, not N^3.
-@export_range(8, 120, 1) var cells_per_side: int = 70
+# Volume locale della griglia collision-aware. Con cell_size = 1 il default
+# copre esattamente 70 x 70 x 70 metri/celle attorno alla camera.
+@export_range(4, 100, 1) var cells_per_side: int = 70
 @export_flags_3d_physics var collision_mask: int = 1
-# Tokens live on layer 2 in the base VTT and are deliberately included in
-# the visible collision grid.
-@export_flags_3d_physics var token_collision_mask: int = 2
-@export var include_tokens: bool = true
-
-# Screen-space sampling. A complete sweep is spread over multiple physics
-# frames, but unlike the old implementation it stops completely once the
-# camera and relevant geometry become stationary.
-@export_range(8, 64, 1) var ray_spacing_pixels: int = 20
-@export_range(1000, 12000, 250) var target_screen_samples: int = 3000
-@export_range(32, 2048, 1) var max_ray_tests_per_physics_frame: int = 128
-@export_range(0.01, 0.25, 0.01) var surface_inset_fraction: float = 0.06
-# Adds nearby cells on the tangent plane of each raycast hit so the tactical
-# grid stays stable when the camera angle changes, without filling depth.
-@export_range(0, 3, 1) var neighbor_margin_cells: int = 1
-@export_range(256, 30000, 256) var max_active_cells: int = 12288
-
-# Event thresholds. Small camera jitter does not restart a sweep.
-@export_range(0.01, 2.0, 0.01) var camera_move_threshold_cells: float = 0.18
-@export_range(0.1, 15.0, 0.1) var camera_rotation_threshold_degrees: float = 1.0
-@export_range(0.02, 1.0, 0.02) var dynamic_change_check_interval: float = 0.12
-
-# Legacy exported properties kept so inherited scenes made before the
-# event-driven grid continue to load without missing-property warnings.
-@export_range(0.15, 2.0, 0.05) var cell_retention_seconds: float = 0.65
-@export_range(0.02, 0.5, 0.01) var visual_update_interval: float = 0.08
-@export_range(0.1, 2.0, 0.1) var exclusion_refresh_interval: float = 0.5
+# La prima scansione del volume viene distribuita su più physics frame
+# per evitare un picco di decine di migliaia di query nello stesso frame.
+@export_range(1, 4096, 1) var max_cell_tests_per_frame: int = 768
+@export_range(1, 64, 1) var max_query_results: int = 16
+@export_range(1000, 1000000, 1000) var max_cached_cells: int = 500000
+@export_range(0.1, 5.0, 0.1) var map_change_check_interval: float = 0.5
+# Un overlap minimo rende affidabile il rilevamento di collisioni trimesh
+# esattamente sul confine fra due celle.
+@export_range(1.0, 1.05, 0.001) var collision_probe_scale: float = 1.002
 
 var _camera: Camera3D = null
 var _grid_mesh_instance: MultiMeshInstance3D = null
 var _multimesh: MultiMesh = null
 var _grid_material: StandardMaterial3D = null
+var _interaction_strength: float = 0.55
+var _cell_query_shape: BoxShape3D = null
+var _query_parameters: PhysicsShapeQueryParameters3D = null
 
 var _center_cell: Vector3i = INVALID_CELL
 var _lower_extent_cells: int = 35
 var _upper_extent_cells: int = 34
 var _half_extent_world: float = 35.0
 
-# The currently displayed cells are replaced atomically when a sweep finishes.
-# This avoids flicker while a new camera view is being sampled.
-var _visible_cells: Dictionary = {}
-var _sweep_cells: Dictionary = {}
-var _sample_points: Array[Vector2] = []
-var _sample_index: int = 0
-var _sample_viewport_size: Vector2i = Vector2i.ZERO
+# Cache globale delle celle già testate: Vector3i -> bool.
+# Quando la camera si sposta di una cella, in genere bisogna interrogare solo
+# il nuovo "strato" entrato nel volume, non tutte le celle del 70^3.
+var _cell_cache: Dictionary = {}
+var _active_occupied: Dictionary = {}
 
-var _ray_query: PhysicsRayQueryParameters3D = null
-var _excluded_rids: Array[RID] = []
-var _sweep_active: bool = false
-var _resweep_requested: bool = true
+var _pending_cells: Array[Vector3i] = []
+var _pending_lookup: Dictionary = {}
+var _pending_index: int = 0
+
+var _map_dirty: bool = true
 var _was_visible: bool = false
-var _visual_dirty: bool = true
-var _interaction_strength: float = 0.55
-
-var _camera_anchor_transform: Transform3D = Transform3D.IDENTITY
-var _camera_anchor_fov: float = -1.0
-var _dynamic_elapsed: float = 999.0
-var _dynamic_signature: int = 0
+var _signature_elapsed: float = 0.0
+var _tracked_map_shapes: Dictionary = {}
+var _shape_signatures: Dictionary = {}
 
 
 func _ready() -> void:
 	_configure_grid()
 	_build_multimesh()
-
-	_ray_query = PhysicsRayQueryParameters3D.new()
-	_ray_query.collide_with_bodies = true
-	_ray_query.collide_with_areas = false
-	_ray_query.collision_mask = _effective_collision_mask()
+	_register_existing_map_shapes()
 
 	get_tree().node_added.connect(_on_tree_node_added)
 	get_tree().node_removed.connect(_on_tree_node_removed)
@@ -86,61 +63,46 @@ func _physics_process(delta: float) -> void:
 	if not visible:
 		_was_visible = false
 		return
-	if _camera == null or not is_instance_valid(_camera):
-		return
-
-	var next_center: Vector3i = _world_to_cell(_camera.global_position)
-	if next_center != _center_cell:
-		_center_cell = next_center
-		_request_sweep()
-
-	var viewport_size := Vector2i(
-		_camera.get_viewport().get_visible_rect().size
-	)
-	if viewport_size != _sample_viewport_size or _sample_points.is_empty():
-		_rebuild_sample_pattern(viewport_size)
-		_request_sweep(true)
 
 	if not _was_visible:
 		_was_visible = true
-		_capture_camera_anchor()
-		_refresh_exclusions()
-		_dynamic_signature = _compute_dynamic_signature()
-		_request_sweep(true)
-	elif _camera_changed_enough():
-		_capture_camera_anchor()
-		_request_sweep()
+		_check_map_shape_signatures(true)
 
-	_dynamic_elapsed += delta
-	if _dynamic_elapsed >= dynamic_change_check_interval:
-		_dynamic_elapsed = 0.0
-		var signature: int = _compute_dynamic_signature()
-		if signature != _dynamic_signature:
-			_dynamic_signature = signature
-			_refresh_exclusions()
-			_request_sweep()
+	if _camera == null or not is_instance_valid(_camera):
+		return
 
-	if _resweep_requested and not _sweep_active:
-		_start_sweep()
+	_signature_elapsed += delta
+	if _signature_elapsed >= map_change_check_interval:
+		_signature_elapsed = 0.0
+		_check_map_shape_signatures(false)
 
-	if _sweep_active:
-		_sample_visible_surfaces()
+	var old_center := _center_cell
+	var next_center := _world_to_cell(_camera.global_position)
+	var center_changed := next_center != _center_cell
+	if center_changed:
+		_center_cell = next_center
+
+	if _map_dirty:
+		_cell_cache.clear()
+		_active_occupied.clear()
+		_map_dirty = false
+		_schedule_full_volume()
+	elif center_changed:
+		_schedule_for_center_change(old_center, next_center)
+
+	_process_pending_cells()
 
 
 func set_camera(new_camera: Camera3D) -> void:
 	_camera = new_camera
 	_center_cell = INVALID_CELL
-	_sample_points.clear()
-	_sample_index = 0
-	_capture_camera_anchor()
-	_request_sweep(true)
 
 
 func mark_map_dirty() -> void:
-	# Static geometry changes should call this. The currently rendered grid is
-	# kept until the new sweep finishes, so edits do not cause visible flicker.
-	_refresh_exclusions()
-	_request_sweep()
+	# Le query vengono rifatte nel prossimo physics frame, e solo se la griglia
+	# è visibile. In questo modo le modifiche alla scena non causano lavoro
+	# inutile quando la griglia 3D è spenta.
+	_map_dirty = true
 
 
 func refresh() -> void:
@@ -152,6 +114,18 @@ func set_interaction_strength(value: float) -> void:
 	_apply_material_strength()
 
 
+func _apply_material_strength() -> void:
+	if _grid_material == null:
+		return
+	var alpha: float = lerpf(0.18, 0.52, _interaction_strength)
+	_grid_material.albedo_color = Color(0.42, 0.75, 1.0, alpha)
+	_grid_material.emission_enabled = true
+	_grid_material.emission = Color(0.04, 0.22, 0.38, 1.0)
+	_grid_material.emission_energy_multiplier = (
+		lerpf(0.30, 0.70, _interaction_strength)
+	)
+
+
 func get_half_extent_world() -> float:
 	return _half_extent_world
 
@@ -160,20 +134,10 @@ func contains_world_point(point: Vector3) -> bool:
 	if _center_cell == INVALID_CELL:
 		return false
 
-	var min_cell := _volume_min_cell(_center_cell)
-	var max_cell := _volume_max_cell(_center_cell)
+	var bounds := _world_bounds()
+	var min_point: Vector3 = bounds["min"]
+	var max_point: Vector3 = bounds["max"]
 	var epsilon := maxf(cell_size * 0.001, 0.0001)
-
-	var min_point := Vector3(
-		float(min_cell.x) * cell_size,
-		float(min_cell.y) * cell_size,
-		float(min_cell.z) * cell_size
-	)
-	var max_point := Vector3(
-		float(max_cell.x + 1) * cell_size,
-		float(max_cell.y + 1) * cell_size,
-		float(max_cell.z + 1) * cell_size
-	)
 
 	return (
 		point.x >= min_point.x - epsilon
@@ -193,18 +157,9 @@ func get_ray_exit_distance(origin: Vector3, direction: Vector3) -> float:
 	if normalized_direction.length_squared() < 0.000001:
 		return 0.0
 
-	var min_cell := _volume_min_cell(_center_cell)
-	var max_cell := _volume_max_cell(_center_cell)
-	var min_point := Vector3(
-		float(min_cell.x) * cell_size,
-		float(min_cell.y) * cell_size,
-		float(min_cell.z) * cell_size
-	)
-	var max_point := Vector3(
-		float(max_cell.x + 1) * cell_size,
-		float(max_cell.y + 1) * cell_size,
-		float(max_cell.z + 1) * cell_size
-	)
+	var bounds := _world_bounds()
+	var min_point: Vector3 = bounds["min"]
+	var max_point: Vector3 = bounds["max"]
 
 	var t_min := -INF
 	var t_max := INF
@@ -229,27 +184,39 @@ func get_ray_exit_distance(origin: Vector3, direction: Vector3) -> float:
 
 		t_min = maxf(t_min, t_a)
 		t_max = minf(t_max, t_b)
+
 		if t_min > t_max:
 			return 0.0
 
 	if t_max < 0.0:
 		return 0.0
+
 	return maxf(0.0, t_max)
 
 
 func _configure_grid() -> void:
 	cell_size = maxf(cell_size, 0.001)
-	cells_per_side = maxi(8, cells_per_side)
+	cells_per_side = maxi(4, cells_per_side)
+
+	# Supporta anche volumi pari (default 70x70x70). La cella della camera
+	# resta inclusa; con un numero pari c'e inevitabilmente una cella in piu
+	# su un lato rispetto all'altro.
 	_lower_extent_cells = int(floor(float(cells_per_side) * 0.5))
 	_upper_extent_cells = cells_per_side - _lower_extent_cells - 1
 	_half_extent_world = float(cells_per_side) * cell_size * 0.5
 
+	_cell_query_shape = BoxShape3D.new()
+	_cell_query_shape.size = (
+		Vector3.ONE
+		* cell_size
+		* maxf(collision_probe_scale, 1.0)
+	)
 
-func _effective_collision_mask() -> int:
-	var result: int = collision_mask
-	if include_tokens:
-		result |= token_collision_mask
-	return result
+	_query_parameters = PhysicsShapeQueryParameters3D.new()
+	_query_parameters.shape = _cell_query_shape
+	_query_parameters.collision_mask = collision_mask
+	_query_parameters.collide_with_bodies = true
+	_query_parameters.collide_with_areas = false
 
 
 func _build_multimesh() -> void:
@@ -262,17 +229,12 @@ func _build_multimesh() -> void:
 	_grid_material = StandardMaterial3D.new()
 	_grid_material.transparency = BaseMaterial3D.TRANSPARENCY_ALPHA
 	_grid_material.shading_mode = BaseMaterial3D.SHADING_MODE_UNSHADED
-	# Grid lines are a tactical overlay. They must stay legible inside effects
-	# such as Darkness/Fog and on token bodies. Cells are still generated only
-	# from the first collision hit by each camera ray, so this does not turn
-	# hidden geometry into a global x-ray grid.
-	_grid_material.no_depth_test = true
-	_grid_material.render_priority = 127
+	_apply_material_strength()
 
 	var wire_cube := ImmediateMesh.new()
 	wire_cube.surface_begin(Mesh.PRIMITIVE_LINES, _grid_material)
 
-	var half := cell_size * 0.503
+	var half := cell_size * 0.495
 	var corners: Array[Vector3] = [
 		Vector3(-half, -half, -half),
 		Vector3(half, -half, -half),
@@ -284,12 +246,18 @@ func _build_multimesh() -> void:
 		Vector3(-half, half, half),
 	]
 	var edges: Array[Vector2i] = [
-		Vector2i(0, 1), Vector2i(1, 2),
-		Vector2i(2, 3), Vector2i(3, 0),
-		Vector2i(4, 5), Vector2i(5, 6),
-		Vector2i(6, 7), Vector2i(7, 4),
-		Vector2i(0, 4), Vector2i(1, 5),
-		Vector2i(2, 6), Vector2i(3, 7),
+		Vector2i(0, 1),
+		Vector2i(1, 2),
+		Vector2i(2, 3),
+		Vector2i(3, 0),
+		Vector2i(4, 5),
+		Vector2i(5, 6),
+		Vector2i(6, 7),
+		Vector2i(7, 4),
+		Vector2i(0, 4),
+		Vector2i(1, 5),
+		Vector2i(2, 6),
+		Vector2i(3, 7),
 	]
 
 	for edge in edges:
@@ -300,352 +268,245 @@ func _build_multimesh() -> void:
 	_multimesh = MultiMesh.new()
 	_multimesh.transform_format = MultiMesh.TRANSFORM_3D
 	_multimesh.mesh = wire_cube
-	_multimesh.instance_count = maxi(256, max_active_cells)
-	_multimesh.visible_instance_count = 0
+	_multimesh.instance_count = 0
 
 	_grid_mesh_instance = MultiMeshInstance3D.new()
-	_grid_mesh_instance.name = "VisibleCollisionGrid3D"
+	_grid_mesh_instance.name = "CollisionCellGrid3D"
 	_grid_mesh_instance.multimesh = _multimesh
 	_grid_mesh_instance.cast_shadow = (
 		GeometryInstance3D.SHADOW_CASTING_SETTING_OFF
 	)
 	add_child(_grid_mesh_instance)
-	_apply_material_strength()
 
 
-func _apply_material_strength() -> void:
-	if _grid_material == null:
+func _schedule_full_volume() -> void:
+	_reset_pending_queue()
+	_active_occupied.clear()
+
+	var min_cell := _volume_min_cell(_center_cell)
+	var max_cell := _volume_max_cell(_center_cell)
+
+	for y in range(min_cell.y, max_cell.y + 1):
+		for z in range(min_cell.z, max_cell.z + 1):
+			for x in range(min_cell.x, max_cell.x + 1):
+				_enqueue_cell(Vector3i(x, y, z))
+
+	_update_multimesh_instances()
+
+
+func _schedule_for_center_change(
+	old_center: Vector3i,
+	new_center: Vector3i
+) -> void:
+	_remove_active_cells_outside_volume()
+
+	# Se la scansione precedente non era ancora finita, ricostruiamo la coda
+	# del volume corrente usando comunque la cache delle celle già testate.
+	if _has_pending_cells() or old_center == INVALID_CELL:
+		_schedule_full_volume()
 		return
 
-	var alpha := lerpf(0.16, 0.62, _interaction_strength)
-	_grid_material.albedo_color = Color(0.42, 0.75, 1.0, alpha)
-	_grid_material.emission_enabled = true
-	_grid_material.emission = Color(0.04, 0.22, 0.38, 1.0)
-	_grid_material.emission_energy_multiplier = (
-		lerpf(0.20, 0.75, _interaction_strength)
-	)
-
-
-func _capture_camera_anchor() -> void:
-	if _camera == null or not is_instance_valid(_camera):
-		return
-	_camera_anchor_transform = _camera.global_transform
-	_camera_anchor_fov = _camera.fov
-
-
-func _camera_changed_enough() -> bool:
-	if _camera == null or not is_instance_valid(_camera):
-		return false
-
-	if absf(_camera.fov - _camera_anchor_fov) > 0.05:
-		return true
-
-	var movement_threshold: float = (
-		maxf(camera_move_threshold_cells, 0.01)
-		* cell_size
-	)
+	var delta := new_center - old_center
 	if (
-		_camera.global_position.distance_to(
-			_camera_anchor_transform.origin
-		) >= movement_threshold
+		absi(delta.x) >= cells_per_side
+		or absi(delta.y) >= cells_per_side
+		or absi(delta.z) >= cells_per_side
 	):
-		return true
-
-	var old_forward: Vector3 = (
-		-_camera_anchor_transform.basis.z
-	).normalized()
-	var new_forward: Vector3 = (
-		-_camera.global_transform.basis.z
-	).normalized()
-	var dot_value: float = clampf(
-		old_forward.dot(new_forward),
-		-1.0,
-		1.0
-	)
-	var angle_degrees: float = rad_to_deg(acos(dot_value))
-	return angle_degrees >= camera_rotation_threshold_degrees
-
-
-func _request_sweep(restart: bool = false) -> void:
-	_resweep_requested = true
-	if restart and _sweep_active:
-		_sweep_active = false
-		_sweep_cells.clear()
-		_sample_index = 0
-
-
-func _start_sweep() -> void:
-	if _camera == null or not is_instance_valid(_camera):
-		return
-	if _sample_points.is_empty():
+		_schedule_full_volume()
 		return
 
-	_resweep_requested = false
-	_sweep_active = true
-	_sweep_cells.clear()
-	_sample_index = 0
-	_ray_query.collision_mask = _effective_collision_mask()
-	_ray_query.exclude = _excluded_rids
+	_reset_pending_queue()
+
+	var old_min := _volume_min_cell(old_center)
+	var old_max := _volume_max_cell(old_center)
+	var new_min := _volume_min_cell(new_center)
+	var new_max := _volume_max_cell(new_center)
+
+	if new_min.x < old_min.x:
+		_enqueue_x_slab(new_min.x, old_min.x - 1, new_min, new_max)
+	elif new_max.x > old_max.x:
+		_enqueue_x_slab(old_max.x + 1, new_max.x, new_min, new_max)
+
+	if new_min.y < old_min.y:
+		_enqueue_y_slab(new_min.y, old_min.y - 1, new_min, new_max)
+	elif new_max.y > old_max.y:
+		_enqueue_y_slab(old_max.y + 1, new_max.y, new_min, new_max)
+
+	if new_min.z < old_min.z:
+		_enqueue_z_slab(new_min.z, old_min.z - 1, new_min, new_max)
+	elif new_max.z > old_max.z:
+		_enqueue_z_slab(old_max.z + 1, new_max.z, new_min, new_max)
+
+	_prune_cache_if_needed()
+	_update_multimesh_instances()
 
 
-func _rebuild_sample_pattern(viewport_size: Vector2i) -> void:
-	_sample_points.clear()
-	_sample_index = 0
-	_sample_viewport_size = viewport_size
-
-	if viewport_size.x <= 0 or viewport_size.y <= 0:
+func _enqueue_x_slab(
+	from_x: int,
+	to_x: int,
+	min_cell: Vector3i,
+	max_cell: Vector3i
+) -> void:
+	if from_x > to_x:
 		return
 
-	var area_pixels := maxf(
-		1.0,
-		float(viewport_size.x) * float(viewport_size.y)
-	)
-	var adaptive_spacing := int(ceil(sqrt(
-		area_pixels / float(maxi(1000, target_screen_samples))
-	)))
-	var spacing := maxi(8, maxi(ray_spacing_pixels, adaptive_spacing))
-	var half_spacing := int(floor(float(spacing) * 0.5))
-	var center := Vector2(viewport_size) * 0.5
-	var points_with_distance: Array[Dictionary] = []
-
-	for y in range(half_spacing, viewport_size.y, spacing):
-		for x in range(half_spacing, viewport_size.x, spacing):
-			var point := Vector2(float(x), float(y))
-			points_with_distance.append({
-				"point": point,
-				"distance": point.distance_squared_to(center)
-			})
-
-	points_with_distance.sort_custom(
-		func(a: Dictionary, b: Dictionary) -> bool:
-			return float(a["distance"]) < float(b["distance"])
-	)
-
-	for item in points_with_distance:
-		_sample_points.append(item["point"])
+	for x in range(from_x, to_x + 1):
+		for y in range(min_cell.y, max_cell.y + 1):
+			for z in range(min_cell.z, max_cell.z + 1):
+				_enqueue_cell(Vector3i(x, y, z))
 
 
-func _sample_visible_surfaces() -> void:
-	if _sample_points.is_empty() or _ray_query == null:
-		_finish_sweep()
+func _enqueue_y_slab(
+	from_y: int,
+	to_y: int,
+	min_cell: Vector3i,
+	max_cell: Vector3i
+) -> void:
+	if from_y > to_y:
 		return
 
-	var remaining: int = _sample_points.size() - _sample_index
-	var tests: int = mini(
-		maxi(1, max_ray_tests_per_physics_frame),
-		remaining
-	)
-	var ray_length := minf(
-		_camera.far,
-		maxf(cell_size, _half_extent_world * sqrt(3.0) * 1.08)
-	)
+	for y in range(from_y, to_y + 1):
+		for x in range(min_cell.x, max_cell.x + 1):
+			for z in range(min_cell.z, max_cell.z + 1):
+				_enqueue_cell(Vector3i(x, y, z))
 
-	for _test in range(tests):
-		var screen_point: Vector2 = _sample_points[_sample_index]
-		_sample_index += 1
 
-		var origin: Vector3 = _camera.project_ray_origin(screen_point)
-		var direction: Vector3 = _camera.project_ray_normal(screen_point)
-		_ray_query.from = origin
-		_ray_query.to = origin + direction * ray_length
+func _enqueue_z_slab(
+	from_z: int,
+	to_z: int,
+	min_cell: Vector3i,
+	max_cell: Vector3i
+) -> void:
+	if from_z > to_z:
+		return
 
-		var hit: Dictionary = (
-			get_world_3d().direct_space_state.intersect_ray(
-				_ray_query
-			)
-		)
-		if hit.is_empty():
-			continue
+	for z in range(from_z, to_z + 1):
+		for x in range(min_cell.x, max_cell.x + 1):
+			for y in range(min_cell.y, max_cell.y + 1):
+				_enqueue_cell(Vector3i(x, y, z))
 
-		var collider: Variant = hit.get("collider")
-		if not _is_grid_collider(collider):
-			continue
 
-		var point: Vector3 = hit.get("position", Vector3.ZERO)
-		var normal: Vector3 = hit.get("normal", Vector3.UP)
-		if normal.length_squared() > 0.000001:
-			point -= (
-				normal.normalized()
-				* cell_size
-				* surface_inset_fraction
-			)
+func _enqueue_cell(cell: Vector3i) -> void:
+	if _cell_cache.has(cell):
+		if bool(_cell_cache[cell]):
+			_active_occupied[cell] = true
+		return
 
-		var cell: Vector3i = _world_to_cell(point)
+	if _pending_lookup.has(cell):
+		return
+
+	_pending_lookup[cell] = true
+	_pending_cells.append(cell)
+
+
+func _process_pending_cells() -> void:
+	if not _has_pending_cells():
+		return
+
+	var tested := 0
+	var visual_changed := false
+	var budget := maxi(1, max_cell_tests_per_frame)
+
+	while _pending_index < _pending_cells.size() and tested < budget:
+		var cell := _pending_cells[_pending_index]
+		_pending_index += 1
+		_pending_lookup.erase(cell)
+
 		if not _cell_inside_current_volume(cell):
 			continue
 
-		_mark_sweep_cell_with_margin(cell, normal)
+		if _cell_cache.has(cell):
+			if bool(_cell_cache[cell]):
+				_active_occupied[cell] = true
+				visual_changed = true
+			continue
 
-	if _sample_index >= _sample_points.size():
-		_finish_sweep()
+		var occupied := _cell_intersects_map(cell)
+		_cell_cache[cell] = occupied
+		tested += 1
 
+		if occupied:
+			_active_occupied[cell] = true
+			visual_changed = true
 
-func _mark_sweep_cell_with_margin(
-	cell: Vector3i,
-	normal: Vector3
-) -> void:
-	_mark_sweep_cell(cell)
+	if _pending_index >= _pending_cells.size():
+		_reset_pending_queue()
+		_prune_cache_if_needed()
 
-	var margin: int = maxi(0, neighbor_margin_cells)
-	if margin == 0:
-		return
-
-	var abs_normal: Vector3 = normal.abs()
-	if abs_normal.x >= abs_normal.y and abs_normal.x >= abs_normal.z:
-		for y_offset in range(-margin, margin + 1):
-			for z_offset in range(-margin, margin + 1):
-				_mark_sweep_cell(cell + Vector3i(0, y_offset, z_offset))
-	elif abs_normal.y >= abs_normal.x and abs_normal.y >= abs_normal.z:
-		for x_offset in range(-margin, margin + 1):
-			for z_offset in range(-margin, margin + 1):
-				_mark_sweep_cell(cell + Vector3i(x_offset, 0, z_offset))
-	else:
-		for x_offset in range(-margin, margin + 1):
-			for y_offset in range(-margin, margin + 1):
-				_mark_sweep_cell(cell + Vector3i(x_offset, y_offset, 0))
+	if visual_changed:
+		_update_multimesh_instances()
 
 
-func _mark_sweep_cell(cell: Vector3i) -> void:
-	if not _cell_inside_current_volume(cell):
-		return
-	if (
-		not _sweep_cells.has(cell)
-		and _sweep_cells.size() >= max_active_cells
-	):
-		return
-	_sweep_cells[cell] = true
+func _cell_intersects_map(cell: Vector3i) -> bool:
+	if _query_parameters == null or _cell_query_shape == null:
+		return false
+
+	_query_parameters.collision_mask = collision_mask
+	_query_parameters.transform = Transform3D(
+		Basis.IDENTITY,
+		_cell_to_world_center(cell)
+	)
+
+	var hits: Array[Dictionary] = (
+		get_world_3d().direct_space_state.intersect_shape(
+			_query_parameters,
+			maxi(1, max_query_results)
+		)
+	)
+
+	for hit in hits:
+		var collider: Variant = hit.get("collider")
+		if _is_map_collider(collider):
+			return true
+
+	return false
 
 
-func _finish_sweep() -> void:
-	if not _sweep_active:
-		return
-
-	_visible_cells = _sweep_cells.duplicate()
-	_sweep_cells.clear()
-	_sweep_active = false
-	_visual_dirty = true
-	_update_multimesh_instances()
-	_visual_dirty = false
-
-
-func _refresh_exclusions() -> void:
-	_excluded_rids.clear()
-
-	for group_name in [
-		GRID_3D_EXCLUDED_GROUP,
-		GRID_2D_EXCLUDED_GROUP
-	]:
-		for node in get_tree().get_nodes_in_group(group_name):
-			if node is CollisionObject3D:
-				var rid: RID = (node as CollisionObject3D).get_rid()
-				if not _excluded_rids.has(rid):
-					_excluded_rids.append(rid)
-
-	if _ray_query != null:
-		_ray_query.exclude = _excluded_rids
-
-
-func _is_grid_collider(collider: Variant) -> bool:
+func _is_map_collider(collider: Variant) -> bool:
 	if collider == null or not is_instance_valid(collider):
 		return false
 	if not collider is PhysicsBody3D:
 		return false
-
-	var body := collider as PhysicsBody3D
-	var is_token: bool = _node_or_ancestor_in_group(
-		body,
-		TOKEN_GROUP
-	)
-
-	if body is CharacterBody3D and not is_token:
+	if collider is CharacterBody3D:
 		return false
 
-	if is_token:
-		if not include_tokens:
-			return false
-		if (body.collision_layer & token_collision_mask) == 0:
-			return false
-	else:
-		if (body.collision_layer & collision_mask) == 0:
-			return false
-
-	if (
-		_node_or_ancestor_in_group(body, GRID_3D_EXCLUDED_GROUP)
-		or _node_or_ancestor_in_group(body, GRID_2D_EXCLUDED_GROUP)
-	):
+	var body := collider as PhysicsBody3D
+	if (body.collision_layer & collision_mask) == 0:
+		return false
+	if _has_excluded_group_in_ancestry(body):
 		return false
 
 	return true
 
 
-func _node_or_ancestor_in_group(
-	node: Node,
-	group_name: String
-) -> bool:
+func _has_excluded_group_in_ancestry(node: Node) -> bool:
 	var current: Node = node
 	while current != null:
-		if current.is_in_group(group_name):
+		if (
+			current.is_in_group(TOKEN_GROUP)
+			or current.is_in_group(GRID_3D_EXCLUDED_GROUP)
+			or current.is_in_group(GRID_2D_EXCLUDED_GROUP)
+		):
 			return true
 		current = current.get_parent()
 	return false
-
-
-func _compute_dynamic_signature() -> int:
-	var signature: int = 17
-	var board_root: Node = get_parent()
-	if board_root == null:
-		return signature
-
-	# Tracking transforms of physics bodies is far cheaper than raycasting.
-	# This catches moving tokens, Kaos platforms and any other runtime map
-	# geometry even when it was not assigned to a special VTT group.
-	for node in board_root.find_children(
-		"*",
-		"PhysicsBody3D",
-		true,
-		false
-	):
-		if not node is PhysicsBody3D:
-			continue
-
-		var body := node as PhysicsBody3D
-		signature = hash([
-			signature,
-			body.get_instance_id(),
-			body.global_transform,
-			body.visible,
-			body.collision_layer,
-		])
-
-	return signature
-
-func _on_tree_node_added(node: Node) -> void:
-	if (
-		node is CollisionObject3D
-		or node is CollisionShape3D
-	):
-		_request_sweep()
-
-
-func _on_tree_node_removed(node: Node) -> void:
-	if (
-		node is CollisionObject3D
-		or node is CollisionShape3D
-	):
-		_request_sweep()
 
 
 func _update_multimesh_instances() -> void:
 	if _multimesh == null:
 		return
 
-	var index := 0
+	var count := _active_occupied.size()
+	_multimesh.instance_count = count
+	_multimesh.visible_instance_count = count
+
+	if count == 0:
+		return
+
 	var inverse_grid_transform := global_transform.affine_inverse()
+	var index := 0
 
-	for key in _visible_cells.keys():
-		if index >= max_active_cells:
-			break
-
+	for key in _active_occupied.keys():
 		var cell: Vector3i = key
 		if not _cell_inside_current_volume(cell):
 			continue
@@ -654,13 +515,62 @@ func _update_multimesh_instances() -> void:
 			Basis.IDENTITY,
 			_cell_to_world_center(cell)
 		)
-		_multimesh.set_instance_transform(
-			index,
-			inverse_grid_transform * world_transform
-		)
+		var local_transform := inverse_grid_transform * world_transform
+		_multimesh.set_instance_transform(index, local_transform)
 		index += 1
 
-	_multimesh.visible_instance_count = index
+	# Normalmente count e index coincidono. Questo protegge comunque da
+	# eventuali celle rimosse fra conteggio e aggiornamento.
+	if index != count:
+		_multimesh.visible_instance_count = index
+
+
+func _remove_active_cells_outside_volume() -> void:
+	for key in _active_occupied.keys():
+		var cell: Vector3i = key
+		if not _cell_inside_current_volume(cell):
+			_active_occupied.erase(cell)
+
+
+func _reset_pending_queue() -> void:
+	_pending_cells.clear()
+	_pending_lookup.clear()
+	_pending_index = 0
+
+
+func _has_pending_cells() -> bool:
+	return _pending_index < _pending_cells.size()
+
+
+func _prune_cache_if_needed() -> void:
+	if _cell_cache.size() <= maxi(max_cached_cells, cells_per_side):
+		return
+
+	var retained: Dictionary = {}
+	var padding := 2
+
+	var min_cell := (
+		_volume_min_cell(_center_cell)
+		- Vector3i.ONE * padding
+	)
+	var max_cell := (
+		_volume_max_cell(_center_cell)
+		+ Vector3i.ONE * padding
+	)
+
+	for key in _cell_cache.keys():
+		var cell: Vector3i = key
+		if (
+			cell.x >= min_cell.x
+			and cell.x <= max_cell.x
+			and cell.y >= min_cell.y
+			and cell.y <= max_cell.y
+			and cell.z >= min_cell.z
+			and cell.z <= max_cell.z
+		):
+			retained[cell] = _cell_cache[cell]
+
+	_cell_cache = retained
 
 
 func _volume_min_cell(center: Vector3i) -> Vector3i:
@@ -677,6 +587,7 @@ func _cell_inside_current_volume(cell: Vector3i) -> bool:
 
 	var min_cell := _volume_min_cell(_center_cell)
 	var max_cell := _volume_max_cell(_center_cell)
+
 	return (
 		cell.x >= min_cell.x
 		and cell.x <= max_cell.x
@@ -702,3 +613,183 @@ func _cell_to_world_center(cell: Vector3i) -> Vector3:
 		(float(cell.y) + 0.5) * cell_size,
 		(float(cell.z) + 0.5) * cell_size
 	)
+
+
+func _world_bounds() -> Dictionary:
+	var min_cell := _volume_min_cell(_center_cell)
+	var max_cell := _volume_max_cell(_center_cell)
+
+	return {
+		"min": Vector3(
+			float(min_cell.x) * cell_size,
+			float(min_cell.y) * cell_size,
+			float(min_cell.z) * cell_size
+		),
+		"max": Vector3(
+			float(max_cell.x + 1) * cell_size,
+			float(max_cell.y + 1) * cell_size,
+			float(max_cell.z + 1) * cell_size
+		)
+	}
+
+
+func _register_existing_map_shapes() -> void:
+	if get_tree() == null or get_tree().root == null:
+		return
+
+	for node in get_tree().root.find_children(
+		"*",
+		"CollisionShape3D",
+		true,
+		false
+	):
+		_register_map_shape(node as CollisionShape3D, false)
+
+
+func _on_tree_node_added(node: Node) -> void:
+	if node is CollisionShape3D:
+		call_deferred(
+			"_register_added_collision_shape",
+			node as CollisionShape3D
+		)
+
+
+func _register_added_collision_shape(
+	collision: CollisionShape3D
+) -> void:
+	if collision == null or not is_instance_valid(collision):
+		return
+
+	if _register_map_shape(collision, true):
+		mark_map_dirty()
+
+
+func _on_tree_node_removed(node: Node) -> void:
+	var instance_id := node.get_instance_id()
+	if not _tracked_map_shapes.has(instance_id):
+		return
+
+	_tracked_map_shapes.erase(instance_id)
+	_shape_signatures.erase(instance_id)
+	mark_map_dirty()
+
+
+func _register_map_shape(
+	collision: CollisionShape3D,
+	update_existing_signature: bool
+) -> bool:
+	if collision == null or not is_instance_valid(collision):
+		return false
+
+	var body := _find_physics_body(collision)
+	if body == null or not _is_map_collider(body):
+		return false
+
+	var instance_id := collision.get_instance_id()
+	var was_known := _tracked_map_shapes.has(instance_id)
+	_tracked_map_shapes[instance_id] = collision
+
+	if not was_known or update_existing_signature:
+		_shape_signatures[instance_id] = (
+			_collision_shape_signature(collision, body)
+		)
+
+	return not was_known
+
+
+func _find_physics_body(node: Node) -> PhysicsBody3D:
+	var current := node.get_parent()
+	while current != null:
+		if current is Area3D:
+			return null
+		if current is PhysicsBody3D:
+			return current as PhysicsBody3D
+		current = current.get_parent()
+	return null
+
+
+func _check_map_shape_signatures(discover_new: bool) -> void:
+	if discover_new:
+		_discover_untracked_map_shapes()
+
+	var changed := false
+	var stale_ids: Array[int] = []
+
+	for key in _tracked_map_shapes.keys():
+		var instance_id: int = int(key)
+		var collision: Variant = _tracked_map_shapes[instance_id]
+
+		if (
+			not is_instance_valid(collision)
+			or not (collision as CollisionShape3D).is_inside_tree()
+		):
+			stale_ids.append(instance_id)
+			changed = true
+			continue
+
+		var collision_shape := collision as CollisionShape3D
+		var body := _find_physics_body(collision_shape)
+		if body == null or not _is_map_collider(body):
+			stale_ids.append(instance_id)
+			changed = true
+			continue
+
+		var signature := _collision_shape_signature(
+			collision_shape,
+			body
+		)
+		if String(_shape_signatures.get(instance_id, "")) != signature:
+			_shape_signatures[instance_id] = signature
+			changed = true
+
+	for instance_id in stale_ids:
+		_tracked_map_shapes.erase(instance_id)
+		_shape_signatures.erase(instance_id)
+
+	if changed:
+		mark_map_dirty()
+
+
+func _discover_untracked_map_shapes() -> void:
+	if get_tree() == null or get_tree().root == null:
+		return
+
+	var discovered := false
+	for node in get_tree().root.find_children(
+		"*",
+		"CollisionShape3D",
+		true,
+		false
+	):
+		var collision := node as CollisionShape3D
+		if (
+			collision != null
+			and not _tracked_map_shapes.has(
+				collision.get_instance_id()
+			)
+			and _register_map_shape(collision, false)
+		):
+			discovered = true
+
+	if discovered:
+		mark_map_dirty()
+
+
+func _collision_shape_signature(
+	collision: CollisionShape3D,
+	body: PhysicsBody3D
+) -> String:
+	var shape_id := 0
+	var shape_class := "none"
+	if collision.shape != null:
+		shape_id = collision.shape.get_instance_id()
+		shape_class = collision.shape.get_class()
+
+	return "%s|%s|%s|%s|%s|%s" % [
+		str(collision.global_transform),
+		str(collision.disabled),
+		str(body.collision_layer),
+		str(body.global_transform),
+		shape_class,
+		str(shape_id)
+	]
