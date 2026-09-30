@@ -2178,11 +2178,40 @@ func _on_token_dialog_confirmed() -> void:
 		push_undo_state()
 		if created_token.has_method("push_transformation_state"):
 			created_token.call("push_transformation_state")
+		var visual_applied: bool = true
 		if (
 			not visual_asset.is_empty()
 			and created_token.has_method("set_visual_asset")
 		):
-			created_token.call("set_visual_asset", visual_asset)
+			visual_applied = bool(
+				created_token.call("set_visual_asset", visual_asset)
+			)
+
+		# Una trasformazione deve essere atomica. Prima questo risultato veniva
+		# ignorato: un OBJ non caricabile lasciava il token con nome/taglia/reach
+		# nuovi ma con la vecchia miniatura.
+		if not visual_applied:
+			if created_token.has_method("restore_previous_transformation"):
+				created_token.call("restore_previous_transformation")
+			var failed_callback: Callable = (
+				_token_generation_canceled_callback
+			)
+			_token_generation_confirmed_callback = Callable()
+			_token_generation_canceled_callback = Callable()
+			_token_generation_transform_target = null
+			_token_generation_exact_position = false
+			_token_generation_place_on_surface = false
+			_has_pending_spawn_position = false
+			_ui_owns_mouse = false
+			_capture_mouse()
+			push_error(
+				"DnDBase: trasformazione annullata, impossibile caricare %s"
+				% visual_asset
+			)
+			if failed_callback.is_valid():
+				failed_callback.call()
+			return
+
 		if created_token.has_method("set_visual_front_quarter_turns"):
 			created_token.call(
 				"set_visual_front_quarter_turns",
