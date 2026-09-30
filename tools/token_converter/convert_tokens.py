@@ -587,11 +587,23 @@ def resolve_base(
             reference_only = added if external.suffix.lower() == ".stl" else []
             return low, high, f"file:{external.name}", reference_only
 
-    fallback = low_band_base_bounds(objects)
-    if fallback is not None:
-        return fallback[0], fallback[1], "geometry:lowest_8_percent", []
+    # No explicit authored base/marker was found.  Do not fail and do not try
+    # to infer a D&D size from the creature's lowest geometry: use a virtual
+    # standard Medium base instead.  These packs are authored in tabletop-mm
+    # scale, so 25.4 source units correspond to a 1-cell Medium footprint.
+    scene_low, scene_high = world_bounds(objects)
+    diameter = STANDARD_BASE_DIAMETERS_MM["Medium"]
+    radius = diameter * 0.5
+    center_x = (scene_low.x + scene_high.x) * 0.5
+    center_y = (scene_low.y + scene_high.y) * 0.5
+    base_low = Vector((center_x - radius, center_y - radius, scene_low.z))
+    base_high = Vector((center_x + radius, center_y + radius, scene_low.z))
 
-    raise ValueError("Could not identify the miniature base")
+    print(
+        "WARNING: no base/marker found; using Medium 1x1 fallback "
+        f"({diameter:g} source units)"
+    )
+    return base_low, base_high, "fallback:Medium (no base found)", []
 
 
 def normalize_from_base(
