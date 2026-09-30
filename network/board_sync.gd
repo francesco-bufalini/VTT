@@ -441,6 +441,8 @@ func valid_snapshot(snapshot: Variant) -> bool:
 				return false
 			if item.has("gravity_applied") and not item.get("gravity_applied") is bool:
 				return false
+			if item.has("support_id") and not item.get("support_id") is String:
+				return false
 			# V4 makes logical token state mandatory. This prevents an older
 			# client from silently accepting a snapshot without names/conditions
 			# and then broadcasting blank state back to the table.
@@ -548,6 +550,7 @@ func apply_snapshot(snapshot: Dictionary) -> bool:
 			var expected_conditions: Array = data.get("conditions", [])
 			if (applied_conditions as Array) != expected_conditions:
 				return false
+	_restore_token_supports(wanted)
 	if is_instance_valid(measurement_tool) and measurement_tool.has_method("apply_persistent_aoes"): measurement_tool.call("apply_persistent_aoes", snapshot.get("aoes",[]))
 	var initiative_tracker: Node = _initiative_tracker()
 	if initiative_tracker == null:
@@ -565,6 +568,26 @@ func apply_snapshot(snapshot: Dictionary) -> bool:
 		if token_list_node.has_method("refresh"):
 			token_list_node.call("refresh")
 	return true
+
+func _restore_token_supports(wanted: Dictionary) -> void:
+	var current: Dictionary = _current_nodes_by_id()
+	for token_id: Variant in wanted.keys():
+		var data_value: Variant = wanted[token_id]
+		if not data_value is Dictionary:
+			continue
+		var data: Dictionary = data_value as Dictionary
+		if String(data.get("kind", "")) != "token":
+			continue
+		var support_id := String(data.get("support_id", ""))
+		if support_id.is_empty():
+			continue
+		var token: Node3D = current.get(String(token_id)) as Node3D
+		var support: Node3D = current.get(support_id) as Node3D
+		if token == null or support == null:
+			continue
+		token.set("grid_support", support)
+		token.set("_support_transform", support.global_transform)
+
 
 func _current_nodes_by_id() -> Dictionary:
 	var out := {}; var seen := {}
@@ -585,6 +608,13 @@ func _serialize_node(node: Node3D, group_name: String) -> Dictionary:
 		# Nuovo significato esplicito: i salvataggi precedenti non avevano
 		# gravity_applied e vengono quindi migrati come token sospesi.
 		data["gravity_applied"] = not bool(node.get("flying"))
+		var support_value: Variant = node.get("grid_support")
+		if (
+			support_value is Node3D
+			and is_instance_valid(support_value)
+			and board_root.is_ancestor_of(support_value as Node3D)
+		):
+			data["support_id"] = _sync_id(support_value as Node3D)
 		data["height_cells"] = float(node.get("token_height_cells"))
 		data["display_name"] = (
 			String(node.call("get_display_name"))
