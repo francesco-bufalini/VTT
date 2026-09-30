@@ -1046,7 +1046,8 @@ func set_transformation_history(value: Variant) -> void:
 	_transformation_history.clear()
 	if not value is Array:
 		return
-	for item_value: Variant in value as Array:
+	var history_values: Array = value as Array
+	for item_value: Variant in history_values:
 		if not item_value is Dictionary:
 			continue
 		var item: Dictionary = (item_value as Dictionary).duplicate(true)
