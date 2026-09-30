@@ -17,7 +17,6 @@ import argparse
 import json
 import math
 import re
-import shutil
 import sys
 from datetime import datetime, timezone
 from pathlib import Path
@@ -725,37 +724,61 @@ def write_wrapper_scene(
     return f"res://assets/tokens/scenes/{scene_path.name}"
 
 
-def cleanup_stale_generated(project_root: Path, tokens: list[dict]) -> None:
-    """Remove only converter-owned artifacts that disappeared from the new scan."""
+def load_existing_manifest(project_root: Path) -> dict:
     manifest_path = project_root / "assets" / "tokens" / "token_library.json"
     if not manifest_path.is_file():
-        return
+        return {}
 
     try:
-        previous = json.loads(manifest_path.read_text(encoding="utf-8"))
-    except Exception:
-        return
+        data = json.loads(manifest_path.read_text(encoding="utf-8"))
+    except Exception as exc:
+        print(f"WARNING: existing token manifest could not be read: {exc}")
+        return {}
 
-    current_ids = {str(token.get("id", "")) for token in tokens}
-    for old in previous.get("tokens", []):
-        old_id = str(old.get("id", ""))
-        if not old_id or old_id in current_ids:
+    return data if isinstance(data, dict) else {}
+
+
+def merge_token_library(existing_tokens: list[dict], new_tokens: list[dict]) -> tuple[list[dict], list[str]]:
+    """Add/update this run without deleting tokens produced by earlier runs."""
+    merged_by_id: dict[str, dict] = {}
+    order: list[str] = []
+
+    for token in existing_tokens:
+        token_id = str(token.get("id", "")).strip()
+        if not token_id or token_id in merged_by_id:
             continue
+        merged_by_id[token_id] = token
+        order.append(token_id)
 
-        obj_res = str(old.get("obj", ""))
-        scene_res = str(old.get("scene", ""))
+    replaced: list[str] = []
+    for token in new_tokens:
+        token_id = str(token.get("id", "")).strip()
+        if not token_id:
+            continue
+        if token_id in merged_by_id:
+            replaced.append(token_id)
+        else:
+            order.append(token_id)
+        merged_by_id[token_id] = token
 
-        if obj_res.startswith("res://assets/tokens/generated/"):
-            obj_path = project_root / obj_res.removeprefix("res://")
-            generated_root = (project_root / "assets" / "tokens" / "generated").resolve()
-            package_dir = obj_path.parent.resolve()
-            if generated_root in package_dir.parents and package_dir.is_dir():
-                shutil.rmtree(package_dir, ignore_errors=True)
+    return [merged_by_id[token_id] for token_id in order], replaced
 
-        if scene_res.startswith("res://assets/tokens/scenes/"):
-            scene_path = project_root / scene_res.removeprefix("res://")
-            if scene_path.is_file():
-                scene_path.unlink()
+
+def choose_persistent_default(
+    tokens: list[dict],
+    requested: str,
+    previous_default_id: str,
+) -> dict:
+    if requested.strip():
+        return choose_default(tokens, requested)
+
+    previous_id = previous_default_id.strip()
+    if previous_id:
+        for token in tokens:
+            if str(token.get("id", "")) == previous_id:
+                return token
+
+    return tokens[0] if tokens else {}
 
 
 def choose_default(tokens: list[dict], requested: str) -> dict:
@@ -954,8 +977,19 @@ def main() -> int:
         print_failure_summary(failures)
         return 4
 
-    default_token = choose_default(tokens, args.default)
-    cleanup_stale_generated(project_root, tokens)
+    existing_manifest = load_existing_manifest(project_root)
+    existing_tokens = existing_manifest.get("tokens", [])
+    if not isinstance(existing_tokens, list):
+        existing_tokens = []
+
+    merged_tokens, replaced_ids = merge_token_library(existing_tokens, tokens)
+    previous_default_id = str(existing_manifest.get("default_id", ""))
+    default_token = choose_persistent_default(
+        merged_tokens,
+        args.default,
+        previous_default_id,
+    )
+
     manifest_path = project_root / "assets" / "tokens" / "token_library.json"
     manifest_path.parent.mkdir(parents=True, exist_ok=True)
     manifest = {
@@ -963,19 +997,27 @@ def main() -> int:
         "generated_at": datetime.now(timezone.utc).isoformat(),
         "default_id": default_token["id"],
         "default": default_token,
-        "tokens": tokens,
+        "tokens": merged_tokens,
+        # Failures intentionally describe only this conversion run.  Earlier
+        # successful tokens remain in the cumulative library.
         "failures": failures,
     }
     manifest_path.write_text(json.dumps(manifest, indent=2), encoding="utf-8")
 
-    print(f"\nConverted: {len(tokens)}")
-    print(f"Failed:    {len(failures)}")
+    added_count = len(tokens) - len(replaced_ids)
+    print(f"\nConverted this run: {len(tokens)}")
+    print(f"Added to library:    {added_count}")
+    print(f"Updated in library:  {len(replaced_ids)}")
+    print(f"Library total:       {len(merged_tokens)}")
+    print(f"Failed this run:     {len(failures)}")
+    if replaced_ids:
+        print("Updated token ids:   " + ", ".join(replaced_ids))
     print(
-        "Default:   "
+        "Default:             "
         f"{default_token['name']} "
         f"({default_token['size_name']}, {default_token['footprint']:g} cells)"
     )
-    print(f"Manifest:  {manifest_path}")
+    print(f"Manifest:            {manifest_path}")
     print_failure_summary(failures)
     return 0
 
