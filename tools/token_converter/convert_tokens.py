@@ -382,23 +382,31 @@ def choose_main_source(package: Path) -> Path:
 
 
 def is_platform_reference_name(text: str) -> bool:
-    name = text.lower()
+    name = text.lower().strip()
+
     if any(
         _contains_word(name, word)
         for word in ("base", "marker", "platform", "stand")
     ):
         return True
 
-    size = size_from_text(name)
-    if size is None:
+    if size_from_text(name) is None:
         return False
 
-    # Common miniature-pack naming convention for flying-size reference discs,
-    # e.g. "Small Creature Flying" or "Huge Creature Flying Size Marker".
+    # Many authored Blender files use the D&D footprint object itself as
+    # "Small Creature", "Large Creature.001", etc.  These are legitimate
+    # in-scene bases and must be recognized (and kept in the exported model).
+    if re.fullmatch(
+        r"(tiny|small|medium|large|huge|gargantuan)\s+creature(?:\.\d+)?",
+        name,
+    ):
+        return True
+
+    # Also support the common flying/floating footprint naming convention.
     return bool(
         re.search(
             r"\b(tiny|small|medium|large|huge|gargantuan)\b"
-            r".*\bcreature\b.*\bflying\b",
+            r".*\bcreature\b.*\b(flying|floating)\b",
             name,
         )
     )
