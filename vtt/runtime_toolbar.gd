@@ -7,6 +7,7 @@ const TOKEN_FLYING := 21
 const TOKEN_ROTATE_LEFT := 22
 const TOKEN_ROTATE_RIGHT := 23
 const TOKEN_DELETE := 24
+const TOKEN_DETAILS := 25
 
 const MEASURE_RULER := 30
 const MEASURE_SPHERE := 31
@@ -74,6 +75,7 @@ func _build_toolbar() -> void:
 		["Volante", TOKEN_FLYING],
 		["Ruota sx", TOKEN_ROTATE_LEFT],
 		["Ruota dx", TOKEN_ROTATE_RIGHT],
+		["Nome e stati…", TOKEN_DETAILS],
 		["Elimina", TOKEN_DELETE]
 	], _on_token))
 
@@ -175,6 +177,8 @@ func _on_token(id: int) -> void:
 			board_root.call("_on_context_menu_id_pressed", 4)
 		TOKEN_DELETE:
 			board_root.call("_on_context_menu_id_pressed", 2)
+		TOKEN_DETAILS:
+			board_root.call("open_selected_token_state_editor")
 
 
 func _on_measure(id: int) -> void:
