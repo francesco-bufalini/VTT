@@ -101,8 +101,13 @@ static func _primary_effect(spec: Dictionary) -> Dictionary:
 
 static func _primary_damage_style(effect: Dictionary) -> String:
 	var damage_value: Variant = effect.get("damage_types", [])
-	if damage_value is Array and not (damage_value as Array).is_empty():
-		return String((damage_value as Array)[0]).to_lower()
+	if damage_value is Array:
+		var damage_types: Array = damage_value as Array
+		# One damage family maps cleanly to one generic animation. Multi-type
+		# effects (for example Prismatic Wall) keep their existing bespoke
+		# style instead of arbitrarily choosing the first damage type.
+		if damage_types.size() == 1:
+			return String(damage_types[0]).to_lower()
 
 	var visual_value: Variant = effect.get("visual_tags", [])
 	if visual_value is Array:
