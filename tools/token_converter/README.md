@@ -64,9 +64,23 @@ circa 68.40 x 68.40 unita' sorgente. Essendo Huge viene portata esattamente a
 
 Per ogni miniatura vengono generati:
 
-- assets/tokens/generated/<id>/<id>.obj
+- modelli statici: assets/tokens/generated/<id>/<id>.obj
+- modelli gia' riggati: assets/tokens/generated/<id>/<id>.glb
 - assets/tokens/scenes/<id>_token.tscn
 - assets/tokens/token_library.json
+
+La pipeline sceglie GLB solo quando una Armature e' realmente collegata a una
+delle mesh visibili tramite parentela o Armature modifier. In quel caso la
+normalizzazione di scala/posizione viene applicata alle radici della gerarchia,
+non separatamente alla mesh: skeleton, bind pose e skin weights restano quindi
+coerenti. Le animazioni gia' presenti nel file sorgente vengono esportate nel
+GLB. Se viene richiesto --decimate-ratio su un modello riggato, la
+semplificazione viene ignorata per non rischiare di degradare skin/weights.
+
+token_library.json v3 usa visual_asset come campo generico e mantiene obj come
+alias di compatibilita'. Aggiunge inoltre asset_format, rigged, rig_type,
+skeleton_profile, animation_set, animation_library, default_animation,
+embedded_animations e armatures.
 
 La scena *_token.tscn eredita da res://token.tscn. Quindi una miniatura
 trascinata direttamente nella scena e' un vero token: CharacterBody3D, gruppo
@@ -76,3 +90,24 @@ di direzione, visione, iniziativa, incantesimi, undo e sincronizzazione.
 La miniatura scelta come default sostituisce automaticamente il corpo
 procedurale dei nuovi token creati dal VTT. Se il manifest non esiste o l'asset
 non e' disponibile, il token procedurale resta come fallback.
+
+## Rig e animazioni condivise
+
+Il convertitore non prova a inventare un rig per STL/OBJ statici: questi
+continuano a funzionare esattamente come prima. Un FBX/GLB/BLEND con rig viene
+invece conservato come GLB.
+
+Per i rig riconosciuti come umanoidi il manifest imposta
+skeleton_profile="humanoid" e, se non ci sono animazioni embedded,
+animation_set="humanoid_default". Questo e' il punto di aggancio previsto per
+retargeting Godot con BoneMap/SkeletonProfileHumanoid.
+
+token.gd supporta anche animation_library: quando il campo contiene il path di
+una AnimationLibrary Godot (.tres/.res), la libreria viene montata come
+"shared" sull'AnimationPlayer del modello. default_animation viene avviata
+automaticamente quando disponibile. In questo modo una sola libreria puo'
+essere condivisa da molti token invece di duplicare le clip in ogni modello.
+
+Gli asset di animazione esterni non sono inclusi automaticamente nel
+repository. Per una libreria redistribuibile usare asset con licenza compatibile
+(ad esempio CC0) e salvarne la versione Godot sotto assets/animations/.

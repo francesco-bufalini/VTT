@@ -187,6 +187,13 @@ func _read_token_library_manifest() -> Dictionary:
 	return {}
 
 
+func _token_profile_visual_asset(profile: Dictionary) -> String:
+	var path := String(profile.get("visual_asset", "")).strip_edges()
+	if not path.is_empty():
+		return path
+	return String(profile.get("obj", "")).strip_edges()
+
+
 func _sort_token_profiles(a: Dictionary, b: Dictionary) -> bool:
 	return (
 		String(a.get("name", "")).nocasecmp_to(
@@ -343,7 +350,7 @@ func _reload_token_miniature_list() -> void:
 			if not value is Dictionary:
 				continue
 			var profile := (value as Dictionary).duplicate(true)
-			if String(profile.get("obj", "")).strip_edges().is_empty():
+			if _token_profile_visual_asset(profile).is_empty():
 				continue
 			_token_profiles.append(profile)
 
@@ -400,7 +407,12 @@ func _refresh_token_miniature_filter(
 		)
 		token_miniature_list.set_item_tooltip(
 			visible_index,
-			String(profile.get("source", profile.get("obj", "")))
+			String(
+				profile.get(
+					"source",
+					_token_profile_visual_asset(profile)
+				)
+			)
 		)
 		if String(profile.get("id", "")) == current_id:
 			target_index = visible_index
@@ -2323,9 +2335,9 @@ func _on_token_dialog_confirmed() -> void:
 			_selected_token_profile.get("name", "Token")
 		)
 
-	var visual_asset := String(
-		_selected_token_profile.get("obj", "")
-	).strip_edges()
+	var visual_asset := _token_profile_visual_asset(
+		_selected_token_profile
+	)
 	var front_quarter_turns := 0
 	if token_front_selector != null:
 		front_quarter_turns = clampi(

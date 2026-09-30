@@ -62,6 +62,9 @@ var _size_name: String = "Medium"
 var _loaded_visual_asset_path: String = ""
 var _imported_visual_base_basis: Basis = Basis.IDENTITY
 var _visual_native_footprint_cells: float = 1.0
+var _rig_type: String = "static"
+var _animation_set: String = ""
+var _default_animation: String = ""
 var _uses_manifest_default: bool = false
 var _conditions: Array[String] = []
 var _reach_feet: float = 5.0
@@ -319,6 +322,7 @@ func set_visual_asset(path: String) -> bool:
 		0.5
 	)
 	visuals.add_child(imported)
+	_configure_imported_animation(imported, profile)
 
 	visual_asset_path = requested_path
 	_loaded_visual_asset_path = requested_path
@@ -359,7 +363,7 @@ func _load_configured_visual() -> void:
 
 	if requested_path.is_empty():
 		profile = _default_token_profile()
-		requested_path = String(profile.get("obj", "")).strip_edges()
+		requested_path = _profile_visual_asset(profile)
 		_uses_manifest_default = not requested_path.is_empty()
 	else:
 		profile = _profile_for_visual(requested_path)
@@ -418,6 +422,14 @@ func _default_token_profile() -> Dictionary:
 	return {}
 
 
+func _profile_visual_asset(profile: Dictionary) -> String:
+	var path := String(profile.get("visual_asset", "")).strip_edges()
+	if not path.is_empty():
+		return path
+	# Manifest v2 compatibility.
+	return String(profile.get("obj", "")).strip_edges()
+
+
 func _profile_for_visual(path: String) -> Dictionary:
 	var requested := path.strip_edges()
 	if requested.is_empty():
@@ -428,13 +440,114 @@ func _profile_for_visual(path: String) -> Dictionary:
 	for value: Variant in tokens:
 		if value is Dictionary:
 			var profile := value as Dictionary
-			if String(profile.get("obj", "")).strip_edges() == requested:
+			if _profile_visual_asset(profile) == requested:
 				return profile.duplicate(true)
 	return {}
 
 
 func _default_visual_asset_path() -> String:
-	return String(_default_token_profile().get("obj", "")).strip_edges()
+	return _profile_visual_asset(_default_token_profile())
+
+
+func get_rig_type() -> String:
+	return _rig_type
+
+
+func get_animation_set() -> String:
+	return _animation_set
+
+
+func play_visual_animation(animation_name: String) -> bool:
+	var imported := _get_imported_visual()
+	if imported == null:
+		return false
+	var player := _find_animation_player(imported)
+	if player == null:
+		return false
+	var resolved := _resolve_animation_name(player, animation_name)
+	if resolved == &"":
+		return false
+	player.play(resolved)
+	return true
+
+
+func _configure_imported_animation(
+	imported: Node3D,
+	profile: Dictionary
+) -> void:
+	_rig_type = String(profile.get("rig_type", "static"))
+	_animation_set = String(profile.get("animation_set", ""))
+	_default_animation = String(profile.get("default_animation", ""))
+
+	imported.set_meta("rig_type", _rig_type)
+	imported.set_meta("animation_set", _animation_set)
+	imported.set_meta("skeleton_profile", String(
+		profile.get("skeleton_profile", "")
+	))
+
+	var player := _find_animation_player(imported)
+	if player == null:
+		return
+
+	# Optional hook for a shared CC0 AnimationLibrary (for example a
+	# retargeted humanoid library). Converter-generated manifests leave this
+	# empty until a project library is assigned, so no external asset is bundled.
+	var library_path := String(
+		profile.get("animation_library", "")
+	).strip_edges()
+	if not library_path.is_empty():
+		var library_resource := ResourceLoader.load(library_path)
+		if library_resource is AnimationLibrary:
+			if not player.has_animation_library(&"shared"):
+				player.add_animation_library(
+					&"shared",
+					library_resource as AnimationLibrary
+				)
+
+	if not _default_animation.is_empty():
+		var resolved := _resolve_animation_name(
+			player,
+			_default_animation
+		)
+		if resolved != &"":
+			player.play(resolved)
+
+
+func _find_animation_player(node: Node) -> AnimationPlayer:
+	if node is AnimationPlayer:
+		return node as AnimationPlayer
+	for child: Node in node.get_children():
+		var found := _find_animation_player(child)
+		if found != null:
+			return found
+	return null
+
+
+func _resolve_animation_name(
+	player: AnimationPlayer,
+	animation_name: String
+) -> StringName:
+	var requested := animation_name.strip_edges()
+	if requested.is_empty():
+		return &""
+
+	var exact := StringName(requested)
+	if player.has_animation(exact):
+		return exact
+
+	var shared := StringName("shared/%s" % requested)
+	if player.has_animation(shared):
+		return shared
+
+	var requested_lower := requested.to_lower()
+	for candidate: StringName in player.get_animation_list():
+		var candidate_text := String(candidate).to_lower()
+		if (
+			candidate_text == requested_lower
+			or candidate_text.ends_with("/" + requested_lower)
+		):
+			return candidate
+	return &""
 
 
 func _get_imported_visual() -> Node3D:
@@ -450,6 +563,9 @@ func _clear_imported_visual() -> void:
 	_loaded_visual_asset_path = ""
 	_imported_visual_base_basis = Basis.IDENTITY
 	_visual_native_footprint_cells = 1.0
+	_rig_type = "static"
+	_animation_set = ""
+	_default_animation = ""
 
 
 func _set_procedural_visuals_visible(value: bool) -> void:

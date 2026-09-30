@@ -6,6 +6,11 @@ the calibration reference: its diameter is mapped to the D&D footprint in grid
 cells.  This keeps long tails, wings and weapons free to extend outside the
 occupied squares without changing the token size.
 
+Static sources keep the established OBJ pipeline.  Sources that already contain
+an armature actually used by the visible creature are exported as GLB instead,
+so Blender -> Godot keeps the skeleton, skin weights and embedded animations.
+Source files are never overwritten.
+
 Run through Blender:
   blender --background --python tools/token_converter/convert_tokens.py -- \
     --source "C:/Downloads/Miniatures" --project-root "C:/Projects/VTT"
@@ -221,6 +226,103 @@ def mesh_objects(visible_only: bool = False) -> list[bpy.types.Object]:
         and not obj.hide_render
         and obj.visible_get(view_layer=bpy.context.view_layer)
     ]
+
+
+def rig_armatures(objects: list[bpy.types.Object]) -> list[bpy.types.Object]:
+    """Return armatures that actually drive one of the exported creature meshes."""
+    found: dict[int, bpy.types.Object] = {}
+    for obj in objects:
+        parent = obj.parent
+        while parent is not None:
+            if parent.type == "ARMATURE":
+                found[parent.as_pointer()] = parent
+            parent = parent.parent
+
+        for modifier in obj.modifiers:
+            if modifier.type != "ARMATURE":
+                continue
+            armature = getattr(modifier, "object", None)
+            if armature is not None and armature.type == "ARMATURE":
+                found[armature.as_pointer()] = armature
+    return list(found.values())
+
+
+def export_hierarchy_objects(
+    meshes: list[bpy.types.Object],
+    armatures: list[bpy.types.Object],
+) -> list[bpy.types.Object]:
+    """Collect meshes, their rigs and parent empties required by the GLB hierarchy."""
+    wanted: dict[int, bpy.types.Object] = {}
+
+    def add_with_parents(obj: bpy.types.Object) -> None:
+        current = obj
+        while current is not None:
+            wanted[current.as_pointer()] = current
+            current = current.parent
+
+    for obj in meshes:
+        add_with_parents(obj)
+    for obj in armatures:
+        add_with_parents(obj)
+
+    return [
+        obj
+        for obj in bpy.context.scene.objects
+        if obj.as_pointer() in wanted
+    ]
+
+
+def hierarchy_roots(objects: list[bpy.types.Object]) -> list[bpy.types.Object]:
+    """Return roots inside an export set so one transform preserves parent/skin relations."""
+    pointers = {obj.as_pointer() for obj in objects}
+    return [
+        obj
+        for obj in objects
+        if obj.parent is None or obj.parent.as_pointer() not in pointers
+    ]
+
+
+def classify_rig_type(armatures: list[bpy.types.Object]) -> str:
+    """Conservatively recognize common humanoid/Mixamo-style bone layouts."""
+    normalized_names: list[str] = []
+    for armature in armatures:
+        if armature.data is None:
+            continue
+        normalized_names.extend(
+            re.sub(r"[^a-z0-9]+", "", bone.name.lower())
+            for bone in armature.data.bones
+        )
+
+    if not normalized_names:
+        return "generic"
+
+    groups = (
+        ("hips", "pelvis"),
+        ("spine",),
+        ("head",),
+        ("upperarm", "shoulder"),
+        ("hand", "wrist"),
+        ("upleg", "upperleg", "thigh"),
+        ("foot", "ankle"),
+    )
+    matches = sum(
+        1
+        for alternatives in groups
+        if any(
+            any(term in bone_name for term in alternatives)
+            for bone_name in normalized_names
+        )
+    )
+    return "humanoid" if matches >= 6 else "generic"
+
+
+def choose_default_animation(animation_names: list[str]) -> str:
+    if not animation_names:
+        return ""
+    for name in animation_names:
+        if re.search(r"(^|[^a-z0-9])idle([^a-z0-9]|$)", name.lower()):
+            return name
+    return animation_names[0]
 
 
 def object_bounds(obj: bpy.types.Object) -> tuple[Vector, Vector]:
@@ -649,6 +751,7 @@ def normalize_from_base(
     base_low: Vector,
     base_high: Vector,
     footprint: float,
+    transform_roots: list[bpy.types.Object] | None = None,
 ) -> dict[str, float]:
     base_x = base_high.x - base_low.x
     base_y = base_high.y - base_low.y
@@ -664,7 +767,11 @@ def normalize_from_base(
     transform = Matrix.Scale(scale, 4) @ Matrix.Translation(
         Vector((-center_x, -center_y, -ground_z))
     )
-    for obj in objects:
+    # Static OBJ conversion can continue transforming each exported mesh.
+    # A skinned mesh must instead move with the root of its armature hierarchy;
+    # transforming the mesh without its skeleton breaks the bind pose.
+    targets = transform_roots if transform_roots is not None else objects
+    for obj in targets:
         obj.matrix_world = transform @ obj.matrix_world
 
     output_low, output_high = world_bounds(objects)
@@ -774,10 +881,34 @@ def export_obj(objects: list[bpy.types.Object], destination: Path) -> None:
         )
 
 
+def export_glb(objects: list[bpy.types.Object], destination: Path) -> None:
+    """Export a selected rig hierarchy without flattening armatures/skin to OBJ."""
+    destination.parent.mkdir(parents=True, exist_ok=True)
+    bpy.ops.object.select_all(action="DESELECT")
+    for obj in objects:
+        obj.select_set(True)
+    if objects:
+        bpy.context.view_layer.objects.active = objects[0]
+
+    operator = bpy.ops.export_scene.gltf
+    supported = set(operator.get_rna_type().properties.keys())
+    kwargs = {
+        "filepath": str(destination),
+        "export_format": "GLB",
+        "use_selection": True,
+        "export_yup": True,
+        "export_apply": False,
+        "export_animations": True,
+        "export_skins": True,
+        "export_extras": True,
+    }
+    operator(**{key: value for key, value in kwargs.items() if key in supported})
+
+
 def write_wrapper_scene(
     project_root: Path,
     slug: str,
-    obj_res_path: str,
+    visual_asset_path: str,
     size_name: str,
     footprint: float,
     height_cells: float,
@@ -789,7 +920,7 @@ def write_wrapper_scene(
         '[gd_scene load_steps=2 format=3]\n\n'
         '[ext_resource type="PackedScene" path="res://token.tscn" id="1_base"]\n\n'
         f'[node name="{slug}_token" instance=ExtResource("1_base")]\n'
-        f'visual_asset_path = "{obj_res_path}"\n'
+        f'visual_asset_path = "{visual_asset_path}"\n'
         f'default_size_name = "{size_name}"\n'
         f'default_footprint_cells = {footprint:.6f}\n'
         f'token_height_cells = {height_cells:.6f}\n'
@@ -889,9 +1020,21 @@ def process_package(
     decimate_ratio: float,
 ) -> dict:
     clear_scene()
+    action_ids_before_import = {
+        action.as_pointer() for action in bpy.data.actions
+    }
+
     main_source = choose_main_source(package)
     print(f"Source model: {main_source.name}")
     import_source(main_source)
+
+    source_animation_names = sorted(
+        {
+            action.name
+            for action in bpy.data.actions
+            if action.as_pointer() not in action_ids_before_import
+        }
+    )
 
     all_objects = mesh_objects()
     if not all_objects:
@@ -943,19 +1086,51 @@ def process_package(
         size_hint if size_hint is not None else size_from_diameter(diameter)
     )
 
-    simplify_objects(objects, decimate_ratio)
-    metrics = normalize_from_base(objects, base_low, base_high, footprint)
+    armatures = rig_armatures(objects)
+    rigged = bool(armatures)
+    rig_type = classify_rig_type(armatures) if rigged else "static"
+    export_objects = (
+        export_hierarchy_objects(objects, armatures)
+        if rigged
+        else objects
+    )
+
+    if rigged and decimate_ratio < 0.999:
+        print(
+            "WARNING: --decimate-ratio ignored for rigged token; "
+            "preserving skin weights and bind geometry"
+        )
+    else:
+        simplify_objects(objects, decimate_ratio)
+
+    transform_roots = hierarchy_roots(export_objects) if rigged else None
+    metrics = normalize_from_base(
+        objects,
+        base_low,
+        base_high,
+        footprint,
+        transform_roots=transform_roots,
+    )
+
     slug = slugify(package.name)
     token_dir = project_root / "assets" / "tokens" / "generated" / slug
-    obj_path = token_dir / f"{slug}.obj"
-    export_obj(objects, obj_path)
+    if rigged:
+        asset_path = token_dir / f"{slug}.glb"
+        export_glb(export_objects, asset_path)
+        asset_format = "glb"
+    else:
+        asset_path = token_dir / f"{slug}.obj"
+        export_obj(objects, asset_path)
+        asset_format = "obj"
 
-    obj_res = f"res://assets/tokens/generated/{slug}/{slug}.obj"
+    asset_res = (
+        f"res://assets/tokens/generated/{slug}/{slug}.{asset_format}"
+    )
     height_cells = max(float(metrics["height"]), 0.1)
     scene_res = write_wrapper_scene(
         project_root,
         slug,
-        obj_res,
+        asset_res,
         size_name,
         footprint,
         height_cells,
@@ -966,11 +1141,35 @@ def process_package(
         if source_root in main_source.parents
         else main_source.name
     )
+
+    default_animation = (
+        choose_default_animation(source_animation_names) if rigged else ""
+    )
+    animation_set = ""
+    if rigged:
+        animation_set = (
+            "embedded"
+            if source_animation_names
+            else ("humanoid_default" if rig_type == "humanoid" else "")
+        )
+
     profile = {
         "id": slug,
         "name": package.name,
         "source": source_label,
-        "obj": obj_res,
+        "visual_asset": asset_res,
+        # Compatibility alias for older VTT code/manifests.  It can now point
+        # to either OBJ or GLB; new code should use visual_asset.
+        "obj": asset_res,
+        "asset_format": asset_format,
+        "rigged": rigged,
+        "rig_type": rig_type,
+        "skeleton_profile": "humanoid" if rig_type == "humanoid" else "",
+        "animation_set": animation_set,
+        "animation_library": "",
+        "default_animation": default_animation,
+        "embedded_animations": source_animation_names if rigged else [],
+        "armatures": [armature.name for armature in armatures],
         "scene": scene_res,
         "size_name": size_name,
         "footprint": footprint,
@@ -992,7 +1191,13 @@ def process_package(
         f"W={metrics['width']:.3f}, D={metrics['depth']:.3f}, "
         f"H={height_cells:.3f} cells"
     )
-    print(f"OBJ: {obj_res}")
+    if rigged:
+        print(
+            "Rig: "
+            f"{rig_type} | armatures={len(armatures)} | "
+            f"embedded animations={len(source_animation_names)}"
+        )
+    print(f"Asset ({asset_format.upper()}): {asset_res}")
     return profile
 
 
@@ -1080,7 +1285,7 @@ def main() -> int:
     manifest_path = project_root / "assets" / "tokens" / "token_library.json"
     manifest_path.parent.mkdir(parents=True, exist_ok=True)
     manifest = {
-        "version": 2,
+        "version": 3,
         "generated_at": datetime.now(timezone.utc).isoformat(),
         "default_id": default_token["id"],
         "default": default_token,
