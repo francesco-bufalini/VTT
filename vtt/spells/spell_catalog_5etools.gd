@@ -390,7 +390,8 @@ const SPELLS: Dictionary = {
     ],
     "target_mode": "summon",
     "range_feet": 10,
-    "summon_count": 1
+    "summon_count": 1,
+    "summon_count_per_slot_above_base": 2
   },
   "animate_objects": {
     "id": "animate_objects",
@@ -3393,7 +3394,8 @@ const SPELLS: Dictionary = {
     "target_mode": "summon",
     "range_feet": 60,
     "summon_count_min": 1,
-    "summon_count_max": 5
+    "summon_count_max": 5,
+    "summon_count_per_slot_above_base": 2
   },
   "dark_star": {
     "id": "dark_star",
@@ -6112,7 +6114,8 @@ const SPELLS: Dictionary = {
     ],
     "target_mode": "summon",
     "range_feet": 5,
-    "summon_count": 3
+    "summon_count": 3,
+    "summon_count_per_slot_above_base": 1
   },
   "fly": {
     "id": "fly",
@@ -15342,7 +15345,8 @@ const SPELLS: Dictionary = {
     ],
     "target_mode": "summon",
     "range_feet": 5,
-    "summon_count": 1
+    "summon_count": 1,
+    "summon_count_per_slot_above_base": 2
   },
   "toll_the_dead": {
     "id": "toll_the_dead",
