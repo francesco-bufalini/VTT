@@ -222,7 +222,7 @@ func _begin_wall_mode(mode: String) -> void:
 				"%s: scegli il punto iniziale del muro entro %d ft."
 				% [
 					String(spell_data.get("name", "Muro")),
-					int(spell_data.get("range_feet", 0))
+					int(round(_effective_spell_range_feet(spell_data, _pending_caster)))
 				]
 			)
 		"circle", "globe", "dome":
@@ -231,7 +231,7 @@ func _begin_wall_mode(mode: String) -> void:
 				"%s: scegli il centro entro %d ft."
 				% [
 					String(spell_data.get("name", "Muro")),
-					int(spell_data.get("range_feet", 0))
+					int(round(_effective_spell_range_feet(spell_data, _pending_caster)))
 				]
 			)
 		_:
@@ -497,7 +497,9 @@ func _try_select_caster(screen_position: Vector2) -> void:
 			_pending_caster = caster
 			_targeting_phase = "point"
 			_hide_spell_preview()
-			var point_range_feet: int = int(spell_data.get("range_feet", 0))
+			var point_range_feet: int = int(
+				round(_effective_spell_range_feet(spell_data, caster))
+			)
 			_set_instruction(
 				"%s: mira un punto entro %d ft e clicca · WASD + mouse per muoverti · rotellina per profondità 3D · Esc per annullare"
 				% [
@@ -509,7 +511,9 @@ func _try_select_caster(screen_position: Vector2) -> void:
 			_pending_caster = caster
 			_targeting_phase = "target_token"
 			_hide_spell_preview()
-			var token_range_feet: int = int(spell_data.get("range_feet", 0))
+			var token_range_feet: int = int(
+				round(_effective_spell_range_feet(spell_data, caster))
+			)
 			var token_target_label: String = (
 				"un altro token o un punto"
 				if bool(spell_data.get("allow_point_target", false))
@@ -567,7 +571,7 @@ func _try_select_caster(screen_position: Vector2) -> void:
 				"%s: scegli il bersaglio primario entro %d ft · Esc per annullare"
 				% [
 					String(spell_data.get("name", "Incantesimo")),
-					int(spell_data.get("range_feet", 0))
+					int(round(_effective_spell_range_feet(spell_data, caster)))
 				]
 			)
 		"self_emanation":
@@ -626,7 +630,7 @@ func _try_select_point(screen_position: Vector2) -> void:
 				"Punto fuori range: %d ft / %d ft. Scegli un punto più vicino."
 				% [
 					int(point_data.get("distance_feet", 0)),
-					int(spell_data.get("range_feet", 0))
+					int(round(_effective_spell_range_feet(spell_data, _pending_caster)))
 				]
 			)
 		elif bool(spell_data.get("requires_ground", false)):
@@ -679,7 +683,7 @@ func _try_select_target_token(screen_position: Vector2) -> void:
 				"Bersaglio fuori range: %d ft / %d ft. Scegli un bersaglio più vicino."
 				% [
 					int(target_data.get("distance_feet", 0)),
-					int(spell_data.get("range_feet", 0))
+					int(round(_effective_spell_range_feet(spell_data, _pending_caster)))
 				]
 			)
 		elif bool(spell_data.get("allow_point_target", false)):
@@ -801,7 +805,7 @@ func _try_select_multi_point(screen_position: Vector2) -> void:
 				"Punto fuori range: %d ft / %d ft."
 				% [
 					int(point_data.get("distance_feet", 0)),
-					int(spell_data.get("range_feet", 0))
+					int(round(_effective_spell_range_feet(spell_data, _pending_caster)))
 				]
 			)
 		else:
@@ -834,7 +838,7 @@ func _update_multi_point_instruction(spell_data: Dictionary) -> void:
 			String(spell_data.get("name", "Incantesimo")),
 			_pending_target_points.size(),
 			_required_target_clicks(spell_data),
-			int(spell_data.get("range_feet", 0))
+			int(round(_effective_spell_range_feet(spell_data, _pending_caster)))
 		]
 	)
 
@@ -1572,7 +1576,7 @@ func _wall_point_data(
 		if _pending_caster == null or not is_instance_valid(_pending_caster):
 			return {"valid": false}
 		var max_distance: float = (
-			float(spell_data.get("range_feet", 0.0))
+			_effective_spell_range_feet(spell_data, _pending_caster)
 			/ 5.0 * _cell_size()
 		)
 		if (
@@ -2141,7 +2145,10 @@ func _update_spell_range_preview(spell_data: Dictionary) -> void:
 		measurement_tool.call("hide_spell_range_preview")
 		return
 
-	var range_feet: float = float(spell_data.get("range_feet", 0.0))
+	var range_feet: float = _effective_spell_range_feet(
+		spell_data,
+		_pending_caster
+	)
 	if _targeting_phase == "teleport_destination":
 		range_feet = float(
 			spell_data.get("teleport_distance_feet", range_feet)
@@ -2296,7 +2303,10 @@ func _target_token_data(
 		return {"valid": false}
 
 	var cell_size: float = _cell_size()
-	var range_feet: float = float(spell_data.get("range_feet", 0.0))
+	var range_feet: float = _effective_spell_range_feet(
+		spell_data,
+		_pending_caster
+	)
 	var max_world_distance: float = range_feet / 5.0 * cell_size
 	var actual_world_distance: float = (
 		_pending_caster.global_position.distance_to(target.global_position)
@@ -2383,7 +2393,10 @@ func _point_target_data(
 
 	var target_point: Vector3 = point_data.get("point", Vector3.ZERO)
 	var cell_size: float = _cell_size()
-	var range_feet: float = float(spell_data.get("range_feet", 0.0))
+	var range_feet: float = _effective_spell_range_feet(
+		spell_data,
+		_pending_caster
+	)
 	var max_world_distance: float = range_feet / 5.0 * cell_size
 	var actual_world_distance: float = (
 		_pending_caster.global_position.distance_to(target_point)
@@ -4022,12 +4035,9 @@ func _update_chain_instruction(spell_data: Dictionary) -> void:
 
 
 func _direction_limit_feet(spell_data: Dictionary) -> float:
-	return float(
-		spell_data.get(
-			"direction_limit_feet",
-			spell_data.get("range_feet", 0.0)
-		)
-	)
+	if spell_data.has("direction_limit_feet"):
+		return float(spell_data.get("direction_limit_feet", 0.0))
+	return _effective_spell_range_feet(spell_data, _pending_caster)
 
 
 func _spell_style(spell_data: Dictionary) -> String:
@@ -4047,6 +4057,31 @@ func _measurement_tool() -> Node:
 
 func _cell_size() -> float:
 	return maxf(float(board_root.get("cell_size")), 0.001)
+
+
+func _effective_spell_range_feet(
+	spell_data: Dictionary,
+	caster: Node3D = null
+) -> float:
+	var configured_range: float = float(spell_data.get("range_feet", 0.0))
+	var range_label: String = String(
+		spell_data.get("range", "")
+	).strip_edges().to_lower()
+	if not range_label.begins_with("touch"):
+		return configured_range
+
+	var source: Node3D = caster
+	if source == null or not is_instance_valid(source):
+		source = _pending_caster
+	if (
+		source != null
+		and is_instance_valid(source)
+		and source.has_method("get_reach_feet")
+	):
+		return maxf(float(source.call("get_reach_feet")), 1.0)
+
+	# Compatibilità con token/scenari precedenti: Touch era codificato come 5 ft.
+	return maxf(configured_range, 5.0)
 
 
 func _set_instruction(message: String) -> void:
