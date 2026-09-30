@@ -49,6 +49,8 @@ const TOKEN_SIZES := [
 
 var _pending_spawn_position: Vector3 = Vector3.ZERO
 var _has_pending_spawn_position: bool = false
+var _token_generation_confirmed_callback: Callable = Callable()
+var _token_generation_canceled_callback: Callable = Callable()
 var _pending_aoe_index: int = -1
 var _context_token: CharacterBody3D = null
 var _selected_tokens: Array[CharacterBody3D] = []
@@ -1332,18 +1334,9 @@ func _on_context_menu_id_pressed(id: int) -> void:
 		CONTEXT_CREATE_TOKEN:
 			if not _has_pending_spawn_position:
 				return
-			_ui_owns_mouse = true
-			if token_miniature_list != null and not _token_profiles.is_empty():
-				var selected_items := token_miniature_list.get_selected_items()
-				var selected_index: int = (
-					int(selected_items[0])
-					if not selected_items.is_empty()
-					else 0
-				)
-				token_miniature_list.select(selected_index)
-				_on_token_miniature_selected(selected_index)
-			color_dialog.popup_centered_clamped(Vector2i(650, 820), 0.92)
-			call_deferred("_release_mouse")
+			_token_generation_confirmed_callback = Callable()
+			_token_generation_canceled_callback = Callable()
+			_open_token_generation_dialog()
 
 		CONTEXT_DELETE_SELECTED:
 			_delete_selected()
@@ -1795,6 +1788,39 @@ func _finish_context_menu_close() -> void:
 	_capture_mouse()
 
 
+func open_token_generation_at(
+	world_position: Vector3,
+	confirmed_callback: Callable = Callable(),
+	canceled_callback: Callable = Callable()
+) -> void:
+	_pending_spawn_position = world_position
+	_has_pending_spawn_position = true
+	_token_generation_confirmed_callback = confirmed_callback
+	_token_generation_canceled_callback = canceled_callback
+	_open_token_generation_dialog()
+
+
+func _open_token_generation_dialog() -> void:
+	if not _has_pending_spawn_position:
+		return
+
+	_ui_owns_mouse = true
+	if token_miniature_list != null and not _token_profiles.is_empty():
+		var selected_items: PackedInt32Array = (
+			token_miniature_list.get_selected_items()
+		)
+		var selected_index: int = (
+			int(selected_items[0])
+			if not selected_items.is_empty()
+			else 0
+		)
+		token_miniature_list.select(selected_index)
+		_on_token_miniature_selected(selected_index)
+
+	color_dialog.popup_centered_clamped(Vector2i(650, 820), 0.92)
+	call_deferred("_release_mouse")
+
+
 func _on_token_dialog_confirmed() -> void:
 	var selected_index: int = size_selector.selected
 	if selected_index < 0 or selected_index >= TOKEN_SIZES.size():
@@ -1827,7 +1853,7 @@ func _on_token_dialog_confirmed() -> void:
 			3
 		)
 
-	_spawn_token(
+	var created_token: CharacterBody3D = _spawn_token(
 		size_name,
 		footprint,
 		display_name,
@@ -1836,12 +1862,33 @@ func _on_token_dialog_confirmed() -> void:
 		reach_feet
 	)
 
+	var confirmed_callback: Callable = (
+		_token_generation_confirmed_callback
+	)
+	_token_generation_confirmed_callback = Callable()
+	_token_generation_canceled_callback = Callable()
+	_has_pending_spawn_position = false
+
 	_ui_owns_mouse = false
 	_capture_mouse()
 
+	if confirmed_callback.is_valid():
+		confirmed_callback.call(created_token)
+
+
 func _on_token_dialog_canceled() -> void:
+	var canceled_callback: Callable = (
+		_token_generation_canceled_callback
+	)
+	_token_generation_confirmed_callback = Callable()
+	_token_generation_canceled_callback = Callable()
+	_has_pending_spawn_position = false
+
 	_ui_owns_mouse = false
 	_capture_mouse()
+
+	if canceled_callback.is_valid():
+		canceled_callback.call()
 
 
 func _spawn_token(
@@ -1851,10 +1898,10 @@ func _spawn_token(
 	visual_asset: String = "",
 	front_quarter_turns: int = 0,
 	reach_feet: float = 0.0
-) -> void:
+) -> CharacterBody3D:
 	if token_scene == null:
 		push_error("DnDBase: token_scene non assegnata.")
-		return
+		return null
 
 	push_undo_state()
 	var token_instance: Node = token_scene.instantiate()
@@ -1863,7 +1910,7 @@ func _spawn_token(
 			"DnDBase: token_scene deve avere un CharacterBody3D come nodo root."
 		)
 		token_instance.queue_free()
-		return
+		return null
 
 	var token: CharacterBody3D = token_instance as CharacterBody3D
 	tokens_root.add_child(token)
@@ -1907,6 +1954,7 @@ func _spawn_token(
 		token.call("set_vision_cone_visible", _vision_cones_visible)
 
 	_replace_selection(token)
+	return token
 
 
 func _interact_or_select_under_mouse(
