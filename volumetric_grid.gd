@@ -4,59 +4,70 @@ const GRID_3D_EXCLUDED_GROUP := "grid_3d_excluded"
 const GRID_2D_EXCLUDED_GROUP := "grid_2d_excluded"
 const TOKEN_GROUP := "dnd_token"
 const INVALID_CELL := Vector3i(2147483647, 2147483647, 2147483647)
+const CHUNK_SIZE := 8
 
 @export var cell_size: float = 1.0
-# Legacy: mantenuto per compatibilita con scene salvate prima del volume
-# orientato. Non determina piu direttamente il volume visualizzato.
+# Legacy: kept so older scenes keep loading without missing-property warnings.
 @export_range(4, 100, 1) var cells_per_side: int = 70
 @export_flags_3d_physics var collision_mask: int = 1
 
-# Volume di scansione orientato con la camera. Il prisma parte solo due celle
-# dietro la camera e si estende soprattutto nella direzione di vista.
-@export_range(8, 60, 1) var forward_cells: int = 30
-@export_range(0, 8, 1) var behind_cells: int = 2
-@export_range(2, 24, 1) var half_width_cells: int = 12
-@export_range(2, 20, 1) var half_height_cells: int = 8
-@export_range(1.0, 20.0, 0.5) var camera_rotation_threshold_degrees: float = 5.0
+# Large camera-oriented view volume. Physics is NOT rescanned when the camera
+# moves through already cached chunks.
+@export_range(12, 96, 1) var forward_cells: int = 56
+@export_range(0, 12, 1) var behind_cells: int = 4
+@export_range(4, 40, 1) var half_width_cells: int = 22
+@export_range(3, 28, 1) var half_height_cells: int = 14
+@export_range(1.0, 30.0, 0.5) var camera_rotation_threshold_degrees: float = 7.5
 
-# Query distribuite su piu physics frame: un budget piu basso evita picchi.
-@export_range(1, 2048, 1) var max_cell_tests_per_frame: int = 128
+# New chunks are filled progressively. Empty 8x8x8 chunks cost only one broad
+# phase query; cell queries are performed only inside chunks that touch map
+# collision.
+@export_range(16, 2048, 1) var max_physics_queries_per_frame: int = 192
 @export_range(1, 32, 1) var max_query_results: int = 8
-@export_range(1000, 250000, 1000) var max_cached_cells: int = 120000
-@export_range(0.25, 5.0, 0.25) var map_change_check_interval: float = 1.0
-
-# Il probe e leggermente piu piccolo della cella: in questo modo il semplice
-# contatto con la collisione della cella adiacente non crea cubi d'aria.
-@export_range(0.80, 1.0, 0.005) var collision_probe_scale: float = 0.96
+@export_range(0.75, 0.99, 0.005) var collision_probe_scale: float = 0.90
+@export_range(0.25, 5.0, 0.25) var map_change_check_interval: float = 0.75
+@export_range(64, 8192, 64) var max_cached_chunks: int = 2048
 
 var _camera: Camera3D = null
 var _grid_mesh_instance: MultiMeshInstance3D = null
 var _multimesh: MultiMesh = null
 var _grid_material: StandardMaterial3D = null
 var _interaction_strength: float = 0.55
-var _cell_query_shape: BoxShape3D = null
-var _query_parameters: PhysicsShapeQueryParameters3D = null
+
+var _cell_probe_shape: BoxShape3D = null
+var _cell_query: PhysicsShapeQueryParameters3D = null
+var _chunk_probe_shape: BoxShape3D = null
+var _chunk_query: PhysicsShapeQueryParameters3D = null
 
 var _center_cell: Vector3i = INVALID_CELL
-var _half_extent_world: float = 30.5
 var _volume_transform: Transform3D = Transform3D.IDENTITY
 var _has_volume_transform: bool = false
+var _half_extent_world: float = 56.5
 
-# Cache globale delle celle già testate: Vector3i -> bool.
-# Quando la camera si sposta di una cella, in genere bisogna interrogare solo
-# il nuovo "strato" entrato nel volume, non tutte le celle del 70^3.
-var _cell_cache: Dictionary = {}
+# Vector3i chunk -> Dictionary(Vector3i cell -> true). Empty dictionaries are
+# cached too, so empty space is never queried again until geometry changes.
+var _chunk_cache: Dictionary = {}
+var _visible_chunks: Dictionary = {}
+var _queued_chunks: Dictionary = {}
+var _chunk_queue: Array[Vector3i] = []
+var _chunk_queue_index: int = 0
+
+var _scan_chunk: Vector3i = INVALID_CELL
+var _scan_cells: Array[Vector3i] = []
+var _scan_index: int = 0
+var _scan_occupied: Dictionary = {}
+
 var _active_occupied: Dictionary = {}
-
-var _pending_cells: Array[Vector3i] = []
-var _pending_lookup: Dictionary = {}
-var _pending_index: int = 0
-
-var _map_dirty: bool = true
+var _visual_dirty: bool = true
+var _view_dirty: bool = true
 var _was_visible: bool = false
-var _signature_elapsed: float = 0.0
-var _tracked_map_shapes: Dictionary = {}
+
+# Collision-shape tracking is used only to invalidate cached chunks when the
+# map really changes. Camera movement never invalidates collision data.
+var _tracked_shapes: Dictionary = {}
 var _shape_signatures: Dictionary = {}
+var _shape_bounds: Dictionary = {}
+var _signature_elapsed: float = 999.0
 
 
 func _ready() -> void:
@@ -72,18 +83,13 @@ func _physics_process(delta: float) -> void:
 	if not visible:
 		_was_visible = false
 		return
-
-	if not _was_visible:
-		_was_visible = true
-		_check_map_shape_signatures(true)
-
 	if _camera == null or not is_instance_valid(_camera):
 		return
 
-	_signature_elapsed += delta
-	if _signature_elapsed >= map_change_check_interval:
-		_signature_elapsed = 0.0
-		_check_map_shape_signatures(false)
+	if not _was_visible:
+		_was_visible = true
+		_capture_volume_transform()
+		_view_dirty = true
 
 	var next_center := _world_to_cell(_camera.global_position)
 	var center_changed := next_center != _center_cell
@@ -91,30 +97,37 @@ func _physics_process(delta: float) -> void:
 	if center_changed:
 		_center_cell = next_center
 
-	if _map_dirty:
-		_cell_cache.clear()
-		_active_occupied.clear()
-		_map_dirty = false
+	if center_changed or rotation_changed:
 		_capture_volume_transform()
-		_schedule_full_volume()
-	elif center_changed or rotation_changed:
-		_capture_volume_transform()
-		_schedule_full_volume()
+		_view_dirty = true
 
-	_process_pending_cells()
+	_signature_elapsed += delta
+	if _signature_elapsed >= map_change_check_interval:
+		_signature_elapsed = 0.0
+		_check_map_shape_signatures(true)
+
+	if _view_dirty:
+		_refresh_visible_chunks()
+		_view_dirty = false
+
+	_process_chunk_scans()
+
+	if _visual_dirty:
+		_update_multimesh_instances()
+		_visual_dirty = false
 
 
 func set_camera(new_camera: Camera3D) -> void:
 	_camera = new_camera
 	_center_cell = INVALID_CELL
 	_has_volume_transform = false
+	_view_dirty = true
 
 
 func mark_map_dirty() -> void:
-	# Le query vengono rifatte nel prossimo physics frame, e solo se la griglia
-	# è visibile. In questo modo le modifiche alla scena non causano lavoro
-	# inutile quando la griglia 3D è spenta.
-	_map_dirty = true
+	_clear_collision_cache()
+	_check_map_shape_signatures(true)
+	_view_dirty = true
 
 
 func refresh() -> void:
@@ -124,18 +137,6 @@ func refresh() -> void:
 func set_interaction_strength(value: float) -> void:
 	_interaction_strength = clampf(value, 0.0, 1.0)
 	_apply_material_strength()
-
-
-func _apply_material_strength() -> void:
-	if _grid_material == null:
-		return
-	var alpha: float = lerpf(0.18, 0.52, _interaction_strength)
-	_grid_material.albedo_color = Color(0.42, 0.75, 1.0, alpha)
-	_grid_material.emission_enabled = true
-	_grid_material.emission = Color(0.04, 0.22, 0.38, 1.0)
-	_grid_material.emission_energy_multiplier = (
-		lerpf(0.30, 0.70, _interaction_strength)
-	)
 
 
 func get_half_extent_world() -> float:
@@ -152,27 +153,26 @@ func get_ray_exit_distance(origin: Vector3, direction: Vector3) -> float:
 	if not _has_volume_transform:
 		return 0.0
 
-	var local_origin: Vector3 = _volume_transform.affine_inverse() * origin
+	var inverse := _volume_transform.affine_inverse()
+	var local_origin: Vector3 = inverse * origin
 	var local_direction: Vector3 = (
 		_volume_transform.basis.inverse() * direction.normalized()
 	)
 	if local_direction.length_squared() < 0.000001:
 		return 0.0
 
-	var width: float = (float(half_width_cells) + 0.5) * cell_size
-	var height: float = (float(half_height_cells) + 0.5) * cell_size
-	var front: float = (float(forward_cells) + 0.5) * cell_size
-	var behind: float = (float(behind_cells) + 0.5) * cell_size
-	var min_point := Vector3(-width, -height, -front)
-	var max_point := Vector3(width, height, behind)
-
+	var limits := _local_volume_limits()
+	var min_point: Vector3 = limits["min"]
+	var max_point: Vector3 = limits["max"]
 	var t_min := -INF
 	var t_max := INF
+
 	for axis in range(3):
 		var o: float = local_origin[axis]
 		var d: float = local_direction[axis]
 		var min_axis: float = min_point[axis]
 		var max_axis: float = max_point[axis]
+
 		if absf(d) < 0.000001:
 			if o < min_axis or o > max_axis:
 				return 0.0
@@ -181,9 +181,10 @@ func get_ray_exit_distance(origin: Vector3, direction: Vector3) -> float:
 		var t_a: float = (min_axis - o) / d
 		var t_b: float = (max_axis - o) / d
 		if t_a > t_b:
-			var swap: float = t_a
+			var swap := t_a
 			t_a = t_b
 			t_b = swap
+
 		t_min = maxf(t_min, t_a)
 		t_max = minf(t_max, t_b)
 		if t_min > t_max:
@@ -205,25 +206,29 @@ func _configure_grid() -> void:
 		+ 0.5
 	) * cell_size
 
-	_cell_query_shape = BoxShape3D.new()
-	_cell_query_shape.size = (
+	_cell_probe_shape = BoxShape3D.new()
+	_cell_probe_shape.size = (
 		Vector3.ONE
 		* cell_size
-		* clampf(collision_probe_scale, 0.80, 1.0)
+		* clampf(collision_probe_scale, 0.75, 0.99)
 	)
+	_cell_query = PhysicsShapeQueryParameters3D.new()
+	_cell_query.shape = _cell_probe_shape
+	_cell_query.collide_with_bodies = true
+	_cell_query.collide_with_areas = false
 
-	_query_parameters = PhysicsShapeQueryParameters3D.new()
-	_query_parameters.shape = _cell_query_shape
-	_query_parameters.collision_mask = collision_mask
-	_query_parameters.collide_with_bodies = true
-	_query_parameters.collide_with_areas = false
+	_chunk_probe_shape = BoxShape3D.new()
+	_chunk_probe_shape.size = (
+		Vector3.ONE * float(CHUNK_SIZE) * cell_size * 0.995
+	)
+	_chunk_query = PhysicsShapeQueryParameters3D.new()
+	_chunk_query.shape = _chunk_probe_shape
+	_chunk_query.collide_with_bodies = true
+	_chunk_query.collide_with_areas = false
 
 
 func _build_multimesh() -> void:
-	if (
-		_grid_mesh_instance != null
-		and is_instance_valid(_grid_mesh_instance)
-	):
+	if _grid_mesh_instance != null and is_instance_valid(_grid_mesh_instance):
 		_grid_mesh_instance.queue_free()
 
 	_grid_material = StandardMaterial3D.new()
@@ -246,20 +251,10 @@ func _build_multimesh() -> void:
 		Vector3(-half, half, half),
 	]
 	var edges: Array[Vector2i] = [
-		Vector2i(0, 1),
-		Vector2i(1, 2),
-		Vector2i(2, 3),
-		Vector2i(3, 0),
-		Vector2i(4, 5),
-		Vector2i(5, 6),
-		Vector2i(6, 7),
-		Vector2i(7, 4),
-		Vector2i(0, 4),
-		Vector2i(1, 5),
-		Vector2i(2, 6),
-		Vector2i(3, 7),
+		Vector2i(0, 1), Vector2i(1, 2), Vector2i(2, 3), Vector2i(3, 0),
+		Vector2i(4, 5), Vector2i(5, 6), Vector2i(6, 7), Vector2i(7, 4),
+		Vector2i(0, 4), Vector2i(1, 5), Vector2i(2, 6), Vector2i(3, 7),
 	]
-
 	for edge in edges:
 		wire_cube.surface_add_vertex(corners[edge.x])
 		wire_cube.surface_add_vertex(corners[edge.y])
@@ -271,12 +266,22 @@ func _build_multimesh() -> void:
 	_multimesh.instance_count = 0
 
 	_grid_mesh_instance = MultiMeshInstance3D.new()
-	_grid_mesh_instance.name = "CollisionCellGrid3D"
+	_grid_mesh_instance.name = "CachedCollisionGrid3D"
 	_grid_mesh_instance.multimesh = _multimesh
-	_grid_mesh_instance.cast_shadow = (
-		GeometryInstance3D.SHADOW_CASTING_SETTING_OFF
-	)
+	_grid_mesh_instance.cast_shadow = GeometryInstance3D.SHADOW_CASTING_SETTING_OFF
 	add_child(_grid_mesh_instance)
+
+
+func _apply_material_strength() -> void:
+	if _grid_material == null:
+		return
+	var alpha: float = lerpf(0.16, 0.50, _interaction_strength)
+	_grid_material.albedo_color = Color(0.42, 0.75, 1.0, alpha)
+	_grid_material.emission_enabled = true
+	_grid_material.emission = Color(0.04, 0.22, 0.38, 1.0)
+	_grid_material.emission_energy_multiplier = (
+		lerpf(0.28, 0.68, _interaction_strength)
+	)
 
 
 func _capture_volume_transform() -> void:
@@ -298,153 +303,243 @@ func _camera_rotation_changed() -> bool:
 	var old_forward: Vector3 = -_volume_transform.basis.z.normalized()
 	var new_forward: Vector3 = -_camera.global_transform.basis.z.normalized()
 	var dot_value: float = clampf(old_forward.dot(new_forward), -1.0, 1.0)
-	var angle_degrees: float = rad_to_deg(acos(dot_value))
-	return angle_degrees >= camera_rotation_threshold_degrees
+	return (
+		rad_to_deg(acos(dot_value))
+		>= camera_rotation_threshold_degrees
+	)
 
 
-func _schedule_full_volume() -> void:
-	_reset_pending_queue()
-	_active_occupied.clear()
-	if not _has_volume_transform:
-		_update_multimesh_instances()
-		return
-
-	var bounds: Dictionary = _volume_world_bounds()
-	var min_point: Vector3 = bounds.get("min", Vector3.ZERO)
-	var max_point: Vector3 = bounds.get("max", Vector3.ZERO)
-	var min_cell: Vector3i = _world_to_cell(min_point)
-	var max_cell: Vector3i = _world_to_cell(max_point)
-
-	for y in range(min_cell.y, max_cell.y + 1):
-		for z in range(min_cell.z, max_cell.z + 1):
-			for x in range(min_cell.x, max_cell.x + 1):
-				var cell := Vector3i(x, y, z)
-				if _cell_inside_current_volume(cell):
-					_enqueue_cell(cell)
-
-	_prune_cache_if_needed()
-	_update_multimesh_instances()
-
-
-func _volume_world_bounds() -> Dictionary:
+func _local_volume_limits() -> Dictionary:
 	var width: float = (float(half_width_cells) + 0.5) * cell_size
 	var height: float = (float(half_height_cells) + 0.5) * cell_size
 	var front: float = (float(forward_cells) + 0.5) * cell_size
 	var behind: float = (float(behind_cells) + 0.5) * cell_size
-
-	var center_local := Vector3(0.0, 0.0, (behind - front) * 0.5)
-	var half_depth: float = (front + behind) * 0.5
-	var center_world: Vector3 = _volume_transform * center_local
-	var basis: Basis = _volume_transform.basis
-	var extents := Vector3(
-		absf(basis.x.x) * width
-			+ absf(basis.y.x) * height
-			+ absf(basis.z.x) * half_depth,
-		absf(basis.x.y) * width
-			+ absf(basis.y.y) * height
-			+ absf(basis.z.y) * half_depth,
-		absf(basis.x.z) * width
-			+ absf(basis.y.z) * height
-			+ absf(basis.z.z) * half_depth
-	)
-
 	return {
-		"min": center_world - extents,
-		"max": center_world + extents
+		"min": Vector3(-width, -height, -front),
+		"max": Vector3(width, height, behind)
 	}
 
 
 func _point_inside_volume(point: Vector3) -> bool:
 	if not _has_volume_transform:
 		return false
-
 	var local: Vector3 = _volume_transform.affine_inverse() * point
-	var width: float = (float(half_width_cells) + 0.5) * cell_size
-	var height: float = (float(half_height_cells) + 0.5) * cell_size
-	var front: float = (float(forward_cells) + 0.5) * cell_size
-	var behind: float = (float(behind_cells) + 0.5) * cell_size
-
+	var limits := _local_volume_limits()
+	var min_point: Vector3 = limits["min"]
+	var max_point: Vector3 = limits["max"]
 	return (
-		absf(local.x) <= width
-		and absf(local.y) <= height
-		and local.z >= -front
-		and local.z <= behind
+		local.x >= min_point.x
+		and local.x <= max_point.x
+		and local.y >= min_point.y
+		and local.y <= max_point.y
+		and local.z >= min_point.z
+		and local.z <= max_point.z
 	)
 
 
-func _enqueue_cell(cell: Vector3i) -> void:
-	if _cell_cache.has(cell):
-		if bool(_cell_cache[cell]):
-			_active_occupied[cell] = true
+func _volume_world_bounds() -> Dictionary:
+	var limits := _local_volume_limits()
+	var min_local: Vector3 = limits["min"]
+	var max_local: Vector3 = limits["max"]
+	var first := true
+	var min_world := Vector3.ZERO
+	var max_world := Vector3.ZERO
+
+	for x in [min_local.x, max_local.x]:
+		for y in [min_local.y, max_local.y]:
+			for z in [min_local.z, max_local.z]:
+				var point: Vector3 = _volume_transform * Vector3(x, y, z)
+				if first:
+					min_world = point
+					max_world = point
+					first = false
+				else:
+					min_world = min_world.min(point)
+					max_world = max_world.max(point)
+
+	return {"min": min_world, "max": max_world}
+
+
+func _refresh_visible_chunks() -> void:
+	_visible_chunks.clear()
+	_active_occupied.clear()
+
+	if not _has_volume_transform:
+		_visual_dirty = true
 		return
 
-	if _pending_lookup.has(cell):
+	var bounds := _volume_world_bounds()
+	var min_point: Vector3 = bounds["min"]
+	var max_point: Vector3 = bounds["max"]
+	var min_chunk := _world_to_chunk(min_point)
+	var max_chunk := _world_to_chunk(max_point)
+
+	for y in range(min_chunk.y, max_chunk.y + 1):
+		for z in range(min_chunk.z, max_chunk.z + 1):
+			for x in range(min_chunk.x, max_chunk.x + 1):
+				var chunk := Vector3i(x, y, z)
+				if not _chunk_might_touch_volume(chunk):
+					continue
+
+				_visible_chunks[chunk] = true
+				if _chunk_cache.has(chunk):
+					_add_cached_chunk_to_active(chunk)
+				else:
+					_enqueue_chunk(chunk)
+
+	_visual_dirty = true
+	_prune_chunk_cache()
+
+
+func _chunk_might_touch_volume(chunk: Vector3i) -> bool:
+	var center := _chunk_world_center(chunk)
+	var local: Vector3 = _volume_transform.affine_inverse() * center
+	var limits := _local_volume_limits()
+	var min_point: Vector3 = limits["min"]
+	var max_point: Vector3 = limits["max"]
+	# A chunk is axis-aligned in world space; use its half diagonal as a
+	# conservative expansion in camera-local space.
+	var padding := (
+		float(CHUNK_SIZE) * cell_size * 0.5 * sqrt(3.0)
+	)
+	return (
+		local.x >= min_point.x - padding
+		and local.x <= max_point.x + padding
+		and local.y >= min_point.y - padding
+		and local.y <= max_point.y + padding
+		and local.z >= min_point.z - padding
+		and local.z <= max_point.z + padding
+	)
+
+
+func _enqueue_chunk(chunk: Vector3i) -> void:
+	if _chunk_cache.has(chunk) or _queued_chunks.has(chunk):
 		return
+	_queued_chunks[chunk] = true
+	_chunk_queue.append(chunk)
 
-	_pending_lookup[cell] = true
-	_pending_cells.append(cell)
 
+func _process_chunk_scans() -> void:
+	var budget := maxi(1, max_physics_queries_per_frame)
+	var queries := 0
 
-func _process_pending_cells() -> void:
-	if not _has_pending_cells():
-		return
+	while queries < budget:
+		if _scan_chunk == INVALID_CELL:
+			if not _start_next_chunk_scan():
+				break
 
-	var tested := 0
-	var visual_changed := false
-	var budget := maxi(1, max_cell_tests_per_frame)
+			queries += 1
+			if not _chunk_has_map_collision(_scan_chunk):
+				_finish_current_chunk()
+				continue
 
-	while _pending_index < _pending_cells.size() and tested < budget:
-		var cell := _pending_cells[_pending_index]
-		_pending_index += 1
-		_pending_lookup.erase(cell)
+			_build_current_chunk_cells()
 
-		if not _cell_inside_current_volume(cell):
+		if _scan_chunk == INVALID_CELL:
 			continue
 
-		if _cell_cache.has(cell):
-			if bool(_cell_cache[cell]):
+		while _scan_index < _scan_cells.size() and queries < budget:
+			var cell: Vector3i = _scan_cells[_scan_index]
+			_scan_index += 1
+			queries += 1
+			if _cell_intersects_map(cell):
+				_scan_occupied[cell] = true
+
+		if _scan_index >= _scan_cells.size():
+			_finish_current_chunk()
+
+
+func _start_next_chunk_scan() -> bool:
+	while _chunk_queue_index < _chunk_queue.size():
+		var chunk: Vector3i = _chunk_queue[_chunk_queue_index]
+		_chunk_queue_index += 1
+		_queued_chunks.erase(chunk)
+
+		if _chunk_cache.has(chunk):
+			continue
+		if not _visible_chunks.has(chunk):
+			continue
+
+		_scan_chunk = chunk
+		_scan_cells.clear()
+		_scan_index = 0
+		_scan_occupied.clear()
+		return true
+
+	if _chunk_queue_index >= _chunk_queue.size():
+		_chunk_queue.clear()
+		_chunk_queue_index = 0
+	return false
+
+
+func _build_current_chunk_cells() -> void:
+	var min_cell := _chunk_min_cell(_scan_chunk)
+	var max_cell := min_cell + Vector3i.ONE * (CHUNK_SIZE - 1)
+	for y in range(min_cell.y, max_cell.y + 1):
+		for z in range(min_cell.z, max_cell.z + 1):
+			for x in range(min_cell.x, max_cell.x + 1):
+				var cell := Vector3i(x, y, z)
+				if _point_inside_volume(_cell_to_world_center(cell)):
+					_scan_cells.append(cell)
+
+
+func _finish_current_chunk() -> void:
+	if _scan_chunk == INVALID_CELL:
+		return
+
+	_chunk_cache[_scan_chunk] = _scan_occupied.duplicate()
+	if _visible_chunks.has(_scan_chunk):
+		for key in _scan_occupied.keys():
+			var cell: Vector3i = key
+			if _point_inside_volume(_cell_to_world_center(cell)):
 				_active_occupied[cell] = true
-				visual_changed = true
-			continue
+		_visual_dirty = true
 
-		var occupied := _cell_intersects_map(cell)
-		_cell_cache[cell] = occupied
-		tested += 1
+	_scan_chunk = INVALID_CELL
+	_scan_cells.clear()
+	_scan_index = 0
+	_scan_occupied.clear()
 
-		if occupied:
-			_active_occupied[cell] = true
-			visual_changed = true
 
-	if _pending_index >= _pending_cells.size():
-		_reset_pending_queue()
-		_prune_cache_if_needed()
+func _chunk_has_map_collision(chunk: Vector3i) -> bool:
+	if _chunk_query == null:
+		return false
+	_chunk_query.collision_mask = collision_mask
+	_chunk_query.transform = Transform3D(
+		Basis.IDENTITY,
+		_chunk_world_center(chunk)
+	)
 
-	if visual_changed:
-		_update_multimesh_instances()
+	var hits: Array[Dictionary] = (
+		get_world_3d().direct_space_state.intersect_shape(
+			_chunk_query,
+			maxi(1, max_query_results)
+		)
+	)
+	for hit in hits:
+		if _is_map_collider(hit.get("collider")):
+			return true
+	return false
 
 
 func _cell_intersects_map(cell: Vector3i) -> bool:
-	if _query_parameters == null or _cell_query_shape == null:
+	if _cell_query == null:
 		return false
-
-	_query_parameters.collision_mask = collision_mask
-	_query_parameters.transform = Transform3D(
+	_cell_query.collision_mask = collision_mask
+	_cell_query.transform = Transform3D(
 		Basis.IDENTITY,
 		_cell_to_world_center(cell)
 	)
 
 	var hits: Array[Dictionary] = (
 		get_world_3d().direct_space_state.intersect_shape(
-			_query_parameters,
+			_cell_query,
 			maxi(1, max_query_results)
 		)
 	)
-
 	for hit in hits:
-		var collider: Variant = hit.get("collider")
-		if _is_map_collider(collider):
+		if _is_map_collider(hit.get("collider")):
 			return true
-
 	return false
 
 
@@ -459,10 +554,7 @@ func _is_map_collider(collider: Variant) -> bool:
 	var body := collider as PhysicsBody3D
 	if (body.collision_layer & collision_mask) == 0:
 		return false
-	if _has_excluded_group_in_ancestry(body):
-		return false
-
-	return true
+	return not _has_excluded_group_in_ancestry(body)
 
 
 func _has_excluded_group_in_ancestry(node: Node) -> bool:
@@ -478,6 +570,17 @@ func _has_excluded_group_in_ancestry(node: Node) -> bool:
 	return false
 
 
+func _add_cached_chunk_to_active(chunk: Vector3i) -> void:
+	var value: Variant = _chunk_cache.get(chunk)
+	if not value is Dictionary:
+		return
+	var occupied: Dictionary = value
+	for key in occupied.keys():
+		var cell: Vector3i = key
+		if _point_inside_volume(_cell_to_world_center(cell)):
+			_active_occupied[cell] = true
+
+
 func _update_multimesh_instances() -> void:
 	if _multimesh == null:
 		return
@@ -485,71 +588,80 @@ func _update_multimesh_instances() -> void:
 	var count := _active_occupied.size()
 	_multimesh.instance_count = count
 	_multimesh.visible_instance_count = count
-
 	if count == 0:
 		return
 
 	var inverse_grid_transform := global_transform.affine_inverse()
 	var index := 0
-
 	for key in _active_occupied.keys():
 		var cell: Vector3i = key
-		if not _cell_inside_current_volume(cell):
-			continue
-
 		var world_transform := Transform3D(
 			Basis.IDENTITY,
 			_cell_to_world_center(cell)
 		)
-		var local_transform := inverse_grid_transform * world_transform
-		_multimesh.set_instance_transform(index, local_transform)
+		_multimesh.set_instance_transform(
+			index,
+			inverse_grid_transform * world_transform
+		)
 		index += 1
 
-	# Normalmente count e index coincidono. Questo protegge comunque da
-	# eventuali celle rimosse fra conteggio e aggiornamento.
-	if index != count:
-		_multimesh.visible_instance_count = index
+
+func _clear_collision_cache() -> void:
+	_chunk_cache.clear()
+	_queued_chunks.clear()
+	_chunk_queue.clear()
+	_chunk_queue_index = 0
+	_scan_chunk = INVALID_CELL
+	_scan_cells.clear()
+	_scan_index = 0
+	_scan_occupied.clear()
+	_active_occupied.clear()
+	_visual_dirty = true
 
 
-func _remove_active_cells_outside_volume() -> void:
-	for key in _active_occupied.keys():
-		var cell: Vector3i = key
-		if not _cell_inside_current_volume(cell):
-			_active_occupied.erase(cell)
-
-
-func _reset_pending_queue() -> void:
-	_pending_cells.clear()
-	_pending_lookup.clear()
-	_pending_index = 0
-
-
-func _has_pending_cells() -> bool:
-	return _pending_index < _pending_cells.size()
-
-
-func _prune_cache_if_needed() -> void:
-	if _cell_cache.size() <= max_cached_cells:
+func _prune_chunk_cache() -> void:
+	if _chunk_cache.size() <= max_cached_chunks:
 		return
 
 	var retained: Dictionary = {}
-	for key in _cell_cache.keys():
-		var cell: Vector3i = key
-		if _cell_inside_current_volume(cell):
-			retained[cell] = _cell_cache[cell]
-	_cell_cache = retained
+	# Always keep the currently visible area.
+	for key in _visible_chunks.keys():
+		if _chunk_cache.has(key):
+			retained[key] = _chunk_cache[key]
 
+	# Keep nearby cached chunks until the limit is reached.
+	if retained.size() < max_cached_chunks:
+		var camera_chunk := _world_to_chunk(_camera.global_position)
+		var candidates: Array[Dictionary] = []
+		for key in _chunk_cache.keys():
+			if retained.has(key):
+				continue
+			var chunk: Vector3i = key
+			candidates.append({
+				"chunk": chunk,
+				"distance": (
+					Vector3(chunk - camera_chunk).length_squared()
+				)
+			})
+		candidates.sort_custom(
+			func(a: Dictionary, b: Dictionary) -> bool:
+				return float(a["distance"]) < float(b["distance"])
+		)
+		for item in candidates:
+			if retained.size() >= max_cached_chunks:
+				break
+			var chunk: Vector3i = item["chunk"]
+			retained[chunk] = _chunk_cache[chunk]
 
-func _cell_inside_current_volume(cell: Vector3i) -> bool:
-	return _point_inside_volume(_cell_to_world_center(cell))
+	_chunk_cache = retained
 
 
 func _world_to_cell(point: Vector3) -> Vector3i:
-	var safe_cell_size := maxf(cell_size, 0.001)
+	var safe := maxf(cell_size, 0.001)
 	return Vector3i(
-		int(floor(point.x / safe_cell_size)),
-		int(floor(point.y / safe_cell_size)),
-		int(floor(point.z / safe_cell_size))
+		int(floor(point.x / safe)),
+		int(floor(point.y / safe)),
+		int(floor(point.z / safe))
 	)
 
 
@@ -561,21 +673,41 @@ func _cell_to_world_center(cell: Vector3i) -> Vector3:
 	)
 
 
-func _world_bounds() -> Dictionary:
-	return _volume_world_bounds()
+func _world_to_chunk(point: Vector3) -> Vector3i:
+	return _cell_to_chunk(_world_to_cell(point))
+
+
+func _cell_to_chunk(cell: Vector3i) -> Vector3i:
+	return Vector3i(
+		int(floor(float(cell.x) / float(CHUNK_SIZE))),
+		int(floor(float(cell.y) / float(CHUNK_SIZE))),
+		int(floor(float(cell.z) / float(CHUNK_SIZE)))
+	)
+
+
+func _chunk_min_cell(chunk: Vector3i) -> Vector3i:
+	return chunk * CHUNK_SIZE
+
+
+func _chunk_world_center(chunk: Vector3i) -> Vector3:
+	var min_cell := _chunk_min_cell(chunk)
+	return Vector3(
+		(float(min_cell.x) + float(CHUNK_SIZE) * 0.5) * cell_size,
+		(float(min_cell.y) + float(CHUNK_SIZE) * 0.5) * cell_size,
+		(float(min_cell.z) + float(CHUNK_SIZE) * 0.5) * cell_size
+	)
 
 
 func _register_existing_map_shapes() -> void:
 	if get_tree() == null or get_tree().root == null:
 		return
-
 	for node in get_tree().root.find_children(
 		"*",
 		"CollisionShape3D",
 		true,
 		false
 	):
-		_register_map_shape(node as CollisionShape3D, false)
+		_register_map_shape(node as CollisionShape3D)
 
 
 func _on_tree_node_added(node: Node) -> void:
@@ -586,47 +718,44 @@ func _on_tree_node_added(node: Node) -> void:
 		)
 
 
-func _register_added_collision_shape(
-	collision: CollisionShape3D
-) -> void:
-	if collision == null or not is_instance_valid(collision):
-		return
-
-	if _register_map_shape(collision, true):
-		mark_map_dirty()
+func _register_added_collision_shape(collision: CollisionShape3D) -> void:
+	if _register_map_shape(collision):
+		var bounds: AABB = _collision_world_aabb(collision)
+		_invalidate_chunks_for_aabb(bounds)
 
 
 func _on_tree_node_removed(node: Node) -> void:
-	var instance_id := node.get_instance_id()
-	if not _tracked_map_shapes.has(instance_id):
+	var id := node.get_instance_id()
+	if not _tracked_shapes.has(id):
 		return
 
-	_tracked_map_shapes.erase(instance_id)
-	_shape_signatures.erase(instance_id)
-	mark_map_dirty()
+	var old_bounds_value: Variant = _shape_bounds.get(id)
+	if old_bounds_value is AABB:
+		_invalidate_chunks_for_aabb(old_bounds_value)
+
+	_tracked_shapes.erase(id)
+	_shape_signatures.erase(id)
+	_shape_bounds.erase(id)
 
 
-func _register_map_shape(
-	collision: CollisionShape3D,
-	update_existing_signature: bool
-) -> bool:
+func _register_map_shape(collision: CollisionShape3D) -> bool:
 	if collision == null or not is_instance_valid(collision):
+		return false
+	if collision.shape == null:
 		return false
 
 	var body := _find_physics_body(collision)
 	if body == null or not _is_map_collider(body):
 		return false
 
-	var instance_id := collision.get_instance_id()
-	var was_known := _tracked_map_shapes.has(instance_id)
-	_tracked_map_shapes[instance_id] = collision
+	var id := collision.get_instance_id()
+	if _tracked_shapes.has(id):
+		return false
 
-	if not was_known or update_existing_signature:
-		_shape_signatures[instance_id] = (
-			_collision_shape_signature(collision, body)
-		)
-
-	return not was_known
+	_tracked_shapes[id] = collision
+	_shape_signatures[id] = _collision_shape_signature(collision, body)
+	_shape_bounds[id] = _collision_world_aabb(collision)
+	return true
 
 
 func _find_physics_body(node: Node) -> PhysicsBody3D:
@@ -644,49 +773,49 @@ func _check_map_shape_signatures(discover_new: bool) -> void:
 	if discover_new:
 		_discover_untracked_map_shapes()
 
-	var changed := false
-	var stale_ids: Array[int] = []
+	var stale: Array[int] = []
+	for key in _tracked_shapes.keys():
+		var id: int = int(key)
+		var value: Variant = _tracked_shapes[id]
+		if not is_instance_valid(value):
+			stale.append(id)
+			continue
 
-	for key in _tracked_map_shapes.keys():
-		var instance_id: int = int(key)
-		var collision: Variant = _tracked_map_shapes[instance_id]
-
+		var collision := value as CollisionShape3D
+		var body := _find_physics_body(collision)
 		if (
-			not is_instance_valid(collision)
-			or not (collision as CollisionShape3D).is_inside_tree()
+			body == null
+			or collision.shape == null
+			or not _is_map_collider(body)
 		):
-			stale_ids.append(instance_id)
-			changed = true
+			stale.append(id)
 			continue
 
-		var collision_shape := collision as CollisionShape3D
-		var body := _find_physics_body(collision_shape)
-		if body == null or not _is_map_collider(body):
-			stale_ids.append(instance_id)
-			changed = true
+		var signature := _collision_shape_signature(collision, body)
+		if String(_shape_signatures.get(id, "")) == signature:
 			continue
 
-		var signature := _collision_shape_signature(
-			collision_shape,
-			body
-		)
-		if String(_shape_signatures.get(instance_id, "")) != signature:
-			_shape_signatures[instance_id] = signature
-			changed = true
+		var old_bounds_value: Variant = _shape_bounds.get(id)
+		if old_bounds_value is AABB:
+			_invalidate_chunks_for_aabb(old_bounds_value)
 
-	for instance_id in stale_ids:
-		_tracked_map_shapes.erase(instance_id)
-		_shape_signatures.erase(instance_id)
+		var new_bounds := _collision_world_aabb(collision)
+		_invalidate_chunks_for_aabb(new_bounds)
+		_shape_signatures[id] = signature
+		_shape_bounds[id] = new_bounds
 
-	if changed:
-		mark_map_dirty()
+	for id in stale:
+		var old_bounds_value: Variant = _shape_bounds.get(id)
+		if old_bounds_value is AABB:
+			_invalidate_chunks_for_aabb(old_bounds_value)
+		_tracked_shapes.erase(id)
+		_shape_signatures.erase(id)
+		_shape_bounds.erase(id)
 
 
 func _discover_untracked_map_shapes() -> void:
 	if get_tree() == null or get_tree().root == null:
 		return
-
-	var discovered := false
 	for node in get_tree().root.find_children(
 		"*",
 		"CollisionShape3D",
@@ -694,17 +823,8 @@ func _discover_untracked_map_shapes() -> void:
 		false
 	):
 		var collision := node as CollisionShape3D
-		if (
-			collision != null
-			and not _tracked_map_shapes.has(
-				collision.get_instance_id()
-			)
-			and _register_map_shape(collision, false)
-		):
-			discovered = true
-
-	if discovered:
-		mark_map_dirty()
+		if collision != null and _register_map_shape(collision):
+			_invalidate_chunks_for_aabb(_collision_world_aabb(collision))
 
 
 func _collision_shape_signature(
@@ -716,7 +836,6 @@ func _collision_shape_signature(
 	if collision.shape != null:
 		shape_id = collision.shape.get_instance_id()
 		shape_class = collision.shape.get_class()
-
 	return "%s|%s|%s|%s|%s|%s" % [
 		str(collision.global_transform),
 		str(collision.disabled),
@@ -725,3 +844,69 @@ func _collision_shape_signature(
 		shape_class,
 		str(shape_id)
 	]
+
+
+func _collision_world_aabb(collision: CollisionShape3D) -> AABB:
+	if (
+		collision == null
+		or not is_instance_valid(collision)
+		or collision.shape == null
+	):
+		return AABB(collision.global_position, Vector3.ZERO)
+
+	var local_aabb := AABB(Vector3.ZERO, Vector3.ZERO)
+	var has_bounds := false
+	if collision.shape.has_method("get_debug_mesh"):
+		var debug_mesh: Variant = collision.shape.call("get_debug_mesh")
+		if debug_mesh is Mesh:
+			local_aabb = (debug_mesh as Mesh).get_aabb()
+			has_bounds = true
+
+	if not has_bounds:
+		return AABB(collision.global_position, Vector3.ONE * cell_size)
+
+	var min_local := local_aabb.position
+	var max_local := local_aabb.position + local_aabb.size
+	var first := true
+	var min_world := Vector3.ZERO
+	var max_world := Vector3.ZERO
+
+	for x in [min_local.x, max_local.x]:
+		for y in [min_local.y, max_local.y]:
+			for z in [min_local.z, max_local.z]:
+				var point := collision.global_transform * Vector3(x, y, z)
+				if first:
+					min_world = point
+					max_world = point
+					first = false
+				else:
+					min_world = min_world.min(point)
+					max_world = max_world.max(point)
+
+	return AABB(min_world, max_world - min_world)
+
+
+func _invalidate_chunks_for_aabb(bounds: AABB) -> void:
+	if bounds.size.length_squared() <= 0.000001:
+		return
+
+	var padding := Vector3.ONE * cell_size
+	var min_chunk := _world_to_chunk(bounds.position - padding)
+	var max_chunk := _world_to_chunk(
+		bounds.position + bounds.size + padding
+	)
+
+	for y in range(min_chunk.y, max_chunk.y + 1):
+		for z in range(min_chunk.z, max_chunk.z + 1):
+			for x in range(min_chunk.x, max_chunk.x + 1):
+				var chunk := Vector3i(x, y, z)
+				_chunk_cache.erase(chunk)
+				if chunk == _scan_chunk:
+					_scan_chunk = INVALID_CELL
+					_scan_cells.clear()
+					_scan_index = 0
+					_scan_occupied.clear()
+				if _visible_chunks.has(chunk):
+					_enqueue_chunk(chunk)
+
+	_visual_dirty = true
