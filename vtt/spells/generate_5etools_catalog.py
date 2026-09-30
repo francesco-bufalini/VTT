@@ -19,7 +19,11 @@ OUTPUT = ROOT / "vtt" / "spells" / "spell_catalog_5etools.gd"
 RUNTIME_MAP = ROOT / "assets" / "spell_area_geometry.json"
 PRIORITY = ["XPHB","PHB","FRHoF","EFA","AU","TCE","XGE","FTD","SCC","EGW","BMT","AAG","AI","GGR","IDRotF","SatO","LLK","AitFR-AVT"]
 SCHOOLS = {"A":"Abjuration","C":"Conjuration","D":"Divination","E":"Enchantment","V":"Evocation","I":"Illusion","N":"Necromancy","T":"Transmutation","P":"Psionic"}
-META = {"id","name","source","level","school","casting_time","range","target","area","components","duration","classes","description","higher_levels"}
+META = {
+    "id","name","source","level","school","casting_time","range","target",
+    "area","components","duration","classes","description","higher_levels",
+    "condition_inflict","saving_throw","misc_tags",
+}
 GENERATED_TARGET_FIELDS = {
     "target_mode",
     "projectile_style",
@@ -150,7 +154,37 @@ def main():
         for v in vs:
             e=lookup.get(str(v.get("source","")).lower(),{}).get(str(v.get("name","")).lower(),{})
             classes.update(class_names(e))
-        rec={"id":sid,"name":s["name"],"source":s.get("source",""),"level":int(s.get("level",0)),"school":SCHOOLS.get(str(s.get("school","")),str(s.get("school",""))),"casting_time":ftime(s),"range":frange(s),"target":"","area":"","components":fcomp(s),"duration":fdur(s),"classes":sorted(classes),"description":flat(s.get("entries",[])),"higher_levels":flat(s.get("entriesHigherLevel",[]))}
+        rec={
+            "id":sid,
+            "name":s["name"],
+            "source":s.get("source",""),
+            "level":int(s.get("level",0)),
+            "school":SCHOOLS.get(str(s.get("school","")),str(s.get("school",""))),
+            "casting_time":ftime(s),
+            "range":frange(s),
+            "target":"",
+            "area":"",
+            "components":fcomp(s),
+            "duration":fdur(s),
+            "classes":sorted(classes),
+            "description":flat(s.get("entries",[])),
+            "higher_levels":flat(s.get("entriesHigherLevel",[])),
+            "condition_inflict":sorted({
+                str(v).strip().lower()
+                for v in s.get("conditionInflict",[])
+                if str(v).strip()
+            }),
+            "saving_throw":sorted({
+                str(v).strip().lower()
+                for v in s.get("savingThrow",[])
+                if str(v).strip()
+            }),
+            "misc_tags":sorted({
+                str(v).strip()
+                for v in s.get("miscTags",[])
+                if str(v).strip()
+            }),
+        }
         for k,v in old.get(sid,{}).items():
             if k not in META and k not in GENERATED_TARGET_FIELDS:
                 rec[k]=v
