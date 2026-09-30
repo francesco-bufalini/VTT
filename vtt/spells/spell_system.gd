@@ -1645,7 +1645,9 @@ func _update_spell_preview() -> void:
 
 	var spell_data: Dictionary = _pending_spell()
 	if spell_data.is_empty():
-		_hide_spell_preview()
+		# Never leave the VTT trapped in targeting mode if runtime spell data
+		# disappears or becomes invalid between activation and targeting.
+		_cancel_pending_cast()
 		return
 
 	var screen_position: Vector2 = (
