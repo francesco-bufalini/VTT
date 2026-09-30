@@ -536,11 +536,12 @@ def resolve_base(
     main_source: Path,
     objects: list[bpy.types.Object],
 ) -> tuple[Vector, Vector, str, list[bpy.types.Object]]:
-    """Resolve scale/ground reference without making the base part of the token.
+    """Resolve scale/ground reference and identify external STL-only helpers.
 
-    Base/marker/flying-size meshes are calibration helpers.  They define D&D
-    footprint, centering and ground height, but when they are separate objects
-    they must never be exported as visible miniature geometry.
+    A base/marker that already belongs to the chosen source scene (especially a
+    .blend miniature) is part of the authored miniature and must stay exported.
+    Only a *separate STL file* imported solely as a size/flying marker is treated
+    as calibration-only geometry and removed from the final OBJ.
     """
     scene_references = [
         obj for obj in objects if base_candidate_score(obj) > 0
@@ -548,12 +549,8 @@ def resolve_base(
     scene_base = find_scene_base(scene_references)
     if scene_base is not None:
         low, high = object_bounds(scene_base)
-        return (
-            low,
-            high,
-            f"object:{scene_base.name}",
-            scene_references,
-        )
+        # Keep every object already present in the main .blend/source scene.
+        return low, high, f"object:{scene_base.name}", []
 
     external = choose_external_base(package, main_source)
     if external is not None:
@@ -569,9 +566,8 @@ def resolve_base(
             )
         if external_base is not None:
             low, high = object_bounds(external_base)
-            # Exclude every mesh imported from the reference file, not only the
-            # one used for bounds: a flying platform can itself be multi-part.
-            return low, high, f"file:{external.name}", added
+            reference_only = added if external.suffix.lower() == ".stl" else []
+            return low, high, f"file:{external.name}", reference_only
 
     fallback = low_band_base_bounds(objects)
     if fallback is not None:
@@ -769,7 +765,7 @@ def process_package(
 
     if reference_objects:
         print(
-            "Reference only (not exported): "
+            "Separate STL reference only (not exported): "
             + ", ".join(obj.name for obj in reference_objects)
         )
     diameter = max(base_high.x - base_low.x, base_high.y - base_low.y)
