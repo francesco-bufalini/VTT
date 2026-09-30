@@ -71,6 +71,8 @@ var _status_label: Label3D
 var movement_validator: Callable
 var grid_support: Node3D
 var _support_transform: Transform3D
+var _transformation_history: Array[Dictionary] = []
+const MAX_TRANSFORMATION_HISTORY := 16
 
 
 func _ready() -> void:
@@ -932,7 +934,7 @@ func set_reach_feet(value: float, overridden: bool = true) -> void:
 	if value <= 0.0:
 		reset_reach_to_default()
 		return
-	_reach_feet = clampf(value, 1.0, 1000.0)
+	_reach_feet = clampf(value, 5.0, 1000.0)
 	_reach_overridden = overridden
 
 
@@ -951,6 +953,107 @@ func is_reach_overridden() -> bool:
 
 func get_size_name() -> String:
 	return _size_name
+
+
+func set_size_category(
+	size_name: String,
+	footprint_cells: float,
+	update_default_reach: bool = false
+) -> void:
+	_size_name = size_name
+	_footprint_cells = maxf(footprint_cells, 0.5)
+	if update_default_reach and not _reach_overridden:
+		_reach_feet = _default_reach_feet()
+	set_token_size(_footprint_cells)
+
+
+func get_appearance_state() -> Dictionary:
+	return {
+		"visual_asset": get_visual_asset_path(),
+		"visual_front_quarter_turns": get_visual_front_quarter_turns(),
+		"display_name": get_display_name(),
+		"size_name": _size_name,
+		"footprint": _footprint_cells,
+		"height_cells": token_height_cells,
+		"reach_feet": _reach_feet,
+		"reach_overridden": _reach_overridden
+	}
+
+
+func apply_appearance_state(state: Dictionary) -> bool:
+	if state.is_empty():
+		return false
+
+	var visual_asset: String = String(
+		state.get("visual_asset", "")
+	).strip_edges()
+	if not visual_asset.is_empty():
+		if not set_visual_asset(visual_asset):
+			return false
+
+	set_visual_front_quarter_turns(
+		int(state.get("visual_front_quarter_turns", 0))
+	)
+	token_height_cells = maxf(
+		float(state.get("height_cells", token_height_cells)),
+		0.1
+	)
+	_size_name = String(state.get("size_name", _size_name))
+	_footprint_cells = maxf(
+		float(state.get("footprint", _footprint_cells)),
+		0.5
+	)
+	set_token_size(_footprint_cells)
+
+	_reach_feet = maxf(
+		float(state.get("reach_feet", _default_reach_feet())),
+		5.0
+	)
+	_reach_overridden = bool(state.get("reach_overridden", false))
+	set_display_name(String(state.get("display_name", token_display_name)))
+	return true
+
+
+func push_transformation_state() -> void:
+	_transformation_history.append(get_appearance_state())
+	while _transformation_history.size() > MAX_TRANSFORMATION_HISTORY:
+		_transformation_history.remove_at(0)
+
+
+func has_previous_transformation() -> bool:
+	return not _transformation_history.is_empty()
+
+
+func restore_previous_transformation() -> bool:
+	if _transformation_history.is_empty():
+		return false
+	var previous: Dictionary = _transformation_history.pop_back()
+	return apply_appearance_state(previous)
+
+
+func get_transformation_history() -> Array:
+	return _transformation_history.duplicate(true)
+
+
+func set_transformation_history(value: Variant) -> void:
+	_transformation_history.clear()
+	if not value is Array:
+		return
+	for item_value: Variant in value as Array:
+		if not item_value is Dictionary:
+			continue
+		var item: Dictionary = (item_value as Dictionary).duplicate(true)
+		var visual_asset: String = String(
+			item.get("visual_asset", "")
+		).strip_edges()
+		if (
+			not visual_asset.is_empty()
+			and not visual_asset.begins_with("res://assets/tokens/")
+		):
+			continue
+		_transformation_history.append(item)
+		if _transformation_history.size() >= MAX_TRANSFORMATION_HISTORY:
+			break
 
 
 func get_footprint_cells() -> float:
