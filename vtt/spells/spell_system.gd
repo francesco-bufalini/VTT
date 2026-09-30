@@ -626,6 +626,13 @@ func _try_select_summon_point(screen_position: Vector2) -> void:
 		"point",
 		Vector3.ZERO
 	)
+	if _point_target_already_selected(summon_point):
+		_set_instruction(
+			"Questo punto è già usato da un'altra creatura evocata."
+		)
+		return
+	_pending_target_points.append(summon_point)
+
 	_targeting_phase = "summon_token_dialog"
 	_hide_spell_preview()
 	_hide_spell_range_preview()
