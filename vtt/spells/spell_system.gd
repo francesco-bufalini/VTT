@@ -390,7 +390,8 @@ func handle_input(event: InputEvent) -> bool:
 			_targeting_phase in [
 				"point",
 				"direction_point",
-				"multi_target_points"
+				"multi_target_points",
+				"summon_point"
 			]
 		)
 		if _targeting_phase in ["target_token", "multi_target_tokens"]:
@@ -436,6 +437,9 @@ func handle_input(event: InputEvent) -> bool:
 				return true
 			"multi_target_points":
 				_try_select_multi_point(screen_position)
+				return true
+			"summon_point":
+				_try_select_summon_point(screen_position)
 				return true
 			"chain_primary":
 				_try_select_chain_primary(screen_position)
