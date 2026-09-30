@@ -3102,6 +3102,11 @@ func _point_target_data(
 func _point_target_air_distance_feet(
 	spell_data: Dictionary
 ) -> float:
+	# Le aree che devono stare sul terreno mantengono il raycast classico:
+	# il depth automatico in aria le renderebbe inutilizzabili a distanza.
+	if bool(spell_data.get("requires_ground", false)):
+		return -1.0
+
 	var shape: String = String(
 		spell_data.get("aoe_shape", "")
 	)
