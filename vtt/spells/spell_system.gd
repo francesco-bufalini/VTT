@@ -2972,11 +2972,10 @@ func _cast_multi_target_spell(
 
 	var start: Vector3 = _token_spell_origin(caster)
 	var style: String = String(
-		spell_data.get(
-			"projectile_style",
-			spell_data.get("id", "arcane")
-		)
+		spell_data.get("projectile_style", "")
 	)
+	if style.is_empty():
+		return
 	var travel_seconds: float = float(
 		spell_data.get("projectile_travel_seconds", 0.65)
 	)
@@ -3209,7 +3208,7 @@ func _required_target_clicks(spell_data: Dictionary) -> int:
 func _update_multi_target_instruction(spell_data: Dictionary) -> void:
 	var required: int = _required_target_clicks(spell_data)
 	var repeat_note: String = (
-		" · puoi selezionare più volte lo stesso token"
+		" · puoi selezionare più volte lo stesso bersaglio"
 		if bool(spell_data.get("allow_repeat_targets", false))
 		else ""
 	)
