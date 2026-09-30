@@ -27,6 +27,7 @@ var _pending_caster: Node3D = null
 var _directional_pitch_degrees: int = 0
 var _selected_slot_level: int = 0
 var _pending_targets: Array[Node3D] = []
+var _pending_target_points: Array[Vector3] = []
 var _pending_chain_primary: Node3D = null
 var _restore_mouse_mode: int = Input.MOUSE_MODE_VISIBLE
 var _wall_mode: String = ""
@@ -338,7 +339,17 @@ func handle_input(event: InputEvent) -> bool:
 			_cancel_pending_cast()
 			return true
 
-		if _targeting_phase in ["point", "direction_point"]:
+		var can_adjust_point_depth: bool = (
+			_targeting_phase in ["point", "direction_point"]
+		)
+		if _targeting_phase in ["target_token", "multi_target_tokens"]:
+			var point_target_spell: Dictionary = SpellCatalog.spell(
+				_pending_spell_id
+			)
+			can_adjust_point_depth = bool(
+				point_target_spell.get("allow_point_target", false)
+			)
+		if can_adjust_point_depth:
 			if mouse_event.button_index == MOUSE_BUTTON_WHEEL_UP:
 				_adjust_point_depth(-1.0)
 				return true
@@ -461,16 +472,23 @@ func _try_select_caster(screen_position: Vector2) -> void:
 			_targeting_phase = "target_token"
 			_hide_spell_preview()
 			var token_range_feet: int = int(spell_data.get("range_feet", 0))
+			var token_target_label: String = (
+				"un altro token o un punto"
+				if bool(spell_data.get("allow_point_target", false))
+				else "un altro token"
+			)
 			_set_instruction(
-				"%s: mira un altro token entro %d ft e clicca · WASD + mouse per muoverti · Esc per annullare"
+				"%s: mira %s entro %d ft e clicca · WASD + mouse per muoverti · Esc per annullare"
 				% [
 					String(spell_data.get("name", "Incantesimo")),
+					token_target_label,
 					token_range_feet
 				]
 			)
 		"token_then_multi_token":
 			_pending_caster = caster
 			_pending_targets.clear()
+			_pending_target_points.clear()
 			_targeting_phase = "multi_target_tokens"
 			_hide_spell_preview()
 			_update_multi_target_instruction(spell_data)
@@ -588,23 +606,37 @@ func _try_select_target_token(screen_position: Vector2) -> void:
 		_cancel_pending_cast()
 		return
 
-	var target_data: Dictionary = _target_token_data(
+	var target_data: Dictionary = _target_or_point_data(
 		screen_position,
 		spell_data
 	)
 	if not bool(target_data.get("valid", false)):
 		if bool(target_data.get("out_of_range", false)):
 			_set_instruction(
-				"Token fuori range: %d ft / %d ft. Scegli un token più vicino."
+				"Bersaglio fuori range: %d ft / %d ft. Scegli un bersaglio più vicino."
 				% [
 					int(target_data.get("distance_feet", 0)),
 					int(spell_data.get("range_feet", 0))
 				]
 			)
+		elif bool(spell_data.get("allow_point_target", false)):
+			_set_instruction(
+				"Seleziona un token o un punto valido entro gittata."
+			)
 		else:
 			_set_instruction(
 				"Seleziona un altro token valido come bersaglio."
 			)
+		return
+
+	if String(target_data.get("kind", "")) == "point":
+		var target_point: Vector3 = target_data.get("point", Vector3.ZERO)
+		_cast_spell_at_point_target(
+			_pending_caster,
+			target_point,
+			spell_data
+		)
+		_finish_cast()
 		return
 
 	var target: Node3D = target_data.get("target") as Node3D
@@ -625,30 +657,44 @@ func _try_select_multi_target(screen_position: Vector2) -> void:
 		return
 
 	var spell_data: Dictionary = SpellCatalog.spell(_pending_spell_id)
-	var target_data: Dictionary = _target_token_data(
+	var target_data: Dictionary = _target_or_point_data(
 		screen_position,
 		spell_data
 	)
 	if not bool(target_data.get("valid", false)):
-		_set_instruction("Seleziona un token valido entro gittata.")
-		return
-
-	var target: Node3D = target_data.get("target") as Node3D
-	if target == null:
+		_set_instruction(
+			"Seleziona un token o un punto valido entro gittata."
+			if bool(spell_data.get("allow_point_target", false))
+			else "Seleziona un token valido entro gittata."
+		)
 		return
 
 	var allow_repeat: bool = bool(
 		spell_data.get("allow_repeat_targets", false)
 	)
-	if not allow_repeat and target in _pending_targets:
-		_set_instruction("Questo bersaglio è già stato selezionato.")
-		return
+	if String(target_data.get("kind", "")) == "point":
+		var target_point: Vector3 = target_data.get("point", Vector3.ZERO)
+		if not allow_repeat and _point_target_already_selected(target_point):
+			_set_instruction("Questo punto è già stato selezionato.")
+			return
+		_pending_target_points.append(target_point)
+	else:
+		var target: Node3D = target_data.get("target") as Node3D
+		if target == null:
+			return
+		if not allow_repeat and target in _pending_targets:
+			_set_instruction("Questo bersaglio è già stato selezionato.")
+			return
+		_pending_targets.append(target)
 
-	_pending_targets.append(target)
-	if _pending_targets.size() >= _required_target_clicks(spell_data):
+	if (
+		_pending_targets.size() + _pending_target_points.size()
+		>= _required_target_clicks(spell_data)
+	):
 		_cast_multi_target_spell(
 			_pending_caster,
 			_pending_targets,
+			_pending_target_points,
 			spell_data
 		)
 		_finish_cast()
@@ -1665,7 +1711,7 @@ func _update_spell_preview() -> void:
 			)
 
 		"target_token":
-			var target_data: Dictionary = _target_token_data(
+			var target_data: Dictionary = _target_or_point_data(
 				screen_position,
 				spell_data
 			)
@@ -1673,15 +1719,20 @@ func _update_spell_preview() -> void:
 				_hide_spell_preview()
 				return
 
-			var target: Node3D = target_data.get("target") as Node3D
-			if target == null:
-				_hide_spell_preview()
-				return
+			var target_endpoint: Vector3
+			if String(target_data.get("kind", "")) == "point":
+				target_endpoint = target_data.get("point", Vector3.ZERO)
+			else:
+				var target: Node3D = target_data.get("target") as Node3D
+				if target == null:
+					_hide_spell_preview()
+					return
+				target_endpoint = _token_spell_origin(target)
 
 			measurement_tool.call(
 				"show_spell_preview",
 				_token_spell_origin(_pending_caster),
-				_token_spell_origin(target),
+				target_endpoint,
 				"line",
 				String(
 					spell_data.get("projectile_style", _spell_style(spell_data))
@@ -1689,21 +1740,28 @@ func _update_spell_preview() -> void:
 			)
 
 		"multi_target_tokens":
-			var multi_data: Dictionary = _target_token_data(
+			var multi_data: Dictionary = _target_or_point_data(
 				screen_position,
 				spell_data
 			)
 			if not bool(multi_data.get("valid", false)):
 				_hide_spell_preview()
 				return
-			var multi_target: Node3D = multi_data.get("target") as Node3D
-			if multi_target == null:
-				_hide_spell_preview()
-				return
+
+			var multi_endpoint: Vector3
+			if String(multi_data.get("kind", "")) == "point":
+				multi_endpoint = multi_data.get("point", Vector3.ZERO)
+			else:
+				var multi_target: Node3D = multi_data.get("target") as Node3D
+				if multi_target == null:
+					_hide_spell_preview()
+					return
+				multi_endpoint = _token_spell_origin(multi_target)
+
 			measurement_tool.call(
 				"show_spell_preview",
 				_token_spell_origin(_pending_caster),
-				_token_spell_origin(multi_target),
+				multi_endpoint,
 				"line",
 				String(spell_data.get("projectile_style", "magic_missile"))
 			)
@@ -1996,6 +2054,38 @@ func _target_token_data(
 		"valid": true,
 		"target": target
 	}
+
+
+func _target_or_point_data(
+	screen_position: Vector2,
+	spell_data: Dictionary
+) -> Dictionary:
+	var hovered_token: Node3D = _token_at_screen(screen_position)
+	if hovered_token != null:
+		var token_data: Dictionary = _target_token_data(
+			screen_position,
+			spell_data
+		)
+		token_data["kind"] = "token"
+		return token_data
+
+	if not bool(spell_data.get("allow_point_target", false)):
+		return {"valid": false}
+
+	var point_data: Dictionary = _point_target_data(
+		screen_position,
+		spell_data
+	)
+	point_data["kind"] = "point"
+	return point_data
+
+
+func _point_target_already_selected(point: Vector3) -> bool:
+	var tolerance: float = _cell_size() * 0.05
+	for selected_point: Vector3 in _pending_target_points:
+		if selected_point.distance_to(point) <= tolerance:
+			return true
+	return false
 
 
 func _point_target_data(
@@ -2529,6 +2619,7 @@ func _activate_selected_spell() -> void:
 	_targeting_phase = "caster"
 	_pending_caster = null
 	_pending_targets.clear()
+	_pending_target_points.clear()
 	_pending_chain_primary = null
 	_directional_pitch_degrees = 0
 
@@ -2780,6 +2871,62 @@ func _cast_spell_at_token(
 		)
 
 
+func _cast_spell_at_point_target(
+	caster: Node3D,
+	target_point: Vector3,
+	spell_data: Dictionary
+) -> void:
+	var measurement_tool: Node = _measurement_tool()
+	if measurement_tool == null:
+		return
+
+	var start: Vector3 = _token_spell_origin(caster)
+	var projectile_style: String = String(
+		spell_data.get("projectile_style", "")
+	)
+	var travel_seconds: float = float(
+		spell_data.get("projectile_travel_seconds", 0.65)
+	)
+	var impact_radius: float = float(
+		spell_data.get("impact_aoe_radius_feet", 0.0)
+	)
+
+	if impact_radius > 0.0:
+		measurement_tool.call(
+			"show_spell_projectile_with_impact",
+			start,
+			target_point,
+			(
+				projectile_style
+				if not projectile_style.is_empty()
+				else _spell_style(spell_data)
+			),
+			travel_seconds,
+			String(spell_data.get("impact_aoe_shape", "sphere")),
+			impact_radius / 5.0 * _cell_size(),
+			String(
+				spell_data.get(
+					"impact_style",
+					_spell_style(spell_data)
+				)
+			),
+			float(spell_data.get("transient_seconds", 5.0))
+		)
+		return
+
+	if not projectile_style.is_empty():
+		measurement_tool.call(
+			"show_spell_projectile",
+			start,
+			target_point,
+			projectile_style,
+			travel_seconds
+		)
+		return
+
+	_cast_spell_at_point(caster, target_point, spell_data)
+
+
 func _cast_self_emanation(
 	caster: Node3D,
 	spell_data: Dictionary
@@ -2816,6 +2963,7 @@ func _cast_self_emanation(
 func _cast_multi_target_spell(
 	caster: Node3D,
 	targets: Array[Node3D],
+	target_points: Array[Vector3],
 	spell_data: Dictionary
 ) -> void:
 	var measurement_tool: Node = _measurement_tool()
@@ -2842,6 +2990,15 @@ func _cast_multi_target_spell(
 			"show_spell_projectile",
 			start,
 			_token_spell_origin(target),
+			style,
+			travel_seconds
+		)
+
+	for target_point: Vector3 in target_points:
+		measurement_tool.call(
+			"show_spell_projectile",
+			start,
+			target_point,
 			style,
 			travel_seconds
 		)
@@ -2928,6 +3085,7 @@ func _finish_cast() -> void:
 	_targeting_phase = ""
 	_pending_caster = null
 	_pending_targets.clear()
+	_pending_target_points.clear()
 	_pending_chain_primary = null
 	_directional_pitch_degrees = 0
 	_wall_mode = ""
@@ -2954,6 +3112,7 @@ func _cancel_pending_cast(restore_mouse: bool = true) -> void:
 	_targeting_phase = ""
 	_pending_caster = null
 	_pending_targets.clear()
+	_pending_target_points.clear()
 	_pending_chain_primary = null
 	_directional_pitch_degrees = 0
 	_wall_mode = ""
@@ -3058,7 +3217,7 @@ func _update_multi_target_instruction(spell_data: Dictionary) -> void:
 		"%s: scegli i bersagli %d/%d%s · Esc per annullare"
 		% [
 			String(spell_data.get("name", "Incantesimo")),
-			_pending_targets.size(),
+			_pending_targets.size() + _pending_target_points.size(),
 			required,
 			repeat_note
 		]
