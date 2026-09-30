@@ -194,6 +194,23 @@ func _input(event: InputEvent) -> void:
 	):
 		return
 
+	# Spell targeting must see mouse/key input before GUI, camera, token drag,
+	# or other gameplay handlers can consume it. Previously normal target
+	# clicks were deferred to _unhandled_input(), which could leave a cast
+	# stuck immediately after selecting its caster.
+	if (
+		spell_system != null
+		and is_instance_valid(spell_system)
+		and bool(spell_system.call("is_targeting"))
+		and (
+			event is InputEventMouseButton
+			or event is InputEventKey
+		)
+	):
+		if bool(spell_system.call("handle_input", event)):
+			get_viewport().set_input_as_handled()
+			return
+
 	if (
 		event is InputEventKey
 		and event.pressed
@@ -231,10 +248,7 @@ func _input(event: InputEvent) -> void:
 		and event is InputEventKey
 		and event.keycode in [KEY_UP, KEY_DOWN, KEY_LEFT, KEY_RIGHT]
 	):
-		if bool(spell_system.call("handle_input", event)):
-			get_viewport().set_input_as_handled()
-		else:
-			get_viewport().set_input_as_handled()
+		get_viewport().set_input_as_handled()
 		return
 	if event is InputEventKey and event.keycode in [KEY_UP,KEY_DOWN,KEY_LEFT,KEY_RIGHT] and not color_dialog.visible:
 		_clean_selection()
