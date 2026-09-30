@@ -540,8 +540,9 @@ func _resolve_animation_name(
 		return shared
 
 	var requested_lower := requested.to_lower()
-	for candidate: StringName in player.get_animation_list():
-		var candidate_text := String(candidate).to_lower()
+	for candidate_value: String in player.get_animation_list():
+		var candidate := StringName(candidate_value)
+		var candidate_text := candidate_value.to_lower()
 		if (
 			candidate_text == requested_lower
 			or candidate_text.ends_with("/" + requested_lower)
