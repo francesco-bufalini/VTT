@@ -73,6 +73,11 @@ const RUNTIME_OVERRIDES: Dictionary = {
 		"meteor_drop_height_feet": 60.0,
 		"requires_ground": true,
 		"transient_seconds": 5.0
+	},
+	"thunderwave": {
+		"forced_movement_feet": 15.0,
+		"forced_movement_mode": "away_from_caster",
+		"forced_movement_on_failed_save": true
 	}
 }
 
@@ -1144,6 +1149,14 @@ static func _is_runtime_usable(spell_data: Dictionary) -> bool:
 		return true
 
 	if target_mode == "token_then_token":
+		var condition_value: Variant = spell_data.get(
+			"condition_inflict",
+			[]
+		)
+		if condition_value is Array and not (condition_value as Array).is_empty():
+			return true
+		if bool(spell_data.get("forced_movement_on_failed_save", false)):
+			return true
 		if (
 			bool(spell_data.get("persistent_link", false))
 			or float(spell_data.get("impact_aoe_radius_feet", 0.0)) > 0.0
@@ -1168,6 +1181,17 @@ static func _is_runtime_usable(spell_data: Dictionary) -> bool:
 					return true
 
 	if target_mode == "token_then_multi_token":
+		var multi_condition_value: Variant = spell_data.get(
+			"condition_inflict",
+			[]
+		)
+		if (
+			multi_condition_value is Array
+			and not (multi_condition_value as Array).is_empty()
+		):
+			return true
+		if bool(spell_data.get("forced_movement_on_failed_save", false)):
+			return true
 		if not String(spell_data.get("projectile_style", "")).is_empty():
 			return true
 
@@ -1209,6 +1233,18 @@ static func catalog_spell(spell_id: String) -> Dictionary:
 				manual_result["classes"] = (
 					generated_classes as Array
 				).duplicate(true)
+			for metadata_field: String in [
+				"condition_inflict",
+				"saving_throw",
+				"misc_tags"
+			]:
+				var generated_metadata: Variant = (
+					generated_value as Dictionary
+				).get(metadata_field, [])
+				if generated_metadata is Array:
+					manual_result[metadata_field] = (
+						generated_metadata as Array
+					).duplicate(true)
 		return _apply_runtime_overrides(manual_result)
 
 	value = GeneratedCatalog.SPELLS.get(spell_id, {})
