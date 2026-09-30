@@ -278,7 +278,11 @@ func adjust_spell_target_depth(step_cells: float) -> void:
 	)
 
 
-func get_spell_target_point(screen_position: Vector2) -> Dictionary:
+func get_spell_target_point(
+	screen_position: Vector2,
+	preferred_air_distance_world: float = -1.0,
+	force_grid_target: bool = false
+) -> Dictionary:
 	if _camera == null or not is_instance_valid(_camera):
 		return {"valid": false}
 
@@ -296,25 +300,85 @@ func get_spell_target_point(screen_position: Vector2) -> Dictionary:
 	var hit: Dictionary = (
 		_camera.get_world_3d().direct_space_state.intersect_ray(query)
 	)
-	if not hit.is_empty():
-		var point: Vector3 = hit.get("position", Vector3.ZERO)
-		var normal: Vector3 = hit.get("normal", Vector3.UP)
-		point += (
-			normal.normalized()
-			* maxf(cell_size * 0.001, 0.0001)
-		)
-		return {
-			"valid": true,
-			"point": _snap_point_to_grid_intersection(point),
-			"in_air": false,
-			"normal": normal
-		}
-
 	var grid_active: bool = (
 		_volumetric_grid != null
 		and is_instance_valid(_volumetric_grid)
 		and _volumetric_grid.visible
 	)
+
+	# Shift mantiene il comportamento manuale della griglia: una superficie
+	# reale viene sempre preferita; in aria si usa la profondita' regolabile
+	# con la rotellina e, se visibile, il volume della griglia 3D.
+	if force_grid_target:
+		if not hit.is_empty():
+			return _spell_surface_target(hit)
+
+		if not grid_active:
+			return {"valid": false}
+
+		var grid_depth: float = _air_depth_world
+		if _volumetric_grid.has_method("get_ray_exit_distance"):
+			var exit_value: Variant = _volumetric_grid.call(
+				"get_ray_exit_distance",
+				origin,
+				direction
+			)
+			if exit_value is float:
+				var exit_distance: float = maxf(float(exit_value), 0.0)
+				grid_depth = minf(
+					grid_depth,
+					maxf(
+						cell_size * 0.5,
+						exit_distance
+						- maxf(cell_size * 0.001, 0.0001)
+					)
+				)
+
+		var grid_point: Vector3 = _snap_point_to_grid_intersection(
+			origin + direction * grid_depth
+		)
+		if not _grid_contains(grid_point):
+			return {"valid": false}
+		return {
+			"valid": true,
+			"point": grid_point,
+			"in_air": true,
+			"normal": Vector3.ZERO
+		}
+
+	# Per le AoE puntuali la distanza automatica viene scelta dallo spell
+	# system (per una sfera: due volte il raggio). Una superficie solida
+	# intercettata PRIMA di quella distanza continua ad avere priorita'.
+	if preferred_air_distance_world > 0.0:
+		var automatic_depth: float = clampf(
+			preferred_air_distance_world,
+			cell_size,
+			max_ray_distance
+		)
+		if not hit.is_empty():
+			var hit_position: Vector3 = hit.get(
+				"position",
+				Vector3.ZERO
+			)
+			var hit_distance: float = origin.distance_to(hit_position)
+			if hit_distance <= automatic_depth + cell_size * 0.01:
+				return _spell_surface_target(hit)
+
+		var automatic_point: Vector3 = _snap_point_to_grid_intersection(
+			origin + direction * automatic_depth
+		)
+		return {
+			"valid": true,
+			"point": automatic_point,
+			"in_air": true,
+			"normal": Vector3.ZERO
+		}
+
+	# Tutti gli altri sistemi (summon, teleport, muri, ecc.) mantengono il
+	# comportamento precedente.
+	if not hit.is_empty():
+		return _spell_surface_target(hit)
+
 	if not grid_active:
 		return {"valid": false}
 
@@ -345,6 +409,21 @@ func get_spell_target_point(screen_position: Vector2) -> Dictionary:
 		"point": snapped_point,
 		"in_air": true,
 		"normal": Vector3.ZERO
+	}
+
+
+func _spell_surface_target(hit: Dictionary) -> Dictionary:
+	var point: Vector3 = hit.get("position", Vector3.ZERO)
+	var normal: Vector3 = hit.get("normal", Vector3.UP)
+	point += (
+		normal.normalized()
+		* maxf(cell_size * 0.001, 0.0001)
+	)
+	return {
+		"valid": true,
+		"point": _snap_point_to_grid_intersection(point),
+		"in_air": false,
+		"normal": normal
 	}
 
 
