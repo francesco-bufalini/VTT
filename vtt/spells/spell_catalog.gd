@@ -7,6 +7,32 @@ const SpellAreaCatalog = preload(
 	"res://vtt/spells/spell_area_catalog.gd"
 )
 
+const CLASS_DISPLAY_NAMES: Dictionary = {
+	"Artificer": "Artefice",
+	"Bard": "Bardo",
+	"Cleric": "Chierico",
+	"Druid": "Druido",
+	"Monk": "Monaco",
+	"Paladin": "Paladino",
+	"Ranger": "Ranger",
+	"Sorcerer": "Stregone",
+	"Warlock": "Warlock",
+	"Wizard": "Mago"
+}
+
+const CLASS_CANONICAL_NAMES: Dictionary = {
+	"Artefice": "Artificer",
+	"Bardo": "Bard",
+	"Chierico": "Cleric",
+	"Druido": "Druid",
+	"Monaco": "Monk",
+	"Paladino": "Paladin",
+	"Ranger": "Ranger",
+	"Stregone": "Sorcerer",
+	"Warlock": "Warlock",
+	"Mago": "Wizard"
+}
+
 const LEVEL_NAMES: Array[String] = [
 	"Trucchetti", "1° livello", "2° livello", "3° livello", "4° livello",
 	"5° livello", "6° livello", "7° livello", "8° livello", "9° livello"
@@ -1179,6 +1205,15 @@ static func all_spells() -> Array[Dictionary]:
 	return result
 
 
+static func canonical_class_name(class_name: String) -> String:
+	return String(CLASS_CANONICAL_NAMES.get(class_name, class_name))
+
+
+static func class_display_name(class_name: String) -> String:
+	var canonical: String = canonical_class_name(class_name)
+	return String(CLASS_DISPLAY_NAMES.get(canonical, canonical))
+
+
 static func class_names() -> Array[String]:
 	var found: Dictionary = {}
 	for entry: Dictionary in all_spells():
@@ -1186,7 +1221,9 @@ static func class_names() -> Array[String]:
 		if not classes_value is Array:
 			continue
 		for class_value: Variant in (classes_value as Array):
-			var class_label: String = String(class_value).strip_edges()
+			var class_label: String = canonical_class_name(
+				String(class_value).strip_edges()
+			)
 			if not class_label.is_empty():
 				found[class_label] = true
 
@@ -1195,7 +1232,9 @@ static func class_names() -> Array[String]:
 		result.append(String(class_value))
 	result.sort_custom(
 		func(a: String, b: String) -> bool:
-			return a.naturalnocasecmp_to(b) < 0
+			return class_display_name(a).naturalnocasecmp_to(
+				class_display_name(b)
+			) < 0
 	)
 	return result
 
@@ -1209,9 +1248,11 @@ static func spells_for_class_and_level(
 		var classes_value: Variant = entry.get("classes", [])
 		if not classes_value is Array:
 			continue
-		if (
-			class_label in (classes_value as Array)
-			and int(entry.get("level", -1)) == level
-		):
+		var matches_class: bool = false
+		for class_value: Variant in (classes_value as Array):
+			if canonical_class_name(String(class_value)) == class_label:
+				matches_class = true
+				break
+		if matches_class and int(entry.get("level", -1)) == level:
 			result.append(entry)
 	return result

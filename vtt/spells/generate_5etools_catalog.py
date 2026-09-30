@@ -1,0 +1,115 @@
+#!/usr/bin/env python3
+"""Regenerate spell_catalog_5etools.gd from a complete 5etools-src checkout.
+
+The generator reads every file referenced by data/spells/index.json and class
+membership from data/generated/gendata-spell-source-lookup.json. Duplicate spell
+names are collapsed, preferring XPHB and then PHB. Canonical English class names
+are kept in generated data; spell_catalog.gd localizes them for the UI.
+
+Usage:
+    python vtt/spells/generate_5etools_catalog.py /path/to/5etools-src
+"""
+from __future__ import annotations
+import json, re, sys, unicodedata
+from pathlib import Path
+from typing import Any
+
+ROOT = Path(__file__).resolve().parents[2]
+OUTPUT = ROOT / "vtt" / "spells" / "spell_catalog_5etools.gd"
+PRIORITY = ["XPHB","PHB","FRHoF","EFA","AU","TCE","XGE","FTD","SCC","EGW","BMT","AAG","AI","GGR","IDRotF","SatO","LLK","AitFR-AVT"]
+SCHOOLS = {"A":"Abjuration","C":"Conjuration","D":"Divination","E":"Enchantment","V":"Evocation","I":"Illusion","N":"Necromancy","T":"Transmutation","P":"Psionic"}
+META = {"id","name","source","level","school","casting_time","range","target","area","components","duration","classes","description","higher_levels"}
+
+def slug(s: str) -> str:
+    s = "".join(c for c in unicodedata.normalize("NFD", s) if unicodedata.category(c) != "Mn")
+    return re.sub(r"^_+|_+$","",re.sub(r"[^a-z0-9]+","_",s.lower().replace("'","").replace("’","")))
+
+def tags(x: Any) -> str:
+    s=str(x or "")
+    pat=re.compile(r"\{@[A-Za-z]+\s+([^{}]+)\}")
+    for _ in range(8):
+        n=pat.sub(lambda m: (m.group(1).split("|")[2] if len(m.group(1).split("|"))>=3 and m.group(1).split("|")[2] else m.group(1).split("|")[0]),s)
+        if n==s: break
+        s=n
+    return re.sub(r"\s+"," ",re.sub(r"\{@[^{}]*\}","",s)).strip()
+
+def flat(x: Any) -> str:
+    if x is None:return ""
+    if isinstance(x,(str,int,float)):return tags(x)
+    if isinstance(x,list):return " ".join(filter(None,(flat(v) for v in x)))
+    if isinstance(x,dict):
+        p=([tags(x["name"])+":"] if x.get("name") else [])
+        for k in ("entry","entries","items"):
+            if k in x:p.append(flat(x[k]))
+        for row in x.get("rows",[]):p.append(flat(row))
+        return re.sub(r"\s+"," "," ".join(filter(None,p))).strip()
+    return ""
+
+def ftime(s):
+    t=(s.get("time") or [None])[0]
+    if not t:return ""
+    unit={"bonus":"bonus action"}.get(str(t.get("unit","")),str(t.get("unit","")))
+    out=f"{t.get('number',1)} {unit}"
+    return out+(f" ({tags(t['condition'])})" if t.get("condition") else "")
+
+def frange(s):
+    r=s.get("range",{});d=r.get("distance",{});k=str(d.get("type",r.get("type","")))
+    return {"self":"Self","touch":"Touch","sight":"Sight","unlimited":"Unlimited","special":"Special"}.get(k,(f"{d['amount']} {k}" if d.get("amount") is not None else ""))
+
+def fcomp(s):
+    c=s.get("components",{});o=[]
+    if c.get("v"):o.append("V")
+    if c.get("s"):o.append("S")
+    if c.get("m"):
+        m=c["m"];txt=m if isinstance(m,str) else m.get("text","material component")
+        o.append(f"M ({tags(txt)})")
+    if c.get("r"):o.append("R")
+    return ", ".join(o)
+
+def fdur(s):
+    d=(s.get("duration") or [None])[0]
+    if not d:return ""
+    if d.get("type")=="instant":return "Instantaneous"
+    if d.get("type")=="permanent":return "Until dispelled"
+    if d.get("type")=="special":return "Special"
+    p="Concentration, up to " if d.get("concentration") else ""
+    t=d.get("duration",{})
+    return f"{p}{t.get('amount','')} {t.get('type','')}".strip() if d.get("type")=="timed" else p+str(d.get("type",""))
+
+def class_names(entry):
+    out=set()
+    for field in ("class","classVariant"):
+        for group in entry.get(field,{}).values():
+            if isinstance(group,dict):out.update(group.keys())
+    return out
+
+def old_records():
+    if not OUTPUT.exists():return {}
+    text=OUTPUT.read_text(encoding="utf-8");mark="const SPELLS: Dictionary = "
+    return json.loads(text.split(mark,1)[1].strip()) if mark in text else {}
+
+def main():
+    if len(sys.argv)!=2:raise SystemExit("Pass a complete 5etools-src checkout.")
+    root=Path(sys.argv[1]).resolve();sd=root/"data"/"spells"
+    index=json.loads((sd/"index.json").read_text(encoding="utf-8"))
+    lookup=json.loads((root/"data"/"generated"/"gendata-spell-source-lookup.json").read_text(encoding="utf-8"))
+    spells=[]
+    for fn in index.values():spells.extend(json.loads((sd/fn).read_text(encoding="utf-8")).get("spell",[]))
+    groups={}
+    for s in spells:
+        if s.get("name"):groups.setdefault(str(s["name"]).lower(),[]).append(s)
+    old=old_records();out={}
+    def score(src): return len(PRIORITY)-PRIORITY.index(src) if src in PRIORITY else 0
+    for vs in groups.values():
+        s=max(vs,key=lambda x:score(str(x.get("source",""))));sid=slug(str(s["name"]));classes=set()
+        for v in vs:
+            e=lookup.get(str(v.get("source","")).lower(),{}).get(str(v.get("name","")).lower(),{})
+            classes.update(class_names(e))
+        rec={"id":sid,"name":s["name"],"source":s.get("source",""),"level":int(s.get("level",0)),"school":SCHOOLS.get(str(s.get("school","")),str(s.get("school",""))),"casting_time":ftime(s),"range":frange(s),"target":"","area":"","components":fcomp(s),"duration":fdur(s),"classes":sorted(classes),"description":flat(s.get("entries",[])),"higher_levels":flat(s.get("entriesHigherLevel",[]))}
+        for k,v in old.get(sid,{}).items():
+            if k not in META:rec[k]=v
+        out[sid]=rec
+    out=dict(sorted(out.items(),key=lambda kv:kv[1]["name"].lower()))
+    OUTPUT.write_text("extends RefCounted\n\n# Generated from the complete 5eTools spell source index.\n# Canonical class names are localized by spell_catalog.gd.\nconst SPELLS: Dictionary = "+json.dumps(out,ensure_ascii=False,indent=2)+"\n",encoding="utf-8")
+    print(f"Wrote {len(out)} unique spells")
+if __name__=="__main__":main()

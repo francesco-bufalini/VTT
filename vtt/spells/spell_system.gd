@@ -2356,7 +2356,10 @@ func _populate_class_tree() -> void:
 
 	for class_label: String in SpellCatalog.class_names():
 		var class_item: TreeItem = class_tree.create_item(root)
-		class_item.set_text(0, class_label)
+		class_item.set_text(
+			0,
+			SpellCatalog.class_display_name(class_label)
+		)
 		class_item.set_collapsed(true)
 
 		for level: int in range(SpellCatalog.LEVEL_NAMES.size()):
@@ -2437,7 +2440,9 @@ func _select_spell(spell_id: String) -> void:
 	if classes_value is Array:
 		var class_names: PackedStringArray = PackedStringArray()
 		for class_value: Variant in classes_value:
-			class_names.append(String(class_value))
+			class_names.append(
+				SpellCatalog.class_display_name(String(class_value))
+			)
 		classes_text = ", ".join(class_names)
 
 	var target_text: String = String(
