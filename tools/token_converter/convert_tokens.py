@@ -50,6 +50,8 @@ AUXILIARY_WORDS = (
     "support",
     "head",
     "body",
+    "tentacle",
+    "tentacles",
     "wing",
     "wings",
     "arm",
@@ -374,15 +376,37 @@ def choose_main_source(package: Path) -> Path:
     if not files:
         raise ValueError("No supported model files")
 
+    # Marker/base STL files are references, never the creature itself.  First
+    # determine how many actual model candidates remain after removing them.
+    creature_files = [
+        path
+        for path in files
+        if not (
+            path.suffix.lower() == ".stl"
+            and is_platform_reference_name(path.stem)
+        )
+    ]
+
+    if not creature_files:
+        raise ValueError(
+            "Only a base/size marker was found; no creature model to convert"
+        )
+
+    # A filename such as Body.stl or Tentacles.stl does not imply that it is a
+    # fragment when it is the only non-marker model in the package.  In that
+    # case it is necessarily the best available representation of the creature.
+    if len(creature_files) == 1:
+        return creature_files[0]
+
     ranked = sorted(
-        files,
+        creature_files,
         key=lambda path: (source_score(path, package.name), path.stat().st_size),
         reverse=True,
     )
     chosen = ranked[0]
 
-    # Do not silently turn a head/body/support into a VTT token.  A package that
-    # contains only printable pieces needs an assembled/posed source model.
+    # With several creature files present, keep the conservative behaviour:
+    # do not silently choose one head/body/tentacle/etc. from a split print set.
     if is_print_part(chosen, package.name):
         raise ValueError(
             "Only separated printable parts were found; no complete/posed model "
@@ -776,6 +800,12 @@ def process_package(
     if not visible_main_objects:
         raise ValueError(
             "The selected complete model has no visible mesh objects to export"
+        )
+
+    if all(base_candidate_score(obj) > 0 for obj in visible_main_objects):
+        raise ValueError(
+            "The selected source contains only base/size-marker geometry; "
+            "no creature mesh was found"
         )
 
     base_low, base_high, base_reference, reference_objects = resolve_base(
