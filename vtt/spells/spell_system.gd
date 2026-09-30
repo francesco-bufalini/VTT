@@ -3485,7 +3485,7 @@ func _spell_targets_in_geometry(
 		if exclude_caster and caster != null and token == caster:
 			continue
 		if _token_inside_spell_geometry(
-			token.global_position,
+			_token_spell_origin(token),
 			start,
 			end,
 			shape,
