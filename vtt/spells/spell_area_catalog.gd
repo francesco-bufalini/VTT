@@ -136,6 +136,23 @@ static func _visual_style_from_entries(
 	if "prismatic" in text or "chromatic" in text or "rainbow" in text:
 		return "prismatic"
 
+	# Preserve geometry-specific renderers that carry more information than
+	# a generic color family.
+	var existing_style: String = String(
+		spell_data.get("visual_style", "")
+	).strip_edges()
+	if existing_style in [
+		"wall_of_force",
+		"wall_of_ice",
+		"wall_of_thorns",
+		"wall_of_sand",
+		"wall_of_water",
+		"prismatic_wall",
+		"blade_barrier",
+		"ice_knife_burst"
+	]:
+		return existing_style
+
 	if "silvery mist" in text or "silver mist" in text:
 		return "silver_mist"
 	if "mist" in text or "fog" in text or "cloud" in text:
@@ -171,9 +188,6 @@ static func _visual_style_from_entries(
 	if "thorn" in text or "vine" in text or "plant" in text:
 		return "nature"
 
-	var existing_style: String = String(
-		spell_data.get("visual_style", "")
-	).strip_edges()
 	if not existing_style.is_empty():
 		return existing_style
 	return "arcane"
