@@ -7,6 +7,11 @@ const BACKUP_DIR := "user://map_sync_backups"
 const MAX_BACKUPS := 20
 const MAX_BYTES := 4 * 1024 * 1024
 const GROUPS := ["dnd_token", "tactical_platform", "encounter_obstacle"]
+const TOKEN_CONDITIONS := [
+	"blinded", "charmed", "deafened", "exhaustion", "frightened",
+	"grappled", "incapacitated", "invisible", "paralyzed", "petrified",
+	"poisoned", "prone", "restrained", "stunned", "unconscious"
+]
 var board_root: Node
 var token_scene: PackedScene
 var tokens_root: Node
@@ -172,6 +177,25 @@ func valid_snapshot(snapshot: Variant) -> bool:
 					return false
 			if not item.get("size_name") is String or not item.get("flying") is bool:
 				return false
+			if item.has("display_name"):
+				if not item.get("display_name") is String:
+					return false
+				if String(item.get("display_name", "")).length() > 80:
+					return false
+			if item.has("conditions"):
+				if not item.get("conditions") is Array:
+					return false
+				var condition_values: Array = item.get("conditions", [])
+				if condition_values.size() > TOKEN_CONDITIONS.size():
+					return false
+				var seen_conditions: Dictionary = {}
+				for condition_value: Variant in condition_values:
+					if not condition_value is String:
+						return false
+					var condition_id := String(condition_value)
+					if condition_id not in TOKEN_CONDITIONS or seen_conditions.has(condition_id):
+						return false
+					seen_conditions[condition_id] = true
 			if item.has("height_cells"):
 				var height_value: Variant = item.get("height_cells")
 				if not (height_value is float or height_value is int):
@@ -264,6 +288,16 @@ func _serialize_node(node: Node3D, group_name: String) -> Dictionary:
 	if group_name == "dnd_token":
 		data["kind"]="token"; data["flying"]=bool(node.get("flying")); data["footprint"]=float(node.get("_footprint_cells")); data["size_name"]=String(node.get("_size_name")); data["color"]=_token_color(node)
 		data["height_cells"] = float(node.get("token_height_cells"))
+		data["display_name"] = (
+			String(node.call("get_display_name"))
+			if node.has_method("get_display_name")
+			else ""
+		)
+		data["conditions"] = (
+			node.call("get_conditions")
+			if node.has_method("get_conditions")
+			else []
+		)
 		if node.has_method("get_visual_asset_path"):
 			data["visual_asset"] = String(node.call("get_visual_asset_path"))
 	else: data["kind"]="physical"
@@ -298,6 +332,10 @@ func _apply_node_data(node: Node3D, data: Dictionary) -> void:
 			)
 		if node.has_method("configure"): node.call("configure",_dict_color(data.get("color",{})),float(board_root.get("cell_size")),String(data.get("size_name","Medium")),float(data.get("footprint",1.0)))
 		if node.has_method("set_flying"): node.call("set_flying",bool(data.get("flying",false)))
+		if node.has_method("set_display_name"):
+			node.call("set_display_name", String(data.get("display_name", "")))
+		if node.has_method("set_conditions"):
+			node.call("set_conditions", data.get("conditions", []))
 	# configure() snaps tokens; restore the exact shared transform afterwards.
 	node.global_transform = _dict_transform(data.get("transform", {}))
 
