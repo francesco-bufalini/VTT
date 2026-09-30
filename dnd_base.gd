@@ -64,6 +64,11 @@ var camera_sensitivity_slider: HSlider
 var camera_speed_value_label: Label
 var camera_sensitivity_value_label: Label
 var token_name_input: LineEdit
+var token_miniature_list: ItemList
+var token_front_selector: OptionButton
+var _token_profiles: Array[Dictionary] = []
+var _selected_token_profile: Dictionary = {}
+var _token_front_by_id: Dictionary = {}
 var token_state_dialog: ConfirmationDialog
 var token_state_name: LineEdit
 var token_state_grid: GridContainer
@@ -98,7 +103,8 @@ func _ready() -> void:
 	for token_size: Dictionary in TOKEN_SIZES:
 		size_selector.add_item(String(token_size.get("name", "Medium")))
 	size_selector.select(2)
-	_configure_default_token_size_selector()
+	size_selector.disabled = true
+	size_selector.tooltip_text = "Taglia determinata dalla miniatura selezionata."
 
 	volumetric_grid.call("set_camera", camera)
 
@@ -115,7 +121,7 @@ func _ready() -> void:
 	_build_share_dialog()
 	board_sync.listen(true, _share_session_key())
 	_build_camera_settings_dialog()
-	_ensure_token_name_input()
+	_build_token_generation_controls()
 	_build_token_state_dialog()
 
 	spell_system = preload("res://vtt/spells/spell_system.gd").new()
@@ -143,39 +149,204 @@ func _ready() -> void:
 	_capture_mouse()
 
 
-func _configure_default_token_size_selector() -> void:
-	size_selector.disabled = false
-	size_selector.tooltip_text = ""
-
+func _read_token_library_manifest() -> Dictionary:
 	if not FileAccess.file_exists(TOKEN_LIBRARY_MANIFEST):
-		return
+		return {}
 	var file := FileAccess.open(TOKEN_LIBRARY_MANIFEST, FileAccess.READ)
 	if file == null:
-		return
+		return {}
 	var parsed: Variant = JSON.parse_string(file.get_as_text())
 	file.close()
-	if not parsed is Dictionary:
+	if parsed is Dictionary:
+		return parsed as Dictionary
+	return {}
+
+
+func _sort_token_profiles(a: Dictionary, b: Dictionary) -> bool:
+	return (
+		String(a.get("name", "")).nocasecmp_to(
+			String(b.get("name", ""))
+		) < 0
+	)
+
+
+func _build_token_generation_controls() -> void:
+	var content_box: VBoxContainer = (
+		color_dialog.get_node_or_null("Content/VBox") as VBoxContainer
+	)
+	if content_box == null:
 		return
 
-	var default_value: Variant = (parsed as Dictionary).get("default", {})
-	if not default_value is Dictionary:
+	_ensure_token_name_input()
+	if token_name_input != null:
+		token_name_input.editable = false
+		token_name_input.tooltip_text = (
+			"Il nome iniziale viene preso dalla miniatura. "
+			+ "Puoi rinominarlo dopo con 'Nome e stati'."
+		)
+
+	var name_label := content_box.get_node_or_null("TokenNameLabel") as Label
+	if name_label != null:
+		name_label.text = "Nome token (dalla miniatura)"
+
+	var miniature_label := content_box.get_node_or_null("MiniatureLabel") as Label
+	if miniature_label == null:
+		miniature_label = Label.new()
+		miniature_label.name = "MiniatureLabel"
+		miniature_label.text = "Miniatura"
+		content_box.add_child(miniature_label)
+
+	token_miniature_list = (
+		content_box.get_node_or_null("MiniatureList") as ItemList
+	)
+	if token_miniature_list == null:
+		token_miniature_list = ItemList.new()
+		token_miniature_list.name = "MiniatureList"
+		token_miniature_list.custom_minimum_size = Vector2(500, 230)
+		token_miniature_list.size_flags_horizontal = Control.SIZE_EXPAND_FILL
+		token_miniature_list.allow_reselect = true
+		token_miniature_list.item_selected.connect(
+			_on_token_miniature_selected
+		)
+		content_box.add_child(token_miniature_list)
+
+	var size_label := content_box.get_node_or_null("SizeLabel") as Label
+	if size_label != null:
+		size_label.text = "Taglia D&D (automatica)"
+
+	var front_label := content_box.get_node_or_null("FrontLabel") as Label
+	if front_label == null:
+		front_label = Label.new()
+		front_label.name = "FrontLabel"
+		front_label.text = "Faccia frontale della miniatura"
+		front_label.tooltip_text = (
+			"Scegli quale asse del modello rappresenta il fronte. "
+			+ "Verrà allineato alla freccia frontale del token."
+		)
+		content_box.add_child(front_label)
+
+	token_front_selector = (
+		content_box.get_node_or_null("FrontSelector") as OptionButton
+	)
+	if token_front_selector == null:
+		token_front_selector = OptionButton.new()
+		token_front_selector.name = "FrontSelector"
+		token_front_selector.add_item("-Z del modello")
+		token_front_selector.add_item("+X del modello")
+		token_front_selector.add_item("+Z del modello")
+		token_front_selector.add_item("-X del modello")
+		token_front_selector.tooltip_text = front_label.tooltip_text
+		token_front_selector.item_selected.connect(
+			_on_token_front_selected
+		)
+		content_box.add_child(token_front_selector)
+
+	# Tutte le miniature stanno nello stesso elenco: nessun filtro per taglia.
+	# La taglia viene dedotta soltanto dopo aver scelto la miniatura.
+	content_box.move_child(miniature_label, 0)
+	content_box.move_child(token_miniature_list, 1)
+	if name_label != null:
+		content_box.move_child(name_label, 2)
+	if token_name_input != null:
+		content_box.move_child(token_name_input, 3)
+	if size_label != null:
+		content_box.move_child(size_label, 4)
+	content_box.move_child(size_selector, 5)
+	content_box.move_child(front_label, 6)
+	content_box.move_child(token_front_selector, 7)
+
+	_reload_token_miniature_list()
+
+
+func _reload_token_miniature_list() -> void:
+	_token_profiles.clear()
+	_selected_token_profile.clear()
+	if token_miniature_list == null:
 		return
-	var profile := default_value as Dictionary
-	if String(profile.get("obj", "")).strip_edges().is_empty():
+	token_miniature_list.clear()
+
+	var manifest := _read_token_library_manifest()
+	var tokens_value: Variant = manifest.get("tokens", [])
+	if tokens_value is Array:
+		for value: Variant in tokens_value:
+			if not value is Dictionary:
+				continue
+			var profile := (value as Dictionary).duplicate(true)
+			if String(profile.get("obj", "")).strip_edges().is_empty():
+				continue
+			_token_profiles.append(profile)
+
+	_token_profiles.sort_custom(
+		Callable(self, "_sort_token_profiles")
+	)
+
+	var default_id := String(manifest.get("default_id", ""))
+	var default_index := 0
+	for index: int in range(_token_profiles.size()):
+		var profile: Dictionary = _token_profiles[index]
+		var token_name := String(profile.get("name", profile.get("id", "Token")))
+		var size_name := String(profile.get("size_name", "Medium"))
+		token_miniature_list.add_item("%s  ·  %s" % [token_name, size_name])
+		token_miniature_list.set_item_tooltip(
+			index,
+			String(profile.get("source", profile.get("obj", "")))
+		)
+		if String(profile.get("id", "")) == default_id:
+			default_index = index
+
+	if _token_profiles.is_empty():
+		size_selector.disabled = false
+		size_selector.tooltip_text = "Manifest miniature vuoto o non disponibile."
+		if token_name_input != null:
+			token_name_input.text = "Token"
 		return
 
-	var default_size := String(profile.get("size_name", "Medium"))
-	for index in range(TOKEN_SIZES.size()):
-		if String(TOKEN_SIZES[index].get("name", "")) == default_size:
-			size_selector.select(index)
+	token_miniature_list.select(default_index)
+	_on_token_miniature_selected(default_index)
+
+
+func _on_token_miniature_selected(index: int) -> void:
+	if index < 0 or index >= _token_profiles.size():
+		return
+	_selected_token_profile = _token_profiles[index].duplicate(true)
+
+	var token_name := String(
+		_selected_token_profile.get(
+			"name",
+			_selected_token_profile.get("id", "Token")
+		)
+	)
+	if token_name_input != null:
+		token_name_input.text = token_name
+
+	var size_name := String(
+		_selected_token_profile.get("size_name", "Medium")
+	)
+	for size_index: int in range(TOKEN_SIZES.size()):
+		if String(TOKEN_SIZES[size_index].get("name", "")) == size_name:
+			size_selector.select(size_index)
 			break
-
-	# Una miniatura fisica mantiene la taglia definita dalla propria base.
 	size_selector.disabled = true
 	size_selector.tooltip_text = (
-		"Taglia determinata automaticamente dalla base della miniatura: "
-		+ default_size
+		"Taglia determinata automaticamente dalla miniatura: " + size_name
 	)
+
+	var token_id := String(_selected_token_profile.get("id", ""))
+	var front_index := clampi(
+		int(_token_front_by_id.get(token_id, 0)),
+		0,
+		3
+	)
+	if token_front_selector != null:
+		token_front_selector.select(front_index)
+
+
+func _on_token_front_selected(index: int) -> void:
+	if _selected_token_profile.is_empty():
+		return
+	var token_id := String(_selected_token_profile.get("id", ""))
+	if not token_id.is_empty():
+		_token_front_by_id[token_id] = clampi(index, 0, 3)
 
 
 func _process(_delta: float) -> void:
@@ -918,11 +1089,17 @@ func _on_context_menu_id_pressed(id: int) -> void:
 			if not _has_pending_spawn_position:
 				return
 			_ui_owns_mouse = true
-			size_selector.select(2)
 			color_picker.color = Color.WHITE
-			if token_name_input != null:
-				token_name_input.clear()
-			color_dialog.popup_centered_clamped(Vector2i(560, 640), 0.9)
+			if token_miniature_list != null and not _token_profiles.is_empty():
+				var selected_items := token_miniature_list.get_selected_items()
+				var selected_index: int = (
+					int(selected_items[0])
+					if not selected_items.is_empty()
+					else 0
+				)
+				token_miniature_list.select(selected_index)
+				_on_token_miniature_selected(selected_index)
+			color_dialog.popup_centered_clamped(Vector2i(650, 820), 0.92)
 			call_deferred("_release_mouse")
 
 		CONTEXT_DELETE_SELECTED:
@@ -1272,13 +1449,47 @@ func _on_token_dialog_confirmed() -> void:
 	var selected_index: int = size_selector.selected
 	if selected_index < 0 or selected_index >= TOKEN_SIZES.size():
 		selected_index = 2
-
 	var selected_size: Dictionary = TOKEN_SIZES[selected_index]
+
+	var size_name := String(selected_size.get("name", "Medium"))
+	var footprint := float(selected_size.get("footprint", 1.0))
+	var display_name := (
+		token_name_input.text if token_name_input != null else "Token"
+	)
+	var visual_asset := ""
+	var front_quarter_turns := 0
+
+	if not _selected_token_profile.is_empty():
+		size_name = String(
+			_selected_token_profile.get("size_name", size_name)
+		)
+		footprint = maxf(
+			float(_selected_token_profile.get("footprint", footprint)),
+			0.5
+		)
+		display_name = String(
+			_selected_token_profile.get(
+				"name",
+				_selected_token_profile.get("id", display_name)
+			)
+		)
+		visual_asset = String(
+			_selected_token_profile.get("obj", "")
+		).strip_edges()
+		if token_front_selector != null:
+			front_quarter_turns = clampi(
+				token_front_selector.selected,
+				0,
+				3
+			)
+
 	_spawn_token(
 		color_picker.color,
-		String(selected_size.get("name", "Medium")),
-		float(selected_size.get("footprint", 1.0)),
-		token_name_input.text if token_name_input != null else ""
+		size_name,
+		footprint,
+		display_name,
+		visual_asset,
+		front_quarter_turns
 	)
 
 	_ui_owns_mouse = false
@@ -1294,7 +1505,9 @@ func _spawn_token(
 	token_color: Color,
 	size_name: String,
 	footprint_cells: float,
-	display_name: String = ""
+	display_name: String = "",
+	visual_asset: String = "",
+	front_quarter_turns: int = 0
 ) -> void:
 	if token_scene == null:
 		push_error("DnDBase: token_scene non assegnata.")
@@ -1317,6 +1530,17 @@ func _spawn_token(
 		_pending_spawn_position.y + token_spawn_height,
 		_pending_spawn_position.z
 	)
+
+	if not visual_asset.is_empty() and token.has_method("set_visual_asset"):
+		if not bool(token.call("set_visual_asset", visual_asset)):
+			push_warning(
+				"DnDBase: miniatura non caricata: %s" % visual_asset
+			)
+	if token.has_method("set_visual_front_quarter_turns"):
+		token.call(
+			"set_visual_front_quarter_turns",
+			front_quarter_turns
+		)
 
 	if token.has_method("configure"):
 		token.call(

@@ -37,6 +37,7 @@ const CONDITION_DEFINITIONS := [
 @export var token_height_cells: float = 2.0
 @export var flying: bool = true
 @export var visual_asset_path: String = ""
+@export_range(0, 3, 1) var visual_front_quarter_turns: int = 0
 @export var token_display_name: String = ""
 @export var default_size_name: String = "Medium"
 @export var default_footprint_cells: float = 1.0
@@ -56,6 +57,7 @@ var _gravity: float = 9.8
 var _footprint_cells: float = 1.0
 var _size_name: String = "Medium"
 var _loaded_visual_asset_path: String = ""
+var _imported_visual_base_basis: Basis = Basis.IDENTITY
 var _uses_manifest_default: bool = false
 var _conditions: Array[String] = []
 var _overlay_root: Node3D
@@ -235,6 +237,7 @@ func set_visual_asset(path: String) -> bool:
 		and _get_imported_visual() != null
 	):
 		visual_asset_path = requested_path
+		_apply_imported_visual_front()
 		_position_imported_visual()
 		return true
 
@@ -267,16 +270,40 @@ func set_visual_asset(path: String) -> bool:
 	_set_procedural_visuals_visible(false)
 	imported.name = IMPORTED_VISUAL_NAME
 	imported.set_meta("token_imported_visual", true)
+	_imported_visual_base_basis = imported.transform.basis
 	visuals.add_child(imported)
 
 	visual_asset_path = requested_path
 	_loaded_visual_asset_path = requested_path
+	_apply_imported_visual_front()
 	_position_imported_visual()
 	return true
 
 
 func get_visual_asset_path() -> String:
 	return _loaded_visual_asset_path
+
+
+func set_visual_front_quarter_turns(value: int) -> void:
+	visual_front_quarter_turns = ((value % 4) + 4) % 4
+	_apply_imported_visual_front()
+	_position_imported_visual()
+
+
+func get_visual_front_quarter_turns() -> int:
+	return visual_front_quarter_turns
+
+
+func _apply_imported_visual_front() -> void:
+	var imported := _get_imported_visual()
+	if imported == null:
+		return
+	var angle := deg_to_rad(
+		90.0 * float(visual_front_quarter_turns)
+	)
+	imported.transform.basis = (
+		Basis(Vector3.UP, angle) * _imported_visual_base_basis
+	)
 
 
 func _load_configured_visual() -> void:
@@ -374,6 +401,7 @@ func _clear_imported_visual() -> void:
 	visuals.remove_child(current)
 	current.queue_free()
 	_loaded_visual_asset_path = ""
+	_imported_visual_base_basis = Basis.IDENTITY
 
 
 func _set_procedural_visuals_visible(value: bool) -> void:

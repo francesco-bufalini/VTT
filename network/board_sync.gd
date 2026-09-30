@@ -2,8 +2,8 @@ extends Node
 
 signal status_changed(message: String)
 const PORT := 45454
-const SNAPSHOT_VERSION := 4
-const MAGIC := "DND_MAP_SYNC_V4"
+const SNAPSHOT_VERSION := 5
+const MAGIC := "DND_MAP_SYNC_V5"
 const BACKUP_DIR := "user://map_sync_backups"
 const MAX_BACKUPS := 20
 const MAX_BYTES := 4 * 1024 * 1024
@@ -482,6 +482,13 @@ func valid_snapshot(snapshot: Variant) -> bool:
 					and not visual_asset.begins_with("res://assets/tokens/")
 				):
 					return false
+			if not item.get("visual_front_quarter_turns") is int:
+				return false
+			var front_turns := int(
+				item.get("visual_front_quarter_turns", -1)
+			)
+			if front_turns < 0 or front_turns > 3:
+				return false
 		if not item.get("name") is String or not item.get("visible") is bool:
 			return false
 	return true
@@ -628,6 +635,11 @@ func _serialize_node(node: Node3D, group_name: String) -> Dictionary:
 		)
 		if node.has_method("get_visual_asset_path"):
 			data["visual_asset"] = String(node.call("get_visual_asset_path"))
+		data["visual_front_quarter_turns"] = (
+			int(node.call("get_visual_front_quarter_turns"))
+			if node.has_method("get_visual_front_quarter_turns")
+			else 0
+		)
 	else: data["kind"]="physical"
 	return data
 
@@ -653,6 +665,13 @@ func _apply_node_data(node: Node3D, data: Dictionary) -> void:
 			var visual_asset := String(data.get("visual_asset", ""))
 			if not visual_asset.is_empty():
 				node.call("set_visual_asset", visual_asset)
+		if data.has("visual_front_quarter_turns") and node.has_method(
+			"set_visual_front_quarter_turns"
+		):
+			node.call(
+				"set_visual_front_quarter_turns",
+				int(data.get("visual_front_quarter_turns", 0))
+			)
 		if data.has("height_cells"):
 			node.set(
 				"token_height_cells",
