@@ -426,9 +426,12 @@ func get_movement_exclusions() -> Array[RID]:
 
 
 func get_spell_origin_position() -> Vector3:
-	var head: Node3D = get_node_or_null("Visuals/Head") as Node3D
-	if head != null:
-		return head.global_position
+	# Il nodo Head procedurale resta nell'albero anche quando e' nascosto.
+	# Con una miniatura importata non deve quindi essere usato come origine.
+	if _get_imported_visual() == null:
+		var head: Node3D = get_node_or_null("Visuals/Head") as Node3D
+		if head != null:
+			return head.global_position
 
 	return (
 		global_position
