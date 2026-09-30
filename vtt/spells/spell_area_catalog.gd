@@ -237,7 +237,8 @@ static func _apply_targeting(
 			"teleport_self",
 			"token_then_chain",
 			"token_then_multi_token",
-			"token_then_multi_point"
+			"token_then_multi_point",
+			"token_then_direction"
 		]
 		and not preserve_token_target
 	):
