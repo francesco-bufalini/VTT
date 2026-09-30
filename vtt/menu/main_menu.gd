@@ -9,8 +9,28 @@ const CASTLE_PATHS := [
 	"res://Castle.glb"
 ]
 const CAMERA_TARGET := Vector3(0.0, 0.15, 0.0)
-const CAMERA_BASE_RADIUS := 14.5
-const CAMERA_BASE_HEIGHT := 3.25
+const CAMERA_BASE_RADIUS := 15.5
+const CAMERA_BASE_HEIGHT := 3.45
+const MENU_SKY_HDR := (
+	"res://assets/menu/environment/sky/"
+	+ "kloppenheim_06_puresky_1k.hdr"
+)
+const MENU_NATURE_DIR := "res://assets/menu/environment/kenney"
+const MOUNTAIN_MODEL_PATHS := [
+	MENU_NATURE_DIR + "/rock_tallA.glb",
+	MENU_NATURE_DIR + "/rock_tallB.glb",
+	MENU_NATURE_DIR + "/rock_tallH.glb"
+]
+const RIVER_ROCK_PATHS := [
+	MENU_NATURE_DIR + "/rock_largeA.glb",
+	MENU_NATURE_DIR + "/rock_largeB.glb",
+	MENU_NATURE_DIR + "/stone_largeA.glb",
+	MENU_NATURE_DIR + "/stone_largeB.glb"
+]
+const RIVER_TREE_PATHS := [
+	MENU_NATURE_DIR + "/tree_pineTallA.glb",
+	MENU_NATURE_DIR + "/tree_pineTallB.glb"
+]
 
 var _options_dialog: AcceptDialog
 var _new_campaign_dialog: ConfirmationDialog
@@ -41,7 +61,7 @@ func _process(delta: float) -> void:
 		minf(delta * 3.0, 1.0)
 	)
 
-	var pan: float = sin(_elapsed * 0.105) * deg_to_rad(6.5)
+	var pan: float = sin(_elapsed * 0.105) * deg_to_rad(4.2)
 	var radius: float = CAMERA_BASE_RADIUS + sin(_elapsed * 0.071) * 0.45
 	var height: float = (
 		CAMERA_BASE_HEIGHT
@@ -123,7 +143,10 @@ func _build_3d_background() -> void:
 	_background_viewport.add_child(_background_world)
 
 	_build_environment()
+	_build_landscape()
+	_build_mountain_backdrop()
 	_build_castle()
+	_build_riverbank_props()
 	_build_lighting()
 	_build_dust_particles()
 
@@ -131,7 +154,7 @@ func _build_3d_background() -> void:
 	_camera.name = "MenuCamera"
 	_camera.fov = 48.0
 	_camera.near = 0.05
-	_camera.far = 120.0
+	_camera.far = 180.0
 	_camera.position = Vector3(0.0, CAMERA_BASE_HEIGHT, CAMERA_BASE_RADIUS)
 	_camera.look_at(CAMERA_TARGET, Vector3.UP)
 	_camera.current = true
@@ -145,25 +168,251 @@ func _build_environment() -> void:
 	var environment := Environment.new()
 	environment.background_mode = Environment.BG_SKY
 	environment.ambient_light_source = Environment.AMBIENT_SOURCE_SKY
-	environment.ambient_light_energy = 0.34
-	environment.ambient_light_color = Color(0.31, 0.36, 0.48)
+	environment.ambient_light_energy = 0.44
+	environment.ambient_light_color = Color(0.34, 0.38, 0.48)
 	environment.fog_enabled = true
-	environment.fog_light_color = Color(0.30, 0.34, 0.43)
-	environment.fog_light_energy = 0.72
-	environment.fog_density = 0.012
+	environment.fog_light_color = Color(0.36, 0.39, 0.47)
+	environment.fog_light_energy = 0.70
+	environment.fog_density = 0.010
 
 	var sky := Sky.new()
-	var sky_material := ProceduralSkyMaterial.new()
-	sky_material.sky_top_color = Color(0.018, 0.027, 0.060)
-	sky_material.sky_horizon_color = Color(0.16, 0.18, 0.25)
-	sky_material.ground_bottom_color = Color(0.012, 0.014, 0.020)
-	sky_material.ground_horizon_color = Color(0.085, 0.080, 0.090)
-	sky_material.sun_angle_max = 3.0
-	sky.sky_material = sky_material
-	environment.sky = sky
+	var external_sky: Resource = null
+	if ResourceLoader.exists(MENU_SKY_HDR):
+		external_sky = ResourceLoader.load(MENU_SKY_HDR)
 
+	if external_sky is Texture2D:
+		var panorama := PanoramaSkyMaterial.new()
+		panorama.panorama = external_sky as Texture2D
+		panorama.energy_multiplier = 0.72
+		sky.sky_material = panorama
+	else:
+		var procedural := ProceduralSkyMaterial.new()
+		procedural.sky_top_color = Color(0.022, 0.040, 0.085)
+		procedural.sky_horizon_color = Color(0.30, 0.25, 0.26)
+		procedural.ground_bottom_color = Color(0.010, 0.014, 0.020)
+		procedural.ground_horizon_color = Color(0.095, 0.085, 0.095)
+		procedural.sun_angle_max = 3.0
+		sky.sky_material = procedural
+
+	environment.sky = sky
 	environment_node.environment = environment
 	_background_world.add_child(environment_node)
+
+
+func _build_landscape() -> void:
+	var ground := MeshInstance3D.new()
+	ground.name = "CastleGround"
+	var ground_mesh := PlaneMesh.new()
+	ground_mesh.size = Vector2(42.0, 36.0)
+	ground.mesh = ground_mesh
+	ground.position = Vector3(0.0, -0.66, -4.0)
+
+	var ground_material := StandardMaterial3D.new()
+	ground_material.albedo_color = Color(0.105, 0.125, 0.105)
+	ground_material.roughness = 0.96
+	ground.material_override = ground_material
+	_background_world.add_child(ground)
+
+	var river := MeshInstance3D.new()
+	river.name = "River"
+	var river_mesh := PlaneMesh.new()
+	river_mesh.size = Vector2(6.6, 39.0)
+	river_mesh.subdivide_width = 24
+	river_mesh.subdivide_depth = 96
+	river.mesh = river_mesh
+	river.position = Vector3(6.15, -0.61, -4.2)
+	river.rotation_degrees.y = -11.0
+	river.material_override = _river_material()
+	_background_world.add_child(river)
+
+	# Sponde leggermente rialzate: fanno leggere il fiume come parte del
+	# paesaggio invece di un semplice piano sovrapposto.
+	for side: float in [-1.0, 1.0]:
+		var bank := MeshInstance3D.new()
+		bank.name = "RiverBank"
+		var bank_mesh := BoxMesh.new()
+		bank_mesh.size = Vector3(0.72, 0.18, 38.0)
+		bank.mesh = bank_mesh
+		bank.position = Vector3(
+			6.15 + side * 3.55,
+			-0.65,
+			-4.2
+		)
+		bank.rotation_degrees.y = -11.0
+		var bank_material := StandardMaterial3D.new()
+		bank_material.albedo_color = Color(0.15, 0.13, 0.095)
+		bank_material.roughness = 1.0
+		bank.material_override = bank_material
+		_background_world.add_child(bank)
+
+
+func _river_material() -> ShaderMaterial:
+	var shader := Shader.new()
+	shader.code = """
+shader_type spatial;
+render_mode blend_mix, depth_draw_opaque, cull_disabled;
+
+uniform vec3 deep_water = vec3(0.035, 0.105, 0.145);
+uniform vec3 shallow_water = vec3(0.105, 0.265, 0.315);
+
+void vertex() {
+	float wave_a = sin((VERTEX.x * 1.8) + TIME * 1.1) * 0.026;
+	float wave_b = sin((VERTEX.z * 2.5) - TIME * 0.75) * 0.018;
+	VERTEX.y += wave_a + wave_b;
+}
+
+void fragment() {
+	float ripple_a = sin(UV.y * 95.0 - TIME * 1.35);
+	float ripple_b = sin(UV.x * 48.0 + TIME * 0.85);
+	float ripple = (ripple_a + ripple_b) * 0.25 + 0.5;
+	ALBEDO = mix(deep_water, shallow_water, ripple * 0.46);
+	ROUGHNESS = 0.13;
+	METALLIC = 0.06;
+	SPECULAR = 0.82;
+	ALPHA = 0.92;
+}
+"""
+	var material := ShaderMaterial.new()
+	material.shader = shader
+	return material
+
+
+func _build_mountain_backdrop() -> void:
+	var mountain_root := Node3D.new()
+	mountain_root.name = "MountainBackdrop"
+	_background_world.add_child(mountain_root)
+
+	var placements: Array[Dictionary] = [
+		{"position": Vector3(-13.0, 3.4, -22.0), "scale": Vector3(6.8, 8.2, 5.4), "rotation": -8.0},
+		{"position": Vector3(-7.5, 4.1, -24.5), "scale": Vector3(8.0, 10.0, 6.0), "rotation": 12.0},
+		{"position": Vector3(-1.2, 4.8, -27.0), "scale": Vector3(9.2, 11.3, 7.0), "rotation": -5.0},
+		{"position": Vector3(5.3, 4.4, -26.0), "scale": Vector3(8.4, 10.5, 6.5), "rotation": 8.0},
+		{"position": Vector3(11.7, 3.8, -23.5), "scale": Vector3(7.0, 9.0, 5.8), "rotation": -14.0}
+	]
+
+	var external_models: Array[PackedScene] = []
+	for model_path: String in MOUNTAIN_MODEL_PATHS:
+		if not ResourceLoader.exists(model_path):
+			continue
+		var resource: Resource = ResourceLoader.load(model_path)
+		if resource is PackedScene:
+			external_models.append(resource as PackedScene)
+
+	for index: int in range(placements.size()):
+		var placement: Dictionary = placements[index]
+		var wrapper := Node3D.new()
+		wrapper.name = "Mountain_%02d" % index
+		wrapper.position = placement.get("position", Vector3.ZERO)
+		wrapper.rotation_degrees.y = float(
+			placement.get("rotation", 0.0)
+		)
+		wrapper.scale = placement.get("scale", Vector3.ONE)
+		mountain_root.add_child(wrapper)
+
+		if not external_models.is_empty():
+			var model: Node = external_models[
+				index % external_models.size()
+			].instantiate()
+			if model is Node3D:
+				wrapper.add_child(model)
+				_tint_meshes(
+					model,
+					Color(0.13, 0.145, 0.18)
+				)
+				continue
+			model.queue_free()
+
+		var mountain := MeshInstance3D.new()
+		var mountain_mesh := CylinderMesh.new()
+		mountain_mesh.top_radius = 0.06
+		mountain_mesh.bottom_radius = 1.0
+		mountain_mesh.height = 1.0
+		mountain_mesh.radial_segments = 7 + index % 3
+		mountain_mesh.rings = 2
+		mountain.mesh = mountain_mesh
+		var mountain_material := StandardMaterial3D.new()
+		mountain_material.albedo_color = Color(
+			0.12 + float(index % 2) * 0.018,
+			0.13 + float(index % 3) * 0.012,
+			0.17 + float(index % 2) * 0.018
+		)
+		mountain_material.roughness = 1.0
+		mountain.material_override = mountain_material
+		wrapper.add_child(mountain)
+
+
+func _build_riverbank_props() -> void:
+	var rock_scenes: Array[PackedScene] = _load_packed_scenes(
+		RIVER_ROCK_PATHS
+	)
+	var tree_scenes: Array[PackedScene] = _load_packed_scenes(
+		RIVER_TREE_PATHS
+	)
+
+	if not rock_scenes.is_empty():
+		var rock_positions: Array[Vector3] = [
+			Vector3(3.15, -0.52, 4.0),
+			Vector3(3.30, -0.52, -1.0),
+			Vector3(3.55, -0.52, -6.4),
+			Vector3(9.15, -0.52, 1.8),
+			Vector3(9.00, -0.52, -4.2)
+		]
+		for index: int in range(rock_positions.size()):
+			var rock: Node = rock_scenes[
+				index % rock_scenes.size()
+			].instantiate()
+			if not rock is Node3D:
+				rock.queue_free()
+				continue
+			var rock_3d := rock as Node3D
+			rock_3d.name = "RiverRock_%02d" % index
+			rock_3d.position = rock_positions[index]
+			rock_3d.rotation_degrees.y = float(index * 41 % 360)
+			rock_3d.scale = Vector3.ONE * (2.0 + float(index % 3) * 0.45)
+			_background_world.add_child(rock_3d)
+
+	if not tree_scenes.is_empty():
+		var tree_positions: Array[Vector3] = [
+			Vector3(10.5, -0.56, -7.8),
+			Vector3(11.7, -0.56, -11.2),
+			Vector3(-8.0, -0.56, -9.2)
+		]
+		for index: int in range(tree_positions.size()):
+			var tree: Node = tree_scenes[
+				index % tree_scenes.size()
+			].instantiate()
+			if not tree is Node3D:
+				tree.queue_free()
+				continue
+			var tree_3d := tree as Node3D
+			tree_3d.name = "RiverTree_%02d" % index
+			tree_3d.position = tree_positions[index]
+			tree_3d.rotation_degrees.y = float(index * 73 % 360)
+			tree_3d.scale = Vector3.ONE * 4.2
+			_background_world.add_child(tree_3d)
+
+
+func _load_packed_scenes(paths: Array) -> Array[PackedScene]:
+	var result: Array[PackedScene] = []
+	for path_value: Variant in paths:
+		var asset_path: String = String(path_value)
+		if not ResourceLoader.exists(asset_path):
+			continue
+		var resource: Resource = ResourceLoader.load(asset_path)
+		if resource is PackedScene:
+			result.append(resource as PackedScene)
+	return result
+
+
+func _tint_meshes(root: Node, color: Color) -> void:
+	if root is MeshInstance3D:
+		var mesh_instance := root as MeshInstance3D
+		var material := StandardMaterial3D.new()
+		material.albedo_color = color
+		material.roughness = 1.0
+		mesh_instance.material_override = material
+	for child: Node in root.get_children():
+		_tint_meshes(child, color)
 
 
 func _build_castle() -> void:
@@ -427,24 +676,22 @@ func _build_title() -> void:
 	title_margin.name = "TitleArea"
 	title_margin.anchor_left = 0.0
 	title_margin.anchor_top = 0.0
-	title_margin.anchor_right = 1.0
+	title_margin.anchor_right = 0.0
 	title_margin.anchor_bottom = 0.0
-	title_margin.offset_top = 26.0
+	title_margin.offset_left = 34.0
+	title_margin.offset_top = 24.0
+	title_margin.offset_right = 830.0
 	title_margin.offset_bottom = 142.0
 	title_margin.mouse_filter = Control.MOUSE_FILTER_IGNORE
 	add_child(title_margin)
 
-	var title_center := CenterContainer.new()
-	title_center.set_anchors_and_offsets_preset(Control.PRESET_FULL_RECT)
-	title_margin.add_child(title_center)
-
 	var title := Label.new()
 	title.name = "GameTitle"
 	title.text = "Virtual Table Story Teller"
-	title.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
-	title.vertical_alignment = VERTICAL_ALIGNMENT_CENTER
+	title.horizontal_alignment = HORIZONTAL_ALIGNMENT_LEFT
+	title.vertical_alignment = VERTICAL_ALIGNMENT_TOP
 	title.add_theme_font_override("font", _medieval_title_font())
-	title.add_theme_font_size_override("font_size", 62)
+	title.add_theme_font_size_override("font_size", 54)
 	title.add_theme_color_override(
 		"font_color",
 		Color(0.94, 0.85, 0.64)
@@ -457,10 +704,10 @@ func _build_title() -> void:
 		"font_shadow_color",
 		Color(0.0, 0.0, 0.0, 0.88)
 	)
-	title.add_theme_constant_override("outline_size", 9)
+	title.add_theme_constant_override("outline_size", 8)
 	title.add_theme_constant_override("shadow_offset_x", 3)
 	title.add_theme_constant_override("shadow_offset_y", 4)
-	title_center.add_child(title)
+	title_margin.add_child(title)
 
 
 func _medieval_title_font() -> Font:
@@ -490,13 +737,13 @@ func _menu_font() -> Font:
 func _build_bottom_controls() -> void:
 	var controls_anchor := MarginContainer.new()
 	controls_anchor.name = "BottomControls"
-	controls_anchor.anchor_left = 0.5
+	controls_anchor.anchor_left = 0.0
 	controls_anchor.anchor_top = 1.0
-	controls_anchor.anchor_right = 0.5
+	controls_anchor.anchor_right = 0.0
 	controls_anchor.anchor_bottom = 1.0
-	controls_anchor.offset_left = -225.0
+	controls_anchor.offset_left = 34.0
 	controls_anchor.offset_top = -316.0
-	controls_anchor.offset_right = 225.0
+	controls_anchor.offset_right = 484.0
 	controls_anchor.offset_bottom = -34.0
 	add_child(controls_anchor)
 
