@@ -20,6 +20,18 @@ Se Blender non e' nel PATH:
 
     .\tools\import_tokens.ps1 -Source "C:\percorso\Miniature" -Blender "C:\Program Files\Blender Foundation\Blender 4.5\blender.exe"
 
+
+## Run multiple su cartelle diverse
+
+Le importazioni sono additive. Puoi eseguire il convertitore piu' volte su
+raccolte o cartelle diverse: i token gia' presenti in token_library.json e in
+assets/tokens/generated non vengono cancellati.
+
+Se una run genera un token con lo stesso id di uno gia' presente, quel token
+viene aggiornato/sostituito; tutti gli altri restano invariati. Il token di
+default precedente viene mantenuto tra le run, a meno che non venga passato
+esplicitamente -Default.
+
 ## Come viene scelta la scala
 
 La scala NON viene ricavata dall'altezza del personaggio.
