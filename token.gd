@@ -467,7 +467,6 @@ func _ensure_token_overlay() -> void:
 		_name_label.name = "Name"
 		_name_label.billboard = BaseMaterial3D.BILLBOARD_ENABLED
 		_name_label.fixed_size = true
-		_name_label.no_depth_test = true
 		_name_label.font_size = 32
 		_name_label.outline_size = 8
 		_name_label.modulate = Color(1.0, 0.97, 0.88, 1.0)
@@ -480,7 +479,6 @@ func _ensure_token_overlay() -> void:
 		_status_label.name = "Statuses"
 		_status_label.billboard = BaseMaterial3D.BILLBOARD_ENABLED
 		_status_label.fixed_size = true
-		_status_label.no_depth_test = true
 		_status_label.font_size = 28
 		_status_label.outline_size = 7
 		_status_label.modulate = Color(1.0, 0.82, 0.35, 1.0)
