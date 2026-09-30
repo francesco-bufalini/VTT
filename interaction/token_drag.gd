@@ -15,6 +15,7 @@ var _support: Node3D
 var _press_position: Vector2
 var _moved: bool = false
 var _anchor_token: CharacterBody3D
+var _undo_state: Dictionary = {}
 
 func setup(owner_board: Node3D) -> void:
 	board = owner_board
@@ -42,8 +43,6 @@ func handle_event(event: InputEvent) -> bool:
 			finish(false)
 			return true
 		if event is InputEventMouseButton and event.button_index == MOUSE_BUTTON_LEFT and not event.pressed:
-			if _moved and _valid and board.has_method("push_undo_state"):
-				board.call("push_undo_state")
 			finish(_moved and _valid)
 			return true
 		return event is InputEventKey or event is InputEventMouseButton
@@ -75,6 +74,11 @@ func handle_event(event: InputEvent) -> bool:
 
 func begin(tokens: Array[CharacterBody3D], anchor_token: CharacterBody3D) -> void:
 	_tokens = tokens.duplicate()
+	_undo_state = {}
+	if board != null and board.has_method("begin_undo_transaction"):
+		var history_value: Variant = board.call("begin_undo_transaction")
+		if history_value is Dictionary:
+			_undo_state = (history_value as Dictionary).duplicate(true)
 	_origins.clear()
 	for token in _tokens:
 		_origins.append(token.global_position)
@@ -153,13 +157,17 @@ func _token_half_height(token: CharacterBody3D) -> float:
 
 
 func finish(commit: bool) -> void:
+	var committed_move: bool = commit and _valid and _moved
 	for index in range(_tokens.size()):
 		var token := _tokens[index]
 		if not is_instance_valid(token):
 			continue
-		if commit and _valid:
+		if committed_move:
 			token.global_position = _targets[index]
-			token.grid_support = _support if not token.flying else null
+			if token.has_method("snap_horizontal_to_grid"):
+				token.call("snap_horizontal_to_grid")
+			# Il supporto del carro/piattaforma e' indipendente dalla gravita.
+			token.grid_support = _support
 			if is_instance_valid(token.grid_support):
 				token._support_transform = token.grid_support.global_transform
 			token.velocity = Vector3.ZERO
@@ -167,6 +175,13 @@ func finish(commit: bool) -> void:
 	_tokens.clear()
 	_preview.visible = false
 	active = false
+	if (
+		committed_move
+		and not _undo_state.is_empty()
+		and board.has_method("commit_undo_transaction")
+	):
+		board.call("commit_undo_transaction", _undo_state)
+	_undo_state = {}
 	if _was_captured:
 		Input.mouse_mode = Input.MOUSE_MODE_CAPTURED
 	interaction_changed.emit(false)
