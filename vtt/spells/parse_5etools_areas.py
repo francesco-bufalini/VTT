@@ -847,6 +847,39 @@ def _damage_types(spell: dict[str, Any]) -> list[str]:
     return sorted({str(item).lower() for item in value if str(item)})
 
 
+def _condition_inflict(spell: dict[str, Any]) -> list[str]:
+    value = spell.get("conditionInflict", [])
+    if not isinstance(value, list):
+        return []
+    return sorted({
+        str(item).strip().lower()
+        for item in value
+        if str(item).strip()
+    })
+
+
+def _saving_throws(spell: dict[str, Any]) -> list[str]:
+    value = spell.get("savingThrow", [])
+    if not isinstance(value, list):
+        return []
+    return sorted({
+        str(item).strip().lower()
+        for item in value
+        if str(item).strip()
+    })
+
+
+def _misc_tags(spell: dict[str, Any]) -> list[str]:
+    value = spell.get("miscTags", [])
+    if not isinstance(value, list):
+        return []
+    return sorted({
+        str(item).strip()
+        for item in value
+        if str(item).strip()
+    })
+
+
 def _build_effect(
     spell: dict[str, Any],
     geometries: list[dict[str, Any]],
@@ -858,6 +891,18 @@ def _build_effect(
     damage_types = _damage_types(spell)
     if damage_types:
         effect["damage_types"] = damage_types
+
+    conditions = _condition_inflict(spell)
+    if conditions:
+        effect["condition_inflict"] = conditions
+
+    saving_throws = _saving_throws(spell)
+    if saving_throws:
+        effect["saving_throw"] = saving_throws
+
+    misc_tags = _misc_tags(spell)
+    if misc_tags:
+        effect["misc_tags"] = misc_tags
 
     if effect:
         effect["persistence"] = (
