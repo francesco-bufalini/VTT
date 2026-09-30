@@ -992,7 +992,7 @@ func _build_token_state_dialog() -> void:
 	outer.add_child(token_state_name)
 
 	var states_label := Label.new()
-	states_label.text = "Condizioni D&D 5e"
+	states_label.text = "Condizioni e marker D&D 5e"
 	states_label.add_theme_font_size_override("font_size", 14)
 	outer.add_child(states_label)
 
@@ -1010,8 +1010,9 @@ func _build_token_state_dialog() -> void:
 
 	var help := Label.new()
 	help.text = (
-		"I pittogrammi degli stati attivi vengono mostrati sotto al nome. "
-		+ "Il nome dell'iniziativa resta modificabile separatamente."
+		"I primi 15 elementi sono le condizioni ufficiali 5e/SRD; "
+		+ "Concentrazione, Sorpreso, Nascosto e Morto sono marker tattici. "
+		+ "I badge attivi vengono mostrati sotto al nome."
 	)
 	help.autowrap_mode = TextServer.AUTOWRAP_WORD_SMART
 	help.add_theme_font_size_override("font_size", 11)
@@ -1064,10 +1065,13 @@ func _open_token_state_editor(token: CharacterBody3D) -> void:
 		if condition_id.is_empty():
 			continue
 		var check := CheckButton.new()
-		check.text = "%s  %s" % [
-			String(definition.get("icon", "•")),
+		var status_label := "%s  %s" % [
+			String(definition.get("icon", "[--]")),
 			String(definition.get("name", condition_id))
 		]
+		if not bool(definition.get("official", true)):
+			status_label += "  (marker)"
+		check.text = status_label
 		check.button_pressed = condition_id in current
 		token_state_grid.add_child(check)
 		token_state_checks[condition_id] = check
