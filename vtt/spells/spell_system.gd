@@ -485,14 +485,30 @@ func _summon_count_choices(spell_data: Dictionary) -> Array[int]:
 		choices.sort()
 		return choices
 
+	var base_level: int = int(spell_data.get("level", 0))
+	var slot_delta: int = maxi(
+		0,
+		_selected_slot_level - base_level
+	)
+	var per_slot: int = maxi(
+		int(spell_data.get("summon_count_per_slot_above_base", 0)),
+		0
+	)
+
 	var minimum: int = int(spell_data.get("summon_count_min", 0))
 	var maximum: int = int(spell_data.get("summon_count_max", 0))
 	if minimum > 0 and maximum >= minimum:
+		maximum += per_slot * slot_delta
 		for count: int in range(minimum, maximum + 1):
 			choices.append(count)
 		return choices
 
-	choices.append(maxi(int(spell_data.get("summon_count", 1)), 1))
+	var fixed_count: int = maxi(
+		int(spell_data.get("summon_count", 1)),
+		1
+	)
+	fixed_count += per_slot * slot_delta
+	choices.append(fixed_count)
 	return choices
 
 
