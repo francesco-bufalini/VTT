@@ -1,8 +1,7 @@
 extends RefCounted
 
 # Generated from the complete 5eTools spell source index.
-# Class membership uses canonical 5eTools names. UI localization is separate.
-# Hand-authored spell_catalog.gd entries take precedence.
+# Canonical class names are localized by spell_catalog.gd.
 const SPELLS: Dictionary = {
   "abi_dalzims_horrid_wilting": {
     "id": "abi_dalzims_horrid_wilting",
@@ -24,7 +23,6 @@ const SPELLS: Dictionary = {
     "higher_levels": "",
     "visual_style": "necrotic",
     "transient_seconds": 5,
-    "target_mode": "token_then_point",
     "aoe_shape": "cube",
     "aoe_side_feet": 30,
     "range_feet": 150
@@ -70,9 +68,6 @@ const SPELLS: Dictionary = {
     ],
     "description": "You create an acidic bubble at a point within range, where it explodes in a 5-foot-radius Sphere. Each creature in that Sphere must succeed on a Dexterity saving throw or take 1d6 Acid damage.",
     "higher_levels": "Cantrip Upgrade: The damage increases by 1d6 when you reach levels 5 (2d6), 11 (3d6), and 17 (4d6).",
-    "target_mode": "token_then_multi_token",
-    "projectile_style": "acid_splash",
-    "projectile_travel_seconds": 0.65,
     "range_feet": 60
   },
   "aganazzars_scorcher": {
@@ -95,7 +90,6 @@ const SPELLS: Dictionary = {
     "higher_levels": "At Higher Levels: When you cast this spell using a spell slot of 3rd level or higher, the damage increases by 1d8 for each slot level above 2nd.",
     "visual_style": "fire",
     "transient_seconds": 5,
-    "target_mode": "token_then_direction",
     "aoe_shape": "line",
     "aoe_length_cells": 6,
     "line_width_feet": 5,
@@ -339,9 +333,6 @@ const SPELLS: Dictionary = {
     ],
     "description": "Objects animate at your command. Choose a number of nonmagical objects within range that aren't being worn or carried, aren't fixed to a surface, and aren't Gargantuan. The maximum number of objects is equal to your spellcasting ability modifier; for this number, a Medium or smaller target counts as one object, a Large target counts as two, and a Huge target counts as three. Each target animates, sprouts legs, and becomes a Construct that uses the Animated Object stat block; this creature is under your control until the spell ends or until it is reduced to 0 Hit Points. Each creature you make with this spell is an ally to you and your allies. In combat, it shares your Initiative count and takes its turn immediately after yours. Until the spell ends, you can take a Bonus Action to mentally command any creature you made with this spell if the creature is within 500 feet of you (if you control multiple creatures, you can command any of them at the same time, issuing the same command to each one). If you issue no commands, the creature takes the Dodge action and moves only to avoid harm. When the creature drops to 0 Hit Points, it reverts to its object form, and any remaining damage carries over to that form.",
     "higher_levels": "Using a Higher-Level Spell Slot: The creature's Slam damage increases by 1d4 (Medium or smaller), 1d6 (Large), or 1d12 (Huge) for each spell slot level above 5.",
-    "target_mode": "token_then_multi_token",
-    "projectile_style": "animate_objects",
-    "projectile_travel_seconds": 0.65,
     "range_feet": 120
   },
   "antagonize": {
@@ -366,7 +357,6 @@ const SPELLS: Dictionary = {
     "higher_levels": "At Higher Levels: When you cast this spell using a spell slot of 4th level or higher, the damage increases by 1d4 for each slot level above 3rd.",
     "visual_style": "psychic",
     "transient_seconds": 5,
-    "target_mode": "token_then_token",
     "range_feet": 30
   },
   "antilife_shell": {
@@ -746,10 +736,7 @@ const SPELLS: Dictionary = {
     "higher_levels": "Using a Higher-Level Spell Slot: The damage reduction and Force damage from this spell both increase by 1d6 for every spell slot level above 4.",
     "visual_style": "force",
     "transient_seconds": 5,
-    "target_mode": "token_then_token",
-    "range_feet": 60,
-    "projectile_style": "backlash",
-    "projectile_travel_seconds": 0.65
+    "range_feet": 60
   },
   "bane": {
     "id": "bane",
@@ -819,9 +806,6 @@ const SPELLS: Dictionary = {
     ],
     "description": "One creature that you can see within range must succeed on a Charisma saving throw or be transported to a harmless demiplane for the duration. While there, the target has the Incapacitated condition. When the spell ends, the target reappears in the space it left or in the nearest unoccupied space if that space is occupied. If the target is an Aberration, a Celestial, an Elemental, a Fey, or a Fiend, the target doesn't return if the spell lasts for 1 minute. The target is instead transported to a random location on a plane (DM's choice) associated with its creature type.",
     "higher_levels": "Using a Higher-Level Spell Slot: You can target one additional creature for each spell slot level above 4.",
-    "target_mode": "token_then_token",
-    "projectile_style": "banishment",
-    "projectile_travel_seconds": 0.65,
     "range_feet": 30
   },
   "barkskin": {
@@ -1053,11 +1037,7 @@ const SPELLS: Dictionary = {
     ],
     "description": "You create a 3-foot-long blade-shaped planar rift that lasts for the duration. The rift appears within range in a space of your choice, and you can immediately make up to two melee spell attacks, each one against a creature or object within 5 feet of the rift. On a hit, the target takes 10d6 Force damage. This attack scores a Critical Hit if the number on the d20 is 18 or higher. As a Bonus Action on your later turns, you can move the rift up to 60 feet and repeat the two attacks against a creature or an object within 5 feet of it. You can direct the attacks at the same target or at different ones. The blade can harmlessly pass through any barrier, including ones created by spells like Wall of Force.",
     "higher_levels": "",
-    "target_mode": "token_then_multi_token",
-    "projectile_style": "blade_of_disaster",
-    "projectile_travel_seconds": 0.65,
-    "range_feet": 60,
-    "allow_repeat_targets": true
+    "range_feet": 60
   },
   "blade_ward": {
     "id": "blade_ward",
@@ -1128,9 +1108,6 @@ const SPELLS: Dictionary = {
     ],
     "description": "A creature that you can see within range makes a Constitution saving throw, taking 8d8 Necrotic damage on a failed save or half as much damage on a successful one. A Plant creature automatically fails the save. Alternatively, target a nonmagical plant that isn't a creature, such as a tree or shrub. It doesn't make a save; it simply withers and dies.",
     "higher_levels": "Using a Higher-Level Spell Slot: The damage increases by 1d8 for each spell slot level above 4.",
-    "target_mode": "token_then_token",
-    "projectile_style": "blight",
-    "projectile_travel_seconds": 0.65,
     "range_feet": 30
   },
   "blinding_smite": {
@@ -1173,13 +1150,7 @@ const SPELLS: Dictionary = {
     "higher_levels": "Using a Higher-Level Spell Slot: You can target one additional creature for each spell slot level above 2.",
     "visual_style": "arcane",
     "transient_seconds": 5,
-    "target_mode": "token_then_token",
-    "range_feet": 120,
-    "base_target_clicks": 1,
-    "allow_repeat_targets": false,
-    "target_clicks_per_slot_above_base": 1,
-    "projectile_style": "blindness_deafness",
-    "projectile_travel_seconds": 0.65
+    "range_feet": 120
   },
   "blink": {
     "id": "blink",
@@ -1411,9 +1382,6 @@ const SPELLS: Dictionary = {
     ],
     "description": "Choose one object weighing 1 to 5 pounds within range that isn't being worn or carried. The object flies in a straight line up to 90 feet in a direction you choose before falling to the ground, stopping early if it impacts against a solid surface. If the object would strike a creature, that creature must make a Dexterity saving throw. On a failed save, the object strikes the target and stops moving. When the object strikes something, the object and what it strikes each take 3d8 bludgeoning damage.",
     "higher_levels": "At Higher Levels: When you cast this spell using a spell slot of 2nd level or higher, the maximum weight of objects that you can target with this spell increases by 5 pounds, and the damage increases by 1d8, for each slot level above 1st.",
-    "target_mode": "token_then_token",
-    "projectile_style": "catapult",
-    "projectile_travel_seconds": 0.65,
     "range_feet": 60
   },
   "catnap": {
@@ -1438,13 +1406,7 @@ const SPELLS: Dictionary = {
     "higher_levels": "Using a Higher-Level Spell Slot: You can target one additional willing creature for each spell slot level above 3.",
     "visual_style": "arcane",
     "transient_seconds": 5,
-    "target_mode": "token_then_multi_token",
-    "range_feet": 30,
-    "base_target_clicks": 3,
-    "allow_repeat_targets": false,
-    "target_clicks_per_slot_above_base": 1,
-    "projectile_style": "catnap",
-    "projectile_travel_seconds": 0.65
+    "range_feet": 30
   },
   "cause_fear": {
     "id": "cause_fear",
@@ -1517,9 +1479,6 @@ const SPELLS: Dictionary = {
     ],
     "description": "You launch a lightning bolt toward a target you can see within range. Three bolts then leap from that target to as many as three other targets of your choice, each of which must be within 30 feet of the first target. A target can be a creature or an object and can be targeted by only one of the bolts. Each target makes a Dexterity saving throw, taking 10d8 Lightning damage on a failed save or half as much damage on a successful one.",
     "higher_levels": "Using a Higher-Level Spell Slot: One additional bolt leaps from the first target to another target for each spell slot level above 6.",
-    "target_mode": "token_then_multi_token",
-    "projectile_style": "chain_lightning",
-    "projectile_travel_seconds": 0.65,
     "range_feet": 150
   },
   "chaos_bolt": {
@@ -1541,10 +1500,11 @@ const SPELLS: Dictionary = {
     "higher_levels": "At Higher Levels: When you cast this spell using a spell slot of 2nd level or higher, each target takes 1d6 extra damage of the type rolled for each slot level above 1st.",
     "visual_style": "fire",
     "transient_seconds": 5,
-    "target_mode": "token_then_token",
     "range_feet": 120,
+    "target_mode": "token_then_token",
     "projectile_style": "chaos_bolt",
-    "projectile_travel_seconds": 0.65
+    "projectile_travel_seconds": 0.65,
+    "allow_point_target": true
   },
   "charm_monster": {
     "id": "charm_monster",
@@ -1569,13 +1529,7 @@ const SPELLS: Dictionary = {
     "higher_levels": "Using a Higher-Level Spell Slot: You can target one additional creature for each spell slot level above 4.",
     "visual_style": "enchantment",
     "transient_seconds": 5,
-    "target_mode": "token_then_token",
-    "range_feet": 30,
-    "base_target_clicks": 1,
-    "allow_repeat_targets": false,
-    "target_clicks_per_slot_above_base": 1,
-    "projectile_style": "charm_monster",
-    "projectile_travel_seconds": 0.65
+    "range_feet": 30
   },
   "charm_person": {
     "id": "charm_person",
@@ -1600,13 +1554,7 @@ const SPELLS: Dictionary = {
     "higher_levels": "Using a Higher-Level Spell Slot: You can target one additional creature for each spell slot level above 1.",
     "visual_style": "enchantment",
     "transient_seconds": 5,
-    "target_mode": "token_then_token",
-    "range_feet": 30,
-    "base_target_clicks": 1,
-    "allow_repeat_targets": false,
-    "target_clicks_per_slot_above_base": 1,
-    "projectile_style": "charm_person",
-    "projectile_travel_seconds": 0.65
+    "range_feet": 30
   },
   "chill_touch": {
     "id": "chill_touch",
@@ -1626,10 +1574,7 @@ const SPELLS: Dictionary = {
       "Wizard"
     ],
     "description": "Channeling the chill of the grave, make a melee spell attack against a target within reach. On a hit, the target takes 1d10 Necrotic damage, and it can't regain Hit Points until the end of your next turn.",
-    "higher_levels": "Cantrip Upgrade: The damage increases by 1d10 when you reach levels 5 (2d10), 11 (3d10), and 17 (4d10).",
-    "target_mode": "token_then_token",
-    "projectile_style": "chill_touch",
-    "projectile_travel_seconds": 0.65
+    "higher_levels": "Cantrip Upgrade: The damage increases by 1d10 when you reach levels 5 (2d10), 11 (3d10), and 17 (4d10)."
   },
   "chromatic_orb": {
     "id": "chromatic_orb",
@@ -1649,10 +1594,11 @@ const SPELLS: Dictionary = {
     ],
     "description": "You hurl an orb of energy at a target within range. Choose Acid, Cold, Fire, Lightning, Poison, or Thunder for the type of orb you create, and then make a ranged spell attack against the target. On a hit, the target takes 3d8 damage of the chosen type. If you roll the same number on two or more of the d8s, the orb leaps to a different target of your choice within 30 feet of the target. Make an attack roll against the new target, and make a new damage roll. The orb can't leap again unless you cast the spell with a level 2+ spell slot.",
     "higher_levels": "Using a Higher-Level Spell Slot: The damage increases by 1d8 for each spell slot level above 1. The orb can leap a maximum number of times equal to the level of the slot expended, and a creature can be targeted only once by each casting of this spell.",
+    "range_feet": 90,
     "target_mode": "token_then_token",
     "projectile_style": "chromatic_orb",
     "projectile_travel_seconds": 0.65,
-    "range_feet": 90
+    "allow_point_target": true
   },
   "circle_of_death": {
     "id": "circle_of_death",
@@ -2261,7 +2207,6 @@ const SPELLS: Dictionary = {
     "higher_levels": "",
     "visual_style": "arcane",
     "transient_seconds": 5,
-    "target_mode": "token_then_point",
     "aoe_shape": "cube",
     "aoe_side_feet": 5,
     "range_feet": 60
@@ -2327,7 +2272,6 @@ const SPELLS: Dictionary = {
     "higher_levels": "",
     "visual_style": "arcane",
     "transient_seconds": 5,
-    "target_mode": "token_then_point",
     "aoe_shape": "cube",
     "aoe_side_feet": 100,
     "range_feet": 300
@@ -2397,7 +2341,6 @@ const SPELLS: Dictionary = {
     "higher_levels": "",
     "visual_style": "fire",
     "transient_seconds": 5,
-    "target_mode": "token_then_point",
     "aoe_shape": "cube",
     "aoe_side_feet": 5,
     "range_feet": 60,
@@ -2569,9 +2512,6 @@ const SPELLS: Dictionary = {
     ],
     "description": "One creature that you can see within range must succeed on a Wisdom saving throw or have the Charmed condition for the duration. The creature succeeds automatically if it isn't Humanoid. A spectral crown appears on the Charmed target's head, and it must use its action before moving on each of its turns to make a melee attack against a creature other than itself that you mentally choose. The target can act normally on its turn if you choose no creature or if no creature is within its reach. The target repeats the save at the end of each of its turns, ending the spell on itself on a success. On your later turns, you must take the Magic action to maintain control of the target, or the spell ends.",
     "higher_levels": "",
-    "target_mode": "token_then_token",
-    "projectile_style": "crown_of_madness",
-    "projectile_travel_seconds": 0.65,
     "range_feet": 120
   },
   "crown_of_stars": {
@@ -2740,10 +2680,7 @@ const SPELLS: Dictionary = {
     "higher_levels": "",
     "visual_style": "arcane",
     "transient_seconds": 5,
-    "target_mode": "token_then_token",
-    "range_feet": 5,
-    "projectile_style": "darkvision",
-    "projectile_travel_seconds": 0.65
+    "range_feet": 5
   },
   "dawn": {
     "id": "dawn",
@@ -2787,7 +2724,6 @@ const SPELLS: Dictionary = {
     "higher_levels": "",
     "visual_style": "arcane",
     "transient_seconds": 5,
-    "target_mode": "token_then_point",
     "aoe_shape": "sphere",
     "aoe_radius_feet": 60,
     "range_feet": 60,
@@ -2813,10 +2749,7 @@ const SPELLS: Dictionary = {
     "higher_levels": "",
     "visual_style": "necrotic",
     "transient_seconds": 5,
-    "target_mode": "token_then_token",
-    "range_feet": 5,
-    "projectile_style": "death_armor",
-    "projectile_travel_seconds": 0.65
+    "range_feet": 5
   },
   "death_ward": {
     "id": "death_ward",
@@ -2863,7 +2796,6 @@ const SPELLS: Dictionary = {
     "higher_levels": "Using a Higher-Level Spell Slot: The base damage increases by 1d6 for each spell slot level above 7.",
     "visual_style": "fire",
     "transient_seconds": 5,
-    "target_mode": "token_then_point",
     "aoe_shape": "sphere",
     "aoe_radius_feet": 20,
     "range_feet": 150,
@@ -3039,7 +2971,6 @@ const SPELLS: Dictionary = {
     "higher_levels": "",
     "visual_style": "fire",
     "transient_seconds": 5,
-    "target_mode": "token_then_token",
     "range_feet": 500
   },
   "dimension_door": {
@@ -3121,10 +3052,11 @@ const SPELLS: Dictionary = {
     ],
     "description": "You launch a green ray at a target you can see within range. The target can be a creature, a nonmagical object, or a creation of magical force, such as the wall created by Wall of Force. A creature targeted by this spell makes a Dexterity saving throw. On a failed save, the target takes 10d6 + 40 Force damage. If this damage reduces it to 0 Hit Points, it and everything nonmagical it is wearing and carrying are disintegrated into gray dust. The target can be revived only by a True Resurrection or a Wish spell. This spell automatically disintegrates a Large or smaller nonmagical object or a creation of magical force. If such a target is Huge or larger, this spell disintegrates a 10-foot-Cube portion of it.",
     "higher_levels": "Using a Higher-Level Spell Slot: The damage increases by 3d6 for each spell slot level above 6.",
+    "range_feet": 60,
     "target_mode": "token_then_token",
     "projectile_style": "disintegrate",
     "projectile_travel_seconds": 0.65,
-    "range_feet": 60
+    "allow_point_target": true
   },
   "dispel_evil_and_good": {
     "id": "dispel_evil_and_good",
@@ -3172,10 +3104,7 @@ const SPELLS: Dictionary = {
     "higher_levels": "Using a Higher-Level Spell Slot: You automatically end a spell on the target if the spell's level is equal to or less than the level of the spell slot you use.",
     "visual_style": "arcane",
     "transient_seconds": 5,
-    "target_mode": "token_then_token",
-    "range_feet": 120,
-    "projectile_style": "dispel_magic",
-    "projectile_travel_seconds": 0.65
+    "range_feet": 120
   },
   "disruptive_tune": {
     "id": "disruptive_tune",
@@ -3198,7 +3127,6 @@ const SPELLS: Dictionary = {
     "higher_levels": "",
     "visual_style": "arcane",
     "transient_seconds": 5,
-    "target_mode": "token_then_point",
     "aoe_shape": "sphere",
     "aoe_radius_feet": 20,
     "range_feet": 120,
@@ -3378,10 +3306,7 @@ const SPELLS: Dictionary = {
     "higher_levels": "Using a Higher-Level Spell Slot: Your Concentration can last longer with a spell slot of level 5 (up to 10 minutes), 6 (up to 1 hour), or 7+ (up to 8 hours).",
     "visual_style": "enchantment",
     "transient_seconds": 5,
-    "target_mode": "token_then_token",
-    "range_feet": 60,
-    "projectile_style": "dominate_beast",
-    "projectile_travel_seconds": 0.65
+    "range_feet": 60
   },
   "dominate_monster": {
     "id": "dominate_monster",
@@ -3405,10 +3330,7 @@ const SPELLS: Dictionary = {
     "higher_levels": "Using a Higher-Level Spell Slot: Your Concentration can last longer with a level 9 spell slot (up to 8 hours).",
     "visual_style": "enchantment",
     "transient_seconds": 5,
-    "target_mode": "token_then_token",
-    "range_feet": 60,
-    "projectile_style": "dominate_monster",
-    "projectile_travel_seconds": 0.65
+    "range_feet": 60
   },
   "dominate_person": {
     "id": "dominate_person",
@@ -3431,10 +3353,7 @@ const SPELLS: Dictionary = {
     "higher_levels": "Using a Higher-Level Spell Slot: Your Concentration can last longer with a spell slot of level 6 (up to 10 minutes), 7 (up to 1 hour), or 8+ (up to 8 hours).",
     "visual_style": "enchantment",
     "transient_seconds": 5,
-    "target_mode": "token_then_token",
-    "range_feet": 60,
-    "projectile_style": "dominate_person",
-    "projectile_travel_seconds": 0.65
+    "range_feet": 60
   },
   "doomtide": {
     "id": "doomtide",
@@ -3504,7 +3423,6 @@ const SPELLS: Dictionary = {
     "higher_levels": "Using a Higher-Level Spell Slot: The damage increases by 1d6 for each spell slot level above 2.",
     "visual_style": "fire",
     "transient_seconds": 5,
-    "target_mode": "token_then_direction",
     "aoe_shape": "cone",
     "aoe_length_cells": 3,
     "direction_limit_feet": 15,
@@ -3702,10 +3620,7 @@ const SPELLS: Dictionary = {
     "higher_levels": "",
     "visual_style": "arcane",
     "transient_seconds": 5,
-    "target_mode": "token_then_token",
-    "range_feet": 300,
-    "projectile_style": "earthbind",
-    "projectile_travel_seconds": 0.65
+    "range_feet": 300
   },
   "earthquake": {
     "id": "earthquake",
@@ -3825,7 +3740,6 @@ const SPELLS: Dictionary = {
     "higher_levels": "",
     "visual_style": "arcane",
     "transient_seconds": 5,
-    "target_mode": "token_then_point",
     "aoe_shape": "cube",
     "aoe_side_feet": 5,
     "range_feet": 30
@@ -3906,10 +3820,7 @@ const SPELLS: Dictionary = {
     "higher_levels": "",
     "visual_style": "arcane",
     "transient_seconds": 5,
-    "target_mode": "token_then_token",
-    "range_feet": 120,
-    "projectile_style": "enemies_abound",
-    "projectile_travel_seconds": 0.65
+    "range_feet": 120
   },
   "enervation": {
     "id": "enervation",
@@ -3930,9 +3841,6 @@ const SPELLS: Dictionary = {
     ],
     "description": "A tendril of inky darkness reaches out from you to drain life from a creature you can see within range. The target makes a Dexterity saving throw. On a failed save, the target takes 6d8 Necrotic damage. On each of your subsequent turns, you can take a Bonus Action to deal 2d8 Necrotic damage to the target automatically. The spell ends if the target is ever outside the spell's range or it has Total Cover from you. On a successful save, the target takes half the initial damage only, and the spell ends. Whenever this spell deals damage to a target, you regain Hit Points equal to half the amount of Necrotic damage dealt.",
     "higher_levels": "Using a Higher-Level Spell Slot: The initial damage increases by 1d8 for each spell slot level above 5.",
-    "target_mode": "token_then_token",
-    "projectile_style": "enervation",
-    "projectile_travel_seconds": 0.65,
     "range_feet": 60
   },
   "enhance_ability": {
@@ -3960,13 +3868,7 @@ const SPELLS: Dictionary = {
     "higher_levels": "Using a Higher-Level Spell Slot: You can target one additional creature for each spell slot level above 2. You can choose a different ability for each target.",
     "visual_style": "arcane",
     "transient_seconds": 5,
-    "target_mode": "token_then_token",
-    "range_feet": 5,
-    "base_target_clicks": 1,
-    "allow_repeat_targets": false,
-    "target_clicks_per_slot_above_base": 1,
-    "projectile_style": "enhance_ability",
-    "projectile_travel_seconds": 0.65
+    "range_feet": 5
   },
   "enlarge_reduce": {
     "id": "enlarge_reduce",
@@ -3991,10 +3893,7 @@ const SPELLS: Dictionary = {
     "higher_levels": "",
     "visual_style": "arcane",
     "transient_seconds": 5,
-    "target_mode": "token_then_token",
-    "range_feet": 30,
-    "projectile_style": "enlarge_reduce",
-    "projectile_travel_seconds": 0.65
+    "range_feet": 30
   },
   "ensnaring_strike": {
     "id": "ensnaring_strike",
@@ -4087,12 +3986,7 @@ const SPELLS: Dictionary = {
     "higher_levels": "",
     "visual_style": "psychic",
     "transient_seconds": 5,
-    "target_mode": "token_then_multi_token",
-    "range_feet": 90,
-    "base_target_clicks": 3,
-    "allow_repeat_targets": false,
-    "projectile_style": "entrancing_mirrors",
-    "projectile_travel_seconds": 0.65
+    "range_feet": 90
   },
   "erupting_earth": {
     "id": "erupting_earth",
@@ -4115,7 +4009,6 @@ const SPELLS: Dictionary = {
     "higher_levels": "At Higher Levels: When you cast this spell using a spell slot of 4th level or higher, the damage increases by 1d12 for each slot level above 3rd.",
     "visual_style": "arcane",
     "transient_seconds": 5,
-    "target_mode": "token_then_point",
     "aoe_shape": "cube",
     "aoe_side_feet": 20,
     "range_feet": 120
@@ -4368,10 +4261,7 @@ const SPELLS: Dictionary = {
     "higher_levels": "",
     "visual_style": "arcane",
     "transient_seconds": 5,
-    "target_mode": "token_then_multi_token",
-    "range_feet": 60,
-    "projectile_style": "feather_fall",
-    "projectile_travel_seconds": 0.65
+    "range_feet": 60
   },
   "feeblemind": {
     "id": "feeblemind",
@@ -4449,7 +4339,6 @@ const SPELLS: Dictionary = {
     "higher_levels": "Using a Higher-Level Spell Slot: The initial damage increases by 1d10 for each spell slot level above 4.",
     "visual_style": "poison",
     "transient_seconds": 5,
-    "target_mode": "token_then_direction",
     "aoe_shape": "line",
     "aoe_length_cells": 12,
     "line_width_feet": 10,
@@ -4571,10 +4460,7 @@ const SPELLS: Dictionary = {
     "higher_levels": "",
     "visual_style": "necrotic",
     "transient_seconds": 5,
-    "target_mode": "token_then_token",
-    "range_feet": 60,
-    "projectile_style": "finger_of_death",
-    "projectile_travel_seconds": 0.65
+    "range_feet": 60
   },
   "fire_bolt": {
     "id": "fire_bolt",
@@ -4595,10 +4481,11 @@ const SPELLS: Dictionary = {
     ],
     "description": "You hurl a mote of fire at a creature or an object within range. Make a ranged spell attack against the target. On a hit, the target takes 1d10 Fire damage. A flammable object hit by this spell starts burning if it isn't being worn or carried.",
     "higher_levels": "Cantrip Upgrade: The damage increases by 1d10 when you reach levels 5 (2d10), 11 (3d10), and 17 (4d10).",
+    "range_feet": 120,
     "target_mode": "token_then_token",
     "projectile_style": "fire_bolt",
     "projectile_travel_seconds": 0.65,
-    "range_feet": 120
+    "allow_point_target": true
   },
   "fire_shield": {
     "id": "fire_shield",
@@ -4641,7 +4528,6 @@ const SPELLS: Dictionary = {
     "higher_levels": "",
     "visual_style": "fire",
     "transient_seconds": 5,
-    "target_mode": "token_then_point",
     "aoe_shape": "cube",
     "aoe_side_feet": 10,
     "range_feet": 150
@@ -4707,7 +4593,6 @@ const SPELLS: Dictionary = {
     "higher_levels": "At Higher Levels: When you cast this spell using a spell slot of 4th level or higher, the number of pieces of ammunition you can affect with this spell increases by two for each slot level above 3rd.",
     "visual_style": "fire",
     "transient_seconds": 5,
-    "target_mode": "token_then_token",
     "range_feet": 5
   },
   "flame_blade": {
@@ -4796,10 +4681,7 @@ const SPELLS: Dictionary = {
     "higher_levels": "",
     "visual_style": "arcane",
     "transient_seconds": 5,
-    "target_mode": "token_then_token",
-    "range_feet": 60,
-    "projectile_style": "flesh_to_stone",
-    "projectile_travel_seconds": 0.65
+    "range_feet": 60
   },
   "flock_of_familiars": {
     "id": "flock_of_familiars",
@@ -4842,13 +4724,7 @@ const SPELLS: Dictionary = {
     "higher_levels": "Using a Higher-Level Spell Slot: You can target one additional creature for each spell slot level above 3.",
     "visual_style": "arcane",
     "transient_seconds": 5,
-    "target_mode": "token_then_token",
-    "range_feet": 5,
-    "base_target_clicks": 1,
-    "allow_repeat_targets": false,
-    "target_clicks_per_slot_above_base": 1,
-    "projectile_style": "fly",
-    "projectile_travel_seconds": 0.65
+    "range_feet": 5
   },
   "fog_cloud": {
     "id": "fog_cloud",
@@ -4997,10 +4873,7 @@ const SPELLS: Dictionary = {
     "higher_levels": "",
     "visual_style": "psychic",
     "transient_seconds": 5,
-    "target_mode": "token_then_token",
-    "range_feet": 120,
-    "projectile_style": "fractured_awareness",
-    "projectile_travel_seconds": 0.65
+    "range_feet": 120
   },
   "freedom_of_movement": {
     "id": "freedom_of_movement",
@@ -5055,10 +4928,7 @@ const SPELLS: Dictionary = {
     "higher_levels": "",
     "visual_style": "enchantment",
     "transient_seconds": 5,
-    "target_mode": "token_then_token",
-    "range_feet": 10,
-    "projectile_style": "friends",
-    "projectile_travel_seconds": 0.65
+    "range_feet": 10
   },
   "frost_fingers": {
     "id": "frost_fingers",
@@ -5108,11 +4978,8 @@ const SPELLS: Dictionary = {
     "higher_levels": "",
     "visual_style": "cold",
     "transient_seconds": 5,
-    "target_mode": "token_then_token",
     "range_feet": 60,
-    "level17_damage": "4d6 Cold",
-    "projectile_style": "frostbite",
-    "projectile_travel_seconds": 0.65
+    "level17_damage": "4d6 Cold"
   },
   "galders_speedy_courier": {
     "id": "galders_speedy_courier",
@@ -5169,10 +5036,7 @@ const SPELLS: Dictionary = {
       "Wizard"
     ],
     "description": "A willing creature you touch shape-shifts, along with everything it's wearing and carrying, into a misty cloud for the duration. The spell ends on the target if it drops to 0 Hit Points or if it takes a Magic action to end the spell on itself. While in this form, the target's only method of movement is a Fly Speed of 10 feet, and it can hover. The target can enter and occupy the space of another creature. The target has Resistance to Bludgeoning, Piercing, and Slashing damage; it has Immunity to the Prone condition; and it has Advantage on Strength, Dexterity, and Constitution saving throws. The target can pass through narrow openings, but it treats liquids as though they were solid surfaces. The target can't talk or manipulate objects, and any objects it was carrying or holding can't be dropped, used, or otherwise interacted with. Finally, the target can't attack or cast spells.",
-    "higher_levels": "Using a Higher-Level Spell Slot: You can target one additional creature for each spell slot level above 3.",
-    "target_mode": "token_then_token",
-    "projectile_style": "gaseous_form",
-    "projectile_travel_seconds": 0.65
+    "higher_levels": "Using a Higher-Level Spell Slot: You can target one additional creature for each spell slot level above 3."
   },
   "gate": {
     "id": "gate",
@@ -5528,10 +5392,7 @@ const SPELLS: Dictionary = {
     "higher_levels": "",
     "visual_style": "arcane",
     "transient_seconds": 5,
-    "target_mode": "token_then_token",
-    "range_feet": 5,
-    "projectile_style": "greater_invisibility",
-    "projectile_travel_seconds": 0.65
+    "range_feet": 5
   },
   "greater_restoration": {
     "id": "greater_restoration",
@@ -5584,7 +5445,6 @@ const SPELLS: Dictionary = {
     "higher_levels": "",
     "visual_style": "fire",
     "transient_seconds": 5,
-    "target_mode": "self_emanation",
     "aoe_shape": "sphere",
     "aoe_radius_feet": 5,
     "show_range_preview": false,
@@ -5729,10 +5589,7 @@ const SPELLS: Dictionary = {
     "higher_levels": "",
     "visual_style": "arcane",
     "transient_seconds": 5,
-    "target_mode": "token_then_token",
-    "range_feet": 30,
-    "projectile_style": "gust",
-    "projectile_travel_seconds": 0.65
+    "range_feet": 30
   },
   "gust_of_wind": {
     "id": "gust_of_wind",
@@ -5867,10 +5724,7 @@ const SPELLS: Dictionary = {
     "higher_levels": "",
     "visual_style": "arcane",
     "transient_seconds": 5,
-    "target_mode": "token_then_token",
-    "range_feet": 30,
-    "projectile_style": "haste",
-    "projectile_travel_seconds": 0.65
+    "range_feet": 30
   },
   "heal": {
     "id": "heal",
@@ -6108,13 +5962,7 @@ const SPELLS: Dictionary = {
     "higher_levels": "Using a Higher-Level Spell Slot: You can target one additional creature for each spell slot level above 5.",
     "visual_style": "arcane",
     "transient_seconds": 5,
-    "target_mode": "token_then_token",
-    "range_feet": 90,
-    "base_target_clicks": 1,
-    "allow_repeat_targets": false,
-    "target_clicks_per_slot_above_base": 1,
-    "projectile_style": "hold_monster",
-    "projectile_travel_seconds": 0.65
+    "range_feet": 90
   },
   "hold_person": {
     "id": "hold_person",
@@ -6140,13 +5988,7 @@ const SPELLS: Dictionary = {
     "higher_levels": "Using a Higher-Level Spell Slot: You can target one additional Humanoid for each spell slot level above 2.",
     "visual_style": "arcane",
     "transient_seconds": 5,
-    "target_mode": "token_then_token",
-    "range_feet": 60,
-    "base_target_clicks": 1,
-    "allow_repeat_targets": false,
-    "target_clicks_per_slot_above_base": 1,
-    "projectile_style": "hold_person",
-    "projectile_travel_seconds": 0.65
+    "range_feet": 60
   },
   "holy_aura": {
     "id": "holy_aura",
@@ -6312,10 +6154,11 @@ const SPELLS: Dictionary = {
     ],
     "description": "You create a shard of ice and fling it at one creature within range. Make a ranged spell attack against the target. On a hit, the target takes 1d10 Piercing damage. Hit or miss, the shard then explodes. The target and each creature within 5 feet of it must succeed on a Dexterity saving throw or take 2d6 Cold damage.",
     "higher_levels": "Using a Higher-Level Spell Slot: The Cold damage increases by 1d6 for each spell slot level above 1.",
+    "range_feet": 60,
     "target_mode": "token_then_token",
     "projectile_style": "ice_knife",
     "projectile_travel_seconds": 0.65,
-    "range_feet": 60
+    "allow_point_target": true
   },
   "ice_storm": {
     "id": "ice_storm",
@@ -6421,10 +6264,7 @@ const SPELLS: Dictionary = {
     "higher_levels": "",
     "visual_style": "fire",
     "transient_seconds": 5,
-    "target_mode": "token_then_token",
-    "range_feet": 90,
-    "projectile_style": "immolation",
-    "projectile_travel_seconds": 0.65
+    "range_feet": 90
   },
   "immovable_object": {
     "id": "immovable_object",
@@ -6489,7 +6329,6 @@ const SPELLS: Dictionary = {
     "higher_levels": "",
     "visual_style": "fire",
     "transient_seconds": 5,
-    "target_mode": "token_then_point",
     "aoe_shape": "sphere",
     "aoe_radius_feet": 20,
     "range_feet": 150,
@@ -6517,10 +6356,7 @@ const SPELLS: Dictionary = {
     "higher_levels": "",
     "visual_style": "enchantment",
     "transient_seconds": 5,
-    "target_mode": "token_then_multi_token",
-    "range_feet": 30,
-    "projectile_style": "incite_greed",
-    "projectile_travel_seconds": 0.65
+    "range_feet": 30
   },
   "infernal_calling": {
     "id": "infernal_calling",
@@ -6563,11 +6399,8 @@ const SPELLS: Dictionary = {
     "higher_levels": "",
     "visual_style": "poison",
     "transient_seconds": 5,
-    "target_mode": "token_then_token",
     "range_feet": 30,
-    "level17_damage": "4d6 Poison",
-    "projectile_style": "infestation",
-    "projectile_travel_seconds": 0.65
+    "level17_damage": "4d6 Poison"
   },
   "inflict_doubt": {
     "id": "inflict_doubt",
@@ -6591,10 +6424,7 @@ const SPELLS: Dictionary = {
     "higher_levels": "",
     "visual_style": "arcane",
     "transient_seconds": 5,
-    "target_mode": "token_then_token",
-    "range_feet": 120,
-    "projectile_style": "inflict_doubt",
-    "projectile_travel_seconds": 0.65
+    "range_feet": 120
   },
   "inflict_wounds": {
     "id": "inflict_wounds",
@@ -6684,7 +6514,6 @@ const SPELLS: Dictionary = {
     "higher_levels": "",
     "visual_style": "fire",
     "transient_seconds": 5,
-    "target_mode": "token_then_direction",
     "aoe_shape": "line",
     "aoe_length_cells": 3,
     "line_width_feet": 5,
@@ -6713,7 +6542,6 @@ const SPELLS: Dictionary = {
     "higher_levels": "",
     "visual_style": "cold",
     "transient_seconds": 5,
-    "target_mode": "token_then_token",
     "range_feet": 5
   },
   "investiture_of_stone": {
@@ -6738,7 +6566,6 @@ const SPELLS: Dictionary = {
     "higher_levels": "",
     "visual_style": "arcane",
     "transient_seconds": 5,
-    "target_mode": "token_then_token",
     "range_feet": 5
   },
   "investiture_of_wind": {
@@ -6763,7 +6590,6 @@ const SPELLS: Dictionary = {
     "higher_levels": "",
     "visual_style": "arcane",
     "transient_seconds": 5,
-    "target_mode": "token_then_point",
     "aoe_shape": "cube",
     "aoe_side_feet": 15,
     "range_feet": 5,
@@ -6792,13 +6618,7 @@ const SPELLS: Dictionary = {
     "higher_levels": "Using a Higher-Level Spell Slot: You can target one additional creature for each spell slot level above 2.",
     "visual_style": "arcane",
     "transient_seconds": 5,
-    "target_mode": "token_then_token",
-    "range_feet": 5,
-    "base_target_clicks": 1,
-    "allow_repeat_targets": false,
-    "target_clicks_per_slot_above_base": 1,
-    "projectile_style": "invisibility",
-    "projectile_travel_seconds": 0.65
+    "range_feet": 5
   },
   "invulnerability": {
     "id": "invulnerability",
@@ -6836,10 +6656,7 @@ const SPELLS: Dictionary = {
       "Wizard"
     ],
     "description": "One willing creature you touch transforms into living metal. Until the spell ends, the target's Exhaustion level can't increase; the target has Resistance to Bludgeoning, Fire, Piercing, and Slashing damage; and it has Immunity to Poison damage and the Paralyzed, Petrified, and Poisoned conditions. If the target is Paralyzed, Petrified, or Poisoned when you cast the spell, those conditions immediately end for the target.",
-    "higher_levels": "",
-    "target_mode": "token_then_token",
-    "projectile_style": "iron_body",
-    "projectile_travel_seconds": 0.65
+    "higher_levels": ""
   },
   "jallarzis_storm_of_radiance": {
     "id": "jallarzis_storm_of_radiance",
@@ -6939,13 +6756,7 @@ const SPELLS: Dictionary = {
     "higher_levels": "Using a Higher-Level Spell Slot: You can target one additional creature for each spell slot level above 1.",
     "visual_style": "arcane",
     "transient_seconds": 5,
-    "target_mode": "token_then_token",
-    "range_feet": 5,
-    "base_target_clicks": 1,
-    "allow_repeat_targets": false,
-    "target_clicks_per_slot_above_base": 1,
-    "projectile_style": "jump",
-    "projectile_travel_seconds": 0.65
+    "range_feet": 5
   },
   "kinetic_jaunt": {
     "id": "kinetic_jaunt",
@@ -7009,7 +6820,6 @@ const SPELLS: Dictionary = {
     "higher_levels": "Using a Higher-Level Spell Slot: The damage increases by 1d10 for every spell slot level above 3.",
     "visual_style": "force",
     "transient_seconds": 5,
-    "target_mode": "token_then_direction",
     "aoe_shape": "line",
     "aoe_length_cells": 24,
     "line_width_feet": 5,
@@ -7129,9 +6939,6 @@ const SPELLS: Dictionary = {
     ],
     "description": "One creature or loose object of your choice that you can see within range rises vertically up to 20 feet and remains suspended there for the duration. The spell can levitate an object that weighs up to 500 pounds. An unwilling creature that succeeds on a Constitution saving throw is unaffected. The target can move only by pushing or pulling against a fixed object or surface within reach (such as a wall or a ceiling), which allows it to move as if it were climbing. You can change the target's altitude by up to 20 feet in either direction on your turn. If you are the target, you can move up or down as part of your move. Otherwise, you can take a Magic action to move the target, which must remain within the spell's range. When the spell ends, the target floats gently to the ground if it is still aloft.",
     "higher_levels": "",
-    "target_mode": "token_then_token",
-    "projectile_style": "levitate",
-    "projectile_travel_seconds": 0.65,
     "range_feet": 60
   },
   "life_transference": {
@@ -7244,7 +7051,6 @@ const SPELLS: Dictionary = {
     "higher_levels": "",
     "visual_style": "lightning",
     "transient_seconds": 5,
-    "target_mode": "self_emanation",
     "aoe_shape": "sphere",
     "aoe_radius_feet": 15,
     "show_range_preview": false,
@@ -7457,10 +7263,7 @@ const SPELLS: Dictionary = {
     "higher_levels": "",
     "visual_style": "arcane",
     "transient_seconds": 5,
-    "target_mode": "token_then_token",
-    "range_feet": 5,
-    "projectile_style": "mage_armor",
-    "projectile_travel_seconds": 0.65
+    "range_feet": 5
   },
   "mage_hand": {
     "id": "mage_hand",
@@ -7548,13 +7351,14 @@ const SPELLS: Dictionary = {
     ],
     "description": "You create three glowing darts of magical force. Each dart strikes a creature of your choice that you can see within range. A dart deals 1d4 + 1 Force damage to its target. The darts all strike simultaneously, and you can direct them to hit one creature or several.",
     "higher_levels": "Using a Higher-Level Spell Slot: The spell creates one more dart for each spell slot level above 1.",
+    "range_feet": 120,
     "target_mode": "token_then_multi_token",
     "projectile_style": "magic_missile",
     "projectile_travel_seconds": 0.65,
-    "range_feet": 120,
     "base_target_clicks": 3,
     "target_clicks_per_slot_above_base": 1,
-    "allow_repeat_targets": true
+    "allow_repeat_targets": true,
+    "allow_point_target": true
   },
   "magic_mouth": {
     "id": "magic_mouth",
@@ -7758,11 +7562,7 @@ const SPELLS: Dictionary = {
     ],
     "description": "You transform up to ten creatures of your choice that you can see within range. An unwilling target must succeed on a Wisdom saving throw to resist the transformation. An unwilling shapechanger automatically succeeds on the save. Each target assumes a beast form of your choice, and you can choose the same form or different ones for each target. The new form can be type=beast you have seen whose challenge rating is equal to or less than the target's (or half the target's level, if the target doesn't have a challenge rating). The target's game statistics, including mental ability scores, are replaced by the statistics of the chosen beast, but the target retains its hit points, alignment, and personality. Each target gains a number of temporary hit points equal to the hit points of its new form. These temporary hit points can't be replaced by temporary hit points from another source. A target reverts to its normal form when it has no more temporary hit points or it dies. If the spell ends before then, the creature loses all its temporary hit points and reverts to its normal form. The creature is limited in the actions it can perform by the nature of its new form. It can't speak, cast spells, or do anything else that requires hands or speech. The target's gear melds into the new form. The target can't activate, use, wield, or otherwise benefit from any of its equipment.",
     "higher_levels": "",
-    "target_mode": "token_then_multi_token",
-    "projectile_style": "mass_polymorph",
-    "projectile_travel_seconds": 0.65,
-    "range_feet": 120,
-    "base_target_clicks": 10
+    "range_feet": 120
   },
   "mass_suggestion": {
     "id": "mass_suggestion",
@@ -7786,10 +7586,7 @@ const SPELLS: Dictionary = {
     "higher_levels": "Using a Higher-Level Spell Slot: The duration is longer with a spell slot of level 7 (10 days), 8 (30 days), or 9 (366 days).",
     "visual_style": "enchantment",
     "transient_seconds": 5,
-    "target_mode": "token_then_multi_token",
-    "range_feet": 60,
-    "projectile_style": "mass_suggestion",
-    "projectile_travel_seconds": 0.65
+    "range_feet": 60
   },
   "maximilians_earthen_grasp": {
     "id": "maximilians_earthen_grasp",
@@ -7811,10 +7608,7 @@ const SPELLS: Dictionary = {
     "higher_levels": "",
     "visual_style": "arcane",
     "transient_seconds": 5,
-    "target_mode": "token_then_token",
-    "range_feet": 30,
-    "projectile_style": "maximilians_earthen_grasp",
-    "projectile_travel_seconds": 0.65
+    "range_feet": 30
   },
   "maze": {
     "id": "maze",
@@ -7951,10 +7745,7 @@ const SPELLS: Dictionary = {
     "higher_levels": "",
     "visual_style": "psychic",
     "transient_seconds": 5,
-    "target_mode": "token_then_token",
-    "range_feet": 60,
-    "projectile_style": "mental_prison",
-    "projectile_travel_seconds": 0.65
+    "range_feet": 60
   },
   "message": {
     "id": "message",
@@ -7979,10 +7770,7 @@ const SPELLS: Dictionary = {
     "higher_levels": "",
     "visual_style": "arcane",
     "transient_seconds": 5,
-    "target_mode": "token_then_token",
-    "range_feet": 120,
-    "projectile_style": "message",
-    "projectile_travel_seconds": 0.65
+    "range_feet": 120
   },
   "meteor_swarm": {
     "id": "meteor_swarm",
@@ -8004,7 +7792,6 @@ const SPELLS: Dictionary = {
     "higher_levels": "",
     "visual_style": "fire",
     "transient_seconds": 5,
-    "target_mode": "token_then_point",
     "aoe_shape": "sphere",
     "aoe_radius_feet": 40,
     "range_feet": 1
@@ -8071,9 +7858,6 @@ const SPELLS: Dictionary = {
     ],
     "description": "You try to temporarily sliver the mind of one creature you can see within range. The target must succeed on an Intelligence saving throw or take 1d6 Psychic damage and subtract 1d4 from the next saving throw it makes before the end of your next turn.",
     "higher_levels": "Cantrip Upgrade: The damage increases by 1d6 when you reach levels 5 (2d6), 11 (3d6), and 17 (4d6).",
-    "target_mode": "token_then_token",
-    "projectile_style": "mind_sliver",
-    "projectile_travel_seconds": 0.65,
     "range_feet": 60
   },
   "mind_spike": {
@@ -8095,9 +7879,6 @@ const SPELLS: Dictionary = {
     ],
     "description": "You drive a spike of psionic energy into the mind of one creature you can see within range. The target makes a Wisdom saving throw, taking 3d8 Psychic damage on a failed save or half as much damage on a successful one. On a failed save, you also always know the target's location until the spell ends, but only while the two of you are on the same plane of existence. While you have this knowledge, the target can't become hidden from you, and if it has the Invisible condition, it gains no benefit from that condition against you.",
     "higher_levels": "Using a Higher-Level Spell Slot: The damage increases by 1d8 for each spell slot level above 2.",
-    "target_mode": "token_then_token",
-    "projectile_style": "mind_spike",
-    "projectile_travel_seconds": 0.65,
     "range_feet": 120
   },
   "minor_illusion": {
@@ -8248,7 +8029,6 @@ const SPELLS: Dictionary = {
     "higher_levels": "",
     "visual_style": "arcane",
     "transient_seconds": 5,
-    "target_mode": "token_then_point",
     "aoe_shape": "cube",
     "aoe_side_feet": 5,
     "range_feet": 30
@@ -8435,7 +8215,6 @@ const SPELLS: Dictionary = {
     "higher_levels": "",
     "visual_style": "arcane",
     "transient_seconds": 5,
-    "target_mode": "token_then_point",
     "aoe_shape": "flat_square",
     "aoe_side_feet": 40,
     "requires_ground": true,
@@ -8664,7 +8443,6 @@ const SPELLS: Dictionary = {
     "higher_levels": "",
     "visual_style": "psychic",
     "transient_seconds": 5,
-    "target_mode": "token_then_token",
     "range_feet": 60
   },
   "phantasmal_killer": {
@@ -8819,10 +8597,11 @@ const SPELLS: Dictionary = {
     ],
     "description": "You spray toxic mist at a creature within range. Make a ranged spell attack against the target. On a hit, the target takes 1d12 Poison damage.",
     "higher_levels": "Cantrip Upgrade: The damage increases by 1d12 when you reach levels 5 (2d12), 11 (3d12), and 17 (4d12).",
+    "range_feet": 30,
     "target_mode": "token_then_token",
     "projectile_style": "poison_spray",
     "projectile_travel_seconds": 0.65,
-    "range_feet": 30
+    "allow_point_target": true
   },
   "polymorph": {
     "id": "polymorph",
@@ -8844,9 +8623,6 @@ const SPELLS: Dictionary = {
     ],
     "description": "You attempt to transform a creature that you can see within range into a Beast. The target must succeed on a Wisdom saving throw or shape-shift into Beast form for the duration. That form can be any type=beast you choose that has a Challenge Rating equal to or less than the target's (or the target's level if it doesn't have a Challenge Rating). The target's game statistics are replaced by the stat block of the chosen Beast, but the target retains its alignment, personality, creature type, Hit Points, and Hit Point Dice. The target gains a number of Temporary Hit Points equal to the Hit Points of the Beast form. These Temporary Hit Points vanish if any remain when the spell ends. The spell ends early on the target if it has no Temporary Hit Points left. The target is limited in the actions it can perform by the anatomy of its new form, and it can't speak or cast spells. The target's gear melds into the new form. The creature can't use or otherwise benefit from any of that equipment.",
     "higher_levels": "",
-    "target_mode": "token_then_token",
-    "projectile_style": "polymorph",
-    "projectile_travel_seconds": 0.65,
     "range_feet": 60
   },
   "power_word_fortify": {
@@ -8923,10 +8699,7 @@ const SPELLS: Dictionary = {
     "higher_levels": "",
     "visual_style": "psychic",
     "transient_seconds": 5,
-    "target_mode": "token_then_token",
-    "range_feet": 60,
-    "projectile_style": "power_word_kill",
-    "projectile_travel_seconds": 0.65
+    "range_feet": 60
   },
   "power_word_pain": {
     "id": "power_word_pain",
@@ -8950,10 +8723,7 @@ const SPELLS: Dictionary = {
     "higher_levels": "",
     "visual_style": "arcane",
     "transient_seconds": 5,
-    "target_mode": "token_then_token",
-    "range_feet": 60,
-    "projectile_style": "power_word_pain",
-    "projectile_travel_seconds": 0.65
+    "range_feet": 60
   },
   "power_word_stun": {
     "id": "power_word_stun",
@@ -8977,10 +8747,7 @@ const SPELLS: Dictionary = {
     "higher_levels": "",
     "visual_style": "arcane",
     "transient_seconds": 5,
-    "target_mode": "token_then_token",
-    "range_feet": 60,
-    "projectile_style": "power_word_stun",
-    "projectile_travel_seconds": 0.65
+    "range_feet": 60
   },
   "prayer_of_healing": {
     "id": "prayer_of_healing",
@@ -9088,7 +8855,6 @@ const SPELLS: Dictionary = {
     "higher_levels": "",
     "visual_style": "fire",
     "transient_seconds": 5,
-    "target_mode": "token_then_direction",
     "aoe_shape": "cone",
     "aoe_length_cells": 12,
     "direction_limit_feet": 60,
@@ -9193,10 +8959,7 @@ const SPELLS: Dictionary = {
     "higher_levels": "",
     "visual_style": "arcane",
     "transient_seconds": 5,
-    "target_mode": "token_then_token",
-    "range_feet": 5,
-    "projectile_style": "protection_from_energy",
-    "projectile_travel_seconds": 0.65
+    "range_feet": 5
   },
   "protection_from_evil_and_good": {
     "id": "protection_from_evil_and_good",
@@ -9278,12 +9041,7 @@ const SPELLS: Dictionary = {
     "higher_levels": "",
     "visual_style": "psychic",
     "transient_seconds": 5,
-    "target_mode": "token_then_multi_token",
-    "range_feet": 90,
-    "base_target_clicks": 10,
-    "allow_repeat_targets": false,
-    "projectile_style": "psychic_scream",
-    "projectile_travel_seconds": 0.65
+    "range_feet": 90
   },
   "pulse_wave": {
     "id": "pulse_wave",
@@ -9350,7 +9108,6 @@ const SPELLS: Dictionary = {
     "higher_levels": "",
     "visual_style": "arcane",
     "transient_seconds": 5,
-    "target_mode": "token_then_token",
     "range_feet": 60
   },
   "raise_dead": {
@@ -9421,10 +9178,7 @@ const SPELLS: Dictionary = {
     "higher_levels": "At Higher Levels: When you cast this spell using a spell slot of 5th level or higher, the damage increases by 1d6 for each slot level above 4th.",
     "visual_style": "psychic",
     "transient_seconds": 5,
-    "target_mode": "token_then_token",
-    "range_feet": 120,
-    "projectile_style": "raulothims_psychic_lance",
-    "projectile_travel_seconds": 0.65
+    "range_feet": 120
   },
   "ravenous_void": {
     "id": "ravenous_void",
@@ -9486,10 +9240,11 @@ const SPELLS: Dictionary = {
     ],
     "description": "A frigid beam of blue-white light streaks toward a creature within range. Make a ranged spell attack against the target. On a hit, it takes 1d8 Cold damage, and its Speed is reduced by 10 feet until the start of your next turn.",
     "higher_levels": "Cantrip Upgrade: The damage increases by 1d8 when you reach levels 5 (2d8), 11 (3d8), and 17 (4d8).",
+    "range_feet": 60,
     "target_mode": "token_then_token",
     "projectile_style": "ray_of_frost",
     "projectile_travel_seconds": 0.65,
-    "range_feet": 60
+    "allow_point_target": true
   },
   "ray_of_sickness": {
     "id": "ray_of_sickness",
@@ -9509,10 +9264,11 @@ const SPELLS: Dictionary = {
     ],
     "description": "You shoot a greenish ray at a creature within range. Make a ranged spell attack against the target. On a hit, the target takes 2d8 Poison damage and has the Poisoned condition until the end of your next turn.",
     "higher_levels": "Using a Higher-Level Spell Slot: The damage increases by 1d8 for each spell slot level above 1.",
+    "range_feet": 60,
     "target_mode": "token_then_token",
     "projectile_style": "ray_of_sickness",
     "projectile_travel_seconds": 0.65,
-    "range_feet": 60
+    "allow_point_target": true
   },
   "reality_break": {
     "id": "reality_break",
@@ -9671,7 +9427,6 @@ const SPELLS: Dictionary = {
     "higher_levels": "",
     "visual_style": "arcane",
     "transient_seconds": 5,
-    "target_mode": "token_then_point",
     "aoe_shape": "cylinder",
     "aoe_radius_feet": 50,
     "aoe_height_feet": 100,
@@ -9753,7 +9508,6 @@ const SPELLS: Dictionary = {
     "higher_levels": "At Higher Levels: When you cast this spell using a spell slot of 3rd level or higher, increase the cold damage by 1d8 for each slot level above 2nd.",
     "visual_style": "cold",
     "transient_seconds": 5,
-    "target_mode": "token_then_direction",
     "aoe_shape": "cone",
     "aoe_length_cells": 6,
     "direction_limit_feet": 30,
@@ -9867,11 +9621,7 @@ const SPELLS: Dictionary = {
     ],
     "description": "The air quivers around up to five creatures of your choice that you can see within range. An unwilling creature must succeed on a Wisdom saving throw to resist this spell. You teleport each affected target to an unoccupied space that you can see within 120 feet of you. That space must be on the ground or on a floor.",
     "higher_levels": "",
-    "target_mode": "token_then_multi_token",
-    "projectile_style": "scatter",
-    "projectile_travel_seconds": 0.65,
-    "range_feet": 30,
-    "base_target_clicks": 5
+    "range_feet": 30
   },
   "scorching_ray": {
     "id": "scorching_ray",
@@ -9891,11 +9641,14 @@ const SPELLS: Dictionary = {
     ],
     "description": "You hurl three fiery rays. You can hurl them at one target within range or at several. Make a ranged spell attack for each ray. On a hit, the target takes 2d6 Fire damage.",
     "higher_levels": "Using a Higher-Level Spell Slot: You create one additional ray for each spell slot level above 2.",
+    "range_feet": 120,
     "target_mode": "token_then_multi_token",
     "projectile_style": "scorching_ray",
     "projectile_travel_seconds": 0.65,
-    "range_feet": 120,
-    "target_clicks_per_slot_above_base": 1
+    "base_target_clicks": 3,
+    "target_clicks_per_slot_above_base": 1,
+    "allow_repeat_targets": true,
+    "allow_point_target": true
   },
   "scrying": {
     "id": "scrying",
@@ -9980,10 +9733,7 @@ const SPELLS: Dictionary = {
     "higher_levels": "",
     "visual_style": "arcane",
     "transient_seconds": 5,
-    "target_mode": "token_then_multi_token",
-    "range_feet": 30,
-    "projectile_style": "seeming",
-    "projectile_travel_seconds": 0.65
+    "range_feet": 30
   },
   "sending": {
     "id": "sending",
@@ -10092,7 +9842,6 @@ const SPELLS: Dictionary = {
     "higher_levels": "",
     "visual_style": "arcane",
     "transient_seconds": 5,
-    "target_mode": "token_then_point",
     "aoe_shape": "cube",
     "aoe_side_feet": 5,
     "range_feet": 30
@@ -10235,10 +9984,7 @@ const SPELLS: Dictionary = {
       "Wizard"
     ],
     "description": "Lightning springs from you to a creature that you try to touch. Make a melee spell attack against the target. On a hit, the target takes 1d8 Lightning damage, and it can't make Opportunity Attacks until the start of its next turn.",
-    "higher_levels": "Cantrip Upgrade: The damage increases by 1d8 when you reach levels 5 (2d8), 11 (3d8), and 17 (4d8).",
-    "target_mode": "token_then_token",
-    "projectile_style": "shocking_grasp",
-    "projectile_travel_seconds": 0.65
+    "higher_levels": "Cantrip Upgrade: The damage increases by 1d8 when you reach levels 5 (2d8), 11 (3d8), and 17 (4d8)."
   },
   "sickening_radiance": {
     "id": "sickening_radiance",
@@ -10261,7 +10007,6 @@ const SPELLS: Dictionary = {
     "higher_levels": "",
     "visual_style": "radiant",
     "transient_seconds": 5,
-    "target_mode": "token_then_point",
     "aoe_shape": "sphere",
     "aoe_radius_feet": 30,
     "range_feet": 120,
@@ -10335,10 +10080,7 @@ const SPELLS: Dictionary = {
     "higher_levels": "",
     "visual_style": "arcane",
     "transient_seconds": 5,
-    "target_mode": "token_then_token",
-    "range_feet": 60,
-    "projectile_style": "silvery_barbs",
-    "projectile_travel_seconds": 0.65
+    "range_feet": 60
   },
   "simbuls_synostodweomer": {
     "id": "simbuls_synostodweomer",
@@ -10360,10 +10102,7 @@ const SPELLS: Dictionary = {
     "higher_levels": "",
     "visual_style": "arcane",
     "transient_seconds": 5,
-    "target_mode": "token_then_token",
-    "range_feet": 5,
-    "projectile_style": "simbuls_synostodweomer",
-    "projectile_travel_seconds": 0.65
+    "range_feet": 5
   },
   "simulacrum": {
     "id": "simulacrum",
@@ -10408,10 +10147,7 @@ const SPELLS: Dictionary = {
     "higher_levels": "",
     "visual_style": "arcane",
     "transient_seconds": 5,
-    "target_mode": "token_then_token",
-    "range_feet": 5,
-    "projectile_style": "skill_empowerment",
-    "projectile_travel_seconds": 0.65
+    "range_feet": 5
   },
   "skywrite": {
     "id": "skywrite",
@@ -10541,7 +10277,6 @@ const SPELLS: Dictionary = {
     "higher_levels": "At Higher Levels: When you cast this spell using a spell slot of 3rd level or higher, the damage increases by 1d6 for each slot level above 2nd.",
     "visual_style": "cold",
     "transient_seconds": 5,
-    "target_mode": "token_then_point",
     "aoe_shape": "sphere",
     "aoe_radius_feet": 5,
     "range_feet": 90
@@ -10583,10 +10318,11 @@ const SPELLS: Dictionary = {
     ],
     "description": "You cast sorcerous energy at one creature or object within range. Make a ranged spell attack against the target. On a hit, the target takes 1d8 damage of a type you choose: Acid, Cold, Fire, Lightning, Poison, Psychic, or Thunder. If you roll an 8 on a d8 for this spell, you can roll another d8, and add it to the damage. When you cast this spell, the maximum number of these d8s you can add to the spell's damage equals your spellcasting ability modifier.",
     "higher_levels": "Cantrip Upgrade: The damage increases by 1d8 when you reach levels 5 (2d8), 11 (3d8), and 17 (4d8).",
+    "range_feet": 120,
     "target_mode": "token_then_token",
     "projectile_style": "sorcerous_burst",
     "projectile_travel_seconds": 0.65,
-    "range_feet": 120
+    "allow_point_target": true
   },
   "soul_cage": {
     "id": "soul_cage",
@@ -10721,10 +10457,11 @@ const SPELLS: Dictionary = {
     "higher_levels": "Using a Higher-Level Spell Slot: You create an additional blast for each spell slot level above 1. You can direct the blasts at the same target or at different ones. Make a separate attack roll for each blast.",
     "visual_style": "radiant",
     "transient_seconds": 5,
-    "target_mode": "token_then_token",
     "range_feet": 60,
+    "target_mode": "token_then_token",
     "projectile_style": "spellfire_flare",
-    "projectile_travel_seconds": 0.65
+    "projectile_travel_seconds": 0.65,
+    "allow_point_target": true
   },
   "spellfire_storm": {
     "id": "spellfire_storm",
@@ -10746,7 +10483,6 @@ const SPELLS: Dictionary = {
     "higher_levels": "Using a Higher-Level Spell Slot: The damage increases by 1d10 for every spell slot level above 4. The number of secondary casters determines the spell's area of effect and duration, as shown in the table below. The spell ends early if any caster who participated in this casting contributes to another casting of Spellfire Storm as a Circle spell. 1-3 40-foot-radius, 40-foot-high Cylinder 1 Hour 4-6 60-foot-radius, 60-foot-high Cylinder 8 Hours 7+ 100-foot-radius, 100-foot-high Cylinder 24 Hours",
     "visual_style": "radiant",
     "transient_seconds": 5,
-    "target_mode": "token_then_point",
     "aoe_shape": "cylinder",
     "aoe_radius_feet": 20,
     "aoe_height_feet": 20,
@@ -10923,7 +10659,6 @@ const SPELLS: Dictionary = {
     "higher_levels": "At Higher Levels: When you cast this spell using a spell slot of 3rd level or higher, the damage increases by 1d10 for each slot level above 2nd.",
     "visual_style": "force",
     "transient_seconds": 5,
-    "target_mode": "token_then_direction",
     "aoe_shape": "cone",
     "aoe_length_cells": 3,
     "direction_limit_feet": 15,
@@ -11061,10 +10796,7 @@ const SPELLS: Dictionary = {
     "higher_levels": "",
     "visual_style": "arcane",
     "transient_seconds": 5,
-    "target_mode": "token_then_token",
-    "range_feet": 5,
-    "projectile_style": "stoneskin",
-    "projectile_travel_seconds": 0.65
+    "range_feet": 5
   },
   "storm_of_vengeance": {
     "id": "storm_of_vengeance",
@@ -11129,10 +10861,7 @@ const SPELLS: Dictionary = {
     "higher_levels": "",
     "visual_style": "enchantment",
     "transient_seconds": 5,
-    "target_mode": "token_then_token",
-    "range_feet": 30,
-    "projectile_style": "suggestion",
-    "projectile_travel_seconds": 0.65
+    "range_feet": 30
   },
   "summon_aberration": {
     "id": "summon_aberration",
@@ -11464,7 +11193,6 @@ const SPELLS: Dictionary = {
     "higher_levels": "",
     "visual_style": "radiant",
     "transient_seconds": 5,
-    "target_mode": "token_then_point",
     "aoe_shape": "sphere",
     "aoe_radius_feet": 60,
     "range_feet": 150
@@ -11509,7 +11237,6 @@ const SPELLS: Dictionary = {
     "higher_levels": "",
     "visual_style": "force",
     "transient_seconds": 5,
-    "target_mode": "self_emanation",
     "aoe_shape": "sphere",
     "aoe_radius_feet": 5,
     "show_range_preview": false,
@@ -11623,7 +11350,6 @@ const SPELLS: Dictionary = {
     "higher_levels": "At Higher Levels: When you cast this spell using a spell slot of 2nd level or higher, the damage increases by 2d4 for each slot level above 1st.",
     "visual_style": "acid",
     "transient_seconds": 5,
-    "target_mode": "token_then_direction",
     "aoe_shape": "line",
     "aoe_length_cells": 6,
     "line_width_feet": 5,
@@ -11679,13 +11405,7 @@ const SPELLS: Dictionary = {
     "higher_levels": "At Higher Levels: When you cast this spell using a spell slot of 3rd level or higher, you can target one additional creature for each slot level above 2nd. The creatures must be within 30 feet of each other when you target them.",
     "visual_style": "psychic",
     "transient_seconds": 5,
-    "target_mode": "token_then_token",
-    "range_feet": 90,
-    "base_target_clicks": 1,
-    "allow_repeat_targets": false,
-    "target_clicks_per_slot_above_base": 1,
-    "projectile_style": "tashas_mind_whip",
-    "projectile_travel_seconds": 0.65
+    "range_feet": 90
   },
   "tashas_otherworldly_guise": {
     "id": "tashas_otherworldly_guise",
@@ -11725,9 +11445,6 @@ const SPELLS: Dictionary = {
     ],
     "description": "You gain the ability to move or manipulate creatures or objects by thought. When you cast the spell and as a Magic action on your later turns before the spell ends, you can exert your will on one creature or object that you can see within range, causing the appropriate effect below. You can affect the same target round after round or choose a new one at any time. If you switch targets, the prior target is no longer affected by the spell. Creature: You can try to move a Huge or smaller creature. The target must succeed on a Strength saving throw, or you move it up to 30 feet in any direction within the spell's range. Until the end of your next turn, the creature has the Restrained condition, and if you lift it into the air, it is suspended there. It falls at the end of your next turn unless you use this option on it again and it fails the save. Object: You can try to move a Huge or smaller object. If the object isn't being worn or carried, you automatically move it up to 30 feet in any direction within the spell's range. If the object is worn or carried by a creature, that creature must succeed on a Strength saving throw, or you pull the object away and move it up to 30 feet in any direction within the spell's range. You can exert fine control on objects with your telekinetic grip, such as manipulating a simple tool, opening a door or a container, stowing or retrieving an item from an open container, or pouring the contents from a vial.",
     "higher_levels": "",
-    "target_mode": "token_then_token",
-    "projectile_style": "telekinesis",
-    "projectile_travel_seconds": 0.65,
     "range_feet": 60
   },
   "telepathy": {
@@ -11774,11 +11491,7 @@ const SPELLS: Dictionary = {
     ],
     "description": "This spell instantly transports you and up to eight willing creatures that you can see within range, or a single object that you can see within range, to a destination you select. If you target an object, it must be Large or smaller, and it can't be held or carried by an unwilling creature. The destination you choose must be known to you, and it must be on the same plane of existence as you. Your familiarity with the destination determines whether you arrive there successfully. The DM rolls 1d100 and consults the Teleportation Outcome table and the explanations after it. Permanent circle — — — 01-00 Linked object — — — 01-00 Very familiar 01-05 06-13 14-24 25-00 Seen casually 01-33 34-43 44-53 54-00 Viewed once or described 01-43 44-53 54-73 74-00 False destination 01-50 51-00 — — Familiarity: Here are the meanings of the terms in the table's Familiarity column: \"Permanent circle\" means a permanent teleportation circle whose sigil sequence you know. \"Linked object\" means you possess an object taken from the desired destination within the last six months, such as a book from a wizard's library. \"Very familiar\" is a place you have visited often, a place you have carefully studied, or a place you can see when you cast the spell. \"Seen casually\" is a place you have seen more than once but with which you aren't very familiar. \"Viewed once or described\" is a place you have seen once, possibly using magic, or a place you know through someone else's description, perhaps from a map. \"False destination\" is a place that doesn't exist. Perhaps you tried to scry an enemy's sanctum but instead viewed an illusion, or you are attempting to teleport to a location that no longer exists. Mishap: The spell's unpredictable magic results in a difficult journey. Each teleporting creature (or the target object) takes 3d10 Force damage, and the DM rerolls on the table to see where you wind up (multiple mishaps can occur, dealing damage each time). Similar Area: You and your group (or the target object) appear in a different area that's visually or thematically similar to the target area. You appear in the closest similar place. If you are heading for your home laboratory, for example, you might appear in another person's laboratory in the same city. Off Target: You and your group (or the target object) appear 2d12 miles away from the destination in a random direction. Roll 1d8 for the direction: 1, east; 2, southeast; 3, south; 4, southwest; 5, west; 6, northwest; 7, north; or 8, northeast. On Target: You and your group (or the target object) appear where you intended.",
     "higher_levels": "",
-    "target_mode": "token_then_multi_token",
-    "projectile_style": "teleport",
-    "projectile_travel_seconds": 0.65,
-    "range_feet": 10,
-    "base_target_clicks": 8
+    "range_feet": 10
   },
   "teleportation_circle": {
     "id": "teleportation_circle",
@@ -12149,10 +11862,7 @@ const SPELLS: Dictionary = {
     "higher_levels": "",
     "visual_style": "arcane",
     "transient_seconds": 5,
-    "target_mode": "token_then_token",
-    "range_feet": 5,
-    "projectile_style": "tongues",
-    "projectile_travel_seconds": 0.65
+    "range_feet": 5
   },
   "transfix": {
     "id": "transfix",
@@ -12458,10 +12168,7 @@ const SPELLS: Dictionary = {
     "higher_levels": "",
     "visual_style": "psychic",
     "transient_seconds": 5,
-    "target_mode": "token_then_token",
-    "range_feet": 120,
-    "projectile_style": "vision_of_elapsing_eons",
-    "projectile_travel_seconds": 0.65
+    "range_feet": 120
   },
   "vitriolic_sphere": {
     "id": "vitriolic_sphere",
@@ -12523,12 +12230,7 @@ const SPELLS: Dictionary = {
     "higher_levels": "",
     "visual_style": "psychic",
     "transient_seconds": 5,
-    "target_mode": "token_then_multi_token",
-    "range_feet": 60,
-    "base_target_clicks": 10,
-    "allow_repeat_targets": false,
-    "projectile_style": "wail_of_the_banshee",
-    "projectile_travel_seconds": 0.65
+    "range_feet": 60
   },
   "wall_of_fire": {
     "id": "wall_of_fire",
@@ -12698,7 +12400,6 @@ const SPELLS: Dictionary = {
     "higher_levels": "",
     "visual_style": "wall_of_water",
     "transient_seconds": 5,
-    "target_mode": "wall_design",
     "wall_modes": [
       "polyline",
       "circle"
@@ -12829,11 +12530,7 @@ const SPELLS: Dictionary = {
     "higher_levels": "",
     "visual_style": "arcane",
     "transient_seconds": 5,
-    "target_mode": "token_then_multi_token",
-    "range_feet": 30,
-    "projectile_style": "water_breathing",
-    "projectile_travel_seconds": 0.65,
-    "base_target_clicks": 10
+    "range_feet": 30
   },
   "water_walk": {
     "id": "water_walk",
@@ -12858,11 +12555,7 @@ const SPELLS: Dictionary = {
     "higher_levels": "",
     "visual_style": "arcane",
     "transient_seconds": 5,
-    "target_mode": "token_then_multi_token",
-    "range_feet": 30,
-    "projectile_style": "water_walk",
-    "projectile_travel_seconds": 0.65,
-    "base_target_clicks": 10
+    "range_feet": 30
   },
   "watery_sphere": {
     "id": "watery_sphere",
@@ -12905,7 +12598,6 @@ const SPELLS: Dictionary = {
     "higher_levels": "",
     "visual_style": "arcane",
     "transient_seconds": 5,
-    "target_mode": "token_then_direction",
     "aoe_shape": "cone",
     "aoe_length_cells": 12,
     "direction_limit_feet": 60,
@@ -12979,7 +12671,6 @@ const SPELLS: Dictionary = {
     "higher_levels": "",
     "visual_style": "arcane",
     "transient_seconds": 5,
-    "target_mode": "token_then_point",
     "aoe_shape": "cylinder",
     "aoe_radius_feet": 10,
     "aoe_height_feet": 30,
@@ -13068,10 +12759,11 @@ const SPELLS: Dictionary = {
     ],
     "description": "A beam of crackling energy lances toward a creature within range, forming a sustained arc of lightning between you and the target. Make a ranged spell attack against it. On a hit, the target takes 2d12 Lightning damage. On each of your subsequent turns, you can take a Bonus Action to deal 1d12 Lightning damage to the target automatically, even if the first attack missed. The spell ends if the target is ever outside the spell's range or if it has Total Cover from you.",
     "higher_levels": "Using a Higher-Level Spell Slot: The initial damage increases by 1d12 for each spell slot level above 1.",
+    "range_feet": 60,
     "target_mode": "token_then_token",
     "projectile_style": "witch_bolt",
     "projectile_travel_seconds": 0.65,
-    "range_feet": 60
+    "allow_point_target": true
   },
   "wither_and_bloom": {
     "id": "wither_and_bloom",
@@ -13094,7 +12786,6 @@ const SPELLS: Dictionary = {
     "higher_levels": "Using a Higher-Level Spell Slot: The damage increases by 1d6 for each spell slot level above 2. The number of Hit Point Dice that can be rolled and expended increases by one for each spell slot level above 2. You add your spellcasting modifier to the number of Hit Points regained by this spell only once, regardless of the number of Hit Point Dice rolled and expended.",
     "visual_style": "necrotic",
     "transient_seconds": 5,
-    "target_mode": "token_then_token",
     "range_feet": 60
   },
   "word_of_radiance": {
