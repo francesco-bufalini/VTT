@@ -761,6 +761,9 @@ func load_state(value: Variant) -> bool:
 		round_number = 1
 		turn_count = 0
 	_render()
+	combat_state_changed.emit(combat_active)
+	if combat_active and not entries.is_empty():
+		_emit_turn_changed()
 	return true
 
 
@@ -772,3 +775,4 @@ func clear_state() -> void:
 	turn_count = 0
 	_next_entry_id = 1
 	_render()
+	combat_state_changed.emit(false)
