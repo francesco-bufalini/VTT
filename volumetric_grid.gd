@@ -20,7 +20,7 @@ const INVALID_CELL := Vector3i(2147483647, 2147483647, 2147483647)
 @export_range(1.0, 20.0, 0.5) var camera_rotation_threshold_degrees: float = 5.0
 
 # Query distribuite su piu physics frame: un budget piu basso evita picchi.
-@export_range(1, 2048, 1) var max_cell_tests_per_frame: int = 256
+@export_range(1, 2048, 1) var max_cell_tests_per_frame: int = 128
 @export_range(1, 32, 1) var max_query_results: int = 8
 @export_range(1000, 250000, 1000) var max_cached_cells: int = 120000
 @export_range(0.25, 5.0, 0.25) var map_change_check_interval: float = 1.0
