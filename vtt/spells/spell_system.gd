@@ -19,6 +19,7 @@ var activate_button: Button
 var instruction_label: Label
 var wall_mode_menu: PopupMenu
 var wall_orientation_menu: PopupMenu
+var summon_count_menu: PopupMenu
 var saving_throw_dialog: ConfirmationDialog
 
 var _selected_spell_id: String = ""
@@ -32,6 +33,8 @@ var _selected_slot_level: int = 0
 var _pending_targets: Array[Node3D] = []
 var _pending_target_points: Array[Vector3] = []
 var _pending_chain_primary: Node3D = null
+var _summon_total_count: int = 1
+var _summon_created_count: int = 0
 var _saving_throw_targets: Array[Node3D] = []
 var _saving_throw_index: int = 0
 var _saving_throw_caster_origin: Vector3 = Vector3.ZERO
@@ -75,11 +78,28 @@ func _initialize() -> void:
 	_build_panel()
 	_build_instruction_label()
 	_build_saving_throw_dialog()
+	_build_summon_count_menu()
 	_build_wall_mode_menu()
 	_build_wall_orientation_menu()
 	_populate_class_tree()
 	_refresh_search_results("")
 	_select_spell("burning_hands")
+
+
+func _build_summon_count_menu() -> void:
+	summon_count_menu = PopupMenu.new()
+	summon_count_menu.name = "SummonCountMenu"
+	summon_count_menu.id_pressed.connect(_on_summon_count_selected)
+	summon_count_menu.popup_hide.connect(_on_summon_count_menu_hidden)
+	ui_root.add_child(summon_count_menu)
+
+
+func _on_summon_count_menu_hidden() -> void:
+	if (
+		_targeting_phase == "summon_count"
+		and not _pending_spell_id.is_empty()
+	):
+		call_deferred("_cancel_pending_cast")
 
 
 func _build_wall_mode_menu() -> void:
