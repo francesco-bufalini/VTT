@@ -181,7 +181,13 @@ def summon_runtime_fields(spell: dict[str, Any], runtime: dict) -> dict:
         "range_feet":_summon_range_feet(spell),
         "summon_count":1,
     }
-    if re.search(r"\bon the ground\b|\bspace on the ground\b",text):
+    if re.search(
+        r"\b(?:appears?|manifests?|springs(?:\s+into\s+existence)?)\b"
+        r"[^.]{0,160}\bon\s+the\s+ground\b"
+        r"|\bon\s+the\s+ground\b[^.]{0,100}"
+        r"\b(?:appears?|manifests?)\b",
+        text,
+    ):
         result["summon_requires_ground"]=True
 
     number=r"(one|two|three|four|five|six|seven|eight|nine|ten|eleven|twelve|\d+)"
