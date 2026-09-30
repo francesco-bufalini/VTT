@@ -232,7 +232,10 @@ const SPELLS: Dictionary = {
     "saving_throw": [],
     "misc_tags": [
       "UA"
-    ]
+    ],
+    "target_mode": "transform_self",
+    "range_feet": 5,
+    "transformation_mode": "appearance"
   },
   "alustriels_mooncloak": {
     "id": "alustriels_mooncloak",
@@ -351,7 +354,7 @@ const SPELLS: Dictionary = {
     ],
     "description": "Choose any number of willing creatures that you can see within range. Each target shape-shifts into a Large or smaller Beast of your choice that has a Challenge Rating of 4 or lower. You can choose a different form for each target. On later turns, you can take a Magic action to transform the targets again. A target's game statistics are replaced by the chosen Beast's statistics, but the target retains its creature type; Hit Points; Hit Point Dice; alignment; ability to communicate; and Intelligence, Wisdom, and Charisma scores. The target's actions are limited by the Beast form's anatomy, and it can't cast spells. The target's equipment melds into the new form, and the target can't use any of that equipment while in that form. The target gains a number of Temporary Hit Points equal to the Hit Points of the first form into which it shape-shifts. These Temporary Hit Points vanish if any remain when the spell ends. The transformation lasts for the duration or until the target ends it as a Bonus Action.",
     "higher_levels": "",
-    "target_mode": "token_then_multi_token",
+    "target_mode": "token_then_multi_transform",
     "projectile_style": "animal_shapes",
     "projectile_travel_seconds": 0.65,
     "range_feet": 30,
@@ -360,7 +363,8 @@ const SPELLS: Dictionary = {
     "misc_tags": [
       "SGT",
       "UA"
-    ]
+    ],
+    "transformation_mode": "appearance"
   },
   "animate_dead": {
     "id": "animate_dead",
@@ -1052,7 +1056,7 @@ const SPELLS: Dictionary = {
     "higher_levels": "",
     "visual_style": "arcane",
     "transient_seconds": 5,
-    "target_mode": "token_then_token",
+    "target_mode": "token_then_transform",
     "range_feet": 5,
     "projectile_style": "barkskin",
     "projectile_travel_seconds": 0.65,
@@ -1060,7 +1064,8 @@ const SPELLS: Dictionary = {
     "saving_throw": [],
     "misc_tags": [
       "MAC"
-    ]
+    ],
+    "transformation_mode": "appearance"
   },
   "battle_familiar": {
     "id": "battle_familiar",
@@ -3929,7 +3934,10 @@ const SPELLS: Dictionary = {
     "saving_throw": [],
     "misc_tags": [
       "SGT"
-    ]
+    ],
+    "target_mode": "transform_self",
+    "range_feet": 5,
+    "transformation_mode": "appearance"
   },
   "disintegrate": {
     "id": "disintegrate",
@@ -4403,7 +4411,10 @@ const SPELLS: Dictionary = {
     "misc_tags": [
       "SGT",
       "UBA"
-    ]
+    ],
+    "target_mode": "transform_self",
+    "range_feet": 5,
+    "transformation_mode": "appearance"
   },
   "dragons_breath": {
     "id": "dragons_breath",
@@ -5047,7 +5058,9 @@ const SPELLS: Dictionary = {
       "ADV",
       "OBJ",
       "SGT"
-    ]
+    ],
+    "target_mode": "resize_token",
+    "transformation_mode": "resize"
   },
   "ensnaring_strike": {
     "id": "ensnaring_strike",
@@ -7127,7 +7140,10 @@ const SPELLS: Dictionary = {
       "ADV",
       "DFT",
       "THP"
-    ]
+    ],
+    "target_mode": "transform_self",
+    "range_feet": 5,
+    "transformation_mode": "appearance"
   },
   "guards_and_wards": {
     "id": "guards_and_wards",
@@ -8662,7 +8678,10 @@ const SPELLS: Dictionary = {
     "higher_levels": "",
     "condition_inflict": [],
     "saving_throw": [],
-    "misc_tags": []
+    "misc_tags": [],
+    "target_mode": "token_then_transform",
+    "range_feet": 5,
+    "transformation_mode": "appearance"
   },
   "jallarzis_storm_of_radiance": {
     "id": "jallarzis_storm_of_radiance",
@@ -9806,7 +9825,10 @@ const SPELLS: Dictionary = {
     "misc_tags": [
       "SGT",
       "THP"
-    ]
+    ],
+    "target_mode": "token_then_multi_transform",
+    "transformation_mode": "appearance",
+    "transform_max_targets": 10
   },
   "mass_suggestion": {
     "id": "mass_suggestion",
@@ -11166,7 +11188,9 @@ const SPELLS: Dictionary = {
     ],
     "misc_tags": [
       "SGT"
-    ]
+    ],
+    "target_mode": "token_then_transform",
+    "transformation_mode": "appearance"
   },
   "power_word_fortify": {
     "id": "power_word_fortify",
@@ -12578,7 +12602,9 @@ const SPELLS: Dictionary = {
     ],
     "misc_tags": [
       "SGT"
-    ]
+    ],
+    "target_mode": "token_then_multi_transform",
+    "transformation_mode": "appearance"
   },
   "sending": {
     "id": "sending",
@@ -12740,7 +12766,10 @@ const SPELLS: Dictionary = {
     "misc_tags": [
       "THP",
       "UA"
-    ]
+    ],
+    "target_mode": "transform_self",
+    "range_feet": 5,
+    "transformation_mode": "appearance"
   },
   "shatter": {
     "id": "shatter",
@@ -14835,7 +14864,10 @@ const SPELLS: Dictionary = {
     "saving_throw": [],
     "misc_tags": [
       "MAC"
-    ]
+    ],
+    "target_mode": "transform_self",
+    "range_feet": 5,
+    "transformation_mode": "appearance"
   },
   "telekinesis": {
     "id": "telekinesis",
@@ -15568,7 +15600,9 @@ const SPELLS: Dictionary = {
       "SGT",
       "SMN",
       "THP"
-    ]
+    ],
+    "target_mode": "token_then_transform",
+    "transformation_mode": "appearance"
   },
   "true_resurrection": {
     "id": "true_resurrection",
