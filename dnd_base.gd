@@ -10,14 +10,11 @@ const CONTEXT_FLYING := 8
 const CONTEXT_MAIN_MENU := 9
 const CONTEXT_DISSOLVE_AOT := 10
 const CONTEXT_SPELLS := 11
-const CONTEXT_CAMERA_SPEED_DOWN := 12
-const CONTEXT_CAMERA_SPEED_UP := 13
-const CONTEXT_CAMERA_SPEED_RESET := 14
-const CONTEXT_CAMERA_SPEED_INFO := 15
+const CONTEXT_CAMERA_SETTINGS := 12
 const CAMPAIGN_EDITOR_SCENE_PATH := "res://vtt/editor/campaign_editor.tscn"
 
-const CAMERA_SPEED_STEP := 1.0
 const CAMERA_SPEED_DEFAULT := 5.0
+const CAMERA_SENSITIVITY_DEFAULT := 0.002
 const ALL_COLLISION_LAYERS := 0xFFFFFFFF
 const UNDO_LIMIT := 50
 
@@ -59,6 +56,11 @@ var share_dialog: AcceptDialog
 var share_host: LineEdit
 var share_key: LineEdit
 var share_status: Label
+var camera_settings_dialog: AcceptDialog
+var camera_speed_slider: HSlider
+var camera_sensitivity_slider: HSlider
+var camera_speed_value_label: Label
+var camera_sensitivity_value_label: Label
 var token_drag: Node
 var spell_system: Node
 var _undo_stack: Array[Dictionary] = []
@@ -97,6 +99,7 @@ func _ready() -> void:
 	add_child(board_sync)
 	board_sync.setup(self, token_scene, tokens_root, measurement_tool)
 	_build_share_dialog()
+	_build_camera_settings_dialog()
 
 	spell_system = preload("res://vtt/spells/spell_system.gd").new()
 	spell_system.name = "SpellSystem"
@@ -554,27 +557,7 @@ func _show_context_menu(screen_position: Vector2) -> void:
 		)
 
 	context_menu.add_separator()
-	var current_camera_speed: float = _get_camera_speed()
-	context_menu.add_item(
-		"Velocità camera: %.1f" % current_camera_speed,
-		CONTEXT_CAMERA_SPEED_INFO
-	)
-	context_menu.set_item_disabled(
-		context_menu.get_item_index(CONTEXT_CAMERA_SPEED_INFO),
-		true
-	)
-	context_menu.add_item(
-		"Camera più lenta (-%.1f)" % CAMERA_SPEED_STEP,
-		CONTEXT_CAMERA_SPEED_DOWN
-	)
-	context_menu.add_item(
-		"Camera più veloce (+%.1f)" % CAMERA_SPEED_STEP,
-		CONTEXT_CAMERA_SPEED_UP
-	)
-	context_menu.add_item(
-		"Ripristina velocità camera (%.1f)" % CAMERA_SPEED_DEFAULT,
-		CONTEXT_CAMERA_SPEED_RESET
-	)
+	context_menu.add_item("Velocità camera…", CONTEXT_CAMERA_SETTINGS)
 
 	if _has_pending_spawn_position:
 		context_menu.add_separator()
@@ -662,17 +645,8 @@ func _on_context_menu_id_pressed(id: int) -> void:
 			toggle_vision_cones()
 			_close_context_menu_to_game()
 
-		CONTEXT_CAMERA_SPEED_DOWN:
-			_adjust_camera_speed(-CAMERA_SPEED_STEP)
-			_close_context_menu_to_game()
-
-		CONTEXT_CAMERA_SPEED_UP:
-			_adjust_camera_speed(CAMERA_SPEED_STEP)
-			_close_context_menu_to_game()
-
-		CONTEXT_CAMERA_SPEED_RESET:
-			_set_camera_speed(CAMERA_SPEED_DEFAULT)
-			_close_context_menu_to_game()
+		CONTEXT_CAMERA_SETTINGS:
+			open_camera_settings()
 
 		CONTEXT_CREATE_TOKEN:
 			if not _has_pending_spawn_position:
@@ -707,11 +681,102 @@ func _set_camera_speed(value: float) -> void:
 		camera.call("set_move_speed", value)
 
 
-func _adjust_camera_speed(delta_speed: float) -> void:
-	if camera.has_method("adjust_move_speed"):
-		camera.call("adjust_move_speed", delta_speed)
-	else:
-		_set_camera_speed(_get_camera_speed() + delta_speed)
+func _get_camera_sensitivity() -> float:
+	if camera.has_method("get_mouse_sensitivity"):
+		return float(camera.call("get_mouse_sensitivity"))
+	return CAMERA_SENSITIVITY_DEFAULT
+
+
+func _set_camera_sensitivity(value: float) -> void:
+	if camera.has_method("set_mouse_sensitivity"):
+		camera.call("set_mouse_sensitivity", value)
+
+
+func open_camera_settings() -> void:
+	if camera_settings_dialog == null or not is_instance_valid(camera_settings_dialog):
+		return
+
+	camera_speed_slider.set_value_no_signal(_get_camera_speed())
+	camera_sensitivity_slider.set_value_no_signal(_get_camera_sensitivity())
+	_update_camera_settings_labels()
+
+	_ui_owns_mouse = true
+	if context_menu.visible:
+		context_menu.hide()
+	_release_mouse()
+	camera_settings_dialog.popup_centered(Vector2i(460, 240))
+	call_deferred("_release_mouse")
+
+
+func _update_camera_settings_labels() -> void:
+	if camera_speed_value_label != null:
+		camera_speed_value_label.text = "Velocità: %.1f" % camera_speed_slider.value
+	if camera_sensitivity_value_label != null:
+		camera_sensitivity_value_label.text = (
+			"Sensibilità: %.4f" % camera_sensitivity_slider.value
+		)
+
+
+func _on_camera_speed_slider_changed(value: float) -> void:
+	_set_camera_speed(value)
+	_update_camera_settings_labels()
+
+
+func _on_camera_sensitivity_slider_changed(value: float) -> void:
+	_set_camera_sensitivity(value)
+	_update_camera_settings_labels()
+
+
+func _close_camera_settings_to_game() -> void:
+	_ui_owns_mouse = false
+	_capture_mouse()
+
+
+func _build_camera_settings_dialog() -> void:
+	camera_settings_dialog = AcceptDialog.new()
+	camera_settings_dialog.title = "Velocità camera"
+	$UI.add_child(camera_settings_dialog)
+	camera_settings_dialog.confirmed.connect(_close_camera_settings_to_game)
+	camera_settings_dialog.canceled.connect(_close_camera_settings_to_game)
+
+	var layout := VBoxContainer.new()
+	layout.add_theme_constant_override("separation", 10)
+	camera_settings_dialog.add_child(layout)
+
+	camera_speed_value_label = Label.new()
+	layout.add_child(camera_speed_value_label)
+	camera_speed_slider = HSlider.new()
+	camera_speed_slider.min_value = 1.0
+	camera_speed_slider.max_value = 30.0
+	camera_speed_slider.step = 0.5
+	camera_speed_slider.custom_minimum_size = Vector2(400, 24)
+	camera_speed_slider.value_changed.connect(_on_camera_speed_slider_changed)
+	layout.add_child(camera_speed_slider)
+
+	camera_sensitivity_value_label = Label.new()
+	layout.add_child(camera_sensitivity_value_label)
+	camera_sensitivity_slider = HSlider.new()
+	camera_sensitivity_slider.min_value = 0.0002
+	camera_sensitivity_slider.max_value = 0.01
+	camera_sensitivity_slider.step = 0.0001
+	camera_sensitivity_slider.custom_minimum_size = Vector2(400, 24)
+	camera_sensitivity_slider.value_changed.connect(
+		_on_camera_sensitivity_slider_changed
+	)
+	layout.add_child(camera_sensitivity_slider)
+
+	var defaults := Button.new()
+	defaults.text = "Ripristina valori predefiniti"
+	defaults.pressed.connect(
+		func() -> void:
+			camera_speed_slider.value = CAMERA_SPEED_DEFAULT
+			camera_sensitivity_slider.value = CAMERA_SENSITIVITY_DEFAULT
+	)
+	layout.add_child(defaults)
+
+	camera_speed_slider.set_value_no_signal(_get_camera_speed())
+	camera_sensitivity_slider.set_value_no_signal(_get_camera_sensitivity())
+	_update_camera_settings_labels()
 
 
 func _close_context_menu_to_game() -> void:
@@ -720,13 +785,27 @@ func _close_context_menu_to_game() -> void:
 
 
 func _on_context_menu_hidden() -> void:
-	if color_dialog.visible or (is_instance_valid(share_dialog) and share_dialog.visible):
+	if (
+		color_dialog.visible
+		or (is_instance_valid(share_dialog) and share_dialog.visible)
+		or (
+			is_instance_valid(camera_settings_dialog)
+			and camera_settings_dialog.visible
+		)
+	):
 		return
 	call_deferred("_finish_context_menu_close")
 
 
 func _finish_context_menu_close() -> void:
-	if color_dialog.visible or (is_instance_valid(share_dialog) and share_dialog.visible):
+	if (
+		color_dialog.visible
+		or (is_instance_valid(share_dialog) and share_dialog.visible)
+		or (
+			is_instance_valid(camera_settings_dialog)
+			and camera_settings_dialog.visible
+		)
+	):
 		return
 	if (
 		spell_system != null
