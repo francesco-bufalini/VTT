@@ -19,6 +19,10 @@ const INVALID_CELL := Vector3i(2147483647, 2147483647, 2147483647)
 @export_range(0.15, 2.0, 0.05) var cell_retention_seconds: float = 0.65
 @export_range(0.02, 0.5, 0.01) var visual_update_interval: float = 0.08
 @export_range(0.01, 0.25, 0.01) var surface_inset_fraction: float = 0.06
+# Expand each raycast hit across nearby cells on the tangent plane of the
+# detected surface. This stabilizes the visible grid when the camera angle
+# changes without filling cells behind or in front of the surface.
+@export_range(0, 3, 1) var neighbor_margin_cells: int = 1
 @export_range(256, 30000, 256) var max_active_cells: int = 12288
 @export_range(0.1, 2.0, 0.1) var exclusion_refresh_interval: float = 0.5
 
@@ -363,16 +367,57 @@ func _sample_visible_surfaces() -> void:
 		if not _cell_inside_current_volume(cell):
 			continue
 
-		if (
-			not _visible_cells.has(cell)
-			and _visible_cells.size() >= max_active_cells
-		):
-			continue
+		_mark_visible_cell_with_margin(cell, normal, now)
 
-		var previous: int = int(_visible_cells.get(cell, 0))
-		_visible_cells[cell] = now
-		if previous == 0:
-			_visual_dirty = true
+
+func _mark_visible_cell_with_margin(
+	cell: Vector3i,
+	normal: Vector3,
+	now: int
+) -> void:
+	_mark_visible_cell(cell, now)
+
+	var margin := maxi(0, neighbor_margin_cells)
+	if margin == 0:
+		return
+
+	var abs_normal := normal.abs()
+	if abs_normal.x >= abs_normal.y and abs_normal.x >= abs_normal.z:
+		for y_offset in range(-margin, margin + 1):
+			for z_offset in range(-margin, margin + 1):
+				_mark_visible_cell(
+					cell + Vector3i(0, y_offset, z_offset),
+					now
+				)
+	elif abs_normal.y >= abs_normal.x and abs_normal.y >= abs_normal.z:
+		for x_offset in range(-margin, margin + 1):
+			for z_offset in range(-margin, margin + 1):
+				_mark_visible_cell(
+					cell + Vector3i(x_offset, 0, z_offset),
+					now
+				)
+	else:
+		for x_offset in range(-margin, margin + 1):
+			for y_offset in range(-margin, margin + 1):
+				_mark_visible_cell(
+					cell + Vector3i(x_offset, y_offset, 0),
+					now
+				)
+
+
+func _mark_visible_cell(cell: Vector3i, now: int) -> void:
+	if not _cell_inside_current_volume(cell):
+		return
+	if (
+		not _visible_cells.has(cell)
+		and _visible_cells.size() >= max_active_cells
+	):
+		return
+
+	var previous: int = int(_visible_cells.get(cell, 0))
+	_visible_cells[cell] = now
+	if previous == 0:
+		_visual_dirty = true
 
 
 func _refresh_exclusions() -> void:
