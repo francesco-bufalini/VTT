@@ -1402,7 +1402,7 @@ func show_spell_projectile_with_impact(
 	impact_shape: String,
 	impact_radius_world: float,
 	impact_style: String,
-	impact_seconds: float = 5.0
+	_impact_seconds: float = 5.0
 ) -> void:
 	show_spell_projectile(
 		start,
@@ -1417,11 +1417,12 @@ func show_spell_projectile_with_impact(
 	add_child(timer)
 	timer.timeout.connect(
 		func() -> void:
-			show_transient_aoe(
+			# La parte finale dell'animazione resta come AoE cliccabile fino
+			# a quando il giocatore non la rimuove dalla mappa.
+			add_aoe(
 				end,
 				end + Vector3.RIGHT * impact_radius_world,
 				impact_shape,
-				impact_seconds,
 				impact_style
 			)
 			timer.queue_free()
