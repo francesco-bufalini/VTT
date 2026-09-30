@@ -73,6 +73,7 @@ var _editing_token: CharacterBody3D
 var token_drag: Node
 var spell_system: Node
 var initiative_tracker: Node
+var token_list: Node
 var _undo_stack: Array[Dictionary] = []
 var _redo_stack: Array[Dictionary] = []
 var _undo_restoring: bool = false
@@ -124,6 +125,11 @@ func _ready() -> void:
 	initiative_tracker.name = "InitiativeTracker"
 	add_child(initiative_tracker)
 	initiative_tracker.call("setup", self)
+
+	token_list = preload("res://vtt/token_list.gd").new()
+	token_list.name = "TokenList"
+	add_child(token_list)
+	token_list.call("setup", self)
 
 	var runtime_toolbar: Node = (
 		preload("res://vtt/runtime_toolbar.gd").new() as Node
@@ -1091,6 +1097,11 @@ func _apply_token_state_editor() -> void:
 	if _editing_token.has_method("set_conditions"):
 		_editing_token.call("set_conditions", active_conditions)
 
+	if initiative_tracker != null and is_instance_valid(initiative_tracker):
+		initiative_tracker.call("refresh")
+	if token_list != null and is_instance_valid(token_list):
+		token_list.call("refresh")
+
 	_close_token_state_editor()
 
 
@@ -1278,6 +1289,31 @@ func _find_interaction_target(start_node: Node) -> Node:
 	return null
 
 
+func set_token_selected_from_ui(
+	token: CharacterBody3D,
+	selected: bool
+) -> void:
+	_clean_selection()
+	if token == null or not is_instance_valid(token):
+		return
+	if selected:
+		_add_to_selection(token)
+	else:
+		_remove_from_selection(token)
+
+
+func focus_camera_on_token(token: CharacterBody3D) -> void:
+	if token == null or not is_instance_valid(token):
+		return
+	if camera.has_method("focus_on_token"):
+		camera.call("focus_on_token", token)
+
+
+func toggle_token_list() -> void:
+	if token_list != null and is_instance_valid(token_list):
+		token_list.call("toggle_panel")
+
+
 func _replace_selection(token: CharacterBody3D) -> void:
 	_clear_selection()
 	_add_to_selection(token)
@@ -1292,6 +1328,14 @@ func _add_to_selection(token: CharacterBody3D) -> void:
 	_selected_tokens.append(token)
 	if token.has_method("set_selected"):
 		token.call("set_selected", true)
+
+
+func _remove_from_selection(token: CharacterBody3D) -> void:
+	if token == null or not is_instance_valid(token):
+		return
+	_selected_tokens.erase(token)
+	if token.has_method("set_selected"):
+		token.call("set_selected", false)
 
 
 func _clear_selection() -> void:
