@@ -6,6 +6,7 @@ on:
       - feature/campaign-hub
     paths:
       - tools/menu_background.jpg.b64
+      - tools/menu_background.jpg.part*
       - .github/workflows/install-menu-background.yml
   workflow_dispatch:
 
@@ -28,9 +29,15 @@ jobs:
           import hashlib
           from pathlib import Path
 
-          source = Path("tools/menu_background.jpg.b64")
+          parts = sorted(Path("tools").glob("menu_background.jpg.part*"))
+          if len(parts) != 4:
+              raise SystemExit(
+                  f"Expected 4 background source parts, found {len(parts)}"
+              )
+
+          encoded = "".join(part.read_text().strip() for part in parts)
           target = Path("assets/menu/background/lithophane_background.jpg")
-          data = base64.b64decode(source.read_text().strip(), validate=True)
+          data = base64.b64decode(encoded, validate=True)
 
           digest = hashlib.sha256(data).hexdigest()
           expected = "8d54c15de3e6e7dcb65ea0d8c57187685b88093e405ac828190a1341ed37ffa3"
