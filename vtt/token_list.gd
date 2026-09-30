@@ -194,9 +194,8 @@ func _add_token_row(token: CharacterBody3D) -> void:
 
 	var focus_button := Button.new()
 	focus_button.icon = EYE_ICON
-	focus_button.expand_icon = true
-	focus_button.icon_max_width = 20
-	focus_button.custom_minimum_size = Vector2(34, 30)
+	focus_button.expand_icon = false
+	focus_button.custom_minimum_size = Vector2(38, 34)
 	focus_button.tooltip_text = "Porta la camera davanti al token"
 	focus_button.pressed.connect(_focus_token.bind(token))
 	row.add_child(focus_button)
