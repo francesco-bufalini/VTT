@@ -19,6 +19,7 @@ var activate_button: Button
 var instruction_label: Label
 var wall_mode_menu: PopupMenu
 var wall_orientation_menu: PopupMenu
+var saving_throw_dialog: ConfirmationDialog
 
 var _selected_spell_id: String = ""
 var _selected_spell_data: Dictionary = {}
@@ -31,6 +32,10 @@ var _selected_slot_level: int = 0
 var _pending_targets: Array[Node3D] = []
 var _pending_target_points: Array[Vector3] = []
 var _pending_chain_primary: Node3D = null
+var _saving_throw_targets: Array[Node3D] = []
+var _saving_throw_index: int = 0
+var _saving_throw_caster_origin: Vector3 = Vector3.ZERO
+var _saving_throw_undo_recorded: bool = false
 var _restore_mouse_mode: int = Input.MOUSE_MODE_VISIBLE
 var _wall_mode: String = ""
 var _wall_points: Array[Vector3] = []
@@ -69,6 +74,7 @@ func _initialize() -> void:
 
 	_build_panel()
 	_build_instruction_label()
+	_build_saving_throw_dialog()
 	_build_wall_mode_menu()
 	_build_wall_orientation_menu()
 	_populate_class_tree()
@@ -289,6 +295,8 @@ func close_panel() -> void:
 
 func handle_input(event: InputEvent) -> bool:
 	if _pending_spell_id.is_empty():
+		return false
+	if _targeting_phase == "saving_throw":
 		return false
 
 	if event is InputEventKey:
@@ -2644,6 +2652,23 @@ func _build_instruction_label() -> void:
 	instruction_label.mouse_filter = Control.MOUSE_FILTER_IGNORE
 	instruction_label.hide()
 	ui_root.add_child(instruction_label)
+
+
+func _build_saving_throw_dialog() -> void:
+	saving_throw_dialog = ConfirmationDialog.new()
+	saving_throw_dialog.name = "SpellSavingThrowDialog"
+	saving_throw_dialog.title = "Tiro salvezza"
+	saving_throw_dialog.ok_button_text = "SÌ"
+	saving_throw_dialog.cancel_button_text = "NO"
+	saving_throw_dialog.confirmed.connect(
+		func() -> void:
+			_resolve_current_saving_throw(true)
+	)
+	saving_throw_dialog.canceled.connect(
+		func() -> void:
+			_resolve_current_saving_throw(false)
+	)
+	ui_root.add_child(saving_throw_dialog)
 
 
 func _populate_class_tree() -> void:
