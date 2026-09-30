@@ -13,6 +13,7 @@ const CONTEXT_SPELLS := 11
 const CONTEXT_CAMERA_SETTINGS := 12
 const CONTEXT_INITIATIVE := 13
 const CAMPAIGN_EDITOR_SCENE_PATH := "res://vtt/editor/campaign_editor.tscn"
+const TOKEN_LIBRARY_MANIFEST := "res://assets/tokens/token_library.json"
 
 const CAMERA_SPEED_DEFAULT := 5.0
 const CAMERA_SENSITIVITY_DEFAULT := 0.002
@@ -87,6 +88,7 @@ func _ready() -> void:
 	for token_size: Dictionary in TOKEN_SIZES:
 		size_selector.add_item(String(token_size.get("name", "Medium")))
 	size_selector.select(2)
+	_configure_default_token_size_selector()
 
 	volumetric_grid.call("set_camera", camera)
 
@@ -121,6 +123,41 @@ func _ready() -> void:
 	runtime_toolbar.call("setup", self)
 
 	_capture_mouse()
+
+
+func _configure_default_token_size_selector() -> void:
+	size_selector.disabled = false
+	size_selector.tooltip_text = ""
+
+	if not FileAccess.file_exists(TOKEN_LIBRARY_MANIFEST):
+		return
+	var file := FileAccess.open(TOKEN_LIBRARY_MANIFEST, FileAccess.READ)
+	if file == null:
+		return
+	var parsed: Variant = JSON.parse_string(file.get_as_text())
+	file.close()
+	if not parsed is Dictionary:
+		return
+
+	var default_value: Variant = (parsed as Dictionary).get("default", {})
+	if not default_value is Dictionary:
+		return
+	var profile := default_value as Dictionary
+	if String(profile.get("obj", "")).strip_edges().is_empty():
+		return
+
+	var default_size := String(profile.get("size_name", "Medium"))
+	for index in range(TOKEN_SIZES.size()):
+		if String(TOKEN_SIZES[index].get("name", "")) == default_size:
+			size_selector.select(index)
+			break
+
+	# Una miniatura fisica mantiene la taglia definita dalla propria base.
+	size_selector.disabled = true
+	size_selector.tooltip_text = (
+		"Taglia determinata automaticamente dalla base della miniatura: "
+		+ default_size
+	)
 
 
 func _process(_delta: float) -> void:
