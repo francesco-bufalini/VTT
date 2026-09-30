@@ -86,6 +86,34 @@ func run() -> void:
 	assert(not wind_wall.is_empty())
 	assert(String(wind_wall.get("visual_style", "")) == "bludgeoning")
 
+	var sorcerer_point_projectiles: Array[String] = [
+		"fire_bolt",
+		"poison_spray",
+		"ray_of_frost",
+		"sorcerous_burst",
+		"chaos_bolt",
+		"chromatic_orb",
+		"ice_knife",
+		"magic_missile",
+		"ray_of_sickness",
+		"spellfire_flare",
+		"scorching_ray",
+		"disintegrate"
+	]
+	for projectile_id: String in sorcerer_point_projectiles:
+		var projectile_spell: Dictionary = SpellCatalog.spell(projectile_id)
+		assert(not projectile_spell.is_empty())
+		assert(not String(
+			projectile_spell.get("projectile_style", "")
+		).is_empty())
+		assert(bool(projectile_spell.get("allow_point_target", false)))
+
+	# Witch Bolt remains on its hand-authored persistent-link mechanic.
+	var witch_bolt: Dictionary = SpellCatalog.spell("witch_bolt")
+	assert(not witch_bolt.is_empty())
+	assert(bool(witch_bolt.get("persistent_link", false)))
+	assert(not bool(witch_bolt.get("allow_point_target", false)))
+
 	var fire_bolt: Dictionary = SpellCatalog.spell("fire_bolt")
 	assert(not fire_bolt.is_empty())
 	assert(String(fire_bolt.get("target_mode", "")) == "token_then_token")
