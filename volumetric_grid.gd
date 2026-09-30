@@ -19,9 +19,8 @@ const CHUNK_SIZE := 8
 @export_range(3, 28, 1) var half_height_cells: int = 14
 @export_range(1.0, 30.0, 0.5) var camera_rotation_threshold_degrees: float = 7.5
 
-# New chunks are filled progressively. Empty 8x8x8 chunks cost only one broad
-# phase query; cell queries are performed only inside chunks that touch map
-# collision.
+# New chunks are filled progressively. Collision AABBs first reduce each
+# chunk to a small candidate set; only those cells reach a physics query.
 @export_range(16, 2048, 1) var max_physics_queries_per_frame: int = 128
 @export_range(1, 32, 1) var max_query_results: int = 8
 @export_range(0.75, 0.99, 0.005) var collision_probe_scale: float = 0.90
@@ -102,7 +101,7 @@ func _physics_process(delta: float) -> void:
 	_signature_elapsed += delta
 	if _signature_elapsed >= map_change_check_interval:
 		_signature_elapsed = 0.0
-		_check_map_shape_signatures(true)
+		_check_map_shape_signatures(false)
 
 	if _view_dirty:
 		_refresh_visible_chunks()
@@ -602,6 +601,18 @@ func _update_multimesh_instances() -> void:
 		index += 1
 
 
+func _remove_chunk_from_active(chunk: Vector3i) -> void:
+	var stale: Array[Vector3i] = []
+	for key in _active_occupied.keys():
+		var cell: Vector3i = key
+		if _cell_to_chunk(cell) == chunk:
+			stale.append(cell)
+	for cell in stale:
+		_active_occupied.erase(cell)
+	if not stale.is_empty():
+		_visual_dirty = true
+
+
 func _clear_collision_cache() -> void:
 	_chunk_cache.clear()
 	_queued_chunks.clear()
@@ -897,6 +908,7 @@ func _invalidate_chunks_for_aabb(bounds: AABB) -> void:
 			for x in range(min_chunk.x, max_chunk.x + 1):
 				var chunk := Vector3i(x, y, z)
 				_chunk_cache.erase(chunk)
+				_remove_chunk_from_active(chunk)
 				if chunk == _scan_chunk:
 					_scan_chunk = INVALID_CELL
 					_scan_cells.clear()
