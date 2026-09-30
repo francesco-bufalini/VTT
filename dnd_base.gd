@@ -56,7 +56,6 @@ var _ui_owns_mouse: bool = false
 var _vision_cones_visible: bool = false
 var board_sync: Node
 var share_dialog: AcceptDialog
-var share_host: LineEdit
 var share_key: LineEdit
 var share_status: Label
 var camera_settings_dialog: AcceptDialog
@@ -682,7 +681,7 @@ func _show_context_menu(screen_position: Vector2) -> void:
 		"Nascondi iniziativa" if initiative_visible else "Mostra iniziativa",
 		CONTEXT_INITIATIVE
 	)
-	context_menu.add_item("Condividi mappa / Tailscale", 25)
+	context_menu.add_item("Sincronizza mappa / Tailscale", 25)
 	if scene_file_path != CAMPAIGN_EDITOR_SCENE_PATH:
 		context_menu.add_item("Torna al menu VTT", CONTEXT_MAIN_MENU)
 	context_menu.add_separator()
