@@ -344,17 +344,82 @@ func _set_procedural_visuals_visible(value: bool) -> void:
 			(child_node as VisualInstance3D).visible = value
 
 
+func _accumulate_imported_y_bounds(
+	node: Node3D,
+	transform_to_visuals: Transform3D,
+	bounds: Vector2
+) -> Vector2:
+	var result := bounds
+
+	if node is MeshInstance3D:
+		var mesh_instance := node as MeshInstance3D
+		if mesh_instance.mesh != null:
+			var aabb: AABB = mesh_instance.get_aabb()
+			for endpoint_index: int in range(8):
+				var point: Vector3 = (
+					transform_to_visuals * aabb.get_endpoint(endpoint_index)
+				)
+				result.x = minf(result.x, point.y)
+				result.y = maxf(result.y, point.y)
+
+	for child_node: Node in node.get_children():
+		if child_node is Node3D:
+			var child := child_node as Node3D
+			result = _accumulate_imported_y_bounds(
+				child,
+				transform_to_visuals * child.transform,
+				result
+			)
+
+	return result
+
+
+func _imported_visual_y_bounds() -> Vector2:
+	var imported := _get_imported_visual()
+	if imported == null:
+		return Vector2(INF, -INF)
+
+	# Ignore the root translation because this function is used to determine it,
+	# but preserve any source rotation/scale on the imported root.
+	var root_transform := Transform3D(
+		imported.transform.basis,
+		Vector3.ZERO
+	)
+	return _accumulate_imported_y_bounds(
+		imported,
+		root_transform,
+		Vector2(INF, -INF)
+	)
+
+
 func _position_imported_visual() -> void:
 	var imported := _get_imported_visual()
 	if imported == null:
 		return
-	# I modelli prodotti dal convertitore hanno i piedi a Y=0.
-	# Il root del token invece e' al centro del volume di collisione.
-	imported.position = Vector3(0.0, -token_height_cells * 0.5, 0.0)
+
+	var bounds := _imported_visual_y_bounds()
+	var min_y: float = 0.0
+	if bounds.x < INF and bounds.y > -INF:
+		min_y = bounds.x
+
+	# Align the actual visible mesh bottom with the collision body's floor.
+	# This also repairs older converted OBJ files whose local Y minimum is not 0.
+	imported.position = Vector3(
+		0.0,
+		-token_height_cells * 0.5 - min_y,
+		0.0
+	)
 
 
 func set_token_size(footprint_cells: float) -> void:
 	_footprint_cells = maxf(footprint_cells, 0.5)
+
+	var imported_bounds := _imported_visual_y_bounds()
+	if imported_bounds.x < INF and imported_bounds.y > -INF:
+		token_height_cells = maxf(
+			imported_bounds.y - imported_bounds.x,
+			0.1
+		)
 
 	var width: float = _footprint_cells * cell_size
 	var height: float = token_height_cells * cell_size
