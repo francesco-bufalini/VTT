@@ -89,6 +89,7 @@ func _initialize() -> void:
 func _build_summon_count_menu() -> void:
 	summon_count_menu = PopupMenu.new()
 	summon_count_menu.name = "SummonCountMenu"
+	summon_count_menu.hide_on_item_selection = false
 	summon_count_menu.id_pressed.connect(_on_summon_count_selected)
 	summon_count_menu.popup_hide.connect(_on_summon_count_menu_hidden)
 	ui_root.add_child(summon_count_menu)
@@ -545,6 +546,7 @@ func _on_summon_count_selected(id: int) -> void:
 	board_root.set("_ui_owns_mouse", false)
 	Input.mouse_mode = Input.MOUSE_MODE_CAPTURED
 	_begin_summon_point_selection(_pending_spell())
+	summon_count_menu.hide()
 
 
 func _begin_summon_point_selection(spell_data: Dictionary) -> void:
