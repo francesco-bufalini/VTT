@@ -1231,12 +1231,12 @@ static func all_spells() -> Array[Dictionary]:
 	return result
 
 
-static func canonical_class_name(class_name: String) -> String:
-	return String(CLASS_CANONICAL_NAMES.get(class_name, class_name))
+static func canonical_class_name(class_label: String) -> String:
+	return String(CLASS_CANONICAL_NAMES.get(class_label, class_label))
 
 
-static func class_display_name(class_name: String) -> String:
-	var canonical: String = canonical_class_name(class_name)
+static func class_display_name(class_label: String) -> String:
+	var canonical: String = canonical_class_name(class_label)
 	return String(CLASS_DISPLAY_NAMES.get(canonical, canonical))
 
 
