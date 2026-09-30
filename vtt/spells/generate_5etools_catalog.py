@@ -32,6 +32,11 @@ GENERATED_TARGET_FIELDS = {
     "target_clicks_per_slot_above_base",
     "allow_repeat_targets",
     "allow_point_target",
+    "summon_count",
+    "summon_count_min",
+    "summon_count_max",
+    "summon_count_options",
+    "summon_requires_ground",
 }
 
 def slug(s: str) -> str:
@@ -132,6 +137,94 @@ def runtime_target_fields(spell_id: str, name: str, source: str, runtime: dict) 
         if key in targeting:result[key]=targeting[key]
     return result
 
+_NUMBER_WORDS = {
+    "one": 1, "two": 2, "three": 3, "four": 4, "five": 5,
+    "six": 6, "seven": 7, "eight": 8, "nine": 9, "ten": 10,
+    "eleven": 11, "twelve": 12,
+}
+
+def _number_value(value: str) -> int | None:
+    normalized=str(value).strip().lower()
+    if normalized.isdigit():return int(normalized)
+    return _NUMBER_WORDS.get(normalized)
+
+def _summon_range_feet(spell: dict[str, Any]) -> float:
+    r=spell.get("range",{})
+    if not isinstance(r,dict):return 5.0
+    d=r.get("distance",{})
+    if not isinstance(d,dict):d={}
+    dtype=str(d.get("type",r.get("type",""))).lower()
+    amount=d.get("amount")
+    if dtype=="feet" and isinstance(amount,(int,float)):
+        return float(amount)
+    if dtype in {"touch","self"}:
+        return 5.0
+    return 5.0
+
+def summon_runtime_fields(spell: dict[str, Any], runtime: dict) -> dict:
+    misc={str(v).strip() for v in spell.get("miscTags",[]) if str(v).strip()}
+    if "SMN" not in misc:return {}
+
+    source=str(spell.get("source",""))
+    name=str(spell.get("name",""))
+    spec=runtime.get(f"{source}::{name}",{})
+    if isinstance(spec,dict):
+        targeting=spec.get("targeting",{})
+        # SMN is also used by 5eTools for conditional creation or
+        # transformation spells. Existing explicit targeting wins.
+        if isinstance(targeting,dict) and targeting:
+            return {}
+
+    text=flat(spell.get("entries",[])).lower()
+    result={
+        "target_mode":"summon",
+        "range_feet":_summon_range_feet(spell),
+        "summon_count":1,
+    }
+    if re.search(r"\bon the ground\b|\bspace on the ground\b",text):
+        result["summon_requires_ground"]=True
+
+    number=r"(one|two|three|four|five|six|seven|eight|nine|ten|eleven|twelve|\d+)"
+    up_to=re.search(
+        rf"\bup to\s+{number}\s+(?:small\s+or\s+medium\s+)?"
+        rf"(?:corpses?|creatures?|familiars?|spirits?|demons?|objects?)\b",
+        text,
+    )
+    if up_to:
+        maximum=_number_value(up_to.group(1))
+        if maximum and maximum>1:
+            result.pop("summon_count",None)
+            result["summon_count_min"]=1
+            result["summon_count_max"]=maximum
+            return result
+
+    # Some legacy summon spells determine one of several possible group
+    # sizes from a table (for example 2/4/8 lesser demons). The VTT asks for
+    # the resolved group size rather than trying to roll the table itself.
+    table_counts=[]
+    for match in re.finditer(rf"\b{number}\s+challenge\s+rating",text):
+        parsed=_number_value(match.group(1))
+        if parsed and parsed not in table_counts:
+            table_counts.append(parsed)
+    if len(table_counts)>1:
+        result.pop("summon_count",None)
+        result["summon_count_options"]=sorted(table_counts)
+        return result
+
+    fixed_patterns=[
+        rf"\b(?:temporarily\s+)?summon(?:ing)?\s+{number}\s+",
+        rf"\bconjure\s+{number}\s+",
+        rf"\bcall\s+forth\s+{number}\s+",
+    ]
+    for pattern in fixed_patterns:
+        match=re.search(pattern,text)
+        if match:
+            parsed=_number_value(match.group(1))
+            if parsed and parsed>0:
+                result["summon_count"]=parsed
+                break
+    return result
+
 def old_records():
     if not OUTPUT.exists():return {}
     text=OUTPUT.read_text(encoding="utf-8");mark="const SPELLS: Dictionary = "
@@ -194,6 +287,9 @@ def main():
             str(s.get("source","")),
             runtime,
         ))
+        summon_fields=summon_runtime_fields(s,runtime)
+        if summon_fields:
+            rec.update(summon_fields)
         out[sid]=rec
     out=dict(sorted(out.items(),key=lambda kv:kv[1]["name"].lower()))
     OUTPUT.write_text("extends RefCounted\n\n# Generated from the complete 5eTools spell source index.\n# Canonical class names are localized by spell_catalog.gd.\nconst SPELLS: Dictionary = "+json.dumps(out,ensure_ascii=False,indent=2)+"\n",encoding="utf-8")
