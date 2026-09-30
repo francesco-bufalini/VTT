@@ -387,7 +387,11 @@ const SPELLS: Dictionary = {
       "SMN",
       "UA",
       "UBA"
-    ]
+    ],
+    "target_mode": "summon",
+    "range_feet": 10,
+    "summon_count_min": 1,
+    "summon_count_max": 4
   },
   "animate_objects": {
     "id": "animate_objects",
@@ -1082,7 +1086,10 @@ const SPELLS: Dictionary = {
     "misc_tags": [
       "SMN",
       "THP"
-    ]
+    ],
+    "target_mode": "summon",
+    "range_feet": 10,
+    "summon_count": 1
   },
   "beacon_of_hope": {
     "id": "beacon_of_hope",
@@ -3187,7 +3194,11 @@ const SPELLS: Dictionary = {
       "PRM",
       "SMN",
       "UBA"
-    ]
+    ],
+    "target_mode": "summon",
+    "range_feet": 10,
+    "summon_count_min": 1,
+    "summon_count_max": 3
   },
   "creation": {
     "id": "creation",
@@ -3379,7 +3390,11 @@ const SPELLS: Dictionary = {
       "SGT",
       "SMN",
       "UBA"
-    ]
+    ],
+    "target_mode": "summon",
+    "range_feet": 60,
+    "summon_count_min": 1,
+    "summon_count_max": 5
   },
   "dark_star": {
     "id": "dark_star",
@@ -3661,7 +3676,10 @@ const SPELLS: Dictionary = {
     "saving_throw": [],
     "misc_tags": [
       "SMN"
-    ]
+    ],
+    "target_mode": "summon",
+    "range_feet": 5,
+    "summon_count": 1
   },
   "destructive_wave": {
     "id": "destructive_wave",
@@ -4510,7 +4528,6 @@ const SPELLS: Dictionary = {
     "higher_levels": "",
     "visual_style": "arcane",
     "transient_seconds": 5,
-    "target_mode": "token_then_point",
     "aoe_shape": "cube",
     "aoe_side_feet": 30,
     "range_feet": 5,
@@ -5638,7 +5655,10 @@ const SPELLS: Dictionary = {
       "PRM",
       "SMN",
       "UA"
-    ]
+    ],
+    "target_mode": "summon",
+    "range_feet": 10,
+    "summon_count": 1
   },
   "find_greater_steed": {
     "id": "find_greater_steed",
@@ -5663,7 +5683,10 @@ const SPELLS: Dictionary = {
       "PRM",
       "SMN",
       "UA"
-    ]
+    ],
+    "target_mode": "summon",
+    "range_feet": 30,
+    "summon_count": 1
   },
   "find_steed": {
     "id": "find_steed",
@@ -5687,7 +5710,10 @@ const SPELLS: Dictionary = {
     "misc_tags": [
       "PRM",
       "SMN"
-    ]
+    ],
+    "target_mode": "summon",
+    "range_feet": 30,
+    "summon_count": 1
   },
   "find_the_path": {
     "id": "find_the_path",
@@ -6084,7 +6110,10 @@ const SPELLS: Dictionary = {
     "saving_throw": [],
     "misc_tags": [
       "SMN"
-    ]
+    ],
+    "target_mode": "summon",
+    "range_feet": 5,
+    "summon_count": 3
   },
   "fly": {
     "id": "fly",
@@ -6462,7 +6491,11 @@ const SPELLS: Dictionary = {
     "saving_throw": [],
     "misc_tags": [
       "SMN"
-    ]
+    ],
+    "target_mode": "summon",
+    "range_feet": 10,
+    "summon_count": 1,
+    "summon_requires_ground": true
   },
   "galders_tower": {
     "id": "galders_tower",
@@ -6650,7 +6683,10 @@ const SPELLS: Dictionary = {
     "saving_throw": [],
     "misc_tags": [
       "SMN"
-    ]
+    ],
+    "target_mode": "summon",
+    "range_feet": 60,
+    "summon_count": 1
   },
   "gift_of_alacrity": {
     "id": "gift_of_alacrity",
@@ -7834,7 +7870,10 @@ const SPELLS: Dictionary = {
     "misc_tags": [
       "PRM",
       "SMN"
-    ]
+    ],
+    "target_mode": "summon",
+    "range_feet": 10,
+    "summon_count": 1
   },
   "hunger_of_hadar": {
     "id": "hunger_of_hadar",
@@ -8249,7 +8288,10 @@ const SPELLS: Dictionary = {
     "misc_tags": [
       "SGT",
       "SMN"
-    ]
+    ],
+    "target_mode": "summon",
+    "range_feet": 90,
+    "summon_count": 1
   },
   "infestation": {
     "id": "infestation",
@@ -10646,7 +10688,6 @@ const SPELLS: Dictionary = {
     "higher_levels": "Using a Higher-Level Spell Slot: The damage increases by 1d10 for each spell slot level above 5.",
     "visual_style": "necrotic",
     "transient_seconds": 5,
-    "target_mode": "token_then_token",
     "range_feet": 60,
     "projectile_style": "negative_energy_flood",
     "projectile_travel_seconds": 0.65,
@@ -10941,7 +10982,11 @@ const SPELLS: Dictionary = {
     "saving_throw": [],
     "misc_tags": [
       "SMN"
-    ]
+    ],
+    "target_mode": "summon",
+    "range_feet": 30,
+    "summon_count": 1,
+    "summon_requires_ground": true
   },
   "planar_ally": {
     "id": "planar_ally",
@@ -10964,7 +11009,10 @@ const SPELLS: Dictionary = {
     "saving_throw": [],
     "misc_tags": [
       "SMN"
-    ]
+    ],
+    "target_mode": "summon",
+    "range_feet": 60,
+    "summon_count": 1
   },
   "planar_binding": {
     "id": "planar_binding",
@@ -10989,7 +11037,6 @@ const SPELLS: Dictionary = {
     "higher_levels": "Using a Higher-Level Spell Slot: The duration increases with a spell slot of level 6 (10 days), 7 (30 days), 8 (180 days), and 9 (366 days).",
     "visual_style": "arcane",
     "transient_seconds": 5,
-    "target_mode": "token_then_token",
     "range_feet": 60,
     "projectile_style": "planar_binding",
     "projectile_travel_seconds": 0.65,
@@ -13606,7 +13653,10 @@ const SPELLS: Dictionary = {
     "misc_tags": [
       "SGT",
       "SMN"
-    ]
+    ],
+    "target_mode": "summon",
+    "range_feet": 60,
+    "summon_count": 1
   },
   "spirit_shroud": {
     "id": "spirit_shroud",
@@ -13986,7 +14036,10 @@ const SPELLS: Dictionary = {
     "misc_tags": [
       "SGT",
       "SMN"
-    ]
+    ],
+    "target_mode": "summon",
+    "range_feet": 90,
+    "summon_count": 1
   },
   "summon_beast": {
     "id": "summon_beast",
@@ -14011,7 +14064,10 @@ const SPELLS: Dictionary = {
     "misc_tags": [
       "SGT",
       "SMN"
-    ]
+    ],
+    "target_mode": "summon",
+    "range_feet": 90,
+    "summon_count": 1
   },
   "summon_celestial": {
     "id": "summon_celestial",
@@ -14036,7 +14092,10 @@ const SPELLS: Dictionary = {
     "misc_tags": [
       "SGT",
       "SMN"
-    ]
+    ],
+    "target_mode": "summon",
+    "range_feet": 90,
+    "summon_count": 1
   },
   "summon_construct": {
     "id": "summon_construct",
@@ -14061,7 +14120,10 @@ const SPELLS: Dictionary = {
     "misc_tags": [
       "SGT",
       "SMN"
-    ]
+    ],
+    "target_mode": "summon",
+    "range_feet": 90,
+    "summon_count": 1
   },
   "summon_dinosaur": {
     "id": "summon_dinosaur",
@@ -14085,7 +14147,10 @@ const SPELLS: Dictionary = {
     "misc_tags": [
       "SGT",
       "SMN"
-    ]
+    ],
+    "target_mode": "summon",
+    "range_feet": 90,
+    "summon_count": 1
   },
   "summon_draconic_spirit": {
     "id": "summon_draconic_spirit",
@@ -14113,7 +14178,10 @@ const SPELLS: Dictionary = {
     "misc_tags": [
       "SGT",
       "SMN"
-    ]
+    ],
+    "target_mode": "summon",
+    "range_feet": 60,
+    "summon_count": 1
   },
   "summon_dragon": {
     "id": "summon_dragon",
@@ -14137,7 +14205,10 @@ const SPELLS: Dictionary = {
     "misc_tags": [
       "SGT",
       "SMN"
-    ]
+    ],
+    "target_mode": "summon",
+    "range_feet": 60,
+    "summon_count": 1
   },
   "summon_elemental": {
     "id": "summon_elemental",
@@ -14163,7 +14234,10 @@ const SPELLS: Dictionary = {
     "misc_tags": [
       "SGT",
       "SMN"
-    ]
+    ],
+    "target_mode": "summon",
+    "range_feet": 90,
+    "summon_count": 1
   },
   "summon_fey": {
     "id": "summon_fey",
@@ -14190,7 +14264,10 @@ const SPELLS: Dictionary = {
     "misc_tags": [
       "SGT",
       "SMN"
-    ]
+    ],
+    "target_mode": "summon",
+    "range_feet": 90,
+    "summon_count": 1
   },
   "summon_fiend": {
     "id": "summon_fiend",
@@ -14215,7 +14292,10 @@ const SPELLS: Dictionary = {
     "misc_tags": [
       "SGT",
       "SMN"
-    ]
+    ],
+    "target_mode": "summon",
+    "range_feet": 90,
+    "summon_count": 1
   },
   "summon_greater_demon": {
     "id": "summon_greater_demon",
@@ -14242,7 +14322,11 @@ const SPELLS: Dictionary = {
     "misc_tags": [
       "SGT",
       "SMN"
-    ]
+    ],
+    "target_mode": "summon",
+    "range_feet": 60,
+    "summon_count": 1,
+    "summon_requires_ground": true
   },
   "summon_lesser_demons": {
     "id": "summon_lesser_demons",
@@ -14268,6 +14352,14 @@ const SPELLS: Dictionary = {
       "RO",
       "SGT",
       "SMN"
+    ],
+    "target_mode": "summon",
+    "range_feet": 60,
+    "summon_requires_ground": true,
+    "summon_count_options": [
+      2,
+      4,
+      8
     ]
   },
   "summon_plant": {
@@ -14293,7 +14385,10 @@ const SPELLS: Dictionary = {
     "misc_tags": [
       "SGT",
       "SMN"
-    ]
+    ],
+    "target_mode": "summon",
+    "range_feet": 90,
+    "summon_count": 1
   },
   "summon_shadowspawn": {
     "id": "summon_shadowspawn",
@@ -14318,7 +14413,10 @@ const SPELLS: Dictionary = {
     "misc_tags": [
       "SGT",
       "SMN"
-    ]
+    ],
+    "target_mode": "summon",
+    "range_feet": 90,
+    "summon_count": 1
   },
   "summon_undead": {
     "id": "summon_undead",
@@ -14343,7 +14441,10 @@ const SPELLS: Dictionary = {
     "misc_tags": [
       "SGT",
       "SMN"
-    ]
+    ],
+    "target_mode": "summon",
+    "range_feet": 90,
+    "summon_count": 1
   },
   "sunbeam": {
     "id": "sunbeam",
@@ -15242,7 +15343,10 @@ const SPELLS: Dictionary = {
       "SMN",
       "UA",
       "UBA"
-    ]
+    ],
+    "target_mode": "summon",
+    "range_feet": 5,
+    "summon_count": 1
   },
   "toll_the_dead": {
     "id": "toll_the_dead",
@@ -15434,7 +15538,6 @@ const SPELLS: Dictionary = {
     ],
     "description": "Choose one creature or nonmagical object that you can see within range. The creature shape-shifts into a different creature or a nonmagical object, or the object shape-shifts into a creature (the object must be neither worn nor carried). The transformation lasts for the duration or until the target dies or is destroyed, but if you maintain Concentration on this spell for the full duration, the spell lasts until dispelled. An unwilling creature can make a Wisdom saving throw, and if it succeeds, it isn't affected by this spell. Creature into Creature: If you turn a creature into another kind of creature, the new form can be any kind you choose that has a Challenge Rating equal to or less than the target's Challenge Rating or level. The target's game statistics are replaced by the stat block of the new form, but it retains its Hit Points, Hit Point Dice, alignment, and personality. The target gains a number of Temporary Hit Points equal to the Hit Points of the new form. These Temporary Hit Points vanish if any remain when the spell ends. The target is limited in the actions it can perform by the anatomy of its new form, and it can't speak or cast spells. The target's gear melds into the new form. The creature can't use or otherwise benefit from any of that equipment. Object into Creature: You can turn an object into any kind of creature, as long as the creature's size is no larger than the object's size and the creature has a Challenge Rating of 9 or lower. The creature is Friendly to you and your allies. In combat, it takes its turns immediately after yours, and it obeys your commands. If the spell lasts more than an hour, you no longer control the creature. It might remain Friendly to you, depending on how you have treated it. Creature into Object: If you turn a creature into an object, it transforms along with whatever it is wearing and carrying into that form, as long as the object's size is no larger than the creature's size. The creature's statistics become those of the object, and the creature has no memory of time spent in this form after the spell ends and it returns to normal.",
     "higher_levels": "",
-    "target_mode": "token_then_token",
     "projectile_style": "true_polymorph",
     "projectile_travel_seconds": 0.65,
     "range_feet": 30,
@@ -15616,7 +15719,11 @@ const SPELLS: Dictionary = {
       "SMN",
       "UA",
       "UBA"
-    ]
+    ],
+    "target_mode": "summon",
+    "range_feet": 60,
+    "summon_count": 1,
+    "summon_requires_ground": true
   },
   "vampiric_touch": {
     "id": "vampiric_touch",
