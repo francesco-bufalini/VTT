@@ -238,7 +238,8 @@ static func _apply_targeting(
 			"token_then_chain",
 			"token_then_multi_token",
 			"token_then_multi_point",
-			"token_then_direction"
+			"token_then_direction",
+			"summon"
 		]
 		and not preserve_token_target
 	):
