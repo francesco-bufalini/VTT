@@ -224,7 +224,9 @@ func _sync_selection_checks() -> void:
 		var check: CheckButton = _row_checks.get(instance_id) as CheckButton
 		if check == null:
 			continue
-		var selected := token.is_selected() if token.has_method("is_selected") else false
+		var selected: bool = false
+		if token.has_method("is_selected"):
+			selected = bool(token.call("is_selected"))
 		check.set_pressed_no_signal(selected)
 
 
