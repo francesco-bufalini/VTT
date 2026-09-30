@@ -33,7 +33,21 @@ if ([string]::IsNullOrWhiteSpace($Blender) -or -not (Test-Path $Blender)) {
     throw "Blender non trovato. Passa -Blender 'C:\...\blender.exe' oppure aggiungilo al PATH."
 }
 
-$SourcePath = (Resolve-Path $Source).Path
+function Remove-TrailingDirectorySeparator([string]$PathValue) {
+    $fullPath = [System.IO.Path]::GetFullPath($PathValue)
+    $root = [System.IO.Path]::GetPathRoot($fullPath)
+
+    if ($fullPath.Length -gt $root.Length) {
+        return $fullPath.TrimEnd([char]92, [char]47)
+    }
+
+    return $fullPath
+}
+
+$SourcePath = Remove-TrailingDirectorySeparator ((Resolve-Path $Source).Path)
+$ProjectRoot = Remove-TrailingDirectorySeparator $ProjectRoot
+$Converter = Remove-TrailingDirectorySeparator $Converter
+
 $arguments = @(
     "--background",
     "--python", $Converter,
