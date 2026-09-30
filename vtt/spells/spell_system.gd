@@ -2707,7 +2707,9 @@ func _point_target_data(
 
 	return {
 		"valid": true,
-		"point": target_point
+		"point": target_point,
+		"in_air": bool(point_data.get("in_air", false)),
+		"normal": point_data.get("normal", Vector3.ZERO)
 	}
 
 
