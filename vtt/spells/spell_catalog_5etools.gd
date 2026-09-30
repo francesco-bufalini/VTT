@@ -441,7 +441,14 @@ const SPELLS: Dictionary = {
     "higher_levels": "At Higher Levels: When you cast this spell using a spell slot of 4th level or higher, the damage increases by 1d4 for each slot level above 3rd.",
     "visual_style": "psychic",
     "transient_seconds": 5,
-    "range_feet": 30
+    "range_feet": 30,
+    "condition_inflict": [],
+    "saving_throw": [
+      "wisdom"
+    ],
+    "misc_tags": [
+      "SGT"
+    ]
   },
   "antilife_shell": {
     "id": "antilife_shell",
@@ -783,7 +790,14 @@ const SPELLS: Dictionary = {
       "Wizard"
     ],
     "description": "An aura of alacrity radiates from you in a 30-foot Emanation for the duration. While in the aura, you and your allies have Advantage on Dexterity saving throws. When an affected creature is subjected to an effect that allows it to make a Dexterity saving throw to take only half damage, it takes no damage if it succeeds on the save and only half damage if it fails. A creature with the Incapacitated condition doesn't gain any benefit from being in the aura.",
-    "higher_levels": ""
+    "higher_levels": "",
+    "condition_inflict": [],
+    "saving_throw": [
+      "dexterity"
+    ],
+    "misc_tags": [
+      "ADV"
+    ]
   },
   "aura_of_life": {
     "id": "aura_of_life",
@@ -1062,7 +1076,13 @@ const SPELLS: Dictionary = {
       "Wizard"
     ],
     "description": "You conjure a familiar imbued with magical might. The familiar appears in an unoccupied space within range; resembles an animal of your choice but is a Celestial, Fey, or Fiend (your choice); and uses the Battle Familiar stat block. When you cast this spell, choose the Brute, Flyer, or Stalker form. The choice determines certain details in the stat block. Combat: The familiar is an ally to you and your allies. It rolls its own Initiative and acts on its own turn. Disappearance of the Familiar: The battle familiar disappears when the spell ends, if it drops to 0 Hit Points, or if you die. When it disappears, it leaves behind in its space anything it was wearing or carrying. If you cast this spell again, you decide whether you summon the familiar that disappeared or a different one. One Familiar at a Time: You can't have more than one familiar at a time. If you cast this spell while you already have a familiar from this spell, that familiar is replaced by the new one. If you have a familiar from the Find Familiar spell when you cast this spell, you empower your existing familiar rather than conjuring a new one. For the duration, your familiar can attack in addition to taking other actions as normal, and your familiar's game statistics are replaced by the Battle Familiar stat block, but it retains its creature type, alignment, Hit Points, Hit Point Dice, and any features granted by the Find Familiar spell. Your familiar gains a number of Temporary Hit Points equal to the Hit Points of the battle familiar. Battle Familiar ends early if the familiar has no more Temporary Hit Points left, and these Temporary Hit Points vanish if any remain when Battle Familiar ends. Your familiar reverts to its previous form when Battle Familiar ends.",
-    "higher_levels": "Using a Higher-Level Spell Slot: Use the spell slot's level for the spell's level in the stat block."
+    "higher_levels": "Using a Higher-Level Spell Slot: Use the spell slot's level for the spell's level in the stat block.",
+    "condition_inflict": [],
+    "saving_throw": [],
+    "misc_tags": [
+      "SMN",
+      "THP"
+    ]
   },
   "beacon_of_hope": {
     "id": "beacon_of_hope",
@@ -1779,7 +1799,15 @@ const SPELLS: Dictionary = {
     "higher_levels": "Using a Higher-Level Spell Slot: You can target one additional willing creature for each spell slot level above 3.",
     "visual_style": "arcane",
     "transient_seconds": 5,
-    "range_feet": 30
+    "range_feet": 30,
+    "condition_inflict": [
+      "unconscious"
+    ],
+    "saving_throw": [],
+    "misc_tags": [
+      "SCT",
+      "SGT"
+    ]
   },
   "cause_fear": {
     "id": "cause_fear",
@@ -3789,7 +3817,17 @@ const SPELLS: Dictionary = {
     "higher_levels": "",
     "visual_style": "fire",
     "transient_seconds": 5,
-    "range_feet": 500
+    "range_feet": 500,
+    "condition_inflict": [],
+    "saving_throw": [
+      "constitution",
+      "dexterity"
+    ],
+    "misc_tags": [
+      "BO",
+      "OBJ",
+      "SGT"
+    ]
   },
   "dimension_door": {
     "id": "dimension_door",
@@ -3986,7 +4024,12 @@ const SPELLS: Dictionary = {
     "aoe_shape": "sphere",
     "aoe_radius_feet": 20,
     "range_feet": 120,
-    "persistent": true
+    "persistent": true,
+    "condition_inflict": [],
+    "saving_throw": [
+      "constitution"
+    ],
+    "misc_tags": []
   },
   "dissonant_whispers": {
     "id": "dissonant_whispers",
@@ -4069,7 +4112,15 @@ const SPELLS: Dictionary = {
     "aoe_shape": "sphere",
     "aoe_radius_feet": 60,
     "range_feet": 120,
-    "persistent": true
+    "persistent": true,
+    "condition_inflict": [],
+    "saving_throw": [
+      "intelligence"
+    ],
+    "misc_tags": [
+      "DFT",
+      "SGT"
+    ]
   },
   "divination": {
     "id": "divination",
@@ -4521,7 +4572,15 @@ const SPELLS: Dictionary = {
       "Wizard"
     ],
     "description": "You create a magical dueling ground bounded by a glowing, rune-scribed circle in a 15-foot-radius Sphere centered on a point on the ground you touch. As part of creating the dueling ground, you designate two willing creatures within the Sphere as the targets. The spell ends early if a creature other than one of the targets enters the Sphere. If a target drops to 0 Hit Points while in the dueling ground, the target is Stable and teleports to the nearest unoccupied space outside the dueling ground. If a target is subjected to an effect that would kill it instantly without dealing damage while in the dueling ground, the target doesn't die and instead has 0 Hit Points and the Unconscious condition, is Stable, and teleports to the nearest unoccupied space outside the dueling ground. When only one target remains in the dueling ground, runes matching those on the ground around the Sphere briefly flash around the remaining target's head like a crown.",
-    "higher_levels": "Using a Higher-Level Spell Slot: You can target one additional willing creature for each spell slot level above 2."
+    "higher_levels": "Using a Higher-Level Spell Slot: You can target one additional willing creature for each spell slot level above 2.",
+    "condition_inflict": [
+      "unconscious"
+    ],
+    "saving_throw": [],
+    "misc_tags": [
+      "SCT",
+      "TP"
+    ]
   },
   "dust_devil": {
     "id": "dust_devil",
@@ -4889,7 +4948,16 @@ const SPELLS: Dictionary = {
     ],
     "description": "A tendril of inky darkness reaches out from you to drain life from a creature you can see within range. The target makes a Dexterity saving throw. On a failed save, the target takes 6d8 Necrotic damage. On each of your subsequent turns, you can take a Bonus Action to deal 2d8 Necrotic damage to the target automatically. The spell ends if the target is ever outside the spell's range or it has Total Cover from you. On a successful save, the target takes half the initial damage only, and the spell ends. Whenever this spell deals damage to a target, you regain Hit Points equal to half the amount of Necrotic damage dealt.",
     "higher_levels": "Using a Higher-Level Spell Slot: The initial damage increases by 1d8 for each spell slot level above 5.",
-    "range_feet": 60
+    "range_feet": 60,
+    "condition_inflict": [],
+    "saving_throw": [
+      "dexterity"
+    ],
+    "misc_tags": [
+      "HL",
+      "SGT",
+      "UBA"
+    ]
   },
   "enhance_ability": {
     "id": "enhance_ability",
@@ -5072,7 +5140,16 @@ const SPELLS: Dictionary = {
     "higher_levels": "",
     "visual_style": "psychic",
     "transient_seconds": 5,
-    "range_feet": 90
+    "range_feet": 90,
+    "condition_inflict": [
+      "stunned"
+    ],
+    "saving_throw": [
+      "intelligence"
+    ],
+    "misc_tags": [
+      "SGT"
+    ]
   },
   "erupting_earth": {
     "id": "erupting_earth",
@@ -5529,7 +5606,14 @@ const SPELLS: Dictionary = {
     "aoe_length_cells": 12,
     "line_width_feet": 10,
     "direction_limit_feet": 60,
-    "show_range_preview": false
+    "show_range_preview": false,
+    "condition_inflict": [
+      "poisoned"
+    ],
+    "saving_throw": [
+      "constitution"
+    ],
+    "misc_tags": []
   },
   "find_familiar": {
     "id": "find_familiar",
@@ -5995,7 +6079,12 @@ const SPELLS: Dictionary = {
       "Wizard"
     ],
     "description": "You temporarily summon three familiars—spirits that take animal forms of your choice. Each familiar uses the same rules and options for a familiar conjured by the find familiar spell. All the familiars conjured by this spell must be the same type of creature (celestials, fey, or fiends; your choice). If you already have a familiar conjured by the find familiar spell or similar means, then one fewer familiars are conjured by this spell. Familiars summoned by this spell can telepathically communicate with you and share their visual or auditory senses while they are within 1 mile of you. When you cast a spell with a range of touch, one of the familiars conjured by this spell can deliver the spell, as normal. However, you can cast a touch spell through only one familiar per turn.",
-    "higher_levels": "At Higher Levels: When you cast this spell using a spell slot of 3rd level or higher, you conjure an additional familiar for each slot level above 2nd."
+    "higher_levels": "At Higher Levels: When you cast this spell using a spell slot of 3rd level or higher, you conjure an additional familiar for each slot level above 2nd.",
+    "condition_inflict": [],
+    "saving_throw": [],
+    "misc_tags": [
+      "SMN"
+    ]
   },
   "fly": {
     "id": "fly",
@@ -6211,7 +6300,14 @@ const SPELLS: Dictionary = {
     "higher_levels": "",
     "visual_style": "psychic",
     "transient_seconds": 5,
-    "range_feet": 120
+    "range_feet": 120,
+    "condition_inflict": [],
+    "saving_throw": [
+      "intelligence"
+    ],
+    "misc_tags": [
+      "SGT"
+    ]
   },
   "freedom_of_movement": {
     "id": "freedom_of_movement",
@@ -6361,7 +6457,12 @@ const SPELLS: Dictionary = {
       "Wizard"
     ],
     "description": "You summon a Small air elemental to a spot within range. The air elemental is formless, nearly transparent, immune to all damage, and cannot interact with other creatures or objects. It carries an open, empty chest whose interior dimensions are 3 feet on each side. While the spell lasts, you can deposit as many items inside the chest as will fit. You can then name a living creature you have met and seen at least once before, or any creature for which you possess a body part, lock of hair, clipping from a nail, or similar portion of the creature's body. As soon as the lid of the chest is closed, the elemental and the chest disappear, then reappear adjacent to the target creature. If the target creature is on another plane, or if it is proofed against magical detection or location, the contents of the chest reappear on the ground at your feet. The target creature is made aware of the chest's contents before it chooses whether or not to open it, and knows how much of the spell's duration remains in which it can retrieve them. No other creature can open the chest and retrieve its contents. When the spell expires or when all the contents of the chest have been removed, the elemental and the chest disappear. The elemental also disappears if the target creature orders it to return the items to you. When the elemental disappears, any items not taken from the chest reappear on the ground at your feet.",
-    "higher_levels": "At Higher Levels: When you cast this spell using an 8th-level spell slot, you can send the chest to a creature on a different plane of existence from you."
+    "higher_levels": "At Higher Levels: When you cast this spell using an 8th-level spell slot, you can send the chest to a creature on a different plane of existence from you.",
+    "condition_inflict": [],
+    "saving_throw": [],
+    "misc_tags": [
+      "SMN"
+    ]
   },
   "galders_tower": {
     "id": "galders_tower",
@@ -6379,7 +6480,14 @@ const SPELLS: Dictionary = {
       "Wizard"
     ],
     "description": "You conjure a two-story tower made of stone, wood, or similar suitably sturdy materials. The tower can be round or square in shape. Each level of the tower is 10 feet tall and has an area of up to 100 square feet. Access between levels consists of a simple ladder and hatch. Each level takes one of the following forms, chosen by you when you cast the spell: A bedroom with a bed, chairs, chest, and magical fireplace A study with desks, books, bookshelves, parchments, ink, and ink pens A dining space with a table, chairs, magical fireplace, containers, and cooking utensils A lounge with couches, armchairs, side tables and footstools A washroom with toilets, washtubs, a magical brazier, and sauna benches An observatory with a telescope and maps of the night sky An unfurnished, empty room The interior of the tower is warm and dry, regardless of conditions outside. Any equipment or furnishings conjured with the tower dissipate into smoke if removed from it. At the end of the spell's duration, all creatures and objects within the tower that were not created by the spell appear safely outside on the ground, and all traces of the tower and its furnishings disappear. You can cast this spell again while it is active to maintain the tower's existence for another 24 hours. You can create a permanent tower by casting this spell in the same location and with the same configuration every day for one year.",
-    "higher_levels": "At Higher Levels: When you cast this spell using a spell slot of 4th level or higher, the tower can have one additional story for each slot level beyond 3rd."
+    "higher_levels": "At Higher Levels: When you cast this spell using a spell slot of 4th level or higher, the tower can have one additional story for each slot level beyond 3rd.",
+    "condition_inflict": [],
+    "saving_throw": [],
+    "misc_tags": [
+      "OBJ",
+      "PIR",
+      "PRM"
+    ]
   },
   "gaseous_form": {
     "id": "gaseous_form",
@@ -6453,7 +6561,12 @@ const SPELLS: Dictionary = {
       "Wizard"
     ],
     "description": "You fortify the fabric of the planes in a 30-foot cube you can see within range. Within that area, portals close and can't be opened for the duration. Spells and other effects that allow planar travel or open portals, such as gate or plane shift, fail if used to enter or leave the area. The cube is stationary.",
-    "higher_levels": "At Higher Levels: When you cast this spell using a spell slot of 6th level or higher, the spell lasts until dispelled."
+    "higher_levels": "At Higher Levels: When you cast this spell using a spell slot of 6th level or higher, the spell lasts until dispelled.",
+    "condition_inflict": [],
+    "saving_throw": [],
+    "misc_tags": [
+      "SGT"
+    ]
   },
   "geas": {
     "id": "geas",
@@ -6742,7 +6855,14 @@ const SPELLS: Dictionary = {
     "aoe_side_feet": 10,
     "requires_ground": true,
     "range_feet": 120,
-    "persistent": true
+    "persistent": true,
+    "condition_inflict": [],
+    "saving_throw": [
+      "strength"
+    ],
+    "misc_tags": [
+      "DFT"
+    ]
   },
   "gravity_fissure": {
     "id": "gravity_fissure",
@@ -7531,7 +7651,10 @@ const SPELLS: Dictionary = {
       "Wizard"
     ],
     "description": "You peer backward through the fabric of time. You see visions of events that occurred within range throughout the past 10 years, racing by at approximately 1 day per second. Throughout the spell's duration, you can freely slow down, pause, rewind, or fast-forward through these visions.",
-    "higher_levels": ""
+    "higher_levels": "",
+    "condition_inflict": [],
+    "saving_throw": [],
+    "misc_tags": []
   },
   "hold_monster": {
     "id": "hold_monster",
@@ -7705,7 +7828,13 @@ const SPELLS: Dictionary = {
       "Artificer"
     ],
     "description": "You summon a special homunculus in an unoccupied space within range. This creature uses the Homunculus Servant stat block. If you already have a homunculus from this spell, the homunculus is replaced by the new one. You determine the homunculus's appearance, such as a mechanical-looking bird, winged vial, or miniature animate cauldron. Combat: The homunculus is an ally to you and your allies. In combat, it shares your Initiative count, but it takes its turn immediately after yours. It obeys your commands (no action required by you). If you don't issue any, it takes the Dodge action and uses its movement to avoid danger.",
-    "higher_levels": "Using a Higher-Level Spell Slot: Use the spell slot's level for the spell's level in the stat block."
+    "higher_levels": "Using a Higher-Level Spell Slot: Use the spell slot's level for the spell's level in the stat block.",
+    "condition_inflict": [],
+    "saving_throw": [],
+    "misc_tags": [
+      "PRM",
+      "SMN"
+    ]
   },
   "hunger_of_hadar": {
     "id": "hunger_of_hadar",
@@ -7906,7 +8035,19 @@ const SPELLS: Dictionary = {
       "Wizard"
     ],
     "description": "By gathering threads of shadow material from the Shadowfell, you create a Huge shadowy dragon in an unoccupied space that you can see within range. The illusion lasts for the spell's duration and occupies its space as if it were a creature. The illusion is tangible because of the shadow material used to create it but has Immunity to all damage and conditions. When the illusion appears, any enemy that can see it makes a Wisdom saving throw. On a failed save, the creature drops whatever it's holding and has the Frightened condition for the duration. If a creature Frightened in this way ends its turn in a space where it doesn't have line of sight to the illusion, the creature repeats the saving throw, ending the condition on itself on a success. As a Bonus Action, you can move the illusion up to 60 feet. At any point during its movement, you can cause the shadowy dragon to exhale a blast of energy in a 60-foot Cone. Each creature in the Cone makes an Intelligence saving throw, taking 6d6 Acid, Cold, Fire, Lightning, Necrotic, or Poison damage (your choice when you create the dragon) on a failed save or half as much damage on a successful one. A creature that takes a Study action to examine the dragon can determine that it is an illusion with a successful Intelligence (Investigation) check against your spell save DC. If a creature discerns the illusion for what it is, the creature can see through the image and has Advantage on saving throws to end the Frightened condition it caused and to resist its exhalation.",
-    "higher_levels": ""
+    "higher_levels": "",
+    "condition_inflict": [
+      "frightened"
+    ],
+    "saving_throw": [
+      "intelligence",
+      "wisdom"
+    ],
+    "misc_tags": [
+      "ADV",
+      "SGT",
+      "UBA"
+    ]
   },
   "illusory_script": {
     "id": "illusory_script",
@@ -8166,7 +8307,14 @@ const SPELLS: Dictionary = {
     "higher_levels": "",
     "visual_style": "arcane",
     "transient_seconds": 5,
-    "range_feet": 120
+    "range_feet": 120,
+    "condition_inflict": [],
+    "saving_throw": [
+      "wisdom"
+    ],
+    "misc_tags": [
+      "SGT"
+    ]
   },
   "inflict_wounds": {
     "id": "inflict_wounds",
@@ -8440,7 +8588,10 @@ const SPELLS: Dictionary = {
       "Wizard"
     ],
     "description": "You have Immunity to all damage until the spell ends.",
-    "higher_levels": ""
+    "higher_levels": "",
+    "condition_inflict": [],
+    "saving_throw": [],
+    "misc_tags": []
   },
   "iron_body": {
     "id": "iron_body",
@@ -8460,7 +8611,10 @@ const SPELLS: Dictionary = {
       "Wizard"
     ],
     "description": "One willing creature you touch transforms into living metal. Until the spell ends, the target's Exhaustion level can't increase; the target has Resistance to Bludgeoning, Fire, Piercing, and Slashing damage; and it has Immunity to Poison damage and the Paralyzed, Petrified, and Poisoned conditions. If the target is Paralyzed, Petrified, or Poisoned when you cast the spell, those conditions immediately end for the target.",
-    "higher_levels": ""
+    "higher_levels": "",
+    "condition_inflict": [],
+    "saving_throw": [],
+    "misc_tags": []
   },
   "jallarzis_storm_of_radiance": {
     "id": "jallarzis_storm_of_radiance",
@@ -8984,7 +9138,17 @@ const SPELLS: Dictionary = {
       "Wizard"
     ],
     "description": "A ring of crackling electricity fills a 10-foot Emanation originating from you. Whenever the Emanation enters a creature's space and whenever a creature enters the Emanation or ends its turn there, you can force that creature to make a Constitution saving throw. On a failed save, the creature takes 3d6 Lightning damage plus 3d6 Thunder damage, and it has the Deafened condition for 1 minute. On a successful save, the creature takes half as much damage only. As a Magic action while the spell is active, you can emit a 60-foot-long, 5-foot-wide Line out from you in a direction you choose. Each creature in the Line makes a Dexterity saving throw, taking 6d6 Lightning damage on a failed save or half as much damage on a successful one.",
-    "higher_levels": ""
+    "higher_levels": "",
+    "condition_inflict": [
+      "deafened"
+    ],
+    "saving_throw": [
+      "constitution",
+      "dexterity"
+    ],
+    "misc_tags": [
+      "UA"
+    ]
   },
   "linked_glyphs": {
     "id": "linked_glyphs",
@@ -9009,7 +9173,14 @@ const SPELLS: Dictionary = {
     "visual_style": "arcane",
     "transient_seconds": 5,
     "target_mode": "token_then_token",
-    "range_feet": 5
+    "range_feet": 5,
+    "condition_inflict": [
+      "invisible"
+    ],
+    "saving_throw": [],
+    "misc_tags": [
+      "PRM"
+    ]
   },
   "locate_animals_or_plants": {
     "id": "locate_animals_or_plants",
@@ -10204,7 +10375,10 @@ const SPELLS: Dictionary = {
       "Wizard"
     ],
     "description": "You have a powerful sixth sense that guides you at just the right time. Turn the roll of your failed D20 Test into a 20, or turn the roll of the triggering attack roll into a 1.",
-    "higher_levels": ""
+    "higher_levels": "",
+    "condition_inflict": [],
+    "saving_throw": [],
+    "misc_tags": []
   },
   "moonbeam": {
     "id": "moonbeam",
@@ -10275,7 +10449,10 @@ const SPELLS: Dictionary = {
       "Wizard"
     ],
     "description": "You recover up to two expended spell slots of level 2 or lower.",
-    "higher_levels": "Using a Higher-Level Spell Slot: The maximum level of spell slots you can recover increases to level 3 (if cast with a level 6-7 spell slot) or level 4 (if cast with a level 8+ spell slot)."
+    "higher_levels": "Using a Higher-Level Spell Slot: The maximum level of spell slots you can recover increases to level 3 (if cast with a level 6-7 spell slot) or level 4 (if cast with a level 8+ spell slot).",
+    "condition_inflict": [],
+    "saving_throw": [],
+    "misc_tags": []
   },
   "mordenkainens_magnificent_mansion": {
     "id": "mordenkainens_magnificent_mansion",
@@ -10472,7 +10649,16 @@ const SPELLS: Dictionary = {
     "target_mode": "token_then_token",
     "range_feet": 60,
     "projectile_style": "negative_energy_flood",
-    "projectile_travel_seconds": 0.65
+    "projectile_travel_seconds": 0.65,
+    "condition_inflict": [],
+    "saving_throw": [
+      "constitution"
+    ],
+    "misc_tags": [
+      "SGT",
+      "SMN",
+      "THP"
+    ]
   },
   "nondetection": {
     "id": "nondetection",
@@ -11043,7 +11229,16 @@ const SPELLS: Dictionary = {
     "higher_levels": "",
     "visual_style": "arcane",
     "transient_seconds": 5,
-    "range_feet": 60
+    "range_feet": 60,
+    "condition_inflict": [
+      "charmed"
+    ],
+    "saving_throw": [
+      "constitution"
+    ],
+    "misc_tags": [
+      "SGT"
+    ]
   },
   "power_word_stun": {
     "id": "power_word_stun",
@@ -12012,7 +12207,14 @@ const SPELLS: Dictionary = {
     "target_mode": "token_then_token",
     "range_feet": 60,
     "projectile_style": "reweave_fate",
-    "projectile_travel_seconds": 0.65
+    "projectile_travel_seconds": 0.65,
+    "condition_inflict": [],
+    "saving_throw": [],
+    "misc_tags": [
+      "ADV",
+      "SGT",
+      "THP"
+    ]
   },
   "rimes_binding_ice": {
     "id": "rimes_binding_ice",
@@ -13368,7 +13570,17 @@ const SPELLS: Dictionary = {
       "Wizard"
     ],
     "description": "You conjure a floating, ghostly black lantern that hovers above you and sheds Dim Light in a 60-foot radius. When an enemy dies within this Dim Light, a fragment of the creature's soul flies into the lantern. The lantern can hold a number of soul fragments equal to your spellcasting ability modifier, and those fragments dissipate when the spell ends. As a Bonus Action, you can expend a soul fragment to create one of the following effects. Drain Life: The soul fragment darts at a creature of your choice that you can see within 60 feet of yourself. The target makes a Constitution saving throw, taking Necrotic damage equal to 4d8 plus your spellcasting ability modifier on a failed save or half as much damage on a successful one. Repair Undead: The soul fragment flies into an Undead creature of your choice that you can see within 60 feet of yourself. That creature regains Hit Points equal to 4d8 plus your spellcasting ability modifier. Ward Ally: The soul fragment darts around a creature of your choice that you can see within 60 feet of yourself. Other creatures have Disadvantage on attack rolls against the chosen creature until the start of your next turn.",
-    "higher_levels": ""
+    "higher_levels": "",
+    "condition_inflict": [],
+    "saving_throw": [
+      "constitution"
+    ],
+    "misc_tags": [
+      "HL",
+      "LGT",
+      "SGT",
+      "UBA"
+    ]
   },
   "spirit_of_death": {
     "id": "spirit_of_death",
@@ -13388,7 +13600,13 @@ const SPELLS: Dictionary = {
       "Wizard"
     ],
     "description": "You call forth a spirit that embodies death. The spirit manifests in an unoccupied space you can see within range and uses the reaper spirit stat block. The spirit disappears when it is reduced to 0 hit points or when the spell ends. The spirit is an ally to you and your companions. In combat, the spirit shares your initiative count and takes its turn immediately after yours. It obeys your verbal commands (no action required by you). If you don't issue the spirit any commands, it takes the Dodge action and uses its movement to avoid danger.",
-    "higher_levels": "At Higher Levels: When you cast this spell using a spell slot of 5th level or higher, use the higher level wherever the spell's level appears in the reaper spirit stat block."
+    "higher_levels": "At Higher Levels: When you cast this spell using a spell slot of 5th level or higher, use the higher level wherever the spell's level appears in the reaper spirit stat block.",
+    "condition_inflict": [],
+    "saving_throw": [],
+    "misc_tags": [
+      "SGT",
+      "SMN"
+    ]
   },
   "spirit_shroud": {
     "id": "spirit_shroud",
@@ -13469,7 +13687,14 @@ const SPELLS: Dictionary = {
     "aoe_shape": "cone",
     "aoe_length_cells": 3,
     "direction_limit_feet": 15,
-    "show_range_preview": false
+    "show_range_preview": false,
+    "condition_inflict": [
+      "blinded"
+    ],
+    "saving_throw": [
+      "dexterity"
+    ],
+    "misc_tags": []
   },
   "staggering_smite": {
     "id": "staggering_smite",
@@ -13854,7 +14079,13 @@ const SPELLS: Dictionary = {
       "Druid"
     ],
     "description": "You call forth the spirit of a primeval dinosaur. It manifests in an unoccupied space that you can see within range and uses the Dinosaur Spirit stat block. When you cast the spell, choose Ankylosaur, Triceratops, or Tyrannosaur. The creature resembles a dinosaur of the chosen type, which determines certain details in its stat block. The creature disappears when it drops to 0 Hit Points or when the spell ends. The creature is an ally to you and your allies. In combat, the creature shares your Initiative count, but it takes its turn immediately after yours. It obeys your verbal commands (no action required by you). If you don't issue any, the creature takes the Dodge action and uses its movement to avoid danger.",
-    "higher_levels": "Using a Higher-Level Spell Slot: Use the spell slot's level for the spell's level in the stat block."
+    "higher_levels": "Using a Higher-Level Spell Slot: Use the spell slot's level for the spell's level in the stat block.",
+    "condition_inflict": [],
+    "saving_throw": [],
+    "misc_tags": [
+      "SGT",
+      "SMN"
+    ]
   },
   "summon_draconic_spirit": {
     "id": "summon_draconic_spirit",
@@ -14056,7 +14287,13 @@ const SPELLS: Dictionary = {
       "Ranger"
     ],
     "description": "You call forth the spirit of an animated plant. It manifests in an unoccupied space that you can see within range and uses the Plant Spirit stat block. When you cast the spell, choose Fungus, Tree, or Vine. The creature resembles a plant of the chosen type, which determines certain details in its stat block. The creature disappears when it drops to 0 Hit Points or when the spell ends. The creature is an ally to you and your allies. In combat, the creature shares your Initiative count, but it takes its turn immediately after yours. It obeys your verbal commands (no action required by you). If you don't issue any, it takes the Dodge action and uses its movement to avoid danger.",
-    "higher_levels": "Using a Higher-Level Spell Slot: Use the spell slot's level for the spell's level in the stat block."
+    "higher_levels": "Using a Higher-Level Spell Slot: Use the spell slot's level for the spell's level in the stat block.",
+    "condition_inflict": [],
+    "saving_throw": [],
+    "misc_tags": [
+      "SGT",
+      "SMN"
+    ]
   },
   "summon_shadowspawn": {
     "id": "summon_shadowspawn",
@@ -15088,7 +15325,18 @@ const SPELLS: Dictionary = {
       "Wizard"
     ],
     "description": "For the duration, your appearance becomes otherworldly and alluring. One creature of your choice that you can see within 60 feet of you must succeed on a Charisma saving throw or have the Charmed condition for the duration. While Charmed, the target has the Incapacitated condition, and if the target is more than 5 feet away from you, it moves on its turn toward you by the most direct route, trying to get within 5 feet of you. If the Charmed creature ends its turn within 5 feet of you, it takes 4d8 Psychic damage. The target doesn't avoid Opportunity Attacks when moving toward you, but before moving into damaging terrain (such as lava or a pit), the target repeats the save, ending the spell on itself on a success. Until the spell ends, you can take a Magic action on subsequent turns to target another creature, but you can't target a creature again if it has succeeded on a save against this casting of the spell.",
-    "higher_levels": "Using a Higher-Level Spell Slot: The damage increases by 1d8 for each spell slot level above 7."
+    "higher_levels": "Using a Higher-Level Spell Slot: The damage increases by 1d8 for each spell slot level above 7.",
+    "condition_inflict": [
+      "charmed",
+      "incapacitated"
+    ],
+    "saving_throw": [
+      "charisma"
+    ],
+    "misc_tags": [
+      "SGT",
+      "UA"
+    ]
   },
   "transmute_rock": {
     "id": "transmute_rock",
@@ -15334,7 +15582,14 @@ const SPELLS: Dictionary = {
     "base_target_clicks": 3,
     "allow_repeat_targets": false,
     "projectile_style": "uncertain_footing",
-    "projectile_travel_seconds": 0.65
+    "projectile_travel_seconds": 0.65,
+    "condition_inflict": [],
+    "saving_throw": [
+      "intelligence"
+    ],
+    "misc_tags": [
+      "SGT"
+    ]
   },
   "unseen_servant": {
     "id": "unseen_servant",
@@ -15443,7 +15698,17 @@ const SPELLS: Dictionary = {
     "higher_levels": "",
     "visual_style": "psychic",
     "transient_seconds": 5,
-    "range_feet": 120
+    "range_feet": 120,
+    "condition_inflict": [
+      "exhaustion",
+      "paralyzed"
+    ],
+    "saving_throw": [
+      "intelligence"
+    ],
+    "misc_tags": [
+      "SGT"
+    ]
   },
   "vitriolic_sphere": {
     "id": "vitriolic_sphere",
@@ -15518,7 +15783,14 @@ const SPELLS: Dictionary = {
     "higher_levels": "",
     "visual_style": "psychic",
     "transient_seconds": 5,
-    "range_feet": 60
+    "range_feet": 60,
+    "condition_inflict": [
+      "deafened"
+    ],
+    "saving_throw": [
+      "constitution"
+    ],
+    "misc_tags": []
   },
   "wall_of_fire": {
     "id": "wall_of_fire",
@@ -15860,7 +16132,12 @@ const SPELLS: Dictionary = {
       "Wizard"
     ],
     "description": "For the duration, you sense the presence of portals, even inactive ones, within 30 feet of yourself. If you detect a portal in this way, you can use your action to study it. Make a 15 ability check using your spellcasting ability. On a successful check, you learn the destination plane of the portal and what portal key it requires, then the spell ends. On a failed check, you learn nothing and can't study that portal again using this spell until you cast it again. The spell can penetrate most barriers but is blocked by 1 foot of stone, 1 inch of common metal, a thin sheet of lead, or 3 feet of wood or dirt.",
-    "higher_levels": ""
+    "higher_levels": "",
+    "condition_inflict": [],
+    "saving_throw": [],
+    "misc_tags": [
+      "UA"
+    ]
   },
   "water_breathing": {
     "id": "water_breathing",
@@ -15974,7 +16251,16 @@ const SPELLS: Dictionary = {
     "aoe_length_cells": 12,
     "direction_limit_feet": 60,
     "show_range_preview": false,
-    "persistent": true
+    "persistent": true,
+    "condition_inflict": [
+      "exhaustion"
+    ],
+    "saving_throw": [
+      "constitution"
+    ],
+    "misc_tags": [
+      "UA"
+    ]
   },
   "web": {
     "id": "web",
@@ -16210,7 +16496,14 @@ const SPELLS: Dictionary = {
     "higher_levels": "Using a Higher-Level Spell Slot: The damage increases by 1d6 for each spell slot level above 2. The number of Hit Point Dice that can be rolled and expended increases by one for each spell slot level above 2. You add your spellcasting modifier to the number of Hit Points regained by this spell only once, regardless of the number of Hit Point Dice rolled and expended.",
     "visual_style": "necrotic",
     "transient_seconds": 5,
-    "range_feet": 60
+    "range_feet": 60,
+    "condition_inflict": [],
+    "saving_throw": [
+      "constitution"
+    ],
+    "misc_tags": [
+      "HL"
+    ]
   },
   "word_of_radiance": {
     "id": "word_of_radiance",
@@ -16419,7 +16712,10 @@ const SPELLS: Dictionary = {
       "Warlock"
     ],
     "description": "A magical zone of amicability radiates from you in a 60-foot Emanation for the duration. When you make an ability check to influence a creature in that area, you can treat a d20 roll of 9 or lower as a 10.",
-    "higher_levels": ""
+    "higher_levels": "",
+    "condition_inflict": [],
+    "saving_throw": [],
+    "misc_tags": []
   },
   "zone_of_truth": {
     "id": "zone_of_truth",
