@@ -226,19 +226,32 @@ static func _base_particles(
 
 static func _color(style: String) -> Color:
 	match style:
-		"fire": return Color(1.0, 0.24, 0.03, 0.66)
-		"cold": return Color(0.48, 0.9, 1.0, 0.62)
-		"lightning": return Color(0.36, 0.84, 1.0, 0.76)
-		"acid": return Color(0.5, 0.96, 0.12, 0.62)
-		"poison": return Color(0.3, 0.76, 0.1, 0.54)
-		"necrotic": return Color(0.28, 0.06, 0.34, 0.6)
-		"radiant": return Color(1.0, 0.94, 0.58, 0.7)
-		"force": return Color(0.72, 0.66, 1.0, 0.62)
-		"psychic": return Color(0.72, 0.28, 1.0, 0.62)
-		"thunder": return Color(0.46, 0.78, 1.0, 0.62)
-		"bludgeoning": return Color(0.7, 0.72, 0.76, 0.6)
-		"piercing", "slashing": return Color(0.88, 0.9, 0.94, 0.66)
-		_: return Color(0.72, 0.34, 1.0, 0.58)
+		"fire":
+			return Color(1.0, 0.24, 0.03, 0.66)
+		"cold":
+			return Color(0.48, 0.9, 1.0, 0.62)
+		"lightning":
+			return Color(0.36, 0.84, 1.0, 0.76)
+		"acid":
+			return Color(0.5, 0.96, 0.12, 0.62)
+		"poison":
+			return Color(0.3, 0.76, 0.1, 0.54)
+		"necrotic":
+			return Color(0.28, 0.06, 0.34, 0.6)
+		"radiant":
+			return Color(1.0, 0.94, 0.58, 0.7)
+		"force":
+			return Color(0.72, 0.66, 1.0, 0.62)
+		"psychic":
+			return Color(0.72, 0.28, 1.0, 0.62)
+		"thunder":
+			return Color(0.46, 0.78, 1.0, 0.62)
+		"bludgeoning":
+			return Color(0.7, 0.72, 0.76, 0.6)
+		"piercing", "slashing":
+			return Color(0.88, 0.9, 0.94, 0.66)
+		_:
+			return Color(0.72, 0.34, 1.0, 0.58)
 
 
 static func _motion(style: String, cell_size: float) -> Vector3:
