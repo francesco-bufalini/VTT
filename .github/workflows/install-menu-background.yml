@@ -1,0 +1,66 @@
+name: Install supplied main menu background
+
+on:
+  push:
+    branches:
+      - feature/campaign-hub
+    paths:
+      - .github/workflows/install-menu-background.yml
+  workflow_dispatch:
+
+permissions:
+  contents: write
+
+jobs:
+  install:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: feature/campaign-hub
+
+      - name: Rebuild supplied background
+        env:
+          EXPECTED_SHA256: 7b62718971a5fd52c09c52990e164dc8f0c2b8945e5237916c772bfcccfb9d71
+        run: |
+          python3 - <<'PY'
+          import base64
+          import hashlib
+          from pathlib import Path
+
+          parts = sorted(Path("tools/_menu_payload").glob("background.webp.part*"))
+          if len(parts) != 5:
+              raise SystemExit(f"Expected 5 payload parts, found {len(parts)}")
+
+          encoded = "".join(p.read_text().strip() for p in parts)
+          data = base64.b64decode(encoded, validate=True)
+
+          digest = hashlib.sha256(data).hexdigest()
+          if digest != "$""{EXPECTED_SHA256}":
+              raise SystemExit(f"Checksum mismatch: {digest}")
+
+          if not data.startswith(b"RIFF") or b"WEBP" not in data[:16]:
+              raise SystemExit("Decoded payload is not a WebP image")
+
+          target = Path("assets/menu/background/lithophane_background.webp")
+          target.parent.mkdir(parents=True, exist_ok=True)
+          target.write_bytes(data)
+          print(f"Installed {target}: {len(data)} bytes")
+
+          for p in parts:
+              p.unlink()
+          payload_dir = Path("tools/_menu_payload")
+          try:
+              payload_dir.rmdir()
+          except OSError:
+              pass
+          PY
+
+      - name: Commit installed background
+        run: |
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git add assets/menu/background/lithophane_background.webp
+          git add -u tools/_menu_payload
+          git commit -m "Replace truncated menu background with supplied image"
+          git push origin HEAD:feature/campaign-hub
