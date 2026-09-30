@@ -10,7 +10,8 @@ const GROUPS := ["dnd_token", "tactical_platform", "encounter_obstacle"]
 const TOKEN_CONDITIONS := [
 	"blinded", "charmed", "deafened", "exhaustion", "frightened",
 	"grappled", "incapacitated", "invisible", "paralyzed", "petrified",
-	"poisoned", "prone", "restrained", "stunned", "unconscious"
+	"poisoned", "prone", "restrained", "stunned", "unconscious",
+	"concentrating", "surprised", "hidden", "dead"
 ]
 var board_root: Node
 var token_scene: PackedScene
