@@ -38,7 +38,8 @@ function Remove-TrailingDirectorySeparator([string]$PathValue) {
     $root = [System.IO.Path]::GetPathRoot($fullPath)
 
     if ($fullPath.Length -gt $root.Length) {
-        return $fullPath.TrimEnd([char]92, [char]47)
+        $separators = [char[]]@([char]92, [char]47)
+        return $fullPath.TrimEnd($separators)
     }
 
     return $fullPath
