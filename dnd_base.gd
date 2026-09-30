@@ -1500,6 +1500,7 @@ func _build_opportunity_attack_dialog() -> void:
 	opportunity_dialog.min_size = Vector2i(560, 240)
 	$UI.add_child(opportunity_dialog)
 	opportunity_dialog.confirmed.connect(_close_opportunity_attack_dialog)
+	opportunity_dialog.canceled.connect(_close_opportunity_attack_dialog)
 	opportunity_dialog.close_requested.connect(_close_opportunity_attack_dialog)
 
 
