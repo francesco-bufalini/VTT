@@ -418,6 +418,12 @@ def choose_main_source(package: Path) -> Path:
 def is_platform_reference_name(text: str) -> bool:
     name = text.lower().strip()
 
+    # "Organic Base Sphere" is a common sculpt/object name in authored .blend
+    # files.  Despite containing the word "base", it is real miniature
+    # geometry, not a D&D footprint marker, and must remain exportable.
+    if re.fullmatch(r"organic\s+base\s+sphere(?:\.\d+)?", name):
+        return False
+
     if any(
         _contains_word(name, word)
         for word in ("base", "marker", "platform", "stand")
