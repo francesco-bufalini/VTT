@@ -7,11 +7,6 @@ const SpellAreaCatalog = preload(
 	"res://vtt/spells/spell_area_catalog.gd"
 )
 
-const CLASS_NAMES: Array[String] = [
-	"Artefice", "Bardo", "Chierico", "Druido", "Monaco",
-	"Paladino", "Ranger", "Stregone", "Warlock", "Mago"
-]
-
 const LEVEL_NAMES: Array[String] = [
 	"Trucchetti", "1° livello", "2° livello", "3° livello", "4° livello",
 	"5° livello", "6° livello", "7° livello", "8° livello", "9° livello"
@@ -1187,6 +1182,27 @@ static func all_spells() -> Array[Dictionary]:
 			return String(a.get("name", "")).naturalnocasecmp_to(
 				String(b.get("name", ""))
 			) < 0
+	)
+	return result
+
+
+static func class_names() -> Array[String]:
+	var found: Dictionary = {}
+	for entry: Dictionary in all_spells():
+		var classes_value: Variant = entry.get("classes", [])
+		if not classes_value is Array:
+			continue
+		for class_value: Variant in (classes_value as Array):
+			var class_label: String = String(class_value).strip_edges()
+			if not class_label.is_empty():
+				found[class_label] = true
+
+	var result: Array[String] = []
+	for class_value: Variant in found.keys():
+		result.append(String(class_value))
+	result.sort_custom(
+		func(a: String, b: String) -> bool:
+			return a.naturalnocasecmp_to(b) < 0
 	)
 	return result
 

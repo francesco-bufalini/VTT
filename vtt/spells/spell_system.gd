@@ -2354,7 +2354,7 @@ func _populate_class_tree() -> void:
 	class_tree.clear()
 	var root: TreeItem = class_tree.create_item()
 
-	for class_label: String in SpellCatalog.CLASS_NAMES:
+	for class_label: String in SpellCatalog.class_names():
 		var class_item: TreeItem = class_tree.create_item(root)
 		class_item.set_text(0, class_label)
 		class_item.set_collapsed(true)
