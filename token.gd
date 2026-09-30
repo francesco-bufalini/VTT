@@ -506,15 +506,13 @@ func _update_status_overlay() -> void:
 	if not is_instance_valid(_status_label):
 		return
 	var icons: PackedStringArray = []
-	var names: PackedStringArray = []
 	for definition: Dictionary in CONDITION_DEFINITIONS:
 		var condition_id := String(definition.get("id", ""))
 		if condition_id in _conditions:
 			icons.append(String(definition.get("icon", "•")))
-			names.append(String(definition.get("name", condition_id)))
 	_status_label.text = "  ".join(icons)
 	_status_label.visible = not icons.is_empty()
-	_status_label.tooltip_text = ", ".join(names)
+
 
 
 func set_token_color(token_color: Color) -> void:
