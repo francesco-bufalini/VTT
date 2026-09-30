@@ -21,7 +21,7 @@
       "feet": 500
     },
     "targeting": {
-      "type": "point"
+      "type": "token"
     },
     "effect": {
       "geometry": {
@@ -2077,7 +2077,7 @@
       "distance_type": "touch"
     },
     "targeting": {
-      "type": "point"
+      "type": "token"
     },
     "effect": {
       "geometry": {
@@ -2388,7 +2388,7 @@
       "feet": 150
     },
     "targeting": {
-      "type": "point"
+      "type": "token"
     },
     "effect": {
       "geometry": {
@@ -2583,7 +2583,7 @@
       "feet": 120
     },
     "targeting": {
-      "type": "point",
+      "type": "token",
       "requires_ground": true
     },
     "effect": {
@@ -3141,7 +3141,7 @@
       "distance_type": "touch"
     },
     "targeting": {
-      "type": "point"
+      "type": "token"
     },
     "effect": {
       "geometry": {
