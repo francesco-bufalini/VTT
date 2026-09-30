@@ -1129,7 +1129,14 @@ static func _is_runtime_usable(spell_data: Dictionary) -> bool:
 	var target_mode: String = String(
 		spell_data.get("target_mode", "")
 	)
-	if target_mode in ["teleport_self", "summon"]:
+	if target_mode in [
+		"teleport_self",
+		"summon",
+		"transform_self",
+		"token_then_transform",
+		"token_then_multi_transform",
+		"resize_token"
+	]:
 		return true
 	if target_mode == "wall_design":
 		var modes_value: Variant = spell_data.get("wall_modes", [])
