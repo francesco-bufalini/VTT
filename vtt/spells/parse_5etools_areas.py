@@ -47,7 +47,6 @@ GEOMETRY_TAGS = {
     "W": ("wall",),
 }
 IGNORED_AREA_TAGS = {"ST", "MT"}
-MAP_VISUAL_TAGS = {"OBS", "LGT", "LGTS", "DFT"}
 
 
 def _number(value: str | float) -> int | float:
@@ -718,17 +717,6 @@ def _targeting_spec(
     return result
 
 
-def _visual_tags(spell: dict[str, Any]) -> list[str]:
-    value = spell.get("miscTags", [])
-    if not isinstance(value, list):
-        return []
-    return sorted({
-        str(tag)
-        for tag in value
-        if str(tag) in MAP_VISUAL_TAGS
-    })
-
-
 def _damage_types(spell: dict[str, Any]) -> list[str]:
     value = spell.get("damageInflict", [])
     if not isinstance(value, list):
@@ -736,38 +724,25 @@ def _damage_types(spell: dict[str, Any]) -> list[str]:
     return sorted({str(item).lower() for item in value if str(item)})
 
 
-def _build_effects(
+def _build_effect(
     spell: dict[str, Any],
     geometries: list[dict[str, Any]],
-    targeting: dict[str, Any],
-) -> list[dict[str, Any]]:
-    effects: list[dict[str, Any]] = []
-    target_type = str(targeting.get("type", "point"))
-    anchor = {
-        "caster": "caster",
-        "caster_direction": "caster",
-        "wall": "selected_path",
-    }.get(target_type, "selected_point")
+) -> dict[str, Any]:
+    if not geometries:
+        return {}
 
-    persistence = "persistent" if _is_persistent(spell) else "instant"
+    # The runtime catalogue stores the one geometry consumed by SpellSystem.
+    # Alternate wall modes remain inside geometry.variants, where the runtime
+    # actually uses them. Other secondary geometries stay in the diagnostic
+    # source data until a dedicated multi-stage state machine exists.
+    effect: dict[str, Any] = {
+        "geometry": geometries[0],
+        "persistence": "persistent" if _is_persistent(spell) else "instant",
+    }
     damage_types = _damage_types(spell)
-    visual_tags = _visual_tags(spell)
-
-    for geometry in geometries:
-        effect: dict[str, Any] = {
-            "anchor": "selected_path"
-            if geometry.get("shape") == "wall"
-            else anchor,
-            "geometry": geometry,
-            "persistence": persistence,
-        }
-        if damage_types:
-            effect["damage_types"] = damage_types
-        if visual_tags:
-            effect["visual_tags"] = visual_tags
-        effects.append(effect)
-    return effects
-
+    if damage_types:
+        effect["damage_types"] = damage_types
+    return effect
 
 def _load_spells_from_json(path: Path) -> list[dict[str, Any]]:
     data = json.loads(path.read_text(encoding="utf-8"))
@@ -842,14 +817,14 @@ def build_output(
             geometries,
             _spell_text(spell),
         )
-        effects = _build_effects(spell, geometries, targeting)
-        if not effects:
+        effect = _build_effect(spell, geometries)
+        if not effect:
             continue
 
         entry: dict[str, Any] = {
             "range": range_spec,
             "targeting": targeting,
-            "effects": effects,
+            "effect": effect,
         }
         runtime[f"{source}::{name}"] = entry
 
