@@ -9,6 +9,8 @@ const IMPORTED_VISUAL_NAME := "ImportedVisual"
 @export var token_height_cells: float = 2.0
 @export var flying: bool = false
 @export var visual_asset_path: String = ""
+@export var default_size_name: String = "Medium"
+@export var default_footprint_cells: float = 1.0
 
 # D&D definisce la forma del cono, ma non una portata visiva universale.
 # 12 celle = 60 ft è quindi solo un default configurabile.
@@ -25,6 +27,7 @@ var _gravity: float = 9.8
 var _footprint_cells: float = 1.0
 var _size_name: String = "Medium"
 var _loaded_visual_asset_path: String = ""
+var _uses_manifest_default: bool = false
 var movement_validator: Callable
 var grid_support: Node3D
 var _support_transform: Transform3D
@@ -37,7 +40,10 @@ func _ready() -> void:
 	_gravity = float(
 		ProjectSettings.get_setting("physics/3d/default_gravity", 9.8)
 	)
+	_size_name = default_size_name
+	_footprint_cells = maxf(default_footprint_cells, 0.5)
 	_load_configured_visual()
+	set_token_size(_footprint_cells)
 	set_selected(false)
 	set_vision_cone_visible(false)
 
@@ -108,8 +114,31 @@ func configure(
 	footprint_cells: float = 1.0
 ) -> void:
 	cell_size = maxf(new_cell_size, 0.001)
-	_size_name = size_name
-	_footprint_cells = maxf(footprint_cells, 0.5)
+
+	var resolved_size_name := size_name
+	var resolved_footprint := maxf(footprint_cells, 0.5)
+	if _uses_manifest_default:
+		var default_profile := _default_token_profile()
+		if not default_profile.is_empty():
+			resolved_size_name = String(
+				default_profile.get("size_name", resolved_size_name)
+			)
+			resolved_footprint = maxf(
+				float(default_profile.get("footprint", resolved_footprint)),
+				0.5
+			)
+			token_height_cells = maxf(
+				float(
+					default_profile.get(
+						"height_cells",
+						token_height_cells
+					)
+				),
+				0.1
+			)
+
+	_size_name = resolved_size_name
+	_footprint_cells = resolved_footprint
 
 	set_token_size(_footprint_cells)
 	set_token_color(token_color)
@@ -118,6 +147,8 @@ func configure(
 
 func set_visual_asset(path: String) -> bool:
 	var requested_path: String = path.strip_edges()
+	if not requested_path.is_empty():
+		_uses_manifest_default = false
 	if requested_path.is_empty():
 		requested_path = _default_visual_asset_path()
 	if requested_path.is_empty():
@@ -174,23 +205,86 @@ func get_visual_asset_path() -> String:
 
 func _load_configured_visual() -> void:
 	var requested_path: String = visual_asset_path.strip_edges()
+	var profile: Dictionary = {}
+
 	if requested_path.is_empty():
-		requested_path = _default_visual_asset_path()
+		profile = _default_token_profile()
+		requested_path = String(profile.get("obj", "")).strip_edges()
+		_uses_manifest_default = not requested_path.is_empty()
+	else:
+		profile = _profile_for_visual(requested_path)
+
+	if not profile.is_empty():
+		_size_name = String(profile.get("size_name", _size_name))
+		_footprint_cells = maxf(
+			float(profile.get("footprint", _footprint_cells)),
+			0.5
+		)
+		token_height_cells = maxf(
+			float(profile.get("height_cells", token_height_cells)),
+			0.1
+		)
+
 	if not requested_path.is_empty():
+		var should_remain_default := _uses_manifest_default
 		set_visual_asset(requested_path)
+		_uses_manifest_default = should_remain_default
+
+
+func _read_token_manifest() -> Dictionary:
+	if not FileAccess.file_exists(TOKEN_LIBRARY_MANIFEST):
+		return {}
+	var file := FileAccess.open(TOKEN_LIBRARY_MANIFEST, FileAccess.READ)
+	if file == null:
+		return {}
+	var parsed: Variant = JSON.parse_string(file.get_as_text())
+	file.close()
+	if parsed is Dictionary:
+		return parsed as Dictionary
+	return {}
+
+
+func _default_token_profile() -> Dictionary:
+	var manifest := _read_token_manifest()
+	if manifest.is_empty():
+		return {}
+
+	var default_value: Variant = manifest.get("default", {})
+	if default_value is Dictionary:
+		return (default_value as Dictionary).duplicate(true)
+
+	var default_path := String(default_value).strip_edges()
+	if not default_path.is_empty():
+		return _profile_for_visual(default_path)
+
+	var default_id := String(manifest.get("default_id", "")).strip_edges()
+	var tokens: Variant = manifest.get("tokens", [])
+	if tokens is Array:
+		for value: Variant in tokens:
+			if value is Dictionary:
+				var profile := value as Dictionary
+				if String(profile.get("id", "")) == default_id:
+					return profile.duplicate(true)
+	return {}
+
+
+func _profile_for_visual(path: String) -> Dictionary:
+	var requested := path.strip_edges()
+	if requested.is_empty():
+		return {}
+	var tokens: Variant = _read_token_manifest().get("tokens", [])
+	if not tokens is Array:
+		return {}
+	for value: Variant in tokens:
+		if value is Dictionary:
+			var profile := value as Dictionary
+			if String(profile.get("obj", "")).strip_edges() == requested:
+				return profile.duplicate(true)
+	return {}
 
 
 func _default_visual_asset_path() -> String:
-	if not FileAccess.file_exists(TOKEN_LIBRARY_MANIFEST):
-		return ""
-	var file := FileAccess.open(TOKEN_LIBRARY_MANIFEST, FileAccess.READ)
-	if file == null:
-		return ""
-	var parsed: Variant = JSON.parse_string(file.get_as_text())
-	file.close()
-	if not parsed is Dictionary:
-		return ""
-	return String((parsed as Dictionary).get("default", "")).strip_edges()
+	return String(_default_token_profile().get("obj", "")).strip_edges()
 
 
 func _get_imported_visual() -> Node3D:
@@ -233,12 +327,17 @@ func set_token_size(footprint_cells: float) -> void:
 	new_shape.size = Vector3(width, height, width)
 	collision_shape.shape = new_shape
 
-	var horizontal_visual_scale: float = maxf(0.55, _footprint_cells)
-	visuals.scale = Vector3(
-		horizontal_visual_scale,
-		cell_size,
-		horizontal_visual_scale
-	)
+	if _get_imported_visual() != null:
+		# I modelli convertiti sono gia' espressi in celle Godot:
+		# la base e' stata scalata esattamente al footprint D&D.
+		visuals.scale = Vector3.ONE * cell_size
+	else:
+		var horizontal_visual_scale: float = maxf(0.55, _footprint_cells)
+		visuals.scale = Vector3(
+			horizontal_visual_scale,
+			cell_size,
+			horizontal_visual_scale
+		)
 
 	selection_marker.scale = Vector3(
 		_footprint_cells,
