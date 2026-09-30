@@ -567,6 +567,91 @@ func _begin_summon_point_selection(spell_data: Dictionary) -> void:
 	)
 
 
+func _try_select_summon_point(screen_position: Vector2) -> void:
+	if _pending_caster == null or not is_instance_valid(_pending_caster):
+		_cancel_pending_cast()
+		return
+
+	var spell_data: Dictionary = _pending_spell()
+	if spell_data.is_empty():
+		_cancel_pending_cast()
+		return
+
+	var point_spell: Dictionary = spell_data.duplicate(true)
+	if bool(spell_data.get("summon_requires_ground", false)):
+		point_spell["requires_ground"] = true
+
+	var point_data: Dictionary = _point_target_data(
+		screen_position,
+		point_spell
+	)
+	if not bool(point_data.get("valid", false)):
+		if bool(point_data.get("out_of_range", false)):
+			_set_instruction(
+				"Punto fuori range: %d ft / %d ft."
+				% [
+					int(point_data.get("distance_feet", 0)),
+					int(spell_data.get("range_feet", 0))
+				]
+			)
+		elif bool(spell_data.get("summon_requires_ground", false)):
+			_set_instruction(
+				"Scegli un punto valido sul terreno entro gittata."
+			)
+		else:
+			_set_instruction(
+				"Scegli una superficie o una cella valida entro gittata."
+			)
+		return
+
+	var summon_point: Vector3 = point_data.get(
+		"point",
+		Vector3.ZERO
+	)
+	_targeting_phase = "summon_token_dialog"
+	_hide_spell_preview()
+	_hide_spell_range_preview()
+	_set_instruction(
+		"%s: configura il token evocato %d/%d."
+		% [
+			String(spell_data.get("name", "Evocazione")),
+			_summon_created_count + 1,
+			_summon_total_count
+		]
+	)
+
+	if not board_root.has_method("open_token_generation_at"):
+		_cancel_pending_cast()
+		return
+
+	board_root.call(
+		"open_token_generation_at",
+		summon_point,
+		Callable(self, "_on_summon_token_created"),
+		Callable(self, "_on_summon_token_generation_canceled")
+	)
+
+
+func _on_summon_token_created(created_token: CharacterBody3D) -> void:
+	if _pending_spell_id.is_empty():
+		return
+	if created_token == null or not is_instance_valid(created_token):
+		_cancel_pending_cast()
+		return
+
+	_summon_created_count += 1
+	if _summon_created_count >= _summon_total_count:
+		_finish_cast()
+		return
+
+	_begin_summon_point_selection(_pending_spell())
+
+
+func _on_summon_token_generation_canceled() -> void:
+	if not _pending_spell_id.is_empty():
+		_cancel_pending_cast()
+
+
 func _try_select_caster(screen_position: Vector2) -> void:
 	var hit_value: Variant = board_root.call(
 		"_raycast_from_screen",
