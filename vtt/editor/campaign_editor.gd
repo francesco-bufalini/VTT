@@ -136,6 +136,16 @@ func _build_toolbar() -> void:
 	)
 	row.add_child(spells_button)
 
+	var initiative_button: Button = Button.new()
+	initiative_button.text = "Iniziativa"
+	initiative_button.custom_minimum_size = Vector2(78, 28)
+	initiative_button.add_theme_font_size_override("font_size", 13)
+	initiative_button.pressed.connect(
+		func() -> void:
+			board_root.call("toggle_initiative_panel")
+	)
+	row.add_child(initiative_button)
+
 	row.add_child(_make_menu_button("Misura", [
 		["Righello", MEASURE_RULER],
 		["AoE · Sfera", MEASURE_SPHERE],
