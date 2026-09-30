@@ -711,6 +711,20 @@ func _spell_style_color(style: String) -> Color:
 			return Color(0.88, 0.9, 0.94, 1.0)
 		"arcane", "color_spray", "sorcerous_burst", "chromatic_orb":
 			return Color(0.82, 0.3, 1.0, 1.0)
+		"prismatic":
+			return Color(0.9, 0.42, 1.0, 1.0)
+		"silver_mist":
+			return Color(0.86, 0.9, 0.98, 1.0)
+		"mist":
+			return Color(0.72, 0.78, 0.86, 1.0)
+		"water":
+			return Color(0.18, 0.66, 1.0, 1.0)
+		"wind":
+			return Color(0.78, 0.92, 1.0, 1.0)
+		"earth":
+			return Color(0.52, 0.4, 0.25, 1.0)
+		"nature":
+			return Color(0.28, 0.72, 0.18, 1.0)
 		"darkness":
 			return Color(0.03, 0.01, 0.07, 1.0)
 		"fog_cloud":
@@ -898,6 +912,30 @@ func show_transient_aoe(
 	var timer: Timer = Timer.new()
 	timer.one_shot = true
 	timer.wait_time = maxf(duration_seconds, 0.05)
+	root.add_child(timer)
+	timer.timeout.connect(root.queue_free)
+	timer.start()
+
+
+func show_teleport_cloud(
+	position: Vector3,
+	style: String = "arcane",
+	duration_seconds: float = 0.55
+) -> void:
+	var root: Node3D = Node3D.new()
+	root.name = "TransientTeleportCloud"
+	add_child(root)
+	SpellVFX.attach_teleport_cloud(
+		root,
+		position,
+		style,
+		maxf(duration_seconds, 0.2),
+		cell_size
+	)
+
+	var timer: Timer = Timer.new()
+	timer.one_shot = true
+	timer.wait_time = maxf(duration_seconds, 0.2) + 0.15
 	root.add_child(timer)
 	timer.timeout.connect(root.queue_free)
 	timer.start()
