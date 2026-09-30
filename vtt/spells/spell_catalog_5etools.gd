@@ -3198,7 +3198,12 @@ const SPELLS: Dictionary = {
     "target_mode": "summon",
     "range_feet": 10,
     "summon_count_min": 1,
-    "summon_count_max": 3
+    "summon_count_max": 3,
+    "summon_count_max_by_slot": {
+      "7": 4,
+      "8": 5,
+      "9": 6
+    }
   },
   "creation": {
     "id": "creation",
@@ -14359,6 +14364,18 @@ const SPELLS: Dictionary = {
       2,
       4,
       8
+    ],
+    "summon_count_multiplier_rules": [
+      {
+        "min_slot": 6,
+        "max_slot": 7,
+        "multiplier": 2
+      },
+      {
+        "min_slot": 8,
+        "max_slot": 9,
+        "multiplier": 3
+      }
     ]
   },
   "summon_plant": {
