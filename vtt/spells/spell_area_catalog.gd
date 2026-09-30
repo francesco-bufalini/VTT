@@ -136,18 +136,27 @@ static func _apply_targeting(
 		targeting.get("type", "")
 	)
 
-	# Special mechanics remain authoritative. The area catalogue generalizes
-	# geometric targeting, but should not replace teleport/chain/multi-target
-	# state machines.
+	# 5eTools area targeting is authoritative for ordinary geometric spells.
+	# Preserve token targeting only when it drives a real special mechanic
+	# (for example Ice Knife's impact AoE or Witch Bolt's persistent link).
 	var existing_mode: String = String(
 		result.get("target_mode", "")
 	)
-	if existing_mode not in [
-		"teleport_self",
-		"token_then_chain",
-		"token_then_multi_token",
-		"token_then_token"
-	]:
+	var preserve_token_target: bool = (
+		existing_mode == "token_then_token"
+		and (
+			float(result.get("impact_aoe_radius_feet", 0.0)) > 0.0
+			or bool(result.get("persistent_link", false))
+		)
+	)
+	if (
+		existing_mode not in [
+			"teleport_self",
+			"token_then_chain",
+			"token_then_multi_token"
+		]
+		and not preserve_token_target
+	):
 		match targeting_type:
 			"point":
 				result["target_mode"] = "token_then_point"
@@ -347,9 +356,8 @@ static func apply_to_spell(spell_data: Dictionary) -> Dictionary:
 	)
 	result["persistent"] = persistence == "persistent"
 
-	# Damage family is now the default animation vocabulary. Existing bespoke
-	# styles are retained only when the JSON cannot supply a damage/visual
-	# family, preserving non-damaging special cases such as force barriers.
+	# Damage family is retained only as a static material/color vocabulary.
+	# Spell animations are intentionally disabled elsewhere in the VTT.
 	var generic_style: String = _primary_damage_style(effect)
 	if not generic_style.is_empty():
 		result["visual_style"] = generic_style
