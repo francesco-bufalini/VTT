@@ -338,6 +338,18 @@ func run() -> void:
 		)),
 		5.0
 	))
+	assert(bool(spell_system.call(
+		"_spell_needs_saving_throw_resolution",
+		polymorph
+	)))
+	var draconic_transformation: Dictionary = SpellCatalog.spell(
+		"draconic_transformation"
+	)
+	assert(not draconic_transformation.is_empty())
+	assert(not bool(spell_system.call(
+		"_spell_needs_saving_throw_resolution",
+		draconic_transformation
+	)))
 	spell_system.free()
 
 	# True Polymorph carries SMN in 5eTools but is a transformation, not summon.
