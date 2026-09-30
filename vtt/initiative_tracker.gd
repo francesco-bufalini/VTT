@@ -433,7 +433,10 @@ func _add_entry_row(
 		var active_style: StyleBoxFlat = StyleBoxFlat.new()
 		active_style.bg_color = Color(0.22, 0.31, 0.46, 0.92)
 		active_style.border_color = Color(0.82, 0.72, 0.30, 1.0)
-		active_style.set_border_width_all(1)
+		active_style.border_width_left = 1
+		active_style.border_width_top = 1
+		active_style.border_width_right = 1
+		active_style.border_width_bottom = 1
 		active_style.corner_radius_top_left = 4
 		active_style.corner_radius_top_right = 4
 		active_style.corner_radius_bottom_left = 4
@@ -671,6 +674,12 @@ func _emit_turn_changed() -> void:
 	turn_changed.emit(entry_id, round_number, turn_count)
 
 
+func get_active_entry() -> Dictionary:
+	if entries.is_empty() or active_index < 0 or active_index >= entries.size():
+		return {}
+	return entries[active_index].duplicate(true)
+
+
 func get_save_state() -> Dictionary:
 	return {
 		"version": 1,
@@ -737,7 +746,11 @@ func load_state(value: Variant) -> bool:
 		return false
 	var state: Dictionary = value as Dictionary
 	combat_active = bool(state.get("active", false))
-	entries = (state.get("entries", []) as Array).duplicate(true)
+	entries.clear()
+	var loaded_entries: Array = state.get("entries", []) as Array
+	for item: Variant in loaded_entries:
+		if item is Dictionary:
+			entries.append((item as Dictionary).duplicate(true))
 	active_index = int(state.get("active_index", 0))
 	round_number = int(state.get("round", 1))
 	turn_count = int(state.get("turn_count", 0))
