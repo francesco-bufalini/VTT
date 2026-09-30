@@ -266,6 +266,7 @@ func start_combat() -> void:
 	if combat_active:
 		show_panel()
 		return
+	_record_undo_state()
 	combat_active = true
 	entries.clear()
 	active_index = 0
@@ -279,6 +280,8 @@ func start_combat() -> void:
 
 
 func end_combat() -> void:
+	if combat_active or not entries.is_empty():
+		_record_undo_state()
 	combat_active = false
 	entries.clear()
 	active_index = 0
@@ -314,6 +317,7 @@ func _on_add_confirmed() -> void:
 	if name_value.is_empty():
 		name_value = "Partecipante %d" % (_next_entry_id)
 
+	_record_undo_state()
 	entries.append({
 		"id": "initiative_%d" % _next_entry_id,
 		"name": name_value,
@@ -385,9 +389,19 @@ func _selected_token_id_from_option() -> String:
 	return String(participant_token.get_item_metadata(index))
 
 
+func _record_undo_state() -> void:
+	if (
+		board_root != null
+		and is_instance_valid(board_root)
+		and board_root.has_method("push_undo_state")
+	):
+		board_root.call("push_undo_state")
+
+
 func next_turn() -> void:
 	if not combat_active or entries.is_empty():
 		return
+	_record_undo_state()
 	active_index += 1
 	turn_count += 1
 	if active_index >= entries.size():
@@ -400,6 +414,7 @@ func next_turn() -> void:
 func previous_turn() -> void:
 	if not combat_active or entries.is_empty() or turn_count <= 0:
 		return
+	_record_undo_state()
 	if active_index == 0:
 		active_index = entries.size() - 1
 		round_number = maxi(1, round_number - 1)
@@ -575,6 +590,7 @@ func _move_entry(entry_id: String, delta: int) -> void:
 	if destination < 0 or destination >= entries.size():
 		return
 
+	_record_undo_state()
 	var active_id: String = _active_entry_id()
 	var item: Dictionary = entries[index]
 	entries.remove_at(index)
@@ -587,6 +603,7 @@ func _remove_entry(entry_id: String) -> void:
 	var index: int = _entry_index(entry_id)
 	if index < 0:
 		return
+	_record_undo_state()
 	var active_id: String = _active_entry_id()
 	var removing_active: bool = active_id == entry_id
 	entries.remove_at(index)
@@ -637,7 +654,10 @@ func _on_token_popup_selected(id: int) -> void:
 	var token_id: String = String(token_popup.get_item_metadata(index))
 	var entry_index: int = _entry_index(_linking_entry_id)
 	if entry_index >= 0:
-		entries[entry_index]["token_id"] = token_id
+		var current_token_id := String(entries[entry_index].get("token_id", ""))
+		if current_token_id != token_id:
+			_record_undo_state()
+			entries[entry_index]["token_id"] = token_id
 	_render()
 
 
