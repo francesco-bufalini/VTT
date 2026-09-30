@@ -280,6 +280,17 @@ func run() -> void:
 	assert(String(finger_of_death.get("target_mode", "")) != "summon")
 
 	# Physical-form spells use reversible token transformations.
+	const SpellSystem = preload("res://vtt/spells/spell_system.gd")
+	for transformation_mode: String in [
+		"transform_self",
+		"token_then_transform",
+		"token_then_multi_transform",
+		"resize_token"
+	]:
+		assert(
+			transformation_mode in SpellSystem.ACTIVATABLE_TARGET_MODES
+		)
+
 	var polymorph: Dictionary = SpellCatalog.spell("polymorph")
 	assert(not polymorph.is_empty())
 	assert(String(polymorph.get("target_mode", "")) == "token_then_transform")
