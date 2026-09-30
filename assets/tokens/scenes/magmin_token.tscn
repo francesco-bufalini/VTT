@@ -4,6 +4,6 @@
 
 [node name="magmin_token" instance=ExtResource("1_base")]
 visual_asset_path = "res://assets/tokens/generated/magmin/magmin.obj"
-default_size_name = "Medium"
+default_size_name = "Small"
 default_footprint_cells = 1.000000
-token_height_cells = 1.262605
+token_height_cells = 1.947274

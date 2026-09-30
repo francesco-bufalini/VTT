@@ -6,4 +6,4 @@
 visual_asset_path = "res://assets/tokens/generated/swarm_of_ravens/swarm_of_ravens.obj"
 default_size_name = "Medium"
 default_footprint_cells = 1.000000
-token_height_cells = 1.663322
+token_height_cells = 1.942062

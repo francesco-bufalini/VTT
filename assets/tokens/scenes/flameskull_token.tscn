@@ -4,6 +4,6 @@
 
 [node name="flameskull_token" instance=ExtResource("1_base")]
 visual_asset_path = "res://assets/tokens/generated/flameskull/flameskull.obj"
-default_size_name = "Medium"
+default_size_name = "Small"
 default_footprint_cells = 1.000000
-token_height_cells = 1.224487
+token_height_cells = 1.888547

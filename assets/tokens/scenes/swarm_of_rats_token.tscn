@@ -4,6 +4,6 @@
 
 [node name="swarm_of_rats_token" instance=ExtResource("1_base")]
 visual_asset_path = "res://assets/tokens/generated/swarm_of_rats/swarm_of_rats.obj"
-default_size_name = "Medium"
-default_footprint_cells = 1.000000
-token_height_cells = 0.198934
+default_size_name = "Tiny"
+default_footprint_cells = 0.500000
+token_height_cells = 0.200389

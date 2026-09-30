@@ -4,6 +4,6 @@
 
 [node name="pixie_sprite_token" instance=ExtResource("1_base")]
 visual_asset_path = "res://assets/tokens/generated/pixie_sprite/pixie_sprite.obj"
-default_size_name = "Medium"
+default_size_name = "Small"
 default_footprint_cells = 1.000000
-token_height_cells = 0.944720
+token_height_cells = 2.248374

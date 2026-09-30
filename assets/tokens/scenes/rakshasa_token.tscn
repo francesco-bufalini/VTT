@@ -6,4 +6,4 @@
 visual_asset_path = "res://assets/tokens/generated/rakshasa/rakshasa.obj"
 default_size_name = "Medium"
 default_footprint_cells = 1.000000
-token_height_cells = 1.516214
+token_height_cells = 1.516323

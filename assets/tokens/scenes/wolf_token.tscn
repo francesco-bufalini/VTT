@@ -6,4 +6,4 @@
 visual_asset_path = "res://assets/tokens/generated/wolf/wolf.obj"
 default_size_name = "Medium"
 default_footprint_cells = 1.000000
-token_height_cells = 0.954312
+token_height_cells = 0.954380

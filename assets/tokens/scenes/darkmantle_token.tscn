@@ -6,4 +6,4 @@
 visual_asset_path = "res://assets/tokens/generated/darkmantle/darkmantle.obj"
 default_size_name = "Medium"
 default_footprint_cells = 1.000000
-token_height_cells = 1.818684
+token_height_cells = 1.804250

@@ -4,6 +4,6 @@
 
 [node name="worg_token" instance=ExtResource("1_base")]
 visual_asset_path = "res://assets/tokens/generated/worg/worg.obj"
-default_size_name = "Medium"
-default_footprint_cells = 1.000000
-token_height_cells = 1.521901
+default_size_name = "Large"
+default_footprint_cells = 2.000000
+token_height_cells = 1.522052
