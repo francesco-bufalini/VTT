@@ -201,7 +201,7 @@ func _configure_grid() -> void:
 	half_width_cells = maxi(1, half_width_cells)
 	half_height_cells = maxi(1, half_height_cells)
 	_half_extent_world = (
-		float(maxi(forward_cells, half_width_cells, half_height_cells))
+		float(maxi(forward_cells, maxi(half_width_cells, half_height_cells)))
 		+ 0.5
 	) * cell_size
 
@@ -310,8 +310,10 @@ func _schedule_full_volume() -> void:
 		return
 
 	var bounds: Dictionary = _volume_world_bounds()
-	var min_cell: Vector3i = _world_to_cell(bounds["min"])
-	var max_cell: Vector3i = _world_to_cell(bounds["max"])
+	var min_point: Vector3 = bounds.get("min", Vector3.ZERO)
+	var max_point: Vector3 = bounds.get("max", Vector3.ZERO)
+	var min_cell: Vector3i = _world_to_cell(min_point)
+	var max_cell: Vector3i = _world_to_cell(max_point)
 
 	for y in range(min_cell.y, max_cell.y + 1):
 		for z in range(min_cell.z, max_cell.z + 1):
