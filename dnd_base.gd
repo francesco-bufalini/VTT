@@ -74,6 +74,7 @@ var token_drag: Node
 var spell_system: Node
 var initiative_tracker: Node
 var _undo_stack: Array[Dictionary] = []
+var _redo_stack: Array[Dictionary] = []
 var _undo_restoring: bool = false
 
 
@@ -200,6 +201,17 @@ func _input(event: InputEvent) -> void:
 			get_viewport().set_input_as_handled()
 			return
 		if undo_last_action():
+			get_viewport().set_input_as_handled()
+			return
+
+	if (
+		event is InputEventKey
+		and event.pressed
+		and not event.echo
+		and event.ctrl_pressed
+		and event.keycode == KEY_Y
+	):
+		if redo_last_action():
 			get_viewport().set_input_as_handled()
 			return
 
@@ -433,53 +445,51 @@ func _unhandled_input(event: InputEvent) -> void:
 			get_viewport().set_input_as_handled()
 
 
-func push_undo_state() -> void:
-	if _undo_restoring or board_sync == null or not is_instance_valid(board_sync):
-		return
+func _capture_history_state() -> Dictionary:
+	if board_sync == null or not is_instance_valid(board_sync):
+		return {}
 
 	var snapshot_value: Variant = board_sync.call("create_snapshot")
 	if not snapshot_value is Dictionary:
-		return
+		return {}
 	var snapshot: Dictionary = snapshot_value as Dictionary
 	if snapshot.is_empty():
-		return
+		return {}
 
-	var state: Dictionary = {
+	return {
 		"snapshot": snapshot.duplicate(true),
 		"grid_visible": volumetric_grid.visible,
 		"vision_visible": _vision_cones_visible
 	}
-	_undo_stack.append(state)
-	if _undo_stack.size() > UNDO_LIMIT:
-		_undo_stack.pop_front()
 
 
-func undo_last_action() -> bool:
-	if _undo_stack.is_empty():
-		return false
-	if board_sync == null or not is_instance_valid(board_sync):
-		return false
+func _append_history_state(
+	stack: Array[Dictionary],
+	state: Dictionary
+) -> void:
+	if state.is_empty():
+		return
+	stack.append(state.duplicate(true))
+	if stack.size() > UNDO_LIMIT:
+		stack.pop_front()
 
-	var state_value: Variant = _undo_stack.pop_back()
-	if not state_value is Dictionary:
-		return false
-	var state: Dictionary = state_value as Dictionary
+
+func push_undo_state() -> void:
+	if _undo_restoring:
+		return
+	var state: Dictionary = _capture_history_state()
+	if state.is_empty():
+		return
+	_append_history_state(_undo_stack, state)
+	# Una nuova azione crea una nuova linea temporale: il redo precedente
+	# non e' piu' applicabile.
+	_redo_stack.clear()
+
+
+func _apply_history_state(state: Dictionary) -> bool:
 	var snapshot_value: Variant = state.get("snapshot", {})
 	if not snapshot_value is Dictionary:
 		return false
-
-	var initiative_state: Dictionary = {}
-	if (
-		initiative_tracker != null
-		and is_instance_valid(initiative_tracker)
-	):
-		var initiative_value: Variant = initiative_tracker.call(
-			"get_save_state"
-		)
-		if initiative_value is Dictionary:
-			initiative_state = (
-				initiative_value as Dictionary
-			).duplicate(true)
 
 	_undo_restoring = true
 	var applied: bool = bool(
@@ -489,21 +499,52 @@ func undo_last_action() -> bool:
 		)
 	)
 	if applied:
-		set_grid_visible(bool(state.get("grid_visible", volumetric_grid.visible)))
+		set_grid_visible(
+			bool(state.get("grid_visible", volumetric_grid.visible))
+		)
 		set_vision_cones_visible(
 			bool(state.get("vision_visible", _vision_cones_visible))
 		)
-		# Ctrl+Z annulla azioni sulla mappa, non il passaggio dei turni.
-		if (
-			initiative_tracker != null
-			and is_instance_valid(initiative_tracker)
-			and not initiative_state.is_empty()
-		):
-			initiative_tracker.call("load_state", initiative_state)
 	_undo_restoring = false
-
 	return applied
 
+
+func undo_last_action() -> bool:
+	if _undo_stack.is_empty():
+		return false
+	if board_sync == null or not is_instance_valid(board_sync):
+		return false
+
+	var current_state: Dictionary = _capture_history_state()
+	if current_state.is_empty():
+		return false
+	var target_state: Dictionary = _undo_stack.pop_back()
+
+	if not _apply_history_state(target_state):
+		_append_history_state(_undo_stack, target_state)
+		return false
+
+	_append_history_state(_redo_stack, current_state)
+	return true
+
+
+func redo_last_action() -> bool:
+	if _redo_stack.is_empty():
+		return false
+	if board_sync == null or not is_instance_valid(board_sync):
+		return false
+
+	var current_state: Dictionary = _capture_history_state()
+	if current_state.is_empty():
+		return false
+	var target_state: Dictionary = _redo_stack.pop_back()
+
+	if not _apply_history_state(target_state):
+		_append_history_state(_redo_stack, target_state)
+		return false
+
+	_append_history_state(_undo_stack, current_state)
+	return true
 
 func toggle_spell_menu() -> void:
 	if spell_system == null or not is_instance_valid(spell_system):
