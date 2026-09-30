@@ -3406,7 +3406,180 @@ func _cast_persistent_sphere(
 	)
 
 
+func _spell_needs_saving_throw_resolution(
+	spell_data: Dictionary
+) -> bool:
+	var conditions_value: Variant = spell_data.get(
+		"condition_inflict",
+		[]
+	)
+	if conditions_value is Array and not (conditions_value as Array).is_empty():
+		return true
+	return bool(
+		spell_data.get("forced_movement_on_failed_save", false)
+	)
+
+
+func _complete_spell_cast(
+	spell_data: Dictionary,
+	targets: Array[Node3D],
+	caster: Node3D = null
+) -> void:
+	if not _spell_needs_saving_throw_resolution(spell_data):
+		_finish_cast()
+		return
+
+	var unique_targets: Array[Node3D] = []
+	for target: Node3D in targets:
+		if (
+			target != null
+			and is_instance_valid(target)
+			and not (target in unique_targets)
+		):
+			unique_targets.append(target)
+
+	if unique_targets.is_empty():
+		_finish_cast()
+		return
+
+	_saving_throw_targets = unique_targets
+	_saving_throw_index = 0
+	_saving_throw_undo_recorded = false
+	_saving_throw_caster_origin = (
+		caster.global_position
+		if caster != null and is_instance_valid(caster)
+		else Vector3.ZERO
+	)
+	_targeting_phase = "saving_throw"
+
+	_hide_spell_preview()
+	_clear_spell_fixed_previews()
+	_hide_spell_range_preview()
+	_hide_wall_preview()
+	board_root.set("_ui_owns_mouse", true)
+	Input.mouse_mode = Input.MOUSE_MODE_VISIBLE
+	_show_current_saving_throw_prompt(spell_data)
+
+
+func _show_current_saving_throw_prompt(
+	spell_data: Dictionary
+) -> void:
+	if (
+		saving_throw_dialog == null
+		or _saving_throw_index >= _saving_throw_targets.size()
+	):
+		_finish_cast()
+		return
+
+	var target: Node3D = _saving_throw_targets[_saving_throw_index]
+	if target == null or not is_instance_valid(target):
+		_saving_throw_index += 1
+		_show_current_saving_throw_prompt(spell_data)
+		return
+
+	var target_name: String = target.name
+	if target.has_method("get_display_name"):
+		var display_name: String = String(
+			target.call("get_display_name")
+		).strip_edges()
+		if not display_name.is_empty():
+			target_name = display_name
+
+	var saves_value: Variant = spell_data.get("saving_throw", [])
+	var save_label: String = "tiro salvezza"
+	if saves_value is Array and not (saves_value as Array).is_empty():
+		var labels: PackedStringArray = PackedStringArray()
+		for save_value: Variant in saves_value:
+			var label: String = String(save_value).strip_edges()
+			if not label.is_empty():
+				labels.append(label.capitalize())
+		if not labels.is_empty():
+			save_label = "TS %s" % "/".join(labels)
+
+	saving_throw_dialog.dialog_text = (
+		"%s\n%s per %s superato?\n\nSÌ = superato · NO = fallito"
+		% [
+			String(spell_data.get("name", "Incantesimo")),
+			save_label,
+			target_name
+		]
+	)
+	saving_throw_dialog.popup_centered(Vector2i(500, 220))
+
+
+func _resolve_current_saving_throw(succeeded: bool) -> void:
+	if _targeting_phase != "saving_throw":
+		return
+
+	var spell_data: Dictionary = _pending_spell()
+	if spell_data.is_empty():
+		_cancel_pending_cast()
+		return
+
+	if _saving_throw_index < _saving_throw_targets.size():
+		var target: Node3D = _saving_throw_targets[_saving_throw_index]
+		if (
+			not succeeded
+			and target != null
+			and is_instance_valid(target)
+		):
+			if not _saving_throw_undo_recorded:
+				if board_root.has_method("push_undo_state"):
+					board_root.call("push_undo_state")
+				_saving_throw_undo_recorded = true
+			_apply_failed_saving_throw_effects(target, spell_data)
+
+	_saving_throw_index += 1
+	if _saving_throw_index >= _saving_throw_targets.size():
+		_finish_cast()
+		return
+
+	call_deferred(
+		"_show_current_saving_throw_prompt",
+		spell_data
+	)
+
+
+func _apply_failed_saving_throw_effects(
+	target: Node3D,
+	spell_data: Dictionary
+) -> void:
+	var conditions_value: Variant = spell_data.get(
+		"condition_inflict",
+		[]
+	)
+	if conditions_value is Array and target.has_method("set_condition"):
+		for condition_value: Variant in conditions_value:
+			var condition_id: String = String(
+				condition_value
+			).strip_edges().to_lower()
+			if not condition_id.is_empty():
+				target.call("set_condition", condition_id, true)
+
+	if bool(spell_data.get("forced_movement_on_failed_save", false)):
+		var distance_feet: float = float(
+			spell_data.get("forced_movement_feet", 0.0)
+		)
+		if distance_feet > 0.0 and target.has_method("apply_forced_movement"):
+			var direction: Vector3 = (
+				target.global_position
+				- _saving_throw_caster_origin
+			)
+			direction.y = 0.0
+			if direction.length_squared() > 0.0001:
+				target.call(
+					"apply_forced_movement",
+					direction.normalized(),
+					distance_feet / 5.0 * _cell_size()
+				)
+
+
 func _finish_cast() -> void:
+	if saving_throw_dialog != null and saving_throw_dialog.visible:
+		saving_throw_dialog.hide()
+	_saving_throw_targets.clear()
+	_saving_throw_index = 0
+	_saving_throw_undo_recorded = false
 	_hide_spell_preview()
 	_clear_spell_fixed_previews()
 	_hide_spell_range_preview()
@@ -3436,6 +3609,11 @@ func _finish_cast() -> void:
 
 
 func _cancel_pending_cast(restore_mouse: bool = true) -> void:
+	if saving_throw_dialog != null and saving_throw_dialog.visible:
+		saving_throw_dialog.hide()
+	_saving_throw_targets.clear()
+	_saving_throw_index = 0
+	_saving_throw_undo_recorded = false
 	_hide_spell_preview()
 	_clear_spell_fixed_previews()
 	_hide_spell_range_preview()
