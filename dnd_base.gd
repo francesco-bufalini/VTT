@@ -11,6 +11,7 @@ const CONTEXT_MAIN_MENU := 9
 const CONTEXT_DISSOLVE_AOT := 10
 const CONTEXT_SPELLS := 11
 const CONTEXT_CAMERA_SETTINGS := 12
+const CONTEXT_INITIATIVE := 13
 const CAMPAIGN_EDITOR_SCENE_PATH := "res://vtt/editor/campaign_editor.tscn"
 
 const CAMERA_SPEED_DEFAULT := 5.0
@@ -63,6 +64,7 @@ var camera_speed_value_label: Label
 var camera_sensitivity_value_label: Label
 var token_drag: Node
 var spell_system: Node
+var initiative_tracker: Node
 var _undo_stack: Array[Dictionary] = []
 var _undo_restoring: bool = false
 
@@ -105,6 +107,11 @@ func _ready() -> void:
 	spell_system.name = "SpellSystem"
 	add_child(spell_system)
 	spell_system.call("setup", self)
+
+	initiative_tracker = preload("res://vtt/initiative_tracker.gd").new()
+	initiative_tracker.name = "InitiativeTracker"
+	add_child(initiative_tracker)
+	initiative_tracker.call("setup", self)
 
 	var runtime_toolbar: Node = (
 		preload("res://vtt/runtime_toolbar.gd").new() as Node
@@ -438,6 +445,24 @@ func toggle_spell_menu() -> void:
 	spell_system.call("toggle_panel")
 
 
+func toggle_initiative_panel() -> void:
+	if (
+		initiative_tracker == null
+		or not is_instance_valid(initiative_tracker)
+	):
+		return
+	initiative_tracker.call("toggle_panel")
+
+
+func show_initiative_panel() -> void:
+	if (
+		initiative_tracker == null
+		or not is_instance_valid(initiative_tracker)
+	):
+		return
+	initiative_tracker.call("show_panel")
+
+
 func toggle_grid() -> void:
 	push_undo_state()
 	set_grid_visible(not volumetric_grid.visible)
@@ -535,6 +560,15 @@ func _show_context_menu(screen_position: Vector2) -> void:
 		context_menu.add_item("Cancella tutte le AoE", 24)
 		context_menu.add_separator()
 
+	var initiative_visible: bool = (
+		initiative_tracker != null
+		and is_instance_valid(initiative_tracker)
+		and bool(initiative_tracker.call("is_panel_visible"))
+	)
+	context_menu.add_item(
+		"Nascondi iniziativa" if initiative_visible else "Mostra iniziativa",
+		CONTEXT_INITIATIVE
+	)
 	context_menu.add_item("Condividi mappa / Tailscale", 25)
 	if scene_file_path != CAMPAIGN_EDITOR_SCENE_PATH:
 		context_menu.add_item("Torna al menu VTT", CONTEXT_MAIN_MENU)
@@ -597,6 +631,11 @@ func _show_context_menu(screen_position: Vector2) -> void:
 
 
 func _on_context_menu_id_pressed(id: int) -> void:
+	if id == CONTEXT_INITIATIVE:
+		toggle_initiative_panel()
+		_close_context_menu_to_game()
+		return
+
 	if id == CONTEXT_SPELLS:
 		if spell_system != null and is_instance_valid(spell_system):
 			spell_system.call("open_panel")
