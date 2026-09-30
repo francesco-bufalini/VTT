@@ -104,8 +104,8 @@ static func _primary_damage_style(effect: Dictionary) -> String:
 	var damage_value: Variant = effect.get("damage_types", [])
 	if damage_value is Array:
 		var damage_types: Array = damage_value as Array
-		# One damage family maps cleanly to one generic animation. Multi-type
-		# effects keep their existing bespoke style instead of arbitrarily
+		# One damage family maps cleanly to one static material family.
+		# Multi-type effects keep their existing style instead of arbitrarily
 		# choosing one damage type.
 		if damage_types.size() == 1:
 			return String(damage_types[0]).to_lower()
@@ -137,19 +137,27 @@ static func _apply_targeting(
 		targeting.get("type", "")
 	)
 
-	# Keep existing special target state machines authoritative. The runtime
-	# catalogue supplies geometry/range for them, but does not reinterpret a
-	# creature-target spell as a point-target spell merely because its AoE
-	# originates from that creature.
+	# 5eTools area targeting is authoritative for ordinary geometric spells.
+	# Preserve token targeting only when it drives a real map mechanic
+	# (for example an impact AoE or a persistent link).
 	var existing_mode: String = String(
 		result.get("target_mode", "")
 	)
-	if existing_mode not in [
-		"teleport_self",
-		"token_then_chain",
-		"token_then_multi_token",
-		"token_then_token"
-	]:
+	var preserve_token_target: bool = (
+		existing_mode == "token_then_token"
+		and (
+			float(result.get("impact_aoe_radius_feet", 0.0)) > 0.0
+			or bool(result.get("persistent_link", false))
+		)
+	)
+	if (
+		existing_mode not in [
+			"teleport_self",
+			"token_then_chain",
+			"token_then_multi_token"
+		]
+		and not preserve_token_target
+	):
 		match targeting_type:
 			"point":
 				result["target_mode"] = "token_then_point"
