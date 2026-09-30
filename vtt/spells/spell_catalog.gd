@@ -1155,7 +1155,20 @@ static func _is_runtime_usable(spell_data: Dictionary) -> bool:
 static func catalog_spell(spell_id: String) -> Dictionary:
 	var value: Variant = SPELLS.get(spell_id, {})
 	if value is Dictionary:
-		return _apply_runtime_overrides(value as Dictionary)
+		var manual_result: Dictionary = (value as Dictionary).duplicate(true)
+		var generated_value: Variant = GeneratedCatalog.SPELLS.get(
+			spell_id,
+			{}
+		)
+		if generated_value is Dictionary:
+			var generated_classes: Variant = (
+				generated_value as Dictionary
+			).get("classes", [])
+			if generated_classes is Array:
+				manual_result["classes"] = (
+					generated_classes as Array
+				).duplicate(true)
+		return _apply_runtime_overrides(manual_result)
 
 	value = GeneratedCatalog.SPELLS.get(spell_id, {})
 	if value is Dictionary:
@@ -1185,9 +1198,22 @@ static func all_spells() -> Array[Dictionary]:
 	for spell_id: Variant in SPELLS.keys():
 		var value: Variant = SPELLS.get(spell_id, {})
 		if value is Dictionary:
-			merged[String(spell_id)] = (
+			var manual_copy: Dictionary = (
 				value as Dictionary
 			).duplicate(true)
+			var generated_value: Variant = GeneratedCatalog.SPELLS.get(
+				spell_id,
+				{}
+			)
+			if generated_value is Dictionary:
+				var generated_classes: Variant = (
+					generated_value as Dictionary
+				).get("classes", [])
+				if generated_classes is Array:
+					manual_copy["classes"] = (
+						generated_classes as Array
+					).duplicate(true)
+			merged[String(spell_id)] = manual_copy
 
 	var result: Array[Dictionary] = []
 	for value: Variant in merged.values():
@@ -1216,7 +1242,10 @@ static func class_display_name(class_name: String) -> String:
 
 static func class_names() -> Array[String]:
 	var found: Dictionary = {}
-	for entry: Dictionary in all_spells():
+	for value: Variant in GeneratedCatalog.SPELLS.values():
+		if not value is Dictionary:
+			continue
+		var entry: Dictionary = value as Dictionary
 		var classes_value: Variant = entry.get("classes", [])
 		if not classes_value is Array:
 			continue
