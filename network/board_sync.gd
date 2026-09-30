@@ -164,8 +164,7 @@ func _tailscale_peer_ipv4s() -> Array[String]:
 	var exit_code: int = OS.execute(
 		executable,
 		PackedStringArray(["status", "--json"]),
-		output,
-		true
+		output
 	)
 	if exit_code != 0:
 		return []
