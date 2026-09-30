@@ -75,8 +75,11 @@ func handle_event(event: InputEvent) -> bool:
 func begin(tokens: Array[CharacterBody3D], anchor_token: CharacterBody3D) -> void:
 	_tokens = tokens.duplicate()
 	_undo_state = {}
-	if board != null and board.has_method("begin_undo_transaction"):
-		var history_value: Variant = board.call("begin_undo_transaction")
+	if board != null and board.has_method("begin_token_move_transaction"):
+		var history_value: Variant = board.call(
+			"begin_token_move_transaction",
+			_tokens
+		)
 		if history_value is Dictionary:
 			_undo_state = (history_value as Dictionary).duplicate(true)
 	_origins.clear()
