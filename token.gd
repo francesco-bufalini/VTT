@@ -58,6 +58,7 @@ var _footprint_cells: float = 1.0
 var _size_name: String = "Medium"
 var _loaded_visual_asset_path: String = ""
 var _imported_visual_base_basis: Basis = Basis.IDENTITY
+var _visual_native_footprint_cells: float = 1.0
 var _uses_manifest_default: bool = false
 var _conditions: Array[String] = []
 var _overlay_root: Node3D
@@ -296,11 +297,16 @@ func set_visual_asset(path: String) -> bool:
 		)
 		return false
 
+	var profile := _profile_for_visual(requested_path)
 	_clear_imported_visual()
 	_set_procedural_visuals_visible(false)
 	imported.name = IMPORTED_VISUAL_NAME
 	imported.set_meta("token_imported_visual", true)
 	_imported_visual_base_basis = imported.transform.basis
+	_visual_native_footprint_cells = maxf(
+		float(profile.get("footprint", 1.0)),
+		0.5
+	)
 	visuals.add_child(imported)
 
 	visual_asset_path = requested_path
@@ -432,6 +438,7 @@ func _clear_imported_visual() -> void:
 	current.queue_free()
 	_loaded_visual_asset_path = ""
 	_imported_visual_base_basis = Basis.IDENTITY
+	_visual_native_footprint_cells = 1.0
 
 
 func _set_procedural_visuals_visible(value: bool) -> void:
@@ -497,14 +504,17 @@ func _position_imported_visual() -> void:
 
 	var bounds := _imported_visual_y_bounds()
 	var min_y: float = 0.0
+	var local_height: float = token_height_cells
 	if bounds.x < INF and bounds.y > -INF:
 		min_y = bounds.x
+		local_height = maxf(bounds.y - bounds.x, 0.1)
 
-	# Align the actual visible mesh bottom with the collision body's floor.
-	# This also repairs older converted OBJ files whose local Y minimum is not 0.
+	# La traslazione e' nello spazio locale della mesh. La scala relativa alla
+	# taglia scelta viene applicata sul nodo Visuals, quindi qui centriamo la
+	# geometria usando la sua altezza nativa.
 	imported.position = Vector3(
 		0.0,
-		-token_height_cells * 0.5 - min_y,
+		-local_height * 0.5 - min_y,
 		0.0
 	)
 
@@ -513,11 +523,18 @@ func set_token_size(footprint_cells: float) -> void:
 	_footprint_cells = maxf(footprint_cells, 0.5)
 
 	var imported_bounds := _imported_visual_y_bounds()
-	if imported_bounds.x < INF and imported_bounds.y > -INF:
-		token_height_cells = maxf(
-			imported_bounds.y - imported_bounds.x,
-			0.1
+	var visual_scale_ratio := 1.0
+	if _get_imported_visual() != null:
+		visual_scale_ratio = (
+			_footprint_cells
+			/ maxf(_visual_native_footprint_cells, 0.5)
 		)
+		if imported_bounds.x < INF and imported_bounds.y > -INF:
+			token_height_cells = maxf(
+				(imported_bounds.y - imported_bounds.x)
+				* visual_scale_ratio,
+				0.1
+			)
 
 	var width: float = _footprint_cells * cell_size
 	var height: float = token_height_cells * cell_size
@@ -527,9 +544,9 @@ func set_token_size(footprint_cells: float) -> void:
 	collision_shape.shape = new_shape
 
 	if _get_imported_visual() != null:
-		# I modelli convertiti sono gia' espressi in celle Godot:
-		# la base e' stata scalata esattamente al footprint D&D.
-		visuals.scale = Vector3.ONE * cell_size
+		visuals.scale = (
+			Vector3.ONE * cell_size * visual_scale_ratio
+		)
 	else:
 		var horizontal_visual_scale: float = maxf(0.55, _footprint_cells)
 		visuals.scale = Vector3(

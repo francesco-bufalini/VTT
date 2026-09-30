@@ -1,21 +1,21 @@
 {
   "version": 2,
   "generated_at": "2026-09-30T15:37:50.130609+00:00",
-  "default_id": "ape",
+  "default_id": "death_knight",
   "default": {
-    "id": "ape",
-    "name": "Ape",
-    "source": "Appendix A/Ape/Ape.stl",
-    "obj": "res://assets/tokens/generated/ape/ape.obj",
-    "scene": "res://assets/tokens/scenes/ape_token.tscn",
+    "id": "death_knight",
+    "name": "Death Knight",
+    "source": "D/Death Knight/Death Knight.blend",
+    "obj": "res://assets/tokens/generated/death_knight/death_knight.obj",
+    "scene": "res://assets/tokens/scenes/death_knight_token.tscn",
     "size_name": "Medium",
     "footprint": 1.0,
-    "height_cells": 1.155462,
+    "height_cells": 1.65874,
     "width_cells": 1.0,
-    "depth_cells": 1.195479,
-    "base_reference": "geometry:lowest_8_percent",
-    "base_diameter_source": 25.248188018798828,
-    "scale_factor": 0.03960680264482499
+    "depth_cells": 1.472317,
+    "base_reference": "object:Medium Creature.001",
+    "base_diameter_source": 25.401001930236816,
+    "scale_factor": 0.03936852580644156
   },
   "tokens": [
     {

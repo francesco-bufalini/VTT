@@ -15,6 +15,7 @@ const CONTEXT_INITIATIVE := 13
 const CONTEXT_TOKEN_DETAILS := 14
 const CAMPAIGN_EDITOR_SCENE_PATH := "res://vtt/editor/campaign_editor.tscn"
 const TOKEN_LIBRARY_MANIFEST := "res://assets/tokens/token_library.json"
+const DEFAULT_TOKEN_PROFILE_ID := "death_knight"
 
 const CAMERA_SPEED_DEFAULT := 5.0
 const CAMERA_SENSITIVITY_DEFAULT := 0.002
@@ -43,7 +44,6 @@ const TOKEN_SIZES := [
 @onready var context_menu: PopupMenu = $UI/ContextMenu
 @onready var color_dialog: ConfirmationDialog = $UI/TokenColorDialog
 @onready var size_selector: OptionButton = $UI/TokenColorDialog/Content/VBox/SizeSelector
-@onready var color_picker: ColorPicker = $UI/TokenColorDialog/Content/VBox/ColorPicker
 @onready var measurement_tool: Node3D = $MeasurementTool
 @onready var measurement_mode_label: Label = $UI/MeasurementModeLabel
 
@@ -64,11 +64,16 @@ var camera_sensitivity_slider: HSlider
 var camera_speed_value_label: Label
 var camera_sensitivity_value_label: Label
 var token_name_input: LineEdit
+var token_miniature_search: LineEdit
 var token_miniature_list: ItemList
 var token_front_selector: OptionButton
 var _token_profiles: Array[Dictionary] = []
+var _visible_token_profiles: Array[Dictionary] = []
 var _selected_token_profile: Dictionary = {}
 var _token_front_by_id: Dictionary = {}
+var _selection_grid_instance: MultiMeshInstance3D
+var _selection_grid_multimesh: MultiMesh
+var _selection_grid_signature: String = ""
 var token_state_dialog: ConfirmationDialog
 var token_state_name: LineEdit
 var token_state_grid: GridContainer
@@ -146,6 +151,7 @@ func _ready() -> void:
 	add_child(runtime_toolbar)
 	runtime_toolbar.call("setup", self)
 
+	_build_selection_grid_highlight()
 	_capture_mouse()
 
 
@@ -179,15 +185,16 @@ func _build_token_generation_controls() -> void:
 
 	_ensure_token_name_input()
 	if token_name_input != null:
-		token_name_input.editable = false
+		token_name_input.editable = true
+		token_name_input.placeholder_text = "Nome del token"
 		token_name_input.tooltip_text = (
-			"Il nome iniziale viene preso dalla miniatura. "
-			+ "Puoi rinominarlo dopo con 'Nome e stati'."
+			"Il nome parte da quello della miniatura, ma puoi modificarlo "
+			+ "prima di creare il token."
 		)
 
 	var name_label := content_box.get_node_or_null("TokenNameLabel") as Label
 	if name_label != null:
-		name_label.text = "Nome token (dalla miniatura)"
+		name_label.text = "Nome del token"
 
 	var miniature_label := content_box.get_node_or_null("MiniatureLabel") as Label
 	if miniature_label == null:
@@ -196,13 +203,26 @@ func _build_token_generation_controls() -> void:
 		miniature_label.text = "Miniatura"
 		content_box.add_child(miniature_label)
 
+	token_miniature_search = (
+		content_box.get_node_or_null("MiniatureSearch") as LineEdit
+	)
+	if token_miniature_search == null:
+		token_miniature_search = LineEdit.new()
+		token_miniature_search.name = "MiniatureSearch"
+		token_miniature_search.placeholder_text = "Cerca miniatura..."
+		token_miniature_search.clear_button_enabled = true
+		token_miniature_search.text_changed.connect(
+			_on_token_miniature_search_changed
+		)
+		content_box.add_child(token_miniature_search)
+
 	token_miniature_list = (
 		content_box.get_node_or_null("MiniatureList") as ItemList
 	)
 	if token_miniature_list == null:
 		token_miniature_list = ItemList.new()
 		token_miniature_list.name = "MiniatureList"
-		token_miniature_list.custom_minimum_size = Vector2(500, 230)
+		token_miniature_list.custom_minimum_size = Vector2(500, 270)
 		token_miniature_list.size_flags_horizontal = Control.SIZE_EXPAND_FILL
 		token_miniature_list.allow_reselect = true
 		token_miniature_list.item_selected.connect(
@@ -212,7 +232,13 @@ func _build_token_generation_controls() -> void:
 
 	var size_label := content_box.get_node_or_null("SizeLabel") as Label
 	if size_label != null:
-		size_label.text = "Taglia D&D (automatica)"
+		size_label.text = "Taglia D&D"
+
+	size_selector.disabled = false
+	size_selector.tooltip_text = (
+		"La miniatura propone una taglia iniziale, ma puoi cambiarla. "
+		+ "La scelta modifica footprint, collisione e scala del token."
+	)
 
 	var front_label := content_box.get_node_or_null("FrontLabel") as Label
 	if front_label == null:
@@ -241,29 +267,28 @@ func _build_token_generation_controls() -> void:
 		)
 		content_box.add_child(token_front_selector)
 
-	# Tutte le miniature stanno nello stesso elenco: nessun filtro per taglia.
-	# La taglia viene dedotta soltanto dopo aver scelto la miniatura.
 	content_box.move_child(miniature_label, 0)
-	content_box.move_child(token_miniature_list, 1)
+	content_box.move_child(token_miniature_search, 1)
+	content_box.move_child(token_miniature_list, 2)
 	if name_label != null:
-		content_box.move_child(name_label, 2)
+		content_box.move_child(name_label, 3)
 	if token_name_input != null:
-		content_box.move_child(token_name_input, 3)
+		content_box.move_child(token_name_input, 4)
 	if size_label != null:
-		content_box.move_child(size_label, 4)
-	content_box.move_child(size_selector, 5)
-	content_box.move_child(front_label, 6)
-	content_box.move_child(token_front_selector, 7)
+		content_box.move_child(size_label, 5)
+	content_box.move_child(size_selector, 6)
+	content_box.move_child(front_label, 7)
+	content_box.move_child(token_front_selector, 8)
 
 	_reload_token_miniature_list()
 
 
 func _reload_token_miniature_list() -> void:
 	_token_profiles.clear()
+	_visible_token_profiles.clear()
 	_selected_token_profile.clear()
 	if token_miniature_list == null:
 		return
-	token_miniature_list.clear()
 
 	var manifest := _read_token_library_manifest()
 	var tokens_value: Variant = manifest.get("tokens", [])
@@ -280,35 +305,86 @@ func _reload_token_miniature_list() -> void:
 		Callable(self, "_sort_token_profiles")
 	)
 
-	var default_id := String(manifest.get("default_id", ""))
-	var default_index := 0
-	for index: int in range(_token_profiles.size()):
-		var profile: Dictionary = _token_profiles[index]
-		var token_name := String(profile.get("name", profile.get("id", "Token")))
-		var size_name := String(profile.get("size_name", "Medium"))
-		token_miniature_list.add_item("%s  ·  %s" % [token_name, size_name])
-		token_miniature_list.set_item_tooltip(
-			index,
-			String(profile.get("source", profile.get("obj", "")))
-		)
-		if String(profile.get("id", "")) == default_id:
-			default_index = index
+	if token_miniature_search != null:
+		token_miniature_search.text = ""
+	_refresh_token_miniature_filter("", DEFAULT_TOKEN_PROFILE_ID)
 
-	if _token_profiles.is_empty():
-		size_selector.disabled = false
-		size_selector.tooltip_text = "Manifest miniature vuoto o non disponibile."
-		if token_name_input != null:
-			token_name_input.text = "Token"
+
+func _on_token_miniature_search_changed(query: String) -> void:
+	_refresh_token_miniature_filter(query)
+
+
+func _refresh_token_miniature_filter(
+	query: String,
+	preferred_id: String = ""
+) -> void:
+	if token_miniature_list == null:
 		return
 
-	token_miniature_list.select(default_index)
-	_on_token_miniature_selected(default_index)
+	var current_id := preferred_id.strip_edges()
+	if current_id.is_empty():
+		current_id = String(_selected_token_profile.get("id", ""))
+
+	var normalized_query := query.strip_edges().to_lower()
+	_visible_token_profiles.clear()
+	token_miniature_list.clear()
+
+	var target_index := -1
+	for profile: Dictionary in _token_profiles:
+		var token_name := String(
+			profile.get("name", profile.get("id", "Token"))
+		)
+		var searchable := (
+			token_name
+			+ " "
+			+ String(profile.get("id", ""))
+			+ " "
+			+ String(profile.get("source", ""))
+		).to_lower()
+		if not normalized_query.is_empty() and not searchable.contains(
+			normalized_query
+		):
+			continue
+
+		var visible_index := _visible_token_profiles.size()
+		_visible_token_profiles.append(profile)
+		var size_name := String(profile.get("size_name", "Medium"))
+		token_miniature_list.add_item(
+			"%s  ·  %s" % [token_name, size_name]
+		)
+		token_miniature_list.set_item_tooltip(
+			visible_index,
+			String(profile.get("source", profile.get("obj", "")))
+		)
+		if String(profile.get("id", "")) == current_id:
+			target_index = visible_index
+
+	var ok_button := color_dialog.get_ok_button()
+	if _visible_token_profiles.is_empty():
+		_selected_token_profile.clear()
+		if ok_button != null:
+			ok_button.disabled = true
+		return
+
+	if ok_button != null:
+		ok_button.disabled = false
+	if target_index < 0:
+		target_index = 0
+
+	var target_profile: Dictionary = _visible_token_profiles[target_index]
+	var target_id := String(target_profile.get("id", ""))
+	token_miniature_list.select(target_index)
+	if (
+		_selected_token_profile.is_empty()
+		or String(_selected_token_profile.get("id", "")) != target_id
+	):
+		_on_token_miniature_selected(target_index)
 
 
 func _on_token_miniature_selected(index: int) -> void:
-	if index < 0 or index >= _token_profiles.size():
+	if index < 0 or index >= _visible_token_profiles.size():
 		return
-	_selected_token_profile = _token_profiles[index].duplicate(true)
+	_selected_token_profile = _visible_token_profiles[index].duplicate(true)
 
 	var token_name := String(
 		_selected_token_profile.get(
@@ -326,10 +402,7 @@ func _on_token_miniature_selected(index: int) -> void:
 		if String(TOKEN_SIZES[size_index].get("name", "")) == size_name:
 			size_selector.select(size_index)
 			break
-	size_selector.disabled = true
-	size_selector.tooltip_text = (
-		"Taglia determinata automaticamente dalla miniatura: " + size_name
-	)
+	size_selector.disabled = false
 
 	var token_id := String(_selected_token_profile.get("id", ""))
 	var front_index := clampi(
@@ -349,8 +422,138 @@ func _on_token_front_selected(index: int) -> void:
 		_token_front_by_id[token_id] = clampi(index, 0, 3)
 
 
+func _build_selection_grid_highlight() -> void:
+	var material := StandardMaterial3D.new()
+	material.transparency = BaseMaterial3D.TRANSPARENCY_ALPHA
+	material.shading_mode = BaseMaterial3D.SHADING_MODE_UNSHADED
+	material.albedo_color = Color(1.0, 0.78, 0.08, 0.95)
+	material.emission_enabled = true
+	material.emission = Color(1.0, 0.58, 0.02, 1.0)
+	material.emission_energy_multiplier = 1.5
+	material.no_depth_test = true
+
+	var wire_cube := ImmediateMesh.new()
+	wire_cube.surface_begin(Mesh.PRIMITIVE_LINES, material)
+	var half := cell_size * 0.49
+	var corners: Array[Vector3] = [
+		Vector3(-half, -half, -half),
+		Vector3(half, -half, -half),
+		Vector3(half, half, -half),
+		Vector3(-half, half, -half),
+		Vector3(-half, -half, half),
+		Vector3(half, -half, half),
+		Vector3(half, half, half),
+		Vector3(-half, half, half),
+	]
+	var edges: Array[Vector2i] = [
+		Vector2i(0, 1), Vector2i(1, 2), Vector2i(2, 3), Vector2i(3, 0),
+		Vector2i(4, 5), Vector2i(5, 6), Vector2i(6, 7), Vector2i(7, 4),
+		Vector2i(0, 4), Vector2i(1, 5), Vector2i(2, 6), Vector2i(3, 7),
+	]
+	for edge: Vector2i in edges:
+		wire_cube.surface_add_vertex(corners[edge.x])
+		wire_cube.surface_add_vertex(corners[edge.y])
+	wire_cube.surface_end()
+
+	_selection_grid_multimesh = MultiMesh.new()
+	_selection_grid_multimesh.transform_format = MultiMesh.TRANSFORM_3D
+	_selection_grid_multimesh.mesh = wire_cube
+	_selection_grid_multimesh.instance_count = 0
+
+	_selection_grid_instance = MultiMeshInstance3D.new()
+	_selection_grid_instance.name = "SelectedTokenGridHighlight"
+	_selection_grid_instance.multimesh = _selection_grid_multimesh
+	_selection_grid_instance.cast_shadow = (
+		GeometryInstance3D.SHADOW_CASTING_SETTING_OFF
+	)
+	add_child(_selection_grid_instance)
+
+
+func _refresh_selection_grid_highlight() -> void:
+	if _selection_grid_multimesh == null:
+		return
+
+	var signature_parts: PackedStringArray = []
+	for token: CharacterBody3D in _selected_tokens:
+		if token == null or not is_instance_valid(token):
+			continue
+		var footprint := (
+			float(token.call("get_footprint_cells"))
+			if token.has_method("get_footprint_cells")
+			else 1.0
+		)
+		var height_cells := maxf(
+			float(token.get("token_height_cells")),
+			0.1
+		)
+		signature_parts.append(
+			"%s|%s|%.4f|%.4f" % [
+				str(token.get_instance_id()),
+				str(token.global_position),
+				footprint,
+				height_cells
+			]
+		)
+
+	var next_signature := ";".join(signature_parts)
+	if next_signature == _selection_grid_signature:
+		return
+	_selection_grid_signature = next_signature
+
+	var centers: Array[Vector3] = []
+	for token: CharacterBody3D in _selected_tokens:
+		if token == null or not is_instance_valid(token):
+			continue
+
+		var footprint := (
+			float(token.call("get_footprint_cells"))
+			if token.has_method("get_footprint_cells")
+			else 1.0
+		)
+		var height_cells := maxf(
+			float(token.get("token_height_cells")),
+			0.1
+		)
+		var horizontal_count := maxi(1, int(ceil(footprint)))
+		var vertical_count := maxi(1, int(ceil(height_cells)))
+		var horizontal_start := (
+			-float(horizontal_count - 1) * cell_size * 0.5
+		)
+		var bottom_y := (
+			token.global_position.y
+			- height_cells * cell_size * 0.5
+		)
+
+		for y_index: int in range(vertical_count):
+			var world_y := (
+				bottom_y + (float(y_index) + 0.5) * cell_size
+			)
+			for z_index: int in range(horizontal_count):
+				for x_index: int in range(horizontal_count):
+					centers.append(
+						Vector3(
+							token.global_position.x
+							+ horizontal_start
+							+ float(x_index) * cell_size,
+							world_y,
+							token.global_position.z
+							+ horizontal_start
+							+ float(z_index) * cell_size
+						)
+					)
+
+	_selection_grid_multimesh.instance_count = centers.size()
+	_selection_grid_multimesh.visible_instance_count = centers.size()
+	for index: int in range(centers.size()):
+		_selection_grid_multimesh.set_instance_transform(
+			index,
+			Transform3D(Basis.IDENTITY, to_local(centers[index]))
+		)
+
+
 func _process(_delta: float) -> void:
 	_clean_selection()
+	_refresh_selection_grid_highlight()
 	_process_pending_history_action()
 
 	if _ui_owns_mouse and Input.mouse_mode != Input.MOUSE_MODE_VISIBLE:
@@ -1089,7 +1292,6 @@ func _on_context_menu_id_pressed(id: int) -> void:
 			if not _has_pending_spawn_position:
 				return
 			_ui_owns_mouse = true
-			color_picker.color = Color.WHITE
 			if token_miniature_list != null and not _token_profiles.is_empty():
 				var selected_items := token_miniature_list.get_selected_items()
 				var selected_index: int = (
@@ -1454,37 +1656,27 @@ func _on_token_dialog_confirmed() -> void:
 	var size_name := String(selected_size.get("name", "Medium"))
 	var footprint := float(selected_size.get("footprint", 1.0))
 	var display_name := (
-		token_name_input.text if token_name_input != null else "Token"
+		token_name_input.text.strip_edges()
+		if token_name_input != null
+		else "Token"
 	)
-	var visual_asset := ""
-	var front_quarter_turns := 0
-
-	if not _selected_token_profile.is_empty():
-		size_name = String(
-			_selected_token_profile.get("size_name", size_name)
-		)
-		footprint = maxf(
-			float(_selected_token_profile.get("footprint", footprint)),
-			0.5
-		)
+	if display_name.is_empty():
 		display_name = String(
-			_selected_token_profile.get(
-				"name",
-				_selected_token_profile.get("id", display_name)
-			)
+			_selected_token_profile.get("name", "Token")
 		)
-		visual_asset = String(
-			_selected_token_profile.get("obj", "")
-		).strip_edges()
-		if token_front_selector != null:
-			front_quarter_turns = clampi(
-				token_front_selector.selected,
-				0,
-				3
-			)
+
+	var visual_asset := String(
+		_selected_token_profile.get("obj", "")
+	).strip_edges()
+	var front_quarter_turns := 0
+	if token_front_selector != null:
+		front_quarter_turns = clampi(
+			token_front_selector.selected,
+			0,
+			3
+		)
 
 	_spawn_token(
-		color_picker.color,
 		size_name,
 		footprint,
 		display_name,
@@ -1495,14 +1687,12 @@ func _on_token_dialog_confirmed() -> void:
 	_ui_owns_mouse = false
 	_capture_mouse()
 
-
 func _on_token_dialog_canceled() -> void:
 	_ui_owns_mouse = false
 	_capture_mouse()
 
 
 func _spawn_token(
-	token_color: Color,
 	size_name: String,
 	footprint_cells: float,
 	display_name: String = "",
@@ -1545,7 +1735,7 @@ func _spawn_token(
 	if token.has_method("configure"):
 		token.call(
 			"configure",
-			token_color,
+			Color.WHITE,
 			cell_size,
 			size_name,
 			footprint_cells
