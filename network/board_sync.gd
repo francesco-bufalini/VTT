@@ -133,6 +133,15 @@ func valid_snapshot(snapshot: Variant) -> bool:
 	if controller != null:
 		if not snapshot.get("encounter") is Dictionary or not controller._valid_state(snapshot.encounter) or controller.is_advancing:
 			return false
+	var initiative_tracker: Node = board_root.get_node_or_null("InitiativeTracker")
+	if initiative_tracker != null and snapshot.has("initiative"):
+		if not bool(
+			initiative_tracker.call(
+				"valid_state",
+				snapshot.get("initiative")
+			)
+		):
+			return false
 	var ids := {}
 	for item in snapshot.objects:
 		if not item is Dictionary or not item.get("id") is String or item.id.is_empty() or ids.has(item.id):
@@ -179,7 +188,13 @@ func create_snapshot() -> Dictionary:
 	var controller := board_root.get_node_or_null("EncounterProgressController")
 	var state: Dictionary = controller.get_save_state() if controller != null else {}
 	if controller != null and state.is_empty(): return {}
-	return {"version":3,"scene":board_root.scene_file_path,"objects":objects,"aoes":aoes,"encounter":state}
+	var initiative: Dictionary = {}
+	var initiative_tracker: Node = board_root.get_node_or_null("InitiativeTracker")
+	if initiative_tracker != null:
+		var initiative_value: Variant = initiative_tracker.call("get_save_state")
+		if initiative_value is Dictionary:
+			initiative = (initiative_value as Dictionary).duplicate(true)
+	return {"version":3,"scene":board_root.scene_file_path,"objects":objects,"aoes":aoes,"encounter":state,"initiative":initiative}
 
 func apply_snapshot(snapshot: Dictionary) -> bool:
 	if not valid_snapshot(snapshot): return false
@@ -199,6 +214,18 @@ func apply_snapshot(snapshot: Dictionary) -> bool:
 		if node == null: node = _instantiate_from_data(data)
 		if node != null: _apply_node_data(node,data)
 	if is_instance_valid(measurement_tool) and measurement_tool.has_method("apply_persistent_aoes"): measurement_tool.call("apply_persistent_aoes", snapshot.get("aoes",[]))
+	var initiative_tracker: Node = board_root.get_node_or_null("InitiativeTracker")
+	if initiative_tracker != null:
+		if snapshot.has("initiative"):
+			if not bool(
+				initiative_tracker.call(
+					"load_state",
+					snapshot.get("initiative")
+				)
+			):
+				return false
+		else:
+			initiative_tracker.call("clear_state")
 	return true
 
 func _current_nodes_by_id() -> Dictionary:
