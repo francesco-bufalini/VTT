@@ -6493,8 +6493,7 @@ const SPELLS: Dictionary = {
     ],
     "target_mode": "summon",
     "range_feet": 10,
-    "summon_count": 1,
-    "summon_requires_ground": true
+    "summon_count": 1
   },
   "galders_tower": {
     "id": "galders_tower",
@@ -14324,8 +14323,7 @@ const SPELLS: Dictionary = {
     ],
     "target_mode": "summon",
     "range_feet": 60,
-    "summon_count": 1,
-    "summon_requires_ground": true
+    "summon_count": 1
   },
   "summon_lesser_demons": {
     "id": "summon_lesser_demons",
@@ -14354,7 +14352,6 @@ const SPELLS: Dictionary = {
     ],
     "target_mode": "summon",
     "range_feet": 60,
-    "summon_requires_ground": true,
     "summon_count_options": [
       2,
       4,
