@@ -2141,6 +2141,29 @@ func _update_spell_preview() -> void:
 				_spell_line_width_world(spell_data)
 			)
 
+		"summon_point":
+			var summon_spell: Dictionary = spell_data.duplicate(true)
+			if bool(spell_data.get("summon_requires_ground", false)):
+				summon_spell["requires_ground"] = true
+			var summon_point_data: Dictionary = _point_target_data(
+				screen_position,
+				summon_spell
+			)
+			if not bool(summon_point_data.get("valid", false)):
+				_hide_spell_preview()
+				return
+			var summon_point: Vector3 = summon_point_data.get(
+				"point",
+				Vector3.ZERO
+			)
+			measurement_tool.call(
+				"show_spell_preview",
+				summon_point,
+				summon_point + Vector3.RIGHT * _cell_size() * 0.45,
+				"sphere",
+				_spell_style(spell_data)
+			)
+
 		"chain_primary":
 			var primary_data: Dictionary = _target_token_data(
 				screen_position,
