@@ -12,7 +12,13 @@
         "shape": "emanation",
         "radius_feet": 30
       },
-      "persistence": "persistent"
+      "persistence": "persistent",
+      "saving_throw": [
+        "dexterity"
+      ],
+      "misc_tags": [
+        "ADV"
+      ]
     }
   },
   "AU::Detonate": {
@@ -31,6 +37,15 @@
       "persistence": "instant",
       "damage_types": [
         "fire"
+      ],
+      "saving_throw": [
+        "constitution",
+        "dexterity"
+      ],
+      "misc_tags": [
+        "BO",
+        "OBJ",
+        "SGT"
       ]
     }
   },
@@ -47,7 +62,10 @@
         "shape": "sphere",
         "radius_feet": 20
       },
-      "persistence": "persistent"
+      "persistence": "persistent",
+      "saving_throw": [
+        "constitution"
+      ]
     }
   },
   "AU::Distorted Distance": {
@@ -66,6 +84,13 @@
       "persistence": "persistent",
       "damage_types": [
         "psychic"
+      ],
+      "saving_throw": [
+        "intelligence"
+      ],
+      "misc_tags": [
+        "DFT",
+        "SGT"
       ]
     }
   },
@@ -83,7 +108,14 @@
         "shape": "sphere",
         "radius_feet": 15
       },
-      "persistence": "persistent"
+      "persistence": "persistent",
+      "condition_inflict": [
+        "unconscious"
+      ],
+      "misc_tags": [
+        "SCT",
+        "TP"
+      ]
     }
   },
   "AU::Festering Blast": {
@@ -105,6 +137,12 @@
       "damage_types": [
         "necrotic",
         "poison"
+      ],
+      "condition_inflict": [
+        "poisoned"
+      ],
+      "saving_throw": [
+        "constitution"
       ]
     }
   },
@@ -125,6 +163,12 @@
       "persistence": "persistent",
       "damage_types": [
         "necrotic"
+      ],
+      "saving_throw": [
+        "strength"
+      ],
+      "misc_tags": [
+        "DFT"
       ]
     }
   },
@@ -149,6 +193,18 @@
         "lightning",
         "necrotic",
         "poison"
+      ],
+      "condition_inflict": [
+        "frightened"
+      ],
+      "saving_throw": [
+        "intelligence",
+        "wisdom"
+      ],
+      "misc_tags": [
+        "ADV",
+        "SGT",
+        "UBA"
       ]
     }
   },
@@ -169,6 +225,16 @@
       "damage_types": [
         "lightning",
         "thunder"
+      ],
+      "condition_inflict": [
+        "deafened"
+      ],
+      "saving_throw": [
+        "constitution",
+        "dexterity"
+      ],
+      "misc_tags": [
+        "UA"
       ]
     }
   },
@@ -186,7 +252,16 @@
         "shape": "cone",
         "length_feet": 60
       },
-      "persistence": "persistent"
+      "persistence": "persistent",
+      "condition_inflict": [
+        "exhaustion"
+      ],
+      "saving_throw": [
+        "constitution"
+      ],
+      "misc_tags": [
+        "UA"
+      ]
     }
   },
   "AU::Wither and Bloom": {
@@ -205,6 +280,12 @@
       "persistence": "instant",
       "damage_types": [
         "necrotic"
+      ],
+      "saving_throw": [
+        "constitution"
+      ],
+      "misc_tags": [
+        "HL"
       ]
     }
   },
@@ -240,6 +321,17 @@
       "persistence": "persistent",
       "damage_types": [
         "force"
+      ],
+      "condition_inflict": [
+        "deafened"
+      ],
+      "saving_throw": [
+        "constitution"
+      ],
+      "misc_tags": [
+        "DFT",
+        "OBJ",
+        "OBS"
       ]
     }
   },
@@ -261,6 +353,9 @@
       "persistence": "instant",
       "damage_types": [
         "force"
+      ],
+      "saving_throw": [
+        "constitution"
       ]
     }
   },
@@ -280,6 +375,12 @@
       "persistence": "instant",
       "damage_types": [
         "force"
+      ],
+      "saving_throw": [
+        "constitution"
+      ],
+      "misc_tags": [
+        "SGT"
       ]
     }
   },
@@ -299,6 +400,13 @@
       "persistence": "persistent",
       "damage_types": [
         "force"
+      ],
+      "saving_throw": [
+        "constitution"
+      ],
+      "misc_tags": [
+        "OBJ",
+        "SGT"
       ]
     }
   },
@@ -319,6 +427,13 @@
       "persistence": "instant",
       "damage_types": [
         "force"
+      ],
+      "saving_throw": [
+        "constitution"
+      ],
+      "misc_tags": [
+        "FMV",
+        "OBJ"
       ]
     }
   },
@@ -338,6 +453,16 @@
       "persistence": "persistent",
       "damage_types": [
         "force"
+      ],
+      "condition_inflict": [
+        "restrained"
+      ],
+      "saving_throw": [
+        "strength"
+      ],
+      "misc_tags": [
+        "OBJ",
+        "SGT"
       ]
     }
   },
@@ -354,7 +479,12 @@
         "shape": "emanation",
         "radius_feet": 20
       },
-      "persistence": "persistent"
+      "persistence": "persistent",
+      "misc_tags": [
+        "HL",
+        "LGT",
+        "UA"
+      ]
     }
   },
   "FRHoF::Cacophonic Shield": {
@@ -373,6 +503,12 @@
       "persistence": "persistent",
       "damage_types": [
         "thunder"
+      ],
+      "condition_inflict": [
+        "deafened"
+      ],
+      "saving_throw": [
+        "constitution"
       ]
     }
   },
@@ -392,6 +528,12 @@
       "persistence": "persistent",
       "damage_types": [
         "necrotic"
+      ],
+      "condition_inflict": [
+        "prone"
+      ],
+      "saving_throw": [
+        "constitution"
       ]
     }
   },
@@ -411,6 +553,9 @@
       "persistence": "persistent",
       "damage_types": [
         "psychic"
+      ],
+      "saving_throw": [
+        "wisdom"
       ]
     }
   },
@@ -432,6 +577,12 @@
       "persistence": "instant",
       "damage_types": [
         "force"
+      ],
+      "condition_inflict": [
+        "prone"
+      ],
+      "saving_throw": [
+        "strength"
       ]
     }
   },
@@ -452,6 +603,12 @@
       "persistence": "persistent",
       "damage_types": [
         "radiant"
+      ],
+      "saving_throw": [
+        "constitution"
+      ],
+      "misc_tags": [
+        "LGT"
       ]
     }
   },
@@ -472,6 +629,9 @@
       "persistence": "instant",
       "damage_types": [
         "cold"
+      ],
+      "saving_throw": [
+        "constitution"
       ]
     }
   },
@@ -492,6 +652,9 @@
       "persistence": "instant",
       "damage_types": [
         "cold"
+      ],
+      "saving_throw": [
+        "constitution"
       ]
     }
   },
@@ -1979,6 +2142,9 @@
       "persistence": "instant",
       "damage_types": [
         "necrotic"
+      ],
+      "saving_throw": [
+        "constitution"
       ]
     }
   },
@@ -1999,6 +2165,9 @@
       "persistence": "instant",
       "damage_types": [
         "fire"
+      ],
+      "saving_throw": [
+        "dexterity"
       ]
     }
   },
@@ -2015,7 +2184,11 @@
         "shape": "cube",
         "side_feet": 5
       },
-      "persistence": "persistent"
+      "persistence": "persistent",
+      "misc_tags": [
+        "LGT",
+        "SGT"
+      ]
     }
   },
   "XGE::Control Winds": {
@@ -2031,7 +2204,17 @@
         "shape": "cube",
         "side_feet": 100
       },
-      "persistence": "persistent"
+      "persistence": "persistent",
+      "condition_inflict": [
+        "prone"
+      ],
+      "saving_throw": [
+        "strength"
+      ],
+      "misc_tags": [
+        "SGT",
+        "UA"
+      ]
     }
   },
   "XGE::Create Bonfire": {
@@ -2051,6 +2234,15 @@
       "persistence": "persistent",
       "damage_types": [
         "fire"
+      ],
+      "saving_throw": [
+        "dexterity"
+      ],
+      "misc_tags": [
+        "BO",
+        "OBJ",
+        "SCL",
+        "SGT"
       ]
     }
   },
@@ -2071,6 +2263,13 @@
       "persistence": "persistent",
       "damage_types": [
         "radiant"
+      ],
+      "saving_throw": [
+        "constitution"
+      ],
+      "misc_tags": [
+        "LGTS",
+        "UBA"
       ]
     }
   },
@@ -2111,7 +2310,13 @@
         "shape": "square",
         "side_feet": 5
       },
-      "persistence": "persistent"
+      "persistence": "persistent",
+      "misc_tags": [
+        "OBS",
+        "PIR",
+        "PRM",
+        "SMN"
+      ]
     }
   },
   "XGE::Erupting Earth": {
@@ -2131,6 +2336,13 @@
       "persistence": "instant",
       "damage_types": [
         "bludgeoning"
+      ],
+      "saving_throw": [
+        "dexterity"
+      ],
+      "misc_tags": [
+        "DFT",
+        "SGT"
       ]
     }
   },
@@ -2147,7 +2359,12 @@
         "shape": "cube",
         "side_feet": 5
       },
-      "persistence": "persistent"
+      "persistence": "persistent",
+      "misc_tags": [
+        "HL",
+        "SGT",
+        "UBA"
+      ]
     }
   },
   "XGE::Illusory Dragon": {
@@ -2192,6 +2409,13 @@
       "persistence": "persistent",
       "damage_types": [
         "fire"
+      ],
+      "saving_throw": [
+        "dexterity"
+      ],
+      "misc_tags": [
+        "LGT",
+        "UA"
       ]
     }
   },
@@ -2212,6 +2436,13 @@
       "persistence": "persistent",
       "damage_types": [
         "cold"
+      ],
+      "saving_throw": [
+        "constitution"
+      ],
+      "misc_tags": [
+        "DFT",
+        "UA"
       ]
     }
   },
@@ -2229,7 +2460,17 @@
         "shape": "sphere",
         "radius_feet": 15
       },
-      "persistence": "persistent"
+      "persistence": "persistent",
+      "condition_inflict": [
+        "prone",
+        "stunned"
+      ],
+      "saving_throw": [
+        "dexterity"
+      ],
+      "misc_tags": [
+        "UA"
+      ]
     }
   },
   "XGE::Investiture of Wind": {
@@ -2249,6 +2490,14 @@
       "persistence": "persistent",
       "damage_types": [
         "bludgeoning"
+      ],
+      "saving_throw": [
+        "constitution"
+      ],
+      "misc_tags": [
+        "FMV",
+        "SGT",
+        "UA"
       ]
     }
   },
@@ -2268,6 +2517,12 @@
       "persistence": "persistent",
       "damage_types": [
         "psychic"
+      ],
+      "saving_throw": [
+        "wisdom"
+      ],
+      "misc_tags": [
+        "OBS"
       ]
     }
   },
@@ -2288,6 +2543,14 @@
       "persistence": "persistent",
       "damage_types": [
         "bludgeoning"
+      ],
+      "saving_throw": [
+        "strength"
+      ],
+      "misc_tags": [
+        "DFT",
+        "FMV",
+        "SGT"
       ]
     }
   },
@@ -2305,7 +2568,11 @@
         "shape": "cube",
         "side_feet": 5
       },
-      "persistence": "persistent"
+      "persistence": "persistent",
+      "misc_tags": [
+        "DFT",
+        "SGT"
+      ]
     }
   },
   "XGE::Pyrotechnics": {
@@ -2321,7 +2588,17 @@
         "shape": "cube",
         "side_feet": 5
       },
-      "persistence": "instant"
+      "persistence": "instant",
+      "condition_inflict": [
+        "blinded"
+      ],
+      "saving_throw": [
+        "constitution"
+      ],
+      "misc_tags": [
+        "OBS",
+        "SGT"
+      ]
     }
   },
   "XGE::Shape Water": {
@@ -2337,7 +2614,10 @@
         "shape": "cube",
         "side_feet": 5
       },
-      "persistence": "persistent"
+      "persistence": "persistent",
+      "misc_tags": [
+        "SGT"
+      ]
     }
   },
   "XGE::Sickening Radiance": {
@@ -2356,6 +2636,12 @@
       "persistence": "persistent",
       "damage_types": [
         "radiant"
+      ],
+      "condition_inflict": [
+        "exhaustion"
+      ],
+      "saving_throw": [
+        "constitution"
       ]
     }
   },
@@ -2375,6 +2661,9 @@
       "persistence": "instant",
       "damage_types": [
         "cold"
+      ],
+      "saving_throw": [
+        "dexterity"
       ]
     }
   },
@@ -2395,6 +2684,13 @@
       "damage_types": [
         "bludgeoning",
         "lightning"
+      ],
+      "saving_throw": [
+        "strength"
+      ],
+      "misc_tags": [
+        "DFT",
+        "UBA"
       ]
     }
   },
@@ -2434,6 +2730,16 @@
       "persistence": "persistent",
       "damage_types": [
         "bludgeoning"
+      ],
+      "condition_inflict": [
+        "restrained"
+      ],
+      "saving_throw": [
+        "dexterity",
+        "strength"
+      ],
+      "misc_tags": [
+        "SGT"
       ]
     }
   },
@@ -2479,6 +2785,16 @@
       "persistence": "persistent",
       "damage_types": [
         "radiant"
+      ],
+      "condition_inflict": [
+        "blinded"
+      ],
+      "saving_throw": [
+        "constitution"
+      ],
+      "misc_tags": [
+        "LGT",
+        "SGT"
       ]
     }
   },
@@ -2503,7 +2819,13 @@
           }
         ]
       },
-      "persistence": "persistent"
+      "persistence": "persistent",
+      "condition_inflict": [
+        "blinded"
+      ],
+      "misc_tags": [
+        "SGT"
+      ]
     }
   },
   "XGE::Wall of Water": {
@@ -2533,7 +2855,11 @@
           }
         ]
       },
-      "persistence": "persistent"
+      "persistence": "persistent",
+      "misc_tags": [
+        "DFT",
+        "SGT"
+      ]
     }
   },
   "XGE::Watery Sphere": {
@@ -2549,7 +2875,18 @@
         "shape": "sphere",
         "radius_feet": 5
       },
-      "persistence": "persistent"
+      "persistence": "persistent",
+      "condition_inflict": [
+        "prone",
+        "restrained"
+      ],
+      "saving_throw": [
+        "strength"
+      ],
+      "misc_tags": [
+        "SGT",
+        "UA"
+      ]
     }
   },
   "XGE::Whirlwind": {
@@ -2570,6 +2907,18 @@
       "persistence": "persistent",
       "damage_types": [
         "bludgeoning"
+      ],
+      "condition_inflict": [
+        "restrained"
+      ],
+      "saving_throw": [
+        "dexterity",
+        "strength"
+      ],
+      "misc_tags": [
+        "FMV",
+        "SGT",
+        "UA"
       ]
     }
   },
@@ -2591,6 +2940,19 @@
       "damage_types": [
         "bludgeoning",
         "slashing"
+      ],
+      "condition_inflict": [
+        "prone",
+        "restrained"
+      ],
+      "saving_throw": [
+        "dexterity",
+        "strength"
+      ],
+      "misc_tags": [
+        "DFT",
+        "SGT",
+        "UBA"
       ]
     }
   },
@@ -2639,7 +3001,10 @@
         "shape": "emanation",
         "radius_feet": 10
       },
-      "persistence": "persistent"
+      "persistence": "persistent",
+      "misc_tags": [
+        "OBJ"
+      ]
     }
   },
   "XPHB::Arms of Hadar": {
@@ -2658,6 +3023,9 @@
       "persistence": "instant",
       "damage_types": [
         "necrotic"
+      ],
+      "saving_throw": [
+        "strength"
       ]
     }
   },
@@ -2674,7 +3042,10 @@
         "shape": "emanation",
         "radius_feet": 30
       },
-      "persistence": "persistent"
+      "persistence": "persistent",
+      "misc_tags": [
+        "HL"
+      ]
     }
   },
   "XPHB::Aura of Purity": {
@@ -2690,7 +3061,10 @@
         "shape": "emanation",
         "radius_feet": 30
       },
-      "persistence": "persistent"
+      "persistence": "persistent",
+      "misc_tags": [
+        "ADV"
+      ]
     }
   },
   "XPHB::Aura of Vitality": {
@@ -2706,7 +3080,10 @@
         "shape": "emanation",
         "radius_feet": 30
       },
-      "persistence": "persistent"
+      "persistence": "persistent",
+      "misc_tags": [
+        "HL"
+      ]
     }
   },
   "XPHB::Blade Barrier": {
@@ -2738,6 +3115,12 @@
       "persistence": "persistent",
       "damage_types": [
         "force"
+      ],
+      "saving_throw": [
+        "dexterity"
+      ],
+      "misc_tags": [
+        "DFT"
       ]
     }
   },
@@ -2758,6 +3141,13 @@
       "persistence": "instant",
       "damage_types": [
         "fire"
+      ],
+      "saving_throw": [
+        "dexterity"
+      ],
+      "misc_tags": [
+        "BO",
+        "OBJ"
       ]
     }
   },
@@ -2778,6 +3168,13 @@
       "persistence": "persistent",
       "damage_types": [
         "lightning"
+      ],
+      "saving_throw": [
+        "dexterity"
+      ],
+      "misc_tags": [
+        "SGT",
+        "UA"
       ]
     }
   },
@@ -2794,7 +3191,10 @@
         "shape": "sphere",
         "radius_feet": 20
       },
-      "persistence": "persistent"
+      "persistence": "persistent",
+      "saving_throw": [
+        "charisma"
+      ]
     }
   },
   "XPHB::Circle of Death": {
@@ -2813,6 +3213,9 @@
       "persistence": "instant",
       "damage_types": [
         "necrotic"
+      ],
+      "saving_throw": [
+        "constitution"
       ]
     }
   },
@@ -2829,7 +3232,10 @@
         "shape": "emanation",
         "radius_feet": 30
       },
-      "persistence": "persistent"
+      "persistence": "persistent",
+      "misc_tags": [
+        "ADV"
+      ]
     }
   },
   "XPHB::Cloud of Daggers": {
@@ -2848,6 +3254,9 @@
       "persistence": "persistent",
       "damage_types": [
         "slashing"
+      ],
+      "misc_tags": [
+        "UA"
       ]
     }
   },
@@ -2867,6 +3276,12 @@
       "persistence": "persistent",
       "damage_types": [
         "poison"
+      ],
+      "saving_throw": [
+        "constitution"
+      ],
+      "misc_tags": [
+        "OBS"
       ]
     }
   },
@@ -2884,7 +3299,13 @@
         "shape": "cone",
         "length_feet": 15
       },
-      "persistence": "instant"
+      "persistence": "instant",
+      "condition_inflict": [
+        "blinded"
+      ],
+      "saving_throw": [
+        "constitution"
+      ]
     }
   },
   "XPHB::Cone of Cold": {
@@ -2904,6 +3325,9 @@
       "persistence": "instant",
       "damage_types": [
         "cold"
+      ],
+      "saving_throw": [
+        "constitution"
       ]
     }
   },
@@ -2920,7 +3344,13 @@
         "shape": "sphere",
         "radius_feet": 10
       },
-      "persistence": "persistent"
+      "persistence": "persistent",
+      "saving_throw": [
+        "wisdom"
+      ],
+      "misc_tags": [
+        "RO"
+      ]
     }
   },
   "XPHB::Conjure Barrage": {
@@ -2940,6 +3370,12 @@
       "persistence": "instant",
       "damage_types": [
         "force"
+      ],
+      "saving_throw": [
+        "dexterity"
+      ],
+      "misc_tags": [
+        "SGT"
       ]
     }
   },
@@ -2960,6 +3396,13 @@
       "persistence": "persistent",
       "damage_types": [
         "radiant"
+      ],
+      "saving_throw": [
+        "dexterity"
+      ],
+      "misc_tags": [
+        "HL",
+        "SGT"
       ]
     }
   },
@@ -2982,6 +3425,10 @@
         "cold",
         "fire",
         "lightning"
+      ],
+      "misc_tags": [
+        "AAD",
+        "DFT"
       ]
     }
   },
@@ -3002,6 +3449,12 @@
       "persistence": "instant",
       "damage_types": [
         "force"
+      ],
+      "saving_throw": [
+        "dexterity"
+      ],
+      "misc_tags": [
+        "SGT"
       ]
     }
   },
@@ -3021,6 +3474,13 @@
       "persistence": "persistent",
       "damage_types": [
         "bludgeoning"
+      ],
+      "saving_throw": [
+        "strength"
+      ],
+      "misc_tags": [
+        "FMV",
+        "OBJ"
       ]
     }
   },
@@ -3037,7 +3497,10 @@
         "shape": "cube",
         "side_feet": 30
       },
-      "persistence": "instant"
+      "persistence": "instant",
+      "misc_tags": [
+        "PRM"
+      ]
     }
   },
   "XPHB::Crusader's Mantle": {
@@ -3056,6 +3519,9 @@
       "persistence": "persistent",
       "damage_types": [
         "radiant"
+      ],
+      "misc_tags": [
+        "AAD"
       ]
     }
   },
@@ -3072,7 +3538,11 @@
         "shape": "sphere",
         "radius_feet": 15
       },
-      "persistence": "persistent"
+      "persistence": "persistent",
+      "misc_tags": [
+        "OBJ",
+        "OBS"
+      ]
     }
   },
   "XPHB::Daylight": {
@@ -3088,7 +3558,12 @@
         "shape": "sphere",
         "radius_feet": 60
       },
-      "persistence": "persistent"
+      "persistence": "persistent",
+      "misc_tags": [
+        "LGT",
+        "LGTS",
+        "OBJ"
+      ]
     }
   },
   "XPHB::Delayed Blast Fireball": {
@@ -3107,6 +3582,13 @@
       "persistence": "persistent",
       "damage_types": [
         "fire"
+      ],
+      "saving_throw": [
+        "dexterity"
+      ],
+      "misc_tags": [
+        "BO",
+        "OBJ"
       ]
     }
   },
@@ -3128,6 +3610,12 @@
         "necrotic",
         "radiant",
         "thunder"
+      ],
+      "condition_inflict": [
+        "prone"
+      ],
+      "saving_throw": [
+        "constitution"
       ]
     }
   },
@@ -3151,6 +3639,9 @@
         "fire",
         "lightning",
         "poison"
+      ],
+      "saving_throw": [
+        "dexterity"
       ]
     }
   },
@@ -3171,6 +3662,17 @@
       "persistence": "persistent",
       "damage_types": [
         "bludgeoning"
+      ],
+      "condition_inflict": [
+        "prone"
+      ],
+      "saving_throw": [
+        "constitution",
+        "dexterity"
+      ],
+      "misc_tags": [
+        "DFT",
+        "SGT"
       ]
     }
   },
@@ -3187,7 +3689,11 @@
         "shape": "square",
         "side_feet": 5
       },
-      "persistence": "instant"
+      "persistence": "instant",
+      "misc_tags": [
+        "BO",
+        "OBJ"
+      ]
     }
   },
   "XPHB::Entangle": {
@@ -3203,7 +3709,16 @@
         "shape": "square",
         "side_feet": 20
       },
-      "persistence": "persistent"
+      "persistence": "persistent",
+      "condition_inflict": [
+        "restrained"
+      ],
+      "saving_throw": [
+        "strength"
+      ],
+      "misc_tags": [
+        "DFT"
+      ]
     }
   },
   "XPHB::Evard's Black Tentacles": {
@@ -3223,6 +3738,16 @@
       "persistence": "persistent",
       "damage_types": [
         "bludgeoning"
+      ],
+      "condition_inflict": [
+        "restrained"
+      ],
+      "saving_throw": [
+        "strength"
+      ],
+      "misc_tags": [
+        "DFT",
+        "SGT"
       ]
     }
   },
@@ -3239,7 +3764,14 @@
         "shape": "cube",
         "side_feet": 20
       },
-      "persistence": "persistent"
+      "persistence": "persistent",
+      "saving_throw": [
+        "dexterity"
+      ],
+      "misc_tags": [
+        "ADV",
+        "LGT"
+      ]
     }
   },
   "XPHB::Fear": {
@@ -3256,7 +3788,13 @@
         "shape": "cone",
         "length_feet": 30
       },
-      "persistence": "persistent"
+      "persistence": "persistent",
+      "condition_inflict": [
+        "frightened"
+      ],
+      "saving_throw": [
+        "wisdom"
+      ]
     }
   },
   "XPHB::Fire Storm": {
@@ -3275,6 +3813,13 @@
       "persistence": "instant",
       "damage_types": [
         "fire"
+      ],
+      "saving_throw": [
+        "dexterity"
+      ],
+      "misc_tags": [
+        "BO",
+        "OBJ"
       ]
     }
   },
@@ -3294,6 +3839,13 @@
       "persistence": "instant",
       "damage_types": [
         "fire"
+      ],
+      "saving_throw": [
+        "dexterity"
+      ],
+      "misc_tags": [
+        "BO",
+        "OBJ"
       ]
     }
   },
@@ -3315,6 +3867,9 @@
       "damage_types": [
         "fire",
         "radiant"
+      ],
+      "saving_throw": [
+        "dexterity"
       ]
     }
   },
@@ -3335,6 +3890,16 @@
       "persistence": "persistent",
       "damage_types": [
         "fire"
+      ],
+      "saving_throw": [
+        "dexterity"
+      ],
+      "misc_tags": [
+        "BO",
+        "LGT",
+        "OBJ",
+        "UA",
+        "UBA"
       ]
     }
   },
@@ -3351,7 +3916,10 @@
         "shape": "sphere",
         "radius_feet": 20
       },
-      "persistence": "persistent"
+      "persistence": "persistent",
+      "misc_tags": [
+        "OBS"
+      ]
     }
   },
   "XPHB::Globe of Invulnerability": {
@@ -3390,6 +3958,9 @@
         "fire",
         "lightning",
         "thunder"
+      ],
+      "saving_throw": [
+        "dexterity"
       ]
     }
   },
@@ -3406,7 +3977,16 @@
         "shape": "square",
         "side_feet": 10
       },
-      "persistence": "persistent"
+      "persistence": "persistent",
+      "condition_inflict": [
+        "prone"
+      ],
+      "saving_throw": [
+        "dexterity"
+      ],
+      "misc_tags": [
+        "DFT"
+      ]
     }
   },
   "XPHB::Guards and Wards": {
@@ -3422,7 +4002,12 @@
         "shape": "square",
         "side_feet": 50
       },
-      "persistence": "persistent"
+      "persistence": "persistent",
+      "misc_tags": [
+        "OBS",
+        "PIR",
+        "PRM"
+      ]
     }
   },
   "XPHB::Gust of Wind": {
@@ -3440,7 +4025,14 @@
         "length_feet": 60,
         "width_feet": 10
       },
-      "persistence": "persistent"
+      "persistence": "persistent",
+      "saving_throw": [
+        "strength"
+      ],
+      "misc_tags": [
+        "FMV",
+        "UBA"
+      ]
     }
   },
   "XPHB::Hallucinatory Terrain": {
@@ -3472,7 +4064,10 @@
         "shape": "cube",
         "side_feet": 10
       },
-      "persistence": "instant"
+      "persistence": "instant",
+      "misc_tags": [
+        "HL"
+      ]
     }
   },
   "XPHB::Holy Aura": {
@@ -3488,7 +4083,16 @@
         "shape": "emanation",
         "radius_feet": 30
       },
-      "persistence": "persistent"
+      "persistence": "persistent",
+      "condition_inflict": [
+        "blinded"
+      ],
+      "saving_throw": [
+        "constitution"
+      ],
+      "misc_tags": [
+        "ADV"
+      ]
     }
   },
   "XPHB::Hunger of Hadar": {
@@ -3508,6 +4112,16 @@
       "damage_types": [
         "acid",
         "cold"
+      ],
+      "condition_inflict": [
+        "blinded"
+      ],
+      "saving_throw": [
+        "dexterity"
+      ],
+      "misc_tags": [
+        "DFT",
+        "OBS"
       ]
     }
   },
@@ -3524,7 +4138,14 @@
         "shape": "cube",
         "side_feet": 30
       },
-      "persistence": "persistent"
+      "persistence": "persistent",
+      "condition_inflict": [
+        "charmed",
+        "incapacitated"
+      ],
+      "saving_throw": [
+        "wisdom"
+      ]
     }
   },
   "XPHB::Ice Storm": {
@@ -3545,6 +4166,12 @@
       "damage_types": [
         "bludgeoning",
         "cold"
+      ],
+      "saving_throw": [
+        "dexterity"
+      ],
+      "misc_tags": [
+        "DFT"
       ]
     }
   },
@@ -3564,6 +4191,12 @@
       "persistence": "persistent",
       "damage_types": [
         "fire"
+      ],
+      "saving_throw": [
+        "dexterity"
+      ],
+      "misc_tags": [
+        "OBS"
       ]
     }
   },
@@ -3583,6 +4216,13 @@
       "persistence": "persistent",
       "damage_types": [
         "piercing"
+      ],
+      "saving_throw": [
+        "constitution"
+      ],
+      "misc_tags": [
+        "DFT",
+        "OBS"
       ]
     }
   },
@@ -3604,6 +4244,16 @@
       "damage_types": [
         "radiant",
         "thunder"
+      ],
+      "condition_inflict": [
+        "blinded",
+        "deafened"
+      ],
+      "saving_throw": [
+        "constitution"
+      ],
+      "misc_tags": [
+        "SGT"
       ]
     }
   },
@@ -3620,7 +4270,10 @@
         "shape": "emanation",
         "radius_feet": 10
       },
-      "persistence": "persistent"
+      "persistence": "persistent",
+      "misc_tags": [
+        "LGT"
+      ]
     }
   },
   "XPHB::Lightning Bolt": {
@@ -3641,6 +4294,12 @@
       "persistence": "instant",
       "damage_types": [
         "lightning"
+      ],
+      "saving_throw": [
+        "dexterity"
+      ],
+      "misc_tags": [
+        "OBJ"
       ]
     }
   },
@@ -3658,7 +4317,13 @@
         "shape": "cylinder",
         "radius_feet": 10
       },
-      "persistence": "persistent"
+      "persistence": "persistent",
+      "saving_throw": [
+        "charisma"
+      ],
+      "misc_tags": [
+        "SGT"
+      ]
     }
   },
   "XPHB::Mass Cure Wounds": {
@@ -3675,7 +4340,10 @@
         "shape": "sphere",
         "radius_feet": 30
       },
-      "persistence": "instant"
+      "persistence": "instant",
+      "misc_tags": [
+        "HL"
+      ]
     }
   },
   "XPHB::Meteor Swarm": {
@@ -3695,6 +4363,14 @@
       "damage_types": [
         "bludgeoning",
         "fire"
+      ],
+      "saving_throw": [
+        "dexterity"
+      ],
+      "misc_tags": [
+        "BO",
+        "OBJ",
+        "SGT"
       ]
     }
   },
@@ -3715,6 +4391,13 @@
       "persistence": "persistent",
       "damage_types": [
         "radiant"
+      ],
+      "saving_throw": [
+        "constitution"
+      ],
+      "misc_tags": [
+        "LGT",
+        "UA"
       ]
     }
   },
@@ -3731,7 +4414,11 @@
         "shape": "cube",
         "side_feet": 100
       },
-      "persistence": "persistent"
+      "persistence": "persistent",
+      "misc_tags": [
+        "PIR",
+        "PRM"
+      ]
     }
   },
   "XPHB::Move Earth": {
@@ -3766,6 +4453,9 @@
       "persistence": "instant",
       "damage_types": [
         "cold"
+      ],
+      "saving_throw": [
+        "constitution"
       ]
     }
   },
@@ -3790,6 +4480,19 @@
         "fire",
         "lightning",
         "poison"
+      ],
+      "condition_inflict": [
+        "blinded",
+        "petrified",
+        "restrained"
+      ],
+      "saving_throw": [
+        "constitution",
+        "dexterity",
+        "wisdom"
+      ],
+      "misc_tags": [
+        "PRM"
       ]
     }
   },
@@ -3825,6 +4528,20 @@
         "force",
         "lightning",
         "poison"
+      ],
+      "condition_inflict": [
+        "blinded",
+        "petrified",
+        "restrained"
+      ],
+      "saving_throw": [
+        "constitution",
+        "dexterity",
+        "wisdom"
+      ],
+      "misc_tags": [
+        "LGT",
+        "PRM"
       ]
     }
   },
@@ -3857,7 +4574,13 @@
         "shape": "cylinder",
         "radius_feet": 50
       },
-      "persistence": "persistent"
+      "persistence": "persistent",
+      "saving_throw": [
+        "dexterity"
+      ],
+      "misc_tags": [
+        "OBJ"
+      ]
     }
   },
   "XPHB::Shatter": {
@@ -3876,6 +4599,12 @@
       "persistence": "instant",
       "damage_types": [
         "thunder"
+      ],
+      "saving_throw": [
+        "constitution"
+      ],
+      "misc_tags": [
+        "OBJ"
       ]
     }
   },
@@ -3892,7 +4621,13 @@
         "shape": "sphere",
         "radius_feet": 20
       },
-      "persistence": "persistent"
+      "persistence": "persistent",
+      "condition_inflict": [
+        "deafened"
+      ],
+      "misc_tags": [
+        "OBJ"
+      ]
     }
   },
   "XPHB::Sleep": {
@@ -3908,7 +4643,14 @@
         "shape": "sphere",
         "radius_feet": 5
       },
-      "persistence": "persistent"
+      "persistence": "persistent",
+      "condition_inflict": [
+        "incapacitated",
+        "unconscious"
+      ],
+      "saving_throw": [
+        "wisdom"
+      ]
     }
   },
   "XPHB::Sleet Storm": {
@@ -3924,7 +4666,17 @@
         "shape": "cylinder",
         "radius_feet": 20
       },
-      "persistence": "persistent"
+      "persistence": "persistent",
+      "condition_inflict": [
+        "prone"
+      ],
+      "saving_throw": [
+        "dexterity"
+      ],
+      "misc_tags": [
+        "DFT",
+        "OBS"
+      ]
     }
   },
   "XPHB::Slow": {
@@ -3941,7 +4693,13 @@
         "shape": "cube",
         "side_feet": 40
       },
-      "persistence": "persistent"
+      "persistence": "persistent",
+      "saving_throw": [
+        "wisdom"
+      ],
+      "misc_tags": [
+        "MAC"
+      ]
     }
   },
   "XPHB::Spike Growth": {
@@ -3960,6 +4718,9 @@
       "persistence": "persistent",
       "damage_types": [
         "piercing"
+      ],
+      "misc_tags": [
+        "DFT"
       ]
     }
   },
@@ -3980,6 +4741,9 @@
       "damage_types": [
         "necrotic",
         "radiant"
+      ],
+      "saving_throw": [
+        "wisdom"
       ]
     }
   },
@@ -3996,7 +4760,16 @@
         "shape": "sphere",
         "radius_feet": 20
       },
-      "persistence": "persistent"
+      "persistence": "persistent",
+      "condition_inflict": [
+        "poisoned"
+      ],
+      "saving_throw": [
+        "constitution"
+      ],
+      "misc_tags": [
+        "OBS"
+      ]
     }
   },
   "XPHB::Sunbeam": {
@@ -4017,6 +4790,16 @@
       "persistence": "persistent",
       "damage_types": [
         "radiant"
+      ],
+      "condition_inflict": [
+        "blinded"
+      ],
+      "saving_throw": [
+        "constitution"
+      ],
+      "misc_tags": [
+        "LGTS",
+        "UA"
       ]
     }
   },
@@ -4036,6 +4819,16 @@
       "persistence": "instant",
       "damage_types": [
         "radiant"
+      ],
+      "condition_inflict": [
+        "blinded"
+      ],
+      "saving_throw": [
+        "constitution"
+      ],
+      "misc_tags": [
+        "LGT",
+        "LGTS"
       ]
     }
   },
@@ -4055,6 +4848,21 @@
       "persistence": "persistent",
       "damage_types": [
         "necrotic"
+      ],
+      "condition_inflict": [
+        "frightened",
+        "incapacitated",
+        "stunned",
+        "unconscious"
+      ],
+      "saving_throw": [
+        "constitution",
+        "intelligence",
+        "wisdom"
+      ],
+      "misc_tags": [
+        "LGT",
+        "OBJ"
       ]
     }
   },
@@ -4074,6 +4882,10 @@
       "persistence": "instant",
       "damage_types": [
         "psychic"
+      ],
+      "saving_throw": [
+        "constitution",
+        "intelligence"
       ]
     }
   },
@@ -4093,6 +4905,12 @@
       "persistence": "instant",
       "damage_types": [
         "thunder"
+      ],
+      "saving_throw": [
+        "constitution"
+      ],
+      "misc_tags": [
+        "SCL"
       ]
     }
   },
@@ -4113,6 +4931,13 @@
       "persistence": "instant",
       "damage_types": [
         "thunder"
+      ],
+      "saving_throw": [
+        "constitution"
+      ],
+      "misc_tags": [
+        "FMV",
+        "OBJ"
       ]
     }
   },
@@ -4139,6 +4964,9 @@
       "persistence": "persistent",
       "damage_types": [
         "bludgeoning"
+      ],
+      "saving_throw": [
+        "strength"
       ]
     }
   },
@@ -4158,6 +4986,9 @@
       "persistence": "instant",
       "damage_types": [
         "acid"
+      ],
+      "saving_throw": [
+        "dexterity"
       ]
     }
   },
@@ -4192,6 +5023,9 @@
       "persistence": "persistent",
       "damage_types": [
         "fire"
+      ],
+      "saving_throw": [
+        "dexterity"
       ]
     }
   },
@@ -4216,7 +5050,14 @@
           }
         ]
       },
-      "persistence": "persistent"
+      "persistence": "persistent",
+      "saving_throw": [
+        "dexterity"
+      ],
+      "misc_tags": [
+        "OBJ",
+        "PRM"
+      ]
     }
   },
   "XPHB::Wall of Thorns": {
@@ -4250,6 +5091,9 @@
       "damage_types": [
         "piercing",
         "slashing"
+      ],
+      "saving_throw": [
+        "dexterity"
       ]
     }
   },
@@ -4269,6 +5113,16 @@
       "persistence": "persistent",
       "damage_types": [
         "fire"
+      ],
+      "condition_inflict": [
+        "restrained"
+      ],
+      "saving_throw": [
+        "dexterity"
+      ],
+      "misc_tags": [
+        "DFT",
+        "OBS"
       ]
     }
   },
@@ -4288,6 +5142,12 @@
       "persistence": "persistent",
       "damage_types": [
         "psychic"
+      ],
+      "condition_inflict": [
+        "frightened"
+      ],
+      "saving_throw": [
+        "wisdom"
       ]
     }
   },
@@ -4315,6 +5175,9 @@
       "persistence": "persistent",
       "damage_types": [
         "bludgeoning"
+      ],
+      "saving_throw": [
+        "strength"
       ]
     }
   },
@@ -4334,6 +5197,16 @@
       "persistence": "persistent",
       "damage_types": [
         "psychic"
+      ],
+      "condition_inflict": [
+        "prone"
+      ],
+      "saving_throw": [
+        "wisdom"
+      ],
+      "misc_tags": [
+        "FMV",
+        "SGT"
       ]
     }
   },
@@ -4350,7 +5223,10 @@
         "shape": "sphere",
         "radius_feet": 15
       },
-      "persistence": "persistent"
+      "persistence": "persistent",
+      "saving_throw": [
+        "charisma"
+      ]
     }
   },
   "PHB::Wall of Force": {
@@ -4486,6 +5362,10 @@
       "persistence": "persistent",
       "damage_types": [
         "cold"
+      ],
+      "saving_throw": [
+        "constitution",
+        "dexterity"
       ]
     }
   },
@@ -4501,7 +5381,13 @@
       "damage_types": [
         "acid"
       ],
-      "persistence": "instant"
+      "persistence": "instant",
+      "saving_throw": [
+        "dexterity"
+      ],
+      "misc_tags": [
+        "SCL"
+      ]
     }
   },
   "XPHB::Aid": {
@@ -4513,6 +5399,12 @@
       "type": "multi_token",
       "base_target_clicks": 3,
       "projectile": true
+    },
+    "effect": {
+      "misc_tags": [
+        "HL"
+      ],
+      "persistence": "instant"
     }
   },
   "XPHB::Animal Friendship": {
@@ -4523,6 +5415,19 @@
     "targeting": {
       "type": "token",
       "projectile": true
+    },
+    "effect": {
+      "condition_inflict": [
+        "charmed"
+      ],
+      "saving_throw": [
+        "wisdom"
+      ],
+      "misc_tags": [
+        "SCT",
+        "SGT"
+      ],
+      "persistence": "instant"
     }
   },
   "XPHB::Animal Messenger": {
@@ -4533,6 +5438,15 @@
     "targeting": {
       "type": "token",
       "projectile": true
+    },
+    "effect": {
+      "saving_throw": [
+        "charisma"
+      ],
+      "misc_tags": [
+        "SGT"
+      ],
+      "persistence": "instant"
     }
   },
   "XPHB::Animal Shapes": {
@@ -4543,6 +5457,13 @@
     "targeting": {
       "type": "multi_token",
       "projectile": true
+    },
+    "effect": {
+      "misc_tags": [
+        "SGT",
+        "UA"
+      ],
+      "persistence": "instant"
     }
   },
   "XPHB::Animate Objects": {
@@ -4559,7 +5480,13 @@
         "piercing",
         "slashing"
       ],
-      "persistence": "persistent"
+      "persistence": "persistent",
+      "misc_tags": [
+        "OBJ",
+        "SMN",
+        "UA",
+        "UBA"
+      ]
     }
   },
   "XPHB::Antipathy/Sympathy": {
@@ -4570,6 +5497,19 @@
     "targeting": {
       "type": "token",
       "projectile": true
+    },
+    "effect": {
+      "condition_inflict": [
+        "charmed",
+        "frightened"
+      ],
+      "saving_throw": [
+        "wisdom"
+      ],
+      "misc_tags": [
+        "OBJ"
+      ],
+      "persistence": "instant"
     }
   },
   "XPHB::Astral Projection": {
@@ -4581,6 +5521,17 @@
       "type": "multi_token",
       "base_target_clicks": 8,
       "projectile": true
+    },
+    "effect": {
+      "condition_inflict": [
+        "unconscious"
+      ],
+      "misc_tags": [
+        "PRM",
+        "PS",
+        "UA"
+      ],
+      "persistence": "instant"
     }
   },
   "XPHB::Awaken": {
@@ -4591,6 +5542,15 @@
     "targeting": {
       "type": "token",
       "projectile": true
+    },
+    "effect": {
+      "condition_inflict": [
+        "charmed"
+      ],
+      "misc_tags": [
+        "PRM"
+      ],
+      "persistence": "instant"
     }
   },
   "XPHB::Bane": {
@@ -4602,6 +5562,16 @@
       "type": "multi_token",
       "base_target_clicks": 3,
       "projectile": true
+    },
+    "effect": {
+      "saving_throw": [
+        "charisma"
+      ],
+      "misc_tags": [
+        "SCT",
+        "SGT"
+      ],
+      "persistence": "instant"
     }
   },
   "XPHB::Banishment": {
@@ -4611,6 +5581,19 @@
     },
     "targeting": {
       "type": "token"
+    },
+    "effect": {
+      "condition_inflict": [
+        "incapacitated"
+      ],
+      "saving_throw": [
+        "charisma"
+      ],
+      "misc_tags": [
+        "SCT",
+        "SGT"
+      ],
+      "persistence": "instant"
     }
   },
   "XPHB::Barkskin": {
@@ -4621,6 +5604,12 @@
     "targeting": {
       "type": "token",
       "projectile": true
+    },
+    "effect": {
+      "misc_tags": [
+        "MAC"
+      ],
+      "persistence": "instant"
     }
   },
   "XPHB::Beacon of Hope": {
@@ -4631,6 +5620,13 @@
     "targeting": {
       "type": "multi_token",
       "projectile": true
+    },
+    "effect": {
+      "misc_tags": [
+        "ADV",
+        "HL"
+      ],
+      "persistence": "instant"
     }
   },
   "XPHB::Beast Sense": {
@@ -4656,7 +5652,13 @@
       "damage_types": [
         "psychic"
       ],
-      "persistence": "instant"
+      "persistence": "instant",
+      "saving_throw": [
+        "intelligence"
+      ],
+      "misc_tags": [
+        "SGT"
+      ]
     }
   },
   "XPHB::Bestow Curse": {
@@ -4672,7 +5674,13 @@
       "damage_types": [
         "necrotic"
       ],
-      "persistence": "persistent"
+      "persistence": "persistent",
+      "saving_throw": [
+        "wisdom"
+      ],
+      "misc_tags": [
+        "PRM"
+      ]
     }
   },
   "XPHB::Bless": {
@@ -4684,6 +5692,12 @@
       "type": "multi_token",
       "base_target_clicks": 3,
       "projectile": true
+    },
+    "effect": {
+      "misc_tags": [
+        "SCT"
+      ],
+      "persistence": "instant"
     }
   },
   "XPHB::Blight": {
@@ -4698,7 +5712,13 @@
       "damage_types": [
         "necrotic"
       ],
-      "persistence": "instant"
+      "persistence": "instant",
+      "saving_throw": [
+        "constitution"
+      ],
+      "misc_tags": [
+        "SGT"
+      ]
     }
   },
   "XPHB::Blindness/Deafness": {
@@ -4708,6 +5728,20 @@
     },
     "targeting": {
       "type": "token"
+    },
+    "effect": {
+      "condition_inflict": [
+        "blinded",
+        "deafened"
+      ],
+      "saving_throw": [
+        "constitution"
+      ],
+      "misc_tags": [
+        "SCT",
+        "SGT"
+      ],
+      "persistence": "instant"
     }
   },
   "XPHB::Chain Lightning": {
@@ -4722,7 +5756,15 @@
       "damage_types": [
         "lightning"
       ],
-      "persistence": "instant"
+      "persistence": "instant",
+      "saving_throw": [
+        "dexterity"
+      ],
+      "misc_tags": [
+        "OBJ",
+        "SCT",
+        "SGT"
+      ]
     }
   },
   "XPHB::Charm Monster": {
@@ -4732,6 +5774,19 @@
     },
     "targeting": {
       "type": "token"
+    },
+    "effect": {
+      "condition_inflict": [
+        "charmed"
+      ],
+      "saving_throw": [
+        "wisdom"
+      ],
+      "misc_tags": [
+        "SCT",
+        "SGT"
+      ],
+      "persistence": "instant"
     }
   },
   "XPHB::Charm Person": {
@@ -4741,6 +5796,19 @@
     },
     "targeting": {
       "type": "token"
+    },
+    "effect": {
+      "condition_inflict": [
+        "charmed"
+      ],
+      "saving_throw": [
+        "wisdom"
+      ],
+      "misc_tags": [
+        "SCT",
+        "SGT"
+      ],
+      "persistence": "instant"
     }
   },
   "XPHB::Chill Touch": {
@@ -4755,7 +5823,10 @@
       "damage_types": [
         "necrotic"
       ],
-      "persistence": "instant"
+      "persistence": "instant",
+      "misc_tags": [
+        "SCL"
+      ]
     }
   },
   "XPHB::Chromatic Orb": {
@@ -4777,7 +5848,10 @@
         "poison",
         "thunder"
       ],
-      "persistence": "instant"
+      "persistence": "instant",
+      "misc_tags": [
+        "SGT"
+      ]
     }
   },
   "XPHB::Command": {
@@ -4788,6 +5862,19 @@
     "targeting": {
       "type": "token",
       "projectile": true
+    },
+    "effect": {
+      "condition_inflict": [
+        "prone"
+      ],
+      "saving_throw": [
+        "wisdom"
+      ],
+      "misc_tags": [
+        "SCT",
+        "SGT"
+      ],
+      "persistence": "instant"
     }
   },
   "XPHB::Compelled Duel": {
@@ -4798,6 +5885,15 @@
     "targeting": {
       "type": "token",
       "projectile": true
+    },
+    "effect": {
+      "saving_throw": [
+        "wisdom"
+      ],
+      "misc_tags": [
+        "SGT"
+      ],
+      "persistence": "instant"
     }
   },
   "XPHB::Compulsion": {
@@ -4808,6 +5904,20 @@
     "targeting": {
       "type": "multi_token",
       "projectile": true
+    },
+    "effect": {
+      "condition_inflict": [
+        "charmed"
+      ],
+      "saving_throw": [
+        "wisdom"
+      ],
+      "misc_tags": [
+        "SGT",
+        "UA",
+        "UBA"
+      ],
+      "persistence": "instant"
     }
   },
   "XPHB::Contagion": {
@@ -4823,7 +5933,13 @@
       "damage_types": [
         "necrotic"
       ],
-      "persistence": "persistent"
+      "persistence": "persistent",
+      "condition_inflict": [
+        "poisoned"
+      ],
+      "saving_throw": [
+        "constitution"
+      ]
     }
   },
   "XPHB::Crown of Madness": {
@@ -4833,6 +5949,18 @@
     },
     "targeting": {
       "type": "token"
+    },
+    "effect": {
+      "condition_inflict": [
+        "charmed"
+      ],
+      "saving_throw": [
+        "wisdom"
+      ],
+      "misc_tags": [
+        "SGT"
+      ],
+      "persistence": "instant"
     }
   },
   "XPHB::Cure Wounds": {
@@ -4843,6 +5971,12 @@
     "targeting": {
       "type": "token",
       "projectile": true
+    },
+    "effect": {
+      "misc_tags": [
+        "HL"
+      ],
+      "persistence": "instant"
     }
   },
   "XPHB::Darkvision": {
@@ -4878,13 +6012,30 @@
       "damage_types": [
         "force"
       ],
-      "persistence": "instant"
+      "persistence": "instant",
+      "saving_throw": [
+        "dexterity"
+      ],
+      "misc_tags": [
+        "OBJ",
+        "SGT"
+      ]
     }
   },
   "XPHB::Dispel Evil and Good": {
     "range": {
       "type": "point",
       "distance_type": "self"
+    },
+    "effect": {
+      "saving_throw": [
+        "charisma"
+      ],
+      "misc_tags": [
+        "SGT",
+        "UA"
+      ],
+      "persistence": "instant"
     }
   },
   "XPHB::Dispel Magic": {
@@ -4894,6 +6045,12 @@
     },
     "targeting": {
       "type": "token"
+    },
+    "effect": {
+      "misc_tags": [
+        "OBJ"
+      ],
+      "persistence": "instant"
     }
   },
   "XPHB::Dissonant Whispers": {
@@ -4909,7 +6066,13 @@
       "damage_types": [
         "psychic"
       ],
-      "persistence": "instant"
+      "persistence": "instant",
+      "saving_throw": [
+        "wisdom"
+      ],
+      "misc_tags": [
+        "SGT"
+      ]
     }
   },
   "XPHB::Divine Word": {
@@ -4920,6 +6083,17 @@
     "targeting": {
       "type": "multi_token",
       "projectile": true
+    },
+    "effect": {
+      "condition_inflict": [
+        "blinded",
+        "deafened",
+        "stunned"
+      ],
+      "saving_throw": [
+        "charisma"
+      ],
+      "persistence": "instant"
     }
   },
   "XPHB::Dominate Beast": {
@@ -4929,6 +6103,18 @@
     },
     "targeting": {
       "type": "token"
+    },
+    "effect": {
+      "condition_inflict": [
+        "charmed"
+      ],
+      "saving_throw": [
+        "wisdom"
+      ],
+      "misc_tags": [
+        "SGT"
+      ],
+      "persistence": "instant"
     }
   },
   "XPHB::Dominate Monster": {
@@ -4938,6 +6124,18 @@
     },
     "targeting": {
       "type": "token"
+    },
+    "effect": {
+      "condition_inflict": [
+        "charmed"
+      ],
+      "saving_throw": [
+        "wisdom"
+      ],
+      "misc_tags": [
+        "SGT"
+      ],
+      "persistence": "instant"
     }
   },
   "XPHB::Dominate Person": {
@@ -4947,6 +6145,18 @@
     },
     "targeting": {
       "type": "token"
+    },
+    "effect": {
+      "condition_inflict": [
+        "charmed"
+      ],
+      "saving_throw": [
+        "wisdom"
+      ],
+      "misc_tags": [
+        "SGT"
+      ],
+      "persistence": "instant"
     }
   },
   "XPHB::Dream": {
@@ -4958,7 +6168,10 @@
       "damage_types": [
         "psychic"
       ],
-      "persistence": "persistent"
+      "persistence": "persistent",
+      "saving_throw": [
+        "wisdom"
+      ]
     }
   },
   "XPHB::Eldritch Blast": {
@@ -4974,7 +6187,10 @@
       "damage_types": [
         "force"
       ],
-      "persistence": "instant"
+      "persistence": "instant",
+      "misc_tags": [
+        "SCL"
+      ]
     }
   },
   "XPHB::Enhance Ability": {
@@ -4984,6 +6200,13 @@
     },
     "targeting": {
       "type": "token"
+    },
+    "effect": {
+      "misc_tags": [
+        "ADV",
+        "SCT"
+      ],
+      "persistence": "instant"
     }
   },
   "XPHB::Enlarge/Reduce": {
@@ -4993,6 +6216,17 @@
     },
     "targeting": {
       "type": "token"
+    },
+    "effect": {
+      "saving_throw": [
+        "constitution"
+      ],
+      "misc_tags": [
+        "ADV",
+        "OBJ",
+        "SGT"
+      ],
+      "persistence": "instant"
     }
   },
   "XPHB::Enthrall": {
@@ -5003,12 +6237,35 @@
     "targeting": {
       "type": "multi_token",
       "projectile": true
+    },
+    "effect": {
+      "saving_throw": [
+        "wisdom"
+      ],
+      "misc_tags": [
+        "SGT"
+      ],
+      "persistence": "instant"
     }
   },
   "XPHB::Eyebite": {
     "range": {
       "type": "point",
       "distance_type": "self"
+    },
+    "effect": {
+      "condition_inflict": [
+        "frightened",
+        "unconscious"
+      ],
+      "saving_throw": [
+        "wisdom"
+      ],
+      "misc_tags": [
+        "SGT",
+        "UA"
+      ],
+      "persistence": "instant"
     }
   },
   "XPHB::Feather Fall": {
@@ -5028,6 +6285,13 @@
     "targeting": {
       "type": "token",
       "projectile": true
+    },
+    "effect": {
+      "condition_inflict": [
+        "blinded",
+        "incapacitated"
+      ],
+      "persistence": "instant"
     }
   },
   "XPHB::Finger of Death": {
@@ -5042,7 +6306,15 @@
       "damage_types": [
         "necrotic"
       ],
-      "persistence": "instant"
+      "persistence": "instant",
+      "saving_throw": [
+        "constitution"
+      ],
+      "misc_tags": [
+        "PRM",
+        "SGT",
+        "SMN"
+      ]
     }
   },
   "XPHB::Fire Bolt": {
@@ -5059,7 +6331,12 @@
       "damage_types": [
         "fire"
       ],
-      "persistence": "instant"
+      "persistence": "instant",
+      "misc_tags": [
+        "BO",
+        "OBJ",
+        "SCL"
+      ]
     }
   },
   "XPHB::Flame Blade": {
@@ -5071,7 +6348,12 @@
       "damage_types": [
         "fire"
       ],
-      "persistence": "persistent"
+      "persistence": "persistent",
+      "misc_tags": [
+        "LGT",
+        "UA",
+        "UBA"
+      ]
     }
   },
   "XPHB::Flesh to Stone": {
@@ -5081,6 +6363,20 @@
     },
     "targeting": {
       "type": "token"
+    },
+    "effect": {
+      "condition_inflict": [
+        "petrified",
+        "restrained"
+      ],
+      "saving_throw": [
+        "constitution"
+      ],
+      "misc_tags": [
+        "PRM",
+        "SGT"
+      ],
+      "persistence": "instant"
     }
   },
   "XPHB::Fly": {
@@ -5090,6 +6386,12 @@
     },
     "targeting": {
       "type": "token"
+    },
+    "effect": {
+      "misc_tags": [
+        "SCT"
+      ],
+      "persistence": "instant"
     }
   },
   "XPHB::Foresight": {
@@ -5100,6 +6402,12 @@
     "targeting": {
       "type": "token",
       "projectile": true
+    },
+    "effect": {
+      "misc_tags": [
+        "ADV"
+      ],
+      "persistence": "instant"
     }
   },
   "XPHB::Freedom of Movement": {
@@ -5110,6 +6418,12 @@
     "targeting": {
       "type": "token",
       "projectile": true
+    },
+    "effect": {
+      "misc_tags": [
+        "SCT"
+      ],
+      "persistence": "instant"
     }
   },
   "XPHB::Friends": {
@@ -5119,6 +6433,15 @@
     },
     "targeting": {
       "type": "token"
+    },
+    "effect": {
+      "condition_inflict": [
+        "charmed"
+      ],
+      "saving_throw": [
+        "wisdom"
+      ],
+      "persistence": "instant"
     }
   },
   "XPHB::Gaseous Form": {
@@ -5128,6 +6451,13 @@
     },
     "targeting": {
       "type": "token"
+    },
+    "effect": {
+      "misc_tags": [
+        "ADV",
+        "SCT"
+      ],
+      "persistence": "instant"
     }
   },
   "XPHB::Geas": {
@@ -5143,7 +6473,17 @@
       "damage_types": [
         "psychic"
       ],
-      "persistence": "persistent"
+      "persistence": "persistent",
+      "condition_inflict": [
+        "charmed"
+      ],
+      "saving_throw": [
+        "wisdom"
+      ],
+      "misc_tags": [
+        "PRM",
+        "SGT"
+      ]
     }
   },
   "XPHB::Grasping Vine": {
@@ -5159,7 +6499,15 @@
       "damage_types": [
         "bludgeoning"
       ],
-      "persistence": "persistent"
+      "persistence": "persistent",
+      "condition_inflict": [
+        "grappled"
+      ],
+      "misc_tags": [
+        "FMV",
+        "SGT",
+        "UBA"
+      ]
     }
   },
   "XPHB::Greater Invisibility": {
@@ -5169,6 +6517,12 @@
     },
     "targeting": {
       "type": "token"
+    },
+    "effect": {
+      "condition_inflict": [
+        "invisible"
+      ],
+      "persistence": "instant"
     }
   },
   "XPHB::Greater Restoration": {
@@ -5204,7 +6558,10 @@
       "damage_types": [
         "radiant"
       ],
-      "persistence": "persistent"
+      "persistence": "persistent",
+      "misc_tags": [
+        "ADV"
+      ]
     }
   },
   "XPHB::Harm": {
@@ -5220,7 +6577,13 @@
       "damage_types": [
         "necrotic"
       ],
-      "persistence": "instant"
+      "persistence": "instant",
+      "saving_throw": [
+        "constitution"
+      ],
+      "misc_tags": [
+        "SGT"
+      ]
     }
   },
   "XPHB::Haste": {
@@ -5230,6 +6593,17 @@
     },
     "targeting": {
       "type": "token"
+    },
+    "effect": {
+      "condition_inflict": [
+        "incapacitated"
+      ],
+      "misc_tags": [
+        "ADV",
+        "MAC",
+        "SGT"
+      ],
+      "persistence": "instant"
     }
   },
   "XPHB::Heal": {
@@ -5240,6 +6614,13 @@
     "targeting": {
       "type": "token",
       "projectile": true
+    },
+    "effect": {
+      "misc_tags": [
+        "HL",
+        "SGT"
+      ],
+      "persistence": "instant"
     }
   },
   "XPHB::Healing Word": {
@@ -5250,6 +6631,13 @@
     "targeting": {
       "type": "token",
       "projectile": true
+    },
+    "effect": {
+      "misc_tags": [
+        "HL",
+        "SGT"
+      ],
+      "persistence": "instant"
     }
   },
   "XPHB::Heat Metal": {
@@ -5265,7 +6653,16 @@
       "damage_types": [
         "fire"
       ],
-      "persistence": "persistent"
+      "persistence": "persistent",
+      "saving_throw": [
+        "constitution"
+      ],
+      "misc_tags": [
+        "OBJ",
+        "SGT",
+        "UA",
+        "UBA"
+      ]
     }
   },
   "XPHB::Hellish Rebuke": {
@@ -5281,7 +6678,13 @@
       "damage_types": [
         "fire"
       ],
-      "persistence": "instant"
+      "persistence": "instant",
+      "saving_throw": [
+        "dexterity"
+      ],
+      "misc_tags": [
+        "SGT"
+      ]
     }
   },
   "XPHB::Heroism": {
@@ -5292,6 +6695,13 @@
     "targeting": {
       "type": "token",
       "projectile": true
+    },
+    "effect": {
+      "misc_tags": [
+        "SCT",
+        "THP"
+      ],
+      "persistence": "instant"
     }
   },
   "XPHB::Hex": {
@@ -5307,7 +6717,13 @@
       "damage_types": [
         "necrotic"
       ],
-      "persistence": "persistent"
+      "persistence": "persistent",
+      "misc_tags": [
+        "AAD",
+        "SGT",
+        "UA",
+        "UBA"
+      ]
     }
   },
   "XPHB::Hold Monster": {
@@ -5317,6 +6733,19 @@
     },
     "targeting": {
       "type": "token"
+    },
+    "effect": {
+      "condition_inflict": [
+        "paralyzed"
+      ],
+      "saving_throw": [
+        "wisdom"
+      ],
+      "misc_tags": [
+        "SCT",
+        "SGT"
+      ],
+      "persistence": "instant"
     }
   },
   "XPHB::Hold Person": {
@@ -5326,6 +6755,19 @@
     },
     "targeting": {
       "type": "token"
+    },
+    "effect": {
+      "condition_inflict": [
+        "paralyzed"
+      ],
+      "saving_throw": [
+        "wisdom"
+      ],
+      "misc_tags": [
+        "SCT",
+        "SGT"
+      ],
+      "persistence": "instant"
     }
   },
   "XPHB::Hunter's Mark": {
@@ -5341,7 +6783,14 @@
       "damage_types": [
         "force"
       ],
-      "persistence": "persistent"
+      "persistence": "persistent",
+      "misc_tags": [
+        "AAD",
+        "ADV",
+        "SGT",
+        "UA",
+        "UBA"
+      ]
     }
   },
   "XPHB::Ice Knife": {
@@ -5359,7 +6808,10 @@
         "cold",
         "piercing"
       ],
-      "persistence": "instant"
+      "persistence": "instant",
+      "saving_throw": [
+        "dexterity"
+      ]
     }
   },
   "XPHB::Identify": {
@@ -5370,6 +6822,12 @@
     "targeting": {
       "type": "token",
       "projectile": true
+    },
+    "effect": {
+      "misc_tags": [
+        "OBJ"
+      ],
+      "persistence": "instant"
     }
   },
   "XPHB::Imprisonment": {
@@ -5380,6 +6838,19 @@
     "targeting": {
       "type": "token",
       "projectile": true
+    },
+    "effect": {
+      "condition_inflict": [
+        "restrained",
+        "unconscious"
+      ],
+      "saving_throw": [
+        "wisdom"
+      ],
+      "misc_tags": [
+        "SGT"
+      ],
+      "persistence": "instant"
     }
   },
   "XPHB::Inflict Wounds": {
@@ -5395,7 +6866,10 @@
       "damage_types": [
         "necrotic"
       ],
-      "persistence": "instant"
+      "persistence": "instant",
+      "saving_throw": [
+        "constitution"
+      ]
     }
   },
   "XPHB::Invisibility": {
@@ -5405,6 +6879,15 @@
     },
     "targeting": {
       "type": "token"
+    },
+    "effect": {
+      "condition_inflict": [
+        "invisible"
+      ],
+      "misc_tags": [
+        "SCT"
+      ],
+      "persistence": "instant"
     }
   },
   "XPHB::Jump": {
@@ -5414,6 +6897,12 @@
     },
     "targeting": {
       "type": "token"
+    },
+    "effect": {
+      "misc_tags": [
+        "SCT"
+      ],
+      "persistence": "instant"
     }
   },
   "XPHB::Lesser Restoration": {
@@ -5433,6 +6922,17 @@
     },
     "targeting": {
       "type": "token"
+    },
+    "effect": {
+      "saving_throw": [
+        "constitution"
+      ],
+      "misc_tags": [
+        "OBJ",
+        "SGT",
+        "UA"
+      ],
+      "persistence": "instant"
     }
   },
   "XPHB::Longstrider": {
@@ -5443,6 +6943,12 @@
     "targeting": {
       "type": "token",
       "projectile": true
+    },
+    "effect": {
+      "misc_tags": [
+        "SCT"
+      ],
+      "persistence": "instant"
     }
   },
   "XPHB::Mage Armor": {
@@ -5452,6 +6958,12 @@
     },
     "targeting": {
       "type": "token"
+    },
+    "effect": {
+      "misc_tags": [
+        "MAC"
+      ],
+      "persistence": "instant"
     }
   },
   "XPHB::Magic Missile": {
@@ -5471,7 +6983,10 @@
       "damage_types": [
         "force"
       ],
-      "persistence": "instant"
+      "persistence": "instant",
+      "misc_tags": [
+        "SGT"
+      ]
     }
   },
   "XPHB::Mass Heal": {
@@ -5482,6 +6997,13 @@
     "targeting": {
       "type": "multi_token",
       "projectile": true
+    },
+    "effect": {
+      "misc_tags": [
+        "HL",
+        "SGT"
+      ],
+      "persistence": "instant"
     }
   },
   "XPHB::Mass Healing Word": {
@@ -5493,6 +7015,13 @@
       "type": "multi_token",
       "base_target_clicks": 6,
       "projectile": true
+    },
+    "effect": {
+      "misc_tags": [
+        "HL",
+        "SGT"
+      ],
+      "persistence": "instant"
     }
   },
   "XPHB::Mass Suggestion": {
@@ -5502,6 +7031,18 @@
     },
     "targeting": {
       "type": "multi_token"
+    },
+    "effect": {
+      "condition_inflict": [
+        "charmed"
+      ],
+      "saving_throw": [
+        "wisdom"
+      ],
+      "misc_tags": [
+        "SGT"
+      ],
+      "persistence": "instant"
     }
   },
   "XPHB::Maze": {
@@ -5512,6 +7053,12 @@
     "targeting": {
       "type": "token",
       "projectile": true
+    },
+    "effect": {
+      "misc_tags": [
+        "SGT"
+      ],
+      "persistence": "instant"
     }
   },
   "XPHB::Melf's Acid Arrow": {
@@ -5561,7 +7108,14 @@
       "damage_types": [
         "psychic"
       ],
-      "persistence": "instant"
+      "persistence": "instant",
+      "saving_throw": [
+        "intelligence"
+      ],
+      "misc_tags": [
+        "SCL",
+        "SGT"
+      ]
     }
   },
   "XPHB::Mind Spike": {
@@ -5576,7 +7130,13 @@
       "damage_types": [
         "psychic"
       ],
-      "persistence": "persistent"
+      "persistence": "persistent",
+      "saving_throw": [
+        "wisdom"
+      ],
+      "misc_tags": [
+        "SGT"
+      ]
     }
   },
   "XPHB::Modify Memory": {
@@ -5587,6 +7147,20 @@
     "targeting": {
       "type": "token",
       "projectile": true
+    },
+    "effect": {
+      "condition_inflict": [
+        "charmed",
+        "incapacitated"
+      ],
+      "saving_throw": [
+        "wisdom"
+      ],
+      "misc_tags": [
+        "PRM",
+        "SGT"
+      ],
+      "persistence": "instant"
     }
   },
   "XPHB::Mordenkainen's Sword": {
@@ -5602,7 +7176,12 @@
       "damage_types": [
         "force"
       ],
-      "persistence": "persistent"
+      "persistence": "persistent",
+      "misc_tags": [
+        "SGT",
+        "UA",
+        "UBA"
+      ]
     }
   },
   "XPHB::Nondetection": {
@@ -5613,6 +7192,12 @@
     "targeting": {
       "type": "token",
       "projectile": true
+    },
+    "effect": {
+      "misc_tags": [
+        "OBJ"
+      ],
+      "persistence": "instant"
     }
   },
   "XPHB::Nystul's Magic Aura": {
@@ -5623,6 +7208,14 @@
     "targeting": {
       "type": "token",
       "projectile": true
+    },
+    "effect": {
+      "misc_tags": [
+        "OBJ",
+        "PIR",
+        "PRM"
+      ],
+      "persistence": "instant"
     }
   },
   "XPHB::Otiluke's Resilient Sphere": {
@@ -5633,6 +7226,15 @@
     "targeting": {
       "type": "token",
       "projectile": true
+    },
+    "effect": {
+      "saving_throw": [
+        "dexterity"
+      ],
+      "misc_tags": [
+        "OBJ"
+      ],
+      "persistence": "instant"
     }
   },
   "XPHB::Otto's Irresistible Dance": {
@@ -5643,6 +7245,18 @@
     "targeting": {
       "type": "token",
       "projectile": true
+    },
+    "effect": {
+      "condition_inflict": [
+        "charmed"
+      ],
+      "saving_throw": [
+        "wisdom"
+      ],
+      "misc_tags": [
+        "SGT"
+      ],
+      "persistence": "instant"
     }
   },
   "XPHB::Pass without Trace": {
@@ -5664,7 +7278,13 @@
       "damage_types": [
         "psychic"
       ],
-      "persistence": "persistent"
+      "persistence": "persistent",
+      "saving_throw": [
+        "wisdom"
+      ],
+      "misc_tags": [
+        "SGT"
+      ]
     }
   },
   "XPHB::Planar Binding": {
@@ -5675,6 +7295,15 @@
     "targeting": {
       "type": "token",
       "projectile": true
+    },
+    "effect": {
+      "saving_throw": [
+        "charisma"
+      ],
+      "misc_tags": [
+        "SMN"
+      ],
+      "persistence": "instant"
     }
   },
   "XPHB::Poison Spray": {
@@ -5691,7 +7320,10 @@
       "damage_types": [
         "poison"
       ],
-      "persistence": "instant"
+      "persistence": "instant",
+      "misc_tags": [
+        "SCL"
+      ]
     }
   },
   "XPHB::Polymorph": {
@@ -5701,6 +7333,15 @@
     },
     "targeting": {
       "type": "token"
+    },
+    "effect": {
+      "saving_throw": [
+        "wisdom"
+      ],
+      "misc_tags": [
+        "SGT"
+      ],
+      "persistence": "instant"
     }
   },
   "XPHB::Power Word Fortify": {
@@ -5712,6 +7353,13 @@
       "type": "multi_token",
       "base_target_clicks": 6,
       "projectile": true
+    },
+    "effect": {
+      "misc_tags": [
+        "SGT",
+        "THP"
+      ],
+      "persistence": "instant"
     }
   },
   "XPHB::Power Word Heal": {
@@ -5722,6 +7370,12 @@
     "targeting": {
       "type": "token",
       "projectile": true
+    },
+    "effect": {
+      "misc_tags": [
+        "HL"
+      ],
+      "persistence": "instant"
     }
   },
   "XPHB::Power Word Kill": {
@@ -5736,7 +7390,10 @@
       "damage_types": [
         "psychic"
       ],
-      "persistence": "instant"
+      "persistence": "instant",
+      "misc_tags": [
+        "SGT"
+      ]
     }
   },
   "XPHB::Power Word Stun": {
@@ -5746,6 +7403,18 @@
     },
     "targeting": {
       "type": "token"
+    },
+    "effect": {
+      "condition_inflict": [
+        "stunned"
+      ],
+      "saving_throw": [
+        "constitution"
+      ],
+      "misc_tags": [
+        "SGT"
+      ],
+      "persistence": "instant"
     }
   },
   "XPHB::Prayer of Healing": {
@@ -5757,6 +7426,12 @@
       "type": "multi_token",
       "base_target_clicks": 5,
       "projectile": true
+    },
+    "effect": {
+      "misc_tags": [
+        "HL"
+      ],
+      "persistence": "instant"
     }
   },
   "XPHB::Produce Flame": {
@@ -5768,7 +7443,13 @@
       "damage_types": [
         "fire"
       ],
-      "persistence": "persistent"
+      "persistence": "persistent",
+      "misc_tags": [
+        "LGT",
+        "OBJ",
+        "SCL",
+        "UA"
+      ]
     }
   },
   "XPHB::Protection from Energy": {
@@ -5788,6 +7469,12 @@
     "targeting": {
       "type": "token",
       "projectile": true
+    },
+    "effect": {
+      "misc_tags": [
+        "ADV"
+      ],
+      "persistence": "instant"
     }
   },
   "XPHB::Protection from Poison": {
@@ -5798,6 +7485,12 @@
     "targeting": {
       "type": "token",
       "projectile": true
+    },
+    "effect": {
+      "misc_tags": [
+        "ADV"
+      ],
+      "persistence": "instant"
     }
   },
   "XPHB::Rary's Telepathic Bond": {
@@ -5819,6 +7512,12 @@
     "targeting": {
       "type": "token",
       "projectile": true
+    },
+    "effect": {
+      "saving_throw": [
+        "constitution"
+      ],
+      "persistence": "instant"
     }
   },
   "XPHB::Ray of Frost": {
@@ -5835,7 +7534,10 @@
       "damage_types": [
         "cold"
       ],
-      "persistence": "instant"
+      "persistence": "instant",
+      "misc_tags": [
+        "SCL"
+      ]
     }
   },
   "XPHB::Ray of Sickness": {
@@ -5852,7 +7554,10 @@
       "damage_types": [
         "poison"
       ],
-      "persistence": "instant"
+      "persistence": "instant",
+      "condition_inflict": [
+        "poisoned"
+      ]
     }
   },
   "XPHB::Regenerate": {
@@ -5863,6 +7568,12 @@
     "targeting": {
       "type": "token",
       "projectile": true
+    },
+    "effect": {
+      "misc_tags": [
+        "HL"
+      ],
+      "persistence": "instant"
     }
   },
   "XPHB::Remove Curse": {
@@ -5873,6 +7584,12 @@
     "targeting": {
       "type": "token",
       "projectile": true
+    },
+    "effect": {
+      "misc_tags": [
+        "OBJ"
+      ],
+      "persistence": "instant"
     }
   },
   "XPHB::Resistance": {
@@ -5893,6 +7610,12 @@
     "targeting": {
       "type": "token",
       "projectile": true
+    },
+    "effect": {
+      "misc_tags": [
+        "HL"
+      ],
+      "persistence": "instant"
     }
   },
   "XPHB::Sacred Flame": {
@@ -5908,7 +7631,14 @@
       "damage_types": [
         "radiant"
       ],
-      "persistence": "instant"
+      "persistence": "instant",
+      "saving_throw": [
+        "dexterity"
+      ],
+      "misc_tags": [
+        "SCL",
+        "SGT"
+      ]
     }
   },
   "XPHB::Sanctuary": {
@@ -5919,6 +7649,12 @@
     "targeting": {
       "type": "token",
       "projectile": true
+    },
+    "effect": {
+      "saving_throw": [
+        "wisdom"
+      ],
+      "persistence": "instant"
     }
   },
   "XPHB::Scorching Ray": {
@@ -5948,6 +7684,15 @@
     },
     "targeting": {
       "type": "multi_token"
+    },
+    "effect": {
+      "saving_throw": [
+        "charisma"
+      ],
+      "misc_tags": [
+        "SGT"
+      ],
+      "persistence": "instant"
     }
   },
   "XPHB::Sequester": {
@@ -5958,6 +7703,16 @@
     "targeting": {
       "type": "token",
       "projectile": true
+    },
+    "effect": {
+      "condition_inflict": [
+        "invisible",
+        "unconscious"
+      ],
+      "misc_tags": [
+        "OBJ"
+      ],
+      "persistence": "instant"
     }
   },
   "XPHB::Shield of Faith": {
@@ -5968,6 +7723,12 @@
     "targeting": {
       "type": "token",
       "projectile": true
+    },
+    "effect": {
+      "misc_tags": [
+        "MAC"
+      ],
+      "persistence": "instant"
     }
   },
   "XPHB::Shining Smite": {
@@ -5979,7 +7740,12 @@
       "damage_types": [
         "radiant"
       ],
-      "persistence": "persistent"
+      "persistence": "persistent",
+      "misc_tags": [
+        "AAD",
+        "ADV",
+        "LGT"
+      ]
     }
   },
   "XPHB::Shocking Grasp": {
@@ -5994,7 +7760,10 @@
       "damage_types": [
         "lightning"
       ],
-      "persistence": "instant"
+      "persistence": "instant",
+      "misc_tags": [
+        "SCL"
+      ]
     }
   },
   "XPHB::Simulacrum": {
@@ -6027,7 +7796,11 @@
         "psychic",
         "thunder"
       ],
-      "persistence": "instant"
+      "persistence": "instant",
+      "misc_tags": [
+        "OBJ",
+        "SCL"
+      ]
     }
   },
   "XPHB::Spare the Dying": {
@@ -6038,6 +7811,12 @@
     "targeting": {
       "type": "token",
       "projectile": true
+    },
+    "effect": {
+      "misc_tags": [
+        "SCL"
+      ],
+      "persistence": "instant"
     }
   },
   "XPHB::Spiritual Weapon": {
@@ -6053,7 +7832,10 @@
       "damage_types": [
         "force"
       ],
-      "persistence": "persistent"
+      "persistence": "persistent",
+      "misc_tags": [
+        "UBA"
+      ]
     }
   },
   "XPHB::Starry Wisp": {
@@ -6069,7 +7851,12 @@
       "damage_types": [
         "radiant"
       ],
-      "persistence": "instant"
+      "persistence": "instant",
+      "misc_tags": [
+        "LGT",
+        "OBJ",
+        "SCL"
+      ]
     }
   },
   "XPHB::Steel Wind Strike": {
@@ -6086,7 +7873,11 @@
       "damage_types": [
         "force"
       ],
-      "persistence": "instant"
+      "persistence": "instant",
+      "misc_tags": [
+        "SGT",
+        "TP"
+      ]
     }
   },
   "XPHB::Stoneskin": {
@@ -6105,6 +7896,18 @@
     },
     "targeting": {
       "type": "token"
+    },
+    "effect": {
+      "condition_inflict": [
+        "charmed"
+      ],
+      "saving_throw": [
+        "wisdom"
+      ],
+      "misc_tags": [
+        "SGT"
+      ],
+      "persistence": "instant"
     }
   },
   "XPHB::Tasha's Hideous Laughter": {
@@ -6115,6 +7918,20 @@
     "targeting": {
       "type": "token",
       "projectile": true
+    },
+    "effect": {
+      "condition_inflict": [
+        "incapacitated",
+        "prone"
+      ],
+      "saving_throw": [
+        "wisdom"
+      ],
+      "misc_tags": [
+        "SCT",
+        "SGT"
+      ],
+      "persistence": "instant"
     }
   },
   "XPHB::Telekinesis": {
@@ -6124,6 +7941,20 @@
     },
     "targeting": {
       "type": "token"
+    },
+    "effect": {
+      "condition_inflict": [
+        "restrained"
+      ],
+      "saving_throw": [
+        "strength"
+      ],
+      "misc_tags": [
+        "FMV",
+        "OBJ",
+        "SGT"
+      ],
+      "persistence": "instant"
     }
   },
   "XPHB::Telepathy": {
@@ -6149,7 +7980,13 @@
       "damage_types": [
         "force"
       ],
-      "persistence": "instant"
+      "persistence": "instant",
+      "misc_tags": [
+        "OBJ",
+        "RO",
+        "SGT",
+        "TP"
+      ]
     }
   },
   "XPHB::Thorn Whip": {
@@ -6165,7 +8002,11 @@
       "damage_types": [
         "piercing"
       ],
-      "persistence": "instant"
+      "persistence": "instant",
+      "misc_tags": [
+        "FMV",
+        "SCL"
+      ]
     }
   },
   "XPHB::Toll the Dead": {
@@ -6181,7 +8022,14 @@
       "damage_types": [
         "necrotic"
       ],
-      "persistence": "instant"
+      "persistence": "instant",
+      "saving_throw": [
+        "wisdom"
+      ],
+      "misc_tags": [
+        "SCL",
+        "SGT"
+      ]
     }
   },
   "XPHB::Tongues": {
@@ -6201,6 +8049,19 @@
     "targeting": {
       "type": "token",
       "projectile": true
+    },
+    "effect": {
+      "saving_throw": [
+        "wisdom"
+      ],
+      "misc_tags": [
+        "OBJ",
+        "PRM",
+        "SGT",
+        "SMN",
+        "THP"
+      ],
+      "persistence": "instant"
     }
   },
   "XPHB::True Resurrection": {
@@ -6211,6 +8072,12 @@
     "targeting": {
       "type": "token",
       "projectile": true
+    },
+    "effect": {
+      "misc_tags": [
+        "HL"
+      ],
+      "persistence": "instant"
     }
   },
   "XPHB::True Strike": {
@@ -6222,7 +8089,10 @@
       "damage_types": [
         "radiant"
       ],
-      "persistence": "instant"
+      "persistence": "instant",
+      "misc_tags": [
+        "AAD"
+      ]
     }
   },
   "XPHB::Vampiric Touch": {
@@ -6234,7 +8104,10 @@
       "damage_types": [
         "necrotic"
       ],
-      "persistence": "persistent"
+      "persistence": "persistent",
+      "misc_tags": [
+        "HL"
+      ]
     }
   },
   "XPHB::Vicious Mockery": {
@@ -6250,7 +8123,14 @@
       "damage_types": [
         "psychic"
       ],
-      "persistence": "instant"
+      "persistence": "instant",
+      "saving_throw": [
+        "wisdom"
+      ],
+      "misc_tags": [
+        "SCL",
+        "SGT"
+      ]
     }
   },
   "XPHB::Warding Bond": {
@@ -6261,6 +8141,12 @@
     "targeting": {
       "type": "token",
       "projectile": true
+    },
+    "effect": {
+      "misc_tags": [
+        "MAC"
+      ],
+      "persistence": "instant"
     }
   },
   "XPHB::Water Breathing": {
@@ -6292,6 +8178,12 @@
       "type": "multi_token",
       "base_target_clicks": 10,
       "projectile": true
+    },
+    "effect": {
+      "condition_inflict": [
+        "stunned"
+      ],
+      "persistence": "instant"
     }
   },
   "XPHB::Witch Bolt": {
@@ -6308,7 +8200,11 @@
       "damage_types": [
         "lightning"
       ],
-      "persistence": "persistent"
+      "persistence": "persistent",
+      "misc_tags": [
+        "UA",
+        "UBA"
+      ]
     }
   },
   "XPHB::Word of Radiance": {
@@ -6320,7 +8216,14 @@
       "damage_types": [
         "radiant"
       ],
-      "persistence": "instant"
+      "persistence": "instant",
+      "saving_throw": [
+        "constitution"
+      ],
+      "misc_tags": [
+        "SCL",
+        "SGT"
+      ]
     }
   },
   "PHB::Acid Splash": {
@@ -6859,7 +8762,13 @@
       "damage_types": [
         "psychic"
       ],
-      "persistence": "instant"
+      "persistence": "instant",
+      "saving_throw": [
+        "intelligence"
+      ],
+      "misc_tags": [
+        "SGT"
+      ]
     }
   },
   "PHB::Feign Death": {
@@ -8044,6 +9953,16 @@
     "targeting": {
       "type": "token",
       "projectile": true
+    },
+    "effect": {
+      "condition_inflict": [
+        "charmed"
+      ],
+      "misc_tags": [
+        "ADV",
+        "SGT"
+      ],
+      "persistence": "instant"
     }
   },
   "XGE::Bones of the Earth": {
@@ -8060,7 +9979,17 @@
       "damage_types": [
         "bludgeoning"
       ],
-      "persistence": "instant"
+      "persistence": "instant",
+      "condition_inflict": [
+        "restrained"
+      ],
+      "saving_throw": [
+        "dexterity"
+      ],
+      "misc_tags": [
+        "DFT",
+        "SGT"
+      ]
     }
   },
   "XGE::Catapult": {
@@ -8075,7 +10004,13 @@
       "damage_types": [
         "bludgeoning"
       ],
-      "persistence": "instant"
+      "persistence": "instant",
+      "saving_throw": [
+        "dexterity"
+      ],
+      "misc_tags": [
+        "OBJ"
+      ]
     }
   },
   "XGE::Catnap": {
@@ -8097,6 +10032,19 @@
     "targeting": {
       "type": "token",
       "projectile": true
+    },
+    "effect": {
+      "condition_inflict": [
+        "frightened"
+      ],
+      "saving_throw": [
+        "wisdom"
+      ],
+      "misc_tags": [
+        "SCT",
+        "SGT"
+      ],
+      "persistence": "instant"
     }
   },
   "XGE::Ceremony": {
@@ -8107,6 +10055,12 @@
     "targeting": {
       "type": "token",
       "projectile": true
+    },
+    "effect": {
+      "misc_tags": [
+        "MAC"
+      ],
+      "persistence": "instant"
     }
   },
   "XGE::Chaos Bolt": {
@@ -8130,7 +10084,10 @@
         "psychic",
         "thunder"
       ],
-      "persistence": "instant"
+      "persistence": "instant",
+      "misc_tags": [
+        "RO"
+      ]
     }
   },
   "XGE::Charm Monster": {
@@ -8152,7 +10109,12 @@
       "damage_types": [
         "radiant"
       ],
-      "persistence": "persistent"
+      "persistence": "persistent",
+      "misc_tags": [
+        "LGT",
+        "OBJ",
+        "UBA"
+      ]
     }
   },
   "XGE::Earthbind": {
@@ -8162,6 +10124,15 @@
     },
     "targeting": {
       "type": "token"
+    },
+    "effect": {
+      "saving_throw": [
+        "strength"
+      ],
+      "misc_tags": [
+        "SGT"
+      ],
+      "persistence": "instant"
     }
   },
   "XGE::Elemental Bane": {
@@ -8181,7 +10152,14 @@
         "lightning",
         "thunder"
       ],
-      "persistence": "persistent"
+      "persistence": "persistent",
+      "saving_throw": [
+        "constitution"
+      ],
+      "misc_tags": [
+        "SCT",
+        "SGT"
+      ]
     }
   },
   "XGE::Enemies Abound": {
@@ -8191,6 +10169,15 @@
     },
     "targeting": {
       "type": "token"
+    },
+    "effect": {
+      "saving_throw": [
+        "intelligence"
+      ],
+      "misc_tags": [
+        "SGT"
+      ],
+      "persistence": "instant"
     }
   },
   "XGE::Enervation": {
@@ -8221,7 +10208,14 @@
       "damage_types": [
         "cold"
       ],
-      "persistence": "instant"
+      "persistence": "instant",
+      "saving_throw": [
+        "constitution"
+      ],
+      "misc_tags": [
+        "SCL",
+        "SGT"
+      ]
     }
   },
   "XGE::Gust": {
@@ -8231,6 +10225,17 @@
     },
     "targeting": {
       "type": "token"
+    },
+    "effect": {
+      "saving_throw": [
+        "strength"
+      ],
+      "misc_tags": [
+        "FMV",
+        "OBJ",
+        "SGT"
+      ],
+      "persistence": "instant"
     }
   },
   "XGE::Holy Weapon": {
@@ -8246,7 +10251,19 @@
       "damage_types": [
         "radiant"
       ],
-      "persistence": "persistent"
+      "persistence": "persistent",
+      "condition_inflict": [
+        "blinded"
+      ],
+      "saving_throw": [
+        "constitution"
+      ],
+      "misc_tags": [
+        "AAD",
+        "LGT",
+        "SGT",
+        "UBA"
+      ]
     }
   },
   "XGE::Ice Knife": {
@@ -8278,7 +10295,14 @@
       "damage_types": [
         "fire"
       ],
-      "persistence": "persistent"
+      "persistence": "persistent",
+      "saving_throw": [
+        "dexterity"
+      ],
+      "misc_tags": [
+        "LGT",
+        "SGT"
+      ]
     }
   },
   "XGE::Infestation": {
@@ -8293,7 +10317,15 @@
       "damage_types": [
         "poison"
       ],
-      "persistence": "instant"
+      "persistence": "instant",
+      "saving_throw": [
+        "constitution"
+      ],
+      "misc_tags": [
+        "FMV",
+        "SCL",
+        "SGT"
+      ]
     }
   },
   "XGE::Life Transference": {
@@ -8309,7 +10341,11 @@
       "damage_types": [
         "necrotic"
       ],
-      "persistence": "instant"
+      "persistence": "instant",
+      "misc_tags": [
+        "HL",
+        "SGT"
+      ]
     }
   },
   "XGE::Magic Stone": {
@@ -8325,7 +10361,10 @@
       "damage_types": [
         "bludgeoning"
       ],
-      "persistence": "persistent"
+      "persistence": "persistent",
+      "misc_tags": [
+        "AAD"
+      ]
     }
   },
   "XGE::Mass Polymorph": {
@@ -8336,6 +10375,16 @@
     "targeting": {
       "type": "multi_token",
       "base_target_clicks": 10
+    },
+    "effect": {
+      "saving_throw": [
+        "wisdom"
+      ],
+      "misc_tags": [
+        "SGT",
+        "THP"
+      ],
+      "persistence": "instant"
     }
   },
   "XGE::Maximilian's Earthen Grasp": {
@@ -8351,7 +10400,17 @@
       "damage_types": [
         "bludgeoning"
       ],
-      "persistence": "persistent"
+      "persistence": "persistent",
+      "condition_inflict": [
+        "restrained"
+      ],
+      "saving_throw": [
+        "strength"
+      ],
+      "misc_tags": [
+        "SGT",
+        "UA"
+      ]
     }
   },
   "XGE::Mental Prison": {
@@ -8366,7 +10425,13 @@
       "damage_types": [
         "psychic"
       ],
-      "persistence": "persistent"
+      "persistence": "persistent",
+      "saving_throw": [
+        "intelligence"
+      ],
+      "misc_tags": [
+        "SGT"
+      ]
     }
   },
   "XGE::Mind Spike": {
@@ -8420,7 +10485,10 @@
       "damage_types": [
         "acid"
       ],
-      "persistence": "instant"
+      "persistence": "instant",
+      "misc_tags": [
+        "SCL"
+      ]
     }
   },
   "XGE::Psychic Scream": {
@@ -8436,7 +10504,16 @@
       "damage_types": [
         "psychic"
       ],
-      "persistence": "instant"
+      "persistence": "instant",
+      "condition_inflict": [
+        "stunned"
+      ],
+      "saving_throw": [
+        "intelligence"
+      ],
+      "misc_tags": [
+        "SGT"
+      ]
     }
   },
   "XGE::Scatter": {
@@ -8448,6 +10525,16 @@
       "type": "multi_token",
       "requires_ground": true,
       "base_target_clicks": 5
+    },
+    "effect": {
+      "saving_throw": [
+        "wisdom"
+      ],
+      "misc_tags": [
+        "SGT",
+        "TP"
+      ],
+      "persistence": "instant"
     }
   },
   "XGE::Skill Empowerment": {
@@ -8468,6 +10555,15 @@
       "type": "token",
       "projectile": true,
       "requires_ground": true
+    },
+    "effect": {
+      "condition_inflict": [
+        "restrained"
+      ],
+      "saving_throw": [
+        "dexterity"
+      ],
+      "persistence": "instant"
     }
   },
   "XGE::Steel Wind Strike": {
@@ -8544,7 +10640,11 @@
       "damage_types": [
         "thunder"
       ],
-      "persistence": "persistent"
+      "persistence": "persistent",
+      "misc_tags": [
+        "AAD",
+        "SCL"
+      ]
     }
   },
   "TCE::Green-Flame Blade": {
@@ -8556,7 +10656,12 @@
       "damage_types": [
         "fire"
       ],
-      "persistence": "instant"
+      "persistence": "instant",
+      "misc_tags": [
+        "AAD",
+        "SCL",
+        "SGT"
+      ]
     }
   },
   "TCE::Lightning Lure": {
@@ -8568,7 +10673,15 @@
       "damage_types": [
         "lightning"
       ],
-      "persistence": "instant"
+      "persistence": "instant",
+      "saving_throw": [
+        "strength"
+      ],
+      "misc_tags": [
+        "FMV",
+        "SCL",
+        "SGT"
+      ]
     }
   },
   "TCE::Mind Sliver": {
@@ -8599,7 +10712,14 @@
       "damage_types": [
         "psychic"
       ],
-      "persistence": "persistent"
+      "persistence": "persistent",
+      "saving_throw": [
+        "intelligence"
+      ],
+      "misc_tags": [
+        "SCT",
+        "SGT"
+      ]
     }
   },
   "FRHoF::Backlash": {
@@ -8614,7 +10734,10 @@
       "damage_types": [
         "force"
       ],
-      "persistence": "instant"
+      "persistence": "instant",
+      "saving_throw": [
+        "constitution"
+      ]
     }
   },
   "FRHoF::Blade of Disaster": {
@@ -8630,7 +10753,11 @@
       "damage_types": [
         "force"
       ],
-      "persistence": "persistent"
+      "persistence": "persistent",
+      "misc_tags": [
+        "OBJ",
+        "UBA"
+      ]
     }
   },
   "FRHoF::Death Armor": {
@@ -8645,7 +10772,10 @@
       "damage_types": [
         "necrotic"
       ],
-      "persistence": "persistent"
+      "persistence": "persistent",
+      "misc_tags": [
+        "ADV"
+      ]
     }
   },
   "FRHoF::Elminster's Effulgent Spheres": {
@@ -8661,19 +10791,36 @@
         "lightning",
         "thunder"
       ],
-      "persistence": "persistent"
+      "persistence": "persistent",
+      "misc_tags": [
+        "UA",
+        "UBA"
+      ]
     }
   },
   "FRHoF::Elminster's Elusion": {
     "range": {
       "type": "point",
       "distance_type": "self"
+    },
+    "effect": {
+      "misc_tags": [
+        "ADV"
+      ],
+      "persistence": "instant"
     }
   },
   "FRHoF::Holy Star of Mystra": {
     "range": {
       "type": "point",
       "distance_type": "self"
+    },
+    "effect": {
+      "misc_tags": [
+        "LGT",
+        "UBA"
+      ],
+      "persistence": "instant"
     }
   },
   "FRHoF::Simbul's Synostodweomer": {
@@ -8683,6 +10830,12 @@
     },
     "targeting": {
       "type": "token"
+    },
+    "effect": {
+      "misc_tags": [
+        "HL"
+      ],
+      "persistence": "instant"
     }
   },
   "FRHoF::Songal's Elemental Suffusion": {
@@ -8698,7 +10851,13 @@
         "lightning",
         "thunder"
       ],
-      "persistence": "persistent"
+      "persistence": "persistent",
+      "condition_inflict": [
+        "prone"
+      ],
+      "saving_throw": [
+        "dexterity"
+      ]
     }
   },
   "FRHoF::Spellfire Flare": {
@@ -8727,7 +10886,15 @@
       "damage_types": [
         "force"
       ],
-      "persistence": "persistent"
+      "persistence": "persistent",
+      "condition_inflict": [
+        "incapacitated",
+        "poisoned"
+      ],
+      "misc_tags": [
+        "THP",
+        "UA"
+      ]
     }
   },
   "FRHoF::Wardaway": {
@@ -8743,7 +10910,10 @@
       "damage_types": [
         "force"
       ],
-      "persistence": "instant"
+      "persistence": "instant",
+      "saving_throw": [
+        "constitution"
+      ]
     }
   },
   "AU::Catnap": {
@@ -8754,6 +10924,16 @@
     "targeting": {
       "type": "multi_token",
       "base_target_clicks": 3
+    },
+    "effect": {
+      "condition_inflict": [
+        "unconscious"
+      ],
+      "misc_tags": [
+        "SCT",
+        "SGT"
+      ],
+      "persistence": "instant"
     }
   },
   "AU::Enervation": {
@@ -8768,7 +10948,15 @@
       "damage_types": [
         "necrotic"
       ],
-      "persistence": "persistent"
+      "persistence": "persistent",
+      "saving_throw": [
+        "dexterity"
+      ],
+      "misc_tags": [
+        "HL",
+        "SGT",
+        "UBA"
+      ]
     }
   },
   "AU::Entrancing Mirrors": {
@@ -8784,7 +10972,16 @@
       "damage_types": [
         "psychic"
       ],
-      "persistence": "persistent"
+      "persistence": "persistent",
+      "condition_inflict": [
+        "stunned"
+      ],
+      "saving_throw": [
+        "intelligence"
+      ],
+      "misc_tags": [
+        "SGT"
+      ]
     }
   },
   "AU::Fractured Awareness": {
@@ -8799,7 +10996,13 @@
       "damage_types": [
         "psychic"
       ],
-      "persistence": "persistent"
+      "persistence": "persistent",
+      "saving_throw": [
+        "intelligence"
+      ],
+      "misc_tags": [
+        "SGT"
+      ]
     }
   },
   "AU::Inflict Doubt": {
@@ -8809,6 +11012,15 @@
     },
     "targeting": {
       "type": "token"
+    },
+    "effect": {
+      "saving_throw": [
+        "wisdom"
+      ],
+      "misc_tags": [
+        "SGT"
+      ],
+      "persistence": "instant"
     }
   },
   "AU::Iron Body": {
@@ -8833,7 +11045,15 @@
       "damage_types": [
         "necrotic"
       ],
-      "persistence": "instant"
+      "persistence": "instant",
+      "saving_throw": [
+        "constitution"
+      ],
+      "misc_tags": [
+        "SGT",
+        "SMN",
+        "THP"
+      ]
     }
   },
   "AU::Power Word Pain": {
@@ -8848,7 +11068,16 @@
       "damage_types": [
         "force"
       ],
-      "persistence": "persistent"
+      "persistence": "persistent",
+      "condition_inflict": [
+        "charmed"
+      ],
+      "saving_throw": [
+        "constitution"
+      ],
+      "misc_tags": [
+        "SGT"
+      ]
     }
   },
   "AU::Reweave Fate": {
@@ -8859,6 +11088,14 @@
     "targeting": {
       "type": "token",
       "projectile": true
+    },
+    "effect": {
+      "misc_tags": [
+        "ADV",
+        "SGT",
+        "THP"
+      ],
+      "persistence": "instant"
     }
   },
   "AU::Spirit Lantern": {
@@ -8870,7 +11107,16 @@
       "damage_types": [
         "necrotic"
       ],
-      "persistence": "persistent"
+      "persistence": "persistent",
+      "saving_throw": [
+        "constitution"
+      ],
+      "misc_tags": [
+        "HL",
+        "LGT",
+        "SGT",
+        "UBA"
+      ]
     }
   },
   "AU::Transfix": {
@@ -8882,7 +11128,18 @@
       "damage_types": [
         "psychic"
       ],
-      "persistence": "persistent"
+      "persistence": "persistent",
+      "condition_inflict": [
+        "charmed",
+        "incapacitated"
+      ],
+      "saving_throw": [
+        "charisma"
+      ],
+      "misc_tags": [
+        "SGT",
+        "UA"
+      ]
     }
   },
   "AU::Uncertain Footing": {
@@ -8894,6 +11151,15 @@
       "type": "multi_token",
       "base_target_clicks": 3,
       "projectile": true
+    },
+    "effect": {
+      "saving_throw": [
+        "intelligence"
+      ],
+      "misc_tags": [
+        "SGT"
+      ],
+      "persistence": "instant"
     }
   },
   "AU::Vision of Elapsing Eons": {
@@ -8908,7 +11174,17 @@
       "damage_types": [
         "psychic"
       ],
-      "persistence": "persistent"
+      "persistence": "persistent",
+      "condition_inflict": [
+        "exhaustion",
+        "paralyzed"
+      ],
+      "saving_throw": [
+        "intelligence"
+      ],
+      "misc_tags": [
+        "SGT"
+      ]
     }
   },
   "AU::Wail of the Banshee": {
@@ -8924,7 +11200,13 @@
       "damage_types": [
         "psychic"
       ],
-      "persistence": "instant"
+      "persistence": "instant",
+      "condition_inflict": [
+        "deafened"
+      ],
+      "saving_throw": [
+        "constitution"
+      ]
     }
   },
   "FTD::Raulothim's Psychic Lance": {
@@ -8939,7 +11221,16 @@
       "damage_types": [
         "psychic"
       ],
-      "persistence": "instant"
+      "persistence": "instant",
+      "condition_inflict": [
+        "incapacitated"
+      ],
+      "saving_throw": [
+        "intelligence"
+      ],
+      "misc_tags": [
+        "SGT"
+      ]
     }
   },
   "SCC::Silvery Barbs": {
@@ -8949,6 +11240,13 @@
     },
     "targeting": {
       "type": "token"
+    },
+    "effect": {
+      "misc_tags": [
+        "ADV",
+        "SGT"
+      ],
+      "persistence": "instant"
     }
   },
   "AI::Fast Friends": {
@@ -8959,6 +11257,19 @@
     "targeting": {
       "type": "multi_token",
       "projectile": true
+    },
+    "effect": {
+      "condition_inflict": [
+        "charmed"
+      ],
+      "saving_throw": [
+        "wisdom"
+      ],
+      "misc_tags": [
+        "SCT",
+        "SGT"
+      ],
+      "persistence": "instant"
     }
   },
   "AI::Gift of Gab": {
@@ -8974,6 +11285,18 @@
     },
     "targeting": {
       "type": "multi_token"
+    },
+    "effect": {
+      "condition_inflict": [
+        "charmed"
+      ],
+      "saving_throw": [
+        "wisdom"
+      ],
+      "misc_tags": [
+        "SGT"
+      ],
+      "persistence": "instant"
     }
   },
   "AI::Jim's Glowing Coin": {
@@ -8984,6 +11307,15 @@
     "targeting": {
       "type": "multi_token",
       "projectile": true
+    },
+    "effect": {
+      "saving_throw": [
+        "wisdom"
+      ],
+      "misc_tags": [
+        "SGT"
+      ],
+      "persistence": "instant"
     }
   },
   "AI::Jim's Magic Missile": {
@@ -9000,7 +11332,10 @@
       "damage_types": [
         "force"
       ],
-      "persistence": "instant"
+      "persistence": "instant",
+      "misc_tags": [
+        "SGT"
+      ]
     }
   },
   "AI::Motivational Speech": {
@@ -9012,6 +11347,14 @@
       "type": "multi_token",
       "base_target_clicks": 5,
       "projectile": true
+    },
+    "effect": {
+      "misc_tags": [
+        "ADV",
+        "SGT",
+        "THP"
+      ],
+      "persistence": "instant"
     }
   },
   "EGW::Fortune's Favor": {
@@ -9022,6 +11365,13 @@
     "targeting": {
       "type": "token",
       "projectile": true
+    },
+    "effect": {
+      "misc_tags": [
+        "SCT",
+        "SGT"
+      ],
+      "persistence": "instant"
     }
   },
   "EGW::Gift of Alacrity": {
@@ -9042,6 +11392,13 @@
     "targeting": {
       "type": "token",
       "projectile": true
+    },
+    "effect": {
+      "misc_tags": [
+        "OBJ",
+        "PRM"
+      ],
+      "persistence": "instant"
     }
   },
   "EGW::Reality Break": {
@@ -9059,7 +11416,20 @@
         "force",
         "psychic"
       ],
-      "persistence": "persistent"
+      "persistence": "persistent",
+      "condition_inflict": [
+        "blinded",
+        "prone",
+        "stunned"
+      ],
+      "saving_throw": [
+        "dexterity",
+        "wisdom"
+      ],
+      "misc_tags": [
+        "RO",
+        "SGT"
+      ]
     }
   },
   "EGW::Sapping Sting": {
@@ -9075,7 +11445,17 @@
       "damage_types": [
         "necrotic"
       ],
-      "persistence": "instant"
+      "persistence": "instant",
+      "condition_inflict": [
+        "prone"
+      ],
+      "saving_throw": [
+        "constitution"
+      ],
+      "misc_tags": [
+        "SCL",
+        "SGT"
+      ]
     }
   },
   "EGW::Temporal Shunt": {
@@ -9086,6 +11466,15 @@
     "targeting": {
       "type": "token",
       "projectile": true
+    },
+    "effect": {
+      "saving_throw": [
+        "wisdom"
+      ],
+      "misc_tags": [
+        "SCT"
+      ],
+      "persistence": "instant"
     }
   },
   "EGW::Tether Essence": {
@@ -9096,6 +11485,15 @@
     "targeting": {
       "type": "multi_token",
       "projectile": true
+    },
+    "effect": {
+      "saving_throw": [
+        "constitution"
+      ],
+      "misc_tags": [
+        "SGT"
+      ],
+      "persistence": "instant"
     }
   },
   "EGW::Time Ravage": {
@@ -9111,13 +11509,25 @@
       "damage_types": [
         "necrotic"
       ],
-      "persistence": "instant"
+      "persistence": "instant",
+      "saving_throw": [
+        "constitution"
+      ],
+      "misc_tags": [
+        "SGT"
+      ]
     }
   },
   "EGW::Wristpocket": {
     "range": {
       "type": "point",
       "distance_type": "self"
+    },
+    "effect": {
+      "misc_tags": [
+        "UA"
+      ],
+      "persistence": "instant"
     }
   },
   "IDRotF::Create Magen": {
@@ -9128,6 +11538,12 @@
     "targeting": {
       "type": "token",
       "projectile": true
+    },
+    "effect": {
+      "misc_tags": [
+        "PRM"
+      ],
+      "persistence": "instant"
     }
   }
 }
