@@ -1,0 +1,160 @@
+{
+  "spell_records": 227,
+  "unresolved": [
+    {
+      "name": "Conjure Constructs",
+      "source": "FRHoF",
+      "area_tag": "C"
+    },
+    {
+      "name": "Death Armor",
+      "source": "FRHoF",
+      "area_tag": "S"
+    },
+    {
+      "name": "Arms of Hadar",
+      "source": "PHB",
+      "area_tag": "S"
+    },
+    {
+      "name": "Call Lightning",
+      "source": "PHB",
+      "area_tag": "S"
+    },
+    {
+      "name": "Circle of Power",
+      "source": "PHB",
+      "area_tag": "S"
+    },
+    {
+      "name": "Cordon of Arrows",
+      "source": "PHB",
+      "area_tag": "S"
+    },
+    {
+      "name": "Destructive Wave",
+      "source": "PHB",
+      "area_tag": "S"
+    },
+    {
+      "name": "Forcecage",
+      "source": "PHB",
+      "area_tag": "C"
+    },
+    {
+      "name": "Hail of Thorns",
+      "source": "PHB",
+      "area_tag": "S"
+    },
+    {
+      "name": "Lightning Arrow",
+      "source": "PHB",
+      "area_tag": "S"
+    },
+    {
+      "name": "Sleep",
+      "source": "PHB",
+      "area_tag": "S"
+    },
+    {
+      "name": "Spirit Guardians",
+      "source": "PHB",
+      "area_tag": "S"
+    },
+    {
+      "name": "Storm of Vengeance",
+      "source": "PHB",
+      "area_tag": "Y"
+    },
+    {
+      "name": "Wall of Force",
+      "source": "PHB",
+      "area_tag": "W"
+    },
+    {
+      "name": "Wall of Ice",
+      "source": "PHB",
+      "area_tag": "W"
+    },
+    {
+      "name": "Sword Burst",
+      "source": "TCE",
+      "area_tag": "S"
+    },
+    {
+      "name": "Earth Tremor",
+      "source": "XGE",
+      "area_tag": "R"
+    },
+    {
+      "name": "Melf's Minute Meteors",
+      "source": "XGE",
+      "area_tag": "S"
+    },
+    {
+      "name": "Shadow of Moil",
+      "source": "XGE",
+      "area_tag": "S"
+    },
+    {
+      "name": "Thunder Step",
+      "source": "XGE",
+      "area_tag": "S"
+    },
+    {
+      "name": "Thunderclap",
+      "source": "XGE",
+      "area_tag": "S"
+    },
+    {
+      "name": "Tidal Wave",
+      "source": "XGE",
+      "area_tag": "W"
+    },
+    {
+      "name": "Call Lightning",
+      "source": "XPHB",
+      "area_tag": "S"
+    },
+    {
+      "name": "Conjure Animals",
+      "source": "XPHB",
+      "area_tag": "C"
+    },
+    {
+      "name": "Cordon of Arrows",
+      "source": "XPHB",
+      "area_tag": "S"
+    },
+    {
+      "name": "Forcecage",
+      "source": "XPHB",
+      "area_tag": "C"
+    },
+    {
+      "name": "Hail of Thorns",
+      "source": "XPHB",
+      "area_tag": "S"
+    },
+    {
+      "name": "Lightning Arrow",
+      "source": "XPHB",
+      "area_tag": "S"
+    },
+    {
+      "name": "Storm of Vengeance",
+      "source": "XPHB",
+      "area_tag": "Y"
+    },
+    {
+      "name": "Wall of Force",
+      "source": "XPHB",
+      "area_tag": "W"
+    },
+    {
+      "name": "Wall of Ice",
+      "source": "XPHB",
+      "area_tag": "W"
+    }
+  ]
+}
