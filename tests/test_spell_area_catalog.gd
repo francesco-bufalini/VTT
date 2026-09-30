@@ -118,14 +118,16 @@ func run() -> void:
 	assert(not fire_bolt.is_empty())
 	assert(String(fire_bolt.get("target_mode", "")) == "token_then_token")
 	assert(is_equal_approx(float(fire_bolt.get("range_feet", 0.0)), 120.0))
-	assert(String(fire_bolt.get("projectile_style", "")) == "fire_bolt")
+	assert(String(fire_bolt.get("visual_style", "")) == "fire")
+	assert(String(fire_bolt.get("projectile_style", "")) == "fire")
 	assert(bool(fire_bolt.get("allow_point_target", false)))
 
 	var chromatic_orb: Dictionary = SpellCatalog.spell("chromatic_orb")
 	assert(not chromatic_orb.is_empty())
 	assert(String(chromatic_orb.get("target_mode", "")) == "token_then_token")
 	assert(is_equal_approx(float(chromatic_orb.get("range_feet", 0.0)), 90.0))
-	assert(String(chromatic_orb.get("projectile_style", "")) == "chromatic_orb")
+	assert(String(chromatic_orb.get("visual_style", "")) == "prismatic")
+	assert(String(chromatic_orb.get("projectile_style", "")) == "prismatic")
 	assert(bool(chromatic_orb.get("allow_point_target", false)))
 
 	var magic_missile: Dictionary = SpellCatalog.spell("magic_missile")
@@ -136,7 +138,8 @@ func run() -> void:
 	assert(int(magic_missile.get("target_clicks_per_slot_above_base", 0)) == 1)
 	assert(bool(magic_missile.get("allow_repeat_targets", false)))
 	assert(bool(magic_missile.get("allow_point_target", false)))
-	assert(String(magic_missile.get("projectile_style", "")) == "magic_missile")
+	assert(String(magic_missile.get("visual_style", "")) == "force")
+	assert(String(magic_missile.get("projectile_style", "")) == "force")
 
 	var scorching_catalog: Dictionary = SpellCatalog.catalog_spell(
 		"scorching_ray"
@@ -159,12 +162,39 @@ func run() -> void:
 	assert(int(scorching_ray.get("target_clicks_per_slot_above_base", 0)) == 1)
 	assert(bool(scorching_ray.get("allow_repeat_targets", false)))
 	assert(bool(scorching_ray.get("allow_point_target", false)))
-	assert(String(scorching_ray.get("projectile_style", "")) == "scorching_ray")
+	assert(String(scorching_ray.get("visual_style", "")) == "fire")
+	assert(String(scorching_ray.get("projectile_style", "")) == "fire")
 
 	# ST/MT alone is not enough to invent a projectile. These spells still
 	# appear in the browser, but have no supported map effect yet.
 	assert(SpellCatalog.spell("charm_person").is_empty())
 	assert(SpellCatalog.spell("feather_fall").is_empty())
+
+	var misty_step: Dictionary = SpellCatalog.spell("misty_step")
+	assert(not misty_step.is_empty())
+	assert(String(misty_step.get("target_mode", "")) == "teleport_self")
+	assert(int(misty_step.get("teleport_distance_feet", 0)) == 30)
+	assert(String(misty_step.get("visual_style", "")) == "silver_mist")
+
+	var dimension_door: Dictionary = SpellCatalog.spell("dimension_door")
+	assert(not dimension_door.is_empty())
+	assert(int(dimension_door.get("teleport_distance_feet", 0)) == 500)
+	assert(String(dimension_door.get("visual_style", "")) == "force")
+
+	var thunder_step: Dictionary = SpellCatalog.spell("thunder_step")
+	assert(not thunder_step.is_empty())
+	assert(int(thunder_step.get("teleport_distance_feet", 0)) == 90)
+	assert(String(thunder_step.get("visual_style", "")) == "thunder")
+
+	var meteor_swarm: Dictionary = SpellCatalog.spell("meteor_swarm")
+	assert(not meteor_swarm.is_empty())
+	assert(String(meteor_swarm.get("target_mode", "")) == "token_then_multi_point")
+	assert(int(meteor_swarm.get("base_target_clicks", 0)) == 4)
+	assert(is_equal_approx(float(meteor_swarm.get("range_feet", 0.0)), 5280.0))
+	assert(String(meteor_swarm.get("aoe_shape", "")) == "sphere")
+	assert(is_equal_approx(float(meteor_swarm.get("aoe_radius_feet", 0.0)), 40.0))
+	assert(String(meteor_swarm.get("visual_style", "")) == "fire")
+	assert(String(meteor_swarm.get("projectile_style", "")) == "fire")
 
 	var entangle: Dictionary = SpellCatalog.spell("entangle")
 	assert(not entangle.is_empty())

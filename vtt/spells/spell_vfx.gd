@@ -837,6 +837,85 @@ static func _add_wall_particle_box(
 	particles.draw_pass_1 = quad
 
 
+static func attach_teleport_cloud(
+	root: Node3D,
+	position: Vector3,
+	style: String,
+	duration_seconds: float,
+	cell_size: float
+) -> void:
+	if root == null or not is_instance_valid(root):
+		return
+
+	root.global_position = position
+	var safe_duration: float = maxf(duration_seconds, 0.2)
+
+	var colors: Array[Color] = []
+	if style == "prismatic":
+		colors = [
+			Color(1.0, 0.18, 0.14, 0.78),
+			Color(1.0, 0.68, 0.08, 0.76),
+			Color(0.24, 0.92, 0.32, 0.72),
+			Color(0.2, 0.62, 1.0, 0.76),
+			Color(0.72, 0.24, 1.0, 0.76)
+		]
+	else:
+		var palette: Dictionary = _projectile_palette(style)
+		colors = [
+			palette.get("primary", Color(0.78, 0.8, 1.0, 0.76)),
+			palette.get("secondary", Color(0.9, 0.92, 1.0, 0.62))
+		]
+
+	for index: int in range(colors.size()):
+		_add_teleport_cloud_layer(
+			root,
+			colors[index],
+			cell_size,
+			safe_duration,
+			index
+		)
+
+
+static func _add_teleport_cloud_layer(
+	root: Node3D,
+	color: Color,
+	cell_size: float,
+	duration_seconds: float,
+	layer_index: int
+) -> void:
+	var particles: GPUParticles3D = GPUParticles3D.new()
+	particles.name = "TeleportCloud%d" % layer_index
+	particles.amount = 72
+	particles.lifetime = duration_seconds
+	particles.one_shot = true
+	particles.explosiveness = 0.82
+	particles.randomness = 0.9
+	root.add_child(particles)
+
+	var process: ParticleProcessMaterial = ParticleProcessMaterial.new()
+	process.emission_shape = ParticleProcessMaterial.EMISSION_SHAPE_SPHERE
+	process.emission_sphere_radius = cell_size * (0.34 + 0.05 * layer_index)
+	process.direction = Vector3.UP
+	process.spread = 180.0
+	process.gravity = Vector3.UP * cell_size * 0.05
+	process.initial_velocity_min = cell_size * 0.04
+	process.initial_velocity_max = cell_size * (0.18 + 0.03 * layer_index)
+	process.scale_min = 0.65
+	process.scale_max = 1.35
+	process.color = color
+	particles.process_material = process
+
+	var quad: QuadMesh = QuadMesh.new()
+	quad.size = Vector2.ONE * cell_size * (0.30 + 0.04 * layer_index)
+	quad.material = _billboard_material(
+		color,
+		Color(color.r, color.g, color.b, 1.0),
+		1.0
+	)
+	particles.draw_pass_1 = quad
+	particles.emitting = true
+
+
 static func attach_projectile(
 	root: Node3D,
 	start: Vector3,
@@ -870,18 +949,34 @@ static func attach_projectile(
 	)
 	root.add_child(sphere)
 
-	_add_projectile_trail(
-		root,
-		cell_size,
-		primary,
-		0.16
-	)
-	_add_projectile_trail(
-		root,
-		cell_size,
-		secondary,
-		0.10
-	)
+	if style == "prismatic":
+		var prismatic_colors: Array[Color] = [
+			Color(1.0, 0.18, 0.14, 0.88),
+			Color(1.0, 0.7, 0.08, 0.86),
+			Color(0.24, 0.94, 0.34, 0.82),
+			Color(0.2, 0.62, 1.0, 0.86),
+			Color(0.72, 0.24, 1.0, 0.86)
+		]
+		for index: int in range(prismatic_colors.size()):
+			_add_projectile_trail(
+				root,
+				cell_size,
+				prismatic_colors[index],
+				0.08 + 0.015 * index
+			)
+	else:
+		_add_projectile_trail(
+			root,
+			cell_size,
+			primary,
+			0.16
+		)
+		_add_projectile_trail(
+			root,
+			cell_size,
+			secondary,
+			0.10
+		)
 
 	var tween: Tween = root.create_tween()
 	tween.tween_property(
@@ -947,6 +1042,20 @@ static func _projectile_palette(style: String) -> Dictionary:
 			return {"primary": Color(0.76, 0.7, 1.0, 0.94), "secondary": Color(0.94, 0.9, 1.0, 0.78)}
 		"psychic", "enchantment", "fear", "arcane":
 			return {"primary": Color(0.74, 0.3, 1.0, 0.92), "secondary": Color(0.28, 0.76, 1.0, 0.74)}
+		"prismatic":
+			return {"primary": Color(1.0, 0.96, 1.0, 0.96), "secondary": Color(0.72, 0.24, 1.0, 0.82)}
+		"silver_mist":
+			return {"primary": Color(0.88, 0.9, 0.96, 0.82), "secondary": Color(0.66, 0.74, 0.86, 0.66)}
+		"mist":
+			return {"primary": Color(0.72, 0.78, 0.86, 0.76), "secondary": Color(0.9, 0.92, 0.96, 0.58)}
+		"water":
+			return {"primary": Color(0.16, 0.64, 1.0, 0.88), "secondary": Color(0.58, 0.9, 1.0, 0.7)}
+		"wind":
+			return {"primary": Color(0.74, 0.9, 1.0, 0.72), "secondary": Color(0.94, 0.98, 1.0, 0.56)}
+		"earth":
+			return {"primary": Color(0.54, 0.4, 0.24, 0.82), "secondary": Color(0.78, 0.64, 0.42, 0.66)}
+		"nature":
+			return {"primary": Color(0.24, 0.72, 0.18, 0.84), "secondary": Color(0.62, 0.9, 0.28, 0.66)}
 		"fire_bolt":
 			return {"primary": Color(1.0, 0.22, 0.02, 0.9), "secondary": Color(1.0, 0.75, 0.08, 0.75)}
 		"ray_of_frost", "ice_knife":
