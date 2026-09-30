@@ -4335,6 +4335,15 @@ func _spell_needs_saving_throw_resolution(
 	)
 	if conditions_value is Array and not (conditions_value as Array).is_empty():
 		return true
+
+	var transformation_mode: String = String(
+		spell_data.get("transformation_mode", "")
+	)
+	if transformation_mode in ["appearance", "resize"]:
+		var saves_value: Variant = spell_data.get("saving_throw", [])
+		if saves_value is Array and not (saves_value as Array).is_empty():
+			return true
+
 	return bool(
 		spell_data.get("forced_movement_on_failed_save", false)
 	)
