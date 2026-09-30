@@ -645,10 +645,37 @@ def _is_persistent(spell: dict[str, Any]) -> bool:
 def _requires_ground(text: str) -> bool:
     cleaned = _strip_5etools_tags(text).lower()
     return bool(re.search(
-        r"\b(?:on|along)\s+(?:the\s+)?(?:ground|a\s+solid\s+surface|solid\s+surface)\b"
-        r"|\bpoint\s+on\s+the\s+ground\b",
+        r"\b(?:point|area)\s+on\s+the\s+ground\b"
+        r"|\bon\s+(?:the\s+)?ground\b",
         cleaned,
     ))
+
+
+def _wall_requires_ground(text: str) -> bool:
+    cleaned = _strip_5etools_tags(text).lower()
+    if "free floating" in cleaned:
+        return False
+    return bool(re.search(
+        r"\bwall\b[^.]{0,120}?\b(?:on|along)\s+"
+        r"(?:the\s+)?(?:ground|a\s+solid\s+surface|solid\s+surface)\b"
+        r"|\bwall\b[^.]{0,80}?\brises\s+from\s+the\s+ground\b",
+        cleaned,
+    ))
+
+
+def _wall_choose_damage_side(text: str) -> bool:
+    cleaned = _strip_5etools_tags(text).lower()
+    return bool(
+        re.search(
+            r"\bone\s+side\s+of\s+the\s+wall\b[^.]{0,120}?\bdeals?\b",
+            cleaned,
+        )
+        or (
+            "one side of the wall" in cleaned
+            and "other side of the wall" in cleaned
+            and "damage" in cleaned
+        )
+    )
 
 
 def _targeting_spec(
@@ -661,12 +688,9 @@ def _targeting_spec(
 
     if any(geometry.get("shape") == "wall" for geometry in geometries):
         result: dict[str, Any] = {"type": "wall"}
-        if _requires_ground(text):
+        if _wall_requires_ground(text):
             result["requires_ground"] = True
-        if re.search(
-            r"\bone\s+side\s+of\s+the\s+wall\b",
-            _strip_5etools_tags(text).lower(),
-        ):
+        if _wall_choose_damage_side(text):
             result["choose_damage_side"] = True
         return result
 
