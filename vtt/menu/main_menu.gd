@@ -1,16 +1,12 @@
 extends Control
 
 const ACTIVE_CAMPAIGNS_SCENE_PATH := "res://vtt/menu/active_campaigns.tscn"
-const CASTLE_PATHS := [
-	"res://assets/menu/castle/Castle.glb",
-	"res://SFON VTST/castle/Castle.glb",
-	"res://SFON VTST/Castle.glb",
-	"res://castle/Castle.glb",
-	"res://Castle.glb"
-]
-const CAMERA_TARGET := Vector3(0.0, 0.15, 0.0)
-const CAMERA_BASE_RADIUS := 15.5
-const CAMERA_BASE_HEIGHT := 3.45
+const MENU_BACKGROUND_TEXTURE := (
+	"res://assets/menu/background/lithophane_background.jpg"
+)
+const CAMERA_TARGET := Vector3(0.0, 0.0, 0.0)
+const CAMERA_BASE_RADIUS := 19.5
+const CAMERA_BASE_HEIGHT := 0.12
 const MENU_SKY_HDR := (
 	"res://assets/menu/environment/sky/"
 	+ "kloppenheim_06_puresky_1k.hdr"
@@ -61,11 +57,11 @@ func _process(delta: float) -> void:
 		minf(delta * 3.0, 1.0)
 	)
 
-	var pan: float = sin(_elapsed * 0.105) * deg_to_rad(4.2)
-	var radius: float = CAMERA_BASE_RADIUS + sin(_elapsed * 0.071) * 0.45
+	var pan: float = sin(_elapsed * 0.105) * deg_to_rad(2.6)
+	var radius: float = CAMERA_BASE_RADIUS + sin(_elapsed * 0.071) * 0.28
 	var height: float = (
 		CAMERA_BASE_HEIGHT
-		+ sin(_elapsed * 0.089) * 0.22
+		+ sin(_elapsed * 0.089) * 0.10
 		- _mouse_parallax.y * 0.26
 	)
 	var parallax_x: float = _mouse_parallax.x * 0.42
@@ -126,39 +122,93 @@ func _build_ui() -> void:
 
 func _build_3d_background() -> void:
 	var viewport_container := SubViewportContainer.new()
-	viewport_container.name = "CastleBackground"
+	viewport_container.name = "FantasyBackground"
 	viewport_container.set_anchors_and_offsets_preset(Control.PRESET_FULL_RECT)
 	viewport_container.stretch = true
 	viewport_container.mouse_filter = Control.MOUSE_FILTER_IGNORE
 	add_child(viewport_container)
 
 	_background_viewport = SubViewport.new()
-	_background_viewport.name = "CastleViewport"
+	_background_viewport.name = "FantasyViewport"
 	_background_viewport.size = Vector2i(1280, 720)
 	_background_viewport.render_target_update_mode = SubViewport.UPDATE_ALWAYS
+	_background_viewport.transparent_bg = false
 	viewport_container.add_child(_background_viewport)
 
 	_background_world = Node3D.new()
 	_background_world.name = "MenuWorld"
 	_background_viewport.add_child(_background_world)
 
-	_build_environment()
-	_build_landscape()
-	_build_mountain_backdrop()
-	_build_castle()
-	_build_riverbank_props()
-	_build_lighting()
-	_build_dust_particles()
+	_build_lithophane_background()
 
 	_camera = Camera3D.new()
 	_camera.name = "MenuCamera"
 	_camera.fov = 48.0
 	_camera.near = 0.05
-	_camera.far = 180.0
+	_camera.far = 100.0
 	_camera.position = Vector3(0.0, CAMERA_BASE_HEIGHT, CAMERA_BASE_RADIUS)
 	_camera.look_at(CAMERA_TARGET, Vector3.UP)
 	_camera.current = true
 	_background_world.add_child(_camera)
+
+
+func _build_lithophane_background() -> void:
+	var background := MeshInstance3D.new()
+	background.name = "LithophaneBackground"
+
+	var plane := PlaneMesh.new()
+	plane.size = Vector2(26.0, 17.333333)
+	plane.subdivide_width = 160
+	plane.subdivide_depth = 106
+	background.mesh = plane
+
+	# The supplied OBJ is a very dense lithophane (~1.2M surface vertices).
+	# For a menu, keep its characteristic shallow relief but generate it from
+	# the same supplied texture at runtime. This avoids a huge import cost.
+	var shader := Shader.new()
+	shader.code = """
+shader_type spatial;
+render_mode unshaded, cull_disabled;
+
+uniform sampler2D background_texture;
+uniform float relief_strength = 0.34;
+
+void vertex() {
+	float luminance = dot(
+		texture(background_texture, UV).rgb,
+		vec3(0.2126, 0.7152, 0.0722)
+	);
+	VERTEX.y -= luminance * relief_strength;
+}
+
+void fragment() {
+	ALBEDO = texture(background_texture, UV).rgb;
+}
+"""
+	var material := ShaderMaterial.new()
+	material.shader = shader
+
+	var background_texture: Texture2D = null
+	if ResourceLoader.exists(MENU_BACKGROUND_TEXTURE):
+		var loaded: Resource = ResourceLoader.load(MENU_BACKGROUND_TEXTURE)
+		if loaded is Texture2D:
+			background_texture = loaded as Texture2D
+
+	if background_texture == null:
+		push_error(
+			"MainMenu: texture di sfondo non trovata: "
+			+ MENU_BACKGROUND_TEXTURE
+		)
+	else:
+		material.set_shader_parameter(
+			"background_texture",
+			background_texture
+		)
+
+	background.material_override = material
+	background.rotation_degrees.x = -90.0
+	background.position = Vector3(0.0, -0.02, 0.0)
+	_background_world.add_child(background)
 
 
 func _build_environment() -> void:
@@ -680,8 +730,8 @@ func _build_title() -> void:
 	title_margin.anchor_bottom = 0.0
 	title_margin.offset_left = 34.0
 	title_margin.offset_top = 24.0
-	title_margin.offset_right = 830.0
-	title_margin.offset_bottom = 142.0
+	title_margin.offset_right = 930.0
+	title_margin.offset_bottom = 160.0
 	title_margin.mouse_filter = Control.MOUSE_FILTER_IGNORE
 	add_child(title_margin)
 
@@ -691,7 +741,7 @@ func _build_title() -> void:
 	title.horizontal_alignment = HORIZONTAL_ALIGNMENT_LEFT
 	title.vertical_alignment = VERTICAL_ALIGNMENT_TOP
 	title.add_theme_font_override("font", _medieval_title_font())
-	title.add_theme_font_size_override("font_size", 54)
+	title.add_theme_font_size_override("font_size", 64)
 	title.add_theme_color_override(
 		"font_color",
 		Color(0.94, 0.85, 0.64)
@@ -741,10 +791,10 @@ func _build_bottom_controls() -> void:
 	controls_anchor.anchor_top = 1.0
 	controls_anchor.anchor_right = 0.0
 	controls_anchor.anchor_bottom = 1.0
-	controls_anchor.offset_left = 34.0
-	controls_anchor.offset_top = -316.0
-	controls_anchor.offset_right = 484.0
-	controls_anchor.offset_bottom = -34.0
+	controls_anchor.offset_left = 28.0
+	controls_anchor.offset_top = -270.0
+	controls_anchor.offset_right = 390.0
+	controls_anchor.offset_bottom = -28.0
 	add_child(controls_anchor)
 
 	var panel := PanelContainer.new()
@@ -799,9 +849,9 @@ func _menu_panel_style() -> StyleBoxFlat:
 func _menu_button(label_text: String) -> Button:
 	var button := Button.new()
 	button.text = label_text
-	button.custom_minimum_size = Vector2(370, 48)
+	button.custom_minimum_size = Vector2(300, 40)
 	button.add_theme_font_override("font", _menu_font())
-	button.add_theme_font_size_override("font_size", 19)
+	button.add_theme_font_size_override("font_size", 17)
 	button.add_theme_color_override(
 		"font_color",
 		Color(0.90, 0.84, 0.71)
