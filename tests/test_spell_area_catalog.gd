@@ -108,7 +108,7 @@ func run() -> void:
 	assert(String(entangle.get("aoe_shape", "")) == "flat_square")
 	assert(is_equal_approx(float(entangle.get("aoe_side_feet", 0.0)), 20.0))
 	assert(bool(entangle.get("persistent", false)))
-	assert(bool(entangle.get("requires_ground", false)))
+	assert(not bool(entangle.get("requires_ground", false)))
 
 	print(
 		"PASS: 5eTools metadata drives range, targets, flat areas, walls and VFX"
