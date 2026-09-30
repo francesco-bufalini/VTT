@@ -49,10 +49,49 @@ AUXILIARY_WORDS = (
     "support",
     "head",
     "body",
-    "sculpted",
+    "wing",
+    "wings",
+    "arm",
+    "arms",
+    "leg",
+    "legs",
+    "tail",
+    "weapon",
+    "weapons",
     "marker",
     "base",
 )
+COMPLETE_MODEL_WORDS = (
+    "final",
+    "posed",
+    "complete",
+    "completed",
+    "assembled",
+    "merged",
+    "whole",
+    "full",
+)
+TECHNICAL_FOLDER_WORDS = {
+    "blend",
+    "blends",
+    "model",
+    "models",
+    "obj",
+    "objs",
+    "source",
+    "sources",
+    "stl",
+    "stls",
+    "unsupported",
+    "supported",
+    "presupported",
+    "pre-supported",
+    "parts",
+    "pieces",
+    "print",
+    "printing",
+    "files",
+}
 
 
 def parse_args() -> argparse.Namespace:
@@ -136,8 +175,17 @@ def import_source(path: Path) -> None:
         raise ValueError(f"Unsupported source format: {suffix}")
 
 
-def mesh_objects() -> list[bpy.types.Object]:
-    return [obj for obj in bpy.context.scene.objects if obj.type == "MESH"]
+def mesh_objects(visible_only: bool = False) -> list[bpy.types.Object]:
+    objects = [obj for obj in bpy.context.scene.objects if obj.type == "MESH"]
+    if not visible_only:
+        return objects
+    return [
+        obj
+        for obj in objects
+        if not obj.hide_viewport
+        and not obj.hide_render
+        and obj.visible_get(view_layer=bpy.context.view_layer)
+    ]
 
 
 def object_bounds(obj: bpy.types.Object) -> tuple[Vector, Vector]:
@@ -168,6 +216,14 @@ def world_bounds(objects: list[bpy.types.Object]) -> tuple[Vector, Vector]:
     return low, high
 
 
+def direct_supported_files(folder: Path) -> list[Path]:
+    return sorted(
+        path
+        for path in folder.iterdir()
+        if path.is_file() and path.suffix.lower() in SUPPORTED_EXTENSIONS
+    )
+
+
 def supported_files(folder: Path) -> list[Path]:
     return sorted(
         path
@@ -176,49 +232,94 @@ def supported_files(folder: Path) -> list[Path]:
     )
 
 
+def _technical_folder_name(name: str) -> bool:
+    normalized = slugify(name).replace("_", "-")
+    return normalized in TECHNICAL_FOLDER_WORDS
+
+
 def discover_packages(source_root: Path) -> list[Path]:
-    direct = [
-        p
-        for p in source_root.iterdir()
-        if p.is_file() and p.suffix.lower() in SUPPORTED_EXTENSIONS
-    ]
-    children = [
-        p
-        for p in sorted(source_root.iterdir())
-        if p.is_dir() and supported_files(p)
-    ]
-    # If the chosen folder already contains miniature files, it is one package.
-    # Otherwise each immediate child is treated as one miniature package.
-    if direct:
-        return [source_root]
-    return children
+    """Find miniature folders at any depth without stopping at A/B/C grouping folders.
+
+    A directory containing model files directly is a package.  A creature folder
+    whose only model-bearing children are technical folders (STL, Supported,
+    Parts, Blend, ...) is also kept as one package so print variants are not
+    mistaken for separate creatures.
+    """
+    packages: list[Path] = []
+
+    def walk(folder: Path, is_root: bool = False) -> None:
+        direct = direct_supported_files(folder)
+        children = [
+            child
+            for child in sorted(folder.iterdir())
+            if child.is_dir() and supported_files(child)
+        ]
+
+        if direct:
+            packages.append(folder)
+            return
+
+        if (
+            not is_root
+            and children
+            and all(_technical_folder_name(child.name) for child in children)
+        ):
+            packages.append(folder)
+            return
+
+        for child in children:
+            walk(child)
+
+    walk(source_root, is_root=True)
+
+    # Preserve order while removing accidental duplicates from unusual trees.
+    unique: list[Path] = []
+    seen: set[Path] = set()
+    for package in packages:
+        resolved = package.resolve()
+        if resolved not in seen:
+            seen.add(resolved)
+            unique.append(package)
+    return unique
+
+
+def _contains_word(text: str, word: str) -> bool:
+    return re.search(r"(^|[^a-z0-9])" + re.escape(word) + r"([^a-z0-9]|$)", text) is not None
+
+
+def is_print_part(path: Path, package_name: str) -> bool:
+    name = path.stem.lower()
+    if slugify(name) == slugify(package_name):
+        return False
+    return any(_contains_word(name, word) for word in AUXILIARY_WORDS)
 
 
 def source_score(path: Path, package_name: str) -> int:
     name = path.stem.lower()
     package = package_name.lower()
     suffix = path.suffix.lower()
+
+    # Scene/assembled formats win decisively over raw printable STL pieces.
     score = {
-        ".blend": 120,
-        ".glb": 110,
-        ".gltf": 105,
-        ".obj": 100,
-        ".stl": 90,
-        ".fbx": 95,
+        ".blend": 1200,
+        ".glb": 1100,
+        ".gltf": 1050,
+        ".fbx": 950,
+        ".obj": 900,
+        ".stl": 200,
     }.get(suffix, 0)
 
-    if "final" in name:
-        score += 400
-    if "posed" in name:
-        score += 300
-    if "rigged" in name:
-        score += 100
     if slugify(name) == slugify(package):
-        score += 250
+        score += 900
+    if any(_contains_word(name, word) for word in COMPLETE_MODEL_WORDS):
+        score += 800
+    if _contains_word(name, "rigged"):
+        score += 500
+    if _contains_word(name, "sculpted"):
+        score += 150
 
-    for word in AUXILIARY_WORDS:
-        if word in name:
-            score -= 600
+    if is_print_part(path, package_name):
+        score -= 1400
     return score
 
 
@@ -226,7 +327,22 @@ def choose_main_source(package: Path) -> Path:
     files = supported_files(package)
     if not files:
         raise ValueError("No supported model files")
-    return max(files, key=lambda path: (source_score(path, package.name), path.stat().st_size))
+
+    ranked = sorted(
+        files,
+        key=lambda path: (source_score(path, package.name), path.stat().st_size),
+        reverse=True,
+    )
+    chosen = ranked[0]
+
+    # Do not silently turn a head/body/support into a VTT token.  A package that
+    # contains only printable pieces needs an assembled/posed source model.
+    if is_print_part(chosen, package.name):
+        raise ValueError(
+            "Only separated printable parts were found; no complete/posed model "
+            "could be identified for this miniature"
+        )
+    return chosen
 
 
 def base_candidate_score(obj: bpy.types.Object) -> int:
@@ -399,9 +515,6 @@ def normalize_from_base(
         Vector((-center_x, -center_y, -ground_z))
     )
     for obj in objects:
-        obj.hide_set(False)
-        obj.hide_viewport = False
-        obj.hide_render = False
         obj.matrix_world = transform @ obj.matrix_world
 
     output_low, output_high = world_bounds(objects)
@@ -507,13 +620,18 @@ def process_package(
     print(f"Source model: {main_source.name}")
     import_source(main_source)
 
-    objects = mesh_objects()
-    if not objects:
+    all_objects = mesh_objects()
+    if not all_objects:
         raise ValueError("Main source contains no mesh objects")
 
-    objects, base_low, base_high, base_reference = resolve_base(
-        package, main_source, objects
+    all_objects, base_low, base_high, base_reference = resolve_base(
+        package, main_source, all_objects
     )
+    objects = mesh_objects(visible_only=True)
+    if not objects:
+        raise ValueError(
+            "The selected complete model has no visible mesh objects to export"
+        )
     diameter = max(base_high.x - base_low.x, base_high.y - base_low.y)
 
     size_hint = (
