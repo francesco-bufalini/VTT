@@ -3406,6 +3406,212 @@ func _cast_persistent_sphere(
 	)
 
 
+func _spell_targets_in_geometry(
+	start: Vector3,
+	end: Vector3,
+	spell_data: Dictionary,
+	caster: Node3D = null
+) -> Array[Node3D]:
+	var targets: Array[Node3D] = []
+	var shape: String = String(
+		spell_data.get("aoe_shape", "sphere")
+	)
+	var description: String = String(
+		spell_data.get("description", "")
+	).to_lower()
+	var target_mode: String = String(
+		spell_data.get("target_mode", "")
+	)
+	var exclude_caster: bool = (
+		target_mode in ["self_token", "token_then_direction"]
+		or "other than you" in description
+		or "other than yourself" in description
+		or "excluding you" in description
+	)
+
+	for node: Node in get_tree().get_nodes_in_group("dnd_token"):
+		if not node is Node3D:
+			continue
+		var token: Node3D = node as Node3D
+		if token == null or not is_instance_valid(token):
+			continue
+		if exclude_caster and caster != null and token == caster:
+			continue
+		if _token_inside_spell_geometry(
+			token.global_position,
+			start,
+			end,
+			shape,
+			spell_data
+		):
+			targets.append(token)
+	return targets
+
+
+func _token_inside_spell_geometry(
+	point: Vector3,
+	start: Vector3,
+	end: Vector3,
+	shape: String,
+	spell_data: Dictionary
+) -> bool:
+	var tolerance: float = _cell_size() * 0.45
+
+	match shape:
+		"sphere":
+			var radius: float = (
+				_effective_aoe_radius_feet(spell_data)
+				/ 5.0
+				* _cell_size()
+			)
+			return point.distance_to(start) <= radius + tolerance
+
+		"cube":
+			var half_side: float = (
+				float(spell_data.get("aoe_side_feet", 10.0))
+				* 0.5
+				/ 5.0
+				* _cell_size()
+			)
+			var delta: Vector3 = point - start
+			return (
+				absf(delta.x) <= half_side + tolerance
+				and absf(delta.y) <= half_side + tolerance
+				and absf(delta.z) <= half_side + tolerance
+			)
+
+		"flat_square":
+			var half_square: float = (
+				float(spell_data.get("aoe_side_feet", 10.0))
+				* 0.5
+				/ 5.0
+				* _cell_size()
+			)
+			var flat_delta: Vector3 = point - start
+			return (
+				absf(flat_delta.x) <= half_square + tolerance
+				and absf(flat_delta.z) <= half_square + tolerance
+				and absf(flat_delta.y) <= _cell_size() * 1.5
+			)
+
+		"cylinder":
+			var radius_world: float = (
+				float(spell_data.get("aoe_radius_feet", 5.0))
+				/ 5.0
+				* _cell_size()
+			)
+			var height_world: float = (
+				float(spell_data.get("aoe_height_feet", 5.0))
+				/ 5.0
+				* _cell_size()
+			)
+			var cylinder_delta: Vector3 = point - start
+			var horizontal: Vector2 = Vector2(
+				cylinder_delta.x,
+				cylinder_delta.z
+			)
+			return (
+				horizontal.length() <= radius_world + tolerance
+				and cylinder_delta.y >= -tolerance
+				and cylinder_delta.y <= height_world + tolerance
+			)
+
+		"line":
+			var line_axis: Vector3 = end - start
+			var line_length: float = line_axis.length()
+			if line_length < 0.0001:
+				return false
+			var line_direction: Vector3 = line_axis / line_length
+			var from_start: Vector3 = point - start
+			var along: float = from_start.dot(line_direction)
+			if along < -tolerance or along > line_length + tolerance:
+				return false
+			var closest: Vector3 = start + line_direction * clampf(
+				along,
+				0.0,
+				line_length
+			)
+			var half_width: float = (
+				maxf(
+					float(spell_data.get("line_width_feet", 5.0)),
+					5.0
+				)
+				* 0.5
+				/ 5.0
+				* _cell_size()
+			)
+			return point.distance_to(closest) <= half_width + tolerance
+
+		"cone":
+			var cone_axis: Vector3 = end - start
+			var cone_length: float = cone_axis.length()
+			if cone_length < 0.0001:
+				return false
+			var cone_direction: Vector3 = cone_axis / cone_length
+			var cone_delta: Vector3 = point - start
+			var cone_along: float = cone_delta.dot(cone_direction)
+			if cone_along < -tolerance or cone_along > cone_length + tolerance:
+				return false
+			var radial_vector: Vector3 = (
+				cone_delta - cone_direction * cone_along
+			)
+			# D&D cones are as wide at a given distance as that distance.
+			return radial_vector.length() <= maxf(cone_along, 0.0) + tolerance
+
+	return false
+
+
+func _point_spell_targets(
+	point: Vector3,
+	spell_data: Dictionary,
+	caster: Node3D
+) -> Array[Node3D]:
+	return _spell_targets_in_geometry(
+		point,
+		_area_endpoint(point, spell_data),
+		spell_data,
+		caster
+	)
+
+
+func _direction_spell_targets(
+	caster: Node3D,
+	target_point: Vector3,
+	spell_data: Dictionary
+) -> Array[Node3D]:
+	var geometry: Dictionary = _direction_geometry_from_point(
+		caster,
+		target_point,
+		spell_data
+	)
+	if geometry.is_empty():
+		return []
+	return _spell_targets_in_geometry(
+		geometry.get("start", Vector3.ZERO),
+		geometry.get("end", Vector3.ZERO),
+		spell_data,
+		caster
+	)
+
+
+func _caster_direction_spell_targets(
+	caster: Node3D,
+	spell_data: Dictionary
+) -> Array[Node3D]:
+	var geometry: Dictionary = _directional_spell_geometry(
+		caster,
+		spell_data
+	)
+	if geometry.is_empty():
+		return []
+	return _spell_targets_in_geometry(
+		geometry.get("start", Vector3.ZERO),
+		geometry.get("end", Vector3.ZERO),
+		spell_data,
+		caster
+	)
+
+
 func _spell_needs_saving_throw_resolution(
 	spell_data: Dictionary
 ) -> bool:
