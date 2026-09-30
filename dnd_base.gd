@@ -399,9 +399,9 @@ func _unhandled_input(event: InputEvent) -> void:
 		if not _selected_tokens.is_empty():
 			if event.shift_pressed:
 				if event.keycode == KEY_UP or event.keycode == KEY_DOWN:
-					push_undo_state()
-					for token in _selected_tokens:
-						token.nudge_vertical(1 if event.keycode == KEY_UP else -1)
+					_move_selected_vertical(
+						1 if event.keycode == KEY_UP else -1
+					)
 					get_viewport().set_input_as_handled()
 					return
 				if event.keycode == KEY_LEFT:
@@ -543,16 +543,23 @@ func _append_history_state(
 		stack.pop_front()
 
 
-func push_undo_state() -> void:
+func begin_undo_transaction() -> Dictionary:
 	if _undo_restoring:
-		return
-	var state: Dictionary = _capture_history_state()
-	if state.is_empty():
+		return {}
+	return _capture_history_state()
+
+
+func commit_undo_transaction(state: Dictionary) -> void:
+	if _undo_restoring or state.is_empty():
 		return
 	_append_history_state(_undo_stack, state)
 	# Una nuova azione crea una nuova linea temporale: il redo precedente
 	# non e' piu' applicabile.
 	_redo_stack.clear()
+
+
+func push_undo_state() -> void:
+	commit_undo_transaction(begin_undo_transaction())
 
 
 func _apply_history_state(state: Dictionary) -> bool:
@@ -1447,12 +1454,52 @@ func _clean_selection() -> void:
 
 func _move_selected(direction: Vector2i) -> void:
 	_clean_selection()
-	if not _selected_tokens.is_empty():
-		push_undo_state()
+	if _selected_tokens.is_empty():
+		return
+
+	var before: Dictionary = begin_undo_transaction()
+	var origins: Array[Vector3] = []
+	for token: CharacterBody3D in _selected_tokens:
+		origins.append(token.global_position)
 
 	for token: CharacterBody3D in _selected_tokens:
 		if token.has_method("nudge_grid"):
 			token.call("nudge_grid", direction)
+
+	if _selected_tokens_moved_from(origins):
+		commit_undo_transaction(before)
+
+
+func _move_selected_vertical(steps: int) -> void:
+	_clean_selection()
+	if _selected_tokens.is_empty():
+		return
+
+	var before: Dictionary = begin_undo_transaction()
+	var origins: Array[Vector3] = []
+	for token: CharacterBody3D in _selected_tokens:
+		origins.append(token.global_position)
+
+	for token: CharacterBody3D in _selected_tokens:
+		if token.has_method("nudge_vertical"):
+			token.call("nudge_vertical", steps)
+
+	if _selected_tokens_moved_from(origins):
+		commit_undo_transaction(before)
+
+
+func _selected_tokens_moved_from(origins: Array[Vector3]) -> bool:
+	if origins.size() != _selected_tokens.size():
+		return true
+	for index: int in range(_selected_tokens.size()):
+		var token: CharacterBody3D = _selected_tokens[index]
+		if (
+			token != null
+			and is_instance_valid(token)
+			and not token.global_position.is_equal_approx(origins[index])
+		):
+			return true
+	return false
 
 
 func _rotate_selected(quarter_turns: int) -> void:
