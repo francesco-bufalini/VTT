@@ -55,6 +55,7 @@ var _wall_globe_preview_center: Vector3 = Vector3.INF
 var _wall_globe_preview_radius: float = -1.0
 var _wall_globe_preview_style: String = ""
 var _wall_globe_preview_hemisphere: bool = false
+var _affected_tokens_signature: String = ""
 
 var _camera: Camera3D = null
 var _volumetric_grid: Node3D = null
@@ -71,6 +72,322 @@ var _start_cube: MeshInstance3D
 var _end_cube: MeshInstance3D
 var _distance_canvas: CanvasLayer
 var _distance_label: Label
+
+
+func _token_occupied_cell_centers(token: Node3D) -> Array[Vector3]:
+	var centers: Array[Vector3] = []
+	if token == null or not is_instance_valid(token):
+		return centers
+
+	var footprint: float = (
+		float(token.call("get_footprint_cells"))
+		if token.has_method("get_footprint_cells")
+		else 1.0
+	)
+	var height_cells: float = maxf(
+		float(token.get("token_height_cells")),
+		0.1
+	)
+	var horizontal_count: int = maxi(1, int(ceil(footprint)))
+	var vertical_count: int = maxi(1, int(ceil(height_cells)))
+	var horizontal_start: float = (
+		-float(horizontal_count - 1) * cell_size * 0.5
+	)
+	var bottom_y: float = (
+		token.global_position.y
+		- height_cells * cell_size * 0.5
+	)
+
+	for y_index: int in range(vertical_count):
+		var world_y: float = (
+			bottom_y + (float(y_index) + 0.5) * cell_size
+		)
+		for z_index: int in range(horizontal_count):
+			for x_index: int in range(horizontal_count):
+				centers.append(
+					Vector3(
+						token.global_position.x
+						+ horizontal_start
+						+ float(x_index) * cell_size,
+						world_y,
+						token.global_position.z
+						+ horizontal_start
+						+ float(z_index) * cell_size
+					)
+				)
+	return centers
+
+
+func _distance_to_segment(
+	point: Vector3,
+	start: Vector3,
+	end: Vector3
+) -> float:
+	var segment: Vector3 = end - start
+	var length_squared: float = segment.length_squared()
+	if length_squared < 0.000001:
+		return point.distance_to(start)
+	var t: float = clampf(
+		(point - start).dot(segment) / length_squared,
+		0.0,
+		1.0
+	)
+	return point.distance_to(start + segment * t)
+
+
+func _cell_intersects_aoe(
+	point: Vector3,
+	start: Vector3,
+	end: Vector3,
+	shape: String,
+	style: String = "",
+	line_width_world: float = -1.0
+) -> bool:
+	var geometry: Dictionary = _aoe_geometry(
+		start,
+		end,
+		shape,
+		style,
+		line_width_world
+	)
+	var tolerance: float = cell_size * 0.52
+
+	match shape:
+		"sphere":
+			return point.distance_to(start) <= (
+				float(geometry.get("radius", cell_size * 0.5))
+				+ tolerance
+			)
+
+		"cube":
+			var size: Vector3 = geometry.get(
+				"size",
+				Vector3.ONE * cell_size
+			)
+			var delta: Vector3 = point - start
+			return (
+				absf(delta.x) <= size.x * 0.5 + tolerance
+				and absf(delta.y) <= size.y * 0.5 + tolerance
+				and absf(delta.z) <= size.z * 0.5 + tolerance
+			)
+
+		"flat_square":
+			var square_size: Vector3 = geometry.get(
+				"size",
+				Vector3.ONE * cell_size
+			)
+			var square_delta: Vector3 = point - start
+			return (
+				absf(square_delta.x) <= square_size.x * 0.5 + tolerance
+				and absf(square_delta.z) <= square_size.z * 0.5 + tolerance
+				and absf(square_delta.y) <= tolerance
+			)
+
+		"cylinder":
+			var radius: float = float(
+				geometry.get("radius", cell_size * 0.5)
+			)
+			var height: float = float(
+				geometry.get("height", cell_size)
+			)
+			var delta: Vector3 = point - start
+			return (
+				Vector2(delta.x, delta.z).length() <= radius + tolerance
+				and delta.y >= -tolerance
+				and delta.y <= height + tolerance
+			)
+
+		"line":
+			var line_radius: float = float(
+				geometry.get("radius", cell_size * 0.5)
+			)
+			return _distance_to_segment(point, start, end) <= (
+				line_radius + tolerance
+			)
+
+		"cone":
+			var axis: Vector3 = end - start
+			var length: float = axis.length()
+			if length < 0.0001:
+				return false
+			var direction: Vector3 = axis / length
+			var delta: Vector3 = point - start
+			var along: float = delta.dot(direction)
+			if along < -tolerance or along > length + tolerance:
+				return false
+			var radial: float = (
+				delta - direction * clampf(along, 0.0, length)
+			).length()
+			var end_radius: float = float(
+				geometry.get("radius", length * 0.5)
+			)
+			var allowed_radius: float = (
+				end_radius * clampf(along / length, 0.0, 1.0)
+			)
+			return radial <= allowed_radius + tolerance
+
+	return false
+
+
+func _persistent_aoe_hits_token(
+	data: Dictionary,
+	token: Node3D
+) -> bool:
+	var start_data: Array = data.get("start", [])
+	var end_data: Array = data.get("end", [])
+	if start_data.size() != 3 or end_data.size() != 3:
+		return false
+	var start: Vector3 = Vector3(
+		float(start_data[0]),
+		float(start_data[1]),
+		float(start_data[2])
+	)
+	var end: Vector3 = Vector3(
+		float(end_data[0]),
+		float(end_data[1]),
+		float(end_data[2])
+	)
+	var shape: String = String(data.get("shape", "sphere"))
+	var style: String = String(data.get("style", ""))
+	var line_width_world: float = float(
+		data.get("line_width_world", -1.0)
+	)
+	for center: Vector3 in _token_occupied_cell_centers(token):
+		if _cell_intersects_aoe(
+			center,
+			start,
+			end,
+			shape,
+			style,
+			line_width_world
+		):
+			return true
+	return false
+
+
+func _token_touched_by_current_geometry(token: Node3D) -> bool:
+	for data_value: Variant in persistent_aoes:
+		if data_value is Dictionary:
+			if _persistent_aoe_hits_token(
+				data_value as Dictionary,
+				token
+			):
+				return true
+
+	if (
+		is_instance_valid(_spell_preview)
+		and _spell_preview.visible
+		and _spell_preview_shape in [
+			"sphere", "cube", "cone", "line", "flat_square", "cylinder"
+		]
+	):
+		for center: Vector3 in _token_occupied_cell_centers(token):
+			if _cell_intersects_aoe(
+				center,
+				_spell_preview_start,
+				_spell_preview_end,
+				_spell_preview_shape,
+				_spell_preview_style,
+				_spell_preview_line_width
+			):
+				return true
+
+	if aoe_mode and _dragging:
+		for center: Vector3 in _token_occupied_cell_centers(token):
+			if _cell_intersects_aoe(
+				center,
+				_start_center,
+				_end_center,
+				aoe_shape,
+				"",
+				-1.0
+			):
+				return true
+
+	if (
+		_measurement_mode
+		and not aoe_mode
+		and is_instance_valid(_line)
+		and _line.visible
+	):
+		for center: Vector3 in _token_occupied_cell_centers(token):
+			if _distance_to_segment(
+				center,
+				_start_center,
+				_end_center
+			) <= cell_size * 0.55:
+				return true
+
+	return false
+
+
+func _refresh_affected_token_highlight() -> void:
+	var board: Node = get_parent()
+	if board == null or not board.has_method(
+		"set_affected_token_highlight"
+	):
+		return
+
+	var tokens: Array[Node] = get_tree().get_nodes_in_group("dnd_token")
+	var signature_parts: PackedStringArray = PackedStringArray()
+	signature_parts.append(JSON.stringify(persistent_aoes))
+	signature_parts.append(
+		"%s|%s|%s|%s|%s|%s|%s" % [
+		str(_measurement_mode),
+		str(aoe_mode),
+		str(_dragging),
+		str(_start_center),
+		str(_end_center),
+		aoe_shape,
+		str(
+			is_instance_valid(_line)
+			and _line.visible
+		)
+		]
+	)
+	signature_parts.append(
+		"%s|%s|%s|%s|%s|%.4f" % [
+		str(
+			is_instance_valid(_spell_preview)
+			and _spell_preview.visible
+		),
+		str(_spell_preview_start),
+		str(_spell_preview_end),
+		_spell_preview_shape,
+		_spell_preview_style,
+		_spell_preview_line_width
+		]
+	)
+	for node: Node in tokens:
+		if not node is Node3D:
+			continue
+		var token: Node3D = node as Node3D
+		signature_parts.append(
+			"%s|%s|%.3f|%.3f" % [
+				str(token.get_instance_id()),
+				str(token.global_position),
+				float(
+					token.call("get_footprint_cells")
+					if token.has_method("get_footprint_cells")
+					else 1.0
+				),
+				maxf(float(token.get("token_height_cells")), 0.1)
+			]
+		)
+
+	var signature: String = ";".join(signature_parts)
+	if signature == _affected_tokens_signature:
+		return
+	_affected_tokens_signature = signature
+
+	var affected: Array = []
+	for node: Node in tokens:
+		if not node is Node3D:
+			continue
+		var token: Node3D = node as Node3D
+		if _token_touched_by_current_geometry(token):
+			affected.append(token)
+	board.call("set_affected_token_highlight", affected)
 
 
 func meters_to_world(meters: float) -> float:
@@ -98,6 +415,7 @@ func _ready() -> void:
 func _process(_delta: float) -> void:
 	if _measurement_mode and _dragging:
 		_update_target_from_camera()
+	_refresh_affected_token_highlight()
 
 
 func set_camera(new_camera: Camera3D) -> void:
