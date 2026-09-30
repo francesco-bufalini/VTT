@@ -12,6 +12,7 @@ const CONTEXT_DISSOLVE_AOT := 10
 const CONTEXT_SPELLS := 11
 const CONTEXT_CAMERA_SETTINGS := 12
 const CONTEXT_INITIATIVE := 13
+const CONTEXT_TOKEN_DETAILS := 14
 const CAMPAIGN_EDITOR_SCENE_PATH := "res://vtt/editor/campaign_editor.tscn"
 const TOKEN_LIBRARY_MANIFEST := "res://assets/tokens/token_library.json"
 
@@ -63,6 +64,12 @@ var camera_speed_slider: HSlider
 var camera_sensitivity_slider: HSlider
 var camera_speed_value_label: Label
 var camera_sensitivity_value_label: Label
+var token_name_input: LineEdit
+var token_state_dialog: ConfirmationDialog
+var token_state_name: LineEdit
+var token_state_grid: GridContainer
+var token_state_checks: Dictionary = {}
+var _editing_token: CharacterBody3D
 var token_drag: Node
 var spell_system: Node
 var initiative_tracker: Node
@@ -104,6 +111,8 @@ func _ready() -> void:
 	board_sync.setup(self, token_scene, tokens_root, measurement_tool)
 	_build_share_dialog()
 	_build_camera_settings_dialog()
+	_ensure_token_name_input()
+	_build_token_state_dialog()
 
 	spell_system = preload("res://vtt/spells/spell_system.gd").new()
 	spell_system.name = "SpellSystem"
@@ -657,6 +666,9 @@ func _show_context_menu(screen_position: Vector2) -> void:
 	if not _selected_tokens.is_empty():
 		context_menu.add_separator()
 
+		if _selected_tokens.size() == 1:
+			context_menu.add_item("Nome e stati…", CONTEXT_TOKEN_DETAILS)
+
 		if _context_token != null and is_instance_valid(_context_token):
 			context_menu.add_item("Incantesimi", CONTEXT_SPELLS)
 			context_menu.add_separator()
@@ -697,6 +709,10 @@ func _on_context_menu_id_pressed(id: int) -> void:
 		if spell_system != null and is_instance_valid(spell_system):
 			spell_system.call("open_panel")
 		context_menu.hide()
+		return
+
+	if id == CONTEXT_TOKEN_DETAILS:
+		open_selected_token_state_editor()
 		return
 
 	if id == CONTEXT_DISSOLVE_AOT:
@@ -750,7 +766,9 @@ func _on_context_menu_id_pressed(id: int) -> void:
 			_ui_owns_mouse = true
 			size_selector.select(2)
 			color_picker.color = Color.WHITE
-			color_dialog.popup_centered_clamped(Vector2i(560, 590), 0.9)
+			if token_name_input != null:
+				token_name_input.clear()
+			color_dialog.popup_centered_clamped(Vector2i(560, 640), 0.9)
 			call_deferred("_release_mouse")
 
 		CONTEXT_DELETE_SELECTED:
@@ -875,6 +893,172 @@ func _build_camera_settings_dialog() -> void:
 	_update_camera_settings_labels()
 
 
+func _ensure_token_name_input() -> void:
+	var content_box: VBoxContainer = (
+		color_dialog.get_node_or_null("Content/VBox") as VBoxContainer
+	)
+	if content_box == null:
+		return
+
+	token_name_input = content_box.get_node_or_null("TokenName") as LineEdit
+	if token_name_input != null:
+		return
+
+	var label := Label.new()
+	label.name = "TokenNameLabel"
+	label.text = "Nome del token (opzionale)"
+	content_box.add_child(label)
+	content_box.move_child(label, 0)
+
+	token_name_input = LineEdit.new()
+	token_name_input.name = "TokenName"
+	token_name_input.placeholder_text = "Es. Sariel, Guardia 1…"
+	token_name_input.max_length = 80
+	content_box.add_child(token_name_input)
+	content_box.move_child(token_name_input, 1)
+
+
+func _build_token_state_dialog() -> void:
+	token_state_dialog = ConfirmationDialog.new()
+	token_state_dialog.name = "TokenStateDialog"
+	token_state_dialog.title = "Nome e stati del token"
+	token_state_dialog.ok_button_text = "Applica"
+	token_state_dialog.min_size = Vector2i(500, 610)
+	$UI.add_child(token_state_dialog)
+
+	var outer := VBoxContainer.new()
+	outer.set_anchors_and_offsets_preset(Control.PRESET_FULL_RECT)
+	outer.offset_left = 14.0
+	outer.offset_right = -14.0
+	outer.offset_top = 48.0
+	outer.offset_bottom = -58.0
+	outer.add_theme_constant_override("separation", 8)
+	token_state_dialog.add_child(outer)
+
+	var name_label := Label.new()
+	name_label.text = "Nome visualizzato sopra il token"
+	outer.add_child(name_label)
+
+	token_state_name = LineEdit.new()
+	token_state_name.placeholder_text = "Lascia vuoto per non mostrare alcun nome"
+	token_state_name.max_length = 80
+	outer.add_child(token_state_name)
+
+	var states_label := Label.new()
+	states_label.text = "Condizioni D&D 5e"
+	states_label.add_theme_font_size_override("font_size", 14)
+	outer.add_child(states_label)
+
+	var scroll := ScrollContainer.new()
+	scroll.size_flags_vertical = Control.SIZE_EXPAND_FILL
+	scroll.horizontal_scroll_mode = ScrollContainer.SCROLL_MODE_DISABLED
+	outer.add_child(scroll)
+
+	token_state_grid = GridContainer.new()
+	token_state_grid.columns = 2
+	token_state_grid.size_flags_horizontal = Control.SIZE_EXPAND_FILL
+	token_state_grid.add_theme_constant_override("h_separation", 16)
+	token_state_grid.add_theme_constant_override("v_separation", 4)
+	scroll.add_child(token_state_grid)
+
+	var help := Label.new()
+	help.text = (
+		"I pittogrammi degli stati attivi vengono mostrati sotto al nome. "
+		+ "Il nome dell'iniziativa resta modificabile separatamente."
+	)
+	help.autowrap_mode = TextServer.AUTOWRAP_WORD_SMART
+	help.add_theme_font_size_override("font_size", 11)
+	outer.add_child(help)
+
+	token_state_dialog.confirmed.connect(_apply_token_state_editor)
+	token_state_dialog.canceled.connect(_close_token_state_editor)
+	token_state_dialog.close_requested.connect(_close_token_state_editor)
+
+
+func open_selected_token_state_editor() -> void:
+	_clean_selection()
+	if _selected_tokens.size() != 1:
+		_close_context_menu_to_game()
+		return
+	_open_token_state_editor(_selected_tokens[0])
+
+
+func _open_token_state_editor(token: CharacterBody3D) -> void:
+	if token_state_dialog == null or token == null or not is_instance_valid(token):
+		return
+	_editing_token = token
+	token_state_name.text = (
+		String(token.call("get_display_name"))
+		if token.has_method("get_display_name")
+		else ""
+	)
+
+	for child: Node in token_state_grid.get_children():
+		child.queue_free()
+	token_state_checks.clear()
+
+	var current: Array = []
+	if token.has_method("get_conditions"):
+		var current_value: Variant = token.call("get_conditions")
+		if current_value is Array:
+			current = current_value as Array
+
+	var definitions: Array = []
+	if token.has_method("get_condition_definitions"):
+		var definitions_value: Variant = token.call("get_condition_definitions")
+		if definitions_value is Array:
+			definitions = definitions_value as Array
+
+	for value: Variant in definitions:
+		if not value is Dictionary:
+			continue
+		var definition := value as Dictionary
+		var condition_id := String(definition.get("id", ""))
+		if condition_id.is_empty():
+			continue
+		var check := CheckButton.new()
+		check.text = "%s  %s" % [
+			String(definition.get("icon", "•")),
+			String(definition.get("name", condition_id))
+		]
+		check.button_pressed = condition_id in current
+		token_state_grid.add_child(check)
+		token_state_checks[condition_id] = check
+
+	_ui_owns_mouse = true
+	if context_menu.visible:
+		context_menu.hide()
+	_release_mouse()
+	token_state_dialog.popup_centered(Vector2i(500, 610))
+	call_deferred("_release_mouse")
+
+
+func _apply_token_state_editor() -> void:
+	if _editing_token == null or not is_instance_valid(_editing_token):
+		_close_token_state_editor()
+		return
+
+	push_undo_state()
+	if _editing_token.has_method("set_display_name"):
+		_editing_token.call("set_display_name", token_state_name.text)
+
+	var active_conditions: Array[String] = []
+	for condition_id: Variant in token_state_checks.keys():
+		var check: CheckButton = token_state_checks[condition_id] as CheckButton
+		if check != null and check.button_pressed:
+			active_conditions.append(String(condition_id))
+	if _editing_token.has_method("set_conditions"):
+		_editing_token.call("set_conditions", active_conditions)
+
+	_close_token_state_editor()
+
+
+func _close_token_state_editor() -> void:
+	_editing_token = null
+	_ui_owns_mouse = false
+	_capture_mouse()
+
+
 func _close_context_menu_to_game() -> void:
 	_ui_owns_mouse = false
 	_capture_mouse()
@@ -884,6 +1068,7 @@ func _on_context_menu_hidden() -> void:
 	if (
 		color_dialog.visible
 		or (is_instance_valid(share_dialog) and share_dialog.visible)
+		or (is_instance_valid(token_state_dialog) and token_state_dialog.visible)
 		or (
 			is_instance_valid(camera_settings_dialog)
 			and camera_settings_dialog.visible
@@ -897,6 +1082,7 @@ func _finish_context_menu_close() -> void:
 	if (
 		color_dialog.visible
 		or (is_instance_valid(share_dialog) and share_dialog.visible)
+		or (is_instance_valid(token_state_dialog) and token_state_dialog.visible)
 		or (
 			is_instance_valid(camera_settings_dialog)
 			and camera_settings_dialog.visible
@@ -928,7 +1114,8 @@ func _on_token_dialog_confirmed() -> void:
 	_spawn_token(
 		color_picker.color,
 		String(selected_size.get("name", "Medium")),
-		float(selected_size.get("footprint", 1.0))
+		float(selected_size.get("footprint", 1.0)),
+		token_name_input.text if token_name_input != null else ""
 	)
 
 	_ui_owns_mouse = false
@@ -943,7 +1130,8 @@ func _on_token_dialog_canceled() -> void:
 func _spawn_token(
 	token_color: Color,
 	size_name: String,
-	footprint_cells: float
+	footprint_cells: float,
+	display_name: String = ""
 ) -> void:
 	if token_scene == null:
 		push_error("DnDBase: token_scene non assegnata.")
@@ -975,6 +1163,9 @@ func _spawn_token(
 			size_name,
 			footprint_cells
 		)
+
+	if token.has_method("set_display_name"):
+		token.call("set_display_name", display_name)
 
 	if token.has_method("set_vision_cone_visible"):
 		token.call("set_vision_cone_visible", _vision_cones_visible)
