@@ -2,7 +2,7 @@ extends Control
 
 const ACTIVE_CAMPAIGNS_SCENE_PATH := "res://vtt/menu/active_campaigns.tscn"
 const MENU_BACKGROUND_TEXTURE := (
-	"res://assets/menu/background/menu_background.jpg"
+	"res://assets/menu/background/menu_background.webp"
 )
 
 var _options_dialog: AcceptDialog
