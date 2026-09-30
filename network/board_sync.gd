@@ -6,6 +6,7 @@ const MAGIC := "DND_MAP_SYNC_V3"
 const BACKUP_DIR := "user://map_sync_backups"
 const MAX_BACKUPS := 20
 const MAX_BYTES := 4 * 1024 * 1024
+const BULK_SEND_TIMEOUT_MS := 3000
 const GROUPS := ["dnd_token", "tactical_platform", "encounter_obstacle"]
 const TOKEN_CONDITIONS := [
 	"blinded", "charmed", "deafened", "exhaustion", "frightened",
@@ -50,24 +51,158 @@ func send_snapshot(host: String, key: String) -> Error:
 	if host.strip_edges().is_empty() or key.strip_edges().is_empty():
 		status_changed.emit("Inserisci indirizzo e codice sessione")
 		return ERR_INVALID_PARAMETER
-	var snapshot := create_snapshot()
+	var payload: PackedByteArray = _snapshot_payload(key)
+	if payload.is_empty():
+		return ERR_BUSY
+	var error: Error = _queue_snapshot_payload(
+		host.strip_edges(),
+		payload,
+		30000,
+		false
+	)
+	if error == OK:
+		status_changed.emit("Connessione e invio in corso…")
+	else:
+		status_changed.emit(error_string(error))
+	return error
+
+
+func send_snapshot_to_tailnet(key: String) -> Error:
+	var clean_key: String = key.strip_edges()
+	if clean_key.is_empty():
+		status_changed.emit("Inserisci un codice sessione condiviso")
+		return ERR_INVALID_PARAMETER
+
+	var payload: PackedByteArray = _snapshot_payload(clean_key)
+	if payload.is_empty():
+		return ERR_BUSY
+
+	var hosts: Array[String] = _tailscale_peer_ipv4s()
+	if hosts.is_empty():
+		status_changed.emit(
+			"Nessun nodo Tailscale trovato o comando tailscale non disponibile"
+		)
+		return ERR_DOES_NOT_EXIST
+
+	var queued: int = 0
+	for host: String in hosts:
+		var error: Error = _queue_snapshot_payload(
+			host,
+			payload,
+			BULK_SEND_TIMEOUT_MS,
+			true
+		)
+		if error == OK:
+			queued += 1
+
+	if queued == 0:
+		status_changed.emit("Nessun invio Tailscale avviato")
+		return ERR_CANT_CONNECT
+
+	status_changed.emit(
+		"Invio mappa avviato verso %d nodi Tailscale" % queued
+	)
+	return OK
+
+
+func _snapshot_payload(key: String) -> PackedByteArray:
+	var snapshot: Dictionary = create_snapshot()
 	if snapshot.is_empty():
 		status_changed.emit("Attendi la fine dell'avanzamento")
-		return ERR_BUSY
-	var payload := JSON.stringify({"magic": MAGIC, "key": key.strip_edges(), "snapshot": snapshot}).to_utf8_buffer()
+		return PackedByteArray()
+
+	var payload: PackedByteArray = JSON.stringify(
+		{
+			"magic": MAGIC,
+			"key": key.strip_edges(),
+			"snapshot": snapshot
+		}
+	).to_utf8_buffer()
 	if payload.size() > MAX_BYTES:
-		return ERR_OUT_OF_MEMORY
+		status_changed.emit("La mappa supera il limite di sincronizzazione")
+		return PackedByteArray()
+	return payload
+
+
+func _queue_snapshot_payload(
+	host: String,
+	payload: PackedByteArray,
+	timeout_ms: int,
+	quiet: bool
+) -> Error:
 	var peer := StreamPeerTCP.new()
-	var error := peer.connect_to_host(host.strip_edges(), PORT)
+	var error: Error = peer.connect_to_host(host, PORT)
 	if error != OK:
-		status_changed.emit(error_string(error))
 		return error
+
 	var frame := StreamPeerBuffer.new()
 	frame.put_u32(payload.size())
 	frame.put_data(payload)
-	connections.append({"peer": peer, "out": frame.data_array, "sent": 0, "buffer": PackedByteArray(), "size": -1, "sender": true, "deadline": Time.get_ticks_msec() + 30000})
-	status_changed.emit("Connessione e invio in corso…")
+	connections.append(
+		{
+			"peer": peer,
+			"out": frame.data_array,
+			"sent": 0,
+			"buffer": PackedByteArray(),
+			"size": -1,
+			"sender": true,
+			"quiet": quiet,
+			"host": host,
+			"deadline": Time.get_ticks_msec() + timeout_ms
+		}
+	)
 	return OK
+
+
+func _tailscale_peer_ipv4s() -> Array[String]:
+	var output: Array = []
+	var executable: String = (
+		"tailscale.exe"
+		if OS.get_name() == "Windows"
+		else "tailscale"
+	)
+	var exit_code: int = OS.execute(
+		executable,
+		PackedStringArray(["status", "--json"]),
+		output,
+		true
+	)
+	if exit_code != 0:
+		return []
+
+	var raw: String = ""
+	for chunk: Variant in output:
+		raw += String(chunk)
+	var parsed: Variant = JSON.parse_string(raw)
+	if not parsed is Dictionary:
+		return []
+
+	var peers_value: Variant = (parsed as Dictionary).get("Peer", {})
+	if not peers_value is Dictionary:
+		return []
+
+	var hosts: Array[String] = []
+	var seen: Dictionary = {}
+	for peer_value: Variant in (peers_value as Dictionary).values():
+		if not peer_value is Dictionary:
+			continue
+		var ips_value: Variant = (peer_value as Dictionary).get(
+			"TailscaleIPs",
+			[]
+		)
+		if not ips_value is Array:
+			continue
+		for ip_value: Variant in ips_value:
+			var ip: String = String(ip_value).strip_edges()
+			if ip.is_empty() or ip.contains(":") or seen.has(ip):
+				continue
+			if not ip.is_valid_ip_address():
+				continue
+			seen[ip] = true
+			hosts.append(ip)
+
+	return hosts
+
 
 func _process(_delta: float) -> void:
 	if server.is_connection_available():
@@ -81,7 +216,7 @@ func _process(_delta: float) -> void:
 		var peer: StreamPeerTCP = item.peer
 		peer.poll()
 		if Time.get_ticks_msec() > item.deadline or peer.get_status() in [StreamPeerTCP.STATUS_ERROR, StreamPeerTCP.STATUS_NONE]:
-			if item.sender:
+			if item.sender and not bool(item.get("quiet", false)):
 				status_changed.emit("Invio non confermato: connessione interrotta o timeout")
 			peer.disconnect_from_host()
 			connections.remove_at(index)
@@ -103,7 +238,8 @@ func _process(_delta: float) -> void:
 			item.buffer.append_array(result[1])
 		if item.sender:
 			if item.buffer.size() > 0:
-				status_changed.emit("Mappa ricevuta e applicata" if item.buffer[0] == 1 else "Mappa rifiutata: controlla codice, scena e stato della partita")
+				if not bool(item.get("quiet", false)):
+					status_changed.emit("Mappa ricevuta e applicata" if item.buffer[0] == 1 else "Mappa rifiutata: controlla codice, scena e stato della partita")
 				peer.disconnect_from_host()
 				connections.remove_at(index)
 			continue
