@@ -13,7 +13,6 @@ const AOE_COLORS: Array[Color] = [
 	Color(1.00, 0.28, 0.62, 1.0),
 	Color(0.95, 0.95, 0.95, 1.0),
 ]
-const SpellVFX = preload("res://vtt/spells/spell_vfx.gd")
 const WallGeometry = preload("res://vtt/spells/wall_geometry.gd")
 
 @export var cell_size: float = 1.0
@@ -890,67 +889,12 @@ func show_transient_aoe(
 		Color(0.0, 0.0, 0.0, -1.0),
 		line_width_world
 	)
-	SpellVFX.attach(root, start, end, shape, style, cell_size)
 
 	var timer: Timer = Timer.new()
 	timer.one_shot = true
 	timer.wait_time = maxf(duration_seconds, 0.05)
 	root.add_child(timer)
 	timer.timeout.connect(root.queue_free)
-	timer.start()
-
-
-func show_spell_projectile(
-	start: Vector3,
-	end: Vector3,
-	style: String,
-	duration_seconds: float = 5.0
-) -> void:
-	var root: Node3D = Node3D.new()
-	root.name = "TransientSpellProjectile"
-	add_child(root)
-	SpellVFX.attach_projectile(
-		root,
-		start,
-		end,
-		style,
-		maxf(duration_seconds, 0.05),
-		cell_size
-	)
-
-
-func show_spell_projectile_with_impact(
-	start: Vector3,
-	end: Vector3,
-	projectile_style: String,
-	travel_seconds: float,
-	impact_shape: String,
-	impact_radius_world: float,
-	impact_style: String,
-	impact_seconds: float = 5.0
-) -> void:
-	show_spell_projectile(
-		start,
-		end,
-		projectile_style,
-		travel_seconds
-	)
-
-	var timer: Timer = Timer.new()
-	timer.one_shot = true
-	timer.wait_time = maxf(travel_seconds, 0.05)
-	add_child(timer)
-	timer.timeout.connect(
-		func() -> void:
-			show_transient_aoe(
-				end,
-				end + Vector3.RIGHT * impact_radius_world,
-				impact_shape,
-				impact_seconds,
-				impact_style
-			)
-			timer.queue_free()
-	)
 	timer.start()
 
 
@@ -1155,15 +1099,6 @@ func _build_wall_path_root(
 				height_world,
 				thickness_world
 			)
-			SpellVFX.attach_wall_segment(
-				root,
-				start,
-				finish,
-				height_world,
-				thickness_world,
-				style,
-				cell_size
-			)
 		if style == "wall_of_fire" and damage_side != 0:
 			_add_wall_damage_band(
 				root,
@@ -1342,14 +1277,6 @@ func _build_wall_globe_root(
 		collision.shape = sphere_shape
 		area.add_child(collision)
 		area.global_position = center
-		SpellVFX.attach_wall_globe(
-			root,
-			center,
-			radius_world,
-			style,
-			hemisphere,
-			cell_size
-		)
 
 
 func _wall_material(
@@ -1464,7 +1391,6 @@ func add_aoe(
 		selected_color,
 		line_width_world
 	)
-	SpellVFX.attach(root, start, end, shape, style, cell_size)
 
 	_add_aoe_pick_area(
 		root,
