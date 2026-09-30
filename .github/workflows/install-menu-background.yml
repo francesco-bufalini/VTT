@@ -5,6 +5,7 @@ on:
     branches:
       - feature/campaign-hub
     paths:
+      - tools/menu_background_source.b64
       - .github/workflows/install-menu-background.yml
   workflow_dispatch:
 
@@ -19,48 +20,38 @@ jobs:
         with:
           ref: feature/campaign-hub
 
-      - name: Rebuild supplied background
-        env:
-          EXPECTED_SHA256: 7b62718971a5fd52c09c52990e164dc8f0c2b8945e5237916c772bfcccfb9d71
+      - name: Decode supplied background
         run: |
           python3 - <<'PY'
           import base64
           import hashlib
           from pathlib import Path
 
-          parts = sorted(Path("tools/_menu_payload").glob("background.webp.part*"))
-          if len(parts) != 5:
-              raise SystemExit(f"Expected 5 payload parts, found {len(parts)}")
-
-          encoded = "".join(p.read_text().strip() for p in parts)
-          data = base64.b64decode(encoded, validate=True)
+          source = Path("tools/menu_background_source.b64")
+          target = Path("assets/menu/background/menu_background.jpg")
+          data = base64.b64decode(source.read_text().strip(), validate=True)
 
           digest = hashlib.sha256(data).hexdigest()
-          if digest != "7b62718971a5fd52c09c52990e164dc8f0c2b8945e5237916c772bfcccfb9d71":
-              raise SystemExit(f"Checksum mismatch: {digest}")
+          expected = "d23f6c266057cf5ef9a22b495c14c7d044fa1b75af7161247d7dbe75d788ae03"
+          if digest != expected:
+              raise SystemExit(f"Checksum mismatch: {digest} != {expected}")
 
-          if not data.startswith(b"RIFF") or b"WEBP" not in data[:16]:
-              raise SystemExit("Decoded payload is not a WebP image")
+          if not data.startswith(b"\xff\xd8\xff"):
+              raise SystemExit("Decoded payload is not a JPEG")
 
-          target = Path("assets/menu/background/lithophane_background.webp")
           target.parent.mkdir(parents=True, exist_ok=True)
           target.write_bytes(data)
           print(f"Installed {target}: {len(data)} bytes")
-
-          for p in parts:
-              p.unlink()
-          payload_dir = Path("tools/_menu_payload")
-          try:
-              payload_dir.rmdir()
-          except OSError:
-              pass
           PY
 
       - name: Commit installed background
         run: |
           git config user.name "github-actions[bot]"
           git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
-          git add assets/menu/background/lithophane_background.webp
-          git add -u tools/_menu_payload
-          git commit -m "Replace truncated menu background with supplied image"
+          git add assets/menu/background/menu_background.jpg
+          if git diff --cached --quiet; then
+            echo "No background changes to commit."
+            exit 0
+          fi
+          git commit -m "Install supplied fantasy landscape menu background"
           git push origin HEAD:feature/campaign-hub
