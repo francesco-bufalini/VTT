@@ -3933,8 +3933,7 @@
       "feet": 120
     },
     "targeting": {
-      "type": "multi_token",
-      "base_target_clicks": 6
+      "type": "multi_token"
     },
     "effect": {
       "geometry": {
@@ -4495,8 +4494,7 @@
       "feet": 60
     },
     "targeting": {
-      "type": "multi_token",
-      "projectile": true
+      "type": "multi_token"
     },
     "effect": {
       "damage_types": [
@@ -4552,8 +4550,7 @@
       "feet": 120
     },
     "targeting": {
-      "type": "multi_token",
-      "projectile": true
+      "type": "multi_token"
     },
     "effect": {
       "damage_types": [
@@ -4612,8 +4609,7 @@
       "feet": 30
     },
     "targeting": {
-      "type": "token",
-      "projectile": true
+      "type": "token"
     }
   },
   "XPHB::Barkskin": {
@@ -4695,8 +4691,7 @@
       "feet": 30
     },
     "targeting": {
-      "type": "token",
-      "projectile": true
+      "type": "token"
     },
     "effect": {
       "damage_types": [
@@ -4711,8 +4706,7 @@
       "feet": 120
     },
     "targeting": {
-      "type": "token",
-      "projectile": true
+      "type": "token"
     }
   },
   "XPHB::Chain Lightning": {
@@ -4721,8 +4715,7 @@
       "feet": 150
     },
     "targeting": {
-      "type": "multi_token",
-      "projectile": true
+      "type": "multi_token"
     },
     "effect": {
       "damage_types": [
@@ -4737,8 +4730,7 @@
       "feet": 30
     },
     "targeting": {
-      "type": "token",
-      "projectile": true
+      "type": "token"
     }
   },
   "XPHB::Charm Person": {
@@ -4747,8 +4739,7 @@
       "feet": 30
     },
     "targeting": {
-      "type": "token",
-      "projectile": true
+      "type": "token"
     }
   },
   "XPHB::Chill Touch": {
@@ -4757,8 +4748,7 @@
       "distance_type": "touch"
     },
     "targeting": {
-      "type": "token",
-      "projectile": true
+      "type": "token"
     },
     "effect": {
       "damage_types": [
@@ -4774,7 +4764,8 @@
     },
     "targeting": {
       "type": "token",
-      "projectile": true
+      "projectile": true,
+      "allow_point_target": true
     },
     "effect": {
       "damage_types": [
@@ -4840,8 +4831,7 @@
       "feet": 120
     },
     "targeting": {
-      "type": "token",
-      "projectile": true
+      "type": "token"
     }
   },
   "XPHB::Cure Wounds": {
@@ -4860,8 +4850,7 @@
       "distance_type": "touch"
     },
     "targeting": {
-      "type": "token",
-      "projectile": true
+      "type": "token"
     }
   },
   "XPHB::Death Ward": {
@@ -4880,8 +4869,7 @@
       "feet": 60
     },
     "targeting": {
-      "type": "token",
-      "projectile": true
+      "type": "token"
     },
     "effect": {
       "damage_types": [
@@ -4902,8 +4890,7 @@
       "feet": 120
     },
     "targeting": {
-      "type": "token",
-      "projectile": true
+      "type": "token"
     }
   },
   "XPHB::Dissonant Whispers": {
@@ -4938,8 +4925,7 @@
       "feet": 60
     },
     "targeting": {
-      "type": "token",
-      "projectile": true
+      "type": "token"
     }
   },
   "XPHB::Dominate Monster": {
@@ -4948,8 +4934,7 @@
       "feet": 60
     },
     "targeting": {
-      "type": "token",
-      "projectile": true
+      "type": "token"
     }
   },
   "XPHB::Dominate Person": {
@@ -4958,8 +4943,7 @@
       "feet": 60
     },
     "targeting": {
-      "type": "token",
-      "projectile": true
+      "type": "token"
     }
   },
   "XPHB::Dream": {
@@ -4996,8 +4980,7 @@
       "distance_type": "touch"
     },
     "targeting": {
-      "type": "token",
-      "projectile": true
+      "type": "token"
     }
   },
   "XPHB::Enlarge/Reduce": {
@@ -5006,8 +4989,7 @@
       "feet": 30
     },
     "targeting": {
-      "type": "token",
-      "projectile": true
+      "type": "token"
     }
   },
   "XPHB::Enthrall": {
@@ -5032,8 +5014,7 @@
       "feet": 60
     },
     "targeting": {
-      "type": "multi_token",
-      "projectile": true
+      "type": "multi_token"
     }
   },
   "XPHB::Feign Death": {
@@ -5052,8 +5033,7 @@
       "feet": 60
     },
     "targeting": {
-      "type": "token",
-      "projectile": true
+      "type": "token"
     },
     "effect": {
       "damage_types": [
@@ -5069,7 +5049,8 @@
     },
     "targeting": {
       "type": "token",
-      "projectile": true
+      "projectile": true,
+      "allow_point_target": true
     },
     "effect": {
       "damage_types": [
@@ -5096,8 +5077,7 @@
       "feet": 60
     },
     "targeting": {
-      "type": "token",
-      "projectile": true
+      "type": "token"
     }
   },
   "XPHB::Fly": {
@@ -5106,8 +5086,7 @@
       "distance_type": "touch"
     },
     "targeting": {
-      "type": "token",
-      "projectile": true
+      "type": "token"
     }
   },
   "XPHB::Foresight": {
@@ -5136,8 +5115,7 @@
       "feet": 10
     },
     "targeting": {
-      "type": "token",
-      "projectile": true
+      "type": "token"
     }
   },
   "XPHB::Gaseous Form": {
@@ -5146,8 +5124,7 @@
       "distance_type": "touch"
     },
     "targeting": {
-      "type": "token",
-      "projectile": true
+      "type": "token"
     }
   },
   "XPHB::Geas": {
@@ -5188,8 +5165,7 @@
       "distance_type": "touch"
     },
     "targeting": {
-      "type": "token",
-      "projectile": true
+      "type": "token"
     }
   },
   "XPHB::Greater Restoration": {
@@ -5250,8 +5226,7 @@
       "feet": 30
     },
     "targeting": {
-      "type": "token",
-      "projectile": true
+      "type": "token"
     }
   },
   "XPHB::Heal": {
@@ -5338,8 +5313,7 @@
       "feet": 90
     },
     "targeting": {
-      "type": "token",
-      "projectile": true
+      "type": "token"
     }
   },
   "XPHB::Hold Person": {
@@ -5348,8 +5322,7 @@
       "feet": 60
     },
     "targeting": {
-      "type": "token",
-      "projectile": true
+      "type": "token"
     }
   },
   "XPHB::Hunter's Mark": {
@@ -5375,7 +5348,8 @@
     },
     "targeting": {
       "type": "token",
-      "projectile": true
+      "projectile": true,
+      "allow_point_target": true
     },
     "effect": {
       "damage_types": [
@@ -5427,8 +5401,7 @@
       "distance_type": "touch"
     },
     "targeting": {
-      "type": "token",
-      "projectile": true
+      "type": "token"
     }
   },
   "XPHB::Jump": {
@@ -5437,8 +5410,7 @@
       "distance_type": "touch"
     },
     "targeting": {
-      "type": "token",
-      "projectile": true
+      "type": "token"
     }
   },
   "XPHB::Lesser Restoration": {
@@ -5457,8 +5429,7 @@
       "feet": 60
     },
     "targeting": {
-      "type": "token",
-      "projectile": true
+      "type": "token"
     }
   },
   "XPHB::Longstrider": {
@@ -5477,8 +5448,7 @@
       "distance_type": "touch"
     },
     "targeting": {
-      "type": "token",
-      "projectile": true
+      "type": "token"
     }
   },
   "XPHB::Magic Missile": {
@@ -5488,10 +5458,7 @@
     },
     "targeting": {
       "type": "multi_token",
-      "base_target_clicks": 3,
-      "target_clicks_per_slot_above_base": 1,
-      "allow_repeat_targets": true,
-      "projectile": true
+      "allow_repeat_targets": true
     },
     "effect": {
       "damage_types": [
@@ -5527,8 +5494,7 @@
       "feet": 60
     },
     "targeting": {
-      "type": "multi_token",
-      "projectile": true
+      "type": "multi_token"
     }
   },
   "XPHB::Maze": {
@@ -5563,8 +5529,7 @@
       "feet": 120
     },
     "targeting": {
-      "type": "token",
-      "projectile": true
+      "type": "token"
     }
   },
   "XPHB::Mind Blank": {
@@ -5583,8 +5548,7 @@
       "feet": 60
     },
     "targeting": {
-      "type": "token",
-      "projectile": true
+      "type": "token"
     },
     "effect": {
       "damage_types": [
@@ -5599,8 +5563,7 @@
       "feet": 120
     },
     "targeting": {
-      "type": "token",
-      "projectile": true
+      "type": "token"
     },
     "effect": {
       "damage_types": [
@@ -5714,7 +5677,8 @@
     },
     "targeting": {
       "type": "token",
-      "projectile": true
+      "projectile": true,
+      "allow_point_target": true
     },
     "effect": {
       "damage_types": [
@@ -5729,8 +5693,7 @@
       "feet": 60
     },
     "targeting": {
-      "type": "token",
-      "projectile": true
+      "type": "token"
     }
   },
   "XPHB::Power Word Fortify": {
@@ -5760,8 +5723,7 @@
       "feet": 60
     },
     "targeting": {
-      "type": "token",
-      "projectile": true
+      "type": "token"
     },
     "effect": {
       "damage_types": [
@@ -5776,8 +5738,7 @@
       "feet": 60
     },
     "targeting": {
-      "type": "token",
-      "projectile": true
+      "type": "token"
     }
   },
   "XPHB::Prayer of Healing": {
@@ -5809,8 +5770,7 @@
       "distance_type": "touch"
     },
     "targeting": {
-      "type": "token",
-      "projectile": true
+      "type": "token"
     }
   },
   "XPHB::Protection from Evil and Good": {
@@ -5861,7 +5821,8 @@
     },
     "targeting": {
       "type": "token",
-      "projectile": true
+      "projectile": true,
+      "allow_point_target": true
     },
     "effect": {
       "damage_types": [
@@ -5877,7 +5838,8 @@
     },
     "targeting": {
       "type": "token",
-      "projectile": true
+      "projectile": true,
+      "allow_point_target": true
     },
     "effect": {
       "damage_types": [
@@ -5959,8 +5921,9 @@
     },
     "targeting": {
       "type": "multi_token",
-      "target_clicks_per_slot_above_base": 1,
-      "projectile": true
+      "allow_repeat_targets": true,
+      "projectile": true,
+      "allow_point_target": true
     },
     "effect": {
       "damage_types": [
@@ -5975,8 +5938,7 @@
       "feet": 30
     },
     "targeting": {
-      "type": "multi_token",
-      "projectile": true
+      "type": "multi_token"
     }
   },
   "XPHB::Sequester": {
@@ -6017,8 +5979,7 @@
       "distance_type": "touch"
     },
     "targeting": {
-      "type": "token",
-      "projectile": true
+      "type": "token"
     },
     "effect": {
       "damage_types": [
@@ -6044,7 +6005,8 @@
     },
     "targeting": {
       "type": "token",
-      "projectile": true
+      "projectile": true,
+      "allow_point_target": true
     },
     "effect": {
       "damage_types": [
@@ -6124,8 +6086,7 @@
       "distance_type": "touch"
     },
     "targeting": {
-      "type": "token",
-      "projectile": true
+      "type": "token"
     }
   },
   "XPHB::Suggestion": {
@@ -6134,8 +6095,7 @@
       "feet": 30
     },
     "targeting": {
-      "type": "token",
-      "projectile": true
+      "type": "token"
     }
   },
   "XPHB::Tasha's Hideous Laughter": {
@@ -6154,8 +6114,7 @@
       "feet": 60
     },
     "targeting": {
-      "type": "token",
-      "projectile": true
+      "type": "token"
     }
   },
   "XPHB::Telepathy": {
@@ -6174,9 +6133,7 @@
       "feet": 10
     },
     "targeting": {
-      "type": "multi_token",
-      "base_target_clicks": 8,
-      "projectile": true
+      "type": "multi_token"
     },
     "effect": {
       "damage_types": [
@@ -6223,8 +6180,7 @@
       "distance_type": "touch"
     },
     "targeting": {
-      "type": "token",
-      "projectile": true
+      "type": "token"
     }
   },
   "XPHB::True Polymorph": {
@@ -6303,9 +6259,7 @@
       "feet": 30
     },
     "targeting": {
-      "type": "multi_token",
-      "base_target_clicks": 10,
-      "projectile": true
+      "type": "multi_token"
     }
   },
   "XPHB::Water Walk": {
@@ -6314,9 +6268,7 @@
       "feet": 30
     },
     "targeting": {
-      "type": "multi_token",
-      "base_target_clicks": 10,
-      "projectile": true
+      "type": "multi_token"
     }
   },
   "XPHB::Wind Walk": {
@@ -6337,7 +6289,8 @@
     },
     "targeting": {
       "type": "token",
-      "projectile": true
+      "projectile": true,
+      "allow_point_target": true
     },
     "effect": {
       "damage_types": [
@@ -8104,8 +8057,7 @@
       "feet": 60
     },
     "targeting": {
-      "type": "token",
-      "projectile": true
+      "type": "token"
     },
     "effect": {
       "damage_types": [
@@ -8152,7 +8104,8 @@
     },
     "targeting": {
       "type": "token",
-      "projectile": true
+      "projectile": true,
+      "allow_point_target": true
     },
     "effect": {
       "damage_types": [
@@ -8196,8 +8149,7 @@
       "feet": 300
     },
     "targeting": {
-      "type": "token",
-      "projectile": true
+      "type": "token"
     }
   },
   "XGE::Elemental Bane": {
@@ -8226,8 +8178,7 @@
       "feet": 120
     },
     "targeting": {
-      "type": "token",
-      "projectile": true
+      "type": "token"
     }
   },
   "XGE::Enervation": {
@@ -8252,8 +8203,7 @@
       "feet": 60
     },
     "targeting": {
-      "type": "token",
-      "projectile": true
+      "type": "token"
     },
     "effect": {
       "damage_types": [
@@ -8268,8 +8218,7 @@
       "feet": 30
     },
     "targeting": {
-      "type": "token",
-      "projectile": true
+      "type": "token"
     }
   },
   "XGE::Holy Weapon": {
@@ -8311,8 +8260,7 @@
       "feet": 90
     },
     "targeting": {
-      "type": "token",
-      "projectile": true
+      "type": "token"
     },
     "effect": {
       "damage_types": [
@@ -8327,8 +8275,7 @@
       "feet": 30
     },
     "targeting": {
-      "type": "token",
-      "projectile": true
+      "type": "token"
     },
     "effect": {
       "damage_types": [
@@ -8375,9 +8322,7 @@
       "feet": 120
     },
     "targeting": {
-      "type": "multi_token",
-      "base_target_clicks": 10,
-      "projectile": true
+      "type": "multi_token"
     }
   },
   "XGE::Maximilian's Earthen Grasp": {
@@ -8387,7 +8332,6 @@
     },
     "targeting": {
       "type": "token",
-      "projectile": true,
       "requires_ground": true
     },
     "effect": {
@@ -8403,8 +8347,7 @@
       "feet": 60
     },
     "targeting": {
-      "type": "token",
-      "projectile": true
+      "type": "token"
     },
     "effect": {
       "damage_types": [
@@ -8473,9 +8416,7 @@
       "feet": 90
     },
     "targeting": {
-      "type": "multi_token",
-      "base_target_clicks": 10,
-      "projectile": true
+      "type": "multi_token"
     },
     "effect": {
       "damage_types": [
@@ -8491,8 +8432,6 @@
     },
     "targeting": {
       "type": "multi_token",
-      "base_target_clicks": 5,
-      "projectile": true,
       "requires_ground": true
     }
   },
@@ -8502,8 +8441,7 @@
       "distance_type": "touch"
     },
     "targeting": {
-      "type": "token",
-      "projectile": true
+      "type": "token"
     }
   },
   "XGE::Snare": {
@@ -8640,8 +8578,7 @@
       "feet": 90
     },
     "targeting": {
-      "type": "token",
-      "projectile": true
+      "type": "token"
     },
     "effect": {
       "damage_types": [
@@ -8656,8 +8593,7 @@
       "feet": 60
     },
     "targeting": {
-      "type": "token",
-      "projectile": true
+      "type": "token"
     },
     "effect": {
       "damage_types": [
@@ -8673,8 +8609,7 @@
     },
     "targeting": {
       "type": "multi_token",
-      "allow_repeat_targets": true,
-      "projectile": true
+      "allow_repeat_targets": true
     },
     "effect": {
       "damage_types": [
@@ -8689,8 +8624,7 @@
       "distance_type": "touch"
     },
     "targeting": {
-      "type": "token",
-      "projectile": true
+      "type": "token"
     },
     "effect": {
       "damage_types": [
@@ -8733,8 +8667,7 @@
       "distance_type": "touch"
     },
     "targeting": {
-      "type": "token",
-      "projectile": true
+      "type": "token"
     }
   },
   "FRHoF::Songal's Elemental Suffusion": {
@@ -8760,7 +8693,8 @@
     },
     "targeting": {
       "type": "token",
-      "projectile": true
+      "projectile": true,
+      "allow_point_target": true
     },
     "effect": {
       "damage_types": [
@@ -8803,9 +8737,7 @@
       "feet": 30
     },
     "targeting": {
-      "type": "multi_token",
-      "base_target_clicks": 3,
-      "projectile": true
+      "type": "multi_token"
     }
   },
   "AU::Enervation": {
@@ -8814,8 +8746,7 @@
       "feet": 60
     },
     "targeting": {
-      "type": "token",
-      "projectile": true
+      "type": "token"
     },
     "effect": {
       "damage_types": [
@@ -8830,9 +8761,7 @@
       "feet": 90
     },
     "targeting": {
-      "type": "multi_token",
-      "base_target_clicks": 3,
-      "projectile": true
+      "type": "multi_token"
     },
     "effect": {
       "damage_types": [
@@ -8847,8 +8776,7 @@
       "feet": 120
     },
     "targeting": {
-      "type": "token",
-      "projectile": true
+      "type": "token"
     },
     "effect": {
       "damage_types": [
@@ -8863,8 +8791,7 @@
       "feet": 120
     },
     "targeting": {
-      "type": "token",
-      "projectile": true
+      "type": "token"
     }
   },
   "AU::Iron Body": {
@@ -8873,8 +8800,7 @@
       "distance_type": "touch"
     },
     "targeting": {
-      "type": "token",
-      "projectile": true
+      "type": "token"
     }
   },
   "AU::Negative Energy Flood": {
@@ -8899,8 +8825,7 @@
       "feet": 60
     },
     "targeting": {
-      "type": "token",
-      "projectile": true
+      "type": "token"
     },
     "effect": {
       "damage_types": [
@@ -8960,8 +8885,7 @@
       "feet": 120
     },
     "targeting": {
-      "type": "token",
-      "projectile": true
+      "type": "token"
     },
     "effect": {
       "damage_types": [
@@ -8976,9 +8900,7 @@
       "feet": 60
     },
     "targeting": {
-      "type": "multi_token",
-      "base_target_clicks": 10,
-      "projectile": true
+      "type": "multi_token"
     },
     "effect": {
       "damage_types": [
@@ -8993,8 +8915,7 @@
       "feet": 120
     },
     "targeting": {
-      "type": "token",
-      "projectile": true
+      "type": "token"
     },
     "effect": {
       "damage_types": [
@@ -9009,8 +8930,7 @@
       "feet": 60
     },
     "targeting": {
-      "type": "token",
-      "projectile": true
+      "type": "token"
     }
   },
   "AI::Fast Friends": {
@@ -9035,8 +8955,7 @@
       "feet": 30
     },
     "targeting": {
-      "type": "multi_token",
-      "projectile": true
+      "type": "multi_token"
     }
   },
   "AI::Jim's Glowing Coin": {
