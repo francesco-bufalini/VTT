@@ -628,7 +628,8 @@ func _try_select_summon_point(screen_position: Vector2) -> void:
 		"open_token_generation_at",
 		summon_point,
 		Callable(self, "_on_summon_token_created"),
-		Callable(self, "_on_summon_token_generation_canceled")
+		Callable(self, "_on_summon_token_generation_canceled"),
+		not bool(point_data.get("in_air", false))
 	)
 
 
