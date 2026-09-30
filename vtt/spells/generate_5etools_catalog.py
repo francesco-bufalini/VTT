@@ -20,6 +20,15 @@ RUNTIME_MAP = ROOT / "assets" / "spell_area_geometry.json"
 PRIORITY = ["XPHB","PHB","FRHoF","EFA","AU","TCE","XGE","FTD","SCC","EGW","BMT","AAG","AI","GGR","IDRotF","SatO","LLK","AitFR-AVT"]
 SCHOOLS = {"A":"Abjuration","C":"Conjuration","D":"Divination","E":"Enchantment","V":"Evocation","I":"Illusion","N":"Necromancy","T":"Transmutation","P":"Psionic"}
 META = {"id","name","source","level","school","casting_time","range","target","area","components","duration","classes","description","higher_levels"}
+GENERATED_TARGET_FIELDS = {
+    "target_mode",
+    "projectile_style",
+    "projectile_travel_seconds",
+    "base_target_clicks",
+    "target_clicks_per_slot_above_base",
+    "allow_repeat_targets",
+    "allow_point_target",
+}
 
 def slug(s: str) -> str:
     s = "".join(c for c in unicodedata.normalize("NFD", s) if unicodedata.category(c) != "Mn")
@@ -110,7 +119,12 @@ def runtime_target_fields(spell_id: str, name: str, source: str, runtime: dict) 
     if isinstance(range_data,dict) and isinstance(range_data.get("feet"),(int,float)):
         result["range_feet"]=range_data["feet"]
 
-    for key in ("base_target_clicks","target_clicks_per_slot_above_base","allow_repeat_targets"):
+    for key in (
+        "base_target_clicks",
+        "target_clicks_per_slot_above_base",
+        "allow_repeat_targets",
+        "allow_point_target",
+    ):
         if key in targeting:result[key]=targeting[key]
     return result
 
@@ -138,7 +152,8 @@ def main():
             classes.update(class_names(e))
         rec={"id":sid,"name":s["name"],"source":s.get("source",""),"level":int(s.get("level",0)),"school":SCHOOLS.get(str(s.get("school","")),str(s.get("school",""))),"casting_time":ftime(s),"range":frange(s),"target":"","area":"","components":fcomp(s),"duration":fdur(s),"classes":sorted(classes),"description":flat(s.get("entries",[])),"higher_levels":flat(s.get("entriesHigherLevel",[]))}
         for k,v in old.get(sid,{}).items():
-            if k not in META:rec[k]=v
+            if k not in META and k not in GENERATED_TARGET_FIELDS:
+                rec[k]=v
         rec.update(runtime_target_fields(
             sid,
             str(s.get("name","")),
