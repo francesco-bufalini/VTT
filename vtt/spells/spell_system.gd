@@ -23,6 +23,7 @@ var wall_orientation_menu: PopupMenu
 var _selected_spell_id: String = ""
 var _selected_spell_data: Dictionary = {}
 var _pending_spell_id: String = ""
+var _pending_spell_data: Dictionary = {}
 var _targeting_phase: String = ""
 var _pending_caster: Node3D = null
 var _directional_pitch_degrees: int = 0
@@ -124,7 +125,7 @@ func _on_wall_orientation_selected(id: int) -> void:
 	board_root.set("_ui_owns_mouse", false)
 	Input.mouse_mode = Input.MOUSE_MODE_CAPTURED
 
-	var spell_data: Dictionary = SpellCatalog.spell(_pending_spell_id)
+	var spell_data: Dictionary = _pending_spell()
 	_commit_wall_path(spell_data)
 
 
@@ -206,7 +207,7 @@ func _begin_wall_mode(mode: String) -> void:
 	_wall_orientation = ""
 	_hide_wall_preview()
 
-	var spell_data: Dictionary = SpellCatalog.spell(_pending_spell_id)
+	var spell_data: Dictionary = _pending_spell()
 	match mode:
 		"polyline":
 			_targeting_phase = "wall_start"
@@ -236,6 +237,22 @@ func is_panel_open() -> bool:
 
 func is_targeting() -> bool:
 	return not _pending_spell_id.is_empty()
+
+
+func _pending_spell() -> Dictionary:
+	if _pending_spell_id.is_empty():
+		return {}
+	if (
+		not _pending_spell_data.is_empty()
+		and String(_pending_spell_data.get("id", "")) == _pending_spell_id
+	):
+		return _pending_spell_data
+
+	# Compatibility fallback for casts started by older code paths.
+	var fallback: Dictionary = SpellCatalog.spell(_pending_spell_id)
+	if not fallback.is_empty():
+		_pending_spell_data = fallback.duplicate(true)
+	return _pending_spell_data
 
 
 func toggle_panel() -> void:
@@ -304,7 +321,7 @@ func handle_input(event: InputEvent) -> bool:
 					_pending_caster,
 					_pending_chain_primary,
 					_pending_targets,
-					SpellCatalog.spell(_pending_spell_id)
+					_pending_spell()
 				)
 				_finish_cast()
 				return true
@@ -314,7 +331,7 @@ func handle_input(event: InputEvent) -> bool:
 				and key_event.keycode == KEY_ENTER
 			):
 				_begin_teleport_destination(
-					SpellCatalog.spell(_pending_spell_id)
+					_pending_spell()
 				)
 				return true
 
@@ -446,7 +463,7 @@ func _try_select_caster(screen_position: Vector2) -> void:
 		return
 
 	var caster: Node3D = target as Node3D
-	var spell_data: Dictionary = SpellCatalog.spell(_pending_spell_id)
+	var spell_data: Dictionary = _pending_spell()
 	if spell_data.is_empty():
 		_cancel_pending_cast()
 		return
@@ -557,7 +574,7 @@ func _try_select_point(screen_position: Vector2) -> void:
 		_cancel_pending_cast()
 		return
 
-	var spell_data: Dictionary = SpellCatalog.spell(_pending_spell_id)
+	var spell_data: Dictionary = _pending_spell()
 	if spell_data.is_empty():
 		_cancel_pending_cast()
 		return
@@ -602,7 +619,7 @@ func _try_select_target_token(screen_position: Vector2) -> void:
 		_cancel_pending_cast()
 		return
 
-	var spell_data: Dictionary = SpellCatalog.spell(_pending_spell_id)
+	var spell_data: Dictionary = _pending_spell()
 	if spell_data.is_empty():
 		_cancel_pending_cast()
 		return
@@ -657,7 +674,7 @@ func _try_select_multi_target(screen_position: Vector2) -> void:
 		_cancel_pending_cast()
 		return
 
-	var spell_data: Dictionary = SpellCatalog.spell(_pending_spell_id)
+	var spell_data: Dictionary = _pending_spell()
 	var target_data: Dictionary = _target_or_point_data(
 		screen_position,
 		spell_data
@@ -725,7 +742,7 @@ func _try_select_teleport_passenger(screen_position: Vector2) -> void:
 		_cancel_pending_cast()
 		return
 
-	var spell_data: Dictionary = SpellCatalog.spell(_pending_spell_id)
+	var spell_data: Dictionary = _pending_spell()
 	var target: Node3D = _token_at_screen(screen_position)
 	if target == null or target == _pending_caster:
 		_set_instruction("Seleziona un altro token vicino al caster, oppure premi Invio.")
@@ -782,7 +799,7 @@ func _try_select_teleport_destination(screen_position: Vector2) -> void:
 		_cancel_pending_cast()
 		return
 
-	var spell_data: Dictionary = SpellCatalog.spell(_pending_spell_id)
+	var spell_data: Dictionary = _pending_spell()
 	var target_rules: Dictionary = spell_data.duplicate(true)
 	target_rules["range_feet"] = float(
 		spell_data.get("teleport_distance_feet", 0.0)
@@ -967,7 +984,7 @@ func _try_select_chain_primary(screen_position: Vector2) -> void:
 		_cancel_pending_cast()
 		return
 
-	var spell_data: Dictionary = SpellCatalog.spell(_pending_spell_id)
+	var spell_data: Dictionary = _pending_spell()
 	var target_data: Dictionary = _target_token_data(
 		screen_position,
 		spell_data
@@ -995,7 +1012,7 @@ func _try_select_chain_secondary(screen_position: Vector2) -> void:
 		_cancel_pending_cast()
 		return
 
-	var spell_data: Dictionary = SpellCatalog.spell(_pending_spell_id)
+	var spell_data: Dictionary = _pending_spell()
 	var target_data: Dictionary = _chain_secondary_target_data(
 		screen_position,
 		spell_data
@@ -1030,7 +1047,7 @@ func _try_select_direction_point(screen_position: Vector2) -> void:
 		_cancel_pending_cast()
 		return
 
-	var spell_data: Dictionary = SpellCatalog.spell(_pending_spell_id)
+	var spell_data: Dictionary = _pending_spell()
 	if spell_data.is_empty():
 		_cancel_pending_cast()
 		return
@@ -1067,7 +1084,7 @@ func _try_select_direction_point(screen_position: Vector2) -> void:
 
 
 func _try_wall_start(screen_position: Vector2) -> void:
-	var spell_data: Dictionary = SpellCatalog.spell(_pending_spell_id)
+	var spell_data: Dictionary = _pending_spell()
 	var point_data: Dictionary = _wall_point_data(
 		screen_position,
 		spell_data,
@@ -1086,7 +1103,7 @@ func _try_wall_start(screen_position: Vector2) -> void:
 
 
 func _try_wall_segment(screen_position: Vector2) -> void:
-	var spell_data: Dictionary = SpellCatalog.spell(_pending_spell_id)
+	var spell_data: Dictionary = _pending_spell()
 	var target_data: Dictionary = _wall_segment_target_data(
 		screen_position,
 		spell_data
@@ -1111,7 +1128,7 @@ func _try_wall_segment(screen_position: Vector2) -> void:
 
 
 func _try_wall_center(screen_position: Vector2) -> void:
-	var spell_data: Dictionary = SpellCatalog.spell(_pending_spell_id)
+	var spell_data: Dictionary = _pending_spell()
 	var point_data: Dictionary = _wall_point_data(
 		screen_position,
 		spell_data,
@@ -1135,7 +1152,7 @@ func _try_wall_center(screen_position: Vector2) -> void:
 
 
 func _try_wall_radius(screen_position: Vector2) -> void:
-	var spell_data: Dictionary = SpellCatalog.spell(_pending_spell_id)
+	var spell_data: Dictionary = _pending_spell()
 	var radius_data: Dictionary = _wall_radius_data(
 		screen_position,
 		spell_data
@@ -1171,7 +1188,7 @@ func _try_wall_radius(screen_position: Vector2) -> void:
 
 
 func _try_wall_arc_start(screen_position: Vector2) -> void:
-	var spell_data: Dictionary = SpellCatalog.spell(_pending_spell_id)
+	var spell_data: Dictionary = _pending_spell()
 	var point_data: Dictionary = _wall_point_data(
 		screen_position,
 		spell_data,
@@ -1214,12 +1231,12 @@ func _try_wall_arc_end(_screen_position: Vector2) -> void:
 func _prepare_or_commit_wall() -> void:
 	if _wall_points.size() < 2:
 		return
-	var spell_data: Dictionary = SpellCatalog.spell(_pending_spell_id)
+	var spell_data: Dictionary = _pending_spell()
 	_show_wall_orientation_menu(spell_data)
 
 
 func _undo_wall_step() -> void:
-	var spell_data: Dictionary = SpellCatalog.spell(_pending_spell_id)
+	var spell_data: Dictionary = _pending_spell()
 
 	if wall_orientation_menu != null and wall_orientation_menu.visible:
 		wall_orientation_menu.hide()
@@ -1626,7 +1643,7 @@ func _update_spell_preview() -> void:
 	if measurement_tool == null:
 		return
 
-	var spell_data: Dictionary = SpellCatalog.spell(_pending_spell_id)
+	var spell_data: Dictionary = _pending_spell()
 	if spell_data.is_empty():
 		_hide_spell_preview()
 		return
@@ -2660,6 +2677,7 @@ func _activate_selected_spell() -> void:
 		return
 
 	_pending_spell_id = _selected_spell_id
+	_pending_spell_data = spell_data.duplicate(true)
 	_targeting_phase = "caster"
 	_pending_caster = null
 	_pending_targets.clear()
@@ -3125,6 +3143,7 @@ func _finish_cast() -> void:
 		wall_orientation_menu.hide()
 	board_root.set("_ui_owns_mouse", false)
 	_pending_spell_id = ""
+	_pending_spell_data.clear()
 	_targeting_phase = ""
 	_pending_caster = null
 	_pending_targets.clear()
@@ -3152,6 +3171,7 @@ func _cancel_pending_cast(restore_mouse: bool = true) -> void:
 		wall_orientation_menu.hide()
 	board_root.set("_ui_owns_mouse", false)
 	_pending_spell_id = ""
+	_pending_spell_data.clear()
 	_targeting_phase = ""
 	_pending_caster = null
 	_pending_targets.clear()
@@ -3177,7 +3197,7 @@ func _adjust_directional_pitch(delta_degrees: int) -> void:
 		-90,
 		90
 	)
-	var spell_data: Dictionary = SpellCatalog.spell(_pending_spell_id)
+	var spell_data: Dictionary = _pending_spell()
 	_update_directional_instruction(spell_data)
 
 
