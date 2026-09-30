@@ -191,6 +191,11 @@ static func _apply_targeting(
 			result["projectile_style"] = String(result.get("id", "arcane"))
 		if not result.has("projectile_travel_seconds"):
 			result["projectile_travel_seconds"] = 0.65
+		if (
+			bool(targeting.get("allow_point_target", false))
+			and not bool(result.get("persistent_link", false))
+		):
+			result["allow_point_target"] = true
 
 	if bool(targeting.get("requires_ground", false)):
 		result["requires_ground"] = true
