@@ -4,6 +4,19 @@ const ACTIVE_CAMPAIGNS_SCENE_PATH := "res://vtt/menu/active_campaigns.tscn"
 const MENU_BACKGROUND_TEXTURE := (
 	"res://assets/menu/background/lithophane_background.jpg"
 )
+# Legacy paths kept because the older helper functions below are retained
+# for reference, even though the main menu no longer instantiates them.
+const MENU_SKY_HDR := (
+	"res://assets/menu/environment/sky/"
+	+ "kloppenheim_06_puresky_1k.hdr"
+)
+const CASTLE_PATHS := [
+	"res://assets/menu/castle/Castle.glb",
+	"res://SFON VTST/castle/Castle.glb",
+	"res://SFON VTST/Castle.glb",
+	"res://castle/Castle.glb",
+	"res://Castle.glb"
+]
 const CAMERA_TARGET := Vector3(0.0, 0.0, 0.0)
 const CAMERA_BASE_RADIUS := 19.5
 const CAMERA_BASE_HEIGHT := 0.12
