@@ -37,6 +37,8 @@ GENERATED_TARGET_FIELDS = {
     "summon_count_max",
     "summon_count_options",
     "summon_count_per_slot_above_base",
+    "summon_count_max_by_slot",
+    "summon_count_multiplier_rules",
     "summon_requires_ground",
 }
 
@@ -166,6 +168,60 @@ def _summon_count_scaling(spell: dict[str, Any]) -> int:
     if raw in {"a","an"}:return 1
     return _number_value(raw) or 0
 
+def _summon_slot_maxima(spell: dict[str, Any]) -> dict[str, int]:
+    higher=flat(spell.get("entriesHigherLevel",[])).lower()
+    if not higher:return {}
+    creature_number=r"(one|two|three|four|five|six|seven|eight|nine|ten|\d+)"
+    creature_noun=(
+        r"(?:ghouls?|ghasts?|wights?|mummies?|corpses?|creatures?|"
+        r"familiars?|spirits?|demons?|objects?|undead)"
+    )
+    result={}
+    for sentence in re.split(r"[.!?]",higher):
+        slot_match=re.search(
+            r"\blevel\s+(\d+)\s+spell\s+slot\b"
+            r"|\b(\d+)(?:st|nd|rd|th)-level\s+spell\s+slot\b",
+            sentence,
+        )
+        if not slot_match:continue
+        slot=int(slot_match.group(1) or slot_match.group(2))
+        counts=[]
+        for count_match in re.finditer(
+            rf"\b{creature_number}\s+{creature_noun}\b",
+            sentence,
+        ):
+            parsed=_number_value(count_match.group(1))
+            if parsed:counts.append(parsed)
+        if counts:result[str(slot)]=max(counts)
+    return result
+
+def _summon_multiplier_rules(spell: dict[str, Any]) -> list[dict[str, int]]:
+    higher=flat(spell.get("entriesHigherLevel",[])).lower()
+    if not higher:return []
+    multiplier_words={
+        "twice":2,
+        "three times":3,
+        "four times":4,
+    }
+    rules=[]
+    pattern=re.compile(
+        r"\bspell\s+slot\s+of\s+(\d+)(?:st|nd|rd|th)"
+        r"(?:\s+or\s+(\d+)(?:st|nd|rd|th))?\s+level\b"
+        r"[^.]{0,140}\b(twice|three\s+times|four\s+times)\s+as\s+many\b"
+    )
+    for match in pattern.finditer(higher):
+        first=int(match.group(1))
+        second=int(match.group(2) or first)
+        phrase=re.sub(r"\s+"," ",match.group(3))
+        multiplier=multiplier_words.get(phrase,1)
+        if multiplier>1:
+            rules.append({
+                "min_slot":min(first,second),
+                "max_slot":max(first,second),
+                "multiplier":multiplier,
+            })
+    return rules
+
 def _summon_range_feet(spell: dict[str, Any]) -> float:
     r=spell.get("range",{})
     if not isinstance(r,dict):return 5.0
@@ -202,6 +258,12 @@ def summon_runtime_fields(spell: dict[str, Any], runtime: dict) -> dict:
     per_slot=_summon_count_scaling(spell)
     if per_slot>0:
         result["summon_count_per_slot_above_base"]=per_slot
+    slot_maxima=_summon_slot_maxima(spell)
+    if slot_maxima:
+        result["summon_count_max_by_slot"]=slot_maxima
+    multiplier_rules=_summon_multiplier_rules(spell)
+    if multiplier_rules:
+        result["summon_count_multiplier_rules"]=multiplier_rules
     if re.search(
         r"\b(?:appears?|manifests?|springs(?:\s+into\s+existence)?)\b"
         r"[^.]{0,160}\bon\s+the\s+ground\b"
