@@ -606,33 +606,9 @@ func _process(_delta: float) -> void:
 
 
 func _input(event: InputEvent) -> void:
-	if (
-		spell_system != null
-		and is_instance_valid(spell_system)
-		and bool(spell_system.call("is_panel_open"))
-	):
-		return
-
-	# Spell targeting must see mouse/key input before GUI, camera, token drag,
-	# or other gameplay handlers can consume it. Previously normal target
-	# clicks were deferred to _unhandled_input(), which could leave a cast
-	# stuck immediately after selecting its caster.
-	if (
-		spell_system != null
-		and is_instance_valid(spell_system)
-		and bool(spell_system.call("is_targeting"))
-		and (
-			event is InputEventKey
-			or (
-				event is InputEventMouseButton
-				and Input.mouse_mode == Input.MOUSE_MODE_CAPTURED
-			)
-		)
-	):
-		if bool(spell_system.call("handle_input", event)):
-			get_viewport().set_input_as_handled()
-			return
-
+	# Undo/redo sono shortcut globali e devono essere gestite prima dei
+	# pannelli UI. In precedenza il pannello Incantesimi poteva lasciare
+	# passare un movimento via _unhandled_input() ma bloccare Ctrl+Z qui.
 	if (
 		event is InputEventKey
 		and event.pressed
@@ -660,6 +636,33 @@ func _input(event: InputEvent) -> void:
 		and event.keycode == KEY_Y
 	):
 		if redo_last_action():
+			get_viewport().set_input_as_handled()
+			return
+
+	if (
+		spell_system != null
+		and is_instance_valid(spell_system)
+		and bool(spell_system.call("is_panel_open"))
+	):
+		return
+
+	# Spell targeting must see mouse/key input before GUI, camera, token drag,
+	# or other gameplay handlers can consume it. Previously normal target
+	# clicks were deferred to _unhandled_input(), which could leave a cast
+	# stuck immediately after selecting its caster.
+	if (
+		spell_system != null
+		and is_instance_valid(spell_system)
+		and bool(spell_system.call("is_targeting"))
+		and (
+			event is InputEventKey
+			or (
+				event is InputEventMouseButton
+				and Input.mouse_mode == Input.MOUSE_MODE_CAPTURED
+			)
+		)
+	):
+		if bool(spell_system.call("handle_input", event)):
 			get_viewport().set_input_as_handled()
 			return
 
