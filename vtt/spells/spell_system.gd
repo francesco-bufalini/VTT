@@ -2680,8 +2680,9 @@ func _cast_spell_at_token(
 		spell_data.get("impact_aoe_radius_feet", 0.0)
 	)
 
-	# No projectile animations. Token-target spells are retained only when
-	# they create a real persistent link or a real impact AoE.
+	# Preserve the established special mechanics first. Otherwise, when the
+	# deterministic catalogue says the AoE is anchored to a creature, render
+	# the parsed geometry around that selected token.
 	if bool(spell_data.get("persistent_link", false)):
 		measurement_tool.call(
 			"add_aoe",
@@ -2690,7 +2691,9 @@ func _cast_spell_at_token(
 			"line",
 			_spell_style(spell_data)
 		)
-	elif impact_radius > 0.0:
+		return
+
+	if impact_radius > 0.0:
 		measurement_tool.call(
 			"show_transient_aoe",
 			finish,
@@ -2705,6 +2708,46 @@ func _cast_spell_at_token(
 					_spell_style(spell_data)
 				)
 			)
+		)
+		return
+
+	var spec_value: Variant = spell_data.get("map_effect_spec", {})
+	if not spec_value is Dictionary:
+		return
+	var spec: Dictionary = spec_value as Dictionary
+	var targeting_value: Variant = spec.get("targeting", {})
+	if not targeting_value is Dictionary:
+		return
+	if String(
+		(targeting_value as Dictionary).get("type", "")
+	) != "token":
+		return
+
+	var shape: String = String(spell_data.get("aoe_shape", ""))
+	if shape.is_empty():
+		return
+
+	var endpoint: Vector3 = _area_endpoint(finish, spell_data)
+	var style: String = _spell_style(spell_data)
+	if bool(spell_data.get("persistent", false)):
+		measurement_tool.call(
+			"add_aoe",
+			finish,
+			endpoint,
+			shape,
+			style,
+			Color(0.0, 0.0, 0.0, -1.0),
+			_spell_line_width_world(spell_data)
+		)
+	else:
+		measurement_tool.call(
+			"show_transient_aoe",
+			finish,
+			endpoint,
+			shape,
+			float(spell_data.get("transient_seconds", 5.0)),
+			style,
+			_spell_line_width_world(spell_data)
 		)
 
 func _cast_self_emanation(
