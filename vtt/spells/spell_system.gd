@@ -316,7 +316,7 @@ func close_panel() -> void:
 func handle_input(event: InputEvent) -> bool:
 	if _pending_spell_id.is_empty():
 		return false
-	if _targeting_phase == "saving_throw":
+	if _targeting_phase in ["saving_throw", "summon_token_dialog"]:
 		return false
 
 	if event is InputEventKey:
@@ -4091,6 +4091,8 @@ func _finish_cast() -> void:
 		wall_mode_menu.hide()
 	if wall_orientation_menu != null and wall_orientation_menu.visible:
 		wall_orientation_menu.hide()
+	if summon_count_menu != null and summon_count_menu.visible:
+		summon_count_menu.hide()
 	board_root.set("_ui_owns_mouse", false)
 	_pending_spell_id = ""
 	_pending_spell_data.clear()
@@ -4099,6 +4101,8 @@ func _finish_cast() -> void:
 	_pending_targets.clear()
 	_pending_target_points.clear()
 	_pending_chain_primary = null
+	_summon_total_count = 1
+	_summon_created_count = 0
 	_directional_pitch_degrees = 0
 	_wall_mode = ""
 	_wall_points.clear()
@@ -4125,6 +4129,8 @@ func _cancel_pending_cast(restore_mouse: bool = true) -> void:
 		wall_mode_menu.hide()
 	if wall_orientation_menu != null and wall_orientation_menu.visible:
 		wall_orientation_menu.hide()
+	if summon_count_menu != null and summon_count_menu.visible:
+		summon_count_menu.hide()
 	board_root.set("_ui_owns_mouse", false)
 	_pending_spell_id = ""
 	_pending_spell_data.clear()
@@ -4133,6 +4139,8 @@ func _cancel_pending_cast(restore_mouse: bool = true) -> void:
 	_pending_targets.clear()
 	_pending_target_points.clear()
 	_pending_chain_primary = null
+	_summon_total_count = 1
+	_summon_created_count = 0
 	_directional_pitch_degrees = 0
 	_wall_mode = ""
 	_wall_points.clear()
