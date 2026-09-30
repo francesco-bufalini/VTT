@@ -89,14 +89,17 @@ static func spec_for_spell(spell_data: Dictionary) -> Dictionary:
 
 
 static func _primary_effect(spec: Dictionary) -> Dictionary:
-	var effects_value: Variant = spec.get("effects", [])
-	if not effects_value is Array:
-		return {}
+	var effect_value: Variant = spec.get("effect", {})
+	if effect_value is Dictionary and not (effect_value as Dictionary).is_empty():
+		return (effect_value as Dictionary).duplicate(true)
 
-	var effects: Array = effects_value as Array
-	for item: Variant in effects:
-		if item is Dictionary:
-			return (item as Dictionary).duplicate(true)
+	# Backward compatibility for a stale generated asset during development.
+	var effects_value: Variant = spec.get("effects", [])
+	if effects_value is Array:
+		var effects: Array = effects_value as Array
+		for item: Variant in effects:
+			if item is Dictionary:
+				return (item as Dictionary).duplicate(true)
 	return {}
 
 
@@ -137,27 +140,18 @@ static func _apply_targeting(
 		targeting.get("type", "")
 	)
 
-	# 5eTools area targeting is authoritative for ordinary geometric spells.
-	# Preserve token targeting only when it drives a real map mechanic
-	# (for example an impact AoE or a persistent link).
+	# The generated catalogue is authoritative for ordinary geometric
+	# targeting. Existing special state machines stay authoritative when the
+	# AoE originates from a creature or uses teleport/chain/multi-target logic.
 	var existing_mode: String = String(
 		result.get("target_mode", "")
 	)
-	var preserve_token_target: bool = (
-		existing_mode == "token_then_token"
-		and (
-			float(result.get("impact_aoe_radius_feet", 0.0)) > 0.0
-			or bool(result.get("persistent_link", false))
-		)
-	)
-	if (
-		existing_mode not in [
-			"teleport_self",
-			"token_then_chain",
-			"token_then_multi_token"
-		]
-		and not preserve_token_target
-	):
+	if existing_mode not in [
+		"teleport_self",
+		"token_then_chain",
+		"token_then_multi_token",
+		"token_then_token"
+	]:
 		match targeting_type:
 			"point":
 				result["target_mode"] = "token_then_point"
