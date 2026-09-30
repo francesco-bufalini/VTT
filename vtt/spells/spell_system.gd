@@ -4746,26 +4746,21 @@ func _cell_size() -> float:
 
 func _effective_spell_range_feet(
 	spell_data: Dictionary,
-	caster: Node3D = null
+	_caster: Node3D = null
 ) -> float:
 	var configured_range: float = float(spell_data.get("range_feet", 0.0))
 	var range_label: String = String(
 		spell_data.get("range", "")
 	).strip_edges().to_lower()
-	if not range_label.begins_with("touch"):
-		return maxf(configured_range, 5.0)
 
-	var source: Node3D = caster
-	if source == null or not is_instance_valid(source):
-		source = _pending_caster
-	if (
-		source != null
-		and is_instance_valid(source)
-		and source.has_method("get_reach_feet")
-	):
-		return maxf(float(source.call("get_reach_feet")), 5.0)
+	# Nel VTT Touch occupa sempre la cella adiacente: 5 ft. La reach della
+	# creatura resta una proprietà separata per attacchi/opportunità e non
+	# può ridurre o ampliare la gittata di un incantesimo Touch.
+	if range_label.begins_with("touch"):
+		return 5.0
 
-	# Compatibilità con token/scenari precedenti: Touch era codificato come 5 ft.
+	# Nessuna gittata tattica può collassare a 0: anche dati incompleti,
+	# Self o vecchie entry senza range_feet mantengono il minimo di una cella.
 	return maxf(configured_range, 5.0)
 
 
