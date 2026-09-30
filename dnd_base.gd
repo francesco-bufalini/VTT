@@ -75,6 +75,8 @@ var initiative_tracker: Node
 var token_list: Node
 var _undo_stack: Array[Dictionary] = []
 var _redo_stack: Array[Dictionary] = []
+var _pending_history_actions: Array[int] = []
+var _history_action_scheduled: bool = false
 var _undo_restoring: bool = false
 
 
@@ -178,6 +180,7 @@ func _configure_default_token_size_selector() -> void:
 
 func _process(_delta: float) -> void:
 	_clean_selection()
+	_process_pending_history_action()
 
 	if _ui_owns_mouse and Input.mouse_mode != Input.MOUSE_MODE_VISIBLE:
 		Input.mouse_mode = Input.MOUSE_MODE_VISIBLE
@@ -451,6 +454,66 @@ func _unhandled_input(event: InputEvent) -> void:
 			get_viewport().set_input_as_handled()
 
 
+func _history_motion_in_progress() -> bool:
+	if (
+		token_drag != null
+		and is_instance_valid(token_drag)
+		and bool(token_drag.get("active"))
+	):
+		return true
+
+	if (
+		measurement_tool != null
+		and is_instance_valid(measurement_tool)
+		and measurement_tool.has_method("is_movable_aoe_dragging")
+		and bool(measurement_tool.call("is_movable_aoe_dragging"))
+	):
+		return true
+
+	for child: Node in tokens_root.get_children():
+		if (
+			child != null
+			and is_instance_valid(child)
+			and child.has_method("is_motion_in_progress")
+			and bool(child.call("is_motion_in_progress"))
+		):
+			return true
+	return false
+
+
+func _queue_history_action(action: int) -> void:
+	if action != -1 and action != 1:
+		return
+	_pending_history_actions.append(action)
+	if _pending_history_actions.size() > UNDO_LIMIT:
+		_pending_history_actions.pop_front()
+
+
+func _process_pending_history_action() -> void:
+	if (
+		_history_action_scheduled
+		or _undo_restoring
+		or _pending_history_actions.is_empty()
+		or _history_motion_in_progress()
+	):
+		return
+
+	var action: int = _pending_history_actions.pop_front()
+	_history_action_scheduled = true
+	call_deferred("_execute_pending_history_action", action)
+
+
+func _execute_pending_history_action(action: int) -> void:
+	_history_action_scheduled = false
+	if _history_motion_in_progress():
+		_pending_history_actions.push_front(action)
+		return
+	if action == -1:
+		_undo_last_action_now()
+	elif action == 1:
+		_redo_last_action_now()
+
+
 func _capture_history_state() -> Dictionary:
 	if board_sync == null or not is_instance_valid(board_sync):
 		return {}
@@ -516,6 +579,13 @@ func _apply_history_state(state: Dictionary) -> bool:
 
 
 func undo_last_action() -> bool:
+	if _history_motion_in_progress():
+		_queue_history_action(-1)
+		return true
+	return _undo_last_action_now()
+
+
+func _undo_last_action_now() -> bool:
 	if _undo_stack.is_empty():
 		return false
 	if board_sync == null or not is_instance_valid(board_sync):
@@ -535,6 +605,13 @@ func undo_last_action() -> bool:
 
 
 func redo_last_action() -> bool:
+	if _history_motion_in_progress():
+		_queue_history_action(1)
+		return true
+	return _redo_last_action_now()
+
+
+func _redo_last_action_now() -> bool:
 	if _redo_stack.is_empty():
 		return false
 	if board_sync == null or not is_instance_valid(board_sync):
@@ -722,8 +799,7 @@ func _show_context_menu(screen_position: Vector2) -> void:
 
 		var count: int = _selected_tokens.size()
 		var suffix: String = "" if count == 1 else " (%d)" % count
-		context_menu.add_check_item("Volante" + suffix, CONTEXT_FLYING)
-		context_menu.set_item_checked(context_menu.get_item_index(CONTEXT_FLYING), _selected_tokens.all(func(token): return token.flying))
+		context_menu.add_item("Applica gravità" + suffix, CONTEXT_FLYING)
 
 		context_menu.add_item(
 			"Ruota 45° a sinistra" + suffix,
@@ -791,10 +867,17 @@ func _on_context_menu_id_pressed(id: int) -> void:
 				campaign_manager.call("return_to_main_menu")
 
 		CONTEXT_FLYING:
-			push_undo_state()
-			var enabled: bool = not _selected_tokens.all(func(token): return token.flying)
-			for token in _selected_tokens:
-				token.set_flying(enabled)
+			var gravity_tokens: Array[CharacterBody3D] = []
+			for token: CharacterBody3D in _selected_tokens:
+				if token != null and is_instance_valid(token) and bool(token.get("flying")):
+					gravity_tokens.append(token)
+			if not gravity_tokens.is_empty():
+				push_undo_state()
+				for token: CharacterBody3D in gravity_tokens:
+					if token.has_method("apply_gravity"):
+						token.call("apply_gravity")
+					else:
+						token.call("set_flying", false)
 			_close_context_menu_to_game()
 		CONTEXT_TOGGLE_GRID:
 			toggle_grid()
