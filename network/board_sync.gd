@@ -499,6 +499,63 @@ func valid_snapshot(snapshot: Variant) -> bool:
 			)
 			if front_turns < 0 or front_turns > 3:
 				return false
+			if item.has("transformation_history"):
+				var history_value: Variant = item.get(
+					"transformation_history",
+					[]
+				)
+				if not history_value is Array:
+					return false
+				var history: Array = history_value as Array
+				if history.size() > 16:
+					return false
+				for state_value: Variant in history:
+					if not state_value is Dictionary:
+						return false
+					var appearance: Dictionary = state_value as Dictionary
+					if not appearance.get("visual_asset", "") is String:
+						return false
+					var previous_visual := String(
+						appearance.get("visual_asset", "")
+					)
+					if (
+						not previous_visual.is_empty()
+						and not previous_visual.begins_with(
+							"res://assets/tokens/"
+						)
+					):
+						return false
+					if not appearance.get("display_name", "") is String:
+						return false
+					if not appearance.get("size_name", "") is String:
+						return false
+					for numeric_key: String in [
+						"footprint",
+						"height_cells",
+						"reach_feet"
+					]:
+						var numeric_value: Variant = appearance.get(
+							numeric_key
+						)
+						if not (
+							numeric_value is float
+							or numeric_value is int
+						):
+							return false
+						if float(numeric_value) <= 0.0:
+							return false
+					var previous_front: Variant = appearance.get(
+						"visual_front_quarter_turns",
+						0
+					)
+					if (
+						not previous_front is int
+						or int(previous_front) < 0
+						or int(previous_front) > 3
+					):
+						return false
+					if not appearance.get("reach_overridden", false) is bool:
+						return false
 		if not item.get("name") is String or not item.get("visible") is bool:
 			return false
 	return true
@@ -655,6 +712,10 @@ func _serialize_node(node: Node3D, group_name: String) -> Dictionary:
 			if node.has_method("get_visual_front_quarter_turns")
 			else 0
 		)
+		if node.has_method("get_transformation_history"):
+			data["transformation_history"] = node.call(
+				"get_transformation_history"
+			)
 	else: data["kind"]="physical"
 	return data
 
@@ -707,6 +768,11 @@ func _apply_node_data(node: Node3D, data: Dictionary) -> void:
 			node.call("set_display_name", String(data.get("display_name", "")))
 		if node.has_method("set_conditions"):
 			node.call("set_conditions", data.get("conditions", []))
+		if node.has_method("set_transformation_history"):
+			node.call(
+				"set_transformation_history",
+				data.get("transformation_history", [])
+			)
 	# configure() snaps tokens; restore the exact shared transform afterwards.
 	node.global_transform = _dict_transform(data.get("transform", {}))
 
