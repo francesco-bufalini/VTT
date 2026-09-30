@@ -1172,6 +1172,10 @@ static func _is_runtime_usable(spell_data: Dictionary) -> bool:
 	return false
 
 
+static func is_runtime_usable(spell_data: Dictionary) -> bool:
+	return _is_runtime_usable(spell_data)
+
+
 static func catalog_spell(spell_id: String) -> Dictionary:
 	var value: Variant = SPELLS.get(spell_id, {})
 	if value is Dictionary:
