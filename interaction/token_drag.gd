@@ -60,7 +60,7 @@ func handle_event(event: InputEvent) -> bool:
 	if (
 		target == null
 		or not target.is_in_group("dnd_token")
-		or not target is CharacterBody3D
+		or not (target is CharacterBody3D)
 		or not target.has_method("snap_destination")
 		or not target.has_method("get_footprint_extent")
 	):
