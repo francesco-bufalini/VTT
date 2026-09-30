@@ -2555,8 +2555,31 @@ func _show_spell_data(spell_data: Dictionary) -> void:
 		classes_text = ", ".join(class_names)
 
 	var target_text: String = String(
-		spell_data.get("target", "Self")
+		spell_data.get("target", "")
 	)
+	if target_text.is_empty():
+		match String(spell_data.get("target_mode", "")):
+			"token_then_token":
+				target_text = (
+					"Un token o un punto entro gittata"
+					if bool(spell_data.get("allow_point_target", false))
+					else "Un token entro gittata"
+				)
+			"token_then_multi_token":
+				target_text = (
+					"Più token o punti entro gittata"
+					if bool(spell_data.get("allow_point_target", false))
+					else "Più token entro gittata"
+				)
+			"token_then_point":
+				target_text = "Un punto entro gittata"
+			"self_token", "self_emanation":
+				target_text = "Self"
+			"wall_design":
+				target_text = "Un punto entro gittata"
+			_:
+				target_text = "Self"
+
 	var area_text: String = String(
 		spell_data.get("area", "")
 	)
