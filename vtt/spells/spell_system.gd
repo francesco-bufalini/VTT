@@ -475,16 +475,6 @@ func handle_input(event: InputEvent) -> bool:
 
 func _summon_count_choices(spell_data: Dictionary) -> Array[int]:
 	var choices: Array[int] = []
-	var options_value: Variant = spell_data.get("summon_count_options", [])
-	if options_value is Array:
-		for option_value: Variant in options_value:
-			var option_count: int = int(option_value)
-			if option_count > 0 and not (option_count in choices):
-				choices.append(option_count)
-	if not choices.is_empty():
-		choices.sort()
-		return choices
-
 	var base_level: int = int(spell_data.get("level", 0))
 	var slot_delta: int = maxi(
 		0,
@@ -495,10 +485,54 @@ func _summon_count_choices(spell_data: Dictionary) -> Array[int]:
 		0
 	)
 
+	var multiplier: int = 1
+	var multiplier_rules_value: Variant = spell_data.get(
+		"summon_count_multiplier_rules",
+		[]
+	)
+	if multiplier_rules_value is Array:
+		for rule_value: Variant in multiplier_rules_value:
+			if not rule_value is Dictionary:
+				continue
+			var rule: Dictionary = rule_value as Dictionary
+			var min_slot: int = int(rule.get("min_slot", 0))
+			var max_slot: int = int(rule.get("max_slot", min_slot))
+			if (
+				_selected_slot_level >= min_slot
+				and _selected_slot_level <= max_slot
+			):
+				multiplier = maxi(
+					multiplier,
+					int(rule.get("multiplier", 1))
+				)
+
+	var options_value: Variant = spell_data.get("summon_count_options", [])
+	if options_value is Array:
+		for option_value: Variant in options_value:
+			var option_count: int = int(option_value) * multiplier
+			if option_count > 0 and not (option_count in choices):
+				choices.append(option_count)
+	if not choices.is_empty():
+		choices.sort()
+		return choices
+
 	var minimum: int = int(spell_data.get("summon_count_min", 0))
 	var maximum: int = int(spell_data.get("summon_count_max", 0))
 	if minimum > 0 and maximum >= minimum:
-		maximum += per_slot * slot_delta
+		var maxima_value: Variant = spell_data.get(
+			"summon_count_max_by_slot",
+			{}
+		)
+		var slot_key: String = str(_selected_slot_level)
+		if (
+			maxima_value is Dictionary
+			and (maxima_value as Dictionary).has(slot_key)
+		):
+			maximum = int(
+				(maxima_value as Dictionary).get(slot_key, maximum)
+			)
+		else:
+			maximum += per_slot * slot_delta
 		for count: int in range(minimum, maximum + 1):
 			choices.append(count)
 		return choices
