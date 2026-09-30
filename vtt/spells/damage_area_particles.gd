@@ -4,9 +4,10 @@ extends RefCounted
 # and geometric volumes; there is no per-spell animation table.
 
 const DAMAGE_TYPES: Array[String] = [
-	"acid", "bludgeoning", "cold", "fire", "force", "lightning",
-	"necrotic", "piercing", "poison", "psychic", "radiant",
-	"slashing", "thunder",
+	"acid", "arcane", "bludgeoning", "cold", "darkness", "earth",
+	"fire", "force", "lightning", "mist", "nature", "necrotic",
+	"piercing", "poison", "prismatic", "psychic", "radiant",
+	"silver_mist", "slashing", "thunder", "water", "wind",
 ]
 
 
@@ -24,6 +25,13 @@ static func attach_area(
 ) -> void:
 	var style: String = damage_type.to_lower()
 	if root == null or not is_instance_valid(root) or not supports(style):
+		return
+
+	if style == "prismatic":
+		for layer_style: String in [
+			"fire", "cold", "lightning", "acid", "radiant", "psychic"
+		]:
+			attach_area(root, start, end, shape, layer_style, cell_size)
 		return
 
 	var delta: Vector3 = end - start
@@ -105,6 +113,16 @@ static func attach_wall_segment(
 	if root == null or not is_instance_valid(root) or not supports(style):
 		return
 
+	if style == "prismatic":
+		for layer_style: String in [
+			"fire", "cold", "lightning", "acid", "radiant", "psychic"
+		]:
+			attach_wall_segment(
+				root, start, finish, height_world, thickness_world,
+				layer_style, cell_size
+			)
+		return
+
 	var delta: Vector3 = finish - start
 	delta.y = 0.0
 	var length: float = delta.length()
@@ -136,6 +154,14 @@ static func attach_wall_globe(
 ) -> void:
 	var style: String = damage_type.to_lower()
 	if root == null or not is_instance_valid(root) or not supports(style):
+		return
+	if style == "prismatic":
+		for layer_style: String in [
+			"fire", "cold", "lightning", "acid", "radiant", "psychic"
+		]:
+			attach_wall_globe(
+				root, center, radius_world, layer_style, cell_size
+			)
 		return
 	_add_sphere(root, center, radius_world * 0.96, style, cell_size, 260)
 
@@ -244,6 +270,22 @@ static func _color(style: String) -> Color:
 			return Color(0.72, 0.66, 1.0, 0.62)
 		"psychic":
 			return Color(0.72, 0.28, 1.0, 0.62)
+		"arcane":
+			return Color(0.72, 0.34, 1.0, 0.58)
+		"silver_mist":
+			return Color(0.86, 0.9, 0.98, 0.5)
+		"mist":
+			return Color(0.72, 0.78, 0.86, 0.46)
+		"water":
+			return Color(0.18, 0.66, 1.0, 0.58)
+		"wind":
+			return Color(0.78, 0.92, 1.0, 0.48)
+		"earth":
+			return Color(0.52, 0.4, 0.25, 0.58)
+		"nature":
+			return Color(0.28, 0.72, 0.18, 0.56)
+		"darkness":
+			return Color(0.06, 0.02, 0.12, 0.62)
 		"thunder":
 			return Color(0.46, 0.78, 1.0, 0.62)
 		"bludgeoning":
@@ -262,6 +304,14 @@ static func _motion(style: String, cell_size: float) -> Vector3:
 			return Vector3.DOWN * cell_size * 0.55
 		"lightning", "thunder", "force":
 			return Vector3.UP * cell_size * 0.25
+		"mist", "silver_mist", "wind":
+			return Vector3.UP * cell_size * 0.18
+		"water":
+			return Vector3.DOWN * cell_size * 0.28
+		"earth":
+			return Vector3.UP * cell_size * 0.08
+		"nature":
+			return Vector3.UP * cell_size * 0.42
 		_:
 			return Vector3.UP * cell_size * 0.35
 
