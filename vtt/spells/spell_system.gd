@@ -939,6 +939,7 @@ func _on_transformation_token_applied(
 
 
 func _on_transformation_token_canceled() -> void:
+	var restored_any: bool = false
 	for index: int in range(_transformation_dialog_index):
 		var target: Node3D = _transformation_dialog_targets[index]
 		if (
@@ -946,7 +947,17 @@ func _on_transformation_token_canceled() -> void:
 			and is_instance_valid(target)
 			and target.has_method("restore_previous_transformation")
 		):
-			target.call("restore_previous_transformation")
+			restored_any = bool(
+				target.call("restore_previous_transformation")
+			) or restored_any
+
+	if (
+		restored_any
+		and board_root.has_method(
+			"_refresh_token_views_after_appearance_change"
+		)
+	):
+		board_root.call("_refresh_token_views_after_appearance_change")
 	_cancel_pending_cast()
 
 
