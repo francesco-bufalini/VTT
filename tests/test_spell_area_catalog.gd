@@ -196,6 +196,28 @@ func run() -> void:
 	assert(String(meteor_swarm.get("visual_style", "")) == "fire")
 	assert(String(meteor_swarm.get("projectile_style", "")) == "fire")
 
+	var hold_person: Dictionary = SpellCatalog.spell("hold_person")
+	assert(not hold_person.is_empty())
+	assert(String(hold_person.get("target_mode", "")) == "token_then_token")
+	var hold_conditions: Array = hold_person.get("condition_inflict", [])
+	assert("paralyzed" in hold_conditions)
+	var hold_saves: Array = hold_person.get("saving_throw", [])
+	assert("wisdom" in hold_saves)
+	assert(SpellCatalog.is_runtime_usable(hold_person))
+
+	var thunderwave: Dictionary = SpellCatalog.spell("thunderwave")
+	assert(not thunderwave.is_empty())
+	assert(String(thunderwave.get("target_mode", "")) == "token_then_direction")
+	var thunder_saves: Array = thunderwave.get("saving_throw", [])
+	assert("constitution" in thunder_saves)
+	var thunder_misc: Array = thunderwave.get("misc_tags", [])
+	assert("FMV" in thunder_misc)
+	assert(bool(thunderwave.get("forced_movement_on_failed_save", false)))
+	assert(is_equal_approx(
+		float(thunderwave.get("forced_movement_feet", 0.0)),
+		15.0
+	))
+
 	var entangle: Dictionary = SpellCatalog.spell("entangle")
 	assert(not entangle.is_empty())
 	assert(String(entangle.get("target_mode", "")) == "token_then_point")
@@ -204,6 +226,10 @@ func run() -> void:
 	assert(is_equal_approx(float(entangle.get("aoe_side_feet", 0.0)), 20.0))
 	assert(bool(entangle.get("persistent", false)))
 	assert(not bool(entangle.get("requires_ground", false)))
+	var entangle_conditions: Array = entangle.get("condition_inflict", [])
+	assert("restrained" in entangle_conditions)
+	var entangle_saves: Array = entangle.get("saving_throw", [])
+	assert("strength" in entangle_saves)
 
 	print(
 		"PASS: 5eTools metadata drives range, projectile targets, flat areas, walls and VFX"
