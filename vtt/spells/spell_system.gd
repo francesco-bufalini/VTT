@@ -2425,7 +2425,7 @@ func _on_tree_item_selected() -> void:
 
 
 func _select_spell(spell_id: String) -> void:
-	var spell_data: Dictionary = SpellCatalog.spell(spell_id)
+	var spell_data: Dictionary = SpellCatalog.catalog_spell(spell_id)
 	if spell_data.is_empty():
 		return
 
@@ -2487,7 +2487,13 @@ func _select_spell(spell_id: String) -> void:
 		+ String(spell_data.get("higher_levels", ""))
 		+ cantrip_note
 	)
-	activate_button.disabled = false
+	var runtime_supported: bool = not SpellCatalog.spell(spell_id).is_empty()
+	activate_button.disabled = not runtime_supported
+	activate_button.text = (
+		"Attiva incantesimo"
+		if runtime_supported
+		else "Effetto VTT non disponibile"
+	)
 
 
 func _activate_selected_spell() -> void:

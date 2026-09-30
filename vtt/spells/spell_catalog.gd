@@ -1126,25 +1126,20 @@ static func _is_runtime_usable(spell_data: Dictionary) -> bool:
 	return false
 
 
-static func spell(spell_id: String) -> Dictionary:
+static func catalog_spell(spell_id: String) -> Dictionary:
 	var value: Variant = SPELLS.get(spell_id, {})
 	if value is Dictionary:
-		var manual_result: Dictionary = _apply_runtime_overrides(
-			value as Dictionary
-		)
-		return manual_result if _is_runtime_usable(manual_result) else {}
+		return _apply_runtime_overrides(value as Dictionary)
 
 	value = GeneratedCatalog.SPELLS.get(spell_id, {})
 	if value is Dictionary:
-		var generated_result: Dictionary = _apply_runtime_overrides(
-			value as Dictionary
-		)
-		return (
-			generated_result
-			if _is_runtime_usable(generated_result)
-			else {}
-		)
+		return _apply_runtime_overrides(value as Dictionary)
 	return {}
+
+
+static func spell(spell_id: String) -> Dictionary:
+	var result: Dictionary = catalog_spell(spell_id)
+	return result if _is_runtime_usable(result) else {}
 
 
 static func all_spells() -> Array[Dictionary]:
@@ -1171,11 +1166,9 @@ static func all_spells() -> Array[Dictionary]:
 	var result: Array[Dictionary] = []
 	for value: Variant in merged.values():
 		if value is Dictionary:
-			var runtime_spell: Dictionary = _apply_runtime_overrides(
-				value as Dictionary
+			result.append(
+				_apply_runtime_overrides(value as Dictionary)
 			)
-			if _is_runtime_usable(runtime_spell):
-				result.append(runtime_spell)
 
 	result.sort_custom(
 		func(a: Dictionary, b: Dictionary) -> bool:
