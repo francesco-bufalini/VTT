@@ -424,7 +424,7 @@ func set_condition(condition_id: String, enabled: bool) -> void:
 	if not _is_valid_condition(normalized):
 		return
 	if enabled:
-		if normalized not in _conditions:
+		if not (normalized in _conditions):
 			_conditions.append(normalized)
 	else:
 		_conditions.erase(normalized)
@@ -438,7 +438,7 @@ func set_conditions(value: Variant) -> void:
 			if not item is String:
 				continue
 			var normalized := String(item).strip_edges().to_lower()
-			if _is_valid_condition(normalized) and normalized not in resolved:
+			if _is_valid_condition(normalized) and not (normalized in resolved):
 				resolved.append(normalized)
 	_conditions = resolved
 	_update_status_overlay()
