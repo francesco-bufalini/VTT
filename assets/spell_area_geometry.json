@@ -3933,7 +3933,8 @@
       "feet": 120
     },
     "targeting": {
-      "type": "multi_token"
+      "type": "multi_token",
+      "base_target_clicks": 6
     },
     "effect": {
       "geometry": {
@@ -4869,7 +4870,9 @@
       "feet": 60
     },
     "targeting": {
-      "type": "token"
+      "type": "token",
+      "projectile": true,
+      "allow_point_target": true
     },
     "effect": {
       "damage_types": [
@@ -5458,7 +5461,11 @@
     },
     "targeting": {
       "type": "multi_token",
-      "allow_repeat_targets": true
+      "base_target_clicks": 3,
+      "target_clicks_per_slot_above_base": 1,
+      "allow_repeat_targets": true,
+      "projectile": true,
+      "allow_point_target": true
     },
     "effect": {
       "damage_types": [
@@ -5921,6 +5928,8 @@
     },
     "targeting": {
       "type": "multi_token",
+      "base_target_clicks": 3,
+      "target_clicks_per_slot_above_base": 1,
       "allow_repeat_targets": true,
       "projectile": true,
       "allow_point_target": true
@@ -6133,7 +6142,8 @@
       "feet": 10
     },
     "targeting": {
-      "type": "multi_token"
+      "type": "multi_token",
+      "base_target_clicks": 8
     },
     "effect": {
       "damage_types": [
@@ -6259,7 +6269,8 @@
       "feet": 30
     },
     "targeting": {
-      "type": "multi_token"
+      "type": "multi_token",
+      "base_target_clicks": 10
     }
   },
   "XPHB::Water Walk": {
@@ -6268,7 +6279,8 @@
       "feet": 30
     },
     "targeting": {
-      "type": "multi_token"
+      "type": "multi_token",
+      "base_target_clicks": 10
     }
   },
   "XPHB::Wind Walk": {
@@ -8322,7 +8334,8 @@
       "feet": 120
     },
     "targeting": {
-      "type": "multi_token"
+      "type": "multi_token",
+      "base_target_clicks": 10
     }
   },
   "XGE::Maximilian's Earthen Grasp": {
@@ -8416,7 +8429,8 @@
       "feet": 90
     },
     "targeting": {
-      "type": "multi_token"
+      "type": "multi_token",
+      "base_target_clicks": 10
     },
     "effect": {
       "damage_types": [
@@ -8432,7 +8446,8 @@
     },
     "targeting": {
       "type": "multi_token",
-      "requires_ground": true
+      "requires_ground": true,
+      "base_target_clicks": 5
     }
   },
   "XGE::Skill Empowerment": {
@@ -8737,7 +8752,8 @@
       "feet": 30
     },
     "targeting": {
-      "type": "multi_token"
+      "type": "multi_token",
+      "base_target_clicks": 3
     }
   },
   "AU::Enervation": {
@@ -8761,7 +8777,8 @@
       "feet": 90
     },
     "targeting": {
-      "type": "multi_token"
+      "type": "multi_token",
+      "base_target_clicks": 3
     },
     "effect": {
       "damage_types": [
@@ -8900,7 +8917,8 @@
       "feet": 60
     },
     "targeting": {
-      "type": "multi_token"
+      "type": "multi_token",
+      "base_target_clicks": 10
     },
     "effect": {
       "damage_types": [
