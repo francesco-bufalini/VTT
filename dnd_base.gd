@@ -64,6 +64,7 @@ var camera_sensitivity_slider: HSlider
 var camera_speed_value_label: Label
 var camera_sensitivity_value_label: Label
 var token_name_input: LineEdit
+var token_reach_input: SpinBox
 var token_miniature_search: LineEdit
 var token_miniature_list: ItemList
 var token_front_selector: OptionButton
@@ -75,6 +76,7 @@ var _selection_grid_instance: MultiMeshInstance3D
 var _selection_grid_multimesh: MultiMesh
 var _selection_grid_signature: String = ""
 var token_state_dialog: ConfirmationDialog
+var opportunity_dialog: AcceptDialog
 var token_state_name: LineEdit
 var token_state_grid: GridContainer
 var token_state_checks: Dictionary = {}
@@ -128,6 +130,7 @@ func _ready() -> void:
 	_build_camera_settings_dialog()
 	_build_token_generation_controls()
 	_build_token_state_dialog()
+	_build_opportunity_attack_dialog()
 
 	spell_system = preload("res://vtt/spells/spell_system.gd").new()
 	spell_system.name = "SpellSystem"
@@ -239,6 +242,31 @@ func _build_token_generation_controls() -> void:
 		"La miniatura propone una taglia iniziale, ma puoi cambiarla. "
 		+ "La scelta modifica footprint, collisione e scala del token."
 	)
+	if not size_selector.item_selected.is_connected(_on_token_size_selected):
+		size_selector.item_selected.connect(_on_token_size_selected)
+
+	var reach_label := content_box.get_node_or_null("ReachLabel") as Label
+	if reach_label == null:
+		reach_label = Label.new()
+		reach_label.name = "ReachLabel"
+		reach_label.text = "Gittata della creatura (ft)"
+		reach_label.tooltip_text = (
+			"Default: 5 ft per Medium o inferiore, 10 ft Large, "
+			+ "15 ft Huge, 20 ft Gargantuan. Puoi sovrascriverla."
+		)
+		content_box.add_child(reach_label)
+
+	token_reach_input = content_box.get_node_or_null("ReachInput") as SpinBox
+	if token_reach_input == null:
+		token_reach_input = SpinBox.new()
+		token_reach_input.name = "ReachInput"
+		token_reach_input.min_value = 5.0
+		token_reach_input.max_value = 1000.0
+		token_reach_input.step = 5.0
+		token_reach_input.value = 5.0
+		token_reach_input.allow_greater = true
+		token_reach_input.tooltip_text = reach_label.tooltip_text
+		content_box.add_child(token_reach_input)
 
 	var front_label := content_box.get_node_or_null("FrontLabel") as Label
 	if front_label == null:
@@ -277,8 +305,10 @@ func _build_token_generation_controls() -> void:
 	if size_label != null:
 		content_box.move_child(size_label, 5)
 	content_box.move_child(size_selector, 6)
-	content_box.move_child(front_label, 7)
-	content_box.move_child(token_front_selector, 8)
+	content_box.move_child(reach_label, 7)
+	content_box.move_child(token_reach_input, 8)
+	content_box.move_child(front_label, 9)
+	content_box.move_child(token_front_selector, 10)
 
 	_reload_token_miniature_list()
 
@@ -403,6 +433,7 @@ func _on_token_miniature_selected(index: int) -> void:
 			size_selector.select(size_index)
 			break
 	size_selector.disabled = false
+	_on_token_size_selected(size_selector.selected)
 
 	var token_id := String(_selected_token_profile.get("id", ""))
 	var front_index := clampi(
@@ -412,6 +443,16 @@ func _on_token_miniature_selected(index: int) -> void:
 	)
 	if token_front_selector != null:
 		token_front_selector.select(front_index)
+
+
+func _on_token_size_selected(index: int) -> void:
+	if token_reach_input == null:
+		return
+	if index < 0 or index >= TOKEN_SIZES.size():
+		index = 2
+	var size_data: Dictionary = TOKEN_SIZES[index]
+	var footprint: float = float(size_data.get("footprint", 1.0))
+	token_reach_input.value = maxf(5.0, footprint * 5.0)
 
 
 func _on_token_front_selected(index: int) -> void:
@@ -1451,6 +1492,112 @@ func _ensure_token_name_input() -> void:
 	content_box.move_child(token_name_input, 1)
 
 
+func _build_opportunity_attack_dialog() -> void:
+	opportunity_dialog = AcceptDialog.new()
+	opportunity_dialog.name = "OpportunityAttackDialog"
+	opportunity_dialog.title = "Attacchi di opportunità disponibili"
+	opportunity_dialog.ok_button_text = "OK"
+	opportunity_dialog.min_size = Vector2i(560, 240)
+	$UI.add_child(opportunity_dialog)
+	opportunity_dialog.confirmed.connect(_close_opportunity_attack_dialog)
+	opportunity_dialog.close_requested.connect(_close_opportunity_attack_dialog)
+
+
+func _close_opportunity_attack_dialog() -> void:
+	_ui_owns_mouse = false
+	call_deferred("_capture_mouse")
+
+
+func _token_reach_feet(token: CharacterBody3D) -> float:
+	if token != null and is_instance_valid(token):
+		if token.has_method("get_reach_feet"):
+			return maxf(float(token.call("get_reach_feet")), 1.0)
+		var footprint_value: Variant = token.get("_footprint_cells")
+		if footprint_value is float or footprint_value is int:
+			return maxf(5.0, float(footprint_value) * 5.0)
+	return 5.0
+
+
+func _token_notice_name(token: CharacterBody3D) -> String:
+	if token != null and is_instance_valid(token):
+		if token.has_method("get_display_name"):
+			var display_name: String = String(
+				token.call("get_display_name")
+			).strip_edges()
+			if not display_name.is_empty():
+				return display_name
+		return String(token.name)
+	return "Creatura"
+
+
+func check_opportunity_attacks_after_movement(
+	moved_tokens: Array[CharacterBody3D],
+	origins: Array[Vector3]
+) -> void:
+	if moved_tokens.is_empty() or moved_tokens.size() != origins.size():
+		return
+
+	var moved_lookup: Dictionary = {}
+	for moved_token: CharacterBody3D in moved_tokens:
+		if moved_token != null and is_instance_valid(moved_token):
+			moved_lookup[moved_token.get_instance_id()] = true
+
+	var notices := PackedStringArray()
+	var feet_per_world_unit: float = 5.0 / maxf(cell_size, 0.001)
+	for index: int in range(moved_tokens.size()):
+		var moved_token: CharacterBody3D = moved_tokens[index]
+		if moved_token == null or not is_instance_valid(moved_token):
+			continue
+		var old_position: Vector3 = origins[index]
+		var new_position: Vector3 = moved_token.global_position
+
+		for node: Node in get_tree().get_nodes_in_group("dnd_token"):
+			if not node is CharacterBody3D:
+				continue
+			var attacker := node as CharacterBody3D
+			if (
+				attacker == moved_token
+				or not is_instance_valid(attacker)
+				or not is_ancestor_of(attacker)
+				or moved_lookup.has(attacker.get_instance_id())
+			):
+				continue
+
+			var reach_feet: float = _token_reach_feet(attacker)
+			var before_feet: float = (
+				attacker.global_position.distance_to(old_position)
+				* feet_per_world_unit
+			)
+			var after_feet: float = (
+				attacker.global_position.distance_to(new_position)
+				* feet_per_world_unit
+			)
+			if (
+				before_feet <= reach_feet + 0.05
+				and after_feet > reach_feet + 0.05
+			):
+				notices.append(
+					"%s può effettuare un attacco di opportunità contro %s "
+					+ "(uscita dalla gittata di %g ft)."
+					% [
+						_token_notice_name(attacker),
+						_token_notice_name(moved_token),
+						reach_feet
+					]
+				)
+
+	if notices.is_empty() or opportunity_dialog == null:
+		return
+
+	opportunity_dialog.dialog_text = (
+		"Il movimento appena concluso rende disponibili:\n\n"
+		+ "\n".join(notices)
+	)
+	_ui_owns_mouse = true
+	Input.mouse_mode = Input.MOUSE_MODE_VISIBLE
+	opportunity_dialog.popup_centered(Vector2i(620, 300))
+
+
 func _build_token_state_dialog() -> void:
 	token_state_dialog = ConfirmationDialog.new()
 	token_state_dialog.name = "TokenStateDialog"
@@ -1655,6 +1802,9 @@ func _on_token_dialog_confirmed() -> void:
 
 	var size_name := String(selected_size.get("name", "Medium"))
 	var footprint := float(selected_size.get("footprint", 1.0))
+	var reach_feet: float = maxf(5.0, footprint * 5.0)
+	if token_reach_input != null:
+		reach_feet = maxf(float(token_reach_input.value), 1.0)
 	var display_name := (
 		token_name_input.text.strip_edges()
 		if token_name_input != null
@@ -1681,7 +1831,8 @@ func _on_token_dialog_confirmed() -> void:
 		footprint,
 		display_name,
 		visual_asset,
-		front_quarter_turns
+		front_quarter_turns,
+		reach_feet
 	)
 
 	_ui_owns_mouse = false
@@ -1697,7 +1848,8 @@ func _spawn_token(
 	footprint_cells: float,
 	display_name: String = "",
 	visual_asset: String = "",
-	front_quarter_turns: int = 0
+	front_quarter_turns: int = 0,
+	reach_feet: float = 0.0
 ) -> void:
 	if token_scene == null:
 		push_error("DnDBase: token_scene non assegnata.")
@@ -1740,6 +1892,12 @@ func _spawn_token(
 			size_name,
 			footprint_cells
 		)
+
+	if token.has_method("set_reach_feet"):
+		var resolved_reach: float = reach_feet
+		if resolved_reach <= 0.0:
+			resolved_reach = maxf(5.0, footprint_cells * 5.0)
+		token.call("set_reach_feet", resolved_reach, true)
 
 	if token.has_method("set_display_name"):
 		token.call("set_display_name", display_name)
@@ -1897,8 +2055,13 @@ func _move_selected(direction: Vector2i) -> void:
 		if token.has_method("nudge_grid"):
 			token.call("nudge_grid", direction)
 
-	if _selected_tokens_moved_from(origins):
+	var moved: bool = _selected_tokens_moved_from(origins)
+	if moved:
 		commit_undo_transaction(before)
+		check_opportunity_attacks_after_movement(
+			_selected_tokens.duplicate(),
+			origins
+		)
 
 
 func _move_selected_vertical(steps: int) -> void:
@@ -1915,8 +2078,13 @@ func _move_selected_vertical(steps: int) -> void:
 		if token.has_method("nudge_vertical"):
 			token.call("nudge_vertical", steps)
 
-	if _selected_tokens_moved_from(origins):
+	var moved: bool = _selected_tokens_moved_from(origins)
+	if moved:
 		commit_undo_transaction(before)
+		check_opportunity_attacks_after_movement(
+			_selected_tokens.duplicate(),
+			origins
+		)
 
 
 func _selected_tokens_moved_from(origins: Array[Vector3]) -> bool:
