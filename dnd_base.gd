@@ -13,6 +13,7 @@ const CONTEXT_SPELLS := 11
 const CONTEXT_CAMERA_SETTINGS := 12
 const CONTEXT_INITIATIVE := 13
 const CONTEXT_TOKEN_DETAILS := 14
+const CONTEXT_RESTORE_TRANSFORMATION := 15
 const CAMPAIGN_EDITOR_SCENE_PATH := "res://vtt/editor/campaign_editor.tscn"
 const TOKEN_LIBRARY_MANIFEST := "res://assets/tokens/token_library.json"
 const DEFAULT_TOKEN_PROFILE_ID := "death_knight"
@@ -53,6 +54,11 @@ var _token_generation_confirmed_callback: Callable = Callable()
 var _token_generation_canceled_callback: Callable = Callable()
 var _token_generation_exact_position: bool = false
 var _token_generation_place_on_surface: bool = false
+var _token_generation_transform_target: CharacterBody3D
+var token_resize_menu: PopupMenu
+var _token_resize_target: CharacterBody3D
+var _token_resize_confirmed_callback: Callable = Callable()
+var _token_resize_canceled_callback: Callable = Callable()
 var _pending_aoe_index: int = -1
 var _context_token: CharacterBody3D = null
 var _selected_tokens: Array[CharacterBody3D] = []
@@ -133,6 +139,7 @@ func _ready() -> void:
 	board_sync.listen(true, _share_session_key())
 	_build_camera_settings_dialog()
 	_build_token_generation_controls()
+	_build_token_resize_menu()
 	_build_token_state_dialog()
 	_build_opportunity_attack_dialog()
 
@@ -465,6 +472,103 @@ func _on_token_front_selected(index: int) -> void:
 	var token_id := String(_selected_token_profile.get("id", ""))
 	if not token_id.is_empty():
 		_token_front_by_id[token_id] = clampi(index, 0, 3)
+
+
+func _build_token_resize_menu() -> void:
+	token_resize_menu = PopupMenu.new()
+	token_resize_menu.name = "TokenResizeMenu"
+	for index: int in range(TOKEN_SIZES.size()):
+		var size_data: Dictionary = TOKEN_SIZES[index]
+		token_resize_menu.add_item(
+			String(size_data.get("name", "Medium")),
+			index
+		)
+		token_resize_menu.set_item_metadata(index, index)
+	token_resize_menu.id_pressed.connect(_on_token_resize_selected)
+	token_resize_menu.popup_hide.connect(_on_token_resize_menu_hidden)
+	$UI.add_child(token_resize_menu)
+
+
+func open_token_resize_menu(
+	target: CharacterBody3D,
+	confirmed_callback: Callable = Callable(),
+	canceled_callback: Callable = Callable()
+) -> void:
+	if target == null or not is_instance_valid(target):
+		if canceled_callback.is_valid():
+			canceled_callback.call()
+		return
+
+	_token_resize_target = target
+	_token_resize_confirmed_callback = confirmed_callback
+	_token_resize_canceled_callback = canceled_callback
+	_ui_owns_mouse = true
+	_release_mouse()
+
+	var viewport_size: Vector2 = get_viewport().get_visible_rect().size
+	token_resize_menu.position = Vector2i(
+		int(viewport_size.x * 0.5 - 70.0),
+		int(viewport_size.y * 0.5 - 90.0)
+	)
+	token_resize_menu.popup()
+
+
+func _on_token_resize_selected(id: int) -> void:
+	if (
+		_token_resize_target == null
+		or not is_instance_valid(_token_resize_target)
+		or id < 0
+		or id >= TOKEN_SIZES.size()
+	):
+		return
+
+	var target: CharacterBody3D = _token_resize_target
+	var size_data: Dictionary = TOKEN_SIZES[id]
+	var confirmed_callback: Callable = _token_resize_confirmed_callback
+
+	push_undo_state()
+	if target.has_method("push_transformation_state"):
+		target.call("push_transformation_state")
+	if target.has_method("set_size_category"):
+		target.call(
+			"set_size_category",
+			String(size_data.get("name", "Medium")),
+			float(size_data.get("footprint", 1.0)),
+			false
+		)
+
+	_token_resize_target = null
+	_token_resize_confirmed_callback = Callable()
+	_token_resize_canceled_callback = Callable()
+	_refresh_token_views_after_appearance_change()
+	_ui_owns_mouse = false
+	_capture_mouse()
+
+	if confirmed_callback.is_valid():
+		confirmed_callback.call(target)
+
+
+func _on_token_resize_menu_hidden() -> void:
+	if _token_resize_target == null:
+		return
+	var canceled_callback: Callable = _token_resize_canceled_callback
+	_token_resize_target = null
+	_token_resize_confirmed_callback = Callable()
+	_token_resize_canceled_callback = Callable()
+	_ui_owns_mouse = false
+	_capture_mouse()
+	if canceled_callback.is_valid():
+		canceled_callback.call()
+
+
+func _refresh_token_views_after_appearance_change() -> void:
+	_refresh_selection_grid_highlight()
+	if token_list != null and is_instance_valid(token_list):
+		if token_list.has_method("refresh"):
+			token_list.call("refresh")
+	if initiative_tracker != null and is_instance_valid(initiative_tracker):
+		if initiative_tracker.has_method("refresh"):
+			initiative_tracker.call("refresh")
 
 
 func _build_selection_grid_highlight() -> void:
@@ -1379,6 +1483,17 @@ func _show_context_menu(screen_position: Vector2) -> void:
 
 		if _selected_tokens.size() == 1:
 			context_menu.add_item("Nome e stati…", CONTEXT_TOKEN_DETAILS)
+			var selected_token: CharacterBody3D = _selected_tokens[0]
+			if (
+				selected_token != null
+				and is_instance_valid(selected_token)
+				and selected_token.has_method("has_previous_transformation")
+				and bool(selected_token.call("has_previous_transformation"))
+			):
+				context_menu.add_item(
+					"Ripristina aspetto precedente",
+					CONTEXT_RESTORE_TRANSFORMATION
+				)
 
 		if _context_token != null and is_instance_valid(_context_token):
 			context_menu.add_item("Incantesimi", CONTEXT_SPELLS)
@@ -1423,6 +1538,20 @@ func _on_context_menu_id_pressed(id: int) -> void:
 
 	if id == CONTEXT_TOKEN_DETAILS:
 		open_selected_token_state_editor()
+		return
+
+	if id == CONTEXT_RESTORE_TRANSFORMATION:
+		if _selected_tokens.size() == 1:
+			var token: CharacterBody3D = _selected_tokens[0]
+			if (
+				token != null
+				and is_instance_valid(token)
+				and token.has_method("restore_previous_transformation")
+			):
+				push_undo_state()
+				token.call("restore_previous_transformation")
+				_refresh_token_views_after_appearance_change()
+		_close_context_menu_to_game()
 		return
 
 	if id == CONTEXT_DISSOLVE_AOT:
@@ -1944,6 +2073,7 @@ func open_token_generation_at(
 ) -> void:
 	_pending_spawn_position = world_position
 	_has_pending_spawn_position = true
+	_token_generation_transform_target = null
 	_token_generation_confirmed_callback = confirmed_callback
 	_token_generation_canceled_callback = canceled_callback
 	_token_generation_exact_position = true
@@ -1951,8 +2081,33 @@ func open_token_generation_at(
 	_open_token_generation_dialog()
 
 
+func open_token_transformation(
+	target: CharacterBody3D,
+	confirmed_callback: Callable = Callable(),
+	canceled_callback: Callable = Callable()
+) -> void:
+	if target == null or not is_instance_valid(target):
+		if canceled_callback.is_valid():
+			canceled_callback.call()
+		return
+
+	_token_generation_transform_target = target
+	_token_generation_confirmed_callback = confirmed_callback
+	_token_generation_canceled_callback = canceled_callback
+	_token_generation_exact_position = false
+	_token_generation_place_on_surface = false
+	_has_pending_spawn_position = false
+	_open_token_generation_dialog()
+
+
 func _open_token_generation_dialog() -> void:
-	if not _has_pending_spawn_position:
+	if (
+		not _has_pending_spawn_position
+		and (
+			_token_generation_transform_target == null
+			or not is_instance_valid(_token_generation_transform_target)
+		)
+	):
 		return
 
 	_ui_owns_mouse = true
@@ -1982,7 +2137,7 @@ func _on_token_dialog_confirmed() -> void:
 	var footprint := float(selected_size.get("footprint", 1.0))
 	var reach_feet: float = maxf(5.0, footprint * 5.0)
 	if token_reach_input != null:
-		reach_feet = maxf(float(token_reach_input.value), 1.0)
+		reach_feet = maxf(float(token_reach_input.value), 5.0)
 	var display_name := (
 		token_name_input.text.strip_edges()
 		if token_name_input != null
@@ -2004,20 +2159,53 @@ func _on_token_dialog_confirmed() -> void:
 			3
 		)
 
-	var created_token: CharacterBody3D = _spawn_token(
-		size_name,
-		footprint,
-		display_name,
-		visual_asset,
-		front_quarter_turns,
-		reach_feet
-	)
+	var created_token: CharacterBody3D
+	if (
+		_token_generation_transform_target != null
+		and is_instance_valid(_token_generation_transform_target)
+	):
+		created_token = _token_generation_transform_target
+		push_undo_state()
+		if created_token.has_method("push_transformation_state"):
+			created_token.call("push_transformation_state")
+		if (
+			not visual_asset.is_empty()
+			and created_token.has_method("set_visual_asset")
+		):
+			created_token.call("set_visual_asset", visual_asset)
+		if created_token.has_method("set_visual_front_quarter_turns"):
+			created_token.call(
+				"set_visual_front_quarter_turns",
+				front_quarter_turns
+			)
+		if created_token.has_method("set_size_category"):
+			created_token.call(
+				"set_size_category",
+				size_name,
+				footprint,
+				false
+			)
+		if created_token.has_method("set_reach_feet"):
+			created_token.call("set_reach_feet", reach_feet, true)
+		if created_token.has_method("set_display_name"):
+			created_token.call("set_display_name", display_name)
+		_refresh_token_views_after_appearance_change()
+	else:
+		created_token = _spawn_token(
+			size_name,
+			footprint,
+			display_name,
+			visual_asset,
+			front_quarter_turns,
+			reach_feet
+		)
 
 	var confirmed_callback: Callable = (
 		_token_generation_confirmed_callback
 	)
 	_token_generation_confirmed_callback = Callable()
 	_token_generation_canceled_callback = Callable()
+	_token_generation_transform_target = null
 	_token_generation_exact_position = false
 	_token_generation_place_on_surface = false
 	_has_pending_spawn_position = false
@@ -2035,6 +2223,7 @@ func _on_token_dialog_canceled() -> void:
 	)
 	_token_generation_confirmed_callback = Callable()
 	_token_generation_canceled_callback = Callable()
+	_token_generation_transform_target = null
 	_token_generation_exact_position = false
 	_token_generation_place_on_surface = false
 	_has_pending_spawn_position = false
