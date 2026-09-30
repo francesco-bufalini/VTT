@@ -488,7 +488,11 @@ func _try_select_caster(screen_position: Vector2) -> void:
 	match target_mode:
 		"self_token":
 			_cast_spell_from_caster(caster, spell_data)
-			_finish_cast()
+			_complete_spell_cast(
+				spell_data,
+				_caster_direction_spell_targets(caster, spell_data),
+				caster
+			)
 		"token_then_point":
 			_pending_caster = caster
 			_targeting_phase = "point"
@@ -569,7 +573,16 @@ func _try_select_caster(screen_position: Vector2) -> void:
 		"self_emanation":
 			_pending_caster = caster
 			_cast_self_emanation(caster, spell_data)
-			_finish_cast()
+			_complete_spell_cast(
+				spell_data,
+				_spell_targets_in_geometry(
+					caster.global_position,
+					_area_endpoint(caster.global_position, spell_data),
+					spell_data,
+					caster
+				),
+				caster
+			)
 		"wall_design":
 			_pending_caster = caster
 			_hide_spell_preview()
@@ -635,7 +648,15 @@ func _try_select_point(screen_position: Vector2) -> void:
 		target_point,
 		spell_data
 	)
-	_finish_cast()
+	_complete_spell_cast(
+		spell_data,
+		_point_spell_targets(
+			target_point,
+			spell_data,
+			_pending_caster
+		),
+		_pending_caster
+	)
 
 
 func _try_select_target_token(screen_position: Vector2) -> void:
@@ -678,7 +699,15 @@ func _try_select_target_token(screen_position: Vector2) -> void:
 			target_point,
 			spell_data
 		)
-		_finish_cast()
+		_complete_spell_cast(
+			spell_data,
+			_point_spell_targets(
+				target_point,
+				spell_data,
+				_pending_caster
+			),
+			_pending_caster
+		)
 		return
 
 	var target: Node3D = target_data.get("target") as Node3D
@@ -690,7 +719,12 @@ func _try_select_target_token(screen_position: Vector2) -> void:
 		target,
 		spell_data
 	)
-	_finish_cast()
+	var direct_targets: Array[Node3D] = [target]
+	_complete_spell_cast(
+		spell_data,
+		direct_targets,
+		_pending_caster
+	)
 
 
 func _try_select_multi_target(screen_position: Vector2) -> void:
@@ -739,7 +773,12 @@ func _try_select_multi_target(screen_position: Vector2) -> void:
 			_pending_target_points,
 			spell_data
 		)
-		_finish_cast()
+		var selected_targets: Array[Node3D] = _pending_targets.duplicate()
+		_complete_spell_cast(
+			spell_data,
+			selected_targets,
+			_pending_caster
+		)
 		return
 
 	_update_multi_target_instruction(spell_data)
@@ -1237,7 +1276,15 @@ func _try_select_direction_point(screen_position: Vector2) -> void:
 		target_point,
 		spell_data
 	)
-	_finish_cast()
+	_complete_spell_cast(
+		spell_data,
+		_direction_spell_targets(
+			_pending_caster,
+			target_point,
+			spell_data
+		),
+		_pending_caster
+	)
 
 
 func _try_wall_start(screen_position: Vector2) -> void:
