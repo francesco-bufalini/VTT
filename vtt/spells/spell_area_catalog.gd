@@ -104,18 +104,10 @@ static func _primary_damage_style(effect: Dictionary) -> String:
 	if damage_value is Array:
 		var damage_types: Array = damage_value as Array
 		# One damage family maps cleanly to one generic animation. Multi-type
-		# effects (for example Prismatic Wall) keep their existing bespoke
-		# style instead of arbitrarily choosing the first damage type.
+		# effects keep their existing bespoke style instead of arbitrarily
+		# choosing one damage type.
 		if damage_types.size() == 1:
 			return String(damage_types[0]).to_lower()
-
-	var visual_value: Variant = effect.get("visual_tags", [])
-	if visual_value is Array:
-		var visual_tags: Array = visual_value as Array
-		if "OBS" in visual_tags:
-			return "arcane"
-		if "LGT" in visual_tags or "LGTS" in visual_tags:
-			return "radiant"
 	return ""
 
 
