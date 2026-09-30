@@ -25,7 +25,12 @@ const SPELLS: Dictionary = {
     "transient_seconds": 5,
     "aoe_shape": "cube",
     "aoe_side_feet": 30,
-    "range_feet": 150
+    "range_feet": 150,
+    "condition_inflict": [],
+    "saving_throw": [
+      "constitution"
+    ],
+    "misc_tags": []
   },
   "absorb_elements": {
     "id": "absorb_elements",
@@ -47,7 +52,10 @@ const SPELLS: Dictionary = {
       "Wizard"
     ],
     "description": "The spell captures some of the incoming energy, lessening its effect on you and storing it for your next melee attack. You have resistance to the triggering damage type until the start of your next turn. Also, the first time you hit with a melee attack on your next turn, the target takes an extra 1d6 damage of the triggering type, and the spell ends.",
-    "higher_levels": "At Higher Levels: When you cast this spell using a spell slot of 2nd level or higher, the extra damage increases by 1d6 for each slot level above 1st."
+    "higher_levels": "At Higher Levels: When you cast this spell using a spell slot of 2nd level or higher, the extra damage increases by 1d6 for each slot level above 1st.",
+    "condition_inflict": [],
+    "saving_throw": [],
+    "misc_tags": []
   },
   "acid_splash": {
     "id": "acid_splash",
@@ -68,7 +76,14 @@ const SPELLS: Dictionary = {
     ],
     "description": "You create an acidic bubble at a point within range, where it explodes in a 5-foot-radius Sphere. Each creature in that Sphere must succeed on a Dexterity saving throw or take 1d6 Acid damage.",
     "higher_levels": "Cantrip Upgrade: The damage increases by 1d6 when you reach levels 5 (2d6), 11 (3d6), and 17 (4d6).",
-    "range_feet": 60
+    "range_feet": 60,
+    "condition_inflict": [],
+    "saving_throw": [
+      "dexterity"
+    ],
+    "misc_tags": [
+      "SCL"
+    ]
   },
   "aganazzars_scorcher": {
     "id": "aganazzars_scorcher",
@@ -94,7 +109,12 @@ const SPELLS: Dictionary = {
     "aoe_length_cells": 6,
     "line_width_feet": 5,
     "direction_limit_feet": 30,
-    "show_range_preview": false
+    "show_range_preview": false,
+    "condition_inflict": [],
+    "saving_throw": [
+      "dexterity"
+    ],
+    "misc_tags": []
   },
   "aid": {
     "id": "aid",
@@ -125,7 +145,12 @@ const SPELLS: Dictionary = {
     "base_target_clicks": 3,
     "allow_repeat_targets": false,
     "projectile_style": "aid",
-    "projectile_travel_seconds": 0.65
+    "projectile_travel_seconds": 0.65,
+    "condition_inflict": [],
+    "saving_throw": [],
+    "misc_tags": [
+      "HL"
+    ]
   },
   "air_bubble": {
     "id": "air_bubble",
@@ -174,7 +199,10 @@ const SPELLS: Dictionary = {
     "aoe_shape": "cube",
     "aoe_side_feet": 20,
     "range_feet": 30,
-    "persistent": true
+    "persistent": true,
+    "condition_inflict": [],
+    "saving_throw": [],
+    "misc_tags": []
   },
   "alter_self": {
     "id": "alter_self",
@@ -194,7 +222,12 @@ const SPELLS: Dictionary = {
       "Wizard"
     ],
     "description": "You alter your physical form. Choose one of the following options. Its effects last for the duration, during which you can take a Magic action to replace the option you chose with a different one. Aquatic Adaptation: You sprout gills and grow webs between your fingers. You can breathe underwater and gain a Swim Speed equal to your Speed. Change Appearance: You alter your appearance. You decide what you look like, including your height, weight, facial features, sound of your voice, hair length, coloration, and other distinguishing characteristics. You can make yourself appear as a member of another species, though none of your statistics change. You can't appear as a creature of a different size, and your basic shape stays the same; if you're bipedal, you can't use this spell to become quadrupedal, for instance. For the duration, you can take a Magic action to change your appearance in this way again. Natural Weapons: You grow claws (Slashing), fangs (Piercing), horns (Piercing), or hooves (Bludgeoning). When you use your Unarmed Strike to deal damage with that new growth, it deals 1d6 damage of the type in parentheses instead of dealing the normal damage for your Unarmed Strike, and you use your spellcasting ability modifier for the attack and damage rolls rather than using Strength.",
-    "higher_levels": ""
+    "higher_levels": "",
+    "condition_inflict": [],
+    "saving_throw": [],
+    "misc_tags": [
+      "UA"
+    ]
   },
   "alustriels_mooncloak": {
     "id": "alustriels_mooncloak",
@@ -215,7 +248,14 @@ const SPELLS: Dictionary = {
       "Wizard"
     ],
     "description": "For the duration, moonlight fills a 20-foot Emanation originating from you with Dim Light. While in that area, you and your allies have Half Cover and Resistance to Cold, Lightning, and Radiant damage. While the spell lasts, you can use one of the following options, ending the spell immediately: Liberation: When you fail a saving throw to avoid or end the Frightened, Grappled, or Restrained condition, you can take a Reaction to succeed on the save instead. Respite: As a Magic action, you or an ally within the area regains Hit Points equal to 4d10 plus your spellcasting ability modifier.",
-    "higher_levels": ""
+    "higher_levels": "",
+    "condition_inflict": [],
+    "saving_throw": [],
+    "misc_tags": [
+      "HL",
+      "LGT",
+      "UA"
+    ]
   },
   "animal_friendship": {
     "id": "animal_friendship",
@@ -244,7 +284,17 @@ const SPELLS: Dictionary = {
     "allow_repeat_targets": false,
     "target_clicks_per_slot_above_base": 1,
     "projectile_style": "animal_friendship",
-    "projectile_travel_seconds": 0.65
+    "projectile_travel_seconds": 0.65,
+    "condition_inflict": [
+      "charmed"
+    ],
+    "saving_throw": [
+      "wisdom"
+    ],
+    "misc_tags": [
+      "SCT",
+      "SGT"
+    ]
   },
   "animal_messenger": {
     "id": "animal_messenger",
@@ -270,7 +320,14 @@ const SPELLS: Dictionary = {
     "target_mode": "token_then_token",
     "range_feet": 30,
     "projectile_style": "animal_messenger",
-    "projectile_travel_seconds": 0.65
+    "projectile_travel_seconds": 0.65,
+    "condition_inflict": [],
+    "saving_throw": [
+      "charisma"
+    ],
+    "misc_tags": [
+      "SGT"
+    ]
   },
   "animal_shapes": {
     "id": "animal_shapes",
@@ -292,7 +349,13 @@ const SPELLS: Dictionary = {
     "target_mode": "token_then_multi_token",
     "projectile_style": "animal_shapes",
     "projectile_travel_seconds": 0.65,
-    "range_feet": 30
+    "range_feet": 30,
+    "condition_inflict": [],
+    "saving_throw": [],
+    "misc_tags": [
+      "SGT",
+      "UA"
+    ]
   },
   "animate_dead": {
     "id": "animate_dead",
@@ -311,7 +374,15 @@ const SPELLS: Dictionary = {
       "Wizard"
     ],
     "description": "Choose a pile of bones or a corpse of a Medium or Small Humanoid within range. The target becomes an Undead creature: a Skeleton if you chose bones or a Zombie if you chose a corpse. On each of your turns, you can take a Bonus Action to mentally command any creature you made with this spell if the creature is within 60 feet of you (if you control multiple creatures, you can command any of them at the same time, issuing the same command to each one). You decide what action the creature will take and where it will move on its next turn, or you can issue a general command, such as to guard a chamber or corridor. If you issue no commands, the creature takes the Dodge action and moves only to avoid harm. Once given an order, the creature continues to follow it until its task is complete. The creature is under your control for 24 hours, after which it stops obeying any command you've given it. To maintain control of the creature for another 24 hours, you must cast this spell on the creature again before the current 24-hour period ends. This use of the spell reasserts your control over up to four creatures you have animated with this spell rather than animating a new creature.",
-    "higher_levels": "Using a Higher-Level Spell Slot: You animate or reassert control over two additional Undead creatures for each spell slot level above 3. Each of the creatures must come from a different corpse or pile of bones."
+    "higher_levels": "Using a Higher-Level Spell Slot: You animate or reassert control over two additional Undead creatures for each spell slot level above 3. Each of the creatures must come from a different corpse or pile of bones.",
+    "condition_inflict": [],
+    "saving_throw": [],
+    "misc_tags": [
+      "PRM",
+      "SMN",
+      "UA",
+      "UBA"
+    ]
   },
   "animate_objects": {
     "id": "animate_objects",
@@ -333,7 +404,15 @@ const SPELLS: Dictionary = {
     ],
     "description": "Objects animate at your command. Choose a number of nonmagical objects within range that aren't being worn or carried, aren't fixed to a surface, and aren't Gargantuan. The maximum number of objects is equal to your spellcasting ability modifier; for this number, a Medium or smaller target counts as one object, a Large target counts as two, and a Huge target counts as three. Each target animates, sprouts legs, and becomes a Construct that uses the Animated Object stat block; this creature is under your control until the spell ends or until it is reduced to 0 Hit Points. Each creature you make with this spell is an ally to you and your allies. In combat, it shares your Initiative count and takes its turn immediately after yours. Until the spell ends, you can take a Bonus Action to mentally command any creature you made with this spell if the creature is within 500 feet of you (if you control multiple creatures, you can command any of them at the same time, issuing the same command to each one). If you issue no commands, the creature takes the Dodge action and moves only to avoid harm. When the creature drops to 0 Hit Points, it reverts to its object form, and any remaining damage carries over to that form.",
     "higher_levels": "Using a Higher-Level Spell Slot: The creature's Slam damage increases by 1d4 (Medium or smaller), 1d6 (Large), or 1d12 (Huge) for each spell slot level above 5.",
-    "range_feet": 120
+    "range_feet": 120,
+    "condition_inflict": [],
+    "saving_throw": [],
+    "misc_tags": [
+      "OBJ",
+      "SMN",
+      "UA",
+      "UBA"
+    ]
   },
   "antagonize": {
     "id": "antagonize",
@@ -375,7 +454,10 @@ const SPELLS: Dictionary = {
       "Druid"
     ],
     "description": "An aura extends from you in a 10-foot Emanation for the duration. The aura prevents creatures other than Constructs and Undead from passing or reaching through it. An affected creature can cast spells or make attacks with Ranged or Reach weapons through the barrier. If you move so that an affected creature is forced to pass through the barrier, the spell ends.",
-    "higher_levels": ""
+    "higher_levels": "",
+    "condition_inflict": [],
+    "saving_throw": [],
+    "misc_tags": []
   },
   "antimagic_field": {
     "id": "antimagic_field",
@@ -394,7 +476,12 @@ const SPELLS: Dictionary = {
       "Wizard"
     ],
     "description": "An aura of antimagic surrounds you in a 10-foot Emanation. No one can cast spells, take Magic actions, or create other magical effects inside the aura, and those things can't target or otherwise affect anything inside it. Magical properties of magic items don't work inside the aura or on anything inside it. Areas of effect created by spells or other magic can't extend into the aura, and no one can teleport into or out of it or use planar travel there. Portals close temporarily while in the aura. Ongoing spells, except those cast by an Artifact or a deity, are suppressed in the area. While an effect is suppressed, it doesn't function, but the time it spends suppressed counts against its duration. Dispel Magic has no effect on the aura, and the auras created by different Antimagic Field spells don't nullify each other.",
-    "higher_levels": ""
+    "higher_levels": "",
+    "condition_inflict": [],
+    "saving_throw": [],
+    "misc_tags": [
+      "OBJ"
+    ]
   },
   "antipathy_sympathy": {
     "id": "antipathy_sympathy",
@@ -420,7 +507,17 @@ const SPELLS: Dictionary = {
     "target_mode": "token_then_token",
     "range_feet": 60,
     "projectile_style": "antipathy_sympathy",
-    "projectile_travel_seconds": 0.65
+    "projectile_travel_seconds": 0.65,
+    "condition_inflict": [
+      "charmed",
+      "frightened"
+    ],
+    "saving_throw": [
+      "wisdom"
+    ],
+    "misc_tags": [
+      "OBJ"
+    ]
   },
   "arcane_eye": {
     "id": "arcane_eye",
@@ -439,7 +536,13 @@ const SPELLS: Dictionary = {
       "Wizard"
     ],
     "description": "You create an Invisible, invulnerable eye within range that hovers for the duration. You mentally receive visual information from the eye, which can see in every direction. It also has Darkvision with a range of 30 feet. As a Bonus Action, you can move the eye up to 30 feet in any direction. A solid barrier blocks the eye's movement, but the eye can pass through an opening as small as 1 inch in diameter.",
-    "higher_levels": ""
+    "higher_levels": "",
+    "condition_inflict": [],
+    "saving_throw": [],
+    "misc_tags": [
+      "UA",
+      "UBA"
+    ]
   },
   "arcane_gate": {
     "id": "arcane_gate",
@@ -459,7 +562,16 @@ const SPELLS: Dictionary = {
       "Wizard"
     ],
     "description": "You create linked teleportation portals. Choose two Large, unoccupied spaces on the ground that you can see, one space within range and the other one within 10 feet of you. A circular portal opens in each of those spaces and remains for the duration. The portals are two-dimensional glowing rings filled with mist that blocks sight. They hover inches from the ground and are perpendicular to it. A portal is open on only one side (you choose which). Anything entering the open side of a portal exits from the open side of the other portal as if the two were adjacent to each other. As a Bonus Action, you can change the facing of the open sides.",
-    "higher_levels": ""
+    "higher_levels": "",
+    "condition_inflict": [],
+    "saving_throw": [],
+    "misc_tags": [
+      "OBJ",
+      "SGT",
+      "TP",
+      "UA",
+      "UBA"
+    ]
   },
   "arcane_lock": {
     "id": "arcane_lock",
@@ -478,7 +590,12 @@ const SPELLS: Dictionary = {
       "Wizard"
     ],
     "description": "You touch a closed door, window, gate, container, or hatch and magically lock it for the duration. This lock can't be unlocked by any nonmagical means. You and any creatures you designate when you cast the spell can open and close the object despite the lock. You can also set a password that, when spoken within 5 feet of the object, unlocks it for 1 minute.",
-    "higher_levels": ""
+    "higher_levels": "",
+    "condition_inflict": [],
+    "saving_throw": [],
+    "misc_tags": [
+      "OBJ"
+    ]
   },
   "arcane_vigor": {
     "id": "arcane_vigor",
@@ -498,7 +615,12 @@ const SPELLS: Dictionary = {
       "Wizard"
     ],
     "description": "You tap into your life force to heal yourself. Roll one or two of your unexpended Hit Point Dice, and regain a number of Hit Points equal to the roll's total plus your spellcasting ability modifier. Those dice are then expended.",
-    "higher_levels": "Using a Higher-Level Spell Slot: The number of unexpended Hit Dice you can roll increases by one for each spell slot level above 2."
+    "higher_levels": "Using a Higher-Level Spell Slot: The number of unexpended Hit Dice you can roll increases by one for each spell slot level above 2.",
+    "condition_inflict": [],
+    "saving_throw": [],
+    "misc_tags": [
+      "HL"
+    ]
   },
   "armor_of_agathys": {
     "id": "armor_of_agathys",
@@ -516,7 +638,12 @@ const SPELLS: Dictionary = {
       "Warlock"
     ],
     "description": "Protective magical frost surrounds you. You gain 5 Temporary Hit Points. If a creature hits you with a melee attack roll before the spell ends, the creature takes 5 Cold damage. The spell ends early if you have no Temporary Hit Points.",
-    "higher_levels": "Using a Higher-Level Spell Slot: The Temporary Hit Points and the Cold damage both increase by 5 for each spell slot level above 1."
+    "higher_levels": "Using a Higher-Level Spell Slot: The Temporary Hit Points and the Cold damage both increase by 5 for each spell slot level above 1.",
+    "condition_inflict": [],
+    "saving_throw": [],
+    "misc_tags": [
+      "THP"
+    ]
   },
   "arms_of_hadar": {
     "id": "arms_of_hadar",
@@ -540,7 +667,12 @@ const SPELLS: Dictionary = {
     "target_mode": "self_emanation",
     "aoe_shape": "sphere",
     "aoe_radius_feet": 10,
-    "show_range_preview": false
+    "show_range_preview": false,
+    "condition_inflict": [],
+    "saving_throw": [
+      "strength"
+    ],
+    "misc_tags": []
   },
   "ashardalons_stride": {
     "id": "ashardalons_stride",
@@ -589,7 +721,16 @@ const SPELLS: Dictionary = {
     "range_feet": 10,
     "projectile_style": "astral_projection",
     "projectile_travel_seconds": 0.65,
-    "base_target_clicks": 8
+    "base_target_clicks": 8,
+    "condition_inflict": [
+      "unconscious"
+    ],
+    "saving_throw": [],
+    "misc_tags": [
+      "PRM",
+      "PS",
+      "UA"
+    ]
   },
   "augury": {
     "id": "augury",
@@ -609,7 +750,10 @@ const SPELLS: Dictionary = {
       "Wizard"
     ],
     "description": "You receive an omen from an otherworldly entity about the results of a course of action that you plan to take within the next 30 minutes. The DM chooses the omen from the Omens table. Weal Good Woe Bad Weal and woe Good and bad Indifference Neither good nor bad The spell doesn't account for circumstances, such as other spells, that might change the results. If you cast the spell more than once before finishing a Long Rest, there is a cumulative 25 chance for each casting after the first that you get no answer.",
-    "higher_levels": ""
+    "higher_levels": "",
+    "condition_inflict": [],
+    "saving_throw": [],
+    "misc_tags": []
   },
   "aura_of_evasion": {
     "id": "aura_of_evasion",
@@ -648,7 +792,12 @@ const SPELLS: Dictionary = {
       "Paladin"
     ],
     "description": "An aura radiates from you in a 30-foot Emanation for the duration. While in the aura, you and your allies have Resistance to Necrotic damage, and your Hit Point maximums can't be reduced. If an ally with 0 Hit Points starts its turn in the aura, that ally regains 1 Hit Point.",
-    "higher_levels": ""
+    "higher_levels": "",
+    "condition_inflict": [],
+    "saving_throw": [],
+    "misc_tags": [
+      "HL"
+    ]
   },
   "aura_of_purity": {
     "id": "aura_of_purity",
@@ -667,7 +816,12 @@ const SPELLS: Dictionary = {
       "Paladin"
     ],
     "description": "An aura radiates from you in a 30-foot Emanation for the duration. While in the aura, you and your allies have Resistance to Poison damage and Advantage on saving throws to avoid or end effects that include the Blinded, Charmed, Deafened, Frightened, Paralyzed, Poisoned, or Stunned condition.",
-    "higher_levels": ""
+    "higher_levels": "",
+    "condition_inflict": [],
+    "saving_throw": [],
+    "misc_tags": [
+      "ADV"
+    ]
   },
   "aura_of_vitality": {
     "id": "aura_of_vitality",
@@ -687,7 +841,12 @@ const SPELLS: Dictionary = {
       "Paladin"
     ],
     "description": "An aura radiates from you in a 30-foot Emanation for the duration. When you create the aura and at the start of each of your turns while it persists, you can restore 2d6 Hit Points to one creature in it.",
-    "higher_levels": ""
+    "higher_levels": "",
+    "condition_inflict": [],
+    "saving_throw": [],
+    "misc_tags": [
+      "HL"
+    ]
   },
   "awaken": {
     "id": "awaken",
@@ -712,7 +871,14 @@ const SPELLS: Dictionary = {
     "target_mode": "token_then_token",
     "range_feet": 5,
     "projectile_style": "awaken",
-    "projectile_travel_seconds": 0.65
+    "projectile_travel_seconds": 0.65,
+    "condition_inflict": [
+      "charmed"
+    ],
+    "saving_throw": [],
+    "misc_tags": [
+      "PRM"
+    ]
   },
   "backlash": {
     "id": "backlash",
@@ -736,7 +902,12 @@ const SPELLS: Dictionary = {
     "higher_levels": "Using a Higher-Level Spell Slot: The damage reduction and Force damage from this spell both increase by 1d6 for every spell slot level above 4.",
     "visual_style": "force",
     "transient_seconds": 5,
-    "range_feet": 60
+    "range_feet": 60,
+    "condition_inflict": [],
+    "saving_throw": [
+      "constitution"
+    ],
+    "misc_tags": []
   },
   "bane": {
     "id": "bane",
@@ -765,7 +936,15 @@ const SPELLS: Dictionary = {
     "allow_repeat_targets": false,
     "target_clicks_per_slot_above_base": 1,
     "projectile_style": "bane",
-    "projectile_travel_seconds": 0.65
+    "projectile_travel_seconds": 0.65,
+    "condition_inflict": [],
+    "saving_throw": [
+      "charisma"
+    ],
+    "misc_tags": [
+      "SCT",
+      "SGT"
+    ]
   },
   "banishing_smite": {
     "id": "banishing_smite",
@@ -783,7 +962,14 @@ const SPELLS: Dictionary = {
       "Paladin"
     ],
     "description": "The target hit by the attack roll takes an extra 5d10 Force damage from the attack. If the attack reduces the target to 50 Hit Points or fewer, the target must succeed on a Charisma saving throw or be transported to a harmless demiplane for the duration. While there, the target has the Incapacitated condition. When the spell ends, the target reappears in the space it left or in the nearest unoccupied space if that space is occupied.",
-    "higher_levels": ""
+    "higher_levels": "",
+    "condition_inflict": [
+      "incapacitated"
+    ],
+    "saving_throw": [],
+    "misc_tags": [
+      "AAD"
+    ]
   },
   "banishment": {
     "id": "banishment",
@@ -806,7 +992,17 @@ const SPELLS: Dictionary = {
     ],
     "description": "One creature that you can see within range must succeed on a Charisma saving throw or be transported to a harmless demiplane for the duration. While there, the target has the Incapacitated condition. When the spell ends, the target reappears in the space it left or in the nearest unoccupied space if that space is occupied. If the target is an Aberration, a Celestial, an Elemental, a Fey, or a Fiend, the target doesn't return if the spell lasts for 1 minute. The target is instead transported to a random location on a plane (DM's choice) associated with its creature type.",
     "higher_levels": "Using a Higher-Level Spell Slot: You can target one additional creature for each spell slot level above 4.",
-    "range_feet": 30
+    "range_feet": 30,
+    "condition_inflict": [
+      "incapacitated"
+    ],
+    "saving_throw": [
+      "charisma"
+    ],
+    "misc_tags": [
+      "SCT",
+      "SGT"
+    ]
   },
   "barkskin": {
     "id": "barkskin",
@@ -831,7 +1027,12 @@ const SPELLS: Dictionary = {
     "target_mode": "token_then_token",
     "range_feet": 5,
     "projectile_style": "barkskin",
-    "projectile_travel_seconds": 0.65
+    "projectile_travel_seconds": 0.65,
+    "condition_inflict": [],
+    "saving_throw": [],
+    "misc_tags": [
+      "MAC"
+    ]
   },
   "battle_familiar": {
     "id": "battle_familiar",
@@ -875,7 +1076,13 @@ const SPELLS: Dictionary = {
     "target_mode": "token_then_multi_token",
     "range_feet": 30,
     "projectile_style": "beacon_of_hope",
-    "projectile_travel_seconds": 0.65
+    "projectile_travel_seconds": 0.65,
+    "condition_inflict": [],
+    "saving_throw": [],
+    "misc_tags": [
+      "ADV",
+      "HL"
+    ]
   },
   "beast_bond": {
     "id": "beast_bond",
@@ -900,7 +1107,15 @@ const SPELLS: Dictionary = {
     "target_mode": "token_then_token",
     "range_feet": 5,
     "projectile_style": "beast_bond",
-    "projectile_travel_seconds": 0.65
+    "projectile_travel_seconds": 0.65,
+    "condition_inflict": [
+      "charmed"
+    ],
+    "saving_throw": [],
+    "misc_tags": [
+      "ADV",
+      "SGT"
+    ]
   },
   "beast_sense": {
     "id": "beast_sense",
@@ -925,7 +1140,10 @@ const SPELLS: Dictionary = {
     "target_mode": "token_then_token",
     "range_feet": 5,
     "projectile_style": "beast_sense",
-    "projectile_travel_seconds": 0.65
+    "projectile_travel_seconds": 0.65,
+    "condition_inflict": [],
+    "saving_throw": [],
+    "misc_tags": []
   },
   "befuddlement": {
     "id": "befuddlement",
@@ -952,7 +1170,14 @@ const SPELLS: Dictionary = {
     "target_mode": "token_then_token",
     "range_feet": 150,
     "projectile_style": "befuddlement",
-    "projectile_travel_seconds": 0.65
+    "projectile_travel_seconds": 0.65,
+    "condition_inflict": [],
+    "saving_throw": [
+      "intelligence"
+    ],
+    "misc_tags": [
+      "SGT"
+    ]
   },
   "bestow_curse": {
     "id": "bestow_curse",
@@ -978,7 +1203,14 @@ const SPELLS: Dictionary = {
     "target_mode": "token_then_token",
     "range_feet": 5,
     "projectile_style": "bestow_curse",
-    "projectile_travel_seconds": 0.65
+    "projectile_travel_seconds": 0.65,
+    "condition_inflict": [],
+    "saving_throw": [
+      "wisdom"
+    ],
+    "misc_tags": [
+      "PRM"
+    ]
   },
   "bigbys_hand": {
     "id": "bigbys_hand",
@@ -998,7 +1230,22 @@ const SPELLS: Dictionary = {
       "Wizard"
     ],
     "description": "You create a Large hand of shimmering magical energy in an unoccupied space that you can see within range. The hand lasts for the duration, and it moves at your command, mimicking the movements of your own hand. The hand is an object that has AC 20 and Hit Points equal to your Hit Point maximum. If it drops to 0 Hit Points, the spell ends. The hand doesn't occupy its space. When you cast the spell and as a Bonus Action on your later turns, you can move the hand up to 60 feet and then cause one of the following effects: Clenched Fist: The hand strikes a target within 5 feet of it. Make a melee spell attack. On a hit, the target takes 5d8 Force damage. Forceful Hand: The hand attempts to push a Huge or smaller creature within 5 feet of it. The target must succeed on a Strength saving throw, or the hand pushes the target up to 5 feet plus a number of feet equal to five times your spellcasting ability modifier. The hand moves with the target, remaining within 5 feet of it. Grasping Hand: The hand attempts to grapple a Huge or smaller creature within 5 feet of it. The target must succeed on a Dexterity saving throw, or the target has the Grappled condition, with an escape DC equal to your spell save DC. While the hand grapples the target, you can take a Bonus Action to cause the hand to crush it, dealing Bludgeoning damage to the target equal to 4d6 plus your spellcasting ability modifier. Interposing Hand: The hand grants you Half Cover against attacks and other effects that originate from its space or that pass through it. In addition, its space counts as Difficult Terrain for your enemies.",
-    "higher_levels": "Using a Higher-Level Spell Slot: The damage of the Clenched Fist increases by 2d8 and the damage of the Grasping Hand increases by 2d6 for each spell slot level above 5."
+    "higher_levels": "Using a Higher-Level Spell Slot: The damage of the Clenched Fist increases by 2d8 and the damage of the Grasping Hand increases by 2d6 for each spell slot level above 5.",
+    "condition_inflict": [
+      "grappled"
+    ],
+    "saving_throw": [
+      "dexterity",
+      "strength"
+    ],
+    "misc_tags": [
+      "DFT",
+      "FMV",
+      "OBJ",
+      "SGT",
+      "UA",
+      "UBA"
+    ]
   },
   "blade_barrier": {
     "id": "blade_barrier",
@@ -1016,7 +1263,14 @@ const SPELLS: Dictionary = {
       "Cleric"
     ],
     "description": "You create a wall of whirling blades made of magical energy. The wall appears within range and lasts for the duration. You make a straight wall up to 100 feet long, 20 feet high, and 5 feet thick, or a ringed wall up to 60 feet in diameter, 20 feet high, and 5 feet thick. The wall provides Three-Quarters Cover, and its space is Difficult Terrain. Any creature in the wall's space makes a Dexterity saving throw, taking 6d10 Force damage on a failed save or half as much damage on a successful one. A creature also makes that save if it enters the wall's space or ends its turn there. A creature makes that save only once per turn.",
-    "higher_levels": ""
+    "higher_levels": "",
+    "condition_inflict": [],
+    "saving_throw": [
+      "dexterity"
+    ],
+    "misc_tags": [
+      "DFT"
+    ]
   },
   "blade_of_disaster": {
     "id": "blade_of_disaster",
@@ -1037,7 +1291,13 @@ const SPELLS: Dictionary = {
     ],
     "description": "You create a 3-foot-long blade-shaped planar rift that lasts for the duration. The rift appears within range in a space of your choice, and you can immediately make up to two melee spell attacks, each one against a creature or object within 5 feet of the rift. On a hit, the target takes 10d6 Force damage. This attack scores a Critical Hit if the number on the d20 is 18 or higher. As a Bonus Action on your later turns, you can move the rift up to 60 feet and repeat the two attacks against a creature or an object within 5 feet of it. You can direct the attacks at the same target or at different ones. The blade can harmlessly pass through any barrier, including ones created by spells like Wall of Force.",
     "higher_levels": "",
-    "range_feet": 60
+    "range_feet": 60,
+    "condition_inflict": [],
+    "saving_throw": [],
+    "misc_tags": [
+      "OBJ",
+      "UBA"
+    ]
   },
   "blade_ward": {
     "id": "blade_ward",
@@ -1058,7 +1318,10 @@ const SPELLS: Dictionary = {
       "Wizard"
     ],
     "description": "Whenever a creature makes an attack roll against you before the spell ends, the attacker subtracts 1d4 from the attack roll.",
-    "higher_levels": ""
+    "higher_levels": "",
+    "condition_inflict": [],
+    "saving_throw": [],
+    "misc_tags": []
   },
   "bless": {
     "id": "bless",
@@ -1086,7 +1349,12 @@ const SPELLS: Dictionary = {
     "allow_repeat_targets": false,
     "target_clicks_per_slot_above_base": 1,
     "projectile_style": "bless",
-    "projectile_travel_seconds": 0.65
+    "projectile_travel_seconds": 0.65,
+    "condition_inflict": [],
+    "saving_throw": [],
+    "misc_tags": [
+      "SCT"
+    ]
   },
   "blight": {
     "id": "blight",
@@ -1108,7 +1376,14 @@ const SPELLS: Dictionary = {
     ],
     "description": "A creature that you can see within range makes a Constitution saving throw, taking 8d8 Necrotic damage on a failed save or half as much damage on a successful one. A Plant creature automatically fails the save. Alternatively, target a nonmagical plant that isn't a creature, such as a tree or shrub. It doesn't make a save; it simply withers and dies.",
     "higher_levels": "Using a Higher-Level Spell Slot: The damage increases by 1d8 for each spell slot level above 4.",
-    "range_feet": 30
+    "range_feet": 30,
+    "condition_inflict": [],
+    "saving_throw": [
+      "constitution"
+    ],
+    "misc_tags": [
+      "SGT"
+    ]
   },
   "blinding_smite": {
     "id": "blinding_smite",
@@ -1126,7 +1401,16 @@ const SPELLS: Dictionary = {
       "Paladin"
     ],
     "description": "The target hit by the strike takes an extra 3d8 Radiant damage from the attack, and the target has the Blinded condition until the spell ends. At the end of each of its turns, the Blinded target makes a Constitution saving throw, ending the spell on itself on a success.",
-    "higher_levels": "Using a Higher-Level Spell Slot: The extra damage increases by 1d8 for each spell slot level above 3."
+    "higher_levels": "Using a Higher-Level Spell Slot: The extra damage increases by 1d8 for each spell slot level above 3.",
+    "condition_inflict": [
+      "blinded"
+    ],
+    "saving_throw": [
+      "constitution"
+    ],
+    "misc_tags": [
+      "AAD"
+    ]
   },
   "blindness_deafness": {
     "id": "blindness_deafness",
@@ -1150,7 +1434,18 @@ const SPELLS: Dictionary = {
     "higher_levels": "Using a Higher-Level Spell Slot: You can target one additional creature for each spell slot level above 2.",
     "visual_style": "arcane",
     "transient_seconds": 5,
-    "range_feet": 120
+    "range_feet": 120,
+    "condition_inflict": [
+      "blinded",
+      "deafened"
+    ],
+    "saving_throw": [
+      "constitution"
+    ],
+    "misc_tags": [
+      "SCT",
+      "SGT"
+    ]
   },
   "blink": {
     "id": "blink",
@@ -1170,7 +1465,12 @@ const SPELLS: Dictionary = {
       "Wizard"
     ],
     "description": "Roll 1d6 at the end of each of your turns for the duration. On a roll of 4-6, you vanish from your current plane of existence and appear in the Ethereal Plane (the spell ends instantly if you are already on that plane). While on the Ethereal Plane, you can perceive the plane you left, which is cast in shades of gray, but you can't see anything there more than 60 feet away. You can affect and be affected only by other creatures on the Ethereal Plane, and creatures on the other plane can't perceive you unless they have a special ability that lets them perceive things on the Ethereal Plane. You return to the other plane at the start of your next turn and when the spell ends if you are on the Ethereal Plane. You return to an unoccupied space of your choice that you can see within 10 feet of the space you left. If no unoccupied space is available within that range, you appear in the nearest unoccupied space.",
-    "higher_levels": ""
+    "higher_levels": "",
+    "condition_inflict": [],
+    "saving_throw": [],
+    "misc_tags": [
+      "SGT"
+    ]
   },
   "blur": {
     "id": "blur",
@@ -1190,7 +1490,10 @@ const SPELLS: Dictionary = {
       "Wizard"
     ],
     "description": "Your body becomes blurred. For the duration, any creature has Disadvantage on attack rolls against you. An attacker is immune to this effect if it perceives you with Blindsight or Truesight.",
-    "higher_levels": ""
+    "higher_levels": "",
+    "condition_inflict": [],
+    "saving_throw": [],
+    "misc_tags": []
   },
   "bones_of_the_earth": {
     "id": "bones_of_the_earth",
@@ -1214,7 +1517,17 @@ const SPELLS: Dictionary = {
     "target_mode": "token_then_multi_token",
     "range_feet": 120,
     "projectile_style": "bones_of_the_earth",
-    "projectile_travel_seconds": 0.65
+    "projectile_travel_seconds": 0.65,
+    "condition_inflict": [
+      "restrained"
+    ],
+    "saving_throw": [
+      "dexterity"
+    ],
+    "misc_tags": [
+      "DFT",
+      "SGT"
+    ]
   },
   "booming_blade": {
     "id": "booming_blade",
@@ -1235,7 +1548,13 @@ const SPELLS: Dictionary = {
       "Wizard"
     ],
     "description": "You brandish the weapon used in the spell's casting and make a melee attack with it against one creature within 5 feet of you. On a hit, the target suffers the weapon attack's normal effects and then becomes sheathed in booming energy until the start of your next turn. If the target willingly moves 5 feet or more before then, the target takes 1d8 thunder damage, and the spell ends. This spell's damage increases when you reach certain levels. At 5th level, the melee attack deals an extra 1d8 thunder damage to the target on a hit, and the damage the target takes for moving increases to 2d8. Both damage rolls increase by 1d8 at 11th level (2d8 and 3d8) and again at 17th level (3d8 and 4d8).",
-    "higher_levels": ""
+    "higher_levels": "",
+    "condition_inflict": [],
+    "saving_throw": [],
+    "misc_tags": [
+      "AAD",
+      "SCL"
+    ]
   },
   "borrowed_knowledge": {
     "id": "borrowed_knowledge",
@@ -1256,7 +1575,10 @@ const SPELLS: Dictionary = {
       "Wizard"
     ],
     "description": "You draw on knowledge from spirits of the past. Choose one skill in which you lack proficiency. For the spell's duration, you have proficiency in the chosen skill. The spell ends early if you cast it again.",
-    "higher_levels": ""
+    "higher_levels": "",
+    "condition_inflict": [],
+    "saving_throw": [],
+    "misc_tags": []
   },
   "branding_smite": {
     "id": "branding_smite",
@@ -1274,7 +1596,13 @@ const SPELLS: Dictionary = {
       "Paladin"
     ],
     "description": "The next time you hit a creature with a weapon attack before this spell ends, the weapon gleams with astral radiance as you strike. The attack deals an extra 2d6 radiant damage to the target, which becomes visible if it's invisible, and the target sheds dim light in a 5-foot radius and can't become invisible until the spell ends.",
-    "higher_levels": "At Higher Levels: When you cast this spell using a spell slot of 3rd level or higher, the extra damage increases by 1d6 for each slot level above 2nd."
+    "higher_levels": "At Higher Levels: When you cast this spell using a spell slot of 3rd level or higher, the extra damage increases by 1d6 for each slot level above 2nd.",
+    "condition_inflict": [],
+    "saving_throw": [],
+    "misc_tags": [
+      "AAD",
+      "LGT"
+    ]
   },
   "burning_hands": {
     "id": "burning_hands",
@@ -1293,7 +1621,15 @@ const SPELLS: Dictionary = {
       "Wizard"
     ],
     "description": "A thin sheet of flames shoots forth from you. Each creature in a 15-foot Cone makes a Dexterity saving throw, taking 3d6 Fire damage on a failed save or half as much damage on a successful one. Flammable objects in the Cone that aren't being worn or carried start burning.",
-    "higher_levels": "Using a Higher-Level Spell Slot: The damage increases by 1d6 for each spell slot level above 1."
+    "higher_levels": "Using a Higher-Level Spell Slot: The damage increases by 1d6 for each spell slot level above 1.",
+    "condition_inflict": [],
+    "saving_throw": [
+      "dexterity"
+    ],
+    "misc_tags": [
+      "BO",
+      "OBJ"
+    ]
   },
   "cacophonic_shield": {
     "id": "cacophonic_shield",
@@ -1313,7 +1649,14 @@ const SPELLS: Dictionary = {
       "Wizard"
     ],
     "description": "Thunderous reverberations fill a 10-foot Emanation originating from you for the duration. Whenever the Emanation enters a creature's space and whenever a creature enters the Emanation or ends its turn there, the creature makes a Constitution saving throw. On a failed save, the creature takes 3d6 Thunder damage and has the Deafened condition until the start of your next turn. On a successful save, the creature takes half as much damage only. A creature makes this save only once per turn. When you cast this spell, you can designate creatures to be unaffected by it. In addition, you have Resistance to Thunder damage, and ranged attack rolls against you are made with Disadvantage.",
-    "higher_levels": "Using a Higher-Level Spell Slot: The damage increases by 1d6 for each spell slot level above 3."
+    "higher_levels": "Using a Higher-Level Spell Slot: The damage increases by 1d6 for each spell slot level above 3.",
+    "condition_inflict": [
+      "deafened"
+    ],
+    "saving_throw": [
+      "constitution"
+    ],
+    "misc_tags": []
   },
   "call_lightning": {
     "id": "call_lightning",
@@ -1335,7 +1678,15 @@ const SPELLS: Dictionary = {
     "visual_style": "lightning",
     "transient_seconds": 5,
     "target_mode": "token_then_token",
-    "range_feet": 120
+    "range_feet": 120,
+    "condition_inflict": [],
+    "saving_throw": [
+      "dexterity"
+    ],
+    "misc_tags": [
+      "SGT",
+      "UA"
+    ]
   },
   "calm_emotions": {
     "id": "calm_emotions",
@@ -1361,7 +1712,12 @@ const SPELLS: Dictionary = {
     "aoe_shape": "sphere",
     "aoe_radius_feet": 20,
     "range_feet": 60,
-    "persistent": true
+    "persistent": true,
+    "condition_inflict": [],
+    "saving_throw": [
+      "charisma"
+    ],
+    "misc_tags": []
   },
   "catapult": {
     "id": "catapult",
@@ -1382,7 +1738,14 @@ const SPELLS: Dictionary = {
     ],
     "description": "Choose one object weighing 1 to 5 pounds within range that isn't being worn or carried. The object flies in a straight line up to 90 feet in a direction you choose before falling to the ground, stopping early if it impacts against a solid surface. If the object would strike a creature, that creature must make a Dexterity saving throw. On a failed save, the object strikes the target and stops moving. When the object strikes something, the object and what it strikes each take 3d8 bludgeoning damage.",
     "higher_levels": "At Higher Levels: When you cast this spell using a spell slot of 2nd level or higher, the maximum weight of objects that you can target with this spell increases by 5 pounds, and the damage increases by 1d8, for each slot level above 1st.",
-    "range_feet": 60
+    "range_feet": 60,
+    "condition_inflict": [],
+    "saving_throw": [
+      "dexterity"
+    ],
+    "misc_tags": [
+      "OBJ"
+    ]
   },
   "catnap": {
     "id": "catnap",
@@ -1434,7 +1797,17 @@ const SPELLS: Dictionary = {
     "allow_repeat_targets": false,
     "target_clicks_per_slot_above_base": 1,
     "projectile_style": "cause_fear",
-    "projectile_travel_seconds": 0.65
+    "projectile_travel_seconds": 0.65,
+    "condition_inflict": [
+      "frightened"
+    ],
+    "saving_throw": [
+      "wisdom"
+    ],
+    "misc_tags": [
+      "SCT",
+      "SGT"
+    ]
   },
   "ceremony": {
     "id": "ceremony",
@@ -1459,7 +1832,12 @@ const SPELLS: Dictionary = {
     "target_mode": "token_then_token",
     "range_feet": 5,
     "projectile_style": "ceremony",
-    "projectile_travel_seconds": 0.65
+    "projectile_travel_seconds": 0.65,
+    "condition_inflict": [],
+    "saving_throw": [],
+    "misc_tags": [
+      "MAC"
+    ]
   },
   "chain_lightning": {
     "id": "chain_lightning",
@@ -1479,7 +1857,16 @@ const SPELLS: Dictionary = {
     ],
     "description": "You launch a lightning bolt toward a target you can see within range. Three bolts then leap from that target to as many as three other targets of your choice, each of which must be within 30 feet of the first target. A target can be a creature or an object and can be targeted by only one of the bolts. Each target makes a Dexterity saving throw, taking 10d8 Lightning damage on a failed save or half as much damage on a successful one.",
     "higher_levels": "Using a Higher-Level Spell Slot: One additional bolt leaps from the first target to another target for each spell slot level above 6.",
-    "range_feet": 150
+    "range_feet": 150,
+    "condition_inflict": [],
+    "saving_throw": [
+      "dexterity"
+    ],
+    "misc_tags": [
+      "OBJ",
+      "SCT",
+      "SGT"
+    ]
   },
   "chaos_bolt": {
     "id": "chaos_bolt",
@@ -1504,7 +1891,12 @@ const SPELLS: Dictionary = {
     "target_mode": "token_then_token",
     "projectile_style": "chaos_bolt",
     "projectile_travel_seconds": 0.65,
-    "allow_point_target": true
+    "allow_point_target": true,
+    "condition_inflict": [],
+    "saving_throw": [],
+    "misc_tags": [
+      "RO"
+    ]
   },
   "charm_monster": {
     "id": "charm_monster",
@@ -1529,7 +1921,17 @@ const SPELLS: Dictionary = {
     "higher_levels": "Using a Higher-Level Spell Slot: You can target one additional creature for each spell slot level above 4.",
     "visual_style": "enchantment",
     "transient_seconds": 5,
-    "range_feet": 30
+    "range_feet": 30,
+    "condition_inflict": [
+      "charmed"
+    ],
+    "saving_throw": [
+      "wisdom"
+    ],
+    "misc_tags": [
+      "SCT",
+      "SGT"
+    ]
   },
   "charm_person": {
     "id": "charm_person",
@@ -1554,7 +1956,17 @@ const SPELLS: Dictionary = {
     "higher_levels": "Using a Higher-Level Spell Slot: You can target one additional creature for each spell slot level above 1.",
     "visual_style": "enchantment",
     "transient_seconds": 5,
-    "range_feet": 30
+    "range_feet": 30,
+    "condition_inflict": [
+      "charmed"
+    ],
+    "saving_throw": [
+      "wisdom"
+    ],
+    "misc_tags": [
+      "SCT",
+      "SGT"
+    ]
   },
   "chill_touch": {
     "id": "chill_touch",
@@ -1574,7 +1986,12 @@ const SPELLS: Dictionary = {
       "Wizard"
     ],
     "description": "Channeling the chill of the grave, make a melee spell attack against a target within reach. On a hit, the target takes 1d10 Necrotic damage, and it can't regain Hit Points until the end of your next turn.",
-    "higher_levels": "Cantrip Upgrade: The damage increases by 1d10 when you reach levels 5 (2d10), 11 (3d10), and 17 (4d10)."
+    "higher_levels": "Cantrip Upgrade: The damage increases by 1d10 when you reach levels 5 (2d10), 11 (3d10), and 17 (4d10).",
+    "condition_inflict": [],
+    "saving_throw": [],
+    "misc_tags": [
+      "SCL"
+    ]
   },
   "chromatic_orb": {
     "id": "chromatic_orb",
@@ -1598,7 +2015,12 @@ const SPELLS: Dictionary = {
     "target_mode": "token_then_token",
     "projectile_style": "chromatic_orb",
     "projectile_travel_seconds": 0.65,
-    "allow_point_target": true
+    "allow_point_target": true,
+    "condition_inflict": [],
+    "saving_throw": [],
+    "misc_tags": [
+      "SGT"
+    ]
   },
   "circle_of_death": {
     "id": "circle_of_death",
@@ -1618,7 +2040,12 @@ const SPELLS: Dictionary = {
       "Wizard"
     ],
     "description": "Negative energy ripples out in a 60-foot-radius Sphere from a point you choose within range. Each creature in that area makes a Constitution saving throw, taking 8d8 Necrotic damage on a failed save or half as much damage on a successful one.",
-    "higher_levels": "Using a Higher-Level Spell Slot: The damage increases by 2d8 for each spell slot level above 6."
+    "higher_levels": "Using a Higher-Level Spell Slot: The damage increases by 2d8 for each spell slot level above 6.",
+    "condition_inflict": [],
+    "saving_throw": [
+      "constitution"
+    ],
+    "misc_tags": []
   },
   "circle_of_power": {
     "id": "circle_of_power",
@@ -1639,7 +2066,12 @@ const SPELLS: Dictionary = {
       "Wizard"
     ],
     "description": "An aura radiates from you in a 30-foot Emanation for the duration. While in the aura, you and your allies have Advantage on saving throws against spells and other magical effects. When an affected creature makes a saving throw against a spell or magical effect that allows a save to take only half damage, it takes no damage if it succeeds on the save.",
-    "higher_levels": ""
+    "higher_levels": "",
+    "condition_inflict": [],
+    "saving_throw": [],
+    "misc_tags": [
+      "ADV"
+    ]
   },
   "clairvoyance": {
     "id": "clairvoyance",
@@ -1660,7 +2092,13 @@ const SPELLS: Dictionary = {
       "Wizard"
     ],
     "description": "You create an Invisible sensor within range in a location familiar to you (a place you have visited or seen before) or in an obvious location that is unfamiliar to you (such as behind a door, around a corner, or in a grove of trees). The intangible, invulnerable sensor remains in place for the duration. When you cast the spell, choose seeing or hearing. You can use the chosen sense through the sensor as if you were in its space. As a Bonus Action, you can switch between seeing and hearing. A creature that sees the sensor (such as a creature benefiting from See Invisibility or Truesight) sees a luminous orb about the size of your fist.",
-    "higher_levels": ""
+    "higher_levels": "",
+    "condition_inflict": [],
+    "saving_throw": [],
+    "misc_tags": [
+      "UA",
+      "UBA"
+    ]
   },
   "clone": {
     "id": "clone",
@@ -1678,7 +2116,12 @@ const SPELLS: Dictionary = {
       "Wizard"
     ],
     "description": "You touch a creature or at least 1 cubic inch of its flesh. An inert duplicate of that creature forms inside the vessel used in the spell's casting and finishes growing after 120 days; you choose whether the finished clone is the same age as the creature or younger. The clone remains inert and endures indefinitely while its vessel remains undisturbed. If the original creature dies after the clone finishes forming, the creature's soul transfers to the clone if the soul is free and willing to return. The clone is physically identical to the original and has the same personality, memories, and abilities, but none of the original's equipment. The creature's original remains, if any, become inert and can't be revived, since the creature's soul is elsewhere.",
-    "higher_levels": ""
+    "higher_levels": "",
+    "condition_inflict": [],
+    "saving_throw": [],
+    "misc_tags": [
+      "PRM"
+    ]
   },
   "cloud_of_daggers": {
     "id": "cloud_of_daggers",
@@ -1699,7 +2142,12 @@ const SPELLS: Dictionary = {
       "Wizard"
     ],
     "description": "You conjure spinning daggers in a 5-foot Cube centered on a point within range. Each creature in that area takes 4d4 Slashing damage. A creature also takes this damage if it enters the Cube or ends its turn there or if the Cube moves into its space. A creature takes this damage only once per turn. On your later turns, you can take a Magic action to teleport the Cube up to 30 feet.",
-    "higher_levels": "Using a Higher-Level Spell Slot: The damage increases by 2d4 for each spell slot level above 2."
+    "higher_levels": "Using a Higher-Level Spell Slot: The damage increases by 2d4 for each spell slot level above 2.",
+    "condition_inflict": [],
+    "saving_throw": [],
+    "misc_tags": [
+      "UA"
+    ]
   },
   "cloudkill": {
     "id": "cloudkill",
@@ -1718,7 +2166,14 @@ const SPELLS: Dictionary = {
       "Wizard"
     ],
     "description": "You create a 20-foot-radius Sphere of yellow-green fog centered on a point within range. The fog lasts for the duration or until strong wind (such as the one created by Gust of Wind) disperses it, ending the spell. Its area is Heavily Obscured. Each creature in the Sphere makes a Constitution saving throw, taking 5d8 Poison damage on a failed save or half as much damage on a successful one. A creature must also make this save when the Sphere moves into its space and when it enters the Sphere or ends its turn there. A creature makes this save only once per turn. The Sphere moves 10 feet away from you at the start of each of your turns.",
-    "higher_levels": "Using a Higher-Level Spell Slot: The damage increases by 1d8 for each spell slot level above 5."
+    "higher_levels": "Using a Higher-Level Spell Slot: The damage increases by 1d8 for each spell slot level above 5.",
+    "condition_inflict": [],
+    "saving_throw": [
+      "constitution"
+    ],
+    "misc_tags": [
+      "OBS"
+    ]
   },
   "color_spray": {
     "id": "color_spray",
@@ -1738,7 +2193,14 @@ const SPELLS: Dictionary = {
       "Wizard"
     ],
     "description": "You launch a dazzling array of flashing, colorful light. Each creature in a 15-foot Cone originating from you must succeed on a Constitution saving throw or have the Blinded condition until the end of your next turn.",
-    "higher_levels": ""
+    "higher_levels": "",
+    "condition_inflict": [
+      "blinded"
+    ],
+    "saving_throw": [
+      "constitution"
+    ],
+    "misc_tags": []
   },
   "command": {
     "id": "command",
@@ -1767,7 +2229,17 @@ const SPELLS: Dictionary = {
     "allow_repeat_targets": false,
     "target_clicks_per_slot_above_base": 1,
     "projectile_style": "command",
-    "projectile_travel_seconds": 0.65
+    "projectile_travel_seconds": 0.65,
+    "condition_inflict": [
+      "prone"
+    ],
+    "saving_throw": [
+      "wisdom"
+    ],
+    "misc_tags": [
+      "SCT",
+      "SGT"
+    ]
   },
   "commune": {
     "id": "commune",
@@ -1785,7 +2257,10 @@ const SPELLS: Dictionary = {
       "Cleric"
     ],
     "description": "You contact a deity or a divine proxy and ask up to three questions that can be answered with yes or no. You must ask your questions before the spell ends. You receive a correct answer for each question. Divine beings aren't necessarily omniscient, so you might receive \"unclear\" as an answer if a question pertains to information that lies beyond the deity's knowledge. In a case where a one-word answer could be misleading or contrary to the deity's interests, the DM might offer a short phrase as an answer instead. If you cast the spell more than once before finishing a Long Rest, there is a cumulative 25 chance for each casting after the first that you get no answer.",
-    "higher_levels": ""
+    "higher_levels": "",
+    "condition_inflict": [],
+    "saving_throw": [],
+    "misc_tags": []
   },
   "commune_with_nature": {
     "id": "commune_with_nature",
@@ -1804,7 +2279,10 @@ const SPELLS: Dictionary = {
       "Ranger"
     ],
     "description": "You commune with nature spirits and gain knowledge of the surrounding area. In the outdoors, the spell gives you knowledge of the area within 3 miles of you. In caves and other natural underground settings, the radius is limited to 300 feet. The spell doesn't function where nature has been replaced by construction, such as in castles and settlements. Choose three of the following facts; you learn those facts as they pertain to the spell's area: Locations of settlements Locations of portals to other planes of existence Location of one Challenge Rating 10+ creature (DM's choice) that is a Celestial, an Elemental, a Fey, a Fiend, or an Undead The most prevalent kind of plant, mineral, or Beast (you choose which to learn) Locations of bodies of water For example, you could determine the location of a powerful monster in the area, the locations of bodies of water, and the locations of any towns.",
-    "higher_levels": ""
+    "higher_levels": "",
+    "condition_inflict": [],
+    "saving_throw": [],
+    "misc_tags": []
   },
   "compelled_duel": {
     "id": "compelled_duel",
@@ -1828,7 +2306,14 @@ const SPELLS: Dictionary = {
     "target_mode": "token_then_token",
     "range_feet": 30,
     "projectile_style": "compelled_duel",
-    "projectile_travel_seconds": 0.65
+    "projectile_travel_seconds": 0.65,
+    "condition_inflict": [],
+    "saving_throw": [
+      "wisdom"
+    ],
+    "misc_tags": [
+      "SGT"
+    ]
   },
   "comprehend_languages": {
     "id": "comprehend_languages",
@@ -1849,7 +2334,10 @@ const SPELLS: Dictionary = {
       "Wizard"
     ],
     "description": "For the duration, you understand the literal meaning of any language that you hear or see signed. You also understand any written language that you see, but you must be touching the surface on which the words are written. It takes about 1 minute to read one page of text. This spell doesn't decode symbols or secret messages.",
-    "higher_levels": ""
+    "higher_levels": "",
+    "condition_inflict": [],
+    "saving_throw": [],
+    "misc_tags": []
   },
   "compulsion": {
     "id": "compulsion",
@@ -1871,7 +2359,18 @@ const SPELLS: Dictionary = {
     "target_mode": "token_then_multi_token",
     "projectile_style": "compulsion",
     "projectile_travel_seconds": 0.65,
-    "range_feet": 30
+    "range_feet": 30,
+    "condition_inflict": [
+      "charmed"
+    ],
+    "saving_throw": [
+      "wisdom"
+    ],
+    "misc_tags": [
+      "SGT",
+      "UA",
+      "UBA"
+    ]
   },
   "cone_of_cold": {
     "id": "cone_of_cold",
@@ -1891,7 +2390,12 @@ const SPELLS: Dictionary = {
       "Wizard"
     ],
     "description": "You unleash a blast of cold air. Each creature in a 60-foot Cone originating from you makes a Constitution saving throw, taking 8d8 Cold damage on a failed save or half as much damage on a successful one. A creature killed by this spell becomes a frozen statue until it thaws.",
-    "higher_levels": "Using a Higher-Level Spell Slot: The damage increases by 1d8 for each spell slot level above 5."
+    "higher_levels": "Using a Higher-Level Spell Slot: The damage increases by 1d8 for each spell slot level above 5.",
+    "condition_inflict": [],
+    "saving_throw": [
+      "constitution"
+    ],
+    "misc_tags": []
   },
   "confusion": {
     "id": "confusion",
@@ -1912,7 +2416,14 @@ const SPELLS: Dictionary = {
       "Wizard"
     ],
     "description": "Each creature in a 10-foot-radius Sphere centered on a point you choose within range must succeed on a Wisdom saving throw, or that target can't take Bonus Actions or Reactions and must roll 1d10 at the start of each of its turns to determine its behavior for that turn, consulting the table below. 1 The target doesn't take an action, and it uses all its movement to move. Roll 1d4 for the direction: 1, north; 2, east; 3, south; or 4, west. 2-6 The target doesn't move or take actions. 7-8 The target doesn't move, and it takes the Attack action to make one melee attack against a random creature within reach. If none are within reach, the target takes no action. 9-10 The target chooses its behavior. At the end of each of its turns, an affected target repeats the save, ending the spell on itself on a success.",
-    "higher_levels": "Using a Higher-Level Spell Slot: The Sphere's radius increases by 5 feet for each spell slot level above 4."
+    "higher_levels": "Using a Higher-Level Spell Slot: The Sphere's radius increases by 5 feet for each spell slot level above 4.",
+    "condition_inflict": [],
+    "saving_throw": [
+      "wisdom"
+    ],
+    "misc_tags": [
+      "RO"
+    ]
   },
   "conjure_animals": {
     "id": "conjure_animals",
@@ -1931,7 +2442,15 @@ const SPELLS: Dictionary = {
       "Ranger"
     ],
     "description": "You conjure nature spirits that appear as a Large pack of spectral, intangible animals in an unoccupied space you can see within range. The pack lasts for the duration, and you choose the spirits' animal form, such as wolves, serpents, or birds. You have Advantage on Strength saving throws while you're within 5 feet of the pack, and when you move on your turn, you can also move the pack up to 30 feet to an unoccupied space you can see. Whenever the pack moves within 10 feet of a creature you can see and whenever a creature you can see enters a space within 10 feet of the pack or ends its turn there, you can force that creature to make a Dexterity saving throw. On a failed save, the creature takes 3d10 Slashing damage. A creature makes this save only once per turn.",
-    "higher_levels": "Using a Higher-Level Spell Slot: The damage increases by 1d10 for each spell slot level above 3."
+    "higher_levels": "Using a Higher-Level Spell Slot: The damage increases by 1d10 for each spell slot level above 3.",
+    "condition_inflict": [],
+    "saving_throw": [
+      "dexterity"
+    ],
+    "misc_tags": [
+      "ADV",
+      "SGT"
+    ]
   },
   "conjure_barrage": {
     "id": "conjure_barrage",
@@ -1956,7 +2475,14 @@ const SPELLS: Dictionary = {
     "aoe_shape": "cone",
     "aoe_length_cells": 12,
     "direction_limit_feet": 60,
-    "show_range_preview": false
+    "show_range_preview": false,
+    "condition_inflict": [],
+    "saving_throw": [
+      "dexterity"
+    ],
+    "misc_tags": [
+      "SGT"
+    ]
   },
   "conjure_celestial": {
     "id": "conjure_celestial",
@@ -1982,7 +2508,15 @@ const SPELLS: Dictionary = {
     "aoe_radius_feet": 10,
     "aoe_height_feet": 40,
     "range_feet": 90,
-    "persistent": true
+    "persistent": true,
+    "condition_inflict": [],
+    "saving_throw": [
+      "dexterity"
+    ],
+    "misc_tags": [
+      "HL",
+      "SGT"
+    ]
   },
   "conjure_constructs": {
     "id": "conjure_constructs",
@@ -2000,7 +2534,16 @@ const SPELLS: Dictionary = {
       "Wizard"
     ],
     "description": "You conjure a group of intangible, orderly spirits that appear as a Medium group of modrons or other Constructs in an unoccupied space you can see within range. The spirits last for the duration. When you cast this spell and as a Magic action on subsequent turns, you can command the spirits to target one creature or object you can see within 5 feet of the spirits and create one of the following effects: Clockwork Force: The target makes a Dexterity saving throw, taking 3d6 Force damage on a failed save or half as much damage on a successful one. Orderly Ward: The target gains Temporary Hit Points equal to 1d6 plus your spellcasting ability modifier. When you move on your turn, you can also move the spirits up to 30 feet to an unoccupied space you can see.",
-    "higher_levels": "Using a Higher-Level Spell Slot: The damage and Temporary Hit Points both increase by 1d6 for each spell slot level above 3."
+    "higher_levels": "Using a Higher-Level Spell Slot: The damage and Temporary Hit Points both increase by 1d6 for each spell slot level above 3.",
+    "condition_inflict": [],
+    "saving_throw": [
+      "dexterity"
+    ],
+    "misc_tags": [
+      "OBJ",
+      "SGT",
+      "THP"
+    ]
   },
   "conjure_elemental": {
     "id": "conjure_elemental",
@@ -2019,7 +2562,16 @@ const SPELLS: Dictionary = {
       "Wizard"
     ],
     "description": "You conjure a Large, intangible spirit from the Elemental Planes that appears in an unoccupied space within range. Choose the spirit's element, which determines its damage type: air (Lightning), earth (Thunder), fire (Fire), or water (Cold). The spirit lasts for the duration. Whenever a creature you can see enters the spirit's space or starts its turn within 5 feet of the spirit, you can force that creature to make a Dexterity saving throw if the spirit has no creature Restrained. On a failed save, the target takes 8d8 damage of the spirit's type, and the target has the Restrained condition until the spell ends. At the start of each of its turns, the Restrained target repeats the save. On a failed save, the target takes 4d8 damage of the spirit's type. On a successful save, the target isn't Restrained by the spirit.",
-    "higher_levels": "Using a Higher-Level Spell Slot: The damage increases by 1d8 for each spell slot level above 5."
+    "higher_levels": "Using a Higher-Level Spell Slot: The damage increases by 1d8 for each spell slot level above 5.",
+    "condition_inflict": [
+      "restrained"
+    ],
+    "saving_throw": [
+      "dexterity"
+    ],
+    "misc_tags": [
+      "SGT"
+    ]
   },
   "conjure_fey": {
     "id": "conjure_fey",
@@ -2038,7 +2590,15 @@ const SPELLS: Dictionary = {
       "Warlock"
     ],
     "description": "You conjure a Medium spirit from the Feywild in an unoccupied space you can see within range. The spirit lasts for the duration, and it looks like a Fey creature of your choice. When the spirit appears, you can make one melee spell attack against a creature within 5 feet of it. On a hit, the target takes Psychic damage equal to 3d12 plus your spellcasting ability modifier, and the target has the Frightened condition until the start of your next turn, with both you and the spirit as the source of the fear. As a Bonus Action on your later turns, you can teleport the spirit to an unoccupied space you can see within 30 feet of the space it left and make the attack against a creature within 5 feet of it.",
-    "higher_levels": "Using a Higher-Level Spell Slot: The damage increases by 1d12 for each spell slot level above 6."
+    "higher_levels": "Using a Higher-Level Spell Slot: The damage increases by 1d12 for each spell slot level above 6.",
+    "condition_inflict": [
+      "frightened"
+    ],
+    "saving_throw": [],
+    "misc_tags": [
+      "SGT",
+      "UBA"
+    ]
   },
   "conjure_minor_elementals": {
     "id": "conjure_minor_elementals",
@@ -2057,7 +2617,13 @@ const SPELLS: Dictionary = {
       "Wizard"
     ],
     "description": "You conjure spirits from the Elemental Planes that flit around you in a 15-foot Emanation for the duration. Until the spell ends, any attack you make deals an extra 2d8 damage when you hit a creature in the Emanation. This damage is Acid, Cold, Fire, or Lightning (your choice when you make the attack). In addition, the ground in the Emanation is Difficult Terrain for your enemies.",
-    "higher_levels": "Using a Higher-Level Spell Slot: The damage increases by 1d8 for each spell slot level above 4."
+    "higher_levels": "Using a Higher-Level Spell Slot: The damage increases by 1d8 for each spell slot level above 4.",
+    "condition_inflict": [],
+    "saving_throw": [],
+    "misc_tags": [
+      "AAD",
+      "DFT"
+    ]
   },
   "conjure_volley": {
     "id": "conjure_volley",
@@ -2082,7 +2648,14 @@ const SPELLS: Dictionary = {
     "aoe_shape": "cylinder",
     "aoe_radius_feet": 40,
     "aoe_height_feet": 20,
-    "range_feet": 150
+    "range_feet": 150,
+    "condition_inflict": [],
+    "saving_throw": [
+      "dexterity"
+    ],
+    "misc_tags": [
+      "SGT"
+    ]
   },
   "conjure_woodland_beings": {
     "id": "conjure_woodland_beings",
@@ -2101,7 +2674,15 @@ const SPELLS: Dictionary = {
       "Ranger"
     ],
     "description": "You conjure nature spirits that flit around you in a 10-foot Emanation for the duration. Whenever the Emanation enters the space of a creature you can see and whenever a creature you can see enters the Emanation or ends its turn there, you can force that creature to make a Wisdom saving throw. The creature takes 5d8 Force damage on a failed save or half as much damage on a successful one. A creature makes this save only once per turn. In addition, you can take the Disengage action as a Bonus Action for the spell's duration.",
-    "higher_levels": "Using a Higher-Level Spell Slot: The damage increases by 1d8 for each spell slot level above 4."
+    "higher_levels": "Using a Higher-Level Spell Slot: The damage increases by 1d8 for each spell slot level above 4.",
+    "condition_inflict": [],
+    "saving_throw": [
+      "wisdom"
+    ],
+    "misc_tags": [
+      "SGT",
+      "UBA"
+    ]
   },
   "contact_other_plane": {
     "id": "contact_other_plane",
@@ -2120,7 +2701,12 @@ const SPELLS: Dictionary = {
       "Wizard"
     ],
     "description": "You mentally contact a demigod, the spirit of a long-dead sage, or some other knowledgeable entity from another plane. Contacting this otherworldly intelligence can break your mind. When you cast this spell, make a 15 Intelligence saving throw. On a successful save, you can ask the entity up to five questions. You must ask your questions before the spell ends. The DM answers each question with one word, such as \"yes,\" \"no,\" \"maybe,\" \"never,\" \"irrelevant,\" or \"unclear\" (if the entity doesn't know the answer to the question). If a one-word answer would be misleading, the DM might instead offer a short phrase as an answer. On a failed save, you take 6d6 Psychic damage and have the Incapacitated condition until you finish a Long Rest. A Greater Restoration spell cast on you ends this effect.",
-    "higher_levels": ""
+    "higher_levels": "",
+    "condition_inflict": [],
+    "saving_throw": [
+      "intelligence"
+    ],
+    "misc_tags": []
   },
   "contagion": {
     "id": "contagion",
@@ -2145,7 +2731,14 @@ const SPELLS: Dictionary = {
     "target_mode": "token_then_token",
     "range_feet": 5,
     "projectile_style": "contagion",
-    "projectile_travel_seconds": 0.65
+    "projectile_travel_seconds": 0.65,
+    "condition_inflict": [
+      "poisoned"
+    ],
+    "saving_throw": [
+      "constitution"
+    ],
+    "misc_tags": []
   },
   "contingency": {
     "id": "contingency",
@@ -2163,7 +2756,10 @@ const SPELLS: Dictionary = {
       "Wizard"
     ],
     "description": "Choose a spell of level 5 or lower that you can cast, that has a casting time of an action, and that can target you. You cast that spell—called the contingent spell—as part of casting Contingency, expending spell slots for both, but the contingent spell doesn't come into effect. Instead, it takes effect when a certain trigger occurs. You describe that trigger when you cast the two spells. For example, a Contingency cast with Water Breathing might stipulate that Water Breathing comes into effect when you are engulfed in water or a similar liquid. The contingent spell takes effect immediately after the trigger occurs for the first time, whether or not you want it to, and then Contingency ends. The contingent spell takes effect only on you, even if it can normally target others. You can use only one Contingency spell at a time. If you cast this spell again, the effect of another Contingency spell on you ends. Also, Contingency ends on you if its material component is ever not on your person.",
-    "higher_levels": ""
+    "higher_levels": "",
+    "condition_inflict": [],
+    "saving_throw": [],
+    "misc_tags": []
   },
   "continual_flame": {
     "id": "continual_flame",
@@ -2184,7 +2780,13 @@ const SPELLS: Dictionary = {
       "Wizard"
     ],
     "description": "A flame springs from an object that you touch. The effect casts Bright Light in a 20-foot radius and Dim Light for an additional 20 feet. It looks like a regular flame, but it creates no heat and consumes no fuel. The flame can be covered or hidden but not smothered or quenched.",
-    "higher_levels": ""
+    "higher_levels": "",
+    "condition_inflict": [],
+    "saving_throw": [],
+    "misc_tags": [
+      "LGT",
+      "OBJ"
+    ]
   },
   "control_flames": {
     "id": "control_flames",
@@ -2209,7 +2811,13 @@ const SPELLS: Dictionary = {
     "transient_seconds": 5,
     "aoe_shape": "cube",
     "aoe_side_feet": 5,
-    "range_feet": 60
+    "range_feet": 60,
+    "condition_inflict": [],
+    "saving_throw": [],
+    "misc_tags": [
+      "LGT",
+      "SGT"
+    ]
   },
   "control_water": {
     "id": "control_water",
@@ -2229,7 +2837,15 @@ const SPELLS: Dictionary = {
       "Wizard"
     ],
     "description": "Until the spell ends, you control any water inside an area you choose that is a Cube up to 100 feet on a side, using one of the following effects. As a Magic action on your later turns, you can repeat the same effect or choose a different one. Flood: You cause the water level of all standing water in the area to rise by as much as 20 feet. If you choose an area in a large body of water, you instead create a 20-foot tall wave that travels from one side of the area to the other and then crashes. Any Huge or smaller vehicles in the wave's path are carried with it to the other side. Any Huge or smaller vehicles struck by the wave have a 25 chance of capsizing. The water level remains elevated until the spell ends or you choose a different effect. If this effect produced a wave, the wave repeats on the start of your next turn while the flood effect lasts. Part Water: You part water in the area and create a trench. The trench extends across the spell's area, and the separated water forms a wall to either side. The trench remains until the spell ends or you choose a different effect. The water then slowly fills in the trench over the course of the next round until the normal water level is restored. Redirect Flow: You cause flowing water in the area to move in a direction you choose, even if the water has to flow over obstacles, up walls, or in other unlikely directions. The water in the area moves as you direct it, but once it moves beyond the spell's area, it resumes its flow based on the terrain. The water continues to move in the direction you chose until the spell ends or you choose a different effect. Whirlpool: You cause a whirlpool to form in the center of the area, which must be at least 50 feet square and 25 feet deep. The whirlpool lasts until you choose a different effect or the spell ends. The whirlpool is 5 feet wide at the base, up to 50 feet wide at the top, and 25 feet tall. Any creature in the water and within 25 feet of the whirlpool is pulled 10 feet toward it. When a creature enters the whirlpool for the first time on a turn or ends its turn there, it makes a Strength saving throw. On a failed save, the creature takes 2d8 Bludgeoning damage. On a successful save, the creature takes half as much damage. A creature can swim away from the whirlpool only if it first takes an action to pull away and succeeds on a Strength (Athletics) check against your spell save DC.",
-    "higher_levels": ""
+    "higher_levels": "",
+    "condition_inflict": [],
+    "saving_throw": [
+      "strength"
+    ],
+    "misc_tags": [
+      "FMV",
+      "OBJ"
+    ]
   },
   "control_weather": {
     "id": "control_weather",
@@ -2249,7 +2865,10 @@ const SPELLS: Dictionary = {
       "Wizard"
     ],
     "description": "You take control of the weather within 5 miles of you for the duration. You must be outdoors to cast this spell, and it ends early if you go indoors. When you cast the spell, you change the current weather conditions, which are determined by the DM. You can change precipitation, temperature, and wind. It takes 1d4 × 10 minutes for the new conditions to take effect. Once they do so, you can change the conditions again. When the spell ends, the weather gradually returns to normal. When you change the weather conditions, find a current condition on the following tables and change its stage by one, up or down. When changing the wind, you can change its direction. 1 Clear 2 Light clouds 3 Overcast or ground fog 4 Rain, hail, or snow 5 Torrential rain, driving hail, or blizzard 1 Heat wave 2 Hot 3 Warm 4 Cool 5 Cold 6 Freezing 1 Calm 2 Moderate wind 3 Strong wind 4 Gale 5 Storm",
-    "higher_levels": ""
+    "higher_levels": "",
+    "condition_inflict": [],
+    "saving_throw": [],
+    "misc_tags": []
   },
   "control_winds": {
     "id": "control_winds",
@@ -2274,7 +2893,17 @@ const SPELLS: Dictionary = {
     "transient_seconds": 5,
     "aoe_shape": "cube",
     "aoe_side_feet": 100,
-    "range_feet": 300
+    "range_feet": 300,
+    "condition_inflict": [
+      "prone"
+    ],
+    "saving_throw": [
+      "strength"
+    ],
+    "misc_tags": [
+      "SGT",
+      "UA"
+    ]
   },
   "cordon_of_arrows": {
     "id": "cordon_of_arrows",
@@ -2296,7 +2925,12 @@ const SPELLS: Dictionary = {
     "visual_style": "arcane",
     "transient_seconds": 5,
     "target_mode": "token_then_token",
-    "range_feet": 5
+    "range_feet": 5,
+    "condition_inflict": [],
+    "saving_throw": [
+      "dexterity"
+    ],
+    "misc_tags": []
   },
   "counterspell": {
     "id": "counterspell",
@@ -2316,7 +2950,14 @@ const SPELLS: Dictionary = {
       "Wizard"
     ],
     "description": "You attempt to interrupt a creature in the process of casting a spell. The creature makes a Constitution saving throw. On a failed save, the spell dissipates with no effect, and the action, Bonus Action, or Reaction used to cast it is wasted. If that spell was cast with a spell slot, the slot isn't expended.",
-    "higher_levels": ""
+    "higher_levels": "",
+    "condition_inflict": [],
+    "saving_throw": [
+      "constitution"
+    ],
+    "misc_tags": [
+      "SGT"
+    ]
   },
   "create_bonfire": {
     "id": "create_bonfire",
@@ -2344,7 +2985,17 @@ const SPELLS: Dictionary = {
     "aoe_shape": "cube",
     "aoe_side_feet": 5,
     "range_feet": 60,
-    "level17_damage": "4d8 Fire"
+    "level17_damage": "4d8 Fire",
+    "condition_inflict": [],
+    "saving_throw": [
+      "dexterity"
+    ],
+    "misc_tags": [
+      "BO",
+      "OBJ",
+      "SCL",
+      "SGT"
+    ]
   },
   "create_food_and_water": {
     "id": "create_food_and_water",
@@ -2364,7 +3015,10 @@ const SPELLS: Dictionary = {
       "Paladin"
     ],
     "description": "You create 45 pounds of food and 30 gallons of fresh water on the ground or in containers within range—both useful in fending off the hazards of malnutrition and dehydration. The food is bland but nourishing and looks like a food of your choice, and the water is clean. The food spoils after 24 hours if uneaten.",
-    "higher_levels": ""
+    "higher_levels": "",
+    "condition_inflict": [],
+    "saving_throw": [],
+    "misc_tags": []
   },
   "create_homunculus": {
     "id": "create_homunculus",
@@ -2382,7 +3036,12 @@ const SPELLS: Dictionary = {
       "Wizard"
     ],
     "description": "While speaking an intricate incantation, you cut yourself with a jewel-encrusted dagger, taking 2d4 piercing damage that can't be reduced in any way. You then drip your blood on the spell's other components and touch them, transforming them into a special construct called a homunculus. The statistics of the homunculus are in the Monster Manual. It is your faithful companion, and it dies if you die. Whenever you finish a long rest, you can spend up to half your Hit Dice if the homunculus is on the same plane of existence as you. When you do so, roll each die and add your Constitution modifier to it. Your hit point maximum is reduced by the total, and the homunculus's hit point maximum and current hit points are both increased by it. This process can reduce you to no lower than 1 hit point, and the change to your and the homunculus's hit points ends when you finish your next long rest. The reduction to your hit point maximum can't be removed by any means before then, except by the homunculus's death. You can have only one homunculus at a time. If you cast this spell while your homunculus lives, the spell fails.",
-    "higher_levels": ""
+    "higher_levels": "",
+    "condition_inflict": [],
+    "saving_throw": [],
+    "misc_tags": [
+      "PRM"
+    ]
   },
   "create_magen": {
     "id": "create_magen",
@@ -2431,7 +3090,12 @@ const SPELLS: Dictionary = {
     "target_mode": "token_then_point",
     "aoe_shape": "cube",
     "aoe_side_feet": 30,
-    "range_feet": 30
+    "range_feet": 30,
+    "condition_inflict": [],
+    "saving_throw": [],
+    "misc_tags": [
+      "PRM"
+    ]
   },
   "create_spelljamming_helm": {
     "id": "create_spelljamming_helm",
@@ -2470,7 +3134,14 @@ const SPELLS: Dictionary = {
       "Wizard"
     ],
     "description": "You can cast this spell only at night. Choose up to three corpses of Medium or Small Humanoids within range. Each one becomes a Ghoul under your control (see the Monster Manual for its stat block). As a Bonus Action on each of your turns, you can mentally command any creature you animated with this spell if the creature is within 120 feet of you (if you control multiple creatures, you can command any of them at the same time, issuing the same command to them). You decide what action the creature will take and where it will move on its next turn, or you can issue a general command, such as to guard a particular place. If you issue no commands, the creature takes the Dodge action and moves only to avoid harm. Once given an order, the creature continues to follow the order until its task is complete. The creature is under your control for 24 hours, after which it stops obeying any command you've given it. To maintain control of the creature for another 24 hours, you must cast this spell on the creature before the current 24-hour period ends. This use of the spell reasserts your control over up to three creatures you have animated with this spell rather than animating new ones.",
-    "higher_levels": "Using a Higher-Level Spell Slot: If you use a level 7 spell slot, you can animate or reassert control over four Ghouls. If you use a level 8 spell slot, you can animate or reassert control over five Ghouls or two Ghasts or Wights. If you use a level 9 spell slot, you can animate or reassert control over six Ghouls, three Ghasts or Wights, or two Mummies. See the Monster Manual for these stat blocks."
+    "higher_levels": "Using a Higher-Level Spell Slot: If you use a level 7 spell slot, you can animate or reassert control over four Ghouls. If you use a level 8 spell slot, you can animate or reassert control over five Ghouls or two Ghasts or Wights. If you use a level 9 spell slot, you can animate or reassert control over six Ghouls, three Ghasts or Wights, or two Mummies. See the Monster Manual for these stat blocks.",
+    "condition_inflict": [],
+    "saving_throw": [],
+    "misc_tags": [
+      "PRM",
+      "SMN",
+      "UBA"
+    ]
   },
   "creation": {
     "id": "creation",
@@ -2490,7 +3161,10 @@ const SPELLS: Dictionary = {
       "Wizard"
     ],
     "description": "You pull wisps of shadow material from the Shadowfell to create an object within range. It is either an object of vegetable matter (soft goods, rope, wood, and the like) or mineral matter (stone, crystal, metal, and the like). The object must be no larger than a 5-foot Cube, and the object must be of a form and material that you have seen. The spell's duration depends on the object's material, as shown in the Materials table. If the object is composed of multiple materials, use the shortest duration. Using any object created by this spell as another spell's Material component causes the other spell to fail. Vegetable matter 24 hours Stone or crystal 12 hours Precious metals 1 hour Gems 10 minutes Adamantine or mithral 1 minute",
-    "higher_levels": "Using a Higher-Level Spell Slot: The Cube increases by 5 feet for each spell slot level above 5."
+    "higher_levels": "Using a Higher-Level Spell Slot: The Cube increases by 5 feet for each spell slot level above 5.",
+    "condition_inflict": [],
+    "saving_throw": [],
+    "misc_tags": []
   },
   "crown_of_madness": {
     "id": "crown_of_madness",
@@ -2512,7 +3186,16 @@ const SPELLS: Dictionary = {
     ],
     "description": "One creature that you can see within range must succeed on a Wisdom saving throw or have the Charmed condition for the duration. The creature succeeds automatically if it isn't Humanoid. A spectral crown appears on the Charmed target's head, and it must use its action before moving on each of its turns to make a melee attack against a creature other than itself that you mentally choose. The target can act normally on its turn if you choose no creature or if no creature is within its reach. The target repeats the save at the end of each of its turns, ending the spell on itself on a success. On your later turns, you must take the Magic action to maintain control of the target, or the spell ends.",
     "higher_levels": "",
-    "range_feet": 120
+    "range_feet": 120,
+    "condition_inflict": [
+      "charmed"
+    ],
+    "saving_throw": [
+      "wisdom"
+    ],
+    "misc_tags": [
+      "SGT"
+    ]
   },
   "crown_of_stars": {
     "id": "crown_of_stars",
@@ -2532,7 +3215,14 @@ const SPELLS: Dictionary = {
       "Wizard"
     ],
     "description": "Seven star-like motes of light appear and orbit your head until the spell ends. You can use a bonus action to send one of the motes streaking toward one creature or object within 120 feet of you. When you do so, make a ranged spell attack. On a hit, the target takes 4d12 radiant damage. Whether you hit or miss, the mote is expended. The spell ends early if you expend the last mote. If you have four or more motes remaining, they shed bright light in a 30-foot radius and dim light for an additional 30 feet. If you have one to three motes remaining, they shed dim light in a 30-foot radius.",
-    "higher_levels": "At Higher Levels: When you cast this spell using a spell slot of 8th level or higher, the number of motes created increases by two for each slot level above 7th."
+    "higher_levels": "At Higher Levels: When you cast this spell using a spell slot of 8th level or higher, the number of motes created increases by two for each slot level above 7th.",
+    "condition_inflict": [],
+    "saving_throw": [],
+    "misc_tags": [
+      "LGT",
+      "OBJ",
+      "UBA"
+    ]
   },
   "crusaders_mantle": {
     "id": "crusaders_mantle",
@@ -2550,7 +3240,12 @@ const SPELLS: Dictionary = {
       "Paladin"
     ],
     "description": "You radiate a magical aura in a 30-foot Emanation. While in the aura, you and your allies each deal an extra 1d4 Radiant damage when hitting with a weapon or an Unarmed Strike.",
-    "higher_levels": ""
+    "higher_levels": "",
+    "condition_inflict": [],
+    "saving_throw": [],
+    "misc_tags": [
+      "AAD"
+    ]
   },
   "cure_wounds": {
     "id": "cure_wounds",
@@ -2579,7 +3274,12 @@ const SPELLS: Dictionary = {
     "target_mode": "token_then_token",
     "range_feet": 5,
     "projectile_style": "cure_wounds",
-    "projectile_travel_seconds": 0.65
+    "projectile_travel_seconds": 0.65,
+    "condition_inflict": [],
+    "saving_throw": [],
+    "misc_tags": [
+      "HL"
+    ]
   },
   "dancing_lights": {
     "id": "dancing_lights",
@@ -2600,7 +3300,14 @@ const SPELLS: Dictionary = {
       "Wizard"
     ],
     "description": "You create up to four torch-size lights within range, making them appear as torches, lanterns, or glowing orbs that hover for the duration. Alternatively, you combine the four lights into one glowing Medium form that is vaguely humanlike. Whichever form you choose, each light sheds Dim Light in a 10-foot radius. As a Bonus Action, you can move the lights up to 60 feet to a space within range. A light must be within 20 feet of another light created by this spell, and a light vanishes if it exceeds the spell's range.",
-    "higher_levels": ""
+    "higher_levels": "",
+    "condition_inflict": [],
+    "saving_throw": [],
+    "misc_tags": [
+      "LGT",
+      "UA",
+      "UBA"
+    ]
   },
   "danse_macabre": {
     "id": "danse_macabre",
@@ -2619,7 +3326,14 @@ const SPELLS: Dictionary = {
       "Wizard"
     ],
     "description": "Threads of dark power leap from your fingers to pierce up to five Small or Medium corpses you can see within range. Each corpse immediately stands up and becomes undead. You decide whether it is a zombie or a skeleton (the statistics for zombies and skeletons are in the Monster Manual), and it gains a bonus to its attack and damage rolls equal to your spellcasting ability modifier. You can use a bonus action to mentally command the creatures you make with this spell, issuing the same command to all of them. To receive the command, a creature must be within 60 feet of you. You decide what action the creatures will take and where they will move during their next turn, or you can issue a general command, such as to guard a chamber or passageway against your foes. If you issue no commands, the creatures do nothing except defend themselves against hostile creatures. Once given an order, the creatures continue to follow it until their task is complete. The creatures are under your control until the spell ends, after which they become inanimate once more.",
-    "higher_levels": "At Higher Levels: When you cast this spell using a spell slot of 6th level or higher, you animate up to two additional corpses for each slot level above 5th."
+    "higher_levels": "At Higher Levels: When you cast this spell using a spell slot of 6th level or higher, you animate up to two additional corpses for each slot level above 5th.",
+    "condition_inflict": [],
+    "saving_throw": [],
+    "misc_tags": [
+      "SGT",
+      "SMN",
+      "UBA"
+    ]
   },
   "dark_star": {
     "id": "dark_star",
@@ -2655,7 +3369,13 @@ const SPELLS: Dictionary = {
       "Wizard"
     ],
     "description": "For the duration, magical Darkness spreads from a point within range and fills a 15-foot-radius Sphere. Darkvision can't see through it, and nonmagical light can't illuminate it. Alternatively, you cast the spell on an object that isn't being worn or carried, causing the Darkness to fill a 15-foot Emanation originating from that object. Covering that object with something opaque, such as a bowl or helm, blocks the Darkness. If any of this spell's area overlaps with an area of Bright Light or Dim Light created by a spell of level 2 or lower, that other spell is dispelled.",
-    "higher_levels": ""
+    "higher_levels": "",
+    "condition_inflict": [],
+    "saving_throw": [],
+    "misc_tags": [
+      "OBJ",
+      "OBS"
+    ]
   },
   "darkvision": {
     "id": "darkvision",
@@ -2680,7 +3400,10 @@ const SPELLS: Dictionary = {
     "higher_levels": "",
     "visual_style": "arcane",
     "transient_seconds": 5,
-    "range_feet": 5
+    "range_feet": 5,
+    "condition_inflict": [],
+    "saving_throw": [],
+    "misc_tags": []
   },
   "dawn": {
     "id": "dawn",
@@ -2699,7 +3422,15 @@ const SPELLS: Dictionary = {
       "Wizard"
     ],
     "description": "The light of dawn shines down on a location you specify within range. Until the spell ends, a 30-foot-radius, 40-foot-high cylinder of bright light glimmers there. This light is sunlight. When the cylinder appears, each creature in it must make a Constitution saving throw, taking 4d10 radiant damage on a failed save, or half as much damage on a successful one. A creature must also make this saving throw whenever it ends its turn in the cylinder. If you're within 60 feet of the cylinder, you can move it up to 60 feet as a bonus action on your turn.",
-    "higher_levels": ""
+    "higher_levels": "",
+    "condition_inflict": [],
+    "saving_throw": [
+      "constitution"
+    ],
+    "misc_tags": [
+      "LGTS",
+      "UBA"
+    ]
   },
   "daylight": {
     "id": "daylight",
@@ -2727,7 +3458,14 @@ const SPELLS: Dictionary = {
     "aoe_shape": "sphere",
     "aoe_radius_feet": 60,
     "range_feet": 60,
-    "persistent": true
+    "persistent": true,
+    "condition_inflict": [],
+    "saving_throw": [],
+    "misc_tags": [
+      "LGT",
+      "LGTS",
+      "OBJ"
+    ]
   },
   "death_armor": {
     "id": "death_armor",
@@ -2749,7 +3487,12 @@ const SPELLS: Dictionary = {
     "higher_levels": "",
     "visual_style": "necrotic",
     "transient_seconds": 5,
-    "range_feet": 5
+    "range_feet": 5,
+    "condition_inflict": [],
+    "saving_throw": [],
+    "misc_tags": [
+      "ADV"
+    ]
   },
   "death_ward": {
     "id": "death_ward",
@@ -2774,7 +3517,10 @@ const SPELLS: Dictionary = {
     "target_mode": "token_then_token",
     "range_feet": 5,
     "projectile_style": "death_ward",
-    "projectile_travel_seconds": 0.65
+    "projectile_travel_seconds": 0.65,
+    "condition_inflict": [],
+    "saving_throw": [],
+    "misc_tags": []
   },
   "delayed_blast_fireball": {
     "id": "delayed_blast_fireball",
@@ -2799,7 +3545,15 @@ const SPELLS: Dictionary = {
     "aoe_shape": "sphere",
     "aoe_radius_feet": 20,
     "range_feet": 150,
-    "persistent": true
+    "persistent": true,
+    "condition_inflict": [],
+    "saving_throw": [
+      "dexterity"
+    ],
+    "misc_tags": [
+      "BO",
+      "OBJ"
+    ]
   },
   "demiplane": {
     "id": "demiplane",
@@ -2819,7 +3573,14 @@ const SPELLS: Dictionary = {
       "Wizard"
     ],
     "description": "You create a shadowy Medium door on a flat solid surface that you can see within range. This door can be opened and closed, and it leads to a demiplane that is an empty room 30 feet in each dimension, made of wood or stone (your choice). When the spell ends, the door vanishes, and any objects inside the demiplane remain there. Any creatures inside also remain unless they opt to be shunted through the door as it vanishes, landing with the Prone condition in the unoccupied spaces closest to the door's former space. Each time you cast this spell, you can create a new demiplane or connect the shadowy door to a demiplane you created with a previous casting of this spell. Additionally, if you know the nature and contents of a demiplane created by a casting of this spell by another creature, you can connect the shadowy door to that demiplane instead.",
-    "higher_levels": ""
+    "higher_levels": "",
+    "condition_inflict": [],
+    "saving_throw": [],
+    "misc_tags": [
+      "OBJ",
+      "PRM",
+      "SGT"
+    ]
   },
   "deryans_helpful_homunculi": {
     "id": "deryans_helpful_homunculi",
@@ -2838,7 +3599,12 @@ const SPELLS: Dictionary = {
       "Wizard"
     ],
     "description": "You summon a group of helpful spirits, which lasts for the duration. The spirits appear as homunculi or as another Construct of your choice but are intangible and invulnerable, and they are considered to have proficiency in the Arcana skill and with the set of Artisan's Tools used in the spell's casting. If you are crafting an item, the spirits function as a single assistant for your crafting, halving the crafting time.",
-    "higher_levels": ""
+    "higher_levels": "",
+    "condition_inflict": [],
+    "saving_throw": [],
+    "misc_tags": [
+      "SMN"
+    ]
   },
   "destructive_wave": {
     "id": "destructive_wave",
@@ -2862,7 +3628,14 @@ const SPELLS: Dictionary = {
     "target_mode": "self_emanation",
     "aoe_shape": "sphere",
     "aoe_radius_feet": 30,
-    "show_range_preview": false
+    "show_range_preview": false,
+    "condition_inflict": [
+      "prone"
+    ],
+    "saving_throw": [
+      "constitution"
+    ],
+    "misc_tags": []
   },
   "detect_evil_and_good": {
     "id": "detect_evil_and_good",
@@ -2881,7 +3654,10 @@ const SPELLS: Dictionary = {
       "Paladin"
     ],
     "description": "For the duration, you sense the location of any Aberration, Celestial, Elemental, Fey, Fiend, or Undead within 30 feet of yourself. You also sense whether the Hallow spell is active there and, if so, where. The spell is blocked by 1 foot of stone, dirt, or wood; 1 inch of metal; or a thin sheet of lead.",
-    "higher_levels": ""
+    "higher_levels": "",
+    "condition_inflict": [],
+    "saving_throw": [],
+    "misc_tags": []
   },
   "detect_magic": {
     "id": "detect_magic",
@@ -2907,7 +3683,10 @@ const SPELLS: Dictionary = {
       "Wizard"
     ],
     "description": "For the duration, you sense the presence of magical effects within 30 feet of yourself. If you sense such effects, you can take the Magic action to see a faint aura around any visible creature or object in the area that bears the magic, and if an effect was created by a spell, you learn the spell's 7. The spell is blocked by 1 foot of stone, dirt, or wood; 1 inch of metal; or a thin sheet of lead.",
-    "higher_levels": ""
+    "higher_levels": "",
+    "condition_inflict": [],
+    "saving_throw": [],
+    "misc_tags": []
   },
   "detect_poison_and_disease": {
     "id": "detect_poison_and_disease",
@@ -2928,7 +3707,10 @@ const SPELLS: Dictionary = {
       "Ranger"
     ],
     "description": "For the duration, you sense the location of poisons, poisonous or venomous creatures, and magical contagions within 30 feet of yourself. You sense the kind of poison, creature, or contagion in each case. The spell is blocked by 1 foot of stone, dirt, or wood; 1 inch of metal; or a thin sheet of lead.",
-    "higher_levels": ""
+    "higher_levels": "",
+    "condition_inflict": [],
+    "saving_throw": [],
+    "misc_tags": []
   },
   "detect_thoughts": {
     "id": "detect_thoughts",
@@ -2948,7 +3730,14 @@ const SPELLS: Dictionary = {
       "Wizard"
     ],
     "description": "You activate one of the effects below. Until the spell ends, you can activate either effect as a Magic action on your later turns. Sense Thoughts: You sense the presence of thoughts within 30 feet of yourself that belong to creatures that know languages or are telepathic. You don't read the thoughts, but you know that a thinking creature is present. The spell is blocked by 1 foot of stone, dirt, or wood; 1 inch of metal; or a thin sheet of lead. Read Thoughts: Target one creature you can see within 30 feet of yourself or one creature within 30 feet of yourself that you detected with the Sense Thoughts option. You learn what is most on the target's mind right now. If the target doesn't know any languages and isn't telepathic, you learn nothing. As a Magic action on your next turn, you can try to probe deeper into the target's mind. If you probe deeper, the target makes a Wisdom saving throw. On a failed save, you discern the target's reasoning, emotions, and something that looms large in its mind (such as a worry, love, or hate). On a successful save, the spell ends. Either way, the target knows that you are probing into its mind, and until you shift your attention away from the target's mind, the target can take an action on its turn to make an Intelligence (Arcana) check against your spell save DC, ending the spell on a success.",
-    "higher_levels": ""
+    "higher_levels": "",
+    "condition_inflict": [],
+    "saving_throw": [
+      "wisdom"
+    ],
+    "misc_tags": [
+      "SGT"
+    ]
   },
   "detonate": {
     "id": "detonate",
@@ -2992,7 +3781,12 @@ const SPELLS: Dictionary = {
       "Wizard"
     ],
     "description": "You teleport to a location within range. You arrive at exactly the spot desired. It can be a place you can see, one you can visualize, or one you can describe by stating distance and direction, such as \"200 feet straight downward\" or \"300 feet upward to the northwest at a 45-degree angle.\" You can also teleport one willing creature. The creature must be within 5 feet of you when you teleport, and it teleports to a space within 5 feet of your destination space. If you, the other creature, or both would arrive in a space occupied by a creature or completely filled by one or more objects, you and any creature traveling with you each take 4d6 Force damage, and the teleportation fails.",
-    "higher_levels": ""
+    "higher_levels": "",
+    "condition_inflict": [],
+    "saving_throw": [],
+    "misc_tags": [
+      "TP"
+    ]
   },
   "dirge": {
     "id": "dirge",
@@ -3011,7 +3805,14 @@ const SPELLS: Dictionary = {
       "Cleric"
     ],
     "description": "Deathly power fills a 60-foot Emanation originating from you for the duration. When you cast this spell, you can designate creatures to be unaffected by it. Any other creature can't regain Hit Points while in the Emanation. Whenever the Emanation enters a creature's space and whenever a creature enters the Emanation or ends its turn there, the creature makes a Constitution saving throw. On a failed save, the creature takes 3d10 Necrotic damage and has the Prone condition. On a successful save, the creature takes half as much damage and its Speed is halved. A creature makes this save only once per turn. Casting as a Circle Spell: Casting this as a Circle spell requires a minimum of two secondary casters. If the spell is cast as a Circle spell, its duration becomes Concentration, up to 10 minutes. A creature that fails its save against the spell's effect also gains 1 Exhaustion level. While the creature has Exhaustion levels, finishing a Long Rest neither restores lost Hit Points nor reduces the creature's Exhaustion level. When the spell is cast, each secondary caster must expend a level 4+ spell slot; otherwise, the spell fails.",
-    "higher_levels": ""
+    "higher_levels": "",
+    "condition_inflict": [
+      "prone"
+    ],
+    "saving_throw": [
+      "constitution"
+    ],
+    "misc_tags": []
   },
   "disguise_self": {
     "id": "disguise_self",
@@ -3032,7 +3833,12 @@ const SPELLS: Dictionary = {
       "Wizard"
     ],
     "description": "You make yourself—including your clothing, armor, weapons, and other belongings on your person—look different until the spell ends. You can seem 1 foot shorter or taller and can appear heavier or lighter. You must adopt a form that has the same basic arrangement of limbs as you have. Otherwise, the extent of the illusion is up to you. The changes wrought by this spell fail to hold up to physical inspection. For example, if you use this spell to add a hat to your outfit, objects pass through the hat, and anyone who touches it would feel nothing. To discern that you are disguised, a creature must take the Study action to inspect your appearance and succeed on an Intelligence (Investigation) check against your spell save DC.",
-    "higher_levels": ""
+    "higher_levels": "",
+    "condition_inflict": [],
+    "saving_throw": [],
+    "misc_tags": [
+      "SGT"
+    ]
   },
   "disintegrate": {
     "id": "disintegrate",
@@ -3056,7 +3862,15 @@ const SPELLS: Dictionary = {
     "target_mode": "token_then_token",
     "projectile_style": "disintegrate",
     "projectile_travel_seconds": 0.65,
-    "allow_point_target": true
+    "allow_point_target": true,
+    "condition_inflict": [],
+    "saving_throw": [
+      "dexterity"
+    ],
+    "misc_tags": [
+      "OBJ",
+      "SGT"
+    ]
   },
   "dispel_evil_and_good": {
     "id": "dispel_evil_and_good",
@@ -3075,7 +3889,15 @@ const SPELLS: Dictionary = {
       "Paladin"
     ],
     "description": "For the duration, Celestials, Elementals, Fey, Fiends, and Undead have Disadvantage on attack rolls against you. You can end the spell early by using either of the following special functions. Break Enchantment: As a Magic action, you touch a creature that is possessed by or has the Charmed or Frightened condition from one or more creatures of the types above. The target is no longer possessed, Charmed, or Frightened by such creatures. Dismissal: As a Magic action, you target one creature you can see within 5 feet of you that has one of the creature types above. The target must succeed on a Charisma saving throw or be sent back to its home plane if it isn't there already. If they aren't on their home plane, Undead are sent to the Shadowfell, and Fey are sent to the Feywild.",
-    "higher_levels": ""
+    "higher_levels": "",
+    "condition_inflict": [],
+    "saving_throw": [
+      "charisma"
+    ],
+    "misc_tags": [
+      "SGT",
+      "UA"
+    ]
   },
   "dispel_magic": {
     "id": "dispel_magic",
@@ -3104,7 +3926,12 @@ const SPELLS: Dictionary = {
     "higher_levels": "Using a Higher-Level Spell Slot: You automatically end a spell on the target if the spell's level is equal to or less than the level of the spell slot you use.",
     "visual_style": "arcane",
     "transient_seconds": 5,
-    "range_feet": 120
+    "range_feet": 120,
+    "condition_inflict": [],
+    "saving_throw": [],
+    "misc_tags": [
+      "OBJ"
+    ]
   },
   "disruptive_tune": {
     "id": "disruptive_tune",
@@ -3154,7 +3981,14 @@ const SPELLS: Dictionary = {
     "target_mode": "token_then_token",
     "range_feet": 60,
     "projectile_style": "dissonant_whispers",
-    "projectile_travel_seconds": 0.65
+    "projectile_travel_seconds": 0.65,
+    "condition_inflict": [],
+    "saving_throw": [
+      "wisdom"
+    ],
+    "misc_tags": [
+      "SGT"
+    ]
   },
   "distort_value": {
     "id": "distort_value",
@@ -3223,7 +4057,10 @@ const SPELLS: Dictionary = {
       "Wizard"
     ],
     "description": "This spell puts you in contact with a god or a god's servants. You ask one question about a specific goal, event, or activity to occur within 7 days. The DM offers a truthful reply, which might be a short phrase or cryptic rhyme. The spell doesn't account for circumstances that might change the answer, such as the casting of other spells. If you cast the spell more than once before finishing a Long Rest, there is a cumulative 25 chance for each casting after the first that you get no answer.",
-    "higher_levels": ""
+    "higher_levels": "",
+    "condition_inflict": [],
+    "saving_throw": [],
+    "misc_tags": []
   },
   "divine_favor": {
     "id": "divine_favor",
@@ -3241,7 +4078,12 @@ const SPELLS: Dictionary = {
       "Paladin"
     ],
     "description": "Until the spell ends, your attacks with weapons deal an extra 1d4 Radiant damage on a hit.",
-    "higher_levels": ""
+    "higher_levels": "",
+    "condition_inflict": [],
+    "saving_throw": [],
+    "misc_tags": [
+      "AAD"
+    ]
   },
   "divine_smite": {
     "id": "divine_smite",
@@ -3259,7 +4101,12 @@ const SPELLS: Dictionary = {
       "Paladin"
     ],
     "description": "The target takes an extra 2d8 Radiant damage from the attack. The damage increases by 1d8 if the target is a Fiend or an Undead.",
-    "higher_levels": "Using a Higher-Level Spell Slot: The damage increases by 1d8 for each spell slot level above 1."
+    "higher_levels": "Using a Higher-Level Spell Slot: The damage increases by 1d8 for each spell slot level above 1.",
+    "condition_inflict": [],
+    "saving_throw": [],
+    "misc_tags": [
+      "AAD"
+    ]
   },
   "divine_word": {
     "id": "divine_word",
@@ -3283,7 +4130,16 @@ const SPELLS: Dictionary = {
     "target_mode": "token_then_multi_token",
     "range_feet": 30,
     "projectile_style": "divine_word",
-    "projectile_travel_seconds": 0.65
+    "projectile_travel_seconds": 0.65,
+    "condition_inflict": [
+      "blinded",
+      "deafened",
+      "stunned"
+    ],
+    "saving_throw": [
+      "charisma"
+    ],
+    "misc_tags": []
   },
   "dominate_beast": {
     "id": "dominate_beast",
@@ -3306,7 +4162,16 @@ const SPELLS: Dictionary = {
     "higher_levels": "Using a Higher-Level Spell Slot: Your Concentration can last longer with a spell slot of level 5 (up to 10 minutes), 6 (up to 1 hour), or 7+ (up to 8 hours).",
     "visual_style": "enchantment",
     "transient_seconds": 5,
-    "range_feet": 60
+    "range_feet": 60,
+    "condition_inflict": [
+      "charmed"
+    ],
+    "saving_throw": [
+      "wisdom"
+    ],
+    "misc_tags": [
+      "SGT"
+    ]
   },
   "dominate_monster": {
     "id": "dominate_monster",
@@ -3330,7 +4195,16 @@ const SPELLS: Dictionary = {
     "higher_levels": "Using a Higher-Level Spell Slot: Your Concentration can last longer with a level 9 spell slot (up to 8 hours).",
     "visual_style": "enchantment",
     "transient_seconds": 5,
-    "range_feet": 60
+    "range_feet": 60,
+    "condition_inflict": [
+      "charmed"
+    ],
+    "saving_throw": [
+      "wisdom"
+    ],
+    "misc_tags": [
+      "SGT"
+    ]
   },
   "dominate_person": {
     "id": "dominate_person",
@@ -3353,7 +4227,16 @@ const SPELLS: Dictionary = {
     "higher_levels": "Using a Higher-Level Spell Slot: Your Concentration can last longer with a spell slot of level 6 (up to 10 minutes), 7 (up to 1 hour), or 8+ (up to 8 hours).",
     "visual_style": "enchantment",
     "transient_seconds": 5,
-    "range_feet": 60
+    "range_feet": 60,
+    "condition_inflict": [
+      "charmed"
+    ],
+    "saving_throw": [
+      "wisdom"
+    ],
+    "misc_tags": [
+      "SGT"
+    ]
   },
   "doomtide": {
     "id": "doomtide",
@@ -3380,7 +4263,12 @@ const SPELLS: Dictionary = {
     "aoe_shape": "sphere",
     "aoe_radius_feet": 20,
     "range_feet": 120,
-    "persistent": true
+    "persistent": true,
+    "condition_inflict": [],
+    "saving_throw": [
+      "wisdom"
+    ],
+    "misc_tags": []
   },
   "draconic_transformation": {
     "id": "draconic_transformation",
@@ -3427,7 +4315,12 @@ const SPELLS: Dictionary = {
     "aoe_length_cells": 3,
     "direction_limit_feet": 15,
     "show_range_preview": false,
-    "persistent": true
+    "persistent": true,
+    "condition_inflict": [],
+    "saving_throw": [
+      "dexterity"
+    ],
+    "misc_tags": []
   },
   "drawmijs_instant_summons": {
     "id": "drawmijs_instant_summons",
@@ -3445,7 +4338,13 @@ const SPELLS: Dictionary = {
       "Wizard"
     ],
     "description": "You touch the sapphire used in the casting and an object weighing 10 pounds or less whose longest dimension is 6 feet or less. The spell leaves an Invisible mark on that object and invisibly inscribes the object's name on the sapphire. Each time you cast this spell, you must use a different sapphire. Thereafter, you can take a Magic action to speak the object's name and crush the sapphire. The object instantly appears in your hand regardless of physical or planar distances, and the spell ends. If another creature is holding or carrying the object, crushing the sapphire doesn't transport it, but instead you learn who that creature is and where that creature is currently located.",
-    "higher_levels": ""
+    "higher_levels": "",
+    "condition_inflict": [],
+    "saving_throw": [],
+    "misc_tags": [
+      "OBJ",
+      "UA"
+    ]
   },
   "dream": {
     "id": "dream",
@@ -3465,7 +4364,12 @@ const SPELLS: Dictionary = {
       "Wizard"
     ],
     "description": "You target a creature you know on the same plane of existence. You or a willing creature you touch enters a trance state to act as a dream messenger. While in the trance, the messenger is Incapacitated and has a Speed of 0. If the target is asleep, the messenger appears in the target's dreams and can converse with the target as long as it remains asleep, through the spell's duration. The messenger can also shape the dream's environment, creating landscapes, objects, and other images. The messenger can emerge from the trance at any time, ending the spell. The target recalls the dream perfectly upon waking. If the target is awake when you cast the spell, the messenger knows it and can either end the trance (and the spell) or wait for the target to sleep, at which point the messenger enters its dreams. You can make the messenger terrifying to the target. If you do so, the messenger can deliver a message of no more than ten words, and then the target makes a Wisdom saving throw. On a failed save, the target gains no benefit from its rest, and it takes 3d6 Psychic damage when it wakes up.",
-    "higher_levels": ""
+    "higher_levels": "",
+    "condition_inflict": [],
+    "saving_throw": [
+      "wisdom"
+    ],
+    "misc_tags": []
   },
   "dream_of_the_blue_veil": {
     "id": "dream_of_the_blue_veil",
@@ -3486,7 +4390,15 @@ const SPELLS: Dictionary = {
       "Wizard"
     ],
     "description": "You and up to eight willing creatures within range fall unconscious for the spell's duration and experience visions of another world on the Material Plane, such as Oerth, Toril, Krynn, or Eberron. If the spell reaches its full duration, the visions conclude with each of you encountering and pulling back a mysterious blue curtain. The spell then ends with you mentally and physically transported to the world that was in the visions. To cast this spell, you must have a magic item that originated on the world you wish to reach, and you must be aware of the world's existence, even if you don't know the world's name. Your destination in the other world is a safe location within 1 mile of where the magic item was created. Alternatively, you can cast the spell if one of the affected creatures was born on the other world, which causes your destination to be a safe location within 1 mile of where that creature was born. The spell ends early on a creature if that creature takes any damage, and the creature isn't transported. If you take any damage, the spell ends for you and all the other creatures, with none of you being transported.",
-    "higher_levels": ""
+    "higher_levels": "",
+    "condition_inflict": [
+      "unconscious"
+    ],
+    "saving_throw": [],
+    "misc_tags": [
+      "PS",
+      "TP"
+    ]
   },
   "druid_grove": {
     "id": "druid_grove",
@@ -3511,7 +4423,15 @@ const SPELLS: Dictionary = {
     "aoe_shape": "cube",
     "aoe_side_feet": 30,
     "range_feet": 5,
-    "persistent": true
+    "persistent": true,
+    "condition_inflict": [],
+    "saving_throw": [],
+    "misc_tags": [
+      "OBS",
+      "PIR",
+      "PRM",
+      "SMN"
+    ]
   },
   "druidcraft": {
     "id": "druidcraft",
@@ -3529,7 +4449,13 @@ const SPELLS: Dictionary = {
       "Druid"
     ],
     "description": "Whispering to the spirits of nature, you create one of the following effects within range. Weather Sensor: You create a Tiny, harmless sensory effect that predicts what the weather will be at your location for the next 24 hours. The effect might manifest as a golden orb for clear skies, a cloud for rain, falling snowflakes for snow, and so on. This effect persists for 1 round. Bloom: You instantly make a flower blossom, a seed pod open, or a leaf bud bloom. Sensory Effect: You create a harmless sensory effect, such as falling leaves, spectral dancing fairies, a gentle breeze, the sound of an animal, or the faint odor of skunk. The effect must fit in a 5-foot Cube. Fire Play: You light or snuff out a candle, a torch, or a campfire.",
-    "higher_levels": ""
+    "higher_levels": "",
+    "condition_inflict": [],
+    "saving_throw": [],
+    "misc_tags": [
+      "BO",
+      "OBJ"
+    ]
   },
   "dueling_ground": {
     "id": "dueling_ground",
@@ -3575,7 +4501,17 @@ const SPELLS: Dictionary = {
       "Wizard"
     ],
     "description": "Choose an unoccupied 5-foot cube of air that you can see within range. An elemental force that resembles a dust devil appears in the cube and lasts for the spell's duration. Any creature that ends its turn within 5 feet of the dust devil must make a Strength saving throw. On a failed save, the creature takes 1d8 bludgeoning damage and is pushed 10 feet away from the dust devil. On a successful save, the creature takes half as much damage and isn't pushed. As a bonus action, you can move the dust devil up to 30 feet in any direction. If the dust devil moves over sand, dust, loose dirt, or light gravel, it sucks up the material and forms a 10-foot-radius cloud of debris around itself that lasts until the start of your next turn. The cloud heavily obscures its area.",
-    "higher_levels": "At Higher Levels: When you cast this spell using a spell slot of 3rd level or higher, the damage increases by 1d8 for each slot level above 2nd."
+    "higher_levels": "At Higher Levels: When you cast this spell using a spell slot of 3rd level or higher, the damage increases by 1d8 for each slot level above 2nd.",
+    "condition_inflict": [],
+    "saving_throw": [
+      "strength"
+    ],
+    "misc_tags": [
+      "FMV",
+      "SGT",
+      "UA",
+      "UBA"
+    ]
   },
   "earth_tremor": {
     "id": "earth_tremor",
@@ -3596,7 +4532,16 @@ const SPELLS: Dictionary = {
       "Wizard"
     ],
     "description": "You cause a tremor in the ground within range. Each creature other than you in that area must make a Dexterity saving throw. On a failed save, a creature takes 1d6 bludgeoning damage and is knocked prone. If the ground in that area is loose earth or stone, it becomes 3 until cleared, with each 5-foot-diameter portion requiring at least 1 minute to clear by hand.",
-    "higher_levels": "At Higher Levels: When you cast this spell using a spell slot of 2nd level or higher, the damage increases by 1d6 for each slot level above 1st."
+    "higher_levels": "At Higher Levels: When you cast this spell using a spell slot of 2nd level or higher, the damage increases by 1d6 for each slot level above 1st.",
+    "condition_inflict": [
+      "prone"
+    ],
+    "saving_throw": [
+      "dexterity"
+    ],
+    "misc_tags": [
+      "DFT"
+    ]
   },
   "earthbind": {
     "id": "earthbind",
@@ -3620,7 +4565,14 @@ const SPELLS: Dictionary = {
     "higher_levels": "",
     "visual_style": "arcane",
     "transient_seconds": 5,
-    "range_feet": 300
+    "range_feet": 300,
+    "condition_inflict": [],
+    "saving_throw": [
+      "strength"
+    ],
+    "misc_tags": [
+      "SGT"
+    ]
   },
   "earthquake": {
     "id": "earthquake",
@@ -3640,7 +4592,18 @@ const SPELLS: Dictionary = {
       "Sorcerer"
     ],
     "description": "Choose a point on the ground that you can see within range. For the duration, an intense tremor rips through the ground in a 100-foot-radius circle centered on that point. The ground there is Difficult Terrain. When you cast this spell and at the end of each of your turns for the duration, each creature on the ground in the area makes a Dexterity saving throw. On a failed save, a creature has the Prone condition, and its Concentration is broken. You can also cause the effects below. Fissures: A total of 1d6 fissures open in the spell's area at the end of the turn you cast it. You choose the fissures' locations, which can't be under structures. Each fissure is 1d10 × 10 feet deep and 10 feet wide, and it extends from one edge of the spell's area to another edge. A creature in the same space as a fissure must succeed on a Dexterity saving throw or fall in. A creature that successfully saves moves with the fissure's edge as it opens. Structures: The tremor deals 50 Bludgeoning damage to any structure in contact with the ground in the area when you cast the spell and at the end of each of your turns until the spell ends. If a structure drops to 0 Hit Points, it collapses. A creature within a distance from a collapsing structure equal to half the structure's height makes a Dexterity saving throw. On a failed save, the creature takes 12d6 Bludgeoning damage, has the Prone condition, and is buried in the rubble, requiring a 20 Strength (Athletics) check as an action to escape. On a successful save, the creature takes half as much damage only.",
-    "higher_levels": ""
+    "higher_levels": "",
+    "condition_inflict": [
+      "prone"
+    ],
+    "saving_throw": [
+      "constitution",
+      "dexterity"
+    ],
+    "misc_tags": [
+      "DFT",
+      "SGT"
+    ]
   },
   "eldritch_blast": {
     "id": "eldritch_blast",
@@ -3665,7 +4628,12 @@ const SPELLS: Dictionary = {
     "range_feet": 120,
     "level17_damage": "4d10 Force",
     "projectile_style": "eldritch_blast",
-    "projectile_travel_seconds": 0.65
+    "projectile_travel_seconds": 0.65,
+    "condition_inflict": [],
+    "saving_throw": [],
+    "misc_tags": [
+      "SCL"
+    ]
   },
   "elemental_bane": {
     "id": "elemental_bane",
@@ -3695,7 +4663,15 @@ const SPELLS: Dictionary = {
     "allow_repeat_targets": false,
     "target_clicks_per_slot_above_base": 1,
     "projectile_style": "elemental_bane",
-    "projectile_travel_seconds": 0.65
+    "projectile_travel_seconds": 0.65,
+    "condition_inflict": [],
+    "saving_throw": [
+      "constitution"
+    ],
+    "misc_tags": [
+      "SCT",
+      "SGT"
+    ]
   },
   "elemental_weapon": {
     "id": "elemental_weapon",
@@ -3716,7 +4692,12 @@ const SPELLS: Dictionary = {
       "Ranger"
     ],
     "description": "A nonmagical weapon you touch becomes a magic weapon. Choose one of the following damage types: Acid, Cold, Fire, Lightning, or Thunder. For the duration, the weapon has a +1 bonus to attack rolls and deals an extra 1d4 damage of the chosen type when it hits.",
-    "higher_levels": "Using a Higher-Level Spell Slot: If you use a level 5-6 spell slot, the bonus to attack rolls increases to +2, and the extra damage increases to 2d4. If you use a level 7+ spell slot, the bonus increases to +3, and the extra damage increases to 3d4."
+    "higher_levels": "Using a Higher-Level Spell Slot: If you use a level 5-6 spell slot, the bonus to attack rolls increases to +2, and the extra damage increases to 2d4. If you use a level 7+ spell slot, the bonus increases to +3, and the extra damage increases to 3d4.",
+    "condition_inflict": [],
+    "saving_throw": [],
+    "misc_tags": [
+      "AAD"
+    ]
   },
   "elementalism": {
     "id": "elementalism",
@@ -3742,7 +4723,13 @@ const SPELLS: Dictionary = {
     "transient_seconds": 5,
     "aoe_shape": "cube",
     "aoe_side_feet": 5,
-    "range_feet": 30
+    "range_feet": 30,
+    "condition_inflict": [],
+    "saving_throw": [],
+    "misc_tags": [
+      "BO",
+      "OBJ"
+    ]
   },
   "elminsters_effulgent_spheres": {
     "id": "elminsters_effulgent_spheres",
@@ -3762,7 +4749,13 @@ const SPELLS: Dictionary = {
       "Wizard"
     ],
     "description": "Six chromatic spheres orbit you for the duration. While the spheres are present, you can expend spheres to create the following effects: Absorb Energy: When you take Acid, Cold, Fire, Lightning, or Thunder damage, you can take a Reaction to expend one sphere and give yourself Resistance to the triggering damage type until the start of your next turn. Energy Blast: As a Bonus Action, you send one sphere hurtling toward a target within 120 feet of yourself. Make a ranged spell attack. On a hit, the target takes 3d6 Acid, Cold, Fire, Lightning, or Thunder damage (your choice). Regardless of whether you hit, the sphere is expended. The spell ends early if you have no more spheres remaining.",
-    "higher_levels": "Using a Higher-Level Spell Slot: The number of spheres increases by 1 for every spell slot level above 6."
+    "higher_levels": "Using a Higher-Level Spell Slot: The number of spheres increases by 1 for every spell slot level above 6.",
+    "condition_inflict": [],
+    "saving_throw": [],
+    "misc_tags": [
+      "UA",
+      "UBA"
+    ]
   },
   "elminsters_elusion": {
     "id": "elminsters_elusion",
@@ -3780,7 +4773,12 @@ const SPELLS: Dictionary = {
       "Wizard"
     ],
     "description": "Arcane wards protect you against magic for the duration. You have Advantage on saving throws against spells and magical effects. Additionally, if you succeed on a saving throw against a spell or magical effect and would normally take half as much damage, you instead take no damage.",
-    "higher_levels": ""
+    "higher_levels": "",
+    "condition_inflict": [],
+    "saving_throw": [],
+    "misc_tags": [
+      "ADV"
+    ]
   },
   "encode_thoughts": {
     "id": "encode_thoughts",
@@ -3820,7 +4818,14 @@ const SPELLS: Dictionary = {
     "higher_levels": "",
     "visual_style": "arcane",
     "transient_seconds": 5,
-    "range_feet": 120
+    "range_feet": 120,
+    "condition_inflict": [],
+    "saving_throw": [
+      "intelligence"
+    ],
+    "misc_tags": [
+      "SGT"
+    ]
   },
   "enervation": {
     "id": "enervation",
@@ -3868,7 +4873,13 @@ const SPELLS: Dictionary = {
     "higher_levels": "Using a Higher-Level Spell Slot: You can target one additional creature for each spell slot level above 2. You can choose a different ability for each target.",
     "visual_style": "arcane",
     "transient_seconds": 5,
-    "range_feet": 5
+    "range_feet": 5,
+    "condition_inflict": [],
+    "saving_throw": [],
+    "misc_tags": [
+      "ADV",
+      "SCT"
+    ]
   },
   "enlarge_reduce": {
     "id": "enlarge_reduce",
@@ -3893,7 +4904,16 @@ const SPELLS: Dictionary = {
     "higher_levels": "",
     "visual_style": "arcane",
     "transient_seconds": 5,
-    "range_feet": 30
+    "range_feet": 30,
+    "condition_inflict": [],
+    "saving_throw": [
+      "constitution"
+    ],
+    "misc_tags": [
+      "ADV",
+      "OBJ",
+      "SGT"
+    ]
   },
   "ensnaring_strike": {
     "id": "ensnaring_strike",
@@ -3911,7 +4931,14 @@ const SPELLS: Dictionary = {
       "Ranger"
     ],
     "description": "As you hit the target, grasping vines appear on it, and it makes a Strength saving throw. A Large or larger creature has Advantage on this save. On a failed save, the target has the Restrained condition until the spell ends. On a successful save, the vines shrivel away, and the spell ends. While Restrained, the target takes 1d6 Piercing damage at the start of each of its turns. The target or a creature within reach of it can take an action to make a Strength (Athletics) check against your spell save DC. On a success, the spell ends.",
-    "higher_levels": "Using a Higher-Level Spell Slot: The damage increases by 1d6 for each spell slot level above 1."
+    "higher_levels": "Using a Higher-Level Spell Slot: The damage increases by 1d6 for each spell slot level above 1.",
+    "condition_inflict": [
+      "restrained"
+    ],
+    "saving_throw": [
+      "strength"
+    ],
+    "misc_tags": []
   },
   "entangle": {
     "id": "entangle",
@@ -3937,7 +4964,16 @@ const SPELLS: Dictionary = {
     "aoe_shape": "flat_square",
     "aoe_side_feet": 20,
     "requires_ground": true,
-    "range_feet": 90
+    "range_feet": 90,
+    "condition_inflict": [
+      "restrained"
+    ],
+    "saving_throw": [
+      "strength"
+    ],
+    "misc_tags": [
+      "DFT"
+    ]
   },
   "enthrall": {
     "id": "enthrall",
@@ -3962,7 +4998,14 @@ const SPELLS: Dictionary = {
     "target_mode": "token_then_multi_token",
     "range_feet": 60,
     "projectile_style": "enthrall",
-    "projectile_travel_seconds": 0.65
+    "projectile_travel_seconds": 0.65,
+    "condition_inflict": [],
+    "saving_throw": [
+      "wisdom"
+    ],
+    "misc_tags": [
+      "SGT"
+    ]
   },
   "entrancing_mirrors": {
     "id": "entrancing_mirrors",
@@ -4011,7 +5054,15 @@ const SPELLS: Dictionary = {
     "transient_seconds": 5,
     "aoe_shape": "cube",
     "aoe_side_feet": 20,
-    "range_feet": 120
+    "range_feet": 120,
+    "condition_inflict": [],
+    "saving_throw": [
+      "dexterity"
+    ],
+    "misc_tags": [
+      "DFT",
+      "SGT"
+    ]
   },
   "etherealness": {
     "id": "etherealness",
@@ -4033,7 +5084,13 @@ const SPELLS: Dictionary = {
       "Wizard"
     ],
     "description": "You step into the border regions of the Ethereal Plane, where it overlaps with your current plane. You remain in the Border Ethereal for the duration. During this time, you can move in any direction. If you move up or down, every foot of movement costs an extra foot. You can perceive the plane you left, which looks gray, and you can't see anything there more than 60 feet away. While on the Ethereal Plane, you can affect and be affected only by creatures, objects, and effects on that plane. Creatures that aren't on the Ethereal Plane can't perceive or interact with you unless a feature gives them the ability to do so. When the spell ends, you return to the plane you left in the spot that corresponds to your space in the Border Ethereal. If you appear in an occupied space, you are shunted to the nearest unoccupied space and take Force damage equal to twice the number of feet you are moved. This spell ends instantly if you cast it while you are on the Ethereal Plane or a plane that doesn't border it, such as one of the Outer Planes.",
-    "higher_levels": "Using a Higher-Level Spell Slot: You can target up to three willing creatures (including yourself) for each spell slot level above 7. The creatures must be within 10 feet of you when you cast the spell."
+    "higher_levels": "Using a Higher-Level Spell Slot: You can target up to three willing creatures (including yourself) for each spell slot level above 7. The creatures must be within 10 feet of you when you cast the spell.",
+    "condition_inflict": [],
+    "saving_throw": [],
+    "misc_tags": [
+      "PS",
+      "SCT"
+    ]
   },
   "evards_black_tentacles": {
     "id": "evards_black_tentacles",
@@ -4059,7 +5116,17 @@ const SPELLS: Dictionary = {
     "aoe_side_feet": 20,
     "requires_ground": true,
     "range_feet": 90,
-    "persistent": true
+    "persistent": true,
+    "condition_inflict": [
+      "restrained"
+    ],
+    "saving_throw": [
+      "strength"
+    ],
+    "misc_tags": [
+      "DFT",
+      "SGT"
+    ]
   },
   "expeditious_retreat": {
     "id": "expeditious_retreat",
@@ -4080,7 +5147,12 @@ const SPELLS: Dictionary = {
       "Wizard"
     ],
     "description": "You take the Dash action, and until the spell ends, you can take that action again as a Bonus Action.",
-    "higher_levels": ""
+    "higher_levels": "",
+    "condition_inflict": [],
+    "saving_throw": [],
+    "misc_tags": [
+      "UBA"
+    ]
   },
   "eyebite": {
     "id": "eyebite",
@@ -4101,7 +5173,18 @@ const SPELLS: Dictionary = {
       "Wizard"
     ],
     "description": "For the duration, your eyes become an inky void. One creature of your choice within 60 feet of you that you can see must succeed on a Wisdom saving throw or be affected by one of the following effects of your choice for the duration. On each of your turns until the spell ends, you can take a Magic action to target another creature but can't target a creature again if it has succeeded on a save against this casting of the spell. Asleep: The target has the Unconscious condition. It wakes up if it takes any damage or if another creature takes an action to shake it awake. Panicked: The target has the Frightened condition. On each of its turns, the Frightened target must take the Dash action and move away from you by the safest and shortest route available. If the target moves to a space at least 60 feet away from you where it can't see you, this effect ends. Sickened: The target has the Poisoned condition.",
-    "higher_levels": ""
+    "higher_levels": "",
+    "condition_inflict": [
+      "frightened",
+      "unconscious"
+    ],
+    "saving_throw": [
+      "wisdom"
+    ],
+    "misc_tags": [
+      "SGT",
+      "UA"
+    ]
   },
   "fabricate": {
     "id": "fabricate",
@@ -4120,7 +5203,14 @@ const SPELLS: Dictionary = {
       "Wizard"
     ],
     "description": "You convert raw materials into products of the same material. For example, you can fabricate a wooden bridge from a clump of trees, a rope from a patch of hemp, or clothes from flax or wool. Choose raw materials that you can see within range. You can fabricate a Large or smaller object (contained within a 10-foot Cube or eight connected 5-foot Cubes) given a sufficient quantity of material. If you're working with metal, stone, or another mineral substance, however, the fabricated object can be no larger than Medium (contained within a 5-foot Cube). The quality of any fabricated objects is based on the quality of the raw materials. Creatures and magic items can't be created by this spell. You also can't use it to create items that require a high degree of skill—such as weapons and armor—unless you have proficiency with the type of Artisan's Tools used to craft such objects.",
-    "higher_levels": ""
+    "higher_levels": "",
+    "condition_inflict": [],
+    "saving_throw": [],
+    "misc_tags": [
+      "OBJ",
+      "PRM",
+      "SGT"
+    ]
   },
   "faerie_fire": {
     "id": "faerie_fire",
@@ -4147,7 +5237,15 @@ const SPELLS: Dictionary = {
     "aoe_shape": "cube",
     "aoe_side_feet": 20,
     "range_feet": 60,
-    "persistent": true
+    "persistent": true,
+    "condition_inflict": [],
+    "saving_throw": [
+      "dexterity"
+    ],
+    "misc_tags": [
+      "ADV",
+      "LGT"
+    ]
   },
   "false_life": {
     "id": "false_life",
@@ -4167,7 +5265,12 @@ const SPELLS: Dictionary = {
       "Wizard"
     ],
     "description": "You gain 2d4 + 4 Temporary Hit Points.",
-    "higher_levels": "Using a Higher-Level Spell Slot: You gain 5 additional Temporary Hit Points for each spell slot level above 1."
+    "higher_levels": "Using a Higher-Level Spell Slot: You gain 5 additional Temporary Hit Points for each spell slot level above 1.",
+    "condition_inflict": [],
+    "saving_throw": [],
+    "misc_tags": [
+      "THP"
+    ]
   },
   "far_step": {
     "id": "far_step",
@@ -4187,7 +5290,14 @@ const SPELLS: Dictionary = {
       "Wizard"
     ],
     "description": "You teleport up to 60 feet to an unoccupied space you can see. On each of your turns before the spell ends, you can use a bonus action to teleport in this way again.",
-    "higher_levels": ""
+    "higher_levels": "",
+    "condition_inflict": [],
+    "saving_throw": [],
+    "misc_tags": [
+      "SGT",
+      "TP",
+      "UBA"
+    ]
   },
   "fast_friends": {
     "id": "fast_friends",
@@ -4237,7 +5347,14 @@ const SPELLS: Dictionary = {
       "Wizard"
     ],
     "description": "Each creature in a 30-foot Cone must succeed on a Wisdom saving throw or drop whatever it is holding and have the Frightened condition for the duration. A Frightened creature takes the Dash action and moves away from you by the safest route on each of its turns unless there is nowhere to move. If the creature ends its turn in a space where it doesn't have line of sight to you, the creature makes a Wisdom saving throw. On a successful save, the spell ends on that creature.",
-    "higher_levels": ""
+    "higher_levels": "",
+    "condition_inflict": [
+      "frightened"
+    ],
+    "saving_throw": [
+      "wisdom"
+    ],
+    "misc_tags": []
   },
   "feather_fall": {
     "id": "feather_fall",
@@ -4261,7 +5378,10 @@ const SPELLS: Dictionary = {
     "higher_levels": "",
     "visual_style": "arcane",
     "transient_seconds": 5,
-    "range_feet": 60
+    "range_feet": 60,
+    "condition_inflict": [],
+    "saving_throw": [],
+    "misc_tags": []
   },
   "feeblemind": {
     "id": "feeblemind",
@@ -4288,7 +5408,14 @@ const SPELLS: Dictionary = {
     "target_mode": "token_then_token",
     "range_feet": 150,
     "projectile_style": "feeblemind",
-    "projectile_travel_seconds": 0.65
+    "projectile_travel_seconds": 0.65,
+    "condition_inflict": [],
+    "saving_throw": [
+      "intelligence"
+    ],
+    "misc_tags": [
+      "SGT"
+    ]
   },
   "feign_death": {
     "id": "feign_death",
@@ -4315,7 +5442,13 @@ const SPELLS: Dictionary = {
     "target_mode": "token_then_token",
     "range_feet": 5,
     "projectile_style": "feign_death",
-    "projectile_travel_seconds": 0.65
+    "projectile_travel_seconds": 0.65,
+    "condition_inflict": [
+      "blinded",
+      "incapacitated"
+    ],
+    "saving_throw": [],
+    "misc_tags": []
   },
   "festering_blast": {
     "id": "festering_blast",
@@ -4361,7 +5494,14 @@ const SPELLS: Dictionary = {
       "Wizard"
     ],
     "description": "You gain the service of a familiar, a spirit that takes an animal form you choose: Bat, Cat, Frog, Hawk, Lizard, Octopus, Owl, Rat, Raven, Spider, Weasel, or another Beast that has a challenge rating=[&0]. Appearing in an unoccupied space within range, the familiar has the statistics of the chosen form, though it is a Celestial, Fey, or Fiend (your choice) instead of a Beast. Your familiar acts independently of you, but it obeys your commands. Telepathic Connection: While your familiar is within 100 feet of you, you can communicate with it telepathically. Additionally, as a Bonus Action, you can see through the familiar's eyes and hear what it hears until the start of your next turn, gaining the benefits of any special senses it has. Finally, when you cast a spell with a range of touch, your familiar can deliver the touch. Your familiar must be within 100 feet of you, and it must take a Reaction to deliver the touch when you cast the spell. Combat: The familiar is an ally to you and your allies. It rolls its own Initiative and acts on its own turn. A familiar can't attack, but it can take other actions as normal. Disappearance of the Familiar: When the familiar drops to 0 Hit Points, it disappears. It reappears after you cast this spell again. As a Magic action, you can temporarily dismiss the familiar to a pocket dimension. Alternatively, you can dismiss it forever. As a Magic action while it is temporarily dismissed, you can cause it to reappear in an unoccupied space within 30 feet of you. Whenever the familiar drops to 0 Hit Points or disappears into the pocket dimension, it leaves behind in its space anything it was wearing or carrying. One Familiar Only: You can't have more than one familiar at a time. If you cast this spell while you have a familiar, you instead cause it to adopt a new eligible form.",
-    "higher_levels": ""
+    "higher_levels": "",
+    "condition_inflict": [],
+    "saving_throw": [],
+    "misc_tags": [
+      "PRM",
+      "SMN",
+      "UA"
+    ]
   },
   "find_greater_steed": {
     "id": "find_greater_steed",
@@ -4379,7 +5519,14 @@ const SPELLS: Dictionary = {
       "Paladin"
     ],
     "description": "You summon a spirit that assumes the form of a loyal, majestic mount. Appearing in an unoccupied space within range, the spirit takes on a form you choose: a griffon, a pegasus, a peryton, a dire wolf, a rhinoceros, or a saber-toothed tiger. The creature has the statistics provided in the Monster Manual for the chosen form, though it is a celestial, a fey, or a fiend (your choice) instead of its normal creature type. Additionally, if it has an Intelligence score of 5 or lower, its Intelligence becomes 6, and it gains the ability to understand one language of your choice that you speak. You control the mount in combat. While the mount is within 1 mile of you, you can communicate with it telepathically. While mounted on it, you can make any spell you cast that targets only you also target the mount. The mount disappears temporarily when it drops to 0 hit points or when you dismiss it as an action. Casting this spell again re-summons the bonded mount, with all its hit points restored and any conditions removed. You can't have more than one mount bonded by this spell or find steed at the same time. As an action, you can release a mount from its bond, causing it to disappear permanently. Whenever the mount disappears, it leaves behind any objects it was wearing or carrying. Dragonnel Steeds: With the DM's permission, a paladin can summon a spirit in the form of a dragonnel using the find greater steed spell, which appears in Xanathar's Guide to Everything.",
-    "higher_levels": ""
+    "higher_levels": "",
+    "condition_inflict": [],
+    "saving_throw": [],
+    "misc_tags": [
+      "PRM",
+      "SMN",
+      "UA"
+    ]
   },
   "find_steed": {
     "id": "find_steed",
@@ -4397,7 +5544,13 @@ const SPELLS: Dictionary = {
       "Paladin"
     ],
     "description": "You summon an otherworldly being that appears as a loyal steed in an unoccupied space of your choice within range. This creature uses the Otherworldly Steed stat block. If you already have a steed from this spell, the steed is replaced by the new one. The steed resembles a Large, rideable animal of your choice, such as a horse, a camel, a dire wolf, or an elk. Whenever you cast the spell, choose the steed's creature type—Celestial, Fey, or Fiend—which determines certain traits in the stat block. Combat: The steed is an ally to you and your allies. In combat, it shares your Initiative count, and it functions as a controlled mount while you ride it (as defined in the rules on 1). If you have the Incapacitated condition, the steed takes its turn immediately after yours and acts independently, focusing on protecting you. Disappearance of the Steed: The steed disappears if it drops to 0 Hit Points or if you die. When it disappears, it leaves behind anything it was wearing or carrying. If you cast this spell again, you decide whether you summon the steed that disappeared or a different one.",
-    "higher_levels": "Using a Higher-Level Spell Slot: Use the spell slot's level for the spell's level in the stat block."
+    "higher_levels": "Using a Higher-Level Spell Slot: Use the spell slot's level for the spell's level in the stat block.",
+    "condition_inflict": [],
+    "saving_throw": [],
+    "misc_tags": [
+      "PRM",
+      "SMN"
+    ]
   },
   "find_the_path": {
     "id": "find_the_path",
@@ -4417,7 +5570,10 @@ const SPELLS: Dictionary = {
       "Druid"
     ],
     "description": "You magically sense the most direct physical route to a location you name. You must be familiar with the location, and the spell fails if you name a destination on another plane of existence, a moving destination (such as a mobile fortress), or an unspecific destination (such as \"a green dragon's lair\"). For the duration, as long as you are on the same plane of existence as the destination, you know how far it is and in what direction it lies. Whenever you face a choice of paths along the way there, you know which path is the most direct.",
-    "higher_levels": ""
+    "higher_levels": "",
+    "condition_inflict": [],
+    "saving_throw": [],
+    "misc_tags": []
   },
   "find_traps": {
     "id": "find_traps",
@@ -4437,7 +5593,12 @@ const SPELLS: Dictionary = {
       "Ranger"
     ],
     "description": "You sense any trap within range that is within line of sight. A trap, for the purpose of this spell, includes any object or mechanism that was created to cause damage or other danger. Thus, the spell would sense the Alarm or Glyph of Warding spell or a mechanical pit trap, but it wouldn't reveal a natural weakness in the floor, an unstable ceiling, or a hidden sinkhole. This spell reveals that a trap is present but not its location. You do learn the general nature of the danger posed by a trap you sense.",
-    "higher_levels": ""
+    "higher_levels": "",
+    "condition_inflict": [],
+    "saving_throw": [],
+    "misc_tags": [
+      "SGT"
+    ]
   },
   "finger_of_death": {
     "id": "finger_of_death",
@@ -4460,7 +5621,16 @@ const SPELLS: Dictionary = {
     "higher_levels": "",
     "visual_style": "necrotic",
     "transient_seconds": 5,
-    "range_feet": 60
+    "range_feet": 60,
+    "condition_inflict": [],
+    "saving_throw": [
+      "constitution"
+    ],
+    "misc_tags": [
+      "PRM",
+      "SGT",
+      "SMN"
+    ]
   },
   "fire_bolt": {
     "id": "fire_bolt",
@@ -4485,7 +5655,14 @@ const SPELLS: Dictionary = {
     "target_mode": "token_then_token",
     "projectile_style": "fire_bolt",
     "projectile_travel_seconds": 0.65,
-    "allow_point_target": true
+    "allow_point_target": true,
+    "condition_inflict": [],
+    "saving_throw": [],
+    "misc_tags": [
+      "BO",
+      "OBJ",
+      "SCL"
+    ]
   },
   "fire_shield": {
     "id": "fire_shield",
@@ -4505,7 +5682,12 @@ const SPELLS: Dictionary = {
       "Wizard"
     ],
     "description": "Wispy flames wreathe your body for the duration, shedding Bright Light in a 10-foot radius and Dim Light for an additional 10 feet. The flames provide you with a warm shield or a chill shield, as you choose. The warm shield grants you Resistance to Cold damage, and the chill shield grants you Resistance to Fire damage. In addition, whenever a creature within 5 feet of you hits you with a melee attack roll, the shield erupts with flame. The attacker takes 2d8 Fire damage from a warm shield or 2d8 Cold damage from a chill shield.",
-    "higher_levels": ""
+    "higher_levels": "",
+    "condition_inflict": [],
+    "saving_throw": [],
+    "misc_tags": [
+      "LGT"
+    ]
   },
   "fire_storm": {
     "id": "fire_storm",
@@ -4530,7 +5712,15 @@ const SPELLS: Dictionary = {
     "transient_seconds": 5,
     "aoe_shape": "cube",
     "aoe_side_feet": 10,
-    "range_feet": 150
+    "range_feet": 150,
+    "condition_inflict": [],
+    "saving_throw": [
+      "dexterity"
+    ],
+    "misc_tags": [
+      "BO",
+      "OBJ"
+    ]
   },
   "fireball": {
     "id": "fireball",
@@ -4549,7 +5739,15 @@ const SPELLS: Dictionary = {
       "Wizard"
     ],
     "description": "A bright streak flashes from you to a point you choose within range and then blossoms with a low roar into a fiery explosion. Each creature in a 20-foot-radius Sphere centered on that point makes a Dexterity saving throw, taking 8d6 Fire damage on a failed save or half as much damage on a successful one. Flammable objects in the area that aren't being worn or carried start burning.",
-    "higher_levels": "Using a Higher-Level Spell Slot: The damage increases by 1d6 for each spell slot level above 3."
+    "higher_levels": "Using a Higher-Level Spell Slot: The damage increases by 1d6 for each spell slot level above 3.",
+    "condition_inflict": [],
+    "saving_throw": [
+      "dexterity"
+    ],
+    "misc_tags": [
+      "BO",
+      "OBJ"
+    ]
   },
   "fizbans_platinum_shield": {
     "id": "fizbans_platinum_shield",
@@ -4593,7 +5791,12 @@ const SPELLS: Dictionary = {
     "higher_levels": "At Higher Levels: When you cast this spell using a spell slot of 4th level or higher, the number of pieces of ammunition you can affect with this spell increases by two for each slot level above 3rd.",
     "visual_style": "fire",
     "transient_seconds": 5,
-    "range_feet": 5
+    "range_feet": 5,
+    "condition_inflict": [],
+    "saving_throw": [],
+    "misc_tags": [
+      "AAD"
+    ]
   },
   "flame_blade": {
     "id": "flame_blade",
@@ -4612,7 +5815,14 @@ const SPELLS: Dictionary = {
       "Sorcerer"
     ],
     "description": "You evoke a fiery blade in your free hand. The blade is similar in size and shape to a scimitar, and it lasts for the duration. If you let go of the blade, it disappears, but you can evoke it again as a Bonus Action. As a Magic action, you can make a melee spell attack with the fiery blade. On a hit, the target takes Fire damage equal to 3d6 plus your spellcasting ability modifier. The flaming blade sheds Bright Light in a 10-foot radius and Dim Light for an additional 10 feet.",
-    "higher_levels": "Using a Higher-Level Spell Slot: The damage increases by 1d6 for each spell slot level above 2."
+    "higher_levels": "Using a Higher-Level Spell Slot: The damage increases by 1d6 for each spell slot level above 2.",
+    "condition_inflict": [],
+    "saving_throw": [],
+    "misc_tags": [
+      "LGT",
+      "UA",
+      "UBA"
+    ]
   },
   "flame_strike": {
     "id": "flame_strike",
@@ -4637,7 +5847,12 @@ const SPELLS: Dictionary = {
     "aoe_shape": "cylinder",
     "aoe_radius_feet": 10,
     "aoe_height_feet": 40,
-    "range_feet": 60
+    "range_feet": 60,
+    "condition_inflict": [],
+    "saving_throw": [
+      "dexterity"
+    ],
+    "misc_tags": []
   },
   "flaming_sphere": {
     "id": "flaming_sphere",
@@ -4657,7 +5872,18 @@ const SPELLS: Dictionary = {
       "Wizard"
     ],
     "description": "You create a 5-foot-diameter sphere of fire in an unoccupied space on the ground within range. It lasts for the duration. Any creature that ends its turn within 5 feet of the sphere makes a Dexterity saving throw, taking 2d6 Fire damage on a failed save or half as much damage on a successful one. As a Bonus Action, you can move the sphere up to 30 feet, rolling it along the ground. If you move the sphere into a creature's space, that creature makes the save against the sphere, and the sphere stops moving for the turn. When you move the sphere, you can direct it over barriers up to 5 feet tall and jump it across pits up to 10 feet wide. Flammable objects that aren't being worn or carried start burning if touched by the sphere, and it sheds Bright Light in a 20-foot radius and Dim Light for an additional 20 feet.",
-    "higher_levels": "Using a Higher-Level Spell Slot: The damage increases by 1d6 for each spell slot level above 2."
+    "higher_levels": "Using a Higher-Level Spell Slot: The damage increases by 1d6 for each spell slot level above 2.",
+    "condition_inflict": [],
+    "saving_throw": [
+      "dexterity"
+    ],
+    "misc_tags": [
+      "BO",
+      "LGT",
+      "OBJ",
+      "UA",
+      "UBA"
+    ]
   },
   "flesh_to_stone": {
     "id": "flesh_to_stone",
@@ -4681,7 +5907,18 @@ const SPELLS: Dictionary = {
     "higher_levels": "",
     "visual_style": "arcane",
     "transient_seconds": 5,
-    "range_feet": 60
+    "range_feet": 60,
+    "condition_inflict": [
+      "petrified",
+      "restrained"
+    ],
+    "saving_throw": [
+      "constitution"
+    ],
+    "misc_tags": [
+      "PRM",
+      "SGT"
+    ]
   },
   "flock_of_familiars": {
     "id": "flock_of_familiars",
@@ -4724,7 +5961,12 @@ const SPELLS: Dictionary = {
     "higher_levels": "Using a Higher-Level Spell Slot: You can target one additional creature for each spell slot level above 3.",
     "visual_style": "arcane",
     "transient_seconds": 5,
-    "range_feet": 5
+    "range_feet": 5,
+    "condition_inflict": [],
+    "saving_throw": [],
+    "misc_tags": [
+      "SCT"
+    ]
   },
   "fog_cloud": {
     "id": "fog_cloud",
@@ -4745,7 +5987,12 @@ const SPELLS: Dictionary = {
       "Wizard"
     ],
     "description": "You create a 20-foot-radius Sphere of fog centered on a point within range. The Sphere is Heavily Obscured. It lasts for the duration or until a strong wind (such as one created by Gust of Wind) disperses it.",
-    "higher_levels": "Using a Higher-Level Spell Slot: The fog's radius increases by 20 feet for each spell slot level above 1."
+    "higher_levels": "Using a Higher-Level Spell Slot: The fog's radius increases by 20 feet for each spell slot level above 1.",
+    "condition_inflict": [],
+    "saving_throw": [],
+    "misc_tags": [
+      "OBS"
+    ]
   },
   "forbiddance": {
     "id": "forbiddance",
@@ -4763,7 +6010,13 @@ const SPELLS: Dictionary = {
       "Cleric"
     ],
     "description": "You create a ward against magical travel that protects up to 40,000 square feet of floor space to a height of 30 feet above the floor. For the duration, creatures can't teleport into the area or use portals, such as those created by the Gate spell, to enter the area. The spell proofs the area against planar travel, and therefore prevents creatures from accessing the area by way of the Astral Plane, the Ethereal Plane, the Feywild, the Shadowfell, or the Plane Shift spell. In addition, the spell damages types of creatures that you choose when you cast it. Choose one or more of the following: Aberrations, Celestials, Elementals, Fey, Fiends, and Undead. When a creature of a chosen type enters the spell's area for the first time on a turn or ends its turn there, the creature takes 5d10 Radiant or Necrotic damage (your choice when you cast this spell). You can designate a password when you cast the spell. A creature that speaks the password as it enters the area takes no damage from the spell. The spell's area can't overlap with the area of another Forbiddance spell. If you cast Forbiddance every day for 30 days in the same location, the spell lasts until it is dispelled, and the Material components are consumed on the last casting.",
-    "higher_levels": ""
+    "higher_levels": "",
+    "condition_inflict": [],
+    "saving_throw": [],
+    "misc_tags": [
+      "PIR",
+      "PRM"
+    ]
   },
   "forcecage": {
     "id": "forcecage",
@@ -4783,7 +6036,12 @@ const SPELLS: Dictionary = {
       "Wizard"
     ],
     "description": "An immobile, Invisible, Cube-shaped prison composed of magical force springs into existence around an area you choose within range. The prison can be a cage or a solid box, as you choose. A prison in the shape of a cage can be up to 20 feet on a side and is made from 1/2-inch diameter bars spaced 1/2 inch apart. A prison in the shape of a box can be up to 10 feet on a side, creating a solid barrier that prevents any matter from passing through it and blocking any spells cast into or out from the area. When you cast the spell, any creature that is completely inside the cage's area is trapped. Creatures only partially within the area, or those too large to fit inside it, are pushed away from the center of the area until they are completely outside it. A creature inside the cage can't leave it by nonmagical means. If the creature tries to use teleportation or interplanar travel to leave, it must first make a Charisma saving throw. On a successful save, the creature can use that magic to exit the cage. On a failed save, the creature doesn't exit the cage and wastes the spell or effect. The cage also extends into the Ethereal Plane, blocking ethereal travel. This spell can't be dispelled by Dispel Magic.",
-    "higher_levels": ""
+    "higher_levels": "",
+    "condition_inflict": [],
+    "saving_throw": [
+      "charisma"
+    ],
+    "misc_tags": []
   },
   "foresight": {
     "id": "foresight",
@@ -4810,7 +6068,12 @@ const SPELLS: Dictionary = {
     "target_mode": "token_then_token",
     "range_feet": 5,
     "projectile_style": "foresight",
-    "projectile_travel_seconds": 0.65
+    "projectile_travel_seconds": 0.65,
+    "condition_inflict": [],
+    "saving_throw": [],
+    "misc_tags": [
+      "ADV"
+    ]
   },
   "fortunes_favor": {
     "id": "fortunes_favor",
@@ -4849,7 +6112,18 @@ const SPELLS: Dictionary = {
       "Druid"
     ],
     "description": "A cool light wreathes your body for the duration, emitting Bright Light in a 20-foot radius and Dim Light for an additional 20 feet. Until the spell ends, you have Resistance to Radiant damage, and your melee attacks deal an extra 2d6 Radiant damage on a hit. In addition, immediately after you take damage from a creature you can see within 60 feet of yourself, you can take a Reaction to force the creature to make a Constitution saving throw. On a failed save, the creature has the Blinded condition until the end of your next turn.",
-    "higher_levels": ""
+    "higher_levels": "",
+    "condition_inflict": [
+      "blinded"
+    ],
+    "saving_throw": [
+      "constitution"
+    ],
+    "misc_tags": [
+      "AAD",
+      "LGT",
+      "SGT"
+    ]
   },
   "fractured_awareness": {
     "id": "fractured_awareness",
@@ -4904,7 +6178,12 @@ const SPELLS: Dictionary = {
     "allow_repeat_targets": false,
     "target_clicks_per_slot_above_base": 1,
     "projectile_style": "freedom_of_movement",
-    "projectile_travel_seconds": 0.65
+    "projectile_travel_seconds": 0.65,
+    "condition_inflict": [],
+    "saving_throw": [],
+    "misc_tags": [
+      "SCT"
+    ]
   },
   "friends": {
     "id": "friends",
@@ -4928,7 +6207,14 @@ const SPELLS: Dictionary = {
     "higher_levels": "",
     "visual_style": "enchantment",
     "transient_seconds": 5,
-    "range_feet": 10
+    "range_feet": 10,
+    "condition_inflict": [
+      "charmed"
+    ],
+    "saving_throw": [
+      "wisdom"
+    ],
+    "misc_tags": []
   },
   "frost_fingers": {
     "id": "frost_fingers",
@@ -4979,7 +6265,15 @@ const SPELLS: Dictionary = {
     "visual_style": "cold",
     "transient_seconds": 5,
     "range_feet": 60,
-    "level17_damage": "4d6 Cold"
+    "level17_damage": "4d6 Cold",
+    "condition_inflict": [],
+    "saving_throw": [
+      "constitution"
+    ],
+    "misc_tags": [
+      "SCL",
+      "SGT"
+    ]
   },
   "galders_speedy_courier": {
     "id": "galders_speedy_courier",
@@ -5036,7 +6330,13 @@ const SPELLS: Dictionary = {
       "Wizard"
     ],
     "description": "A willing creature you touch shape-shifts, along with everything it's wearing and carrying, into a misty cloud for the duration. The spell ends on the target if it drops to 0 Hit Points or if it takes a Magic action to end the spell on itself. While in this form, the target's only method of movement is a Fly Speed of 10 feet, and it can hover. The target can enter and occupy the space of another creature. The target has Resistance to Bludgeoning, Piercing, and Slashing damage; it has Immunity to the Prone condition; and it has Advantage on Strength, Dexterity, and Constitution saving throws. The target can pass through narrow openings, but it treats liquids as though they were solid surfaces. The target can't talk or manipulate objects, and any objects it was carrying or holding can't be dropped, used, or otherwise interacted with. Finally, the target can't attack or cast spells.",
-    "higher_levels": "Using a Higher-Level Spell Slot: You can target one additional creature for each spell slot level above 3."
+    "higher_levels": "Using a Higher-Level Spell Slot: You can target one additional creature for each spell slot level above 3.",
+    "condition_inflict": [],
+    "saving_throw": [],
+    "misc_tags": [
+      "ADV",
+      "SCT"
+    ]
   },
   "gate": {
     "id": "gate",
@@ -5057,7 +6357,14 @@ const SPELLS: Dictionary = {
       "Wizard"
     ],
     "description": "You conjure a portal linking an unoccupied space you can see within range to a precise location on a different plane of existence. The portal is a circular opening, which you can make 5 to 20 feet in diameter. You can orient the portal in any direction you choose. The portal lasts for the duration, and the portal's destination is visible through it. The portal has a front and a back on each plane where it appears. Travel through the portal is possible only by moving through its front. Anything that does so is instantly transported to the other plane, appearing in the unoccupied space nearest to the portal. Deities and other planar rulers can prevent portals created by this spell from opening in their presence or anywhere within their domains. When you cast this spell, you can speak the name of a specific creature (a pseudonym, title, or nickname doesn't work). If that creature is on a plane other than the one you are on, the portal opens next to the named creature and transports it to the nearest unoccupied space on your side of the portal. You gain no special power over the creature, and it is free to act as the DM deems appropriate. It might leave, attack you, or help you.",
-    "higher_levels": ""
+    "higher_levels": "",
+    "condition_inflict": [],
+    "saving_throw": [],
+    "misc_tags": [
+      "PS",
+      "SGT",
+      "TP"
+    ]
   },
   "gate_seal": {
     "id": "gate_seal",
@@ -5105,7 +6412,17 @@ const SPELLS: Dictionary = {
     "target_mode": "token_then_token",
     "range_feet": 60,
     "projectile_style": "geas",
-    "projectile_travel_seconds": 0.65
+    "projectile_travel_seconds": 0.65,
+    "condition_inflict": [
+      "charmed"
+    ],
+    "saving_throw": [
+      "wisdom"
+    ],
+    "misc_tags": [
+      "PRM",
+      "SGT"
+    ]
   },
   "gentle_repose": {
     "id": "gentle_repose",
@@ -5125,7 +6442,10 @@ const SPELLS: Dictionary = {
       "Wizard"
     ],
     "description": "You touch a corpse or other remains. For the duration, the target is protected from decay and can't become Undead. The spell also effectively extends the time limit on raising the target from the dead, since days spent under the influence of this spell don't count against the time limit of spells such as Raise Dead.",
-    "higher_levels": ""
+    "higher_levels": "",
+    "condition_inflict": [],
+    "saving_throw": [],
+    "misc_tags": []
   },
   "giant_insect": {
     "id": "giant_insect",
@@ -5143,7 +6463,12 @@ const SPELLS: Dictionary = {
       "Druid"
     ],
     "description": "You summon a giant centipede, spider, or wasp (chosen when you cast the spell). It manifests in an unoccupied space you can see within range and uses the Giant Insect stat block. The form you choose determines certain details in its stat block. The creature disappears when it drops to 0 Hit Points or when the spell ends. The creature is an ally to you and your allies. In combat, the creature shares your Initiative count, but it takes its turn immediately after yours. It obeys your verbal commands (no action required by you). If you don't issue any, it takes the Dodge action and uses its movement to avoid danger.",
-    "higher_levels": "Using a Higher-Level Spell Slot: Use the spell slot's level for the spell's level in the stat block."
+    "higher_levels": "Using a Higher-Level Spell Slot: Use the spell slot's level for the spell's level in the stat block.",
+    "condition_inflict": [],
+    "saving_throw": [],
+    "misc_tags": [
+      "SMN"
+    ]
   },
   "gift_of_alacrity": {
     "id": "gift_of_alacrity",
@@ -5200,7 +6525,10 @@ const SPELLS: Dictionary = {
       "Warlock"
     ],
     "description": "Until the spell ends, when you make a Charisma check, you can replace the number you roll with a 15. Additionally, no matter what you say, magic that would determine if you are telling the truth indicates that you are being truthful.",
-    "higher_levels": ""
+    "higher_levels": "",
+    "condition_inflict": [],
+    "saving_throw": [],
+    "misc_tags": []
   },
   "globe_of_invulnerability": {
     "id": "globe_of_invulnerability",
@@ -5219,7 +6547,10 @@ const SPELLS: Dictionary = {
       "Wizard"
     ],
     "description": "An immobile, shimmering barrier appears in a 10-foot Emanation around you and remains for the duration. Any spell of level 5 or lower cast from outside the barrier can't affect anything within it. Such a spell can target creatures and objects within the barrier, but the spell has no effect on them. Similarly, the area within the barrier is excluded from areas of effect created by such spells.",
-    "higher_levels": "Using a Higher-Level Spell Slot: The barrier blocks spells of 1 level higher for each spell slot level above 6."
+    "higher_levels": "Using a Higher-Level Spell Slot: The barrier blocks spells of 1 level higher for each spell slot level above 6.",
+    "condition_inflict": [],
+    "saving_throw": [],
+    "misc_tags": []
   },
   "glyph_of_warding": {
     "id": "glyph_of_warding",
@@ -5247,7 +6578,12 @@ const SPELLS: Dictionary = {
     "aoe_shape": "sphere",
     "aoe_radius_feet": 20,
     "range_feet": 5,
-    "persistent": true
+    "persistent": true,
+    "condition_inflict": [],
+    "saving_throw": [
+      "dexterity"
+    ],
+    "misc_tags": []
   },
   "goodberry": {
     "id": "goodberry",
@@ -5266,7 +6602,12 @@ const SPELLS: Dictionary = {
       "Ranger"
     ],
     "description": "Ten berries appear in your hand and are infused with magic for the duration. A creature can take a Bonus Action to eat one berry. Eating a berry restores 1 Hit Point, and the berry provides enough nourishment to sustain a creature for one day. Uneaten berries disappear when the spell ends.",
-    "higher_levels": ""
+    "higher_levels": "",
+    "condition_inflict": [],
+    "saving_throw": [],
+    "misc_tags": [
+      "HL"
+    ]
   },
   "grasping_vine": {
     "id": "grasping_vine",
@@ -5289,7 +6630,16 @@ const SPELLS: Dictionary = {
     "target_mode": "token_then_token",
     "projectile_style": "grasping_vine",
     "projectile_travel_seconds": 0.65,
-    "range_feet": 60
+    "range_feet": 60,
+    "condition_inflict": [
+      "grappled"
+    ],
+    "saving_throw": [],
+    "misc_tags": [
+      "FMV",
+      "SGT",
+      "UBA"
+    ]
   },
   "grave_ground": {
     "id": "grave_ground",
@@ -5369,7 +6719,16 @@ const SPELLS: Dictionary = {
       "Wizard"
     ],
     "description": "Nonflammable grease covers the ground in a 10-foot square centered on a point within range and turns it into Difficult Terrain for the duration. When the grease appears, each creature standing in its area must succeed on a Dexterity saving throw or have the Prone condition. A creature that enters the area or ends its turn there must also succeed on that save or fall Prone.",
-    "higher_levels": ""
+    "higher_levels": "",
+    "condition_inflict": [
+      "prone"
+    ],
+    "saving_throw": [
+      "dexterity"
+    ],
+    "misc_tags": [
+      "DFT"
+    ]
   },
   "greater_invisibility": {
     "id": "greater_invisibility",
@@ -5392,7 +6751,12 @@ const SPELLS: Dictionary = {
     "higher_levels": "",
     "visual_style": "arcane",
     "transient_seconds": 5,
-    "range_feet": 5
+    "range_feet": 5,
+    "condition_inflict": [
+      "invisible"
+    ],
+    "saving_throw": [],
+    "misc_tags": []
   },
   "greater_restoration": {
     "id": "greater_restoration",
@@ -5421,7 +6785,10 @@ const SPELLS: Dictionary = {
     "target_mode": "token_then_token",
     "range_feet": 5,
     "projectile_style": "greater_restoration",
-    "projectile_travel_seconds": 0.65
+    "projectile_travel_seconds": 0.65,
+    "condition_inflict": [],
+    "saving_throw": [],
+    "misc_tags": []
   },
   "green_flame_blade": {
     "id": "green_flame_blade",
@@ -5448,7 +6815,14 @@ const SPELLS: Dictionary = {
     "aoe_shape": "sphere",
     "aoe_radius_feet": 5,
     "show_range_preview": false,
-    "level17_damage": "4d8 Fire"
+    "level17_damage": "4d8 Fire",
+    "condition_inflict": [],
+    "saving_throw": [],
+    "misc_tags": [
+      "AAD",
+      "SCL",
+      "SGT"
+    ]
   },
   "guardian_of_faith": {
     "id": "guardian_of_faith",
@@ -5470,7 +6844,14 @@ const SPELLS: Dictionary = {
     "visual_style": "radiant",
     "transient_seconds": 5,
     "target_mode": "token_then_token",
-    "range_feet": 30
+    "range_feet": 30,
+    "condition_inflict": [],
+    "saving_throw": [
+      "dexterity"
+    ],
+    "misc_tags": [
+      "SGT"
+    ]
   },
   "guardian_of_nature": {
     "id": "guardian_of_nature",
@@ -5489,7 +6870,15 @@ const SPELLS: Dictionary = {
       "Ranger"
     ],
     "description": "A nature spirit answers your call and transforms you into a powerful guardian. The transformation lasts until the spell ends. You choose one of the following forms to assume: Primal Beast or Great Tree. Primal Beast: Bestial fur covers your body, your facial features become feral, and you gain the following benefits: Your walking speed increases by 10 feet. You gain darkvision with a range of 120 feet. You make Strength-based attack rolls with advantage. Your melee weapon attacks deal an extra 1d6 force damage on a hit. Great Tree: Your skin appears barky, leaves sprout from your hair, and you gain the following benefits: You gain 10 temporary hit points. You make Constitution saving throws with advantage. You make Dexterity- and Wisdom-based attack rolls with advantage. While you are on the ground, the ground within 15 feet of you is 3 for your enemies.",
-    "higher_levels": ""
+    "higher_levels": "",
+    "condition_inflict": [],
+    "saving_throw": [],
+    "misc_tags": [
+      "AAD",
+      "ADV",
+      "DFT",
+      "THP"
+    ]
   },
   "guards_and_wards": {
     "id": "guards_and_wards",
@@ -5516,7 +6905,14 @@ const SPELLS: Dictionary = {
     "aoe_side_feet": 50,
     "requires_ground": true,
     "range_feet": 5,
-    "persistent": true
+    "persistent": true,
+    "condition_inflict": [],
+    "saving_throw": [],
+    "misc_tags": [
+      "OBS",
+      "PIR",
+      "PRM"
+    ]
   },
   "guidance": {
     "id": "guidance",
@@ -5542,7 +6938,10 @@ const SPELLS: Dictionary = {
     "target_mode": "token_then_token",
     "range_feet": 5,
     "projectile_style": "guidance",
-    "projectile_travel_seconds": 0.65
+    "projectile_travel_seconds": 0.65,
+    "condition_inflict": [],
+    "saving_throw": [],
+    "misc_tags": []
   },
   "guiding_bolt": {
     "id": "guiding_bolt",
@@ -5566,7 +6965,12 @@ const SPELLS: Dictionary = {
     "target_mode": "token_then_token",
     "range_feet": 120,
     "projectile_style": "guiding_bolt",
-    "projectile_travel_seconds": 0.65
+    "projectile_travel_seconds": 0.65,
+    "condition_inflict": [],
+    "saving_throw": [],
+    "misc_tags": [
+      "ADV"
+    ]
   },
   "gust": {
     "id": "gust",
@@ -5589,7 +6993,16 @@ const SPELLS: Dictionary = {
     "higher_levels": "",
     "visual_style": "arcane",
     "transient_seconds": 5,
-    "range_feet": 30
+    "range_feet": 30,
+    "condition_inflict": [],
+    "saving_throw": [
+      "strength"
+    ],
+    "misc_tags": [
+      "FMV",
+      "OBJ",
+      "SGT"
+    ]
   },
   "gust_of_wind": {
     "id": "gust_of_wind",
@@ -5610,7 +7023,15 @@ const SPELLS: Dictionary = {
       "Wizard"
     ],
     "description": "A Line of strong wind 60 feet long and 10 feet wide blasts from you in a direction you choose for the duration. Each creature in the Line must succeed on a Strength saving throw or be pushed 15 feet away from you in a direction following the Line. A creature that ends its turn in the Line must make the same save. Any creature in the Line must spend 2 feet of movement for every 1 foot it moves when moving closer to you. The gust disperses gas or vapor, and it extinguishes candles and similar unprotected flames in the area. It causes protected flames, such as those of lanterns, to dance wildly and has a 50 chance to extinguish them. As a Bonus Action on your later turns, you can change the direction in which the Line blasts from you.",
-    "higher_levels": ""
+    "higher_levels": "",
+    "condition_inflict": [],
+    "saving_throw": [
+      "strength"
+    ],
+    "misc_tags": [
+      "FMV",
+      "UBA"
+    ]
   },
   "hail_of_thorns": {
     "id": "hail_of_thorns",
@@ -5632,7 +7053,12 @@ const SPELLS: Dictionary = {
     "visual_style": "arcane",
     "transient_seconds": 5,
     "target_mode": "token_then_token",
-    "range_feet": 5
+    "range_feet": 5,
+    "condition_inflict": [],
+    "saving_throw": [
+      "dexterity"
+    ],
+    "misc_tags": []
   },
   "hallow": {
     "id": "hallow",
@@ -5650,7 +7076,13 @@ const SPELLS: Dictionary = {
       "Cleric"
     ],
     "description": "You touch a point and infuse an area around it with holy or unholy power. The area can have a radius up to 60 feet, and the spell fails if the radius includes an area already under the effect of Hallow. The affected area has the following effects. Hallowed Ward: Choose any of these creature types: Aberration, Celestial, Elemental, Fey, Fiend, or Undead. Creatures of the chosen types can't willingly enter the area, and any creature that is possessed by or that has the Charmed or Frightened condition from such creatures isn't possessed, Charmed, or Frightened by them while in the area. Extra Effect: You bind an extra effect to the area from the list below: Courage: Creatures of any types you choose can't gain the Frightened condition while in the area. Darkness: Darkness fills the area. Normal light, as well as magical light created by spells of a level lower than this spell, can't illuminate the area. Daylight: Bright light fills the area. Magical Darkness created by spells of a level lower than this spell can't extinguish the light. Peaceful Rest: Dead bodies interred in the area can't be turned into Undead. Extradimensional Interference: Creatures of any types you choose can't enter or exit the area using teleportation or interplanar travel. Fear: Creatures of any types you choose have the Frightened condition while in the area. Resistance: Creatures of any types you choose have Resistance to one damage type of your choice while in the area. Silence: No sound can emanate from within the area, and no sound can reach into it. Tongues: Creatures of any types you choose can communicate with any other creature in the area even if they don't share a common language. Vulnerability: Creatures of any types you choose have Vulnerability to one damage type of your choice while in the area.",
-    "higher_levels": ""
+    "higher_levels": "",
+    "condition_inflict": [],
+    "saving_throw": [],
+    "misc_tags": [
+      "LGT",
+      "OBS"
+    ]
   },
   "hallucinatory_terrain": {
     "id": "hallucinatory_terrain",
@@ -5677,7 +7109,10 @@ const SPELLS: Dictionary = {
     "target_mode": "token_then_point",
     "aoe_shape": "cube",
     "aoe_side_feet": 150,
-    "range_feet": 300
+    "range_feet": 300,
+    "condition_inflict": [],
+    "saving_throw": [],
+    "misc_tags": []
   },
   "harm": {
     "id": "harm",
@@ -5701,7 +7136,14 @@ const SPELLS: Dictionary = {
     "target_mode": "token_then_token",
     "range_feet": 60,
     "projectile_style": "harm",
-    "projectile_travel_seconds": 0.65
+    "projectile_travel_seconds": 0.65,
+    "condition_inflict": [],
+    "saving_throw": [
+      "constitution"
+    ],
+    "misc_tags": [
+      "SGT"
+    ]
   },
   "haste": {
     "id": "haste",
@@ -5724,7 +7166,16 @@ const SPELLS: Dictionary = {
     "higher_levels": "",
     "visual_style": "arcane",
     "transient_seconds": 5,
-    "range_feet": 30
+    "range_feet": 30,
+    "condition_inflict": [
+      "incapacitated"
+    ],
+    "saving_throw": [],
+    "misc_tags": [
+      "ADV",
+      "MAC",
+      "SGT"
+    ]
   },
   "heal": {
     "id": "heal",
@@ -5749,7 +7200,13 @@ const SPELLS: Dictionary = {
     "target_mode": "token_then_token",
     "range_feet": 60,
     "projectile_style": "heal",
-    "projectile_travel_seconds": 0.65
+    "projectile_travel_seconds": 0.65,
+    "condition_inflict": [],
+    "saving_throw": [],
+    "misc_tags": [
+      "HL",
+      "SGT"
+    ]
   },
   "healing_spirit": {
     "id": "healing_spirit",
@@ -5768,7 +7225,14 @@ const SPELLS: Dictionary = {
       "Ranger"
     ],
     "description": "You call forth a nature spirit to soothe the wounded. The intangible spirit appears in a space that is a 5-foot cube you can see within range. The spirit looks like a transparent beast or fey (your choice). Until the spell ends, whenever you or a creature you can see moves into the spirit's space for the first time on a turn or starts its turn there, you can cause the spirit to restore 1d6 hit points to that creature (no action required). The spirit can't heal constructs or undead. The spirit can heal a number of times equal to 1 + your spellcasting ability modifier (minimum of twice). After healing that number of times, the spirit disappears. As a bonus action on your turn, you can move the spirit up to 30 feet to a space you can see.",
-    "higher_levels": "At Higher Levels: When you cast this spell using a spell slot of 3rd level or higher, the healing increases by 1d6 for each slot level above 2nd."
+    "higher_levels": "At Higher Levels: When you cast this spell using a spell slot of 3rd level or higher, the healing increases by 1d6 for each slot level above 2nd.",
+    "condition_inflict": [],
+    "saving_throw": [],
+    "misc_tags": [
+      "HL",
+      "SGT",
+      "UBA"
+    ]
   },
   "healing_word": {
     "id": "healing_word",
@@ -5794,7 +7258,13 @@ const SPELLS: Dictionary = {
     "target_mode": "token_then_token",
     "range_feet": 60,
     "projectile_style": "healing_word",
-    "projectile_travel_seconds": 0.65
+    "projectile_travel_seconds": 0.65,
+    "condition_inflict": [],
+    "saving_throw": [],
+    "misc_tags": [
+      "HL",
+      "SGT"
+    ]
   },
   "heat_metal": {
     "id": "heat_metal",
@@ -5818,7 +7288,17 @@ const SPELLS: Dictionary = {
     "target_mode": "token_then_token",
     "projectile_style": "heat_metal",
     "projectile_travel_seconds": 0.65,
-    "range_feet": 60
+    "range_feet": 60,
+    "condition_inflict": [],
+    "saving_throw": [
+      "constitution"
+    ],
+    "misc_tags": [
+      "OBJ",
+      "SGT",
+      "UA",
+      "UBA"
+    ]
   },
   "hellish_rebuke": {
     "id": "hellish_rebuke",
@@ -5842,7 +7322,14 @@ const SPELLS: Dictionary = {
     "target_mode": "token_then_token",
     "range_feet": 60,
     "projectile_style": "hellish_rebuke",
-    "projectile_travel_seconds": 0.65
+    "projectile_travel_seconds": 0.65,
+    "condition_inflict": [],
+    "saving_throw": [
+      "dexterity"
+    ],
+    "misc_tags": [
+      "SGT"
+    ]
   },
   "heroes_feast": {
     "id": "heroes_feast",
@@ -5870,7 +7357,12 @@ const SPELLS: Dictionary = {
     "aoe_side_feet": 10,
     "directional_cube": true,
     "direction_limit_feet": 10,
-    "show_range_preview": false
+    "show_range_preview": false,
+    "condition_inflict": [],
+    "saving_throw": [],
+    "misc_tags": [
+      "HL"
+    ]
   },
   "heroism": {
     "id": "heroism",
@@ -5898,7 +7390,13 @@ const SPELLS: Dictionary = {
     "allow_repeat_targets": false,
     "target_clicks_per_slot_above_base": 1,
     "projectile_style": "heroism",
-    "projectile_travel_seconds": 0.65
+    "projectile_travel_seconds": 0.65,
+    "condition_inflict": [],
+    "saving_throw": [],
+    "misc_tags": [
+      "SCT",
+      "THP"
+    ]
   },
   "hex": {
     "id": "hex",
@@ -5920,7 +7418,15 @@ const SPELLS: Dictionary = {
     "target_mode": "token_then_token",
     "projectile_style": "hex",
     "projectile_travel_seconds": 0.65,
-    "range_feet": 90
+    "range_feet": 90,
+    "condition_inflict": [],
+    "saving_throw": [],
+    "misc_tags": [
+      "AAD",
+      "SGT",
+      "UA",
+      "UBA"
+    ]
   },
   "hindsight": {
     "id": "hindsight",
@@ -5962,7 +7468,17 @@ const SPELLS: Dictionary = {
     "higher_levels": "Using a Higher-Level Spell Slot: You can target one additional creature for each spell slot level above 5.",
     "visual_style": "arcane",
     "transient_seconds": 5,
-    "range_feet": 90
+    "range_feet": 90,
+    "condition_inflict": [
+      "paralyzed"
+    ],
+    "saving_throw": [
+      "wisdom"
+    ],
+    "misc_tags": [
+      "SCT",
+      "SGT"
+    ]
   },
   "hold_person": {
     "id": "hold_person",
@@ -5988,7 +7504,17 @@ const SPELLS: Dictionary = {
     "higher_levels": "Using a Higher-Level Spell Slot: You can target one additional Humanoid for each spell slot level above 2.",
     "visual_style": "arcane",
     "transient_seconds": 5,
-    "range_feet": 60
+    "range_feet": 60,
+    "condition_inflict": [
+      "paralyzed"
+    ],
+    "saving_throw": [
+      "wisdom"
+    ],
+    "misc_tags": [
+      "SCT",
+      "SGT"
+    ]
   },
   "holy_aura": {
     "id": "holy_aura",
@@ -6006,7 +7532,16 @@ const SPELLS: Dictionary = {
       "Cleric"
     ],
     "description": "For the duration, you emit an aura in a 30-foot Emanation. While in the aura, creatures of your choice have Advantage on all saving throws, and other creatures have Disadvantage on attack rolls against them. In addition, when a Fiend or an Undead hits an affected creature with a melee attack roll, the attacker must succeed on a Constitution saving throw or have the Blinded condition until the end of its next turn.",
-    "higher_levels": ""
+    "higher_levels": "",
+    "condition_inflict": [
+      "blinded"
+    ],
+    "saving_throw": [
+      "constitution"
+    ],
+    "misc_tags": [
+      "ADV"
+    ]
   },
   "holy_star_of_mystra": {
     "id": "holy_star_of_mystra",
@@ -6025,7 +7560,13 @@ const SPELLS: Dictionary = {
       "Wizard"
     ],
     "description": "You create a glowing mote of energy that hovers above you for the duration. The mote sheds Bright Light in a 5-foot radius and Dim Light for an additional 5 feet. When you cast this spell and as a Bonus Action on later turns, you can unleash a shining bolt from the mote, targeting one creature within 120 feet of yourself. Make a ranged spell attack. On a hit, the target takes Force or Radiant damage (your choice) equal to 4d10 plus your spellcasting ability modifier. In addition, while the mote is present, you have Three-Quarters Cover, and if you succeed on a saving throw against a spell of level 7 or lower that targeted only you and didn't create an area of effect, you can take a Reaction to deflect that spell back at the spell's caster; the caster makes a saving throw against that spell using that caster's own spell save DC.",
-    "higher_levels": ""
+    "higher_levels": "",
+    "condition_inflict": [],
+    "saving_throw": [],
+    "misc_tags": [
+      "LGT",
+      "UBA"
+    ]
   },
   "holy_weapon": {
     "id": "holy_weapon",
@@ -6047,7 +7588,19 @@ const SPELLS: Dictionary = {
     "higher_levels": "",
     "target_mode": "token_then_multi_token",
     "projectile_style": "holy_weapon",
-    "projectile_travel_seconds": 0.65
+    "projectile_travel_seconds": 0.65,
+    "condition_inflict": [
+      "blinded"
+    ],
+    "saving_throw": [
+      "constitution"
+    ],
+    "misc_tags": [
+      "AAD",
+      "LGT",
+      "SGT",
+      "UBA"
+    ]
   },
   "homunculus_servant": {
     "id": "homunculus_servant",
@@ -6090,7 +7643,17 @@ const SPELLS: Dictionary = {
     "aoe_shape": "sphere",
     "aoe_radius_feet": 20,
     "range_feet": 150,
-    "persistent": true
+    "persistent": true,
+    "condition_inflict": [
+      "blinded"
+    ],
+    "saving_throw": [
+      "dexterity"
+    ],
+    "misc_tags": [
+      "DFT",
+      "OBS"
+    ]
   },
   "hunters_mark": {
     "id": "hunters_mark",
@@ -6112,7 +7675,16 @@ const SPELLS: Dictionary = {
     "target_mode": "token_then_token",
     "projectile_style": "hunters_mark",
     "projectile_travel_seconds": 0.65,
-    "range_feet": 90
+    "range_feet": 90,
+    "condition_inflict": [],
+    "saving_throw": [],
+    "misc_tags": [
+      "AAD",
+      "ADV",
+      "SGT",
+      "UA",
+      "UBA"
+    ]
   },
   "hypnotic_pattern": {
     "id": "hypnotic_pattern",
@@ -6133,7 +7705,15 @@ const SPELLS: Dictionary = {
       "Wizard"
     ],
     "description": "You create a twisting pattern of colors in a 30-foot Cube within range. The pattern appears for a moment and vanishes. Each creature in the area who can see the pattern must succeed on a Wisdom saving throw or have the Charmed condition for the duration. While Charmed, the creature has the Incapacitated condition and a Speed of 0. The spell ends for an affected creature if it takes any damage or if someone else uses an action to shake the creature out of its stupor.",
-    "higher_levels": ""
+    "higher_levels": "",
+    "condition_inflict": [
+      "charmed",
+      "incapacitated"
+    ],
+    "saving_throw": [
+      "wisdom"
+    ],
+    "misc_tags": []
   },
   "ice_knife": {
     "id": "ice_knife",
@@ -6158,7 +7738,12 @@ const SPELLS: Dictionary = {
     "target_mode": "token_then_token",
     "projectile_style": "ice_knife",
     "projectile_travel_seconds": 0.65,
-    "allow_point_target": true
+    "allow_point_target": true,
+    "condition_inflict": [],
+    "saving_throw": [
+      "dexterity"
+    ],
+    "misc_tags": []
   },
   "ice_storm": {
     "id": "ice_storm",
@@ -6178,7 +7763,14 @@ const SPELLS: Dictionary = {
       "Wizard"
     ],
     "description": "Hail falls in a 20-foot-radius, 40-foot-high Cylinder centered on a point within range. Each creature in the Cylinder makes a Dexterity saving throw. A creature takes 2d10 Bludgeoning damage and 4d6 Cold damage on a failed save or half as much damage on a successful one. Hailstones turn ground in the Cylinder into Difficult Terrain until the end of your next turn.",
-    "higher_levels": "Using a Higher-Level Spell Slot: The Bludgeoning damage increases by 1d10 for each spell slot level above 4."
+    "higher_levels": "Using a Higher-Level Spell Slot: The Bludgeoning damage increases by 1d10 for each spell slot level above 4.",
+    "condition_inflict": [],
+    "saving_throw": [
+      "dexterity"
+    ],
+    "misc_tags": [
+      "DFT"
+    ]
   },
   "identify": {
     "id": "identify",
@@ -6204,7 +7796,12 @@ const SPELLS: Dictionary = {
     "target_mode": "token_then_token",
     "range_feet": 5,
     "projectile_style": "identify",
-    "projectile_travel_seconds": 0.65
+    "projectile_travel_seconds": 0.65,
+    "condition_inflict": [],
+    "saving_throw": [],
+    "misc_tags": [
+      "OBJ"
+    ]
   },
   "illusory_dragon": {
     "id": "illusory_dragon",
@@ -6242,7 +7839,10 @@ const SPELLS: Dictionary = {
       "Wizard"
     ],
     "description": "You write on parchment, paper, or another suitable material and imbue it with an illusion that lasts for the duration. To you and any creatures you designate when you cast the spell, the writing appears normal, seems to be written in your hand, and conveys whatever meaning you intended when you wrote the text. To all others, the writing appears as if it were written in an unknown or magical script that is unintelligible. Alternatively, the illusion can alter the meaning, handwriting, and language of the text, though the language must be one you know. If the spell is dispelled, the original script and the illusion both disappear. A creature that has Truesight can read the hidden message.",
-    "higher_levels": ""
+    "higher_levels": "",
+    "condition_inflict": [],
+    "saving_throw": [],
+    "misc_tags": []
   },
   "immolation": {
     "id": "immolation",
@@ -6264,7 +7864,15 @@ const SPELLS: Dictionary = {
     "higher_levels": "",
     "visual_style": "fire",
     "transient_seconds": 5,
-    "range_feet": 90
+    "range_feet": 90,
+    "condition_inflict": [],
+    "saving_throw": [
+      "dexterity"
+    ],
+    "misc_tags": [
+      "LGT",
+      "SGT"
+    ]
   },
   "immovable_object": {
     "id": "immovable_object",
@@ -6306,7 +7914,17 @@ const SPELLS: Dictionary = {
     "target_mode": "token_then_token",
     "projectile_style": "imprisonment",
     "projectile_travel_seconds": 0.65,
-    "range_feet": 30
+    "range_feet": 30,
+    "condition_inflict": [
+      "restrained",
+      "unconscious"
+    ],
+    "saving_throw": [
+      "wisdom"
+    ],
+    "misc_tags": [
+      "SGT"
+    ]
   },
   "incendiary_cloud": {
     "id": "incendiary_cloud",
@@ -6332,7 +7950,14 @@ const SPELLS: Dictionary = {
     "aoe_shape": "sphere",
     "aoe_radius_feet": 20,
     "range_feet": 150,
-    "persistent": true
+    "persistent": true,
+    "condition_inflict": [],
+    "saving_throw": [
+      "dexterity"
+    ],
+    "misc_tags": [
+      "OBS"
+    ]
   },
   "incite_greed": {
     "id": "incite_greed",
@@ -6375,7 +8000,13 @@ const SPELLS: Dictionary = {
       "Wizard"
     ],
     "description": "Uttering a dark incantation, you summon a devil from the Nine Hells. You choose the devil's type, which must be one of challenge rating=[&0;&6], such as a barbed devil or a bearded devil. The devil appears in an unoccupied space that you can see within range. The devil disappears when it drops to 0 hit points or when the spell ends. The devil is unfriendly toward you and your companions. Roll initiative for the devil, which has its own turns. It is under the Dungeon Master's control and acts according to its nature on each of its turns, which might result in its attacking you if it thinks it can prevail, or trying to tempt you to undertake an evil act in exchange for limited service. The DM has the creature's statistics. On each of your turns, you can try to issue a verbal command to the devil (no action required by you). It obeys the command if the likely outcome is in accordance with its desires, especially if the result would draw you toward evil. Otherwise, you must make a Charisma (Deception, Intimidation, or Persuasion) check contested by its Wisdom (Insight) check. You make the check with advantage if you say the devil's true name. If your check fails, the devil becomes immune to your verbal commands for the duration of the spell, though it can still carry out your commands if it chooses. If your check succeeds, the devil carries out your command—such as \"attack my enemies,\" \"explore the room ahead,\" or \"bear this message to the queen\"—until it completes the activity, at which point it returns to you to report having done so. If your concentration ends before the spell reaches its full duration, the devil doesn't disappear if it has become immune to your verbal commands. Instead, it acts in whatever manner it chooses for 3d6 minutes, and then it disappears. If you possess an individual devil's talisman, you can summon that devil if it is of the appropriate challenge rating plus 1, and it obeys all your commands, with no Charisma checks required.",
-    "higher_levels": "At Higher Levels: When you cast this spell using a spell slot of 6th level or higher, the challenge rating increases by 1 for each slot level above 5th."
+    "higher_levels": "At Higher Levels: When you cast this spell using a spell slot of 6th level or higher, the challenge rating increases by 1 for each slot level above 5th.",
+    "condition_inflict": [],
+    "saving_throw": [],
+    "misc_tags": [
+      "SGT",
+      "SMN"
+    ]
   },
   "infestation": {
     "id": "infestation",
@@ -6400,7 +8031,16 @@ const SPELLS: Dictionary = {
     "visual_style": "poison",
     "transient_seconds": 5,
     "range_feet": 30,
-    "level17_damage": "4d6 Poison"
+    "level17_damage": "4d6 Poison",
+    "condition_inflict": [],
+    "saving_throw": [
+      "constitution"
+    ],
+    "misc_tags": [
+      "FMV",
+      "SCL",
+      "SGT"
+    ]
   },
   "inflict_doubt": {
     "id": "inflict_doubt",
@@ -6448,7 +8088,12 @@ const SPELLS: Dictionary = {
     "target_mode": "token_then_token",
     "range_feet": 5,
     "projectile_style": "inflict_wounds",
-    "projectile_travel_seconds": 0.65
+    "projectile_travel_seconds": 0.65,
+    "condition_inflict": [],
+    "saving_throw": [
+      "constitution"
+    ],
+    "misc_tags": []
   },
   "insect_plague": {
     "id": "insect_plague",
@@ -6468,7 +8113,15 @@ const SPELLS: Dictionary = {
       "Sorcerer"
     ],
     "description": "Swarming locusts fill a 20-foot-radius Sphere centered on a point you choose within range. The Sphere remains for the duration, and its area is Lightly Obscured and Difficult Terrain. When the swarm appears, each creature in it makes a Constitution saving throw, taking 4d10 Piercing damage on a failed save or half as much damage on a successful one. A creature also makes this save when it enters the spell's area for the first time on a turn or ends its turn there. A creature makes this save only once per turn.",
-    "higher_levels": "Using a Higher-Level Spell Slot: The damage increases by 1d10 for each spell slot level above 5."
+    "higher_levels": "Using a Higher-Level Spell Slot: The damage increases by 1d10 for each spell slot level above 5.",
+    "condition_inflict": [],
+    "saving_throw": [
+      "constitution"
+    ],
+    "misc_tags": [
+      "DFT",
+      "OBS"
+    ]
   },
   "intellect_fortress": {
     "id": "intellect_fortress",
@@ -6490,7 +8143,14 @@ const SPELLS: Dictionary = {
       "Wizard"
     ],
     "description": "For the duration, you or one willing creature you can see within range has resistance to psychic damage, as well as advantage on Intelligence, Wisdom, and Charisma saving throws.",
-    "higher_levels": "At Higher Levels: When you cast this spell using a spell slot of 4th level or higher, you can target one additional creature for each slot level above 3rd. The creatures must be within 30 feet of each other when you target them."
+    "higher_levels": "At Higher Levels: When you cast this spell using a spell slot of 4th level or higher, you can target one additional creature for each slot level above 3rd. The creatures must be within 30 feet of each other when you target them.",
+    "condition_inflict": [],
+    "saving_throw": [],
+    "misc_tags": [
+      "ADV",
+      "SCT",
+      "SGT"
+    ]
   },
   "investiture_of_flame": {
     "id": "investiture_of_flame",
@@ -6518,7 +8178,15 @@ const SPELLS: Dictionary = {
     "aoe_length_cells": 3,
     "line_width_feet": 5,
     "direction_limit_feet": 15,
-    "show_range_preview": false
+    "show_range_preview": false,
+    "condition_inflict": [],
+    "saving_throw": [
+      "dexterity"
+    ],
+    "misc_tags": [
+      "LGT",
+      "UA"
+    ]
   },
   "investiture_of_ice": {
     "id": "investiture_of_ice",
@@ -6542,7 +8210,15 @@ const SPELLS: Dictionary = {
     "higher_levels": "",
     "visual_style": "cold",
     "transient_seconds": 5,
-    "range_feet": 5
+    "range_feet": 5,
+    "condition_inflict": [],
+    "saving_throw": [
+      "constitution"
+    ],
+    "misc_tags": [
+      "DFT",
+      "UA"
+    ]
   },
   "investiture_of_stone": {
     "id": "investiture_of_stone",
@@ -6566,7 +8242,17 @@ const SPELLS: Dictionary = {
     "higher_levels": "",
     "visual_style": "arcane",
     "transient_seconds": 5,
-    "range_feet": 5
+    "range_feet": 5,
+    "condition_inflict": [
+      "prone",
+      "stunned"
+    ],
+    "saving_throw": [
+      "dexterity"
+    ],
+    "misc_tags": [
+      "UA"
+    ]
   },
   "investiture_of_wind": {
     "id": "investiture_of_wind",
@@ -6593,7 +8279,16 @@ const SPELLS: Dictionary = {
     "aoe_shape": "cube",
     "aoe_side_feet": 15,
     "range_feet": 5,
-    "persistent": true
+    "persistent": true,
+    "condition_inflict": [],
+    "saving_throw": [
+      "constitution"
+    ],
+    "misc_tags": [
+      "FMV",
+      "SGT",
+      "UA"
+    ]
   },
   "invisibility": {
     "id": "invisibility",
@@ -6618,7 +8313,14 @@ const SPELLS: Dictionary = {
     "higher_levels": "Using a Higher-Level Spell Slot: You can target one additional creature for each spell slot level above 2.",
     "visual_style": "arcane",
     "transient_seconds": 5,
-    "range_feet": 5
+    "range_feet": 5,
+    "condition_inflict": [
+      "invisible"
+    ],
+    "saving_throw": [],
+    "misc_tags": [
+      "SCT"
+    ]
   },
   "invulnerability": {
     "id": "invulnerability",
@@ -6682,7 +8384,17 @@ const SPELLS: Dictionary = {
     "aoe_shape": "cylinder",
     "aoe_radius_feet": 10,
     "aoe_height_feet": 40,
-    "range_feet": 120
+    "range_feet": 120,
+    "condition_inflict": [
+      "blinded",
+      "deafened"
+    ],
+    "saving_throw": [
+      "constitution"
+    ],
+    "misc_tags": [
+      "SGT"
+    ]
   },
   "jims_glowing_coin": {
     "id": "jims_glowing_coin",
@@ -6756,7 +8468,12 @@ const SPELLS: Dictionary = {
     "higher_levels": "Using a Higher-Level Spell Slot: You can target one additional creature for each spell slot level above 1.",
     "visual_style": "arcane",
     "transient_seconds": 5,
-    "range_feet": 5
+    "range_feet": 5,
+    "condition_inflict": [],
+    "saving_throw": [],
+    "misc_tags": [
+      "SCT"
+    ]
   },
   "kinetic_jaunt": {
     "id": "kinetic_jaunt",
@@ -6777,7 +8494,10 @@ const SPELLS: Dictionary = {
       "Wizard"
     ],
     "description": "You magically empower your movement with dance-like steps, giving yourself the following benefits for the duration. Your walking speed increases by 10 feet. You don't provoke opportunity attacks. You can move through the space of another creature, and it doesn't count as 3. If you end your turn in another creature's space, you are shunted to the last unoccupied space you occupied, and you take 1d8 force damage.",
-    "higher_levels": ""
+    "higher_levels": "",
+    "condition_inflict": [],
+    "saving_throw": [],
+    "misc_tags": []
   },
   "knock": {
     "id": "knock",
@@ -6797,7 +8517,13 @@ const SPELLS: Dictionary = {
       "Wizard"
     ],
     "description": "Choose an object that you can see within range. The object can be a door, a box, a chest, a set of manacles, a padlock, or another object that contains a mundane or magical means that prevents access. A target that is held shut by a mundane lock or that is stuck or barred becomes unlocked, unstuck, or unbarred. If the object has multiple locks, only one of them is unlocked. If the target is held shut by Arcane Lock, that spell is suppressed for 10 minutes, during which time the target can be opened and closed. When you cast the spell, a loud knock, audible up to 300 feet away, emanates from the target.",
-    "higher_levels": ""
+    "higher_levels": "",
+    "condition_inflict": [],
+    "saving_throw": [],
+    "misc_tags": [
+      "OBJ",
+      "SGT"
+    ]
   },
   "laerals_silver_lance": {
     "id": "laerals_silver_lance",
@@ -6824,7 +8550,14 @@ const SPELLS: Dictionary = {
     "aoe_length_cells": 24,
     "line_width_feet": 5,
     "direction_limit_feet": 120,
-    "show_range_preview": false
+    "show_range_preview": false,
+    "condition_inflict": [
+      "prone"
+    ],
+    "saving_throw": [
+      "strength"
+    ],
+    "misc_tags": []
   },
   "legend_lore": {
     "id": "legend_lore",
@@ -6844,7 +8577,12 @@ const SPELLS: Dictionary = {
       "Wizard"
     ],
     "description": "Name or describe a famous person, place, or object. The spell brings to your mind a brief summary of the significant lore about that famous thing, as described by the DM. The lore might consist of important details, amusing revelations, or even secret lore that has never been widely known. The more information you already know about the thing, the more precise and detailed the information you receive is. That information is accurate but might be couched in figurative language or poetry, as determined by the DM. If the famous thing you chose isn't actually famous, you hear sad musical notes played on a trombone, and the spell fails.",
-    "higher_levels": ""
+    "higher_levels": "",
+    "condition_inflict": [],
+    "saving_throw": [],
+    "misc_tags": [
+      "OBJ"
+    ]
   },
   "leomunds_secret_chest": {
     "id": "leomunds_secret_chest",
@@ -6863,7 +8601,14 @@ const SPELLS: Dictionary = {
       "Wizard"
     ],
     "description": "You hide a chest and all its contents on the Ethereal Plane. You must touch the chest and the miniature replica that serve as Material components for the spell. The chest can contain up to 12 cubic feet of nonliving material (3 feet by 2 feet by 2 feet). While the chest remains on the Ethereal Plane, you can take a Magic action and touch the replica to recall the chest. It appears in an unoccupied space on the ground within 5 feet of you. You can send the chest back to the Ethereal Plane by taking a Magic action to touch the chest and the replica. After 60 days, there is a cumulative 5 chance at the end of each day that the spell ends. The spell also ends if you cast this spell again or if the Tiny replica chest is destroyed. If the spell ends and the larger chest is on the Ethereal Plane, the chest remains there for you or someone else to find.",
-    "higher_levels": ""
+    "higher_levels": "",
+    "condition_inflict": [],
+    "saving_throw": [],
+    "misc_tags": [
+      "OBJ",
+      "PRM",
+      "UA"
+    ]
   },
   "leomunds_tiny_hut": {
     "id": "leomunds_tiny_hut",
@@ -6889,7 +8634,12 @@ const SPELLS: Dictionary = {
     "aoe_shape": "sphere",
     "aoe_radius_feet": 10,
     "show_range_preview": false,
-    "persistent": true
+    "persistent": true,
+    "condition_inflict": [],
+    "saving_throw": [],
+    "misc_tags": [
+      "LGT"
+    ]
   },
   "lesser_restoration": {
     "id": "lesser_restoration",
@@ -6918,7 +8668,10 @@ const SPELLS: Dictionary = {
     "target_mode": "token_then_token",
     "range_feet": 5,
     "projectile_style": "lesser_restoration",
-    "projectile_travel_seconds": 0.65
+    "projectile_travel_seconds": 0.65,
+    "condition_inflict": [],
+    "saving_throw": [],
+    "misc_tags": []
   },
   "levitate": {
     "id": "levitate",
@@ -6939,7 +8692,16 @@ const SPELLS: Dictionary = {
     ],
     "description": "One creature or loose object of your choice that you can see within range rises vertically up to 20 feet and remains suspended there for the duration. The spell can levitate an object that weighs up to 500 pounds. An unwilling creature that succeeds on a Constitution saving throw is unaffected. The target can move only by pushing or pulling against a fixed object or surface within reach (such as a wall or a ceiling), which allows it to move as if it were climbing. You can change the target's altitude by up to 20 feet in either direction on your turn. If you are the target, you can move up or down as part of your move. Otherwise, you can take a Magic action to move the target, which must remain within the spell's range. When the spell ends, the target floats gently to the ground if it is still aloft.",
     "higher_levels": "",
-    "range_feet": 60
+    "range_feet": 60,
+    "condition_inflict": [],
+    "saving_throw": [
+      "constitution"
+    ],
+    "misc_tags": [
+      "OBJ",
+      "SGT",
+      "UA"
+    ]
   },
   "life_transference": {
     "id": "life_transference",
@@ -6964,7 +8726,13 @@ const SPELLS: Dictionary = {
     "target_mode": "token_then_token",
     "range_feet": 30,
     "projectile_style": "life_transference",
-    "projectile_travel_seconds": 0.65
+    "projectile_travel_seconds": 0.65,
+    "condition_inflict": [],
+    "saving_throw": [],
+    "misc_tags": [
+      "HL",
+      "SGT"
+    ]
   },
   "light": {
     "id": "light",
@@ -6986,7 +8754,13 @@ const SPELLS: Dictionary = {
       "Wizard"
     ],
     "description": "You touch one Large or smaller object that isn't being worn or carried by someone else. Until the spell ends, the object sheds Bright Light in a 20-foot radius and Dim Light for an additional 20 feet. The light can be colored as you like. Covering the object with something opaque blocks the light. The spell ends if you cast it again.",
-    "higher_levels": ""
+    "higher_levels": "",
+    "condition_inflict": [],
+    "saving_throw": [],
+    "misc_tags": [
+      "LGT",
+      "OBJ"
+    ]
   },
   "lightning_arrow": {
     "id": "lightning_arrow",
@@ -7008,7 +8782,12 @@ const SPELLS: Dictionary = {
     "visual_style": "lightning",
     "transient_seconds": 5,
     "target_mode": "token_then_token",
-    "range_feet": 5
+    "range_feet": 5,
+    "condition_inflict": [],
+    "saving_throw": [
+      "dexterity"
+    ],
+    "misc_tags": []
   },
   "lightning_bolt": {
     "id": "lightning_bolt",
@@ -7027,7 +8806,14 @@ const SPELLS: Dictionary = {
       "Wizard"
     ],
     "description": "A stroke of lightning forming a 100-foot-long, 5-foot-wide Line blasts out from you in a direction you choose. Each creature in the Line makes a Dexterity saving throw, taking 8d6 Lightning damage on a failed save or half as much damage on a successful one.",
-    "higher_levels": "Using a Higher-Level Spell Slot: The damage increases by 1d6 for each spell slot level above 3."
+    "higher_levels": "Using a Higher-Level Spell Slot: The damage increases by 1d6 for each spell slot level above 3.",
+    "condition_inflict": [],
+    "saving_throw": [
+      "dexterity"
+    ],
+    "misc_tags": [
+      "OBJ"
+    ]
   },
   "lightning_lure": {
     "id": "lightning_lure",
@@ -7054,7 +8840,16 @@ const SPELLS: Dictionary = {
     "aoe_shape": "sphere",
     "aoe_radius_feet": 15,
     "show_range_preview": false,
-    "level17_damage": "4d8 Lightning"
+    "level17_damage": "4d8 Lightning",
+    "condition_inflict": [],
+    "saving_throw": [
+      "strength"
+    ],
+    "misc_tags": [
+      "FMV",
+      "SCL",
+      "SGT"
+    ]
   },
   "lightning_ring": {
     "id": "lightning_ring",
@@ -7120,7 +8915,10 @@ const SPELLS: Dictionary = {
       "Ranger"
     ],
     "description": "Describe or name a specific kind of Beast, Plant creature, or nonmagical plant. You learn the direction and distance to the closest creature or plant of that kind within 5 miles, if any are present.",
-    "higher_levels": ""
+    "higher_levels": "",
+    "condition_inflict": [],
+    "saving_throw": [],
+    "misc_tags": []
   },
   "locate_creature": {
     "id": "locate_creature",
@@ -7143,7 +8941,10 @@ const SPELLS: Dictionary = {
       "Wizard"
     ],
     "description": "Describe or name a creature that is familiar to you. You sense the direction to the creature's location if that creature is within 1,000 feet of you. If the creature is moving, you know the direction of its movement. The spell can locate a specific creature known to you or the nearest creature of a specific kind (such as a human or a unicorn) if you have seen such a creature up close—within 30 feet—at least once. If the creature you described or named is in a different form, such as under the effects of a Flesh to Stone or Polymorph spell, this spell doesn't locate the creature. This spell can't locate a creature if any thickness of lead blocks a direct path between you and the creature.",
-    "higher_levels": ""
+    "higher_levels": "",
+    "condition_inflict": [],
+    "saving_throw": [],
+    "misc_tags": []
   },
   "locate_object": {
     "id": "locate_object",
@@ -7166,7 +8967,12 @@ const SPELLS: Dictionary = {
       "Wizard"
     ],
     "description": "Describe or name an object that is familiar to you. You sense the direction to the object's location if that object is within 1,000 feet of you. If the object is in motion, you know the direction of its movement. The spell can locate a specific object known to you if you have seen it up close—within 30 feet—at least once. Alternatively, the spell can locate the nearest object of a particular kind, such as a certain kind of apparel, jewelry, furniture, tool, or weapon. This spell can't locate an object if any thickness of lead blocks a direct path between you and the object.",
-    "higher_levels": ""
+    "higher_levels": "",
+    "condition_inflict": [],
+    "saving_throw": [],
+    "misc_tags": [
+      "OBJ"
+    ]
   },
   "longstrider": {
     "id": "longstrider",
@@ -7197,7 +9003,12 @@ const SPELLS: Dictionary = {
     "allow_repeat_targets": false,
     "target_clicks_per_slot_above_base": 1,
     "projectile_style": "longstrider",
-    "projectile_travel_seconds": 0.65
+    "projectile_travel_seconds": 0.65,
+    "condition_inflict": [],
+    "saving_throw": [],
+    "misc_tags": [
+      "SCT"
+    ]
   },
   "maddening_darkness": {
     "id": "maddening_darkness",
@@ -7223,7 +9034,14 @@ const SPELLS: Dictionary = {
     "aoe_shape": "sphere",
     "aoe_radius_feet": 60,
     "range_feet": 150,
-    "persistent": true
+    "persistent": true,
+    "condition_inflict": [],
+    "saving_throw": [
+      "wisdom"
+    ],
+    "misc_tags": [
+      "OBS"
+    ]
   },
   "maelstrom": {
     "id": "maelstrom",
@@ -7241,7 +9059,16 @@ const SPELLS: Dictionary = {
       "Druid"
     ],
     "description": "A swirling mass of 5-foot-deep water appears in a 30-foot radius centered on a point you can see within range. The point must be on the ground or in a body of water. Until the spell ends, that area is 3, and any creature that starts its turn there must succeed on a Strength saving throw or take 6d6 bludgeoning damage and be pulled 10 feet toward the center.",
-    "higher_levels": ""
+    "higher_levels": "",
+    "condition_inflict": [],
+    "saving_throw": [
+      "strength"
+    ],
+    "misc_tags": [
+      "DFT",
+      "FMV",
+      "SGT"
+    ]
   },
   "mage_armor": {
     "id": "mage_armor",
@@ -7263,7 +9090,12 @@ const SPELLS: Dictionary = {
     "higher_levels": "",
     "visual_style": "arcane",
     "transient_seconds": 5,
-    "range_feet": 5
+    "range_feet": 5,
+    "condition_inflict": [],
+    "saving_throw": [],
+    "misc_tags": [
+      "MAC"
+    ]
   },
   "mage_hand": {
     "id": "mage_hand",
@@ -7285,7 +9117,12 @@ const SPELLS: Dictionary = {
       "Wizard"
     ],
     "description": "A spectral, floating hand appears at a point you choose within range. The hand lasts for the duration. The hand vanishes if it is ever more than 30 feet away from you or if you cast this spell again. When you cast the spell, you can use the hand to manipulate an object, open an unlocked door or container, stow or retrieve an item from an open container, or pour the contents out of a vial. As a Magic action on your later turns, you can control the hand thus again. As part of that action, you can move the hand up to 30 feet. The hand can't attack, activate magic items, or carry more than 10 pounds.",
-    "higher_levels": ""
+    "higher_levels": "",
+    "condition_inflict": [],
+    "saving_throw": [],
+    "misc_tags": [
+      "OBJ"
+    ]
   },
   "magic_circle": {
     "id": "magic_circle",
@@ -7313,7 +9150,14 @@ const SPELLS: Dictionary = {
     "aoe_shape": "cylinder",
     "aoe_radius_feet": 10,
     "aoe_height_feet": 20,
-    "range_feet": 10
+    "range_feet": 10,
+    "condition_inflict": [],
+    "saving_throw": [
+      "charisma"
+    ],
+    "misc_tags": [
+      "SGT"
+    ]
   },
   "magic_jar": {
     "id": "magic_jar",
@@ -7331,7 +9175,15 @@ const SPELLS: Dictionary = {
       "Wizard"
     ],
     "description": "Your body falls into a catatonic state as your soul leaves it and enters the container you used for the spell's Material component. While your soul inhabits the container, you are aware of your surroundings as if you were in the container's space. You can't move or take Reactions. The only action you can take is to project your soul up to 100 feet out of the container, either returning to your living body (and ending the spell) or attempting to possess a Humanoid's body. You can attempt to possess any Humanoid within 100 feet of you that you can see (creatures warded by a Protection from Evil and Good or Magic Circle spell can't be possessed). The target makes a Charisma saving throw. On a failed save, your soul enters the target's body, and the target's soul becomes trapped in the container. On a successful save, the target resists your efforts to possess it, and you can't attempt to possess it again for 24 hours. Once you possess a creature's body, you control it. Your Hit Points, Hit Point Dice, Strength, Dexterity, Constitution, Speed, and senses are replaced by the creature's. You otherwise keep your game statistics. Meanwhile, the possessed creature's soul can perceive from the container using its own senses, but it can't move and it is Incapacitated. While possessing a body, you can take a Magic action to return from the host body to the container if it is within 100 feet of you, returning the host creature's soul to its body. If the host body dies while you're in it, the creature dies, and you make a Charisma saving throw against your own spellcasting DC. On a success, you return to the container if it is within 100 feet of you. Otherwise, you die. If the container is destroyed or the spell ends, your soul returns to your body. If your body is more than 100 feet away from you or if your body is dead, you die. If another creature's soul is in the container when it is destroyed, the creature's soul returns to its body if the body is alive and within 100 feet. Otherwise, that creature dies. When the spell ends, the container is destroyed.",
-    "higher_levels": ""
+    "higher_levels": "",
+    "condition_inflict": [],
+    "saving_throw": [
+      "charisma"
+    ],
+    "misc_tags": [
+      "SGT",
+      "UA"
+    ]
   },
   "magic_missile": {
     "id": "magic_missile",
@@ -7358,7 +9210,12 @@ const SPELLS: Dictionary = {
     "base_target_clicks": 3,
     "target_clicks_per_slot_above_base": 1,
     "allow_repeat_targets": true,
-    "allow_point_target": true
+    "allow_point_target": true,
+    "condition_inflict": [],
+    "saving_throw": [],
+    "misc_tags": [
+      "SGT"
+    ]
   },
   "magic_mouth": {
     "id": "magic_mouth",
@@ -7378,7 +9235,13 @@ const SPELLS: Dictionary = {
       "Wizard"
     ],
     "description": "You implant a message within an object in range—a message that is uttered when a trigger condition is met. Choose an object that you can see and that isn't being worn or carried by another creature. Then speak the message, which must be 25 words or fewer, though it can be delivered over as long as 10 minutes. Finally, determine the circumstance that will trigger the spell to deliver your message. When that trigger occurs, a magical mouth appears on the object and recites the message in your voice and at the same volume you spoke. If the object you chose has a mouth or something that looks like a mouth (for example, the mouth of a statue), the magical mouth appears there, so the words appear to come from the object's mouth. When you cast this spell, you can have the spell end after it delivers its message, or it can remain and repeat its message whenever the trigger occurs. The trigger can be as general or as detailed as you like, though it must be based on visual or audible conditions that occur within 30 feet of the object. For example, you could instruct the mouth to speak when any creature moves within 30 feet of the object or when a silver bell rings within 30 feet of it.",
-    "higher_levels": ""
+    "higher_levels": "",
+    "condition_inflict": [],
+    "saving_throw": [],
+    "misc_tags": [
+      "OBJ",
+      "SGT"
+    ]
   },
   "magic_stone": {
     "id": "magic_stone",
@@ -7405,7 +9268,12 @@ const SPELLS: Dictionary = {
     "range_feet": 5,
     "level17_damage": "1d6 Bludgeoning",
     "projectile_style": "magic_stone",
-    "projectile_travel_seconds": 0.65
+    "projectile_travel_seconds": 0.65,
+    "condition_inflict": [],
+    "saving_throw": [],
+    "misc_tags": [
+      "AAD"
+    ]
   },
   "magic_weapon": {
     "id": "magic_weapon",
@@ -7427,7 +9295,10 @@ const SPELLS: Dictionary = {
       "Wizard"
     ],
     "description": "You touch a nonmagical weapon. Until the spell ends, that weapon becomes a magic weapon with a +1 bonus to attack rolls and damage rolls. The spell ends early if you cast it again.",
-    "higher_levels": "Using a Higher-Level Spell Slot: The bonus increases to +2 with a level 3-5 spell slot. The bonus increases to +3 with a level 6+ spell slot."
+    "higher_levels": "Using a Higher-Level Spell Slot: The bonus increases to +2 with a level 3-5 spell slot. The bonus increases to +3 with a level 6+ spell slot.",
+    "condition_inflict": [],
+    "saving_throw": [],
+    "misc_tags": []
   },
   "magnify_gravity": {
     "id": "magnify_gravity",
@@ -7464,7 +9335,14 @@ const SPELLS: Dictionary = {
       "Wizard"
     ],
     "description": "You create the image of an object, a creature, or some other visible phenomenon that is no larger than a 20-foot Cube. The image appears at a spot that you can see within range and lasts for the duration. It seems real, including sounds, smells, and temperature appropriate to the thing depicted, but it can't deal damage or cause conditions. If you are within range of the illusion, you can take a Magic action to cause the image to move to any other spot within range. As the image changes location, you can alter its appearance so that its movements appear natural for the image. For example, if you create an image of a creature and move it, you can alter the image so that it appears to be walking. Similarly, you can cause the illusion to make different sounds at different times, even making it carry on a conversation, for example. Physical interaction with the image reveals it to be an illusion, for things can pass through it. A creature that takes a Study action to examine the image can determine that it is an illusion with a successful Intelligence (Investigation) check against your spell save DC. If a creature discerns the illusion for what it is, the creature can see through the image, and its other sensory qualities become faint to the creature.",
-    "higher_levels": "Using a Higher-Level Spell Slot: The spell lasts until dispelled, without requiring Concentration, if cast with a level 4+ spell slot."
+    "higher_levels": "Using a Higher-Level Spell Slot: The spell lasts until dispelled, without requiring Concentration, if cast with a level 4+ spell slot.",
+    "condition_inflict": [],
+    "saving_throw": [],
+    "misc_tags": [
+      "PRM",
+      "SGT",
+      "UA"
+    ]
   },
   "mass_cure_wounds": {
     "id": "mass_cure_wounds",
@@ -7490,7 +9368,12 @@ const SPELLS: Dictionary = {
     "target_mode": "token_then_point",
     "aoe_shape": "sphere",
     "aoe_radius_feet": 30,
-    "range_feet": 60
+    "range_feet": 60,
+    "condition_inflict": [],
+    "saving_throw": [],
+    "misc_tags": [
+      "HL"
+    ]
   },
   "mass_heal": {
     "id": "mass_heal",
@@ -7514,7 +9397,13 @@ const SPELLS: Dictionary = {
     "target_mode": "token_then_multi_token",
     "range_feet": 60,
     "projectile_style": "mass_heal",
-    "projectile_travel_seconds": 0.65
+    "projectile_travel_seconds": 0.65,
+    "condition_inflict": [],
+    "saving_throw": [],
+    "misc_tags": [
+      "HL",
+      "SGT"
+    ]
   },
   "mass_healing_word": {
     "id": "mass_healing_word",
@@ -7541,7 +9430,13 @@ const SPELLS: Dictionary = {
     "base_target_clicks": 6,
     "allow_repeat_targets": false,
     "projectile_style": "mass_healing_word",
-    "projectile_travel_seconds": 0.65
+    "projectile_travel_seconds": 0.65,
+    "condition_inflict": [],
+    "saving_throw": [],
+    "misc_tags": [
+      "HL",
+      "SGT"
+    ]
   },
   "mass_polymorph": {
     "id": "mass_polymorph",
@@ -7562,7 +9457,15 @@ const SPELLS: Dictionary = {
     ],
     "description": "You transform up to ten creatures of your choice that you can see within range. An unwilling target must succeed on a Wisdom saving throw to resist the transformation. An unwilling shapechanger automatically succeeds on the save. Each target assumes a beast form of your choice, and you can choose the same form or different ones for each target. The new form can be type=beast you have seen whose challenge rating is equal to or less than the target's (or half the target's level, if the target doesn't have a challenge rating). The target's game statistics, including mental ability scores, are replaced by the statistics of the chosen beast, but the target retains its hit points, alignment, and personality. Each target gains a number of temporary hit points equal to the hit points of its new form. These temporary hit points can't be replaced by temporary hit points from another source. A target reverts to its normal form when it has no more temporary hit points or it dies. If the spell ends before then, the creature loses all its temporary hit points and reverts to its normal form. The creature is limited in the actions it can perform by the nature of its new form. It can't speak, cast spells, or do anything else that requires hands or speech. The target's gear melds into the new form. The target can't activate, use, wield, or otherwise benefit from any of its equipment.",
     "higher_levels": "",
-    "range_feet": 120
+    "range_feet": 120,
+    "condition_inflict": [],
+    "saving_throw": [
+      "wisdom"
+    ],
+    "misc_tags": [
+      "SGT",
+      "THP"
+    ]
   },
   "mass_suggestion": {
     "id": "mass_suggestion",
@@ -7586,7 +9489,16 @@ const SPELLS: Dictionary = {
     "higher_levels": "Using a Higher-Level Spell Slot: The duration is longer with a spell slot of level 7 (10 days), 8 (30 days), or 9 (366 days).",
     "visual_style": "enchantment",
     "transient_seconds": 5,
-    "range_feet": 60
+    "range_feet": 60,
+    "condition_inflict": [
+      "charmed"
+    ],
+    "saving_throw": [
+      "wisdom"
+    ],
+    "misc_tags": [
+      "SGT"
+    ]
   },
   "maximilians_earthen_grasp": {
     "id": "maximilians_earthen_grasp",
@@ -7608,7 +9520,17 @@ const SPELLS: Dictionary = {
     "higher_levels": "",
     "visual_style": "arcane",
     "transient_seconds": 5,
-    "range_feet": 30
+    "range_feet": 30,
+    "condition_inflict": [
+      "restrained"
+    ],
+    "saving_throw": [
+      "strength"
+    ],
+    "misc_tags": [
+      "SGT",
+      "UA"
+    ]
   },
   "maze": {
     "id": "maze",
@@ -7632,7 +9554,12 @@ const SPELLS: Dictionary = {
     "target_mode": "token_then_token",
     "range_feet": 60,
     "projectile_style": "maze",
-    "projectile_travel_seconds": 0.65
+    "projectile_travel_seconds": 0.65,
+    "condition_inflict": [],
+    "saving_throw": [],
+    "misc_tags": [
+      "SGT"
+    ]
   },
   "meld_into_stone": {
     "id": "meld_into_stone",
@@ -7656,7 +9583,12 @@ const SPELLS: Dictionary = {
     "visual_style": "force",
     "transient_seconds": 5,
     "target_mode": "token_then_token",
-    "range_feet": 5
+    "range_feet": 5,
+    "condition_inflict": [
+      "prone"
+    ],
+    "saving_throw": [],
+    "misc_tags": []
   },
   "melfs_acid_arrow": {
     "id": "melfs_acid_arrow",
@@ -7680,7 +9612,10 @@ const SPELLS: Dictionary = {
     "target_mode": "token_then_token",
     "range_feet": 90,
     "projectile_style": "melfs_acid_arrow",
-    "projectile_travel_seconds": 0.65
+    "projectile_travel_seconds": 0.65,
+    "condition_inflict": [],
+    "saving_throw": [],
+    "misc_tags": []
   },
   "melfs_minute_meteors": {
     "id": "melfs_minute_meteors",
@@ -7699,7 +9634,14 @@ const SPELLS: Dictionary = {
       "Wizard"
     ],
     "description": "You create six tiny meteors in your space. They float in the air and orbit you for the spell's duration. When you cast the spell—and as a bonus action on each of your turns thereafter—you can expend one or two of the meteors, sending them streaking toward a point or points you choose within 120 feet of you. Once a meteor reaches its destination or impacts against a solid surface, the meteor explodes. Each creature within 5 feet of the point where the meteor explodes must make a Dexterity saving throw. A creature takes 2d6 fire damage on a failed save, or half as much damage on a successful one.",
-    "higher_levels": "At Higher Levels: When you cast this spell using a spell slot of 4th level or higher, the number of meteors created increases by two for each slot level above 3rd."
+    "higher_levels": "At Higher Levels: When you cast this spell using a spell slot of 4th level or higher, the number of meteors created increases by two for each slot level above 3rd.",
+    "condition_inflict": [],
+    "saving_throw": [
+      "dexterity"
+    ],
+    "misc_tags": [
+      "UBA"
+    ]
   },
   "mending": {
     "id": "mending",
@@ -7722,7 +9664,12 @@ const SPELLS: Dictionary = {
       "Wizard"
     ],
     "description": "This spell repairs a single break or tear in an object you touch, such as a broken chain link, two halves of a broken key, a torn cloak, or a leaking wineskin. As long as the break or tear is no larger than 1 foot in any dimension, you mend it, leaving no trace of the former damage. This spell can physically repair a magic item, but it can't restore magic to such an object.",
-    "higher_levels": ""
+    "higher_levels": "",
+    "condition_inflict": [],
+    "saving_throw": [],
+    "misc_tags": [
+      "OBJ"
+    ]
   },
   "mental_prison": {
     "id": "mental_prison",
@@ -7745,7 +9692,14 @@ const SPELLS: Dictionary = {
     "higher_levels": "",
     "visual_style": "psychic",
     "transient_seconds": 5,
-    "range_feet": 60
+    "range_feet": 60,
+    "condition_inflict": [],
+    "saving_throw": [
+      "intelligence"
+    ],
+    "misc_tags": [
+      "SGT"
+    ]
   },
   "message": {
     "id": "message",
@@ -7770,7 +9724,10 @@ const SPELLS: Dictionary = {
     "higher_levels": "",
     "visual_style": "arcane",
     "transient_seconds": 5,
-    "range_feet": 120
+    "range_feet": 120,
+    "condition_inflict": [],
+    "saving_throw": [],
+    "misc_tags": []
   },
   "meteor_swarm": {
     "id": "meteor_swarm",
@@ -7794,7 +9751,16 @@ const SPELLS: Dictionary = {
     "transient_seconds": 5,
     "aoe_shape": "sphere",
     "aoe_radius_feet": 40,
-    "range_feet": 1
+    "range_feet": 1,
+    "condition_inflict": [],
+    "saving_throw": [
+      "dexterity"
+    ],
+    "misc_tags": [
+      "BO",
+      "OBJ",
+      "SGT"
+    ]
   },
   "mighty_fortress": {
     "id": "mighty_fortress",
@@ -7812,7 +9778,14 @@ const SPELLS: Dictionary = {
       "Wizard"
     ],
     "description": "A fortress of stone erupts from a square area of ground of your choice that you can see within range. The area is 120 feet on each side, and it must not have any buildings or other structures on it. Any creatures in the area are harmlessly lifted up as the fortress rises. The fortress has four turrets with square bases, each one 20 feet on a side and 30 feet tall, with one turret on each corner. The turrets are connected to each other by stone walls that are each 80 feet long, creating an enclosed area. Each wall is 1 foot thick and is composed of panels that are 10 feet wide and 20 feet tall. Each panel is contiguous with two other panels or one other panel and a turret. You can place up to four stone doors in the fortress's outer wall. A small keep stands inside the enclosed area. The keep has a square base that is 50 feet on each side, and it has three floors with 10-foot-high ceilings. Each of the floors can be divided into as many rooms as you like, provided each room is at least 5 feet on each side. The floors of the keep are connected by stone staircases, its walls are 6 inches thick, and interior rooms can have stone doors or open archways as you choose. The keep is furnished and decorated however you like, and it contains sufficient food to serve a nine-course banquet for up to 100 people each day. Furnishings, food, and other objects created by this spell crumble to dust if removed from the fortress. A staff of one hundred invisible servants obeys any command given to them by creatures you designate when you cast the spell. Each servant functions as if created by the unseen servant spell. The walls, turrets, and keep are all made of stone that can be damaged. Each 10-foot-by-10-foot section of stone has AC 15 and 30 hit points per inch of thickness. It is immune to poison and psychic damage. Reducing a section of stone to 0 hit points destroys it and might cause connected sections to buckle and collapse at the DM's discretion. After 7 days or when you cast this spell somewhere else, the fortress harmlessly crumbles and sinks back into the ground, leaving any creatures that were inside it safely on the ground. Casting this spell on the same spot once every 7 days for a year makes the fortress permanent.",
-    "higher_levels": ""
+    "higher_levels": "",
+    "condition_inflict": [],
+    "saving_throw": [],
+    "misc_tags": [
+      "PIR",
+      "PRM",
+      "SGT"
+    ]
   },
   "mind_blank": {
     "id": "mind_blank",
@@ -7837,7 +9810,10 @@ const SPELLS: Dictionary = {
     "target_mode": "token_then_token",
     "range_feet": 5,
     "projectile_style": "mind_blank",
-    "projectile_travel_seconds": 0.65
+    "projectile_travel_seconds": 0.65,
+    "condition_inflict": [],
+    "saving_throw": [],
+    "misc_tags": []
   },
   "mind_sliver": {
     "id": "mind_sliver",
@@ -7858,7 +9834,15 @@ const SPELLS: Dictionary = {
     ],
     "description": "You try to temporarily sliver the mind of one creature you can see within range. The target must succeed on an Intelligence saving throw or take 1d6 Psychic damage and subtract 1d4 from the next saving throw it makes before the end of your next turn.",
     "higher_levels": "Cantrip Upgrade: The damage increases by 1d6 when you reach levels 5 (2d6), 11 (3d6), and 17 (4d6).",
-    "range_feet": 60
+    "range_feet": 60,
+    "condition_inflict": [],
+    "saving_throw": [
+      "intelligence"
+    ],
+    "misc_tags": [
+      "SCL",
+      "SGT"
+    ]
   },
   "mind_spike": {
     "id": "mind_spike",
@@ -7879,7 +9863,14 @@ const SPELLS: Dictionary = {
     ],
     "description": "You drive a spike of psionic energy into the mind of one creature you can see within range. The target makes a Wisdom saving throw, taking 3d8 Psychic damage on a failed save or half as much damage on a successful one. On a failed save, you also always know the target's location until the spell ends, but only while the two of you are on the same plane of existence. While you have this knowledge, the target can't become hidden from you, and if it has the Invisible condition, it gains no benefit from that condition against you.",
     "higher_levels": "Using a Higher-Level Spell Slot: The damage increases by 1d8 for each spell slot level above 2.",
-    "range_feet": 120
+    "range_feet": 120,
+    "condition_inflict": [],
+    "saving_throw": [
+      "wisdom"
+    ],
+    "misc_tags": [
+      "SGT"
+    ]
   },
   "minor_illusion": {
     "id": "minor_illusion",
@@ -7900,7 +9891,10 @@ const SPELLS: Dictionary = {
       "Wizard"
     ],
     "description": "You create a sound or an image of an object within range that lasts for the duration. See the descriptions below for the effects of each. The illusion ends if you cast this spell again. If a creature takes a Study action to examine the sound or image, the creature can determine that it is an illusion with a successful Intelligence (Investigation) check against your spell save DC. If a creature discerns the illusion for what it is, the illusion becomes faint to the creature. Sound: If you create a sound, its volume can range from a whisper to a scream. It can be your voice, someone else's voice, a lion's roar, a beating of drums, or any other sound you choose. The sound continues unabated throughout the duration, or you can make discrete sounds at different times before the spell ends. Image: If you create an image of an object—such as a chair, muddy footprints, or a small chest—it must be no larger than a 5-foot Cube. The image can't create sound, light, smell, or any other sensory effect. Physical interaction with the image reveals it to be an illusion, since things can pass through it.",
-    "higher_levels": ""
+    "higher_levels": "",
+    "condition_inflict": [],
+    "saving_throw": [],
+    "misc_tags": []
   },
   "mirage_arcane": {
     "id": "mirage_arcane",
@@ -7920,7 +9914,12 @@ const SPELLS: Dictionary = {
       "Wizard"
     ],
     "description": "You make terrain in an area up to 1 mile square look, sound, smell, and even feel like some other sort of terrain. Open fields or a road could be made to resemble a swamp, hill, crevasse, or some other rough or impassable terrain. A pond can be made to seem like a grassy meadow, a precipice like a gentle slope, or a rock-strewn gully like a wide and smooth road. Similarly, you can alter the appearance of structures or add them where none are present. The spell doesn't disguise, conceal, or add creatures. The illusion includes audible, visual, tactile, and olfactory elements, so it can turn clear ground into Difficult Terrain (or vice versa) or otherwise impede movement through the area. Any piece of the illusory terrain (such as a rock or stick) that is removed from the spell's area disappears immediately. Creatures with Truesight can see through the illusion to the terrain's true form; however, all other elements of the illusion remain, so while the creature is aware of the illusion's presence, the creature can still physically interact with the illusion.",
-    "higher_levels": ""
+    "higher_levels": "",
+    "condition_inflict": [],
+    "saving_throw": [],
+    "misc_tags": [
+      "DFT"
+    ]
   },
   "mirror_image": {
     "id": "mirror_image",
@@ -7941,7 +9940,10 @@ const SPELLS: Dictionary = {
       "Wizard"
     ],
     "description": "Three illusory duplicates of yourself appear in your space. Until the spell ends, the duplicates move with you and mimic your actions, shifting position so it's impossible to track which image is real. Each time a creature hits you with an attack roll during the spell's duration, roll a d6 for each of your remaining duplicates. If any of the d6s rolls a 3 or higher, one of the duplicates is hit instead of you, and the duplicate is destroyed. The duplicates otherwise ignore all other damage and effects. The spell ends when all three duplicates are destroyed. A creature is unaffected by this spell if it has the Blinded condition, Blindsight, or Truesight.",
-    "higher_levels": ""
+    "higher_levels": "",
+    "condition_inflict": [],
+    "saving_throw": [],
+    "misc_tags": []
   },
   "mislead": {
     "id": "mislead",
@@ -7961,7 +9963,15 @@ const SPELLS: Dictionary = {
       "Wizard"
     ],
     "description": "You gain the Invisible condition at the same time that an illusory double of you appears where you are standing. The double lasts for the duration, but the invisibility ends immediately after you make an attack roll, deal damage, or cast a spell. As a Magic action, you can move the illusory double up to twice your Speed and make it gesture, speak, and behave in whatever way you choose. It is intangible and invulnerable. You can see through its eyes and hear through its ears as if you were located where it is.",
-    "higher_levels": ""
+    "higher_levels": "",
+    "condition_inflict": [
+      "invisible"
+    ],
+    "saving_throw": [],
+    "misc_tags": [
+      "SGT",
+      "UA"
+    ]
   },
   "misty_step": {
     "id": "misty_step",
@@ -7981,7 +9991,13 @@ const SPELLS: Dictionary = {
       "Wizard"
     ],
     "description": "Briefly surrounded by silvery mist, you teleport up to 30 feet to an unoccupied space you can see.",
-    "higher_levels": ""
+    "higher_levels": "",
+    "condition_inflict": [],
+    "saving_throw": [],
+    "misc_tags": [
+      "SGT",
+      "TP"
+    ]
   },
   "modify_memory": {
     "id": "modify_memory",
@@ -8006,7 +10022,18 @@ const SPELLS: Dictionary = {
     "target_mode": "token_then_token",
     "range_feet": 30,
     "projectile_style": "modify_memory",
-    "projectile_travel_seconds": 0.65
+    "projectile_travel_seconds": 0.65,
+    "condition_inflict": [
+      "charmed",
+      "incapacitated"
+    ],
+    "saving_throw": [
+      "wisdom"
+    ],
+    "misc_tags": [
+      "PRM",
+      "SGT"
+    ]
   },
   "mold_earth": {
     "id": "mold_earth",
@@ -8031,7 +10058,13 @@ const SPELLS: Dictionary = {
     "transient_seconds": 5,
     "aoe_shape": "cube",
     "aoe_side_feet": 5,
-    "range_feet": 30
+    "range_feet": 30,
+    "condition_inflict": [],
+    "saving_throw": [],
+    "misc_tags": [
+      "DFT",
+      "SGT"
+    ]
   },
   "moment_of_prescience": {
     "id": "moment_of_prescience",
@@ -8067,7 +10100,15 @@ const SPELLS: Dictionary = {
       "Druid"
     ],
     "description": "A silvery beam of pale light shines down in a 5-foot-radius, 40-foot-high Cylinder centered on a point within range. Until the spell ends, Dim Light fills the Cylinder, and you can take a Magic action on later turns to move the Cylinder up to 60 feet. When the Cylinder appears, each creature in it makes a Constitution saving throw. On a failed save, a creature takes 2d10 Radiant damage, and if the creature is shape-shifted (as a result of the Polymorph spell, for example), it reverts to its true form and can't shape-shift until it leaves the Cylinder. On a successful save, a creature takes half as much damage only. A creature also makes this save when the spell's area moves into its space and when it enters the spell's area or ends its turn there. A creature makes this save only once per turn.",
-    "higher_levels": "Using a Higher-Level Spell Slot: The damage increases by 1d10 for each spell slot level above 2."
+    "higher_levels": "Using a Higher-Level Spell Slot: The damage increases by 1d10 for each spell slot level above 2.",
+    "condition_inflict": [],
+    "saving_throw": [
+      "constitution"
+    ],
+    "misc_tags": [
+      "LGT",
+      "UA"
+    ]
   },
   "mordenkainens_faithful_hound": {
     "id": "mordenkainens_faithful_hound",
@@ -8086,7 +10127,15 @@ const SPELLS: Dictionary = {
       "Wizard"
     ],
     "description": "You conjure a phantom watchdog in an unoccupied space that you can see within range. The hound remains for the duration or until the two of you are more than 300 feet apart from each other. No one but you can see the hound, and it is intangible and invulnerable. When a Small or larger creature comes within 30 feet of it without first speaking the password that you specify when you cast this spell, the hound starts barking loudly. The hound has Truesight with a range of 30 feet. At the start of each of your turns, the hound attempts to bite one enemy within 5 feet of it. That enemy must succeed on a Dexterity saving throw or take 4d8 Force damage. On your later turns, you can take a Magic action to move the hound up to 30 feet.",
-    "higher_levels": ""
+    "higher_levels": "",
+    "condition_inflict": [],
+    "saving_throw": [
+      "dexterity"
+    ],
+    "misc_tags": [
+      "SGT",
+      "UA"
+    ]
   },
   "mordenkainens_lucubration": {
     "id": "mordenkainens_lucubration",
@@ -8123,7 +10172,12 @@ const SPELLS: Dictionary = {
       "Wizard"
     ],
     "description": "You conjure a shimmering door in range that lasts for the duration. The door leads to an extradimensional dwelling and is 5 feet wide and 10 feet tall. You and any creature you designate when you cast the spell can enter the extradimensional dwelling as long as the door remains open. You can open or close it (no action required) if you are within 30 feet of it. While closed, the door is imperceptible. Beyond the door is a magnificent foyer with numerous chambers beyond. The dwelling's atmosphere is clean, fresh, and warm. You can create any floor plan you like for the dwelling, but it can't exceed 50 contiguous 10-foot Cubes. The place is furnished and decorated as you choose. It contains sufficient food to serve a nine-course banquet for up to 100 people. Furnishings and other objects created by this spell dissipate into smoke if removed from it. A staff of 100 near-transparent servants attends all who enter. You determine the appearance of these servants and their attire. They are invulnerable and obey your commands. Each servant can perform tasks that a human could perform, but they can't attack or take any action that would directly harm another creature. Thus the servants can fetch things, clean, mend, fold clothes, light fires, serve food, pour wine, and so on. The servants can't leave the dwelling. When the spell ends, any creatures or objects left inside the extradimensional space are expelled into the unoccupied spaces nearest to the entrance.",
-    "higher_levels": ""
+    "higher_levels": "",
+    "condition_inflict": [],
+    "saving_throw": [],
+    "misc_tags": [
+      "OBJ"
+    ]
   },
   "mordenkainens_private_sanctum": {
     "id": "mordenkainens_private_sanctum",
@@ -8142,7 +10196,13 @@ const SPELLS: Dictionary = {
       "Wizard"
     ],
     "description": "You make an area within range magically secure. The area is a Cube that can be as small as 5 feet to as large as 100 feet on each side. The spell lasts for the duration. When you cast the spell, you decide what sort of security the spell provides, choosing any of the following properties: Sound can't pass through the barrier at the edge of the warded area. The barrier of the warded area appears dark and foggy, preventing vision (including Darkvision) through it. Sensors created by Divination spells can't appear inside the protected area or pass through the barrier at its perimeter. Creatures in the area can't be targeted by Divination spells. Nothing can teleport into or out of the warded area. Planar travel is blocked within the warded area. Casting this spell on the same spot every day for 365 days makes the spell last until dispelled.",
-    "higher_levels": "Using a Higher-Level Spell Slot: You can increase the size of the Cube by 100 feet for each spell slot level above 4."
+    "higher_levels": "Using a Higher-Level Spell Slot: You can increase the size of the Cube by 100 feet for each spell slot level above 4.",
+    "condition_inflict": [],
+    "saving_throw": [],
+    "misc_tags": [
+      "PIR",
+      "PRM"
+    ]
   },
   "mordenkainens_sword": {
     "id": "mordenkainens_sword",
@@ -8165,7 +10225,14 @@ const SPELLS: Dictionary = {
     "target_mode": "token_then_token",
     "projectile_style": "mordenkainens_sword",
     "projectile_travel_seconds": 0.65,
-    "range_feet": 90
+    "range_feet": 90,
+    "condition_inflict": [],
+    "saving_throw": [],
+    "misc_tags": [
+      "SGT",
+      "UA",
+      "UBA"
+    ]
   },
   "motivational_speech": {
     "id": "motivational_speech",
@@ -8219,7 +10286,10 @@ const SPELLS: Dictionary = {
     "aoe_side_feet": 40,
     "requires_ground": true,
     "range_feet": 120,
-    "persistent": true
+    "persistent": true,
+    "condition_inflict": [],
+    "saving_throw": [],
+    "misc_tags": []
   },
   "nathairs_mischief": {
     "id": "nathairs_mischief",
@@ -8290,7 +10360,12 @@ const SPELLS: Dictionary = {
     "target_mode": "token_then_token",
     "range_feet": 5,
     "projectile_style": "nondetection",
-    "projectile_travel_seconds": 0.65
+    "projectile_travel_seconds": 0.65,
+    "condition_inflict": [],
+    "saving_throw": [],
+    "misc_tags": [
+      "OBJ"
+    ]
   },
   "nystuls_magic_aura": {
     "id": "nystuls_magic_aura",
@@ -8314,7 +10389,14 @@ const SPELLS: Dictionary = {
     "target_mode": "token_then_token",
     "range_feet": 5,
     "projectile_style": "nystuls_magic_aura",
-    "projectile_travel_seconds": 0.65
+    "projectile_travel_seconds": 0.65,
+    "condition_inflict": [],
+    "saving_throw": [],
+    "misc_tags": [
+      "OBJ",
+      "PIR",
+      "PRM"
+    ]
   },
   "otilukes_freezing_sphere": {
     "id": "otilukes_freezing_sphere",
@@ -8333,7 +10415,12 @@ const SPELLS: Dictionary = {
       "Wizard"
     ],
     "description": "A frigid globe streaks from you to a point of your choice within range, where it explodes in a 60-foot-radius Sphere. Each creature in that area makes a Constitution saving throw, taking 10d6 Cold damage on a failed save or half as much damage on a successful one. If the globe strikes a body of water, it freezes the water to a depth of 6 inches over an area 30 feet square. This ice lasts for 1 minute. Creatures that were swimming on the surface of frozen water are trapped in the ice and have the Restrained condition. A trapped creature can take an action to make a Strength (Athletics) check against your spell save DC to break free. You can refrain from firing the globe after completing the spell's casting. If you do so, a globe about the size of a sling bullet, cool to the touch, appears in your hand. At any time, you or a creature you give the globe to can throw the globe (to a range of 40 feet) or hurl it with a sling (to the sling's normal range). It shatters on impact, with the same effect as a normal casting of the spell. You can also set the globe down without shattering it. After 1 minute, if the globe hasn't already shattered, it explodes.",
-    "higher_levels": "Using a Higher-Level Spell Slot: The damage increases by 1d6 for each spell slot level above 6."
+    "higher_levels": "Using a Higher-Level Spell Slot: The damage increases by 1d6 for each spell slot level above 6.",
+    "condition_inflict": [],
+    "saving_throw": [
+      "constitution"
+    ],
+    "misc_tags": []
   },
   "otilukes_resilient_sphere": {
     "id": "otilukes_resilient_sphere",
@@ -8358,7 +10445,14 @@ const SPELLS: Dictionary = {
     "target_mode": "token_then_token",
     "range_feet": 30,
     "projectile_style": "otilukes_resilient_sphere",
-    "projectile_travel_seconds": 0.65
+    "projectile_travel_seconds": 0.65,
+    "condition_inflict": [],
+    "saving_throw": [
+      "dexterity"
+    ],
+    "misc_tags": [
+      "OBJ"
+    ]
   },
   "ottos_irresistible_dance": {
     "id": "ottos_irresistible_dance",
@@ -8383,7 +10477,16 @@ const SPELLS: Dictionary = {
     "target_mode": "token_then_token",
     "range_feet": 30,
     "projectile_style": "ottos_irresistible_dance",
-    "projectile_travel_seconds": 0.65
+    "projectile_travel_seconds": 0.65,
+    "condition_inflict": [
+      "charmed"
+    ],
+    "saving_throw": [
+      "wisdom"
+    ],
+    "misc_tags": [
+      "SGT"
+    ]
   },
   "pass_without_trace": {
     "id": "pass_without_trace",
@@ -8402,7 +10505,10 @@ const SPELLS: Dictionary = {
       "Ranger"
     ],
     "description": "You radiate a concealing aura in a 30-foot Emanation for the duration. While in the aura, you and each creature you choose have a +10 bonus to Dexterity (Stealth) checks and leave no tracks.",
-    "higher_levels": ""
+    "higher_levels": "",
+    "condition_inflict": [],
+    "saving_throw": [],
+    "misc_tags": []
   },
   "passwall": {
     "id": "passwall",
@@ -8420,7 +10526,13 @@ const SPELLS: Dictionary = {
       "Wizard"
     ],
     "description": "A passage appears at a point that you can see on a wooden, plaster, or stone surface (such as a wall, ceiling, or floor) within range and lasts for the duration. You choose the opening's dimensions: up to 5 feet wide, 8 feet tall, and 20 feet deep. The passage creates no instability in a structure surrounding it. When the opening disappears, any creatures or objects still in the passage created by the spell are safely ejected to an unoccupied space nearest to the surface on which you cast the spell.",
-    "higher_levels": ""
+    "higher_levels": "",
+    "condition_inflict": [],
+    "saving_throw": [],
+    "misc_tags": [
+      "OBJ",
+      "SGT"
+    ]
   },
   "phantasmal_force": {
     "id": "phantasmal_force",
@@ -8443,7 +10555,14 @@ const SPELLS: Dictionary = {
     "higher_levels": "",
     "visual_style": "psychic",
     "transient_seconds": 5,
-    "range_feet": 60
+    "range_feet": 60,
+    "condition_inflict": [],
+    "saving_throw": [
+      "intelligence"
+    ],
+    "misc_tags": [
+      "SGT"
+    ]
   },
   "phantasmal_killer": {
     "id": "phantasmal_killer",
@@ -8468,7 +10587,14 @@ const SPELLS: Dictionary = {
     "target_mode": "token_then_token",
     "range_feet": 120,
     "projectile_style": "phantasmal_killer",
-    "projectile_travel_seconds": 0.65
+    "projectile_travel_seconds": 0.65,
+    "condition_inflict": [],
+    "saving_throw": [
+      "wisdom"
+    ],
+    "misc_tags": [
+      "SGT"
+    ]
   },
   "phantom_steed": {
     "id": "phantom_steed",
@@ -8486,7 +10612,12 @@ const SPELLS: Dictionary = {
       "Wizard"
     ],
     "description": "A Large, quasi-real, horselike creature appears on the ground in an unoccupied space of your choice within range. You decide the creature's appearance, and it is equipped with a saddle, bit, and bridle. Any of the equipment created by the spell vanishes in a puff of smoke if it is carried more than 10 feet away from the steed. For the duration, you or a creature you choose can ride the steed. The steed uses the Riding Horse stat block, except it has a Speed of 100 feet and can travel 13 miles in an hour. When the spell ends, the steed gradually fades, giving the rider 1 minute to dismount. The spell ends early if the steed takes any damage.",
-    "higher_levels": ""
+    "higher_levels": "",
+    "condition_inflict": [],
+    "saving_throw": [],
+    "misc_tags": [
+      "SMN"
+    ]
   },
   "planar_ally": {
     "id": "planar_ally",
@@ -8504,7 +10635,12 @@ const SPELLS: Dictionary = {
       "Cleric"
     ],
     "description": "You beseech an otherworldly entity for aid. The being must be known to you: a god, a demon prince, or some other being of cosmic power. That entity sends a type=celestial, an type=elemental, or a type=fiend loyal to it to aid you, making the creature appear in an unoccupied space within range. If you know a specific creature's name, you can speak that name when you cast this spell to request that creature, though you might get a different creature anyway (DM's choice). When the creature appears, it is under no compulsion to behave a particular way. You can ask it to perform a service in exchange for payment, but it isn't obliged to do so. The requested task could range from simple (fly us across the chasm, or help us fight a battle) to complex (spy on our enemies, or protect us during our foray into the dungeon). You must be able to communicate with the creature to bargain for its services. Payment can take a variety of forms. A Celestial might require a sizable donation of gold or magic items to an allied temple, while a Fiend might demand a living sacrifice or a gift of treasure. Some creatures might exchange their service for a quest undertaken by you. A task that can be measured in minutes requires a payment worth 100 GP per minute. A task measured in hours requires 1,000 GP per hour. And a task measured in days (up to 10 days) requires 10,000 GP per day. The DM can adjust these payments based on the circumstances under which you cast the spell. If the task is aligned with the creature's ethos, the payment might be halved or even waived. Nonhazardous tasks typically require only half the suggested payment, while especially dangerous tasks might require a greater gift. Creatures rarely accept tasks that seem suicidal. After the creature completes the task, or when the agreed-upon duration of service expires, the creature returns to its home plane after reporting back to you if possible. If you are unable to agree on a price for the creature's service, the creature immediately returns to its home plane.",
-    "higher_levels": ""
+    "higher_levels": "",
+    "condition_inflict": [],
+    "saving_throw": [],
+    "misc_tags": [
+      "SMN"
+    ]
   },
   "planar_binding": {
     "id": "planar_binding",
@@ -8532,7 +10668,14 @@ const SPELLS: Dictionary = {
     "target_mode": "token_then_token",
     "range_feet": 60,
     "projectile_style": "planar_binding",
-    "projectile_travel_seconds": 0.65
+    "projectile_travel_seconds": 0.65,
+    "condition_inflict": [],
+    "saving_throw": [
+      "charisma"
+    ],
+    "misc_tags": [
+      "SMN"
+    ]
   },
   "plane_shift": {
     "id": "plane_shift",
@@ -8554,7 +10697,13 @@ const SPELLS: Dictionary = {
       "Wizard"
     ],
     "description": "You and up to eight willing creatures who link hands in a circle are transported to a different plane of existence. You can specify a target destination in general terms, such as the City of Brass on the Elemental Plane of Fire or the palace of Dispater on the second level of the Nine Hells, and you appear in or near that destination, as determined by the DM. Alternatively, if you know the sigil sequence of a teleportation circle on another plane of existence, this spell can take you to that circle. If the teleportation circle is too small to hold all the creatures you transported, they appear in the closest unoccupied spaces next to the circle.",
-    "higher_levels": ""
+    "higher_levels": "",
+    "condition_inflict": [],
+    "saving_throw": [],
+    "misc_tags": [
+      "PS",
+      "TP"
+    ]
   },
   "plant_growth": {
     "id": "plant_growth",
@@ -8574,7 +10723,12 @@ const SPELLS: Dictionary = {
       "Ranger"
     ],
     "description": "This spell channels vitality into plants. The casting time you use determines whether the spell has the Overgrowth or the Enrichment effect below. Overgrowth: Choose a point within range. All normal plants in a 100-foot-radius Sphere centered on that point become thick and overgrown. A creature moving through that area must spend 4 feet of movement for every 1 foot it moves. You can exclude one or more areas of any size within the spell's area from being affected. Enrichment: All plants in a half-mile radius centered on a point within range become enriched for 365 days. The plants yield twice the normal amount of food when harvested. They can benefit from only one Plant Growth per year.",
-    "higher_levels": ""
+    "higher_levels": "",
+    "condition_inflict": [],
+    "saving_throw": [],
+    "misc_tags": [
+      "DFT"
+    ]
   },
   "poison_spray": {
     "id": "poison_spray",
@@ -8601,7 +10755,12 @@ const SPELLS: Dictionary = {
     "target_mode": "token_then_token",
     "projectile_style": "poison_spray",
     "projectile_travel_seconds": 0.65,
-    "allow_point_target": true
+    "allow_point_target": true,
+    "condition_inflict": [],
+    "saving_throw": [],
+    "misc_tags": [
+      "SCL"
+    ]
   },
   "polymorph": {
     "id": "polymorph",
@@ -8623,7 +10782,14 @@ const SPELLS: Dictionary = {
     ],
     "description": "You attempt to transform a creature that you can see within range into a Beast. The target must succeed on a Wisdom saving throw or shape-shift into Beast form for the duration. That form can be any type=beast you choose that has a Challenge Rating equal to or less than the target's (or the target's level if it doesn't have a Challenge Rating). The target's game statistics are replaced by the stat block of the chosen Beast, but the target retains its alignment, personality, creature type, Hit Points, and Hit Point Dice. The target gains a number of Temporary Hit Points equal to the Hit Points of the Beast form. These Temporary Hit Points vanish if any remain when the spell ends. The spell ends early on the target if it has no Temporary Hit Points left. The target is limited in the actions it can perform by the anatomy of its new form, and it can't speak or cast spells. The target's gear melds into the new form. The creature can't use or otherwise benefit from any of that equipment.",
     "higher_levels": "",
-    "range_feet": 60
+    "range_feet": 60,
+    "condition_inflict": [],
+    "saving_throw": [
+      "wisdom"
+    ],
+    "misc_tags": [
+      "SGT"
+    ]
   },
   "power_word_fortify": {
     "id": "power_word_fortify",
@@ -8650,7 +10816,13 @@ const SPELLS: Dictionary = {
     "base_target_clicks": 6,
     "allow_repeat_targets": false,
     "projectile_style": "power_word_fortify",
-    "projectile_travel_seconds": 0.65
+    "projectile_travel_seconds": 0.65,
+    "condition_inflict": [],
+    "saving_throw": [],
+    "misc_tags": [
+      "SGT",
+      "THP"
+    ]
   },
   "power_word_heal": {
     "id": "power_word_heal",
@@ -8675,7 +10847,12 @@ const SPELLS: Dictionary = {
     "target_mode": "token_then_token",
     "range_feet": 60,
     "projectile_style": "power_word_heal",
-    "projectile_travel_seconds": 0.65
+    "projectile_travel_seconds": 0.65,
+    "condition_inflict": [],
+    "saving_throw": [],
+    "misc_tags": [
+      "HL"
+    ]
   },
   "power_word_kill": {
     "id": "power_word_kill",
@@ -8699,7 +10876,12 @@ const SPELLS: Dictionary = {
     "higher_levels": "",
     "visual_style": "psychic",
     "transient_seconds": 5,
-    "range_feet": 60
+    "range_feet": 60,
+    "condition_inflict": [],
+    "saving_throw": [],
+    "misc_tags": [
+      "SGT"
+    ]
   },
   "power_word_pain": {
     "id": "power_word_pain",
@@ -8747,7 +10929,16 @@ const SPELLS: Dictionary = {
     "higher_levels": "",
     "visual_style": "arcane",
     "transient_seconds": 5,
-    "range_feet": 60
+    "range_feet": 60,
+    "condition_inflict": [
+      "stunned"
+    ],
+    "saving_throw": [
+      "constitution"
+    ],
+    "misc_tags": [
+      "SGT"
+    ]
   },
   "prayer_of_healing": {
     "id": "prayer_of_healing",
@@ -8774,7 +10965,12 @@ const SPELLS: Dictionary = {
     "base_target_clicks": 5,
     "allow_repeat_targets": false,
     "projectile_style": "prayer_of_healing",
-    "projectile_travel_seconds": 0.65
+    "projectile_travel_seconds": 0.65,
+    "condition_inflict": [],
+    "saving_throw": [],
+    "misc_tags": [
+      "HL"
+    ]
   },
   "prestidigitation": {
     "id": "prestidigitation",
@@ -8796,7 +10992,13 @@ const SPELLS: Dictionary = {
       "Wizard"
     ],
     "description": "You create a magical effect within range. Choose the effect from the options below. If you cast this spell multiple times, you can have up to three of its non-instantaneous effects active at a time. Sensory Effect: You create an instantaneous, harmless sensory effect, such as a shower of sparks, a puff of wind, faint musical notes, or an odd odor. Fire Play: You instantaneously light or snuff out a candle, a torch, or a small campfire. Clean or Soil: You instantaneously clean or soil an object no larger than 1 cubic foot. Minor Sensation: You chill, warm, or flavor up to 1 cubic foot of nonliving material for 1 hour. Magic Mark: You make a color, a small mark, or a symbol appear on an object or a surface for 1 hour. Minor Creation: You create a nonmagical trinket or an illusory image that can fit in your hand. It lasts until the end of your next turn. A trinket can deal no damage and has no monetary worth.",
-    "higher_levels": ""
+    "higher_levels": "",
+    "condition_inflict": [],
+    "saving_throw": [],
+    "misc_tags": [
+      "BO",
+      "OBJ"
+    ]
   },
   "primal_savagery": {
     "id": "primal_savagery",
@@ -8814,7 +11016,12 @@ const SPELLS: Dictionary = {
       "Druid"
     ],
     "description": "You channel primal magic to cause your teeth or fingernails to sharpen, ready to deliver a corrosive attack. Make a melee spell attack against one creature within 5 feet of you. On a hit, the target takes 1d10 acid damage. After you make the attack, your teeth or fingernails return to normal. The spell's damage increases by 1d10 when you reach 5th level (2d10), 11th level (3d10), and 17th level (4d10).",
-    "higher_levels": ""
+    "higher_levels": "",
+    "condition_inflict": [],
+    "saving_throw": [],
+    "misc_tags": [
+      "SCL"
+    ]
   },
   "primordial_ward": {
     "id": "primordial_ward",
@@ -8832,7 +11039,10 @@ const SPELLS: Dictionary = {
       "Druid"
     ],
     "description": "You have resistance to acid, cold, fire, lightning, and thunder damage for the spell's duration. When you take damage of one of those types, you can use your reaction to gain immunity to that type of damage, including against the triggering damage. If you do so, the resistances end, and you have the immunity until the end of your next turn, at which time the spell ends.",
-    "higher_levels": ""
+    "higher_levels": "",
+    "condition_inflict": [],
+    "saving_throw": [],
+    "misc_tags": []
   },
   "prismatic_spray": {
     "id": "prismatic_spray",
@@ -8858,7 +11068,20 @@ const SPELLS: Dictionary = {
     "aoe_shape": "cone",
     "aoe_length_cells": 12,
     "direction_limit_feet": 60,
-    "show_range_preview": false
+    "show_range_preview": false,
+    "condition_inflict": [
+      "blinded",
+      "petrified",
+      "restrained"
+    ],
+    "saving_throw": [
+      "constitution",
+      "dexterity",
+      "wisdom"
+    ],
+    "misc_tags": [
+      "PRM"
+    ]
   },
   "prismatic_wall": {
     "id": "prismatic_wall",
@@ -8877,7 +11100,21 @@ const SPELLS: Dictionary = {
       "Wizard"
     ],
     "description": "A shimmering, multicolored plane of light forms a vertical opaque wall—up to 90 feet long, 30 feet high, and 1 inch thick—centered on a point within range. Alternatively, you shape the wall into a globe up to 30 feet in diameter centered on a point within range. The wall lasts for the duration. If you position the wall in a space occupied by a creature, the spell ends instantly without effect. The wall sheds Bright Light within 100 feet and Dim Light for an additional 100 feet. You and creatures you designate when you cast the spell can pass through and be near the wall without harm. If another creature that can see the wall moves within 20 feet of it or starts its turn there, the creature must succeed on a Constitution saving throw or have the Blinded condition for 1 minute. The wall consists of seven layers, each with a different color. When a creature reaches into or passes through the wall, it does so one layer at a time through all the layers. Each layer forces the creature to make a Dexterity saving throw or be affected by that layer's properties as described in the Prismatic Layers table. The wall, which has AC 10, can be destroyed one layer at a time, in order from red to violet, by means specific to each layer. If a layer is destroyed, it is gone for the duration. Antimagic Field has no effect on the wall, and Dispel Magic can affect only the violet layer. 1 Red. Failed Save: 12d6 Fire damage. Successful Save: Half as much damage. Additional Effects: Nonmagical ranged attacks can't pass through this layer, which is destroyed if it takes at least 25 Cold damage. 2 Orange. Failed Save: 12d6 Acid damage. Successful Save: Half as much damage. Additional Effects: Magical ranged attacks can't pass through this layer, which is destroyed by a strong wind (such as the one created by Gust of Wind). 3 Yellow. Failed Save: 12d6 Lightning damage. Successful Save: Half as much damage. Additional Effects: The layer is destroyed if it takes at least 60 Force damage. 4 Green. Failed Save: 12d6 Poison damage. Successful Save: Half as much damage. Additional Effects: A Passwall spell, or another spell of equal or greater level that can open a portal on a solid surface, destroys this layer. 5 Blue. Failed Save: 12d6 Cold damage. Successful Save: Half as much damage. Additional Effects: The layer is destroyed if it takes at least 25 Fire damage. 6 Indigo. Failed Save: The target has the Restrained condition and makes a Constitution saving throw at the end of each of its turns. If it successfully saves three times, the condition ends. If it fails three times, it has the Petrified condition until it is freed by an effect like the Greater Restoration spell. The successes and failures needn't be consecutive; keep track of both until the target collects three of a kind. Additional Effects: Spells can't be cast through this layer, which is destroyed by Bright Light shed by the Daylight spell. 7 Violet. Failed Save: The target has the Blinded condition and makes a Wisdom saving throw at the start of your next turn. On a successful save, the condition ends. On a failed save, the condition ends, and the creature teleports to another plane of existence (DM's choice). Additional Effects: This layer is destroyed by Dispel Magic.",
-    "higher_levels": ""
+    "higher_levels": "",
+    "condition_inflict": [
+      "blinded",
+      "petrified",
+      "restrained"
+    ],
+    "saving_throw": [
+      "constitution",
+      "dexterity",
+      "wisdom"
+    ],
+    "misc_tags": [
+      "LGT",
+      "PRM"
+    ]
   },
   "produce_flame": {
     "id": "produce_flame",
@@ -8895,7 +11132,15 @@ const SPELLS: Dictionary = {
       "Druid"
     ],
     "description": "A flickering flame appears in your hand and remains there for the duration. While there, the flame emits no heat and ignites nothing, and it sheds Bright Light in a 20-foot radius and Dim Light for an additional 20 feet. The spell ends if you cast it again. Until the spell ends, you can take a Magic action to hurl fire at a creature or an object within 60 feet of you. Make a ranged spell attack. On a hit, the target takes 1d8 Fire damage.",
-    "higher_levels": "Cantrip Upgrade: The damage increases by 1d8 when you reach levels 5 (2d8), 11 (3d8), and 17 (4d8)."
+    "higher_levels": "Cantrip Upgrade: The damage increases by 1d8 when you reach levels 5 (2d8), 11 (3d8), and 17 (4d8).",
+    "condition_inflict": [],
+    "saving_throw": [],
+    "misc_tags": [
+      "LGT",
+      "OBJ",
+      "SCL",
+      "UA"
+    ]
   },
   "programmed_illusion": {
     "id": "programmed_illusion",
@@ -8914,7 +11159,10 @@ const SPELLS: Dictionary = {
       "Wizard"
     ],
     "description": "You create an illusion of an object, a creature, or some other visible phenomenon within range that activates when a specific trigger occurs. The illusion is imperceptible until then. It must be no larger than a 30-foot Cube, and you decide when you cast the spell how the illusion behaves and what sounds it makes. This scripted performance can last up to 5 minutes. When the trigger you specify occurs, the illusion springs into existence and performs in the manner you described. Once the illusion finishes performing, it disappears and remains dormant for 10 minutes, after which the illusion can be activated again. The trigger can be as general or as detailed as you like, though it must be based on visual or audible phenomena that occur within 30 feet of the area. For example, you could create an illusion of yourself to appear and warn off others who attempt to open a trapped door. Physical interaction with the image reveals it to be illusory, since things can pass through it. A creature that takes the Study action to examine the image can determine that it is an illusion with a successful Intelligence (Investigation) check against your spell save DC. If a creature discerns the illusion for what it is, the creature can see through the image, and any noise it makes sounds hollow to the creature.",
-    "higher_levels": ""
+    "higher_levels": "",
+    "condition_inflict": [],
+    "saving_throw": [],
+    "misc_tags": []
   },
   "project_image": {
     "id": "project_image",
@@ -8933,7 +11181,13 @@ const SPELLS: Dictionary = {
       "Wizard"
     ],
     "description": "You create an illusory copy of yourself that lasts for the duration. The copy can appear at any location within range that you have seen before, regardless of intervening obstacles. The illusion looks and sounds like you, but it is intangible. If the illusion takes any damage, it disappears, and the spell ends. You can see through the illusion's eyes and hear through its ears as if you were in its space. As a Magic action, you can move it up to 60 feet and make it gesture, speak, and behave in whatever way you choose. It mimics your mannerisms perfectly. Physical interaction with the image reveals it to be illusory, since things can pass through it. A creature that takes the Study action to examine the image can determine that it is an illusion with a successful Intelligence (Investigation) check against your spell save DC. If a creature discerns the illusion for what it is, the creature can see through the image, and any noise it makes sounds hollow to the creature.",
-    "higher_levels": ""
+    "higher_levels": "",
+    "condition_inflict": [],
+    "saving_throw": [],
+    "misc_tags": [
+      "SGT",
+      "UA"
+    ]
   },
   "protection_from_energy": {
     "id": "protection_from_energy",
@@ -8959,7 +11213,10 @@ const SPELLS: Dictionary = {
     "higher_levels": "",
     "visual_style": "arcane",
     "transient_seconds": 5,
-    "range_feet": 5
+    "range_feet": 5,
+    "condition_inflict": [],
+    "saving_throw": [],
+    "misc_tags": []
   },
   "protection_from_evil_and_good": {
     "id": "protection_from_evil_and_good",
@@ -8989,7 +11246,12 @@ const SPELLS: Dictionary = {
     "base_target_clicks": 1,
     "allow_repeat_targets": false,
     "projectile_style": "protection_from_evil_and_good",
-    "projectile_travel_seconds": 0.65
+    "projectile_travel_seconds": 0.65,
+    "condition_inflict": [],
+    "saving_throw": [],
+    "misc_tags": [
+      "ADV"
+    ]
   },
   "protection_from_poison": {
     "id": "protection_from_poison",
@@ -9017,7 +11279,12 @@ const SPELLS: Dictionary = {
     "target_mode": "token_then_token",
     "range_feet": 5,
     "projectile_style": "protection_from_poison",
-    "projectile_travel_seconds": 0.65
+    "projectile_travel_seconds": 0.65,
+    "condition_inflict": [],
+    "saving_throw": [],
+    "misc_tags": [
+      "ADV"
+    ]
   },
   "psychic_scream": {
     "id": "psychic_scream",
@@ -9041,7 +11308,16 @@ const SPELLS: Dictionary = {
     "higher_levels": "",
     "visual_style": "psychic",
     "transient_seconds": 5,
-    "range_feet": 90
+    "range_feet": 90,
+    "condition_inflict": [
+      "stunned"
+    ],
+    "saving_throw": [
+      "intelligence"
+    ],
+    "misc_tags": [
+      "SGT"
+    ]
   },
   "pulse_wave": {
     "id": "pulse_wave",
@@ -9084,7 +11360,10 @@ const SPELLS: Dictionary = {
     "target_mode": "token_then_point",
     "aoe_shape": "sphere",
     "aoe_radius_feet": 5,
-    "range_feet": 10
+    "range_feet": 10,
+    "condition_inflict": [],
+    "saving_throw": [],
+    "misc_tags": []
   },
   "pyrotechnics": {
     "id": "pyrotechnics",
@@ -9108,7 +11387,17 @@ const SPELLS: Dictionary = {
     "higher_levels": "",
     "visual_style": "arcane",
     "transient_seconds": 5,
-    "range_feet": 60
+    "range_feet": 60,
+    "condition_inflict": [
+      "blinded"
+    ],
+    "saving_throw": [
+      "constitution"
+    ],
+    "misc_tags": [
+      "OBS",
+      "SGT"
+    ]
   },
   "raise_dead": {
     "id": "raise_dead",
@@ -9128,7 +11417,12 @@ const SPELLS: Dictionary = {
       "Paladin"
     ],
     "description": "With a touch, you revive a dead creature if it has been dead no longer than 10 days and it wasn't Undead when it died. The creature returns to life with 1 Hit Point. This spell also neutralizes any poisons that affected the creature at the time of death. This spell closes all mortal wounds, but it doesn't restore missing body parts. If the creature is lacking body parts or organs integral for its survival—its head, for instance—the spell automatically fails. Coming back from the dead is an ordeal. The target takes a -4 penalty to D20 Tests. Every time the target finishes a Long Rest, the penalty is reduced by 1 until it becomes 0.",
-    "higher_levels": ""
+    "higher_levels": "",
+    "condition_inflict": [],
+    "saving_throw": [],
+    "misc_tags": [
+      "HL"
+    ]
   },
   "rarys_telepathic_bond": {
     "id": "rarys_telepathic_bond",
@@ -9154,7 +11448,10 @@ const SPELLS: Dictionary = {
     "range_feet": 30,
     "projectile_style": "rarys_telepathic_bond",
     "projectile_travel_seconds": 0.65,
-    "base_target_clicks": 8
+    "base_target_clicks": 8,
+    "condition_inflict": [],
+    "saving_throw": [],
+    "misc_tags": []
   },
   "raulothims_psychic_lance": {
     "id": "raulothims_psychic_lance",
@@ -9219,7 +11516,12 @@ const SPELLS: Dictionary = {
     "target_mode": "token_then_token",
     "range_feet": 60,
     "projectile_style": "ray_of_enfeeblement",
-    "projectile_travel_seconds": 0.65
+    "projectile_travel_seconds": 0.65,
+    "condition_inflict": [],
+    "saving_throw": [
+      "constitution"
+    ],
+    "misc_tags": []
   },
   "ray_of_frost": {
     "id": "ray_of_frost",
@@ -9244,7 +11546,12 @@ const SPELLS: Dictionary = {
     "target_mode": "token_then_token",
     "projectile_style": "ray_of_frost",
     "projectile_travel_seconds": 0.65,
-    "allow_point_target": true
+    "allow_point_target": true,
+    "condition_inflict": [],
+    "saving_throw": [],
+    "misc_tags": [
+      "SCL"
+    ]
   },
   "ray_of_sickness": {
     "id": "ray_of_sickness",
@@ -9268,7 +11575,12 @@ const SPELLS: Dictionary = {
     "target_mode": "token_then_token",
     "projectile_style": "ray_of_sickness",
     "projectile_travel_seconds": 0.65,
-    "allow_point_target": true
+    "allow_point_target": true,
+    "condition_inflict": [
+      "poisoned"
+    ],
+    "saving_throw": [],
+    "misc_tags": []
   },
   "reality_break": {
     "id": "reality_break",
@@ -9314,7 +11626,12 @@ const SPELLS: Dictionary = {
     "target_mode": "token_then_token",
     "range_feet": 5,
     "projectile_style": "regenerate",
-    "projectile_travel_seconds": 0.65
+    "projectile_travel_seconds": 0.65,
+    "condition_inflict": [],
+    "saving_throw": [],
+    "misc_tags": [
+      "HL"
+    ]
   },
   "reincarnate": {
     "id": "reincarnate",
@@ -9332,7 +11649,13 @@ const SPELLS: Dictionary = {
       "Druid"
     ],
     "description": "You touch a dead Humanoid or a piece of one. If the creature has been dead no longer than 10 days, the spell forms a new body for it and calls the soul to enter that body. Roll 1d10 and consult the table below to determine the body's species, or the DM chooses another playable species. 1 Aasimar 2 Dragonborn 3 Dwarf 4 Elf 5 Gnome 6 Goliath 7 Halfling 8 Human 9 Orc 10 Tiefling The reincarnated creature makes any choices that a species' description offers, and the creature recalls its former life. It retains the capabilities it had in its original form, except it loses the traits of its previous species and gains the traits of its new one.",
-    "higher_levels": ""
+    "higher_levels": "",
+    "condition_inflict": [],
+    "saving_throw": [],
+    "misc_tags": [
+      "HL",
+      "RO"
+    ]
   },
   "remove_curse": {
     "id": "remove_curse",
@@ -9359,7 +11682,12 @@ const SPELLS: Dictionary = {
     "target_mode": "token_then_token",
     "range_feet": 5,
     "projectile_style": "remove_curse",
-    "projectile_travel_seconds": 0.65
+    "projectile_travel_seconds": 0.65,
+    "condition_inflict": [],
+    "saving_throw": [],
+    "misc_tags": [
+      "OBJ"
+    ]
   },
   "resistance": {
     "id": "resistance",
@@ -9385,7 +11713,10 @@ const SPELLS: Dictionary = {
     "target_mode": "token_then_token",
     "range_feet": 5,
     "projectile_style": "resistance",
-    "projectile_travel_seconds": 0.65
+    "projectile_travel_seconds": 0.65,
+    "condition_inflict": [],
+    "saving_throw": [],
+    "misc_tags": []
   },
   "resurrection": {
     "id": "resurrection",
@@ -9404,7 +11735,12 @@ const SPELLS: Dictionary = {
       "Cleric"
     ],
     "description": "With a touch, you revive a dead creature that has been dead for no more than a century, didn't die of old age, and wasn't Undead when it died. The creature returns to life with all its Hit Points. This spell also neutralizes any poisons that affected the creature at the time of death. This spell closes all mortal wounds and restores any missing body parts. Coming back from the dead is an ordeal. The target takes a -4 penalty to D20 Tests. Every time the target finishes a Long Rest, the penalty is reduced by 1 until it becomes 0. Casting this spell to revive a creature that has been dead for 365 days or longer taxes you. Until you finish a Long Rest, you can't cast spells again, and you have Disadvantage on D20 Tests.",
-    "higher_levels": ""
+    "higher_levels": "",
+    "condition_inflict": [],
+    "saving_throw": [],
+    "misc_tags": [
+      "HL"
+    ]
   },
   "reverse_gravity": {
     "id": "reverse_gravity",
@@ -9431,7 +11767,14 @@ const SPELLS: Dictionary = {
     "aoe_radius_feet": 50,
     "aoe_height_feet": 100,
     "range_feet": 100,
-    "persistent": true
+    "persistent": true,
+    "condition_inflict": [],
+    "saving_throw": [
+      "dexterity"
+    ],
+    "misc_tags": [
+      "OBJ"
+    ]
   },
   "revivify": {
     "id": "revivify",
@@ -9459,7 +11802,12 @@ const SPELLS: Dictionary = {
     "target_mode": "token_then_token",
     "range_feet": 5,
     "projectile_style": "revivify",
-    "projectile_travel_seconds": 0.65
+    "projectile_travel_seconds": 0.65,
+    "condition_inflict": [],
+    "saving_throw": [],
+    "misc_tags": [
+      "HL"
+    ]
   },
   "reweave_fate": {
     "id": "reweave_fate",
@@ -9530,7 +11878,10 @@ const SPELLS: Dictionary = {
       "Wizard"
     ],
     "description": "You touch a rope. One end of it hovers upward until the rope hangs perpendicular to the ground or the rope reaches a ceiling. At the rope's upper end, an Invisible 3-foot-by-5-foot portal opens to an extradimensional space that lasts until the spell ends. That space can be reached by climbing the rope, which can be pulled into or dropped out of it. The space can hold up to eight Medium or smaller creatures. Attacks, spells, and other effects can't pass into or out of the space, but creatures inside it can see through the portal. Anything inside the space drops out when the spell ends.",
-    "higher_levels": ""
+    "higher_levels": "",
+    "condition_inflict": [],
+    "saving_throw": [],
+    "misc_tags": []
   },
   "sacred_flame": {
     "id": "sacred_flame",
@@ -9555,7 +11906,15 @@ const SPELLS: Dictionary = {
     "range_feet": 60,
     "level17_damage": "4d8 Radiant",
     "projectile_style": "sacred_flame",
-    "projectile_travel_seconds": 0.65
+    "projectile_travel_seconds": 0.65,
+    "condition_inflict": [],
+    "saving_throw": [
+      "dexterity"
+    ],
+    "misc_tags": [
+      "SCL",
+      "SGT"
+    ]
   },
   "sanctuary": {
     "id": "sanctuary",
@@ -9580,7 +11939,12 @@ const SPELLS: Dictionary = {
     "target_mode": "token_then_token",
     "range_feet": 30,
     "projectile_style": "sanctuary",
-    "projectile_travel_seconds": 0.65
+    "projectile_travel_seconds": 0.65,
+    "condition_inflict": [],
+    "saving_throw": [
+      "wisdom"
+    ],
+    "misc_tags": []
   },
   "sapping_sting": {
     "id": "sapping_sting",
@@ -9621,7 +11985,15 @@ const SPELLS: Dictionary = {
     ],
     "description": "The air quivers around up to five creatures of your choice that you can see within range. An unwilling creature must succeed on a Wisdom saving throw to resist this spell. You teleport each affected target to an unoccupied space that you can see within 120 feet of you. That space must be on the ground or on a floor.",
     "higher_levels": "",
-    "range_feet": 30
+    "range_feet": 30,
+    "condition_inflict": [],
+    "saving_throw": [
+      "wisdom"
+    ],
+    "misc_tags": [
+      "SGT",
+      "TP"
+    ]
   },
   "scorching_ray": {
     "id": "scorching_ray",
@@ -9648,7 +12020,10 @@ const SPELLS: Dictionary = {
     "base_target_clicks": 3,
     "target_clicks_per_slot_above_base": 1,
     "allow_repeat_targets": true,
-    "allow_point_target": true
+    "allow_point_target": true,
+    "condition_inflict": [],
+    "saving_throw": [],
+    "misc_tags": []
   },
   "scrying": {
     "id": "scrying",
@@ -9670,7 +12045,12 @@ const SPELLS: Dictionary = {
       "Wizard"
     ],
     "description": "You can see and hear a creature you choose that is on the same plane of existence as you. The target makes a Wisdom saving throw, which is modified (see the tables below) by how well you know the target and the sort of physical connection you have to it. The target doesn't know what it is making the save against, only that it feels uneasy. Secondhand (heard of the target) +5 Firsthand (met the target) +0 Extensive (know the target well) -5 Picture or other likeness -2 Garment or other possession -4 Body part, lock of hair, or bit of nail -10 On a successful save, the target isn't affected, and you can't use this spell on it again for 24 hours. On a failed save, the spell creates an Invisible, intangible sensor within 10 feet of the target. You can see and hear through the sensor as if you were there. The sensor moves with the target, remaining within 10 feet of it for the duration. If something can see the sensor, it appears as a luminous orb about the size of your fist. Instead of targeting a creature, you can target a location you have seen. When you do so, the sensor appears at that location and doesn't move.",
-    "higher_levels": ""
+    "higher_levels": "",
+    "condition_inflict": [],
+    "saving_throw": [
+      "wisdom"
+    ],
+    "misc_tags": []
   },
   "searing_smite": {
     "id": "searing_smite",
@@ -9689,7 +12069,14 @@ const SPELLS: Dictionary = {
       "Ranger"
     ],
     "description": "As you hit the target, it takes an extra 1d6 Fire damage from the attack. At the start of each of its turns until the spell ends, the target takes 1d6 Fire damage and then makes a Constitution saving throw. On a failed save, the spell continues. On a successful save, the spell ends.",
-    "higher_levels": "Using a Higher-Level Spell Slot: All the damage increases by 1d6 for each spell slot level above 1."
+    "higher_levels": "Using a Higher-Level Spell Slot: All the damage increases by 1d6 for each spell slot level above 1.",
+    "condition_inflict": [],
+    "saving_throw": [
+      "constitution"
+    ],
+    "misc_tags": [
+      "AAD"
+    ]
   },
   "see_invisibility": {
     "id": "see_invisibility",
@@ -9710,7 +12097,10 @@ const SPELLS: Dictionary = {
       "Wizard"
     ],
     "description": "For the duration, you see creatures and objects that have the Invisible condition as if they were visible, and you can see into the Ethereal Plane. Creatures and objects there appear ghostly.",
-    "higher_levels": ""
+    "higher_levels": "",
+    "condition_inflict": [],
+    "saving_throw": [],
+    "misc_tags": []
   },
   "seeming": {
     "id": "seeming",
@@ -9733,7 +12123,14 @@ const SPELLS: Dictionary = {
     "higher_levels": "",
     "visual_style": "arcane",
     "transient_seconds": 5,
-    "range_feet": 30
+    "range_feet": 30,
+    "condition_inflict": [],
+    "saving_throw": [
+      "charisma"
+    ],
+    "misc_tags": [
+      "SGT"
+    ]
   },
   "sending": {
     "id": "sending",
@@ -9753,7 +12150,10 @@ const SPELLS: Dictionary = {
       "Wizard"
     ],
     "description": "You send a short message of 25 words or fewer to a creature you have met or a creature described to you by someone who has met it. The target hears the message in its mind, recognizes you as the sender if it knows you, and can answer in a like manner immediately. The spell enables targets to understand the meaning of your message. You can send the message across any distance and even to other planes of existence, but if the target is on a different plane than you, there is a 5 chance that the message doesn't arrive. You know if the delivery fails. Upon receiving your message, a creature can block your ability to reach it again with this spell for 8 hours. If you try to send another message during that time, you learn that you are blocked, and the spell fails.",
-    "higher_levels": ""
+    "higher_levels": "",
+    "condition_inflict": [],
+    "saving_throw": [],
+    "misc_tags": []
   },
   "sequester": {
     "id": "sequester",
@@ -9777,7 +12177,15 @@ const SPELLS: Dictionary = {
     "target_mode": "token_then_token",
     "range_feet": 5,
     "projectile_style": "sequester",
-    "projectile_travel_seconds": 0.65
+    "projectile_travel_seconds": 0.65,
+    "condition_inflict": [
+      "invisible",
+      "unconscious"
+    ],
+    "saving_throw": [],
+    "misc_tags": [
+      "OBJ"
+    ]
   },
   "shadow_blade": {
     "id": "shadow_blade",
@@ -9797,7 +12205,12 @@ const SPELLS: Dictionary = {
       "Wizard"
     ],
     "description": "You weave together threads of shadow to create a sword of solidified gloom in your hand. This magic sword lasts until the spell ends. It counts as a simple melee weapon with which you are proficient. It deals 2d8 psychic damage on a hit and has the finesse, light, and thrown properties (range 20/60). In addition, when you use the sword to attack a target that is in dim light or darkness, you make the attack roll with advantage. If you drop the weapon or throw it, it dissipates at the end of the turn. Thereafter, while the spell persists, you can use a bonus action to cause the sword to reappear in your hand.",
-    "higher_levels": "At Higher Levels: When you cast this spell using a 3rd- or 4th-level spell slot, the damage increases to 3d8. When you cast it using a 5th- or 6th-level spell slot, the damage increases to 4d8. When you cast it using a spell slot of 7th level or higher, the damage increases to 5d8."
+    "higher_levels": "At Higher Levels: When you cast this spell using a 3rd- or 4th-level spell slot, the damage increases to 3d8. When you cast it using a 5th- or 6th-level spell slot, the damage increases to 4d8. When you cast it using a spell slot of 7th level or higher, the damage increases to 5d8.",
+    "condition_inflict": [],
+    "saving_throw": [],
+    "misc_tags": [
+      "UBA"
+    ]
   },
   "shadow_of_moil": {
     "id": "shadow_of_moil",
@@ -9819,7 +12232,12 @@ const SPELLS: Dictionary = {
     "visual_style": "necrotic",
     "transient_seconds": 5,
     "target_mode": "token_then_token",
-    "range_feet": 5
+    "range_feet": 5,
+    "condition_inflict": [],
+    "saving_throw": [],
+    "misc_tags": [
+      "OBS"
+    ]
   },
   "shape_water": {
     "id": "shape_water",
@@ -9844,7 +12262,12 @@ const SPELLS: Dictionary = {
     "transient_seconds": 5,
     "aoe_shape": "cube",
     "aoe_side_feet": 5,
-    "range_feet": 30
+    "range_feet": 30,
+    "condition_inflict": [],
+    "saving_throw": [],
+    "misc_tags": [
+      "SGT"
+    ]
   },
   "shapechange": {
     "id": "shapechange",
@@ -9863,7 +12286,13 @@ const SPELLS: Dictionary = {
       "Wizard"
     ],
     "description": "You shape-shift into another creature for the duration or until you take a Magic action to shape-shift into a different eligible form. The new form must be of a creature that has a Challenge Rating no higher than your level or Challenge Rating. You must have seen the sort of creature before, and it can't be a Construct or an Undead. When you cast the spell, you gain a number of Temporary Hit Points equal to the Hit Points of the first form into which you shape-shift. These Temporary Hit Points vanish if any remain when the spell ends. Your game statistics are replaced by the stat block of the chosen form, but you retain your creature type; alignment; personality; Intelligence, Wisdom, and Charisma scores; Hit Points; Hit Point Dice; proficiencies; and ability to communicate. If you have the Spellcasting feature, you retain it too. Upon shape-shifting, you determine whether your equipment drops to the ground or changes in size and shape to fit the new form while you're in it.",
-    "higher_levels": ""
+    "higher_levels": "",
+    "condition_inflict": [],
+    "saving_throw": [],
+    "misc_tags": [
+      "THP",
+      "UA"
+    ]
   },
   "shatter": {
     "id": "shatter",
@@ -9884,7 +12313,14 @@ const SPELLS: Dictionary = {
       "Wizard"
     ],
     "description": "A loud noise erupts from a point of your choice within range. Each creature in a 10-foot-radius Sphere centered there makes a Constitution saving throw, taking 3d8 Thunder damage on a failed save or half as much damage on a successful one. A Construct has Disadvantage on the save. A nonmagical object that isn't being worn or carried also takes the damage if it's in the spell's area.",
-    "higher_levels": "Using a Higher-Level Spell Slot: The damage increases by 1d8 for each spell slot level above 2."
+    "higher_levels": "Using a Higher-Level Spell Slot: The damage increases by 1d8 for each spell slot level above 2.",
+    "condition_inflict": [],
+    "saving_throw": [
+      "constitution"
+    ],
+    "misc_tags": [
+      "OBJ"
+    ]
   },
   "shield": {
     "id": "shield",
@@ -9903,7 +12339,12 @@ const SPELLS: Dictionary = {
       "Wizard"
     ],
     "description": "An imperceptible barrier of magical force protects you. Until the start of your next turn, you have a +5 bonus to AC, including against the triggering attack, and you take no damage from Magic Missile.",
-    "higher_levels": ""
+    "higher_levels": "",
+    "condition_inflict": [],
+    "saving_throw": [],
+    "misc_tags": [
+      "MAC"
+    ]
   },
   "shield_of_faith": {
     "id": "shield_of_faith",
@@ -9928,7 +12369,12 @@ const SPELLS: Dictionary = {
     "target_mode": "token_then_token",
     "range_feet": 60,
     "projectile_style": "shield_of_faith",
-    "projectile_travel_seconds": 0.65
+    "projectile_travel_seconds": 0.65,
+    "condition_inflict": [],
+    "saving_throw": [],
+    "misc_tags": [
+      "MAC"
+    ]
   },
   "shillelagh": {
     "id": "shillelagh",
@@ -9946,7 +12392,13 @@ const SPELLS: Dictionary = {
       "Druid"
     ],
     "description": "A Club or Quarterstaff you are holding is imbued with nature's power. For the duration, you can use your spellcasting ability instead of Strength for the attack and damage rolls of melee attacks using that weapon, and the weapon's damage die becomes a d8. If the attack deals damage, it can be Force damage or the weapon's normal damage type (your choice). The spell ends early if you cast it again or if you let go of the weapon.",
-    "higher_levels": "Cantrip Upgrade: The damage die changes when you reach levels 5 (d10), 11 (d12), and 17 (2d6)."
+    "higher_levels": "Cantrip Upgrade: The damage die changes when you reach levels 5 (d10), 11 (d12), and 17 (2d6).",
+    "condition_inflict": [],
+    "saving_throw": [],
+    "misc_tags": [
+      "AAD",
+      "SCL"
+    ]
   },
   "shining_smite": {
     "id": "shining_smite",
@@ -9964,7 +12416,14 @@ const SPELLS: Dictionary = {
       "Paladin"
     ],
     "description": "The target hit by the strike takes an extra 2d6 Radiant damage from the attack. Until the spell ends, the target sheds Bright Light in a 5-foot radius, attack rolls against it have Advantage, and it can't benefit from the Invisible condition.",
-    "higher_levels": "Using a Higher-Level Spell Slot: The damage increases by 1d6 for each spell slot level above 2."
+    "higher_levels": "Using a Higher-Level Spell Slot: The damage increases by 1d6 for each spell slot level above 2.",
+    "condition_inflict": [],
+    "saving_throw": [],
+    "misc_tags": [
+      "AAD",
+      "ADV",
+      "LGT"
+    ]
   },
   "shocking_grasp": {
     "id": "shocking_grasp",
@@ -9984,7 +12443,12 @@ const SPELLS: Dictionary = {
       "Wizard"
     ],
     "description": "Lightning springs from you to a creature that you try to touch. Make a melee spell attack against the target. On a hit, the target takes 1d8 Lightning damage, and it can't make Opportunity Attacks until the start of its next turn.",
-    "higher_levels": "Cantrip Upgrade: The damage increases by 1d8 when you reach levels 5 (2d8), 11 (3d8), and 17 (4d8)."
+    "higher_levels": "Cantrip Upgrade: The damage increases by 1d8 when you reach levels 5 (2d8), 11 (3d8), and 17 (4d8).",
+    "condition_inflict": [],
+    "saving_throw": [],
+    "misc_tags": [
+      "SCL"
+    ]
   },
   "sickening_radiance": {
     "id": "sickening_radiance",
@@ -10010,7 +12474,14 @@ const SPELLS: Dictionary = {
     "aoe_shape": "sphere",
     "aoe_radius_feet": 30,
     "range_feet": 120,
-    "persistent": true
+    "persistent": true,
+    "condition_inflict": [
+      "exhaustion"
+    ],
+    "saving_throw": [
+      "constitution"
+    ],
+    "misc_tags": []
   },
   "silence": {
     "id": "silence",
@@ -10037,7 +12508,14 @@ const SPELLS: Dictionary = {
     "aoe_shape": "sphere",
     "aoe_radius_feet": 20,
     "range_feet": 120,
-    "persistent": true
+    "persistent": true,
+    "condition_inflict": [
+      "deafened"
+    ],
+    "saving_throw": [],
+    "misc_tags": [
+      "OBJ"
+    ]
   },
   "silent_image": {
     "id": "silent_image",
@@ -10057,7 +12535,12 @@ const SPELLS: Dictionary = {
       "Wizard"
     ],
     "description": "You create the image of an object, a creature, or some other visible phenomenon that is no larger than a 15-foot Cube. The image appears at a spot within range and lasts for the duration. The image is purely visual; it isn't accompanied by sound, smell, or other sensory effects. As a Magic action, you can cause the image to move to any spot within range. As the image changes location, you can alter its appearance so that its movements appear natural for the image. For example, if you create an image of a creature and move it, you can alter the image so that it appears to be walking. Physical interaction with the image reveals it to be an illusion, since things can pass through it. A creature that takes a Study action to examine the image can determine that it is an illusion with a successful Intelligence (Investigation) check against your spell save DC. If a creature discerns the illusion for what it is, the creature can see through the image.",
-    "higher_levels": ""
+    "higher_levels": "",
+    "condition_inflict": [],
+    "saving_throw": [],
+    "misc_tags": [
+      "UA"
+    ]
   },
   "silvery_barbs": {
     "id": "silvery_barbs",
@@ -10080,7 +12563,13 @@ const SPELLS: Dictionary = {
     "higher_levels": "",
     "visual_style": "arcane",
     "transient_seconds": 5,
-    "range_feet": 60
+    "range_feet": 60,
+    "condition_inflict": [],
+    "saving_throw": [],
+    "misc_tags": [
+      "ADV",
+      "SGT"
+    ]
   },
   "simbuls_synostodweomer": {
     "id": "simbuls_synostodweomer",
@@ -10102,7 +12591,12 @@ const SPELLS: Dictionary = {
     "higher_levels": "",
     "visual_style": "arcane",
     "transient_seconds": 5,
-    "range_feet": 5
+    "range_feet": 5,
+    "condition_inflict": [],
+    "saving_throw": [],
+    "misc_tags": [
+      "HL"
+    ]
   },
   "simulacrum": {
     "id": "simulacrum",
@@ -10123,7 +12617,10 @@ const SPELLS: Dictionary = {
     "higher_levels": "",
     "target_mode": "token_then_token",
     "projectile_style": "simulacrum",
-    "projectile_travel_seconds": 0.65
+    "projectile_travel_seconds": 0.65,
+    "condition_inflict": [],
+    "saving_throw": [],
+    "misc_tags": []
   },
   "skill_empowerment": {
     "id": "skill_empowerment",
@@ -10147,7 +12644,10 @@ const SPELLS: Dictionary = {
     "higher_levels": "",
     "visual_style": "arcane",
     "transient_seconds": 5,
-    "range_feet": 5
+    "range_feet": 5,
+    "condition_inflict": [],
+    "saving_throw": [],
+    "misc_tags": []
   },
   "skywrite": {
     "id": "skywrite",
@@ -10168,7 +12668,12 @@ const SPELLS: Dictionary = {
       "Wizard"
     ],
     "description": "You cause up to ten words to form in a part of the sky you can see. The words appear to be made of cloud and remain in place for the spell's duration. The words dissipate when the spell ends. A strong wind can disperse the clouds and end the spell early.",
-    "higher_levels": ""
+    "higher_levels": "",
+    "condition_inflict": [],
+    "saving_throw": [],
+    "misc_tags": [
+      "SGT"
+    ]
   },
   "sleep": {
     "id": "sleep",
@@ -10188,7 +12693,15 @@ const SPELLS: Dictionary = {
       "Wizard"
     ],
     "description": "Each creature of your choice in a 5-foot-radius Sphere centered on a point within range must succeed on a Wisdom saving throw or have the Incapacitated condition until the end of its next turn, at which point it must repeat the save. If the target fails the second save, the target has the Unconscious condition for the duration. The spell ends on a target if it takes damage or someone within 5 feet of it takes an action to shake it out of the spell's effect. Creatures that don't sleep, such as elves, or that have Immunity to the Exhaustion condition automatically succeed on saves against this spell.",
-    "higher_levels": ""
+    "higher_levels": "",
+    "condition_inflict": [
+      "incapacitated",
+      "unconscious"
+    ],
+    "saving_throw": [
+      "wisdom"
+    ],
+    "misc_tags": []
   },
   "sleet_storm": {
     "id": "sleet_storm",
@@ -10208,7 +12721,17 @@ const SPELLS: Dictionary = {
       "Wizard"
     ],
     "description": "Until the spell ends, sleet falls in a 40-foot-tall, 20-foot-radius Cylinder centered on a point you choose within range. The area is Heavily Obscured, and exposed flames in the area are doused. Ground in the Cylinder is Difficult Terrain. When a creature enters the Cylinder for the first time on a turn or starts its turn there, it must succeed on a Dexterity saving throw or have the Prone condition and lose Concentration.",
-    "higher_levels": ""
+    "higher_levels": "",
+    "condition_inflict": [
+      "prone"
+    ],
+    "saving_throw": [
+      "dexterity"
+    ],
+    "misc_tags": [
+      "DFT",
+      "OBS"
+    ]
   },
   "slow": {
     "id": "slow",
@@ -10228,7 +12751,14 @@ const SPELLS: Dictionary = {
       "Wizard"
     ],
     "description": "You alter time around up to six creatures of your choice in a 40-foot Cube within range. Each target must succeed on a Wisdom saving throw or be affected by this spell for the duration. An affected target's Speed is halved, it takes a -2 penalty to AC and Dexterity saving throws, and it can't take Reactions. On its turns, it can take either an action or a Bonus Action, not both, and it can make only one attack if it takes the Attack action. If it casts a spell with a Somatic component, there is a 25 chance the spell fails as a result of the target making the spell's gestures too slowly. An affected target repeats the save at the end of each of its turns, ending the spell on itself on a success.",
-    "higher_levels": ""
+    "higher_levels": "",
+    "condition_inflict": [],
+    "saving_throw": [
+      "wisdom"
+    ],
+    "misc_tags": [
+      "MAC"
+    ]
   },
   "snare": {
     "id": "snare",
@@ -10255,7 +12785,14 @@ const SPELLS: Dictionary = {
     "target_mode": "token_then_token",
     "range_feet": 5,
     "projectile_style": "snare",
-    "projectile_travel_seconds": 0.65
+    "projectile_travel_seconds": 0.65,
+    "condition_inflict": [
+      "restrained"
+    ],
+    "saving_throw": [
+      "dexterity"
+    ],
+    "misc_tags": []
   },
   "snillocs_snowball_swarm": {
     "id": "snillocs_snowball_swarm",
@@ -10279,7 +12816,12 @@ const SPELLS: Dictionary = {
     "transient_seconds": 5,
     "aoe_shape": "sphere",
     "aoe_radius_feet": 5,
-    "range_feet": 90
+    "range_feet": 90,
+    "condition_inflict": [],
+    "saving_throw": [
+      "dexterity"
+    ],
+    "misc_tags": []
   },
   "songals_elemental_suffusion": {
     "id": "songals_elemental_suffusion",
@@ -10299,7 +12841,14 @@ const SPELLS: Dictionary = {
       "Wizard"
     ],
     "description": "You imbue yourself with the elemental power of genies. You gain the following benefits until the spell ends: Elemental Immunity: When you cast this spell, choose one of the following damage types: Acid, Cold, Fire, Lightning, or Thunder. You have Resistance to the chosen damage type. Elemental Pulse: When you cast this spell and at the start of each of your subsequent turns, you release a burst of elemental energy in a 15-foot Emanation originating from yourself. Each creature of your choice in that area makes a Dexterity saving throw. On a failed save, a creature takes 2d6 Acid, Cold, Fire, Lightning, or Thunder damage (your choice) and has the Prone condition. On a successful save, a creature takes half as much damage only. Flight: You gain a Fly Speed of 30 feet and can hover. Casting as a Circle Spell: If the spell is cast as a Circle spell, its casting time increases to 1 minute, and its duration increases to Concentration, up to 10 minutes. For each secondary caster who participates in the casting, you can choose one additional creature, to a maximum of nine additional creatures. The chosen creatures also gain the benefits of the spell for its duration. When the spell is cast, each secondary caster must expend a level 2+ spell slot; otherwise, the spell fails.",
-    "higher_levels": ""
+    "higher_levels": "",
+    "condition_inflict": [
+      "prone"
+    ],
+    "saving_throw": [
+      "dexterity"
+    ],
+    "misc_tags": []
   },
   "sorcerous_burst": {
     "id": "sorcerous_burst",
@@ -10322,7 +12871,13 @@ const SPELLS: Dictionary = {
     "target_mode": "token_then_token",
     "projectile_style": "sorcerous_burst",
     "projectile_travel_seconds": 0.65,
-    "allow_point_target": true
+    "allow_point_target": true,
+    "condition_inflict": [],
+    "saving_throw": [],
+    "misc_tags": [
+      "OBJ",
+      "SCL"
+    ]
   },
   "soul_cage": {
     "id": "soul_cage",
@@ -10341,7 +12896,14 @@ const SPELLS: Dictionary = {
       "Wizard"
     ],
     "description": "This spell snatches the soul of a humanoid as it dies and traps it inside the tiny cage you use for the material component. A stolen soul remains inside the cage until the spell ends or until you destroy the cage, which ends the spell. While you have a soul inside the cage, you can exploit it in any of the ways described below. You can use a trapped soul up to six times. Once you exploit a soul for the sixth time, it is released, and the spell ends. While a soul is trapped, the dead humanoid it came from can't be revived. Steal Life: You can use a bonus action to drain vigor from the soul and regain 2d8 hit points. Query Soul: You ask the soul a question (no action required) and receive a brief telepathic answer, which you can understand regardless of the language used. The soul knows only what it knew in life, but it must answer you truthfully and to the best of its ability. The answer is no more than a sentence or two and might be cryptic. Borrow Experience: You can use a bonus action to bolster yourself with the soul's life experience, making your next attack roll, ability check, or saving throw with advantage. If you don't use this benefit before the start of your next turn, it is lost. Eyes of the Dead: You can use an action to name a place the humanoid saw in life, which creates an invisible sensor somewhere in that place if it is on the plane of existence you're currently on. The sensor remains for as long as you concentrate, up to 10 minutes (as if you were concentrating on a spell). You receive visual and auditory information from the sensor as if you were in its space using your senses. A creature that can see the sensor (such as one using see invisibility or truesight) sees a translucent image of the tormented humanoid whose soul you caged.",
-    "higher_levels": ""
+    "higher_levels": "",
+    "condition_inflict": [],
+    "saving_throw": [],
+    "misc_tags": [
+      "ADV",
+      "HL",
+      "UBA"
+    ]
   },
   "spare_the_dying": {
     "id": "spare_the_dying",
@@ -10367,7 +12929,12 @@ const SPELLS: Dictionary = {
     "target_mode": "token_then_token",
     "range_feet": 15,
     "projectile_style": "spare_the_dying",
-    "projectile_travel_seconds": 0.65
+    "projectile_travel_seconds": 0.65,
+    "condition_inflict": [],
+    "saving_throw": [],
+    "misc_tags": [
+      "SCL"
+    ]
   },
   "speak_with_animals": {
     "id": "speak_with_animals",
@@ -10388,7 +12955,10 @@ const SPELLS: Dictionary = {
       "Warlock"
     ],
     "description": "For the duration, you can comprehend and verbally communicate with Beasts, and you can use any of the Influence action's skill options with them. Most Beasts have little to say about topics that don't pertain to survival or companionship, but at minimum, a Beast can give you information about nearby locations and monsters, including whatever it has perceived within the past day.",
-    "higher_levels": ""
+    "higher_levels": "",
+    "condition_inflict": [],
+    "saving_throw": [],
+    "misc_tags": []
   },
   "speak_with_dead": {
     "id": "speak_with_dead",
@@ -10408,7 +12978,10 @@ const SPELLS: Dictionary = {
       "Wizard"
     ],
     "description": "You grant the semblance of life to a corpse of your choice within range, allowing it to answer questions you pose. The corpse must have a mouth, and this spell fails if the deceased creature was Undead when it died. The spell also fails if the corpse was the target of this spell within the past 10 days. Until the spell ends, you can ask the corpse up to five questions. The corpse knows only what it knew in life, including the languages it knew. Answers are usually brief, cryptic, or repetitive, and the corpse is under no compulsion to offer a truthful answer if you are antagonistic toward it or it recognizes you as an enemy. This spell doesn't return the creature's soul to its body, only its animating spirit. Thus, the corpse can't learn new information, doesn't comprehend anything that has happened since it died, and can't speculate about future events.",
-    "higher_levels": ""
+    "higher_levels": "",
+    "condition_inflict": [],
+    "saving_throw": [],
+    "misc_tags": []
   },
   "speak_with_plants": {
     "id": "speak_with_plants",
@@ -10435,7 +13008,12 @@ const SPELLS: Dictionary = {
     "aoe_shape": "sphere",
     "aoe_radius_feet": 30,
     "show_range_preview": false,
-    "persistent": true
+    "persistent": true,
+    "condition_inflict": [],
+    "saving_throw": [],
+    "misc_tags": [
+      "DFT"
+    ]
   },
   "spellfire_flare": {
     "id": "spellfire_flare",
@@ -10461,7 +13039,10 @@ const SPELLS: Dictionary = {
     "target_mode": "token_then_token",
     "projectile_style": "spellfire_flare",
     "projectile_travel_seconds": 0.65,
-    "allow_point_target": true
+    "allow_point_target": true,
+    "condition_inflict": [],
+    "saving_throw": [],
+    "misc_tags": []
   },
   "spellfire_storm": {
     "id": "spellfire_storm",
@@ -10486,7 +13067,14 @@ const SPELLS: Dictionary = {
     "aoe_shape": "cylinder",
     "aoe_radius_feet": 20,
     "aoe_height_feet": 20,
-    "range_feet": 60
+    "range_feet": 60,
+    "condition_inflict": [],
+    "saving_throw": [
+      "constitution"
+    ],
+    "misc_tags": [
+      "LGT"
+    ]
   },
   "spider_climb": {
     "id": "spider_climb",
@@ -10507,7 +13095,12 @@ const SPELLS: Dictionary = {
       "Wizard"
     ],
     "description": "Until the spell ends, one willing creature you touch gains the ability to move up, down, and across vertical surfaces and along ceilings, while leaving its hands free. The target also gains a Climb Speed equal to its Speed.",
-    "higher_levels": "Using a Higher-Level Spell Slot: You can target one additional creature for each spell slot level above 2."
+    "higher_levels": "Using a Higher-Level Spell Slot: You can target one additional creature for each spell slot level above 2.",
+    "condition_inflict": [],
+    "saving_throw": [],
+    "misc_tags": [
+      "SCT"
+    ]
   },
   "spike_growth": {
     "id": "spike_growth",
@@ -10533,7 +13126,12 @@ const SPELLS: Dictionary = {
     "aoe_shape": "sphere",
     "aoe_radius_feet": 20,
     "range_feet": 150,
-    "persistent": true
+    "persistent": true,
+    "condition_inflict": [],
+    "saving_throw": [],
+    "misc_tags": [
+      "DFT"
+    ]
   },
   "spirit_guardians": {
     "id": "spirit_guardians",
@@ -10551,7 +13149,12 @@ const SPELLS: Dictionary = {
       "Cleric"
     ],
     "description": "Protective spirits flit around you in a 15-foot Emanation for the duration. If you are good or neutral, their spectral form appears angelic or fey (your choice). If you are evil, they appear fiendish. When you cast this spell, you can designate creatures to be unaffected by it. Any other creature's Speed is halved in the Emanation, and whenever the Emanation enters a creature's space and whenever a creature enters the Emanation or ends its turn there, the creature must make a Wisdom saving throw. On a failed save, the creature takes 3d8 Radiant damage (if you are good or neutral) or 3d8 Necrotic damage (if you are evil). On a successful save, the creature takes half as much damage. A creature makes this save only once per turn.",
-    "higher_levels": "Using a Higher-Level Spell Slot: The damage increases by 1d8 for each spell slot level above 3."
+    "higher_levels": "Using a Higher-Level Spell Slot: The damage increases by 1d8 for each spell slot level above 3.",
+    "condition_inflict": [],
+    "saving_throw": [
+      "wisdom"
+    ],
+    "misc_tags": []
   },
   "spirit_lantern": {
     "id": "spirit_lantern",
@@ -10613,7 +13216,13 @@ const SPELLS: Dictionary = {
       "Wizard"
     ],
     "description": "You call forth spirits of the dead, which flit around you for the spell's duration. The spirits are intangible and invulnerable. Until the spell ends, any attack you make deals 1d8 extra damage when you hit a creature within 10 feet of you. This damage is radiant, necrotic, or cold (your choice when you cast the spell). Any creature that takes this damage can't regain hit points until the start of your next turn. In addition, any creature of your choice that you can see that starts its turn within 10 feet of you has its speed reduced by 10 feet until the start of your next turn.",
-    "higher_levels": "At Higher Levels: When you cast this spell using a spell slot of 4th level or higher, the damage increases by 1d8 for every two slot levels above 3rd."
+    "higher_levels": "At Higher Levels: When you cast this spell using a spell slot of 4th level or higher, the damage increases by 1d8 for every two slot levels above 3rd.",
+    "condition_inflict": [],
+    "saving_throw": [],
+    "misc_tags": [
+      "AAD",
+      "SGT"
+    ]
   },
   "spiritual_weapon": {
     "id": "spiritual_weapon",
@@ -10635,7 +13244,12 @@ const SPELLS: Dictionary = {
     "target_mode": "token_then_token",
     "projectile_style": "spiritual_weapon",
     "projectile_travel_seconds": 0.65,
-    "range_feet": 60
+    "range_feet": 60,
+    "condition_inflict": [],
+    "saving_throw": [],
+    "misc_tags": [
+      "UBA"
+    ]
   },
   "spray_of_cards": {
     "id": "spray_of_cards",
@@ -10680,7 +13294,16 @@ const SPELLS: Dictionary = {
       "Paladin"
     ],
     "description": "The target takes an extra 4d6 Psychic damage from the attack, and the target must succeed on a Wisdom saving throw or have the Stunned condition until the end of your next turn.",
-    "higher_levels": "Using a Higher-Level Spell Slot: The extra damage increases by 1d6 for each spell slot level above 4."
+    "higher_levels": "Using a Higher-Level Spell Slot: The extra damage increases by 1d6 for each spell slot level above 4.",
+    "condition_inflict": [
+      "stunned"
+    ],
+    "saving_throw": [
+      "wisdom"
+    ],
+    "misc_tags": [
+      "AAD"
+    ]
   },
   "starry_wisp": {
     "id": "starry_wisp",
@@ -10706,7 +13329,14 @@ const SPELLS: Dictionary = {
     "range_feet": 60,
     "level17_damage": "4d8 Radiant",
     "projectile_style": "starry_wisp",
-    "projectile_travel_seconds": 0.65
+    "projectile_travel_seconds": 0.65,
+    "condition_inflict": [],
+    "saving_throw": [],
+    "misc_tags": [
+      "LGT",
+      "OBJ",
+      "SCL"
+    ]
   },
   "steel_wind_strike": {
     "id": "steel_wind_strike",
@@ -10730,7 +13360,13 @@ const SPELLS: Dictionary = {
     "projectile_style": "steel_wind_strike",
     "projectile_travel_seconds": 0.65,
     "range_feet": 30,
-    "base_target_clicks": 5
+    "base_target_clicks": 5,
+    "condition_inflict": [],
+    "saving_throw": [],
+    "misc_tags": [
+      "SGT",
+      "TP"
+    ]
   },
   "stinking_cloud": {
     "id": "stinking_cloud",
@@ -10750,7 +13386,16 @@ const SPELLS: Dictionary = {
       "Wizard"
     ],
     "description": "You create a 20-foot-radius Sphere of yellow, nauseating gas centered on a point within range. The cloud is Heavily Obscured. The cloud lingers in the air for the duration or until a strong wind (such as the one created by Gust of Wind) disperses it. Each creature that starts its turn in the Sphere must succeed on a Constitution saving throw or have the Poisoned condition until the end of the current turn. While Poisoned in this way, the creature can't take an action or a Bonus Action.",
-    "higher_levels": ""
+    "higher_levels": "",
+    "condition_inflict": [
+      "poisoned"
+    ],
+    "saving_throw": [
+      "constitution"
+    ],
+    "misc_tags": [
+      "OBS"
+    ]
   },
   "stone_shape": {
     "id": "stone_shape",
@@ -10771,7 +13416,12 @@ const SPELLS: Dictionary = {
       "Wizard"
     ],
     "description": "You touch a stone object of Medium size or smaller or a section of stone no more than 5 feet in any dimension and form it into any shape you like. For example, you could shape a large rock into a weapon, statue, or coffer, or you could make a small passage through a wall that is 5 feet thick. You could also shape a stone door or its frame to seal the door shut. The object you create can have up to two hinges and a latch, but finer mechanical detail isn't possible.",
-    "higher_levels": ""
+    "higher_levels": "",
+    "condition_inflict": [],
+    "saving_throw": [],
+    "misc_tags": [
+      "OBJ"
+    ]
   },
   "stoneskin": {
     "id": "stoneskin",
@@ -10796,7 +13446,10 @@ const SPELLS: Dictionary = {
     "higher_levels": "",
     "visual_style": "arcane",
     "transient_seconds": 5,
-    "range_feet": 5
+    "range_feet": 5,
+    "condition_inflict": [],
+    "saving_throw": [],
+    "misc_tags": []
   },
   "storm_of_vengeance": {
     "id": "storm_of_vengeance",
@@ -10818,7 +13471,19 @@ const SPELLS: Dictionary = {
     "visual_style": "cold",
     "transient_seconds": 5,
     "target_mode": "token_then_token",
-    "range_feet": 1
+    "range_feet": 1,
+    "condition_inflict": [
+      "deafened"
+    ],
+    "saving_throw": [
+      "constitution",
+      "dexterity"
+    ],
+    "misc_tags": [
+      "DFT",
+      "OBJ",
+      "OBS"
+    ]
   },
   "storm_sphere": {
     "id": "storm_sphere",
@@ -10837,7 +13502,15 @@ const SPELLS: Dictionary = {
       "Wizard"
     ],
     "description": "A 20-foot-radius sphere of whirling air springs into existence, centered on a point you choose within range. The sphere remains for the spell's duration. Each creature in the sphere when it appears or that ends its turn there must succeed on a Strength saving throw or take 2d6 bludgeoning damage. The sphere's space is 3. Until the spell ends, you can use a bonus action on each of your turns to cause a bolt of lightning to leap from the center of the sphere toward one creature you choose within 60 feet of the center. Make a ranged spell attack. You have advantage on the attack roll if the target is in the sphere. On a hit, the target takes 4d6 lightning damage. Creatures within 30 feet of the sphere have disadvantage on Wisdom (Perception) checks made to listen.",
-    "higher_levels": "At Higher Levels: When you cast this spell using a spell slot of 5th level or higher, the damage for each of its effects increases by 1d6 for each slot level above 4th."
+    "higher_levels": "At Higher Levels: When you cast this spell using a spell slot of 5th level or higher, the damage for each of its effects increases by 1d6 for each slot level above 4th.",
+    "condition_inflict": [],
+    "saving_throw": [
+      "strength"
+    ],
+    "misc_tags": [
+      "DFT",
+      "UBA"
+    ]
   },
   "suggestion": {
     "id": "suggestion",
@@ -10861,7 +13534,16 @@ const SPELLS: Dictionary = {
     "higher_levels": "",
     "visual_style": "enchantment",
     "transient_seconds": 5,
-    "range_feet": 30
+    "range_feet": 30,
+    "condition_inflict": [
+      "charmed"
+    ],
+    "saving_throw": [
+      "wisdom"
+    ],
+    "misc_tags": [
+      "SGT"
+    ]
   },
   "summon_aberration": {
     "id": "summon_aberration",
@@ -10880,7 +13562,13 @@ const SPELLS: Dictionary = {
       "Wizard"
     ],
     "description": "You call forth an aberrant spirit. It manifests in an unoccupied space that you can see within range and uses the Aberrant Spirit stat block. When you cast the spell, choose Beholderkin, Mind Flayer, or Slaad. The creature resembles an Aberration of that kind, which determines certain details in its stat block. The creature disappears when it drops to 0 Hit Points or when the spell ends. The creature is an ally to you and your allies. In combat, it shares your Initiative count, but it takes its turn immediately after yours. It obeys your verbal commands (no action required by you). If you don't issue any, it takes the Dodge action and uses its movement to avoid danger.",
-    "higher_levels": "Using a Higher-Level Spell Slot: Use the spell slot's level for the spell's level in the stat block."
+    "higher_levels": "Using a Higher-Level Spell Slot: Use the spell slot's level for the spell's level in the stat block.",
+    "condition_inflict": [],
+    "saving_throw": [],
+    "misc_tags": [
+      "SGT",
+      "SMN"
+    ]
   },
   "summon_beast": {
     "id": "summon_beast",
@@ -10899,7 +13587,13 @@ const SPELLS: Dictionary = {
       "Ranger"
     ],
     "description": "You call forth a bestial spirit. It manifests in an unoccupied space that you can see within range and uses the Bestial Spirit stat block. When you cast the spell, choose an environment: Air, Land, or Water. The creature resembles an animal of your choice that is native to the chosen environment, which determines certain details in its stat block. The creature disappears when it drops to 0 Hit Points or when the spell ends. The creature is an ally to you and your allies. In combat, the creature shares your Initiative count, but it takes its turn immediately after yours. It obeys your verbal commands (no action required by you). If you don't issue any, it takes the Dodge action and uses its movement to avoid danger.",
-    "higher_levels": "Using a Higher-Level Spell Slot: Use the spell slot's level for the spell's level in the stat block."
+    "higher_levels": "Using a Higher-Level Spell Slot: Use the spell slot's level for the spell's level in the stat block.",
+    "condition_inflict": [],
+    "saving_throw": [],
+    "misc_tags": [
+      "SGT",
+      "SMN"
+    ]
   },
   "summon_celestial": {
     "id": "summon_celestial",
@@ -10918,7 +13612,13 @@ const SPELLS: Dictionary = {
       "Paladin"
     ],
     "description": "You call forth a Celestial spirit. It manifests in an angelic form in an unoccupied space that you can see within range and uses the Celestial Spirit stat block. When you cast the spell, choose Avenger or Defender. Your choice determines certain details in its stat block. The creature disappears when it drops to 0 Hit Points or when the spell ends. The creature is an ally to you and your allies. In combat, the creature shares your Initiative count, but it takes its turn immediately after yours. It obeys your verbal commands (no action required by you). If you don't issue any, it takes the Dodge action and uses its movement to avoid danger.",
-    "higher_levels": "Using a Higher-Level Spell Slot: Use the spell slot's level for the spell's level in the stat block."
+    "higher_levels": "Using a Higher-Level Spell Slot: Use the spell slot's level for the spell's level in the stat block.",
+    "condition_inflict": [],
+    "saving_throw": [],
+    "misc_tags": [
+      "SGT",
+      "SMN"
+    ]
   },
   "summon_construct": {
     "id": "summon_construct",
@@ -10937,7 +13637,13 @@ const SPELLS: Dictionary = {
       "Wizard"
     ],
     "description": "You call forth the spirit of a Construct. It manifests in an unoccupied space that you can see within range and uses the Construct Spirit stat block. When you cast the spell, choose a material: Clay, Metal, or Stone. The creature resembles an animate statue (you determine the appearance) made of the chosen material, which determines certain details in its stat block. The creature disappears when it drops to 0 Hit Points or when the spell ends. The creature is an ally to you and your allies. In combat, the creature shares your Initiative count, but it takes its turn immediately after yours. It obeys your verbal commands (no action required by you). If you don't issue any, it takes the Dodge action and uses its movement to avoid danger.",
-    "higher_levels": "Using a Higher-Level Spell Slot: Use the spell slot's level for the spell's level in the stat block."
+    "higher_levels": "Using a Higher-Level Spell Slot: Use the spell slot's level for the spell's level in the stat block.",
+    "condition_inflict": [],
+    "saving_throw": [],
+    "misc_tags": [
+      "SGT",
+      "SMN"
+    ]
   },
   "summon_dinosaur": {
     "id": "summon_dinosaur",
@@ -10993,7 +13699,13 @@ const SPELLS: Dictionary = {
       "Wizard"
     ],
     "description": "You call forth a Dragon spirit. It manifests in an unoccupied space that you can see within range and uses the Draconic Spirit stat block. The creature disappears when it drops to 0 Hit Points or when the spell ends. The creature is an ally to you and your allies. In combat, the creature shares your Initiative count, but it takes its turn immediately after yours. It obeys your verbal commands (no action required by you). If you don't issue any, it takes the Dodge action and uses its movement to avoid danger.",
-    "higher_levels": "Using a Higher-Level Spell Slot: Use the spell slot's level for the spell's level in the stat block."
+    "higher_levels": "Using a Higher-Level Spell Slot: Use the spell slot's level for the spell's level in the stat block.",
+    "condition_inflict": [],
+    "saving_throw": [],
+    "misc_tags": [
+      "SGT",
+      "SMN"
+    ]
   },
   "summon_elemental": {
     "id": "summon_elemental",
@@ -11013,7 +13725,13 @@ const SPELLS: Dictionary = {
       "Wizard"
     ],
     "description": "You call forth an Elemental spirit. It manifests in an unoccupied space that you can see within range and uses the Elemental Spirit stat block. When you cast the spell, choose an element: Air, Earth, Fire, or Water. The creature resembles a bipedal form wreathed in the chosen element, which determines certain details in its stat block. The creature disappears when it drops to 0 Hit Points or when the spell ends. The creature is an ally to you and your allies. In combat, the creature shares your Initiative count, but it takes its turn immediately after yours. It obeys your verbal commands (no action required by you). If you don't issue any, it takes the Dodge action and uses its movement to avoid danger.",
-    "higher_levels": "Using a Higher-Level Spell Slot: Use the spell slot's level for the spell's level in the stat block."
+    "higher_levels": "Using a Higher-Level Spell Slot: Use the spell slot's level for the spell's level in the stat block.",
+    "condition_inflict": [],
+    "saving_throw": [],
+    "misc_tags": [
+      "SGT",
+      "SMN"
+    ]
   },
   "summon_fey": {
     "id": "summon_fey",
@@ -11034,7 +13752,13 @@ const SPELLS: Dictionary = {
       "Wizard"
     ],
     "description": "You call forth a Fey spirit. It manifests in an unoccupied space that you can see within range and uses the Fey Spirit stat block. When you cast the spell, choose a mood: Fuming, Mirthful, or Tricksy. The creature resembles a Fey creature of your choice marked by the chosen mood, which determines certain details in its stat block. The creature disappears when it drops to 0 Hit Points or when the spell ends. The creature is an ally to you and your allies. In combat, the creature shares your Initiative count, but it takes its turn immediately after yours. It obeys your verbal commands (no action required by you). If you don't issue any, it takes the Dodge action and uses its movement to avoid danger.",
-    "higher_levels": "Using a Higher-Level Spell Slot: Use the spell slot's level for the spell's level in the stat block."
+    "higher_levels": "Using a Higher-Level Spell Slot: Use the spell slot's level for the spell's level in the stat block.",
+    "condition_inflict": [],
+    "saving_throw": [],
+    "misc_tags": [
+      "SGT",
+      "SMN"
+    ]
   },
   "summon_fiend": {
     "id": "summon_fiend",
@@ -11053,7 +13777,13 @@ const SPELLS: Dictionary = {
       "Wizard"
     ],
     "description": "You call forth a fiendish spirit. It manifests in an unoccupied space that you can see within range and uses the Fiendish Spirit stat block. When you cast the spell, choose Demon, Devil, or Yugoloth. The creature resembles a Fiend of the chosen type, which determines certain details in its stat block. The creature disappears when it drops to 0 Hit Points or when the spell ends. The creature is an ally to you and your allies. In combat, the creature shares your Initiative count, but it takes its turn immediately after yours. It obeys your verbal commands (no action required by you). If you don't issue any, it takes the Dodge action and uses its movement to avoid danger.",
-    "higher_levels": "Using a Higher-Level Spell Slot: Use the spell slot's level for the spell's level in the stat block."
+    "higher_levels": "Using a Higher-Level Spell Slot: Use the spell slot's level for the spell's level in the stat block.",
+    "condition_inflict": [],
+    "saving_throw": [],
+    "misc_tags": [
+      "SGT",
+      "SMN"
+    ]
   },
   "summon_greater_demon": {
     "id": "summon_greater_demon",
@@ -11072,7 +13802,15 @@ const SPELLS: Dictionary = {
       "Wizard"
     ],
     "description": "You utter foul words, summoning one demon from the chaos of the Abyss. You choose the demon's type, which must be challenge rating=[&0;&5], such as a shadow demon or a barlgura. The demon appears in an unoccupied space you can see within range, and the demon disappears when it drops to 0 hit points or when the spell ends. Roll initiative for the demon, which has its own turns. When you summon it and on each of your turns thereafter, you can issue a verbal command to it (requiring no action on your part), telling it what it must do on its next turn. If you issue no command, it spends its turn attacking any creature within reach that has attacked it. At the end of each of the demon's turns, it makes a Charisma saving throw. The demon has disadvantage on this saving throw if you say its true name. On a failed save, the demon continues to obey you. On a successful save, your control of the demon ends for the rest of the duration, and the demon spends its turns pursuing and attacking the nearest non-demons to the best of its ability. If you stop concentrating on the spell before it reaches its full duration, an uncontrolled demon doesn't disappear for 1d6 rounds if it still has hit points. As part of casting the spell, you can form a circle on the ground with the blood used as a material component. The circle is large enough to encompass your space. While the spell lasts, the summoned demon can't cross the circle or harm it, and it can't target anyone within it. Using the material component in this manner consumes it when the spell ends.",
-    "higher_levels": "At Higher Levels: When you cast this spell using a spell slot of 5th level or higher, the challenge rating increases by 1 for each slot level above 4th."
+    "higher_levels": "At Higher Levels: When you cast this spell using a spell slot of 5th level or higher, the challenge rating increases by 1 for each slot level above 4th.",
+    "condition_inflict": [],
+    "saving_throw": [
+      "charisma"
+    ],
+    "misc_tags": [
+      "SGT",
+      "SMN"
+    ]
   },
   "summon_lesser_demons": {
     "id": "summon_lesser_demons",
@@ -11091,7 +13829,14 @@ const SPELLS: Dictionary = {
       "Wizard"
     ],
     "description": "You utter foul words, summoning demons from the chaos of the Abyss. Roll on the following table to determine what appears. Two challenge rating=[&0;&1] Four challenge rating=[&0;&1/2] Eight challenge rating=[&0;&1/4] The DM chooses the demons, such as manes or dretches, and you choose the unoccupied spaces you can see within range where they appear. A summoned demon disappears when it drops to 0 hit points or when the spell ends. The demons are hostile to all creatures, including you. Roll initiative for the summoned demons as a group, which has its own turns. The demons pursue and attack the nearest non-demons to the best of their ability. As part of casting the spell, you can form a circle on the ground with the blood used as a material component. The circle is large enough to encompass your space. While the spell lasts, the summoned demons can't cross the circle or harm it, and they can't target anyone within it. Using the material component in this manner consumes it when the spell ends.",
-    "higher_levels": "At Higher Levels: When you cast this spell using a spell slot of 6th or 7th level, you summon twice as many demons. If you cast it using a spell slot of 8th or 9th level, you summon three times as many demons."
+    "higher_levels": "At Higher Levels: When you cast this spell using a spell slot of 6th or 7th level, you summon twice as many demons. If you cast it using a spell slot of 8th or 9th level, you summon three times as many demons.",
+    "condition_inflict": [],
+    "saving_throw": [],
+    "misc_tags": [
+      "RO",
+      "SGT",
+      "SMN"
+    ]
   },
   "summon_plant": {
     "id": "summon_plant",
@@ -11129,7 +13874,13 @@ const SPELLS: Dictionary = {
       "Wizard"
     ],
     "description": "You call forth a shadowy spirit. It manifests in an unoccupied space that you can see within range. This corporeal form uses the Shadow Spirit stat block. When you cast the spell, choose an emotion: Fury, Despair, or Fear. The creature resembles a misshapen biped marked by the chosen emotion, which determines certain traits in its stat block. The creature disappears when it drops to 0 hit points or when the spell ends. The creature is an ally to you and your companions. In combat, the creature shares your initiative count, but it takes its turn immediately after yours. It obeys your verbal commands (no action required by you). If you don't issue any, it takes the Dodge action and uses its move to avoid danger.",
-    "higher_levels": "At Higher Levels: When you cast this spell using a spell slot of 4th level or higher, use the higher level wherever the spell's level appears in the stat block."
+    "higher_levels": "At Higher Levels: When you cast this spell using a spell slot of 4th level or higher, use the higher level wherever the spell's level appears in the stat block.",
+    "condition_inflict": [],
+    "saving_throw": [],
+    "misc_tags": [
+      "SGT",
+      "SMN"
+    ]
   },
   "summon_undead": {
     "id": "summon_undead",
@@ -11148,7 +13899,13 @@ const SPELLS: Dictionary = {
       "Wizard"
     ],
     "description": "You call forth an Undead spirit. It manifests in an unoccupied space that you can see within range and uses the Undead Spirit stat block. When you cast the spell, choose the creature's form: Ghostly, Putrid, or Skeletal. The spirit resembles an Undead creature with the chosen form, which determines certain details in its stat block. The creature disappears when it drops to 0 Hit Points or when the spell ends. The creature is an ally to you and your allies. In combat, the creature shares your Initiative count, but it takes its turn immediately after yours. It obeys your verbal commands (no action required by you). If you don't issue any, it takes the Dodge action and uses its movement to avoid danger.",
-    "higher_levels": "Using a Higher-Level Spell Slot: Use the spell slot's level for the spell's level in the stat block."
+    "higher_levels": "Using a Higher-Level Spell Slot: Use the spell slot's level for the spell's level in the stat block.",
+    "condition_inflict": [],
+    "saving_throw": [],
+    "misc_tags": [
+      "SGT",
+      "SMN"
+    ]
   },
   "sunbeam": {
     "id": "sunbeam",
@@ -11169,7 +13926,17 @@ const SPELLS: Dictionary = {
       "Wizard"
     ],
     "description": "You launch a sunbeam in a 5-foot-wide, 60-foot-long Line. Each creature in the Line makes a Constitution saving throw. On a failed save, a creature takes 6d8 Radiant damage and has the Blinded condition until the start of your next turn. On a successful save, it takes half as much damage only. Until the spell ends, you can take a Magic action to create a new Line of radiance. For the duration, a mote of brilliant radiance shines above you. It sheds Bright Light in a 30-foot radius and Dim Light for an additional 30 feet. This light is sunlight.",
-    "higher_levels": ""
+    "higher_levels": "",
+    "condition_inflict": [
+      "blinded"
+    ],
+    "saving_throw": [
+      "constitution"
+    ],
+    "misc_tags": [
+      "LGTS",
+      "UA"
+    ]
   },
   "sunburst": {
     "id": "sunburst",
@@ -11195,7 +13962,17 @@ const SPELLS: Dictionary = {
     "transient_seconds": 5,
     "aoe_shape": "sphere",
     "aoe_radius_feet": 60,
-    "range_feet": 150
+    "range_feet": 150,
+    "condition_inflict": [
+      "blinded"
+    ],
+    "saving_throw": [
+      "constitution"
+    ],
+    "misc_tags": [
+      "LGT",
+      "LGTS"
+    ]
   },
   "swift_quiver": {
     "id": "swift_quiver",
@@ -11213,7 +13990,12 @@ const SPELLS: Dictionary = {
       "Ranger"
     ],
     "description": "When you cast the spell and as a Bonus Action until it ends, you can make two attacks with a weapon that fires Arrows or Bolts, such as a Longbow or a Light Crossbow. The spell magically creates the ammunition needed for each attack. Each Arrow or Bolt created by the spell deals damage like a nonmagical piece of ammunition of its kind and disintegrates immediately after it hits or misses.",
-    "higher_levels": ""
+    "higher_levels": "",
+    "condition_inflict": [],
+    "saving_throw": [],
+    "misc_tags": [
+      "UBA"
+    ]
   },
   "sword_burst": {
     "id": "sword_burst",
@@ -11240,7 +14022,14 @@ const SPELLS: Dictionary = {
     "aoe_shape": "sphere",
     "aoe_radius_feet": 5,
     "show_range_preview": false,
-    "level17_damage": "4d6 Force"
+    "level17_damage": "4d6 Force",
+    "condition_inflict": [],
+    "saving_throw": [
+      "dexterity"
+    ],
+    "misc_tags": [
+      "SCL"
+    ]
   },
   "sylunes_viper": {
     "id": "sylunes_viper",
@@ -11259,7 +14048,16 @@ const SPELLS: Dictionary = {
       "Wizard"
     ],
     "description": "A shimmering, spectral snake encircles your body for the duration. You gain 15 Temporary Hit Points; the spell ends early if you have no Temporary Hit Points left. While the spell is active, you gain the following benefits: Climbing: You gain a Climb Speed equal to your Speed. Venomous Bite: As a Magic action, you can make a ranged spell attack using the snake against one creature within 50 feet. On a hit, the target takes 1d6 Force damage and has the Poisoned condition until the start of your next turn. While Poisoned, the target has the Incapacitated condition.",
-    "higher_levels": "Using a Higher-Level Spell Slot: For each spell slot level above 3, the number of Temporary Hit Points you gain from this spell increases by 5, and the damage of Venomous Bite increases by 1d6."
+    "higher_levels": "Using a Higher-Level Spell Slot: For each spell slot level above 3, the number of Temporary Hit Points you gain from this spell increases by 5, and the damage of Venomous Bite increases by 1d6.",
+    "condition_inflict": [
+      "incapacitated",
+      "poisoned"
+    ],
+    "saving_throw": [],
+    "misc_tags": [
+      "THP",
+      "UA"
+    ]
   },
   "symbol": {
     "id": "symbol",
@@ -11287,7 +14085,22 @@ const SPELLS: Dictionary = {
     "aoe_shape": "sphere",
     "aoe_radius_feet": 60,
     "range_feet": 5,
-    "persistent": true
+    "persistent": true,
+    "condition_inflict": [
+      "frightened",
+      "incapacitated",
+      "stunned",
+      "unconscious"
+    ],
+    "saving_throw": [
+      "constitution",
+      "intelligence",
+      "wisdom"
+    ],
+    "misc_tags": [
+      "LGT",
+      "OBJ"
+    ]
   },
   "synaptic_static": {
     "id": "synaptic_static",
@@ -11308,7 +14121,13 @@ const SPELLS: Dictionary = {
       "Wizard"
     ],
     "description": "You cause psychic energy to erupt at a point within range. Each creature in a 20-foot-radius Sphere centered on that point makes an Intelligence saving throw, taking 8d6 Psychic damage on a failed save or half as much damage on a successful one. On a failed save, a target also has muddled thoughts for 1 minute. During that time, it subtracts 1d6 from all its attack rolls and ability checks, as well as any Constitution saving throws to maintain Concentration. The target makes an Intelligence saving throw at the end of each of its turns, ending the effect on itself on a success.",
-    "higher_levels": ""
+    "higher_levels": "",
+    "condition_inflict": [],
+    "saving_throw": [
+      "constitution",
+      "intelligence"
+    ],
+    "misc_tags": []
   },
   "tashas_bubbling_cauldron": {
     "id": "tashas_bubbling_cauldron",
@@ -11327,7 +14146,14 @@ const SPELLS: Dictionary = {
       "Wizard"
     ],
     "description": "You conjure a claw-footed cauldron filled with bubbling liquid. The cauldron appears in an unoccupied space on the ground within 5 feet of you and lasts for the duration. The cauldron can't be moved and disappears when the spell ends, along with the bubbling liquid inside it. The liquid in the cauldron duplicates the properties of a Common or an Uncommon potion of your choice (such as a Potion of Healing). As a Bonus Action, you or an ally can reach into the cauldron and withdraw one potion of that kind. The potion is contained in a vial that disappears when the potion is consumed. The cauldron can produce a number of these potions equal to your spellcasting ability modifier (minimum 1). When the last of these potions is withdrawn from the cauldron, the cauldron disappears, and the spell ends. Potions obtained from the cauldron that aren't consumed disappear when you cast this spell again.",
-    "higher_levels": ""
+    "higher_levels": "",
+    "condition_inflict": [],
+    "saving_throw": [],
+    "misc_tags": [
+      "HL",
+      "UA",
+      "UBA"
+    ]
   },
   "tashas_caustic_brew": {
     "id": "tashas_caustic_brew",
@@ -11354,7 +14180,12 @@ const SPELLS: Dictionary = {
     "aoe_length_cells": 6,
     "line_width_feet": 5,
     "direction_limit_feet": 30,
-    "show_range_preview": false
+    "show_range_preview": false,
+    "condition_inflict": [],
+    "saving_throw": [
+      "dexterity"
+    ],
+    "misc_tags": []
   },
   "tashas_hideous_laughter": {
     "id": "tashas_hideous_laughter",
@@ -11383,7 +14214,18 @@ const SPELLS: Dictionary = {
     "allow_repeat_targets": false,
     "target_clicks_per_slot_above_base": 1,
     "projectile_style": "tashas_hideous_laughter",
-    "projectile_travel_seconds": 0.65
+    "projectile_travel_seconds": 0.65,
+    "condition_inflict": [
+      "incapacitated",
+      "prone"
+    ],
+    "saving_throw": [
+      "wisdom"
+    ],
+    "misc_tags": [
+      "SCT",
+      "SGT"
+    ]
   },
   "tashas_mind_whip": {
     "id": "tashas_mind_whip",
@@ -11405,7 +14247,15 @@ const SPELLS: Dictionary = {
     "higher_levels": "At Higher Levels: When you cast this spell using a spell slot of 3rd level or higher, you can target one additional creature for each slot level above 2nd. The creatures must be within 30 feet of each other when you target them.",
     "visual_style": "psychic",
     "transient_seconds": 5,
-    "range_feet": 90
+    "range_feet": 90,
+    "condition_inflict": [],
+    "saving_throw": [
+      "intelligence"
+    ],
+    "misc_tags": [
+      "SCT",
+      "SGT"
+    ]
   },
   "tashas_otherworldly_guise": {
     "id": "tashas_otherworldly_guise",
@@ -11425,7 +14275,12 @@ const SPELLS: Dictionary = {
       "Wizard"
     ],
     "description": "Uttering an incantation, you draw on the magic of the Lower Planes or Upper Planes (your choice) to transform yourself. You gain the following benefits until the spell ends: You are immune to fire and poison damage (Lower Planes) or radiant and necrotic damage (Upper Planes). You are immune to the poisoned condition (Lower Planes) or the charmed condition (Upper Planes). Spectral wings appear on your back, giving you a flying speed of 40 feet. You have a +2 bonus to AC. All your weapon attacks are magical, and when you make a weapon attack, you can use your spellcasting ability modifier, instead of Strength or Dexterity, for the attack and damage rolls. You can attack twice, instead of once, when you take the Attack action on your turn. You ignore this benefit if you already have a feature, like Extra Attack, that lets you attack more than once when you take the Attack action on your turn.",
-    "higher_levels": ""
+    "higher_levels": "",
+    "condition_inflict": [],
+    "saving_throw": [],
+    "misc_tags": [
+      "MAC"
+    ]
   },
   "telekinesis": {
     "id": "telekinesis",
@@ -11445,7 +14300,18 @@ const SPELLS: Dictionary = {
     ],
     "description": "You gain the ability to move or manipulate creatures or objects by thought. When you cast the spell and as a Magic action on your later turns before the spell ends, you can exert your will on one creature or object that you can see within range, causing the appropriate effect below. You can affect the same target round after round or choose a new one at any time. If you switch targets, the prior target is no longer affected by the spell. Creature: You can try to move a Huge or smaller creature. The target must succeed on a Strength saving throw, or you move it up to 30 feet in any direction within the spell's range. Until the end of your next turn, the creature has the Restrained condition, and if you lift it into the air, it is suspended there. It falls at the end of your next turn unless you use this option on it again and it fails the save. Object: You can try to move a Huge or smaller object. If the object isn't being worn or carried, you automatically move it up to 30 feet in any direction within the spell's range. If the object is worn or carried by a creature, that creature must succeed on a Strength saving throw, or you pull the object away and move it up to 30 feet in any direction within the spell's range. You can exert fine control on objects with your telekinetic grip, such as manipulating a simple tool, opening a door or a container, stowing or retrieving an item from an open container, or pouring the contents from a vial.",
     "higher_levels": "",
-    "range_feet": 60
+    "range_feet": 60,
+    "condition_inflict": [
+      "restrained"
+    ],
+    "saving_throw": [
+      "strength"
+    ],
+    "misc_tags": [
+      "FMV",
+      "OBJ",
+      "SGT"
+    ]
   },
   "telepathy": {
     "id": "telepathy",
@@ -11470,7 +14336,10 @@ const SPELLS: Dictionary = {
     "range_feet": 100000,
     "show_range_preview": false,
     "projectile_style": "telepathy",
-    "projectile_travel_seconds": 0.65
+    "projectile_travel_seconds": 0.65,
+    "condition_inflict": [],
+    "saving_throw": [],
+    "misc_tags": []
   },
   "teleport": {
     "id": "teleport",
@@ -11491,7 +14360,15 @@ const SPELLS: Dictionary = {
     ],
     "description": "This spell instantly transports you and up to eight willing creatures that you can see within range, or a single object that you can see within range, to a destination you select. If you target an object, it must be Large or smaller, and it can't be held or carried by an unwilling creature. The destination you choose must be known to you, and it must be on the same plane of existence as you. Your familiarity with the destination determines whether you arrive there successfully. The DM rolls 1d100 and consults the Teleportation Outcome table and the explanations after it. Permanent circle — — — 01-00 Linked object — — — 01-00 Very familiar 01-05 06-13 14-24 25-00 Seen casually 01-33 34-43 44-53 54-00 Viewed once or described 01-43 44-53 54-73 74-00 False destination 01-50 51-00 — — Familiarity: Here are the meanings of the terms in the table's Familiarity column: \"Permanent circle\" means a permanent teleportation circle whose sigil sequence you know. \"Linked object\" means you possess an object taken from the desired destination within the last six months, such as a book from a wizard's library. \"Very familiar\" is a place you have visited often, a place you have carefully studied, or a place you can see when you cast the spell. \"Seen casually\" is a place you have seen more than once but with which you aren't very familiar. \"Viewed once or described\" is a place you have seen once, possibly using magic, or a place you know through someone else's description, perhaps from a map. \"False destination\" is a place that doesn't exist. Perhaps you tried to scry an enemy's sanctum but instead viewed an illusion, or you are attempting to teleport to a location that no longer exists. Mishap: The spell's unpredictable magic results in a difficult journey. Each teleporting creature (or the target object) takes 3d10 Force damage, and the DM rerolls on the table to see where you wind up (multiple mishaps can occur, dealing damage each time). Similar Area: You and your group (or the target object) appear in a different area that's visually or thematically similar to the target area. You appear in the closest similar place. If you are heading for your home laboratory, for example, you might appear in another person's laboratory in the same city. Off Target: You and your group (or the target object) appear 2d12 miles away from the destination in a random direction. Roll 1d8 for the direction: 1, east; 2, southeast; 3, south; 4, southwest; 5, west; 6, northwest; 7, north; or 8, northeast. On Target: You and your group (or the target object) appear where you intended.",
     "higher_levels": "",
-    "range_feet": 10
+    "range_feet": 10,
+    "condition_inflict": [],
+    "saving_throw": [],
+    "misc_tags": [
+      "OBJ",
+      "RO",
+      "SGT",
+      "TP"
+    ]
   },
   "teleportation_circle": {
     "id": "teleportation_circle",
@@ -11512,7 +14389,14 @@ const SPELLS: Dictionary = {
       "Wizard"
     ],
     "description": "As you cast the spell, you draw a 5-foot-radius circle on the ground inscribed with sigils that link your location to a permanent teleportation circle of your choice whose sigil sequence you know and that is on the same plane of existence as you. A shimmering portal opens within the circle you drew and remains open until the end of your next turn. Any creature that enters the portal instantly appears within 5 feet of the destination circle or in the nearest unoccupied space if that space is occupied. Many major temples, guildhalls, and other important places have permanent teleportation circles. Each circle includes a unique sigil sequence—a string of runes arranged in a particular pattern. When you first gain the ability to cast this spell, you learn the sigil sequences for two destinations on the Material Plane, determined by the DM. You might learn additional sigil sequences during your adventures. You can commit a new sigil sequence to memory after studying it for 1 minute. You can create a permanent teleportation circle by casting this spell in the same location every day for 365 days.",
-    "higher_levels": ""
+    "higher_levels": "",
+    "condition_inflict": [],
+    "saving_throw": [],
+    "misc_tags": [
+      "PIR",
+      "PRM",
+      "TP"
+    ]
   },
   "temple_of_the_gods": {
     "id": "temple_of_the_gods",
@@ -11530,7 +14414,18 @@ const SPELLS: Dictionary = {
       "Cleric"
     ],
     "description": "You cause a temple to shimmer into existence on ground you can see within range. The temple must fit within an unoccupied cube of space, up to 120 feet on each side. The temple remains until the spell ends. It is dedicated to whatever god, pantheon, or philosophy is represented by the holy symbol used in the casting. You make all decisions about the temple's appearance. The interior is enclosed by a floor, walls, and a roof, with one door granting access to the interior and as many windows as you wish. Only you and any creatures you designate when you cast the spell can open or close the door. The temple's interior is an open space with an idol or altar at one end. You decide whether the temple is illuminated and whether that illumination is bright light or dim light. The smell of burning incense fills the air within, and the temperature is mild. The temple opposes types of creatures you choose when you cast this spell. Choose one or more of the following: celestials, elementals, fey, fiends, or undead. If a creature of the chosen type attempts to enter the temple, that creature must make a Charisma saving throw. On a failed save, it can't enter the temple for 24 hours. Even if the creature can enter the temple, the magic there hinders it; whenever it makes an attack roll, an ability check, or a saving throw inside the temple, it must roll a d4 and subtract the number rolled from the d20 roll. In addition, the sensors created by divination spells can't appear inside the temple, and creatures within can't be targeted by divination spells. Finally, whenever any creature in the temple regains hit points from a spell of 1st level or higher, the creature regains additional hit points equal to your Wisdom modifier (minimum 1 hit point). The temple is made from opaque magical force that extends into the Ethereal Plane, thus blocking ethereal travel into the temple's interior. Nothing can physically pass through the temple's exterior. It can't be dispelled by dispel magic, and antimagic field has no effect on it. A disintegrate spell destroys the temple instantly. Casting this spell on the same spot every day for a year makes this effect permanent.",
-    "higher_levels": ""
+    "higher_levels": "",
+    "condition_inflict": [],
+    "saving_throw": [
+      "charisma"
+    ],
+    "misc_tags": [
+      "HL",
+      "LGT",
+      "PIR",
+      "PRM",
+      "SGT"
+    ]
   },
   "temporal_shunt": {
     "id": "temporal_shunt",
@@ -11568,7 +14463,12 @@ const SPELLS: Dictionary = {
       "Wizard"
     ],
     "description": "This spell creates a circular, horizontal plane of force, 3 feet in diameter and 1 inch thick, that floats 3 feet above the ground in an unoccupied space of your choice that you can see within range. The disk remains for the duration and can hold up to 500 pounds. If more weight is placed on it, the spell ends, and everything on the disk falls to the ground. The disk is immobile while you are within 20 feet of it. If you move more than 20 feet away from it, the disk follows you so that it remains within 20 feet of you. It can move across uneven terrain, up or down stairs, slopes and the like, but it can't cross an elevation change of 10 feet or more. For example, the disk can't move across a 10-foot-deep pit, nor could it leave such a pit if it was created at the bottom. If you move more than 100 feet from the disk (typically because it can't move around an obstacle to follow you), the spell ends.",
-    "higher_levels": ""
+    "higher_levels": "",
+    "condition_inflict": [],
+    "saving_throw": [],
+    "misc_tags": [
+      "SGT"
+    ]
   },
   "tensers_transformation": {
     "id": "tensers_transformation",
@@ -11586,7 +14486,18 @@ const SPELLS: Dictionary = {
       "Wizard"
     ],
     "description": "You endow yourself with endurance and martial prowess fueled by magic. Until the spell ends, you can't cast spells, and you gain the following benefits: You gain 50 temporary hit points. If any of these remain when the spell ends, they are lost. You have advantage on attack rolls that you make with simple and martial weapons. When you hit a target with a weapon attack, that target takes an extra 2d12 force damage. You have proficiency with all armor, shields, simple weapons, and martial weapons. You have proficiency in Strength and Constitution saving throws. You can attack twice, instead of once, when you take the Attack action on your turn. You ignore this benefit if you already have a feature, like Extra Attack, that gives you extra attacks. Immediately after the spell ends, you must succeed on a 15 Constitution saving throw or suffer one level of exhaustion.",
-    "higher_levels": ""
+    "higher_levels": "",
+    "condition_inflict": [
+      "exhaustion"
+    ],
+    "saving_throw": [
+      "constitution"
+    ],
+    "misc_tags": [
+      "AAD",
+      "ADV",
+      "THP"
+    ]
   },
   "tether_essence": {
     "id": "tether_essence",
@@ -11624,7 +14535,12 @@ const SPELLS: Dictionary = {
       "Cleric"
     ],
     "description": "You manifest a minor wonder within range. You create one of the effects below within range. If you cast this spell multiple times, you can have up to three of its 1-minute effects active at a time. Altered Eyes: You alter the appearance of your eyes for 1 minute. Booming Voice: Your voice booms up to three times as loud as normal for 1 minute. For the duration, you have Advantage on Charisma (Intimidation) checks. Fire Play: You cause flames to flicker, brighten, dim, or change color for 1 minute. Invisible Hand: You instantaneously cause an unlocked door or window to fly open or slam shut. Phantom Sound: You create an instantaneous sound that originates from a point of your choice within range, such as a rumble of thunder, the cry of a raven, or ominous whispers. Tremors: You cause harmless tremors in the ground for 1 minute.",
-    "higher_levels": ""
+    "higher_levels": "",
+    "condition_inflict": [],
+    "saving_throw": [],
+    "misc_tags": [
+      "ADV"
+    ]
   },
   "thorn_whip": {
     "id": "thorn_whip",
@@ -11650,7 +14566,13 @@ const SPELLS: Dictionary = {
     "range_feet": 30,
     "level17_damage": "4d6 Piercing",
     "projectile_style": "thorn_whip",
-    "projectile_travel_seconds": 0.65
+    "projectile_travel_seconds": 0.65,
+    "condition_inflict": [],
+    "saving_throw": [],
+    "misc_tags": [
+      "FMV",
+      "SCL"
+    ]
   },
   "thunder_step": {
     "id": "thunder_step",
@@ -11670,7 +14592,15 @@ const SPELLS: Dictionary = {
       "Wizard"
     ],
     "description": "You teleport yourself to an unoccupied space you can see within range. Immediately after you disappear, a thunderous boom sounds, and each creature within 10 feet of the space you left must make a Constitution saving throw, taking 3d10 thunder damage on a failed save, or half as much damage on a successful one. The thunder can be heard from up to 300 feet away. You can bring along objects as long as their weight doesn't exceed what you can carry. You can also teleport one willing creature of your size or smaller who is carrying gear up to its carrying capacity. The creature must be within 5 feet of you when you cast this spell, and there must be an unoccupied space within 5 feet of your destination space for the creature to appear in; otherwise, the creature is left behind.",
-    "higher_levels": "At Higher Levels: When you cast this spell using a spell slot of 4th level or higher, the damage increases by 1d10 for each slot level above 3rd."
+    "higher_levels": "At Higher Levels: When you cast this spell using a spell slot of 4th level or higher, the damage increases by 1d10 for each slot level above 3rd.",
+    "condition_inflict": [],
+    "saving_throw": [
+      "constitution"
+    ],
+    "misc_tags": [
+      "SGT",
+      "TP"
+    ]
   },
   "thunderclap": {
     "id": "thunderclap",
@@ -11693,7 +14623,14 @@ const SPELLS: Dictionary = {
       "Wizard"
     ],
     "description": "Each creature in a 5-foot Emanation originating from you must succeed on a Constitution saving throw or take 1d6 Thunder damage. The spell's thunderous sound can be heard up to 100 feet away.",
-    "higher_levels": "Cantrip Upgrade: The damage increases by 1d6 when you reach levels 5 (2d6), 11 (3d6), and 17 (4d6)."
+    "higher_levels": "Cantrip Upgrade: The damage increases by 1d6 when you reach levels 5 (2d6), 11 (3d6), and 17 (4d6).",
+    "condition_inflict": [],
+    "saving_throw": [
+      "constitution"
+    ],
+    "misc_tags": [
+      "SCL"
+    ]
   },
   "thunderous_smite": {
     "id": "thunderous_smite",
@@ -11711,7 +14648,17 @@ const SPELLS: Dictionary = {
       "Paladin"
     ],
     "description": "Your strike rings with thunder that is audible within 300 feet of you, and the target takes an extra 2d6 Thunder damage from the attack. Additionally, if the target is a creature, it must succeed on a Strength saving throw or be pushed 10 feet away from you and have the Prone condition.",
-    "higher_levels": "Using a Higher-Level Spell Slot: The damage increases by 1d6 for each spell slot level above 1."
+    "higher_levels": "Using a Higher-Level Spell Slot: The damage increases by 1d6 for each spell slot level above 1.",
+    "condition_inflict": [
+      "prone"
+    ],
+    "saving_throw": [
+      "strength"
+    ],
+    "misc_tags": [
+      "AAD",
+      "FMV"
+    ]
   },
   "thunderwave": {
     "id": "thunderwave",
@@ -11732,7 +14679,15 @@ const SPELLS: Dictionary = {
       "Wizard"
     ],
     "description": "You unleash a wave of thunderous energy. Each creature in a 15-foot Cube originating from you makes a Constitution saving throw. On a failed save, a creature takes 2d8 Thunder damage and is pushed 10 feet away from you. On a successful save, a creature takes half as much damage only. In addition, unsecured objects that are entirely within the Cube are pushed 10 feet away from you, and a thunderous boom is audible within 300 feet.",
-    "higher_levels": "Using a Higher-Level Spell Slot: The damage increases by 1d8 for each spell slot level above 1."
+    "higher_levels": "Using a Higher-Level Spell Slot: The damage increases by 1d8 for each spell slot level above 1.",
+    "condition_inflict": [],
+    "saving_throw": [
+      "constitution"
+    ],
+    "misc_tags": [
+      "FMV",
+      "OBJ"
+    ]
   },
   "tidal_wave": {
     "id": "tidal_wave",
@@ -11752,7 +14707,14 @@ const SPELLS: Dictionary = {
       "Wizard"
     ],
     "description": "You conjure up a wave of water that crashes down on an area within range. The area can be up to 30 feet long, up to 10 feet wide, and up to 10 feet tall. Each creature in that area must make a Dexterity saving throw. On a failed save, a creature takes 4d8 bludgeoning damage and is knocked prone. On a successful save, a creature takes half as much damage and isn't knocked prone. The water then spreads out across the ground in all directions, extinguishing unprotected flames in its area and within 30 feet of it, and then it vanishes.",
-    "higher_levels": ""
+    "higher_levels": "",
+    "condition_inflict": [
+      "prone"
+    ],
+    "saving_throw": [
+      "dexterity"
+    ],
+    "misc_tags": []
   },
   "time_ravage": {
     "id": "time_ravage",
@@ -11791,7 +14753,10 @@ const SPELLS: Dictionary = {
       "Wizard"
     ],
     "description": "You briefly stop the flow of time for everyone but yourself. No time passes for other creatures, while you take 1d4 + 1 turns in a row, during which you can use actions and move as normal. This spell ends if one of the actions you use during this period, or any effects that you create during it, affects a creature other than you or an object being worn or carried by someone other than you. In addition, the spell ends if you move to a place more than 1,000 feet from the location where you cast it.",
-    "higher_levels": ""
+    "higher_levels": "",
+    "condition_inflict": [],
+    "saving_throw": [],
+    "misc_tags": []
   },
   "tiny_servant": {
     "id": "tiny_servant",
@@ -11810,7 +14775,15 @@ const SPELLS: Dictionary = {
       "Wizard"
     ],
     "description": "You touch one Tiny, nonmagical object that isn't attached to another object or a surface and isn't being carried by another creature. The target animates and sprouts little arms and legs, becoming a creature under your control until the spell ends or the creature drops to 0 hit points. See the stat block for its statistics. As a bonus action, you can mentally command the creature if it is within 120 feet of you. (If you control multiple creatures with this spell, you can command any or all of them at the same time, issuing the same command to each one.) You decide what action the creature will take and where it will move during its next turn, or you can issue a simple, general command, such as to fetch a key, stand watch, or stack some books. If you issue no commands, the servant does nothing other than defend itself against hostile creatures. Once given an order, the servant continues to follow that order until its task is complete. When the creature drops to 0 hit points, it reverts to its original form, and any remaining damage carries over to that form.",
-    "higher_levels": "At Higher Levels: When you cast this spell using a spell slot of 4th level or higher, you can animate two additional objects for each slot level above 3rd."
+    "higher_levels": "At Higher Levels: When you cast this spell using a spell slot of 4th level or higher, you can animate two additional objects for each slot level above 3rd.",
+    "condition_inflict": [],
+    "saving_throw": [],
+    "misc_tags": [
+      "OBJ",
+      "SMN",
+      "UA",
+      "UBA"
+    ]
   },
   "toll_the_dead": {
     "id": "toll_the_dead",
@@ -11837,7 +14810,15 @@ const SPELLS: Dictionary = {
     "range_feet": 60,
     "level17_damage": "4d8 Necrotic",
     "projectile_style": "toll_the_dead",
-    "projectile_travel_seconds": 0.65
+    "projectile_travel_seconds": 0.65,
+    "condition_inflict": [],
+    "saving_throw": [
+      "wisdom"
+    ],
+    "misc_tags": [
+      "SCL",
+      "SGT"
+    ]
   },
   "tongues": {
     "id": "tongues",
@@ -11862,7 +14843,10 @@ const SPELLS: Dictionary = {
     "higher_levels": "",
     "visual_style": "arcane",
     "transient_seconds": 5,
-    "range_feet": 5
+    "range_feet": 5,
+    "condition_inflict": [],
+    "saving_throw": [],
+    "misc_tags": []
   },
   "transfix": {
     "id": "transfix",
@@ -11902,7 +14886,17 @@ const SPELLS: Dictionary = {
       "Wizard"
     ],
     "description": "You choose an area of stone or mud that you can see that fits within a 40-foot cube and is within range, and choose one of the following effects. Transmute Rock to Mud: Nonmagical rock of any sort in the area becomes an equal volume of thick, flowing mud that remains for the spell's duration. The ground in the spell's area becomes muddy enough that creatures can sink into it. Each foot that a creature moves through the mud costs 4 feet of movement, and any creature on the ground when you cast the spell must make a Strength saving throw. A creature must also make the saving throw when it moves into the area for the first time on a turn or ends its turn there. On a failed save, a creature sinks into the mud and is restrained, though it can use an action to end the restrained condition on itself by pulling itself free of the mud. If you cast the spell on a ceiling, the mud falls. Any creature under the mud when it falls must make a Dexterity saving throw. A creature takes 4d8 bludgeoning damage on a failed save, or half as much damage on a successful one. Transmute Mud to Rock: Nonmagical mud or quicksand in the area no more than 10 feet deep transforms into soft stone for the spell's duration. Any creature in the mud when it transforms must make a Dexterity saving throw. On a successful save, a creature is shunted safely to the surface in an unoccupied space. On a failed save, a creature becomes restrained by the rock. A restrained creature, or another creature within reach, can use an action to try to break the rock by succeeding on a 20 Strength check or by dealing damage to it. The rock has AC 15 and 25 hit points, and it is immune to poison and psychic damage.",
-    "higher_levels": ""
+    "higher_levels": "",
+    "condition_inflict": [
+      "restrained"
+    ],
+    "saving_throw": [
+      "dexterity",
+      "strength"
+    ],
+    "misc_tags": [
+      "SGT"
+    ]
   },
   "transport_via_plants": {
     "id": "transport_via_plants",
@@ -11920,7 +14914,12 @@ const SPELLS: Dictionary = {
       "Druid"
     ],
     "description": "This spell creates a magical link between a Large or larger inanimate plant within range and another plant, at any distance, on the same plane of existence. You must have seen or touched the destination plant at least once before. For the duration, any creature can step into the target plant and exit from the destination plant by using 5 feet of movement.",
-    "higher_levels": ""
+    "higher_levels": "",
+    "condition_inflict": [],
+    "saving_throw": [],
+    "misc_tags": [
+      "TP"
+    ]
   },
   "tree_stride": {
     "id": "tree_stride",
@@ -11939,7 +14938,12 @@ const SPELLS: Dictionary = {
       "Ranger"
     ],
     "description": "You gain the ability to enter a tree and move from inside it to inside another tree of the same kind within 500 feet. Both trees must be living and at least the same size as you. You must use 5 feet of movement to enter a tree. You instantly know the location of all other trees of the same kind within 500 feet and, as part of the move used to enter the tree, can either pass into one of those trees or step out of the tree you're in. You appear in a spot of your choice within 5 feet of the destination tree, using another 5 feet of movement. If you have no movement left, you appear within 5 feet of the tree you entered. You can use this transportation ability only once on each of your turns. You must end each turn outside a tree.",
-    "higher_levels": ""
+    "higher_levels": "",
+    "condition_inflict": [],
+    "saving_throw": [],
+    "misc_tags": [
+      "TP"
+    ]
   },
   "true_polymorph": {
     "id": "true_polymorph",
@@ -11963,7 +14967,18 @@ const SPELLS: Dictionary = {
     "target_mode": "token_then_token",
     "projectile_style": "true_polymorph",
     "projectile_travel_seconds": 0.65,
-    "range_feet": 30
+    "range_feet": 30,
+    "condition_inflict": [],
+    "saving_throw": [
+      "wisdom"
+    ],
+    "misc_tags": [
+      "OBJ",
+      "PRM",
+      "SGT",
+      "SMN",
+      "THP"
+    ]
   },
   "true_resurrection": {
     "id": "true_resurrection",
@@ -11988,7 +15003,12 @@ const SPELLS: Dictionary = {
     "target_mode": "token_then_token",
     "range_feet": 5,
     "projectile_style": "true_resurrection",
-    "projectile_travel_seconds": 0.65
+    "projectile_travel_seconds": 0.65,
+    "condition_inflict": [],
+    "saving_throw": [],
+    "misc_tags": [
+      "HL"
+    ]
   },
   "true_seeing": {
     "id": "true_seeing",
@@ -12010,7 +15030,10 @@ const SPELLS: Dictionary = {
       "Wizard"
     ],
     "description": "For the duration, the willing creature you touch has Truesight with a range of 120 feet.",
-    "higher_levels": ""
+    "higher_levels": "",
+    "condition_inflict": [],
+    "saving_throw": [],
+    "misc_tags": []
   },
   "true_strike": {
     "id": "true_strike",
@@ -12032,7 +15055,12 @@ const SPELLS: Dictionary = {
       "Wizard"
     ],
     "description": "Guided by a flash of magical insight, you make one attack with the weapon used in the spell's casting. The attack uses your spellcasting ability for the attack and damage rolls instead of using Strength or Dexterity. If the attack deals damage, it can be Radiant damage or the weapon's normal damage type (your choice).",
-    "higher_levels": "Cantrip Upgrade: Whether you deal Radiant damage or the weapon's normal damage type, the attack deals extra Radiant damage when you reach levels 5 (1d6), 11 (2d6), and 17 (3d6)."
+    "higher_levels": "Cantrip Upgrade: Whether you deal Radiant damage or the weapon's normal damage type, the attack deals extra Radiant damage when you reach levels 5 (1d6), 11 (2d6), and 17 (3d6).",
+    "condition_inflict": [],
+    "saving_throw": [],
+    "misc_tags": [
+      "AAD"
+    ]
   },
   "tsunami": {
     "id": "tsunami",
@@ -12050,7 +15078,12 @@ const SPELLS: Dictionary = {
       "Druid"
     ],
     "description": "A wall of water springs into existence at a point you choose within range. You can make the wall up to 300 feet long, 300 feet high, and 50 feet thick. The wall lasts for the duration. When the wall appears, each creature in its area makes a Strength saving throw, taking 6d10 Bludgeoning damage on a failed save or half as much damage on a successful one. At the start of each of your turns after the wall appears, the wall, along with any creatures in it, moves 50 feet away from you. Any Huge or smaller creature inside the wall or whose space the wall enters when it moves must succeed on a Strength saving throw or take 5d10 Bludgeoning damage. A creature can take this damage only once per round. At the end of the turn, the wall's height is reduced by 50 feet, and the damage the wall deals on later rounds is reduced by 1d10. When the wall reaches 0 feet in height, the spell ends. A creature caught in the wall can move by swimming. Because of the wave's force, though, the creature must succeed on a Strength (Athletics) check against your spell save DC to move at all. If it fails the check, it can't move. A creature that moves out of the wall falls to the ground.",
-    "higher_levels": ""
+    "higher_levels": "",
+    "condition_inflict": [],
+    "saving_throw": [
+      "strength"
+    ],
+    "misc_tags": []
   },
   "uncertain_footing": {
     "id": "uncertain_footing",
@@ -12099,7 +15132,14 @@ const SPELLS: Dictionary = {
       "Wizard"
     ],
     "description": "This spell creates an Invisible, mindless, shapeless, Medium force that performs simple tasks at your command until the spell ends. The servant springs into existence in an unoccupied space on the ground within range. It has AC 10, 1 Hit Point, and a Strength of 2, and it can't attack. If it drops to 0 Hit Points, the spell ends. Once on each of your turns as a Bonus Action, you can mentally command the servant to move up to 15 feet and interact with an object. The servant can perform simple tasks that a human could do, such as fetching things, cleaning, mending, folding clothes, lighting fires, serving food, and pouring drinks. Once you give the command, the servant performs the task to the best of its ability until it completes the task, then waits for your next command. If you command the servant to perform a task that would move it more than 60 feet away from you, the spell ends.",
-    "higher_levels": ""
+    "higher_levels": "",
+    "condition_inflict": [],
+    "saving_throw": [],
+    "misc_tags": [
+      "SMN",
+      "UA",
+      "UBA"
+    ]
   },
   "vampiric_touch": {
     "id": "vampiric_touch",
@@ -12119,7 +15159,12 @@ const SPELLS: Dictionary = {
       "Wizard"
     ],
     "description": "The touch of your shadow-wreathed hand can siphon life force from others to heal your wounds. Make a melee spell attack against one creature within reach. On a hit, the target takes 3d6 Necrotic damage, and you regain Hit Points equal to half the amount of Necrotic damage dealt. Until the spell ends, you can make the attack again on each of your turns as a Magic action, targeting the same creature or a different one.",
-    "higher_levels": "Using a Higher-Level Spell Slot: The damage increases by 1d6 for each spell slot level above 3."
+    "higher_levels": "Using a Higher-Level Spell Slot: The damage increases by 1d6 for each spell slot level above 3.",
+    "condition_inflict": [],
+    "saving_throw": [],
+    "misc_tags": [
+      "HL"
+    ]
   },
   "vicious_mockery": {
     "id": "vicious_mockery",
@@ -12144,7 +15189,15 @@ const SPELLS: Dictionary = {
     "range_feet": 60,
     "level17_damage": "4d6 Psychic",
     "projectile_style": "vicious_mockery",
-    "projectile_travel_seconds": 0.65
+    "projectile_travel_seconds": 0.65,
+    "condition_inflict": [],
+    "saving_throw": [
+      "wisdom"
+    ],
+    "misc_tags": [
+      "SCL",
+      "SGT"
+    ]
   },
   "vision_of_elapsing_eons": {
     "id": "vision_of_elapsing_eons",
@@ -12187,7 +15240,12 @@ const SPELLS: Dictionary = {
       "Wizard"
     ],
     "description": "You point at a location within range, and a glowing, 1-foot-diameter ball of acid streaks there and explodes in a 20-foot-radius Sphere. Each creature in that area makes a Dexterity saving throw. On a failed save, a creature takes 10d4 Acid damage and another 5d4 Acid damage at the end of its next turn. On a successful save, a creature takes half the initial damage only.",
-    "higher_levels": "Using a Higher-Level Spell Slot: The initial damage increases by 2d4 for each spell slot level above 4."
+    "higher_levels": "Using a Higher-Level Spell Slot: The initial damage increases by 2d4 for each spell slot level above 4.",
+    "condition_inflict": [],
+    "saving_throw": [
+      "dexterity"
+    ],
+    "misc_tags": []
   },
   "vortex_warp": {
     "id": "vortex_warp",
@@ -12207,7 +15265,15 @@ const SPELLS: Dictionary = {
       "Wizard"
     ],
     "description": "You magically twist space around another creature you can see within range. The target must succeed on a Constitution saving throw (the target can choose to fail), or the target is teleported to an unoccupied space of your choice that you can see within range. The chosen space must be on a surface or in a liquid that can support the target without the target having to squeeze.",
-    "higher_levels": "At Higher Levels: When you cast this spell using a spell slot of 3rd level or higher, the range of the spell increases by 30 feet for each slot level above 2nd."
+    "higher_levels": "At Higher Levels: When you cast this spell using a spell slot of 3rd level or higher, the range of the spell increases by 30 feet for each slot level above 2nd.",
+    "condition_inflict": [],
+    "saving_throw": [
+      "constitution"
+    ],
+    "misc_tags": [
+      "SGT",
+      "TP"
+    ]
   },
   "wail_of_the_banshee": {
     "id": "wail_of_the_banshee",
@@ -12250,7 +15316,12 @@ const SPELLS: Dictionary = {
       "Wizard"
     ],
     "description": "You create a wall of fire on a solid surface within range. You can make the wall up to 60 feet long, 20 feet high, and 1 foot thick, or a ringed wall up to 20 feet in diameter, 20 feet high, and 1 foot thick. The wall is opaque and lasts for the duration. When the wall appears, each creature in its area makes a Dexterity saving throw, taking 5d8 Fire damage on a failed save or half as much damage on a successful one. One side of the wall, selected by you when you cast this spell, deals 5d8 Fire damage to each creature that ends its turn within 10 feet of that side or inside the wall. A creature takes the same damage when it enters the wall for the first time on a turn or ends its turn there. The other side of the wall deals no damage.",
-    "higher_levels": "Using a Higher-Level Spell Slot: The damage increases by 1d8 for each spell slot level above 4."
+    "higher_levels": "Using a Higher-Level Spell Slot: The damage increases by 1d8 for each spell slot level above 4.",
+    "condition_inflict": [],
+    "saving_throw": [
+      "dexterity"
+    ],
+    "misc_tags": []
   },
   "wall_of_force": {
     "id": "wall_of_force",
@@ -12268,7 +15339,10 @@ const SPELLS: Dictionary = {
       "Wizard"
     ],
     "description": "An Invisible wall of force springs into existence at a point you choose within range. The wall appears in any orientation you choose, as a horizontal or vertical barrier or at an angle. It can be free floating or resting on a solid surface. You can form it into a hemispherical dome or a globe with a radius of up to 10 feet, or you can shape a flat surface made up of ten 10-foot-by-10-foot panels. Each panel must be contiguous with another panel. In any form, the wall is 1/4 inch thick and lasts for the duration. If the wall cuts through a creature's space when it appears, the creature is pushed to one side of the wall (you choose which side). Nothing can physically pass through the wall. It is immune to all damage and can't be dispelled by Dispel Magic. A Disintegrate spell destroys the wall instantly, however. The wall also extends into the Ethereal Plane and blocks ethereal travel through the wall.",
-    "higher_levels": ""
+    "higher_levels": "",
+    "condition_inflict": [],
+    "saving_throw": [],
+    "misc_tags": []
   },
   "wall_of_ice": {
     "id": "wall_of_ice",
@@ -12286,7 +15360,13 @@ const SPELLS: Dictionary = {
       "Wizard"
     ],
     "description": "You create a wall of ice on a solid surface within range. You can form it into a hemispherical dome or a globe with a radius of up to 10 feet, or you can shape a flat surface made up of ten 10-foot-square panels. Each panel must be contiguous with another panel. In any form, the wall is 1 foot thick and lasts for the duration. If the wall cuts through a creature's space when it appears, the creature is pushed to one side of the wall (you choose which side) and makes a Dexterity saving throw, taking 10d6 Cold damage on a failed save or half as much damage on a successful one. The wall is an object that can be damaged and thus breached. It has AC 12 and 30 Hit Points per 10-foot section, and it has Immunity to Cold, Poison, and Psychic damage and Vulnerability to Fire damage. Reducing a 10-foot section of wall to 0 Hit Points destroys it and leaves behind a sheet of frigid air in the space the wall occupied. A creature moving through the sheet of frigid air for the first time on a turn makes a Constitution saving throw, taking 5d6 Cold damage on a failed save or half as much damage on a successful one.",
-    "higher_levels": "Using a Higher-Level Spell Slot: The damage the wall deals when it appears increases by 2d6 and the damage from passing through the sheet of frigid air increases by 1d6 for each spell slot level above 6."
+    "higher_levels": "Using a Higher-Level Spell Slot: The damage the wall deals when it appears increases by 2d6 and the damage from passing through the sheet of frigid air increases by 1d6 for each spell slot level above 6.",
+    "condition_inflict": [],
+    "saving_throw": [
+      "constitution",
+      "dexterity"
+    ],
+    "misc_tags": []
   },
   "wall_of_light": {
     "id": "wall_of_light",
@@ -12306,7 +15386,17 @@ const SPELLS: Dictionary = {
       "Wizard"
     ],
     "description": "A shimmering wall of bright light appears at a point you choose within range. The wall appears in any orientation you choose: horizontally, vertically, or diagonally. It can be free floating, or it can rest on a solid surface. The wall can be up to 60 feet long, 10 feet high, and 5 feet thick. The wall blocks line of sight, but creatures and objects can pass through it. It emits bright light out to 120 feet and dim light for an additional 120 feet. When the wall appears, each creature in its area must make a Constitution saving throw. On a failed save, a creature takes 4d8 radiant damage, and it is blinded for 1 minute. On a successful save, it takes half as much damage and isn't blinded. A blinded creature can make a Constitution saving throw at the end of each of its turns, ending the effect on itself on a success. A creature that ends its turn in the wall's area takes 4d8 radiant damage. Until the spell ends, you can use an action to launch a beam of radiance from the wall at one creature you can see within 60 feet of it. Make a ranged spell attack. On a hit, the target takes 4d8 radiant damage. Whether you hit or miss, reduce the length of the wall by 10 feet. If the wall's length drops to 0 feet, the spell ends.",
-    "higher_levels": "At Higher Levels: When you cast this spell using a spell slot of 6th level or higher, the damage increases by 1d8 for each slot level above 5th."
+    "higher_levels": "At Higher Levels: When you cast this spell using a spell slot of 6th level or higher, the damage increases by 1d8 for each slot level above 5th.",
+    "condition_inflict": [
+      "blinded"
+    ],
+    "saving_throw": [
+      "constitution"
+    ],
+    "misc_tags": [
+      "LGT",
+      "SGT"
+    ]
   },
   "wall_of_sand": {
     "id": "wall_of_sand",
@@ -12338,7 +15428,14 @@ const SPELLS: Dictionary = {
     "wall_globe_max_radius_feet": 10,
     "wall_requires_ground": true,
     "persistent": true,
-    "range_feet": 90
+    "range_feet": 90,
+    "condition_inflict": [
+      "blinded"
+    ],
+    "saving_throw": [],
+    "misc_tags": [
+      "SGT"
+    ]
   },
   "wall_of_stone": {
     "id": "wall_of_stone",
@@ -12359,7 +15456,15 @@ const SPELLS: Dictionary = {
       "Wizard"
     ],
     "description": "A nonmagical wall of solid stone springs into existence at a point you choose within range. The wall is 6 inches thick and is composed of ten 10-foot-by-10-foot panels. Each panel must be contiguous with another panel. Alternatively, you can create 10-foot-by-20-foot panels that are only 3 inches thick. If the wall cuts through a creature's space when it appears, the creature is pushed to one side of the wall (you choose which side). If a creature would be surrounded on all sides by the wall (or the wall and another solid surface), that creature can make a Dexterity saving throw. On a success, it can use its Reaction to move up to its Speed so that it is no longer enclosed by the wall. The wall can have any shape you desire, though it can't occupy the same space as a creature or object. The wall doesn't need to be vertical or rest on a firm foundation. It must, however, merge with and be solidly supported by existing stone. Thus, you can use this spell to bridge a chasm or create a ramp. If you create a span greater than 20 feet in length, you must halve the size of each panel to create supports. You can crudely shape the wall to create battlements and the like. The wall is an object made of stone that can be damaged and thus breached. Each panel has AC 15 and 30 Hit Points per inch of thickness, and it has Immunity to Poison and Psychic damage. Reducing a panel to 0 Hit Points destroys it and might cause connected panels to collapse at the DM's discretion. If you maintain your Concentration on this spell for its full duration, the wall becomes permanent and can't be dispelled. Otherwise, the wall disappears when the spell ends.",
-    "higher_levels": ""
+    "higher_levels": "",
+    "condition_inflict": [],
+    "saving_throw": [
+      "dexterity"
+    ],
+    "misc_tags": [
+      "OBJ",
+      "PRM"
+    ]
   },
   "wall_of_thorns": {
     "id": "wall_of_thorns",
@@ -12377,7 +15482,12 @@ const SPELLS: Dictionary = {
       "Druid"
     ],
     "description": "You create a wall of tangled brush bristling with needle-sharp thorns. The wall appears within range on a solid surface and lasts for the duration. You choose to make the wall up to 60 feet long, 10 feet high, and 5 feet thick or a circle that has a 20-foot diameter and is up to 20 feet high and 5 feet thick. The wall blocks line of sight. When the wall appears, each creature in its area makes a Dexterity saving throw, taking 7d8 Piercing damage on a failed save or half as much damage on a successful one. A creature can move through the wall, albeit slowly and painfully. For every 1 foot a creature moves through the wall, it must spend 4 feet of movement. Furthermore, the first time a creature enters a space in the wall on a turn or ends its turn there, the creature makes a Dexterity saving throw, taking 7d8 Slashing damage on a failed save or half as much damage on a successful one. A creature makes this save only once per turn.",
-    "higher_levels": "Using a Higher-Level Spell Slot: Both types of damage increase by 1d8 for each spell slot level above 6."
+    "higher_levels": "Using a Higher-Level Spell Slot: Both types of damage increase by 1d8 for each spell slot level above 6.",
+    "condition_inflict": [],
+    "saving_throw": [
+      "dexterity"
+    ],
+    "misc_tags": []
   },
   "wall_of_water": {
     "id": "wall_of_water",
@@ -12412,7 +15522,13 @@ const SPELLS: Dictionary = {
     "wall_requires_ground": true,
     "persistent": true,
     "range_feet": 60,
-    "wall_circle_height_feet": 20
+    "wall_circle_height_feet": 20,
+    "condition_inflict": [],
+    "saving_throw": [],
+    "misc_tags": [
+      "DFT",
+      "SGT"
+    ]
   },
   "wardaway": {
     "id": "wardaway",
@@ -12439,7 +15555,12 @@ const SPELLS: Dictionary = {
     "target_mode": "token_then_token",
     "range_feet": 60,
     "projectile_style": "wardaway",
-    "projectile_travel_seconds": 0.65
+    "projectile_travel_seconds": 0.65,
+    "condition_inflict": [],
+    "saving_throw": [
+      "constitution"
+    ],
+    "misc_tags": []
   },
   "warding_bond": {
     "id": "warding_bond",
@@ -12464,7 +15585,12 @@ const SPELLS: Dictionary = {
     "target_mode": "token_then_token",
     "range_feet": 5,
     "projectile_style": "warding_bond",
-    "projectile_travel_seconds": 0.65
+    "projectile_travel_seconds": 0.65,
+    "condition_inflict": [],
+    "saving_throw": [],
+    "misc_tags": [
+      "MAC"
+    ]
   },
   "warding_wind": {
     "id": "warding_wind",
@@ -12485,7 +15611,14 @@ const SPELLS: Dictionary = {
       "Wizard"
     ],
     "description": "A strong wind (20 miles per hour) blows around you in a 10-foot radius and moves with you, remaining centered on you. The wind lasts for the spell's duration. The wind has the following effects: It deafens you and other creatures in its area. It extinguishes unprotected flames in its area that are torch-sized or smaller. It hedges out vapor, gas, and fog that can be dispersed by strong wind. The area is 3 for creatures other than you. The attack rolls of ranged weapon attacks have disadvantage if the attacks pass in or out of the wind.",
-    "higher_levels": ""
+    "higher_levels": "",
+    "condition_inflict": [
+      "deafened"
+    ],
+    "saving_throw": [],
+    "misc_tags": [
+      "DFT"
+    ]
   },
   "warp_sense": {
     "id": "warp_sense",
@@ -12530,7 +15663,10 @@ const SPELLS: Dictionary = {
     "higher_levels": "",
     "visual_style": "arcane",
     "transient_seconds": 5,
-    "range_feet": 30
+    "range_feet": 30,
+    "condition_inflict": [],
+    "saving_throw": [],
+    "misc_tags": []
   },
   "water_walk": {
     "id": "water_walk",
@@ -12555,7 +15691,10 @@ const SPELLS: Dictionary = {
     "higher_levels": "",
     "visual_style": "arcane",
     "transient_seconds": 5,
-    "range_feet": 30
+    "range_feet": 30,
+    "condition_inflict": [],
+    "saving_throw": [],
+    "misc_tags": []
   },
   "watery_sphere": {
     "id": "watery_sphere",
@@ -12575,7 +15714,18 @@ const SPELLS: Dictionary = {
       "Wizard"
     ],
     "description": "You conjure up a sphere of water with a 5-foot radius at a point you can see within range. The sphere can hover but no more than 10 feet off the ground. The sphere remains for the spell's duration. Any creature in the sphere's space must make a Strength saving throw. On a successful save, a creature is ejected from that space to the nearest unoccupied space of the creature's choice outside the sphere. A Huge or larger creature succeeds on the saving throw automatically, and a Large or smaller creature can choose to fail it. On a failed save, a creature is restrained by the sphere and is engulfed by the water. At the end of each of its turns, a restrained target can repeat the saving throw, ending the effect on itself on a success. The sphere can restrain as many as four Medium or smaller creatures or one Large creature. If the sphere restrains a creature that causes it to exceed this capacity, a random creature that was already restrained by the sphere falls out of it and lands prone in a space within 5 feet of it. As an action, you can move the sphere up to 30 feet in a straight line. If it moves over a pit, a cliff, or other drop-off, it safely descends until it is hovering 10 feet above the ground. Any creature restrained by the sphere moves with it. You can ram the sphere into creatures, forcing them to make the saving throw. When the spell ends, the sphere falls to the ground and extinguishes all normal flames within 30 feet of it. Any creature restrained by the sphere is knocked prone in the space where it falls. The water then vanishes.",
-    "higher_levels": ""
+    "higher_levels": "",
+    "condition_inflict": [
+      "prone",
+      "restrained"
+    ],
+    "saving_throw": [
+      "strength"
+    ],
+    "misc_tags": [
+      "SGT",
+      "UA"
+    ]
   },
   "waves_of_exhaustion": {
     "id": "waves_of_exhaustion",
@@ -12622,7 +15772,17 @@ const SPELLS: Dictionary = {
       "Wizard"
     ],
     "description": "You conjure a mass of sticky webbing at a point within range. The webs fill a 20-foot Cube there for the duration. The webs are Difficult Terrain, and the area within them is Lightly Obscured. If the webs aren't anchored between two solid masses (such as walls or trees) or layered across a floor, wall, or ceiling, the web collapses on itself, and the spell ends at the start of your next turn. Webs layered over a flat surface have a depth of 5 feet. The first time a creature enters the webs on a turn or starts its turn there, it must succeed on a Dexterity saving throw or have the Restrained condition while in the webs or until it breaks free. A creature Restrained by the webs can take an action to make a Strength (Athletics) check against your spell save DC. If it succeeds, it is no longer Restrained. The webs are flammable. Any 5-foot Cube of webs exposed to fire burns away in 1 round, dealing 2d4 Fire damage to any creature that starts its turn in the fire.",
-    "higher_levels": ""
+    "higher_levels": "",
+    "condition_inflict": [
+      "restrained"
+    ],
+    "saving_throw": [
+      "dexterity"
+    ],
+    "misc_tags": [
+      "DFT",
+      "OBS"
+    ]
   },
   "weird": {
     "id": "weird",
@@ -12648,7 +15808,14 @@ const SPELLS: Dictionary = {
     "aoe_shape": "sphere",
     "aoe_radius_feet": 30,
     "range_feet": 120,
-    "persistent": true
+    "persistent": true,
+    "condition_inflict": [
+      "frightened"
+    ],
+    "saving_throw": [
+      "wisdom"
+    ],
+    "misc_tags": []
   },
   "whirlwind": {
     "id": "whirlwind",
@@ -12675,7 +15842,19 @@ const SPELLS: Dictionary = {
     "aoe_radius_feet": 10,
     "aoe_height_feet": 30,
     "range_feet": 300,
-    "persistent": true
+    "persistent": true,
+    "condition_inflict": [
+      "restrained"
+    ],
+    "saving_throw": [
+      "dexterity",
+      "strength"
+    ],
+    "misc_tags": [
+      "FMV",
+      "SGT",
+      "UA"
+    ]
   },
   "wind_walk": {
     "id": "wind_walk",
@@ -12700,7 +15879,12 @@ const SPELLS: Dictionary = {
     "range_feet": 30,
     "projectile_style": "wind_walk",
     "projectile_travel_seconds": 0.65,
-    "base_target_clicks": 10
+    "base_target_clicks": 10,
+    "condition_inflict": [
+      "stunned"
+    ],
+    "saving_throw": [],
+    "misc_tags": []
   },
   "wind_wall": {
     "id": "wind_wall",
@@ -12719,7 +15903,12 @@ const SPELLS: Dictionary = {
       "Ranger"
     ],
     "description": "A wall of strong wind rises from the ground at a point you choose within range. You can make the wall up to 50 feet long, 15 feet high, and 1 foot thick. You can shape the wall in any way you choose so long as it makes one continuous path along the ground. The wall lasts for the duration. When the wall appears, each creature in its area makes a Strength saving throw, taking 4d8 Bludgeoning damage on a failed save or half as much damage on a successful one. The strong wind keeps fog, smoke, and other gases at bay. Small or smaller flying creatures or objects can't pass through the wall. Loose, lightweight materials brought into the wall fly upward. Arrows, bolts, and other ordinary projectiles launched at targets behind the wall are deflected upward and miss automatically. Boulders hurled by Giants or siege engines, and similar projectiles, are unaffected. Creatures in gaseous form can't pass through it.",
-    "higher_levels": ""
+    "higher_levels": "",
+    "condition_inflict": [],
+    "saving_throw": [
+      "strength"
+    ],
+    "misc_tags": []
   },
   "wish": {
     "id": "wish",
@@ -12738,7 +15927,14 @@ const SPELLS: Dictionary = {
       "Wizard"
     ],
     "description": "Wish is the mightiest spell a mortal can cast. By simply speaking aloud, you can alter reality itself. The basic use of this spell is to duplicate any other spell of level 8 or lower. If you use it this way, you don't need to meet any requirements to cast that spell, including costly components. The spell simply takes effect. Alternatively, you can create one of the following effects of your choice: Object Creation: You create one object of up to 25,000 GP in value that isn't a magic item. The object can be no more than 300 feet in any dimension, and it appears in an unoccupied space that you can see on the ground. Instant Health: You allow yourself and up to twenty creatures that you can see to regain all Hit Points, and you end all effects on them listed in the Greater Restoration spell. Resistance: You grant up to ten creatures that you can see Resistance to one damage type that you choose. This Resistance is permanent. Spell Immunity: You grant up to ten creatures you can see immunity to a single spell or other magical effect for 8 hours. Sudden Learning: You replace one of your feats with another feat for which you are eligible. You lose all the benefits of the old feat and gain the benefits of the new one. You can't replace a feat that is a prerequisite for any of your other feats or features. Roll Redo: You undo a single recent event by forcing a reroll of any die roll made within the last round (including your last turn). Reality reshapes itself to accommodate the new result. For example, a Wish spell could undo an ally's failed saving throw or a foe's Critical Hit. You can force the reroll to be made with Advantage or Disadvantage, and you choose whether to use the reroll or the original roll. Reshape Reality: You may wish for something not included in any of the other effects. To do so, state your wish to the DM as precisely as possible. The DM has great latitude in ruling what occurs in such an instance; the greater the wish, the greater the likelihood that something goes wrong. This spell might simply fail, the effect you desire might be achieved only in part, or you might suffer an unforeseen consequence as a result of how you worded the wish. For example, wishing that a villain were dead might propel you forward in time to a period when that villain is no longer alive, effectively removing you from the game. Similarly, wishing for a Legendary magic item or an Artifact might instantly transport you to the presence of the item's current owner. If your wish is granted and its effects have consequences for a whole community, region, or world, you are likely to attract powerful foes. If your wish would affect a god, the god's divine servants might instantly intervene to prevent it or to encourage you to craft the wish in a particular way. If your wish would undo the multiverse itself, threaten the City of Sigil, or affect the Lady of Pain in any way, you see an image of her in your mind for a moment; she shakes her head, and your wish fails. The stress of casting Wish to produce any effect other than duplicating another spell weakens you. After enduring that stress, each time you cast a spell until you finish a Long Rest, you take 1d10 Necrotic damage per level of that spell. This damage can't be reduced or prevented in any way. In addition, your Strength score becomes 3 for 2d4 days. For each of those days that you spend resting and doing nothing more than light activity, your remaining recovery time decreases by 2 days. Finally, there is a 33 chance that you are unable to cast Wish ever again if you suffer this stress.",
-    "higher_levels": ""
+    "higher_levels": "",
+    "condition_inflict": [],
+    "saving_throw": [],
+    "misc_tags": [
+      "ADV",
+      "HL",
+      "SGT"
+    ]
   },
   "witch_bolt": {
     "id": "witch_bolt",
@@ -12763,7 +15959,13 @@ const SPELLS: Dictionary = {
     "target_mode": "token_then_token",
     "projectile_style": "witch_bolt",
     "projectile_travel_seconds": 0.65,
-    "allow_point_target": true
+    "allow_point_target": true,
+    "condition_inflict": [],
+    "saving_throw": [],
+    "misc_tags": [
+      "UA",
+      "UBA"
+    ]
   },
   "wither_and_bloom": {
     "id": "wither_and_bloom",
@@ -12811,7 +16013,15 @@ const SPELLS: Dictionary = {
     "aoe_shape": "sphere",
     "aoe_radius_feet": 5,
     "show_range_preview": false,
-    "level17_damage": "4d6 Radiant"
+    "level17_damage": "4d6 Radiant",
+    "condition_inflict": [],
+    "saving_throw": [
+      "constitution"
+    ],
+    "misc_tags": [
+      "SCL",
+      "SGT"
+    ]
   },
   "word_of_recall": {
     "id": "word_of_recall",
@@ -12829,7 +16039,13 @@ const SPELLS: Dictionary = {
       "Cleric"
     ],
     "description": "You and up to five willing creatures within 5 feet of you instantly teleport to a previously designated sanctuary. You and any creatures that teleport with you appear in the nearest unoccupied space to the spot you designated when you prepared your sanctuary (see below). If you cast this spell without first preparing a sanctuary, the spell has no effect. You must designate a location, such as a temple, as a sanctuary by casting this spell there.",
-    "higher_levels": ""
+    "higher_levels": "",
+    "condition_inflict": [],
+    "saving_throw": [],
+    "misc_tags": [
+      "PS",
+      "TP"
+    ]
   },
   "wrath_of_nature": {
     "id": "wrath_of_nature",
@@ -12848,7 +16064,20 @@ const SPELLS: Dictionary = {
       "Ranger"
     ],
     "description": "You call out to the spirits of nature to rouse them against your enemies. Choose a point you can see within range. The spirits cause trees, rocks, and grasses in a 60-foot cube centered on that point to become animated until the spell ends. Grasses and Undergrowth: Any area of ground in the cube that is covered by grass or undergrowth is 3 for your enemies. Trees: At the start of each of your turns, each of your enemies within 10 feet of any tree in the cube must succeed on a Dexterity saving throw or take 4d6 slashing damage from whipping branches. Roots and Vines: At the end of each of your turns, one creature of your choice that is on the ground in the cube must succeed on a Strength saving throw or become restrained until the spell ends. A restrained creature can use an action to make a Strength (Athletics) check against your spell save DC, ending the effect on itself on a success. Rocks: As a bonus action on your turn, you can cause a loose rock in the cube to launch at a creature you can see in the cube. Make a ranged spell attack against the target. On a hit, the target takes 3d8 nonmagical bludgeoning damage, and it must succeed on a Strength saving throw or fall prone.",
-    "higher_levels": ""
+    "higher_levels": "",
+    "condition_inflict": [
+      "prone",
+      "restrained"
+    ],
+    "saving_throw": [
+      "dexterity",
+      "strength"
+    ],
+    "misc_tags": [
+      "DFT",
+      "SGT",
+      "UBA"
+    ]
   },
   "wrathful_smite": {
     "id": "wrathful_smite",
@@ -12866,7 +16095,16 @@ const SPELLS: Dictionary = {
       "Paladin"
     ],
     "description": "The target takes an extra 1d6 Necrotic damage from the attack, and it must succeed on a Wisdom saving throw or have the Frightened condition until the spell ends. At the end of each of its turns, the Frightened target repeats the save, ending the spell on itself on a success.",
-    "higher_levels": "Using a Higher-Level Spell Slot: The damage increases by 1d6 for each spell slot level above 1."
+    "higher_levels": "Using a Higher-Level Spell Slot: The damage increases by 1d6 for each spell slot level above 1.",
+    "condition_inflict": [
+      "frightened"
+    ],
+    "saving_throw": [
+      "wisdom"
+    ],
+    "misc_tags": [
+      "AAD"
+    ]
   },
   "wristpocket": {
     "id": "wristpocket",
@@ -12901,7 +16139,17 @@ const SPELLS: Dictionary = {
       "Wizard"
     ],
     "description": "You surround yourself with unearthly majesty in a 10-foot Emanation. Whenever the Emanation enters the space of a creature you can see and whenever a creature you can see enters the Emanation or ends its turn there, you can force that creature to make a Wisdom saving throw. On a failed save, the target takes 4d6 Psychic damage and has the Prone condition, and you can push it up to 10 feet away. On a successful save, the target takes half as much damage only. A creature makes this save only once per turn.",
-    "higher_levels": ""
+    "higher_levels": "",
+    "condition_inflict": [
+      "prone"
+    ],
+    "saving_throw": [
+      "wisdom"
+    ],
+    "misc_tags": [
+      "FMV",
+      "SGT"
+    ]
   },
   "zephyr_strike": {
     "id": "zephyr_strike",
@@ -12919,7 +16167,13 @@ const SPELLS: Dictionary = {
       "Ranger"
     ],
     "description": "You move like the wind. Until the spell ends, your movement doesn't provoke opportunity attacks. Once before the spell ends, you can give yourself advantage on one weapon attack roll on your turn. That attack deals an extra 1d8 force damage on a hit. Whether you hit or miss, your walking speed increases by 30 feet until the end of that turn.",
-    "higher_levels": ""
+    "higher_levels": "",
+    "condition_inflict": [],
+    "saving_throw": [],
+    "misc_tags": [
+      "AAD",
+      "ADV"
+    ]
   },
   "zone_of_amicability": {
     "id": "zone_of_amicability",
@@ -12965,6 +16219,11 @@ const SPELLS: Dictionary = {
     "aoe_shape": "sphere",
     "aoe_radius_feet": 15,
     "range_feet": 60,
-    "persistent": true
+    "persistent": true,
+    "condition_inflict": [],
+    "saving_throw": [
+      "charisma"
+    ],
+    "misc_tags": []
   }
 }
