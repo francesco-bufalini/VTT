@@ -2,6 +2,7 @@ extends SceneTree
 
 const SpellCatalog = preload("res://vtt/spells/spell_catalog.gd")
 const SpellSystem = preload("res://vtt/spells/spell_system.gd")
+const MeasurementTool = preload("res://measurement_tool.gd")
 
 
 func _initialize() -> void:
@@ -400,6 +401,26 @@ func run() -> void:
 	assert("restrained" in entangle_conditions)
 	var entangle_saves: Array = entangle.get("saving_throw", [])
 	assert("strength" in entangle_saves)
+
+	# Token-hit highlighting uses the same geometric volumes shown on the map.
+	var measurement_tool: Node = MeasurementTool.new()
+	measurement_tool.set("cell_size", 1.0)
+	assert(bool(measurement_tool.call(
+		"_cell_intersects_aoe",
+		Vector3(0.5, 0.0, 0.0),
+		Vector3.ZERO,
+		Vector3.RIGHT * 4.0,
+		"sphere",
+		"fire",
+		-1.0
+	)))
+	assert(float(measurement_tool.call(
+		"_distance_to_segment",
+		Vector3(0.0, 0.25, 0.0),
+		Vector3(-2.0, 0.0, 0.0),
+		Vector3(2.0, 0.0, 0.0)
+	)) < 0.55)
+	measurement_tool.free()
 
 	print(
 		"PASS: 5eTools metadata drives projectiles, summons, transformations, conditions, areas, walls and VFX"
