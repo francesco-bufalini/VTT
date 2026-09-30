@@ -2059,8 +2059,11 @@ func _update_spell_range_preview(spell_data: Dictionary) -> void:
 			spell_data.get("teleport_distance_feet", range_feet)
 		)
 	elif _targeting_phase == "teleport_passengers":
+		# Keep showing the spell's actual teleport reach while optional
+		# passengers are selected; their 5-foot eligibility is enforced
+		# separately by the passenger selection rule.
 		range_feet = float(
-			spell_data.get("teleport_passenger_range_feet", 5.0)
+			spell_data.get("teleport_distance_feet", range_feet)
 		)
 
 	if range_feet <= 0.0:
