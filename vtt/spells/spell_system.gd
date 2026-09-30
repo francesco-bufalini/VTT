@@ -2254,6 +2254,7 @@ func _update_spell_range_preview(spell_data: Dictionary) -> void:
 			"target_token",
 			"multi_target_tokens",
 			"multi_target_points",
+			"summon_point",
 			"teleport_passengers",
 			"teleport_destination",
 			"chain_primary",
