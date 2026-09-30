@@ -36,6 +36,7 @@ GENERATED_TARGET_FIELDS = {
     "summon_count_min",
     "summon_count_max",
     "summon_count_options",
+    "summon_count_per_slot_above_base",
     "summon_requires_ground",
 }
 
@@ -148,6 +149,23 @@ def _number_value(value: str) -> int | None:
     if normalized.isdigit():return int(normalized)
     return _NUMBER_WORDS.get(normalized)
 
+def _summon_count_scaling(spell: dict[str, Any]) -> int:
+    higher=flat(spell.get("entriesHigherLevel",[])).lower()
+    if not higher:return 0
+    number=r"(a|an|one|two|three|four|five|six|seven|eight|nine|ten|\d+)"
+    match=re.search(
+        rf"\b(?:animate|conjure|summon|create)"
+        rf"(?:\s+or\s+reassert\s+control\s+over)?\s+"
+        rf"(?:up\s+to\s+)?{number}\s+additional\s+"
+        rf"(?:corpses?|creatures?|familiars?|spirits?|demons?|objects?|undead)"
+        rf"\b[^.]{0,120}\bfor\s+each\s+(?:spell\s+)?slot\s+level\s+above\b",
+        higher,
+    )
+    if not match:return 0
+    raw=match.group(1)
+    if raw in {"a","an"}:return 1
+    return _number_value(raw) or 0
+
 def _summon_range_feet(spell: dict[str, Any]) -> float:
     r=spell.get("range",{})
     if not isinstance(r,dict):return 5.0
@@ -181,6 +199,9 @@ def summon_runtime_fields(spell: dict[str, Any], runtime: dict) -> dict:
         "range_feet":_summon_range_feet(spell),
         "summon_count":1,
     }
+    per_slot=_summon_count_scaling(spell)
+    if per_slot>0:
+        result["summon_count_per_slot_above_base"]=per_slot
     if re.search(
         r"\b(?:appears?|manifests?|springs(?:\s+into\s+existence)?)\b"
         r"[^.]{0,160}\bon\s+the\s+ground\b"
