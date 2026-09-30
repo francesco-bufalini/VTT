@@ -29,6 +29,7 @@ var participant_token: OptionButton
 var token_popup: PopupMenu
 var _linking_entry_id: String = ""
 var _restore_mouse_mode: int = Input.MOUSE_MODE_CAPTURED
+var _auto_filled_name: String = ""
 
 var combat_active: bool = false
 var entries: Array[Dictionary] = []
@@ -211,6 +212,7 @@ func _build_add_dialog() -> void:
 	body.add_child(token_label)
 
 	participant_token = OptionButton.new()
+	participant_token.item_selected.connect(_on_participant_token_selected)
 	body.add_child(participant_token)
 
 	var info: Label = Label.new()
@@ -291,7 +293,10 @@ func open_add_dialog() -> void:
 	if not combat_active or add_dialog == null:
 		return
 	participant_name.clear()
-	_refresh_token_selector()
+	_auto_filled_name = ""
+	var preferred_token_id := _selected_board_token_id()
+	_refresh_token_selector(preferred_token_id)
+	_autofill_name_from_token(_selected_token_id_from_option())
 	_take_dialog_mouse()
 	add_dialog.popup_centered(Vector2i(460, 260))
 	participant_name.grab_focus()
@@ -322,15 +327,53 @@ func _on_add_confirmed() -> void:
 	_release_dialog_mouse()
 
 
-func _refresh_token_selector() -> void:
+func _refresh_token_selector(preferred_token_id: String = "") -> void:
 	participant_token.clear()
 	participant_token.add_item("Nessun token")
 	participant_token.set_item_metadata(0, "")
+	var selected_index := 0
+	var unnamed_index := 1
 	for token: Node3D in _tokens():
 		var index: int = participant_token.item_count
-		participant_token.add_item(String(token.name))
-		participant_token.set_item_metadata(index, _token_id(token))
-	participant_token.select(0)
+		var visible_name := _token_display_name(token)
+		var label := visible_name
+		if label.is_empty():
+			label = "Token senza nome %d" % unnamed_index
+			unnamed_index += 1
+		participant_token.add_item(label)
+		var token_id := _token_id(token)
+		participant_token.set_item_metadata(index, token_id)
+		if not preferred_token_id.is_empty() and token_id == preferred_token_id:
+			selected_index = index
+	participant_token.select(selected_index)
+
+
+func _on_participant_token_selected(_index: int) -> void:
+	_autofill_name_from_token(_selected_token_id_from_option())
+
+
+func _autofill_name_from_token(token_id: String) -> void:
+	var current := participant_name.text.strip_edges()
+	if not current.is_empty() and current != _auto_filled_name:
+		return
+	var suggested := _token_display_name_by_id(token_id)
+	participant_name.text = suggested
+	_auto_filled_name = suggested
+
+
+func _selected_board_token_id() -> String:
+	if board_root == null or not is_instance_valid(board_root):
+		return ""
+	var selected_value: Variant = board_root.get("_selected_tokens")
+	if not selected_value is Array:
+		return ""
+	var selected: Array = selected_value as Array
+	if selected.size() != 1 or not selected[0] is Node3D:
+		return ""
+	var token := selected[0] as Node3D
+	if not is_instance_valid(token) or not token.is_in_group("dnd_token"):
+		return ""
+	return _token_id(token)
 
 
 func _selected_token_id_from_option() -> String:
@@ -470,11 +513,7 @@ func _add_entry_row(
 
 	var token_id: String = String(entry.get("token_id", ""))
 	var token_label: Label = Label.new()
-	token_label.text = (
-		"Token: %s" % _token_name_by_id(token_id)
-		if not token_id.is_empty()
-		else "Token: —"
-	)
+	token_label.text = "Token collegato" if not token_id.is_empty() else "Token: —"
 	token_label.modulate = Color(0.78, 0.8, 0.84, 1.0)
 	token_label.add_theme_font_size_override("font_size", 10)
 	text_column.add_child(token_label)
@@ -572,8 +611,13 @@ func _open_token_popup(entry_id: String, button: Control) -> void:
 	token_popup.set_item_metadata(0, "")
 
 	var item_id: int = 1
+	var unnamed_index := 1
 	for token: Node3D in _tokens():
-		token_popup.add_item(String(token.name), item_id)
+		var token_label := _token_display_name(token)
+		if token_label.is_empty():
+			token_label = "Token senza nome %d" % unnamed_index
+			unnamed_index += 1
+		token_popup.add_item(token_label, item_id)
 		var item_index: int = token_popup.get_item_index(item_id)
 		token_popup.set_item_metadata(item_index, _token_id(token))
 		item_id += 1
@@ -647,12 +691,28 @@ func _token_id(token: Node3D) -> String:
 	return fallback
 
 
+func _token_display_name(token: Node3D) -> String:
+	if token != null and token.has_method("get_display_name"):
+		return String(token.call("get_display_name")).strip_edges()
+	return ""
+
+
+func _token_display_name_by_id(token_id: String) -> String:
+	if token_id.is_empty():
+		return ""
+	for token: Node3D in _tokens():
+		if _token_id(token) == token_id:
+			return _token_display_name(token)
+	return ""
+
+
 func _token_name_by_id(token_id: String) -> String:
 	if token_id.is_empty():
 		return ""
 	for token: Node3D in _tokens():
 		if _token_id(token) == token_id:
-			return String(token.name)
+			var display_name := _token_display_name(token)
+			return display_name if not display_name.is_empty() else "senza nome"
 	return "mancante"
 
 
