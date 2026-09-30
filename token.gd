@@ -35,7 +35,7 @@ const CONDITION_DEFINITIONS := [
 @export var gravity_multiplier: float = 1.0
 @export var terminal_velocity: float = 40.0
 @export var token_height_cells: float = 2.0
-@export var flying: bool = false
+@export var flying: bool = true
 @export var visual_asset_path: String = ""
 @export var token_display_name: String = ""
 @export var default_size_name: String = "Medium"
@@ -78,6 +78,9 @@ func _ready() -> void:
 	_load_configured_visual()
 	_ensure_token_overlay()
 	set_token_size(_footprint_cells)
+	# I token partono sempre sospesi. La gravità viene attivata solo
+	# esplicitamente dal comando "Applica gravità".
+	set_flying(true)
 	set_display_name(token_display_name)
 	set_conditions(_conditions)
 	set_selected(false)
@@ -135,6 +138,16 @@ func set_flying(enabled: bool) -> void:
 			material.albedo_color = Color(0.3, 0.85, 1)
 			material.emission = Color(0.1, 0.5, 0.8)
 		selection_marker.material_override = material
+
+
+func apply_gravity() -> void:
+	set_flying(false)
+
+
+func is_motion_in_progress() -> bool:
+	if flying:
+		return false
+	return not is_on_floor() or absf(velocity.y) > 0.1
 
 
 func nudge_vertical(steps: int) -> void:
