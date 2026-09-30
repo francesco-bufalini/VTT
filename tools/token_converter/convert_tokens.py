@@ -172,6 +172,11 @@ def import_blend(path: Path) -> None:
         if child.name not in destination.children:
             destination.children.link(child)
 
+    # The appended hierarchy is now owned by the conversion scene too; remove
+    # the temporary Scene datablock so it cannot keep stale duplicate objects
+    # alive across hundreds of conversions.
+    bpy.data.scenes.remove(source_scene)
+
 
 def import_source(path: Path) -> None:
     suffix = path.suffix.lower()
@@ -284,11 +289,7 @@ def discover_packages(source_root: Path) -> list[Path]:
             packages.append(folder)
             return
 
-        if (
-            not is_root
-            and children
-            and all(_technical_folder_name(child.name) for child in children)
-        ):
+        if children and all(_technical_folder_name(child.name) for child in children):
             packages.append(folder)
             return
 
@@ -316,6 +317,8 @@ def is_print_part(path: Path, package_name: str) -> bool:
     name = path.stem.lower()
     if slugify(name) == slugify(package_name):
         return False
+    if any(_contains_word(name, word) for word in COMPLETE_MODEL_WORDS):
+        return False
     return any(_contains_word(name, word) for word in AUXILIARY_WORDS)
 
 
@@ -334,14 +337,22 @@ def source_score(path: Path, package_name: str) -> int:
         ".stl": 200,
     }.get(suffix, 0)
 
+    if _contains_word(name, "final"):
+        score += 1500
+    elif _contains_word(name, "posed"):
+        score += 1400
+    elif any(
+        _contains_word(name, word)
+        for word in ("complete", "completed", "assembled", "merged", "whole", "full")
+    ):
+        score += 1300
+
     if slugify(name) == slugify(package):
-        score += 900
-    if any(_contains_word(name, word) for word in COMPLETE_MODEL_WORDS):
         score += 800
     if _contains_word(name, "rigged"):
-        score += 500
+        score += 600
     if _contains_word(name, "sculpted"):
-        score += 150
+        score -= 400
 
     if is_print_part(path, package_name):
         score -= 1400
