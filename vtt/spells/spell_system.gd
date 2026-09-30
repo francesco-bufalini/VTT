@@ -21,6 +21,7 @@ var wall_mode_menu: PopupMenu
 var wall_orientation_menu: PopupMenu
 
 var _selected_spell_id: String = ""
+var _selected_spell_data: Dictionary = {}
 var _pending_spell_id: String = ""
 var _targeting_phase: String = ""
 var _pending_caster: Node3D = null
@@ -2474,7 +2475,7 @@ func _populate_class_tree() -> void:
 				)
 				spell_item.set_metadata(
 					0,
-					String(spell_data.get("id", ""))
+					spell_data.duplicate(true)
 				)
 
 
@@ -2493,13 +2494,13 @@ func _refresh_search_results(query: String) -> void:
 		var index: int = search_results.add_item(spell_name)
 		search_results.set_item_metadata(
 			index,
-			String(spell_data.get("id", ""))
+			spell_data.duplicate(true)
 		)
 
 
 func _on_search_item_selected(index: int) -> void:
-	var spell_id: String = String(search_results.get_item_metadata(index))
-	_select_spell(spell_id)
+	var metadata: Variant = search_results.get_item_metadata(index)
+	_select_spell_metadata(metadata)
 
 
 func _on_tree_item_selected() -> void:
@@ -2509,6 +2510,13 @@ func _on_tree_item_selected() -> void:
 
 	var metadata: Variant = item.get_metadata(0)
 	if metadata == null:
+		return
+	_select_spell_metadata(metadata)
+
+
+func _select_spell_metadata(metadata: Variant) -> void:
+	if metadata is Dictionary:
+		_show_spell_data((metadata as Dictionary).duplicate(true))
 		return
 
 	var spell_id: String = String(metadata)
@@ -2521,8 +2529,19 @@ func _select_spell(spell_id: String) -> void:
 	var spell_data: Dictionary = SpellCatalog.catalog_spell(spell_id)
 	if spell_data.is_empty():
 		return
+	_show_spell_data(spell_data)
+
+
+func _show_spell_data(spell_data: Dictionary) -> void:
+	if spell_data.is_empty():
+		return
+
+	var spell_id: String = String(spell_data.get("id", ""))
+	if spell_id.is_empty():
+		return
 
 	_selected_spell_id = spell_id
+	_selected_spell_data = spell_data.duplicate(true)
 	spell_title.text = String(spell_data.get("name", "Incantesimo"))
 
 	var classes_value: Variant = spell_data.get("classes", [])
@@ -2582,7 +2601,9 @@ func _select_spell(spell_id: String) -> void:
 		+ String(spell_data.get("higher_levels", ""))
 		+ cantrip_note
 	)
-	var runtime_supported: bool = not SpellCatalog.spell(spell_id).is_empty()
+	var runtime_supported: bool = SpellCatalog.is_runtime_usable(
+		_selected_spell_data
+	)
 	activate_button.disabled = not runtime_supported
 	activate_button.text = (
 		"Attiva incantesimo"
@@ -2592,11 +2613,11 @@ func _select_spell(spell_id: String) -> void:
 
 
 func _activate_selected_spell() -> void:
-	if _selected_spell_id.is_empty():
+	if _selected_spell_id.is_empty() or _selected_spell_data.is_empty():
 		return
 
-	var spell_data: Dictionary = SpellCatalog.spell(_selected_spell_id)
-	if spell_data.is_empty():
+	var spell_data: Dictionary = _selected_spell_data.duplicate(true)
+	if not SpellCatalog.is_runtime_usable(spell_data):
 		return
 
 	var target_mode: String = String(
