@@ -4,6 +4,8 @@ const TOKEN_LIBRARY_MANIFEST := "res://assets/tokens/token_library.json"
 const IMPORTED_VISUAL_NAME := "ImportedVisual"
 const TOKEN_OVERLAY_NAME := "TokenOverlay"
 const CONDITION_RINGS_NAME := "ConditionRings"
+# Protezione contro asset importati con bounds corrotti o unita' errate.
+const MAX_IMPORTED_EXTENT_PER_FOOTPRINT := 3.0
 
 # Condizioni standard D&D 5e / SRD. Gli ID rimangono in inglese per essere
 # stabili nei salvataggi; etichette e pittogrammi sono solo presentazione.
@@ -506,6 +508,17 @@ func _imported_visual_y_bounds() -> Vector2:
 	)
 
 
+func _imported_visual_xz_radius() -> float:
+	var imported := _get_imported_visual()
+	if imported == null:
+		return 0.0
+	return _accumulate_imported_xz_radius(
+		imported,
+		imported.transform,
+		0.0
+	)
+
+
 func _position_imported_visual() -> void:
 	var imported := _get_imported_visual()
 	if imported == null:
@@ -538,11 +551,34 @@ func set_token_size(footprint_cells: float) -> void:
 			_footprint_cells
 			/ maxf(_visual_native_footprint_cells, 0.5)
 		)
+
+		# Le miniature possono sporgere dal footprint (ali, code, armi), ma
+		# alcuni OBJ hanno bounds chiaramente corrotti. Limitiamo solo gli
+		# outlier estremi a 3x il footprint scelto.
+		var max_extent_cells: float = maxf(
+			_footprint_cells * MAX_IMPORTED_EXTENT_PER_FOOTPRINT,
+			1.5
+		)
+		var local_radius: float = _imported_visual_xz_radius()
+		if local_radius > 0.0001:
+			visual_scale_ratio = minf(
+				visual_scale_ratio,
+				max_extent_cells / (local_radius * 2.0)
+			)
+
 		if imported_bounds.x < INF and imported_bounds.y > -INF:
-			token_height_cells = maxf(
-				(imported_bounds.y - imported_bounds.x)
-				* visual_scale_ratio,
+			var local_height: float = maxf(
+				imported_bounds.y - imported_bounds.x,
 				0.1
+			)
+			visual_scale_ratio = minf(
+				visual_scale_ratio,
+				max_extent_cells / local_height
+			)
+			token_height_cells = clampf(
+				local_height * visual_scale_ratio,
+				0.1,
+				max_extent_cells
 			)
 
 	var width: float = _footprint_cells * cell_size
@@ -960,11 +996,23 @@ func set_size_category(
 	footprint_cells: float,
 	update_default_reach: bool = false
 ) -> void:
+	# Il nodo root sta al centro del collider: conserva la quota della base
+	# quando la nuova forma ha un'altezza diversa.
+	var base_y: float = (
+		global_position.y
+		- token_height_cells * cell_size * 0.5
+	)
+
 	_size_name = size_name
 	_footprint_cells = maxf(footprint_cells, 0.5)
 	if update_default_reach and not _reach_overridden:
 		_reach_feet = _default_reach_feet()
 	set_token_size(_footprint_cells)
+
+	global_position.y = (
+		base_y
+		+ token_height_cells * cell_size * 0.5
+	)
 
 
 func get_appearance_state() -> Dictionary:
@@ -983,6 +1031,11 @@ func get_appearance_state() -> Dictionary:
 func apply_appearance_state(state: Dictionary) -> bool:
 	if state.is_empty():
 		return false
+
+	var base_y: float = (
+		global_position.y
+		- token_height_cells * cell_size * 0.5
+	)
 
 	var visual_asset: String = String(
 		state.get("visual_asset", "")
@@ -1018,6 +1071,10 @@ func apply_appearance_state(state: Dictionary) -> bool:
 	)
 	_reach_overridden = bool(state.get("reach_overridden", false))
 	set_display_name(String(state.get("display_name", token_display_name)))
+	global_position.y = (
+		base_y
+		+ token_height_cells * cell_size * 0.5
+	)
 	return true
 
 
