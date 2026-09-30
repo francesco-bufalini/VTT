@@ -1436,35 +1436,48 @@ func _release_mouse() -> void:
 
 func _build_share_dialog() -> void:
 	share_dialog = AcceptDialog.new()
-	share_dialog.title = "Condivisione mappa · Tailscale / LAN"
+	share_dialog.title = "Sincronizzazione mappa · Tailscale"
 	$UI.add_child(share_dialog)
 	share_dialog.confirmed.connect(_close_context_menu_to_game)
 	share_dialog.canceled.connect(_close_context_menu_to_game)
 	var layout := VBoxContainer.new()
 	share_dialog.add_child(layout)
+
 	var info := Label.new()
-	info.text = "Stessa versione e stessa scena su entrambi i computer.\nUsa l'IP Tailscale (100.x.x.x) o il nome MagicDNS."
+	info.text = (
+		"Sincronizza invia lo stato corrente a tutti i nodi restituiti da "
+		+ "tailscale status --json.\n"
+		+ "Non viene controllato se siano online o se il VTT sia aperto."
+	)
+	info.autowrap_mode = TextServer.AUTOWRAP_WORD_SMART
 	layout.add_child(info)
-	share_host = LineEdit.new()
-	share_host.placeholder_text = "Indirizzo del destinatario"
-	layout.add_child(share_host)
+
 	share_key = LineEdit.new()
-	share_key.placeholder_text = "Codice sessione uguale sui due computer"
+	share_key.placeholder_text = "Codice sessione uguale sui computer della partita"
 	share_key.secret = true
 	layout.add_child(share_key)
+
 	var receive := CheckButton.new()
 	receive.text = "Abilita ricezione (sostituisce lo stato della mappa)"
 	layout.add_child(receive)
 	receive.toggled.connect(func(enabled):
 		var error: Error = board_sync.listen(enabled, share_key.text)
-		if error != OK: receive.set_pressed_no_signal(false)
+		if error != OK:
+			receive.set_pressed_no_signal(false)
 		share_key.editable = not receive.button_pressed
 	)
+
 	var send := Button.new()
-	send.text = "Invia mappa"
+	send.text = "Sincronizza mappa su Tailscale"
 	layout.add_child(send)
-	send.pressed.connect(func(): board_sync.send_snapshot(share_host.text, share_key.text))
+	send.pressed.connect(
+		func(): board_sync.send_snapshot_to_tailnet(share_key.text)
+	)
+
 	share_status = Label.new()
 	share_status.text = "Ricezione disattivata"
+	share_status.autowrap_mode = TextServer.AUTOWRAP_WORD_SMART
 	layout.add_child(share_status)
-	board_sync.status_changed.connect(func(message): share_status.text = message)
+	board_sync.status_changed.connect(
+		func(message): share_status.text = message
+	)
