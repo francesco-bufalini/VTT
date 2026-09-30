@@ -60,6 +60,18 @@ const RUNTIME_OVERRIDES: Dictionary = {
 	"conjure_celestial": {
 		"movable_aoe_feet": 30.0,
 		"movable_aoe_mode": "free"
+	},
+	"meteor_swarm": {
+		"target_mode": "token_then_multi_point",
+		"range_feet": 5280.0,
+		"base_target_clicks": 4,
+		"aoe_shape": "sphere",
+		"aoe_radius_feet": 40.0,
+		"visual_style": "fire",
+		"projectile_style": "fire",
+		"projectile_travel_seconds": 0.8,
+		"meteor_drop_height_feet": 60.0,
+		"transient_seconds": 5.0
 	}
 }
 
@@ -994,7 +1006,8 @@ const SPELLS: Dictionary = {
 		"higher_levels": "No slot scaling.",
 		"target_mode": "teleport_self",
 		"teleport_distance_feet": 30,
-		"teleport_max_passengers": 0
+		"teleport_max_passengers": 0,
+		"visual_style": "silver_mist"
 	},
 	"dimension_door": {
 		"id": "dimension_door",
@@ -1014,7 +1027,8 @@ const SPELLS: Dictionary = {
 		"target_mode": "teleport_self",
 		"teleport_distance_feet": 500,
 		"teleport_max_passengers": 1,
-		"teleport_passenger_range_feet": 5
+		"teleport_passenger_range_feet": 5,
+		"visual_style": "force"
 	},
 	"thunder_step": {
 		"id": "thunder_step",
@@ -1035,6 +1049,7 @@ const SPELLS: Dictionary = {
 		"teleport_distance_feet": 90,
 		"teleport_max_passengers": 1,
 		"teleport_passenger_range_feet": 5,
+		"visual_style": "thunder",
 		"teleport_departure_aoe_radius_feet": 10,
 		"teleport_departure_style": "thunder_step"
 	},
@@ -1121,7 +1136,8 @@ static func _is_runtime_usable(spell_data: Dictionary) -> bool:
 			"self_token",
 			"self_emanation",
 			"token_then_point",
-			"token_then_direction"
+			"token_then_direction",
+			"token_then_multi_point"
 		]
 	):
 		return true
