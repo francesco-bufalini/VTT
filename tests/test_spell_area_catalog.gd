@@ -138,6 +138,19 @@ func run() -> void:
 	assert(bool(magic_missile.get("allow_point_target", false)))
 	assert(String(magic_missile.get("projectile_style", "")) == "magic_missile")
 
+	var scorching_catalog: Dictionary = SpellCatalog.catalog_spell(
+		"scorching_ray"
+	)
+	assert(not scorching_catalog.is_empty())
+	assert(String(scorching_catalog.get("name", "")) == "Scorching Ray")
+	assert(int(scorching_catalog.get("level", -1)) == 2)
+	assert(String(scorching_catalog.get("school", "")) == "Evocation")
+	assert(not String(scorching_catalog.get("description", "")).is_empty())
+	assert("three fiery rays" in String(
+		scorching_catalog.get("description", "")
+	).to_lower())
+	assert(SpellCatalog.is_runtime_usable(scorching_catalog))
+
 	var scorching_ray: Dictionary = SpellCatalog.spell("scorching_ray")
 	assert(not scorching_ray.is_empty())
 	assert(String(scorching_ray.get("target_mode", "")) == "token_then_multi_token")
