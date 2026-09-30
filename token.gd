@@ -3,6 +3,7 @@ extends CharacterBody3D
 const TOKEN_LIBRARY_MANIFEST := "res://assets/tokens/token_library.json"
 const IMPORTED_VISUAL_NAME := "ImportedVisual"
 const TOKEN_OVERLAY_NAME := "TokenOverlay"
+const CONDITION_RINGS_NAME := "ConditionRings"
 
 # Condizioni standard D&D 5e / SRD. Gli ID rimangono in inglese per essere
 # stabili nei salvataggi; etichette e pittogrammi sono solo presentazione.
@@ -61,6 +62,7 @@ var _imported_visual_base_basis: Basis = Basis.IDENTITY
 var _visual_native_footprint_cells: float = 1.0
 var _uses_manifest_default: bool = false
 var _conditions: Array[String] = []
+var _condition_rings_root: Node3D
 var _overlay_root: Node3D
 var _name_label: Label3D
 var _status_label: Label3D
@@ -580,6 +582,7 @@ func set_token_size(footprint_cells: float) -> void:
 
 	_position_imported_visual()
 	_update_overlay_position()
+	_update_condition_rings()
 
 
 func set_display_name(value: String) -> void:
@@ -616,6 +619,7 @@ func set_condition(condition_id: String, enabled: bool) -> void:
 	else:
 		_conditions.erase(normalized)
 	_update_status_overlay()
+	_update_condition_rings()
 
 
 func set_conditions(value: Variant) -> void:
@@ -629,6 +633,7 @@ func set_conditions(value: Variant) -> void:
 				resolved.append(normalized)
 	_conditions = resolved
 	_update_status_overlay()
+	_update_condition_rings()
 
 
 func _is_valid_condition(condition_id: String) -> bool:
@@ -636,6 +641,168 @@ func _is_valid_condition(condition_id: String) -> bool:
 		if String(definition.get("id", "")) == condition_id:
 			return true
 	return false
+
+
+func _condition_ring_color(condition_id: String) -> Color:
+	match condition_id:
+		"blinded":
+			return Color(1.0, 0.88, 0.12, 1.0)
+		"charmed":
+			return Color(1.0, 0.20, 0.72, 1.0)
+		"deafened":
+			return Color(0.10, 0.78, 1.0, 1.0)
+		"exhaustion":
+			return Color(0.58, 0.34, 0.14, 1.0)
+		"frightened":
+			return Color(0.62, 0.22, 1.0, 1.0)
+		"grappled":
+			return Color(1.0, 0.43, 0.08, 1.0)
+		"incapacitated":
+			return Color(0.72, 0.72, 0.76, 1.0)
+		"invisible":
+			return Color(0.25, 1.0, 0.82, 1.0)
+		"paralyzed":
+			return Color(0.12, 0.38, 1.0, 1.0)
+		"petrified":
+			return Color(0.42, 0.54, 0.62, 1.0)
+		"poisoned":
+			# Richiesta esplicita: avvelenato = verde.
+			return Color(0.12, 0.92, 0.24, 1.0)
+		"prone":
+			return Color(1.0, 0.62, 0.04, 1.0)
+		"restrained":
+			return Color(1.0, 0.16, 0.10, 1.0)
+		"stunned":
+			return Color(1.0, 1.0, 0.18, 1.0)
+		"unconscious":
+			return Color(0.20, 0.22, 0.52, 1.0)
+		"concentrating":
+			return Color(0.88, 0.18, 1.0, 1.0)
+		"surprised":
+			return Color(1.0, 0.94, 0.80, 1.0)
+		"hidden":
+			return Color(0.04, 0.58, 0.48, 1.0)
+		"dead":
+			return Color(0.38, 0.02, 0.03, 1.0)
+		_:
+			return Color.WHITE
+
+
+func _ensure_condition_rings_root() -> void:
+	if is_instance_valid(_condition_rings_root):
+		return
+	_condition_rings_root = get_node_or_null(
+		CONDITION_RINGS_NAME
+	) as Node3D
+	if _condition_rings_root == null:
+		_condition_rings_root = Node3D.new()
+		_condition_rings_root.name = CONDITION_RINGS_NAME
+		add_child(_condition_rings_root)
+
+
+func _clear_condition_rings() -> void:
+	_ensure_condition_rings_root()
+	for child: Node in _condition_rings_root.get_children():
+		_condition_rings_root.remove_child(child)
+		child.queue_free()
+
+
+func _accumulate_imported_xz_radius(
+	node: Node3D,
+	transform_to_visuals: Transform3D,
+	current_radius: float
+) -> float:
+	var result := current_radius
+	if node is MeshInstance3D:
+		var mesh_instance := node as MeshInstance3D
+		if mesh_instance.mesh != null:
+			var aabb: AABB = mesh_instance.get_aabb()
+			for endpoint_index: int in range(8):
+				var point: Vector3 = (
+					transform_to_visuals
+					* aabb.get_endpoint(endpoint_index)
+				)
+				result = maxf(
+					result,
+					Vector2(point.x, point.z).length()
+				)
+
+	for child_node: Node in node.get_children():
+		if child_node is Node3D:
+			var child := child_node as Node3D
+			result = _accumulate_imported_xz_radius(
+				child,
+				transform_to_visuals * child.transform,
+				result
+			)
+	return result
+
+
+func _visual_horizontal_radius_world() -> float:
+	var fallback := _footprint_cells * cell_size * 0.5
+	var imported := _get_imported_visual()
+	if imported == null:
+		return fallback
+
+	var local_radius := _accumulate_imported_xz_radius(
+		imported,
+		imported.transform,
+		0.0
+	)
+	var horizontal_scale := maxf(
+		absf(visuals.scale.x),
+		absf(visuals.scale.z)
+	)
+	return maxf(fallback, local_radius * horizontal_scale)
+
+
+func _update_condition_rings() -> void:
+	_clear_condition_rings()
+	if _conditions.is_empty():
+		return
+
+	var visual_radius := _visual_horizontal_radius_world()
+	var clearance := 0.12 * cell_size
+	var ring_spacing := 0.11 * cell_size
+	var half_thickness := 0.025 * cell_size
+	var waist_y := token_height_cells * cell_size * 0.05
+
+	var ring_index := 0
+	for definition: Dictionary in CONDITION_DEFINITIONS:
+		var condition_id := String(definition.get("id", ""))
+		if not (condition_id in _conditions):
+			continue
+
+		var center_radius := (
+			visual_radius
+			+ clearance
+			+ float(ring_index) * ring_spacing
+		)
+		var torus := TorusMesh.new()
+		torus.inner_radius = maxf(
+			center_radius - half_thickness,
+			0.01
+		)
+		torus.outer_radius = center_radius + half_thickness
+		torus.rings = 48
+		torus.ring_segments = 10
+
+		var color := _condition_ring_color(condition_id)
+		var material := StandardMaterial3D.new()
+		material.shading_mode = BaseMaterial3D.SHADING_MODE_UNSHADED
+		material.albedo_color = color
+		material.emission_enabled = true
+		material.emission = color
+		material.emission_energy_multiplier = 1.35
+
+		var ring := MeshInstance3D.new()
+		ring.name = "Condition_%s" % condition_id
+		ring.mesh = torus
+		ring.material_override = material
+		ring.position = Vector3(0.0, waist_y, 0.0)
+		ring.cast_shadow = GeometryInstance3D.SHADOW_CASTING_SETTING_OFF
+		_condition_rings_root.add_child(ring)
+		ring_index += 1
 
 
 func _ensure_token_overlay() -> void:
