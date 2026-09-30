@@ -7,16 +7,13 @@
     "targeting": {
       "type": "caster"
     },
-    "effects": [
-      {
-        "anchor": "caster",
-        "geometry": {
-          "shape": "emanation",
-          "radius_feet": 30
-        },
-        "persistence": "persistent"
-      }
-    ]
+    "effect": {
+      "geometry": {
+        "shape": "emanation",
+        "radius_feet": 30
+      },
+      "persistence": "persistent"
+    }
   },
   "AU::Detonate": {
     "range": {
@@ -26,19 +23,16 @@
     "targeting": {
       "type": "point"
     },
-    "effects": [
-      {
-        "anchor": "selected_point",
-        "geometry": {
-          "shape": "emanation",
-          "radius_feet": 60
-        },
-        "persistence": "instant",
-        "damage_types": [
-          "fire"
-        ]
-      }
-    ]
+    "effect": {
+      "geometry": {
+        "shape": "emanation",
+        "radius_feet": 60
+      },
+      "persistence": "instant",
+      "damage_types": [
+        "fire"
+      ]
+    }
   },
   "AU::Disruptive Tune": {
     "range": {
@@ -48,16 +42,13 @@
     "targeting": {
       "type": "point"
     },
-    "effects": [
-      {
-        "anchor": "selected_point",
-        "geometry": {
-          "shape": "sphere",
-          "radius_feet": 20
-        },
-        "persistence": "persistent"
-      }
-    ]
+    "effect": {
+      "geometry": {
+        "shape": "sphere",
+        "radius_feet": 20
+      },
+      "persistence": "persistent"
+    }
   },
   "AU::Distorted Distance": {
     "range": {
@@ -67,22 +58,16 @@
     "targeting": {
       "type": "point"
     },
-    "effects": [
-      {
-        "anchor": "selected_point",
-        "geometry": {
-          "shape": "sphere",
-          "radius_feet": 60
-        },
-        "persistence": "persistent",
-        "damage_types": [
-          "psychic"
-        ],
-        "visual_tags": [
-          "DFT"
-        ]
-      }
-    ]
+    "effect": {
+      "geometry": {
+        "shape": "sphere",
+        "radius_feet": 60
+      },
+      "persistence": "persistent",
+      "damage_types": [
+        "psychic"
+      ]
+    }
   },
   "AU::Dueling Ground": {
     "range": {
@@ -93,16 +78,13 @@
       "type": "point",
       "requires_ground": true
     },
-    "effects": [
-      {
-        "anchor": "selected_point",
-        "geometry": {
-          "shape": "sphere",
-          "radius_feet": 15
-        },
-        "persistence": "persistent"
-      }
-    ]
+    "effect": {
+      "geometry": {
+        "shape": "sphere",
+        "radius_feet": 15
+      },
+      "persistence": "persistent"
+    }
   },
   "AU::Festering Blast": {
     "range": {
@@ -113,21 +95,18 @@
       "type": "caster_direction",
       "allow_pitch": true
     },
-    "effects": [
-      {
-        "anchor": "caster",
-        "geometry": {
-          "shape": "line",
-          "length_feet": 60,
-          "width_feet": 10
-        },
-        "persistence": "persistent",
-        "damage_types": [
-          "necrotic",
-          "poison"
-        ]
-      }
-    ]
+    "effect": {
+      "geometry": {
+        "shape": "line",
+        "length_feet": 60,
+        "width_feet": 10
+      },
+      "persistence": "persistent",
+      "damage_types": [
+        "necrotic",
+        "poison"
+      ]
+    }
   },
   "AU::Grave Ground": {
     "range": {
@@ -138,22 +117,16 @@
       "type": "point",
       "requires_ground": true
     },
-    "effects": [
-      {
-        "anchor": "selected_point",
-        "geometry": {
-          "shape": "square",
-          "side_feet": 10
-        },
-        "persistence": "persistent",
-        "damage_types": [
-          "necrotic"
-        ],
-        "visual_tags": [
-          "DFT"
-        ]
-      }
-    ]
+    "effect": {
+      "geometry": {
+        "shape": "square",
+        "side_feet": 10
+      },
+      "persistence": "persistent",
+      "damage_types": [
+        "necrotic"
+      ]
+    }
   },
   "AU::Illusory Dragon": {
     "range": {
@@ -163,24 +136,21 @@
     "targeting": {
       "type": "point"
     },
-    "effects": [
-      {
-        "anchor": "selected_point",
-        "geometry": {
-          "shape": "cone",
-          "length_feet": 60
-        },
-        "persistence": "persistent",
-        "damage_types": [
-          "acid",
-          "cold",
-          "fire",
-          "lightning",
-          "necrotic",
-          "poison"
-        ]
-      }
-    ]
+    "effect": {
+      "geometry": {
+        "shape": "cone",
+        "length_feet": 60
+      },
+      "persistence": "persistent",
+      "damage_types": [
+        "acid",
+        "cold",
+        "fire",
+        "lightning",
+        "necrotic",
+        "poison"
+      ]
+    }
   },
   "AU::Lightning Ring": {
     "range": {
@@ -190,33 +160,17 @@
     "targeting": {
       "type": "caster"
     },
-    "effects": [
-      {
-        "anchor": "caster",
-        "geometry": {
-          "shape": "emanation",
-          "radius_feet": 10
-        },
-        "persistence": "persistent",
-        "damage_types": [
-          "lightning",
-          "thunder"
-        ]
+    "effect": {
+      "geometry": {
+        "shape": "emanation",
+        "radius_feet": 10
       },
-      {
-        "anchor": "caster",
-        "geometry": {
-          "shape": "line",
-          "length_feet": 60,
-          "width_feet": 5
-        },
-        "persistence": "persistent",
-        "damage_types": [
-          "lightning",
-          "thunder"
-        ]
-      }
-    ]
+      "persistence": "persistent",
+      "damage_types": [
+        "lightning",
+        "thunder"
+      ]
+    }
   },
   "AU::Waves of Exhaustion": {
     "range": {
@@ -227,16 +181,13 @@
       "type": "caster_direction",
       "allow_pitch": true
     },
-    "effects": [
-      {
-        "anchor": "caster",
-        "geometry": {
-          "shape": "cone",
-          "length_feet": 60
-        },
-        "persistence": "persistent"
-      }
-    ]
+    "effect": {
+      "geometry": {
+        "shape": "cone",
+        "length_feet": 60
+      },
+      "persistence": "persistent"
+    }
   },
   "AU::Wither and Bloom": {
     "range": {
@@ -246,19 +197,16 @@
     "targeting": {
       "type": "point"
     },
-    "effects": [
-      {
-        "anchor": "selected_point",
-        "geometry": {
-          "shape": "sphere",
-          "radius_feet": 10
-        },
-        "persistence": "instant",
-        "damage_types": [
-          "necrotic"
-        ]
-      }
-    ]
+    "effect": {
+      "geometry": {
+        "shape": "sphere",
+        "radius_feet": 10
+      },
+      "persistence": "instant",
+      "damage_types": [
+        "necrotic"
+      ]
+    }
   },
   "AU::Zone of Amicability": {
     "range": {
@@ -268,16 +216,13 @@
     "targeting": {
       "type": "caster"
     },
-    "effects": [
-      {
-        "anchor": "caster",
-        "geometry": {
-          "shape": "emanation",
-          "radius_feet": 60
-        },
-        "persistence": "persistent"
-      }
-    ]
+    "effect": {
+      "geometry": {
+        "shape": "emanation",
+        "radius_feet": 60
+      },
+      "persistence": "persistent"
+    }
   },
   "EGW::Dark Star": {
     "range": {
@@ -287,23 +232,16 @@
     "targeting": {
       "type": "point"
     },
-    "effects": [
-      {
-        "anchor": "selected_point",
-        "geometry": {
-          "shape": "sphere",
-          "radius_feet": 40
-        },
-        "persistence": "persistent",
-        "damage_types": [
-          "force"
-        ],
-        "visual_tags": [
-          "DFT",
-          "OBS"
-        ]
-      }
-    ]
+    "effect": {
+      "geometry": {
+        "shape": "sphere",
+        "radius_feet": 40
+      },
+      "persistence": "persistent",
+      "damage_types": [
+        "force"
+      ]
+    }
   },
   "EGW::Gravity Fissure": {
     "range": {
@@ -314,20 +252,17 @@
       "type": "caster_direction",
       "allow_pitch": true
     },
-    "effects": [
-      {
-        "anchor": "caster",
-        "geometry": {
-          "shape": "line",
-          "length_feet": 100,
-          "width_feet": 5
-        },
-        "persistence": "instant",
-        "damage_types": [
-          "force"
-        ]
-      }
-    ]
+    "effect": {
+      "geometry": {
+        "shape": "line",
+        "length_feet": 100,
+        "width_feet": 5
+      },
+      "persistence": "instant",
+      "damage_types": [
+        "force"
+      ]
+    }
   },
   "EGW::Gravity Sinkhole": {
     "range": {
@@ -337,19 +272,16 @@
     "targeting": {
       "type": "point"
     },
-    "effects": [
-      {
-        "anchor": "selected_point",
-        "geometry": {
-          "shape": "sphere",
-          "radius_feet": 20
-        },
-        "persistence": "instant",
-        "damage_types": [
-          "force"
-        ]
-      }
-    ]
+    "effect": {
+      "geometry": {
+        "shape": "sphere",
+        "radius_feet": 20
+      },
+      "persistence": "instant",
+      "damage_types": [
+        "force"
+      ]
+    }
   },
   "EGW::Magnify Gravity": {
     "range": {
@@ -359,19 +291,16 @@
     "targeting": {
       "type": "point"
     },
-    "effects": [
-      {
-        "anchor": "selected_point",
-        "geometry": {
-          "shape": "sphere",
-          "radius_feet": 10
-        },
-        "persistence": "persistent",
-        "damage_types": [
-          "force"
-        ]
-      }
-    ]
+    "effect": {
+      "geometry": {
+        "shape": "sphere",
+        "radius_feet": 10
+      },
+      "persistence": "persistent",
+      "damage_types": [
+        "force"
+      ]
+    }
   },
   "EGW::Pulse Wave": {
     "range": {
@@ -382,19 +311,16 @@
       "type": "caster_direction",
       "allow_pitch": true
     },
-    "effects": [
-      {
-        "anchor": "caster",
-        "geometry": {
-          "shape": "cone",
-          "length_feet": 30
-        },
-        "persistence": "instant",
-        "damage_types": [
-          "force"
-        ]
-      }
-    ]
+    "effect": {
+      "geometry": {
+        "shape": "cone",
+        "length_feet": 30
+      },
+      "persistence": "instant",
+      "damage_types": [
+        "force"
+      ]
+    }
   },
   "EGW::Ravenous Void": {
     "range": {
@@ -404,19 +330,16 @@
     "targeting": {
       "type": "point"
     },
-    "effects": [
-      {
-        "anchor": "selected_point",
-        "geometry": {
-          "shape": "sphere",
-          "radius_feet": 20
-        },
-        "persistence": "persistent",
-        "damage_types": [
-          "force"
-        ]
-      }
-    ]
+    "effect": {
+      "geometry": {
+        "shape": "sphere",
+        "radius_feet": 20
+      },
+      "persistence": "persistent",
+      "damage_types": [
+        "force"
+      ]
+    }
   },
   "FRHoF::Alustriel's Mooncloak": {
     "range": {
@@ -426,19 +349,13 @@
     "targeting": {
       "type": "caster"
     },
-    "effects": [
-      {
-        "anchor": "caster",
-        "geometry": {
-          "shape": "emanation",
-          "radius_feet": 20
-        },
-        "persistence": "persistent",
-        "visual_tags": [
-          "LGT"
-        ]
-      }
-    ]
+    "effect": {
+      "geometry": {
+        "shape": "emanation",
+        "radius_feet": 20
+      },
+      "persistence": "persistent"
+    }
   },
   "FRHoF::Cacophonic Shield": {
     "range": {
@@ -448,19 +365,16 @@
     "targeting": {
       "type": "caster"
     },
-    "effects": [
-      {
-        "anchor": "caster",
-        "geometry": {
-          "shape": "emanation",
-          "radius_feet": 10
-        },
-        "persistence": "persistent",
-        "damage_types": [
-          "thunder"
-        ]
-      }
-    ]
+    "effect": {
+      "geometry": {
+        "shape": "emanation",
+        "radius_feet": 10
+      },
+      "persistence": "persistent",
+      "damage_types": [
+        "thunder"
+      ]
+    }
   },
   "FRHoF::Dirge": {
     "range": {
@@ -470,19 +384,16 @@
     "targeting": {
       "type": "caster"
     },
-    "effects": [
-      {
-        "anchor": "caster",
-        "geometry": {
-          "shape": "emanation",
-          "radius_feet": 60
-        },
-        "persistence": "persistent",
-        "damage_types": [
-          "necrotic"
-        ]
-      }
-    ]
+    "effect": {
+      "geometry": {
+        "shape": "emanation",
+        "radius_feet": 60
+      },
+      "persistence": "persistent",
+      "damage_types": [
+        "necrotic"
+      ]
+    }
   },
   "FRHoF::Doomtide": {
     "range": {
@@ -492,19 +403,16 @@
     "targeting": {
       "type": "point"
     },
-    "effects": [
-      {
-        "anchor": "selected_point",
-        "geometry": {
-          "shape": "sphere",
-          "radius_feet": 20
-        },
-        "persistence": "persistent",
-        "damage_types": [
-          "psychic"
-        ]
-      }
-    ]
+    "effect": {
+      "geometry": {
+        "shape": "sphere",
+        "radius_feet": 20
+      },
+      "persistence": "persistent",
+      "damage_types": [
+        "psychic"
+      ]
+    }
   },
   "FRHoF::Laeral's Silver Lance": {
     "range": {
@@ -515,20 +423,17 @@
       "type": "caster_direction",
       "allow_pitch": true
     },
-    "effects": [
-      {
-        "anchor": "caster",
-        "geometry": {
-          "shape": "line",
-          "length_feet": 120,
-          "width_feet": 5
-        },
-        "persistence": "instant",
-        "damage_types": [
-          "force"
-        ]
-      }
-    ]
+    "effect": {
+      "geometry": {
+        "shape": "line",
+        "length_feet": 120,
+        "width_feet": 5
+      },
+      "persistence": "instant",
+      "damage_types": [
+        "force"
+      ]
+    }
   },
   "FRHoF::Spellfire Storm": {
     "range": {
@@ -538,23 +443,17 @@
     "targeting": {
       "type": "point"
     },
-    "effects": [
-      {
-        "anchor": "selected_point",
-        "geometry": {
-          "shape": "cylinder",
-          "radius_feet": 20,
-          "height_feet": 20
-        },
-        "persistence": "persistent",
-        "damage_types": [
-          "radiant"
-        ],
-        "visual_tags": [
-          "LGT"
-        ]
-      }
-    ]
+    "effect": {
+      "geometry": {
+        "shape": "cylinder",
+        "radius_feet": 20,
+        "height_feet": 20
+      },
+      "persistence": "persistent",
+      "damage_types": [
+        "radiant"
+      ]
+    }
   },
   "FTD::Rime's Binding Ice": {
     "range": {
@@ -565,19 +464,16 @@
       "type": "caster_direction",
       "allow_pitch": true
     },
-    "effects": [
-      {
-        "anchor": "caster",
-        "geometry": {
-          "shape": "cone",
-          "length_feet": 30
-        },
-        "persistence": "instant",
-        "damage_types": [
-          "cold"
-        ]
-      }
-    ]
+    "effect": {
+      "geometry": {
+        "shape": "cone",
+        "length_feet": 30
+      },
+      "persistence": "instant",
+      "damage_types": [
+        "cold"
+      ]
+    }
   },
   "IDRotF::Frost Fingers": {
     "range": {
@@ -588,19 +484,16 @@
       "type": "caster_direction",
       "allow_pitch": true
     },
-    "effects": [
-      {
-        "anchor": "caster",
-        "geometry": {
-          "shape": "cone",
-          "length_feet": 15
-        },
-        "persistence": "instant",
-        "damage_types": [
-          "cold"
-        ]
-      }
-    ]
+    "effect": {
+      "geometry": {
+        "shape": "cone",
+        "length_feet": 15
+      },
+      "persistence": "instant",
+      "damage_types": [
+        "cold"
+      ]
+    }
   },
   "PHB::Alarm": {
     "range": {
@@ -610,16 +503,13 @@
     "targeting": {
       "type": "point"
     },
-    "effects": [
-      {
-        "anchor": "selected_point",
-        "geometry": {
-          "shape": "cube",
-          "side_feet": 20
-        },
-        "persistence": "persistent"
-      }
-    ]
+    "effect": {
+      "geometry": {
+        "shape": "cube",
+        "side_feet": 20
+      },
+      "persistence": "persistent"
+    }
   },
   "PHB::Antilife Shell": {
     "range": {
@@ -629,16 +519,13 @@
     "targeting": {
       "type": "caster"
     },
-    "effects": [
-      {
-        "anchor": "caster",
-        "geometry": {
-          "shape": "sphere",
-          "radius_feet": 10
-        },
-        "persistence": "persistent"
-      }
-    ]
+    "effect": {
+      "geometry": {
+        "shape": "sphere",
+        "radius_feet": 10
+      },
+      "persistence": "persistent"
+    }
   },
   "PHB::Antipathy/Sympathy": {
     "range": {
@@ -648,16 +535,13 @@
     "targeting": {
       "type": "point"
     },
-    "effects": [
-      {
-        "anchor": "selected_point",
-        "geometry": {
-          "shape": "cube",
-          "side_feet": 200
-        },
-        "persistence": "persistent"
-      }
-    ]
+    "effect": {
+      "geometry": {
+        "shape": "cube",
+        "side_feet": 200
+      },
+      "persistence": "persistent"
+    }
   },
   "PHB::Aura of Life": {
     "range": {
@@ -667,16 +551,13 @@
     "targeting": {
       "type": "caster"
     },
-    "effects": [
-      {
-        "anchor": "caster",
-        "geometry": {
-          "shape": "sphere",
-          "radius_feet": 30
-        },
-        "persistence": "persistent"
-      }
-    ]
+    "effect": {
+      "geometry": {
+        "shape": "sphere",
+        "radius_feet": 30
+      },
+      "persistence": "persistent"
+    }
   },
   "PHB::Aura of Purity": {
     "range": {
@@ -686,16 +567,13 @@
     "targeting": {
       "type": "caster"
     },
-    "effects": [
-      {
-        "anchor": "caster",
-        "geometry": {
-          "shape": "sphere",
-          "radius_feet": 30
-        },
-        "persistence": "persistent"
-      }
-    ]
+    "effect": {
+      "geometry": {
+        "shape": "sphere",
+        "radius_feet": 30
+      },
+      "persistence": "persistent"
+    }
   },
   "PHB::Aura of Vitality": {
     "range": {
@@ -705,16 +583,13 @@
     "targeting": {
       "type": "caster"
     },
-    "effects": [
-      {
-        "anchor": "caster",
-        "geometry": {
-          "shape": "sphere",
-          "radius_feet": 30
-        },
-        "persistence": "persistent"
-      }
-    ]
+    "effect": {
+      "geometry": {
+        "shape": "sphere",
+        "radius_feet": 30
+      },
+      "persistence": "persistent"
+    }
   },
   "PHB::Blade Barrier": {
     "range": {
@@ -724,35 +599,29 @@
     "targeting": {
       "type": "wall"
     },
-    "effects": [
-      {
-        "anchor": "selected_path",
-        "geometry": {
-          "shape": "wall",
-          "variants": [
-            {
-              "type": "path",
-              "max_length_feet": 100,
-              "height_feet": 20,
-              "thickness_feet": 5
-            },
-            {
-              "type": "circle",
-              "radius_feet": 30,
-              "height_feet": 20,
-              "thickness_feet": 5
-            }
-          ]
-        },
-        "persistence": "persistent",
-        "damage_types": [
-          "slashing"
-        ],
-        "visual_tags": [
-          "DFT"
+    "effect": {
+      "geometry": {
+        "shape": "wall",
+        "variants": [
+          {
+            "type": "path",
+            "max_length_feet": 100,
+            "height_feet": 20,
+            "thickness_feet": 5
+          },
+          {
+            "type": "circle",
+            "radius_feet": 30,
+            "height_feet": 20,
+            "thickness_feet": 5
+          }
         ]
-      }
-    ]
+      },
+      "persistence": "persistent",
+      "damage_types": [
+        "slashing"
+      ]
+    }
   },
   "PHB::Burning Hands": {
     "range": {
@@ -763,19 +632,16 @@
       "type": "caster_direction",
       "allow_pitch": true
     },
-    "effects": [
-      {
-        "anchor": "caster",
-        "geometry": {
-          "shape": "cone",
-          "length_feet": 15
-        },
-        "persistence": "instant",
-        "damage_types": [
-          "fire"
-        ]
-      }
-    ]
+    "effect": {
+      "geometry": {
+        "shape": "cone",
+        "length_feet": 15
+      },
+      "persistence": "instant",
+      "damage_types": [
+        "fire"
+      ]
+    }
   },
   "PHB::Call Lightning": {
     "range": {
@@ -785,20 +651,17 @@
     "targeting": {
       "type": "point"
     },
-    "effects": [
-      {
-        "anchor": "selected_point",
-        "geometry": {
-          "shape": "cylinder",
-          "radius_feet": 60,
-          "height_feet": 10
-        },
-        "persistence": "persistent",
-        "damage_types": [
-          "lightning"
-        ]
-      }
-    ]
+    "effect": {
+      "geometry": {
+        "shape": "cylinder",
+        "radius_feet": 60,
+        "height_feet": 10
+      },
+      "persistence": "persistent",
+      "damage_types": [
+        "lightning"
+      ]
+    }
   },
   "PHB::Calm Emotions": {
     "range": {
@@ -808,16 +671,13 @@
     "targeting": {
       "type": "point"
     },
-    "effects": [
-      {
-        "anchor": "selected_point",
-        "geometry": {
-          "shape": "sphere",
-          "radius_feet": 20
-        },
-        "persistence": "persistent"
-      }
-    ]
+    "effect": {
+      "geometry": {
+        "shape": "sphere",
+        "radius_feet": 20
+      },
+      "persistence": "persistent"
+    }
   },
   "PHB::Circle of Death": {
     "range": {
@@ -827,19 +687,16 @@
     "targeting": {
       "type": "point"
     },
-    "effects": [
-      {
-        "anchor": "selected_point",
-        "geometry": {
-          "shape": "sphere",
-          "radius_feet": 60
-        },
-        "persistence": "instant",
-        "damage_types": [
-          "necrotic"
-        ]
-      }
-    ]
+    "effect": {
+      "geometry": {
+        "shape": "sphere",
+        "radius_feet": 60
+      },
+      "persistence": "instant",
+      "damage_types": [
+        "necrotic"
+      ]
+    }
   },
   "PHB::Cloud of Daggers": {
     "range": {
@@ -849,19 +706,16 @@
     "targeting": {
       "type": "point"
     },
-    "effects": [
-      {
-        "anchor": "selected_point",
-        "geometry": {
-          "shape": "cube",
-          "side_feet": 5
-        },
-        "persistence": "persistent",
-        "damage_types": [
-          "slashing"
-        ]
-      }
-    ]
+    "effect": {
+      "geometry": {
+        "shape": "cube",
+        "side_feet": 5
+      },
+      "persistence": "persistent",
+      "damage_types": [
+        "slashing"
+      ]
+    }
   },
   "PHB::Cloudkill": {
     "range": {
@@ -871,22 +725,16 @@
     "targeting": {
       "type": "point"
     },
-    "effects": [
-      {
-        "anchor": "selected_point",
-        "geometry": {
-          "shape": "sphere",
-          "radius_feet": 20
-        },
-        "persistence": "persistent",
-        "damage_types": [
-          "poison"
-        ],
-        "visual_tags": [
-          "OBS"
-        ]
-      }
-    ]
+    "effect": {
+      "geometry": {
+        "shape": "sphere",
+        "radius_feet": 20
+      },
+      "persistence": "persistent",
+      "damage_types": [
+        "poison"
+      ]
+    }
   },
   "PHB::Color Spray": {
     "range": {
@@ -897,16 +745,13 @@
       "type": "caster_direction",
       "allow_pitch": true
     },
-    "effects": [
-      {
-        "anchor": "caster",
-        "geometry": {
-          "shape": "cone",
-          "length_feet": 15
-        },
-        "persistence": "persistent"
-      }
-    ]
+    "effect": {
+      "geometry": {
+        "shape": "cone",
+        "length_feet": 15
+      },
+      "persistence": "persistent"
+    }
   },
   "PHB::Cone of Cold": {
     "range": {
@@ -917,19 +762,16 @@
       "type": "caster_direction",
       "allow_pitch": true
     },
-    "effects": [
-      {
-        "anchor": "caster",
-        "geometry": {
-          "shape": "cone",
-          "length_feet": 60
-        },
-        "persistence": "instant",
-        "damage_types": [
-          "cold"
-        ]
-      }
-    ]
+    "effect": {
+      "geometry": {
+        "shape": "cone",
+        "length_feet": 60
+      },
+      "persistence": "instant",
+      "damage_types": [
+        "cold"
+      ]
+    }
   },
   "PHB::Confusion": {
     "range": {
@@ -939,16 +781,13 @@
     "targeting": {
       "type": "point"
     },
-    "effects": [
-      {
-        "anchor": "selected_point",
-        "geometry": {
-          "shape": "sphere",
-          "radius_feet": 10
-        },
-        "persistence": "persistent"
-      }
-    ]
+    "effect": {
+      "geometry": {
+        "shape": "sphere",
+        "radius_feet": 10
+      },
+      "persistence": "persistent"
+    }
   },
   "PHB::Conjure Barrage": {
     "range": {
@@ -959,16 +798,13 @@
       "type": "caster_direction",
       "allow_pitch": true
     },
-    "effects": [
-      {
-        "anchor": "caster",
-        "geometry": {
-          "shape": "cone",
-          "length_feet": 60
-        },
-        "persistence": "instant"
-      }
-    ]
+    "effect": {
+      "geometry": {
+        "shape": "cone",
+        "length_feet": 60
+      },
+      "persistence": "instant"
+    }
   },
   "PHB::Conjure Volley": {
     "range": {
@@ -978,17 +814,14 @@
     "targeting": {
       "type": "point"
     },
-    "effects": [
-      {
-        "anchor": "selected_point",
-        "geometry": {
-          "shape": "cylinder",
-          "radius_feet": 40,
-          "height_feet": 20
-        },
-        "persistence": "instant"
-      }
-    ]
+    "effect": {
+      "geometry": {
+        "shape": "cylinder",
+        "radius_feet": 40,
+        "height_feet": 20
+      },
+      "persistence": "instant"
+    }
   },
   "PHB::Control Water": {
     "range": {
@@ -998,19 +831,16 @@
     "targeting": {
       "type": "point"
     },
-    "effects": [
-      {
-        "anchor": "selected_point",
-        "geometry": {
-          "shape": "cube",
-          "side_feet": 100
-        },
-        "persistence": "persistent",
-        "damage_types": [
-          "bludgeoning"
-        ]
-      }
-    ]
+    "effect": {
+      "geometry": {
+        "shape": "cube",
+        "side_feet": 100
+      },
+      "persistence": "persistent",
+      "damage_types": [
+        "bludgeoning"
+      ]
+    }
   },
   "PHB::Create or Destroy Water": {
     "range": {
@@ -1020,16 +850,13 @@
     "targeting": {
       "type": "point"
     },
-    "effects": [
-      {
-        "anchor": "selected_point",
-        "geometry": {
-          "shape": "cube",
-          "side_feet": 30
-        },
-        "persistence": "instant"
-      }
-    ]
+    "effect": {
+      "geometry": {
+        "shape": "cube",
+        "side_feet": 30
+      },
+      "persistence": "instant"
+    }
   },
   "PHB::Crusader's Mantle": {
     "range": {
@@ -1039,19 +866,16 @@
     "targeting": {
       "type": "caster"
     },
-    "effects": [
-      {
-        "anchor": "caster",
-        "geometry": {
-          "shape": "sphere",
-          "radius_feet": 30
-        },
-        "persistence": "persistent",
-        "damage_types": [
-          "radiant"
-        ]
-      }
-    ]
+    "effect": {
+      "geometry": {
+        "shape": "sphere",
+        "radius_feet": 30
+      },
+      "persistence": "persistent",
+      "damage_types": [
+        "radiant"
+      ]
+    }
   },
   "PHB::Darkness": {
     "range": {
@@ -1061,19 +885,13 @@
     "targeting": {
       "type": "point"
     },
-    "effects": [
-      {
-        "anchor": "selected_point",
-        "geometry": {
-          "shape": "sphere",
-          "radius_feet": 15
-        },
-        "persistence": "persistent",
-        "visual_tags": [
-          "OBS"
-        ]
-      }
-    ]
+    "effect": {
+      "geometry": {
+        "shape": "sphere",
+        "radius_feet": 15
+      },
+      "persistence": "persistent"
+    }
   },
   "PHB::Daylight": {
     "range": {
@@ -1083,19 +901,13 @@
     "targeting": {
       "type": "point"
     },
-    "effects": [
-      {
-        "anchor": "selected_point",
-        "geometry": {
-          "shape": "sphere",
-          "radius_feet": 60
-        },
-        "persistence": "persistent",
-        "visual_tags": [
-          "LGT"
-        ]
-      }
-    ]
+    "effect": {
+      "geometry": {
+        "shape": "sphere",
+        "radius_feet": 60
+      },
+      "persistence": "persistent"
+    }
   },
   "PHB::Delayed Blast Fireball": {
     "range": {
@@ -1105,19 +917,16 @@
     "targeting": {
       "type": "point"
     },
-    "effects": [
-      {
-        "anchor": "selected_point",
-        "geometry": {
-          "shape": "sphere",
-          "radius_feet": 20
-        },
-        "persistence": "persistent",
-        "damage_types": [
-          "fire"
-        ]
-      }
-    ]
+    "effect": {
+      "geometry": {
+        "shape": "sphere",
+        "radius_feet": 20
+      },
+      "persistence": "persistent",
+      "damage_types": [
+        "fire"
+      ]
+    }
   },
   "PHB::Earthquake": {
     "range": {
@@ -1128,22 +937,16 @@
       "type": "point",
       "requires_ground": true
     },
-    "effects": [
-      {
-        "anchor": "selected_point",
-        "geometry": {
-          "shape": "circle",
-          "radius_feet": 100
-        },
-        "persistence": "persistent",
-        "damage_types": [
-          "bludgeoning"
-        ],
-        "visual_tags": [
-          "DFT"
-        ]
-      }
-    ]
+    "effect": {
+      "geometry": {
+        "shape": "circle",
+        "radius_feet": 100
+      },
+      "persistence": "persistent",
+      "damage_types": [
+        "bludgeoning"
+      ]
+    }
   },
   "PHB::Entangle": {
     "range": {
@@ -1153,16 +956,13 @@
     "targeting": {
       "type": "point"
     },
-    "effects": [
-      {
-        "anchor": "selected_point",
-        "geometry": {
-          "shape": "square",
-          "side_feet": 20
-        },
-        "persistence": "persistent"
-      }
-    ]
+    "effect": {
+      "geometry": {
+        "shape": "square",
+        "side_feet": 20
+      },
+      "persistence": "persistent"
+    }
   },
   "PHB::Evard's Black Tentacles": {
     "range": {
@@ -1173,19 +973,16 @@
       "type": "point",
       "requires_ground": true
     },
-    "effects": [
-      {
-        "anchor": "selected_point",
-        "geometry": {
-          "shape": "square",
-          "side_feet": 20
-        },
-        "persistence": "persistent",
-        "damage_types": [
-          "bludgeoning"
-        ]
-      }
-    ]
+    "effect": {
+      "geometry": {
+        "shape": "square",
+        "side_feet": 20
+      },
+      "persistence": "persistent",
+      "damage_types": [
+        "bludgeoning"
+      ]
+    }
   },
   "PHB::Faerie Fire": {
     "range": {
@@ -1195,19 +992,13 @@
     "targeting": {
       "type": "point"
     },
-    "effects": [
-      {
-        "anchor": "selected_point",
-        "geometry": {
-          "shape": "cube",
-          "side_feet": 20
-        },
-        "persistence": "persistent",
-        "visual_tags": [
-          "LGT"
-        ]
-      }
-    ]
+    "effect": {
+      "geometry": {
+        "shape": "cube",
+        "side_feet": 20
+      },
+      "persistence": "persistent"
+    }
   },
   "PHB::Fear": {
     "range": {
@@ -1218,16 +1009,13 @@
       "type": "caster_direction",
       "allow_pitch": true
     },
-    "effects": [
-      {
-        "anchor": "caster",
-        "geometry": {
-          "shape": "cone",
-          "length_feet": 30
-        },
-        "persistence": "persistent"
-      }
-    ]
+    "effect": {
+      "geometry": {
+        "shape": "cone",
+        "length_feet": 30
+      },
+      "persistence": "persistent"
+    }
   },
   "PHB::Fire Storm": {
     "range": {
@@ -1237,19 +1025,16 @@
     "targeting": {
       "type": "point"
     },
-    "effects": [
-      {
-        "anchor": "selected_point",
-        "geometry": {
-          "shape": "cube",
-          "side_feet": 10
-        },
-        "persistence": "instant",
-        "damage_types": [
-          "fire"
-        ]
-      }
-    ]
+    "effect": {
+      "geometry": {
+        "shape": "cube",
+        "side_feet": 10
+      },
+      "persistence": "instant",
+      "damage_types": [
+        "fire"
+      ]
+    }
   },
   "PHB::Fireball": {
     "range": {
@@ -1259,19 +1044,16 @@
     "targeting": {
       "type": "point"
     },
-    "effects": [
-      {
-        "anchor": "selected_point",
-        "geometry": {
-          "shape": "sphere",
-          "radius_feet": 20
-        },
-        "persistence": "instant",
-        "damage_types": [
-          "fire"
-        ]
-      }
-    ]
+    "effect": {
+      "geometry": {
+        "shape": "sphere",
+        "radius_feet": 20
+      },
+      "persistence": "instant",
+      "damage_types": [
+        "fire"
+      ]
+    }
   },
   "PHB::Flame Strike": {
     "range": {
@@ -1281,21 +1063,18 @@
     "targeting": {
       "type": "point"
     },
-    "effects": [
-      {
-        "anchor": "selected_point",
-        "geometry": {
-          "shape": "cylinder",
-          "radius_feet": 10,
-          "height_feet": 40
-        },
-        "persistence": "instant",
-        "damage_types": [
-          "fire",
-          "radiant"
-        ]
-      }
-    ]
+    "effect": {
+      "geometry": {
+        "shape": "cylinder",
+        "radius_feet": 10,
+        "height_feet": 40
+      },
+      "persistence": "instant",
+      "damage_types": [
+        "fire",
+        "radiant"
+      ]
+    }
   },
   "PHB::Flaming Sphere": {
     "range": {
@@ -1305,22 +1084,16 @@
     "targeting": {
       "type": "point"
     },
-    "effects": [
-      {
-        "anchor": "selected_point",
-        "geometry": {
-          "shape": "sphere",
-          "radius_feet": 2.5
-        },
-        "persistence": "persistent",
-        "damage_types": [
-          "fire"
-        ],
-        "visual_tags": [
-          "LGT"
-        ]
-      }
-    ]
+    "effect": {
+      "geometry": {
+        "shape": "sphere",
+        "radius_feet": 2.5
+      },
+      "persistence": "persistent",
+      "damage_types": [
+        "fire"
+      ]
+    }
   },
   "PHB::Fog Cloud": {
     "range": {
@@ -1330,19 +1103,13 @@
     "targeting": {
       "type": "point"
     },
-    "effects": [
-      {
-        "anchor": "selected_point",
-        "geometry": {
-          "shape": "sphere",
-          "radius_feet": 20
-        },
-        "persistence": "persistent",
-        "visual_tags": [
-          "OBS"
-        ]
-      }
-    ]
+    "effect": {
+      "geometry": {
+        "shape": "sphere",
+        "radius_feet": 20
+      },
+      "persistence": "persistent"
+    }
   },
   "PHB::Globe of Invulnerability": {
     "range": {
@@ -1352,16 +1119,13 @@
     "targeting": {
       "type": "caster"
     },
-    "effects": [
-      {
-        "anchor": "caster",
-        "geometry": {
-          "shape": "sphere",
-          "radius_feet": 10
-        },
-        "persistence": "persistent"
-      }
-    ]
+    "effect": {
+      "geometry": {
+        "shape": "sphere",
+        "radius_feet": 10
+      },
+      "persistence": "persistent"
+    }
   },
   "PHB::Glyph of Warding": {
     "range": {
@@ -1371,23 +1135,20 @@
     "targeting": {
       "type": "point"
     },
-    "effects": [
-      {
-        "anchor": "selected_point",
-        "geometry": {
-          "shape": "sphere",
-          "radius_feet": 20
-        },
-        "persistence": "persistent",
-        "damage_types": [
-          "acid",
-          "cold",
-          "fire",
-          "lightning",
-          "thunder"
-        ]
-      }
-    ]
+    "effect": {
+      "geometry": {
+        "shape": "sphere",
+        "radius_feet": 20
+      },
+      "persistence": "persistent",
+      "damage_types": [
+        "acid",
+        "cold",
+        "fire",
+        "lightning",
+        "thunder"
+      ]
+    }
   },
   "PHB::Grease": {
     "range": {
@@ -1397,19 +1158,13 @@
     "targeting": {
       "type": "point"
     },
-    "effects": [
-      {
-        "anchor": "selected_point",
-        "geometry": {
-          "shape": "square",
-          "side_feet": 10
-        },
-        "persistence": "persistent",
-        "visual_tags": [
-          "DFT"
-        ]
-      }
-    ]
+    "effect": {
+      "geometry": {
+        "shape": "square",
+        "side_feet": 10
+      },
+      "persistence": "persistent"
+    }
   },
   "PHB::Guards and Wards": {
     "range": {
@@ -1419,19 +1174,13 @@
     "targeting": {
       "type": "point"
     },
-    "effects": [
-      {
-        "anchor": "selected_point",
-        "geometry": {
-          "shape": "square",
-          "side_feet": 5
-        },
-        "persistence": "persistent",
-        "visual_tags": [
-          "OBS"
-        ]
-      }
-    ]
+    "effect": {
+      "geometry": {
+        "shape": "square",
+        "side_feet": 5
+      },
+      "persistence": "persistent"
+    }
   },
   "PHB::Gust of Wind": {
     "range": {
@@ -1442,17 +1191,14 @@
       "type": "caster_direction",
       "allow_pitch": true
     },
-    "effects": [
-      {
-        "anchor": "caster",
-        "geometry": {
-          "shape": "line",
-          "length_feet": 60,
-          "width_feet": 10
-        },
-        "persistence": "persistent"
-      }
-    ]
+    "effect": {
+      "geometry": {
+        "shape": "line",
+        "length_feet": 60,
+        "width_feet": 10
+      },
+      "persistence": "persistent"
+    }
   },
   "PHB::Hallucinatory Terrain": {
     "range": {
@@ -1462,16 +1208,13 @@
     "targeting": {
       "type": "point"
     },
-    "effects": [
-      {
-        "anchor": "selected_point",
-        "geometry": {
-          "shape": "cube",
-          "side_feet": 150
-        },
-        "persistence": "persistent"
-      }
-    ]
+    "effect": {
+      "geometry": {
+        "shape": "cube",
+        "side_feet": 150
+      },
+      "persistence": "persistent"
+    }
   },
   "PHB::Holy Aura": {
     "range": {
@@ -1481,19 +1224,13 @@
     "targeting": {
       "type": "caster"
     },
-    "effects": [
-      {
-        "anchor": "caster",
-        "geometry": {
-          "shape": "sphere",
-          "radius_feet": 30
-        },
-        "persistence": "persistent",
-        "visual_tags": [
-          "LGT"
-        ]
-      }
-    ]
+    "effect": {
+      "geometry": {
+        "shape": "sphere",
+        "radius_feet": 30
+      },
+      "persistence": "persistent"
+    }
   },
   "PHB::Hunger of Hadar": {
     "range": {
@@ -1503,24 +1240,17 @@
     "targeting": {
       "type": "point"
     },
-    "effects": [
-      {
-        "anchor": "selected_point",
-        "geometry": {
-          "shape": "sphere",
-          "radius_feet": 20
-        },
-        "persistence": "persistent",
-        "damage_types": [
-          "acid",
-          "cold"
-        ],
-        "visual_tags": [
-          "DFT",
-          "OBS"
-        ]
-      }
-    ]
+    "effect": {
+      "geometry": {
+        "shape": "sphere",
+        "radius_feet": 20
+      },
+      "persistence": "persistent",
+      "damage_types": [
+        "acid",
+        "cold"
+      ]
+    }
   },
   "PHB::Hypnotic Pattern": {
     "range": {
@@ -1530,16 +1260,13 @@
     "targeting": {
       "type": "point"
     },
-    "effects": [
-      {
-        "anchor": "selected_point",
-        "geometry": {
-          "shape": "cube",
-          "side_feet": 30
-        },
-        "persistence": "persistent"
-      }
-    ]
+    "effect": {
+      "geometry": {
+        "shape": "cube",
+        "side_feet": 30
+      },
+      "persistence": "persistent"
+    }
   },
   "PHB::Ice Storm": {
     "range": {
@@ -1549,21 +1276,18 @@
     "targeting": {
       "type": "point"
     },
-    "effects": [
-      {
-        "anchor": "selected_point",
-        "geometry": {
-          "shape": "cylinder",
-          "radius_feet": 20,
-          "height_feet": 40
-        },
-        "persistence": "instant",
-        "damage_types": [
-          "bludgeoning",
-          "cold"
-        ]
-      }
-    ]
+    "effect": {
+      "geometry": {
+        "shape": "cylinder",
+        "radius_feet": 20,
+        "height_feet": 40
+      },
+      "persistence": "instant",
+      "damage_types": [
+        "bludgeoning",
+        "cold"
+      ]
+    }
   },
   "PHB::Incendiary Cloud": {
     "range": {
@@ -1573,22 +1297,16 @@
     "targeting": {
       "type": "point"
     },
-    "effects": [
-      {
-        "anchor": "selected_point",
-        "geometry": {
-          "shape": "sphere",
-          "radius_feet": 20
-        },
-        "persistence": "persistent",
-        "damage_types": [
-          "fire"
-        ],
-        "visual_tags": [
-          "OBS"
-        ]
-      }
-    ]
+    "effect": {
+      "geometry": {
+        "shape": "sphere",
+        "radius_feet": 20
+      },
+      "persistence": "persistent",
+      "damage_types": [
+        "fire"
+      ]
+    }
   },
   "PHB::Insect Plague": {
     "range": {
@@ -1598,23 +1316,16 @@
     "targeting": {
       "type": "point"
     },
-    "effects": [
-      {
-        "anchor": "selected_point",
-        "geometry": {
-          "shape": "sphere",
-          "radius_feet": 20
-        },
-        "persistence": "persistent",
-        "damage_types": [
-          "piercing"
-        ],
-        "visual_tags": [
-          "DFT",
-          "OBS"
-        ]
-      }
-    ]
+    "effect": {
+      "geometry": {
+        "shape": "sphere",
+        "radius_feet": 20
+      },
+      "persistence": "persistent",
+      "damage_types": [
+        "piercing"
+      ]
+    }
   },
   "PHB::Leomund's Tiny Hut": {
     "range": {
@@ -1624,16 +1335,13 @@
     "targeting": {
       "type": "caster"
     },
-    "effects": [
-      {
-        "anchor": "caster",
-        "geometry": {
-          "shape": "hemisphere",
-          "radius_feet": 10
-        },
-        "persistence": "persistent"
-      }
-    ]
+    "effect": {
+      "geometry": {
+        "shape": "hemisphere",
+        "radius_feet": 10
+      },
+      "persistence": "persistent"
+    }
   },
   "PHB::Lightning Bolt": {
     "range": {
@@ -1644,20 +1352,17 @@
       "type": "caster_direction",
       "allow_pitch": true
     },
-    "effects": [
-      {
-        "anchor": "caster",
-        "geometry": {
-          "shape": "line",
-          "length_feet": 100,
-          "width_feet": 5
-        },
-        "persistence": "instant",
-        "damage_types": [
-          "lightning"
-        ]
-      }
-    ]
+    "effect": {
+      "geometry": {
+        "shape": "line",
+        "length_feet": 100,
+        "width_feet": 5
+      },
+      "persistence": "instant",
+      "damage_types": [
+        "lightning"
+      ]
+    }
   },
   "PHB::Magic Circle": {
     "range": {
@@ -1668,16 +1373,13 @@
       "type": "point",
       "requires_ground": true
     },
-    "effects": [
-      {
-        "anchor": "selected_point",
-        "geometry": {
-          "shape": "cylinder",
-          "radius_feet": 10
-        },
-        "persistence": "persistent"
-      }
-    ]
+    "effect": {
+      "geometry": {
+        "shape": "cylinder",
+        "radius_feet": 10
+      },
+      "persistence": "persistent"
+    }
   },
   "PHB::Mass Cure Wounds": {
     "range": {
@@ -1687,16 +1389,13 @@
     "targeting": {
       "type": "point"
     },
-    "effects": [
-      {
-        "anchor": "selected_point",
-        "geometry": {
-          "shape": "sphere",
-          "radius_feet": 30
-        },
-        "persistence": "instant"
-      }
-    ]
+    "effect": {
+      "geometry": {
+        "shape": "sphere",
+        "radius_feet": 30
+      },
+      "persistence": "instant"
+    }
   },
   "PHB::Meteor Swarm": {
     "range": {
@@ -1706,20 +1405,17 @@
     "targeting": {
       "type": "point"
     },
-    "effects": [
-      {
-        "anchor": "selected_point",
-        "geometry": {
-          "shape": "sphere",
-          "radius_feet": 40
-        },
-        "persistence": "instant",
-        "damage_types": [
-          "bludgeoning",
-          "fire"
-        ]
-      }
-    ]
+    "effect": {
+      "geometry": {
+        "shape": "sphere",
+        "radius_feet": 40
+      },
+      "persistence": "instant",
+      "damage_types": [
+        "bludgeoning",
+        "fire"
+      ]
+    }
   },
   "PHB::Moonbeam": {
     "range": {
@@ -1729,23 +1425,17 @@
     "targeting": {
       "type": "point"
     },
-    "effects": [
-      {
-        "anchor": "selected_point",
-        "geometry": {
-          "shape": "cylinder",
-          "radius_feet": 5,
-          "height_feet": 40
-        },
-        "persistence": "persistent",
-        "damage_types": [
-          "radiant"
-        ],
-        "visual_tags": [
-          "LGT"
-        ]
-      }
-    ]
+    "effect": {
+      "geometry": {
+        "shape": "cylinder",
+        "radius_feet": 5,
+        "height_feet": 40
+      },
+      "persistence": "persistent",
+      "damage_types": [
+        "radiant"
+      ]
+    }
   },
   "PHB::Mordenkainen's Private Sanctum": {
     "range": {
@@ -1755,16 +1445,13 @@
     "targeting": {
       "type": "point"
     },
-    "effects": [
-      {
-        "anchor": "selected_point",
-        "geometry": {
-          "shape": "cube",
-          "side_feet": 100
-        },
-        "persistence": "persistent"
-      }
-    ]
+    "effect": {
+      "geometry": {
+        "shape": "cube",
+        "side_feet": 100
+      },
+      "persistence": "persistent"
+    }
   },
   "PHB::Move Earth": {
     "range": {
@@ -1774,16 +1461,13 @@
     "targeting": {
       "type": "point"
     },
-    "effects": [
-      {
-        "anchor": "selected_point",
-        "geometry": {
-          "shape": "square",
-          "side_feet": 40
-        },
-        "persistence": "persistent"
-      }
-    ]
+    "effect": {
+      "geometry": {
+        "shape": "square",
+        "side_feet": 40
+      },
+      "persistence": "persistent"
+    }
   },
   "PHB::Otiluke's Freezing Sphere": {
     "range": {
@@ -1793,19 +1477,16 @@
     "targeting": {
       "type": "point"
     },
-    "effects": [
-      {
-        "anchor": "selected_point",
-        "geometry": {
-          "shape": "sphere",
-          "radius_feet": 60
-        },
-        "persistence": "instant",
-        "damage_types": [
-          "cold"
-        ]
-      }
-    ]
+    "effect": {
+      "geometry": {
+        "shape": "sphere",
+        "radius_feet": 60
+      },
+      "persistence": "instant",
+      "damage_types": [
+        "cold"
+      ]
+    }
   },
   "PHB::Prismatic Spray": {
     "range": {
@@ -1816,23 +1497,20 @@
       "type": "caster_direction",
       "allow_pitch": true
     },
-    "effects": [
-      {
-        "anchor": "caster",
-        "geometry": {
-          "shape": "cone",
-          "length_feet": 60
-        },
-        "persistence": "instant",
-        "damage_types": [
-          "acid",
-          "cold",
-          "fire",
-          "lightning",
-          "poison"
-        ]
-      }
-    ]
+    "effect": {
+      "geometry": {
+        "shape": "cone",
+        "length_feet": 60
+      },
+      "persistence": "instant",
+      "damage_types": [
+        "acid",
+        "cold",
+        "fire",
+        "lightning",
+        "poison"
+      ]
+    }
   },
   "PHB::Prismatic Wall": {
     "range": {
@@ -1842,38 +1520,32 @@
     "targeting": {
       "type": "wall"
     },
-    "effects": [
-      {
-        "anchor": "selected_path",
-        "geometry": {
-          "shape": "wall",
-          "variants": [
-            {
-              "type": "path",
-              "max_length_feet": 90,
-              "height_feet": 30,
-              "thickness_feet": 0.08333333333333333
-            },
-            {
-              "type": "globe",
-              "radius_feet": 15
-            }
-          ]
-        },
-        "persistence": "persistent",
-        "damage_types": [
-          "acid",
-          "cold",
-          "fire",
-          "force",
-          "lightning",
-          "poison"
-        ],
-        "visual_tags": [
-          "LGT"
+    "effect": {
+      "geometry": {
+        "shape": "wall",
+        "variants": [
+          {
+            "type": "path",
+            "max_length_feet": 90,
+            "height_feet": 30,
+            "thickness_feet": 0.08333333333333333
+          },
+          {
+            "type": "globe",
+            "radius_feet": 15
+          }
         ]
-      }
-    ]
+      },
+      "persistence": "persistent",
+      "damage_types": [
+        "acid",
+        "cold",
+        "fire",
+        "force",
+        "lightning",
+        "poison"
+      ]
+    }
   },
   "PHB::Purify Food and Drink": {
     "range": {
@@ -1883,16 +1555,13 @@
     "targeting": {
       "type": "point"
     },
-    "effects": [
-      {
-        "anchor": "selected_point",
-        "geometry": {
-          "shape": "sphere",
-          "radius_feet": 5
-        },
-        "persistence": "instant"
-      }
-    ]
+    "effect": {
+      "geometry": {
+        "shape": "sphere",
+        "radius_feet": 5
+      },
+      "persistence": "instant"
+    }
   },
   "PHB::Reverse Gravity": {
     "range": {
@@ -1902,17 +1571,14 @@
     "targeting": {
       "type": "point"
     },
-    "effects": [
-      {
-        "anchor": "selected_point",
-        "geometry": {
-          "shape": "cylinder",
-          "radius_feet": 50,
-          "height_feet": 100
-        },
-        "persistence": "persistent"
-      }
-    ]
+    "effect": {
+      "geometry": {
+        "shape": "cylinder",
+        "radius_feet": 50,
+        "height_feet": 100
+      },
+      "persistence": "persistent"
+    }
   },
   "PHB::Shatter": {
     "range": {
@@ -1922,19 +1588,16 @@
     "targeting": {
       "type": "point"
     },
-    "effects": [
-      {
-        "anchor": "selected_point",
-        "geometry": {
-          "shape": "sphere",
-          "radius_feet": 10
-        },
-        "persistence": "instant",
-        "damage_types": [
-          "thunder"
-        ]
-      }
-    ]
+    "effect": {
+      "geometry": {
+        "shape": "sphere",
+        "radius_feet": 10
+      },
+      "persistence": "instant",
+      "damage_types": [
+        "thunder"
+      ]
+    }
   },
   "PHB::Silence": {
     "range": {
@@ -1944,16 +1607,13 @@
     "targeting": {
       "type": "point"
     },
-    "effects": [
-      {
-        "anchor": "selected_point",
-        "geometry": {
-          "shape": "sphere",
-          "radius_feet": 20
-        },
-        "persistence": "persistent"
-      }
-    ]
+    "effect": {
+      "geometry": {
+        "shape": "sphere",
+        "radius_feet": 20
+      },
+      "persistence": "persistent"
+    }
   },
   "PHB::Sleet Storm": {
     "range": {
@@ -1963,20 +1623,13 @@
     "targeting": {
       "type": "point"
     },
-    "effects": [
-      {
-        "anchor": "selected_point",
-        "geometry": {
-          "shape": "cylinder",
-          "radius_feet": 40
-        },
-        "persistence": "persistent",
-        "visual_tags": [
-          "DFT",
-          "OBS"
-        ]
-      }
-    ]
+    "effect": {
+      "geometry": {
+        "shape": "cylinder",
+        "radius_feet": 40
+      },
+      "persistence": "persistent"
+    }
   },
   "PHB::Slow": {
     "range": {
@@ -1986,16 +1639,13 @@
     "targeting": {
       "type": "point"
     },
-    "effects": [
-      {
-        "anchor": "selected_point",
-        "geometry": {
-          "shape": "cube",
-          "side_feet": 40
-        },
-        "persistence": "persistent"
-      }
-    ]
+    "effect": {
+      "geometry": {
+        "shape": "cube",
+        "side_feet": 40
+      },
+      "persistence": "persistent"
+    }
   },
   "PHB::Spike Growth": {
     "range": {
@@ -2005,22 +1655,16 @@
     "targeting": {
       "type": "point"
     },
-    "effects": [
-      {
-        "anchor": "selected_point",
-        "geometry": {
-          "shape": "circle",
-          "radius_feet": 20
-        },
-        "persistence": "persistent",
-        "damage_types": [
-          "piercing"
-        ],
-        "visual_tags": [
-          "DFT"
-        ]
-      }
-    ]
+    "effect": {
+      "geometry": {
+        "shape": "circle",
+        "radius_feet": 20
+      },
+      "persistence": "persistent",
+      "damage_types": [
+        "piercing"
+      ]
+    }
   },
   "PHB::Stinking Cloud": {
     "range": {
@@ -2030,19 +1674,13 @@
     "targeting": {
       "type": "point"
     },
-    "effects": [
-      {
-        "anchor": "selected_point",
-        "geometry": {
-          "shape": "sphere",
-          "radius_feet": 20
-        },
-        "persistence": "persistent",
-        "visual_tags": [
-          "OBS"
-        ]
-      }
-    ]
+    "effect": {
+      "geometry": {
+        "shape": "sphere",
+        "radius_feet": 20
+      },
+      "persistence": "persistent"
+    }
   },
   "PHB::Sunbeam": {
     "range": {
@@ -2053,23 +1691,17 @@
       "type": "caster_direction",
       "allow_pitch": true
     },
-    "effects": [
-      {
-        "anchor": "caster",
-        "geometry": {
-          "shape": "line",
-          "length_feet": 60,
-          "width_feet": 5
-        },
-        "persistence": "persistent",
-        "damage_types": [
-          "radiant"
-        ],
-        "visual_tags": [
-          "LGTS"
-        ]
-      }
-    ]
+    "effect": {
+      "geometry": {
+        "shape": "line",
+        "length_feet": 60,
+        "width_feet": 5
+      },
+      "persistence": "persistent",
+      "damage_types": [
+        "radiant"
+      ]
+    }
   },
   "PHB::Sunburst": {
     "range": {
@@ -2079,23 +1711,16 @@
     "targeting": {
       "type": "point"
     },
-    "effects": [
-      {
-        "anchor": "selected_point",
-        "geometry": {
-          "shape": "sphere",
-          "radius_feet": 60
-        },
-        "persistence": "instant",
-        "damage_types": [
-          "radiant"
-        ],
-        "visual_tags": [
-          "LGT",
-          "LGTS"
-        ]
-      }
-    ]
+    "effect": {
+      "geometry": {
+        "shape": "sphere",
+        "radius_feet": 60
+      },
+      "persistence": "instant",
+      "damage_types": [
+        "radiant"
+      ]
+    }
   },
   "PHB::Symbol": {
     "range": {
@@ -2105,22 +1730,16 @@
     "targeting": {
       "type": "point"
     },
-    "effects": [
-      {
-        "anchor": "selected_point",
-        "geometry": {
-          "shape": "sphere",
-          "radius_feet": 60
-        },
-        "persistence": "persistent",
-        "damage_types": [
-          "necrotic"
-        ],
-        "visual_tags": [
-          "LGT"
-        ]
-      }
-    ]
+    "effect": {
+      "geometry": {
+        "shape": "sphere",
+        "radius_feet": 60
+      },
+      "persistence": "persistent",
+      "damage_types": [
+        "necrotic"
+      ]
+    }
   },
   "PHB::Thunderwave": {
     "range": {
@@ -2131,19 +1750,16 @@
       "type": "caster_direction",
       "allow_pitch": true
     },
-    "effects": [
-      {
-        "anchor": "caster",
-        "geometry": {
-          "shape": "cube",
-          "side_feet": 15
-        },
-        "persistence": "instant",
-        "damage_types": [
-          "thunder"
-        ]
-      }
-    ]
+    "effect": {
+      "geometry": {
+        "shape": "cube",
+        "side_feet": 15
+      },
+      "persistence": "instant",
+      "damage_types": [
+        "thunder"
+      ]
+    }
   },
   "PHB::Tsunami": {
     "range": {
@@ -2153,26 +1769,23 @@
     "targeting": {
       "type": "wall"
     },
-    "effects": [
-      {
-        "anchor": "selected_path",
-        "geometry": {
-          "shape": "wall",
-          "variants": [
-            {
-              "type": "path",
-              "max_length_feet": 300,
-              "height_feet": 300,
-              "thickness_feet": 50
-            }
-          ]
-        },
-        "persistence": "persistent",
-        "damage_types": [
-          "bludgeoning"
+    "effect": {
+      "geometry": {
+        "shape": "wall",
+        "variants": [
+          {
+            "type": "path",
+            "max_length_feet": 300,
+            "height_feet": 300,
+            "thickness_feet": 50
+          }
         ]
-      }
-    ]
+      },
+      "persistence": "persistent",
+      "damage_types": [
+        "bludgeoning"
+      ]
+    }
   },
   "PHB::Wall of Fire": {
     "range": {
@@ -2184,32 +1797,29 @@
       "requires_ground": true,
       "choose_damage_side": true
     },
-    "effects": [
-      {
-        "anchor": "selected_path",
-        "geometry": {
-          "shape": "wall",
-          "variants": [
-            {
-              "type": "path",
-              "max_length_feet": 60,
-              "height_feet": 20,
-              "thickness_feet": 1
-            },
-            {
-              "type": "circle",
-              "radius_feet": 10,
-              "height_feet": 20,
-              "thickness_feet": 1
-            }
-          ]
-        },
-        "persistence": "persistent",
-        "damage_types": [
-          "fire"
+    "effect": {
+      "geometry": {
+        "shape": "wall",
+        "variants": [
+          {
+            "type": "path",
+            "max_length_feet": 60,
+            "height_feet": 20,
+            "thickness_feet": 1
+          },
+          {
+            "type": "circle",
+            "radius_feet": 10,
+            "height_feet": 20,
+            "thickness_feet": 1
+          }
         ]
-      }
-    ]
+      },
+      "persistence": "persistent",
+      "damage_types": [
+        "fire"
+      ]
+    }
   },
   "PHB::Wall of Stone": {
     "range": {
@@ -2219,24 +1829,21 @@
     "targeting": {
       "type": "wall"
     },
-    "effects": [
-      {
-        "anchor": "selected_path",
-        "geometry": {
-          "shape": "wall",
-          "variants": [
-            {
-              "type": "panels",
-              "max_panels": 10,
-              "panel_width_feet": 10,
-              "panel_height_feet": 10,
-              "thickness_feet": 0.5
-            }
-          ]
-        },
-        "persistence": "persistent"
-      }
-    ]
+    "effect": {
+      "geometry": {
+        "shape": "wall",
+        "variants": [
+          {
+            "type": "panels",
+            "max_panels": 10,
+            "panel_width_feet": 10,
+            "panel_height_feet": 10,
+            "thickness_feet": 0.5
+          }
+        ]
+      },
+      "persistence": "persistent"
+    }
   },
   "PHB::Wall of Thorns": {
     "range": {
@@ -2247,33 +1854,30 @@
       "type": "wall",
       "requires_ground": true
     },
-    "effects": [
-      {
-        "anchor": "selected_path",
-        "geometry": {
-          "shape": "wall",
-          "variants": [
-            {
-              "type": "path",
-              "max_length_feet": 60,
-              "height_feet": 10,
-              "thickness_feet": 5
-            },
-            {
-              "type": "circle",
-              "radius_feet": 10,
-              "height_feet": 20,
-              "thickness_feet": 5
-            }
-          ]
-        },
-        "persistence": "persistent",
-        "damage_types": [
-          "piercing",
-          "slashing"
+    "effect": {
+      "geometry": {
+        "shape": "wall",
+        "variants": [
+          {
+            "type": "path",
+            "max_length_feet": 60,
+            "height_feet": 10,
+            "thickness_feet": 5
+          },
+          {
+            "type": "circle",
+            "radius_feet": 10,
+            "height_feet": 20,
+            "thickness_feet": 5
+          }
         ]
-      }
-    ]
+      },
+      "persistence": "persistent",
+      "damage_types": [
+        "piercing",
+        "slashing"
+      ]
+    }
   },
   "PHB::Web": {
     "range": {
@@ -2283,22 +1887,16 @@
     "targeting": {
       "type": "point"
     },
-    "effects": [
-      {
-        "anchor": "selected_point",
-        "geometry": {
-          "shape": "cube",
-          "side_feet": 20
-        },
-        "persistence": "persistent",
-        "damage_types": [
-          "fire"
-        ],
-        "visual_tags": [
-          "DFT"
-        ]
-      }
-    ]
+    "effect": {
+      "geometry": {
+        "shape": "cube",
+        "side_feet": 20
+      },
+      "persistence": "persistent",
+      "damage_types": [
+        "fire"
+      ]
+    }
   },
   "PHB::Weird": {
     "range": {
@@ -2308,19 +1906,16 @@
     "targeting": {
       "type": "point"
     },
-    "effects": [
-      {
-        "anchor": "selected_point",
-        "geometry": {
-          "shape": "sphere",
-          "radius_feet": 30
-        },
-        "persistence": "persistent",
-        "damage_types": [
-          "psychic"
-        ]
-      }
-    ]
+    "effect": {
+      "geometry": {
+        "shape": "sphere",
+        "radius_feet": 30
+      },
+      "persistence": "persistent",
+      "damage_types": [
+        "psychic"
+      ]
+    }
   },
   "PHB::Wind Wall": {
     "range": {
@@ -2331,26 +1926,23 @@
       "type": "wall",
       "requires_ground": true
     },
-    "effects": [
-      {
-        "anchor": "selected_path",
-        "geometry": {
-          "shape": "wall",
-          "variants": [
-            {
-              "type": "path",
-              "max_length_feet": 50,
-              "height_feet": 15,
-              "thickness_feet": 1
-            }
-          ]
-        },
-        "persistence": "persistent",
-        "damage_types": [
-          "bludgeoning"
+    "effect": {
+      "geometry": {
+        "shape": "wall",
+        "variants": [
+          {
+            "type": "path",
+            "max_length_feet": 50,
+            "height_feet": 15,
+            "thickness_feet": 1
+          }
         ]
-      }
-    ]
+      },
+      "persistence": "persistent",
+      "damage_types": [
+        "bludgeoning"
+      ]
+    }
   },
   "PHB::Zone of Truth": {
     "range": {
@@ -2360,16 +1952,13 @@
     "targeting": {
       "type": "point"
     },
-    "effects": [
-      {
-        "anchor": "selected_point",
-        "geometry": {
-          "shape": "sphere",
-          "radius_feet": 15
-        },
-        "persistence": "persistent"
-      }
-    ]
+    "effect": {
+      "geometry": {
+        "shape": "sphere",
+        "radius_feet": 15
+      },
+      "persistence": "persistent"
+    }
   },
   "XGE::Abi-Dalzim's Horrid Wilting": {
     "range": {
@@ -2379,19 +1968,16 @@
     "targeting": {
       "type": "point"
     },
-    "effects": [
-      {
-        "anchor": "selected_point",
-        "geometry": {
-          "shape": "cube",
-          "side_feet": 30
-        },
-        "persistence": "instant",
-        "damage_types": [
-          "necrotic"
-        ]
-      }
-    ]
+    "effect": {
+      "geometry": {
+        "shape": "cube",
+        "side_feet": 30
+      },
+      "persistence": "instant",
+      "damage_types": [
+        "necrotic"
+      ]
+    }
   },
   "XGE::Aganazzar's Scorcher": {
     "range": {
@@ -2401,20 +1987,17 @@
     "targeting": {
       "type": "point"
     },
-    "effects": [
-      {
-        "anchor": "selected_point",
-        "geometry": {
-          "shape": "line",
-          "length_feet": 30,
-          "width_feet": 5
-        },
-        "persistence": "instant",
-        "damage_types": [
-          "fire"
-        ]
-      }
-    ]
+    "effect": {
+      "geometry": {
+        "shape": "line",
+        "length_feet": 30,
+        "width_feet": 5
+      },
+      "persistence": "instant",
+      "damage_types": [
+        "fire"
+      ]
+    }
   },
   "XGE::Control Flames": {
     "range": {
@@ -2424,19 +2007,13 @@
     "targeting": {
       "type": "point"
     },
-    "effects": [
-      {
-        "anchor": "selected_point",
-        "geometry": {
-          "shape": "cube",
-          "side_feet": 5
-        },
-        "persistence": "persistent",
-        "visual_tags": [
-          "LGT"
-        ]
-      }
-    ]
+    "effect": {
+      "geometry": {
+        "shape": "cube",
+        "side_feet": 5
+      },
+      "persistence": "persistent"
+    }
   },
   "XGE::Control Winds": {
     "range": {
@@ -2446,16 +2023,13 @@
     "targeting": {
       "type": "point"
     },
-    "effects": [
-      {
-        "anchor": "selected_point",
-        "geometry": {
-          "shape": "cube",
-          "side_feet": 100
-        },
-        "persistence": "persistent"
-      }
-    ]
+    "effect": {
+      "geometry": {
+        "shape": "cube",
+        "side_feet": 100
+      },
+      "persistence": "persistent"
+    }
   },
   "XGE::Create Bonfire": {
     "range": {
@@ -2466,19 +2040,16 @@
       "type": "point",
       "requires_ground": true
     },
-    "effects": [
-      {
-        "anchor": "selected_point",
-        "geometry": {
-          "shape": "cube",
-          "side_feet": 5
-        },
-        "persistence": "persistent",
-        "damage_types": [
-          "fire"
-        ]
-      }
-    ]
+    "effect": {
+      "geometry": {
+        "shape": "cube",
+        "side_feet": 5
+      },
+      "persistence": "persistent",
+      "damage_types": [
+        "fire"
+      ]
+    }
   },
   "XGE::Dawn": {
     "range": {
@@ -2488,23 +2059,17 @@
     "targeting": {
       "type": "point"
     },
-    "effects": [
-      {
-        "anchor": "selected_point",
-        "geometry": {
-          "shape": "cylinder",
-          "radius_feet": 30,
-          "height_feet": 40
-        },
-        "persistence": "persistent",
-        "damage_types": [
-          "radiant"
-        ],
-        "visual_tags": [
-          "LGTS"
-        ]
-      }
-    ]
+    "effect": {
+      "geometry": {
+        "shape": "cylinder",
+        "radius_feet": 30,
+        "height_feet": 40
+      },
+      "persistence": "persistent",
+      "damage_types": [
+        "radiant"
+      ]
+    }
   },
   "XGE::Dragon's Breath": {
     "range": {
@@ -2514,23 +2079,20 @@
     "targeting": {
       "type": "point"
     },
-    "effects": [
-      {
-        "anchor": "selected_point",
-        "geometry": {
-          "shape": "cone",
-          "length_feet": 15
-        },
-        "persistence": "persistent",
-        "damage_types": [
-          "acid",
-          "cold",
-          "fire",
-          "lightning",
-          "poison"
-        ]
-      }
-    ]
+    "effect": {
+      "geometry": {
+        "shape": "cone",
+        "length_feet": 15
+      },
+      "persistence": "persistent",
+      "damage_types": [
+        "acid",
+        "cold",
+        "fire",
+        "lightning",
+        "poison"
+      ]
+    }
   },
   "XGE::Druid Grove": {
     "range": {
@@ -2541,37 +2103,20 @@
       "type": "point",
       "requires_ground": true
     },
-    "effects": [
-      {
-        "anchor": "selected_point",
-        "geometry": {
-          "shape": "cube",
-          "variants": [
-            {
-              "side_feet": 30
-            },
-            {
-              "side_feet": 90
-            }
-          ]
-        },
-        "persistence": "persistent",
-        "visual_tags": [
-          "OBS"
+    "effect": {
+      "geometry": {
+        "shape": "cube",
+        "variants": [
+          {
+            "side_feet": 30
+          },
+          {
+            "side_feet": 90
+          }
         ]
       },
-      {
-        "anchor": "selected_point",
-        "geometry": {
-          "shape": "square",
-          "side_feet": 5
-        },
-        "persistence": "persistent",
-        "visual_tags": [
-          "OBS"
-        ]
-      }
-    ]
+      "persistence": "persistent"
+    }
   },
   "XGE::Erupting Earth": {
     "range": {
@@ -2582,22 +2127,16 @@
       "type": "point",
       "requires_ground": true
     },
-    "effects": [
-      {
-        "anchor": "selected_point",
-        "geometry": {
-          "shape": "cube",
-          "side_feet": 20
-        },
-        "persistence": "instant",
-        "damage_types": [
-          "bludgeoning"
-        ],
-        "visual_tags": [
-          "DFT"
-        ]
-      }
-    ]
+    "effect": {
+      "geometry": {
+        "shape": "cube",
+        "side_feet": 20
+      },
+      "persistence": "instant",
+      "damage_types": [
+        "bludgeoning"
+      ]
+    }
   },
   "XGE::Healing Spirit": {
     "range": {
@@ -2607,16 +2146,13 @@
     "targeting": {
       "type": "point"
     },
-    "effects": [
-      {
-        "anchor": "selected_point",
-        "geometry": {
-          "shape": "cube",
-          "side_feet": 5
-        },
-        "persistence": "persistent"
-      }
-    ]
+    "effect": {
+      "geometry": {
+        "shape": "cube",
+        "side_feet": 5
+      },
+      "persistence": "persistent"
+    }
   },
   "XGE::Illusory Dragon": {
     "range": {
@@ -2626,24 +2162,21 @@
     "targeting": {
       "type": "point"
     },
-    "effects": [
-      {
-        "anchor": "selected_point",
-        "geometry": {
-          "shape": "cone",
-          "length_feet": 60
-        },
-        "persistence": "persistent",
-        "damage_types": [
-          "acid",
-          "cold",
-          "fire",
-          "lightning",
-          "necrotic",
-          "poison"
-        ]
-      }
-    ]
+    "effect": {
+      "geometry": {
+        "shape": "cone",
+        "length_feet": 60
+      },
+      "persistence": "persistent",
+      "damage_types": [
+        "acid",
+        "cold",
+        "fire",
+        "lightning",
+        "necrotic",
+        "poison"
+      ]
+    }
   },
   "XGE::Investiture of Flame": {
     "range": {
@@ -2654,23 +2187,17 @@
       "type": "caster_direction",
       "allow_pitch": true
     },
-    "effects": [
-      {
-        "anchor": "caster",
-        "geometry": {
-          "shape": "line",
-          "length_feet": 15,
-          "width_feet": 5
-        },
-        "persistence": "persistent",
-        "damage_types": [
-          "fire"
-        ],
-        "visual_tags": [
-          "LGT"
-        ]
-      }
-    ]
+    "effect": {
+      "geometry": {
+        "shape": "line",
+        "length_feet": 15,
+        "width_feet": 5
+      },
+      "persistence": "persistent",
+      "damage_types": [
+        "fire"
+      ]
+    }
   },
   "XGE::Investiture of Ice": {
     "range": {
@@ -2681,36 +2208,16 @@
       "type": "caster_direction",
       "allow_pitch": true
     },
-    "effects": [
-      {
-        "anchor": "caster",
-        "geometry": {
-          "shape": "cone",
-          "length_feet": 15
-        },
-        "persistence": "persistent",
-        "damage_types": [
-          "cold"
-        ],
-        "visual_tags": [
-          "DFT"
-        ]
+    "effect": {
+      "geometry": {
+        "shape": "cone",
+        "length_feet": 15
       },
-      {
-        "anchor": "caster",
-        "geometry": {
-          "shape": "sphere",
-          "radius_feet": 10
-        },
-        "persistence": "persistent",
-        "damage_types": [
-          "cold"
-        ],
-        "visual_tags": [
-          "DFT"
-        ]
-      }
-    ]
+      "persistence": "persistent",
+      "damage_types": [
+        "cold"
+      ]
+    }
   },
   "XGE::Investiture of Stone": {
     "range": {
@@ -2721,16 +2228,13 @@
       "type": "caster",
       "requires_ground": true
     },
-    "effects": [
-      {
-        "anchor": "caster",
-        "geometry": {
-          "shape": "sphere",
-          "radius_feet": 15
-        },
-        "persistence": "persistent"
-      }
-    ]
+    "effect": {
+      "geometry": {
+        "shape": "sphere",
+        "radius_feet": 15
+      },
+      "persistence": "persistent"
+    }
   },
   "XGE::Investiture of Wind": {
     "range": {
@@ -2741,19 +2245,16 @@
       "type": "caster_direction",
       "allow_pitch": true
     },
-    "effects": [
-      {
-        "anchor": "caster",
-        "geometry": {
-          "shape": "cube",
-          "side_feet": 15
-        },
-        "persistence": "persistent",
-        "damage_types": [
-          "bludgeoning"
-        ]
-      }
-    ]
+    "effect": {
+      "geometry": {
+        "shape": "cube",
+        "side_feet": 15
+      },
+      "persistence": "persistent",
+      "damage_types": [
+        "bludgeoning"
+      ]
+    }
   },
   "XGE::Maddening Darkness": {
     "range": {
@@ -2763,22 +2264,16 @@
     "targeting": {
       "type": "point"
     },
-    "effects": [
-      {
-        "anchor": "selected_point",
-        "geometry": {
-          "shape": "sphere",
-          "radius_feet": 60
-        },
-        "persistence": "persistent",
-        "damage_types": [
-          "psychic"
-        ],
-        "visual_tags": [
-          "OBS"
-        ]
-      }
-    ]
+    "effect": {
+      "geometry": {
+        "shape": "sphere",
+        "radius_feet": 60
+      },
+      "persistence": "persistent",
+      "damage_types": [
+        "psychic"
+      ]
+    }
   },
   "XGE::Maelstrom": {
     "range": {
@@ -2789,22 +2284,16 @@
       "type": "point",
       "requires_ground": true
     },
-    "effects": [
-      {
-        "anchor": "selected_point",
-        "geometry": {
-          "shape": "circle",
-          "radius_feet": 30
-        },
-        "persistence": "persistent",
-        "damage_types": [
-          "bludgeoning"
-        ],
-        "visual_tags": [
-          "DFT"
-        ]
-      }
-    ]
+    "effect": {
+      "geometry": {
+        "shape": "circle",
+        "radius_feet": 30
+      },
+      "persistence": "persistent",
+      "damage_types": [
+        "bludgeoning"
+      ]
+    }
   },
   "XGE::Mold Earth": {
     "range": {
@@ -2815,19 +2304,13 @@
       "type": "point",
       "requires_ground": true
     },
-    "effects": [
-      {
-        "anchor": "selected_point",
-        "geometry": {
-          "shape": "cube",
-          "side_feet": 5
-        },
-        "persistence": "persistent",
-        "visual_tags": [
-          "DFT"
-        ]
-      }
-    ]
+    "effect": {
+      "geometry": {
+        "shape": "cube",
+        "side_feet": 5
+      },
+      "persistence": "persistent"
+    }
   },
   "XGE::Pyrotechnics": {
     "range": {
@@ -2837,30 +2320,13 @@
     "targeting": {
       "type": "point"
     },
-    "effects": [
-      {
-        "anchor": "selected_point",
-        "geometry": {
-          "shape": "cube",
-          "side_feet": 5
-        },
-        "persistence": "instant",
-        "visual_tags": [
-          "OBS"
-        ]
+    "effect": {
+      "geometry": {
+        "shape": "cube",
+        "side_feet": 5
       },
-      {
-        "anchor": "selected_point",
-        "geometry": {
-          "shape": "sphere",
-          "radius_feet": 20
-        },
-        "persistence": "instant",
-        "visual_tags": [
-          "OBS"
-        ]
-      }
-    ]
+      "persistence": "instant"
+    }
   },
   "XGE::Shape Water": {
     "range": {
@@ -2870,16 +2336,13 @@
     "targeting": {
       "type": "point"
     },
-    "effects": [
-      {
-        "anchor": "selected_point",
-        "geometry": {
-          "shape": "cube",
-          "side_feet": 5
-        },
-        "persistence": "persistent"
-      }
-    ]
+    "effect": {
+      "geometry": {
+        "shape": "cube",
+        "side_feet": 5
+      },
+      "persistence": "persistent"
+    }
   },
   "XGE::Sickening Radiance": {
     "range": {
@@ -2889,19 +2352,16 @@
     "targeting": {
       "type": "point"
     },
-    "effects": [
-      {
-        "anchor": "selected_point",
-        "geometry": {
-          "shape": "sphere",
-          "radius_feet": 30
-        },
-        "persistence": "persistent",
-        "damage_types": [
-          "radiant"
-        ]
-      }
-    ]
+    "effect": {
+      "geometry": {
+        "shape": "sphere",
+        "radius_feet": 30
+      },
+      "persistence": "persistent",
+      "damage_types": [
+        "radiant"
+      ]
+    }
   },
   "XGE::Snilloc's Snowball Swarm": {
     "range": {
@@ -2911,19 +2371,16 @@
     "targeting": {
       "type": "point"
     },
-    "effects": [
-      {
-        "anchor": "selected_point",
-        "geometry": {
-          "shape": "sphere",
-          "radius_feet": 5
-        },
-        "persistence": "instant",
-        "damage_types": [
-          "cold"
-        ]
-      }
-    ]
+    "effect": {
+      "geometry": {
+        "shape": "sphere",
+        "radius_feet": 5
+      },
+      "persistence": "instant",
+      "damage_types": [
+        "cold"
+      ]
+    }
   },
   "XGE::Storm Sphere": {
     "range": {
@@ -2933,23 +2390,17 @@
     "targeting": {
       "type": "point"
     },
-    "effects": [
-      {
-        "anchor": "selected_point",
-        "geometry": {
-          "shape": "sphere",
-          "radius_feet": 20
-        },
-        "persistence": "persistent",
-        "damage_types": [
-          "bludgeoning",
-          "lightning"
-        ],
-        "visual_tags": [
-          "DFT"
-        ]
-      }
-    ]
+    "effect": {
+      "geometry": {
+        "shape": "sphere",
+        "radius_feet": 20
+      },
+      "persistence": "persistent",
+      "damage_types": [
+        "bludgeoning",
+        "lightning"
+      ]
+    }
   },
   "XGE::Synaptic Static": {
     "range": {
@@ -2959,19 +2410,16 @@
     "targeting": {
       "type": "point"
     },
-    "effects": [
-      {
-        "anchor": "selected_point",
-        "geometry": {
-          "shape": "sphere",
-          "radius_feet": 20
-        },
-        "persistence": "instant",
-        "damage_types": [
-          "psychic"
-        ]
-      }
-    ]
+    "effect": {
+      "geometry": {
+        "shape": "sphere",
+        "radius_feet": 20
+      },
+      "persistence": "instant",
+      "damage_types": [
+        "psychic"
+      ]
+    }
   },
   "XGE::Transmute Rock": {
     "range": {
@@ -2982,19 +2430,16 @@
       "type": "point",
       "requires_ground": true
     },
-    "effects": [
-      {
-        "anchor": "selected_point",
-        "geometry": {
-          "shape": "cube",
-          "side_feet": 40
-        },
-        "persistence": "persistent",
-        "damage_types": [
-          "bludgeoning"
-        ]
-      }
-    ]
+    "effect": {
+      "geometry": {
+        "shape": "cube",
+        "side_feet": 40
+      },
+      "persistence": "persistent",
+      "damage_types": [
+        "bludgeoning"
+      ]
+    }
   },
   "XGE::Vitriolic Sphere": {
     "range": {
@@ -3004,19 +2449,16 @@
     "targeting": {
       "type": "point"
     },
-    "effects": [
-      {
-        "anchor": "selected_point",
-        "geometry": {
-          "shape": "sphere",
-          "radius_feet": 20
-        },
-        "persistence": "instant",
-        "damage_types": [
-          "acid"
-        ]
-      }
-    ]
+    "effect": {
+      "geometry": {
+        "shape": "sphere",
+        "radius_feet": 20
+      },
+      "persistence": "instant",
+      "damage_types": [
+        "acid"
+      ]
+    }
   },
   "XGE::Wall of Light": {
     "range": {
@@ -3026,29 +2468,23 @@
     "targeting": {
       "type": "wall"
     },
-    "effects": [
-      {
-        "anchor": "selected_path",
-        "geometry": {
-          "shape": "wall",
-          "variants": [
-            {
-              "type": "path",
-              "max_length_feet": 60,
-              "height_feet": 10,
-              "thickness_feet": 5
-            }
-          ]
-        },
-        "persistence": "persistent",
-        "damage_types": [
-          "radiant"
-        ],
-        "visual_tags": [
-          "LGT"
+    "effect": {
+      "geometry": {
+        "shape": "wall",
+        "variants": [
+          {
+            "type": "path",
+            "max_length_feet": 60,
+            "height_feet": 10,
+            "thickness_feet": 5
+          }
         ]
-      }
-    ]
+      },
+      "persistence": "persistent",
+      "damage_types": [
+        "radiant"
+      ]
+    }
   },
   "XGE::Wall of Sand": {
     "range": {
@@ -3059,23 +2495,20 @@
       "type": "wall",
       "requires_ground": true
     },
-    "effects": [
-      {
-        "anchor": "selected_path",
-        "geometry": {
-          "shape": "wall",
-          "variants": [
-            {
-              "type": "path",
-              "max_length_feet": 30,
-              "height_feet": 10,
-              "thickness_feet": 10
-            }
-          ]
-        },
-        "persistence": "persistent"
-      }
-    ]
+    "effect": {
+      "geometry": {
+        "shape": "wall",
+        "variants": [
+          {
+            "type": "path",
+            "max_length_feet": 30,
+            "height_feet": 10,
+            "thickness_feet": 10
+          }
+        ]
+      },
+      "persistence": "persistent"
+    }
   },
   "XGE::Wall of Water": {
     "range": {
@@ -3086,32 +2519,26 @@
       "type": "wall",
       "requires_ground": true
     },
-    "effects": [
-      {
-        "anchor": "selected_path",
-        "geometry": {
-          "shape": "wall",
-          "variants": [
-            {
-              "type": "path",
-              "max_length_feet": 30,
-              "height_feet": 10,
-              "thickness_feet": 1
-            },
-            {
-              "type": "circle",
-              "radius_feet": 10,
-              "height_feet": 20,
-              "thickness_feet": 1
-            }
-          ]
-        },
-        "persistence": "persistent",
-        "visual_tags": [
-          "DFT"
+    "effect": {
+      "geometry": {
+        "shape": "wall",
+        "variants": [
+          {
+            "type": "path",
+            "max_length_feet": 30,
+            "height_feet": 10,
+            "thickness_feet": 1
+          },
+          {
+            "type": "circle",
+            "radius_feet": 10,
+            "height_feet": 20,
+            "thickness_feet": 1
+          }
         ]
-      }
-    ]
+      },
+      "persistence": "persistent"
+    }
   },
   "XGE::Watery Sphere": {
     "range": {
@@ -3121,16 +2548,13 @@
     "targeting": {
       "type": "point"
     },
-    "effects": [
-      {
-        "anchor": "selected_point",
-        "geometry": {
-          "shape": "sphere",
-          "radius_feet": 5
-        },
-        "persistence": "persistent"
-      }
-    ]
+    "effect": {
+      "geometry": {
+        "shape": "sphere",
+        "radius_feet": 5
+      },
+      "persistence": "persistent"
+    }
   },
   "XGE::Whirlwind": {
     "range": {
@@ -3141,20 +2565,17 @@
       "type": "point",
       "requires_ground": true
     },
-    "effects": [
-      {
-        "anchor": "selected_point",
-        "geometry": {
-          "shape": "cylinder",
-          "radius_feet": 10,
-          "height_feet": 30
-        },
-        "persistence": "persistent",
-        "damage_types": [
-          "bludgeoning"
-        ]
-      }
-    ]
+    "effect": {
+      "geometry": {
+        "shape": "cylinder",
+        "radius_feet": 10,
+        "height_feet": 30
+      },
+      "persistence": "persistent",
+      "damage_types": [
+        "bludgeoning"
+      ]
+    }
   },
   "XGE::Wrath of Nature": {
     "range": {
@@ -3165,23 +2586,17 @@
       "type": "point",
       "requires_ground": true
     },
-    "effects": [
-      {
-        "anchor": "selected_point",
-        "geometry": {
-          "shape": "cube",
-          "side_feet": 60
-        },
-        "persistence": "persistent",
-        "damage_types": [
-          "bludgeoning",
-          "slashing"
-        ],
-        "visual_tags": [
-          "DFT"
-        ]
-      }
-    ]
+    "effect": {
+      "geometry": {
+        "shape": "cube",
+        "side_feet": 60
+      },
+      "persistence": "persistent",
+      "damage_types": [
+        "bludgeoning",
+        "slashing"
+      ]
+    }
   },
   "XPHB::Alarm": {
     "range": {
@@ -3191,16 +2606,13 @@
     "targeting": {
       "type": "point"
     },
-    "effects": [
-      {
-        "anchor": "selected_point",
-        "geometry": {
-          "shape": "cube",
-          "side_feet": 20
-        },
-        "persistence": "persistent"
-      }
-    ]
+    "effect": {
+      "geometry": {
+        "shape": "cube",
+        "side_feet": 20
+      },
+      "persistence": "persistent"
+    }
   },
   "XPHB::Antilife Shell": {
     "range": {
@@ -3210,16 +2622,13 @@
     "targeting": {
       "type": "caster"
     },
-    "effects": [
-      {
-        "anchor": "caster",
-        "geometry": {
-          "shape": "emanation",
-          "radius_feet": 10
-        },
-        "persistence": "persistent"
-      }
-    ]
+    "effect": {
+      "geometry": {
+        "shape": "emanation",
+        "radius_feet": 10
+      },
+      "persistence": "persistent"
+    }
   },
   "XPHB::Antimagic Field": {
     "range": {
@@ -3229,16 +2638,13 @@
     "targeting": {
       "type": "caster"
     },
-    "effects": [
-      {
-        "anchor": "caster",
-        "geometry": {
-          "shape": "emanation",
-          "radius_feet": 10
-        },
-        "persistence": "persistent"
-      }
-    ]
+    "effect": {
+      "geometry": {
+        "shape": "emanation",
+        "radius_feet": 10
+      },
+      "persistence": "persistent"
+    }
   },
   "XPHB::Arms of Hadar": {
     "range": {
@@ -3248,19 +2654,16 @@
     "targeting": {
       "type": "caster"
     },
-    "effects": [
-      {
-        "anchor": "caster",
-        "geometry": {
-          "shape": "emanation",
-          "radius_feet": 10
-        },
-        "persistence": "instant",
-        "damage_types": [
-          "necrotic"
-        ]
-      }
-    ]
+    "effect": {
+      "geometry": {
+        "shape": "emanation",
+        "radius_feet": 10
+      },
+      "persistence": "instant",
+      "damage_types": [
+        "necrotic"
+      ]
+    }
   },
   "XPHB::Aura of Life": {
     "range": {
@@ -3270,16 +2673,13 @@
     "targeting": {
       "type": "caster"
     },
-    "effects": [
-      {
-        "anchor": "caster",
-        "geometry": {
-          "shape": "emanation",
-          "radius_feet": 30
-        },
-        "persistence": "persistent"
-      }
-    ]
+    "effect": {
+      "geometry": {
+        "shape": "emanation",
+        "radius_feet": 30
+      },
+      "persistence": "persistent"
+    }
   },
   "XPHB::Aura of Purity": {
     "range": {
@@ -3289,16 +2689,13 @@
     "targeting": {
       "type": "caster"
     },
-    "effects": [
-      {
-        "anchor": "caster",
-        "geometry": {
-          "shape": "emanation",
-          "radius_feet": 30
-        },
-        "persistence": "persistent"
-      }
-    ]
+    "effect": {
+      "geometry": {
+        "shape": "emanation",
+        "radius_feet": 30
+      },
+      "persistence": "persistent"
+    }
   },
   "XPHB::Aura of Vitality": {
     "range": {
@@ -3308,16 +2705,13 @@
     "targeting": {
       "type": "caster"
     },
-    "effects": [
-      {
-        "anchor": "caster",
-        "geometry": {
-          "shape": "emanation",
-          "radius_feet": 30
-        },
-        "persistence": "persistent"
-      }
-    ]
+    "effect": {
+      "geometry": {
+        "shape": "emanation",
+        "radius_feet": 30
+      },
+      "persistence": "persistent"
+    }
   },
   "XPHB::Blade Barrier": {
     "range": {
@@ -3327,35 +2721,29 @@
     "targeting": {
       "type": "wall"
     },
-    "effects": [
-      {
-        "anchor": "selected_path",
-        "geometry": {
-          "shape": "wall",
-          "variants": [
-            {
-              "type": "path",
-              "max_length_feet": 100,
-              "height_feet": 20,
-              "thickness_feet": 5
-            },
-            {
-              "type": "circle",
-              "radius_feet": 30,
-              "height_feet": 20,
-              "thickness_feet": 5
-            }
-          ]
-        },
-        "persistence": "persistent",
-        "damage_types": [
-          "force"
-        ],
-        "visual_tags": [
-          "DFT"
+    "effect": {
+      "geometry": {
+        "shape": "wall",
+        "variants": [
+          {
+            "type": "path",
+            "max_length_feet": 100,
+            "height_feet": 20,
+            "thickness_feet": 5
+          },
+          {
+            "type": "circle",
+            "radius_feet": 30,
+            "height_feet": 20,
+            "thickness_feet": 5
+          }
         ]
-      }
-    ]
+      },
+      "persistence": "persistent",
+      "damage_types": [
+        "force"
+      ]
+    }
   },
   "XPHB::Burning Hands": {
     "range": {
@@ -3366,19 +2754,16 @@
       "type": "caster_direction",
       "allow_pitch": true
     },
-    "effects": [
-      {
-        "anchor": "caster",
-        "geometry": {
-          "shape": "cone",
-          "length_feet": 15
-        },
-        "persistence": "instant",
-        "damage_types": [
-          "fire"
-        ]
-      }
-    ]
+    "effect": {
+      "geometry": {
+        "shape": "cone",
+        "length_feet": 15
+      },
+      "persistence": "instant",
+      "damage_types": [
+        "fire"
+      ]
+    }
   },
   "XPHB::Call Lightning": {
     "range": {
@@ -3388,20 +2773,17 @@
     "targeting": {
       "type": "point"
     },
-    "effects": [
-      {
-        "anchor": "selected_point",
-        "geometry": {
-          "shape": "cylinder",
-          "radius_feet": 60,
-          "height_feet": 10
-        },
-        "persistence": "persistent",
-        "damage_types": [
-          "lightning"
-        ]
-      }
-    ]
+    "effect": {
+      "geometry": {
+        "shape": "cylinder",
+        "radius_feet": 60,
+        "height_feet": 10
+      },
+      "persistence": "persistent",
+      "damage_types": [
+        "lightning"
+      ]
+    }
   },
   "XPHB::Calm Emotions": {
     "range": {
@@ -3411,16 +2793,13 @@
     "targeting": {
       "type": "point"
     },
-    "effects": [
-      {
-        "anchor": "selected_point",
-        "geometry": {
-          "shape": "sphere",
-          "radius_feet": 20
-        },
-        "persistence": "persistent"
-      }
-    ]
+    "effect": {
+      "geometry": {
+        "shape": "sphere",
+        "radius_feet": 20
+      },
+      "persistence": "persistent"
+    }
   },
   "XPHB::Circle of Death": {
     "range": {
@@ -3430,19 +2809,16 @@
     "targeting": {
       "type": "point"
     },
-    "effects": [
-      {
-        "anchor": "selected_point",
-        "geometry": {
-          "shape": "sphere",
-          "radius_feet": 60
-        },
-        "persistence": "instant",
-        "damage_types": [
-          "necrotic"
-        ]
-      }
-    ]
+    "effect": {
+      "geometry": {
+        "shape": "sphere",
+        "radius_feet": 60
+      },
+      "persistence": "instant",
+      "damage_types": [
+        "necrotic"
+      ]
+    }
   },
   "XPHB::Circle of Power": {
     "range": {
@@ -3452,16 +2828,13 @@
     "targeting": {
       "type": "caster"
     },
-    "effects": [
-      {
-        "anchor": "caster",
-        "geometry": {
-          "shape": "emanation",
-          "radius_feet": 30
-        },
-        "persistence": "persistent"
-      }
-    ]
+    "effect": {
+      "geometry": {
+        "shape": "emanation",
+        "radius_feet": 30
+      },
+      "persistence": "persistent"
+    }
   },
   "XPHB::Cloud of Daggers": {
     "range": {
@@ -3471,19 +2844,16 @@
     "targeting": {
       "type": "point"
     },
-    "effects": [
-      {
-        "anchor": "selected_point",
-        "geometry": {
-          "shape": "cube",
-          "side_feet": 5
-        },
-        "persistence": "persistent",
-        "damage_types": [
-          "slashing"
-        ]
-      }
-    ]
+    "effect": {
+      "geometry": {
+        "shape": "cube",
+        "side_feet": 5
+      },
+      "persistence": "persistent",
+      "damage_types": [
+        "slashing"
+      ]
+    }
   },
   "XPHB::Cloudkill": {
     "range": {
@@ -3493,22 +2863,16 @@
     "targeting": {
       "type": "point"
     },
-    "effects": [
-      {
-        "anchor": "selected_point",
-        "geometry": {
-          "shape": "sphere",
-          "radius_feet": 20
-        },
-        "persistence": "persistent",
-        "damage_types": [
-          "poison"
-        ],
-        "visual_tags": [
-          "OBS"
-        ]
-      }
-    ]
+    "effect": {
+      "geometry": {
+        "shape": "sphere",
+        "radius_feet": 20
+      },
+      "persistence": "persistent",
+      "damage_types": [
+        "poison"
+      ]
+    }
   },
   "XPHB::Color Spray": {
     "range": {
@@ -3519,16 +2883,13 @@
       "type": "caster_direction",
       "allow_pitch": true
     },
-    "effects": [
-      {
-        "anchor": "caster",
-        "geometry": {
-          "shape": "cone",
-          "length_feet": 15
-        },
-        "persistence": "instant"
-      }
-    ]
+    "effect": {
+      "geometry": {
+        "shape": "cone",
+        "length_feet": 15
+      },
+      "persistence": "instant"
+    }
   },
   "XPHB::Cone of Cold": {
     "range": {
@@ -3539,19 +2900,16 @@
       "type": "caster_direction",
       "allow_pitch": true
     },
-    "effects": [
-      {
-        "anchor": "caster",
-        "geometry": {
-          "shape": "cone",
-          "length_feet": 60
-        },
-        "persistence": "instant",
-        "damage_types": [
-          "cold"
-        ]
-      }
-    ]
+    "effect": {
+      "geometry": {
+        "shape": "cone",
+        "length_feet": 60
+      },
+      "persistence": "instant",
+      "damage_types": [
+        "cold"
+      ]
+    }
   },
   "XPHB::Confusion": {
     "range": {
@@ -3561,16 +2919,13 @@
     "targeting": {
       "type": "point"
     },
-    "effects": [
-      {
-        "anchor": "selected_point",
-        "geometry": {
-          "shape": "sphere",
-          "radius_feet": 10
-        },
-        "persistence": "persistent"
-      }
-    ]
+    "effect": {
+      "geometry": {
+        "shape": "sphere",
+        "radius_feet": 10
+      },
+      "persistence": "persistent"
+    }
   },
   "XPHB::Conjure Barrage": {
     "range": {
@@ -3581,19 +2936,16 @@
       "type": "caster_direction",
       "allow_pitch": true
     },
-    "effects": [
-      {
-        "anchor": "caster",
-        "geometry": {
-          "shape": "cone",
-          "length_feet": 60
-        },
-        "persistence": "instant",
-        "damage_types": [
-          "force"
-        ]
-      }
-    ]
+    "effect": {
+      "geometry": {
+        "shape": "cone",
+        "length_feet": 60
+      },
+      "persistence": "instant",
+      "damage_types": [
+        "force"
+      ]
+    }
   },
   "XPHB::Conjure Celestial": {
     "range": {
@@ -3603,20 +2955,17 @@
     "targeting": {
       "type": "point"
     },
-    "effects": [
-      {
-        "anchor": "selected_point",
-        "geometry": {
-          "shape": "cylinder",
-          "radius_feet": 10,
-          "height_feet": 40
-        },
-        "persistence": "persistent",
-        "damage_types": [
-          "radiant"
-        ]
-      }
-    ]
+    "effect": {
+      "geometry": {
+        "shape": "cylinder",
+        "radius_feet": 10,
+        "height_feet": 40
+      },
+      "persistence": "persistent",
+      "damage_types": [
+        "radiant"
+      ]
+    }
   },
   "XPHB::Conjure Minor Elementals": {
     "range": {
@@ -3626,25 +2975,19 @@
     "targeting": {
       "type": "caster"
     },
-    "effects": [
-      {
-        "anchor": "caster",
-        "geometry": {
-          "shape": "emanation",
-          "radius_feet": 15
-        },
-        "persistence": "persistent",
-        "damage_types": [
-          "acid",
-          "cold",
-          "fire",
-          "lightning"
-        ],
-        "visual_tags": [
-          "DFT"
-        ]
-      }
-    ]
+    "effect": {
+      "geometry": {
+        "shape": "emanation",
+        "radius_feet": 15
+      },
+      "persistence": "persistent",
+      "damage_types": [
+        "acid",
+        "cold",
+        "fire",
+        "lightning"
+      ]
+    }
   },
   "XPHB::Conjure Volley": {
     "range": {
@@ -3654,20 +2997,17 @@
     "targeting": {
       "type": "point"
     },
-    "effects": [
-      {
-        "anchor": "selected_point",
-        "geometry": {
-          "shape": "cylinder",
-          "radius_feet": 40,
-          "height_feet": 20
-        },
-        "persistence": "instant",
-        "damage_types": [
-          "force"
-        ]
-      }
-    ]
+    "effect": {
+      "geometry": {
+        "shape": "cylinder",
+        "radius_feet": 40,
+        "height_feet": 20
+      },
+      "persistence": "instant",
+      "damage_types": [
+        "force"
+      ]
+    }
   },
   "XPHB::Control Water": {
     "range": {
@@ -3677,19 +3017,16 @@
     "targeting": {
       "type": "point"
     },
-    "effects": [
-      {
-        "anchor": "selected_point",
-        "geometry": {
-          "shape": "cube",
-          "side_feet": 100
-        },
-        "persistence": "persistent",
-        "damage_types": [
-          "bludgeoning"
-        ]
-      }
-    ]
+    "effect": {
+      "geometry": {
+        "shape": "cube",
+        "side_feet": 100
+      },
+      "persistence": "persistent",
+      "damage_types": [
+        "bludgeoning"
+      ]
+    }
   },
   "XPHB::Create or Destroy Water": {
     "range": {
@@ -3699,16 +3036,13 @@
     "targeting": {
       "type": "point"
     },
-    "effects": [
-      {
-        "anchor": "selected_point",
-        "geometry": {
-          "shape": "cube",
-          "side_feet": 30
-        },
-        "persistence": "instant"
-      }
-    ]
+    "effect": {
+      "geometry": {
+        "shape": "cube",
+        "side_feet": 30
+      },
+      "persistence": "instant"
+    }
   },
   "XPHB::Crusader's Mantle": {
     "range": {
@@ -3718,19 +3052,16 @@
     "targeting": {
       "type": "caster"
     },
-    "effects": [
-      {
-        "anchor": "caster",
-        "geometry": {
-          "shape": "emanation",
-          "radius_feet": 30
-        },
-        "persistence": "persistent",
-        "damage_types": [
-          "radiant"
-        ]
-      }
-    ]
+    "effect": {
+      "geometry": {
+        "shape": "emanation",
+        "radius_feet": 30
+      },
+      "persistence": "persistent",
+      "damage_types": [
+        "radiant"
+      ]
+    }
   },
   "XPHB::Darkness": {
     "range": {
@@ -3740,19 +3071,13 @@
     "targeting": {
       "type": "point"
     },
-    "effects": [
-      {
-        "anchor": "selected_point",
-        "geometry": {
-          "shape": "sphere",
-          "radius_feet": 15
-        },
-        "persistence": "persistent",
-        "visual_tags": [
-          "OBS"
-        ]
-      }
-    ]
+    "effect": {
+      "geometry": {
+        "shape": "sphere",
+        "radius_feet": 15
+      },
+      "persistence": "persistent"
+    }
   },
   "XPHB::Daylight": {
     "range": {
@@ -3762,20 +3087,13 @@
     "targeting": {
       "type": "point"
     },
-    "effects": [
-      {
-        "anchor": "selected_point",
-        "geometry": {
-          "shape": "sphere",
-          "radius_feet": 60
-        },
-        "persistence": "persistent",
-        "visual_tags": [
-          "LGT",
-          "LGTS"
-        ]
-      }
-    ]
+    "effect": {
+      "geometry": {
+        "shape": "sphere",
+        "radius_feet": 60
+      },
+      "persistence": "persistent"
+    }
   },
   "XPHB::Delayed Blast Fireball": {
     "range": {
@@ -3785,19 +3103,16 @@
     "targeting": {
       "type": "point"
     },
-    "effects": [
-      {
-        "anchor": "selected_point",
-        "geometry": {
-          "shape": "sphere",
-          "radius_feet": 20
-        },
-        "persistence": "persistent",
-        "damage_types": [
-          "fire"
-        ]
-      }
-    ]
+    "effect": {
+      "geometry": {
+        "shape": "sphere",
+        "radius_feet": 20
+      },
+      "persistence": "persistent",
+      "damage_types": [
+        "fire"
+      ]
+    }
   },
   "XPHB::Destructive Wave": {
     "range": {
@@ -3807,21 +3122,18 @@
     "targeting": {
       "type": "caster"
     },
-    "effects": [
-      {
-        "anchor": "caster",
-        "geometry": {
-          "shape": "emanation",
-          "radius_feet": 30
-        },
-        "persistence": "instant",
-        "damage_types": [
-          "necrotic",
-          "radiant",
-          "thunder"
-        ]
-      }
-    ]
+    "effect": {
+      "geometry": {
+        "shape": "emanation",
+        "radius_feet": 30
+      },
+      "persistence": "instant",
+      "damage_types": [
+        "necrotic",
+        "radiant",
+        "thunder"
+      ]
+    }
   },
   "XPHB::Dragon's Breath": {
     "range": {
@@ -3831,23 +3143,20 @@
     "targeting": {
       "type": "point"
     },
-    "effects": [
-      {
-        "anchor": "selected_point",
-        "geometry": {
-          "shape": "cone",
-          "length_feet": 15
-        },
-        "persistence": "persistent",
-        "damage_types": [
-          "acid",
-          "cold",
-          "fire",
-          "lightning",
-          "poison"
-        ]
-      }
-    ]
+    "effect": {
+      "geometry": {
+        "shape": "cone",
+        "length_feet": 15
+      },
+      "persistence": "persistent",
+      "damage_types": [
+        "acid",
+        "cold",
+        "fire",
+        "lightning",
+        "poison"
+      ]
+    }
   },
   "XPHB::Earthquake": {
     "range": {
@@ -3858,22 +3167,16 @@
       "type": "point",
       "requires_ground": true
     },
-    "effects": [
-      {
-        "anchor": "selected_point",
-        "geometry": {
-          "shape": "circle",
-          "radius_feet": 100
-        },
-        "persistence": "persistent",
-        "damage_types": [
-          "bludgeoning"
-        ],
-        "visual_tags": [
-          "DFT"
-        ]
-      }
-    ]
+    "effect": {
+      "geometry": {
+        "shape": "circle",
+        "radius_feet": 100
+      },
+      "persistence": "persistent",
+      "damage_types": [
+        "bludgeoning"
+      ]
+    }
   },
   "XPHB::Elementalism": {
     "range": {
@@ -3883,24 +3186,13 @@
     "targeting": {
       "type": "point"
     },
-    "effects": [
-      {
-        "anchor": "selected_point",
-        "geometry": {
-          "shape": "cube",
-          "side_feet": 5
-        },
-        "persistence": "instant"
+    "effect": {
+      "geometry": {
+        "shape": "cube",
+        "side_feet": 5
       },
-      {
-        "anchor": "selected_point",
-        "geometry": {
-          "shape": "square",
-          "side_feet": 5
-        },
-        "persistence": "instant"
-      }
-    ]
+      "persistence": "instant"
+    }
   },
   "XPHB::Entangle": {
     "range": {
@@ -3910,19 +3202,13 @@
     "targeting": {
       "type": "point"
     },
-    "effects": [
-      {
-        "anchor": "selected_point",
-        "geometry": {
-          "shape": "square",
-          "side_feet": 20
-        },
-        "persistence": "persistent",
-        "visual_tags": [
-          "DFT"
-        ]
-      }
-    ]
+    "effect": {
+      "geometry": {
+        "shape": "square",
+        "side_feet": 20
+      },
+      "persistence": "persistent"
+    }
   },
   "XPHB::Evard's Black Tentacles": {
     "range": {
@@ -3933,22 +3219,16 @@
       "type": "point",
       "requires_ground": true
     },
-    "effects": [
-      {
-        "anchor": "selected_point",
-        "geometry": {
-          "shape": "square",
-          "side_feet": 20
-        },
-        "persistence": "persistent",
-        "damage_types": [
-          "bludgeoning"
-        ],
-        "visual_tags": [
-          "DFT"
-        ]
-      }
-    ]
+    "effect": {
+      "geometry": {
+        "shape": "square",
+        "side_feet": 20
+      },
+      "persistence": "persistent",
+      "damage_types": [
+        "bludgeoning"
+      ]
+    }
   },
   "XPHB::Faerie Fire": {
     "range": {
@@ -3958,19 +3238,13 @@
     "targeting": {
       "type": "point"
     },
-    "effects": [
-      {
-        "anchor": "selected_point",
-        "geometry": {
-          "shape": "cube",
-          "side_feet": 20
-        },
-        "persistence": "persistent",
-        "visual_tags": [
-          "LGT"
-        ]
-      }
-    ]
+    "effect": {
+      "geometry": {
+        "shape": "cube",
+        "side_feet": 20
+      },
+      "persistence": "persistent"
+    }
   },
   "XPHB::Fear": {
     "range": {
@@ -3981,16 +3255,13 @@
       "type": "caster_direction",
       "allow_pitch": true
     },
-    "effects": [
-      {
-        "anchor": "caster",
-        "geometry": {
-          "shape": "cone",
-          "length_feet": 30
-        },
-        "persistence": "persistent"
-      }
-    ]
+    "effect": {
+      "geometry": {
+        "shape": "cone",
+        "length_feet": 30
+      },
+      "persistence": "persistent"
+    }
   },
   "XPHB::Fire Storm": {
     "range": {
@@ -4000,19 +3271,16 @@
     "targeting": {
       "type": "point"
     },
-    "effects": [
-      {
-        "anchor": "selected_point",
-        "geometry": {
-          "shape": "cube",
-          "side_feet": 10
-        },
-        "persistence": "instant",
-        "damage_types": [
-          "fire"
-        ]
-      }
-    ]
+    "effect": {
+      "geometry": {
+        "shape": "cube",
+        "side_feet": 10
+      },
+      "persistence": "instant",
+      "damage_types": [
+        "fire"
+      ]
+    }
   },
   "XPHB::Fireball": {
     "range": {
@@ -4022,19 +3290,16 @@
     "targeting": {
       "type": "point"
     },
-    "effects": [
-      {
-        "anchor": "selected_point",
-        "geometry": {
-          "shape": "sphere",
-          "radius_feet": 20
-        },
-        "persistence": "instant",
-        "damage_types": [
-          "fire"
-        ]
-      }
-    ]
+    "effect": {
+      "geometry": {
+        "shape": "sphere",
+        "radius_feet": 20
+      },
+      "persistence": "instant",
+      "damage_types": [
+        "fire"
+      ]
+    }
   },
   "XPHB::Flame Strike": {
     "range": {
@@ -4044,21 +3309,18 @@
     "targeting": {
       "type": "point"
     },
-    "effects": [
-      {
-        "anchor": "selected_point",
-        "geometry": {
-          "shape": "cylinder",
-          "radius_feet": 10,
-          "height_feet": 40
-        },
-        "persistence": "instant",
-        "damage_types": [
-          "fire",
-          "radiant"
-        ]
-      }
-    ]
+    "effect": {
+      "geometry": {
+        "shape": "cylinder",
+        "radius_feet": 10,
+        "height_feet": 40
+      },
+      "persistence": "instant",
+      "damage_types": [
+        "fire",
+        "radiant"
+      ]
+    }
   },
   "XPHB::Flaming Sphere": {
     "range": {
@@ -4069,22 +3331,16 @@
       "type": "point",
       "requires_ground": true
     },
-    "effects": [
-      {
-        "anchor": "selected_point",
-        "geometry": {
-          "shape": "sphere",
-          "radius_feet": 2.5
-        },
-        "persistence": "persistent",
-        "damage_types": [
-          "fire"
-        ],
-        "visual_tags": [
-          "LGT"
-        ]
-      }
-    ]
+    "effect": {
+      "geometry": {
+        "shape": "sphere",
+        "radius_feet": 2.5
+      },
+      "persistence": "persistent",
+      "damage_types": [
+        "fire"
+      ]
+    }
   },
   "XPHB::Fog Cloud": {
     "range": {
@@ -4094,19 +3350,13 @@
     "targeting": {
       "type": "point"
     },
-    "effects": [
-      {
-        "anchor": "selected_point",
-        "geometry": {
-          "shape": "sphere",
-          "radius_feet": 20
-        },
-        "persistence": "persistent",
-        "visual_tags": [
-          "OBS"
-        ]
-      }
-    ]
+    "effect": {
+      "geometry": {
+        "shape": "sphere",
+        "radius_feet": 20
+      },
+      "persistence": "persistent"
+    }
   },
   "XPHB::Globe of Invulnerability": {
     "range": {
@@ -4116,16 +3366,13 @@
     "targeting": {
       "type": "caster"
     },
-    "effects": [
-      {
-        "anchor": "caster",
-        "geometry": {
-          "shape": "emanation",
-          "radius_feet": 10
-        },
-        "persistence": "persistent"
-      }
-    ]
+    "effect": {
+      "geometry": {
+        "shape": "emanation",
+        "radius_feet": 10
+      },
+      "persistence": "persistent"
+    }
   },
   "XPHB::Glyph of Warding": {
     "range": {
@@ -4135,23 +3382,20 @@
     "targeting": {
       "type": "point"
     },
-    "effects": [
-      {
-        "anchor": "selected_point",
-        "geometry": {
-          "shape": "sphere",
-          "radius_feet": 20
-        },
-        "persistence": "persistent",
-        "damage_types": [
-          "acid",
-          "cold",
-          "fire",
-          "lightning",
-          "thunder"
-        ]
-      }
-    ]
+    "effect": {
+      "geometry": {
+        "shape": "sphere",
+        "radius_feet": 20
+      },
+      "persistence": "persistent",
+      "damage_types": [
+        "acid",
+        "cold",
+        "fire",
+        "lightning",
+        "thunder"
+      ]
+    }
   },
   "XPHB::Grease": {
     "range": {
@@ -4161,19 +3405,13 @@
     "targeting": {
       "type": "point"
     },
-    "effects": [
-      {
-        "anchor": "selected_point",
-        "geometry": {
-          "shape": "square",
-          "side_feet": 10
-        },
-        "persistence": "persistent",
-        "visual_tags": [
-          "DFT"
-        ]
-      }
-    ]
+    "effect": {
+      "geometry": {
+        "shape": "square",
+        "side_feet": 10
+      },
+      "persistence": "persistent"
+    }
   },
   "XPHB::Guards and Wards": {
     "range": {
@@ -4183,19 +3421,13 @@
     "targeting": {
       "type": "point"
     },
-    "effects": [
-      {
-        "anchor": "selected_point",
-        "geometry": {
-          "shape": "square",
-          "side_feet": 50
-        },
-        "persistence": "persistent",
-        "visual_tags": [
-          "OBS"
-        ]
-      }
-    ]
+    "effect": {
+      "geometry": {
+        "shape": "square",
+        "side_feet": 50
+      },
+      "persistence": "persistent"
+    }
   },
   "XPHB::Gust of Wind": {
     "range": {
@@ -4206,17 +3438,14 @@
       "type": "caster_direction",
       "allow_pitch": true
     },
-    "effects": [
-      {
-        "anchor": "caster",
-        "geometry": {
-          "shape": "line",
-          "length_feet": 60,
-          "width_feet": 10
-        },
-        "persistence": "persistent"
-      }
-    ]
+    "effect": {
+      "geometry": {
+        "shape": "line",
+        "length_feet": 60,
+        "width_feet": 10
+      },
+      "persistence": "persistent"
+    }
   },
   "XPHB::Hallucinatory Terrain": {
     "range": {
@@ -4226,16 +3455,13 @@
     "targeting": {
       "type": "point"
     },
-    "effects": [
-      {
-        "anchor": "selected_point",
-        "geometry": {
-          "shape": "cube",
-          "side_feet": 150
-        },
-        "persistence": "persistent"
-      }
-    ]
+    "effect": {
+      "geometry": {
+        "shape": "cube",
+        "side_feet": 150
+      },
+      "persistence": "persistent"
+    }
   },
   "XPHB::Heroes' Feast": {
     "range": {
@@ -4246,16 +3472,13 @@
       "type": "caster_direction",
       "allow_pitch": true
     },
-    "effects": [
-      {
-        "anchor": "caster",
-        "geometry": {
-          "shape": "cube",
-          "side_feet": 10
-        },
-        "persistence": "instant"
-      }
-    ]
+    "effect": {
+      "geometry": {
+        "shape": "cube",
+        "side_feet": 10
+      },
+      "persistence": "instant"
+    }
   },
   "XPHB::Holy Aura": {
     "range": {
@@ -4265,16 +3488,13 @@
     "targeting": {
       "type": "caster"
     },
-    "effects": [
-      {
-        "anchor": "caster",
-        "geometry": {
-          "shape": "emanation",
-          "radius_feet": 30
-        },
-        "persistence": "persistent"
-      }
-    ]
+    "effect": {
+      "geometry": {
+        "shape": "emanation",
+        "radius_feet": 30
+      },
+      "persistence": "persistent"
+    }
   },
   "XPHB::Hunger of Hadar": {
     "range": {
@@ -4284,24 +3504,17 @@
     "targeting": {
       "type": "point"
     },
-    "effects": [
-      {
-        "anchor": "selected_point",
-        "geometry": {
-          "shape": "sphere",
-          "radius_feet": 20
-        },
-        "persistence": "persistent",
-        "damage_types": [
-          "acid",
-          "cold"
-        ],
-        "visual_tags": [
-          "DFT",
-          "OBS"
-        ]
-      }
-    ]
+    "effect": {
+      "geometry": {
+        "shape": "sphere",
+        "radius_feet": 20
+      },
+      "persistence": "persistent",
+      "damage_types": [
+        "acid",
+        "cold"
+      ]
+    }
   },
   "XPHB::Hypnotic Pattern": {
     "range": {
@@ -4311,16 +3524,13 @@
     "targeting": {
       "type": "point"
     },
-    "effects": [
-      {
-        "anchor": "selected_point",
-        "geometry": {
-          "shape": "cube",
-          "side_feet": 30
-        },
-        "persistence": "persistent"
-      }
-    ]
+    "effect": {
+      "geometry": {
+        "shape": "cube",
+        "side_feet": 30
+      },
+      "persistence": "persistent"
+    }
   },
   "XPHB::Ice Storm": {
     "range": {
@@ -4330,24 +3540,18 @@
     "targeting": {
       "type": "point"
     },
-    "effects": [
-      {
-        "anchor": "selected_point",
-        "geometry": {
-          "shape": "cylinder",
-          "radius_feet": 20,
-          "height_feet": 40
-        },
-        "persistence": "instant",
-        "damage_types": [
-          "bludgeoning",
-          "cold"
-        ],
-        "visual_tags": [
-          "DFT"
-        ]
-      }
-    ]
+    "effect": {
+      "geometry": {
+        "shape": "cylinder",
+        "radius_feet": 20,
+        "height_feet": 40
+      },
+      "persistence": "instant",
+      "damage_types": [
+        "bludgeoning",
+        "cold"
+      ]
+    }
   },
   "XPHB::Incendiary Cloud": {
     "range": {
@@ -4357,22 +3561,16 @@
     "targeting": {
       "type": "point"
     },
-    "effects": [
-      {
-        "anchor": "selected_point",
-        "geometry": {
-          "shape": "sphere",
-          "radius_feet": 20
-        },
-        "persistence": "persistent",
-        "damage_types": [
-          "fire"
-        ],
-        "visual_tags": [
-          "OBS"
-        ]
-      }
-    ]
+    "effect": {
+      "geometry": {
+        "shape": "sphere",
+        "radius_feet": 20
+      },
+      "persistence": "persistent",
+      "damage_types": [
+        "fire"
+      ]
+    }
   },
   "XPHB::Insect Plague": {
     "range": {
@@ -4382,23 +3580,16 @@
     "targeting": {
       "type": "point"
     },
-    "effects": [
-      {
-        "anchor": "selected_point",
-        "geometry": {
-          "shape": "sphere",
-          "radius_feet": 20
-        },
-        "persistence": "persistent",
-        "damage_types": [
-          "piercing"
-        ],
-        "visual_tags": [
-          "DFT",
-          "OBS"
-        ]
-      }
-    ]
+    "effect": {
+      "geometry": {
+        "shape": "sphere",
+        "radius_feet": 20
+      },
+      "persistence": "persistent",
+      "damage_types": [
+        "piercing"
+      ]
+    }
   },
   "XPHB::Jallarzi's Storm of Radiance": {
     "range": {
@@ -4408,21 +3599,18 @@
     "targeting": {
       "type": "point"
     },
-    "effects": [
-      {
-        "anchor": "selected_point",
-        "geometry": {
-          "shape": "cylinder",
-          "radius_feet": 10,
-          "height_feet": 40
-        },
-        "persistence": "persistent",
-        "damage_types": [
-          "radiant",
-          "thunder"
-        ]
-      }
-    ]
+    "effect": {
+      "geometry": {
+        "shape": "cylinder",
+        "radius_feet": 10,
+        "height_feet": 40
+      },
+      "persistence": "persistent",
+      "damage_types": [
+        "radiant",
+        "thunder"
+      ]
+    }
   },
   "XPHB::Leomund's Tiny Hut": {
     "range": {
@@ -4432,19 +3620,13 @@
     "targeting": {
       "type": "caster"
     },
-    "effects": [
-      {
-        "anchor": "caster",
-        "geometry": {
-          "shape": "emanation",
-          "radius_feet": 10
-        },
-        "persistence": "persistent",
-        "visual_tags": [
-          "LGT"
-        ]
-      }
-    ]
+    "effect": {
+      "geometry": {
+        "shape": "emanation",
+        "radius_feet": 10
+      },
+      "persistence": "persistent"
+    }
   },
   "XPHB::Lightning Bolt": {
     "range": {
@@ -4455,20 +3637,17 @@
       "type": "caster_direction",
       "allow_pitch": true
     },
-    "effects": [
-      {
-        "anchor": "caster",
-        "geometry": {
-          "shape": "line",
-          "length_feet": 100,
-          "width_feet": 5
-        },
-        "persistence": "instant",
-        "damage_types": [
-          "lightning"
-        ]
-      }
-    ]
+    "effect": {
+      "geometry": {
+        "shape": "line",
+        "length_feet": 100,
+        "width_feet": 5
+      },
+      "persistence": "instant",
+      "damage_types": [
+        "lightning"
+      ]
+    }
   },
   "XPHB::Magic Circle": {
     "range": {
@@ -4479,16 +3658,13 @@
       "type": "point",
       "requires_ground": true
     },
-    "effects": [
-      {
-        "anchor": "selected_point",
-        "geometry": {
-          "shape": "cylinder",
-          "radius_feet": 10
-        },
-        "persistence": "persistent"
-      }
-    ]
+    "effect": {
+      "geometry": {
+        "shape": "cylinder",
+        "radius_feet": 10
+      },
+      "persistence": "persistent"
+    }
   },
   "XPHB::Mass Cure Wounds": {
     "range": {
@@ -4498,16 +3674,13 @@
     "targeting": {
       "type": "point"
     },
-    "effects": [
-      {
-        "anchor": "selected_point",
-        "geometry": {
-          "shape": "sphere",
-          "radius_feet": 30
-        },
-        "persistence": "instant"
-      }
-    ]
+    "effect": {
+      "geometry": {
+        "shape": "sphere",
+        "radius_feet": 30
+      },
+      "persistence": "instant"
+    }
   },
   "XPHB::Meteor Swarm": {
     "range": {
@@ -4517,20 +3690,17 @@
     "targeting": {
       "type": "point"
     },
-    "effects": [
-      {
-        "anchor": "selected_point",
-        "geometry": {
-          "shape": "sphere",
-          "radius_feet": 40
-        },
-        "persistence": "instant",
-        "damage_types": [
-          "bludgeoning",
-          "fire"
-        ]
-      }
-    ]
+    "effect": {
+      "geometry": {
+        "shape": "sphere",
+        "radius_feet": 40
+      },
+      "persistence": "instant",
+      "damage_types": [
+        "bludgeoning",
+        "fire"
+      ]
+    }
   },
   "XPHB::Moonbeam": {
     "range": {
@@ -4540,23 +3710,17 @@
     "targeting": {
       "type": "point"
     },
-    "effects": [
-      {
-        "anchor": "selected_point",
-        "geometry": {
-          "shape": "cylinder",
-          "radius_feet": 5,
-          "height_feet": 40
-        },
-        "persistence": "persistent",
-        "damage_types": [
-          "radiant"
-        ],
-        "visual_tags": [
-          "LGT"
-        ]
-      }
-    ]
+    "effect": {
+      "geometry": {
+        "shape": "cylinder",
+        "radius_feet": 5,
+        "height_feet": 40
+      },
+      "persistence": "persistent",
+      "damage_types": [
+        "radiant"
+      ]
+    }
   },
   "XPHB::Mordenkainen's Private Sanctum": {
     "range": {
@@ -4566,16 +3730,13 @@
     "targeting": {
       "type": "point"
     },
-    "effects": [
-      {
-        "anchor": "selected_point",
-        "geometry": {
-          "shape": "cube",
-          "side_feet": 100
-        },
-        "persistence": "persistent"
-      }
-    ]
+    "effect": {
+      "geometry": {
+        "shape": "cube",
+        "side_feet": 100
+      },
+      "persistence": "persistent"
+    }
   },
   "XPHB::Move Earth": {
     "range": {
@@ -4585,16 +3746,13 @@
     "targeting": {
       "type": "point"
     },
-    "effects": [
-      {
-        "anchor": "selected_point",
-        "geometry": {
-          "shape": "square",
-          "side_feet": 40
-        },
-        "persistence": "persistent"
-      }
-    ]
+    "effect": {
+      "geometry": {
+        "shape": "square",
+        "side_feet": 40
+      },
+      "persistence": "persistent"
+    }
   },
   "XPHB::Otiluke's Freezing Sphere": {
     "range": {
@@ -4604,19 +3762,16 @@
     "targeting": {
       "type": "point"
     },
-    "effects": [
-      {
-        "anchor": "selected_point",
-        "geometry": {
-          "shape": "sphere",
-          "radius_feet": 60
-        },
-        "persistence": "instant",
-        "damage_types": [
-          "cold"
-        ]
-      }
-    ]
+    "effect": {
+      "geometry": {
+        "shape": "sphere",
+        "radius_feet": 60
+      },
+      "persistence": "instant",
+      "damage_types": [
+        "cold"
+      ]
+    }
   },
   "XPHB::Prismatic Spray": {
     "range": {
@@ -4627,23 +3782,20 @@
       "type": "caster_direction",
       "allow_pitch": true
     },
-    "effects": [
-      {
-        "anchor": "caster",
-        "geometry": {
-          "shape": "cone",
-          "length_feet": 60
-        },
-        "persistence": "instant",
-        "damage_types": [
-          "acid",
-          "cold",
-          "fire",
-          "lightning",
-          "poison"
-        ]
-      }
-    ]
+    "effect": {
+      "geometry": {
+        "shape": "cone",
+        "length_feet": 60
+      },
+      "persistence": "instant",
+      "damage_types": [
+        "acid",
+        "cold",
+        "fire",
+        "lightning",
+        "poison"
+      ]
+    }
   },
   "XPHB::Prismatic Wall": {
     "range": {
@@ -4653,38 +3805,32 @@
     "targeting": {
       "type": "wall"
     },
-    "effects": [
-      {
-        "anchor": "selected_path",
-        "geometry": {
-          "shape": "wall",
-          "variants": [
-            {
-              "type": "path",
-              "max_length_feet": 90,
-              "height_feet": 30,
-              "thickness_feet": 0.08333333333333333
-            },
-            {
-              "type": "globe",
-              "radius_feet": 15
-            }
-          ]
-        },
-        "persistence": "persistent",
-        "damage_types": [
-          "acid",
-          "cold",
-          "fire",
-          "force",
-          "lightning",
-          "poison"
-        ],
-        "visual_tags": [
-          "LGT"
+    "effect": {
+      "geometry": {
+        "shape": "wall",
+        "variants": [
+          {
+            "type": "path",
+            "max_length_feet": 90,
+            "height_feet": 30,
+            "thickness_feet": 0.08333333333333333
+          },
+          {
+            "type": "globe",
+            "radius_feet": 15
+          }
         ]
-      }
-    ]
+      },
+      "persistence": "persistent",
+      "damage_types": [
+        "acid",
+        "cold",
+        "fire",
+        "force",
+        "lightning",
+        "poison"
+      ]
+    }
   },
   "XPHB::Purify Food and Drink": {
     "range": {
@@ -4694,16 +3840,13 @@
     "targeting": {
       "type": "point"
     },
-    "effects": [
-      {
-        "anchor": "selected_point",
-        "geometry": {
-          "shape": "sphere",
-          "radius_feet": 5
-        },
-        "persistence": "instant"
-      }
-    ]
+    "effect": {
+      "geometry": {
+        "shape": "sphere",
+        "radius_feet": 5
+      },
+      "persistence": "instant"
+    }
   },
   "XPHB::Reverse Gravity": {
     "range": {
@@ -4713,16 +3856,13 @@
     "targeting": {
       "type": "point"
     },
-    "effects": [
-      {
-        "anchor": "selected_point",
-        "geometry": {
-          "shape": "cylinder",
-          "radius_feet": 50
-        },
-        "persistence": "persistent"
-      }
-    ]
+    "effect": {
+      "geometry": {
+        "shape": "cylinder",
+        "radius_feet": 50
+      },
+      "persistence": "persistent"
+    }
   },
   "XPHB::Shatter": {
     "range": {
@@ -4732,19 +3872,16 @@
     "targeting": {
       "type": "point"
     },
-    "effects": [
-      {
-        "anchor": "selected_point",
-        "geometry": {
-          "shape": "sphere",
-          "radius_feet": 10
-        },
-        "persistence": "instant",
-        "damage_types": [
-          "thunder"
-        ]
-      }
-    ]
+    "effect": {
+      "geometry": {
+        "shape": "sphere",
+        "radius_feet": 10
+      },
+      "persistence": "instant",
+      "damage_types": [
+        "thunder"
+      ]
+    }
   },
   "XPHB::Silence": {
     "range": {
@@ -4754,16 +3891,13 @@
     "targeting": {
       "type": "point"
     },
-    "effects": [
-      {
-        "anchor": "selected_point",
-        "geometry": {
-          "shape": "sphere",
-          "radius_feet": 20
-        },
-        "persistence": "persistent"
-      }
-    ]
+    "effect": {
+      "geometry": {
+        "shape": "sphere",
+        "radius_feet": 20
+      },
+      "persistence": "persistent"
+    }
   },
   "XPHB::Sleep": {
     "range": {
@@ -4773,16 +3907,13 @@
     "targeting": {
       "type": "point"
     },
-    "effects": [
-      {
-        "anchor": "selected_point",
-        "geometry": {
-          "shape": "sphere",
-          "radius_feet": 5
-        },
-        "persistence": "persistent"
-      }
-    ]
+    "effect": {
+      "geometry": {
+        "shape": "sphere",
+        "radius_feet": 5
+      },
+      "persistence": "persistent"
+    }
   },
   "XPHB::Sleet Storm": {
     "range": {
@@ -4792,20 +3923,13 @@
     "targeting": {
       "type": "point"
     },
-    "effects": [
-      {
-        "anchor": "selected_point",
-        "geometry": {
-          "shape": "cylinder",
-          "radius_feet": 20
-        },
-        "persistence": "persistent",
-        "visual_tags": [
-          "DFT",
-          "OBS"
-        ]
-      }
-    ]
+    "effect": {
+      "geometry": {
+        "shape": "cylinder",
+        "radius_feet": 20
+      },
+      "persistence": "persistent"
+    }
   },
   "XPHB::Slow": {
     "range": {
@@ -4815,16 +3939,13 @@
     "targeting": {
       "type": "point"
     },
-    "effects": [
-      {
-        "anchor": "selected_point",
-        "geometry": {
-          "shape": "cube",
-          "side_feet": 40
-        },
-        "persistence": "persistent"
-      }
-    ]
+    "effect": {
+      "geometry": {
+        "shape": "cube",
+        "side_feet": 40
+      },
+      "persistence": "persistent"
+    }
   },
   "XPHB::Spike Growth": {
     "range": {
@@ -4834,22 +3955,16 @@
     "targeting": {
       "type": "point"
     },
-    "effects": [
-      {
-        "anchor": "selected_point",
-        "geometry": {
-          "shape": "sphere",
-          "radius_feet": 20
-        },
-        "persistence": "persistent",
-        "damage_types": [
-          "piercing"
-        ],
-        "visual_tags": [
-          "DFT"
-        ]
-      }
-    ]
+    "effect": {
+      "geometry": {
+        "shape": "sphere",
+        "radius_feet": 20
+      },
+      "persistence": "persistent",
+      "damage_types": [
+        "piercing"
+      ]
+    }
   },
   "XPHB::Spirit Guardians": {
     "range": {
@@ -4859,20 +3974,17 @@
     "targeting": {
       "type": "caster"
     },
-    "effects": [
-      {
-        "anchor": "caster",
-        "geometry": {
-          "shape": "emanation",
-          "radius_feet": 15
-        },
-        "persistence": "persistent",
-        "damage_types": [
-          "necrotic",
-          "radiant"
-        ]
-      }
-    ]
+    "effect": {
+      "geometry": {
+        "shape": "emanation",
+        "radius_feet": 15
+      },
+      "persistence": "persistent",
+      "damage_types": [
+        "necrotic",
+        "radiant"
+      ]
+    }
   },
   "XPHB::Stinking Cloud": {
     "range": {
@@ -4882,19 +3994,13 @@
     "targeting": {
       "type": "point"
     },
-    "effects": [
-      {
-        "anchor": "selected_point",
-        "geometry": {
-          "shape": "sphere",
-          "radius_feet": 20
-        },
-        "persistence": "persistent",
-        "visual_tags": [
-          "OBS"
-        ]
-      }
-    ]
+    "effect": {
+      "geometry": {
+        "shape": "sphere",
+        "radius_feet": 20
+      },
+      "persistence": "persistent"
+    }
   },
   "XPHB::Sunbeam": {
     "range": {
@@ -4905,23 +4011,17 @@
       "type": "caster_direction",
       "allow_pitch": true
     },
-    "effects": [
-      {
-        "anchor": "caster",
-        "geometry": {
-          "shape": "line",
-          "length_feet": 60,
-          "width_feet": 5
-        },
-        "persistence": "persistent",
-        "damage_types": [
-          "radiant"
-        ],
-        "visual_tags": [
-          "LGTS"
-        ]
-      }
-    ]
+    "effect": {
+      "geometry": {
+        "shape": "line",
+        "length_feet": 60,
+        "width_feet": 5
+      },
+      "persistence": "persistent",
+      "damage_types": [
+        "radiant"
+      ]
+    }
   },
   "XPHB::Sunburst": {
     "range": {
@@ -4931,23 +4031,16 @@
     "targeting": {
       "type": "point"
     },
-    "effects": [
-      {
-        "anchor": "selected_point",
-        "geometry": {
-          "shape": "sphere",
-          "radius_feet": 60
-        },
-        "persistence": "instant",
-        "damage_types": [
-          "radiant"
-        ],
-        "visual_tags": [
-          "LGT",
-          "LGTS"
-        ]
-      }
-    ]
+    "effect": {
+      "geometry": {
+        "shape": "sphere",
+        "radius_feet": 60
+      },
+      "persistence": "instant",
+      "damage_types": [
+        "radiant"
+      ]
+    }
   },
   "XPHB::Symbol": {
     "range": {
@@ -4957,22 +4050,16 @@
     "targeting": {
       "type": "point"
     },
-    "effects": [
-      {
-        "anchor": "selected_point",
-        "geometry": {
-          "shape": "sphere",
-          "radius_feet": 60
-        },
-        "persistence": "persistent",
-        "damage_types": [
-          "necrotic"
-        ],
-        "visual_tags": [
-          "LGT"
-        ]
-      }
-    ]
+    "effect": {
+      "geometry": {
+        "shape": "sphere",
+        "radius_feet": 60
+      },
+      "persistence": "persistent",
+      "damage_types": [
+        "necrotic"
+      ]
+    }
   },
   "XPHB::Synaptic Static": {
     "range": {
@@ -4982,19 +4069,16 @@
     "targeting": {
       "type": "point"
     },
-    "effects": [
-      {
-        "anchor": "selected_point",
-        "geometry": {
-          "shape": "sphere",
-          "radius_feet": 20
-        },
-        "persistence": "instant",
-        "damage_types": [
-          "psychic"
-        ]
-      }
-    ]
+    "effect": {
+      "geometry": {
+        "shape": "sphere",
+        "radius_feet": 20
+      },
+      "persistence": "instant",
+      "damage_types": [
+        "psychic"
+      ]
+    }
   },
   "XPHB::Thunderclap": {
     "range": {
@@ -5004,19 +4088,16 @@
     "targeting": {
       "type": "caster"
     },
-    "effects": [
-      {
-        "anchor": "caster",
-        "geometry": {
-          "shape": "emanation",
-          "radius_feet": 5
-        },
-        "persistence": "instant",
-        "damage_types": [
-          "thunder"
-        ]
-      }
-    ]
+    "effect": {
+      "geometry": {
+        "shape": "emanation",
+        "radius_feet": 5
+      },
+      "persistence": "instant",
+      "damage_types": [
+        "thunder"
+      ]
+    }
   },
   "XPHB::Thunderwave": {
     "range": {
@@ -5027,19 +4108,16 @@
       "type": "caster_direction",
       "allow_pitch": true
     },
-    "effects": [
-      {
-        "anchor": "caster",
-        "geometry": {
-          "shape": "cube",
-          "side_feet": 15
-        },
-        "persistence": "instant",
-        "damage_types": [
-          "thunder"
-        ]
-      }
-    ]
+    "effect": {
+      "geometry": {
+        "shape": "cube",
+        "side_feet": 15
+      },
+      "persistence": "instant",
+      "damage_types": [
+        "thunder"
+      ]
+    }
   },
   "XPHB::Tsunami": {
     "range": {
@@ -5049,26 +4127,23 @@
     "targeting": {
       "type": "wall"
     },
-    "effects": [
-      {
-        "anchor": "selected_path",
-        "geometry": {
-          "shape": "wall",
-          "variants": [
-            {
-              "type": "path",
-              "max_length_feet": 300,
-              "height_feet": 300,
-              "thickness_feet": 50
-            }
-          ]
-        },
-        "persistence": "persistent",
-        "damage_types": [
-          "bludgeoning"
+    "effect": {
+      "geometry": {
+        "shape": "wall",
+        "variants": [
+          {
+            "type": "path",
+            "max_length_feet": 300,
+            "height_feet": 300,
+            "thickness_feet": 50
+          }
         ]
-      }
-    ]
+      },
+      "persistence": "persistent",
+      "damage_types": [
+        "bludgeoning"
+      ]
+    }
   },
   "XPHB::Vitriolic Sphere": {
     "range": {
@@ -5078,19 +4153,16 @@
     "targeting": {
       "type": "point"
     },
-    "effects": [
-      {
-        "anchor": "selected_point",
-        "geometry": {
-          "shape": "sphere",
-          "radius_feet": 20
-        },
-        "persistence": "instant",
-        "damage_types": [
-          "acid"
-        ]
-      }
-    ]
+    "effect": {
+      "geometry": {
+        "shape": "sphere",
+        "radius_feet": 20
+      },
+      "persistence": "instant",
+      "damage_types": [
+        "acid"
+      ]
+    }
   },
   "XPHB::Wall of Fire": {
     "range": {
@@ -5102,32 +4174,29 @@
       "requires_ground": true,
       "choose_damage_side": true
     },
-    "effects": [
-      {
-        "anchor": "selected_path",
-        "geometry": {
-          "shape": "wall",
-          "variants": [
-            {
-              "type": "path",
-              "max_length_feet": 60,
-              "height_feet": 20,
-              "thickness_feet": 1
-            },
-            {
-              "type": "circle",
-              "radius_feet": 10,
-              "height_feet": 20,
-              "thickness_feet": 1
-            }
-          ]
-        },
-        "persistence": "persistent",
-        "damage_types": [
-          "fire"
+    "effect": {
+      "geometry": {
+        "shape": "wall",
+        "variants": [
+          {
+            "type": "path",
+            "max_length_feet": 60,
+            "height_feet": 20,
+            "thickness_feet": 1
+          },
+          {
+            "type": "circle",
+            "radius_feet": 10,
+            "height_feet": 20,
+            "thickness_feet": 1
+          }
         ]
-      }
-    ]
+      },
+      "persistence": "persistent",
+      "damage_types": [
+        "fire"
+      ]
+    }
   },
   "XPHB::Wall of Stone": {
     "range": {
@@ -5137,24 +4206,21 @@
     "targeting": {
       "type": "wall"
     },
-    "effects": [
-      {
-        "anchor": "selected_path",
-        "geometry": {
-          "shape": "wall",
-          "variants": [
-            {
-              "type": "panels",
-              "max_panels": 10,
-              "panel_width_feet": 10,
-              "panel_height_feet": 10,
-              "thickness_feet": 0.5
-            }
-          ]
-        },
-        "persistence": "persistent"
-      }
-    ]
+    "effect": {
+      "geometry": {
+        "shape": "wall",
+        "variants": [
+          {
+            "type": "panels",
+            "max_panels": 10,
+            "panel_width_feet": 10,
+            "panel_height_feet": 10,
+            "thickness_feet": 0.5
+          }
+        ]
+      },
+      "persistence": "persistent"
+    }
   },
   "XPHB::Wall of Thorns": {
     "range": {
@@ -5165,33 +4231,30 @@
       "type": "wall",
       "requires_ground": true
     },
-    "effects": [
-      {
-        "anchor": "selected_path",
-        "geometry": {
-          "shape": "wall",
-          "variants": [
-            {
-              "type": "path",
-              "max_length_feet": 60,
-              "height_feet": 10,
-              "thickness_feet": 5
-            },
-            {
-              "type": "circle",
-              "radius_feet": 10,
-              "height_feet": 20,
-              "thickness_feet": 5
-            }
-          ]
-        },
-        "persistence": "persistent",
-        "damage_types": [
-          "piercing",
-          "slashing"
+    "effect": {
+      "geometry": {
+        "shape": "wall",
+        "variants": [
+          {
+            "type": "path",
+            "max_length_feet": 60,
+            "height_feet": 10,
+            "thickness_feet": 5
+          },
+          {
+            "type": "circle",
+            "radius_feet": 10,
+            "height_feet": 20,
+            "thickness_feet": 5
+          }
         ]
-      }
-    ]
+      },
+      "persistence": "persistent",
+      "damage_types": [
+        "piercing",
+        "slashing"
+      ]
+    }
   },
   "XPHB::Web": {
     "range": {
@@ -5201,23 +4264,16 @@
     "targeting": {
       "type": "point"
     },
-    "effects": [
-      {
-        "anchor": "selected_point",
-        "geometry": {
-          "shape": "cube",
-          "side_feet": 20
-        },
-        "persistence": "persistent",
-        "damage_types": [
-          "fire"
-        ],
-        "visual_tags": [
-          "DFT",
-          "OBS"
-        ]
-      }
-    ]
+    "effect": {
+      "geometry": {
+        "shape": "cube",
+        "side_feet": 20
+      },
+      "persistence": "persistent",
+      "damage_types": [
+        "fire"
+      ]
+    }
   },
   "XPHB::Weird": {
     "range": {
@@ -5227,19 +4283,16 @@
     "targeting": {
       "type": "point"
     },
-    "effects": [
-      {
-        "anchor": "selected_point",
-        "geometry": {
-          "shape": "sphere",
-          "radius_feet": 30
-        },
-        "persistence": "persistent",
-        "damage_types": [
-          "psychic"
-        ]
-      }
-    ]
+    "effect": {
+      "geometry": {
+        "shape": "sphere",
+        "radius_feet": 30
+      },
+      "persistence": "persistent",
+      "damage_types": [
+        "psychic"
+      ]
+    }
   },
   "XPHB::Wind Wall": {
     "range": {
@@ -5250,26 +4303,23 @@
       "type": "wall",
       "requires_ground": true
     },
-    "effects": [
-      {
-        "anchor": "selected_path",
-        "geometry": {
-          "shape": "wall",
-          "variants": [
-            {
-              "type": "path",
-              "max_length_feet": 50,
-              "height_feet": 15,
-              "thickness_feet": 1
-            }
-          ]
-        },
-        "persistence": "persistent",
-        "damage_types": [
-          "bludgeoning"
+    "effect": {
+      "geometry": {
+        "shape": "wall",
+        "variants": [
+          {
+            "type": "path",
+            "max_length_feet": 50,
+            "height_feet": 15,
+            "thickness_feet": 1
+          }
         ]
-      }
-    ]
+      },
+      "persistence": "persistent",
+      "damage_types": [
+        "bludgeoning"
+      ]
+    }
   },
   "XPHB::Yolande's Regal Presence": {
     "range": {
@@ -5279,19 +4329,16 @@
     "targeting": {
       "type": "caster"
     },
-    "effects": [
-      {
-        "anchor": "caster",
-        "geometry": {
-          "shape": "emanation",
-          "radius_feet": 10
-        },
-        "persistence": "persistent",
-        "damage_types": [
-          "psychic"
-        ]
-      }
-    ]
+    "effect": {
+      "geometry": {
+        "shape": "emanation",
+        "radius_feet": 10
+      },
+      "persistence": "persistent",
+      "damage_types": [
+        "psychic"
+      ]
+    }
   },
   "XPHB::Zone of Truth": {
     "range": {
@@ -5301,16 +4348,13 @@
     "targeting": {
       "type": "point"
     },
-    "effects": [
-      {
-        "anchor": "selected_point",
-        "geometry": {
-          "shape": "sphere",
-          "radius_feet": 15
-        },
-        "persistence": "persistent"
-      }
-    ]
+    "effect": {
+      "geometry": {
+        "shape": "sphere",
+        "radius_feet": 15
+      },
+      "persistence": "persistent"
+    }
   },
   "PHB::Wall of Force": {
     "range": {
@@ -5320,32 +4364,29 @@
     "targeting": {
       "type": "wall"
     },
-    "effects": [
-      {
-        "anchor": "selected_path",
-        "geometry": {
-          "shape": "wall",
-          "variants": [
-            {
-              "type": "globe",
-              "radius_feet": 10
-            },
-            {
-              "type": "dome",
-              "radius_feet": 10
-            },
-            {
-              "type": "panels",
-              "max_panels": 10,
-              "panel_width_feet": 10,
-              "panel_height_feet": 10,
-              "thickness_feet": 0.020833333333333332
-            }
-          ]
-        },
-        "persistence": "persistent"
-      }
-    ]
+    "effect": {
+      "geometry": {
+        "shape": "wall",
+        "variants": [
+          {
+            "type": "globe",
+            "radius_feet": 10
+          },
+          {
+            "type": "dome",
+            "radius_feet": 10
+          },
+          {
+            "type": "panels",
+            "max_panels": 10,
+            "panel_width_feet": 10,
+            "panel_height_feet": 10,
+            "thickness_feet": 0.020833333333333332
+          }
+        ]
+      },
+      "persistence": "persistent"
+    }
   },
   "PHB::Wall of Ice": {
     "range": {
@@ -5356,35 +4397,32 @@
       "type": "wall",
       "requires_ground": true
     },
-    "effects": [
-      {
-        "anchor": "selected_path",
-        "geometry": {
-          "shape": "wall",
-          "variants": [
-            {
-              "type": "globe",
-              "radius_feet": 10
-            },
-            {
-              "type": "dome",
-              "radius_feet": 10
-            },
-            {
-              "type": "panels",
-              "max_panels": 10,
-              "panel_width_feet": 10,
-              "panel_height_feet": 10,
-              "thickness_feet": 1
-            }
-          ]
-        },
-        "persistence": "persistent",
-        "damage_types": [
-          "cold"
+    "effect": {
+      "geometry": {
+        "shape": "wall",
+        "variants": [
+          {
+            "type": "globe",
+            "radius_feet": 10
+          },
+          {
+            "type": "dome",
+            "radius_feet": 10
+          },
+          {
+            "type": "panels",
+            "max_panels": 10,
+            "panel_width_feet": 10,
+            "panel_height_feet": 10,
+            "thickness_feet": 1
+          }
         ]
-      }
-    ]
+      },
+      "persistence": "persistent",
+      "damage_types": [
+        "cold"
+      ]
+    }
   },
   "XPHB::Wall of Force": {
     "range": {
@@ -5394,32 +4432,29 @@
     "targeting": {
       "type": "wall"
     },
-    "effects": [
-      {
-        "anchor": "selected_path",
-        "geometry": {
-          "shape": "wall",
-          "variants": [
-            {
-              "type": "globe",
-              "radius_feet": 10
-            },
-            {
-              "type": "dome",
-              "radius_feet": 10
-            },
-            {
-              "type": "panels",
-              "max_panels": 10,
-              "panel_width_feet": 10,
-              "panel_height_feet": 10,
-              "thickness_feet": 0.020833333333333332
-            }
-          ]
-        },
-        "persistence": "persistent"
-      }
-    ]
+    "effect": {
+      "geometry": {
+        "shape": "wall",
+        "variants": [
+          {
+            "type": "globe",
+            "radius_feet": 10
+          },
+          {
+            "type": "dome",
+            "radius_feet": 10
+          },
+          {
+            "type": "panels",
+            "max_panels": 10,
+            "panel_width_feet": 10,
+            "panel_height_feet": 10,
+            "thickness_feet": 0.020833333333333332
+          }
+        ]
+      },
+      "persistence": "persistent"
+    }
   },
   "XPHB::Wall of Ice": {
     "range": {
@@ -5430,34 +4465,31 @@
       "type": "wall",
       "requires_ground": true
     },
-    "effects": [
-      {
-        "anchor": "selected_path",
-        "geometry": {
-          "shape": "wall",
-          "variants": [
-            {
-              "type": "globe",
-              "radius_feet": 10
-            },
-            {
-              "type": "dome",
-              "radius_feet": 10
-            },
-            {
-              "type": "panels",
-              "max_panels": 10,
-              "panel_width_feet": 10,
-              "panel_height_feet": 10,
-              "thickness_feet": 1
-            }
-          ]
-        },
-        "persistence": "persistent",
-        "damage_types": [
-          "cold"
+    "effect": {
+      "geometry": {
+        "shape": "wall",
+        "variants": [
+          {
+            "type": "globe",
+            "radius_feet": 10
+          },
+          {
+            "type": "dome",
+            "radius_feet": 10
+          },
+          {
+            "type": "panels",
+            "max_panels": 10,
+            "panel_width_feet": 10,
+            "panel_height_feet": 10,
+            "thickness_feet": 1
+          }
         ]
-      }
-    ]
+      },
+      "persistence": "persistent",
+      "damage_types": [
+        "cold"
+      ]
+    }
   }
 }
