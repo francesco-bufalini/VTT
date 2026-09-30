@@ -1,0 +1,9 @@
+[gd_scene load_steps=2 format=3]
+
+[ext_resource type="PackedScene" path="res://token.tscn" id="1_base"]
+
+[node name="crawling_claw_token" instance=ExtResource("1_base")]
+visual_asset_path = "res://assets/tokens/generated/crawling_claw/crawling_claw.obj"
+default_size_name = "Medium"
+default_footprint_cells = 1.000000
+token_height_cells = 0.490796
