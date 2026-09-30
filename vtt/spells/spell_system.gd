@@ -4339,7 +4339,10 @@ func _spell_needs_saving_throw_resolution(
 	var transformation_mode: String = String(
 		spell_data.get("transformation_mode", "")
 	)
-	if transformation_mode in ["appearance", "resize"]:
+	if (
+		transformation_mode in ["appearance", "resize"]
+		and String(spell_data.get("target_mode", "")) != "transform_self"
+	):
 		var saves_value: Variant = spell_data.get("saving_throw", [])
 		if saves_value is Array and not (saves_value as Array).is_empty():
 			return true
