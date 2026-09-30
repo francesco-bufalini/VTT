@@ -1062,7 +1062,7 @@ func _try_select_caster(screen_position: Vector2) -> void:
 				round(_effective_spell_range_feet(spell_data, caster))
 			)
 			_set_instruction(
-				"%s: mira un punto entro %d ft e clicca · WASD + mouse per muoverti · rotellina per profondità 3D · Esc per annullare"
+				"%s: mira un punto entro %d ft e clicca · Shift = griglia/profondità manuale · rotellina regola la profondità · Esc per annullare"
 				% [
 					String(spell_data.get("name", "Incantesimo")),
 					point_range_feet
@@ -1449,7 +1449,7 @@ func _try_select_multi_point(screen_position: Vector2) -> void:
 
 func _update_multi_point_instruction(spell_data: Dictionary) -> void:
 	_set_instruction(
-		"%s: scegli punti diversi %d/%d entro %d ft · Esc per annullare"
+		"%s: scegli punti diversi %d/%d entro %d ft · Shift = griglia/profondità manuale · Esc per annullare"
 		% [
 			String(spell_data.get("name", "Incantesimo")),
 			_pending_target_points.size(),
@@ -3041,9 +3041,18 @@ func _point_target_data(
 	if measurement_tool == null:
 		return {"valid": false}
 
+	var force_grid_target: bool = Input.is_key_pressed(KEY_SHIFT)
+	var preferred_air_distance_world: float = -1.0
+	if not force_grid_target:
+		preferred_air_distance_world = _point_target_air_distance_world(
+			spell_data
+		)
+
 	var point_value: Variant = measurement_tool.call(
 		"get_spell_target_point",
-		screen_position
+		screen_position,
+		preferred_air_distance_world,
+		force_grid_target
 	)
 	if not point_value is Dictionary:
 		return {"valid": false}
@@ -3088,6 +3097,46 @@ func _point_target_data(
 		"in_air": bool(point_data.get("in_air", false)),
 		"normal": point_data.get("normal", Vector3.ZERO)
 	}
+
+
+func _point_target_air_distance_feet(
+	spell_data: Dictionary
+) -> float:
+	var shape: String = String(
+		spell_data.get("aoe_shape", "")
+	)
+	match shape:
+		"sphere":
+			return maxf(
+				_effective_aoe_radius_feet(spell_data) * 2.0,
+				5.0
+			)
+		"cylinder", "circle":
+			return maxf(
+				float(spell_data.get("aoe_radius_feet", 5.0)) * 2.0,
+				5.0
+			)
+		"cube", "flat_square":
+			return maxf(
+				float(spell_data.get("aoe_side_feet", 5.0)),
+				5.0
+			)
+		_:
+			return -1.0
+
+
+func _point_target_air_distance_world(
+	spell_data: Dictionary
+) -> float:
+	var distance_feet: float = _point_target_air_distance_feet(
+		spell_data
+	)
+	if distance_feet <= 0.0:
+		return -1.0
+	return maxf(
+		distance_feet / 5.0 * _cell_size(),
+		_cell_size()
+	)
 
 
 func _spell_line_width_world(spell_data: Dictionary) -> float:
