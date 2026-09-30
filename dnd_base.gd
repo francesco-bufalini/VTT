@@ -747,7 +747,7 @@ func _build_camera_settings_dialog() -> void:
 	layout.add_child(camera_speed_value_label)
 	camera_speed_slider = HSlider.new()
 	camera_speed_slider.min_value = 1.0
-	camera_speed_slider.max_value = 30.0
+	camera_speed_slider.max_value = 100.0
 	camera_speed_slider.step = 0.5
 	camera_speed_slider.custom_minimum_size = Vector2(400, 24)
 	camera_speed_slider.value_changed.connect(_on_camera_speed_slider_changed)
