@@ -16,6 +16,7 @@ from typing import Any
 
 ROOT = Path(__file__).resolve().parents[2]
 OUTPUT = ROOT / "vtt" / "spells" / "spell_catalog_5etools.gd"
+RUNTIME_MAP = ROOT / "assets" / "spell_area_geometry.json"
 PRIORITY = ["XPHB","PHB","FRHoF","EFA","AU","TCE","XGE","FTD","SCC","EGW","BMT","AAG","AI","GGR","IDRotF","SatO","LLK","AitFR-AVT"]
 SCHOOLS = {"A":"Abjuration","C":"Conjuration","D":"Divination","E":"Enchantment","V":"Evocation","I":"Illusion","N":"Necromancy","T":"Transmutation","P":"Psionic"}
 META = {"id","name","source","level","school","casting_time","range","target","area","components","duration","classes","description","higher_levels"}
@@ -83,6 +84,36 @@ def class_names(entry):
             if isinstance(group,dict):out.update(group.keys())
     return out
 
+def runtime_map():
+    if not RUNTIME_MAP.exists():return {}
+    try:
+        value=json.loads(RUNTIME_MAP.read_text(encoding="utf-8"))
+        return value if isinstance(value,dict) else {}
+    except Exception:
+        return {}
+
+def runtime_target_fields(spell_id: str, name: str, source: str, runtime: dict) -> dict:
+    spec=runtime.get(f"{source}::{name}",{})
+    if not isinstance(spec,dict):return {}
+    targeting=spec.get("targeting",{})
+    if not isinstance(targeting,dict) or not targeting.get("projectile"):return {}
+
+    target_type=str(targeting.get("type",""))
+    if target_type not in {"token","multi_token"}:return {}
+
+    result={
+        "target_mode": "token_then_token" if target_type=="token" else "token_then_multi_token",
+        "projectile_style": spell_id,
+        "projectile_travel_seconds": 0.65,
+    }
+    range_data=spec.get("range",{})
+    if isinstance(range_data,dict) and isinstance(range_data.get("feet"),(int,float)):
+        result["range_feet"]=range_data["feet"]
+
+    for key in ("base_target_clicks","target_clicks_per_slot_above_base","allow_repeat_targets"):
+        if key in targeting:result[key]=targeting[key]
+    return result
+
 def old_records():
     if not OUTPUT.exists():return {}
     text=OUTPUT.read_text(encoding="utf-8");mark="const SPELLS: Dictionary = "
@@ -98,7 +129,7 @@ def main():
     groups={}
     for s in spells:
         if s.get("name"):groups.setdefault(str(s["name"]).lower(),[]).append(s)
-    old=old_records();out={}
+    old=old_records();runtime=runtime_map();out={}
     def score(src): return len(PRIORITY)-PRIORITY.index(src) if src in PRIORITY else 0
     for vs in groups.values():
         s=max(vs,key=lambda x:score(str(x.get("source",""))));sid=slug(str(s["name"]));classes=set()
@@ -108,6 +139,12 @@ def main():
         rec={"id":sid,"name":s["name"],"source":s.get("source",""),"level":int(s.get("level",0)),"school":SCHOOLS.get(str(s.get("school","")),str(s.get("school",""))),"casting_time":ftime(s),"range":frange(s),"target":"","area":"","components":fcomp(s),"duration":fdur(s),"classes":sorted(classes),"description":flat(s.get("entries",[])),"higher_levels":flat(s.get("entriesHigherLevel",[]))}
         for k,v in old.get(sid,{}).items():
             if k not in META:rec[k]=v
+        rec.update(runtime_target_fields(
+            sid,
+            str(s.get("name","")),
+            str(s.get("source","")),
+            runtime,
+        ))
         out[sid]=rec
     out=dict(sorted(out.items(),key=lambda kv:kv[1]["name"].lower()))
     OUTPUT.write_text("extends RefCounted\n\n# Generated from the complete 5eTools spell source index.\n# Canonical class names are localized by spell_catalog.gd.\nconst SPELLS: Dictionary = "+json.dumps(out,ensure_ascii=False,indent=2)+"\n",encoding="utf-8")
