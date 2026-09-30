@@ -193,7 +193,7 @@ func valid_snapshot(snapshot: Variant) -> bool:
 					if not condition_value is String:
 						return false
 					var condition_id := String(condition_value)
-					if condition_id not in TOKEN_CONDITIONS or seen_conditions.has(condition_id):
+					if not (condition_id in TOKEN_CONDITIONS) or seen_conditions.has(condition_id):
 						return false
 					seen_conditions[condition_id] = true
 			if item.has("height_cells"):
