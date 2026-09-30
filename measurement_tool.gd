@@ -13,6 +13,7 @@ const AOE_COLORS: Array[Color] = [
 	Color(1.00, 0.28, 0.62, 1.0),
 	Color(0.95, 0.95, 0.95, 1.0),
 ]
+const SpellVFX = preload("res://vtt/spells/spell_vfx.gd")
 const WallGeometry = preload("res://vtt/spells/wall_geometry.gd")
 
 @export var cell_size: float = 1.0
@@ -889,6 +890,7 @@ func show_transient_aoe(
 		Color(0.0, 0.0, 0.0, -1.0),
 		line_width_world
 	)
+	SpellVFX.attach(root, start, end, shape, style, cell_size)
 
 	var timer: Timer = Timer.new()
 	timer.one_shot = true
@@ -1099,6 +1101,15 @@ func _build_wall_path_root(
 				height_world,
 				thickness_world
 			)
+			SpellVFX.attach_wall_segment(
+				root,
+				start,
+				finish,
+				height_world,
+				thickness_world,
+				style,
+				cell_size
+			)
 		if style == "wall_of_fire" and damage_side != 0:
 			_add_wall_damage_band(
 				root,
@@ -1277,6 +1288,14 @@ func _build_wall_globe_root(
 		collision.shape = sphere_shape
 		area.add_child(collision)
 		area.global_position = center
+		SpellVFX.attach_wall_globe(
+			root,
+			center,
+			radius_world,
+			style,
+			hemisphere,
+			cell_size
+		)
 
 
 func _wall_material(
@@ -1391,6 +1410,7 @@ func add_aoe(
 		selected_color,
 		line_width_world
 	)
+	SpellVFX.attach(root, start, end, shape, style, cell_size)
 
 	_add_aoe_pick_area(
 		root,
