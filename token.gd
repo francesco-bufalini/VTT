@@ -1,10 +1,14 @@
 extends CharacterBody3D
 
+const TOKEN_LIBRARY_MANIFEST := "res://assets/tokens/token_library.json"
+const IMPORTED_VISUAL_NAME := "ImportedVisual"
+
 @export var cell_size: float = 1.0
 @export var gravity_multiplier: float = 1.0
 @export var terminal_velocity: float = 40.0
 @export var token_height_cells: float = 2.0
 @export var flying: bool = false
+@export var visual_asset_path: String = ""
 
 # D&D definisce la forma del cono, ma non una portata visiva universale.
 # 12 celle = 60 ft è quindi solo un default configurabile.
@@ -20,6 +24,7 @@ var _selected: bool = false
 var _gravity: float = 9.8
 var _footprint_cells: float = 1.0
 var _size_name: String = "Medium"
+var _loaded_visual_asset_path: String = ""
 var movement_validator: Callable
 var grid_support: Node3D
 var _support_transform: Transform3D
@@ -32,6 +37,7 @@ func _ready() -> void:
 	_gravity = float(
 		ProjectSettings.get_setting("physics/3d/default_gravity", 9.8)
 	)
+	_load_configured_visual()
 	set_selected(false)
 	set_vision_cone_visible(false)
 
@@ -110,6 +116,113 @@ func configure(
 	_snap_horizontal_to_grid()
 
 
+func set_visual_asset(path: String) -> bool:
+	var requested_path: String = path.strip_edges()
+	if requested_path.is_empty():
+		requested_path = _default_visual_asset_path()
+	if requested_path.is_empty():
+		return false
+
+	if (
+		requested_path == _loaded_visual_asset_path
+		and _get_imported_visual() != null
+	):
+		visual_asset_path = requested_path
+		_position_imported_visual()
+		return true
+
+	var resource: Resource = ResourceLoader.load(requested_path)
+	if resource == null:
+		push_warning(
+			"Token: impossibile caricare la miniatura %s" % requested_path
+		)
+		return false
+
+	var imported: Node3D = null
+	if resource is Mesh:
+		var mesh_instance := MeshInstance3D.new()
+		mesh_instance.mesh = resource as Mesh
+		imported = mesh_instance
+	elif resource is PackedScene:
+		var scene_instance: Node = (resource as PackedScene).instantiate()
+		if scene_instance is Node3D:
+			imported = scene_instance as Node3D
+		else:
+			scene_instance.queue_free()
+
+	if imported == null:
+		push_warning(
+			"Token: formato visuale non supportato per %s" % requested_path
+		)
+		return false
+
+	_clear_imported_visual()
+	_set_procedural_visuals_visible(false)
+	imported.name = IMPORTED_VISUAL_NAME
+	imported.set_meta("token_imported_visual", true)
+	visuals.add_child(imported)
+
+	visual_asset_path = requested_path
+	_loaded_visual_asset_path = requested_path
+	_position_imported_visual()
+	return true
+
+
+func get_visual_asset_path() -> String:
+	return _loaded_visual_asset_path
+
+
+func _load_configured_visual() -> void:
+	var requested_path: String = visual_asset_path.strip_edges()
+	if requested_path.is_empty():
+		requested_path = _default_visual_asset_path()
+	if not requested_path.is_empty():
+		set_visual_asset(requested_path)
+
+
+func _default_visual_asset_path() -> String:
+	if not FileAccess.file_exists(TOKEN_LIBRARY_MANIFEST):
+		return ""
+	var file := FileAccess.open(TOKEN_LIBRARY_MANIFEST, FileAccess.READ)
+	if file == null:
+		return ""
+	var parsed: Variant = JSON.parse_string(file.get_as_text())
+	file.close()
+	if not parsed is Dictionary:
+		return ""
+	return String((parsed as Dictionary).get("default", "")).strip_edges()
+
+
+func _get_imported_visual() -> Node3D:
+	return visuals.get_node_or_null(IMPORTED_VISUAL_NAME) as Node3D
+
+
+func _clear_imported_visual() -> void:
+	var current := _get_imported_visual()
+	if current == null:
+		return
+	visuals.remove_child(current)
+	current.queue_free()
+	_loaded_visual_asset_path = ""
+
+
+func _set_procedural_visuals_visible(value: bool) -> void:
+	for child_node: Node in visuals.get_children():
+		if child_node.has_meta("token_imported_visual"):
+			continue
+		if child_node is VisualInstance3D:
+			(child_node as VisualInstance3D).visible = value
+
+
+func _position_imported_visual() -> void:
+	var imported := _get_imported_visual()
+	if imported == null:
+		return
+	# I modelli prodotti dal convertitore hanno i piedi a Y=0.
+	# Il root del token invece e' al centro del volume di collisione.
+	imported.position = Vector3(0.0, -token_height_cells * 0.5, 0.0)
+
+
 func set_token_size(footprint_cells: float) -> void:
 	_footprint_cells = maxf(footprint_cells, 0.5)
 
@@ -150,6 +263,8 @@ func set_token_size(footprint_cells: float) -> void:
 			ground_y
 		)
 
+	_position_imported_visual()
+
 
 func set_token_color(token_color: Color) -> void:
 	var body_material: StandardMaterial3D = StandardMaterial3D.new()
@@ -162,6 +277,8 @@ func set_token_color(token_color: Color) -> void:
 	head_material.roughness = 0.7
 
 	for child_node: Node in visuals.get_children():
+		if child_node.has_meta("token_imported_visual"):
+			continue
 		if child_node is MeshInstance3D:
 			var mesh_instance: MeshInstance3D = child_node as MeshInstance3D
 
