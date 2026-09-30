@@ -477,6 +477,9 @@ func _on_token_front_selected(index: int) -> void:
 func _build_token_resize_menu() -> void:
 	token_resize_menu = PopupMenu.new()
 	token_resize_menu.name = "TokenResizeMenu"
+	# Non lasciare che PopupMenu si chiuda prima di id_pressed: popup_hide
+	# rappresenta l'annullamento e azzererebbe il target prima del resize.
+	token_resize_menu.hide_on_item_selection = false
 	for index: int in range(TOKEN_SIZES.size()):
 		var size_data: Dictionary = TOKEN_SIZES[index]
 		token_resize_menu.add_item(
@@ -541,6 +544,13 @@ func _on_token_resize_selected(id: int) -> void:
 	_token_resize_confirmed_callback = Callable()
 	_token_resize_canceled_callback = Callable()
 	_refresh_token_views_after_appearance_change()
+
+	# Ora che il resize e' stato applicato possiamo chiudere il popup.
+	# _on_token_resize_menu_hidden vede target=null e non interpreta questa
+	# chiusura come un annullamento.
+	if token_resize_menu != null and token_resize_menu.visible:
+		token_resize_menu.hide()
+
 	_ui_owns_mouse = false
 	_capture_mouse()
 
