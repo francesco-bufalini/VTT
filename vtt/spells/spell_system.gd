@@ -3,6 +3,23 @@ extends Node
 const SpellCatalog = preload("res://vtt/spells/spell_catalog.gd")
 const WallGeometry = preload("res://vtt/spells/wall_geometry.gd")
 const ALL_COLLISION_LAYERS := 0xFFFFFFFF
+const ACTIVATABLE_TARGET_MODES := [
+	"self_token",
+	"self_emanation",
+	"teleport_self",
+	"token_then_point",
+	"token_then_token",
+	"token_then_multi_token",
+	"token_then_multi_point",
+	"summon",
+	"transform_self",
+	"token_then_transform",
+	"token_then_multi_transform",
+	"resize_token",
+	"token_then_chain",
+	"token_then_direction",
+	"wall_design"
+]
 
 var board_root: Node3D
 var ui_root: CanvasLayer
@@ -3597,19 +3614,7 @@ func _activate_selected_spell() -> void:
 	var target_mode: String = String(
 		spell_data.get("target_mode", "")
 	)
-	if target_mode not in [
-		"self_token",
-		"self_emanation",
-		"teleport_self",
-		"token_then_point",
-		"token_then_token",
-		"token_then_multi_token",
-		"token_then_multi_point",
-		"summon",
-		"token_then_chain",
-		"token_then_direction",
-		"wall_design"
-	]:
+	if target_mode not in ACTIVATABLE_TARGET_MODES:
 		return
 
 	_pending_spell_id = _selected_spell_id
