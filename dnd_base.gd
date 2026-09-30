@@ -592,6 +592,10 @@ func _interact_or_select_under_mouse(
 	var target: Node = _find_interaction_target(collider)
 
 	if target != null and target.is_in_group("dnd_token"):
+		if not (target is CharacterBody3D):
+			if not additive_selection:
+				_clear_selection()
+			return
 		var token: CharacterBody3D = target as CharacterBody3D
 
 		if first_person_request:
