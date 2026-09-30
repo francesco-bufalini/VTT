@@ -185,6 +185,36 @@ func nudge_vertical(steps: int) -> void:
 	grid_support = null
 
 
+func apply_forced_movement(
+	world_direction: Vector3,
+	distance_world: float
+) -> bool:
+	var direction: Vector3 = world_direction
+	direction.y = 0.0
+	if direction.length_squared() < 0.0001 or distance_world <= 0.0:
+		return false
+	direction = direction.normalized()
+
+	var destination: Vector3 = global_position + direction * distance_world
+	destination = snap_destination(destination)
+
+	if (
+		movement_validator.is_valid()
+		and not movement_validator.call(self, destination)
+	):
+		return false
+
+	var delta: Vector3 = destination - global_position
+	if delta.length_squared() < 0.0001:
+		return false
+
+	move_and_collide(delta)
+	_snap_horizontal_to_grid()
+	velocity = Vector3.ZERO
+	grid_support = null
+	return true
+
+
 func configure(
 	token_color: Color,
 	new_cell_size: float = 1.0,
