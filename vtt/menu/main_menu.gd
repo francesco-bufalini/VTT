@@ -3,6 +3,8 @@ extends Control
 const ACTIVE_CAMPAIGNS_SCENE_PATH := "res://vtt/menu/active_campaigns.tscn"
 const CASTLE_PATHS := [
 	"res://assets/menu/castle/Castle.glb",
+	"res://SFON VTST/castle/Castle.glb",
+	"res://SFON VTST/Castle.glb",
 	"res://castle/Castle.glb",
 	"res://Castle.glb"
 ]
@@ -171,24 +173,25 @@ func _build_castle() -> void:
 
 	var castle_path: String = _find_castle_path()
 	if castle_path.is_empty():
-		push_warning(
-			"MainMenu: Castle.glb non trovato. Atteso in "
-			+ "res://assets/menu/castle/Castle.glb"
+		push_error(
+			"MainMenu: Castle.glb non trovato nel progetto. Copialo in "
+			+ "res://assets/menu/castle/Castle.glb oppure in una qualsiasi "
+			+ "cartella sotto res://."
 		)
-		_build_castle_placeholder()
+		_show_missing_castle_message()
 		return
 
 	var castle_resource: Resource = ResourceLoader.load(castle_path)
 	if not castle_resource is PackedScene:
-		push_warning("MainMenu: Castle.glb non e' una PackedScene valida.")
-		_build_castle_placeholder()
+		push_error("MainMenu: Castle.glb non e' una PackedScene valida.")
+		_show_missing_castle_message()
 		return
 
 	var castle_instance: Node = (castle_resource as PackedScene).instantiate()
 	if not castle_instance is Node3D:
 		castle_instance.queue_free()
-		push_warning("MainMenu: root del Castle.glb non e' Node3D.")
-		_build_castle_placeholder()
+		push_error("MainMenu: root del Castle.glb non e' Node3D.")
+		_show_missing_castle_message()
 		return
 
 	castle_instance.name = "Castle"
@@ -200,6 +203,54 @@ func _find_castle_path() -> String:
 	for path_value: String in CASTLE_PATHS:
 		if ResourceLoader.exists(path_value):
 			return path_value
+
+	# Il modello puo' essere stato copiato nel progetto mantenendo la cartella
+	# originale dello ZIP. Cercalo ricorsivamente invece di dipendere da un
+	# singolo percorso hardcoded.
+	var discovered: String = _find_file_recursive(
+		"res://",
+		"castle.glb",
+		0
+	)
+	if not discovered.is_empty():
+		print("MainMenu: Castle.glb trovato in ", discovered)
+	return discovered
+
+
+func _find_file_recursive(
+	directory_path: String,
+	file_name_lower: String,
+	depth: int
+) -> String:
+	if depth > 8:
+		return ""
+
+	var directory := DirAccess.open(directory_path)
+	if directory == null:
+		return ""
+
+	directory.list_dir_begin()
+	var entry: String = directory.get_next()
+	while not entry.is_empty():
+		if entry != "." and entry != "..":
+			var child_path: String = directory_path.path_join(entry)
+			if directory.current_is_dir():
+				# Le cartelle di import/cache non contengono l'asset sorgente.
+				if entry not in [".godot", ".git"]:
+					var nested: String = _find_file_recursive(
+						child_path,
+						file_name_lower,
+						depth + 1
+					)
+					if not nested.is_empty():
+						directory.list_dir_end()
+						return nested
+			elif entry.to_lower() == file_name_lower:
+				directory.list_dir_end()
+				return child_path
+		entry = directory.get_next()
+
+	directory.list_dir_end()
 	return ""
 
 
@@ -261,19 +312,19 @@ func _visual_bounds(root: Node3D) -> Dictionary:
 	}
 
 
-func _build_castle_placeholder() -> void:
-	var mesh_instance := MeshInstance3D.new()
-	mesh_instance.name = "CastlePlaceholder"
-	var box := BoxMesh.new()
-	box.size = Vector3(7.0, 5.0, 4.5)
-	mesh_instance.mesh = box
-
-	var material := StandardMaterial3D.new()
-	material.albedo_color = Color(0.10, 0.11, 0.14)
-	material.roughness = 0.88
-	mesh_instance.material_override = material
-	mesh_instance.position = Vector3(0.0, -0.5, 0.0)
-	_castle_root.add_child(mesh_instance)
+func _show_missing_castle_message() -> void:
+	var label := Label3D.new()
+	label.name = "MissingCastleMessage"
+	label.text = (
+		"CASTLE.GLB NON TROVATO\n"
+		+ "assets/menu/castle/Castle.glb"
+	)
+	label.font_size = 42
+	label.modulate = Color(0.88, 0.62, 0.42, 0.92)
+	label.outline_size = 8
+	label.position = Vector3(0.0, 0.6, 0.0)
+	label.billboard = BaseMaterial3D.BILLBOARD_ENABLED
+	_castle_root.add_child(label)
 
 
 func _build_lighting() -> void:
