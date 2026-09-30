@@ -73,7 +73,7 @@ func _build_toolbar() -> void:
 
 	row.add_child(_menu("Token", [
 		["Crea token", TOKEN_CREATE],
-		["Volante", TOKEN_FLYING],
+		["Applica gravità", TOKEN_FLYING],
 		["Ruota sx", TOKEN_ROTATE_LEFT],
 		["Ruota dx", TOKEN_ROTATE_RIGHT],
 		["Nome e stati…", TOKEN_DETAILS],
