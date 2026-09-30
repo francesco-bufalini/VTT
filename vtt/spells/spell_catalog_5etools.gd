@@ -390,8 +390,7 @@ const SPELLS: Dictionary = {
     ],
     "target_mode": "summon",
     "range_feet": 10,
-    "summon_count_min": 1,
-    "summon_count_max": 4
+    "summon_count": 1
   },
   "animate_objects": {
     "id": "animate_objects",
