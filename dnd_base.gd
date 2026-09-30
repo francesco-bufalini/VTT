@@ -203,8 +203,11 @@ func _input(event: InputEvent) -> void:
 		and is_instance_valid(spell_system)
 		and bool(spell_system.call("is_targeting"))
 		and (
-			event is InputEventMouseButton
-			or event is InputEventKey
+			event is InputEventKey
+			or (
+				event is InputEventMouseButton
+				and Input.mouse_mode == Input.MOUSE_MODE_CAPTURED
+			)
 		)
 	):
 		if bool(spell_system.call("handle_input", event)):
