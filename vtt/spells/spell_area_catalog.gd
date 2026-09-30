@@ -115,6 +115,70 @@ static func _primary_damage_style(effect: Dictionary) -> String:
 	return ""
 
 
+static func _visual_style_from_entries(
+	spell_data: Dictionary,
+	effect: Dictionary
+) -> String:
+	var damage_style: String = _primary_damage_style(effect)
+	if not damage_style.is_empty():
+		return damage_style
+
+	var text: String = (
+		String(spell_data.get("name", ""))
+		+ " "
+		+ String(spell_data.get("description", ""))
+		+ " "
+		+ String(spell_data.get("higher_levels", ""))
+	).to_lower()
+
+	# Multi-color families should remain visibly multicolored rather than
+	# arbitrarily selecting one of their possible damage types.
+	if "prismatic" in text or "chromatic" in text or "rainbow" in text:
+		return "prismatic"
+
+	if "silvery mist" in text or "silver mist" in text:
+		return "silver_mist"
+	if "mist" in text or "fog" in text or "cloud" in text:
+		return "mist"
+	if "blazing" in text or "flame" in text or "fire" in text:
+		return "fire"
+	if "frost" in text or "ice" in text or "snow" in text or "freez" in text:
+		return "cold"
+	if "lightning" in text or "electric" in text:
+		return "lightning"
+	if "thunder" in text or "thunderous" in text:
+		return "thunder"
+	if "acid" in text or "corros" in text:
+		return "acid"
+	if "poison" in text or "toxic" in text or "venom" in text:
+		return "poison"
+	if "necrotic" in text or "deathly" in text or "withering" in text:
+		return "necrotic"
+	if "radiant" in text or "sunlight" in text or "brilliant light" in text:
+		return "radiant"
+	if "psychic" in text or "mind" in text or "mental" in text:
+		return "psychic"
+	if "force" in text:
+		return "force"
+	if "shadow" in text or "darkness" in text:
+		return "darkness"
+	if "water" in text or "wave" in text:
+		return "water"
+	if "wind" in text or "air " in text:
+		return "wind"
+	if "stone" in text or "earth" in text or "rock" in text:
+		return "earth"
+	if "thorn" in text or "vine" in text or "plant" in text:
+		return "nature"
+
+	var existing_style: String = String(
+		spell_data.get("visual_style", "")
+	).strip_edges()
+	if not existing_style.is_empty():
+		return existing_style
+	return "arcane"
+
+
 static func _apply_range(
 	result: Dictionary,
 	spec: Dictionary
@@ -158,7 +222,8 @@ static func _apply_targeting(
 		existing_mode not in [
 			"teleport_self",
 			"token_then_chain",
-			"token_then_multi_token"
+			"token_then_multi_token",
+			"token_then_multi_point"
 		]
 		and not preserve_token_target
 	):
@@ -393,10 +458,13 @@ static func apply_to_spell(spell_data: Dictionary) -> Dictionary:
 	)
 	result["persistent"] = persistence == "persistent"
 
-	# A single damage family drives the generic material and particle
-	# animation. Non-damaging and multi-damage effects keep bespoke styles.
-	var generic_style: String = _primary_damage_style(effect)
-	if not generic_style.is_empty():
-		result["visual_style"] = generic_style
+	# Damage type is authoritative when exactly one is present. Otherwise
+	# infer the visual family from the 5eTools Entries text; if no clue exists,
+	# fall back to an existing bespoke style and finally to generic arcane.
+	var resolved_style: String = _visual_style_from_entries(result, effect)
+	if not resolved_style.is_empty():
+		result["visual_style"] = resolved_style
+		if not String(result.get("projectile_style", "")).is_empty():
+			result["projectile_style"] = resolved_style
 
 	return result
