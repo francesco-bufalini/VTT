@@ -40,6 +40,8 @@ GENERATED_TARGET_FIELDS = {
     "summon_count_max_by_slot",
     "summon_count_multiplier_rules",
     "summon_requires_ground",
+    "transformation_mode",
+    "transform_max_targets",
 }
 
 def slug(s: str) -> str:
@@ -320,6 +322,92 @@ def summon_runtime_fields(spell: dict[str, Any], runtime: dict) -> dict:
                 break
     return result
 
+def transformation_runtime_fields(spell: dict[str, Any]) -> dict:
+    """Infer VTT token-transformation workflows from 5eTools spell text.
+
+    This intentionally targets spells whose primary effect changes a creature's
+    visible physical form. Incidental wording about transformed objects,
+    scenery, projectiles, or minor cosmetic details is left untouched.
+    """
+    name=str(spell.get("name","")).strip().lower()
+    text=flat(spell.get("entries",[])).lower()
+    range_feet=_summon_range_feet(spell)
+
+    if (
+        name=="enlarge/reduce"
+        or (
+            "size increases by one category" in text
+            and "size decreases by one category" in text
+        )
+    ):
+        return {
+            "target_mode":"resize_token",
+            "range_feet":max(5.0,range_feet),
+            "transformation_mode":"resize",
+        }
+
+    self_patterns=(
+        r"\balter your physical form\b",
+        r"\bmake yourself\b[^.]{0,180}\blook different\b",
+        r"\btransform yourself\b",
+        r"\btransforms you into\b",
+        r"\byou shape-shift into\b",
+    )
+    multi_patterns=(
+        r"\beach target shape-shifts? into\b",
+        r"\btransform up to\s+(?:one|two|three|four|five|six|seven|eight|nine|ten|\d+)\s+creatures?\b",
+        r"\bgive an illusory appearance to each creature\b",
+    )
+    single_patterns=(
+        r"\btransform a creature\b",
+        r"\bcreature shape-shifts? into\b",
+        r"\bone willing creature\b[^.]{0,120}\btransforms? into\b",
+        r"\btarget['’]s skin assumes?\b[^.]{0,80}\bappearance\b",
+        r"\bthe target\b[^.]{0,160}\bshape-shifts? into\b",
+    )
+
+    distance=spell.get("range",{}).get("distance",{})
+    distance_type=str(
+        distance.get("type",spell.get("range",{}).get("type",""))
+        if isinstance(distance,dict)
+        else ""
+    ).lower()
+
+    if distance_type=="self" and any(re.search(p,text) for p in self_patterns):
+        return {
+            "target_mode":"transform_self",
+            "range_feet":max(5.0,range_feet),
+            "transformation_mode":"appearance",
+        }
+
+    if any(re.search(p,text) for p in multi_patterns):
+        result={
+            "target_mode":"token_then_multi_transform",
+            "range_feet":max(5.0,range_feet),
+            "transformation_mode":"appearance",
+        }
+        up_to=re.search(
+            r"\btransform up to\s+"
+            r"(one|two|three|four|five|six|seven|eight|nine|ten|\d+)"
+            r"\s+creatures?\b",
+            text,
+        )
+        if up_to:
+            maximum=_number_value(up_to.group(1))
+            if maximum:
+                result["transform_max_targets"]=maximum
+        return result
+
+    if any(re.search(p,text) for p in single_patterns):
+        return {
+            "target_mode":"token_then_transform",
+            "range_feet":max(5.0,range_feet),
+            "transformation_mode":"appearance",
+        }
+
+    return {}
+
+
 def old_records():
     if not OUTPUT.exists():return {}
     text=OUTPUT.read_text(encoding="utf-8");mark="const SPELLS: Dictionary = "
@@ -385,6 +473,9 @@ def main():
         summon_fields=summon_runtime_fields(s,runtime)
         if summon_fields:
             rec.update(summon_fields)
+        transformation_fields=transformation_runtime_fields(s)
+        if transformation_fields:
+            rec.update(transformation_fields)
         out[sid]=rec
     out=dict(sorted(out.items(),key=lambda kv:kv[1]["name"].lower()))
     OUTPUT.write_text("extends RefCounted\n\n# Generated from the complete 5eTools spell source index.\n# Canonical class names are localized by spell_catalog.gd.\nconst SPELLS: Dictionary = "+json.dumps(out,ensure_ascii=False,indent=2)+"\n",encoding="utf-8")
