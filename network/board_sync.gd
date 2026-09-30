@@ -422,6 +422,8 @@ func valid_snapshot(snapshot: Variant) -> bool:
 					return false
 			if not item.get("size_name") is String or not item.get("flying") is bool:
 				return false
+			if item.has("gravity_applied") and not item.get("gravity_applied") is bool:
+				return false
 			if item.has("display_name"):
 				if not item.get("display_name") is String:
 					return false
@@ -532,6 +534,9 @@ func _serialize_node(node: Node3D, group_name: String) -> Dictionary:
 	var data := {"id":_sync_id(node),"group":group_name,"path":String(board_root.get_path_to(node)),"scene":node.scene_file_path,"name":node.name,"transform":_transform(node.global_transform),"visible":node.visible}
 	if group_name == "dnd_token":
 		data["kind"]="token"; data["flying"]=bool(node.get("flying")); data["footprint"]=float(node.get("_footprint_cells")); data["size_name"]=String(node.get("_size_name")); data["color"]=_token_color(node)
+		# Nuovo significato esplicito: i salvataggi precedenti non avevano
+		# gravity_applied e vengono quindi migrati come token sospesi.
+		data["gravity_applied"] = not bool(node.get("flying"))
 		data["height_cells"] = float(node.get("token_height_cells"))
 		data["display_name"] = (
 			String(node.call("get_display_name"))
@@ -576,7 +581,11 @@ func _apply_node_data(node: Node3D, data: Dictionary) -> void:
 				maxf(float(data.get("height_cells", 2.0)), 0.1)
 			)
 		if node.has_method("configure"): node.call("configure",_dict_color(data.get("color",{})),float(board_root.get("cell_size")),String(data.get("size_name","Medium")),float(data.get("footprint",1.0)))
-		if node.has_method("set_flying"): node.call("set_flying",bool(data.get("flying",false)))
+		var gravity_applied: bool = bool(data.get("gravity_applied", false))
+		if gravity_applied and node.has_method("apply_gravity"):
+			node.call("apply_gravity")
+		elif node.has_method("set_flying"):
+			node.call("set_flying", true)
 		if node.has_method("set_display_name"):
 			node.call("set_display_name", String(data.get("display_name", "")))
 		if node.has_method("set_conditions"):
