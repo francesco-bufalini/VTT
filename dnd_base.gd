@@ -2253,7 +2253,23 @@ func _on_token_dialog_confirmed() -> void:
 	_capture_mouse()
 
 	if confirmed_callback.is_valid():
-		confirmed_callback.call(created_token)
+		# ConfirmationDialog emette confirmed prima di completare il proprio
+		# ciclo di chiusura. Rimandare il callback evita che Polymorph apra il
+		# TS (o il dialogo del bersaglio successivo) mentre questo popup e'
+		# ancora attivo.
+		call_deferred(
+			"_invoke_token_generation_confirmed",
+			confirmed_callback,
+			created_token
+		)
+
+
+func _invoke_token_generation_confirmed(
+	callback: Callable,
+	token: CharacterBody3D
+) -> void:
+	if callback.is_valid() and token != null and is_instance_valid(token):
+		callback.call(token)
 
 
 func _on_token_dialog_canceled() -> void:
