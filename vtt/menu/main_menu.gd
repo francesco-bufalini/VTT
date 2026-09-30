@@ -2,97 +2,21 @@ extends Control
 
 const ACTIVE_CAMPAIGNS_SCENE_PATH := "res://vtt/menu/active_campaigns.tscn"
 const MENU_BACKGROUND_TEXTURE := (
-	"res://assets/menu/background/lithophane_background.webp"
+	"res://assets/menu/background/menu_background.jpg"
 )
-const CAMERA_TARGET := Vector3(0.0, 0.0, 0.0)
-const CAMERA_BASE_RADIUS := 19.5
-const CAMERA_BASE_HEIGHT := 0.12
 
 var _options_dialog: AcceptDialog
 var _new_campaign_dialog: ConfirmationDialog
 var _new_campaign_name: LineEdit
 
-var _background_viewport: SubViewport
-var _background_world: Node3D
-var _castle_root: Node3D
-var _camera: Camera3D
-var _torch_left: OmniLight3D
-var _torch_right: OmniLight3D
-var _elapsed: float = 0.0
-var _mouse_parallax_target: Vector2 = Vector2.ZERO
-var _mouse_parallax: Vector2 = Vector2.ZERO
 
 
 func _ready() -> void:
 	_build_ui()
 
 
-func _process(delta: float) -> void:
-	if _camera == null or not is_instance_valid(_camera):
-		return
-
-	_elapsed += delta
-	_mouse_parallax = _mouse_parallax.lerp(
-		_mouse_parallax_target,
-		minf(delta * 3.0, 1.0)
-	)
-
-	var pan: float = sin(_elapsed * 0.105) * deg_to_rad(2.6)
-	var radius: float = CAMERA_BASE_RADIUS + sin(_elapsed * 0.071) * 0.28
-	var height: float = (
-		CAMERA_BASE_HEIGHT
-		+ sin(_elapsed * 0.089) * 0.10
-		- _mouse_parallax.y * 0.26
-	)
-	var parallax_x: float = _mouse_parallax.x * 0.42
-
-	_camera.position = Vector3(
-		sin(pan) * radius + parallax_x,
-		height,
-		cos(pan) * radius
-	)
-	_camera.look_at(
-		CAMERA_TARGET
-		+ Vector3(
-			_mouse_parallax.x * 0.20,
-			-_mouse_parallax.y * 0.12,
-			0.0
-		),
-		Vector3.UP
-	)
-
-	if _torch_left != null and is_instance_valid(_torch_left):
-		_torch_left.light_energy = (
-			2.45
-			+ sin(_elapsed * 7.7) * 0.22
-			+ sin(_elapsed * 13.1) * 0.11
-		)
-	if _torch_right != null and is_instance_valid(_torch_right):
-		_torch_right.light_energy = (
-			2.20
-			+ sin(_elapsed * 8.3 + 1.4) * 0.20
-			+ sin(_elapsed * 12.4) * 0.10
-		)
-
-
-func _input(event: InputEvent) -> void:
-	if not event is InputEventMouseMotion:
-		return
-	var viewport_size: Vector2 = get_viewport_rect().size
-	if viewport_size.x <= 1.0 or viewport_size.y <= 1.0:
-		return
-	var mouse_event := event as InputEventMouseMotion
-	var normalized: Vector2 = Vector2(
-		mouse_event.position.x / viewport_size.x,
-		mouse_event.position.y / viewport_size.y
-	)
-	_mouse_parallax_target = (
-		normalized - Vector2(0.5, 0.5)
-	) * 2.0
-
-
 func _build_ui() -> void:
-	_build_3d_background()
+	_build_image_background()
 	_build_vignette()
 	_build_title()
 	_build_bottom_controls()
@@ -100,164 +24,27 @@ func _build_ui() -> void:
 	_build_options_dialog()
 
 
-func _build_3d_background() -> void:
-	var viewport_container := SubViewportContainer.new()
-	viewport_container.name = "FantasyBackground"
-	viewport_container.set_anchors_and_offsets_preset(Control.PRESET_FULL_RECT)
-	viewport_container.stretch = true
-	viewport_container.mouse_filter = Control.MOUSE_FILTER_IGNORE
-	add_child(viewport_container)
+func _build_image_background() -> void:
+	var background := TextureRect.new()
+	background.name = "FantasyBackground"
+	background.set_anchors_and_offsets_preset(Control.PRESET_FULL_RECT)
+	background.expand_mode = TextureRect.EXPAND_IGNORE_SIZE
+	background.stretch_mode = TextureRect.STRETCH_KEEP_ASPECT_COVERED
+	background.mouse_filter = Control.MOUSE_FILTER_IGNORE
+	background.texture_filter = CanvasItem.TEXTURE_FILTER_LINEAR
+	background.z_index = -100
 
-	_background_viewport = SubViewport.new()
-	_background_viewport.name = "FantasyViewport"
-	_background_viewport.size = Vector2i(1280, 720)
-	_background_viewport.render_target_update_mode = SubViewport.UPDATE_ALWAYS
-	_background_viewport.transparent_bg = false
-	viewport_container.add_child(_background_viewport)
-
-	_background_world = Node3D.new()
-	_background_world.name = "MenuWorld"
-	_background_viewport.add_child(_background_world)
-
-	_build_lithophane_background()
-
-	_camera = Camera3D.new()
-	_camera.name = "MenuCamera"
-	_camera.fov = 48.0
-	_camera.near = 0.05
-	_camera.far = 100.0
-	_camera.position = Vector3(0.0, CAMERA_BASE_HEIGHT, CAMERA_BASE_RADIUS)
-	_camera.look_at(CAMERA_TARGET, Vector3.UP)
-	_camera.current = true
-	_background_world.add_child(_camera)
-
-
-func _build_lithophane_background() -> void:
-	var background := MeshInstance3D.new()
-	background.name = "LithophaneBackground"
-
-	var plane := PlaneMesh.new()
-	plane.size = Vector2(26.0, 17.333333)
-	plane.subdivide_width = 160
-	plane.subdivide_depth = 106
-	background.mesh = plane
-
-	# The supplied OBJ is a very dense lithophane (~1.2M surface vertices).
-	# For a menu, keep its characteristic shallow relief but generate it from
-	# the same supplied texture at runtime. This avoids a huge import cost.
-	var shader := Shader.new()
-	shader.code = """
-shader_type spatial;
-render_mode unshaded, cull_disabled;
-
-uniform sampler2D background_texture;
-uniform float relief_strength = 0.34;
-
-void vertex() {
-	float luminance = dot(
-		texture(background_texture, UV).rgb,
-		vec3(0.2126, 0.7152, 0.0722)
-	);
-	VERTEX.y -= luminance * relief_strength;
-}
-
-void fragment() {
-	ALBEDO = texture(background_texture, UV).rgb;
-}
-"""
-	var material := ShaderMaterial.new()
-	material.shader = shader
-
-	var background_texture: Texture2D = null
-	if ResourceLoader.exists(MENU_BACKGROUND_TEXTURE):
-		var loaded: Resource = ResourceLoader.load(MENU_BACKGROUND_TEXTURE)
-		if loaded is Texture2D:
-			background_texture = loaded as Texture2D
-
+	var background_texture: Texture2D = load(MENU_BACKGROUND_TEXTURE)
 	if background_texture == null:
 		push_error(
 			"MainMenu: texture di sfondo non trovata: "
 			+ MENU_BACKGROUND_TEXTURE
 		)
 	else:
-		material.set_shader_parameter(
-			"background_texture",
-			background_texture
-		)
+		background.texture = background_texture
 
-	background.material_override = material
-	background.rotation_degrees.x = -90.0
-	background.position = Vector3(0.0, -0.02, 0.0)
-	_background_world.add_child(background)
-
-
-func _build_lighting() -> void:
-	var moon := DirectionalLight3D.new()
-	moon.name = "MoonLight"
-	moon.rotation_degrees = Vector3(-46.0, -28.0, 0.0)
-	moon.light_color = Color(0.56, 0.66, 0.91)
-	moon.light_energy = 1.45
-	moon.shadow_enabled = true
-	_background_world.add_child(moon)
-
-	_torch_left = _make_torch(
-		"TorchLeft",
-		Vector3(-2.65, -0.25, 2.65)
-	)
-	_torch_right = _make_torch(
-		"TorchRight",
-		Vector3(2.55, -0.10, 2.30)
-	)
-	_background_world.add_child(_torch_left)
-	_background_world.add_child(_torch_right)
-
-
-func _make_torch(light_name: String, light_position: Vector3) -> OmniLight3D:
-	var light := OmniLight3D.new()
-	light.name = light_name
-	light.position = light_position
-	light.light_color = Color(1.0, 0.49, 0.17)
-	light.light_energy = 2.3
-	light.omni_range = 5.8
-	light.shadow_enabled = true
-	return light
-
-
-func _build_dust_particles() -> void:
-	var particles := GPUParticles3D.new()
-	particles.name = "AtmosphericDust"
-	particles.amount = 120
-	particles.lifetime = 8.0
-	particles.randomness = 0.75
-	particles.visibility_aabb = AABB(
-		Vector3(-9.0, -5.0, -8.0),
-		Vector3(18.0, 12.0, 16.0)
-	)
-
-	var process_material := ParticleProcessMaterial.new()
-	process_material.emission_shape = ParticleProcessMaterial.EMISSION_SHAPE_BOX
-	process_material.emission_box_extents = Vector3(7.5, 4.3, 5.0)
-	process_material.direction = Vector3(0.15, 0.85, 0.05)
-	process_material.spread = 80.0
-	process_material.initial_velocity_min = 0.025
-	process_material.initial_velocity_max = 0.095
-	process_material.gravity = Vector3(0.0, 0.012, 0.0)
-	process_material.scale_min = 0.6
-	process_material.scale_max = 1.5
-	process_material.color = Color(0.78, 0.72, 0.60, 0.24)
-	particles.process_material = process_material
-
-	var quad := QuadMesh.new()
-	quad.size = Vector2(0.035, 0.035)
-	var particle_material := StandardMaterial3D.new()
-	particle_material.transparency = BaseMaterial3D.TRANSPARENCY_ALPHA
-	particle_material.shading_mode = BaseMaterial3D.SHADING_MODE_UNSHADED
-	particle_material.billboard_mode = BaseMaterial3D.BILLBOARD_ENABLED
-	particle_material.albedo_color = Color(0.92, 0.84, 0.70, 0.34)
-	quad.material = particle_material
-	particles.draw_pass_1 = quad
-	particles.position = Vector3(0.0, 0.4, 0.0)
-	_background_world.add_child(particles)
+	add_child(background)
+	move_child(background, 0)
 
 
 func _build_vignette() -> void:
