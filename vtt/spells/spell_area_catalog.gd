@@ -472,6 +472,15 @@ static func apply_to_spell(spell_data: Dictionary) -> Dictionary:
 	)
 	result["persistent"] = persistence == "persistent"
 
+	for field_name: String in [
+		"condition_inflict",
+		"saving_throw",
+		"misc_tags"
+	]:
+		var field_value: Variant = effect.get(field_name, [])
+		if field_value is Array and not (field_value as Array).is_empty():
+			result[field_name] = (field_value as Array).duplicate(true)
+
 	# Damage type is authoritative when exactly one is present. Otherwise
 	# infer the visual family from the 5eTools Entries text; if no clue exists,
 	# fall back to an existing bespoke style and finally to generic arcane.
