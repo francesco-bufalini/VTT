@@ -381,19 +381,44 @@ def choose_main_source(package: Path) -> Path:
     return chosen
 
 
+def is_platform_reference_name(text: str) -> bool:
+    name = text.lower()
+    if any(word in name for word in ("base", "marker", "platform", "stand")):
+        return True
+
+    size = size_from_text(name)
+    if size is None:
+        return False
+
+    # Common miniature-pack naming convention for flying-size reference discs,
+    # e.g. "Small Creature Flying" or "Huge Creature Flying Size Marker".
+    return bool(
+        re.search(
+            r"\b(tiny|small|medium|large|huge|gargantuan)\b"
+            r".*\bcreature\b.*\bflying\b",
+            name,
+        )
+    )
+
+
 def base_candidate_score(obj: bpy.types.Object) -> int:
     name = obj.name.lower()
+    if not is_platform_reference_name(name):
+        return 0
+
     score = 0
     if "marker" in name:
         score += 50
     if "base" in name:
         score += 40
+    if "platform" in name or "stand" in name:
+        score += 40
+    if "flying" in name:
+        score += 30
     if "size" in name:
         score += 10
     if size_from_text(name) is not None:
         score += 80
-    if score <= 0:
-        return 0
 
     low, high = object_bounds(obj)
     x_extent = high.x - low.x
@@ -428,11 +453,18 @@ def find_scene_base(objects: list[bpy.types.Object]) -> bpy.types.Object | None:
 
 def base_file_score(path: Path) -> int:
     name = path.stem.lower()
+    if not is_platform_reference_name(name):
+        return 0
+
     score = 0
     if "marker" in name:
         score += 50
     if "base" in name:
         score += 40
+    if "platform" in name or "stand" in name:
+        score += 40
+    if "flying" in name:
+        score += 30
     if "size" in name:
         score += 10
     if size_from_text(name) is not None:
