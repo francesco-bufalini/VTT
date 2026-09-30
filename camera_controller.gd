@@ -72,6 +72,49 @@ func _process(delta: float) -> void:
 		global_position += direction.normalized() * speed * delta
 
 
+func focus_on_token(token: Node3D) -> void:
+	if token == null or not is_instance_valid(token):
+		return
+
+	# Il comando "occhio" deve essere una semplice inquadratura, non entrare
+	# nella modalita' prima persona e non legare la camera al movimento futuro.
+	if is_first_person():
+		_first_person_target = null
+		_has_saved_free_transform = false
+
+	var token_cell_size := 1.0
+	var token_height := 2.0
+	var footprint := 1.0
+	var cell_value: Variant = token.get("cell_size")
+	if cell_value is float or cell_value is int:
+		token_cell_size = maxf(float(cell_value), 0.001)
+	var height_value: Variant = token.get("token_height_cells")
+	if height_value is float or height_value is int:
+		token_height = maxf(float(height_value), 0.5)
+	if token.has_method("get_footprint_cells"):
+		footprint = maxf(float(token.call("get_footprint_cells")), 0.5)
+
+	var target := (
+		token.global_position
+		+ Vector3.UP * token_height * token_cell_size * 0.18
+	)
+	var token_forward := -token.global_transform.basis.z.normalized()
+	var distance := maxf(
+		3.0 * token_cell_size,
+		footprint * token_cell_size * 2.4
+	)
+	var camera_height := maxf(
+		1.1 * token_cell_size,
+		token_height * token_cell_size * 0.45
+	)
+	global_position = (
+		target
+		+ token_forward * distance
+		+ Vector3.UP * camera_height
+	)
+	look_at(target, Vector3.UP)
+
+
 func enter_first_person(token: CharacterBody3D) -> void:
 	if token == null or not is_instance_valid(token):
 		return
