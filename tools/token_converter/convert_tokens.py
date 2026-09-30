@@ -17,6 +17,7 @@ import argparse
 import json
 import math
 import re
+import shutil
 import sys
 from datetime import datetime, timezone
 from pathlib import Path
@@ -146,11 +147,30 @@ def clear_scene() -> None:
 
 
 def import_blend(path: Path) -> None:
+    """Append the source scene hierarchy instead of flattening every object.
+
+    Keeping the collection tree preserves author visibility choices: hidden
+    printable pieces/variants stay hidden instead of becoming part of the VTT
+    miniature.
+    """
     with bpy.data.libraries.load(str(path), link=False) as (source, target):
-        target.objects = list(source.objects)
-    for obj in target.objects:
-        if obj is not None and obj.name not in bpy.context.scene.collection.objects:
-            bpy.context.scene.collection.objects.link(obj)
+        if not source.scenes:
+            raise ValueError(f"No scene found in blend file: {path.name}")
+        target.scenes = [source.scenes[0]]
+
+    source_scene = target.scenes[0]
+    if source_scene is None:
+        raise ValueError(f"Could not load scene from blend file: {path.name}")
+
+    destination = bpy.context.scene.collection
+
+    for obj in source_scene.collection.objects:
+        if obj.name not in destination.objects:
+            destination.objects.link(obj)
+
+    for child in source_scene.collection.children:
+        if child.name not in destination.children:
+            destination.children.link(child)
 
 
 def import_source(path: Path) -> None:
@@ -233,8 +253,13 @@ def supported_files(folder: Path) -> list[Path]:
 
 
 def _technical_folder_name(name: str) -> bool:
-    normalized = slugify(name).replace("_", "-")
-    return normalized in TECHNICAL_FOLDER_WORDS
+    normalized = slugify(name)
+    tokens = set(normalized.split("_"))
+    compact = normalized.replace("_", "-")
+    return (
+        compact in TECHNICAL_FOLDER_WORDS
+        or bool(tokens.intersection(TECHNICAL_FOLDER_WORDS))
+    )
 
 
 def discover_packages(source_root: Path) -> list[Path]:
@@ -583,6 +608,39 @@ def write_wrapper_scene(
     return f"res://assets/tokens/scenes/{scene_path.name}"
 
 
+def cleanup_stale_generated(project_root: Path, tokens: list[dict]) -> None:
+    """Remove only converter-owned artifacts that disappeared from the new scan."""
+    manifest_path = project_root / "assets" / "tokens" / "token_library.json"
+    if not manifest_path.is_file():
+        return
+
+    try:
+        previous = json.loads(manifest_path.read_text(encoding="utf-8"))
+    except Exception:
+        return
+
+    current_ids = {str(token.get("id", "")) for token in tokens}
+    for old in previous.get("tokens", []):
+        old_id = str(old.get("id", ""))
+        if not old_id or old_id in current_ids:
+            continue
+
+        obj_res = str(old.get("obj", ""))
+        scene_res = str(old.get("scene", ""))
+
+        if obj_res.startswith("res://assets/tokens/generated/"):
+            obj_path = project_root / obj_res.removeprefix("res://")
+            generated_root = (project_root / "assets" / "tokens" / "generated").resolve()
+            package_dir = obj_path.parent.resolve()
+            if generated_root in package_dir.parents and package_dir.is_dir():
+                shutil.rmtree(package_dir, ignore_errors=True)
+
+        if scene_res.startswith("res://assets/tokens/scenes/"):
+            scene_path = project_root / scene_res.removeprefix("res://")
+            if scene_path.is_file():
+                scene_path.unlink()
+
+
 def choose_default(tokens: list[dict], requested: str) -> dict:
     if not tokens:
         return {}
@@ -712,11 +770,18 @@ def main() -> int:
         print(f"ERROR: no miniature packages found under {source_root}")
         return 3
 
+    print(f"Miniature packages discovered: {len(packages)}")
+
     tokens: list[dict] = []
     failures: list[dict] = []
 
     for package in packages:
-        print(f"\n=== {package.name} ===")
+        relative_package = (
+            package.relative_to(source_root).as_posix()
+            if package != source_root
+            else package.name
+        )
+        print(f"\n=== {relative_package} ===")
         try:
             tokens.append(process_package(package, source_root, project_root))
         except Exception as exc:
@@ -728,6 +793,7 @@ def main() -> int:
         return 4
 
     default_token = choose_default(tokens, args.default)
+    cleanup_stale_generated(project_root, tokens)
     manifest_path = project_root / "assets" / "tokens" / "token_library.json"
     manifest_path.parent.mkdir(parents=True, exist_ok=True)
     manifest = {
