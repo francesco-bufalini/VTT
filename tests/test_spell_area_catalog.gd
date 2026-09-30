@@ -279,6 +279,75 @@ func run() -> void:
 	assert(not finger_of_death.is_empty())
 	assert(String(finger_of_death.get("target_mode", "")) != "summon")
 
+	# Physical-form spells use reversible token transformations.
+	var polymorph: Dictionary = SpellCatalog.spell("polymorph")
+	assert(not polymorph.is_empty())
+	assert(String(polymorph.get("target_mode", "")) == "token_then_transform")
+	assert(String(polymorph.get("transformation_mode", "")) == "appearance")
+	assert(is_equal_approx(float(polymorph.get("range_feet", 0.0)), 60.0))
+
+	var shapechange: Dictionary = SpellCatalog.spell("shapechange")
+	assert(not shapechange.is_empty())
+	assert(String(shapechange.get("target_mode", "")) == "transform_self")
+	assert(is_equal_approx(float(shapechange.get("range_feet", 0.0)), 5.0))
+
+	var animal_shapes: Dictionary = SpellCatalog.spell("animal_shapes")
+	assert(not animal_shapes.is_empty())
+	assert(
+		String(animal_shapes.get("target_mode", ""))
+		== "token_then_multi_transform"
+	)
+
+	var mass_polymorph: Dictionary = SpellCatalog.spell("mass_polymorph")
+	assert(not mass_polymorph.is_empty())
+	assert(
+		String(mass_polymorph.get("target_mode", ""))
+		== "token_then_multi_transform"
+	)
+	assert(int(mass_polymorph.get("transform_max_targets", 0)) == 10)
+
+	var enlarge_reduce: Dictionary = SpellCatalog.spell("enlarge_reduce")
+	assert(not enlarge_reduce.is_empty())
+	assert(String(enlarge_reduce.get("target_mode", "")) == "resize_token")
+	assert(
+		String(enlarge_reduce.get("transformation_mode", ""))
+		== "resize"
+	)
+
+	# Touch and every other effective map range are clamped to at least 5 ft.
+	var barkskin: Dictionary = SpellCatalog.spell("barkskin")
+	assert(not barkskin.is_empty())
+	assert(String(barkskin.get("target_mode", "")) == "token_then_transform")
+	assert(is_equal_approx(float(barkskin.get("range_feet", 0.0)), 5.0))
+	var spell_system: Node = preload(
+		"res://vtt/spells/spell_system.gd"
+	).new()
+	assert(is_equal_approx(
+		float(spell_system.call(
+			"_effective_spell_range_feet",
+			{"range": "Touch", "range_feet": 0.0},
+			null
+		)),
+		5.0
+	))
+	assert(is_equal_approx(
+		float(spell_system.call(
+			"_effective_spell_range_feet",
+			{"range": "Self", "range_feet": 0.0},
+			null
+		)),
+		5.0
+	))
+	spell_system.free()
+
+	# True Polymorph carries SMN in 5eTools but is a transformation, not summon.
+	var true_polymorph: Dictionary = SpellCatalog.spell("true_polymorph")
+	assert(not true_polymorph.is_empty())
+	assert(
+		String(true_polymorph.get("target_mode", ""))
+		== "token_then_transform"
+	)
+
 	var entangle: Dictionary = SpellCatalog.spell("entangle")
 	assert(not entangle.is_empty())
 	assert(String(entangle.get("target_mode", "")) == "token_then_point")
@@ -293,6 +362,6 @@ func run() -> void:
 	assert("strength" in entangle_saves)
 
 	print(
-		"PASS: 5eTools metadata drives projectiles, summon flows, conditions, areas, walls and VFX"
+		"PASS: 5eTools metadata drives projectiles, summons, transformations, conditions, areas, walls and VFX"
 	)
 	quit()
