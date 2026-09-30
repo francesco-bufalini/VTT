@@ -76,153 +76,6 @@ const SPELLS: Dictionary = {
 		"transient_seconds": 5.0,
 		"level17_damage": "4d6 Acid"
 	},
-	"chill_touch": {
-		"id": "chill_touch",
-		"name": "Chill Touch",
-		"source": "XPHB",
-		"level": 0,
-		"school": "Necromancy",
-		"casting_time": "1 action",
-		"range": "Touch",
-		"target": "One creature within reach",
-		"area": "Single target",
-		"components": "V, S",
-		"duration": "Instantaneous",
-		"classes": ["Stregone", "Warlock", "Mago"],
-		"description": "A necrotic touch damages one nearby creature and briefly prevents healing.",
-		"higher_levels": "Cantrip scaling: at character level 17 the damage is 4d10 Necrotic.",
-		"target_mode": "token_then_token",
-		"range_feet": 5,
-		"projectile_style": "chill_touch",
-		"transient_seconds": 5.0,
-		"level17_damage": "4d10 Necrotic"
-	},
-	"fire_bolt": {
-		"id": "fire_bolt",
-		"name": "Fire Bolt",
-		"source": "XPHB",
-		"level": 0,
-		"school": "Evocation",
-		"casting_time": "1 action",
-		"range": "120 feet",
-		"target": "One creature or object",
-		"area": "Single target",
-		"components": "V, S",
-		"duration": "Instantaneous",
-		"classes": ["Stregone", "Mago"],
-		"description": "A mote of fire streaks toward one target.",
-		"higher_levels": "Cantrip scaling: at character level 17 the damage is 4d10 Fire.",
-		"target_mode": "token_then_token",
-		"range_feet": 120,
-		"projectile_style": "fire_bolt",
-		"transient_seconds": 5.0,
-		"level17_damage": "4d10 Fire"
-	},
-	"mind_sliver": {
-		"id": "mind_sliver",
-		"name": "Mind Sliver",
-		"source": "XPHB",
-		"level": 0,
-		"school": "Enchantment",
-		"casting_time": "1 action",
-		"range": "60 feet",
-		"target": "One creature",
-		"area": "Single target",
-		"components": "V",
-		"duration": "Instantaneous",
-		"classes": ["Stregone", "Warlock", "Mago"],
-		"description": "Psychic energy strikes one creature and hinders its next saving throw.",
-		"higher_levels": "Cantrip scaling: at character level 17 the damage is 4d6 Psychic.",
-		"target_mode": "token_then_token",
-		"range_feet": 60,
-		"projectile_style": "mind_sliver",
-		"transient_seconds": 5.0,
-		"level17_damage": "4d6 Psychic"
-	},
-	"poison_spray": {
-		"id": "poison_spray",
-		"name": "Poison Spray",
-		"source": "XPHB",
-		"level": 0,
-		"school": "Necromancy",
-		"casting_time": "1 action",
-		"range": "30 feet",
-		"target": "One creature",
-		"area": "Single target",
-		"components": "V, S",
-		"duration": "Instantaneous",
-		"classes": ["Druido", "Stregone", "Warlock", "Mago"],
-		"description": "Toxic magical mist is projected toward one creature.",
-		"higher_levels": "Cantrip scaling: at character level 17 the damage is 4d12 Poison.",
-		"target_mode": "token_then_token",
-		"range_feet": 30,
-		"projectile_style": "poison_spray",
-		"transient_seconds": 5.0,
-		"level17_damage": "4d12 Poison"
-	},
-	"ray_of_frost": {
-		"id": "ray_of_frost",
-		"name": "Ray of Frost",
-		"source": "XPHB",
-		"level": 0,
-		"school": "Evocation",
-		"casting_time": "1 action",
-		"range": "60 feet",
-		"target": "One creature",
-		"area": "Single target",
-		"components": "V, S",
-		"duration": "Instantaneous",
-		"classes": ["Stregone", "Mago"],
-		"description": "A freezing ray damages one creature and briefly reduces its speed.",
-		"higher_levels": "Cantrip scaling: at character level 17 the damage is 4d8 Cold.",
-		"target_mode": "token_then_token",
-		"range_feet": 60,
-		"projectile_style": "ray_of_frost",
-		"transient_seconds": 5.0,
-		"level17_damage": "4d8 Cold"
-	},
-	"shocking_grasp": {
-		"id": "shocking_grasp",
-		"name": "Shocking Grasp",
-		"source": "XPHB",
-		"level": 0,
-		"school": "Evocation",
-		"casting_time": "1 action",
-		"range": "Touch",
-		"target": "One creature within reach",
-		"area": "Single target",
-		"components": "V, S",
-		"duration": "Instantaneous",
-		"classes": ["Stregone", "Mago"],
-		"description": "Lightning jumps from the caster into a creature within reach.",
-		"higher_levels": "Cantrip scaling: at character level 17 the damage is 4d8 Lightning.",
-		"target_mode": "token_then_token",
-		"range_feet": 5,
-		"projectile_style": "shocking_grasp",
-		"transient_seconds": 5.0,
-		"level17_damage": "4d8 Lightning"
-	},
-	"sorcerous_burst": {
-		"id": "sorcerous_burst",
-		"name": "Sorcerous Burst",
-		"source": "XPHB",
-		"level": 0,
-		"school": "Evocation",
-		"casting_time": "1 action",
-		"range": "120 feet",
-		"target": "One creature or object",
-		"area": "Single target",
-		"components": "V, S",
-		"duration": "Instantaneous",
-		"classes": ["Stregone"],
-		"description": "Raw sorcerous energy strikes a target; its damage type is chosen when cast.",
-		"higher_levels": "At character level 17 the base damage is 4d8; rolled 8s can add further d8s up to the normal spell limit.",
-		"target_mode": "token_then_token",
-		"range_feet": 120,
-		"projectile_style": "sorcerous_burst",
-		"transient_seconds": 5.0,
-		"level17_damage": "4d8 chosen type"
-	},
 	"thunderclap": {
 		"id": "thunderclap",
 		"name": "Thunderclap",
@@ -266,26 +119,6 @@ const SPELLS: Dictionary = {
 		"aoe_length_cells": 3,
 		"allow_pitch": true,
 		"visual_style": "burning_hands",
-		"transient_seconds": 5.0
-	},
-	"chromatic_orb": {
-		"id": "chromatic_orb",
-		"name": "Chromatic Orb",
-		"source": "XPHB",
-		"level": 1,
-		"school": "Evocation",
-		"casting_time": "1 action",
-		"range": "90 feet",
-		"target": "One creature",
-		"area": "Single target",
-		"components": "V, S, M (a diamond worth 50+ GP)",
-		"duration": "Instantaneous",
-		"classes": ["Stregone", "Mago"],
-		"description": "A sphere of chosen elemental energy is hurled at one target. Matching damage dice can make the orb leap to another creature.",
-		"higher_levels": "Damage increases by 1d8 per slot above 1. The maximum number of possible leaps equals the slot level; a creature can be targeted only once.",
-		"target_mode": "token_then_token",
-		"range_feet": 90,
-		"projectile_style": "chromatic_orb",
 		"transient_seconds": 5.0
 	},
 	"color_spray": {
@@ -379,49 +212,6 @@ const SPELLS: Dictionary = {
 		"impact_style": "ice_knife_burst",
 		"transient_seconds": 5.0
 	},
-	"magic_missile": {
-		"id": "magic_missile",
-		"name": "Magic Missile",
-		"source": "XPHB",
-		"level": 1,
-		"school": "Evocation",
-		"casting_time": "1 action",
-		"range": "120 feet",
-		"target": "One or more creatures",
-		"area": "Multiple targets",
-		"components": "V, S",
-		"duration": "Instantaneous",
-		"classes": ["Stregone", "Mago"],
-		"description": "Three force darts strike creatures chosen within range; multiple darts may hit the same creature.",
-		"higher_levels": "One additional dart is created for each slot level above 1.",
-		"target_mode": "token_then_multi_token",
-		"range_feet": 120,
-		"base_target_clicks": 3,
-		"target_clicks_per_slot_above_base": 1,
-		"allow_repeat_targets": true,
-		"projectile_style": "magic_missile",
-		"transient_seconds": 5.0
-	},
-	"ray_of_sickness": {
-		"id": "ray_of_sickness",
-		"name": "Ray of Sickness",
-		"source": "XPHB",
-		"level": 1,
-		"school": "Necromancy",
-		"casting_time": "1 action",
-		"range": "60 feet",
-		"target": "One creature",
-		"area": "Single target",
-		"components": "V, S",
-		"duration": "Instantaneous",
-		"classes": ["Stregone", "Mago"],
-		"description": "A sickly green ray damages and briefly poisons one creature.",
-		"higher_levels": "Damage increases by 1d8 for each slot level above 1.",
-		"target_mode": "token_then_token",
-		"range_feet": 60,
-		"projectile_style": "ray_of_sickness",
-		"transient_seconds": 5.0
-	},
 	"sleep": {
 		"id": "sleep",
 		"name": "Sleep",
@@ -513,49 +303,6 @@ const SPELLS: Dictionary = {
 		"movable_aoe_feet": 30.0,
 		"movable_aoe_mode": "free",
 		"visual_style": "cloud_of_daggers"
-	},
-	"mind_spike": {
-		"id": "mind_spike",
-		"name": "Mind Spike",
-		"source": "XPHB",
-		"level": 2,
-		"school": "Divination",
-		"casting_time": "1 action",
-		"range": "120 feet",
-		"target": "One creature",
-		"area": "Single target",
-		"components": "S",
-		"duration": "Concentration, up to 1 hour",
-		"classes": ["Stregone", "Warlock", "Mago"],
-		"description": "A spike of psionic energy strikes one creature and can reveal its location.",
-		"higher_levels": "Damage increases by 1d8 for each slot level above 2.",
-		"target_mode": "token_then_token",
-		"range_feet": 120,
-		"projectile_style": "mind_spike",
-		"transient_seconds": 5.0
-	},
-	"scorching_ray": {
-		"id": "scorching_ray",
-		"name": "Scorching Ray",
-		"source": "XPHB",
-		"level": 2,
-		"school": "Evocation",
-		"casting_time": "1 action",
-		"range": "120 feet",
-		"target": "One or more creatures",
-		"area": "Multiple rays",
-		"components": "V, S",
-		"duration": "Instantaneous",
-		"classes": ["Stregone", "Mago"],
-		"description": "Three fiery rays can be directed at one target or divided among several targets.",
-		"higher_levels": "Creates one additional ray for each slot level above 2.",
-		"target_mode": "token_then_multi_token",
-		"range_feet": 120,
-		"base_target_clicks": 3,
-		"target_clicks_per_slot_above_base": 1,
-		"allow_repeat_targets": true,
-		"projectile_style": "scorching_ray",
-		"transient_seconds": 5.0
 	},
 	"shatter": {
 		"id": "shatter",
@@ -714,26 +461,6 @@ const SPELLS: Dictionary = {
 		"visual_style": "stinking_cloud"
 	},
 
-	"blight": {
-		"id": "blight",
-		"name": "Blight",
-		"source": "XPHB",
-		"level": 4,
-		"school": "Necromancy",
-		"casting_time": "1 action",
-		"range": "30 feet",
-		"target": "One creature",
-		"area": "Single target",
-		"components": "V, S",
-		"duration": "Instantaneous",
-		"classes": ["Druido", "Stregone", "Warlock", "Mago"],
-		"description": "Necromantic energy withers one creature, with special effectiveness against plants.",
-		"higher_levels": "Damage increases by 1d8 for each slot level above 4.",
-		"target_mode": "token_then_token",
-		"range_feet": 30,
-		"projectile_style": "blight",
-		"transient_seconds": 5.0
-	},
 	"confusion": {
 		"id": "confusion",
 		"name": "Confusion",
@@ -870,29 +597,6 @@ const SPELLS: Dictionary = {
 		"transient_seconds": 5.0
 	},
 
-	"chain_lightning": {
-		"id": "chain_lightning",
-		"name": "Chain Lightning",
-		"source": "XPHB",
-		"level": 6,
-		"school": "Evocation",
-		"casting_time": "1 action",
-		"range": "150 feet",
-		"target": "One primary target, then up to three secondary targets",
-		"area": "Chained targets",
-		"components": "V, S, M (three silver pins)",
-		"duration": "Instantaneous",
-		"classes": ["Stregone", "Mago"],
-		"description": "Lightning strikes a primary target, then arcs to additional targets close to that first target.",
-		"higher_levels": "One additional secondary bolt is available for each slot level above 6.",
-		"target_mode": "token_then_chain",
-		"range_feet": 150,
-		"secondary_range_feet": 30,
-		"base_secondary_targets": 3,
-		"secondary_targets_per_slot_above_base": 1,
-		"projectile_style": "chain_lightning",
-		"transient_seconds": 5.0
-	},
 	"circle_of_death": {
 		"id": "circle_of_death",
 		"name": "Circle of Death",
@@ -913,26 +617,6 @@ const SPELLS: Dictionary = {
 		"aoe_shape": "sphere",
 		"aoe_radius_feet": 60,
 		"visual_style": "circle_of_death",
-		"transient_seconds": 5.0
-	},
-	"disintegrate": {
-		"id": "disintegrate",
-		"name": "Disintegrate",
-		"source": "XPHB",
-		"level": 6,
-		"school": "Transmutation",
-		"casting_time": "1 action",
-		"range": "60 feet",
-		"target": "One creature or object",
-		"area": "Single target",
-		"components": "V, S, M (a lodestone and dust)",
-		"duration": "Instantaneous",
-		"classes": ["Stregone", "Mago"],
-		"description": "A destructive green ray strikes one visible target.",
-		"higher_levels": "Damage increases by 3d6 for each slot level above 6.",
-		"target_mode": "token_then_token",
-		"range_feet": 60,
-		"projectile_style": "disintegrate",
 		"transient_seconds": 5.0
 	},
 	"globe_of_invulnerability": {
@@ -1396,14 +1080,58 @@ static func _apply_runtime_overrides(data: Dictionary) -> Dictionary:
 	return SpellAreaCatalog.apply_to_spell(result)
 
 
+static func _is_runtime_usable(spell_data: Dictionary) -> bool:
+	if spell_data.is_empty():
+		return false
+
+	var target_mode: String = String(
+		spell_data.get("target_mode", "")
+	)
+	if target_mode == "teleport_self":
+		return true
+	if target_mode == "wall_design":
+		var modes_value: Variant = spell_data.get("wall_modes", [])
+		return modes_value is Array and not (modes_value as Array).is_empty()
+
+	var shape: String = String(spell_data.get("aoe_shape", ""))
+	if (
+		not shape.is_empty()
+		and target_mode in [
+			"self_token",
+			"self_emanation",
+			"token_then_point",
+			"token_then_direction"
+		]
+	):
+		return true
+
+	if target_mode == "token_then_token":
+		return (
+			bool(spell_data.get("persistent_link", false))
+			or float(spell_data.get("impact_aoe_radius_feet", 0.0)) > 0.0
+		)
+
+	return false
+
+
 static func spell(spell_id: String) -> Dictionary:
 	var value: Variant = SPELLS.get(spell_id, {})
 	if value is Dictionary:
-		return _apply_runtime_overrides(value as Dictionary)
+		var manual_result: Dictionary = _apply_runtime_overrides(
+			value as Dictionary
+		)
+		return manual_result if _is_runtime_usable(manual_result) else {}
 
 	value = GeneratedCatalog.SPELLS.get(spell_id, {})
 	if value is Dictionary:
-		return _apply_runtime_overrides(value as Dictionary)
+		var generated_result: Dictionary = _apply_runtime_overrides(
+			value as Dictionary
+		)
+		return (
+			generated_result
+			if _is_runtime_usable(generated_result)
+			else {}
+		)
 	return {}
 
 
@@ -1431,9 +1159,11 @@ static func all_spells() -> Array[Dictionary]:
 	var result: Array[Dictionary] = []
 	for value: Variant in merged.values():
 		if value is Dictionary:
-			result.append(
-				_apply_runtime_overrides(value as Dictionary)
+			var runtime_spell: Dictionary = _apply_runtime_overrides(
+				value as Dictionary
 			)
+			if _is_runtime_usable(runtime_spell):
+				result.append(runtime_spell)
 
 	result.sort_custom(
 		func(a: Dictionary, b: Dictionary) -> bool:
