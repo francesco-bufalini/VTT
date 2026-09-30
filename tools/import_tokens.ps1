@@ -4,9 +4,7 @@ param(
 
     [string]$Default = "",
 
-    [string]$Blender = "",
-
-    [double]$TargetHeight = 1.8
+    [string]$Blender = ""
 )
 
 $ErrorActionPreference = "Stop"
@@ -25,9 +23,7 @@ if ([string]::IsNullOrWhiteSpace($Blender)) {
 }
 
 if ([string]::IsNullOrWhiteSpace($Blender)) {
-    $candidates = Get-ChildItem -Path "$env:ProgramFiles\Blender Foundation\Blender *\blender.exe" -ErrorAction SilentlyContinue |
-        Sort-Object FullName -Descending
-
+    $candidates = Get-ChildItem -Path "$env:ProgramFiles\Blender Foundation\Blender *\blender.exe" -ErrorAction SilentlyContinue | Sort-Object FullName -Descending
     if ($candidates.Count -gt 0) {
         $Blender = $candidates[0].FullName
     }
@@ -38,25 +34,22 @@ if ([string]::IsNullOrWhiteSpace($Blender) -or -not (Test-Path $Blender)) {
 }
 
 $SourcePath = (Resolve-Path $Source).Path
-$InvariantTargetHeight = $TargetHeight.ToString([System.Globalization.CultureInfo]::InvariantCulture)
-
 $arguments = @(
     "--background",
     "--python", $Converter,
     "--",
     "--source", $SourcePath,
-    "--project-root", $ProjectRoot,
-    "--target-height", $InvariantTargetHeight
+    "--project-root", $ProjectRoot
 )
 
 if (-not [string]::IsNullOrWhiteSpace($Default)) {
     $arguments += @("--default", $Default)
 }
 
-Write-Host "Blender: $Blender"
+Write-Host "Blender:  $Blender"
 Write-Host "Sorgente: $SourcePath"
 Write-Host "Progetto: $ProjectRoot"
-Write-Host "Altezza normalizzata: $TargetHeight unita Godot"
+Write-Host "Scala:    ricavata automaticamente dalla base della miniatura"
 
 & $Blender @arguments
 if ($LASTEXITCODE -ne 0) {
@@ -64,6 +57,6 @@ if ($LASTEXITCODE -ne 0) {
 }
 
 Write-Host ""
-Write-Host "Token pronti in assets\tokens\generated"
-Write-Host "Scene trascinabili in assets\tokens\scenes"
-Write-Host "Default registrato in assets\tokens\token_library.json"
+Write-Host "OBJ:    assets\tokens\generated"
+Write-Host "Scene:  assets\tokens\scenes"
+Write-Host "Indice: assets\tokens\token_library.json"
