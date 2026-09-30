@@ -9013,5 +9013,185 @@
       "type": "token",
       "projectile": true
     }
+  },
+  "AI::Fast Friends": {
+    "range": {
+      "type": "point",
+      "feet": 30
+    },
+    "targeting": {
+      "type": "multi_token",
+      "projectile": true
+    }
+  },
+  "AI::Gift of Gab": {
+    "range": {
+      "type": "point",
+      "distance_type": "self"
+    }
+  },
+  "AI::Incite Greed": {
+    "range": {
+      "type": "point",
+      "feet": 30
+    },
+    "targeting": {
+      "type": "multi_token",
+      "projectile": true
+    }
+  },
+  "AI::Jim's Glowing Coin": {
+    "range": {
+      "type": "point",
+      "feet": 60
+    },
+    "targeting": {
+      "type": "multi_token",
+      "projectile": true
+    }
+  },
+  "AI::Jim's Magic Missile": {
+    "range": {
+      "type": "point",
+      "feet": 120
+    },
+    "targeting": {
+      "type": "multi_token",
+      "base_target_clicks": 3,
+      "projectile": true
+    },
+    "effect": {
+      "damage_types": [
+        "force"
+      ],
+      "persistence": "instant"
+    }
+  },
+  "AI::Motivational Speech": {
+    "range": {
+      "type": "point",
+      "feet": 60
+    },
+    "targeting": {
+      "type": "multi_token",
+      "base_target_clicks": 5,
+      "projectile": true
+    }
+  },
+  "EGW::Fortune's Favor": {
+    "range": {
+      "type": "point",
+      "feet": 60
+    },
+    "targeting": {
+      "type": "token",
+      "projectile": true
+    }
+  },
+  "EGW::Gift of Alacrity": {
+    "range": {
+      "type": "point",
+      "distance_type": "touch"
+    },
+    "targeting": {
+      "type": "token",
+      "projectile": true
+    }
+  },
+  "EGW::Immovable Object": {
+    "range": {
+      "type": "point",
+      "distance_type": "touch"
+    },
+    "targeting": {
+      "type": "token",
+      "projectile": true
+    }
+  },
+  "EGW::Reality Break": {
+    "range": {
+      "type": "point",
+      "feet": 60
+    },
+    "targeting": {
+      "type": "token",
+      "projectile": true
+    },
+    "effect": {
+      "damage_types": [
+        "cold",
+        "force",
+        "psychic"
+      ],
+      "persistence": "persistent"
+    }
+  },
+  "EGW::Sapping Sting": {
+    "range": {
+      "type": "point",
+      "feet": 30
+    },
+    "targeting": {
+      "type": "token",
+      "projectile": true
+    },
+    "effect": {
+      "damage_types": [
+        "necrotic"
+      ],
+      "persistence": "instant"
+    }
+  },
+  "EGW::Temporal Shunt": {
+    "range": {
+      "type": "point",
+      "feet": 120
+    },
+    "targeting": {
+      "type": "token",
+      "projectile": true
+    }
+  },
+  "EGW::Tether Essence": {
+    "range": {
+      "type": "point",
+      "feet": 60
+    },
+    "targeting": {
+      "type": "multi_token",
+      "projectile": true
+    }
+  },
+  "EGW::Time Ravage": {
+    "range": {
+      "type": "point",
+      "feet": 90
+    },
+    "targeting": {
+      "type": "token",
+      "projectile": true
+    },
+    "effect": {
+      "damage_types": [
+        "necrotic"
+      ],
+      "persistence": "instant"
+    }
+  },
+  "EGW::Wristpocket": {
+    "range": {
+      "type": "point",
+      "distance_type": "self"
+    }
+  },
+  "IDRotF::Create Magen": {
+    "range": {
+      "type": "point",
+      "distance_type": "touch"
+    },
+    "targeting": {
+      "type": "token",
+      "projectile": true
+    }
   }
 }
