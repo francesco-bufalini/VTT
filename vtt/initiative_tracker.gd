@@ -299,7 +299,7 @@ func open_add_dialog() -> void:
 	_auto_filled_name = ""
 	var preferred_token_id := _selected_board_token_id()
 	_refresh_token_selector(preferred_token_id)
-	_autofill_name_from_token(_selected_token_id_from_option())
+	_sync_name_field_to_token(_selected_token_id_from_option())
 	_take_dialog_mouse()
 	add_dialog.popup_centered(Vector2i(460, 260))
 	participant_name.grab_focus()
@@ -310,11 +310,13 @@ func _on_add_confirmed() -> void:
 		_release_dialog_mouse()
 		return
 
-	var name_value: String = participant_name.text.strip_edges()
 	var token_id: String = _selected_token_id_from_option()
-	if name_value.is_empty():
+	var name_value: String = participant_name.text.strip_edges()
+	if not token_id.is_empty():
 		name_value = _token_display_name_by_id(token_id)
-	if name_value.is_empty():
+		if name_value.is_empty():
+			name_value = "Token senza nome"
+	elif name_value.is_empty():
 		name_value = "Partecipante %d" % (_next_entry_id)
 
 	_record_undo_state()
@@ -353,15 +355,22 @@ func _refresh_token_selector(preferred_token_id: String = "") -> void:
 
 
 func _on_participant_token_selected(_index: int) -> void:
-	_autofill_name_from_token(_selected_token_id_from_option())
+	_sync_name_field_to_token(_selected_token_id_from_option())
 
 
-func _autofill_name_from_token(token_id: String) -> void:
-	var current := participant_name.text.strip_edges()
-	if not current.is_empty() and current != _auto_filled_name:
+func _sync_name_field_to_token(token_id: String) -> void:
+	if token_id.is_empty():
+		participant_name.editable = true
+		if participant_name.text == _auto_filled_name:
+			participant_name.clear()
+		_auto_filled_name = ""
 		return
+
 	var suggested := _token_display_name_by_id(token_id)
+	if suggested.is_empty():
+		suggested = "Token senza nome"
 	participant_name.text = suggested
+	participant_name.editable = false
 	_auto_filled_name = suggested
 
 
@@ -425,9 +434,14 @@ func previous_turn() -> void:
 	_emit_turn_changed()
 
 
+func refresh() -> void:
+	_render()
+
+
 func _render() -> void:
 	if panel == null:
 		return
+	_synchronize_linked_entry_names()
 
 	inactive_controls.visible = not combat_active
 	combat_controls.visible = combat_active
@@ -457,8 +471,8 @@ func _render() -> void:
 		active_label.text = "Nessun partecipante. Aggiungili in ordine."
 	else:
 		var active_entry: Dictionary = entries[active_index]
-		active_label.text = "Turno attivo: %s" % String(
-			active_entry.get("name", "Partecipante")
+		active_label.text = "Turno attivo: %s" % _entry_display_name(
+			active_entry
 		)
 
 	_clear_list_rows()
@@ -517,7 +531,7 @@ func _add_entry_row(
 	row.add_child(text_column)
 
 	var name_label: Label = Label.new()
-	name_label.text = String(entry.get("name", "Partecipante"))
+	name_label.text = _entry_display_name(entry)
 	name_label.clip_text = true
 	name_label.tooltip_text = name_label.text
 	name_label.add_theme_font_size_override(
@@ -528,7 +542,11 @@ func _add_entry_row(
 
 	var token_id: String = String(entry.get("token_id", ""))
 	var token_label: Label = Label.new()
-	token_label.text = "Token collegato" if not token_id.is_empty() else "Token: —"
+	token_label.text = (
+		"Token: %s" % _token_name_by_id(token_id)
+		if not token_id.is_empty()
+		else "Token: —"
+	)
 	token_label.modulate = Color(0.78, 0.8, 0.84, 1.0)
 	token_label.add_theme_font_size_override("font_size", 10)
 	text_column.add_child(token_label)
@@ -658,6 +676,10 @@ func _on_token_popup_selected(id: int) -> void:
 		if current_token_id != token_id:
 			_record_undo_state()
 			entries[entry_index]["token_id"] = token_id
+			if not token_id.is_empty():
+				var linked_name := _token_display_name_by_id(token_id)
+				if not linked_name.is_empty():
+					entries[entry_index]["name"] = linked_name
 	_render()
 
 
@@ -694,7 +716,13 @@ func _tokens() -> Array[Node3D]:
 			result.append(node as Node3D)
 	result.sort_custom(
 		func(a: Node3D, b: Node3D) -> bool:
-			return String(a.name).naturalnocasecmp_to(String(b.name)) < 0
+			var name_a := _token_display_name(a)
+			var name_b := _token_display_name(b)
+			if name_a.is_empty():
+				name_a = String(a.name)
+			if name_b.is_empty():
+				name_b = String(b.name)
+			return name_a.naturalnocasecmp_to(name_b) < 0
 	)
 	return result
 
@@ -736,6 +764,27 @@ func _token_name_by_id(token_id: String) -> String:
 	return "mancante"
 
 
+func _entry_display_name(entry: Dictionary) -> String:
+	var token_id := String(entry.get("token_id", ""))
+	if not token_id.is_empty():
+		var token_name := _token_display_name_by_id(token_id)
+		if not token_name.is_empty():
+			return token_name
+		if _token_name_by_id(token_id) != "mancante":
+			return "Token senza nome"
+	return String(entry.get("name", "Partecipante"))
+
+
+func _synchronize_linked_entry_names() -> void:
+	for entry: Dictionary in entries:
+		var token_id := String(entry.get("token_id", ""))
+		if token_id.is_empty():
+			continue
+		var token_name := _token_display_name_by_id(token_id)
+		if not token_name.is_empty():
+			entry["name"] = token_name
+
+
 func _entry_index(entry_id: String) -> int:
 	for index: int in range(entries.size()):
 		if String(entries[index].get("id", "")) == entry_id:
@@ -757,10 +806,12 @@ func _emit_turn_changed() -> void:
 func get_active_entry() -> Dictionary:
 	if entries.is_empty() or active_index < 0 or active_index >= entries.size():
 		return {}
+	_synchronize_linked_entry_names()
 	return entries[active_index].duplicate(true)
 
 
 func get_save_state() -> Dictionary:
+	_synchronize_linked_entry_names()
 	return {
 		"version": 1,
 		"active": combat_active,
