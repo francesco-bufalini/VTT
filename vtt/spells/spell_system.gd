@@ -966,8 +966,45 @@ func _cast_teleport(
 				)
 			)
 
+	var measurement_tool: Node = _measurement_tool()
+	var teleport_style: String = _spell_style(spell_data)
+	if measurement_tool != null:
+		measurement_tool.call(
+			"show_teleport_cloud",
+			caster_origin,
+			teleport_style,
+			0.55
+		)
+
+	_animate_teleport_tokens(
+		teleporting,
+		targets,
+		caster_target,
+		teleport_style
+	)
+	return true
+
+
+func _animate_teleport_tokens(
+	teleporting: Array[Node3D],
+	targets: Array[Vector3],
+	caster_target: Vector3,
+	teleport_style: String
+) -> void:
+	# Keep teleportation discrete, but give the departure cloud time to build
+	# before the tokens disappear and reappear at their destination.
+	await get_tree().create_timer(0.28).timeout
+
+	for token: Node3D in teleporting:
+		if token != null and is_instance_valid(token):
+			token.visible = false
+
+	await get_tree().create_timer(0.12).timeout
+
 	for index: int in range(teleporting.size()):
 		var token: Node3D = teleporting[index]
+		if token == null or not is_instance_valid(token):
+			continue
 		token.global_position = targets[index]
 		var velocity_value: Variant = token.get("velocity")
 		if velocity_value is Vector3:
@@ -976,7 +1013,19 @@ func _cast_teleport(
 		if support_value != null:
 			token.set("grid_support", null)
 
-	return true
+	var measurement_tool: Node = _measurement_tool()
+	if measurement_tool != null:
+		measurement_tool.call(
+			"show_teleport_cloud",
+			caster_target,
+			teleport_style,
+			0.62
+		)
+
+	await get_tree().create_timer(0.08).timeout
+	for token: Node3D in teleporting:
+		if token != null and is_instance_valid(token):
+			token.visible = true
 
 
 func _try_select_chain_primary(screen_position: Vector2) -> void:
@@ -1898,6 +1947,9 @@ func _update_spell_range_preview(spell_data: Dictionary) -> void:
 			"point",
 			"target_token",
 			"multi_target_tokens",
+			"multi_target_points",
+			"teleport_passengers",
+			"teleport_destination",
 			"chain_primary",
 			"chain_secondary",
 			"direction_point",
@@ -1913,6 +1965,15 @@ func _update_spell_range_preview(spell_data: Dictionary) -> void:
 		return
 
 	var range_feet: float = float(spell_data.get("range_feet", 0.0))
+	if _targeting_phase == "teleport_destination":
+		range_feet = float(
+			spell_data.get("teleport_distance_feet", range_feet)
+		)
+	elif _targeting_phase == "teleport_passengers":
+		range_feet = float(
+			spell_data.get("teleport_passenger_range_feet", 5.0)
+		)
+
 	if range_feet <= 0.0:
 		measurement_tool.call("hide_spell_range_preview")
 		return
