@@ -2676,45 +2676,36 @@ func _cast_spell_at_token(
 
 	var start: Vector3 = _token_spell_origin(caster)
 	var finish: Vector3 = _token_spell_origin(target)
-	var style: String = String(
-		spell_data.get("projectile_style", _spell_style(spell_data))
-	)
-	var duration: float = float(
-		spell_data.get("transient_seconds", 5.0)
-	)
 	var impact_radius: float = float(
 		spell_data.get("impact_aoe_radius_feet", 0.0)
 	)
 
+	# No projectile animations. Token-target spells are retained only when
+	# they create a real persistent link or a real impact AoE.
 	if bool(spell_data.get("persistent_link", false)):
 		measurement_tool.call(
 			"add_aoe",
 			start,
 			finish,
 			"line",
-			style
+			_spell_style(spell_data)
 		)
 	elif impact_radius > 0.0:
 		measurement_tool.call(
-			"show_spell_projectile_with_impact",
-			start,
+			"show_transient_aoe",
 			finish,
-			style,
-			duration,
+			finish + Vector3.RIGHT * (
+				impact_radius / 5.0 * _cell_size()
+			),
 			String(spell_data.get("impact_aoe_shape", "sphere")),
-			impact_radius / 5.0 * _cell_size(),
-			String(spell_data.get("impact_style", style)),
-			duration
+			float(spell_data.get("transient_seconds", 5.0)),
+			String(
+				spell_data.get(
+					"impact_style",
+					_spell_style(spell_data)
+				)
+			)
 		)
-	else:
-		measurement_tool.call(
-			"show_spell_projectile",
-			start,
-			finish,
-			style,
-			duration
-		)
-
 
 func _cast_self_emanation(
 	caster: Node3D,
@@ -2750,65 +2741,23 @@ func _cast_self_emanation(
 
 
 func _cast_multi_target_spell(
-	caster: Node3D,
-	targets: Array[Node3D],
-	spell_data: Dictionary
+	_caster: Node3D,
+	_targets: Array[Node3D],
+	_spell_data: Dictionary
 ) -> void:
-	var measurement_tool: Node = _measurement_tool()
-	if measurement_tool == null:
-		return
-	var start: Vector3 = _token_spell_origin(caster)
-	var style: String = String(
-		spell_data.get("projectile_style", "magic_missile")
-	)
-	for target: Node3D in targets:
-		if target == null or not is_instance_valid(target):
-			continue
-		measurement_tool.call(
-			"show_spell_projectile",
-			start,
-			_token_spell_origin(target),
-			style,
-			float(spell_data.get("transient_seconds", 5.0))
-		)
-
+	# Multi-target projectile-only spells are filtered out of the catalogue
+	# while spell animations are disabled.
+	return
 
 func _cast_chain_lightning(
-	caster: Node3D,
-	primary: Node3D,
-	secondaries: Array[Node3D],
-	spell_data: Dictionary
+	_caster: Node3D,
+	_primary: Node3D,
+	_secondaries: Array[Node3D],
+	_spell_data: Dictionary
 ) -> void:
-	var measurement_tool: Node = _measurement_tool()
-	if measurement_tool == null:
-		return
-
-	var duration: float = float(
-		spell_data.get("transient_seconds", 5.0)
-	)
-	var primary_start: Vector3 = _token_spell_origin(caster)
-	var primary_end: Vector3 = _token_spell_origin(primary)
-	measurement_tool.call(
-		"show_transient_aoe",
-		primary_start,
-		primary_end,
-		"line",
-		duration,
-		"chain_lightning"
-	)
-
-	for secondary: Node3D in secondaries:
-		if secondary == null or not is_instance_valid(secondary):
-			continue
-		measurement_tool.call(
-			"show_transient_aoe",
-			primary_end,
-			_token_spell_origin(secondary),
-			"line",
-			duration,
-			"chain_lightning"
-		)
-
+	# Chain-only visual effects are disabled together with all spell
+	# animations. Chain spells are filtered out until they gain a map effect.
+	return
 
 func _cast_fireball(
 	target_point: Vector3,
