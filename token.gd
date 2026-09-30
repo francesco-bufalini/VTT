@@ -990,6 +990,13 @@ func apply_appearance_state(state: Dictionary) -> bool:
 	if not visual_asset.is_empty():
 		if not set_visual_asset(visual_asset):
 			return false
+	else:
+		_clear_imported_visual()
+		_set_procedural_visuals_visible(true)
+		visual_asset_path = ""
+		_loaded_visual_asset_path = ""
+		_uses_manifest_default = false
+		_visual_native_footprint_cells = 1.0
 
 	set_visual_front_quarter_turns(
 		int(state.get("visual_front_quarter_turns", 0))
