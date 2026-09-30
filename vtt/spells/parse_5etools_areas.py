@@ -645,7 +645,8 @@ def _requires_ground(text: str) -> bool:
     cleaned = _strip_5etools_tags(text).lower()
     return bool(re.search(
         r"\b(?:point|area)\s+on\s+the\s+ground\b"
-        r"|\bon\s+(?:the\s+)?ground\b"\n        r"|\b(?:sprout|rise|grow|emerge)s?\s+from\s+(?:the\s+)?ground\b",
+        r"|\bon\s+(?:the\s+)?ground\b"
+        r"|\b(?:sprout|rise|grow|emerge)s?\s+from\s+(?:the\s+)?ground\b",
         cleaned,
     ))
 
