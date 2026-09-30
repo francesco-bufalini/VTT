@@ -140,21 +140,33 @@ static func _apply_targeting(
 		targeting.get("type", "")
 	)
 
-	# The generated catalogue is authoritative for ordinary geometric
-	# targeting. Existing special state machines stay authoritative when the
-	# AoE originates from a creature or uses teleport/chain/multi-target logic.
+	# The generated targeting is authoritative for ordinary area spells.
+	# Keep dedicated state machines only for mechanics the geometry catalogue
+	# does not describe (teleport, chain/multi-target selection, persistent
+	# links, and legacy token-impact sequences).
 	var existing_mode: String = String(
 		result.get("target_mode", "")
 	)
-	if existing_mode not in [
-		"teleport_self",
-		"token_then_chain",
-		"token_then_multi_token",
-		"token_then_token"
-	]:
+	var preserve_token_target: bool = (
+		existing_mode == "token_then_token"
+		and (
+			bool(result.get("persistent_link", false))
+			or float(result.get("impact_aoe_radius_feet", 0.0)) > 0.0
+		)
+	)
+	if (
+		existing_mode not in [
+			"teleport_self",
+			"token_then_chain",
+			"token_then_multi_token"
+		]
+		and not preserve_token_target
+	):
 		match targeting_type:
 			"point":
 				result["target_mode"] = "token_then_point"
+			"token":
+				result["target_mode"] = "token_then_token"
 			"caster":
 				result["target_mode"] = "self_emanation"
 			"caster_direction":
