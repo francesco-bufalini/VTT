@@ -40,6 +40,7 @@ var _spell_preview_end: Vector3 = Vector3.INF
 var _spell_preview_shape: String = ""
 var _spell_preview_style: String = ""
 var _spell_preview_line_width: float = -1.0
+var _spell_fixed_previews: Array[MeshInstance3D] = []
 var _spell_range_preview: MeshInstance3D
 var _spell_range_center: Vector3 = Vector3.INF
 var _spell_range_radius: float = -1.0
@@ -830,6 +831,42 @@ func show_spell_preview(
 func hide_spell_preview() -> void:
 	if is_instance_valid(_spell_preview):
 		_spell_preview.hide()
+
+
+func show_spell_fixed_previews(
+	starts: Array[Vector3],
+	ends: Array[Vector3],
+	shape: String,
+	style: String = "",
+	line_width_world: float = -1.0
+) -> void:
+	clear_spell_fixed_previews()
+	if starts.size() != ends.size():
+		return
+	if shape not in ["sphere", "cube", "cone", "line", "flat_square", "cylinder"]:
+		return
+
+	for index: int in range(starts.size()):
+		var preview: MeshInstance3D = MeshInstance3D.new()
+		preview.name = "SpellFixedPreview%d" % index
+		add_child(preview)
+		_draw_aoe(
+			preview,
+			starts[index],
+			ends[index],
+			shape,
+			style,
+			Color(0.0, 0.0, 0.0, -1.0),
+			line_width_world
+		)
+		_spell_fixed_previews.append(preview)
+
+
+func clear_spell_fixed_previews() -> void:
+	for preview: MeshInstance3D in _spell_fixed_previews:
+		if preview != null and is_instance_valid(preview):
+			preview.queue_free()
+	_spell_fixed_previews.clear()
 
 
 func show_spell_range_preview(
