@@ -167,12 +167,30 @@ static func _apply_targeting(
 				result["target_mode"] = "token_then_point"
 			"token":
 				result["target_mode"] = "token_then_token"
+			"multi_token":
+				result["target_mode"] = "token_then_multi_token"
 			"caster":
 				result["target_mode"] = "self_emanation"
 			"caster_direction":
 				result["target_mode"] = "self_token"
 			"wall":
 				result["target_mode"] = "wall_design"
+
+	if targeting.has("base_target_clicks"):
+		result["base_target_clicks"] = int(targeting.get("base_target_clicks", 1))
+	if targeting.has("target_clicks_per_slot_above_base"):
+		result["target_clicks_per_slot_above_base"] = int(
+			targeting.get("target_clicks_per_slot_above_base", 0)
+		)
+	if targeting.has("allow_repeat_targets"):
+		result["allow_repeat_targets"] = bool(
+			targeting.get("allow_repeat_targets", false)
+		)
+	if bool(targeting.get("projectile", false)):
+		if String(result.get("projectile_style", "")).is_empty():
+			result["projectile_style"] = String(result.get("id", "arcane"))
+		if not result.has("projectile_travel_seconds"):
+			result["projectile_travel_seconds"] = 0.65
 
 	if bool(targeting.get("requires_ground", false)):
 		result["requires_ground"] = true
