@@ -1130,6 +1130,7 @@ static func _is_runtime_usable(spell_data: Dictionary) -> bool:
 		if (
 			bool(spell_data.get("persistent_link", false))
 			or float(spell_data.get("impact_aoe_radius_feet", 0.0)) > 0.0
+			or not String(spell_data.get("projectile_style", "")).is_empty()
 		):
 			return true
 
@@ -1148,6 +1149,20 @@ static func _is_runtime_usable(spell_data: Dictionary) -> bool:
 				var effect: Dictionary = effect_value as Dictionary
 				if effect.get("geometry", {}) is Dictionary:
 					return true
+
+	if target_mode == "token_then_multi_token":
+		var multi_spec_value: Variant = spell_data.get("map_effect_spec", {})
+		if multi_spec_value is Dictionary:
+			var multi_targeting_value: Variant = (
+				multi_spec_value as Dictionary
+			).get("targeting", {})
+			if (
+				multi_targeting_value is Dictionary
+				and String(
+					(multi_targeting_value as Dictionary).get("type", "")
+				) == "multi_token"
+			):
+				return true
 
 	return false
 
