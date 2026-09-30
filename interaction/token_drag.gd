@@ -158,6 +158,8 @@ func _token_half_height(token: CharacterBody3D) -> float:
 
 func finish(commit: bool) -> void:
 	var committed_move: bool = commit and _valid and _moved
+	var moved_tokens: Array[CharacterBody3D] = _tokens.duplicate()
+	var movement_origins: Array[Vector3] = _origins.duplicate()
 	for index in range(_tokens.size()):
 		var token := _tokens[index]
 		if not is_instance_valid(token):
@@ -185,6 +187,16 @@ func finish(commit: bool) -> void:
 	if _was_captured:
 		Input.mouse_mode = Input.MOUSE_MODE_CAPTURED
 	interaction_changed.emit(false)
+	if (
+		committed_move
+		and board != null
+		and board.has_method("check_opportunity_attacks_after_movement")
+	):
+		board.call_deferred(
+			"check_opportunity_attacks_after_movement",
+			moved_tokens,
+			movement_origins
+		)
 
 func _notification(what: int) -> void:
 	if what == NOTIFICATION_APPLICATION_FOCUS_OUT and active:
