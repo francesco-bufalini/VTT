@@ -383,7 +383,10 @@ def choose_main_source(package: Path) -> Path:
 
 def is_platform_reference_name(text: str) -> bool:
     name = text.lower()
-    if any(word in name for word in ("base", "marker", "platform", "stand")):
+    if any(
+        _contains_word(name, word)
+        for word in ("base", "marker", "platform", "stand")
+    ):
         return True
 
     size = size_from_text(name)
@@ -539,10 +542,18 @@ def resolve_base(
     footprint, centering and ground height, but when they are separate objects
     they must never be exported as visible miniature geometry.
     """
-    scene_base = find_scene_base(objects)
+    scene_references = [
+        obj for obj in objects if base_candidate_score(obj) > 0
+    ]
+    scene_base = find_scene_base(scene_references)
     if scene_base is not None:
         low, high = object_bounds(scene_base)
-        return low, high, f"object:{scene_base.name}", [scene_base]
+        return (
+            low,
+            high,
+            f"object:{scene_base.name}",
+            scene_references,
+        )
 
     external = choose_external_base(package, main_source)
     if external is not None:
