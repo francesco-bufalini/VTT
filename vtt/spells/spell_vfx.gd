@@ -22,7 +22,8 @@ static func attach(
 	"circle_of_death", "globe_of_invulnerability",
 	"otilukes_freezing_sphere", "sunbeam",
 	"fire", "cold", "lightning", "acid", "poison", "necrotic",
-	"radiant", "force", "psychic", "thunder", "fear",
+	"radiant", "force", "psychic", "thunder",
+	"bludgeoning", "piercing", "slashing", "fear",
 	"enchantment", "arcane"
 ]:
 		return
@@ -98,7 +99,7 @@ static func attach(
 			_add_sphere_layer(root, start, reach_world * 0.96, cell_size, 360, 1.1, Color(0.55, 0.92, 1.0, 0.58), 0.30, reach_world * 0.07)
 		"sunbeam":
 			_attach_sunbeam(root, start, end, reach_world, cell_size)
-		"fire", "cold", "lightning", "acid", "poison", "necrotic", "radiant", "force", "psychic", "thunder", "fear", "enchantment", "arcane":
+		"fire", "cold", "lightning", "acid", "poison", "necrotic", "radiant", "force", "psychic", "thunder", "bludgeoning", "piercing", "slashing", "fear", "enchantment", "arcane":
 			_attach_generic_area(
 				root,
 				start,
@@ -132,6 +133,10 @@ static func _generic_style_color(style: String) -> Color:
 			return Color(0.72, 0.28, 1.0, 0.58)
 		"thunder":
 			return Color(0.46, 0.78, 1.0, 0.58)
+		"bludgeoning":
+			return Color(0.7, 0.72, 0.76, 0.58)
+		"piercing", "slashing":
+			return Color(0.88, 0.9, 0.94, 0.62)
 		_:
 			return Color(0.72, 0.34, 1.0, 0.54)
 
@@ -673,7 +678,8 @@ static func attach_wall_segment(
 
 	if style in [
 		"fire", "cold", "lightning", "acid", "poison", "necrotic",
-		"radiant", "force", "psychic", "thunder", "fear",
+		"radiant", "force", "psychic", "thunder",
+		"bludgeoning", "piercing", "slashing", "fear",
 		"enchantment", "arcane"
 	]:
 		var generic_color: Color = _generic_style_color(style)
@@ -785,7 +791,8 @@ static func attach_wall_globe(
 	var color: Color = Color(0.55, 0.82, 1.0, 0.28)
 	if style in [
 		"fire", "cold", "lightning", "acid", "poison", "necrotic",
-		"radiant", "force", "psychic", "thunder", "fear",
+		"radiant", "force", "psychic", "thunder",
+		"bludgeoning", "piercing", "slashing", "fear",
 		"enchantment", "arcane"
 	]:
 		color = _generic_style_color(style)
