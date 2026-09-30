@@ -1,0 +1,61 @@
+name: Install main menu background
+
+on:
+  push:
+    branches:
+      - feature/campaign-hub
+    paths:
+      - tools/menu_background.jpg.b64
+      - .github/workflows/install-menu-background.yml
+  workflow_dispatch:
+
+permissions:
+  contents: write
+
+jobs:
+  install:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Check out branch
+        uses: actions/checkout@v4
+        with:
+          ref: feature/campaign-hub
+
+      - name: Decode and validate background
+        run: |
+          python3 - <<'PY'
+          import base64
+          import hashlib
+          from pathlib import Path
+
+          source = Path("tools/menu_background.jpg.b64")
+          target = Path("assets/menu/background/lithophane_background.jpg")
+          data = base64.b64decode(source.read_text().strip(), validate=True)
+
+          digest = hashlib.sha256(data).hexdigest()
+          expected = "8d54c15de3e6e7dcb65ea0d8c57187685b88093e405ac828190a1341ed37ffa3"
+          if digest != expected:
+              raise SystemExit(
+                  f"Background checksum mismatch: {digest} != {expected}"
+              )
+
+          if not data.startswith(b"\\xff\\xd8\\xff"):
+              raise SystemExit("Decoded background is not a JPEG")
+
+          target.parent.mkdir(parents=True, exist_ok=True)
+          target.write_bytes(data)
+          print(f"Installed {target} ({len(data)} bytes)")
+          PY
+
+      - name: Commit background
+        shell: bash
+        run: |
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git add assets/menu/background/lithophane_background.jpg
+          if git diff --cached --quiet; then
+            echo "No background changes to commit."
+            exit 0
+          fi
+          git commit -m "Add supplied fantasy landscape background"
+          git push origin HEAD:feature/campaign-hub
