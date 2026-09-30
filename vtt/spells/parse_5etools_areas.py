@@ -46,7 +46,7 @@ GEOMETRY_TAGS = {
     "H": ("hemisphere", "dome"),
     "W": ("wall",),
 }
-IGNORED_AREA_TAGS = {"ST", "MT"}
+TARGET_ONLY_AREA_TAGS = {"ST", "MT"}
 
 
 def _number(value: str | float) -> int | float:
@@ -594,7 +594,7 @@ def _extract_geometries(
 
     for raw_tag in area_tags:
         tag = str(raw_tag)
-        if tag in IGNORED_AREA_TAGS or tag not in GEOMETRY_TAGS:
+        if tag in TARGET_ONLY_AREA_TAGS or tag not in GEOMETRY_TAGS:
             continue
         geometry = (
             _parse_wall(text)
@@ -645,7 +645,7 @@ def _requires_ground(text: str) -> bool:
     cleaned = _strip_5etools_tags(text).lower()
     return bool(re.search(
         r"\b(?:point|area)\s+on\s+the\s+ground\b"
-        r"|\bon\s+(?:the\s+)?ground\b",
+        r"|\bon\s+(?:the\s+)?ground\b"\n        r"|\b(?:sprout|rise|grow|emerge)s?\s+from\s+(?:the\s+)?ground\b",
         cleaned,
     ))
 
@@ -677,15 +677,75 @@ def _wall_choose_damage_side(text: str) -> bool:
     )
 
 
+NUMBER_WORDS = {
+    "one": 1, "two": 2, "three": 3, "four": 4, "five": 5,
+    "six": 6, "seven": 7, "eight": 8, "nine": 9, "ten": 10,
+}
+
+
+def _count_token(value: str) -> int | None:
+    lowered = value.lower()
+    if lowered.isdigit():
+        return int(lowered)
+    return NUMBER_WORDS.get(lowered)
+
+
+def _multi_target_count_spec(spell: dict[str, Any]) -> dict[str, Any]:
+    text = _strip_5etools_tags(_spell_text(spell)).lower()
+    higher = _strip_5etools_tags(
+        "\n".join(_flatten_entries(spell.get("entriesHigherLevel", [])))
+    ).lower()
+    number = r"(one|two|three|four|five|six|seven|eight|nine|ten|\d+)"
+    result: dict[str, Any] = {}
+
+    base_patterns = [
+        rf"\b(?:create|creates|fire|fires|launch|launches|shoot|shoots)\s+"
+        rf"{number}\b[^.]{0,90}\b(?:dart|darts|ray|rays|missile|missiles|"
+        rf"bolt|bolts|beam|beams)\b",
+        rf"\bup\s+to\s+{number}\s+(?:willing\s+)?(?:creatures?|targets?)\b",
+        rf"\b{number}\s+(?:willing\s+)?(?:creatures?|targets?)\s+of\s+"
+        rf"(?:your|the caster's)\s+choice\b",
+    ]
+    for pattern in base_patterns:
+        match = re.search(pattern, text)
+        if match:
+            count = _count_token(match.group(1))
+            if count is not None and count > 0:
+                result["base_target_clicks"] = count
+                break
+
+    scaling_patterns = [
+        rf"\b(?:create|creates|add|adds|gain|gains)\s+{number}\s+"
+        rf"(?:additional\s+|more\s+)?(?:dart|darts|ray|rays|missile|missiles|"
+        rf"bolt|bolts|beam|beams|creature|creatures|target|targets)\b"
+        rf"[^.]{0,120}\bfor\s+each\s+spell\s+slot\s+level\s+above\b",
+        rf"\btarget\s+{number}\s+additional\s+(?:creatures?|targets?)\b"
+        rf"[^.]{0,120}\bfor\s+each\s+spell\s+slot\s+level\s+above\b",
+    ]
+    for pattern in scaling_patterns:
+        match = re.search(pattern, higher)
+        if match:
+            count = _count_token(match.group(1))
+            if count is not None and count > 0:
+                result["target_clicks_per_slot_above_base"] = count
+                break
+
+    if (
+        "one creature or several" in text
+        or "same creature" in text
+        or "same target" in text
+    ):
+        result["allow_repeat_targets"] = True
+
+    return result
+
+
 def _targeting_spec(
     spell: dict[str, Any],
     range_spec: dict[str, Any],
     geometries: list[dict[str, Any]],
     text: str,
 ) -> dict[str, Any]:
-    if not geometries:
-        return {}
-
     if any(geometry.get("shape") == "wall" for geometry in geometries):
         result: dict[str, Any] = {"type": "wall"}
         if _wall_requires_ground(text):
@@ -694,7 +754,7 @@ def _targeting_spec(
             result["choose_damage_side"] = True
         return result
 
-    primary = geometries[0]
+    primary = geometries[0] if geometries else {}
     shape = str(primary.get("shape", ""))
     range_type = str(range_spec.get("type", "point"))
     distance_type = str(range_spec.get("distance_type", ""))
@@ -703,18 +763,28 @@ def _targeting_spec(
         range_type in {"self", "radius", "emanation"}
         or distance_type == "self"
     )
-
-    area_tags = spell.get("areaTags", [])
-    targets_creature = (
-        isinstance(area_tags, list)
-        and "ST" in [str(tag) for tag in area_tags]
-        and not self_like
+    area_tags_value = spell.get("areaTags", [])
+    area_tags = (
+        {str(tag) for tag in area_tags_value}
+        if isinstance(area_tags_value, list)
+        else set()
     )
 
+    if "MT" in area_tags and not self_like:
+        result = {"type": "multi_token"}
+        result.update(_multi_target_count_spec(spell))
+        if not geometries:
+            result["projectile"] = True
+        return result
+
+    if "ST" in area_tags and not self_like:
+        result = {"type": "token"}
+        if not geometries:
+            result["projectile"] = True
+        return result
+
     result = {}
-    if targets_creature:
-        result["type"] = "token"
-    elif self_like and shape in {"cone", "line", "cube"}:
+    if self_like and shape in {"cone", "line", "cube"}:
         result["type"] = "caster_direction"
         result["allow_pitch"] = True
     elif self_like:
@@ -738,21 +808,20 @@ def _build_effect(
     spell: dict[str, Any],
     geometries: list[dict[str, Any]],
 ) -> dict[str, Any]:
-    if not geometries:
-        return {}
+    effect: dict[str, Any] = {}
+    if geometries:
+        effect["geometry"] = geometries[0]
 
-    # The runtime catalogue stores the one geometry consumed by SpellSystem.
-    # Alternate wall modes remain inside geometry.variants, where the runtime
-    # actually uses them. Other secondary geometries stay in the diagnostic
-    # source data until a dedicated multi-stage state machine exists.
-    effect: dict[str, Any] = {
-        "geometry": geometries[0],
-        "persistence": "persistent" if _is_persistent(spell) else "instant",
-    }
     damage_types = _damage_types(spell)
     if damage_types:
         effect["damage_types"] = damage_types
+
+    if effect:
+        effect["persistence"] = (
+            "persistent" if _is_persistent(spell) else "instant"
+        )
     return effect
+
 
 def _load_spells_from_json(path: Path) -> list[dict[str, Any]]:
     data = json.loads(path.read_text(encoding="utf-8"))
@@ -812,7 +881,14 @@ def build_output(
             continue
 
         geometries, missing_tags = _extract_geometries(spell)
-        if not geometries:
+        area_tags_value = spell.get("areaTags", [])
+        area_tags = (
+            {str(tag) for tag in area_tags_value}
+            if isinstance(area_tags_value, list)
+            else set()
+        )
+        target_only = bool(area_tags & TARGET_ONLY_AREA_TAGS)
+        if not geometries and not target_only:
             for tag in missing_tags:
                 unresolved.append({
                     "name": name,
@@ -828,15 +904,16 @@ def build_output(
             geometries,
             _spell_text(spell),
         )
-        effect = _build_effect(spell, geometries)
-        if not effect:
+        if not targeting:
             continue
 
+        effect = _build_effect(spell, geometries)
         entry: dict[str, Any] = {
             "range": range_spec,
             "targeting": targeting,
-            "effect": effect,
         }
+        if effect:
+            entry["effect"] = effect
         runtime[f"{source}::{name}"] = entry
 
         for tag in missing_tags:
