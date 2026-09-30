@@ -361,6 +361,23 @@ func run() -> void:
 		"_spell_needs_saving_throw_resolution",
 		draconic_transformation
 	)))
+	# Automatic air targeting keeps the camera outside point-based areas:
+	# Fireball has a 20 ft radius, so its default air depth is 40 ft.
+	assert(is_equal_approx(
+		float(spell_system.call(
+			"_point_target_air_distance_feet",
+			fireball
+		)),
+		40.0
+	))
+	# Meteor Swarm uses the same rule with its 40 ft sphere.
+	assert(is_equal_approx(
+		float(spell_system.call(
+			"_point_target_air_distance_feet",
+			meteor_swarm
+		)),
+		80.0
+	))
 	spell_system.free()
 
 	# True Polymorph carries SMN in 5eTools but is a transformation, not summon.
