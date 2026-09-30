@@ -119,10 +119,6 @@ static func _visual_style_from_entries(
 	spell_data: Dictionary,
 	effect: Dictionary
 ) -> String:
-	var damage_style: String = _primary_damage_style(effect)
-	if not damage_style.is_empty():
-		return damage_style
-
 	var text: String = (
 		String(spell_data.get("name", ""))
 		+ " "
@@ -148,10 +144,14 @@ static func _visual_style_from_entries(
 	]:
 		return existing_style
 
-	# Multi-color families should remain visibly multicolored rather than
-	# arbitrarily selecting one of their possible damage types.
+	# Explicitly multicolored spell families win over a single damage label.
 	if "prismatic" in text or "chromatic" in text or "rainbow" in text:
 		return "prismatic"
+
+	# For every ordinary spell, exactly one damage family is authoritative.
+	var damage_style: String = _primary_damage_style(effect)
+	if not damage_style.is_empty():
+		return damage_style
 
 	if "silvery mist" in text or "silver mist" in text:
 		return "silver_mist"
