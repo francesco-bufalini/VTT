@@ -945,14 +945,14 @@ func _cast_teleport(
 		spell_data.get("teleport_departure_aoe_radius_feet", 0.0)
 	)
 	if departure_radius > 0.0:
-		var measurement_tool: Node = _measurement_tool()
-		if measurement_tool != null:
+		var departure_tool: Node = _measurement_tool()
+		if departure_tool != null:
 			var departure_endpoint: Vector3 = (
 				caster_origin
 				+ Vector3.RIGHT
 				* (departure_radius / 5.0 * _cell_size())
 			)
-			measurement_tool.call(
+			departure_tool.call(
 				"show_transient_aoe",
 				caster_origin,
 				departure_endpoint,
