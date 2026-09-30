@@ -35,6 +35,8 @@ var _pending_target_points: Array[Vector3] = []
 var _pending_chain_primary: Node3D = null
 var _summon_total_count: int = 1
 var _summon_created_count: int = 0
+var _transformation_dialog_targets: Array[Node3D] = []
+var _transformation_dialog_index: int = 0
 var _saving_throw_targets: Array[Node3D] = []
 var _saving_throw_index: int = 0
 var _saving_throw_caster_origin: Vector3 = Vector3.ZERO
@@ -317,7 +319,12 @@ func close_panel() -> void:
 func handle_input(event: InputEvent) -> bool:
 	if _pending_spell_id.is_empty():
 		return false
-	if _targeting_phase in ["saving_throw", "summon_token_dialog"]:
+	if _targeting_phase in [
+		"saving_throw",
+		"summon_token_dialog",
+		"transform_token_dialog",
+		"resize_token_dialog"
+	]:
 		return false
 
 	if event is InputEventKey:
@@ -361,6 +368,17 @@ func handle_input(event: InputEvent) -> bool:
 				and key_event.keycode == KEY_ENTER
 			):
 				_begin_teleport_destination(
+					_pending_spell()
+				)
+				return true
+
+			if (
+				_targeting_phase == "transform_multi_targets"
+				and key_event.keycode == KEY_ENTER
+				and not _pending_targets.is_empty()
+			):
+				_begin_token_transformations(
+					_pending_targets.duplicate(),
 					_pending_spell()
 				)
 				return true
@@ -441,6 +459,15 @@ func handle_input(event: InputEvent) -> bool:
 				return true
 			"summon_point":
 				_try_select_summon_point(screen_position)
+				return true
+			"transform_target":
+				_try_select_transformation_target(screen_position)
+				return true
+			"transform_multi_targets":
+				_try_select_transformation_multi_target(screen_position)
+				return true
+			"resize_target":
+				_try_select_resize_target(screen_position)
 				return true
 			"chain_primary":
 				_try_select_chain_primary(screen_position)
@@ -712,6 +739,248 @@ func _on_summon_token_generation_canceled() -> void:
 		_cancel_pending_cast()
 
 
+func _transformation_target_data(
+	screen_position: Vector2,
+	spell_data: Dictionary
+) -> Dictionary:
+	if _pending_caster == null or not is_instance_valid(_pending_caster):
+		return {"valid": false}
+
+	var target: Node3D = _token_at_screen(screen_position)
+	if target == null:
+		return {"valid": false}
+
+	var cell_size: float = _cell_size()
+	var range_feet: float = _effective_spell_range_feet(
+		spell_data,
+		_pending_caster
+	)
+	var max_world_distance: float = range_feet / 5.0 * cell_size
+	var actual_world_distance: float = (
+		_pending_caster.global_position.distance_to(target.global_position)
+	)
+	if actual_world_distance > max_world_distance + cell_size * 0.01:
+		return {
+			"valid": false,
+			"out_of_range": true,
+			"target": target,
+			"distance_feet": int(
+				round(actual_world_distance / cell_size * 5.0)
+			)
+		}
+
+	return {"valid": true, "target": target}
+
+
+func _try_select_transformation_target(screen_position: Vector2) -> void:
+	var spell_data: Dictionary = _pending_spell()
+	var target_data: Dictionary = _transformation_target_data(
+		screen_position,
+		spell_data
+	)
+	if not bool(target_data.get("valid", false)):
+		if bool(target_data.get("out_of_range", false)):
+			_set_instruction(
+				"Bersaglio fuori range: %d ft / %d ft."
+				% [
+					int(target_data.get("distance_feet", 0)),
+					int(round(_effective_spell_range_feet(
+						spell_data,
+						_pending_caster
+					)))
+				]
+			)
+		else:
+			_set_instruction("Seleziona un token valido da trasformare.")
+		return
+
+	var target: Node3D = target_data.get("target") as Node3D
+	if target == null:
+		return
+	_begin_token_transformations([target], spell_data)
+
+
+func _try_select_transformation_multi_target(
+	screen_position: Vector2
+) -> void:
+	var spell_data: Dictionary = _pending_spell()
+	var target_data: Dictionary = _transformation_target_data(
+		screen_position,
+		spell_data
+	)
+	if not bool(target_data.get("valid", false)):
+		_set_instruction("Seleziona un token valido entro gittata.")
+		return
+
+	var target: Node3D = target_data.get("target") as Node3D
+	if target == null:
+		return
+	if target in _pending_targets:
+		_set_instruction("Questo bersaglio è già stato selezionato.")
+		return
+
+	_pending_targets.append(target)
+	var maximum: int = maxi(
+		int(spell_data.get("transform_max_targets", 0)),
+		0
+	)
+	if maximum > 0 and _pending_targets.size() >= maximum:
+		_begin_token_transformations(
+			_pending_targets.duplicate(),
+			spell_data
+		)
+		return
+	_update_transformation_multi_instruction(spell_data)
+
+
+func _update_transformation_multi_instruction(
+	spell_data: Dictionary
+) -> void:
+	var maximum: int = maxi(
+		int(spell_data.get("transform_max_targets", 0)),
+		0
+	)
+	var maximum_label: String = (
+		"/%d" % maximum if maximum > 0 else ""
+	)
+	_set_instruction(
+		"%s: scegli i token da trasformare %d%s · Invio per confermare · Esc per annullare"
+		% [
+			String(spell_data.get("name", "Trasformazione")),
+			_pending_targets.size(),
+			maximum_label
+		]
+	)
+
+
+func _begin_token_transformations(
+	targets: Array[Node3D],
+	spell_data: Dictionary
+) -> void:
+	if targets.is_empty():
+		_cancel_pending_cast()
+		return
+	_transformation_dialog_targets = targets.duplicate()
+	_transformation_dialog_index = 0
+	_open_current_transformation_dialog(spell_data)
+
+
+func _open_current_transformation_dialog(
+	spell_data: Dictionary
+) -> void:
+	if _transformation_dialog_index >= _transformation_dialog_targets.size():
+		var transformed_targets: Array[Node3D] = (
+			_transformation_dialog_targets.duplicate()
+		)
+		_complete_spell_cast(
+			spell_data,
+			transformed_targets,
+			_pending_caster
+		)
+		return
+
+	var target: Node3D = _transformation_dialog_targets[
+		_transformation_dialog_index
+	]
+	if target == null or not is_instance_valid(target):
+		_transformation_dialog_index += 1
+		_open_current_transformation_dialog(spell_data)
+		return
+	if not target is CharacterBody3D:
+		_cancel_pending_cast()
+		return
+	if not board_root.has_method("open_token_transformation"):
+		_cancel_pending_cast()
+		return
+
+	_targeting_phase = "transform_token_dialog"
+	_hide_spell_preview()
+	_hide_spell_range_preview()
+	_set_instruction(
+		"%s: scegli il nuovo aspetto del token %d/%d."
+		% [
+			String(spell_data.get("name", "Trasformazione")),
+			_transformation_dialog_index + 1,
+			_transformation_dialog_targets.size()
+		]
+	)
+	board_root.call(
+		"open_token_transformation",
+		target as CharacterBody3D,
+		Callable(self, "_on_transformation_token_applied"),
+		Callable(self, "_on_transformation_token_canceled")
+	)
+
+
+func _on_transformation_token_applied(
+	_transformed_token: CharacterBody3D
+) -> void:
+	if _pending_spell_id.is_empty():
+		return
+	_transformation_dialog_index += 1
+	_open_current_transformation_dialog(_pending_spell())
+
+
+func _on_transformation_token_canceled() -> void:
+	for index: int in range(_transformation_dialog_index):
+		var target: Node3D = _transformation_dialog_targets[index]
+		if (
+			target != null
+			and is_instance_valid(target)
+			and target.has_method("restore_previous_transformation")
+		):
+			target.call("restore_previous_transformation")
+	_cancel_pending_cast()
+
+
+func _try_select_resize_target(screen_position: Vector2) -> void:
+	var spell_data: Dictionary = _pending_spell()
+	var target_data: Dictionary = _transformation_target_data(
+		screen_position,
+		spell_data
+	)
+	if not bool(target_data.get("valid", false)):
+		_set_instruction("Seleziona un token valido entro gittata.")
+		return
+
+	var target: Node3D = target_data.get("target") as Node3D
+	if target == null or not target is CharacterBody3D:
+		return
+	if not board_root.has_method("open_token_resize_menu"):
+		_cancel_pending_cast()
+		return
+
+	_targeting_phase = "resize_token_dialog"
+	_hide_spell_preview()
+	_hide_spell_range_preview()
+	_set_instruction(
+		"%s: scegli la nuova taglia del bersaglio."
+		% String(spell_data.get("name", "Enlarge/Reduce"))
+	)
+	board_root.call(
+		"open_token_resize_menu",
+		target as CharacterBody3D,
+		Callable(self, "_on_resize_token_applied"),
+		Callable(self, "_on_resize_token_canceled")
+	)
+
+
+func _on_resize_token_applied(resized_token: CharacterBody3D) -> void:
+	if _pending_spell_id.is_empty():
+		return
+	var targets: Array[Node3D] = [resized_token]
+	_complete_spell_cast(
+		_pending_spell(),
+		targets,
+		_pending_caster
+	)
+
+
+func _on_resize_token_canceled() -> void:
+	if not _pending_spell_id.is_empty():
+		_cancel_pending_cast()
+
+
 func _try_select_caster(screen_position: Vector2) -> void:
 	var hit_value: Variant = board_root.call(
 		"_raycast_from_screen",
@@ -806,6 +1075,47 @@ func _try_select_caster(screen_position: Vector2) -> void:
 			_hide_spell_preview()
 			_clear_spell_fixed_previews()
 			_update_multi_point_instruction(spell_data)
+		"transform_self":
+			_pending_caster = caster
+			_pending_targets.clear()
+			_hide_spell_preview()
+			_begin_token_transformations([caster], spell_data)
+		"token_then_transform":
+			_pending_caster = caster
+			_pending_targets.clear()
+			_targeting_phase = "transform_target"
+			_hide_spell_preview()
+			_set_instruction(
+				"%s: scegli un token da trasformare entro %d ft · Esc per annullare"
+				% [
+					String(spell_data.get("name", "Trasformazione")),
+					int(round(_effective_spell_range_feet(
+						spell_data,
+						caster
+					)))
+				]
+			)
+		"token_then_multi_transform":
+			_pending_caster = caster
+			_pending_targets.clear()
+			_targeting_phase = "transform_multi_targets"
+			_hide_spell_preview()
+			_update_transformation_multi_instruction(spell_data)
+		"resize_token":
+			_pending_caster = caster
+			_pending_targets.clear()
+			_targeting_phase = "resize_target"
+			_hide_spell_preview()
+			_set_instruction(
+				"%s: scegli il token da ridimensionare entro %d ft · Esc per annullare"
+				% [
+					String(spell_data.get("name", "Enlarge/Reduce")),
+					int(round(_effective_spell_range_feet(
+						spell_data,
+						caster
+					)))
+				]
+			)
 		"summon":
 			_pending_caster = caster
 			_pending_target_points.clear()
@@ -863,19 +1173,27 @@ func _try_select_caster(screen_position: Vector2) -> void:
 			_show_wall_mode_menu(spell_data)
 		"token_then_direction":
 			_pending_caster = caster
-			_targeting_phase = "direction_point"
 			_hide_spell_preview()
-			var direction_range_feet: int = int(
-				_direction_limit_feet(spell_data)
-			)
-			_set_instruction(
-				"%s: mira un punto o un token entro %d ft per scegliere la direzione · la linea arriva sempre a %d ft · clicca per confermare · Esc per annullare"
-				% [
-					String(spell_data.get("name", "Incantesimo")),
-					direction_range_feet,
-					direction_range_feet
-				]
-			)
+			if String(spell_data.get("aoe_shape", "")) == "cone":
+				_cast_spell_from_caster(caster, spell_data)
+				_complete_spell_cast(
+					spell_data,
+					_caster_direction_spell_targets(caster, spell_data),
+					caster
+				)
+			else:
+				_targeting_phase = "direction_point"
+				var direction_range_feet: int = int(
+					_direction_limit_feet(spell_data)
+				)
+				_set_instruction(
+					"%s: mira un punto o un token entro %d ft per scegliere la direzione · la linea arriva sempre a %d ft · clicca per confermare · Esc per annullare"
+					% [
+						String(spell_data.get("name", "Incantesimo")),
+						direction_range_feet,
+						direction_range_feet
+					]
+				)
 		_:
 			_cancel_pending_cast()
 
@@ -2237,6 +2555,28 @@ func _update_spell_preview() -> void:
 				)
 			)
 
+		"transform_target", "transform_multi_targets", "resize_target":
+			var transform_data: Dictionary = _transformation_target_data(
+				screen_position,
+				spell_data
+			)
+			if not bool(transform_data.get("valid", false)):
+				_hide_spell_preview()
+				return
+			var transform_target: Node3D = (
+				transform_data.get("target") as Node3D
+			)
+			if transform_target == null:
+				_hide_spell_preview()
+				return
+			measurement_tool.call(
+				"show_spell_preview",
+				_token_spell_origin(_pending_caster),
+				_token_spell_origin(transform_target),
+				"line",
+				_spell_style(spell_data)
+			)
+
 		"multi_target_tokens":
 			var multi_data: Dictionary = _target_or_point_data(
 				screen_position,
@@ -2423,6 +2763,9 @@ func _update_spell_range_preview(spell_data: Dictionary) -> void:
 			"multi_target_tokens",
 			"multi_target_points",
 			"summon_point",
+			"transform_target",
+			"transform_multi_targets",
+			"resize_target",
 			"teleport_passengers",
 			"teleport_destination",
 			"chain_primary",
@@ -2787,6 +3130,18 @@ func _directional_spell_geometry(
 	).normalized()
 
 	var origin: Vector3 = _token_spell_origin(caster)
+	if String(spell_data.get("aoe_shape", "")) == "cone":
+		var horizontal_forward: Vector3 = Vector3(
+			direction.x,
+			0.0,
+			direction.z
+		)
+		if horizontal_forward.length_squared() < 0.0001:
+			horizontal_forward = -caster.global_transform.basis.z
+			horizontal_forward.y = 0.0
+		if horizontal_forward.length_squared() > 0.0001:
+			origin += horizontal_forward.normalized() * _cell_size()
+
 	var length_cells: int = int(
 		spell_data.get("aoe_length_cells", 3)
 	)
@@ -4083,16 +4438,32 @@ func _resolve_current_saving_throw(succeeded: bool) -> void:
 
 	if _saving_throw_index < _saving_throw_targets.size():
 		var target: Node3D = _saving_throw_targets[_saving_throw_index]
-		if (
-			not succeeded
-			and target != null
-			and is_instance_valid(target)
-		):
-			if not _saving_throw_undo_recorded:
-				if board_root.has_method("push_undo_state"):
-					board_root.call("push_undo_state")
-				_saving_throw_undo_recorded = true
-			_apply_failed_saving_throw_effects(target, spell_data)
+		if target != null and is_instance_valid(target):
+			var transformation_mode: String = String(
+				spell_data.get("transformation_mode", "")
+			)
+			if (
+				succeeded
+				and transformation_mode in ["appearance", "resize"]
+				and target.has_method("restore_previous_transformation")
+			):
+				if not _saving_throw_undo_recorded:
+					if board_root.has_method("push_undo_state"):
+						board_root.call("push_undo_state")
+					_saving_throw_undo_recorded = true
+				target.call("restore_previous_transformation")
+				if board_root.has_method(
+					"_refresh_token_views_after_appearance_change"
+				):
+					board_root.call(
+						"_refresh_token_views_after_appearance_change"
+					)
+			elif not succeeded:
+				if not _saving_throw_undo_recorded:
+					if board_root.has_method("push_undo_state"):
+						board_root.call("push_undo_state")
+					_saving_throw_undo_recorded = true
+				_apply_failed_saving_throw_effects(target, spell_data)
 
 	_saving_throw_index += 1
 	if _saving_throw_index >= _saving_throw_targets.size():
@@ -4165,6 +4536,8 @@ func _finish_cast() -> void:
 	_pending_chain_primary = null
 	_summon_total_count = 1
 	_summon_created_count = 0
+	_transformation_dialog_targets.clear()
+	_transformation_dialog_index = 0
 	_directional_pitch_degrees = 0
 	_wall_mode = ""
 	_wall_points.clear()
@@ -4203,6 +4576,8 @@ func _cancel_pending_cast(restore_mouse: bool = true) -> void:
 	_pending_chain_primary = null
 	_summon_total_count = 1
 	_summon_created_count = 0
+	_transformation_dialog_targets.clear()
+	_transformation_dialog_index = 0
 	_directional_pitch_degrees = 0
 	_wall_mode = ""
 	_wall_points.clear()
@@ -4343,7 +4718,10 @@ func _update_chain_instruction(spell_data: Dictionary) -> void:
 
 func _direction_limit_feet(spell_data: Dictionary) -> float:
 	if spell_data.has("direction_limit_feet"):
-		return float(spell_data.get("direction_limit_feet", 0.0))
+		return maxf(
+			float(spell_data.get("direction_limit_feet", 0.0)),
+			5.0
+		)
 	return _effective_spell_range_feet(spell_data, _pending_caster)
 
 
@@ -4375,7 +4753,7 @@ func _effective_spell_range_feet(
 		spell_data.get("range", "")
 	).strip_edges().to_lower()
 	if not range_label.begins_with("touch"):
-		return configured_range
+		return maxf(configured_range, 5.0)
 
 	var source: Node3D = caster
 	if source == null or not is_instance_valid(source):
@@ -4385,7 +4763,7 @@ func _effective_spell_range_feet(
 		and is_instance_valid(source)
 		and source.has_method("get_reach_feet")
 	):
-		return maxf(float(source.call("get_reach_feet")), 1.0)
+		return maxf(float(source.call("get_reach_feet")), 5.0)
 
 	# Compatibilità con token/scenari precedenti: Touch era codificato come 5 ft.
 	return maxf(configured_range, 5.0)
