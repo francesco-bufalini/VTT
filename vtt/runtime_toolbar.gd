@@ -16,6 +16,7 @@ const MEASURE_LINE := 34
 const MEASURE_CLEAR := 35
 
 const VIEW_VISION := 40
+const VIEW_CAMERA_SETTINGS := 41
 const SHARE_OPEN := 50
 const CAMPAIGN_EDITOR_SCENE_PATH := "res://vtt/editor/campaign_editor.tscn"
 
@@ -96,7 +97,8 @@ func _build_toolbar() -> void:
 	], _on_measure))
 
 	row.add_child(_menu("Vista", [
-		["Coni visivi", VIEW_VISION]
+		["Coni visivi", VIEW_VISION],
+		["Velocità camera…", VIEW_CAMERA_SETTINGS]
 	], _on_view))
 
 	row.add_child(_menu("Rete", [
@@ -204,8 +206,11 @@ func _on_measure(id: int) -> void:
 
 
 func _on_view(id: int) -> void:
-	if id == VIEW_VISION:
-		board_root.call("toggle_vision_cones")
+	match id:
+		VIEW_VISION:
+			board_root.call("toggle_vision_cones")
+		VIEW_CAMERA_SETTINGS:
+			board_root.call("open_camera_settings")
 
 
 func _on_share(id: int) -> void:
