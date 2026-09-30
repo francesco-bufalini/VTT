@@ -2687,13 +2687,16 @@ func _cast_spell_at_token(
 
 	var start: Vector3 = _token_spell_origin(caster)
 	var finish: Vector3 = _token_spell_origin(target)
+	var projectile_style: String = String(
+		spell_data.get("projectile_style", "")
+	)
+	var travel_seconds: float = float(
+		spell_data.get("projectile_travel_seconds", 0.65)
+	)
 	var impact_radius: float = float(
 		spell_data.get("impact_aoe_radius_feet", 0.0)
 	)
 
-	# Preserve the established special mechanics first. Otherwise, when the
-	# deterministic catalogue says the AoE is anchored to a creature, render
-	# the parsed geometry around that selected token.
 	if bool(spell_data.get("persistent_link", false)):
 		measurement_tool.call(
 			"add_aoe",
@@ -2706,19 +2709,34 @@ func _cast_spell_at_token(
 
 	if impact_radius > 0.0:
 		measurement_tool.call(
-			"show_transient_aoe",
+			"show_spell_projectile_with_impact",
+			start,
 			finish,
-			finish + Vector3.RIGHT * (
-				impact_radius / 5.0 * _cell_size()
+			(
+				projectile_style
+				if not projectile_style.is_empty()
+				else _spell_style(spell_data)
 			),
+			travel_seconds,
 			String(spell_data.get("impact_aoe_shape", "sphere")),
-			float(spell_data.get("transient_seconds", 5.0)),
+			impact_radius / 5.0 * _cell_size(),
 			String(
 				spell_data.get(
 					"impact_style",
 					_spell_style(spell_data)
 				)
-			)
+			),
+			float(spell_data.get("transient_seconds", 5.0))
+		)
+		return
+
+	if not projectile_style.is_empty():
+		measurement_tool.call(
+			"show_spell_projectile",
+			start,
+			finish,
+			projectile_style,
+			travel_seconds
 		)
 		return
 
@@ -2761,6 +2779,7 @@ func _cast_spell_at_token(
 			_spell_line_width_world(spell_data)
 		)
 
+
 func _cast_self_emanation(
 	caster: Node3D,
 	spell_data: Dictionary
@@ -2795,13 +2814,38 @@ func _cast_self_emanation(
 
 
 func _cast_multi_target_spell(
-	_caster: Node3D,
-	_targets: Array[Node3D],
-	_spell_data: Dictionary
+	caster: Node3D,
+	targets: Array[Node3D],
+	spell_data: Dictionary
 ) -> void:
-	# Multi-target projectile-only spells are filtered out of the catalogue
-	# while spell animations are disabled.
-	return
+	var measurement_tool: Node = _measurement_tool()
+	if measurement_tool == null:
+		return
+
+	var start: Vector3 = _token_spell_origin(caster)
+	var style: String = String(
+		spell_data.get(
+			"projectile_style",
+			spell_data.get("id", "arcane")
+		)
+	)
+	var travel_seconds: float = float(
+		spell_data.get("projectile_travel_seconds", 0.65)
+	)
+
+	# _try_select_multi_target calls this only after all required targets
+	# have been selected, so the projectiles begin together.
+	for target: Node3D in targets:
+		if target == null or not is_instance_valid(target):
+			continue
+		measurement_tool.call(
+			"show_spell_projectile",
+			start,
+			_token_spell_origin(target),
+			style,
+			travel_seconds
+		)
+
 
 func _cast_chain_lightning(
 	_caster: Node3D,
@@ -3005,12 +3049,18 @@ func _required_target_clicks(spell_data: Dictionary) -> int:
 
 func _update_multi_target_instruction(spell_data: Dictionary) -> void:
 	var required: int = _required_target_clicks(spell_data)
+	var repeat_note: String = (
+		" · puoi selezionare più volte lo stesso token"
+		if bool(spell_data.get("allow_repeat_targets", false))
+		else ""
+	)
 	_set_instruction(
-		"%s: scegli i bersagli dei dardi %d/%d · puoi selezionare più volte lo stesso token · Esc per annullare"
+		"%s: scegli i bersagli %d/%d%s · Esc per annullare"
 		% [
 			String(spell_data.get("name", "Incantesimo")),
 			_pending_targets.size(),
-			required
+			required,
+			repeat_note
 		]
 	)
 
