@@ -7,6 +7,13 @@ const CONTEXT_ROTATE_RIGHT := 4
 const CONTEXT_TOGGLE_GRID := 5
 const CONTEXT_TOGGLE_VISION_CONES := 6
 const CONTEXT_FLYING := 8
+const CONTEXT_CAMERA_SPEED_DOWN := 9
+const CONTEXT_CAMERA_SPEED_UP := 10
+const CONTEXT_CAMERA_SPEED_RESET := 11
+const CONTEXT_CAMERA_SPEED_INFO := 12
+
+const CAMERA_SPEED_STEP := 1.0
+const CAMERA_SPEED_DEFAULT := 5.0
 
 const ALL_COLLISION_LAYERS := 0xFFFFFFFF
 
@@ -342,6 +349,29 @@ func _show_context_menu(screen_position: Vector2) -> void:
 			CONTEXT_TOGGLE_VISION_CONES
 		)
 
+	context_menu.add_separator()
+	var current_camera_speed := _get_camera_speed()
+	context_menu.add_item(
+		"Velocità camera: %.1f" % current_camera_speed,
+		CONTEXT_CAMERA_SPEED_INFO
+	)
+	context_menu.set_item_disabled(
+		context_menu.get_item_index(CONTEXT_CAMERA_SPEED_INFO),
+		true
+	)
+	context_menu.add_item(
+		"Camera più lenta (-%.1f)" % CAMERA_SPEED_STEP,
+		CONTEXT_CAMERA_SPEED_DOWN
+	)
+	context_menu.add_item(
+		"Camera più veloce (+%.1f)" % CAMERA_SPEED_STEP,
+		CONTEXT_CAMERA_SPEED_UP
+	)
+	context_menu.add_item(
+		"Ripristina velocità camera (%.1f)" % CAMERA_SPEED_DEFAULT,
+		CONTEXT_CAMERA_SPEED_RESET
+	)
+
 	if _has_pending_spawn_position:
 		context_menu.add_separator()
 		context_menu.add_item("Genera token", CONTEXT_CREATE_TOKEN)
@@ -405,6 +435,18 @@ func _on_context_menu_id_pressed(id: int) -> void:
 			toggle_vision_cones()
 			_close_context_menu_to_game()
 
+		CONTEXT_CAMERA_SPEED_DOWN:
+			_adjust_camera_speed(-CAMERA_SPEED_STEP)
+			_close_context_menu_to_game()
+
+		CONTEXT_CAMERA_SPEED_UP:
+			_adjust_camera_speed(CAMERA_SPEED_STEP)
+			_close_context_menu_to_game()
+
+		CONTEXT_CAMERA_SPEED_RESET:
+			_set_camera_speed(CAMERA_SPEED_DEFAULT)
+			_close_context_menu_to_game()
+
 		CONTEXT_CREATE_TOKEN:
 			if not _has_pending_spawn_position:
 				return
@@ -425,6 +467,24 @@ func _on_context_menu_id_pressed(id: int) -> void:
 		CONTEXT_ROTATE_RIGHT:
 			_rotate_selected(1)
 			_close_context_menu_to_game()
+
+
+func _get_camera_speed() -> float:
+	if camera.has_method("get_move_speed"):
+		return float(camera.call("get_move_speed"))
+	return CAMERA_SPEED_DEFAULT
+
+
+func _set_camera_speed(value: float) -> void:
+	if camera.has_method("set_move_speed"):
+		camera.call("set_move_speed", value)
+
+
+func _adjust_camera_speed(delta_speed: float) -> void:
+	if camera.has_method("adjust_move_speed"):
+		camera.call("adjust_move_speed", delta_speed)
+	else:
+		_set_camera_speed(_get_camera_speed() + delta_speed)
 
 
 func _close_context_menu_to_game() -> void:
