@@ -324,7 +324,13 @@ static func _apply_wall_geometry(
 				)
 
 	if not modes.is_empty():
-		result["wall_modes"] = modes
+		var ordered_modes: Array[String] = []
+		for canonical_mode: String in [
+			"polyline", "circle", "globe", "dome"
+		]:
+			if canonical_mode in modes:
+				ordered_modes.append(canonical_mode)
+		result["wall_modes"] = ordered_modes
 
 
 static func apply_to_spell(spell_data: Dictionary) -> Dictionary:
