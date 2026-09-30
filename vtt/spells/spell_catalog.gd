@@ -3,6 +3,9 @@ extends RefCounted
 const GeneratedCatalog = preload(
 	"res://vtt/spells/spell_catalog_5etools.gd"
 )
+const SpellAreaCatalog = preload(
+	"res://vtt/spells/spell_area_catalog.gd"
+)
 
 const CLASS_NAMES: Array[String] = [
 	"Artefice", "Bardo", "Chierico", "Druido", "Monaco",
@@ -1385,7 +1388,12 @@ static func _apply_runtime_overrides(data: Dictionary) -> Dictionary:
 	if override_value is Dictionary:
 		for key: Variant in (override_value as Dictionary).keys():
 			result[key] = (override_value as Dictionary).get(key)
-	return result
+
+	# Geometry, range, targeting and generic VFX come from the generated
+	# runtime map catalogue. Hand-authored entries still carry descriptive
+	# metadata and special mechanics, but no longer need to be the authority
+	# for ordinary AoE dimensions.
+	return SpellAreaCatalog.apply_to_spell(result)
 
 
 static func spell(spell_id: String) -> Dictionary:
