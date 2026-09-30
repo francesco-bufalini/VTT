@@ -21,6 +21,9 @@ const INVALID_CELL := Vector3i(2147483647, 2147483647, 2147483647)
 @export_range(1000, 12000, 250) var target_screen_samples: int = 3000
 @export_range(32, 2048, 1) var max_ray_tests_per_physics_frame: int = 128
 @export_range(0.01, 0.25, 0.01) var surface_inset_fraction: float = 0.06
+# Adds nearby cells on the tangent plane of each raycast hit so the tactical
+# grid stays stable when the camera angle changes, without filling depth.
+@export_range(0, 3, 1) var neighbor_margin_cells: int = 1
 @export_range(256, 30000, 256) var max_active_cells: int = 12288
 
 # Event thresholds. Small camera jitter does not restart a sweep.
@@ -470,16 +473,47 @@ func _sample_visible_surfaces() -> void:
 		var cell: Vector3i = _world_to_cell(point)
 		if not _cell_inside_current_volume(cell):
 			continue
-		if (
-			not _sweep_cells.has(cell)
-			and _sweep_cells.size() >= max_active_cells
-		):
-			continue
 
-		_sweep_cells[cell] = true
+		_mark_sweep_cell_with_margin(cell, normal)
 
 	if _sample_index >= _sample_points.size():
 		_finish_sweep()
+
+
+func _mark_sweep_cell_with_margin(
+	cell: Vector3i,
+	normal: Vector3
+) -> void:
+	_mark_sweep_cell(cell)
+
+	var margin: int = maxi(0, neighbor_margin_cells)
+	if margin == 0:
+		return
+
+	var abs_normal: Vector3 = normal.abs()
+	if abs_normal.x >= abs_normal.y and abs_normal.x >= abs_normal.z:
+		for y_offset in range(-margin, margin + 1):
+			for z_offset in range(-margin, margin + 1):
+				_mark_sweep_cell(cell + Vector3i(0, y_offset, z_offset))
+	elif abs_normal.y >= abs_normal.x and abs_normal.y >= abs_normal.z:
+		for x_offset in range(-margin, margin + 1):
+			for z_offset in range(-margin, margin + 1):
+				_mark_sweep_cell(cell + Vector3i(x_offset, 0, z_offset))
+	else:
+		for x_offset in range(-margin, margin + 1):
+			for y_offset in range(-margin, margin + 1):
+				_mark_sweep_cell(cell + Vector3i(x_offset, y_offset, 0))
+
+
+func _mark_sweep_cell(cell: Vector3i) -> void:
+	if not _cell_inside_current_volume(cell):
+		return
+	if (
+		not _sweep_cells.has(cell)
+		and _sweep_cells.size() >= max_active_cells
+	):
+		return
+	_sweep_cells[cell] = true
 
 
 func _finish_sweep() -> void:
