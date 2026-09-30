@@ -392,146 +392,160 @@ def _feet_from_inches(value: float) -> int | float:
     return _number(value / 12.0)
 
 
-def _parse_wall(sentence: str) -> dict[str, Any] | None:
-    text = sentence.lower().replace("–", "-").replace("—", "-")
-    if "wall" not in text and "panels" not in text:
+def _parse_length_feet(text: str) -> int | float | None:
+    fraction = re.search(r"(\d+)\s*/\s*(\d+)\s+inch(?:es)?\s+thick", text)
+    if fraction and int(fraction.group(2)) != 0:
+        inches = float(fraction.group(1)) / float(fraction.group(2))
+        return _feet_from_inches(inches)
+
+    inches = re.search(
+        r"(\d+(?:\.\d+)?)\s+inch(?:es)?\s+thick",
+        text,
+    )
+    if inches:
+        return _feet_from_inches(float(inches.group(1)))
+
+    feet = re.search(
+        r"(\d+(?:\.\d+)?)\s+(?:feet|foot)\s+thick",
+        text,
+    )
+    if feet:
+        return _number(feet.group(1))
+    return None
+
+
+def _parse_wall(text_value: str) -> dict[str, Any] | None:
+    # Walls are parsed from the complete spell text, not a single sentence:
+    # the dimensions of alternate forms (ring/globe/panels) are commonly
+    # described in following sentences.
+    text = _strip_5etools_tags(text_value).lower()
+    text = text.replace("–", "-").replace("—", "-")
+    if "wall" not in text:
         return None
 
     variants: list[dict[str, Any]] = []
 
     # Straight/path wall.
-    match = re.search(
-        r"(?:wall[^.]{0,120}?)?(?:up\s+to\s+)?"
+    path_match = re.search(
+        r"(?:wall[^.]{0,160}?)?(?:up\s+to\s+)?"
         r"(\d+(?:\.\d+)?)\s+feet\s+long\b"
-        r"[^.]{0,80}?(\d+(?:\.\d+)?)\s+feet\s+high\b"
-        r"[^.]{0,80}?(\d+(?:\.\d+)?)\s+(?:feet|foot)\s+thick\b",
+        r"[^.]{0,100}?(\d+(?:\.\d+)?)\s+feet\s+high\b"
+        r"[^.]{0,100}?(?:(\d+(?:\.\d+)?)\s+(?:feet|foot)\s+thick"
+        r"|(\d+(?:\.\d+)?)\s+inch(?:es)?\s+thick)",
         text,
     )
-    if match:
+    if path_match:
+        thickness = (
+            _number(path_match.group(3))
+            if path_match.group(3)
+            else _feet_from_inches(float(path_match.group(4)))
+        )
         variants.append({
             "type": "path",
-            "max_length_feet": _number(match.group(1)),
-            "height_feet": _number(match.group(2)),
-            "thickness_feet": _number(match.group(3)),
+            "max_length_feet": _number(path_match.group(1)),
+            "height_feet": _number(path_match.group(2)),
+            "thickness_feet": thickness,
         })
-    else:
-        # Inch-thick wall (e.g. Prismatic Wall).
-        match = re.search(
-            r"(?:up\s+to\s+)?(\d+(?:\.\d+)?)\s+feet\s+long\b"
-            r"[^.]{0,80}?(\d+(?:\.\d+)?)\s+feet\s+high\b"
-            r"[^.]{0,80}?(\d+(?:\.\d+)?)\s+inch(?:es)?\s+thick\b",
-            text,
-        )
+
+    # Ring/circle wall, accepting both "20-foot diameter" and
+    # "20 feet in diameter" wording.
+    circle_patterns = (
+        r"(?:ringed\s+wall|circle)[^.]{0,100}?"
+        r"(?:up\s+to\s+)?(?:a\s+)?(\d+(?:\.\d+)?)\s*-\s*foot\s+diameter\b"
+        r"[^.]{0,100}?(?:up\s+to\s+)?(\d+(?:\.\d+)?)\s+feet\s+high\b"
+        r"[^.]{0,100}?(\d+(?:\.\d+)?)\s+(?:feet|foot)\s+thick\b",
+        r"(?:ringed\s+wall|circle)[^.]{0,100}?"
+        r"(?:up\s+to\s+)?(?:a\s+)?(\d+(?:\.\d+)?)\s+feet\s+in\s+diameter\b"
+        r"[^.]{0,100}?(?:up\s+to\s+)?(\d+(?:\.\d+)?)\s+feet\s+high\b"
+        r"[^.]{0,100}?(\d+(?:\.\d+)?)\s+(?:feet|foot)\s+thick\b",
+    )
+    for pattern in circle_patterns:
+        match = re.search(pattern, text)
         if match:
             variants.append({
-                "type": "path",
-                "max_length_feet": _number(match.group(1)),
+                "type": "circle",
+                "radius_feet": _number(float(match.group(1)) / 2.0),
                 "height_feet": _number(match.group(2)),
-                "thickness_feet": _feet_from_inches(float(match.group(3))),
+                "thickness_feet": _number(match.group(3)),
             })
+            break
 
-    # Ring/circle wall.
+    # Globe/sphere. The dome alternative often shares this same radius.
+    globe_radius: int | float | None = None
     match = re.search(
-        r"(?:ringed\s+wall|circle)[^.]{0,80}?"
-        r"(?:up\s+to\s+)?(?:a\s+)?(\d+(?:\.\d+)?)\s*-?\s*foot\s+diameter\b"
-        r"[^.]{0,80}?(?:up\s+to\s+)?(\d+(?:\.\d+)?)\s+feet\s+high\b"
-        r"[^.]{0,80}?(\d+(?:\.\d+)?)\s+(?:feet|foot)\s+thick\b",
-        text,
-    )
-    if match:
-        variants.append({
-            "type": "circle",
-            "radius_feet": _number(float(match.group(1)) / 2.0),
-            "height_feet": _number(match.group(2)),
-            "thickness_feet": _number(match.group(3)),
-        })
-
-    # Globe/sphere.
-    match = re.search(
-        r"(?:sphere|globe)\b[^.]{0,100}?\bradius\s+of\s+(?:up\s+to\s+)?"
+        r"(?:sphere|globe)\b[^.]{0,120}?\bradius\s+of\s+(?:up\s+to\s+)?"
         r"(\d+(?:\.\d+)?)\s+feet\b",
         text,
     )
     if match:
-        variants.append({
-            "type": "globe",
-            "radius_feet": _number(match.group(1)),
-        })
+        globe_radius = _number(match.group(1))
     else:
         match = re.search(
-            r"(?:sphere|globe)\b[^.]{0,100}?(?:up\s+to\s+)?"
+            r"(?:sphere|globe)\b[^.]{0,120}?(?:up\s+to\s+)?"
             r"(\d+(?:\.\d+)?)\s+feet\s+in\s+diameter\b",
             text,
         )
         if match:
-            variants.append({
-                "type": "globe",
-                "radius_feet": _number(float(match.group(1)) / 2.0),
-            })
+            globe_radius = _number(float(match.group(1)) / 2.0)
+    if globe_radius is not None:
+        variants.append({"type": "globe", "radius_feet": globe_radius})
 
-    # Hemispherical dome.
+    dome_radius: int | float | None = None
     match = re.search(
-        r"hemispherical\s+dome\b[^.]{0,120}?"
+        r"hemispherical\s+dome\b[^.]{0,140}?"
         r"(?:radius\s+of\s+)?(?:up\s+to\s+)?"
         r"(\d+(?:\.\d+)?)\s+feet\b",
         text,
     )
     if match:
-        variants.append({
-            "type": "dome",
-            "radius_feet": _number(match.group(1)),
-        })
+        dome_radius = _number(match.group(1))
+    elif "hemispherical dome" in text and globe_radius is not None:
+        dome_radius = globe_radius
+    if dome_radius is not None:
+        variants.append({"type": "dome", "radius_feet": dome_radius})
 
-    # Panel walls. Convert to the current path editor while preserving the
-    # actual panel dimensions in the asset for future panel-by-panel editing.
+    # Panels. Keep exact panel metadata even though the current UI maps them
+    # to the polyline editor.
+    words = {
+        "one": 1, "two": 2, "three": 3, "four": 4, "five": 5,
+        "six": 6, "seven": 7, "eight": 8, "nine": 9, "ten": 10,
+    }
     panel_match = re.search(
-        r"(\w+|\d+)\s+(\d+(?:\.\d+)?)\s*-\s*foot(?:-by-|\s+square\s+)"
-        r"(\d+(?:\.\d+)?)?\s*-?\s*foot?\s*panels?",
+        r"\b(one|two|three|four|five|six|seven|eight|nine|ten|\d+)"
+        r"\s+(\d+(?:\.\d+)?)\s*-\s*foot(?:-by-"
+        r"(\d+(?:\.\d+)?)\s*-\s*foot|-square)\s+panels?\b",
         text,
     )
-    if not panel_match:
-        panel_match = re.search(
-            r"(\w+|\d+)\s+(\d+(?:\.\d+)?)\s*-\s*foot-square\s+panels?",
-            text,
-        )
     if panel_match:
-        words = {
-            "one": 1, "two": 2, "three": 3, "four": 4, "five": 5,
-            "six": 6, "seven": 7, "eight": 8, "nine": 9, "ten": 10,
-        }
         raw_count = panel_match.group(1)
-        count = int(raw_count) if raw_count.isdigit() else words.get(raw_count, 0)
+        count = int(raw_count) if raw_count.isdigit() else words.get(raw_count, 1)
         width = float(panel_match.group(2))
-        raw_height = panel_match.group(3)
-        height = float(raw_height) if raw_height else width
-
-        thickness_feet: int | float = 0.5
-        thick_match = re.search(
-            r"wall\s+is\s+(\d+(?:\.\d+)?)\s+feet?\s+thick\b",
-            text,
+        height = (
+            float(panel_match.group(3))
+            if panel_match.group(3)
+            else width
         )
-        if thick_match:
-            thickness_feet = _number(thick_match.group(1))
-        else:
-            thick_match = re.search(
-                r"wall\s+is\s+(\d+(?:\.\d+)?)\s+inch(?:es)?\s+thick\b",
-                text,
-            )
-            if thick_match:
-                thickness_feet = _feet_from_inches(float(thick_match.group(1)))
+        thickness = _parse_length_feet(text)
+        if thickness is None:
+            thickness = 0.5
 
         variants.append({
             "type": "panels",
             "max_panels": count,
             "panel_width_feet": _number(width),
             "panel_height_feet": _number(height),
-            "thickness_feet": thickness_feet,
+            "thickness_feet": thickness,
         })
 
     if not variants:
         return None
 
-    return {"shape": "wall", "variants": variants}
+    # Remove exact duplicates while retaining the prose order.
+    unique: list[dict[str, Any]] = []
+    for variant in variants:
+        if variant not in unique:
+            unique.append(variant)
+    return {"shape": "wall", "variants": unique}
 
 
 PARSERS: dict[str, Callable[[str], dict[str, Any] | None]] = {
@@ -583,7 +597,11 @@ def _extract_geometries(
         tag = str(raw_tag)
         if tag in IGNORED_AREA_TAGS or tag not in GEOMETRY_TAGS:
             continue
-        geometry = _parse_tag(tag, sentences)
+        geometry = (
+            _parse_wall(text)
+            if tag == "W"
+            else _parse_tag(tag, sentences)
+        )
         if geometry is None:
             unresolved.append(tag)
             continue
