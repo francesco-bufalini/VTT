@@ -1110,7 +1110,7 @@ func _build_wall_path_root(
 				style,
 				cell_size
 			)
-		if style == "wall_of_fire" and damage_side != 0:
+		if style in ["wall_of_fire", "fire"] and damage_side != 0:
 			_add_wall_damage_band(
 				root,
 				start,
