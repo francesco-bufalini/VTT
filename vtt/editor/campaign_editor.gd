@@ -115,7 +115,7 @@ func _build_toolbar() -> void:
 	var token_menu := _make_menu_button("Token", [
 		["Libreria token · prossimamente", TOKEN_LIBRARY],
 		["Crea token nel punto osservato…", TOKEN_CREATE],
-		["Volante · token selezionati", TOKEN_FLYING],
+		["Applica gravità · token selezionati", TOKEN_FLYING],
 		["Ruota 45° a sinistra", TOKEN_ROTATE_LEFT],
 		["Ruota 45° a destra", TOKEN_ROTATE_RIGHT],
 		["Elimina token selezionati", TOKEN_DELETE]
