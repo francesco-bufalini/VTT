@@ -699,9 +699,9 @@ def _multi_target_count_spec(spell: dict[str, Any]) -> dict[str, Any]:
     result: dict[str, Any] = {}
 
     base_patterns = [
-        rf"\b(?:create|creates|fire|fires|launch|launches|shoot|shoots)\s+"
-        rf"{number}\b[^.]{0,90}\b(?:dart|darts|ray|rays|missile|missiles|"
-        rf"bolt|bolts|beam|beams)\b",
+        rf"\b(?:create|creates|fire|fires|hurl|hurls|launch|launches|"
+        rf"shoot|shoots)\s+{number}\b[^.]{0,90}\b(?:dart|darts|ray|rays|"
+        rf"missile|missiles|bolt|bolts|beam|beams)\b",
         rf"\bup\s+to\s+{number}\s+(?:willing\s+)?(?:creatures?|targets?)\b",
         rf"\b{number}\s+(?:willing\s+)?(?:creatures?|targets?)\s+of\s+"
         rf"(?:your|the caster's)\s+choice\b",
@@ -734,10 +734,44 @@ def _multi_target_count_spec(spell: dict[str, Any]) -> dict[str, Any]:
         "one creature or several" in text
         or "same creature" in text
         or "same target" in text
+        or re.search(
+            r"\bone\s+target\b[^.]{0,100}\b(?:or|and)\b[^.]{0,40}\bseveral\b",
+            text,
+        )
     ):
         result["allow_repeat_targets"] = True
 
     return result
+
+
+def _is_projectile_targeting(spell: dict[str, Any]) -> bool:
+    text = _strip_5etools_tags(_spell_text(spell)).lower()
+    projectile_nouns = (
+        r"dart|darts|ray|rays|missile|missiles|bolt|bolts|orb|orbs|"
+        r"mote|motes|beam|beams|shard|shards|projectile|projectiles"
+    )
+    patterns = [
+        r"\bmake\s+(?:an?\s+|one\s+)?ranged\s+spell\s+attack\b",
+        r"\bmake\s+(?:an?\s+|one\s+)?ranged\s+attack(?:\s+roll)?\b",
+        rf"\b(?:hurl|hurls|fire|fires|launch|launches|shoot|shoots|"
+        rf"throw|throws|fling|flings)\b[^.]{{0,100}}\b(?:{projectile_nouns})\b",
+        rf"\b(?:{projectile_nouns})\b[^.]{{0,100}}\b"
+        rf"(?:strike|strikes|hit|hits|fly|flies|leap|leaps|streak|streaks)\b",
+    ]
+    return any(re.search(pattern, text) for pattern in patterns)
+
+
+def _is_generic_multi_projectile(spell: dict[str, Any]) -> bool:
+    text = _strip_5etools_tags(_spell_text(spell)).lower()
+    # Chained projectiles such as Chain Lightning need their own secondary
+    # target state machine; do not flatten them into ordinary multi-targeting.
+    if re.search(
+        r"\b(?:then\s+)?(?:leap|leaps)\s+from\s+(?:that|the)\s+target\b"
+        r"|\bwithin\s+\d+\s+feet\s+of\s+the\s+first\s+target\b",
+        text,
+    ):
+        return False
+    return True
 
 
 def _targeting_spec(
@@ -773,14 +807,22 @@ def _targeting_spec(
     if "MT" in area_tags and not self_like:
         result = {"type": "multi_token"}
         result.update(_multi_target_count_spec(spell))
-        if not geometries:
+        if (
+            not geometries
+            and _is_projectile_targeting(spell)
+            and _is_generic_multi_projectile(spell)
+        ):
             result["projectile"] = True
+            if range_type == "point":
+                result["allow_point_target"] = True
         return result
 
     if "ST" in area_tags and not self_like:
         result = {"type": "token"}
-        if not geometries:
+        if not geometries and _is_projectile_targeting(spell):
             result["projectile"] = True
+            if range_type == "point":
+                result["allow_point_target"] = True
         return result
 
     result = {}
