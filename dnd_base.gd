@@ -56,7 +56,7 @@ var _ui_owns_mouse: bool = false
 var _vision_cones_visible: bool = false
 var board_sync: Node
 var share_dialog: AcceptDialog
-var share_key: LineEdit
+var share_session: SpinBox
 var share_status: Label
 var camera_settings_dialog: AcceptDialog
 var camera_speed_slider: HSlider
@@ -111,6 +111,7 @@ func _ready() -> void:
 	add_child(board_sync)
 	board_sync.setup(self, token_scene, tokens_root, measurement_tool)
 	_build_share_dialog()
+	board_sync.listen(true, _share_session_key())
 	_build_camera_settings_dialog()
 	_ensure_token_name_input()
 	_build_token_state_dialog()
@@ -1433,48 +1434,66 @@ func _release_mouse() -> void:
 	Input.mouse_mode = Input.MOUSE_MODE_VISIBLE
 
 
+func _share_session_key() -> String:
+	if share_session == null:
+		return "1"
+	return str(clampi(int(share_session.value), 1, 5))
+
+
+func _on_share_session_changed(_value: float) -> void:
+	board_sync.listen(true, _share_session_key())
+
+
 func _build_share_dialog() -> void:
 	share_dialog = AcceptDialog.new()
 	share_dialog.title = "Sincronizzazione mappa · Tailscale"
 	$UI.add_child(share_dialog)
 	share_dialog.confirmed.connect(_close_context_menu_to_game)
 	share_dialog.canceled.connect(_close_context_menu_to_game)
+
 	var layout := VBoxContainer.new()
+	layout.add_theme_constant_override("separation", 10)
 	share_dialog.add_child(layout)
 
 	var info := Label.new()
 	info.text = (
-		"Sincronizza invia lo stato corrente a tutti i nodi restituiti da "
-		+ "tailscale status --json.\n"
-		+ "Non viene controllato se siano online o se il VTT sia aperto."
+		"La ricezione è sempre attiva. Sincronizza invia lo stato corrente "
+		+ "a tutti i nodi restituiti da tailscale status --json."
 	)
 	info.autowrap_mode = TextServer.AUTOWRAP_WORD_SMART
 	layout.add_child(info)
 
-	share_key = LineEdit.new()
-	share_key.placeholder_text = "Codice sessione uguale sui computer della partita"
-	share_key.secret = true
-	layout.add_child(share_key)
+	var session_row := HBoxContainer.new()
+	layout.add_child(session_row)
 
-	var receive := CheckButton.new()
-	receive.text = "Abilita ricezione (sostituisce lo stato della mappa)"
-	layout.add_child(receive)
-	receive.toggled.connect(func(enabled):
-		var error: Error = board_sync.listen(enabled, share_key.text)
-		if error != OK:
-			receive.set_pressed_no_signal(false)
-		share_key.editable = not receive.button_pressed
+	var session_label := Label.new()
+	session_label.text = "Partita:"
+	session_row.add_child(session_label)
+
+	share_session = SpinBox.new()
+	share_session.min_value = 1.0
+	share_session.max_value = 5.0
+	share_session.step = 1.0
+	share_session.value = 1.0
+	share_session.allow_greater = false
+	share_session.allow_lesser = false
+	share_session.custom_minimum_size = Vector2(90, 0)
+	share_session.tooltip_text = (
+		"Solo i computer impostati sullo stesso numero di partita "
+		+ "accettano la sincronizzazione."
 	)
+	share_session.value_changed.connect(_on_share_session_changed)
+	session_row.add_child(share_session)
 
 	var send := Button.new()
 	send.text = "Sincronizza mappa su Tailscale"
 	layout.add_child(send)
 	send.pressed.connect(
-		func(): board_sync.send_snapshot_to_tailnet(share_key.text)
+		func(): board_sync.send_snapshot_to_tailnet(_share_session_key())
 	)
 
 	share_status = Label.new()
-	share_status.text = "Ricezione disattivata"
+	share_status.text = "Ricezione automatica · Partita 1"
 	share_status.autowrap_mode = TextServer.AUTOWRAP_WORD_SMART
 	layout.add_child(share_status)
 	board_sync.status_changed.connect(
