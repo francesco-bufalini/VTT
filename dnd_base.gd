@@ -51,6 +51,8 @@ var _pending_spawn_position: Vector3 = Vector3.ZERO
 var _has_pending_spawn_position: bool = false
 var _token_generation_confirmed_callback: Callable = Callable()
 var _token_generation_canceled_callback: Callable = Callable()
+var _token_generation_exact_position: bool = false
+var _token_generation_place_on_surface: bool = false
 var _pending_aoe_index: int = -1
 var _context_token: CharacterBody3D = null
 var _selected_tokens: Array[CharacterBody3D] = []
@@ -1336,6 +1338,8 @@ func _on_context_menu_id_pressed(id: int) -> void:
 				return
 			_token_generation_confirmed_callback = Callable()
 			_token_generation_canceled_callback = Callable()
+			_token_generation_exact_position = false
+			_token_generation_place_on_surface = false
 			_open_token_generation_dialog()
 
 		CONTEXT_DELETE_SELECTED:
@@ -1791,12 +1795,15 @@ func _finish_context_menu_close() -> void:
 func open_token_generation_at(
 	world_position: Vector3,
 	confirmed_callback: Callable = Callable(),
-	canceled_callback: Callable = Callable()
+	canceled_callback: Callable = Callable(),
+	place_on_surface: bool = false
 ) -> void:
 	_pending_spawn_position = world_position
 	_has_pending_spawn_position = true
 	_token_generation_confirmed_callback = confirmed_callback
 	_token_generation_canceled_callback = canceled_callback
+	_token_generation_exact_position = true
+	_token_generation_place_on_surface = place_on_surface
 	_open_token_generation_dialog()
 
 
@@ -1867,6 +1874,8 @@ func _on_token_dialog_confirmed() -> void:
 	)
 	_token_generation_confirmed_callback = Callable()
 	_token_generation_canceled_callback = Callable()
+	_token_generation_exact_position = false
+	_token_generation_place_on_surface = false
 	_has_pending_spawn_position = false
 
 	_ui_owns_mouse = false
@@ -1882,6 +1891,8 @@ func _on_token_dialog_canceled() -> void:
 	)
 	_token_generation_confirmed_callback = Callable()
 	_token_generation_canceled_callback = Callable()
+	_token_generation_exact_position = false
+	_token_generation_place_on_surface = false
 	_has_pending_spawn_position = false
 
 	_ui_owns_mouse = false
@@ -1917,7 +1928,11 @@ func _spawn_token(
 
 	token.global_position = Vector3(
 		_pending_spawn_position.x,
-		_pending_spawn_position.y + token_spawn_height,
+		(
+			_pending_spawn_position.y
+			if _token_generation_exact_position
+			else _pending_spawn_position.y + token_spawn_height
+		),
 		_pending_spawn_position.z
 	)
 
@@ -1939,6 +1954,13 @@ func _spawn_token(
 			cell_size,
 			size_name,
 			footprint_cells
+		)
+
+	if _token_generation_exact_position and _token_generation_place_on_surface:
+		var token_height: float = float(token.get("token_height_cells"))
+		token.global_position.y = (
+			_pending_spawn_position.y
+			+ token_height * cell_size * 0.5
 		)
 
 	if token.has_method("set_reach_feet"):
