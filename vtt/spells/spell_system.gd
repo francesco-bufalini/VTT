@@ -2467,7 +2467,13 @@ func _update_spell_preview() -> void:
 			var caster_mode: String = String(
 				spell_data.get("target_mode", "")
 			)
-			if caster_mode == "self_token":
+			if (
+				caster_mode == "self_token"
+				or (
+					caster_mode == "token_then_direction"
+					and String(spell_data.get("aoe_shape", "")) == "cone"
+				)
+			):
 				var geometry: Dictionary = _directional_spell_geometry(
 					hovered_caster,
 					spell_data
