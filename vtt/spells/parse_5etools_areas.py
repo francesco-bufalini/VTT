@@ -678,6 +678,7 @@ def _wall_choose_damage_side(text: str) -> bool:
 
 
 def _targeting_spec(
+    spell: dict[str, Any],
     range_spec: dict[str, Any],
     geometries: list[dict[str, Any]],
     text: str,
@@ -703,8 +704,17 @@ def _targeting_spec(
         or distance_type == "self"
     )
 
+    area_tags = spell.get("areaTags", [])
+    targets_creature = (
+        isinstance(area_tags, list)
+        and "ST" in [str(tag) for tag in area_tags]
+        and not self_like
+    )
+
     result = {}
-    if self_like and shape in {"cone", "line", "cube"}:
+    if targets_creature:
+        result["type"] = "token"
+    elif self_like and shape in {"cone", "line", "cube"}:
         result["type"] = "caster_direction"
         result["allow_pitch"] = True
     elif self_like:
@@ -813,6 +823,7 @@ def build_output(
 
         range_spec = _range_spec(spell)
         targeting = _targeting_spec(
+            spell,
             range_spec,
             geometries,
             _spell_text(spell),
