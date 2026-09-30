@@ -37,6 +37,8 @@ var active_index: int = 0
 var round_number: int = 1
 var turn_count: int = 0
 var _next_entry_id: int = 1
+var _name_watch_elapsed: float = 0.0
+var _last_linked_name_signature: String = ""
 
 
 func setup(root: Node3D) -> void:
@@ -61,6 +63,28 @@ func _initialize() -> void:
 	_build_add_dialog()
 	_build_token_popup()
 	_render()
+
+
+func _process(delta: float) -> void:
+	if panel == null or not panel.visible or entries.is_empty():
+		return
+	_name_watch_elapsed += delta
+	if _name_watch_elapsed < 0.25:
+		return
+	_name_watch_elapsed = 0.0
+	var signature := _linked_name_signature()
+	if signature != _last_linked_name_signature:
+		_render()
+
+
+func _linked_name_signature() -> String:
+	var parts := PackedStringArray()
+	for entry: Dictionary in entries:
+		var token_id := String(entry.get("token_id", ""))
+		if token_id.is_empty():
+			continue
+		parts.append("%s:%s" % [token_id, _token_display_name_by_id(token_id)])
+	return "|".join(parts)
 
 
 func _build_panel() -> void:
@@ -442,6 +466,7 @@ func _render() -> void:
 	if panel == null:
 		return
 	_synchronize_linked_entry_names()
+	_last_linked_name_signature = _linked_name_signature()
 
 	inactive_controls.visible = not combat_active
 	combat_controls.visible = combat_active
