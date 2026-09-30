@@ -954,7 +954,8 @@
       "feet": 90
     },
     "targeting": {
-      "type": "point"
+      "type": "point",
+      "requires_ground": true
     },
     "effect": {
       "geometry": {
@@ -1387,7 +1388,8 @@
       "feet": 60
     },
     "targeting": {
-      "type": "point"
+      "type": "multi_token",
+      "base_target_clicks": 6
     },
     "effect": {
       "geometry": {
@@ -1637,7 +1639,8 @@
       "feet": 120
     },
     "targeting": {
-      "type": "point"
+      "type": "multi_token",
+      "base_target_clicks": 6
     },
     "effect": {
       "geometry": {
@@ -2105,15 +2108,8 @@
     },
     "effect": {
       "geometry": {
-        "shape": "cube",
-        "variants": [
-          {
-            "side_feet": 30
-          },
-          {
-            "side_feet": 90
-          }
-        ]
+        "shape": "square",
+        "side_feet": 5
       },
       "persistence": "persistent"
     }
@@ -2466,7 +2462,7 @@
       "feet": 120
     },
     "targeting": {
-      "type": "wall"
+      "type": "token"
     },
     "effect": {
       "geometry": {
@@ -6361,6 +6357,2661 @@
         "radiant"
       ],
       "persistence": "instant"
+    }
+  },
+  "PHB::Acid Splash": {
+    "range": {
+      "type": "point",
+      "feet": 60
+    },
+    "targeting": {
+      "type": "multi_token",
+      "projectile": true
+    },
+    "effect": {
+      "damage_types": [
+        "acid"
+      ],
+      "persistence": "instant"
+    }
+  },
+  "PHB::Aid": {
+    "range": {
+      "type": "point",
+      "feet": 30
+    },
+    "targeting": {
+      "type": "multi_token",
+      "base_target_clicks": 3,
+      "projectile": true
+    }
+  },
+  "PHB::Animal Friendship": {
+    "range": {
+      "type": "point",
+      "feet": 30
+    },
+    "targeting": {
+      "type": "token",
+      "projectile": true
+    }
+  },
+  "PHB::Animal Messenger": {
+    "range": {
+      "type": "point",
+      "feet": 30
+    },
+    "targeting": {
+      "type": "token",
+      "projectile": true
+    }
+  },
+  "PHB::Animal Shapes": {
+    "range": {
+      "type": "point",
+      "feet": 30
+    },
+    "targeting": {
+      "type": "multi_token",
+      "projectile": true
+    }
+  },
+  "PHB::Animate Objects": {
+    "range": {
+      "type": "point",
+      "feet": 120
+    },
+    "targeting": {
+      "type": "multi_token",
+      "projectile": true
+    },
+    "effect": {
+      "damage_types": [
+        "bludgeoning",
+        "piercing",
+        "slashing"
+      ],
+      "persistence": "persistent"
+    }
+  },
+  "PHB::Astral Projection": {
+    "range": {
+      "type": "point",
+      "feet": 10
+    },
+    "targeting": {
+      "type": "multi_token",
+      "base_target_clicks": 8,
+      "projectile": true
+    }
+  },
+  "PHB::Awaken": {
+    "range": {
+      "type": "point",
+      "distance_type": "touch"
+    },
+    "targeting": {
+      "type": "token",
+      "projectile": true
+    }
+  },
+  "PHB::Bane": {
+    "range": {
+      "type": "point",
+      "feet": 30
+    },
+    "targeting": {
+      "type": "multi_token",
+      "base_target_clicks": 3,
+      "projectile": true
+    }
+  },
+  "PHB::Banishment": {
+    "range": {
+      "type": "point",
+      "feet": 60
+    },
+    "targeting": {
+      "type": "token",
+      "projectile": true
+    }
+  },
+  "PHB::Barkskin": {
+    "range": {
+      "type": "point",
+      "distance_type": "touch"
+    },
+    "targeting": {
+      "type": "token",
+      "projectile": true
+    }
+  },
+  "PHB::Beacon of Hope": {
+    "range": {
+      "type": "point",
+      "feet": 30
+    },
+    "targeting": {
+      "type": "multi_token",
+      "projectile": true
+    }
+  },
+  "PHB::Beast Sense": {
+    "range": {
+      "type": "point",
+      "distance_type": "touch"
+    },
+    "targeting": {
+      "type": "token",
+      "projectile": true
+    }
+  },
+  "PHB::Bestow Curse": {
+    "range": {
+      "type": "point",
+      "distance_type": "touch"
+    },
+    "targeting": {
+      "type": "token",
+      "projectile": true
+    },
+    "effect": {
+      "damage_types": [
+        "necrotic"
+      ],
+      "persistence": "persistent"
+    }
+  },
+  "PHB::Bless": {
+    "range": {
+      "type": "point",
+      "feet": 30
+    },
+    "targeting": {
+      "type": "multi_token",
+      "base_target_clicks": 3,
+      "projectile": true
+    }
+  },
+  "PHB::Blight": {
+    "range": {
+      "type": "point",
+      "feet": 30
+    },
+    "targeting": {
+      "type": "token",
+      "projectile": true
+    },
+    "effect": {
+      "damage_types": [
+        "necrotic"
+      ],
+      "persistence": "instant"
+    }
+  },
+  "PHB::Blindness/Deafness": {
+    "range": {
+      "type": "point",
+      "feet": 30
+    },
+    "targeting": {
+      "type": "token",
+      "projectile": true
+    }
+  },
+  "PHB::Chain Lightning": {
+    "range": {
+      "type": "point",
+      "feet": 150
+    },
+    "targeting": {
+      "type": "multi_token",
+      "projectile": true
+    },
+    "effect": {
+      "damage_types": [
+        "lightning"
+      ],
+      "persistence": "instant"
+    }
+  },
+  "PHB::Charm Person": {
+    "range": {
+      "type": "point",
+      "feet": 30
+    },
+    "targeting": {
+      "type": "token",
+      "projectile": true
+    }
+  },
+  "PHB::Chill Touch": {
+    "range": {
+      "type": "point",
+      "feet": 120
+    },
+    "targeting": {
+      "type": "token",
+      "projectile": true
+    },
+    "effect": {
+      "damage_types": [
+        "necrotic"
+      ],
+      "persistence": "persistent"
+    }
+  },
+  "PHB::Chromatic Orb": {
+    "range": {
+      "type": "point",
+      "feet": 90
+    },
+    "targeting": {
+      "type": "token",
+      "projectile": true
+    },
+    "effect": {
+      "damage_types": [
+        "acid",
+        "cold",
+        "fire",
+        "lightning",
+        "poison",
+        "thunder"
+      ],
+      "persistence": "instant"
+    }
+  },
+  "PHB::Command": {
+    "range": {
+      "type": "point",
+      "feet": 60
+    },
+    "targeting": {
+      "type": "token",
+      "projectile": true
+    }
+  },
+  "PHB::Compelled Duel": {
+    "range": {
+      "type": "point",
+      "feet": 30
+    },
+    "targeting": {
+      "type": "token",
+      "projectile": true
+    }
+  },
+  "PHB::Compulsion": {
+    "range": {
+      "type": "point",
+      "feet": 30
+    },
+    "targeting": {
+      "type": "multi_token",
+      "projectile": true
+    }
+  },
+  "PHB::Contagion": {
+    "range": {
+      "type": "point",
+      "distance_type": "touch"
+    },
+    "targeting": {
+      "type": "token",
+      "projectile": true
+    }
+  },
+  "PHB::Crown of Madness": {
+    "range": {
+      "type": "point",
+      "feet": 120
+    },
+    "targeting": {
+      "type": "token",
+      "projectile": true
+    }
+  },
+  "PHB::Cure Wounds": {
+    "range": {
+      "type": "point",
+      "distance_type": "touch"
+    },
+    "targeting": {
+      "type": "token",
+      "projectile": true
+    }
+  },
+  "PHB::Darkvision": {
+    "range": {
+      "type": "point",
+      "distance_type": "touch"
+    },
+    "targeting": {
+      "type": "token",
+      "projectile": true
+    }
+  },
+  "PHB::Death Ward": {
+    "range": {
+      "type": "point",
+      "distance_type": "touch"
+    },
+    "targeting": {
+      "type": "token",
+      "projectile": true
+    }
+  },
+  "PHB::Destructive Wave": {
+    "range": {
+      "type": "radius",
+      "feet": 30
+    },
+    "effect": {
+      "damage_types": [
+        "necrotic",
+        "radiant",
+        "thunder"
+      ],
+      "persistence": "instant"
+    }
+  },
+  "PHB::Disintegrate": {
+    "range": {
+      "type": "point",
+      "feet": 60
+    },
+    "targeting": {
+      "type": "token",
+      "projectile": true
+    },
+    "effect": {
+      "damage_types": [
+        "force"
+      ],
+      "persistence": "instant"
+    }
+  },
+  "PHB::Dispel Evil and Good": {
+    "range": {
+      "type": "point",
+      "distance_type": "self"
+    }
+  },
+  "PHB::Dispel Magic": {
+    "range": {
+      "type": "point",
+      "feet": 120
+    },
+    "targeting": {
+      "type": "token",
+      "projectile": true
+    }
+  },
+  "PHB::Dissonant Whispers": {
+    "range": {
+      "type": "point",
+      "feet": 60
+    },
+    "targeting": {
+      "type": "token",
+      "projectile": true
+    },
+    "effect": {
+      "damage_types": [
+        "psychic"
+      ],
+      "persistence": "instant"
+    }
+  },
+  "PHB::Divine Word": {
+    "range": {
+      "type": "point",
+      "feet": 30
+    },
+    "targeting": {
+      "type": "multi_token",
+      "projectile": true
+    }
+  },
+  "PHB::Dominate Beast": {
+    "range": {
+      "type": "point",
+      "feet": 60
+    },
+    "targeting": {
+      "type": "token",
+      "projectile": true
+    }
+  },
+  "PHB::Dominate Monster": {
+    "range": {
+      "type": "point",
+      "feet": 60
+    },
+    "targeting": {
+      "type": "token",
+      "projectile": true
+    }
+  },
+  "PHB::Dominate Person": {
+    "range": {
+      "type": "point",
+      "feet": 60
+    },
+    "targeting": {
+      "type": "token",
+      "projectile": true
+    }
+  },
+  "PHB::Dream": {
+    "range": {
+      "type": "special"
+    },
+    "targeting": {
+      "type": "token",
+      "projectile": true
+    },
+    "effect": {
+      "damage_types": [
+        "psychic"
+      ],
+      "persistence": "persistent"
+    }
+  },
+  "PHB::Eldritch Blast": {
+    "range": {
+      "type": "point",
+      "feet": 120
+    },
+    "targeting": {
+      "type": "multi_token",
+      "allow_repeat_targets": true,
+      "projectile": true
+    },
+    "effect": {
+      "damage_types": [
+        "force"
+      ],
+      "persistence": "instant"
+    }
+  },
+  "PHB::Enhance Ability": {
+    "range": {
+      "type": "point",
+      "distance_type": "touch"
+    },
+    "targeting": {
+      "type": "token",
+      "projectile": true
+    }
+  },
+  "PHB::Enlarge/Reduce": {
+    "range": {
+      "type": "point",
+      "feet": 30
+    },
+    "targeting": {
+      "type": "token",
+      "projectile": true
+    }
+  },
+  "PHB::Enthrall": {
+    "range": {
+      "type": "point",
+      "feet": 60
+    },
+    "targeting": {
+      "type": "multi_token",
+      "projectile": true
+    }
+  },
+  "PHB::Eyebite": {
+    "range": {
+      "type": "point",
+      "distance_type": "self"
+    }
+  },
+  "PHB::Feather Fall": {
+    "range": {
+      "type": "point",
+      "feet": 60
+    },
+    "targeting": {
+      "type": "multi_token",
+      "projectile": true
+    }
+  },
+  "PHB::Feeblemind": {
+    "range": {
+      "type": "point",
+      "feet": 150
+    },
+    "targeting": {
+      "type": "token",
+      "projectile": true
+    },
+    "effect": {
+      "damage_types": [
+        "psychic"
+      ],
+      "persistence": "instant"
+    }
+  },
+  "PHB::Feign Death": {
+    "range": {
+      "type": "point",
+      "distance_type": "touch"
+    },
+    "targeting": {
+      "type": "token",
+      "projectile": true
+    }
+  },
+  "PHB::Finger of Death": {
+    "range": {
+      "type": "point",
+      "feet": 60
+    },
+    "targeting": {
+      "type": "token",
+      "projectile": true
+    },
+    "effect": {
+      "damage_types": [
+        "necrotic"
+      ],
+      "persistence": "instant"
+    }
+  },
+  "PHB::Fire Bolt": {
+    "range": {
+      "type": "point",
+      "feet": 120
+    },
+    "targeting": {
+      "type": "token",
+      "projectile": true
+    },
+    "effect": {
+      "damage_types": [
+        "fire"
+      ],
+      "persistence": "instant"
+    }
+  },
+  "PHB::Flame Blade": {
+    "range": {
+      "type": "point",
+      "distance_type": "self"
+    },
+    "effect": {
+      "damage_types": [
+        "fire"
+      ],
+      "persistence": "persistent"
+    }
+  },
+  "PHB::Flesh to Stone": {
+    "range": {
+      "type": "point",
+      "feet": 60
+    },
+    "targeting": {
+      "type": "token",
+      "projectile": true
+    }
+  },
+  "PHB::Fly": {
+    "range": {
+      "type": "point",
+      "distance_type": "touch"
+    },
+    "targeting": {
+      "type": "token",
+      "projectile": true
+    }
+  },
+  "PHB::Foresight": {
+    "range": {
+      "type": "point",
+      "distance_type": "touch"
+    },
+    "targeting": {
+      "type": "token",
+      "projectile": true
+    }
+  },
+  "PHB::Freedom of Movement": {
+    "range": {
+      "type": "point",
+      "distance_type": "touch"
+    },
+    "targeting": {
+      "type": "token",
+      "projectile": true
+    }
+  },
+  "PHB::Friends": {
+    "range": {
+      "type": "point",
+      "distance_type": "self"
+    }
+  },
+  "PHB::Gaseous Form": {
+    "range": {
+      "type": "point",
+      "distance_type": "touch"
+    },
+    "targeting": {
+      "type": "token",
+      "projectile": true
+    }
+  },
+  "PHB::Geas": {
+    "range": {
+      "type": "point",
+      "feet": 60
+    },
+    "targeting": {
+      "type": "token",
+      "projectile": true
+    },
+    "effect": {
+      "damage_types": [
+        "psychic"
+      ],
+      "persistence": "persistent"
+    }
+  },
+  "PHB::Giant Insect": {
+    "range": {
+      "type": "point",
+      "feet": 30
+    },
+    "targeting": {
+      "type": "multi_token",
+      "projectile": true
+    }
+  },
+  "PHB::Grasping Vine": {
+    "range": {
+      "type": "point",
+      "feet": 30
+    },
+    "targeting": {
+      "type": "token",
+      "projectile": true,
+      "requires_ground": true
+    }
+  },
+  "PHB::Greater Invisibility": {
+    "range": {
+      "type": "point",
+      "distance_type": "touch"
+    },
+    "targeting": {
+      "type": "token",
+      "projectile": true
+    }
+  },
+  "PHB::Greater Restoration": {
+    "range": {
+      "type": "point",
+      "distance_type": "touch"
+    },
+    "targeting": {
+      "type": "token",
+      "projectile": true
+    }
+  },
+  "PHB::Guidance": {
+    "range": {
+      "type": "point",
+      "distance_type": "touch"
+    },
+    "targeting": {
+      "type": "token",
+      "projectile": true
+    }
+  },
+  "PHB::Guiding Bolt": {
+    "range": {
+      "type": "point",
+      "feet": 120
+    },
+    "targeting": {
+      "type": "token",
+      "projectile": true
+    },
+    "effect": {
+      "damage_types": [
+        "radiant"
+      ],
+      "persistence": "persistent"
+    }
+  },
+  "PHB::Harm": {
+    "range": {
+      "type": "point",
+      "feet": 60
+    },
+    "targeting": {
+      "type": "token",
+      "projectile": true
+    },
+    "effect": {
+      "damage_types": [
+        "necrotic"
+      ],
+      "persistence": "instant"
+    }
+  },
+  "PHB::Haste": {
+    "range": {
+      "type": "point",
+      "feet": 30
+    },
+    "targeting": {
+      "type": "token",
+      "projectile": true
+    }
+  },
+  "PHB::Heal": {
+    "range": {
+      "type": "point",
+      "feet": 60
+    },
+    "targeting": {
+      "type": "token",
+      "projectile": true
+    }
+  },
+  "PHB::Healing Word": {
+    "range": {
+      "type": "point",
+      "feet": 60
+    },
+    "targeting": {
+      "type": "token",
+      "projectile": true
+    }
+  },
+  "PHB::Heat Metal": {
+    "range": {
+      "type": "point",
+      "feet": 60
+    },
+    "targeting": {
+      "type": "token",
+      "projectile": true
+    },
+    "effect": {
+      "damage_types": [
+        "fire"
+      ],
+      "persistence": "persistent"
+    }
+  },
+  "PHB::Hellish Rebuke": {
+    "range": {
+      "type": "point",
+      "feet": 60
+    },
+    "targeting": {
+      "type": "token",
+      "projectile": true
+    },
+    "effect": {
+      "damage_types": [
+        "fire"
+      ],
+      "persistence": "instant"
+    }
+  },
+  "PHB::Heroes' Feast": {
+    "range": {
+      "type": "point",
+      "feet": 30
+    },
+    "targeting": {
+      "type": "multi_token",
+      "projectile": true
+    }
+  },
+  "PHB::Heroism": {
+    "range": {
+      "type": "point",
+      "distance_type": "touch"
+    },
+    "targeting": {
+      "type": "token",
+      "projectile": true
+    }
+  },
+  "PHB::Hex": {
+    "range": {
+      "type": "point",
+      "feet": 90
+    },
+    "targeting": {
+      "type": "token",
+      "projectile": true
+    },
+    "effect": {
+      "damage_types": [
+        "necrotic"
+      ],
+      "persistence": "persistent"
+    }
+  },
+  "PHB::Hold Monster": {
+    "range": {
+      "type": "point",
+      "feet": 90
+    },
+    "targeting": {
+      "type": "token",
+      "projectile": true
+    }
+  },
+  "PHB::Hold Person": {
+    "range": {
+      "type": "point",
+      "feet": 60
+    },
+    "targeting": {
+      "type": "token",
+      "projectile": true
+    }
+  },
+  "PHB::Hunter's Mark": {
+    "range": {
+      "type": "point",
+      "feet": 90
+    },
+    "targeting": {
+      "type": "token",
+      "projectile": true
+    }
+  },
+  "PHB::Identify": {
+    "range": {
+      "type": "point",
+      "distance_type": "touch"
+    },
+    "targeting": {
+      "type": "token",
+      "projectile": true
+    }
+  },
+  "PHB::Imprisonment": {
+    "range": {
+      "type": "point",
+      "feet": 30
+    },
+    "targeting": {
+      "type": "token",
+      "projectile": true
+    }
+  },
+  "PHB::Inflict Wounds": {
+    "range": {
+      "type": "point",
+      "distance_type": "touch"
+    },
+    "targeting": {
+      "type": "token",
+      "projectile": true
+    },
+    "effect": {
+      "damage_types": [
+        "necrotic"
+      ],
+      "persistence": "instant"
+    }
+  },
+  "PHB::Invisibility": {
+    "range": {
+      "type": "point",
+      "distance_type": "touch"
+    },
+    "targeting": {
+      "type": "token",
+      "projectile": true
+    }
+  },
+  "PHB::Jump": {
+    "range": {
+      "type": "point",
+      "distance_type": "touch"
+    },
+    "targeting": {
+      "type": "token",
+      "projectile": true
+    }
+  },
+  "PHB::Lesser Restoration": {
+    "range": {
+      "type": "point",
+      "distance_type": "touch"
+    },
+    "targeting": {
+      "type": "token",
+      "projectile": true
+    }
+  },
+  "PHB::Levitate": {
+    "range": {
+      "type": "point",
+      "feet": 60
+    },
+    "targeting": {
+      "type": "token",
+      "projectile": true
+    }
+  },
+  "PHB::Longstrider": {
+    "range": {
+      "type": "point",
+      "distance_type": "touch"
+    },
+    "targeting": {
+      "type": "token",
+      "projectile": true
+    }
+  },
+  "PHB::Mage Armor": {
+    "range": {
+      "type": "point",
+      "distance_type": "touch"
+    },
+    "targeting": {
+      "type": "token",
+      "projectile": true
+    }
+  },
+  "PHB::Magic Missile": {
+    "range": {
+      "type": "point",
+      "feet": 120
+    },
+    "targeting": {
+      "type": "multi_token",
+      "base_target_clicks": 3,
+      "allow_repeat_targets": true,
+      "projectile": true
+    },
+    "effect": {
+      "damage_types": [
+        "force"
+      ],
+      "persistence": "instant"
+    }
+  },
+  "PHB::Mass Heal": {
+    "range": {
+      "type": "point",
+      "feet": 60
+    },
+    "targeting": {
+      "type": "multi_token",
+      "projectile": true
+    }
+  },
+  "PHB::Mass Healing Word": {
+    "range": {
+      "type": "point",
+      "feet": 60
+    },
+    "targeting": {
+      "type": "multi_token",
+      "base_target_clicks": 6,
+      "projectile": true
+    }
+  },
+  "PHB::Mass Suggestion": {
+    "range": {
+      "type": "point",
+      "feet": 60
+    },
+    "targeting": {
+      "type": "multi_token",
+      "projectile": true
+    }
+  },
+  "PHB::Maze": {
+    "range": {
+      "type": "point",
+      "feet": 60
+    },
+    "targeting": {
+      "type": "token",
+      "projectile": true
+    }
+  },
+  "PHB::Melf's Acid Arrow": {
+    "range": {
+      "type": "point",
+      "feet": 90
+    },
+    "targeting": {
+      "type": "token",
+      "projectile": true
+    },
+    "effect": {
+      "damage_types": [
+        "acid"
+      ],
+      "persistence": "instant"
+    }
+  },
+  "PHB::Message": {
+    "range": {
+      "type": "point",
+      "feet": 120
+    },
+    "targeting": {
+      "type": "token",
+      "projectile": true
+    }
+  },
+  "PHB::Mind Blank": {
+    "range": {
+      "type": "point",
+      "distance_type": "touch"
+    },
+    "targeting": {
+      "type": "token",
+      "projectile": true
+    }
+  },
+  "PHB::Modify Memory": {
+    "range": {
+      "type": "point",
+      "feet": 30
+    },
+    "targeting": {
+      "type": "token",
+      "projectile": true
+    }
+  },
+  "PHB::Mordenkainen's Sword": {
+    "range": {
+      "type": "point",
+      "feet": 60
+    },
+    "targeting": {
+      "type": "token",
+      "projectile": true
+    },
+    "effect": {
+      "damage_types": [
+        "force"
+      ],
+      "persistence": "persistent"
+    }
+  },
+  "PHB::Nondetection": {
+    "range": {
+      "type": "point",
+      "distance_type": "touch"
+    },
+    "targeting": {
+      "type": "token",
+      "projectile": true
+    }
+  },
+  "PHB::Nystul's Magic Aura": {
+    "range": {
+      "type": "point",
+      "distance_type": "touch"
+    },
+    "targeting": {
+      "type": "token",
+      "projectile": true
+    }
+  },
+  "PHB::Otiluke's Resilient Sphere": {
+    "range": {
+      "type": "point",
+      "feet": 30
+    },
+    "targeting": {
+      "type": "token",
+      "projectile": true
+    }
+  },
+  "PHB::Otto's Irresistible Dance": {
+    "range": {
+      "type": "point",
+      "feet": 30
+    },
+    "targeting": {
+      "type": "token",
+      "projectile": true
+    }
+  },
+  "PHB::Pass without Trace": {
+    "range": {
+      "type": "point",
+      "distance_type": "self"
+    }
+  },
+  "PHB::Phantasmal Killer": {
+    "range": {
+      "type": "point",
+      "feet": 120
+    },
+    "targeting": {
+      "type": "token",
+      "projectile": true
+    },
+    "effect": {
+      "damage_types": [
+        "psychic"
+      ],
+      "persistence": "persistent"
+    }
+  },
+  "PHB::Planar Binding": {
+    "range": {
+      "type": "point",
+      "feet": 60
+    },
+    "targeting": {
+      "type": "token",
+      "projectile": true
+    }
+  },
+  "PHB::Plane Shift": {
+    "range": {
+      "type": "point",
+      "distance_type": "touch"
+    },
+    "targeting": {
+      "type": "multi_token",
+      "base_target_clicks": 8,
+      "projectile": true
+    }
+  },
+  "PHB::Poison Spray": {
+    "range": {
+      "type": "point",
+      "feet": 10
+    },
+    "targeting": {
+      "type": "token",
+      "projectile": true
+    },
+    "effect": {
+      "damage_types": [
+        "poison"
+      ],
+      "persistence": "instant"
+    }
+  },
+  "PHB::Polymorph": {
+    "range": {
+      "type": "point",
+      "feet": 60
+    },
+    "targeting": {
+      "type": "token",
+      "projectile": true
+    }
+  },
+  "PHB::Power Word Heal": {
+    "range": {
+      "type": "point",
+      "distance_type": "touch"
+    },
+    "targeting": {
+      "type": "token",
+      "projectile": true
+    }
+  },
+  "PHB::Power Word Kill": {
+    "range": {
+      "type": "point",
+      "feet": 60
+    },
+    "targeting": {
+      "type": "token",
+      "projectile": true
+    }
+  },
+  "PHB::Power Word Stun": {
+    "range": {
+      "type": "point",
+      "feet": 60
+    },
+    "targeting": {
+      "type": "token",
+      "projectile": true
+    }
+  },
+  "PHB::Prayer of Healing": {
+    "range": {
+      "type": "point",
+      "feet": 30
+    },
+    "targeting": {
+      "type": "multi_token",
+      "base_target_clicks": 6,
+      "projectile": true
+    }
+  },
+  "PHB::Produce Flame": {
+    "range": {
+      "type": "point",
+      "distance_type": "self"
+    },
+    "effect": {
+      "damage_types": [
+        "fire"
+      ],
+      "persistence": "persistent"
+    }
+  },
+  "PHB::Protection from Energy": {
+    "range": {
+      "type": "point",
+      "distance_type": "touch"
+    },
+    "targeting": {
+      "type": "token",
+      "projectile": true
+    }
+  },
+  "PHB::Protection from Evil and Good": {
+    "range": {
+      "type": "point",
+      "distance_type": "touch"
+    },
+    "targeting": {
+      "type": "token",
+      "projectile": true
+    }
+  },
+  "PHB::Protection from Poison": {
+    "range": {
+      "type": "point",
+      "distance_type": "touch"
+    },
+    "targeting": {
+      "type": "token",
+      "projectile": true
+    }
+  },
+  "PHB::Rary's Telepathic Bond": {
+    "range": {
+      "type": "point",
+      "feet": 30
+    },
+    "targeting": {
+      "type": "multi_token",
+      "base_target_clicks": 8,
+      "projectile": true
+    }
+  },
+  "PHB::Ray of Enfeeblement": {
+    "range": {
+      "type": "point",
+      "feet": 60
+    },
+    "targeting": {
+      "type": "token",
+      "projectile": true
+    }
+  },
+  "PHB::Ray of Frost": {
+    "range": {
+      "type": "point",
+      "feet": 60
+    },
+    "targeting": {
+      "type": "token",
+      "projectile": true
+    },
+    "effect": {
+      "damage_types": [
+        "cold"
+      ],
+      "persistence": "instant"
+    }
+  },
+  "PHB::Ray of Sickness": {
+    "range": {
+      "type": "point",
+      "feet": 60
+    },
+    "targeting": {
+      "type": "token",
+      "projectile": true
+    },
+    "effect": {
+      "damage_types": [
+        "poison"
+      ],
+      "persistence": "instant"
+    }
+  },
+  "PHB::Regenerate": {
+    "range": {
+      "type": "point",
+      "distance_type": "touch"
+    },
+    "targeting": {
+      "type": "token",
+      "projectile": true
+    }
+  },
+  "PHB::Remove Curse": {
+    "range": {
+      "type": "point",
+      "distance_type": "touch"
+    },
+    "targeting": {
+      "type": "token",
+      "projectile": true
+    }
+  },
+  "PHB::Resistance": {
+    "range": {
+      "type": "point",
+      "distance_type": "touch"
+    },
+    "targeting": {
+      "type": "token",
+      "projectile": true
+    }
+  },
+  "PHB::Revivify": {
+    "range": {
+      "type": "point",
+      "distance_type": "touch"
+    },
+    "targeting": {
+      "type": "token",
+      "projectile": true
+    }
+  },
+  "PHB::Sacred Flame": {
+    "range": {
+      "type": "point",
+      "feet": 60
+    },
+    "targeting": {
+      "type": "token",
+      "projectile": true
+    },
+    "effect": {
+      "damage_types": [
+        "radiant"
+      ],
+      "persistence": "instant"
+    }
+  },
+  "PHB::Sanctuary": {
+    "range": {
+      "type": "point",
+      "feet": 30
+    },
+    "targeting": {
+      "type": "token",
+      "projectile": true
+    }
+  },
+  "PHB::Scorching Ray": {
+    "range": {
+      "type": "point",
+      "feet": 120
+    },
+    "targeting": {
+      "type": "multi_token",
+      "base_target_clicks": 3,
+      "projectile": true
+    },
+    "effect": {
+      "damage_types": [
+        "fire"
+      ],
+      "persistence": "instant"
+    }
+  },
+  "PHB::Seeming": {
+    "range": {
+      "type": "point",
+      "feet": 30
+    },
+    "targeting": {
+      "type": "multi_token",
+      "projectile": true
+    }
+  },
+  "PHB::Sequester": {
+    "range": {
+      "type": "point",
+      "distance_type": "touch"
+    },
+    "targeting": {
+      "type": "token",
+      "projectile": true
+    }
+  },
+  "PHB::Shield of Faith": {
+    "range": {
+      "type": "point",
+      "feet": 60
+    },
+    "targeting": {
+      "type": "token",
+      "projectile": true
+    }
+  },
+  "PHB::Shocking Grasp": {
+    "range": {
+      "type": "point",
+      "distance_type": "touch"
+    },
+    "targeting": {
+      "type": "token",
+      "projectile": true
+    },
+    "effect": {
+      "damage_types": [
+        "lightning"
+      ],
+      "persistence": "instant"
+    }
+  },
+  "PHB::Simulacrum": {
+    "range": {
+      "type": "point",
+      "distance_type": "touch"
+    },
+    "targeting": {
+      "type": "token",
+      "projectile": true
+    }
+  },
+  "PHB::Spare the Dying": {
+    "range": {
+      "type": "point",
+      "distance_type": "touch"
+    },
+    "targeting": {
+      "type": "token",
+      "projectile": true
+    }
+  },
+  "PHB::Spiritual Weapon": {
+    "range": {
+      "type": "point",
+      "feet": 60
+    },
+    "targeting": {
+      "type": "token",
+      "projectile": true
+    },
+    "effect": {
+      "damage_types": [
+        "force"
+      ],
+      "persistence": "persistent"
+    }
+  },
+  "PHB::Stoneskin": {
+    "range": {
+      "type": "point",
+      "distance_type": "touch"
+    },
+    "targeting": {
+      "type": "token",
+      "projectile": true
+    }
+  },
+  "PHB::Suggestion": {
+    "range": {
+      "type": "point",
+      "feet": 30
+    },
+    "targeting": {
+      "type": "token",
+      "projectile": true
+    }
+  },
+  "PHB::Tasha's Hideous Laughter": {
+    "range": {
+      "type": "point",
+      "feet": 30
+    },
+    "targeting": {
+      "type": "token",
+      "projectile": true
+    }
+  },
+  "PHB::Telekinesis": {
+    "range": {
+      "type": "point",
+      "feet": 60
+    },
+    "targeting": {
+      "type": "token",
+      "projectile": true
+    }
+  },
+  "PHB::Telepathy": {
+    "range": {
+      "type": "point",
+      "distance_type": "unlimited"
+    },
+    "targeting": {
+      "type": "token",
+      "projectile": true
+    }
+  },
+  "PHB::Teleport": {
+    "range": {
+      "type": "point",
+      "feet": 10
+    },
+    "targeting": {
+      "type": "multi_token",
+      "base_target_clicks": 8,
+      "projectile": true
+    },
+    "effect": {
+      "damage_types": [
+        "force"
+      ],
+      "persistence": "instant"
+    }
+  },
+  "PHB::Thorn Whip": {
+    "range": {
+      "type": "point",
+      "feet": 30
+    },
+    "targeting": {
+      "type": "token",
+      "projectile": true
+    },
+    "effect": {
+      "damage_types": [
+        "piercing"
+      ],
+      "persistence": "instant"
+    }
+  },
+  "PHB::Tongues": {
+    "range": {
+      "type": "point",
+      "distance_type": "touch"
+    },
+    "targeting": {
+      "type": "token",
+      "projectile": true
+    }
+  },
+  "PHB::True Polymorph": {
+    "range": {
+      "type": "point",
+      "feet": 30
+    },
+    "targeting": {
+      "type": "token",
+      "projectile": true
+    }
+  },
+  "PHB::True Resurrection": {
+    "range": {
+      "type": "point",
+      "distance_type": "touch"
+    },
+    "targeting": {
+      "type": "token",
+      "projectile": true
+    }
+  },
+  "PHB::True Strike": {
+    "range": {
+      "type": "point",
+      "feet": 30
+    },
+    "targeting": {
+      "type": "token",
+      "projectile": true
+    }
+  },
+  "PHB::Vampiric Touch": {
+    "range": {
+      "type": "point",
+      "distance_type": "self"
+    },
+    "effect": {
+      "damage_types": [
+        "necrotic"
+      ],
+      "persistence": "persistent"
+    }
+  },
+  "PHB::Vicious Mockery": {
+    "range": {
+      "type": "point",
+      "feet": 60
+    },
+    "targeting": {
+      "type": "token",
+      "projectile": true
+    },
+    "effect": {
+      "damage_types": [
+        "psychic"
+      ],
+      "persistence": "instant"
+    }
+  },
+  "PHB::Warding Bond": {
+    "range": {
+      "type": "point",
+      "distance_type": "touch"
+    },
+    "targeting": {
+      "type": "token",
+      "projectile": true
+    }
+  },
+  "PHB::Water Breathing": {
+    "range": {
+      "type": "point",
+      "feet": 30
+    },
+    "targeting": {
+      "type": "multi_token",
+      "base_target_clicks": 10,
+      "projectile": true
+    }
+  },
+  "PHB::Water Walk": {
+    "range": {
+      "type": "point",
+      "feet": 30
+    },
+    "targeting": {
+      "type": "multi_token",
+      "base_target_clicks": 10,
+      "projectile": true
+    }
+  },
+  "PHB::Wind Walk": {
+    "range": {
+      "type": "point",
+      "feet": 30
+    },
+    "targeting": {
+      "type": "multi_token",
+      "base_target_clicks": 10,
+      "projectile": true
+    }
+  },
+  "PHB::Witch Bolt": {
+    "range": {
+      "type": "point",
+      "feet": 30
+    },
+    "targeting": {
+      "type": "token",
+      "projectile": true
+    },
+    "effect": {
+      "damage_types": [
+        "lightning"
+      ],
+      "persistence": "persistent"
+    }
+  },
+  "XGE::Beast Bond": {
+    "range": {
+      "type": "point",
+      "distance_type": "touch"
+    },
+    "targeting": {
+      "type": "token",
+      "projectile": true
+    }
+  },
+  "XGE::Bones of the Earth": {
+    "range": {
+      "type": "point",
+      "feet": 120
+    },
+    "targeting": {
+      "type": "multi_token",
+      "projectile": true,
+      "requires_ground": true
+    },
+    "effect": {
+      "damage_types": [
+        "bludgeoning"
+      ],
+      "persistence": "instant"
+    }
+  },
+  "XGE::Catapult": {
+    "range": {
+      "type": "point",
+      "feet": 60
+    },
+    "targeting": {
+      "type": "token",
+      "projectile": true
+    },
+    "effect": {
+      "damage_types": [
+        "bludgeoning"
+      ],
+      "persistence": "instant"
+    }
+  },
+  "XGE::Catnap": {
+    "range": {
+      "type": "point",
+      "feet": 30
+    },
+    "targeting": {
+      "type": "multi_token",
+      "base_target_clicks": 3,
+      "projectile": true
+    }
+  },
+  "XGE::Cause Fear": {
+    "range": {
+      "type": "point",
+      "feet": 60
+    },
+    "targeting": {
+      "type": "token",
+      "projectile": true
+    }
+  },
+  "XGE::Ceremony": {
+    "range": {
+      "type": "point",
+      "distance_type": "touch"
+    },
+    "targeting": {
+      "type": "token",
+      "projectile": true
+    }
+  },
+  "XGE::Chaos Bolt": {
+    "range": {
+      "type": "point",
+      "feet": 120
+    },
+    "targeting": {
+      "type": "token",
+      "projectile": true
+    },
+    "effect": {
+      "damage_types": [
+        "acid",
+        "cold",
+        "fire",
+        "force",
+        "lightning",
+        "poison",
+        "psychic",
+        "thunder"
+      ],
+      "persistence": "instant"
+    }
+  },
+  "XGE::Charm Monster": {
+    "range": {
+      "type": "point",
+      "feet": 30
+    },
+    "targeting": {
+      "type": "token",
+      "projectile": true
+    }
+  },
+  "XGE::Crown of Stars": {
+    "range": {
+      "type": "point",
+      "distance_type": "self"
+    },
+    "effect": {
+      "damage_types": [
+        "radiant"
+      ],
+      "persistence": "persistent"
+    }
+  },
+  "XGE::Earthbind": {
+    "range": {
+      "type": "point",
+      "feet": 300
+    },
+    "targeting": {
+      "type": "token",
+      "projectile": true
+    }
+  },
+  "XGE::Elemental Bane": {
+    "range": {
+      "type": "point",
+      "feet": 90
+    },
+    "targeting": {
+      "type": "token",
+      "projectile": true
+    },
+    "effect": {
+      "damage_types": [
+        "acid",
+        "cold",
+        "fire",
+        "lightning",
+        "thunder"
+      ],
+      "persistence": "persistent"
+    }
+  },
+  "XGE::Enemies Abound": {
+    "range": {
+      "type": "point",
+      "feet": 120
+    },
+    "targeting": {
+      "type": "token",
+      "projectile": true
+    }
+  },
+  "XGE::Enervation": {
+    "range": {
+      "type": "point",
+      "feet": 60
+    },
+    "targeting": {
+      "type": "token",
+      "projectile": true
+    },
+    "effect": {
+      "damage_types": [
+        "necrotic"
+      ],
+      "persistence": "persistent"
+    }
+  },
+  "XGE::Frostbite": {
+    "range": {
+      "type": "point",
+      "feet": 60
+    },
+    "targeting": {
+      "type": "token",
+      "projectile": true
+    },
+    "effect": {
+      "damage_types": [
+        "cold"
+      ],
+      "persistence": "instant"
+    }
+  },
+  "XGE::Gust": {
+    "range": {
+      "type": "point",
+      "feet": 30
+    },
+    "targeting": {
+      "type": "token",
+      "projectile": true
+    }
+  },
+  "XGE::Holy Weapon": {
+    "range": {
+      "type": "point",
+      "distance_type": "touch"
+    },
+    "targeting": {
+      "type": "multi_token",
+      "projectile": true
+    },
+    "effect": {
+      "damage_types": [
+        "radiant"
+      ],
+      "persistence": "persistent"
+    }
+  },
+  "XGE::Ice Knife": {
+    "range": {
+      "type": "point",
+      "feet": 60
+    },
+    "targeting": {
+      "type": "token",
+      "projectile": true
+    },
+    "effect": {
+      "damage_types": [
+        "cold",
+        "piercing"
+      ],
+      "persistence": "instant"
+    }
+  },
+  "XGE::Immolation": {
+    "range": {
+      "type": "point",
+      "feet": 90
+    },
+    "targeting": {
+      "type": "token",
+      "projectile": true
+    },
+    "effect": {
+      "damage_types": [
+        "fire"
+      ],
+      "persistence": "persistent"
+    }
+  },
+  "XGE::Infestation": {
+    "range": {
+      "type": "point",
+      "feet": 30
+    },
+    "targeting": {
+      "type": "token",
+      "projectile": true
+    },
+    "effect": {
+      "damage_types": [
+        "poison"
+      ],
+      "persistence": "instant"
+    }
+  },
+  "XGE::Life Transference": {
+    "range": {
+      "type": "point",
+      "feet": 30
+    },
+    "targeting": {
+      "type": "token",
+      "projectile": true
+    },
+    "effect": {
+      "damage_types": [
+        "necrotic"
+      ],
+      "persistence": "instant"
+    }
+  },
+  "XGE::Magic Stone": {
+    "range": {
+      "type": "point",
+      "distance_type": "touch"
+    },
+    "targeting": {
+      "type": "token",
+      "projectile": true
+    },
+    "effect": {
+      "damage_types": [
+        "bludgeoning"
+      ],
+      "persistence": "persistent"
+    }
+  },
+  "XGE::Mass Polymorph": {
+    "range": {
+      "type": "point",
+      "feet": 120
+    },
+    "targeting": {
+      "type": "multi_token",
+      "base_target_clicks": 10,
+      "projectile": true
+    }
+  },
+  "XGE::Maximilian's Earthen Grasp": {
+    "range": {
+      "type": "point",
+      "feet": 30
+    },
+    "targeting": {
+      "type": "token",
+      "projectile": true,
+      "requires_ground": true
+    },
+    "effect": {
+      "damage_types": [
+        "bludgeoning"
+      ],
+      "persistence": "persistent"
+    }
+  },
+  "XGE::Mental Prison": {
+    "range": {
+      "type": "point",
+      "feet": 60
+    },
+    "targeting": {
+      "type": "token",
+      "projectile": true
+    },
+    "effect": {
+      "damage_types": [
+        "psychic"
+      ],
+      "persistence": "persistent"
+    }
+  },
+  "XGE::Mind Spike": {
+    "range": {
+      "type": "point",
+      "feet": 60
+    },
+    "targeting": {
+      "type": "token",
+      "projectile": true
+    },
+    "effect": {
+      "damage_types": [
+        "psychic"
+      ],
+      "persistence": "persistent"
+    }
+  },
+  "XGE::Negative Energy Flood": {
+    "range": {
+      "type": "point",
+      "feet": 60
+    },
+    "targeting": {
+      "type": "token",
+      "projectile": true
+    },
+    "effect": {
+      "damage_types": [
+        "necrotic"
+      ],
+      "persistence": "instant"
+    }
+  },
+  "XGE::Power Word Pain": {
+    "range": {
+      "type": "point",
+      "feet": 60
+    },
+    "targeting": {
+      "type": "token",
+      "projectile": true
+    }
+  },
+  "XGE::Primal Savagery": {
+    "range": {
+      "type": "point",
+      "distance_type": "self"
+    },
+    "effect": {
+      "damage_types": [
+        "acid"
+      ],
+      "persistence": "instant"
+    }
+  },
+  "XGE::Psychic Scream": {
+    "range": {
+      "type": "point",
+      "feet": 90
+    },
+    "targeting": {
+      "type": "multi_token",
+      "base_target_clicks": 10,
+      "projectile": true
+    },
+    "effect": {
+      "damage_types": [
+        "psychic"
+      ],
+      "persistence": "instant"
+    }
+  },
+  "XGE::Scatter": {
+    "range": {
+      "type": "point",
+      "feet": 30
+    },
+    "targeting": {
+      "type": "multi_token",
+      "base_target_clicks": 5,
+      "projectile": true,
+      "requires_ground": true
+    }
+  },
+  "XGE::Skill Empowerment": {
+    "range": {
+      "type": "point",
+      "distance_type": "touch"
+    },
+    "targeting": {
+      "type": "token",
+      "projectile": true
+    }
+  },
+  "XGE::Snare": {
+    "range": {
+      "type": "point",
+      "distance_type": "touch"
+    },
+    "targeting": {
+      "type": "token",
+      "projectile": true,
+      "requires_ground": true
+    }
+  },
+  "XGE::Steel Wind Strike": {
+    "range": {
+      "type": "point",
+      "feet": 30
+    },
+    "targeting": {
+      "type": "multi_token",
+      "base_target_clicks": 5,
+      "projectile": true
+    },
+    "effect": {
+      "damage_types": [
+        "force"
+      ],
+      "persistence": "instant"
+    }
+  },
+  "XGE::Toll the Dead": {
+    "range": {
+      "type": "point",
+      "feet": 60
+    },
+    "targeting": {
+      "type": "token",
+      "projectile": true
+    },
+    "effect": {
+      "damage_types": [
+        "necrotic"
+      ],
+      "persistence": "instant"
+    }
+  },
+  "XGE::Word of Radiance": {
+    "range": {
+      "type": "point",
+      "feet": 5
+    },
+    "targeting": {
+      "type": "multi_token",
+      "projectile": true
+    },
+    "effect": {
+      "damage_types": [
+        "radiant"
+      ],
+      "persistence": "instant"
+    }
+  },
+  "TCE::Blade of Disaster": {
+    "range": {
+      "type": "point",
+      "feet": 60
+    },
+    "targeting": {
+      "type": "multi_token",
+      "projectile": true
+    },
+    "effect": {
+      "damage_types": [
+        "force"
+      ],
+      "persistence": "persistent"
+    }
+  },
+  "TCE::Booming Blade": {
+    "range": {
+      "type": "radius",
+      "feet": 5
+    },
+    "effect": {
+      "damage_types": [
+        "thunder"
+      ],
+      "persistence": "persistent"
+    }
+  },
+  "TCE::Green-Flame Blade": {
+    "range": {
+      "type": "radius",
+      "feet": 5
+    },
+    "effect": {
+      "damage_types": [
+        "fire"
+      ],
+      "persistence": "instant"
+    }
+  },
+  "TCE::Lightning Lure": {
+    "range": {
+      "type": "radius",
+      "feet": 15
+    },
+    "effect": {
+      "damage_types": [
+        "lightning"
+      ],
+      "persistence": "instant"
+    }
+  },
+  "TCE::Mind Sliver": {
+    "range": {
+      "type": "point",
+      "feet": 60
+    },
+    "targeting": {
+      "type": "token",
+      "projectile": true
+    },
+    "effect": {
+      "damage_types": [
+        "psychic"
+      ],
+      "persistence": "persistent"
+    }
+  },
+  "TCE::Tasha's Mind Whip": {
+    "range": {
+      "type": "point",
+      "feet": 90
+    },
+    "targeting": {
+      "type": "token",
+      "projectile": true
+    },
+    "effect": {
+      "damage_types": [
+        "psychic"
+      ],
+      "persistence": "persistent"
+    }
+  },
+  "FRHoF::Backlash": {
+    "range": {
+      "type": "point",
+      "feet": 60
+    },
+    "targeting": {
+      "type": "token",
+      "projectile": true
+    },
+    "effect": {
+      "damage_types": [
+        "force"
+      ],
+      "persistence": "instant"
+    }
+  },
+  "FRHoF::Blade of Disaster": {
+    "range": {
+      "type": "point",
+      "feet": 60
+    },
+    "targeting": {
+      "type": "multi_token",
+      "allow_repeat_targets": true,
+      "projectile": true
+    },
+    "effect": {
+      "damage_types": [
+        "force"
+      ],
+      "persistence": "persistent"
+    }
+  },
+  "FRHoF::Death Armor": {
+    "range": {
+      "type": "point",
+      "distance_type": "touch"
+    },
+    "targeting": {
+      "type": "token",
+      "projectile": true
+    },
+    "effect": {
+      "damage_types": [
+        "necrotic"
+      ],
+      "persistence": "persistent"
+    }
+  },
+  "FRHoF::Elminster's Effulgent Spheres": {
+    "range": {
+      "type": "point",
+      "distance_type": "self"
+    },
+    "effect": {
+      "damage_types": [
+        "acid",
+        "cold",
+        "fire",
+        "lightning",
+        "thunder"
+      ],
+      "persistence": "persistent"
+    }
+  },
+  "FRHoF::Elminster's Elusion": {
+    "range": {
+      "type": "point",
+      "distance_type": "self"
+    }
+  },
+  "FRHoF::Holy Star of Mystra": {
+    "range": {
+      "type": "point",
+      "distance_type": "self"
+    }
+  },
+  "FRHoF::Simbul's Synostodweomer": {
+    "range": {
+      "type": "point",
+      "distance_type": "touch"
+    },
+    "targeting": {
+      "type": "token",
+      "projectile": true
+    }
+  },
+  "FRHoF::Songal's Elemental Suffusion": {
+    "range": {
+      "type": "point",
+      "distance_type": "self"
+    },
+    "effect": {
+      "damage_types": [
+        "acid",
+        "cold",
+        "fire",
+        "lightning",
+        "thunder"
+      ],
+      "persistence": "persistent"
+    }
+  },
+  "FRHoF::Spellfire Flare": {
+    "range": {
+      "type": "point",
+      "feet": 60
+    },
+    "targeting": {
+      "type": "token",
+      "projectile": true
+    },
+    "effect": {
+      "damage_types": [
+        "radiant"
+      ],
+      "persistence": "instant"
+    }
+  },
+  "FRHoF::Syluné's Viper": {
+    "range": {
+      "type": "point",
+      "distance_type": "self"
+    },
+    "effect": {
+      "damage_types": [
+        "force"
+      ],
+      "persistence": "persistent"
+    }
+  },
+  "FRHoF::Wardaway": {
+    "range": {
+      "type": "point",
+      "feet": 60
+    },
+    "targeting": {
+      "type": "token",
+      "projectile": true
+    },
+    "effect": {
+      "damage_types": [
+        "force"
+      ],
+      "persistence": "instant"
+    }
+  },
+  "AU::Catnap": {
+    "range": {
+      "type": "point",
+      "feet": 30
+    },
+    "targeting": {
+      "type": "multi_token",
+      "base_target_clicks": 3,
+      "projectile": true
+    }
+  },
+  "AU::Enervation": {
+    "range": {
+      "type": "point",
+      "feet": 60
+    },
+    "targeting": {
+      "type": "token",
+      "projectile": true
+    },
+    "effect": {
+      "damage_types": [
+        "necrotic"
+      ],
+      "persistence": "persistent"
+    }
+  },
+  "AU::Entrancing Mirrors": {
+    "range": {
+      "type": "point",
+      "feet": 90
+    },
+    "targeting": {
+      "type": "multi_token",
+      "base_target_clicks": 3,
+      "projectile": true
+    },
+    "effect": {
+      "damage_types": [
+        "psychic"
+      ],
+      "persistence": "persistent"
+    }
+  },
+  "AU::Fractured Awareness": {
+    "range": {
+      "type": "point",
+      "feet": 120
+    },
+    "targeting": {
+      "type": "token",
+      "projectile": true
+    },
+    "effect": {
+      "damage_types": [
+        "psychic"
+      ],
+      "persistence": "persistent"
+    }
+  },
+  "AU::Inflict Doubt": {
+    "range": {
+      "type": "point",
+      "feet": 120
+    },
+    "targeting": {
+      "type": "token",
+      "projectile": true
+    }
+  },
+  "AU::Iron Body": {
+    "range": {
+      "type": "point",
+      "distance_type": "touch"
+    },
+    "targeting": {
+      "type": "token",
+      "projectile": true
+    }
+  },
+  "AU::Negative Energy Flood": {
+    "range": {
+      "type": "point",
+      "feet": 60
+    },
+    "targeting": {
+      "type": "token",
+      "projectile": true
+    },
+    "effect": {
+      "damage_types": [
+        "necrotic"
+      ],
+      "persistence": "instant"
+    }
+  },
+  "AU::Power Word Pain": {
+    "range": {
+      "type": "point",
+      "feet": 60
+    },
+    "targeting": {
+      "type": "token",
+      "projectile": true
+    },
+    "effect": {
+      "damage_types": [
+        "force"
+      ],
+      "persistence": "persistent"
+    }
+  },
+  "AU::Reweave Fate": {
+    "range": {
+      "type": "point",
+      "feet": 60
+    },
+    "targeting": {
+      "type": "token",
+      "projectile": true
+    }
+  },
+  "AU::Spirit Lantern": {
+    "range": {
+      "type": "point",
+      "distance_type": "self"
+    },
+    "effect": {
+      "damage_types": [
+        "necrotic"
+      ],
+      "persistence": "persistent"
+    }
+  },
+  "AU::Transfix": {
+    "range": {
+      "type": "point",
+      "distance_type": "self"
+    },
+    "effect": {
+      "damage_types": [
+        "psychic"
+      ],
+      "persistence": "persistent"
+    }
+  },
+  "AU::Uncertain Footing": {
+    "range": {
+      "type": "point",
+      "feet": 120
+    },
+    "targeting": {
+      "type": "multi_token",
+      "base_target_clicks": 3,
+      "projectile": true
+    }
+  },
+  "AU::Vision of Elapsing Eons": {
+    "range": {
+      "type": "point",
+      "feet": 120
+    },
+    "targeting": {
+      "type": "token",
+      "projectile": true
+    },
+    "effect": {
+      "damage_types": [
+        "psychic"
+      ],
+      "persistence": "persistent"
+    }
+  },
+  "AU::Wail of the Banshee": {
+    "range": {
+      "type": "point",
+      "feet": 60
+    },
+    "targeting": {
+      "type": "multi_token",
+      "base_target_clicks": 10,
+      "projectile": true
+    },
+    "effect": {
+      "damage_types": [
+        "psychic"
+      ],
+      "persistence": "instant"
+    }
+  },
+  "FTD::Raulothim's Psychic Lance": {
+    "range": {
+      "type": "point",
+      "feet": 120
+    },
+    "targeting": {
+      "type": "token",
+      "projectile": true
+    },
+    "effect": {
+      "damage_types": [
+        "psychic"
+      ],
+      "persistence": "instant"
+    }
+  },
+  "SCC::Silvery Barbs": {
+    "range": {
+      "type": "point",
+      "feet": 60
+    },
+    "targeting": {
+      "type": "token",
+      "projectile": true
     }
   }
 }
