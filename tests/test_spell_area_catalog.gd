@@ -238,6 +238,13 @@ func run() -> void:
 	assert(String(create_undead.get("target_mode", "")) == "summon")
 	assert(int(create_undead.get("summon_count_min", 0)) == 1)
 	assert(int(create_undead.get("summon_count_max", 0)) == 3)
+	var create_undead_maxima: Dictionary = create_undead.get(
+		"summon_count_max_by_slot",
+		{}
+	)
+	assert(int(create_undead_maxima.get("7", 0)) == 4)
+	assert(int(create_undead_maxima.get("8", 0)) == 5)
+	assert(int(create_undead_maxima.get("9", 0)) == 6)
 
 	var danse_macabre: Dictionary = SpellCatalog.spell("danse_macabre")
 	assert(not danse_macabre.is_empty())
@@ -260,6 +267,11 @@ func run() -> void:
 	assert(2 in lesser_options)
 	assert(4 in lesser_options)
 	assert(8 in lesser_options)
+	var lesser_rules: Array = lesser_demons.get(
+		"summon_count_multiplier_rules",
+		[]
+	)
+	assert(lesser_rules.size() == 2)
 
 	# SMN can also tag conditional creation/transformation. Existing explicit
 	# targeting must win instead of opening the summon-token workflow.
