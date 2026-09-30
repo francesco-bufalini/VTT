@@ -671,6 +671,27 @@ static func attach_wall_segment(
 		+ Vector3.UP * height_world * 0.5
 	)
 
+	if style in [
+		"fire", "cold", "lightning", "acid", "poison", "necrotic",
+		"radiant", "force", "psychic", "thunder", "fear",
+		"enchantment", "arcane"
+	]:
+		var generic_color: Color = _generic_style_color(style)
+		_add_wall_particle_box(
+			root,
+			center,
+			direction,
+			length,
+			height_world,
+			maxf(thickness_world, cell_size * 0.12),
+			220,
+			0.9,
+			generic_color,
+			cell_size * 0.14,
+			Vector3.UP * cell_size * 0.32
+		)
+		return
+
 	match style:
 		"wall_of_fire":
 			_add_wall_particle_box(
@@ -762,6 +783,13 @@ static func attach_wall_globe(
 	cell_size: float
 ) -> void:
 	var color: Color = Color(0.55, 0.82, 1.0, 0.28)
+	if style in [
+		"fire", "cold", "lightning", "acid", "poison", "necrotic",
+		"radiant", "force", "psychic", "thunder", "fear",
+		"enchantment", "arcane"
+	]:
+		color = _generic_style_color(style)
+		color.a = 0.34
 	match style:
 		"wall_of_ice":
 			color = Color(0.56, 0.92, 1.0, 0.38)
