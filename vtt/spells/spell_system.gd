@@ -468,6 +468,101 @@ func handle_input(event: InputEvent) -> bool:
 	return false
 
 
+func _summon_count_choices(spell_data: Dictionary) -> Array[int]:
+	var choices: Array[int] = []
+	var options_value: Variant = spell_data.get("summon_count_options", [])
+	if options_value is Array:
+		for option_value: Variant in options_value:
+			var option_count: int = int(option_value)
+			if option_count > 0 and not (option_count in choices):
+				choices.append(option_count)
+	if not choices.is_empty():
+		choices.sort()
+		return choices
+
+	var minimum: int = int(spell_data.get("summon_count_min", 0))
+	var maximum: int = int(spell_data.get("summon_count_max", 0))
+	if minimum > 0 and maximum >= minimum:
+		for count: int in range(minimum, maximum + 1):
+			choices.append(count)
+		return choices
+
+	choices.append(maxi(int(spell_data.get("summon_count", 1)), 1))
+	return choices
+
+
+func _begin_summon_count_or_point(spell_data: Dictionary) -> void:
+	var choices: Array[int] = _summon_count_choices(spell_data)
+	if choices.is_empty():
+		choices.append(1)
+
+	if choices.size() == 1:
+		_summon_total_count = choices[0]
+		_begin_summon_point_selection(spell_data)
+		return
+
+	summon_count_menu.clear()
+	for index: int in range(choices.size()):
+		var count: int = choices[index]
+		var label: String = (
+			"1 creatura" if count == 1 else "%d creature" % count
+		)
+		summon_count_menu.add_item(label, index)
+		summon_count_menu.set_item_metadata(index, count)
+
+	_targeting_phase = "summon_count"
+	board_root.set("_ui_owns_mouse", true)
+	Input.mouse_mode = Input.MOUSE_MODE_VISIBLE
+	_set_instruction(
+		"%s: scegli quante creature evocare."
+		% String(spell_data.get("name", "Evocazione"))
+	)
+
+	var viewport_size: Vector2 = get_viewport().get_visible_rect().size
+	summon_count_menu.position = Vector2i(
+		int(viewport_size.x * 0.5 - 90.0),
+		int(viewport_size.y * 0.5 - 40.0)
+	)
+	summon_count_menu.popup()
+
+
+func _on_summon_count_selected(id: int) -> void:
+	if (
+		summon_count_menu == null
+		or id < 0
+		or id >= summon_count_menu.item_count
+	):
+		return
+
+	_summon_total_count = maxi(
+		int(summon_count_menu.get_item_metadata(id)),
+		1
+	)
+	board_root.set("_ui_owns_mouse", false)
+	Input.mouse_mode = Input.MOUSE_MODE_CAPTURED
+	_begin_summon_point_selection(_pending_spell())
+
+
+func _begin_summon_point_selection(spell_data: Dictionary) -> void:
+	if spell_data.is_empty():
+		_cancel_pending_cast()
+		return
+
+	_targeting_phase = "summon_point"
+	board_root.set("_ui_owns_mouse", false)
+	Input.mouse_mode = Input.MOUSE_MODE_CAPTURED
+	_hide_spell_preview()
+	_set_instruction(
+		"%s: scegli il punto per la creatura %d/%d entro %d ft · Esc per annullare"
+		% [
+			String(spell_data.get("name", "Evocazione")),
+			_summon_created_count + 1,
+			_summon_total_count,
+			int(spell_data.get("range_feet", 0))
+		]
+	)
+
+
 func _try_select_caster(screen_position: Vector2) -> void:
 	var hit_value: Variant = board_root.call(
 		"_raycast_from_screen",
@@ -562,6 +657,12 @@ func _try_select_caster(screen_position: Vector2) -> void:
 			_hide_spell_preview()
 			_clear_spell_fixed_previews()
 			_update_multi_point_instruction(spell_data)
+		"summon":
+			_pending_caster = caster
+			_pending_target_points.clear()
+			_summon_created_count = 0
+			_hide_spell_preview()
+			_begin_summon_count_or_point(spell_data)
 		"teleport_self":
 			_pending_caster = caster
 			_pending_targets.clear()
@@ -2883,6 +2984,8 @@ func _show_spell_data(spell_data: Dictionary) -> void:
 				)
 			"token_then_multi_point":
 				target_text = "Più punti distinti entro gittata"
+			"summon":
+				target_text = "Punto/i di evocazione entro gittata"
 			"token_then_point":
 				target_text = "Un punto entro gittata"
 			"self_token", "self_emanation":
@@ -2966,6 +3069,7 @@ func _activate_selected_spell() -> void:
 		"token_then_token",
 		"token_then_multi_token",
 		"token_then_multi_point",
+		"summon",
 		"token_then_chain",
 		"token_then_direction",
 		"wall_design"
