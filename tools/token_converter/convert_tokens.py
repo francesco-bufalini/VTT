@@ -500,16 +500,21 @@ def resolve_base(
     package: Path,
     main_source: Path,
     objects: list[bpy.types.Object],
-) -> tuple[list[bpy.types.Object], Vector, Vector, str]:
+) -> tuple[Vector, Vector, str, list[bpy.types.Object]]:
+    """Resolve scale/ground reference without making the base part of the token.
+
+    Base/marker/flying-size meshes are calibration helpers.  They define D&D
+    footprint, centering and ground height, but when they are separate objects
+    they must never be exported as visible miniature geometry.
+    """
     scene_base = find_scene_base(objects)
     if scene_base is not None:
         low, high = object_bounds(scene_base)
-        return objects, low, high, f"object:{scene_base.name}"
+        return low, high, f"object:{scene_base.name}", [scene_base]
 
     external = choose_external_base(package, main_source)
     if external is not None:
         added = import_external_base(external)
-        objects = mesh_objects()
         external_base = find_scene_base(added)
         if external_base is None and added:
             external_base = max(
@@ -521,11 +526,13 @@ def resolve_base(
             )
         if external_base is not None:
             low, high = object_bounds(external_base)
-            return objects, low, high, f"file:{external.name}"
+            # Exclude every mesh imported from the reference file, not only the
+            # one used for bounds: a flying platform can itself be multi-part.
+            return low, high, f"file:{external.name}", added
 
     fallback = low_band_base_bounds(objects)
     if fallback is not None:
-        return objects, fallback[0], fallback[1], "geometry:lowest_8_percent"
+        return fallback[0], fallback[1], "geometry:lowest_8_percent", []
 
     raise ValueError("Could not identify the miniature base")
 
@@ -702,13 +709,25 @@ def process_package(
             "The selected complete model has no visible mesh objects to export"
         )
 
-    _resolved_objects, base_low, base_high, base_reference = resolve_base(
+    base_low, base_high, base_reference, reference_objects = resolve_base(
         package, main_source, visible_main_objects
     )
-    objects = mesh_objects(visible_only=True)
+    reference_ids = {obj.as_pointer() for obj in reference_objects}
+    objects = [
+        obj
+        for obj in mesh_objects(visible_only=True)
+        if obj.as_pointer() not in reference_ids
+    ]
     if not objects:
         raise ValueError(
-            "The selected complete model has no visible mesh objects to export"
+            "The selected complete model has no visible creature mesh after "
+            "excluding base/marker reference geometry"
+        )
+
+    if reference_objects:
+        print(
+            "Reference only (not exported): "
+            + ", ".join(obj.name for obj in reference_objects)
         )
     diameter = max(base_high.x - base_low.x, base_high.y - base_low.y)
 
