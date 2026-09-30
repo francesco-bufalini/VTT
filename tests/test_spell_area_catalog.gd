@@ -231,12 +231,22 @@ func run() -> void:
 	assert(not flock.is_empty())
 	assert(String(flock.get("target_mode", "")) == "summon")
 	assert(int(flock.get("summon_count", 0)) == 3)
+	assert(int(flock.get("summon_count_per_slot_above_base", 0)) == 1)
 
 	var create_undead: Dictionary = SpellCatalog.spell("create_undead")
 	assert(not create_undead.is_empty())
 	assert(String(create_undead.get("target_mode", "")) == "summon")
 	assert(int(create_undead.get("summon_count_min", 0)) == 1)
 	assert(int(create_undead.get("summon_count_max", 0)) == 3)
+
+	var danse_macabre: Dictionary = SpellCatalog.spell("danse_macabre")
+	assert(not danse_macabre.is_empty())
+	assert(String(danse_macabre.get("target_mode", "")) == "summon")
+	assert(int(danse_macabre.get("summon_count_min", 0)) == 1)
+	assert(int(danse_macabre.get("summon_count_max", 0)) == 5)
+	assert(int(
+		danse_macabre.get("summon_count_per_slot_above_base", 0)
+	) == 2)
 
 	var lesser_demons: Dictionary = SpellCatalog.spell(
 		"summon_lesser_demons"
