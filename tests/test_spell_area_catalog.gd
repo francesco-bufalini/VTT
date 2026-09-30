@@ -86,7 +86,31 @@ func run() -> void:
 	assert(not wind_wall.is_empty())
 	assert(String(wind_wall.get("visual_style", "")) == "bludgeoning")
 
+	var chromatic_orb: Dictionary = SpellCatalog.spell("chromatic_orb")
+	assert(not chromatic_orb.is_empty())
+	assert(String(chromatic_orb.get("target_mode", "")) == "token_then_token")
+	assert(is_equal_approx(float(chromatic_orb.get("range_feet", 0.0)), 90.0))
+	assert(String(chromatic_orb.get("projectile_style", "")) == "chromatic_orb")
+
+	var magic_missile: Dictionary = SpellCatalog.spell("magic_missile")
+	assert(not magic_missile.is_empty())
+	assert(String(magic_missile.get("target_mode", "")) == "token_then_multi_token")
+	assert(is_equal_approx(float(magic_missile.get("range_feet", 0.0)), 120.0))
+	assert(int(magic_missile.get("base_target_clicks", 0)) == 3)
+	assert(int(magic_missile.get("target_clicks_per_slot_above_base", 0)) == 1)
+	assert(bool(magic_missile.get("allow_repeat_targets", false)))
+	assert(String(magic_missile.get("projectile_style", "")) == "magic_missile")
+
+	var entangle: Dictionary = SpellCatalog.spell("entangle")
+	assert(not entangle.is_empty())
+	assert(String(entangle.get("target_mode", "")) == "token_then_point")
+	assert(is_equal_approx(float(entangle.get("range_feet", 0.0)), 90.0))
+	assert(String(entangle.get("aoe_shape", "")) == "flat_square")
+	assert(is_equal_approx(float(entangle.get("aoe_side_feet", 0.0)), 20.0))
+	assert(bool(entangle.get("persistent", false)))
+	assert(bool(entangle.get("requires_ground", false)))
+
 	print(
-		"PASS: compact 5eTools map spec drives range, AoE, walls and damage VFX"
+		"PASS: 5eTools metadata drives range, targets, flat areas, walls and VFX"
 	)
 	quit()
