@@ -36,7 +36,7 @@ jobs:
           data = base64.b64decode(encoded, validate=True)
 
           digest = hashlib.sha256(data).hexdigest()
-          if digest != "$""{EXPECTED_SHA256}":
+          if digest != "7b62718971a5fd52c09c52990e164dc8f0c2b8945e5237916c772bfcccfb9d71":
               raise SystemExit(f"Checksum mismatch: {digest}")
 
           if not data.startswith(b"RIFF") or b"WEBP" not in data[:16]:
