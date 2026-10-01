@@ -56,6 +56,10 @@ var _token_generation_exact_position: bool = false
 var _token_generation_place_on_surface: bool = false
 var _token_generation_transform_target: CharacterBody3D
 var token_resize_menu: PopupMenu
+var context_token_menu: PopupMenu
+var context_measure_menu: PopupMenu
+var context_view_menu: PopupMenu
+var context_session_menu: PopupMenu
 var _token_resize_target: CharacterBody3D
 var _token_resize_confirmed_callback: Callable = Callable()
 var _token_resize_canceled_callback: Callable = Callable()
@@ -115,6 +119,7 @@ func _ready() -> void:
 
 	context_menu.id_pressed.connect(_on_context_menu_id_pressed)
 	context_menu.popup_hide.connect(_on_context_menu_hidden)
+	_build_context_submenus()
 
 	color_dialog.confirmed.connect(_on_token_dialog_confirmed)
 	color_dialog.canceled.connect(_on_token_dialog_canceled)
@@ -1507,6 +1512,62 @@ func _toggle_measurement_mode() -> void:
 		measurement_mode_label.text = ""
 
 
+func _build_context_submenus() -> void:
+	context_token_menu = _create_context_submenu("ContextTokenMenu")
+	context_measure_menu = _create_context_submenu("ContextMeasureMenu")
+	context_view_menu = _create_context_submenu("ContextViewMenu")
+	context_session_menu = _create_context_submenu("ContextSessionMenu")
+
+
+func _create_context_submenu(menu_name: String) -> PopupMenu:
+	var menu := PopupMenu.new()
+	menu.name = menu_name
+	menu.id_pressed.connect(_on_context_menu_id_pressed)
+	context_menu.add_child(menu)
+	return menu
+
+
+func _prepare_context_submenus() -> void:
+	context_token_menu.clear()
+	context_measure_menu.clear()
+	context_view_menu.clear()
+	context_session_menu.clear()
+	_limit_popup_menu(context_menu)
+	_limit_popup_menu(context_token_menu)
+	_limit_popup_menu(context_measure_menu)
+	_limit_popup_menu(context_view_menu)
+	_limit_popup_menu(context_session_menu)
+
+
+func _limit_popup_menu(menu: PopupMenu) -> void:
+	var viewport_size: Vector2 = get_viewport().get_visible_rect().size
+	menu.max_size = Vector2i(
+		maxi(140, int(viewport_size.x) - 24),
+		maxi(140, int(viewport_size.y) - 24)
+	)
+
+
+func _popup_context_menu(screen_position: Vector2) -> void:
+	_limit_popup_menu(context_menu)
+	var viewport_size: Vector2 = get_viewport().get_visible_rect().size
+	context_menu.position = Vector2i(
+		clampi(int(screen_position.x), 8, maxi(8, int(viewport_size.x) - 8)),
+		clampi(int(screen_position.y), 8, maxi(8, int(viewport_size.y) - 8))
+	)
+	context_menu.popup()
+
+
+func _popup_dialog_safe(
+	dialog: Window,
+	preferred_size: Vector2i,
+	fallback_ratio: float = 0.92
+) -> void:
+	if dialog == null or not is_instance_valid(dialog):
+		return
+	dialog.reset_size()
+	dialog.popup_centered_clamped(preferred_size, fallback_ratio)
+
+
 func _show_context_menu(screen_position: Vector2) -> void:
 	_clean_selection()
 	_has_pending_spawn_position = false
@@ -1519,8 +1580,7 @@ func _show_context_menu(screen_position: Vector2) -> void:
 		context_menu.add_item("Dissolvi AoT", CONTEXT_DISSOLVE_AOT)
 		_ui_owns_mouse = true
 		_release_mouse()
-		context_menu.position = Vector2i(screen_position)
-		context_menu.popup()
+		_popup_context_menu(screen_position)
 		call_deferred("_release_mouse")
 		return
 
@@ -1550,59 +1610,26 @@ func _show_context_menu(screen_position: Vector2) -> void:
 			_has_pending_spawn_position = true
 
 	context_menu.clear()
+	_prepare_context_submenus()
 
-	# Area templates are measurement tools, so keep them out of the normal
-	# interaction menu. They appear only after entering measurement mode with R.
 	if measurement_tool.is_measurement_mode():
-		context_menu.add_item("AoE: sfera", 20)
-		context_menu.add_item("AoE: cubo", 21)
-		context_menu.add_item("AoE: cono", 22)
-		context_menu.add_item("AoE: linea", 23)
-		context_menu.add_item("Cancella tutte le AoE", 24)
-		context_menu.add_separator()
-
-	var initiative_visible: bool = (
-		initiative_tracker != null
-		and is_instance_valid(initiative_tracker)
-		and bool(initiative_tracker.call("is_panel_visible"))
-	)
-	context_menu.add_item(
-		"Nascondi iniziativa" if initiative_visible else "Mostra iniziativa",
-		CONTEXT_INITIATIVE
-	)
-	context_menu.add_item("Sincronizza mappa / Tailscale", 25)
-	if scene_file_path != CAMPAIGN_EDITOR_SCENE_PATH:
-		context_menu.add_item("Torna al menu VTT", CONTEXT_MAIN_MENU)
-	context_menu.add_separator()
-
-	if volumetric_grid.visible:
-		context_menu.add_item("Nascondi griglia", CONTEXT_TOGGLE_GRID)
-	else:
-		context_menu.add_item("Mostra griglia", CONTEXT_TOGGLE_GRID)
-
-	if _vision_cones_visible:
-		context_menu.add_item(
-			"Nascondi coni visivi dei token",
-			CONTEXT_TOGGLE_VISION_CONES
-		)
-	else:
-		context_menu.add_item(
-			"Mostra coni visivi dei token",
-			CONTEXT_TOGGLE_VISION_CONES
-		)
-
-	context_menu.add_separator()
-	context_menu.add_item("Velocità camera…", CONTEXT_CAMERA_SETTINGS)
+		context_measure_menu.add_item("AoE: sfera", 20)
+		context_measure_menu.add_item("AoE: cubo", 21)
+		context_measure_menu.add_item("AoE: cono", 22)
+		context_measure_menu.add_item("AoE: linea", 23)
+		context_measure_menu.add_separator()
+		context_measure_menu.add_item("Cancella tutte le AoE", 24)
+		context_menu.add_submenu_node_item("Misura", context_measure_menu)
 
 	if _has_pending_spawn_position:
-		context_menu.add_separator()
-		context_menu.add_item("Genera token", CONTEXT_CREATE_TOKEN)
+		context_token_menu.add_item("Genera token", CONTEXT_CREATE_TOKEN)
 
 	if not _selected_tokens.is_empty():
-		context_menu.add_separator()
+		if context_token_menu.item_count > 0:
+			context_token_menu.add_separator()
 
 		if _selected_tokens.size() == 1:
-			context_menu.add_item("Nome e stati…", CONTEXT_TOKEN_DETAILS)
+			context_token_menu.add_item("Nome e stati…", CONTEXT_TOKEN_DETAILS)
 			var selected_token: CharacterBody3D = _selected_tokens[0]
 			if (
 				selected_token != null
@@ -1610,37 +1637,77 @@ func _show_context_menu(screen_position: Vector2) -> void:
 				and selected_token.has_method("has_previous_transformation")
 				and bool(selected_token.call("has_previous_transformation"))
 			):
-				context_menu.add_item(
+				context_token_menu.add_item(
 					"Ripristina aspetto precedente",
 					CONTEXT_RESTORE_TRANSFORMATION
 				)
 
 		if _context_token != null and is_instance_valid(_context_token):
-			context_menu.add_item("Incantesimi", CONTEXT_SPELLS)
-			context_menu.add_separator()
+			context_token_menu.add_item("Incantesimi", CONTEXT_SPELLS)
 
 		var count: int = _selected_tokens.size()
 		var suffix: String = "" if count == 1 else " (%d)" % count
-		context_menu.add_item("Applica gravità" + suffix, CONTEXT_FLYING)
-
-		context_menu.add_item(
+		context_token_menu.add_separator()
+		context_token_menu.add_item(
+			"Applica gravità" + suffix,
+			CONTEXT_FLYING
+		)
+		context_token_menu.add_item(
 			"Ruota 45° a sinistra" + suffix,
 			CONTEXT_ROTATE_LEFT
 		)
-		context_menu.add_item(
+		context_token_menu.add_item(
 			"Ruota 45° a destra" + suffix,
 			CONTEXT_ROTATE_RIGHT
 		)
-		context_menu.add_separator()
-		context_menu.add_item(
+		context_token_menu.add_separator()
+		context_token_menu.add_item(
 			"Elimina token selezionati" + suffix,
 			CONTEXT_DELETE_SELECTED
 		)
 
+	if context_token_menu.item_count > 0:
+		context_menu.add_submenu_node_item("Token", context_token_menu)
+
+	if volumetric_grid.visible:
+		context_view_menu.add_item("Nascondi griglia", CONTEXT_TOGGLE_GRID)
+	else:
+		context_view_menu.add_item("Mostra griglia", CONTEXT_TOGGLE_GRID)
+	if _vision_cones_visible:
+		context_view_menu.add_item(
+			"Nascondi coni visivi dei token",
+			CONTEXT_TOGGLE_VISION_CONES
+		)
+	else:
+		context_view_menu.add_item(
+			"Mostra coni visivi dei token",
+			CONTEXT_TOGGLE_VISION_CONES
+		)
+	context_view_menu.add_separator()
+	context_view_menu.add_item("Velocità camera…", CONTEXT_CAMERA_SETTINGS)
+	context_menu.add_submenu_node_item("Vista", context_view_menu)
+
+	var initiative_visible: bool = (
+		initiative_tracker != null
+		and is_instance_valid(initiative_tracker)
+		and bool(initiative_tracker.call("is_panel_visible"))
+	)
+	context_session_menu.add_item(
+		"Nascondi iniziativa" if initiative_visible else "Mostra iniziativa",
+		CONTEXT_INITIATIVE
+	)
+	context_session_menu.add_item("Sincronizza mappa / Tailscale", 25)
+	if scene_file_path != CAMPAIGN_EDITOR_SCENE_PATH:
+		context_session_menu.add_separator()
+		context_session_menu.add_item(
+			"Torna al menu VTT",
+			CONTEXT_MAIN_MENU
+		)
+	context_menu.add_submenu_node_item("Sessione", context_session_menu)
+
 	_ui_owns_mouse = true
 	_release_mouse()
-	context_menu.position = Vector2i(screen_position)
-	context_menu.popup()
+	_popup_context_menu(screen_position)
 	call_deferred("_release_mouse")
 
 
@@ -1691,7 +1758,7 @@ func _on_context_menu_id_pressed(id: int) -> void:
 		return
 	if id == 25:
 		_ui_owns_mouse = true
-		share_dialog.popup_centered(Vector2i(580, 330))
+		_popup_dialog_safe(share_dialog, Vector2i(580, 330))
 		_release_mouse()
 		return
 	match id:
@@ -1782,7 +1849,7 @@ func open_camera_settings() -> void:
 	if context_menu.visible:
 		context_menu.hide()
 	_release_mouse()
-	camera_settings_dialog.popup_centered(Vector2i(460, 240))
+	_popup_dialog_safe(camera_settings_dialog, Vector2i(460, 240))
 	call_deferred("_release_mouse")
 
 
@@ -1986,7 +2053,7 @@ func check_opportunity_attacks_after_movement(
 	)
 	_ui_owns_mouse = true
 	Input.mouse_mode = Input.MOUSE_MODE_VISIBLE
-	opportunity_dialog.popup_centered(Vector2i(620, 300))
+	_popup_dialog_safe(opportunity_dialog, Vector2i(620, 300))
 
 
 func _build_token_state_dialog() -> void:
@@ -2104,7 +2171,7 @@ func _open_token_state_editor(token: CharacterBody3D) -> void:
 	if context_menu.visible:
 		context_menu.hide()
 	_release_mouse()
-	token_state_dialog.popup_centered(Vector2i(500, 610))
+	_popup_dialog_safe(token_state_dialog, Vector2i(500, 610))
 	call_deferred("_release_mouse")
 
 
@@ -2243,7 +2310,7 @@ func _open_token_generation_dialog() -> void:
 		token_miniature_list.select(selected_index)
 		_on_token_miniature_selected(selected_index)
 
-	color_dialog.popup_centered_clamped(Vector2i(650, 820), 0.92)
+	_popup_dialog_safe(color_dialog, Vector2i(650, 820))
 	call_deferred("_release_mouse")
 
 

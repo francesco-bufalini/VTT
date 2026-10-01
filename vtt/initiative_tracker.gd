@@ -206,7 +206,7 @@ func _build_add_dialog() -> void:
 	add_dialog.name = "InitiativeAddDialog"
 	add_dialog.title = "Aggiungi partecipante"
 	add_dialog.ok_button_text = "Aggiungi"
-	add_dialog.min_size = Vector2i(460, 260)
+	add_dialog.min_size = Vector2i(460, 300)
 	ui_root.add_child(add_dialog)
 
 	var body: VBoxContainer = VBoxContainer.new()
@@ -325,8 +325,24 @@ func open_add_dialog() -> void:
 	_refresh_token_selector(preferred_token_id)
 	_sync_name_field_to_token(_selected_token_id_from_option())
 	_take_dialog_mouse()
-	add_dialog.popup_centered(Vector2i(460, 260))
-	participant_name.grab_focus()
+	_popup_dialog_safe(add_dialog, Vector2i(460, 300))
+	call_deferred("_focus_participant_name")
+
+
+func _popup_dialog_safe(dialog: Window, preferred_size: Vector2i) -> void:
+	if dialog == null or not is_instance_valid(dialog):
+		return
+	dialog.reset_size()
+	dialog.popup_centered_clamped(preferred_size, 0.92)
+
+
+func _focus_participant_name() -> void:
+	if (
+		add_dialog != null
+		and add_dialog.visible
+		and participant_name != null
+	):
+		participant_name.grab_focus()
 
 
 func _on_add_confirmed() -> void:
@@ -683,9 +699,22 @@ func _open_token_popup(entry_id: String, button: Control) -> void:
 		item_id += 1
 
 	_take_dialog_mouse()
+	var viewport_size: Vector2 = board_root.get_viewport().get_visible_rect().size
+	token_popup.max_size = Vector2i(
+		maxi(180, int(viewport_size.x) - 24),
+		maxi(160, int(viewport_size.y) - 24)
+	)
 	token_popup.position = Vector2i(
-		int(button.global_position.x),
-		int(button.global_position.y + button.size.y)
+		clampi(
+			int(button.global_position.x),
+			8,
+			maxi(8, int(viewport_size.x) - 8)
+		),
+		clampi(
+			int(button.global_position.y + button.size.y),
+			8,
+			maxi(8, int(viewport_size.y) - 8)
+		)
 	)
 	token_popup.popup()
 
