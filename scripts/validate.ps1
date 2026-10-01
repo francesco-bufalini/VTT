@@ -62,6 +62,11 @@ function Invoke-Godot {
             Write-Host $stderr.TrimEnd()
         }
 
+        $combinedOutput = $stdout + [Environment]::NewLine + $stderr
+        if ($combinedOutput -match "(?m)^(SCRIPT ERROR:|ERROR: Failed to load script)") {
+            throw "Godot reported a script load/compile error: $($Arguments -join ' ')"
+        }
+
         $exitCode = $process.ExitCode
         if ($null -ne $exitCode -and $exitCode -ne 0) {
             throw "Godot failed with exit code ${exitCode}: $($Arguments -join ' ')"

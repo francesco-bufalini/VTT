@@ -1,6 +1,6 @@
 extends SceneTree
 
-const BoardController = preload("res://dnd_base.gd")
+const GridHighlightRenderer = preload("res://vtt/grid_highlight_renderer.gd")
 const MeasurementTool = preload("res://measurement_tool.gd")
 const SpellSystem = preload("res://vtt/spells/spell_system.gd")
 
@@ -52,19 +52,18 @@ func run() -> void:
 	# signature and then rendering zero tokens must clear stale MultiMesh
 	# instances. This is the exact 1-token -> 0-token transition used when a
 	# Fireball preview moves completely off the last affected token.
-	var renderer: Node3D = BoardController.new()
+	var renderer_owner := Node3D.new()
 	var red_multimesh := MultiMesh.new()
 	red_multimesh.transform_format = MultiMesh.TRANSFORM_3D
 	red_multimesh.instance_count = 2
 	red_multimesh.visible_instance_count = 2
 	var no_tokens: Array[CharacterBody3D] = []
-	var empty_signature: String = String(
-		renderer.call(
-			"_refresh_grid_highlight",
-			no_tokens,
-			red_multimesh,
-			""
-		)
+	var empty_signature: String = GridHighlightRenderer.refresh(
+		renderer_owner,
+		no_tokens,
+		red_multimesh,
+		"",
+		1.0
 	)
 	if red_multimesh.instance_count != 0:
 		_fail("grid renderer kept stale red instances after 1-token -> 0-token")
@@ -72,7 +71,7 @@ func run() -> void:
 	if empty_signature.is_empty():
 		_fail("empty grid highlight still collides with invalidated signature")
 		return
-	renderer.free()
+	renderer_owner.free()
 
 	var board := FakeBoard.new()
 	root.add_child(board)
