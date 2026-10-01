@@ -99,12 +99,12 @@ func _run() -> void:
 	var units: float = float(
 		scene.get_node("MeasurementTool").call("meters_to_world", 1.0)
 	)
-	var cap_mesh := cap.mesh as CylinderMesh
+	var cap_mesh := cap.mesh as SphereMesh
 	if (
 		cap_mesh == null
-		or cap_mesh.top_radius / units < 18.5
-		or cap.scale.x < 1.5
-		or cap.scale.z < 0.85
+		or cap.scale.x / units < 28.0
+		or cap.scale.y / units < 5.0
+		or cap.scale.z / units < 16.0
 	):
 		_fail("Kaos shoulder/base-neck opening is not fully capped.")
 		return
@@ -170,6 +170,12 @@ func _run() -> void:
 				% label
 			)
 			return
+
+	if String(
+		scene.get_meta("post_kaos_decor_source", "")
+	) != "scontro_contro_kaos_runtime":
+		_fail("Post-Kaos decor was not copied from live Scontro runtime.")
+		return
 
 	var klothys_visual := scene.get_node_or_null(
 		"KlothisRoot/KlothisVisual"
