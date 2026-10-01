@@ -25,7 +25,11 @@ func run() -> void:
 	var data: Array = JSON.parse_string(JSON.stringify(measure.serialize_persistent_aoes()))
 	measure.clear_persistent_aoes()
 	measure.apply_persistent_aoes(data)
-	assert(measure.serialize_persistent_aoes() == data)
+	var restored_data: Array = measure.serialize_persistent_aoes()
+	if restored_data != data:
+		print("AoE round-trip expected: ", JSON.stringify(data))
+		print("AoE round-trip actual:   ", JSON.stringify(restored_data))
+	assert(restored_data == data)
 	assert(not measure.valid_aoes([{"shape":"sphere", "start":[], "end":[]}]))
 	var sync: Node = scene.board_sync
 	var snapshot: Dictionary = JSON.parse_string(JSON.stringify(sync.create_snapshot()))
