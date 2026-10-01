@@ -1,6 +1,7 @@
 extends SceneTree
 
 const SCENE_PATH := "res://encounter/post_kaos_editable.scn"
+const SCONTRO_SCENE_PATH := "res://encounter/scontro_contro_kaos.tscn"
 const PostKaosHelpers = preload("res://encounter/post_kaos_helpers.gd")
 
 
@@ -22,7 +23,30 @@ func _upgrade() -> void:
 	PostKaosHelpers.remove_kaos_phase_two_token(scene)
 	PostKaosHelpers.remove_legacy_platforms(scene)
 	PostKaosHelpers.prepare_kaos_petrified_geometry(scene)
-	PostKaosHelpers.restore_encounter_decor(scene)
+
+	# Build an actual Scontro contro Kaos instance and copy only its requested
+	# visual groups into Post-Kaos. This avoids merely regenerating similar
+	# geometry and guarantees the same Klothys/sphere/columns seen in Scontro.
+	var scontro_packed: PackedScene = load(SCONTRO_SCENE_PATH)
+	if scontro_packed == null:
+		_fail("Cannot load %s" % SCONTRO_SCENE_PATH)
+		return
+	var scontro := scontro_packed.instantiate()
+	if scontro == null:
+		_fail("Cannot instantiate Scontro contro Kaos.")
+		return
+	root.add_child(scontro)
+	await process_frame
+	await physics_frame
+	await process_frame
+
+	if not PostKaosHelpers.copy_decor_from_scontro(scene, scontro):
+		_fail("Could not copy Scontro visual groups into Post-Kaos.")
+		return
+
+	scontro.queue_free()
+	await process_frame
+
 	PostKaosHelpers.ensure_solid_surfaces(scene)
 
 	var grid := scene.get_node_or_null("VolumetricGrid")
