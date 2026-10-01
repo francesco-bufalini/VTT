@@ -23,16 +23,27 @@ func _ready() -> void:
 	_player.bus = &"Master"
 	add_child(_player)
 
-	var stream: AudioStream = load(SOUNDTRACK_PATH)
-	if stream == null:
+	if not ResourceLoader.exists(SOUNDTRACK_PATH, "AudioStreamMP3"):
 		push_warning(
 			"MenuAudioManager: soundtrack non trovata: " + SOUNDTRACK_PATH
 		)
-	else:
-		if stream is AudioStreamMP3:
-			(stream as AudioStreamMP3).loop = true
-		_player.stream = stream
-		_audio_available = true
+		return
+
+	var stream: AudioStream = ResourceLoader.load(
+		SOUNDTRACK_PATH,
+		"AudioStreamMP3"
+	)
+	if stream == null:
+		push_warning(
+			"MenuAudioManager: impossibile caricare la soundtrack: "
+			+ SOUNDTRACK_PATH
+		)
+		return
+
+	if stream is AudioStreamMP3:
+		(stream as AudioStreamMP3).loop = true
+	_player.stream = stream
+	_audio_available = true
 
 	get_tree().scene_changed.connect(_sync_with_scene)
 	call_deferred("_sync_with_scene")
