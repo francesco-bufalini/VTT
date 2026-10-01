@@ -772,7 +772,11 @@ func _grid_highlight_signature(tokens: Array[CharacterBody3D]) -> String:
 				height_cells
 			]
 		)
-	return ";".join(signature_parts)
+	# Empty highlights need a real signature too. The old empty-string
+	# signature collided with the explicit invalidation value (""), so a
+	# transition from one highlighted token to zero tokens skipped the redraw
+	# and left stale MultiMesh instances visible.
+	return "%d:%s" % [signature_parts.size(), ";".join(signature_parts)]
 
 
 func _refresh_grid_highlight(
