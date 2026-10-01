@@ -57,6 +57,7 @@ var _token_generation_place_on_surface: bool = false
 var _token_generation_transform_target: CharacterBody3D
 var token_resize_menu: PopupMenu
 var context_token_menu: PopupMenu
+var context_game_menu: PopupMenu
 var context_measure_menu: PopupMenu
 var context_view_menu: PopupMenu
 var context_session_menu: PopupMenu
@@ -1100,9 +1101,15 @@ func _unhandled_input(event: InputEvent) -> void:
 	if event is InputEventMouseButton:
 		if Input.mouse_mode != Input.MOUSE_MODE_CAPTURED:
 			if event.pressed and event.button_index == MOUSE_BUTTON_LEFT:
-				_interact_or_select_under_mouse(event.position, event.shift_pressed, event.ctrl_pressed)
+				_interact_or_select_under_mouse(
+					event.position,
+					event.shift_pressed,
+					event.ctrl_pressed
+				)
+				get_viewport().set_input_as_handled()
 			elif event.pressed and event.button_index == MOUSE_BUTTON_RIGHT:
 				_show_context_menu(event.position)
+				get_viewport().set_input_as_handled()
 			return
 
 		if not event.pressed:
@@ -1514,6 +1521,7 @@ func _toggle_measurement_mode() -> void:
 
 func _build_context_submenus() -> void:
 	context_token_menu = _create_context_submenu("ContextTokenMenu")
+	context_game_menu = _create_context_submenu("ContextGameMenu")
 	context_measure_menu = _create_context_submenu("ContextMeasureMenu")
 	context_view_menu = _create_context_submenu("ContextViewMenu")
 	context_session_menu = _create_context_submenu("ContextSessionMenu")
@@ -1529,11 +1537,13 @@ func _create_context_submenu(menu_name: String) -> PopupMenu:
 
 func _prepare_context_submenus() -> void:
 	context_token_menu.clear()
+	context_game_menu.clear()
 	context_measure_menu.clear()
 	context_view_menu.clear()
 	context_session_menu.clear()
 	_limit_popup_menu(context_menu)
 	_limit_popup_menu(context_token_menu)
+	_limit_popup_menu(context_game_menu)
 	_limit_popup_menu(context_measure_menu)
 	_limit_popup_menu(context_view_menu)
 	_limit_popup_menu(context_session_menu)
@@ -1600,7 +1610,6 @@ func _show_context_menu(screen_position: Vector2) -> void:
 				and token_target is CharacterBody3D
 			):
 				_context_token = token_target as CharacterBody3D
-				_replace_selection(_context_token)
 
 	var hit: Dictionary = _raycast_from_screen(screen_position, 1 | 4, false)
 	if not hit.is_empty():
@@ -1642,9 +1651,6 @@ func _show_context_menu(screen_position: Vector2) -> void:
 					CONTEXT_RESTORE_TRANSFORMATION
 				)
 
-		if _context_token != null and is_instance_valid(_context_token):
-			context_token_menu.add_item("Incantesimi", CONTEXT_SPELLS)
-
 		var count: int = _selected_tokens.size()
 		var suffix: String = "" if count == 1 else " (%d)" % count
 		context_token_menu.add_separator()
@@ -1669,6 +1675,18 @@ func _show_context_menu(screen_position: Vector2) -> void:
 	if context_token_menu.item_count > 0:
 		context_menu.add_submenu_node_item("Token", context_token_menu)
 
+	context_game_menu.add_item("Incantesimi", CONTEXT_SPELLS)
+	var initiative_visible: bool = (
+		initiative_tracker != null
+		and is_instance_valid(initiative_tracker)
+		and bool(initiative_tracker.call("is_panel_visible"))
+	)
+	context_game_menu.add_item(
+		"Nascondi iniziativa" if initiative_visible else "Mostra iniziativa",
+		CONTEXT_INITIATIVE
+	)
+	context_menu.add_submenu_node_item("Gioco", context_game_menu)
+
 	if volumetric_grid.visible:
 		context_view_menu.add_item("Nascondi griglia", CONTEXT_TOGGLE_GRID)
 	else:
@@ -1687,15 +1705,6 @@ func _show_context_menu(screen_position: Vector2) -> void:
 	context_view_menu.add_item("Velocità camera…", CONTEXT_CAMERA_SETTINGS)
 	context_menu.add_submenu_node_item("Vista", context_view_menu)
 
-	var initiative_visible: bool = (
-		initiative_tracker != null
-		and is_instance_valid(initiative_tracker)
-		and bool(initiative_tracker.call("is_panel_visible"))
-	)
-	context_session_menu.add_item(
-		"Nascondi iniziativa" if initiative_visible else "Mostra iniziativa",
-		CONTEXT_INITIATIVE
-	)
 	context_session_menu.add_item("Sincronizza mappa / Tailscale", 25)
 	if scene_file_path != CAMPAIGN_EDITOR_SCENE_PATH:
 		context_session_menu.add_separator()
