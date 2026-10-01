@@ -1,32 +1,53 @@
-name: VTT Godot Tests
+name: VTT Godot Fast Tests
 
 on:
   workflow_dispatch:
   push:
     branches:
       - feature/campaign-hub
+    paths:
+      - "**/*.gd"
+      - "**/*.tscn"
+      - "**/*.tres"
+      - "project.godot"
+      - "scripts/validate.ps1"
+      - ".github/workflows/vtt-self-hosted-tests.yml"
+      - "assets/tokens/token_library.json"
 
 concurrency:
-  group: vtt-godot-${{ github.ref }}
+  group: vtt-godot-fast-${{ github.ref }}
   cancel-in-progress: true
 
 jobs:
   validate:
-    name: Godot 4.7.2 validation
+    name: Godot fast validation
     runs-on: [self-hosted, windows, x64, vtt-godot]
-    timeout-minutes: 20
+    timeout-minutes: 8
 
     steps:
-      - name: Checkout repository
+      - name: Sparse checkout test surface
         uses: actions/checkout@v4
         with:
           clean: false
+          fetch-depth: 1
+          sparse-checkout-cone-mode: false
+          sparse-checkout: |
+            /project.godot
+            /*.gd
+            /*.tscn
+            /scripts/
+            /tests/
+            /vtt/
+            /network/
+            /interaction/
+            /encounter/encounter_events.gd
+            /assets/tokens/token_library.json
 
-      - name: Clean workspace but keep Godot import cache
+      - name: Clean generated files but keep Godot cache
         shell: powershell
         run: |
           git reset --hard HEAD
-          git clean -ffdx -e .godot/ -e '*.import' -e '*.uid'
+          git clean -ffdx -e .godot/
 
       - name: Show environment
         shell: powershell
@@ -35,6 +56,6 @@ jobs:
           Write-Host "Workspace: $env:GITHUB_WORKSPACE"
           & "C:\Program Files\Godot\Godot_v4.7.2-stable_win64.exe" --version
 
-      - name: Validate with Godot
+      - name: Run fast Godot tests
         shell: powershell
         run: .\scripts\validate.ps1 -Godot "C:\Program Files\Godot\Godot_v4.7.2-stable_win64.exe" -Tests
