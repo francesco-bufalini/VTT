@@ -91,5 +91,24 @@ jobs:
           git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
           git commit -m "Bake editable post-Kaos encounter scene"
           if ($LASTEXITCODE -ne 0) { exit $LASTEXITCODE }
-          git push origin "HEAD:${{ github.ref_name }}"
-          if ($LASTEXITCODE -ne 0) { exit $LASTEXITCODE }
+
+          # Other ChatGPT tasks may update campaign-hub while this bake is
+          # serializing a large scene. Rebase instead of force-pushing.
+          for ($attempt = 1; $attempt -le 3; $attempt++) {
+            git fetch origin "${{ github.ref_name }}"
+            if ($LASTEXITCODE -ne 0) { exit $LASTEXITCODE }
+
+            git rebase "origin/${{ github.ref_name }}"
+            if ($LASTEXITCODE -ne 0) {
+              git rebase --abort
+              exit 1
+            }
+
+            git push origin "HEAD:${{ github.ref_name }}"
+            if ($LASTEXITCODE -eq 0) {
+              exit 0
+            }
+
+            Write-Host "Remote moved during push; retrying rebase ($attempt/3)."
+          }
+          throw "Could not push baked scene after rebasing three times."
