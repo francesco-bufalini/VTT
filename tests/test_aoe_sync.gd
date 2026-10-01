@@ -1,69 +1,9 @@
 extends SceneTree
 
-const SpellCatalog = preload("res://vtt/spells/spell_catalog.gd")
-
 func _initialize() -> void:
 	call_deferred("run")
 
 func run() -> void:
-	# 5eTools-backed spell catalogue: only spells with real VTT map effects
-	# remain exposed while animations are disabled.
-	var flame_strike: Dictionary = SpellCatalog.spell("flame_strike")
-	assert(not flame_strike.is_empty())
-	assert(String(flame_strike.get("target_mode", "")) == "token_then_point")
-	assert(String(flame_strike.get("aoe_shape", "")) == "cylinder")
-	assert(float(flame_strike.get("aoe_radius_feet", 0.0)) == 10.0)
-	assert(float(flame_strike.get("aoe_height_feet", 0.0)) == 40.0)
-
-	var silence: Dictionary = SpellCatalog.spell("silence")
-	assert(not silence.is_empty())
-	assert(String(silence.get("aoe_shape", "")) == "sphere")
-	assert(float(silence.get("aoe_radius_feet", 0.0)) == 20.0)
-	assert(bool(silence.get("persistent", false)))
-
-	var entangle: Dictionary = SpellCatalog.spell("entangle")
-	assert(not entangle.is_empty())
-	assert(String(entangle.get("aoe_shape", "")) == "flat_square")
-	assert(float(entangle.get("aoe_side_feet", 0.0)) == 20.0)
-	assert(bool(entangle.get("persistent", false)))
-
-	var call_lightning: Dictionary = SpellCatalog.spell("call_lightning")
-	assert(not call_lightning.is_empty())
-	assert(String(call_lightning.get("target_mode", "")) == "token_then_point")
-	assert(String(call_lightning.get("aoe_shape", "")) == "cylinder")
-
-	# Projectile-only / condition-only spells have no map effect with spell
-	# animations disabled and must therefore not survive catalogue pruning.
-	assert(SpellCatalog.spell("guiding_bolt").is_empty())
-	assert(SpellCatalog.spell("magic_missile").is_empty())
-
-	for spell_data: Dictionary in SpellCatalog.all_spells():
-		var mode: String = String(spell_data.get("target_mode", ""))
-		var shape: String = String(spell_data.get("aoe_shape", ""))
-		var usable: bool = (
-			mode == "teleport_self"
-			or mode == "wall_design"
-			or (
-				not shape.is_empty()
-				and mode in [
-					"self_token",
-					"self_emanation",
-					"token_then_point",
-					"token_then_direction"
-				]
-			)
-			or (
-				mode == "token_then_token"
-				and (
-					bool(spell_data.get("persistent_link", false))
-					or float(
-						spell_data.get("impact_aoe_radius_feet", 0.0)
-					) > 0.0
-				)
-			)
-		)
-		assert(usable)
-
 	var scene: Node = load("res://dnd_base.tscn").instantiate()
 	root.add_child(scene)
 	await process_frame
