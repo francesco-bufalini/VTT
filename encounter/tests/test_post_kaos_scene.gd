@@ -83,6 +83,12 @@ func _run() -> void:
 		)
 		% [kaos_collisions, klothis_collisions, chariots]
 	)
+	# Let runtime controllers, listeners and scene resources leave the tree
+	# cleanly before the headless test process exits.
+	scene.queue_free()
+	packed = null
+	await process_frame
+	await process_frame
 	quit(0)
 
 func _find_kaos_token(scene: Node) -> Node:
