@@ -6,7 +6,7 @@ const BODY_COLLISION_NAME := "WalkableBodyCollision"
 const GRID_EXCLUDED_GROUP := "grid_3d_excluded"
 const COLLISION_VERSION := 5
 const GEOMETRY_VERSION := 4
-const DECOR_VERSION := 3
+const DECOR_VERSION := 4
 
 # Kaos' final one-hand pose keeps the head around y=136 m.  Remove the
 # complete skull plus the central neck column, while preserving the shoulders
@@ -137,21 +137,19 @@ static func restore_encounter_decor(
 	if units <= 0.0:
 		return
 
-	# Rebuild only the pieces that are actually missing. A normal Encounter
-	# instance already contains the canonical Klothys hair, titan reliefs and
-	# ruins; regenerating the full hair system during every bake is expensive
-	# and can take minutes for no visual benefit.
-	if force_rebuild or _count_klothys_hair(scene) < 100:
-		_restore_klothys_hair(scene, units)
+	var current := int(scene.get_meta("post_kaos_decor_version", 0))
 	if (
 		force_rebuild
-		or scene.get_node_or_null(
-			"KlothisRoot/SphereVisual/CarvedTitanFaces"
-		) == null
+		or current < DECOR_VERSION
+		or not _decor_is_complete(scene)
 	):
-		_restore_titan_faces(scene, units)
-	if force_rebuild or not _ruins_are_complete(scene):
-		_restore_ruins(scene, units)
+		# Copy these visual groups from exactly the same builder used by
+		# Scontro contro Kaos: Klothys + hair, sphere + titan faces/bindings,
+		# and the background colonnade. No other Post-Kaos nodes are touched.
+		preload("res://encounter/encounter_scenery.gd").new().call(
+			"replace_klothis_sphere_and_ruins_from_encounter",
+			scene
+		)
 
 	_ensure_decor_visible(scene)
 	scene.set_meta("post_kaos_decor_version", DECOR_VERSION)
@@ -374,9 +372,12 @@ static func _ensure_kaos_shoulder_cap(
 		old.free()
 
 	var mesh := CylinderMesh.new()
-	mesh.top_radius = 12.9 * units
-	mesh.bottom_radius = 13.2 * units
-	mesh.height = 1.8 * units
+	# Wide opaque shoulder slab: this closes the opening left by removing
+	# Kaos' neck/head and reaches the shoulder line instead of leaving the
+	# upper torso visibly hollow.
+	mesh.top_radius = 19.0 * units
+	mesh.bottom_radius = 19.5 * units
+	mesh.height = 3.6 * units
 	mesh.radial_segments = 64
 
 	var cap := MeshInstance3D.new()
@@ -385,8 +386,8 @@ static func _ensure_kaos_shoulder_cap(
 	cap.set_meta("post_kaos_shoulder_cap", true)
 	cap.mesh = mesh
 	cap.material_override = material
-	cap.position = Vector3(0.0, 115.6 * units, 0.0)
-	cap.scale = Vector3(1.0, 1.0, 0.74)
+	cap.position = Vector3(0.0, 112.8 * units, 0.0)
+	cap.scale = Vector3(1.55, 1.0, 0.90)
 	visual.add_child(cap)
 
 
