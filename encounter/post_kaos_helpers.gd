@@ -4,15 +4,27 @@ const WALKABLE_LAYER := 1
 const RIGHT_ARM_GRID_LAYER := 8
 const BODY_COLLISION_NAME := "WalkableBodyCollision"
 const GRID_EXCLUDED_GROUP := "grid_3d_excluded"
-const COLLISION_VERSION := 4
-const GEOMETRY_VERSION := 3
-const DECOR_VERSION := 2
+const COLLISION_VERSION := 5
+const GEOMETRY_VERSION := 4
+const DECOR_VERSION := 3
 
-const KAOS_HEAD_CUTOFF_METERS := 116.5
-const KAOS_NECK_HALF_WIDTH_METERS := 13.0
-const KAOS_RIGHT_ARM_MIN_X_METERS := 12.0
-const KAOS_RIGHT_ARM_MIN_Y_METERS := 105.0
-const KAOS_RIGHT_ARM_MAX_Z_METERS := -5.0
+# Kaos' final one-hand pose keeps the head around y=136 m.  Remove the
+# complete skull plus the central neck column, while preserving the shoulders
+# and both arms.  The visible shoulder cap then closes the cut as solid stone.
+const KAOS_HEAD_CENTER_METERS := Vector3(0.0, 136.0, 0.0)
+const KAOS_HEAD_RADIUS_METERS := 17.5
+const KAOS_NECK_BOTTOM_METERS := 108.0
+const KAOS_NECK_TOP_METERS := 130.0
+const KAOS_NECK_RADIUS_X_METERS := 12.5
+const KAOS_NECK_RADIUS_Z_METERS := 11.0
+
+# The grid proxy is deliberately narrower than the physical Kaos collider.
+# Only the positive-X bracing arm should produce blue volumetric cells.
+const KAOS_RIGHT_ARM_MIN_X_METERS := 17.0
+const KAOS_RIGHT_ARM_MIN_Y_METERS := 101.0
+const KAOS_RIGHT_ARM_MAX_Y_METERS := 149.0
+const KAOS_RIGHT_ARM_MAX_Z_METERS := 1.0
+const KAOS_RIGHT_ARM_MIN_Z_METERS := -58.0
 
 const RUIN_NODE_NAMES: Array[String] = [
 	"FlutedColumns",
@@ -30,8 +42,12 @@ const KAOS_HEAD_VISUAL_TERMS: Array[String] = [
 	"Sclera",
 	"Iris",
 	"Pupil",
+	"Brow",
+	"Mouth",
+	"Blindfold",
 	"FittedGoldCollar",
 	"GoldCollarRim",
+	"Lightning",
 ]
 
 const KLOTHYS_HAIR_TERMS: Array[String] = [
@@ -39,6 +55,8 @@ const KLOTHYS_HAIR_TERMS: Array[String] = [
 	"RootedSilverLock",
 	"PartedTempleLock",
 	"HangingSilverTress",
+	"PartedHairCap",
+	"SculptedHairLock",
 ]
 
 
@@ -135,6 +153,7 @@ static func restore_encounter_decor(
 	if force_rebuild or not _ruins_are_complete(scene):
 		_restore_ruins(scene, units)
 
+	_ensure_decor_visible(scene)
 	scene.set_meta("post_kaos_decor_version", DECOR_VERSION)
 
 
@@ -306,10 +325,27 @@ static func _keep_kaos_anatomy_vertex(
 	units: float
 ) -> bool:
 	var point := point_world_units / units
-	return not (
-		point.y > KAOS_HEAD_CUTOFF_METERS
-		and absf(point.x) < KAOS_NECK_HALF_WIDTH_METERS
-	)
+	return not _is_kaos_head_or_neck(point)
+
+
+static func _is_kaos_head_or_neck(point: Vector3) -> bool:
+	# Full skull: use a sphere instead of the former narrow X-only strip.
+	# The old test left the sides/back of the head visible.
+	if point.distance_to(KAOS_HEAD_CENTER_METERS) <= KAOS_HEAD_RADIUS_METERS:
+		return true
+
+	# Neck: remove the central elliptical column down to shoulder level.
+	# Arms are far enough on X that they are unaffected.
+	if (
+		point.y >= KAOS_NECK_BOTTOM_METERS
+		and point.y <= KAOS_NECK_TOP_METERS
+	):
+		var nx := point.x / KAOS_NECK_RADIUS_X_METERS
+		var nz := point.z / KAOS_NECK_RADIUS_Z_METERS
+		if nx * nx + nz * nz <= 1.0:
+			return true
+
+	return false
 
 
 static func _remove_kaos_head_accessories(visual: Node3D) -> void:
@@ -456,7 +492,10 @@ static func _add_kaos_right_arm_grid_proxy(
 				if (
 					center.x < KAOS_RIGHT_ARM_MIN_X_METERS
 					or center.y < KAOS_RIGHT_ARM_MIN_Y_METERS
+					or center.y > KAOS_RIGHT_ARM_MAX_Y_METERS
 					or center.z > KAOS_RIGHT_ARM_MAX_Z_METERS
+					or center.z < KAOS_RIGHT_ARM_MIN_Z_METERS
+					or _is_kaos_head_or_neck(center)
 				):
 					continue
 				faces.append(p0)
@@ -599,6 +638,30 @@ static func _restore_ruins(scene: Node, units: float) -> void:
 		units,
 		marble
 	)
+
+
+static func _ensure_decor_visible(scene: Node) -> void:
+	var visual := scene.get_node_or_null("KlothisRoot/KlothisVisual") as Node3D
+	if visual != null:
+		for child in visual.get_children():
+			if not child is MeshInstance3D:
+				continue
+			var label := String(child.get_meta("visual_role", child.name))
+			if _matches_any_term(label, KLOTHYS_HAIR_TERMS):
+				child.show()
+
+	var titan_faces := scene.get_node_or_null(
+		"KlothisRoot/SphereVisual/CarvedTitanFaces"
+	) as VisualInstance3D
+	if titan_faces != null:
+		titan_faces.show()
+
+	var ruins := scene.get_node_or_null("Board/MapGeometry") as Node3D
+	if ruins != null:
+		for node_name in RUIN_NODE_NAMES:
+			var node := ruins.get_node_or_null(node_name) as VisualInstance3D
+			if node != null:
+				node.show()
 
 
 static func _count_klothys_hair(scene: Node) -> int:
