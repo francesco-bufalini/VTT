@@ -6,6 +6,7 @@ const BODY_COLLISION_NAME := "WalkableBodyCollision"
 const GRID_EXCLUDED_GROUP := "grid_3d_excluded"
 const COLLISION_VERSION := 5
 const GEOMETRY_VERSION := 4
+const SCONTRO_GEOMETRY_VERSION := 1
 const DECOR_VERSION := 5
 
 # Kaos' final one-hand pose keeps the head around y=136 m.  Remove the
@@ -17,6 +18,13 @@ const KAOS_NECK_BOTTOM_METERS := 108.0
 const KAOS_NECK_TOP_METERS := 130.0
 const KAOS_NECK_RADIUS_X_METERS := 12.5
 const KAOS_NECK_RADIUS_Z_METERS := 11.0
+
+# Scontro contro Kaos keeps a visible, solid stump at the base of the neck.
+# Only the head and upper neck are removed.
+const SCONTRO_NECK_CUT_BOTTOM_METERS := 121.5
+const SCONTRO_NECK_CUT_TOP_METERS := 130.0
+const SCONTRO_NECK_RADIUS_X_METERS := 12.5
+const SCONTRO_NECK_RADIUS_Z_METERS := 11.0
 
 # The grid proxy is deliberately narrower than the physical Kaos collider.
 # Only the positive-X bracing arm should produce blue volumetric cells.
@@ -122,6 +130,64 @@ static func prepare_kaos_petrified_geometry(scene: Node) -> void:
 		mesh_instance.material_override = stone
 
 	_ensure_kaos_shoulder_cap(visual, units, stone)
+
+
+static func prepare_scontro_kaos_terrain(scene: Node) -> void:
+	var visual := active_kaos_visual(scene)
+	if visual == null:
+		return
+	var units := _scene_units(scene)
+	if units <= 0.0:
+		return
+
+	if (
+		int(visual.get_meta("scontro_kaos_geometry_version", 0))
+		< SCONTRO_GEOMETRY_VERSION
+	):
+		_freeze_active_blend_shapes(visual)
+		_clip_scontro_kaos_head_and_upper_neck(visual, units)
+		_remove_kaos_head_accessories(visual)
+		visual.set_meta(
+			"scontro_kaos_geometry_version",
+			SCONTRO_GEOMETRY_VERSION
+		)
+
+	var stone := _stone_material()
+	for child in visual.find_children("*", "MeshInstance3D", true, false):
+		var mesh_instance := child as MeshInstance3D
+		if mesh_instance == null or not mesh_instance.visible:
+			continue
+		mesh_instance.material_override = stone
+
+	_ensure_scontro_shoulder_fill(visual, units, stone)
+	_ensure_scontro_neck_base(visual, units, stone)
+
+
+static func disable_scontro_legacy_platforms(scene: Node) -> void:
+	# Keep the ShoulderPlatform node alive because the encounter controller
+	# still references it, but make it physically inert. The visible Kaos body,
+	# shoulder fill and neck stump are now the actual terrain.
+	var shoulder := scene.get_node_or_null(
+		"KaosRoot/ShoulderPlatform"
+	) as CollisionObject3D
+	if shoulder != null:
+		shoulder.collision_layer = 0
+		shoulder.collision_mask = 0
+		if shoulder.is_in_group("tactical_platform"):
+			shoulder.remove_from_group("tactical_platform")
+		for node in shoulder.find_children(
+			"*",
+			"CollisionShape3D",
+			true,
+			false
+		):
+			var shape := node as CollisionShape3D
+			if shape != null:
+				shape.set_deferred("disabled", true)
+
+	var hand_platforms := scene.get_node_or_null("HandPlatforms")
+	if hand_platforms != null:
+		hand_platforms.free()
 
 
 # Compatibility alias used by older baked post-Kaos scenes.
@@ -248,9 +314,16 @@ static func ensure_solid_surfaces(scene: Node) -> void:
 	var kaos_visual := active_kaos_visual(scene)
 	if kaos_visual != null:
 		_add_anatomy_collisions(kaos_visual, true, "kaos")
-		var cap := kaos_visual.get_node_or_null("PetrifiedShoulderCap") as MeshInstance3D
+		var cap := kaos_visual.get_node_or_null(
+			"PetrifiedShoulderCap"
+		) as MeshInstance3D
 		if cap != null:
 			_add_mesh_collision(cap, true, "kaos_shoulders")
+		var neck_base := kaos_visual.get_node_or_null(
+			"PetrifiedNeckBase"
+		) as MeshInstance3D
+		if neck_base != null:
+			_add_mesh_collision(neck_base, true, "kaos_neck_base")
 		_add_kaos_right_arm_grid_proxy(scene, kaos_visual)
 
 	var klothys := scene.get_node_or_null("KlothisRoot/KlothisVisual") as Node3D
@@ -405,6 +478,96 @@ static func _clip_kaos_head_and_neck(visual: Node3D, units: float) -> void:
 			mesh_instance.hide()
 
 
+static func _clip_scontro_kaos_head_and_upper_neck(
+	visual: Node3D,
+	units: float
+) -> void:
+	for node in visual.find_children("*", "MeshInstance3D", true, false):
+		var mesh_instance := node as MeshInstance3D
+		if mesh_instance == null or mesh_instance.mesh == null:
+			continue
+		var role := String(
+			mesh_instance.get_meta("visual_role", mesh_instance.name)
+		)
+		if not role.begins_with("Anatomy"):
+			continue
+
+		var source: Mesh = mesh_instance.mesh
+		var clipped := ArrayMesh.new()
+		for surface_index in range(source.get_surface_count()):
+			var arrays: Array = source.surface_get_arrays(
+				surface_index
+			).duplicate(true)
+			var vertices: PackedVector3Array = arrays[Mesh.ARRAY_VERTEX]
+			var indices: PackedInt32Array = arrays[Mesh.ARRAY_INDEX]
+			if indices.is_empty():
+				indices.resize(vertices.size())
+				for index in range(vertices.size()):
+					indices[index] = index
+
+			var kept := PackedInt32Array()
+			for index in range(0, indices.size() - 2, 3):
+				var a := indices[index]
+				var b := indices[index + 1]
+				var d := indices[index + 2]
+				if (
+					_keep_scontro_kaos_vertex(
+						mesh_instance.transform * vertices[a],
+						units
+					)
+					and _keep_scontro_kaos_vertex(
+						mesh_instance.transform * vertices[b],
+						units
+					)
+					and _keep_scontro_kaos_vertex(
+						mesh_instance.transform * vertices[d],
+						units
+					)
+				):
+					kept.append(a)
+					kept.append(b)
+					kept.append(d)
+			arrays[Mesh.ARRAY_INDEX] = kept
+			if kept.size() < 3:
+				continue
+			clipped.add_surface_from_arrays(
+				Mesh.PRIMITIVE_TRIANGLES,
+				arrays
+			)
+			var material := source.surface_get_material(surface_index)
+			if material != null:
+				clipped.surface_set_material(
+					clipped.get_surface_count() - 1,
+					material
+				)
+
+		mesh_instance.mesh = clipped
+		if clipped.get_surface_count() == 0:
+			mesh_instance.hide()
+
+
+static func _keep_scontro_kaos_vertex(
+	point_world_units: Vector3,
+	units: float
+) -> bool:
+	var point := point_world_units / units
+	return not _is_scontro_head_or_upper_neck(point)
+
+
+static func _is_scontro_head_or_upper_neck(point: Vector3) -> bool:
+	if point.distance_to(KAOS_HEAD_CENTER_METERS) <= KAOS_HEAD_RADIUS_METERS:
+		return true
+	if (
+		point.y >= SCONTRO_NECK_CUT_BOTTOM_METERS
+		and point.y <= SCONTRO_NECK_CUT_TOP_METERS
+	):
+		var nx := point.x / SCONTRO_NECK_RADIUS_X_METERS
+		var nz := point.z / SCONTRO_NECK_RADIUS_Z_METERS
+		if nx * nx + nz * nz <= 1.0:
+			return true
+	return false
+
+
 static func _keep_kaos_anatomy_vertex(
 	point_world_units: Vector3,
 	units: float
@@ -472,6 +635,58 @@ static func _ensure_kaos_shoulder_cap(
 	cap.position = Vector3(0.0, 110.8 * units, 0.0)
 	cap.scale = Vector3(29.0, 5.2, 17.0) * units
 	visual.add_child(cap)
+
+
+static func _ensure_scontro_shoulder_fill(
+	visual: Node3D,
+	units: float,
+	material: Material
+) -> void:
+	var old := visual.get_node_or_null("PetrifiedShoulderCap")
+	if old != null:
+		old.free()
+
+	var mesh := SphereMesh.new()
+	mesh.radius = 1.0
+	mesh.height = 2.0
+	mesh.radial_segments = 64
+	mesh.rings = 32
+
+	var fill := MeshInstance3D.new()
+	fill.name = "PetrifiedShoulderCap"
+	fill.set_meta("visual_role", "PetrifiedShoulderCap")
+	fill.set_meta("scontro_kaos_shoulder_fill", true)
+	fill.mesh = mesh
+	fill.material_override = material
+	fill.position = Vector3(0.0, 111.0 * units, 0.0)
+	fill.scale = Vector3(29.0, 5.0, 17.0) * units
+	visual.add_child(fill)
+
+
+static func _ensure_scontro_neck_base(
+	visual: Node3D,
+	units: float,
+	material: Material
+) -> void:
+	var old := visual.get_node_or_null("PetrifiedNeckBase")
+	if old != null:
+		old.free()
+
+	var mesh := CylinderMesh.new()
+	mesh.top_radius = 9.6 * units
+	mesh.bottom_radius = 11.2 * units
+	mesh.height = 8.0 * units
+	mesh.radial_segments = 64
+
+	var stump := MeshInstance3D.new()
+	stump.name = "PetrifiedNeckBase"
+	stump.set_meta("visual_role", "PetrifiedNeckBase")
+	stump.set_meta("scontro_kaos_neck_base", true)
+	stump.mesh = mesh
+	stump.material_override = material
+	stump.position = Vector3(0.0, 117.0 * units, 0.0)
+	stump.scale = Vector3(1.0, 1.0, 0.92)
+	visual.add_child(stump)
 
 
 static func _add_anatomy_collisions(
