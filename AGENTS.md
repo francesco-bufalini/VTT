@@ -44,6 +44,7 @@ Change the generator or normalization layer, then regenerate.
 6. Do not introduce a new manager/service when an existing subsystem already owns the responsibility.
 7. Do not mix spell data ingestion with runtime spell mechanics.
 8. Keep encounter-specific code under encounter/; reusable VTT behavior belongs outside it.
+9. Spell targeting lifecycle is coupled by design: cancel clears preview + red affected cells immediately; a confirmed non-persistent point AoE remains with its red affected cells until the next left click; leaving spell targeting returns mouse capture to the camera.
 
 ## Validation
 
@@ -64,6 +65,8 @@ or:
     bash scripts/validate.sh --tests
 
 A change is not considered verified merely because it parses. For gameplay changes, add or update a focused regression test where practical.
+
+The fast suite includes `res://tests/test_spell_targeting_lifecycle.gd`, which protects spell cancel, camera-control restoration, held post-cast AoEs, and synchronized red-hitbox cleanup. Keep it lightweight and headless-safe.
 
 ## Large-file policy
 

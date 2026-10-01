@@ -83,6 +83,7 @@ if ($version -notmatch "^4\.7\.2\.stable") {
 $fastTests = @(
     "test_initiative_tracker.gd",
     "test_spell_catalog_smoke.gd",
+    "test_spell_targeting_lifecycle.gd",
     "test_board_smoke.gd"
 )
 

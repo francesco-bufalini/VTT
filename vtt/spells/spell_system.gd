@@ -3969,7 +3969,8 @@ func _cast_spell_at_point(
 			shape,
 			float(spell_data.get("transient_seconds", 5.0)),
 			style,
-			_spell_line_width_world(spell_data)
+			_spell_line_width_world(spell_data),
+			false
 		)
 
 func _cast_directional_aoe(
@@ -4884,14 +4885,23 @@ func _reset_cast_state(
 		Input.mouse_mode = _restore_mouse_mode
 
 
+func _return_control_to_camera() -> void:
+	if board_root != null and is_instance_valid(board_root):
+		board_root.set("_ui_owns_mouse", false)
+	Input.mouse_mode = Input.MOUSE_MODE_CAPTURED
+
+
 func _finish_cast() -> void:
 	_post_cast_cleanup_pending = true
-	_reset_cast_state(true, true)
+	_reset_cast_state(false, true)
+	_return_control_to_camera()
 
 
 func _cancel_pending_cast(restore_mouse: bool = true) -> void:
 	_post_cast_cleanup_pending = false
-	_reset_cast_state(restore_mouse, false)
+	_reset_cast_state(false, false)
+	if restore_mouse:
+		_return_control_to_camera()
 
 
 func _adjust_directional_pitch(delta_degrees: int) -> void:

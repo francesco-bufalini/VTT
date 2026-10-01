@@ -308,6 +308,9 @@ func set_spell_affected_token_highlight(
 	_spell_affected_override_active = active
 	_spell_affected_override = resolved
 	_affected_tokens_signature = ""
+	# Apply spell-target changes immediately. Waiting for _process() left the
+	# previous red grid visible for one or more frames after Esc/cleanup.
+	_refresh_affected_token_highlight()
 
 
 func _cell_intersects_spell_geometry(
@@ -1455,7 +1458,8 @@ func show_transient_aoe(
 	shape: String,
 	duration_seconds: float = 5.0,
 	style: String = "",
-	line_width_world: float = -1.0
+	line_width_world: float = -1.0,
+	auto_expire: bool = true
 ) -> void:
 	if shape not in ["sphere", "cube", "cone", "line", "flat_square", "cylinder"]:
 		return
@@ -1491,6 +1495,11 @@ func show_transient_aoe(
 	})
 	_affected_tokens_signature = ""
 
+	# Confirmed spell areas may be held until the user's next click so the
+	# final AoE and its red affected-cell highlight share one lifecycle.
+	if not auto_expire:
+		return
+
 	var timer: Timer = Timer.new()
 	timer.one_shot = true
 	timer.wait_time = maxf(duration_seconds, 0.05)
@@ -1520,9 +1529,11 @@ func clear_transient_spell_aoes() -> void:
 			child is Node3D
 			and String(child.name).begins_with("TransientAoE")
 		):
+			(child as Node3D).hide()
 			child.queue_free()
 	_transient_spell_aoes.clear()
 	_affected_tokens_signature = ""
+	_refresh_affected_token_highlight()
 
 
 func show_teleport_cloud(
