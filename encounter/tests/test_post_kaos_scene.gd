@@ -77,8 +77,10 @@ func _run() -> void:
 		return
 
 	print(
-		"PASS: post-Kaos scene clean; Kaos collisions=%d, "
-		+ "Klothis collisions=%d, chariots=%d"
+		(
+			"PASS: post-Kaos scene clean; Kaos collisions=%d, "
+			+ "Klothis collisions=%d, chariots=%d"
+		)
 		% [kaos_collisions, klothis_collisions, chariots]
 	)
 	quit(0)
