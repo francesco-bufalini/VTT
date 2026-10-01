@@ -492,12 +492,19 @@ func valid_snapshot(snapshot: Variant) -> bool:
 					and not visual_asset.begins_with("res://assets/tokens/")
 				):
 					return false
-			if not item.get("visual_front_quarter_turns") is int:
-				return false
-			var front_turns := int(
-				item.get("visual_front_quarter_turns", -1)
+			var front_value: Variant = item.get(
+				"visual_front_quarter_turns",
+				-1
 			)
-			if front_turns < 0 or front_turns > 3:
+			if not (front_value is int or front_value is float):
+				return false
+			var front_number: float = float(front_value)
+			if (
+				not is_finite(front_number)
+				or front_number != floor(front_number)
+				or int(front_number) < 0
+				or int(front_number) > 3
+			):
 				return false
 			if item.has("transformation_history"):
 				var history_value: Variant = item.get(
