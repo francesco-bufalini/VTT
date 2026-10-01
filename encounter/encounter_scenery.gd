@@ -88,46 +88,96 @@ func build(scene: Node3D) -> void:
 		_bindings(sphere)
 	var ruins: Node3D = scene.get_node("Board/MapGeometry")
 	preload("res://encounter/ruins_visual.gd").new().build(ruins, _units, _marble)
+	spawn_encounter_tokens(scene)
+
+func spawn_encounter_tokens(
+	scene: Node3D,
+	chariot_deck_positions_world: Array[Vector3] = []
+) -> void:
+	var units: float = scene.measurement_tool.meters_to_world(1.0)
+	var roster_start := scene.tokens_root.get_child_count()
 	for index in range(6):
 		var token: CharacterBody3D = scene.token_scene.instantiate()
 		scene.tokens_root.add_child(token)
-		token.position = Vector3(5 + index * 3, 3, 80) * _units
-		token.configure(Color(0.15 + index * 0.17, 0.68, 0.76 - index * 0.12), scene.cell_size, "Medium", 1.0)
-		preload("res://encounter/party_skins.gd").new().apply(token,index)
+		token.position = Vector3(5 + index * 3, 3, 80) * units
+		token.configure(
+			Color(0.15 + index * 0.17, 0.68, 0.76 - index * 0.12),
+			scene.cell_size,
+			"Medium",
+			1.0
+		)
+		preload("res://encounter/party_skins.gd").new().apply(token, index)
+		token.set_meta("post_kaos_roster", true)
+
 	for index in range(3):
 		var chariot = scene.token_scene.instantiate()
 		chariot.set_script(preload("res://encounter/chariot_token.gd"))
 		chariot.cell_size = scene.cell_size
 		scene.tokens_root.add_child(chariot)
-		chariot.position = Vector3(-10+index*10,150,182)*_units
 		chariot.setup_chariot()
-		# Deck surface, rather than the collision body's centre, is exactly 150 m up.
-		chariot.position.y = 150*_units - chariot.deck.position.y
+		_place_chariot(
+			chariot,
+			Vector3(-10 + index * 10, 150, 182) * units,
+			chariot_deck_positions_world[index]
+				if index < chariot_deck_positions_world.size()
+				else Vector3.INF
+		)
 		chariot.set_flying(true)
+		chariot.set_meta("post_kaos_roster", true)
 		for seat in range(2):
-			var rider = scene.tokens_root.get_child(index*2+seat)
-			rider.global_position = chariot.deck.to_global(Vector3(-.5+seat, rider.token_height_cells*.5+.015, -.5)*scene.cell_size)
+			var rider_index := roster_start + index * 2 + seat
+			var rider = scene.tokens_root.get_child(rider_index)
+			rider.global_position = chariot.deck.to_global(
+				Vector3(
+					-.5 + seat,
+					rider.token_height_cells * .5 + .015,
+					-.5
+				) * scene.cell_size
+			)
 			rider.grid_support = chariot.deck
 			rider._support_transform = chariot.deck.global_transform
-	# The seventh passenger is Large and reserves the whole fourth deck.
+
 	var phenax_chariot = scene.token_scene.instantiate()
 	phenax_chariot.name = "PhenaxChariot"
 	phenax_chariot.set_script(preload("res://encounter/chariot_token.gd"))
 	phenax_chariot.cell_size = scene.cell_size
 	scene.tokens_root.add_child(phenax_chariot)
-	phenax_chariot.position = Vector3(20,150,182)*_units
 	phenax_chariot.setup_chariot()
-	phenax_chariot.position.y = 150*_units-phenax_chariot.deck.position.y
+	_place_chariot(
+		phenax_chariot,
+		Vector3(20, 150, 182) * units,
+		chariot_deck_positions_world[3]
+			if chariot_deck_positions_world.size() > 3
+			else Vector3.INF
+	)
 	phenax_chariot.set_flying(true)
+	phenax_chariot.set_meta("post_kaos_roster", true)
+
 	var phenax = scene.token_scene.instantiate()
 	phenax.name = "Phenax"
 	phenax.token_height_cells = 3.0
 	scene.tokens_root.add_child(phenax)
-	phenax.configure(Color(.65,.30,.10),scene.cell_size,"Large",2.0)
+	phenax.configure(Color(.65, .30, .10), scene.cell_size, "Large", 2.0)
 	preload("res://encounter/phenax_skin.gd").new().apply(phenax)
-	phenax.global_position = phenax_chariot.deck.to_global(Vector3(0,1.515,0)*scene.cell_size)
+	phenax.global_position = phenax_chariot.deck.to_global(
+		Vector3(0, 1.515, 0) * scene.cell_size
+	)
 	phenax.grid_support = phenax_chariot.deck
 	phenax._support_transform = phenax_chariot.deck.global_transform
+	phenax.set_meta("post_kaos_roster", true)
+
+func _place_chariot(
+	chariot: CharacterBody3D,
+	default_root_world: Vector3,
+	custom_deck_world: Vector3
+) -> void:
+	if custom_deck_world != Vector3.INF:
+		var deck_offset_world := chariot.global_transform.basis * chariot.deck.position
+		chariot.global_position = custom_deck_world - deck_offset_world
+		return
+	chariot.position = default_root_world
+	# Deck surface, rather than the collision body's centre, is exactly 150 m up.
+	chariot.position.y = default_root_world.y - chariot.deck.position.y
 
 func _material(color: Color, emission: float = 0.0) -> StandardMaterial3D:
 	var material := StandardMaterial3D.new()
