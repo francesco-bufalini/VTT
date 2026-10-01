@@ -37,6 +37,9 @@ func _process(delta: float) -> void:
 	if _slide_elapsed >= SLIDE_DURATION_SECONDS:
 		_slide_elapsed = 0.0
 		_show_next_background()
+		return
+
+	_update_background_motion(_background_layers[_active_layer], _slide_elapsed)
 
 
 func _notification(what: int) -> void:
@@ -86,9 +89,8 @@ func _build_image_background() -> void:
 
 	_background_layers[0].modulate.a = 1.0
 	_background_layers[0].texture = load(_background_paths[0])
-	_background_layers[0].scale = Vector2.ONE * ZOOM_START
 	_update_background_pivots()
-	_start_zoom(_background_layers[0])
+	_update_background_motion(_background_layers[0], 0.0)
 
 
 func _discover_backgrounds() -> Array[String]:
@@ -115,16 +117,26 @@ func _update_background_pivots() -> void:
 		layer.pivot_offset = center
 
 
-func _start_zoom(layer: TextureRect) -> void:
-	var tween := create_tween()
-	tween.set_trans(Tween.TRANS_LINEAR)
-	tween.set_ease(Tween.EASE_IN_OUT)
-	tween.tween_property(
-		layer,
-		"scale",
-		Vector2.ONE * ZOOM_END,
-		SLIDE_DURATION_SECONDS
+func _update_background_motion(layer: TextureRect, elapsed: float) -> void:
+	if layer == null:
+		return
+
+	var progress := clampf(elapsed / SLIDE_DURATION_SECONDS, 0.0, 1.0)
+	# Quintic smoothstep: zero velocity at both ends, with no visible stepping.
+	var smooth_progress := progress * progress * progress * (
+		progress * (progress * 6.0 - 15.0) + 10.0
 	)
+
+	var zoom := lerpf(ZOOM_START, ZOOM_END, smooth_progress)
+	var motion_phase := float(_background_index % 4) * (PI * 0.5)
+	var pan_progress := smooth_progress * 2.0 - 1.0
+	var pan := Vector2(
+		sin(motion_phase + pan_progress * PI * 0.5) * 0.006,
+		cos(motion_phase + pan_progress * PI * 0.5) * 0.004
+	)
+
+	layer.scale = Vector2.ONE * zoom
+	layer.position = _background_root.size * pan
 
 
 func _show_next_background() -> void:
@@ -137,9 +149,10 @@ func _show_next_background() -> void:
 
 	_background_index = (_background_index + 1) % _background_paths.size()
 	incoming.texture = load(_background_paths[_background_index])
-	incoming.scale = Vector2.ONE * ZOOM_START
 	incoming.modulate.a = 0.0
+	incoming.position = Vector2.ZERO
 	_update_background_pivots()
+	_update_background_motion(incoming, 0.0)
 
 	if _slide_tween != null and _slide_tween.is_valid():
 		_slide_tween.kill()
@@ -160,13 +173,6 @@ func _show_next_background() -> void:
 		0.0,
 		FADE_DURATION_SECONDS
 	)
-	_slide_tween.tween_property(
-		incoming,
-		"scale",
-		Vector2.ONE * ZOOM_END,
-		SLIDE_DURATION_SECONDS
-	)
-
 	_active_layer = incoming_layer_index
 
 func _build_vignette() -> void:
