@@ -55,13 +55,22 @@ func run() -> void:
 	if not _expect("paralyzed" in conditions, "Hold Person condition changed"):
 		return
 
-	var find_familiar: Dictionary = SpellCatalog.spell("find_familiar")
-	if not _expect(not find_familiar.is_empty(), "Find Familiar missing"):
+	var familiar_catalog: Dictionary = SpellCatalog.catalog_spell("find_familiar")
+	if not _expect(not familiar_catalog.is_empty(), "Find Familiar catalog entry missing"):
+		return
+	var familiar_mode := String(familiar_catalog.get("target_mode", ""))
+	if not _expect(
+		familiar_mode == "summon",
+		"Find Familiar target mode is '%s'" % familiar_mode
+	):
 		return
 	if not _expect(
-		String(find_familiar.get("target_mode", "")) == "summon",
-		"Find Familiar summon targeting changed"
+		SpellCatalog.is_runtime_usable(familiar_catalog),
+		"Find Familiar catalog entry is not runtime-usable"
 	):
+		return
+	var find_familiar: Dictionary = SpellCatalog.spell("find_familiar")
+	if not _expect(not find_familiar.is_empty(), "Find Familiar runtime spell missing"):
 		return
 
 	print("PASS: representative spell catalog mechanics")
