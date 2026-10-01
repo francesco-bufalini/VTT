@@ -6,18 +6,26 @@ param(
 $ErrorActionPreference = "Stop"
 $ProjectRoot = Split-Path -Parent $PSScriptRoot
 
+if (Test-Path -LiteralPath $Godot -PathType Leaf) {
+    $GodotExecutable = (Resolve-Path -LiteralPath $Godot).Path
+} else {
+    $GodotCommand = Get-Command $Godot -ErrorAction SilentlyContinue
+    if ($null -eq $GodotCommand) {
+        throw "Godot executable not found: $Godot"
+    }
+    $GodotExecutable = $GodotCommand.Source
+}
+
 function Invoke-Godot {
     param([string[]]$Arguments)
-    & $Godot @Arguments
-    if ($LASTEXITCODE -ne 0) {
-        throw "Godot failed with exit code ${LASTEXITCODE}: $($Arguments -join ' ')"
+    & $script:GodotExecutable @Arguments
+    $exitCode = $LASTEXITCODE
+    if ($null -ne $exitCode -and $exitCode -ne 0) {
+        throw "Godot failed with exit code ${exitCode}: $($Arguments -join ' ')"
     }
 }
 
-$version = & $Godot --version
-if ($LASTEXITCODE -ne 0) {
-    throw "Godot executable not found: $Godot"
-}
+$version = (& $GodotExecutable --version | Select-Object -First 1)
 if ($version -notmatch "^4\.7\.2\.stable") {
     throw "Expected Godot 4.7.2 stable, found: $version"
 }

@@ -20,7 +20,13 @@ jobs:
       - name: Checkout repository
         uses: actions/checkout@v4
         with:
-          clean: true
+          clean: false
+
+      - name: Clean workspace but keep Godot import cache
+        shell: powershell
+        run: |
+          git reset --hard HEAD
+          git clean -ffdx -e .godot/
 
       - name: Show environment
         shell: powershell
