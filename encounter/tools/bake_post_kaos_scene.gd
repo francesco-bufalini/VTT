@@ -86,7 +86,11 @@ func _bake() -> void:
 	_strip_kaos_runtime(kaos)
 	PostKaosHelpers.clear_baked_tokens(scene)
 	PostKaosHelpers.remove_legacy_platforms(scene)
-	PostKaosHelpers.ensure_solid_surfaces(scene)
+	# Collision meshes are intentionally rebuilt by post_kaos_scene.gd at
+	# runtime. Baking concave copies of both giant meshes would duplicate tens
+	# of MB of geometry in the editable .scn and make every bake needlessly
+	# slow; the smoke test still instantiates the scene and validates all of
+	# those runtime solid surfaces.
 	_strip_dnd_runtime(scene)
 	_restore_base_ui(scene)
 
