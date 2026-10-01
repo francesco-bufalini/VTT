@@ -114,3 +114,4 @@ foreach ($test in $testFiles) {
 }
 
 Write-Host "Validation passed."
+exit 0
