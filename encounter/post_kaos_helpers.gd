@@ -195,6 +195,14 @@ static func _freeze_active_blend_shapes(visual: Node3D) -> void:
 		var mesh_instance := node as MeshInstance3D
 		if mesh_instance == null or mesh_instance.mesh == null:
 			continue
+		var role := String(
+			mesh_instance.get_meta("visual_role", mesh_instance.name)
+		)
+		# Collision and head clipping only depend on the authored anatomy.
+		# Leaving cloth, hair and ornaments as blend-shaped render meshes avoids
+		# rebuilding hundreds of heavy procedural meshes during the bake.
+		if not role.begins_with("Anatomy"):
+			continue
 		var source: Mesh = mesh_instance.mesh
 		var blend_count := source.get_blend_shape_count()
 		if blend_count <= 0:
