@@ -204,7 +204,7 @@ static func _freeze_active_blend_shapes(visual: Node3D) -> void:
 		if not role.begins_with("Anatomy"):
 			continue
 		var source: Mesh = mesh_instance.mesh
-		var blend_count := source.get_blend_shape_count()
+		var blend_count: int = source.get_blend_shape_count()
 		if blend_count <= 0:
 			continue
 
