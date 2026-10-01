@@ -1119,7 +1119,17 @@ static func _apply_runtime_overrides(data: Dictionary) -> Dictionary:
 	# runtime map catalogue. Hand-authored entries still carry descriptive
 	# metadata and special mechanics, but no longer need to be the authority
 	# for ordinary AoE dimensions.
-	return SpellAreaCatalog.apply_to_spell(result)
+	result = SpellAreaCatalog.apply_to_spell(result)
+
+	# Condition-only spells such as Hold Person have no map geometry, so the
+	# area catalogue has nothing from which to infer targeting. The runtime
+	# condition flow still needs a token target.
+	if String(result.get("target_mode", "")).is_empty():
+		var conditions_value: Variant = result.get("condition_inflict", [])
+		if conditions_value is Array and not (conditions_value as Array).is_empty():
+			result["target_mode"] = "token_then_token"
+
+	return result
 
 
 static func _is_runtime_usable(spell_data: Dictionary) -> bool:

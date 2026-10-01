@@ -65,6 +65,9 @@ if ($FullTests) {
     $testFiles = Get-ChildItem -LiteralPath (Join-Path $ProjectRoot "tests") `
         -Filter "test_*.gd" -File | Sort-Object Name
 } elseif ($Tests) {
+    Write-Host "== Fast sparse project import =="
+    Invoke-Godot @("--headless", "--path", $ProjectRoot, "--editor", "--import", "--quit") 30
+
     Write-Host "== Fast VTT validation =="
     $testFiles = foreach ($name in $fastTests) {
         $path = Join-Path (Join-Path $ProjectRoot "tests") $name
