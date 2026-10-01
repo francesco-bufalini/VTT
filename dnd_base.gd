@@ -52,6 +52,7 @@ const TOKEN_SIZES := [
 
 var _pending_spawn_position: Vector3 = Vector3.ZERO
 var _has_pending_spawn_position: bool = false
+var _pending_spawn_support: Node3D = null
 var _token_generation_confirmed_callback: Callable = Callable()
 var _token_generation_canceled_callback: Callable = Callable()
 var _token_generation_exact_position: bool = false
@@ -1606,6 +1607,7 @@ func _show_context_menu(screen_position: Vector2) -> void:
 		return
 
 	_context_token = null
+	_pending_spawn_support = null
 	var token_hit: Dictionary = _raycast_from_screen(
 		screen_position,
 		ALL_COLLISION_LAYERS,
@@ -1625,9 +1627,15 @@ func _show_context_menu(screen_position: Vector2) -> void:
 	var hit: Dictionary = _raycast_from_screen(screen_position, 1 | 4, false)
 	if not hit.is_empty():
 		var hit_normal: Vector3 = hit.get("normal", Vector3.UP)
-		if hit_normal.dot(Vector3.UP) >= 0.5:
+		if hit_normal.dot(Vector3.UP) >= 0.35:
 			_pending_spawn_position = hit.get("position", Vector3.ZERO)
 			_has_pending_spawn_position = true
+			var hit_collider := hit.get("collider") as Node3D
+			if (
+				hit_collider != null
+				and hit_collider.is_in_group("tactical_platform")
+			):
+				_pending_spawn_support = hit_collider
 
 	context_menu.clear()
 	_prepare_context_submenus()
@@ -1818,8 +1826,11 @@ func _on_context_menu_id_pressed(id: int) -> void:
 				return
 			_token_generation_confirmed_callback = Callable()
 			_token_generation_canceled_callback = Callable()
-			_token_generation_exact_position = false
-			_token_generation_place_on_surface = false
+			_token_generation_exact_position = (
+				_pending_spawn_support != null
+				and is_instance_valid(_pending_spawn_support)
+			)
+			_token_generation_place_on_surface = _token_generation_exact_position
 			_open_token_generation_dialog()
 
 		CONTEXT_DELETE_SELECTED:
@@ -2280,6 +2291,7 @@ func open_token_generation_at(
 ) -> void:
 	_pending_spawn_position = world_position
 	_has_pending_spawn_position = true
+	_pending_spawn_support = null
 	_token_generation_transform_target = null
 	_token_generation_confirmed_callback = confirmed_callback
 	_token_generation_canceled_callback = canceled_callback
@@ -2341,6 +2353,7 @@ func _reset_token_generation_state() -> void:
 	_token_generation_exact_position = false
 	_token_generation_place_on_surface = false
 	_has_pending_spawn_position = false
+	_pending_spawn_support = null
 	_ui_owns_mouse = false
 	_capture_mouse()
 
@@ -2535,6 +2548,15 @@ func _spawn_token(
 			_pending_spawn_position.y
 			+ token_height * cell_size * 0.5
 		)
+		if (
+			_pending_spawn_support != null
+			and is_instance_valid(_pending_spawn_support)
+		):
+			token.set("grid_support", _pending_spawn_support)
+			token.set(
+				"_support_transform",
+				_pending_spawn_support.global_transform
+			)
 
 	if token.has_method("set_reach_feet"):
 		var resolved_reach: float = reach_feet
