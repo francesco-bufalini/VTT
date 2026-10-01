@@ -70,7 +70,8 @@ func _bake() -> void:
 	_disconnect_bake_grid_watchers(scene)
 	petrification.call("apply", false)
 	PostKaosHelpers.remove_kaos_phase_two_token(scene)
-	PostKaosHelpers.close_kaos_petrification_hole(scene)
+	PostKaosHelpers.prepare_kaos_petrified_geometry(scene)
+	PostKaosHelpers.restore_encounter_decor(scene, true)
 
 	# open_head_space() uses a deferred collision update.
 	await physics_frame
@@ -85,7 +86,7 @@ func _bake() -> void:
 	_strip_kaos_runtime(kaos)
 	PostKaosHelpers.clear_baked_tokens(scene)
 	PostKaosHelpers.remove_legacy_platforms(scene)
-	PostKaosHelpers.ensure_body_collisions(scene)
+	PostKaosHelpers.ensure_solid_surfaces(scene)
 	_strip_dnd_runtime(scene)
 	_restore_base_ui(scene)
 
