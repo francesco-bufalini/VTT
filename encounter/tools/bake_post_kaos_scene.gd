@@ -79,6 +79,7 @@ func _bake() -> void:
 		_free_path(scene, path)
 
 	_strip_kaos_runtime(kaos)
+	_disconnect_bake_grid_watchers(scene)
 	PostKaosHelpers.clear_baked_tokens(scene)
 	PostKaosHelpers.remove_legacy_platforms(scene)
 	PostKaosHelpers.ensure_body_collisions(scene)
@@ -92,11 +93,23 @@ func _bake() -> void:
 		for child in grid.get_children():
 			child.free()
 
+	var base_exports := {
+		"token_scene": scene.get("token_scene"),
+		"cell_size": scene.get("cell_size"),
+		"token_spawn_height": scene.get("token_spawn_height"),
+		"grid_visible_on_start": scene.get("grid_visible_on_start"),
+		"grid_3d_visible_on_start": scene.get("grid_3d_visible_on_start"),
+		"vision_cones_visible_on_start": scene.get("vision_cones_visible_on_start"),
+	}
 	scene.name = "PostKaosEncounter"
 	scene.set_meta("baked_from", SOURCE_SCENE)
 	scene.set_meta("baked_state", "post_jump_petrified")
 	scene.set_meta("editor_editable_environment", true)
 	scene.set_script(load("res://encounter/post_kaos_scene.gd"))
+	for property_name in base_exports:
+		scene.set(property_name, base_exports[property_name])
+	# The post-Kaos scene should open with the tactical grid visible.
+	scene.set("grid_visible_on_start", true)
 
 	# Runtime-created children have no owner. Assigning the scene root makes
 	# them persistent and directly editable in the Godot 3D editor.
@@ -124,6 +137,18 @@ func _strip_kaos_runtime(kaos: Node) -> void:
 			child.free()
 	kaos.set_script(null)
 
+
+func _disconnect_bake_grid_watchers(scene: Node) -> void:
+	var grid := scene.get_node_or_null("VolumetricGrid")
+	if grid == null or grid.get_tree() == null:
+		return
+	var tree := grid.get_tree()
+	var added := Callable(grid, "_on_tree_node_added")
+	var removed := Callable(grid, "_on_tree_node_removed")
+	if tree.node_added.is_connected(added):
+		tree.node_added.disconnect(added)
+	if tree.node_removed.is_connected(removed):
+		tree.node_removed.disconnect(removed)
 
 func _strip_dnd_runtime(scene: Node) -> void:
 	var runtime_scripts: Array[String] = [
