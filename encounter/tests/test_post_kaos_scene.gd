@@ -1,8 +1,12 @@
 extends SceneTree
 
 const SCENE_PATH := "res://encounter/post_kaos_editable.scn"
-const HEAD_CUTOFF_METERS := 119.8
-const NECK_HALF_WIDTH_METERS := 11.5
+const HEAD_CENTER_METERS := Vector3(0.0, 136.0, 0.0)
+const HEAD_RADIUS_METERS := 17.5
+const NECK_BOTTOM_METERS := 108.0
+const NECK_TOP_METERS := 130.0
+const NECK_RADIUS_X_METERS := 12.5
+const NECK_RADIUS_Z_METERS := 11.0
 const EXPECTED_RUINS: Array[String] = [
 	"FlutedColumns",
 	"Capitals",
@@ -16,6 +20,8 @@ const HAIR_TERMS: Array[String] = [
 	"RootedSilverLock",
 	"PartedTempleLock",
 	"HangingSilverTress",
+	"PartedHairCap",
+	"SculptedHairLock",
 ]
 
 
@@ -119,6 +125,18 @@ func _run() -> void:
 			_fail("Missing solid post-Kaos surface: %s" % required)
 			return
 
+	for label in ["kaos", "kaos_shoulders", "klothys", "sphere"]:
+		var body := _find_surface_body(scene, label)
+		if body == null:
+			_fail("Missing walkable body for %s." % label)
+			return
+		if (body.collision_layer & 1) == 0:
+			_fail("Walkable surface %s is not on collision layer 1." % label)
+			return
+		if not body.is_in_group("tactical_platform"):
+			_fail("Walkable surface %s is not a tactical platform." % label)
+			return
+
 	var right_arm := _find_surface_body(scene, "kaos_right_arm_grid")
 	if right_arm == null:
 		_fail("Kaos right-arm grid proxy is missing.")
@@ -126,8 +144,8 @@ func _run() -> void:
 	if right_arm.is_in_group("grid_3d_excluded"):
 		_fail("Kaos right-arm grid proxy is incorrectly grid-excluded.")
 		return
-	if not _right_arm_proxy_is_on_positive_x(right_arm, units):
-		_fail("Kaos right-arm grid proxy is not around the right arm.")
+	if not _right_arm_proxy_is_tightly_bounded(right_arm, units):
+		_fail("Kaos right-arm grid proxy is not tightly bounded to the right arm.")
 		return
 
 	for node in scene.find_children("*", "StaticBody3D", true, false):
@@ -170,9 +188,17 @@ func _run() -> void:
 		_fail("MapGeometry is missing.")
 		return
 	for node_name in EXPECTED_RUINS:
-		if ruins.get_node_or_null(node_name) == null:
+		var ruin_node := ruins.get_node_or_null(node_name) as VisualInstance3D
+		if ruin_node == null:
 			_fail("Encounter background element is missing: %s" % node_name)
 			return
+		if not ruin_node.visible:
+			_fail("Encounter background element is hidden: %s" % node_name)
+			return
+
+	if not _test_flying_token_surface_support(scene, units):
+		_fail("A flying token cannot rest on the post-Kaos solid terrain.")
+		return
 
 	var chariots := 0
 	for child in scene.get_node("Tokens").get_children():
@@ -184,7 +210,7 @@ func _run() -> void:
 
 	print(
 		(
-			"PASS: post-Kaos solid terrain; head triangles=%d, "
+			"PASS: post-Kaos scene clean; solid terrain; head triangles=%d, "
 			+ "Kaos=%d, Klothys=%d, sphere=%d, hair=%d, chariots=%d"
 		)
 		% [
@@ -261,10 +287,7 @@ func _count_remaining_kaos_head_triangles(
 						mesh_instance.transform
 						* vertices[indices[index + corner]]
 					) / units
-					if (
-						vertex.y > HEAD_CUTOFF_METERS
-						and absf(vertex.x) < NECK_HALF_WIDTH_METERS
-					):
+					if _is_head_or_neck(vertex):
 						count += 1
 						break
 	return count
@@ -278,8 +301,12 @@ func _has_kaos_head_accessory(visual: Node3D) -> bool:
 		"Sclera",
 		"Iris",
 		"Pupil",
+		"Brow",
+		"Mouth",
+		"Blindfold",
 		"FittedGoldCollar",
 		"GoldCollarRim",
+		"Lightning",
 	]
 	for child in visual.get_children():
 		if not child is MeshInstance3D or not child.visible:
@@ -291,7 +318,7 @@ func _has_kaos_head_accessory(visual: Node3D) -> bool:
 	return false
 
 
-func _right_arm_proxy_is_on_positive_x(
+func _right_arm_proxy_is_tightly_bounded(
 	body: StaticBody3D,
 	units: float
 ) -> bool:
@@ -302,12 +329,78 @@ func _right_arm_proxy_is_on_positive_x(
 	var faces := shape.get_faces()
 	if faces.is_empty():
 		return false
-	var min_x := INF
-	var max_x := -INF
-	for point in faces:
-		min_x = minf(min_x, point.x / units)
-		max_x = maxf(max_x, point.x / units)
-	return min_x > 0.0 and max_x > 12.0
+
+	var min_point := Vector3(INF, INF, INF)
+	var max_point := Vector3(-INF, -INF, -INF)
+	for raw_point in faces:
+		var point: Vector3 = raw_point / units
+		if _is_head_or_neck(point):
+			return false
+		min_point = min_point.min(point)
+		max_point = max_point.max(point)
+
+	return (
+		min_point.x >= 16.5
+		and min_point.y >= 100.0
+		and max_point.y <= 150.0
+		and min_point.z >= -59.0
+		and max_point.z <= 2.0
+	)
+
+
+func _is_head_or_neck(point: Vector3) -> bool:
+	if point.distance_to(HEAD_CENTER_METERS) <= HEAD_RADIUS_METERS:
+		return true
+	if point.y >= NECK_BOTTOM_METERS and point.y <= NECK_TOP_METERS:
+		var nx := point.x / NECK_RADIUS_X_METERS
+		var nz := point.z / NECK_RADIUS_Z_METERS
+		return nx * nx + nz * nz <= 1.0
+	return false
+
+
+func _test_flying_token_surface_support(scene: Node3D, units: float) -> bool:
+	var sphere := _find_surface_body(scene, "sphere")
+	if sphere == null:
+		return false
+	var sphere_root := scene.get_node_or_null(
+		"KlothisRoot/SphereVisual"
+	) as Node3D
+	if sphere_root == null:
+		return false
+
+	scene.set(
+		"_pending_spawn_position",
+		sphere_root.global_position + Vector3.UP * 220.0 * units
+	)
+	scene.set("_pending_spawn_support", sphere)
+	scene.set("_token_generation_exact_position", true)
+	scene.set("_token_generation_place_on_surface", true)
+
+	var value: Variant = scene.call(
+		"_spawn_token",
+		"Medium",
+		1.0,
+		"Surface smoke token",
+		"",
+		0,
+		5.0
+	)
+	var token := value as CharacterBody3D
+	if token == null:
+		return false
+
+	var expected_y := (
+		sphere_root.global_position.y
+		+ 220.0 * units
+		+ float(token.get("token_height_cells")) * scene.cell_size * 0.5
+	)
+	var supported := (
+		bool(token.get("flying"))
+		and token.get("grid_support") == sphere
+		and absf(token.global_position.y - expected_y) <= scene.cell_size * 0.1
+	)
+	token.queue_free()
+	return supported
 
 
 func _count_klothys_hair(visual: Node3D) -> int:
