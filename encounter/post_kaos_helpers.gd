@@ -92,6 +92,11 @@ static func prepare_headless_kaos(scene: Node) -> void:
 static func close_kaos_petrification_hole(scene: Node) -> void:
 	prepare_headless_kaos(scene)
 
+# Name used by the post-Kaos scene controller.  Keep the intent explicit:
+# this prepares the petrified geometry, including the shoulder cap.
+static func prepare_kaos_petrified_geometry(scene: Node) -> void:
+	prepare_headless_kaos(scene)
+
 static func ensure_surface_collisions(scene: Node) -> void:
 	var units: float = _meters_to_world(scene)
 
@@ -125,6 +130,9 @@ static func ensure_surface_collisions(scene: Node) -> void:
 
 # Compatibility with the previous helper API.
 static func ensure_body_collisions(scene: Node) -> void:
+	ensure_surface_collisions(scene)
+
+static func ensure_solid_surfaces(scene: Node) -> void:
 	ensure_surface_collisions(scene)
 
 static func _ensure_anatomy_collisions(
@@ -471,6 +479,148 @@ static func _meters_to_world(scene: Node) -> float:
 	if tool != null and tool.has_method("meters_to_world"):
 		return float(tool.call("meters_to_world", 1.0))
 	return 1.0
+
+static func restore_encounter_decor(scene: Node) -> void:
+	var units: float = _meters_to_world(scene)
+	_restore_klothis_hair(scene, units)
+	_restore_titan_faces(scene, units)
+	_restore_background_ruins(scene, units)
+
+static func _restore_klothis_hair(scene: Node, units: float) -> void:
+	var visual := scene.get_node_or_null(
+		"KlothisRoot/KlothisVisual"
+	) as Node3D
+	if visual == null:
+		return
+
+	var hair_prefixes: Array[String] = [
+		"RootedSilverLock",
+		"PartedTempleLock",
+		"AnatomicalHairline",
+		"HangingSilverTress",
+	]
+	var hair_nodes: Array[MeshInstance3D] = []
+	for child in visual.find_children("*", "MeshInstance3D", true, false):
+		var mesh := child as MeshInstance3D
+		if mesh == null:
+			continue
+		var label := String(mesh.get_meta("visual_role", mesh.name))
+		if _starts_with_any(label, hair_prefixes):
+			hair_nodes.append(mesh)
+
+	# The original encounter creates 88 rooted locks, 18 temple locks and the
+	# anatomical hairline (plus the long silver tresses).  If those survived
+	# the bake, simply make sure they are visible.
+	if hair_nodes.size() >= 100:
+		for hair_node in hair_nodes:
+			hair_node.show()
+		return
+
+	for hair_node in hair_nodes:
+		hair_node.free()
+
+	# Rebuild from the exact same giant builder used by encounter, then copy
+	# only the hair meshes.  The builder conforms them to the sphere before we
+	# transfer them, restoring the original visual placement.
+	var temporary := Node3D.new()
+	var body := StandardMaterial3D.new()
+	body.albedo_color = Color(0.69, 0.57, 0.44)
+	body.roughness = 0.72
+	body.emission_enabled = true
+	body.emission = Color(0.69, 0.57, 0.44)
+	body.emission_energy_multiplier = 0.07
+	var marble := StandardMaterial3D.new()
+	marble.albedo_color = Color(0.51, 0.53, 0.51)
+	var gold := StandardMaterial3D.new()
+	gold.albedo_color = Color(0.62, 0.52, 0.35)
+	var builder := preload(
+		"res://encounter/sculpted_giant_visual.gd"
+	).new()
+	builder.build(temporary, units, body, marble, gold, true)
+
+	for child in temporary.get_children().duplicate():
+		if not child is MeshInstance3D:
+			child.free()
+			continue
+		var mesh := child as MeshInstance3D
+		var label := String(mesh.get_meta("visual_role", mesh.name))
+		if not _starts_with_any(label, hair_prefixes):
+			mesh.free()
+			continue
+		temporary.remove_child(mesh)
+		visual.add_child(mesh)
+		mesh.show()
+	temporary.free()
+
+static func _restore_titan_faces(scene: Node, units: float) -> void:
+	var sphere_root := scene.get_node_or_null(
+		"KlothisRoot/SphereVisual"
+	) as Node3D
+	if sphere_root == null:
+		return
+	var faces := sphere_root.get_node_or_null(
+		"CarvedTitanFaces"
+	) as MultiMeshInstance3D
+	if (
+		faces != null
+		and faces.multimesh != null
+		and faces.multimesh.instance_count == 16
+	):
+		faces.material_override = _stone_material()
+		faces.show()
+		return
+	if faces != null:
+		faces.free()
+	preload("res://encounter/titan_reliefs.gd").new().build(
+		sphere_root,
+		units,
+		_stone_material()
+	)
+
+static func _restore_background_ruins(scene: Node, units: float) -> void:
+	var root := scene.get_node_or_null("Board/MapGeometry") as Node3D
+	if root == null:
+		return
+	var required: Array[String] = [
+		"FlutedColumns",
+		"Capitals",
+		"RomanArches",
+		"Cornices",
+		"ColumnPlinths",
+		"ContinuousApseWall",
+	]
+	var complete := true
+	for node_name in required:
+		var node := root.get_node_or_null(node_name) as Node3D
+		if node == null:
+			complete = false
+			continue
+		node.show()
+		if node is MultiMeshInstance3D:
+			var batch := node as MultiMeshInstance3D
+			if batch.multimesh == null or batch.multimesh.instance_count == 0:
+				complete = false
+	if complete:
+		return
+
+	for node_name in required:
+		var stale := root.get_node_or_null(node_name)
+		if stale != null:
+			stale.free()
+	var marble := StandardMaterial3D.new()
+	marble.albedo_color = Color(0.51, 0.53, 0.51)
+	marble.roughness = 0.8
+	preload("res://encounter/ruins_visual.gd").new().build(
+		root,
+		units,
+		marble
+	)
+
+static func _starts_with_any(value: String, prefixes: Array[String]) -> bool:
+	for prefix in prefixes:
+		if value.begins_with(prefix):
+			return true
+	return false
 
 static func has_post_roster(scene: Node) -> bool:
 	var tokens := scene.get_node_or_null("Tokens")
