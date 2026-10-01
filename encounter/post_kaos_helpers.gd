@@ -4,8 +4,8 @@ const WALKABLE_LAYER := 1
 const RIGHT_ARM_GRID_LAYER := 8
 const BODY_COLLISION_NAME := "WalkableBodyCollision"
 const GRID_EXCLUDED_GROUP := "grid_3d_excluded"
-const COLLISION_VERSION := 3
-const GEOMETRY_VERSION := 2
+const COLLISION_VERSION := 4
+const GEOMETRY_VERSION := 3
 const DECOR_VERSION := 2
 
 const KAOS_HEAD_CUTOFF_METERS := 116.5
