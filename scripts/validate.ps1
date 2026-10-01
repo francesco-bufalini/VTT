@@ -34,7 +34,7 @@ if ($version -notmatch "^4\.7\.2\.stable") {
 $fastTests = @(
     "test_initiative_tracker.gd",
     "test_spell_area_catalog.gd",
-    "test_aoe_sync.gd"
+    "test_board_smoke.gd"
 )
 
 if ($FullTests) {
