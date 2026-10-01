@@ -99,6 +99,18 @@ func _run() -> void:
 	var units: float = float(
 		scene.get_node("MeasurementTool").call("meters_to_world", 1.0)
 	)
+	var cap_mesh := cap.mesh as CylinderMesh
+	if (
+		cap_mesh == null
+		or cap_mesh.top_radius / units < 18.5
+		or cap.scale.x < 1.5
+		or cap.scale.z < 0.85
+	):
+		_fail("Kaos shoulder/base-neck opening is not fully capped.")
+		return
+
+		scene.get_node("MeasurementTool").call("meters_to_world", 1.0)
+	)
 	var head_triangles := _count_remaining_kaos_head_triangles(
 		kaos_visual,
 		units
@@ -164,6 +176,36 @@ func _run() -> void:
 	var klothys_visual := scene.get_node_or_null(
 		"KlothisRoot/KlothisVisual"
 	) as Node3D
+	var klothys_root := scene.get_node_or_null("KlothisRoot") as Node3D
+	var sphere_root := scene.get_node_or_null(
+		"KlothisRoot/SphereVisual"
+	) as Node3D
+	if (
+		klothys_root == null
+		or klothys_visual == null
+		or sphere_root == null
+	):
+		_fail("Scontro contro Kaos Klothys group is incomplete.")
+		return
+	if not (klothys_root.position / units).is_equal_approx(
+		Vector3(0, 75, -12)
+	):
+		_fail("KlothysRoot transform differs from Scontro contro Kaos.")
+		return
+	if not (klothys_visual.position / units).is_equal_approx(
+		Vector3(0, 150, 12)
+	):
+		_fail("KlothysVisual transform differs from Scontro contro Kaos.")
+		return
+	if not (sphere_root.position / units).is_equal_approx(
+		Vector3(0, 310, -218)
+	):
+		_fail("SphereVisual transform differs from Scontro contro Kaos.")
+		return
+	if not _sphere_has_encounter_bindings(sphere_root):
+		_fail("Sphere bindings from Scontro contro Kaos are missing.")
+		return
+
 	var hair_count := _count_klothys_hair(klothys_visual)
 	if hair_count < 100:
 		_fail(
@@ -186,6 +228,14 @@ func _run() -> void:
 	var ruins := scene.get_node_or_null("Board/MapGeometry")
 	if ruins == null:
 		_fail("MapGeometry is missing.")
+		return
+	var columns := ruins.get_node_or_null("FlutedColumns") as MultiMeshInstance3D
+	if (
+		columns == null
+		or columns.multimesh == null
+		or columns.multimesh.instance_count < 300
+	):
+		_fail("Scontro contro Kaos background colonnade was not copied.")
 		return
 	for node_name in EXPECTED_RUINS:
 		var ruin_node := ruins.get_node_or_null(node_name) as VisualInstance3D
@@ -403,6 +453,16 @@ func _test_flying_token_surface_support(scene: Node3D, units: float) -> bool:
 	)
 	token.queue_free()
 	return supported
+
+
+func _sphere_has_encounter_bindings(sphere_root: Node3D) -> bool:
+	for child in sphere_root.get_children():
+		if not child is MeshInstance3D:
+			continue
+		var mesh_instance := child as MeshInstance3D
+		if mesh_instance.mesh is ImmediateMesh:
+			return true
+	return false
 
 
 func _count_klothys_hair(visual: Node3D) -> int:
