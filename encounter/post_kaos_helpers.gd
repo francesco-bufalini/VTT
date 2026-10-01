@@ -6,7 +6,7 @@ const BODY_COLLISION_NAME := "WalkableBodyCollision"
 const GRID_EXCLUDED_GROUP := "grid_3d_excluded"
 const COLLISION_VERSION := 5
 const GEOMETRY_VERSION := 4
-const DECOR_VERSION := 4
+const DECOR_VERSION := 5
 
 # Kaos' final one-hand pose keeps the head around y=136 m.  Remove the
 # complete skull plus the central neck column, while preserving the shoulders
@@ -133,26 +133,109 @@ static func restore_encounter_decor(
 	scene: Node,
 	force_rebuild: bool = false
 ) -> void:
+	var current := int(scene.get_meta("post_kaos_decor_version", 0))
+	if (
+		not force_rebuild
+		and current >= DECOR_VERSION
+		and _decor_is_complete(scene)
+	):
+		_ensure_decor_visible(scene)
+		return
+
+	# Fallback used at runtime when the baked scene is incomplete. The bake/
+	# upgrader uses copy_decor_from_scontro() below so the committed .scn
+	# contains the literal visual result of Scontro contro Kaos.
 	var units := _scene_units(scene)
 	if units <= 0.0:
 		return
-
-	var current := int(scene.get_meta("post_kaos_decor_version", 0))
-	if (
-		force_rebuild
-		or current < DECOR_VERSION
-		or not _decor_is_complete(scene)
-	):
-		# Copy these visual groups from exactly the same builder used by
-		# Scontro contro Kaos: Klothys + hair, sphere + titan faces/bindings,
-		# and the background colonnade. No other Post-Kaos nodes are touched.
-		preload("res://encounter/encounter_scenery.gd").new().call(
-			"replace_klothis_sphere_and_ruins_from_encounter",
-			scene
-		)
-
+	preload("res://encounter/encounter_scenery.gd").new().call(
+		"replace_klothis_sphere_and_ruins_from_encounter",
+		scene
+	)
 	_ensure_decor_visible(scene)
 	scene.set_meta("post_kaos_decor_version", DECOR_VERSION)
+
+
+static func copy_decor_from_scontro(
+	destination: Node,
+	source: Node
+) -> bool:
+	if destination == null or source == null:
+		return false
+
+	var src_klothys_root := source.get_node_or_null("KlothisRoot") as Node3D
+	var dst_klothys_root := destination.get_node_or_null("KlothisRoot") as Node3D
+	if src_klothys_root == null or dst_klothys_root == null:
+		return false
+
+	var src_visual := src_klothys_root.get_node_or_null("KlothisVisual") as Node3D
+	var src_sphere := src_klothys_root.get_node_or_null("SphereVisual") as Node3D
+	var dst_visual := dst_klothys_root.get_node_or_null("KlothisVisual") as Node3D
+	var dst_sphere := dst_klothys_root.get_node_or_null("SphereVisual") as Node3D
+	if (
+		src_visual == null
+		or src_sphere == null
+		or dst_visual == null
+		or dst_sphere == null
+	):
+		return false
+
+	# Preserve only the destination containers. Replace their complete visual
+	# contents with duplicates of the *actual runtime Scontro scene*.
+	for child in dst_visual.get_children().duplicate():
+		child.free()
+	for child in dst_sphere.get_children().duplicate():
+		child.free()
+
+	dst_klothys_root.transform = src_klothys_root.transform
+	dst_visual.transform = src_visual.transform
+	dst_sphere.transform = src_sphere.transform
+
+	for child in src_visual.get_children():
+		var copy := child.duplicate(
+			Node.DUPLICATE_SIGNALS
+			| Node.DUPLICATE_GROUPS
+			| Node.DUPLICATE_SCRIPTS
+			| Node.DUPLICATE_USE_INSTANTIATION
+		)
+		if copy != null:
+			dst_visual.add_child(copy)
+
+	for child in src_sphere.get_children():
+		var copy := child.duplicate(
+			Node.DUPLICATE_SIGNALS
+			| Node.DUPLICATE_GROUPS
+			| Node.DUPLICATE_SCRIPTS
+			| Node.DUPLICATE_USE_INSTANTIATION
+		)
+		if copy != null:
+			dst_sphere.add_child(copy)
+
+	var src_ruins := source.get_node_or_null("Board/MapGeometry") as Node3D
+	var dst_ruins := destination.get_node_or_null("Board/MapGeometry") as Node3D
+	if src_ruins == null or dst_ruins == null:
+		return false
+
+	for node_name in RUIN_NODE_NAMES:
+		var old := dst_ruins.get_node_or_null(node_name)
+		if old != null:
+			old.free()
+		var original := src_ruins.get_node_or_null(node_name)
+		if original == null:
+			continue
+		var copy := original.duplicate(
+			Node.DUPLICATE_SIGNALS
+			| Node.DUPLICATE_GROUPS
+			| Node.DUPLICATE_SCRIPTS
+			| Node.DUPLICATE_USE_INSTANTIATION
+		)
+		if copy != null:
+			dst_ruins.add_child(copy)
+
+	_ensure_decor_visible(destination)
+	destination.set_meta("post_kaos_decor_version", DECOR_VERSION)
+	destination.set_meta("post_kaos_decor_source", "scontro_contro_kaos_runtime")
+	return true
 
 
 static func ensure_solid_surfaces(scene: Node) -> void:
@@ -371,14 +454,14 @@ static func _ensure_kaos_shoulder_cap(
 	if old != null:
 		old.free()
 
-	var mesh := CylinderMesh.new()
-	# Wide opaque shoulder slab: this closes the opening left by removing
-	# Kaos' neck/head and reaches the shoulder line instead of leaving the
-	# upper torso visibly hollow.
-	mesh.top_radius = 19.0 * units
-	mesh.bottom_radius = 19.5 * units
-	mesh.height = 3.6 * units
+	var mesh := SphereMesh.new()
+	# Opaque ellipsoidal fill spanning the shoulder cavity. Using a rounded
+	# volume instead of a thin disk prevents seeing through Kaos from oblique
+	# camera angles while blending into the surviving shoulder anatomy.
+	mesh.radius = 1.0
+	mesh.height = 2.0
 	mesh.radial_segments = 64
+	mesh.rings = 32
 
 	var cap := MeshInstance3D.new()
 	cap.name = "PetrifiedShoulderCap"
@@ -386,8 +469,8 @@ static func _ensure_kaos_shoulder_cap(
 	cap.set_meta("post_kaos_shoulder_cap", true)
 	cap.mesh = mesh
 	cap.material_override = material
-	cap.position = Vector3(0.0, 112.8 * units, 0.0)
-	cap.scale = Vector3(1.55, 1.0, 0.90)
+	cap.position = Vector3(0.0, 110.8 * units, 0.0)
+	cap.scale = Vector3(29.0, 5.2, 17.0) * units
 	visual.add_child(cap)
 
 
