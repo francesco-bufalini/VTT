@@ -1,0 +1,34 @@
+name: VTT Godot Tests
+
+on:
+  workflow_dispatch:
+  push:
+    branches:
+      - feature/campaign-hub
+
+concurrency:
+  group: vtt-godot-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  validate:
+    name: Godot 4.7.2 validation
+    runs-on: [self-hosted, windows, x64, vtt-godot]
+    timeout-minutes: 20
+
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+        with:
+          clean: true
+
+      - name: Show environment
+        shell: powershell
+        run: |
+          Write-Host "Runner: $env:RUNNER_NAME"
+          Write-Host "Workspace: $env:GITHUB_WORKSPACE"
+          godot --version
+
+      - name: Import, parse and run tests
+        shell: powershell
+        run: .\scripts\validate.ps1 -Tests
