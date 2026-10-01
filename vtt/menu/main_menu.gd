@@ -535,24 +535,29 @@ func _refresh_audio_settings_ui() -> void:
 	var available: bool = bool(manager.call("is_soundtrack_available"))
 
 	_soundtrack_toggle.set_pressed_no_signal(enabled)
-	_soundtrack_toggle.disabled = not available
+	# The settings remain editable even if the audio asset is temporarily
+	# unavailable. The chosen values are persisted and take effect as soon
+	# as the soundtrack is available.
+	_soundtrack_toggle.disabled = false
 	_soundtrack_volume.value = volume * 100.0
-	_soundtrack_volume.editable = available
-	_soundtrack_volume.mouse_filter = (
-		Control.MOUSE_FILTER_STOP
-		if available
-		else Control.MOUSE_FILTER_IGNORE
-	)
-	_soundtrack_volume.modulate.a = 1.0 if available else 0.45
+	_soundtrack_volume.editable = true
+	_soundtrack_volume.mouse_filter = Control.MOUSE_FILTER_STOP
+	_soundtrack_volume.modulate.a = 1.0
 	_soundtrack_volume_label.text = "%d%%" % roundi(volume * 100.0)
 
 	if not available:
 		_soundtrack_toggle.tooltip_text = (
-			"File soundtrack non disponibile: "
-			+ "assets/menu/audio/menu_theme.mp3"
+			"La soundtrack non è ancora disponibile. "
+			+ "Le impostazioni verranno applicate automaticamente "
+			+ "quando il file viene aggiunto."
+		)
+		_soundtrack_volume.tooltip_text = (
+			"Impostazione salvata: la soundtrack verrà riprodotta "
+			+ "con questo volume quando il file sarà disponibile."
 		)
 	else:
 		_soundtrack_toggle.tooltip_text = ""
+		_soundtrack_volume.tooltip_text = "Volume della colonna sonora"
 
 
 func _on_soundtrack_toggled(enabled: bool) -> void:
