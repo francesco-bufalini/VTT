@@ -11,8 +11,9 @@ func _ready() -> void:
 	_ensure_missing_baked_visuals()
 	PostKaosHelpers.remove_kaos_phase_two_token(self)
 	PostKaosHelpers.remove_legacy_platforms(self)
-	PostKaosHelpers.close_kaos_petrification_hole(self)
-	PostKaosHelpers.ensure_body_collisions(self)
+	PostKaosHelpers.prepare_kaos_petrified_geometry(self)
+	PostKaosHelpers.restore_encounter_decor(self)
+	PostKaosHelpers.ensure_solid_surfaces(self)
 	_ensure_post_kaos_roster()
 	_configure_post_kaos_surfaces()
 
@@ -178,7 +179,7 @@ func _ensure_kaos(units: float) -> void:
 	var gold := StandardMaterial3D.new()
 	gold.albedo_color = Color(0.62, 0.52, 0.35)
 	var builder := SculptedGiantVisual.new()
-	builder.anatomy_override = "res://encounter/assets/characters/kaos_climbing.glb"
+	builder.anatomy_override = "res://encounter/assets/characters/kaos_one_hand.glb"
 	builder.climbing = true
 	builder.build(visual, units, stone, marble, gold, false)
 	visual.show()
