@@ -95,7 +95,7 @@ func spawn_encounter_tokens(
 	chariot_deck_positions_world: Array[Vector3] = []
 ) -> void:
 	var units: float = scene.measurement_tool.meters_to_world(1.0)
-	var roster_start := scene.tokens_root.get_child_count()
+	var roster_start: int = scene.tokens_root.get_child_count()
 	for index in range(6):
 		var token: CharacterBody3D = scene.token_scene.instantiate()
 		scene.tokens_root.add_child(token)
@@ -110,7 +110,7 @@ func spawn_encounter_tokens(
 		token.set_meta("post_kaos_roster", true)
 
 	for index in range(3):
-		var chariot = scene.token_scene.instantiate()
+		var chariot: CharacterBody3D = scene.token_scene.instantiate()
 		chariot.set_script(preload("res://encounter/chariot_token.gd"))
 		chariot.cell_size = scene.cell_size
 		scene.tokens_root.add_child(chariot)
@@ -125,8 +125,8 @@ func spawn_encounter_tokens(
 		chariot.set_flying(true)
 		chariot.set_meta("post_kaos_roster", true)
 		for seat in range(2):
-			var rider_index := roster_start + index * 2 + seat
-			var rider = scene.tokens_root.get_child(rider_index)
+			var rider_index: int = roster_start + index * 2 + seat
+			var rider := scene.tokens_root.get_child(rider_index) as CharacterBody3D
 			rider.global_position = chariot.deck.to_global(
 				Vector3(
 					-.5 + seat,
@@ -137,7 +137,7 @@ func spawn_encounter_tokens(
 			rider.grid_support = chariot.deck
 			rider._support_transform = chariot.deck.global_transform
 
-	var phenax_chariot = scene.token_scene.instantiate()
+	var phenax_chariot: CharacterBody3D = scene.token_scene.instantiate()
 	phenax_chariot.name = "PhenaxChariot"
 	phenax_chariot.set_script(preload("res://encounter/chariot_token.gd"))
 	phenax_chariot.cell_size = scene.cell_size
@@ -153,7 +153,7 @@ func spawn_encounter_tokens(
 	phenax_chariot.set_flying(true)
 	phenax_chariot.set_meta("post_kaos_roster", true)
 
-	var phenax = scene.token_scene.instantiate()
+	var phenax: CharacterBody3D = scene.token_scene.instantiate()
 	phenax.name = "Phenax"
 	phenax.token_height_cells = 3.0
 	scene.tokens_root.add_child(phenax)
@@ -172,7 +172,7 @@ func _place_chariot(
 	custom_deck_world: Vector3
 ) -> void:
 	if custom_deck_world != Vector3.INF:
-		var deck_offset_world := chariot.global_transform.basis * chariot.deck.position
+		var deck_offset_world: Vector3 = chariot.global_transform.basis * chariot.deck.position
 		chariot.global_position = custom_deck_world - deck_offset_world
 		return
 	chariot.position = default_root_world
