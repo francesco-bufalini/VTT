@@ -41,6 +41,7 @@ jobs:
             /encounter/*.tscn
             /encounter/*.gdshader
             /encounter/tools/
+            /encounter/post_kaos_editable.scn
             /encounter/assets/characters/*.glb
             /encounter/assets/characters/*.glb.import
             /encounter/assets/characters/*.jpg
@@ -60,15 +61,15 @@ jobs:
         shell: powershell
         run: |
           $ErrorActionPreference = "Stop"
-          $godot = "C:\Program Files\Godot\Godot_v4.7.2-stable_win64.exe"
-          & $godot --headless --path . --import
+          $godot = "C:\Program Files\Godot\Godot_v4.7.2-stable_win64_console.exe"
+          & $godot --headless --path . --editor --import --quit
           if ($LASTEXITCODE -ne 0) { exit $LASTEXITCODE }
 
       - name: Bake editable post-Kaos scene
         shell: powershell
         run: |
           $ErrorActionPreference = "Stop"
-          $godot = "C:\Program Files\Godot\Godot_v4.7.2-stable_win64.exe"
+          $godot = "C:\Program Files\Godot\Godot_v4.7.2-stable_win64_console.exe"
           & $godot --headless --path . --script res://encounter/tools/bake_post_kaos_scene.gd
           if ($LASTEXITCODE -ne 0) { exit $LASTEXITCODE }
           if (-not (Test-Path "encounter/post_kaos_editable.scn")) {
@@ -80,7 +81,7 @@ jobs:
         shell: powershell
         run: |
           $ErrorActionPreference = "Stop"
-          git add encounter/post_kaos_editable.scn
+          git add --sparse encounter/post_kaos_editable.scn
           if ($LASTEXITCODE -ne 0) { exit $LASTEXITCODE }
           if (git diff --cached --quiet) {
             Write-Host "Baked scene is already up to date."
