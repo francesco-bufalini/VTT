@@ -22,14 +22,57 @@ function Invoke-Godot {
         [string[]]$Arguments,
         [int]$TimeoutSeconds = 180
     )
-    $process = Start-Process -FilePath $script:GodotExecutable `
-        -ArgumentList $Arguments -NoNewWindow -PassThru
-    if (-not $process.WaitForExit($TimeoutSeconds * 1000)) {
-        Stop-Process -Id $process.Id -Force -ErrorAction SilentlyContinue
-        throw "Godot timed out after $TimeoutSeconds seconds: $($Arguments -join ' ')"
+
+    $stdoutPath = [System.IO.Path]::GetTempFileName()
+    $stderrPath = [System.IO.Path]::GetTempFileName()
+    $failurePattern = (
+        "SCRIPT ERROR:.*(Assertion failed|Parse Error|Compile Error|Invalid call|" +
+        "Invalid access|Invalid assignment)|ERROR: Failed to load script"
+    )
+
+    try {
+        $process = Start-Process -FilePath $script:GodotExecutable `
+            -ArgumentList $Arguments -NoNewWindow -PassThru `
+            -RedirectStandardOutput $stdoutPath -RedirectStandardError $stderrPath
+        $deadline = [DateTime]::UtcNow.AddSeconds($TimeoutSeconds)
+        $failureDetected = $false
+
+        while (-not $process.HasExited) {
+            Start-Sleep -Milliseconds 500
+            $combined = (
+                (Get-Content -LiteralPath $stdoutPath -Raw -ErrorAction SilentlyContinue) +
+                [Environment]::NewLine +
+                (Get-Content -LiteralPath $stderrPath -Raw -ErrorAction SilentlyContinue)
+            )
+            if ($combined -match $failurePattern) {
+                $failureDetected = $true
+                Stop-Process -Id $process.Id -Force -ErrorAction SilentlyContinue
+                $process.WaitForExit()
+                break
+            }
+            if ([DateTime]::UtcNow -ge $deadline) {
+                Stop-Process -Id $process.Id -Force -ErrorAction SilentlyContinue
+                $process.WaitForExit()
+                $combined | Write-Host
+                throw "Godot timed out after $TimeoutSeconds seconds: $($Arguments -join ' ')"
+            }
+        }
+
+        $stdout = Get-Content -LiteralPath $stdoutPath -Raw -ErrorAction SilentlyContinue
+        $stderr = Get-Content -LiteralPath $stderrPath -Raw -ErrorAction SilentlyContinue
+        if ($stdout) { $stdout | Write-Host }
+        if ($stderr) { $stderr | Write-Host }
+
+        if ($failureDetected) {
+            throw "Godot reported a script failure: $($Arguments -join ' ')"
+        }
+        $exitCode = $process.ExitCode
+        if ($null -ne $exitCode -and $exitCode -ne 0) {
+            throw "Godot failed with exit code ${exitCode}: $($Arguments -join ' ')"
+        }
     }
-    if ($process.ExitCode -ne 0) {
-        throw "Godot failed with exit code $($process.ExitCode): $($Arguments -join ' ')"
+    finally {
+        Remove-Item -LiteralPath $stdoutPath, $stderrPath -Force -ErrorAction SilentlyContinue
     }
 }
 
