@@ -392,12 +392,14 @@ func _test_flying_token_surface_support(scene: Node3D, units: float) -> bool:
 	var expected_y := (
 		sphere_root.global_position.y
 		+ 220.0 * units
-		+ float(token.get("token_height_cells")) * scene.cell_size * 0.5
+		+ float(token.get("token_height_cells"))
+			* float(scene.get("cell_size")) * 0.5
 	)
 	var supported := (
 		bool(token.get("flying"))
 		and token.get("grid_support") == sphere
-		and absf(token.global_position.y - expected_y) <= scene.cell_size * 0.1
+		and absf(token.global_position.y - expected_y)
+			<= float(scene.get("cell_size")) * 0.1
 	)
 	token.queue_free()
 	return supported
