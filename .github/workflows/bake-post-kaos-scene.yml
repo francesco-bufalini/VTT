@@ -43,6 +43,8 @@ jobs:
             /encounter/tools/
             /encounter/assets/characters/*.glb
             /encounter/assets/characters/*.glb.import
+            /encounter/assets/characters/*.jpg
+            /encounter/assets/characters/*.jpg.import
             /encounter/assets/polyhaven/*.jpg
             /encounter/assets/polyhaven/*.jpg.import
             /assets/spell_area_geometry.json
@@ -57,13 +59,15 @@ jobs:
       - name: Import bake dependencies
         shell: powershell
         run: |
+          $ErrorActionPreference = "Stop"
           $godot = "C:\Program Files\Godot\Godot_v4.7.2-stable_win64.exe"
-          & $godot --headless --editor --path . --quit-after 2
+          & $godot --headless --path . --import
           if ($LASTEXITCODE -ne 0) { exit $LASTEXITCODE }
 
       - name: Bake editable post-Kaos scene
         shell: powershell
         run: |
+          $ErrorActionPreference = "Stop"
           $godot = "C:\Program Files\Godot\Godot_v4.7.2-stable_win64.exe"
           & $godot --headless --path . --script res://encounter/tools/bake_post_kaos_scene.gd
           if ($LASTEXITCODE -ne 0) { exit $LASTEXITCODE }
@@ -75,7 +79,9 @@ jobs:
       - name: Commit baked scene
         shell: powershell
         run: |
+          $ErrorActionPreference = "Stop"
           git add encounter/post_kaos_editable.scn
+          if ($LASTEXITCODE -ne 0) { exit $LASTEXITCODE }
           if (git diff --cached --quiet) {
             Write-Host "Baked scene is already up to date."
             exit 0
@@ -83,4 +89,6 @@ jobs:
           git config user.name "github-actions[bot]"
           git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
           git commit -m "Bake editable post-Kaos encounter scene"
+          if ($LASTEXITCODE -ne 0) { exit $LASTEXITCODE }
           git push origin "HEAD:${{ github.ref_name }}"
+          if ($LASTEXITCODE -ne 0) { exit $LASTEXITCODE }
