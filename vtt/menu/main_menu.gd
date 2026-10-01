@@ -9,8 +9,6 @@ const MENU_BACKGROUND_FALLBACK := (
 )
 const SLIDE_DURATION_SECONDS := 60.0
 const FADE_DURATION_SECONDS := 2.5
-const ZOOM_START := 1.0
-const ZOOM_END := 1.055
 
 var _options_dialog: AcceptDialog
 var _new_campaign_dialog: ConfirmationDialog
@@ -23,6 +21,7 @@ var _active_layer := 0
 var _slide_elapsed := 0.0
 var _slide_tween: Tween
 var _background_root: Control
+var _background_rng := RandomNumberGenerator.new()
 
 
 func _ready() -> void:
@@ -37,14 +36,6 @@ func _process(delta: float) -> void:
 	if _slide_elapsed >= SLIDE_DURATION_SECONDS:
 		_slide_elapsed = 0.0
 		_show_next_background()
-		return
-
-	_update_background_motion(_background_layers[_active_layer], _slide_elapsed)
-
-
-func _notification(what: int) -> void:
-	if what == NOTIFICATION_RESIZED:
-		_update_background_pivots()
 
 
 func _build_ui() -> void:
@@ -87,10 +78,15 @@ func _build_image_background() -> void:
 		_background_root.add_child(layer)
 		_background_layers.append(layer)
 
+	_background_rng.randomize()
+	_background_index = _background_rng.randi_range(
+		0,
+		_background_paths.size() - 1
+	)
 	_background_layers[0].modulate.a = 1.0
-	_background_layers[0].texture = load(_background_paths[0])
-	_update_background_pivots()
-	_update_background_motion(_background_layers[0], 0.0)
+	_background_layers[0].texture = load(
+		_background_paths[_background_index]
+	)
 
 
 func _discover_backgrounds() -> Array[String]:
@@ -109,34 +105,17 @@ func _discover_backgrounds() -> Array[String]:
 	return paths
 
 
-func _update_background_pivots() -> void:
-	if _background_root == null:
-		return
-	var center := _background_root.size * 0.5
-	for layer in _background_layers:
-		layer.pivot_offset = center
+func _pick_random_background_index() -> int:
+	if _background_paths.size() <= 1:
+		return 0
 
-
-func _update_background_motion(layer: TextureRect, elapsed: float) -> void:
-	if layer == null:
-		return
-
-	var progress := clampf(elapsed / SLIDE_DURATION_SECONDS, 0.0, 1.0)
-	# Quintic smoothstep: zero velocity at both ends, with no visible stepping.
-	var smooth_progress := progress * progress * progress * (
-		progress * (progress * 6.0 - 15.0) + 10.0
-	)
-
-	var zoom := lerpf(ZOOM_START, ZOOM_END, smooth_progress)
-	var motion_phase := float(_background_index % 4) * (PI * 0.5)
-	var pan_progress := smooth_progress * 2.0 - 1.0
-	var pan := Vector2(
-		sin(motion_phase + pan_progress * PI * 0.5) * 0.006,
-		cos(motion_phase + pan_progress * PI * 0.5) * 0.004
-	)
-
-	layer.scale = Vector2.ONE * zoom
-	layer.position = _background_root.size * pan
+	var next_index := _background_index
+	while next_index == _background_index:
+		next_index = _background_rng.randi_range(
+			0,
+			_background_paths.size() - 1
+		)
+	return next_index
 
 
 func _show_next_background() -> void:
@@ -147,12 +126,13 @@ func _show_next_background() -> void:
 	var outgoing := _background_layers[_active_layer]
 	var incoming := _background_layers[incoming_layer_index]
 
-	_background_index = (_background_index + 1) % _background_paths.size()
+	_background_index = _pick_random_background_index()
 	incoming.texture = load(_background_paths[_background_index])
 	incoming.modulate.a = 0.0
 	incoming.position = Vector2.ZERO
-	_update_background_pivots()
-	_update_background_motion(incoming, 0.0)
+	incoming.scale = Vector2.ONE
+	outgoing.position = Vector2.ZERO
+	outgoing.scale = Vector2.ONE
 
 	if _slide_tween != null and _slide_tween.is_valid():
 		_slide_tween.kill()
