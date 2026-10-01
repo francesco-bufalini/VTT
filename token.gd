@@ -1312,14 +1312,31 @@ func snap_horizontal_to_grid() -> void:
 
 
 func _snap_horizontal_to_grid() -> void:
-	# La griglia tattica e' globale: con cell_size == 1, X e Z sono
-	# coordinate intere anche quando il token e' sospeso.
+	# Il centro dei cubi della VolumetricGrid e' a n + 0.5 celle.
+	# I footprint dispari (1x1, 3x3, ...) devono quindi stare sui centri
+	# delle celle; quelli pari (2x2, 4x4, ...) sugli incroci, cosi' i bordi
+	# del token coincidono sempre con le linee della griglia.
 	global_position.x = _snap_coordinate(global_position.x)
 	global_position.z = _snap_coordinate(global_position.z)
 
 
+func _grid_snap_offset_cells() -> float:
+	var rounded_footprint := roundi(_footprint_cells)
+	if is_equal_approx(_footprint_cells, float(rounded_footprint)):
+		return 0.5 if abs(rounded_footprint) % 2 == 1 else 0.0
+
+	# Tiny e altri footprint frazionari restano centrati dentro una cella,
+	# invece di finire su una linea/intersezione.
+	return 0.5
+
+
 func _snap_coordinate(value: float) -> float:
-	return round(value / cell_size) * cell_size
+	var safe_cell_size := maxf(cell_size, 0.001)
+	var offset_cells := _grid_snap_offset_cells()
+	return (
+		(round(value / safe_cell_size - offset_cells) + offset_cells)
+		* safe_cell_size
+	)
 
 
 func snap_destination(point: Vector3, _support: Node3D = null) -> Vector3:
