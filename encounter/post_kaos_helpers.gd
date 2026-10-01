@@ -31,12 +31,12 @@ static func clear_baked_tokens(scene: Node) -> void:
 		child.free()
 
 static func close_kaos_petrification_hole(scene: Node) -> void:
-	var kaos := scene.get_node_or_null("KaosRoot")
+	var kaos := scene.get_node_or_null("KaosRoot") as Node3D
 	if kaos == null:
 		return
-	var visual: Node = kaos.get_node_or_null("ClimbingVisual")
+	var visual := kaos.get_node_or_null("ClimbingVisual") as Node3D
 	if visual == null or not visual.visible:
-		visual = kaos.get_node_or_null("KaosVisual")
+		visual = kaos.get_node_or_null("KaosVisual") as Node3D
 	if visual == null:
 		return
 
@@ -74,7 +74,7 @@ static func _add_anatomy_collisions(visual: Node) -> void:
 			continue
 		if mesh_instance.has_node(BODY_COLLISION_NAME):
 			continue
-		var shape := mesh_instance.mesh.create_trimesh_shape()
+		var shape: Shape3D = mesh_instance.mesh.create_trimesh_shape()
 		if shape == null:
 			continue
 		var body := StaticBody3D.new()
