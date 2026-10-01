@@ -64,6 +64,10 @@ func _bake() -> void:
 	if is_instance_valid(hazards):
 		var threatened: Array = hazards.get("threatened_cells")
 		threatened.clear()
+	# Petrification briefly creates a token/collision that is removed from the
+	# baked result. Stop the live grid watcher first so no deferred callback
+	# retains that soon-to-be-freed CollisionShape3D.
+	_disconnect_bake_grid_watchers(scene)
 	petrification.call("apply", false)
 	PostKaosHelpers.remove_kaos_phase_two_token(scene)
 	PostKaosHelpers.close_kaos_petrification_hole(scene)
@@ -79,7 +83,6 @@ func _bake() -> void:
 		_free_path(scene, path)
 
 	_strip_kaos_runtime(kaos)
-	_disconnect_bake_grid_watchers(scene)
 	PostKaosHelpers.clear_baked_tokens(scene)
 	PostKaosHelpers.remove_legacy_platforms(scene)
 	PostKaosHelpers.ensure_body_collisions(scene)
