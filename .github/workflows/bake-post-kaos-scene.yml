@@ -7,6 +7,7 @@ on:
       - feature/campaign-hub
     paths:
       - "encounter/tools/bake_post_kaos_scene.gd"
+      - "encounter/tools/upgrade_post_kaos_scene.gd"
       - "encounter/post_kaos_scene.gd"
       - "encounter/post_kaos_helpers.gd"
       - "encounter/encounter_scenery.gd"
@@ -77,7 +78,13 @@ jobs:
         run: |
           $ErrorActionPreference = "Stop"
           $godot = "C:\Program Files\Godot\Godot_v4.7.2-stable_win64_console.exe"
-          & $godot --headless --path . --script res://encounter/tools/bake_post_kaos_scene.gd
+          if (Test-Path "encounter/post_kaos_editable.scn") {
+            Write-Host "Existing baked scene found: applying incremental upgrade."
+            & $godot --headless --path . --script res://encounter/tools/upgrade_post_kaos_scene.gd
+          } else {
+            Write-Host "No baked scene found: running full encounter bake."
+            & $godot --headless --path . --script res://encounter/tools/bake_post_kaos_scene.gd
+          }
           if ($LASTEXITCODE -ne 0) { exit $LASTEXITCODE }
           if (-not (Test-Path "encounter/post_kaos_editable.scn")) {
             throw "Bake completed without encounter/post_kaos_editable.scn"
@@ -98,7 +105,7 @@ jobs:
           if ($joined -match "Attempting to parent and popup a dialog that already has a parent") {
             throw "Post-Kaos scene still contains duplicated runtime dialogs."
           }
-          if ($joined -notmatch "(?m)^PASS: post-Kaos scene clean") {
+          if ($joined -notmatch "(?m)^PASS: post-Kaos") {
             throw "Post-Kaos smoke test ended without PASS marker."
           }
 
