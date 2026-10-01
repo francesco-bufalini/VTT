@@ -19,6 +19,7 @@ config/icon="res://icon.svg"
 
 CampaignManager="*res://vtt/campaign_manager.gd"
 EncounterEvents="*res://encounter/encounter_events.gd"
+MenuAudioManager="*res://vtt/menu/menu_audio_manager.gd"
 
 [display]
 
