@@ -18,7 +18,10 @@ func _ready() -> void:
 	_configure_post_kaos_surfaces()
 
 func _configure_post_kaos_surfaces() -> void:
-	volumetric_grid.collision_mask = 1 | 4
+	# Only the dedicated right-arm proxy is voxelized. The actual sphere and
+	# giant surfaces remain solid on layer 1 without flooding the whole scene
+	# with blue grid cells.
+	volumetric_grid.collision_mask = PostKaosHelpers.RIGHT_ARM_GRID_LAYER
 	measurement_tool.collision_mask = 1 | 4
 	if volumetric_grid.has_method("refresh"):
 		volumetric_grid.call_deferred("refresh")
