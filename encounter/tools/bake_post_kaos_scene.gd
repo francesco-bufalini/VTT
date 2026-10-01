@@ -108,7 +108,7 @@ func _bake() -> void:
 		_fail("PackedScene.pack failed with error %s" % pack_error)
 		return
 
-	var save_error := ResourceSaver.save(packed, OUTPUT_SCENE)
+	var save_error := ResourceSaver.save(packed, OUTPUT_SCENE, ResourceSaver.FLAG_COMPRESS)
 	if save_error != OK:
 		_fail("ResourceSaver.save failed with error %s" % save_error)
 		return
