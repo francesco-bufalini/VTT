@@ -90,6 +90,67 @@ func build(scene: Node3D) -> void:
 	preload("res://encounter/ruins_visual.gd").new().build(ruins, _units, _marble)
 	spawn_encounter_tokens(scene)
 
+func replace_klothis_sphere_and_ruins_from_encounter(scene: Node3D) -> void:
+	# Rebuild exactly the three visual groups requested for Post-Kaos using
+	# the same code path and transforms as Scontro contro Kaos.  Nothing else
+	# in the destination scene is modified.
+	_units = scene.measurement_tool.meters_to_world(1.0)
+	_marble = _material(Color(0.51, 0.53, 0.51))
+	_gold = _material(Color(0.62, 0.52, 0.35), 0.3)
+	_dark = _material(Color(0.11, 0.105, 0.10))
+
+	var klothis: Node3D = scene.get_node("KlothisRoot")
+	klothis.position = Vector3(0, klothis_group_elevation_meters, -12) * _units
+
+	var klothis_visual: Node3D = klothis.get_node("KlothisVisual")
+	for child in klothis_visual.get_children().duplicate():
+		child.free()
+	klothis_visual.position = Vector3(
+		0,
+		sphere_extra_elevation_meters,
+		12
+	) * _units
+	_giant(klothis_visual, true)
+
+	var sphere: Node3D = klothis.get_node("SphereVisual")
+	for child in sphere.get_children().duplicate():
+		child.free()
+	sphere.position = Vector3(
+		0,
+		160 + sphere_extra_elevation_meters,
+		-218
+	) * _units
+	var sphere_mesh := _sphere(sphere, 220, _dark)
+	var stone := ShaderMaterial.new()
+	stone.shader = preload("res://encounter/sphere_surface.gdshader")
+	preload("res://encounter/pbr_assets.gd").apply(stone, "dark_rock")
+	sphere_mesh.material_override = stone
+	preload("res://encounter/titan_reliefs.gd").new().build(
+		sphere,
+		_units,
+		stone
+	)
+	_bindings(sphere)
+
+	var ruins: Node3D = scene.get_node("Board/MapGeometry")
+	for node_name in [
+		"FlutedColumns",
+		"Capitals",
+		"RomanArches",
+		"Cornices",
+		"ColumnPlinths",
+		"ContinuousApseWall",
+	]:
+		var old := ruins.get_node_or_null(node_name)
+		if old != null:
+			old.free()
+	preload("res://encounter/ruins_visual.gd").new().build(
+		ruins,
+		_units,
+		_marble
+	)
+
+
 func spawn_encounter_tokens(
 	scene: Node3D,
 	chariot_deck_positions_world: Array[Vector3] = []
