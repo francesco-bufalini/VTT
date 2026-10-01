@@ -537,7 +537,13 @@ func _refresh_audio_settings_ui() -> void:
 	_soundtrack_toggle.set_pressed_no_signal(enabled)
 	_soundtrack_toggle.disabled = not available
 	_soundtrack_volume.value = volume * 100.0
-	_soundtrack_volume.disabled = not available
+	_soundtrack_volume.editable = available
+	_soundtrack_volume.mouse_filter = (
+		Control.MOUSE_FILTER_STOP
+		if available
+		else Control.MOUSE_FILTER_IGNORE
+	)
+	_soundtrack_volume.modulate.a = 1.0 if available else 0.45
 	_soundtrack_volume_label.text = "%d%%" % roundi(volume * 100.0)
 
 	if not available:
