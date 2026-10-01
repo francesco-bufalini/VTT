@@ -19,6 +19,14 @@ const BUILTIN_CAMPAIGNS := [
 		"builtin": true
 	},
 	{
+		"id": "scontro_contro_kaos",
+		"name": "Scontro Contro Kaos",
+		"description": "Encounter dalla fase 2, con Kaos gia' sulla sfera",
+		"scene": "res://encounter/scontro_contro_kaos.tscn",
+		"preview": "",
+		"builtin": true
+	},
+	{
 		"id": "dnd_base",
 		"name": "D&D Base",
 		"description": "Scena VTT di base",
