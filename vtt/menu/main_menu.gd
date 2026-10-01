@@ -14,6 +14,9 @@ const FADE_DURATION_SECONDS := 2.5
 var _options_dialog: AcceptDialog
 var _new_campaign_dialog: ConfirmationDialog
 var _new_campaign_name: LineEdit
+var _soundtrack_toggle: CheckButton
+var _soundtrack_volume: HSlider
+var _soundtrack_volume_label: Label
 
 var _background_layers: Array[TextureRect] = []
 var _background_paths: Array[String] = []
@@ -400,12 +403,67 @@ func _build_new_campaign_dialog() -> void:
 
 func _build_options_dialog() -> void:
 	_options_dialog = AcceptDialog.new()
-	_options_dialog.title = "Opzioni"
-	_options_dialog.dialog_text = (
-		"Sezione predisposta.\n"
-		+ "Audio, grafica e comandi saranno aggiunti successivamente."
-	)
+	_options_dialog.title = "Impostazioni menu"
+	_options_dialog.ok_button_text = "Chiudi"
+	_options_dialog.min_size = Vector2i(520, 300)
 	add_child(_options_dialog)
+
+	var body := VBoxContainer.new()
+	body.set_anchors_and_offsets_preset(Control.PRESET_FULL_RECT)
+	body.offset_left = 22
+	body.offset_top = 18
+	body.offset_right = -22
+	body.offset_bottom = -68
+	body.add_theme_constant_override("separation", 14)
+	_options_dialog.add_child(body)
+
+	var audio_title := Label.new()
+	audio_title.text = "Colonna sonora"
+	audio_title.add_theme_font_size_override("font_size", 21)
+	body.add_child(audio_title)
+
+	_soundtrack_toggle = CheckButton.new()
+	_soundtrack_toggle.text = "Riproduci la colonna sonora nel menu"
+	_soundtrack_toggle.size_flags_horizontal = Control.SIZE_SHRINK_BEGIN
+	body.add_child(_soundtrack_toggle)
+
+	_soundtrack_toggle.toggled.connect(_on_soundtrack_toggled)
+
+	var volume_row := HBoxContainer.new()
+	volume_row.add_theme_constant_override("separation", 12)
+	body.add_child(volume_row)
+
+	var volume_title := Label.new()
+	volume_title.text = "Volume"
+	volume_title.custom_minimum_size = Vector2(80, 0)
+	volume_row.add_child(volume_title)
+
+	_soundtrack_volume = HSlider.new()
+	_soundtrack_volume.min_value = 0.0
+	_soundtrack_volume.max_value = 100.0
+	_soundtrack_volume.step = 1.0
+	_soundtrack_volume.size_flags_horizontal = Control.SIZE_EXPAND_FILL
+	_soundtrack_volume.tooltip_text = "Volume della colonna sonora"
+	volume_row.add_child(_soundtrack_volume)
+
+	_soundtrack_volume_label = Label.new()
+	_soundtrack_volume_label.custom_minimum_size = Vector2(48, 0)
+	_soundtrack_volume_label.horizontal_alignment = HORIZONTAL_ALIGNMENT_RIGHT
+	volume_row.add_child(_soundtrack_volume_label)
+
+	_soundtrack_volume.value_changed.connect(_on_soundtrack_volume_changed)
+
+	var info := Label.new()
+	info.text = (
+		"La colonna sonora viene riprodotta solo nel Menu e in "
+		+ "Campagne attive. Entrando in una campagna viene fermata "
+		+ "automaticamente."
+	)
+	info.autowrap_mode = TextServer.AUTOWRAP_WORD_SMART
+	info.modulate = Color(0.72, 0.75, 0.82, 1.0)
+	body.add_child(info)
+
+	_refresh_audio_settings_ui()
 
 
 func _open_active_campaigns() -> void:
@@ -458,8 +516,50 @@ func _campaign_manager() -> Node:
 
 
 func _show_options_placeholder() -> void:
+	_refresh_audio_settings_ui()
 	_options_dialog.reset_size()
-	_options_dialog.popup_centered_clamped(Vector2i(460, 190), 0.92)
+	_options_dialog.popup_centered_clamped(Vector2i(520, 300), 0.92)
+
+
+func _menu_audio_manager() -> Node:
+	return get_node_or_null("/root/MenuAudioManager")
+
+
+func _refresh_audio_settings_ui() -> void:
+	var manager := _menu_audio_manager()
+	if manager == null or _soundtrack_toggle == null or _soundtrack_volume == null:
+		return
+
+	var enabled: bool = bool(manager.get("soundtrack_enabled"))
+	var volume: float = float(manager.call("get_soundtrack_volume"))
+	var available: bool = bool(manager.call("is_soundtrack_available"))
+
+	_soundtrack_toggle.set_pressed_no_signal(enabled)
+	_soundtrack_toggle.disabled = not available
+	_soundtrack_volume.value = volume * 100.0
+	_soundtrack_volume.disabled = not available
+	_soundtrack_volume_label.text = "%d%%" % roundi(volume * 100.0)
+
+	if not available:
+		_soundtrack_toggle.tooltip_text = (
+			"File soundtrack non disponibile: "
+			+ "assets/menu/audio/menu_theme.mp3"
+		)
+	else:
+		_soundtrack_toggle.tooltip_text = ""
+
+
+func _on_soundtrack_toggled(enabled: bool) -> void:
+	var manager := _menu_audio_manager()
+	if manager != null:
+		manager.call("set_soundtrack_enabled", enabled)
+
+
+func _on_soundtrack_volume_changed(value: float) -> void:
+	_soundtrack_volume_label.text = "%d%%" % roundi(value)
+	var manager := _menu_audio_manager()
+	if manager != null:
+		manager.call("set_soundtrack_volume", value / 100.0)
 
 
 func _show_error(message: String) -> void:
