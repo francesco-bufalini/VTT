@@ -68,7 +68,8 @@ if ($FullTests) {
 foreach ($test in $testFiles) {
     $relative = "res://tests/$($test.Name)"
     Write-Host "== $relative =="
-    Invoke-Godot @("--headless", "--path", $ProjectRoot, "--script", $relative) 45
+    $testTimeout = if ($FullTests) { 90 } else { 20 }
+    Invoke-Godot @("--headless", "--path", $ProjectRoot, "--script", $relative) $testTimeout
 }
 
 Write-Host "Validation passed."

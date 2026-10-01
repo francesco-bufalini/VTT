@@ -13,6 +13,7 @@ on:
       - "scripts/validate.ps1"
       - ".github/workflows/vtt-self-hosted-tests.yml"
       - "assets/tokens/token_library.json"
+      - "assets/spell_area_geometry.json"
 
 concurrency:
   group: vtt-godot-fast-${{ github.ref }}
@@ -42,6 +43,7 @@ jobs:
             /interaction/
             /encounter/encounter_events.gd
             /assets/tokens/token_library.json
+            /assets/spell_area_geometry.json
 
       - name: Clean generated files but keep Godot cache
         shell: powershell
