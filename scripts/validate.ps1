@@ -17,6 +17,17 @@ if (Test-Path -LiteralPath $Godot -PathType Leaf) {
     $GodotExecutable = $GodotCommand.Source
 }
 
+# Prefer the console build on Windows: unlike the GUI executable it exposes
+# a reliable process exit code to PowerShell while remaining fully headless.
+if ($GodotExecutable -notmatch "_console\.exe$") {
+    $directory = Split-Path -Parent $GodotExecutable
+    $baseName = [System.IO.Path]::GetFileNameWithoutExtension($GodotExecutable)
+    $consoleCandidate = Join-Path $directory ($baseName + "_console.exe")
+    if (Test-Path -LiteralPath $consoleCandidate -PathType Leaf) {
+        $GodotExecutable = $consoleCandidate
+    }
+}
+
 function Invoke-Godot {
     param(
         [string[]]$Arguments,
@@ -29,8 +40,10 @@ function Invoke-Godot {
         Stop-Process -Id $process.Id -Force -ErrorAction SilentlyContinue
         throw "Godot timed out after $TimeoutSeconds seconds: $($Arguments -join ' ')"
     }
-    if ($process.ExitCode -ne 0) {
-        throw "Godot failed with exit code $($process.ExitCode): $($Arguments -join ' ')"
+    $process.Refresh()
+    $exitCode = $process.ExitCode
+    if ($null -ne $exitCode -and $exitCode -ne 0) {
+        throw "Godot failed with exit code ${exitCode}: $($Arguments -join ' ')"
     }
 }
 
