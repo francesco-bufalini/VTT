@@ -77,10 +77,7 @@ func setup(root: Node3D) -> void:
 
 func _process(_delta: float) -> void:
 	if _pending_spell_id.is_empty():
-		_hide_spell_preview()
-		_clear_spell_fixed_previews()
-		_hide_spell_range_preview()
-		_hide_wall_preview()
+		_hide_all_spell_previews()
 		return
 	_update_spell_preview()
 
@@ -4599,56 +4596,20 @@ func _apply_failed_saving_throw_effects(
 				)
 
 
-func _finish_cast() -> void:
+func _hide_all_spell_previews() -> void:
+	_hide_spell_preview()
+	_clear_spell_fixed_previews()
+	_hide_spell_range_preview()
+	_hide_wall_preview()
+
+
+func _reset_cast_state(restore_mouse: bool) -> void:
 	if saving_throw_dialog != null and saving_throw_dialog.visible:
 		saving_throw_dialog.hide()
 	_saving_throw_targets.clear()
 	_saving_throw_index = 0
 	_saving_throw_undo_recorded = false
-	_hide_spell_preview()
-	_clear_spell_fixed_previews()
-	_hide_spell_range_preview()
-	_hide_wall_preview()
-	if wall_mode_menu != null and wall_mode_menu.visible:
-		wall_mode_menu.hide()
-	if wall_orientation_menu != null and wall_orientation_menu.visible:
-		wall_orientation_menu.hide()
-	if summon_count_menu != null and summon_count_menu.visible:
-		summon_count_menu.hide()
-	board_root.set("_ui_owns_mouse", false)
-	_pending_spell_id = ""
-	_pending_spell_data.clear()
-	_targeting_phase = ""
-	_pending_caster = null
-	_pending_targets.clear()
-	_pending_target_points.clear()
-	_pending_chain_primary = null
-	_summon_total_count = 1
-	_summon_created_count = 0
-	_transformation_dialog_targets.clear()
-	_transformation_dialog_index = 0
-	_directional_pitch_degrees = 0
-	_wall_mode = ""
-	_wall_points.clear()
-	_wall_center = Vector3.ZERO
-	_wall_radius_world = 0.0
-	_wall_sweep = 0.0
-	_wall_damage_side = 0
-	_wall_orientation = ""
-	instruction_label.hide()
-	Input.mouse_mode = _restore_mouse_mode
-
-
-func _cancel_pending_cast(restore_mouse: bool = true) -> void:
-	if saving_throw_dialog != null and saving_throw_dialog.visible:
-		saving_throw_dialog.hide()
-	_saving_throw_targets.clear()
-	_saving_throw_index = 0
-	_saving_throw_undo_recorded = false
-	_hide_spell_preview()
-	_clear_spell_fixed_previews()
-	_hide_spell_range_preview()
-	_hide_wall_preview()
+	_hide_all_spell_previews()
 	if wall_mode_menu != null and wall_mode_menu.visible:
 		wall_mode_menu.hide()
 	if wall_orientation_menu != null and wall_orientation_menu.visible:
@@ -4679,6 +4640,14 @@ func _cancel_pending_cast(restore_mouse: bool = true) -> void:
 		instruction_label.hide()
 	if restore_mouse:
 		Input.mouse_mode = _restore_mouse_mode
+
+
+func _finish_cast() -> void:
+	_reset_cast_state(true)
+
+
+func _cancel_pending_cast(restore_mouse: bool = true) -> void:
+	_reset_cast_state(restore_mouse)
 
 
 func _adjust_directional_pitch(delta_degrees: int) -> void:

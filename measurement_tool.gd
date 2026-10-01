@@ -606,6 +606,36 @@ func adjust_spell_target_depth(step_cells: float) -> void:
 	)
 
 
+func _clamp_depth_to_grid_exit(
+	origin: Vector3,
+	direction: Vector3,
+	requested_depth: float
+) -> float:
+	if (
+		_volumetric_grid == null
+		or not is_instance_valid(_volumetric_grid)
+		or not _volumetric_grid.has_method("get_ray_exit_distance")
+	):
+		return requested_depth
+
+	var exit_value: Variant = _volumetric_grid.call(
+		"get_ray_exit_distance",
+		origin,
+		direction
+	)
+	if not exit_value is float:
+		return requested_depth
+
+	var exit_distance: float = maxf(float(exit_value), 0.0)
+	return minf(
+		requested_depth,
+		maxf(
+			cell_size * 0.5,
+			exit_distance - maxf(cell_size * 0.001, 0.0001)
+		)
+	)
+
+
 func get_spell_target_point(
 	screen_position: Vector2,
 	preferred_air_distance_world: float = -1.0,
@@ -644,23 +674,11 @@ func get_spell_target_point(
 		if not grid_active:
 			return {"valid": false}
 
-		var grid_depth: float = _air_depth_world
-		if _volumetric_grid.has_method("get_ray_exit_distance"):
-			var exit_value: Variant = _volumetric_grid.call(
-				"get_ray_exit_distance",
-				origin,
-				direction
-			)
-			if exit_value is float:
-				var exit_distance: float = maxf(float(exit_value), 0.0)
-				grid_depth = minf(
-					grid_depth,
-					maxf(
-						cell_size * 0.5,
-						exit_distance
-						- maxf(cell_size * 0.001, 0.0001)
-					)
-				)
+		var grid_depth: float = _clamp_depth_to_grid_exit(
+			origin,
+			direction,
+			_air_depth_world
+		)
 
 		var grid_point: Vector3 = _snap_point_to_grid_intersection(
 			origin + direction * grid_depth
@@ -710,22 +728,11 @@ func get_spell_target_point(
 	if not grid_active:
 		return {"valid": false}
 
-	var effective_depth: float = _air_depth_world
-	if _volumetric_grid.has_method("get_ray_exit_distance"):
-		var exit_value: Variant = _volumetric_grid.call(
-			"get_ray_exit_distance",
-			origin,
-			direction
-		)
-		if exit_value is float:
-			var exit_distance: float = maxf(float(exit_value), 0.0)
-			effective_depth = minf(
-				effective_depth,
-				maxf(
-					cell_size * 0.5,
-					exit_distance - maxf(cell_size * 0.001, 0.0001)
-				)
-			)
+	var effective_depth: float = _clamp_depth_to_grid_exit(
+		origin,
+		direction,
+		_air_depth_world
+	)
 
 	var point_in_air: Vector3 = origin + direction * effective_depth
 	var snapped_point: Vector3 = _snap_point_to_grid_intersection(point_in_air)
@@ -808,22 +815,11 @@ func _looked_cell() -> Dictionary:
 	# cube. Depth still selects a layer along the camera ray, but it is clamped
 	# to the current cube so an invisible external cell can never be selected.
 	if grid_active:
-		var effective_depth := _air_depth_world
-		if _volumetric_grid.has_method("get_ray_exit_distance"):
-			var exit_value: Variant = _volumetric_grid.call(
-				"get_ray_exit_distance",
-				origin,
-				direction
-			)
-			if exit_value is float:
-				var exit_distance := maxf(float(exit_value), 0.0)
-				effective_depth = minf(
-					effective_depth,
-					maxf(
-						cell_size * 0.5,
-						exit_distance - maxf(cell_size * 0.001, 0.0001)
-					)
-				)
+		var effective_depth: float = _clamp_depth_to_grid_exit(
+			origin,
+			direction,
+			_air_depth_world
+		)
 
 		var point_in_air := origin + direction * effective_depth
 		var snapped_point := _snap_point_to_cell_center(point_in_air)

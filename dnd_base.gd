@@ -2236,6 +2236,17 @@ func _open_token_generation_dialog() -> void:
 	call_deferred("_release_mouse")
 
 
+func _reset_token_generation_state() -> void:
+	_token_generation_confirmed_callback = Callable()
+	_token_generation_canceled_callback = Callable()
+	_token_generation_transform_target = null
+	_token_generation_exact_position = false
+	_token_generation_place_on_surface = false
+	_has_pending_spawn_position = false
+	_ui_owns_mouse = false
+	_capture_mouse()
+
+
 func _on_token_dialog_confirmed() -> void:
 	var selected_index: int = size_selector.selected
 	if selected_index < 0 or selected_index >= TOKEN_SIZES.size():
@@ -2295,14 +2306,7 @@ func _on_token_dialog_confirmed() -> void:
 			var failed_callback: Callable = (
 				_token_generation_canceled_callback
 			)
-			_token_generation_confirmed_callback = Callable()
-			_token_generation_canceled_callback = Callable()
-			_token_generation_transform_target = null
-			_token_generation_exact_position = false
-			_token_generation_place_on_surface = false
-			_has_pending_spawn_position = false
-			_ui_owns_mouse = false
-			_capture_mouse()
+			_reset_token_generation_state()
 			push_error(
 				"DnDBase: trasformazione annullata, impossibile caricare %s"
 				% visual_asset
@@ -2341,15 +2345,7 @@ func _on_token_dialog_confirmed() -> void:
 	var confirmed_callback: Callable = (
 		_token_generation_confirmed_callback
 	)
-	_token_generation_confirmed_callback = Callable()
-	_token_generation_canceled_callback = Callable()
-	_token_generation_transform_target = null
-	_token_generation_exact_position = false
-	_token_generation_place_on_surface = false
-	_has_pending_spawn_position = false
-
-	_ui_owns_mouse = false
-	_capture_mouse()
+	_reset_token_generation_state()
 
 	if confirmed_callback.is_valid():
 		# ConfirmationDialog emette confirmed prima di completare il proprio
@@ -2375,15 +2371,7 @@ func _on_token_dialog_canceled() -> void:
 	var canceled_callback: Callable = (
 		_token_generation_canceled_callback
 	)
-	_token_generation_confirmed_callback = Callable()
-	_token_generation_canceled_callback = Callable()
-	_token_generation_transform_target = null
-	_token_generation_exact_position = false
-	_token_generation_place_on_surface = false
-	_has_pending_spawn_position = false
-
-	_ui_owns_mouse = false
-	_capture_mouse()
+	_reset_token_generation_state()
 
 	if canceled_callback.is_valid():
 		canceled_callback.call()
