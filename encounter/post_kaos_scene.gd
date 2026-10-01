@@ -37,16 +37,19 @@ func _move_existing_chariots_near_kaos() -> void:
 			continue
 		if index >= targets.size():
 			break
-		var deck: Node3D = child.get_node_or_null("ChariotDeck")
+		var chariot := child as CharacterBody3D
+		if chariot == null:
+			continue
+		var deck := chariot.get_node_or_null("ChariotDeck") as Node3D
 		if deck == null:
 			continue
-		var deck_offset_world := child.global_transform.basis * deck.position
-		child.global_position = targets[index] - deck_offset_world
+		var deck_offset_world := chariot.global_transform.basis * deck.position
+		chariot.global_position = targets[index] - deck_offset_world
 		index += 1
 
 func _chariot_deck_targets() -> Array[Vector3]:
 	var units: float = measurement_tool.meters_to_world(1.0)
-	var kaos := get_node_or_null("KaosRoot")
+	var kaos := get_node_or_null("KaosRoot") as Node3D
 	var anchor: Node3D = null
 	if kaos != null:
 		anchor = kaos.get_node_or_null("ClimbingVisual/FaceAnchor") as Node3D
@@ -105,7 +108,7 @@ func _ensure_water(units: float) -> void:
 	board.add_child(water)
 
 func _ensure_ruins(units: float) -> void:
-	var root := get_node_or_null("Board/MapGeometry")
+	var root := get_node_or_null("Board/MapGeometry") as Node3D
 	if root == null or root.get_node_or_null("FlutedColumns") != null:
 		return
 	var marble := StandardMaterial3D.new()
@@ -114,7 +117,7 @@ func _ensure_ruins(units: float) -> void:
 	RuinsVisual.new().build(root, units, marble)
 
 func _ensure_klothis(units: float) -> void:
-	var visual := get_node_or_null("KlothisRoot/KlothisVisual")
+	var visual := get_node_or_null("KlothisRoot/KlothisVisual") as Node3D
 	if visual == null or not visual.find_children("*", "MeshInstance3D", true, false).is_empty():
 		return
 	var body := StandardMaterial3D.new()
@@ -137,7 +140,7 @@ func _ensure_klothis(units: float) -> void:
 	)
 
 func _ensure_sphere(units: float) -> void:
-	var root := get_node_or_null("KlothisRoot/SphereVisual")
+	var root := get_node_or_null("KlothisRoot/SphereVisual") as Node3D
 	if root == null or not root.find_children("*", "MeshInstance3D", true, false).is_empty():
 		return
 	var sphere_mesh := SphereMesh.new()
@@ -159,7 +162,7 @@ func _ensure_kaos(units: float) -> void:
 	var kaos := get_node_or_null("KaosRoot")
 	if kaos == null:
 		return
-	var visual := kaos.get_node_or_null("ClimbingVisual")
+	var visual := kaos.get_node_or_null("ClimbingVisual") as Node3D
 	if visual == null:
 		visual = Node3D.new()
 		visual.name = "ClimbingVisual"
