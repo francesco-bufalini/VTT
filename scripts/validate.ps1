@@ -18,9 +18,17 @@ if (Test-Path -LiteralPath $Godot -PathType Leaf) {
 }
 
 function Invoke-Godot {
-    param([string[]]$Arguments)
+    param(
+        [string[]]$Arguments,
+        [int]$TimeoutSeconds = 60
+    )
     $process = Start-Process -FilePath $script:GodotExecutable `
-        -ArgumentList $Arguments -NoNewWindow -Wait -PassThru
+        -ArgumentList $Arguments -NoNewWindow -PassThru
+
+    if (-not $process.WaitForExit($TimeoutSeconds * 1000)) {
+        Stop-Process -Id $process.Id -Force -ErrorAction SilentlyContinue
+        throw "Godot timed out after $TimeoutSeconds seconds: $($Arguments -join ' ')"
+    }
     if ($process.ExitCode -ne 0) {
         throw "Godot failed with exit code $($process.ExitCode): $($Arguments -join ' ')"
     }
@@ -39,7 +47,7 @@ $fastTests = @(
 
 if ($FullTests) {
     Write-Host "== Full project import / parse =="
-    Invoke-Godot @("--headless", "--path", $ProjectRoot, "--editor", "--import", "--quit")
+    Invoke-Godot @("--headless", "--path", $ProjectRoot, "--editor", "--import", "--quit") 300
 
     $testFiles = Get-ChildItem -LiteralPath (Join-Path $ProjectRoot "tests") `
         -Filter "test_*.gd" -File | Sort-Object Name
@@ -60,7 +68,7 @@ if ($FullTests) {
 foreach ($test in $testFiles) {
     $relative = "res://tests/$($test.Name)"
     Write-Host "== $relative =="
-    Invoke-Godot @("--headless", "--path", $ProjectRoot, "--script", $relative)
+    Invoke-Godot @("--headless", "--path", $ProjectRoot, "--script", $relative) 45
 }
 
 Write-Host "Validation passed."
