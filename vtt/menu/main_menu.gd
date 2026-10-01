@@ -1,18 +1,55 @@
 extends Control
 
 const ACTIVE_CAMPAIGNS_SCENE_PATH := "res://vtt/menu/active_campaigns.tscn"
-const MENU_BACKGROUND_TEXTURE := (
+const MENU_BACKGROUND_TEXTURES := [
+	"res://assets/menu/background/slideshow/menu_01.jpg",
+	"res://assets/menu/background/slideshow/menu_02.webp",
+	"res://assets/menu/background/slideshow/menu_03.jpg",
+	"res://assets/menu/background/slideshow/menu_04.webp",
+	"res://assets/menu/background/slideshow/menu_05.jpg",
+	"res://assets/menu/background/slideshow/menu_06.jpg",
+	"res://assets/menu/background/slideshow/menu_07.png",
+	"res://assets/menu/background/slideshow/menu_08.jpg",
+	"res://assets/menu/background/slideshow/menu_09.png",
+]
+const MENU_BACKGROUND_FALLBACK := (
 	"res://assets/menu/background/menu_background.webp"
 )
+const SLIDE_DURATION_SECONDS := 60.0
+const FADE_DURATION_SECONDS := 2.5
+const ZOOM_START := 1.0
+const ZOOM_END := 1.055
 
 var _options_dialog: AcceptDialog
 var _new_campaign_dialog: ConfirmationDialog
 var _new_campaign_name: LineEdit
 
+var _background_layers: Array[TextureRect] = []
+var _background_paths: Array[String] = []
+var _background_index := 0
+var _active_layer := 0
+var _slide_elapsed := 0.0
+var _slide_tween: Tween
+var _background_root: Control
 
 
 func _ready() -> void:
 	_build_ui()
+
+
+func _process(delta: float) -> void:
+	if _background_paths.size() <= 1:
+		return
+
+	_slide_elapsed += delta
+	if _slide_elapsed >= SLIDE_DURATION_SECONDS:
+		_slide_elapsed = 0.0
+		_show_next_background()
+
+
+func _notification(what: int) -> void:
+	if what == NOTIFICATION_RESIZED:
+		_update_background_pivots()
 
 
 func _build_ui() -> void:
@@ -25,27 +62,107 @@ func _build_ui() -> void:
 
 
 func _build_image_background() -> void:
-	var background := TextureRect.new()
-	background.name = "FantasyBackground"
-	background.set_anchors_and_offsets_preset(Control.PRESET_FULL_RECT)
-	background.expand_mode = TextureRect.EXPAND_IGNORE_SIZE
-	background.stretch_mode = TextureRect.STRETCH_KEEP_ASPECT_COVERED
-	background.mouse_filter = Control.MOUSE_FILTER_IGNORE
-	background.texture_filter = CanvasItem.TEXTURE_FILTER_LINEAR
-	background.z_index = -100
+	_background_root = Control.new()
+	_background_root.name = "FantasyBackground"
+	_background_root.set_anchors_and_offsets_preset(Control.PRESET_FULL_RECT)
+	_background_root.mouse_filter = Control.MOUSE_FILTER_IGNORE
+	_background_root.clip_contents = true
+	_background_root.z_index = -100
+	add_child(_background_root)
+	move_child(_background_root, 0)
 
-	var background_texture: Texture2D = load(MENU_BACKGROUND_TEXTURE)
-	if background_texture == null:
-		push_error(
-			"MainMenu: texture di sfondo non trovata: "
-			+ MENU_BACKGROUND_TEXTURE
-		)
-	else:
-		background.texture = background_texture
+	_background_paths.clear()
+	for path in MENU_BACKGROUND_TEXTURES:
+		if ResourceLoader.exists(path):
+			_background_paths.append(path)
 
-	add_child(background)
-	move_child(background, 0)
+	if _background_paths.is_empty() and ResourceLoader.exists(MENU_BACKGROUND_FALLBACK):
+		_background_paths.append(MENU_BACKGROUND_FALLBACK)
 
+	if _background_paths.is_empty():
+		push_error("MainMenu: nessuna texture di sfondo disponibile.")
+		return
+
+	for layer_index in 2:
+		var layer := TextureRect.new()
+		layer.name = "BackgroundLayer%d" % layer_index
+		layer.set_anchors_and_offsets_preset(Control.PRESET_FULL_RECT)
+		layer.expand_mode = TextureRect.EXPAND_IGNORE_SIZE
+		layer.stretch_mode = TextureRect.STRETCH_KEEP_ASPECT_COVERED
+		layer.mouse_filter = Control.MOUSE_FILTER_IGNORE
+		layer.texture_filter = CanvasItem.TEXTURE_FILTER_LINEAR
+		layer.modulate = Color(1.0, 1.0, 1.0, 0.0)
+		_background_root.add_child(layer)
+		_background_layers.append(layer)
+
+	_background_layers[0].modulate.a = 1.0
+	_background_layers[0].texture = load(_background_paths[0])
+	_background_layers[0].scale = Vector2.ONE * ZOOM_START
+	_update_background_pivots()
+	_start_zoom(_background_layers[0])
+
+
+func _update_background_pivots() -> void:
+	if _background_root == null:
+		return
+	var center := _background_root.size * 0.5
+	for layer in _background_layers:
+		layer.pivot_offset = center
+
+
+func _start_zoom(layer: TextureRect) -> void:
+	var tween := create_tween()
+	tween.set_trans(Tween.TRANS_LINEAR)
+	tween.set_ease(Tween.EASE_IN_OUT)
+	tween.tween_property(
+		layer,
+		"scale",
+		Vector2.ONE * ZOOM_END,
+		SLIDE_DURATION_SECONDS + FADE_DURATION_SECONDS
+	)
+
+
+func _show_next_background() -> void:
+	if _background_paths.size() <= 1 or _background_layers.size() < 2:
+		return
+
+	var incoming_layer_index := 1 - _active_layer
+	var outgoing := _background_layers[_active_layer]
+	var incoming := _background_layers[incoming_layer_index]
+
+	_background_index = (_background_index + 1) % _background_paths.size()
+	incoming.texture = load(_background_paths[_background_index])
+	incoming.scale = Vector2.ONE * ZOOM_START
+	incoming.modulate.a = 0.0
+	_update_background_pivots()
+
+	if _slide_tween != null and _slide_tween.is_valid():
+		_slide_tween.kill()
+
+	_slide_tween = create_tween()
+	_slide_tween.set_parallel(true)
+	_slide_tween.set_trans(Tween.TRANS_SINE)
+	_slide_tween.set_ease(Tween.EASE_IN_OUT)
+	_slide_tween.tween_property(
+		incoming,
+		"modulate:a",
+		1.0,
+		FADE_DURATION_SECONDS
+	)
+	_slide_tween.tween_property(
+		outgoing,
+		"modulate:a",
+		0.0,
+		FADE_DURATION_SECONDS
+	)
+	_slide_tween.tween_property(
+		incoming,
+		"scale",
+		Vector2.ONE * ZOOM_END,
+		SLIDE_DURATION_SECONDS + FADE_DURATION_SECONDS
+	)
+
+	_active_layer = incoming_layer_index
 
 func _build_vignette() -> void:
 	var overlay := ColorRect.new()
