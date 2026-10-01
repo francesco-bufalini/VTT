@@ -7,6 +7,9 @@ on:
       - feature/campaign-hub
     paths:
       - "encounter/tools/bake_post_kaos_scene.gd"
+      - "encounter/post_kaos_scene.gd"
+      - "encounter/post_kaos_helpers.gd"
+      - "encounter/encounter_scenery.gd"
       - ".github/workflows/bake-post-kaos-scene.yml"
 
 permissions:
@@ -49,6 +52,8 @@ jobs:
             /encounter/assets/polyhaven/*.jpg
             /encounter/assets/polyhaven/*.jpg.import
             /assets/spell_area_geometry.json
+            /assets/tokens/token_library.json
+            /assets/tokens/generated/death_knight/
             /assets/tokens/test/
 
       - name: Clean generated files but keep Godot cache
