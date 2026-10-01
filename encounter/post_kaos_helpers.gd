@@ -491,7 +491,10 @@ static func _add_kaos_right_arm_grid_proxy(
 static func _remove_generated_collisions(scene: Node) -> void:
 	var nodes: Array[Node] = []
 	for node in scene.find_children("*", "StaticBody3D", true, false):
-		if bool(node.get_meta("post_kaos_collision", false)):
+		if (
+			bool(node.get_meta("post_kaos_collision", false))
+			or bool(node.get_meta("post_kaos_body_collision", false))
+		):
 			nodes.append(node)
 	for node in nodes:
 		node.free()
