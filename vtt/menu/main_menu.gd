@@ -1,17 +1,9 @@
 extends Control
 
 const ACTIVE_CAMPAIGNS_SCENE_PATH := "res://vtt/menu/active_campaigns.tscn"
-const MENU_BACKGROUND_TEXTURES := [
-	"res://assets/menu/background/slideshow/menu_01.jpg",
-	"res://assets/menu/background/slideshow/menu_02.webp",
-	"res://assets/menu/background/slideshow/menu_03.jpg",
-	"res://assets/menu/background/slideshow/menu_04.webp",
-	"res://assets/menu/background/slideshow/menu_05.jpg",
-	"res://assets/menu/background/slideshow/menu_06.jpg",
-	"res://assets/menu/background/slideshow/menu_07.png",
-	"res://assets/menu/background/slideshow/menu_08.jpg",
-	"res://assets/menu/background/slideshow/menu_09.png",
-]
+const MENU_BACKGROUND_DIRECTORY := (
+	"res://assets/menu/background/slideshow"
+)
 const MENU_BACKGROUND_FALLBACK := (
 	"res://assets/menu/background/menu_background.webp"
 )
@@ -71,10 +63,7 @@ func _build_image_background() -> void:
 	add_child(_background_root)
 	move_child(_background_root, 0)
 
-	_background_paths.clear()
-	for path in MENU_BACKGROUND_TEXTURES:
-		if ResourceLoader.exists(path):
-			_background_paths.append(path)
+	_background_paths = _discover_backgrounds()
 
 	if _background_paths.is_empty() and ResourceLoader.exists(MENU_BACKGROUND_FALLBACK):
 		_background_paths.append(MENU_BACKGROUND_FALLBACK)
@@ -100,6 +89,22 @@ func _build_image_background() -> void:
 	_background_layers[0].scale = Vector2.ONE * ZOOM_START
 	_update_background_pivots()
 	_start_zoom(_background_layers[0])
+
+
+func _discover_backgrounds() -> Array[String]:
+	var paths: Array[String] = []
+	var directory := DirAccess.open(MENU_BACKGROUND_DIRECTORY)
+	if directory == null:
+		return paths
+
+	for file_name in directory.get_files():
+		var extension := file_name.get_extension().to_lower()
+		if extension not in ["jpg", "jpeg", "png", "webp"]:
+			continue
+		paths.append(MENU_BACKGROUND_DIRECTORY + "/" + file_name)
+
+	paths.sort()
+	return paths
 
 
 func _update_background_pivots() -> void:
