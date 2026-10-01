@@ -42,6 +42,8 @@ var _spell_preview_style: String = ""
 var _spell_preview_line_width: float = -1.0
 var _spell_fixed_previews: Array[MeshInstance3D] = []
 var _transient_spell_aoes: Array[Dictionary] = []
+var _spell_affected_override_active: bool = false
+var _spell_affected_override: Array[Node3D] = []
 var _spell_range_preview: MeshInstance3D
 var _spell_range_center: Vector3 = Vector3.INF
 var _spell_range_radius: float = -1.0
@@ -266,6 +268,123 @@ func _persistent_aoe_hits_token(
 	return false
 
 
+func _spell_affected_override_signature() -> String:
+	var parts: PackedStringArray = PackedStringArray()
+	for token: Node3D in _spell_affected_override:
+		if token != null and is_instance_valid(token):
+			parts.append(str(token.get_instance_id()))
+	return ",".join(parts)
+
+
+func set_spell_affected_token_highlight(
+	tokens: Array,
+	active: bool = true
+) -> void:
+	var resolved: Array[Node3D] = []
+	for value: Variant in tokens:
+		if not value is Node3D:
+			continue
+		var token: Node3D = value as Node3D
+		if (
+			token != null
+			and is_instance_valid(token)
+			and token.is_in_group("dnd_token")
+			and not (token in resolved)
+		):
+			resolved.append(token)
+
+	var same: bool = (
+		active == _spell_affected_override_active
+		and resolved.size() == _spell_affected_override.size()
+	)
+	if same:
+		for index: int in range(resolved.size()):
+			if resolved[index] != _spell_affected_override[index]:
+				same = false
+				break
+	if same:
+		return
+
+	_spell_affected_override_active = active
+	_spell_affected_override = resolved
+	_affected_tokens_signature = ""
+
+
+func _cell_intersects_spell_geometry(
+	center: Vector3,
+	start: Vector3,
+	end: Vector3,
+	shape: String,
+	style: String = "",
+	line_width_world: float = -1.0
+) -> bool:
+	if shape == "sphere":
+		var geometry: Dictionary = _aoe_geometry(
+			start,
+			end,
+			shape,
+			style,
+			line_width_world
+		)
+		var radius: float = float(
+			geometry.get("radius", cell_size * 0.5)
+		)
+		var half_cell: float = cell_size * 0.5
+		var delta: Vector3 = Vector3(
+			absf(center.x - start.x),
+			absf(center.y - start.y),
+			absf(center.z - start.z)
+		)
+		var closest_delta: Vector3 = Vector3(
+			maxf(delta.x - half_cell, 0.0),
+			maxf(delta.y - half_cell, 0.0),
+			maxf(delta.z - half_cell, 0.0)
+		)
+		return closest_delta.length_squared() <= radius * radius
+
+	return _cell_intersects_aoe(
+		center,
+		start,
+		end,
+		shape,
+		style,
+		line_width_world
+	)
+
+
+func spell_geometry_affected_tokens(
+	start: Vector3,
+	end: Vector3,
+	shape: String,
+	style: String = "",
+	line_width_world: float = -1.0
+) -> Array[Node3D]:
+	var affected: Array[Node3D] = []
+	if shape not in [
+		"sphere", "cube", "cone", "line", "flat_square", "cylinder"
+	]:
+		return affected
+
+	for node: Node in get_tree().get_nodes_in_group("dnd_token"):
+		if not node is Node3D:
+			continue
+		var token: Node3D = node as Node3D
+		if token == null or not is_instance_valid(token):
+			continue
+		for center: Vector3 in _token_occupied_cell_centers(token):
+			if _cell_intersects_spell_geometry(
+				center,
+				start,
+				end,
+				shape,
+				style,
+				line_width_world
+			):
+				affected.append(token)
+				break
+	return affected
+
+
 func _token_touched_by_current_geometry(token: Node3D) -> bool:
 	for data_value: Variant in persistent_aoes:
 		if data_value is Dictionary:
@@ -342,6 +461,12 @@ func _refresh_affected_token_highlight() -> void:
 	signature_parts.append(JSON.stringify(persistent_aoes))
 	signature_parts.append(JSON.stringify(_transient_spell_aoes))
 	signature_parts.append(
+		"%s|%s" % [
+			str(_spell_affected_override_active),
+			_spell_affected_override_signature()
+		]
+	)
+	signature_parts.append(
 		"%s|%s|%s|%s|%s|%s|%s" % [
 		str(_measurement_mode),
 		str(aoe_mode),
@@ -391,12 +516,17 @@ func _refresh_affected_token_highlight() -> void:
 	_affected_tokens_signature = signature
 
 	var affected: Array = []
-	for node: Node in tokens:
-		if not node is Node3D:
-			continue
-		var token: Node3D = node as Node3D
-		if _token_touched_by_current_geometry(token):
-			affected.append(token)
+	if _spell_affected_override_active:
+		for token: Node3D in _spell_affected_override:
+			if token != null and is_instance_valid(token):
+				affected.append(token)
+	else:
+		for node: Node in tokens:
+			if not node is Node3D:
+				continue
+			var token: Node3D = node as Node3D
+			if _token_touched_by_current_geometry(token):
+				affected.append(token)
 	board.call("set_affected_token_highlight", affected)
 
 
@@ -1382,6 +1512,18 @@ func show_transient_aoe(
 				root.queue_free()
 	)
 	timer.start()
+
+
+func clear_transient_spell_aoes() -> void:
+	for child: Node in get_children():
+		if (
+			child is Node3D
+			and String(child.name).begins_with("TransientAoE")
+		):
+			child.queue_free()
+	_transient_spell_aoes.clear()
+	_affected_tokens_signature = ""
+
 
 func show_teleport_cloud(
 	position: Vector3,
