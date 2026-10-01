@@ -7,6 +7,12 @@ const RuinsVisual = preload("res://encounter/ruins_visual.gd")
 const TitanReliefs = preload("res://encounter/titan_reliefs.gd")
 
 func _ready() -> void:
+	# Configure the grid mask before dnd_base._ready() starts the grid scanner.
+	# Otherwise the first scan sees every layer-1 giant/sphere collider and can
+	# leave a frame (or cached chunks) of blue cells around the whole scene.
+	volumetric_grid.collision_mask = PostKaosHelpers.RIGHT_ARM_GRID_LAYER
+	measurement_tool.collision_mask = 1 | 4
+
 	super._ready()
 	_ensure_missing_baked_visuals()
 	PostKaosHelpers.remove_kaos_phase_two_token(self)
