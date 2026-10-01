@@ -316,8 +316,12 @@ static func _clip_kaos_head_and_neck(visual: Node3D, units: float) -> void:
 					clipped.get_surface_count() - 1,
 					material
 				)
-		if clipped.get_surface_count() > 0:
-			mesh_instance.mesh = clipped
+		# Assign the clipped mesh even when every triangle was removed.
+		# Head-only AnatomicalDetail meshes otherwise kept their untouched
+		# original geometry and could leave floating ears/face pieces behind.
+		mesh_instance.mesh = clipped
+		if clipped.get_surface_count() == 0:
+			mesh_instance.hide()
 
 
 static func _keep_kaos_anatomy_vertex(
