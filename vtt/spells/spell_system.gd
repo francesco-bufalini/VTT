@@ -49,7 +49,9 @@ var _directional_pitch_degrees: int = 0
 var _selected_slot_level: int = 0
 var _pending_targets: Array[Node3D] = []
 var _pending_target_points: Array[Vector3] = []
+var _pending_target_history: Array[Dictionary] = []
 var _pending_chain_primary: Node3D = null
+var _post_cast_cleanup_pending: bool = false
 var _summon_total_count: int = 1
 var _summon_created_count: int = 0
 var _transformation_dialog_targets: Array[Node3D] = []
@@ -283,6 +285,78 @@ func is_targeting() -> bool:
 	return not _pending_spell_id.is_empty()
 
 
+func has_post_cast_cleanup() -> bool:
+	return _post_cast_cleanup_pending
+
+
+func _set_spell_affected_targets(
+	tokens: Array,
+	active: bool = true
+) -> void:
+	var measurement_tool: Node = _measurement_tool()
+	if (
+		measurement_tool != null
+		and measurement_tool.has_method(
+			"set_spell_affected_token_highlight"
+		)
+	):
+		measurement_tool.call(
+			"set_spell_affected_token_highlight",
+			tokens,
+			active
+		)
+		return
+	if (
+		board_root != null
+		and is_instance_valid(board_root)
+		and board_root.has_method("set_affected_token_highlight")
+	):
+		board_root.call("set_affected_token_highlight", tokens)
+
+
+func _set_spell_geometry_highlight(
+	start: Vector3,
+	end: Vector3,
+	spell_data: Dictionary,
+	caster: Node3D = null
+) -> void:
+	_set_spell_affected_targets(
+		_spell_targets_in_geometry(
+			start,
+			end,
+			spell_data,
+			caster
+		),
+		true
+	)
+
+
+func dismiss_post_cast_visuals() -> bool:
+	if not _post_cast_cleanup_pending:
+		return false
+
+	_post_cast_cleanup_pending = false
+	var measurement_tool: Node = _measurement_tool()
+	if measurement_tool != null:
+		if measurement_tool.has_method("clear_transient_spell_aoes"):
+			measurement_tool.call("clear_transient_spell_aoes")
+		if measurement_tool.has_method(
+			"set_spell_affected_token_highlight"
+		):
+			measurement_tool.call(
+				"set_spell_affected_token_highlight",
+				[],
+				false
+			)
+	if (
+		board_root != null
+		and is_instance_valid(board_root)
+		and board_root.has_method("set_affected_token_highlight")
+	):
+		board_root.call("set_affected_token_highlight", [])
+	return true
+
+
 func _pending_spell() -> Dictionary:
 	if _pending_spell_id.is_empty():
 		return {}
@@ -352,6 +426,13 @@ func handle_input(event: InputEvent) -> bool:
 
 			if key_event.keycode == KEY_ESCAPE:
 				_cancel_pending_cast()
+				return true
+
+			if (
+				_targeting_phase == "multi_target_tokens"
+				and key_event.keycode in [KEY_BACKSPACE, KEY_DELETE]
+			):
+				_undo_last_multi_target_selection()
 				return true
 
 			if (
@@ -1089,6 +1170,7 @@ func _try_select_caster(screen_position: Vector2) -> void:
 			_pending_caster = caster
 			_pending_targets.clear()
 			_pending_target_points.clear()
+			_pending_target_history.clear()
 			_targeting_phase = "multi_target_tokens"
 			_hide_spell_preview()
 			_update_multi_target_instruction(spell_data)
@@ -1363,7 +1445,7 @@ func _try_select_multi_target(screen_position: Vector2) -> void:
 		return
 
 	var allow_repeat: bool = bool(
-		spell_data.get("allow_repeat_targets", false)
+		spell_data.get("allow_repeat_targets", true)
 	)
 	if String(target_data.get("kind", "")) == "point":
 		var target_point: Vector3 = target_data.get("point", Vector3.ZERO)
@@ -1371,6 +1453,10 @@ func _try_select_multi_target(screen_position: Vector2) -> void:
 			_set_instruction("Questo punto è già stato selezionato.")
 			return
 		_pending_target_points.append(target_point)
+		_pending_target_history.append({
+			"kind": "point",
+			"point": target_point
+		})
 	else:
 		var target: Node3D = target_data.get("target") as Node3D
 		if target == null:
@@ -1379,6 +1465,12 @@ func _try_select_multi_target(screen_position: Vector2) -> void:
 			_set_instruction("Questo bersaglio è già stato selezionato.")
 			return
 		_pending_targets.append(target)
+		_pending_target_history.append({
+			"kind": "token",
+			"target": target
+		})
+
+	_set_spell_affected_targets(_pending_targets, true)
 
 	if (
 		_pending_targets.size() + _pending_target_points.size()
@@ -1400,6 +1492,26 @@ func _try_select_multi_target(screen_position: Vector2) -> void:
 
 	_update_multi_target_instruction(spell_data)
 
+
+func _undo_last_multi_target_selection() -> void:
+	var spell_data: Dictionary = _pending_spell()
+	if _pending_target_history.is_empty():
+		_update_multi_target_instruction(spell_data)
+		return
+
+	var entry: Dictionary = _pending_target_history.pop_back()
+	match String(entry.get("kind", "")):
+		"token":
+			if not _pending_targets.is_empty():
+				_pending_targets.remove_at(_pending_targets.size() - 1)
+		"point":
+			if not _pending_target_points.is_empty():
+				_pending_target_points.remove_at(
+					_pending_target_points.size() - 1
+				)
+
+	_set_spell_affected_targets(_pending_targets, true)
+	_update_multi_target_instruction(spell_data)
 
 
 func _try_select_multi_point(screen_position: Vector2) -> void:
@@ -1438,6 +1550,16 @@ func _try_select_multi_point(screen_position: Vector2) -> void:
 			_pending_target_points,
 			spell_data
 		)
+		var affected_targets: Array[Node3D] = []
+		for selected_point: Vector3 in _pending_target_points:
+			for target: Node3D in _point_spell_targets(
+				selected_point,
+				spell_data,
+				_pending_caster
+			):
+				if not (target in affected_targets):
+					affected_targets.append(target)
+		_set_spell_affected_targets(affected_targets, true)
 		_finish_cast()
 		return
 
@@ -3681,6 +3803,11 @@ func _activate_selected_spell() -> void:
 	if not SpellCatalog.is_runtime_usable(spell_data):
 		return
 
+	dismiss_post_cast_visuals()
+	if board_root.has_method("clear_token_selection"):
+		board_root.call("clear_token_selection")
+	_set_spell_affected_targets([], true)
+
 	var target_mode: String = String(
 		spell_data.get("target_mode", "")
 	)
@@ -3693,6 +3820,7 @@ func _activate_selected_spell() -> void:
 	_pending_caster = null
 	_pending_targets.clear()
 	_pending_target_points.clear()
+	_pending_target_history.clear()
 	_pending_chain_primary = null
 	_directional_pitch_degrees = 0
 
@@ -4217,6 +4345,39 @@ func _spell_targets_in_geometry(
 		or "excluding you" in description
 	)
 
+	var measurement_tool: Node = _measurement_tool()
+	if (
+		measurement_tool != null
+		and measurement_tool.has_method(
+			"spell_geometry_affected_tokens"
+		)
+	):
+		var affected_value: Variant = measurement_tool.call(
+			"spell_geometry_affected_tokens",
+			start,
+			end,
+			shape,
+			_spell_style(spell_data),
+			_spell_line_width_world(spell_data)
+		)
+		if affected_value is Array:
+			for value: Variant in affected_value:
+				if not value is Node3D:
+					continue
+				var token: Node3D = value as Node3D
+				if (
+					token == null
+					or not is_instance_valid(token)
+					or (
+						exclude_caster
+						and caster != null
+						and token == caster
+					)
+				):
+					continue
+				targets.append(token)
+			return targets
+
 	for node: Node in get_tree().get_nodes_in_group("dnd_token"):
 		if not node is Node3D:
 			continue
@@ -4431,6 +4592,7 @@ func _complete_spell_cast(
 	targets: Array[Node3D],
 	caster: Node3D = null
 ) -> void:
+	_set_spell_affected_targets(targets, true)
 	if not _spell_needs_saving_throw_resolution(spell_data):
 		_finish_cast()
 		return
@@ -4603,13 +4765,18 @@ func _hide_all_spell_previews() -> void:
 	_hide_wall_preview()
 
 
-func _reset_cast_state(restore_mouse: bool) -> void:
+func _reset_cast_state(
+	restore_mouse: bool,
+	preserve_spell_highlight: bool = false
+) -> void:
 	if saving_throw_dialog != null and saving_throw_dialog.visible:
 		saving_throw_dialog.hide()
 	_saving_throw_targets.clear()
 	_saving_throw_index = 0
 	_saving_throw_undo_recorded = false
 	_hide_all_spell_previews()
+	if not preserve_spell_highlight:
+		_set_spell_affected_targets([], false)
 	if wall_mode_menu != null and wall_mode_menu.visible:
 		wall_mode_menu.hide()
 	if wall_orientation_menu != null and wall_orientation_menu.visible:
@@ -4623,6 +4790,7 @@ func _reset_cast_state(restore_mouse: bool) -> void:
 	_pending_caster = null
 	_pending_targets.clear()
 	_pending_target_points.clear()
+	_pending_target_history.clear()
 	_pending_chain_primary = null
 	_summon_total_count = 1
 	_summon_created_count = 0
@@ -4643,11 +4811,13 @@ func _reset_cast_state(restore_mouse: bool) -> void:
 
 
 func _finish_cast() -> void:
-	_reset_cast_state(true)
+	_post_cast_cleanup_pending = true
+	_reset_cast_state(true, true)
 
 
 func _cancel_pending_cast(restore_mouse: bool = true) -> void:
-	_reset_cast_state(restore_mouse)
+	_post_cast_cleanup_pending = false
+	_reset_cast_state(restore_mouse, false)
 
 
 func _adjust_directional_pitch(delta_degrees: int) -> void:
@@ -4732,16 +4902,22 @@ func _update_multi_target_instruction(spell_data: Dictionary) -> void:
 	var required: int = _required_target_clicks(spell_data)
 	var repeat_note: String = (
 		" · puoi selezionare più volte lo stesso bersaglio"
-		if bool(spell_data.get("allow_repeat_targets", false))
+		if bool(spell_data.get("allow_repeat_targets", true))
+		else ""
+	)
+	var undo_note: String = (
+		" · Backspace annulla ultima selezione"
+		if not _pending_target_history.is_empty()
 		else ""
 	)
 	_set_instruction(
-		"%s: scegli i bersagli %d/%d%s · Esc per annullare"
+		"%s: scegli i bersagli %d/%d%s%s · Esc annulla incantesimo"
 		% [
 			String(spell_data.get("name", "Incantesimo")),
 			_pending_targets.size() + _pending_target_points.size(),
 			required,
-			repeat_note
+			repeat_note,
+			undo_note
 		]
 	)
 
