@@ -18,10 +18,10 @@ if (Test-Path -LiteralPath $Godot -PathType Leaf) {
 
 function Invoke-Godot {
     param([string[]]$Arguments)
-    & $script:GodotExecutable @Arguments
-    $exitCode = $LASTEXITCODE
-    if ($null -ne $exitCode -and $exitCode -ne 0) {
-        throw "Godot failed with exit code ${exitCode}: $($Arguments -join ' ')"
+    $process = Start-Process -FilePath $script:GodotExecutable `
+        -ArgumentList $Arguments -NoNewWindow -Wait -PassThru
+    if ($process.ExitCode -ne 0) {
+        throw "Godot failed with exit code $($process.ExitCode): $($Arguments -join ' ')"
     }
 }
 
