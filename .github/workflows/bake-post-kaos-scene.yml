@@ -92,6 +92,13 @@ jobs:
           git commit -m "Bake editable post-Kaos encounter scene"
           if ($LASTEXITCODE -ne 0) { exit $LASTEXITCODE }
 
+          # Godot import can refresh tracked UID files. Discard only those
+          # uncommitted/generated changes; the baked scene is already committed.
+          git reset --hard HEAD
+          if ($LASTEXITCODE -ne 0) { exit $LASTEXITCODE }
+          git clean -ffdx -e .godot/
+          if ($LASTEXITCODE -ne 0) { exit $LASTEXITCODE }
+
           # Other ChatGPT tasks may update campaign-hub while this bake is
           # serializing a large scene. Rebase instead of force-pushing.
           for ($attempt = 1; $attempt -le 3; $attempt++) {
