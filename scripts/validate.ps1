@@ -10,7 +10,7 @@ function Invoke-Godot {
     param([string[]]$Arguments)
     & $Godot @Arguments
     if ($LASTEXITCODE -ne 0) {
-        throw "Godot failed with exit code $LASTEXITCODE: $($Arguments -join ' ')"
+        throw "Godot failed with exit code ${LASTEXITCODE}: $($Arguments -join ' ')"
     }
 }
 
