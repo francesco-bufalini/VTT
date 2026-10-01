@@ -1,0 +1,88 @@
+[gd_scene format=3]
+
+[ext_resource type="PackedScene" uid="uid://c2iuskp15jilc" path="res://dnd_base.tscn" id="1"]
+[ext_resource type="Script" path="res://encounter/scontro_contro_kaos.gd" id="2"]
+[ext_resource type="Script" path="res://encounter/scontro_contro_kaos_progress_controller.gd" id="3"]
+[ext_resource type="Script" uid="uid://bicdlnsd3w86e" path="res://encounter/kaos_controller.gd" id="4"]
+[ext_resource type="Script" uid="uid://bjtj3xjh2kfp0" path="res://encounter/hazard_controller.gd" id="5"]
+[ext_resource type="Script" uid="uid://4o4qxpav3n63" path="res://encounter/environment_collapse_controller.gd" id="6"]
+[ext_resource type="Script" uid="uid://cijn4r5noymb8" path="res://encounter/encounter_ui.gd" id="7"]
+[ext_resource type="Script" uid="uid://b6ekggykae83u" path="res://encounter/hazard_allowed_area.gd" id="8"]
+[ext_resource type="Script" uid="uid://l3shtlww4jwx" path="res://encounter/encounter_scenery.gd" id="9"]
+[ext_resource type="Script" uid="uid://c54a00k0k0cxx" path="res://encounter/encounter_config.gd" id="10"]
+[ext_resource type="Script" uid="uid://kmxo4ct3xg2m" path="res://encounter/shoulder_platform.gd" id="11"]
+
+[sub_resource type="Resource" id="Config"]
+resource_local_to_scene = true
+script = ExtResource("10")
+
+[node name="ScontroControKaos" instance=ExtResource("1")]
+script = ExtResource("2")
+grid_visible_on_start = false
+
+[node name="EncounterUI" type="VBoxContainer" parent="UI" parent_id_path=PackedInt32Array(1006666995) index="4"]
+script = ExtResource("7")
+
+[node name="VolumetricGrid" parent="." index="5"]
+collision_mask = 5
+
+[node name="Camera3D" parent="." index="7"]
+speed = 40.0
+
+[node name="EncounterProgressController" type="Node" parent="." index="8"]
+script = ExtResource("3")
+config = SubResource("Config")
+
+[node name="HazardController" type="Node" parent="." index="9"]
+script = ExtResource("5")
+
+[node name="HazardAllowedArea" type="Node3D" parent="." index="10"]
+script = ExtResource("8")
+
+[node name="EnvironmentCollapseController" type="Node3D" parent="." index="11"]
+script = ExtResource("6")
+
+[node name="Scenery" type="Node" parent="." index="12"]
+script = ExtResource("9")
+
+[node name="KaosRoot" type="Node3D" parent="." index="13"]
+script = ExtResource("4")
+
+[node name="KaosVisual" type="Node3D" parent="KaosRoot" index="0"]
+
+[node name="ShoulderPlatform" type="AnimatableBody3D" parent="KaosRoot" index="1"]
+script = ExtResource("11")
+
+[node name="Collision" type="Node3D" parent="KaosRoot" index="2"]
+
+[node name="KlothisRoot" type="Node3D" parent="." index="14"]
+
+[node name="KlothisVisual" type="Node3D" parent="KlothisRoot" index="0"]
+
+[node name="SphereVisual" type="Node3D" parent="KlothisRoot" index="1"]
+
+[node name="Collision" type="Node3D" parent="KlothisRoot" index="2"]
+
+[node name="KaosPositions" type="Node3D" parent="." index="15"]
+
+[node name="KaosPosition_00" type="Marker3D" parent="KaosPositions" index="0"]
+
+[node name="KaosPosition_01" type="Marker3D" parent="KaosPositions" index="1"]
+
+[node name="KaosPosition_02" type="Marker3D" parent="KaosPositions" index="2"]
+
+[node name="KaosPosition_03" type="Marker3D" parent="KaosPositions" index="3"]
+
+[node name="KaosPosition_04" type="Marker3D" parent="KaosPositions" index="4"]
+
+[node name="KaosPosition_05" type="Marker3D" parent="KaosPositions" index="5"]
+
+[node name="KaosPosition_06" type="Marker3D" parent="KaosPositions" index="6"]
+
+[node name="KaosPosition_07" type="Marker3D" parent="KaosPositions" index="7"]
+
+[node name="KaosPosition_08" type="Marker3D" parent="KaosPositions" index="8"]
+
+[node name="KaosPosition_09" type="Marker3D" parent="KaosPositions" index="9"]
+
+[node name="KaosPosition_10" type="Marker3D" parent="KaosPositions" index="10"]
