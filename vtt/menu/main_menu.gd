@@ -1,6 +1,7 @@
 extends Control
 
 const ACTIVE_CAMPAIGNS_SCENE_PATH := "res://vtt/menu/active_campaigns.tscn"
+const POST_KAOS_SCENE_PATH := "res://encounter/post_kaos_editable.scn"
 const MENU_BACKGROUND_DIRECTORY := (
 	"res://assets/menu/background/slideshow"
 )
@@ -252,7 +253,7 @@ func _build_bottom_controls() -> void:
 	controls_anchor.anchor_right = 0.0
 	controls_anchor.anchor_bottom = 1.0
 	controls_anchor.offset_left = 28.0
-	controls_anchor.offset_top = -270.0
+	controls_anchor.offset_top = -320.0
 	controls_anchor.offset_right = 390.0
 	controls_anchor.offset_bottom = -28.0
 	add_child(controls_anchor)
@@ -275,6 +276,10 @@ func _build_bottom_controls() -> void:
 	var active_button: Button = _menu_button("Campagne attive")
 	active_button.pressed.connect(_open_active_campaigns)
 	layout.add_child(active_button)
+
+	var post_kaos_button: Button = _menu_button("Incontro post-Kaos")
+	post_kaos_button.pressed.connect(_open_post_kaos_encounter)
+	layout.add_child(post_kaos_button)
 
 	var new_button: Button = _menu_button("Nuova campagna")
 	new_button.pressed.connect(_request_new_campaign)
@@ -405,6 +410,11 @@ func _build_options_dialog() -> void:
 
 func _open_active_campaigns() -> void:
 	get_tree().change_scene_to_file(ACTIVE_CAMPAIGNS_SCENE_PATH)
+
+func _open_post_kaos_encounter() -> void:
+	var error := get_tree().change_scene_to_file(POST_KAOS_SCENE_PATH)
+	if error != OK:
+		_show_error("Impossibile aprire l'incontro post-Kaos: %s" % error_string(error))
 
 
 func _request_new_campaign() -> void:
