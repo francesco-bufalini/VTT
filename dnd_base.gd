@@ -2798,6 +2798,11 @@ func _screen_center() -> Vector2:
 	return get_viewport().get_visible_rect().size * 0.5
 
 
+func capture_camera_control() -> void:
+	_ui_owns_mouse = false
+	_capture_mouse()
+
+
 func _capture_mouse() -> void:
 	if not _ui_owns_mouse:
 		Input.mouse_mode = Input.MOUSE_MODE_CAPTURED

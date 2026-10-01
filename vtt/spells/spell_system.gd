@@ -4887,6 +4887,9 @@ func _reset_cast_state(
 
 func _return_control_to_camera() -> void:
 	if board_root != null and is_instance_valid(board_root):
+		if board_root.has_method("capture_camera_control"):
+			board_root.call("capture_camera_control")
+			return
 		board_root.set("_ui_owns_mouse", false)
 	Input.mouse_mode = Input.MOUSE_MODE_CAPTURED
 

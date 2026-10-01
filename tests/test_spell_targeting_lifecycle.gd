@@ -10,9 +10,14 @@ class FakeBoard:
 	var cell_size: float = 1.0
 	var _ui_owns_mouse: bool = false
 	var affected_tokens: Array = []
+	var camera_control_requests: int = 0
 
 	func set_affected_token_highlight(tokens: Array) -> void:
 		affected_tokens = tokens.duplicate()
+
+	func capture_camera_control() -> void:
+		_ui_owns_mouse = false
+		camera_control_requests += 1
 
 
 class FakeToken:
@@ -76,7 +81,6 @@ func run() -> void:
 
 	spell.set("_pending_spell_id", "fireball")
 	spell.set("_pending_spell_data", {"id": "fireball"})
-	Input.mouse_mode = Input.MOUSE_MODE_VISIBLE
 
 	var esc := InputEventKey.new()
 	esc.keycode = KEY_ESCAPE
@@ -92,8 +96,8 @@ func run() -> void:
 	if not board.affected_tokens.is_empty():
 		_fail("red affected cells remained after Esc")
 		return
-	if Input.mouse_mode != Input.MOUSE_MODE_CAPTURED:
-		_fail("Esc did not return control to the captured camera")
+	if board.camera_control_requests != 1:
+		_fail("Esc did not request camera control restoration")
 		return
 
 	# A confirmed point AoE is intentionally non-expiring: its final area and
@@ -113,11 +117,10 @@ func run() -> void:
 
 	spell.set("_pending_spell_id", "fireball")
 	spell.set("_pending_spell_data", fireball)
-	Input.mouse_mode = Input.MOUSE_MODE_VISIBLE
 	spell.call("_finish_cast")
 
-	if Input.mouse_mode != Input.MOUSE_MODE_CAPTURED:
-		_fail("completed cast did not return control to the camera")
+	if board.camera_control_requests != 2:
+		_fail("completed cast did not request camera control restoration")
 		return
 	if not bool(spell.call("has_post_cast_cleanup")):
 		_fail("completed cast did not arm post-cast cleanup")
