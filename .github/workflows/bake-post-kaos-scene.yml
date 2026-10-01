@@ -87,10 +87,11 @@ jobs:
       - name: Smoke test post-Kaos scene
         shell: powershell
         run: |
-          $ErrorActionPreference = "Stop"
+          $ErrorActionPreference = "Continue"
           $godot = "C:\\Program Files\\Godot\\Godot_v4.7.2-stable_win64_console.exe"
           $smokeOutput = @(& $godot --headless --path . --script res://encounter/tests/test_post_kaos_scene.gd 2>&1)
           $exitCode = $LASTEXITCODE
+          $ErrorActionPreference = "Stop"
           $smokeOutput | ForEach-Object { Write-Host $_ }
           if ($exitCode -ne 0) { exit $exitCode }
           $joined = $smokeOutput -join "`n"
