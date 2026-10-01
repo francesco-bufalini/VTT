@@ -133,7 +133,7 @@ jobs:
 
           # Other ChatGPT tasks may update campaign-hub while this bake is
           # serializing a large scene. Rebase instead of force-pushing.
-          for ($attempt = 1; $attempt -le 3; $attempt++) {
+          for ($attempt = 1; $attempt -le 10; $attempt++) {
             git fetch origin "${{ github.ref_name }}"
             if ($LASTEXITCODE -ne 0) { exit $LASTEXITCODE }
 
@@ -148,6 +148,6 @@ jobs:
               exit 0
             }
 
-            Write-Host "Remote moved during push; retrying rebase ($attempt/3)."
+            Write-Host "Remote moved during push; retrying rebase ($attempt/10)."
           }
-          throw "Could not push baked scene after rebasing three times."
+          throw "Could not push baked scene after rebasing ten times."
