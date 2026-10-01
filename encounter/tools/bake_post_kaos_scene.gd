@@ -37,28 +37,33 @@ func _bake() -> void:
 	await physics_frame
 	await process_frame
 
-	var progress: Node = scene.get_node_or_null("EncounterProgressController")
-	var kaos: Node3D = scene.get_node_or_null("KaosRoot")
+	var progress := scene.get_node_or_null("EncounterProgressController")
+	var kaos := scene.get_node_or_null("KaosRoot")
 	if progress == null or kaos == null:
 		_fail("Encounter did not initialize the expected controller nodes.")
 		return
-	if not is_instance_valid(kaos.climb) or not is_instance_valid(progress.petrification):
+
+	var climb: Node = kaos.get("climb")
+	var petrification: Node = progress.get("petrification")
+	if not is_instance_valid(climb) or not is_instance_valid(petrification):
 		_fail("Encounter did not prepare Kaos climb/petrification state.")
 		return
 
 	# Freeze exactly the state used by the live encounter after Kaos reaches
 	# Klothis, finishes the jump/climb, and the giant body is petrified.
-	kaos.climb.restore_phase_two()
-	progress.kaos_step = 0
-	progress.encounter_phase = 2
-	progress.giant_hp = 0.0
-	progress.giant_petrified = true
-	progress.damage_since_last_advance = 0.0
-	progress.kaos_slowed = false
-	progress.obstacle_slowed = false
-	if is_instance_valid(progress.hazards):
-		progress.hazards.threatened_cells.clear()
-	progress.petrification.apply(false)
+	climb.call("restore_phase_two")
+	progress.set("kaos_step", 0)
+	progress.set("encounter_phase", 2)
+	progress.set("giant_hp", 0.0)
+	progress.set("giant_petrified", true)
+	progress.set("damage_since_last_advance", 0.0)
+	progress.set("kaos_slowed", false)
+	progress.set("obstacle_slowed", false)
+	var hazards: Node = progress.get("hazards")
+	if is_instance_valid(hazards):
+		var threatened: Array = hazards.get("threatened_cells")
+		threatened.clear()
+	petrification.call("apply", false)
 
 	# open_head_space() uses a deferred collision update.
 	await physics_frame
@@ -112,7 +117,7 @@ func _bake() -> void:
 	quit(0)
 
 
-func _strip_kaos_runtime(kaos: Node3D) -> void:
+func _strip_kaos_runtime(kaos: Node) -> void:
 	for child in kaos.get_children().duplicate():
 		var script: Script = child.get_script()
 		if script != null and script.resource_path in KAOS_HELPER_SCRIPTS:
