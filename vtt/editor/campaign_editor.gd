@@ -186,7 +186,8 @@ func _build_toolbar() -> void:
 	menu_button.add_theme_font_size_override("font_size", 13)
 	menu_button.pressed.connect(
 		func() -> void:
-			leave_dialog.popup_centered(Vector2i(470, 190))
+			leave_dialog.reset_size()
+			leave_dialog.popup_centered_clamped(Vector2i(470, 190), 0.92)
 	)
 	row.add_child(menu_button)
 
@@ -202,6 +203,11 @@ func _make_menu_button(
 	button.add_theme_font_size_override("font_size", 13)
 
 	var popup := button.get_popup()
+	var viewport_size: Vector2 = get_viewport().get_visible_rect().size
+	popup.max_size = Vector2i(
+		maxi(180, int(viewport_size.x) - 24),
+		maxi(160, int(viewport_size.y) - 24)
+	)
 	popup.add_theme_font_size_override("font_size", 13)
 	for item: Array in items:
 		popup.add_item(String(item[0]), int(item[1]))
@@ -232,9 +238,11 @@ func _on_grid_selected(id: int) -> void:
 		GRID_RESIZE:
 			resize_width.value = primary_width_cells
 			resize_depth.value = primary_depth_cells
-			resize_dialog.popup_centered(Vector2i(460, 250))
+			resize_dialog.reset_size()
+			resize_dialog.popup_centered_clamped(Vector2i(460, 250), 0.92)
 		GRID_ADD:
-			add_grid_dialog.popup_centered(Vector2i(500, 430))
+			add_grid_dialog.reset_size()
+			add_grid_dialog.popup_centered_clamped(Vector2i(500, 430), 0.92)
 		GRID_REMOVE_LAST:
 			_remove_last_extra_grid()
 

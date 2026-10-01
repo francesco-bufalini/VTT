@@ -429,7 +429,8 @@ func _open_active_campaigns() -> void:
 
 func _request_new_campaign() -> void:
 	_new_campaign_name.clear()
-	_new_campaign_dialog.popup_centered(Vector2i(440, 210))
+	_new_campaign_dialog.reset_size()
+	_new_campaign_dialog.popup_centered_clamped(Vector2i(440, 210), 0.92)
 	_new_campaign_name.call_deferred("grab_focus")
 
 
@@ -467,7 +468,8 @@ func _campaign_manager() -> Node:
 
 
 func _show_options_placeholder() -> void:
-	_options_dialog.popup_centered(Vector2i(460, 190))
+	_options_dialog.reset_size()
+	_options_dialog.popup_centered_clamped(Vector2i(460, 190), 0.92)
 
 
 func _show_error(message: String) -> void:
@@ -475,5 +477,6 @@ func _show_error(message: String) -> void:
 	dialog.title = "Errore"
 	dialog.dialog_text = message
 	add_child(dialog)
-	dialog.popup_centered(Vector2i(480, 180))
+	dialog.reset_size()
+	dialog.popup_centered_clamped(Vector2i(480, 180), 0.92)
 	dialog.close_requested.connect(dialog.queue_free)

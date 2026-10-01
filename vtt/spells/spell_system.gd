@@ -4747,7 +4747,8 @@ func _show_current_saving_throw_prompt(
 			target_name
 		]
 	)
-	saving_throw_dialog.popup_centered(Vector2i(500, 220))
+	saving_throw_dialog.reset_size()
+	saving_throw_dialog.popup_centered_clamped(Vector2i(500, 220), 0.92)
 
 
 func _resolve_current_saving_throw(succeeded: bool) -> void:

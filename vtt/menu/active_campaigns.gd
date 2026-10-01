@@ -207,14 +207,16 @@ func _on_card_action(action_id: int, campaign: Dictionary) -> void:
 		ACTION_RENAME:
 			_rename_input.text = _pending_campaign_name
 			_rename_input.select_all()
-			_rename_dialog.popup_centered(Vector2i(430, 200))
+			_rename_dialog.reset_size()
+			_rename_dialog.popup_centered_clamped(Vector2i(430, 200), 0.92)
 			_rename_input.call_deferred("grab_focus")
 		ACTION_DELETE:
 			_delete_dialog.dialog_text = (
 				"Vuoi eliminare definitivamente la campagna \"%s\"?\n"
 				+ "Il salvataggio non potrà essere recuperato."
 			) % _pending_campaign_name
-			_delete_dialog.popup_centered(Vector2i(460, 200))
+			_delete_dialog.reset_size()
+			_delete_dialog.popup_centered_clamped(Vector2i(460, 200), 0.92)
 
 
 func _confirm_rename() -> void:
