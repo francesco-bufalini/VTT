@@ -26,7 +26,7 @@ jobs:
         shell: powershell
         run: |
           git reset --hard HEAD
-          git clean -ffdx -e .godot/
+          git clean -ffdx -e .godot/ -e '*.import' -e '*.uid'
 
       - name: Show environment
         shell: powershell
@@ -35,6 +35,6 @@ jobs:
           Write-Host "Workspace: $env:GITHUB_WORKSPACE"
           & "C:\Program Files\Godot\Godot_v4.7.2-stable_win64.exe" --version
 
-      - name: Import, parse and run tests
+      - name: Validate with Godot
         shell: powershell
         run: .\scripts\validate.ps1 -Godot "C:\Program Files\Godot\Godot_v4.7.2-stable_win64.exe" -Tests

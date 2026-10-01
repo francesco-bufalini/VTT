@@ -38,7 +38,8 @@ if ($version -notmatch "^4\.7\.2\.stable") {
     throw "Expected Godot 4.7.2 stable, found: $version"
 }
 
-if ($FullImport) {
+$ImportSentinel = Join-Path $ProjectRoot "vtt/icons/eye.svg.import"
+if ($FullImport -or -not (Test-Path -LiteralPath $ImportSentinel)) {
     Write-Host "== Full project import / parse =="
     Invoke-Godot -Arguments @("--headless", "--path", $ProjectRoot, "--editor", "--import", "--quit") -TimeoutSeconds 1200
 }
