@@ -1,18 +1,46 @@
 extends RefCounted
 
-# Physical encounter geometry lives on layer 1 so normal CharacterBody3D tokens
-# can actually collide with it.  The post-Kaos volumetric grid uses a separate
-# proxy layer and therefore does not voxelize the whole pair of giants.
-const SOLID_LAYER := 1
+const WALKABLE_LAYER := 1
 const RIGHT_ARM_GRID_LAYER := 8
 const BODY_COLLISION_NAME := "WalkableBodyCollision"
+const GRID_EXCLUDED_GROUP := "grid_3d_excluded"
 const COLLISION_VERSION := 3
+const GEOMETRY_VERSION := 2
+const DECOR_VERSION := 2
 
-const KAOS_HEAD_CUT_Y_METERS := 116.5
-const KAOS_HEAD_CUT_HALF_WIDTH_METERS := 13.0
-const KAOS_SHOULDER_CAP_NAME := "KaosShoulderCap"
-const KAOS_RIGHT_ARM_GRID_NAME := "KaosRightArmGridProxy"
-const SPHERE_SOLID_BODY_NAME := "SphereSolidBody"
+const KAOS_HEAD_CUTOFF_METERS := 116.5
+const KAOS_NECK_HALF_WIDTH_METERS := 13.0
+const KAOS_RIGHT_ARM_MIN_X_METERS := 12.0
+const KAOS_RIGHT_ARM_MIN_Y_METERS := 105.0
+const KAOS_RIGHT_ARM_MAX_Z_METERS := -5.0
+
+const RUIN_NODE_NAMES: Array[String] = [
+	"FlutedColumns",
+	"Capitals",
+	"RomanArches",
+	"Cornices",
+	"ColumnPlinths",
+	"ContinuousApseWall",
+]
+
+const KAOS_HEAD_VISUAL_TERMS: Array[String] = [
+	"Hair",
+	"Lock",
+	"Crown",
+	"Sclera",
+	"Iris",
+	"Pupil",
+	"FittedGoldCollar",
+	"GoldCollarRim",
+]
+
+const KLOTHYS_HAIR_TERMS: Array[String] = [
+	"AnatomicalHairline",
+	"RootedSilverLock",
+	"PartedTempleLock",
+	"HangingSilverTress",
+]
+
 
 static func remove_legacy_platforms(scene: Node) -> void:
 	for path in [
@@ -22,6 +50,7 @@ static func remove_legacy_platforms(scene: Node) -> void:
 		var node := scene.get_node_or_null(path)
 		if node != null:
 			node.free()
+
 
 static func remove_kaos_phase_two_token(scene: Node) -> void:
 	var tokens := scene.get_node_or_null("Tokens")
@@ -34,6 +63,7 @@ static func remove_kaos_phase_two_token(scene: Node) -> void:
 		):
 			child.free()
 
+
 static func clear_baked_tokens(scene: Node) -> void:
 	var tokens := scene.get_node_or_null("Tokens")
 	if tokens == null:
@@ -41,104 +71,273 @@ static func clear_baked_tokens(scene: Node) -> void:
 	for child in tokens.get_children():
 		child.free()
 
-# Keep the petrified body/arms, but remove Kaos' head and neck.  The clip is
-# deliberately limited to the centre of the upper body so raised arms survive.
-# A real stone cap closes the cut: from above the shoulders are a continuous,
-# opaque walkable surface rather than an opening into the anatomy mesh.
-static func prepare_headless_kaos(scene: Node) -> void:
+
+static func active_kaos_visual(scene: Node) -> Node3D:
 	var kaos := scene.get_node_or_null("KaosRoot") as Node3D
 	if kaos == null:
-		return
-	var visual := kaos.get_node_or_null("ClimbingVisual") as Node3D
-	if visual == null or not visual.visible:
-		visual = kaos.get_node_or_null("KaosVisual") as Node3D
+		return null
+	var climbing := kaos.get_node_or_null("ClimbingVisual") as Node3D
+	if climbing != null and climbing.visible:
+		return climbing
+	return kaos.get_node_or_null("KaosVisual") as Node3D
+
+
+static func prepare_kaos_petrified_geometry(scene: Node) -> void:
+	var visual := active_kaos_visual(scene)
 	if visual == null:
 		return
+	var units := _scene_units(scene)
+	if units <= 0.0:
+		return
 
-	var units: float = _meters_to_world(scene)
+	if int(visual.get_meta("post_kaos_geometry_version", 0)) < GEOMETRY_VERSION:
+		_freeze_active_blend_shapes(visual)
+		_clip_kaos_head_and_neck(visual, units)
+		_remove_kaos_head_accessories(visual)
+		visual.set_meta("post_kaos_geometry_version", GEOMETRY_VERSION)
+
 	var stone := _stone_material()
-	var clipped_stone := _kaos_clipped_stone_material(
-		kaos.global_position,
-		units
-	)
-
 	for child in visual.find_children("*", "MeshInstance3D", true, false):
 		var mesh_instance := child as MeshInstance3D
-		if mesh_instance == null:
+		if mesh_instance == null or not mesh_instance.visible:
 			continue
-		var label := String(
-			mesh_instance.get_meta("visual_role", mesh_instance.name)
-		)
-		if (
-			"Hair" in label
-			or "Lock" in label
-			or "Crown" in label
-			or "Sclera" in label
-			or "Iris" in label
-			or "Pupil" in label
-			or "Lightning" in label
-		):
-			mesh_instance.hide()
-			continue
-		if mesh_instance.name == KAOS_SHOULDER_CAP_NAME:
-			continue
-		mesh_instance.material_override = clipped_stone
-		mesh_instance.set_meta("post_kaos_head_clipped", true)
+		mesh_instance.material_override = stone
 
 	_ensure_kaos_shoulder_cap(visual, units, stone)
-	visual.set_meta("post_kaos_headless", true)
 
-# Backward-compatible alias for older baked scenes/scripts.
+
+# Compatibility alias used by older baked post-Kaos scenes.
 static func close_kaos_petrification_hole(scene: Node) -> void:
-	prepare_headless_kaos(scene)
+	prepare_kaos_petrified_geometry(scene)
 
-# Name used by the post-Kaos scene controller.  Keep the intent explicit:
-# this prepares the petrified geometry, including the shoulder cap.
-static func prepare_kaos_petrified_geometry(scene: Node) -> void:
-	prepare_headless_kaos(scene)
 
-static func ensure_surface_collisions(scene: Node) -> void:
-	var units: float = _meters_to_world(scene)
+static func restore_encounter_decor(
+	scene: Node,
+	force_rebuild: bool = false
+) -> void:
+	var already_current := (
+		int(scene.get_meta("post_kaos_decor_version", 0)) >= DECOR_VERSION
+	)
+	if already_current and not force_rebuild and _decor_is_complete(scene):
+		return
 
-	var kaos_visual := scene.get_node_or_null(
-		"KaosRoot/ClimbingVisual"
-	) as Node3D
-	if kaos_visual == null or not kaos_visual.visible:
-		kaos_visual = scene.get_node_or_null(
-			"KaosRoot/KaosVisual"
-		) as Node3D
-	if kaos_visual != null:
-		_ensure_anatomy_collisions(
-			kaos_visual,
-			units,
-			true
-		)
-		_ensure_cap_collision(kaos_visual, units)
-		_ensure_right_arm_grid_proxy(kaos_visual, units)
+	var units := _scene_units(scene)
+	if units <= 0.0:
+		return
+	_restore_klothys_hair(scene, units)
+	_restore_titan_faces(scene, units)
+	_restore_ruins(scene, units)
+	scene.set_meta("post_kaos_decor_version", DECOR_VERSION)
 
-	var klothis_visual := scene.get_node_or_null(
-		"KlothisRoot/KlothisVisual"
-	) as Node3D
-	if klothis_visual != null:
-		_ensure_anatomy_collisions(
-			klothis_visual,
-			units,
-			false
-		)
-
-	_ensure_sphere_collision(scene, units)
-
-# Compatibility with the previous helper API.
-static func ensure_body_collisions(scene: Node) -> void:
-	ensure_surface_collisions(scene)
 
 static func ensure_solid_surfaces(scene: Node) -> void:
-	ensure_surface_collisions(scene)
+	var current := int(scene.get_meta("post_kaos_collision_version", 0))
+	if current >= COLLISION_VERSION and _solid_surface_set_is_complete(scene):
+		return
 
-static func _ensure_anatomy_collisions(
+	_remove_generated_collisions(scene)
+
+	var kaos_visual := active_kaos_visual(scene)
+	if kaos_visual != null:
+		_add_anatomy_collisions(kaos_visual, true, "kaos")
+		var cap := kaos_visual.get_node_or_null("PetrifiedShoulderCap") as MeshInstance3D
+		if cap != null:
+			_add_mesh_collision(cap, true, "kaos_shoulders")
+		_add_kaos_right_arm_grid_proxy(scene, kaos_visual)
+
+	var klothys := scene.get_node_or_null("KlothisRoot/KlothisVisual") as Node3D
+	if klothys != null and klothys.visible:
+		_add_anatomy_collisions(klothys, true, "klothys")
+
+	_add_sphere_collision(scene)
+	scene.set_meta("post_kaos_collision_version", COLLISION_VERSION)
+
+
+# Compatibility alias kept for the previous post-Kaos runtime script.
+static func ensure_body_collisions(scene: Node) -> void:
+	ensure_solid_surfaces(scene)
+
+
+static func has_post_roster(scene: Node) -> bool:
+	var tokens := scene.get_node_or_null("Tokens")
+	if tokens == null:
+		return false
+	for child in tokens.get_children():
+		if bool(child.get_meta("post_kaos_roster", false)):
+			return true
+	return false
+
+
+static func _scene_units(scene: Node) -> float:
+	var measurement := scene.get_node_or_null("MeasurementTool")
+	if measurement == null or not measurement.has_method("meters_to_world"):
+		return 0.0
+	return float(measurement.call("meters_to_world", 1.0))
+
+
+static func _stone_material() -> ShaderMaterial:
+	var stone := ShaderMaterial.new()
+	stone.shader = load("res://encounter/sphere_surface.gdshader")
+	preload("res://encounter/pbr_assets.gd").apply(stone, "dark_rock")
+	return stone
+
+
+static func _freeze_active_blend_shapes(visual: Node3D) -> void:
+	for node in visual.find_children("*", "MeshInstance3D", true, false):
+		var mesh_instance := node as MeshInstance3D
+		if mesh_instance == null or mesh_instance.mesh == null:
+			continue
+		var source: Mesh = mesh_instance.mesh
+		var blend_count := source.get_blend_shape_count()
+		if blend_count <= 0:
+			continue
+
+		var active_index := -1
+		var active_weight := 0.0
+		for index in range(blend_count):
+			var weight := absf(mesh_instance.get_blend_shape_value(index))
+			if weight > active_weight:
+				active_weight = weight
+				active_index = index
+		if active_index < 0 or active_weight < 0.001:
+			continue
+
+		var frozen := ArrayMesh.new()
+		for surface_index in range(source.get_surface_count()):
+			var arrays: Array = source.surface_get_arrays(surface_index).duplicate(true)
+			var blend_arrays: Array = source.surface_get_blend_shape_arrays(
+				surface_index
+			)
+			if active_index < blend_arrays.size():
+				var target: Array = blend_arrays[active_index]
+				for slot in [
+					Mesh.ARRAY_VERTEX,
+					Mesh.ARRAY_NORMAL,
+					Mesh.ARRAY_TANGENT,
+				]:
+					if slot >= target.size():
+						continue
+					var target_value: Variant = target[slot]
+					if target_value != null:
+						arrays[slot] = target_value
+			frozen.add_surface_from_arrays(Mesh.PRIMITIVE_TRIANGLES, arrays)
+			var material := source.surface_get_material(surface_index)
+			if material != null:
+				frozen.surface_set_material(surface_index, material)
+		mesh_instance.mesh = frozen
+
+
+static func _clip_kaos_head_and_neck(visual: Node3D, units: float) -> void:
+	for node in visual.find_children("*", "MeshInstance3D", true, false):
+		var mesh_instance := node as MeshInstance3D
+		if mesh_instance == null or mesh_instance.mesh == null:
+			continue
+		var role := String(
+			mesh_instance.get_meta("visual_role", mesh_instance.name)
+		)
+		if not role.begins_with("Anatomy"):
+			continue
+
+		var source: Mesh = mesh_instance.mesh
+		var clipped := ArrayMesh.new()
+		for surface_index in range(source.get_surface_count()):
+			var arrays: Array = source.surface_get_arrays(surface_index).duplicate(true)
+			var vertices: PackedVector3Array = arrays[Mesh.ARRAY_VERTEX]
+			var indices: PackedInt32Array = arrays[Mesh.ARRAY_INDEX]
+			if indices.is_empty():
+				indices.resize(vertices.size())
+				for index in range(vertices.size()):
+					indices[index] = index
+
+			var kept := PackedInt32Array()
+			for index in range(0, indices.size() - 2, 3):
+				var a := indices[index]
+				var b := indices[index + 1]
+				var c := indices[index + 2]
+				if (
+					_keep_kaos_anatomy_vertex(
+						mesh_instance.transform * vertices[a],
+						units
+					)
+					and _keep_kaos_anatomy_vertex(
+						mesh_instance.transform * vertices[b],
+						units
+					)
+					and _keep_kaos_anatomy_vertex(
+						mesh_instance.transform * vertices[c],
+						units
+					)
+				):
+					kept.append(a)
+					kept.append(b)
+					kept.append(c)
+			arrays[Mesh.ARRAY_INDEX] = kept
+			if kept.size() < 3:
+				continue
+			clipped.add_surface_from_arrays(Mesh.PRIMITIVE_TRIANGLES, arrays)
+			var material := source.surface_get_material(surface_index)
+			if material != null:
+				clipped.surface_set_material(
+					clipped.get_surface_count() - 1,
+					material
+				)
+		if clipped.get_surface_count() > 0:
+			mesh_instance.mesh = clipped
+
+
+static func _keep_kaos_anatomy_vertex(
+	point_world_units: Vector3,
+	units: float
+) -> bool:
+	var point := point_world_units / units
+	return not (
+		point.y > KAOS_HEAD_CUTOFF_METERS
+		and absf(point.x) < KAOS_NECK_HALF_WIDTH_METERS
+	)
+
+
+static func _remove_kaos_head_accessories(visual: Node3D) -> void:
+	var to_remove: Array[Node] = []
+	for child in visual.get_children():
+		if not child is MeshInstance3D:
+			continue
+		var label := String(child.get_meta("visual_role", child.name))
+		if _matches_any_term(label, KAOS_HEAD_VISUAL_TERMS):
+			to_remove.append(child)
+	for child in to_remove:
+		child.free()
+
+
+static func _ensure_kaos_shoulder_cap(
 	visual: Node3D,
 	units: float,
-	clip_kaos_head: bool
+	material: Material
+) -> void:
+	var old := visual.get_node_or_null("PetrifiedShoulderCap")
+	if old != null:
+		old.free()
+
+	var mesh := CylinderMesh.new()
+	mesh.top_radius = 12.9 * units
+	mesh.bottom_radius = 13.2 * units
+	mesh.height = 1.8 * units
+	mesh.radial_segments = 64
+
+	var cap := MeshInstance3D.new()
+	cap.name = "PetrifiedShoulderCap"
+	cap.set_meta("visual_role", "PetrifiedShoulderCap")
+	cap.set_meta("post_kaos_shoulder_cap", true)
+	cap.mesh = mesh
+	cap.material_override = material
+	cap.position = Vector3(0.0, 115.6 * units, 0.0)
+	cap.scale = Vector3(1.0, 1.0, 0.74)
+	visual.add_child(cap)
+
+
+static func _add_anatomy_collisions(
+	visual: Node3D,
+	grid_excluded: bool,
+	surface_label: String
 ) -> void:
 	for child in visual.find_children("*", "MeshInstance3D", true, false):
 		var mesh_instance := child as MeshInstance3D
@@ -151,378 +350,173 @@ static func _ensure_anatomy_collisions(
 		)
 		if not role.begins_with("Anatomy"):
 			continue
+		_add_mesh_collision(mesh_instance, grid_excluded, surface_label)
 
-		var existing := mesh_instance.get_node_or_null(
-			BODY_COLLISION_NAME
-		) as StaticBody3D
-		if (
-			existing != null
-			and int(existing.get_meta("post_kaos_collision_version", 0))
-				== COLLISION_VERSION
-		):
-			continue
-		if existing != null:
-			existing.free()
 
-		var shape: Shape3D = null
-		if clip_kaos_head:
-			shape = _kaos_body_shape_without_head(
-				mesh_instance,
-				visual,
-				units
-			)
-		else:
-			shape = mesh_instance.mesh.create_trimesh_shape()
-		if shape == null:
-			continue
-
-		var body := StaticBody3D.new()
-		body.name = BODY_COLLISION_NAME
-		body.collision_layer = SOLID_LAYER
-		body.collision_mask = 0
-		body.add_to_group("tactical_platform")
-		body.set_meta("post_kaos_body_collision", true)
-		body.set_meta(
-			"post_kaos_collision_version",
-			COLLISION_VERSION
-		)
-		mesh_instance.add_child(body)
-
-		var collider := CollisionShape3D.new()
-		collider.name = "CollisionShape3D"
-		collider.shape = shape
-		body.add_child(collider)
-
-static func _kaos_body_shape_without_head(
+static func _add_mesh_collision(
 	mesh_instance: MeshInstance3D,
-	visual: Node3D,
-	units: float
-) -> Shape3D:
-	var mesh := mesh_instance.mesh
-	if mesh == null:
-		return null
-
-	var to_visual: Transform3D = (
-		visual.global_transform.affine_inverse()
-		* mesh_instance.global_transform
-	)
-	var surface := SurfaceTool.new()
-	surface.begin(Mesh.PRIMITIVE_TRIANGLES)
-	var kept_triangles := 0
-
-	for surface_index in range(mesh.get_surface_count()):
-		if mesh.surface_get_primitive_type(surface_index) != Mesh.PRIMITIVE_TRIANGLES:
-			continue
-		var arrays: Array = mesh.surface_get_arrays(surface_index)
-		var vertices: PackedVector3Array = arrays[Mesh.ARRAY_VERTEX]
-		var indices: PackedInt32Array = arrays[Mesh.ARRAY_INDEX]
-		if indices.is_empty():
-			indices.resize(vertices.size())
-			for index in range(vertices.size()):
-				indices[index] = index
-
-		for index in range(0, indices.size() - 2, 3):
-			var raw_a: Vector3 = vertices[indices[index]]
-			var raw_b: Vector3 = vertices[indices[index + 1]]
-			var raw_c: Vector3 = vertices[indices[index + 2]]
-			var a: Vector3 = (to_visual * raw_a) / units
-			var b: Vector3 = (to_visual * raw_b) / units
-			var c: Vector3 = (to_visual * raw_c) / units
-			var centroid := (a + b + c) / 3.0
-			var upper_vertices := 0
-			for point in [a, b, c]:
-				if _point_is_kaos_head_or_neck(point):
-					upper_vertices += 1
-
-			# Removing a triangle as soon as two vertices belong to the central
-			# head/neck volume prevents invisible pieces from remaining solid.
-			if (
-				upper_vertices >= 2
-				or _point_is_kaos_head_or_neck(centroid)
-			):
-				continue
-
-			surface.add_vertex(raw_a)
-			surface.add_vertex(raw_b)
-			surface.add_vertex(raw_c)
-			kept_triangles += 1
-
-	if kept_triangles == 0:
-		return null
-	var clipped_mesh := surface.commit()
-	if clipped_mesh == null:
-		return null
-	return clipped_mesh.create_trimesh_shape()
-
-static func _point_is_kaos_head_or_neck(point: Vector3) -> bool:
-	return (
-		point.y > KAOS_HEAD_CUT_Y_METERS
-		and absf(point.x) < KAOS_HEAD_CUT_HALF_WIDTH_METERS
-	)
-
-static func _ensure_kaos_shoulder_cap(
-	visual: Node3D,
-	units: float,
-	stone: Material
+	grid_excluded: bool,
+	surface_label: String
 ) -> void:
-	var cap := visual.get_node_or_null(
-		KAOS_SHOULDER_CAP_NAME
-	) as MeshInstance3D
-	if cap == null:
-		var mesh := CylinderMesh.new()
-		mesh.top_radius = units
-		mesh.bottom_radius = units
-		mesh.height = 0.8 * units
-		mesh.radial_segments = 64
-		mesh.rings = 1
-		cap = MeshInstance3D.new()
-		cap.name = KAOS_SHOULDER_CAP_NAME
-		cap.mesh = mesh
-		cap.position = Vector3(
-			0.0,
-			KAOS_HEAD_CUT_Y_METERS - 0.15,
-			0.0
-		) * units
-		# Broad across both shoulders, but only as deep as the upper torso.
-		cap.scale = Vector3(13.0, 1.0, 9.5)
-		cap.set_meta("visual_role", KAOS_SHOULDER_CAP_NAME)
-		cap.set_meta("post_kaos_shoulder_cap", true)
-		visual.add_child(cap)
-	cap.material_override = stone
-	cap.show()
-
-static func _ensure_cap_collision(
-	visual: Node3D,
-	units: float
-) -> void:
-	var cap := visual.get_node_or_null(
-		KAOS_SHOULDER_CAP_NAME
-	) as MeshInstance3D
-	if cap == null:
+	var shape: Shape3D = mesh_instance.mesh.create_trimesh_shape()
+	if shape == null:
 		return
-	var body := cap.get_node_or_null(
-		BODY_COLLISION_NAME
-	) as StaticBody3D
-	if (
-		body != null
-		and int(body.get_meta("post_kaos_collision_version", 0))
-			== COLLISION_VERSION
-	):
-		return
-	if body != null:
-		body.free()
-
-	body = StaticBody3D.new()
+	var body := StaticBody3D.new()
 	body.name = BODY_COLLISION_NAME
-	body.collision_layer = SOLID_LAYER
+	body.collision_layer = WALKABLE_LAYER
 	body.collision_mask = 0
 	body.add_to_group("tactical_platform")
-	body.set_meta("post_kaos_shoulder_collision", true)
-	body.set_meta("post_kaos_collision_version", COLLISION_VERSION)
-	cap.add_child(body)
+	if grid_excluded:
+		body.add_to_group(GRID_EXCLUDED_GROUP)
+	body.set_meta("post_kaos_collision", true)
+	body.set_meta("post_kaos_surface", surface_label)
+	mesh_instance.add_child(body)
 
-	var collision := CollisionShape3D.new()
-	collision.name = "CollisionShape3D"
-	var shape := BoxShape3D.new()
-	# The shape is local to the already scaled visual cap.
-	shape.size = Vector3(
-		2.0 * units,
-		0.8 * units,
-		2.0 * units
-	)
-	collision.shape = shape
-	body.add_child(collision)
+	var collider := CollisionShape3D.new()
+	collider.name = "CollisionShape3D"
+	collider.shape = shape
+	body.add_child(collider)
 
-static func _ensure_sphere_collision(
-	scene: Node,
-	units: float
-) -> void:
-	var sphere_root := scene.get_node_or_null(
-		"KlothisRoot/SphereVisual"
-	) as Node3D
+
+static func _add_sphere_collision(scene: Node) -> void:
+	var sphere_root := scene.get_node_or_null("KlothisRoot/SphereVisual") as Node3D
 	if sphere_root == null:
 		return
-	var body := sphere_root.get_node_or_null(
-		SPHERE_SOLID_BODY_NAME
-	) as StaticBody3D
-	if (
-		body != null
-		and int(body.get_meta("post_kaos_collision_version", 0))
-			== COLLISION_VERSION
-	):
+	var units := _scene_units(scene)
+	if units <= 0.0:
 		return
-	if body != null:
-		body.free()
 
-	body = StaticBody3D.new()
-	body.name = SPHERE_SOLID_BODY_NAME
-	body.collision_layer = SOLID_LAYER
+	var body := StaticBody3D.new()
+	body.name = "WalkableSphereCollision"
+	body.collision_layer = WALKABLE_LAYER
 	body.collision_mask = 0
 	body.add_to_group("tactical_platform")
-	body.set_meta("post_kaos_sphere_collision", true)
-	body.set_meta("post_kaos_collision_version", COLLISION_VERSION)
+	body.add_to_group(GRID_EXCLUDED_GROUP)
+	body.set_meta("post_kaos_collision", true)
+	body.set_meta("post_kaos_surface", "sphere")
 	sphere_root.add_child(body)
 
-	var collision := CollisionShape3D.new()
-	collision.name = "CollisionShape3D"
 	var shape := SphereShape3D.new()
 	shape.radius = 220.0 * units
-	collision.shape = shape
-	body.add_child(collision)
+	var collider := CollisionShape3D.new()
+	collider.name = "CollisionShape3D"
+	collider.shape = shape
+	body.add_child(collider)
 
-static func _ensure_right_arm_grid_proxy(
-	visual: Node3D,
-	units: float
+
+static func _add_kaos_right_arm_grid_proxy(
+	scene: Node,
+	visual: Node3D
 ) -> void:
-	var existing := visual.get_node_or_null(
-		KAOS_RIGHT_ARM_GRID_NAME
-	) as StaticBody3D
-	if (
-		existing != null
-		and int(existing.get_meta("post_kaos_collision_version", 0))
-			== COLLISION_VERSION
-	):
+	var units := _scene_units(scene)
+	if units <= 0.0:
 		return
-	if existing != null:
-		existing.free()
+	var faces := PackedVector3Array()
 
-	var proxy := StaticBody3D.new()
-	proxy.name = KAOS_RIGHT_ARM_GRID_NAME
-	proxy.collision_layer = RIGHT_ARM_GRID_LAYER
-	proxy.collision_mask = 0
-	proxy.set_meta("post_kaos_right_arm_grid", true)
-	proxy.set_meta("post_kaos_collision_version", COLLISION_VERSION)
-	visual.add_child(proxy)
-
-	# Same climbing-pose landmarks used by hero_costume.gd for Kaos' right
-	# bracer.  The proxy is grid-only: the exact anatomy collider below it
-	# remains responsible for token placement and physical support.
-	var points: Array[Vector3] = [
-		Vector3(12.0, 117.0, -8.0),
-		Vector3(26.0, 125.0, -23.0),
-		Vector3(28.0, 140.0, -46.0),
-		Vector3(29.0, 143.0, -51.0),
-	]
-	var radii: Array[float] = [5.2, 4.7, 3.8]
-	for index in range(points.size() - 1):
-		_add_grid_capsule(
-			proxy,
-			points[index] * units,
-			points[index + 1] * units,
-			radii[index] * units,
-			index
+	for node in visual.find_children("*", "MeshInstance3D", true, false):
+		var mesh_instance := node as MeshInstance3D
+		if mesh_instance == null or mesh_instance.mesh == null:
+			continue
+		var role := String(
+			mesh_instance.get_meta("visual_role", mesh_instance.name)
 		)
+		if not role.begins_with("Anatomy"):
+			continue
 
-static func _add_grid_capsule(
-	parent: StaticBody3D,
-	from: Vector3,
-	to: Vector3,
-	radius: float,
-	index: int
-) -> void:
-	var axis := to - from
-	var length := axis.length()
-	if length <= 0.001:
+		var source: Mesh = mesh_instance.mesh
+		for surface_index in range(source.get_surface_count()):
+			var arrays: Array = source.surface_get_arrays(surface_index)
+			var vertices: PackedVector3Array = arrays[Mesh.ARRAY_VERTEX]
+			var indices: PackedInt32Array = arrays[Mesh.ARRAY_INDEX]
+			if indices.is_empty():
+				indices.resize(vertices.size())
+				for index in range(vertices.size()):
+					indices[index] = index
+			for index in range(0, indices.size() - 2, 3):
+				var p0 := mesh_instance.transform * vertices[indices[index]]
+				var p1 := mesh_instance.transform * vertices[indices[index + 1]]
+				var p2 := mesh_instance.transform * vertices[indices[index + 2]]
+				var center := (p0 + p1 + p2) / 3.0 / units
+				if (
+					center.x < KAOS_RIGHT_ARM_MIN_X_METERS
+					or center.y < KAOS_RIGHT_ARM_MIN_Y_METERS
+					or center.z > KAOS_RIGHT_ARM_MAX_Z_METERS
+				):
+					continue
+				faces.append(p0)
+				faces.append(p1)
+				faces.append(p2)
+
+	if faces.size() < 3:
 		return
-	var shape := CapsuleShape3D.new()
-	shape.radius = radius
-	shape.height = maxf(length + radius * 2.0, radius * 2.0)
 
-	var collision := CollisionShape3D.new()
-	collision.name = "RightArmGridSegment%d" % index
-	collision.shape = shape
-	collision.position = (from + to) * 0.5
-	collision.basis = Basis(Quaternion(Vector3.UP, axis.normalized()))
-	parent.add_child(collision)
+	var shape := ConcavePolygonShape3D.new()
+	shape.set_faces(faces)
 
-static func _stone_material() -> ShaderMaterial:
-	var stone := ShaderMaterial.new()
-	stone.shader = load("res://encounter/sphere_surface.gdshader")
-	preload("res://encounter/pbr_assets.gd").apply(stone, "dark_rock")
-	return stone
+	var body := StaticBody3D.new()
+	body.name = "KaosRightArmGridProxy"
+	# Grid-only collision. The exact anatomy collider remains on layer 1 and
+	# is what tokens actually rest on; this proxy only tells VolumetricGrid
+	# where to draw cells around Kaos' petrified right arm.
+	body.collision_layer = RIGHT_ARM_GRID_LAYER
+	body.collision_mask = 0
+	body.set_meta("post_kaos_collision", true)
+	body.set_meta("post_kaos_surface", "kaos_right_arm_grid")
+	body.set_meta("post_kaos_right_arm_grid", true)
+	body.set_meta("right_arm_side", "positive_x")
+	visual.add_child(body)
 
-static func _kaos_clipped_stone_material(
-	giant_origin: Vector3,
-	units: float
-) -> ShaderMaterial:
-	var stone := ShaderMaterial.new()
-	var shader := Shader.new()
-	var code := FileAccess.get_file_as_string(
-		"res://encounter/sphere_surface.gdshader"
-	)
-	code = code.replace(
-		"void fragment() {",
-		(
-			"uniform vec3 giant_origin;\n"
-			+ "uniform float unit_scale;\n"
-			+ "varying vec3 world_point;\n"
-			+ "void vertex() { "
-			+ "world_point=(MODEL_MATRIX*vec4(VERTEX,1.0)).xyz; }\n"
-			+ "void fragment() {\n"
-			+ " vec3 local=(world_point-giant_origin)/unit_scale;\n"
-			+ " if(local.y>%f && abs(local.x)<%f) { discard; }\n"
-		)
-		% [
-			KAOS_HEAD_CUT_Y_METERS,
-			KAOS_HEAD_CUT_HALF_WIDTH_METERS,
-		]
-	)
-	shader.code = code
-	stone.shader = shader
-	preload("res://encounter/pbr_assets.gd").apply(stone, "dark_rock")
-	stone.set_shader_parameter("giant_origin", giant_origin)
-	stone.set_shader_parameter("unit_scale", units)
-	return stone
+	var collider := CollisionShape3D.new()
+	collider.name = "CollisionShape3D"
+	collider.shape = shape
+	body.add_child(collider)
 
-static func _meters_to_world(scene: Node) -> float:
-	var tool := scene.get_node_or_null("MeasurementTool")
-	if tool != null and tool.has_method("meters_to_world"):
-		return float(tool.call("meters_to_world", 1.0))
-	return 1.0
 
-static func restore_encounter_decor(scene: Node) -> void:
-	var units: float = _meters_to_world(scene)
-	_restore_klothis_hair(scene, units)
-	_restore_titan_faces(scene, units)
-	_restore_background_ruins(scene, units)
+static func _remove_generated_collisions(scene: Node) -> void:
+	var nodes: Array[Node] = []
+	for node in scene.find_children("*", "StaticBody3D", true, false):
+		if bool(node.get_meta("post_kaos_collision", false)):
+			nodes.append(node)
+	for node in nodes:
+		node.free()
 
-static func _restore_klothis_hair(scene: Node, units: float) -> void:
-	var visual := scene.get_node_or_null(
-		"KlothisRoot/KlothisVisual"
-	) as Node3D
+
+static func _solid_surface_set_is_complete(scene: Node) -> bool:
+	var found := {
+		"kaos": false,
+		"kaos_shoulders": false,
+		"kaos_right_arm_grid": false,
+		"klothys": false,
+		"sphere": false,
+	}
+	for node in scene.find_children("*", "StaticBody3D", true, false):
+		if not bool(node.get_meta("post_kaos_collision", false)):
+			continue
+		var label := String(node.get_meta("post_kaos_surface", ""))
+		if label in found:
+			found[label] = true
+	for value in found.values():
+		if not bool(value):
+			return false
+	return true
+
+
+static func _restore_klothys_hair(scene: Node, units: float) -> void:
+	var visual := scene.get_node_or_null("KlothisRoot/KlothisVisual") as Node3D
 	if visual == null:
 		return
 
-	var hair_prefixes: Array[String] = [
-		"RootedSilverLock",
-		"PartedTempleLock",
-		"AnatomicalHairline",
-		"HangingSilverTress",
-	]
-	var hair_nodes: Array[MeshInstance3D] = []
-	for child in visual.find_children("*", "MeshInstance3D", true, false):
-		var mesh := child as MeshInstance3D
-		if mesh == null:
+	var old_hair: Array[Node] = []
+	for child in visual.get_children():
+		if not child is MeshInstance3D:
 			continue
-		var label := String(mesh.get_meta("visual_role", mesh.name))
-		if _starts_with_any(label, hair_prefixes):
-			hair_nodes.append(mesh)
+		var label := String(child.get_meta("visual_role", child.name))
+		if _matches_any_term(label, KLOTHYS_HAIR_TERMS):
+			old_hair.append(child)
+	for child in old_hair:
+		child.free()
 
-	# The original encounter creates 88 rooted locks, 18 temple locks and the
-	# anatomical hairline (plus the long silver tresses).  If those survived
-	# the bake, simply make sure they are visible.
-	if hair_nodes.size() >= 100:
-		for hair_node in hair_nodes:
-			hair_node.show()
-		return
-
-	for hair_node in hair_nodes:
-		hair_node.free()
-
-	# Rebuild from the exact same giant builder used by encounter, then copy
-	# only the hair meshes.  The builder conforms them to the sphere before we
-	# transfer them, restoring the original visual placement.
-	var temporary := Node3D.new()
+	var temp := Node3D.new()
 	var body := StandardMaterial3D.new()
 	body.albedo_color = Color(0.69, 0.57, 0.44)
 	body.roughness = 0.72
@@ -533,80 +527,51 @@ static func _restore_klothis_hair(scene: Node, units: float) -> void:
 	marble.albedo_color = Color(0.51, 0.53, 0.51)
 	var gold := StandardMaterial3D.new()
 	gold.albedo_color = Color(0.62, 0.52, 0.35)
-	var builder := preload(
-		"res://encounter/sculpted_giant_visual.gd"
-	).new()
-	builder.build(temporary, units, body, marble, gold, true)
+	preload("res://encounter/sculpted_giant_visual.gd").new().build(
+		temp,
+		units,
+		body,
+		marble,
+		gold,
+		true
+	)
 
-	for child in temporary.get_children().duplicate():
+	var restored: Array[Node] = []
+	for child in temp.get_children():
 		if not child is MeshInstance3D:
-			child.free()
 			continue
-		var mesh := child as MeshInstance3D
-		var label := String(mesh.get_meta("visual_role", mesh.name))
-		if not _starts_with_any(label, hair_prefixes):
-			mesh.free()
-			continue
-		temporary.remove_child(mesh)
-		visual.add_child(mesh)
-		mesh.show()
-	temporary.free()
+		var label := String(child.get_meta("visual_role", child.name))
+		if _matches_any_term(label, KLOTHYS_HAIR_TERMS):
+			restored.append(child)
+	for child in restored:
+		temp.remove_child(child)
+		visual.add_child(child)
+	temp.free()
+
 
 static func _restore_titan_faces(scene: Node, units: float) -> void:
-	var sphere_root := scene.get_node_or_null(
-		"KlothisRoot/SphereVisual"
-	) as Node3D
+	var sphere_root := scene.get_node_or_null("KlothisRoot/SphereVisual") as Node3D
 	if sphere_root == null:
 		return
-	var faces := sphere_root.get_node_or_null(
-		"CarvedTitanFaces"
-	) as MultiMeshInstance3D
-	if (
-		faces != null
-		and faces.multimesh != null
-		and faces.multimesh.instance_count == 16
-	):
-		faces.material_override = _stone_material()
-		faces.show()
-		return
-	if faces != null:
-		faces.free()
+	var old := sphere_root.get_node_or_null("CarvedTitanFaces")
+	if old != null:
+		old.free()
+	var stone := _stone_material()
 	preload("res://encounter/titan_reliefs.gd").new().build(
 		sphere_root,
 		units,
-		_stone_material()
+		stone
 	)
 
-static func _restore_background_ruins(scene: Node, units: float) -> void:
+
+static func _restore_ruins(scene: Node, units: float) -> void:
 	var root := scene.get_node_or_null("Board/MapGeometry") as Node3D
 	if root == null:
 		return
-	var required: Array[String] = [
-		"FlutedColumns",
-		"Capitals",
-		"RomanArches",
-		"Cornices",
-		"ColumnPlinths",
-		"ContinuousApseWall",
-	]
-	var complete := true
-	for node_name in required:
-		var node := root.get_node_or_null(node_name) as Node3D
-		if node == null:
-			complete = false
-			continue
-		node.show()
-		if node is MultiMeshInstance3D:
-			var batch := node as MultiMeshInstance3D
-			if batch.multimesh == null or batch.multimesh.instance_count == 0:
-				complete = false
-	if complete:
-		return
-
-	for node_name in required:
-		var stale := root.get_node_or_null(node_name)
-		if stale != null:
-			stale.free()
+	for node_name in RUIN_NODE_NAMES:
+		var old := root.get_node_or_null(node_name)
+		if old != null:
+			old.free()
 	var marble := StandardMaterial3D.new()
 	marble.albedo_color = Color(0.51, 0.53, 0.51)
 	marble.roughness = 0.8
@@ -616,17 +581,33 @@ static func _restore_background_ruins(scene: Node, units: float) -> void:
 		marble
 	)
 
-static func _starts_with_any(value: String, prefixes: Array[String]) -> bool:
-	for prefix in prefixes:
-		if value.begins_with(prefix):
-			return true
-	return false
 
-static func has_post_roster(scene: Node) -> bool:
-	var tokens := scene.get_node_or_null("Tokens")
-	if tokens == null:
+static func _decor_is_complete(scene: Node) -> bool:
+	var visual := scene.get_node_or_null("KlothisRoot/KlothisVisual") as Node3D
+	var sphere := scene.get_node_or_null("KlothisRoot/SphereVisual") as Node3D
+	var ruins := scene.get_node_or_null("Board/MapGeometry") as Node3D
+	if visual == null or sphere == null or ruins == null:
 		return false
-	for child in tokens.get_children():
-		if bool(child.get_meta("post_kaos_roster", false)):
+
+	var hair_count := 0
+	for child in visual.get_children():
+		if not child is MeshInstance3D:
+			continue
+		var label := String(child.get_meta("visual_role", child.name))
+		if _matches_any_term(label, KLOTHYS_HAIR_TERMS):
+			hair_count += 1
+	if hair_count < 100:
+		return false
+	if sphere.get_node_or_null("CarvedTitanFaces") == null:
+		return false
+	for node_name in RUIN_NODE_NAMES:
+		if ruins.get_node_or_null(node_name) == null:
+			return false
+	return true
+
+
+static func _matches_any_term(label: String, terms: Array[String]) -> bool:
+	for term in terms:
+		if term in label:
 			return true
 	return false
