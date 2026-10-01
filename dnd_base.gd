@@ -819,6 +819,17 @@ func _process(_delta: float) -> void:
 
 
 func _input(event: InputEvent) -> void:
+	if (
+		event is InputEventMouseButton
+		and event.pressed
+		and event.button_index == MOUSE_BUTTON_LEFT
+		and spell_system != null
+		and is_instance_valid(spell_system)
+		and spell_system.has_method("has_post_cast_cleanup")
+		and bool(spell_system.call("has_post_cast_cleanup"))
+	):
+		spell_system.call("dismiss_post_cast_visuals")
+
 	# Undo/redo sono shortcut globali e devono essere gestite prima dei
 	# pannelli UI. In precedenza il pannello Incantesimi poteva lasciare
 	# passare un movimento via _unhandled_input() ma bloccare Ctrl+Z qui.
@@ -2566,6 +2577,10 @@ func _remove_from_selection(token: CharacterBody3D) -> void:
 	_selected_tokens.erase(token)
 	if token.has_method("set_selected"):
 		token.call("set_selected", false)
+
+
+func clear_token_selection() -> void:
+	_clear_selection()
 
 
 func _clear_selection() -> void:
