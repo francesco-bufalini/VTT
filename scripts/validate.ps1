@@ -1,6 +1,7 @@
 param(
     [string]$Godot = "godot",
-    [switch]$Tests
+    [switch]$Tests,
+    [switch]$FullImport
 )
 
 $ErrorActionPreference = "Stop"
@@ -30,8 +31,10 @@ if ($version -notmatch "^4\.7\.2\.stable") {
     throw "Expected Godot 4.7.2 stable, found: $version"
 }
 
-Write-Host "== Import / parse =="
-Invoke-Godot @("--headless", "--path", $ProjectRoot, "--editor", "--import", "--quit")
+if ($FullImport) {
+    Write-Host "== Full project import / parse =="
+    Invoke-Godot @("--headless", "--path", $ProjectRoot, "--editor", "--import", "--quit")
+}
 
 if ($Tests) {
     $testFiles = Get-ChildItem -LiteralPath (Join-Path $ProjectRoot "tests") -Filter "test_*.gd" -File |
