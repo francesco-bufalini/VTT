@@ -83,7 +83,7 @@ func _build_image_background() -> void:
 		push_error("MainMenu: nessuna texture di sfondo disponibile.")
 		return
 
-	for layer_index in 2:
+	for layer_index in range(2):
 		var layer := TextureRect.new()
 		layer.name = "BackgroundLayer%d" % layer_index
 		layer.set_anchors_and_offsets_preset(Control.PRESET_FULL_RECT)
@@ -118,7 +118,7 @@ func _start_zoom(layer: TextureRect) -> void:
 		layer,
 		"scale",
 		Vector2.ONE * ZOOM_END,
-		SLIDE_DURATION_SECONDS + FADE_DURATION_SECONDS
+		SLIDE_DURATION_SECONDS
 	)
 
 
@@ -159,7 +159,7 @@ func _show_next_background() -> void:
 		incoming,
 		"scale",
 		Vector2.ONE * ZOOM_END,
-		SLIDE_DURATION_SECONDS + FADE_DURATION_SECONDS
+		SLIDE_DURATION_SECONDS
 	)
 
 	_active_layer = incoming_layer_index
