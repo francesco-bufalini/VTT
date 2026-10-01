@@ -27,8 +27,8 @@ jobs:
         run: |
           Write-Host "Runner: $env:RUNNER_NAME"
           Write-Host "Workspace: $env:GITHUB_WORKSPACE"
-          godot --version
+          & "C:\Program Files\Godot\Godot_v4.7.2-stable_win64.exe" --version
 
       - name: Import, parse and run tests
         shell: powershell
-        run: .\scripts\validate.ps1 -Tests
+        run: .\scripts\validate.ps1 -Godot "C:\Program Files\Godot\Godot_v4.7.2-stable_win64.exe" -Tests
