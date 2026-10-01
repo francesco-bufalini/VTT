@@ -16,6 +16,7 @@ const CONTEXT_TOKEN_DETAILS := 14
 const CONTEXT_RESTORE_TRANSFORMATION := 15
 const CAMPAIGN_EDITOR_SCENE_PATH := "res://vtt/editor/campaign_editor.tscn"
 const TOKEN_LIBRARY_MANIFEST := "res://assets/tokens/token_library.json"
+const CHARACTER_TOKEN_ROOT := "res://assets/tokens/Characters"
 const DEFAULT_TOKEN_PROFILE_ID := "death_knight"
 const GridHighlightRenderer = preload("res://vtt/grid_highlight_renderer.gd")
 
@@ -33,7 +34,7 @@ const TOKEN_SIZES := [
 	{"name": "Gargantuan", "footprint": 4.0},
 ]
 
-@export var grid_visible_on_start: bool = false
+@export var grid_visible_on_start: bool = true
 @export var grid_3d_visible_on_start: bool = false
 @export var vision_cones_visible_on_start: bool = false
 @export var cell_size: float = 1.0
@@ -201,6 +202,94 @@ func _token_profile_visual_asset(profile: Dictionary) -> String:
 	return String(profile.get("obj", "")).strip_edges()
 
 
+
+func _collect_character_obj_paths(
+	directory_path: String,
+	relative_prefix: String,
+	out_paths: Array[String]
+) -> void:
+	var directory := DirAccess.open(directory_path)
+	if directory == null:
+		return
+
+	directory.list_dir_begin()
+	while true:
+		var entry := directory.get_next()
+		if entry.is_empty():
+			break
+		if entry.begins_with("."):
+			continue
+
+		var relative_path := (
+			entry
+			if relative_prefix.is_empty()
+			else relative_prefix.path_join(entry)
+		)
+		var full_path := CHARACTER_TOKEN_ROOT.path_join(relative_path)
+		if directory.current_is_dir():
+			_collect_character_obj_paths(
+				full_path,
+				relative_path,
+				out_paths
+			)
+		elif entry.get_extension().to_lower() == "obj":
+			out_paths.append(relative_path)
+	directory.list_dir_end()
+
+
+func _character_token_group(relative_path: String) -> String:
+	var normalized := relative_path.replace("\\", "/")
+	var parts := normalized.split("/", false)
+	if parts.size() >= 2:
+		return String(parts[0]).strip_edges()
+	return normalized.get_file().get_basename().strip_edges()
+
+
+func _append_character_token_profiles() -> void:
+	var relative_paths: Array[String] = []
+	_collect_character_obj_paths(
+		CHARACTER_TOKEN_ROOT,
+		"",
+		relative_paths
+	)
+	if relative_paths.is_empty():
+		return
+
+	relative_paths.sort()
+	var known_assets: Dictionary = {}
+	for profile: Dictionary in _token_profiles:
+		known_assets[_token_profile_visual_asset(profile)] = true
+
+	var group_counts: Dictionary = {}
+	for relative_path: String in relative_paths:
+		var group_name := _character_token_group(relative_path)
+		group_counts[group_name] = int(group_counts.get(group_name, 0)) + 1
+
+	for relative_path: String in relative_paths:
+		var normalized_relative := relative_path.replace("\\", "/")
+		var visual_path := CHARACTER_TOKEN_ROOT.path_join(normalized_relative)
+		if known_assets.has(visual_path):
+			continue
+
+		var group_name := _character_token_group(normalized_relative)
+		var display_name := group_name
+		if int(group_counts.get(group_name, 0)) > 1:
+			display_name = "%s · %s" % [
+				group_name,
+				normalized_relative.get_file().get_basename()
+			]
+
+		_token_profiles.append({
+			"id": "character:" + normalized_relative.to_lower(),
+			"name": display_name,
+			"source": "Characters/" + normalized_relative,
+			"visual_asset": visual_path,
+			"size_name": "Medium",
+			"footprint": 1.0,
+		})
+		known_assets[visual_path] = true
+
+
 func _sort_token_profiles(a: Dictionary, b: Dictionary) -> bool:
 	return (
 		String(a.get("name", "")).nocasecmp_to(
@@ -360,6 +449,8 @@ func _reload_token_miniature_list() -> void:
 			if _token_profile_visual_asset(profile).is_empty():
 				continue
 			_token_profiles.append(profile)
+
+	_append_character_token_profiles()
 
 	_token_profiles.sort_custom(
 		Callable(self, "_sort_token_profiles")
