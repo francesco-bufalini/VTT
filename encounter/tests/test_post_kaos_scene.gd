@@ -109,8 +109,6 @@ func _run() -> void:
 		_fail("Kaos shoulder/base-neck opening is not fully capped.")
 		return
 
-		scene.get_node("MeasurementTool").call("meters_to_world", 1.0)
-	)
 	var head_triangles := _count_remaining_kaos_head_triangles(
 		kaos_visual,
 		units
