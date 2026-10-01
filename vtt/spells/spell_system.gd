@@ -2600,6 +2600,7 @@ func _update_spell_preview() -> void:
 	_update_spell_range_preview(spell_data)
 
 	if _targeting_phase.begins_with("wall_"):
+		_set_spell_affected_targets([], true)
 		_hide_spell_preview()
 		_update_wall_preview(screen_position, spell_data)
 		return
@@ -2608,6 +2609,7 @@ func _update_spell_preview() -> void:
 		"caster":
 			var hovered_caster: Node3D = _token_at_screen(screen_position)
 			if hovered_caster == null:
+				_set_spell_affected_targets([], true)
 				_hide_spell_preview()
 				return
 
@@ -2626,31 +2628,58 @@ func _update_spell_preview() -> void:
 					spell_data
 				)
 				if geometry.is_empty():
+					_set_spell_affected_targets([], true)
 					_hide_spell_preview()
 					return
+				var geometry_start: Vector3 = geometry.get(
+					"start",
+					Vector3.ZERO
+				)
+				var geometry_end: Vector3 = geometry.get(
+					"end",
+					Vector3.ZERO
+				)
 				measurement_tool.call(
 					"show_spell_preview",
-					geometry.get("start", Vector3.ZERO),
-					geometry.get("end", Vector3.ZERO),
+					geometry_start,
+					geometry_end,
 					String(spell_data.get("aoe_shape", "cone")),
 					_spell_style(spell_data),
 					_spell_line_width_world(spell_data)
 				)
+				_set_spell_geometry_highlight(
+					geometry_start,
+					geometry_end,
+					spell_data,
+					hovered_caster
+				)
 			elif caster_mode == "self_emanation":
 				var center: Vector3 = hovered_caster.global_position
+				var emanation_end: Vector3 = _area_endpoint(
+					center,
+					spell_data
+				)
 				measurement_tool.call(
 					"show_spell_preview",
 					center,
-					_area_endpoint(center, spell_data),
+					emanation_end,
 					String(spell_data.get("aoe_shape", "sphere")),
 					_spell_style(spell_data),
 					_spell_line_width_world(spell_data)
 				)
+				_set_spell_geometry_highlight(
+					center,
+					emanation_end,
+					spell_data,
+					hovered_caster
+				)
 			else:
+				_set_spell_affected_targets([], true)
 				_hide_spell_preview()
 
 		"point":
 			if _pending_caster == null or not is_instance_valid(_pending_caster):
+				_set_spell_affected_targets([], true)
 				_hide_spell_preview()
 				return
 
@@ -2659,6 +2688,7 @@ func _update_spell_preview() -> void:
 				spell_data
 			)
 			if not bool(point_data.get("valid", false)):
+				_set_spell_affected_targets([], true)
 				_hide_spell_preview()
 				return
 
@@ -2678,8 +2708,15 @@ func _update_spell_preview() -> void:
 				_spell_style(spell_data),
 				_spell_line_width_world(spell_data)
 			)
+			_set_spell_geometry_highlight(
+				target_point,
+				endpoint,
+				spell_data,
+				_pending_caster
+			)
 
 		"target_token":
+			_set_spell_affected_targets([], true)
 			var target_data: Dictionary = _target_or_point_data(
 				screen_position,
 				spell_data
@@ -2709,6 +2746,7 @@ func _update_spell_preview() -> void:
 			)
 
 		"transform_target", "transform_multi_targets", "resize_target":
+			_set_spell_affected_targets([], true)
 			var transform_data: Dictionary = _transformation_target_data(
 				screen_position,
 				spell_data
@@ -2731,6 +2769,7 @@ func _update_spell_preview() -> void:
 			)
 
 		"multi_target_tokens":
+			_set_spell_affected_targets(_pending_targets, true)
 			var multi_data: Dictionary = _target_or_point_data(
 				screen_position,
 				spell_data
@@ -2763,6 +2802,7 @@ func _update_spell_preview() -> void:
 				spell_data
 			)
 			if not bool(multi_point_data.get("valid", false)):
+				_set_spell_affected_targets([], true)
 				_hide_spell_preview()
 				return
 
@@ -2770,16 +2810,27 @@ func _update_spell_preview() -> void:
 				"point",
 				Vector3.ZERO
 			)
+			var multi_point_end: Vector3 = _area_endpoint(
+				multi_point,
+				spell_data
+			)
 			measurement_tool.call(
 				"show_spell_preview",
 				multi_point,
-				_area_endpoint(multi_point, spell_data),
+				multi_point_end,
 				String(spell_data.get("aoe_shape", "sphere")),
 				_spell_style(spell_data),
 				_spell_line_width_world(spell_data)
 			)
+			_set_spell_geometry_highlight(
+				multi_point,
+				multi_point_end,
+				spell_data,
+				_pending_caster
+			)
 
 		"summon_point":
+			_set_spell_affected_targets([], true)
 			var summon_spell: Dictionary = spell_data.duplicate(true)
 			if bool(spell_data.get("summon_requires_ground", false)):
 				summon_spell["requires_ground"] = true
@@ -2803,6 +2854,7 @@ func _update_spell_preview() -> void:
 			)
 
 		"chain_primary":
+			_set_spell_affected_targets([], true)
 			var primary_data: Dictionary = _target_token_data(
 				screen_position,
 				spell_data
@@ -2823,6 +2875,7 @@ func _update_spell_preview() -> void:
 			)
 
 		"chain_secondary":
+			_set_spell_affected_targets([], true)
 			var secondary_data: Dictionary = _chain_secondary_target_data(
 				screen_position,
 				spell_data
@@ -2848,6 +2901,7 @@ func _update_spell_preview() -> void:
 				spell_data
 			)
 			if not bool(direction_data.get("valid", false)):
+				_set_spell_affected_targets([], true)
 				_hide_spell_preview()
 				return
 
@@ -2857,19 +2911,39 @@ func _update_spell_preview() -> void:
 				spell_data
 			)
 			if geometry.is_empty():
+				_set_spell_affected_targets([], true)
 				_hide_spell_preview()
 				return
 
+			var direction_start: Vector3 = geometry.get(
+				"start",
+				Vector3.ZERO
+			)
+			var direction_end: Vector3 = geometry.get(
+				"end",
+				Vector3.ZERO
+			)
 			measurement_tool.call(
 				"show_spell_preview",
-				geometry.get("start", Vector3.ZERO),
-				geometry.get("end", Vector3.ZERO),
+				direction_start,
+				direction_end,
 				String(spell_data.get("aoe_shape", "line")),
 				_spell_style(spell_data),
 				_spell_line_width_world(spell_data)
 			)
+			_set_spell_geometry_highlight(
+				direction_start,
+				direction_end,
+				spell_data,
+				_pending_caster
+			)
+
+		"saving_throw":
+			_set_spell_affected_targets(_saving_throw_targets, true)
+			_hide_spell_preview()
 
 		_:
+			_set_spell_affected_targets([], true)
 			_hide_spell_preview()
 
 
