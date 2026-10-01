@@ -61,6 +61,8 @@ func _start_if_allowed() -> void:
 		return
 
 	if _player.playing:
+		if _fade_tween != null and _fade_tween.is_valid():
+			_fade_tween.kill()
 		_set_volume_immediately(_volume_db())
 		return
 
