@@ -42,6 +42,7 @@ jobs:
             /interaction/
             /encounter/encounter_events.gd
             /assets/spell_area_geometry.json
+            /assets/tokens/test/test_token_visual.tscn
 
       - name: Clean generated files but keep Godot cache
         shell: powershell
