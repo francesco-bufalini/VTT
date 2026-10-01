@@ -12,7 +12,6 @@ on:
       - "project.godot"
       - "scripts/validate.ps1"
       - ".github/workflows/vtt-self-hosted-tests.yml"
-      - "assets/tokens/token_library.json"
       - "assets/spell_area_geometry.json"
 
 concurrency:
@@ -42,7 +41,6 @@ jobs:
             /network/
             /interaction/
             /encounter/encounter_events.gd
-            /assets/tokens/token_library.json
             /assets/spell_area_geometry.json
 
       - name: Clean generated files but keep Godot cache

@@ -49,7 +49,7 @@ func run() -> void:
 		_fail("snapshot creation returned empty")
 		return
 	if not sync.valid_snapshot(snapshot):
-		_fail("fresh snapshot failed validation")
+		_fail("fresh snapshot failed validation: %s" % JSON.stringify(snapshot))
 		return
 	if snapshot.objects.size() != 1:
 		_fail("expected exactly one serialized token")
