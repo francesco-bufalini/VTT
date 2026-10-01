@@ -38,10 +38,10 @@ func _fail(message: String) -> void:
 	quit(1)
 
 
-func _transient_aoe_count(measure: Node) -> int:
+func _held_aoe_count(measure: Node) -> int:
 	var count: int = 0
 	for child: Node in measure.get_children():
-		if child is Node3D and String(child.name).begins_with("TransientAoE"):
+		if child is Node3D and String(child.name).begins_with("HeldSpellAoE"):
 			count += 1
 	return count
 
@@ -74,9 +74,50 @@ func run() -> void:
 		"sphere",
 		"fire"
 	)
-	measure.call("set_spell_affected_token_highlight", [token], true)
+	spell.call(
+		"_set_spell_geometry_highlight",
+		Vector3.ZERO,
+		Vector3.RIGHT * 4.0,
+		{
+			"aoe_shape": "sphere",
+			"aoe_radius_feet": 20.0,
+			"visual_style": "fireball"
+		},
+		null
+	)
 	if board.affected_tokens.size() != 1:
 		_fail("red affected cells were not established before cancel")
+		return
+
+	# Regression: moving the sphere away must immediately un-highlight the
+	# last token it touched; moving it back must highlight it again.
+	spell.call(
+		"_set_spell_geometry_highlight",
+		Vector3.RIGHT * 20.0,
+		Vector3.RIGHT * 24.0,
+		{
+			"aoe_shape": "sphere",
+			"aoe_radius_feet": 20.0,
+			"visual_style": "fireball"
+		},
+		null
+	)
+	if not board.affected_tokens.is_empty():
+		_fail("token stayed red after the preview sphere moved away")
+		return
+	spell.call(
+		"_set_spell_geometry_highlight",
+		Vector3.ZERO,
+		Vector3.RIGHT * 4.0,
+		{
+			"aoe_shape": "sphere",
+			"aoe_radius_feet": 20.0,
+			"visual_style": "fireball"
+		},
+		null
+	)
+	if board.affected_tokens.size() != 1:
+		_fail("token did not become red again when the sphere returned")
 		return
 
 	spell.set("_pending_spell_id", "fireball")
@@ -112,12 +153,9 @@ func run() -> void:
 		"transient_seconds": 0.05,
 		"style": "fire"
 	}
-	spell.call("_cast_spell_at_point", caster, Vector3.ZERO, fireball)
-	measure.call("set_spell_affected_token_highlight", [token], true)
-
 	spell.set("_pending_spell_id", "fireball")
 	spell.set("_pending_spell_data", fireball)
-	spell.call("_finish_cast")
+	spell.call("_commit_point_spell_cast", caster, Vector3.ZERO, fireball)
 
 	if board.camera_control_requests != 2:
 		_fail("completed cast did not request camera control restoration")
@@ -127,8 +165,8 @@ func run() -> void:
 		return
 
 	await create_timer(0.12).timeout
-	if _transient_aoe_count(measure) != 1:
-		_fail("confirmed point AoE expired before the next click")
+	if _held_aoe_count(measure) != 1:
+		_fail("confirmed point AoE disappeared before the next click")
 		return
 	if board.affected_tokens.size() != 1:
 		_fail("red affected cells did not persist with the confirmed AoE")
@@ -139,7 +177,7 @@ func run() -> void:
 		return
 	await process_frame
 
-	if _transient_aoe_count(measure) != 0:
+	if _held_aoe_count(measure) != 0:
 		_fail("confirmed AoE remained after post-cast cleanup")
 		return
 	if not board.affected_tokens.is_empty():

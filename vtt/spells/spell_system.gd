@@ -320,6 +320,22 @@ func _set_spell_geometry_highlight(
 	spell_data: Dictionary,
 	caster: Node3D = null
 ) -> void:
+	var measurement_tool: Node = _measurement_tool()
+	if (
+		measurement_tool != null
+		and measurement_tool.has_method("set_spell_affected_geometry")
+	):
+		measurement_tool.call(
+			"set_spell_affected_geometry",
+			start,
+			end,
+			String(spell_data.get("aoe_shape", "sphere")),
+			_spell_style(spell_data),
+			_spell_line_width_world(spell_data),
+			true
+		)
+		return
+
 	_set_spell_affected_targets(
 		_spell_targets_in_geometry(
 			start,
@@ -338,7 +354,9 @@ func dismiss_post_cast_visuals() -> bool:
 	_post_cast_cleanup_pending = false
 	var measurement_tool: Node = _measurement_tool()
 	if measurement_tool != null:
-		if measurement_tool.has_method("clear_transient_spell_aoes"):
+		if measurement_tool.has_method("clear_post_cast_spell_visuals"):
+			measurement_tool.call("clear_post_cast_spell_visuals")
+		elif measurement_tool.has_method("clear_transient_spell_aoes"):
 			measurement_tool.call("clear_transient_spell_aoes")
 		if measurement_tool.has_method(
 			"set_spell_affected_token_highlight"
@@ -1342,19 +1360,37 @@ func _try_select_point(screen_position: Vector2) -> void:
 		"point",
 		Vector3.ZERO
 	)
-	_cast_spell_at_point(
+	_commit_point_spell_cast(
 		_pending_caster,
 		target_point,
 		spell_data
 	)
-	_complete_spell_cast(
+
+
+func _commit_point_spell_cast(
+	caster: Node3D,
+	target_point: Vector3,
+	spell_data: Dictionary
+) -> void:
+	if caster == null or not is_instance_valid(caster):
+		_cancel_pending_cast()
+		return
+
+	var endpoint: Vector3 = _area_endpoint(target_point, spell_data)
+	var targets: Array[Node3D] = _point_spell_targets(
+		target_point,
 		spell_data,
-		_point_spell_targets(
-			target_point,
-			spell_data,
-			_pending_caster
-		),
-		_pending_caster
+		caster
+	)
+	_cast_spell_at_point(caster, target_point, spell_data)
+	_complete_spell_cast(spell_data, targets, caster)
+	# The confirmed area remains the authority for red hitboxes. This avoids
+	# freezing the last affected token list after the preview stops moving.
+	_set_spell_geometry_highlight(
+		target_point,
+		endpoint,
+		spell_data,
+		caster
 	)
 
 
@@ -3962,16 +3998,26 @@ func _cast_spell_at_point(
 			caster.global_position
 		)
 	else:
-		measurement_tool.call(
-			"show_transient_aoe",
-			target_point,
-			endpoint,
-			shape,
-			float(spell_data.get("transient_seconds", 5.0)),
-			style,
-			_spell_line_width_world(spell_data),
-			false
-		)
+		if measurement_tool.has_method("show_held_spell_aoe"):
+			measurement_tool.call(
+				"show_held_spell_aoe",
+				target_point,
+				endpoint,
+				shape,
+				style,
+				_spell_line_width_world(spell_data)
+			)
+		else:
+			measurement_tool.call(
+				"show_transient_aoe",
+				target_point,
+				endpoint,
+				shape,
+				float(spell_data.get("transient_seconds", 5.0)),
+				style,
+				_spell_line_width_world(spell_data),
+				false
+			)
 
 func _cast_directional_aoe(
 	caster: Node3D,

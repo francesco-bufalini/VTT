@@ -44,7 +44,7 @@ Change the generator or normalization layer, then regenerate.
 6. Do not introduce a new manager/service when an existing subsystem already owns the responsibility.
 7. Do not mix spell data ingestion with runtime spell mechanics.
 8. Keep encounter-specific code under encounter/; reusable VTT behavior belongs outside it.
-9. Spell targeting lifecycle is coupled by design: cancel clears preview + red affected cells immediately; a confirmed non-persistent point AoE remains with its red affected cells until the next left click; leaving spell targeting returns mouse capture to the camera.
+9. Spell targeting lifecycle is coupled by design: preview hitboxes are geometry-driven (never a cached cumulative target list); cancel clears preview + red affected cells immediately; a confirmed non-persistent point AoE is a HeldSpellAoE and remains with geometry-driven red affected cells until the next left click; leaving spell targeting returns mouse capture to the camera.
 
 ## Validation
 

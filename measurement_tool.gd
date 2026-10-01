@@ -42,8 +42,10 @@ var _spell_preview_style: String = ""
 var _spell_preview_line_width: float = -1.0
 var _spell_fixed_previews: Array[MeshInstance3D] = []
 var _transient_spell_aoes: Array[Dictionary] = []
+var _held_spell_aoes: Array[Node3D] = []
 var _spell_affected_override_active: bool = false
 var _spell_affected_override: Array[Node3D] = []
+var _spell_affected_geometry_override: Dictionary = {}
 var _spell_range_preview: MeshInstance3D
 var _spell_range_center: Vector3 = Vector3.INF
 var _spell_range_radius: float = -1.0
@@ -276,6 +278,42 @@ func _spell_affected_override_signature() -> String:
 	return ",".join(parts)
 
 
+func _spell_affected_geometry_signature() -> String:
+	if _spell_affected_geometry_override.is_empty():
+		return ""
+	return "%s|%s|%s|%s|%.4f" % [
+		str(_spell_affected_geometry_override.get("start", Vector3.ZERO)),
+		str(_spell_affected_geometry_override.get("end", Vector3.ZERO)),
+		String(_spell_affected_geometry_override.get("shape", "")),
+		String(_spell_affected_geometry_override.get("style", "")),
+		float(_spell_affected_geometry_override.get("line_width_world", -1.0))
+	]
+
+
+func set_spell_affected_geometry(
+	start: Vector3,
+	end: Vector3,
+	shape: String,
+	style: String = "",
+	line_width_world: float = -1.0,
+	active: bool = true
+) -> void:
+	_spell_affected_override_active = active
+	_spell_affected_override.clear()
+	if active:
+		_spell_affected_geometry_override = {
+			"start": start,
+			"end": end,
+			"shape": shape,
+			"style": style,
+			"line_width_world": line_width_world
+		}
+	else:
+		_spell_affected_geometry_override.clear()
+	_affected_tokens_signature = ""
+	_refresh_affected_token_highlight()
+
+
 func set_spell_affected_token_highlight(
 	tokens: Array,
 	active: bool = true
@@ -294,7 +332,8 @@ func set_spell_affected_token_highlight(
 			resolved.append(token)
 
 	var same: bool = (
-		active == _spell_affected_override_active
+		_spell_affected_geometry_override.is_empty()
+		and active == _spell_affected_override_active
 		and resolved.size() == _spell_affected_override.size()
 	)
 	if same:
@@ -307,6 +346,7 @@ func set_spell_affected_token_highlight(
 
 	_spell_affected_override_active = active
 	_spell_affected_override = resolved
+	_spell_affected_geometry_override.clear()
 	_affected_tokens_signature = ""
 	# Apply spell-target changes immediately. Waiting for _process() left the
 	# previous red grid visible for one or more frames after Esc/cleanup.
@@ -464,9 +504,10 @@ func _refresh_affected_token_highlight() -> void:
 	signature_parts.append(JSON.stringify(persistent_aoes))
 	signature_parts.append(JSON.stringify(_transient_spell_aoes))
 	signature_parts.append(
-		"%s|%s" % [
+		"%s|%s|%s" % [
 			str(_spell_affected_override_active),
-			_spell_affected_override_signature()
+			_spell_affected_override_signature(),
+			_spell_affected_geometry_signature()
 		]
 	)
 	signature_parts.append(
@@ -520,9 +561,20 @@ func _refresh_affected_token_highlight() -> void:
 
 	var affected: Array = []
 	if _spell_affected_override_active:
-		for token: Node3D in _spell_affected_override:
-			if token != null and is_instance_valid(token):
+		if not _spell_affected_geometry_override.is_empty():
+			var geometry_targets: Array[Node3D] = spell_geometry_affected_tokens(
+				_spell_affected_geometry_override.get("start", Vector3.ZERO),
+				_spell_affected_geometry_override.get("end", Vector3.ZERO),
+				String(_spell_affected_geometry_override.get("shape", "sphere")),
+				String(_spell_affected_geometry_override.get("style", "")),
+				float(_spell_affected_geometry_override.get("line_width_world", -1.0))
+			)
+			for token: Node3D in geometry_targets:
 				affected.append(token)
+		else:
+			for token: Node3D in _spell_affected_override:
+				if token != null and is_instance_valid(token):
+					affected.append(token)
 	else:
 		for node: Node in tokens:
 			if not node is Node3D:
@@ -1450,6 +1502,51 @@ func hide_spell_range_preview() -> void:
 	if is_instance_valid(_spell_range_preview):
 		_spell_range_preview.hide()
 
+
+
+func show_held_spell_aoe(
+	start: Vector3,
+	end: Vector3,
+	shape: String,
+	style: String = "",
+	line_width_world: float = -1.0
+) -> void:
+	if shape not in ["sphere", "cube", "cone", "line", "flat_square", "cylinder"]:
+		return
+
+	var root: Node3D = Node3D.new()
+	root.name = "HeldSpellAoE"
+	add_child(root)
+
+	var mesh: MeshInstance3D = MeshInstance3D.new()
+	mesh.name = "Visual"
+	root.add_child(mesh)
+	_draw_aoe(
+		mesh,
+		start,
+		end,
+		shape,
+		style,
+		Color(0.0, 0.0, 0.0, -1.0),
+		line_width_world
+	)
+	DamageAreaParticles.attach_area(
+		root, start, end, shape, style, cell_size
+	)
+	_held_spell_aoes.append(root)
+
+
+func clear_held_spell_aoes() -> void:
+	for root: Node3D in _held_spell_aoes:
+		if root != null and is_instance_valid(root):
+			root.hide()
+			root.queue_free()
+	_held_spell_aoes.clear()
+
+
+func clear_post_cast_spell_visuals() -> void:
+	clear_held_spell_aoes()
+	clear_transient_spell_aoes()
 
 
 func show_transient_aoe(
