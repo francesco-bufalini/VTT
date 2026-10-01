@@ -54,7 +54,7 @@ if ($version -notmatch "^4\.7\.2\.stable") {
 
 $fastTests = @(
     "test_initiative_tracker.gd",
-    "test_spell_area_catalog.gd",
+    "test_spell_catalog_smoke.gd",
     "test_board_smoke.gd"
 )
 
@@ -81,7 +81,7 @@ if ($FullTests) {
 foreach ($test in $testFiles) {
     $relative = "res://tests/$($test.Name)"
     Write-Host "== $relative =="
-    $testTimeout = if ($FullTests) { 90 } else { 20 }
+    $testTimeout = if ($FullTests) { 90 } else { 12 }
     Invoke-Godot @("--headless", "--path", $ProjectRoot, "--script", $relative) $testTimeout
 }
 
