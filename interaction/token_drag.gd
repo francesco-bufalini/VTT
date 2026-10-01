@@ -107,13 +107,43 @@ func update_preview(screen_point: Vector2) -> void:
 				break
 	var position: Variant
 	var support: Node3D = _support
-	if _anchor_token.flying:
-		position = Plane(Vector3.UP, _anchor.y).intersects_ray(origin, direction)
-	elif not hit.is_empty() and Vector3(hit.normal).dot(Vector3.UP) > 0.7:
-		position = Vector3(hit.position) + Vector3.UP * _token_half_height(_anchor_token)
-		support = hit.collider if hit.collider.is_in_group("tactical_platform") else null
+	var tactical_support: Node3D = null
+	var hit_normal := Vector3.ZERO
+	if not hit.is_empty():
+		hit_normal = Vector3(hit.normal)
+		if hit.collider is Node3D and hit.collider.is_in_group("tactical_platform"):
+			tactical_support = hit.collider as Node3D
+
+	# Flying tokens normally stay on their current Y plane, but a deliberate
+	# drag onto a tactical surface should rest on that surface without
+	# requiring "Applica gravità". This is what makes the giant bodies and
+	# sphere usable as terrain while keeping free-air placement intact.
+	if (
+		_anchor_token.flying
+		and tactical_support != null
+		and hit_normal.dot(Vector3.UP) > 0.35
+	):
+		position = (
+			Vector3(hit.position)
+			+ Vector3.UP * _token_half_height(_anchor_token)
+		)
+		support = tactical_support
+	elif _anchor_token.flying:
+		position = Plane(Vector3.UP, _anchor.y).intersects_ray(
+			origin,
+			direction
+		)
+	elif not hit.is_empty() and hit_normal.dot(Vector3.UP) > 0.7:
+		position = (
+			Vector3(hit.position)
+			+ Vector3.UP * _token_half_height(_anchor_token)
+		)
+		support = tactical_support
 	else:
-		position = Plane(Vector3.UP, _anchor.y).intersects_ray(origin, direction)
+		position = Plane(Vector3.UP, _anchor.y).intersects_ray(
+			origin,
+			direction
+		)
 	if position == null:
 		_valid = false
 		return
