@@ -115,18 +115,26 @@ static func restore_encounter_decor(
 	scene: Node,
 	force_rebuild: bool = false
 ) -> void:
-	var already_current := (
-		int(scene.get_meta("post_kaos_decor_version", 0)) >= DECOR_VERSION
-	)
-	if already_current and not force_rebuild and _decor_is_complete(scene):
-		return
-
 	var units := _scene_units(scene)
 	if units <= 0.0:
 		return
-	_restore_klothys_hair(scene, units)
-	_restore_titan_faces(scene, units)
-	_restore_ruins(scene, units)
+
+	# Rebuild only the pieces that are actually missing. A normal Encounter
+	# instance already contains the canonical Klothys hair, titan reliefs and
+	# ruins; regenerating the full hair system during every bake is expensive
+	# and can take minutes for no visual benefit.
+	if force_rebuild or _count_klothys_hair(scene) < 100:
+		_restore_klothys_hair(scene, units)
+	if (
+		force_rebuild
+		or scene.get_node_or_null(
+			"KlothisRoot/SphereVisual/CarvedTitanFaces"
+		) == null
+	):
+		_restore_titan_faces(scene, units)
+	if force_rebuild or not _ruins_are_complete(scene):
+		_restore_ruins(scene, units)
+
 	scene.set_meta("post_kaos_decor_version", DECOR_VERSION)
 
 
@@ -580,6 +588,30 @@ static func _restore_ruins(scene: Node, units: float) -> void:
 		units,
 		marble
 	)
+
+
+static func _count_klothys_hair(scene: Node) -> int:
+	var visual := scene.get_node_or_null("KlothisRoot/KlothisVisual") as Node3D
+	if visual == null:
+		return 0
+	var hair_count := 0
+	for child in visual.get_children():
+		if not child is MeshInstance3D:
+			continue
+		var label := String(child.get_meta("visual_role", child.name))
+		if _matches_any_term(label, KLOTHYS_HAIR_TERMS):
+			hair_count += 1
+	return hair_count
+
+
+static func _ruins_are_complete(scene: Node) -> bool:
+	var ruins := scene.get_node_or_null("Board/MapGeometry") as Node3D
+	if ruins == null:
+		return false
+	for node_name in RUIN_NODE_NAMES:
+		if ruins.get_node_or_null(node_name) == null:
+			return false
+	return true
 
 
 static func _decor_is_complete(scene: Node) -> bool:
