@@ -31,21 +31,49 @@ if ($GodotExecutable -notmatch "_console\.exe$") {
 function Invoke-Godot {
     param(
         [string[]]$Arguments,
-        [int]$TimeoutSeconds = 60
+        [int]$TimeoutSeconds = 60,
+        [switch]$RequirePass
     )
-    $process = Start-Process -FilePath $script:GodotExecutable `
-        -ArgumentList $Arguments -NoNewWindow -PassThru
 
-    if (-not $process.WaitForExit($TimeoutSeconds * 1000)) {
-        Stop-Process -Id $process.Id -Force -ErrorAction SilentlyContinue
-        throw "Godot timed out after $TimeoutSeconds seconds: $($Arguments -join ' ')"
-    }
-    $process.Refresh()
-    $exitCode = $process.ExitCode
-    if ($null -ne $exitCode -and $exitCode -ne 0) {
-        throw "Godot failed with exit code ${exitCode}: $($Arguments -join ' ')"
+    $stdoutPath = Join-Path $env:TEMP ("vtt-godot-" + [guid]::NewGuid() + ".out")
+    $stderrPath = Join-Path $env:TEMP ("vtt-godot-" + [guid]::NewGuid() + ".err")
+    try {
+        $process = Start-Process -FilePath $script:GodotExecutable `
+            -ArgumentList $Arguments -PassThru `
+            -RedirectStandardOutput $stdoutPath `
+            -RedirectStandardError $stderrPath
+
+        if (-not $process.WaitForExit($TimeoutSeconds * 1000)) {
+            Stop-Process -Id $process.Id -Force -ErrorAction SilentlyContinue
+            throw "Godot timed out after $TimeoutSeconds seconds: $($Arguments -join ' ')"
+        }
+        $process.Refresh()
+
+        $stdout = if (Test-Path $stdoutPath) {
+            Get-Content -LiteralPath $stdoutPath -Raw
+        } else { "" }
+        $stderr = if (Test-Path $stderrPath) {
+            Get-Content -LiteralPath $stderrPath -Raw
+        } else { "" }
+        if (-not [string]::IsNullOrWhiteSpace($stdout)) {
+            Write-Host $stdout.TrimEnd()
+        }
+        if (-not [string]::IsNullOrWhiteSpace($stderr)) {
+            Write-Host $stderr.TrimEnd()
+        }
+
+        $exitCode = $process.ExitCode
+        if ($null -ne $exitCode -and $exitCode -ne 0) {
+            throw "Godot failed with exit code ${exitCode}: $($Arguments -join ' ')"
+        }
+        if ($RequirePass -and (($stdout + $stderr) -notmatch "(?m)^PASS:")) {
+            throw "Godot test ended without PASS marker: $($Arguments -join ' ')"
+        }
+    } finally {
+        Remove-Item -LiteralPath $stdoutPath,$stderrPath -Force -ErrorAction SilentlyContinue
     }
 }
+
 
 $version = (& $GodotExecutable --version | Select-Object -First 1)
 if ($version -notmatch "^4\.7\.2\.stable") {
@@ -65,9 +93,6 @@ if ($FullTests) {
     $testFiles = Get-ChildItem -LiteralPath (Join-Path $ProjectRoot "tests") `
         -Filter "test_*.gd" -File | Sort-Object Name
 } elseif ($Tests) {
-    Write-Host "== Fast sparse project import =="
-    Invoke-Godot @("--headless", "--path", $ProjectRoot, "--editor", "--import", "--quit") 30
-
     Write-Host "== Fast VTT validation =="
     $testFiles = foreach ($name in $fastTests) {
         $path = Join-Path (Join-Path $ProjectRoot "tests") $name
@@ -85,7 +110,7 @@ foreach ($test in $testFiles) {
     $relative = "res://tests/$($test.Name)"
     Write-Host "== $relative =="
     $testTimeout = if ($FullTests) { 90 } else { 12 }
-    Invoke-Godot @("--headless", "--path", $ProjectRoot, "--script", $relative) $testTimeout
+    Invoke-Godot -Arguments @("--headless", "--path", $ProjectRoot, "--script", $relative) -TimeoutSeconds $testTimeout -RequirePass
 }
 
 Write-Host "Validation passed."

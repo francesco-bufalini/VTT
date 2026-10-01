@@ -36,6 +36,7 @@ func run() -> void:
 	sync.setup(arena, TokenScene, tokens_root, measure)
 
 	var token: CharacterBody3D = TokenScene.instantiate()
+	token.visual_asset_path = ""
 	tokens_root.add_child(token)
 	token.position = Vector3(2.0, 1.0, 2.0)
 	token.set_flying(true)

@@ -1129,6 +1129,11 @@ static func _apply_runtime_overrides(data: Dictionary) -> Dictionary:
 		if conditions_value is Array and not (conditions_value as Array).is_empty():
 			result["target_mode"] = "token_then_token"
 
+	if String(result.get("target_mode", "")).is_empty():
+		var misc_value: Variant = result.get("misc_tags", [])
+		if misc_value is Array and "SMN" in (misc_value as Array):
+			result["target_mode"] = "summon"
+
 	return result
 
 
