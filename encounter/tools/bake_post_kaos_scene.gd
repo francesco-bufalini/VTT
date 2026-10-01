@@ -2,6 +2,7 @@ extends SceneTree
 
 const SOURCE_SCENE := "res://encounter/kaos_klothis.tscn"
 const OUTPUT_SCENE := "res://encounter/post_kaos_editable.scn"
+const PostKaosHelpers = preload("res://encounter/post_kaos_helpers.gd")
 
 const RUNTIME_ONLY_PATHS: Array[String] = [
 	"EncounterProgressController",
@@ -64,6 +65,8 @@ func _bake() -> void:
 		var threatened: Array = hazards.get("threatened_cells")
 		threatened.clear()
 	petrification.call("apply", false)
+	PostKaosHelpers.remove_kaos_phase_two_token(scene)
+	PostKaosHelpers.close_kaos_petrification_hole(scene)
 
 	# open_head_space() uses a deferred collision update.
 	await physics_frame
@@ -76,14 +79,11 @@ func _bake() -> void:
 		_free_path(scene, path)
 
 	_strip_kaos_runtime(kaos)
-
-	var shoulder := kaos.get_node_or_null("ShoulderPlatform")
-	if shoulder != null:
-		shoulder.set_script(null)
-
-	var hand_platforms := scene.get_node_or_null("HandPlatforms")
-	if hand_platforms != null:
-		hand_platforms.set_script(null)
+	PostKaosHelpers.clear_baked_tokens(scene)
+	PostKaosHelpers.remove_legacy_platforms(scene)
+	PostKaosHelpers.ensure_body_collisions(scene)
+	_strip_dnd_runtime(scene)
+	_restore_base_ui(scene)
 
 	# The volumetric grid is runtime visualization. Keep its controller node,
 	# but do not bake a stale frame of generated grid geometry.
@@ -96,7 +96,7 @@ func _bake() -> void:
 	scene.set_meta("baked_from", SOURCE_SCENE)
 	scene.set_meta("baked_state", "post_jump_petrified")
 	scene.set_meta("editor_editable_environment", true)
-	scene.set_script(load("res://dnd_base.gd"))
+	scene.set_script(load("res://encounter/post_kaos_scene.gd"))
 
 	# Runtime-created children have no owner. Assigning the scene root makes
 	# them persistent and directly editable in the Godot 3D editor.
@@ -124,6 +124,51 @@ func _strip_kaos_runtime(kaos: Node) -> void:
 			child.free()
 	kaos.set_script(null)
 
+
+func _strip_dnd_runtime(scene: Node) -> void:
+	var runtime_scripts: Array[String] = [
+		"res://interaction/token_drag.gd",
+		"res://network/board_sync.gd",
+		"res://vtt/spells/spell_system.gd",
+		"res://vtt/initiative_tracker.gd",
+		"res://vtt/token_list.gd",
+		"res://vtt/runtime_toolbar.gd",
+	]
+	for child in scene.get_children().duplicate():
+		if child.name in [
+			"SelectedTokenGridHighlight",
+			"AffectedTokenGridHighlight",
+		]:
+			child.free()
+			continue
+		var script: Script = child.get_script()
+		if script != null and script.resource_path in runtime_scripts:
+			child.free()
+
+func _restore_base_ui(scene: Node) -> void:
+	var ui := scene.get_node_or_null("UI")
+	if ui == null:
+		return
+	var keep_ui := [
+		"Crosshair",
+		"MeasurementModeLabel",
+		"ContextMenu",
+		"TokenColorDialog",
+	]
+	for child in ui.get_children().duplicate():
+		if String(child.name) not in keep_ui:
+			child.free()
+
+	var context_menu := ui.get_node_or_null("ContextMenu")
+	if context_menu != null:
+		for child in context_menu.get_children().duplicate():
+			child.free()
+
+	var content := ui.get_node_or_null("TokenColorDialog/Content/VBox")
+	if content != null:
+		for child in content.get_children().duplicate():
+			if String(child.name) not in ["SizeLabel", "SizeSelector"]:
+				child.free()
 
 func _free_path(scene: Node, path: String) -> void:
 	var node := scene.get_node_or_null(path)
