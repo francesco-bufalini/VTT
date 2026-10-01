@@ -7,6 +7,9 @@ const DEFAULT_ENABLED := true
 const DEFAULT_VOLUME := 0.55
 const FADE_DURATION := 0.6
 
+const MENU_SCENE_PATH := "res://vtt/menu/main_menu.tscn"
+const ACTIVE_CAMPAIGNS_SCENE_PATH := "res://vtt/menu/active_campaigns.tscn"
+
 var soundtrack_enabled: bool = DEFAULT_ENABLED
 var soundtrack_volume: float = DEFAULT_VOLUME
 
@@ -23,7 +26,7 @@ func _ready() -> void:
 	_player.bus = &"Master"
 	add_child(_player)
 
-	if not ResourceLoader.exists(SOUNDTRACK_PATH, "AudioStreamMP3"):
+	if not ResourceLoader.exists(SOUNDTRACK_PATH):
 		push_warning(
 			"MenuAudioManager: soundtrack non trovata: " + SOUNDTRACK_PATH
 		)
@@ -44,6 +47,7 @@ func _ready() -> void:
 		(stream as AudioStreamMP3).loop = true
 	_player.stream = stream
 	_audio_available = true
+	_player.finished.connect(_on_player_finished)
 
 	get_tree().scene_changed.connect(_sync_with_scene)
 	call_deferred("_sync_with_scene")
@@ -56,8 +60,8 @@ func _sync_with_scene() -> void:
 
 	var scene_path := scene.scene_file_path
 	var should_play := (
-		scene_path == "res://vtt/menu/main_menu.tscn"
-		or scene_path == "res://vtt/menu/active_campaigns.tscn"
+		scene_path == MENU_SCENE_PATH
+		or scene_path == ACTIVE_CAMPAIGNS_SCENE_PATH
 	)
 
 	if should_play:
@@ -90,6 +94,24 @@ func _start_if_allowed() -> void:
 		"volume_db",
 		_volume_db(),
 		FADE_DURATION
+	)
+
+
+func _on_player_finished() -> void:
+	# loop=true normally handles MP3 looping. This is a defensive fallback
+	# for imported streams/platforms where the loop flag is not honored.
+	if _is_menu_scene() and soundtrack_enabled and _audio_available:
+		_player.play()
+
+
+func _is_menu_scene() -> bool:
+	var scene := get_tree().current_scene
+	if scene == null:
+		return false
+	var scene_path := scene.scene_file_path
+	return (
+		scene_path == MENU_SCENE_PATH
+		or scene_path == ACTIVE_CAMPAIGNS_SCENE_PATH
 	)
 
 
