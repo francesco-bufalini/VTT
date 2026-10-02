@@ -426,6 +426,31 @@ print(json.dumps({
     return execute_json_code(code, timeout=300)
 
 
+def blender_file_info() -> dict[str, Any]:
+    code = r"""import bpy, json
+print(json.dumps({
+    'filepath': bpy.data.filepath,
+    'current_scene': bpy.context.scene.name if bpy.context.scene else None,
+    'scenes': [
+        {
+            'name': scene.name,
+            'object_count': len(scene.objects),
+        }
+        for scene in bpy.data.scenes
+    ],
+    'collections': [
+        {
+            'name': col.name,
+            'object_count': len(col.objects),
+        }
+        for col in bpy.data.collections
+    ],
+    'objects_total': len(bpy.data.objects),
+}))
+"""
+    return execute_json_code(code)
+
+
 def set_viewport_shading(command: dict[str, Any]) -> dict[str, Any]:
     shading = str(command.get("shading", "RENDERED")).strip().upper()
     allowed = {"WIREFRAME", "SOLID", "MATERIAL", "RENDERED"}
@@ -840,6 +865,9 @@ def execute(command: dict[str, Any]) -> dict[str, Any]:
     if action in {"set_viewport_shading", "viewport_shading"}:
         return set_viewport_shading(command)
 
+    if action in {"file_info", "blend_info"}:
+        return blender_file_info()
+
     if action == "import_titan_reference":
         return import_titan_reference()
 
@@ -912,7 +940,7 @@ def execute(command: dict[str, Any]) -> dict[str, Any]:
         return blender_command("execute_code", {"code": code}, timeout=300)
 
     raise ValueError(
-        "Unknown action. Supported: ping, scene, workspaces, viewport, set_viewport_shading, import_titan_reference, self_update, screenshot, render_preview, titan_relief, reset_titan_relief, hide_titan_helpers, show_titan_helpers, hide_runic_seals, show_runic_seals, hide_stress_cracks, show_stress_cracks, hide_floating_shards, show_floating_shards, object, transform, undo, save"
+        "Unknown action. Supported: ping, scene, workspaces, viewport, set_viewport_shading, file_info, import_titan_reference, self_update, screenshot, render_preview, titan_relief, reset_titan_relief, hide_titan_helpers, show_titan_helpers, hide_runic_seals, show_runic_seals, hide_stress_cracks, show_stress_cracks, hide_floating_shards, show_floating_shards, object, transform, undo, save"
         + (", python" if ALLOW_PYTHON else "")
     )
 
