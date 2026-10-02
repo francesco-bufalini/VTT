@@ -399,6 +399,99 @@ def _cubic_bezier_2d(p0, p1, p2, p3, segments: int):
     return points
 
 
+
+def _point_in_polygon_2d(x: float, y: float, polygon) -> bool:
+    inside = False
+    j = len(polygon) - 1
+    for i in range(len(polygon)):
+        xi, yi = polygon[i]
+        xj, yj = polygon[j]
+        intersects = ((yi > y) != (yj > y)) and (
+            x < (xj - xi) * (y - yi) / ((yj - yi) if abs(yj - yi) > 1e-12 else 1e-12) + xi
+        )
+        if intersects:
+            inside = not inside
+        j = i
+    return inside
+
+
+def _harmonious_walkable_outline(
+    rect_x_min: float,
+    rect_x_max: float,
+    rect_y_max: float,
+    circle_center,
+    circle_radius: float,
+    blend_start_y: float,
+    circle_join_angle_deg: float = 32.0,
+    transition_segments: int = 24,
+    circle_segments: int = 180,
+):
+    cx, cy = float(circle_center[0]), float(circle_center[1])
+    half_angle = math.radians(circle_join_angle_deg)
+    right_join = (
+        cx + math.sin(half_angle) * circle_radius,
+        cy + math.cos(half_angle) * circle_radius,
+    )
+    left_join = (
+        cx - math.sin(half_angle) * circle_radius,
+        cy + math.cos(half_angle) * circle_radius,
+    )
+    left_start = (rect_x_min, blend_start_y)
+    right_start = (rect_x_max, blend_start_y)
+
+    desired_left_derivative = mathutils.Vector(
+        (-math.cos(half_angle), -math.sin(half_angle))
+    ).normalized()
+    desired_right_derivative = mathutils.Vector(
+        (-math.cos(half_angle), math.sin(half_angle))
+    ).normalized()
+    handle = min(58.0, circle_radius * 0.24)
+    vertical_handle = min(
+        48.0,
+        max(20.0, (blend_start_y - right_join[1]) * 0.38),
+    )
+
+    left_curve = _cubic_bezier_2d(
+        left_start,
+        (left_start[0], left_start[1] - vertical_handle),
+        (
+            left_join[0] - desired_left_derivative.x * handle,
+            left_join[1] - desired_left_derivative.y * handle,
+        ),
+        left_join,
+        transition_segments,
+    )
+
+    left_angle = math.atan2(left_join[1] - cy, left_join[0] - cx)
+    right_angle = math.atan2(right_join[1] - cy, right_join[0] - cx)
+    while right_angle <= left_angle:
+        right_angle += math.tau
+
+    arc = []
+    for i in range(1, circle_segments):
+        t = i / circle_segments
+        a = left_angle + (right_angle - left_angle) * t
+        arc.append((cx + math.cos(a) * circle_radius, cy + math.sin(a) * circle_radius))
+
+    right_curve = _cubic_bezier_2d(
+        right_join,
+        (
+            right_join[0] + desired_right_derivative.x * handle,
+            right_join[1] + desired_right_derivative.y * handle,
+        ),
+        (right_start[0], right_start[1] - vertical_handle),
+        right_start,
+        transition_segments,
+    )
+
+    outline = [(rect_x_min, rect_y_max), left_start]
+    outline.extend(left_curve[1:])
+    outline.extend(arc)
+    outline.extend(right_curve[1:])
+    outline.append((rect_x_max, rect_y_max))
+    return outline
+
+
 def _add_harmonious_rect_circle_prism(
     name: str,
     rect_x_min: float,
@@ -415,68 +508,17 @@ def _add_harmonious_rect_circle_prism(
     circle_segments: int = 180,
 ):
     """One continuous floor with smooth flared shoulders into the circular platform."""
-    cx, cy = float(circle_center[0]), float(circle_center[1])
-    half_angle = math.radians(circle_join_angle_deg)
-
-    right_join = (
-        cx + math.sin(half_angle) * circle_radius,
-        cy + math.cos(half_angle) * circle_radius,
+    outline = _harmonious_walkable_outline(
+        rect_x_min,
+        rect_x_max,
+        rect_y_max,
+        circle_center,
+        circle_radius,
+        blend_start_y,
+        circle_join_angle_deg=circle_join_angle_deg,
+        transition_segments=transition_segments,
+        circle_segments=circle_segments,
     )
-    left_join = (
-        cx - math.sin(half_angle) * circle_radius,
-        cy + math.cos(half_angle) * circle_radius,
-    )
-
-    left_start = (rect_x_min, blend_start_y)
-    right_start = (rect_x_max, blend_start_y)
-
-    tangent_right = mathutils.Vector((-math.cos(half_angle), math.sin(half_angle))).normalized()
-    tangent_left = mathutils.Vector((math.cos(half_angle), math.sin(half_angle))).normalized()
-    handle = min(58.0, circle_radius * 0.24)
-    vertical_handle = min(48.0, max(20.0, (blend_start_y - right_join[1]) * 0.38))
-
-    left_curve = _cubic_bezier_2d(
-        left_start,
-        (left_start[0], left_start[1] - vertical_handle),
-        (
-            left_join[0] - tangent_left.x * handle,
-            left_join[1] - tangent_left.y * handle,
-        ),
-        left_join,
-        transition_segments,
-    )
-
-    # Long outer arc from left join around the back/bottom of the platform to right join.
-    left_angle = math.atan2(left_join[1] - cy, left_join[0] - cx)
-    right_angle = math.atan2(right_join[1] - cy, right_join[0] - cx)
-    while right_angle <= left_angle:
-        right_angle += math.tau
-
-    arc = []
-    for i in range(1, circle_segments):
-        t = i / circle_segments
-        a = left_angle + (right_angle - left_angle) * t
-        arc.append((cx + math.cos(a) * circle_radius, cy + math.sin(a) * circle_radius))
-
-    right_curve = _cubic_bezier_2d(
-        right_join,
-        (
-            right_join[0] + tangent_right.x * handle,
-            right_join[1] + tangent_right.y * handle,
-        ),
-        (right_start[0], right_start[1] - vertical_handle),
-        right_start,
-        transition_segments,
-    )
-
-    outline = [
-        (rect_x_min, rect_y_max),
-        left_start,
-    ]
-    outline.extend(left_curve[1:])
-    outline.extend(arc)
-    outline.extend(right_curve[1:])
-    outline.append((rect_x_max, rect_y_max))
 
     n = len(outline)
     top_z = 0.0
@@ -1312,7 +1354,21 @@ def build_kaos_arena(op: dict, root_path: Path) -> None:
             x = math.cos(a) * rr
             y = water_center_y + math.sin(a) * rr
 
-            if _point_inside_rect_circle_union(
+            if bool(layout_extension.get("harmonious_walkable_transition", False)):
+                outline = _harmonious_walkable_outline(
+                    xb[0] - walkable_margin,
+                    xb[1] + walkable_margin,
+                    yb[1] + walkable_margin,
+                    (sphere_blender[0], sphere_blender[1]),
+                    float(layout_extension["sphere_platform_radius_m"]) + walkable_margin,
+                    float(layout_extension.get("transition_start_y_m", 72.0)) + walkable_margin,
+                    circle_join_angle_deg=float(layout_extension.get("transition_circle_angle_deg", 32.0)),
+                    transition_segments=28,
+                    circle_segments=200,
+                )
+                if _point_in_polygon_2d(x, y, outline):
+                    continue
+            elif _point_inside_rect_circle_union(
                 x,
                 y,
                 (xb[0], xb[1], yb[0], yb[1]),
