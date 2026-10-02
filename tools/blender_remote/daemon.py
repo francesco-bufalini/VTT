@@ -773,13 +773,15 @@ def main() -> int:
     print()
     print("Waiting for commands. Ctrl+C to stop.")
 
+    poll_since = session_started
+
     while True:
         try:
-            # Keep a small overlap so minor clock skew cannot lose a command.
-            # session_started prevents that overlap from reaching old history.
-            recent_floor = datetime.now(timezone.utc) - timedelta(seconds=30)
-            since = max(session_started, recent_floor)
-            comments = fetch_comments_since(since)
+            # Advance the cursor only after a successful fetch. This means a
+            # long Blender operation cannot make commands posted meanwhile fall
+            # out of a fixed polling window.
+            poll_started = datetime.now(timezone.utc)
+            comments = fetch_comments_since(poll_since)
 
             for comment in comments:
                 comment_id = int(comment["id"])
@@ -829,6 +831,10 @@ def main() -> int:
                     }
                     post_result(command_id, comment_id, False, error)
                     print(f"< {command_id} ERROR: {exc}")
+
+            # Five seconds of overlap handles clock skew and eventual
+            # consistency; last_comment_id prevents duplicate execution.
+            poll_since = max(session_started, poll_started - timedelta(seconds=5))
 
         except KeyboardInterrupt:
             print("\nStopped.")
