@@ -1073,9 +1073,11 @@ func _catalog_filters(character_key: String) -> Dictionary:
 		return filters
 	var character: Dictionary = _characters[_current_index]
 	if character_key == "class_features_catalog":
-		var class_name := String(character.get("class", "")).strip_edges()
-		if not class_name.is_empty():
-			filters["class_name"] = class_name
+		var player_class_name := String(
+			character.get("class", "")
+		).strip_edges()
+		if not player_class_name.is_empty():
+			filters["class_name"] = player_class_name
 	elif character_key == "species_traits_catalog":
 		var species_name := String(character.get("species", "")).strip_edges()
 		if not species_name.is_empty():
