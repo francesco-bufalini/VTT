@@ -18,3 +18,7 @@
 *.blend~
 __pycache__/
 *.pyc
+/assets/tokens/generated/
+/assets/tokens/scenes/
+/dist/token_packs/
+/.token_pack_build/
