@@ -12,6 +12,9 @@ on:
       - "encounter/post_kaos_helpers.gd"
       - "encounter/encounter_scenery.gd"
       - "encounter/tests/test_post_kaos_scene.gd"
+      - "encounter/tests/test_scontro_contro_kaos_scene.gd"
+      - "encounter/scontro_contro_kaos.gd"
+      - "encounter/scontro_contro_kaos.tscn"
       - ".github/workflows/bake-post-kaos-scene.yml"
 
 permissions:
@@ -72,6 +75,21 @@ jobs:
           $godot = "C:\Program Files\Godot\Godot_v4.7.2-stable_win64_console.exe"
           & $godot --headless --path . --editor --import --quit
           if ($LASTEXITCODE -ne 0) { exit $LASTEXITCODE }
+
+      - name: Smoke test Scontro contro Kaos
+        shell: powershell
+        run: |
+          $ErrorActionPreference = "Continue"
+          $godot = "C:\Program Files\Godot\Godot_v4.7.2-stable_win64_console.exe"
+          $smokeOutput = @(& $godot --headless --path . --script res://encounter/tests/test_scontro_contro_kaos_scene.gd 2>&1)
+          $exitCode = $LASTEXITCODE
+          $ErrorActionPreference = "Stop"
+          $smokeOutput | ForEach-Object { Write-Host $_ }
+          if ($exitCode -ne 0) { exit $exitCode }
+          $joined = $smokeOutput -join "`n"
+          if ($joined -notmatch "(?m)^PASS: Scontro contro Kaos") {
+            throw "Scontro contro Kaos smoke test ended without PASS marker."
+          }
 
       - name: Bake editable post-Kaos scene
         shell: powershell
