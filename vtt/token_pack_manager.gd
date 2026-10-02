@@ -144,24 +144,58 @@ func mount_token(token_id: String) -> Error:
 		return ERR_INVALID_PARAMETER
 	if not _entries_by_id.has(id):
 		return ERR_DOES_NOT_EXIST
-	if bool(_mounted_token_ids.get(id, false)):
+	var entry := get_entry(id)
+	return _mount_token_pack(
+		id,
+		entry,
+		cache_path_for(id),
+		true
+	)
+
+
+func mount_local_token(
+	token_id: String,
+	entry: Dictionary,
+	pck_path: String
+) -> Error:
+	var id := token_id.strip_edges()
+	if id.is_empty() or pck_path.strip_edges().is_empty():
+		return ERR_INVALID_PARAMETER
+	return _mount_token_pack(id, entry, pck_path, true)
+
+
+func _mount_token_pack(
+	token_id: String,
+	entry: Dictionary,
+	pck_path: String,
+	verify_sha: bool
+) -> Error:
+	if bool(_mounted_token_ids.get(token_id, false)):
 		return OK
 
-	var entry := get_entry(id)
-	var expected_sha := String(entry.get("sha256", "")).strip_edges().to_lower()
-	if expected_sha.is_empty():
-		return ERR_INVALID_DATA
-	if not _verify_cached_pck(id, expected_sha):
-		return ERR_FILE_CORRUPT
+	if not FileAccess.file_exists(pck_path):
+		return ERR_FILE_NOT_FOUND
 
-	var pck_path := cache_path_for(id)
+	var expected_sha := String(entry.get("sha256", "")).strip_edges().to_lower()
+	if verify_sha and not expected_sha.is_empty():
+		var actual_sha := FileAccess.get_sha256(pck_path).to_lower()
+		if actual_sha != expected_sha:
+			push_warning(
+				"TokenPackManager: SHA-256 mismatch for %s (expected %s, got %s)"
+				% [pck_path, expected_sha, actual_sha]
+			)
+			return ERR_FILE_CORRUPT
+
 	var absolute_pck := ProjectSettings.globalize_path(pck_path)
 	if not ProjectSettings.load_resource_pack(absolute_pck, false):
 		return ERR_CANT_OPEN
 
 	var scene_path := String(entry.get("scene", "")).strip_edges()
 	if scene_path.is_empty():
-		scene_path = "res://remote_tokens/%s/%s_token.tscn" % [id, id]
+		scene_path = (
+			"res://remote_tokens/%s/%s_token.tscn"
+			% [token_id, token_id]
+		)
 
 	var packed := ResourceLoader.load(
 		scene_path,
@@ -171,7 +205,7 @@ func mount_token(token_id: String) -> Error:
 	if packed == null:
 		var message := "PCK mounted but scene is not loadable: %s" % scene_path
 		push_warning("TokenPackManager: %s" % message)
-		token_mount_failed.emit(id, message)
+		token_mount_failed.emit(token_id, message)
 		return ERR_CANT_OPEN
 
 	var instance := packed.instantiate()
@@ -180,7 +214,7 @@ func mount_token(token_id: String) -> Error:
 			instance.free()
 		var message := "Remote scene did not instantiate a Node3D: %s" % scene_path
 		push_warning("TokenPackManager: %s" % message)
-		token_mount_failed.emit(id, message)
+		token_mount_failed.emit(token_id, message)
 		return ERR_INVALID_DATA
 
 	var token := instance as Node3D
@@ -191,17 +225,20 @@ func mount_token(token_id: String) -> Error:
 	)
 	token.free()
 	if not behaves_as_token:
-		var message := "Remote scene does not inherit expected token behavior: %s" % scene_path
+		var message := (
+			"Remote scene does not inherit expected token behavior: %s"
+			% scene_path
+		)
 		push_warning("TokenPackManager: %s" % message)
-		token_mount_failed.emit(id, message)
+		token_mount_failed.emit(token_id, message)
 		return ERR_INVALID_DATA
 
-	_mounted_token_ids[id] = true
+	_mounted_token_ids[token_id] = true
 	print(
-		"TokenPackManager: %s.pck mounted; remote scene load/instantiate OK: %s"
-		% [id, scene_path]
+		"TokenPackManager: %s mounted; scene load/instantiate OK: %s"
+		% [pck_path, scene_path]
 	)
-	token_mounted.emit(id, scene_path)
+	token_mounted.emit(token_id, scene_path)
 	return OK
 
 
