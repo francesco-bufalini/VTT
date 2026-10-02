@@ -1,0 +1,750 @@
+﻿{
+    "schema_version":  1,
+    "scene_id":  "kaos_arena_v7",
+    "run_id":  "37021724724",
+    "run_number":  "32",
+    "source_sha":  "7505aad26faac4fa77fdcdf6ac0b673b0f708434",
+    "blender_job":  "blender/jobs/kaos_arena_v7.json",
+    "scene_report":  {
+                         "blender_version":  "5.2.2 LTS",
+                         "job":  "C:\\actions-runner\\_work\\VTT\\VTT\\blender\\jobs\\kaos_arena_v7.json",
+                         "scene_id":  "kaos_arena_v7",
+                         "description":  "Kaos arena V7: stores PBR texture references as portable //textures paths and extends the 120m-wide rectangular walkable corridor to the opposite circular arena boundary while preserving the smooth platform transition.",
+                         "design_references":  [
+                                                   "encounter/encounter_scenery.gd",
+                                                   "encounter/hazard_allowed_area.gd",
+                                                   "measurement_tool.gd",
+                                                   "V6 smooth flared platform transition and embedded CC0 PBR textures",
+                                                   "V7 portable Blender-relative texture paths",
+                                                   "V7 rectangular corridor extended to the opposite R400m arena boundary"
+                                               ],
+                         "combat_mapping":  {
+                                                "battlemap":  {
+                                                                  "center_godot_m":  [
+                                                                                         0.0,
+                                                                                         0.0,
+                                                                                         85.5
+                                                                                     ],
+                                                                  "size_m":  [
+                                                                                 120.0,
+                                                                                 180.0
+                                                                             ],
+                                                                  "x_bounds_m":  [
+                                                                                     -60.0,
+                                                                                     60.0
+                                                                                 ],
+                                                                  "z_bounds_m":  [
+                                                                                     -4.5,
+                                                                                     175.5
+                                                                                 ]
+                                                              },
+                                                "coordinate_mapping":  "Godot (X,Y,Z) -\u003e Blender (X,Z,Y)",
+                                                "hazard_area":  {
+                                                                    "cells":  [
+                                                                                  -38,
+                                                                                  0,
+                                                                                  76,
+                                                                                  114
+                                                                              ],
+                                                                    "size_m":  [
+                                                                                   114.0,
+                                                                                   171.0
+                                                                               ],
+                                                                    "x_bounds_m":  [
+                                                                                       -57.0,
+                                                                                       57.0
+                                                                                   ],
+                                                                    "z_bounds_m":  [
+                                                                                       0.0,
+                                                                                       171.0
+                                                                                   ]
+                                                                },
+                                                "meters_per_cell":  1.5,
+                                                "sphere":  {
+                                                               "center_godot_m":  [
+                                                                                      0.0,
+                                                                                      385.0,
+                                                                                      -230.0
+                                                                                  ],
+                                                               "radius_m":  220.0
+                                                           },
+                                                "water":  {
+                                                              "center_godot_m":  [
+                                                                                     0.0,
+                                                                                     -0.18,
+                                                                                     -60.0
+                                                                                 ],
+                                                              "radius_m":  337.0
+                                                          }
+                                            },
+                         "layout_extension":  {
+                                                  "arena_wall_enabled":  true,
+                                                  "arena_wall_flute_depth_m":  2.4,
+                                                  "arena_wall_flutes":  48,
+                                                  "arena_wall_height_m":  60,
+                                                  "arena_water_radius_m":  400.0,
+                                                  "continuous_walkable_surface":  true,
+                                                  "extend_rect_to_arena_edge":  true,
+                                                  "extended_rect_y_max_m":  335.47439866570375,
+                                                  "harmonious_walkable_transition":  true,
+                                                  "platform_thickness_m":  0.7,
+                                                  "random_water_column_count":  16,
+                                                  "random_water_column_walkable_margin_m":  10,
+                                                  "random_water_column_wall_margin_m":  24,
+                                                  "random_water_columns":  true,
+                                                  "required_tangent_radius_m":  400.0,
+                                                  "sphere_platform_radius_m":  230.0,
+                                                  "texture_sets":  {
+                                                                       "floor":  {
+                                                                                     "asset_id":  "floor_tiles_02",
+                                                                                     "normal_strength":  0.62,
+                                                                                     "resolution":  "1k",
+                                                                                     "tiling":  [
+                                                                                                    54,
+                                                                                                    54,
+                                                                                                    54
+                                                                                                ]
+                                                                                 },
+                                                                       "wall":  {
+                                                                                    "asset_id":  "plaster_stone_wall_01",
+                                                                                    "normal_strength":  0.82,
+                                                                                    "resolution":  "1k",
+                                                                                    "tiling":  [
+                                                                                                   44,
+                                                                                                   44,
+                                                                                                   44
+                                                                                               ]
+                                                                                }
+                                                                   },
+                                                  "transition_circle_angle_deg":  32,
+                                                  "transition_start_y_m":  72
+                                              },
+                         "asset_root":  "C:\\VTT-BlenderAssets",
+                         "object_count":  69,
+                         "mesh_object_count":  66,
+                         "triangle_count":  31916,
+                         "objects":  [
+                                         {
+                                             "name":  "AgentCamera",
+                                             "type":  "CAMERA",
+                                             "location":  [
+                                                              160.0,
+                                                              170.0,
+                                                              155.0
+                                                          ]
+                                         },
+                                         {
+                                             "name":  "SCENERY_GreekFlutedArenaWall",
+                                             "type":  "MESH",
+                                             "location":  [
+                                                              0.0,
+                                                              0.0,
+                                                              0.0
+                                                          ]
+                                         },
+                                         {
+                                             "name":  "SCENERY_GreekWall_BaseBand",
+                                             "type":  "MESH",
+                                             "location":  [
+                                                              0.0,
+                                                              0.0,
+                                                              0.0
+                                                          ]
+                                         },
+                                         {
+                                             "name":  "SCENERY_GreekWall_CapitalBand",
+                                             "type":  "MESH",
+                                             "location":  [
+                                                              0.0,
+                                                              0.0,
+                                                              0.0
+                                                          ]
+                                         },
+                                         {
+                                             "name":  "COMBAT_ContinuousArenaFloor",
+                                             "type":  "MESH",
+                                             "location":  [
+                                                              0.0,
+                                                              0.0,
+                                                              0.0
+                                                          ]
+                                         },
+                                         {
+                                             "name":  "KaosKey",
+                                             "type":  "LIGHT",
+                                             "location":  [
+                                                              0.0,
+                                                              0.0,
+                                                              0.0
+                                                          ]
+                                         },
+                                         {
+                                             "name":  "KaosFill",
+                                             "type":  "LIGHT",
+                                             "location":  [
+                                                              -180.0,
+                                                              80.0,
+                                                              280.0
+                                                          ]
+                                         },
+                                         {
+                                             "name":  "COMBAT_WaterBasin_R400m",
+                                             "type":  "MESH",
+                                             "location":  [
+                                                              0.0,
+                                                              -60.0,
+                                                              -0.18
+                                                          ]
+                                         },
+                                         {
+                                             "name":  "COMBAT_KlothysSphere_R220m",
+                                             "type":  "MESH",
+                                             "location":  [
+                                                              0.0,
+                                                              -230.0,
+                                                              385.0
+                                                          ]
+                                         },
+                                         {
+                                             "name":  "SphereBinding",
+                                             "type":  "MESH",
+                                             "location":  [
+                                                              0.0,
+                                                              -230.0,
+                                                              385.0
+                                                          ]
+                                         },
+                                         {
+                                             "name":  "SphereBinding.001",
+                                             "type":  "MESH",
+                                             "location":  [
+                                                              0.0,
+                                                              -230.0,
+                                                              385.0
+                                                          ]
+                                         },
+                                         {
+                                             "name":  "SphereBinding.002",
+                                             "type":  "MESH",
+                                             "location":  [
+                                                              0.0,
+                                                              -230.0,
+                                                              385.0
+                                                          ]
+                                         },
+                                         {
+                                             "name":  "BoundaryPlinth_0",
+                                             "type":  "MESH",
+                                             "location":  [
+                                                              -62.0,
+                                                              -6.5,
+                                                              0.8
+                                                          ]
+                                         },
+                                         {
+                                             "name":  "BoundaryPlinth_1",
+                                             "type":  "MESH",
+                                             "location":  [
+                                                              62.0,
+                                                              -6.5,
+                                                              0.8
+                                                          ]
+                                         },
+                                         {
+                                             "name":  "BoundaryPlinth_2",
+                                             "type":  "MESH",
+                                             "location":  [
+                                                              -62.0,
+                                                              337.4744,
+                                                              0.8
+                                                          ]
+                                         },
+                                         {
+                                             "name":  "BoundaryPlinth_3",
+                                             "type":  "MESH",
+                                             "location":  [
+                                                              62.0,
+                                                              337.4744,
+                                                              0.8
+                                                          ]
+                                         },
+                                         {
+                                             "name":  "FloodedColumn_00_Shaft",
+                                             "type":  "MESH",
+                                             "location":  [
+                                                              75.052,
+                                                              59.8945,
+                                                              9.2019
+                                                          ]
+                                         },
+                                         {
+                                             "name":  "FloodedColumn_00_Base",
+                                             "type":  "MESH",
+                                             "location":  [
+                                                              75.052,
+                                                              59.8945,
+                                                              0.42
+                                                          ]
+                                         },
+                                         {
+                                             "name":  "FloodedColumn_01_Shaft",
+                                             "type":  "MESH",
+                                             "location":  [
+                                                              233.796,
+                                                              -328.6797,
+                                                              5.5901
+                                                          ]
+                                         },
+                                         {
+                                             "name":  "FloodedColumn_01_Base",
+                                             "type":  "MESH",
+                                             "location":  [
+                                                              233.796,
+                                                              -328.6797,
+                                                              0.2816
+                                                          ]
+                                         },
+                                         {
+                                             "name":  "FloodedColumn_02_Shaft",
+                                             "type":  "MESH",
+                                             "location":  [
+                                                              259.3412,
+                                                              89.6928,
+                                                              3.7038
+                                                          ]
+                                         },
+                                         {
+                                             "name":  "FloodedColumn_02_Base",
+                                             "type":  "MESH",
+                                             "location":  [
+                                                              259.3412,
+                                                              89.6928,
+                                                              0.1307
+                                                          ]
+                                         },
+                                         {
+                                             "name":  "FloodedColumn_03_Shaft",
+                                             "type":  "MESH",
+                                             "location":  [
+                                                              157.3856,
+                                                              138.5646,
+                                                              5.4324
+                                                          ]
+                                         },
+                                         {
+                                             "name":  "FloodedColumn_03_Base",
+                                             "type":  "MESH",
+                                             "location":  [
+                                                              157.3856,
+                                                              138.5646,
+                                                              0.269
+                                                          ]
+                                         },
+                                         {
+                                             "name":  "FloodedColumn_04_Shaft",
+                                             "type":  "MESH",
+                                             "location":  [
+                                                              134.5784,
+                                                              264.1309,
+                                                              7.5108
+                                                          ]
+                                         },
+                                         {
+                                             "name":  "FloodedColumn_04_Base",
+                                             "type":  "MESH",
+                                             "location":  [
+                                                              134.5784,
+                                                              264.1309,
+                                                              0.42
+                                                          ]
+                                         },
+                                         {
+                                             "name":  "FloodedColumn_04_Capital",
+                                             "type":  "MESH",
+                                             "location":  [
+                                                              134.5784,
+                                                              264.1309,
+                                                              14.7017
+                                                          ]
+                                         },
+                                         {
+                                             "name":  "FloodedColumn_05_Shaft",
+                                             "type":  "MESH",
+                                             "location":  [
+                                                              -247.8171,
+                                                              -183.4004,
+                                                              8.2388
+                                                          ]
+                                         },
+                                         {
+                                             "name":  "FloodedColumn_05_Base",
+                                             "type":  "MESH",
+                                             "location":  [
+                                                              -247.8171,
+                                                              -183.4004,
+                                                              0.42
+                                                          ]
+                                         },
+                                         {
+                                             "name":  "FloodedColumn_06_Shaft",
+                                             "type":  "MESH",
+                                             "location":  [
+                                                              276.3361,
+                                                              55.9975,
+                                                              7.3504
+                                                          ]
+                                         },
+                                         {
+                                             "name":  "FloodedColumn_06_Base",
+                                             "type":  "MESH",
+                                             "location":  [
+                                                              276.3361,
+                                                              55.9975,
+                                                              0.42
+                                                          ]
+                                         },
+                                         {
+                                             "name":  "FloodedColumn_06_Capital",
+                                             "type":  "MESH",
+                                             "location":  [
+                                                              276.3361,
+                                                              55.9975,
+                                                              14.3808
+                                                          ]
+                                         },
+                                         {
+                                             "name":  "FloodedColumn_07_Shaft",
+                                             "type":  "MESH",
+                                             "location":  [
+                                                              174.3133,
+                                                              10.3875,
+                                                              11.0938
+                                                          ]
+                                         },
+                                         {
+                                             "name":  "FloodedColumn_07_Base",
+                                             "type":  "MESH",
+                                             "location":  [
+                                                              174.3133,
+                                                              10.3875,
+                                                              0.42
+                                                          ]
+                                         },
+                                         {
+                                             "name":  "FloodedColumn_07_Capital",
+                                             "type":  "MESH",
+                                             "location":  [
+                                                              174.3133,
+                                                              10.3875,
+                                                              21.8677
+                                                          ]
+                                         },
+                                         {
+                                             "name":  "FloodedColumn_08_Shaft",
+                                             "type":  "MESH",
+                                             "location":  [
+                                                              -299.6309,
+                                                              140.4104,
+                                                              9.4668
+                                                          ]
+                                         },
+                                         {
+                                             "name":  "FloodedColumn_08_Base",
+                                             "type":  "MESH",
+                                             "location":  [
+                                                              -299.6309,
+                                                              140.4104,
+                                                              0.42
+                                                          ]
+                                         },
+                                         {
+                                             "name":  "FloodedColumn_08_Capital",
+                                             "type":  "MESH",
+                                             "location":  [
+                                                              -299.6309,
+                                                              140.4104,
+                                                              18.6136
+                                                          ]
+                                         },
+                                         {
+                                             "name":  "FloodedColumn_09_Shaft",
+                                             "type":  "MESH",
+                                             "location":  [
+                                                              -180.1139,
+                                                              107.9592,
+                                                              7.7179
+                                                          ]
+                                         },
+                                         {
+                                             "name":  "FloodedColumn_09_Base",
+                                             "type":  "MESH",
+                                             "location":  [
+                                                              -180.1139,
+                                                              107.9592,
+                                                              0.42
+                                                          ]
+                                         },
+                                         {
+                                             "name":  "FloodedColumn_10_Shaft",
+                                             "type":  "MESH",
+                                             "location":  [
+                                                              129.6176,
+                                                              173.0654,
+                                                              10.3724
+                                                          ]
+                                         },
+                                         {
+                                             "name":  "FloodedColumn_10_Base",
+                                             "type":  "MESH",
+                                             "location":  [
+                                                              129.6176,
+                                                              173.0654,
+                                                              0.42
+                                                          ]
+                                         },
+                                         {
+                                             "name":  "FloodedColumn_10_Capital",
+                                             "type":  "MESH",
+                                             "location":  [
+                                                              129.6176,
+                                                              173.0654,
+                                                              20.4247
+                                                          ]
+                                         },
+                                         {
+                                             "name":  "FloodedColumn_11_Shaft",
+                                             "type":  "MESH",
+                                             "location":  [
+                                                              -278.7539,
+                                                              -181.8768,
+                                                              3.8033
+                                                          ]
+                                         },
+                                         {
+                                             "name":  "FloodedColumn_11_Base",
+                                             "type":  "MESH",
+                                             "location":  [
+                                                              -278.7539,
+                                                              -181.8768,
+                                                              0.1387
+                                                          ]
+                                         },
+                                         {
+                                             "name":  "FloodedColumn_12_Shaft",
+                                             "type":  "MESH",
+                                             "location":  [
+                                                              -327.4716,
+                                                              103.6433,
+                                                              9.5156
+                                                          ]
+                                         },
+                                         {
+                                             "name":  "FloodedColumn_12_Base",
+                                             "type":  "MESH",
+                                             "location":  [
+                                                              -327.4716,
+                                                              103.6433,
+                                                              0.42
+                                                          ]
+                                         },
+                                         {
+                                             "name":  "FloodedColumn_12_Capital",
+                                             "type":  "MESH",
+                                             "location":  [
+                                                              -327.4716,
+                                                              103.6433,
+                                                              18.7113
+                                                          ]
+                                         },
+                                         {
+                                             "name":  "FloodedColumn_13_Shaft",
+                                             "type":  "MESH",
+                                             "location":  [
+                                                              251.9719,
+                                                              148.6384,
+                                                              9.9219
+                                                          ]
+                                         },
+                                         {
+                                             "name":  "FloodedColumn_13_Base",
+                                             "type":  "MESH",
+                                             "location":  [
+                                                              251.9719,
+                                                              148.6384,
+                                                              0.42
+                                                          ]
+                                         },
+                                         {
+                                             "name":  "FloodedColumn_13_Capital",
+                                             "type":  "MESH",
+                                             "location":  [
+                                                              251.9719,
+                                                              148.6384,
+                                                              19.5238
+                                                          ]
+                                         },
+                                         {
+                                             "name":  "FloodedColumn_14_Shaft",
+                                             "type":  "MESH",
+                                             "location":  [
+                                                              -140.9572,
+                                                              229.8983,
+                                                              11.5516
+                                                          ]
+                                         },
+                                         {
+                                             "name":  "FloodedColumn_14_Base",
+                                             "type":  "MESH",
+                                             "location":  [
+                                                              -140.9572,
+                                                              229.8983,
+                                                              0.42
+                                                          ]
+                                         },
+                                         {
+                                             "name":  "FloodedColumn_14_Capital",
+                                             "type":  "MESH",
+                                             "location":  [
+                                                              -140.9572,
+                                                              229.8983,
+                                                              22.7832
+                                                          ]
+                                         },
+                                         {
+                                             "name":  "FloodedColumn_15_Shaft",
+                                             "type":  "MESH",
+                                             "location":  [
+                                                              135.2281,
+                                                              12.2909,
+                                                              8.7129
+                                                          ]
+                                         },
+                                         {
+                                             "name":  "FloodedColumn_15_Base",
+                                             "type":  "MESH",
+                                             "location":  [
+                                                              135.2281,
+                                                              12.2909,
+                                                              0.42
+                                                          ]
+                                         },
+                                         {
+                                             "name":  "FloodedColumn_15_Capital",
+                                             "type":  "MESH",
+                                             "location":  [
+                                                              135.2281,
+                                                              12.2909,
+                                                              17.1059
+                                                          ]
+                                         },
+                                         {
+                                             "name":  "ScenicFloorDebris_00",
+                                             "type":  "MESH",
+                                             "location":  [
+                                                              -23.5597,
+                                                              83.2963,
+                                                              0.45
+                                                          ]
+                                         },
+                                         {
+                                             "name":  "ScenicFloorDebris_01",
+                                             "type":  "MESH",
+                                             "location":  [
+                                                              19.8871,
+                                                              108.2368,
+                                                              0.45
+                                                          ]
+                                         },
+                                         {
+                                             "name":  "ScenicFloorDebris_02",
+                                             "type":  "MESH",
+                                             "location":  [
+                                                              46.9966,
+                                                              101.3409,
+                                                              0.45
+                                                          ]
+                                         },
+                                         {
+                                             "name":  "ScenicFloorDebris_03",
+                                             "type":  "MESH",
+                                             "location":  [
+                                                              -42.1127,
+                                                              33.3251,
+                                                              0.45
+                                                          ]
+                                         },
+                                         {
+                                             "name":  "ScenicFloorDebris_04",
+                                             "type":  "MESH",
+                                             "location":  [
+                                                              43.2549,
+                                                              105.9357,
+                                                              0.45
+                                                          ]
+                                         },
+                                         {
+                                             "name":  "ScenicFloorDebris_05",
+                                             "type":  "MESH",
+                                             "location":  [
+                                                              -18.3942,
+                                                              46.1552,
+                                                              0.45
+                                                          ]
+                                         },
+                                         {
+                                             "name":  "ScenicFloorDebris_06",
+                                             "type":  "MESH",
+                                             "location":  [
+                                                              41.6485,
+                                                              82.6029,
+                                                              0.45
+                                                          ]
+                                         },
+                                         {
+                                             "name":  "ScenicFloorDebris_07",
+                                             "type":  "MESH",
+                                             "location":  [
+                                                              -15.7485,
+                                                              147.9202,
+                                                              0.45
+                                                          ]
+                                         },
+                                         {
+                                             "name":  "ScenicFloorDebris_08",
+                                             "type":  "MESH",
+                                             "location":  [
+                                                              -12.5524,
+                                                              125.1314,
+                                                              0.45
+                                                          ]
+                                         },
+                                         {
+                                             "name":  "ScenicFloorDebris_09",
+                                             "type":  "MESH",
+                                             "location":  [
+                                                              -13.1423,
+                                                              119.8486,
+                                                              0.45
+                                                          ]
+                                         },
+                                         {
+                                             "name":  "ScenicFloorDebris_10",
+                                             "type":  "MESH",
+                                             "location":  [
+                                                              27.0582,
+                                                              145.0347,
+                                                              0.45
+                                                          ]
+                                         },
+                                         {
+                                             "name":  "ScenicFloorDebris_11",
+                                             "type":  "MESH",
+                                             "location":  [
+                                                              16.0935,
+                                                              65.3389,
+                                                              0.45
+                                                          ]
+                                         }
+                                     ]
+                     }
+}
