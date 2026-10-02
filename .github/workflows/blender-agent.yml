@@ -73,12 +73,33 @@ jobs:
         run: |
           $ErrorActionPreference = "Stop"
           Remove-Item -LiteralPath "outputs/blender_agent" -Recurse -Force -ErrorAction SilentlyContinue
+          New-Item -ItemType Directory -Path "outputs/blender_agent" -Force | Out-Null
+
           $job = "${{ steps.job.outputs.job }}"
-          $output = @(& $env:VTT_BLENDER_EXE --background --python ".\tools\blender_agent\run_job.py" -- --job $job --project-root $env:GITHUB_WORKSPACE 2>&1)
-          $exitCode = $LASTEXITCODE
-          $output | ForEach-Object { Write-Host $_ }
-          if ($exitCode -ne 0) { exit $exitCode }
-          if (($output -join [Environment]::NewLine) -notmatch "(?m)^BLENDER_AGENT_PASS ") { throw "Blender job ended without BLENDER_AGENT_PASS marker." }
+          $stdoutPath = Join-Path $env:RUNNER_TEMP "blender-agent-${{ github.run_id }}.out"
+          $stderrPath = Join-Path $env:RUNNER_TEMP "blender-agent-${{ github.run_id }}.err"
+          Remove-Item -LiteralPath $stdoutPath,$stderrPath -Force -ErrorAction SilentlyContinue
+
+          $arguments = @(
+            "--background",
+            "--python", ".\tools\blender_agent\run_job.py",
+            "--",
+            "--job", $job,
+            "--project-root", $env:GITHUB_WORKSPACE
+          )
+          $process = Start-Process -FilePath $env:VTT_BLENDER_EXE -ArgumentList $arguments -PassThru -Wait -NoNewWindow -RedirectStandardOutput $stdoutPath -RedirectStandardError $stderrPath
+          $stdout = if (Test-Path $stdoutPath) { Get-Content -LiteralPath $stdoutPath -Raw } else { "" }
+          $stderr = if (Test-Path $stderrPath) { Get-Content -LiteralPath $stderrPath -Raw } else { "" }
+
+          if ($stdout) { Write-Host $stdout.TrimEnd() }
+          if ($stderr) { Write-Host "== Blender stderr =="; Write-Host $stderr.TrimEnd() }
+
+          if ($process.ExitCode -ne 0) {
+            throw "Blender job failed with exit code $($process.ExitCode)."
+          }
+          if (($stdout + [Environment]::NewLine + $stderr) -notmatch "(?m)^BLENDER_AGENT_PASS ") {
+            throw "Blender job ended without BLENDER_AGENT_PASS marker."
+          }
 
       - name: Show scene report
         shell: powershell
@@ -116,9 +137,9 @@ jobs:
             blender_job = "${{ steps.job.outputs.job }}"
             scene_report = $scene
           }
-          $status | ConvertTo-Json -Depth 10 | Set-Content -LiteralPath "blender/agent_reports/latest.json" -Encoding UTF8
+          $status | ConvertTo-Json -Depth 10 | Set-Content -LiteralPath "blender/agent_reports/run-${{ github.run_id }}.json" -Encoding UTF8
 
-          git add --sparse blender/agent_reports/latest.json
+          git add --sparse blender/agent_reports/run-${{ github.run_id }}.json
           if (git diff --cached --quiet) {
             Write-Host "Agent status report unchanged."
             exit 0
