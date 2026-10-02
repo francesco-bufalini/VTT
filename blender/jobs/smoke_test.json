@@ -14,7 +14,7 @@
     },
     {
       "op": "add_cube",
-      "name": "AgentCube",
+      "name": "AgentCubeSmoke",
       "location": [
         0,
         0,
