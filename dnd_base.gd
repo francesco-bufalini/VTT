@@ -111,6 +111,7 @@ var token_drag: Node
 var spell_system: Node
 var initiative_tracker: Node
 var token_list: Node
+var player_area: Node
 var _undo_stack: Array[Dictionary] = []
 var _redo_stack: Array[Dictionary] = []
 var _pending_history_actions: Array[int] = []
@@ -174,6 +175,11 @@ func _ready() -> void:
 	token_list.name = "TokenList"
 	add_child(token_list)
 	token_list.call("setup", self)
+
+	player_area = preload("res://vtt/player_area.gd").new()
+	player_area.name = "PlayerArea"
+	add_child(player_area)
+	player_area.call("setup", self)
 
 	var runtime_toolbar: Node = (
 		preload("res://vtt/runtime_toolbar.gd").new() as Node
@@ -1466,6 +1472,26 @@ func _redo_last_action_now() -> bool:
 
 	_append_history_state(_undo_stack, current_state)
 	return true
+
+func toggle_player_area() -> void:
+	if player_area != null and is_instance_valid(player_area):
+		player_area.call("toggle_panel")
+
+
+func add_player_character() -> void:
+	if player_area != null and is_instance_valid(player_area):
+		player_area.call("add_character")
+
+
+func link_player_character_to_selected_token() -> void:
+	if player_area != null and is_instance_valid(player_area):
+		player_area.call("request_link_character_to_selected_token")
+
+
+func get_selected_tokens_for_player_area() -> Array[CharacterBody3D]:
+	_clean_selection()
+	return _selected_tokens.duplicate()
+
 
 func toggle_spell_menu() -> void:
 	if spell_system == null or not is_instance_valid(spell_system):
@@ -2908,6 +2934,11 @@ func _raycast_from_screen(
 
 func _screen_center() -> Vector2:
 	return get_viewport().get_visible_rect().size * 0.5
+
+
+func release_camera_control() -> void:
+	_ui_owns_mouse = true
+	_release_mouse()
 
 
 func capture_camera_control() -> void:
