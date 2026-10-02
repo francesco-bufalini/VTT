@@ -1,0 +1,808 @@
+﻿{
+    "schema_version":  1,
+    "run_id":  "37013415785",
+    "run_number":  "23",
+    "source_sha":  "6427af3b667afbfdcd9a53b2e5dc0e851d92e6e2",
+    "workflow_status":  "success",
+    "blender_job":  "blender/jobs/klothys_titan_prison_sphere_v1.json",
+    "scene_report":  {
+                         "blender_version":  "5.2.2 LTS",
+                         "job":  "C:\\actions-runner\\_work\\VTT\\VTT\\blender\\jobs\\klothys_titan_prison_sphere_v1.json",
+                         "scene_id":  "klothys_titan_prison_sphere_v1",
+                         "description":  "Standalone Klothys Titan prison sphere aligned exactly to the Godot arena. No platform is generated. The nominal 220 m sphere keeps the current arena proportions while Godot\u0027s titan relief asset forms the imprisoned silhouettes pressing through the shell.",
+                         "design_references":  [
+                                                   "encounter/encounter_scenery.gd",
+                                                   "encounter/titan_reliefs.gd",
+                                                   "encounter/assets/characters/titan_relief.glb",
+                                                   "measurement_tool.gd"
+                                               ],
+                         "combat_mapping":  {
+                                                "battlemap":  {
+                                                                  "center_godot_m":  [
+                                                                                         0.0,
+                                                                                         0.0,
+                                                                                         85.5
+                                                                                     ],
+                                                                  "size_m":  [
+                                                                                 120.0,
+                                                                                 180.0
+                                                                             ],
+                                                                  "x_bounds_m":  [
+                                                                                     -60.0,
+                                                                                     60.0
+                                                                                 ],
+                                                                  "z_bounds_m":  [
+                                                                                     -4.5,
+                                                                                     175.5
+                                                                                 ]
+                                                              },
+                                                "coordinate_mapping":  "Godot (X,Y,Z) -\u003e Blender (X,Z,Y)",
+                                                "hazard_area":  {
+                                                                    "cells":  [
+                                                                                  -38,
+                                                                                  0,
+                                                                                  76,
+                                                                                  114
+                                                                              ],
+                                                                    "size_m":  [
+                                                                                   114.0,
+                                                                                   171.0
+                                                                               ],
+                                                                    "x_bounds_m":  [
+                                                                                       -57.0,
+                                                                                       57.0
+                                                                                   ],
+                                                                    "z_bounds_m":  [
+                                                                                       0.0,
+                                                                                       171.0
+                                                                                   ]
+                                                                },
+                                                "meters_per_cell":  1.5,
+                                                "sphere":  {
+                                                               "center_godot_m":  [
+                                                                                      0.0,
+                                                                                      385.0,
+                                                                                      -230.0
+                                                                                  ],
+                                                               "radius_m":  220.0
+                                                           },
+                                                "water":  {
+                                                              "center_godot_m":  [
+                                                                                     0.0,
+                                                                                     -0.18,
+                                                                                     -60.0
+                                                                                 ],
+                                                              "radius_m":  337.0
+                                                          }
+                                            },
+                         "layout_extension":  {
+
+                                              },
+                         "asset_root":  "C:\\VTT-BlenderAssets",
+                         "object_count":  80,
+                         "mesh_object_count":  60,
+                         "triangle_count":  988032,
+                         "objects":  [
+                                         {
+                                             "name":  "AgentCamera",
+                                             "type":  "CAMERA",
+                                             "location":  [
+                                                              0.0,
+                                                              260.0,
+                                                              650.0
+                                                          ]
+                                         },
+                                         {
+                                             "name":  "TitanPressureRelief_00",
+                                             "type":  "MESH",
+                                             "location":  [
+                                                              -117.8761,
+                                                              -145.7054,
+                                                              235.7899
+                                                          ]
+                                         },
+                                         {
+                                             "name":  "TitanPressureRelief_01",
+                                             "type":  "MESH",
+                                             "location":  [
+                                                              -45.5854,
+                                                              -92.4416,
+                                                              235.7899
+                                                          ]
+                                         },
+                                         {
+                                             "name":  "TitanPressureRelief_02",
+                                             "type":  "MESH",
+                                             "location":  [
+                                                              44.2076,
+                                                              -91.9926,
+                                                              235.7899
+                                                          ]
+                                         },
+                                         {
+                                             "name":  "TitanPressureRelief_03",
+                                             "type":  "MESH",
+                                             "location":  [
+                                                              117.0273,
+                                                              -144.5309,
+                                                              235.7899
+                                                          ]
+                                         },
+                                         {
+                                             "name":  "TitanPressureRelief_04",
+                                             "type":  "MESH",
+                                             "location":  [
+                                                              -147.0806,
+                                                              -95.4873,
+                                                              325.5219
+                                                          ]
+                                         },
+                                         {
+                                             "name":  "TitanPressureRelief_05",
+                                             "type":  "MESH",
+                                             "location":  [
+                                                              -92.0394,
+                                                              -53.2088,
+                                                              325.5219
+                                                          ]
+                                         },
+                                         {
+                                             "name":  "TitanPressureRelief_06",
+                                             "type":  "MESH",
+                                             "location":  [
+                                                              92.0394,
+                                                              -53.2088,
+                                                              325.5219
+                                                          ]
+                                         },
+                                         {
+                                             "name":  "TitanPressureRelief_07",
+                                             "type":  "MESH",
+                                             "location":  [
+                                                              173.8733,
+                                                              -132.5606,
+                                                              325.5219
+                                                          ]
+                                         },
+                                         {
+                                             "name":  "TitanPressureRelief_08",
+                                             "type":  "MESH",
+                                             "location":  [
+                                                              -165.1125,
+                                                              -111.9261,
+                                                              430.3918
+                                                          ]
+                                         },
+                                         {
+                                             "name":  "TitanPressureRelief_09",
+                                             "type":  "MESH",
+                                             "location":  [
+                                                              -63.8528,
+                                                              -37.3179,
+                                                              430.3918
+                                                          ]
+                                         },
+                                         {
+                                             "name":  "TitanPressureRelief_10",
+                                             "type":  "MESH",
+                                             "location":  [
+                                                              61.9228,
+                                                              -36.689,
+                                                              430.3918
+                                                          ]
+                                         },
+                                         {
+                                             "name":  "TitanPressureRelief_11",
+                                             "type":  "MESH",
+                                             "location":  [
+                                                              163.9236,
+                                                              -110.2809,
+                                                              430.3918
+                                                          ]
+                                         },
+                                         {
+                                             "name":  "TitanPressureRelief_12",
+                                             "type":  "MESH",
+                                             "location":  [
+                                                              -114.3766,
+                                                              -125.3968,
+                                                              523.7089
+                                                          ]
+                                         },
+                                         {
+                                             "name":  "TitanPressureRelief_13",
+                                             "type":  "MESH",
+                                             "location":  [
+                                                              -30.793,
+                                                              -78.0933,
+                                                              523.7089
+                                                          ]
+                                         },
+                                         {
+                                             "name":  "TitanPressureRelief_14",
+                                             "type":  "MESH",
+                                             "location":  [
+                                                              64.6134,
+                                                              -89.1137,
+                                                              523.7089
+                                                          ]
+                                         },
+                                         {
+                                             "name":  "TitanPressureRelief_15",
+                                             "type":  "MESH",
+                                             "location":  [
+                                                              135.2119,
+                                                              -154.2267,
+                                                              523.7089
+                                                          ]
+                                         },
+                                         {
+                                             "name":  "EnergyFissure_00",
+                                             "type":  "CURVE",
+                                             "location":  [
+                                                              0.0,
+                                                              0.0,
+                                                              0.0
+                                                          ]
+                                         },
+                                         {
+                                             "name":  "EnergyFissure_00_Branch",
+                                             "type":  "CURVE",
+                                             "location":  [
+                                                              0.0,
+                                                              0.0,
+                                                              0.0
+                                                          ]
+                                         },
+                                         {
+                                             "name":  "EnergyFissure_01",
+                                             "type":  "CURVE",
+                                             "location":  [
+                                                              0.0,
+                                                              0.0,
+                                                              0.0
+                                                          ]
+                                         },
+                                         {
+                                             "name":  "EnergyFissure_02",
+                                             "type":  "CURVE",
+                                             "location":  [
+                                                              0.0,
+                                                              0.0,
+                                                              0.0
+                                                          ]
+                                         },
+                                         {
+                                             "name":  "EnergyFissure_02_Branch",
+                                             "type":  "CURVE",
+                                             "location":  [
+                                                              0.0,
+                                                              0.0,
+                                                              0.0
+                                                          ]
+                                         },
+                                         {
+                                             "name":  "EnergyFissure_03",
+                                             "type":  "CURVE",
+                                             "location":  [
+                                                              0.0,
+                                                              0.0,
+                                                              0.0
+                                                          ]
+                                         },
+                                         {
+                                             "name":  "EnergyFissure_04",
+                                             "type":  "CURVE",
+                                             "location":  [
+                                                              0.0,
+                                                              0.0,
+                                                              0.0
+                                                          ]
+                                         },
+                                         {
+                                             "name":  "EnergyFissure_04_Branch",
+                                             "type":  "CURVE",
+                                             "location":  [
+                                                              0.0,
+                                                              0.0,
+                                                              0.0
+                                                          ]
+                                         },
+                                         {
+                                             "name":  "EnergyFissure_05",
+                                             "type":  "CURVE",
+                                             "location":  [
+                                                              0.0,
+                                                              0.0,
+                                                              0.0
+                                                          ]
+                                         },
+                                         {
+                                             "name":  "EnergyFissure_06",
+                                             "type":  "CURVE",
+                                             "location":  [
+                                                              0.0,
+                                                              0.0,
+                                                              0.0
+                                                          ]
+                                         },
+                                         {
+                                             "name":  "EnergyFissure_06_Branch",
+                                             "type":  "CURVE",
+                                             "location":  [
+                                                              0.0,
+                                                              0.0,
+                                                              0.0
+                                                          ]
+                                         },
+                                         {
+                                             "name":  "EnergyFissure_07",
+                                             "type":  "CURVE",
+                                             "location":  [
+                                                              0.0,
+                                                              0.0,
+                                                              0.0
+                                                          ]
+                                         },
+                                         {
+                                             "name":  "EnergyFissure_08",
+                                             "type":  "CURVE",
+                                             "location":  [
+                                                              0.0,
+                                                              0.0,
+                                                              0.0
+                                                          ]
+                                         },
+                                         {
+                                             "name":  "EnergyFissure_08_Branch",
+                                             "type":  "CURVE",
+                                             "location":  [
+                                                              0.0,
+                                                              0.0,
+                                                              0.0
+                                                          ]
+                                         },
+                                         {
+                                             "name":  "EnergyFissure_09",
+                                             "type":  "CURVE",
+                                             "location":  [
+                                                              0.0,
+                                                              0.0,
+                                                              0.0
+                                                          ]
+                                         },
+                                         {
+                                             "name":  "EnergyFissure_10",
+                                             "type":  "CURVE",
+                                             "location":  [
+                                                              0.0,
+                                                              0.0,
+                                                              0.0
+                                                          ]
+                                         },
+                                         {
+                                             "name":  "EnergyFissure_10_Branch",
+                                             "type":  "CURVE",
+                                             "location":  [
+                                                              0.0,
+                                                              0.0,
+                                                              0.0
+                                                          ]
+                                         },
+                                         {
+                                             "name":  "TitanPrison_Key",
+                                             "type":  "LIGHT",
+                                             "location":  [
+                                                              -270.0,
+                                                              -70.0,
+                                                              695.0
+                                                          ]
+                                         },
+                                         {
+                                             "name":  "TitanPrison_Rim",
+                                             "type":  "LIGHT",
+                                             "location":  [
+                                                              0.0,
+                                                              -230.0,
+                                                              385.0
+                                                          ]
+                                         },
+                                         {
+                                             "name":  "Klothys_PrisonShell_R220m",
+                                             "type":  "MESH",
+                                             "location":  [
+                                                              0.0,
+                                                              -230.0,
+                                                              385.0
+                                                          ]
+                                         },
+                                         {
+                                             "name":  "TitanSurfaceBulge_00",
+                                             "type":  "MESH",
+                                             "location":  [
+                                                              -121.5597,
+                                                              -143.0712,
+                                                              231.1271
+                                                          ]
+                                         },
+                                         {
+                                             "name":  "TitanSurfaceBulge_01",
+                                             "type":  "MESH",
+                                             "location":  [
+                                                              -47.01,
+                                                              -88.1429,
+                                                              231.1271
+                                                          ]
+                                         },
+                                         {
+                                             "name":  "TitanSurfaceBulge_02",
+                                             "type":  "MESH",
+                                             "location":  [
+                                                              45.5891,
+                                                              -87.6799,
+                                                              231.1271
+                                                          ]
+                                         },
+                                         {
+                                             "name":  "TitanSurfaceBulge_03",
+                                             "type":  "MESH",
+                                             "location":  [
+                                                              120.6844,
+                                                              -141.86,
+                                                              231.1271
+                                                          ]
+                                         },
+                                         {
+                                             "name":  "TitanSurfaceBulge_04",
+                                             "type":  "MESH",
+                                             "location":  [
+                                                              -151.6768,
+                                                              -91.2838,
+                                                              323.6632
+                                                          ]
+                                         },
+                                         {
+                                             "name":  "TitanSurfaceBulge_05",
+                                             "type":  "MESH",
+                                             "location":  [
+                                                              -94.9156,
+                                                              -47.6841,
+                                                              323.6632
+                                                          ]
+                                         },
+                                         {
+                                             "name":  "TitanSurfaceBulge_06",
+                                             "type":  "MESH",
+                                             "location":  [
+                                                              94.9156,
+                                                              -47.6841,
+                                                              323.6632
+                                                          ]
+                                         },
+                                         {
+                                             "name":  "TitanSurfaceBulge_07",
+                                             "type":  "MESH",
+                                             "location":  [
+                                                              179.3068,
+                                                              -129.5156,
+                                                              323.6632
+                                                          ]
+                                         },
+                                         {
+                                             "name":  "TitanSurfaceBulge_08",
+                                             "type":  "MESH",
+                                             "location":  [
+                                                              -170.2723,
+                                                              -108.2363,
+                                                              431.8102
+                                                          ]
+                                         },
+                                         {
+                                             "name":  "TitanSurfaceBulge_09",
+                                             "type":  "MESH",
+                                             "location":  [
+                                                              -65.8482,
+                                                              -31.2965,
+                                                              431.8102
+                                                          ]
+                                         },
+                                         {
+                                             "name":  "TitanSurfaceBulge_10",
+                                             "type":  "MESH",
+                                             "location":  [
+                                                              63.8579,
+                                                              -30.648,
+                                                              431.8102
+                                                          ]
+                                         },
+                                         {
+                                             "name":  "TitanSurfaceBulge_11",
+                                             "type":  "MESH",
+                                             "location":  [
+                                                              169.0462,
+                                                              -106.5397,
+                                                              431.8103
+                                                          ]
+                                         },
+                                         {
+                                             "name":  "TitanSurfaceBulge_12",
+                                             "type":  "MESH",
+                                             "location":  [
+                                                              -117.9509,
+                                                              -122.1279,
+                                                              528.0435
+                                                          ]
+                                         },
+                                         {
+                                             "name":  "TitanSurfaceBulge_13",
+                                             "type":  "MESH",
+                                             "location":  [
+                                                              -31.7553,
+                                                              -73.3463,
+                                                              528.0435
+                                                          ]
+                                         },
+                                         {
+                                             "name":  "TitanSurfaceBulge_14",
+                                             "type":  "MESH",
+                                             "location":  [
+                                                              66.6326,
+                                                              -84.711,
+                                                              528.0435
+                                                          ]
+                                         },
+                                         {
+                                             "name":  "TitanSurfaceBulge_15",
+                                             "type":  "MESH",
+                                             "location":  [
+                                                              139.4372,
+                                                              -151.8587,
+                                                              528.0435
+                                                          ]
+                                         },
+                                         {
+                                             "name":  "DivineBinding_00",
+                                             "type":  "MESH",
+                                             "location":  [
+                                                              0.0,
+                                                              -230.0,
+                                                              385.0
+                                                          ]
+                                         },
+                                         {
+                                             "name":  "DivineBinding_01",
+                                             "type":  "MESH",
+                                             "location":  [
+                                                              0.0,
+                                                              -230.0,
+                                                              385.0
+                                                          ]
+                                         },
+                                         {
+                                             "name":  "DivineBinding_02",
+                                             "type":  "MESH",
+                                             "location":  [
+                                                              0.0,
+                                                              -230.0,
+                                                              385.0
+                                                          ]
+                                         },
+                                         {
+                                             "name":  "PrisonFragment_00",
+                                             "type":  "MESH",
+                                             "location":  [
+                                                              -20.3656,
+                                                              -428.884,
+                                                              265.2909
+                                                          ]
+                                         },
+                                         {
+                                             "name":  "PrisonFragment_01",
+                                             "type":  "MESH",
+                                             "location":  [
+                                                              -33.9544,
+                                                              -445.9212,
+                                                              451.7662
+                                                          ]
+                                         },
+                                         {
+                                             "name":  "PrisonFragment_02",
+                                             "type":  "MESH",
+                                             "location":  [
+                                                              -104.641,
+                                                              -206.9158,
+                                                              181.3712
+                                                          ]
+                                         },
+                                         {
+                                             "name":  "PrisonFragment_03",
+                                             "type":  "MESH",
+                                             "location":  [
+                                                              91.162,
+                                                              -428.5708,
+                                                              448.025
+                                                          ]
+                                         },
+                                         {
+                                             "name":  "PrisonFragment_04",
+                                             "type":  "MESH",
+                                             "location":  [
+                                                              145.5583,
+                                                              -409.8893,
+                                                              354.9232
+                                                          ]
+                                         },
+                                         {
+                                             "name":  "PrisonFragment_05",
+                                             "type":  "MESH",
+                                             "location":  [
+                                                              86.1215,
+                                                              -378.6172,
+                                                              230.6367
+                                                          ]
+                                         },
+                                         {
+                                             "name":  "PrisonFragment_06",
+                                             "type":  "MESH",
+                                             "location":  [
+                                                              87.1322,
+                                                              -103.7899,
+                                                              562.3712
+                                                          ]
+                                         },
+                                         {
+                                             "name":  "PrisonFragment_07",
+                                             "type":  "MESH",
+                                             "location":  [
+                                                              -174.0547,
+                                                              -368.2008,
+                                                              293.1681
+                                                          ]
+                                         },
+                                         {
+                                             "name":  "PrisonFragment_08",
+                                             "type":  "MESH",
+                                             "location":  [
+                                                              165.8526,
+                                                              -71.3298,
+                                                              373.144
+                                                          ]
+                                         },
+                                         {
+                                             "name":  "PrisonFragment_09",
+                                             "type":  "MESH",
+                                             "location":  [
+                                                              -18.5286,
+                                                              -3.3249,
+                                                              398.0033
+                                                          ]
+                                         },
+                                         {
+                                             "name":  "PrisonFragment_10",
+                                             "type":  "MESH",
+                                             "location":  [
+                                                              -213.345,
+                                                              -162.4999,
+                                                              350.8302
+                                                          ]
+                                         },
+                                         {
+                                             "name":  "PrisonFragment_11",
+                                             "type":  "MESH",
+                                             "location":  [
+                                                              -31.9771,
+                                                              -360.6306,
+                                                              201.3093
+                                                          ]
+                                         },
+                                         {
+                                             "name":  "PrisonFragment_12",
+                                             "type":  "MESH",
+                                             "location":  [
+                                                              66.6163,
+                                                              -346.3771,
+                                                              580.7305
+                                                          ]
+                                         },
+                                         {
+                                             "name":  "PrisonFragment_13",
+                                             "type":  "MESH",
+                                             "location":  [
+                                                              -108.6072,
+                                                              -331.0647,
+                                                              568.926
+                                                          ]
+                                         },
+                                         {
+                                             "name":  "PrisonFragment_14",
+                                             "type":  "MESH",
+                                             "location":  [
+                                                              19.6271,
+                                                              -395.8246,
+                                                              542.4563
+                                                          ]
+                                         },
+                                         {
+                                             "name":  "PrisonFragment_15",
+                                             "type":  "MESH",
+                                             "location":  [
+                                                              158.7602,
+                                                              -102.4024,
+                                                              277.4962
+                                                          ]
+                                         },
+                                         {
+                                             "name":  "PrisonFragment_16",
+                                             "type":  "MESH",
+                                             "location":  [
+                                                              -199.5467,
+                                                              -213.9198,
+                                                              255.7984
+                                                          ]
+                                         },
+                                         {
+                                             "name":  "PrisonFragment_17",
+                                             "type":  "MESH",
+                                             "location":  [
+                                                              101.3348,
+                                                              -367.6606,
+                                                              533.1503
+                                                          ]
+                                         },
+                                         {
+                                             "name":  "PrisonFragment_18",
+                                             "type":  "MESH",
+                                             "location":  [
+                                                              -196.1822,
+                                                              -209.8058,
+                                                              273.4098
+                                                          ]
+                                         },
+                                         {
+                                             "name":  "PrisonFragment_19",
+                                             "type":  "MESH",
+                                             "location":  [
+                                                              68.4171,
+                                                              -454.9369,
+                                                              364.114
+                                                          ]
+                                         },
+                                         {
+                                             "name":  "PrisonFragment_20",
+                                             "type":  "MESH",
+                                             "location":  [
+                                                              129.4425,
+                                                              -418.741,
+                                                              450.3589
+                                                          ]
+                                         },
+                                         {
+                                             "name":  "PrisonFragment_21",
+                                             "type":  "MESH",
+                                             "location":  [
+                                                              -2.5365,
+                                                              -314.0093,
+                                                              596.9367
+                                                          ]
+                                         },
+                                         {
+                                             "name":  "PrisonFragment_22",
+                                             "type":  "MESH",
+                                             "location":  [
+                                                              -52.5954,
+                                                              -139.0067,
+                                                              596.6373
+                                                          ]
+                                         },
+                                         {
+                                             "name":  "PrisonFragment_23",
+                                             "type":  "MESH",
+                                             "location":  [
+                                                              -18.3498,
+                                                              -219.3655,
+                                                              153.552
+                                                          ]
+                                         }
+                                     ]
+                     }
+}
