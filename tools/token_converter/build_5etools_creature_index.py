@@ -42,9 +42,10 @@ def extract_size_name(raw: Any) -> str | None:
 
 
 def main() -> None:
-    if len(sys.argv) != 2:
+    argv = sys.argv[sys.argv.index("--") + 1 :] if "--" in sys.argv else sys.argv[1:]
+    if len(argv) != 1:
         raise SystemExit("Pass a complete 5etools-src checkout.")
-    root = Path(sys.argv[1]).resolve()
+    root = Path(argv[0]).resolve()
     bestiary = root / "data" / "bestiary"
     index_path = bestiary / "index.json"
     if not index_path.is_file():
