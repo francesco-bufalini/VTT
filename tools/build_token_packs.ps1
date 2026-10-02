@@ -57,7 +57,17 @@ function Invoke-Godot {
     )
 
     Write-Host ">> $Phase"
-    $argumentLine = ($Arguments | ForEach-Object {
+
+    $logDir = Join-Path $ProjectRoot ".token_pack_build\logs"
+    New-Item -ItemType Directory -Force -Path $logDir | Out-Null
+    $safePhase = ($Phase -replace '[^a-zA-Z0-9_-]', '_')
+    $logPath = Join-Path $logDir ($safePhase + ".log")
+    if (Test-Path $logPath) { Remove-Item -Force $logPath }
+
+    # Godot's own log captures engine/GDScript diagnostics even when Process
+    # output isn't attached to the current PowerShell host.
+    $effectiveArguments = @("--log-file", $logPath) + $Arguments
+    $argumentLine = ($effectiveArguments | ForEach-Object {
         if ($_ -match '[\s"]') {
             '"' + ($_ -replace '"', '\"') + '"'
         } else {
@@ -86,6 +96,14 @@ function Invoke-Godot {
     }
 
     if ($process.ExitCode -ne 0) {
+        Write-Host ""
+        Write-Host "---- Godot log: $Phase ----"
+        if (Test-Path $logPath) {
+            Get-Content -Path $logPath -Tail 120 | ForEach-Object { Write-Host $_ }
+        } else {
+            Write-Host "(Godot non ha prodotto il file di log atteso: $logPath)"
+        }
+        Write-Host "---- fine log ----"
         throw "$Phase fallita con codice $($process.ExitCode)"
     }
 }
