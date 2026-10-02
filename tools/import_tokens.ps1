@@ -7,12 +7,16 @@ param(
     [ValidateRange(0.05, 1.0)]
     [double]$DecimateRatio = 1.0,
 
-    [string]$Blender = ""
+    [string]$Blender = "",
+
+    [string]$FiveEToolsRoot = ""
 )
 
 $ErrorActionPreference = "Stop"
 $ProjectRoot = (Resolve-Path (Join-Path $PSScriptRoot "..")).Path
 $Converter = Join-Path $ProjectRoot "tools\token_converter\convert_tokens.py"
+$CreatureIndexGenerator = Join-Path $ProjectRoot "tools\token_converter\build_5etools_creature_index.py"
+$CreatureIndex = Join-Path $ProjectRoot "assets\tokens\5etools_creature_index.json"
 
 if (-not (Test-Path $Converter)) {
     throw "Convertitore non trovato: $Converter"
@@ -34,6 +38,51 @@ if ([string]::IsNullOrWhiteSpace($Blender)) {
 
 if ([string]::IsNullOrWhiteSpace($Blender) -or -not (Test-Path $Blender)) {
     throw "Blender non trovato. Passa -Blender 'C:\...\blender.exe' oppure aggiungilo al PATH."
+}
+
+if ([string]::IsNullOrWhiteSpace($FiveEToolsRoot)) {
+    $fiveEToolsCandidates = @()
+    if (-not [string]::IsNullOrWhiteSpace($env:VTT_5ETOOLS_ROOT)) {
+        $fiveEToolsCandidates += $env:VTT_5ETOOLS_ROOT
+    }
+    $fiveEToolsCandidates += @(
+        (Join-Path $ProjectRoot "5etools-src"),
+        (Join-Path $ProjectRoot "5etools"),
+        (Join-Path $ProjectRoot ".vtt_assets\5etools-src"),
+        (Join-Path (Split-Path $ProjectRoot -Parent) "5etools-src")
+    )
+
+    foreach ($candidate in $fiveEToolsCandidates) {
+        if (-not [string]::IsNullOrWhiteSpace($candidate) -and
+            (Test-Path (Join-Path $candidate "data\bestiary\index.json"))) {
+            $FiveEToolsRoot = (Resolve-Path $candidate).Path
+            break
+        }
+    }
+}
+
+if (-not [string]::IsNullOrWhiteSpace($FiveEToolsRoot)) {
+    $FiveEToolsRoot = (Resolve-Path $FiveEToolsRoot).Path
+    $bestiaryIndex = Join-Path $FiveEToolsRoot "data\bestiary\index.json"
+    if (-not (Test-Path $bestiaryIndex)) {
+        throw "Checkout 5eTools non valido: manca $bestiaryIndex"
+    }
+    if (-not (Test-Path $CreatureIndexGenerator)) {
+        throw "Generatore indice creature non trovato: $CreatureIndexGenerator"
+    }
+
+    Write-Host "5eTools:  $FiveEToolsRoot"
+    Write-Host "Indice:   rigenerazione metadata creature..."
+    & $Blender --background --python $CreatureIndexGenerator -- $FiveEToolsRoot
+    if ($LASTEXITCODE -ne 0) {
+        throw "Generazione indice creature 5eTools terminata con codice $LASTEXITCODE"
+    }
+}
+elseif (-not (Test-Path $CreatureIndex)) {
+    Write-Warning "5eTools non rilevato e indice creature assente. Il converter usera i fallback locali."
+}
+else {
+    Write-Host "5eTools:  uso indice creature locale esistente"
 }
 
 function Remove-TrailingDirectorySeparator([string]$PathValue) {
@@ -68,7 +117,8 @@ if (-not [string]::IsNullOrWhiteSpace($Default)) {
 Write-Host "Blender:  $Blender"
 Write-Host "Sorgente: $SourcePath"
 Write-Host "Progetto: $ProjectRoot"
-Write-Host "Scala:    ricavata automaticamente dalla base della miniatura"
+Write-Host "Taglia:   5eTools -> override -> nome -> base/marker -> Medium"
+Write-Host "Scala:    visuale authored; la taglia D&D non ridimensiona la miniatura"
 Write-Host "Decimate: $DecimateRatio (1.0 = nessuna semplificazione)"
 
 & $Blender @arguments
