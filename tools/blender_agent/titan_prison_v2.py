@@ -10,8 +10,8 @@ import bpy
 import mathutils
 
 
-DEMON_URL = "https://raw.githubusercontent.com/ilrein/warptracker/71bbfbdfacd118196994b26da68eec1876d55c6b/public/models/demon.glb"
-GHOST_URL = "https://raw.githubusercontent.com/ilrein/warptracker/71bbfbdfacd118196994b26da68eec1876d55c6b/public/models/ghost.glb"
+DEMON_URL = "https://raw.githubusercontent.com/yerdaulet-damir/liminal/ff9ee5b57e2531b4f8841d6e7564283f943f6d34/client/public/models/monster_Demon.gltf"
+ORC_URL = "https://raw.githubusercontent.com/yerdaulet-damir/liminal/ff9ee5b57e2531b4f8841d6e7564283f943f6d34/client/public/models/monster_Orc.gltf"
 SOURCE_LICENSE = "Quaternius Ultimate Monsters - CC0 1.0"
 
 
@@ -240,7 +240,7 @@ def _radial_relief(
         edge = min(1.0, math.sqrt((nx * 0.88) ** 2 + (nz * 0.78) ** 2))
         body_bulge = max(0.0, 1.0 - edge ** 1.65)
         depth_term = ny * 2.6
-        radial = radius - 4.2 + body_bulge * 13.0 + depth_term
+        radial = radius - 2.0 + body_bulge * 18.0 + depth_term * 1.15
         radial += rng.uniform(-0.20, 0.20)
         mapped.append(mathutils.Vector(center) + patch_dir * radial)
 
@@ -269,7 +269,7 @@ def _radial_relief(
 
 
 def _pressure_tendrils(prefix: str, center, radius: float, yaw: float, stone, rng: random.Random, side_sign: float):
-    for i in range(8):
+    for i in range(6):
         start_lat = rng.uniform(-0.58, 0.62)
         start_yaw = yaw + side_sign * rng.uniform(0.18, 0.38)
         points = []
@@ -289,8 +289,14 @@ def _pressure_tendrils(prefix: str, center, radius: float, yaw: float, stone, rn
 
 
 def _crack_pair(name: str, points, groove, glow, width: float):
-    _curve_object(name + "_Groove", points, width * 1.9, groove)
-    _curve_object(name + "_Glow", points, width, glow)
+    _curve_object(name + "_Groove", points, width * 1.85, groove)
+    center_guess = mathutils.Vector((0.0, -230.0, 385.0))
+    glow_points = []
+    for point in points:
+        p = mathutils.Vector(point)
+        direction = (p - center_guess).normalized()
+        glow_points.append(tuple(p + direction * 1.15))
+    _curve_object(name + "_Glow", glow_points, width * 0.82, glow)
 
 
 def _add_cracks(center, radius: float, groove, glow, rng: random.Random):
@@ -302,7 +308,7 @@ def _add_cracks(center, radius: float, groove, glow, rng: random.Random):
             points = []
             count = rng.randint(6, 11)
             for step in range(count):
-                points.append(tuple(_surface_point(center, radius + 2.1, yaw, lat)))
+                points.append(tuple(_surface_point(center, radius + 3.25, yaw, lat)))
                 yaw += side * rng.uniform(0.025, 0.07)
                 lat += rng.uniform(-0.055, 0.055)
                 if abs(yaw) < 0.50:
@@ -319,7 +325,7 @@ def _add_cracks(center, radius: float, groove, glow, rng: random.Random):
                 b_lat = lat + rng.uniform(-0.15, 0.15)
                 branch = []
                 for _ in range(rng.randint(4, 7)):
-                    branch.append(tuple(_surface_point(center, radius + 2.25, b_yaw, b_lat)))
+                    branch.append(tuple(_surface_point(center, radius + 3.35, b_yaw, b_lat)))
                     b_yaw += rng.uniform(-0.05, 0.05)
                     b_lat += rng.uniform(-0.06, 0.06)
                 _crack_pair(
@@ -345,9 +351,13 @@ def _surface_ring(name: str, center, radius: float, yaw: float, latitude: float,
             + tx * (math.cos(a) * angular_size)
             + tz * (math.sin(a) * angular_size)
         ).normalized()
-        points.append(tuple(mathutils.Vector(center) + direction * (radius + 2.35)))
+        points.append(tuple(mathutils.Vector(center) + direction * (radius + 3.15)))
     _curve_object(name + "_Groove", points, 1.05, groove, cyclic=True)
-    _curve_object(name + "_Glow", points, 0.42, glow, cyclic=True)
+    glow_points = []
+    for point in points:
+        p = mathutils.Vector(point)
+        glow_points.append(tuple(p + (p - mathutils.Vector(center)).normalized() * 1.25))
+    _curve_object(name + "_Glow", glow_points, 0.52, glow, cyclic=True)
 
     for j, angle in enumerate((0.0, 2.1, 4.2)):
         inner = []
@@ -358,9 +368,13 @@ def _surface_ring(name: str, center, radius: float, yaw: float, latitude: float,
                 + tz * (math.sin(angle) * angular_size * t)
             )
             direction = (n + offset).normalized()
-            inner.append(tuple(mathutils.Vector(center) + direction * (radius + 2.55)))
+            inner.append(tuple(mathutils.Vector(center) + direction * (radius + 3.35)))
         _curve_object(f"{name}_Mark{j}_Groove", inner, 0.75, groove)
-        _curve_object(f"{name}_Mark{j}_Glow", inner, 0.28, glow)
+        inner_glow = []
+        for point in inner:
+            p = mathutils.Vector(point)
+            inner_glow.append(tuple(p + (p - mathutils.Vector(center)).normalized() * 1.0))
+        _curve_object(f"{name}_Mark{j}_Glow", inner_glow, 0.34, glow)
 
 
 def _add_runes(center, radius: float, groove, glow):
@@ -394,8 +408,8 @@ def _add_binding_arc(name: str, center, radius: float, latitude: float, metal, s
         tangent = (_direction(yaw + 0.02, latitude) - _direction(yaw - 0.02, latitude)).normalized()
 
         bpy.ops.mesh.primitive_torus_add(
-            major_radius=5.0,
-            minor_radius=1.25,
+            major_radius=7.0,
+            minor_radius=1.35,
             major_segments=28,
             minor_segments=8,
             location=location,
@@ -417,7 +431,7 @@ def _add_bindings(center, radius: float, metal):
             metal,
             0.52,
             math.pi - 0.15,
-            14,
+            30,
         )
         _add_binding_arc(
             f"Binding_{row}_Right",
@@ -427,13 +441,13 @@ def _add_bindings(center, radius: float, metal):
             metal,
             -0.52,
             -math.pi + 0.15,
-            14,
+            30,
         )
 
 
 def _add_preview_lights(center, scale: float):
     sun_data = bpy.data.lights.new("TitanPrisonV2_KeySun", type="SUN")
-    sun_data.energy = 3.6
+    sun_data.energy = 5.2
     sun_data.angle = math.radians(18.0)
     sun_data.color = (1.0, 0.68, 0.48)
     sun = bpy.data.objects.new("TitanPrisonV2_KeySun", sun_data)
@@ -442,7 +456,7 @@ def _add_preview_lights(center, scale: float):
     sun["preview_only"] = True
 
     fill_data = bpy.data.lights.new("TitanPrisonV2_Fill", type="AREA")
-    fill_data.energy = 42000
+    fill_data.energy = 78000
     fill_data.shape = "DISK"
     fill_data.size = 250 * scale
     fill_data.color = (0.24, 0.36, 0.62)
@@ -458,7 +472,7 @@ def _add_preview_lights(center, scale: float):
     fill["preview_only"] = True
 
     rim_data = bpy.data.lights.new("TitanPrisonV2_Rim", type="AREA")
-    rim_data.energy = 50000
+    rim_data.energy = 68000
     rim_data.shape = "DISK"
     rim_data.size = 180 * scale
     rim_data.color = (1.0, 0.16, 0.035)
@@ -488,17 +502,17 @@ def build_titan_prison_sphere_v2(op: dict, root_path: Path, mapping: dict) -> No
 
     stone = _stone_material(
         "TitanPrisonV2_Stone",
-        dark=(0.085, 0.07, 0.062, 1.0),
-        light=(0.235, 0.18, 0.135, 1.0),
+        dark=(0.125, 0.095, 0.078, 1.0),
+        light=(0.36, 0.275, 0.19, 1.0),
     )
     relief_stone = _stone_material(
         "TitanPrisonV2_ReliefStone",
-        dark=(0.11, 0.085, 0.07, 1.0),
-        light=(0.30, 0.22, 0.16, 1.0),
+        dark=(0.15, 0.11, 0.085, 1.0),
+        light=(0.43, 0.31, 0.205, 1.0),
     )
     groove = _simple_material("TitanPrisonV2_CrackGroove", (0.014, 0.008, 0.006), 0.96, 0.0)
-    glow = _emissive_material("TitanPrisonV2_CrackGlow", (1.0, 0.12, 0.018), 24.0)
-    rune_glow = _emissive_material("TitanPrisonV2_RuneGlow", (1.0, 0.31, 0.055), 16.0)
+    glow = _emissive_material("TitanPrisonV2_CrackGlow", (1.0, 0.08, 0.008), 70.0)
+    rune_glow = _emissive_material("TitanPrisonV2_RuneGlow", (1.0, 0.30, 0.035), 48.0)
     metal = _simple_material("TitanPrisonV2_BindingMetal", (0.08, 0.055, 0.035), 0.47, 0.72)
 
     root = bpy.data.collections.new("KLOTHYS_TITAN_PRISON_SPHERE_V2")
@@ -522,7 +536,7 @@ def build_titan_prison_sphere_v2(op: dict, root_path: Path, mapping: dict) -> No
     )
     reserve.empty_display_type = "PLAIN_AXES"
     reserve.empty_display_size = 18.0 * scale
-    reserve["reserved_front_half_angle_degrees"] = 28.0
+    reserve["reserved_front_half_angle_degrees"] = 40.0
     reserve["reserved_character_height_m"] = 440.0
     reserve["purpose"] = "Klothys body and binding hair - keep clear"
 
@@ -538,6 +552,8 @@ def build_titan_prison_sphere_v2(op: dict, root_path: Path, mapping: dict) -> No
     shell["reference_radius_m"] = sphere_radius
     shell["center_godot_m"] = ",".join(str(v) for v in sphere_godot)
     _assign_material(shell, stone)
+    for poly in shell.data.polygons:
+        poly.use_smooth = True
 
     rock_tex = bpy.data.textures.new("TitanPrisonV2_ShellBreakup", type="CLOUDS")
     rock_tex.noise_scale = 0.44
@@ -549,28 +565,28 @@ def build_titan_prison_sphere_v2(op: dict, root_path: Path, mapping: dict) -> No
     disp.mid_level = 0.5
 
     assets = _asset_root(root_path)
-    demon_path = _fetch(DEMON_URL, assets / "quaternius_demon.glb")
-    ghost_path = _fetch(GHOST_URL, assets / "quaternius_ghost.glb")
+    demon_path = _fetch(DEMON_URL, assets / "quaternius_demon.gltf")
+    orc_path = _fetch(ORC_URL, assets / "quaternius_orc.gltf")
 
     creature_specs = [
         {
             "name": "ImprisonedTitan_A_Demon",
             "path": demon_path,
             "frame": 13,
-            "yaw": -0.93,
-            "latitude": 0.06,
-            "width": 0.49,
-            "height": 0.66,
+            "yaw": -1.16,
+            "latitude": 0.10,
+            "width": 0.38,
+            "height": 0.57,
             "seed": 421,
         },
         {
-            "name": "ImprisonedTitan_B_Ghost",
-            "path": ghost_path,
-            "frame": 21,
-            "yaw": 0.96,
-            "latitude": -0.04,
-            "width": 0.50,
-            "height": 0.69,
+            "name": "ImprisonedTitan_B_Orc",
+            "path": orc_path,
+            "frame": 18,
+            "yaw": 1.18,
+            "latitude": -0.08,
+            "width": 0.39,
+            "height": 0.59,
             "seed": 997,
         },
     ]
@@ -591,7 +607,7 @@ def build_titan_prison_sphere_v2(op: dict, root_path: Path, mapping: dict) -> No
             relief_stone,
             spec["seed"],
         )
-        relief["source_url"] = DEMON_URL if index == 0 else GHOST_URL
+        relief["source_url"] = DEMON_URL if index == 0 else ORC_URL
         relief["source_was_rigged"] = bool(armatures)
         relief["animation_sample_frame"] = spec["frame"]
         _remove_import(imported)
@@ -634,12 +650,13 @@ def build_titan_prison_sphere_v2(op: dict, root_path: Path, mapping: dict) -> No
         _assign_material(rock, stone)
 
     _add_preview_lights(center, scale)
-    bpy.context.scene.world.color = (0.026, 0.034, 0.052)
+    bpy.context.scene.world.color = (0.045, 0.052, 0.068)
+    bpy.context.scene.view_settings.exposure = 1.25
     bpy.context.scene["titan_prison_asset_collection"] = root.name
     bpy.context.scene["titan_prison_reference_radius_m"] = sphere_radius
     bpy.context.scene["titan_prison_center_godot_m"] = ",".join(str(v) for v in sphere_godot)
     bpy.context.scene["titan_prison_v2_sources"] = SOURCE_LICENSE
-    bpy.context.scene["klothys_reserved_front_half_angle_degrees"] = 28.0
+    bpy.context.scene["klothys_reserved_front_half_angle_degrees"] = 40.0
 
     generated = [obj for obj in bpy.context.scene.objects if obj not in before]
     for obj in generated:
