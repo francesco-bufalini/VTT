@@ -478,6 +478,27 @@ static func apply_to_spell(spell_data: Dictionary) -> Dictionary:
 	)
 	result["persistent"] = persistence == "persistent"
 
+	# Persistent caster-centered emanations normally move with their caster.
+	# 5e.tools prose also contains explicit stationary exceptions such as
+	# Globe of Invulnerability ("immobile") and Leomund's Tiny Hut
+	# ("remains stationary"), which must stay where they were cast.
+	if (
+		bool(result.get("persistent", false))
+		and String(result.get("target_mode", "")) == "self_emanation"
+		and not result.has("follow_caster")
+	):
+		var description_lower: String = String(
+			result.get("description", "")
+		).to_lower()
+		var stationary: bool = (
+			"immobile" in description_lower
+			or "stationary" in description_lower
+			or "doesn't move" in description_lower
+			or "does not move" in description_lower
+			or "remains in place" in description_lower
+		)
+		result["follow_caster"] = not stationary
+
 	for field_name: String in [
 		"condition_inflict",
 		"saving_throw",
