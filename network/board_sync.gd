@@ -678,6 +678,12 @@ func _current_nodes_by_id() -> Dictionary:
 			seen[node]=true; out[_sync_id(node as Node3D)]=node
 	return out
 
+func get_sync_id_for_node(node: Node3D) -> String:
+	if node == null or not is_instance_valid(node):
+		return ""
+	return _sync_id(node)
+
+
 func _sync_id(node: Node3D) -> String:
 	if node.has_meta("sync_id"): return String(node.get_meta("sync_id"))
 	var id := "path:" + String(board_root.get_path_to(node)); node.set_meta("sync_id",id); return id
@@ -702,6 +708,13 @@ func _serialize_node(node: Node3D, group_name: String) -> Dictionary:
 			if node.has_method("get_display_name")
 			else ""
 		)
+		if node.has_meta("player_character_id"):
+			data["player_character_id"] = String(
+				node.get_meta("player_character_id")
+			)
+			data["player_character_name"] = String(
+				node.get_meta("player_character_name", "")
+			)
 		data["conditions"] = (
 			node.call("get_conditions")
 			if node.has_method("get_conditions")
@@ -773,6 +786,20 @@ func _apply_node_data(node: Node3D, data: Dictionary) -> void:
 			node.call("set_flying", true)
 		if node.has_method("set_display_name"):
 			node.call("set_display_name", String(data.get("display_name", "")))
+		var character_id: String = String(
+			data.get("player_character_id", "")
+		)
+		if character_id.is_empty():
+			if node.has_meta("player_character_id"):
+				node.remove_meta("player_character_id")
+			if node.has_meta("player_character_name"):
+				node.remove_meta("player_character_name")
+		else:
+			node.set_meta("player_character_id", character_id)
+			node.set_meta(
+				"player_character_name",
+				String(data.get("player_character_name", ""))
+			)
 		if node.has_method("set_conditions"):
 			node.call("set_conditions", data.get("conditions", []))
 		if node.has_method("set_transformation_history"):
