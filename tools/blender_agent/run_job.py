@@ -342,6 +342,106 @@ def _add_rock(name: str, location, scale, mat, seed_value: int):
     return obj
 
 
+
+def _add_rect_circle_union_prism(
+    name: str,
+    rect_x_min: float,
+    rect_x_max: float,
+    rect_y_min: float,
+    rect_y_max: float,
+    circle_center,
+    circle_radius: float,
+    thickness: float,
+    mat,
+    arc_segments: int = 128,
+):
+    """Create one watertight prism from the union of a rectangle and a circle.
+
+    The circle must intersect the rectangle's lower edge. This is used for the
+    Kaos walkable floor so the former rectangular floor and circular platform
+    become one continuous mesh with no coplanar overlap or collision seam.
+    """
+    cx, cy = float(circle_center[0]), float(circle_center[1])
+    dy = rect_y_min - cy
+    if abs(dy) >= circle_radius:
+        raise RuntimeError("Circle does not intersect the rectangle lower edge.")
+
+    dx = math.sqrt(circle_radius * circle_radius - dy * dy)
+    ix_left = cx - dx
+    ix_right = cx + dx
+    if ix_left <= rect_x_min or ix_right >= rect_x_max:
+        raise RuntimeError(
+            "Circle/rectangle intersection must fall inside the rectangle width "
+            f"for a continuous union: intersections=({ix_left}, {ix_right}), "
+            f"rect=({rect_x_min}, {rect_x_max})"
+        )
+
+    angle_left = math.atan2(dy, ix_left - cx)
+    angle_right = math.atan2(dy, ix_right - cx)
+    while angle_right <= angle_left:
+        angle_right += math.tau
+
+    outline = [
+        (rect_x_min, rect_y_max),
+        (rect_x_min, rect_y_min),
+        (ix_left, rect_y_min),
+    ]
+
+    # Follow the long, outward arc around the circular platform.
+    for i in range(1, arc_segments):
+        t = i / arc_segments
+        a = angle_left + (angle_right - angle_left) * t
+        outline.append((cx + math.cos(a) * circle_radius, cy + math.sin(a) * circle_radius))
+
+    outline.extend([
+        (ix_right, rect_y_min),
+        (rect_x_max, rect_y_min),
+        (rect_x_max, rect_y_max),
+    ])
+
+    n = len(outline)
+    top_z = 0.0
+    bottom_z = -abs(float(thickness))
+    verts = [(x, y, top_z) for x, y in outline] + [(x, y, bottom_z) for x, y in outline]
+
+    faces = [tuple(range(n)), tuple(reversed(range(n, 2 * n)))]
+    for i in range(n):
+        j = (i + 1) % n
+        faces.append((i, j, n + j, n + i))
+
+    mesh = bpy.data.meshes.new(name + "_Mesh")
+    mesh.from_pydata(verts, [], faces)
+    mesh.update()
+
+    obj = bpy.data.objects.new(name, mesh)
+    bpy.context.scene.collection.objects.link(obj)
+    _assign_material(obj, mat)
+    obj["continuous_union"] = True
+    obj["rect_bounds_m"] = f"{rect_x_min},{rect_x_max},{rect_y_min},{rect_y_max}"
+    obj["circle_center_m"] = f"{cx},{cy}"
+    obj["circle_radius_m"] = circle_radius
+    obj["intersection_x_m"] = f"{ix_left},{ix_right}"
+    return obj
+
+
+def _point_inside_rect_circle_union(
+    x: float,
+    y: float,
+    rect_bounds,
+    circle_center,
+    circle_radius: float,
+    margin: float = 0.0,
+) -> bool:
+    rx0, rx1, ry0, ry1 = rect_bounds
+    in_rect = (
+        rx0 - margin <= x <= rx1 + margin
+        and ry0 - margin <= y <= ry1 + margin
+    )
+    cx, cy = circle_center
+    in_circle = math.hypot(x - cx, y - cy) <= circle_radius + margin
+    return in_rect or in_circle
+
+
 def _add_fluted_cylinder_wall(
     name: str,
     radius: float,
@@ -626,26 +726,30 @@ def build_kaos_arena(op: dict, root_path: Path) -> None:
     xb = mapping["battlemap"]["x_bounds_m"]
     yb = mapping["battlemap"]["z_bounds_m"]
 
-    # Exact visual proxy for the current Godot FloorCollision: 120 x 180 m.
-    # Decorative geometry may exist outside this rectangle but must not change it.
-    floor = _add_box(
-        "COMBAT_TacticalFloor_120x180m",
-        (floor_w * 0.5 * scale, floor_d * 0.5 * scale, 0.35 * scale),
-        (0.0, floor_center_y * scale, -0.35 * scale),
-        stone,
+    continuous_walkable = bool(
+        layout_extension.get("continuous_walkable_surface", False)
+        if layout_extension else False
     )
-    floor["godot_role"] = "Board/FloorCollision"
-    floor["size_m"] = f"{floor_w}x{floor_d}"
-    floor["center_godot_m"] = f"0,0,{floor_center_y}"
 
-    # A subtly raised inner paving field follows the same footprint but remains
-    # entirely inside it. It is visual dressing, not a new gameplay boundary.
-    _add_box(
-        "ArenaInnerPaving",
-        ((floor_w - 3.0) * 0.5 * scale, (floor_d - 3.0) * 0.5 * scale, 0.10 * scale),
-        (0.0, floor_center_y * scale, 0.10 * scale),
-        stone_light,
-    )
+    # V5 replaces the old overlapping rectangle + circular platform with one
+    # watertight union mesh. Older jobs retain the original rectangular floor.
+    if not continuous_walkable:
+        floor = _add_box(
+            "COMBAT_TacticalFloor_120x180m",
+            (floor_w * 0.5 * scale, floor_d * 0.5 * scale, 0.35 * scale),
+            (0.0, floor_center_y * scale, -0.35 * scale),
+            stone,
+        )
+        floor["godot_role"] = "Board/FloorCollision"
+        floor["size_m"] = f"{floor_w}x{floor_d}"
+        floor["center_godot_m"] = f"0,0,{floor_center_y}"
+
+        _add_box(
+            "ArenaInnerPaving",
+            ((floor_w - 3.0) * 0.5 * scale, (floor_d - 3.0) * 0.5 * scale, 0.10 * scale),
+            (0.0, floor_center_y * scale, 0.10 * scale),
+            stone_light,
+        )
 
     # Godot defines R337m. V4 may deliberately enlarge the flooded arena
     # while preserving the original value in combat_mapping for traceability.
@@ -702,89 +806,88 @@ def build_kaos_arena(op: dict, root_path: Path) -> None:
             segments=256,
         )
 
-    # Optional additive combat extension used by Kaos V3. The original
-    # 120x180 m Godot battlemap remains untouched; this extends it toward the
-    # sphere and ends in a circular platform centered directly below it.
+    # Additive combat extension. V5 can merge the original rectangle and
+    # the R230m sphere platform into one continuous watertight walkable mesh.
     if layout_extension:
         platform_radius = float(layout_extension["sphere_platform_radius_m"])
-        approach_width = float(layout_extension.get("approach_width_m", 100.0))
-        approach_into_platform = float(layout_extension.get("approach_into_platform_m", 55.0))
-        approach_floor_overlap = float(layout_extension.get("approach_floor_overlap_m", 6.0))
         platform_thickness = float(layout_extension.get("platform_thickness_m", 0.7))
 
-        platform = _add_cylinder(
-            f"COMBAT_SpherePlatform_R{platform_radius:g}m",
-            platform_radius * scale,
-            platform_thickness * scale,
-            (
-                sphere_blender[0] * scale,
-                sphere_blender[1] * scale,
-                -platform_thickness * 0.5 * scale,
-            ),
-            stone,
-            vertices=160,
-        )
-        platform["combat_extension"] = "kaos_v3"
-        platform["radius_m"] = platform_radius
-        platform["center_godot_m"] = (
-            f"{sphere_godot[0]},0,{sphere_godot[2]}"
-        )
-
-        # Slightly inset paving makes the platform visually distinct while
-        # preserving the exact walkable radius on the underlying slab.
-        _add_cylinder(
-            "SpherePlatformInnerPaving",
-            max(1.0, platform_radius - 3.0) * scale,
-            0.12 * scale,
-            (
-                sphere_blender[0] * scale,
-                sphere_blender[1] * scale,
-                0.06 * scale,
-            ),
-            stone_light,
-            vertices=160,
-        )
-
-        platform_front_y = sphere_blender[1] + platform_radius
-        approach_start_y = yb[0] + approach_floor_overlap
-        approach_end_y = platform_front_y - approach_into_platform
-        if approach_start_y <= approach_end_y:
-            raise RuntimeError(
-                "Kaos V3 approach does not overlap the sphere platform enough."
+        if continuous_walkable:
+            rect_x_min, rect_x_max = xb
+            rect_y_min, rect_y_max = yb
+            walkable = _add_rect_circle_union_prism(
+                "COMBAT_ContinuousArenaFloor",
+                rect_x_min * scale,
+                rect_x_max * scale,
+                rect_y_min * scale,
+                rect_y_max * scale,
+                (sphere_blender[0] * scale, sphere_blender[1] * scale),
+                platform_radius * scale,
+                platform_thickness * scale,
+                stone_light,
+                arc_segments=160,
             )
-        approach_depth = approach_start_y - approach_end_y
-        approach_center_y = (approach_start_y + approach_end_y) * 0.5
+            walkable["godot_role"] = "Board/FloorCollision + V5 sphere platform"
+            walkable["combat_extension"] = "kaos_v5"
+            walkable["source_battlemap_size_m"] = f"{floor_w}x{floor_d}"
+            walkable["sphere_platform_radius_m"] = platform_radius
+        else:
+            approach_width = float(layout_extension.get("approach_width_m", 100.0))
+            approach_into_platform = float(layout_extension.get("approach_into_platform_m", 55.0))
+            approach_floor_overlap = float(layout_extension.get("approach_floor_overlap_m", 6.0))
 
-        approach = _add_box(
-            f"COMBAT_SphereApproach_{approach_width:g}m",
-            (
-                approach_width * 0.5 * scale,
-                approach_depth * 0.5 * scale,
-                platform_thickness * 0.5 * scale,
-            ),
-            (
-                0.0,
-                approach_center_y * scale,
-                -platform_thickness * 0.5 * scale,
-            ),
-            stone,
-        )
-        approach["combat_extension"] = "kaos_v3"
-        approach["width_m"] = approach_width
-        approach["y_bounds_blender_m"] = (
-            f"{approach_end_y},{approach_start_y}"
-        )
+            platform = _add_cylinder(
+                f"COMBAT_SpherePlatform_R{platform_radius:g}m",
+                platform_radius * scale,
+                platform_thickness * scale,
+                (
+                    sphere_blender[0] * scale,
+                    sphere_blender[1] * scale,
+                    -platform_thickness * 0.5 * scale,
+                ),
+                stone,
+                vertices=160,
+            )
+            platform["combat_extension"] = "kaos_v3"
+            platform["radius_m"] = platform_radius
+            platform["center_godot_m"] = f"{sphere_godot[0]},0,{sphere_godot[2]}"
 
-        _add_box(
-            "SphereApproachInnerPaving",
-            (
-                max(1.0, approach_width - 3.0) * 0.5 * scale,
-                max(1.0, approach_depth - 3.0) * 0.5 * scale,
-                0.08 * scale,
-            ),
-            (0.0, approach_center_y * scale, 0.08 * scale),
-            stone_light,
-        )
+            _add_cylinder(
+                "SpherePlatformInnerPaving",
+                max(1.0, platform_radius - 3.0) * scale,
+                0.12 * scale,
+                (
+                    sphere_blender[0] * scale,
+                    sphere_blender[1] * scale,
+                    0.06 * scale,
+                ),
+                stone_light,
+                vertices=160,
+            )
+
+            platform_front_y = sphere_blender[1] + platform_radius
+            approach_start_y = yb[0] + approach_floor_overlap
+            approach_end_y = platform_front_y - approach_into_platform
+            if approach_start_y <= approach_end_y:
+                raise RuntimeError("Kaos V3 approach does not overlap the sphere platform enough.")
+            approach_depth = approach_start_y - approach_end_y
+            approach_center_y = (approach_start_y + approach_end_y) * 0.5
+
+            approach = _add_box(
+                f"COMBAT_SphereApproach_{approach_width:g}m",
+                (
+                    approach_width * 0.5 * scale,
+                    approach_depth * 0.5 * scale,
+                    platform_thickness * 0.5 * scale,
+                ),
+                (
+                    0.0,
+                    approach_center_y * scale,
+                    -platform_thickness * 0.5 * scale,
+                ),
+                stone,
+            )
+            approach["combat_extension"] = "kaos_v3"
 
     # Exact Klothys sphere mapping. This is intentionally enormous relative
     # to the 120x180 m battlemap, matching encounter_scenery.gd.
@@ -831,25 +934,76 @@ def build_kaos_arena(op: dict, root_path: Path) -> None:
             stone_dark,
         )
 
-    # Scenic ruins follow the ACTUAL Godot apse radii: columns start around
-    # 310 m from (0,-60), with the back wall at 395 m. They stay far outside
-    # the practical 120x180 m combat floor.
-    ruin_center_y = -60.0
-    kept_angles = [160, 177, 196, 216, 238, 262, 287, 313, 340]
-    ruin_radius = 310.0
-    for idx, deg in enumerate(kept_angles):
-        a = math.radians(deg)
-        x = math.cos(a) * ruin_radius
-        y = ruin_center_y + math.sin(a) * ruin_radius
-        broken = 1.0 if idx not in (1, 5, 8) else rng.uniform(0.55, 0.78)
-        _add_column(
-            f"ScenicColumn_{idx:02d}",
-            (x * scale, y * scale, 0.0),
-            29.0 * scale,
-            2.8 * scale,
-            stone_light,
-            broken=broken,
-        )
+    # Columns are scenic debris in the flooded zone, not a semicircular
+    # colonnade. Sample uniformly over area and reject any point that falls on
+    # the walkable floor/platform or too close to the cylindrical wall.
+    random_water_columns = bool(
+        layout_extension.get("random_water_columns", False)
+        if layout_extension else False
+    )
+    if random_water_columns:
+        target_columns = int(layout_extension.get("random_water_column_count", 16))
+        wall_margin = float(layout_extension.get("random_water_column_wall_margin_m", 24.0))
+        walkable_margin = float(layout_extension.get("random_water_column_walkable_margin_m", 10.0))
+        water_sample_radius = max(1.0, effective_water_radius - wall_margin)
+        placed = []
+        attempts = 0
+
+        while len(placed) < target_columns and attempts < target_columns * 300:
+            attempts += 1
+            a = rng.uniform(0.0, math.tau)
+            rr = math.sqrt(rng.random()) * water_sample_radius
+            x = math.cos(a) * rr
+            y = water_center_y + math.sin(a) * rr
+
+            if _point_inside_rect_circle_union(
+                x,
+                y,
+                (xb[0], xb[1], yb[0], yb[1]),
+                (sphere_blender[0], sphere_blender[1]),
+                float(layout_extension["sphere_platform_radius_m"]),
+                margin=walkable_margin,
+            ):
+                continue
+            if any(math.hypot(x - px, y - py) < 28.0 for px, py in placed):
+                continue
+
+            placed.append((x, y))
+            height = rng.uniform(14.0, 31.0)
+            broken = rng.uniform(0.42, 1.0)
+            radius = rng.uniform(2.0, 3.2)
+            col = _add_column(
+                f"FloodedColumn_{len(placed)-1:02d}",
+                (x * scale, y * scale, water_height * scale),
+                height * scale,
+                radius * scale,
+                stone_light,
+                broken=broken,
+            )
+            col.rotation_euler.z = rng.uniform(-math.pi, math.pi)
+
+        if len(placed) != target_columns:
+            raise RuntimeError(
+                f"Could place only {len(placed)}/{target_columns} flooded columns "
+                f"after {attempts} attempts."
+            )
+    else:
+        ruin_center_y = -60.0
+        kept_angles = [160, 177, 196, 216, 238, 262, 287, 313, 340]
+        ruin_radius = 310.0
+        for idx, deg in enumerate(kept_angles):
+            a = math.radians(deg)
+            x = math.cos(a) * ruin_radius
+            y = ruin_center_y + math.sin(a) * ruin_radius
+            broken = 1.0 if idx not in (1, 5, 8) else rng.uniform(0.55, 0.78)
+            _add_column(
+                f"ScenicColumn_{idx:02d}",
+                (x * scale, y * scale, 0.0),
+                29.0 * scale,
+                2.8 * scale,
+                stone_light,
+                broken=broken,
+            )
 
     # A few fallen fragments may decorate the floor, but remain low and do not
     # define the combat boundary. They can later be removed or made non-solid.
