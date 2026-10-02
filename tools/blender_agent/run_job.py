@@ -194,21 +194,26 @@ def main(argv: list[str]) -> int:
     elif job.get("reset_scene", True):
         clear_scene()
 
-    for operation in job.get("operations", []):
+    for index, operation in enumerate(job.get("operations", []), start=1):
+        print(f"BLENDER_AGENT_OP {index}: {operation.get('op')}", flush=True)
         execute_operation(operation)
 
     outputs = job.get("outputs", {})
     if outputs.get("preview"):
+        print("BLENDER_AGENT_OUTPUT preview", flush=True)
         render_preview(
             project_path(root, outputs["preview"]),
             int(outputs.get("preview_width", 960)),
             int(outputs.get("preview_height", 540)),
         )
     if outputs.get("report"):
+        print("BLENDER_AGENT_OUTPUT report", flush=True)
         scene_report(project_path(root, outputs["report"]), job_path)
     if outputs.get("glb"):
+        print("BLENDER_AGENT_OUTPUT glb", flush=True)
         export_glb(project_path(root, outputs["glb"]))
     if outputs.get("blend"):
+        print("BLENDER_AGENT_OUTPUT blend", flush=True)
         save_blend(project_path(root, outputs["blend"]))
 
     print("BLENDER_AGENT_PASS", job_path.name)
@@ -219,4 +224,12 @@ if __name__ == "__main__":
     import mathutils
 
     cli = sys.argv[sys.argv.index("--") + 1 :] if "--" in sys.argv else []
-    raise SystemExit(main(cli))
+    try:
+        raise SystemExit(main(cli))
+    except SystemExit:
+        raise
+    except Exception:
+        print("BLENDER_AGENT_TRACEBACK_BEGIN", flush=True)
+        print(traceback.format_exc(), flush=True)
+        print("BLENDER_AGENT_TRACEBACK_END", flush=True)
+        raise SystemExit(1)
