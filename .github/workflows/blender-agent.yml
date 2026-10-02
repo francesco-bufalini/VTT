@@ -39,6 +39,9 @@ jobs:
             /blender/agent_reports/
             /tools/blender_agent/
             /tools/blender_env/
+            /encounter/encounter_scenery.gd
+            /encounter/hazard_allowed_area.gd
+            /measurement_tool.gd
 
       - name: Resolve job
         id: job
