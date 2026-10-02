@@ -583,17 +583,17 @@ print(json.dumps({{
 
 
 def set_titan_helpers_visible(visible: bool) -> dict[str, Any]:
-    flag = "False" if visible else "True"
-    visible_json = "true" if visible else "false"
+    hidden_flag = "False" if visible else "True"
+    visible_literal = "True" if visible else "False"
     code = f"""import bpy, json
 prefixes = ('ImprisonedTitan_A_Demon_StoneRoot_', 'ImprisonedTitan_B_Orc_StoneRoot_')
 changed = []
 for obj in bpy.data.objects:
     if obj.name.startswith(prefixes):
-        obj.hide_viewport = {flag}
-        obj.hide_render = {flag}
+        obj.hide_viewport = {hidden_flag}
+        obj.hide_render = {hidden_flag}
         changed.append(obj.name)
-print(json.dumps({{'visible': {visible_json}, 'count': len(changed), 'objects': changed}}))
+print(json.dumps({{'visible': {visible_literal}, 'count': len(changed), 'objects': changed}}))
 """
     return execute_json_code(code)
 
