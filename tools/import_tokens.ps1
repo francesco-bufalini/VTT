@@ -53,6 +53,8 @@ if (-not (Test-Path $CacheRoot)) {
     New-Item -ItemType Directory -Path $CacheRoot -Force | Out-Null
 }
 
+$FiveEToolsBuildRan = $false
+
 if (-not [string]::IsNullOrWhiteSpace($FiveEToolsRoot)) {
     $FiveEToolsRoot = (Resolve-Path $FiveEToolsRoot).Path
     $bestiaryIndex = Join-Path $FiveEToolsRoot "data\bestiary\index.json"
@@ -61,6 +63,7 @@ if (-not [string]::IsNullOrWhiteSpace($FiveEToolsRoot)) {
     }
 
     Write-Host "5eTools:  checkout locale esplicito $FiveEToolsRoot"
+    $FiveEToolsBuildRan = $true
     & $Blender --background --python $CreatureIndexGenerator -- $FiveEToolsRoot --output $CreatureIndex
 }
 elseif (-not [string]::IsNullOrWhiteSpace($env:VTT_5ETOOLS_ROOT)) {
@@ -71,20 +74,21 @@ elseif (-not [string]::IsNullOrWhiteSpace($env:VTT_5ETOOLS_ROOT)) {
     }
 
     Write-Host "5eTools:  checkout locale da VTT_5ETOOLS_ROOT"
+    $FiveEToolsBuildRan = $true
     & $Blender --background --python $CreatureIndexGenerator -- $FiveEToolsRoot --output $CreatureIndex
 }
 elseif ((Test-Path $CreatureIndex) -and -not $Refresh5eTools) {
     Write-Host "5eTools:  uso cache online locale"
     Write-Host "Cache:    $CreatureIndex"
-    $global:LASTEXITCODE = 0
 }
 else {
     Write-Host "5eTools:  aggiornamento online (GitHub mirror)"
     Write-Host "Cache:    $CreatureIndex"
+    $FiveEToolsBuildRan = $true
     & $Blender --background --python $CreatureIndexGenerator -- --online --output $CreatureIndex
 }
 
-if ($LASTEXITCODE -ne 0) {
+if ($FiveEToolsBuildRan -and $LASTEXITCODE -ne 0) {
     if (Test-Path $CreatureIndex) {
         Write-Warning ("Aggiornamento 5eTools fallito; uso la cache esistente: " + $CreatureIndex)
     }
