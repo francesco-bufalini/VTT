@@ -43,10 +43,12 @@ var _name_input: LineEdit
 var _name_dialog_mode: String = ""
 
 var _link_dialog: ConfirmationDialog
+var _link_info_label: Label
 var _link_character_selector: OptionButton
 var _link_token: CharacterBody3D
 
 var _character_token_dialog: ConfirmationDialog
+var _character_token_info_label: Label
 var _character_token_selector: OptionButton
 
 
@@ -64,6 +66,34 @@ func setup(root: Node3D) -> void:
 	_build_link_dialog()
 	_build_character_token_dialog()
 	_reload_characters()
+
+
+func _unhandled_input(event: InputEvent) -> void:
+	if (
+		_panel == null
+		or not _panel.visible
+		or _player_modal_dialog_visible()
+	):
+		return
+	if (
+		event is InputEventKey
+		and event.pressed
+		and not event.echo
+		and event.keycode == KEY_ESCAPE
+	):
+		hide_panel()
+		get_viewport().set_input_as_handled()
+
+
+func _player_modal_dialog_visible() -> bool:
+	for dialog: Window in [
+		_name_dialog,
+		_link_dialog,
+		_character_token_dialog
+	]:
+		if dialog != null and is_instance_valid(dialog) and dialog.visible:
+			return true
+	return false
 
 
 func toggle_panel() -> void:
@@ -206,10 +236,12 @@ func request_link_character_to_selected_token() -> void:
 				break
 
 	var token_name := _token_name(_link_token)
-	_link_dialog.dialog_text = (
-		"Token selezionato: %s\nScegli il personaggio da associare."
-		% token_name
-	)
+	_link_dialog.dialog_text = ""
+	if _link_info_label != null:
+		_link_info_label.text = (
+			"Token selezionato: %s\n"
+			+ "Scegli il personaggio da associare."
+		) % token_name
 	_link_dialog.reset_size()
 	_link_dialog.popup_centered_clamped(Vector2i(520, 240), 0.92)
 
@@ -258,10 +290,12 @@ func request_link_selected_character_to_named_token() -> void:
 	var character_name: String = String(
 		_characters[_current_index].get("name", "Personaggio")
 	)
-	_character_token_dialog.dialog_text = (
-		"Personaggio selezionato: %s\n"
-		+ "Scegli un token con nome presente nello scenario."
-	) % character_name
+	_character_token_dialog.dialog_text = ""
+	if _character_token_info_label != null:
+		_character_token_info_label.text = (
+			"Personaggio selezionato: %s\n"
+			+ "Scegli un token con nome presente nello scenario."
+		) % character_name
 	_character_token_dialog.reset_size()
 	_character_token_dialog.popup_centered_clamped(
 		Vector2i(520, 250),
@@ -280,15 +314,17 @@ func serialize_characters() -> Array[Dictionary]:
 func _build_ui() -> void:
 	_panel = PanelContainer.new()
 	_panel.name = "PlayerAreaPanel"
-	# Mirror of the spell browser: compact half-screen panel on the right.
-	_panel.anchor_left = 0.52
+	# Right-side panel, shifted inward so long sheet controls never extend
+	# beyond the viewport. It remains the visual counterpart of Spells.
+	_panel.anchor_left = 0.42
 	_panel.anchor_top = 0.0
-	_panel.anchor_right = 1.0
+	_panel.anchor_right = 0.965
 	_panel.anchor_bottom = 1.0
 	_panel.offset_left = 4.0
 	_panel.offset_top = 8.0
-	_panel.offset_right = -8.0
+	_panel.offset_right = -4.0
 	_panel.offset_bottom = -8.0
+	_panel.clip_contents = true
 	_panel.mouse_filter = Control.MOUSE_FILTER_STOP
 	_panel.hide()
 	ui_root.add_child(_panel)
@@ -612,7 +648,7 @@ func _build_combat_tab() -> void:
 
 
 func _build_story_tab() -> void:
-	var tab := _scroll_tab("Personaggio & Inventario")
+	var tab := _scroll_tab("Personaggio")
 	var body: VBoxContainer = tab.get_meta("body") as VBoxContainer
 
 	_section_title(body, "Aspetto del personaggio")
@@ -808,17 +844,23 @@ func _build_link_dialog() -> void:
 	_link_dialog.title = "Token selezionato → personaggio"
 	_link_dialog.ok_button_text = "Collega"
 	_link_dialog.cancel_button_text = "Annulla"
-	_link_dialog.min_size = Vector2i(520, 240)
+	_link_dialog.dialog_text = ""
+	_link_dialog.min_size = Vector2i(520, 270)
 	ui_root.add_child(_link_dialog)
 
 	var body := VBoxContainer.new()
 	body.set_anchors_and_offsets_preset(Control.PRESET_FULL_RECT)
 	body.offset_left = 18
-	body.offset_top = 80
+	body.offset_top = 50
 	body.offset_right = -18
 	body.offset_bottom = -70
-	body.add_theme_constant_override("separation", 8)
+	body.add_theme_constant_override("separation", 10)
 	_link_dialog.add_child(body)
+
+	_link_info_label = Label.new()
+	_link_info_label.autowrap_mode = TextServer.AUTOWRAP_WORD_SMART
+	_link_info_label.custom_minimum_size = Vector2(0, 52)
+	body.add_child(_link_info_label)
 
 	var label := Label.new()
 	label.text = "Personaggio"
@@ -835,17 +877,23 @@ func _build_character_token_dialog() -> void:
 	_character_token_dialog.title = "Personaggio → token"
 	_character_token_dialog.ok_button_text = "Collega"
 	_character_token_dialog.cancel_button_text = "Annulla"
-	_character_token_dialog.min_size = Vector2i(520, 250)
+	_character_token_dialog.dialog_text = ""
+	_character_token_dialog.min_size = Vector2i(520, 280)
 	ui_root.add_child(_character_token_dialog)
 
 	var body := VBoxContainer.new()
 	body.set_anchors_and_offsets_preset(Control.PRESET_FULL_RECT)
 	body.offset_left = 18
-	body.offset_top = 82
+	body.offset_top = 50
 	body.offset_right = -18
 	body.offset_bottom = -70
-	body.add_theme_constant_override("separation", 8)
+	body.add_theme_constant_override("separation", 10)
 	_character_token_dialog.add_child(body)
+
+	_character_token_info_label = Label.new()
+	_character_token_info_label.autowrap_mode = TextServer.AUTOWRAP_WORD_SMART
+	_character_token_info_label.custom_minimum_size = Vector2(0, 52)
+	body.add_child(_character_token_info_label)
 
 	var label := Label.new()
 	label.text = "Token nello scenario"
