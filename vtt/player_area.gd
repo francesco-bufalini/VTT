@@ -834,14 +834,25 @@ func _build_spells_tab() -> void:
 	_available_spells.size_flags_horizontal = Control.SIZE_EXPAND_FILL
 	body.add_child(_available_spells)
 
+	var add_spell_actions := HBoxContainer.new()
+	add_spell_actions.add_theme_constant_override("separation", 8)
+	body.add_child(add_spell_actions)
+
 	var add_spell_button := Button.new()
-	add_spell_button.text = "Aggiungi incantesimo selezionato"
+	add_spell_button.text = "Aggiungi ai conosciuti"
+	add_spell_button.size_flags_horizontal = Control.SIZE_EXPAND_FILL
 	add_spell_button.pressed.connect(_add_selected_spell)
-	body.add_child(add_spell_button)
+	add_spell_actions.add_child(add_spell_button)
+
+	var prepare_spell_button := Button.new()
+	prepare_spell_button.text = "Aggiungi ai preparati"
+	prepare_spell_button.size_flags_horizontal = Control.SIZE_EXPAND_FILL
+	prepare_spell_button.pressed.connect(_add_selected_prepared_spell)
+	add_spell_actions.add_child(prepare_spell_button)
 
 	_section_title(body, "Incantesimi conosciuti")
 	_selected_spells = ItemList.new()
-	_selected_spells.custom_minimum_size = Vector2(0, 160)
+	_selected_spells.custom_minimum_size = Vector2(0, 150)
 	_selected_spells.select_mode = ItemList.SELECT_SINGLE
 	_selected_spells.item_activated.connect(
 		func(_index: int) -> void:
@@ -867,45 +878,134 @@ func _build_spells_tab() -> void:
 	remove_spell_button.pressed.connect(_remove_selected_spell)
 	known_spell_actions.add_child(remove_spell_button)
 
-	_section_title(body, "Slot")
-	var slots_grid := GridContainer.new()
-	slots_grid.columns = 5
-	slots_grid.add_theme_constant_override("h_separation", 8)
-	slots_grid.add_theme_constant_override("v_separation", 5)
-	body.add_child(slots_grid)
+	_section_title(body, "Incantesimi preparati")
+	_prepared_spells = ItemList.new()
+	_prepared_spells.custom_minimum_size = Vector2(0, 150)
+	_prepared_spells.select_mode = ItemList.SELECT_SINGLE
+	_prepared_spells.item_activated.connect(
+		func(_index: int) -> void:
+			_activate_prepared_spell()
+	)
+	body.add_child(_prepared_spells)
+
+	var prepared_actions := HBoxContainer.new()
+	prepared_actions.add_theme_constant_override("separation", 8)
+	body.add_child(prepared_actions)
+
+	var activate_prepared_button := Button.new()
+	activate_prepared_button.text = "Attiva preparato"
+	activate_prepared_button.size_flags_horizontal = Control.SIZE_EXPAND_FILL
+	activate_prepared_button.pressed.connect(_activate_prepared_spell)
+	prepared_actions.add_child(activate_prepared_button)
+
+	var remove_prepared_button := Button.new()
+	remove_prepared_button.text = "Rimuovi"
+	remove_prepared_button.pressed.connect(_remove_selected_prepared_spell)
+	prepared_actions.add_child(remove_prepared_button)
+
+	var clear_prepared_button := Button.new()
+	clear_prepared_button.text = "Svuota preparati"
+	clear_prepared_button.pressed.connect(_clear_prepared_spells)
+	prepared_actions.add_child(clear_prepared_button)
+
+	_section_title(body, "Slot incantesimo")
+	var slots_box := VBoxContainer.new()
+	slots_box.add_theme_constant_override("separation", 5)
+	body.add_child(slots_box)
 
 	for level: int in range(1, 10):
+		var row := HBoxContainer.new()
+		row.add_theme_constant_override("separation", 7)
+		slots_box.add_child(row)
+
 		var level_label := Label.new()
 		level_label.text = "Lv %d" % level
-		slots_grid.add_child(level_label)
+		level_label.custom_minimum_size = Vector2(44, 0)
+		row.add_child(level_label)
 
 		var total_label := Label.new()
 		total_label.text = "Totali"
-		slots_grid.add_child(total_label)
+		row.add_child(total_label)
 
 		var total_spin := SpinBox.new()
 		total_spin.min_value = 0
 		total_spin.max_value = 20
+		total_spin.custom_minimum_size = Vector2(72, 30)
 		total_spin.value_changed.connect(
-			func(_value: float) -> void:
-				_on_form_changed()
+			_on_slot_total_changed.bind(level)
 		)
-		slots_grid.add_child(total_spin)
+		row.add_child(total_spin)
 		_slot_total_spins.append(total_spin)
 
-		var spent_label := Label.new()
-		spent_label.text = "Spesi"
-		slots_grid.add_child(spent_label)
+		var markers := HBoxContainer.new()
+		markers.size_flags_horizontal = Control.SIZE_EXPAND_FILL
+		markers.add_theme_constant_override("separation", 2)
+		row.add_child(markers)
+		_slot_marker_rows.append(markers)
 
-		var spent_spin := SpinBox.new()
-		spent_spin.min_value = 0
-		spent_spin.max_value = 20
-		spent_spin.value_changed.connect(
-			func(_value: float) -> void:
-				_on_form_changed()
+
+func _on_slot_total_changed(_value: float, level: int) -> void:
+	_refresh_slot_markers(level)
+	if not _loading:
+		_on_form_changed()
+
+
+func _refresh_slot_markers(level: int) -> void:
+	if level < 1 or level > 9:
+		return
+	var row_index := level - 1
+	if (
+		row_index >= _slot_marker_rows.size()
+		or row_index >= _slot_total_spins.size()
+	):
+		return
+
+	var markers: HBoxContainer = _slot_marker_rows[row_index]
+	for child: Node in markers.get_children():
+		markers.remove_child(child)
+		child.queue_free()
+
+	var total := maxi(0, int(_slot_total_spins[row_index].value))
+	_slot_spent_values[level] = clampi(
+		_slot_spent_values[level],
+		0,
+		total
+	)
+	for marker_index: int in range(total):
+		var marker := Button.new()
+		marker.flat = true
+		marker.text = (
+			"●"
+			if marker_index < _slot_spent_values[level]
+			else "○"
 		)
-		slots_grid.add_child(spent_spin)
-		_slot_spent_spins.append(spent_spin)
+		marker.tooltip_text = (
+			"Slot usato"
+			if marker_index < _slot_spent_values[level]
+			else "Slot disponibile"
+		)
+		marker.custom_minimum_size = Vector2(27, 27)
+		marker.pressed.connect(
+			_on_slot_marker_pressed.bind(level, marker_index)
+		)
+		markers.add_child(marker)
+
+
+func _refresh_all_slot_markers() -> void:
+	for level: int in range(1, 10):
+		_refresh_slot_markers(level)
+
+
+func _on_slot_marker_pressed(level: int, marker_index: int) -> void:
+	if level < 1 or level > 9:
+		return
+	var current := _slot_spent_values[level]
+	if marker_index < current:
+		_slot_spent_values[level] = marker_index
+	else:
+		_slot_spent_values[level] = marker_index + 1
+	_refresh_slot_markers(level)
+	_on_form_changed()
 
 
 func _add_5etools_catalog_section(
