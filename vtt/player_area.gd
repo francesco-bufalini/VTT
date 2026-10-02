@@ -635,30 +635,62 @@ func _build_combat_tab() -> void:
 		row.add_child(value_label)
 		_skill_value_labels[skill_id] = value_label
 
-	_section_title(body, "Attacchi & Incantesimi")
-	_add_multiline_field(body, "Attacchi / armi / danni", "attacks", 120)
-	_add_multiline_field(body, "Munizioni", "ammunition", 70)
-
-	_section_title(body, "Competenze")
-	_add_multiline_field(body, "Armature", "armor_proficiencies", 65)
-	_add_multiline_field(body, "Armi", "weapon_proficiencies", 65)
-	_add_multiline_field(body, "Strumenti", "tool_proficiencies", 65)
-	_add_multiline_field(body, "Linguaggi", "languages", 65)
-
-	_section_title(body, "Privilegi")
-	_add_multiline_field(body, "Talenti", "feats", 90)
-	_add_multiline_field(body, "Privilegi di classe", "class_features", 140)
+	_section_title(body, "Attacchi")
 	_add_multiline_field(
 		body,
-		"Tratti razziali / specie e background",
-		"racial_background_traits",
-		120
+		"Note attacchi / danni",
+		"attacks",
+		90
 	)
-	_add_multiline_field(
+	_add_multiline_field(body, "Munizioni / note", "ammunition", 60)
+
+	_add_5etools_catalog_section(
 		body,
-		"Privilegi e tratti limitati",
-		"limited_features",
-		100
+		"Armi · catalogo 5e.tools",
+		"weapons",
+		"weapons_catalog"
+	)
+	_add_5etools_catalog_section(
+		body,
+		"Armature · catalogo 5e.tools",
+		"armor",
+		"armor_catalog"
+	)
+	_add_5etools_catalog_section(
+		body,
+		"Strumenti · catalogo 5e.tools",
+		"tools",
+		"tools_catalog"
+	)
+	_add_5etools_catalog_section(
+		body,
+		"Linguaggi · catalogo 5e.tools",
+		"languages",
+		"languages_catalog"
+	)
+	_add_5etools_catalog_section(
+		body,
+		"Talenti · catalogo 5e.tools",
+		"feats",
+		"feats_catalog"
+	)
+	_add_5etools_catalog_section(
+		body,
+		"Privilegi di classe · catalogo 5e.tools",
+		"class_features",
+		"class_features_catalog"
+	)
+	_add_5etools_catalog_section(
+		body,
+		"Tratti razziali / specie · catalogo 5e.tools",
+		"species_traits",
+		"species_traits_catalog"
+	)
+	_add_5etools_catalog_section(
+		body,
+		"Privilegi opzionali · catalogo 5e.tools",
+		"optional_features",
+		"optional_features_catalog"
 	)
 
 
@@ -696,13 +728,31 @@ func _build_story_tab() -> void:
 	)
 
 	_section_title(body, "Inventario")
-	_add_multiline_field(body, "Equipaggiamento", "equipment", 150)
-	_add_multiline_field(body, "Consumabili", "consumables", 100)
+	_add_5etools_catalog_section(
+		body,
+		"Oggetti mondani · Items 5e.tools",
+		"mundane_items",
+		"inventory_mundane"
+	)
+	_add_5etools_catalog_section(
+		body,
+		"Oggetti magici · Items 5e.tools",
+		"magic_items",
+		"inventory_magic"
+	)
+
+	_section_title(body, "Note inventario")
 	_add_multiline_field(
 		body,
-		"Oggetti magici armonizzati",
-		"magic_items",
+		"Equipaggiamento / quantità / contenitori",
+		"equipment",
 		100
+	)
+	_add_multiline_field(
+		body,
+		"Consumabili / cariche / note",
+		"consumables",
+		80
 	)
 
 
