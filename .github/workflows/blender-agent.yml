@@ -33,7 +33,7 @@ jobs:
         uses: actions/checkout@v4
         with:
           clean: true
-          fetch-depth: 1
+          fetch-depth: 2
           sparse-checkout-cone-mode: false
           sparse-checkout: |
             /blender/jobs/
@@ -58,6 +58,11 @@ jobs:
             $changed = $candidates |
               Where-Object { $_ -like "blender/jobs/*.json" } |
               Select-Object -First 1
+            if (-not $changed) {
+              $changed = git diff-tree --no-commit-id --name-only -r HEAD |
+                Where-Object { $_ -like "blender/jobs/*.json" } |
+                Select-Object -First 1
+            }
             if ($changed) { $job = $changed } else { $job = "blender/jobs/smoke_test.json" }
           }
           if (-not (Test-Path -LiteralPath $job -PathType Leaf)) { throw "Blender job not found: $job" }
