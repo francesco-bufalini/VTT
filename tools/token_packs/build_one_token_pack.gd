@@ -279,6 +279,15 @@ func _build_pack(token_id: String, output_path: String) -> Error:
 		return ERR_UNAVAILABLE
 
 	var build_dir := "%s/%s" % [BUILD_ROOT, token_id]
+	var build_dir_absolute := ProjectSettings.globalize_path(build_dir)
+	var build_dir_error := DirAccess.make_dir_recursive_absolute(build_dir_absolute)
+	if build_dir_error != OK:
+		push_error(
+			"Could not create token build directory: %s (%s)"
+			% [build_dir_absolute, error_string(build_dir_error)]
+		)
+		return build_dir_error
+
 	var saved_visual := "%s/%s_visual.res" % [build_dir, token_id]
 	print("TOKEN_PACK_STAGE serialize class=%s target=%s" % [source_resource.get_class(), saved_visual])
 	var save_error := ResourceSaver.save(source_resource, saved_visual)
