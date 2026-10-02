@@ -1488,6 +1488,11 @@ func link_player_character_to_selected_token() -> void:
 		player_area.call("request_link_character_to_selected_token")
 
 
+func link_selected_player_character_to_named_token() -> void:
+	if player_area != null and is_instance_valid(player_area):
+		player_area.call("request_link_selected_character_to_named_token")
+
+
 func get_selected_tokens_for_player_area() -> Array[CharacterBody3D]:
 	_clean_selection()
 	return _selected_tokens.duplicate()
@@ -1515,6 +1520,24 @@ func show_initiative_panel() -> void:
 	):
 		return
 	initiative_tracker.call("show_panel")
+
+
+func start_combat_mode() -> void:
+	if (
+		initiative_tracker == null
+		or not is_instance_valid(initiative_tracker)
+	):
+		return
+	initiative_tracker.call("start_combat")
+
+
+func end_combat_mode() -> void:
+	if (
+		initiative_tracker == null
+		or not is_instance_valid(initiative_tracker)
+	):
+		return
+	initiative_tracker.call("end_combat")
 
 
 func toggle_grid() -> void:
