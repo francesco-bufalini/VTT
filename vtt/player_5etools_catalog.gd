@@ -126,3 +126,238 @@ static func display_label(entry: Dictionary) -> String:
 	if not source.is_empty():
 		suffix += " · " + source
 	return name + suffix
+
+
+static func has_property(entry: Dictionary, property_code: String) -> bool:
+	var wanted := property_code.strip_edges().to_upper()
+	var value: Variant = entry.get("properties", [])
+	if not value is Array:
+		return false
+	for raw_property: Variant in value:
+		var property_text := String(raw_property)
+		var code := property_text.split("|")[0].strip_edges().to_upper()
+		if code == wanted:
+			return true
+	return false
+
+
+static func info_text(entry: Dictionary) -> String:
+	if entry.is_empty():
+		return "Nessuna informazione disponibile."
+
+	var lines: PackedStringArray = []
+	lines.append(String(entry.get("name", "Voce catalogo")))
+	var source := String(entry.get("source", "")).strip_edges()
+	if not source.is_empty():
+		lines.append("Fonte: %s" % source)
+
+	var class_name_value := String(
+		entry.get("class_name", "")
+	).strip_edges()
+	if not class_name_value.is_empty():
+		var class_line := "Classe: %s" % class_name_value
+		var level := int(entry.get("level", 0))
+		if level > 0:
+			class_line += " · Livello %d" % level
+		lines.append(class_line)
+
+	var species := String(entry.get("species", "")).strip_edges()
+	if not species.is_empty():
+		lines.append("Specie/Razza: %s" % species)
+
+	var category := String(entry.get("category", "")).strip_edges()
+	if not category.is_empty():
+		lines.append("Categoria: %s" % category)
+
+	var type_code := String(entry.get("type", "")).split("|")[0]
+	if not type_code.is_empty():
+		lines.append("Tipo: %s" % _item_type_name(type_code))
+
+	var rarity := String(entry.get("rarity", "")).strip_edges()
+	if not rarity.is_empty() and rarity.to_lower() != "none":
+		lines.append("Rarità: %s" % rarity)
+
+	var damage := String(entry.get("damage", "")).strip_edges()
+	if not damage.is_empty():
+		var damage_line := "Danno: %s" % damage
+		var damage_type := String(
+			entry.get("damage_type", "")
+		).strip_edges()
+		if not damage_type.is_empty():
+			damage_line += " %s" % _damage_type_name(damage_type)
+		lines.append(damage_line)
+
+	var versatile := String(
+		entry.get("versatile_damage", "")
+	).strip_edges()
+	if not versatile.is_empty():
+		lines.append("Danno versatile: %s" % versatile)
+
+	var range_text := String(entry.get("range", "")).strip_edges()
+	if not range_text.is_empty():
+		lines.append("Gittata: %s ft" % range_text)
+
+	var properties_text := _properties_text(entry)
+	if not properties_text.is_empty():
+		lines.append("Proprietà: %s" % properties_text)
+
+	var mastery_value: Variant = entry.get("mastery", [])
+	if mastery_value is Array and not (mastery_value as Array).is_empty():
+		var mastery_names: PackedStringArray = []
+		for raw_mastery: Variant in mastery_value:
+			mastery_names.append(
+				String(raw_mastery).split("|")[0]
+			)
+		lines.append("Maestria: %s" % ", ".join(mastery_names))
+
+	if entry.has("ac") and entry.get("ac") != null:
+		var ac_value: Variant = entry.get("ac")
+		if ac_value is Dictionary:
+			var ac_data: Dictionary = ac_value as Dictionary
+			var base_ac := int(ac_data.get("base", 0))
+			if base_ac > 0:
+				lines.append("CA base: %d" % base_ac)
+		else:
+			lines.append("CA: %s" % JSON.stringify(ac_data))
+		elif int(ac_value) > 0:
+			lines.append("CA: %d" % int(ac_value))
+
+	if entry.has("weight") and entry.get("weight") != null:
+		var weight := float(entry.get("weight", 0.0))
+		if weight > 0.0:
+			lines.append("Peso: %s lb" % _trim_number(weight))
+
+	if entry.has("value") and entry.get("value") != null:
+		var copper := float(entry.get("value", 0.0))
+		if copper > 0.0:
+			lines.append(
+				"Costo: %s gp" % _trim_number(copper / 100.0)
+			)
+
+	var mechanic := _known_mechanic_summary(entry)
+	if not mechanic.is_empty():
+		lines.append("")
+		lines.append(mechanic)
+
+	lines.append("")
+	lines.append(
+		"Dati strutturati: catalogo locale derivato da 5e.tools."
+	)
+	return "\n".join(lines)
+
+
+static func _known_mechanic_summary(entry: Dictionary) -> String:
+	var name := String(entry.get("name", "")).strip_edges().to_lower()
+	match name:
+		"sneak attack":
+			return (
+				"Attacco Furtivo: aggiunge dadi d6 una volta per turno "
+				+ "a un attacco idoneo; i dadi aumentano con il livello da Ladro."
+			)
+		"martial arts":
+			return (
+				"Arti Marziali: abilita il dado marziale e l'uso della "
+				+ "caratteristica marziale per colpi senz'armi/armi idonee."
+			)
+		"flurry of blows":
+			return (
+				"Raffica di Colpi: permette più colpi senz'armi come parte "
+				+ "della risorsa/azione bonus del Monaco."
+			)
+		"ki-fueled attack":
+			return (
+				"Ki-Fueled Attack: dopo aver speso Ki durante l'azione, "
+				+ "consente un ulteriore attacco idoneo come azione bonus."
+			)
+		"bonus unarmed strike":
+			return (
+				"Bonus Unarmed Strike: concede un colpo senz'armi aggiuntivo "
+				+ "tramite l'azione bonus prevista dal privilegio."
+			)
+		"cunning strike":
+			return (
+				"Cunning Strike: permette di scambiare parte dei dadi "
+				+ "dell'Attacco Furtivo con effetti aggiuntivi."
+			)
+		"heightened focus":
+			return (
+				"Heightened Focus: potenzia le opzioni di Focus del Monaco, "
+				+ "inclusa Raffica di Colpi."
+			)
+	return ""
+
+
+static func _properties_text(entry: Dictionary) -> String:
+	var value: Variant = entry.get("properties", [])
+	if not value is Array:
+		return ""
+	var names: PackedStringArray = []
+	for raw_property: Variant in value:
+		var code := String(raw_property).split("|")[0].to_upper()
+		names.append(_property_name(code))
+	return ", ".join(names)
+
+
+static func _property_name(code: String) -> String:
+	match code:
+		"F":
+			return "Finesse"
+		"L":
+			return "Leggera"
+		"T":
+			return "Lancio"
+		"V":
+			return "Versatile"
+		"H":
+			return "Pesante"
+		"2H":
+			return "A due mani"
+		"A":
+			return "Munizioni"
+		"R":
+			return "Portata"
+		"LD":
+			return "Caricamento"
+		"RLD":
+			return "Ricarica"
+	return code
+
+
+static func _item_type_name(code: String) -> String:
+	match code:
+		"M":
+			return "Arma da mischia"
+		"R":
+			return "Arma a distanza"
+		"LA":
+			return "Armatura leggera"
+		"MA":
+			return "Armatura media"
+		"HA":
+			return "Armatura pesante"
+		"S":
+			return "Scudo"
+		"AT":
+			return "Strumento da artigiano"
+		"INS":
+			return "Strumento musicale"
+		"SCF":
+			return "Focus da incantatore"
+	return code
+
+
+static func _damage_type_name(code: String) -> String:
+	match code.to_upper():
+		"B":
+			return "contundente"
+		"P":
+			return "perforante"
+		"S":
+			return "tagliente"
+	return code
+
+
+static func _trim_number(value: float) -> String:
+	if is_equal_approx(value, roundf(value)):
+		return str(int(roundf(value)))
+	return "%.2f" % value
