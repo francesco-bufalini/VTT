@@ -269,7 +269,10 @@ func configure(
 	_snap_horizontal_to_grid()
 
 
-func set_visual_asset(path: String) -> bool:
+func set_visual_asset(
+	path: String,
+	native_footprint_override: float = 0.0
+) -> bool:
 	var requested_path: String = path.strip_edges()
 	if not requested_path.is_empty():
 		_uses_manifest_default = false
@@ -282,6 +285,11 @@ func set_visual_asset(path: String) -> bool:
 		requested_path == _loaded_visual_asset_path
 		and _get_imported_visual() != null
 	):
+		if native_footprint_override > 0.0:
+			_visual_native_footprint_cells = maxf(
+				native_footprint_override,
+				0.5
+			)
 		visual_asset_path = requested_path
 		_apply_imported_visual_front()
 		_position_imported_visual()
@@ -318,15 +326,17 @@ func set_visual_asset(path: String) -> bool:
 	imported.name = IMPORTED_VISUAL_NAME
 	imported.set_meta("token_imported_visual", true)
 	_imported_visual_base_basis = imported.transform.basis
-	var native_footprint := (
-		visual_native_footprint_cells
-		if visual_native_footprint_cells > 0.0
-		else maxf(default_footprint_cells, 0.5)
-	)
-	_visual_native_footprint_cells = maxf(
-		float(profile.get("footprint", native_footprint)),
-		0.5
-	)
+	var native_footprint := maxf(default_footprint_cells, 0.5)
+	if visual_native_footprint_cells > 0.0:
+		native_footprint = visual_native_footprint_cells
+	if not profile.is_empty():
+		native_footprint = maxf(
+			float(profile.get("footprint", native_footprint)),
+			0.5
+		)
+	if native_footprint_override > 0.0:
+		native_footprint = maxf(native_footprint_override, 0.5)
+	_visual_native_footprint_cells = native_footprint
 	visuals.add_child(imported)
 	_configure_imported_animation(imported, profile)
 
@@ -339,6 +349,10 @@ func set_visual_asset(path: String) -> bool:
 
 func get_visual_asset_path() -> String:
 	return _loaded_visual_asset_path
+
+
+func get_visual_native_footprint_cells() -> float:
+	return _visual_native_footprint_cells
 
 
 func set_visual_front_quarter_turns(value: int) -> void:
@@ -1141,6 +1155,7 @@ func set_size_category(
 func get_appearance_state() -> Dictionary:
 	return {
 		"visual_asset": get_visual_asset_path(),
+		"visual_native_footprint": _visual_native_footprint_cells,
 		"visual_front_quarter_turns": get_visual_front_quarter_turns(),
 		"display_name": get_display_name(),
 		"size_name": _size_name,
@@ -1164,7 +1179,16 @@ func apply_appearance_state(state: Dictionary) -> bool:
 		state.get("visual_asset", "")
 	).strip_edges()
 	if not visual_asset.is_empty():
-		if not set_visual_asset(visual_asset):
+		var native_footprint := maxf(
+			float(
+				state.get(
+					"visual_native_footprint",
+					state.get("footprint", _footprint_cells)
+				)
+			),
+			0.5
+		)
+		if not set_visual_asset(visual_asset, native_footprint):
 			return false
 	else:
 		_clear_imported_visual()
