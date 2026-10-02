@@ -1,15 +1,15 @@
 ﻿{
     "schema_version":  1,
     "scene_id":  "klothys_titan_prison_sphere_v2",
-    "run_id":  "37018850139",
-    "run_number":  "28",
-    "source_sha":  "9be15182cb28bd1725139816192a0add16c5c466",
+    "run_id":  "37020193054",
+    "run_number":  "30",
+    "source_sha":  "373bd2682e04e58ae3a5d3728dda77654927f7b9",
     "blender_job":  "blender/jobs/klothys_titan_prison_sphere_v2.json",
     "scene_report":  {
                          "blender_version":  "5.2.2 LTS",
                          "job":  "C:\\actions-runner\\_work\\VTT\\VTT\\blender\\jobs\\klothys_titan_prison_sphere_v2.json",
                          "scene_id":  "klothys_titan_prison_sphere_v2",
-                         "description":  "V2 of Klothys\u0027s Titan prison: no repeated face reliefs. Two CC0 animated fantasy creature bodies are baked from rigged sources, radially wrapped into carbonite-like stone reliefs and embedded into the exact 220 m Godot sphere. A +/-28 degree front corridor is kept clear for the later Klothys figure and her binding hair.",
+                         "description":  "Klothys Titan prison V2: Demon and Orc animated CC0 bodies are baked from rigged sources, compacted and wrapped into the exact 220 m stone sphere as carbonite-style reliefs. The central +/-40 degree front sector stays open for the future full-height Klothys figure and binding hair.",
                          "design_references":  [
                                                    "User-approved concept: two full creature silhouettes imprisoned in a cracked runic stone sphere",
                                                    "encounter/encounter_scenery.gd",
@@ -79,9 +79,9 @@
 
                                               },
                          "asset_root":  "C:\\VTT-BlenderAssets",
-                         "object_count":  201,
-                         "mesh_object_count":  77,
-                         "triangle_count":  84724,
+                         "object_count":  261,
+                         "mesh_object_count":  141,
+                         "triangle_count":  118184,
                          "objects":  [
                                          {
                                              "name":  "TitanPrisonV2_KeySun",
@@ -114,9 +114,9 @@
                                              "name":  "AgentCamera",
                                              "type":  "CAMERA",
                                              "location":  [
-                                                              -520.0,
-                                                              170.0,
-                                                              500.0
+                                                              -690.0,
+                                                              430.0,
+                                                              520.0
                                                           ]
                                          },
                                          {
@@ -201,25 +201,7 @@
                                                           ]
                                          },
                                          {
-                                             "name":  "ImprisonedTitan_A_Demon_StoneTendril_06",
-                                             "type":  "CURVE",
-                                             "location":  [
-                                                              0.0,
-                                                              0.0,
-                                                              0.0
-                                                          ]
-                                         },
-                                         {
-                                             "name":  "ImprisonedTitan_A_Demon_StoneTendril_07",
-                                             "type":  "CURVE",
-                                             "location":  [
-                                                              0.0,
-                                                              0.0,
-                                                              0.0
-                                                          ]
-                                         },
-                                         {
-                                             "name":  "ImprisonedTitan_B_Ghost",
+                                             "name":  "ImprisonedTitan_B_Orc",
                                              "type":  "MESH",
                                              "location":  [
                                                               0.0,
@@ -228,7 +210,7 @@
                                                           ]
                                          },
                                          {
-                                             "name":  "ImprisonedTitan_B_Ghost_StoneTendril_00",
+                                             "name":  "ImprisonedTitan_B_Orc_StoneTendril_00",
                                              "type":  "CURVE",
                                              "location":  [
                                                               0.0,
@@ -237,7 +219,7 @@
                                                           ]
                                          },
                                          {
-                                             "name":  "ImprisonedTitan_B_Ghost_StoneTendril_01",
+                                             "name":  "ImprisonedTitan_B_Orc_StoneTendril_01",
                                              "type":  "CURVE",
                                              "location":  [
                                                               0.0,
@@ -246,7 +228,7 @@
                                                           ]
                                          },
                                          {
-                                             "name":  "ImprisonedTitan_B_Ghost_StoneTendril_02",
+                                             "name":  "ImprisonedTitan_B_Orc_StoneTendril_02",
                                              "type":  "CURVE",
                                              "location":  [
                                                               0.0,
@@ -255,7 +237,7 @@
                                                           ]
                                          },
                                          {
-                                             "name":  "ImprisonedTitan_B_Ghost_StoneTendril_03",
+                                             "name":  "ImprisonedTitan_B_Orc_StoneTendril_03",
                                              "type":  "CURVE",
                                              "location":  [
                                                               0.0,
@@ -264,7 +246,7 @@
                                                           ]
                                          },
                                          {
-                                             "name":  "ImprisonedTitan_B_Ghost_StoneTendril_04",
+                                             "name":  "ImprisonedTitan_B_Orc_StoneTendril_04",
                                              "type":  "CURVE",
                                              "location":  [
                                                               0.0,
@@ -273,25 +255,7 @@
                                                           ]
                                          },
                                          {
-                                             "name":  "ImprisonedTitan_B_Ghost_StoneTendril_05",
-                                             "type":  "CURVE",
-                                             "location":  [
-                                                              0.0,
-                                                              0.0,
-                                                              0.0
-                                                          ]
-                                         },
-                                         {
-                                             "name":  "ImprisonedTitan_B_Ghost_StoneTendril_06",
-                                             "type":  "CURVE",
-                                             "location":  [
-                                                              0.0,
-                                                              0.0,
-                                                              0.0
-                                                          ]
-                                         },
-                                         {
-                                             "name":  "ImprisonedTitan_B_Ghost_StoneTendril_07",
+                                             "name":  "ImprisonedTitan_B_Orc_StoneTendril_05",
                                              "type":  "CURVE",
                                              "location":  [
                                                               0.0,
@@ -1239,8 +1203,8 @@
                                              "name":  "Binding_0_Left_Link_01",
                                              "type":  "MESH",
                                              "location":  [
-                                                              133.1886,
-                                                              -75.083,
+                                                              116.2363,
+                                                              -61.9893,
                                                               283.7798
                                                           ]
                                          },
@@ -1248,8 +1212,8 @@
                                              "name":  "Binding_0_Left_Link_02",
                                              "type":  "MESH",
                                              "location":  [
-                                                              160.0648,
-                                                              -103.0443,
+                                                              130.1162,
+                                                              -72.4936,
                                                               283.7798
                                                           ]
                                          },
@@ -1257,8 +1221,8 @@
                                              "name":  "Binding_0_Left_Link_03",
                                              "type":  "MESH",
                                              "location":  [
-                                                              181.1726,
-                                                              -135.5808,
+                                                              143.0515,
+                                                              -84.1413,
                                                               283.7798
                                                           ]
                                          },
@@ -1266,8 +1230,8 @@
                                              "name":  "Binding_0_Left_Link_04",
                                              "type":  "MESH",
                                              "location":  [
-                                                              195.7513,
-                                                              -171.52,
+                                                              154.9483,
+                                                              -96.8479,
                                                               283.7798
                                                           ]
                                          },
@@ -1275,8 +1239,8 @@
                                              "name":  "Binding_0_Left_Link_05",
                                              "type":  "MESH",
                                              "location":  [
-                                                              203.2756,
-                                                              -209.5667,
+                                                              165.7204,
+                                                              -110.521,
                                                               283.7798
                                                           ]
                                          },
@@ -1284,8 +1248,8 @@
                                              "name":  "Binding_0_Left_Link_06",
                                              "type":  "MESH",
                                              "location":  [
-                                                              203.4742,
-                                                              -248.3497,
+                                                              175.2895,
+                                                              -125.0615,
                                                               283.7798
                                                           ]
                                          },
@@ -1293,8 +1257,8 @@
                                              "name":  "Binding_0_Left_Link_07",
                                              "type":  "MESH",
                                              "location":  [
-                                                              196.3401,
-                                                              -286.4715,
+                                                              183.586,
+                                                              -140.3638,
                                                               283.7798
                                                           ]
                                          },
@@ -1302,8 +1266,8 @@
                                              "name":  "Binding_0_Left_Link_08",
                                              "type":  "MESH",
                                              "location":  [
-                                                              182.1304,
-                                                              -322.5581,
+                                                              190.5499,
+                                                              -156.3167,
                                                               283.7798
                                                           ]
                                          },
@@ -1311,8 +1275,8 @@
                                              "name":  "Binding_0_Left_Link_09",
                                              "type":  "MESH",
                                              "location":  [
-                                                              161.357,
-                                                              -355.3092,
+                                                              196.1305,
+                                                              -172.8046,
                                                               283.7798
                                                           ]
                                          },
@@ -1320,8 +1284,8 @@
                                              "name":  "Binding_0_Left_Link_10",
                                              "type":  "MESH",
                                              "location":  [
-                                                              134.7687,
-                                                              -383.5444,
+                                                              200.2873,
+                                                              -189.7076,
                                                               283.7798
                                                           ]
                                          },
@@ -1329,8 +1293,8 @@
                                              "name":  "Binding_0_Left_Link_11",
                                              "type":  "MESH",
                                              "location":  [
-                                                              103.3236,
-                                                              -406.2462,
+                                                              202.9902,
+                                                              -206.9032,
                                                               283.7798
                                                           ]
                                          },
@@ -1338,13 +1302,157 @@
                                              "name":  "Binding_0_Left_Link_12",
                                              "type":  "MESH",
                                              "location":  [
-                                                              68.155,
-                                                              -422.5964,
+                                                              204.2195,
+                                                              -224.2664,
                                                               283.7798
                                                           ]
                                          },
                                          {
                                              "name":  "Binding_0_Left_Link_13",
+                                             "type":  "MESH",
+                                             "location":  [
+                                                              203.9663,
+                                                              -241.6712,
+                                                              283.7798
+                                                          ]
+                                         },
+                                         {
+                                             "name":  "Binding_0_Left_Link_14",
+                                             "type":  "MESH",
+                                             "location":  [
+                                                              202.2325,
+                                                              -258.9913,
+                                                              283.7798
+                                                          ]
+                                         },
+                                         {
+                                             "name":  "Binding_0_Left_Link_15",
+                                             "type":  "MESH",
+                                             "location":  [
+                                                              199.0306,
+                                                              -276.101,
+                                                              283.7798
+                                                          ]
+                                         },
+                                         {
+                                             "name":  "Binding_0_Left_Link_16",
+                                             "type":  "MESH",
+                                             "location":  [
+                                                              194.3839,
+                                                              -292.876,
+                                                              283.7798
+                                                          ]
+                                         },
+                                         {
+                                             "name":  "Binding_0_Left_Link_17",
+                                             "type":  "MESH",
+                                             "location":  [
+                                                              188.3261,
+                                                              -309.1945,
+                                                              283.7798
+                                                          ]
+                                         },
+                                         {
+                                             "name":  "Binding_0_Left_Link_18",
+                                             "type":  "MESH",
+                                             "location":  [
+                                                              180.9011,
+                                                              -324.9382,
+                                                              283.7798
+                                                          ]
+                                         },
+                                         {
+                                             "name":  "Binding_0_Left_Link_19",
+                                             "type":  "MESH",
+                                             "location":  [
+                                                              172.163,
+                                                              -339.9926,
+                                                              283.7798
+                                                          ]
+                                         },
+                                         {
+                                             "name":  "Binding_0_Left_Link_20",
+                                             "type":  "MESH",
+                                             "location":  [
+                                                              162.1751,
+                                                              -354.2487,
+                                                              283.7798
+                                                          ]
+                                         },
+                                         {
+                                             "name":  "Binding_0_Left_Link_21",
+                                             "type":  "MESH",
+                                             "location":  [
+                                                              151.0099,
+                                                              -367.6027,
+                                                              283.7798
+                                                          ]
+                                         },
+                                         {
+                                             "name":  "Binding_0_Left_Link_22",
+                                             "type":  "MESH",
+                                             "location":  [
+                                                              138.7484,
+                                                              -379.9578,
+                                                              283.7798
+                                                          ]
+                                         },
+                                         {
+                                             "name":  "Binding_0_Left_Link_23",
+                                             "type":  "MESH",
+                                             "location":  [
+                                                              125.4798,
+                                                              -391.2244,
+                                                              283.7798
+                                                          ]
+                                         },
+                                         {
+                                             "name":  "Binding_0_Left_Link_24",
+                                             "type":  "MESH",
+                                             "location":  [
+                                                              111.3002,
+                                                              -401.3206,
+                                                              283.7798
+                                                          ]
+                                         },
+                                         {
+                                             "name":  "Binding_0_Left_Link_25",
+                                             "type":  "MESH",
+                                             "location":  [
+                                                              96.3127,
+                                                              -410.1731,
+                                                              283.7798
+                                                          ]
+                                         },
+                                         {
+                                             "name":  "Binding_0_Left_Link_26",
+                                             "type":  "MESH",
+                                             "location":  [
+                                                              80.6261,
+                                                              -417.7177,
+                                                              283.7798
+                                                          ]
+                                         },
+                                         {
+                                             "name":  "Binding_0_Left_Link_27",
+                                             "type":  "MESH",
+                                             "location":  [
+                                                              64.3541,
+                                                              -423.8995,
+                                                              283.7798
+                                                          ]
+                                         },
+                                         {
+                                             "name":  "Binding_0_Left_Link_28",
+                                             "type":  "MESH",
+                                             "location":  [
+                                                              47.615,
+                                                              -428.6738,
+                                                              283.7798
+                                                          ]
+                                         },
+                                         {
+                                             "name":  "Binding_0_Left_Link_29",
                                              "type":  "MESH",
                                              "location":  [
                                                               30.5302,
@@ -1365,8 +1473,8 @@
                                              "name":  "Binding_0_Right_Link_01",
                                              "type":  "MESH",
                                              "location":  [
-                                                              -133.1886,
-                                                              -75.083,
+                                                              -116.2363,
+                                                              -61.9893,
                                                               283.7798
                                                           ]
                                          },
@@ -1374,8 +1482,8 @@
                                              "name":  "Binding_0_Right_Link_02",
                                              "type":  "MESH",
                                              "location":  [
-                                                              -160.0648,
-                                                              -103.0443,
+                                                              -130.1162,
+                                                              -72.4936,
                                                               283.7798
                                                           ]
                                          },
@@ -1383,8 +1491,8 @@
                                              "name":  "Binding_0_Right_Link_03",
                                              "type":  "MESH",
                                              "location":  [
-                                                              -181.1726,
-                                                              -135.5808,
+                                                              -143.0515,
+                                                              -84.1413,
                                                               283.7798
                                                           ]
                                          },
@@ -1392,8 +1500,8 @@
                                              "name":  "Binding_0_Right_Link_04",
                                              "type":  "MESH",
                                              "location":  [
-                                                              -195.7513,
-                                                              -171.52,
+                                                              -154.9483,
+                                                              -96.8479,
                                                               283.7798
                                                           ]
                                          },
@@ -1401,8 +1509,8 @@
                                              "name":  "Binding_0_Right_Link_05",
                                              "type":  "MESH",
                                              "location":  [
-                                                              -203.2756,
-                                                              -209.5667,
+                                                              -165.7204,
+                                                              -110.521,
                                                               283.7798
                                                           ]
                                          },
@@ -1410,8 +1518,8 @@
                                              "name":  "Binding_0_Right_Link_06",
                                              "type":  "MESH",
                                              "location":  [
-                                                              -203.4742,
-                                                              -248.3497,
+                                                              -175.2895,
+                                                              -125.0615,
                                                               283.7798
                                                           ]
                                          },
@@ -1419,8 +1527,8 @@
                                              "name":  "Binding_0_Right_Link_07",
                                              "type":  "MESH",
                                              "location":  [
-                                                              -196.3401,
-                                                              -286.4715,
+                                                              -183.586,
+                                                              -140.3638,
                                                               283.7798
                                                           ]
                                          },
@@ -1428,8 +1536,8 @@
                                              "name":  "Binding_0_Right_Link_08",
                                              "type":  "MESH",
                                              "location":  [
-                                                              -182.1304,
-                                                              -322.5581,
+                                                              -190.5499,
+                                                              -156.3167,
                                                               283.7798
                                                           ]
                                          },
@@ -1437,8 +1545,8 @@
                                              "name":  "Binding_0_Right_Link_09",
                                              "type":  "MESH",
                                              "location":  [
-                                                              -161.357,
-                                                              -355.3092,
+                                                              -196.1305,
+                                                              -172.8046,
                                                               283.7798
                                                           ]
                                          },
@@ -1446,8 +1554,8 @@
                                              "name":  "Binding_0_Right_Link_10",
                                              "type":  "MESH",
                                              "location":  [
-                                                              -134.7687,
-                                                              -383.5444,
+                                                              -200.2873,
+                                                              -189.7076,
                                                               283.7798
                                                           ]
                                          },
@@ -1455,8 +1563,8 @@
                                              "name":  "Binding_0_Right_Link_11",
                                              "type":  "MESH",
                                              "location":  [
-                                                              -103.3236,
-                                                              -406.2462,
+                                                              -202.9902,
+                                                              -206.9032,
                                                               283.7798
                                                           ]
                                          },
@@ -1464,13 +1572,157 @@
                                              "name":  "Binding_0_Right_Link_12",
                                              "type":  "MESH",
                                              "location":  [
-                                                              -68.155,
-                                                              -422.5964,
+                                                              -204.2195,
+                                                              -224.2664,
                                                               283.7798
                                                           ]
                                          },
                                          {
                                              "name":  "Binding_0_Right_Link_13",
+                                             "type":  "MESH",
+                                             "location":  [
+                                                              -203.9663,
+                                                              -241.6712,
+                                                              283.7798
+                                                          ]
+                                         },
+                                         {
+                                             "name":  "Binding_0_Right_Link_14",
+                                             "type":  "MESH",
+                                             "location":  [
+                                                              -202.2325,
+                                                              -258.9913,
+                                                              283.7798
+                                                          ]
+                                         },
+                                         {
+                                             "name":  "Binding_0_Right_Link_15",
+                                             "type":  "MESH",
+                                             "location":  [
+                                                              -199.0306,
+                                                              -276.101,
+                                                              283.7798
+                                                          ]
+                                         },
+                                         {
+                                             "name":  "Binding_0_Right_Link_16",
+                                             "type":  "MESH",
+                                             "location":  [
+                                                              -194.3839,
+                                                              -292.876,
+                                                              283.7798
+                                                          ]
+                                         },
+                                         {
+                                             "name":  "Binding_0_Right_Link_17",
+                                             "type":  "MESH",
+                                             "location":  [
+                                                              -188.3261,
+                                                              -309.1945,
+                                                              283.7798
+                                                          ]
+                                         },
+                                         {
+                                             "name":  "Binding_0_Right_Link_18",
+                                             "type":  "MESH",
+                                             "location":  [
+                                                              -180.9011,
+                                                              -324.9382,
+                                                              283.7798
+                                                          ]
+                                         },
+                                         {
+                                             "name":  "Binding_0_Right_Link_19",
+                                             "type":  "MESH",
+                                             "location":  [
+                                                              -172.163,
+                                                              -339.9926,
+                                                              283.7798
+                                                          ]
+                                         },
+                                         {
+                                             "name":  "Binding_0_Right_Link_20",
+                                             "type":  "MESH",
+                                             "location":  [
+                                                              -162.1751,
+                                                              -354.2487,
+                                                              283.7798
+                                                          ]
+                                         },
+                                         {
+                                             "name":  "Binding_0_Right_Link_21",
+                                             "type":  "MESH",
+                                             "location":  [
+                                                              -151.0099,
+                                                              -367.6027,
+                                                              283.7798
+                                                          ]
+                                         },
+                                         {
+                                             "name":  "Binding_0_Right_Link_22",
+                                             "type":  "MESH",
+                                             "location":  [
+                                                              -138.7484,
+                                                              -379.9578,
+                                                              283.7798
+                                                          ]
+                                         },
+                                         {
+                                             "name":  "Binding_0_Right_Link_23",
+                                             "type":  "MESH",
+                                             "location":  [
+                                                              -125.4798,
+                                                              -391.2244,
+                                                              283.7798
+                                                          ]
+                                         },
+                                         {
+                                             "name":  "Binding_0_Right_Link_24",
+                                             "type":  "MESH",
+                                             "location":  [
+                                                              -111.3002,
+                                                              -401.3206,
+                                                              283.7798
+                                                          ]
+                                         },
+                                         {
+                                             "name":  "Binding_0_Right_Link_25",
+                                             "type":  "MESH",
+                                             "location":  [
+                                                              -96.3127,
+                                                              -410.1731,
+                                                              283.7798
+                                                          ]
+                                         },
+                                         {
+                                             "name":  "Binding_0_Right_Link_26",
+                                             "type":  "MESH",
+                                             "location":  [
+                                                              -80.6261,
+                                                              -417.7177,
+                                                              283.7798
+                                                          ]
+                                         },
+                                         {
+                                             "name":  "Binding_0_Right_Link_27",
+                                             "type":  "MESH",
+                                             "location":  [
+                                                              -64.3541,
+                                                              -423.8995,
+                                                              283.7798
+                                                          ]
+                                         },
+                                         {
+                                             "name":  "Binding_0_Right_Link_28",
+                                             "type":  "MESH",
+                                             "location":  [
+                                                              -47.615,
+                                                              -428.6738,
+                                                              283.7798
+                                                          ]
+                                         },
+                                         {
+                                             "name":  "Binding_0_Right_Link_29",
                                              "type":  "MESH",
                                              "location":  [
                                                               -30.5302,
@@ -1491,8 +1743,8 @@
                                              "name":  "Binding_1_Left_Link_01",
                                              "type":  "MESH",
                                              "location":  [
-                                                              128.992,
-                                                              -79.9642,
+                                                              112.5738,
+                                                              -67.2831,
                                                               498.2887
                                                           ]
                                          },
@@ -1500,8 +1752,8 @@
                                              "name":  "Binding_1_Left_Link_02",
                                              "type":  "MESH",
                                              "location":  [
-                                                              155.0214,
-                                                              -107.0445,
+                                                              126.0164,
+                                                              -77.4564,
                                                               498.2887
                                                           ]
                                          },
@@ -1509,8 +1761,8 @@
                                              "name":  "Binding_1_Left_Link_03",
                                              "type":  "MESH",
                                              "location":  [
-                                                              175.4641,
-                                                              -138.5558,
+                                                              138.5441,
+                                                              -88.7371,
                                                               498.2887
                                                           ]
                                          },
@@ -1518,8 +1770,8 @@
                                              "name":  "Binding_1_Left_Link_04",
                                              "type":  "MESH",
                                              "location":  [
-                                                              189.5835,
-                                                              -173.3626,
+                                                              150.0661,
+                                                              -101.0433,
                                                               498.2887
                                                           ]
                                          },
@@ -1527,8 +1779,8 @@
                                              "name":  "Binding_1_Left_Link_05",
                                              "type":  "MESH",
                                              "location":  [
-                                                              196.8707,
-                                                              -210.2105,
+                                                              160.4988,
+                                                              -114.2857,
                                                               498.2887
                                                           ]
                                          },
@@ -1536,8 +1788,8 @@
                                              "name":  "Binding_1_Left_Link_06",
                                              "type":  "MESH",
                                              "location":  [
-                                                              197.063,
-                                                              -247.7715,
+                                                              169.7663,
+                                                              -128.368,
                                                               498.2887
                                                           ]
                                          },
@@ -1545,8 +1797,8 @@
                                              "name":  "Binding_1_Left_Link_07",
                                              "type":  "MESH",
                                              "location":  [
-                                                              190.1537,
-                                                              -284.6921,
+                                                              177.8015,
+                                                              -143.1881,
                                                               498.2887
                                                           ]
                                          },
@@ -1554,8 +1806,8 @@
                                              "name":  "Binding_1_Left_Link_08",
                                              "type":  "MESH",
                                              "location":  [
-                                                              176.3917,
-                                                              -319.6418,
+                                                              184.5459,
+                                                              -158.6384,
                                                               498.2887
                                                           ]
                                          },
@@ -1563,8 +1815,8 @@
                                              "name":  "Binding_1_Left_Link_09",
                                              "type":  "MESH",
                                              "location":  [
-                                                              156.2729,
-                                                              -351.3609,
+                                                              189.9507,
+                                                              -174.6067,
                                                               498.2887
                                                           ]
                                          },
@@ -1572,8 +1824,8 @@
                                              "name":  "Binding_1_Left_Link_10",
                                              "type":  "MESH",
                                              "location":  [
-                                                              130.5224,
-                                                              -378.7064,
+                                                              193.9765,
+                                                              -190.9772,
                                                               498.2887
                                                           ]
                                          },
@@ -1581,8 +1833,8 @@
                                              "name":  "Binding_1_Left_Link_11",
                                              "type":  "MESH",
                                              "location":  [
-                                                              100.0681,
-                                                              -400.6929,
+                                                              196.5943,
+                                                              -207.6309,
                                                               498.2887
                                                           ]
                                          },
@@ -1590,13 +1842,157 @@
                                              "name":  "Binding_1_Left_Link_12",
                                              "type":  "MESH",
                                              "location":  [
-                                                              66.0075,
-                                                              -416.528,
+                                                              197.7848,
+                                                              -224.4471,
                                                               498.2887
                                                           ]
                                          },
                                          {
                                              "name":  "Binding_1_Left_Link_13",
+                                             "type":  "MESH",
+                                             "location":  [
+                                                              197.5396,
+                                                              -241.3035,
+                                                              498.2887
+                                                          ]
+                                         },
+                                         {
+                                             "name":  "Binding_1_Left_Link_14",
+                                             "type":  "MESH",
+                                             "location":  [
+                                                              195.8604,
+                                                              -258.0779,
+                                                              498.2887
+                                                          ]
+                                         },
+                                         {
+                                             "name":  "Binding_1_Left_Link_15",
+                                             "type":  "MESH",
+                                             "location":  [
+                                                              192.7594,
+                                                              -274.6484,
+                                                              498.2887
+                                                          ]
+                                         },
+                                         {
+                                             "name":  "Binding_1_Left_Link_16",
+                                             "type":  "MESH",
+                                             "location":  [
+                                                              188.2591,
+                                                              -290.8948,
+                                                              498.2887
+                                                          ]
+                                         },
+                                         {
+                                             "name":  "Binding_1_Left_Link_17",
+                                             "type":  "MESH",
+                                             "location":  [
+                                                              182.3922,
+                                                              -306.6992,
+                                                              498.2887
+                                                          ]
+                                         },
+                                         {
+                                             "name":  "Binding_1_Left_Link_18",
+                                             "type":  "MESH",
+                                             "location":  [
+                                                              175.2012,
+                                                              -321.9468,
+                                                              498.2887
+                                                          ]
+                                         },
+                                         {
+                                             "name":  "Binding_1_Left_Link_19",
+                                             "type":  "MESH",
+                                             "location":  [
+                                                              166.7384,
+                                                              -336.5269,
+                                                              498.2887
+                                                          ]
+                                         },
+                                         {
+                                             "name":  "Binding_1_Left_Link_20",
+                                             "type":  "MESH",
+                                             "location":  [
+                                                              157.0652,
+                                                              -350.3337,
+                                                              498.2887
+                                                          ]
+                                         },
+                                         {
+                                             "name":  "Binding_1_Left_Link_21",
+                                             "type":  "MESH",
+                                             "location":  [
+                                                              146.2518,
+                                                              -363.267,
+                                                              498.2887
+                                                          ]
+                                         },
+                                         {
+                                             "name":  "Binding_1_Left_Link_22",
+                                             "type":  "MESH",
+                                             "location":  [
+                                                              134.3767,
+                                                              -375.2329,
+                                                              498.2887
+                                                          ]
+                                         },
+                                         {
+                                             "name":  "Binding_1_Left_Link_23",
+                                             "type":  "MESH",
+                                             "location":  [
+                                                              121.5261,
+                                                              -386.1444,
+                                                              498.2887
+                                                          ]
+                                         },
+                                         {
+                                             "name":  "Binding_1_Left_Link_24",
+                                             "type":  "MESH",
+                                             "location":  [
+                                                              107.7933,
+                                                              -395.9225,
+                                                              498.2887
+                                                          ]
+                                         },
+                                         {
+                                             "name":  "Binding_1_Left_Link_25",
+                                             "type":  "MESH",
+                                             "location":  [
+                                                              93.2781,
+                                                              -404.4961,
+                                                              498.2887
+                                                          ]
+                                         },
+                                         {
+                                             "name":  "Binding_1_Left_Link_26",
+                                             "type":  "MESH",
+                                             "location":  [
+                                                              78.0857,
+                                                              -411.8029,
+                                                              498.2887
+                                                          ]
+                                         },
+                                         {
+                                             "name":  "Binding_1_Left_Link_27",
+                                             "type":  "MESH",
+                                             "location":  [
+                                                              62.3264,
+                                                              -417.79,
+                                                              498.2887
+                                                          ]
+                                         },
+                                         {
+                                             "name":  "Binding_1_Left_Link_28",
+                                             "type":  "MESH",
+                                             "location":  [
+                                                              46.1147,
+                                                              -422.4139,
+                                                              498.2887
+                                                          ]
+                                         },
+                                         {
+                                             "name":  "Binding_1_Left_Link_29",
                                              "type":  "MESH",
                                              "location":  [
                                                               29.5682,
@@ -1617,8 +2013,8 @@
                                              "name":  "Binding_1_Right_Link_01",
                                              "type":  "MESH",
                                              "location":  [
-                                                              -128.992,
-                                                              -79.9642,
+                                                              -112.5738,
+                                                              -67.2831,
                                                               498.2887
                                                           ]
                                          },
@@ -1626,8 +2022,8 @@
                                              "name":  "Binding_1_Right_Link_02",
                                              "type":  "MESH",
                                              "location":  [
-                                                              -155.0214,
-                                                              -107.0445,
+                                                              -126.0164,
+                                                              -77.4564,
                                                               498.2887
                                                           ]
                                          },
@@ -1635,8 +2031,8 @@
                                              "name":  "Binding_1_Right_Link_03",
                                              "type":  "MESH",
                                              "location":  [
-                                                              -175.4641,
-                                                              -138.5558,
+                                                              -138.5441,
+                                                              -88.7371,
                                                               498.2887
                                                           ]
                                          },
@@ -1644,8 +2040,8 @@
                                              "name":  "Binding_1_Right_Link_04",
                                              "type":  "MESH",
                                              "location":  [
-                                                              -189.5835,
-                                                              -173.3626,
+                                                              -150.0661,
+                                                              -101.0433,
                                                               498.2887
                                                           ]
                                          },
@@ -1653,8 +2049,8 @@
                                              "name":  "Binding_1_Right_Link_05",
                                              "type":  "MESH",
                                              "location":  [
-                                                              -196.8707,
-                                                              -210.2105,
+                                                              -160.4988,
+                                                              -114.2857,
                                                               498.2887
                                                           ]
                                          },
@@ -1662,8 +2058,8 @@
                                              "name":  "Binding_1_Right_Link_06",
                                              "type":  "MESH",
                                              "location":  [
-                                                              -197.063,
-                                                              -247.7715,
+                                                              -169.7663,
+                                                              -128.368,
                                                               498.2887
                                                           ]
                                          },
@@ -1671,8 +2067,8 @@
                                              "name":  "Binding_1_Right_Link_07",
                                              "type":  "MESH",
                                              "location":  [
-                                                              -190.1537,
-                                                              -284.6921,
+                                                              -177.8015,
+                                                              -143.1881,
                                                               498.2887
                                                           ]
                                          },
@@ -1680,8 +2076,8 @@
                                              "name":  "Binding_1_Right_Link_08",
                                              "type":  "MESH",
                                              "location":  [
-                                                              -176.3917,
-                                                              -319.6418,
+                                                              -184.5459,
+                                                              -158.6384,
                                                               498.2887
                                                           ]
                                          },
@@ -1689,8 +2085,8 @@
                                              "name":  "Binding_1_Right_Link_09",
                                              "type":  "MESH",
                                              "location":  [
-                                                              -156.2729,
-                                                              -351.3609,
+                                                              -189.9507,
+                                                              -174.6067,
                                                               498.2887
                                                           ]
                                          },
@@ -1698,8 +2094,8 @@
                                              "name":  "Binding_1_Right_Link_10",
                                              "type":  "MESH",
                                              "location":  [
-                                                              -130.5224,
-                                                              -378.7064,
+                                                              -193.9765,
+                                                              -190.9772,
                                                               498.2887
                                                           ]
                                          },
@@ -1707,8 +2103,8 @@
                                              "name":  "Binding_1_Right_Link_11",
                                              "type":  "MESH",
                                              "location":  [
-                                                              -100.0681,
-                                                              -400.6929,
+                                                              -196.5943,
+                                                              -207.6309,
                                                               498.2887
                                                           ]
                                          },
@@ -1716,13 +2112,157 @@
                                              "name":  "Binding_1_Right_Link_12",
                                              "type":  "MESH",
                                              "location":  [
-                                                              -66.0075,
-                                                              -416.528,
+                                                              -197.7848,
+                                                              -224.4471,
                                                               498.2887
                                                           ]
                                          },
                                          {
                                              "name":  "Binding_1_Right_Link_13",
+                                             "type":  "MESH",
+                                             "location":  [
+                                                              -197.5396,
+                                                              -241.3035,
+                                                              498.2887
+                                                          ]
+                                         },
+                                         {
+                                             "name":  "Binding_1_Right_Link_14",
+                                             "type":  "MESH",
+                                             "location":  [
+                                                              -195.8604,
+                                                              -258.0779,
+                                                              498.2887
+                                                          ]
+                                         },
+                                         {
+                                             "name":  "Binding_1_Right_Link_15",
+                                             "type":  "MESH",
+                                             "location":  [
+                                                              -192.7594,
+                                                              -274.6484,
+                                                              498.2887
+                                                          ]
+                                         },
+                                         {
+                                             "name":  "Binding_1_Right_Link_16",
+                                             "type":  "MESH",
+                                             "location":  [
+                                                              -188.2591,
+                                                              -290.8948,
+                                                              498.2887
+                                                          ]
+                                         },
+                                         {
+                                             "name":  "Binding_1_Right_Link_17",
+                                             "type":  "MESH",
+                                             "location":  [
+                                                              -182.3922,
+                                                              -306.6992,
+                                                              498.2887
+                                                          ]
+                                         },
+                                         {
+                                             "name":  "Binding_1_Right_Link_18",
+                                             "type":  "MESH",
+                                             "location":  [
+                                                              -175.2012,
+                                                              -321.9468,
+                                                              498.2887
+                                                          ]
+                                         },
+                                         {
+                                             "name":  "Binding_1_Right_Link_19",
+                                             "type":  "MESH",
+                                             "location":  [
+                                                              -166.7384,
+                                                              -336.5269,
+                                                              498.2887
+                                                          ]
+                                         },
+                                         {
+                                             "name":  "Binding_1_Right_Link_20",
+                                             "type":  "MESH",
+                                             "location":  [
+                                                              -157.0652,
+                                                              -350.3337,
+                                                              498.2887
+                                                          ]
+                                         },
+                                         {
+                                             "name":  "Binding_1_Right_Link_21",
+                                             "type":  "MESH",
+                                             "location":  [
+                                                              -146.2518,
+                                                              -363.267,
+                                                              498.2887
+                                                          ]
+                                         },
+                                         {
+                                             "name":  "Binding_1_Right_Link_22",
+                                             "type":  "MESH",
+                                             "location":  [
+                                                              -134.3767,
+                                                              -375.2329,
+                                                              498.2887
+                                                          ]
+                                         },
+                                         {
+                                             "name":  "Binding_1_Right_Link_23",
+                                             "type":  "MESH",
+                                             "location":  [
+                                                              -121.5261,
+                                                              -386.1444,
+                                                              498.2887
+                                                          ]
+                                         },
+                                         {
+                                             "name":  "Binding_1_Right_Link_24",
+                                             "type":  "MESH",
+                                             "location":  [
+                                                              -107.7933,
+                                                              -395.9225,
+                                                              498.2887
+                                                          ]
+                                         },
+                                         {
+                                             "name":  "Binding_1_Right_Link_25",
+                                             "type":  "MESH",
+                                             "location":  [
+                                                              -93.2781,
+                                                              -404.4961,
+                                                              498.2887
+                                                          ]
+                                         },
+                                         {
+                                             "name":  "Binding_1_Right_Link_26",
+                                             "type":  "MESH",
+                                             "location":  [
+                                                              -78.0857,
+                                                              -411.8029,
+                                                              498.2887
+                                                          ]
+                                         },
+                                         {
+                                             "name":  "Binding_1_Right_Link_27",
+                                             "type":  "MESH",
+                                             "location":  [
+                                                              -62.3264,
+                                                              -417.79,
+                                                              498.2887
+                                                          ]
+                                         },
+                                         {
+                                             "name":  "Binding_1_Right_Link_28",
+                                             "type":  "MESH",
+                                             "location":  [
+                                                              -46.1147,
+                                                              -422.4139,
+                                                              498.2887
+                                                          ]
+                                         },
+                                         {
+                                             "name":  "Binding_1_Right_Link_29",
                                              "type":  "MESH",
                                              "location":  [
                                                               -29.5682,
@@ -1734,162 +2274,162 @@
                                              "name":  "FloatingPrisonShard_00",
                                              "type":  "MESH",
                                              "location":  [
-                                                              -242.8323,
-                                                              -220.2008,
-                                                              408.4172
+                                                              -224.1402,
+                                                              -148.1341,
+                                                              363.7225
                                                           ]
                                          },
                                          {
                                              "name":  "FloatingPrisonShard_01",
                                              "type":  "MESH",
                                              "location":  [
-                                                              234.8614,
-                                                              -205.4281,
-                                                              407.6729
+                                                              106.3923,
+                                                              -118.8775,
+                                                              197.9837
                                                           ]
                                          },
                                          {
                                              "name":  "FloatingPrisonShard_02",
                                              "type":  "MESH",
                                              "location":  [
-                                                              -139.664,
-                                                              -92.2596,
-                                                              511.5164
+                                                              -216.5043,
+                                                              -336.0089,
+                                                              390.3714
                                                           ]
                                          },
                                          {
                                              "name":  "FloatingPrisonShard_03",
                                              "type":  "MESH",
                                              "location":  [
-                                                              225.4954,
-                                                              -294.7885,
-                                                              340.4365
+                                                              165.7017,
+                                                              -213.1812,
+                                                              544.1823
                                                           ]
                                          },
                                          {
                                              "name":  "FloatingPrisonShard_04",
                                              "type":  "MESH",
                                              "location":  [
-                                                              -206.7054,
-                                                              -223.3414,
-                                                              507.5819
+                                                              -219.285,
+                                                              -159.6721,
+                                                              352.4095
                                                           ]
                                          },
                                          {
                                              "name":  "FloatingPrisonShard_05",
                                              "type":  "MESH",
                                              "location":  [
-                                                              159.8255,
-                                                              -170.2178,
-                                                              232.0719
+                                                              230.9295,
+                                                              -156.1012,
+                                                              358.7896
                                                           ]
                                          },
                                          {
                                              "name":  "FloatingPrisonShard_06",
                                              "type":  "MESH",
                                              "location":  [
-                                                              -168.4717,
-                                                              -309.6011,
-                                                              240.2085
+                                                              -121.2202,
+                                                              -105.8577,
+                                                              544.2736
                                                           ]
                                          },
                                          {
                                              "name":  "FloatingPrisonShard_07",
                                              "type":  "MESH",
                                              "location":  [
-                                                              196.7398,
-                                                              -104.6367,
-                                                              378.8431
+                                                              211.9303,
+                                                              -232.1011,
+                                                              298.0342
                                                           ]
                                          },
                                          {
                                              "name":  "FloatingPrisonShard_08",
                                              "type":  "MESH",
                                              "location":  [
-                                                              -166.6908,
-                                                              -395.1373,
-                                                              333.3806
+                                                              -150.2077,
+                                                              -386.3232,
+                                                              472.0202
                                                           ]
                                          },
                                          {
                                              "name":  "FloatingPrisonShard_09",
                                              "type":  "MESH",
                                              "location":  [
-                                                              174.5446,
-                                                              -62.7466,
-                                                              368.3142
+                                                              163.164,
+                                                              -177.6024,
+                                                              547.2443
                                                           ]
                                          },
                                          {
                                              "name":  "FloatingPrisonShard_10",
                                              "type":  "MESH",
                                              "location":  [
-                                                              -143.7142,
-                                                              -275.088,
-                                                              565.9257
+                                                              -149.0284,
+                                                              -138.7326,
+                                                              534.0881
                                                           ]
                                          },
                                          {
                                              "name":  "FloatingPrisonShard_11",
                                              "type":  "MESH",
                                              "location":  [
-                                                              161.2363,
-                                                              -162.0107,
-                                                              224.5278
+                                                              177.8586,
+                                                              -344.8713,
+                                                              287.6631
                                                           ]
                                          },
                                          {
                                              "name":  "FloatingPrisonShard_12",
                                              "type":  "MESH",
                                              "location":  [
-                                                              -167.2989,
-                                                              -294.1628,
-                                                              543.5272
+                                                              -177.16,
+                                                              -274.74,
+                                                              230.608
                                                           ]
                                          },
                                          {
                                              "name":  "FloatingPrisonShard_13",
                                              "type":  "MESH",
                                              "location":  [
-                                                              175.0356,
-                                                              -332.405,
-                                                              517.6699
+                                                              160.876,
+                                                              -156.485,
+                                                              228.2531
                                                           ]
                                          },
                                          {
                                              "name":  "FloatingPrisonShard_14",
                                              "type":  "MESH",
                                              "location":  [
-                                                              -222.4202,
-                                                              -258.6044,
-                                                              475.1362
+                                                              -123.128,
+                                                              -336.9277,
+                                                              563.1063
                                                           ]
                                          },
                                          {
                                              "name":  "FloatingPrisonShard_15",
                                              "type":  "MESH",
                                              "location":  [
-                                                              204.4017,
-                                                              -115.3134,
-                                                              453.787
+                                                              223.7932,
+                                                              -283.9185,
+                                                              458.3833
                                                           ]
                                          },
                                          {
                                              "name":  "FloatingPrisonShard_16",
                                              "type":  "MESH",
                                              "location":  [
-                                                              -215.6526,
-                                                              -334.1596,
-                                                              378.0908
+                                                              -143.6632,
+                                                              -78.1928,
+                                                              478.9479
                                                           ]
                                          },
                                          {
                                              "name":  "FloatingPrisonShard_17",
                                              "type":  "MESH",
                                              "location":  [
-                                                              145.506,
-                                                              -162.0322,
-                                                              213.6184
+                                                              172.5937,
+                                                              -207.7354,
+                                                              555.5433
                                                           ]
                                          }
                                      ]
