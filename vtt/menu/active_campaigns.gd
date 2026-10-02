@@ -5,10 +5,15 @@ const MenuBackdrop = preload("res://vtt/menu/menu_backdrop.gd")
 const MenuStyle = preload("res://vtt/menu/menu_style.gd")
 
 var _status_label: Label
+var _edit_dialog: ConfirmationDialog
+var _edit_name_input: LineEdit
+var _edit_description_input: TextEdit
+var _pending_campaign_group_id: String = ""
 
 
 func _ready() -> void:
 	_build_ui()
+	_build_edit_dialog()
 
 
 func _build_ui() -> void:
@@ -147,6 +152,10 @@ func _campaign_card(campaign: Dictionary) -> Control:
 	)
 	layout.add_child(description)
 
+	var actions_row := HBoxContainer.new()
+	actions_row.add_theme_constant_override("separation", 10)
+	layout.add_child(actions_row)
+
 	var open_button: Button = MenuStyle.menu_button(
 		"Apri campagna",
 		Vector2(0, 40)
@@ -158,9 +167,128 @@ func _campaign_card(campaign: Dictionary) -> Control:
 				String(campaign.get("id", ""))
 			)
 	)
-	layout.add_child(open_button)
+	actions_row.add_child(open_button)
+
+	var edit_button: Button = MenuStyle.menu_button(
+		"Modifica",
+		Vector2(110, 40)
+	)
+	edit_button.pressed.connect(
+		func() -> void:
+			_request_edit_campaign(campaign)
+	)
+	actions_row.add_child(edit_button)
 
 	return panel
+
+
+func _build_edit_dialog() -> void:
+	_edit_dialog = ConfirmationDialog.new()
+	_edit_dialog.title = "Modifica campagna"
+	_edit_dialog.ok_button_text = "Salva"
+	_edit_dialog.cancel_button_text = "Annulla"
+	_edit_dialog.min_size = Vector2i(560, 390)
+	add_child(_edit_dialog)
+
+	var body := VBoxContainer.new()
+	body.set_anchors_and_offsets_preset(Control.PRESET_FULL_RECT)
+	body.offset_left = 20
+	body.offset_top = 18
+	body.offset_right = -20
+	body.offset_bottom = -72
+	body.add_theme_constant_override("separation", 10)
+	_edit_dialog.add_child(body)
+
+	var name_label := Label.new()
+	name_label.text = "Nome campagna"
+	name_label.add_theme_font_override("font", MenuStyle.menu_font())
+	name_label.add_theme_font_size_override("font_size", 17)
+	body.add_child(name_label)
+
+	_edit_name_input = LineEdit.new()
+	_edit_name_input.max_length = 100
+	_edit_name_input.placeholder_text = "Nome della campagna"
+	_edit_name_input.add_theme_font_override("font", MenuStyle.menu_font())
+	body.add_child(_edit_name_input)
+
+	var description_label := Label.new()
+	description_label.text = "Descrizione"
+	description_label.add_theme_font_override("font", MenuStyle.menu_font())
+	description_label.add_theme_font_size_override("font_size", 17)
+	body.add_child(description_label)
+
+	_edit_description_input = TextEdit.new()
+	_edit_description_input.custom_minimum_size = Vector2(0, 145)
+	_edit_description_input.placeholder_text = "Descrizione della campagna"
+	_edit_description_input.wrap_mode = TextEdit.LINE_WRAPPING_BOUNDARY
+	_edit_description_input.add_theme_font_override(
+		"font",
+		MenuStyle.menu_font()
+	)
+	body.add_child(_edit_description_input)
+
+	var hint := Label.new()
+	hint.text = "Le modifiche vengono salvate e non cambiano gli scenari contenuti."
+	hint.autowrap_mode = TextServer.AUTOWRAP_WORD_SMART
+	hint.add_theme_font_override("font", MenuStyle.menu_font())
+	hint.add_theme_font_size_override("font_size", 13)
+	hint.add_theme_color_override(
+		"font_color",
+		Color(0.80, 0.78, 0.73, 0.86)
+	)
+	body.add_child(hint)
+
+	_edit_dialog.confirmed.connect(_confirm_edit_campaign)
+
+
+func _request_edit_campaign(campaign: Dictionary) -> void:
+	_pending_campaign_group_id = String(campaign.get("id", ""))
+	if _pending_campaign_group_id.is_empty():
+		_set_status("Impossibile modificare questa campagna.")
+		return
+
+	_edit_name_input.text = String(campaign.get("name", ""))
+	_edit_description_input.text = String(
+		campaign.get("description", "")
+	)
+
+	_edit_dialog.reset_size()
+	_edit_dialog.popup_centered_clamped(Vector2i(560, 390), 0.92)
+	_edit_name_input.call_deferred("grab_focus")
+	_edit_name_input.call_deferred("select_all")
+
+
+func _confirm_edit_campaign() -> void:
+	if _pending_campaign_group_id.is_empty():
+		_set_status("Nessuna campagna selezionata.")
+		return
+
+	var new_name: String = _edit_name_input.text.strip_edges()
+	if new_name.is_empty():
+		_set_status("Il nome della campagna non può essere vuoto.")
+		return
+
+	var manager: Node = _campaign_manager()
+	if manager == null:
+		_set_status("CampaignManager non disponibile.")
+		return
+
+	var error: Error = int(
+		manager.call(
+			"update_campaign_group",
+			_pending_campaign_group_id,
+			new_name,
+			_edit_description_input.text
+		)
+	)
+	if error != OK:
+		_set_status(
+			"Errore modifica campagna: %s" % error_string(error)
+		)
+		return
+
+	_pending_campaign_group_id = ""
+	get_tree().reload_current_scene()
 
 
 func _open_campaign_group(campaign_group_id: String) -> void:
