@@ -1,113 +1,332 @@
-# Import automatico miniature come token
+# Token Converter
 
-La conversione viene eseguita da Blender in background e serve durante lo sviluppo.
+Questa cartella contiene il convertitore Blender usato durante lo sviluppo per trasformare raccolte di miniature 3D in asset compatibili con il VTT Godot.
 
-## Uso
+Il convertitore lavora sempre su una scena/copia temporanea in Blender: **non modifica mai i file sorgente originali**.
+
+## Pipeline
+
+```text
+miniature originali
+(.blend / .stl / .obj / .fbx / .glb / .gltf)
+        |
+        v
+tools/import_tokens.ps1
+        |
+        v
+Blender background
+tools/token_converter/convert_tokens.py
+        |
+        +--> statico  -> assets/tokens/generated/<id>/<id>.obj
+        |
+        +--> riggato  -> assets/tokens/generated/<id>/<id>.glb
+        |
+        +--> assets/tokens/scenes/<id>_token.tscn
+        |
+        +--> assets/tokens/token_library.json
+```
+
+Gli asset in `assets/tokens/generated/` sono file locali di sviluppo e non devono essere usati come sistema di distribuzione finale. Per la distribuzione lazy-loaded usare la pipeline PCK documentata in `tools/token_packs/README.md`.
+
+## Uso rapido
 
 Da PowerShell, nella root del progetto:
 
-    .\tools\import_tokens.ps1 -Source "C:\percorso\Miniature"
-
-Se la cartella indicata contiene direttamente i file di una miniatura, viene
-creato un solo token. Se invece contiene una sottocartella per miniatura, ogni
-sottocartella viene convertita in un token.
+```powershell
+.\tools\import_tokens.ps1 -Source "C:\percorso\Miniature"
+```
 
 Per scegliere il token di default:
 
-    .\tools\import_tokens.ps1 -Source "C:\percorso\Miniature" -Default "Solar Dragon"
+```powershell
+.\tools\import_tokens.ps1 -Source "C:\percorso\Miniature" -Default "Solar Dragon"
+```
 
-Se Blender non e' nel PATH:
+Per ridurre la geometria dei modelli statici:
 
-    .\tools\import_tokens.ps1 -Source "C:\percorso\Miniature" -Blender "C:\Program Files\Blender Foundation\Blender 4.5\blender.exe"
+```powershell
+.\tools\import_tokens.ps1 -Source "C:\percorso\Miniature" -DecimateRatio 0.65
+```
 
+Se Blender non è nel PATH:
 
-## Run multiple su cartelle diverse
+```powershell
+.\tools\import_tokens.ps1 `
+    -Source "C:\percorso\Miniature" `
+    -Blender "C:\Program Files\Blender Foundation\Blender 4.5\blender.exe"
+```
 
-Le importazioni sono additive. Puoi eseguire il convertitore piu' volte su
-raccolte o cartelle diverse: i token gia' presenti in token_library.json e in
-assets/tokens/generated non vengono cancellati.
+`import_tokens.ps1` individua Blender e avvia `convert_tokens.py` in background con il project root corretto.
 
-Se una run genera un token con lo stesso id di uno gia' presente, quel token
-viene aggiornato/sostituito; tutti gli altri restano invariati. Il token di
-default precedente viene mantenuto tra le run, a meno che non venga passato
-esplicitamente -Default.
+## Formati sorgente supportati
 
-## Come viene scelta la scala
+Il convertitore considera:
 
-La scala NON viene ricavata dall'altezza del personaggio.
+- `.blend`
+- `.stl`
+- `.obj`
+- `.fbx`
+- `.glb`
+- `.gltf`
 
-Il convertitore cerca prima un oggetto della scena o un file separato che
-rappresenti la base/size marker. Se nel nome compare Tiny, Small, Medium, Large,
-Huge o Gargantuan, quella taglia e' usata direttamente. La base viene poi
-scalata affinche' il suo diametro occupi il footprint del VTT:
+Quando in una cartella esistono più file possibili, non vengono semplicemente importati tutti come una singola mesh. Il converter cerca il candidato che più probabilmente rappresenta la miniatura completa.
 
-- Tiny: 0.5 celle
-- Small/Medium: 1 cella
-- Large: 2 celle
-- Huge: 3 celle
-- Gargantuan: 4 celle
+In generale vengono favoriti:
 
-Se il nome non contiene la taglia, viene usato come fallback il diametro fisico
-della base e il formato standard piu' vicino.
+1. scene complete `.blend`;
+2. GLB/GLTF;
+3. FBX;
+4. OBJ;
+5. STL grezzi.
 
-Il centro della base diventa X/Z = 0 del token e il fondo della base viene
-portato a quota 0. Ali, code, armi e altre parti possono quindi uscire dal
-footprint senza modificare la taglia del token.
+Nomi come `final`, `posed`, `complete`, `assembled`, `merged`, `whole` e `full` aumentano la priorità. File che sembrano singole parti di stampa, supporti, marker o basi vengono penalizzati.
 
-### Verifica Solar Dragon
+Un file `.blend` non viene classificato come semplice "parte" solo perché contiene nel nome o nella scena oggetti come Body, Base o Marker: può contenere l'intera scena assemblata.
 
-Nel pacchetto di test l'oggetto "Huge Creature Flying Marker" ha una base di
-circa 68.40 x 68.40 unita' sorgente. Essendo Huge viene portata esattamente a
-3 x 3 celle, con fattore di scala circa 0.0438584.
+## Discovery delle miniature
 
-## Output
+`--source` può indicare:
 
-Per ogni miniatura vengono generati:
+- direttamente la cartella di una miniatura;
+- una cartella con una sottocartella per miniatura;
+- una collezione più profonda con cartelle alfabetiche o organizzative intermedie.
 
-- modelli statici: assets/tokens/generated/<id>/<id>.obj
-- modelli gia' riggati: assets/tokens/generated/<id>/<id>.glb
-- assets/tokens/scenes/<id>_token.tscn
-- assets/tokens/token_library.json
+La ricerca è ricorsiva e non si ferma automaticamente alle cartelle di raggruppamento.
 
-La pipeline sceglie GLB solo quando una Armature e' realmente collegata a una
-delle mesh visibili tramite parentela o Armature modifier. In quel caso la
-normalizzazione di scala/posizione viene applicata alle radici della gerarchia,
-non separatamente alla mesh: skeleton, bind pose e skin weights restano quindi
-coerenti. Le animazioni gia' presenti nel file sorgente vengono esportate nel
-GLB. Se viene richiesto --decimate-ratio su un modello riggato, la
-semplificazione viene ignorata per non rischiare di degradare skin/weights.
+Le cartelle tecniche come `STL`, `Blend`, `Parts`, `Supported`, `Presupported`, `Models` ecc. vengono trattate come parti della stessa miniatura quando appropriato, invece di diventare token separati.
 
-token_library.json v3 usa visual_asset come campo generico e mantiene obj come
-alias di compatibilita'. Aggiunge inoltre asset_format, rigged, rig_type,
-skeleton_profile, animation_set, animation_library, default_animation,
-embedded_animations e armatures.
+L'id del token viene normalizzato in forma slug, per esempio:
 
-La scena *_token.tscn eredita da res://token.tscn. Quindi una miniatura
-trascinata direttamente nella scena e' un vero token: CharacterBody3D, gruppo
-dnd_token, collisione, selezione, drag, movimento su griglia, volo, indicatore
-di direzione, visione, iniziativa, incantesimi, undo e sincronizzazione.
+```text
+Giant Weasel -> giant_weasel
+Solar Dragon -> solar_dragon
+```
 
-La miniatura scelta come default sostituisce automaticamente il corpo
-procedurale dei nuovi token creati dal VTT. Se il manifest non esiste o l'asset
-non e' disponibile, il token procedurale resta come fallback.
+## Importazioni additive
 
-## Rig e animazioni condivise
+Le importazioni sono additive.
 
-Il convertitore non prova a inventare un rig per STL/OBJ statici: questi
-continuano a funzionare esattamente come prima. Un FBX/GLB/BLEND con rig viene
-invece conservato come GLB.
+Puoi eseguire il convertitore più volte su raccolte o cartelle differenti:
 
-Per i rig riconosciuti come umanoidi il manifest imposta
-skeleton_profile="humanoid" e, se non ci sono animazioni embedded,
-animation_set="humanoid_default". Questo e' il punto di aggancio previsto per
-retargeting Godot con BoneMap/SkeletonProfileHumanoid.
+```powershell
+.\tools\import_tokens.ps1 -Source "D:\Miniatures\Appendix A"
+.\tools\import_tokens.ps1 -Source "D:\Miniatures\Appendix B"
+.\tools\import_tokens.ps1 -Source "D:\Miniatures\Characters"
+```
 
-token.gd supporta anche animation_library: quando il campo contiene il path di
-una AnimationLibrary Godot (.tres/.res), la libreria viene montata come
-"shared" sull'AnimationPlayer del modello. default_animation viene avviata
-automaticamente quando disponibile. In questo modo una sola libreria puo'
-essere condivisa da molti token invece di duplicare le clip in ogni modello.
+I token già presenti in `assets/tokens/token_library.json` e in `assets/tokens/generated/` non vengono cancellati.
 
-Gli asset di animazione esterni non sono inclusi automaticamente nel
-repository. Per una libreria redistribuibile usare asset con licenza compatibile
-(ad esempio CC0) e salvarne la versione Godot sotto assets/animations/.
+Se una run genera nuovamente lo stesso id, solo quel token viene aggiornato/sostituito. Gli altri restano invariati.
+
+Il token di default precedente viene mantenuto, salvo uso esplicito di `-Default`.
+
+## Come viene determinata la taglia
+
+La scala **non viene ricavata dall'altezza del personaggio**.
+
+Il riferimento principale è la base/size marker della miniatura.
+
+Il converter cerca prima:
+
+- marker già presenti nella scena;
+- oppure file separati che rappresentano una base o un size marker.
+
+Se il nome identifica direttamente una taglia D&D, quella taglia viene usata.
+
+| Taglia | Footprint VTT |
+| --- | ---: |
+| Tiny | 0.5 celle |
+| Small | 1 cella |
+| Medium | 1 cella |
+| Large | 2 celle |
+| Huge | 3 celle |
+| Gargantuan | 4 celle |
+
+La base viene scalata affinché il suo diametro corrisponda al footprint.
+
+Se non esiste una taglia esplicita nel nome, il diametro fisico della base viene confrontato con le dimensioni tabletop standard e viene scelta la taglia più vicina.
+
+Il centro della base diventa `X/Z = 0` e il fondo viene portato a quota `0`.
+
+Ali, code, armi e altre geometrie possono quindi uscire dal footprint senza alterare la taglia occupata sulla griglia.
+
+### Marker e geometria
+
+I marker esterni servono come riferimento di scala e non vengono esportati come parte della creatura.
+
+Marker già presenti nella scena possono invece essere riconosciuti dalla struttura/nomenclatura del modello.
+
+Casi speciali gestiti dal converter includono anche miniature i cui veri componenti si chiamano semplicemente `Body.stl` o `Tentacles.stl`: se sono l'unica geometria reale non vengono scartati come parti ausiliarie.
+
+`Organic Base Sphere` può rappresentare geometria effettiva della creatura e non viene automaticamente eliminata come marker.
+
+Se una cartella contiene soltanto un marker e nessuna geometria utilizzabile, la conversione fallisce invece di generare un token vuoto.
+
+## Modelli statici: OBJ
+
+Quando la miniatura non contiene un'armatura realmente collegata alle mesh visibili, il risultato è:
+
+```text
+assets/tokens/generated/<id>/<id>.obj
+```
+
+Il file viene normalizzato sulla base/marker e può essere semplificato con `-DecimateRatio`.
+
+La decimazione viene applicata **solo alla copia temporanea importata in Blender**. Il file sorgente originale non viene mai riscritto.
+
+`1.0` disabilita la decimazione. Ad esempio:
+
+```powershell
+-DecimateRatio 0.65
+```
+
+tenta di conservare circa il 65% delle facce.
+
+## Modelli riggati: GLB
+
+Una miniatura viene trattata come riggata solo quando esiste un'Armature che **controlla realmente una delle mesh visibili**, tramite:
+
+- parentela nella gerarchia;
+- oppure Armature Modifier.
+
+La semplice presenza di un oggetto Armature inutilizzato non basta.
+
+In questo caso l'output principale è:
+
+```text
+assets/tokens/generated/<id>/<id>.glb
+```
+
+La normalizzazione viene applicata alle radici della gerarchia anziché separatamente alle mesh, preservando:
+
+- skeleton;
+- bind pose;
+- skin weights;
+- gerarchia;
+- animazioni embedded presenti nel sorgente.
+
+La decimazione richiesta con `-DecimateRatio` viene ignorata sui modelli riggati per evitare di degradare skin e pesi.
+
+## Rig type e animazioni
+
+Il converter classifica in modo conservativo gli skeleton riconoscibili.
+
+Un rig con sufficiente corrispondenza a ossa tipiche come hips/pelvis, spine, head, upper arm, hand, thigh e foot può essere marcato come:
+
+```text
+rig_type = humanoid
+skeleton_profile = humanoid
+```
+
+Gli altri vengono mantenuti come rig generici.
+
+Per umanoidi senza animazioni embedded il manifest può indicare:
+
+```text
+animation_set = humanoid_default
+```
+
+Questo è il punto di aggancio previsto per il retargeting Godot tramite `BoneMap` / `SkeletonProfileHumanoid`.
+
+Se sono presenti animazioni embedded, il converter ne registra i nomi e sceglie preferibilmente un'animazione chiamata `idle`; in assenza di idle usa la prima disponibile come default.
+
+Il VTT supporta anche una `animation_library` Godot condivisa (`.tres` / `.res`), evitando di duplicare le stesse clip in ogni modello.
+
+## Wrapper Godot
+
+Per ogni miniatura viene generata anche:
+
+```text
+assets/tokens/scenes/<id>_token.tscn
+```
+
+Questa scena eredita da:
+
+```text
+res://token.tscn
+```
+
+Quindi non è semplicemente una mesh: è un vero token del VTT e mantiene il comportamento comune definito dal progetto, tra cui collisione, selezione, drag, movimento su griglia, volo, direzione, visione, iniziativa, condizioni, incantesimi, undo e sincronizzazione.
+
+## Manifest token_library.json
+
+Il converter aggiorna:
+
+```text
+assets/tokens/token_library.json
+```
+
+Il manifest v3 usa `visual_asset` come path generico della risorsa visuale.
+
+Per compatibilità mantiene anche il campo `obj`, ma il codice nuovo deve preferire `visual_asset`.
+
+Tra i metadati utilizzati dal converter/pipeline possono comparire:
+
+```text
+id
+name
+source
+visual_asset
+obj
+scene
+asset_format
+size_name
+footprint
+height_cells
+width_cells
+depth_cells
+base_reference
+base_diameter_source
+scale_factor
+rigged
+rig_type
+skeleton_profile
+animation_set
+animation_library
+default_animation
+embedded_animations
+armatures
+```
+
+Il manifest è additivo come gli asset generati.
+
+## Default token
+
+Con `-Default` puoi indicare id, nome o una sottostringa del token da usare al posto del corpo procedurale predefinito.
+
+Se il manifest o l'asset non sono disponibili, il token procedurale rimane il fallback.
+
+## Errori e casi da controllare
+
+Alla fine della conversione vengono riportati i token che non è stato possibile convertire. Una miniatura che fallisce non implica necessariamente che l'intera collezione sia inutilizzabile.
+
+Controllare soprattutto:
+
+- cartella con solo marker/base e nessuna creatura;
+- file sorgente incompleto;
+- scene con più varianti senza un candidato completo riconoscibile;
+- geometria nascosta/visibilità Blender;
+- armatura presente ma non collegata alle mesh visibili;
+- scala/base anomala.
+
+## Dal converter ai PCK lazy-loaded
+
+Il converter produce gli asset locali di sviluppo. La pipeline successiva crea un PCK indipendente per token:
+
+```text
+assets/tokens/generated/<id>/
+        |
+        v
+tools/build_token_packs.ps1
+        |
+        v
+dist/token_packs/<id>.pck
+```
+
+Consulta:
+
+```text
+tools/token_packs/README.md
+```
+
+per build incrementali, verifica, catalogo e GitHub Releases.
