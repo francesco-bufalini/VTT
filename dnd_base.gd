@@ -86,6 +86,7 @@ var token_name_input: LineEdit
 var token_reach_input: SpinBox
 var token_miniature_search: LineEdit
 var token_miniature_list: ItemList
+var token_download_button: Button
 var token_front_selector: OptionButton
 var _token_profiles: Array[Dictionary] = []
 var _visible_token_profiles: Array[Dictionary] = []
@@ -368,6 +369,19 @@ func _build_token_generation_controls() -> void:
 		)
 		content_box.add_child(token_miniature_list)
 
+	token_download_button = (
+		content_box.get_node_or_null("TokenDownloadButton") as Button
+	)
+	if token_download_button == null:
+		token_download_button = Button.new()
+		token_download_button.name = "TokenDownloadButton"
+		token_download_button.text = "Scarica"
+		token_download_button.visible = false
+		token_download_button.pressed.connect(
+			_on_token_download_button_pressed
+		)
+		content_box.add_child(token_download_button)
+
 	var size_label := content_box.get_node_or_null("SizeLabel") as Label
 	if size_label != null:
 		size_label.text = "Taglia D&D"
@@ -433,17 +447,18 @@ func _build_token_generation_controls() -> void:
 	content_box.move_child(miniature_label, 0)
 	content_box.move_child(token_miniature_search, 1)
 	content_box.move_child(token_miniature_list, 2)
+	content_box.move_child(token_download_button, 3)
 	if name_label != null:
-		content_box.move_child(name_label, 3)
+		content_box.move_child(name_label, 4)
 	if token_name_input != null:
-		content_box.move_child(token_name_input, 4)
+		content_box.move_child(token_name_input, 5)
 	if size_label != null:
-		content_box.move_child(size_label, 5)
-	content_box.move_child(size_selector, 6)
-	content_box.move_child(reach_label, 7)
-	content_box.move_child(token_reach_input, 8)
-	content_box.move_child(front_label, 9)
-	content_box.move_child(token_front_selector, 10)
+		content_box.move_child(size_label, 6)
+	content_box.move_child(size_selector, 7)
+	content_box.move_child(reach_label, 8)
+	content_box.move_child(token_reach_input, 9)
+	content_box.move_child(front_label, 10)
+	content_box.move_child(token_front_selector, 11)
 
 	_reload_token_miniature_list()
 
@@ -496,17 +511,10 @@ func _on_remote_token_downloaded(
 	token_id: String,
 	_cache_path: String
 ) -> void:
-	if (
-		String(_selected_token_profile.get("_pack_origin", "")) == "remote"
-		and String(_selected_token_profile.get("id", "")) == token_id
-	):
-		var error := TokenPackManager.mount_token(token_id)
-		if error != OK:
-			_on_remote_token_mount_failed(
-				token_id,
-				"Mount non riuscito: %s" % error_string(error)
-			)
-			return
+	if String(_selected_token_profile.get("id", "")) == token_id:
+		var ok_button := color_dialog.get_ok_button()
+		if ok_button != null:
+			ok_button.disabled = false
 	call_deferred("_reload_token_miniature_list", token_id)
 
 
@@ -533,6 +541,10 @@ func _on_remote_token_download_failed(
 		var ok_button := color_dialog.get_ok_button()
 		if ok_button != null:
 			ok_button.disabled = true
+		if token_download_button != null:
+			token_download_button.visible = true
+			token_download_button.disabled = false
+			token_download_button.text = "Scarica"
 	push_warning("DnDBase: download token remoto fallito: %s" % message)
 
 
@@ -547,36 +559,6 @@ func _on_remote_token_mount_failed(
 	push_warning("DnDBase: mount token remoto fallito: %s" % message)
 
 
-func _prepare_local_pack_token(profile: Dictionary) -> void:
-	if String(profile.get("_pack_origin", "")) != "local_pack":
-		return
-	var token_id := String(profile.get("id", "")).strip_edges()
-	if token_id.is_empty():
-		return
-
-	var ok_button := color_dialog.get_ok_button()
-	if ok_button != null:
-		ok_button.disabled = true
-
-	if TokenPackManager.is_mounted(token_id):
-		_selected_token_profile["visual_asset"] = _remote_visual_path(token_id)
-		if ok_button != null:
-			ok_button.disabled = false
-		return
-
-	var pck_path := String(profile.get("_local_pck_path", "")).strip_edges()
-	var mount_error := TokenPackManager.mount_local_token(
-		token_id,
-		profile,
-		pck_path
-	)
-	if mount_error != OK:
-		_on_remote_token_mount_failed(
-			token_id,
-			"Mount PCK locale non riuscito: %s" % error_string(mount_error)
-		)
-
-
 func _prepare_remote_token(profile: Dictionary) -> void:
 	if String(profile.get("_pack_origin", "")) != "remote":
 		return
@@ -584,30 +566,45 @@ func _prepare_remote_token(profile: Dictionary) -> void:
 	if token_id.is_empty():
 		return
 
+	var downloaded := TokenPackManager.is_downloaded(token_id)
+	var mounted := TokenPackManager.is_mounted(token_id)
 	var ok_button := color_dialog.get_ok_button()
 	if ok_button != null:
-		ok_button.disabled = true
+		ok_button.disabled = not (downloaded or mounted)
 
-	if TokenPackManager.is_mounted(token_id):
-		_selected_token_profile["visual_asset"] = _remote_visual_path(token_id)
-		if ok_button != null:
-			ok_button.disabled = false
+	if token_download_button != null:
+		token_download_button.visible = not downloaded and not mounted
+		token_download_button.disabled = false
+		var size_text := _format_token_download_size(profile)
+		token_download_button.text = (
+			"Scarica (%s)" % size_text
+			if not size_text.is_empty()
+			else "Scarica"
+		)
+
+
+func _on_token_download_button_pressed() -> void:
+	if String(_selected_token_profile.get("_pack_origin", "")) != "remote":
 		return
-
+	var token_id := String(_selected_token_profile.get("id", "")).strip_edges()
+	if token_id.is_empty():
+		return
 	if TokenPackManager.is_downloaded(token_id):
-		var mount_error := TokenPackManager.mount_token(token_id)
-		if mount_error != OK:
-			_on_remote_token_mount_failed(
-				token_id,
-				"Mount non riuscito: %s" % error_string(mount_error)
-			)
+		_reload_token_miniature_list(token_id)
 		return
 
-	var download_error := TokenPackManager.download_token(token_id)
-	if download_error != OK:
+	if token_download_button != null:
+		token_download_button.disabled = true
+		token_download_button.text = "Download..."
+
+	var error := TokenPackManager.download_token(token_id)
+	if error != OK:
+		if token_download_button != null:
+			token_download_button.disabled = false
+			token_download_button.text = "Scarica"
 		_on_remote_token_download_failed(
 			token_id,
-			"Download non avviato: %s" % error_string(download_error)
+			"Download non avviato: %s" % error_string(error)
 		)
 
 
@@ -843,10 +840,10 @@ func _on_token_miniature_selected(index: int) -> void:
 		token_front_selector.select(front_index)
 
 	var origin := String(_selected_token_profile.get("_pack_origin", ""))
+	if token_download_button != null:
+		token_download_button.visible = false
 	if origin == "remote":
 		_prepare_remote_token(_selected_token_profile)
-	elif origin == "local_pack":
-		_prepare_local_pack_token(_selected_token_profile)
 	else:
 		var ok_button := color_dialog.get_ok_button()
 		if ok_button != null:
@@ -2646,10 +2643,28 @@ func _on_token_dialog_confirmed() -> void:
 	if selected_origin in ["remote", "local_pack"]:
 		var pack_id := String(_selected_token_profile.get("id", ""))
 		if not TokenPackManager.is_mounted(pack_id):
-			push_warning(
-				"DnDBase: token PCK non ancora pronto: %s" % pack_id
-			)
-			return
+			var mount_error := OK
+			if selected_origin == "local_pack":
+				mount_error = TokenPackManager.mount_local_token(
+					pack_id,
+					_selected_token_profile,
+					String(
+						_selected_token_profile.get("_local_pck_path", "")
+					)
+				)
+			else:
+				if not TokenPackManager.is_downloaded(pack_id):
+					push_warning(
+						"DnDBase: scarica prima il token remoto: %s" % pack_id
+					)
+					return
+				mount_error = TokenPackManager.mount_token(pack_id)
+			if mount_error != OK:
+				_on_remote_token_mount_failed(
+					pack_id,
+					"Mount non riuscito: %s" % error_string(mount_error)
+				)
+				return
 		_selected_token_profile["visual_asset"] = _remote_visual_path(pack_id)
 
 	var selected_index: int = size_selector.selected
