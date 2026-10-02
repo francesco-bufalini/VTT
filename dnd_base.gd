@@ -146,6 +146,15 @@ func _ready() -> void:
 
 	volumetric_grid.call("set_camera", camera)
 
+	if not tokens_root.child_entered_tree.is_connected(
+		_configure_token_volumetric_grid
+	):
+		tokens_root.child_entered_tree.connect(
+			_configure_token_volumetric_grid
+		)
+	for token_child: Node in tokens_root.get_children():
+		_configure_token_volumetric_grid(token_child)
+
 	measurement_tool.call("set_camera", camera)
 	measurement_tool.call("set_volumetric_grid", volumetric_grid)
 	measurement_tool.call("set_measurement_mode", false)
@@ -195,6 +204,14 @@ func _ready() -> void:
 	_build_selection_grid_highlight()
 	_build_affected_grid_highlight()
 	_capture_mouse()
+
+
+func _configure_token_volumetric_grid(node: Node) -> void:
+	if (
+		node is CharacterBody3D
+		and node.has_method("set_volumetric_grid")
+	):
+		node.call("set_volumetric_grid", volumetric_grid)
 
 
 func _read_local_token_catalog() -> Dictionary:
