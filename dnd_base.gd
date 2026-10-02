@@ -15,7 +15,8 @@ const CONTEXT_INITIATIVE := 13
 const CONTEXT_TOKEN_DETAILS := 14
 const CONTEXT_RESTORE_TRANSFORMATION := 15
 const CAMPAIGN_EDITOR_SCENE_PATH := "res://vtt/editor/campaign_editor.tscn"
-const TOKEN_LIBRARY_MANIFEST := "res://assets/tokens/token_library.json"
+const LOCAL_TOKEN_CATALOG := "res://dist/token_packs/token_catalog.json"
+const LOCAL_TOKEN_PACK_ROOT := "res://dist/token_packs"
 const CHARACTER_TOKEN_ROOT := "res://assets/tokens/Characters"
 const DEFAULT_TOKEN_PROFILE_ID := "death_knight"
 const GridHighlightRenderer = preload("res://vtt/grid_highlight_renderer.gd")
@@ -184,10 +185,10 @@ func _ready() -> void:
 	_capture_mouse()
 
 
-func _read_token_library_manifest() -> Dictionary:
-	if not FileAccess.file_exists(TOKEN_LIBRARY_MANIFEST):
+func _read_local_token_catalog() -> Dictionary:
+	if not FileAccess.file_exists(LOCAL_TOKEN_CATALOG):
 		return {}
-	var file := FileAccess.open(TOKEN_LIBRARY_MANIFEST, FileAccess.READ)
+	var file := FileAccess.open(LOCAL_TOKEN_CATALOG, FileAccess.READ)
 	if file == null:
 		return {}
 	var parsed: Variant = JSON.parse_string(file.get_as_text())
@@ -195,6 +196,18 @@ func _read_token_library_manifest() -> Dictionary:
 	if parsed is Dictionary:
 		return parsed as Dictionary
 	return {}
+
+
+func _local_pack_path(entry: Dictionary) -> String:
+	var pck_name := String(entry.get("pck", "")).strip_edges()
+	if pck_name.is_empty():
+		var token_id := String(entry.get("id", "")).strip_edges()
+		if token_id.is_empty():
+			return ""
+		pck_name = "%s.pck" % token_id
+	if pck_name.begins_with("res://"):
+		return pck_name
+	return LOCAL_TOKEN_PACK_ROOT.path_join(pck_name.get_file())
 
 
 func _token_profile_visual_asset(profile: Dictionary) -> String:
@@ -288,6 +301,7 @@ func _append_character_token_profiles() -> void:
 			"visual_asset": visual_path,
 			"size_name": "Medium",
 			"footprint": 1.0,
+			"_pack_origin": "character",
 		})
 		known_assets[visual_path] = true
 
@@ -533,6 +547,36 @@ func _on_remote_token_mount_failed(
 	push_warning("DnDBase: mount token remoto fallito: %s" % message)
 
 
+func _prepare_local_pack_token(profile: Dictionary) -> void:
+	if String(profile.get("_pack_origin", "")) != "local_pack":
+		return
+	var token_id := String(profile.get("id", "")).strip_edges()
+	if token_id.is_empty():
+		return
+
+	var ok_button := color_dialog.get_ok_button()
+	if ok_button != null:
+		ok_button.disabled = true
+
+	if TokenPackManager.is_mounted(token_id):
+		_selected_token_profile["visual_asset"] = _remote_visual_path(token_id)
+		if ok_button != null:
+			ok_button.disabled = false
+		return
+
+	var pck_path := String(profile.get("_local_pck_path", "")).strip_edges()
+	var mount_error := TokenPackManager.mount_local_token(
+		token_id,
+		profile,
+		pck_path
+	)
+	if mount_error != OK:
+		_on_remote_token_mount_failed(
+			token_id,
+			"Mount PCK locale non riuscito: %s" % error_string(mount_error)
+		)
+
+
 func _prepare_remote_token(profile: Dictionary) -> void:
 	if String(profile.get("_pack_origin", "")) != "remote":
 		return
@@ -581,7 +625,6 @@ func _append_remote_token_profiles() -> void:
 		var local_id := String(profile.get("id", "")).strip_edges()
 		if not local_id.is_empty():
 			known_ids[local_id] = true
-			profile["_pack_origin"] = "local"
 
 	for entry: Dictionary in TokenPackManager.get_entries():
 		var token_id := String(entry.get("id", "")).strip_edges()
@@ -607,7 +650,11 @@ func _append_remote_token_profiles() -> void:
 
 
 func _token_profile_status(profile: Dictionary) -> String:
-	if String(profile.get("_pack_origin", "local")) != "remote":
+	var origin := String(profile.get("_pack_origin", ""))
+	if origin == "local_pack":
+		var token_id := String(profile.get("id", ""))
+		return "Montato" if TokenPackManager.is_mounted(token_id) else "Locale"
+	if origin == "character":
 		return "Locale"
 	var token_id := String(profile.get("id", ""))
 	return _remote_token_status(token_id)
@@ -640,19 +687,22 @@ func _reload_token_miniature_list(preferred_id: String = "") -> void:
 	if token_miniature_list == null:
 		return
 
-	var manifest := _read_token_library_manifest()
-	var tokens_value: Variant = manifest.get("tokens", [])
-	if tokens_value is Array:
-		for value: Variant in tokens_value:
+	var local_catalog := _read_local_token_catalog()
+	var local_tokens_value: Variant = local_catalog.get("tokens", [])
+	if local_tokens_value is Array:
+		for value: Variant in local_tokens_value:
 			if not value is Dictionary:
 				continue
 			var profile := (value as Dictionary).duplicate(true)
-			var local_visual := _token_profile_visual_asset(profile)
-			if local_visual.is_empty():
+			var token_id := String(profile.get("id", "")).strip_edges()
+			if token_id.is_empty():
 				continue
-			if not FileAccess.file_exists(local_visual):
+			var local_pck := _local_pack_path(profile)
+			if local_pck.is_empty() or not FileAccess.file_exists(local_pck):
 				continue
-			profile["_pack_origin"] = "local"
+			profile["_pack_origin"] = "local_pack"
+			profile["_local_pck_path"] = local_pck
+			profile["visual_asset"] = _remote_visual_path(token_id)
 			_token_profiles.append(profile)
 
 	_append_character_token_profiles()
@@ -792,8 +842,11 @@ func _on_token_miniature_selected(index: int) -> void:
 	if token_front_selector != null:
 		token_front_selector.select(front_index)
 
-	if String(_selected_token_profile.get("_pack_origin", "local")) == "remote":
+	var origin := String(_selected_token_profile.get("_pack_origin", ""))
+	if origin == "remote":
 		_prepare_remote_token(_selected_token_profile)
+	elif origin == "local_pack":
+		_prepare_local_pack_token(_selected_token_profile)
 	else:
 		var ok_button := color_dialog.get_ok_button()
 		if ok_button != null:
@@ -2587,14 +2640,17 @@ func _reset_token_generation_state() -> void:
 
 
 func _on_token_dialog_confirmed() -> void:
-	if String(_selected_token_profile.get("_pack_origin", "local")) == "remote":
-		var remote_id := String(_selected_token_profile.get("id", ""))
-		if not TokenPackManager.is_mounted(remote_id):
+	var selected_origin := String(
+		_selected_token_profile.get("_pack_origin", "")
+	)
+	if selected_origin in ["remote", "local_pack"]:
+		var pack_id := String(_selected_token_profile.get("id", ""))
+		if not TokenPackManager.is_mounted(pack_id):
 			push_warning(
-				"DnDBase: token remoto non ancora pronto: %s" % remote_id
+				"DnDBase: token PCK non ancora pronto: %s" % pack_id
 			)
 			return
-		_selected_token_profile["visual_asset"] = _remote_visual_path(remote_id)
+		_selected_token_profile["visual_asset"] = _remote_visual_path(pack_id)
 
 	var selected_index: int = size_selector.selected
 	if selected_index < 0 or selected_index >= TOKEN_SIZES.size():
