@@ -52,6 +52,8 @@ Actions enabled by default:
 - `ping`: verify Blender connectivity.
 - `scene`: return basic scene information.
 - `workspaces` (alias `ui`): return the active workspace/screen, Blender mode, active/selected objects, all workspaces, windows, and open editor area types.
+- `viewport`: return every open 3D viewport's perspective, orbit target, distance, quaternion rotation, lens, clipping, shading, and camera.
+- `screenshot` (alias `render_preview`): capture the largest open 3D viewport, resize/compress it to a GitHub-comment-safe JPEG, and return it as base64 so ChatGPT can display it directly.
 - `object`: return information about one object. Add `"object": "Cube"`.
 - `transform`: set absolute location/rotation/scale on one object.
 - `undo`: run one Blender undo.
@@ -101,3 +103,32 @@ The last consumed GitHub comment ID is stored outside the repository at:
 `%LOCALAPPDATA%\VTT\blender_remote_state.json`
 
 This prevents an old mutation from being executed again after a daemon restart.
+
+
+## Viewport inspection
+
+````text
+<!-- blender-remote:v1 -->
+```json
+{
+  "id": "viewport-001",
+  "action": "viewport"
+}
+```
+````
+
+## Viewport screenshot
+
+````text
+<!-- blender-remote:v1 -->
+```json
+{
+  "id": "screenshot-001",
+  "action": "screenshot",
+  "max_width": 640,
+  "quality": 55
+}
+```
+````
+
+The daemon captures the largest currently open `VIEW_3D` editor with Blender's screenshot-area operator. The image is automatically reduced until the JPEG can fit in a single GitHub comment. No GitHub Action, public web server, Tailscale endpoint, or repository commit is used for the image transfer.
