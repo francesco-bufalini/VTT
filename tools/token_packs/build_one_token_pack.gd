@@ -90,17 +90,29 @@ func _build_pack(token_id: String, output_path: String) -> Error:
 	if source_path.is_empty():
 		push_error("Token has no visual asset: %s" % token_id)
 		return ERR_INVALID_DATA
-	if not ResourceLoader.exists(source_path):
+	var source_absolute := ProjectSettings.globalize_path(source_path)
+	if not FileAccess.file_exists(source_absolute):
 		push_error(
-			("Converted local asset is missing or not imported: %s. "
-			+ "Run tools/import_tokens.ps1 first.") % source_path
+			("Converted local asset is missing on disk: %s. "
+			+ "Run tools/import_tokens.ps1 first.") % source_absolute
 		)
 		return ERR_FILE_NOT_FOUND
 
+	# Do not gate imported OBJ/GLB files with ResourceLoader.exists().
+	# In headless tooling it can report false for source assets even though the
+	# importer has produced a loadable resource. The actual load is authoritative.
 	print("TOKEN_PACK_STAGE load source=%s" % source_path)
-	var source_resource := ResourceLoader.load(source_path)
+	print("TOKEN_PACK_STAGE loader_exists=%s" % str(ResourceLoader.exists(source_path)))
+	var source_resource := ResourceLoader.load(
+		source_path,
+		"",
+		ResourceLoader.CACHE_MODE_IGNORE
+	)
 	if source_resource == null:
-		push_error("Godot could not load converted asset: %s" % source_path)
+		push_error(
+			("Godot could not load converted asset after import: %s "
+			+ "(physical file: %s)") % [source_path, source_absolute]
+		)
 		return ERR_CANT_OPEN
 	if not (source_resource is Mesh or source_resource is PackedScene):
 		push_error(
