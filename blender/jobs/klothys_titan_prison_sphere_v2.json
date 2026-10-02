@@ -1,7 +1,7 @@
 {
   "schema_version": 1,
   "scene_id": "klothys_titan_prison_sphere_v2",
-  "description": "Klothys Titan prison V2: Demon and Orc animated CC0 bodies are baked from rigged sources, compacted and wrapped into the exact 220 m stone sphere as carbonite-style reliefs. The central +/-40 degree front sector stays open for the future full-height Klothys figure and binding hair.",
+  "description": "Klothys Titan prison V2, revised after visual review: two animated CC0 monster bodies are shallowly embedded as carbonite-like stone reliefs, with thick stone roots blending them into the shell. The front central +/-20 degree vertical slot is intentionally clear for full-height Klothys and her future binding hair; temporary chain geometry has been removed.",
   "design_references": [
     "User-approved concept: two full creature silhouettes imprisoned in a cracked runic stone sphere",
     "encounter/encounter_scenery.gd",
@@ -151,5 +151,5 @@
     "glb": "outputs/blender_agent/klothys_titan_prison_sphere_v2/klothys_titan_prison_sphere_v2.glb",
     "blend": "outputs/blender_agent/klothys_titan_prison_sphere_v2/klothys_titan_prison_sphere_v2.blend"
   },
-  "revision": 3
+  "revision": 4
 }
