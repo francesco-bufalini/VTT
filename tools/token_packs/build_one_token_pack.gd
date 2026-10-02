@@ -80,6 +80,7 @@ func _write_text(path: String, content: String) -> Error:
 
 
 func _build_pack(token_id: String, output_path: String) -> Error:
+	print("TOKEN_PACK_STAGE profile id=%s" % token_id)
 	var profile := _find_profile(token_id)
 	if profile.is_empty():
 		push_error("Token id not found in manifest: %s" % token_id)
@@ -96,6 +97,7 @@ func _build_pack(token_id: String, output_path: String) -> Error:
 		)
 		return ERR_FILE_NOT_FOUND
 
+	print("TOKEN_PACK_STAGE load source=%s" % source_path)
 	var source_resource := ResourceLoader.load(source_path)
 	if source_resource == null:
 		push_error("Godot could not load converted asset: %s" % source_path)
@@ -109,6 +111,7 @@ func _build_pack(token_id: String, output_path: String) -> Error:
 
 	var build_dir := "%s/%s" % [BUILD_ROOT, token_id]
 	var saved_visual := "%s/%s_visual.res" % [build_dir, token_id]
+	print("TOKEN_PACK_STAGE serialize class=%s target=%s" % [source_resource.get_class(), saved_visual])
 	var save_error := ResourceSaver.save(source_resource, saved_visual)
 	if save_error != OK:
 		push_error("Could not serialize token resource: %s" % error_string(save_error))
@@ -148,11 +151,13 @@ func _build_pack(token_id: String, output_path: String) -> Error:
 	if FileAccess.file_exists(output_absolute):
 		DirAccess.remove_absolute(output_absolute)
 
+	print("TOKEN_PACK_STAGE pck_start output=%s" % output_absolute)
 	var packer := PCKPacker.new()
 	var start_error := packer.pck_start(output_absolute)
 	if start_error != OK:
 		return start_error
 
+	print("TOKEN_PACK_STAGE add visual=%s" % remote_visual)
 	var add_visual_error := packer.add_file(
 		remote_visual,
 		ProjectSettings.globalize_path(saved_visual)
@@ -160,6 +165,7 @@ func _build_pack(token_id: String, output_path: String) -> Error:
 	if add_visual_error != OK:
 		return add_visual_error
 
+	print("TOKEN_PACK_STAGE add scene=%s" % remote_scene)
 	var add_scene_error := packer.add_file(
 		remote_scene,
 		ProjectSettings.globalize_path(staged_scene)
@@ -167,7 +173,8 @@ func _build_pack(token_id: String, output_path: String) -> Error:
 	if add_scene_error != OK:
 		return add_scene_error
 
-	var flush_error := packer.flush()
+	print("TOKEN_PACK_STAGE flush")
+	var flush_error := packer.flush(true)
 	if flush_error != OK:
 		return flush_error
 
