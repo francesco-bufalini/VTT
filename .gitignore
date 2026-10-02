@@ -6,3 +6,15 @@
 *.uid
 *.tmp
 /build/
+
+# Rebuildable Blender workspace and downloaded third-party assets
+.vtt_assets/
+.blender-cache/
+
+# Blender backup/autosave files (project .blend sources remain trackable)
+*.blend1
+*.blend2
+*.blend3
+*.blend~
+__pycache__/
+*.pyc
