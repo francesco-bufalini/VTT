@@ -33,6 +33,7 @@ ALLOWED_LOGINS = {
     if value.strip()
 }
 ALLOW_PYTHON = os.getenv("BLENDER_REMOTE_ALLOW_PYTHON", "0") == "1"
+SKIP_PENDING = os.getenv("BLENDER_REMOTE_SKIP_PENDING", "0") == "1"
 
 BLENDER_HOST = os.getenv("BLENDER_REMOTE_HOST", "127.0.0.1")
 BLENDER_PORT = int(os.getenv("BLENDER_REMOTE_PORT", "9876"))
@@ -581,6 +582,22 @@ print(json.dumps({{
     return execute_json_code(code, timeout=300)
 
 
+def set_titan_helpers_visible(visible: bool) -> dict[str, Any]:
+    flag = "False" if visible else "True"
+    visible_json = "true" if visible else "false"
+    code = f"""import bpy, json
+prefixes = ('ImprisonedTitan_A_Demon_StoneRoot_', 'ImprisonedTitan_B_Orc_StoneRoot_')
+changed = []
+for obj in bpy.data.objects:
+    if obj.name.startswith(prefixes):
+        obj.hide_viewport = {flag}
+        obj.hide_render = {flag}
+        changed.append(obj.name)
+print(json.dumps({{'visible': {visible_json}, 'count': len(changed), 'objects': changed}}))
+"""
+    return execute_json_code(code)
+
+
 def reset_titan_relief() -> dict[str, Any]:
     code = """import bpy, json
 shell = bpy.data.objects.get('Klothys_PrisonShell_V2_R220m')
@@ -632,6 +649,12 @@ def execute(command: dict[str, Any]) -> dict[str, Any]:
     if action == "reset_titan_relief":
         return reset_titan_relief()
 
+    if action == "hide_titan_helpers":
+        return set_titan_helpers_visible(False)
+
+    if action == "show_titan_helpers":
+        return set_titan_helpers_visible(True)
+
     if action == "object":
         name = str(command["object"])
         return blender_command("get_object_info", {"name": name})
@@ -665,7 +688,7 @@ def execute(command: dict[str, Any]) -> dict[str, Any]:
         return blender_command("execute_code", {"code": code}, timeout=300)
 
     raise ValueError(
-        "Unknown action. Supported: ping, scene, workspaces, viewport, screenshot, render_preview, titan_relief, reset_titan_relief, object, transform, undo, save"
+        "Unknown action. Supported: ping, scene, workspaces, viewport, screenshot, render_preview, titan_relief, reset_titan_relief, hide_titan_helpers, show_titan_helpers, object, transform, undo, save"
         + (", python" if ALLOW_PYTHON else "")
     )
 
@@ -742,7 +765,7 @@ def main() -> int:
     state = load_state()
     state_key = f"{REPO}#{ISSUE_NUMBER}"
 
-    if state.get("console") != state_key:
+    if SKIP_PENDING or state.get("console") != state_key:
         last_comment_id = fetch_latest_comment_id()
         state = {"console": state_key, "last_comment_id": last_comment_id}
         save_state(state)
