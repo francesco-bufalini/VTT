@@ -203,7 +203,6 @@ func _grid_landing_center_y(delta: float) -> float:
 	if (
 		volumetric_grid == null
 		or not is_instance_valid(volumetric_grid)
-		or not volumetric_grid.visible
 		or not volumetric_grid.has_method("get_support_top_for_footprint")
 	):
 		return INF
