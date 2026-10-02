@@ -102,6 +102,24 @@ def _curve_object(name: str, points, bevel_depth: float, material, cyclic=False)
     return obj
 
 
+def _root_curve_object(name: str, points, bevel_depth: float, material):
+    curve = bpy.data.curves.new(name, type="CURVE")
+    curve.dimensions = "3D"
+    curve.resolution_u = 4
+    curve.bevel_depth = bevel_depth
+    curve.bevel_resolution = 4
+    spline = curve.splines.new("NURBS")
+    spline.points.add(len(points) - 1)
+    for i, point in enumerate(points):
+        spline.points[i].co = (*point, 1.0)
+    spline.order_u = min(4, len(points))
+    spline.use_endpoint_u = True
+    obj = bpy.data.objects.new(name, curve)
+    bpy.context.scene.collection.objects.link(obj)
+    curve.materials.append(material)
+    return obj
+
+
 def _direction(yaw: float, latitude: float):
     c = math.cos(latitude)
     return mathutils.Vector((
@@ -225,6 +243,8 @@ def _radial_relief(
         nz = ((co.z - min_z) / sz) * 2.0 - 1.0
 
         nx *= 0.92 - 0.12 * (nz * nz)
+        if nz > 0.55:
+            nx *= 0.72
         nz = math.copysign(abs(nz) ** 0.88, nz)
         nx += math.sin((nz + 1.0) * 3.1 + seed) * 0.035
         nz += math.sin((nx + 1.0) * 2.3 + seed * 0.3) * 0.025
@@ -240,8 +260,9 @@ def _radial_relief(
         edge = min(1.0, math.sqrt((nx * 0.88) ** 2 + (nz * 0.78) ** 2))
         body_bulge = max(0.0, 1.0 - edge ** 1.65)
         depth_term = ny * 2.6
-        radial = radius - 2.0 + body_bulge * 18.0 + depth_term * 1.15
-        radial += rng.uniform(-0.20, 0.20)
+        head_sink = max(0.0, (nz - 0.56) / 0.44) * 4.5
+        radial = radius - 2.8 + body_bulge * 13.5 + depth_term * 0.95 - head_sink
+        radial += rng.uniform(-0.14, 0.14)
         mapped.append(mathutils.Vector(center) + patch_dir * radial)
 
     mesh = bpy.data.meshes.new(name + "_Mesh")
@@ -262,30 +283,54 @@ def _radial_relief(
     disp = obj.modifiers.new("CreatureStoneBreakup", type="DISPLACE")
     disp.texture = tex
     disp.texture_coords = "LOCAL"
-    disp.strength = 1.15
+    disp.strength = 0.65
     disp.mid_level = 0.5
+
+    smooth = obj.modifiers.new("OrganicSmoothing", type="SMOOTH")
+    smooth.factor = 0.30
+    smooth.iterations = 3
+    subdiv = obj.modifiers.new("OrganicSubdivision", type="SUBSURF")
+    subdiv.subdivision_type = "CATMULL_CLARK"
+    subdiv.levels = 1
+    subdiv.render_levels = 1
 
     return obj
 
 
 def _pressure_tendrils(prefix: str, center, radius: float, yaw: float, stone, rng: random.Random, side_sign: float):
-    for i in range(6):
-        start_lat = rng.uniform(-0.58, 0.62)
-        start_yaw = yaw + side_sign * rng.uniform(0.18, 0.38)
+    latitudes = (-0.52, -0.28, -0.04, 0.24, 0.52)
+    for i, start_lat in enumerate(latitudes):
+        start_yaw = yaw + rng.uniform(-0.08, 0.08)
         points = []
         lat = start_lat
         ang = start_yaw
-        length = rng.randint(6, 10)
+        length = rng.randint(8, 11)
         for step in range(length):
-            points.append(tuple(_surface_point(center, radius + rng.uniform(3.0, 6.5), ang, lat)))
-            ang += side_sign * rng.uniform(0.035, 0.075)
-            lat += rng.uniform(-0.045, 0.045)
-        _curve_object(
-            f"{prefix}_StoneTendril_{i:02d}",
+            phase = step / max(length - 1, 1)
+            bulge = 6.8 + 2.2 * math.sin(phase * math.pi)
+            points.append(tuple(_surface_point(center, radius + bulge, ang, lat)))
+            ang += side_sign * rng.uniform(0.028, 0.055)
+            lat += rng.uniform(-0.030, 0.030)
+        _root_curve_object(
+            f"{prefix}_StoneRoot_{i:02d}",
             points,
-            rng.uniform(1.0, 2.4),
+            rng.uniform(2.6, 4.3),
             stone,
         )
+        if i in (1, 3):
+            branch = []
+            b_ang = ang - side_sign * 0.12
+            b_lat = lat
+            for step in range(5):
+                branch.append(tuple(_surface_point(center, radius + 6.2, b_ang, b_lat)))
+                b_ang += side_sign * rng.uniform(0.032, 0.058)
+                b_lat += rng.uniform(0.022, 0.048) * (1 if i == 3 else -1)
+            _root_curve_object(
+                f"{prefix}_StoneRoot_{i:02d}_Branch",
+                branch,
+                rng.uniform(1.4, 2.3),
+                stone,
+            )
 
 
 def _crack_pair(name: str, points, groove, glow, width: float):
@@ -302,8 +347,8 @@ def _crack_pair(name: str, points, groove, glow, width: float):
 def _add_cracks(center, radius: float, groove, glow, rng: random.Random):
     crack_index = 0
     for side in (-1.0, 1.0):
-        for _ in range(10):
-            yaw = side * rng.uniform(0.54, 1.36)
+        for _ in range(7):
+            yaw = side * rng.uniform(0.32, 1.22)
             lat = rng.uniform(-0.82, 0.82)
             points = []
             count = rng.randint(6, 11)
@@ -311,8 +356,8 @@ def _add_cracks(center, radius: float, groove, glow, rng: random.Random):
                 points.append(tuple(_surface_point(center, radius + 3.25, yaw, lat)))
                 yaw += side * rng.uniform(0.025, 0.07)
                 lat += rng.uniform(-0.055, 0.055)
-                if abs(yaw) < 0.50:
-                    yaw = side * 0.50
+                if abs(yaw) < 0.30:
+                    yaw = side * 0.30
             _crack_pair(
                 f"TitanStressCrack_{crack_index:02d}",
                 points,
@@ -379,12 +424,10 @@ def _surface_ring(name: str, center, radius: float, yaw: float, latitude: float,
 
 def _add_runes(center, radius: float, groove, glow):
     seals = [
-        (-1.38, 0.48, 17.0),
-        (-1.14, -0.42, 13.0),
-        (-0.82, 0.76, 11.0),
-        (1.34, 0.44, 16.0),
-        (1.12, -0.44, 13.0),
-        (0.84, 0.72, 10.0),
+        (-1.06, 0.58, 18.0),
+        (-0.88, -0.54, 14.0),
+        (1.06, 0.58, 18.0),
+        (0.88, -0.54, 14.0),
     ]
     for index, (yaw, lat, size) in enumerate(seals):
         _surface_ring(
@@ -502,13 +545,13 @@ def build_titan_prison_sphere_v2(op: dict, root_path: Path, mapping: dict) -> No
 
     stone = _stone_material(
         "TitanPrisonV2_Stone",
-        dark=(0.125, 0.095, 0.078, 1.0),
-        light=(0.36, 0.275, 0.19, 1.0),
+        dark=(0.045, 0.042, 0.040, 1.0),
+        light=(0.18, 0.15, 0.12, 1.0),
     )
     relief_stone = _stone_material(
         "TitanPrisonV2_ReliefStone",
-        dark=(0.15, 0.11, 0.085, 1.0),
-        light=(0.43, 0.31, 0.205, 1.0),
+        dark=(0.065, 0.058, 0.052, 1.0),
+        light=(0.24, 0.19, 0.14, 1.0),
     )
     groove = _simple_material("TitanPrisonV2_CrackGroove", (0.014, 0.008, 0.006), 0.96, 0.0)
     glow = _emissive_material("TitanPrisonV2_CrackGlow", (1.0, 0.08, 0.008), 70.0)
@@ -536,7 +579,7 @@ def build_titan_prison_sphere_v2(op: dict, root_path: Path, mapping: dict) -> No
     )
     reserve.empty_display_type = "PLAIN_AXES"
     reserve.empty_display_size = 18.0 * scale
-    reserve["reserved_front_half_angle_degrees"] = 40.0
+    reserve["reserved_front_half_angle_degrees"] = 20.0
     reserve["reserved_character_height_m"] = 440.0
     reserve["purpose"] = "Klothys body and binding hair - keep clear"
 
@@ -573,20 +616,20 @@ def build_titan_prison_sphere_v2(op: dict, root_path: Path, mapping: dict) -> No
             "name": "ImprisonedTitan_A_Demon",
             "path": demon_path,
             "frame": 13,
-            "yaw": -1.16,
-            "latitude": 0.10,
+            "yaw": -0.64,
+            "latitude": 0.08,
             "width": 0.38,
-            "height": 0.57,
+            "height": 0.72,
             "seed": 421,
         },
         {
             "name": "ImprisonedTitan_B_Orc",
             "path": orc_path,
             "frame": 18,
-            "yaw": 1.18,
+            "yaw": 0.66,
             "latitude": -0.08,
             "width": 0.39,
-            "height": 0.59,
+            "height": 0.72,
             "seed": 997,
         },
     ]
@@ -625,9 +668,8 @@ def build_titan_prison_sphere_v2(op: dict, root_path: Path, mapping: dict) -> No
 
     _add_cracks(center, radius, groove, glow, rng)
     _add_runes(center, radius, groove, rune_glow)
-    _add_bindings(center, radius, metal)
-
-    for i in range(18):
+ 
+    for i in range(12):
         side = -1.0 if i % 2 == 0 else 1.0
         yaw = side * rng.uniform(0.72, 2.5)
         lat = rng.uniform(-0.92, 0.92)
@@ -650,13 +692,13 @@ def build_titan_prison_sphere_v2(op: dict, root_path: Path, mapping: dict) -> No
         _assign_material(rock, stone)
 
     _add_preview_lights(center, scale)
-    bpy.context.scene.world.color = (0.045, 0.052, 0.068)
-    bpy.context.scene.view_settings.exposure = 1.25
+    bpy.context.scene.world.color = (0.010, 0.014, 0.022)
+    bpy.context.scene.view_settings.exposure = 0.72
     bpy.context.scene["titan_prison_asset_collection"] = root.name
     bpy.context.scene["titan_prison_reference_radius_m"] = sphere_radius
     bpy.context.scene["titan_prison_center_godot_m"] = ",".join(str(v) for v in sphere_godot)
     bpy.context.scene["titan_prison_v2_sources"] = SOURCE_LICENSE
-    bpy.context.scene["klothys_reserved_front_half_angle_degrees"] = 40.0
+    bpy.context.scene["klothys_reserved_front_half_angle_degrees"] = 20.0
 
     generated = [obj for obj in bpy.context.scene.objects if obj not in before]
     for obj in generated:
