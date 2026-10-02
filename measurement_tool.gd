@@ -639,7 +639,7 @@ func _update_following_aoes() -> void:
 			root.set_meta("follow_last_position", current_position)
 			continue
 
-		var previous_position: Vector3 = previous_value as Vector3
+		var previous_position: Vector3 = previous_value
 		var movement_delta: Vector3 = current_position - previous_position
 		if movement_delta.length_squared() <= 0.000001:
 			continue
