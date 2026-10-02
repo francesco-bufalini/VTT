@@ -1,0 +1,59 @@
+﻿{
+    "schema_version":  1,
+    "run_id":  "37006251890",
+    "run_number":  "9",
+    "source_sha":  "295352ea2a6c7dc987b96e1f67f2967a4a90847b",
+    "workflow_status":  "success",
+    "blender_job":  "blender/jobs/smoke_test.json",
+    "scene_report":  {
+                         "blender_version":  "5.2.2 LTS",
+                         "job":  "C:\\actions-runner\\_work\\VTT\\VTT\\blender\\jobs\\smoke_test.json",
+                         "scene_id":  "smoke_test",
+                         "description":  "",
+                         "design_references":  [
+
+                                               ],
+                         "asset_root":  "C:\\VTT-BlenderAssets",
+                         "object_count":  4,
+                         "mesh_object_count":  2,
+                         "triangle_count":  14,
+                         "objects":  [
+                                         {
+                                             "name":  "AgentSun",
+                                             "type":  "LIGHT",
+                                             "location":  [
+                                                              0.0,
+                                                              0.0,
+                                                              0.0
+                                                          ]
+                                         },
+                                         {
+                                             "name":  "AgentCamera",
+                                             "type":  "CAMERA",
+                                             "location":  [
+                                                              8.0,
+                                                              -8.0,
+                                                              6.0
+                                                          ]
+                                         },
+                                         {
+                                             "name":  "Ground",
+                                             "type":  "MESH",
+                                             "location":  [
+                                                              0.0,
+                                                              0.0,
+                                                              0.0
+                                                          ]
+                                         },
+                                         {
+                                             "name":  "AgentCubeSmoke2",
+                                             "type":  "MESH",
+                                             "location":  [
+                                                              0.0,
+                                                              0.0,
+                                                              1.0
+                                                          ]
+                                         }
+                                     ]
+                     }
+}
