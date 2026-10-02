@@ -211,6 +211,30 @@ def fixed_transform(command: dict[str, Any]) -> dict[str, Any]:
     return blender_command("execute_code", {"code": code})
 
 
+def execute_json_code(code: str, timeout: float = 120) -> dict[str, Any]:
+    response = blender_command("execute_code", {"code": code}, timeout=timeout)
+    if response.get("status") != "success":
+        return response
+
+    outer = response.get("result") or {}
+    stdout = str(outer.get("result") or "").strip()
+    if not stdout:
+        return response
+
+    # Blender code may emit extra lines. The final non-empty line is our JSON payload.
+    for line in reversed(stdout.splitlines()):
+        line = line.strip()
+        if not line:
+            continue
+        try:
+            parsed = json.loads(line)
+        except json.JSONDecodeError:
+            continue
+        return {"status": "success", "result": parsed}
+
+    return response
+
+
 def workspace_info() -> dict[str, Any]:
     code = """import bpy, json
 ctx = bpy.context
@@ -244,7 +268,169 @@ payload = {
 }
 print(json.dumps(payload))
 """
-    return blender_command("execute_code", {"code": code})
+    return execute_json_code(code)
+
+
+def viewport_info() -> dict[str, Any]:
+    code = """import bpy, json
+ctx = bpy.context
+views = []
+wm = ctx.window_manager
+for window_index, window in enumerate(wm.windows):
+    screen = window.screen
+    if not screen:
+        continue
+    for area_index, area in enumerate(screen.areas):
+        if area.type != 'VIEW_3D':
+            continue
+        space = area.spaces.active
+        region_3d = space.region_3d
+        region = next((r for r in area.regions if r.type == 'WINDOW'), None)
+        views.append({
+            "window_index": window_index,
+            "area_index": area_index,
+            "width": region.width if region else area.width,
+            "height": region.height if region else area.height,
+            "workspace": window.workspace.name if window.workspace else None,
+            "screen": screen.name,
+            "view_perspective": region_3d.view_perspective,
+            "view_location": list(region_3d.view_location),
+            "view_distance": region_3d.view_distance,
+            "view_rotation_quaternion": list(region_3d.view_rotation),
+            "view_camera_zoom": region_3d.view_camera_zoom,
+            "lens_mm": space.lens,
+            "clip_start": space.clip_start,
+            "clip_end": space.clip_end,
+            "shading": space.shading.type,
+            "camera": space.camera.name if space.camera else None,
+        })
+
+payload = {
+    "mode": ctx.mode,
+    "active_object": ctx.active_object.name if ctx.active_object else None,
+    "views": views,
+}
+print(json.dumps(payload))
+"""
+    return execute_json_code(code)
+
+
+def viewport_screenshot(command: dict[str, Any]) -> dict[str, Any]:
+    requested_width = int(command.get("max_width", 640))
+    max_width = max(256, min(requested_width, 800))
+    requested_quality = int(command.get("quality", 55))
+    quality = max(25, min(requested_quality, 70))
+
+    # Keep the JPEG small enough that base64 + JSON fits safely in one GitHub comment.
+    target_bytes = 32000
+
+    code = f"""import bpy, json, base64, os, tempfile
+ctx = bpy.context
+candidates = []
+for window_index, window in enumerate(ctx.window_manager.windows):
+    screen = window.screen
+    if not screen:
+        continue
+    for area_index, area in enumerate(screen.areas):
+        if area.type != 'VIEW_3D':
+            continue
+        region = next((r for r in area.regions if r.type == 'WINDOW'), None)
+        width = region.width if region else area.width
+        height = region.height if region else area.height
+        candidates.append((width * height, window_index, area_index, window, area, width, height))
+
+if not candidates:
+    raise RuntimeError('No VIEW_3D editor is open')
+
+_, window_index, area_index, window, area, source_w, source_h = max(candidates, key=lambda item: item[0])
+
+tmp_dir = tempfile.gettempdir()
+raw_path = os.path.join(tmp_dir, 'vtt_blender_remote_viewport.png')
+jpg_path = os.path.join(tmp_dir, 'vtt_blender_remote_viewport.jpg')
+
+with ctx.temp_override(window=window, screen=window.screen, area=area):
+    bpy.ops.screen.screenshot_area(filepath=raw_path, check_existing=False)
+
+img = bpy.data.images.load(raw_path, check_existing=False)
+scene = window.scene
+settings = scene.render.image_settings
+old_format = settings.file_format
+old_color_mode = settings.color_mode
+old_quality = settings.quality
+
+try:
+    original_w, original_h = int(img.size[0]), int(img.size[1])
+    max_width = {max_width}
+    if original_w > max_width:
+        scaled_h = max(1, int(round(original_h * (max_width / original_w))))
+        img.scale(max_width, scaled_h)
+
+    settings.file_format = 'JPEG'
+    settings.color_mode = 'RGB'
+
+    qualities = []
+    for q in [{quality}, 45, 35, 25]:
+        if q not in qualities:
+            qualities.append(q)
+
+    target_bytes = {target_bytes}
+    encoded = None
+    final_quality = qualities[-1]
+
+    for pass_index in range(3):
+        for q in qualities:
+            settings.quality = q
+            img.save_render(jpg_path, scene=scene)
+            size = os.path.getsize(jpg_path)
+            final_quality = q
+            if size <= target_bytes:
+                encoded = base64.b64encode(open(jpg_path, 'rb').read()).decode('ascii')
+                break
+        if encoded is not None:
+            break
+
+        new_w = max(256, int(img.size[0] * 0.75))
+        if new_w >= img.size[0]:
+            break
+        new_h = max(1, int(round(img.size[1] * (new_w / img.size[0]))))
+        img.scale(new_w, new_h)
+
+    if encoded is None:
+        settings.quality = 20
+        img.save_render(jpg_path, scene=scene)
+        data = open(jpg_path, 'rb').read()
+        if len(data) > 40000:
+            raise RuntimeError(f'Viewport screenshot remains too large for GitHub comment: {{len(data)}} bytes')
+        encoded = base64.b64encode(data).decode('ascii')
+        final_quality = 20
+
+    payload = {{
+        "mime": "image/jpeg",
+        "width": int(img.size[0]),
+        "height": int(img.size[1]),
+        "source_width": int(source_w),
+        "source_height": int(source_h),
+        "bytes": os.path.getsize(jpg_path),
+        "quality": final_quality,
+        "window_index": window_index,
+        "area_index": area_index,
+        "workspace": window.workspace.name if window.workspace else None,
+        "screen": window.screen.name if window.screen else None,
+        "base64": encoded,
+    }}
+    print(json.dumps(payload))
+finally:
+    settings.file_format = old_format
+    settings.color_mode = old_color_mode
+    settings.quality = old_quality
+    bpy.data.images.remove(img)
+    for path in (raw_path, jpg_path):
+        try:
+            os.remove(path)
+        except OSError:
+            pass
+"""
+    return execute_json_code(code, timeout=180)
 
 
 def execute(command: dict[str, Any]) -> dict[str, Any]:
@@ -269,6 +455,12 @@ def execute(command: dict[str, Any]) -> dict[str, Any]:
 
     if action in {"workspaces", "ui"}:
         return workspace_info()
+
+    if action == "viewport":
+        return viewport_info()
+
+    if action in {"screenshot", "render_preview"}:
+        return viewport_screenshot(command)
 
     if action == "object":
         name = str(command["object"])
@@ -303,7 +495,7 @@ def execute(command: dict[str, Any]) -> dict[str, Any]:
         return blender_command("execute_code", {"code": code}, timeout=300)
 
     raise ValueError(
-        "Unknown action. Supported: ping, scene, workspaces, object, transform, undo, save"
+        "Unknown action. Supported: ping, scene, workspaces, viewport, screenshot, render_preview, object, transform, undo, save"
         + (", python" if ALLOW_PYTHON else "")
     )
 
