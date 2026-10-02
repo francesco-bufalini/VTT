@@ -336,7 +336,7 @@ def _kaos_mapping_from_godot(root: Path) -> dict:
     measurement = measurement_path.read_text(encoding="utf-8")
 
     def one(pattern: str, text: str, label: str) -> tuple[str, ...]:
-        match = re.search(pattern, text, re.MULTILINE)
+        match = re.search(pattern, text, re.MULTILINE | re.DOTALL)
         if not match:
             raise RuntimeError(f"Could not derive {label} from current Godot source.")
         return match.groups()
