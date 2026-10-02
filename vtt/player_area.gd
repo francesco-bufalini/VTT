@@ -97,6 +97,10 @@ func _player_modal_dialog_visible() -> bool:
 	return false
 
 
+func is_panel_open() -> bool:
+	return _panel != null and _panel.visible
+
+
 func toggle_panel() -> void:
 	if _panel == null:
 		return
