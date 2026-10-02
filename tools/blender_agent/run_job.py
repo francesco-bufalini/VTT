@@ -167,6 +167,11 @@ def scene_report(path: Path, job_path: Path, job: dict) -> None:
             if scene.get("kaos_combat_mapping_json")
             else job.get("combat_mapping", {})
         ),
+        "layout_extension": (
+            json.loads(scene.get("kaos_layout_extension_json", "{}"))
+            if scene.get("kaos_layout_extension_json")
+            else job.get("layout_extension", {})
+        ),
         "asset_root": os.environ.get("VTT_BLENDER_ASSET_ROOT", ""),
         "object_count": len(objects),
         "mesh_object_count": len(meshes),
@@ -484,6 +489,18 @@ def build_kaos_arena(op: dict, root_path: Path) -> None:
     _validate_expected_mapping(mapping, op.get("expected_mapping", {}))
     bpy.context.scene["kaos_combat_mapping_json"] = json.dumps(mapping, sort_keys=True)
 
+    layout_extension = dict(op.get("layout_extension", {}) or {})
+    if layout_extension:
+        sphere_radius_expected = float(mapping["sphere"]["radius_m"])
+        platform_radius = float(layout_extension.get("sphere_platform_radius_m", sphere_radius_expected + 10.0))
+        if platform_radius <= sphere_radius_expected:
+            raise RuntimeError(
+                f"Sphere platform radius must exceed the sphere radius: "
+                f"platform={platform_radius}, sphere={sphere_radius_expected}"
+            )
+        layout_extension["sphere_platform_radius_m"] = platform_radius
+        bpy.context.scene["kaos_layout_extension_json"] = json.dumps(layout_extension, sort_keys=True)
+
     stone = _material("Arena_Weathered_Marble", (0.48, 0.47, 0.43), 0.86)
     stone_dark = _material("Arena_Dark_Stone", (0.09, 0.095, 0.105), 0.82)
     stone_light = _material("Arena_Pale_Stone", (0.62, 0.60, 0.54), 0.78)
@@ -504,6 +521,8 @@ def build_kaos_arena(op: dict, root_path: Path) -> None:
     sphere_radius = mapping["sphere"]["radius_m"]
     sphere_godot = mapping["sphere"]["center_godot_m"]
     sphere_blender = (sphere_godot[0], sphere_godot[2], sphere_godot[1])
+    xb = mapping["battlemap"]["x_bounds_m"]
+    yb = mapping["battlemap"]["z_bounds_m"]
 
     # Exact visual proxy for the current Godot FloorCollision: 120 x 180 m.
     # Decorative geometry may exist outside this rectangle but must not change it.
@@ -538,6 +557,90 @@ def build_kaos_arena(op: dict, root_path: Path) -> None:
     water_obj["godot_role"] = "Board/WaterSurface"
     water_obj["radius_m"] = water_radius
 
+    # Optional additive combat extension used by Kaos V3. The original
+    # 120x180 m Godot battlemap remains untouched; this extends it toward the
+    # sphere and ends in a circular platform centered directly below it.
+    if layout_extension:
+        platform_radius = float(layout_extension["sphere_platform_radius_m"])
+        approach_width = float(layout_extension.get("approach_width_m", 100.0))
+        approach_into_platform = float(layout_extension.get("approach_into_platform_m", 55.0))
+        approach_floor_overlap = float(layout_extension.get("approach_floor_overlap_m", 6.0))
+        platform_thickness = float(layout_extension.get("platform_thickness_m", 0.7))
+
+        platform = _add_cylinder(
+            f"COMBAT_SpherePlatform_R{platform_radius:g}m",
+            platform_radius * scale,
+            platform_thickness * scale,
+            (
+                sphere_blender[0] * scale,
+                sphere_blender[1] * scale,
+                -platform_thickness * 0.5 * scale,
+            ),
+            stone,
+            vertices=160,
+        )
+        platform["combat_extension"] = "kaos_v3"
+        platform["radius_m"] = platform_radius
+        platform["center_godot_m"] = (
+            f"{sphere_godot[0]},0,{sphere_godot[2]}"
+        )
+
+        # Slightly inset paving makes the platform visually distinct while
+        # preserving the exact walkable radius on the underlying slab.
+        _add_cylinder(
+            "SpherePlatformInnerPaving",
+            max(1.0, platform_radius - 3.0) * scale,
+            0.12 * scale,
+            (
+                sphere_blender[0] * scale,
+                sphere_blender[1] * scale,
+                0.06 * scale,
+            ),
+            stone_light,
+            vertices=160,
+        )
+
+        platform_front_y = sphere_blender[1] + platform_radius
+        approach_start_y = yb[0] + approach_floor_overlap
+        approach_end_y = platform_front_y - approach_into_platform
+        if approach_start_y <= approach_end_y:
+            raise RuntimeError(
+                "Kaos V3 approach does not overlap the sphere platform enough."
+            )
+        approach_depth = approach_start_y - approach_end_y
+        approach_center_y = (approach_start_y + approach_end_y) * 0.5
+
+        approach = _add_box(
+            f"COMBAT_SphereApproach_{approach_width:g}m",
+            (
+                approach_width * 0.5 * scale,
+                approach_depth * 0.5 * scale,
+                platform_thickness * 0.5 * scale,
+            ),
+            (
+                0.0,
+                approach_center_y * scale,
+                -platform_thickness * 0.5 * scale,
+            ),
+            stone,
+        )
+        approach["combat_extension"] = "kaos_v3"
+        approach["width_m"] = approach_width
+        approach["y_bounds_blender_m"] = (
+            f"{approach_end_y},{approach_start_y}"
+        )
+
+        _add_box(
+            "SphereApproachInnerPaving",
+            (
+                max(1.0, approach_width - 3.0) * 0.5 * scale,
+                max(1.0, approach_depth - 3.0) * 0.5 * scale,
+                0.08 * scale,
+            ),
+            (0.0, approach_center_y * scale, 0.08 * scale),
+            stone_light,
+        )
+
     # Exact Klothys sphere mapping. This is intentionally enormous relative
     # to the 120x180 m battlemap, matching encounter_scenery.gd.
     bpy.ops.mesh.primitive_uv_sphere_add(
@@ -569,8 +672,6 @@ def build_kaos_arena(op: dict, root_path: Path) -> None:
 
     # Tactical reference markers: four corner plinths sit just OUTSIDE the
     # combat rectangle, so they make scale readable without occupying cells.
-    xb = mapping["battlemap"]["x_bounds_m"]
-    yb = mapping["battlemap"]["z_bounds_m"]
     corner_offset = 2.0
     for idx, (x, y) in enumerate([
         (xb[0] - corner_offset, yb[0] - corner_offset),
