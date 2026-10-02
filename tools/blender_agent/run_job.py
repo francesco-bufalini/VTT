@@ -11,6 +11,7 @@ import json
 import math
 import os
 import sys
+import traceback
 from pathlib import Path
 
 import bpy
