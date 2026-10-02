@@ -26,12 +26,28 @@ var _request: HTTPRequest
 
 func _ready() -> void:
 	_ensure_cache_dir()
-	_load_cached_catalog()
+	var had_cached_catalog := _load_cached_catalog()
+	if had_cached_catalog:
+		print(
+			"TokenPackManager: cached catalog loaded (%d tokens)"
+			% _entries_by_id.size()
+		)
 
 	_request = HTTPRequest.new()
 	_request.name = "CatalogRequest"
 	add_child(_request)
 	_request.request_completed.connect(_on_catalog_request_completed)
+
+	call_deferred("_refresh_catalog_on_start")
+
+
+func _refresh_catalog_on_start() -> void:
+	print("TokenPackManager: refreshing remote catalog...")
+	var error := refresh_catalog()
+	if error != OK:
+		var message := "Could not start catalog refresh: %s" % error_string(error)
+		push_warning("TokenPackManager: %s" % message)
+		catalog_refresh_failed.emit(message)
 
 
 func configure_catalog_url(url: String) -> void:
@@ -190,6 +206,12 @@ func _on_catalog_request_completed(
 			)
 			return
 		push_warning("TokenPackManager: HTTP catalog JSON is invalid.")
+
+	print(
+		"TokenPackManager: HTTP catalog unavailable (result=%d code=%d), "
+		+ "trying gh fallback..."
+		% [result, response_code]
+	)
 
 	# Current private-repository development fallback. This path is not required
 	# once the catalog URL is publicly downloadable.
