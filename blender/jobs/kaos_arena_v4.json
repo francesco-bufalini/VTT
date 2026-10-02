@@ -1,0 +1,177 @@
+{
+  "schema_version": 1,
+  "scene_id": "kaos_arena_v4",
+  "description": "Kaos arena V4: preserves sphere/platform mapping, enlarges the flooded arena base to the exact internal-tangency radius and adds an open fluted cylindrical wall inspired by a monumental Greek column shaft.",
+  "design_references": [
+    "encounter/encounter_scenery.gd",
+    "encounter/hazard_allowed_area.gd",
+    "measurement_tool.gd",
+    "V3 sphere platform R230m centered below sphere R220m",
+    "V4 flooded arena base internally tangent to the sphere platform",
+    "V4 open Greek fluted cylindrical arena wall"
+  ],
+  "combat_mapping": {
+    "meters_per_cell": 1.5,
+    "battlemap": {
+      "size_m": [
+        120,
+        180
+      ],
+      "center_godot_m": [
+        0,
+        0,
+        85.5
+      ]
+    },
+    "hazard_area": {
+      "cells": [
+        -38,
+        0,
+        76,
+        114
+      ]
+    },
+    "water": {
+      "radius_m": 337,
+      "center_godot_m": [
+        0,
+        -0.18,
+        -60
+      ]
+    },
+    "sphere": {
+      "radius_m": 220,
+      "center_godot_m": [
+        0,
+        385,
+        -230
+      ]
+    }
+  },
+  "reset_scene": true,
+  "operations": [
+    {
+      "op": "build_kaos_arena",
+      "seed": 20261002,
+      "scale": 1,
+      "expected_mapping": {
+        "meters_per_cell": 1.5,
+        "battlemap": {
+          "size_m": [
+            120,
+            180
+          ],
+          "center_godot_m": [
+            0,
+            0,
+            85.5
+          ]
+        },
+        "hazard_area": {
+          "cells": [
+            -38,
+            0,
+            76,
+            114
+          ]
+        },
+        "water": {
+          "radius_m": 337,
+          "center_godot_m": [
+            0,
+            -0.18,
+            -60
+          ]
+        },
+        "sphere": {
+          "radius_m": 220,
+          "center_godot_m": [
+            0,
+            385,
+            -230
+          ]
+        }
+      },
+      "layout_extension": {
+        "sphere_platform_radius_m": 230,
+        "approach_width_m": 100,
+        "approach_into_platform_m": 55,
+        "approach_floor_overlap_m": 6,
+        "platform_thickness_m": 0.7,
+        "arena_water_radius_m": 400,
+        "arena_wall_enabled": true,
+        "arena_wall_height_m": 60,
+        "arena_wall_flutes": 48,
+        "arena_wall_flute_depth_m": 2.4
+      }
+    }
+  ],
+  "outputs": {
+    "previews": [
+      {
+        "path": "outputs/blender_agent/kaos_arena_v4/preview_overview.png",
+        "location": [
+          520,
+          500,
+          410
+        ],
+        "look_at": [
+          0,
+          -80,
+          80
+        ],
+        "lens": 58,
+        "width": 960,
+        "height": 540
+      },
+      {
+        "path": "outputs/blender_agent/kaos_arena_v4/preview_wall.png",
+        "location": [
+          0,
+          240,
+          55
+        ],
+        "look_at": [
+          0,
+          -60,
+          28
+        ],
+        "lens": 55,
+        "width": 960,
+        "height": 540
+      },
+      {
+        "path": "outputs/blender_agent/kaos_arena_v4/preview_platform.png",
+        "location": [
+          250,
+          200,
+          260
+        ],
+        "look_at": [
+          0,
+          -210,
+          30
+        ],
+        "lens": 62,
+        "width": 960,
+        "height": 540
+      }
+    ],
+    "report": "outputs/blender_agent/kaos_arena_v4/scene_report.json",
+    "glb": "outputs/blender_agent/kaos_arena_v4/kaos_arena_v4.glb",
+    "blend": "outputs/blender_agent/kaos_arena_v4/kaos_arena_v4.blend"
+  },
+  "revision": 1,
+  "layout_extension": {
+    "sphere_platform_radius_m": 230,
+    "approach_width_m": 100,
+    "approach_into_platform_m": 55,
+    "approach_floor_overlap_m": 6,
+    "platform_thickness_m": 0.7,
+    "arena_water_radius_m": 400,
+    "arena_wall_enabled": true,
+    "arena_wall_height_m": 60,
+    "arena_wall_flutes": 48,
+    "arena_wall_flute_depth_m": 2.4
+  }
+}
