@@ -69,5 +69,6 @@
     "report": "outputs/blender_agent/kaos_arena_v1/scene_report.json",
     "glb": "outputs/blender_agent/kaos_arena_v1/kaos_arena_v1.glb",
     "blend": "outputs/blender_agent/kaos_arena_v1/kaos_arena_v1.blend"
-  }
+  },
+  "revision": 2
 }
