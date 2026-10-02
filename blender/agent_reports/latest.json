@@ -1,0 +1,10 @@
+﻿{
+    "schema_version":  1,
+    "run_id":  "36998288197",
+    "run_number":  "1",
+    "source_sha":  "facb02c1c31ea4d1b5ac79c031cde66b219993d2",
+    "requested_ref":  "feature/campaign-hub",
+    "workflow_status":  "failure",
+    "blender_job":  "blender/jobs/smoke_test.json",
+    "scene_report":  null
+}
