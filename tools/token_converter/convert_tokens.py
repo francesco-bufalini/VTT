@@ -1,10 +1,11 @@
 #!/usr/bin/env python3
 """Convert downloaded tabletop miniatures into ready-to-use Godot tokens.
 
-The physical/author scale is not normalized from character height.  The base is
-the calibration reference: its diameter is mapped to the D&D footprint in grid
-cells.  This keeps long tails, wings and weapons free to extend outside the
-occupied squares without changing the token size.
+The physical/author scale is not normalized from character height.  When a D&D
+size is explicitly recognized (Tiny/Small/Medium/Large/Huge/Gargantuan), that
+size is metadata for footprint/collision only: it must not resize the authored
+miniature.  A single source-units-to-grid conversion preserves the relative
+physical scale between miniatures.
 
 Static sources keep the established OBJ pipeline.  Sources that already contain
 an armature actually used by the visible creature are exported as GLB instead,
@@ -47,6 +48,12 @@ STANDARD_BASE_DIAMETERS_MM = {
     "Huge": 76.2,
     "Gargantuan": 101.6,
 }
+# Miniature sources in these packs are authored in tabletop millimetres.
+# One 25.4 mm tabletop inch corresponds to one VTT grid cell.  Crucially this
+# conversion is independent of D&D size: a source Large is already physically
+# larger than a source Medium and must not be enlarged again just because its
+# metadata says "Large".
+SOURCE_UNITS_PER_GRID_CELL = 25.4
 AUXILIARY_WORDS = (
     "presupported",
     "pre-supported",
@@ -752,6 +759,7 @@ def normalize_from_base(
     base_high: Vector,
     footprint: float,
     transform_roots: list[bpy.types.Object] | None = None,
+    preserve_authored_scale: bool = False,
 ) -> dict[str, float]:
     base_x = base_high.x - base_low.x
     base_y = base_high.y - base_low.y
@@ -759,7 +767,15 @@ def normalize_from_base(
     if base_diameter <= 1.0e-9:
         raise ValueError("Detected base has zero diameter")
 
-    scale = footprint / base_diameter
+    # Explicit D&D size names describe occupied grid cells; they do NOT request
+    # visual scaling.  Preserve the physical scale authored by the modeller and
+    # only convert the common tabletop source unit (mm) into Godot grid cells.
+    # Only unnamed/inferred bases keep the legacy normalization fallback.
+    scale = (
+        1.0 / SOURCE_UNITS_PER_GRID_CELL
+        if preserve_authored_scale
+        else footprint / base_diameter
+    )
     center_x = (base_low.x + base_high.x) * 0.5
     center_y = (base_low.y + base_high.y) * 0.5
     ground_z = base_low.z
@@ -921,6 +937,7 @@ def write_wrapper_scene(
         '[ext_resource type="PackedScene" path="res://token.tscn" id="1_base"]\n\n'
         f'[node name="{slug}_token" instance=ExtResource("1_base")]\n'
         f'visual_asset_path = "{visual_asset_path}"\n'
+        f'visual_native_footprint_cells = {footprint:.6f}\n'
         f'default_size_name = "{size_name}"\n'
         f'default_footprint_cells = {footprint:.6f}\n'
         f'token_height_cells = {height_cells:.6f}\n'
@@ -1110,6 +1127,7 @@ def process_package(
         base_high,
         footprint,
         transform_roots=transform_roots,
+        preserve_authored_scale=size_hint is not None,
     )
 
     slug = slugify(package.name)
@@ -1179,12 +1197,22 @@ def process_package(
         "base_reference": base_reference,
         "base_diameter_source": float(metrics["base_diameter_source"]),
         "scale_factor": float(metrics["scale_factor"]),
+        "scale_mode": (
+            "authored"
+            if size_hint is not None
+            else "normalized_from_unnamed_base"
+        ),
     }
 
     print(
         "Base: "
         f"{base_reference} | diameter={metrics['base_diameter_source']:.4f} "
-        f"-> {size_name} ({footprint:g} cells)"
+        f"-> {size_name} ({footprint:g} cells) | "
+        + (
+            "authored visual scale preserved"
+            if size_hint is not None
+            else "unnamed-base normalization"
+        )
     )
     print(
         "Godot bounds: "
