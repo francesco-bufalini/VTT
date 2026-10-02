@@ -63,6 +63,29 @@ func _profile_visual_path(profile: Dictionary) -> String:
 		path = String(profile.get("obj", "")).strip_edges()
 	return path
 
+func _resolve_imported_resource_path(source_path: String) -> String:
+	# Editor-imported source formats such as OBJ/GLB are represented at runtime
+	# by a generated resource referenced from <source>.import.
+	var import_file := source_path + ".import"
+	var import_absolute := ProjectSettings.globalize_path(import_file)
+	if not FileAccess.file_exists(import_absolute):
+		return ""
+
+	var config := ConfigFile.new()
+	var load_error := config.load(import_file)
+	if load_error != OK:
+		push_error(
+			"Could not read Godot import metadata: %s (%s)"
+			% [import_file, error_string(load_error)]
+		)
+		return ""
+
+	var remap_path := String(config.get_value("remap", "path", "")).strip_edges()
+	if remap_path.is_empty():
+		return ""
+	return remap_path
+
+
 
 func _write_text(path: String, content: String) -> Error:
 	var absolute := ProjectSettings.globalize_path(path)
@@ -98,20 +121,38 @@ func _build_pack(token_id: String, output_path: String) -> Error:
 		)
 		return ERR_FILE_NOT_FOUND
 
-	# Do not gate imported OBJ/GLB files with ResourceLoader.exists().
-	# In headless tooling it can report false for source assets even though the
-	# importer has produced a loadable resource. The actual load is authoritative.
 	print("TOKEN_PACK_STAGE load source=%s" % source_path)
 	print("TOKEN_PACK_STAGE loader_exists=%s" % str(ResourceLoader.exists(source_path)))
+
+	var load_path := source_path
+	if not ResourceLoader.exists(load_path):
+		var imported_path := _resolve_imported_resource_path(source_path)
+		if imported_path.is_empty():
+			push_error(
+				("Godot import metadata is missing or has no remap path for: %s. "
+				+ "Expected metadata: %s.import")
+				% [source_path, source_path]
+			)
+			return ERR_CANT_OPEN
+		load_path = imported_path
+		print("TOKEN_PACK_STAGE imported_resource=%s" % load_path)
+
+	if not ResourceLoader.exists(load_path):
+		push_error(
+			"Godot imported resource does not exist/load: %s (from %s)"
+			% [load_path, source_path]
+		)
+		return ERR_CANT_OPEN
+
 	var source_resource := ResourceLoader.load(
-		source_path,
+		load_path,
 		"",
 		ResourceLoader.CACHE_MODE_IGNORE
 	)
 	if source_resource == null:
 		push_error(
-			("Godot could not load converted asset after import: %s "
-			+ "(physical file: %s)") % [source_path, source_absolute]
+			("Godot could not load imported token resource: %s "
+			+ "(source: %s)") % [load_path, source_path]
 		)
 		return ERR_CANT_OPEN
 	if not (source_resource is Mesh or source_resource is PackedScene):
