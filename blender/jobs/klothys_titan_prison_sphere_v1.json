@@ -98,32 +98,32 @@
       {
         "path": "outputs/blender_agent/klothys_titan_prison_sphere_v1/preview_hero.png",
         "location": [
-          410,
-          -20,
-          540
+          650,
+          170,
+          640
         ],
         "look_at": [
           0,
           -230,
           385
         ],
-        "lens": 58,
+        "lens": 68,
         "width": 960,
         "height": 540
       },
       {
         "path": "outputs/blender_agent/klothys_titan_prison_sphere_v1/preview_reliefs.png",
         "location": [
-          260,
-          -10,
-          420
+          350,
+          230,
+          470
         ],
         "look_at": [
           0,
           -230,
-          385
+          390
         ],
-        "lens": 78,
+        "lens": 82,
         "width": 960,
         "height": 540
       },
@@ -131,15 +131,15 @@
         "path": "outputs/blender_agent/klothys_titan_prison_sphere_v1/preview_scale.png",
         "location": [
           0,
-          260,
-          650
+          470,
+          760
         ],
         "look_at": [
           0,
           -230,
-          260
+          350
         ],
-        "lens": 52,
+        "lens": 58,
         "width": 960,
         "height": 540
       }
@@ -148,5 +148,5 @@
     "glb": "outputs/blender_agent/klothys_titan_prison_sphere_v1/klothys_titan_prison_sphere_v1.glb",
     "blend": "outputs/blender_agent/klothys_titan_prison_sphere_v1/klothys_titan_prison_sphere_v1.blend"
   },
-  "revision": 2
+  "revision": 3
 }
