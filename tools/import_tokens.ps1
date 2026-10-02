@@ -16,7 +16,6 @@ $ErrorActionPreference = "Stop"
 $ProjectRoot = (Resolve-Path (Join-Path $PSScriptRoot "..")).Path
 $Converter = Join-Path $ProjectRoot "tools\token_converter\convert_tokens.py"
 $CreatureIndexGenerator = Join-Path $ProjectRoot "tools\token_converter\build_5etools_creature_index.py"
-$CreatureIndex = Join-Path $ProjectRoot "assets\tokens\5etools_creature_index.json"
 
 if (-not (Test-Path $Converter)) {
     throw "Convertitore non trovato: $Converter"
@@ -40,54 +39,16 @@ if ([string]::IsNullOrWhiteSpace($Blender) -or -not (Test-Path $Blender)) {
     throw "Blender non trovato. Passa -Blender 'C:\...\blender.exe' oppure aggiungilo al PATH."
 }
 
-if ([string]::IsNullOrWhiteSpace($FiveEToolsRoot)) {
-    $fiveEToolsCandidates = @()
-    if (-not [string]::IsNullOrWhiteSpace($env:VTT_5ETOOLS_ROOT)) {
-        $fiveEToolsCandidates += $env:VTT_5ETOOLS_ROOT
-    }
-    $fiveEToolsCandidates += @(
-        (Join-Path $ProjectRoot "5etools-src"),
-        (Join-Path $ProjectRoot "5etools"),
-        (Join-Path $ProjectRoot ".vtt_assets\5etools-src"),
-        (Join-Path (Split-Path $ProjectRoot -Parent) "5etools-src")
-    )
+$CacheRoot = if (-not [string]::IsNullOrWhiteSpace($env:LOCALAPPDATA)) {
+    Join-Path $env:LOCALAPPDATA "VTT\cache"
+}
+else {
+    Join-Path $env:USERPROFILE ".vtt\cache"
+}
+$CreatureIndex = Join-Path $CacheRoot "5etools_creature_index.json"
 
-    foreach ($candidate in $fiveEToolsCandidates) {
-        if (-not [string]::IsNullOrWhiteSpace($candidate) -and
-            (Test-Path (Join-Path $candidate "data\bestiary\index.json"))) {
-            $FiveEToolsRoot = (Resolve-Path $candidate).Path
-            break
-        }
-    }
-
-    # Locate any project-local checkout by its canonical bestiary index.
-    if ([string]::IsNullOrWhiteSpace($FiveEToolsRoot)) {
-        $searchRoots = @($ProjectRoot)
-        $parentRoot = Split-Path $ProjectRoot -Parent
-        if (-not [string]::IsNullOrWhiteSpace($parentRoot)) {
-            $searchRoots += $parentRoot
-        }
-
-        foreach ($searchRoot in $searchRoots) {
-            $bestiaryIndexes = Get-ChildItem -Path $searchRoot -Filter "index.json" -File -Recurse -ErrorAction SilentlyContinue |
-                Where-Object {
-                    $_.Directory.Name -eq "bestiary" -and
-                    $_.Directory.Parent.Name -eq "data"
-                }
-
-            foreach ($indexFile in $bestiaryIndexes) {
-                $candidateRoot = $indexFile.Directory.Parent.Parent.FullName
-                if (Test-Path (Join-Path $candidateRoot "data\bestiary\index.json")) {
-                    $FiveEToolsRoot = $candidateRoot
-                    break
-                }
-            }
-
-            if (-not [string]::IsNullOrWhiteSpace($FiveEToolsRoot)) {
-                break
-            }
-        }
-    }
+if (-not (Test-Path $CacheRoot)) {
+    New-Item -ItemType Directory -Path $CacheRoot -Force | Out-Null
 }
 
 if (-not [string]::IsNullOrWhiteSpace($FiveEToolsRoot)) {
@@ -96,28 +57,34 @@ if (-not [string]::IsNullOrWhiteSpace($FiveEToolsRoot)) {
     if (-not (Test-Path $bestiaryIndex)) {
         throw "Checkout 5eTools non valido: manca $bestiaryIndex"
     }
-    if (-not (Test-Path $CreatureIndexGenerator)) {
-        throw "Generatore indice creature non trovato: $CreatureIndexGenerator"
+
+    Write-Host "5eTools:  checkout locale esplicito $FiveEToolsRoot"
+    & $Blender --background --python $CreatureIndexGenerator -- $FiveEToolsRoot --output $CreatureIndex
+}
+elseif (-not [string]::IsNullOrWhiteSpace($env:VTT_5ETOOLS_ROOT)) {
+    $FiveEToolsRoot = (Resolve-Path $env:VTT_5ETOOLS_ROOT).Path
+    $bestiaryIndex = Join-Path $FiveEToolsRoot "data\bestiary\index.json"
+    if (-not (Test-Path $bestiaryIndex)) {
+        throw "VTT_5ETOOLS_ROOT non valido: manca $bestiaryIndex"
     }
 
-    Write-Host "5eTools:  $FiveEToolsRoot"
-    Write-Host "Indice:   rigenerazione metadata creature..."
-    & $Blender --background --python $CreatureIndexGenerator -- $FiveEToolsRoot
-    if ($LASTEXITCODE -ne 0) {
-        throw "Generazione indice creature 5eTools terminata con codice $LASTEXITCODE"
-    }
-}
-elseif (-not (Test-Path $CreatureIndex)) {
-    throw (
-        "5eTools non rilevato e indice creature assente. " +
-        "Il token importer richiede un checkout con data\bestiary\index.json. " +
-        "Passa -FiveEToolsRoot oppure imposta VTT_5ETOOLS_ROOT."
-    )
+    Write-Host "5eTools:  checkout locale da VTT_5ETOOLS_ROOT"
+    & $Blender --background --python $CreatureIndexGenerator -- $FiveEToolsRoot --output $CreatureIndex
 }
 else {
-    Write-Host "5eTools:  uso indice creature locale esistente"
+    Write-Host "5eTools:  sorgente online (GitHub mirror)"
+    Write-Host "Cache:    $CreatureIndex"
+    & $Blender --background --python $CreatureIndexGenerator -- --online --output $CreatureIndex
 }
 
+if ($LASTEXITCODE -ne 0) {
+    if (Test-Path $CreatureIndex) {
+        Write-Warning ("Aggiornamento 5eTools fallito; uso la cache esistente: " + $CreatureIndex)
+    }
+    else {
+        throw "Impossibile creare l indice creature 5eTools e nessuna cache disponibile."
+    }
+}
 function Remove-TrailingDirectorySeparator([string]$PathValue) {
     $fullPath = [System.IO.Path]::GetFullPath($PathValue)
     $root = [System.IO.Path]::GetPathRoot($fullPath)
@@ -140,6 +107,7 @@ $arguments = @(
     "--",
     "--source", $SourcePath,
     "--project-root", $ProjectRoot,
+    "--creature-index", $CreatureIndex,
     "--decimate-ratio", $DecimateRatio.ToString([System.Globalization.CultureInfo]::InvariantCulture)
 )
 
@@ -150,7 +118,7 @@ if (-not [string]::IsNullOrWhiteSpace($Default)) {
 Write-Host "Blender:  $Blender"
 Write-Host "Sorgente: $SourcePath"
 Write-Host "Progetto: $ProjectRoot"
-Write-Host "Taglia:   5eTools -> override -> nome -> base/marker -> Medium"
+Write-Host "Taglia:   5eTools online/cache -> override -> nome -> base/marker -> Medium"
 Write-Host "Scala:    visuale authored; la taglia D&D non ridimensiona la miniatura"
 Write-Host "Decimate: $DecimateRatio (1.0 = nessuna semplificazione)"
 
