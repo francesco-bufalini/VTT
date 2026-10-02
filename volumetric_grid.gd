@@ -4,7 +4,6 @@ const GRID_3D_EXCLUDED_GROUP := "grid_3d_excluded"
 const GRID_2D_EXCLUDED_GROUP := "grid_2d_excluded"
 const TOKEN_GROUP := "dnd_token"
 const INVALID_CELL := Vector3i(2147483647, 2147483647, 2147483647)
-const GRID_SURFACE_SHADER = preload("res://grid_surface_overlay.gdshader")
 const CHUNK_SIZE := 8
 
 @export var cell_size: float = 1.0
@@ -24,14 +23,14 @@ const CHUNK_SIZE := 8
 # chunk to a small candidate set; only those cells reach a physics query.
 @export_range(16, 2048, 1) var max_physics_queries_per_frame: int = 128
 @export_range(1, 32, 1) var max_query_results: int = 8
-@export_range(0.95, 1.0, 0.005) var collision_probe_scale: float = 1.0
+@export_range(0.75, 0.99, 0.005) var collision_probe_scale: float = 0.90
 @export_range(0.25, 5.0, 0.25) var map_change_check_interval: float = 0.75
 @export_range(64, 8192, 64) var max_cached_chunks: int = 2048
 
 var _camera: Camera3D = null
 var _grid_mesh_instance: MultiMeshInstance3D = null
 var _multimesh: MultiMesh = null
-var _grid_material: ShaderMaterial = null
+var _grid_material: StandardMaterial3D = null
 var _interaction_strength: float = 0.55
 
 var _cell_probe_shape: BoxShape3D = null
@@ -208,7 +207,7 @@ func _configure_grid() -> void:
 	_cell_probe_shape.size = (
 		Vector3.ONE
 		* cell_size
-		* clampf(collision_probe_scale, 0.95, 1.0)
+		* clampf(collision_probe_scale, 0.75, 0.99)
 	)
 	_cell_query = PhysicsShapeQueryParameters3D.new()
 	_cell_query.shape = _cell_probe_shape
@@ -220,8 +219,9 @@ func _build_multimesh() -> void:
 	if _grid_mesh_instance != null and is_instance_valid(_grid_mesh_instance):
 		_grid_mesh_instance.queue_free()
 
-	_grid_material = ShaderMaterial.new()
-	_grid_material.shader = GRID_SURFACE_SHADER
+	_grid_material = StandardMaterial3D.new()
+	_grid_material.transparency = BaseMaterial3D.TRANSPARENCY_ALPHA
+	_grid_material.shading_mode = BaseMaterial3D.SHADING_MODE_UNSHADED
 	_apply_material_strength()
 
 	var wire_cube := ImmediateMesh.new()
@@ -264,9 +264,11 @@ func _apply_material_strength() -> void:
 	if _grid_material == null:
 		return
 	var alpha: float = lerpf(0.16, 0.50, _interaction_strength)
-	_grid_material.set_shader_parameter(
-		"grid_color",
-		Color(0.42, 0.75, 1.0, alpha)
+	_grid_material.albedo_color = Color(0.42, 0.75, 1.0, alpha)
+	_grid_material.emission_enabled = true
+	_grid_material.emission = Color(0.04, 0.22, 0.38, 1.0)
+	_grid_material.emission_energy_multiplier = (
+		lerpf(0.28, 0.68, _interaction_strength)
 	)
 
 
