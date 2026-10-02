@@ -15,6 +15,9 @@ on:
       - "blender/jobs/**"
       - "tools/blender_agent/**"
 
+permissions:
+  contents: write
+
 concurrency:
   group: blender-agent-${{ github.ref }}
   cancel-in-progress: false
@@ -90,3 +93,51 @@ jobs:
           path: outputs/blender_agent/**
           if-no-files-found: error
           retention-days: 7
+
+      - name: Publish Blender agent status
+        if: always()
+        shell: powershell
+        run: |
+          $ErrorActionPreference = "Stop"
+          New-Item -ItemType Directory -Path "blender/agent_reports" -Force | Out-Null
+
+          $sceneReport = Get-ChildItem -Path "outputs/blender_agent" -Filter scene_report.json -Recurse -File -ErrorAction SilentlyContinue | Select-Object -First 1
+          $scene = $null
+          if ($sceneReport) {
+            $scene = Get-Content -LiteralPath $sceneReport.FullName -Raw | ConvertFrom-Json
+          }
+
+          $status = [ordered]@{
+            schema_version = 1
+            run_id = "${{ github.run_id }}"
+            run_number = "${{ github.run_number }}"
+            source_sha = "${{ github.sha }}"
+            workflow_status = "${{ job.status }}"
+            blender_job = "${{ steps.job.outputs.job }}"
+            scene_report = $scene
+          }
+          $status | ConvertTo-Json -Depth 10 | Set-Content -LiteralPath "blender/agent_reports/latest.json" -Encoding UTF8
+
+          git add --sparse blender/agent_reports/latest.json
+          if (git diff --cached --quiet) {
+            Write-Host "Agent status report unchanged."
+            exit 0
+          }
+
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git commit -m "Record Blender agent run status"
+
+          for ($attempt = 1; $attempt -le 10; $attempt++) {
+            git fetch origin "${{ github.ref_name }}"
+            if ($LASTEXITCODE -ne 0) { exit $LASTEXITCODE }
+            git rebase "origin/${{ github.ref_name }}"
+            if ($LASTEXITCODE -ne 0) {
+              git rebase --abort
+              exit 1
+            }
+            git push origin "HEAD:${{ github.ref_name }}"
+            if ($LASTEXITCODE -eq 0) { exit 0 }
+            Write-Host "Remote moved during status push; retrying rebase ($attempt/10)."
+          }
+          throw "Could not publish Blender agent status after ten retries."
