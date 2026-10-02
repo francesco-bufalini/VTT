@@ -115,16 +115,8 @@ function Get-GitHubReleaseAssetsViaGh {
         return $null
     }
 
-    try {
-        & $gh.Source auth status 1>$null 2>$null
-        if ($LASTEXITCODE -ne 0) {
-            return $null
-        }
-    } catch {
-        return $null
-    }
-
-    Write-Host "Autenticazione GitHub: uso direttamente GitHub CLI (gh api)."
+    Write-Host "GitHub CLI trovata: $($gh.Source)"
+    Write-Host "Controllo Release private direttamente con 'gh api'..."
 
     $assetsByName = @{}
     $page = 1
@@ -140,6 +132,7 @@ function Get-GitHubReleaseAssetsViaGh {
             $releases = @($json | ConvertFrom-Json)
         } catch {
             Write-Warning "gh api non e riuscito a leggere le Release private: $($_.Exception.Message)"
+            Write-Warning "Verifica con: gh auth status"
             return $null
         }
 
@@ -439,8 +432,13 @@ if ($All -and -not $SkipReleaseCheck -and -not $Force) {
     $ghReleaseAssets = Get-GitHubReleaseAssetsViaGh
     if ($null -ne $ghReleaseAssets) {
         $releaseAssets = $ghReleaseAssets
-    } else {
+    } elseif (-not [string]::IsNullOrWhiteSpace($GitHubToken)) {
+        Write-Host "Fallback: uso l'API REST con il token esplicito/GITHUB_TOKEN."
         $releaseAssets = Get-GitHubReleaseAssets -Token $GitHubToken
+    } else {
+        Write-Warning "Release remote non controllabili: gh api non disponibile/autenticato e nessun GitHubToken fornito."
+        Write-Warning "Non uso il fallback anonimo perche il repository e privato."
+        $releaseAssets = @{}
     }
 }
 
