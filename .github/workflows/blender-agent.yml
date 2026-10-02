@@ -36,7 +36,9 @@ jobs:
           fetch-depth: 1
           sparse-checkout-cone-mode: false
           sparse-checkout: |
-            /blender/
+            /blender/jobs/
+            /blender/scene_previews/
+            /blender/agent_reports/
             /tools/blender_agent/
             /tools/blender_env/
 
@@ -114,6 +116,58 @@ jobs:
           path: outputs/blender_agent/**
           if-no-files-found: error
           retention-days: 7
+
+      - name: Publish canonical scene preview
+        if: success()
+        shell: powershell
+        run: |
+          $ErrorActionPreference = "Stop"
+          $sceneReport = Get-ChildItem -Path "outputs/blender_agent" -Filter scene_report.json -Recurse -File | Select-Object -First 1
+          if (-not $sceneReport) { throw "scene_report.json missing." }
+
+          $scene = Get-Content -LiteralPath $sceneReport.FullName -Raw | ConvertFrom-Json
+          $sceneId = [string]$scene.scene_id
+          if ([string]::IsNullOrWhiteSpace($sceneId) -or $sceneId -notmatch "^[A-Za-z0-9._-]+$") {
+            throw "Invalid scene_id in scene report: $sceneId"
+          }
+
+          $dest = Join-Path "blender/scene_previews" $sceneId
+          New-Item -ItemType Directory -Path $dest -Force | Out-Null
+
+          Get-ChildItem -Path $sceneReport.Directory.FullName -Filter *.png -File | ForEach-Object {
+            if ($_.Length -gt 5MB) {
+              throw "Preview exceeds 5 MB Git guard: $($_.FullName)"
+            }
+            Copy-Item -LiteralPath $_.FullName -Destination (Join-Path $dest $_.Name) -Force
+          }
+
+          $metadata = [ordered]@{
+            schema_version = 1
+            scene_id = $sceneId
+            run_id = "${{ github.run_id }}"
+            run_number = "${{ github.run_number }}"
+            source_sha = "${{ github.sha }}"
+            blender_job = "${{ steps.job.outputs.job }}"
+            scene_report = $scene
+          }
+          $metadata | ConvertTo-Json -Depth 12 | Set-Content -LiteralPath (Join-Path $dest "metadata.json") -Encoding UTF8
+
+          git add --sparse "blender/scene_previews/$sceneId"
+          if (-not (git diff --cached --quiet)) {
+            git config user.name "github-actions[bot]"
+            git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+            git commit -m "Update Blender scene preview: $sceneId"
+
+            for ($attempt = 1; $attempt -le 10; $attempt++) {
+              git fetch origin "${{ github.ref_name }}"
+              if ($LASTEXITCODE -ne 0) { exit $LASTEXITCODE }
+              git rebase "origin/${{ github.ref_name }}"
+              if ($LASTEXITCODE -ne 0) { git rebase --abort; exit 1 }
+              git push origin "HEAD:${{ github.ref_name }}"
+              if ($LASTEXITCODE -eq 0) { break }
+              if ($attempt -eq 10) { throw "Could not publish canonical scene preview after ten retries." }
+            }
+          }
 
       - name: Publish Blender agent status
         if: always()
