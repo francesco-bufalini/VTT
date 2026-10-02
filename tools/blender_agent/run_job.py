@@ -345,6 +345,7 @@ def _pbr_material_from_maps(
     diffuse = nodes.new("ShaderNodeTexImage")
     diffuse.location = (-430, 170)
     diffuse.image = bpy.data.images.load(str(maps["diffuse"]), check_existing=True)
+    diffuse.image.filepath = "//textures/" + maps["diffuse"].parent.name + "/" + maps["diffuse"].name
     diffuse.projection = "BOX"
     diffuse.projection_blend = 0.18
     links.new(mapping.outputs["Vector"], diffuse.inputs["Vector"])
@@ -353,6 +354,7 @@ def _pbr_material_from_maps(
     rough = nodes.new("ShaderNodeTexImage")
     rough.location = (-430, -60)
     rough.image = bpy.data.images.load(str(maps["rough"]), check_existing=True)
+    rough.image.filepath = "//textures/" + maps["rough"].parent.name + "/" + maps["rough"].name
     rough.image.colorspace_settings.name = "Non-Color"
     rough.projection = "BOX"
     rough.projection_blend = 0.18
@@ -362,6 +364,7 @@ def _pbr_material_from_maps(
     normal_tex = nodes.new("ShaderNodeTexImage")
     normal_tex.location = (-430, -300)
     normal_tex.image = bpy.data.images.load(str(maps["normal"]), check_existing=True)
+    normal_tex.image.filepath = "//textures/" + maps["normal"].parent.name + "/" + maps["normal"].name
     normal_tex.image.colorspace_settings.name = "Non-Color"
     normal_tex.projection = "BOX"
     normal_tex.projection_blend = 0.18
@@ -1107,6 +1110,24 @@ def build_kaos_arena(op: dict, root_path: Path) -> None:
     xb = mapping["battlemap"]["x_bounds_m"]
     yb = mapping["battlemap"]["z_bounds_m"]
 
+    # Optional V7 extension: keep the original 120 m width but extend the
+    # rectangle away from the sphere until its two far corners touch the
+    # flooded arena boundary exactly.
+    effective_rect_y_max = float(yb[1])
+    if layout_extension and bool(layout_extension.get("extend_rect_to_arena_edge", False)):
+        arena_radius_for_extension = float(
+            layout_extension.get("arena_water_radius_m", mapping["water"]["radius_m"])
+        )
+        rect_half_width = max(abs(float(xb[0])), abs(float(xb[1])))
+        if rect_half_width >= arena_radius_for_extension:
+            raise RuntimeError("Rectangular floor is wider than the arena radius.")
+        effective_rect_y_max = (
+            float(mapping["water"]["center_godot_m"][2])
+            + math.sqrt(arena_radius_for_extension ** 2 - rect_half_width ** 2)
+        )
+        layout_extension["extended_rect_y_max_m"] = effective_rect_y_max
+        bpy.context.scene["kaos_layout_extension_json"] = json.dumps(layout_extension, sort_keys=True)
+
     continuous_walkable = bool(
         layout_extension.get("continuous_walkable_surface", False)
         if layout_extension else False
@@ -1195,7 +1216,8 @@ def build_kaos_arena(op: dict, root_path: Path) -> None:
 
         if continuous_walkable:
             rect_x_min, rect_x_max = xb
-            rect_y_min, rect_y_max = yb
+            rect_y_min = yb[0]
+            rect_y_max = effective_rect_y_max
             if bool(layout_extension.get("harmonious_walkable_transition", False)):
                 walkable = _add_harmonious_rect_circle_prism(
                     "COMBAT_ContinuousArenaFloor",
@@ -1322,8 +1344,8 @@ def build_kaos_arena(op: dict, root_path: Path) -> None:
     for idx, (x, y) in enumerate([
         (xb[0] - corner_offset, yb[0] - corner_offset),
         (xb[1] + corner_offset, yb[0] - corner_offset),
-        (xb[0] - corner_offset, yb[1] + corner_offset),
-        (xb[1] + corner_offset, yb[1] + corner_offset),
+        (xb[0] - corner_offset, effective_rect_y_max + corner_offset),
+        (xb[1] + corner_offset, effective_rect_y_max + corner_offset),
     ]):
         _add_box(
             f"BoundaryPlinth_{idx}",
@@ -1358,7 +1380,7 @@ def build_kaos_arena(op: dict, root_path: Path) -> None:
                 outline = _harmonious_walkable_outline(
                     xb[0] - walkable_margin,
                     xb[1] + walkable_margin,
-                    yb[1] + walkable_margin,
+                    effective_rect_y_max + walkable_margin,
                     (sphere_blender[0], sphere_blender[1]),
                     float(layout_extension["sphere_platform_radius_m"]) + walkable_margin,
                     float(layout_extension.get("transition_start_y_m", 72.0)) + walkable_margin,
@@ -1371,7 +1393,7 @@ def build_kaos_arena(op: dict, root_path: Path) -> None:
             elif _point_inside_rect_circle_union(
                 x,
                 y,
-                (xb[0], xb[1], yb[0], yb[1]),
+                (xb[0], xb[1], yb[0], effective_rect_y_max),
                 (sphere_blender[0], sphere_blender[1]),
                 float(layout_extension["sphere_platform_radius_m"]),
                 margin=walkable_margin,
