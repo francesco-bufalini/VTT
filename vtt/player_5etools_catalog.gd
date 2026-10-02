@@ -217,10 +217,14 @@ static func info_text(entry: Dictionary) -> String:
 			var base_ac := int(ac_data.get("base", 0))
 			if base_ac > 0:
 				lines.append("CA base: %d" % base_ac)
-		else:
-			lines.append("CA: %s" % JSON.stringify(ac_data))
-		elif int(ac_value) > 0:
-			lines.append("CA: %d" % int(ac_value))
+			else:
+				lines.append("CA: %s" % JSON.stringify(ac_data))
+		elif (
+			typeof(ac_value) == TYPE_INT
+			or typeof(ac_value) == TYPE_FLOAT
+		):
+			if int(ac_value) > 0:
+				lines.append("CA: %d" % int(ac_value))
 
 	if entry.has("weight") and entry.get("weight") != null:
 		var weight := float(entry.get("weight", 0.0))
