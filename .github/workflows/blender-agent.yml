@@ -42,6 +42,7 @@ jobs:
             /tools/blender_env/
             /encounter/encounter_scenery.gd
             /encounter/hazard_allowed_area.gd
+            /encounter/assets/characters/titan_relief.glb
             /measurement_tool.gd
 
       - name: Resolve job
