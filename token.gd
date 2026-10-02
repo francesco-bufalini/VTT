@@ -75,8 +75,8 @@ var _overlay_root: Node3D
 var _name_label: Label3D
 var _status_label: Label3D
 var _hp_bar_root: Node3D
-var _hp_bar_background: MeshInstance3D
-var _hp_bar_fill: MeshInstance3D
+var _hp_bar_mesh: MeshInstance3D
+var _hp_bar_material: StandardMaterial3D
 var _hp_bar_label: Label3D
 var _player_hp_current: int = 0
 var _player_hp_max: int = 0
@@ -1114,7 +1114,11 @@ func _update_overlay_position() -> void:
 func _ensure_health_bar() -> void:
 	if _overlay_root == null or not is_instance_valid(_overlay_root):
 		return
-	if is_instance_valid(_hp_bar_root):
+	if (
+		is_instance_valid(_hp_bar_root)
+		and is_instance_valid(_hp_bar_mesh)
+		and is_instance_valid(_hp_bar_label)
+	):
 		return
 
 	_hp_bar_root = _overlay_root.get_node_or_null("HealthBar") as Node3D
@@ -1123,47 +1127,39 @@ func _ensure_health_bar() -> void:
 		_hp_bar_root.name = "HealthBar"
 		_overlay_root.add_child(_hp_bar_root)
 
-	_hp_bar_background = _hp_bar_root.get_node_or_null(
-		"Background"
-	) as MeshInstance3D
-	if _hp_bar_background == null:
-		_hp_bar_background = MeshInstance3D.new()
-		_hp_bar_background.name = "Background"
-		var background_mesh := QuadMesh.new()
-		_hp_bar_background.mesh = background_mesh
-		var background_material := StandardMaterial3D.new()
-		background_material.shading_mode = (
+	# Remove the old two-billboard implementation if this scene survives a
+	# script reload. Two independently billboarded quads drift apart when the
+	# camera rotates because their local offsets are not billboarded together.
+	for legacy_name: String in ["Background", "Fill"]:
+		var legacy := _hp_bar_root.get_node_or_null(legacy_name)
+		if legacy != null:
+			_hp_bar_root.remove_child(legacy)
+			legacy.queue_free()
+
+	_hp_bar_mesh = _hp_bar_root.get_node_or_null("Bar") as MeshInstance3D
+	if _hp_bar_mesh == null:
+		_hp_bar_mesh = MeshInstance3D.new()
+		_hp_bar_mesh.name = "Bar"
+		_hp_bar_mesh.cast_shadow = (
+			GeometryInstance3D.SHADOW_CASTING_SETTING_OFF
+		)
+		_hp_bar_root.add_child(_hp_bar_mesh)
+
+	_hp_bar_material = _hp_bar_mesh.material_override as StandardMaterial3D
+	if _hp_bar_material == null:
+		_hp_bar_material = StandardMaterial3D.new()
+		_hp_bar_material.shading_mode = (
 			BaseMaterial3D.SHADING_MODE_UNSHADED
 		)
-		background_material.billboard_mode = (
+		_hp_bar_material.billboard_mode = (
 			BaseMaterial3D.BILLBOARD_ENABLED
 		)
-		background_material.transparency = (
-			BaseMaterial3D.TRANSPARENCY_ALPHA
+		_hp_bar_material.vertex_color_use_as_albedo = true
+		_hp_bar_material.cull_mode = BaseMaterial3D.CULL_DISABLED
+		_hp_bar_material.transparency = (
+			BaseMaterial3D.TRANSPARENCY_DISABLED
 		)
-		background_material.albedo_color = Color(0.04, 0.04, 0.05, 0.94)
-		_hp_bar_background.material_override = background_material
-		_hp_bar_background.cast_shadow = (
-			GeometryInstance3D.SHADOW_CASTING_SETTING_OFF
-		)
-		_hp_bar_root.add_child(_hp_bar_background)
-
-	_hp_bar_fill = _hp_bar_root.get_node_or_null("Fill") as MeshInstance3D
-	if _hp_bar_fill == null:
-		_hp_bar_fill = MeshInstance3D.new()
-		_hp_bar_fill.name = "Fill"
-		var fill_mesh := QuadMesh.new()
-		_hp_bar_fill.mesh = fill_mesh
-		var fill_material := StandardMaterial3D.new()
-		fill_material.shading_mode = BaseMaterial3D.SHADING_MODE_UNSHADED
-		fill_material.billboard_mode = BaseMaterial3D.BILLBOARD_ENABLED
-		fill_material.transparency = BaseMaterial3D.TRANSPARENCY_ALPHA
-		fill_material.albedo_color = Color(0.18, 0.82, 0.28, 1.0)
-		_hp_bar_fill.material_override = fill_material
-		_hp_bar_fill.cast_shadow = (
-			GeometryInstance3D.SHADOW_CASTING_SETTING_OFF
-		)
-		_hp_bar_root.add_child(_hp_bar_fill)
+		_hp_bar_mesh.material_override = _hp_bar_material
 
 	_hp_bar_label = _hp_bar_root.get_node_or_null("Percent") as Label3D
 	if _hp_bar_label == null:
@@ -1219,42 +1215,90 @@ func _update_health_bar_visual() -> void:
 		0.0,
 		1.0
 	)
-	var width := maxf(1.35, _footprint_cells * 0.95) * cell_size
-	var height := 0.13 * cell_size
+	var width := maxf(1.45, _footprint_cells * 1.05) * cell_size
+	var height := 0.14 * cell_size
 
-	if is_instance_valid(_hp_bar_background):
-		var background_mesh := _hp_bar_background.mesh as QuadMesh
-		if background_mesh != null:
-			background_mesh.size = Vector2(width, height)
-		_hp_bar_background.position = Vector3.ZERO
-
-	if is_instance_valid(_hp_bar_fill):
-		var fill_mesh := _hp_bar_fill.mesh as QuadMesh
-		if fill_mesh != null:
-			fill_mesh.size = Vector2(width, height)
-		_hp_bar_fill.scale = Vector3(maxf(ratio, 0.001), 1.0, 1.0)
-		_hp_bar_fill.position = Vector3(
-			-width * (1.0 - ratio) * 0.5,
-			0.0,
-			0.004 * cell_size
+	if is_instance_valid(_hp_bar_mesh):
+		# Black total HP and red remaining HP are vertices of ONE billboarded
+		# mesh. They therefore rotate, scale and translate as one object from
+		# every camera direction.
+		var bar_mesh := ImmediateMesh.new()
+		bar_mesh.surface_begin(
+			Mesh.PRIMITIVE_TRIANGLES,
+			_hp_bar_material
 		)
-		var fill_material := _hp_bar_fill.material_override as StandardMaterial3D
-		if fill_material != null:
-			if ratio > 0.5:
-				fill_material.albedo_color = Color(0.18, 0.82, 0.28, 1.0)
-			elif ratio > 0.25:
-				fill_material.albedo_color = Color(0.95, 0.68, 0.12, 1.0)
-			else:
-				fill_material.albedo_color = Color(0.90, 0.18, 0.16, 1.0)
+
+		var half_width := width * 0.5
+		var half_height := height * 0.5
+		var black := Color(0.015, 0.015, 0.02, 1.0)
+		_add_hp_bar_quad(
+			bar_mesh,
+			-half_width,
+			half_width,
+			-half_height,
+			half_height,
+			0.0,
+			black
+		)
+
+		if ratio > 0.0:
+			var inset := height * 0.12
+			var inner_left := -half_width + inset
+			var inner_right_max := half_width - inset
+			var inner_width := maxf(
+				0.0,
+				inner_right_max - inner_left
+			)
+			var red_right := inner_left + inner_width * ratio
+			var red := Color(0.92, 0.08, 0.08, 1.0)
+			_add_hp_bar_quad(
+				bar_mesh,
+				inner_left,
+				red_right,
+				-half_height + inset,
+				half_height - inset,
+				0.002 * cell_size,
+				red
+			)
+
+		bar_mesh.surface_end()
+		_hp_bar_mesh.mesh = bar_mesh
 
 	if is_instance_valid(_hp_bar_label):
 		_hp_bar_label.text = "%d%%" % roundi(ratio * 100.0)
 		_hp_bar_label.pixel_size = 0.008 * cell_size
 		_hp_bar_label.position = Vector3(
 			0.0,
-			0.115 * cell_size,
+			0.12 * cell_size,
 			0.008 * cell_size
 		)
+
+
+func _add_hp_bar_quad(
+	mesh: ImmediateMesh,
+	left: float,
+	right: float,
+	bottom: float,
+	top: float,
+	z_offset: float,
+	color: Color
+) -> void:
+	if mesh == null or right <= left or top <= bottom:
+		return
+
+	mesh.surface_set_color(color)
+	mesh.surface_add_vertex(Vector3(left, bottom, z_offset))
+	mesh.surface_set_color(color)
+	mesh.surface_add_vertex(Vector3(right, bottom, z_offset))
+	mesh.surface_set_color(color)
+	mesh.surface_add_vertex(Vector3(right, top, z_offset))
+
+	mesh.surface_set_color(color)
+	mesh.surface_add_vertex(Vector3(left, bottom, z_offset))
+	mesh.surface_set_color(color)
+	mesh.surface_add_vertex(Vector3(right, top, z_offset))
+	mesh.surface_set_color(color)
+	mesh.surface_add_vertex(Vector3(left, top, z_offset))
 
 
 func _update_status_overlay() -> void:
