@@ -4264,7 +4264,11 @@ func _cast_self_emanation(
 			shape,
 			style,
 			Color(0.0, 0.0, 0.0, -1.0),
-			_spell_line_width_world(spell_data)
+			_spell_line_width_world(spell_data),
+			0.0,
+			"free",
+			Vector3(INF, INF, INF),
+			caster
 		)
 	else:
 		measurement_tool.call(
