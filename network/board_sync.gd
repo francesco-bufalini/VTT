@@ -483,6 +483,21 @@ func valid_snapshot(snapshot: Variant) -> bool:
 					or float(height_value) > 100.0
 				):
 					return false
+			if item.has("visual_native_footprint"):
+				var native_footprint_value: Variant = item.get(
+					"visual_native_footprint"
+				)
+				if not (
+					native_footprint_value is float
+					or native_footprint_value is int
+				):
+					return false
+				if (
+					not is_finite(float(native_footprint_value))
+					or float(native_footprint_value) <= 0.0
+					or float(native_footprint_value) > 100.0
+				):
+					return false
 			if item.has("visual_asset"):
 				if not item.get("visual_asset") is String:
 					return false
@@ -536,6 +551,21 @@ func valid_snapshot(snapshot: Variant) -> bool:
 						return false
 					if not appearance.get("size_name", "") is String:
 						return false
+					if appearance.has("visual_native_footprint"):
+						var previous_native: Variant = appearance.get(
+							"visual_native_footprint"
+						)
+						if not (
+							previous_native is float
+							or previous_native is int
+						):
+							return false
+						if (
+							not is_finite(float(previous_native))
+							or float(previous_native) <= 0.0
+							or float(previous_native) > 100.0
+						):
+							return false
 					for numeric_key: String in [
 						"footprint",
 						"height_cells",
@@ -714,6 +744,10 @@ func _serialize_node(node: Node3D, group_name: String) -> Dictionary:
 		)
 		if node.has_method("get_visual_asset_path"):
 			data["visual_asset"] = String(node.call("get_visual_asset_path"))
+		if node.has_method("get_visual_native_footprint_cells"):
+			data["visual_native_footprint"] = float(
+				node.call("get_visual_native_footprint_cells")
+			)
 		data["visual_front_quarter_turns"] = (
 			int(node.call("get_visual_front_quarter_turns"))
 			if node.has_method("get_visual_front_quarter_turns")
@@ -747,7 +781,20 @@ func _apply_node_data(node: Node3D, data: Dictionary) -> void:
 		if data.has("visual_asset") and node.has_method("set_visual_asset"):
 			var visual_asset := String(data.get("visual_asset", ""))
 			if not visual_asset.is_empty():
-				node.call("set_visual_asset", visual_asset)
+				var native_footprint := maxf(
+					float(
+						data.get(
+							"visual_native_footprint",
+							data.get("footprint", 1.0)
+						)
+					),
+					0.5
+				)
+				node.call(
+					"set_visual_asset",
+					visual_asset,
+					native_footprint
+				)
 		if data.has("visual_front_quarter_turns") and node.has_method(
 			"set_visual_front_quarter_turns"
 		):
