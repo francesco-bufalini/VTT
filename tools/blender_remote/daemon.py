@@ -19,6 +19,7 @@ import time
 import urllib.error
 import urllib.parse
 import urllib.request
+from datetime import datetime, timedelta, timezone
 from pathlib import Path
 from typing import Any
 
@@ -730,30 +731,18 @@ def save_state(state: dict[str, Any]) -> None:
     temp.replace(STATE_PATH)
 
 
-def fetch_latest_comment_id() -> int:
+def fetch_comments_since(since: datetime) -> list[dict[str, Any]]:
+    # GitHub's issue-comment endpoint supports `since`, but not reliable
+    # descending sort for this use case. Poll only the recent time window and
+    # filter by monotonically increasing comment IDs in main().
     query = urllib.parse.urlencode(
-        {"per_page": 1, "sort": "created", "direction": "desc"}
+        {
+            "per_page": 100,
+            "since": since.astimezone(timezone.utc).isoformat().replace("+00:00", "Z"),
+        }
     )
     _, comments, _ = github_request("GET", f"{COMMENTS_URL}?{query}")
-    if not comments:
-        return 0
-    return int(comments[0]["id"])
-
-
-def fetch_comments(etag: str | None) -> tuple[list[dict[str, Any]], str | None]:
-    query = urllib.parse.urlencode(
-        {"per_page": 100, "sort": "created", "direction": "desc"}
-    )
-    status, comments, headers = github_request(
-        "GET",
-        f"{COMMENTS_URL}?{query}",
-        etag=etag,
-    )
-    if status == 304:
-        return [], etag
-    new_etag = headers.get("ETag") or headers.get("Etag")
-    ordered = sorted(list(comments or []), key=lambda item: int(item["id"]))
-    return ordered, new_etag
+    return sorted(list(comments or []), key=lambda item: int(item["id"]))
 
 
 def main() -> int:
@@ -762,15 +751,17 @@ def main() -> int:
     if not ALLOWED_LOGINS:
         fail("BLENDER_REMOTE_ALLOWED must contain at least one GitHub login.")
 
-    state = load_state()
-    state_key = f"{REPO}#{ISSUE_NUMBER}"
-
-    if SKIP_PENDING or state.get("console") != state_key:
-        last_comment_id = fetch_latest_comment_id()
-        state = {"console": state_key, "last_comment_id": last_comment_id}
-        save_state(state)
-    else:
-        last_comment_id = int(state.get("last_comment_id", 0))
+    # Interactive mode is intentionally session-scoped: commands that existed
+    # before this daemon process started are never replayed. If the daemon was
+    # offline, resend the command after "Waiting for commands" appears.
+    session_started = datetime.now(timezone.utc)
+    last_comment_id = 0
+    state = {
+        "console": f"{REPO}#{ISSUE_NUMBER}",
+        "session_started": session_started.isoformat(),
+        "last_comment_id": 0,
+    }
+    save_state(state)
 
     print("Blender Remote Daemon")
     print(f"  Console : https://github.com/{REPO}/issues/{ISSUE_NUMBER}")
@@ -778,15 +769,17 @@ def main() -> int:
     print(f"  Blender : {BLENDER_HOST}:{BLENDER_PORT}")
     print(f"  Poll    : {POLL_SECONDS:g}s")
     print(f"  Python  : {'ENABLED' if ALLOW_PYTHON else 'disabled'}")
-    print(f"  Resume  : after GitHub comment id {last_comment_id}")
+    print("  Session : fresh (pre-existing GitHub comments ignored)")
     print()
     print("Waiting for commands. Ctrl+C to stop.")
 
-    etag: str | None = None
-
     while True:
         try:
-            comments, etag = fetch_comments(etag)
+            # Keep a small overlap so minor clock skew cannot lose a command.
+            # session_started prevents that overlap from reaching old history.
+            recent_floor = datetime.now(timezone.utc) - timedelta(seconds=30)
+            since = max(session_started, recent_floor)
+            comments = fetch_comments_since(since)
 
             for comment in comments:
                 comment_id = int(comment["id"])
@@ -842,7 +835,6 @@ def main() -> int:
             return 0
         except Exception as exc:
             print(f"[bridge error] {type(exc).__name__}: {exc}", file=sys.stderr)
-            etag = None
             time.sleep(10)
             continue
 
