@@ -15,6 +15,8 @@ on:
       - "encounter/tests/test_scontro_contro_kaos_scene.gd"
       - "encounter/scontro_contro_kaos.gd"
       - "encounter/scontro_contro_kaos.tscn"
+      - "encounter/kaos_climb.gd"
+      - "volumetric_grid.gd"
       - ".github/workflows/bake-post-kaos-scene.yml"
 
 permissions:
@@ -87,6 +89,9 @@ jobs:
           $smokeOutput | ForEach-Object { Write-Host $_ }
           if ($exitCode -ne 0) { exit $exitCode }
           $joined = $smokeOutput -join "`n"
+          if ($joined -match "Cannot convert argument 1 from Object to Object|Index p_blend_shape|previously freed instance|Error calling deferred method") {
+            throw "Scontro smoke test reproduced a freed-object or blend-shape runtime error."
+          }
           if ($joined -notmatch "(?m)^PASS: Scontro contro Kaos") {
             throw "Scontro contro Kaos smoke test ended without PASS marker."
           }
