@@ -291,6 +291,31 @@ func has_post_cast_cleanup() -> bool:
 	return _post_cast_cleanup_pending
 
 
+func activate_spell_from_caster(
+	spell_id: String,
+	caster: Node3D
+) -> bool:
+	if spell_id.is_empty() or caster == null or not is_instance_valid(caster):
+		return false
+
+	var spell_data: Dictionary = SpellCatalog.catalog_spell(spell_id)
+	if spell_data.is_empty() or not SpellCatalog.is_runtime_usable(spell_data):
+		return false
+
+	_selected_spell_id = spell_id
+	_selected_spell_data = spell_data.duplicate(true)
+	_activate_selected_spell()
+
+	if (
+		_pending_spell_id != spell_id
+		or _targeting_phase != "caster"
+	):
+		return false
+
+	_begin_cast_with_caster(caster, _pending_spell())
+	return true
+
+
 func _set_spell_affected_targets(
 	tokens: Array,
 	active: bool = true
@@ -1139,6 +1164,20 @@ func _try_select_caster(screen_position: Vector2) -> void:
 
 	var caster: Node3D = target as Node3D
 	var spell_data: Dictionary = _pending_spell()
+	if spell_data.is_empty():
+		_cancel_pending_cast()
+		return
+
+	_begin_cast_with_caster(caster, spell_data)
+
+
+func _begin_cast_with_caster(
+	caster: Node3D,
+	spell_data: Dictionary
+) -> void:
+	if caster == null or not is_instance_valid(caster):
+		_cancel_pending_cast()
+		return
 	if spell_data.is_empty():
 		_cancel_pending_cast()
 		return
