@@ -11,6 +11,7 @@ import json
 import math
 import os
 import random
+import re
 import sys
 import traceback
 from pathlib import Path
@@ -146,6 +147,11 @@ def scene_report(path: Path, job_path: Path, job: dict) -> None:
         "scene_id": job.get("scene_id", job_path.stem),
         "description": job.get("description", ""),
         "design_references": job.get("design_references", []),
+        "combat_mapping": (
+            json.loads(scene.get("kaos_combat_mapping_json", "{}"))
+            if scene.get("kaos_combat_mapping_json")
+            else job.get("combat_mapping", {})
+        ),
         "asset_root": os.environ.get("VTT_BLENDER_ASSET_ROOT", ""),
         "object_count": len(objects),
         "mesh_object_count": len(meshes),
@@ -316,14 +322,152 @@ def _add_rock(name: str, location, scale, mat, seed_value: int):
     return obj
 
 
-def build_kaos_arena(op: dict) -> None:
-    """Build the first Blender-authored Kaos arena environment shell.
+def _kaos_mapping_from_godot(root: Path) -> dict:
+    scenery_path = root / "encounter" / "encounter_scenery.gd"
+    hazard_path = root / "encounter" / "hazard_allowed_area.gd"
+    measurement_path = root / "measurement_tool.gd"
 
-    This intentionally models only visual environment geometry. Gameplay
-    collision, tokens, Kaos anatomy and encounter logic stay in Godot.
-    """
+    for path in (scenery_path, hazard_path, measurement_path):
+        if not path.exists():
+            raise FileNotFoundError(f"Kaos mapping source missing: {path}")
+
+    scenery = scenery_path.read_text(encoding="utf-8")
+    hazard = hazard_path.read_text(encoding="utf-8")
+    measurement = measurement_path.read_text(encoding="utf-8")
+
+    def one(pattern: str, text: str, label: str) -> tuple[str, ...]:
+        match = re.search(pattern, text, re.MULTILINE)
+        if not match:
+            raise RuntimeError(f"Could not derive {label} from current Godot source.")
+        return match.groups()
+
+    floor_x, floor_z = one(
+        r"floor_shape\.size\s*=\s*Vector3\(\s*([0-9.]+)\s*\*\s*_units,\s*[0-9.]+,\s*([0-9.]+)\s*\*\s*_units\s*\)",
+        scenery,
+        "battlemap dimensions",
+    )
+    (floor_center_z,) = one(
+        r'get_node\("Board/FloorCollision"\)\.position\.z\s*=\s*([0-9.]+)\s*\*\s*_units',
+        scenery,
+        "battlemap center",
+    )
+    (water_radius,) = one(
+        r"water_mesh\.top_radius\s*=\s*([0-9.]+)\s*\*\s*_units",
+        scenery,
+        "water radius",
+    )
+    water_y, water_z = one(
+        r"water\.position\s*=\s*Vector3\(\s*0\s*,\s*([-0-9.]+)\s*,\s*([-0-9.]+)\s*\)\s*\*\s*_units",
+        scenery,
+        "water position",
+    )
+    klothis_elev, sphere_extra = one(
+        r"@export var klothis_group_elevation_meters:\s*float\s*=\s*([0-9.]+).*?@export var sphere_extra_elevation_meters:\s*float\s*=\s*([0-9.]+)",
+        scenery,
+        "Klothys elevation defaults",
+    )
+    sphere_base_y, sphere_local_z = one(
+        r"sphere\.position\s*=\s*Vector3\(\s*0\s*,\s*([0-9.]+)\s*\+\s*sphere_extra_elevation_meters\s*,\s*([-0-9.]+)\s*\)",
+        scenery,
+        "sphere local position",
+    )
+    (sphere_radius,) = one(
+        r"_sphere\(\s*sphere\s*,\s*([0-9.]+)\s*,",
+        scenery,
+        "sphere radius",
+    )
+    klothis_root_z = -12.0
+    klothis_root_match = re.search(
+        r"klothis\.position\s*=\s*Vector3\(\s*0\s*,\s*klothis_group_elevation_meters\s*,\s*([-0-9.]+)\s*\)",
+        scenery,
+    )
+    if klothis_root_match:
+        klothis_root_z = float(klothis_root_match.group(1))
+
+    hx, hz, hw, hh = one(
+        r"Rect2i\(\s*([-0-9]+)\s*,\s*([-0-9]+)\s*,\s*([0-9]+)\s*,\s*([0-9]+)\s*\)",
+        hazard,
+        "hazard cell rectangle",
+    )
+    (meters_per_cell,) = one(
+        r"meters_per_cell:\s*float\s*=\s*([0-9.]+)",
+        measurement,
+        "meters per cell",
+    )
+
+    klothis_elev = float(klothis_elev)
+    sphere_extra = float(sphere_extra)
+    sphere_base_y = float(sphere_base_y)
+    sphere_local_z = float(sphere_local_z)
+    mpc = float(meters_per_cell)
+
+    return {
+        "coordinate_mapping": "Godot (X,Y,Z) -> Blender (X,Z,Y)",
+        "meters_per_cell": mpc,
+        "battlemap": {
+            "size_m": [float(floor_x), float(floor_z)],
+            "center_godot_m": [0.0, 0.0, float(floor_center_z)],
+            "x_bounds_m": [-float(floor_x) * 0.5, float(floor_x) * 0.5],
+            "z_bounds_m": [
+                float(floor_center_z) - float(floor_z) * 0.5,
+                float(floor_center_z) + float(floor_z) * 0.5,
+            ],
+        },
+        "hazard_area": {
+            "cells": [int(hx), int(hz), int(hw), int(hh)],
+            "size_m": [int(hw) * mpc, int(hh) * mpc],
+            "x_bounds_m": [int(hx) * mpc, (int(hx) + int(hw)) * mpc],
+            "z_bounds_m": [int(hz) * mpc, (int(hz) + int(hh)) * mpc],
+        },
+        "water": {
+            "radius_m": float(water_radius),
+            "center_godot_m": [0.0, float(water_y), float(water_z)],
+        },
+        "sphere": {
+            "radius_m": float(sphere_radius),
+            "center_godot_m": [
+                0.0,
+                klothis_elev + sphere_base_y + sphere_extra,
+                klothis_root_z + sphere_local_z,
+            ],
+        },
+    }
+
+
+def _validate_expected_mapping(actual: dict, expected: dict) -> None:
+    if not expected:
+        return
+
+    checks = [
+        ("meters_per_cell", actual["meters_per_cell"], expected["meters_per_cell"]),
+        ("battlemap.size_m[0]", actual["battlemap"]["size_m"][0], expected["battlemap"]["size_m"][0]),
+        ("battlemap.size_m[1]", actual["battlemap"]["size_m"][1], expected["battlemap"]["size_m"][1]),
+        ("battlemap.center_godot_m[2]", actual["battlemap"]["center_godot_m"][2], expected["battlemap"]["center_godot_m"][2]),
+        ("water.radius_m", actual["water"]["radius_m"], expected["water"]["radius_m"]),
+        ("water.center_godot_m[2]", actual["water"]["center_godot_m"][2], expected["water"]["center_godot_m"][2]),
+        ("sphere.radius_m", actual["sphere"]["radius_m"], expected["sphere"]["radius_m"]),
+        ("sphere.center_godot_m[1]", actual["sphere"]["center_godot_m"][1], expected["sphere"]["center_godot_m"][1]),
+        ("sphere.center_godot_m[2]", actual["sphere"]["center_godot_m"][2], expected["sphere"]["center_godot_m"][2]),
+    ]
+    for label, got, want in checks:
+        if abs(float(got) - float(want)) > 1e-6:
+            raise RuntimeError(f"Godot/Blender mapping drift for {label}: Godot={got}, expected={want}")
+
+    if actual["hazard_area"]["cells"] != expected["hazard_area"]["cells"]:
+        raise RuntimeError(
+            "Godot/Blender hazard mapping drift: "
+            f"Godot={actual['hazard_area']['cells']}, expected={expected['hazard_area']['cells']}"
+        )
+
+
+def build_kaos_arena(op: dict, root_path: Path) -> None:
+    """Build a Blender visual shell whose combat geometry matches Godot exactly."""
     rng = random.Random(int(op.get("seed", 20261002)))
     scale = float(op.get("scale", 1.0))
+
+    mapping = _kaos_mapping_from_godot(root_path)
+    _validate_expected_mapping(mapping, op.get("expected_mapping", {}))
+    bpy.context.scene["kaos_combat_mapping_json"] = json.dumps(mapping, sort_keys=True)
 
     stone = _material("Arena_Weathered_Marble", (0.48, 0.47, 0.43), 0.86)
     stone_dark = _material("Arena_Dark_Stone", (0.09, 0.095, 0.105), 0.82)
@@ -334,229 +478,154 @@ def build_kaos_arena(op: dict) -> None:
 
     root = bpy.data.collections.new("KAOS_ARENA")
     bpy.context.scene.collection.children.link(root)
-
-    # Build in the scene collection, then move generated objects into KAOS_ARENA.
     before = set(bpy.context.scene.objects)
 
-    # Water basin and concentric stepped arena.
-    _add_cylinder("WaterBasin", 190 * scale, 0.7 * scale, (0, 0, -0.5 * scale), water, vertices=128)
-    rings = [
-        (112, 1.0, 0.0, stone_dark),
-        (101, 1.8, 0.7, stone),
-        (88, 1.6, 1.7, stone_light),
-        (73, 1.4, 2.6, stone),
-    ]
-    for idx, (radius, depth, z, mat) in enumerate(rings):
-        _add_cylinder(
-            f"ArenaRing_{idx}",
-            radius * scale,
-            depth * scale,
-            (0, 0, (z + depth * 0.5) * scale),
-            mat,
-            vertices=128,
-        )
+    # Godot X,Z become Blender X,Y. Godot vertical Y becomes Blender Z.
+    floor_w, floor_d = mapping["battlemap"]["size_m"]
+    floor_center_y = mapping["battlemap"]["center_godot_m"][2]
+    water_radius = mapping["water"]["radius_m"]
+    water_center_y = mapping["water"]["center_godot_m"][2]
+    water_height = mapping["water"]["center_godot_m"][1]
+    sphere_radius = mapping["sphere"]["radius_m"]
+    sphere_godot = mapping["sphere"]["center_godot_m"]
+    sphere_blender = (sphere_godot[0], sphere_godot[2], sphere_godot[1])
 
-    # Central fractured dais.
-    _add_cylinder("CentralDais", 45 * scale, 1.4 * scale, (0, 0, 4.0 * scale), stone_dark, vertices=96)
-    for i in range(12):
-        angle = i * math.tau / 12.0 + rng.uniform(-0.08, 0.08)
-        radius = rng.uniform(35, 58) * scale
-        w = rng.uniform(3.5, 7.5) * scale
-        l = rng.uniform(8.0, 18.0) * scale
-        h = rng.uniform(0.5, 1.4) * scale
-        _add_box(
-            f"FracturedSlab_{i:02d}",
-            (w * 0.5, l * 0.5, h * 0.5),
-            (math.cos(angle) * radius, math.sin(angle) * radius, (4.2 + h * 0.5) * scale),
-            stone_light if i % 3 else stone,
-            rotation=(rng.uniform(-0.07,0.07), rng.uniform(-0.07,0.07), angle + rng.uniform(-0.2,0.2)),
-        )
+    # Exact visual proxy for the current Godot FloorCollision: 120 x 180 m.
+    # Decorative geometry may exist outside this rectangle but must not change it.
+    floor = _add_box(
+        "COMBAT_TacticalFloor_120x180m",
+        (floor_w * 0.5 * scale, floor_d * 0.5 * scale, 0.35 * scale),
+        (0.0, floor_center_y * scale, -0.35 * scale),
+        stone,
+    )
+    floor["godot_role"] = "Board/FloorCollision"
+    floor["size_m"] = f"{floor_w}x{floor_d}"
+    floor["center_godot_m"] = f"0,0,{floor_center_y}"
 
-    # Monumental sphere behind the arena, echoing the Godot encounter composition.
+    # A subtly raised inner paving field follows the same footprint but remains
+    # entirely inside it. It is visual dressing, not a new gameplay boundary.
+    _add_box(
+        "ArenaInnerPaving",
+        ((floor_w - 3.0) * 0.5 * scale, (floor_d - 3.0) * 0.5 * scale, 0.10 * scale),
+        (0.0, floor_center_y * scale, 0.10 * scale),
+        stone_light,
+    )
+
+    # Exact Godot water basin reference: radius 337 m, centered at Z=-60 m.
+    water_obj = _add_cylinder(
+        "COMBAT_WaterBasin_R337m",
+        water_radius * scale,
+        0.20 * scale,
+        (0.0, water_center_y * scale, water_height * scale),
+        water,
+        vertices=160,
+    )
+    water_obj["godot_role"] = "Board/WaterSurface"
+    water_obj["radius_m"] = water_radius
+
+    # Exact Klothys sphere mapping. This is intentionally enormous relative
+    # to the 120x180 m battlemap, matching encounter_scenery.gd.
     bpy.ops.mesh.primitive_uv_sphere_add(
-        segments=96,
-        ring_count=48,
-        radius=62 * scale,
-        location=(0, 154 * scale, 96 * scale),
+        segments=128,
+        ring_count=64,
+        radius=sphere_radius * scale,
+        location=tuple(v * scale for v in sphere_blender),
     )
     sphere = bpy.context.object
-    sphere.name = "KlothysSphere_Reference"
+    sphere.name = "COMBAT_KlothysSphere_R220m"
+    sphere["godot_role"] = "KlothisRoot/SphereVisual"
+    sphere["radius_m"] = sphere_radius
+    sphere["center_godot_m"] = ",".join(str(v) for v in sphere_godot)
     _assign_material(sphere, stone_dark)
+
+    # Keep only restrained bindings; these do not alter the sphere surface.
     for band_angle in (-0.58, 0.0, 0.58):
         bpy.ops.mesh.primitive_torus_add(
-            major_radius=62.8 * scale,
-            minor_radius=0.7 * scale,
-            major_segments=96,
+            major_radius=(sphere_radius + 1.2) * scale,
+            minor_radius=0.85 * scale,
+            major_segments=128,
             minor_segments=10,
-            location=(0, 154 * scale, 96 * scale),
+            location=tuple(v * scale for v in sphere_blender),
             rotation=(band_angle, 0.0, 0.0),
         )
         band = bpy.context.object
         band.name = "SphereBinding"
         _assign_material(band, gold)
 
-    # Outer ruin arc: intentionally incomplete/asymmetric.
-    ruin_radius = 105 * scale
-    kept_angles = [-155, -132, -110, -87, -65, -43, -20, 4, 31, 59, 84, 112, 139]
+    # Tactical reference markers: four corner plinths sit just OUTSIDE the
+    # combat rectangle, so they make scale readable without occupying cells.
+    xb = mapping["battlemap"]["x_bounds_m"]
+    yb = mapping["battlemap"]["z_bounds_m"]
+    corner_offset = 2.0
+    for idx, (x, y) in enumerate([
+        (xb[0] - corner_offset, yb[0] - corner_offset),
+        (xb[1] + corner_offset, yb[0] - corner_offset),
+        (xb[0] - corner_offset, yb[1] + corner_offset),
+        (xb[1] + corner_offset, yb[1] + corner_offset),
+    ]):
+        _add_box(
+            f"BoundaryPlinth_{idx}",
+            (1.5 * scale, 1.5 * scale, 0.8 * scale),
+            (x * scale, y * scale, 0.8 * scale),
+            stone_dark,
+        )
+
+    # Scenic ruins follow the ACTUAL Godot apse radii: columns start around
+    # 310 m from (0,-60), with the back wall at 395 m. They stay far outside
+    # the practical 120x180 m combat floor.
+    ruin_center_y = -60.0
+    kept_angles = [160, 177, 196, 216, 238, 262, 287, 313, 340]
+    ruin_radius = 310.0
     for idx, deg in enumerate(kept_angles):
         a = math.radians(deg)
-        p = (math.cos(a) * ruin_radius, math.sin(a) * ruin_radius, 4.3 * scale)
-        broken = 1.0
-        if idx in (1, 4, 8, 11):
-            broken = rng.uniform(0.48, 0.76)
-        col = _add_column(
-            f"OuterColumn_{idx:02d}",
-            p,
-            23 * scale,
-            1.75 * scale,
+        x = math.cos(a) * ruin_radius
+        y = ruin_center_y + math.sin(a) * ruin_radius
+        broken = 1.0 if idx not in (1, 5, 8) else rng.uniform(0.55, 0.78)
+        _add_column(
+            f"ScenicColumn_{idx:02d}",
+            (x * scale, y * scale, 0.0),
+            29.0 * scale,
+            2.8 * scale,
             stone_light,
             broken=broken,
         )
-        col.rotation_euler.z = a + math.pi * 0.5
 
-    # A partially surviving rear tholos creates one strong architectural landmark.
-    tholos_angles = [48, 65, 82, 99, 116, 133]
-    tholos_radius = 83 * scale
-    tholos_points = []
-    for idx, deg in enumerate(tholos_angles):
-        a = math.radians(deg)
-        p = (
-            math.cos(a) * tholos_radius,
-            math.sin(a) * tholos_radius,
-            4.3 * scale,
-        )
-        tholos_points.append(p)
-        _add_column(
-            f"RearTholosColumn_{idx:02d}",
-            p,
-            (27 if idx not in (0, 5) else 18) * scale,
-            1.9 * scale,
-            stone_light,
-            broken=1.0 if idx not in (0, 5) else 0.67,
-        )
-    for idx in range(1, len(tholos_points) - 2):
-        a = tholos_points[idx]
-        b = tholos_points[idx + 1]
-        mx = (a[0] + b[0]) * 0.5
-        my = (a[1] + b[1]) * 0.5
-        segment_len = math.hypot(b[0] - a[0], b[1] - a[1])
-        rot = math.atan2(b[1] - a[1], b[0] - a[0])
-        _add_box(
-            f"RearTholosEntablature_{idx:02d}",
-            (segment_len * 0.52, 1.8 * scale, 1.25 * scale),
-            (mx, my, 30.1 * scale),
-            stone_light,
-            rotation=(0.0, 0.0, rot),
-        )
-
-    # Three surviving arches establish scale; two damaged ones break symmetry.
-    arch_specs = [
-        (-70, False, 20),
-        (-18, True, 17),
-        (28, False, 21),
-        (145, True, 16),
-        (-145, True, 15),
-    ]
-    for idx, (deg, ruined, width) in enumerate(arch_specs):
-        a = math.radians(deg)
-        r = 101 * scale
-        x, y = math.cos(a) * r, math.sin(a) * r
-        _add_arch(
-            f"RuinArch_{idx:02d}",
-            (x, y, 4.3 * scale),
-            width * scale,
-            24 * scale,
-            3.6 * scale,
-            stone_light,
-            ruined=ruined,
-            rotation_z=a + math.pi * 0.5,
-        )
-
-    # Fallen column drums and debris.
-    for i in range(28):
-        a = rng.uniform(-math.pi, math.pi)
-        r = rng.uniform(78, 118) * scale
-        x, y = math.cos(a) * r, math.sin(a) * r
-        if i < 10:
-            bpy.ops.mesh.primitive_cylinder_add(
-                vertices=20,
-                radius=rng.uniform(1.1, 1.8) * scale,
-                depth=rng.uniform(4.0, 9.0) * scale,
-                location=(x, y, rng.uniform(4.8, 6.0) * scale),
-                rotation=(rng.uniform(1.25,1.75), rng.uniform(-0.25,0.25), a),
-            )
-            obj = bpy.context.object
-            obj.name = f"FallenColumn_{i:02d}"
-            _assign_material(obj, stone_light)
-        else:
-            _add_rock(
-                f"Debris_{i:02d}",
-                (x, y, rng.uniform(4.3, 5.2) * scale),
-                (
-                    rng.uniform(1.2, 3.8) * scale,
-                    rng.uniform(1.0, 3.1) * scale,
-                    rng.uniform(0.6, 2.0) * scale,
-                ),
-                stone if i % 2 else rock,
-                1000 + i,
-            )
-
-    # Perimeter cliff fragments to give the arena a stronger silhouette.
-    for i in range(18):
-        a = math.radians(-170 + i * 20 + rng.uniform(-5, 5))
-        r = rng.uniform(150, 176) * scale
+    # A few fallen fragments may decorate the floor, but remain low and do not
+    # define the combat boundary. They can later be removed or made non-solid.
+    for i in range(12):
+        x = rng.uniform(xb[0] + 8, xb[1] - 8)
+        y = rng.uniform(yb[0] + 8, yb[1] - 8)
         _add_rock(
-            f"PerimeterRock_{i:02d}",
-            (math.cos(a) * r, math.sin(a) * r, rng.uniform(3, 8) * scale),
+            f"ScenicFloorDebris_{i:02d}",
+            (x * scale, y * scale, 0.45 * scale),
             (
-                rng.uniform(7, 16) * scale,
-                rng.uniform(5, 12) * scale,
-                rng.uniform(8, 20) * scale,
+                rng.uniform(0.7, 1.8) * scale,
+                rng.uniform(0.6, 1.5) * scale,
+                rng.uniform(0.3, 0.7) * scale,
             ),
-            rock,
-            2000 + i,
+            stone_dark if i % 3 == 0 else rock,
+            3000 + i,
         )
 
-    # Broad ceremonial approach with damaged flanking walls.
-    for i in range(10):
-        _add_box(
-            f"ApproachStep_{i:02d}",
-            (9.0 * scale, 4.6 * scale, 0.48 * scale),
-            (0, (-138 + i * 8.1) * scale, (0.2 + i * 0.43) * scale),
-            stone if i % 2 else stone_light,
-        )
-    for side in (-1, 1):
-        for i in range(4):
-            _add_box(
-                f"ApproachWall_{side}_{i:02d}",
-                (2.0 * scale, 7.0 * scale, rng.uniform(1.6, 3.8) * scale),
-                (side * 13.0 * scale, (-119 + i * 16) * scale, 2.8 * scale),
-                stone,
-                rotation=(rng.uniform(-0.05, 0.05), 0.0, rng.uniform(-0.08, 0.08)),
-            )
-
-    # Lighting tuned for readable greybox + material preview.
     key = bpy.data.lights.new("KaosKey", type="SUN")
-    key.energy = 2.8
+    key.energy = 3.0
     key.color = (1.0, 0.84, 0.68)
     key_obj = bpy.data.objects.new("KaosKey", key)
     bpy.context.scene.collection.objects.link(key_obj)
     key_obj.rotation_euler = tuple(math.radians(v) for v in (42, -18, -28))
 
     fill = bpy.data.lights.new("KaosFill", type="AREA")
-    fill.energy = 1800
+    fill.energy = 2600
     fill.shape = "DISK"
-    fill.size = 55 * scale
+    fill.size = 120 * scale
     fill.color = (0.22, 0.38, 0.55)
     fill_obj = bpy.data.objects.new("KaosFill", fill)
     bpy.context.scene.collection.objects.link(fill_obj)
-    fill_obj.location = (-65 * scale, -45 * scale, 68 * scale)
+    fill_obj.location = (-180 * scale, 80 * scale, 280 * scale)
     fill_obj.rotation_euler = (math.radians(30), 0, math.radians(-35))
 
-    scene = bpy.context.scene
-    scene.world.color = (0.012, 0.016, 0.024)
+    bpy.context.scene.world.color = (0.012, 0.016, 0.024)
 
-    # Move freshly generated objects into dedicated collection for later editing.
     generated = [obj for obj in bpy.context.scene.objects if obj not in before]
     for obj in generated:
         for coll in list(obj.users_collection):
@@ -576,6 +645,7 @@ def _set_camera_pose(location, look_at, lens: float) -> None:
     direction = mathutils.Vector(look_at) - camera.location
     camera.rotation_euler = direction.to_track_quat("-Z", "Y").to_euler()
     camera.data.lens = lens
+    camera.data.clip_end = 3000.0
 
 
 def render_preview_spec(root: Path, spec: dict) -> None:
@@ -590,7 +660,7 @@ def render_preview_spec(root: Path, spec: dict) -> None:
         int(spec.get("height", 720)),
     )
 
-def execute_operation(op: dict) -> None:
+def execute_operation(op: dict, root: Path) -> None:
     kind = op.get("op")
     if kind == "add_cube":
         add_cube(op)
@@ -601,7 +671,7 @@ def execute_operation(op: dict) -> None:
     elif kind == "set_camera":
         set_camera(op)
     elif kind == "build_kaos_arena":
-        build_kaos_arena(op)
+        build_kaos_arena(op, root)
     else:
         raise ValueError(f"Unsupported operation: {kind!r}")
 
@@ -633,7 +703,7 @@ def main(argv: list[str]) -> int:
 
     for index, operation in enumerate(job.get("operations", []), start=1):
         print(f"BLENDER_AGENT_OP {index}: {operation.get('op')}", flush=True)
-        execute_operation(operation)
+        execute_operation(operation, root)
 
     outputs = job.get("outputs", {})
     if outputs.get("previews"):
