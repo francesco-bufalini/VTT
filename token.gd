@@ -223,7 +223,7 @@ func _grid_landing_center_y(delta: float) -> float:
 		max_support_y,
 		min_support_y
 	)
-	if not (value is float or value is int):
+	if typeof(value) != TYPE_FLOAT and typeof(value) != TYPE_INT:
 		return INF
 
 	var support_top := float(value)
