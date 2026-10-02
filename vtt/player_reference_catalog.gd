@@ -96,7 +96,7 @@ static func display_name(entry: Dictionary) -> String:
 
 
 static func proficiency_bonus(level: int) -> int:
-	return 2 + maxi(0, level - 1) / 4
+	return 2 + int(floor(float(maxi(0, level - 1)) / 4.0))
 
 
 static func ability_modifier(score: int) -> int:
