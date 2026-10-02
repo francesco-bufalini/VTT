@@ -334,32 +334,37 @@ per build incrementali, verifica, catalogo e GitHub Releases.
 
 ## D&D size metadata from 5eTools
 
-Token size is metadata; it never rescales the authored miniature automatically.
-`tools/import_tokens.ps1` reuses the project's local `5etools-src` checkout
-and builds a compact development-only index at
-`assets/tokens/5etools_creature_index.json`.
+La taglia D&D è metadata e non ridimensiona automaticamente la miniatura.
 
-Lookup priority is:
+Per default `tools/import_tokens.ps1` non richiede più un checkout 5eTools nel
+repository. Alla prima esecuzione scarica online i dati bestiario dal mirror
+pubblico `5etools-src`, costruisce un indice compatto e lo salva fuori dal
+repository nella cache utente:
 
-1. exact/controlled 5eTools creature-name match (2014 MM preferred over XMM),
+```text
+%LOCALAPPDATA%\VTT\cache\5etools_creature_index.json
+```
+
+Le esecuzioni successive riutilizzano questa cache senza nuove richieste online.
+Per aggiornarla esplicitamente:
+
+```powershell
+.\tools\import_tokens.ps1 -Source "C:\...\Monster Manual 2014" -Refresh5eTools
+```
+
+Resta possibile usare un checkout locale esterno al repository tramite
+`-FiveEToolsRoot` o `VTT_5ETOOLS_ROOT`.
+
+Lookup priority:
+
+1. exact/controlled 5eTools creature-name match (MM 2014 preferred over XMM),
 2. optional `assets/tokens/creature_size_overrides.json`,
-3. explicit size word in the package/model name,
+3. explicit size word in package/model name,
 4. base/marker fallback,
 5. Medium.
 
-Known model suffixes such as `Updated`, `Final`, `posed`, and Blender
-numeric suffixes such as `.001` are stripped conservatively. Ambiguous
-5eTools matches are rejected rather than guessed.
+Suffix controllati come `Updated`, `Final`, `posed` e `.001` vengono
+rimossi senza fuzzy matching aggressivo. Un match ambiguo non viene inventato.
 
-If a 5eTools size disagrees with the detected base/marker, conversion prints a
-warning but keeps the 5eTools metadata and preserves the authored visual scale.
-
-You can point the importer at the existing checkout explicitly:
-
-```powershell
-.\tools\import_tokens.ps1 -Source "C:\...\Monster Manual 2014" -FiveEToolsRoot "C:\...\5etools-src"
-```
-
-Alternatively set `VTT_5ETOOLS_ROOT`; common project-local locations are
-auto-detected. The generated creature index is ignored by Git and contains only
-name/source/edition/size/footprint metadata, not the full 5eTools bestiary.
+Se 5eTools e base/marker non concordano, il converter stampa un warning ma
+mantiene la taglia 5eTools e la scala visuale authored.
