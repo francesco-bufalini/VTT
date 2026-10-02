@@ -15,13 +15,12 @@ var _rendering: bool = false
 
 func setup(progress: Node) -> void:
 	controller = progress
-	position = Vector2(14, 14)
+	# Runtime toolbar occupies the top strip; keep the encounter HUD below it.
+	position = Vector2(14, 54)
 	custom_minimum_size.x = 244
 	add_theme_constant_override("separation", 5)
 	mouse_filter = Control.MOUSE_FILTER_IGNORE
 	theme = _make_theme()
-	var eyebrow := _label(self, "KAOS / KLOTHIS", 12)
-	eyebrow.modulate = Color(0.77,0.67,0.44)
 	_label(self, "Il filo del destino", 21)
 	_round = _label(self, "", 12)
 	var panel := PanelContainer.new()
