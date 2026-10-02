@@ -1,0 +1,22 @@
+{
+  "schema_version": 1,
+  "description": "External rigged creature sources for Klothys Titan Prison Sphere V2. Cached lazily by the Blender runner; not vendored into the VTT repository.",
+  "assets": [
+    {
+      "id": "quaternius_ultimate_monsters_demon",
+      "url": "https://raw.githubusercontent.com/ilrein/warptracker/71bbfbdfacd118196994b26da68eec1876d55c6b/public/models/demon.glb",
+      "upstream": "https://quaternius.com/packs/ultimatemonsters.html",
+      "provenance": "ilrein/warptracker public/models/demon.glb",
+      "license": "CC0-1.0",
+      "purpose": "Rigged/animated source body for imprisoned Titan A"
+    },
+    {
+      "id": "quaternius_ultimate_monsters_ghost",
+      "url": "https://raw.githubusercontent.com/ilrein/warptracker/71bbfbdfacd118196994b26da68eec1876d55c6b/public/models/ghost.glb",
+      "upstream": "https://quaternius.com/packs/ultimatemonsters.html",
+      "provenance": "ilrein/warptracker public/models/ghost.glb",
+      "license": "CC0-1.0",
+      "purpose": "Rigged/animated source body for imprisoned Titan B"
+    }
+  ]
+}
