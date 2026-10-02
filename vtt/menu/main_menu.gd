@@ -455,9 +455,9 @@ func _build_options_dialog() -> void:
 
 	var info := Label.new()
 	info.text = (
-		"La colonna sonora viene riprodotta solo nel Menu e in "
-		+ "Campagne attive. Entrando in una campagna viene fermata "
-		+ "automaticamente."
+		"La colonna sonora viene riprodotta nel Menu, in Campagne attive "
+		+ "e in Scenari della campagna. Entrando in uno scenario viene "
+		+ "fermata automaticamente."
 	)
 	info.autowrap_mode = TextServer.AUTOWRAP_WORD_SMART
 	info.modulate = Color(0.72, 0.75, 0.82, 1.0)
