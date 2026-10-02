@@ -1,7 +1,7 @@
 {
   "schema_version": 1,
   "scene_id": "klothys_titan_prison_sphere_v2",
-  "description": "V2 of Klothys's Titan prison: no repeated face reliefs. Two CC0 animated fantasy creature bodies are baked from rigged sources, radially wrapped into carbonite-like stone reliefs and embedded into the exact 220 m Godot sphere. A +/-28 degree front corridor is kept clear for the later Klothys figure and her binding hair.",
+  "description": "Klothys Titan prison V2: Demon and Orc animated CC0 bodies are baked from rigged sources, compacted and wrapped into the exact 220 m stone sphere as carbonite-style reliefs. The central +/-40 degree front sector stays open for the future full-height Klothys figure and binding hair.",
   "design_references": [
     "User-approved concept: two full creature silhouettes imprisoned in a cracked runic stone sphere",
     "encounter/encounter_scenery.gd",
@@ -102,47 +102,47 @@
         "path": "outputs/blender_agent/klothys_titan_prison_sphere_v2/preview_front.png",
         "location": [
           0,
-          390,
-          420
+          760,
+          430
         ],
         "look_at": [
           0,
           -230,
           385
         ],
-        "lens": 62,
+        "lens": 54,
         "width": 1100,
         "height": 700
       },
       {
         "path": "outputs/blender_agent/klothys_titan_prison_sphere_v2/preview_right.png",
         "location": [
-          520,
-          160,
-          510
+          690,
+          430,
+          520
         ],
         "look_at": [
           0,
           -230,
           385
         ],
-        "lens": 64,
+        "lens": 56,
         "width": 1100,
         "height": 700
       },
       {
         "path": "outputs/blender_agent/klothys_titan_prison_sphere_v2/preview_left.png",
         "location": [
-          -520,
-          170,
-          500
+          -690,
+          430,
+          520
         ],
         "look_at": [
           0,
           -230,
           385
         ],
-        "lens": 64,
+        "lens": 56,
         "width": 1100,
         "height": 700
       }
@@ -151,5 +151,5 @@
     "glb": "outputs/blender_agent/klothys_titan_prison_sphere_v2/klothys_titan_prison_sphere_v2.glb",
     "blend": "outputs/blender_agent/klothys_titan_prison_sphere_v2/klothys_titan_prison_sphere_v2.blend"
   },
-  "revision": 2
+  "revision": 3
 }
