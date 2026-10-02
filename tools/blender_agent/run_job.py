@@ -749,6 +749,277 @@ def build_kaos_arena(op: dict, root_path: Path) -> None:
         root.objects.link(obj)
 
 
+
+def _emissive_material(name: str, base_color, strength: float = 6.0, metallic: float = 0.0):
+    mat = _material(name, base_color, roughness=0.32, metallic=metallic)
+    bsdf = mat.node_tree.nodes.get("Principled BSDF") if mat.use_nodes else None
+    if bsdf is not None:
+        if "Emission Color" in bsdf.inputs:
+            bsdf.inputs["Emission Color"].default_value = (*base_color, 1.0)
+        elif "Emission" in bsdf.inputs:
+            bsdf.inputs["Emission"].default_value = (*base_color, 1.0)
+        if "Emission Strength" in bsdf.inputs:
+            bsdf.inputs["Emission Strength"].default_value = strength
+    return mat
+
+
+def _surface_curve(name: str, points, bevel_depth: float, material):
+    curve = bpy.data.curves.new(name, type="CURVE")
+    curve.dimensions = "3D"
+    curve.resolution_u = 2
+    curve.bevel_depth = bevel_depth
+    curve.bevel_resolution = 2
+    spline = curve.splines.new("POLY")
+    spline.points.add(len(points) - 1)
+    for i, point in enumerate(points):
+        spline.points[i].co = (*point, 1.0)
+    obj = bpy.data.objects.new(name, curve)
+    bpy.context.scene.collection.objects.link(obj)
+    curve.materials.append(material)
+    return obj
+
+
+def _sphere_point(center, radius: float, latitude: float, longitude: float):
+    c_lat = math.cos(latitude)
+    return (
+        center[0] + radius * c_lat * math.sin(longitude),
+        center[1] + radius * c_lat * math.cos(longitude),
+        center[2] + radius * math.sin(latitude),
+    )
+
+
+def build_titan_prison_sphere(op: dict, root_path: Path) -> None:
+    """Build the Klothys Titan prison as a standalone, arena-aligned Blender asset."""
+    rng = random.Random(int(op.get("seed", 20261002)))
+    scale = float(op.get("scale", 1.0))
+    mapping = _kaos_mapping_from_godot(root_path)
+    _validate_expected_mapping(mapping, op.get("expected_mapping", {}))
+    bpy.context.scene["kaos_combat_mapping_json"] = json.dumps(mapping, sort_keys=True)
+
+    sphere_radius = float(mapping["sphere"]["radius_m"])
+    sphere_godot = mapping["sphere"]["center_godot_m"]
+    center = (
+        sphere_godot[0] * scale,
+        sphere_godot[2] * scale,
+        sphere_godot[1] * scale,
+    )
+    radius = sphere_radius * scale
+
+    stone = _material("TitanPrison_ObsidianStone", (0.055, 0.06, 0.072), 0.82, 0.04)
+    titan_stone = _material("TitanPrison_TitanStone", (0.105, 0.105, 0.115), 0.76, 0.02)
+    gold = _emissive_material("TitanPrison_AgedDivineGold", (0.52, 0.25, 0.045), 2.0, 0.62)
+    energy = _emissive_material("TitanPrison_InnerEnergy", (1.0, 0.23, 0.055), 9.0, 0.05)
+
+    root = bpy.data.collections.new("KLOTHYS_TITAN_PRISON_SPHERE")
+    bpy.context.scene.collection.children.link(root)
+    before = set(bpy.context.scene.objects)
+
+    bpy.ops.mesh.primitive_uv_sphere_add(
+        segments=160,
+        ring_count=96,
+        radius=radius,
+        location=center,
+    )
+    shell = bpy.context.object
+    shell.name = "Klothys_PrisonShell_R220m"
+    shell["godot_role"] = "KlothisRoot/SphereVisual"
+    shell["reference_radius_m"] = sphere_radius
+    shell["center_godot_m"] = ",".join(str(v) for v in sphere_godot)
+    _assign_material(shell, stone)
+
+    # Keep the nominal 220 m sphere unchanged while adding only shallow,
+    # large-scale surface breakup. The exact scale/center remain derived from Godot.
+    tex = bpy.data.textures.new("TitanPrison_RockBreakup", type="CLOUDS")
+    tex.noise_scale = 0.72
+    tex.noise_depth = 2
+    disp = shell.modifiers.new("SubtleRockDeformation", type="DISPLACE")
+    disp.texture = tex
+    disp.texture_coords = "NORMAL"
+    disp.strength = 1.65 * scale
+    disp.mid_level = 0.5
+
+    # Reuse the exact relief asset used by Godot. Its placements mirror
+    # encounter/titan_reliefs.gd, but sit fractionally nearer the skin so the
+    # imprisoned Titans read as bodies/faces physically pressing through it.
+    relief_path = root_path / "encounter" / "assets" / "characters" / "titan_relief.glb"
+    if not relief_path.exists():
+        raise FileNotFoundError(f"Titan relief source missing: {relief_path}")
+
+    imported_before = set(bpy.context.scene.objects)
+    bpy.ops.import_scene.gltf(filepath=str(relief_path))
+    imported = [obj for obj in bpy.context.scene.objects if obj not in imported_before]
+    sources = [obj for obj in imported if obj.type == "MESH"]
+    if not sources:
+        raise RuntimeError("titan_relief.glb imported without a mesh")
+    source = max(sources, key=lambda obj: len(obj.data.vertices) if obj.data else 0)
+    source.hide_render = True
+    source.hide_set(True)
+
+    titan_instances = []
+    for i in range(16):
+        row = i // 4
+        yaw = -0.95 + float(i % 4) * 0.63 + (row % 2) * 0.12
+        if row == 1 and i % 4 in (1, 2):
+            yaw = -0.48 if i % 4 == 1 else 0.48
+        pitch = -0.80 + row * 0.51
+        n = mathutils.Vector((
+            math.sin(yaw) * math.cos(pitch),
+            math.cos(yaw) * math.cos(pitch),
+            math.sin(pitch),
+        )).normalized()
+
+        titan = source.copy()
+        titan.data = source.data.copy()
+        bpy.context.scene.collection.objects.link(titan)
+        titan.name = f"TitanPressureRelief_{i:02d}"
+        titan.hide_render = False
+        titan.hide_set(False)
+
+        # Godot uses radius 205 m. 208 m keeps the same composition while making
+        # the outer silhouette more legible against a 220 m shell.
+        titan.location = mathutils.Vector(center) + n * (208.0 * scale)
+        titan.rotation_euler = n.to_track_quat("Z", "Y").to_euler()
+        roll = -0.12 if i % 2 == 0 else 0.14
+        titan.rotation_euler.rotate_axis("Z", roll)
+        s = (3.8 + (i % 3) * 0.45) * scale
+        titan.scale = (s, s, s)
+        _assign_material(titan, titan_stone)
+        titan["source_role"] = "Godot titan_reliefs.gd"
+        titan_instances.append(titan)
+
+        # Soft under-form blends the relief into the shell so it reads as a
+        # deformation rather than a separate statue pasted onto the surface.
+        under_center = mathutils.Vector(center) + n * (214.5 * scale)
+        bpy.ops.mesh.primitive_ico_sphere_add(
+            subdivisions=3,
+            radius=1.0,
+            location=under_center,
+        )
+        under = bpy.context.object
+        under.name = f"TitanSurfaceBulge_{i:02d}"
+        under.rotation_euler = n.to_track_quat("Z", "Y").to_euler()
+        under.scale = (
+            (10.5 + (i % 3) * 1.2) * scale,
+            (7.5 + (i % 2) * 1.0) * scale,
+            (4.8 + (i % 3) * 0.55) * scale,
+        )
+        bpy.ops.object.transform_apply(location=False, rotation=False, scale=True)
+        _assign_material(under, stone)
+
+    for obj in imported:
+        if obj == source:
+            continue
+        bpy.data.objects.remove(obj, do_unlink=True)
+    bpy.data.objects.remove(source, do_unlink=True)
+
+    # Divine restraints: three thin, readable bands offset just above the stone.
+    for idx, rotation in enumerate(((0.0, 0.0, 0.0), (0.62, 0.0, 0.38), (-0.55, 0.28, -0.46))):
+        bpy.ops.mesh.primitive_torus_add(
+            major_radius=(sphere_radius + 2.3) * scale,
+            minor_radius=0.72 * scale,
+            major_segments=192,
+            minor_segments=10,
+            location=center,
+            rotation=rotation,
+        )
+        band = bpy.context.object
+        band.name = f"DivineBinding_{idx:02d}"
+        _assign_material(band, gold)
+
+    # Irregular emissive fissures are lightweight curves, not destructive booleans.
+    # They suggest the pressure and divine energy under the shell while keeping
+    # the asset fast to regenerate and easy to edit.
+    crack_count = int(op.get("crack_count", 11))
+    for crack_index in range(crack_count):
+        latitude = rng.uniform(-0.95, 0.95)
+        longitude = rng.uniform(-math.pi, math.pi)
+        points = []
+        lat = latitude
+        lon = longitude
+        segments = rng.randint(9, 17)
+        for j in range(segments):
+            points.append(_sphere_point(center, (sphere_radius + 0.9) * scale, lat, lon))
+            lat += rng.uniform(-0.055, 0.055)
+            lon += rng.uniform(0.045, 0.11) * (-1 if crack_index % 3 == 0 else 1)
+            lat = max(-1.34, min(1.34, lat))
+        _surface_curve(
+            f"EnergyFissure_{crack_index:02d}",
+            points,
+            rng.uniform(0.34, 0.72) * scale,
+            energy,
+        )
+
+        if crack_index % 2 == 0 and len(points) > 5:
+            branch_start = rng.randint(3, len(points) - 3)
+            b_lat = lat - rng.uniform(-0.12, 0.12)
+            b_lon = lon - rng.uniform(0.12, 0.28)
+            branch_points = []
+            for _ in range(rng.randint(4, 7)):
+                branch_points.append(_sphere_point(center, (sphere_radius + 1.0) * scale, b_lat, b_lon))
+                b_lat += rng.uniform(-0.04, 0.04)
+                b_lon += rng.uniform(-0.075, 0.075)
+            _surface_curve(
+                f"EnergyFissure_{crack_index:02d}_Branch",
+                branch_points,
+                rng.uniform(0.20, 0.38) * scale,
+                energy,
+            )
+
+    # Sparse floating fragments reinforce the "strained prison" silhouette without
+    # changing the gameplay-scale sphere or adding a platform.
+    for i in range(24):
+        u = rng.uniform(-1.0, 1.0)
+        theta = rng.uniform(-math.pi, math.pi)
+        ring = math.sqrt(max(0.0, 1.0 - u * u))
+        n = mathutils.Vector((ring * math.cos(theta), ring * math.sin(theta), u))
+        distance = rng.uniform(sphere_radius + 6.0, sphere_radius + 22.0) * scale
+        loc = mathutils.Vector(center) + n * distance
+        _add_rock(
+            f"PrisonFragment_{i:02d}",
+            loc,
+            (
+                rng.uniform(0.8, 2.8) * scale,
+                rng.uniform(0.7, 2.4) * scale,
+                rng.uniform(0.6, 2.0) * scale,
+            ),
+            stone,
+            9200 + i,
+        )
+
+    # Preview lighting belongs to the asset file; importing the collection into the
+    # arena only requires KLOTHYS_TITAN_PRISON_SPHERE.
+    key = bpy.data.lights.new("TitanPrison_Key", type="AREA")
+    key.energy = 4800
+    key.shape = "DISK"
+    key.size = 180 * scale
+    key.color = (0.36, 0.45, 0.75)
+    key_obj = bpy.data.objects.new("TitanPrison_Key", key)
+    bpy.context.scene.collection.objects.link(key_obj)
+    key_obj.location = (
+        center[0] - 270 * scale,
+        center[1] + 160 * scale,
+        center[2] + 310 * scale,
+    )
+    key_obj.rotation_euler = (math.radians(52), 0.0, math.radians(-42))
+
+    rim = bpy.data.lights.new("TitanPrison_Rim", type="POINT")
+    rim.energy = 9000
+    rim.color = (1.0, 0.18, 0.035)
+    rim_obj = bpy.data.objects.new("TitanPrison_Rim", rim)
+    bpy.context.scene.collection.objects.link(rim_obj)
+    rim_obj.location = center
+
+    bpy.context.scene.world.color = (0.006, 0.008, 0.016)
+    bpy.context.scene["titan_prison_asset_collection"] = root.name
+    bpy.context.scene["titan_prison_reference_radius_m"] = sphere_radius
+    bpy.context.scene["titan_prison_center_godot_m"] = ",".join(str(v) for v in sphere_godot)
+
+    generated = [obj for obj in bpy.context.scene.objects if obj not in before]
+    for obj in generated:
+        for coll in list(obj.users_collection):
+            coll.objects.unlink(obj)
+        root.objects.link(obj)
+
 def _set_camera_pose(location, look_at, lens: float) -> None:
     scene = bpy.context.scene
     camera = scene.camera
@@ -788,6 +1059,8 @@ def execute_operation(op: dict, root: Path) -> None:
         set_camera(op)
     elif kind == "build_kaos_arena":
         build_kaos_arena(op, root)
+    elif kind == "build_titan_prison_sphere":
+        build_titan_prison_sphere(op, root)
     else:
         raise ValueError(f"Unsupported operation: {kind!r}")
 
