@@ -33,6 +33,7 @@ var _passive_perception_label: Label
 
 var _spell_class_selector: OptionButton
 var _spell_level_selector: OptionButton
+var _spell_search_input: LineEdit
 var _available_spells: ItemList
 var _selected_spells: ItemList
 var _slot_total_spins: Array[SpinBox] = []
@@ -723,7 +724,27 @@ func _build_spells_tab() -> void:
 		30
 	)
 
-	_section_title(body, "Aggiungi dal catalogo 5e.tools")
+	_section_title(body, "Cerca nel catalogo 5e.tools")
+
+	_spell_search_input = LineEdit.new()
+	_spell_search_input.placeholder_text = "Cerca incantesimo per nome..."
+	_spell_search_input.clear_button_enabled = true
+	_spell_search_input.text_changed.connect(
+		func(_query: String) -> void:
+			_refresh_available_spells()
+	)
+	body.add_child(_spell_search_input)
+
+	var filter_hint := Label.new()
+	filter_hint.text = (
+		"Scrivi un nome per cercare in tutto il catalogo, "
+		+ "oppure usa classe e livello per filtrare."
+	)
+	filter_hint.autowrap_mode = TextServer.AUTOWRAP_WORD_SMART
+	filter_hint.add_theme_font_size_override("font_size", 12)
+	filter_hint.modulate = Color(0.76, 0.79, 0.86, 1.0)
+	body.add_child(filter_hint)
+
 	var picker_row := HBoxContainer.new()
 	picker_row.add_theme_constant_override("separation", 8)
 	body.add_child(picker_row)
@@ -755,15 +776,33 @@ func _build_spells_tab() -> void:
 	add_spell_button.pressed.connect(_add_selected_spell)
 	body.add_child(add_spell_button)
 
-	_section_title(body, "Incantesimi del personaggio")
+	_section_title(body, "Incantesimi conosciuti")
 	_selected_spells = ItemList.new()
 	_selected_spells.custom_minimum_size = Vector2(0, 160)
+	_selected_spells.select_mode = ItemList.SELECT_SINGLE
+	_selected_spells.item_activated.connect(
+		func(_index: int) -> void:
+			_activate_known_spell()
+	)
 	body.add_child(_selected_spells)
 
+	var known_spell_actions := HBoxContainer.new()
+	known_spell_actions.add_theme_constant_override("separation", 8)
+	body.add_child(known_spell_actions)
+
+	var activate_spell_button := Button.new()
+	activate_spell_button.text = "Attiva incantesimo"
+	activate_spell_button.tooltip_text = (
+		"Usa automaticamente come caster il token collegato alla scheda"
+	)
+	activate_spell_button.size_flags_horizontal = Control.SIZE_EXPAND_FILL
+	activate_spell_button.pressed.connect(_activate_known_spell)
+	known_spell_actions.add_child(activate_spell_button)
+
 	var remove_spell_button := Button.new()
-	remove_spell_button.text = "Rimuovi incantesimo selezionato"
+	remove_spell_button.text = "Rimuovi"
 	remove_spell_button.pressed.connect(_remove_selected_spell)
-	body.add_child(remove_spell_button)
+	known_spell_actions.add_child(remove_spell_button)
 
 	_section_title(body, "Slot")
 	var slots_grid := GridContainer.new()
@@ -1662,42 +1701,69 @@ func _select_option_value(option: OptionButton, value: String) -> void:
 
 
 func _refresh_available_spells() -> void:
-	if _available_spells == null or _spell_class_selector == null:
+	if _available_spells == null:
 		return
 	_available_spells.clear()
-	if _spell_class_selector.selected <= 0:
-		return
 
-	var class_metadata: Variant = _spell_class_selector.get_item_metadata(
-		_spell_class_selector.selected
-	)
-	if not class_metadata is Dictionary:
-		return
-	var selected_class_name: String = String(
-		(class_metadata as Dictionary).get("name", "")
-	)
-	if selected_class_name.is_empty():
-		return
+	var query := ""
+	if _spell_search_input != null:
+		query = _spell_search_input.text.strip_edges().to_lower()
 
-	var level := 0
-	if _spell_level_selector != null and _spell_level_selector.selected >= 0:
-		level = int(
-			_spell_level_selector.get_item_metadata(
-				_spell_level_selector.selected
+	var spells: Array[Dictionary] = []
+	if not query.is_empty():
+		for spell: Dictionary in SpellCatalog.all_spells():
+			var spell_name: String = String(
+				spell.get("name", "")
+			).to_lower()
+			if query in spell_name:
+				spells.append(spell)
+				if spells.size() >= 100:
+					break
+	else:
+		if _spell_class_selector == null or _spell_class_selector.selected <= 0:
+			return
+
+		var class_metadata: Variant = _spell_class_selector.get_item_metadata(
+			_spell_class_selector.selected
+		)
+		if not class_metadata is Dictionary:
+			return
+		var selected_class_name: String = String(
+			(class_metadata as Dictionary).get("name", "")
+		)
+		if selected_class_name.is_empty():
+			return
+
+		var level := 0
+		if (
+			_spell_level_selector != null
+			and _spell_level_selector.selected >= 0
+		):
+			level = int(
+				_spell_level_selector.get_item_metadata(
+					_spell_level_selector.selected
+				)
 			)
+		spells = SpellCatalog.spells_for_class_and_level(
+			selected_class_name,
+			level
 		)
 
-	var spells: Array[Dictionary] = SpellCatalog.spells_for_class_and_level(
-		selected_class_name,
-		level
-	)
 	for spell: Dictionary in spells:
-		var spell_name: String = String(spell.get("name", "Incantesimo"))
+		var spell_name: String = String(
+			spell.get("name", "Incantesimo")
+		)
 		var source: String = String(spell.get("source", ""))
+		var level: int = int(spell.get("level", 0))
+		var level_text := (
+			"Trucchetto" if level == 0 else "Lv %d" % level
+		)
 		_available_spells.add_item(
-			"%s  ·  %s" % [spell_name, source]
-			if not source.is_empty()
-			else spell_name
+			"%s · %s%s" % [
+				level_text,
+				spell_name,
+				(" · " + source) if not source.is_empty() else ""
+			]
 		)
 		_available_spells.set_item_metadata(
 			_available_spells.item_count - 1,
@@ -1773,6 +1839,86 @@ func _add_selected_spell() -> void:
 	_characters[_current_index] = character
 	_store.call("save_characters", _characters)
 	_refresh_selected_spells()
+
+
+func _activate_known_spell() -> void:
+	if _current_index < 0 or _current_index >= _characters.size():
+		_set_status("Seleziona prima un personaggio.")
+		return
+	if _selected_spells == null:
+		return
+
+	var selected: PackedInt32Array = _selected_spells.get_selected_items()
+	if selected.is_empty():
+		_set_status("Seleziona un incantesimo conosciuto.")
+		return
+
+	_save_form()
+	var character: Dictionary = _characters[_current_index]
+	var character_id: String = String(character.get("id", ""))
+	var caster: CharacterBody3D = _linked_token_for_character(character_id)
+	if caster == null:
+		_set_status(
+			"Questo personaggio non ha un token collegato nello scenario."
+		)
+		return
+
+	var spell_id: String = String(
+		_selected_spells.get_item_metadata(selected[0])
+	)
+	var spell_data: Dictionary = SpellCatalog.catalog_spell(spell_id)
+	if spell_data.is_empty():
+		_set_status("Incantesimo non trovato nel catalogo.")
+		return
+	if not SpellCatalog.is_runtime_usable(spell_data):
+		_set_status(
+			"%s è conosciuto, ma non ha ancora un effetto VTT attivabile."
+			% String(spell_data.get("name", "Questo incantesimo"))
+		)
+		return
+
+	var spell_system_value: Variant = board_root.get("spell_system")
+	if not spell_system_value is Node:
+		_set_status("Sistema incantesimi non disponibile.")
+		return
+	var runtime_spell_system: Node = spell_system_value as Node
+	if (
+		not is_instance_valid(runtime_spell_system)
+		or not runtime_spell_system.has_method(
+			"activate_spell_from_caster"
+		)
+	):
+		_set_status("Sistema incantesimi non disponibile.")
+		return
+
+	# Close the sheet before targeting so it cannot intercept the next click.
+	hide_panel()
+	var activated: bool = bool(
+		runtime_spell_system.call(
+			"activate_spell_from_caster",
+			spell_id,
+			caster
+		)
+	)
+	if not activated:
+		show_panel()
+		_set_status("Impossibile attivare l'incantesimo selezionato.")
+
+
+func _linked_token_for_character(
+	character_id: String
+) -> CharacterBody3D:
+	if character_id.is_empty():
+		return null
+	for node: Node in get_tree().get_nodes_in_group("dnd_token"):
+		if (
+			node is CharacterBody3D
+			and board_root.is_ancestor_of(node)
+			and node.has_meta("player_character_id")
+			and String(node.get_meta("player_character_id")) == character_id
+		):
+			return node as CharacterBody3D
+	return null
 
 
 func _remove_selected_spell() -> void:
