@@ -189,7 +189,7 @@
     "glb": "outputs/blender_agent/kaos_arena_v7/kaos_arena_v7.glb",
     "blend": "outputs/blender_agent/kaos_arena_v7/kaos_arena_v7.blend"
   },
-  "revision": 1,
+  "revision": 2,
   "layout_extension": {
     "sphere_platform_radius_m": 230,
     "platform_thickness_m": 0.7,
