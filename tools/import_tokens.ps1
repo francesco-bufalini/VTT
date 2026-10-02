@@ -59,6 +59,35 @@ if ([string]::IsNullOrWhiteSpace($FiveEToolsRoot)) {
             break
         }
     }
+
+    # Locate any project-local checkout by its canonical bestiary index.
+    if ([string]::IsNullOrWhiteSpace($FiveEToolsRoot)) {
+        $searchRoots = @($ProjectRoot)
+        $parentRoot = Split-Path $ProjectRoot -Parent
+        if (-not [string]::IsNullOrWhiteSpace($parentRoot)) {
+            $searchRoots += $parentRoot
+        }
+
+        foreach ($searchRoot in $searchRoots) {
+            $bestiaryIndexes = Get-ChildItem -Path $searchRoot -Filter "index.json" -File -Recurse -ErrorAction SilentlyContinue |
+                Where-Object {
+                    $_.Directory.Name -eq "bestiary" -and
+                    $_.Directory.Parent.Name -eq "data"
+                }
+
+            foreach ($indexFile in $bestiaryIndexes) {
+                $candidateRoot = $indexFile.Directory.Parent.Parent.FullName
+                if (Test-Path (Join-Path $candidateRoot "data\bestiary\index.json")) {
+                    $FiveEToolsRoot = $candidateRoot
+                    break
+                }
+            }
+
+            if (-not [string]::IsNullOrWhiteSpace($FiveEToolsRoot)) {
+                break
+            }
+        }
+    }
 }
 
 if (-not [string]::IsNullOrWhiteSpace($FiveEToolsRoot)) {
@@ -79,7 +108,11 @@ if (-not [string]::IsNullOrWhiteSpace($FiveEToolsRoot)) {
     }
 }
 elseif (-not (Test-Path $CreatureIndex)) {
-    Write-Warning "5eTools non rilevato e indice creature assente. Il converter usera i fallback locali."
+    throw (
+        "5eTools non rilevato e indice creature assente. " +
+        "Il token importer richiede un checkout con data\bestiary\index.json. " +
+        "Passa -FiveEToolsRoot oppure imposta VTT_5ETOOLS_ROOT."
+    )
 }
 else {
     Write-Host "5eTools:  uso indice creature locale esistente"
