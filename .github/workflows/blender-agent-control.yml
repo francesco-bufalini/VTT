@@ -1,0 +1,138 @@
+name: Blender Agent Control
+
+on:
+  issue_comment:
+    types: [created]
+
+permissions:
+  contents: write
+  issues: write
+
+jobs:
+  blender:
+    if: >-
+      github.event.issue.pull_request == null &&
+      github.actor == github.repository_owner &&
+      startsWith(github.event.comment.body, '/blender-agent ')
+    runs-on: [self-hosted, windows, x64, vtt-godot]
+    timeout-minutes: 20
+
+    steps:
+      - name: Parse Blender command
+        id: command
+        shell: powershell
+        env:
+          BLENDER_COMMAND: ${{ github.event.comment.body }}
+        run: |
+          $ErrorActionPreference = "Stop"
+          $parts = $env:BLENDER_COMMAND.Trim() -split "\s+"
+          if ($parts.Count -ne 3 -or $parts[0] -ne "/blender-agent") {
+            throw "Expected: /blender-agent <git-ref> <job-json-path>"
+          }
+          $ref = $parts[1]
+          $job = $parts[2]
+          if ($ref -notmatch "^[A-Za-z0-9._/-]+$") { throw "Invalid git ref." }
+          if ($job -notmatch "^blender/jobs/[A-Za-z0-9._/-]+\.json$") { throw "Invalid Blender job path." }
+          "ref=$ref" >> $env:GITHUB_OUTPUT
+          "job=$job" >> $env:GITHUB_OUTPUT
+          Write-Host "Ref: $ref"
+          Write-Host "Job: $job"
+
+      - name: Checkout requested Blender surface
+        uses: actions/checkout@v4
+        with:
+          ref: ${{ steps.command.outputs.ref }}
+          clean: true
+          fetch-depth: 1
+          sparse-checkout-cone-mode: false
+          sparse-checkout: |
+            /blender/
+            /tools/blender_agent/
+            /tools/blender_env/
+
+      - name: Verify Blender runner environment
+        shell: powershell
+        run: |
+          $ErrorActionPreference = "Stop"
+          if ([string]::IsNullOrWhiteSpace($env:VTT_BLENDER_EXE)) { throw "VTT_BLENDER_EXE is not available to the runner process." }
+          if (-not (Test-Path -LiteralPath $env:VTT_BLENDER_EXE -PathType Leaf)) { throw "Blender executable not found: $env:VTT_BLENDER_EXE" }
+          if ([string]::IsNullOrWhiteSpace($env:VTT_BLENDER_ASSET_ROOT)) { throw "VTT_BLENDER_ASSET_ROOT is not available to the runner process." }
+          if (-not (Test-Path -LiteralPath $env:VTT_BLENDER_ASSET_ROOT -PathType Container)) { throw "Blender asset root not found: $env:VTT_BLENDER_ASSET_ROOT" }
+          $versionLine = (& $env:VTT_BLENDER_EXE --background --python-expr "import bpy; print('BLENDER_AGENT_VERSION', bpy.app.version_string)" 2>&1 | Out-String)
+          Write-Host $versionLine
+          if ($versionLine -notmatch "BLENDER_AGENT_VERSION 5\.2\.") { throw "Expected Blender 5.2.x." }
+
+      - name: Run Blender job
+        id: blender
+        shell: powershell
+        run: |
+          $ErrorActionPreference = "Stop"
+          Remove-Item -LiteralPath "outputs/blender_agent" -Recurse -Force -ErrorAction SilentlyContinue
+          $job = "${{ steps.command.outputs.job }}"
+          if (-not (Test-Path -LiteralPath $job -PathType Leaf)) { throw "Blender job not found: $job" }
+          $output = @(& $env:VTT_BLENDER_EXE --background --python ".\tools\blender_agent\run_job.py" -- --job $job --project-root $env:GITHUB_WORKSPACE 2>&1)
+          $exitCode = $LASTEXITCODE
+          $output | ForEach-Object { Write-Host $_ }
+          if ($exitCode -ne 0) { exit $exitCode }
+          if (($output -join [Environment]::NewLine) -notmatch "(?m)^BLENDER_AGENT_PASS ") { throw "Blender job ended without BLENDER_AGENT_PASS marker." }
+
+      - name: Upload Blender outputs
+        if: success()
+        uses: actions/upload-artifact@v4
+        with:
+          name: blender-agent-${{ github.run_number }}
+          path: outputs/blender_agent/**
+          if-no-files-found: error
+          retention-days: 7
+
+      - name: Publish Blender agent status
+        if: always()
+        shell: powershell
+        run: |
+          $ErrorActionPreference = "Stop"
+          New-Item -ItemType Directory -Path "blender/agent_reports" -Force | Out-Null
+          $sceneReport = Get-ChildItem -Path "outputs/blender_agent" -Filter scene_report.json -Recurse -File -ErrorAction SilentlyContinue | Select-Object -First 1
+          $scene = $null
+          if ($sceneReport) { $scene = Get-Content -LiteralPath $sceneReport.FullName -Raw | ConvertFrom-Json }
+          $status = [ordered]@{
+            schema_version = 1
+            run_id = "${{ github.run_id }}"
+            run_number = "${{ github.run_number }}"
+            source_sha = "${{ github.sha }}"
+            requested_ref = "${{ steps.command.outputs.ref }}"
+            workflow_status = "${{ job.status }}"
+            blender_job = "${{ steps.command.outputs.job }}"
+            scene_report = $scene
+          }
+          $status | ConvertTo-Json -Depth 10 | Set-Content -LiteralPath "blender/agent_reports/latest.json" -Encoding UTF8
+          git add --sparse blender/agent_reports/latest.json
+          if (-not (git diff --cached --quiet)) {
+            git config user.name "github-actions[bot]"
+            git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+            git commit -m "Record Blender agent run status"
+            $target = "${{ steps.command.outputs.ref }}"
+            for ($attempt = 1; $attempt -le 10; $attempt++) {
+              git fetch origin $target
+              if ($LASTEXITCODE -ne 0) { exit $LASTEXITCODE }
+              git rebase "origin/$target"
+              if ($LASTEXITCODE -ne 0) { git rebase --abort; exit 1 }
+              git push origin "HEAD:$target"
+              if ($LASTEXITCODE -eq 0) { break }
+              if ($attempt -eq 10) { throw "Could not publish Blender agent status after ten retries." }
+            }
+          }
+
+      - name: Reply on control issue
+        if: always()
+        uses: actions/github-script@v7
+        with:
+          script: |
+            const status = "${{ job.status }}";
+            const ref = "${{ steps.command.outputs.ref }}";
+            const jobPath = "${{ steps.command.outputs.job }}";
+            await github.rest.issues.createComment({
+              owner: context.repo.owner,
+              repo: context.repo.repo,
+              issue_number: context.issue.number,
+              body: `Blender agent run ${context.runId}: **${status}** — ref \`${ref}\`, job \`${jobPath}\`.`
+            });
