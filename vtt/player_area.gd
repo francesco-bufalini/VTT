@@ -2164,36 +2164,59 @@ func _refresh_available_spells() -> void:
 
 
 func _refresh_selected_spells() -> void:
-	if _selected_spells == null:
+	_refresh_spell_list(_selected_spells, "spells")
+
+
+func _refresh_prepared_spells() -> void:
+	_refresh_spell_list(_prepared_spells, "prepared_spells")
+
+
+func _refresh_spell_list(
+	list_control: ItemList,
+	character_key: String
+) -> void:
+	if list_control == null:
 		return
-	_selected_spells.clear()
+	list_control.clear()
 	if _current_index < 0 or _current_index >= _characters.size():
 		return
-	var spells_value: Variant = _characters[_current_index].get("spells", [])
+
+	var spells_value: Variant = _characters[_current_index].get(
+		character_key,
+		[]
+	)
 	if not spells_value is Array:
 		return
-	var spells: Array = spells_value as Array
-	for spell_value: Variant in spells:
+
+	for spell_value: Variant in spells_value:
 		if not spell_value is Dictionary:
 			continue
 		var spell: Dictionary = spell_value as Dictionary
 		var level: int = int(spell.get("level", 0))
-		var level_text: String = (
+		var level_text := (
 			"Trucchetto" if level == 0 else "Lv %d" % level
 		)
-		_selected_spells.add_item(
+		list_control.add_item(
 			"%s · %s" % [
 				level_text,
 				String(spell.get("name", "Incantesimo"))
 			]
 		)
-		_selected_spells.set_item_metadata(
-			_selected_spells.item_count - 1,
+		list_control.set_item_metadata(
+			list_control.item_count - 1,
 			String(spell.get("id", ""))
 		)
 
 
 func _add_selected_spell() -> void:
+	_add_selected_spell_to("spells")
+
+
+func _add_selected_prepared_spell() -> void:
+	_add_selected_spell_to("prepared_spells")
+
+
+func _add_selected_spell_to(character_key: String) -> void:
 	if _current_index < 0 or _available_spells == null:
 		return
 	var selected: PackedInt32Array = _available_spells.get_selected_items()
@@ -2204,45 +2227,62 @@ func _add_selected_spell() -> void:
 	if not metadata is Dictionary:
 		return
 	var new_spell: Dictionary = (metadata as Dictionary).duplicate(true)
-	var new_id: String = String(new_spell.get("id", ""))
+	var new_id := String(new_spell.get("id", ""))
 	if new_id.is_empty():
 		return
 
 	var character: Dictionary = _characters[_current_index]
-	var spells_value: Variant = character.get("spells", [])
+	var raw_value: Variant = character.get(character_key, [])
 	var spells: Array = (
-		(spells_value as Array).duplicate(true)
-		if spells_value is Array
+		(raw_value as Array).duplicate(true)
+		if raw_value is Array
 		else []
 	)
 	for existing_value: Variant in spells:
 		if (
 			existing_value is Dictionary
-			and String((existing_value as Dictionary).get("id", "")) == new_id
+			and String((existing_value as Dictionary).get("id", ""))
+			== new_id
 		):
 			return
+
 	spells.append(new_spell)
-	character["spells"] = spells
+	character[character_key] = spells
 	_characters[_current_index] = character
 	_store.call("save_characters", _characters)
-	_refresh_selected_spells()
+
+	if character_key == "prepared_spells":
+		_refresh_prepared_spells()
+	else:
+		_refresh_selected_spells()
 
 
 func _activate_known_spell() -> void:
+	_activate_spell_from_sheet(_selected_spells, "spells")
+
+
+func _activate_prepared_spell() -> void:
+	_activate_spell_from_sheet(_prepared_spells, "prepared_spells")
+
+
+func _activate_spell_from_sheet(
+	list_control: ItemList,
+	character_key: String
+) -> void:
 	if _current_index < 0 or _current_index >= _characters.size():
 		_set_status("Seleziona prima un personaggio.")
 		return
-	if _selected_spells == null:
+	if list_control == null:
 		return
 
-	var selected: PackedInt32Array = _selected_spells.get_selected_items()
+	var selected := list_control.get_selected_items()
 	if selected.is_empty():
-		_set_status("Seleziona un incantesimo conosciuto.")
+		_set_status("Seleziona un incantesimo.")
 		return
 
 	_save_form()
 	var character: Dictionary = _characters[_current_index]
-	var character_id: String = String(character.get("id", ""))
+	var character_id := String(character.get("id", ""))
 	var caster: CharacterBody3D = _linked_token_for_character(character_id)
 	if caster == null:
 		_set_status(
@@ -2250,19 +2290,33 @@ func _activate_known_spell() -> void:
 		)
 		return
 
-	var spell_id: String = String(
-		_selected_spells.get_item_metadata(selected[0])
-	)
-	var known_spell: Dictionary = {}
-	var known_spells_value: Variant = character.get("spells", [])
-	if known_spells_value is Array:
-		for item: Variant in known_spells_value:
+	var spell_id := String(list_control.get_item_metadata(selected[0]))
+	var spell_data: Dictionary = {}
+	var raw_spells: Variant = character.get(character_key, [])
+	if raw_spells is Array:
+		for item: Variant in raw_spells:
 			if (
 				item is Dictionary
 				and String((item as Dictionary).get("id", "")) == spell_id
 			):
-				known_spell = (item as Dictionary).duplicate(true)
+				spell_data = (item as Dictionary).duplicate(true)
 				break
+	if spell_data.is_empty():
+		_set_status("Incantesimo non trovato nella scheda.")
+		return
+
+	var spell_level := int(spell_data.get("level", 0))
+	if spell_level > 0:
+		if spell_level > 9:
+			_set_status("Livello incantesimo non valido per gli slot.")
+			return
+		var total_slots := int(_slot_total_spins[spell_level - 1].value)
+		var spent_slots := _slot_spent_values[spell_level]
+		if total_slots <= spent_slots:
+			_set_status(
+				"Nessuno slot di livello %d disponibile." % spell_level
+			)
+			return
 
 	var spell_system_value: Variant = board_root.get("spell_system")
 	if not spell_system_value is Node:
@@ -2278,23 +2332,56 @@ func _activate_known_spell() -> void:
 		_set_status("Sistema incantesimi non disponibile.")
 		return
 
-	# Close the sheet before targeting so it cannot intercept the next click.
+	# The sheet closes before targeting so it cannot intercept clicks.
 	hide_panel()
-	var activated: bool = bool(
+	var activated := bool(
 		runtime_spell_system.call(
 			"activate_spell_from_caster",
 			spell_id,
 			caster,
-			String(known_spell.get("name", "")),
-			String(known_spell.get("source", ""))
+			String(spell_data.get("name", "")),
+			String(spell_data.get("source", ""))
 		)
 	)
 	if not activated:
 		show_panel()
 		_set_status(
-			"L'incantesimo è conosciuto, ma il suo effetto VTT "
+			"L'incantesimo è nella scheda, ma il suo effetto VTT "
 			+ "non è disponibile nel catalogo runtime corrente."
 		)
+		return
+
+	if spell_level > 0:
+		_consume_spell_slot(spell_level)
+
+
+func _consume_spell_slot(level: int) -> void:
+	if (
+		level < 1
+		or level > 9
+		or _current_index < 0
+		or _current_index >= _characters.size()
+	):
+		return
+	var total := int(_slot_total_spins[level - 1].value)
+	if _slot_spent_values[level] >= total:
+		return
+
+	_slot_spent_values[level] += 1
+	var character: Dictionary = _characters[_current_index]
+	var raw_slots: Variant = character.get("spell_slots_spent", [])
+	var spent_slots: Array = (
+		(raw_slots as Array).duplicate(true)
+		if raw_slots is Array
+		else []
+	)
+	while spent_slots.size() < 10:
+		spent_slots.append(0)
+	spent_slots[level] = _slot_spent_values[level]
+	character["spell_slots_spent"] = spent_slots
+	_characters[_current_index] = character
+	_store.call("save_characters", _characters)
+	_refresh_slot_markers(level)
 
 
 func _linked_token_for_character(
@@ -2307,27 +2394,37 @@ func _linked_token_for_character(
 			node is CharacterBody3D
 			and board_root.is_ancestor_of(node)
 			and node.has_meta("player_character_id")
-			and String(node.get_meta("player_character_id")) == character_id
+			and String(node.get_meta("player_character_id"))
+			== character_id
 		):
 			return node as CharacterBody3D
 	return null
 
 
 func _remove_selected_spell() -> void:
-	if _current_index < 0 or _selected_spells == null:
+	_remove_spell_from_sheet(_selected_spells, "spells")
+
+
+func _remove_selected_prepared_spell() -> void:
+	_remove_spell_from_sheet(_prepared_spells, "prepared_spells")
+
+
+func _remove_spell_from_sheet(
+	list_control: ItemList,
+	character_key: String
+) -> void:
+	if _current_index < 0 or list_control == null:
 		return
-	var selected: PackedInt32Array = _selected_spells.get_selected_items()
+	var selected := list_control.get_selected_items()
 	if selected.is_empty():
 		return
-	var spell_id: String = String(
-		_selected_spells.get_item_metadata(selected[0])
-	)
+	var spell_id := String(list_control.get_item_metadata(selected[0]))
 
 	var character: Dictionary = _characters[_current_index]
-	var spells_value: Variant = character.get("spells", [])
-	if not spells_value is Array:
+	var raw_spells: Variant = character.get(character_key, [])
+	if not raw_spells is Array:
 		return
-	var spells: Array = (spells_value as Array).duplicate(true)
+	var spells: Array = (raw_spells as Array).duplicate(true)
 	for index: int in range(spells.size() - 1, -1, -1):
 		var item: Variant = spells[index]
 		if (
@@ -2336,10 +2433,47 @@ func _remove_selected_spell() -> void:
 		):
 			spells.remove_at(index)
 			break
-	character["spells"] = spells
+
+	character[character_key] = spells
 	_characters[_current_index] = character
 	_store.call("save_characters", _characters)
-	_refresh_selected_spells()
+	if character_key == "prepared_spells":
+		_refresh_prepared_spells()
+	else:
+		_refresh_selected_spells()
+
+
+func _clear_prepared_spells() -> void:
+	if _current_index < 0 or _current_index >= _characters.size():
+		return
+	_characters[_current_index]["prepared_spells"] = []
+	_store.call("save_characters", _characters)
+	_refresh_prepared_spells()
+
+
+func _sync_character_health_to_token(character: Dictionary) -> void:
+	var character_id := String(character.get("id", ""))
+	var token: CharacterBody3D = _linked_token_for_character(character_id)
+	if token == null:
+		return
+	if token.has_method("set_player_hit_points"):
+		token.call(
+			"set_player_hit_points",
+			int(character.get("current_hp", 0)),
+			int(character.get("max_hp", 0))
+		)
+
+
+func _sync_all_character_health_bars() -> void:
+	for character: Dictionary in _characters:
+		_sync_character_health_to_token(character)
+
+
+func _clear_character_health_from_token(character_id: String) -> void:
+	var token: CharacterBody3D = _linked_token_for_character(character_id)
+	if token != null and token.has_method("clear_player_hit_points"):
+		token.call("clear_player_hit_points")
+
 
 
 func _campaign_manager() -> Node:
