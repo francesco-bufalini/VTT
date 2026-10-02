@@ -129,6 +129,11 @@ def parse_args() -> argparse.Namespace:
     )
     parser.add_argument("--project-root", required=True)
     parser.add_argument(
+        "--creature-index",
+        default="",
+        help="Path to the compact 5eTools creature-size index.",
+    )
+    parser.add_argument(
         "--default",
         default="",
         help="Token id/name/substring to use instead of the procedural default token.",
@@ -197,6 +202,7 @@ def resolve_creature_size(
     project_root: Path,
     base_reference: str,
     base_diameter: float,
+    creature_index_path: Path | None = None,
 ) -> dict:
     """Resolve D&D size metadata without changing authored visual scale.
 
@@ -204,7 +210,11 @@ def resolve_creature_size(
     base/marker -> Medium.  Base-derived information is never allowed to
     override a successful 5eTools match.
     """
-    index_path = project_root / "assets" / "tokens" / "5etools_creature_index.json"
+    index_path = (
+        creature_index_path
+        if creature_index_path is not None
+        else project_root / "assets" / "tokens" / "5etools_creature_index.json"
+    )
     records = load_creature_index(index_path)
     queries = [package.name]
     if normalize_creature_name(main_source.stem) != normalize_creature_name(package.name):
@@ -1189,6 +1199,7 @@ def process_package(
     source_root: Path,
     project_root: Path,
     decimate_ratio: float,
+    creature_index_path: Path | None = None,
 ) -> dict:
     clear_scene()
     action_ids_before_import = {
@@ -1254,6 +1265,7 @@ def process_package(
         project_root,
         base_reference,
         diameter,
+        creature_index_path,
     )
     size_name = str(size_info["size_name"])
     footprint = float(size_info["footprint"])
@@ -1418,6 +1430,11 @@ def main() -> int:
     args = parse_args()
     source_root = Path(args.source).expanduser().resolve()
     project_root = Path(args.project_root).expanduser().resolve()
+    creature_index_path = (
+        Path(args.creature_index).expanduser().resolve()
+        if args.creature_index.strip()
+        else None
+    )
 
     if not 0.05 <= args.decimate_ratio <= 1.0:
         print("ERROR: --decimate-ratio must be between 0.05 and 1.0")
@@ -1454,6 +1471,7 @@ def main() -> int:
                     source_root,
                     project_root,
                     args.decimate_ratio,
+                    creature_index_path,
                 )
             )
         except Exception as exc:
