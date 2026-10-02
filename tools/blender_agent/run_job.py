@@ -136,13 +136,16 @@ def render_preview(path: Path, width: int = 960, height: int = 540) -> None:
     bpy.ops.render.render(write_still=True)
 
 
-def scene_report(path: Path, job_path: Path) -> None:
+def scene_report(path: Path, job_path: Path, job: dict) -> None:
     scene = bpy.context.scene
     objects = list(scene.objects)
     meshes = [obj for obj in objects if obj.type == "MESH"]
     report = {
         "blender_version": bpy.app.version_string,
         "job": str(job_path),
+        "scene_id": job.get("scene_id", job_path.stem),
+        "description": job.get("description", ""),
+        "design_references": job.get("design_references", []),
         "asset_root": os.environ.get("VTT_BLENDER_ASSET_ROOT", ""),
         "object_count": len(objects),
         "mesh_object_count": len(meshes),
@@ -237,45 +240,63 @@ def _add_column(name: str, location, height: float, radius: float, mat, broken: 
     return shaft
 
 
-def _add_arch(name: str, center, width: float, height: float, depth: float, mat, ruined: bool = False):
+def _add_arch(
+    name: str,
+    center,
+    width: float,
+    height: float,
+    depth: float,
+    mat,
+    ruined: bool = False,
+    rotation_z: float = 0.0,
+):
     x, y, z = center
     pillar_w = width * 0.12
     pillar_h = height * (0.72 if ruined else 0.78)
+
+    def world_point(local_x: float, local_y: float, local_z: float):
+        return (
+            x + math.cos(rotation_z) * local_x - math.sin(rotation_z) * local_y,
+            y + math.sin(rotation_z) * local_x + math.cos(rotation_z) * local_y,
+            z + local_z,
+        )
+
     _add_box(
         name + "_L",
         (pillar_w * 0.5, depth * 0.5, pillar_h * 0.5),
-        (x - width * 0.5 + pillar_w * 0.5, y, z + pillar_h * 0.5),
+        world_point(-width * 0.5 + pillar_w * 0.5, 0.0, pillar_h * 0.5),
         mat,
+        rotation=(0.0, 0.0, rotation_z),
     )
     _add_box(
         name + "_R",
         (pillar_w * 0.5, depth * 0.5, pillar_h * 0.5),
-        (x + width * 0.5 - pillar_w * 0.5, y, z + pillar_h * 0.5),
+        world_point(width * 0.5 - pillar_w * 0.5, 0.0, pillar_h * 0.5),
         mat,
+        rotation=(0.0, 0.0, rotation_z),
     )
     if not ruined:
         segments = 9
         arch_radius = width * 0.38
-        arch_center_z = z + pillar_h
+        arch_center_z = pillar_h
         for i in range(segments):
             a = math.pi * (i / (segments - 1))
-            bx = x + math.cos(a) * arch_radius
-            bz = arch_center_z + math.sin(a) * arch_radius
-            block = _add_box(
+            local_x = math.cos(a) * arch_radius
+            local_z = arch_center_z + math.sin(a) * arch_radius
+            _add_box(
                 f"{name}_Voussoir_{i:02d}",
                 (width * 0.055, depth * 0.52, width * 0.055),
-                (bx, y, bz),
+                world_point(local_x, 0.0, local_z),
                 mat,
-                rotation=(0.0, a - math.pi * 0.5, 0.0),
+                rotation=(0.0, -(a - math.pi * 0.5), rotation_z),
             )
-            block.rotation_euler.y = -(a - math.pi * 0.5)
     else:
         _add_box(
             name + "_BrokenLintel",
             (width * 0.20, depth * 0.52, pillar_w * 0.6),
-            (x - width * 0.28, y, z + pillar_h + width * 0.13),
+            world_point(-width * 0.28, 0.0, pillar_h + width * 0.13),
             mat,
-            rotation=(0.0, 0.18, 0.12),
+            rotation=(0.0, 0.18, rotation_z + 0.12),
         )
 
 
@@ -413,9 +434,8 @@ def build_kaos_arena(op: dict) -> None:
             3.0 * scale,
             stone_light,
             ruined=ruined,
+            rotation_z=a + math.pi * 0.5,
         )
-        # Parentless primitive architecture: rotate every piece created near the arch.
-        # Visual orientation is handled by placing arches along the outer silhouette.
 
     # Fallen column drums and debris.
     for i in range(28):
@@ -585,7 +605,7 @@ def main(argv: list[str]) -> int:
         )
     if outputs.get("report"):
         print("BLENDER_AGENT_OUTPUT report", flush=True)
-        scene_report(project_path(root, outputs["report"]), job_path)
+        scene_report(project_path(root, outputs["report"]), job_path, job)
     if outputs.get("glb"):
         print("BLENDER_AGENT_OUTPUT glb", flush=True)
         export_glb(project_path(root, outputs["glb"]))
