@@ -20,6 +20,9 @@ import bpy
 
 
 REQUIRED_VERSION = (5, 2)
+BLENDER_AGENT_DIR = Path(__file__).resolve().parent
+if str(BLENDER_AGENT_DIR) not in sys.path:
+    sys.path.insert(0, str(BLENDER_AGENT_DIR))
 
 
 def project_path(root: Path, value: str) -> Path:
