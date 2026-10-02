@@ -444,16 +444,28 @@ func _connect_token_pack_manager() -> void:
 			_on_remote_token_catalog_updated
 		)
 	if not TokenPackManager.token_downloaded.is_connected(
-		_on_remote_token_state_changed
+		_on_remote_token_downloaded
 	):
 		TokenPackManager.token_downloaded.connect(
-			_on_remote_token_state_changed
+			_on_remote_token_downloaded
 		)
 	if not TokenPackManager.token_mounted.is_connected(
-		_on_remote_token_state_changed
+		_on_remote_token_mounted
 	):
 		TokenPackManager.token_mounted.connect(
-			_on_remote_token_state_changed
+			_on_remote_token_mounted
+		)
+	if not TokenPackManager.token_download_failed.is_connected(
+		_on_remote_token_download_failed
+	):
+		TokenPackManager.token_download_failed.connect(
+			_on_remote_token_download_failed
+		)
+	if not TokenPackManager.token_mount_failed.is_connected(
+		_on_remote_token_mount_failed
+	):
+		TokenPackManager.token_mount_failed.connect(
+			_on_remote_token_mount_failed
 		)
 
 
@@ -462,12 +474,97 @@ func _on_remote_token_catalog_updated(_entries: Array[Dictionary]) -> void:
 		_reload_token_miniature_list()
 
 
-func _on_remote_token_state_changed(
-	_token_id: String,
-	_path_or_scene: String
+func _remote_visual_path(token_id: String) -> String:
+	return "res://remote_tokens/%s/%s_visual.res" % [token_id, token_id]
+
+
+func _on_remote_token_downloaded(
+	token_id: String,
+	_cache_path: String
 ) -> void:
-	if token_miniature_list != null:
-		_reload_token_miniature_list()
+	if (
+		String(_selected_token_profile.get("_pack_origin", "")) == "remote"
+		and String(_selected_token_profile.get("id", "")) == token_id
+	):
+		var error := TokenPackManager.mount_token(token_id)
+		if error != OK:
+			_on_remote_token_mount_failed(
+				token_id,
+				"Mount non riuscito: %s" % error_string(error)
+			)
+			return
+	call_deferred("_reload_token_miniature_list", token_id)
+
+
+func _on_remote_token_mounted(
+	token_id: String,
+	_scene_path: String
+) -> void:
+	if (
+		String(_selected_token_profile.get("_pack_origin", "")) == "remote"
+		and String(_selected_token_profile.get("id", "")) == token_id
+	):
+		_selected_token_profile["visual_asset"] = _remote_visual_path(token_id)
+		var ok_button := color_dialog.get_ok_button()
+		if ok_button != null:
+			ok_button.disabled = false
+	call_deferred("_reload_token_miniature_list", token_id)
+
+
+func _on_remote_token_download_failed(
+	token_id: String,
+	message: String
+) -> void:
+	if String(_selected_token_profile.get("id", "")) == token_id:
+		var ok_button := color_dialog.get_ok_button()
+		if ok_button != null:
+			ok_button.disabled = true
+	push_warning("DnDBase: download token remoto fallito: %s" % message)
+
+
+func _on_remote_token_mount_failed(
+	token_id: String,
+	message: String
+) -> void:
+	if String(_selected_token_profile.get("id", "")) == token_id:
+		var ok_button := color_dialog.get_ok_button()
+		if ok_button != null:
+			ok_button.disabled = true
+	push_warning("DnDBase: mount token remoto fallito: %s" % message)
+
+
+func _prepare_remote_token(profile: Dictionary) -> void:
+	if String(profile.get("_pack_origin", "")) != "remote":
+		return
+	var token_id := String(profile.get("id", "")).strip_edges()
+	if token_id.is_empty():
+		return
+
+	var ok_button := color_dialog.get_ok_button()
+	if ok_button != null:
+		ok_button.disabled = true
+
+	if TokenPackManager.is_mounted(token_id):
+		_selected_token_profile["visual_asset"] = _remote_visual_path(token_id)
+		if ok_button != null:
+			ok_button.disabled = false
+		return
+
+	if TokenPackManager.is_downloaded(token_id):
+		var mount_error := TokenPackManager.mount_token(token_id)
+		if mount_error != OK:
+			_on_remote_token_mount_failed(
+				token_id,
+				"Mount non riuscito: %s" % error_string(mount_error)
+			)
+		return
+
+	var download_error := TokenPackManager.download_token(token_id)
+	if download_error != OK:
+		_on_remote_token_download_failed(
+			token_id,
+			"Download non avviato: %s" % error_string(download_error)
+		)
 
 
 func _remote_token_status(token_id: String) -> String:
@@ -496,6 +593,7 @@ func _append_remote_token_profiles() -> void:
 
 		var remote_profile := entry.duplicate(true)
 		remote_profile["_pack_origin"] = "remote"
+		remote_profile["visual_asset"] = _remote_visual_path(token_id)
 		remote_profile["_pack_status"] = _remote_token_status(token_id)
 		remote_profile["_remote_scene"] = String(
 			entry.get(
@@ -526,7 +624,16 @@ func _format_token_download_size(profile: Dictionary) -> String:
 	return "%d B" % bytes
 
 
-func _reload_token_miniature_list() -> void:
+func _reload_token_miniature_list(preferred_id: String = "") -> void:
+	var previous_id := preferred_id.strip_edges()
+	if previous_id.is_empty():
+		previous_id = String(_selected_token_profile.get("id", ""))
+	var previous_query := (
+		token_miniature_search.text
+		if token_miniature_search != null
+		else ""
+	)
+
 	_token_profiles.clear()
 	_visible_token_profiles.clear()
 	_selected_token_profile.clear()
@@ -540,8 +647,12 @@ func _reload_token_miniature_list() -> void:
 			if not value is Dictionary:
 				continue
 			var profile := (value as Dictionary).duplicate(true)
-			if _token_profile_visual_asset(profile).is_empty():
+			var local_visual := _token_profile_visual_asset(profile)
+			if local_visual.is_empty():
 				continue
+			if not FileAccess.file_exists(local_visual):
+				continue
+			profile["_pack_origin"] = "local"
 			_token_profiles.append(profile)
 
 	_append_character_token_profiles()
@@ -551,9 +662,11 @@ func _reload_token_miniature_list() -> void:
 		Callable(self, "_sort_token_profiles")
 	)
 
-	if token_miniature_search != null:
-		token_miniature_search.text = ""
-	_refresh_token_miniature_filter("", DEFAULT_TOKEN_PROFILE_ID)
+	if previous_id.is_empty():
+		previous_id = DEFAULT_TOKEN_PROFILE_ID
+	if token_miniature_search != null and token_miniature_search.text != previous_query:
+		token_miniature_search.text = previous_query
+	_refresh_token_miniature_filter(previous_query, previous_id)
 
 
 func _on_token_miniature_search_changed(query: String) -> void:
@@ -678,6 +791,13 @@ func _on_token_miniature_selected(index: int) -> void:
 	)
 	if token_front_selector != null:
 		token_front_selector.select(front_index)
+
+	if String(_selected_token_profile.get("_pack_origin", "local")) == "remote":
+		_prepare_remote_token(_selected_token_profile)
+	else:
+		var ok_button := color_dialog.get_ok_button()
+		if ok_button != null:
+			ok_button.disabled = false
 
 
 func _on_token_size_selected(index: int) -> void:
@@ -2467,6 +2587,15 @@ func _reset_token_generation_state() -> void:
 
 
 func _on_token_dialog_confirmed() -> void:
+	if String(_selected_token_profile.get("_pack_origin", "local")) == "remote":
+		var remote_id := String(_selected_token_profile.get("id", ""))
+		if not TokenPackManager.is_mounted(remote_id):
+			push_warning(
+				"DnDBase: token remoto non ancora pronto: %s" % remote_id
+			)
+			return
+		_selected_token_profile["visual_asset"] = _remote_visual_path(remote_id)
+
 	var selected_index: int = size_selector.selected
 	if selected_index < 0 or selected_index >= TOKEN_SIZES.size():
 		selected_index = 2
