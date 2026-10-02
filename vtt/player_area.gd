@@ -1866,16 +1866,16 @@ func _activate_known_spell() -> void:
 	var spell_id: String = String(
 		_selected_spells.get_item_metadata(selected[0])
 	)
-	var spell_data: Dictionary = SpellCatalog.catalog_spell(spell_id)
-	if spell_data.is_empty():
-		_set_status("Incantesimo non trovato nel catalogo.")
-		return
-	if not SpellCatalog.is_runtime_usable(spell_data):
-		_set_status(
-			"%s è conosciuto, ma non ha ancora un effetto VTT attivabile."
-			% String(spell_data.get("name", "Questo incantesimo"))
-		)
-		return
+	var known_spell: Dictionary = {}
+	var known_spells_value: Variant = character.get("spells", [])
+	if known_spells_value is Array:
+		for item: Variant in known_spells_value:
+			if (
+				item is Dictionary
+				and String((item as Dictionary).get("id", "")) == spell_id
+			):
+				known_spell = (item as Dictionary).duplicate(true)
+				break
 
 	var spell_system_value: Variant = board_root.get("spell_system")
 	if not spell_system_value is Node:
@@ -1897,12 +1897,17 @@ func _activate_known_spell() -> void:
 		runtime_spell_system.call(
 			"activate_spell_from_caster",
 			spell_id,
-			caster
+			caster,
+			String(known_spell.get("name", "")),
+			String(known_spell.get("source", ""))
 		)
 	)
 	if not activated:
 		show_panel()
-		_set_status("Impossibile attivare l'incantesimo selezionato.")
+		_set_status(
+			"L'incantesimo è conosciuto, ma il suo effetto VTT "
+			+ "non è disponibile nel catalogo runtime corrente."
+		)
 
 
 func _linked_token_for_character(
