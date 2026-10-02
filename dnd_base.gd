@@ -14,6 +14,7 @@ const CONTEXT_CAMERA_SETTINGS := 12
 const CONTEXT_INITIATIVE := 13
 const CONTEXT_TOKEN_DETAILS := 14
 const CONTEXT_RESTORE_TRANSFORMATION := 15
+const CONTEXT_PLAYER_AREA := 16
 const CAMPAIGN_EDITOR_SCENE_PATH := "res://vtt/editor/campaign_editor.tscn"
 const TOKEN_LIBRARY_MANIFEST := "res://assets/tokens/token_library.json"
 const CHARACTER_TOKEN_ROOT := "res://assets/tokens/Characters"
@@ -1747,6 +1748,7 @@ func _show_context_menu(screen_position: Vector2) -> void:
 		context_menu.add_submenu_node_item("Token", context_token_menu)
 
 	context_game_menu.add_item("Incantesimi", CONTEXT_SPELLS)
+	context_game_menu.add_item("Area Player", CONTEXT_PLAYER_AREA)
 	var initiative_visible: bool = (
 		initiative_tracker != null
 		and is_instance_valid(initiative_tracker)
@@ -1800,6 +1802,12 @@ func _on_context_menu_id_pressed(id: int) -> void:
 	if id == CONTEXT_SPELLS:
 		if spell_system != null and is_instance_valid(spell_system):
 			spell_system.call("open_panel")
+		context_menu.hide()
+		return
+
+	if id == CONTEXT_PLAYER_AREA:
+		if player_area != null and is_instance_valid(player_area):
+			player_area.call("show_panel")
 		context_menu.hide()
 		return
 
