@@ -719,13 +719,24 @@ func _register_existing_map_shapes() -> void:
 
 func _on_tree_node_added(node: Node) -> void:
 	if node is CollisionShape3D:
+		# Never keep the CollisionShape3D itself as a deferred argument.
+		# Runtime terrain builders can add and free a shape in the same frame;
+		# by the time the deferred call runs that Object may already be freed.
+		# An integer instance id remains safe to pass through the queue.
 		call_deferred(
-			"_register_added_collision_shape",
-			node as CollisionShape3D
+			"_register_added_collision_shape_by_id",
+			node.get_instance_id()
 		)
 
 
-func _register_added_collision_shape(collision: CollisionShape3D) -> void:
+func _register_added_collision_shape_by_id(instance_id: int) -> void:
+	var value: Object = instance_from_id(instance_id)
+	if value == null or not is_instance_valid(value):
+		return
+	if not value is CollisionShape3D:
+		return
+
+	var collision := value as CollisionShape3D
 	if _register_map_shape(collision):
 		var bounds: AABB = _collision_world_aabb(collision)
 		_invalidate_chunks_for_aabb(bounds)
