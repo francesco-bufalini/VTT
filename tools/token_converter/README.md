@@ -330,3 +330,36 @@ tools/token_packs/README.md
 ```
 
 per build incrementali, verifica, catalogo e GitHub Releases.
+
+
+## D&D size metadata from 5eTools
+
+Token size is metadata; it never rescales the authored miniature automatically.
+`tools/import_tokens.ps1` reuses the project's local `5etools-src` checkout
+and builds a compact development-only index at
+`assets/tokens/5etools_creature_index.json`.
+
+Lookup priority is:
+
+1. exact/controlled 5eTools creature-name match (2014 MM preferred over XMM),
+2. optional `assets/tokens/creature_size_overrides.json`,
+3. explicit size word in the package/model name,
+4. base/marker fallback,
+5. Medium.
+
+Known model suffixes such as `Updated`, `Final`, `posed`, and Blender
+numeric suffixes such as `.001` are stripped conservatively. Ambiguous
+5eTools matches are rejected rather than guessed.
+
+If a 5eTools size disagrees with the detected base/marker, conversion prints a
+warning but keeps the 5eTools metadata and preserves the authored visual scale.
+
+You can point the importer at the existing checkout explicitly:
+
+```powershell
+.\tools\import_tokens.ps1 -Source "C:\...\Monster Manual 2014" -FiveEToolsRoot "C:\...\5etools-src"
+```
+
+Alternatively set `VTT_5ETOOLS_ROOT`; common project-local locations are
+auto-detected. The generated creature index is ignored by Git and contains only
+name/source/edition/size/footprint metadata, not the full 5eTools bestiary.
