@@ -40,6 +40,7 @@ const CONDITION_DEFINITIONS := [
 @export var token_height_cells: float = 2.0
 @export var flying: bool = true
 @export var visual_asset_path: String = ""
+@export var visual_native_footprint_cells: float = 0.0
 @export_range(0, 3, 1) var visual_front_quarter_turns: int = 0
 @export var token_display_name: String = ""
 @export var default_size_name: String = "Medium"
@@ -317,8 +318,13 @@ func set_visual_asset(path: String) -> bool:
 	imported.name = IMPORTED_VISUAL_NAME
 	imported.set_meta("token_imported_visual", true)
 	_imported_visual_base_basis = imported.transform.basis
+	var native_footprint := (
+		visual_native_footprint_cells
+		if visual_native_footprint_cells > 0.0
+		else 1.0
+	)
 	_visual_native_footprint_cells = maxf(
-		float(profile.get("footprint", 1.0)),
+		float(profile.get("footprint", native_footprint)),
 		0.5
 	)
 	visuals.add_child(imported)
