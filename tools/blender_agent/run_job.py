@@ -342,6 +342,91 @@ def _add_rock(name: str, location, scale, mat, seed_value: int):
     return obj
 
 
+def _add_fluted_cylinder_wall(
+    name: str,
+    radius: float,
+    height: float,
+    location,
+    mat,
+    flutes: int = 48,
+    flute_depth: float = 2.4,
+    segments_per_flute: int = 8,
+):
+    """Create an open-ended inward-facing fluted cylindrical wall.
+
+    Only the curved surface is generated: there are no top or bottom caps.
+    The radial modulation evokes the shaft of a monumental Greek column.
+    """
+    segments = max(24, int(flutes) * max(4, int(segments_per_flute)))
+    verts = []
+    faces = []
+    z0 = float(location[2])
+    z1 = z0 + float(height)
+    cx = float(location[0])
+    cy = float(location[1])
+
+    for i in range(segments):
+        angle = math.tau * i / segments
+        # Concave grooves: radius varies smoothly from the nominal wall radius
+        # inward by flute_depth. Using cosine keeps every groove continuous.
+        phase = math.tau * flutes * i / segments
+        radial = radius - flute_depth * (0.5 + 0.5 * math.cos(phase))
+        x = cx + math.cos(angle) * radial
+        y = cy + math.sin(angle) * radial
+        verts.append((x, y, z0))
+        verts.append((x, y, z1))
+
+    for i in range(segments):
+        j = (i + 1) % segments
+        # Winding is chosen so normals face inward toward the arena.
+        faces.append((2 * i, 2 * j, 2 * j + 1, 2 * i + 1))
+
+    mesh = bpy.data.meshes.new(name + "_Mesh")
+    mesh.from_pydata(verts, [], faces)
+    mesh.update()
+
+    obj = bpy.data.objects.new(name, mesh)
+    bpy.context.scene.collection.objects.link(obj)
+    _assign_material(obj, mat)
+    obj["open_cylinder"] = True
+    obj["radius_m"] = radius
+    obj["height_m"] = height
+    obj["flutes"] = flutes
+    obj["flute_depth_m"] = flute_depth
+    return obj
+
+
+def _add_open_cylinder_band(
+    name: str,
+    radius: float,
+    height: float,
+    z_bottom: float,
+    location_xy,
+    mat,
+    segments: int = 192,
+):
+    """Add a thin decorative cylindrical band with no caps."""
+    verts = []
+    faces = []
+    cx, cy = location_xy
+    for i in range(segments):
+        a = math.tau * i / segments
+        x = cx + math.cos(a) * radius
+        y = cy + math.sin(a) * radius
+        verts.append((x, y, z_bottom))
+        verts.append((x, y, z_bottom + height))
+    for i in range(segments):
+        j = (i + 1) % segments
+        faces.append((2 * i, 2 * j, 2 * j + 1, 2 * i + 1))
+    mesh = bpy.data.meshes.new(name + "_Mesh")
+    mesh.from_pydata(verts, [], faces)
+    mesh.update()
+    obj = bpy.data.objects.new(name, mesh)
+    bpy.context.scene.collection.objects.link(obj)
+    _assign_material(obj, mat)
+    return obj
+
+
 def _kaos_mapping_from_godot(root: Path) -> dict:
     scenery_path = root / "encounter" / "encounter_scenery.gd"
     hazard_path = root / "encounter" / "hazard_allowed_area.gd"
@@ -499,6 +584,23 @@ def build_kaos_arena(op: dict, root_path: Path) -> None:
                 f"platform={platform_radius}, sphere={sphere_radius_expected}"
             )
         layout_extension["sphere_platform_radius_m"] = platform_radius
+
+        if "arena_water_radius_m" in layout_extension:
+            arena_water_radius = float(layout_extension["arena_water_radius_m"])
+            sphere_center_distance = abs(
+                float(mapping["sphere"]["center_godot_m"][2])
+                - float(mapping["water"]["center_godot_m"][2])
+            )
+            required_tangent_radius = sphere_center_distance + platform_radius
+            if abs(arena_water_radius - required_tangent_radius) > 1e-6:
+                raise RuntimeError(
+                    "Arena water radius must be exactly internally tangent to "
+                    f"the sphere platform: got {arena_water_radius}, "
+                    f"required {required_tangent_radius}"
+                )
+            layout_extension["arena_water_radius_m"] = arena_water_radius
+            layout_extension["required_tangent_radius_m"] = required_tangent_radius
+
         bpy.context.scene["kaos_layout_extension_json"] = json.dumps(layout_extension, sort_keys=True)
 
     stone = _material("Arena_Weathered_Marble", (0.48, 0.47, 0.43), 0.86)
@@ -545,17 +647,60 @@ def build_kaos_arena(op: dict, root_path: Path) -> None:
         stone_light,
     )
 
-    # Exact Godot water basin reference: radius 337 m, centered at Z=-60 m.
+    # Godot defines R337m. V4 may deliberately enlarge the flooded arena
+    # while preserving the original value in combat_mapping for traceability.
+    effective_water_radius = float(
+        layout_extension.get("arena_water_radius_m", water_radius)
+        if layout_extension else water_radius
+    )
     water_obj = _add_cylinder(
-        "COMBAT_WaterBasin_R337m",
-        water_radius * scale,
+        f"COMBAT_WaterBasin_R{effective_water_radius:g}m",
+        effective_water_radius * scale,
         0.20 * scale,
         (0.0, water_center_y * scale, water_height * scale),
         water,
-        vertices=160,
+        vertices=192,
     )
     water_obj["godot_role"] = "Board/WaterSurface"
-    water_obj["radius_m"] = water_radius
+    water_obj["source_godot_radius_m"] = water_radius
+    water_obj["radius_m"] = effective_water_radius
+
+    if layout_extension and bool(layout_extension.get("arena_wall_enabled", False)):
+        wall_height = float(layout_extension.get("arena_wall_height_m", 60.0))
+        wall_flutes = int(layout_extension.get("arena_wall_flutes", 48))
+        wall_flute_depth = float(layout_extension.get("arena_wall_flute_depth_m", 2.4))
+        wall = _add_fluted_cylinder_wall(
+            "SCENERY_GreekFlutedArenaWall",
+            effective_water_radius * scale,
+            wall_height * scale,
+            (0.0, water_center_y * scale, 0.0),
+            stone_light,
+            flutes=wall_flutes,
+            flute_depth=wall_flute_depth * scale,
+            segments_per_flute=8,
+        )
+        wall["arena_wall_style"] = "greek_fluted_column"
+        wall["center_godot_m"] = f"0,0,{water_center_y}"
+
+        # Monumental base/capital mouldings: still only curved surfaces, never caps.
+        _add_open_cylinder_band(
+            "SCENERY_GreekWall_BaseBand",
+            (effective_water_radius - wall_flute_depth * 0.35) * scale,
+            4.0 * scale,
+            0.0,
+            (0.0, water_center_y * scale),
+            stone,
+            segments=256,
+        )
+        _add_open_cylinder_band(
+            "SCENERY_GreekWall_CapitalBand",
+            (effective_water_radius - wall_flute_depth * 0.20) * scale,
+            5.0 * scale,
+            (wall_height - 5.0) * scale,
+            (0.0, water_center_y * scale),
+            stone,
+            segments=256,
+        )
 
     # Optional additive combat extension used by Kaos V3. The original
     # 120x180 m Godot battlemap remains untouched; this extends it toward the
