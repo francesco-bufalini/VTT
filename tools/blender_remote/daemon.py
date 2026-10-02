@@ -39,6 +39,7 @@ SKIP_PENDING = os.getenv("BLENDER_REMOTE_SKIP_PENDING", "0") == "1"
 BLENDER_HOST = os.getenv("BLENDER_REMOTE_HOST", "127.0.0.1")
 BLENDER_PORT = int(os.getenv("BLENDER_REMOTE_PORT", "9876"))
 POLL_SECONDS = max(1.0, float(os.getenv("BLENDER_REMOTE_POLL_SECONDS", "3")))
+RESTART_REQUESTED = False
 GITHUB_API_VERSION = "2022-11-28"
 
 STATE_ROOT = Path(os.getenv("LOCALAPPDATA", str(Path.home()))) / "VTT"
@@ -271,6 +272,52 @@ payload = {
 print(json.dumps(payload))
 """
     return execute_json_code(code)
+
+
+def self_update() -> dict[str, Any]:
+    repo_root = Path(__file__).resolve().parents[2]
+
+    status = subprocess.run(
+        ["git", "status", "--porcelain"],
+        cwd=repo_root,
+        capture_output=True,
+        text=True,
+        timeout=30,
+    )
+    if status.returncode != 0:
+        raise RuntimeError(f"git status failed: {status.stderr.strip()}")
+
+    # Refuse to auto-update across local modifications. This keeps the update
+    # mechanism predictable and avoids overwriting user work.
+    dirty = [line for line in status.stdout.splitlines() if line.strip()]
+    if dirty:
+        raise RuntimeError(
+            "Repository has local changes; self_update refused. "
+            "Commit/stash them first, then retry."
+        )
+
+    pull = subprocess.run(
+        ["git", "pull", "--ff-only", "origin", "main"],
+        cwd=repo_root,
+        capture_output=True,
+        text=True,
+        timeout=120,
+    )
+    if pull.returncode != 0:
+        raise RuntimeError(f"git pull --ff-only failed: {pull.stderr.strip()}")
+
+    result = {
+        "updated": True,
+        "repo_root": str(repo_root),
+        "git_output": pull.stdout.strip(),
+        "restart": "scheduled",
+    }
+
+    # Re-exec after the result comment has been posted by main(). The flag is
+    # picked up by the loop after post_result returns.
+    global RESTART_REQUESTED
+    RESTART_REQUESTED = True
+    return {"status": "success", "result": result}
 
 
 def import_titan_reference() -> dict[str, Any]:
@@ -796,6 +843,9 @@ def execute(command: dict[str, Any]) -> dict[str, Any]:
     if action == "import_titan_reference":
         return import_titan_reference()
 
+    if action == "self_update":
+        return self_update()
+
     if action in {"screenshot", "render_preview"}:
         return viewport_screenshot(command)
 
@@ -862,7 +912,7 @@ def execute(command: dict[str, Any]) -> dict[str, Any]:
         return blender_command("execute_code", {"code": code}, timeout=300)
 
     raise ValueError(
-        "Unknown action. Supported: ping, scene, workspaces, viewport, set_viewport_shading, import_titan_reference, screenshot, render_preview, titan_relief, reset_titan_relief, hide_titan_helpers, show_titan_helpers, hide_runic_seals, show_runic_seals, hide_stress_cracks, show_stress_cracks, hide_floating_shards, show_floating_shards, object, transform, undo, save"
+        "Unknown action. Supported: ping, scene, workspaces, viewport, set_viewport_shading, import_titan_reference, self_update, screenshot, render_preview, titan_relief, reset_titan_relief, hide_titan_helpers, show_titan_helpers, hide_runic_seals, show_runic_seals, hide_stress_cracks, show_stress_cracks, hide_floating_shards, show_floating_shards, object, transform, undo, save"
         + (", python" if ALLOW_PYTHON else "")
     )
 
@@ -997,6 +1047,9 @@ def main() -> int:
                     result = execute(command)
                     post_result(command_id, comment_id, True, result)
                     print(f"< {command_id} OK")
+                    if RESTART_REQUESTED:
+                        print("Self-update complete. Restarting daemon...")
+                        os.execv(sys.executable, [sys.executable, str(Path(__file__).resolve())])
                 except Exception as exc:
                     error = {
                         "error": type(exc).__name__,
