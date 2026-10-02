@@ -189,6 +189,17 @@ jobs:
                 New-Item -ItemType Directory -Path $sceneDest -Force | Out-Null
                 Copy-Item -LiteralPath $blend.FullName -Destination (Join-Path $sceneDest "$sceneId.blend") -Force
                 Write-Host "Tracked Blender source: $(Join-Path $sceneDest "$sceneId.blend") ($($blend.Length) bytes)"
+
+                # Keep only the latest Kaos arena .blend in Git. Jobs, metadata
+                # and previews are cheap and remain available as history.
+                if ($sceneId -match "^kaos_arena_v\d+$") {
+                  Get-ChildItem -Path "blender/scenes" -Directory -Filter "kaos_arena_v*" -ErrorAction SilentlyContinue |
+                    Where-Object { $_.Name -ne $sceneId } |
+                    ForEach-Object {
+                      Write-Host "Pruning old Kaos arena Blender source: $($_.FullName)"
+                      Remove-Item -LiteralPath $_.FullName -Recurse -Force
+                    }
+                }
               }
               else {
                 Write-Warning "Blend file is $($blend.Length) bytes (>50 MB); leaving it in the artifact only."
@@ -216,6 +227,9 @@ jobs:
             git add --sparse "blender/scene_previews/$sceneId"
             if (Test-Path -LiteralPath "blender/scenes/$sceneId") {
               git add --sparse "blender/scenes/$sceneId"
+            }
+            if ($sceneId -match "^kaos_arena_v\d+$") {
+              git add -A --sparse "blender/scenes"
             }
           }
 
