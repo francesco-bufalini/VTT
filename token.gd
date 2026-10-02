@@ -74,6 +74,12 @@ var _condition_rings_root: Node3D
 var _overlay_root: Node3D
 var _name_label: Label3D
 var _status_label: Label3D
+var _hp_bar_root: Node3D
+var _hp_bar_background: MeshInstance3D
+var _hp_bar_fill: MeshInstance3D
+var _hp_bar_label: Label3D
+var _player_hp_current: int = 0
+var _player_hp_max: int = 0
 var movement_validator: Callable
 var grid_support: Node3D
 # The visible VolumetricGrid is the primary vertical support for tactical
@@ -1082,6 +1088,7 @@ func _ensure_token_overlay() -> void:
 		_status_label.visible = false
 		_overlay_root.add_child(_status_label)
 
+	_ensure_health_bar()
 	_update_overlay_position()
 
 
@@ -1099,6 +1106,155 @@ func _update_overlay_position() -> void:
 	if is_instance_valid(_status_label):
 		_status_label.pixel_size = 0.010 * cell_size
 		_status_label.position = Vector3(0.0, -0.22 * cell_size, 0.0)
+	if is_instance_valid(_hp_bar_root):
+		_hp_bar_root.position = Vector3(0.0, 0.34 * cell_size, 0.0)
+		_update_health_bar_visual()
+
+
+func _ensure_health_bar() -> void:
+	if _overlay_root == null or not is_instance_valid(_overlay_root):
+		return
+	if is_instance_valid(_hp_bar_root):
+		return
+
+	_hp_bar_root = _overlay_root.get_node_or_null("HealthBar") as Node3D
+	if _hp_bar_root == null:
+		_hp_bar_root = Node3D.new()
+		_hp_bar_root.name = "HealthBar"
+		_overlay_root.add_child(_hp_bar_root)
+
+	_hp_bar_background = _hp_bar_root.get_node_or_null(
+		"Background"
+	) as MeshInstance3D
+	if _hp_bar_background == null:
+		_hp_bar_background = MeshInstance3D.new()
+		_hp_bar_background.name = "Background"
+		var background_mesh := QuadMesh.new()
+		_hp_bar_background.mesh = background_mesh
+		var background_material := StandardMaterial3D.new()
+		background_material.shading_mode = (
+			BaseMaterial3D.SHADING_MODE_UNSHADED
+		)
+		background_material.billboard_mode = (
+			BaseMaterial3D.BILLBOARD_ENABLED
+		)
+		background_material.transparency = (
+			BaseMaterial3D.TRANSPARENCY_ALPHA
+		)
+		background_material.albedo_color = Color(0.04, 0.04, 0.05, 0.94)
+		_hp_bar_background.material_override = background_material
+		_hp_bar_background.cast_shadow = (
+			GeometryInstance3D.SHADOW_CASTING_SETTING_OFF
+		)
+		_hp_bar_root.add_child(_hp_bar_background)
+
+	_hp_bar_fill = _hp_bar_root.get_node_or_null("Fill") as MeshInstance3D
+	if _hp_bar_fill == null:
+		_hp_bar_fill = MeshInstance3D.new()
+		_hp_bar_fill.name = "Fill"
+		var fill_mesh := QuadMesh.new()
+		_hp_bar_fill.mesh = fill_mesh
+		var fill_material := StandardMaterial3D.new()
+		fill_material.shading_mode = BaseMaterial3D.SHADING_MODE_UNSHADED
+		fill_material.billboard_mode = BaseMaterial3D.BILLBOARD_ENABLED
+		fill_material.transparency = BaseMaterial3D.TRANSPARENCY_ALPHA
+		fill_material.albedo_color = Color(0.18, 0.82, 0.28, 1.0)
+		_hp_bar_fill.material_override = fill_material
+		_hp_bar_fill.cast_shadow = (
+			GeometryInstance3D.SHADOW_CASTING_SETTING_OFF
+		)
+		_hp_bar_root.add_child(_hp_bar_fill)
+
+	_hp_bar_label = _hp_bar_root.get_node_or_null("Percent") as Label3D
+	if _hp_bar_label == null:
+		_hp_bar_label = Label3D.new()
+		_hp_bar_label.name = "Percent"
+		_hp_bar_label.billboard = BaseMaterial3D.BILLBOARD_ENABLED
+		_hp_bar_label.fixed_size = false
+		_hp_bar_label.font_size = 22
+		_hp_bar_label.outline_size = 7
+		_hp_bar_label.modulate = Color.WHITE
+		_hp_bar_root.add_child(_hp_bar_label)
+
+	_update_health_bar_visual()
+
+
+func set_player_hit_points(current_hp: int, max_hp: int) -> void:
+	_player_hp_current = current_hp
+	_player_hp_max = maxi(0, max_hp)
+	_ensure_token_overlay()
+	_ensure_health_bar()
+	_update_health_bar_visual()
+
+
+func clear_player_hit_points() -> void:
+	_player_hp_current = 0
+	_player_hp_max = 0
+	if is_instance_valid(_hp_bar_root):
+		_hp_bar_root.visible = false
+
+
+func get_player_hit_points() -> Dictionary:
+	return {
+		"current": _player_hp_current,
+		"max": _player_hp_max,
+	}
+
+
+func _update_health_bar_visual() -> void:
+	if not is_instance_valid(_hp_bar_root):
+		return
+	if _player_hp_max <= 0:
+		_hp_bar_root.visible = false
+		return
+
+	_hp_bar_root.visible = true
+	var clamped_current := clampi(
+		_player_hp_current,
+		0,
+		_player_hp_max
+	)
+	var ratio := clampf(
+		float(clamped_current) / float(_player_hp_max),
+		0.0,
+		1.0
+	)
+	var width := maxf(1.35, _footprint_cells * 0.95) * cell_size
+	var height := 0.13 * cell_size
+
+	if is_instance_valid(_hp_bar_background):
+		var background_mesh := _hp_bar_background.mesh as QuadMesh
+		if background_mesh != null:
+			background_mesh.size = Vector2(width, height)
+		_hp_bar_background.position = Vector3.ZERO
+
+	if is_instance_valid(_hp_bar_fill):
+		var fill_mesh := _hp_bar_fill.mesh as QuadMesh
+		if fill_mesh != null:
+			fill_mesh.size = Vector2(width, height)
+		_hp_bar_fill.scale = Vector3(maxf(ratio, 0.001), 1.0, 1.0)
+		_hp_bar_fill.position = Vector3(
+			-width * (1.0 - ratio) * 0.5,
+			0.0,
+			0.004 * cell_size
+		)
+		var fill_material := _hp_bar_fill.material_override as StandardMaterial3D
+		if fill_material != null:
+			if ratio > 0.5:
+				fill_material.albedo_color = Color(0.18, 0.82, 0.28, 1.0)
+			elif ratio > 0.25:
+				fill_material.albedo_color = Color(0.95, 0.68, 0.12, 1.0)
+			else:
+				fill_material.albedo_color = Color(0.90, 0.18, 0.16, 1.0)
+
+	if is_instance_valid(_hp_bar_label):
+		_hp_bar_label.text = "%d%%" % roundi(ratio * 100.0)
+		_hp_bar_label.pixel_size = 0.008 * cell_size
+		_hp_bar_label.position = Vector3(
+			0.0,
+			0.115 * cell_size,
+			0.008 * cell_size
+		)
 
 
 func _update_status_overlay() -> void:
