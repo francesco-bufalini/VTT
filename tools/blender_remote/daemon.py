@@ -583,6 +583,22 @@ print(json.dumps({{
     return execute_json_code(code, timeout=300)
 
 
+def set_named_prefixes_visible(prefixes: tuple[str, ...], visible: bool) -> dict[str, Any]:
+    hidden_flag = "False" if visible else "True"
+    visible_literal = "True" if visible else "False"
+    code = f"""import bpy, json
+prefixes = {prefixes!r}
+changed = []
+for obj in bpy.data.objects:
+    if obj.name.startswith(prefixes):
+        obj.hide_viewport = {hidden_flag}
+        obj.hide_render = {hidden_flag}
+        changed.append(obj.name)
+print(json.dumps({{'visible': {visible_literal}, 'count': len(changed), 'objects': changed}}))
+"""
+    return execute_json_code(code)
+
+
 def set_titan_helpers_visible(visible: bool) -> dict[str, Any]:
     hidden_flag = "False" if visible else "True"
     visible_literal = "True" if visible else "False"
@@ -656,6 +672,24 @@ def execute(command: dict[str, Any]) -> dict[str, Any]:
     if action == "show_titan_helpers":
         return set_titan_helpers_visible(True)
 
+    if action == "hide_runic_seals":
+        return set_named_prefixes_visible(("RunicSeal_",), False)
+
+    if action == "show_runic_seals":
+        return set_named_prefixes_visible(("RunicSeal_",), True)
+
+    if action == "hide_stress_cracks":
+        return set_named_prefixes_visible(("TitanStressCrack_",), False)
+
+    if action == "show_stress_cracks":
+        return set_named_prefixes_visible(("TitanStressCrack_",), True)
+
+    if action == "hide_floating_shards":
+        return set_named_prefixes_visible(("FloatingPrisonShard_",), False)
+
+    if action == "show_floating_shards":
+        return set_named_prefixes_visible(("FloatingPrisonShard_",), True)
+
     if action == "object":
         name = str(command["object"])
         return blender_command("get_object_info", {"name": name})
@@ -689,7 +723,7 @@ def execute(command: dict[str, Any]) -> dict[str, Any]:
         return blender_command("execute_code", {"code": code}, timeout=300)
 
     raise ValueError(
-        "Unknown action. Supported: ping, scene, workspaces, viewport, screenshot, render_preview, titan_relief, reset_titan_relief, hide_titan_helpers, show_titan_helpers, object, transform, undo, save"
+        "Unknown action. Supported: ping, scene, workspaces, viewport, screenshot, render_preview, titan_relief, reset_titan_relief, hide_titan_helpers, show_titan_helpers, hide_runic_seals, show_runic_seals, hide_stress_cracks, show_stress_cracks, hide_floating_shards, show_floating_shards, object, transform, undo, save"
         + (", python" if ALLOW_PYTHON else "")
     )
 
