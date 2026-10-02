@@ -610,7 +610,70 @@ func _ready() -> void:
 func _process(_delta: float) -> void:
 	if _measurement_mode and _dragging:
 		_update_target_from_camera()
+	_update_following_aoes()
 	_refresh_affected_token_highlight()
+
+
+func _update_following_aoes() -> void:
+	var count: int = mini(persistent_aoes.size(), _aoe_nodes.size())
+	for index: int in range(count):
+		var root: Node3D = _aoe_nodes[index]
+		if root == null or not is_instance_valid(root):
+			continue
+
+		var follow_value: Variant = root.get_meta("follow_target", null)
+		if not follow_value is Node3D:
+			continue
+		var follow_target: Node3D = follow_value as Node3D
+		if not is_instance_valid(follow_target):
+			root.remove_meta("follow_target")
+			root.remove_meta("follow_last_position")
+			continue
+
+		var current_position: Vector3 = follow_target.global_position
+		var previous_value: Variant = root.get_meta(
+			"follow_last_position",
+			current_position
+		)
+		if not previous_value is Vector3:
+			root.set_meta("follow_last_position", current_position)
+			continue
+
+		var previous_position: Vector3 = previous_value
+		var movement_delta: Vector3 = current_position - previous_position
+		if movement_delta.length_squared() <= 0.000001:
+			continue
+
+		# The rendered mesh, particles and pick collision are all children of
+		# the persistent AoE root, so moving the root keeps the whole aura
+		# visually attached to its caster.
+		root.global_position += movement_delta
+
+		# Persistent hit-testing and serialization use the stored world-space
+		# start/end points, so move those by the same delta as the visual root.
+		var data_value: Variant = persistent_aoes[index]
+		if data_value is Dictionary:
+			var data: Dictionary = data_value as Dictionary
+			for point_key: String in ["start", "end"]:
+				var point_value: Variant = data.get(point_key, [])
+				if not point_value is Array:
+					continue
+				var coordinates: Array = point_value as Array
+				if coordinates.size() != 3:
+					continue
+				var shifted_point := Vector3(
+					float(coordinates[0]),
+					float(coordinates[1]),
+					float(coordinates[2])
+				) + movement_delta
+				data[point_key] = [
+					shifted_point.x,
+					shifted_point.y,
+					shifted_point.z
+				]
+			persistent_aoes[index] = data
+
+		root.set_meta("follow_last_position", current_position)
 
 
 func set_camera(new_camera: Camera3D) -> void:
@@ -2168,7 +2231,8 @@ func add_aoe(
 	line_width_world: float = -1.0,
 	movable_aoe_feet: float = 0.0,
 	movable_aoe_mode: String = "free",
-	caster_origin: Vector3 = Vector3(INF, INF, INF)
+	caster_origin: Vector3 = Vector3(INF, INF, INF),
+	follow_target: Node3D = null
 ) -> void:
 	if persistent_aoes.size() >= 256:
 		return
@@ -2207,6 +2271,9 @@ func add_aoe(
 	var root := Node3D.new()
 	root.name = "PersistentAoE"
 	add_child(root)
+	if follow_target != null and is_instance_valid(follow_target):
+		root.set_meta("follow_target", follow_target)
+		root.set_meta("follow_last_position", follow_target.global_position)
 
 	var mesh := MeshInstance3D.new()
 	mesh.name = "Visual"

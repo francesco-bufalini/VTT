@@ -9,6 +9,7 @@ const FADE_DURATION := 0.6
 
 const MENU_SCENE_PATH := "res://vtt/menu/main_menu.tscn"
 const ACTIVE_CAMPAIGNS_SCENE_PATH := "res://vtt/menu/active_campaigns.tscn"
+const CAMPAIGN_SCENARIOS_SCENE_PATH := "res://vtt/menu/campaign_scenarios.tscn"
 
 var soundtrack_enabled: bool = DEFAULT_ENABLED
 var soundtrack_volume: float = DEFAULT_VOLUME
@@ -62,6 +63,7 @@ func _sync_with_scene() -> void:
 	var should_play := (
 		scene_path == MENU_SCENE_PATH
 		or scene_path == ACTIVE_CAMPAIGNS_SCENE_PATH
+		or scene_path == CAMPAIGN_SCENARIOS_SCENE_PATH
 	)
 
 	if should_play:
@@ -112,6 +114,7 @@ func _is_menu_scene() -> bool:
 	return (
 		scene_path == MENU_SCENE_PATH
 		or scene_path == ACTIVE_CAMPAIGNS_SCENE_PATH
+		or scene_path == CAMPAIGN_SCENARIOS_SCENE_PATH
 	)
 
 

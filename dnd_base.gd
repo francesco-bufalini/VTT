@@ -8,7 +8,7 @@ const CONTEXT_TOGGLE_GRID := 5
 const CONTEXT_TOGGLE_VISION_CONES := 6
 const CONTEXT_FLYING := 8
 const CONTEXT_MAIN_MENU := 9
-const CONTEXT_DISSOLVE_AOT := 10
+const CONTEXT_DISSOLVE_AOE := 10
 const CONTEXT_SPELLS := 11
 const CONTEXT_CAMERA_SETTINGS := 12
 const CONTEXT_INITIATIVE := 13
@@ -24,6 +24,10 @@ const GridHighlightRenderer = preload("res://vtt/grid_highlight_renderer.gd")
 const CAMERA_SPEED_DEFAULT := 5.0
 const CAMERA_SENSITIVITY_DEFAULT := 0.002
 const ALL_COLLISION_LAYERS := 0xFFFFFFFF
+# Persistent AoEs use this layer only so the right-click context menu can
+# identify them. Token picking must see through this layer.
+const AOE_PICK_LAYER := 1 << 20
+const TOKEN_PICK_COLLISION_MASK := ALL_COLLISION_LAYERS & ~AOE_PICK_LAYER
 const UNDO_LIMIT := 50
 
 const TOKEN_SIZES := [
@@ -1278,17 +1282,16 @@ func _unhandled_input(event: InputEvent) -> void:
 				aoe_screen_position
 			)
 		)
-		if aoe_index >= 0:
-			if bool(measurement_tool.call("is_movable_aoe", aoe_index)):
-				if bool(
-					measurement_tool.call(
-						"begin_movable_aoe_drag",
-						aoe_index
-					)
-				):
-					get_viewport().set_input_as_handled()
-					return
-			elif bool(measurement_tool.call("dissolve_aoe", aoe_index)):
+		if (
+			aoe_index >= 0
+			and bool(measurement_tool.call("is_movable_aoe", aoe_index))
+		):
+			if bool(
+				measurement_tool.call(
+					"begin_movable_aoe_drag",
+					aoe_index
+				)
+			):
 				get_viewport().set_input_as_handled()
 				return
 
@@ -1877,7 +1880,7 @@ func _show_context_menu(screen_position: Vector2) -> void:
 
 	if _pending_aoe_index >= 0:
 		context_menu.clear()
-		context_menu.add_item("Dissolvi AoT", CONTEXT_DISSOLVE_AOT)
+		context_menu.add_item("Dissolvi AoE", CONTEXT_DISSOLVE_AOE)
 		_ui_owns_mouse = true
 		_release_mouse()
 		_popup_context_menu(screen_position)
@@ -1888,7 +1891,7 @@ func _show_context_menu(screen_position: Vector2) -> void:
 	_pending_spawn_support = null
 	var token_hit: Dictionary = _raycast_from_screen(
 		screen_position,
-		ALL_COLLISION_LAYERS,
+		TOKEN_PICK_COLLISION_MASK,
 		true
 	)
 	if not token_hit.is_empty():
@@ -2047,7 +2050,7 @@ func _on_context_menu_id_pressed(id: int) -> void:
 		_close_context_menu_to_game()
 		return
 
-	if id == CONTEXT_DISSOLVE_AOT:
+	if id == CONTEXT_DISSOLVE_AOE:
 		measurement_tool.call("dissolve_aoe", _pending_aoe_index)
 		_pending_aoe_index = -1
 		_close_context_menu_to_game()
@@ -2889,7 +2892,7 @@ func _interact_or_select_under_mouse(
 ) -> void:
 	var hit: Dictionary = _raycast_from_screen(
 		screen_position,
-		ALL_COLLISION_LAYERS,
+		TOKEN_PICK_COLLISION_MASK,
 		true
 	)
 	hit = _prefer_passenger_token_hit(screen_position, hit)
@@ -3144,7 +3147,7 @@ func _prefer_passenger_token_hit(
 
 	var passenger_hit := _raycast_from_screen_excluding(
 		screen_position,
-		ALL_COLLISION_LAYERS,
+		TOKEN_PICK_COLLISION_MASK,
 		exclusions,
 		true
 	)
