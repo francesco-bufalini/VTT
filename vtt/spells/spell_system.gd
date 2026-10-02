@@ -3,6 +3,8 @@ extends Node
 const SpellCatalog = preload("res://vtt/spells/spell_catalog.gd")
 const WallGeometry = preload("res://vtt/spells/wall_geometry.gd")
 const ALL_COLLISION_LAYERS := 0xFFFFFFFF
+const AOE_PICK_LAYER := 1 << 20
+const TOKEN_PICK_COLLISION_MASK := ALL_COLLISION_LAYERS & ~AOE_PICK_LAYER
 const ACTIVATABLE_TARGET_MODES := [
 	"self_token",
 	"self_emanation",
@@ -1109,7 +1111,7 @@ func _try_select_caster(screen_position: Vector2) -> void:
 	var hit_value: Variant = board_root.call(
 		"_raycast_from_screen",
 		screen_position,
-		ALL_COLLISION_LAYERS,
+		TOKEN_PICK_COLLISION_MASK,
 		true
 	)
 	if not hit_value is Dictionary:
@@ -2987,7 +2989,7 @@ func _token_at_screen(screen_position: Vector2) -> Node3D:
 	var hit_value: Variant = board_root.call(
 		"_raycast_from_screen",
 		screen_position,
-		ALL_COLLISION_LAYERS,
+		TOKEN_PICK_COLLISION_MASK,
 		true
 	)
 	if not hit_value is Dictionary:
