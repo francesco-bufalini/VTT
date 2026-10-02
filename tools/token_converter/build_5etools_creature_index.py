@@ -15,6 +15,10 @@ import sys
 from pathlib import Path
 from typing import Any
 
+SCRIPT_DIR = Path(__file__).resolve().parent
+if str(SCRIPT_DIR) not in sys.path:
+    sys.path.insert(0, str(SCRIPT_DIR))
+
 from creature_size_lookup import SIZE_CODE_TO_NAME, SIZE_TO_FOOTPRINT
 
 PROJECT_ROOT = Path(__file__).resolve().parents[2]
