@@ -76,6 +76,9 @@ var _name_label: Label3D
 var _status_label: Label3D
 var movement_validator: Callable
 var grid_support: Node3D
+# The visible VolumetricGrid is the primary vertical support for tactical
+# tokens. Physics bodies remain a fallback for places without grid cells.
+var volumetric_grid: Node3D
 var _support_transform: Transform3D
 var _transformation_history: Array[Dictionary] = []
 const MAX_TRANSFORMATION_HISTORY := 16
@@ -142,6 +145,21 @@ func _physics_process(delta: float) -> void:
 
 	velocity.x = 0.0
 	velocity.z = 0.0
+
+	# Grid-first landing: stop at the rendered top face before the CharacterBody
+	# can enter the solid mesh underneath. This also prevents fast falls from
+	# tunnelling through a thin tactical cell.
+	var grid_landing_y := _grid_landing_center_y(delta)
+	if grid_landing_y < INF:
+		global_position.y = grid_landing_y
+		velocity = Vector3.ZERO
+		grid_support = null
+		_snap_horizontal_to_grid()
+		_finish_gravity_after_landing()
+		return
+
+	# No tactical cell under the footprint: preserve the old physical-floor
+	# behavior for carts, special platforms and non-gridded terrain.
 	move_and_slide()
 
 	if is_on_floor():
@@ -175,6 +193,52 @@ func set_flying(enabled: bool) -> void:
 			material.albedo_color = Color(0.3, 0.85, 1)
 			material.emission = Color(0.1, 0.5, 0.8)
 		selection_marker.material_override = material
+
+
+func set_volumetric_grid(grid: Node3D) -> void:
+	volumetric_grid = grid
+
+
+func _grid_landing_center_y(delta: float) -> float:
+	if (
+		volumetric_grid == null
+		or not is_instance_valid(volumetric_grid)
+		or not volumetric_grid.visible
+		or not volumetric_grid.has_method("get_support_top_for_footprint")
+	):
+		return INF
+
+	var half_height := token_height_cells * cell_size * 0.5
+	var current_bottom := global_position.y - half_height
+	var projected_bottom := current_bottom + velocity.y * delta
+
+	# Allow one half-cell above the current bottom so an already half-embedded
+	# token is repaired onto the grid on its next gravity tick.
+	var max_support_y := current_bottom + cell_size * 0.55
+	var min_support_y := projected_bottom - cell_size * 0.05
+	var value: Variant = volumetric_grid.call(
+		"get_support_top_for_footprint",
+		global_position,
+		_footprint_cells,
+		max_support_y,
+		min_support_y
+	)
+	if not (value is float or value is int):
+		return INF
+
+	var support_top := float(value)
+	if support_top >= INF:
+		return INF
+
+	# Land when the next gravity step would reach/cross the cell top, or repair
+	# a token whose bottom is already inside that grid cell.
+	if (
+		projected_bottom <= support_top + cell_size * 0.02
+		or current_bottom < support_top
+	):
+		return support_top + half_height + cell_size * 0.005
+
+	return INF
 
 
 func apply_gravity() -> void:
