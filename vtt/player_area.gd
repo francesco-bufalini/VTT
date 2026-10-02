@@ -1401,6 +1401,69 @@ func _build_character_token_dialog() -> void:
 	)
 
 
+func _build_catalog_info_dialog() -> void:
+	_catalog_info_dialog = AcceptDialog.new()
+	_catalog_info_dialog.name = "CatalogInfoDialog"
+	_catalog_info_dialog.title = "Informazioni 5e.tools"
+	_catalog_info_dialog.ok_button_text = "Chiudi"
+	_catalog_info_dialog.min_size = Vector2i(560, 520)
+	ui_root.add_child(_catalog_info_dialog)
+
+	_catalog_info_text = RichTextLabel.new()
+	_catalog_info_text.set_anchors_and_offsets_preset(
+		Control.PRESET_FULL_RECT
+	)
+	_catalog_info_text.offset_left = 18
+	_catalog_info_text.offset_top = 48
+	_catalog_info_text.offset_right = -18
+	_catalog_info_text.offset_bottom = -64
+	_catalog_info_text.bbcode_enabled = false
+	_catalog_info_text.fit_content = false
+	_catalog_info_text.scroll_active = true
+	_catalog_info_text.selection_enabled = true
+	_catalog_info_dialog.add_child(_catalog_info_text)
+
+
+func _show_catalog_info_from_list(
+	list_control: ItemList,
+	_character_key: String = ""
+) -> void:
+	if list_control == null:
+		return
+	var selected := list_control.get_selected_items()
+	if selected.is_empty():
+		_set_status("Seleziona prima una voce del catalogo.")
+		return
+
+	var metadata: Variant = list_control.get_item_metadata(selected[0])
+	var entry: Dictionary = {}
+	if metadata is Dictionary:
+		entry = (metadata as Dictionary).duplicate(true)
+	else:
+		var wanted_id := String(metadata)
+		var category := String(
+			list_control.get_meta("catalog_category", "")
+		)
+		for candidate: Dictionary in Player5eToolsCatalog.entries(category):
+			if String(candidate.get("id", "")) == wanted_id:
+				entry = candidate
+				break
+
+	if entry.is_empty():
+		_set_status("Informazioni non disponibili per questa voce.")
+		return
+
+	_catalog_info_dialog.title = String(
+		entry.get("name", "Informazioni 5e.tools")
+	)
+	_catalog_info_text.text = Player5eToolsCatalog.info_text(entry)
+	_catalog_info_dialog.reset_size()
+	_catalog_info_dialog.popup_centered_clamped(
+		Vector2i(560, 520),
+		0.92
+	)
+
+
 func _scroll_tab(tab_name: String) -> ScrollContainer:
 	var scroll := ScrollContainer.new()
 	scroll.name = tab_name
