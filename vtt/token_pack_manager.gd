@@ -4,6 +4,8 @@ signal catalog_updated(entries: Array[Dictionary])
 signal catalog_refresh_failed(message: String)
 signal token_downloaded(token_id: String, cache_path: String)
 signal token_download_failed(token_id: String, message: String)
+signal token_mounted(token_id: String, scene_path: String)
+signal token_mount_failed(token_id: String, message: String)
 
 const CACHE_DIR := "user://token_cache"
 const CATALOG_CACHE_PATH := CACHE_DIR + "/token_catalog.json"
@@ -28,6 +30,7 @@ var _request: HTTPRequest
 var _download_request: HTTPRequest
 var _download_token_id: String = ""
 var _download_target_path: String = ""
+var _mounted_token_ids: Dictionary = {}
 
 
 func _ready() -> void:
@@ -48,6 +51,7 @@ func _ready() -> void:
 	_download_request.name = "TokenDownloadRequest"
 	add_child(_download_request)
 	_download_request.request_completed.connect(_on_token_download_completed)
+	token_downloaded.connect(_on_token_downloaded_for_startup_test)
 
 	call_deferred("_refresh_catalog_on_start")
 
@@ -136,6 +140,93 @@ func download_token(token_id: String) -> Error:
 	return error
 
 
+func mount_token(token_id: String) -> Error:
+	var id := token_id.strip_edges()
+	if id.is_empty():
+		return ERR_INVALID_PARAMETER
+	if not _entries_by_id.has(id):
+		return ERR_DOES_NOT_EXIST
+	if bool(_mounted_token_ids.get(id, false)):
+		return OK
+
+	var entry := get_entry(id)
+	var expected_sha := String(entry.get("sha256", "")).strip_edges().to_lower()
+	if expected_sha.is_empty():
+		return ERR_INVALID_DATA
+	if not _verify_cached_pck(id, expected_sha):
+		return ERR_FILE_CORRUPT
+
+	var pck_path := cache_path_for(id)
+	var absolute_pck := ProjectSettings.globalize_path(pck_path)
+	if not ProjectSettings.load_resource_pack(absolute_pck, false):
+		return ERR_CANT_OPEN
+
+	var scene_path := String(entry.get("scene", "")).strip_edges()
+	if scene_path.is_empty():
+		scene_path = "res://remote_tokens/%s/%s_token.tscn" % [id, id]
+
+	var packed := ResourceLoader.load(
+		scene_path,
+		"PackedScene",
+		ResourceLoader.CACHE_MODE_IGNORE
+	) as PackedScene
+	if packed == null:
+		var message := "PCK mounted but scene is not loadable: %s" % scene_path
+		push_warning("TokenPackManager: %s" % message)
+		token_mount_failed.emit(id, message)
+		return ERR_CANT_OPEN
+
+	var instance := packed.instantiate()
+	if not instance is Node3D:
+		if instance != null:
+			instance.free()
+		var message := "Remote scene did not instantiate a Node3D: %s" % scene_path
+		push_warning("TokenPackManager: %s" % message)
+		token_mount_failed.emit(id, message)
+		return ERR_INVALID_DATA
+
+	var token := instance as Node3D
+	var behaves_as_token := (
+		token.has_method("configure")
+		and token.has_method("set_visual_asset")
+		and token.has_method("get_visual_asset_path")
+	)
+	token.free()
+	if not behaves_as_token:
+		var message := "Remote scene does not inherit expected token behavior: %s" % scene_path
+		push_warning("TokenPackManager: %s" % message)
+		token_mount_failed.emit(id, message)
+		return ERR_INVALID_DATA
+
+	_mounted_token_ids[id] = true
+	print(
+		"TokenPackManager: %s.pck mounted; remote scene load/instantiate OK: %s"
+		% [id, scene_path]
+	)
+	token_mounted.emit(id, scene_path)
+	return OK
+
+
+func is_mounted(token_id: String) -> bool:
+	return bool(_mounted_token_ids.get(token_id, false))
+
+
+func _on_token_downloaded_for_startup_test(
+	token_id: String,
+	_cache_path: String
+) -> void:
+	if token_id != STARTUP_DOWNLOAD_TEST_ID:
+		return
+	var error := mount_token(token_id)
+	if error != OK:
+		var message := "Could not mount %s.pck: %s" % [
+			token_id,
+			error_string(error),
+		]
+		push_warning("TokenPackManager: %s" % message)
+		token_mount_failed.emit(token_id, message)
+
+
 func _download_url_for(entry: Dictionary) -> String:
 	var explicit := String(entry.get("release_download_url", "")).strip_edges()
 	if not explicit.is_empty():
@@ -203,9 +294,10 @@ func _on_token_download_completed(
 
 	_remove_cached_file(target_path)
 	print(
-		"TokenPackManager: HTTP download for %s.pck unavailable "
-		+ "(result=%d code=%d), trying gh fallback..."
-		% [id, result, response_code]
+		(
+			"TokenPackManager: HTTP download for %s.pck unavailable "
+			+ "(result=%d code=%d), trying gh fallback..."
+		) % [id, result, response_code]
 	)
 	if _download_token_via_gh(id, entry):
 		return
@@ -417,9 +509,10 @@ func _on_catalog_request_completed(
 		push_warning("TokenPackManager: HTTP catalog JSON is invalid.")
 
 	print(
-		"TokenPackManager: HTTP catalog unavailable (result=%d code=%d), "
-		+ "trying gh fallback..."
-		% [result, response_code]
+		(
+			"TokenPackManager: HTTP catalog unavailable (result=%d code=%d), "
+			+ "trying gh fallback..."
+		) % [result, response_code]
 	)
 
 	# Current private-repository development fallback. This path is not required
