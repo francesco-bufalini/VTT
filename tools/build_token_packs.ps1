@@ -3,6 +3,9 @@ param(
     [string]$Godot = "",
     [switch]$All,
     [switch]$Force,
+    [string]$ReleaseTag = "latest",
+    [string]$GitHubToken = "",
+    [switch]$SkipReleaseCheck,
     [switch]$SkipImport,
     [switch]$SkipVerify
 )
@@ -13,6 +16,8 @@ $ManifestPath = Join-Path $ProjectRoot "assets\tokens\token_library.json"
 $GeneratedDir = Join-Path $ProjectRoot "assets\tokens\generated"
 $DistDir = Join-Path $ProjectRoot "dist\token_packs"
 $CatalogPath = Join-Path $DistDir "token_catalog.json"
+$GitHubOwner = "francesco-bufalini"
+$GitHubRepo = "VTT"
 
 if (-not (Test-Path $ManifestPath)) {
     throw "Manifest token non trovato: $ManifestPath"
@@ -104,6 +109,92 @@ function Invoke-Godot {
         throw "$Phase fallita con codice $($process.ExitCode)"
     }
 }
+
+function Get-GitHubReleaseAssets {
+    param(
+        [string]$Tag = "latest",
+        [string]$Token = ""
+    )
+
+    $headers = @{
+        Accept = "application/vnd.github+json"
+        "X-GitHub-Api-Version" = "2022-11-28"
+        "User-Agent" = "VTT-token-pack-builder"
+    }
+    if (-not [string]::IsNullOrWhiteSpace($Token)) {
+        $headers.Authorization = "Bearer $Token"
+    }
+
+    if ($Tag -eq "latest") {
+        $uri = "https://api.github.com/repos/$GitHubOwner/$GitHubRepo/releases/latest"
+    } else {
+        $escapedTag = [uri]::EscapeDataString($Tag)
+        $uri = "https://api.github.com/repos/$GitHubOwner/$GitHubRepo/releases/tags/$escapedTag"
+    }
+
+    try {
+        $release = Invoke-RestMethod -Uri $uri -Headers $headers -Method Get
+    } catch {
+        $statusCode = $null
+        if ($_.Exception.Response) {
+            try { $statusCode = [int]$_.Exception.Response.StatusCode } catch {}
+        }
+        if ($statusCode -eq 404) {
+            Write-Host "Release GitHub '$Tag' non trovata o non accessibile; continuo solo con lo stato locale."
+        } else {
+            Write-Warning "Controllo Release GitHub non riuscito; continuo localmente: $($_.Exception.Message)"
+        }
+        return @{}
+    }
+
+    $assetsByName = @{}
+    foreach ($asset in @($release.assets)) {
+        if ($null -ne $asset -and -not [string]::IsNullOrWhiteSpace([string]$asset.name)) {
+            $assetsByName[[string]$asset.name] = $asset
+        }
+    }
+
+    Write-Host "Release GitHub: $($release.tag_name) - asset trovati: $($assetsByName.Count)"
+    return $assetsByName
+}
+
+
+function New-RemoteCatalogEntry {
+    param(
+        [Parameter(Mandatory = $true)]$Profile,
+        [Parameter(Mandatory = $true)]$Asset
+    )
+
+    $id = [string]$Profile.id
+    $entry = [ordered]@{
+        id = $id
+        name = [string]$Profile.name
+        size_name = [string]$Profile.size_name
+        footprint = [double]$Profile.footprint
+        version = 1
+        bytes = [int64]$Asset.size
+        pck = [string]$Asset.name
+        scene = ("res://remote_tokens/{0}/{0}_token.tscn" -f $id)
+        release_asset_id = [int64]$Asset.id
+        release_download_url = [string]$Asset.browser_download_url
+    }
+
+    if ($Asset.PSObject.Properties.Name -contains "digest") {
+        $digest = [string]$Asset.digest
+        if ($digest.StartsWith("sha256:")) {
+            $entry.sha256 = $digest.Substring(7).ToLowerInvariant()
+        }
+    }
+
+    if ($Profile.PSObject.Properties.Name -contains "source") {
+        $sourceCollection = [string]$Profile.source
+        if (-not [string]::IsNullOrWhiteSpace($sourceCollection)) {
+            $entry.source_collection = $sourceCollection
+        }
+    }
+    return $entry
+}
+
 
 function Get-ProfileVisualPath {
     param([Parameter(Mandatory = $true)]$Profile)
@@ -217,6 +308,10 @@ function Build-OneTokenPack {
     return $pckPath
 }
 
+if ([string]::IsNullOrWhiteSpace($GitHubToken) -and -not [string]::IsNullOrWhiteSpace($env:GITHUB_TOKEN)) {
+    $GitHubToken = $env:GITHUB_TOKEN
+}
+
 $manifest = Get-Content -Raw -Encoding UTF8 $ManifestPath | ConvertFrom-Json
 $profilesById = @{}
 foreach ($profile in $manifest.tokens) {
@@ -258,11 +353,18 @@ if ($All) {
     $tokenIds = @($TokenId)
 }
 
+$releaseAssets = @{}
+if ($All -and -not $SkipReleaseCheck -and -not $Force) {
+    Write-Host ""
+    Write-Host "Controllo PCK gia pubblicati nelle GitHub Releases..."
+    $releaseAssets = Get-GitHubReleaseAssets -Tag $ReleaseTag -Token $GitHubToken
+}
+
 Write-Host "Godot: $Godot"
 Write-Host ("Modalita: " + $(if ($All) { "ALL incrementale" } else { "singolo token" }))
 Write-Host "Token candidati: $($tokenIds.Count)"
 if ($All -and -not $Force) {
-    Write-Host "I PCK gia presenti verranno saltati e mantenuti nel catalogo."
+    Write-Host "I PCK gia presenti localmente o nella Release verranno saltati e mantenuti nel catalogo."
 }
 if ($Force) {
     Write-Host "Force: i PCK esistenti verranno ricostruiti."
@@ -290,6 +392,14 @@ foreach ($id in $tokenIds) {
 
     $profile = $profilesById[$id]
     $pckPath = Join-Path $DistDir "$id.pck"
+
+    $releaseAssetName = "$id.pck"
+    if ($All -and -not $Force -and $releaseAssets.ContainsKey($releaseAssetName)) {
+        $catalogEntries[$id] = New-RemoteCatalogEntry -Profile $profile -Asset $releaseAssets[$releaseAssetName]
+        $skipped++
+        Write-Host "[$id] gia pubblicato nella Release: skip"
+        continue
+    }
 
     if ($All -and -not $Force -and (Test-Path $pckPath) -and ((Get-Item $pckPath).Length -gt 0)) {
         $catalogEntries[$id] = New-CatalogEntry -Profile $profile -PckPath $pckPath
@@ -320,7 +430,7 @@ Save-Catalog -EntriesById $catalogEntries
 Write-Host ""
 Write-Host "===== TOKEN PACK SUMMARY ====="
 Write-Host "Costruiti: $built"
-Write-Host "Gia presenti/skippati: $skipped"
+Write-Host "Gia presenti (locale/release): $skipped"
 Write-Host "Falliti: $failed"
 Write-Host "Catalogo totale: $($catalogEntries.Count)"
 Write-Host "Catalogo: $CatalogPath"
