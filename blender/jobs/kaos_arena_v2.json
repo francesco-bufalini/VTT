@@ -94,34 +94,34 @@
   "outputs": {
     "previews": [
       {
-        "path": "outputs/blender_agent/kaos_arena_v2/preview_mapping.png",
+        "path": "outputs/blender_agent/kaos_arena_v2/preview_relationship.png",
         "location": [
-          390,
-          360,
-          330
+          0,
+          720,
+          430
         ],
         "look_at": [
           0,
-          20,
-          170
+          -120,
+          230
         ],
-        "lens": 58,
+        "lens": 52,
         "width": 960,
         "height": 540
       },
       {
         "path": "outputs/blender_agent/kaos_arena_v2/preview_tactical.png",
         "location": [
-          170,
-          300,
-          180
+          160,
+          360,
+          190
         ],
         "look_at": [
           0,
-          70,
+          75,
           25
         ],
-        "lens": 62,
+        "lens": 60,
         "width": 960,
         "height": 540
       }
@@ -130,5 +130,5 @@
     "glb": "outputs/blender_agent/kaos_arena_v2/kaos_arena_v2.glb",
     "blend": "outputs/blender_agent/kaos_arena_v2/kaos_arena_v2.blend"
   },
-  "revision": 1
+  "revision": 2
 }
