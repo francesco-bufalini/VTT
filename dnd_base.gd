@@ -8,7 +8,7 @@ const CONTEXT_TOGGLE_GRID := 5
 const CONTEXT_TOGGLE_VISION_CONES := 6
 const CONTEXT_FLYING := 8
 const CONTEXT_MAIN_MENU := 9
-const CONTEXT_DISSOLVE_AOT := 10
+const CONTEXT_DISSOLVE_AOE := 10
 const CONTEXT_SPELLS := 11
 const CONTEXT_CAMERA_SETTINGS := 12
 const CONTEXT_INITIATIVE := 13
@@ -1000,17 +1000,16 @@ func _unhandled_input(event: InputEvent) -> void:
 				aoe_screen_position
 			)
 		)
-		if aoe_index >= 0:
-			if bool(measurement_tool.call("is_movable_aoe", aoe_index)):
-				if bool(
-					measurement_tool.call(
-						"begin_movable_aoe_drag",
-						aoe_index
-					)
-				):
-					get_viewport().set_input_as_handled()
-					return
-			elif bool(measurement_tool.call("dissolve_aoe", aoe_index)):
+		if (
+			aoe_index >= 0
+			and bool(measurement_tool.call("is_movable_aoe", aoe_index))
+		):
+			if bool(
+				measurement_tool.call(
+					"begin_movable_aoe_drag",
+					aoe_index
+				)
+			):
 				get_viewport().set_input_as_handled()
 				return
 
@@ -1599,7 +1598,7 @@ func _show_context_menu(screen_position: Vector2) -> void:
 
 	if _pending_aoe_index >= 0:
 		context_menu.clear()
-		context_menu.add_item("Dissolvi AoT", CONTEXT_DISSOLVE_AOT)
+		context_menu.add_item("Dissolvi AoE", CONTEXT_DISSOLVE_AOE)
 		_ui_owns_mouse = true
 		_release_mouse()
 		_popup_context_menu(screen_position)
@@ -1769,7 +1768,7 @@ func _on_context_menu_id_pressed(id: int) -> void:
 		_close_context_menu_to_game()
 		return
 
-	if id == CONTEXT_DISSOLVE_AOT:
+	if id == CONTEXT_DISSOLVE_AOE:
 		measurement_tool.call("dissolve_aoe", _pending_aoe_index)
 		_pending_aoe_index = -1
 		_close_context_menu_to_game()
