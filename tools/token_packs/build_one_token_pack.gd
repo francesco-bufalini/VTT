@@ -87,6 +87,119 @@ func _resolve_imported_resource_path(source_path: String) -> String:
 
 
 
+func _resolve_obj_index(raw_index: int, count: int) -> int:
+	if raw_index > 0:
+		return raw_index - 1
+	if raw_index < 0:
+		return count + raw_index
+	return -1
+
+
+func _load_obj_runtime(source_path: String) -> ArrayMesh:
+	var absolute := ProjectSettings.globalize_path(source_path)
+	var file := FileAccess.open(absolute, FileAccess.READ)
+	if file == null:
+		push_error("Cannot open OBJ file: %s" % absolute)
+		return null
+
+	var positions := PackedVector3Array()
+	var texcoords := PackedVector2Array()
+	var normals := PackedVector3Array()
+	var triangles: Array[PackedStringArray] = []
+
+	while not file.eof_reached():
+		var line := file.get_line().strip_edges()
+		if line.is_empty() or line.begins_with("#"):
+			continue
+		var parts := line.split(" ", false)
+		if parts.is_empty():
+			continue
+		match parts[0]:
+			"v":
+				if parts.size() >= 4:
+					positions.append(Vector3(
+						float(parts[1]),
+						float(parts[2]),
+						float(parts[3])
+					))
+			"vt":
+				if parts.size() >= 3:
+					texcoords.append(Vector2(
+						float(parts[1]),
+						1.0 - float(parts[2])
+					))
+			"vn":
+				if parts.size() >= 4:
+					normals.append(Vector3(
+						float(parts[1]),
+						float(parts[2]),
+						float(parts[3])
+					).normalized())
+			"f":
+				if parts.size() >= 4:
+					var face := PackedStringArray()
+					for i in range(1, parts.size()):
+						face.append(parts[i])
+					# OBJ polygons are fan-triangulated. Reverse the triangle order
+					# for Godot's clockwise front-face convention.
+					for i in range(2, face.size()):
+						triangles.append(PackedStringArray([
+							face[0],
+							face[i],
+							face[i - 1],
+						]))
+	file.close()
+
+	if positions.is_empty() or triangles.is_empty():
+		push_error(
+			"OBJ has no usable geometry: %s (vertices=%d triangles=%d)"
+			% [source_path, positions.size(), triangles.size()]
+		)
+		return null
+
+	var surface := SurfaceTool.new()
+	surface.begin(Mesh.PRIMITIVE_TRIANGLES)
+	var supplied_normals := not normals.is_empty()
+
+	for triangle: PackedStringArray in triangles:
+		for vertex_ref: String in triangle:
+			var refs := vertex_ref.split("/", true)
+			if refs.is_empty() or refs[0].is_empty():
+				push_error("Invalid OBJ face vertex: %s" % vertex_ref)
+				return null
+
+			var position_index := _resolve_obj_index(int(refs[0]), positions.size())
+			if position_index < 0 or position_index >= positions.size():
+				push_error("OBJ position index out of range: %s" % vertex_ref)
+				return null
+
+			if refs.size() >= 2 and not refs[1].is_empty():
+				var uv_index := _resolve_obj_index(int(refs[1]), texcoords.size())
+				if uv_index >= 0 and uv_index < texcoords.size():
+					surface.set_uv(texcoords[uv_index])
+
+			if refs.size() >= 3 and not refs[2].is_empty():
+				var normal_index := _resolve_obj_index(int(refs[2]), normals.size())
+				if normal_index >= 0 and normal_index < normals.size():
+					surface.set_normal(normals[normal_index])
+
+			surface.add_vertex(positions[position_index])
+
+	if not supplied_normals:
+		surface.generate_normals()
+
+	var mesh := surface.commit()
+	if mesh == null:
+		push_error("SurfaceTool could not commit OBJ mesh: %s" % source_path)
+		return null
+
+	print(
+		"TOKEN_PACK_STAGE obj_runtime vertices=%d triangles=%d surfaces=%d"
+		% [positions.size(), triangles.size(), mesh.get_surface_count()]
+	)
+	return mesh
+
+
 func _write_text(path: String, content: String) -> Error:
 	var absolute := ProjectSettings.globalize_path(path)
 	var parent := absolute.get_base_dir()
@@ -124,36 +237,39 @@ func _build_pack(token_id: String, output_path: String) -> Error:
 	print("TOKEN_PACK_STAGE load source=%s" % source_path)
 	print("TOKEN_PACK_STAGE loader_exists=%s" % str(ResourceLoader.exists(source_path)))
 
-	var load_path := source_path
-	if not ResourceLoader.exists(load_path):
-		var imported_path := _resolve_imported_resource_path(source_path)
-		if imported_path.is_empty():
+	var source_resource: Resource = null
+	if source_path.get_extension().to_lower() == "obj":
+		print("TOKEN_PACK_STAGE obj_runtime_loader")
+		source_resource = _load_obj_runtime(source_path)
+	else:
+		var load_path := source_path
+		if not ResourceLoader.exists(load_path):
+			var imported_path := _resolve_imported_resource_path(source_path)
+			if imported_path.is_empty():
+				push_error(
+					("Godot import metadata is missing or has no remap path for: %s. "
+					+ "Expected metadata: %s.import")
+					% [source_path, source_path]
+				)
+				return ERR_CANT_OPEN
+			load_path = imported_path
+			print("TOKEN_PACK_STAGE imported_resource=%s" % load_path)
+
+		if not ResourceLoader.exists(load_path):
 			push_error(
-				("Godot import metadata is missing or has no remap path for: %s. "
-				+ "Expected metadata: %s.import")
-				% [source_path, source_path]
+				"Godot imported resource does not exist/load: %s (from %s)"
+				% [load_path, source_path]
 			)
 			return ERR_CANT_OPEN
-		load_path = imported_path
-		print("TOKEN_PACK_STAGE imported_resource=%s" % load_path)
 
-	if not ResourceLoader.exists(load_path):
-		push_error(
-			"Godot imported resource does not exist/load: %s (from %s)"
-			% [load_path, source_path]
+		source_resource = ResourceLoader.load(
+			load_path,
+			"",
+			ResourceLoader.CACHE_MODE_IGNORE
 		)
-		return ERR_CANT_OPEN
 
-	var source_resource := ResourceLoader.load(
-		load_path,
-		"",
-		ResourceLoader.CACHE_MODE_IGNORE
-	)
 	if source_resource == null:
-		push_error(
-			("Godot could not load imported token resource: %s "
-			+ "(source: %s)") % [load_path, source_path]
-		)
+		push_error("Godot could not build/load token resource: %s" % source_path)
 		return ERR_CANT_OPEN
 	if not (source_resource is Mesh or source_resource is PackedScene):
 		push_error(
