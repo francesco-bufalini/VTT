@@ -1,7 +1,7 @@
 {
   "schema_version": 1,
   "scene_id": "kaos_arena_v1",
-  "description": "First Blender-authored reconstruction of the Kaos arena: circular stepped ruin over water with monumental sphere, asymmetric classical ruins, debris and perimeter rocks.",
+  "description": "Second composition pass of the Blender-authored Kaos arena: monumental circular ruins over water, rear tholos fragment, larger arches, ceremonial approach and elevated sphere backdrop.",
   "design_references": [
     "Original Godot encounter layout in encounter/encounter_scenery.gd",
     "Ancient Greek/Roman tholos and ruined colonnade composition",
@@ -20,16 +20,16 @@
       {
         "path": "outputs/blender_agent/kaos_arena_v1/preview_perspective.png",
         "location": [
-          175,
-          -185,
-          120
+          205,
+          -225,
+          132
         ],
         "look_at": [
           0,
-          35,
+          40,
           38
         ],
-        "lens": 48,
+        "lens": 52,
         "width": 1280,
         "height": 720
       },
@@ -37,15 +37,15 @@
         "path": "outputs/blender_agent/kaos_arena_v1/preview_top.png",
         "location": [
           0,
-          -5,
-          290
+          -20,
+          380
         ],
         "look_at": [
           0,
-          20,
+          35,
           0
         ],
-        "lens": 52,
+        "lens": 58,
         "width": 1280,
         "height": 720
       },
@@ -53,13 +53,13 @@
         "path": "outputs/blender_agent/kaos_arena_v1/preview_front.png",
         "location": [
           0,
-          -230,
-          72
+          -275,
+          92
         ],
         "look_at": [
           0,
-          48,
-          35
+          55,
+          40
         ],
         "lens": 58,
         "width": 1280,
@@ -70,5 +70,5 @@
     "glb": "outputs/blender_agent/kaos_arena_v1/kaos_arena_v1.glb",
     "blend": "outputs/blender_agent/kaos_arena_v1/kaos_arena_v1.blend"
   },
-  "revision": 3
+  "revision": 4
 }
