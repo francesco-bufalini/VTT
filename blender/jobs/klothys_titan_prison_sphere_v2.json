@@ -1,0 +1,155 @@
+{
+  "schema_version": 1,
+  "scene_id": "klothys_titan_prison_sphere_v2",
+  "description": "V2 of Klothys's Titan prison: no repeated face reliefs. Two CC0 animated fantasy creature bodies are baked from rigged sources, radially wrapped into carbonite-like stone reliefs and embedded into the exact 220 m Godot sphere. A +/-28 degree front corridor is kept clear for the later Klothys figure and her binding hair.",
+  "design_references": [
+    "User-approved concept: two full creature silhouettes imprisoned in a cracked runic stone sphere",
+    "encounter/encounter_scenery.gd",
+    "measurement_tool.gd",
+    "blender/manifests/klothys_titan_prison_v2.assets.json"
+  ],
+  "asset_sources": [
+    "Quaternius Ultimate Monsters (CC0)",
+    "Pinned GLB copies from ilrein/warptracker"
+  ],
+  "combat_mapping": {
+    "meters_per_cell": 1.5,
+    "battlemap": {
+      "size_m": [
+        120,
+        180
+      ],
+      "center_godot_m": [
+        0,
+        0,
+        85.5
+      ]
+    },
+    "hazard_area": {
+      "cells": [
+        -38,
+        0,
+        76,
+        114
+      ]
+    },
+    "water": {
+      "radius_m": 337,
+      "center_godot_m": [
+        0,
+        -0.18,
+        -60
+      ]
+    },
+    "sphere": {
+      "radius_m": 220,
+      "center_godot_m": [
+        0,
+        385,
+        -230
+      ]
+    }
+  },
+  "reset_scene": true,
+  "operations": [
+    {
+      "op": "build_titan_prison_sphere_v2",
+      "seed": 20261002,
+      "scale": 1,
+      "expected_mapping": {
+        "meters_per_cell": 1.5,
+        "battlemap": {
+          "size_m": [
+            120,
+            180
+          ],
+          "center_godot_m": [
+            0,
+            0,
+            85.5
+          ]
+        },
+        "hazard_area": {
+          "cells": [
+            -38,
+            0,
+            76,
+            114
+          ]
+        },
+        "water": {
+          "radius_m": 337,
+          "center_godot_m": [
+            0,
+            -0.18,
+            -60
+          ]
+        },
+        "sphere": {
+          "radius_m": 220,
+          "center_godot_m": [
+            0,
+            385,
+            -230
+          ]
+        }
+      }
+    }
+  ],
+  "outputs": {
+    "previews": [
+      {
+        "path": "outputs/blender_agent/klothys_titan_prison_sphere_v2/preview_front.png",
+        "location": [
+          0,
+          390,
+          420
+        ],
+        "look_at": [
+          0,
+          -230,
+          385
+        ],
+        "lens": 62,
+        "width": 1100,
+        "height": 700
+      },
+      {
+        "path": "outputs/blender_agent/klothys_titan_prison_sphere_v2/preview_right.png",
+        "location": [
+          520,
+          160,
+          510
+        ],
+        "look_at": [
+          0,
+          -230,
+          385
+        ],
+        "lens": 64,
+        "width": 1100,
+        "height": 700
+      },
+      {
+        "path": "outputs/blender_agent/klothys_titan_prison_sphere_v2/preview_left.png",
+        "location": [
+          -520,
+          170,
+          500
+        ],
+        "look_at": [
+          0,
+          -230,
+          385
+        ],
+        "lens": 64,
+        "width": 1100,
+        "height": 700
+      }
+    ],
+    "report": "outputs/blender_agent/klothys_titan_prison_sphere_v2/scene_report.json",
+    "glb": "outputs/blender_agent/klothys_titan_prison_sphere_v2/klothys_titan_prison_sphere_v2.glb",
+    "blend": "outputs/blender_agent/klothys_titan_prison_sphere_v2/klothys_titan_prison_sphere_v2.blend"
+  },
+  "revision": 1
+}
