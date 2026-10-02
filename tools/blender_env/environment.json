@@ -1,0 +1,67 @@
+{
+  "schema_version": 1,
+  "blender": {
+    "required_major_minor": "5.2",
+    "purpose": "Stable VTT environment-art workstation"
+  },
+  "asset_root": ".vtt_assets",
+  "asset_library": {
+    "name": "VTT Assets",
+    "path": "library",
+    "catalogs": [
+      "Architecture",
+      "Nature",
+      "Props",
+      "Materials",
+      "GeometryNodes",
+      "Environments"
+    ]
+  },
+  "paths": {
+    "downloads": "downloads",
+    "extensions": "extensions",
+    "cache": "cache"
+  },
+  "extension_repository": {
+    "id": "vtt_local",
+    "name": "VTT Local Extensions",
+    "path": "extensions"
+  },
+  "providers": [
+    {
+      "id": "polyhaven",
+      "name": "Poly Haven",
+      "role": "CC0 HDRIs, textures and models",
+      "license_policy": "CC0",
+      "mode": "on_demand"
+    },
+    {
+      "id": "ambientcg",
+      "name": "ambientCG",
+      "role": "CC0 PBR materials, HDRIs and models",
+      "license_policy": "CC0",
+      "mode": "on_demand"
+    },
+    {
+      "id": "blenderkit",
+      "name": "BlenderKit",
+      "role": "Searchable Blender-native assets",
+      "license_policy": "per_asset",
+      "mode": "optional_extension"
+    },
+    {
+      "id": "fab",
+      "name": "Fab",
+      "role": "Specialized environment and modular packs",
+      "license_policy": "per_asset",
+      "mode": "authenticated_on_demand"
+    },
+    {
+      "id": "geoscatter",
+      "name": "Geo-Scatter",
+      "role": "Optional scattering/biome tooling",
+      "license_policy": "commercial",
+      "mode": "optional_extension"
+    }
+  ]
+}
