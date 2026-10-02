@@ -2,6 +2,7 @@ extends Node
 
 const CharacterStore = preload("res://vtt/player_character_store.gd")
 const PlayerReference = preload("res://vtt/player_reference_catalog.gd")
+const Player5eToolsCatalog = preload("res://vtt/player_5etools_catalog.gd")
 const SpellCatalog = preload("res://vtt/spells/spell_catalog.gd")
 
 var board_root: Node3D
@@ -33,11 +34,19 @@ var _passive_perception_label: Label
 
 var _spell_class_selector: OptionButton
 var _spell_level_selector: OptionButton
+var _catalog_search_fields: Dictionary = {}
+var _catalog_available_lists: Dictionary = {}
+var _catalog_owned_lists: Dictionary = {}
+
 var _spell_search_input: LineEdit
 var _available_spells: ItemList
 var _selected_spells: ItemList
+var _prepared_spells: ItemList
 var _slot_total_spins: Array[SpinBox] = []
-var _slot_spent_spins: Array[SpinBox] = []
+var _slot_marker_rows: Array[HBoxContainer] = []
+var _slot_spent_values: Array[int] = [
+	0, 0, 0, 0, 0, 0, 0, 0, 0, 0
+]
 
 var _name_dialog: ConfirmationDialog
 var _name_input: LineEdit
@@ -847,6 +856,219 @@ func _build_spells_tab() -> void:
 		)
 		slots_grid.add_child(spent_spin)
 		_slot_spent_spins.append(spent_spin)
+
+
+func _add_5etools_catalog_section(
+	parent: Control,
+	title_text: String,
+	category: String,
+	character_key: String
+) -> void:
+	_section_title(parent, title_text)
+
+	var search := LineEdit.new()
+	search.placeholder_text = "Cerca nel catalogo 5e.tools..."
+	search.clear_button_enabled = true
+	search.text_changed.connect(
+		_on_catalog_search_changed.bind(character_key)
+	)
+	parent.add_child(search)
+	_catalog_search_fields[character_key] = search
+
+	var available := ItemList.new()
+	available.custom_minimum_size = Vector2(0, 145)
+	available.size_flags_horizontal = Control.SIZE_EXPAND_FILL
+	available.select_mode = ItemList.SELECT_SINGLE
+	parent.add_child(available)
+	_catalog_available_lists[character_key] = available
+	available.set_meta("catalog_category", category)
+
+	var add_button := Button.new()
+	add_button.text = "Aggiungi alla scheda"
+	add_button.pressed.connect(
+		_add_catalog_selection.bind(character_key)
+	)
+	parent.add_child(add_button)
+
+	var owned_label := Label.new()
+	owned_label.text = "Nella scheda"
+	owned_label.add_theme_font_size_override("font_size", 14)
+	parent.add_child(owned_label)
+
+	var owned := ItemList.new()
+	owned.custom_minimum_size = Vector2(0, 115)
+	owned.size_flags_horizontal = Control.SIZE_EXPAND_FILL
+	owned.select_mode = ItemList.SELECT_SINGLE
+	parent.add_child(owned)
+	_catalog_owned_lists[character_key] = owned
+
+	var remove_button := Button.new()
+	remove_button.text = "Rimuovi selezionato"
+	remove_button.pressed.connect(
+		_remove_catalog_selection.bind(character_key)
+	)
+	parent.add_child(remove_button)
+
+
+func _on_catalog_search_changed(
+	_query: String,
+	character_key: String
+) -> void:
+	_refresh_catalog_section(character_key)
+
+
+func _catalog_filters(character_key: String) -> Dictionary:
+	var filters: Dictionary = {}
+	if _current_index < 0 or _current_index >= _characters.size():
+		return filters
+	var character: Dictionary = _characters[_current_index]
+	if character_key == "class_features_catalog":
+		var class_name := String(character.get("class", "")).strip_edges()
+		if not class_name.is_empty():
+			filters["class_name"] = class_name
+	elif character_key == "species_traits_catalog":
+		var species_name := String(character.get("species", "")).strip_edges()
+		if not species_name.is_empty():
+			filters["species"] = species_name
+	return filters
+
+
+func _refresh_catalog_section(character_key: String) -> void:
+	var available: ItemList = _catalog_available_lists.get(
+		character_key
+	) as ItemList
+	var search: LineEdit = _catalog_search_fields.get(
+		character_key
+	) as LineEdit
+	if available == null:
+		return
+
+	var category := String(
+		available.get_meta("catalog_category", "")
+	)
+	var query := search.text if search != null else ""
+	var entries: Array[Dictionary] = Player5eToolsCatalog.search(
+		category,
+		query,
+		_catalog_filters(character_key),
+		2000
+	)
+
+	available.clear()
+	for entry: Dictionary in entries:
+		available.add_item(
+			Player5eToolsCatalog.display_label(entry)
+		)
+		available.set_item_metadata(
+			available.item_count - 1,
+			entry.duplicate(true)
+		)
+
+	_refresh_catalog_owned(character_key)
+
+
+func _refresh_catalog_owned(character_key: String) -> void:
+	var owned: ItemList = _catalog_owned_lists.get(
+		character_key
+	) as ItemList
+	if owned == null:
+		return
+	owned.clear()
+	if _current_index < 0 or _current_index >= _characters.size():
+		return
+
+	var values: Variant = _characters[_current_index].get(
+		character_key,
+		[]
+	)
+	if not values is Array:
+		return
+
+	for value: Variant in values:
+		if not value is Dictionary:
+			continue
+		var entry: Dictionary = value as Dictionary
+		owned.add_item(Player5eToolsCatalog.display_label(entry))
+		owned.set_item_metadata(
+			owned.item_count - 1,
+			String(entry.get("id", ""))
+		)
+
+
+func _refresh_all_catalog_sections() -> void:
+	for raw_key: Variant in _catalog_available_lists.keys():
+		_refresh_catalog_section(String(raw_key))
+
+
+func _add_catalog_selection(character_key: String) -> void:
+	if _current_index < 0 or _current_index >= _characters.size():
+		return
+	var available: ItemList = _catalog_available_lists.get(
+		character_key
+	) as ItemList
+	if available == null:
+		return
+	var selected := available.get_selected_items()
+	if selected.is_empty():
+		return
+	var metadata: Variant = available.get_item_metadata(selected[0])
+	if not metadata is Dictionary:
+		return
+
+	var entry: Dictionary = (metadata as Dictionary).duplicate(true)
+	var entry_id := String(entry.get("id", ""))
+	var character: Dictionary = _characters[_current_index]
+	var raw_values: Variant = character.get(character_key, [])
+	var values: Array = (
+		(raw_values as Array).duplicate(true)
+		if raw_values is Array
+		else []
+	)
+	for existing: Variant in values:
+		if (
+			existing is Dictionary
+			and String((existing as Dictionary).get("id", ""))
+			== entry_id
+		):
+			return
+	values.append(entry)
+	character[character_key] = values
+	_characters[_current_index] = character
+	_store.call("save_characters", _characters)
+	_refresh_catalog_owned(character_key)
+
+
+func _remove_catalog_selection(character_key: String) -> void:
+	if _current_index < 0 or _current_index >= _characters.size():
+		return
+	var owned: ItemList = _catalog_owned_lists.get(
+		character_key
+	) as ItemList
+	if owned == null:
+		return
+	var selected := owned.get_selected_items()
+	if selected.is_empty():
+		return
+	var entry_id := String(owned.get_item_metadata(selected[0]))
+
+	var character: Dictionary = _characters[_current_index]
+	var raw_values: Variant = character.get(character_key, [])
+	if not raw_values is Array:
+		return
+	var values: Array = (raw_values as Array).duplicate(true)
+	for index: int in range(values.size() - 1, -1, -1):
+		var value: Variant = values[index]
+		if (
+			value is Dictionary
+			and String((value as Dictionary).get("id", ""))
+			== entry_id
+		):
+			values.remove_at(index)
+			break
+	character[character_key] = values
+	_characters[_current_index] = character
+	_store.call("save_characters", _characters)
+	_refresh_catalog_owned(character_key)
 
 
 func _build_name_dialog() -> void:
