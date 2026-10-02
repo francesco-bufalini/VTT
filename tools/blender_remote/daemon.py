@@ -433,6 +433,170 @@ finally:
     return execute_json_code(code, timeout=180)
 
 
+def titan_relief(command: dict[str, Any]) -> dict[str, Any]:
+    influence = max(5.0, min(float(command.get("influence", 48.0)), 120.0))
+    skin = max(0.0, min(float(command.get("skin", 26.0)), 80.0))
+    max_push = max(0.0, min(float(command.get("max_push", 32.0)), 100.0))
+    reserve_inner = max(0.0, min(float(command.get("reserve_inner", 52.0)), 180.0))
+    reserve_outer = max(reserve_inner + 1.0, min(float(command.get("reserve_outer", 92.0)), 210.0))
+    strength = max(0.0, min(float(command.get("strength", 1.0)), 1.5))
+
+    code = f"""import bpy, json, math
+from mathutils import kdtree, Vector
+
+shell_name = 'Klothys_PrisonShell_V2_R220m'
+titan_names = ['ImprisonedTitan_A_Demon', 'ImprisonedTitan_B_Orc']
+key_name = 'TitanLatexRelief'
+
+shell = bpy.data.objects.get(shell_name)
+if shell is None or shell.type != 'MESH':
+    raise RuntimeError(f'Shell not found or not a mesh: {{shell_name}}')
+
+titans = []
+for name in titan_names:
+    obj = bpy.data.objects.get(name)
+    if obj is None or obj.type != 'MESH':
+        raise RuntimeError(f'Titan not found or not a mesh: {{name}}')
+    titans.append(obj)
+
+# Ensure a reversible basis + dedicated relief shape key.
+if shell.data.shape_keys is None:
+    shell.shape_key_add(name='Basis', from_mix=False)
+
+existing = shell.data.shape_keys.key_blocks.get(key_name)
+if existing is not None:
+    shell.shape_key_remove(existing)
+
+relief = shell.shape_key_add(name=key_name, from_mix=False)
+basis = shell.data.shape_keys.key_blocks.get('Basis')
+
+depsgraph = bpy.context.evaluated_depsgraph_get()
+trees = []
+for titan in titans:
+    eval_obj = titan.evaluated_get(depsgraph)
+    eval_mesh = eval_obj.to_mesh()
+    tree = kdtree.KDTree(len(eval_mesh.vertices))
+    matrix = eval_obj.matrix_world.copy()
+    for i, vert in enumerate(eval_mesh.vertices):
+        tree.insert(matrix @ vert.co, i)
+    tree.balance()
+    trees.append((tree, eval_obj, eval_mesh))
+
+center = shell.matrix_world.translation.copy()
+shell_world = shell.matrix_world.copy()
+shell_inv = shell_world.inverted()
+
+influence = {influence!r}
+skin = {skin!r}
+max_push = {max_push!r}
+reserve_inner = {reserve_inner!r}
+reserve_outer = {reserve_outer!r}
+strength = {strength!r}
+
+changed = 0
+push_sum = 0.0
+push_peak = 0.0
+
+try:
+    for i, basis_point in enumerate(basis.data):
+        world = shell_world @ basis_point.co
+        radial = world - center
+        radius = radial.length
+        if radius <= 1e-6:
+            relief.data[i].co = basis_point.co
+            continue
+
+        # Preserve a central vertical corridor for Klothys. Fade the relief in
+        # gradually outside that corridor to avoid a hard seam.
+        abs_x = abs(world.x - center.x)
+        if abs_x <= reserve_inner:
+            center_mask = 0.0
+        elif abs_x >= reserve_outer:
+            center_mask = 1.0
+        else:
+            t = (abs_x - reserve_inner) / (reserve_outer - reserve_inner)
+            center_mask = t * t * (3.0 - 2.0 * t)
+
+        if center_mask <= 0.0:
+            relief.data[i].co = basis_point.co
+            continue
+
+        best_dist = 1.0e30
+        best_point = None
+        for tree, _, _ in trees:
+            co, _, dist = tree.find(world)
+            if co is not None and dist < best_dist:
+                best_dist = dist
+                best_point = co
+
+        if best_point is None or best_dist >= influence:
+            relief.data[i].co = basis_point.co
+            continue
+
+        # Smooth proximity falloff.
+        t = 1.0 - best_dist / influence
+        falloff = t * t * (3.0 - 2.0 * t)
+
+        titan_radius = (best_point - center).length
+        desired_radius = titan_radius + skin
+        raw_push = max(0.0, desired_radius - radius)
+        push = min(max_push, raw_push * falloff * center_mask * strength)
+
+        if push <= 1e-5:
+            relief.data[i].co = basis_point.co
+            continue
+
+        new_world = center + radial.normalized() * (radius + push)
+        relief.data[i].co = shell_inv @ new_world
+        changed += 1
+        push_sum += push
+        push_peak = max(push_peak, push)
+
+finally:
+    for _, eval_obj, eval_mesh in trees:
+        eval_obj.to_mesh_clear()
+
+relief.value = 1.0
+shell.active_shape_key_index = shell.data.shape_keys.key_blocks.find(key_name)
+bpy.context.view_layer.update()
+
+print(json.dumps({{
+    'shell': shell.name,
+    'shape_key': key_name,
+    'titans': titan_names,
+    'vertices_total': len(shell.data.vertices),
+    'vertices_deformed': changed,
+    'mean_push': (push_sum / changed) if changed else 0.0,
+    'max_push_actual': push_peak,
+    'parameters': {{
+        'influence': influence,
+        'skin': skin,
+        'max_push': max_push,
+        'reserve_inner': reserve_inner,
+        'reserve_outer': reserve_outer,
+        'strength': strength,
+    }}
+}}))
+"""
+    return execute_json_code(code, timeout=300)
+
+
+def reset_titan_relief() -> dict[str, Any]:
+    code = """import bpy, json
+shell = bpy.data.objects.get('Klothys_PrisonShell_V2_R220m')
+if shell is None:
+    raise RuntimeError('Klothys_PrisonShell_V2_R220m not found')
+key = shell.data.shape_keys.key_blocks.get('TitanLatexRelief') if shell.data.shape_keys else None
+if key is None:
+    print(json.dumps({'found': False, 'value': 0.0}))
+else:
+    key.value = 0.0
+    bpy.context.view_layer.update()
+    print(json.dumps({'found': True, 'value': key.value}))
+"""
+    return execute_json_code(code)
+
+
 def execute(command: dict[str, Any]) -> dict[str, Any]:
     action = str(command.get("action", "")).strip().lower()
 
@@ -461,6 +625,12 @@ def execute(command: dict[str, Any]) -> dict[str, Any]:
 
     if action in {"screenshot", "render_preview"}:
         return viewport_screenshot(command)
+
+    if action in {"titan_relief", "latex_titans"}:
+        return titan_relief(command)
+
+    if action == "reset_titan_relief":
+        return reset_titan_relief()
 
     if action == "object":
         name = str(command["object"])
@@ -495,7 +665,7 @@ def execute(command: dict[str, Any]) -> dict[str, Any]:
         return blender_command("execute_code", {"code": code}, timeout=300)
 
     raise ValueError(
-        "Unknown action. Supported: ping, scene, workspaces, viewport, screenshot, render_preview, object, transform, undo, save"
+        "Unknown action. Supported: ping, scene, workspaces, viewport, screenshot, render_preview, titan_relief, reset_titan_relief, object, transform, undo, save"
         + (", python" if ALLOW_PYTHON else "")
     )
 
