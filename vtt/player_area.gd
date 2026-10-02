@@ -2118,8 +2118,10 @@ func _refresh_attack_calculator() -> void:
 				has_attack_feature = true
 			var sneak_dice := ceili(float(level) / 2.0)
 			lines.append(
-				"• [b]Attacco Furtivo[/b] — +%dd6 una volta per "
-				+ "turno con arma idonea (%s)"
+				(
+					"• [b]Attacco Furtivo[/b] — +%dd6 una volta per "
+					+ "turno con arma idonea (%s)"
+				)
 				% [
 					sneak_dice,
 					", ".join(eligible_weapon_names),
@@ -2162,8 +2164,10 @@ func _refresh_attack_calculator() -> void:
 		)
 
 		lines.append(
-			"• [b]Colpo senz'armi[/b] — Colpire %s | Danni %s "
-			+ "contundenti (%s)"
+			(
+				"• [b]Colpo senz'armi[/b] — Colpire %s | Danni %s "
+				+ "contundenti (%s)"
+			)
 			% [
 				_signed(martial_hit),
 				martial_damage,
@@ -2186,8 +2190,10 @@ func _refresh_attack_calculator() -> void:
 			):
 				flurry_attacks = 3
 			lines.append(
-				"• [b]Raffica di Colpi[/b] — %d colpi; ciascuno "
-				+ "Colpire %s | Danni %s."
+				(
+					"• [b]Raffica di Colpi[/b] — %d colpi; ciascuno "
+					+ "Colpire %s | Danni %s."
+				)
 				% [
 					flurry_attacks,
 					_signed(martial_hit),
