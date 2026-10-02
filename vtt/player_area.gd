@@ -98,6 +98,7 @@ func add_character() -> void:
 
 
 func request_link_character_to_selected_token() -> void:
+	show_panel()
 	if _characters.is_empty():
 		add_character()
 
