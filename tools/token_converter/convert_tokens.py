@@ -27,6 +27,16 @@ import sys
 from datetime import datetime, timezone
 from pathlib import Path
 
+SCRIPT_DIR = Path(__file__).resolve().parent
+if str(SCRIPT_DIR) not in sys.path:
+    sys.path.insert(0, str(SCRIPT_DIR))
+
+from creature_size_lookup import (
+    load_creature_index,
+    lookup_5etools_size,
+    normalize_creature_name,
+)
+
 import bpy
 from mathutils import Matrix, Vector
 
@@ -161,6 +171,150 @@ def size_from_diameter(diameter: float) -> tuple[str, float]:
         ),
     )
     return size_name, SIZE_TO_FOOTPRINT[size_name]
+
+
+def load_size_overrides(project_root: Path) -> dict[str, dict]:
+    path = project_root / "assets" / "tokens" / "creature_size_overrides.json"
+    if not path.is_file():
+        return {}
+    try:
+        raw = json.loads(path.read_text(encoding="utf-8"))
+    except Exception as exc:
+        print(f"WARNING: creature size overrides could not be read: {exc}")
+        return {}
+    if not isinstance(raw, dict):
+        return {}
+    return {
+        normalize_creature_name(str(name)): value
+        for name, value in raw.items()
+        if isinstance(value, dict)
+    }
+
+
+def resolve_creature_size(
+    package: Path,
+    main_source: Path,
+    project_root: Path,
+    base_reference: str,
+    base_diameter: float,
+) -> dict:
+    """Resolve D&D size metadata without changing authored visual scale.
+
+    Priority: 5eTools -> local override -> explicit model/folder name ->
+    base/marker -> Medium.  Base-derived information is never allowed to
+    override a successful 5eTools match.
+    """
+    index_path = project_root / "assets" / "tokens" / "5etools_creature_index.json"
+    records = load_creature_index(index_path)
+    queries = [package.name]
+    if normalize_creature_name(main_source.stem) != normalize_creature_name(package.name):
+        queries.append(main_source.stem)
+
+    match = None
+    ambiguous_queries: list[str] = []
+    for query in queries:
+        candidate = lookup_5etools_size(query, records)
+        if candidate is None:
+            continue
+        if candidate.get("ambiguous"):
+            ambiguous_queries.append(query)
+            continue
+        match = candidate
+        break
+
+    explicit_base_size = size_from_text(base_reference)
+    inferred_base_size = None
+    if not base_reference.startswith("fallback:"):
+        inferred_base_size = explicit_base_size or size_from_diameter(base_diameter)
+
+    if match is not None:
+        size_name = str(match["size_name"])
+        footprint = float(match["footprint"])
+        if inferred_base_size is not None and inferred_base_size[0] != size_name:
+            print(
+                "WARNING: 5eTools/base size mismatch: "
+                f"5eTools={size_name} ({footprint:g} cells), "
+                f"base appears {inferred_base_size[0]} "
+                f"({inferred_base_size[1]:g} cells). "
+                "Keeping 5eTools metadata; visual scale is unchanged."
+            )
+        return {
+            "size_name": size_name,
+            "footprint": footprint,
+            "size_source": "5etools",
+            "size_match_name": str(match.get("name", "")),
+            "size_match_source": str(match.get("source", "")),
+            "size_match_edition": str(match.get("edition", "")),
+            "size_match_kind": str(match.get("match_kind", "")),
+        }
+
+    if records:
+        warning_name = package.name
+        if ambiguous_queries:
+            print(
+                "WARNING: ambiguous 5eTools size match for "
+                f'"{warning_name}" ({", ".join(ambiguous_queries)}); '
+                "not guessing"
+            )
+        else:
+            print(f'WARNING: no 5eTools size match for "{warning_name}"')
+    else:
+        print(
+            "WARNING: 5eTools creature index not found/empty; "
+            f'cannot match "{package.name}"'
+        )
+
+    overrides = load_size_overrides(project_root)
+    for query in queries:
+        override = overrides.get(normalize_creature_name(query))
+        if override:
+            size_name = str(override.get("size_name", "")).title()
+            if size_name in SIZE_TO_FOOTPRINT:
+                return {
+                    "size_name": size_name,
+                    "footprint": float(
+                        override.get("footprint", SIZE_TO_FOOTPRINT[size_name])
+                    ),
+                    "size_source": "manual_override",
+                    "size_match_name": query,
+                    "size_match_source": "creature_size_overrides.json",
+                    "size_match_edition": "",
+                    "size_match_kind": "exact_normalized",
+                }
+
+    for query in queries:
+        name_hint = size_from_text(query)
+        if name_hint is not None:
+            return {
+                "size_name": name_hint[0],
+                "footprint": name_hint[1],
+                "size_source": "name_fallback",
+                "size_match_name": query,
+                "size_match_source": "",
+                "size_match_edition": "",
+                "size_match_kind": "explicit_size_word",
+            }
+
+    if inferred_base_size is not None:
+        return {
+            "size_name": inferred_base_size[0],
+            "footprint": inferred_base_size[1],
+            "size_source": "base_fallback",
+            "size_match_name": "",
+            "size_match_source": base_reference,
+            "size_match_edition": "",
+            "size_match_kind": "base_or_marker",
+        }
+
+    return {
+        "size_name": "Medium",
+        "footprint": SIZE_TO_FOOTPRINT["Medium"],
+        "size_source": "medium_fallback",
+        "size_match_name": "",
+        "size_match_source": "",
+        "size_match_edition": "",
+        "size_match_kind": "default",
+    }
 
 
 def clear_scene() -> None:
@@ -1094,14 +1248,15 @@ def process_package(
         )
     diameter = max(base_high.x - base_low.x, base_high.y - base_low.y)
 
-    size_hint = (
-        size_from_text(base_reference)
-        or size_from_text(package.name)
-        or size_from_text(main_source.stem)
+    size_info = resolve_creature_size(
+        package,
+        main_source,
+        project_root,
+        base_reference,
+        diameter,
     )
-    size_name, footprint = (
-        size_hint if size_hint is not None else size_from_diameter(diameter)
-    )
+    size_name = str(size_info["size_name"])
+    footprint = float(size_info["footprint"])
 
     armatures = rig_armatures(objects)
     rigged = bool(armatures)
@@ -1127,7 +1282,9 @@ def process_package(
         base_high,
         footprint,
         transform_roots=transform_roots,
-        preserve_authored_scale=size_hint is not None,
+        # D&D size is metadata only.  Never resize the visual from the resolved
+        # size, whether it came from 5eTools or any fallback.
+        preserve_authored_scale=True,
     )
 
     slug = slugify(package.name)
@@ -1191,29 +1348,40 @@ def process_package(
         "scene": scene_res,
         "size_name": size_name,
         "footprint": footprint,
+        "visual_native_footprint": footprint,
+        "size_source": size_info["size_source"],
+        "size_match_name": size_info["size_match_name"],
+        "size_match_source": size_info["size_match_source"],
+        "size_match_edition": size_info["size_match_edition"],
+        "size_match_kind": size_info["size_match_kind"],
         "height_cells": round(height_cells, 6),
         "width_cells": round(float(metrics["width"]), 6),
         "depth_cells": round(float(metrics["depth"]), 6),
         "base_reference": base_reference,
         "base_diameter_source": float(metrics["base_diameter_source"]),
         "scale_factor": float(metrics["scale_factor"]),
-        "scale_mode": (
-            "authored"
-            if size_hint is not None
-            else "normalized_from_unnamed_base"
-        ),
+        "scale_mode": "authored",
     }
 
+    print(f"Size: {size_name} ({footprint:g} cells)")
+    if size_info["size_source"] == "5etools":
+        print(
+            "Source: 5etools / "
+            f"{size_info['size_match_name']} / "
+            f"{size_info['size_match_source']} "
+            f"({size_info['size_match_edition']})"
+        )
+    else:
+        print(
+            "Source: "
+            f"{size_info['size_source']} / "
+            f"{size_info['size_match_source'] or size_info['size_match_name'] or 'fallback'}"
+        )
     print(
         "Base: "
-        f"{base_reference} | diameter={metrics['base_diameter_source']:.4f} "
-        f"-> {size_name} ({footprint:g} cells) | "
-        + (
-            "authored visual scale preserved"
-            if size_hint is not None
-            else "unnamed-base normalization"
-        )
+        f"{base_reference} | diameter={metrics['base_diameter_source']:.4f}"
     )
+    print("Visual scale: authored")
     print(
         "Godot bounds: "
         f"W={metrics['width']:.3f}, D={metrics['depth']:.3f}, "
