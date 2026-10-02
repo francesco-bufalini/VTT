@@ -31,6 +31,7 @@ var _skill_expertise_checks: Dictionary = {}
 var _skill_value_labels: Dictionary = {}
 var _proficiency_label: Label
 var _passive_perception_label: Label
+var _attack_calculator: RichTextLabel
 
 var _spell_class_selector: OptionButton
 var _spell_level_selector: OptionButton
@@ -61,6 +62,9 @@ var _character_token_dialog: ConfirmationDialog
 var _character_token_info_label: Label
 var _character_token_selector: OptionButton
 
+var _catalog_info_dialog: AcceptDialog
+var _catalog_info_text: RichTextLabel
+
 
 func setup(root: Node3D) -> void:
 	board_root = root
@@ -75,6 +79,7 @@ func setup(root: Node3D) -> void:
 	_build_name_dialog()
 	_build_link_dialog()
 	_build_character_token_dialog()
+	_build_catalog_info_dialog()
 	_reload_characters()
 
 
@@ -99,7 +104,8 @@ func _player_modal_dialog_visible() -> bool:
 	for dialog: Window in [
 		_name_dialog,
 		_link_dialog,
-		_character_token_dialog
+		_character_token_dialog,
+		_catalog_info_dialog
 	]:
 		if dialog != null and is_instance_valid(dialog) and dialog.visible:
 			return true
@@ -636,6 +642,17 @@ func _build_combat_tab() -> void:
 		_skill_value_labels[skill_id] = value_label
 
 	_section_title(body, "Attacchi")
+	_attack_calculator = RichTextLabel.new()
+	_attack_calculator.bbcode_enabled = true
+	_attack_calculator.fit_content = true
+	_attack_calculator.custom_minimum_size = Vector2(0, 150)
+	_attack_calculator.scroll_active = false
+	_attack_calculator.text = (
+		"Aggiungi un'arma alla scheda per calcolare automaticamente "
+		+ "tiro per colpire e danni."
+	)
+	body.add_child(_attack_calculator)
+
 	_add_multiline_field(
 		body,
 		"Note attacchi / danni",
@@ -646,7 +663,7 @@ func _build_combat_tab() -> void:
 
 	_add_5etools_catalog_section(
 		body,
-		"Armi · catalogo 5e.tools",
+		"Armi equipaggiate · catalogo 5e.tools",
 		"weapons",
 		"weapons_catalog"
 	)
