@@ -1,0 +1,92 @@
+name: Blender Agent
+
+on:
+  workflow_dispatch:
+    inputs:
+      job:
+        description: Blender job JSON path
+        required: true
+        default: blender/jobs/smoke_test.json
+        type: string
+  push:
+    branches:
+      - feature/campaign-hub
+    paths:
+      - "blender/jobs/**"
+      - "tools/blender_agent/**"
+
+concurrency:
+  group: blender-agent-${{ github.ref }}
+  cancel-in-progress: false
+
+jobs:
+  blender:
+    name: Blender agent job
+    runs-on: [self-hosted, windows, x64, vtt-godot]
+    timeout-minutes: 20
+
+    steps:
+      - name: Checkout Blender surface
+        uses: actions/checkout@v4
+        with:
+          clean: true
+          fetch-depth: 1
+          sparse-checkout-cone-mode: false
+          sparse-checkout: |
+            /blender/
+            /tools/blender_agent/
+            /tools/blender_env/
+
+      - name: Resolve job
+        id: job
+        shell: powershell
+        run: |
+          $ErrorActionPreference = "Stop"
+          $job = "${{ github.event.inputs.job }}"
+          if ([string]::IsNullOrWhiteSpace($job)) {
+            $changed = git diff-tree --no-commit-id --name-only -r HEAD | Where-Object { $_ -like "blender/jobs/*.json" } | Select-Object -First 1
+            if ($changed) { $job = $changed } else { $job = "blender/jobs/smoke_test.json" }
+          }
+          if (-not (Test-Path -LiteralPath $job -PathType Leaf)) { throw "Blender job not found: $job" }
+          "job=$job" >> $env:GITHUB_OUTPUT
+          Write-Host "Job: $job"
+
+      - name: Verify Blender runner environment
+        shell: powershell
+        run: |
+          $ErrorActionPreference = "Stop"
+          if ([string]::IsNullOrWhiteSpace($env:VTT_BLENDER_EXE)) { throw "VTT_BLENDER_EXE is not available to the runner process. Restart run.cmd after setting the variable." }
+          if (-not (Test-Path -LiteralPath $env:VTT_BLENDER_EXE -PathType Leaf)) { throw "Blender executable not found: $env:VTT_BLENDER_EXE" }
+          if ([string]::IsNullOrWhiteSpace($env:VTT_BLENDER_ASSET_ROOT)) { throw "VTT_BLENDER_ASSET_ROOT is not available to the runner process. Restart run.cmd after setting the variable." }
+          if (-not (Test-Path -LiteralPath $env:VTT_BLENDER_ASSET_ROOT -PathType Container)) { throw "Blender asset root not found: $env:VTT_BLENDER_ASSET_ROOT" }
+          & $env:VTT_BLENDER_EXE --version
+          if ($LASTEXITCODE -ne 0) { exit $LASTEXITCODE }
+          $versionLine = (& $env:VTT_BLENDER_EXE --background --python-expr "import bpy; print('BLENDER_AGENT_VERSION', bpy.app.version_string)" 2>&1 | Out-String)
+          Write-Host $versionLine
+          if ($versionLine -notmatch "BLENDER_AGENT_VERSION 5\.2\.") { throw "Expected Blender 5.2.x." }
+
+      - name: Run Blender job
+        shell: powershell
+        run: |
+          $ErrorActionPreference = "Stop"
+          Remove-Item -LiteralPath "outputs/blender_agent" -Recurse -Force -ErrorAction SilentlyContinue
+          $job = "${{ steps.job.outputs.job }}"
+          $output = @(& $env:VTT_BLENDER_EXE --background --python ".\tools\blender_agent\run_job.py" -- --job $job --project-root $env:GITHUB_WORKSPACE 2>&1)
+          $exitCode = $LASTEXITCODE
+          $output | ForEach-Object { Write-Host $_ }
+          if ($exitCode -ne 0) { exit $exitCode }
+          if (($output -join [Environment]::NewLine) -notmatch "(?m)^BLENDER_AGENT_PASS ") { throw "Blender job ended without BLENDER_AGENT_PASS marker." }
+
+      - name: Show scene report
+        shell: powershell
+        run: |
+          Get-ChildItem -Path "outputs/blender_agent" -Recurse -File | Select-Object FullName,Length
+          Get-ChildItem -Path "outputs/blender_agent" -Filter scene_report.json -Recurse -File | ForEach-Object { Write-Host "== $($_.FullName) =="; Get-Content -LiteralPath $_.FullName -Raw }
+
+      - name: Upload Blender outputs
+        uses: actions/upload-artifact@v4
+        with:
+          name: blender-agent-${{ github.run_number }}
+          path: outputs/blender_agent/**
+          if-no-files-found: error
+          retention-days: 7
