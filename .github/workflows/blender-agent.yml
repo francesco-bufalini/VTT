@@ -6,14 +6,12 @@ on:
       job:
         description: Blender job JSON path
         required: true
-        default: blender/jobs/smoke_test.json
         type: string
   push:
     branches:
       - feature/campaign-hub
     paths:
       - "blender/jobs/**"
-      - "tools/blender_agent/**"
 
 permissions:
   contents: write
@@ -48,28 +46,29 @@ jobs:
         run: |
           $ErrorActionPreference = "Stop"
           $job = "${{ github.event.inputs.job }}"
+
           if ([string]::IsNullOrWhiteSpace($job)) {
-            $event = Get-Content -LiteralPath $env:GITHUB_EVENT_PATH -Raw | ConvertFrom-Json
-            $candidates = @()
-            if ($event.head_commit) {
-              $candidates += @($event.head_commit.added)
-              $candidates += @($event.head_commit.modified)
-            }
-            $changed = $candidates |
+            $job = git diff-tree --diff-filter=AM --no-commit-id --name-only -r HEAD |
               Where-Object { $_ -like "blender/jobs/*.json" } |
               Select-Object -First 1
-            if (-not $changed) {
-              $changed = git diff-tree --no-commit-id --name-only -r HEAD |
-                Where-Object { $_ -like "blender/jobs/*.json" } |
-                Select-Object -First 1
-            }
-            if ($changed) { $job = $changed } else { $job = "blender/jobs/smoke_test.json" }
           }
-          if (-not (Test-Path -LiteralPath $job -PathType Leaf)) { throw "Blender job not found: $job" }
+
+          if ([string]::IsNullOrWhiteSpace($job)) {
+            "skip=true" >> $env:GITHUB_OUTPUT
+            Write-Host "No added/modified Blender job in this push; nothing to run."
+            exit 0
+          }
+
+          if (-not (Test-Path -LiteralPath $job -PathType Leaf)) {
+            throw "Blender job not found: $job"
+          }
+
+          "skip=false" >> $env:GITHUB_OUTPUT
           "job=$job" >> $env:GITHUB_OUTPUT
           Write-Host "Job: $job"
 
       - name: Verify Blender runner environment
+        if: steps.job.outputs.skip != 'true'
         shell: powershell
         run: |
           $ErrorActionPreference = "Stop"
@@ -84,6 +83,7 @@ jobs:
           if ($versionLine -notmatch "BLENDER_AGENT_VERSION 5\.2\.") { throw "Expected Blender 5.2.x." }
 
       - name: Run Blender job
+        if: steps.job.outputs.skip != 'true'
         shell: powershell
         run: |
           $ErrorActionPreference = "Stop"
@@ -117,12 +117,14 @@ jobs:
           }
 
       - name: Show scene report
+        if: steps.job.outputs.skip != 'true'
         shell: powershell
         run: |
           Get-ChildItem -Path "outputs/blender_agent" -Recurse -File | Select-Object FullName,Length
           Get-ChildItem -Path "outputs/blender_agent" -Filter scene_report.json -Recurse -File | ForEach-Object { Write-Host "== $($_.FullName) =="; Get-Content -LiteralPath $_.FullName -Raw }
 
       - name: Upload Blender outputs
+        if: steps.job.outputs.skip != 'true'
         uses: actions/upload-artifact@v4
         with:
           name: blender-agent-${{ github.run_number }}
@@ -131,7 +133,7 @@ jobs:
           retention-days: 7
 
       - name: Publish canonical scene preview
-        if: success()
+        if: success() && steps.job.outputs.skip != 'true'
         shell: powershell
         run: |
           $ErrorActionPreference = "Stop"
@@ -183,7 +185,7 @@ jobs:
           }
 
       - name: Publish Blender agent status
-        if: always()
+        if: always() && steps.job.outputs.skip != 'true'
         shell: powershell
         run: |
           $ErrorActionPreference = "Stop"
