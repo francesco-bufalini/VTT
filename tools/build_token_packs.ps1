@@ -33,6 +33,63 @@ if ([string]::IsNullOrWhiteSpace($Godot) -or -not (Test-Path $Godot)) {
     throw "Godot 4.7.2 non trovato. Passa -Godot 'C:\...\Godot_v4.7.2-stable_win64.exe'."
 }
 
+
+# PowerShell does not reliably wait for GUI-subsystem executables. Prefer the
+# console build when it lives next to the selected Godot executable.
+$godotDir = Split-Path -Parent $Godot
+$godotName = [IO.Path]::GetFileNameWithoutExtension($Godot)
+if (-not $godotName.EndsWith("_console")) {
+    $consoleCandidate = Join-Path $godotDir ($godotName + "_console.exe")
+    if (Test-Path $consoleCandidate) {
+        $Godot = $consoleCandidate
+    }
+}
+
+function Invoke-Godot {
+    param(
+        [Parameter(Mandatory = $true)]
+        [string[]]$Arguments,
+
+        [Parameter(Mandatory = $true)]
+        [string]$Phase,
+
+        [int]$TimeoutSeconds = 180
+    )
+
+    Write-Host ">> $Phase"
+    $argumentLine = ($Arguments | ForEach-Object {
+        if ($_ -match '[\s"]') {
+            '"' + ($_ -replace '"', '\"') + '"'
+        } else {
+            $_
+        }
+    }) -join ' '
+
+    $startInfo = New-Object System.Diagnostics.ProcessStartInfo
+    $startInfo.FileName = $Godot
+    $startInfo.Arguments = $argumentLine
+    $startInfo.WorkingDirectory = $ProjectRoot
+    $startInfo.UseShellExecute = $false
+    $startInfo.RedirectStandardOutput = $false
+    $startInfo.RedirectStandardError = $false
+    $startInfo.CreateNoWindow = $true
+
+    $process = New-Object System.Diagnostics.Process
+    $process.StartInfo = $startInfo
+    if (-not $process.Start()) {
+        throw "Impossibile avviare Godot durante: $Phase"
+    }
+
+    if (-not $process.WaitForExit($TimeoutSeconds * 1000)) {
+        try { $process.Kill() } catch {}
+        throw "Timeout ($TimeoutSeconds s) durante: $Phase. Il processo Godot e stato terminato."
+    }
+
+    if ($process.ExitCode -ne 0) {
+        throw "$Phase fallita con codice $($process.ExitCode)"
+    }
+}
+
 $manifest = Get-Content -Raw -Encoding UTF8 $ManifestPath | ConvertFrom-Json
 $profile = $manifest.tokens | Where-Object { $_.id -eq $TokenId } | Select-Object -First 1
 if (-not $profile) {
@@ -74,10 +131,7 @@ if (-not $SkipImport) {
     Write-Host ""
     Write-Host "Aggiorno la cache di import Godot..."
     $importArgs = @("--headless", "--path", $ProjectRoot, "--import")
-    & $Godot @importArgs
-    if ($LASTEXITCODE -ne 0) {
-        throw "Import Godot fallito con codice $LASTEXITCODE"
-    }
+    Invoke-Godot -Arguments $importArgs -Phase "Import della miniatura in Godot" -TimeoutSeconds 180
 }
 
 $pckResPath = "res://dist/token_packs/$TokenId.pck"
@@ -89,10 +143,7 @@ $buildArgs = @(
     "--token-id", $TokenId,
     "--output", $pckResPath
 )
-& $Godot @buildArgs
-if ($LASTEXITCODE -ne 0) {
-    throw "Build PCK fallita con codice $LASTEXITCODE"
-}
+Invoke-Godot -Arguments $buildArgs -Phase "Build PCK di $TokenId" -TimeoutSeconds 180
 
 $pckPath = Join-Path $DistDir "$TokenId.pck"
 if (-not (Test-Path $pckPath)) {
@@ -112,10 +163,7 @@ if (-not $SkipVerify) {
         "--scene", $scenePath,
         "--token-id", $TokenId
     )
-    & $Godot @verifyArgs
-    if ($LASTEXITCODE -ne 0) {
-        throw "Verifica PCK fallita con codice $LASTEXITCODE"
-    }
+    Invoke-Godot -Arguments $verifyArgs -Phase "Verifica mount e instantiate" -TimeoutSeconds 60
 }
 
 $file = Get-Item $pckPath
