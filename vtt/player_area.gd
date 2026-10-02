@@ -1209,12 +1209,55 @@ func _refresh_catalog_owned(character_key: String) -> void:
 	for value: Variant in values:
 		if not value is Dictionary:
 			continue
-		var entry: Dictionary = value as Dictionary
+		var entry: Dictionary = _resolve_catalog_entry(
+			character_key,
+			value as Dictionary
+		)
 		owned.add_item(Player5eToolsCatalog.display_label(entry))
 		owned.set_item_metadata(
 			owned.item_count - 1,
 			entry.duplicate(true)
 		)
+
+
+func _catalog_category_for_key(character_key: String) -> String:
+	match character_key:
+		"weapons_catalog":
+			return "weapons"
+		"armor_catalog":
+			return "armor"
+		"tools_catalog":
+			return "tools"
+		"languages_catalog":
+			return "languages"
+		"feats_catalog":
+			return "feats"
+		"class_features_catalog":
+			return "class_features"
+		"species_traits_catalog":
+			return "species_traits"
+		"optional_features_catalog":
+			return "optional_features"
+		"inventory_mundane":
+			return "mundane_items"
+		"inventory_magic":
+			return "magic_items"
+	return ""
+
+
+func _resolve_catalog_entry(
+	character_key: String,
+	saved_entry: Dictionary
+) -> Dictionary:
+	var entry_id := String(saved_entry.get("id", ""))
+	var category := _catalog_category_for_key(character_key)
+	if entry_id.is_empty() or category.is_empty():
+		return saved_entry.duplicate(true)
+
+	for candidate: Dictionary in Player5eToolsCatalog.entries(category):
+		if String(candidate.get("id", "")) == entry_id:
+			return candidate.duplicate(true)
+	return saved_entry.duplicate(true)
 
 
 func _refresh_all_catalog_sections() -> void:
@@ -1979,6 +2022,271 @@ func _refresh_derived_values() -> void:
 	_passive_perception_label.text = (
 		"Percezione passiva: %d" % (10 + perception_value)
 	)
+	_refresh_attack_calculator()
+
+
+func _refresh_attack_calculator() -> void:
+	if _attack_calculator == null:
+		return
+	if _current_index < 0 or _current_index >= _characters.size():
+		_attack_calculator.text = "Nessun personaggio selezionato."
+		return
+
+	var character: Dictionary = _characters[_current_index]
+	var level := clampi(int(character.get("level", 1)), 1, 20)
+	var proficiency := PlayerReference.proficiency_bonus(level)
+	var strength_mod := _ability_modifier_from_form("str")
+	var dexterity_mod := _ability_modifier_from_form("dex")
+
+	var lines: PackedStringArray = []
+	lines.append(
+		"[b]Bonus competenza:[/b] %s"
+		% _signed(proficiency)
+	)
+
+	var raw_weapons: Variant = character.get("weapons_catalog", [])
+	var weapons: Array[Dictionary] = []
+	if raw_weapons is Array:
+		for raw_weapon: Variant in raw_weapons:
+			if raw_weapon is Dictionary:
+				weapons.append(
+					_resolve_catalog_entry(
+						"weapons_catalog",
+						raw_weapon as Dictionary
+					)
+				)
+
+	if weapons.is_empty():
+		lines.append("")
+		lines.append(
+			"[i]Nessuna arma equipaggiata nella scheda.[/i]"
+		)
+	else:
+		lines.append("")
+		lines.append("[b]Armi equipaggiate[/b]")
+		for weapon: Dictionary in weapons:
+			var ability_id := _weapon_attack_ability(
+				weapon,
+				strength_mod,
+				dexterity_mod
+			)
+			var ability_mod := (
+				dexterity_mod
+				if ability_id == "dex"
+				else strength_mod
+			)
+			var attack_bonus := proficiency + ability_mod
+			var damage_die := String(
+				weapon.get("damage", "")
+			).strip_edges()
+			if damage_die.is_empty():
+				damage_die = "—"
+			var damage_text := _damage_expression(
+				damage_die,
+				ability_mod
+			)
+			var damage_type := _attack_damage_type(
+				String(weapon.get("damage_type", ""))
+			)
+			if not damage_type.is_empty():
+				damage_text += " " + damage_type
+
+			lines.append(
+				"• [b]%s[/b] — Colpire %s | Danni %s (%s)"
+				% [
+					String(weapon.get("name", "Arma")),
+					_signed(attack_bonus),
+					damage_text,
+					"DES" if ability_id == "dex" else "FOR",
+				]
+			)
+
+	var feature_names := _class_feature_names(character)
+	var has_attack_feature := false
+
+	if "sneak attack" in feature_names:
+		var eligible_weapon_names: PackedStringArray = []
+		for weapon: Dictionary in weapons:
+			if _weapon_allows_sneak_attack(weapon):
+				eligible_weapon_names.append(
+					String(weapon.get("name", "Arma"))
+				)
+		if not eligible_weapon_names.is_empty():
+			if not has_attack_feature:
+				lines.append("")
+				lines.append("[b]Privilegi offensivi[/b]")
+				has_attack_feature = true
+			var sneak_dice := ceili(float(level) / 2.0)
+			lines.append(
+				"• [b]Attacco Furtivo[/b] — +%dd6 una volta per "
+				+ "turno con arma idonea (%s)"
+				% [
+					sneak_dice,
+					", ".join(eligible_weapon_names),
+				]
+			)
+		else:
+			if not has_attack_feature:
+				lines.append("")
+				lines.append("[b]Privilegi offensivi[/b]")
+				has_attack_feature = true
+			lines.append(
+				"• [b]Attacco Furtivo[/b] — privilegio presente, "
+				+ "ma nessuna arma Finesse/a distanza equipaggiata."
+			)
+
+	var has_martial_arts := (
+		"martial arts" in feature_names
+		or "bonus unarmed strike" in feature_names
+		or "flurry of blows" in feature_names
+		or "ki-fueled attack" in feature_names
+	)
+	if has_martial_arts:
+		if not has_attack_feature:
+			lines.append("")
+			lines.append("[b]Privilegi offensivi[/b]")
+			has_attack_feature = true
+
+		var martial_mod := maxi(strength_mod, dexterity_mod)
+		var martial_ability := (
+			"DES" if dexterity_mod >= strength_mod else "FOR"
+		)
+		var martial_die := _monk_martial_arts_die(
+			level,
+			String(character.get("rules_version", "2024"))
+		)
+		var martial_hit := proficiency + martial_mod
+		var martial_damage := _damage_expression(
+			martial_die,
+			martial_mod
+		)
+
+		lines.append(
+			"• [b]Colpo senz'armi[/b] — Colpire %s | Danni %s "
+			+ "contundenti (%s)"
+			% [
+				_signed(martial_hit),
+				martial_damage,
+				martial_ability,
+			]
+		)
+
+		if "bonus unarmed strike" in feature_names:
+			lines.append(
+				"• [b]Bonus Unarmed Strike[/b] — 1 colpo senz'armi "
+				+ "aggiuntivo con gli stessi valori."
+			)
+
+		if "flurry of blows" in feature_names:
+			var flurry_attacks := 2
+			if (
+				String(character.get("rules_version", "2024")) == "2024"
+				and level >= 10
+				and "heightened focus" in feature_names
+			):
+				flurry_attacks = 3
+			lines.append(
+				"• [b]Raffica di Colpi[/b] — %d colpi; ciascuno "
+				+ "Colpire %s | Danni %s."
+				% [
+					flurry_attacks,
+					_signed(martial_hit),
+					martial_damage,
+				]
+			)
+
+		if "ki-fueled attack" in feature_names:
+			lines.append(
+				"• [b]Ki-Fueled Attack[/b] — 1 attacco bonus "
+				+ "idoneo dopo l'uso di Ki."
+			)
+
+	_attack_calculator.text = "\n".join(lines)
+
+
+func _ability_modifier_from_form(ability_id: String) -> int:
+	var spin: SpinBox = _ability_spins.get(ability_id) as SpinBox
+	if spin == null:
+		return 0
+	return PlayerReference.ability_modifier(int(spin.value))
+
+
+func _weapon_attack_ability(
+	weapon: Dictionary,
+	strength_mod: int,
+	dexterity_mod: int
+) -> String:
+	var type_code := String(weapon.get("type", "")).split("|")[0]
+	if type_code == "R":
+		return "dex"
+	if Player5eToolsCatalog.has_property(weapon, "F"):
+		return "dex" if dexterity_mod >= strength_mod else "str"
+	return "str"
+
+
+func _weapon_allows_sneak_attack(weapon: Dictionary) -> bool:
+	var type_code := String(weapon.get("type", "")).split("|")[0]
+	return (
+		type_code == "R"
+		or Player5eToolsCatalog.has_property(weapon, "F")
+	)
+
+
+func _class_feature_names(character: Dictionary) -> Array[String]:
+	var result: Array[String] = []
+	var value: Variant = character.get("class_features_catalog", [])
+	if not value is Array:
+		return result
+	for raw_feature: Variant in value:
+		if not raw_feature is Dictionary:
+			continue
+		var feature_name := String(
+			(raw_feature as Dictionary).get("name", "")
+		).strip_edges().to_lower()
+		if not feature_name.is_empty() and feature_name not in result:
+			result.append(feature_name)
+	return result
+
+
+func _monk_martial_arts_die(
+	level: int,
+	rules_version: String
+) -> String:
+	if rules_version == "2014":
+		if level < 5:
+			return "1d4"
+		if level < 11:
+			return "1d6"
+		if level < 17:
+			return "1d8"
+		return "1d10"
+
+	if level < 5:
+		return "1d6"
+	if level < 11:
+		return "1d8"
+	if level < 17:
+		return "1d10"
+	return "1d12"
+
+
+func _damage_expression(die_text: String, modifier: int) -> String:
+	if modifier > 0:
+		return "%s + %d" % [die_text, modifier]
+	if modifier < 0:
+		return "%s - %d" % [die_text, absi(modifier)]
+	return die_text
+
+
+func _attack_damage_type(code: String) -> String:
+	match code.strip_edges().to_upper():
+		"B":
+			return "contundenti"
+		"P":
+			return "perforanti"
+		"S":
+			return "taglienti"
+	return ""
 
 
 func _refresh_character_list_label(index: int) -> void:
