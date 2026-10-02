@@ -478,6 +478,65 @@ print(json.dumps({
     return execute_json_code(code)
 
 
+def focus_titan_reference() -> dict[str, Any]:
+    code = r"""import bpy, json, math
+from mathutils import Quaternion, Vector
+
+mesh = bpy.data.objects.get('SuperHero_Male')
+arm = bpy.data.objects.get('Armature')
+if mesh is None:
+    raise RuntimeError('SuperHero_Male not found')
+
+# Keep the rig, but make the mesh the active visible reference.
+bpy.ops.object.select_all(action='DESELECT')
+mesh.hide_viewport = False
+mesh.hide_render = False
+mesh.select_set(True)
+bpy.context.view_layer.objects.active = mesh
+
+# Do not delete or alter the rig; only hide it in the viewport so the body is readable.
+if arm is not None:
+    arm.hide_viewport = True
+
+# Use the mesh bounds to center the view.
+corners = [mesh.matrix_world @ Vector(c) for c in mesh.bound_box]
+mins = Vector((min(p.x for p in corners), min(p.y for p in corners), min(p.z for p in corners)))
+maxs = Vector((max(p.x for p in corners), max(p.y for p in corners), max(p.z for p in corners)))
+center = (mins + maxs) * 0.5
+height = maxs.z - mins.z
+
+changed = []
+for window in bpy.context.window_manager.windows:
+    screen = window.screen
+    if not screen:
+        continue
+    for area in screen.areas:
+        if area.type != 'VIEW_3D':
+            continue
+        space = area.spaces.active
+        r3d = space.region_3d
+        if r3d:
+            r3d.view_location = center
+            r3d.view_distance = max(height * 0.75, 50.0)
+            # Front view, looking along -Y with Z up.
+            r3d.view_rotation = Quaternion((1.0, 0.0, 0.0, 0.0))
+            r3d.view_perspective = 'ORTHO'
+        space.shading.type = 'MATERIAL'
+        area.tag_redraw()
+        changed.append({'area': area.type, 'center': list(center), 'height': height})
+
+bpy.context.view_layer.update()
+print(json.dumps({
+    'mesh': mesh.name,
+    'armature_hidden_in_viewport': bool(arm is not None),
+    'center': list(center),
+    'height': height,
+    'views_changed': changed,
+}))
+"""
+    return execute_json_code(code)
+
+
 def set_viewport_shading(command: dict[str, Any]) -> dict[str, Any]:
     shading = str(command.get("shading", "RENDERED")).strip().upper()
     allowed = {"WIREFRAME", "SOLID", "MATERIAL", "RENDERED"}
@@ -891,6 +950,9 @@ def execute(command: dict[str, Any]) -> dict[str, Any]:
 
     if action in {"set_viewport_shading", "viewport_shading"}:
         return set_viewport_shading(command)
+
+    if action == "focus_titan_reference":
+        return focus_titan_reference()
 
     if action in {"file_info", "blend_info"}:
         return blender_file_info()
