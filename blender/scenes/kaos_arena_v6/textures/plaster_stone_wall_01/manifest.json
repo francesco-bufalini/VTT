@@ -1,0 +1,27 @@
+{
+  "asset_id": "plaster_stone_wall_01",
+  "source": "https://polyhaven.com/a/plaster_stone_wall_01",
+  "api": "https://api.polyhaven.com/files/plaster_stone_wall_01",
+  "license": "CC0",
+  "resolution": "1k",
+  "maps": {
+    "diffuse": {
+      "file": "plaster_stone_wall_01_1k_diffuse.jpg",
+      "source_url": "https://dl.polyhaven.org/file/ph-assets/Textures/jpg/1k/plaster_stone_wall_01/plaster_stone_wall_01_diff_1k.jpg",
+      "size_bytes": 704992,
+      "md5": "f6c78f3defc91e4f7f5000eece52d10d"
+    },
+    "normal": {
+      "file": "plaster_stone_wall_01_1k_normal.jpg",
+      "source_url": "https://dl.polyhaven.org/file/ph-assets/Textures/jpg/1k/plaster_stone_wall_01/plaster_stone_wall_01_nor_gl_1k.jpg",
+      "size_bytes": 985509,
+      "md5": "2febf6edd6514c9e988a72fba27b8ace"
+    },
+    "rough": {
+      "file": "plaster_stone_wall_01_1k_rough.jpg",
+      "source_url": "https://dl.polyhaven.org/file/ph-assets/Textures/jpg/1k/plaster_stone_wall_01/plaster_stone_wall_01_rough_1k.jpg",
+      "size_bytes": 153750,
+      "md5": "e03997b92fd3636af617b7fcced41533"
+    }
+  }
+}
