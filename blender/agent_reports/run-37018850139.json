@@ -1,0 +1,1897 @@
+﻿{
+    "schema_version":  1,
+    "run_id":  "37018850139",
+    "run_number":  "28",
+    "source_sha":  "9be15182cb28bd1725139816192a0add16c5c466",
+    "workflow_status":  "success",
+    "blender_job":  "blender/jobs/klothys_titan_prison_sphere_v2.json",
+    "scene_report":  {
+                         "blender_version":  "5.2.2 LTS",
+                         "job":  "C:\\actions-runner\\_work\\VTT\\VTT\\blender\\jobs\\klothys_titan_prison_sphere_v2.json",
+                         "scene_id":  "klothys_titan_prison_sphere_v2",
+                         "description":  "V2 of Klothys\u0027s Titan prison: no repeated face reliefs. Two CC0 animated fantasy creature bodies are baked from rigged sources, radially wrapped into carbonite-like stone reliefs and embedded into the exact 220 m Godot sphere. A +/-28 degree front corridor is kept clear for the later Klothys figure and her binding hair.",
+                         "design_references":  [
+                                                   "User-approved concept: two full creature silhouettes imprisoned in a cracked runic stone sphere",
+                                                   "encounter/encounter_scenery.gd",
+                                                   "measurement_tool.gd",
+                                                   "blender/manifests/klothys_titan_prison_v2.assets.json"
+                                               ],
+                         "combat_mapping":  {
+                                                "battlemap":  {
+                                                                  "center_godot_m":  [
+                                                                                         0.0,
+                                                                                         0.0,
+                                                                                         85.5
+                                                                                     ],
+                                                                  "size_m":  [
+                                                                                 120.0,
+                                                                                 180.0
+                                                                             ],
+                                                                  "x_bounds_m":  [
+                                                                                     -60.0,
+                                                                                     60.0
+                                                                                 ],
+                                                                  "z_bounds_m":  [
+                                                                                     -4.5,
+                                                                                     175.5
+                                                                                 ]
+                                                              },
+                                                "coordinate_mapping":  "Godot (X,Y,Z) -\u003e Blender (X,Z,Y)",
+                                                "hazard_area":  {
+                                                                    "cells":  [
+                                                                                  -38,
+                                                                                  0,
+                                                                                  76,
+                                                                                  114
+                                                                              ],
+                                                                    "size_m":  [
+                                                                                   114.0,
+                                                                                   171.0
+                                                                               ],
+                                                                    "x_bounds_m":  [
+                                                                                       -57.0,
+                                                                                       57.0
+                                                                                   ],
+                                                                    "z_bounds_m":  [
+                                                                                       0.0,
+                                                                                       171.0
+                                                                                   ]
+                                                                },
+                                                "meters_per_cell":  1.5,
+                                                "sphere":  {
+                                                               "center_godot_m":  [
+                                                                                      0.0,
+                                                                                      385.0,
+                                                                                      -230.0
+                                                                                  ],
+                                                               "radius_m":  220.0
+                                                           },
+                                                "water":  {
+                                                              "center_godot_m":  [
+                                                                                     0.0,
+                                                                                     -0.18,
+                                                                                     -60.0
+                                                                                 ],
+                                                              "radius_m":  337.0
+                                                          }
+                                            },
+                         "layout_extension":  {
+
+                                              },
+                         "asset_root":  "C:\\VTT-BlenderAssets",
+                         "object_count":  201,
+                         "mesh_object_count":  77,
+                         "triangle_count":  84724,
+                         "objects":  [
+                                         {
+                                             "name":  "TitanPrisonV2_KeySun",
+                                             "type":  "LIGHT",
+                                             "location":  [
+                                                              0.0,
+                                                              0.0,
+                                                              0.0
+                                                          ]
+                                         },
+                                         {
+                                             "name":  "TitanPrisonV2_Fill",
+                                             "type":  "LIGHT",
+                                             "location":  [
+                                                              -300.0,
+                                                              90.0,
+                                                              635.0
+                                                          ]
+                                         },
+                                         {
+                                             "name":  "TitanPrisonV2_Rim",
+                                             "type":  "LIGHT",
+                                             "location":  [
+                                                              250.0,
+                                                              -410.0,
+                                                              465.0
+                                                          ]
+                                         },
+                                         {
+                                             "name":  "AgentCamera",
+                                             "type":  "CAMERA",
+                                             "location":  [
+                                                              -520.0,
+                                                              170.0,
+                                                              500.0
+                                                          ]
+                                         },
+                                         {
+                                             "name":  "ALIGN_KLOTHYS_SPHERE_CENTER_V2",
+                                             "type":  "EMPTY",
+                                             "location":  [
+                                                              0.0,
+                                                              -230.0,
+                                                              385.0
+                                                          ]
+                                         },
+                                         {
+                                             "name":  "RESERVED_KLOTHYS_FRONT_AXIS",
+                                             "type":  "EMPTY",
+                                             "location":  [
+                                                              0.0,
+                                                              10.0,
+                                                              385.0
+                                                          ]
+                                         },
+                                         {
+                                             "name":  "ImprisonedTitan_A_Demon",
+                                             "type":  "MESH",
+                                             "location":  [
+                                                              0.0,
+                                                              0.0,
+                                                              0.0
+                                                          ]
+                                         },
+                                         {
+                                             "name":  "ImprisonedTitan_A_Demon_StoneTendril_00",
+                                             "type":  "CURVE",
+                                             "location":  [
+                                                              0.0,
+                                                              0.0,
+                                                              0.0
+                                                          ]
+                                         },
+                                         {
+                                             "name":  "ImprisonedTitan_A_Demon_StoneTendril_01",
+                                             "type":  "CURVE",
+                                             "location":  [
+                                                              0.0,
+                                                              0.0,
+                                                              0.0
+                                                          ]
+                                         },
+                                         {
+                                             "name":  "ImprisonedTitan_A_Demon_StoneTendril_02",
+                                             "type":  "CURVE",
+                                             "location":  [
+                                                              0.0,
+                                                              0.0,
+                                                              0.0
+                                                          ]
+                                         },
+                                         {
+                                             "name":  "ImprisonedTitan_A_Demon_StoneTendril_03",
+                                             "type":  "CURVE",
+                                             "location":  [
+                                                              0.0,
+                                                              0.0,
+                                                              0.0
+                                                          ]
+                                         },
+                                         {
+                                             "name":  "ImprisonedTitan_A_Demon_StoneTendril_04",
+                                             "type":  "CURVE",
+                                             "location":  [
+                                                              0.0,
+                                                              0.0,
+                                                              0.0
+                                                          ]
+                                         },
+                                         {
+                                             "name":  "ImprisonedTitan_A_Demon_StoneTendril_05",
+                                             "type":  "CURVE",
+                                             "location":  [
+                                                              0.0,
+                                                              0.0,
+                                                              0.0
+                                                          ]
+                                         },
+                                         {
+                                             "name":  "ImprisonedTitan_A_Demon_StoneTendril_06",
+                                             "type":  "CURVE",
+                                             "location":  [
+                                                              0.0,
+                                                              0.0,
+                                                              0.0
+                                                          ]
+                                         },
+                                         {
+                                             "name":  "ImprisonedTitan_A_Demon_StoneTendril_07",
+                                             "type":  "CURVE",
+                                             "location":  [
+                                                              0.0,
+                                                              0.0,
+                                                              0.0
+                                                          ]
+                                         },
+                                         {
+                                             "name":  "ImprisonedTitan_B_Ghost",
+                                             "type":  "MESH",
+                                             "location":  [
+                                                              0.0,
+                                                              0.0,
+                                                              0.0
+                                                          ]
+                                         },
+                                         {
+                                             "name":  "ImprisonedTitan_B_Ghost_StoneTendril_00",
+                                             "type":  "CURVE",
+                                             "location":  [
+                                                              0.0,
+                                                              0.0,
+                                                              0.0
+                                                          ]
+                                         },
+                                         {
+                                             "name":  "ImprisonedTitan_B_Ghost_StoneTendril_01",
+                                             "type":  "CURVE",
+                                             "location":  [
+                                                              0.0,
+                                                              0.0,
+                                                              0.0
+                                                          ]
+                                         },
+                                         {
+                                             "name":  "ImprisonedTitan_B_Ghost_StoneTendril_02",
+                                             "type":  "CURVE",
+                                             "location":  [
+                                                              0.0,
+                                                              0.0,
+                                                              0.0
+                                                          ]
+                                         },
+                                         {
+                                             "name":  "ImprisonedTitan_B_Ghost_StoneTendril_03",
+                                             "type":  "CURVE",
+                                             "location":  [
+                                                              0.0,
+                                                              0.0,
+                                                              0.0
+                                                          ]
+                                         },
+                                         {
+                                             "name":  "ImprisonedTitan_B_Ghost_StoneTendril_04",
+                                             "type":  "CURVE",
+                                             "location":  [
+                                                              0.0,
+                                                              0.0,
+                                                              0.0
+                                                          ]
+                                         },
+                                         {
+                                             "name":  "ImprisonedTitan_B_Ghost_StoneTendril_05",
+                                             "type":  "CURVE",
+                                             "location":  [
+                                                              0.0,
+                                                              0.0,
+                                                              0.0
+                                                          ]
+                                         },
+                                         {
+                                             "name":  "ImprisonedTitan_B_Ghost_StoneTendril_06",
+                                             "type":  "CURVE",
+                                             "location":  [
+                                                              0.0,
+                                                              0.0,
+                                                              0.0
+                                                          ]
+                                         },
+                                         {
+                                             "name":  "ImprisonedTitan_B_Ghost_StoneTendril_07",
+                                             "type":  "CURVE",
+                                             "location":  [
+                                                              0.0,
+                                                              0.0,
+                                                              0.0
+                                                          ]
+                                         },
+                                         {
+                                             "name":  "TitanStressCrack_00_Groove",
+                                             "type":  "CURVE",
+                                             "location":  [
+                                                              0.0,
+                                                              0.0,
+                                                              0.0
+                                                          ]
+                                         },
+                                         {
+                                             "name":  "TitanStressCrack_00_Glow",
+                                             "type":  "CURVE",
+                                             "location":  [
+                                                              0.0,
+                                                              0.0,
+                                                              0.0
+                                                          ]
+                                         },
+                                         {
+                                             "name":  "TitanStressCrack_00_Branch_Groove",
+                                             "type":  "CURVE",
+                                             "location":  [
+                                                              0.0,
+                                                              0.0,
+                                                              0.0
+                                                          ]
+                                         },
+                                         {
+                                             "name":  "TitanStressCrack_00_Branch_Glow",
+                                             "type":  "CURVE",
+                                             "location":  [
+                                                              0.0,
+                                                              0.0,
+                                                              0.0
+                                                          ]
+                                         },
+                                         {
+                                             "name":  "TitanStressCrack_01_Groove",
+                                             "type":  "CURVE",
+                                             "location":  [
+                                                              0.0,
+                                                              0.0,
+                                                              0.0
+                                                          ]
+                                         },
+                                         {
+                                             "name":  "TitanStressCrack_01_Glow",
+                                             "type":  "CURVE",
+                                             "location":  [
+                                                              0.0,
+                                                              0.0,
+                                                              0.0
+                                                          ]
+                                         },
+                                         {
+                                             "name":  "TitanStressCrack_02_Groove",
+                                             "type":  "CURVE",
+                                             "location":  [
+                                                              0.0,
+                                                              0.0,
+                                                              0.0
+                                                          ]
+                                         },
+                                         {
+                                             "name":  "TitanStressCrack_02_Glow",
+                                             "type":  "CURVE",
+                                             "location":  [
+                                                              0.0,
+                                                              0.0,
+                                                              0.0
+                                                          ]
+                                         },
+                                         {
+                                             "name":  "TitanStressCrack_03_Groove",
+                                             "type":  "CURVE",
+                                             "location":  [
+                                                              0.0,
+                                                              0.0,
+                                                              0.0
+                                                          ]
+                                         },
+                                         {
+                                             "name":  "TitanStressCrack_03_Glow",
+                                             "type":  "CURVE",
+                                             "location":  [
+                                                              0.0,
+                                                              0.0,
+                                                              0.0
+                                                          ]
+                                         },
+                                         {
+                                             "name":  "TitanStressCrack_03_Branch_Groove",
+                                             "type":  "CURVE",
+                                             "location":  [
+                                                              0.0,
+                                                              0.0,
+                                                              0.0
+                                                          ]
+                                         },
+                                         {
+                                             "name":  "TitanStressCrack_03_Branch_Glow",
+                                             "type":  "CURVE",
+                                             "location":  [
+                                                              0.0,
+                                                              0.0,
+                                                              0.0
+                                                          ]
+                                         },
+                                         {
+                                             "name":  "TitanStressCrack_04_Groove",
+                                             "type":  "CURVE",
+                                             "location":  [
+                                                              0.0,
+                                                              0.0,
+                                                              0.0
+                                                          ]
+                                         },
+                                         {
+                                             "name":  "TitanStressCrack_04_Glow",
+                                             "type":  "CURVE",
+                                             "location":  [
+                                                              0.0,
+                                                              0.0,
+                                                              0.0
+                                                          ]
+                                         },
+                                         {
+                                             "name":  "TitanStressCrack_05_Groove",
+                                             "type":  "CURVE",
+                                             "location":  [
+                                                              0.0,
+                                                              0.0,
+                                                              0.0
+                                                          ]
+                                         },
+                                         {
+                                             "name":  "TitanStressCrack_05_Glow",
+                                             "type":  "CURVE",
+                                             "location":  [
+                                                              0.0,
+                                                              0.0,
+                                                              0.0
+                                                          ]
+                                         },
+                                         {
+                                             "name":  "TitanStressCrack_06_Groove",
+                                             "type":  "CURVE",
+                                             "location":  [
+                                                              0.0,
+                                                              0.0,
+                                                              0.0
+                                                          ]
+                                         },
+                                         {
+                                             "name":  "TitanStressCrack_06_Glow",
+                                             "type":  "CURVE",
+                                             "location":  [
+                                                              0.0,
+                                                              0.0,
+                                                              0.0
+                                                          ]
+                                         },
+                                         {
+                                             "name":  "TitanStressCrack_06_Branch_Groove",
+                                             "type":  "CURVE",
+                                             "location":  [
+                                                              0.0,
+                                                              0.0,
+                                                              0.0
+                                                          ]
+                                         },
+                                         {
+                                             "name":  "TitanStressCrack_06_Branch_Glow",
+                                             "type":  "CURVE",
+                                             "location":  [
+                                                              0.0,
+                                                              0.0,
+                                                              0.0
+                                                          ]
+                                         },
+                                         {
+                                             "name":  "TitanStressCrack_07_Groove",
+                                             "type":  "CURVE",
+                                             "location":  [
+                                                              0.0,
+                                                              0.0,
+                                                              0.0
+                                                          ]
+                                         },
+                                         {
+                                             "name":  "TitanStressCrack_07_Glow",
+                                             "type":  "CURVE",
+                                             "location":  [
+                                                              0.0,
+                                                              0.0,
+                                                              0.0
+                                                          ]
+                                         },
+                                         {
+                                             "name":  "TitanStressCrack_08_Groove",
+                                             "type":  "CURVE",
+                                             "location":  [
+                                                              0.0,
+                                                              0.0,
+                                                              0.0
+                                                          ]
+                                         },
+                                         {
+                                             "name":  "TitanStressCrack_08_Glow",
+                                             "type":  "CURVE",
+                                             "location":  [
+                                                              0.0,
+                                                              0.0,
+                                                              0.0
+                                                          ]
+                                         },
+                                         {
+                                             "name":  "TitanStressCrack_09_Groove",
+                                             "type":  "CURVE",
+                                             "location":  [
+                                                              0.0,
+                                                              0.0,
+                                                              0.0
+                                                          ]
+                                         },
+                                         {
+                                             "name":  "TitanStressCrack_09_Glow",
+                                             "type":  "CURVE",
+                                             "location":  [
+                                                              0.0,
+                                                              0.0,
+                                                              0.0
+                                                          ]
+                                         },
+                                         {
+                                             "name":  "TitanStressCrack_09_Branch_Groove",
+                                             "type":  "CURVE",
+                                             "location":  [
+                                                              0.0,
+                                                              0.0,
+                                                              0.0
+                                                          ]
+                                         },
+                                         {
+                                             "name":  "TitanStressCrack_09_Branch_Glow",
+                                             "type":  "CURVE",
+                                             "location":  [
+                                                              0.0,
+                                                              0.0,
+                                                              0.0
+                                                          ]
+                                         },
+                                         {
+                                             "name":  "TitanStressCrack_10_Groove",
+                                             "type":  "CURVE",
+                                             "location":  [
+                                                              0.0,
+                                                              0.0,
+                                                              0.0
+                                                          ]
+                                         },
+                                         {
+                                             "name":  "TitanStressCrack_10_Glow",
+                                             "type":  "CURVE",
+                                             "location":  [
+                                                              0.0,
+                                                              0.0,
+                                                              0.0
+                                                          ]
+                                         },
+                                         {
+                                             "name":  "TitanStressCrack_11_Groove",
+                                             "type":  "CURVE",
+                                             "location":  [
+                                                              0.0,
+                                                              0.0,
+                                                              0.0
+                                                          ]
+                                         },
+                                         {
+                                             "name":  "TitanStressCrack_11_Glow",
+                                             "type":  "CURVE",
+                                             "location":  [
+                                                              0.0,
+                                                              0.0,
+                                                              0.0
+                                                          ]
+                                         },
+                                         {
+                                             "name":  "TitanStressCrack_12_Groove",
+                                             "type":  "CURVE",
+                                             "location":  [
+                                                              0.0,
+                                                              0.0,
+                                                              0.0
+                                                          ]
+                                         },
+                                         {
+                                             "name":  "TitanStressCrack_12_Glow",
+                                             "type":  "CURVE",
+                                             "location":  [
+                                                              0.0,
+                                                              0.0,
+                                                              0.0
+                                                          ]
+                                         },
+                                         {
+                                             "name":  "TitanStressCrack_12_Branch_Groove",
+                                             "type":  "CURVE",
+                                             "location":  [
+                                                              0.0,
+                                                              0.0,
+                                                              0.0
+                                                          ]
+                                         },
+                                         {
+                                             "name":  "TitanStressCrack_12_Branch_Glow",
+                                             "type":  "CURVE",
+                                             "location":  [
+                                                              0.0,
+                                                              0.0,
+                                                              0.0
+                                                          ]
+                                         },
+                                         {
+                                             "name":  "TitanStressCrack_13_Groove",
+                                             "type":  "CURVE",
+                                             "location":  [
+                                                              0.0,
+                                                              0.0,
+                                                              0.0
+                                                          ]
+                                         },
+                                         {
+                                             "name":  "TitanStressCrack_13_Glow",
+                                             "type":  "CURVE",
+                                             "location":  [
+                                                              0.0,
+                                                              0.0,
+                                                              0.0
+                                                          ]
+                                         },
+                                         {
+                                             "name":  "TitanStressCrack_14_Groove",
+                                             "type":  "CURVE",
+                                             "location":  [
+                                                              0.0,
+                                                              0.0,
+                                                              0.0
+                                                          ]
+                                         },
+                                         {
+                                             "name":  "TitanStressCrack_14_Glow",
+                                             "type":  "CURVE",
+                                             "location":  [
+                                                              0.0,
+                                                              0.0,
+                                                              0.0
+                                                          ]
+                                         },
+                                         {
+                                             "name":  "TitanStressCrack_15_Groove",
+                                             "type":  "CURVE",
+                                             "location":  [
+                                                              0.0,
+                                                              0.0,
+                                                              0.0
+                                                          ]
+                                         },
+                                         {
+                                             "name":  "TitanStressCrack_15_Glow",
+                                             "type":  "CURVE",
+                                             "location":  [
+                                                              0.0,
+                                                              0.0,
+                                                              0.0
+                                                          ]
+                                         },
+                                         {
+                                             "name":  "TitanStressCrack_15_Branch_Groove",
+                                             "type":  "CURVE",
+                                             "location":  [
+                                                              0.0,
+                                                              0.0,
+                                                              0.0
+                                                          ]
+                                         },
+                                         {
+                                             "name":  "TitanStressCrack_15_Branch_Glow",
+                                             "type":  "CURVE",
+                                             "location":  [
+                                                              0.0,
+                                                              0.0,
+                                                              0.0
+                                                          ]
+                                         },
+                                         {
+                                             "name":  "TitanStressCrack_16_Groove",
+                                             "type":  "CURVE",
+                                             "location":  [
+                                                              0.0,
+                                                              0.0,
+                                                              0.0
+                                                          ]
+                                         },
+                                         {
+                                             "name":  "TitanStressCrack_16_Glow",
+                                             "type":  "CURVE",
+                                             "location":  [
+                                                              0.0,
+                                                              0.0,
+                                                              0.0
+                                                          ]
+                                         },
+                                         {
+                                             "name":  "TitanStressCrack_17_Groove",
+                                             "type":  "CURVE",
+                                             "location":  [
+                                                              0.0,
+                                                              0.0,
+                                                              0.0
+                                                          ]
+                                         },
+                                         {
+                                             "name":  "TitanStressCrack_17_Glow",
+                                             "type":  "CURVE",
+                                             "location":  [
+                                                              0.0,
+                                                              0.0,
+                                                              0.0
+                                                          ]
+                                         },
+                                         {
+                                             "name":  "TitanStressCrack_18_Groove",
+                                             "type":  "CURVE",
+                                             "location":  [
+                                                              0.0,
+                                                              0.0,
+                                                              0.0
+                                                          ]
+                                         },
+                                         {
+                                             "name":  "TitanStressCrack_18_Glow",
+                                             "type":  "CURVE",
+                                             "location":  [
+                                                              0.0,
+                                                              0.0,
+                                                              0.0
+                                                          ]
+                                         },
+                                         {
+                                             "name":  "TitanStressCrack_18_Branch_Groove",
+                                             "type":  "CURVE",
+                                             "location":  [
+                                                              0.0,
+                                                              0.0,
+                                                              0.0
+                                                          ]
+                                         },
+                                         {
+                                             "name":  "TitanStressCrack_18_Branch_Glow",
+                                             "type":  "CURVE",
+                                             "location":  [
+                                                              0.0,
+                                                              0.0,
+                                                              0.0
+                                                          ]
+                                         },
+                                         {
+                                             "name":  "TitanStressCrack_19_Groove",
+                                             "type":  "CURVE",
+                                             "location":  [
+                                                              0.0,
+                                                              0.0,
+                                                              0.0
+                                                          ]
+                                         },
+                                         {
+                                             "name":  "TitanStressCrack_19_Glow",
+                                             "type":  "CURVE",
+                                             "location":  [
+                                                              0.0,
+                                                              0.0,
+                                                              0.0
+                                                          ]
+                                         },
+                                         {
+                                             "name":  "RunicSeal_00_Groove",
+                                             "type":  "CURVE",
+                                             "location":  [
+                                                              0.0,
+                                                              0.0,
+                                                              0.0
+                                                          ]
+                                         },
+                                         {
+                                             "name":  "RunicSeal_00_Glow",
+                                             "type":  "CURVE",
+                                             "location":  [
+                                                              0.0,
+                                                              0.0,
+                                                              0.0
+                                                          ]
+                                         },
+                                         {
+                                             "name":  "RunicSeal_00_Mark0_Groove",
+                                             "type":  "CURVE",
+                                             "location":  [
+                                                              0.0,
+                                                              0.0,
+                                                              0.0
+                                                          ]
+                                         },
+                                         {
+                                             "name":  "RunicSeal_00_Mark0_Glow",
+                                             "type":  "CURVE",
+                                             "location":  [
+                                                              0.0,
+                                                              0.0,
+                                                              0.0
+                                                          ]
+                                         },
+                                         {
+                                             "name":  "RunicSeal_00_Mark1_Groove",
+                                             "type":  "CURVE",
+                                             "location":  [
+                                                              0.0,
+                                                              0.0,
+                                                              0.0
+                                                          ]
+                                         },
+                                         {
+                                             "name":  "RunicSeal_00_Mark1_Glow",
+                                             "type":  "CURVE",
+                                             "location":  [
+                                                              0.0,
+                                                              0.0,
+                                                              0.0
+                                                          ]
+                                         },
+                                         {
+                                             "name":  "RunicSeal_00_Mark2_Groove",
+                                             "type":  "CURVE",
+                                             "location":  [
+                                                              0.0,
+                                                              0.0,
+                                                              0.0
+                                                          ]
+                                         },
+                                         {
+                                             "name":  "RunicSeal_00_Mark2_Glow",
+                                             "type":  "CURVE",
+                                             "location":  [
+                                                              0.0,
+                                                              0.0,
+                                                              0.0
+                                                          ]
+                                         },
+                                         {
+                                             "name":  "RunicSeal_01_Groove",
+                                             "type":  "CURVE",
+                                             "location":  [
+                                                              0.0,
+                                                              0.0,
+                                                              0.0
+                                                          ]
+                                         },
+                                         {
+                                             "name":  "RunicSeal_01_Glow",
+                                             "type":  "CURVE",
+                                             "location":  [
+                                                              0.0,
+                                                              0.0,
+                                                              0.0
+                                                          ]
+                                         },
+                                         {
+                                             "name":  "RunicSeal_01_Mark0_Groove",
+                                             "type":  "CURVE",
+                                             "location":  [
+                                                              0.0,
+                                                              0.0,
+                                                              0.0
+                                                          ]
+                                         },
+                                         {
+                                             "name":  "RunicSeal_01_Mark0_Glow",
+                                             "type":  "CURVE",
+                                             "location":  [
+                                                              0.0,
+                                                              0.0,
+                                                              0.0
+                                                          ]
+                                         },
+                                         {
+                                             "name":  "RunicSeal_01_Mark1_Groove",
+                                             "type":  "CURVE",
+                                             "location":  [
+                                                              0.0,
+                                                              0.0,
+                                                              0.0
+                                                          ]
+                                         },
+                                         {
+                                             "name":  "RunicSeal_01_Mark1_Glow",
+                                             "type":  "CURVE",
+                                             "location":  [
+                                                              0.0,
+                                                              0.0,
+                                                              0.0
+                                                          ]
+                                         },
+                                         {
+                                             "name":  "RunicSeal_01_Mark2_Groove",
+                                             "type":  "CURVE",
+                                             "location":  [
+                                                              0.0,
+                                                              0.0,
+                                                              0.0
+                                                          ]
+                                         },
+                                         {
+                                             "name":  "RunicSeal_01_Mark2_Glow",
+                                             "type":  "CURVE",
+                                             "location":  [
+                                                              0.0,
+                                                              0.0,
+                                                              0.0
+                                                          ]
+                                         },
+                                         {
+                                             "name":  "RunicSeal_02_Groove",
+                                             "type":  "CURVE",
+                                             "location":  [
+                                                              0.0,
+                                                              0.0,
+                                                              0.0
+                                                          ]
+                                         },
+                                         {
+                                             "name":  "RunicSeal_02_Glow",
+                                             "type":  "CURVE",
+                                             "location":  [
+                                                              0.0,
+                                                              0.0,
+                                                              0.0
+                                                          ]
+                                         },
+                                         {
+                                             "name":  "RunicSeal_02_Mark0_Groove",
+                                             "type":  "CURVE",
+                                             "location":  [
+                                                              0.0,
+                                                              0.0,
+                                                              0.0
+                                                          ]
+                                         },
+                                         {
+                                             "name":  "RunicSeal_02_Mark0_Glow",
+                                             "type":  "CURVE",
+                                             "location":  [
+                                                              0.0,
+                                                              0.0,
+                                                              0.0
+                                                          ]
+                                         },
+                                         {
+                                             "name":  "RunicSeal_02_Mark1_Groove",
+                                             "type":  "CURVE",
+                                             "location":  [
+                                                              0.0,
+                                                              0.0,
+                                                              0.0
+                                                          ]
+                                         },
+                                         {
+                                             "name":  "RunicSeal_02_Mark1_Glow",
+                                             "type":  "CURVE",
+                                             "location":  [
+                                                              0.0,
+                                                              0.0,
+                                                              0.0
+                                                          ]
+                                         },
+                                         {
+                                             "name":  "RunicSeal_02_Mark2_Groove",
+                                             "type":  "CURVE",
+                                             "location":  [
+                                                              0.0,
+                                                              0.0,
+                                                              0.0
+                                                          ]
+                                         },
+                                         {
+                                             "name":  "RunicSeal_02_Mark2_Glow",
+                                             "type":  "CURVE",
+                                             "location":  [
+                                                              0.0,
+                                                              0.0,
+                                                              0.0
+                                                          ]
+                                         },
+                                         {
+                                             "name":  "RunicSeal_03_Groove",
+                                             "type":  "CURVE",
+                                             "location":  [
+                                                              0.0,
+                                                              0.0,
+                                                              0.0
+                                                          ]
+                                         },
+                                         {
+                                             "name":  "RunicSeal_03_Glow",
+                                             "type":  "CURVE",
+                                             "location":  [
+                                                              0.0,
+                                                              0.0,
+                                                              0.0
+                                                          ]
+                                         },
+                                         {
+                                             "name":  "RunicSeal_03_Mark0_Groove",
+                                             "type":  "CURVE",
+                                             "location":  [
+                                                              0.0,
+                                                              0.0,
+                                                              0.0
+                                                          ]
+                                         },
+                                         {
+                                             "name":  "RunicSeal_03_Mark0_Glow",
+                                             "type":  "CURVE",
+                                             "location":  [
+                                                              0.0,
+                                                              0.0,
+                                                              0.0
+                                                          ]
+                                         },
+                                         {
+                                             "name":  "RunicSeal_03_Mark1_Groove",
+                                             "type":  "CURVE",
+                                             "location":  [
+                                                              0.0,
+                                                              0.0,
+                                                              0.0
+                                                          ]
+                                         },
+                                         {
+                                             "name":  "RunicSeal_03_Mark1_Glow",
+                                             "type":  "CURVE",
+                                             "location":  [
+                                                              0.0,
+                                                              0.0,
+                                                              0.0
+                                                          ]
+                                         },
+                                         {
+                                             "name":  "RunicSeal_03_Mark2_Groove",
+                                             "type":  "CURVE",
+                                             "location":  [
+                                                              0.0,
+                                                              0.0,
+                                                              0.0
+                                                          ]
+                                         },
+                                         {
+                                             "name":  "RunicSeal_03_Mark2_Glow",
+                                             "type":  "CURVE",
+                                             "location":  [
+                                                              0.0,
+                                                              0.0,
+                                                              0.0
+                                                          ]
+                                         },
+                                         {
+                                             "name":  "RunicSeal_04_Groove",
+                                             "type":  "CURVE",
+                                             "location":  [
+                                                              0.0,
+                                                              0.0,
+                                                              0.0
+                                                          ]
+                                         },
+                                         {
+                                             "name":  "RunicSeal_04_Glow",
+                                             "type":  "CURVE",
+                                             "location":  [
+                                                              0.0,
+                                                              0.0,
+                                                              0.0
+                                                          ]
+                                         },
+                                         {
+                                             "name":  "RunicSeal_04_Mark0_Groove",
+                                             "type":  "CURVE",
+                                             "location":  [
+                                                              0.0,
+                                                              0.0,
+                                                              0.0
+                                                          ]
+                                         },
+                                         {
+                                             "name":  "RunicSeal_04_Mark0_Glow",
+                                             "type":  "CURVE",
+                                             "location":  [
+                                                              0.0,
+                                                              0.0,
+                                                              0.0
+                                                          ]
+                                         },
+                                         {
+                                             "name":  "RunicSeal_04_Mark1_Groove",
+                                             "type":  "CURVE",
+                                             "location":  [
+                                                              0.0,
+                                                              0.0,
+                                                              0.0
+                                                          ]
+                                         },
+                                         {
+                                             "name":  "RunicSeal_04_Mark1_Glow",
+                                             "type":  "CURVE",
+                                             "location":  [
+                                                              0.0,
+                                                              0.0,
+                                                              0.0
+                                                          ]
+                                         },
+                                         {
+                                             "name":  "RunicSeal_04_Mark2_Groove",
+                                             "type":  "CURVE",
+                                             "location":  [
+                                                              0.0,
+                                                              0.0,
+                                                              0.0
+                                                          ]
+                                         },
+                                         {
+                                             "name":  "RunicSeal_04_Mark2_Glow",
+                                             "type":  "CURVE",
+                                             "location":  [
+                                                              0.0,
+                                                              0.0,
+                                                              0.0
+                                                          ]
+                                         },
+                                         {
+                                             "name":  "RunicSeal_05_Groove",
+                                             "type":  "CURVE",
+                                             "location":  [
+                                                              0.0,
+                                                              0.0,
+                                                              0.0
+                                                          ]
+                                         },
+                                         {
+                                             "name":  "RunicSeal_05_Glow",
+                                             "type":  "CURVE",
+                                             "location":  [
+                                                              0.0,
+                                                              0.0,
+                                                              0.0
+                                                          ]
+                                         },
+                                         {
+                                             "name":  "RunicSeal_05_Mark0_Groove",
+                                             "type":  "CURVE",
+                                             "location":  [
+                                                              0.0,
+                                                              0.0,
+                                                              0.0
+                                                          ]
+                                         },
+                                         {
+                                             "name":  "RunicSeal_05_Mark0_Glow",
+                                             "type":  "CURVE",
+                                             "location":  [
+                                                              0.0,
+                                                              0.0,
+                                                              0.0
+                                                          ]
+                                         },
+                                         {
+                                             "name":  "RunicSeal_05_Mark1_Groove",
+                                             "type":  "CURVE",
+                                             "location":  [
+                                                              0.0,
+                                                              0.0,
+                                                              0.0
+                                                          ]
+                                         },
+                                         {
+                                             "name":  "RunicSeal_05_Mark1_Glow",
+                                             "type":  "CURVE",
+                                             "location":  [
+                                                              0.0,
+                                                              0.0,
+                                                              0.0
+                                                          ]
+                                         },
+                                         {
+                                             "name":  "RunicSeal_05_Mark2_Groove",
+                                             "type":  "CURVE",
+                                             "location":  [
+                                                              0.0,
+                                                              0.0,
+                                                              0.0
+                                                          ]
+                                         },
+                                         {
+                                             "name":  "RunicSeal_05_Mark2_Glow",
+                                             "type":  "CURVE",
+                                             "location":  [
+                                                              0.0,
+                                                              0.0,
+                                                              0.0
+                                                          ]
+                                         },
+                                         {
+                                             "name":  "Klothys_PrisonShell_V2_R220m",
+                                             "type":  "MESH",
+                                             "location":  [
+                                                              0.0,
+                                                              -230.0,
+                                                              385.0
+                                                          ]
+                                         },
+                                         {
+                                             "name":  "Binding_0_Left_Link_00",
+                                             "type":  "MESH",
+                                             "location":  [
+                                                              101.5126,
+                                                              -52.7046,
+                                                              283.7798
+                                                          ]
+                                         },
+                                         {
+                                             "name":  "Binding_0_Left_Link_01",
+                                             "type":  "MESH",
+                                             "location":  [
+                                                              133.1886,
+                                                              -75.083,
+                                                              283.7798
+                                                          ]
+                                         },
+                                         {
+                                             "name":  "Binding_0_Left_Link_02",
+                                             "type":  "MESH",
+                                             "location":  [
+                                                              160.0648,
+                                                              -103.0443,
+                                                              283.7798
+                                                          ]
+                                         },
+                                         {
+                                             "name":  "Binding_0_Left_Link_03",
+                                             "type":  "MESH",
+                                             "location":  [
+                                                              181.1726,
+                                                              -135.5808,
+                                                              283.7798
+                                                          ]
+                                         },
+                                         {
+                                             "name":  "Binding_0_Left_Link_04",
+                                             "type":  "MESH",
+                                             "location":  [
+                                                              195.7513,
+                                                              -171.52,
+                                                              283.7798
+                                                          ]
+                                         },
+                                         {
+                                             "name":  "Binding_0_Left_Link_05",
+                                             "type":  "MESH",
+                                             "location":  [
+                                                              203.2756,
+                                                              -209.5667,
+                                                              283.7798
+                                                          ]
+                                         },
+                                         {
+                                             "name":  "Binding_0_Left_Link_06",
+                                             "type":  "MESH",
+                                             "location":  [
+                                                              203.4742,
+                                                              -248.3497,
+                                                              283.7798
+                                                          ]
+                                         },
+                                         {
+                                             "name":  "Binding_0_Left_Link_07",
+                                             "type":  "MESH",
+                                             "location":  [
+                                                              196.3401,
+                                                              -286.4715,
+                                                              283.7798
+                                                          ]
+                                         },
+                                         {
+                                             "name":  "Binding_0_Left_Link_08",
+                                             "type":  "MESH",
+                                             "location":  [
+                                                              182.1304,
+                                                              -322.5581,
+                                                              283.7798
+                                                          ]
+                                         },
+                                         {
+                                             "name":  "Binding_0_Left_Link_09",
+                                             "type":  "MESH",
+                                             "location":  [
+                                                              161.357,
+                                                              -355.3092,
+                                                              283.7798
+                                                          ]
+                                         },
+                                         {
+                                             "name":  "Binding_0_Left_Link_10",
+                                             "type":  "MESH",
+                                             "location":  [
+                                                              134.7687,
+                                                              -383.5444,
+                                                              283.7798
+                                                          ]
+                                         },
+                                         {
+                                             "name":  "Binding_0_Left_Link_11",
+                                             "type":  "MESH",
+                                             "location":  [
+                                                              103.3236,
+                                                              -406.2462,
+                                                              283.7798
+                                                          ]
+                                         },
+                                         {
+                                             "name":  "Binding_0_Left_Link_12",
+                                             "type":  "MESH",
+                                             "location":  [
+                                                              68.155,
+                                                              -422.5964,
+                                                              283.7798
+                                                          ]
+                                         },
+                                         {
+                                             "name":  "Binding_0_Left_Link_13",
+                                             "type":  "MESH",
+                                             "location":  [
+                                                              30.5302,
+                                                              -432.0059,
+                                                              283.7798
+                                                          ]
+                                         },
+                                         {
+                                             "name":  "Binding_0_Right_Link_00",
+                                             "type":  "MESH",
+                                             "location":  [
+                                                              -101.5126,
+                                                              -52.7046,
+                                                              283.7798
+                                                          ]
+                                         },
+                                         {
+                                             "name":  "Binding_0_Right_Link_01",
+                                             "type":  "MESH",
+                                             "location":  [
+                                                              -133.1886,
+                                                              -75.083,
+                                                              283.7798
+                                                          ]
+                                         },
+                                         {
+                                             "name":  "Binding_0_Right_Link_02",
+                                             "type":  "MESH",
+                                             "location":  [
+                                                              -160.0648,
+                                                              -103.0443,
+                                                              283.7798
+                                                          ]
+                                         },
+                                         {
+                                             "name":  "Binding_0_Right_Link_03",
+                                             "type":  "MESH",
+                                             "location":  [
+                                                              -181.1726,
+                                                              -135.5808,
+                                                              283.7798
+                                                          ]
+                                         },
+                                         {
+                                             "name":  "Binding_0_Right_Link_04",
+                                             "type":  "MESH",
+                                             "location":  [
+                                                              -195.7513,
+                                                              -171.52,
+                                                              283.7798
+                                                          ]
+                                         },
+                                         {
+                                             "name":  "Binding_0_Right_Link_05",
+                                             "type":  "MESH",
+                                             "location":  [
+                                                              -203.2756,
+                                                              -209.5667,
+                                                              283.7798
+                                                          ]
+                                         },
+                                         {
+                                             "name":  "Binding_0_Right_Link_06",
+                                             "type":  "MESH",
+                                             "location":  [
+                                                              -203.4742,
+                                                              -248.3497,
+                                                              283.7798
+                                                          ]
+                                         },
+                                         {
+                                             "name":  "Binding_0_Right_Link_07",
+                                             "type":  "MESH",
+                                             "location":  [
+                                                              -196.3401,
+                                                              -286.4715,
+                                                              283.7798
+                                                          ]
+                                         },
+                                         {
+                                             "name":  "Binding_0_Right_Link_08",
+                                             "type":  "MESH",
+                                             "location":  [
+                                                              -182.1304,
+                                                              -322.5581,
+                                                              283.7798
+                                                          ]
+                                         },
+                                         {
+                                             "name":  "Binding_0_Right_Link_09",
+                                             "type":  "MESH",
+                                             "location":  [
+                                                              -161.357,
+                                                              -355.3092,
+                                                              283.7798
+                                                          ]
+                                         },
+                                         {
+                                             "name":  "Binding_0_Right_Link_10",
+                                             "type":  "MESH",
+                                             "location":  [
+                                                              -134.7687,
+                                                              -383.5444,
+                                                              283.7798
+                                                          ]
+                                         },
+                                         {
+                                             "name":  "Binding_0_Right_Link_11",
+                                             "type":  "MESH",
+                                             "location":  [
+                                                              -103.3236,
+                                                              -406.2462,
+                                                              283.7798
+                                                          ]
+                                         },
+                                         {
+                                             "name":  "Binding_0_Right_Link_12",
+                                             "type":  "MESH",
+                                             "location":  [
+                                                              -68.155,
+                                                              -422.5964,
+                                                              283.7798
+                                                          ]
+                                         },
+                                         {
+                                             "name":  "Binding_0_Right_Link_13",
+                                             "type":  "MESH",
+                                             "location":  [
+                                                              -30.5302,
+                                                              -432.0059,
+                                                              283.7798
+                                                          ]
+                                         },
+                                         {
+                                             "name":  "Binding_1_Left_Link_00",
+                                             "type":  "MESH",
+                                             "location":  [
+                                                              98.3141,
+                                                              -58.2909,
+                                                              498.2887
+                                                          ]
+                                         },
+                                         {
+                                             "name":  "Binding_1_Left_Link_01",
+                                             "type":  "MESH",
+                                             "location":  [
+                                                              128.992,
+                                                              -79.9642,
+                                                              498.2887
+                                                          ]
+                                         },
+                                         {
+                                             "name":  "Binding_1_Left_Link_02",
+                                             "type":  "MESH",
+                                             "location":  [
+                                                              155.0214,
+                                                              -107.0445,
+                                                              498.2887
+                                                          ]
+                                         },
+                                         {
+                                             "name":  "Binding_1_Left_Link_03",
+                                             "type":  "MESH",
+                                             "location":  [
+                                                              175.4641,
+                                                              -138.5558,
+                                                              498.2887
+                                                          ]
+                                         },
+                                         {
+                                             "name":  "Binding_1_Left_Link_04",
+                                             "type":  "MESH",
+                                             "location":  [
+                                                              189.5835,
+                                                              -173.3626,
+                                                              498.2887
+                                                          ]
+                                         },
+                                         {
+                                             "name":  "Binding_1_Left_Link_05",
+                                             "type":  "MESH",
+                                             "location":  [
+                                                              196.8707,
+                                                              -210.2105,
+                                                              498.2887
+                                                          ]
+                                         },
+                                         {
+                                             "name":  "Binding_1_Left_Link_06",
+                                             "type":  "MESH",
+                                             "location":  [
+                                                              197.063,
+                                                              -247.7715,
+                                                              498.2887
+                                                          ]
+                                         },
+                                         {
+                                             "name":  "Binding_1_Left_Link_07",
+                                             "type":  "MESH",
+                                             "location":  [
+                                                              190.1537,
+                                                              -284.6921,
+                                                              498.2887
+                                                          ]
+                                         },
+                                         {
+                                             "name":  "Binding_1_Left_Link_08",
+                                             "type":  "MESH",
+                                             "location":  [
+                                                              176.3917,
+                                                              -319.6418,
+                                                              498.2887
+                                                          ]
+                                         },
+                                         {
+                                             "name":  "Binding_1_Left_Link_09",
+                                             "type":  "MESH",
+                                             "location":  [
+                                                              156.2729,
+                                                              -351.3609,
+                                                              498.2887
+                                                          ]
+                                         },
+                                         {
+                                             "name":  "Binding_1_Left_Link_10",
+                                             "type":  "MESH",
+                                             "location":  [
+                                                              130.5224,
+                                                              -378.7064,
+                                                              498.2887
+                                                          ]
+                                         },
+                                         {
+                                             "name":  "Binding_1_Left_Link_11",
+                                             "type":  "MESH",
+                                             "location":  [
+                                                              100.0681,
+                                                              -400.6929,
+                                                              498.2887
+                                                          ]
+                                         },
+                                         {
+                                             "name":  "Binding_1_Left_Link_12",
+                                             "type":  "MESH",
+                                             "location":  [
+                                                              66.0075,
+                                                              -416.528,
+                                                              498.2887
+                                                          ]
+                                         },
+                                         {
+                                             "name":  "Binding_1_Left_Link_13",
+                                             "type":  "MESH",
+                                             "location":  [
+                                                              29.5682,
+                                                              -425.641,
+                                                              498.2887
+                                                          ]
+                                         },
+                                         {
+                                             "name":  "Binding_1_Right_Link_00",
+                                             "type":  "MESH",
+                                             "location":  [
+                                                              -98.3141,
+                                                              -58.2909,
+                                                              498.2887
+                                                          ]
+                                         },
+                                         {
+                                             "name":  "Binding_1_Right_Link_01",
+                                             "type":  "MESH",
+                                             "location":  [
+                                                              -128.992,
+                                                              -79.9642,
+                                                              498.2887
+                                                          ]
+                                         },
+                                         {
+                                             "name":  "Binding_1_Right_Link_02",
+                                             "type":  "MESH",
+                                             "location":  [
+                                                              -155.0214,
+                                                              -107.0445,
+                                                              498.2887
+                                                          ]
+                                         },
+                                         {
+                                             "name":  "Binding_1_Right_Link_03",
+                                             "type":  "MESH",
+                                             "location":  [
+                                                              -175.4641,
+                                                              -138.5558,
+                                                              498.2887
+                                                          ]
+                                         },
+                                         {
+                                             "name":  "Binding_1_Right_Link_04",
+                                             "type":  "MESH",
+                                             "location":  [
+                                                              -189.5835,
+                                                              -173.3626,
+                                                              498.2887
+                                                          ]
+                                         },
+                                         {
+                                             "name":  "Binding_1_Right_Link_05",
+                                             "type":  "MESH",
+                                             "location":  [
+                                                              -196.8707,
+                                                              -210.2105,
+                                                              498.2887
+                                                          ]
+                                         },
+                                         {
+                                             "name":  "Binding_1_Right_Link_06",
+                                             "type":  "MESH",
+                                             "location":  [
+                                                              -197.063,
+                                                              -247.7715,
+                                                              498.2887
+                                                          ]
+                                         },
+                                         {
+                                             "name":  "Binding_1_Right_Link_07",
+                                             "type":  "MESH",
+                                             "location":  [
+                                                              -190.1537,
+                                                              -284.6921,
+                                                              498.2887
+                                                          ]
+                                         },
+                                         {
+                                             "name":  "Binding_1_Right_Link_08",
+                                             "type":  "MESH",
+                                             "location":  [
+                                                              -176.3917,
+                                                              -319.6418,
+                                                              498.2887
+                                                          ]
+                                         },
+                                         {
+                                             "name":  "Binding_1_Right_Link_09",
+                                             "type":  "MESH",
+                                             "location":  [
+                                                              -156.2729,
+                                                              -351.3609,
+                                                              498.2887
+                                                          ]
+                                         },
+                                         {
+                                             "name":  "Binding_1_Right_Link_10",
+                                             "type":  "MESH",
+                                             "location":  [
+                                                              -130.5224,
+                                                              -378.7064,
+                                                              498.2887
+                                                          ]
+                                         },
+                                         {
+                                             "name":  "Binding_1_Right_Link_11",
+                                             "type":  "MESH",
+                                             "location":  [
+                                                              -100.0681,
+                                                              -400.6929,
+                                                              498.2887
+                                                          ]
+                                         },
+                                         {
+                                             "name":  "Binding_1_Right_Link_12",
+                                             "type":  "MESH",
+                                             "location":  [
+                                                              -66.0075,
+                                                              -416.528,
+                                                              498.2887
+                                                          ]
+                                         },
+                                         {
+                                             "name":  "Binding_1_Right_Link_13",
+                                             "type":  "MESH",
+                                             "location":  [
+                                                              -29.5682,
+                                                              -425.641,
+                                                              498.2887
+                                                          ]
+                                         },
+                                         {
+                                             "name":  "FloatingPrisonShard_00",
+                                             "type":  "MESH",
+                                             "location":  [
+                                                              -242.8323,
+                                                              -220.2008,
+                                                              408.4172
+                                                          ]
+                                         },
+                                         {
+                                             "name":  "FloatingPrisonShard_01",
+                                             "type":  "MESH",
+                                             "location":  [
+                                                              234.8614,
+                                                              -205.4281,
+                                                              407.6729
+                                                          ]
+                                         },
+                                         {
+                                             "name":  "FloatingPrisonShard_02",
+                                             "type":  "MESH",
+                                             "location":  [
+                                                              -139.664,
+                                                              -92.2596,
+                                                              511.5164
+                                                          ]
+                                         },
+                                         {
+                                             "name":  "FloatingPrisonShard_03",
+                                             "type":  "MESH",
+                                             "location":  [
+                                                              225.4954,
+                                                              -294.7885,
+                                                              340.4365
+                                                          ]
+                                         },
+                                         {
+                                             "name":  "FloatingPrisonShard_04",
+                                             "type":  "MESH",
+                                             "location":  [
+                                                              -206.7054,
+                                                              -223.3414,
+                                                              507.5819
+                                                          ]
+                                         },
+                                         {
+                                             "name":  "FloatingPrisonShard_05",
+                                             "type":  "MESH",
+                                             "location":  [
+                                                              159.8255,
+                                                              -170.2178,
+                                                              232.0719
+                                                          ]
+                                         },
+                                         {
+                                             "name":  "FloatingPrisonShard_06",
+                                             "type":  "MESH",
+                                             "location":  [
+                                                              -168.4717,
+                                                              -309.6011,
+                                                              240.2085
+                                                          ]
+                                         },
+                                         {
+                                             "name":  "FloatingPrisonShard_07",
+                                             "type":  "MESH",
+                                             "location":  [
+                                                              196.7398,
+                                                              -104.6367,
+                                                              378.8431
+                                                          ]
+                                         },
+                                         {
+                                             "name":  "FloatingPrisonShard_08",
+                                             "type":  "MESH",
+                                             "location":  [
+                                                              -166.6908,
+                                                              -395.1373,
+                                                              333.3806
+                                                          ]
+                                         },
+                                         {
+                                             "name":  "FloatingPrisonShard_09",
+                                             "type":  "MESH",
+                                             "location":  [
+                                                              174.5446,
+                                                              -62.7466,
+                                                              368.3142
+                                                          ]
+                                         },
+                                         {
+                                             "name":  "FloatingPrisonShard_10",
+                                             "type":  "MESH",
+                                             "location":  [
+                                                              -143.7142,
+                                                              -275.088,
+                                                              565.9257
+                                                          ]
+                                         },
+                                         {
+                                             "name":  "FloatingPrisonShard_11",
+                                             "type":  "MESH",
+                                             "location":  [
+                                                              161.2363,
+                                                              -162.0107,
+                                                              224.5278
+                                                          ]
+                                         },
+                                         {
+                                             "name":  "FloatingPrisonShard_12",
+                                             "type":  "MESH",
+                                             "location":  [
+                                                              -167.2989,
+                                                              -294.1628,
+                                                              543.5272
+                                                          ]
+                                         },
+                                         {
+                                             "name":  "FloatingPrisonShard_13",
+                                             "type":  "MESH",
+                                             "location":  [
+                                                              175.0356,
+                                                              -332.405,
+                                                              517.6699
+                                                          ]
+                                         },
+                                         {
+                                             "name":  "FloatingPrisonShard_14",
+                                             "type":  "MESH",
+                                             "location":  [
+                                                              -222.4202,
+                                                              -258.6044,
+                                                              475.1362
+                                                          ]
+                                         },
+                                         {
+                                             "name":  "FloatingPrisonShard_15",
+                                             "type":  "MESH",
+                                             "location":  [
+                                                              204.4017,
+                                                              -115.3134,
+                                                              453.787
+                                                          ]
+                                         },
+                                         {
+                                             "name":  "FloatingPrisonShard_16",
+                                             "type":  "MESH",
+                                             "location":  [
+                                                              -215.6526,
+                                                              -334.1596,
+                                                              378.0908
+                                                          ]
+                                         },
+                                         {
+                                             "name":  "FloatingPrisonShard_17",
+                                             "type":  "MESH",
+                                             "location":  [
+                                                              145.506,
+                                                              -162.0322,
+                                                              213.6184
+                                                          ]
+                                         }
+                                     ]
+                     }
+}
