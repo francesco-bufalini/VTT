@@ -78,3 +78,15 @@ The current hotspots are intentionally being reduced incrementally:
 - token.gd
 
 Do not split these files mechanically. Extract a component only when it has a clear state owner, a narrow API, and can be validated independently.
+
+## Blender / environment-art workflow
+
+- Blender environment tooling lives under tools/blender_env/; editable project-specific source lives under blender/.
+- Target Blender 5.2.x for reproducibility. Do not silently change the pinned major/minor version.
+- Before modeling environment geometry from scratch, check the local VTT Asset Library and suitable approved providers. Prefer reuse/kitbash, then Geometry Nodes/extensions, then custom modeling.
+- Treat distant unreachable scenery as visual environment art: optimize/merge/simplify it in Blender rather than reproducing it as many gameplay nodes in Godot.
+- Keep gameplay collisions, triggers, tokens, spell logic and encounter state in Godot unless a task explicitly requires otherwise.
+- Never commit .vtt_assets/, provider caches, credentials, paid asset libraries or bulk third-party downloads.
+- Record source and license in a scene asset manifest when a direct-download external asset becomes a project dependency.
+- Install Blender extensions only when they materially help the current task; prefer a small stable core and remove/disable unnecessary tools.
+- Export game-ready GLB through tools/blender_env/blender_env.ps1 where practical. Keep editable Blender source separate from generated game exports.
