@@ -51,6 +51,7 @@ Actions enabled by default:
 
 - `ping`: verify Blender connectivity.
 - `scene`: return basic scene information.
+- `workspaces` (alias `ui`): return the active workspace/screen, Blender mode, active/selected objects, all workspaces, windows, and open editor area types.
 - `object`: return information about one object. Add `"object": "Cube"`.
 - `transform`: set absolute location/rotation/scale on one object.
 - `undo`: run one Blender undo.
