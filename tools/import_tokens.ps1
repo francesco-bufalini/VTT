@@ -9,7 +9,9 @@ param(
 
     [string]$Blender = "",
 
-    [string]$FiveEToolsRoot = ""
+    [string]$FiveEToolsRoot = "",
+
+    [switch]$Refresh5eTools
 )
 
 $ErrorActionPreference = "Stop"
@@ -71,8 +73,13 @@ elseif (-not [string]::IsNullOrWhiteSpace($env:VTT_5ETOOLS_ROOT)) {
     Write-Host "5eTools:  checkout locale da VTT_5ETOOLS_ROOT"
     & $Blender --background --python $CreatureIndexGenerator -- $FiveEToolsRoot --output $CreatureIndex
 }
+elseif ((Test-Path $CreatureIndex) -and -not $Refresh5eTools) {
+    Write-Host "5eTools:  uso cache online locale"
+    Write-Host "Cache:    $CreatureIndex"
+    $global:LASTEXITCODE = 0
+}
 else {
-    Write-Host "5eTools:  sorgente online (GitHub mirror)"
+    Write-Host "5eTools:  aggiornamento online (GitHub mirror)"
     Write-Host "Cache:    $CreatureIndex"
     & $Blender --background --python $CreatureIndexGenerator -- --online --output $CreatureIndex
 }
