@@ -2084,9 +2084,9 @@ func _on_context_menu_id_pressed(id: int) -> void:
 		return
 
 	if id == CONTEXT_PLAYER_AREA:
-		if player_area != null and is_instance_valid(player_area):
-			player_area.call("show_panel")
 		context_menu.hide()
+		if player_area != null and is_instance_valid(player_area):
+			player_area.call_deferred("show_panel")
 		return
 
 	if id == CONTEXT_TOKEN_DETAILS:
@@ -2605,11 +2605,18 @@ func _finish_context_menu_close() -> void:
 		)
 	):
 		return
-	if (
+	var spell_panel_open: bool = (
 		spell_system != null
 		and is_instance_valid(spell_system)
 		and bool(spell_system.call("is_panel_open"))
-	):
+	)
+	var player_panel_open: bool = (
+		player_area != null
+		and is_instance_valid(player_area)
+		and player_area.has_method("is_panel_open")
+		and bool(player_area.call("is_panel_open"))
+	)
+	if spell_panel_open or player_panel_open:
 		_pending_aoe_index = -1
 		_context_token = null
 		_ui_owns_mouse = true
