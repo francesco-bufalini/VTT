@@ -834,7 +834,7 @@ def build_titan_prison_sphere(op: dict, root_path: Path) -> None:
     tex.noise_depth = 2
     disp = shell.modifiers.new("SubtleRockDeformation", type="DISPLACE")
     disp.texture = tex
-    disp.texture_coords = "NORMAL"
+    disp.texture_coords = "LOCAL"
     disp.strength = 1.65 * scale
     disp.mid_level = 0.5
 
