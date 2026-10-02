@@ -1,0 +1,233 @@
+{
+  "schema_version": 1,
+  "scene_id": "kaos_arena_v7",
+  "description": "Kaos arena V7: stores PBR texture references as portable //textures paths and extends the 120m-wide rectangular walkable corridor to the opposite circular arena boundary while preserving the smooth platform transition.",
+  "design_references": [
+    "encounter/encounter_scenery.gd",
+    "encounter/hazard_allowed_area.gd",
+    "measurement_tool.gd",
+    "V6 smooth flared platform transition and embedded CC0 PBR textures",
+    "V7 portable Blender-relative texture paths",
+    "V7 rectangular corridor extended to the opposite R400m arena boundary"
+  ],
+  "combat_mapping": {
+    "meters_per_cell": 1.5,
+    "battlemap": {
+      "size_m": [
+        120,
+        180
+      ],
+      "center_godot_m": [
+        0,
+        0,
+        85.5
+      ]
+    },
+    "hazard_area": {
+      "cells": [
+        -38,
+        0,
+        76,
+        114
+      ]
+    },
+    "water": {
+      "radius_m": 337,
+      "center_godot_m": [
+        0,
+        -0.18,
+        -60
+      ]
+    },
+    "sphere": {
+      "radius_m": 220,
+      "center_godot_m": [
+        0,
+        385,
+        -230
+      ]
+    }
+  },
+  "reset_scene": true,
+  "operations": [
+    {
+      "op": "build_kaos_arena",
+      "seed": 20261002,
+      "scale": 1,
+      "expected_mapping": {
+        "meters_per_cell": 1.5,
+        "battlemap": {
+          "size_m": [
+            120,
+            180
+          ],
+          "center_godot_m": [
+            0,
+            0,
+            85.5
+          ]
+        },
+        "hazard_area": {
+          "cells": [
+            -38,
+            0,
+            76,
+            114
+          ]
+        },
+        "water": {
+          "radius_m": 337,
+          "center_godot_m": [
+            0,
+            -0.18,
+            -60
+          ]
+        },
+        "sphere": {
+          "radius_m": 220,
+          "center_godot_m": [
+            0,
+            385,
+            -230
+          ]
+        }
+      },
+      "layout_extension": {
+        "sphere_platform_radius_m": 230,
+        "platform_thickness_m": 0.7,
+        "continuous_walkable_surface": true,
+        "arena_water_radius_m": 400,
+        "arena_wall_enabled": true,
+        "arena_wall_height_m": 60,
+        "arena_wall_flutes": 48,
+        "arena_wall_flute_depth_m": 2.4,
+        "random_water_columns": true,
+        "random_water_column_count": 16,
+        "random_water_column_wall_margin_m": 24,
+        "random_water_column_walkable_margin_m": 10,
+        "harmonious_walkable_transition": true,
+        "transition_start_y_m": 72,
+        "transition_circle_angle_deg": 32,
+        "texture_sets": {
+          "floor": {
+            "asset_id": "floor_tiles_02",
+            "resolution": "1k",
+            "tiling": [
+              54,
+              54,
+              54
+            ],
+            "normal_strength": 0.62
+          },
+          "wall": {
+            "asset_id": "plaster_stone_wall_01",
+            "resolution": "1k",
+            "tiling": [
+              44,
+              44,
+              44
+            ],
+            "normal_strength": 0.82
+          }
+        },
+        "extend_rect_to_arena_edge": true
+      }
+    }
+  ],
+  "outputs": {
+    "previews": [
+      {
+        "path": "outputs/blender_agent/kaos_arena_v7/preview_overview.png",
+        "location": [
+          520,
+          500,
+          420
+        ],
+        "look_at": [
+          0,
+          15,
+          45
+        ],
+        "lens": 58,
+        "width": 960,
+        "height": 540
+      },
+      {
+        "path": "outputs/blender_agent/kaos_arena_v7/preview_far_edge.png",
+        "location": [
+          220,
+          460,
+          150
+        ],
+        "look_at": [
+          0,
+          280,
+          5
+        ],
+        "lens": 58,
+        "width": 960,
+        "height": 540
+      },
+      {
+        "path": "outputs/blender_agent/kaos_arena_v7/preview_transition.png",
+        "location": [
+          160,
+          170,
+          155
+        ],
+        "look_at": [
+          0,
+          -45,
+          0
+        ],
+        "lens": 60,
+        "width": 960,
+        "height": 540
+      }
+    ],
+    "report": "outputs/blender_agent/kaos_arena_v7/scene_report.json",
+    "glb": "outputs/blender_agent/kaos_arena_v7/kaos_arena_v7.glb",
+    "blend": "outputs/blender_agent/kaos_arena_v7/kaos_arena_v7.blend"
+  },
+  "revision": 1,
+  "layout_extension": {
+    "sphere_platform_radius_m": 230,
+    "platform_thickness_m": 0.7,
+    "continuous_walkable_surface": true,
+    "arena_water_radius_m": 400,
+    "arena_wall_enabled": true,
+    "arena_wall_height_m": 60,
+    "arena_wall_flutes": 48,
+    "arena_wall_flute_depth_m": 2.4,
+    "random_water_columns": true,
+    "random_water_column_count": 16,
+    "random_water_column_wall_margin_m": 24,
+    "random_water_column_walkable_margin_m": 10,
+    "harmonious_walkable_transition": true,
+    "transition_start_y_m": 72,
+    "transition_circle_angle_deg": 32,
+    "texture_sets": {
+      "floor": {
+        "asset_id": "floor_tiles_02",
+        "resolution": "1k",
+        "tiling": [
+          54,
+          54,
+          54
+        ],
+        "normal_strength": 0.62
+      },
+      "wall": {
+        "asset_id": "plaster_stone_wall_01",
+        "resolution": "1k",
+        "tiling": [
+          44,
+          44,
+          44
+        ],
+        "normal_strength": 0.82
+      }
+    },
+    "extend_rect_to_arena_edge": true
+  }
+}
