@@ -1,9 +1,9 @@
 ﻿{
     "schema_version":  1,
     "scene_id":  "kaos_arena_v2",
-    "run_id":  "37008974993",
-    "run_number":  "15",
-    "source_sha":  "3307b0dff8a982103737647f137ee04fc204f7f5",
+    "run_id":  "37009869360",
+    "run_number":  "19",
+    "source_sha":  "173399c1c813d9a7c29d4ec84a36b2bbc3ffe8c7",
     "blender_job":  "blender/jobs/kaos_arena_v2.json",
     "scene_report":  {
                          "blender_version":  "5.2.2 LTS",
@@ -83,9 +83,9 @@
                                              "name":  "AgentCamera",
                                              "type":  "CAMERA",
                                              "location":  [
-                                                              170.0,
-                                                              300.0,
-                                                              180.0
+                                                              160.0,
+                                                              360.0,
+                                                              190.0
                                                           ]
                                          },
                                          {
