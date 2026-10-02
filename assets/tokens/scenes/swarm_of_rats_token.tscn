@@ -1,9 +1,0 @@
-[gd_scene load_steps=2 format=3]
-
-[ext_resource type="PackedScene" path="res://token.tscn" id="1_base"]
-
-[node name="swarm_of_rats_token" instance=ExtResource("1_base")]
-visual_asset_path = "res://assets/tokens/generated/swarm_of_rats/swarm_of_rats.obj"
-default_size_name = "Tiny"
-default_footprint_cells = 0.500000
-token_height_cells = 0.200389

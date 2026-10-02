@@ -1,9 +1,0 @@
-[gd_scene load_steps=2 format=3]
-
-[ext_resource type="PackedScene" path="res://token.tscn" id="1_base"]
-
-[node name="weasel_token" instance=ExtResource("1_base")]
-visual_asset_path = "res://assets/tokens/generated/weasel/weasel.obj"
-default_size_name = "Tiny"
-default_footprint_cells = 0.500000
-token_height_cells = 0.387369
