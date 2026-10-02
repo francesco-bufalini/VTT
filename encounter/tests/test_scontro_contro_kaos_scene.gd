@@ -135,6 +135,37 @@ func _run() -> void:
 		_fail("Background columns disappeared from Scontro.")
 		return
 
+	# Regression: terrain processing freezes/removes some ClimbingVisual
+	# meshes. Restoring phase two again must not address stale MeshInstance3D
+	# references or blend-shape tracks that no longer exist.
+	var kaos_controller := scene.get_node_or_null("KaosRoot")
+	if kaos_controller == null:
+		_fail("KaosRoot is missing.")
+		return
+	var climb: Variant = kaos_controller.get("climb")
+	if climb == null:
+		_fail("Kaos climb controller is missing.")
+		return
+	climb.call("restore_phase_two")
+	climb.call("restore_phase_two")
+	await process_frame
+
+	# Regression: VolumetricGrid must tolerate a CollisionShape3D that is
+	# created and destroyed before its deferred registration runs.
+	var temporary_body := StaticBody3D.new()
+	temporary_body.name = "DeferredCollisionRegressionBody"
+	temporary_body.collision_layer = 1
+	scene.add_child(temporary_body)
+	var temporary_collision := CollisionShape3D.new()
+	temporary_collision.name = "DeferredCollisionRegressionShape"
+	var temporary_shape := BoxShape3D.new()
+	temporary_shape.size = Vector3.ONE * scene.get("cell_size")
+	temporary_collision.shape = temporary_shape
+	temporary_body.add_child(temporary_collision)
+	temporary_body.queue_free()
+	await process_frame
+	await process_frame
+
 	var chariots := 0
 	var farthest_chariot_meters := 0.0
 	var kaos_root := scene.get_node("KaosRoot") as Node3D
