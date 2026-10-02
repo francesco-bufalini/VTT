@@ -276,9 +276,12 @@ print(json.dumps(payload))
 
 def self_update() -> dict[str, Any]:
     repo_root = Path(__file__).resolve().parents[2]
+    daemon_rel = "tools/blender_remote/daemon.py"
 
+    # Only protect the daemon itself from being overwritten if the user has
+    # edited it locally. Unrelated dirty project files must not block updates.
     status = subprocess.run(
-        ["git", "status", "--porcelain"],
+        ["git", "status", "--porcelain", "--", daemon_rel],
         cwd=repo_root,
         capture_output=True,
         text=True,
@@ -286,35 +289,43 @@ def self_update() -> dict[str, Any]:
     )
     if status.returncode != 0:
         raise RuntimeError(f"git status failed: {status.stderr.strip()}")
-
-    # Refuse to auto-update across local modifications. This keeps the update
-    # mechanism predictable and avoids overwriting user work.
-    dirty = [line for line in status.stdout.splitlines() if line.strip()]
-    if dirty:
+    if status.stdout.strip():
         raise RuntimeError(
-            "Repository has local changes; self_update refused. "
-            "Commit/stash them first, then retry."
+            "daemon.py has local modifications; self_update refused to overwrite it."
         )
 
-    pull = subprocess.run(
-        ["git", "pull", "--ff-only", "origin", "main"],
+    fetch = subprocess.run(
+        ["git", "fetch", "origin", "main"],
         cwd=repo_root,
         capture_output=True,
         text=True,
         timeout=120,
     )
-    if pull.returncode != 0:
-        raise RuntimeError(f"git pull --ff-only failed: {pull.stderr.strip()}")
+    if fetch.returncode != 0:
+        raise RuntimeError(f"git fetch failed: {fetch.stderr.strip()}")
+
+    show = subprocess.run(
+        ["git", "show", f"origin/main:{daemon_rel}"],
+        cwd=repo_root,
+        capture_output=True,
+        timeout=30,
+    )
+    if show.returncode != 0:
+        stderr = show.stderr.decode("utf-8", errors="replace").strip()
+        raise RuntimeError(f"git show failed: {stderr}")
+
+    daemon_path = Path(__file__).resolve()
+    temp_path = daemon_path.with_suffix(".py.update")
+    temp_path.write_bytes(show.stdout)
+    temp_path.replace(daemon_path)
 
     result = {
         "updated": True,
         "repo_root": str(repo_root),
-        "git_output": pull.stdout.strip(),
+        "daemon_path": str(daemon_path),
         "restart": "scheduled",
     }
 
-    # Re-exec after the result comment has been posted by main(). The flag is
-    # picked up by the loop after post_result returns.
     global RESTART_REQUESTED
     RESTART_REQUESTED = True
     return {"status": "success", "result": result}
@@ -326,11 +337,10 @@ from mathutils import Vector
 
 url = 'https://raw.githubusercontent.com/programasweights/avatar/main/public/assets/character.glb'
 collection_name = 'REF_Titan_Normal'
-shell_name = 'Klothys_PrisonShell_V2_R220m'
 center = Vector((0.0, -230.0, 385.0))
 target_height = 430.0
 
-# Remove a previous reference import cleanly.
+# Remove only the previous reference collection and objects owned by it.
 old_col = bpy.data.collections.get(collection_name)
 if old_col is not None:
     for obj in list(old_col.objects):
@@ -341,85 +351,102 @@ tmp_dir = tempfile.gettempdir()
 glb_path = os.path.join(tmp_dir, 'quaternius_superhero_male_cc0.glb')
 urllib.request.urlretrieve(url, glb_path)
 
-before = set(bpy.data.objects)
+before_names = set(bpy.data.objects.keys())
 bpy.ops.import_scene.gltf(filepath=glb_path)
-imported = [obj for obj in bpy.data.objects if obj not in before]
+imported = [obj for obj in bpy.data.objects if obj.name not in before_names]
 if not imported:
     raise RuntimeError('GLB import completed but no objects were created')
 
-# Put all imported objects in a dedicated collection.
-col = bpy.data.collections.new(collection_name)
-bpy.context.scene.collection.children.link(col)
+# Link imported objects to a dedicated reference collection WITHOUT unlinking
+# them from the collection created by Blender's glTF importer.
+ref_col = bpy.data.collections.new(collection_name)
+bpy.context.scene.collection.children.link(ref_col)
 for obj in imported:
-    for parent_col in list(obj.users_collection):
-        parent_col.objects.unlink(obj)
-    col.objects.link(obj)
+    if ref_col not in obj.users_collection:
+        ref_col.objects.link(obj)
 
-# Compute world-space bounds using mesh objects only.
 mesh_objs = [obj for obj in imported if obj.type == 'MESH']
+armatures = [obj for obj in imported if obj.type == 'ARMATURE']
 if not mesh_objs:
     raise RuntimeError('Imported GLB has no mesh objects')
 
-mins = Vector((1e30, 1e30, 1e30))
-maxs = Vector((-1e30, -1e30, -1e30))
-for obj in mesh_objs:
-    for corner in obj.bound_box:
-        p = obj.matrix_world @ Vector(corner)
-        mins.x = min(mins.x, p.x); mins.y = min(mins.y, p.y); mins.z = min(mins.z, p.z)
-        maxs.x = max(maxs.x, p.x); maxs.y = max(maxs.y, p.y); maxs.z = max(maxs.z, p.z)
+def bounds_world(objects):
+    mins = Vector((1e30, 1e30, 1e30))
+    maxs = Vector((-1e30, -1e30, -1e30))
+    for obj in objects:
+        for corner in obj.bound_box:
+            p = obj.matrix_world @ Vector(corner)
+            mins.x = min(mins.x, p.x); mins.y = min(mins.y, p.y); mins.z = min(mins.z, p.z)
+            maxs.x = max(maxs.x, p.x); maxs.y = max(maxs.y, p.y); maxs.z = max(maxs.z, p.z)
+    return mins, maxs
 
+mins, maxs = bounds_world(mesh_objs)
 height = maxs.z - mins.z
 if height <= 1e-6:
     raise RuntimeError('Imported titan has invalid height')
 
-scale_factor = target_height / height
 roots = [obj for obj in imported if obj.parent is None]
+scale_factor = target_height / height
 for obj in roots:
     obj.scale = obj.scale * scale_factor
-
 bpy.context.view_layer.update()
 
-# Recompute bounds after scale, then translate the root hierarchy so the
-# character's bounding-box center matches the old sphere center.
-mins = Vector((1e30, 1e30, 1e30))
-maxs = Vector((-1e30, -1e30, -1e30))
-for obj in mesh_objs:
-    for corner in obj.bound_box:
-        p = obj.matrix_world @ Vector(corner)
-        mins.x = min(mins.x, p.x); mins.y = min(mins.y, p.y); mins.z = min(mins.z, p.z)
-        maxs.x = max(maxs.x, p.x); maxs.y = max(maxs.y, p.y); maxs.z = max(maxs.z, p.z)
-
+mins, maxs = bounds_world(mesh_objs)
 bbox_center = (mins + maxs) * 0.5
 delta = center - bbox_center
 for obj in roots:
     obj.location = obj.location + delta
+bpy.context.view_layer.update()
 
-shell = bpy.data.objects.get(shell_name)
-if shell is not None:
-    shell.hide_viewport = True
-    shell.hide_render = True
+# Hide whichever prison shell variant exists.
+shell_names = (
+    'Klothys_PrisonShell_V2_R220m',
+    'COMBAT_KlothysSphere_R220m',
+    'SphereBinding',
+)
+hidden_shells = []
+for name in shell_names:
+    shell = bpy.data.objects.get(name)
+    if shell is not None:
+        shell.hide_viewport = True
+        shell.hide_render = True
+        hidden_shells.append(name)
 
-# Select imported mesh/armature for easy inspection.
+# Select the imported rig and mesh.
 bpy.ops.object.select_all(action='DESELECT')
 for obj in imported:
     obj.select_set(True)
-armatures = [obj for obj in imported if obj.type == 'ARMATURE']
 if armatures:
     bpy.context.view_layer.objects.active = armatures[0]
 else:
     bpy.context.view_layer.objects.active = mesh_objs[0]
 
+# Center every 3D viewport on the imported titan and force a redraw.
+for window in bpy.context.window_manager.windows:
+    screen = window.screen
+    if not screen:
+        continue
+    for area in screen.areas:
+        if area.type != 'VIEW_3D':
+            continue
+        space = area.spaces.active
+        if space.region_3d:
+            space.region_3d.view_location = center
+            space.region_3d.view_distance = target_height * 0.75
+        area.tag_redraw()
+
 bpy.context.view_layer.update()
 
 print(json.dumps({
     'collection': collection_name,
+    'collection_object_count': len(ref_col.objects),
     'objects': [obj.name for obj in imported],
     'mesh_objects': [obj.name for obj in mesh_objs],
     'armatures': [obj.name for obj in armatures],
     'scale_factor': scale_factor,
     'target_center': list(center),
     'target_height': target_height,
-    'shell_hidden': bool(shell is not None),
+    'hidden_shells': hidden_shells,
     'source_url': url,
 }))
 """
