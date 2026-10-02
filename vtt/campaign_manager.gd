@@ -7,7 +7,17 @@ const BUILTIN_STATES_DIR := "user://campaigns/_builtin_states"
 
 const MAIN_MENU_SCENE := "res://vtt/menu/main_menu.tscn"
 const ACTIVE_CAMPAIGNS_SCENE := "res://vtt/menu/active_campaigns.tscn"
+const CAMPAIGN_SCENARIOS_SCENE := "res://vtt/menu/campaign_scenarios.tscn"
 const CAMPAIGN_EDITOR_SCENE := "res://vtt/editor/campaign_editor.tscn"
+
+const BUILTIN_CAMPAIGN_GROUPS := [
+	{
+		"id": "i_figli_dell_apocalisse",
+		"name": "I Figli dell'Apocalisse",
+		"description": "La campagna che raccoglie gli scenari attualmente disponibili.",
+		"builtin": true
+	}
+]
 
 const BUILTIN_CAMPAIGNS := [
 	{
@@ -65,12 +75,91 @@ const OPTIONAL_BUILTIN_CAMPAIGNS := [
 	}
 ]
 
+var selected_campaign_group_id: String = ""
+var selected_campaign_group: Dictionary = {}
 var active_campaign_id: String = ""
 var active_campaign: Dictionary = {}
 
 
 func _ready() -> void:
 	_ensure_campaigns_directory()
+
+
+func list_campaign_groups() -> Array[Dictionary]:
+	var result: Array[Dictionary] = []
+	for entry: Dictionary in BUILTIN_CAMPAIGN_GROUPS:
+		var item: Dictionary = entry.duplicate(true)
+		item["scenario_count"] = list_campaign_scenarios(
+			String(item.get("id", ""))
+		).size()
+		result.append(item)
+	return result
+
+
+func get_campaign_group(campaign_group_id: String) -> Dictionary:
+	for campaign_group: Dictionary in list_campaign_groups():
+		if String(campaign_group.get("id", "")) == campaign_group_id:
+			return campaign_group
+	return {}
+
+
+func select_campaign_group(campaign_group_id: String) -> Error:
+	var data: Dictionary = get_campaign_group(campaign_group_id)
+	if data.is_empty():
+		return ERR_DOES_NOT_EXIST
+	selected_campaign_group_id = campaign_group_id
+	selected_campaign_group = data.duplicate(true)
+	return OK
+
+
+func open_campaign_group(campaign_group_id: String) -> Error:
+	var error: Error = select_campaign_group(campaign_group_id)
+	if error != OK:
+		return error
+	return get_tree().change_scene_to_file(CAMPAIGN_SCENARIOS_SCENE)
+
+
+func get_selected_campaign_group() -> Dictionary:
+	return selected_campaign_group.duplicate(true)
+
+
+func get_selected_campaign_group_name() -> String:
+	return String(
+		selected_campaign_group.get("name", "Campagna")
+	)
+
+
+func list_campaign_scenarios(
+	campaign_group_id: String
+) -> Array[Dictionary]:
+	# The first campaign groups the entries that the previous UI exposed
+	# directly as "campagne attive". This intentionally includes user-created
+	# entries such as "Test incantesimi", preserving their existing state.
+	if campaign_group_id == "i_figli_dell_apocalisse":
+		return list_campaigns()
+	return []
+
+
+func open_scenario(
+	campaign_group_id: String,
+	scenario_id: String
+) -> Error:
+	var campaign_group: Dictionary = get_campaign_group(campaign_group_id)
+	if campaign_group.is_empty():
+		return ERR_DOES_NOT_EXIST
+
+	var scenario_exists := false
+	for scenario: Dictionary in list_campaign_scenarios(campaign_group_id):
+		if String(scenario.get("id", "")) == scenario_id:
+			scenario_exists = true
+			break
+	if not scenario_exists:
+		return ERR_DOES_NOT_EXIST
+
+	var select_error: Error = select_campaign_group(campaign_group_id)
+	if select_error != OK:
+		return select_error
+	return open_campaign(scenario_id)
 
 
 func list_campaigns() -> Array[Dictionary]:
@@ -304,6 +393,8 @@ func load_active_state() -> Dictionary:
 
 
 func return_to_main_menu() -> Error:
+	selected_campaign_group_id = ""
+	selected_campaign_group = {}
 	active_campaign_id = ""
 	active_campaign = {}
 	return get_tree().change_scene_to_file(MAIN_MENU_SCENE)
