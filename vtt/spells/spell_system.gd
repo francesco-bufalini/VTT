@@ -4257,6 +4257,9 @@ func _cast_self_emanation(
 	var shape: String = String(spell_data.get("aoe_shape", "sphere"))
 	var style: String = _spell_style(spell_data)
 	if bool(spell_data.get("persistent", false)):
+		var follow_target: Node3D = null
+		if bool(spell_data.get("follow_caster", true)):
+			follow_target = caster
 		measurement_tool.call(
 			"add_aoe",
 			center,
@@ -4268,7 +4271,7 @@ func _cast_self_emanation(
 			0.0,
 			"free",
 			Vector3(INF, INF, INF),
-			caster
+			follow_target
 		)
 	else:
 		measurement_tool.call(
