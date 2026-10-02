@@ -117,7 +117,14 @@ def export_glb(path: Path) -> None:
 def render_preview(path: Path, width: int = 960, height: int = 540) -> None:
     ensure_default_camera_and_light()
     scene = bpy.context.scene
-    scene.render.engine = "BLENDER_EEVEE_NEXT"
+    for engine in ("BLENDER_EEVEE", "BLENDER_EEVEE_NEXT", "BLENDER_WORKBENCH"):
+        try:
+            scene.render.engine = engine
+            break
+        except TypeError:
+            continue
+    else:
+        raise RuntimeError("No supported Blender render engine is available.")
     scene.render.resolution_x = width
     scene.render.resolution_y = height
     scene.render.resolution_percentage = 100
