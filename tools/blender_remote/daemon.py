@@ -273,6 +273,33 @@ print(json.dumps(payload))
     return execute_json_code(code)
 
 
+def set_viewport_shading(command: dict[str, Any]) -> dict[str, Any]:
+    shading = str(command.get("shading", "RENDERED")).strip().upper()
+    allowed = {"WIREFRAME", "SOLID", "MATERIAL", "RENDERED"}
+    if shading not in allowed:
+        raise ValueError(f"shading must be one of: {', '.join(sorted(allowed))}")
+
+    code = f"""import bpy, json
+changed = []
+for window_index, window in enumerate(bpy.context.window_manager.windows):
+    screen = window.screen
+    if not screen:
+        continue
+    for area_index, area in enumerate(screen.areas):
+        if area.type != 'VIEW_3D':
+            continue
+        space = area.spaces.active
+        space.shading.type = {shading!r}
+        changed.append({{
+            'window_index': window_index,
+            'area_index': area_index,
+            'shading': space.shading.type,
+        }})
+print(json.dumps({{'changed': changed}}))
+"""
+    return execute_json_code(code)
+
+
 def viewport_info() -> dict[str, Any]:
     code = """import bpy, json
 ctx = bpy.context
@@ -657,6 +684,9 @@ def execute(command: dict[str, Any]) -> dict[str, Any]:
     if action == "viewport":
         return viewport_info()
 
+    if action in {"set_viewport_shading", "viewport_shading"}:
+        return set_viewport_shading(command)
+
     if action in {"screenshot", "render_preview"}:
         return viewport_screenshot(command)
 
@@ -723,7 +753,7 @@ def execute(command: dict[str, Any]) -> dict[str, Any]:
         return blender_command("execute_code", {"code": code}, timeout=300)
 
     raise ValueError(
-        "Unknown action. Supported: ping, scene, workspaces, viewport, screenshot, render_preview, titan_relief, reset_titan_relief, hide_titan_helpers, show_titan_helpers, hide_runic_seals, show_runic_seals, hide_stress_cracks, show_stress_cracks, hide_floating_shards, show_floating_shards, object, transform, undo, save"
+        "Unknown action. Supported: ping, scene, workspaces, viewport, set_viewport_shading, screenshot, render_preview, titan_relief, reset_titan_relief, hide_titan_helpers, show_titan_helpers, hide_runic_seals, show_runic_seals, hide_stress_cracks, show_stress_cracks, hide_floating_shards, show_floating_shards, object, transform, undo, save"
         + (", python" if ALLOW_PYTHON else "")
     )
 
