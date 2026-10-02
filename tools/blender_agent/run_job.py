@@ -29,6 +29,21 @@ def project_path(root: Path, value: str) -> Path:
     return path.resolve()
 
 
+def output_path(root: Path, value: str, output_root: Path | None) -> Path:
+    path = Path(value)
+    if output_root is None:
+        return project_path(root, value)
+
+    normalized = path.as_posix()
+    prefix = "outputs/blender_agent/"
+    if normalized.startswith(prefix):
+        normalized = normalized[len(prefix):]
+    elif path.is_absolute():
+        normalized = path.name
+
+    return (output_root / Path(normalized)).resolve()
+
+
 def vec3(value, default=(0.0, 0.0, 0.0)):
     if value is None:
         return default
@@ -648,14 +663,14 @@ def _set_camera_pose(location, look_at, lens: float) -> None:
     camera.data.clip_end = 3000.0
 
 
-def render_preview_spec(root: Path, spec: dict) -> None:
+def render_preview_spec(root: Path, spec: dict, runtime_output_root: Path | None = None) -> None:
     _set_camera_pose(
         vec3(spec.get("location"), (150.0, -165.0, 110.0)),
         vec3(spec.get("look_at"), (0.0, 35.0, 35.0)),
         float(spec.get("lens", 50.0)),
     )
     render_preview(
-        project_path(root, spec["path"]),
+        output_path(root, spec["path"], runtime_output_root),
         int(spec.get("width", 1280)),
         int(spec.get("height", 720)),
     )
@@ -680,12 +695,16 @@ def main(argv: list[str]) -> int:
     parser = argparse.ArgumentParser()
     parser.add_argument("--job", required=True)
     parser.add_argument("--project-root", required=True)
+    parser.add_argument("--output-root")
     args = parser.parse_args(argv)
 
     if tuple(bpy.app.version[:2]) != REQUIRED_VERSION:
         raise RuntimeError(f"Expected Blender 5.2.x, found {bpy.app.version_string}")
 
     root = Path(args.project_root).resolve()
+    runtime_output_root = Path(args.output_root).resolve() if args.output_root else None
+    if runtime_output_root is not None:
+        runtime_output_root.mkdir(parents=True, exist_ok=True)
     job_path = project_path(root, args.job)
     job = json.loads(job_path.read_text(encoding="utf-8"))
 
@@ -709,23 +728,23 @@ def main(argv: list[str]) -> int:
     if outputs.get("previews"):
         for preview_index, spec in enumerate(outputs["previews"], start=1):
             print(f"BLENDER_AGENT_OUTPUT preview_{preview_index}", flush=True)
-            render_preview_spec(root, spec)
+            render_preview_spec(root, spec, runtime_output_root)
     elif outputs.get("preview"):
         print("BLENDER_AGENT_OUTPUT preview", flush=True)
         render_preview(
-            project_path(root, outputs["preview"]),
+            output_path(root, outputs["preview"], runtime_output_root),
             int(outputs.get("preview_width", 960)),
             int(outputs.get("preview_height", 540)),
         )
     if outputs.get("report"):
         print("BLENDER_AGENT_OUTPUT report", flush=True)
-        scene_report(project_path(root, outputs["report"]), job_path, job)
+        scene_report(output_path(root, outputs["report"], runtime_output_root), job_path, job)
     if outputs.get("glb"):
         print("BLENDER_AGENT_OUTPUT glb", flush=True)
-        export_glb(project_path(root, outputs["glb"]))
+        export_glb(output_path(root, outputs["glb"], runtime_output_root))
     if outputs.get("blend"):
         print("BLENDER_AGENT_OUTPUT blend", flush=True)
-        save_blend(project_path(root, outputs["blend"]))
+        save_blend(output_path(root, outputs["blend"], runtime_output_root))
 
     print("BLENDER_AGENT_PASS", job_path.name)
     return 0
