@@ -152,6 +152,7 @@ func _ready() -> void:
 	board_sync.listen(true, _share_session_key())
 	_build_camera_settings_dialog()
 	_build_token_generation_controls()
+	_connect_token_pack_manager()
 	_build_token_resize_menu()
 	_build_token_state_dialog()
 	_build_opportunity_attack_dialog()
@@ -433,6 +434,98 @@ func _build_token_generation_controls() -> void:
 	_reload_token_miniature_list()
 
 
+func _connect_token_pack_manager() -> void:
+	if TokenPackManager == null:
+		return
+	if not TokenPackManager.catalog_updated.is_connected(
+		_on_remote_token_catalog_updated
+	):
+		TokenPackManager.catalog_updated.connect(
+			_on_remote_token_catalog_updated
+		)
+	if not TokenPackManager.token_downloaded.is_connected(
+		_on_remote_token_state_changed
+	):
+		TokenPackManager.token_downloaded.connect(
+			_on_remote_token_state_changed
+		)
+	if not TokenPackManager.token_mounted.is_connected(
+		_on_remote_token_state_changed
+	):
+		TokenPackManager.token_mounted.connect(
+			_on_remote_token_state_changed
+		)
+
+
+func _on_remote_token_catalog_updated(_entries: Array[Dictionary]) -> void:
+	if token_miniature_list != null:
+		_reload_token_miniature_list()
+
+
+func _on_remote_token_state_changed(
+	_token_id: String,
+	_path_or_scene: String
+) -> void:
+	if token_miniature_list != null:
+		_reload_token_miniature_list()
+
+
+func _remote_token_status(token_id: String) -> String:
+	if TokenPackManager.is_mounted(token_id):
+		return "Montato"
+	if TokenPackManager.is_downloaded(token_id):
+		return "Scaricato"
+	return "Remoto"
+
+
+func _append_remote_token_profiles() -> void:
+	var known_ids: Dictionary = {}
+	for profile: Dictionary in _token_profiles:
+		var local_id := String(profile.get("id", "")).strip_edges()
+		if not local_id.is_empty():
+			known_ids[local_id] = true
+			profile["_pack_origin"] = "local"
+
+	for entry: Dictionary in TokenPackManager.get_entries():
+		var token_id := String(entry.get("id", "")).strip_edges()
+		if token_id.is_empty():
+			continue
+
+		if known_ids.has(token_id):
+			continue
+
+		var remote_profile := entry.duplicate(true)
+		remote_profile["_pack_origin"] = "remote"
+		remote_profile["_pack_status"] = _remote_token_status(token_id)
+		remote_profile["_remote_scene"] = String(
+			entry.get(
+				"scene",
+				"res://remote_tokens/%s/%s_token.tscn"
+				% [token_id, token_id]
+			)
+		)
+		_token_profiles.append(remote_profile)
+		known_ids[token_id] = true
+
+
+func _token_profile_status(profile: Dictionary) -> String:
+	if String(profile.get("_pack_origin", "local")) != "remote":
+		return "Locale"
+	var token_id := String(profile.get("id", ""))
+	return _remote_token_status(token_id)
+
+
+func _format_token_download_size(profile: Dictionary) -> String:
+	var bytes := int(profile.get("bytes", 0))
+	if bytes <= 0:
+		return ""
+	if bytes >= 1024 * 1024:
+		return "%.1f MB" % (float(bytes) / (1024.0 * 1024.0))
+	if bytes >= 1024:
+		return "%.0f KB" % (float(bytes) / 1024.0)
+	return "%d B" % bytes
+
+
 func _reload_token_miniature_list() -> void:
 	_token_profiles.clear()
 	_visible_token_profiles.clear()
@@ -452,6 +545,7 @@ func _reload_token_miniature_list() -> void:
 			_token_profiles.append(profile)
 
 	_append_character_token_profiles()
+	_append_remote_token_profiles()
 
 	_token_profiles.sort_custom(
 		Callable(self, "_sort_token_profiles")
@@ -492,6 +586,10 @@ func _refresh_token_miniature_filter(
 			+ String(profile.get("id", ""))
 			+ " "
 			+ String(profile.get("source", ""))
+			+ " "
+			+ String(profile.get("pck", ""))
+			+ " "
+			+ _token_profile_status(profile)
 		).to_lower()
 		if not normalized_query.is_empty() and not searchable.contains(
 			normalized_query
@@ -501,17 +599,27 @@ func _refresh_token_miniature_filter(
 		var visible_index := _visible_token_profiles.size()
 		_visible_token_profiles.append(profile)
 		var size_name := String(profile.get("size_name", "Medium"))
+		var status := _token_profile_status(profile)
 		token_miniature_list.add_item(
-			"%s  ·  %s" % [token_name, size_name]
+			"%s  ·  %s  ·  %s" % [token_name, size_name, status]
 		)
+
+		var tooltip_parts: Array[String] = []
+		var source_text := String(
+			profile.get(
+				"source",
+				_token_profile_visual_asset(profile)
+			)
+		).strip_edges()
+		if not source_text.is_empty():
+			tooltip_parts.append(source_text)
+		tooltip_parts.append("Stato: %s" % status)
+		var download_size := _format_token_download_size(profile)
+		if not download_size.is_empty():
+			tooltip_parts.append("Download: %s" % download_size)
 		token_miniature_list.set_item_tooltip(
 			visible_index,
-			String(
-				profile.get(
-					"source",
-					_token_profile_visual_asset(profile)
-				)
-			)
+			"\n".join(tooltip_parts)
 		)
 		if String(profile.get("id", "")) == current_id:
 			target_index = visible_index
