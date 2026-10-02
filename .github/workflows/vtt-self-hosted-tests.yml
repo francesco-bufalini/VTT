@@ -39,6 +39,7 @@ jobs:
             /*.tscn
             /scripts/
             /tools/token_packs/
+/tools/build_token_packs.ps1
             /tests/
             /vtt/
             /network/
