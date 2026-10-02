@@ -1,0 +1,133 @@
+{
+  "schema_version": 1,
+  "scene_id": "kaos_arena_v2",
+  "description": "Combat-mapped Kaos arena rebuilt in Blender from the exact Godot battlemap, water and Klothys sphere dimensions. Scenic ruins are secondary and remain outside the tactical footprint.",
+  "design_references": [
+    "encounter/encounter_scenery.gd",
+    "encounter/hazard_allowed_area.gd",
+    "measurement_tool.gd"
+  ],
+  "combat_mapping": {
+    "meters_per_cell": 1.5,
+    "battlemap": {
+      "size_m": [
+        120,
+        180
+      ],
+      "center_godot_m": [
+        0,
+        0,
+        85.5
+      ]
+    },
+    "hazard_area": {
+      "cells": [
+        -38,
+        0,
+        76,
+        114
+      ]
+    },
+    "water": {
+      "radius_m": 337,
+      "center_godot_m": [
+        0,
+        -0.18,
+        -60
+      ]
+    },
+    "sphere": {
+      "radius_m": 220,
+      "center_godot_m": [
+        0,
+        385,
+        -230
+      ]
+    }
+  },
+  "reset_scene": true,
+  "operations": [
+    {
+      "op": "build_kaos_arena",
+      "seed": 20261002,
+      "scale": 1,
+      "expected_mapping": {
+        "meters_per_cell": 1.5,
+        "battlemap": {
+          "size_m": [
+            120,
+            180
+          ],
+          "center_godot_m": [
+            0,
+            0,
+            85.5
+          ]
+        },
+        "hazard_area": {
+          "cells": [
+            -38,
+            0,
+            76,
+            114
+          ]
+        },
+        "water": {
+          "radius_m": 337,
+          "center_godot_m": [
+            0,
+            -0.18,
+            -60
+          ]
+        },
+        "sphere": {
+          "radius_m": 220,
+          "center_godot_m": [
+            0,
+            385,
+            -230
+          ]
+        }
+      }
+    }
+  ],
+  "outputs": {
+    "previews": [
+      {
+        "path": "outputs/blender_agent/kaos_arena_v2/preview_mapping.png",
+        "location": [
+          390,
+          360,
+          330
+        ],
+        "look_at": [
+          0,
+          20,
+          170
+        ],
+        "lens": 58,
+        "width": 960,
+        "height": 540
+      },
+      {
+        "path": "outputs/blender_agent/kaos_arena_v2/preview_tactical.png",
+        "location": [
+          170,
+          300,
+          180
+        ],
+        "look_at": [
+          0,
+          70,
+          25
+        ],
+        "lens": 62,
+        "width": 960,
+        "height": 540
+      }
+    ],
+    "report": "outputs/blender_agent/kaos_arena_v2/scene_report.json",
+    "glb": "outputs/blender_agent/kaos_arena_v2/kaos_arena_v2.glb",
+    "blend": "outputs/blender_agent/kaos_arena_v2/kaos_arena_v2.blend"
+  }
+}
