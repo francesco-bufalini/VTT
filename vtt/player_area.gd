@@ -1315,10 +1315,10 @@ func _refresh_available_spells() -> void:
 	)
 	if not class_metadata is Dictionary:
 		return
-	var class_name: String = String(
+	var selected_class_name: String = String(
 		(class_metadata as Dictionary).get("name", "")
 	)
-	if class_name.is_empty():
+	if selected_class_name.is_empty():
 		return
 
 	var level := 0
@@ -1330,7 +1330,7 @@ func _refresh_available_spells() -> void:
 		)
 
 	var spells: Array[Dictionary] = SpellCatalog.spells_for_class_and_level(
-		class_name,
+		selected_class_name,
 		level
 	)
 	for spell: Dictionary in spells:
