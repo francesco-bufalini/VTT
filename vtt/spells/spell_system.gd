@@ -293,27 +293,76 @@ func has_post_cast_cleanup() -> bool:
 
 func activate_spell_from_caster(
 	spell_id: String,
-	caster: Node3D
+	caster: Node3D,
+	spell_name: String = "",
+	source: String = ""
 ) -> bool:
 	if spell_id.is_empty() or caster == null or not is_instance_valid(caster):
 		return false
 
-	var spell_data: Dictionary = SpellCatalog.catalog_spell(spell_id)
-	if spell_data.is_empty() or not SpellCatalog.is_runtime_usable(spell_data):
+	# Character sheets can contain entries saved before the runtime area
+	# catalogue was regenerated. Resolve through the same all_spells() data
+	# used by the normal spell browser so sheet casting and browser casting
+	# always agree on VTT support.
+	var spell_data: Dictionary = _runtime_spell_reference(
+		spell_id,
+		spell_name,
+		source
+	)
+	if spell_data.is_empty():
 		return false
 
-	_selected_spell_id = spell_id
+	var resolved_spell_id: String = String(
+		spell_data.get("id", spell_id)
+	)
+	_selected_spell_id = resolved_spell_id
 	_selected_spell_data = spell_data.duplicate(true)
 	_activate_selected_spell()
 
 	if (
-		_pending_spell_id != spell_id
+		_pending_spell_id != resolved_spell_id
 		or _targeting_phase != "caster"
 	):
 		return false
 
 	_begin_cast_with_caster(caster, _pending_spell())
 	return true
+
+
+func _runtime_spell_reference(
+	spell_id: String,
+	spell_name: String = "",
+	source: String = ""
+) -> Dictionary:
+	var direct: Dictionary = SpellCatalog.catalog_spell(spell_id)
+	if (
+		not direct.is_empty()
+		and SpellCatalog.is_runtime_usable(direct)
+	):
+		return direct
+
+	var normalized_name: String = spell_name.strip_edges().to_lower()
+	var normalized_source: String = source.strip_edges().to_lower()
+	for candidate: Dictionary in SpellCatalog.all_spells():
+		var candidate_id: String = String(candidate.get("id", ""))
+		var id_match: bool = candidate_id == spell_id
+		var name_match: bool = (
+			not normalized_name.is_empty()
+			and String(candidate.get("name", "")).strip_edges().to_lower()
+			== normalized_name
+		)
+		var source_match: bool = (
+			normalized_source.is_empty()
+			or String(candidate.get("source", "")).strip_edges().to_lower()
+			== normalized_source
+		)
+		if (
+			(id_match or (name_match and source_match))
+			and SpellCatalog.is_runtime_usable(candidate)
+		):
+			return candidate.duplicate(true)
+
+	return {}
 
 
 func _set_spell_affected_targets(
@@ -3593,6 +3642,17 @@ func _build_panel() -> void:
 	panel.offset_right = -4.0
 	panel.offset_bottom = -8.0
 	panel.mouse_filter = Control.MOUSE_FILTER_STOP
+
+	# The spell browser is an editing/targeting UI, not an overlay preview:
+	# make it fully opaque so the 3D scene and encounter HUD cannot bleed
+	# through the controls.
+	var panel_style := StyleBoxFlat.new()
+	panel_style.bg_color = Color(0.025, 0.028, 0.036, 1.0)
+	panel_style.border_color = Color(0.42, 0.34, 0.22, 1.0)
+	panel_style.set_border_width_all(1)
+	panel_style.set_corner_radius_all(6)
+	panel.add_theme_stylebox_override("panel", panel_style)
+
 	panel.hide()
 	ui_root.add_child(panel)
 
