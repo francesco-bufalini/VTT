@@ -1,9 +1,9 @@
 ﻿{
     "schema_version":  1,
     "scene_id":  "klothys_titan_prison_sphere_v1",
-    "run_id":  "37013415785",
-    "run_number":  "23",
-    "source_sha":  "6427af3b667afbfdcd9a53b2e5dc0e851d92e6e2",
+    "run_id":  "37014214563",
+    "run_number":  "24",
+    "source_sha":  "50466e4a09f50a601793dd63255bfe4c2a6b0f8c",
     "blender_job":  "blender/jobs/klothys_titan_prison_sphere_v1.json",
     "scene_report":  {
                          "blender_version":  "5.2.2 LTS",
@@ -79,17 +79,44 @@
 
                                               },
                          "asset_root":  "C:\\VTT-BlenderAssets",
-                         "object_count":  80,
+                         "object_count":  81,
                          "mesh_object_count":  60,
                          "triangle_count":  988032,
                          "objects":  [
+                                         {
+                                             "name":  "TitanPrison_Key",
+                                             "type":  "LIGHT",
+                                             "location":  [
+                                                              -320.0,
+                                                              130.0,
+                                                              685.0
+                                                          ]
+                                         },
+                                         {
+                                             "name":  "TitanPrison_Rim",
+                                             "type":  "LIGHT",
+                                             "location":  [
+                                                              250.0,
+                                                              160.0,
+                                                              425.0
+                                                          ]
+                                         },
                                          {
                                              "name":  "AgentCamera",
                                              "type":  "CAMERA",
                                              "location":  [
                                                               0.0,
-                                                              260.0,
-                                                              650.0
+                                                              470.0,
+                                                              760.0
+                                                          ]
+                                         },
+                                         {
+                                             "name":  "ALIGN_KLOTHYS_SPHERE_CENTER",
+                                             "type":  "EMPTY",
+                                             "location":  [
+                                                              0.0,
+                                                              -230.0,
+                                                              385.0
                                                           ]
                                          },
                                          {
@@ -390,24 +417,6 @@
                                                           ]
                                          },
                                          {
-                                             "name":  "TitanPrison_Key",
-                                             "type":  "LIGHT",
-                                             "location":  [
-                                                              -270.0,
-                                                              -70.0,
-                                                              695.0
-                                                          ]
-                                         },
-                                         {
-                                             "name":  "TitanPrison_Rim",
-                                             "type":  "LIGHT",
-                                             "location":  [
-                                                              0.0,
-                                                              -230.0,
-                                                              385.0
-                                                          ]
-                                         },
-                                         {
                                              "name":  "Klothys_PrisonShell_R220m",
                                              "type":  "MESH",
                                              "location":  [
@@ -591,216 +600,216 @@
                                              "name":  "PrisonFragment_00",
                                              "type":  "MESH",
                                              "location":  [
-                                                              -20.3656,
-                                                              -428.884,
-                                                              265.2909
+                                                              220.6682,
+                                                              -176.9255,
+                                                              366.093
                                                           ]
                                          },
                                          {
                                              "name":  "PrisonFragment_01",
                                              "type":  "MESH",
                                              "location":  [
-                                                              -33.9544,
-                                                              -445.9212,
-                                                              451.7662
+                                                              83.8158,
+                                                              -357.1755,
+                                                              202.3257
                                                           ]
                                          },
                                          {
                                              "name":  "PrisonFragment_02",
                                              "type":  "MESH",
                                              "location":  [
-                                                              -104.641,
-                                                              -206.9158,
-                                                              181.3712
+                                                              55.3304,
+                                                              -201.108,
+                                                              604.9403
                                                           ]
                                          },
                                          {
                                              "name":  "PrisonFragment_03",
                                              "type":  "MESH",
                                              "location":  [
-                                                              91.162,
-                                                              -428.5708,
-                                                              448.025
+                                                              226.4522,
+                                                              -172.8468,
+                                                              337.9168
                                                           ]
                                          },
                                          {
                                              "name":  "PrisonFragment_04",
                                              "type":  "MESH",
                                              "location":  [
-                                                              145.5583,
-                                                              -409.8893,
-                                                              354.9232
+                                                              117.9825,
+                                                              -342.4171,
+                                                              217.1725
                                                           ]
                                          },
                                          {
                                              "name":  "PrisonFragment_05",
                                              "type":  "MESH",
                                              "location":  [
-                                                              86.1215,
-                                                              -378.6172,
-                                                              230.6367
+                                                              176.0064,
+                                                              -160.9869,
+                                                              527.2614
                                                           ]
                                          },
                                          {
                                              "name":  "PrisonFragment_06",
                                              "type":  "MESH",
                                              "location":  [
-                                                              87.1322,
-                                                              -103.7899,
-                                                              562.3712
+                                                              202.7741,
+                                                              -227.912,
+                                                              491.2417
                                                           ]
                                          },
                                          {
                                              "name":  "PrisonFragment_07",
                                              "type":  "MESH",
                                              "location":  [
-                                                              -174.0547,
-                                                              -368.2008,
-                                                              293.1681
+                                                              -205.2395,
+                                                              -103.9937,
+                                                              374.9273
                                                           ]
                                          },
                                          {
                                              "name":  "PrisonFragment_08",
                                              "type":  "MESH",
                                              "location":  [
-                                                              165.8526,
-                                                              -71.3298,
-                                                              373.144
+                                                              8.5457,
+                                                              -42.409,
+                                                              247.826
                                                           ]
                                          },
                                          {
                                              "name":  "PrisonFragment_09",
                                              "type":  "MESH",
                                              "location":  [
-                                                              -18.5286,
-                                                              -3.3249,
-                                                              398.0033
+                                                              -166.4935,
+                                                              -370.0473,
+                                                              299.3955
                                                           ]
                                          },
                                          {
                                              "name":  "PrisonFragment_10",
                                              "type":  "MESH",
                                              "location":  [
-                                                              -213.345,
-                                                              -162.4999,
-                                                              350.8302
+                                                              192.24,
+                                                              -278.2238,
+                                                              519.6009
                                                           ]
                                          },
                                          {
                                              "name":  "PrisonFragment_11",
                                              "type":  "MESH",
                                              "location":  [
-                                                              -31.9771,
-                                                              -360.6306,
-                                                              201.3093
+                                                              222.21,
+                                                              -199.1414,
+                                                              465.5691
                                                           ]
                                          },
                                          {
                                              "name":  "PrisonFragment_12",
                                              "type":  "MESH",
                                              "location":  [
-                                                              66.6163,
-                                                              -346.3771,
-                                                              580.7305
+                                                              17.5816,
+                                                              -138.9711,
+                                                              167.3784
                                                           ]
                                          },
                                          {
                                              "name":  "PrisonFragment_13",
                                              "type":  "MESH",
                                              "location":  [
-                                                              -108.6072,
-                                                              -331.0647,
-                                                              568.926
+                                                              -30.2738,
+                                                              -162.9127,
+                                                              607.2386
                                                           ]
                                          },
                                          {
                                              "name":  "PrisonFragment_14",
                                              "type":  "MESH",
                                              "location":  [
-                                                              19.6271,
-                                                              -395.8246,
-                                                              542.4563
+                                                              123.8975,
+                                                              -396.6225,
+                                                              486.5912
                                                           ]
                                          },
                                          {
                                              "name":  "PrisonFragment_15",
                                              "type":  "MESH",
                                              "location":  [
-                                                              158.7602,
-                                                              -102.4024,
-                                                              277.4962
+                                                              -87.6028,
+                                                              -181.7608,
+                                                              181.9299
                                                           ]
                                          },
                                          {
                                              "name":  "PrisonFragment_16",
                                              "type":  "MESH",
                                              "location":  [
-                                                              -199.5467,
-                                                              -213.9198,
-                                                              255.7984
+                                                              -36.1486,
+                                                              -161.3272,
+                                                              168.7149
                                                           ]
                                          },
                                          {
                                              "name":  "PrisonFragment_17",
                                              "type":  "MESH",
                                              "location":  [
-                                                              101.3348,
-                                                              -367.6606,
-                                                              533.1503
+                                                              -175.6531,
+                                                              -314.0291,
+                                                              262.481
                                                           ]
                                          },
                                          {
                                              "name":  "PrisonFragment_18",
                                              "type":  "MESH",
                                              "location":  [
-                                                              -196.1822,
-                                                              -209.8058,
-                                                              273.4098
+                                                              13.2582,
+                                                              -66.205,
+                                                              220.2677
                                                           ]
                                          },
                                          {
                                              "name":  "PrisonFragment_19",
                                              "type":  "MESH",
                                              "location":  [
-                                                              68.4171,
-                                                              -454.9369,
-                                                              364.114
+                                                              -166.6171,
+                                                              -263.0617,
+                                                              231.5105
                                                           ]
                                          },
                                          {
                                              "name":  "PrisonFragment_20",
                                              "type":  "MESH",
                                              "location":  [
-                                                              129.4425,
-                                                              -418.741,
-                                                              450.3589
+                                                              232.1311,
+                                                              -198.0186,
+                                                              334.893
                                                           ]
                                          },
                                          {
                                              "name":  "PrisonFragment_21",
                                              "type":  "MESH",
                                              "location":  [
-                                                              -2.5365,
-                                                              -314.0093,
-                                                              596.9367
+                                                              -85.9559,
+                                                              -385.7925,
+                                                              542.836
                                                           ]
                                          },
                                          {
                                              "name":  "PrisonFragment_22",
                                              "type":  "MESH",
                                              "location":  [
-                                                              -52.5954,
-                                                              -139.0067,
-                                                              596.6373
+                                                              104.4575,
+                                                              -341.7007,
+                                                              207.01
                                                           ]
                                          },
                                          {
                                              "name":  "PrisonFragment_23",
                                              "type":  "MESH",
                                              "location":  [
-                                                              -18.3498,
-                                                              -219.3655,
-                                                              153.552
+                                                              -102.8397,
+                                                              -437.033,
+                                                              366.8413
                                                           ]
                                          }
                                      ]
