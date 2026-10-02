@@ -211,6 +211,42 @@ def fixed_transform(command: dict[str, Any]) -> dict[str, Any]:
     return blender_command("execute_code", {"code": code})
 
 
+def workspace_info() -> dict[str, Any]:
+    code = """import bpy, json
+ctx = bpy.context
+windows = []
+wm = ctx.window_manager
+for index, window in enumerate(wm.windows):
+    screen = window.screen
+    areas = []
+    for area in screen.areas:
+        areas.append({
+            "type": area.type,
+            "ui_type": area.ui_type,
+            "width": area.width,
+            "height": area.height,
+        })
+    windows.append({
+        "index": index,
+        "workspace": window.workspace.name if window.workspace else None,
+        "screen": screen.name if screen else None,
+        "areas": areas,
+    })
+
+payload = {
+    "active_workspace": ctx.window.workspace.name if ctx.window and ctx.window.workspace else None,
+    "active_screen": ctx.window.screen.name if ctx.window and ctx.window.screen else None,
+    "mode": ctx.mode,
+    "active_object": ctx.active_object.name if ctx.active_object else None,
+    "selected_objects": [obj.name for obj in ctx.selected_objects],
+    "workspaces": [workspace.name for workspace in bpy.data.workspaces],
+    "windows": windows,
+}
+print(json.dumps(payload))
+"""
+    return blender_command("execute_code", {"code": code})
+
+
 def execute(command: dict[str, Any]) -> dict[str, Any]:
     action = str(command.get("action", "")).strip().lower()
 
@@ -230,6 +266,9 @@ def execute(command: dict[str, Any]) -> dict[str, Any]:
 
     if action == "scene":
         return blender_command("get_scene_info")
+
+    if action in {"workspaces", "ui"}:
+        return workspace_info()
 
     if action == "object":
         name = str(command["object"])
@@ -264,7 +303,7 @@ def execute(command: dict[str, Any]) -> dict[str, Any]:
         return blender_command("execute_code", {"code": code}, timeout=300)
 
     raise ValueError(
-        "Unknown action. Supported: ping, scene, object, transform, undo, save"
+        "Unknown action. Supported: ping, scene, workspaces, object, transform, undo, save"
         + (", python" if ALLOW_PYTHON else "")
     )
 
