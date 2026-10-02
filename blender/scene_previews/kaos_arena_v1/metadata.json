@@ -1,32 +1,32 @@
 ﻿{
     "schema_version":  1,
     "scene_id":  "kaos_arena_v1",
-    "run_id":  "37006485650",
-    "run_number":  "10",
-    "source_sha":  "89b7d3118e85587b178efad8c10aa7d6f590fb67",
+    "run_id":  "37007129000",
+    "run_number":  "12",
+    "source_sha":  "b341d42f66a1981f5ad58d666530fc60c7cd803f",
     "blender_job":  "blender/jobs/kaos_arena_v1.json",
     "scene_report":  {
                          "blender_version":  "5.2.2 LTS",
                          "job":  "C:\\actions-runner\\_work\\VTT\\VTT\\blender\\jobs\\kaos_arena_v1.json",
                          "scene_id":  "kaos_arena_v1",
-                         "description":  "First Blender-authored reconstruction of the Kaos arena: circular stepped ruin over water with monumental sphere, asymmetric classical ruins, debris and perimeter rocks.",
+                         "description":  "Second composition pass of the Blender-authored Kaos arena: monumental circular ruins over water, rear tholos fragment, larger arches, ceremonial approach and elevated sphere backdrop.",
                          "design_references":  [
                                                    "Original Godot encounter layout in encounter/encounter_scenery.gd",
                                                    "Ancient Greek/Roman tholos and ruined colonnade composition",
                                                    "Planned external dressing: Fab Ancient Ruins free pack, Poly Haven stone/rock materials"
                                                ],
                          "asset_root":  "C:\\VTT-BlenderAssets",
-                         "object_count":  153,
-                         "mesh_object_count":  150,
-                         "triangle_count":  25064,
+                         "object_count":  174,
+                         "mesh_object_count":  171,
+                         "triangle_count":  26500,
                          "objects":  [
                                          {
                                              "name":  "AgentCamera",
                                              "type":  "CAMERA",
                                              "location":  [
                                                               0.0,
-                                                              -230.0,
-                                                              72.0
+                                                              -275.0,
+                                                              92.0
                                                           ]
                                          },
                                          {
@@ -214,8 +214,8 @@
                                              "type":  "MESH",
                                              "location":  [
                                                               0.0,
-                                                              118.0,
-                                                              70.0
+                                                              154.0,
+                                                              96.0
                                                           ]
                                          },
                                          {
@@ -223,8 +223,8 @@
                                              "type":  "MESH",
                                              "location":  [
                                                               0.0,
-                                                              118.0,
-                                                              70.0
+                                                              154.0,
+                                                              96.0
                                                           ]
                                          },
                                          {
@@ -232,8 +232,8 @@
                                              "type":  "MESH",
                                              "location":  [
                                                               0.0,
-                                                              118.0,
-                                                              70.0
+                                                              154.0,
+                                                              96.0
                                                           ]
                                          },
                                          {
@@ -241,8 +241,8 @@
                                              "type":  "MESH",
                                              "location":  [
                                                               0.0,
-                                                              118.0,
-                                                              70.0
+                                                              154.0,
+                                                              96.0
                                                           ]
                                          },
                                          {
@@ -251,7 +251,7 @@
                                              "location":  [
                                                               -95.1623,
                                                               -44.3749,
-                                                              13.3
+                                                              15.8
                                                           ]
                                          },
                                          {
@@ -269,7 +269,7 @@
                                              "location":  [
                                                               -95.1623,
                                                               -44.3749,
-                                                              21.8
+                                                              26.8
                                                           ]
                                          },
                                          {
@@ -278,7 +278,7 @@
                                              "location":  [
                                                               -70.2587,
                                                               -78.0302,
-                                                              10.0453
+                                                              11.6412
                                                           ]
                                          },
                                          {
@@ -287,7 +287,7 @@
                                              "location":  [
                                                               -70.2587,
                                                               -78.0302,
-                                                              4.7596
+                                                              4.8873
                                                           ]
                                          },
                                          {
@@ -296,7 +296,7 @@
                                              "location":  [
                                                               -35.9121,
                                                               -98.6677,
-                                                              13.3
+                                                              15.8
                                                           ]
                                          },
                                          {
@@ -314,7 +314,7 @@
                                              "location":  [
                                                               -35.9121,
                                                               -98.6677,
-                                                              21.8
+                                                              26.8
                                                           ]
                                          },
                                          {
@@ -323,7 +323,7 @@
                                              "location":  [
                                                               5.4953,
                                                               -104.8561,
-                                                              13.3
+                                                              15.8
                                                           ]
                                          },
                                          {
@@ -341,7 +341,7 @@
                                              "location":  [
                                                               5.4953,
                                                               -104.8561,
-                                                              21.8
+                                                              26.8
                                                           ]
                                          },
                                          {
@@ -350,7 +350,7 @@
                                              "location":  [
                                                               44.3749,
                                                               -95.1623,
-                                                              10.2698
+                                                              11.9281
                                                           ]
                                          },
                                          {
@@ -359,7 +359,7 @@
                                              "location":  [
                                                               44.3749,
                                                               -95.1623,
-                                                              4.7776
+                                                              4.9
                                                           ]
                                          },
                                          {
@@ -368,7 +368,7 @@
                                              "location":  [
                                                               76.7921,
                                                               -71.6098,
-                                                              13.3
+                                                              15.8
                                                           ]
                                          },
                                          {
@@ -386,7 +386,7 @@
                                              "location":  [
                                                               76.7921,
                                                               -71.6098,
-                                                              21.8
+                                                              26.8
                                                           ]
                                          },
                                          {
@@ -395,7 +395,7 @@
                                              "location":  [
                                                               98.6677,
                                                               -35.9121,
-                                                              13.3
+                                                              15.8
                                                           ]
                                          },
                                          {
@@ -413,7 +413,7 @@
                                              "location":  [
                                                               98.6677,
                                                               -35.9121,
-                                                              21.8
+                                                              26.8
                                                           ]
                                          },
                                          {
@@ -422,7 +422,7 @@
                                              "location":  [
                                                               104.7442,
                                                               7.3244,
-                                                              13.3
+                                                              15.8
                                                           ]
                                          },
                                          {
@@ -440,7 +440,7 @@
                                              "location":  [
                                                               104.7442,
                                                               7.3244,
-                                                              21.8
+                                                              26.8
                                                           ]
                                          },
                                          {
@@ -449,7 +449,7 @@
                                              "location":  [
                                                               90.0026,
                                                               54.079,
-                                                              8.8986
+                                                              10.176
                                                           ]
                                          },
                                          {
@@ -458,7 +458,7 @@
                                              "location":  [
                                                               90.0026,
                                                               54.079,
-                                                              4.6679
+                                                              4.7701
                                                           ]
                                          },
                                          {
@@ -467,7 +467,7 @@
                                              "location":  [
                                                               54.079,
                                                               90.0026,
-                                                              13.3
+                                                              15.8
                                                           ]
                                          },
                                          {
@@ -485,7 +485,7 @@
                                              "location":  [
                                                               54.079,
                                                               90.0026,
-                                                              21.8
+                                                              26.8
                                                           ]
                                          },
                                          {
@@ -494,7 +494,7 @@
                                              "location":  [
                                                               10.9755,
                                                               104.4248,
-                                                              13.3
+                                                              15.8
                                                           ]
                                          },
                                          {
@@ -512,7 +512,7 @@
                                              "location":  [
                                                               10.9755,
                                                               104.4248,
-                                                              21.8
+                                                              26.8
                                                           ]
                                          },
                                          {
@@ -521,7 +521,7 @@
                                              "location":  [
                                                               -39.3337,
                                                               97.3543,
-                                                              8.975
+                                                              10.2736
                                                           ]
                                          },
                                          {
@@ -530,7 +530,7 @@
                                              "location":  [
                                                               -39.3337,
                                                               97.3543,
-                                                              4.674
+                                                              4.7779
                                                           ]
                                          },
                                          {
@@ -539,7 +539,7 @@
                                              "location":  [
                                                               -79.2445,
                                                               68.8862,
-                                                              13.3
+                                                              15.8
                                                           ]
                                          },
                                          {
@@ -557,358 +557,457 @@
                                              "location":  [
                                                               -79.2445,
                                                               68.8862,
-                                                              21.8
+                                                              26.8
+                                                          ]
+                                         },
+                                         {
+                                             "name":  "RearTholosColumn_00_Shaft",
+                                             "type":  "MESH",
+                                             "location":  [
+                                                              55.5378,
+                                                              61.681,
+                                                              10.33
+                                                          ]
+                                         },
+                                         {
+                                             "name":  "RearTholosColumn_00_Base",
+                                             "type":  "MESH",
+                                             "location":  [
+                                                              55.5378,
+                                                              61.681,
+                                                              4.7824
+                                                          ]
+                                         },
+                                         {
+                                             "name":  "RearTholosColumn_01_Shaft",
+                                             "type":  "MESH",
+                                             "location":  [
+                                                              35.0773,
+                                                              75.2235,
+                                                              17.8
+                                                          ]
+                                         },
+                                         {
+                                             "name":  "RearTholosColumn_01_Base",
+                                             "type":  "MESH",
+                                             "location":  [
+                                                              35.0773,
+                                                              75.2235,
+                                                              4.9
+                                                          ]
+                                         },
+                                         {
+                                             "name":  "RearTholosColumn_01_Capital",
+                                             "type":  "MESH",
+                                             "location":  [
+                                                              35.0773,
+                                                              75.2235,
+                                                              30.8
+                                                          ]
+                                         },
+                                         {
+                                             "name":  "RearTholosColumn_02_Shaft",
+                                             "type":  "MESH",
+                                             "location":  [
+                                                              11.5514,
+                                                              82.1923,
+                                                              17.8
+                                                          ]
+                                         },
+                                         {
+                                             "name":  "RearTholosColumn_02_Base",
+                                             "type":  "MESH",
+                                             "location":  [
+                                                              11.5514,
+                                                              82.1923,
+                                                              4.9
+                                                          ]
+                                         },
+                                         {
+                                             "name":  "RearTholosColumn_02_Capital",
+                                             "type":  "MESH",
+                                             "location":  [
+                                                              11.5514,
+                                                              82.1923,
+                                                              30.8
+                                                          ]
+                                         },
+                                         {
+                                             "name":  "RearTholosColumn_03_Shaft",
+                                             "type":  "MESH",
+                                             "location":  [
+                                                              -12.9841,
+                                                              81.9781,
+                                                              17.8
+                                                          ]
+                                         },
+                                         {
+                                             "name":  "RearTholosColumn_03_Base",
+                                             "type":  "MESH",
+                                             "location":  [
+                                                              -12.9841,
+                                                              81.9781,
+                                                              4.9
+                                                          ]
+                                         },
+                                         {
+                                             "name":  "RearTholosColumn_03_Capital",
+                                             "type":  "MESH",
+                                             "location":  [
+                                                              -12.9841,
+                                                              81.9781,
+                                                              30.8
+                                                          ]
+                                         },
+                                         {
+                                             "name":  "RearTholosColumn_04_Shaft",
+                                             "type":  "MESH",
+                                             "location":  [
+                                                              -36.3848,
+                                                              74.5999,
+                                                              17.8
+                                                          ]
+                                         },
+                                         {
+                                             "name":  "RearTholosColumn_04_Base",
+                                             "type":  "MESH",
+                                             "location":  [
+                                                              -36.3848,
+                                                              74.5999,
+                                                              4.9
+                                                          ]
+                                         },
+                                         {
+                                             "name":  "RearTholosColumn_04_Capital",
+                                             "type":  "MESH",
+                                             "location":  [
+                                                              -36.3848,
+                                                              74.5999,
+                                                              30.8
+                                                          ]
+                                         },
+                                         {
+                                             "name":  "RearTholosColumn_05_Shaft",
+                                             "type":  "MESH",
+                                             "location":  [
+                                                              -56.6059,
+                                                              60.7024,
+                                                              10.33
+                                                          ]
+                                         },
+                                         {
+                                             "name":  "RearTholosColumn_05_Base",
+                                             "type":  "MESH",
+                                             "location":  [
+                                                              -56.6059,
+                                                              60.7024,
+                                                              4.7824
+                                                          ]
+                                         },
+                                         {
+                                             "name":  "RearTholosEntablature_01",
+                                             "type":  "MESH",
+                                             "location":  [
+                                                              23.3143,
+                                                              78.7079,
+                                                              30.1
+                                                          ]
+                                         },
+                                         {
+                                             "name":  "RearTholosEntablature_02",
+                                             "type":  "MESH",
+                                             "location":  [
+                                                              -0.7163,
+                                                              82.0852,
+                                                              30.1
+                                                          ]
+                                         },
+                                         {
+                                             "name":  "RearTholosEntablature_03",
+                                             "type":  "MESH",
+                                             "location":  [
+                                                              -24.6844,
+                                                              78.289,
+                                                              30.1
                                                           ]
                                          },
                                          {
                                              "name":  "RuinArch_00_L",
                                              "type":  "MESH",
                                              "location":  [
-                                                              24.5153,
-                                                              -98.2322,
-                                                              11.32
+                                                              26.2747,
+                                                              -97.9187,
+                                                              13.66
                                                           ]
                                          },
                                          {
                                              "name":  "RuinArch_00_R",
                                              "type":  "MESH",
                                              "location":  [
-                                                              37.9062,
-                                                              -93.8812,
-                                                              11.32
+                                                              42.8133,
+                                                              -91.8992,
+                                                              13.66
                                                           ]
                                          },
                                          {
                                              "name":  "RuinArch_00_Voussoir_00",
                                              "type":  "MESH",
                                              "location":  [
-                                                              36.9931,
-                                                              -94.1779,
-                                                              18.34
+                                                              41.6857,
+                                                              -92.3096,
+                                                              23.02
                                                           ]
                                          },
                                          {
                                              "name":  "RuinArch_00_Voussoir_01",
                                              "type":  "MESH",
                                              "location":  [
-                                                              36.553,
-                                                              -94.3209,
-                                                              20.6667
+                                                              41.1421,
+                                                              -92.5075,
+                                                              25.9284
                                                           ]
                                          },
                                          {
                                              "name":  "RuinArch_00_Voussoir_02",
                                              "type":  "MESH",
                                              "location":  [
-                                                              35.2995,
-                                                              -94.7282,
-                                                              22.6392
+                                                              39.594,
+                                                              -93.0709,
+                                                              28.394
                                                           ]
                                          },
                                          {
                                              "name":  "RuinArch_00_Voussoir_03",
                                              "type":  "MESH",
                                              "location":  [
-                                                              33.4236,
-                                                              -95.3377,
-                                                              23.9572
+                                                              37.277,
+                                                              -93.9142,
+                                                              30.0415
                                                           ]
                                          },
                                          {
                                              "name":  "RuinArch_00_Voussoir_04",
                                              "type":  "MESH",
                                              "location":  [
-                                                              31.2107,
-                                                              -96.0567,
-                                                              24.42
+                                                              34.544,
+                                                              -94.909,
+                                                              30.62
                                                           ]
                                          },
                                          {
                                              "name":  "RuinArch_00_Voussoir_05",
                                              "type":  "MESH",
                                              "location":  [
-                                                              28.9979,
-                                                              -96.7757,
-                                                              23.9572
+                                                              31.811,
+                                                              -95.9037,
+                                                              30.0415
                                                           ]
                                          },
                                          {
                                              "name":  "RuinArch_00_Voussoir_06",
                                              "type":  "MESH",
                                              "location":  [
-                                                              27.1219,
-                                                              -97.3852,
-                                                              22.6392
+                                                              29.4941,
+                                                              -96.747,
+                                                              28.394
                                                           ]
                                          },
                                          {
                                              "name":  "RuinArch_00_Voussoir_07",
                                              "type":  "MESH",
                                              "location":  [
-                                                              25.8685,
-                                                              -97.7925,
-                                                              20.6667
+                                                              27.946,
+                                                              -97.3104,
+                                                              25.9284
                                                           ]
                                          },
                                          {
                                              "name":  "RuinArch_00_Voussoir_08",
                                              "type":  "MESH",
                                              "location":  [
-                                                              25.4283,
-                                                              -97.9355,
-                                                              18.34
+                                                              27.4024,
+                                                              -97.5083,
+                                                              23.02
                                                           ]
                                          },
                                          {
                                              "name":  "RuinArch_01_L",
                                              "type":  "MESH",
                                              "location":  [
-                                                              101.0,
-                                                              -7.92,
-                                                              11.32
+                                                              93.7453,
+                                                              -38.3246,
+                                                              12.94
                                                           ]
                                          },
                                          {
                                              "name":  "RuinArch_01_R",
                                              "type":  "MESH",
                                              "location":  [
-                                                              101.0,
-                                                              7.92,
-                                                              11.32
+                                                              98.3682,
+                                                              -24.0968,
+                                                              12.94
                                                           ]
                                          },
                                          {
-                                             "name":  "RuinArch_01_Voussoir_00",
+                                             "name":  "RuinArch_01_BrokenLintel",
                                              "type":  "MESH",
                                              "location":  [
-                                                              101.0,
-                                                              6.84,
-                                                              18.34
-                                                          ]
-                                         },
-                                         {
-                                             "name":  "RuinArch_01_Voussoir_01",
-                                             "type":  "MESH",
-                                             "location":  [
-                                                              101.0,
-                                                              6.3193,
-                                                              20.9576
-                                                          ]
-                                         },
-                                         {
-                                             "name":  "RuinArch_01_Voussoir_02",
-                                             "type":  "MESH",
-                                             "location":  [
-                                                              101.0,
-                                                              4.8366,
-                                                              23.1766
-                                                          ]
-                                         },
-                                         {
-                                             "name":  "RuinArch_01_Voussoir_03",
-                                             "type":  "MESH",
-                                             "location":  [
-                                                              101.0,
-                                                              2.6176,
-                                                              24.6593
-                                                          ]
-                                         },
-                                         {
-                                             "name":  "RuinArch_01_Voussoir_04",
-                                             "type":  "MESH",
-                                             "location":  [
-                                                              101.0,
-                                                              0.0,
-                                                              25.18
-                                                          ]
-                                         },
-                                         {
-                                             "name":  "RuinArch_01_Voussoir_05",
-                                             "type":  "MESH",
-                                             "location":  [
-                                                              101.0,
-                                                              -2.6176,
-                                                              24.6593
-                                                          ]
-                                         },
-                                         {
-                                             "name":  "RuinArch_01_Voussoir_06",
-                                             "type":  "MESH",
-                                             "location":  [
-                                                              101.0,
-                                                              -4.8366,
-                                                              23.1766
-                                                          ]
-                                         },
-                                         {
-                                             "name":  "RuinArch_01_Voussoir_07",
-                                             "type":  "MESH",
-                                             "location":  [
-                                                              101.0,
-                                                              -6.3193,
-                                                              20.9576
-                                                          ]
-                                         },
-                                         {
-                                             "name":  "RuinArch_01_Voussoir_08",
-                                             "type":  "MESH",
-                                             "location":  [
-                                                              101.0,
-                                                              -6.84,
-                                                              18.34
+                                                              94.5858,
+                                                              -35.7377,
+                                                              23.79
                                                           ]
                                          },
                                          {
                                              "name":  "RuinArch_02_L",
                                              "type":  "MESH",
                                              "location":  [
-                                                              43.9547,
-                                                              91.1732,
-                                                              11.32
+                                                              93.5156,
+                                                              39.2582,
+                                                              13.66
                                                           ]
                                          },
                                          {
                                              "name":  "RuinArch_02_R",
                                              "type":  "MESH",
                                              "location":  [
-                                                              31.7159,
-                                                              96.118,
-                                                              11.32
+                                                              84.8398,
+                                                              55.5751,
+                                                              13.66
                                                           ]
                                          },
                                          {
                                              "name":  "RuinArch_02_Voussoir_00",
                                              "type":  "MESH",
                                              "location":  [
-                                                              32.5503,
-                                                              95.7808,
-                                                              18.34
+                                                              85.4313,
+                                                              54.4626,
+                                                              23.02
                                                           ]
                                          },
                                          {
                                              "name":  "RuinArch_02_Voussoir_01",
                                              "type":  "MESH",
                                              "location":  [
-                                                              32.9526,
-                                                              95.6183,
-                                                              20.5213
+                                                              85.7165,
+                                                              53.9262,
+                                                              26.0738
                                                           ]
                                          },
                                          {
                                              "name":  "RuinArch_02_Voussoir_02",
                                              "type":  "MESH",
                                              "location":  [
-                                                              34.0982,
-                                                              95.1554,
-                                                              22.3705
+                                                              86.5286,
+                                                              52.3988,
+                                                              28.6627
                                                           ]
                                          },
                                          {
                                              "name":  "RuinArch_02_Voussoir_03",
                                              "type":  "MESH",
                                              "location":  [
-                                                              35.8128,
-                                                              94.4627,
-                                                              23.6061
+                                                              87.744,
+                                                              50.113,
+                                                              30.3926
                                                           ]
                                          },
                                          {
                                              "name":  "RuinArch_02_Voussoir_04",
                                              "type":  "MESH",
                                              "location":  [
-                                                              37.8353,
-                                                              93.6456,
-                                                              24.04
+                                                              89.1777,
+                                                              47.4166,
+                                                              31.0
                                                           ]
                                          },
                                          {
                                              "name":  "RuinArch_02_Voussoir_05",
                                              "type":  "MESH",
                                              "location":  [
-                                                              39.8577,
-                                                              92.8284,
-                                                              23.6061
+                                                              90.6114,
+                                                              44.7203,
+                                                              30.3926
                                                           ]
                                          },
                                          {
                                              "name":  "RuinArch_02_Voussoir_06",
                                              "type":  "MESH",
                                              "location":  [
-                                                              41.5723,
-                                                              92.1357,
-                                                              22.3705
+                                                              91.8268,
+                                                              42.4344,
+                                                              28.6627
                                                           ]
                                          },
                                          {
                                              "name":  "RuinArch_02_Voussoir_07",
                                              "type":  "MESH",
                                              "location":  [
-                                                              42.7179,
-                                                              91.6729,
-                                                              20.5213
+                                                              92.6389,
+                                                              40.907,
+                                                              26.0738
                                                           ]
                                          },
                                          {
                                              "name":  "RuinArch_02_Voussoir_08",
                                              "type":  "MESH",
                                              "location":  [
-                                                              43.1202,
-                                                              91.5103,
-                                                              18.34
+                                                              92.9241,
+                                                              40.3707,
+                                                              23.02
                                                           ]
                                          },
                                          {
                                              "name":  "RuinArch_03_L",
                                              "type":  "MESH",
                                              "location":  [
-                                                              -57.6744,
-                                                              83.1107,
-                                                              10.78
+                                                              -78.6964,
+                                                              63.6981,
+                                                              12.94
                                                           ]
                                          },
                                          {
                                              "name":  "RuinArch_03_R",
                                              "type":  "MESH",
                                              "location":  [
-                                                              -66.6892,
-                                                              76.0675,
-                                                              10.78
+                                                              -86.7723,
+                                                              52.1644,
+                                                              12.94
                                                           ]
                                          },
                                          {
                                              "name":  "RuinArch_03_BrokenLintel",
                                              "type":  "MESH",
                                              "location":  [
-                                                              -59.3134,
-                                                              81.8301,
-                                                              18.95
+                                                              -80.1647,
+                                                              61.601,
+                                                              23.66
                                                           ]
                                          },
                                          {
                                              "name":  "RuinArch_04_L",
                                              "type":  "MESH",
                                              "location":  [
-                                                              -78.5906,
-                                                              -63.6584,
-                                                              10.78
+                                                              -86.52,
+                                                              -52.5248,
+                                                              12.94
                                                           ]
                                          },
                                          {
                                              "name":  "RuinArch_04_R",
                                              "type":  "MESH",
                                              "location":  [
-                                                              -71.5246,
-                                                              -71.506,
-                                                              10.78
+                                                              -78.9488,
+                                                              -63.3376,
+                                                              12.94
                                                           ]
                                          },
                                          {
                                              "name":  "RuinArch_04_BrokenLintel",
                                              "type":  "MESH",
                                              "location":  [
-                                                              -77.3059,
-                                                              -65.0852,
-                                                              18.82
+                                                              -85.1434,
+                                                              -54.4908,
+                                                              23.53
                                                           ]
                                          },
                                          {
@@ -1330,7 +1429,7 @@
                                              "type":  "MESH",
                                              "location":  [
                                                               0.0,
-                                                              -128.0,
+                                                              -138.0,
                                                               0.2
                                                           ]
                                          },
@@ -1339,8 +1438,8 @@
                                              "type":  "MESH",
                                              "location":  [
                                                               0.0,
-                                                              -119.5,
-                                                              0.68
+                                                              -129.9,
+                                                              0.63
                                                           ]
                                          },
                                          {
@@ -1348,8 +1447,8 @@
                                              "type":  "MESH",
                                              "location":  [
                                                               0.0,
-                                                              -111.0,
-                                                              1.16
+                                                              -121.8,
+                                                              1.06
                                                           ]
                                          },
                                          {
@@ -1357,8 +1456,8 @@
                                              "type":  "MESH",
                                              "location":  [
                                                               0.0,
-                                                              -102.5,
-                                                              1.64
+                                                              -113.7,
+                                                              1.49
                                                           ]
                                          },
                                          {
@@ -1366,8 +1465,8 @@
                                              "type":  "MESH",
                                              "location":  [
                                                               0.0,
-                                                              -94.0,
-                                                              2.12
+                                                              -105.6,
+                                                              1.92
                                                           ]
                                          },
                                          {
@@ -1375,8 +1474,8 @@
                                              "type":  "MESH",
                                              "location":  [
                                                               0.0,
-                                                              -85.5,
-                                                              2.6
+                                                              -97.5,
+                                                              2.35
                                                           ]
                                          },
                                          {
@@ -1384,8 +1483,8 @@
                                              "type":  "MESH",
                                              "location":  [
                                                               0.0,
-                                                              -77.0,
-                                                              3.08
+                                                              -89.4,
+                                                              2.78
                                                           ]
                                          },
                                          {
@@ -1393,8 +1492,98 @@
                                              "type":  "MESH",
                                              "location":  [
                                                               0.0,
-                                                              -68.5,
-                                                              3.56
+                                                              -81.3,
+                                                              3.21
+                                                          ]
+                                         },
+                                         {
+                                             "name":  "ApproachStep_08",
+                                             "type":  "MESH",
+                                             "location":  [
+                                                              0.0,
+                                                              -73.2,
+                                                              3.64
+                                                          ]
+                                         },
+                                         {
+                                             "name":  "ApproachStep_09",
+                                             "type":  "MESH",
+                                             "location":  [
+                                                              0.0,
+                                                              -65.1,
+                                                              4.07
+                                                          ]
+                                         },
+                                         {
+                                             "name":  "ApproachWall_-1_00",
+                                             "type":  "MESH",
+                                             "location":  [
+                                                              -13.0,
+                                                              -119.0,
+                                                              2.8
+                                                          ]
+                                         },
+                                         {
+                                             "name":  "ApproachWall_-1_01",
+                                             "type":  "MESH",
+                                             "location":  [
+                                                              -13.0,
+                                                              -103.0,
+                                                              2.8
+                                                          ]
+                                         },
+                                         {
+                                             "name":  "ApproachWall_-1_02",
+                                             "type":  "MESH",
+                                             "location":  [
+                                                              -13.0,
+                                                              -87.0,
+                                                              2.8
+                                                          ]
+                                         },
+                                         {
+                                             "name":  "ApproachWall_-1_03",
+                                             "type":  "MESH",
+                                             "location":  [
+                                                              -13.0,
+                                                              -71.0,
+                                                              2.8
+                                                          ]
+                                         },
+                                         {
+                                             "name":  "ApproachWall_1_00",
+                                             "type":  "MESH",
+                                             "location":  [
+                                                              13.0,
+                                                              -119.0,
+                                                              2.8
+                                                          ]
+                                         },
+                                         {
+                                             "name":  "ApproachWall_1_01",
+                                             "type":  "MESH",
+                                             "location":  [
+                                                              13.0,
+                                                              -103.0,
+                                                              2.8
+                                                          ]
+                                         },
+                                         {
+                                             "name":  "ApproachWall_1_02",
+                                             "type":  "MESH",
+                                             "location":  [
+                                                              13.0,
+                                                              -87.0,
+                                                              2.8
+                                                          ]
+                                         },
+                                         {
+                                             "name":  "ApproachWall_1_03",
+                                             "type":  "MESH",
+                                             "location":  [
+                                                              13.0,
+                                                              -71.0,
+                                                              2.8
                                                           ]
                                          }
                                      ]
