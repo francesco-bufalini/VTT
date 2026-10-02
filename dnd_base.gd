@@ -14,6 +14,7 @@ const CONTEXT_CAMERA_SETTINGS := 12
 const CONTEXT_INITIATIVE := 13
 const CONTEXT_TOKEN_DETAILS := 14
 const CONTEXT_RESTORE_TRANSFORMATION := 15
+const CONTEXT_PLAYER_AREA := 16
 const CAMPAIGN_EDITOR_SCENE_PATH := "res://vtt/editor/campaign_editor.tscn"
 const LOCAL_TOKEN_CATALOG := "res://dist/token_packs/token_catalog.json"
 const LOCAL_TOKEN_PACK_ROOT := "res://dist/token_packs"
@@ -113,6 +114,7 @@ var token_drag: Node
 var spell_system: Node
 var initiative_tracker: Node
 var token_list: Node
+var player_area: Node
 var _undo_stack: Array[Dictionary] = []
 var _redo_stack: Array[Dictionary] = []
 var _pending_history_actions: Array[int] = []
@@ -177,6 +179,11 @@ func _ready() -> void:
 	token_list.name = "TokenList"
 	add_child(token_list)
 	token_list.call("setup", self)
+
+	player_area = preload("res://vtt/player_area.gd").new()
+	player_area.name = "PlayerArea"
+	add_child(player_area)
+	player_area.call("setup", self)
 
 	var runtime_toolbar: Node = (
 		preload("res://vtt/runtime_toolbar.gd").new() as Node
@@ -1745,6 +1752,31 @@ func _redo_last_action_now() -> bool:
 	_append_history_state(_undo_stack, current_state)
 	return true
 
+func toggle_player_area() -> void:
+	if player_area != null and is_instance_valid(player_area):
+		player_area.call("toggle_panel")
+
+
+func add_player_character() -> void:
+	if player_area != null and is_instance_valid(player_area):
+		player_area.call("add_character")
+
+
+func link_player_character_to_selected_token() -> void:
+	if player_area != null and is_instance_valid(player_area):
+		player_area.call("request_link_character_to_selected_token")
+
+
+func link_selected_player_character_to_named_token() -> void:
+	if player_area != null and is_instance_valid(player_area):
+		player_area.call("request_link_selected_character_to_named_token")
+
+
+func get_selected_tokens_for_player_area() -> Array[CharacterBody3D]:
+	_clean_selection()
+	return _selected_tokens.duplicate()
+
+
 func toggle_spell_menu() -> void:
 	if spell_system == null or not is_instance_valid(spell_system):
 		return
@@ -1767,6 +1799,24 @@ func show_initiative_panel() -> void:
 	):
 		return
 	initiative_tracker.call("show_panel")
+
+
+func start_combat_mode() -> void:
+	if (
+		initiative_tracker == null
+		or not is_instance_valid(initiative_tracker)
+	):
+		return
+	initiative_tracker.call("start_combat")
+
+
+func end_combat_mode() -> void:
+	if (
+		initiative_tracker == null
+		or not is_instance_valid(initiative_tracker)
+	):
+		return
+	initiative_tracker.call("end_combat")
 
 
 func toggle_grid() -> void:
@@ -1976,6 +2026,7 @@ func _show_context_menu(screen_position: Vector2) -> void:
 		context_menu.add_submenu_node_item("Token", context_token_menu)
 
 	context_game_menu.add_item("Incantesimi", CONTEXT_SPELLS)
+	context_game_menu.add_item("Area Player", CONTEXT_PLAYER_AREA)
 	var initiative_visible: bool = (
 		initiative_tracker != null
 		and is_instance_valid(initiative_tracker)
@@ -2029,6 +2080,12 @@ func _on_context_menu_id_pressed(id: int) -> void:
 	if id == CONTEXT_SPELLS:
 		if spell_system != null and is_instance_valid(spell_system):
 			spell_system.call("open_panel")
+		context_menu.hide()
+		return
+
+	if id == CONTEXT_PLAYER_AREA:
+		if player_area != null and is_instance_valid(player_area):
+			player_area.call("show_panel")
 		context_menu.hide()
 		return
 
@@ -3232,6 +3289,11 @@ func _raycast_from_screen(
 
 func _screen_center() -> Vector2:
 	return get_viewport().get_visible_rect().size * 0.5
+
+
+func release_camera_control() -> void:
+	_ui_owns_mouse = true
+	_release_mouse()
 
 
 func capture_camera_control() -> void:

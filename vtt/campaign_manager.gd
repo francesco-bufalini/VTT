@@ -4,6 +4,7 @@ const CAMPAIGNS_DIR := "user://campaigns"
 const CAMPAIGN_METADATA_FILE := "campaign.json"
 const CAMPAIGN_STATE_FILE := "state.json"
 const BUILTIN_STATES_DIR := "user://campaigns/_builtin_states"
+const CAMPAIGN_GROUP_OVERRIDES_FILE := "user://campaign_group_overrides.json"
 
 const MAIN_MENU_SCENE := "res://vtt/menu/main_menu.tscn"
 const ACTIVE_CAMPAIGNS_SCENE := "res://vtt/menu/active_campaigns.tscn"
@@ -87,13 +88,67 @@ func _ready() -> void:
 
 func list_campaign_groups() -> Array[Dictionary]:
 	var result: Array[Dictionary] = []
+	var overrides: Dictionary = _campaign_group_overrides()
+
 	for entry: Dictionary in BUILTIN_CAMPAIGN_GROUPS:
 		var item: Dictionary = entry.duplicate(true)
+		var campaign_group_id: String = String(item.get("id", ""))
+		var override_value: Variant = overrides.get(campaign_group_id, {})
+		if override_value is Dictionary:
+			var override_data: Dictionary = override_value as Dictionary
+			if override_data.has("name"):
+				item["name"] = String(override_data.get("name", item.get("name", "")))
+			if override_data.has("description"):
+				item["description"] = String(
+					override_data.get("description", item.get("description", ""))
+				)
+
 		item["scenario_count"] = list_campaign_scenarios(
-			String(item.get("id", ""))
+			campaign_group_id
 		).size()
 		result.append(item)
 	return result
+
+
+func update_campaign_group(
+	campaign_group_id: String,
+	new_name: String,
+	new_description: String
+) -> Error:
+	var cleaned_name: String = new_name.strip_edges()
+	if cleaned_name.is_empty():
+		return ERR_INVALID_PARAMETER
+
+	var campaign_group: Dictionary = get_campaign_group(campaign_group_id)
+	if campaign_group.is_empty():
+		return ERR_DOES_NOT_EXIST
+
+	var overrides: Dictionary = _campaign_group_overrides()
+	overrides[campaign_group_id] = {
+		"name": cleaned_name,
+		"description": new_description.strip_edges()
+	}
+
+	var error: Error = _write_json(
+		CAMPAIGN_GROUP_OVERRIDES_FILE,
+		overrides
+	)
+	if error != OK:
+		return error
+
+	if selected_campaign_group_id == campaign_group_id:
+		selected_campaign_group = get_campaign_group(
+			campaign_group_id
+		).duplicate(true)
+
+	return OK
+
+
+func _campaign_group_overrides() -> Dictionary:
+	var value: Variant = _read_json(CAMPAIGN_GROUP_OVERRIDES_FILE)
+	if value is Dictionary:
+		return (value as Dictionary).duplicate(true)
+	return {}
 
 
 func get_campaign_group(campaign_group_id: String) -> Dictionary:

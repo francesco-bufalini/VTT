@@ -2,7 +2,15 @@ extends Node
 
 const GRID := 10
 const GAME_SPELLS := 11
-const GAME_INITIATIVE := 12
+
+const PLAYER_AREA_OPEN := 60
+const PLAYER_ADD_CHARACTER := 61
+const PLAYER_LINK_TOKEN := 62
+const PLAYER_LINK_CHARACTER := 63
+
+const COMBAT_START := 70
+const COMBAT_INITIATIVE := 71
+const COMBAT_END := 72
 
 const TOKEN_CREATE := 20
 const TOKEN_FLYING := 21
@@ -82,9 +90,21 @@ func _build_toolbar() -> void:
 	], _on_token))
 
 	row.add_child(_menu("Gioco", [
-		["Incantesimi", GAME_SPELLS],
-		["Iniziativa", GAME_INITIATIVE]
+		["Incantesimi", GAME_SPELLS]
 	], _on_game))
+
+	row.add_child(_menu("Combattimento", [
+		["Inizia combattimento", COMBAT_START],
+		["Mostra / nascondi iniziativa", COMBAT_INITIATIVE],
+		["Termina combattimento", COMBAT_END]
+	], _on_combat))
+
+	row.add_child(_menu("Area Player", [
+		["Apri Area Player", PLAYER_AREA_OPEN],
+		["Aggiungi Personaggio", PLAYER_ADD_CHARACTER],
+		["Token selezionato → personaggio", PLAYER_LINK_TOKEN],
+		["Personaggio → token per nome", PLAYER_LINK_CHARACTER]
+	], _on_player))
 
 	row.add_child(_menu("Misura", [
 		["Righello", MEASURE_RULER],
@@ -120,7 +140,10 @@ func _build_toolbar() -> void:
 func _menu(label_text: String, items: Array, callback: Callable) -> MenuButton:
 	var button: MenuButton = MenuButton.new()
 	button.text = label_text
-	button.custom_minimum_size = Vector2(72, 30)
+	button.custom_minimum_size = Vector2(
+		maxf(72.0, float(label_text.length() * 8 + 22)),
+		30
+	)
 	button.add_theme_font_size_override("font_size", 13)
 
 	var popup: PopupMenu = button.get_popup()
@@ -139,8 +162,28 @@ func _on_game(id: int) -> void:
 	match id:
 		GAME_SPELLS:
 			board_root.call("toggle_spell_menu")
-		GAME_INITIATIVE:
+
+
+func _on_combat(id: int) -> void:
+	match id:
+		COMBAT_START:
+			board_root.call("start_combat_mode")
+		COMBAT_INITIATIVE:
 			board_root.call("toggle_initiative_panel")
+		COMBAT_END:
+			board_root.call("end_combat_mode")
+
+
+func _on_player(id: int) -> void:
+	match id:
+		PLAYER_AREA_OPEN:
+			board_root.call("toggle_player_area")
+		PLAYER_ADD_CHARACTER:
+			board_root.call("add_player_character")
+		PLAYER_LINK_TOKEN:
+			board_root.call("link_player_character_to_selected_token")
+		PLAYER_LINK_CHARACTER:
+			board_root.call("link_selected_player_character_to_named_token")
 
 
 func _on_token(id: int) -> void:
