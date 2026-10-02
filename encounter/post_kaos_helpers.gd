@@ -4,7 +4,7 @@ const WALKABLE_LAYER := 1
 const RIGHT_ARM_GRID_LAYER := 8
 const BODY_COLLISION_NAME := "WalkableBodyCollision"
 const GRID_EXCLUDED_GROUP := "grid_3d_excluded"
-const COLLISION_VERSION := 5
+const COLLISION_VERSION := 6
 const GEOMETRY_VERSION := 4
 const SCONTRO_GEOMETRY_VERSION := 1
 const DECOR_VERSION := 5
@@ -304,15 +304,26 @@ static func copy_decor_from_scontro(
 	return true
 
 
-static func ensure_solid_surfaces(scene: Node) -> void:
+static func ensure_solid_surfaces(
+	scene: Node,
+	full_grid_surfaces: bool = false
+) -> void:
+	var grid_mode := "full" if full_grid_surfaces else "right_arm"
 	var current := int(scene.get_meta("post_kaos_collision_version", 0))
-	if current >= COLLISION_VERSION and _solid_surface_set_is_complete(scene):
+	if (
+		current >= COLLISION_VERSION
+		and String(scene.get_meta("post_kaos_grid_mode", "")) == grid_mode
+		and _solid_surface_set_is_complete(scene, full_grid_surfaces)
+	):
 		return
 
 	_remove_generated_collisions(scene)
 
 	var kaos_visual := active_kaos_visual(scene)
 	if kaos_visual != null:
+		# Exact trimesh bodies remain the physical support for tokens. They are
+		# intentionally excluded from direct grid probing; dedicated layer-8
+		# surface proxies below feed the blue grid without changing physics.
 		_add_anatomy_collisions(kaos_visual, true, "kaos")
 		var cap := kaos_visual.get_node_or_null(
 			"PetrifiedShoulderCap"
@@ -324,14 +335,39 @@ static func ensure_solid_surfaces(scene: Node) -> void:
 		) as MeshInstance3D
 		if neck_base != null:
 			_add_mesh_collision(neck_base, true, "kaos_neck_base")
-		_add_kaos_right_arm_grid_proxy(scene, kaos_visual)
 
-	var klothys := scene.get_node_or_null("KlothisRoot/KlothisVisual") as Node3D
+		if full_grid_surfaces:
+			_add_anatomy_grid_proxies(
+				kaos_visual,
+				"kaos_grid"
+			)
+			if cap != null:
+				_add_mesh_grid_proxy(cap, "kaos_shoulders_grid")
+			if neck_base != null:
+				_add_mesh_grid_proxy(
+					neck_base,
+					"kaos_neck_base_grid"
+				)
+		else:
+			_add_kaos_right_arm_grid_proxy(scene, kaos_visual)
+
+	var klothys := scene.get_node_or_null(
+		"KlothisRoot/KlothisVisual"
+	) as Node3D
 	if klothys != null and klothys.visible:
 		_add_anatomy_collisions(klothys, true, "klothys")
+		if full_grid_surfaces:
+			_add_anatomy_grid_proxies(
+				klothys,
+				"klothys_grid"
+			)
 
 	_add_sphere_collision(scene)
+	if full_grid_surfaces:
+		_add_sphere_grid_proxy(scene)
+
 	scene.set_meta("post_kaos_collision_version", COLLISION_VERSION)
+	scene.set_meta("post_kaos_grid_mode", grid_mode)
 
 
 # Compatibility alias kept for the previous post-Kaos runtime script.
@@ -658,8 +694,12 @@ static func _ensure_scontro_shoulder_fill(
 	fill.set_meta("scontro_kaos_shoulder_fill", true)
 	fill.mesh = mesh
 	fill.material_override = material
-	fill.position = Vector3(0.0, 111.0 * units, 0.0)
-	fill.scale = Vector3(29.0, 5.0, 17.0) * units
+	# Keep the opaque repair entirely inside the surviving upper torso.
+	# The old 29 x 5 x 17 m ellipsoid protruded through Kaos' chest and back.
+	# This compact plug overlaps the neck stump and reaches the lower edge of
+	# the clipped upper-neck opening without escaping the body silhouette.
+	fill.position = Vector3(0.0, 119.0 * units, 0.0)
+	fill.scale = Vector3(12.4, 2.6, 9.8) * units
 	visual.add_child(fill)
 
 
@@ -759,6 +799,94 @@ static func _add_sphere_collision(scene: Node) -> void:
 	body.add_child(collider)
 
 
+static func _add_anatomy_grid_proxies(
+	visual: Node3D,
+	surface_label: String
+) -> void:
+	for child in visual.find_children(
+		"*",
+		"MeshInstance3D",
+		true,
+		false
+	):
+		var mesh_instance := child as MeshInstance3D
+		if mesh_instance == null or mesh_instance.mesh == null:
+			continue
+		if not mesh_instance.visible:
+			continue
+		var role := String(
+			mesh_instance.get_meta(
+				"visual_role",
+				mesh_instance.name
+			)
+		)
+		if not role.begins_with("Anatomy"):
+			continue
+		_add_mesh_grid_proxy(mesh_instance, surface_label)
+
+
+static func _add_mesh_grid_proxy(
+	mesh_instance: MeshInstance3D,
+	surface_label: String
+) -> void:
+	if mesh_instance == null or mesh_instance.mesh == null:
+		return
+	var shape: Shape3D = mesh_instance.mesh.create_trimesh_shape()
+	if shape == null:
+		return
+
+	var body := StaticBody3D.new()
+	body.name = "VolumetricGridSurfaceProxy"
+	body.collision_layer = RIGHT_ARM_GRID_LAYER
+	body.collision_mask = 0
+	body.set_meta("post_kaos_collision", true)
+	body.set_meta("post_kaos_surface", surface_label)
+	body.set_meta("volumetric_grid_surface_proxy", true)
+	mesh_instance.add_child(body)
+
+	var collider := CollisionShape3D.new()
+	collider.name = "CollisionShape3D"
+	collider.shape = shape
+	body.add_child(collider)
+
+
+static func _add_sphere_grid_proxy(scene: Node) -> void:
+	var sphere_root := scene.get_node_or_null(
+		"KlothisRoot/SphereVisual"
+	) as Node3D
+	if sphere_root == null:
+		return
+	var units := _scene_units(scene)
+	if units <= 0.0:
+		return
+
+	# The physical SphereShape is a filled volume. Feeding that directly to
+	# VolumetricGrid would voxelize the whole interior, so use a concave
+	# triangulated shell exclusively for grid detection.
+	var shell_mesh := SphereMesh.new()
+	shell_mesh.radius = 220.0 * units
+	shell_mesh.height = 440.0 * units
+	shell_mesh.radial_segments = 96
+	shell_mesh.rings = 48
+	var shell_shape: Shape3D = shell_mesh.create_trimesh_shape()
+	if shell_shape == null:
+		return
+
+	var body := StaticBody3D.new()
+	body.name = "SphereVolumetricGridSurfaceProxy"
+	body.collision_layer = RIGHT_ARM_GRID_LAYER
+	body.collision_mask = 0
+	body.set_meta("post_kaos_collision", true)
+	body.set_meta("post_kaos_surface", "sphere_grid")
+	body.set_meta("volumetric_grid_surface_proxy", true)
+	sphere_root.add_child(body)
+
+	var collider := CollisionShape3D.new()
+	collider.name = "CollisionShape3D"
+	collider.shape = shell_shape
+	body.add_child(collider)
+
+
 static func _add_kaos_right_arm_grid_proxy(
 	scene: Node,
 	visual: Node3D
@@ -842,14 +970,23 @@ static func _remove_generated_collisions(scene: Node) -> void:
 		node.free()
 
 
-static func _solid_surface_set_is_complete(scene: Node) -> bool:
+static func _solid_surface_set_is_complete(
+	scene: Node,
+	full_grid_surfaces: bool = false
+) -> bool:
 	var found := {
 		"kaos": false,
 		"kaos_shoulders": false,
-		"kaos_right_arm_grid": false,
 		"klothys": false,
 		"sphere": false,
 	}
+	if full_grid_surfaces:
+		found["kaos_grid"] = false
+		found["klothys_grid"] = false
+		found["sphere_grid"] = false
+	else:
+		found["kaos_right_arm_grid"] = false
+
 	for node in scene.find_children("*", "StaticBody3D", true, false):
 		if not bool(node.get_meta("post_kaos_collision", false)):
 			continue
