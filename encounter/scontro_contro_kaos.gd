@@ -12,8 +12,51 @@ const CHARIOT_OFFSETS_METERS := [
 
 func _ready() -> void:
 	super._ready()
+	_clean_scontro_board()
 	_apply_post_kaos_terrain_rules()
 	_position_starting_group_near_sphere()
+
+
+func _clean_scontro_board() -> void:
+	# Scontro Contro Kaos now starts as a clean tactical board: no spell
+	# areas and no creature tokens. Keep exactly one Pegasus/chariot token.
+	if measurement_tool != null and is_instance_valid(measurement_tool):
+		for method_name: String in [
+			"clear_persistent_aoes",
+			"clear_post_cast_spell_visuals",
+			"clear_spell_fixed_previews",
+			"hide_spell_preview",
+			"hide_spell_range_preview"
+		]:
+			if measurement_tool.has_method(method_name):
+				measurement_tool.call(method_name)
+
+	_clear_selection()
+
+	var retained_chariot: CharacterBody3D = null
+	for child: Node in tokens_root.get_children():
+		if (
+			retained_chariot == null
+			and child is CharacterBody3D
+			and bool(child.get_meta("compound_chariot", false))
+		):
+			retained_chariot = child as CharacterBody3D
+
+	for child: Node in tokens_root.get_children():
+		if child == retained_chariot:
+			continue
+		child.free()
+
+	if retained_chariot == null:
+		push_warning(
+			"Scontro Contro Kaos: nessun carro alato generato da conservare."
+		)
+		return
+
+	retained_chariot.name = "PegasusChariot"
+	retained_chariot.set_meta("post_kaos_roster", true)
+	if retained_chariot.has_method("set_display_name"):
+		retained_chariot.call("set_display_name", "Carro alato")
 
 
 func _apply_post_kaos_terrain_rules() -> void:
