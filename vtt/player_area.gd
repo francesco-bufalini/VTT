@@ -1652,7 +1652,7 @@ func _load_form(character: Dictionary) -> void:
 			if total_slots.size() > index + 1
 			else 0
 		)
-		_slot_spent_spins[index].value = (
+		_slot_spent_values[index + 1] = (
 			int(spent_slots[index + 1])
 			if spent_slots.size() > index + 1
 			else 0
@@ -1670,7 +1670,11 @@ func _load_form(character: Dictionary) -> void:
 	_loading = false
 	_refresh_derived_values()
 	_refresh_selected_spells()
+	_refresh_prepared_spells()
 	_refresh_available_spells()
+	_refresh_all_slot_markers()
+	_refresh_all_catalog_sections()
+	_sync_character_health_to_token(character)
 
 
 func _save_form() -> void:
@@ -1747,7 +1751,13 @@ func _save_form() -> void:
 	var spent_slots: Array = [0]
 	for index: int in range(9):
 		total_slots.append(int(_slot_total_spins[index].value))
-		spent_slots.append(int(_slot_spent_spins[index].value))
+		spent_slots.append(
+			clampi(
+				_slot_spent_values[index + 1],
+				0,
+				int(_slot_total_spins[index].value)
+			)
+		)
 	character["spell_slots_total"] = total_slots
 	character["spell_slots_spent"] = spent_slots
 
@@ -1761,6 +1771,7 @@ func _save_form() -> void:
 	_store.call("save_characters", _characters)
 	_refresh_character_list_label(_current_index)
 	_refresh_derived_values()
+	_sync_character_health_to_token(character)
 
 
 func _on_form_changed() -> void:
