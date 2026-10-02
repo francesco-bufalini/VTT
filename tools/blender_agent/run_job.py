@@ -123,6 +123,11 @@ def ensure_default_camera_and_light() -> None:
 
 def save_blend(path: Path) -> None:
     path.parent.mkdir(parents=True, exist_ok=True)
+    for image in bpy.data.images:
+        relative = image.get("vtt_relative_path")
+        if relative:
+            image.filepath = str(relative)
+            image.filepath_raw = str(relative)
     bpy.ops.wm.save_as_mainfile(filepath=str(path))
 
 
@@ -345,7 +350,7 @@ def _pbr_material_from_maps(
     diffuse = nodes.new("ShaderNodeTexImage")
     diffuse.location = (-430, 170)
     diffuse.image = bpy.data.images.load(str(maps["diffuse"]), check_existing=True)
-    diffuse.image.filepath = "//textures/" + maps["diffuse"].parent.name + "/" + maps["diffuse"].name
+    diffuse.image["vtt_relative_path"] = "//textures/" + maps["diffuse"].parent.name + "/" + maps["diffuse"].name
     diffuse.projection = "BOX"
     diffuse.projection_blend = 0.18
     links.new(mapping.outputs["Vector"], diffuse.inputs["Vector"])
@@ -354,7 +359,7 @@ def _pbr_material_from_maps(
     rough = nodes.new("ShaderNodeTexImage")
     rough.location = (-430, -60)
     rough.image = bpy.data.images.load(str(maps["rough"]), check_existing=True)
-    rough.image.filepath = "//textures/" + maps["rough"].parent.name + "/" + maps["rough"].name
+    rough.image["vtt_relative_path"] = "//textures/" + maps["rough"].parent.name + "/" + maps["rough"].name
     rough.image.colorspace_settings.name = "Non-Color"
     rough.projection = "BOX"
     rough.projection_blend = 0.18
@@ -364,7 +369,7 @@ def _pbr_material_from_maps(
     normal_tex = nodes.new("ShaderNodeTexImage")
     normal_tex.location = (-430, -300)
     normal_tex.image = bpy.data.images.load(str(maps["normal"]), check_existing=True)
-    normal_tex.image.filepath = "//textures/" + maps["normal"].parent.name + "/" + maps["normal"].name
+    normal_tex.image["vtt_relative_path"] = "//textures/" + maps["normal"].parent.name + "/" + maps["normal"].name
     normal_tex.image.colorspace_settings.name = "Non-Color"
     normal_tex.projection = "BOX"
     normal_tex.projection_blend = 0.18
