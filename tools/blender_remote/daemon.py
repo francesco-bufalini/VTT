@@ -278,22 +278,6 @@ def self_update() -> dict[str, Any]:
     repo_root = Path(__file__).resolve().parents[2]
     daemon_rel = "tools/blender_remote/daemon.py"
 
-    # Only protect the daemon itself from being overwritten if the user has
-    # edited it locally. Unrelated dirty project files must not block updates.
-    status = subprocess.run(
-        ["git", "status", "--porcelain", "--", daemon_rel],
-        cwd=repo_root,
-        capture_output=True,
-        text=True,
-        timeout=30,
-    )
-    if status.returncode != 0:
-        raise RuntimeError(f"git status failed: {status.stderr.strip()}")
-    if status.stdout.strip():
-        raise RuntimeError(
-            "daemon.py has local modifications; self_update refused to overwrite it."
-        )
-
     fetch = subprocess.run(
         ["git", "fetch", "origin", "main"],
         cwd=repo_root,
@@ -319,16 +303,194 @@ def self_update() -> dict[str, Any]:
     temp_path.write_bytes(show.stdout)
     temp_path.replace(daemon_path)
 
-    result = {
-        "updated": True,
-        "repo_root": str(repo_root),
-        "daemon_path": str(daemon_path),
-        "restart": "scheduled",
-    }
-
     global RESTART_REQUESTED
     RESTART_REQUESTED = True
-    return {"status": "success", "result": result}
+    return {
+        "status": "success",
+        "result": {
+            "updated": True,
+            "daemon_path": str(daemon_path),
+            "restart": "scheduled",
+        },
+    }
+
+
+def import_empyrean_reference() -> dict[str, Any]:
+    repo_root = Path(__file__).resolve().parents[2]
+
+    code = f"""import bpy, json, os
+from pathlib import Path
+from mathutils import Vector
+
+repo_root = Path({str(Path("/placeholder"))!r})
+"""
+    # Inject the real repo path without allowing arbitrary user input.
+    code = code.replace(str(Path("/placeholder")), str(repo_root).replace("\\", "\\\\"))
+
+    code += r"""
+collection_names = ('REF_Titan_Normal', 'REF_Titan_Empyrean')
+center = Vector((0.0, -230.0, 385.0))
+target_height = 430.0
+
+# Remove previous reference imports.
+for cname in collection_names:
+    col = bpy.data.collections.get(cname)
+    if col is not None:
+        for obj in list(col.objects):
+            bpy.data.objects.remove(obj, do_unlink=True)
+        bpy.data.collections.remove(col)
+
+# Remove empty importer collections left by prior GLB tests.
+for col in list(bpy.data.collections):
+    if col.name.startswith('glTF') and len(col.objects) == 0:
+        bpy.data.collections.remove(col)
+
+repo_root = Path(repo_root)
+home = Path.home()
+roots = [
+    repo_root,
+    repo_root.parent,
+    home / 'Downloads',
+    home / 'Desktop',
+]
+wanted_tail = Path('E') / 'Empyrean' / 'Empyrean.blend'
+source_blend = None
+
+# Prefer exact known source layout, then exact basename search with pruning.
+for root in roots:
+    candidate = root / wanted_tail
+    if candidate.exists():
+        source_blend = candidate
+        break
+
+if source_blend is None:
+    skip_dirs = {'.git', '.godot', 'node_modules', '__pycache__', '.venv', 'venv'}
+    for root in roots:
+        if not root.exists():
+            continue
+        for dirpath, dirnames, filenames in os.walk(root):
+            dirnames[:] = [d for d in dirnames if d not in skip_dirs]
+            if 'Empyrean.blend' in filenames:
+                source_blend = Path(dirpath) / 'Empyrean.blend'
+                break
+        if source_blend is not None:
+            break
+
+imported = []
+source_kind = None
+source_path = None
+
+if source_blend is not None:
+    before = set(bpy.data.objects)
+    with bpy.data.libraries.load(str(source_blend), link=False) as (data_from, data_to):
+        data_to.objects = list(data_from.objects)
+    imported = [obj for obj in data_to.objects if obj is not None and obj not in before]
+    source_kind = 'blend'
+    source_path = str(source_blend)
+else:
+    obj_candidates = [
+        repo_root / 'assets' / 'tokens' / 'generated' / 'empyrean' / 'empyrean.obj',
+        repo_root / 'dist' / 'token_packs' / 'empyrean' / 'empyrean.obj',
+    ]
+    obj_path = next((p for p in obj_candidates if p.exists()), None)
+    if obj_path is None:
+        raise RuntimeError(
+            'Empyrean source not found. Expected E/Empyrean/Empyrean.blend '
+            'under the project, Desktop, or Downloads, or a generated local OBJ.'
+        )
+    before = set(bpy.data.objects)
+    bpy.ops.wm.obj_import(filepath=str(obj_path))
+    imported = [obj for obj in bpy.data.objects if obj not in before]
+    source_kind = 'obj'
+    source_path = str(obj_path)
+
+if not imported:
+    raise RuntimeError('Empyrean import produced no objects')
+
+ref_col = bpy.data.collections.new('REF_Titan_Empyrean')
+bpy.context.scene.collection.children.link(ref_col)
+for obj in imported:
+    if ref_col not in obj.users_collection:
+        ref_col.objects.link(obj)
+
+# Hide/delete obvious miniature bases from the reference.
+model_objects = []
+excluded = []
+for obj in imported:
+    n = obj.name.lower()
+    if any(k in n for k in ('huge creature', 'base', 'pedestal', 'stand')):
+        obj.hide_viewport = True
+        obj.hide_render = True
+        excluded.append(obj.name)
+    elif obj.type == 'MESH':
+        model_objects.append(obj)
+
+if not model_objects:
+    model_objects = [obj for obj in imported if obj.type == 'MESH']
+if not model_objects:
+    raise RuntimeError('Empyrean source contains no usable mesh objects')
+
+def world_bounds(objects):
+    pts = []
+    for obj in objects:
+        pts.extend(obj.matrix_world @ Vector(corner) for corner in obj.bound_box)
+    mins = Vector((min(p.x for p in pts), min(p.y for p in pts), min(p.z for p in pts)))
+    maxs = Vector((max(p.x for p in pts), max(p.y for p in pts), max(p.z for p in pts)))
+    return mins, maxs
+
+mins, maxs = world_bounds(model_objects)
+height = maxs.z - mins.z
+if height <= 1e-6:
+    raise RuntimeError('Empyrean has invalid bounds')
+
+roots_imported = [obj for obj in imported if obj.parent is None]
+scale_factor = target_height / height
+for obj in roots_imported:
+    obj.scale = obj.scale * scale_factor
+bpy.context.view_layer.update()
+
+mins, maxs = world_bounds(model_objects)
+delta = center - ((mins + maxs) * 0.5)
+for obj in roots_imported:
+    obj.location = obj.location + delta
+bpy.context.view_layer.update()
+
+# Select the creature, not lights/cameras/base.
+bpy.ops.object.select_all(action='DESELECT')
+for obj in model_objects:
+    obj.select_set(True)
+bpy.context.view_layer.objects.active = model_objects[0]
+
+# Center viewport around the imported titan.
+mins, maxs = world_bounds(model_objects)
+final_center = (mins + maxs) * 0.5
+final_height = maxs.z - mins.z
+for window in bpy.context.window_manager.windows:
+    screen = window.screen
+    if not screen:
+        continue
+    for area in screen.areas:
+        if area.type != 'VIEW_3D':
+            continue
+        r3d = area.spaces.active.region_3d
+        if r3d:
+            r3d.view_location = final_center
+            r3d.view_distance = max(final_height * 0.8, 50.0)
+        area.tag_redraw()
+
+print(json.dumps({
+    'collection': ref_col.name,
+    'source_kind': source_kind,
+    'source_path': source_path,
+    'objects': [o.name for o in imported],
+    'model_meshes': [o.name for o in model_objects],
+    'excluded': excluded,
+    'scale_factor': scale_factor,
+    'height': final_height,
+    'center': list(final_center),
+}))
+"""
+    return execute_json_code(code, timeout=300)
 
 
 def import_titan_reference() -> dict[str, Any]:
@@ -959,6 +1121,9 @@ def execute(command: dict[str, Any]) -> dict[str, Any]:
 
     if action == "import_titan_reference":
         return import_titan_reference()
+
+    if action == "import_empyrean_reference":
+        return import_empyrean_reference()
 
     if action == "self_update":
         return self_update()
