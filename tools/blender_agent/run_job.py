@@ -1380,6 +1380,12 @@ def execute_operation(op: dict, root: Path) -> None:
         build_kaos_arena(op, root)
     elif kind == "build_titan_prison_sphere":
         build_titan_prison_sphere(op, root)
+    elif kind == "build_titan_prison_sphere_v2":
+        from titan_prison_v2 import build_titan_prison_sphere_v2
+        mapping = _kaos_mapping_from_godot(root)
+        _validate_expected_mapping(mapping, op.get("expected_mapping", {}))
+        bpy.context.scene["kaos_combat_mapping_json"] = json.dumps(mapping, sort_keys=True)
+        build_titan_prison_sphere_v2(op, root, mapping)
     else:
         raise ValueError(f"Unsupported operation: {kind!r}")
 
