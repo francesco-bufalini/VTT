@@ -31,7 +31,7 @@ const CHUNK_SIZE := 8
 var _camera: Camera3D = null
 var _grid_mesh_instance: MultiMeshInstance3D = null
 var _multimesh: MultiMesh = null
-var _grid_material: StandardMaterial3D = null
+var _grid_material: ShaderMaterial = null
 var _interaction_strength: float = 0.55
 
 var _cell_probe_shape: BoxShape3D = null
