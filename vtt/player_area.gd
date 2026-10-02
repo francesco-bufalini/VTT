@@ -1042,39 +1042,92 @@ func _add_5etools_catalog_section(
 	parent.add_child(search)
 	_catalog_search_fields[character_key] = search
 
+	var available_row := HBoxContainer.new()
+	available_row.add_theme_constant_override("separation", 8)
+	parent.add_child(available_row)
+
 	var available := ItemList.new()
 	available.custom_minimum_size = Vector2(0, 145)
 	available.size_flags_horizontal = Control.SIZE_EXPAND_FILL
 	available.select_mode = ItemList.SELECT_SINGLE
-	parent.add_child(available)
+	available.item_activated.connect(
+		func(_index: int) -> void:
+			_show_catalog_info_from_list(
+				available,
+				character_key
+			)
+	)
+	available_row.add_child(available)
 	_catalog_available_lists[character_key] = available
 	available.set_meta("catalog_category", category)
 
+	var available_actions := VBoxContainer.new()
+	available_actions.custom_minimum_size = Vector2(124, 0)
+	available_actions.add_theme_constant_override("separation", 6)
+	available_row.add_child(available_actions)
+
+	var info_button := Button.new()
+	info_button.text = "ⓘ Info"
+	info_button.tooltip_text = "Apri la scheda informativa della voce selezionata"
+	info_button.pressed.connect(
+		_show_catalog_info_from_list.bind(
+			available,
+			character_key
+		)
+	)
+	available_actions.add_child(info_button)
+
 	var add_button := Button.new()
-	add_button.text = "Aggiungi alla scheda"
+	add_button.text = "Aggiungi"
 	add_button.pressed.connect(
 		_add_catalog_selection.bind(character_key)
 	)
-	parent.add_child(add_button)
+	available_actions.add_child(add_button)
 
 	var owned_label := Label.new()
 	owned_label.text = "Nella scheda"
 	owned_label.add_theme_font_size_override("font_size", 14)
 	parent.add_child(owned_label)
 
+	var owned_row := HBoxContainer.new()
+	owned_row.add_theme_constant_override("separation", 8)
+	parent.add_child(owned_row)
+
 	var owned := ItemList.new()
 	owned.custom_minimum_size = Vector2(0, 115)
 	owned.size_flags_horizontal = Control.SIZE_EXPAND_FILL
 	owned.select_mode = ItemList.SELECT_SINGLE
-	parent.add_child(owned)
+	owned.item_activated.connect(
+		func(_index: int) -> void:
+			_show_catalog_info_from_list(
+				owned,
+				character_key
+			)
+	)
+	owned_row.add_child(owned)
 	_catalog_owned_lists[character_key] = owned
 
+	var owned_actions := VBoxContainer.new()
+	owned_actions.custom_minimum_size = Vector2(124, 0)
+	owned_actions.add_theme_constant_override("separation", 6)
+	owned_row.add_child(owned_actions)
+
+	var owned_info_button := Button.new()
+	owned_info_button.text = "ⓘ Info"
+	owned_info_button.pressed.connect(
+		_show_catalog_info_from_list.bind(
+			owned,
+			character_key
+		)
+	)
+	owned_actions.add_child(owned_info_button)
+
 	var remove_button := Button.new()
-	remove_button.text = "Rimuovi selezionato"
+	remove_button.text = "Rimuovi"
 	remove_button.pressed.connect(
 		_remove_catalog_selection.bind(character_key)
 	)
-	parent.add_child(remove_button)
+	owned_actions.add_child(remove_button)
 
 
 func _on_catalog_search_changed(
@@ -1160,7 +1213,7 @@ func _refresh_catalog_owned(character_key: String) -> void:
 		owned.add_item(Player5eToolsCatalog.display_label(entry))
 		owned.set_item_metadata(
 			owned.item_count - 1,
-			String(entry.get("id", ""))
+			entry.duplicate(true)
 		)
 
 
@@ -1205,6 +1258,7 @@ func _add_catalog_selection(character_key: String) -> void:
 	_characters[_current_index] = character
 	_store.call("save_characters", _characters)
 	_refresh_catalog_owned(character_key)
+	_refresh_attack_calculator()
 
 
 func _remove_catalog_selection(character_key: String) -> void:
@@ -1218,7 +1272,12 @@ func _remove_catalog_selection(character_key: String) -> void:
 	var selected := owned.get_selected_items()
 	if selected.is_empty():
 		return
-	var entry_id := String(owned.get_item_metadata(selected[0]))
+	var selected_metadata: Variant = owned.get_item_metadata(selected[0])
+	var entry_id := (
+		String((selected_metadata as Dictionary).get("id", ""))
+		if selected_metadata is Dictionary
+		else String(selected_metadata)
+	)
 
 	var character: Dictionary = _characters[_current_index]
 	var raw_values: Variant = character.get(character_key, [])
@@ -1238,6 +1297,7 @@ func _remove_catalog_selection(character_key: String) -> void:
 	_characters[_current_index] = character
 	_store.call("save_characters", _characters)
 	_refresh_catalog_owned(character_key)
+	_refresh_attack_calculator()
 
 
 func _build_name_dialog() -> void:
