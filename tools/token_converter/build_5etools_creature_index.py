@@ -19,11 +19,14 @@ from creature_size_lookup import SIZE_CODE_TO_NAME, SIZE_TO_FOOTPRINT
 
 PROJECT_ROOT = Path(__file__).resolve().parents[2]
 OUTPUT = PROJECT_ROOT / "assets" / "tokens" / "5etools_creature_index.json"
-REVISED_SOURCES = {"XMM"}
+SOURCE_EDITIONS = {
+    "MM": "2014",
+    "XMM": "2024",
+}
 
 
 def edition_for_source(source: str) -> str:
-    return "2024" if source in REVISED_SOURCES else "2014"
+    return SOURCE_EDITIONS.get(source, "unknown")
 
 
 def extract_size_name(raw: Any) -> str | None:
