@@ -200,6 +200,54 @@ func _load_obj_runtime(source_path: String) -> ArrayMesh:
 	return mesh
 
 
+func _load_glb_runtime(source_path: String) -> PackedScene:
+	var absolute := ProjectSettings.globalize_path(source_path)
+	var document := GLTFDocument.new()
+	var state := GLTFState.new()
+	state.handle_binary_image_mode = GLTFState.HANDLE_BINARY_IMAGE_MODE_EMBED_AS_UNCOMPRESSED
+
+	var import_error := document.append_from_file(
+		absolute,
+		state,
+		GLTFDocument.IMPORT_FLAG_GENERATE_TANGENT_ARRAYS
+	)
+	if import_error != OK:
+		push_error(
+			"GLB runtime import failed: %s (%s)"
+			% [source_path, error_string(import_error)]
+		)
+		return null
+
+	var scene_root := document.generate_scene(state)
+	if scene_root == null:
+		push_error("GLB runtime import generated no scene: %s" % source_path)
+		return null
+
+	var packed := PackedScene.new()
+	var pack_error := packed.pack(scene_root)
+	if pack_error != OK:
+		push_error(
+			"Could not pack GLB runtime scene: %s (%s)"
+			% [source_path, error_string(pack_error)]
+		)
+		scene_root.free()
+		return null
+
+	var skeleton_count := scene_root.find_children("*", "Skeleton3D", true, false).size()
+	var animation_player_count := scene_root.find_children(
+		"*",
+		"AnimationPlayer",
+		true,
+		false
+	).size()
+	print(
+		"TOKEN_PACK_STAGE glb_runtime skeletons=%d animation_players=%d"
+		% [skeleton_count, animation_player_count]
+	)
+	scene_root.free()
+	return packed
+
+
 func _write_text(path: String, content: String) -> Error:
 	var absolute := ProjectSettings.globalize_path(path)
 	var parent := absolute.get_base_dir()
@@ -238,9 +286,13 @@ func _build_pack(token_id: String, output_path: String) -> Error:
 	print("TOKEN_PACK_STAGE loader_exists=%s" % str(ResourceLoader.exists(source_path)))
 
 	var source_resource: Resource = null
-	if source_path.get_extension().to_lower() == "obj":
+	var source_extension := source_path.get_extension().to_lower()
+	if source_extension == "obj":
 		print("TOKEN_PACK_STAGE obj_runtime_loader")
 		source_resource = _load_obj_runtime(source_path)
+	elif source_extension == "glb" or source_extension == "gltf":
+		print("TOKEN_PACK_STAGE glb_runtime_loader")
+		source_resource = _load_glb_runtime(source_path)
 	else:
 		var load_path := source_path
 		if not ResourceLoader.exists(load_path):
