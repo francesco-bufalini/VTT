@@ -273,6 +273,112 @@ print(json.dumps(payload))
     return execute_json_code(code)
 
 
+def import_titan_reference() -> dict[str, Any]:
+    code = r"""import bpy, json, os, tempfile, urllib.request
+from mathutils import Vector
+
+url = 'https://raw.githubusercontent.com/programasweights/avatar/main/public/assets/character.glb'
+collection_name = 'REF_Titan_Normal'
+shell_name = 'Klothys_PrisonShell_V2_R220m'
+center = Vector((0.0, -230.0, 385.0))
+target_height = 430.0
+
+# Remove a previous reference import cleanly.
+old_col = bpy.data.collections.get(collection_name)
+if old_col is not None:
+    for obj in list(old_col.objects):
+        bpy.data.objects.remove(obj, do_unlink=True)
+    bpy.data.collections.remove(old_col)
+
+tmp_dir = tempfile.gettempdir()
+glb_path = os.path.join(tmp_dir, 'quaternius_superhero_male_cc0.glb')
+urllib.request.urlretrieve(url, glb_path)
+
+before = set(bpy.data.objects)
+bpy.ops.import_scene.gltf(filepath=glb_path)
+imported = [obj for obj in bpy.data.objects if obj not in before]
+if not imported:
+    raise RuntimeError('GLB import completed but no objects were created')
+
+# Put all imported objects in a dedicated collection.
+col = bpy.data.collections.new(collection_name)
+bpy.context.scene.collection.children.link(col)
+for obj in imported:
+    for parent_col in list(obj.users_collection):
+        parent_col.objects.unlink(obj)
+    col.objects.link(obj)
+
+# Compute world-space bounds using mesh objects only.
+mesh_objs = [obj for obj in imported if obj.type == 'MESH']
+if not mesh_objs:
+    raise RuntimeError('Imported GLB has no mesh objects')
+
+mins = Vector((1e30, 1e30, 1e30))
+maxs = Vector((-1e30, -1e30, -1e30))
+for obj in mesh_objs:
+    for corner in obj.bound_box:
+        p = obj.matrix_world @ Vector(corner)
+        mins.x = min(mins.x, p.x); mins.y = min(mins.y, p.y); mins.z = min(mins.z, p.z)
+        maxs.x = max(maxs.x, p.x); maxs.y = max(maxs.y, p.y); maxs.z = max(maxs.z, p.z)
+
+height = maxs.z - mins.z
+if height <= 1e-6:
+    raise RuntimeError('Imported titan has invalid height')
+
+scale_factor = target_height / height
+roots = [obj for obj in imported if obj.parent is None]
+for obj in roots:
+    obj.scale = obj.scale * scale_factor
+
+bpy.context.view_layer.update()
+
+# Recompute bounds after scale, then translate the root hierarchy so the
+# character's bounding-box center matches the old sphere center.
+mins = Vector((1e30, 1e30, 1e30))
+maxs = Vector((-1e30, -1e30, -1e30))
+for obj in mesh_objs:
+    for corner in obj.bound_box:
+        p = obj.matrix_world @ Vector(corner)
+        mins.x = min(mins.x, p.x); mins.y = min(mins.y, p.y); mins.z = min(mins.z, p.z)
+        maxs.x = max(maxs.x, p.x); maxs.y = max(maxs.y, p.y); maxs.z = max(maxs.z, p.z)
+
+bbox_center = (mins + maxs) * 0.5
+delta = center - bbox_center
+for obj in roots:
+    obj.location = obj.location + delta
+
+shell = bpy.data.objects.get(shell_name)
+if shell is not None:
+    shell.hide_viewport = True
+    shell.hide_render = True
+
+# Select imported mesh/armature for easy inspection.
+bpy.ops.object.select_all(action='DESELECT')
+for obj in imported:
+    obj.select_set(True)
+armatures = [obj for obj in imported if obj.type == 'ARMATURE']
+if armatures:
+    bpy.context.view_layer.objects.active = armatures[0]
+else:
+    bpy.context.view_layer.objects.active = mesh_objs[0]
+
+bpy.context.view_layer.update()
+
+print(json.dumps({
+    'collection': collection_name,
+    'objects': [obj.name for obj in imported],
+    'mesh_objects': [obj.name for obj in mesh_objs],
+    'armatures': [obj.name for obj in armatures],
+    'scale_factor': scale_factor,
+    'target_center': list(center),
+    'target_height': target_height,
+    'shell_hidden': bool(shell is not None),
+    'source_url': url,
+}))
+"""
+    return execute_json_code(code, timeout=300)
+
+
 def set_viewport_shading(command: dict[str, Any]) -> dict[str, Any]:
     shading = str(command.get("shading", "RENDERED")).strip().upper()
     allowed = {"WIREFRAME", "SOLID", "MATERIAL", "RENDERED"}
@@ -687,6 +793,9 @@ def execute(command: dict[str, Any]) -> dict[str, Any]:
     if action in {"set_viewport_shading", "viewport_shading"}:
         return set_viewport_shading(command)
 
+    if action == "import_titan_reference":
+        return import_titan_reference()
+
     if action in {"screenshot", "render_preview"}:
         return viewport_screenshot(command)
 
@@ -753,7 +862,7 @@ def execute(command: dict[str, Any]) -> dict[str, Any]:
         return blender_command("execute_code", {"code": code}, timeout=300)
 
     raise ValueError(
-        "Unknown action. Supported: ping, scene, workspaces, viewport, set_viewport_shading, screenshot, render_preview, titan_relief, reset_titan_relief, hide_titan_helpers, show_titan_helpers, hide_runic_seals, show_runic_seals, hide_stress_cracks, show_stress_cracks, hide_floating_shards, show_floating_shards, object, transform, undo, save"
+        "Unknown action. Supported: ping, scene, workspaces, viewport, set_viewport_shading, import_titan_reference, screenshot, render_preview, titan_relief, reset_titan_relief, hide_titan_helpers, show_titan_helpers, hide_runic_seals, show_runic_seals, hide_stress_cracks, show_stress_cracks, hide_floating_shards, show_floating_shards, object, transform, undo, save"
         + (", python" if ALLOW_PYTHON else "")
     )
 
