@@ -668,6 +668,109 @@ func _prune_chunk_cache() -> void:
 	_chunk_cache = retained
 
 
+func get_support_top_y(
+	world_point: Vector3,
+	max_y: float,
+	min_y: float
+) -> float:
+	if max_y < min_y:
+		var swap_y := max_y
+		max_y = min_y
+		min_y = swap_y
+
+	var safe := maxf(cell_size, 0.001)
+	var x_cell := int(floor(world_point.x / safe))
+	var z_cell := int(floor(world_point.z / safe))
+
+	# The rendered cube can be displaced from the collision-probe cell.
+	# Search a small guard band so a token already intersecting a cell is
+	# repaired upward instead of being allowed to continue through it.
+	var max_cell_y := int(floor(max_y / safe)) + 2
+	var min_cell_y := int(floor(min_y / safe)) - 2
+	var epsilon := safe * 0.02
+
+	for y_cell: int in range(max_cell_y, min_cell_y - 1, -1):
+		var cell := Vector3i(x_cell, y_cell, z_cell)
+		if not _support_cell_is_occupied(cell):
+			continue
+		var top_y := _cell_visual_top_y(cell)
+		if (
+			top_y <= max_y + safe * 0.55
+			and top_y >= min_y - epsilon
+		):
+			return top_y
+
+	return INF
+
+
+func get_support_top_for_footprint(
+	world_center: Vector3,
+	footprint_cells: float,
+	max_y: float,
+	min_y: float
+) -> float:
+	var safe_footprint := maxf(footprint_cells, 0.5)
+	var rounded := maxi(1, roundi(safe_footprint))
+	var samples: Array[Vector2] = []
+
+	if (
+		is_equal_approx(safe_footprint, float(rounded))
+		and rounded > 1
+	):
+		var first_offset := -float(rounded - 1) * 0.5
+		for x_index: int in range(rounded):
+			for z_index: int in range(rounded):
+				samples.append(
+					Vector2(
+						first_offset + float(x_index),
+						first_offset + float(z_index)
+					)
+				)
+	else:
+		samples.append(Vector2.ZERO)
+
+	var highest := -INF
+	for sample: Vector2 in samples:
+		var point := world_center + Vector3(
+			sample.x * cell_size,
+			0.0,
+			sample.y * cell_size
+		)
+		var support_y := get_support_top_y(point, max_y, min_y)
+		if support_y < INF:
+			highest = maxf(highest, support_y)
+
+	return INF if highest == -INF else highest
+
+
+func _support_cell_is_occupied(cell: Vector3i) -> bool:
+	if _active_occupied.has(cell):
+		return true
+
+	var chunk := _cell_to_chunk(cell)
+	var cached_value: Variant = _chunk_cache.get(chunk)
+	if cached_value is Dictionary:
+		var cached: Dictionary = cached_value as Dictionary
+		if cached.has(cell):
+			return true
+
+	# A token may be falling over a chunk that has not been scanned yet.
+	# Query the same collision definition used to construct the visible grid,
+	# so the tactical grid remains authoritative even before rendering catches
+	# up with the camera.
+	if not _point_inside_volume(_cell_to_world_center(cell)):
+		return false
+	return _cell_intersects_map(cell)
+
+
+func _cell_visual_top_y(cell: Vector3i) -> float:
+	return (
+		_cell_to_world_center(cell).y
+		+ display_offset_cells.y * cell_size
+		+ cell_size * 0.5
+	)
+
+
 func _world_to_cell(point: Vector3) -> Vector3i:
 	var safe := maxf(cell_size, 0.001)
 	return Vector3i(
