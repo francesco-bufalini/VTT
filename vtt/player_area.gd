@@ -38,9 +38,16 @@ var _selected_spells: ItemList
 var _slot_total_spins: Array[SpinBox] = []
 var _slot_spent_spins: Array[SpinBox] = []
 
+var _name_dialog: ConfirmationDialog
+var _name_input: LineEdit
+var _name_dialog_mode: String = ""
+
 var _link_dialog: ConfirmationDialog
 var _link_character_selector: OptionButton
 var _link_token: CharacterBody3D
+
+var _character_token_dialog: ConfirmationDialog
+var _character_token_selector: OptionButton
 
 
 func setup(root: Node3D) -> void:
@@ -53,7 +60,9 @@ func setup(root: Node3D) -> void:
 	_store = CharacterStore.new()
 	_store.call("setup", _campaign_manager())
 	_build_ui()
+	_build_name_dialog()
 	_build_link_dialog()
+	_build_character_token_dialog()
 	_reload_characters()
 
 
@@ -89,24 +98,83 @@ func hide_panel() -> void:
 func add_character() -> void:
 	if _store == null:
 		return
-	var character: Dictionary = _store.call("create_character")
-	_characters.append(character)
-	_store.call("save_characters", _characters)
-	_refresh_character_list(String(character.get("id", "")))
 	show_panel()
-	_set_status("Nuovo personaggio creato.")
+	_open_character_name_dialog("create")
+
+
+func rename_current_character() -> void:
+	if _current_index < 0 or _current_index >= _characters.size():
+		_set_status("Seleziona prima un personaggio.")
+		return
+	_save_form()
+	_open_character_name_dialog("rename")
+
+
+func _open_character_name_dialog(mode: String) -> void:
+	if _name_dialog == null or _name_input == null:
+		return
+
+	_name_dialog_mode = mode
+	if mode == "rename":
+		_name_dialog.title = "Rinomina personaggio"
+		_name_dialog.ok_button_text = "Rinomina"
+		_name_input.text = String(
+			_characters[_current_index].get("name", "")
+		)
+	else:
+		_name_dialog.title = "Aggiungi Personaggio"
+		_name_dialog.ok_button_text = "Crea"
+		_name_input.clear()
+
+	_name_dialog.reset_size()
+	_name_dialog.popup_centered_clamped(Vector2i(440, 190), 0.92)
+	_name_input.call_deferred("grab_focus")
+	if mode == "rename":
+		_name_input.call_deferred("select_all")
+
+
+func _confirm_character_name() -> void:
+	var clean_name: String = _name_input.text.strip_edges()
+	if clean_name.is_empty():
+		_set_status("Inserisci un nome per il personaggio.")
+		return
+
+	if _name_dialog_mode == "create":
+		var character: Dictionary = _store.call("create_character")
+		character["name"] = clean_name
+		_characters.append(character)
+		_store.call("save_characters", _characters)
+		_refresh_character_list(String(character.get("id", "")))
+		_set_status("%s creato." % clean_name)
+	elif (
+		_name_dialog_mode == "rename"
+		and _current_index >= 0
+		and _current_index < _characters.size()
+	):
+		var character_id: String = String(
+			_characters[_current_index].get("id", "")
+		)
+		_characters[_current_index]["name"] = clean_name
+		_sync_linked_token_character_name(character_id, clean_name)
+		_store.call("save_characters", _characters)
+		_refresh_character_list(character_id)
+		_set_status("Personaggio rinominato in %s." % clean_name)
+
+	_name_dialog_mode = ""
 
 
 func request_link_character_to_selected_token() -> void:
 	show_panel()
 	if _characters.is_empty():
+		_set_status("Crea prima un personaggio da associare al token.")
 		add_character()
+		return
 
 	var selected_tokens: Array[CharacterBody3D] = _selected_tokens()
 	if selected_tokens.size() != 1:
 		show_panel()
 		_set_status(
-			"Seleziona esattamente un token, poi usa «Collega personaggio a token»."
+			"Seleziona esattamente un token, poi scegli il personaggio da associare."
 		)
 		return
 
@@ -146,6 +214,61 @@ func request_link_character_to_selected_token() -> void:
 	_link_dialog.popup_centered_clamped(Vector2i(520, 240), 0.92)
 
 
+func request_link_selected_character_to_named_token() -> void:
+	show_panel()
+	if _current_index < 0 or _current_index >= _characters.size():
+		_set_status("Seleziona prima un personaggio nell'Area Player.")
+		return
+
+	_save_form()
+	_character_token_selector.clear()
+	var current_character_id: String = String(
+		_characters[_current_index].get("id", "")
+	)
+	var selected_index := 0
+	var visible_token_count := 0
+
+	for token: CharacterBody3D in _named_scene_tokens():
+		var token_display_name: String = _display_token_name(token)
+		if token_display_name.is_empty():
+			continue
+		_character_token_selector.add_item(token_display_name)
+		var item_index: int = _character_token_selector.item_count - 1
+		_character_token_selector.set_item_metadata(
+			item_index,
+			token.get_instance_id()
+		)
+		visible_token_count += 1
+
+		if (
+			token.has_meta("player_character_id")
+			and String(token.get_meta("player_character_id"))
+			== current_character_id
+		):
+			selected_index = item_index
+
+	if visible_token_count == 0:
+		_set_status(
+			"Nello scenario non ci sono token con un nome. "
+			+ "Assegna prima un nome al token."
+		)
+		return
+
+	_character_token_selector.select(selected_index)
+	var character_name: String = String(
+		_characters[_current_index].get("name", "Personaggio")
+	)
+	_character_token_dialog.dialog_text = (
+		"Personaggio selezionato: %s\n"
+		+ "Scegli un token con nome presente nello scenario."
+	) % character_name
+	_character_token_dialog.reset_size()
+	_character_token_dialog.popup_centered_clamped(
+		Vector2i(520, 250),
+		0.92
+	)
+
+
 func character_count() -> int:
 	return _characters.size()
 
@@ -157,10 +280,15 @@ func serialize_characters() -> Array[Dictionary]:
 func _build_ui() -> void:
 	_panel = PanelContainer.new()
 	_panel.name = "PlayerAreaPanel"
-	_panel.anchor_left = 0.045
-	_panel.anchor_top = 0.045
-	_panel.anchor_right = 0.955
-	_panel.anchor_bottom = 0.955
+	# Mirror of the spell browser: compact half-screen panel on the right.
+	_panel.anchor_left = 0.52
+	_panel.anchor_top = 0.0
+	_panel.anchor_right = 1.0
+	_panel.anchor_bottom = 1.0
+	_panel.offset_left = 4.0
+	_panel.offset_top = 8.0
+	_panel.offset_right = -8.0
+	_panel.offset_bottom = -8.0
 	_panel.mouse_filter = Control.MOUSE_FILTER_STOP
 	_panel.hide()
 	ui_root.add_child(_panel)
@@ -182,19 +310,9 @@ func _build_ui() -> void:
 
 	var title := Label.new()
 	title.text = "Area Player"
-	title.add_theme_font_size_override("font_size", 24)
+	title.add_theme_font_size_override("font_size", 20)
 	title.size_flags_horizontal = Control.SIZE_EXPAND_FILL
 	header.add_child(title)
-
-	var add_button := Button.new()
-	add_button.text = "Aggiungi Personaggio"
-	add_button.pressed.connect(add_character)
-	header.add_child(add_button)
-
-	var link_button := Button.new()
-	link_button.text = "Collega a token"
-	link_button.pressed.connect(request_link_character_to_selected_token)
-	header.add_child(link_button)
 
 	var close_button := Button.new()
 	close_button.text = "Chiudi"
@@ -208,11 +326,11 @@ func _build_ui() -> void:
 
 	var split := HSplitContainer.new()
 	split.size_flags_vertical = Control.SIZE_EXPAND_FILL
-	split.split_offset = 230
+	split.split_offset = 190
 	outer.add_child(split)
 
 	var left := VBoxContainer.new()
-	left.custom_minimum_size = Vector2(220, 0)
+	left.custom_minimum_size = Vector2(180, 0)
 	left.add_theme_constant_override("separation", 6)
 	split.add_child(left)
 
@@ -227,8 +345,39 @@ func _build_ui() -> void:
 	_character_list.item_selected.connect(_on_character_selected)
 	left.add_child(_character_list)
 
+	var add_button := Button.new()
+	add_button.text = "+ Aggiungi"
+	add_button.tooltip_text = "Crea un nuovo personaggio e assegnagli subito un nome"
+	add_button.pressed.connect(add_character)
+	left.add_child(add_button)
+
+	var rename_button := Button.new()
+	rename_button.text = "Rinomina"
+	rename_button.pressed.connect(rename_current_character)
+	left.add_child(rename_button)
+
+	var selected_token_link_button := Button.new()
+	selected_token_link_button.text = "Token selezionato → PG"
+	selected_token_link_button.tooltip_text = (
+		"Associa il token attualmente selezionato a un personaggio"
+	)
+	selected_token_link_button.pressed.connect(
+		request_link_character_to_selected_token
+	)
+	left.add_child(selected_token_link_button)
+
+	var character_token_link_button := Button.new()
+	character_token_link_button.text = "PG → token…"
+	character_token_link_button.tooltip_text = (
+		"Associa il personaggio selezionato a un token con nome nello scenario"
+	)
+	character_token_link_button.pressed.connect(
+		request_link_selected_character_to_named_token
+	)
+	left.add_child(character_token_link_button)
+
 	var delete_button := Button.new()
-	delete_button.text = "Elimina personaggio"
+	delete_button.text = "Elimina"
 	delete_button.pressed.connect(_delete_current_character)
 	left.add_child(delete_button)
 
@@ -620,9 +769,43 @@ func _build_spells_tab() -> void:
 		_slot_spent_spins.append(spent_spin)
 
 
+func _build_name_dialog() -> void:
+	_name_dialog = ConfirmationDialog.new()
+	_name_dialog.name = "PlayerCharacterNameDialog"
+	_name_dialog.title = "Aggiungi Personaggio"
+	_name_dialog.ok_button_text = "Crea"
+	_name_dialog.cancel_button_text = "Annulla"
+	_name_dialog.min_size = Vector2i(440, 190)
+	ui_root.add_child(_name_dialog)
+
+	var body := VBoxContainer.new()
+	body.set_anchors_and_offsets_preset(Control.PRESET_FULL_RECT)
+	body.offset_left = 18
+	body.offset_top = 48
+	body.offset_right = -18
+	body.offset_bottom = -64
+	body.add_theme_constant_override("separation", 8)
+	_name_dialog.add_child(body)
+
+	var label := Label.new()
+	label.text = "Nome del personaggio"
+	body.add_child(label)
+
+	_name_input = LineEdit.new()
+	_name_input.placeholder_text = "Es. Sariel, Tharivol, Brakka…"
+	_name_input.max_length = 100
+	_name_input.text_submitted.connect(
+		func(_value: String) -> void:
+			if not _name_input.text.strip_edges().is_empty():
+				_name_dialog.get_ok_button().emit_signal("pressed")
+	)
+	body.add_child(_name_input)
+	_name_dialog.confirmed.connect(_confirm_character_name)
+
+
 func _build_link_dialog() -> void:
 	_link_dialog = ConfirmationDialog.new()
-	_link_dialog.title = "Collega personaggio a token"
+	_link_dialog.title = "Token selezionato → personaggio"
 	_link_dialog.ok_button_text = "Collega"
 	_link_dialog.cancel_button_text = "Annulla"
 	_link_dialog.min_size = Vector2i(520, 240)
@@ -644,6 +827,35 @@ func _build_link_dialog() -> void:
 	_link_character_selector = OptionButton.new()
 	body.add_child(_link_character_selector)
 	_link_dialog.confirmed.connect(_confirm_link_character)
+
+
+func _build_character_token_dialog() -> void:
+	_character_token_dialog = ConfirmationDialog.new()
+	_character_token_dialog.name = "CharacterToTokenDialog"
+	_character_token_dialog.title = "Personaggio → token"
+	_character_token_dialog.ok_button_text = "Collega"
+	_character_token_dialog.cancel_button_text = "Annulla"
+	_character_token_dialog.min_size = Vector2i(520, 250)
+	ui_root.add_child(_character_token_dialog)
+
+	var body := VBoxContainer.new()
+	body.set_anchors_and_offsets_preset(Control.PRESET_FULL_RECT)
+	body.offset_left = 18
+	body.offset_top = 82
+	body.offset_right = -18
+	body.offset_bottom = -70
+	body.add_theme_constant_override("separation", 8)
+	_character_token_dialog.add_child(body)
+
+	var label := Label.new()
+	label.text = "Token nello scenario"
+	body.add_child(label)
+
+	_character_token_selector = OptionButton.new()
+	body.add_child(_character_token_selector)
+	_character_token_dialog.confirmed.connect(
+		_confirm_character_token_link
+	)
 
 
 func _scroll_tab(tab_name: String) -> ScrollContainer:
@@ -1002,6 +1214,7 @@ func _save_form() -> void:
 		return
 
 	var character: Dictionary = _characters[_current_index].duplicate(true)
+	var previous_character_name: String = String(character.get("name", ""))
 
 	for key: Variant in _text_fields.keys():
 		var control: Control = _text_fields[key] as Control
@@ -1075,6 +1288,12 @@ func _save_form() -> void:
 	character["spell_slots_spent"] = spent_slots
 
 	_characters[_current_index] = character
+	var current_character_name: String = String(character.get("name", ""))
+	if current_character_name != previous_character_name:
+		_sync_linked_token_character_name(
+			String(character.get("id", "")),
+			current_character_name
+		)
 	_store.call("save_characters", _characters)
 	_refresh_character_list_label(_current_index)
 	_refresh_derived_values()
@@ -1208,21 +1427,69 @@ func _confirm_link_character() -> void:
 	if character_index < 0:
 		return
 
-	# One character ↔ one token. Clear previous links on both sides first.
-	for token: Node in get_tree().get_nodes_in_group("dnd_token"):
-		if (
-			token.has_meta("player_character_id")
-			and String(token.get_meta("player_character_id")) == character_id
-		):
-			token.remove_meta("player_character_id")
-			token.remove_meta("player_character_name")
+	_link_character_to_token(character_index, _link_token)
+	_link_token = null
 
-	var previous_character_id: String = ""
-	if _link_token.has_meta("player_character_id"):
-		previous_character_id = String(
-			_link_token.get_meta("player_character_id")
+
+func _confirm_character_token_link() -> void:
+	if _current_index < 0 or _current_index >= _characters.size():
+		return
+	if _character_token_selector.selected < 0:
+		return
+
+	var instance_id: int = int(
+		_character_token_selector.get_item_metadata(
+			_character_token_selector.selected
 		)
-	if not previous_character_id.is_empty():
+	)
+	var token_value: Object = instance_from_id(instance_id)
+	if not token_value is CharacterBody3D:
+		_set_status("Il token scelto non è più disponibile.")
+		return
+
+	_link_character_to_token(
+		_current_index,
+		token_value as CharacterBody3D
+	)
+
+
+func _link_character_to_token(
+	character_index: int,
+	token: CharacterBody3D
+) -> void:
+	if (
+		character_index < 0
+		or character_index >= _characters.size()
+		or token == null
+		or not is_instance_valid(token)
+	):
+		return
+
+	_save_form()
+	var character_id: String = String(
+		_characters[character_index].get("id", "")
+	)
+
+	# One character ↔ one token. Detach this character from any old token.
+	for scene_token: Node in get_tree().get_nodes_in_group("dnd_token"):
+		if (
+			scene_token.has_meta("player_character_id")
+			and String(scene_token.get_meta("player_character_id"))
+			== character_id
+		):
+			scene_token.remove_meta("player_character_id")
+			scene_token.remove_meta("player_character_name")
+
+	# If the target token belonged to another character, clear that sheet.
+	var previous_character_id := ""
+	if token.has_meta("player_character_id"):
+		previous_character_id = String(
+			token.get_meta("player_character_id")
+		)
+	if (
+		not previous_character_id.is_empty()
+		and previous_character_id != character_id
+	):
 		var previous_index: int = _character_index_by_id(
 			previous_character_id
 		)
@@ -1234,29 +1501,74 @@ func _confirm_link_character() -> void:
 	var character_name: String = String(
 		character.get("name", "Personaggio")
 	)
-	_link_token.set_meta("player_character_id", character_id)
-	_link_token.set_meta("player_character_name", character_name)
+	token.set_meta("player_character_id", character_id)
+	token.set_meta("player_character_name", character_name)
 
 	var sync_id := ""
 	var sync: Node = board_root.get("board_sync") as Node
 	if sync != null and is_instance_valid(sync):
 		if sync.has_method("get_sync_id_for_node"):
 			sync_id = String(
-				sync.call("get_sync_id_for_node", _link_token)
+				sync.call("get_sync_id_for_node", token)
 			)
 
 	character["linked_token_sync_id"] = sync_id
-	character["linked_token_name"] = _token_name(_link_token)
+	character["linked_token_name"] = _token_name(token)
 	_characters[character_index] = character
 	_store.call("save_characters", _characters)
 
 	_current_index = character_index
+	_loading = true
 	_refresh_character_list(character_id)
+	_loading = false
 	_set_status(
 		"%s collegato a %s."
-		% [character_name, _token_name(_link_token)]
+		% [character_name, _token_name(token)]
 	)
-	_link_token = null
+
+
+func _sync_linked_token_character_name(
+	character_id: String,
+	character_name: String
+) -> void:
+	if character_id.is_empty():
+		return
+	for token: Node in get_tree().get_nodes_in_group("dnd_token"):
+		if (
+			token.has_meta("player_character_id")
+			and String(token.get_meta("player_character_id"))
+			== character_id
+		):
+			token.set_meta("player_character_name", character_name)
+
+
+func _named_scene_tokens() -> Array[CharacterBody3D]:
+	var result: Array[CharacterBody3D] = []
+	if board_root == null or not is_instance_valid(board_root):
+		return result
+
+	for node: Node in get_tree().get_nodes_in_group("dnd_token"):
+		if (
+			node is CharacterBody3D
+			and board_root.is_ancestor_of(node)
+			and not _display_token_name(node as CharacterBody3D).is_empty()
+		):
+			result.append(node as CharacterBody3D)
+
+	result.sort_custom(
+		func(a: CharacterBody3D, b: CharacterBody3D) -> bool:
+			return _display_token_name(a).naturalnocasecmp_to(
+				_display_token_name(b)
+			) < 0
+	)
+	return result
+
+
+func _display_token_name(token: CharacterBody3D) -> String:
+	if token != null and is_instance_valid(token):
+		if token.has_method("get_display_name"):
+			return String(token.call("get_display_name")).strip_edges()
+	return ""
 
 
 func _selected_tokens() -> Array[CharacterBody3D]:
@@ -1273,13 +1585,10 @@ func _selected_tokens() -> Array[CharacterBody3D]:
 
 
 func _token_name(token: CharacterBody3D) -> String:
-	if token.has_method("get_display_name"):
-		var display_name: String = String(
-			token.call("get_display_name")
-		).strip_edges()
-		if not display_name.is_empty():
-			return display_name
-	return String(token.name)
+	var display_name: String = _display_token_name(token)
+	if not display_name.is_empty():
+		return display_name
+	return "Token senza nome"
 
 
 func _character_index_by_id(character_id: String) -> int:
