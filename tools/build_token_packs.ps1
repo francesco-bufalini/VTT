@@ -109,6 +109,71 @@ function Invoke-Godot {
     }
 }
 
+function Get-GitHubReleaseAssetsViaGh {
+    $gh = Get-Command gh -ErrorAction SilentlyContinue
+    if (-not $gh) {
+        return $null
+    }
+
+    try {
+        & $gh.Source auth status 1>$null 2>$null
+        if ($LASTEXITCODE -ne 0) {
+            return $null
+        }
+    } catch {
+        return $null
+    }
+
+    Write-Host "Autenticazione GitHub: uso direttamente GitHub CLI (gh api)."
+
+    $assetsByName = @{}
+    $page = 1
+    $releaseCount = 0
+
+    while ($true) {
+        $endpoint = "repos/$GitHubOwner/$GitHubRepo/releases?per_page=100&page=$page"
+        try {
+            $json = (& $gh.Source api $endpoint 2>&1 | Out-String)
+            if ($LASTEXITCODE -ne 0) {
+                throw $json.Trim()
+            }
+            $releases = @($json | ConvertFrom-Json)
+        } catch {
+            Write-Warning "gh api non e riuscito a leggere le Release private: $($_.Exception.Message)"
+            return $null
+        }
+
+        if ($releases.Count -eq 0) {
+            break
+        }
+
+        foreach ($release in $releases) {
+            $releaseCount++
+            foreach ($asset in @($release.assets)) {
+                if ($null -eq $asset -or [string]::IsNullOrWhiteSpace([string]$asset.name)) {
+                    continue
+                }
+
+                $name = [string]$asset.name
+                if (-not $assetsByName.ContainsKey($name)) {
+                    $asset | Add-Member -NotePropertyName release_tag -NotePropertyValue ([string]$release.tag_name) -Force
+                    $asset | Add-Member -NotePropertyName release_published_at -NotePropertyValue ([string]$release.published_at) -Force
+                    $assetsByName[$name] = $asset
+                }
+            }
+        }
+
+        if ($releases.Count -lt 100) {
+            break
+        }
+        $page++
+    }
+
+    Write-Host "Release GitHub controllate via gh: $releaseCount - asset unici trovati: $($assetsByName.Count)"
+    return $assetsByName
+}
+
+
 function Get-GitHubReleaseAssets {
     param([string]$Token = "")
 
@@ -371,7 +436,12 @@ $releaseAssets = @{}
 if ($All -and -not $SkipReleaseCheck -and -not $Force) {
     Write-Host ""
     Write-Host "Controllo PCK gia pubblicati in tutte le GitHub Releases..."
-    $releaseAssets = Get-GitHubReleaseAssets -Token $GitHubToken
+    $ghReleaseAssets = Get-GitHubReleaseAssetsViaGh
+    if ($null -ne $ghReleaseAssets) {
+        $releaseAssets = $ghReleaseAssets
+    } else {
+        $releaseAssets = Get-GitHubReleaseAssets -Token $GitHubToken
+    }
 }
 
 Write-Host "Godot: $Godot"
