@@ -321,7 +321,7 @@ func set_visual_asset(path: String) -> bool:
 	var native_footprint := (
 		visual_native_footprint_cells
 		if visual_native_footprint_cells > 0.0
-		else 1.0
+		else maxf(default_footprint_cells, 0.5)
 	)
 	_visual_native_footprint_cells = maxf(
 		float(profile.get("footprint", native_footprint)),
