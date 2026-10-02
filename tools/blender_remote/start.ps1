@@ -1,6 +1,5 @@
 param(
     [switch]$AllowPython,
-    [switch]$SkipPending,
     [double]$PollSeconds = 3
 )
 
@@ -11,7 +10,6 @@ $env:BLENDER_REMOTE_ISSUE = "2"
 $env:BLENDER_REMOTE_ALLOWED = "francesco-bufalini"
 $env:BLENDER_REMOTE_POLL_SECONDS = [string]$PollSeconds
 $env:BLENDER_REMOTE_ALLOW_PYTHON = $(if ($AllowPython) { "1" } else { "0" })
-$env:BLENDER_REMOTE_SKIP_PENDING = $(if ($SkipPending) { "1" } else { "0" })
 
 if (-not (Get-Command gh -ErrorAction SilentlyContinue)) {
     throw "GitHub CLI not found. Install it with: winget install --id GitHub.cli"
