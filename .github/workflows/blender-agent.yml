@@ -49,7 +49,15 @@ jobs:
           $ErrorActionPreference = "Stop"
           $job = "${{ github.event.inputs.job }}"
           if ([string]::IsNullOrWhiteSpace($job)) {
-            $changed = git diff-tree --no-commit-id --name-only -r HEAD | Where-Object { $_ -like "blender/jobs/*.json" } | Select-Object -First 1
+            $event = Get-Content -LiteralPath $env:GITHUB_EVENT_PATH -Raw | ConvertFrom-Json
+            $candidates = @()
+            if ($event.head_commit) {
+              $candidates += @($event.head_commit.added)
+              $candidates += @($event.head_commit.modified)
+            }
+            $changed = $candidates |
+              Where-Object { $_ -like "blender/jobs/*.json" } |
+              Select-Object -First 1
             if ($changed) { $job = $changed } else { $job = "blender/jobs/smoke_test.json" }
           }
           if (-not (Test-Path -LiteralPath $job -PathType Leaf)) { throw "Blender job not found: $job" }
