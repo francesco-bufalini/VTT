@@ -3,7 +3,6 @@ param(
     [string]$Godot = "",
     [switch]$All,
     [switch]$Force,
-    [string]$ReleaseTag = "latest",
     [string]$GitHubToken = "",
     [switch]$SkipReleaseCheck,
     [switch]$SkipImport,
@@ -111,10 +110,7 @@ function Invoke-Godot {
 }
 
 function Get-GitHubReleaseAssets {
-    param(
-        [string]$Tag = "latest",
-        [string]$Token = ""
-    )
+    param([string]$Token = "")
 
     $headers = @{
         Accept = "application/vnd.github+json"
@@ -125,36 +121,48 @@ function Get-GitHubReleaseAssets {
         $headers.Authorization = "Bearer $Token"
     }
 
-    if ($Tag -eq "latest") {
-        $uri = "https://api.github.com/repos/$GitHubOwner/$GitHubRepo/releases/latest"
-    } else {
-        $escapedTag = [uri]::EscapeDataString($Tag)
-        $uri = "https://api.github.com/repos/$GitHubOwner/$GitHubRepo/releases/tags/$escapedTag"
-    }
-
-    try {
-        $release = Invoke-RestMethod -Uri $uri -Headers $headers -Method Get
-    } catch {
-        $statusCode = $null
-        if ($_.Exception.Response) {
-            try { $statusCode = [int]$_.Exception.Response.StatusCode } catch {}
-        }
-        if ($statusCode -eq 404) {
-            Write-Host "Release GitHub '$Tag' non trovata o non accessibile; continuo solo con lo stato locale."
-        } else {
-            Write-Warning "Controllo Release GitHub non riuscito; continuo localmente: $($_.Exception.Message)"
-        }
-        return @{}
-    }
-
     $assetsByName = @{}
-    foreach ($asset in @($release.assets)) {
-        if ($null -ne $asset -and -not [string]::IsNullOrWhiteSpace([string]$asset.name)) {
-            $assetsByName[[string]$asset.name] = $asset
+    $page = 1
+    $releaseCount = 0
+
+    while ($true) {
+        $uri = "https://api.github.com/repos/$GitHubOwner/$GitHubRepo/releases?per_page=100&page=$page"
+        try {
+            $releases = @(Invoke-RestMethod -Uri $uri -Headers $headers -Method Get)
+        } catch {
+            Write-Warning "Controllo Release GitHub non riuscito; continuo localmente: $($_.Exception.Message)"
+            return $assetsByName
         }
+
+        if ($releases.Count -eq 0) {
+            break
+        }
+
+        foreach ($release in $releases) {
+            $releaseCount++
+            foreach ($asset in @($release.assets)) {
+                if ($null -eq $asset -or [string]::IsNullOrWhiteSpace([string]$asset.name)) {
+                    continue
+                }
+
+                $name = [string]$asset.name
+                # GitHub returns releases newest-first. Keep the first occurrence
+                # so duplicate asset names resolve to the newest published copy.
+                if (-not $assetsByName.ContainsKey($name)) {
+                    $asset | Add-Member -NotePropertyName release_tag -NotePropertyValue ([string]$release.tag_name) -Force
+                    $asset | Add-Member -NotePropertyName release_published_at -NotePropertyValue ([string]$release.published_at) -Force
+                    $assetsByName[$name] = $asset
+                }
+            }
+        }
+
+        if ($releases.Count -lt 100) {
+            break
+        }
+        $page++
     }
 
-    Write-Host "Release GitHub: $($release.tag_name) - asset trovati: $($assetsByName.Count)"
+    Write-Host "Release GitHub controllate: $releaseCount - asset unici trovati: $($assetsByName.Count)"
     return $assetsByName
 }
 
@@ -177,6 +185,12 @@ function New-RemoteCatalogEntry {
         scene = ("res://remote_tokens/{0}/{0}_token.tscn" -f $id)
         release_asset_id = [int64]$Asset.id
         release_download_url = [string]$Asset.browser_download_url
+    }
+    if ($Asset.PSObject.Properties.Name -contains "release_tag") {
+        $entry.release_tag = [string]$Asset.release_tag
+    }
+    if ($Asset.PSObject.Properties.Name -contains "release_published_at") {
+        $entry.release_published_at = [string]$Asset.release_published_at
     }
 
     if ($Asset.PSObject.Properties.Name -contains "digest") {
@@ -356,8 +370,8 @@ if ($All) {
 $releaseAssets = @{}
 if ($All -and -not $SkipReleaseCheck -and -not $Force) {
     Write-Host ""
-    Write-Host "Controllo PCK gia pubblicati nelle GitHub Releases..."
-    $releaseAssets = Get-GitHubReleaseAssets -Tag $ReleaseTag -Token $GitHubToken
+    Write-Host "Controllo PCK gia pubblicati in tutte le GitHub Releases..."
+    $releaseAssets = Get-GitHubReleaseAssets -Token $GitHubToken
 }
 
 Write-Host "Godot: $Godot"
