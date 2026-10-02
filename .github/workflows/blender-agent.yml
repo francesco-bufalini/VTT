@@ -190,13 +190,18 @@ jobs:
                 Copy-Item -LiteralPath $blend.FullName -Destination (Join-Path $sceneDest "$sceneId.blend") -Force
                 Write-Host "Tracked Blender source: $(Join-Path $sceneDest "$sceneId.blend") ($($blend.Length) bytes)"
 
-                # Keep only the latest Kaos arena .blend in Git. Jobs, metadata
-                # and previews are cheap and remain available as history.
-                if ($sceneId -match "^kaos_arena_v\d+$") {
-                  Get-ChildItem -Path "blender/scenes" -Directory -Filter "kaos_arena_v*" -ErrorAction SilentlyContinue |
-                    Where-Object { $_.Name -ne $sceneId } |
+                # Keep only the latest Blender source for the same versioned family.
+                # Example: kaos_arena_v6 prunes kaos_arena_v1..v5; a different
+                # asset family is untouched.
+                if ($sceneId -match "^(.*)_v(\d+)$") {
+                  $family = $Matches[1]
+                  Get-ChildItem -Path "blender/scenes" -Directory -ErrorAction SilentlyContinue |
+                    Where-Object {
+                      $_.Name -ne $sceneId -and
+                      $_.Name -match ("^" + [regex]::Escape($family) + "_v\d+$")
+                    } |
                     ForEach-Object {
-                      Write-Host "Pruning old Kaos arena Blender source: $($_.FullName)"
+                      Write-Host "Pruning old Blender source version: $($_.FullName)"
                       Remove-Item -LiteralPath $_.FullName -Recurse -Force
                     }
                 }
@@ -228,7 +233,7 @@ jobs:
             if (Test-Path -LiteralPath "blender/scenes/$sceneId") {
               git add --sparse "blender/scenes/$sceneId"
             }
-            if ($sceneId -match "^kaos_arena_v\d+$") {
+            if ($sceneId -match "^(.*)_v(\d+)$") {
               git add -A --sparse "blender/scenes"
             }
           }
