@@ -314,14 +314,14 @@ func serialize_characters() -> Array[Dictionary]:
 func _build_ui() -> void:
 	_panel = PanelContainer.new()
 	_panel.name = "PlayerAreaPanel"
-	# Right-side panel, shifted inward so long sheet controls never extend
-	# beyond the viewport. It remains the visual counterpart of Spells.
-	_panel.anchor_left = 0.42
+	# Open from the left toward the centre. The 54 px top inset keeps the
+	# whole panel below the runtime toolbar at every viewport size.
+	_panel.anchor_left = 0.02
 	_panel.anchor_top = 0.0
-	_panel.anchor_right = 0.965
+	_panel.anchor_right = 0.62
 	_panel.anchor_bottom = 1.0
 	_panel.offset_left = 4.0
-	_panel.offset_top = 8.0
+	_panel.offset_top = 54.0
 	_panel.offset_right = -4.0
 	_panel.offset_bottom = -8.0
 	_panel.clip_contents = true
@@ -330,7 +330,8 @@ func _build_ui() -> void:
 	ui_root.add_child(_panel)
 
 	var panel_style := StyleBoxFlat.new()
-	panel_style.bg_color = Color(0.025, 0.028, 0.036, 0.97)
+	# Fully opaque: the game view and encounter HUD must not show through.
+	panel_style.bg_color = Color(0.025, 0.028, 0.036, 1.0)
 	panel_style.border_color = Color(0.56, 0.43, 0.24, 0.84)
 	panel_style.set_border_width_all(1)
 	panel_style.set_corner_radius_all(8)
