@@ -20,5 +20,6 @@ __pycache__/
 *.pyc
 /assets/tokens/generated/
 /assets/tokens/scenes/
+/assets/tokens/5etools_creature_index.json
 /dist/token_packs/
 /.token_pack_build/
