@@ -24,6 +24,10 @@ const CHUNK_SIZE := 8
 @export_range(16, 2048, 1) var max_physics_queries_per_frame: int = 128
 @export_range(1, 32, 1) var max_query_results: int = 8
 @export_range(0.75, 0.99, 0.005) var collision_probe_scale: float = 0.90
+# Visual-only displacement of occupied grid cells. Useful for walkable
+# surface grids: -0.5 on Y puts the top face of a voxel on the collision
+# surface instead of centering the voxel around it.
+@export var display_offset_cells: Vector3 = Vector3.ZERO
 @export_range(0.25, 5.0, 0.25) var map_change_check_interval: float = 0.75
 @export_range(64, 8192, 64) var max_cached_chunks: int = 2048
 
@@ -593,6 +597,7 @@ func _update_multimesh_instances() -> void:
 		var world_transform := Transform3D(
 			Basis.IDENTITY,
 			_cell_to_world_center(cell)
+			+ display_offset_cells * cell_size
 		)
 		_multimesh.set_instance_transform(
 			index,
