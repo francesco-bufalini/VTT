@@ -21,7 +21,6 @@ const DEFAULT_CATALOG_URL := (
 const GITHUB_REPOSITORY := "francesco-bufalini/VTT"
 const GITHUB_RELEASE_TAG := "token-packs-test-001"
 const CATALOG_FILENAME := "token_catalog.json"
-const STARTUP_DOWNLOAD_TEST_ID := "ape"
 
 var catalog_url: String = DEFAULT_CATALOG_URL
 var _catalog: Dictionary = {}
@@ -51,7 +50,6 @@ func _ready() -> void:
 	_download_request.name = "TokenDownloadRequest"
 	add_child(_download_request)
 	_download_request.request_completed.connect(_on_token_download_completed)
-	token_downloaded.connect(_on_token_downloaded_for_startup_test)
 
 	call_deferred("_refresh_catalog_on_start")
 
@@ -211,22 +209,6 @@ func is_mounted(token_id: String) -> bool:
 	return bool(_mounted_token_ids.get(token_id, false))
 
 
-func _on_token_downloaded_for_startup_test(
-	token_id: String,
-	_cache_path: String
-) -> void:
-	if token_id != STARTUP_DOWNLOAD_TEST_ID:
-		return
-	var error := mount_token(token_id)
-	if error != OK:
-		var message := "Could not mount %s.pck: %s" % [
-			token_id,
-			error_string(error),
-		]
-		push_warning("TokenPackManager: %s" % message)
-		token_mount_failed.emit(token_id, message)
-
-
 func _download_url_for(entry: Dictionary) -> String:
 	var explicit := String(entry.get("release_download_url", "")).strip_edges()
 	if not explicit.is_empty():
@@ -362,21 +344,6 @@ func _download_token_via_gh(token_id: String, entry: Dictionary) -> bool:
 	return true
 
 
-func _run_startup_download_test() -> void:
-	if not has_token(STARTUP_DOWNLOAD_TEST_ID):
-		push_warning(
-			"TokenPackManager: startup test token '%s' is absent from catalog."
-			% STARTUP_DOWNLOAD_TEST_ID
-		)
-		return
-	var error := download_token(STARTUP_DOWNLOAD_TEST_ID)
-	if error != OK:
-		push_warning(
-			"TokenPackManager: could not start %s.pck test download: %s"
-			% [STARTUP_DOWNLOAD_TEST_ID, error_string(error)]
-		)
-
-
 func get_catalog() -> Dictionary:
 	return _catalog.duplicate(true)
 
@@ -504,7 +471,6 @@ func _on_catalog_request_completed(
 				"TokenPackManager: catalog loaded via HTTP (%d tokens)"
 				% _entries_by_id.size()
 			)
-			call_deferred("_run_startup_download_test")
 			return
 		push_warning("TokenPackManager: HTTP catalog JSON is invalid.")
 
@@ -570,7 +536,6 @@ func _refresh_catalog_via_gh() -> bool:
 		"TokenPackManager: catalog loaded via gh fallback (%d tokens)"
 		% _entries_by_id.size()
 	)
-	call_deferred("_run_startup_download_test")
 	return true
 
 
