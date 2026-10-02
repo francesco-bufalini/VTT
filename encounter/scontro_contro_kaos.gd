@@ -75,10 +75,10 @@ func _apply_post_kaos_terrain_rules() -> void:
 		| 4
 		| PostKaosHelpers.RIGHT_ARM_GRID_LAYER
 	)
-	# Surface collision cells straddle the mesh by construction. Rendering
-	# them half a cell downward makes their top plane coincide with the
-	# walkable surface, so tokens stand on the grid instead of inside it.
-	volumetric_grid.display_offset_cells = Vector3(0.0, -0.5, 0.0)
+	# The tactical voxel itself is now the authoritative floor for tokens.
+	# Keep cells at their natural position: their upper face is guaranteed to
+	# sit above the solid geometry that caused the cell to be occupied.
+	volumetric_grid.display_offset_cells = Vector3.ZERO
 	measurement_tool.collision_mask = 1 | 4
 	if volumetric_grid.has_method("refresh"):
 		volumetric_grid.call_deferred("refresh")
