@@ -1494,6 +1494,10 @@ func _add_reference_option(
 			_on_form_changed()
 			if field == _spell_class_selector:
 				_refresh_available_spells()
+			if key == "class":
+				_refresh_catalog_section("class_features_catalog")
+			elif key == "species":
+				_refresh_catalog_section("species_traits_catalog")
 	)
 	parent.add_child(field)
 	_option_fields[key] = field
@@ -1527,6 +1531,7 @@ func _reload_characters() -> void:
 					)
 				)
 	_refresh_character_list()
+	_sync_all_character_health_bars()
 
 
 func _refresh_character_list(select_id: String = "") -> void:
@@ -1862,6 +1867,11 @@ func _clear_form() -> void:
 		_linked_token_label.text = "Token collegato: nessuno"
 	if _selected_spells != null:
 		_selected_spells.clear()
+	if _prepared_spells != null:
+		_prepared_spells.clear()
+	for owned_value: Variant in _catalog_owned_lists.values():
+		if owned_value is ItemList:
+			(owned_value as ItemList).clear()
 	_loading = false
 
 
@@ -1876,6 +1886,8 @@ func _delete_current_character() -> void:
 			token.has_meta("player_character_id")
 			and String(token.get_meta("player_character_id")) == character_id
 		):
+			if token.has_method("clear_player_hit_points"):
+				token.call("clear_player_hit_points")
 			token.remove_meta("player_character_id")
 			token.remove_meta("player_character_name")
 
@@ -1952,6 +1964,8 @@ func _link_character_to_token(
 			and String(scene_token.get_meta("player_character_id"))
 			== character_id
 		):
+			if scene_token.has_method("clear_player_hit_points"):
+				scene_token.call("clear_player_hit_points")
 			scene_token.remove_meta("player_character_id")
 			scene_token.remove_meta("player_character_name")
 
@@ -1991,6 +2005,7 @@ func _link_character_to_token(
 	character["linked_token_name"] = _token_name(token)
 	_characters[character_index] = character
 	_store.call("save_characters", _characters)
+	_sync_character_health_to_token(character)
 
 	_current_index = character_index
 	_loading = true
