@@ -12,6 +12,7 @@ on:
       - "**/*.tres"
       - "project.godot"
       - "scripts/validate.ps1"
+      - "tools/build_token_packs.ps1"
       - ".github/workflows/vtt-self-hosted-tests.yml"
       - "assets/spell_area_geometry.json"
 
@@ -71,3 +72,17 @@ jobs:
           if ($LASTEXITCODE -ne 0) { exit $LASTEXITCODE }
           & $godot --headless --path . --check-only --script res://tools/token_packs/verify_token_pack.gd
           if ($LASTEXITCODE -ne 0) { exit $LASTEXITCODE }
+
+      - name: Parse token pack PowerShell
+        shell: powershell
+        run: |
+          $errors = $null
+          [System.Management.Automation.Language.Parser]::ParseFile(
+            (Resolve-Path ".\tools\build_token_packs.ps1"),
+            [ref]$null,
+            [ref]$errors
+          ) | Out-Null
+          if ($errors.Count -gt 0) {
+            $errors | ForEach-Object { Write-Error $_.Message }
+            exit 1
+          }
