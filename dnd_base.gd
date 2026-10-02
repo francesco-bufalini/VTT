@@ -2677,6 +2677,10 @@ func _on_token_dialog_confirmed() -> void:
 
 	var size_name := String(selected_size.get("name", "Medium"))
 	var footprint := float(selected_size.get("footprint", 1.0))
+	var visual_native_footprint := maxf(
+		float(_selected_token_profile.get("footprint", footprint)),
+		0.5
+	)
 	var reach_feet: float = maxf(5.0, footprint * 5.0)
 	if token_reach_input != null:
 		reach_feet = maxf(float(token_reach_input.value), 5.0)
@@ -2716,7 +2720,11 @@ func _on_token_dialog_confirmed() -> void:
 			and created_token.has_method("set_visual_asset")
 		):
 			visual_applied = bool(
-				created_token.call("set_visual_asset", visual_asset)
+				created_token.call(
+					"set_visual_asset",
+					visual_asset,
+					visual_native_footprint
+				)
 			)
 
 		# Una trasformazione deve essere atomica. Prima questo risultato veniva
@@ -2761,7 +2769,8 @@ func _on_token_dialog_confirmed() -> void:
 			display_name,
 			visual_asset,
 			front_quarter_turns,
-			reach_feet
+			reach_feet,
+			visual_native_footprint
 		)
 
 	var confirmed_callback: Callable = (
@@ -2805,7 +2814,8 @@ func _spawn_token(
 	display_name: String = "",
 	visual_asset: String = "",
 	front_quarter_turns: int = 0,
-	reach_feet: float = 0.0
+	reach_feet: float = 0.0,
+	visual_native_footprint: float = 0.0
 ) -> CharacterBody3D:
 	if token_scene == null:
 		push_error("DnDBase: token_scene non assegnata.")
@@ -2834,7 +2844,13 @@ func _spawn_token(
 	)
 
 	if not visual_asset.is_empty() and token.has_method("set_visual_asset"):
-		if not bool(token.call("set_visual_asset", visual_asset)):
+		if not bool(
+			token.call(
+				"set_visual_asset",
+				visual_asset,
+				visual_native_footprint
+			)
+		):
 			push_warning(
 				"DnDBase: miniatura non caricata: %s" % visual_asset
 			)
