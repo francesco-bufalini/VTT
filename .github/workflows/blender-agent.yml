@@ -130,6 +130,72 @@ jobs:
           Get-ChildItem -Path "${{ steps.job.outputs.output_root }}" -Recurse -File | Select-Object FullName,Length
           Get-ChildItem -Path "${{ steps.job.outputs.output_root }}" -Filter scene_report.json -Recurse -File | ForEach-Object { Write-Host "== $($_.FullName) =="; Get-Content -LiteralPath $_.FullName -Raw }
 
+      - name: Persist latest Blender scene locally
+        if: success() && steps.job.outputs.skip != 'true'
+        shell: powershell
+        run: |
+          $ErrorActionPreference = "Stop"
+
+          $sceneReport = Get-ChildItem -Path "${{ steps.job.outputs.output_root }}" -Filter scene_report.json -Recurse -File | Select-Object -First 1
+          if (-not $sceneReport) { throw "scene_report.json missing; refusing to update persistent workspace." }
+
+          $scene = Get-Content -LiteralPath $sceneReport.FullName -Raw | ConvertFrom-Json
+          $sceneId = [string]$scene.scene_id
+          if ([string]::IsNullOrWhiteSpace($sceneId) -or $sceneId -notmatch "^[A-Za-z0-9._-]+$") {
+            throw "Invalid scene_id in scene report: $sceneId"
+          }
+
+          $workspaceRoot = $env:VTT_BLENDER_WORKSPACE_ROOT
+          if ([string]::IsNullOrWhiteSpace($workspaceRoot)) {
+            $workspaceRoot = "C:\VTT-BlenderWorkspace"
+          }
+
+          New-Item -ItemType Directory -Path $workspaceRoot -Force | Out-Null
+          $sceneRoot = Join-Path $workspaceRoot $sceneId
+          $stageRoot = Join-Path $workspaceRoot (".$sceneId-stage-${{ github.run_id }}")
+          $backupRoot = Join-Path $workspaceRoot (".$sceneId-previous")
+
+          Remove-Item -LiteralPath $stageRoot -Recurse -Force -ErrorAction SilentlyContinue
+          New-Item -ItemType Directory -Path $stageRoot -Force | Out-Null
+
+          Copy-Item -Path (Join-Path $sceneReport.Directory.FullName "*") -Destination $stageRoot -Recurse -Force
+
+          $latest = [ordered]@{
+            schema_version = 1
+            scene_id = $sceneId
+            run_id = "${{ github.run_id }}"
+            run_number = "${{ github.run_number }}"
+            source_sha = "${{ github.sha }}"
+            blender_job = "${{ steps.job.outputs.job }}"
+            updated_utc = (Get-Date).ToUniversalTime().ToString("o")
+          }
+          $latest | ConvertTo-Json -Depth 6 | Set-Content -LiteralPath (Join-Path $stageRoot "latest.json") -Encoding UTF8
+
+          Remove-Item -LiteralPath $backupRoot -Recurse -Force -ErrorAction SilentlyContinue
+          try {
+            if (Test-Path -LiteralPath $sceneRoot) {
+              Move-Item -LiteralPath $sceneRoot -Destination $backupRoot
+            }
+            Move-Item -LiteralPath $stageRoot -Destination $sceneRoot
+            Remove-Item -LiteralPath $backupRoot -Recurse -Force -ErrorAction SilentlyContinue
+          }
+          catch {
+            if (Test-Path -LiteralPath $sceneRoot) {
+              Remove-Item -LiteralPath $sceneRoot -Recurse -Force -ErrorAction SilentlyContinue
+            }
+            if (Test-Path -LiteralPath $backupRoot) {
+              Move-Item -LiteralPath $backupRoot -Destination $sceneRoot
+            }
+            throw
+          }
+
+          $blend = Get-ChildItem -Path $sceneRoot -Filter *.blend -File | Select-Object -First 1
+          if (-not $blend) { throw "Persistent workspace update completed without a .blend file." }
+
+          Write-Host "Persistent scene: $sceneRoot"
+          Write-Host "Persistent blend: $($blend.FullName)"
+          Write-Host "Persistent blend size: $($blend.Length) bytes"
+
       - name: Upload Blender outputs
         if: steps.job.outputs.skip != 'true'
         uses: actions/upload-artifact@v4
