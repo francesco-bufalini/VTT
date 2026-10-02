@@ -950,14 +950,22 @@ def build_titan_prison_sphere(op: dict, root_path: Path) -> None:
     )
     radius = sphere_radius * scale
 
-    stone = _material("TitanPrison_ObsidianStone", (0.055, 0.06, 0.072), 0.82, 0.04)
-    titan_stone = _material("TitanPrison_TitanStone", (0.105, 0.105, 0.115), 0.76, 0.02)
-    gold = _emissive_material("TitanPrison_AgedDivineGold", (0.52, 0.25, 0.045), 2.0, 0.62)
-    energy = _emissive_material("TitanPrison_InnerEnergy", (1.0, 0.23, 0.055), 9.0, 0.05)
+    stone = _material("TitanPrison_ObsidianStone", (0.105, 0.095, 0.09), 0.78, 0.04)
+    titan_stone = _material("TitanPrison_TitanStone", (0.19, 0.16, 0.135), 0.66, 0.03)
+    gold = _emissive_material("TitanPrison_AgedDivineGold", (0.34, 0.15, 0.035), 0.65, 0.72)
+    energy = _emissive_material("TitanPrison_InnerEnergy", (1.0, 0.12, 0.018), 18.0, 0.05)
 
     root = bpy.data.collections.new("KLOTHYS_TITAN_PRISON_SPHERE")
     bpy.context.scene.collection.children.link(root)
     before = set(bpy.context.scene.objects)
+
+    anchor = bpy.data.objects.new("ALIGN_KLOTHYS_SPHERE_CENTER", None)
+    bpy.context.scene.collection.objects.link(anchor)
+    anchor.location = center
+    anchor.empty_display_type = "SPHERE"
+    anchor.empty_display_size = 5.0 * scale
+    anchor["reference_radius_m"] = sphere_radius
+    anchor["center_godot_m"] = ",".join(str(v) for v in sphere_godot)
 
     bpy.ops.mesh.primitive_uv_sphere_add(
         segments=160,
@@ -1014,7 +1022,7 @@ def build_titan_prison_sphere(op: dict, root_path: Path) -> None:
         )).normalized()
 
         titan = source.copy()
-        titan.data = source.data.copy()
+        titan.data = source.data
         bpy.context.scene.collection.objects.link(titan)
         titan.name = f"TitanPressureRelief_{i:02d}"
         titan.hide_render = False
@@ -1061,7 +1069,7 @@ def build_titan_prison_sphere(op: dict, root_path: Path) -> None:
     for idx, rotation in enumerate(((0.0, 0.0, 0.0), (0.62, 0.0, 0.38), (-0.55, 0.28, -0.46))):
         bpy.ops.mesh.primitive_torus_add(
             major_radius=(sphere_radius + 2.3) * scale,
-            minor_radius=0.72 * scale,
+            minor_radius=0.46 * scale,
             major_segments=192,
             minor_segments=10,
             location=center,
@@ -1077,12 +1085,14 @@ def build_titan_prison_sphere(op: dict, root_path: Path) -> None:
     crack_count = int(op.get("crack_count", 11))
     for crack_index in range(crack_count):
         latitude = rng.uniform(-0.95, 0.95)
-        longitude = rng.uniform(-math.pi, math.pi)
+        longitude = rng.uniform(-1.08, 1.08) if crack_index < 8 else rng.uniform(-math.pi, math.pi)
         points = []
+        angular_points = []
         lat = latitude
         lon = longitude
         segments = rng.randint(9, 17)
         for j in range(segments):
+            angular_points.append((lat, lon))
             points.append(_sphere_point(center, (sphere_radius + 0.9) * scale, lat, lon))
             lat += rng.uniform(-0.055, 0.055)
             lon += rng.uniform(0.045, 0.11) * (-1 if crack_index % 3 == 0 else 1)
@@ -1090,23 +1100,22 @@ def build_titan_prison_sphere(op: dict, root_path: Path) -> None:
         _surface_curve(
             f"EnergyFissure_{crack_index:02d}",
             points,
-            rng.uniform(0.34, 0.72) * scale,
+            rng.uniform(0.42, 0.82) * scale,
             energy,
         )
 
         if crack_index % 2 == 0 and len(points) > 5:
             branch_start = rng.randint(3, len(points) - 3)
-            b_lat = lat - rng.uniform(-0.12, 0.12)
-            b_lon = lon - rng.uniform(0.12, 0.28)
+            b_lat, b_lon = angular_points[branch_start]
             branch_points = []
             for _ in range(rng.randint(4, 7)):
                 branch_points.append(_sphere_point(center, (sphere_radius + 1.0) * scale, b_lat, b_lon))
-                b_lat += rng.uniform(-0.04, 0.04)
-                b_lon += rng.uniform(-0.075, 0.075)
+                b_lat += rng.uniform(-0.045, 0.045)
+                b_lon += rng.uniform(-0.085, 0.085)
             _surface_curve(
                 f"EnergyFissure_{crack_index:02d}_Branch",
                 branch_points,
-                rng.uniform(0.20, 0.38) * scale,
+                rng.uniform(0.24, 0.42) * scale,
                 energy,
             )
 
@@ -1134,25 +1143,34 @@ def build_titan_prison_sphere(op: dict, root_path: Path) -> None:
     # Preview lighting belongs to the asset file; importing the collection into the
     # arena only requires KLOTHYS_TITAN_PRISON_SPHERE.
     key = bpy.data.lights.new("TitanPrison_Key", type="AREA")
-    key.energy = 4800
+    key.energy = 52000
     key.shape = "DISK"
-    key.size = 180 * scale
+    key.size = 260 * scale
     key.color = (0.36, 0.45, 0.75)
     key_obj = bpy.data.objects.new("TitanPrison_Key", key)
     bpy.context.scene.collection.objects.link(key_obj)
+    key_obj["preview_only"] = True
     key_obj.location = (
-        center[0] - 270 * scale,
-        center[1] + 160 * scale,
-        center[2] + 310 * scale,
+        center[0] - 320 * scale,
+        center[1] + 360 * scale,
+        center[2] + 300 * scale,
     )
     key_obj.rotation_euler = (math.radians(52), 0.0, math.radians(-42))
 
-    rim = bpy.data.lights.new("TitanPrison_Rim", type="POINT")
-    rim.energy = 9000
-    rim.color = (1.0, 0.18, 0.035)
+    rim = bpy.data.lights.new("TitanPrison_Rim", type="AREA")
+    rim.energy = 36000
+    rim.shape = "DISK"
+    rim.size = 220 * scale
+    rim.color = (1.0, 0.22, 0.055)
     rim_obj = bpy.data.objects.new("TitanPrison_Rim", rim)
     bpy.context.scene.collection.objects.link(rim_obj)
-    rim_obj.location = center
+    rim_obj["preview_only"] = True
+    rim_obj.location = (
+        center[0] + 250 * scale,
+        center[1] + 390 * scale,
+        center[2] + 40 * scale,
+    )
+    rim_obj.rotation_euler = (math.radians(78), 0.0, math.radians(145))
 
     bpy.context.scene.world.color = (0.006, 0.008, 0.016)
     bpy.context.scene["titan_prison_asset_collection"] = root.name
@@ -1161,6 +1179,8 @@ def build_titan_prison_sphere(op: dict, root_path: Path) -> None:
 
     generated = [obj for obj in bpy.context.scene.objects if obj not in before]
     for obj in generated:
+        if bool(obj.get("preview_only", False)):
+            continue
         for coll in list(obj.users_collection):
             coll.objects.unlink(obj)
         root.objects.link(obj)
