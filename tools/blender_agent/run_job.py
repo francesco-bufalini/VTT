@@ -14,6 +14,8 @@ import random
 import re
 import sys
 import traceback
+import urllib.parse
+import urllib.request
 from pathlib import Path
 
 import bpy
@@ -195,6 +197,307 @@ def scene_report(path: Path, job_path: Path, job: dict) -> None:
     path.parent.mkdir(parents=True, exist_ok=True)
     path.write_text(json.dumps(report, indent=2), encoding="utf-8")
 
+
+
+
+def _json_from_url(url: str):
+    request = urllib.request.Request(
+        url,
+        headers={
+            "User-Agent": "VTT-Blender-Agent/1.0 (+https://github.com/francesco-bufalini/VTT)",
+            "Accept": "application/json",
+        },
+    )
+    with urllib.request.urlopen(request, timeout=60) as response:
+        return json.loads(response.read().decode("utf-8"))
+
+
+def _flatten_download_leaves(tree, path=()):
+    leaves = []
+    if isinstance(tree, dict):
+        if isinstance(tree.get("url"), str):
+            leaves.append((path, tree))
+        else:
+            for key, value in tree.items():
+                leaves.extend(_flatten_download_leaves(value, path + (str(key),)))
+    elif isinstance(tree, list):
+        for index, value in enumerate(tree):
+            leaves.extend(_flatten_download_leaves(value, path + (str(index),)))
+    return leaves
+
+
+def _polyhaven_pick_file(files_tree, kind: str, resolution: str = "1k"):
+    aliases = {
+        "diffuse": ("diffuse", "albedo", "basecolor", "base_color"),
+        "normal": ("nor_gl", "normal_gl", "normal (gl)", "normal"),
+        "rough": ("rough", "roughness"),
+    }
+    wanted = aliases[kind]
+    candidates = []
+    for path, leaf in _flatten_download_leaves(files_tree):
+        path_text = "/".join(path).lower()
+        url = str(leaf.get("url", ""))
+        if not url:
+            continue
+        if not any(alias in path_text for alias in wanted):
+            continue
+        score = 0
+        if resolution.lower() in path_text:
+            score += 20
+        if kind == "normal" and "nor_gl" in path_text:
+            score += 20
+        if path and path[-1].lower() == "jpg":
+            score += 8
+        elif path and path[-1].lower() == "png":
+            score += 6
+        if "exr" in path_text:
+            score -= 10
+        candidates.append((score, path, leaf))
+    if not candidates:
+        raise RuntimeError(
+            f"Poly Haven asset does not expose {kind!r} at a usable format/resolution."
+        )
+    candidates.sort(key=lambda item: (item[0], "/".join(item[1])), reverse=True)
+    return candidates[0][2]
+
+
+def _download_file(url: str, destination: Path) -> None:
+    destination.parent.mkdir(parents=True, exist_ok=True)
+    if destination.exists() and destination.stat().st_size > 0:
+        return
+    request = urllib.request.Request(
+        url,
+        headers={"User-Agent": "VTT-Blender-Agent/1.0 (+https://github.com/francesco-bufalini/VTT)"},
+    )
+    with urllib.request.urlopen(request, timeout=120) as response:
+        data = response.read()
+    destination.write_bytes(data)
+
+
+def _polyhaven_texture_set(
+    root_path: Path,
+    scene_id: str,
+    asset_id: str,
+    resolution: str = "1k",
+) -> dict:
+    files_tree = _json_from_url(f"https://api.polyhaven.com/files/{asset_id}")
+    target_dir = root_path / "blender" / "scenes" / scene_id / "textures" / asset_id
+    target_dir.mkdir(parents=True, exist_ok=True)
+    result = {}
+    manifest_maps = {}
+
+    for kind in ("diffuse", "normal", "rough"):
+        leaf = _polyhaven_pick_file(files_tree, kind, resolution)
+        url = str(leaf["url"])
+        suffix = Path(urllib.parse.urlparse(url).path).suffix.lower() or ".jpg"
+        filename = f"{asset_id}_{resolution}_{kind}{suffix}"
+        dest = target_dir / filename
+        _download_file(url, dest)
+        result[kind] = dest
+        manifest_maps[kind] = {
+            "file": filename,
+            "source_url": url,
+            "size_bytes": dest.stat().st_size,
+            "md5": leaf.get("md5", ""),
+        }
+
+    manifest = {
+        "asset_id": asset_id,
+        "source": f"https://polyhaven.com/a/{asset_id}",
+        "api": f"https://api.polyhaven.com/files/{asset_id}",
+        "license": "CC0",
+        "resolution": resolution,
+        "maps": manifest_maps,
+    }
+    (target_dir / "manifest.json").write_text(
+        json.dumps(manifest, indent=2),
+        encoding="utf-8",
+    )
+    return result
+
+
+def _pbr_material_from_maps(
+    name: str,
+    maps: dict,
+    tiling=(32.0, 32.0, 32.0),
+    normal_strength: float = 0.65,
+):
+    mat = bpy.data.materials.get(name) or bpy.data.materials.new(name)
+    mat.use_nodes = True
+    nodes = mat.node_tree.nodes
+    links = mat.node_tree.links
+    nodes.clear()
+
+    output = nodes.new("ShaderNodeOutputMaterial")
+    output.location = (620, 0)
+    bsdf = nodes.new("ShaderNodeBsdfPrincipled")
+    bsdf.location = (360, 0)
+    bsdf.inputs["Roughness"].default_value = 0.72
+    links.new(bsdf.outputs["BSDF"], output.inputs["Surface"])
+
+    texcoord = nodes.new("ShaderNodeTexCoord")
+    texcoord.location = (-900, 0)
+    mapping = nodes.new("ShaderNodeMapping")
+    mapping.location = (-700, 0)
+    mapping.inputs["Scale"].default_value = tuple(float(v) for v in tiling[:3])
+    links.new(texcoord.outputs["Generated"], mapping.inputs["Vector"])
+
+    diffuse = nodes.new("ShaderNodeTexImage")
+    diffuse.location = (-430, 170)
+    diffuse.image = bpy.data.images.load(str(maps["diffuse"]), check_existing=True)
+    diffuse.projection = "BOX"
+    diffuse.projection_blend = 0.18
+    links.new(mapping.outputs["Vector"], diffuse.inputs["Vector"])
+    links.new(diffuse.outputs["Color"], bsdf.inputs["Base Color"])
+
+    rough = nodes.new("ShaderNodeTexImage")
+    rough.location = (-430, -60)
+    rough.image = bpy.data.images.load(str(maps["rough"]), check_existing=True)
+    rough.image.colorspace_settings.name = "Non-Color"
+    rough.projection = "BOX"
+    rough.projection_blend = 0.18
+    links.new(mapping.outputs["Vector"], rough.inputs["Vector"])
+    links.new(rough.outputs["Color"], bsdf.inputs["Roughness"])
+
+    normal_tex = nodes.new("ShaderNodeTexImage")
+    normal_tex.location = (-430, -300)
+    normal_tex.image = bpy.data.images.load(str(maps["normal"]), check_existing=True)
+    normal_tex.image.colorspace_settings.name = "Non-Color"
+    normal_tex.projection = "BOX"
+    normal_tex.projection_blend = 0.18
+    links.new(mapping.outputs["Vector"], normal_tex.inputs["Vector"])
+
+    normal = nodes.new("ShaderNodeNormalMap")
+    normal.location = (90, -240)
+    normal.inputs["Strength"].default_value = normal_strength
+    links.new(normal_tex.outputs["Color"], normal.inputs["Color"])
+    links.new(normal.outputs["Normal"], bsdf.inputs["Normal"])
+
+    mat["texture_source"] = "Poly Haven"
+    mat["texture_license"] = "CC0"
+    return mat
+
+
+def _cubic_bezier_2d(p0, p1, p2, p3, segments: int):
+    points = []
+    for i in range(segments + 1):
+        t = i / segments
+        u = 1.0 - t
+        x = (
+            u**3 * p0[0]
+            + 3.0 * u * u * t * p1[0]
+            + 3.0 * u * t * t * p2[0]
+            + t**3 * p3[0]
+        )
+        y = (
+            u**3 * p0[1]
+            + 3.0 * u * u * t * p1[1]
+            + 3.0 * u * t * t * p2[1]
+            + t**3 * p3[1]
+        )
+        points.append((x, y))
+    return points
+
+
+def _add_harmonious_rect_circle_prism(
+    name: str,
+    rect_x_min: float,
+    rect_x_max: float,
+    rect_y_min: float,
+    rect_y_max: float,
+    circle_center,
+    circle_radius: float,
+    thickness: float,
+    mat,
+    blend_start_y: float,
+    circle_join_angle_deg: float = 32.0,
+    transition_segments: int = 24,
+    circle_segments: int = 180,
+):
+    """One continuous floor with smooth flared shoulders into the circular platform."""
+    cx, cy = float(circle_center[0]), float(circle_center[1])
+    half_angle = math.radians(circle_join_angle_deg)
+
+    right_join = (
+        cx + math.sin(half_angle) * circle_radius,
+        cy + math.cos(half_angle) * circle_radius,
+    )
+    left_join = (
+        cx - math.sin(half_angle) * circle_radius,
+        cy + math.cos(half_angle) * circle_radius,
+    )
+
+    left_start = (rect_x_min, blend_start_y)
+    right_start = (rect_x_max, blend_start_y)
+
+    tangent_right = mathutils.Vector((-math.cos(half_angle), math.sin(half_angle))).normalized()
+    tangent_left = mathutils.Vector((math.cos(half_angle), math.sin(half_angle))).normalized()
+    handle = min(58.0, circle_radius * 0.24)
+    vertical_handle = min(48.0, max(20.0, (blend_start_y - right_join[1]) * 0.38))
+
+    left_curve = _cubic_bezier_2d(
+        left_start,
+        (left_start[0], left_start[1] - vertical_handle),
+        (
+            left_join[0] - tangent_left.x * handle,
+            left_join[1] - tangent_left.y * handle,
+        ),
+        left_join,
+        transition_segments,
+    )
+
+    # Long outer arc from left join around the back/bottom of the platform to right join.
+    left_angle = math.atan2(left_join[1] - cy, left_join[0] - cx)
+    right_angle = math.atan2(right_join[1] - cy, right_join[0] - cx)
+    while right_angle <= left_angle:
+        right_angle += math.tau
+
+    arc = []
+    for i in range(1, circle_segments):
+        t = i / circle_segments
+        a = left_angle + (right_angle - left_angle) * t
+        arc.append((cx + math.cos(a) * circle_radius, cy + math.sin(a) * circle_radius))
+
+    right_curve = _cubic_bezier_2d(
+        right_join,
+        (
+            right_join[0] + tangent_right.x * handle,
+            right_join[1] + tangent_right.y * handle,
+        ),
+        (right_start[0], right_start[1] - vertical_handle),
+        right_start,
+        transition_segments,
+    )
+
+    outline = [
+        (rect_x_min, rect_y_max),
+        left_start,
+    ]
+    outline.extend(left_curve[1:])
+    outline.extend(arc)
+    outline.extend(right_curve[1:])
+    outline.append((rect_x_max, rect_y_max))
+
+    n = len(outline)
+    top_z = 0.0
+    bottom_z = -abs(float(thickness))
+    verts = [(x, y, top_z) for x, y in outline] + [(x, y, bottom_z) for x, y in outline]
+    faces = [tuple(range(n)), tuple(reversed(range(n, 2 * n)))]
+    for i in range(n):
+        j = (i + 1) % n
+        faces.append((i, j, n + j, n + i))
+
+    mesh = bpy.data.meshes.new(name + "_Mesh")
+    mesh.from_pydata(verts, [], faces)
+    mesh.update()
+    obj = bpy.data.objects.new(name, mesh)
+    bpy.context.scene.collection.objects.link(obj)
+    _assign_material(obj, mat)
+    obj["harmonious_transition"] = True
+    obj["blend_start_y_m"] = blend_start_y
+    obj["circle_join_angle_deg"] = circle_join_angle_deg
+    obj["circle_radius_m"] = circle_radius
+    return obj
 
 
 def _material(name: str, base_color, roughness: float = 0.7, metallic: float = 0.0):
@@ -713,6 +1016,39 @@ def build_kaos_arena(op: dict, root_path: Path) -> None:
     water = _material("Arena_Deep_Water", (0.018, 0.055, 0.075), 0.18, 0.08)
     rock = _material("Arena_Cliff_Rock", (0.12, 0.115, 0.105), 0.94)
 
+    texture_config = layout_extension.get("texture_sets", {}) if layout_extension else {}
+    if texture_config:
+        scene_id = str(op.get("scene_id") or bpy.context.scene.get("scene_id") or "kaos_arena")
+        floor_cfg = texture_config.get("floor", {})
+        wall_cfg = texture_config.get("wall", {})
+        if floor_cfg:
+            floor_maps = _polyhaven_texture_set(
+                root_path,
+                scene_id,
+                str(floor_cfg.get("asset_id", "floor_tiles_02")),
+                str(floor_cfg.get("resolution", "1k")),
+            )
+            stone_light = _pbr_material_from_maps(
+                "Arena_PBR_Floor",
+                floor_maps,
+                tuple(floor_cfg.get("tiling", [58.0, 58.0, 58.0])),
+                float(floor_cfg.get("normal_strength", 0.6)),
+            )
+        if wall_cfg:
+            wall_maps = _polyhaven_texture_set(
+                root_path,
+                scene_id,
+                str(wall_cfg.get("asset_id", "plaster_stone_wall_01")),
+                str(wall_cfg.get("resolution", "1k")),
+            )
+            stone = _pbr_material_from_maps(
+                "Arena_PBR_AncientStone",
+                wall_maps,
+                tuple(wall_cfg.get("tiling", [42.0, 42.0, 42.0])),
+                float(wall_cfg.get("normal_strength", 0.85)),
+            )
+            rock = stone
+
     root = bpy.data.collections.new("KAOS_ARENA")
     bpy.context.scene.collection.children.link(root)
     before = set(bpy.context.scene.objects)
@@ -781,7 +1117,7 @@ def build_kaos_arena(op: dict, root_path: Path) -> None:
             effective_water_radius * scale,
             wall_height * scale,
             (0.0, water_center_y * scale, 0.0),
-            stone_light,
+            stone,
             flutes=wall_flutes,
             flute_depth=wall_flute_depth * scale,
             segments_per_flute=8,
@@ -818,18 +1154,35 @@ def build_kaos_arena(op: dict, root_path: Path) -> None:
         if continuous_walkable:
             rect_x_min, rect_x_max = xb
             rect_y_min, rect_y_max = yb
-            walkable = _add_rect_circle_union_prism(
-                "COMBAT_ContinuousArenaFloor",
-                rect_x_min * scale,
-                rect_x_max * scale,
-                rect_y_min * scale,
-                rect_y_max * scale,
-                (sphere_blender[0] * scale, sphere_blender[1] * scale),
-                platform_radius * scale,
-                platform_thickness * scale,
-                stone_light,
-                arc_segments=160,
-            )
+            if bool(layout_extension.get("harmonious_walkable_transition", False)):
+                walkable = _add_harmonious_rect_circle_prism(
+                    "COMBAT_ContinuousArenaFloor",
+                    rect_x_min * scale,
+                    rect_x_max * scale,
+                    rect_y_min * scale,
+                    rect_y_max * scale,
+                    (sphere_blender[0] * scale, sphere_blender[1] * scale),
+                    platform_radius * scale,
+                    platform_thickness * scale,
+                    stone_light,
+                    blend_start_y=float(layout_extension.get("transition_start_y_m", 72.0)) * scale,
+                    circle_join_angle_deg=float(layout_extension.get("transition_circle_angle_deg", 32.0)),
+                    transition_segments=28,
+                    circle_segments=200,
+                )
+            else:
+                walkable = _add_rect_circle_union_prism(
+                    "COMBAT_ContinuousArenaFloor",
+                    rect_x_min * scale,
+                    rect_x_max * scale,
+                    rect_y_min * scale,
+                    rect_y_max * scale,
+                    (sphere_blender[0] * scale, sphere_blender[1] * scale),
+                    platform_radius * scale,
+                    platform_thickness * scale,
+                    stone_light,
+                    arc_segments=160,
+                )
             walkable["godot_role"] = "Board/FloorCollision + V5 sphere platform"
             walkable["combat_extension"] = "kaos_v5"
             walkable["source_battlemap_size_m"] = f"{floor_w}x{floor_d}"
@@ -980,7 +1333,7 @@ def build_kaos_arena(op: dict, root_path: Path) -> None:
                 (x * scale, y * scale, water_height * scale),
                 height * scale,
                 radius * scale,
-                stone_light,
+                stone,
                 broken=broken,
             )
             col.rotation_euler.z = rng.uniform(-math.pi, math.pi)
@@ -1423,6 +1776,8 @@ def main(argv: list[str]) -> int:
         clear_scene()
 
     for index, operation in enumerate(job.get("operations", []), start=1):
+        operation = dict(operation)
+        operation.setdefault("scene_id", job.get("scene_id", job_path.stem))
         print(f"BLENDER_AGENT_OP {index}: {operation.get('op')}", flush=True)
         execute_operation(operation, root)
 
