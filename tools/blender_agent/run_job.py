@@ -376,19 +376,19 @@ def build_kaos_arena(op: dict) -> None:
     bpy.ops.mesh.primitive_uv_sphere_add(
         segments=96,
         ring_count=48,
-        radius=74 * scale,
-        location=(0, 118 * scale, 70 * scale),
+        radius=62 * scale,
+        location=(0, 154 * scale, 96 * scale),
     )
     sphere = bpy.context.object
     sphere.name = "KlothysSphere_Reference"
     _assign_material(sphere, stone_dark)
     for band_angle in (-0.58, 0.0, 0.58):
         bpy.ops.mesh.primitive_torus_add(
-            major_radius=74.8 * scale,
+            major_radius=62.8 * scale,
             minor_radius=0.7 * scale,
             major_segments=96,
             minor_segments=10,
-            location=(0, 118 * scale, 70 * scale),
+            location=(0, 154 * scale, 96 * scale),
             rotation=(band_angle, 0.0, 0.0),
         )
         band = bpy.context.object
@@ -407,20 +407,55 @@ def build_kaos_arena(op: dict) -> None:
         col = _add_column(
             f"OuterColumn_{idx:02d}",
             p,
-            18 * scale,
-            1.55 * scale,
+            23 * scale,
+            1.75 * scale,
             stone_light,
             broken=broken,
         )
         col.rotation_euler.z = a + math.pi * 0.5
 
+    # A partially surviving rear tholos creates one strong architectural landmark.
+    tholos_angles = [48, 65, 82, 99, 116, 133]
+    tholos_radius = 83 * scale
+    tholos_points = []
+    for idx, deg in enumerate(tholos_angles):
+        a = math.radians(deg)
+        p = (
+            math.cos(a) * tholos_radius,
+            math.sin(a) * tholos_radius,
+            4.3 * scale,
+        )
+        tholos_points.append(p)
+        _add_column(
+            f"RearTholosColumn_{idx:02d}",
+            p,
+            (27 if idx not in (0, 5) else 18) * scale,
+            1.9 * scale,
+            stone_light,
+            broken=1.0 if idx not in (0, 5) else 0.67,
+        )
+    for idx in range(1, len(tholos_points) - 2):
+        a = tholos_points[idx]
+        b = tholos_points[idx + 1]
+        mx = (a[0] + b[0]) * 0.5
+        my = (a[1] + b[1]) * 0.5
+        segment_len = math.hypot(b[0] - a[0], b[1] - a[1])
+        rot = math.atan2(b[1] - a[1], b[0] - a[0])
+        _add_box(
+            f"RearTholosEntablature_{idx:02d}",
+            (segment_len * 0.52, 1.8 * scale, 1.25 * scale),
+            (mx, my, 30.1 * scale),
+            stone_light,
+            rotation=(0.0, 0.0, rot),
+        )
+
     # Three surviving arches establish scale; two damaged ones break symmetry.
     arch_specs = [
-        (-72, False, 16),
-        (0, False, 18),
-        (68, False, 15),
-        (128, True, 13),
-        (-138, True, 12),
+        (-70, False, 20),
+        (-18, True, 17),
+        (28, False, 21),
+        (145, True, 16),
+        (-145, True, 15),
     ]
     for idx, (deg, ruined, width) in enumerate(arch_specs):
         a = math.radians(deg)
@@ -430,8 +465,8 @@ def build_kaos_arena(op: dict) -> None:
             f"RuinArch_{idx:02d}",
             (x, y, 4.3 * scale),
             width * scale,
-            18 * scale,
-            3.0 * scale,
+            24 * scale,
+            3.6 * scale,
             stone_light,
             ruined=ruined,
             rotation_z=a + math.pi * 0.5,
@@ -482,14 +517,23 @@ def build_kaos_arena(op: dict) -> None:
             2000 + i,
         )
 
-    # Small processional bridge from the near side into the arena.
-    for i in range(8):
+    # Broad ceremonial approach with damaged flanking walls.
+    for i in range(10):
         _add_box(
             f"ApproachStep_{i:02d}",
-            (7.0 * scale, 5.0 * scale, 0.45 * scale),
-            (0, (-128 + i * 8.5) * scale, (0.2 + i * 0.48) * scale),
+            (9.0 * scale, 4.6 * scale, 0.48 * scale),
+            (0, (-138 + i * 8.1) * scale, (0.2 + i * 0.43) * scale),
             stone if i % 2 else stone_light,
         )
+    for side in (-1, 1):
+        for i in range(4):
+            _add_box(
+                f"ApproachWall_{side}_{i:02d}",
+                (2.0 * scale, 7.0 * scale, rng.uniform(1.6, 3.8) * scale),
+                (side * 13.0 * scale, (-119 + i * 16) * scale, 2.8 * scale),
+                stone,
+                rotation=(rng.uniform(-0.05, 0.05), 0.0, rng.uniform(-0.08, 0.08)),
+            )
 
     # Lighting tuned for readable greybox + material preview.
     key = bpy.data.lights.new("KaosKey", type="SUN")
