@@ -23,6 +23,10 @@ const GridHighlightRenderer = preload("res://vtt/grid_highlight_renderer.gd")
 const CAMERA_SPEED_DEFAULT := 5.0
 const CAMERA_SENSITIVITY_DEFAULT := 0.002
 const ALL_COLLISION_LAYERS := 0xFFFFFFFF
+# Persistent AoEs use this layer only so the right-click context menu can
+# identify them. Token picking must see through this layer.
+const AOE_PICK_LAYER := 1 << 20
+const TOKEN_PICK_COLLISION_MASK := ALL_COLLISION_LAYERS & ~AOE_PICK_LAYER
 const UNDO_LIMIT := 50
 
 const TOKEN_SIZES := [
@@ -1609,7 +1613,7 @@ func _show_context_menu(screen_position: Vector2) -> void:
 	_pending_spawn_support = null
 	var token_hit: Dictionary = _raycast_from_screen(
 		screen_position,
-		ALL_COLLISION_LAYERS,
+		TOKEN_PICK_COLLISION_MASK,
 		true
 	)
 	if not token_hit.is_empty():
@@ -2580,7 +2584,7 @@ func _interact_or_select_under_mouse(
 ) -> void:
 	var hit: Dictionary = _raycast_from_screen(
 		screen_position,
-		ALL_COLLISION_LAYERS,
+		TOKEN_PICK_COLLISION_MASK,
 		true
 	)
 	hit = _prefer_passenger_token_hit(screen_position, hit)
@@ -2835,7 +2839,7 @@ func _prefer_passenger_token_hit(
 
 	var passenger_hit := _raycast_from_screen_excluding(
 		screen_position,
-		ALL_COLLISION_LAYERS,
+		TOKEN_PICK_COLLISION_MASK,
 		exclusions,
 		true
 	)
