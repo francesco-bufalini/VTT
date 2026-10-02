@@ -25,8 +25,6 @@ jobs:
     name: Blender agent job
     runs-on: [self-hosted, windows, x64, vtt-godot]
     timeout-minutes: 20
-    env:
-      BLENDER_AGENT_OUTPUT_ROOT: ${{ runner.temp }}/blender-agent-${{ github.run_id }}
 
     steps:
       - name: Checkout Blender surface
@@ -68,9 +66,12 @@ jobs:
             throw "Blender job not found: $job"
           }
 
+          $outputRoot = Join-Path $env:RUNNER_TEMP "blender-agent-${{ github.run_id }}"
           "skip=false" >> $env:GITHUB_OUTPUT
           "job=$job" >> $env:GITHUB_OUTPUT
+          "output_root=$outputRoot" >> $env:GITHUB_OUTPUT
           Write-Host "Job: $job"
+          Write-Host "Output root: $outputRoot"
 
       - name: Verify Blender runner environment
         if: steps.job.outputs.skip != 'true'
@@ -92,8 +93,8 @@ jobs:
         shell: powershell
         run: |
           $ErrorActionPreference = "Stop"
-          Remove-Item -LiteralPath $env:BLENDER_AGENT_OUTPUT_ROOT -Recurse -Force -ErrorAction SilentlyContinue
-          New-Item -ItemType Directory -Path $env:BLENDER_AGENT_OUTPUT_ROOT -Force | Out-Null
+          Remove-Item -LiteralPath "${{ steps.job.outputs.output_root }}" -Recurse -Force -ErrorAction SilentlyContinue
+          New-Item -ItemType Directory -Path "${{ steps.job.outputs.output_root }}" -Force | Out-Null
 
           $job = "${{ steps.job.outputs.job }}"
           $stdoutPath = Join-Path $env:RUNNER_TEMP "blender-agent-${{ github.run_id }}.out"
@@ -106,7 +107,7 @@ jobs:
             "--",
             "--job", $job,
             "--project-root", $env:GITHUB_WORKSPACE,
-            "--output-root", $env:BLENDER_AGENT_OUTPUT_ROOT
+            "--output-root", "${{ steps.job.outputs.output_root }}"
           )
           $process = Start-Process -FilePath $env:VTT_BLENDER_EXE -ArgumentList $arguments -PassThru -Wait -NoNewWindow -RedirectStandardOutput $stdoutPath -RedirectStandardError $stderrPath
           $stdout = if (Test-Path $stdoutPath) { Get-Content -LiteralPath $stdoutPath -Raw } else { "" }
@@ -126,15 +127,15 @@ jobs:
         if: steps.job.outputs.skip != 'true'
         shell: powershell
         run: |
-          Get-ChildItem -Path $env:BLENDER_AGENT_OUTPUT_ROOT -Recurse -File | Select-Object FullName,Length
-          Get-ChildItem -Path $env:BLENDER_AGENT_OUTPUT_ROOT -Filter scene_report.json -Recurse -File | ForEach-Object { Write-Host "== $($_.FullName) =="; Get-Content -LiteralPath $_.FullName -Raw }
+          Get-ChildItem -Path "${{ steps.job.outputs.output_root }}" -Recurse -File | Select-Object FullName,Length
+          Get-ChildItem -Path "${{ steps.job.outputs.output_root }}" -Filter scene_report.json -Recurse -File | ForEach-Object { Write-Host "== $($_.FullName) =="; Get-Content -LiteralPath $_.FullName -Raw }
 
       - name: Upload Blender outputs
         if: steps.job.outputs.skip != 'true'
         uses: actions/upload-artifact@v4
         with:
           name: blender-agent-${{ github.run_number }}
-          path: ${{ env.BLENDER_AGENT_OUTPUT_ROOT }}/**
+          path: ${{ steps.job.outputs.output_root }}/**
           if-no-files-found: error
           retention-days: 7
 
@@ -143,7 +144,7 @@ jobs:
         shell: powershell
         run: |
           $ErrorActionPreference = "Stop"
-          $sceneReport = Get-ChildItem -Path $env:BLENDER_AGENT_OUTPUT_ROOT -Filter scene_report.json -Recurse -File | Select-Object -First 1
+          $sceneReport = Get-ChildItem -Path "${{ steps.job.outputs.output_root }}" -Filter scene_report.json -Recurse -File | Select-Object -First 1
           if (-not $sceneReport) { throw "scene_report.json missing." }
 
           $scene = Get-Content -LiteralPath $sceneReport.FullName -Raw | ConvertFrom-Json
@@ -197,7 +198,7 @@ jobs:
           $ErrorActionPreference = "Stop"
           New-Item -ItemType Directory -Path "blender/agent_reports" -Force | Out-Null
 
-          $sceneReport = Get-ChildItem -Path $env:BLENDER_AGENT_OUTPUT_ROOT -Filter scene_report.json -Recurse -File -ErrorAction SilentlyContinue | Select-Object -First 1
+          $sceneReport = Get-ChildItem -Path "${{ steps.job.outputs.output_root }}" -Filter scene_report.json -Recurse -File -ErrorAction SilentlyContinue | Select-Object -First 1
           $scene = $null
           if ($sceneReport) {
             $scene = Get-Content -LiteralPath $sceneReport.FullName -Raw | ConvertFrom-Json
