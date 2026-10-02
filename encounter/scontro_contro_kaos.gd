@@ -23,11 +23,19 @@ func _apply_post_kaos_terrain_rules() -> void:
 	# the shoulders and neck stump are opaque, real walkable geometry.
 	PostKaosHelpers.prepare_scontro_kaos_terrain(self)
 	PostKaosHelpers.disable_scontro_legacy_platforms(self)
-	PostKaosHelpers.ensure_solid_surfaces(self)
+	PostKaosHelpers.ensure_solid_surfaces(self, true)
 
-	# As in Post-Kaos, only the dedicated right-arm proxy drives the blue 3D
-	# grid. Physical support still comes from the exact body/sphere colliders.
-	volumetric_grid.collision_mask = PostKaosHelpers.RIGHT_ARM_GRID_LAYER
+	# Scan ordinary solid map layers as well as the dedicated surface shells
+	# for Kaos, Klothys and the prison sphere.
+	volumetric_grid.collision_mask = (
+		PostKaosHelpers.WALKABLE_LAYER
+		| 4
+		| PostKaosHelpers.RIGHT_ARM_GRID_LAYER
+	)
+	# Surface collision cells straddle the mesh by construction. Rendering
+	# them half a cell downward makes their top plane coincide with the
+	# walkable surface, so tokens stand on the grid instead of inside it.
+	volumetric_grid.display_offset_cells = Vector3(0.0, -0.5, 0.0)
 	measurement_tool.collision_mask = 1 | 4
 	if volumetric_grid.has_method("refresh"):
 		volumetric_grid.call_deferred("refresh")
