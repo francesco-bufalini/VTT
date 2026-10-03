@@ -39,7 +39,9 @@ var _spell_class_selector: OptionButton
 var _spell_level_selector: OptionButton
 var _catalog_search_fields: Dictionary = {}
 var _catalog_available_lists: Dictionary = {}
+var _catalog_available_rows: Dictionary = {}
 var _catalog_owned_lists: Dictionary = {}
+var _catalog_expanded: Dictionary = {}
 
 var _spell_search_input: LineEdit
 var _available_spells: ItemList
@@ -130,6 +132,7 @@ func toggle_panel() -> void:
 func show_panel() -> void:
 	if _panel == null:
 		return
+	_collapse_all_catalog_sections(false)
 	_panel.show()
 	if board_root.has_method("release_camera_control"):
 		board_root.call("release_camera_control")
@@ -1059,12 +1062,21 @@ func _add_5etools_catalog_section(
 	search.text_changed.connect(
 		_on_catalog_search_changed.bind(character_key)
 	)
+	search.focus_entered.connect(
+		_expand_catalog_section.bind(character_key)
+	)
+	search.gui_input.connect(
+		_on_catalog_search_input.bind(character_key)
+	)
 	parent.add_child(search)
 	_catalog_search_fields[character_key] = search
 
 	var available_row := HBoxContainer.new()
 	available_row.add_theme_constant_override("separation", 8)
+	available_row.hide()
 	parent.add_child(available_row)
+	_catalog_available_rows[character_key] = available_row
+	_catalog_expanded[character_key] = false
 
 	var available := ItemList.new()
 	available.custom_minimum_size = Vector2(0, 145)
@@ -1103,6 +1115,16 @@ func _add_5etools_catalog_section(
 		_add_catalog_selection.bind(character_key)
 	)
 	available_actions.add_child(add_button)
+
+	var close_catalog_button := Button.new()
+	close_catalog_button.text = "Chiudi catalogo"
+	close_catalog_button.tooltip_text = (
+		"Nasconde il catalogo e torna a mostrare solo la scheda"
+	)
+	close_catalog_button.pressed.connect(
+		_collapse_catalog_section.bind(character_key, true)
+	)
+	available_actions.add_child(close_catalog_button)
 
 	var owned_label := Label.new()
 	owned_label.text = "Nella scheda"
@@ -1154,7 +1176,68 @@ func _on_catalog_search_changed(
 	_query: String,
 	character_key: String
 ) -> void:
+	if bool(_catalog_expanded.get(character_key, false)):
+		_refresh_catalog_section(character_key)
+
+
+func _on_catalog_search_input(
+	event: InputEvent,
+	character_key: String
+) -> void:
+	if (
+		event is InputEventKey
+		and event.pressed
+		and not event.echo
+		and event.keycode == KEY_ESCAPE
+	):
+		_collapse_catalog_section(character_key, true)
+		get_viewport().set_input_as_handled()
+
+
+func _expand_catalog_section(character_key: String) -> void:
+	_catalog_expanded[character_key] = true
+	var row: Control = _catalog_available_rows.get(
+		character_key
+	) as Control
+	if row != null:
+		row.show()
 	_refresh_catalog_section(character_key)
+
+
+func _collapse_catalog_section(
+	character_key: String,
+	clear_search: bool = false
+) -> void:
+	_catalog_expanded[character_key] = false
+	var row: Control = _catalog_available_rows.get(
+		character_key
+	) as Control
+	if row != null:
+		row.hide()
+
+	var available: ItemList = _catalog_available_lists.get(
+		character_key
+	) as ItemList
+	if available != null:
+		available.clear()
+
+	if clear_search:
+		var search: LineEdit = _catalog_search_fields.get(
+			character_key
+		) as LineEdit
+		if search != null:
+			search.clear()
+			search.release_focus()
+
+
+func _collapse_all_catalog_sections(
+	clear_search: bool = false
+) -> void:
+	for raw_key: Variant in _catalog_available_lists.keys():
+		_collapse_catalog_section(
+			String(raw_key),
+			clear_search
+		)
 
 
 func _catalog_filters(character_key: String) -> Dictionary:
@@ -1184,6 +1267,23 @@ func _refresh_catalog_section(character_key: String) -> void:
 	) as LineEdit
 	if available == null:
 		return
+
+	var is_expanded := bool(
+		_catalog_expanded.get(character_key, false)
+	)
+	var row: Control = _catalog_available_rows.get(
+		character_key
+	) as Control
+
+	if not is_expanded:
+		available.clear()
+		if row != null:
+			row.hide()
+		_refresh_catalog_owned(character_key)
+		return
+
+	if row != null:
+		row.show()
 
 	var category := String(
 		available.get_meta("catalog_category", "")
@@ -1783,6 +1883,7 @@ func _on_character_selected(index: int) -> void:
 		return
 	if not _loading:
 		_save_form()
+	_collapse_all_catalog_sections(true)
 	_current_index = index
 	_load_form(_characters[index])
 
