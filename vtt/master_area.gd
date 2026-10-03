@@ -1132,7 +1132,7 @@ func _strip_5etools_tags(text: String) -> String:
 
 
 func _escape_bb(text: String) -> String:
-	return text.replace("[", "\\[").replace("]", "\\]")
+	return text.replace("[", "［").replace("]", "］")
 
 
 func _hp_spin() -> SpinBox:
