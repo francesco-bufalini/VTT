@@ -95,7 +95,7 @@ func _peer_ipv4s() -> Array[String]:
 
 	var out: Array[String] = []
 	var seen: Dictionary = {}
-	for raw: Variant in value as Array:
+	for raw: Variant in (value as Array):
 		var host := String(raw).strip_edges()
 		if (
 			host.is_empty()
