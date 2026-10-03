@@ -2,11 +2,13 @@ extends Node
 
 const BestiaryClient = preload("res://vtt/bestiary_5etools_client.gd")
 const CreatureStore = preload("res://vtt/master_creature_store.gd")
+const PDFStatblockImporter = preload("res://vtt/pdf_statblock_importer.gd")
 
 var board_root: Node3D
 var ui_root: CanvasLayer
 var _client: Node
 var _store: RefCounted
+var _pdf_importer: RefCounted
 
 var _catalog: Array[Dictionary] = []
 var _creatures: Array[Dictionary] = []
@@ -35,6 +37,9 @@ var _selected_creature_selector: OptionButton
 var _selected_token_info: Label
 var _selected_link_token: CharacterBody3D
 
+var _pdf_dialog: FileDialog
+var _pending_pdf_side: String = "enemy"
+
 
 func setup(root: Node3D) -> void:
 	board_root = root
@@ -45,6 +50,7 @@ func setup(root: Node3D) -> void:
 
 	_store = CreatureStore.new()
 	_store.call("setup", _campaign_manager())
+	_pdf_importer = PDFStatblockImporter.new()
 	_client = BestiaryClient.new()
 	_client.name = "Bestiary5eTools"
 	add_child(_client)
@@ -57,6 +63,7 @@ func setup(root: Node3D) -> void:
 	_build_ui()
 	_build_token_dialog()
 	_build_selected_token_dialog()
+	_build_pdf_dialog()
 	_reload_creatures()
 	_set_status("Caricamento bestiario 5eTools…")
 	_client.call("load_catalog")
@@ -76,7 +83,11 @@ func _unhandled_input(event: InputEvent) -> void:
 
 
 func _modal_visible() -> bool:
-	for dialog: Window in [_token_dialog, _selected_token_dialog]:
+	for dialog: Window in [
+		_token_dialog,
+		_selected_token_dialog,
+		_pdf_dialog,
+	]:
 		if dialog != null and is_instance_valid(dialog) and dialog.visible:
 			return true
 	return false
@@ -291,6 +302,18 @@ func _build_ui() -> void:
 	roster_buttons.columns = 2
 	roster_column.add_child(roster_buttons)
 
+	var pdf_enemy := Button.new()
+	pdf_enemy.text = "+ PDF nemico…"
+	pdf_enemy.tooltip_text = "Importa uno stat block da PDF nei Nemici"
+	pdf_enemy.pressed.connect(_request_pdf_import.bind("enemy"))
+	roster_buttons.add_child(pdf_enemy)
+
+	var pdf_ally := Button.new()
+	pdf_ally.text = "+ PDF alleato…"
+	pdf_ally.tooltip_text = "Importa uno stat block da PDF negli Alleati"
+	pdf_ally.pressed.connect(_request_pdf_import.bind("ally"))
+	roster_buttons.add_child(pdf_ally)
+
 	var link_selected := Button.new()
 	link_selected.text = "Token → creatura"
 	link_selected.tooltip_text = "Collega il token selezionato a una creatura"
@@ -427,6 +450,71 @@ func _build_selected_token_dialog() -> void:
 	box.add_child(_selected_creature_selector)
 
 
+func _build_pdf_dialog() -> void:
+	_pdf_dialog = FileDialog.new()
+	_pdf_dialog.name = "MasterPDFStatblockDialog"
+	_pdf_dialog.title = "Importa stat block PDF"
+	_pdf_dialog.file_mode = FileDialog.FILE_MODE_OPEN_FILE
+	_pdf_dialog.access = FileDialog.ACCESS_FILESYSTEM
+	_pdf_dialog.filters = PackedStringArray(["*.pdf ; PDF"])
+	_pdf_dialog.use_native_dialog = true
+	_pdf_dialog.file_selected.connect(_on_pdf_selected)
+	ui_root.add_child(_pdf_dialog)
+
+
+func _request_pdf_import(side: String) -> void:
+	_pending_pdf_side = "ally" if side == "ally" else "enemy"
+	_pdf_dialog.title = (
+		"Importa PDF come Alleato"
+		if _pending_pdf_side == "ally"
+		else "Importa PDF come Nemico"
+	)
+	_pdf_dialog.popup_centered_ratio(0.72)
+
+
+func _on_pdf_selected(path: String) -> void:
+	if _pdf_importer == null:
+		_set_status("Importatore PDF non disponibile.")
+		return
+
+	var destination := (
+		"Alleati" if _pending_pdf_side == "ally" else "Nemici"
+	)
+	_set_status("Lettura dello stat block PDF…")
+	# Give the native dialog one frame to close before the blocking extractor
+	# runs. Normal text PDFs finish almost immediately; OCR may take longer.
+	await get_tree().process_frame
+
+	var result: Dictionary = _pdf_importer.call("import_pdf", path)
+	if not bool(result.get("ok", false)):
+		_set_status(
+			"Importazione PDF fallita: "
+			+ String(result.get("message", "errore sconosciuto"))
+		)
+		return
+
+	var stat_value: Variant = result.get("stat_block", {})
+	if not stat_value is Dictionary:
+		_set_status("Il PDF non ha prodotto una scheda valida.")
+		return
+
+	var stat := (stat_value as Dictionary).duplicate(true)
+	stat["_pdf_filename"] = path.get_file()
+	_append_stat_block_creature(stat, _pending_pdf_side)
+
+	var method := String(result.get("method", "")).strip_edges()
+	var warning := String(result.get("warning", "")).strip_edges()
+	var message := "%s importato in %s" % [
+		String(stat.get("name", "Creatura")),
+		destination,
+	]
+	if not method.is_empty():
+		message += " · " + method
+	if not warning.is_empty():
+		message += " · " + warning
+	_set_status(message)
+
+
 func _refresh_catalog() -> void:
 	_set_status("Aggiornamento bestiario 5eTools…")
 	_client.call("load_catalog", true)
@@ -494,12 +582,7 @@ func _add_selected_bestiary(side: String) -> void:
 func _on_creature_ready(request_key: String, stat: Dictionary) -> void:
 	var side := String(_pending_side_by_request.get(request_key, "enemy"))
 	_pending_side_by_request.erase(request_key)
-	var creature: Dictionary = _store.call("create_creature", stat, side)
-	_creatures.append(creature)
-	_store.call("save_creatures", _creatures)
-	_current_id = String(creature.get("id", ""))
-	_refresh_rosters()
-	_load_current_form()
+	var creature := _append_stat_block_creature(stat, side)
 	_set_status(
 		"%s aggiunto a %s."
 		% [
@@ -507,6 +590,23 @@ func _on_creature_ready(request_key: String, stat: Dictionary) -> void:
 			"Alleati" if side == "ally" else "Nemici"
 		]
 	)
+
+
+func _append_stat_block_creature(
+	stat: Dictionary,
+	side: String
+) -> Dictionary:
+	var creature: Dictionary = _store.call(
+		"create_creature",
+		stat,
+		side
+	)
+	_creatures.append(creature)
+	_store.call("save_creatures", _creatures)
+	_current_id = String(creature.get("id", ""))
+	_refresh_rosters()
+	_load_current_form()
+	return creature
 
 
 func _on_creature_failed(request_key: String, message: String) -> void:
@@ -883,11 +983,24 @@ func _build_stat_block_text(stat: Dictionary) -> String:
 	var out := PackedStringArray()
 	var source := String(stat.get("source", ""))
 	var base_name := String(stat.get("name", "Creatura"))
+	var imported_pdf := bool(stat.get("_imported_pdf", false))
 	out.append("[font_size=22][b]%s[/b][/font_size]" % _escape_bb(base_name))
-	out.append(
-		"[color=#c89b4a]%s · pagina %d[/color]"
-		% [_escape_bb(source), int(stat.get("page", 0))]
-	)
+	if imported_pdf:
+		var pdf_filename := String(
+			stat.get(
+				"_pdf_filename",
+				stat.get("_pdf_name", "stat block.pdf")
+			)
+		)
+		out.append(
+			"[color=#c89b4a]PDF importato · %s[/color]"
+			% _escape_bb(pdf_filename)
+		)
+	else:
+		out.append(
+			"[color=#c89b4a]%s · pagina %d[/color]"
+			% [_escape_bb(source), int(stat.get("page", 0))]
+		)
 
 	var size := _size_text(stat.get("size", ""))
 	var type := _type_text(stat.get("type", ""))
@@ -979,7 +1092,7 @@ func _build_stat_block_text(stat: Dictionary) -> String:
 		"trait": true, "spellcasting": true, "action": true,
 		"bonus": true, "reaction": true, "legendary": true,
 		"mythic": true, "lairActions": true, "regionalEffects": true,
-		"variant": true
+		"variant": true, "raw_text": true
 	}
 	var extras := PackedStringArray()
 	for key_value: Variant in stat.keys():
@@ -999,9 +1112,18 @@ func _build_stat_block_text(stat: Dictionary) -> String:
 		)
 	if not extras.is_empty():
 		out.append(
-			"[font_size=16][color=#a8a8a8][b]Dati 5eTools aggiuntivi[/b][/color][/font_size]"
+			"[font_size=16][color=#a8a8a8][b]Dati aggiuntivi[/b][/color][/font_size]"
 		)
 		out.append("\n".join(extras))
+
+	if imported_pdf:
+		var raw_pdf_text := String(stat.get("raw_text", "")).strip_edges()
+		if not raw_pdf_text.is_empty():
+			out.append("")
+			out.append(
+				"[font_size=16][color=#8ea9c7][b]Testo originale PDF[/b][/color][/font_size]"
+			)
+			out.append(_escape_bb(raw_pdf_text))
 
 	return "\n".join(out)
 
