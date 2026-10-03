@@ -71,5 +71,109 @@ Cloud of Insects. One creature within 120 feet takes poison damage.
 		)
 	)
 
+
+	var tetra_sample := """
+Kaos, God of Speed
+Gargantuan celestial (god), Chaotic Good
+Armor Class 25 (natural armor)
+Hit Points 202 (15d20 + 45)
+Speed 100 ft. (It can ignore difficult terrain and run on vertical
+surfaces or across water if it moves at least 6 meters in a
+turn.)
+STR
+22 (+6)
+DEX
+30 (+10)
+CON
+16 (+3)
+INT
+30 (+10)
+WIS
+22 (+6)
+CHA
+24 (+7)
+Saving Throws Dex +18, Int +18, Cha +15
+Skills Acrobatics +26, Athletics +14, Perception +14, Persuasion
++15, Sleight of Hand +18, Stealth +18
+Damage Immunities lightning, poison, radiant, thunder;
+bludgeoning, piercing, and slashing from nonmagical attacks
+Condition Immunities charmed, exhaustion, frightened,
+poisoned
+Senses darkvision 100 ft., truesight 100 ft., passive Perception
+24
+Languages All, telepathy 100 ft.
+Challenge 26 (90,000 XP)
+Godspeed (Mythic Trait; Recharges after a Short or Long Rest).
+When Kaos drops to 0 hit points, he neither dies nor falls
+unconscious. Instead, he regains 200 hit points.
+Magic Weapons. Kaos's weapon attacks are magical.
+Actions
+Multiattack. Kaos makes four Lightning Fists attacks.
+Lightning Fists. Melee Weapon Attack: +16 to hit, reach 15 ft.,
+one target. Hit: 9 (2d8 + 10) bludgeoning damage.
+Reactions
+Slow Fall. Kaos can use its reaction when falling to reduce fall
+damage by 3d10.
+Legendary Actions
+Instant Movement. It moves 30 feet without provoking
+opportunity attacks.
+Mythic Actions
+Speed Clone (Costs 2 Actions). Kaos activates a speed clone.
+24/09/26, 18:33 Kaos, God of Speed
+about:blank
+1/1
+"""
+	var tetra := PDFStatblockImporter.parse_stat_block_text(
+		tetra_sample,
+		"Kaos, God of Speed"
+	)
+	assert(String(tetra.get("name", "")) == "Kaos, God of Speed")
+	assert(String(tetra.get("size", "")) == "G")
+	assert(String(tetra.get("type", "")) == "celestial (god)")
+	assert(String(tetra.get("alignment", "")) == "Chaotic Good")
+	assert(int(tetra.get("str", 0)) == 22)
+	assert(int(tetra.get("dex", 0)) == 30)
+	assert(int(tetra.get("con", 0)) == 16)
+	assert(int(tetra.get("int", 0)) == 30)
+	assert(int(tetra.get("wis", 0)) == 22)
+	assert(int(tetra.get("cha", 0)) == 24)
+
+	var tetra_hp: Dictionary = tetra.get("hp", {})
+	assert(int(tetra_hp.get("average", 0)) == 202)
+	assert(String(tetra_hp.get("formula", "")) == "15d20 + 45")
+	assert(
+		"vertical surfaces"
+		in String(tetra.get("speed", ""))
+	)
+	assert(
+		"Persuasion +15"
+		in String(tetra.get("skill", ""))
+	)
+	assert(
+		"bludgeoning, piercing"
+		in String(tetra.get("immune", ""))
+	)
+	assert(int(tetra.get("passive", 0)) == 24)
+	assert(String(tetra.get("cr", "")) == "26 (90,000 XP)")
+
+	var tetra_traits: Array = tetra.get("trait", [])
+	var tetra_actions: Array = tetra.get("action", [])
+	var tetra_reactions: Array = tetra.get("reaction", [])
+	var tetra_legendary: Array = tetra.get("legendary", [])
+	var tetra_mythic: Array = tetra.get("mythic", [])
+	assert(tetra_traits.size() >= 2)
+	assert(
+		String((tetra_traits[0] as Dictionary).get("name", ""))
+		.begins_with("Godspeed")
+	)
+	assert(tetra_actions.size() == 2)
+	assert(tetra_reactions.size() == 1)
+	assert(tetra_legendary.size() == 1)
+	assert(tetra_mythic.size() == 1)
+	assert(
+		"about:blank"
+		not in String(tetra.get("raw_text", ""))
+	)
+
 	print("PASS: PDF stat blocks parse into editable master creature data")
 	quit()
