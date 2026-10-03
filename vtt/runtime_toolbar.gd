@@ -8,6 +8,10 @@ const PLAYER_ADD_CHARACTER := 61
 const PLAYER_LINK_TOKEN := 62
 const PLAYER_LINK_CHARACTER := 63
 
+const MASTER_AREA_OPEN := 64
+const MASTER_LINK_TOKEN := 65
+const MASTER_LINK_CREATURE := 66
+
 const COMBAT_START := 70
 const COMBAT_INITIATIVE := 71
 const COMBAT_END := 72
@@ -106,6 +110,12 @@ func _build_toolbar() -> void:
 		["Personaggio → token per nome", PLAYER_LINK_CHARACTER]
 	], _on_player))
 
+	row.add_child(_menu("Area Master", [
+		["Apri Area Master", MASTER_AREA_OPEN],
+		["Token selezionato → creatura", MASTER_LINK_TOKEN],
+		["Creatura → token per nome", MASTER_LINK_CREATURE]
+	], _on_master))
+
 	row.add_child(_menu("Misura", [
 		["Righello", MEASURE_RULER],
 		["AoE · Sfera", MEASURE_SPHERE],
@@ -184,6 +194,16 @@ func _on_player(id: int) -> void:
 			board_root.call("link_player_character_to_selected_token")
 		PLAYER_LINK_CHARACTER:
 			board_root.call("link_selected_player_character_to_named_token")
+
+
+func _on_master(id: int) -> void:
+	match id:
+		MASTER_AREA_OPEN:
+			board_root.call("toggle_master_area")
+		MASTER_LINK_TOKEN:
+			board_root.call("link_master_creature_to_selected_token")
+		MASTER_LINK_CREATURE:
+			board_root.call("link_selected_master_creature_to_named_token")
 
 
 func _on_token(id: int) -> void:
