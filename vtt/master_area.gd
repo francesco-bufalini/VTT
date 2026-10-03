@@ -1116,15 +1116,6 @@ func _build_stat_block_text(stat: Dictionary) -> String:
 		)
 		out.append("\n".join(extras))
 
-	if imported_pdf:
-		var raw_pdf_text := String(stat.get("raw_text", "")).strip_edges()
-		if not raw_pdf_text.is_empty():
-			out.append("")
-			out.append(
-				"[font_size=16][color=#8ea9c7][b]Testo originale PDF[/b][/color][/font_size]"
-			)
-			out.append(_escape_bb(raw_pdf_text))
-
 	return "\n".join(out)
 
 
