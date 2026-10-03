@@ -116,6 +116,7 @@ var attack_system: Node
 var initiative_tracker: Node
 var token_list: Node
 var player_area: Node
+var master_area: Node
 var _undo_stack: Array[Dictionary] = []
 var _redo_stack: Array[Dictionary] = []
 var _pending_history_actions: Array[int] = []
@@ -199,6 +200,11 @@ func _ready() -> void:
 	player_area.name = "PlayerArea"
 	add_child(player_area)
 	player_area.call("setup", self)
+
+	master_area = preload("res://vtt/master_area.gd").new()
+	master_area.name = "MasterArea"
+	add_child(master_area)
+	master_area.call("setup", self)
 
 	var runtime_toolbar: Node = (
 		preload("res://vtt/runtime_toolbar.gd").new() as Node
@@ -1811,6 +1817,26 @@ func link_selected_player_character_to_named_token() -> void:
 
 
 func get_selected_tokens_for_player_area() -> Array[CharacterBody3D]:
+	_clean_selection()
+	return _selected_tokens.duplicate()
+
+
+func toggle_master_area() -> void:
+	if master_area != null and is_instance_valid(master_area):
+		master_area.call("toggle_panel")
+
+
+func link_master_creature_to_selected_token() -> void:
+	if master_area != null and is_instance_valid(master_area):
+		master_area.call("request_link_creature_to_selected_token")
+
+
+func link_selected_master_creature_to_named_token() -> void:
+	if master_area != null and is_instance_valid(master_area):
+		master_area.call("request_link_selected_creature_to_named_token")
+
+
+func get_selected_tokens_for_master_area() -> Array[CharacterBody3D]:
 	_clean_selection()
 	return _selected_tokens.duplicate()
 
