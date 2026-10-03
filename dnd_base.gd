@@ -112,6 +112,7 @@ var token_state_checks: Dictionary = {}
 var _editing_token: CharacterBody3D
 var token_drag: Node
 var spell_system: Node
+var attack_system: Node
 var initiative_tracker: Node
 var token_list: Node
 var player_area: Node
@@ -178,6 +179,11 @@ func _ready() -> void:
 	spell_system.name = "SpellSystem"
 	add_child(spell_system)
 	spell_system.call("setup", self)
+
+	attack_system = preload("res://vtt/attack_system.gd").new()
+	attack_system.name = "AttackSystem"
+	add_child(attack_system)
+	attack_system.call("setup", self)
 
 	initiative_tracker = preload("res://vtt/initiative_tracker.gd").new()
 	initiative_tracker.name = "InitiativeTracker"
@@ -1193,6 +1199,21 @@ func _input(event: InputEvent) -> void:
 		and bool(spell_system.call("is_panel_open"))
 	):
 		return
+
+	# Player-sheet attacks use the same targeting priority as spells: the
+	# click must be consumed before normal token selection/drag handles it.
+	if (
+		attack_system != null
+		and is_instance_valid(attack_system)
+		and bool(attack_system.call("is_targeting"))
+		and (
+			event is InputEventKey
+			or event is InputEventMouseButton
+		)
+	):
+		if bool(attack_system.call("handle_input", event)):
+			get_viewport().set_input_as_handled()
+			return
 
 	# Spell targeting must see mouse/key input before GUI, camera, token drag,
 	# or other gameplay handlers can consume it. Previously normal target
@@ -3034,6 +3055,31 @@ func _interact_or_select_under_mouse(
 
 	if not additive_selection:
 		_clear_selection()
+
+
+func get_attack_token_at_screen(
+	screen_position: Vector2
+) -> CharacterBody3D:
+	var hit: Dictionary = _raycast_from_screen(
+		screen_position,
+		TOKEN_PICK_COLLISION_MASK,
+		true
+	)
+	if hit.is_empty():
+		return null
+
+	hit = _prefer_passenger_token_hit(screen_position, hit)
+	var collider: Node = hit.get("collider") as Node
+	if collider == null:
+		return null
+	var target: Node = _find_interaction_target(collider)
+	if (
+		target != null
+		and target is CharacterBody3D
+		and target.is_in_group("dnd_token")
+	):
+		return target as CharacterBody3D
+	return null
 
 
 func _find_interaction_target(start_node: Node) -> Node:
