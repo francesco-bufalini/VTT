@@ -1,0 +1,568 @@
+extends RefCounted
+
+const PDF_HELPER := "res://tools/pdf_statblock_extract.py"
+
+const SECTION_KEYS := {
+	"traits": "trait",
+	"trait": "trait",
+	"tratti": "trait",
+	"actions": "action",
+	"action": "action",
+	"azioni": "action",
+	"bonus actions": "bonus",
+	"bonus action": "bonus",
+	"azioni bonus": "bonus",
+	"reactions": "reaction",
+	"reaction": "reaction",
+	"reazioni": "reaction",
+	"legendary actions": "legendary",
+	"azioni leggendarie": "legendary",
+	"mythic actions": "mythic",
+	"azioni mitiche": "mythic",
+	"lair actions": "lairActions",
+	"azioni di tana": "lairActions",
+	"regional effects": "regionalEffects",
+	"effetti regionali": "regionalEffects",
+}
+
+const SIZE_CODES := {
+	"tiny": "T",
+	"small": "S",
+	"medium": "M",
+	"large": "L",
+	"huge": "H",
+	"gargantuan": "G",
+	"minuscola": "T",
+	"piccola": "S",
+	"media": "M",
+	"grande": "L",
+	"enorme": "H",
+	"mastodontica": "G",
+}
+
+
+func import_pdf(path: String) -> Dictionary:
+	var extraction := extract_pdf_text(path)
+	if not bool(extraction.get("ok", false)):
+		return extraction
+
+	var text := String(extraction.get("text", "")).strip_edges()
+	if text.is_empty():
+		return {
+			"ok": false,
+			"message": (
+				"Il PDF non contiene testo leggibile. "
+				+ "Se è una scansione serve OCR (Tesseract/Poppler)."
+			)
+		}
+
+	var stat := parse_stat_block_text(
+		text,
+		path.get_file().get_basename()
+	)
+	if stat.is_empty():
+		return {
+			"ok": false,
+			"message": "Non riesco a riconoscere uno stat block nel PDF."
+		}
+
+	return {
+		"ok": true,
+		"stat_block": stat,
+		"text": text,
+		"method": String(extraction.get("method", "")),
+		"warning": String(extraction.get("warning", "")),
+	}
+
+
+func extract_pdf_text(path: String) -> Dictionary:
+	if path.get_extension().to_lower() != "pdf":
+		return {"ok": false, "message": "Seleziona un file PDF."}
+	if not FileAccess.file_exists(path):
+		return {"ok": false, "message": "Il PDF selezionato non esiste più."}
+
+	var helper_path := ProjectSettings.globalize_path(PDF_HELPER)
+	if not FileAccess.file_exists(helper_path):
+		return {
+			"ok": false,
+			"message": "Helper PDF non trovato nel progetto."
+		}
+
+	var candidates: Array[Dictionary] = []
+	if OS.get_name() == "Windows":
+		candidates.append({
+			"exe": "py",
+			"args": PackedStringArray(["-3", helper_path, path])
+		})
+	candidates.append({
+		"exe": "python",
+		"args": PackedStringArray([helper_path, path])
+	})
+	candidates.append({
+		"exe": "python3",
+		"args": PackedStringArray([helper_path, path])
+	})
+
+	var last_message := ""
+	for candidate: Dictionary in candidates:
+		var output: Array = []
+		var exit_code := OS.execute(
+			String(candidate.get("exe", "")),
+			candidate.get("args", PackedStringArray()),
+			output,
+			false,
+			false
+		)
+		if exit_code == -1:
+			continue
+
+		var raw := "\n".join(output).strip_edges()
+		var parsed: Variant = JSON.parse_string(raw)
+		if parsed is Dictionary:
+			var result := (parsed as Dictionary).duplicate(true)
+			if bool(result.get("ok", false)):
+				return result
+			last_message = String(result.get("message", ""))
+		else:
+			last_message = (
+				raw if not raw.is_empty()
+				else "L'estrattore PDF non ha restituito dati."
+			)
+
+	if last_message.is_empty():
+		last_message = (
+			"Python non è disponibile. Installa Python 3 oppure aggiungilo al PATH."
+		)
+	return {"ok": false, "message": last_message}
+
+
+static func parse_stat_block_text(
+	raw_text: String,
+	fallback_name: String = "Creatura PDF"
+) -> Dictionary:
+	var text := _normalize_text(raw_text)
+	var lines := _clean_lines(text)
+	if lines.is_empty():
+		return {}
+
+	var stat: Dictionary = {
+		"name": _guess_name(lines, fallback_name),
+		"source": "PDF",
+		"page": 0,
+		"_imported_pdf": true,
+		"_pdf_name": fallback_name,
+		"raw_text": text,
+	}
+
+	_parse_size_type_alignment(lines, stat)
+	_parse_core_fields(lines, stat)
+	_parse_abilities(text, stat)
+	_parse_sections(lines, stat)
+
+	# A usable imported creature must always have an HP pool. If HP was not
+	# recognized, keep it explicit so the user can immediately edit it.
+	if not stat.has("hp"):
+		stat["hp"] = {"average": 1}
+
+	return stat
+
+
+static func _normalize_text(value: String) -> String:
+	var text := value.replace("\r\n", "\n").replace("\r", "\n")
+	text = text.replace("\u00a0", " ")
+	text = text.replace("–", "-").replace("—", "-")
+	var whitespace := RegEx.new()
+	if whitespace.compile("[ \\t]+") == OK:
+		text = whitespace.sub(text, " ", true)
+	return text.strip_edges()
+
+
+static func _clean_lines(text: String) -> Array[String]:
+	var result: Array[String] = []
+	for raw_line: String in text.split("\n"):
+		var line := raw_line.strip_edges()
+		if line.is_empty():
+			continue
+		result.append(line)
+	return result
+
+
+static func _guess_name(
+	lines: Array[String],
+	fallback_name: String
+) -> String:
+	for line: String in lines:
+		var lower := line.to_lower()
+		if _is_field_line(lower) or _section_key(lower) != "":
+			continue
+		if (
+			lower.begins_with("dungeons & dragons")
+			or lower.begins_with("challenge rating")
+			or lower.begins_with("stat block")
+		):
+			continue
+		if line.length() <= 100:
+			return line
+	var fallback := fallback_name.strip_edges()
+	return fallback if not fallback.is_empty() else "Creatura PDF"
+
+
+static func _parse_size_type_alignment(
+	lines: Array[String],
+	stat: Dictionary
+) -> void:
+	var name := String(stat.get("name", ""))
+	var name_index := lines.find(name)
+	if name_index < 0:
+		return
+
+	for index: int in range(
+		name_index + 1,
+		mini(lines.size(), name_index + 5)
+	):
+		var line := lines[index]
+		var lower := line.to_lower()
+		for size_word: Variant in SIZE_CODES.keys():
+			var key := String(size_word)
+			if not lower.begins_with(key + " "):
+				continue
+			stat["size"] = String(SIZE_CODES[key])
+			var rest := line.substr(key.length()).strip_edges()
+			var comma := rest.find(",")
+			if comma >= 0:
+				stat["type"] = rest.substr(0, comma).strip_edges()
+				stat["alignment"] = rest.substr(comma + 1).strip_edges()
+			else:
+				stat["type"] = rest
+			return
+
+
+static func _parse_core_fields(
+	lines: Array[String],
+	stat: Dictionary
+) -> void:
+	for line: String in lines:
+		var value := ""
+
+		value = _value_after_label(
+			line,
+			["armor class", "ac", "classe armatura", "ca"]
+		)
+		if not value.is_empty():
+			stat["ac"] = value
+			continue
+
+		value = _value_after_label(
+			line,
+			["hit points", "hp", "punti ferita", "pf"]
+		)
+		if not value.is_empty():
+			stat["hp"] = _parse_hp(value)
+			continue
+
+		value = _value_after_label(line, ["speed", "velocità", "velocita"])
+		if not value.is_empty():
+			stat["speed"] = value
+			continue
+
+		value = _value_after_label(
+			line,
+			["saving throws", "tiri salvezza", "salvezza"]
+		)
+		if not value.is_empty():
+			stat["save"] = value
+			continue
+
+		value = _value_after_label(line, ["skills", "abilità", "abilita"])
+		if not value.is_empty():
+			stat["skill"] = value
+			continue
+
+		value = _value_after_label(
+			line,
+			["damage vulnerabilities", "vulnerabilità ai danni", "vulnerabilita ai danni"]
+		)
+		if not value.is_empty():
+			stat["vulnerable"] = value
+			continue
+
+		value = _value_after_label(
+			line,
+			["damage resistances", "resistenze ai danni"]
+		)
+		if not value.is_empty():
+			stat["resist"] = value
+			continue
+
+		value = _value_after_label(
+			line,
+			["damage immunities", "immunità ai danni", "immunita ai danni"]
+		)
+		if not value.is_empty():
+			stat["immune"] = value
+			continue
+
+		value = _value_after_label(
+			line,
+			["condition immunities", "immunità alle condizioni", "immunita alle condizioni"]
+		)
+		if not value.is_empty():
+			stat["conditionImmune"] = value
+			continue
+
+		value = _value_after_label(line, ["senses", "sensi"])
+		if not value.is_empty():
+			stat["senses"] = value
+			var passive := _extract_first_int_after(
+				value.to_lower(),
+				["passive perception", "percezione passiva"]
+			)
+			if passive >= 0:
+				stat["passive"] = passive
+			continue
+
+		value = _value_after_label(line, ["languages", "linguaggi"])
+		if not value.is_empty():
+			stat["languages"] = value
+			continue
+
+		value = _value_after_label(
+			line,
+			["challenge", "challenge rating", "cr", "grado sfida", "gs"]
+		)
+		if not value.is_empty():
+			stat["cr"] = value
+			continue
+
+		value = _value_after_label(
+			line,
+			["proficiency bonus", "bonus di competenza"]
+		)
+		if not value.is_empty():
+			stat["pbNote"] = value
+
+
+static func _parse_hp(value: String) -> Dictionary:
+	var hp := {"average": 1}
+	var regex := RegEx.new()
+	if regex.compile("([0-9]+)(?:\\s*\\(([^)]+)\\))?") != OK:
+		return hp
+	var hit := regex.search(value)
+	if hit == null:
+		return hp
+	hp["average"] = int(hit.get_string(1))
+	var formula := hit.get_string(2).strip_edges()
+	if not formula.is_empty():
+		hp["formula"] = formula
+	return hp
+
+
+static func _parse_abilities(text: String, stat: Dictionary) -> void:
+	var patterns := [
+		{
+			"labels": ["str", "dex", "con", "int", "wis", "cha"],
+			"pattern": (
+				"(?is)\\bSTR\\b\\s+\\bDEX\\b\\s+\\bCON\\b\\s+"
+				+ "\\bINT\\b\\s+\\bWIS\\b\\s+\\bCHA\\b"
+				+ "\\s+([0-9]{1,2})\\s*\\([^)]*\\)"
+				+ "\\s+([0-9]{1,2})\\s*\\([^)]*\\)"
+				+ "\\s+([0-9]{1,2})\\s*\\([^)]*\\)"
+				+ "\\s+([0-9]{1,2})\\s*\\([^)]*\\)"
+				+ "\\s+([0-9]{1,2})\\s*\\([^)]*\\)"
+				+ "\\s+([0-9]{1,2})"
+			)
+		},
+		{
+			"labels": ["str", "dex", "con", "int", "wis", "cha"],
+			"pattern": (
+				"(?is)\\bFOR\\b\\s+\\bDES\\b\\s+\\bCOS\\b\\s+"
+				+ "\\bINT\\b\\s+\\bSAG\\b\\s+\\bCAR\\b"
+				+ "\\s+([0-9]{1,2})\\s*\\([^)]*\\)"
+				+ "\\s+([0-9]{1,2})\\s*\\([^)]*\\)"
+				+ "\\s+([0-9]{1,2})\\s*\\([^)]*\\)"
+				+ "\\s+([0-9]{1,2})\\s*\\([^)]*\\)"
+				+ "\\s+([0-9]{1,2})\\s*\\([^)]*\\)"
+				+ "\\s+([0-9]{1,2})"
+			)
+		},
+	]
+
+	for definition: Dictionary in patterns:
+		var regex := RegEx.new()
+		if regex.compile(String(definition.get("pattern", ""))) != OK:
+			continue
+		var hit := regex.search(text)
+		if hit == null:
+			continue
+		var labels: Array = definition.get("labels", [])
+		for index: int in range(6):
+			stat[String(labels[index])] = int(hit.get_string(index + 1))
+		return
+
+	# Alternate layout: "STR 18 (+4) DEX 14 (+2) ..."
+	var inline := RegEx.new()
+	if inline.compile(
+		"(?i)\\b(STR|DEX|CON|INT|WIS|CHA|FOR|DES|COS|SAG|CAR)"
+		+ "\\s*([0-9]{1,2})\\s*\\("
+	) != OK:
+		return
+	var matches := inline.search_all(text)
+	var aliases := {
+		"str": "str", "for": "str",
+		"dex": "dex", "des": "dex",
+		"con": "con", "cos": "con",
+		"int": "int",
+		"wis": "wis", "sag": "wis",
+		"cha": "cha", "car": "cha",
+	}
+	for hit: RegExMatch in matches:
+		var label := hit.get_string(1).to_lower()
+		var key := String(aliases.get(label, ""))
+		if not key.is_empty():
+			stat[key] = int(hit.get_string(2))
+
+
+static func _parse_sections(
+	lines: Array[String],
+	stat: Dictionary
+) -> void:
+	var current_key := ""
+	var current_entries: Array = []
+	var current_entry: Dictionary = {}
+
+	for line: String in lines:
+		var section := _section_key(line.to_lower())
+		if not section.is_empty():
+			_flush_entry(current_entries, current_entry)
+			if not current_key.is_empty() and not current_entries.is_empty():
+				stat[current_key] = current_entries.duplicate(true)
+			current_key = section
+			current_entries.clear()
+			current_entry = {}
+			continue
+
+		if current_key.is_empty():
+			continue
+		if _is_field_line(line.to_lower()):
+			continue
+
+		var parsed_entry := _split_entry_line(line)
+		if not parsed_entry.is_empty():
+			_flush_entry(current_entries, current_entry)
+			current_entry = parsed_entry
+		elif current_entry.is_empty():
+			current_entry = {"name": "", "entries": [line]}
+		else:
+			var entry_lines: Array = current_entry.get("entries", [])
+			if entry_lines.is_empty():
+				entry_lines.append(line)
+			else:
+				entry_lines[entry_lines.size() - 1] = (
+					String(entry_lines.back()) + " " + line
+				)
+			current_entry["entries"] = entry_lines
+
+	_flush_entry(current_entries, current_entry)
+	if not current_key.is_empty() and not current_entries.is_empty():
+		stat[current_key] = current_entries
+
+
+static func _split_entry_line(line: String) -> Dictionary:
+	var regex := RegEx.new()
+	if regex.compile(
+		"^([A-ZÀ-ÖØ-Þ][A-Za-zÀ-ÿ0-9 '’+\\-/(),]{1,70})"
+		+ "[.:]\\s+(.+)$"
+	) != OK:
+		return {}
+	var hit := regex.search(line)
+	if hit == null:
+		return {}
+	var title := hit.get_string(1).strip_edges()
+	var body := hit.get_string(2).strip_edges()
+	if title.count(" ") > 9:
+		return {}
+	return {"name": title, "entries": [body]}
+
+
+static func _flush_entry(entries: Array, entry: Dictionary) -> void:
+	if entry.is_empty():
+		return
+	var copy := entry.duplicate(true)
+	var entry_lines: Array = copy.get("entries", [])
+	var body_parts := PackedStringArray()
+	for item: Variant in entry_lines:
+		var part := String(item).strip_edges()
+		if not part.is_empty():
+			body_parts.append(part)
+	copy["entries"] = [" ".join(body_parts)]
+	entries.append(copy)
+	entry.clear()
+
+
+static func _value_after_label(
+	line: String,
+	labels: Array[String]
+) -> String:
+	var normalized := line.strip_edges()
+	var lower := normalized.to_lower()
+	for label: String in labels:
+		var candidate := label.to_lower()
+		if not lower.begins_with(candidate):
+			continue
+		var boundary := candidate.length()
+		if lower.length() > boundary:
+			var next := lower.substr(boundary, 1)
+			if next not in [" ", ":", ".", "-"]:
+				continue
+		var value := normalized.substr(boundary).strip_edges()
+		while (
+			value.begins_with(":")
+			or value.begins_with(".")
+			or value.begins_with("-")
+		):
+			value = value.substr(1).strip_edges()
+		return value
+	return ""
+
+
+static func _extract_first_int_after(
+	text: String,
+	labels: Array[String]
+) -> int:
+	for label: String in labels:
+		var index := text.find(label)
+		if index < 0:
+			continue
+		var tail := text.substr(index + label.length())
+		var regex := RegEx.new()
+		if regex.compile("[0-9]+") != OK:
+			continue
+		var hit := regex.search(tail)
+		if hit != null:
+			return int(hit.get_string())
+	return -1
+
+
+static func _section_key(lower_line: String) -> String:
+	var normalized := lower_line.strip_edges().trim_suffix(":")
+	return String(SECTION_KEYS.get(normalized, ""))
+
+
+static func _is_field_line(lower_line: String) -> bool:
+	var prefixes := [
+		"armor class", "ac ", "classe armatura", "ca ",
+		"hit points", "hp ", "punti ferita", "pf ",
+		"speed", "velocità", "velocita",
+		"saving throws", "tiri salvezza",
+		"skills", "abilità", "abilita",
+		"damage vulnerabilities", "damage resistances",
+		"damage immunities", "condition immunities",
+		"vulnerabilità", "vulnerabilita", "resistenze", "immunità", "immunita",
+		"senses", "sensi", "languages", "linguaggi",
+		"challenge", "cr ", "grado sfida", "gs ",
+		"proficiency bonus", "bonus di competenza",
+	]
+	for prefix: String in prefixes:
+		if lower_line.begins_with(prefix):
+			return true
+	return false
