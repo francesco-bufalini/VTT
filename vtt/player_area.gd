@@ -32,6 +32,8 @@ var _skill_value_labels: Dictionary = {}
 var _proficiency_label: Label
 var _passive_perception_label: Label
 var _attack_calculator: RichTextLabel
+var _attack_list: ItemList
+var _attack_definitions: Array[Dictionary] = []
 
 var _spell_class_selector: OptionButton
 var _spell_level_selector: OptionButton
@@ -652,6 +654,24 @@ func _build_combat_tab() -> void:
 		+ "tiro per colpire e danni."
 	)
 	body.add_child(_attack_calculator)
+
+	_attack_list = ItemList.new()
+	_attack_list.custom_minimum_size = Vector2(0, 155)
+	_attack_list.select_mode = ItemList.SELECT_SINGLE
+	_attack_list.item_activated.connect(
+		func(_index: int) -> void:
+			_activate_selected_attack()
+	)
+	body.add_child(_attack_list)
+
+	var activate_attack_button := Button.new()
+	activate_attack_button.text = "Attiva attacco"
+	activate_attack_button.tooltip_text = (
+		"Mostra la gittata e usa automaticamente come attaccante "
+		+ "il token collegato alla scheda."
+	)
+	activate_attack_button.pressed.connect(_activate_selected_attack)
+	body.add_child(activate_attack_button)
 
 	_add_multiline_field(
 		body,
@@ -2030,6 +2050,9 @@ func _refresh_attack_calculator() -> void:
 		return
 	if _current_index < 0 or _current_index >= _characters.size():
 		_attack_calculator.text = "Nessun personaggio selezionato."
+		_attack_definitions.clear()
+		if _attack_list != null:
+			_attack_list.clear()
 		return
 
 	var character: Dictionary = _characters[_current_index]
@@ -2208,6 +2231,410 @@ func _refresh_attack_calculator() -> void:
 			)
 
 	_attack_calculator.text = "\n".join(lines)
+	_refresh_attack_actions()
+
+
+func _refresh_attack_actions() -> void:
+	_attack_definitions.clear()
+	if _attack_list != null:
+		_attack_list.clear()
+	if _current_index < 0 or _current_index >= _characters.size():
+		return
+
+	var character: Dictionary = _characters[_current_index]
+	_attack_definitions = _build_attack_definitions(character)
+	if _attack_list == null:
+		return
+
+	for attack: Dictionary in _attack_definitions:
+		var attack_name := String(attack.get("name", "Attacco"))
+		var range_feet := int(round(float(attack.get("range_feet", 5.0))))
+		var damage_expression := String(
+			attack.get("damage_expression", "0")
+		)
+		var damage_type := String(attack.get("damage_type", "")).strip_edges()
+		var label := "%s · %d ft · %s" % [
+			attack_name,
+			range_feet,
+			damage_expression,
+		]
+		if not damage_type.is_empty():
+			label += " " + damage_type
+		_attack_list.add_item(label)
+		_attack_list.set_item_metadata(
+			_attack_list.item_count - 1,
+			attack.duplicate(true)
+		)
+
+
+func _build_attack_definitions(
+	character: Dictionary
+) -> Array[Dictionary]:
+	var result: Array[Dictionary] = []
+	var level := clampi(int(character.get("level", 1)), 1, 20)
+	var proficiency := PlayerReference.proficiency_bonus(level)
+	var strength_mod := _ability_modifier_from_form("str")
+	var dexterity_mod := _ability_modifier_from_form("dex")
+
+	var raw_weapons: Variant = character.get("weapons_catalog", [])
+	if raw_weapons is Array:
+		for raw_weapon: Variant in raw_weapons:
+			if not raw_weapon is Dictionary:
+				continue
+			var weapon := _resolve_catalog_entry(
+				"weapons_catalog",
+				raw_weapon as Dictionary
+			)
+			var ability_id := _weapon_attack_ability(
+				weapon,
+				strength_mod,
+				dexterity_mod
+			)
+			var ability_mod := (
+				dexterity_mod
+				if ability_id == "dex"
+				else strength_mod
+			)
+			var damage_die := String(
+				weapon.get("damage", "")
+			).strip_edges()
+			if damage_die.is_empty():
+				continue
+
+			var modes: Array[Dictionary] = _weapon_attack_modes(weapon)
+			for mode: Dictionary in modes:
+				var suffix := String(mode.get("suffix", ""))
+				var attack_name := String(
+					weapon.get("name", "Arma")
+				)
+				if not suffix.is_empty():
+					attack_name += " " + suffix
+
+				result.append({
+					"id": "%s:%s" % [
+						String(weapon.get("id", attack_name)),
+						String(mode.get("id", "base")),
+					],
+					"name": attack_name,
+					"kind": "weapon",
+					"source_id": String(weapon.get("id", "")),
+					"range_feet": float(mode.get("range_feet", 5.0)),
+					"attack_bonus": proficiency + ability_mod,
+					"ability": ability_id,
+					"damage_expression": _damage_expression(
+						damage_die,
+						ability_mod
+					),
+					"damage_type": _attack_damage_type(
+						String(weapon.get("damage_type", ""))
+					),
+					"sneak_eligible": _weapon_allows_sneak_attack(weapon),
+				})
+
+	var feature_names := _class_feature_names(character)
+
+	if "sneak attack" in feature_names:
+		var sneak_dice := ceili(float(level) / 2.0)
+		var existing_attacks := result.duplicate(true)
+		for raw_attack: Variant in existing_attacks:
+			if not raw_attack is Dictionary:
+				continue
+			var base_attack: Dictionary = raw_attack as Dictionary
+			if not bool(base_attack.get("sneak_eligible", false)):
+				continue
+			var sneak_attack := base_attack.duplicate(true)
+			sneak_attack["id"] = (
+				String(base_attack.get("id", "attack"))
+				+ ":sneak"
+			)
+			sneak_attack["name"] = (
+				String(base_attack.get("name", "Attacco"))
+				+ " + Attacco Furtivo"
+			)
+			sneak_attack["kind"] = "sneak_attack"
+			sneak_attack["damage_expression"] = (
+				String(base_attack.get("damage_expression", "0"))
+				+ " + %dd6" % sneak_dice
+			)
+			result.append(sneak_attack)
+
+	var has_martial_arts := (
+		"martial arts" in feature_names
+		or "bonus unarmed strike" in feature_names
+		or "flurry of blows" in feature_names
+		or "ki-fueled attack" in feature_names
+	)
+	if has_martial_arts:
+		var martial_mod := maxi(strength_mod, dexterity_mod)
+		var martial_ability := (
+			"dex" if dexterity_mod >= strength_mod else "str"
+		)
+		var martial_die := _monk_martial_arts_die(
+			level,
+			String(character.get("rules_version", "2024"))
+		)
+		var base_unarmed := {
+			"id": "martial_arts:unarmed",
+			"name": "Colpo senz'armi",
+			"kind": "unarmed",
+			"range_feet": 5.0,
+			"attack_bonus": proficiency + martial_mod,
+			"ability": martial_ability,
+			"damage_expression": _damage_expression(
+				martial_die,
+				martial_mod
+			),
+			"damage_type": "contundenti",
+			"sneak_eligible": false,
+		}
+		result.append(base_unarmed)
+
+		if "bonus unarmed strike" in feature_names:
+			var bonus_unarmed := base_unarmed.duplicate(true)
+			bonus_unarmed["id"] = "martial_arts:bonus_unarmed"
+			bonus_unarmed["name"] = "Bonus Unarmed Strike"
+			result.append(bonus_unarmed)
+
+		if "flurry of blows" in feature_names:
+			var flurry_attacks := 2
+			if (
+				String(character.get("rules_version", "2024")) == "2024"
+				and level >= 10
+				and "heightened focus" in feature_names
+			):
+				flurry_attacks = 3
+			var flurry := base_unarmed.duplicate(true)
+			flurry["id"] = "martial_arts:flurry"
+			flurry["name"] = "Raffica di Colpi"
+			flurry["kind"] = "flurry"
+			flurry["damage_expression"] = _multiply_die_expression(
+				martial_die,
+				martial_mod,
+				flurry_attacks
+			)
+			result.append(flurry)
+
+		if "ki-fueled attack" in feature_names:
+			var ki_attack := base_unarmed.duplicate(true)
+			ki_attack["id"] = "martial_arts:ki_fueled"
+			ki_attack["name"] = "Ki-Fueled Attack"
+			ki_attack["kind"] = "ki_attack"
+			result.append(ki_attack)
+
+	return result
+
+
+func _weapon_attack_modes(
+	weapon: Dictionary
+) -> Array[Dictionary]:
+	var modes: Array[Dictionary] = []
+	var type_code := String(weapon.get("type", "")).split("|")[0]
+	var normal_range := _weapon_normal_range_feet(weapon)
+
+	if type_code == "R":
+		modes.append({
+			"id": "ranged",
+			"suffix": "",
+			"range_feet": normal_range if normal_range > 0.0 else 5.0,
+		})
+		return modes
+
+	var melee_range := (
+		10.0
+		if Player5eToolsCatalog.has_property(weapon, "R")
+		else 5.0
+	)
+	modes.append({
+		"id": "melee",
+		"suffix": "(mischia)" if normal_range > 0.0 else "",
+		"range_feet": melee_range,
+	})
+
+	if (
+		Player5eToolsCatalog.has_property(weapon, "T")
+		and normal_range > 0.0
+	):
+		modes.append({
+			"id": "thrown",
+			"suffix": "(lancio)",
+			"range_feet": normal_range,
+		})
+	return modes
+
+
+func _weapon_normal_range_feet(weapon: Dictionary) -> float:
+	var range_text := String(weapon.get("range", "")).strip_edges()
+	if range_text.is_empty():
+		return 0.0
+	var first_part := range_text.split("/")[0].strip_edges()
+	if not first_part.is_valid_float():
+		return 0.0
+	return maxf(0.0, float(first_part))
+
+
+func _multiply_die_expression(
+	die_text: String,
+	modifier: int,
+	count: int
+) -> String:
+	var safe_count := maxi(1, count)
+	var normalized := die_text.strip_edges().to_lower()
+	var d_index := normalized.find("d")
+	var dice_expression := normalized
+	if d_index > 0:
+		var dice_count := int(normalized.substr(0, d_index))
+		var sides := normalized.substr(d_index + 1)
+		dice_expression = "%dd%s" % [
+			maxi(1, dice_count) * safe_count,
+			sides,
+		]
+	return _damage_expression(
+		dice_expression,
+		modifier * safe_count
+	)
+
+
+func _activate_selected_attack() -> void:
+	if _current_index < 0 or _current_index >= _characters.size():
+		_set_status("Seleziona prima un personaggio.")
+		return
+	if _attack_list == null:
+		return
+
+	var selected := _attack_list.get_selected_items()
+	if selected.is_empty():
+		_set_status("Seleziona un attacco.")
+		return
+	var metadata: Variant = _attack_list.get_item_metadata(selected[0])
+	if not metadata is Dictionary:
+		return
+	var attack: Dictionary = (metadata as Dictionary).duplicate(true)
+
+	_save_form()
+	var character: Dictionary = _characters[_current_index]
+	var character_id := String(character.get("id", ""))
+	var attacker: CharacterBody3D = _linked_token_for_character(character_id)
+	if attacker == null:
+		_set_status(
+			"Questo personaggio non ha un token collegato nello scenario."
+		)
+		return
+
+	var attack_system_value: Variant = board_root.get("attack_system")
+	if not attack_system_value is Node:
+		_set_status("Sistema attacchi non disponibile.")
+		return
+	var runtime_attack_system := attack_system_value as Node
+	if (
+		not is_instance_valid(runtime_attack_system)
+		or not runtime_attack_system.has_method("start_attack")
+	):
+		_set_status("Sistema attacchi non disponibile.")
+		return
+
+	hide_panel()
+	var started := bool(
+		runtime_attack_system.call(
+			"start_attack",
+			attacker,
+			attack
+		)
+	)
+	if not started:
+		show_panel()
+		_set_status("Impossibile attivare l'attacco selezionato.")
+
+
+func apply_attack_damage_to_token(
+	target: CharacterBody3D,
+	damage: int
+) -> Dictionary:
+	if (
+		target == null
+		or not is_instance_valid(target)
+		or damage < 0
+	):
+		return {"applied": false}
+
+	var character_id := ""
+	if target.has_meta("player_character_id"):
+		character_id = String(
+			target.get_meta("player_character_id")
+		)
+	var character_index := _character_index_by_id(character_id)
+
+	if character_index >= 0:
+		var character: Dictionary = _characters[character_index]
+		var remaining_damage := damage
+		var temporary_hp := maxi(
+			0,
+			int(character.get("temporary_hp", 0))
+		)
+		if temporary_hp > 0 and remaining_damage > 0:
+			var absorbed := mini(temporary_hp, remaining_damage)
+			temporary_hp -= absorbed
+			remaining_damage -= absorbed
+
+		var max_hp := maxi(0, int(character.get("max_hp", 0)))
+		var current_hp := clampi(
+			int(character.get("current_hp", max_hp)),
+			0,
+			max_hp
+		)
+		current_hp = maxi(0, current_hp - remaining_damage)
+
+		character["temporary_hp"] = temporary_hp
+		character["current_hp"] = current_hp
+		_characters[character_index] = character
+		_store.call("save_characters", _characters)
+		_sync_character_health_to_token(character)
+
+		if character_index == _current_index:
+			_loading = true
+			var hp_spin: SpinBox = _int_fields.get(
+				"current_hp"
+			) as SpinBox
+			if hp_spin != null:
+				hp_spin.value = current_hp
+			var temp_spin: SpinBox = _int_fields.get(
+				"temporary_hp"
+			) as SpinBox
+			if temp_spin != null:
+				temp_spin.value = temporary_hp
+			_loading = false
+
+		return {
+			"applied": true,
+			"current_hp": current_hp,
+			"max_hp": max_hp,
+			"temporary_hp": temporary_hp,
+		}
+
+	if target.has_method("get_player_hit_points"):
+		var hp_value: Variant = target.call("get_player_hit_points")
+		if hp_value is Dictionary:
+			var hp_data: Dictionary = hp_value as Dictionary
+			var max_hp := maxi(0, int(hp_data.get("max", 0)))
+			if max_hp > 0:
+				var current_hp := clampi(
+					int(hp_data.get("current", max_hp)) - damage,
+					0,
+					max_hp
+				)
+				if target.has_method("set_player_hit_points"):
+					target.call(
+						"set_player_hit_points",
+						current_hp,
+						max_hp
+					)
+				return {
+					"applied": true,
+					"current_hp": current_hp,
+					"max_hp": max_hp,
+					"temporary_hp": 0,
+				}
+
+	return {"applied": false}
 
 
 func _ability_modifier_from_form(ability_id: String) -> int:
