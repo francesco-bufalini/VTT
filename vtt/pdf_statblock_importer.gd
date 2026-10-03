@@ -172,7 +172,7 @@ static func parse_stat_block_text(
 		"page": 0,
 		"_imported_pdf": true,
 		"_pdf_name": fallback_name,
-		"raw_text": text,
+		"raw_text": "\n".join(lines),
 	}
 
 	_parse_size_type_alignment(lines, stat)
