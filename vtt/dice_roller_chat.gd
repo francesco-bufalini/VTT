@@ -17,6 +17,8 @@ var panel: PanelContainer
 var history_view: RichTextLabel
 var chat_input: LineEdit
 var status_label: Label
+var dice_count_input: SpinBox
+var dice_modifier_input: SpinBox
 
 
 func setup(
@@ -167,6 +169,48 @@ func _build_ui() -> void:
 	var separator := HSeparator.new()
 	outer.add_child(separator)
 
+	var roll_settings := HBoxContainer.new()
+	roll_settings.add_theme_constant_override("separation", 8)
+	outer.add_child(roll_settings)
+
+	var count_label := Label.new()
+	count_label.text = "Dadi:"
+	roll_settings.add_child(count_label)
+
+	dice_count_input = SpinBox.new()
+	dice_count_input.min_value = 1
+	dice_count_input.max_value = 100
+	dice_count_input.step = 1
+	dice_count_input.value = 1
+	dice_count_input.allow_greater = false
+	dice_count_input.allow_lesser = false
+	dice_count_input.custom_minimum_size = Vector2(78, 32)
+	dice_count_input.tooltip_text = "Numero di dadi da lanciare"
+	roll_settings.add_child(dice_count_input)
+
+	var modifier_label := Label.new()
+	modifier_label.text = "Mod:"
+	roll_settings.add_child(modifier_label)
+
+	dice_modifier_input = SpinBox.new()
+	dice_modifier_input.min_value = -9999
+	dice_modifier_input.max_value = 9999
+	dice_modifier_input.step = 1
+	dice_modifier_input.value = 0
+	dice_modifier_input.allow_greater = false
+	dice_modifier_input.allow_lesser = false
+	dice_modifier_input.custom_minimum_size = Vector2(98, 32)
+	dice_modifier_input.tooltip_text = (
+		"Modificatore aggiunto una sola volta al totale del tiro"
+	)
+	roll_settings.add_child(dice_modifier_input)
+
+	var settings_hint := Label.new()
+	settings_hint.text = "es. 3d20 + 5"
+	settings_hint.modulate = Color(0.55, 0.59, 0.66, 1.0)
+	settings_hint.size_flags_horizontal = Control.SIZE_EXPAND_FILL
+	roll_settings.add_child(settings_hint)
+
 	var dice_grid := GridContainer.new()
 	dice_grid.columns = 4
 	dice_grid.add_theme_constant_override("h_separation", 5)
@@ -210,23 +254,93 @@ func _build_ui() -> void:
 
 
 func _roll(die: String) -> void:
+	var count := 1
+	var modifier := 0
+	if dice_count_input != null:
+		count = clampi(int(dice_count_input.value), 1, 100)
+	if dice_modifier_input != null:
+		modifier = clampi(int(dice_modifier_input.value), -9999, 9999)
+
 	var event := _new_event("roll")
 	event["die"] = die
+	event["count"] = count
+	event["modifier"] = modifier
 
+	var rolls: Array[int] = []
+	var percentile_faces: Array[Dictionary] = []
+	for _index: int in range(count):
+		if die == "d%":
+			var tens_face := rng.randi_range(0, 9) * 10
+			var ones_face := rng.randi_range(0, 9)
+			var value := percentile_total(tens_face, ones_face)
+			rolls.append(value)
+			percentile_faces.append({
+				"tens": tens_face,
+				"ones": ones_face,
+				"value": value
+			})
+		else:
+			var sides := int(die.trim_prefix("d"))
+			rolls.append(rng.randi_range(1, sides))
+
+	event["rolls"] = rolls
+	event["total"] = _roll_total(rolls, modifier)
 	if die == "d%":
-		var tens_face := rng.randi_range(0, 9) * 10
-		var ones_face := rng.randi_range(0, 9)
-		var total := percentile_total(tens_face, ones_face)
-		event["total"] = total
-		event["tens"] = tens_face
-		event["ones"] = ones_face
-		event["detail"] = "%02d + %d" % [tens_face, ones_face]
-	else:
-		var sides := int(die.trim_prefix("d"))
-		event["total"] = rng.randi_range(1, sides)
-		event["detail"] = ""
+		event["percentile_faces"] = percentile_faces
+	event["detail"] = _roll_detail(die, rolls, modifier, percentile_faces)
 
 	_append_event(event, true)
+
+
+static func _roll_total(rolls: Array[int], modifier: int) -> int:
+	var total := modifier
+	for value: int in rolls:
+		total += value
+	return total
+
+
+static func _roll_notation(
+	die: String,
+	count: int,
+	modifier: int
+) -> String:
+	var notation := "%d%s" % [maxi(1, count), die]
+	if modifier > 0:
+		notation += " + %d" % modifier
+	elif modifier < 0:
+		notation += " - %d" % absi(modifier)
+	return notation
+
+
+static func _roll_detail(
+	die: String,
+	rolls: Array[int],
+	modifier: int,
+	percentile_faces: Array[Dictionary] = []
+) -> String:
+	var result_parts := PackedStringArray()
+	for value: int in rolls:
+		result_parts.append(str(value))
+
+	var detail := "[%s]" % ", ".join(result_parts)
+	if die == "d%" and not percentile_faces.is_empty():
+		var face_parts := PackedStringArray()
+		for face: Dictionary in percentile_faces:
+			face_parts.append(
+				"%02d+%d=%d"
+				% [
+					int(face.get("tens", 0)),
+					int(face.get("ones", 0)),
+					int(face.get("value", 0))
+				]
+			)
+		detail += " · %s" % ", ".join(face_parts)
+
+	if modifier > 0:
+		detail += " · +%d" % modifier
+	elif modifier < 0:
+		detail += " · -%d" % absi(modifier)
+	return detail
 
 
 static func percentile_total(tens_face: int, ones_face: int) -> int:
@@ -308,14 +422,19 @@ func _render_history() -> void:
 		var kind := String(event.get("kind", ""))
 
 		if kind == "roll":
-			var die := _escape_bb(String(event.get("die", "d?")))
+			var die_raw := String(event.get("die", "d?"))
+			var count := maxi(1, int(event.get("count", 1)))
+			var modifier := int(event.get("modifier", 0))
+			var notation := _escape_bb(
+				_roll_notation(die_raw, count, modifier)
+			)
 			var total := int(event.get("total", 0))
 			var detail := String(event.get("detail", "")).strip_edges()
 			var roll_text := (
 				"[color=#d5a64a][b]%s[/b][/color]  "
 				+ "[color=#8fa8c6]%s[/color] → "
 				+ "[font_size=18][b]%d[/b][/font_size]"
-			) % [author, die, total]
+			) % [author, notation, total]
 			if not detail.is_empty():
 				roll_text += (
 					"  [color=#78818e](%s)[/color]"
@@ -344,7 +463,11 @@ func _render_history() -> void:
 			toggle_button.tooltip_text = (
 				"Ultimo tiro: %s = %d"
 				% [
-					String(last.get("die", "")),
+					_roll_notation(
+						String(last.get("die", "")),
+						maxi(1, int(last.get("count", 1))),
+						int(last.get("modifier", 0))
+					),
 					int(last.get("total", 0))
 				]
 			)
