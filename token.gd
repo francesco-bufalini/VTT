@@ -80,6 +80,7 @@ var _hp_bar_material: StandardMaterial3D
 var _hp_bar_label: Label3D
 var _player_hp_current: int = 0
 var _player_hp_max: int = 0
+var _hp_bar_show_percentage: bool = true
 var movement_validator: Callable
 var grid_support: Node3D
 # The visible VolumetricGrid is the primary vertical support for tactical
@@ -1178,6 +1179,16 @@ func _ensure_health_bar() -> void:
 func set_player_hit_points(current_hp: int, max_hp: int) -> void:
 	_player_hp_current = current_hp
 	_player_hp_max = maxi(0, max_hp)
+	_hp_bar_show_percentage = true
+	_ensure_token_overlay()
+	_ensure_health_bar()
+	_update_health_bar_visual()
+
+
+func set_master_hit_points(current_hp: int, max_hp: int) -> void:
+	_player_hp_current = current_hp
+	_player_hp_max = maxi(0, max_hp)
+	_hp_bar_show_percentage = false
 	_ensure_token_overlay()
 	_ensure_health_bar()
 	_update_health_bar_visual()
@@ -1186,6 +1197,15 @@ func set_player_hit_points(current_hp: int, max_hp: int) -> void:
 func clear_player_hit_points() -> void:
 	_player_hp_current = 0
 	_player_hp_max = 0
+	_hp_bar_show_percentage = true
+	if is_instance_valid(_hp_bar_root):
+		_hp_bar_root.visible = false
+
+
+func clear_master_hit_points() -> void:
+	_player_hp_current = 0
+	_player_hp_max = 0
+	_hp_bar_show_percentage = false
 	if is_instance_valid(_hp_bar_root):
 		_hp_bar_root.visible = false
 
@@ -1272,6 +1292,7 @@ func _update_health_bar_visual() -> void:
 			0.12 * cell_size,
 			0.008 * cell_size
 		)
+		_hp_bar_label.visible = _hp_bar_show_percentage
 
 
 func _add_hp_bar_quad(
