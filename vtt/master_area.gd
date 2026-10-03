@@ -392,6 +392,20 @@ func _build_ui() -> void:
 	_stat_block.selection_enabled = true
 	_stat_block.size_flags_horizontal = Control.SIZE_EXPAND_FILL
 	_stat_block.size_flags_vertical = Control.SIZE_EXPAND_FILL
+	_stat_block.add_theme_constant_override("line_separation", 5)
+	_stat_block.add_theme_font_size_override("normal_font_size", 16)
+	_stat_block.add_theme_font_size_override("bold_font_size", 16)
+
+	var stat_style := StyleBoxFlat.new()
+	stat_style.bg_color = Color(0.018, 0.021, 0.028, 0.72)
+	stat_style.border_color = Color(0.19, 0.21, 0.26, 0.9)
+	stat_style.set_border_width_all(1)
+	stat_style.set_corner_radius_all(6)
+	stat_style.content_margin_left = 14
+	stat_style.content_margin_right = 14
+	stat_style.content_margin_top = 12
+	stat_style.content_margin_bottom = 14
+	_stat_block.add_theme_stylebox_override("normal", stat_style)
 	sheet_column.add_child(_stat_block)
 
 	_set_form_enabled(false)
@@ -1015,10 +1029,16 @@ func _build_stat_block_text(stat: Dictionary) -> String:
 	)
 	out.append("")
 
-	out.append("[b]CA[/b] %s" % _escape_bb(_plain_value(stat.get("ac", ""))))
-	out.append("[b]PF[/b] %s" % _escape_bb(_hp_text(stat.get("hp", {}))))
 	out.append(
-		"[b]Velocità[/b] %s"
+		"[color=#aeb7c5][b]CA[/b][/color] %s"
+		% _escape_bb(_plain_value(stat.get("ac", "")))
+	)
+	out.append(
+		"[color=#aeb7c5][b]PF[/b][/color] %s"
+		% _escape_bb(_hp_text(stat.get("hp", {})))
+	)
+	out.append(
+		"[color=#aeb7c5][b]Velocità[/b][/color] %s"
 		% _escape_bb(_plain_value(stat.get("speed", "")))
 	)
 	out.append("")
@@ -1072,14 +1092,11 @@ func _build_stat_block_text(stat: Dictionary) -> String:
 	for section: Array in section_map:
 		var key := String(section[1])
 		if stat.has(key):
-			var value: Variant = stat.get(key)
-			if not _plain_value(value).is_empty():
-				out.append(
-					"[font_size=17][color=#d49b42][b]%s[/b][/color][/font_size]"
-					% String(section[0])
-				)
-				out.append(_escape_bb(_plain_value(value)))
-				out.append("")
+			_append_stat_section(
+				out,
+				String(section[0]),
+				stat.get(key)
+			)
 
 	var consumed := {
 		"name": true, "source": true, "page": true, "size": true,
@@ -1117,6 +1134,77 @@ func _build_stat_block_text(stat: Dictionary) -> String:
 		out.append("\n".join(extras))
 
 	return "\n".join(out)
+
+
+func _append_stat_section(
+	out: PackedStringArray,
+	label: String,
+	value: Variant
+) -> void:
+	if _plain_value(value).is_empty():
+		return
+
+	out.append("")
+	out.append(
+		"[font_size=18][color=#d49b42][b]%s[/b][/color][/font_size]"
+		% _escape_bb(label)
+	)
+
+	if value is Array:
+		var entries: Array = value as Array
+		for item: Variant in entries:
+			var rendered := _render_stat_section_entry(item)
+			if rendered.is_empty():
+				continue
+			out.append(rendered)
+			out.append("")
+		return
+
+	var rendered_single := _render_stat_section_entry(value)
+	if not rendered_single.is_empty():
+		out.append(rendered_single)
+		out.append("")
+
+
+func _render_stat_section_entry(value: Variant) -> String:
+	if value is Dictionary:
+		var data: Dictionary = value as Dictionary
+		var name := _plain_value(data.get("name", "")).strip_edges()
+		var body := _section_entry_body(data)
+		if not name.is_empty():
+			var heading := "[b]%s[/b]" % _escape_bb(name)
+			if not heading.ends_with("."):
+				heading += "."
+			if body.is_empty():
+				return heading
+			return "%s  %s" % [heading, _escape_bb(body)]
+		return _escape_bb(body)
+
+	if value is Array:
+		var blocks := PackedStringArray()
+		for nested: Variant in value as Array:
+			var rendered := _render_stat_section_entry(nested)
+			if not rendered.is_empty():
+				blocks.append(rendered)
+		return "\n\n".join(blocks)
+
+	return _escape_bb(_plain_value(value))
+
+
+func _section_entry_body(data: Dictionary) -> String:
+	var entries_value: Variant = data.get("entries", null)
+	if entries_value == null:
+		return _plain_value(data)
+
+	if entries_value is Array:
+		var paragraphs := PackedStringArray()
+		for entry_value: Variant in entries_value as Array:
+			var paragraph := _plain_value(entry_value).strip_edges()
+			if not paragraph.is_empty():
+				paragraphs.append(paragraph)
+		return "\n".join(paragraphs)
+
+	return _plain_value(entries_value).strip_edges()
 
 
 func _append_field(
