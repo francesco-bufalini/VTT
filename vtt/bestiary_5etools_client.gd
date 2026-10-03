@@ -441,7 +441,7 @@ func _parse_search_index(value: Variant) -> void:
 
 	var result: Array[Dictionary] = []
 	var seen: Dictionary = {}
-	for row_value: Variant in rows_value as Array:
+	for row_value: Variant in (rows_value as Array):
 		if not row_value is Dictionary:
 			continue
 		var row: Dictionary = row_value as Dictionary
@@ -502,7 +502,7 @@ func _find_creature(
 	var monsters_value: Variant = root.get("monster", [])
 	if not monsters_value is Array:
 		return {}
-	for monster_value: Variant in monsters_value as Array:
+	for monster_value: Variant in (monsters_value as Array):
 		if not monster_value is Dictionary:
 			continue
 		var monster: Dictionary = monster_value as Dictionary
