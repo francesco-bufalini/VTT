@@ -445,13 +445,28 @@ static func _collect_labeled_value(
 	if not value.is_empty():
 		parts.append(value)
 
+	var compact_label := matched_label.to_lower()
+	var one_line_value := compact_label in [
+		"challenge",
+		"challenge rating",
+		"cr",
+		"grado sfida",
+		"gs",
+		"proficiency bonus",
+		"bonus di competenza"
+	]
+
 	for next_index: int in range(index + 1, lines.size()):
 		var next_line := lines[next_index].strip_edges()
 		if next_line.is_empty():
 			continue
 		if _is_core_value_boundary(next_line):
 			break
+		if one_line_value and not parts.is_empty():
+			break
 		parts.append(next_line)
+		if one_line_value:
+			break
 
 	return {
 		"matched": true,
@@ -652,6 +667,18 @@ static func _parse_sections(
 		if not parsed_entry.is_empty():
 			_flush_entry(current_entries, current_entry)
 			current_entry = parsed_entry
+		elif (
+			current_entry.is_empty()
+			and line.ends_with(".")
+			and line.length() <= 100
+			and line.substr(0, 1) == line.substr(0, 1).to_upper()
+		):
+			# Tetra-Cube can place the first trait name on its own line,
+			# followed by the description on the next visual line.
+			current_entry = {
+				"name": line.trim_suffix(".").strip_edges(),
+				"entries": []
+			}
 		elif current_entry.is_empty():
 			current_entry = {"name": "", "entries": [line]}
 		else:
