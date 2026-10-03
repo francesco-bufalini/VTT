@@ -83,10 +83,24 @@ func extract_pdf_text(path: String) -> Dictionary:
 
 	var helper_path := ProjectSettings.globalize_path(PDF_HELPER)
 	if not FileAccess.file_exists(helper_path):
-		return {
-			"ok": false,
-			"message": "Helper PDF non trovato nel progetto."
-		}
+		# In an exported project res:// may live inside the PCK. Materialize
+		# the helper under user:// so Python can execute a real filesystem file.
+		if not FileAccess.file_exists(PDF_HELPER):
+			return {
+				"ok": false,
+				"message": "Helper PDF non trovato nel progetto."
+			}
+		var helper_text := FileAccess.get_file_as_string(PDF_HELPER)
+		var user_helper := "user://pdf_statblock_extract.py"
+		var helper_file := FileAccess.open(user_helper, FileAccess.WRITE)
+		if helper_file == null:
+			return {
+				"ok": false,
+				"message": "Impossibile preparare l'estrattore PDF."
+			}
+		helper_file.store_string(helper_text)
+		helper_file.close()
+		helper_path = ProjectSettings.globalize_path(user_helper)
 
 	var candidates: Array[Dictionary] = []
 	if OS.get_name() == "Windows":
@@ -106,9 +120,13 @@ func extract_pdf_text(path: String) -> Dictionary:
 	var last_message := ""
 	for candidate: Dictionary in candidates:
 		var output: Array = []
+		var args: PackedStringArray = candidate.get(
+			"args",
+			PackedStringArray()
+		)
 		var exit_code := OS.execute(
 			String(candidate.get("exe", "")),
-			candidate.get("args", PackedStringArray()),
+			args,
 			output,
 			false,
 			false
@@ -116,7 +134,10 @@ func extract_pdf_text(path: String) -> Dictionary:
 		if exit_code == -1:
 			continue
 
-		var raw := "\n".join(output).strip_edges()
+		var output_lines := PackedStringArray()
+		for output_value: Variant in output:
+			output_lines.append(String(output_value))
+		var raw := "\n".join(output_lines).strip_edges()
 		var parsed: Variant = JSON.parse_string(raw)
 		if parsed is Dictionary:
 			var result := (parsed as Dictionary).duplicate(true)
@@ -429,9 +450,11 @@ static func _parse_sections(
 	var current_key := ""
 	var current_entries: Array = []
 	var current_entry: Dictionary = {}
+	var implicit_traits_ready := false
 
 	for line: String in lines:
-		var section := _section_key(line.to_lower())
+		var lower := line.to_lower()
+		var section := _section_key(lower)
 		if not section.is_empty():
 			_flush_entry(current_entries, current_entry)
 			if not current_key.is_empty() and not current_entries.is_empty():
@@ -439,12 +462,28 @@ static func _parse_sections(
 			current_key = section
 			current_entries.clear()
 			current_entry = {}
+			implicit_traits_ready = false
 			continue
 
+		if _is_field_line(lower):
+			if (
+				lower.begins_with("challenge")
+				or lower.begins_with("cr ")
+				or lower.begins_with("grado sfida")
+				or lower.begins_with("gs ")
+				or lower.begins_with("proficiency bonus")
+				or lower.begins_with("bonus di competenza")
+			):
+				implicit_traits_ready = true
+			continue
+
+		# Official/third-party PDFs often omit a literal "Traits" heading.
+		# After Challenge/Proficiency Bonus, treat named entries before
+		# "Actions" as traits.
 		if current_key.is_empty():
-			continue
-		if _is_field_line(line.to_lower()):
-			continue
+			if not implicit_traits_ready:
+				continue
+			current_key = "trait"
 
 		var parsed_entry := _split_entry_line(line)
 		if not parsed_entry.is_empty():
