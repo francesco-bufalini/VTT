@@ -113,7 +113,11 @@ func _request_creature_now(
 				source
 			)
 			if not creature.is_empty():
-				creature_ready.emit(request_key, creature)
+				_deliver_or_resolve_copy(
+					request_key,
+					creature,
+					parsed as Dictionary
+				)
 				return
 
 	_queue.push_back({
@@ -244,7 +248,33 @@ func _on_request_completed(
 						"Creatura non trovata nel file 5eTools."
 					)
 				else:
-					creature_ready.emit(request_key, creature)
+					_deliver_or_resolve_copy(
+						request_key,
+						creature,
+						parsed as Dictionary
+					)
+		"copy_base_file":
+			var copy_request_key := String(task.get("request_key", ""))
+			var child_value: Variant = task.get("child", {})
+			if parsed is Dictionary and child_value is Dictionary:
+				var base := _find_creature(
+					parsed as Dictionary,
+					String(task.get("base_name", "")),
+					String(task.get("base_source", ""))
+				)
+				if not base.is_empty():
+					creature_ready.emit(
+						copy_request_key,
+						_merge_copy_creature(
+							base,
+							child_value as Dictionary
+						)
+					)
+				else:
+					creature_ready.emit(
+						copy_request_key,
+						(child_value as Dictionary).duplicate(true)
+					)
 
 	_finish_catalog_if_ready()
 	_pump_queue()
@@ -269,7 +299,7 @@ func _retry_or_fail(message: String) -> void:
 	var request_key: String = String(task.get("request_key", ""))
 	_active = {}
 
-	if kind == "creature_file":
+	if kind in ["creature_file", "copy_base_file"]:
 		creature_failed.emit(request_key, message)
 	elif kind in ["source_index", "search_index"]:
 		if _load_catalog_from_cache():
@@ -282,6 +312,78 @@ func _retry_or_fail(message: String) -> void:
 				"Impossibile caricare il bestiario 5eTools: " + message
 			)
 			_queue.clear()
+
+
+func _deliver_or_resolve_copy(
+	request_key: String,
+	creature: Dictionary,
+	source_root: Dictionary
+) -> void:
+	var copy_value: Variant = creature.get("_copy", {})
+	if not copy_value is Dictionary:
+		creature_ready.emit(request_key, creature)
+		return
+
+	var copy_data: Dictionary = copy_value as Dictionary
+	var base_name := String(copy_data.get("name", "")).strip_edges()
+	var base_source := String(copy_data.get("source", "")).strip_edges()
+	if base_name.is_empty() or base_source.is_empty():
+		creature_ready.emit(request_key, creature)
+		return
+
+	var base := _find_creature(source_root, base_name, base_source)
+	if base.is_empty():
+		var filename := String(_source_files.get(base_source, "")).strip_edges()
+		if not filename.is_empty():
+			var cache_path := CACHE_DIR.path_join(filename)
+			if FileAccess.file_exists(cache_path):
+				var cached_value: Variant = _read_json(cache_path)
+				if cached_value is Dictionary:
+					base = _find_creature(
+						cached_value as Dictionary,
+						base_name,
+						base_source
+					)
+			if base.is_empty():
+				_queue.push_front({
+					"kind": "copy_base_file",
+					"url": OFFICIAL_BASE + "data/bestiary/" + filename,
+					"fallback_url": (
+						MIRROR_BASE + "data/bestiary/" + filename
+					),
+					"cache_path": cache_path,
+					"fallback_used": false,
+					"request_key": request_key,
+					"base_name": base_name,
+					"base_source": base_source,
+					"child": creature.duplicate(true)
+				})
+				_pump_queue()
+				return
+
+	if base.is_empty():
+		creature_ready.emit(request_key, creature)
+		return
+
+	creature_ready.emit(
+		request_key,
+		_merge_copy_creature(base, creature)
+	)
+
+
+func _merge_copy_creature(
+	base: Dictionary,
+	child: Dictionary
+) -> Dictionary:
+	var merged := base.duplicate(true)
+	for key: Variant in child.keys():
+		if String(key) == "_copy":
+			continue
+		merged[key] = child[key]
+	# Manteniamo il blocco _copy: le eventuali _mod avanzate di 5eTools
+	# restano visibili nella scheda anche quando non sono trasformate qui.
+	merged["_copy"] = child.get("_copy", {}).duplicate(true)
+	return merged
 
 
 func _load_catalog_from_cache() -> bool:
