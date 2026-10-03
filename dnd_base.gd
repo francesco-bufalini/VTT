@@ -3443,8 +3443,11 @@ func _build_share_dialog() -> void:
 
 	var info := Label.new()
 	info.text = (
-		"La ricezione è sempre attiva. Sincronizza invia lo stato corrente "
-		+ "a tutti i nodi restituiti da tailscale status --json."
+		"La ricezione mappa è sempre attiva. Il pulsante sotto invia solo "
+		+ "la mappa ai nodi restituiti da tailscale status --json. "
+		+ "Dice roller e chat usano un canale separato e si aggiornano "
+		+ "automaticamente: tirare un dado o inviare un messaggio non "
+		+ "sincronizza mai la mappa."
 	)
 	info.autowrap_mode = TextServer.AUTOWRAP_WORD_SMART
 	layout.add_child(info)
