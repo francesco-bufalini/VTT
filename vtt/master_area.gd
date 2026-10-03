@@ -518,7 +518,7 @@ func _reload_creatures() -> void:
 	_creatures.clear()
 	var raw: Variant = _store.call("list_creatures")
 	if raw is Array:
-		for item: Variant in raw as Array:
+		for item: Variant in (raw as Array):
 			if item is Dictionary:
 				_creatures.append(item as Dictionary)
 	_refresh_rosters()
@@ -840,7 +840,7 @@ func _selected_tokens() -> Array[CharacterBody3D]:
 			"get_selected_tokens_for_master_area"
 		)
 		if value is Array:
-			for item: Variant in value as Array:
+			for item: Variant in (value as Array):
 				if item is CharacterBody3D:
 					result.append(item as CharacterBody3D)
 	return result
@@ -1061,7 +1061,7 @@ func _plain_value(value: Variant) -> String:
 		return str(value)
 	if value is Array:
 		var parts := PackedStringArray()
-		for item: Variant in value as Array:
+		for item: Variant in (value as Array):
 			var text := _plain_value(item)
 			if not text.is_empty():
 				parts.append(text)
