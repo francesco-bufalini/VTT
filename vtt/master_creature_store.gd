@@ -48,7 +48,7 @@ func list_creatures() -> Array[Dictionary]:
 		return []
 
 	var result: Array[Dictionary] = []
-	for item: Variant in creatures_value as Array:
+	for item: Variant in (creatures_value as Array):
 		if item is Dictionary:
 			result.append(normalize_creature(item as Dictionary))
 	return result
