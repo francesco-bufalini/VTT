@@ -446,8 +446,6 @@ func _filter_catalog(query: String) -> void:
 		return
 	_bestiary_list.clear()
 	var needle := query.strip_edges().to_lower()
-	var shown := 0
-	const MAX_VISIBLE := 1600
 	for entry: Dictionary in _catalog:
 		var name := String(entry.get("name", ""))
 		var source := String(entry.get("source", ""))
@@ -462,9 +460,6 @@ func _filter_catalog(query: String) -> void:
 			_bestiary_list.item_count - 1,
 			entry.duplicate(true)
 		)
-		shown += 1
-		if shown >= MAX_VISIBLE:
-			break
 
 
 func _add_enemy_from_index(index: int) -> void:
