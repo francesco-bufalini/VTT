@@ -350,6 +350,7 @@ func _build_ui() -> void:
 
 	_add_label(identity, "PF massimi")
 	_max_hp = _hp_spin()
+	_max_hp.min_value = 0
 	_max_hp.value_changed.connect(
 		func(_value: float) -> void:
 			_save_current_fields()
