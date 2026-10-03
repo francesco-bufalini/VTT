@@ -314,7 +314,7 @@ static func valid_event(event: Dictionary) -> bool:
 
 		var expected_total := modifier
 		var seen_dice := 0
-		for term_value: Variant in terms_value as Array:
+		for term_value: Variant in (terms_value as Array):
 			if not term_value is Dictionary:
 				return false
 			var term: Dictionary = term_value as Dictionary
