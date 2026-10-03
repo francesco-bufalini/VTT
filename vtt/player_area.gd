@@ -446,12 +446,17 @@ func _build_ui() -> void:
 	_tabs = TabContainer.new()
 	_tabs.size_flags_horizontal = Control.SIZE_EXPAND_FILL
 	_tabs.size_flags_vertical = Control.SIZE_EXPAND_FILL
+	_tabs.tab_changed.connect(_on_player_tab_changed)
 	split.add_child(_tabs)
 
 	_build_identity_tab()
 	_build_combat_tab()
 	_build_story_tab()
 	_build_spells_tab()
+
+
+func _on_player_tab_changed(_tab: int) -> void:
+	_collapse_all_catalog_sections(true)
 
 
 func _build_identity_tab() -> void:
