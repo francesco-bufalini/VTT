@@ -384,7 +384,7 @@ func _load_history() -> void:
 	if not parsed is Array:
 		return
 
-	for value: Variant in parsed as Array:
+	for value: Variant in (parsed as Array):
 		if not value is Dictionary:
 			continue
 		var event: Dictionary = value as Dictionary
