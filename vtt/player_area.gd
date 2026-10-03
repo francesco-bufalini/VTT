@@ -511,7 +511,7 @@ func _build_identity_tab() -> void:
 
 	_section_title(body, "Caratteristiche")
 	var abilities_grid := GridContainer.new()
-	abilities_grid.columns = 3
+	abilities_grid.columns = 4
 	abilities_grid.add_theme_constant_override("h_separation", 12)
 	abilities_grid.add_theme_constant_override("v_separation", 6)
 	body.add_child(abilities_grid)
@@ -539,6 +539,21 @@ func _build_identity_tab() -> void:
 		modifier.custom_minimum_size = Vector2(54, 0)
 		abilities_grid.add_child(modifier)
 		_ability_mod_labels[ability_id] = modifier
+
+		var roll_ability := Button.new()
+		roll_ability.text = "🎲"
+		roll_ability.tooltip_text = (
+			"Tira 1d20 usando il modificatore di %s"
+			% String(ability.get("name", ability_id))
+		)
+		roll_ability.custom_minimum_size = Vector2(38, 28)
+		roll_ability.pressed.connect(
+			_roll_ability_check.bind(
+				ability_id,
+				String(ability.get("name", ability_id))
+			)
+		)
+		abilities_grid.add_child(roll_ability)
 
 	_section_title(body, "Difese e risorse")
 	var stats_grid := GridContainer.new()
@@ -570,6 +585,14 @@ func _build_identity_tab() -> void:
 		0,
 		3
 	)
+
+	var initiative_roll := Button.new()
+	initiative_roll.text = "🎲 Tira iniziativa"
+	initiative_roll.tooltip_text = (
+		"Lancia 1d20 e usa il modificatore Iniziativa della scheda"
+	)
+	initiative_roll.pressed.connect(_roll_initiative_from_sheet)
+	body.add_child(initiative_roll)
 
 	_bool_fields["inspiration"] = _add_check(body, "Ispirazione")
 	_proficiency_label = Label.new()
@@ -603,9 +626,20 @@ func _build_combat_tab() -> void:
 		value_label.text = "+0"
 		saves_grid.add_child(value_label)
 		_save_value_labels[ability_id] = value_label
-		var spacer := Control.new()
-		spacer.custom_minimum_size = Vector2(10, 0)
-		saves_grid.add_child(spacer)
+		var roll_save := Button.new()
+		roll_save.text = "🎲"
+		roll_save.custom_minimum_size = Vector2(38, 28)
+		roll_save.tooltip_text = (
+			"Tira il tiro salvezza su %s"
+			% String(ability.get("name", ability_id))
+		)
+		roll_save.pressed.connect(
+			_roll_saving_throw.bind(
+				ability_id,
+				String(ability.get("name", ability_id))
+			)
+		)
+		saves_grid.add_child(roll_save)
 
 	_section_title(body, "Abilità")
 	var skills_grid := GridContainer.new()
@@ -651,6 +685,21 @@ func _build_combat_tab() -> void:
 		row.add_child(value_label)
 		_skill_value_labels[skill_id] = value_label
 
+		var roll_skill := Button.new()
+		roll_skill.text = "🎲"
+		roll_skill.custom_minimum_size = Vector2(38, 28)
+		roll_skill.tooltip_text = (
+			"Tira 1d20 per %s"
+			% String(skill.get("name", skill_id))
+		)
+		roll_skill.pressed.connect(
+			_roll_skill_check.bind(
+				skill_id,
+				String(skill.get("name", skill_id))
+			)
+		)
+		row.add_child(roll_skill)
+
 	_section_title(body, "Attacchi")
 	_attack_calculator = RichTextLabel.new()
 	_attack_calculator.bbcode_enabled = true
@@ -672,14 +721,37 @@ func _build_combat_tab() -> void:
 	)
 	body.add_child(_attack_list)
 
+	var attack_actions := HBoxContainer.new()
+	attack_actions.add_theme_constant_override("separation", 7)
+	body.add_child(attack_actions)
+
+	var roll_attack_button := Button.new()
+	roll_attack_button.text = "🎲 Tiro per colpire"
+	roll_attack_button.tooltip_text = (
+		"Lancia 1d20 con il bonus per colpire dell'attacco selezionato"
+	)
+	roll_attack_button.size_flags_horizontal = Control.SIZE_EXPAND_FILL
+	roll_attack_button.pressed.connect(_roll_selected_attack_hit)
+	attack_actions.add_child(roll_attack_button)
+
+	var roll_damage_button := Button.new()
+	roll_damage_button.text = "🎲 Danni"
+	roll_damage_button.tooltip_text = (
+		"Lancia i dadi danno dell'attacco selezionato con il suo modificatore"
+	)
+	roll_damage_button.size_flags_horizontal = Control.SIZE_EXPAND_FILL
+	roll_damage_button.pressed.connect(_roll_selected_attack_damage)
+	attack_actions.add_child(roll_damage_button)
+
 	var activate_attack_button := Button.new()
 	activate_attack_button.text = "Attiva attacco"
 	activate_attack_button.tooltip_text = (
 		"Mostra la gittata e usa automaticamente come attaccante "
 		+ "il token collegato alla scheda."
 	)
+	activate_attack_button.size_flags_horizontal = Control.SIZE_EXPAND_FILL
 	activate_attack_button.pressed.connect(_activate_selected_attack)
-	body.add_child(activate_attack_button)
+	attack_actions.add_child(activate_attack_button)
 
 	_add_multiline_field(
 		body,
@@ -831,6 +903,14 @@ func _build_spells_tab() -> void:
 		-20,
 		30
 	)
+
+	var spell_attack_roll := Button.new()
+	spell_attack_roll.text = "🎲 Tiro per colpire incantesimo"
+	spell_attack_roll.tooltip_text = (
+		"Lancia 1d20 con il bonus attacco incantesimi della scheda"
+	)
+	spell_attack_roll.pressed.connect(_roll_spell_attack_from_sheet)
+	body.add_child(spell_attack_roll)
 
 	_section_title(body, "Cerca nel catalogo 5e.tools")
 
@@ -2359,8 +2439,9 @@ func _refresh_attack_actions() -> void:
 			attack.get("damage_expression", "0")
 		)
 		var damage_type := String(attack.get("damage_type", "")).strip_edges()
-		var label := "%s · %d ft · %s" % [
+		var label := "%s · Colpire %s · %d ft · Danni %s" % [
 			attack_name,
+			_signed(int(attack.get("attack_bonus", 0))),
 			range_feet,
 			damage_expression,
 		]
@@ -2597,6 +2678,185 @@ func _multiply_die_expression(
 	return _damage_expression(
 		dice_expression,
 		modifier * safe_count
+	)
+
+
+func _dice_roller() -> Node:
+	if board_root == null or not is_instance_valid(board_root):
+		return null
+	var value: Variant = board_root.get("dice_roller_chat")
+	if value is Node and is_instance_valid(value):
+		return value as Node
+	return board_root.get_node_or_null("DiceRollerChat")
+
+
+func _character_roll_label(action_name: String) -> String:
+	var character_name := "Personaggio"
+	if _current_index >= 0 and _current_index < _characters.size():
+		character_name = String(
+			_characters[_current_index].get("name", "Personaggio")
+		).strip_edges()
+		if character_name.is_empty():
+			character_name = "Personaggio"
+	return "%s · %s" % [character_name, action_name]
+
+
+func _roll_sheet_d20(action_name: String, modifier: int) -> void:
+	var roller := _dice_roller()
+	if roller == null or not roller.has_method("roll_from_sheet"):
+		_set_status("Dice roller non disponibile.")
+		return
+	roller.call(
+		"roll_from_sheet",
+		_character_roll_label(action_name),
+		"d20",
+		1,
+		modifier
+	)
+	_set_status(
+		"%s: 1d20 %s inviato al dice roller."
+		% [action_name, _signed(modifier)]
+	)
+
+
+func _roll_ability_check(
+	ability_id: String,
+	ability_name: String
+) -> void:
+	_roll_sheet_d20(
+		"Prova di %s" % ability_name,
+		_ability_modifier_from_form(ability_id)
+	)
+
+
+func _saving_throw_bonus_from_form(ability_id: String) -> int:
+	var bonus := _ability_modifier_from_form(ability_id)
+	var level := 1
+	if _current_index >= 0 and _current_index < _characters.size():
+		level = clampi(
+			int(_characters[_current_index].get("level", 1)),
+			1,
+			20
+		)
+	var check: CheckButton = _save_checks.get(ability_id) as CheckButton
+	if check != null and check.button_pressed:
+		bonus += PlayerReference.proficiency_bonus(level)
+	return bonus
+
+
+func _roll_saving_throw(
+	ability_id: String,
+	ability_name: String
+) -> void:
+	_roll_sheet_d20(
+		"Tiro salvezza · %s" % ability_name,
+		_saving_throw_bonus_from_form(ability_id)
+	)
+
+
+func _skill_bonus_from_form(skill_id: String) -> int:
+	var ability_id := ""
+	for skill: Dictionary in PlayerReference.SKILLS:
+		if String(skill.get("id", "")) == skill_id:
+			ability_id = String(skill.get("ability", ""))
+			break
+	if ability_id.is_empty():
+		return 0
+
+	var bonus := _ability_modifier_from_form(ability_id)
+	var level := 1
+	if _current_index >= 0 and _current_index < _characters.size():
+		level = clampi(
+			int(_characters[_current_index].get("level", 1)),
+			1,
+			20
+		)
+	var proficiency := PlayerReference.proficiency_bonus(level)
+	var proficient: CheckButton = _skill_checks.get(skill_id) as CheckButton
+	var expertise: CheckButton = (
+		_skill_expertise_checks.get(skill_id) as CheckButton
+	)
+	if expertise != null and expertise.button_pressed:
+		bonus += proficiency * 2
+	elif proficient != null and proficient.button_pressed:
+		bonus += proficiency
+	return bonus
+
+
+func _roll_skill_check(skill_id: String, skill_name: String) -> void:
+	_roll_sheet_d20(
+		"Abilità · %s" % skill_name,
+		_skill_bonus_from_form(skill_id)
+	)
+
+
+func _roll_initiative_from_sheet() -> void:
+	var spin: SpinBox = _int_fields.get("initiative") as SpinBox
+	var modifier := int(spin.value) if spin != null else 0
+	_roll_sheet_d20("Iniziativa", modifier)
+
+
+func _roll_spell_attack_from_sheet() -> void:
+	var spin: SpinBox = _int_fields.get("spell_attack_bonus") as SpinBox
+	var modifier := int(spin.value) if spin != null else 0
+	_roll_sheet_d20("Tiro per colpire incantesimo", modifier)
+
+
+func _selected_attack_definition() -> Dictionary:
+	if _attack_list == null:
+		return {}
+	var selected := _attack_list.get_selected_items()
+	if selected.is_empty():
+		_set_status("Seleziona prima un attacco.")
+		return {}
+	var metadata: Variant = _attack_list.get_item_metadata(selected[0])
+	if not metadata is Dictionary:
+		return {}
+	return (metadata as Dictionary).duplicate(true)
+
+
+func _roll_selected_attack_hit() -> void:
+	var attack := _selected_attack_definition()
+	if attack.is_empty():
+		return
+	var attack_name := String(attack.get("name", "Attacco"))
+	_roll_sheet_d20(
+		"Tiro per colpire · %s" % attack_name,
+		int(attack.get("attack_bonus", 0))
+	)
+
+
+func _roll_selected_attack_damage() -> void:
+	var attack := _selected_attack_definition()
+	if attack.is_empty():
+		return
+	var expression := String(
+		attack.get("damage_expression", "")
+	).strip_edges()
+	if expression.is_empty() or expression == "—":
+		_set_status("L'attacco selezionato non ha dadi danno.")
+		return
+
+	var roller := _dice_roller()
+	if roller == null or not roller.has_method("roll_expression_from_sheet"):
+		_set_status("Dice roller non disponibile.")
+		return
+
+	var attack_name := String(attack.get("name", "Attacco"))
+	var damage_type := String(
+		attack.get("damage_type", "")
+	).strip_edges()
+	var label := "Danni · %s" % attack_name
+	if not damage_type.is_empty():
+		label += " · " + damage_type
+	roller.call(
+		"roll_expression_from_sheet",
+		_character_roll_label(label),
+		expression
+	)
+	_set_status(
+		"%s: %s inviato al dice roller."
+		% [attack_name, expression]
 	)
 
 
