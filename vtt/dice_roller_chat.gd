@@ -260,11 +260,41 @@ func _roll(die: String) -> void:
 		count = clampi(int(dice_count_input.value), 1, 100)
 	if dice_modifier_input != null:
 		modifier = clampi(int(dice_modifier_input.value), -9999, 9999)
+	_roll_specific("", die, count, modifier)
+
+
+func roll_from_sheet(
+	label: String,
+	die: String,
+	count: int = 1,
+	modifier: int = 0
+) -> void:
+	_roll_specific(
+		label.strip_edges(),
+		die,
+		clampi(count, 1, 100),
+		clampi(modifier, -9999, 9999)
+	)
+
+
+func _roll_specific(
+	label: String,
+	die: String,
+	count: int,
+	modifier: int
+) -> void:
+	if die not in [
+		"d20", "d12", "d10", "d8",
+		"d6", "d4", "d100", "d%"
+	]:
+		return
 
 	var event := _new_event("roll")
 	event["die"] = die
 	event["count"] = count
 	event["modifier"] = modifier
+	if not label.is_empty():
+		event["label"] = label.left(160)
 
 	var rolls: Array[int] = []
 	var percentile_faces: Array[Dictionary] = []
@@ -287,9 +317,177 @@ func _roll(die: String) -> void:
 	event["total"] = _roll_total(rolls, modifier)
 	if die == "d%":
 		event["percentile_faces"] = percentile_faces
-	event["detail"] = _roll_detail(die, rolls, modifier, percentile_faces)
+	event["detail"] = _roll_detail(
+		die,
+		rolls,
+		modifier,
+		percentile_faces
+	)
 
 	_append_event(event, true)
+
+
+func roll_expression_from_sheet(
+	label: String,
+	expression: String
+) -> void:
+	var parsed := parse_dice_expression(expression)
+	if parsed.is_empty():
+		return
+
+	var terms_value: Variant = parsed.get("terms", [])
+	if not terms_value is Array:
+		return
+	var terms: Array = terms_value as Array
+	var fixed_modifier := int(parsed.get("modifier", 0))
+	var rolled_terms: Array[Dictionary] = []
+	var total := fixed_modifier
+	var total_dice := 0
+
+	for term_value: Variant in terms:
+		if not term_value is Dictionary:
+			continue
+		var term: Dictionary = term_value as Dictionary
+		var count := clampi(int(term.get("count", 1)), 1, 100)
+		var sides := int(term.get("sides", 0))
+		var sign := -1 if int(term.get("sign", 1)) < 0 else 1
+		if sides <= 0:
+			continue
+
+		var values: Array[int] = []
+		for _index: int in range(count):
+			var value := rng.randi_range(1, sides)
+			values.append(value)
+			total += sign * value
+		total_dice += 1
+		rolled_terms.append({
+			"count": count,
+			"sides": sides,
+			"sign": sign,
+			"rolls": values
+		})
+
+	if rolled_terms.is_empty() or total_dice > 100:
+		return
+
+	var event := _new_event("roll")
+	event["die"] = "formula"
+	event["count"] = total_dice
+	event["modifier"] = fixed_modifier
+	event["notation"] = String(parsed.get("notation", expression))
+	event["terms"] = rolled_terms
+	event["total"] = total
+	event["detail"] = _formula_roll_detail(
+		rolled_terms,
+		fixed_modifier
+	)
+	if not label.strip_edges().is_empty():
+		event["label"] = label.strip_edges().left(160)
+	_append_event(event, true)
+
+
+static func parse_dice_expression(expression: String) -> Dictionary:
+	var normalized := expression.to_lower().replace(" ", "")
+	normalized = normalized.replace("−", "-")
+	if normalized.is_empty() or normalized == "—":
+		return {}
+
+	normalized = normalized.replace("-", "+-")
+	var terms: Array[Dictionary] = []
+	var modifier := 0
+	var total_dice := 0
+	var notation_parts := PackedStringArray()
+
+	for raw_term: String in normalized.split("+", false):
+		var term := raw_term.strip_edges()
+		if term.is_empty():
+			continue
+
+		var sign := 1
+		if term.begins_with("-"):
+			sign = -1
+			term = term.substr(1)
+		if term.is_empty():
+			return {}
+
+		var d_index := term.find("d")
+		if d_index >= 0:
+			var count_text := term.substr(0, d_index)
+			var sides_text := term.substr(d_index + 1)
+			var count := 1 if count_text.is_empty() else int(count_text)
+			var sides := int(sides_text)
+			if count < 1 or sides < 2 or count > 100:
+				return {}
+			total_dice += count
+			if total_dice > 100:
+				return {}
+			terms.append({
+				"count": count,
+				"sides": sides,
+				"sign": sign
+			})
+			var dice_text := "%dd%d" % [count, sides]
+			if notation_parts.is_empty():
+				notation_parts.append(
+					("-" if sign < 0 else "") + dice_text
+				)
+			else:
+				notation_parts.append(
+					("%s %s" % [
+						"-" if sign < 0 else "+",
+						dice_text
+					])
+				)
+		else:
+			if not term.is_valid_int():
+				return {}
+			var value := int(term) * sign
+			modifier += value
+			if notation_parts.is_empty():
+				notation_parts.append(str(value))
+			else:
+				notation_parts.append(
+					"%s %d" % [
+						"-" if value < 0 else "+",
+						absi(value)
+					]
+				)
+
+	if terms.is_empty():
+		return {}
+	return {
+		"terms": terms,
+		"modifier": modifier,
+		"notation": " ".join(notation_parts)
+	}
+
+
+static func _formula_roll_detail(
+	terms: Array[Dictionary],
+	modifier: int
+) -> String:
+	var parts := PackedStringArray()
+	for term: Dictionary in terms:
+		var values_value: Variant = term.get("rolls", [])
+		var value_parts := PackedStringArray()
+		if values_value is Array:
+			for value: Variant in values_value as Array:
+				value_parts.append(str(int(value)))
+		var prefix := "-" if int(term.get("sign", 1)) < 0 else ""
+		parts.append(
+			"%s%dd%d [%s]"
+			% [
+				prefix,
+				int(term.get("count", 1)),
+				int(term.get("sides", 0)),
+				", ".join(value_parts)
+			]
+		)
+	if modifier > 0:
+		parts.append("+%d" % modifier)
+	elif modifier < 0:
+		parts.append("-%d" % absi(modifier))
+	return " · ".join(parts)
 
 
 static func _roll_total(rolls: Array[int], modifier: int) -> int:
@@ -425,16 +623,25 @@ func _render_history() -> void:
 			var die_raw := String(event.get("die", "d?"))
 			var count := maxi(1, int(event.get("count", 1)))
 			var modifier := int(event.get("modifier", 0))
-			var notation := _escape_bb(
-				_roll_notation(die_raw, count, modifier)
+			var raw_notation := (
+				String(event.get("notation", ""))
+				if die_raw == "formula"
+				else _roll_notation(die_raw, count, modifier)
 			)
+			var notation := _escape_bb(raw_notation)
 			var total := int(event.get("total", 0))
 			var detail := String(event.get("detail", "")).strip_edges()
+			var label := String(event.get("label", "")).strip_edges()
 			var roll_text := (
 				"[color=#d5a64a][b]%s[/b][/color]  "
 				+ "[color=#8fa8c6]%s[/color] → "
 				+ "[font_size=18][b]%d[/b][/font_size]"
 			) % [author, notation, total]
+			if not label.is_empty():
+				roll_text += (
+					"\n[color=#9ca8b8]%s[/color]"
+					% _escape_bb(label)
+				)
 			if not detail.is_empty():
 				roll_text += (
 					"  [color=#78818e](%s)[/color]"
@@ -460,14 +667,20 @@ func _render_history() -> void:
 		var last: Dictionary = history.back()
 		if String(last.get("kind", "")) == "roll":
 			toggle_button.text = str(int(last.get("total", 0)))
+			var last_die := String(last.get("die", ""))
+			var last_notation := (
+				String(last.get("notation", ""))
+				if last_die == "formula"
+				else _roll_notation(
+					last_die,
+					maxi(1, int(last.get("count", 1))),
+					int(last.get("modifier", 0))
+				)
+			)
 			toggle_button.tooltip_text = (
 				"Ultimo tiro: %s = %d"
 				% [
-					_roll_notation(
-						String(last.get("die", "")),
-						maxi(1, int(last.get("count", 1))),
-						int(last.get("modifier", 0))
-					),
+					last_notation,
 					int(last.get("total", 0))
 				]
 			)
