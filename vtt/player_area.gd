@@ -2834,6 +2834,11 @@ func _link_character_to_token(
 		or not is_instance_valid(token)
 	):
 		return
+	if token.has_meta("master_creature_id"):
+		_set_status(
+			"Questo token è già collegato a una creatura dell'Area Master."
+		)
+		return
 
 	_save_form()
 	var character_id: String = String(
