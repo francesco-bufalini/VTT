@@ -88,11 +88,56 @@ func run() -> void:
 	bad_die_result["total"] = 58
 	assert(not DiceChatSync.valid_event(bad_die_result))
 
+	var parsed_damage := DiceRollerChat.parse_dice_expression(
+		"1d8 + 5 + 5d6"
+	)
+	assert(not parsed_damage.is_empty())
+	assert(int(parsed_damage.get("modifier", 0)) == 5)
+	var parsed_terms: Array = parsed_damage.get("terms", [])
+	assert(parsed_terms.size() == 2)
+	assert(int((parsed_terms[0] as Dictionary).get("count", 0)) == 1)
+	assert(int((parsed_terms[0] as Dictionary).get("sides", 0)) == 8)
+	assert(int((parsed_terms[1] as Dictionary).get("count", 0)) == 5)
+	assert(int((parsed_terms[1] as Dictionary).get("sides", 0)) == 6)
+
+	var formula_roll := {
+		"id": "test-formula-roll",
+		"kind": "roll",
+		"author": "Tester",
+		"timestamp": 5,
+		"label": "Lyria · Danni · Pugnale + Attacco Furtivo",
+		"die": "formula",
+		"count": 6,
+		"modifier": 5,
+		"notation": "1d8 + 5 + 5d6",
+		"terms": [
+			{
+				"count": 1,
+				"sides": 8,
+				"sign": 1,
+				"rolls": [6]
+			},
+			{
+				"count": 5,
+				"sides": 6,
+				"sign": 1,
+				"rolls": [1, 2, 3, 4, 5]
+			}
+		],
+		"total": 26,
+		"detail": "1d8 [6] · 5d6 [1, 2, 3, 4, 5] · +5"
+	}
+	assert(DiceChatSync.valid_event(formula_roll))
+
+	var bad_formula := formula_roll.duplicate(true)
+	bad_formula["total"] = 27
+	assert(not DiceChatSync.valid_event(bad_formula))
+
 	var chat := {
 		"id": "test-chat-1",
 		"kind": "chat",
 		"author": "Tester",
-		"timestamp": 5,
+		"timestamp": 6,
 		"text": "Ciao party"
 	}
 	assert(DiceChatSync.valid_event(chat))
