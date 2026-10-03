@@ -2,6 +2,9 @@ extends "res://encounter/final_encounter.gd"
 
 const PostKaosHelpers = preload("res://encounter/post_kaos_helpers.gd")
 
+const ImportedPrison = preload("res://encounter/klotis_prison.gd")
+var klotis_prison: Node3D
+
 const CHARIOT_OFFSETS_METERS := [
 	Vector3(-27.0, 24.0, 70.0),
 	Vector3(-9.0, 30.0, 74.0),
@@ -14,6 +17,7 @@ func _ready() -> void:
 	super._ready()
 	_clean_scontro_board()
 	_apply_post_kaos_terrain_rules()
+	_install_imported_prison()
 	_position_starting_group_near_sphere()
 
 
@@ -140,3 +144,50 @@ func _position_starting_group_near_sphere() -> void:
 				passenger.set("grid_support", deck)
 				passenger.set("_support_transform", deck.global_transform)
 				passenger.set("velocity", Vector3.ZERO)
+
+
+func _install_imported_prison() -> void:
+	klotis_prison = ImportedPrison.new()
+	klotis_prison.name = "KlotisPrison"
+	klotis_prison.scene = self
+	var visual: Node3D = preload("res://encounter/assets/klotis_prison/klotis_prison.glb").instantiate()
+	visual.name = "Visual"
+	klotis_prison.add_child(visual)
+	add_child(klotis_prison)
+	volumetric_grid.collision_probe_scale = 0.99
+	volumetric_grid.call("_configure_grid")
+	volumetric_grid.call_deferred("refresh")
+
+
+func avvia_animazione_sigillo(lato: String) -> bool:
+	var aliases := {"sinistro":1,"left":1,"destro":2,"right":2,"fronte":0,"forehead":0}
+	if not aliases.has(lato.to_lower()) or encounter.encounter_finished:
+		return false
+	var index: int = aliases[lato.to_lower()]
+	if encounter.seals.damage[index] >= encounter.seals.break_damage:
+		return false
+	encounter.register_seal_damage(index, encounter.seals.break_damage)
+	return true
+
+
+func _show_context_menu(screen_position: Vector2) -> void:
+	super._show_context_menu(screen_position)
+	context_menu.add_separator("Sigilli di Klotis")
+	for index in range(3):
+		context_menu.add_item(["Spezza sigillo sinistro", "Spezza sigillo destro", "Spezza sigillo sulla fronte"][index], 120 + index)
+		var side: String = ["left", "right", "forehead"][index]
+		context_menu.set_item_disabled(context_menu.get_item_index(120 + index), encounter.encounter_finished or klotis_prison.broken[side])
+
+
+func _on_context_menu_id_pressed(id: int) -> void:
+	if id in [120,121,122]:
+		_close_context_menu_to_game()
+		avvia_animazione_sigillo(["sinistro", "destro", "fronte"][id-120])
+	elif id == CONTEXT_SHOULDERS and is_instance_valid(klotis_prison):
+		camera.exit_first_person()
+		var target: Vector3 = klotis_prison.statue_top
+		camera.global_position = target + Vector3(-18,25,24)
+		camera.look_at(target)
+		_close_context_menu_to_game()
+	else:
+		super._on_context_menu_id_pressed(id)

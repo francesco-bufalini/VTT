@@ -1,0 +1,36 @@
+{
+  "asset": "Klotis titan prison",
+  "provenance": "Blender scene built for this user; Empyrean model supplied locally by the user.",
+  "editable_source": "C:/Users/franc/Documents/Codex/2026-10-03/correggi-la-sfera-sul-mio/outputs/klotis_esagoni_crepe/klotis_esagoni_crepe.blend",
+  "sha256": "d461f189ceeb8264a7ed7a44851e90eb841b108a10d7969d6e63aa06f428b8b6",
+  "scene": "res://encounter/scontro_contro_kaos.tscn",
+  "animations": {
+    "left": "Break_Left_Seal",
+    "right": "Break_Right_Seal",
+    "forehead": "Break_Forehead_Seal"
+  },
+  "animation_duration_seconds": 1.4,
+  "animation_last_frame": 42,
+  "fps": 30,
+  "commands": [
+    "avvia_animazione_sigillo(\"sinistro\")",
+    "avvia_animazione_sigillo(\"destro\")",
+    "avvia_animazione_sigillo(\"fronte\")"
+  ],
+  "collision_layers": [
+    1,
+    8
+  ],
+  "file_bytes": 99279116,
+  "external_textures": [
+    "klotis_prison_sfera_normal.png",
+    "klotis_prison_sfera_albedo.png",
+    "klotis_prison_sfera_roughness.png",
+    "klotis_prison_statua_normal.png",
+    "klotis_prison_statua_albedo.png",
+    "klotis_prison_statua_roughness.png",
+    "klotis_prison_quatrefoil_jacquard_fabric_nor_gl.jpg",
+    "klotis_prison_young_lightskinned_female_diffuse.png"
+  ],
+  "optimization": "Lossless: texture payloads moved to the identical files already extracted by Godot; duplicate buffer views shared. Geometry and animation bytes unchanged."
+}
