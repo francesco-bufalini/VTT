@@ -43,11 +43,56 @@ func run() -> void:
 	}
 	assert(DiceChatSync.valid_event(percentile))
 
+	var multi_roll := {
+		"id": "test-roll-multi",
+		"kind": "roll",
+		"author": "Tester",
+		"timestamp": 3,
+		"die": "d20",
+		"count": 3,
+		"modifier": 5,
+		"rolls": [12, 7, 20],
+		"total": 44,
+		"detail": "[12, 7, 20] · +5"
+	}
+	assert(DiceChatSync.valid_event(multi_roll))
+	assert(
+		DiceRollerChat._roll_notation("d20", 3, 5)
+		== "3d20 + 5"
+	)
+	assert(
+		DiceRollerChat._roll_notation("d8", 2, -3)
+		== "2d8 - 3"
+	)
+
+	var multi_percentile := {
+		"id": "test-roll-percentile-multi",
+		"kind": "roll",
+		"author": "Tester",
+		"timestamp": 4,
+		"die": "d%",
+		"count": 2,
+		"modifier": -10,
+		"rolls": [73, 100],
+		"total": 163,
+		"detail": "[73, 100] · 70+3=73, 00+0=100 · -10"
+	}
+	assert(DiceChatSync.valid_event(multi_percentile))
+
+	var mismatched_total := multi_roll.duplicate(true)
+	mismatched_total["total"] = 45
+	assert(not DiceChatSync.valid_event(mismatched_total))
+
+	var bad_die_result := multi_roll.duplicate(true)
+	bad_die_result["rolls"] = [12, 21, 20]
+	bad_die_result["total"] = 58
+	assert(not DiceChatSync.valid_event(bad_die_result))
+
 	var chat := {
 		"id": "test-chat-1",
 		"kind": "chat",
 		"author": "Tester",
-		"timestamp": 3,
+		"timestamp": 5,
 		"text": "Ciao party"
 	}
 	assert(DiceChatSync.valid_event(chat))
