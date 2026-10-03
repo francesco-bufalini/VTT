@@ -471,7 +471,7 @@ static func _formula_roll_detail(
 		var values_value: Variant = term.get("rolls", [])
 		var value_parts := PackedStringArray()
 		if values_value is Array:
-			for value: Variant in values_value as Array:
+			for value: Variant in (values_value as Array):
 				value_parts.append(str(int(value)))
 		var prefix := "-" if int(term.get("sign", 1)) < 0 else ""
 		parts.append(
