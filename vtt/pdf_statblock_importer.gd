@@ -212,20 +212,52 @@ static func _guess_name(
 	lines: Array[String],
 	fallback_name: String
 ) -> String:
-	for line: String in lines:
-		var lower := line.to_lower()
-		if _is_field_line(lower) or _section_key(lower) != "":
+	# Prefer a heading immediately followed by the size/type line or by the
+	# Armor Class block. This skips page headers and PDF document titles.
+	for index: int in range(lines.size()):
+		var line := lines[index]
+		if not _valid_name_candidate(line):
 			continue
-		if (
-			lower.begins_with("dungeons & dragons")
-			or lower.begins_with("challenge rating")
-			or lower.begins_with("stat block")
+		for lookahead: int in range(
+			index + 1,
+			mini(lines.size(), index + 5)
 		):
-			continue
-		if line.length() <= 100:
+			var next_lower := lines[lookahead].to_lower()
+			if (
+				_looks_like_size_type_line(next_lower)
+				or next_lower.begins_with("armor class")
+				or next_lower.begins_with("classe armatura")
+				or next_lower.begins_with("ac ")
+				or next_lower.begins_with("ca ")
+			):
+				return line
+
+	for line: String in lines:
+		if _valid_name_candidate(line):
 			return line
 	var fallback := fallback_name.strip_edges()
 	return fallback if not fallback.is_empty() else "Creatura PDF"
+
+
+static func _valid_name_candidate(line: String) -> bool:
+	var lower := line.to_lower()
+	if _is_field_line(lower) or _section_key(lower) != "":
+		return false
+	if (
+		lower.begins_with("dungeons & dragons")
+		or lower.begins_with("challenge rating")
+		or lower.begins_with("stat block")
+		or lower.begins_with("monster manual")
+	):
+		return false
+	return line.length() <= 100
+
+
+static func _looks_like_size_type_line(lower: String) -> bool:
+	for size_word: Variant in SIZE_CODES.keys():
+		if lower.begins_with(String(size_word) + " "):
+			return true
+	return false
 
 
 static func _parse_size_type_alignment(
