@@ -356,6 +356,8 @@ func _build_ui() -> void:
 	_add_label(identity, "Nome")
 	_name_edit = LineEdit.new()
 	_name_edit.placeholder_text = "Nome / soprannome"
+	_name_edit.custom_minimum_size = Vector2(260, 34)
+	_name_edit.size_flags_horizontal = Control.SIZE_EXPAND_FILL
 	_name_edit.text_submitted.connect(
 		func(_value: String) -> void:
 			_save_current_fields()
@@ -729,6 +731,7 @@ func _load_current_form() -> void:
 		if stat_value is Dictionary
 		else "Scheda 5eTools non disponibile."
 	)
+	_stat_block.call_deferred("scroll_to_line", 0)
 	_loading_form = false
 
 
