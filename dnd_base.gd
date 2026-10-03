@@ -117,6 +117,7 @@ var initiative_tracker: Node
 var token_list: Node
 var player_area: Node
 var master_area: Node
+var dice_roller_chat: Node
 var _undo_stack: Array[Dictionary] = []
 var _redo_stack: Array[Dictionary] = []
 var _pending_history_actions: Array[int] = []
@@ -205,6 +206,16 @@ func _ready() -> void:
 	master_area.name = "MasterArea"
 	add_child(master_area)
 	master_area.call("setup", self)
+
+	dice_roller_chat = preload("res://vtt/dice_roller_chat.gd").new()
+	dice_roller_chat.name = "DiceRollerChat"
+	add_child(dice_roller_chat)
+	dice_roller_chat.call(
+		"setup",
+		self,
+		_share_session_key(),
+		Callable(board_sync, "_tailscale_peer_ipv4s")
+	)
 
 	var runtime_toolbar: Node = (
 		preload("res://vtt/runtime_toolbar.gd").new() as Node
@@ -3413,7 +3424,10 @@ func _share_session_key() -> String:
 
 
 func _on_share_session_changed(_value: float) -> void:
-	board_sync.listen(true, _share_session_key())
+	var key := _share_session_key()
+	board_sync.listen(true, key)
+	if dice_roller_chat != null and is_instance_valid(dice_roller_chat):
+		dice_roller_chat.call("set_session_key", key)
 
 
 func _build_share_dialog() -> void:
