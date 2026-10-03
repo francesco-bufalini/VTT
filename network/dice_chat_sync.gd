@@ -269,21 +269,70 @@ static func valid_event(event: Dictionary) -> bool:
 
 	if kind == "chat":
 		var text_value := String(event.get("text", ""))
-		return not text_value.strip_edges().is_empty() and text_value.length() <= 1000
+		return (
+			not text_value.strip_edges().is_empty()
+			and text_value.length() <= 1000
+		)
 
 	var die := String(event.get("die", ""))
-	if die not in ["d20", "d12", "d10", "d8", "d6", "d4", "d100", "d%"]:
+	if die not in [
+		"d20", "d12", "d10", "d8",
+		"d6", "d4", "d100", "d%"
+	]:
 		return false
 
-	var total: Variant = event.get("total", 0)
-	if not (total is int or total is float):
+	var total_value: Variant = event.get("total", 0)
+	if not (total_value is int or total_value is float):
 		return false
-	var total_int := int(total)
-	if die == "d%" or die == "d100":
-		return total_int >= 1 and total_int <= 100
+	var total := int(total_value)
 
-	var sides := int(die.trim_prefix("d"))
-	return total_int >= 1 and total_int <= sides
+	# Backward compatibility with history generated before multi-die rolls.
+	if not event.has("rolls"):
+		if die in ["d%", "d100"]:
+			return total >= 1 and total <= 100
+		var legacy_sides := int(die.trim_prefix("d"))
+		return total >= 1 and total <= legacy_sides
+
+	var count_value: Variant = event.get("count", 1)
+	var modifier_value: Variant = event.get("modifier", 0)
+	if not (count_value is int or count_value is float):
+		return false
+	if not (modifier_value is int or modifier_value is float):
+		return false
+
+	var count := int(count_value)
+	var modifier := int(modifier_value)
+	if count < 1 or count > 100:
+		return false
+	if modifier < -9999 or modifier > 9999:
+		return false
+
+	var rolls_value: Variant = event.get("rolls", [])
+	if not rolls_value is Array:
+		return false
+	var rolls: Array = rolls_value as Array
+	if rolls.size() != count:
+		return false
+
+	var sides := 100 if die in ["d%", "d100"] else int(
+		die.trim_prefix("d")
+	)
+	var expected_total := modifier
+	for roll_value: Variant in rolls:
+		if not (roll_value is int or roll_value is float):
+			return false
+		var roll := int(roll_value)
+		if roll < 1 or roll > sides:
+			return false
+		expected_total += roll
+
+	if total != expected_total:
+		return false
+
+	if event.has("detail") and String(event.get("detail", "")).length() > 4000:
+		return false
+
+	return true
 
 
 func _exit_tree() -> void:
