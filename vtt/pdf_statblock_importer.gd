@@ -200,9 +200,23 @@ static func _normalize_text(value: String) -> String:
 
 static func _clean_lines(text: String) -> Array[String]:
 	var result: Array[String] = []
+	var footer_date := RegEx.new()
+	footer_date.compile(
+		"^[0-9]{1,2}/[0-9]{1,2}/[0-9]{2,4},\\s*[0-9]{1,2}:[0-9]{2}\\b"
+	)
+	var page_fraction := RegEx.new()
+	page_fraction.compile("^[0-9]+\\s*/\\s*[0-9]+$")
+
 	for raw_line: String in text.split("\n"):
 		var line := raw_line.strip_edges()
 		if line.is_empty():
+			continue
+		var lower := line.to_lower()
+		if lower.begins_with("about:blank"):
+			continue
+		if footer_date.search(line) != null:
+			continue
+		if page_fraction.search(line) != null:
 			continue
 		result.append(line)
 	return result
@@ -294,106 +308,187 @@ static func _parse_core_fields(
 	lines: Array[String],
 	stat: Dictionary
 ) -> void:
-	for line: String in lines:
-		var value := ""
+	var field_definitions: Array[Dictionary] = [
+		{
+			"key": "ac",
+			"labels": ["armor class", "ac", "classe armatura", "ca"]
+		},
+		{
+			"key": "hp",
+			"labels": ["hit points", "hp", "punti ferita", "pf"]
+		},
+		{
+			"key": "speed",
+			"labels": ["speed", "velocità", "velocita"]
+		},
+		{
+			"key": "save",
+			"labels": ["saving throws", "tiri salvezza", "salvezza"]
+		},
+		{
+			"key": "skill",
+			"labels": ["skills", "abilità", "abilita"]
+		},
+		{
+			"key": "vulnerable",
+			"labels": [
+				"damage vulnerabilities",
+				"vulnerabilità ai danni",
+				"vulnerabilita ai danni"
+			]
+		},
+		{
+			"key": "resist",
+			"labels": ["damage resistances", "resistenze ai danni"]
+		},
+		{
+			"key": "immune",
+			"labels": [
+				"damage immunities",
+				"immunità ai danni",
+				"immunita ai danni"
+			]
+		},
+		{
+			"key": "conditionImmune",
+			"labels": [
+				"condition immunities",
+				"immunità alle condizioni",
+				"immunita alle condizioni"
+			]
+		},
+		{
+			"key": "senses",
+			"labels": ["senses", "sensi"]
+		},
+		{
+			"key": "languages",
+			"labels": ["languages", "linguaggi"]
+		},
+		{
+			"key": "cr",
+			"labels": [
+				"challenge rating",
+				"challenge",
+				"cr",
+				"grado sfida",
+				"gs"
+			]
+		},
+		{
+			"key": "pbNote",
+			"labels": ["proficiency bonus", "bonus di competenza"]
+		},
+	]
 
-		value = _value_after_label(
-			line,
-			["armor class", "ac", "classe armatura", "ca"]
-		)
-		if not value.is_empty():
-			stat["ac"] = value
-			continue
+	for index: int in range(lines.size()):
+		for definition: Dictionary in field_definitions:
+			var labels: Array[String] = []
+			for label_value: Variant in definition.get("labels", []):
+				labels.append(String(label_value))
 
-		value = _value_after_label(
-			line,
-			["hit points", "hp", "punti ferita", "pf"]
-		)
-		if not value.is_empty():
-			stat["hp"] = _parse_hp(value)
-			continue
-
-		value = _value_after_label(line, ["speed", "velocità", "velocita"])
-		if not value.is_empty():
-			stat["speed"] = value
-			continue
-
-		value = _value_after_label(
-			line,
-			["saving throws", "tiri salvezza", "salvezza"]
-		)
-		if not value.is_empty():
-			stat["save"] = value
-			continue
-
-		value = _value_after_label(line, ["skills", "abilità", "abilita"])
-		if not value.is_empty():
-			stat["skill"] = value
-			continue
-
-		value = _value_after_label(
-			line,
-			["damage vulnerabilities", "vulnerabilità ai danni", "vulnerabilita ai danni"]
-		)
-		if not value.is_empty():
-			stat["vulnerable"] = value
-			continue
-
-		value = _value_after_label(
-			line,
-			["damage resistances", "resistenze ai danni"]
-		)
-		if not value.is_empty():
-			stat["resist"] = value
-			continue
-
-		value = _value_after_label(
-			line,
-			["damage immunities", "immunità ai danni", "immunita ai danni"]
-		)
-		if not value.is_empty():
-			stat["immune"] = value
-			continue
-
-		value = _value_after_label(
-			line,
-			["condition immunities", "immunità alle condizioni", "immunita alle condizioni"]
-		)
-		if not value.is_empty():
-			stat["conditionImmune"] = value
-			continue
-
-		value = _value_after_label(line, ["senses", "sensi"])
-		if not value.is_empty():
-			stat["senses"] = value
-			var passive := _extract_first_int_after(
-				value.to_lower(),
-				["passive perception", "percezione passiva"]
+			var collected := _collect_labeled_value(
+				lines,
+				index,
+				labels
 			)
-			if passive >= 0:
-				stat["passive"] = passive
+			if not bool(collected.get("matched", false)):
+				continue
+
+			var key := String(definition.get("key", ""))
+			var value := String(
+				collected.get("value", "")
+			).strip_edges()
+			if value.is_empty():
+				break
+
+			if key == "hp":
+				stat[key] = _parse_hp(value)
+			else:
+				stat[key] = value
+
+			if key == "senses":
+				var passive := _extract_first_int_after(
+					value.to_lower(),
+					[
+						"passive perception",
+						"percezione passiva"
+					]
+				)
+				if passive >= 0:
+					stat["passive"] = passive
+			break
+
+
+static func _collect_labeled_value(
+	lines: Array[String],
+	index: int,
+	labels: Array[String]
+) -> Dictionary:
+	if index < 0 or index >= lines.size():
+		return {"matched": false, "value": ""}
+
+	var line := lines[index].strip_edges()
+	var matched_label := _matched_label(line, labels)
+	if matched_label.is_empty():
+		return {"matched": false, "value": ""}
+
+	var value := line.substr(matched_label.length()).strip_edges()
+	while (
+		value.begins_with(":")
+		or value.begins_with(".")
+		or value.begins_with("-")
+	):
+		value = value.substr(1).strip_edges()
+
+	var parts := PackedStringArray()
+	if not value.is_empty():
+		parts.append(value)
+
+	for next_index: int in range(index + 1, lines.size()):
+		var next_line := lines[next_index].strip_edges()
+		if next_line.is_empty():
 			continue
+		if _is_core_value_boundary(next_line):
+			break
+		parts.append(next_line)
 
-		value = _value_after_label(line, ["languages", "linguaggi"])
-		if not value.is_empty():
-			stat["languages"] = value
+	return {
+		"matched": true,
+		"value": " ".join(parts).strip_edges()
+	}
+
+
+static func _matched_label(
+	line: String,
+	labels: Array[String]
+) -> String:
+	var normalized := line.strip_edges()
+	var lower := normalized.to_lower()
+	for label: String in labels:
+		var candidate := label.to_lower()
+		if not lower.begins_with(candidate):
 			continue
+		var boundary := candidate.length()
+		if lower.length() > boundary:
+			var next := lower.substr(boundary, 1)
+			if next not in [" ", ":", ".", "-"]:
+				continue
+		return normalized.substr(0, boundary)
+	return ""
 
-		value = _value_after_label(
-			line,
-			["challenge", "challenge rating", "cr", "grado sfida", "gs"]
-		)
-		if not value.is_empty():
-			stat["cr"] = value
-			continue
 
-		value = _value_after_label(
-			line,
-			["proficiency bonus", "bonus di competenza"]
-		)
-		if not value.is_empty():
-			stat["pbNote"] = value
-
+static func _is_core_value_boundary(line: String) -> bool:
+	var lower := line.to_lower().strip_edges()
+	if _is_field_line(lower):
+		return true
+	if _is_ability_label(line):
+		return true
+	if not _section_key(lower).is_empty():
+		return true
+	if not _split_entry_line(line).is_empty():
+		return true
+	return false
 
 static func _parse_hp(value: String) -> Dictionary:
 	var hp := {"average": 1}
@@ -452,14 +547,6 @@ static func _parse_abilities(text: String, stat: Dictionary) -> void:
 			stat[String(labels[index])] = int(hit.get_string(index + 1))
 		return
 
-	# Alternate layout: "STR 18 (+4) DEX 14 (+2) ..."
-	var inline := RegEx.new()
-	if inline.compile(
-		"(?i)\\b(STR|DEX|CON|INT|WIS|CHA|FOR|DES|COS|SAG|CAR)"
-		+ "\\s*([0-9]{1,2})\\s*\\("
-	) != OK:
-		return
-	var matches := inline.search_all(text)
 	var aliases := {
 		"str": "str", "for": "str",
 		"dex": "dex", "des": "dex",
@@ -468,12 +555,56 @@ static func _parse_abilities(text: String, stat: Dictionary) -> void:
 		"wis": "wis", "sag": "wis",
 		"cha": "cha", "car": "cha",
 	}
-	for hit: RegExMatch in matches:
-		var label := hit.get_string(1).to_lower()
-		var key := String(aliases.get(label, ""))
-		if not key.is_empty():
-			stat[key] = int(hit.get_string(2))
 
+	# Inline layout: "STR 18 (+4) DEX 14 (+2) ..."
+	var inline := RegEx.new()
+	if inline.compile(
+		"(?i)\\b(STR|DEX|CON|INT|WIS|CHA|FOR|DES|COS|SAG|CAR)"
+		+ "\\s*([0-9]{1,2})\\s*\\("
+	) == OK:
+		for hit: RegExMatch in inline.search_all(text):
+			var label := hit.get_string(1).to_lower()
+			var key := String(aliases.get(label, ""))
+			if not key.is_empty():
+				stat[key] = int(hit.get_string(2))
+
+	if (
+		stat.has("str")
+		and stat.has("dex")
+		and stat.has("con")
+		and stat.has("int")
+		and stat.has("wis")
+		and stat.has("cha")
+	):
+		return
+
+	# Tetra-Cube/Chromium extraction often yields:
+	# STR
+	# 22 (+6)
+	# DEX
+	# 26 (+8)
+	# ...
+	var lines := _clean_lines(text)
+	var score_regex := RegEx.new()
+	if score_regex.compile("^([0-9]{1,2})\\s*(?:\\([^)]*\\))?") != OK:
+		return
+
+	for index: int in range(lines.size() - 1):
+		var label := lines[index].strip_edges().to_lower()
+		if not aliases.has(label):
+			continue
+		var score_hit := score_regex.search(lines[index + 1])
+		if score_hit == null:
+			continue
+		stat[String(aliases[label])] = int(score_hit.get_string(1))
+
+
+static func _is_ability_label(line: String) -> bool:
+	var normalized := line.strip_edges().to_lower()
+	return normalized in [
+		"str", "dex", "con", "int", "wis", "cha",
+		"for", "des", "cos", "sag", "car"
+	]
 
 static func _parse_sections(
 	lines: Array[String],
@@ -574,27 +705,17 @@ static func _value_after_label(
 	line: String,
 	labels: Array[String]
 ) -> String:
-	var normalized := line.strip_edges()
-	var lower := normalized.to_lower()
-	for label: String in labels:
-		var candidate := label.to_lower()
-		if not lower.begins_with(candidate):
-			continue
-		var boundary := candidate.length()
-		if lower.length() > boundary:
-			var next := lower.substr(boundary, 1)
-			if next not in [" ", ":", ".", "-"]:
-				continue
-		var value := normalized.substr(boundary).strip_edges()
-		while (
-			value.begins_with(":")
-			or value.begins_with(".")
-			or value.begins_with("-")
-		):
-			value = value.substr(1).strip_edges()
-		return value
-	return ""
-
+	var matched := _matched_label(line, labels)
+	if matched.is_empty():
+		return ""
+	var value := line.substr(matched.length()).strip_edges()
+	while (
+		value.begins_with(":")
+		or value.begins_with(".")
+		or value.begins_with("-")
+	):
+		value = value.substr(1).strip_edges()
+	return value
 
 static func _extract_first_int_after(
 	text: String,
