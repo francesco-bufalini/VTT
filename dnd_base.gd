@@ -4624,7 +4624,7 @@ func replay_sync_event(sync_event: Dictionary) -> void:
 			spell_system.call("replay_sync_visual_event", sync_event)
 		return
 
-	if event_type == "seal_break" or event_type == "encounter_advance":
+	if event_type in ["seal_break", "encounter_advance", "petrification"]:
 		var controller := get_node_or_null("EncounterProgressController")
 		if controller != null and controller.has_method("replay_sync_event"):
 			controller.call("replay_sync_event", sync_event)
