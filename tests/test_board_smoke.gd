@@ -41,6 +41,13 @@ func run() -> void:
 	token.position = Vector3(2.0, 1.0, 2.0)
 	token.set_flying(true)
 	token.set_display_name("Agent Smoke Token")
+	var stable_token_id := token.get_token_id()
+	if stable_token_id.is_empty():
+		_fail("token did not receive a stable token_id")
+		return
+	if token.get_effective_party_id() != "Default":
+		_fail("empty party did not resolve to Default")
+		return
 	token.set_party_id("Eroi")
 
 	var snapshot: Dictionary = JSON.parse_string(
@@ -56,12 +63,21 @@ func run() -> void:
 		_fail("expected exactly one serialized token")
 		return
 	var serialized_token: Dictionary = snapshot.objects[0]
+	if String(serialized_token.get("token_id", "")) != stable_token_id:
+		_fail("stable token_id was not serialized")
+		return
+	if String(serialized_token.get("id", "")) != stable_token_id:
+		_fail("board sync id did not use stable token_id")
+		return
 	if String(serialized_token.get("party_id", "")) != "Eroi":
 		_fail("token party was not serialized")
 		return
 	token.set_party_id("")
 	if not sync.apply_snapshot(snapshot):
 		_fail("snapshot round-trip failed")
+		return
+	if token.get_token_id() != stable_token_id:
+		_fail("stable token_id changed during snapshot restore")
 		return
 	if token.get_party_id() != "Eroi":
 		_fail("token party was not restored")
