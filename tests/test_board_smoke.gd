@@ -151,6 +151,10 @@ func run() -> void:
 	var before_editor_signature := String(
 		sync.call("_snapshot_signature", sync.create_snapshot())
 	)
+	# Match the real "Modifica token" path: resizing first stores the previous
+	# appearance in transformation_history. The history is JSON-encoded on the
+	# wire, so integer rotation fields may be decoded as numeric floats.
+	token.push_transformation_state()
 	token.set_size_category("Large", 2.0, false)
 	token.set_reach_feet(15.0, true)
 	token.set_party_id("Mostri")
@@ -184,6 +188,13 @@ func run() -> void:
 	var edited_conditions: Array = edited_token.get("conditions", [])
 	if not ("prone" in edited_conditions and "poisoned" in edited_conditions):
 		_fail("edited token conditions were not serialized")
+		return
+	var edited_history: Array = edited_token.get(
+		"transformation_history",
+		[]
+	)
+	if edited_history.size() != 1:
+		_fail("token resize did not serialize transformation history")
 		return
 
 	token.set_size_category("Medium", 1.0, false)
