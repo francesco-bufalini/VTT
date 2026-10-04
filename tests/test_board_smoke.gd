@@ -55,6 +55,10 @@ func run() -> void:
 		if not definition_value is Dictionary:
 			continue
 		var definition := definition_value as Dictionary
+		var condition_id := String(definition.get("id", ""))
+		if condition_id == "flying":
+			_fail("Flying must not be exposed as a token condition")
+			return
 		var icon := String(definition.get("icon", ""))
 		if icon.is_empty() or icon.begins_with("["):
 			_fail(
