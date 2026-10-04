@@ -870,8 +870,6 @@ func _refresh_token_miniature_filter(
 			ok_button.disabled = true
 		return
 
-	if ok_button != null:
-		ok_button.disabled = false
 	if target_index < 0:
 		target_index = 0
 
@@ -883,6 +881,18 @@ func _refresh_token_miniature_filter(
 		or String(_selected_token_profile.get("id", "")) != target_id
 	):
 		_on_token_miniature_selected(target_index)
+	else:
+		# Filtering can keep the same first result selected, so item_selected
+		# is not emitted again. Re-apply its availability state instead of
+		# leaving the Create button enabled by the list refresh.
+		var target_origin := String(target_profile.get("_pack_origin", ""))
+		if target_origin == "remote":
+			_prepare_remote_token(target_profile)
+		else:
+			if token_download_button != null:
+				token_download_button.visible = false
+			if ok_button != null:
+				ok_button.disabled = false
 
 
 static func unique_token_display_name(
