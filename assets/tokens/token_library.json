@@ -2652,7 +2652,7 @@
     },
     {
       "id": "valandir",
-      "name": "valandir",
+      "name": "Valandir",
       "source": "Valandir.glb",
       "visual_asset": "res://assets/tokens/generated/valandir/valandir.obj",
       "obj": "res://assets/tokens/generated/valandir/valandir.obj",
