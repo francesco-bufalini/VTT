@@ -7,6 +7,7 @@ var board_root: Node3D
 var tokens_root: Node3D
 var _line_root: Node3D
 var _line_material: StandardMaterial3D
+var _line_outline_material: StandardMaterial3D
 var _elapsed := 0.0
 var _flanked_ids: Dictionary = {}
 
@@ -44,6 +45,8 @@ func refresh_now() -> void:
 	_flanked_ids.clear()
 	for token: CharacterBody3D in tokens:
 		token.set_meta("flanked", false)
+		if token.has_method("set_flanking_indicator_visible"):
+			token.call("set_flanking_indicator_visible", false)
 
 	var line_points: Array[Vector3] = []
 	for target: CharacterBody3D in tokens:
@@ -99,10 +102,19 @@ func refresh_now() -> void:
 				if segment.size() != 2:
 					continue
 
-				line_points.append(segment[0])
-				line_points.append(segment[1])
 				_flanked_ids[target.get_instance_id()] = true
 				target.set_meta("flanked", true)
+
+				var relationship_visible := flanking_relationship_visible(
+					_token_selected(first),
+					_token_selected(second),
+					_token_selected(target)
+				)
+				if relationship_visible:
+					line_points.append(segment[0])
+					line_points.append(segment[1])
+					if target.has_method("set_flanking_indicator_visible"):
+						target.call("set_flanking_indicator_visible", true)
 
 	_render_lines(line_points)
 
@@ -113,6 +125,22 @@ func is_flanked(token: Node) -> bool:
 		and is_instance_valid(token)
 		and _flanked_ids.has(token.get_instance_id())
 	)
+
+
+func _token_selected(token: Node) -> bool:
+	if token == null or not is_instance_valid(token):
+		return false
+	if token.has_method("is_selected"):
+		return bool(token.call("is_selected"))
+	return false
+
+
+static func flanking_relationship_visible(
+	first_selected: bool,
+	second_selected: bool,
+	target_selected: bool
+) -> bool:
+	return first_selected or second_selected or target_selected
 
 
 func _party_key(token: Node) -> String:
@@ -547,11 +575,19 @@ static func _box_boundary_distance(
 func _build_line_renderer() -> void:
 	_line_material = StandardMaterial3D.new()
 	_line_material.shading_mode = BaseMaterial3D.SHADING_MODE_UNSHADED
-	_line_material.albedo_color = Color(1.0, 0.72, 0.12, 1.0)
+	_line_material.albedo_color = Color(1.0, 0.78, 0.22, 1.0)
 	_line_material.emission_enabled = true
-	_line_material.emission = Color(1.0, 0.34, 0.02, 1.0)
-	_line_material.emission_energy_multiplier = 2.5
+	_line_material.emission = Color(1.0, 0.40, 0.04, 1.0)
+	_line_material.emission_energy_multiplier = 2.8
 	_line_material.no_depth_test = true
+
+	_line_outline_material = StandardMaterial3D.new()
+	_line_outline_material.shading_mode = BaseMaterial3D.SHADING_MODE_UNSHADED
+	_line_outline_material.albedo_color = Color(0.08, 0.035, 0.01, 0.92)
+	_line_outline_material.emission_enabled = true
+	_line_outline_material.emission = Color(0.20, 0.07, 0.01, 1.0)
+	_line_outline_material.emission_energy_multiplier = 0.5
+	_line_outline_material.no_depth_test = true
 
 	_line_root = Node3D.new()
 	_line_root.name = "FlankingLines"
@@ -569,7 +605,7 @@ func _render_lines(points: Array[Vector3]) -> void:
 		return
 
 	var cell_size := maxf(float(board_root.get("cell_size")), 0.001)
-	var radius := maxf(cell_size * 0.045, 0.02)
+	var radius := maxf(cell_size * 0.026, 0.012)
 	for index: int in range(0, points.size() - 1, 2):
 		_add_visible_segment(points[index], points[index + 1], radius)
 
@@ -584,18 +620,6 @@ func _add_visible_segment(
 	if length <= EPSILON:
 		return
 
-	var mesh := CylinderMesh.new()
-	mesh.top_radius = radius
-	mesh.bottom_radius = radius
-	mesh.height = length
-	mesh.radial_segments = 10
-	mesh.rings = 1
-
-	var instance := MeshInstance3D.new()
-	instance.mesh = mesh
-	instance.material_override = _line_material
-	instance.cast_shadow = GeometryInstance3D.SHADOW_CASTING_SETTING_OFF
-
 	var direction := delta / length
 	var reference := Vector3.UP
 	if absf(direction.dot(reference)) > 0.95:
@@ -603,9 +627,58 @@ func _add_visible_segment(
 	var x_axis := reference.cross(direction).normalized()
 	var z_axis := x_axis.cross(direction).normalized()
 	var basis := Basis(x_axis, direction, z_axis)
+	var midpoint := (start + end) * 0.5
 
-	_line_root.add_child(instance)
-	instance.global_transform = Transform3D(
+	_add_segment_cylinder(
+		midpoint,
 		basis,
-		(start + end) * 0.5
+		length,
+		radius * 1.75,
+		_line_outline_material
 	)
+	_add_segment_cylinder(
+		midpoint,
+		basis,
+		length,
+		radius,
+		_line_material
+	)
+	_add_segment_cap(start, radius * 1.65)
+	_add_segment_cap(end, radius * 1.65)
+
+
+func _add_segment_cylinder(
+	center: Vector3,
+	basis: Basis,
+	length: float,
+	radius: float,
+	material: Material
+) -> void:
+	var mesh := CylinderMesh.new()
+	mesh.top_radius = radius
+	mesh.bottom_radius = radius
+	mesh.height = length
+	mesh.radial_segments = 12
+	mesh.rings = 1
+
+	var instance := MeshInstance3D.new()
+	instance.mesh = mesh
+	instance.material_override = material
+	instance.cast_shadow = GeometryInstance3D.SHADOW_CASTING_SETTING_OFF
+	_line_root.add_child(instance)
+	instance.global_transform = Transform3D(basis, center)
+
+
+func _add_segment_cap(position_world: Vector3, radius: float) -> void:
+	var sphere := SphereMesh.new()
+	sphere.radius = radius
+	sphere.height = radius * 2.0
+	sphere.radial_segments = 12
+	sphere.rings = 6
+
+	var cap := MeshInstance3D.new()
+	cap.mesh = sphere
+	cap.material_override = _line_material
+	cap.cast_shadow = GeometryInstance3D.SHADOW_CASTING_SETTING_OFF
+	_line_root.add_child(cap)
+	cap.global_position = position_world
