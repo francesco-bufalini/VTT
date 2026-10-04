@@ -22,6 +22,7 @@ const TOKEN_CONDITIONS := [
 	"concentrating", "surprised", "hidden", "dead"
 ]
 const SYNC_APPEARANCE_META := "board_sync_authoritative_appearance"
+const SYNC_APPEARANCE_REVISION_META := "board_sync_appearance_revision"
 const SYNC_APPEARANCE_KEYS := [
 	"token_pack_id",
 	"footprint",
@@ -837,6 +838,26 @@ func valid_snapshot(snapshot: Variant) -> bool:
 					return false
 			if not item.get("size_name") is String or not item.get("flying") is bool:
 				return false
+			if item.has("appearance_revision"):
+				var appearance_revision_value: Variant = item.get(
+					"appearance_revision"
+				)
+				if not (
+					appearance_revision_value is int
+					or appearance_revision_value is float
+				):
+					return false
+				var appearance_revision_number := float(
+					appearance_revision_value
+				)
+				if (
+					not is_finite(appearance_revision_number)
+					or appearance_revision_number
+					!= floor(appearance_revision_number)
+					or appearance_revision_number < 0.0
+					or appearance_revision_number > 2147483647.0
+				):
+					return false
 			if item.has("gravity_applied") and not item.get("gravity_applied") is bool:
 				return false
 			if item.has("support_id") and not item.get("support_id") is String:
@@ -1390,6 +1411,10 @@ func _serialize_node(node: Node3D, group_name: String) -> Dictionary:
 			if node.has_method("get_token_id")
 			else String(data.get("id", ""))
 		)
+		data["appearance_revision"] = maxi(
+			int(node.get_meta(SYNC_APPEARANCE_REVISION_META, 0)),
+			0
+		)
 		var token_pack_id := ""
 		if node.has_method("get_token_pack_id"):
 			token_pack_id = String(node.call("get_token_pack_id")).strip_edges()
@@ -1487,16 +1512,36 @@ func _apply_node_data(node: Node3D, data: Dictionary) -> void:
 			node.call("set_token_id", restored_token_id)
 	node.set_meta("sync_id", _sync_id(node))
 	if data.get("kind","") == "token":
+		var incoming_appearance_revision := maxi(
+			int(data.get("appearance_revision", 0)),
+			0
+		)
+		var local_appearance_revision := maxi(
+			int(node.get_meta(SYNC_APPEARANCE_REVISION_META, 0)),
+			0
+		)
+		var apply_shared_appearance := (
+			incoming_appearance_revision >= local_appearance_revision
+		)
+		if apply_shared_appearance:
+			node.set_meta(
+				SYNC_APPEARANCE_REVISION_META,
+				incoming_appearance_revision
+			)
 		var token_pack_id := String(data.get("token_pack_id", "")).strip_edges()
 		if token_pack_id.is_empty():
 			token_pack_id = _pack_id_from_visual_asset(
 				String(data.get("visual_asset", ""))
 			)
-		if node.has_method("set_token_pack_id"):
+		if apply_shared_appearance and node.has_method("set_token_pack_id"):
 			node.call("set_token_pack_id", token_pack_id)
 		# Applicare prima l'asset esplicito disattiva l'eventuale miniatura
 		# di default caricata dal token_scene appena istanziato.
-		if data.has("visual_asset") and node.has_method("set_visual_asset"):
+		if (
+			apply_shared_appearance
+			and data.has("visual_asset")
+			and node.has_method("set_visual_asset")
+		):
 			var visual_asset := String(data.get("visual_asset", ""))
 			if not visual_asset.is_empty():
 				var native_footprint := maxf(
@@ -1525,29 +1570,48 @@ func _apply_node_data(node: Node3D, data: Dictionary) -> void:
 					and node.has_meta("pending_token_pack_native_footprint")
 				):
 					node.remove_meta("pending_token_pack_native_footprint")
-		if data.has("visual_front_quarter_turns") and node.has_method(
-			"set_visual_front_quarter_turns"
+		if (
+			apply_shared_appearance
+			and data.has("visual_front_quarter_turns")
+			and node.has_method("set_visual_front_quarter_turns")
 		):
 			node.call(
 				"set_visual_front_quarter_turns",
 				int(data.get("visual_front_quarter_turns", 0))
 			)
-		if data.has("visual_pitch_steps") and node.has_method(
-			"set_visual_pitch_steps"
+		if (
+			apply_shared_appearance
+			and data.has("visual_pitch_steps")
+			and node.has_method("set_visual_pitch_steps")
 		):
 			node.call(
 				"set_visual_pitch_steps",
 				int(data.get("visual_pitch_steps", 0))
 			)
-		if data.has("height_cells"):
+		if apply_shared_appearance and data.has("height_cells"):
 			node.set(
 				"token_height_cells",
 				maxf(float(data.get("height_cells", 2.0)), 0.1)
 			)
-		if node.has_method("configure"): node.call("configure",_dict_color(data.get("color",{})),float(board_root.get("cell_size")),String(data.get("size_name","Medium")),float(data.get("footprint",1.0)))
-		if data.has("reach_feet") and node.has_method("set_reach_feet"):
-			node.call("set_reach_feet", float(data.get("reach_feet", 5.0)), true)
-		elif node.has_method("reset_reach_to_default"):
+		if apply_shared_appearance and node.has_method("configure"):
+			node.call(
+				"configure",
+				_dict_color(data.get("color", {})),
+				float(board_root.get("cell_size")),
+				String(data.get("size_name", "Medium")),
+				float(data.get("footprint", 1.0))
+			)
+		if (
+			apply_shared_appearance
+			and data.has("reach_feet")
+			and node.has_method("set_reach_feet")
+		):
+			node.call(
+				"set_reach_feet",
+				float(data.get("reach_feet", 5.0)),
+				true
+			)
+		elif apply_shared_appearance and node.has_method("reset_reach_to_default"):
 			# Snapshot precedenti: migrazione trasparente dal footprint/taglia.
 			node.call("reset_reach_to_default")
 		var gravity_applied: bool = bool(data.get("gravity_applied", false))
@@ -1579,12 +1643,15 @@ func _apply_node_data(node: Node3D, data: Dictionary) -> void:
 			)
 		if node.has_method("set_conditions"):
 			node.call("set_conditions", data.get("conditions", []))
-		if node.has_method("set_transformation_history"):
+		if apply_shared_appearance and node.has_method(
+			"set_transformation_history"
+		):
 			node.call(
 				"set_transformation_history",
 				data.get("transformation_history", [])
 			)
-		_remember_received_token_appearance(node, data)
+		if apply_shared_appearance:
+			_remember_received_token_appearance(node, data)
 	# configure() snaps tokens; restore the exact shared transform afterwards.
 	node.global_transform = _dict_transform(data.get("transform", {}))
 
@@ -1613,9 +1680,14 @@ func _remember_received_token_appearance(
 func mark_token_appearance_locally_edited(node: Node3D) -> void:
 	if node == null or not is_instance_valid(node):
 		return
-	# Drop any older received authority, serialize the appearance that the user
-	# has just explicitly confirmed, then make that exact representation the
-	# new authority for subsequent movement-only/full-map snapshots.
+	# Appearance has its own causal revision. Movement and unrelated map
+	# actions never advance it, so an older full-scene snapshot cannot undo a
+	# newer explicit token edit.
+	var next_revision := maxi(
+		int(node.get_meta(SYNC_APPEARANCE_REVISION_META, 0)) + 1,
+		1
+	)
+	node.set_meta(SYNC_APPEARANCE_REVISION_META, next_revision)
 	if node.has_meta(SYNC_APPEARANCE_META):
 		node.remove_meta(SYNC_APPEARANCE_META)
 	var live_data := _serialize_node(node, "dnd_token")
