@@ -123,12 +123,12 @@ func refresh_now() -> void:
 	if arrow_value is Array:
 		for point: Variant in arrow_value as Array:
 			if point is Vector3:
-				arrow_points.append(point as Vector3)
+				arrow_points.append(point)
 	var mutual_value: Variant = reach_visuals.get("mutual_markers", [])
 	if mutual_value is Array:
 		for point: Variant in mutual_value as Array:
 			if point is Vector3:
-				mutual_marker_points.append(point as Vector3)
+				mutual_marker_points.append(point)
 
 	# Affiancato is always shown. Condition text participates only when the
 	# View toggle for condition visuals is enabled.
