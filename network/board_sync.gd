@@ -521,6 +521,8 @@ func valid_snapshot(snapshot: Variant) -> bool:
 					or float(native_footprint_value) > 100.0
 				):
 					return false
+			if item.has("token_pack_id") and not item.get("token_pack_id") is String:
+				return false
 			var token_pack_id := String(item.get("token_pack_id", "")).strip_edges()
 			if not token_pack_id.is_empty() and not _valid_token_pack_id(token_pack_id):
 				return false
@@ -563,6 +565,11 @@ func valid_snapshot(snapshot: Variant) -> bool:
 					var previous_visual := String(
 						appearance.get("visual_asset", "")
 					)
+					if (
+						appearance.has("token_pack_id")
+						and not appearance.get("token_pack_id") is String
+					):
+						return false
 					var previous_pack_id := String(
 						appearance.get("token_pack_id", "")
 					).strip_edges()
@@ -691,7 +698,6 @@ func apply_snapshot(snapshot: Dictionary) -> bool:
 			if (applied_conditions as Array) != expected_conditions:
 				return false
 	_restore_token_supports(wanted)
-	_queue_snapshot_token_packs(snapshot)
 	if is_instance_valid(measurement_tool) and measurement_tool.has_method("apply_persistent_aoes"): measurement_tool.call("apply_persistent_aoes", snapshot.get("aoes",[]))
 	var initiative_tracker: Node = _initiative_tracker()
 	if initiative_tracker == null:
@@ -708,6 +714,7 @@ func apply_snapshot(snapshot: Dictionary) -> bool:
 		var token_list_node := token_list_value as Node
 		if token_list_node.has_method("refresh"):
 			token_list_node.call("refresh")
+	_queue_snapshot_token_packs(snapshot)
 	return true
 
 func _restore_token_supports(wanted: Dictionary) -> void:
