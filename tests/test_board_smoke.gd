@@ -146,6 +146,69 @@ func run() -> void:
 		_fail("token party was not restored")
 		return
 
+	# Token-editor fields must all participate in the snapshot signature and
+	# survive a manual snapshot round trip.
+	var before_editor_signature := String(
+		sync.call("_snapshot_signature", sync.create_snapshot())
+	)
+	token.set_size_category("Large", 2.0, false)
+	token.set_reach_feet(15.0, true)
+	token.set_party_id("Mostri")
+	token.set_conditions(["prone", "poisoned"])
+	var editor_snapshot: Dictionary = JSON.parse_string(
+		JSON.stringify(sync.create_snapshot())
+	)
+	if not sync.valid_snapshot(editor_snapshot):
+		_fail("token-editor snapshot failed validation")
+		return
+	var after_editor_signature := String(
+		sync.call("_snapshot_signature", editor_snapshot)
+	)
+	if before_editor_signature == after_editor_signature:
+		_fail("token-editor changes did not dirty automatic sync state")
+		return
+
+	var edited_token: Dictionary = editor_snapshot.objects[0]
+	if String(edited_token.get("size_name", "")) != "Large":
+		_fail("edited token size was not serialized")
+		return
+	if not is_equal_approx(float(edited_token.get("footprint", 0.0)), 2.0):
+		_fail("edited token footprint was not serialized")
+		return
+	if not is_equal_approx(float(edited_token.get("reach_feet", 0.0)), 15.0):
+		_fail("edited token reach was not serialized")
+		return
+	if String(edited_token.get("party_id", "")) != "Mostri":
+		_fail("edited token party was not serialized")
+		return
+	var edited_conditions: Array = edited_token.get("conditions", [])
+	if not ("prone" in edited_conditions and "poisoned" in edited_conditions):
+		_fail("edited token conditions were not serialized")
+		return
+
+	token.set_size_category("Medium", 1.0, false)
+	token.set_reach_feet(5.0, true)
+	token.set_party_id("")
+	token.set_conditions([])
+	if not sync.apply_snapshot(editor_snapshot):
+		_fail("token-editor snapshot round-trip failed")
+		return
+	if token.get_size_name() != "Large":
+		_fail("edited token size was not restored")
+		return
+	if not is_equal_approx(float(token.get_footprint_cells()), 2.0):
+		_fail("edited token footprint was not restored")
+		return
+	if not is_equal_approx(float(token.get_reach_feet()), 15.0):
+		_fail("edited token reach was not restored")
+		return
+	if token.get_party_id() != "Mostri":
+		_fail("edited token party was not restored")
+		return
+	if not token.has_condition("prone") or not token.has_condition("poisoned"):
+		_fail("edited token conditions were not restored")
+		return
+
 	arena.queue_free()
 	await process_frame
 	print("PASS: lightweight board/token/snapshot arena")
