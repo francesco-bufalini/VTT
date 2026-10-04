@@ -107,12 +107,14 @@ var _affected_tokens: Array[CharacterBody3D] = []
 var token_state_dialog: ConfirmationDialog
 var opportunity_dialog: AcceptDialog
 var token_state_name: LineEdit
+var token_party_input: LineEdit
 var token_state_grid: GridContainer
 var token_state_checks: Dictionary = {}
 var _editing_token: CharacterBody3D
 var token_drag: Node
 var spell_system: Node
 var attack_system: Node
+var flanking_system: Node
 var initiative_tracker: Node
 var token_list: Node
 var player_area: Node
@@ -186,6 +188,11 @@ func _ready() -> void:
 	attack_system.name = "AttackSystem"
 	add_child(attack_system)
 	attack_system.call("setup", self)
+
+	flanking_system = preload("res://vtt/flanking_system.gd").new()
+	flanking_system.name = "FlankingSystem"
+	add_child(flanking_system)
+	flanking_system.call("setup", self)
 
 	initiative_tracker = preload("res://vtt/initiative_tracker.gd").new()
 	initiative_tracker.name = "InitiativeTracker"
@@ -2503,9 +2510,9 @@ func check_opportunity_attacks_after_movement(
 func _build_token_state_dialog() -> void:
 	token_state_dialog = ConfirmationDialog.new()
 	token_state_dialog.name = "TokenStateDialog"
-	token_state_dialog.title = "Nome e stati del token"
+	token_state_dialog.title = "Nome, party e stati del token"
 	token_state_dialog.ok_button_text = "Applica"
-	token_state_dialog.min_size = Vector2i(500, 610)
+	token_state_dialog.min_size = Vector2i(520, 690)
 	$UI.add_child(token_state_dialog)
 
 	var outer := VBoxContainer.new()
@@ -2525,6 +2532,27 @@ func _build_token_state_dialog() -> void:
 	token_state_name.placeholder_text = "Lascia vuoto per non mostrare alcun nome"
 	token_state_name.max_length = 80
 	outer.add_child(token_state_name)
+
+	var party_label := Label.new()
+	party_label.text = "Party / gruppo tattico"
+	outer.add_child(party_label)
+
+	token_party_input = LineEdit.new()
+	token_party_input.placeholder_text = "Es. Eroi, Cultisti, Guardie…"
+	token_party_input.max_length = 80
+	token_party_input.tooltip_text = (
+		"Token con lo stesso party sono alleati ai fini dell'affiancamento."
+	)
+	outer.add_child(token_party_input)
+
+	var party_help := Label.new()
+	party_help.text = (
+		"Stesso nome = stesso party. Vuoto = nessun party. "
+		+ "Un token di un altro party (o senza party) può essere affiancato."
+	)
+	party_help.autowrap_mode = TextServer.AUTOWRAP_WORD_SMART
+	party_help.add_theme_font_size_override("font_size", 11)
+	outer.add_child(party_help)
 
 	var states_label := Label.new()
 	states_label.text = "Condizioni e marker D&D 5e"
@@ -2575,6 +2603,11 @@ func _open_token_state_editor(token: CharacterBody3D) -> void:
 		if token.has_method("get_display_name")
 		else ""
 	)
+	token_party_input.text = (
+		String(token.call("get_party_id"))
+		if token.has_method("get_party_id")
+		else String(token.get_meta("party_id", ""))
+	)
 
 	for child: Node in token_state_grid.get_children():
 		child.queue_free()
@@ -2615,7 +2648,7 @@ func _open_token_state_editor(token: CharacterBody3D) -> void:
 	if context_menu.visible:
 		context_menu.hide()
 	_release_mouse()
-	_popup_dialog_safe(token_state_dialog, Vector2i(500, 610))
+	_popup_dialog_safe(token_state_dialog, Vector2i(520, 690))
 	call_deferred("_release_mouse")
 
 
@@ -2627,6 +2660,15 @@ func _apply_token_state_editor() -> void:
 	push_undo_state()
 	if _editing_token.has_method("set_display_name"):
 		_editing_token.call("set_display_name", token_state_name.text)
+	if _editing_token.has_method("set_party_id"):
+		_editing_token.call("set_party_id", token_party_input.text)
+	else:
+		var party_value := token_party_input.text.strip_edges()
+		if party_value.is_empty():
+			if _editing_token.has_meta("party_id"):
+				_editing_token.remove_meta("party_id")
+		else:
+			_editing_token.set_meta("party_id", party_value)
 
 	var active_conditions: Array[String] = []
 	for condition_id: Variant in token_state_checks.keys():
@@ -2640,6 +2682,8 @@ func _apply_token_state_editor() -> void:
 		initiative_tracker.call("refresh")
 	if token_list != null and is_instance_valid(token_list):
 		token_list.call("refresh")
+	if flanking_system != null and is_instance_valid(flanking_system):
+		flanking_system.call("refresh_now")
 
 	_close_token_state_editor()
 
