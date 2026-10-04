@@ -1632,6 +1632,17 @@ func has_post_cast_spell_visuals() -> bool:
 			and String(child.name).begins_with("TransientAoE")
 		):
 			return true
+	for data_value: Variant in persistent_aoes:
+		if (
+			data_value is Dictionary
+			and bool(
+				(data_value as Dictionary).get(
+					"spell_click_to_remove",
+					false
+				)
+			)
+		):
+			return true
 	return false
 
 
@@ -1647,6 +1658,25 @@ func _remove_post_cast_spell_root(root: Node3D) -> bool:
 		_affected_tokens_signature = ""
 		_refresh_affected_token_highlight()
 		return true
+
+	var persistent_index: int = _aoe_nodes.find(root)
+	if (
+		persistent_index >= 0
+		and persistent_index < persistent_aoes.size()
+	):
+		var persistent_data_value: Variant = persistent_aoes[
+			persistent_index
+		]
+		if (
+			persistent_data_value is Dictionary
+			and bool(
+				(persistent_data_value as Dictionary).get(
+					"spell_click_to_remove",
+					false
+				)
+			)
+		):
+			return dissolve_aoe(persistent_index)
 
 	var root_id: int = root.get_instance_id()
 	for index: int in range(_transient_spell_aoes.size() - 1, -1, -1):
@@ -2404,6 +2434,53 @@ func add_aoe(
 	_aoe_nodes.append(root)
 
 
+func _mark_persistent_aoe_as_spell(index: int) -> void:
+	if (
+		index < 0
+		or index >= persistent_aoes.size()
+		or index >= _aoe_nodes.size()
+	):
+		return
+	var data_value: Variant = persistent_aoes[index]
+	if not data_value is Dictionary:
+		return
+	var data: Dictionary = data_value as Dictionary
+	data["spell_click_to_remove"] = true
+	persistent_aoes[index] = data
+	var root: Node3D = _aoe_nodes[index]
+	if root != null and is_instance_valid(root):
+		root.set_meta("post_cast_spell_area", true)
+
+
+func add_spell_aoe(
+	start: Vector3,
+	end: Vector3,
+	shape: String,
+	style: String = "",
+	color: Color = Color(0.0, 0.0, 0.0, -1.0),
+	line_width_world: float = -1.0,
+	movable_aoe_feet: float = 0.0,
+	movable_aoe_mode: String = "free",
+	caster_origin: Vector3 = Vector3(INF, INF, INF),
+	follow_target: Node3D = null
+) -> void:
+	var previous_count: int = persistent_aoes.size()
+	add_aoe(
+		start,
+		end,
+		shape,
+		style,
+		color,
+		line_width_world,
+		movable_aoe_feet,
+		movable_aoe_mode,
+		caster_origin,
+		follow_target
+	)
+	if persistent_aoes.size() > previous_count:
+		_mark_persistent_aoe_as_spell(persistent_aoes.size() - 1)
+
+
 func _aoe_line_radius(style: String) -> float:
 	# Manual line templates represent a normal 5-ft-wide D&D line. Spell
 	# projectiles keep their deliberately thin preview, while true line AoEs
@@ -3068,6 +3145,12 @@ func valid_aoes(data: Variant) -> bool:
 		if item.has("wall_meta") and not item.get("wall_meta") is Dictionary:
 			return false
 
+		if (
+			item.has("spell_click_to_remove")
+			and not item.get("spell_click_to_remove") is bool
+		):
+			return false
+
 		if item.has("color"):
 			var color_value: Variant = item.get("color")
 			if not color_value is Dictionary:
@@ -3174,5 +3257,7 @@ func apply_persistent_aoes(data: Array) -> void:
 			String(item_data.get("movable_aoe_mode", "free")),
 			caster_origin
 		)
+		if bool(item_data.get("spell_click_to_remove", false)):
+			_mark_persistent_aoe_as_spell(_aoe_nodes.size() - 1)
 
 	_suppress_undo_record = false
