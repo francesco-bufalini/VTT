@@ -42,9 +42,9 @@ func refresh_now() -> void:
 		):
 			tokens.append(node as CharacterBody3D)
 
+	_flanked_ids.clear()
 	for token: CharacterBody3D in tokens:
 		token.set_meta("flanked", false)
-	_flanked_ids.clear()
 
 	var line_points: Array[Vector3] = []
 	for target: CharacterBody3D in tokens:
