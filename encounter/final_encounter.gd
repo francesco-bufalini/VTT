@@ -27,7 +27,9 @@ func _ready() -> void:
 	$KaosRoot.configure_positions($KaosPositions, measurement_tool)
 	$EnvironmentCollapseController.setup(cell_size)
 	encounter.setup($HazardController, $KaosRoot, $EnvironmentCollapseController, $HazardAllowedArea, cell_size)
-	$UI/EncounterUI.setup(encounter)
+	var encounter_ui := get_node_or_null("UI/EncounterUI")
+	if encounter_ui != null and encounter_ui.has_method("setup"):
+		encounter_ui.call("setup", encounter)
 	tokens_root.child_entered_tree.connect(_configure_encounter_token)
 	encounter.state_changed.connect(_refresh_encounter_menu)
 	encounter.state_changed.connect(_sync_end_state)
