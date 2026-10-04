@@ -5,6 +5,9 @@ const EPSILON := 0.0001
 
 var board_root: Node3D
 var tokens_root: Node3D
+var ui_root: Node
+var camera: Camera3D
+var _flanking_badges: Dictionary = {}
 var _line_root: Node3D
 var _line_material: StandardMaterial3D
 var _line_outline_material: StandardMaterial3D
@@ -15,6 +18,8 @@ var _flanked_ids: Dictionary = {}
 func setup(root: Node3D) -> void:
 	board_root = root
 	tokens_root = root.get_node_or_null("Tokens") as Node3D
+	ui_root = root.get_node_or_null("UI")
+	camera = root.get_node_or_null("Camera3D") as Camera3D
 	_build_line_renderer()
 	set_process(true)
 	refresh_now()
@@ -43,10 +48,9 @@ func refresh_now() -> void:
 			tokens.append(node as CharacterBody3D)
 
 	_flanked_ids.clear()
+	var visible_badge_targets: Dictionary = {}
 	for token: CharacterBody3D in tokens:
 		token.set_meta("flanked", false)
-		if token.has_method("set_flanking_indicator_visible"):
-			token.call("set_flanking_indicator_visible", false)
 
 	var arrow_points: Array[Vector3] = []
 	for target: CharacterBody3D in tokens:
@@ -131,10 +135,102 @@ func refresh_now() -> void:
 					if second_arrow.size() == 2:
 						arrow_points.append(second_arrow[0])
 						arrow_points.append(second_arrow[1])
-					if target.has_method("set_flanking_indicator_visible"):
-						target.call("set_flanking_indicator_visible", true)
+					visible_badge_targets[target.get_instance_id()] = target
 
 	_render_arrows(arrow_points)
+	_refresh_flanking_badges(visible_badge_targets)
+
+
+func _refresh_flanking_badges(targets: Dictionary) -> void:
+	if ui_root == null or camera == null or not is_instance_valid(camera):
+		_clear_flanking_badges()
+		return
+
+	var stale: Array[int] = []
+	for key: Variant in _flanking_badges.keys():
+		var token_id := int(key)
+		if not targets.has(token_id):
+			stale.append(token_id)
+	for token_id: int in stale:
+		var stale_panel: Variant = _flanking_badges.get(token_id)
+		if stale_panel is Control and is_instance_valid(stale_panel):
+			(stale_panel as Control).queue_free()
+		_flanking_badges.erase(token_id)
+
+	for key: Variant in targets.keys():
+		var token_id := int(key)
+		var target_value: Variant = targets[key]
+		if not target_value is CharacterBody3D:
+			continue
+		var target := target_value as CharacterBody3D
+		if not is_instance_valid(target):
+			continue
+
+		var panel := _flanking_badges.get(token_id) as PanelContainer
+		if panel == null or not is_instance_valid(panel):
+			panel = _create_flanking_badge()
+			_flanking_badges[token_id] = panel
+
+		var world_anchor := target.global_position
+		var height_cells_value: Variant = target.get("token_height_cells")
+		var height_cells := (
+			float(height_cells_value)
+			if height_cells_value is float or height_cells_value is int
+			else 2.0
+		)
+		var safe_cell := maxf(float(board_root.get("cell_size")), 0.001)
+		world_anchor.y += height_cells * safe_cell * 0.5 + safe_cell * 0.55
+
+		if camera.is_position_behind(world_anchor):
+			panel.hide()
+			continue
+
+		var screen := camera.unproject_position(world_anchor)
+		var viewport_size := board_root.get_viewport().get_visible_rect().size
+		screen.x = clampf(screen.x, 12.0, viewport_size.x - 12.0)
+		screen.y = clampf(screen.y, 12.0, viewport_size.y - 12.0)
+		panel.position = Vector2(
+			screen.x - panel.size.x * 0.5,
+			screen.y - panel.size.y
+		)
+		panel.show()
+
+
+func _create_flanking_badge() -> PanelContainer:
+	var panel := PanelContainer.new()
+	panel.name = "FlankingNotice"
+	panel.mouse_filter = Control.MOUSE_FILTER_IGNORE
+	panel.z_index = 95
+
+	# Deliberately identical to the opportunity-attack popup style.
+	var style := StyleBoxFlat.new()
+	style.bg_color = Color(0.035, 0.04, 0.05, 0.86)
+	style.border_color = Color(0.72, 0.48, 0.20, 0.72)
+	style.set_border_width_all(1)
+	style.set_corner_radius_all(7)
+	style.content_margin_left = 12
+	style.content_margin_right = 12
+	style.content_margin_top = 7
+	style.content_margin_bottom = 7
+	panel.add_theme_stylebox_override("panel", style)
+
+	var label := Label.new()
+	label.text = "⚔  Affiancato"
+	label.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
+	label.vertical_alignment = VERTICAL_ALIGNMENT_CENTER
+	label.add_theme_font_size_override("font_size", 13)
+	panel.add_child(label)
+
+	ui_root.add_child(panel)
+	panel.reset_size()
+	return panel
+
+
+func _clear_flanking_badges() -> void:
+	for value: Variant in _flanking_badges.values():
+		if value is Control and is_instance_valid(value):
+			(value as Control).queue_free()
+	_flanking_badges.clear()
 
 
 func is_flanked(token: Node) -> bool:
