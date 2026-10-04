@@ -103,7 +103,7 @@ func refresh_now() -> void:
 					second_half,
 					target_center,
 					target_half,
-					cell_size * 0.08,
+					cell_size * 0.49,
 					cell_size * 0.035
 				)
 				var segment := flanking_segment(
@@ -192,7 +192,11 @@ func _build_reach_visuals(
 			first_base.y -= first_half.y
 			second_base.y -= second_half.y
 
-			if absf(first_base.y - second_base.y) <= safe_cell * 0.08:
+			if bases_share_tactical_plane(
+				first_base.y,
+				second_base.y,
+				safe_cell
+			):
 				var shared_y := (first_base.y + second_base.y) * 0.5
 				first_base.y = shared_y
 				second_base.y = shared_y
@@ -535,7 +539,7 @@ static func tactical_reach_distance_feet(
 	var safe_cell := maxf(cell_size, 0.001)
 	var first_base := first_center.y - first_half.y
 	var second_base := second_center.y - second_half.y
-	if absf(first_base - second_base) <= safe_cell * 0.08:
+	if bases_share_tactical_plane(first_base, second_base, safe_cell):
 		return grid_reach_distance_feet(
 			first_center,
 			first_half,
@@ -553,6 +557,19 @@ static func tactical_reach_distance_feet(
 		/ safe_cell
 		* 5.0
 	)
+
+
+static func bases_share_tactical_plane(
+	first_base_y: float,
+	second_base_y: float,
+	cell_size: float
+) -> bool:
+	var safe_cell := maxf(cell_size, 0.001)
+	# Tokens resting on the same rendered surface can differ slightly in Y
+	# because of legacy height data, landing offsets or imported model bounds.
+	# Treat sub-half-cell differences as the same tactical grid plane. A full
+	# grid level remains distinct.
+	return absf(first_base_y - second_base_y) < safe_cell * 0.5
 
 
 static func grid_reach_distance_feet(
