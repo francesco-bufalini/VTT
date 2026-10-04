@@ -105,7 +105,23 @@ func run() -> void:
 	if not ("flying" in token.get_automatic_conditions()):
 		_fail("automatic flying condition was not tracked as derived state")
 		return
+	if not token.are_condition_visuals_visible():
+		_fail("condition visuals should be enabled by default")
+		return
 	token.set_condition("poisoned", true)
+	token.set_condition_visuals_visible(false)
+	if token.are_condition_visuals_visible():
+		_fail("condition visual toggle did not hide token visuals")
+		return
+	var ring_root := token.get_node_or_null("ConditionRings")
+	if ring_root != null and ring_root.get_child_count() != 0:
+		_fail("condition rings remained visible after toggle off")
+		return
+	token.set_condition_visuals_visible(true)
+	if not token.are_condition_visuals_visible():
+		_fail("condition visual toggle did not restore token visuals")
+		return
+
 	var condition_parts: PackedStringArray = token.get_active_condition_display_parts()
 	if not ("☠️ Avvelenato" in condition_parts):
 		_fail("named poisoned condition is missing from shared badge data")
