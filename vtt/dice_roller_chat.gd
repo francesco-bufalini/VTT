@@ -161,9 +161,9 @@ func _build_ui() -> void:
 	panel.anchor_right = 1.0
 	panel.anchor_bottom = 1.0
 	panel.offset_left = -402.0
-	panel.offset_top = -520.0
+	panel.offset_top = -620.0
 	panel.offset_right = -12.0
-	panel.offset_bottom = -82.0
+	panel.offset_bottom = -96.0
 	panel.mouse_filter = Control.MOUSE_FILTER_STOP
 	panel.clip_contents = true
 	panel.hide()
@@ -212,6 +212,7 @@ func _build_ui() -> void:
 	history_view.name = "DiceChatHistory"
 	history_view.bbcode_enabled = true
 	history_view.fit_content = false
+	history_view.autowrap_mode = TextServer.AUTOWRAP_WORD_SMART
 	history_view.scroll_active = true
 	history_view.selection_enabled = true
 	history_view.size_flags_horizontal = Control.SIZE_EXPAND_FILL
@@ -329,12 +330,14 @@ func _build_ui() -> void:
 	outer.add_child(roll_button)
 
 	var chat_row := HBoxContainer.new()
+	chat_row.custom_minimum_size = Vector2(0, 42)
 	chat_row.add_theme_constant_override("separation", 6)
 	outer.add_child(chat_row)
 
 	chat_input = LineEdit.new()
 	chat_input.placeholder_text = "Scrivi in chat…"
 	chat_input.max_length = 1000
+	chat_input.custom_minimum_size = Vector2(0, 42)
 	chat_input.size_flags_horizontal = Control.SIZE_EXPAND_FILL
 	chat_input.text_submitted.connect(
 		func(_value: String) -> void:
