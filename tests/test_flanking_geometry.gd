@@ -30,6 +30,55 @@ func run() -> void:
 		1.0
 	))
 
+	# Grid reach counts occupied spaces, not continuous empty-edge distance.
+	# Adjacent Medium bases are 5 ft apart; one whole empty square is 10 ft.
+	assert(is_equal_approx(
+		FlankingSystem.grid_reach_distance_feet(
+			Vector3.ZERO,
+			half,
+			Vector3(1.0, 0.0, 0.0),
+			half,
+			1.0
+		),
+		5.0
+	))
+	assert(is_equal_approx(
+		FlankingSystem.grid_reach_distance_feet(
+			Vector3.ZERO,
+			half,
+			Vector3(2.0, 0.0, 0.0),
+			half,
+			1.0
+		),
+		10.0
+	))
+	assert(is_equal_approx(
+		FlankingSystem.grid_reach_distance_feet(
+			Vector3.ZERO,
+			half,
+			Vector3(1.0, 0.0, 1.0),
+			half,
+			1.0
+		),
+		5.0
+	))
+
+	# Same-plane line geometry is projected down to the miniature bases.
+	var projected := FlankingSystem.project_centers_to_shared_base(
+		Vector3(-1.0, 1.0, 0.0),
+		half,
+		Vector3(1.0, 1.0, 0.0),
+		half,
+		Vector3(0.0, 1.0, 0.0),
+		half,
+		0.08,
+		0.03
+	)
+	assert(projected.size() == 3)
+	assert(is_equal_approx(projected[0].y, 0.03))
+	assert(is_equal_approx(projected[1].y, 0.03))
+	assert(is_equal_approx(projected[2].y, 0.03))
+
 	# Two allies on opposite sides produce a segment through the enemy hitbox.
 	var valid := FlankingSystem.flanking_segment(
 		Vector3(-2.0, 0.0, 0.0),
