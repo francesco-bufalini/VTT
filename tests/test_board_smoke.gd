@@ -197,6 +197,12 @@ func run() -> void:
 	if String(edited_token.get("size_name", "")) != "Large":
 		_fail("edited token size was not serialized")
 		return
+	var edited_revision := int(
+		edited_token.get("appearance_revision", 0)
+	)
+	if edited_revision <= 0:
+		_fail("explicit token edit did not advance appearance revision")
+		return
 	if not is_equal_approx(float(edited_token.get("footprint", 0.0)), 2.0):
 		_fail("edited token footprint was not serialized")
 		return
@@ -283,6 +289,28 @@ func run() -> void:
 				% appearance_key
 			)
 			return
+
+	# A late/stale full-scene snapshot must not overwrite a newer appearance.
+	var stale_token: Dictionary = edited_token.duplicate(true)
+	stale_token["appearance_revision"] = maxi(edited_revision - 1, 0)
+	stale_token["size_name"] = "Medium"
+	stale_token["footprint"] = 1.0
+	stale_token["visual_native_footprint"] = 1.0
+	sync.call("_apply_node_data", peer_token, stale_token)
+	var after_stale: Dictionary = sync.call(
+		"_serialize_node",
+		peer_token,
+		"dnd_token"
+	)
+	if int(after_stale.get("appearance_revision", -1)) != edited_revision:
+		_fail("stale snapshot replaced the newer appearance revision")
+		return
+	if String(after_stale.get("size_name", "")) != "Large":
+		_fail("stale snapshot reverted token size")
+		return
+	if not is_equal_approx(float(after_stale.get("footprint", 0.0)), 2.0):
+		_fail("stale snapshot reverted token footprint")
+		return
 	# An explicit local edit is the only operation allowed to replace the
 	# received appearance authority.
 	sync.call("mark_token_appearance_locally_edited", peer_token)
@@ -291,6 +319,11 @@ func run() -> void:
 		peer_token,
 		"dnd_token"
 	)
+	if int(
+		peer_after_explicit_edit.get("appearance_revision", 0)
+	) <= edited_revision:
+		_fail("explicit local edit did not advance peer appearance revision")
+		return
 	if is_equal_approx(
 		float(peer_after_explicit_edit.get("visual_native_footprint", 0.0)),
 		float(edited_token.get("visual_native_footprint", 0.0))
