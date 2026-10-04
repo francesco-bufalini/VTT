@@ -8,6 +8,7 @@ var tokens_root: Node3D
 var ui_root: Node
 var camera: Camera3D
 var _flanking_badges: Dictionary = {}
+var _condition_visuals_visible: bool = true
 var _line_root: Node3D
 var _line_material: StandardMaterial3D
 var _line_outline_material: StandardMaterial3D
@@ -109,39 +110,22 @@ func refresh_now() -> void:
 				_flanked_ids[target.get_instance_id()] = true
 				target.set_meta("flanked", true)
 
-				var relationship_visible := flanking_relationship_visible(
-					_token_selected(first),
-					_token_selected(second),
-					_token_selected(target)
-				)
-				if relationship_visible:
-					var first_arrow := flanking_arrow_segment(
-						display_centers[0],
-						first_half,
-						display_centers[2],
-						target_half,
-						cell_size
-					)
-					var second_arrow := flanking_arrow_segment(
-						display_centers[1],
-						second_half,
-						display_centers[2],
-						target_half,
-						cell_size
-					)
-					if first_arrow.size() == 2:
-						arrow_points.append(first_arrow[0])
-						arrow_points.append(first_arrow[1])
-					if second_arrow.size() == 2:
-						arrow_points.append(second_arrow[0])
-						arrow_points.append(second_arrow[1])
+	# Reach arrows are a general tactical layer: every token points toward every
+	# other token currently inside its own reach, independent of party,
+	# selection and flanking state.
+	arrow_points = _build_reach_arrow_points(tokens)
 
-	# Badges are always visible for active conditions and for flanked targets.
-	# Selection only controls the directional arrows above.
+	# Affiancato is always shown. Condition text participates only when the
+	# View toggle for condition visuals is enabled.
 	for token: CharacterBody3D in tokens:
+		var condition_parts := (
+			_token_condition_display_parts(token)
+			if _condition_visuals_visible
+			else PackedStringArray()
+		)
 		var badge_text := compose_status_badge_text(
 			bool(token.get_meta("flanked", false)),
-			_token_condition_display_parts(token)
+			condition_parts
 		)
 		if badge_text.is_empty():
 			continue
@@ -152,6 +136,61 @@ func refresh_now() -> void:
 
 	_render_arrows(arrow_points)
 	_refresh_flanking_badges(visible_badge_targets)
+
+
+func _build_reach_arrow_points(
+	tokens: Array[CharacterBody3D]
+) -> Array[Vector3]:
+	var points: Array[Vector3] = []
+	var safe_cell := maxf(float(board_root.get("cell_size")), 0.001)
+	for source: CharacterBody3D in tokens:
+		if source == null or not is_instance_valid(source):
+			continue
+		var source_half := _token_half_extents(source)
+		for target: CharacterBody3D in tokens:
+			if (
+				target == null
+				or not is_instance_valid(target)
+				or target == source
+				or not _token_reaches_target(source, target)
+			):
+				continue
+
+			var target_half := _token_half_extents(target)
+			var source_base := source.global_position
+			var target_base := target.global_position
+			source_base.y -= source_half.y
+			target_base.y -= target_half.y
+
+			# Same-level arrows lie flat on the shared base plane. At different
+			# elevations the same 2D ribbon slopes between the two bases.
+			if absf(source_base.y - target_base.y) <= safe_cell * 0.08:
+				var shared_y := (
+					source_base.y + target_base.y
+				) * 0.5
+				source_base.y = shared_y
+				target_base.y = shared_y
+
+			var arrow := flanking_arrow_segment(
+				source_base,
+				source_half,
+				target_base,
+				target_half,
+				safe_cell
+			)
+			if arrow.size() == 2:
+				points.append(arrow[0])
+				points.append(arrow[1])
+	return points
+
+
+func set_condition_visuals_visible(value: bool) -> void:
+	_condition_visuals_visible = value
+	refresh_now()
+
+
+func are_condition_visuals_visible() -> bool:
+	return _condition_visuals_visible
 
 
 func _refresh_flanking_badges(targets: Dictionary) -> void:
@@ -202,9 +241,9 @@ func _refresh_flanking_badges(targets: Dictionary) -> void:
 			else 2.0
 		)
 		var safe_cell := maxf(float(board_root.get("cell_size")), 0.001)
-		# Keep the shared badge above the existing world-space name/HP stack.
-		# The previous flanking overlay sat at roughly top + 0.94 cells.
-		world_anchor.y += height_cells * safe_cell * 0.5 + safe_cell * 0.94
+		# The token name sits at top + 0.38 cells. Anchor this compact badge
+		# immediately below it while keeping the whole panel above the model.
+		world_anchor.y += height_cells * safe_cell * 0.5 + safe_cell * 0.04
 
 		if camera.is_position_behind(world_anchor):
 			panel.hide()
@@ -298,12 +337,12 @@ static func perspective_badge_scale(
 ) -> float:
 	if projected_cell_pixels <= EPSILON or natural_height_pixels <= EPSILON:
 		return 1.0
-	# The badge occupies roughly 0.38 grid cells in world height, matching the
-	# previous compact popup proportions while following camera perspective.
+	# Keep the badge compact beneath the token name while preserving world
+	# perspective: about a quarter of a grid cell tall at every depth.
 	return clampf(
-		projected_cell_pixels * 0.38 / natural_height_pixels,
-		0.06,
-		2.2
+		projected_cell_pixels * 0.24 / natural_height_pixels,
+		0.05,
+		1.8
 	)
 
 
@@ -753,10 +792,12 @@ func _build_line_renderer() -> void:
 	_line_material.transparency = BaseMaterial3D.TRANSPARENCY_ALPHA
 	_line_material.shading_mode = BaseMaterial3D.SHADING_MODE_UNSHADED
 	_line_material.cull_mode = BaseMaterial3D.CULL_DISABLED
-	_line_material.albedo_color = Color(0.93, 0.58, 0.16, 0.94)
+	# Cool teal keeps reach information visually distinct from the warm amber
+	# used by status/UI notifications and remains legible over stone or grid.
+	_line_material.albedo_color = Color(0.20, 0.82, 0.78, 0.84)
 	_line_material.emission_enabled = true
-	_line_material.emission = Color(0.72, 0.25, 0.035, 1.0)
-	_line_material.emission_energy_multiplier = 0.75
+	_line_material.emission = Color(0.04, 0.34, 0.40, 1.0)
+	_line_material.emission_energy_multiplier = 0.45
 	_line_material.no_depth_test = true
 	_line_material.render_priority = 2
 
@@ -764,15 +805,15 @@ func _build_line_renderer() -> void:
 	_line_outline_material.transparency = BaseMaterial3D.TRANSPARENCY_ALPHA
 	_line_outline_material.shading_mode = BaseMaterial3D.SHADING_MODE_UNSHADED
 	_line_outline_material.cull_mode = BaseMaterial3D.CULL_DISABLED
-	_line_outline_material.albedo_color = Color(0.055, 0.038, 0.025, 0.92)
+	_line_outline_material.albedo_color = Color(0.012, 0.065, 0.085, 0.90)
 	_line_outline_material.emission_enabled = true
-	_line_outline_material.emission = Color(0.10, 0.055, 0.02, 1.0)
-	_line_outline_material.emission_energy_multiplier = 0.15
+	_line_outline_material.emission = Color(0.015, 0.12, 0.15, 1.0)
+	_line_outline_material.emission_energy_multiplier = 0.08
 	_line_outline_material.no_depth_test = true
 	_line_outline_material.render_priority = 1
 
 	_line_root = Node3D.new()
-	_line_root.name = "FlankingArrows"
+	_line_root.name = "ReachArrows"
 	add_child(_line_root)
 
 
@@ -878,11 +919,11 @@ func _add_flat_vector_arrow(
 		right = right.normalized()
 
 	var head_length := minf(
-		maxf(cell_size * 0.22, length * 0.22),
-		length * 0.42
+		maxf(cell_size * 0.18, length * 0.18),
+		length * 0.36
 	)
-	var body_half_width := cell_size * 0.045
-	var head_half_width := cell_size * 0.13
+	var body_half_width := cell_size * 0.028
+	var head_half_width := cell_size * 0.095
 
 	var outline_mesh := _build_flat_arrow_mesh(
 		start,
