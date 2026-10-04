@@ -527,6 +527,7 @@ func valid_snapshot(snapshot: Variant) -> bool:
 		return false
 	var ids := {}
 	var item_token_ids: Dictionary = {}
+	var token_parties: Dictionary = {}
 	for item in snapshot.objects:
 		if not item is Dictionary or not item.get("id") is String or item.id.is_empty() or ids.has(item.id):
 			return false
@@ -579,6 +580,14 @@ func valid_snapshot(snapshot: Variant) -> bool:
 				return false
 			if String(item.get("display_name", "")).length() > 80:
 				return false
+			if item.has("party_id") and not item.get("party_id") is String:
+				return false
+			var party_id := String(item.get("party_id", "")).strip_edges()
+			if party_id.length() > 80:
+				return false
+			token_parties[String(item.get("id", ""))] = _effective_party_id(
+				party_id
+			)
 			if not item.get("conditions") is Array:
 				return false
 			var condition_values: Array = item.get("conditions", [])
@@ -739,9 +748,171 @@ func valid_snapshot(snapshot: Variant) -> bool:
 						return false
 		if not item.get("name") is String or not item.get("visible") is bool:
 			return false
+
+	# V6 snapshot precedenti non avevano un manifest dei party: continuano a
+	# essere accettati usando il party_id contenuto nei token. I nuovi snapshot
+	# lo includono e viene validato in modo stretto.
+	if snapshot.has("parties"):
+		if not _valid_party_manifest(snapshot.get("parties"), token_parties):
+			return false
+
 	if board_root.get("item_controller") != null:
 		return board_root.item_controller.valid_items(snapshot.get("items", []), item_token_ids)
 	return not snapshot.has("items") or snapshot.items == []
+
+func _effective_party_id(value: String) -> String:
+	var clean := value.strip_edges().left(80)
+	return clean if not clean.is_empty() else "Default"
+
+
+func _party_key(value: String) -> String:
+	return _effective_party_id(value).to_lower()
+
+
+func _party_manifest_from_objects(objects: Array) -> Array[Dictionary]:
+	var by_key: Dictionary = {}
+	for value: Variant in objects:
+		if not value is Dictionary:
+			continue
+		var data: Dictionary = value as Dictionary
+		if String(data.get("kind", "")) != "token":
+			continue
+		var token_id := String(data.get("id", "")).strip_edges()
+		if token_id.is_empty():
+			continue
+		var party_id := _effective_party_id(
+			String(data.get("party_id", ""))
+		)
+		var key := _party_key(party_id)
+		if not by_key.has(key):
+			by_key[key] = {
+				"id": party_id,
+				"token_ids": []
+			}
+		var entry: Dictionary = by_key[key]
+		var token_ids: Array = entry.get("token_ids", [])
+		token_ids.append(token_id)
+		entry["token_ids"] = token_ids
+		by_key[key] = entry
+
+	var parties: Array[Dictionary] = []
+	for key: Variant in by_key.keys():
+		var entry: Dictionary = (by_key[key] as Dictionary).duplicate(true)
+		var token_ids: Array = entry.get("token_ids", [])
+		token_ids.sort()
+		entry["token_ids"] = token_ids
+		parties.append(entry)
+	parties.sort_custom(
+		func(a: Dictionary, b: Dictionary) -> bool:
+			var a_id := String(a.get("id", ""))
+			var b_id := String(b.get("id", ""))
+			if _party_key(a_id) == "default":
+				return _party_key(b_id) != "default"
+			if _party_key(b_id) == "default":
+				return false
+			return a_id.naturalnocasecmp_to(b_id) < 0
+	)
+	return parties
+
+
+func _valid_party_manifest(
+	value: Variant,
+	token_parties: Dictionary
+) -> bool:
+	if not value is Array:
+		return false
+	var parties: Array = value as Array
+	if parties.size() > 256:
+		return false
+
+	var seen_parties: Dictionary = {}
+	var seen_tokens: Dictionary = {}
+	for entry_value: Variant in parties:
+		if not entry_value is Dictionary:
+			return false
+		var entry: Dictionary = entry_value as Dictionary
+		if not entry.get("id") is String:
+			return false
+		var party_id := String(entry.get("id", "")).strip_edges()
+		if party_id.is_empty() or party_id.length() > 80:
+			return false
+		var party_key := _party_key(party_id)
+		if seen_parties.has(party_key):
+			return false
+		seen_parties[party_key] = true
+
+		var token_ids_value: Variant = entry.get("token_ids", [])
+		if not token_ids_value is Array:
+			return false
+		var token_ids: Array = token_ids_value as Array
+		if token_ids.size() > 4096:
+			return false
+		for token_id_value: Variant in token_ids:
+			if not token_id_value is String:
+				return false
+			var token_id := String(token_id_value).strip_edges()
+			if (
+				token_id.is_empty()
+				or seen_tokens.has(token_id)
+				or not token_parties.has(token_id)
+			):
+				return false
+			if _party_key(String(token_parties[token_id])) != party_key:
+				return false
+			seen_tokens[token_id] = true
+
+	# Ogni token deve appartenere a esattamente un party, Default incluso.
+	return seen_tokens.size() == token_parties.size()
+
+
+func _node_party_id(node: Node3D) -> String:
+	if node == null or not is_instance_valid(node):
+		return "Default"
+	if node.has_method("get_effective_party_id"):
+		return _effective_party_id(
+			String(node.call("get_effective_party_id"))
+		)
+	if node.has_method("get_party_id"):
+		return _effective_party_id(String(node.call("get_party_id")))
+	return _effective_party_id(String(node.get_meta("party_id", "")))
+
+
+func _node_matches_snapshot_party(
+	node: Node3D,
+	data: Dictionary
+) -> bool:
+	return _party_key(_node_party_id(node)) == _party_key(
+		String(data.get("party_id", ""))
+	)
+
+
+func _party_manifest_matches_scene(value: Variant) -> bool:
+	if not value is Array:
+		return false
+	var expected: Dictionary = {}
+	for entry_value: Variant in value as Array:
+		if not entry_value is Dictionary:
+			return false
+		var entry: Dictionary = entry_value as Dictionary
+		var party_key := _party_key(String(entry.get("id", "")))
+		var token_ids_value: Variant = entry.get("token_ids", [])
+		if not token_ids_value is Array:
+			return false
+		for token_id_value: Variant in token_ids_value as Array:
+			expected[String(token_id_value)] = party_key
+
+	var current := _current_nodes_by_id()
+	for token_id: Variant in expected.keys():
+		var node_value: Variant = current.get(String(token_id))
+		if not node_value is Node3D:
+			return false
+		var node := node_value as Node3D
+		if not node.is_in_group("dnd_token"):
+			return false
+		if _party_key(_node_party_id(node)) != String(expected[token_id]):
+			return false
+	return true
+
 
 func create_snapshot() -> Dictionary:
 	if board_root.get("item_controller") != null:
@@ -772,6 +943,7 @@ func create_snapshot() -> Dictionary:
 		"version": SNAPSHOT_VERSION,
 		"scene": board_root.scene_file_path,
 		"objects": objects,
+		"parties": _party_manifest_from_objects(objects),
 		"items": board_root.item_controller.serialize_items() if board_root.get("item_controller") != null else [],
 		"aoes": aoes,
 		"encounter": state,
@@ -899,12 +1071,20 @@ func apply_snapshot(snapshot: Dictionary) -> bool:
 				return false
 			if String(node.call("get_display_name")) != String(data.get("display_name", "")):
 				return false
+			if not _node_matches_snapshot_party(node, data):
+				return false
 			var applied_conditions: Variant = node.call("get_conditions")
 			if not applied_conditions is Array:
 				return false
 			var expected_conditions: Array = data.get("conditions", [])
 			if (applied_conditions as Array) != expected_conditions:
 				return false
+
+	if snapshot.has("parties") and not _party_manifest_matches_scene(
+		snapshot.get("parties")
+	):
+		return false
+
 	if board_root.get("item_controller") != null:
 		board_root.item_controller.apply_items(snapshot.get("items", []))
 	_restore_token_supports(wanted)
