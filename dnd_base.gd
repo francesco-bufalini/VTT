@@ -1590,7 +1590,8 @@ func _set_pending_spawn_from_screen(screen_position: Vector2) -> bool:
 					spawn_position
 				)
 				if top_center_value is Vector3:
-					spawn_position = top_center_value as Vector3
+					var top_center: Vector3 = top_center_value
+					spawn_position = top_center
 					_pending_spawn_on_grid_surface = true
 
 	_pending_spawn_position = spawn_position
@@ -3958,9 +3959,16 @@ func _on_token_dialog_confirmed() -> void:
 	var confirmed_callback: Callable = (
 		_token_generation_confirmed_callback
 	)
+	var failed_callback: Callable = (
+		_token_generation_canceled_callback
+	)
 	_reset_token_generation_state()
 
-	if confirmed_callback.is_valid():
+	if (
+		created_token != null
+		and is_instance_valid(created_token)
+		and confirmed_callback.is_valid()
+	):
 		# ConfirmationDialog emette confirmed prima di completare il proprio
 		# ciclo di chiusura. Rimandare il callback evita che Polymorph apra il
 		# TS (o il dialogo del bersaglio successivo) mentre questo popup e'
@@ -3970,6 +3978,13 @@ func _on_token_dialog_confirmed() -> void:
 			confirmed_callback,
 			created_token
 		)
+	elif failed_callback.is_valid():
+		# Anche il piazzamento obbligatorio dell'identità deve uscire sempre
+		# dallo stato pending se la creazione del token fallisce.
+		call_deferred(
+			"_invoke_token_generation_failed",
+			failed_callback
+		)
 
 
 func _invoke_token_generation_confirmed(
@@ -3978,6 +3993,11 @@ func _invoke_token_generation_confirmed(
 ) -> void:
 	if callback.is_valid() and token != null and is_instance_valid(token):
 		callback.call(token)
+
+
+func _invoke_token_generation_failed(callback: Callable) -> void:
+	if callback.is_valid():
+		callback.call()
 
 
 func _on_token_dialog_canceled() -> void:
