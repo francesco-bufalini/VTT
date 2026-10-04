@@ -160,9 +160,9 @@ func _build_ui() -> void:
 	panel.anchor_top = 1.0
 	panel.anchor_right = 1.0
 	panel.anchor_bottom = 1.0
-	panel.offset_left = -402.0
+	panel.offset_left = -740.0
 	panel.offset_top = -620.0
-	panel.offset_right = -12.0
+	panel.offset_right = -350.0
 	panel.offset_bottom = -96.0
 	panel.mouse_filter = Control.MOUSE_FILTER_STOP
 	panel.clip_contents = true
@@ -864,7 +864,12 @@ func _prompt_initial_identity_after_scene_ready() -> void:
 	# frame fa sì che il primo popup veda davvero tutti i token caricati.
 	await get_tree().process_frame
 	await get_tree().process_frame
-	ensure_scene_identity()
+	# L’identità salvata serve solo come preselezione: a ogni avvio chiediamo
+	# comunque quale token appartiene all’utente, perché la composizione della
+	# scena può essere cambiata dall’ultima sessione.
+	if not _identity_placement_pending:
+		_identity_change_mode = false
+		_show_scene_identity_dialog()
 
 
 func _build_scene_identity_dialog() -> void:
