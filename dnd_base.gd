@@ -85,6 +85,8 @@ var board_sync: Node
 var share_dialog: AcceptDialog
 var share_session: SpinBox
 var share_status: Label
+var map_save_dialog: FileDialog
+var map_load_dialog: FileDialog
 var camera_settings_dialog: AcceptDialog
 var camera_speed_slider: HSlider
 var camera_sensitivity_slider: HSlider
@@ -2360,7 +2362,7 @@ func _on_context_menu_id_pressed(id: int) -> void:
 		return
 	if id == 25:
 		_ui_owns_mouse = true
-		_popup_dialog_safe(share_dialog, Vector2i(580, 330))
+		_popup_dialog_safe(share_dialog, Vector2i(620, 430))
 		_release_mouse()
 		return
 	match id:
@@ -2875,6 +2877,8 @@ func _on_context_menu_hidden() -> void:
 	if (
 		color_dialog.visible
 		or (is_instance_valid(share_dialog) and share_dialog.visible)
+		or (is_instance_valid(map_save_dialog) and map_save_dialog.visible)
+		or (is_instance_valid(map_load_dialog) and map_load_dialog.visible)
 		or (is_instance_valid(token_state_dialog) and token_state_dialog.visible)
 		or (
 			is_instance_valid(camera_settings_dialog)
@@ -2889,6 +2893,8 @@ func _finish_context_menu_close() -> void:
 	if (
 		color_dialog.visible
 		or (is_instance_valid(share_dialog) and share_dialog.visible)
+		or (is_instance_valid(map_save_dialog) and map_save_dialog.visible)
+		or (is_instance_valid(map_load_dialog) and map_load_dialog.visible)
 		or (is_instance_valid(token_state_dialog) and token_state_dialog.visible)
 		or (
 			is_instance_valid(camera_settings_dialog)
@@ -3830,7 +3836,7 @@ func _on_share_session_changed(_value: float) -> void:
 
 func _build_share_dialog() -> void:
 	share_dialog = AcceptDialog.new()
-	share_dialog.title = "Sincronizzazione mappa · Tailscale"
+	share_dialog.title = "Mappa · locale e Tailscale"
 	$UI.add_child(share_dialog)
 	share_dialog.confirmed.connect(_close_context_menu_to_game)
 	share_dialog.canceled.connect(_close_context_menu_to_game)
@@ -3841,11 +3847,10 @@ func _build_share_dialog() -> void:
 
 	var info := Label.new()
 	info.text = (
-		"La ricezione mappa è sempre attiva. Il pulsante sotto invia solo "
-		+ "la mappa ai nodi restituiti da tailscale status --json. "
-		+ "Dice roller e chat usano un canale separato e si aggiornano "
-		+ "automaticamente: tirare un dado o inviare un messaggio non "
-		+ "sincronizza mai la mappa."
+		"Puoi salvare o caricare una copia locale della mappa, oppure "
+		+ "sincronizzarla con gli altri VTT via Tailscale. La ricezione "
+		+ "di rete resta sempre attiva. Dice roller e chat usano un canale "
+		+ "separato e non salvano né sincronizzano automaticamente la mappa."
 	)
 	info.autowrap_mode = TextServer.AUTOWRAP_WORD_SMART
 	layout.add_child(info)
@@ -3872,12 +3877,30 @@ func _build_share_dialog() -> void:
 	share_session.value_changed.connect(_on_share_session_changed)
 	session_row.add_child(share_session)
 
+	var local_row := HBoxContainer.new()
+	local_row.add_theme_constant_override("separation", 8)
+	layout.add_child(local_row)
+
+	var save_local := Button.new()
+	save_local.text = "Salva mappa in locale"
+	save_local.size_flags_horizontal = Control.SIZE_EXPAND_FILL
+	local_row.add_child(save_local)
+	save_local.pressed.connect(_open_map_save_dialog)
+
+	var load_local := Button.new()
+	load_local.text = "Carica mappa locale"
+	load_local.size_flags_horizontal = Control.SIZE_EXPAND_FILL
+	local_row.add_child(load_local)
+	load_local.pressed.connect(_open_map_load_dialog)
+
 	var send := Button.new()
 	send.text = "Sincronizza mappa su Tailscale"
 	layout.add_child(send)
 	send.pressed.connect(
 		func(): board_sync.send_snapshot_to_tailnet(_share_session_key())
 	)
+
+	_build_map_file_dialogs()
 
 	share_status = Label.new()
 	share_status.text = "Ricezione automatica · Partita 1"
@@ -3886,3 +3909,79 @@ func _build_share_dialog() -> void:
 	board_sync.status_changed.connect(
 		func(message): share_status.text = message
 	)
+
+
+func _build_map_file_dialogs() -> void:
+	var documents_dir := OS.get_system_dir(OS.SYSTEM_DIR_DOCUMENTS)
+
+	map_save_dialog = FileDialog.new()
+	map_save_dialog.title = "Salva mappa VTT"
+	map_save_dialog.file_mode = FileDialog.FILE_MODE_SAVE_FILE
+	map_save_dialog.access = FileDialog.ACCESS_FILESYSTEM
+	map_save_dialog.filters = PackedStringArray([
+		"*.vttmap ; Mappa VTT",
+		"*.json ; JSON"
+	])
+	map_save_dialog.current_file = _default_map_save_filename()
+	if not documents_dir.is_empty():
+		map_save_dialog.current_dir = documents_dir
+	$UI.add_child(map_save_dialog)
+	map_save_dialog.file_selected.connect(_on_map_save_file_selected)
+
+	map_load_dialog = FileDialog.new()
+	map_load_dialog.title = "Carica mappa VTT"
+	map_load_dialog.file_mode = FileDialog.FILE_MODE_OPEN_FILE
+	map_load_dialog.access = FileDialog.ACCESS_FILESYSTEM
+	map_load_dialog.filters = PackedStringArray([
+		"*.vttmap ; Mappa VTT",
+		"*.json ; JSON"
+	])
+	if not documents_dir.is_empty():
+		map_load_dialog.current_dir = documents_dir
+	$UI.add_child(map_load_dialog)
+	map_load_dialog.file_selected.connect(_on_map_load_file_selected)
+
+
+func _default_map_save_filename() -> String:
+	var base_name := scene_file_path.get_file().get_basename()
+	if base_name.is_empty():
+		base_name = "mappa"
+	return "%s.vttmap" % base_name
+
+
+func _open_map_save_dialog() -> void:
+	if map_save_dialog == null or not is_instance_valid(map_save_dialog):
+		return
+	_ui_owns_mouse = true
+	_release_mouse()
+	map_save_dialog.current_file = _default_map_save_filename()
+	_popup_dialog_safe(map_save_dialog, Vector2i(880, 620), 0.96)
+
+
+func _open_map_load_dialog() -> void:
+	if map_load_dialog == null or not is_instance_valid(map_load_dialog):
+		return
+	_ui_owns_mouse = true
+	_release_mouse()
+	_popup_dialog_safe(map_load_dialog, Vector2i(880, 620), 0.96)
+
+
+func _on_map_save_file_selected(path: String) -> void:
+	if board_sync == null or not is_instance_valid(board_sync):
+		return
+	var error: Error = board_sync.call("save_snapshot_to_file", path)
+	if error == OK:
+		var clean_path := path.strip_edges()
+		if clean_path.get_extension().is_empty():
+			clean_path += ".vttmap"
+		if map_load_dialog != null and is_instance_valid(map_load_dialog):
+			map_load_dialog.current_path = clean_path
+
+
+func _on_map_load_file_selected(path: String) -> void:
+	if board_sync == null or not is_instance_valid(board_sync):
+		return
+	push_undo_state()
+	var error: Error = board_sync.call("load_snapshot_from_file", path)
+	if error != OK and not _undo_stack.is_empty():
+		_undo_stack.pop_back()
