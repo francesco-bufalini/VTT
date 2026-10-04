@@ -1406,12 +1406,26 @@ func _input(event: InputEvent) -> void:
 		event is InputEventMouseButton
 		and event.pressed
 		and event.button_index == MOUSE_BUTTON_LEFT
+		and not _ui_owns_mouse
 		and spell_system != null
 		and is_instance_valid(spell_system)
-		and spell_system.has_method("has_post_cast_cleanup")
-		and bool(spell_system.call("has_post_cast_cleanup"))
+		and spell_system.has_method(
+			"dismiss_post_cast_visual_at_screen"
+		)
 	):
-		spell_system.call("dismiss_post_cast_visuals")
+		var spell_area_screen_position: Vector2 = (
+			_screen_center()
+			if Input.mouse_mode == Input.MOUSE_MODE_CAPTURED
+			else event.position
+		)
+		if bool(
+			spell_system.call(
+				"dismiss_post_cast_visual_at_screen",
+				spell_area_screen_position
+			)
+		):
+			get_viewport().set_input_as_handled()
+			return
 
 	# Undo/redo sono shortcut globali e devono essere gestite prima dei
 	# pannelli UI. In precedenza il pannello Incantesimi poteva lasciare
