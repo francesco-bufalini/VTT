@@ -41,6 +41,7 @@ func run() -> void:
 	token.position = Vector3(2.0, 1.0, 2.0)
 	token.set_flying(true)
 	token.set_display_name("Agent Smoke Token")
+	token.set_party_id("Eroi")
 
 	var snapshot: Dictionary = JSON.parse_string(
 		JSON.stringify(sync.create_snapshot())
@@ -54,8 +55,16 @@ func run() -> void:
 	if snapshot.objects.size() != 1:
 		_fail("expected exactly one serialized token")
 		return
+	var serialized_token: Dictionary = snapshot.objects[0]
+	if String(serialized_token.get("party_id", "")) != "Eroi":
+		_fail("token party was not serialized")
+		return
+	token.set_party_id("")
 	if not sync.apply_snapshot(snapshot):
 		_fail("snapshot round-trip failed")
+		return
+	if token.get_party_id() != "Eroi":
+		_fail("token party was not restored")
 		return
 
 	arena.queue_free()
