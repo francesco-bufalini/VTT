@@ -642,6 +642,18 @@ func valid_snapshot(snapshot: Variant) -> bool:
 				or int(front_number) > 3
 			):
 				return false
+			if item.has("visual_pitch_steps"):
+				var pitch_value: Variant = item.get("visual_pitch_steps")
+				if not (pitch_value is int or pitch_value is float):
+					return false
+				var pitch_number: float = float(pitch_value)
+				if (
+					not is_finite(pitch_number)
+					or pitch_number != floor(pitch_number)
+					or int(pitch_number) < -3
+					or int(pitch_number) > 3
+				):
+					return false
 			if item.has("transformation_history"):
 				var history_value: Variant = item.get(
 					"transformation_history",
@@ -1029,6 +1041,11 @@ func _serialize_node(node: Node3D, group_name: String) -> Dictionary:
 			if node.has_method("get_visual_front_quarter_turns")
 			else 0
 		)
+		data["visual_pitch_steps"] = (
+			int(node.call("get_visual_pitch_steps"))
+			if node.has_method("get_visual_pitch_steps")
+			else 0
+		)
 		if node.has_method("get_transformation_history"):
 			data["transformation_history"] = node.call(
 				"get_transformation_history"
@@ -1105,6 +1122,13 @@ func _apply_node_data(node: Node3D, data: Dictionary) -> void:
 			node.call(
 				"set_visual_front_quarter_turns",
 				int(data.get("visual_front_quarter_turns", 0))
+			)
+		if data.has("visual_pitch_steps") and node.has_method(
+			"set_visual_pitch_steps"
+		):
+			node.call(
+				"set_visual_pitch_steps",
+				int(data.get("visual_pitch_steps", 0))
 			)
 		if data.has("height_cells"):
 			node.set(

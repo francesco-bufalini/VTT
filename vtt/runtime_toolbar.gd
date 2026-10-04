@@ -24,8 +24,14 @@ const TOKEN_ROTATE_RIGHT := 23
 const TOKEN_DELETE := 24
 const TOKEN_DETAILS := 25
 const TOKEN_LIST := 26
+const TOKEN_TILT_UP := 27
+const TOKEN_TILT_DOWN := 28
 const ITEM_CREATE := 80
 const ITEM_MANAGE := 81
+const ITEM_ROTATE_LEFT := 82
+const ITEM_ROTATE_RIGHT := 83
+const ITEM_TILT_UP := 84
+const ITEM_TILT_DOWN := 85
 
 const MEASURE_RULER := 30
 const MEASURE_SPHERE := 31
@@ -93,6 +99,8 @@ func _build_toolbar() -> void:
 		["Applica gravità", TOKEN_FLYING],
 		["Ruota sx", TOKEN_ROTATE_LEFT],
 		["Ruota dx", TOKEN_ROTATE_RIGHT],
+		["Inclina su · 30°", TOKEN_TILT_UP],
+		["Inclina giu · 30°", TOKEN_TILT_DOWN],
 		["Nome e stati…", TOKEN_DETAILS],
 		["Lista token", TOKEN_LIST],
 		["Elimina", TOKEN_DELETE]
@@ -100,7 +108,11 @@ func _build_toolbar() -> void:
 
 	row.add_child(_menu("Item", [
 		["Carro romano · posiziona (2×2)", ITEM_CREATE],
-		["Lista item / associa token…", ITEM_MANAGE]
+		["Lista item / associa token…", ITEM_MANAGE],
+		["Ruota sx · 45°", ITEM_ROTATE_LEFT],
+		["Ruota dx · 45°", ITEM_ROTATE_RIGHT],
+		["Inclina su · 30°", ITEM_TILT_UP],
+		["Inclina giu · 30°", ITEM_TILT_DOWN]
 	], _on_item))
 
 	row.add_child(_menu("Gioco", [
@@ -198,6 +210,14 @@ func _on_item(id: int) -> void:
 			controller.call("begin_placement")
 		ITEM_MANAGE:
 			controller.call("open_menu")
+		ITEM_ROTATE_LEFT:
+			controller.call("rotate_selected_yaw", -1)
+		ITEM_ROTATE_RIGHT:
+			controller.call("rotate_selected_yaw", 1)
+		ITEM_TILT_UP:
+			controller.call("rotate_selected_vertical", 1)
+		ITEM_TILT_DOWN:
+			controller.call("rotate_selected_vertical", -1)
 
 
 func _on_combat(id: int) -> void:
@@ -243,6 +263,10 @@ func _on_token(id: int) -> void:
 			board_root.call("_on_context_menu_id_pressed", 3)
 		TOKEN_ROTATE_RIGHT:
 			board_root.call("_on_context_menu_id_pressed", 4)
+		TOKEN_TILT_UP:
+			board_root.call("_rotate_selected_vertical", 1)
+		TOKEN_TILT_DOWN:
+			board_root.call("_rotate_selected_vertical", -1)
 		TOKEN_DELETE:
 			board_root.call("_on_context_menu_id_pressed", 2)
 		TOKEN_DETAILS:

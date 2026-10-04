@@ -1494,9 +1494,13 @@ func _input(event: InputEvent) -> void:
 	):
 		get_viewport().set_input_as_handled()
 		return
-	if event is InputEventKey and event.keycode in [KEY_UP,KEY_DOWN,KEY_LEFT,KEY_RIGHT] and not color_dialog.visible:
+	if (
+		event is InputEventKey
+		and event.keycode in [KEY_UP, KEY_DOWN, KEY_LEFT, KEY_RIGHT]
+		and not color_dialog.visible
+	):
 		_clean_selection()
-		if not _selected_tokens.is_empty():
+		if not _selected_tokens.is_empty() or _has_selected_item():
 			if event.pressed and not event.echo:
 				_unhandled_input(event)
 			get_viewport().set_input_as_handled()
@@ -1757,7 +1761,20 @@ func _unhandled_input(event: InputEvent) -> void:
 			return
 
 		_clean_selection()
-		if not _selected_tokens.is_empty():
+		if not _selected_tokens.is_empty() or _has_selected_item():
+			# Ctrl+Shift+Su/Giu inclina di 30 gradi. Shift+Su/Giu resta
+			# disponibile per il movimento verticale gia' esistente.
+			if (
+				event.ctrl_pressed
+				and event.shift_pressed
+				and event.keycode in [KEY_UP, KEY_DOWN]
+			):
+				_rotate_selected_vertical(
+					1 if event.keycode == KEY_UP else -1
+				)
+				get_viewport().set_input_as_handled()
+				return
+
 			if event.shift_pressed:
 				if event.keycode == KEY_UP or event.keycode == KEY_DOWN:
 					_move_selected_vertical(
@@ -4146,6 +4163,14 @@ func _interact_or_select_under_mouse(
 
 	var target: Node = _find_interaction_target(collider)
 
+	if target != null and target.is_in_group("dnd_item"):
+		if first_person_request:
+			return
+		if item_controller != null and target is StaticBody3D:
+			clear_token_selection()
+			item_controller.select_item(target as StaticBody3D)
+		return
+
 	if target != null and target.is_in_group("dnd_token"):
 		if not (target is CharacterBody3D):
 			if not additive_selection:
@@ -4273,16 +4298,26 @@ func _remove_from_selection(token: CharacterBody3D) -> void:
 
 
 func clear_token_selection() -> void:
-	_clear_selection()
+	_clear_selection(false)
 
 
-func _clear_selection() -> void:
+func _clear_selection(include_items: bool = true) -> void:
 	for token: CharacterBody3D in _selected_tokens:
 		if token != null and is_instance_valid(token):
 			if token.has_method("set_selected"):
 				token.call("set_selected", false)
 
 	_selected_tokens.clear()
+	if include_items and item_controller != null:
+		item_controller.clear_selection()
+
+
+func _has_selected_item() -> bool:
+	return (
+		item_controller != null
+		and item_controller.has_method("has_selected_item")
+		and bool(item_controller.call("has_selected_item"))
+	)
 
 
 func _clean_selection() -> void:
@@ -4298,6 +4333,8 @@ func _clean_selection() -> void:
 func _move_selected(direction: Vector2i) -> void:
 	_clean_selection()
 	if _selected_tokens.is_empty():
+		if _has_selected_item():
+			item_controller.call("move_selected_grid", direction)
 		return
 
 	var before: Dictionary = begin_token_move_transaction(_selected_tokens)
@@ -4324,6 +4361,8 @@ func _move_selected(direction: Vector2i) -> void:
 func _move_selected_vertical(steps: int) -> void:
 	_clean_selection()
 	if _selected_tokens.is_empty():
+		if _has_selected_item():
+			item_controller.call("move_selected_vertical", steps)
 		return
 
 	var before: Dictionary = begin_token_move_transaction(_selected_tokens)
@@ -4363,12 +4402,28 @@ func _selected_tokens_moved_from(origins: Array[Vector3]) -> bool:
 
 func _rotate_selected(quarter_turns: int) -> void:
 	_clean_selection()
-	if not _selected_tokens.is_empty():
-		push_undo_state()
+	if _selected_tokens.is_empty():
+		if _has_selected_item():
+			item_controller.call("rotate_selected_yaw", quarter_turns)
+		return
 
+	push_undo_state()
 	for token: CharacterBody3D in _selected_tokens:
 		if token.has_method("rotate_grid"):
 			token.call("rotate_grid", quarter_turns)
+
+
+func _rotate_selected_vertical(steps: int) -> void:
+	_clean_selection()
+	if _selected_tokens.is_empty():
+		if _has_selected_item():
+			item_controller.call("rotate_selected_vertical", steps)
+		return
+
+	push_undo_state()
+	for token: CharacterBody3D in _selected_tokens:
+		if token.has_method("rotate_vertical"):
+			token.call("rotate_vertical", steps)
 
 
 func _delete_selected() -> void:

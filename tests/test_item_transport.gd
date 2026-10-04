@@ -77,6 +77,13 @@ func run() -> void:
 	var saved_rider: Vector3 = rider.position
 	controller.move_item(cart, cart.position + Vector3(4, 0, 0))
 	assert(rider.position.is_equal_approx(saved_rider + Vector3(4, 0, 0)))
+	controller.select_item(cart)
+	controller.rotate_selected_yaw(1)
+	assert(is_equal_approx(rad_to_deg(cart.rotation.y), 45.0))
+	controller.rotate_selected_vertical(1)
+	assert(is_equal_approx(rad_to_deg(cart.rotation.x), 30.0))
+	var rotated_snapshot: Dictionary = board.board_sync.create_snapshot()
+	assert(board.board_sync.valid_snapshot(rotated_snapshot))
 	assert(board.board_sync.apply_snapshot(snapshot))
 	cart = controller.items[0]
 	assert(cart.position.is_equal_approx(saved_position))

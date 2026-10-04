@@ -43,6 +43,7 @@ const CONDITION_DEFINITIONS := [
 @export var visual_asset_path: String = ""
 @export var visual_native_footprint_cells: float = 0.0
 @export_range(0, 3, 1) var visual_front_quarter_turns: int = 0
+@export_range(-3, 3, 1) var visual_pitch_steps: int = 0
 @export var token_display_name: String = ""
 @export var token_id: String = ""
 @export var token_pack_id: String = ""
@@ -114,6 +115,7 @@ func _ready() -> void:
 	_footprint_cells = maxf(default_footprint_cells, 0.5)
 	_reach_feet = _default_reach_feet()
 	_load_configured_visual()
+	_apply_visual_pitch()
 	_ensure_token_overlay()
 	set_token_size(_footprint_cells)
 	# I token partono sempre sospesi. La gravità viene attivata solo
@@ -1702,6 +1704,7 @@ func get_appearance_state() -> Dictionary:
 		"visual_asset": get_visual_asset_path(),
 		"visual_native_footprint": _visual_native_footprint_cells,
 		"visual_front_quarter_turns": get_visual_front_quarter_turns(),
+		"visual_pitch_steps": get_visual_pitch_steps(),
 		"display_name": get_display_name(),
 		"party_id": get_party_id(),
 		"conditions": get_conditions(),
@@ -1749,6 +1752,9 @@ func apply_appearance_state(state: Dictionary) -> bool:
 
 	set_visual_front_quarter_turns(
 		int(state.get("visual_front_quarter_turns", 0))
+	)
+	set_visual_pitch_steps(
+		int(state.get("visual_pitch_steps", visual_pitch_steps))
 	)
 	token_height_cells = maxf(
 		float(state.get("height_cells", token_height_cells)),
@@ -1888,6 +1894,25 @@ func nudge_grid(grid_direction: Vector2i) -> void:
 func rotate_grid(rotation_steps: int) -> void:
 	rotation.y += deg_to_rad(45.0 * float(rotation_steps))
 	rotation.y = snappedf(rotation.y, PI / 4.0)
+
+
+func rotate_vertical(rotation_steps: int) -> void:
+	set_visual_pitch_steps(visual_pitch_steps + rotation_steps)
+
+
+func set_visual_pitch_steps(steps: int) -> void:
+	visual_pitch_steps = clampi(steps, -3, 3)
+	_apply_visual_pitch()
+
+
+func get_visual_pitch_steps() -> int:
+	return visual_pitch_steps
+
+
+func _apply_visual_pitch() -> void:
+	if visuals == null or not is_instance_valid(visuals):
+		return
+	visuals.rotation.x = deg_to_rad(30.0 * float(visual_pitch_steps))
 
 
 func snap_horizontal_to_grid() -> void:
