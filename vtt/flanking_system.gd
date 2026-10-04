@@ -113,12 +113,16 @@ func refresh_now() -> void:
 				if relationship_visible:
 					var first_arrow := flanking_arrow_segment(
 						display_centers[0],
+						first_half,
 						display_centers[2],
+						target_half,
 						cell_size
 					)
 					var second_arrow := flanking_arrow_segment(
 						display_centers[1],
+						second_half,
 						display_centers[2],
+						target_half,
 						cell_size
 					)
 					if first_arrow.size() == 2:
@@ -569,20 +573,26 @@ static func _box_boundary_distance(
 
 func _build_line_renderer() -> void:
 	_line_material = StandardMaterial3D.new()
+	_line_material.transparency = BaseMaterial3D.TRANSPARENCY_ALPHA
 	_line_material.shading_mode = BaseMaterial3D.SHADING_MODE_UNSHADED
-	_line_material.albedo_color = Color(1.0, 0.76, 0.18, 0.98)
+	_line_material.cull_mode = BaseMaterial3D.CULL_DISABLED
+	_line_material.albedo_color = Color(0.93, 0.58, 0.16, 0.94)
 	_line_material.emission_enabled = true
-	_line_material.emission = Color(1.0, 0.34, 0.03, 1.0)
-	_line_material.emission_energy_multiplier = 2.3
+	_line_material.emission = Color(0.72, 0.25, 0.035, 1.0)
+	_line_material.emission_energy_multiplier = 0.75
 	_line_material.no_depth_test = true
+	_line_material.render_priority = 2
 
 	_line_outline_material = StandardMaterial3D.new()
+	_line_outline_material.transparency = BaseMaterial3D.TRANSPARENCY_ALPHA
 	_line_outline_material.shading_mode = BaseMaterial3D.SHADING_MODE_UNSHADED
-	_line_outline_material.albedo_color = Color(0.055, 0.025, 0.008, 0.96)
+	_line_outline_material.cull_mode = BaseMaterial3D.CULL_DISABLED
+	_line_outline_material.albedo_color = Color(0.055, 0.038, 0.025, 0.92)
 	_line_outline_material.emission_enabled = true
-	_line_outline_material.emission = Color(0.13, 0.045, 0.008, 1.0)
-	_line_outline_material.emission_energy_multiplier = 0.35
+	_line_outline_material.emission = Color(0.10, 0.055, 0.02, 1.0)
+	_line_outline_material.emission_energy_multiplier = 0.15
 	_line_outline_material.no_depth_test = true
+	_line_outline_material.render_priority = 1
 
 	_line_root = Node3D.new()
 	_line_root.name = "FlankingArrows"
@@ -591,21 +601,67 @@ func _build_line_renderer() -> void:
 
 static func flanking_arrow_segment(
 	flanker_center: Vector3,
+	flanker_half: Vector3,
 	target_center: Vector3,
+	target_half: Vector3,
 	cell_size: float
 ) -> PackedVector3Array:
 	var delta := target_center - flanker_center
-	var length := delta.length()
-	if length <= EPSILON:
+	var horizontal := Vector2(delta.x, delta.z)
+	var horizontal_length := horizontal.length()
+	if horizontal_length <= EPSILON:
 		return PackedVector3Array()
 
-	var direction := delta / length
+	var horizontal_direction := horizontal / horizontal_length
+	var flanker_boundary := _horizontal_box_boundary_distance(
+		Vector2(flanker_half.x, flanker_half.z),
+		horizontal_direction
+	)
+	var target_boundary := _horizontal_box_boundary_distance(
+		Vector2(target_half.x, target_half.z),
+		-horizontal_direction
+	)
 	var safe_cell := maxf(cell_size, 0.001)
-	var start := flanker_center + direction * minf(safe_cell * 0.12, length * 0.12)
-	var end := target_center - direction * minf(safe_cell * 0.10, length * 0.10)
-	if start.distance_squared_to(end) <= EPSILON * EPSILON:
+	var total_horizontal := maxf(horizontal_length, EPSILON)
+	var start_fraction := clampf(
+		(flanker_boundary + safe_cell * 0.04) / total_horizontal,
+		0.0,
+		0.45
+	)
+	var end_fraction := clampf(
+		1.0 - (target_boundary + safe_cell * 0.07) / total_horizontal,
+		0.55,
+		1.0
+	)
+	if end_fraction <= start_fraction:
 		return PackedVector3Array()
+
+	var start := flanker_center.lerp(target_center, start_fraction)
+	var end := flanker_center.lerp(target_center, end_fraction)
+	# Same-plane flankers are already projected to their shared base plane.
+	# A tiny lift only prevents z-fighting with the rendered grid/terrain.
+	var lift := Vector3.UP * safe_cell * 0.018
+	start += lift
+	end += lift
 	return PackedVector3Array([start, end])
+
+
+static func _horizontal_box_boundary_distance(
+	half_extents: Vector2,
+	direction: Vector2
+) -> float:
+	var distance := INF
+	if absf(direction.x) > EPSILON:
+		distance = minf(
+			distance,
+			maxf(half_extents.x, 0.0) / absf(direction.x)
+		)
+	if absf(direction.y) > EPSILON:
+		distance = minf(
+			distance,
+			maxf(half_extents.y, 0.0) / absf(direction.y)
+		)
+	return 0.0 if distance == INF else distance
 
 
 func _render_arrows(points: Array[Vector3]) -> void:
@@ -618,124 +674,104 @@ func _render_arrows(points: Array[Vector3]) -> void:
 	if points.is_empty():
 		return
 
-	var cell_size := maxf(float(board_root.get("cell_size")), 0.001)
-	var shaft_radius := maxf(cell_size * 0.018, 0.009)
+	var safe_cell := maxf(float(board_root.get("cell_size")), 0.001)
 	for index: int in range(0, points.size() - 1, 2):
-		_add_visible_arrow(
+		_add_flat_vector_arrow(
 			points[index],
 			points[index + 1],
-			shaft_radius,
-			cell_size
+			safe_cell
 		)
 
 
-func _add_visible_arrow(
+func _add_flat_vector_arrow(
 	start: Vector3,
 	end: Vector3,
-	shaft_radius: float,
 	cell_size: float
 ) -> void:
 	var delta := end - start
-	var total_length := delta.length()
-	if total_length <= EPSILON:
+	var length := delta.length()
+	if length <= EPSILON:
 		return
 
-	var direction := delta / total_length
+	var direction := delta / length
+	var right := Vector3.UP.cross(direction)
+	if right.length_squared() <= EPSILON * EPSILON:
+		right = Vector3.RIGHT
+	else:
+		right = right.normalized()
+
 	var head_length := minf(
-		maxf(cell_size * 0.22, shaft_radius * 7.0),
-		total_length * 0.38
+		maxf(cell_size * 0.22, length * 0.22),
+		length * 0.42
 	)
-	var shaft_length := maxf(total_length - head_length, 0.001)
-	var shaft_end := start + direction * shaft_length
-	var shaft_center := (start + shaft_end) * 0.5
-	var shaft_basis := _basis_y_along(direction)
+	var body_half_width := cell_size * 0.045
+	var head_half_width := cell_size * 0.13
 
-	# A dark silhouette keeps the indicator legible over bright maps without
-	# turning it into a heavy bar.
-	_add_arrow_cylinder(
-		shaft_center,
-		shaft_basis,
-		shaft_length,
-		shaft_radius * 1.8,
-		_line_outline_material
+	var outline_mesh := _build_flat_arrow_mesh(
+		start,
+		end,
+		right,
+		body_half_width * 1.55,
+		head_half_width * 1.28,
+		head_length * 1.03
 	)
-	_add_arrow_cylinder(
-		shaft_center,
-		shaft_basis,
-		shaft_length,
-		shaft_radius,
-		_line_material
+	var fill_mesh := _build_flat_arrow_mesh(
+		start + Vector3.UP * cell_size * 0.002,
+		end + Vector3.UP * cell_size * 0.002,
+		right,
+		body_half_width,
+		head_half_width,
+		head_length
 	)
 
-	# Cone points toward the flanked creature.
-	var head_center := shaft_end + direction * head_length * 0.5
-	_add_arrow_cone(
-		head_center,
-		shaft_basis,
-		head_length,
-		shaft_radius * 4.0,
-		_line_outline_material
+	_add_flat_arrow_instance(outline_mesh, _line_outline_material)
+	_add_flat_arrow_instance(fill_mesh, _line_material)
+
+
+static func _build_flat_arrow_mesh(
+	start: Vector3,
+	end: Vector3,
+	right: Vector3,
+	body_half_width: float,
+	head_half_width: float,
+	head_length: float
+) -> ArrayMesh:
+	var delta := end - start
+	var length := delta.length()
+	var direction := delta.normalized()
+	var safe_head_length := minf(
+		maxf(head_length, 0.001),
+		length * 0.48
 	)
-	_add_arrow_cone(
-		head_center,
-		shaft_basis,
-		head_length * 0.88,
-		shaft_radius * 2.8,
-		_line_material
-	)
+	var neck := end - direction * safe_head_length
+
+	var body_left_start := start - right * body_half_width
+	var body_right_start := start + right * body_half_width
+	var body_left_end := neck - right * body_half_width
+	var body_right_end := neck + right * body_half_width
+	var head_left := neck - right * head_half_width
+	var head_right := neck + right * head_half_width
+
+	var vertices := PackedVector3Array([
+		body_left_start, body_right_start, body_left_end,
+		body_right_start, body_right_end, body_left_end,
+		head_left, head_right, end,
+	])
+	var arrays: Array = []
+	arrays.resize(Mesh.ARRAY_MAX)
+	arrays[Mesh.ARRAY_VERTEX] = vertices
+	var mesh := ArrayMesh.new()
+	mesh.add_surface_from_arrays(Mesh.PRIMITIVE_TRIANGLES, arrays)
+	return mesh
 
 
-static func _basis_y_along(direction: Vector3) -> Basis:
-	var reference := Vector3.UP
-	if absf(direction.dot(reference)) > 0.95:
-		reference = Vector3.FORWARD
-	var x_axis := reference.cross(direction).normalized()
-	var z_axis := x_axis.cross(direction).normalized()
-	return Basis(x_axis, direction, z_axis)
-
-
-func _add_arrow_cylinder(
-	center: Vector3,
-	basis: Basis,
-	length: float,
-	radius: float,
+func _add_flat_arrow_instance(
+	mesh: ArrayMesh,
 	material: Material
 ) -> void:
-	var mesh := CylinderMesh.new()
-	mesh.top_radius = radius
-	mesh.bottom_radius = radius
-	mesh.height = length
-	mesh.radial_segments = 10
-	mesh.rings = 1
-
 	var instance := MeshInstance3D.new()
 	instance.mesh = mesh
 	instance.material_override = material
 	instance.cast_shadow = GeometryInstance3D.SHADOW_CASTING_SETTING_OFF
 	_line_root.add_child(instance)
-	instance.global_transform = Transform3D(basis, center)
-
-
-func _add_arrow_cone(
-	center: Vector3,
-	basis: Basis,
-	length: float,
-	radius: float,
-	material: Material
-) -> void:
-	var cone := CylinderMesh.new()
-	# CylinderMesh points along local Y. bottom_radius sits at -Y, while a
-	# zero top radius places the point at +Y, matching the arrow direction.
-	cone.bottom_radius = radius
-	cone.top_radius = 0.0
-	cone.height = length
-	cone.radial_segments = 12
-	cone.rings = 1
-
-	var instance := MeshInstance3D.new()
-	instance.mesh = cone
-	instance.material_override = material
-	instance.cast_shadow = GeometryInstance3D.SHADOW_CASTING_SETTING_OFF
-	_line_root.add_child(instance)
-	instance.global_transform = Transform3D(basis, center)
 
