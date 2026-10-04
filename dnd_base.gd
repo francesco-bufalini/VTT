@@ -16,6 +16,7 @@ const CONTEXT_INITIATIVE := 13
 const CONTEXT_TOKEN_DETAILS := 14
 const CONTEXT_RESTORE_TRANSFORMATION := 15
 const CONTEXT_PLAYER_AREA := 16
+const CONTEXT_MASTER_AREA := 17
 const CAMPAIGN_EDITOR_SCENE_PATH := "res://vtt/editor/campaign_editor.tscn"
 const LOCAL_TOKEN_CATALOG := "res://dist/token_packs/token_catalog.json"
 const LOCAL_TOKEN_PACK_ROOT := "res://dist/token_packs"
@@ -2255,6 +2256,7 @@ func _show_context_menu(screen_position: Vector2) -> void:
 
 	context_game_menu.add_item("Incantesimi", CONTEXT_SPELLS)
 	context_game_menu.add_item("Area Player", CONTEXT_PLAYER_AREA)
+	context_game_menu.add_item("Area Master", CONTEXT_MASTER_AREA)
 	var initiative_visible: bool = (
 		initiative_tracker != null
 		and is_instance_valid(initiative_tracker)
@@ -2325,6 +2327,12 @@ func _on_context_menu_id_pressed(id: int) -> void:
 		context_menu.hide()
 		if player_area != null and is_instance_valid(player_area):
 			player_area.call_deferred("show_panel")
+		return
+
+	if id == CONTEXT_MASTER_AREA:
+		context_menu.hide()
+		if master_area != null and is_instance_valid(master_area):
+			master_area.call_deferred("show_panel")
 		return
 
 	if id == CONTEXT_TOKEN_DETAILS:
@@ -2913,7 +2921,13 @@ func _finish_context_menu_close() -> void:
 		and player_area.has_method("is_panel_open")
 		and bool(player_area.call("is_panel_open"))
 	)
-	if spell_panel_open or player_panel_open:
+	var master_panel_open: bool = (
+		master_area != null
+		and is_instance_valid(master_area)
+		and master_area.has_method("is_panel_open")
+		and bool(master_area.call("is_panel_open"))
+	)
+	if spell_panel_open or player_panel_open or master_panel_open:
 		_pending_aoe_index = -1
 		_context_token = null
 		_ui_owns_mouse = true

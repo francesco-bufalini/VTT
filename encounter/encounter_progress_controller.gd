@@ -42,8 +42,17 @@ func setup(hazard_controller: Node, kaos_controller: Node3D, effects: Node3D, ar
 	_cell_size = size
 	petrification = preload("res://encounter/petrification.gd").new()
 	kaos.add_child(petrification)
-	seals.all_seals_broken.connect(func(): finish_encounter("Tutti i sigilli sono infranti"))
+	seals.all_seals_broken.connect(_on_all_seals_broken)
 	reset_encounter()
+
+
+func _on_all_seals_broken() -> void:
+	if _should_end_on_all_seals_broken():
+		finish_encounter("Tutti i sigilli sono infranti")
+
+
+func _should_end_on_all_seals_broken() -> bool:
+	return true
 
 func reset_encounter(seed_override: int = 0) -> bool:
 	if is_advancing:
@@ -267,7 +276,16 @@ func _valid_state(data: Dictionary) -> bool:
 		if not (value is float or value is int) or not is_finite(float(value)) or float(value) < 0 or float(value) > 100:
 			return false
 	if int(data.version) == 2:
-		var ended: bool = (data.giant_petrified and data.avatar_hp == 0) or seal_values.all(func(value): return float(value)>=seals.break_damage)
+		var seals_finished: bool = (
+			_should_end_on_all_seals_broken()
+			and seal_values.all(
+				func(value): return float(value) >= seals.break_damage
+			)
+		)
+		var ended: bool = (
+			(data.giant_petrified and data.avatar_hp == 0)
+			or seals_finished
+		)
 		if data.encounter_finished != ended:
 			return false
 		if data.giant_petrified and not data.threatened_cells.is_empty():

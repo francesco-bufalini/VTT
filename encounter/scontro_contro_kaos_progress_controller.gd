@@ -3,6 +3,10 @@ extends "res://encounter/encounter_progress_controller.gd"
 const LOCAL_SAVE_PATH := "user://scontro_contro_kaos.json"
 
 
+func _should_end_on_all_seals_broken() -> bool:
+	return false
+
+
 func reset_encounter(seed_override: int = 0) -> bool:
 	var reset_ok := super.reset_encounter(seed_override)
 	if not reset_ok:

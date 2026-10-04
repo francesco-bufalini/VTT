@@ -4,6 +4,10 @@ const PostKaosHelpers = preload("res://encounter/post_kaos_helpers.gd")
 const CosmicBackdrop = preload("res://encounter/cosmic_backdrop.gd")
 
 const ImportedPrison = preload("res://encounter/klotis_prison.gd")
+const CONTEXT_BREAK_LEFT_SEAL := 120
+const CONTEXT_BREAK_RIGHT_SEAL := 121
+const CONTEXT_BREAK_FOREHEAD_SEAL := 122
+const CONTEXT_RESET_SEALS := 123
 var klotis_prison: Node3D
 
 const CHARIOT_OFFSETS_METERS := [
@@ -429,19 +433,68 @@ func avvia_animazione_sigillo(lato: String) -> bool:
 	return true
 
 
+func resetta_tutti_i_sigilli() -> void:
+	_clear_klothys_attack_telegraph()
+	if encounter == null or not is_instance_valid(encounter):
+		return
+	if encounter.seals == null or not is_instance_valid(encounter.seals):
+		return
+
+	# Also recover an already-running session created before this fix, where
+	# breaking all seals could mark the encounter as finished.
+	encounter.encounter_finished = false
+	encounter.end_reason = ""
+	encounter.seals.restore([0.0, 0.0, 0.0])
+	if klotis_prison != null and is_instance_valid(klotis_prison):
+		klotis_prison.reset_seals()
+	encounter.state_changed.emit()
+
+
 func _show_context_menu(screen_position: Vector2) -> void:
 	super._show_context_menu(screen_position)
 	context_menu.add_separator("Sigilli di Klotis")
+	var seal_ids := [
+		CONTEXT_BREAK_LEFT_SEAL,
+		CONTEXT_BREAK_RIGHT_SEAL,
+		CONTEXT_BREAK_FOREHEAD_SEAL,
+	]
+	var seal_labels := [
+		"Spezza sigillo sinistro",
+		"Spezza sigillo destro",
+		"Spezza sigillo sulla fronte",
+	]
+	var seal_sides := ["left", "right", "forehead"]
+	var any_broken := false
 	for index in range(3):
-		context_menu.add_item(["Spezza sigillo sinistro", "Spezza sigillo destro", "Spezza sigillo sulla fronte"][index], 120 + index)
-		var side: String = ["left", "right", "forehead"][index]
-		context_menu.set_item_disabled(context_menu.get_item_index(120 + index), encounter.encounter_finished or klotis_prison.broken[side])
+		context_menu.add_item(seal_labels[index], seal_ids[index])
+		var side: String = seal_sides[index]
+		var is_broken: bool = bool(klotis_prison.broken.get(side, false))
+		any_broken = any_broken or is_broken
+		context_menu.set_item_disabled(
+			context_menu.get_item_index(seal_ids[index]),
+			is_broken
+		)
+	context_menu.add_separator()
+	context_menu.add_item("Resetta tutti i sigilli", CONTEXT_RESET_SEALS)
+	context_menu.set_item_disabled(
+		context_menu.get_item_index(CONTEXT_RESET_SEALS),
+		not any_broken
+	)
 
 
 func _on_context_menu_id_pressed(id: int) -> void:
-	if id in [120,121,122]:
+	if id in [
+		CONTEXT_BREAK_LEFT_SEAL,
+		CONTEXT_BREAK_RIGHT_SEAL,
+		CONTEXT_BREAK_FOREHEAD_SEAL,
+	]:
 		_close_context_menu_to_game()
-		avvia_animazione_sigillo(["sinistro", "destro", "fronte"][id-120])
+		avvia_animazione_sigillo(
+			["sinistro", "destro", "fronte"][id - CONTEXT_BREAK_LEFT_SEAL]
+		)
+	elif id == CONTEXT_RESET_SEALS:
+		resetta_tutti_i_sigilli()
+		_close_context_menu_to_game()
 	elif id == CONTEXT_SHOULDERS and is_instance_valid(klotis_prison):
 		camera.exit_first_person()
 		var target: Vector3 = klotis_prison.statue_top
