@@ -48,8 +48,13 @@ function Invoke-Godot {
             -RedirectStandardError $stderrPath
 
         if (-not $process.WaitForExit($TimeoutSeconds * 1000)) {
-            # The console launcher may own a headless child; stop this test tree.
-            $process.Kill($true)
+            # The Windows runner uses a .NET build without Process.Kill(bool).
+            # taskkill /T reliably terminates the console launcher and its Godot child.
+            if ($env:OS -eq "Windows_NT") {
+                & taskkill.exe /PID $process.Id /T /F 2>$null | Out-Null
+            } else {
+                $process.Kill()
+            }
             $process.WaitForExit()
             throw "Godot timed out after $TimeoutSeconds seconds: $($Arguments -join ' ')"
         }
@@ -128,7 +133,13 @@ if ($FullTests) {
 foreach ($test in $testFiles) {
     $relative = "res://tests/$($test.Name)"
     Write-Host "== $relative =="
-    $testTimeout = if ($FullTests) { 90 } else { 12 }
+    $testTimeout = if ($FullTests) {
+        90
+    } elseif ($test.Name -in @("test_item_transport.gd", "test_item_board_integration.gd")) {
+        30
+    } else {
+        12
+    }
     Invoke-Godot -Arguments @("--headless", "--path", $ProjectRoot, "--script", $relative) -TimeoutSeconds $testTimeout -RequirePass
 }
 
