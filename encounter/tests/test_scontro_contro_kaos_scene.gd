@@ -7,6 +7,7 @@ const UPPER_NECK_BOTTOM_METERS := 121.5
 const UPPER_NECK_TOP_METERS := 130.0
 const UPPER_NECK_RADIUS_X_METERS := 12.5
 const UPPER_NECK_RADIUS_Z_METERS := 11.0
+const PRISON_RADIUS_METERS := 220.0
 
 
 func _initialize() -> void:
@@ -135,11 +136,9 @@ func _run() -> void:
 		_fail("Background columns disappeared from Scontro.")
 		return
 
-	var cosmic_backdrop := scene.get_node_or_null(
-		"CosmicBackdrop/StarfieldRing"
-	) as MeshInstance3D
-	if cosmic_backdrop == null or not cosmic_backdrop.visible:
-		_fail("The seamless 360-degree cosmic backdrop is missing.")
+	# The global WorldEnvironment sky is the only background in Scontro.
+	if scene.get_node_or_null("CosmicBackdrop") != null:
+		_fail("The duplicate local arena backdrop is still present.")
 		return
 
 	var old_apse := scene.get_node_or_null(
@@ -160,6 +159,30 @@ func _run() -> void:
 		or world_environment.environment.sky == null
 	):
 		_fail("Scontro does not use the starry sky environment.")
+		return
+
+	var prison := scene.get_node_or_null("KlotisPrison")
+	if prison == null:
+		_fail("Imported Klotis prison is missing.")
+		return
+	var right_hand_metrics: Dictionary = prison.call(
+		"_sealed_hand_metrics",
+		"right"
+	)
+	if right_hand_metrics.is_empty():
+		_fail("Cannot measure Klotis' sealed right hand.")
+		return
+	var right_hand_min_radius_m := (
+		float(right_hand_metrics.get("min_radius", 0.0)) / units
+	)
+	if right_hand_min_radius_m < PRISON_RADIUS_METERS:
+		_fail(
+			(
+				"Klotis' sealed right hand still penetrates the prison rock: "
+				+ "%.2f m < %.2f m."
+			)
+			% [right_hand_min_radius_m, PRISON_RADIUS_METERS]
+		)
 		return
 
 	# Regression: terrain processing freezes/removes some ClimbingVisual
