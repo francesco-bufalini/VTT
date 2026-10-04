@@ -19,6 +19,10 @@ var chat_input: LineEdit
 var status_label: Label
 var dice_count_input: SpinBox
 var dice_modifier_input: SpinBox
+var roll_mode_input: OptionButton
+var quick_result_panel: PanelContainer
+var quick_result_label: Label
+var _quick_result_generation := 0
 
 
 func setup(
@@ -211,6 +215,34 @@ func _build_ui() -> void:
 	settings_hint.size_flags_horizontal = Control.SIZE_EXPAND_FILL
 	roll_settings.add_child(settings_hint)
 
+	var mode_row := HBoxContainer.new()
+	mode_row.add_theme_constant_override("separation", 8)
+	outer.add_child(mode_row)
+
+	var mode_label := Label.new()
+	mode_label.text = "Modalità d20:"
+	mode_row.add_child(mode_label)
+
+	roll_mode_input = OptionButton.new()
+	roll_mode_input.add_item("Normale")
+	roll_mode_input.set_item_metadata(0, "normal")
+	roll_mode_input.add_item("Vantaggio")
+	roll_mode_input.set_item_metadata(1, "advantage")
+	roll_mode_input.add_item("Svantaggio")
+	roll_mode_input.set_item_metadata(2, "disadvantage")
+	roll_mode_input.select(0)
+	roll_mode_input.tooltip_text = (
+		"Vantaggio/svantaggio tira due d20 per ogni dado e tiene "
+		+ "rispettivamente il risultato più alto o più basso."
+	)
+	mode_row.add_child(roll_mode_input)
+
+	var mode_hint := Label.new()
+	mode_hint.text = "Si applica solo ai d20, anche dalla scheda."
+	mode_hint.modulate = Color(0.55, 0.59, 0.66, 1.0)
+	mode_hint.size_flags_horizontal = Control.SIZE_EXPAND_FILL
+	mode_row.add_child(mode_hint)
+
 	var dice_grid := GridContainer.new()
 	dice_grid.columns = 4
 	dice_grid.add_theme_constant_override("h_separation", 5)
@@ -252,6 +284,41 @@ func _build_ui() -> void:
 	send.pressed.connect(_send_chat)
 	chat_row.add_child(send)
 
+	_build_quick_result_popup()
+
+
+func _build_quick_result_popup() -> void:
+	quick_result_panel = PanelContainer.new()
+	quick_result_panel.name = "DiceQuickResult"
+	quick_result_panel.anchor_left = 0.5
+	quick_result_panel.anchor_right = 0.5
+	quick_result_panel.offset_left = -175.0
+	quick_result_panel.offset_top = 72.0
+	quick_result_panel.offset_right = 175.0
+	quick_result_panel.offset_bottom = 132.0
+	quick_result_panel.mouse_filter = Control.MOUSE_FILTER_IGNORE
+	quick_result_panel.z_index = 100
+	quick_result_panel.hide()
+
+	var style := StyleBoxFlat.new()
+	style.bg_color = Color(0.025, 0.028, 0.036, 0.94)
+	style.border_color = Color(0.82, 0.62, 0.24, 0.95)
+	style.set_border_width_all(1)
+	style.set_corner_radius_all(8)
+	style.content_margin_left = 12
+	style.content_margin_right = 12
+	style.content_margin_top = 8
+	style.content_margin_bottom = 8
+	quick_result_panel.add_theme_stylebox_override("panel", style)
+
+	quick_result_label = Label.new()
+	quick_result_label.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
+	quick_result_label.vertical_alignment = VERTICAL_ALIGNMENT_CENTER
+	quick_result_label.autowrap_mode = TextServer.AUTOWRAP_WORD_SMART
+	quick_result_label.add_theme_font_size_override("font_size", 18)
+	quick_result_panel.add_child(quick_result_label)
+	ui_root.add_child(quick_result_panel)
+
 
 func _roll(die: String) -> void:
 	var count := 1
@@ -267,13 +334,15 @@ func roll_from_sheet(
 	label: String,
 	die: String,
 	count: int = 1,
-	modifier: int = 0
+	modifier: int = 0,
+	roll_mode: String = ""
 ) -> void:
 	_roll_specific(
 		label.strip_edges(),
 		die,
 		clampi(count, 1, 100),
-		clampi(modifier, -9999, 9999)
+		clampi(modifier, -9999, 9999),
+		roll_mode
 	)
 
 
@@ -281,7 +350,8 @@ func _roll_specific(
 	label: String,
 	die: String,
 	count: int,
-	modifier: int
+	modifier: int,
+	roll_mode_override: String = ""
 ) -> void:
 	if die not in [
 		"d20", "d12", "d10", "d8",
@@ -296,7 +366,15 @@ func _roll_specific(
 	if not label.is_empty():
 		event["label"] = label.left(160)
 
+	var roll_mode := normalize_roll_mode(roll_mode_override)
+	if roll_mode_override.strip_edges().is_empty():
+		roll_mode = _selected_roll_mode(die)
+	if die != "d20":
+		roll_mode = "normal"
+	event["roll_mode"] = roll_mode
+
 	var rolls: Array[int] = []
+	var candidate_rolls: Array = []
 	var percentile_faces: Array[Dictionary] = []
 	for _index: int in range(count):
 		if die == "d%":
@@ -309,19 +387,28 @@ func _roll_specific(
 				"ones": ones_face,
 				"value": value
 			})
+		elif die == "d20" and roll_mode != "normal":
+			var first := rng.randi_range(1, 20)
+			var second := rng.randi_range(1, 20)
+			candidate_rolls.append([first, second])
+			rolls.append(choose_d20_pair(first, second, roll_mode))
 		else:
 			var sides := int(die.trim_prefix("d"))
 			rolls.append(rng.randi_range(1, sides))
 
 	event["rolls"] = rolls
 	event["total"] = _roll_total(rolls, modifier)
+	if not candidate_rolls.is_empty():
+		event["candidate_rolls"] = candidate_rolls
 	if die == "d%":
 		event["percentile_faces"] = percentile_faces
 	event["detail"] = _roll_detail(
 		die,
 		rolls,
 		modifier,
-		percentile_faces
+		percentile_faces,
+		roll_mode,
+		candidate_rolls
 	)
 
 	_append_event(event, true)
@@ -497,12 +584,45 @@ static func _roll_total(rolls: Array[int], modifier: int) -> int:
 	return total
 
 
+static func normalize_roll_mode(value: String) -> String:
+	var normalized := value.strip_edges().to_lower()
+	if normalized in ["advantage", "disadvantage"]:
+		return normalized
+	return "normal"
+
+
+static func choose_d20_pair(first: int, second: int, roll_mode: String) -> int:
+	var mode := normalize_roll_mode(roll_mode)
+	if mode == "advantage":
+		return maxi(first, second)
+	if mode == "disadvantage":
+		return mini(first, second)
+	return first
+
+
+func _selected_roll_mode(die: String) -> String:
+	if die != "d20" or roll_mode_input == null:
+		return "normal"
+	var selected := roll_mode_input.get_selected_id()
+	if selected < 0:
+		return "normal"
+	return normalize_roll_mode(
+		String(roll_mode_input.get_item_metadata(selected))
+	)
+
+
 static func _roll_notation(
 	die: String,
 	count: int,
-	modifier: int
+	modifier: int,
+	roll_mode: String = "normal"
 ) -> String:
 	var notation := "%d%s" % [maxi(1, count), die]
+	var mode := normalize_roll_mode(roll_mode)
+	if die == "d20" and mode == "advantage":
+		notation += " (vant.)"
+	elif die == "d20" and mode == "disadvantage":
+		notation += " (svant.)"
 	if modifier > 0:
 		notation += " + %d" % modifier
 	elif modifier < 0:
@@ -514,13 +634,29 @@ static func _roll_detail(
 	die: String,
 	rolls: Array[int],
 	modifier: int,
-	percentile_faces: Array[Dictionary] = []
+	percentile_faces: Array[Dictionary] = [],
+	roll_mode: String = "normal",
+	candidate_rolls: Array = []
 ) -> String:
 	var result_parts := PackedStringArray()
 	for value: int in rolls:
 		result_parts.append(str(value))
 
+	var mode := normalize_roll_mode(roll_mode)
 	var detail := "[%s]" % ", ".join(result_parts)
+	if die == "d20" and mode != "normal" and not candidate_rolls.is_empty():
+		var pair_parts := PackedStringArray()
+		for index: int in range(candidate_rolls.size()):
+			var pair_value: Variant = candidate_rolls[index]
+			if not pair_value is Array or (pair_value as Array).size() != 2:
+				continue
+			var pair: Array = pair_value as Array
+			var kept := int(rolls[index]) if index < rolls.size() else 0
+			pair_parts.append(
+				"%d/%d → %d" % [int(pair[0]), int(pair[1]), kept]
+			)
+		var mode_name := "Vantaggio" if mode == "advantage" else "Svantaggio"
+		detail = "%s [%s]" % [mode_name, ", ".join(pair_parts)]
 	if die == "d%" and not percentile_faces.is_empty():
 		var face_parts := PackedStringArray()
 		for face: Dictionary in percentile_faces:
@@ -590,6 +726,8 @@ func _append_event(event: Dictionary, broadcast: bool) -> void:
 
 	_save_history()
 	_render_history()
+	if String(event.get("kind", "")) == "roll":
+		_show_quick_roll_result(event)
 
 	if broadcast and sync != null:
 		sync.call(
@@ -597,6 +735,32 @@ func _append_event(event: Dictionary, broadcast: bool) -> void:
 			event,
 			session_key
 		)
+
+
+func _show_quick_roll_result(event: Dictionary) -> void:
+	if quick_result_panel == null or quick_result_label == null:
+		return
+
+	_quick_result_generation += 1
+	var generation := _quick_result_generation
+	var total := int(event.get("total", 0))
+	var label := String(event.get("label", "")).strip_edges()
+	var mode := normalize_roll_mode(String(event.get("roll_mode", "normal")))
+	var mode_text := ""
+	if mode == "advantage":
+		mode_text = "VANTAGGIO · "
+	elif mode == "disadvantage":
+		mode_text = "SVANTAGGIO · "
+
+	quick_result_label.text = (
+		("%s\n" % label if not label.is_empty() else "")
+		+ "%s%d" % [mode_text, total]
+	)
+	quick_result_panel.show()
+
+	await get_tree().create_timer(2.2).timeout
+	if generation == _quick_result_generation and quick_result_panel != null:
+		quick_result_panel.hide()
 
 
 func _on_remote_event(event: Dictionary) -> void:
@@ -626,7 +790,12 @@ func _render_history() -> void:
 			var raw_notation := (
 				String(event.get("notation", ""))
 				if die_raw == "formula"
-				else _roll_notation(die_raw, count, modifier)
+				else _roll_notation(
+					die_raw,
+					count,
+					modifier,
+					String(event.get("roll_mode", "normal"))
+				)
 			)
 			var notation := _escape_bb(raw_notation)
 			var total := int(event.get("total", 0))
@@ -674,7 +843,8 @@ func _render_history() -> void:
 				else _roll_notation(
 					last_die,
 					maxi(1, int(last.get("count", 1))),
-					int(last.get("modifier", 0))
+					int(last.get("modifier", 0)),
+					String(last.get("roll_mode", "normal"))
 				)
 			)
 			toggle_button.tooltip_text = (
