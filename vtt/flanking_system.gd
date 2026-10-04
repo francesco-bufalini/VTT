@@ -5,8 +5,7 @@ const EPSILON := 0.0001
 
 var board_root: Node3D
 var tokens_root: Node3D
-var _line_instance: MeshInstance3D
-var _line_mesh: ImmediateMesh
+var _line_root: Node3D
 var _line_material: StandardMaterial3D
 var _elapsed := 0.0
 var _flanked_ids: Dictionary = {}
@@ -252,29 +251,67 @@ static func _box_boundary_distance(
 
 
 func _build_line_renderer() -> void:
-	_line_mesh = ImmediateMesh.new()
 	_line_material = StandardMaterial3D.new()
 	_line_material.shading_mode = BaseMaterial3D.SHADING_MODE_UNSHADED
-	_line_material.albedo_color = Color(1.0, 0.74, 0.18, 1.0)
+	_line_material.albedo_color = Color(1.0, 0.72, 0.12, 1.0)
 	_line_material.emission_enabled = true
-	_line_material.emission = Color(1.0, 0.42, 0.08, 1.0)
+	_line_material.emission = Color(1.0, 0.34, 0.02, 1.0)
+	_line_material.emission_energy_multiplier = 2.5
 	_line_material.no_depth_test = true
 
-	_line_instance = MeshInstance3D.new()
-	_line_instance.name = "FlankingLines"
-	_line_instance.mesh = _line_mesh
-	_line_instance.cast_shadow = GeometryInstance3D.SHADOW_CASTING_SETTING_OFF
-	add_child(_line_instance)
+	_line_root = Node3D.new()
+	_line_root.name = "FlankingLines"
+	add_child(_line_root)
 
 
 func _render_lines(points: Array[Vector3]) -> void:
-	if _line_mesh == null:
+	if _line_root == null:
 		return
-	_line_mesh.clear_surfaces()
+
+	for child: Node in _line_root.get_children():
+		child.queue_free()
+
 	if points.is_empty():
 		return
 
-	_line_mesh.surface_begin(Mesh.PRIMITIVE_LINES, _line_material)
-	for point: Vector3 in points:
-		_line_mesh.surface_add_vertex(to_local(point))
-	_line_mesh.surface_end()
+	var cell_size := maxf(float(board_root.get("cell_size")), 0.001)
+	var radius := maxf(cell_size * 0.045, 0.02)
+	for index: int in range(0, points.size() - 1, 2):
+		_add_visible_segment(points[index], points[index + 1], radius)
+
+
+func _add_visible_segment(
+	start: Vector3,
+	end: Vector3,
+	radius: float
+) -> void:
+	var delta := end - start
+	var length := delta.length()
+	if length <= EPSILON:
+		return
+
+	var mesh := CylinderMesh.new()
+	mesh.top_radius = radius
+	mesh.bottom_radius = radius
+	mesh.height = length
+	mesh.radial_segments = 10
+	mesh.rings = 1
+
+	var instance := MeshInstance3D.new()
+	instance.mesh = mesh
+	instance.material_override = _line_material
+	instance.cast_shadow = GeometryInstance3D.SHADOW_CASTING_SETTING_OFF
+
+	var direction := delta / length
+	var reference := Vector3.UP
+	if absf(direction.dot(reference)) > 0.95:
+		reference = Vector3.FORWARD
+	var x_axis := reference.cross(direction).normalized()
+	var z_axis := x_axis.cross(direction).normalized()
+	var basis := Basis(x_axis, direction, z_axis)
+
+	_line_root.add_child(instance)
+	instance.global_transform = Transform3D(
+		basis,
+		(start + end) * 0.5
+	)
