@@ -847,6 +847,30 @@ func _build_line_renderer() -> void:
 	_line_outline_material.no_depth_test = true
 	_line_outline_material.render_priority = 1
 
+	# Reciprocal adjacent reach uses a quieter mint marker instead of two
+	# overlapping arrows. It reads as a single bidirectional relationship.
+	_mutual_material = StandardMaterial3D.new()
+	_mutual_material.transparency = BaseMaterial3D.TRANSPARENCY_ALPHA
+	_mutual_material.shading_mode = BaseMaterial3D.SHADING_MODE_UNSHADED
+	_mutual_material.cull_mode = BaseMaterial3D.CULL_DISABLED
+	_mutual_material.albedo_color = Color(0.40, 0.92, 0.72, 0.94)
+	_mutual_material.emission_enabled = true
+	_mutual_material.emission = Color(0.06, 0.28, 0.24, 1.0)
+	_mutual_material.emission_energy_multiplier = 0.32
+	_mutual_material.no_depth_test = true
+	_mutual_material.render_priority = 4
+
+	_mutual_outline_material = StandardMaterial3D.new()
+	_mutual_outline_material.transparency = BaseMaterial3D.TRANSPARENCY_ALPHA
+	_mutual_outline_material.shading_mode = BaseMaterial3D.SHADING_MODE_UNSHADED
+	_mutual_outline_material.cull_mode = BaseMaterial3D.CULL_DISABLED
+	_mutual_outline_material.albedo_color = Color(0.015, 0.09, 0.085, 0.94)
+	_mutual_outline_material.emission_enabled = true
+	_mutual_outline_material.emission = Color(0.01, 0.08, 0.07, 1.0)
+	_mutual_outline_material.emission_energy_multiplier = 0.06
+	_mutual_outline_material.no_depth_test = true
+	_mutual_outline_material.render_priority = 3
+
 	_line_root = Node3D.new()
 	_line_root.name = "ReachArrows"
 	add_child(_line_root)
@@ -925,6 +949,60 @@ static func flanking_arrow_segment(
 	)
 
 
+static func should_use_mutual_adjacent_marker(
+	first_reaches: bool,
+	second_reaches: bool,
+	tactical_distance_feet: float
+) -> bool:
+	return (
+		first_reaches
+		and second_reaches
+		and tactical_distance_feet <= 5.001
+	)
+
+
+static func mutual_reach_marker_segment(
+	first_base: Vector3,
+	first_half: Vector3,
+	second_base: Vector3,
+	second_half: Vector3,
+	cell_size: float
+) -> PackedVector3Array:
+	var horizontal := Vector2(
+		second_base.x - first_base.x,
+		second_base.z - first_base.z
+	)
+	var horizontal_length := horizontal.length()
+	if horizontal_length <= EPSILON:
+		return PackedVector3Array()
+
+	var safe_cell := maxf(cell_size, 0.001)
+	var direction_2d := horizontal / horizontal_length
+	var direction := Vector3(direction_2d.x, 0.0, direction_2d.y)
+	var right := Vector3(-direction.z, 0.0, direction.x)
+
+	var first_boundary_distance := _horizontal_box_boundary_distance(
+		Vector2(first_half.x, first_half.z),
+		direction_2d
+	)
+	var second_boundary_distance := _horizontal_box_boundary_distance(
+		Vector2(second_half.x, second_half.z),
+		-direction_2d
+	)
+	var first_boundary := first_base + direction * first_boundary_distance
+	var second_boundary := second_base - direction * second_boundary_distance
+	var midpoint := (first_boundary + second_boundary) * 0.5
+
+	# Move the compact ↔ marker slightly beside the touching edge so it stays
+	# visible instead of sitting underneath both bases.
+	var lateral_offset := right * safe_cell * 0.12
+	var half_length := safe_cell * 0.22
+	var lift := Vector3.UP * safe_cell * 0.022
+	var start := midpoint - direction * half_length + lateral_offset + lift
+	var end := midpoint + direction * half_length + lateral_offset + lift
+	return PackedVector3Array([start, end])
+
+
 static func _horizontal_box_boundary_distance(
 	half_extents: Vector2,
 	direction: Vector2
@@ -943,51 +1021,90 @@ static func _horizontal_box_boundary_distance(
 	return 0.0 if distance == INF else distance
 
 
-func _render_arrows(points: Array[Vector3]) -> void:
+func _render_arrows(
+	points: Array[Vector3],
+	mutual_points: Array[Vector3]
+) -> void:
 	if _arrow_mesh == null:
 		return
 
 	_arrow_mesh.clear_surfaces()
-	if points.is_empty():
+	if points.is_empty() and mutual_points.is_empty():
 		return
 
 	var safe_cell := maxf(float(board_root.get("cell_size")), 0.001)
 	var body_half_width := safe_cell * 0.028
 	var head_half_width := safe_cell * 0.095
 
-	# All outlines share one surface/draw call.
-	_arrow_mesh.surface_begin(
-		Mesh.PRIMITIVE_TRIANGLES,
-		_line_outline_material
-	)
-	for index: int in range(0, points.size() - 1, 2):
-		_append_flat_arrow_vertices(
-			_arrow_mesh,
-			points[index],
-			points[index + 1],
-			body_half_width * 1.55,
-			head_half_width * 1.28,
-			safe_cell,
-			0.0
+	if not points.is_empty():
+		# One-way / longer-range arrows.
+		_arrow_mesh.surface_begin(
+			Mesh.PRIMITIVE_TRIANGLES,
+			_line_outline_material
 		)
-	_arrow_mesh.surface_end()
+		for index: int in range(0, points.size() - 1, 2):
+			_append_flat_arrow_vertices(
+				_arrow_mesh,
+				points[index],
+				points[index + 1],
+				body_half_width * 1.55,
+				head_half_width * 1.28,
+				safe_cell,
+				0.0
+			)
+		_arrow_mesh.surface_end()
 
-	# All colored interiors share a second surface/draw call.
-	_arrow_mesh.surface_begin(
-		Mesh.PRIMITIVE_TRIANGLES,
-		_line_material
-	)
-	for index: int in range(0, points.size() - 1, 2):
-		_append_flat_arrow_vertices(
-			_arrow_mesh,
-			points[index],
-			points[index + 1],
-			body_half_width,
-			head_half_width,
-			safe_cell,
-			safe_cell * 0.002
+		_arrow_mesh.surface_begin(
+			Mesh.PRIMITIVE_TRIANGLES,
+			_line_material
 		)
-	_arrow_mesh.surface_end()
+		for index: int in range(0, points.size() - 1, 2):
+			_append_flat_arrow_vertices(
+				_arrow_mesh,
+				points[index],
+				points[index + 1],
+				body_half_width,
+				head_half_width,
+				safe_cell,
+				safe_cell * 0.002
+			)
+		_arrow_mesh.surface_end()
+
+	if not mutual_points.is_empty():
+		var mutual_body_half_width := safe_cell * 0.024
+		var mutual_head_half_width := safe_cell * 0.080
+
+		_arrow_mesh.surface_begin(
+			Mesh.PRIMITIVE_TRIANGLES,
+			_mutual_outline_material
+		)
+		for index: int in range(0, mutual_points.size() - 1, 2):
+			_append_double_arrow_vertices(
+				_arrow_mesh,
+				mutual_points[index],
+				mutual_points[index + 1],
+				mutual_body_half_width * 1.55,
+				mutual_head_half_width * 1.30,
+				safe_cell,
+				0.0
+			)
+		_arrow_mesh.surface_end()
+
+		_arrow_mesh.surface_begin(
+			Mesh.PRIMITIVE_TRIANGLES,
+			_mutual_material
+		)
+		for index: int in range(0, mutual_points.size() - 1, 2):
+			_append_double_arrow_vertices(
+				_arrow_mesh,
+				mutual_points[index],
+				mutual_points[index + 1],
+				mutual_body_half_width,
+				mutual_head_half_width,
+				safe_cell,
+				safe_cell * 0.002
+			)
+		_arrow_mesh.surface_end()
 
 
 static func _append_flat_arrow_vertices(
@@ -1035,6 +1152,60 @@ static func _append_flat_arrow_vertices(
 		body_left_start, body_right_start, body_left_end,
 		body_right_start, body_right_end, body_left_end,
 		head_left, head_right, lifted_end,
+	])
+	for vertex: Vector3 in vertices:
+		mesh.surface_add_vertex(vertex)
+
+
+static func _append_double_arrow_vertices(
+	mesh: ImmediateMesh,
+	start: Vector3,
+	end: Vector3,
+	body_half_width: float,
+	head_half_width: float,
+	cell_size: float,
+	lift: float
+) -> void:
+	var delta := end - start
+	var length := delta.length()
+	if length <= EPSILON:
+		return
+
+	var direction := delta / length
+	var right := Vector3.UP.cross(direction)
+	if right.length_squared() <= EPSILON * EPSILON:
+		right = Vector3.RIGHT
+	else:
+		right = right.normalized()
+
+	var head_length := minf(
+		maxf(cell_size * 0.11, length * 0.22),
+		length * 0.30
+	)
+	var offset := Vector3.UP * lift
+	var left_tip := start + offset
+	var right_tip := end + offset
+	var left_neck := left_tip + direction * head_length
+	var right_neck := right_tip - direction * head_length
+
+	var shaft_left_a := left_neck - right * body_half_width
+	var shaft_left_b := left_neck + right * body_half_width
+	var shaft_right_a := right_neck - right * body_half_width
+	var shaft_right_b := right_neck + right * body_half_width
+
+	var left_head_a := left_neck - right * head_half_width
+	var left_head_b := left_neck + right * head_half_width
+	var right_head_a := right_neck - right * head_half_width
+	var right_head_b := right_neck + right * head_half_width
+
+	var vertices := PackedVector3Array([
+		# Short central shaft.
+		shaft_left_a, shaft_left_b, shaft_right_a,
+		shaft_left_b, shaft_right_b, shaft_right_a,
+		# Arrow head pointing toward the first creature.
+		left_tip, left_head_a, left_head_b,
+		# Arrow head pointing toward the second creature.
+		right_tip, right_head_b, right_head_a,
 	])
 	for vertex: Vector3 in vertices:
 		mesh.surface_add_vertex(vertex)
