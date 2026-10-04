@@ -29,6 +29,14 @@ func run() -> void:
 	initiative.name = "InitiativeTracker"
 	arena.add_child(initiative)
 
+	var local_camera := Camera3D.new()
+	local_camera.name = "Camera3D"
+	local_camera.global_transform = Transform3D(
+		Basis.IDENTITY,
+		Vector3(11.0, 7.0, -3.0)
+	)
+	arena.add_child(local_camera)
+
 	# Load after the SceneTree autoloads are registered in command-line tests.
 	var sync: Node = load("res://network/board_sync.gd").new()
 	sync.name = "BoardSync"
@@ -95,6 +103,9 @@ func run() -> void:
 	if snapshot.is_empty():
 		_fail("snapshot creation returned empty")
 		return
+	if snapshot.has("camera"):
+		_fail("camera/view must remain local and must not be serialized")
+		return
 	if not sync.valid_snapshot(snapshot):
 		_fail("fresh snapshot failed validation: %s" % JSON.stringify(snapshot))
 		return
@@ -121,6 +132,14 @@ func run() -> void:
 	)
 	if state_signature != camera_signature:
 		_fail("camera-only movement must not trigger automatic map sync")
+		return
+
+	var camera_before_sync := local_camera.global_transform
+	if not sync.apply_snapshot(snapshot_with_camera):
+		_fail("legacy snapshot containing camera failed to apply")
+		return
+	if not local_camera.global_transform.is_equal_approx(camera_before_sync):
+		_fail("incoming camera/view changed the local camera")
 		return
 	if snapshot.objects.size() != 1:
 		_fail("expected exactly one serialized token")
@@ -196,6 +215,62 @@ func run() -> void:
 	if edited_history.size() != 1:
 		_fail("token resize did not serialize transformation history")
 		return
+
+	# Reproduce X -> Y -> Y moves -> Y broadcasts. Y may represent the same
+	# token through a different local asset/profile state; movement must never
+	# resurrect that local/default appearance.
+	var peer_token: CharacterBody3D = TokenScene.instantiate()
+	peer_token.visual_asset_path = "res://assets/tokens/test/test_token_visual.tscn"
+	tokens_root.add_child(peer_token)
+	peer_token.remove_from_group("dnd_token")
+	peer_token.set_size_category("Medium", 1.0, false)
+	peer_token.set_reach_feet(5.0, true)
+	sync.call("_apply_node_data", peer_token, edited_token)
+	var peer_after_receive: Dictionary = sync.call(
+		"_serialize_node",
+		peer_token,
+		"dnd_token"
+	)
+	for appearance_key: String in [
+		"size_name",
+		"footprint",
+		"reach_feet",
+		"visual_asset",
+		"visual_native_footprint",
+		"visual_front_quarter_turns",
+		"visual_pitch_steps",
+		"transformation_history"
+	]:
+		if peer_after_receive.get(appearance_key) != edited_token.get(appearance_key):
+			_fail(
+				"peer did not preserve received appearance field: %s"
+				% appearance_key
+			)
+			return
+
+	peer_token.global_position += Vector3(1.0, 0.0, 0.0)
+	var peer_after_move: Dictionary = sync.call(
+		"_serialize_node",
+		peer_token,
+		"dnd_token"
+	)
+	for appearance_key: String in [
+		"size_name",
+		"footprint",
+		"reach_feet",
+		"visual_asset",
+		"visual_native_footprint",
+		"visual_front_quarter_turns",
+		"visual_pitch_steps",
+		"transformation_history"
+	]:
+		if peer_after_move.get(appearance_key) != edited_token.get(appearance_key):
+			_fail(
+				"peer movement reverted authoritative appearance field: %s"
+				% appearance_key
+			)
+			return
+	peer_token.queue_free()
 
 	token.set_size_category("Medium", 1.0, false)
 	token.set_reach_feet(5.0, true)
