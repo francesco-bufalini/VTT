@@ -2040,6 +2040,27 @@ func add_wall_path(
 	_aoe_nodes.append(root)
 
 
+func add_spell_wall_path(
+	points: Array[Vector3],
+	height_world: float,
+	thickness_world: float,
+	style: String,
+	damage_side: int = 0,
+	metadata: Dictionary = {}
+) -> void:
+	var previous_count: int = persistent_aoes.size()
+	add_wall_path(
+		points,
+		height_world,
+		thickness_world,
+		style,
+		damage_side,
+		metadata
+	)
+	if persistent_aoes.size() > previous_count:
+		_mark_persistent_aoe_as_spell(persistent_aoes.size() - 1)
+
+
 func add_wall_globe(
 	center: Vector3,
 	radius_world: float,
@@ -2074,6 +2095,25 @@ func add_wall_globe(
 		false
 	)
 	_aoe_nodes.append(root)
+
+
+func add_spell_wall_globe(
+	center: Vector3,
+	radius_world: float,
+	style: String,
+	hemisphere: bool = false,
+	metadata: Dictionary = {}
+) -> void:
+	var previous_count: int = persistent_aoes.size()
+	add_wall_globe(
+		center,
+		radius_world,
+		style,
+		hemisphere,
+		metadata
+	)
+	if persistent_aoes.size() > previous_count:
+		_mark_persistent_aoe_as_spell(persistent_aoes.size() - 1)
 
 
 func _build_wall_path_root(
@@ -3199,6 +3239,8 @@ func apply_persistent_aoes(data: Array) -> void:
 				int(item_data.get("damage_side", 0)),
 				wall_meta
 			)
+			if bool(item_data.get("spell_click_to_remove", false)):
+				_mark_persistent_aoe_as_spell(_aoe_nodes.size() - 1)
 			continue
 
 		if shape == "wall_globe":
@@ -3220,6 +3262,8 @@ func apply_persistent_aoes(data: Array) -> void:
 				bool(item_data.get("hemisphere", false)),
 				globe_meta
 			)
+			if bool(item_data.get("spell_click_to_remove", false)):
+				_mark_persistent_aoe_as_spell(_aoe_nodes.size() - 1)
 			continue
 
 		var start_data: Array = item_data.get("start", [])
