@@ -9,6 +9,9 @@ class TestBoard extends Node3D:
 	var token_list: Node
 	var _ui_owns_mouse: bool = false
 
+	func push_undo_state() -> void:
+		pass
+
 func _initialize() -> void:
 	call_deferred("run")
 
