@@ -21,7 +21,9 @@ func make_token(board: Node3D, point: Vector3) -> CharacterBody3D:
 
 func run() -> void:
 	# Loading the real board here also compiles all integrations with autoloads.
+	print("TRACE item_transport: load dnd_base start")
 	assert(load("res://dnd_base.gd") != null)
+	print("TRACE item_transport: load dnd_base done")
 	var board := TestBoard.new()
 	board.scene_file_path = "res://tests/scenes/agent_test_arena.tscn"
 	root.add_child(board)
@@ -39,6 +41,7 @@ func run() -> void:
 	board.board_sync = load("res://network/board_sync.gd").new()
 	board.add_child(board.board_sync)
 	board.board_sync.setup(board, TokenScene, tokens, measure)
+	print("TRACE item_transport: board sync setup done")
 	board.item_controller = Controller.new()
 	board.add_child(board.item_controller)
 	board.item_controller.setup(board)
@@ -49,7 +52,9 @@ func run() -> void:
 	var outside := make_token(board, Vector3(-1.5, 1, 0.5))
 	var above := make_token(board, Vector3(0.5, 5, 0.5))
 	var ground_rider := make_token(board, Vector3(0.5, 0.3, -0.5))
+	print("TRACE item_transport: create item start")
 	var cart: StaticBody3D = controller.create_item(Vector3.ZERO)
+	print("TRACE item_transport: create item done")
 	assert(not cart.is_in_group("dnd_token"))
 	assert(cart.get_child_count() >= 2, "GLB must import and load")
 	assert(cart.get_meta("passenger_deck_extent") == Vector2(2, 2))
@@ -70,7 +75,9 @@ func run() -> void:
 	rider.position += Vector3.RIGHT
 	controller.flush_motion([driver, rider])
 	assert(rider.position.is_equal_approx(Vector3(3.5, 1, 3.5)))
+	print("TRACE item_transport: snapshot start")
 	var snapshot: Dictionary = JSON.parse_string(JSON.stringify(board.board_sync.create_snapshot()))
+	print("TRACE item_transport: snapshot done")
 	assert(board.board_sync.valid_snapshot(snapshot))
 	assert(snapshot.objects.size() == 5 and snapshot.items.size() == 1)
 	var saved_position: Vector3 = cart.position
@@ -84,7 +91,9 @@ func run() -> void:
 	assert(is_equal_approx(rad_to_deg(cart.rotation.x), 30.0))
 	var rotated_snapshot: Dictionary = board.board_sync.create_snapshot()
 	assert(board.board_sync.valid_snapshot(rotated_snapshot))
+	print("TRACE item_transport: apply snapshot start")
 	assert(board.board_sync.apply_snapshot(snapshot))
+	print("TRACE item_transport: apply snapshot done")
 	cart = controller.items[0]
 	assert(cart.position.is_equal_approx(saved_position))
 	assert(rider.position.is_equal_approx(saved_rider))
@@ -104,9 +113,13 @@ func run() -> void:
 	var legacy: Dictionary = snapshot.duplicate(true)
 	legacy.version = 5
 	legacy.erase("items")
+	print("TRACE item_transport: legacy apply start")
 	assert(board.board_sync.apply_snapshot(legacy))
+	print("TRACE item_transport: legacy apply done")
 	assert(controller.items.is_empty())
 	assert(rider.grid_support == null)
+	print("TRACE item_transport: board free start")
 	board.free()
+	print("TRACE item_transport: board free done")
 	print("PASS: item transport, offset, passengers, snapshot round trip and legacy saves")
 	quit()
