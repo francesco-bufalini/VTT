@@ -34,6 +34,7 @@ const MEASURE_CLEAR := 35
 const VIEW_VISION := 40
 const VIEW_CAMERA_SETTINGS := 41
 const VIEW_REACHES := 42
+const VIEW_CONDITIONS := 43
 const SHARE_OPEN := 50
 const SESSION_SAVE := 51
 const SESSION_MAIN_MENU := 52
@@ -130,6 +131,7 @@ func _build_toolbar() -> void:
 		["Mostra / nascondi griglia", GRID],
 		["Coni visivi", VIEW_VISION],
 		["Gittate di tutte le creature", VIEW_REACHES],
+		["Targhette e anelli condizioni", VIEW_CONDITIONS],
 		["Velocità camera…", VIEW_CAMERA_SETTINGS]
 	], _on_view))
 
@@ -273,6 +275,8 @@ func _on_view(id: int) -> void:
 			board_root.call("toggle_vision_cones")
 		VIEW_REACHES:
 			board_root.call("toggle_all_reach_spheres")
+		VIEW_CONDITIONS:
+			board_root.call("toggle_condition_visuals")
 		VIEW_CAMERA_SETTINGS:
 			board_root.call("open_camera_settings")
 
