@@ -1444,7 +1444,8 @@ func _ensure_health_bar() -> void:
 func set_player_hit_points(current_hp: int, max_hp: int) -> void:
 	_player_hp_current = current_hp
 	_player_hp_max = maxi(0, max_hp)
-	_hp_bar_show_percentage = true
+	# The sheet contains the exact values. Above the token show only the bar.
+	_hp_bar_show_percentage = false
 	_ensure_token_overlay()
 	_ensure_health_bar()
 	_update_health_bar_visual()
@@ -1453,6 +1454,17 @@ func set_player_hit_points(current_hp: int, max_hp: int) -> void:
 func set_master_hit_points(current_hp: int, max_hp: int) -> void:
 	_player_hp_current = current_hp
 	_player_hp_max = maxi(0, max_hp)
+	_hp_bar_show_percentage = false
+	_ensure_token_overlay()
+	_ensure_health_bar()
+	_update_health_bar_visual()
+
+
+func set_synced_hit_point_percent(percent: int) -> void:
+	var clean_percent := clampi(percent, 0, 100)
+	# Remote peers receive only a percentage, never the sheet's absolute HP.
+	_player_hp_current = clean_percent
+	_player_hp_max = 100
 	_hp_bar_show_percentage = false
 	_ensure_token_overlay()
 	_ensure_health_bar()
