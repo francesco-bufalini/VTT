@@ -83,6 +83,7 @@ const TOKEN_SIZES := [
 var _pending_spawn_position: Vector3 = Vector3.ZERO
 var _has_pending_spawn_position: bool = false
 var _pending_spawn_support: Node3D = null
+var _pending_spawn_on_grid_surface: bool = false
 var _token_generation_confirmed_callback: Callable = Callable()
 var _token_generation_canceled_callback: Callable = Callable()
 var _token_generation_exact_position: bool = false
@@ -2200,6 +2201,7 @@ func _popup_dialog_safe(
 func _show_context_menu(screen_position: Vector2) -> void:
 	_clean_selection()
 	_has_pending_spawn_position = false
+	_pending_spawn_on_grid_surface = false
 	_pending_aoe_index = int(
 		measurement_tool.call("get_aoe_index_at_screen", screen_position)
 	)
@@ -2269,8 +2271,12 @@ func _show_context_menu(screen_position: Vector2) -> void:
 						)
 						if top_center_value is Vector3:
 							var top_center: Vector3 = top_center_value
-							spawn_position.x = top_center.x
-							spawn_position.z = top_center.z
+							# Use the visible voxel's TOP face as the support
+							# plane. Keeping hit_position.y here embedded the
+							# token's lowest cell inside the grid until its
+							# first move/gravity update repaired the height.
+							spawn_position = top_center
+							_pending_spawn_on_grid_surface = true
 
 			_pending_spawn_position = spawn_position
 			_has_pending_spawn_position = true
@@ -2642,8 +2648,11 @@ func _on_context_menu_id_pressed(id: int) -> void:
 			_token_generation_confirmed_callback = Callable()
 			_token_generation_canceled_callback = Callable()
 			_token_generation_exact_position = (
-				_pending_spawn_support != null
-				and is_instance_valid(_pending_spawn_support)
+				_pending_spawn_on_grid_surface
+				or (
+					_pending_spawn_support != null
+					and is_instance_valid(_pending_spawn_support)
+				)
 			)
 			_token_generation_place_on_surface = _token_generation_exact_position
 			_open_token_generation_dialog()
@@ -3175,6 +3184,7 @@ func open_token_generation_at(
 	_pending_spawn_position = world_position
 	_has_pending_spawn_position = true
 	_pending_spawn_support = null
+	_pending_spawn_on_grid_surface = false
 	_token_generation_transform_target = null
 	_token_generation_confirmed_callback = confirmed_callback
 	_token_generation_canceled_callback = canceled_callback
@@ -3376,6 +3386,7 @@ func _reset_token_generation_state() -> void:
 	_token_generation_place_on_surface = false
 	_has_pending_spawn_position = false
 	_pending_spawn_support = null
+	_pending_spawn_on_grid_surface = false
 	_token_name_is_auto = true
 	_updating_token_name_input = false
 	_ui_owns_mouse = false
