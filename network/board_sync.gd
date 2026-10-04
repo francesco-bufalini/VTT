@@ -1060,6 +1060,38 @@ func valid_snapshot(snapshot: Variant) -> bool:
 		if not item.get("name") is String or not item.get("visible") is bool:
 			return false
 
+	if snapshot.has("health_bars"):
+		var health_value: Variant = snapshot.get("health_bars", [])
+		if not health_value is Array or (health_value as Array).size() > 4096:
+			return false
+		var seen_health_tokens: Dictionary = {}
+		for entry_value: Variant in health_value as Array:
+			if not entry_value is Dictionary:
+				return false
+			var entry: Dictionary = entry_value as Dictionary
+			var token_id_value: Variant = entry.get("token_id")
+			if not token_id_value is String:
+				return false
+			var health_token_id := String(token_id_value).strip_edges()
+			if (
+				health_token_id.is_empty()
+				or health_token_id.length() > 96
+				or seen_health_tokens.has(health_token_id)
+				or not item_token_ids.has(health_token_id)
+			):
+				return false
+			seen_health_tokens[health_token_id] = true
+			var percent_value: Variant = entry.get("percent")
+			if not (percent_value is float or percent_value is int):
+				return false
+			var percent := float(percent_value)
+			if (
+				not is_finite(percent)
+				or percent < 0.0
+				or percent > 100.0
+			):
+				return false
+
 	if board_root.get("item_controller") != null:
 		return board_root.item_controller.valid_items(snapshot.get("items", []), item_token_ids)
 	return not snapshot.has("items") or snapshot.items == []
@@ -1162,6 +1194,88 @@ func _apply_party_manifest(value: Variant) -> void:
 				node.set_meta("party_id", stored_party_id)
 
 
+func _owned_health_bar_entries() -> Array[Dictionary]:
+	var by_token: Dictionary = {}
+	for area_name: String in ["PlayerArea", "MasterArea"]:
+		var area := board_root.get_node_or_null(area_name)
+		if (
+			area == null
+			or not is_instance_valid(area)
+			or not area.has_method("get_owned_health_bar_sync_entries")
+		):
+			continue
+		var entries_value: Variant = area.call(
+			"get_owned_health_bar_sync_entries"
+		)
+		if not entries_value is Array:
+			continue
+		for entry_value: Variant in entries_value as Array:
+			if not entry_value is Dictionary:
+				continue
+			var entry: Dictionary = entry_value as Dictionary
+			var token_id := String(
+				entry.get("token_id", "")
+			).strip_edges()
+			var percent_value: Variant = entry.get("percent")
+			if (
+				token_id.is_empty()
+				or by_token.has(token_id)
+				or not (percent_value is float or percent_value is int)
+			):
+				continue
+			var percent := float(percent_value)
+			if not is_finite(percent):
+				continue
+			by_token[token_id] = {
+				"token_id": token_id,
+				"percent": clampf(percent, 0.0, 100.0)
+			}
+
+	var result: Array[Dictionary] = []
+	for token_id_value: Variant in by_token.keys():
+		result.append(
+			(by_token[token_id_value] as Dictionary).duplicate(true)
+		)
+	result.sort_custom(
+		func(a: Dictionary, b: Dictionary) -> bool:
+			return String(a.get("token_id", "")).naturalnocasecmp_to(
+				String(b.get("token_id", ""))
+			) < 0
+	)
+	return result
+
+
+func _locally_owned_health_token_ids() -> Dictionary:
+	var owned: Dictionary = {}
+	for entry: Dictionary in _owned_health_bar_entries():
+		owned[String(entry.get("token_id", ""))] = true
+	return owned
+
+
+func _apply_partial_health_bars(value: Variant) -> void:
+	if not value is Array:
+		return
+	var current := _current_nodes_by_id()
+	var locally_owned := _locally_owned_health_token_ids()
+	for entry_value: Variant in value as Array:
+		if not entry_value is Dictionary:
+			continue
+		var entry: Dictionary = entry_value as Dictionary
+		var token_id := String(entry.get("token_id", "")).strip_edges()
+		if token_id.is_empty() or locally_owned.has(token_id):
+			continue
+		var node_value: Variant = current.get(token_id)
+		if not node_value is Node3D:
+			continue
+		var token := node_value as Node3D
+		if not token.has_method("set_synced_hit_point_percent"):
+			continue
+		token.call(
+			"set_synced_hit_point_percent",
+			float(entry.get("percent", 0.0))
+		)
+
+
 func create_snapshot() -> Dictionary:
 	if board_root.get("item_controller") != null:
 		board_root.item_controller.flush_motion()
@@ -1195,7 +1309,8 @@ func create_snapshot() -> Dictionary:
 		"items": board_root.item_controller.serialize_items() if board_root.get("item_controller") != null else [],
 		"aoes": aoes,
 		"encounter": state,
-		"initiative": initiative
+		"initiative": initiative,
+		"health_bars": _owned_health_bar_entries()
 	}
 	return snapshot
 
@@ -1329,6 +1444,7 @@ func apply_snapshot(snapshot: Dictionary) -> bool:
 
 
 	_apply_party_manifest(snapshot.get("parties", []))
+	_apply_partial_health_bars(snapshot.get("health_bars", []))
 	if board_root.get("item_controller") != null:
 		board_root.item_controller.apply_items(snapshot.get("items", []))
 	_restore_token_supports(wanted)
