@@ -21,6 +21,7 @@ const LOCAL_TOKEN_PACK_ROOT := "res://dist/token_packs"
 const CHARACTER_TOKEN_ROOT := "res://assets/tokens/Characters"
 const DEFAULT_TOKEN_PROFILE_ID := "death_knight"
 const GridHighlightRenderer = preload("res://vtt/grid_highlight_renderer.gd")
+const TokenScript = preload("res://token.gd")
 
 const CAMERA_SPEED_DEFAULT := 5.0
 const CAMERA_SENSITIVITY_DEFAULT := 0.002
@@ -380,6 +381,15 @@ func _build_token_generation_controls() -> void:
 	if content_box == null:
 		return
 
+	color_dialog.min_size = Vector2i(360, 360)
+	color_dialog.get_ok_button().custom_minimum_size = Vector2(110, 36)
+	color_dialog.get_ok_button().show()
+	var cancel_button := color_dialog.get_cancel_button()
+	if cancel_button != null:
+		cancel_button.text = "Annulla"
+		cancel_button.custom_minimum_size = Vector2(110, 36)
+		cancel_button.show()
+
 	_ensure_token_name_input()
 	if token_name_input != null:
 		token_name_input.editable = true
@@ -706,6 +716,8 @@ func _append_remote_token_profiles() -> void:
 
 func _token_profile_status(profile: Dictionary) -> String:
 	var origin := String(profile.get("_pack_origin", ""))
+	if origin == "current":
+		return "Attuale"
 	if origin == "local_pack":
 		var local_token_id := String(profile.get("id", ""))
 		return "Montato" if TokenPackManager.is_mounted(local_token_id) else "Locale"
@@ -1999,8 +2011,12 @@ func _popup_dialog_safe(
 ) -> void:
 	if dialog == null or not is_instance_valid(dialog):
 		return
-	dialog.reset_size()
-	dialog.popup_centered_clamped(preferred_size, fallback_ratio)
+	var viewport_size := get_viewport().get_visible_rect().size
+	var safe_size := Vector2i(
+		mini(preferred_size.x, maxi(340, int(viewport_size.x) - 48)),
+		mini(preferred_size.y, maxi(260, int(viewport_size.y) - 48))
+	)
+	dialog.popup_centered_clamped(safe_size, fallback_ratio)
 
 
 func _show_context_menu(screen_position: Vector2) -> void:
