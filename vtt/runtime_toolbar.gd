@@ -131,7 +131,7 @@ func _build_toolbar() -> void:
 		["Mostra / nascondi griglia", GRID],
 		["Coni visivi", VIEW_VISION],
 		["Gittate di tutte le creature", VIEW_REACHES],
-		["Targhette e anelli condizioni", VIEW_CONDITIONS],
+		["Mostra / nascondi targhette e anelli", VIEW_CONDITIONS],
 		["Velocità camera…", VIEW_CAMERA_SETTINGS]
 	], _on_view))
 
