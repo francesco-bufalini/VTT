@@ -3979,6 +3979,33 @@ func _sync_all_character_health_bars() -> void:
 		_sync_character_health_to_token(character)
 
 
+func get_owned_health_bar_sync_entries() -> Array[Dictionary]:
+	var entries: Array[Dictionary] = []
+	for character: Dictionary in _characters:
+		var token_id := String(
+			character.get("linked_token_sync_id", "")
+		).strip_edges()
+		if token_id.is_empty():
+			continue
+		var max_hp := maxi(0, int(character.get("max_hp", 0)))
+		if max_hp <= 0:
+			continue
+		var current_hp := clampi(
+			int(character.get("current_hp", 0)),
+			0,
+			max_hp
+		)
+		entries.append({
+			"token_id": token_id,
+			"percent": clampi(
+				roundi(float(current_hp) / float(max_hp) * 100.0),
+				0,
+				100
+			)
+		})
+	return entries
+
+
 func _clear_character_health_from_token(character_id: String) -> void:
 	var token: CharacterBody3D = _linked_token_for_character(character_id)
 	if token != null and token.has_method("clear_player_hit_points"):
