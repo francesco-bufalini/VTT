@@ -10,6 +10,9 @@ const MAX_BACKUPS := 20
 const MAX_BYTES := 4 * 1024 * 1024
 const BULK_SEND_TIMEOUT_MS := 3000
 const TAILSCALE_PEER_REFRESH_MS := 15000
+const AUTO_SYNC_POLL_MS := 150
+const AUTO_SYNC_DEBOUNCE_MS := 280
+const AUTO_SYNC_REMOTE_SUPPRESS_MS := 900
 const GROUPS := ["dnd_token", "tactical_platform", "encounter_obstacle"]
 const TOKEN_CONDITIONS := [
 	"blinded", "charmed", "deafened", "exhaustion", "frightened",
@@ -37,6 +40,14 @@ var _bulk_rejected := 0
 var _bulk_failed := 0
 var _pending_token_pack_ids: Array[String] = []
 var _active_token_pack_id := ""
+var auto_sync_enabled := true
+var _auto_sync_initialized := false
+var _auto_sync_last_signature := ""
+var _auto_sync_candidate_signature := ""
+var _auto_sync_candidate_since_msec := 0
+var _auto_sync_last_poll_msec := 0
+var _auto_sync_suppress_until_msec := 0
+var _applying_received_snapshot := false
 
 func setup(root: Node, scene: PackedScene, tokens: Node, measure: Node) -> void:
 	board_root = root
@@ -65,6 +76,145 @@ func _connect_token_pack_manager() -> void:
 	var mount_failed_callback := Callable(self, "_on_token_pack_mount_failed")
 	if not TokenPackManager.token_mount_failed.is_connected(mount_failed_callback):
 		TokenPackManager.token_mount_failed.connect(mount_failed_callback)
+
+
+func set_auto_sync_enabled(enabled: bool) -> void:
+	if auto_sync_enabled == enabled:
+		return
+	auto_sync_enabled = enabled
+	_auto_sync_initialized = false
+	_auto_sync_candidate_signature = ""
+	_auto_sync_candidate_since_msec = 0
+	if enabled:
+		status_changed.emit("Sincronizzazione automatica attiva")
+	else:
+		status_changed.emit("Sincronizzazione automatica disattivata")
+
+
+func is_auto_sync_enabled() -> bool:
+	return auto_sync_enabled
+
+
+func broadcast_sync_event(sync_event: Dictionary) -> Error:
+	if not auto_sync_enabled or sync_event.is_empty():
+		return OK
+	if session_key.is_empty():
+		return ERR_INVALID_PARAMETER
+	return send_snapshot_to_tailnet(session_key, sync_event)
+
+
+func _poll_auto_sync() -> void:
+	if (
+		not auto_sync_enabled
+		or _applying_received_snapshot
+		or board_root == null
+		or not is_instance_valid(board_root)
+		or session_key.is_empty()
+	):
+		return
+	var now := Time.get_ticks_msec()
+	if now < _auto_sync_suppress_until_msec:
+		return
+	if now - _auto_sync_last_poll_msec < AUTO_SYNC_POLL_MS:
+		return
+	_auto_sync_last_poll_msec = now
+
+	var snapshot := create_snapshot()
+	if snapshot.is_empty():
+		return
+	var signature := _snapshot_signature(snapshot)
+	if not _auto_sync_initialized:
+		_auto_sync_initialized = true
+		_auto_sync_last_signature = signature
+		_auto_sync_candidate_signature = ""
+		return
+	if signature == _auto_sync_last_signature:
+		_auto_sync_candidate_signature = ""
+		_auto_sync_candidate_since_msec = 0
+		return
+	if signature != _auto_sync_candidate_signature:
+		_auto_sync_candidate_signature = signature
+		_auto_sync_candidate_since_msec = now
+		return
+	if now - _auto_sync_candidate_since_msec < AUTO_SYNC_DEBOUNCE_MS:
+		return
+
+	_auto_sync_last_signature = signature
+	_auto_sync_candidate_signature = ""
+	_auto_sync_candidate_since_msec = 0
+	send_snapshot_to_tailnet(session_key)
+
+
+func _snapshot_signature(snapshot: Dictionary) -> String:
+	var comparable := snapshot.duplicate(true)
+	# La camera viaggia con ogni sync, ma muoverla da sola non deve generare
+	# traffico continuo: viene allineata quando cambia la mappa.
+	comparable.erase("camera")
+	return JSON.stringify(comparable).sha256_text()
+
+
+func _accept_received_snapshot(snapshot: Dictionary) -> void:
+	_auto_sync_initialized = true
+	_auto_sync_last_signature = _snapshot_signature(snapshot)
+	_auto_sync_candidate_signature = ""
+	_auto_sync_candidate_since_msec = 0
+	_auto_sync_suppress_until_msec = (
+		Time.get_ticks_msec() + AUTO_SYNC_REMOTE_SUPPRESS_MS
+	)
+
+
+func _replay_sync_event(sync_event: Dictionary) -> void:
+	if (
+		board_root != null
+		and is_instance_valid(board_root)
+		and board_root.has_method("replay_sync_event")
+	):
+		board_root.call("replay_sync_event", sync_event)
+
+
+func _camera_state() -> Dictionary:
+	if board_root == null or not is_instance_valid(board_root):
+		return {}
+	var camera := board_root.get_node_or_null("Camera3D") as Camera3D
+	if camera == null:
+		return {}
+	return _transform(camera.global_transform)
+
+
+func _apply_camera_state(value: Variant) -> void:
+	if not _valid_transform_payload(value):
+		return
+	var camera := board_root.get_node_or_null("Camera3D") as Camera3D
+	if camera == null:
+		return
+	if camera.has_method("is_first_person") and bool(camera.call("is_first_person")):
+		if camera.has_method("exit_first_person"):
+			camera.call("exit_first_person")
+	camera.global_transform = _dict_transform(value)
+
+
+func _valid_transform_payload(value: Variant) -> bool:
+	if not value is Dictionary:
+		return false
+	var transform: Dictionary = value as Dictionary
+	var basis_value: Variant = transform.get("basis", [])
+	if not basis_value is Array or (basis_value as Array).size() != 3:
+		return false
+	var vectors: Array = (basis_value as Array).duplicate()
+	vectors.append(transform.get("origin"))
+	for vector_value: Variant in vectors:
+		if not vector_value is Dictionary:
+			return false
+		var vector: Dictionary = vector_value as Dictionary
+		for axis: String in ["x", "y", "z"]:
+			var component: Variant = vector.get(axis)
+			if (
+				not (component is float or component is int)
+				or not is_finite(float(component))
+				or absf(float(component)) > 100000.0
+			):
+				return false
+	return absf(_dict_transform(transform).basis.determinant()) >= 0.000001
 
 
 func _initiative_tracker() -> Node:
@@ -113,13 +263,16 @@ func send_snapshot(host: String, key: String) -> Error:
 	return error
 
 
-func send_snapshot_to_tailnet(key: String) -> Error:
+func send_snapshot_to_tailnet(
+	key: String,
+	sync_event: Dictionary = {}
+) -> Error:
 	var clean_key: String = key.strip_edges()
 	if clean_key.is_empty():
 		status_changed.emit("Numero partita non valido")
 		return ERR_INVALID_PARAMETER
 
-	var payload: PackedByteArray = _snapshot_payload(clean_key)
+	var payload: PackedByteArray = _snapshot_payload(clean_key, sync_event)
 	if payload.is_empty():
 		return ERR_BUSY
 
@@ -163,19 +316,23 @@ func send_snapshot_to_tailnet(key: String) -> Error:
 	return OK
 
 
-func _snapshot_payload(key: String) -> PackedByteArray:
+func _snapshot_payload(
+	key: String,
+	sync_event: Dictionary = {}
+) -> PackedByteArray:
 	var snapshot: Dictionary = create_snapshot()
 	if snapshot.is_empty():
 		status_changed.emit("Attendi la fine dell'avanzamento")
 		return PackedByteArray()
 
-	var payload: PackedByteArray = JSON.stringify(
-		{
-			"magic": MAGIC,
-			"key": key.strip_edges(),
-			"snapshot": snapshot
-		}
-	).to_utf8_buffer()
+	var message := {
+		"magic": MAGIC,
+		"key": key.strip_edges(),
+		"snapshot": snapshot
+	}
+	if not sync_event.is_empty():
+		message["event"] = sync_event.duplicate(true)
+	var payload: PackedByteArray = JSON.stringify(message).to_utf8_buffer()
 	if payload.size() > MAX_BYTES:
 		status_changed.emit("La mappa supera il limite di sincronizzazione")
 		return PackedByteArray()
@@ -393,6 +550,7 @@ func _finish_bulk_attempt(item: Dictionary, accepted: bool, rejected: bool) -> v
 
 func _process(_delta: float) -> void:
 	_poll_tailscale_peer_refresh()
+	_poll_auto_sync()
 	if (
 		_tailscale_peer_refresh_thread == null
 		and (
@@ -478,8 +636,15 @@ func _process(_delta: float) -> void:
 					):
 						reject_reason = "backup locale fallito"
 					else:
+						_applying_received_snapshot = true
 						accepted = apply_snapshot(snapshot)
-						if not accepted:
+						_applying_received_snapshot = false
+						if accepted:
+							_accept_received_snapshot(snapshot)
+							var sync_event: Variant = message.get("event", {})
+							if sync_event is Dictionary and not (sync_event as Dictionary).is_empty():
+								_replay_sync_event(sync_event as Dictionary)
+						else:
 							reject_reason = "applicazione snapshot fallita"
 			peer.put_data(PackedByteArray([1 if accepted else 0]))
 			status_changed.emit(
@@ -508,6 +673,8 @@ func valid_snapshot(snapshot: Variant) -> bool:
 	):
 		return false
 	if not snapshot.get("objects") is Array or snapshot.objects.size() > 4096 or not measurement_tool.valid_aoes(snapshot.get("aoes")):
+		return false
+	if snapshot.has("camera") and not _valid_transform_payload(snapshot.get("camera")):
 		return false
 	var controller := board_root.get_node_or_null("EncounterProgressController")
 	if controller != null:
@@ -942,6 +1109,7 @@ func create_snapshot() -> Dictionary:
 	return {
 		"version": SNAPSHOT_VERSION,
 		"scene": board_root.scene_file_path,
+		"camera": _camera_state(),
 		"objects": objects,
 		"parties": _party_manifest_from_objects(objects),
 		"items": board_root.item_controller.serialize_items() if board_root.get("item_controller") != null else [],
@@ -1105,6 +1273,7 @@ func apply_snapshot(snapshot: Dictionary) -> bool:
 		if token_list_node.has_method("refresh"):
 			token_list_node.call("refresh")
 	_queue_snapshot_token_packs(snapshot)
+	_apply_camera_state(snapshot.get("camera", {}))
 	return true
 
 func _restore_token_supports(wanted: Dictionary) -> void:
