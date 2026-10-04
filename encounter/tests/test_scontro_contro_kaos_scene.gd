@@ -135,11 +135,10 @@ func _run() -> void:
 		_fail("Background columns disappeared from Scontro.")
 		return
 
-	var cosmic_backdrop := scene.get_node_or_null(
-		"CosmicBackdrop/StarfieldRing"
-	) as MeshInstance3D
-	if cosmic_backdrop == null or not cosmic_backdrop.visible:
-		_fail("The seamless 360-degree cosmic backdrop is missing.")
+	# Scontro uses the global WorldEnvironment sky only. A local cylindrical
+	# starfield around the arena would duplicate the background.
+	if scene.get_node_or_null("CosmicBackdrop") != null:
+		_fail("The duplicate local arena backdrop is still present.")
 		return
 
 	var old_apse := scene.get_node_or_null(
