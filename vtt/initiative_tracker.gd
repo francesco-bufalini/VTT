@@ -876,13 +876,20 @@ func _token_display_name(token: Node3D) -> String:
 	return ""
 
 
-func _token_display_name_by_id(token_id: String) -> String:
+func _token_by_id(token_id: String) -> Node3D:
 	if token_id.is_empty():
-		return ""
+		return null
 	for token: Node3D in _tokens():
 		if _token_id(token) == token_id:
-			return _token_display_name(token)
-	return ""
+			return token
+	return null
+
+
+func _token_display_name_by_id(token_id: String) -> String:
+	var token := _token_by_id(token_id)
+	if token == null:
+		return ""
+	return _token_display_name(token)
 
 
 func _token_name_by_id(token_id: String) -> String:
@@ -931,7 +938,28 @@ func _active_entry_id() -> String:
 
 func _emit_turn_changed() -> void:
 	var entry_id: String = _active_entry_id()
+	_focus_camera_on_active_token()
 	turn_changed.emit(entry_id, round_number, turn_count)
+
+
+func _focus_camera_on_active_token() -> void:
+	if (
+		entries.is_empty()
+		or active_index < 0
+		or active_index >= entries.size()
+		or board_root == null
+		or not is_instance_valid(board_root)
+		or not board_root.has_method("focus_camera_on_token")
+	):
+		return
+	var token_id := String(
+		entries[active_index].get("token_id", "")
+	).strip_edges()
+	var token := _token_by_id(token_id)
+	if token == null or not token is CharacterBody3D:
+		return
+	# Stessa azione del pulsante con l'occhio nella lista token.
+	board_root.call("focus_camera_on_token", token)
 
 
 func get_active_entry() -> Dictionary:
