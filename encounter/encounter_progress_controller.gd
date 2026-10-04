@@ -120,10 +120,19 @@ func register_kaos_damage(amount: float) -> void:
 			hazards.threatened_cells.clear()
 			collapse.rebuild(hazards)
 			petrification.apply()
+			call_deferred("_broadcast_petrification_sync_event")
 			phase_two_started.emit()
 			get_node("/root/EncounterEvents").phase_two_started.emit()
 	refresh_obstacle_slowing()
 	state_changed.emit()
+
+func _broadcast_petrification_sync_event() -> void:
+	var board := get_parent()
+	if board != null and board.has_method("broadcast_sync_event"):
+		board.call("broadcast_sync_event", {
+			"type": "petrification"
+		})
+
 
 func finish_encounter(reason: String) -> void:
 	if encounter_finished:
@@ -227,6 +236,14 @@ func replay_sync_event(sync_event: Dictionary) -> void:
 		return
 	if event_type == "encounter_advance":
 		_replay_synced_advance(sync_event)
+		return
+	if event_type == "petrification":
+		if (
+			petrification != null
+			and is_instance_valid(petrification)
+			and petrification.has_method("replay_burst")
+		):
+			petrification.call("replay_burst")
 
 
 func _replay_synced_advance(sync_event: Dictionary) -> void:
