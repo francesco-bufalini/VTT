@@ -14,6 +14,8 @@ var _arrow_mesh: ImmediateMesh
 var _arrow_instance: MeshInstance3D
 var _line_material: StandardMaterial3D
 var _line_outline_material: StandardMaterial3D
+var _mutual_material: StandardMaterial3D
+var _mutual_outline_material: StandardMaterial3D
 var _elapsed := 0.0
 var _flanked_ids: Dictionary = {}
 
@@ -56,6 +58,7 @@ func refresh_now() -> void:
 		token.set_meta("flanked", false)
 
 	var arrow_points: Array[Vector3] = []
+	var mutual_marker_points: Array[Vector3] = []
 	for target: CharacterBody3D in tokens:
 		for first_index: int in range(tokens.size()):
 			var first: CharacterBody3D = tokens[first_index]
@@ -115,7 +118,11 @@ func refresh_now() -> void:
 	# Reach arrows are a general tactical layer: every token points toward every
 	# other token currently inside its own reach, independent of party,
 	# selection and flanking state.
-	arrow_points = _build_reach_arrow_points(tokens)
+	var reach_visuals := _build_reach_visuals(tokens)
+	arrow_points = reach_visuals.get("arrows", []) as Array[Vector3]
+	mutual_marker_points = (
+		reach_visuals.get("mutual_markers", []) as Array[Vector3]
+	)
 
 	# Affiancato is always shown. Condition text participates only when the
 	# View toggle for condition visuals is enabled.
@@ -134,54 +141,98 @@ func refresh_now() -> void:
 			"text": badge_text,
 		}
 
-	_render_arrows(arrow_points)
+	_render_arrows(arrow_points, mutual_marker_points)
 	_refresh_flanking_badges(visible_badge_targets)
 
 
-func _build_reach_arrow_points(
+func _build_reach_visuals(
 	tokens: Array[CharacterBody3D]
-) -> Array[Vector3]:
-	var points: Array[Vector3] = []
+) -> Dictionary:
+	var arrows: Array[Vector3] = []
+	var mutual_markers: Array[Vector3] = []
 	var safe_cell := maxf(float(board_root.get("cell_size")), 0.001)
-	for source: CharacterBody3D in tokens:
-		if source == null or not is_instance_valid(source):
+
+	# Work on unordered pairs so reciprocal adjacent reach can be represented
+	# once instead of drawing two arrows on top of each other.
+	for first_index: int in range(tokens.size()):
+		var first := tokens[first_index]
+		if first == null or not is_instance_valid(first):
 			continue
-		var source_half := _token_half_extents(source)
-		for target: CharacterBody3D in tokens:
-			if (
-				target == null
-				or not is_instance_valid(target)
-				or target == source
-				or not _token_reaches_target(source, target)
-			):
+		var first_half := _token_half_extents(first)
+
+		for second_index: int in range(first_index + 1, tokens.size()):
+			var second := tokens[second_index]
+			if second == null or not is_instance_valid(second):
 				continue
 
-			var target_half := _token_half_extents(target)
-			var source_base := source.global_position
-			var target_base := target.global_position
-			source_base.y -= source_half.y
-			target_base.y -= target_half.y
+			var second_half := _token_half_extents(second)
+			var first_reaches := _token_reaches_target(first, second)
+			var second_reaches := _token_reaches_target(second, first)
+			if not first_reaches and not second_reaches:
+				continue
 
-			# Same-level arrows lie flat on the shared base plane. At different
-			# elevations the same 2D ribbon slopes between the two bases.
-			if absf(source_base.y - target_base.y) <= safe_cell * 0.08:
-				var shared_y := (
-					source_base.y + target_base.y
-				) * 0.5
-				source_base.y = shared_y
-				target_base.y = shared_y
+			var first_base := first.global_position
+			var second_base := second.global_position
+			first_base.y -= first_half.y
+			second_base.y -= second_half.y
 
-			var arrow := reach_arrow_segment(
-				source_base,
-				source_half,
-				target_base,
-				target_half,
+			if absf(first_base.y - second_base.y) <= safe_cell * 0.08:
+				var shared_y := (first_base.y + second_base.y) * 0.5
+				first_base.y = shared_y
+				second_base.y = shared_y
+
+			var tactical_distance := tactical_reach_distance_feet(
+				first.global_position,
+				first_half,
+				second.global_position,
+				second_half,
 				safe_cell
 			)
-			if arrow.size() == 2:
-				points.append(arrow[0])
-				points.append(arrow[1])
-	return points
+			if should_use_mutual_adjacent_marker(
+				first_reaches,
+				second_reaches,
+				tactical_distance
+			):
+				var marker := mutual_reach_marker_segment(
+					first_base,
+					first_half,
+					second_base,
+					second_half,
+					safe_cell
+				)
+				if marker.size() == 2:
+					mutual_markers.append(marker[0])
+					mutual_markers.append(marker[1])
+				continue
+
+			if first_reaches:
+				var first_arrow := reach_arrow_segment(
+					first_base,
+					first_half,
+					second_base,
+					second_half,
+					safe_cell
+				)
+				if first_arrow.size() == 2:
+					arrows.append(first_arrow[0])
+					arrows.append(first_arrow[1])
+
+			if second_reaches:
+				var second_arrow := reach_arrow_segment(
+					second_base,
+					second_half,
+					first_base,
+					first_half,
+					safe_cell
+				)
+				if second_arrow.size() == 2:
+					arrows.append(second_arrow[0])
+					arrows.append(second_arrow[1])
+
+	return {
+		"arrows": arrows,
+		"mutual_markers": mutual_markers,
+	}
 
 
 func set_condition_visuals_visible(value: bool) -> void:
