@@ -202,7 +202,9 @@ func _refresh_flanking_badges(targets: Dictionary) -> void:
 			else 2.0
 		)
 		var safe_cell := maxf(float(board_root.get("cell_size")), 0.001)
-		world_anchor.y += height_cells * safe_cell * 0.5 + safe_cell * 0.34
+		# Keep the shared badge above the existing world-space name/HP stack.
+		# The previous flanking overlay sat at roughly top + 0.94 cells.
+		world_anchor.y += height_cells * safe_cell * 0.5 + safe_cell * 0.94
 
 		if camera.is_position_behind(world_anchor):
 			panel.hide()
