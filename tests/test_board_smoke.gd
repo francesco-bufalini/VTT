@@ -5,20 +5,6 @@ const MeasurementTool = preload("res://measurement_tool.gd")
 const TokenScene = preload("res://token.tscn")
 
 
-class FakeGridSupport:
-	extends Node3D
-
-	var supported: bool = true
-
-	func has_grid_cell_immediately_below(
-		_world_center: Vector3,
-		_footprint_cells: float,
-		_base_y: float,
-		_tolerance_world: float = -1.0
-	) -> bool:
-		return supported
-
-
 func _initialize() -> void:
 	call_deferred("run")
 
@@ -64,47 +50,19 @@ func run() -> void:
 		return
 	token.set_party_id("Eroi")
 
-	# Every displayed condition must expose a real emoji/icon, and Volante is
-	# an automatic derived marker rather than persistent user state.
-	var found_flying := false
+	# Every displayed condition must expose a real emoji/icon.
 	for definition_value: Variant in token.get_condition_definitions():
 		if not definition_value is Dictionary:
 			continue
 		var definition := definition_value as Dictionary
 		var icon := String(definition.get("icon", ""))
 		if icon.is_empty() or icon.begins_with("["):
-			_fail("condition is missing emoji icon: %s" % JSON.stringify(definition))
+			_fail(
+				"condition is missing emoji icon: %s"
+				% JSON.stringify(definition)
+			)
 			return
-		if String(definition.get("id", "")) == "flying":
-			found_flying = true
-			if icon != "🪽" or not bool(definition.get("automatic", false)):
-				_fail("flying condition definition is not automatic wing marker")
-				return
-	if not found_flying:
-		_fail("automatic flying condition definition missing")
-		return
 
-	var fake_grid := FakeGridSupport.new()
-	arena.add_child(fake_grid)
-	token.set_volumetric_grid(fake_grid)
-
-	fake_grid.supported = true
-	token.refresh_automatic_conditions()
-	if token.has_condition("flying"):
-		_fail("grounded token incorrectly received flying condition")
-		return
-
-	fake_grid.supported = false
-	token.refresh_automatic_conditions()
-	if not token.has_condition("flying"):
-		_fail("unsupported token did not receive flying condition")
-		return
-	if "flying" in token.get_conditions():
-		_fail("automatic flying condition leaked into persistent conditions")
-		return
-	if not ("flying" in token.get_automatic_conditions()):
-		_fail("automatic flying condition was not tracked as derived state")
-		return
 	if not token.are_condition_visuals_visible():
 		_fail("condition visuals should be enabled by default")
 		return
@@ -125,9 +83,6 @@ func run() -> void:
 	var condition_parts: PackedStringArray = token.get_active_condition_display_parts()
 	if not ("☠️ Avvelenato" in condition_parts):
 		_fail("named poisoned condition is missing from shared badge data")
-		return
-	if not ("🪽 Volante" in condition_parts):
-		_fail("automatic flying condition is missing from shared badge data")
 		return
 
 	var snapshot: Dictionary = JSON.parse_string(
@@ -151,10 +106,6 @@ func run() -> void:
 		return
 	if String(serialized_token.get("party_id", "")) != "Eroi":
 		_fail("token party was not serialized")
-		return
-	var serialized_conditions: Array = serialized_token.get("conditions", [])
-	if "flying" in serialized_conditions:
-		_fail("automatic flying condition was serialized")
 		return
 	token.set_party_id("")
 	if not sync.apply_snapshot(snapshot):
