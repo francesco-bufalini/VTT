@@ -4346,7 +4346,7 @@ func _cast_spell_at_point(
 	var style: String = _spell_style(spell_data)
 	if bool(spell_data.get("persistent", false)):
 		measurement_tool.call(
-			"add_aoe",
+			"add_spell_aoe",
 			target_point,
 			endpoint,
 			shape,
@@ -4443,7 +4443,7 @@ func _cast_directional_spell_to_point(
 
 	if bool(spell_data.get("persistent", false)):
 		measurement_tool.call(
-			"add_aoe",
+			"add_spell_aoe",
 			geometry.get("start", Vector3.ZERO),
 			geometry.get("end", Vector3.ZERO),
 			String(spell_data.get("aoe_shape", "line")),
@@ -4493,7 +4493,7 @@ func _cast_spell_at_token(
 
 	if bool(spell_data.get("persistent_link", false)):
 		measurement_tool.call(
-			"add_aoe",
+			"add_spell_aoe",
 			start,
 			finish,
 			"line",
@@ -4581,7 +4581,7 @@ func _cast_spell_at_token(
 	var style: String = _spell_style(spell_data)
 	if bool(spell_data.get("persistent", false)):
 		measurement_tool.call(
-			"add_aoe",
+			"add_spell_aoe",
 			finish,
 			endpoint,
 			shape,
@@ -4699,7 +4699,7 @@ func _cast_self_emanation(
 		if bool(spell_data.get("follow_caster", true)):
 			follow_target = caster
 		measurement_tool.call(
-			"add_aoe",
+			"add_spell_aoe",
 			center,
 			endpoint,
 			shape,
@@ -4936,7 +4936,7 @@ func _cast_persistent_sphere(
 	)
 
 	measurement_tool.call(
-		"add_aoe",
+		"add_spell_aoe",
 		target_point,
 		endpoint,
 		String(spell_data.get("aoe_shape", "sphere")),
