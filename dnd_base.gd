@@ -2609,7 +2609,9 @@ func _build_token_state_dialog() -> void:
 
 
 func _set_shared_token_editor_conditions(value: Variant) -> void:
-	var active: Array = value as Array if value is Array else []
+	var active: Array = []
+	if value is Array:
+		active = value as Array
 	for condition_id: Variant in token_state_checks.keys():
 		var check: CheckButton = token_state_checks[condition_id] as CheckButton
 		if check != null:
