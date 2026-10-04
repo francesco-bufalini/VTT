@@ -139,61 +139,81 @@ func _token_reaches_target(
 	var reach_feet := 5.0
 	if attacker.has_method("get_reach_feet"):
 		reach_feet = maxf(float(attacker.call("get_reach_feet")), 0.0)
-
-	var attacker_half := _token_half_extents(attacker)
-	var target_half := _token_half_extents(target)
-	var attacker_base := attacker.global_position.y - attacker_half.y
-	var target_base := target.global_position.y - target_half.y
-
-	# On the same tactical plane use square-grid reach: adjacent occupied
-	# spaces are 5 ft apart, one empty square between them is 10 ft.
-	if absf(attacker_base - target_base) <= cell_size * 0.08:
-		return (
-			grid_reach_distance_feet(
-				attacker.global_position,
-				attacker_half,
-				target.global_position,
-				target_half,
-				cell_size
-			)
-			<= reach_feet + EPSILON
-		)
-
-	# Different elevations retain the previous true 3D hitbox distance.
-	var reach_world := reach_feet / 5.0 * cell_size
 	return (
-		aabb_gap_distance_world(
+		tactical_reach_distance_feet(
 			attacker.global_position,
-			attacker_half,
+			_token_half_extents(attacker),
 			target.global_position,
-			target_half
+			_token_half_extents(target),
+			cell_size
 		)
-		< reach_world - EPSILON
+		<= reach_feet + EPSILON
 	)
 
 
 func _token_half_extents(token: CharacterBody3D) -> Vector3:
-	var cell_size := maxf(float(board_root.get("cell_size")), 0.001)
+	return token_half_extents_world(
+		token,
+		maxf(float(board_root.get("cell_size")), 0.001)
+	)
+
+
+static func token_half_extents_world(
+	token: Node,
+	cell_size: float
+) -> Vector3:
+	var safe_cell := maxf(cell_size, 0.001)
 	var footprint_cells := 1.0
-	if token.has_method("get_footprint_cells"):
+	if token != null and token.has_method("get_footprint_cells"):
 		footprint_cells = maxf(
 			float(token.call("get_footprint_cells")),
 			0.5
 		)
-	else:
+	elif token != null:
 		var footprint_value: Variant = token.get("_footprint_cells")
 		if footprint_value is float or footprint_value is int:
 			footprint_cells = maxf(float(footprint_value), 0.5)
 
 	var height_cells := 2.0
-	var height_value: Variant = token.get("token_height_cells")
-	if height_value is float or height_value is int:
-		height_cells = maxf(float(height_value), 0.1)
+	if token != null:
+		var height_value: Variant = token.get("token_height_cells")
+		if height_value is float or height_value is int:
+			height_cells = maxf(float(height_value), 0.1)
 
 	return Vector3(
-		footprint_cells * cell_size * 0.5,
-		height_cells * cell_size * 0.5,
-		footprint_cells * cell_size * 0.5
+		footprint_cells * safe_cell * 0.5,
+		height_cells * safe_cell * 0.5,
+		footprint_cells * safe_cell * 0.5
+	)
+
+
+static func tactical_reach_distance_feet(
+	first_center: Vector3,
+	first_half: Vector3,
+	second_center: Vector3,
+	second_half: Vector3,
+	cell_size: float
+) -> float:
+	var safe_cell := maxf(cell_size, 0.001)
+	var first_base := first_center.y - first_half.y
+	var second_base := second_center.y - second_half.y
+	if absf(first_base - second_base) <= safe_cell * 0.08:
+		return grid_reach_distance_feet(
+			first_center,
+			first_half,
+			second_center,
+			second_half,
+			safe_cell
+		)
+	return (
+		aabb_gap_distance_world(
+			first_center,
+			first_half,
+			second_center,
+			second_half
+		)
+		/ safe_cell
+		* 5.0
 	)
 
 
@@ -275,10 +295,10 @@ static func flanking_segment(
 	target_center: Vector3,
 	target_half: Vector3
 ) -> PackedVector3Array:
-	# DMG 2014 square-grid test: use the centers of the flankers' spaces and
-	# require that line to cross opposite sides or opposite corners of the
-	# target's space. Merely touching/intersecting the target is not enough.
-	if not centers_cross_opposite_borders(
+	# Treat flankers separated by at least three of the eight neighbouring
+	# directions (135 degrees) as occupying opposite flanking sectors. This
+	# includes the common diagonal-plus-opposite-side "L" arrangement.
+	if not centers_form_flanking_pair(
 		first_center,
 		second_center,
 		target_center,
@@ -299,6 +319,76 @@ static func flanking_segment(
 		return PackedVector3Array()
 
 	return PackedVector3Array([start, end])
+
+
+static func centers_form_flanking_pair(
+	first_center: Vector3,
+	second_center: Vector3,
+	target_center: Vector3,
+	target_half: Vector3
+) -> bool:
+	var first := Vector2(
+		first_center.x - target_center.x,
+		first_center.z - target_center.z
+	)
+	var second := Vector2(
+		second_center.x - target_center.x,
+		second_center.z - target_center.z
+	)
+	if (
+		first.length_squared() <= EPSILON * EPSILON
+		or second.length_squared() <= EPSILON * EPSILON
+	):
+		return false
+
+	var cosine := first.normalized().dot(second.normalized())
+	var opposite_sector_limit := -0.70710678
+	if cosine > opposite_sector_limit + 0.0005:
+		return false
+
+	# Keep a geometric intersection requirement so reach-enabled flankers
+	# cannot qualify merely by being far away in broadly opposite directions.
+	return segment_intersects_horizontal_rect(
+		first_center,
+		second_center,
+		target_center,
+		target_half
+	)
+
+
+static func segment_intersects_horizontal_rect(
+	start: Vector3,
+	end: Vector3,
+	box_center: Vector3,
+	box_half: Vector3
+) -> bool:
+	var start_2d := Vector2(start.x - box_center.x, start.z - box_center.z)
+	var end_2d := Vector2(end.x - box_center.x, end.z - box_center.z)
+	var delta := end_2d - start_2d
+	var half := Vector2(
+		maxf(box_half.x, EPSILON),
+		maxf(box_half.z, EPSILON)
+	)
+	var t_min := 0.0
+	var t_max := 1.0
+	for axis: int in range(2):
+		var origin := start_2d[axis]
+		var step := delta[axis]
+		if absf(step) <= EPSILON:
+			if origin < -half[axis] or origin > half[axis]:
+				return false
+			continue
+		var near_t := (-half[axis] - origin) / step
+		var far_t := (half[axis] - origin) / step
+		if near_t > far_t:
+			var swap := near_t
+			near_t = far_t
+			far_t = swap
+		t_min = maxf(t_min, near_t)
+		t_max = minf(t_max, far_t)
+		if t_min > t_max:
+			return false
+	return t_max >= 0.0 and t_min <= 1.0
 
 
 static func centers_cross_opposite_borders(
