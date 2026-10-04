@@ -6,6 +6,7 @@ const CONTEXT_ROTATE_LEFT := 3
 const CONTEXT_ROTATE_RIGHT := 4
 const CONTEXT_TOGGLE_GRID := 5
 const CONTEXT_TOGGLE_VISION_CONES := 6
+const CONTEXT_TOGGLE_REACH_SPHERES := 7
 const CONTEXT_FLYING := 8
 const CONTEXT_MAIN_MENU := 9
 const CONTEXT_DISSOLVE_AOE := 10
@@ -22,6 +23,7 @@ const CHARACTER_TOKEN_ROOT := "res://assets/tokens/Characters"
 const DEFAULT_TOKEN_PROFILE_ID := "death_knight"
 const GridHighlightRenderer = preload("res://vtt/grid_highlight_renderer.gd")
 const TokenScript = preload("res://token.gd")
+const FlankingGeometry = preload("res://vtt/flanking_system.gd")
 
 const CAMERA_SPEED_DEFAULT := 5.0
 const CAMERA_SENSITIVITY_DEFAULT := 0.002
@@ -2041,6 +2043,24 @@ func set_vision_cones_visible(enabled: bool) -> void:
 			child_node.call("set_vision_cone_visible", enabled)
 
 
+func toggle_all_reach_spheres() -> void:
+	if attack_system == null or not is_instance_valid(attack_system):
+		return
+	var visible := false
+	if attack_system.has_method("are_all_reaches_visible"):
+		visible = bool(attack_system.call("are_all_reaches_visible"))
+	attack_system.call("set_all_reaches_visible", not visible)
+
+
+func are_all_reach_spheres_visible() -> bool:
+	return (
+		attack_system != null
+		and is_instance_valid(attack_system)
+		and attack_system.has_method("are_all_reaches_visible")
+		and bool(attack_system.call("are_all_reaches_visible"))
+	)
+
+
 func _toggle_measurement_mode() -> void:
 	measurement_tool.aoe_mode = false
 	var enabled: bool = bool(measurement_tool.call("toggle_measurement_mode"))
@@ -2258,6 +2278,16 @@ func _show_context_menu(screen_position: Vector2) -> void:
 			"Mostra coni visivi dei token",
 			CONTEXT_TOGGLE_VISION_CONES
 		)
+	if are_all_reach_spheres_visible():
+		context_view_menu.add_item(
+			"Nascondi gittate di tutte le creature",
+			CONTEXT_TOGGLE_REACH_SPHERES
+		)
+	else:
+		context_view_menu.add_item(
+			"Mostra gittate di tutte le creature",
+			CONTEXT_TOGGLE_REACH_SPHERES
+		)
 	context_view_menu.add_separator()
 	context_view_menu.add_item("Velocità camera…", CONTEXT_CAMERA_SETTINGS)
 	context_menu.add_submenu_node_item("Vista", context_view_menu)
@@ -2360,6 +2390,10 @@ func _on_context_menu_id_pressed(id: int) -> void:
 
 		CONTEXT_TOGGLE_VISION_CONES:
 			toggle_vision_cones()
+			_close_context_menu_to_game()
+
+		CONTEXT_TOGGLE_REACH_SPHERES:
+			toggle_all_reach_spheres()
 			_close_context_menu_to_game()
 
 		CONTEXT_CAMERA_SETTINGS:
@@ -2596,6 +2630,41 @@ func _token_reach_feet(token: CharacterBody3D) -> float:
 	return 5.0
 
 
+func _token_party_key(token: CharacterBody3D) -> String:
+	if token == null or not is_instance_valid(token):
+		return ""
+	var value := ""
+	if token.has_method("get_effective_party_id"):
+		value = String(token.call("get_effective_party_id"))
+	elif token.has_method("get_party_id"):
+		value = String(token.call("get_party_id"))
+	else:
+		value = String(token.get_meta("party_id", ""))
+	value = value.strip_edges()
+	return (value if not value.is_empty() else "Default").to_lower()
+
+
+func _token_half_extents_world(token: CharacterBody3D) -> Vector3:
+	return FlankingGeometry.token_half_extents_world(
+		token,
+		maxf(cell_size, 0.001)
+	)
+
+
+func _tactical_distance_to_position_feet(
+	attacker: CharacterBody3D,
+	target: CharacterBody3D,
+	target_position: Vector3
+) -> float:
+	return FlankingGeometry.tactical_reach_distance_feet(
+		attacker.global_position,
+		_token_half_extents_world(attacker),
+		target_position,
+		_token_half_extents_world(target),
+		maxf(cell_size, 0.001)
+	)
+
+
 func _token_notice_name(token: CharacterBody3D) -> String:
 	if token != null and is_instance_valid(token):
 		if token.has_method("get_display_name"):
@@ -2621,7 +2690,6 @@ func check_opportunity_attacks_after_movement(
 			moved_lookup[moved_token.get_instance_id()] = true
 
 	var notices := PackedStringArray()
-	var feet_per_world_unit: float = 5.0 / maxf(cell_size, 0.001)
 	for index: int in range(moved_tokens.size()):
 		var moved_token: CharacterBody3D = moved_tokens[index]
 		if moved_token == null or not is_instance_valid(moved_token):
@@ -2641,18 +2709,23 @@ func check_opportunity_attacks_after_movement(
 			):
 				continue
 
+			if _token_party_key(attacker) == _token_party_key(moved_token):
+				continue
+
 			var reach_feet: float = _token_reach_feet(attacker)
-			var before_feet: float = (
-				attacker.global_position.distance_to(old_position)
-				* feet_per_world_unit
+			var before_feet := _tactical_distance_to_position_feet(
+				attacker,
+				moved_token,
+				old_position
 			)
-			var after_feet: float = (
-				attacker.global_position.distance_to(new_position)
-				* feet_per_world_unit
+			var after_feet := _tactical_distance_to_position_feet(
+				attacker,
+				moved_token,
+				new_position
 			)
 			if (
-				before_feet <= reach_feet + 0.05
-				and after_feet > reach_feet + 0.05
+				before_feet <= reach_feet + 0.001
+				and after_feet > reach_feet + 0.001
 			):
 				var notice: String = "⚔ %s → %s · opportunità" % [
 					_token_notice_name(attacker),
