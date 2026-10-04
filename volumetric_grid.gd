@@ -19,6 +19,10 @@ const INVALID_CELL := Vector3i(2147483647, 2147483647, 2147483647)
 @export_range(0.15, 2.0, 0.05) var cell_retention_seconds: float = 0.65
 @export_range(0.02, 0.5, 0.01) var visual_update_interval: float = 0.08
 @export_range(0.01, 0.25, 0.01) var surface_inset_fraction: float = 0.06
+# Visual-only displacement of rendered grid cells. Some encounter scenes set
+# this at runtime (for example Vector3(0, -0.5, 0)) so the voxel top face sits
+# on the walkable collision surface instead of being centered around it.
+@export var display_offset_cells: Vector3 = Vector3.ZERO
 # Expand each raycast hit across nearby cells on the tangent plane of the
 # detected surface. This stabilizes the visible grid when the camera angle
 # changes without filling cells behind or in front of the surface.
@@ -504,6 +508,7 @@ func _update_multimesh_instances() -> void:
 		var world_transform := Transform3D(
 			Basis.IDENTITY,
 			_cell_to_world_center(cell)
+			+ display_offset_cells * cell_size
 		)
 		_multimesh.set_instance_transform(
 			index,
