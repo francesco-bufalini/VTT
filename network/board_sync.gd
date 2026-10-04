@@ -22,9 +22,6 @@ const TOKEN_CONDITIONS := [
 	"concentrating", "surprised", "hidden", "dead"
 ]
 const SYNC_APPEARANCE_META := "board_sync_authoritative_appearance"
-const SYNC_APPEARANCE_LIVE_SIGNATURE_META := (
-	"board_sync_authoritative_appearance_live_signature"
-)
 const SYNC_APPEARANCE_KEYS := [
 	"token_pack_id",
 	"footprint",
@@ -1601,94 +1598,39 @@ func _serialized_token_appearance(data: Dictionary) -> Dictionary:
 	return appearance
 
 
-func _live_token_appearance(node: Node3D) -> Dictionary:
-	var appearance: Dictionary = {}
-	var token_pack_id := ""
-	if node.has_method("get_token_pack_id"):
-		token_pack_id = String(node.call("get_token_pack_id")).strip_edges()
-	if not token_pack_id.is_empty():
-		appearance["token_pack_id"] = token_pack_id
-	appearance["footprint"] = float(node.get("_footprint_cells"))
-	appearance["size_name"] = String(node.get("_size_name"))
-	appearance["color"] = _token_color(node)
-	appearance["height_cells"] = float(node.get("token_height_cells"))
-	appearance["reach_feet"] = (
-		float(node.call("get_reach_feet"))
-		if node.has_method("get_reach_feet")
-		else maxf(5.0, float(node.get("_footprint_cells")) * 5.0)
-	)
-	if node.has_method("get_visual_asset_path"):
-		appearance["visual_asset"] = String(
-			node.call("get_visual_asset_path")
-		)
-	if node.has_method("get_visual_native_footprint_cells"):
-		appearance["visual_native_footprint"] = float(
-			node.call("get_visual_native_footprint_cells")
-		)
-	appearance["visual_front_quarter_turns"] = (
-		int(node.call("get_visual_front_quarter_turns"))
-		if node.has_method("get_visual_front_quarter_turns")
-		else 0
-	)
-	appearance["visual_pitch_steps"] = (
-		int(node.call("get_visual_pitch_steps"))
-		if node.has_method("get_visual_pitch_steps")
-		else 0
-	)
-	if node.has_method("get_transformation_history"):
-		appearance["transformation_history"] = node.call(
-			"get_transformation_history"
-		)
-	return appearance
-
-
-func _appearance_signature(appearance: Dictionary) -> String:
-	return JSON.stringify(appearance).sha256_text()
-
-
 func _remember_received_token_appearance(
 	node: Node3D,
 	data: Dictionary
 ) -> void:
+	# The network representation is authoritative until this client performs
+	# an explicit local appearance edit. Never infer an edit from local mesh
+	# state: mounting a pack or recalculating native footprint can legitimately
+	# change the local representation without changing the shared token.
 	var authoritative := _serialized_token_appearance(data)
 	node.set_meta(SYNC_APPEARANCE_META, authoritative.duplicate(true))
-	node.set_meta(
-		SYNC_APPEARANCE_LIVE_SIGNATURE_META,
-		_appearance_signature(_live_token_appearance(node))
-	)
+
+
+func mark_token_appearance_locally_edited(node: Node3D) -> void:
+	if node == null or not is_instance_valid(node):
+		return
+	if node.has_meta(SYNC_APPEARANCE_META):
+		node.remove_meta(SYNC_APPEARANCE_META)
 
 
 func _preserve_received_token_appearance(
 	node: Node3D,
 	data: Dictionary
 ) -> void:
-	if (
-		not node.has_meta(SYNC_APPEARANCE_META)
-		or not node.has_meta(SYNC_APPEARANCE_LIVE_SIGNATURE_META)
-	):
+	if not node.has_meta(SYNC_APPEARANCE_META):
 		return
 	var stored_value: Variant = node.get_meta(SYNC_APPEARANCE_META)
 	if not stored_value is Dictionary:
 		node.remove_meta(SYNC_APPEARANCE_META)
-		node.remove_meta(SYNC_APPEARANCE_LIVE_SIGNATURE_META)
 		return
 
-	var current_signature := _appearance_signature(
-		_live_token_appearance(node)
-	)
-	var expected_signature := String(
-		node.get_meta(SYNC_APPEARANCE_LIVE_SIGNATURE_META, "")
-	)
-	if current_signature != expected_signature:
-		# A local appearance edit is now authoritative. From this point onward
-		# serialize the live node normally.
-		node.remove_meta(SYNC_APPEARANCE_META)
-		node.remove_meta(SYNC_APPEARANCE_LIVE_SIGNATURE_META)
-		return
-
-	# Only the transform/flying/support state changed locally (e.g. another
-	# player moved the token). Reuse the exact appearance received from the
-	# network so local asset/profile differences cannot resurrect defaults.
+	# Movement, gravity, initiative changes, another token moving, etc. must
+	# never rewrite this token's shared visual state from a peer-local mesh
+	# representation. Reuse exactly what was received.
 	var authoritative: Dictionary = stored_value as Dictionary
 	for key_value: Variant in SYNC_APPEARANCE_KEYS:
 		var key := String(key_value)
