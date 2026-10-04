@@ -10,6 +10,8 @@ var camera: Camera3D
 var _flanking_badges: Dictionary = {}
 var _condition_visuals_visible: bool = true
 var _line_root: Node3D
+var _arrow_mesh: ImmediateMesh
+var _arrow_instance: MeshInstance3D
 var _line_material: StandardMaterial3D
 var _line_outline_material: StandardMaterial3D
 var _elapsed := 0.0
@@ -800,6 +802,15 @@ func _build_line_renderer() -> void:
 	_line_root.name = "ReachArrows"
 	add_child(_line_root)
 
+	_arrow_mesh = ImmediateMesh.new()
+	_arrow_instance = MeshInstance3D.new()
+	_arrow_instance.name = "ReachArrowMesh"
+	_arrow_instance.mesh = _arrow_mesh
+	_arrow_instance.cast_shadow = (
+		GeometryInstance3D.SHADOW_CASTING_SETTING_OFF
+	)
+	_line_root.add_child(_arrow_instance)
+
 
 static func flanking_arrow_segment(
 	flanker_center: Vector3,
@@ -867,28 +878,60 @@ static func _horizontal_box_boundary_distance(
 
 
 func _render_arrows(points: Array[Vector3]) -> void:
-	if _line_root == null:
+	if _arrow_mesh == null:
 		return
 
-	for child: Node in _line_root.get_children():
-		child.queue_free()
-
+	_arrow_mesh.clear_surfaces()
 	if points.is_empty():
 		return
 
 	var safe_cell := maxf(float(board_root.get("cell_size")), 0.001)
+	var body_half_width := safe_cell * 0.028
+	var head_half_width := safe_cell * 0.095
+
+	# All outlines share one surface/draw call.
+	_arrow_mesh.surface_begin(
+		Mesh.PRIMITIVE_TRIANGLES,
+		_line_outline_material
+	)
 	for index: int in range(0, points.size() - 1, 2):
-		_add_flat_vector_arrow(
+		_append_flat_arrow_vertices(
+			_arrow_mesh,
 			points[index],
 			points[index + 1],
-			safe_cell
+			body_half_width * 1.55,
+			head_half_width * 1.28,
+			safe_cell,
+			0.0
 		)
+	_arrow_mesh.surface_end()
+
+	# All colored interiors share a second surface/draw call.
+	_arrow_mesh.surface_begin(
+		Mesh.PRIMITIVE_TRIANGLES,
+		_line_material
+	)
+	for index: int in range(0, points.size() - 1, 2):
+		_append_flat_arrow_vertices(
+			_arrow_mesh,
+			points[index],
+			points[index + 1],
+			body_half_width,
+			head_half_width,
+			safe_cell,
+			safe_cell * 0.002
+		)
+	_arrow_mesh.surface_end()
 
 
-func _add_flat_vector_arrow(
+static func _append_flat_arrow_vertices(
+	mesh: ImmediateMesh,
 	start: Vector3,
 	end: Vector3,
-	cell_size: float
+	body_half_width: float,
+	head_half_width: float,
+	cell_size: float,
+	lift: float
 ) -> void:
 	var delta := end - start
 	var length := delta.length()
@@ -906,74 +949,26 @@ func _add_flat_vector_arrow(
 		maxf(cell_size * 0.18, length * 0.18),
 		length * 0.36
 	)
-	var body_half_width := cell_size * 0.028
-	var head_half_width := cell_size * 0.095
-
-	var outline_mesh := _build_flat_arrow_mesh(
-		start,
-		end,
-		right,
-		body_half_width * 1.55,
-		head_half_width * 1.28,
-		head_length * 1.03
-	)
-	var fill_mesh := _build_flat_arrow_mesh(
-		start + Vector3.UP * cell_size * 0.002,
-		end + Vector3.UP * cell_size * 0.002,
-		right,
-		body_half_width,
-		head_half_width,
-		head_length
-	)
-
-	_add_flat_arrow_instance(outline_mesh, _line_outline_material)
-	_add_flat_arrow_instance(fill_mesh, _line_material)
-
-
-static func _build_flat_arrow_mesh(
-	start: Vector3,
-	end: Vector3,
-	right: Vector3,
-	body_half_width: float,
-	head_half_width: float,
-	head_length: float
-) -> ArrayMesh:
-	var delta := end - start
-	var length := delta.length()
-	var direction := delta.normalized()
 	var safe_head_length := minf(
 		maxf(head_length, 0.001),
 		length * 0.48
 	)
-	var neck := end - direction * safe_head_length
+	var offset := Vector3.UP * lift
+	var lifted_start := start + offset
+	var lifted_end := end + offset
+	var neck := lifted_end - direction * safe_head_length
 
-	var body_left_start := start - right * body_half_width
-	var body_right_start := start + right * body_half_width
+	var body_left_start := lifted_start - right * body_half_width
+	var body_right_start := lifted_start + right * body_half_width
 	var body_left_end := neck - right * body_half_width
 	var body_right_end := neck + right * body_half_width
 	var head_left := neck - right * head_half_width
 	var head_right := neck + right * head_half_width
 
-	var vertices := PackedVector3Array([
+	for vertex: Vector3 in [
 		body_left_start, body_right_start, body_left_end,
 		body_right_start, body_right_end, body_left_end,
-		head_left, head_right, end,
-	])
-	var arrays: Array = []
-	arrays.resize(Mesh.ARRAY_MAX)
-	arrays[Mesh.ARRAY_VERTEX] = vertices
-	var mesh := ArrayMesh.new()
-	mesh.add_surface_from_arrays(Mesh.PRIMITIVE_TRIANGLES, arrays)
-	return mesh
-
-
-func _add_flat_arrow_instance(
-	mesh: ArrayMesh,
-	material: Material
-) -> void:
-	var instance := MeshInstance3D.new()
-	instance.mesh = mesh
-	instance.material_override = material
-	instance.cast_shadow = GeometryInstance3D.SHADOW_CASTING_SETTING_OFF
-	_line_root.add_child(instance)
+		head_left, head_right, lifted_end,
+	]:
+		mesh.surface_add_vertex(vertex)
 
