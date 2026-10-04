@@ -64,6 +64,32 @@ func run() -> void:
 		DiceRollerChat._roll_notation("d8", 2, -3)
 		== "2d8 - 3"
 	)
+	assert(DiceRollerChat.choose_d20_pair(7, 18, "advantage") == 18)
+	assert(DiceRollerChat.choose_d20_pair(7, 18, "disadvantage") == 7)
+	assert(
+		DiceRollerChat._roll_notation("d20", 1, 5, "advantage")
+		== "1d20 (vant.) + 5"
+	)
+
+	var advantage_roll := {
+		"id": "test-roll-advantage",
+		"kind": "roll",
+		"author": "Tester",
+		"timestamp": 4,
+		"die": "d20",
+		"count": 1,
+		"modifier": 5,
+		"roll_mode": "advantage",
+		"candidate_rolls": [[7, 18]],
+		"rolls": [18],
+		"total": 23,
+		"detail": "Vantaggio [7/18 → 18] · +5"
+	}
+	assert(DiceChatSync.valid_event(advantage_roll))
+	var bad_advantage := advantage_roll.duplicate(true)
+	bad_advantage["rolls"] = [7]
+	bad_advantage["total"] = 12
+	assert(not DiceChatSync.valid_event(bad_advantage))
 
 	var multi_percentile := {
 		"id": "test-roll-percentile-multi",
