@@ -375,8 +375,13 @@ func set_visual_asset(
 		_position_imported_visual()
 		return true
 
-	# Token packs may be absent locally. Keep the current/procedural visual
-	# until the caller supplies an installed asset instead of logging load errors.
+	# Token packs may be absent locally. Do not ask ResourceLoader about a
+	# path that is not in the virtual filesystem: Godot logs a hard debugger
+	# error even when ResourceLoader.exists() is only used as a probe.
+	var source_exists := FileAccess.file_exists(requested_path)
+	var remap_exists := FileAccess.file_exists(requested_path + ".remap")
+	if not source_exists and not remap_exists:
+		return false
 	if not ResourceLoader.exists(requested_path):
 		return false
 
