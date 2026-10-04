@@ -1217,7 +1217,7 @@ func _on_token_resize_selected(id: int) -> void:
 	_token_resize_confirmed_callback = Callable()
 	_token_resize_canceled_callback = Callable()
 	_refresh_token_views_after_appearance_change()
-	call_deferred("_sync_explicit_token_change")
+	call_deferred("_sync_explicit_token_change", target)
 
 	# Ora che il resize e' stato applicato possiamo chiudere il popup.
 	# _on_token_resize_menu_hidden vede target=null e non interpreta questa
@@ -4011,7 +4011,7 @@ func _on_token_dialog_confirmed() -> void:
 			# Party, condizioni, taglia, reach, nome e miniatura sono già stati
 			# applicati al nodo: forza uno snapshot adesso, invece di lasciare
 			# che il primo poll possa assorbirli come nuova baseline.
-			call_deferred("_sync_explicit_token_change")
+			call_deferred("_sync_explicit_token_change", created_token)
 
 	var confirmed_callback: Callable = (
 		_token_generation_confirmed_callback
@@ -4609,9 +4609,23 @@ func _release_mouse() -> void:
 	Input.mouse_mode = Input.MOUSE_MODE_VISIBLE
 
 
-func _sync_explicit_token_change() -> void:
+func _sync_explicit_token_change(
+	edited_token: Node3D = null
+) -> void:
 	if board_sync == null or not is_instance_valid(board_sync):
 		return
+	if (
+		edited_token != null
+		and is_instance_valid(edited_token)
+		and board_sync.has_method("mark_token_appearance_locally_edited")
+	):
+		# Only an explicit local edit may replace the authoritative appearance
+		# received from another peer. Movement and unrelated map actions never
+		# clear it.
+		board_sync.call(
+			"mark_token_appearance_locally_edited",
+			edited_token
+		)
 	if not board_sync.has_method("sync_local_change_now"):
 		return
 	board_sync.call("sync_local_change_now")
