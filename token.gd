@@ -32,14 +32,7 @@ const CONDITION_DEFINITIONS := [
 	{"id": "surprised", "name": "Sorpreso", "icon": "❗", "official": false},
 	{"id": "hidden", "name": "Nascosto", "icon": "🥷", "official": false},
 	{"id": "dead", "name": "Morto", "icon": "💀", "official": false},
-	{
-		"id": "flying",
-		"name": "Volante",
-		"icon": "🪽",
-		"official": false,
-		"automatic": true,
-		"ring": false
-	},
+
 ]
 
 @export var cell_size: float = 1.0
@@ -79,10 +72,7 @@ var _animation_set: String = ""
 var _default_animation: String = ""
 var _uses_manifest_default: bool = false
 var _conditions: Array[String] = []
-var _automatic_conditions: Array[String] = []
 var _condition_visuals_visible: bool = true
-var _automatic_condition_elapsed: float = 0.0
-const AUTOMATIC_CONDITION_INTERVAL := 0.25
 var _reach_feet: float = 5.0
 var _reach_overridden: bool = false
 var _condition_rings_root: Node3D
@@ -136,11 +126,6 @@ func _ready() -> void:
 
 
 func _physics_process(delta: float) -> void:
-	_automatic_condition_elapsed += delta
-	if _automatic_condition_elapsed >= AUTOMATIC_CONDITION_INTERVAL:
-		_automatic_condition_elapsed = 0.0
-		_refresh_automatic_flying_condition()
-
 	# L'aggancio a carro/piattaforma non dipende dalla gravita: un token
 	# sospeso ma appoggiato al carro continua a seguirne il transform.
 	if is_instance_valid(grid_support):
@@ -231,67 +216,6 @@ func set_flying(enabled: bool) -> void:
 
 func set_volumetric_grid(grid: Node3D) -> void:
 	volumetric_grid = grid
-	call_deferred("refresh_automatic_conditions")
-
-
-func refresh_automatic_conditions() -> void:
-	_automatic_condition_elapsed = 0.0
-	_refresh_automatic_flying_condition()
-
-
-func _refresh_automatic_flying_condition() -> void:
-	if (
-		volumetric_grid == null
-		or not is_instance_valid(volumetric_grid)
-		or not volumetric_grid.has_method(
-			"has_grid_cell_immediately_below"
-		)
-	):
-		return
-
-	var half_height := token_height_cells * cell_size * 0.5
-	var base_y := global_position.y - half_height
-	var has_support := bool(
-		volumetric_grid.call(
-			"has_grid_cell_immediately_below",
-			global_position,
-			_footprint_cells,
-			base_y,
-			cell_size * 0.10
-		)
-	)
-	_set_automatic_condition("flying", not has_support)
-
-
-func _set_automatic_condition(
-	condition_id: String,
-	enabled: bool
-) -> void:
-	var normalized := condition_id.strip_edges().to_lower()
-	if not _condition_is_automatic(normalized):
-		return
-	var changed := false
-	if enabled:
-		if not (normalized in _automatic_conditions):
-			_automatic_conditions.append(normalized)
-			changed = true
-	else:
-		if normalized in _automatic_conditions:
-			_automatic_conditions.erase(normalized)
-			changed = true
-	if changed:
-		_update_status_overlay()
-
-
-static func support_is_immediately_below(
-	base_y: float,
-	support_top_y: float,
-	cell_size_value: float
-) -> bool:
-	if support_top_y >= INF:
-		return false
-	var safe_cell := maxf(cell_size_value, 0.001)
-	return absf(base_y - support_top_y) <= safe_cell * 0.10 + 0.0001
 
 
 func _grid_landing_center_y(delta: float) -> float:
@@ -996,18 +920,11 @@ func get_conditions() -> Array[String]:
 	return _conditions.duplicate()
 
 
-func get_automatic_conditions() -> Array[String]:
-	return _automatic_conditions.duplicate()
-
-
 func get_active_condition_display_parts() -> PackedStringArray:
 	var parts := PackedStringArray()
 	for definition: Dictionary in CONDITION_DEFINITIONS:
 		var condition_id := String(definition.get("id", ""))
-		if (
-			condition_id in _conditions
-			or condition_id in _automatic_conditions
-		):
+		if condition_id in _conditions:
 			parts.append(
 				"%s %s" % [
 					String(definition.get("icon", "•")),
@@ -1019,18 +936,12 @@ func get_active_condition_display_parts() -> PackedStringArray:
 
 func has_condition(condition_id: String) -> bool:
 	var normalized := condition_id.strip_edges().to_lower()
-	return (
-		normalized in _conditions
-		or normalized in _automatic_conditions
-	)
+	return normalized in _conditions
 
 
 func set_condition(condition_id: String, enabled: bool) -> void:
 	var normalized := condition_id.strip_edges().to_lower()
-	if (
-		not _is_valid_condition(normalized)
-		or _condition_is_automatic(normalized)
-	):
+	if not _is_valid_condition(normalized):
 		return
 	if enabled:
 		if not (normalized in _conditions):
@@ -1050,7 +961,6 @@ func set_conditions(value: Variant) -> void:
 			var normalized := String(item).strip_edges().to_lower()
 			if (
 				_is_valid_condition(normalized)
-				and not _condition_is_automatic(normalized)
 				and not (normalized in resolved)
 			):
 				resolved.append(normalized)
@@ -1063,13 +973,6 @@ func _is_valid_condition(condition_id: String) -> bool:
 	for definition: Dictionary in CONDITION_DEFINITIONS:
 		if String(definition.get("id", "")) == condition_id:
 			return true
-	return false
-
-
-func _condition_is_automatic(condition_id: String) -> bool:
-	for definition: Dictionary in CONDITION_DEFINITIONS:
-		if String(definition.get("id", "")) == condition_id:
-			return bool(definition.get("automatic", false))
 	return false
 
 
