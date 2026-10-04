@@ -30,12 +30,35 @@ var _bulk_total := 0
 var _bulk_accepted := 0
 var _bulk_rejected := 0
 var _bulk_failed := 0
+var _pending_token_pack_ids: Array[String] = []
+var _active_token_pack_id := ""
 
 func setup(root: Node, scene: PackedScene, tokens: Node, measure: Node) -> void:
 	board_root = root
 	token_scene = scene
 	tokens_root = tokens
 	measurement_tool = measure
+	_connect_token_pack_manager()
+
+
+func _connect_token_pack_manager() -> void:
+	if TokenPackManager == null:
+		return
+	var catalog_callback := Callable(self, "_on_token_pack_catalog_updated")
+	if not TokenPackManager.catalog_updated.is_connected(catalog_callback):
+		TokenPackManager.catalog_updated.connect(catalog_callback)
+	var downloaded_callback := Callable(self, "_on_token_pack_downloaded")
+	if not TokenPackManager.token_downloaded.is_connected(downloaded_callback):
+		TokenPackManager.token_downloaded.connect(downloaded_callback)
+	var download_failed_callback := Callable(self, "_on_token_pack_download_failed")
+	if not TokenPackManager.token_download_failed.is_connected(download_failed_callback):
+		TokenPackManager.token_download_failed.connect(download_failed_callback)
+	var mounted_callback := Callable(self, "_on_token_pack_mounted")
+	if not TokenPackManager.token_mounted.is_connected(mounted_callback):
+		TokenPackManager.token_mounted.connect(mounted_callback)
+	var mount_failed_callback := Callable(self, "_on_token_pack_mount_failed")
+	if not TokenPackManager.token_mount_failed.is_connected(mount_failed_callback):
+		TokenPackManager.token_mount_failed.connect(mount_failed_callback)
 
 
 func _initiative_tracker() -> Node:
@@ -498,14 +521,14 @@ func valid_snapshot(snapshot: Variant) -> bool:
 					or float(native_footprint_value) > 100.0
 				):
 					return false
+			var token_pack_id := String(item.get("token_pack_id", "")).strip_edges()
+			if not token_pack_id.is_empty() and not _valid_token_pack_id(token_pack_id):
+				return false
 			if item.has("visual_asset"):
 				if not item.get("visual_asset") is String:
 					return false
 				var visual_asset := String(item.get("visual_asset", ""))
-				if (
-					not visual_asset.is_empty()
-					and not visual_asset.begins_with("res://assets/tokens/")
-				):
+				if not _valid_token_visual_asset(visual_asset, token_pack_id):
 					return false
 			var front_value: Variant = item.get(
 				"visual_front_quarter_turns",
@@ -540,11 +563,17 @@ func valid_snapshot(snapshot: Variant) -> bool:
 					var previous_visual := String(
 						appearance.get("visual_asset", "")
 					)
+					var previous_pack_id := String(
+						appearance.get("token_pack_id", "")
+					).strip_edges()
 					if (
-						not previous_visual.is_empty()
-						and not previous_visual.begins_with(
-							"res://assets/tokens/"
-						)
+						not previous_pack_id.is_empty()
+						and not _valid_token_pack_id(previous_pack_id)
+					):
+						return false
+					if not _valid_token_visual_asset(
+						previous_visual,
+						previous_pack_id
 					):
 						return false
 					if not appearance.get("display_name", "") is String:
@@ -662,6 +691,7 @@ func apply_snapshot(snapshot: Dictionary) -> bool:
 			if (applied_conditions as Array) != expected_conditions:
 				return false
 	_restore_token_supports(wanted)
+	_queue_snapshot_token_packs(snapshot)
 	if is_instance_valid(measurement_tool) and measurement_tool.has_method("apply_persistent_aoes"): measurement_tool.call("apply_persistent_aoes", snapshot.get("aoes",[]))
 	var initiative_tracker: Node = _initiative_tracker()
 	if initiative_tracker == null:
@@ -735,6 +765,15 @@ func _serialize_node(node: Node3D, group_name: String) -> Dictionary:
 			if node.has_method("get_token_id")
 			else String(data.get("id", ""))
 		)
+		var token_pack_id := ""
+		if node.has_method("get_token_pack_id"):
+			token_pack_id = String(node.call("get_token_pack_id")).strip_edges()
+		if token_pack_id.is_empty() and node.has_method("get_visual_asset_path"):
+			token_pack_id = _pack_id_from_visual_asset(
+				String(node.call("get_visual_asset_path"))
+			)
+		if not token_pack_id.is_empty():
+			data["token_pack_id"] = token_pack_id
 		data["footprint"]=float(node.get("_footprint_cells")); data["size_name"]=String(node.get("_size_name")); data["color"]=_token_color(node)
 		# Nuovo significato esplicito: i salvataggi precedenti non avevano
 		# gravity_applied e vengono quindi migrati come token sospesi.
@@ -817,6 +856,13 @@ func _apply_node_data(node: Node3D, data: Dictionary) -> void:
 			node.call("set_token_id", restored_token_id)
 	node.set_meta("sync_id", _sync_id(node))
 	if data.get("kind","") == "token":
+		var token_pack_id := String(data.get("token_pack_id", "")).strip_edges()
+		if token_pack_id.is_empty():
+			token_pack_id = _pack_id_from_visual_asset(
+				String(data.get("visual_asset", ""))
+			)
+		if node.has_method("set_token_pack_id"):
+			node.call("set_token_pack_id", token_pack_id)
 		# Applicare prima l'asset esplicito disattiva l'eventuale miniatura
 		# di default caricata dal token_scene appena istanziato.
 		if data.has("visual_asset") and node.has_method("set_visual_asset"):
@@ -831,11 +877,23 @@ func _apply_node_data(node: Node3D, data: Dictionary) -> void:
 					),
 					0.5
 				)
-				node.call(
-					"set_visual_asset",
-					visual_asset,
-					native_footprint
+				var visual_applied := bool(
+					node.call(
+						"set_visual_asset",
+						visual_asset,
+						native_footprint
+					)
 				)
+				if not visual_applied and not token_pack_id.is_empty():
+					node.set_meta(
+						"pending_token_pack_native_footprint",
+						native_footprint
+					)
+				elif (
+					visual_applied
+					and node.has_meta("pending_token_pack_native_footprint")
+				):
+					node.remove_meta("pending_token_pack_native_footprint")
 		if data.has("visual_front_quarter_turns") and node.has_method(
 			"set_visual_front_quarter_turns"
 		):
@@ -890,6 +948,226 @@ func _apply_node_data(node: Node3D, data: Dictionary) -> void:
 			)
 	# configure() snaps tokens; restore the exact shared transform afterwards.
 	node.global_transform = _dict_transform(data.get("transform", {}))
+
+func _remote_visual_path(token_pack_id: String) -> String:
+	return (
+		"res://remote_tokens/%s/%s_visual.res"
+		% [token_pack_id, token_pack_id]
+	)
+
+
+func _valid_token_pack_id(token_pack_id: String) -> bool:
+	var clean := token_pack_id.strip_edges()
+	return (
+		not clean.is_empty()
+		and clean.length() <= 96
+		and not clean.contains("/")
+		and not clean.contains("\\")
+		and not clean.contains("..")
+		and not clean.contains(":")
+	)
+
+
+func _pack_id_from_visual_asset(visual_asset: String) -> String:
+	var clean := visual_asset.strip_edges()
+	var prefix := "res://remote_tokens/"
+	if not clean.begins_with(prefix):
+		return ""
+	var remainder := clean.substr(prefix.length())
+	var slash_index := remainder.find("/")
+	if slash_index <= 0:
+		return ""
+	var token_pack_id := remainder.left(slash_index)
+	if not _valid_token_pack_id(token_pack_id):
+		return ""
+	if clean != _remote_visual_path(token_pack_id):
+		return ""
+	return token_pack_id
+
+
+func _valid_token_visual_asset(
+	visual_asset: String,
+	token_pack_id: String = ""
+) -> bool:
+	var clean := visual_asset.strip_edges()
+	if clean.is_empty():
+		return true
+	if clean.begins_with("res://assets/tokens/"):
+		return not clean.contains("..")
+	var resolved_pack_id := token_pack_id.strip_edges()
+	if resolved_pack_id.is_empty():
+		resolved_pack_id = _pack_id_from_visual_asset(clean)
+	return (
+		_valid_token_pack_id(resolved_pack_id)
+		and clean == _remote_visual_path(resolved_pack_id)
+	)
+
+
+func _queue_snapshot_token_packs(snapshot: Dictionary) -> void:
+	for item_value: Variant in snapshot.get("objects", []):
+		if not item_value is Dictionary:
+			continue
+		var item: Dictionary = item_value as Dictionary
+		if String(item.get("kind", "")) != "token":
+			continue
+		var current_pack_id := String(
+			item.get("token_pack_id", "")
+		).strip_edges()
+		if current_pack_id.is_empty():
+			current_pack_id = _pack_id_from_visual_asset(
+				String(item.get("visual_asset", ""))
+			)
+		_queue_token_pack_id(current_pack_id)
+		var history_value: Variant = item.get("transformation_history", [])
+		if history_value is Array:
+			var history: Array = history_value as Array
+			for state_value: Variant in history:
+				if not state_value is Dictionary:
+					continue
+				var appearance: Dictionary = state_value as Dictionary
+				var previous_pack_id := String(
+					appearance.get("token_pack_id", "")
+				).strip_edges()
+				if previous_pack_id.is_empty():
+					previous_pack_id = _pack_id_from_visual_asset(
+						String(appearance.get("visual_asset", ""))
+					)
+				_queue_token_pack_id(previous_pack_id)
+	_process_token_pack_queue()
+
+
+func _queue_token_pack_id(token_pack_id: String) -> void:
+	var clean := token_pack_id.strip_edges()
+	if (
+		not _valid_token_pack_id(clean)
+		or clean == _active_token_pack_id
+		or _pending_token_pack_ids.has(clean)
+	):
+		return
+	_pending_token_pack_ids.append(clean)
+
+
+func _process_token_pack_queue() -> void:
+	if TokenPackManager == null or not _active_token_pack_id.is_empty():
+		return
+	while not _pending_token_pack_ids.is_empty():
+		var candidate_index := -1
+		for index in range(_pending_token_pack_ids.size()):
+			if TokenPackManager.has_token(_pending_token_pack_ids[index]):
+				candidate_index = index
+				break
+		if candidate_index < 0:
+			# Il catalogo remoto potrebbe essere ancora in aggiornamento.
+			return
+
+		var token_pack_id := _pending_token_pack_ids[candidate_index]
+		_pending_token_pack_ids.remove_at(candidate_index)
+		if TokenPackManager.is_mounted(token_pack_id):
+			_apply_mounted_pack_to_tokens(token_pack_id)
+			continue
+
+		_active_token_pack_id = token_pack_id
+		if TokenPackManager.is_downloaded(token_pack_id):
+			var mount_error := TokenPackManager.mount_token(token_pack_id)
+			if mount_error == OK:
+				# token_mounted continua la coda; evitare reentrancy qui.
+				return
+			_active_token_pack_id = ""
+			push_warning(
+				"BoardSync: mount automatico fallito per %s: %s"
+				% [token_pack_id, error_string(mount_error)]
+			)
+			continue
+
+		var download_error := TokenPackManager.download_token(token_pack_id)
+		if download_error == OK:
+			return
+		_active_token_pack_id = ""
+		if download_error == ERR_BUSY:
+			_pending_token_pack_ids.push_front(token_pack_id)
+			return
+		push_warning(
+			"BoardSync: download automatico fallito per %s: %s"
+			% [token_pack_id, error_string(download_error)]
+		)
+
+
+func _apply_mounted_pack_to_tokens(token_pack_id: String) -> void:
+	if board_root == null or not is_instance_valid(board_root):
+		return
+	var visual_asset := _remote_visual_path(token_pack_id)
+	for node_value: Variant in get_tree().get_nodes_in_group("dnd_token"):
+		if not node_value is Node3D:
+			continue
+		var node: Node3D = node_value as Node3D
+		if not board_root.is_ancestor_of(node):
+			continue
+		var node_pack_id := ""
+		if node.has_method("get_token_pack_id"):
+			node_pack_id = String(node.call("get_token_pack_id")).strip_edges()
+		if node_pack_id != token_pack_id or not node.has_method("set_visual_asset"):
+			continue
+		var fallback_native := 1.0
+		if node.has_method("get_footprint_cells"):
+			fallback_native = maxf(
+				float(node.call("get_footprint_cells")),
+				0.5
+			)
+		var native_footprint := float(
+			node.get_meta(
+				"pending_token_pack_native_footprint",
+				fallback_native
+			)
+		)
+		if bool(node.call("set_visual_asset", visual_asset, native_footprint)):
+			if node.has_meta("pending_token_pack_native_footprint"):
+				node.remove_meta("pending_token_pack_native_footprint")
+
+
+func _on_token_pack_catalog_updated(_entries: Array[Dictionary]) -> void:
+	_process_token_pack_queue()
+
+
+func _on_token_pack_downloaded(token_pack_id: String, _cache_path: String) -> void:
+	if token_pack_id == _active_token_pack_id:
+		var mount_error := TokenPackManager.mount_token(token_pack_id)
+		if mount_error != OK:
+			_active_token_pack_id = ""
+			push_warning(
+				"BoardSync: mount dopo download fallito per %s: %s"
+				% [token_pack_id, error_string(mount_error)]
+			)
+			_process_token_pack_queue()
+	elif _active_token_pack_id.is_empty():
+		_process_token_pack_queue()
+
+
+func _on_token_pack_download_failed(token_pack_id: String, message: String) -> void:
+	if token_pack_id == _active_token_pack_id:
+		_active_token_pack_id = ""
+		push_warning(
+			"BoardSync: download automatico fallito per %s: %s"
+			% [token_pack_id, message]
+		)
+	_process_token_pack_queue()
+
+
+func _on_token_pack_mounted(token_pack_id: String, _scene_path: String) -> void:
+	_apply_mounted_pack_to_tokens(token_pack_id)
+	if token_pack_id == _active_token_pack_id:
+		_active_token_pack_id = ""
+	_process_token_pack_queue()
+
+
+func _on_token_pack_mount_failed(token_pack_id: String, message: String) -> void:
+	if token_pack_id == _active_token_pack_id:
+		_active_token_pack_id = ""
+		push_warning(
+			"BoardSync: mount automatico fallito per %s: %s"
+			% [token_pack_id, message]
+		)
+	_process_token_pack_queue()
+
 
 func _save_backup(snapshot: Dictionary, reason: String) -> bool:
 	DirAccess.make_dir_recursive_absolute(ProjectSettings.globalize_path(BACKUP_DIR))
