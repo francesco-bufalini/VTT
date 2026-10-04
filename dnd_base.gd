@@ -54,7 +54,6 @@ var share_host: LineEdit
 var share_key: LineEdit
 var share_status: Label
 var token_drag: Node
-var minecraft_lights: Node
 
 
 func _ready() -> void:
@@ -77,13 +76,6 @@ func _ready() -> void:
 	size_selector.select(2)
 
 	volumetric_grid.call("set_camera", camera)
-
-	# Best-effort: Mineways/Blender materials whose names still identify
-	# luminous Minecraft blocks become lightweight OmniLight3D sources.
-	minecraft_lights = preload("res://minecraft_lights.gd").new()
-	minecraft_lights.name = "MinecraftLightImporter"
-	add_child(minecraft_lights)
-	minecraft_lights.setup(self, cell_size)
 
 	measurement_tool.call("set_camera", camera)
 	measurement_tool.call("set_volumetric_grid", volumetric_grid)
