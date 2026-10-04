@@ -16,7 +16,9 @@ const CHARIOT_OFFSETS_METERS := [
 
 func _ready() -> void:
 	super._ready()
-	CosmicBackdrop.install(self)
+	# Keep the global star-sky environment, without the local cylinder that
+	# used to wrap the arena and duplicate the background.
+	CosmicBackdrop.install(self, false)
 	_clean_scontro_board()
 	_apply_post_kaos_terrain_rules()
 	_install_imported_prison()
