@@ -43,6 +43,7 @@ const CONDITION_DEFINITIONS := [
 @export var visual_native_footprint_cells: float = 0.0
 @export_range(0, 3, 1) var visual_front_quarter_turns: int = 0
 @export var token_display_name: String = ""
+@export var token_id: String = ""
 @export var party_id: String = ""
 @export var default_size_name: String = "Medium"
 @export var default_footprint_cells: float = 1.0
@@ -99,6 +100,7 @@ func _ready() -> void:
 	_gravity = float(
 		ProjectSettings.get_setting("physics/3d/default_gravity", 9.8)
 	)
+	_ensure_token_id()
 	_size_name = default_size_name
 	_footprint_cells = maxf(default_footprint_cells, 0.5)
 	_reach_feet = _default_reach_feet()
@@ -841,6 +843,27 @@ func set_token_size(footprint_cells: float) -> void:
 	_update_condition_rings()
 
 
+func _ensure_token_id() -> void:
+	if not token_id.strip_edges().is_empty():
+		token_id = token_id.strip_edges().left(96)
+		return
+	var micros := int(Time.get_unix_time_from_system() * 1000000.0)
+	token_id = "token_%d_%d" % [micros, get_instance_id()]
+
+
+func set_token_id(value: String) -> void:
+	var clean := value.strip_edges()
+	if clean.is_empty():
+		_ensure_token_id()
+		return
+	token_id = clean.left(96)
+
+
+func get_token_id() -> String:
+	_ensure_token_id()
+	return token_id
+
+
 func set_display_name(value: String) -> void:
 	token_display_name = value.strip_edges()
 	_ensure_token_overlay()
@@ -859,6 +882,11 @@ func set_party_id(value: String) -> void:
 
 func get_party_id() -> String:
 	return party_id
+
+
+func get_effective_party_id() -> String:
+	var clean := party_id.strip_edges()
+	return clean if not clean.is_empty() else "Default"
 
 
 func get_condition_definitions() -> Array:
@@ -1456,6 +1484,8 @@ func get_appearance_state() -> Dictionary:
 		"visual_native_footprint": _visual_native_footprint_cells,
 		"visual_front_quarter_turns": get_visual_front_quarter_turns(),
 		"display_name": get_display_name(),
+		"party_id": get_party_id(),
+		"conditions": get_conditions(),
 		"size_name": _size_name,
 		"footprint": _footprint_cells,
 		"height_cells": token_height_cells,
@@ -1516,6 +1546,8 @@ func apply_appearance_state(state: Dictionary) -> bool:
 	)
 	_reach_overridden = bool(state.get("reach_overridden", false))
 	set_display_name(String(state.get("display_name", token_display_name)))
+	set_party_id(String(state.get("party_id", party_id)))
+	set_conditions(state.get("conditions", _conditions))
 	global_position.y = (
 		base_y
 		+ token_height_cells * cell_size * 0.5
