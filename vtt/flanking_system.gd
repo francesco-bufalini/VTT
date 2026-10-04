@@ -179,6 +179,17 @@ static func flanking_segment(
 	target_center: Vector3,
 	target_half: Vector3
 ) -> PackedVector3Array:
+	# DMG 2014 square-grid test: use the centers of the flankers' spaces and
+	# require that line to cross opposite sides or opposite corners of the
+	# target's space. Merely touching/intersecting the target is not enough.
+	if not centers_cross_opposite_borders(
+		first_center,
+		second_center,
+		target_center,
+		target_half
+	):
+		return PackedVector3Array()
+
 	var delta := second_center - first_center
 	if delta.length_squared() <= EPSILON * EPSILON:
 		return PackedVector3Array()
@@ -191,10 +202,107 @@ static func flanking_segment(
 	if start.distance_squared_to(end) <= EPSILON * EPSILON:
 		return PackedVector3Array()
 
-	if not segment_intersects_aabb(start, end, target_center, target_half):
-		return PackedVector3Array()
-
 	return PackedVector3Array([start, end])
+
+
+static func centers_cross_opposite_borders(
+	first_center: Vector3,
+	second_center: Vector3,
+	target_center: Vector3,
+	target_half: Vector3
+) -> bool:
+	var start := Vector2(
+		first_center.x - target_center.x,
+		first_center.z - target_center.z
+	)
+	var end := Vector2(
+		second_center.x - target_center.x,
+		second_center.z - target_center.z
+	)
+	var delta := end - start
+	if delta.length_squared() <= EPSILON * EPSILON:
+		return false
+
+	var half := Vector2(
+		maxf(target_half.x, EPSILON),
+		maxf(target_half.z, EPSILON)
+	)
+	var t_enter := 0.0
+	var t_exit := 1.0
+
+	# Liang-Barsky style clipping against the target's horizontal rectangle.
+	for axis: int in range(2):
+		var origin := start[axis]
+		var step := delta[axis]
+		var minimum := -half[axis]
+		var maximum := half[axis]
+
+		if absf(step) <= EPSILON:
+			if origin < minimum or origin > maximum:
+				return false
+			continue
+
+		var near_t := (minimum - origin) / step
+		var far_t := (maximum - origin) / step
+		if near_t > far_t:
+			var swap := near_t
+			near_t = far_t
+			far_t = swap
+
+		t_enter = maxf(t_enter, near_t)
+		t_exit = minf(t_exit, far_t)
+		if t_enter > t_exit:
+			return false
+
+	if t_exit < 0.0 or t_enter > 1.0:
+		return false
+
+	var entry := start + delta * clampf(t_enter, 0.0, 1.0)
+	var exit := start + delta * clampf(t_exit, 0.0, 1.0)
+	var entry_edges := _rectangle_border_flags(entry, half)
+	var exit_edges := _rectangle_border_flags(exit, half)
+	if entry_edges.is_empty() or exit_edges.is_empty():
+		return false
+
+	var entry_corner := entry_edges.size() == 2
+	var exit_corner := exit_edges.size() == 2
+
+	# Opposite corners are valid; a side-to-corner crossing is not treated as
+	# flanking because the DMG wording requires opposite sides OR corners.
+	if entry_corner or exit_corner:
+		if not (entry_corner and exit_corner):
+			return false
+		return (
+			("left" in entry_edges and "right" in exit_edges
+				or "right" in entry_edges and "left" in exit_edges)
+			and
+			("top" in entry_edges and "bottom" in exit_edges
+				or "bottom" in entry_edges and "top" in exit_edges)
+		)
+
+	return (
+		("left" in entry_edges and "right" in exit_edges)
+		or ("right" in entry_edges and "left" in exit_edges)
+		or ("top" in entry_edges and "bottom" in exit_edges)
+		or ("bottom" in entry_edges and "top" in exit_edges)
+	)
+
+
+static func _rectangle_border_flags(
+	point: Vector2,
+	half: Vector2
+) -> Array[String]:
+	var tolerance := maxf(maxf(half.x, half.y) * 0.001, 0.0005)
+	var result: Array[String] = []
+	if absf(point.x + half.x) <= tolerance:
+		result.append("left")
+	if absf(point.x - half.x) <= tolerance:
+		result.append("right")
+	if absf(point.y + half.y) <= tolerance:
+		result.append("top")
+	if absf(point.y - half.y) <= tolerance:
+		result.append("bottom")
+	return result
 
 
 static func segment_intersects_aabb(
