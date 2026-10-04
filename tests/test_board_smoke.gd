@@ -98,6 +98,30 @@ func run() -> void:
 	if not sync.valid_snapshot(snapshot):
 		_fail("fresh snapshot failed validation: %s" % JSON.stringify(snapshot))
 		return
+	if not bool(sync.call("is_auto_sync_enabled")):
+		_fail("automatic synchronization should be enabled by default")
+		return
+	var snapshot_with_camera := snapshot.duplicate(true)
+	snapshot_with_camera["camera"] = {
+		"basis": [
+			{"x": 1.0, "y": 0.0, "z": 0.0},
+			{"x": 0.0, "y": 1.0, "z": 0.0},
+			{"x": 0.0, "y": 0.0, "z": 1.0}
+		],
+		"origin": {"x": 5.0, "y": 7.0, "z": 9.0}
+	}
+	if not sync.valid_snapshot(snapshot_with_camera):
+		_fail("snapshot with synchronized camera failed validation")
+		return
+	var state_signature := String(
+		sync.call("_snapshot_signature", snapshot)
+	)
+	var camera_signature := String(
+		sync.call("_snapshot_signature", snapshot_with_camera)
+	)
+	if state_signature != camera_signature:
+		_fail("camera-only movement must not trigger automatic map sync")
+		return
 	if snapshot.objects.size() != 1:
 		_fail("expected exactly one serialized token")
 		return
