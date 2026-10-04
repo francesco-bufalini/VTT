@@ -4452,6 +4452,14 @@ func _cast_spell_at_token(
 			"line",
 			_spell_style(spell_data)
 		)
+		_broadcast_aoe_sync_visual(
+			start,
+			finish,
+			"line",
+			_spell_style(spell_data),
+			float(spell_data.get("transient_seconds", 5.0)),
+			_spell_line_width_world(spell_data)
+		)
 		return
 
 	if impact_radius > 0.0:
@@ -4574,25 +4582,38 @@ func _cast_spell_at_point_target(
 	)
 
 	if impact_radius > 0.0:
+		var resolved_projectile_style := (
+			projectile_style
+			if not projectile_style.is_empty()
+			else _spell_style(spell_data)
+		)
+		var resolved_impact_style := String(
+			spell_data.get("impact_style", _spell_style(spell_data))
+		)
+		var impact_radius_world := impact_radius / 5.0 * _cell_size()
+		var impact_duration := float(
+			spell_data.get("transient_seconds", 5.0)
+		)
 		measurement_tool.call(
 			"show_spell_projectile_with_impact",
 			start,
 			target_point,
-			(
-				projectile_style
-				if not projectile_style.is_empty()
-				else _spell_style(spell_data)
-			),
+			resolved_projectile_style,
 			travel_seconds,
 			String(spell_data.get("impact_aoe_shape", "sphere")),
-			impact_radius / 5.0 * _cell_size(),
-			String(
-				spell_data.get(
-					"impact_style",
-					_spell_style(spell_data)
-				)
-			),
-			float(spell_data.get("transient_seconds", 5.0))
+			impact_radius_world,
+			resolved_impact_style,
+			impact_duration
+		)
+		_broadcast_projectile_impact_sync_visual(
+			start,
+			target_point,
+			resolved_projectile_style,
+			travel_seconds,
+			String(spell_data.get("impact_aoe_shape", "sphere")),
+			impact_radius_world,
+			resolved_impact_style,
+			impact_duration
 		)
 		return
 
