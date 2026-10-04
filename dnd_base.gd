@@ -2537,7 +2537,6 @@ func _build_token_state_dialog() -> void:
 	token_identity_label = Label.new()
 	token_identity_label.name = "TokenIdentityLabel"
 	token_identity_label.text = "ID token: assegnato automaticamente alla creazione"
-	token_identity_label.selectable = true
 	token_identity_label.add_theme_font_size_override("font_size", 11)
 	content_box.add_child(token_identity_label)
 
