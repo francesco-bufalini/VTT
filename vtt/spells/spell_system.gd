@@ -451,6 +451,53 @@ func dismiss_post_cast_visuals() -> bool:
 	return true
 
 
+func dismiss_post_cast_visual_at_screen(
+	screen_position: Vector2
+) -> bool:
+	var measurement_tool: Node = _measurement_tool()
+	if (
+		measurement_tool == null
+		or not measurement_tool.has_method(
+			"remove_post_cast_spell_visual_at_screen"
+		)
+	):
+		return false
+
+	var removed: bool = bool(
+		measurement_tool.call(
+			"remove_post_cast_spell_visual_at_screen",
+			screen_position
+		)
+	)
+	if not removed:
+		return false
+
+	var has_remaining: bool = false
+	if measurement_tool.has_method("has_post_cast_spell_visuals"):
+		has_remaining = bool(
+			measurement_tool.call("has_post_cast_spell_visuals")
+		)
+	_post_cast_cleanup_pending = has_remaining
+
+	if not has_remaining:
+		if measurement_tool.has_method(
+			"set_spell_affected_token_highlight"
+		):
+			measurement_tool.call(
+				"set_spell_affected_token_highlight",
+				[],
+				false
+			)
+		if (
+			board_root != null
+			and is_instance_valid(board_root)
+			and board_root.has_method("set_affected_token_highlight")
+		):
+			board_root.call("set_affected_token_highlight", [])
+
+	return true
+
+
 func _pending_spell() -> Dictionary:
 	if _pending_spell_id.is_empty():
 		return {}
@@ -4029,7 +4076,7 @@ func _activate_selected_spell() -> void:
 	if not SpellCatalog.is_runtime_usable(spell_data):
 		return
 
-	dismiss_post_cast_visuals()
+	# Existing spell areas stay on the map until the user clicks the area.
 	if board_root.has_method("clear_token_selection"):
 		board_root.call("clear_token_selection")
 	_set_spell_affected_targets([], true)
