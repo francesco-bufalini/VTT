@@ -23,6 +23,7 @@ var roll_mode_input: OptionButton
 var quick_result_panel: PanelContainer
 var quick_result_label: Label
 var _quick_result_generation := 0
+var close_button: Button
 
 
 func setup(
@@ -74,18 +75,45 @@ func set_session_key(value: String) -> void:
 func toggle_panel() -> void:
 	if panel == null:
 		return
-	panel.visible = not panel.visible
 	if panel.visible:
-		if board_root.has_method("release_camera_control"):
-			board_root.call("release_camera_control")
-		elif board_root.has_method("_release_mouse"):
-			board_root.call("_release_mouse")
-		chat_input.call_deferred("grab_focus")
+		hide_panel()
 	else:
-		if board_root.has_method("capture_camera_control"):
-			board_root.call("capture_camera_control")
-		elif board_root.has_method("_capture_mouse"):
-			board_root.call("_capture_mouse")
+		show_panel()
+
+
+func show_panel() -> void:
+	if panel == null:
+		return
+	panel.show()
+	if board_root.has_method("release_camera_control"):
+		board_root.call("release_camera_control")
+	elif board_root.has_method("_release_mouse"):
+		board_root.call("_release_mouse")
+	if chat_input != null:
+		chat_input.call_deferred("grab_focus")
+
+
+func hide_panel() -> void:
+	if panel == null:
+		return
+	panel.hide()
+	if board_root.has_method("capture_camera_control"):
+		board_root.call("capture_camera_control")
+	elif board_root.has_method("_capture_mouse"):
+		board_root.call("_capture_mouse")
+
+
+func _input(event: InputEvent) -> void:
+	if (
+		panel != null
+		and panel.visible
+		and event is InputEventKey
+		and event.pressed
+		and not event.echo
+		and event.keycode == KEY_ESCAPE
+	):
+		hide_panel()
+		get_viewport().set_input_as_handled()
 
 
 func _build_ui() -> void:
@@ -145,11 +173,12 @@ func _build_ui() -> void:
 	title.size_flags_horizontal = Control.SIZE_EXPAND_FILL
 	header.add_child(title)
 
-	var collapse := Button.new()
-	collapse.text = "—"
-	collapse.tooltip_text = "Chiudi"
-	collapse.pressed.connect(toggle_panel)
-	header.add_child(collapse)
+	close_button = Button.new()
+	close_button.text = "×"
+	close_button.tooltip_text = "Chiudi dice roller (Esc)"
+	close_button.custom_minimum_size = Vector2(34, 30)
+	close_button.pressed.connect(hide_panel)
+	header.add_child(close_button)
 
 	status_label = Label.new()
 	status_label.text = "Partita %s · sincronizzazione automatica" % session_key
