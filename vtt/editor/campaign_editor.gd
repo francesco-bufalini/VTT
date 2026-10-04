@@ -37,6 +37,11 @@ const PIRATE_SHIP_COLLISION_KEYWORDS := [
 	"Keel",
 	"Ram",
 ]
+const PIRATE_WATER_UV_SPEED := Vector2(0.010, 0.006)
+const PIRATE_WATER_BOB_SPEED := 0.65
+const PIRATE_WATER_BOB_AMPLITUDE_CELLS := 0.035
+const PIRATE_LANTERN_LIGHT_RANGE_CELLS := 6.0
+const PIRATE_LANTERN_LIGHT_ENERGY := 1.8
 
 const GRID_RESIZE := 200
 const GRID_ADD := 201
@@ -70,6 +75,11 @@ var primary_depth_cells := 30
 var next_grid_id := 1
 var active_element_preset: String = ""
 
+var _pirate_water_root: Node3D = null
+var _pirate_water_base_global_y: float = 0.0
+var _pirate_water_materials: Array[Dictionary] = []
+var _pirate_water_time: float = 0.0
+
 var resize_dialog: ConfirmationDialog
 var resize_width: SpinBox
 var resize_depth: SpinBox
@@ -94,6 +104,38 @@ func _ready() -> void:
 	# l'inizializzazione a quando dnd_base ha creato la griglia volumetrica,
 	# BoardSync, token drag e gli altri servizi runtime.
 	call_deferred("_initialize_editor")
+
+
+func _process(delta: float) -> void:
+	if active_element_preset != PIRATE_SHIP_PRESET_ID:
+		return
+	if _pirate_water_root == null or not is_instance_valid(_pirate_water_root):
+		return
+
+	_pirate_water_time += delta
+	_pirate_water_root.global_position.y = (
+		_pirate_water_base_global_y
+		+ sin(_pirate_water_time * PIRATE_WATER_BOB_SPEED)
+		* PIRATE_WATER_BOB_AMPLITUDE_CELLS
+		* _cell_size()
+	)
+
+	for entry: Dictionary in _pirate_water_materials:
+		var material := entry.get("material") as StandardMaterial3D
+		if material == null or not is_instance_valid(material):
+			continue
+		var base_offset: Vector3 = entry.get("base_offset", Vector3.ZERO)
+		material.uv1_offset = base_offset + Vector3(
+			fposmod(
+				_pirate_water_time * PIRATE_WATER_UV_SPEED.x,
+				1.0
+			),
+			fposmod(
+				_pirate_water_time * PIRATE_WATER_UV_SPEED.y,
+				1.0
+			),
+			0.0
+		)
 
 
 func _initialize_editor() -> void:
@@ -262,12 +304,14 @@ func _on_preset_selected(id: int) -> void:
 		PRESET_WHITE:
 			_clear_element_presets()
 			active_element_preset = ""
+			_set_orientation_marker_enabled(true)
 			_set_base_platform_enabled(true)
 			_set_white_environment()
 			_set_status("Scenario: vuoto bianco")
 		PRESET_EMPTY_ELEMENTS:
 			_clear_element_presets()
 			active_element_preset = ""
+			_set_orientation_marker_enabled(true)
 			_set_base_platform_enabled(true)
 			_set_status("Preset elementi: nessun elemento")
 		PRESET_FOREST_MOUNTAINS:
@@ -306,6 +350,7 @@ func _apply_forest_mountains_preset(resize_grid: bool = true) -> void:
 
 	var root := instance as Node3D
 	_set_base_platform_enabled(false)
+	_set_orientation_marker_enabled(false)
 	root.name = "CampaignPreset_ForestMountains"
 	root.scale = Vector3.ONE * _cell_size()
 	root.add_to_group("campaign_preset_element")
@@ -355,6 +400,7 @@ func _apply_pirate_ship_preset(resize_grid: bool = true) -> void:
 
 	var root := instance as Node3D
 	_set_base_platform_enabled(false)
+	_set_orientation_marker_enabled(false)
 	root.name = "CampaignPreset_SirensLight"
 	# The prepared GLB is already normalized so one cannon is 2 grid cells
 	# long. Scaling by cell_size only preserves that reference at runtime.
@@ -364,6 +410,8 @@ func _apply_pirate_ship_preset(resize_grid: bool = true) -> void:
 	board_root.add_child(root)
 
 	_build_pirate_ship_collisions(root)
+	_configure_pirate_ship_water(root)
+	_preserve_pirate_ship_lighting(root)
 	active_element_preset = PIRATE_SHIP_PRESET_ID
 
 	if resize_grid:
@@ -376,6 +424,84 @@ func _apply_pirate_ship_preset(resize_grid: bool = true) -> void:
 	_set_status(
 		"Preset: The Siren's Light · cannone lungo 2 celle · griglia 50×50"
 	)
+
+
+func _configure_pirate_ship_water(root: Node3D) -> void:
+	_pirate_water_root = null
+	_pirate_water_materials.clear()
+	_pirate_water_time = 0.0
+
+	var water_parent := root.find_child("Water", true, false) as Node3D
+	if water_parent != null:
+		_pirate_water_root = water_parent
+		_pirate_water_base_global_y = water_parent.global_position.y
+
+	for candidate: Node in root.find_children(
+		"*",
+		"MeshInstance3D",
+		true,
+		false
+	):
+		var mesh_instance := candidate as MeshInstance3D
+		if (
+			mesh_instance == null
+			or mesh_instance.mesh == null
+			or not String(mesh_instance.name).contains("Water")
+		):
+			continue
+
+		for surface_index in range(mesh_instance.mesh.get_surface_count()):
+			var source := mesh_instance.mesh.surface_get_material(surface_index)
+			if not source is StandardMaterial3D:
+				continue
+			var animated := source.duplicate(true) as StandardMaterial3D
+			mesh_instance.set_surface_override_material(
+				surface_index,
+				animated
+			)
+			_pirate_water_materials.append({
+				"material": animated,
+				"base_offset": animated.uv1_offset,
+			})
+
+
+func _preserve_pirate_ship_lighting(root: Node3D) -> void:
+	var imported_lights := 0
+	for candidate: Node in root.find_children("*", "Light3D", true, false):
+		var imported_light := candidate as Light3D
+		if imported_light == null:
+			continue
+		imported_light.visible = true
+		imported_lights += 1
+
+	# The current GLB carries glowing lantern meshes but no
+	# KHR_lights_punctual nodes. Keep their original emissive materials intact
+	# and give those lanterns a small warm runtime light instead.
+	if imported_lights > 0:
+		return
+
+	for candidate: Node in root.find_children(
+		"*Lantern*",
+		"MeshInstance3D",
+		true,
+		false
+	):
+		var lantern := candidate as MeshInstance3D
+		if lantern == null or lantern.mesh == null:
+			continue
+		if lantern.get_node_or_null("PresetLanternLight") != null:
+			continue
+
+		var light := OmniLight3D.new()
+		light.name = "PresetLanternLight"
+		light.light_color = Color(1.0, 0.63, 0.32, 1.0)
+		light.light_energy = PIRATE_LANTERN_LIGHT_ENERGY
+		light.omni_range = (
+			PIRATE_LANTERN_LIGHT_RANGE_CELLS * _cell_size()
+		)
+		light.shadow_enabled = true
+		lantern.add_child(light)
+		light.position = lantern.get_aabb().get_center()
 
 
 func _build_pirate_ship_collisions(root: Node3D) -> void:
@@ -454,6 +580,9 @@ func _forest_mesh_is_terrain(mesh_instance: MeshInstance3D) -> bool:
 
 
 func _clear_element_presets() -> void:
+	_pirate_water_root = null
+	_pirate_water_materials.clear()
+	_pirate_water_time = 0.0
 	for candidate: Node in get_tree().get_nodes_in_group(
 		"campaign_preset_element"
 	):
@@ -848,6 +977,7 @@ func _load_active_campaign() -> void:
 			_apply_pirate_ship_preset(true)
 		else:
 			active_element_preset = ""
+			_set_orientation_marker_enabled(true)
 			_set_base_platform_enabled(true)
 			_set_status("%s · nuovo salvataggio" % _campaign_name())
 		return
@@ -881,6 +1011,7 @@ func _load_active_campaign() -> void:
 	elif active_element_preset == PIRATE_SHIP_PRESET_ID:
 		_apply_pirate_ship_preset(false)
 	else:
+		_set_orientation_marker_enabled(true)
 		_set_base_platform_enabled(true)
 
 	_apply_view_state(state.get("view", {}))
@@ -953,6 +1084,18 @@ func _set_white_environment() -> void:
 	environment.ambient_light_color = Color(0.95, 0.96, 1.0, 1.0)
 	environment.ambient_light_energy = 0.8
 	world.environment = environment
+
+
+func _set_orientation_marker_enabled(enabled: bool) -> void:
+	var marker := board_root.get_node_or_null(
+		"Board/MapGeometry/OrientationMarker"
+	) as StaticBody3D
+	if marker == null:
+		return
+	marker.visible = enabled
+	marker.collision_layer = 1 if enabled else 0
+	marker.collision_mask = 1 if enabled else 0
+	_refresh_volumetric_grid()
 
 
 func _set_base_platform_enabled(enabled: bool) -> void:
