@@ -120,11 +120,9 @@ func refresh_now() -> void:
 	# Affiancato is always shown. Condition text participates only when the
 	# View toggle for condition visuals is enabled.
 	for token: CharacterBody3D in tokens:
-		var condition_parts := (
-			_token_condition_display_parts(token)
-			if _condition_visuals_visible
-			else PackedStringArray()
-		)
+		var condition_parts := PackedStringArray()
+		if _condition_visuals_visible:
+			condition_parts = _token_condition_display_parts(token)
 		var badge_text := compose_status_badge_text(
 			bool(token.get_meta("flanked", false)),
 			condition_parts
@@ -173,7 +171,7 @@ func _build_reach_arrow_points(
 				source_base.y = shared_y
 				target_base.y = shared_y
 
-			var arrow := flanking_arrow_segment(
+			var arrow := reach_arrow_segment(
 				source_base,
 				source_half,
 				target_base,
@@ -812,7 +810,7 @@ func _build_line_renderer() -> void:
 	_line_root.add_child(_arrow_instance)
 
 
-static func flanking_arrow_segment(
+static func reach_arrow_segment(
 	flanker_center: Vector3,
 	flanker_half: Vector3,
 	target_center: Vector3,
@@ -857,6 +855,23 @@ static func flanking_arrow_segment(
 	start += lift
 	end += lift
 	return PackedVector3Array([start, end])
+
+
+static func flanking_arrow_segment(
+	flanker_center: Vector3,
+	flanker_half: Vector3,
+	target_center: Vector3,
+	target_half: Vector3,
+	cell_size: float
+) -> PackedVector3Array:
+	# Compatibility alias for older callers/tests.
+	return reach_arrow_segment(
+		flanker_center,
+		flanker_half,
+		target_center,
+		target_half,
+		cell_size
+	)
 
 
 static func _horizontal_box_boundary_distance(
@@ -965,10 +980,11 @@ static func _append_flat_arrow_vertices(
 	var head_left := neck - right * head_half_width
 	var head_right := neck + right * head_half_width
 
-	for vertex: Vector3 in [
+	var vertices := PackedVector3Array([
 		body_left_start, body_right_start, body_left_end,
 		body_right_start, body_right_end, body_left_end,
 		head_left, head_right, lifted_end,
-	]:
+	])
+	for vertex: Vector3 in vertices:
 		mesh.surface_add_vertex(vertex)
 
