@@ -152,6 +152,7 @@ var token_state_grid: GridContainer
 var token_state_checks: Dictionary = {}
 var _editing_token: CharacterBody3D
 var token_drag: Node
+var item_controller: Node
 var spell_system: Node
 var attack_system: Node
 var flanking_system: Node
@@ -207,6 +208,10 @@ func _ready() -> void:
 	token_drag = preload("res://interaction/token_drag.gd").new()
 	add_child(token_drag)
 	token_drag.setup(self)
+	item_controller = preload("res://items/item_controller.gd").new()
+	item_controller.name = "ItemController"
+	add_child(item_controller)
+	item_controller.setup(self)
 	board_sync = preload("res://network/board_sync.gd").new()
 	add_child(board_sync)
 	board_sync.setup(self, token_scene, tokens_root, measurement_tool)
@@ -1611,6 +1616,9 @@ func _set_pending_spawn_from_screen(screen_position: Vector2) -> bool:
 
 
 func _unhandled_input(event: InputEvent) -> void:
+	if item_controller != null and item_controller.handle_event(event):
+		get_viewport().set_input_as_handled()
+		return
 	if bool(measurement_tool.call("is_movable_aoe_dragging")):
 		if event is InputEventMouseMotion:
 			measurement_tool.call(
@@ -1814,6 +1822,8 @@ func _unhandled_input(event: InputEvent) -> void:
 
 
 func _history_motion_in_progress() -> bool:
+	if item_controller != null and item_controller.placing:
+		return true
 	if (
 		token_drag != null
 		and is_instance_valid(token_drag)
@@ -1911,6 +1921,8 @@ func begin_undo_transaction() -> Dictionary:
 func begin_token_move_transaction(tokens: Array) -> Dictionary:
 	if _undo_restoring:
 		return {}
+	if item_controller != null and not item_controller.items.is_empty():
+		return _capture_history_state()
 	return _capture_token_move_state(tokens)
 
 
@@ -2045,6 +2057,8 @@ func _apply_token_move_history_state(state: Dictionary) -> bool:
 
 
 func commit_undo_transaction(state: Dictionary) -> void:
+	if item_controller != null:
+		item_controller.flush_motion()
 	if _undo_restoring or state.is_empty():
 		return
 	_append_history_state(_undo_stack, state)
@@ -3549,12 +3563,6 @@ func _load_shared_token_editor_from_target(token: CharacterBody3D) -> void:
 		var manual_value: Variant = token.call("get_conditions")
 		if manual_value is Array:
 			conditions.append_array(manual_value as Array)
-	if token.has_method("get_automatic_conditions"):
-		var automatic_value: Variant = token.call("get_automatic_conditions")
-		if automatic_value is Array:
-			for condition_value: Variant in automatic_value as Array:
-				if not (condition_value in conditions):
-					conditions.append(condition_value)
 	_set_shared_token_editor_conditions(conditions)
 
 
@@ -4301,6 +4309,9 @@ func _move_selected(direction: Vector2i) -> void:
 		if token.has_method("nudge_grid"):
 			token.call("nudge_grid", direction)
 
+	if item_controller != null:
+		item_controller.flush_motion(_selected_tokens)
+
 	var moved: bool = _selected_tokens_moved_from(origins)
 	if moved:
 		commit_undo_transaction(before)
@@ -4323,6 +4334,9 @@ func _move_selected_vertical(steps: int) -> void:
 	for token: CharacterBody3D in _selected_tokens:
 		if token.has_method("nudge_vertical"):
 			token.call("nudge_vertical", steps)
+
+	if item_controller != null:
+		item_controller.flush_motion(_selected_tokens)
 
 	var moved: bool = _selected_tokens_moved_from(origins)
 	if moved:

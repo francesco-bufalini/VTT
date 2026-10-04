@@ -26,3 +26,6 @@ __pycache__/
 
 # Generated screenshots and analysis reports
 /outputs/
+
+# Embedded images extracted automatically from the item GLB on import.
+/assets/items/roman_chariot_with_painted_front_*.png

@@ -65,20 +65,25 @@ func refresh_now() -> void:
 			if first == target:
 				continue
 
-			var party_key := _party_key(first)
-			if party_key.is_empty() or _party_key(target) == party_key:
+			var target_party := _party_key(target)
+			var first_party := _party_key(first)
+			if not party_keys_are_enemies(first_party, target_party):
 				continue
 			if not _token_reaches_target(first, target):
 				continue
 
 			for second_index: int in range(first_index + 1, tokens.size()):
 				var second: CharacterBody3D = tokens[second_index]
-				if (
-					second == target
-					or second == first
-					or _party_key(second) != party_key
-					or not _token_reaches_target(second, target)
+				if second == target or second == first:
+					continue
+				var second_party := _party_key(second)
+				if not flankers_are_hostile_to_target(
+					first_party,
+					second_party,
+					target_party
 				):
+					continue
+				if not _token_reaches_target(second, target):
 					continue
 
 				var first_half := _token_half_extents(first)
@@ -115,9 +120,9 @@ func refresh_now() -> void:
 				_flanked_ids[target.get_instance_id()] = true
 				target.set_meta("flanked", true)
 
-	# Reach arrows are a general tactical layer: every token points toward every
-	# other token currently inside its own reach, independent of party,
-	# selection and flanking state.
+	# Reach arrows are a tactical hostility layer: every token points only
+	# toward enemy-party tokens currently inside its own reach. Selection and
+	# flanking state do not affect this visualization.
 	var reach_visuals := _build_reach_visuals(tokens)
 	var arrow_value: Variant = reach_visuals.get("arrows", [])
 	if arrow_value is Array:
@@ -169,6 +174,11 @@ func _build_reach_visuals(
 		for second_index: int in range(first_index + 1, tokens.size()):
 			var second := tokens[second_index]
 			if second == null or not is_instance_valid(second):
+				continue
+			if not party_keys_are_enemies(
+				_party_key(first),
+				_party_key(second)
+			):
 				continue
 
 			var second_half := _token_half_extents(second)
@@ -418,6 +428,34 @@ func is_flanked(token: Node) -> bool:
 	)
 
 
+static func normalized_party_key(value: String) -> String:
+	var clean := value.strip_edges().to_lower()
+	return clean if not clean.is_empty() else "default"
+
+
+static func party_keys_are_enemies(
+	first_party: String,
+	second_party: String
+) -> bool:
+	return (
+		normalized_party_key(first_party)
+		!= normalized_party_key(second_party)
+	)
+
+
+static func flankers_are_hostile_to_target(
+	first_flanker_party: String,
+	second_flanker_party: String,
+	target_party: String
+) -> bool:
+	# The flankers do not need to be allies with each other. Each one only
+	# needs to be hostile to the creature being flanked.
+	return (
+		party_keys_are_enemies(first_flanker_party, target_party)
+		and party_keys_are_enemies(second_flanker_party, target_party)
+	)
+
+
 func _party_key(token: Node) -> String:
 	if token == null or not is_instance_valid(token):
 		return ""
@@ -428,10 +466,7 @@ func _party_key(token: Node) -> String:
 		value = String(token.call("get_party_id"))
 	elif token.has_meta("party_id"):
 		value = String(token.get_meta("party_id", ""))
-	value = value.strip_edges()
-	if value.is_empty():
-		value = "Default"
-	return value.to_lower()
+	return normalized_party_key(value)
 
 
 func _token_reaches_target(
