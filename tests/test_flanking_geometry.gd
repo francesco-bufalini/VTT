@@ -63,6 +63,29 @@ func run() -> void:
 		5.0
 	))
 
+	# Tactical reach used by opportunity attacks has the same diagonal rule:
+	# moving between orthogonal and diagonal adjacency stays within 5 ft.
+	assert(is_equal_approx(
+		FlankingSystem.tactical_reach_distance_feet(
+			Vector3.ZERO,
+			half,
+			Vector3(1.0, 0.0, 0.0),
+			half,
+			1.0
+		),
+		5.0
+	))
+	assert(is_equal_approx(
+		FlankingSystem.tactical_reach_distance_feet(
+			Vector3.ZERO,
+			half,
+			Vector3(1.0, 0.0, 1.0),
+			half,
+			1.0
+		),
+		5.0
+	))
+
 	# Same-plane line geometry is projected down to the miniature bases.
 	var projected := FlankingSystem.project_centers_to_shared_base(
 		Vector3(-1.0, 1.0, 0.0),
@@ -124,20 +147,32 @@ func run() -> void:
 		half
 	))
 
-	# Crossing adjacent borders is not flanking, even though the line
-	# intersects the target's space.
-	assert(not FlankingSystem.centers_cross_opposite_borders(
-		Vector3(-2.0, 0.0, 0.0),
-		Vector3(0.0, 0.0, 2.0),
+	# Requested square-grid sector handling: diagonal + opposite side is a
+	# valid 135-degree flank ("L" arrangement), while a 90-degree pair is not.
+	assert(FlankingSystem.centers_form_flanking_pair(
+		Vector3(1.0, 0.0, 1.0),
+		Vector3(0.0, 0.0, -1.0),
+		Vector3.ZERO,
+		half
+	))
+	assert(FlankingSystem.centers_form_flanking_pair(
+		Vector3(1.0, 0.0, 1.0),
+		Vector3(-1.0, 0.0, 0.0),
+		Vector3.ZERO,
+		half
+	))
+	assert(not FlankingSystem.centers_form_flanking_pair(
+		Vector3(0.0, 0.0, -1.0),
+		Vector3(1.0, 0.0, 0.0),
 		Vector3.ZERO,
 		half
 	))
 
-	# Side-to-corner is deliberately rejected: the DMG requires opposite
-	# sides or opposite corners rather than any generic intersection.
+	# The stricter opposite-border helper remains available for exact DMG
+	# line diagnostics, but is no longer the only accepted tactical layout.
 	assert(not FlankingSystem.centers_cross_opposite_borders(
 		Vector3(-2.0, 0.0, 0.0),
-		Vector3(2.0, 0.0, 2.0),
+		Vector3(0.0, 0.0, 2.0),
 		Vector3.ZERO,
 		half
 	))
