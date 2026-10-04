@@ -2235,7 +2235,44 @@ func _show_context_menu(screen_position: Vector2) -> void:
 	if not hit.is_empty():
 		var hit_normal: Vector3 = hit.get("normal", Vector3.UP)
 		if hit_normal.dot(Vector3.UP) >= 0.35:
-			_pending_spawn_position = hit.get("position", Vector3.ZERO)
+			var hit_position: Vector3 = hit.get("position", Vector3.ZERO)
+			var spawn_position := hit_position
+
+			# The volumetric grid is visual-only. At shallow camera angles its
+			# visible top face can be one or more cells in front of the actual
+			# collision point underneath. Pick the top grid cell crossed by the
+			# same mouse ray so the token appears on the square being pointed at.
+			if (
+				volumetric_grid.visible
+				and volumetric_grid.has_method(
+					"pick_visible_top_cell_from_ray"
+				)
+			):
+				var ray_origin := camera.project_ray_origin(screen_position)
+				var ray_direction := camera.project_ray_normal(screen_position)
+				var max_grid_pick_distance := (
+					ray_origin.distance_to(hit_position)
+					+ cell_size * 1.5
+				)
+				var grid_pick: Variant = volumetric_grid.call(
+					"pick_visible_top_cell_from_ray",
+					ray_origin,
+					ray_direction,
+					max_grid_pick_distance
+				)
+				if grid_pick is Dictionary:
+					var grid_pick_data := grid_pick as Dictionary
+					if bool(grid_pick_data.get("valid", false)):
+						var top_center_value: Variant = grid_pick_data.get(
+							"top_center",
+							spawn_position
+						)
+						if top_center_value is Vector3:
+							var top_center: Vector3 = top_center_value
+							spawn_position.x = top_center.x
+							spawn_position.z = top_center.z
+
+			_pending_spawn_position = spawn_position
 			_has_pending_spawn_position = true
 			var hit_collider := hit.get("collider") as Node3D
 			if (
