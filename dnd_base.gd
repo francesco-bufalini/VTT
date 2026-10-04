@@ -17,6 +17,26 @@ const CONTEXT_TOKEN_DETAILS := 14
 const CONTEXT_RESTORE_TRANSFORMATION := 15
 const CONTEXT_PLAYER_AREA := 16
 const CONTEXT_MASTER_AREA := 17
+const CONTEXT_TOKEN_LIST := 18
+const CONTEXT_MEASURE_RULER := 19
+const CONTEXT_AOE_SPHERE := 20
+const CONTEXT_AOE_CUBE := 21
+const CONTEXT_AOE_CONE := 22
+const CONTEXT_AOE_LINE := 23
+const CONTEXT_CLEAR_AOES := 24
+const CONTEXT_SHARE_MAP := 25
+const CONTEXT_SAVE_MAP_LOCAL := 26
+const CONTEXT_LOAD_MAP_LOCAL := 27
+const CONTEXT_SAVE_CAMPAIGN_STATE := 28
+const CONTEXT_COMBAT_START := 29
+const CONTEXT_COMBAT_END := 30
+const CONTEXT_PLAYER_ADD_CHARACTER := 31
+const CONTEXT_PLAYER_LINK_TOKEN := 32
+const CONTEXT_PLAYER_LINK_CHARACTER := 33
+const CONTEXT_MASTER_LINK_TOKEN := 34
+const CONTEXT_MASTER_LINK_CREATURE := 35
+const CONTEXT_UNDO := 36
+const CONTEXT_REDO := 37
 const CAMPAIGN_EDITOR_SCENE_PATH := "res://vtt/editor/campaign_editor.tscn"
 const LOCAL_TOKEN_CATALOG := "res://dist/token_packs/token_catalog.json"
 const LOCAL_TOKEN_PACK_ROOT := "res://dist/token_packs"
@@ -2005,6 +2025,25 @@ func start_combat_mode() -> void:
 	initiative_tracker.call("start_combat")
 
 
+func _save_active_runtime_state() -> Error:
+	var campaign_manager: Node = get_node_or_null("/root/CampaignManager")
+	if (
+		campaign_manager == null
+		or board_sync == null
+		or not is_instance_valid(board_sync)
+	):
+		return ERR_UNAVAILABLE
+	var snapshot_value: Variant = board_sync.call("create_snapshot")
+	if not snapshot_value is Dictionary:
+		return ERR_INVALID_DATA
+	var snapshot: Dictionary = snapshot_value as Dictionary
+	if snapshot.is_empty():
+		return ERR_BUSY
+	return int(
+		campaign_manager.call("save_active_runtime_state", snapshot)
+	) as Error
+
+
 func end_combat_mode() -> void:
 	if (
 		initiative_tracker == null
@@ -2208,17 +2247,22 @@ func _show_context_menu(screen_position: Vector2) -> void:
 	context_menu.clear()
 	_prepare_context_submenus()
 
-	if measurement_tool.is_measurement_mode():
-		context_measure_menu.add_item("AoE: sfera", 20)
-		context_measure_menu.add_item("AoE: cubo", 21)
-		context_measure_menu.add_item("AoE: cono", 22)
-		context_measure_menu.add_item("AoE: linea", 23)
-		context_measure_menu.add_separator()
-		context_measure_menu.add_item("Cancella tutte le AoE", 24)
-		context_menu.add_submenu_node_item("Misura", context_measure_menu)
+	context_measure_menu.add_item("Righello", CONTEXT_MEASURE_RULER)
+	context_measure_menu.add_separator()
+	context_measure_menu.add_item("AoE: sfera", CONTEXT_AOE_SPHERE)
+	context_measure_menu.add_item("AoE: cubo", CONTEXT_AOE_CUBE)
+	context_measure_menu.add_item("AoE: cono", CONTEXT_AOE_CONE)
+	context_measure_menu.add_item("AoE: linea", CONTEXT_AOE_LINE)
+	context_measure_menu.add_separator()
+	context_measure_menu.add_item("Cancella tutte le AoE", CONTEXT_CLEAR_AOES)
+	context_menu.add_submenu_node_item("Misura", context_measure_menu)
 
 	if _has_pending_spawn_position:
 		context_token_menu.add_item("Genera token", CONTEXT_CREATE_TOKEN)
+
+	if context_token_menu.item_count > 0:
+		context_token_menu.add_separator()
+	context_token_menu.add_item("Lista token", CONTEXT_TOKEN_LIST)
 
 	if not _selected_tokens.is_empty():
 		if context_token_menu.item_count > 0:
@@ -2255,8 +2299,40 @@ func _show_context_menu(screen_position: Vector2) -> void:
 		context_menu.add_submenu_node_item("Token", context_token_menu)
 
 	context_game_menu.add_item("Incantesimi", CONTEXT_SPELLS)
+	context_game_menu.add_separator()
 	context_game_menu.add_item("Area Player", CONTEXT_PLAYER_AREA)
+	context_game_menu.add_item(
+		"Aggiungi personaggio",
+		CONTEXT_PLAYER_ADD_CHARACTER
+	)
+	context_game_menu.add_item(
+		"Token selezionato → personaggio",
+		CONTEXT_PLAYER_LINK_TOKEN
+	)
+	context_game_menu.set_item_disabled(
+		context_game_menu.get_item_index(CONTEXT_PLAYER_LINK_TOKEN),
+		_selected_tokens.is_empty()
+	)
+	context_game_menu.add_item(
+		"Personaggio → token per nome",
+		CONTEXT_PLAYER_LINK_CHARACTER
+	)
+	context_game_menu.add_separator()
 	context_game_menu.add_item("Area Master", CONTEXT_MASTER_AREA)
+	context_game_menu.add_item(
+		"Token selezionato → creatura",
+		CONTEXT_MASTER_LINK_TOKEN
+	)
+	context_game_menu.set_item_disabled(
+		context_game_menu.get_item_index(CONTEXT_MASTER_LINK_TOKEN),
+		_selected_tokens.is_empty()
+	)
+	context_game_menu.add_item(
+		"Creatura → token per nome",
+		CONTEXT_MASTER_LINK_CREATURE
+	)
+	context_game_menu.add_separator("Combattimento")
+	context_game_menu.add_item("Inizia combattimento", CONTEXT_COMBAT_START)
 	var initiative_visible: bool = (
 		initiative_tracker != null
 		and is_instance_valid(initiative_tracker)
@@ -2266,6 +2342,7 @@ func _show_context_menu(screen_position: Vector2) -> void:
 		"Nascondi iniziativa" if initiative_visible else "Mostra iniziativa",
 		CONTEXT_INITIATIVE
 	)
+	context_game_menu.add_item("Termina combattimento", CONTEXT_COMBAT_END)
 	context_menu.add_submenu_node_item("Gioco", context_game_menu)
 
 	if volumetric_grid.visible:
@@ -2296,7 +2373,35 @@ func _show_context_menu(screen_position: Vector2) -> void:
 	context_view_menu.add_item("Velocità camera…", CONTEXT_CAMERA_SETTINGS)
 	context_menu.add_submenu_node_item("Vista", context_view_menu)
 
-	context_session_menu.add_item("Sincronizza mappa / Tailscale", 25)
+	context_session_menu.add_item("Annulla ultima azione", CONTEXT_UNDO)
+	context_session_menu.set_item_disabled(
+		context_session_menu.get_item_index(CONTEXT_UNDO),
+		_undo_stack.is_empty()
+	)
+	context_session_menu.add_item("Ripeti ultima azione", CONTEXT_REDO)
+	context_session_menu.set_item_disabled(
+		context_session_menu.get_item_index(CONTEXT_REDO),
+		_redo_stack.is_empty()
+	)
+	context_session_menu.add_separator("Salvataggi")
+	if scene_file_path != CAMPAIGN_EDITOR_SCENE_PATH:
+		context_session_menu.add_item(
+			"Salva stato campagna",
+			CONTEXT_SAVE_CAMPAIGN_STATE
+		)
+	context_session_menu.add_item(
+		"Salva mappa in locale…",
+		CONTEXT_SAVE_MAP_LOCAL
+	)
+	context_session_menu.add_item(
+		"Carica mappa locale…",
+		CONTEXT_LOAD_MAP_LOCAL
+	)
+	context_session_menu.add_separator()
+	context_session_menu.add_item(
+		"Sincronizza mappa / Tailscale",
+		CONTEXT_SHARE_MAP
+	)
 	if scene_file_path != CAMPAIGN_EDITOR_SCENE_PATH:
 		context_session_menu.add_separator()
 		context_session_menu.add_item(
@@ -2339,6 +2444,46 @@ func _on_context_menu_id_pressed(id: int) -> void:
 		open_selected_token_state_editor()
 		return
 
+	if id == CONTEXT_TOKEN_LIST:
+		toggle_token_list()
+		_close_context_menu_to_game()
+		return
+
+	if id == CONTEXT_PLAYER_ADD_CHARACTER:
+		add_player_character()
+		_close_context_menu_to_game()
+		return
+
+	if id == CONTEXT_PLAYER_LINK_TOKEN:
+		link_player_character_to_selected_token()
+		_close_context_menu_to_game()
+		return
+
+	if id == CONTEXT_PLAYER_LINK_CHARACTER:
+		link_selected_player_character_to_named_token()
+		_close_context_menu_to_game()
+		return
+
+	if id == CONTEXT_MASTER_LINK_TOKEN:
+		link_master_creature_to_selected_token()
+		_close_context_menu_to_game()
+		return
+
+	if id == CONTEXT_MASTER_LINK_CREATURE:
+		link_selected_master_creature_to_named_token()
+		_close_context_menu_to_game()
+		return
+
+	if id == CONTEXT_COMBAT_START:
+		start_combat_mode()
+		_close_context_menu_to_game()
+		return
+
+	if id == CONTEXT_COMBAT_END:
+		end_combat_mode()
+		_close_context_menu_to_game()
+		return
+
 	if id == CONTEXT_RESTORE_TRANSFORMATION:
 		if _selected_tokens.size() == 1:
 			var token: CharacterBody3D = _selected_tokens[0]
@@ -2358,20 +2503,51 @@ func _on_context_menu_id_pressed(id: int) -> void:
 		_pending_aoe_index = -1
 		_close_context_menu_to_game()
 		return
-	if id >= 20 and id <= 23:
-		measurement_tool.set_aoe_mode(["sphere", "cube", "cone", "line"][id - 20])
+	if id == CONTEXT_MEASURE_RULER:
+		measurement_tool.call("set_measurement_mode", true)
+		measurement_tool.set("aoe_mode", false)
+		measurement_mode_label.text = "MISURAZIONE  [R per uscire]"
+		measurement_mode_label.show()
+		_close_context_menu_to_game()
+		return
+	if id >= CONTEXT_AOE_SPHERE and id <= CONTEXT_AOE_LINE:
+		if not measurement_tool.is_measurement_mode():
+			measurement_tool.call("set_measurement_mode", true)
+		measurement_tool.set_aoe_mode(
+			["sphere", "cube", "cone", "line"][id - CONTEXT_AOE_SPHERE]
+		)
 		measurement_mode_label.text = "AoE: trascina clic sinistro | R per uscire"
 		measurement_mode_label.show()
 		_close_context_menu_to_game()
 		return
-	if id == 24:
+	if id == CONTEXT_CLEAR_AOES:
 		measurement_tool.clear_persistent_aoes()
 		_close_context_menu_to_game()
 		return
-	if id == 25:
+	if id == CONTEXT_SHARE_MAP:
 		_ui_owns_mouse = true
 		_popup_dialog_safe(share_dialog, Vector2i(620, 430))
 		_release_mouse()
+		return
+	if id == CONTEXT_SAVE_MAP_LOCAL:
+		context_menu.hide()
+		_open_map_save_dialog()
+		return
+	if id == CONTEXT_LOAD_MAP_LOCAL:
+		context_menu.hide()
+		_open_map_load_dialog()
+		return
+	if id == CONTEXT_SAVE_CAMPAIGN_STATE:
+		_save_active_runtime_state()
+		_close_context_menu_to_game()
+		return
+	if id == CONTEXT_UNDO:
+		undo_last_action()
+		_close_context_menu_to_game()
+		return
+	if id == CONTEXT_REDO:
+		redo_last_action()
+		_close_context_menu_to_game()
 		return
 	match id:
 		CONTEXT_MAIN_MENU:
