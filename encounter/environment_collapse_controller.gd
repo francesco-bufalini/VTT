@@ -81,6 +81,13 @@ func stop_effects() -> void:
 		_fall_tween.kill()
 	_falling.visible = false
 
+func replay_collapse(cells: Array[Vector2i]) -> void:
+	for object in get_tree().get_nodes_in_group("encounter_obstacle"):
+		if object.has_method("replay_collapse"):
+			object.call("replay_collapse", cells, cell_size)
+	animate_collapse(cells)
+
+
 func animate_collapse(cells: Array[Vector2i]) -> void:
 	if _fall_tween != null:
 		_fall_tween.kill()
