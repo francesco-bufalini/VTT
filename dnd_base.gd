@@ -2973,7 +2973,7 @@ func check_opportunity_attacks_after_movement(
 				before_feet <= reach_feet + 0.001
 				and after_feet > reach_feet + 0.001
 			):
-				var notice: String = "⚔ %s → %s · opportunità" % [
+				var notice: String = "🗡️ %s → %s · opportunità" % [
 					_token_notice_name(attacker),
 					_token_notice_name(moved_token)
 				]
