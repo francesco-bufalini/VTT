@@ -206,8 +206,15 @@ func _build_add_dialog() -> void:
 	add_dialog.name = "InitiativeAddDialog"
 	add_dialog.title = "Aggiungi partecipante"
 	add_dialog.ok_button_text = "Aggiungi"
-	add_dialog.min_size = Vector2i(460, 300)
+	add_dialog.min_size = Vector2i(360, 220)
 	ui_root.add_child(add_dialog)
+	add_dialog.get_ok_button().custom_minimum_size = Vector2(100, 34)
+	add_dialog.get_ok_button().show()
+	var cancel_button := add_dialog.get_cancel_button()
+	if cancel_button != null:
+		cancel_button.text = "Annulla"
+		cancel_button.custom_minimum_size = Vector2(100, 34)
+		cancel_button.show()
 
 	var body: VBoxContainer = VBoxContainer.new()
 	body.set_anchors_and_offsets_preset(Control.PRESET_FULL_RECT)
@@ -332,8 +339,12 @@ func open_add_dialog() -> void:
 func _popup_dialog_safe(dialog: Window, preferred_size: Vector2i) -> void:
 	if dialog == null or not is_instance_valid(dialog):
 		return
-	dialog.reset_size()
-	dialog.popup_centered_clamped(preferred_size, 0.92)
+	var viewport_size := board_root.get_viewport().get_visible_rect().size
+	var safe_size := Vector2i(
+		mini(preferred_size.x, maxi(320, int(viewport_size.x) - 48)),
+		mini(preferred_size.y, maxi(200, int(viewport_size.y) - 48))
+	)
+	dialog.popup_centered_clamped(safe_size, 0.92)
 
 
 func _focus_participant_name() -> void:
@@ -782,6 +793,10 @@ func _tokens() -> Array[Node3D]:
 
 
 func _token_id(token: Node3D) -> String:
+	if token.has_method("get_token_id"):
+		var stable_id := String(token.call("get_token_id")).strip_edges()
+		if not stable_id.is_empty():
+			return stable_id
 	if token.has_meta("sync_id"):
 		return String(token.get_meta("sync_id"))
 	if board_sync != null and is_instance_valid(board_sync):
