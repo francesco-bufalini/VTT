@@ -1598,6 +1598,14 @@ func show_held_spell_aoe(
 	DamageAreaParticles.attach_area(
 		root, start, end, shape, style, cell_size
 	)
+	_add_aoe_pick_area(
+		root,
+		start,
+		end,
+		shape,
+		style,
+		line_width_world
+	)
 	_held_spell_aoes.append(root)
 
 
@@ -1614,6 +1622,90 @@ func clear_post_cast_spell_visuals() -> void:
 	clear_transient_spell_aoes()
 
 
+func has_post_cast_spell_visuals() -> bool:
+	for root: Node3D in _held_spell_aoes:
+		if root != null and is_instance_valid(root):
+			return true
+	for child: Node in get_children():
+		if (
+			child is Node3D
+			and String(child.name).begins_with("TransientAoE")
+		):
+			return true
+	return false
+
+
+func _remove_post_cast_spell_root(root: Node3D) -> bool:
+	if root == null or not is_instance_valid(root):
+		return false
+
+	var held_index: int = _held_spell_aoes.find(root)
+	if held_index >= 0:
+		_held_spell_aoes.remove_at(held_index)
+		root.hide()
+		root.queue_free()
+		_affected_tokens_signature = ""
+		_refresh_affected_token_highlight()
+		return true
+
+	var root_id: int = root.get_instance_id()
+	for index: int in range(_transient_spell_aoes.size() - 1, -1, -1):
+		if int(_transient_spell_aoes[index].get("id", -1)) != root_id:
+			continue
+		_transient_spell_aoes.remove_at(index)
+		root.hide()
+		root.queue_free()
+		_affected_tokens_signature = ""
+		_refresh_affected_token_highlight()
+		return true
+
+	return false
+
+
+func remove_post_cast_spell_visual_at_screen(
+	screen_position: Vector2
+) -> bool:
+	if _camera == null or not is_instance_valid(_camera):
+		return false
+
+	var origin: Vector3 = _camera.project_ray_origin(screen_position)
+	var direction: Vector3 = _camera.project_ray_normal(screen_position)
+	var excluded: Array[RID] = []
+
+	# Post-cast spell areas share the normal AoE pick layer. Skip any manual
+	# persistent AoE in front of the ray instead of deleting it by accident.
+	for _attempt: int in range(16):
+		var query := PhysicsRayQueryParameters3D.create(
+			origin,
+			origin + direction * max_ray_distance
+		)
+		query.collision_mask = AOE_PICK_LAYER
+		query.collide_with_bodies = false
+		query.collide_with_areas = true
+		query.exclude = excluded
+
+		var hit: Dictionary = (
+			_camera.get_world_3d().direct_space_state.intersect_ray(query)
+		)
+		if hit.is_empty():
+			return false
+
+		var area: Area3D = hit.get("collider") as Area3D
+		if area == null:
+			return false
+
+		if area.has_meta("aoe_root"):
+			var root_value: Variant = area.get_meta("aoe_root")
+			if root_value is Node3D:
+				var root := root_value as Node3D
+				if _remove_post_cast_spell_root(root):
+					return true
+
+		excluded.append(area.get_rid())
+
+	return false
+
+
 func show_transient_aoe(
 	start: Vector3,
 	end: Vector3,
@@ -1621,7 +1713,7 @@ func show_transient_aoe(
 	duration_seconds: float = 5.0,
 	style: String = "",
 	line_width_world: float = -1.0,
-	auto_expire: bool = true
+	auto_expire: bool = false
 ) -> void:
 	if shape not in ["sphere", "cube", "cone", "line", "flat_square", "cylinder"]:
 		return
@@ -1644,6 +1736,14 @@ func show_transient_aoe(
 	)
 	DamageAreaParticles.attach_area(
 		root, start, end, shape, style, cell_size
+	)
+	_add_aoe_pick_area(
+		root,
+		start,
+		end,
+		shape,
+		style,
+		line_width_world
 	)
 
 	var transient_id: int = root.get_instance_id()
