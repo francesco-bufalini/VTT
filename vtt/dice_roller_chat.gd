@@ -758,7 +758,11 @@ func _show_quick_roll_result(event: Dictionary) -> void:
 	)
 	quick_result_panel.show()
 
-	await get_tree().create_timer(2.2).timeout
+	var timer := get_tree().create_timer(2.2)
+	timer.timeout.connect(_hide_quick_roll_result.bind(generation))
+
+
+func _hide_quick_roll_result(generation: int) -> void:
 	if generation == _quick_result_generation and quick_result_panel != null:
 		quick_result_panel.hide()
 
