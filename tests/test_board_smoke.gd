@@ -1,6 +1,5 @@
 extends SceneTree
 
-const BoardSync = preload("res://network/board_sync.gd")
 const InitiativeTracker = preload("res://vtt/initiative_tracker.gd")
 const MeasurementTool = preload("res://measurement_tool.gd")
 const TokenScene = preload("res://token.tscn")
@@ -30,7 +29,8 @@ func run() -> void:
 	initiative.name = "InitiativeTracker"
 	arena.add_child(initiative)
 
-	var sync: Node = BoardSync.new()
+	# Load after the SceneTree autoloads are registered in command-line tests.
+	var sync: Node = load("res://network/board_sync.gd").new()
 	sync.name = "BoardSync"
 	arena.add_child(sync)
 	sync.setup(arena, TokenScene, tokens_root, measure)
@@ -41,7 +41,7 @@ func run() -> void:
 	token.position = Vector3(2.0, 1.0, 2.0)
 	token.set_flying(true)
 	token.set_display_name("Agent Smoke Token")
-	var stable_token_id := token.get_token_id()
+	var stable_token_id: String = token.get_token_id()
 	if stable_token_id.is_empty():
 		_fail("token did not receive a stable token_id")
 		return

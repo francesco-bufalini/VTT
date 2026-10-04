@@ -43,6 +43,9 @@ func _sync_end_state() -> void:
 
 func _unhandled_input(event: InputEvent) -> void:
 	if is_instance_valid(encounter) and encounter.encounter_finished:
+		# Ending combat must still allow the player to release/capture the cursor.
+		if event is InputEventKey and event.pressed and not event.echo and event.keycode == KEY_ESCAPE:
+			super._unhandled_input(event)
 		return
 	super._unhandled_input(event)
 

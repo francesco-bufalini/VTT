@@ -1,6 +1,5 @@
 extends SceneTree
 
-const BoardSync = preload("res://network/board_sync.gd")
 const DiceChatSync = preload("res://network/dice_chat_sync.gd")
 const DiceRollerChat = preload("res://vtt/dice_roller_chat.gd")
 
@@ -10,9 +9,10 @@ func _initialize() -> void:
 
 
 func run() -> void:
+	var board_sync: Script = load("res://network/board_sync.gd")
 	# Chat/dice traffic must never share the map-sync socket/protocol.
-	assert(DiceChatSync.PORT != BoardSync.PORT)
-	assert(DiceChatSync.MAGIC != BoardSync.MAGIC)
+	assert(DiceChatSync.PORT != board_sync.PORT)
+	assert(DiceChatSync.MAGIC != board_sync.MAGIC)
 
 	assert(DiceRollerChat.percentile_total(0, 0) == 100)
 	assert(DiceRollerChat.percentile_total(0, 7) == 7)

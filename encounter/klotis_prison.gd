@@ -26,10 +26,11 @@ var _active_side: String = ""
 var _burst_sent: bool = false
 var _impact_sent: bool = false
 var _model_fitted: bool = false
+var _sealed_hand_offsets: Dictionary = {}
 
 const PRISON_RADIUS_METERS := 220.0
-const SEALED_RIGHT_HAND_CLEARANCE_METERS := 0.35
-const SEALED_RIGHT_HAND_MAX_PUSH_METERS := 30.0
+const SEALED_HAND_CLEARANCE_METERS := 0.35
+const SEALED_HAND_MAX_PUSH_METERS := 30.0
 
 func _ready() -> void:
 	model = get_node("Visual") as Node3D
@@ -76,8 +77,10 @@ func _ready() -> void:
 	player.animation_finished.connect(_on_animation_finished)
 	for clip in _clips.values():
 		player.get_animation(clip).loop_mode = Animation.LOOP_NONE
+	_refine_animation_timing()
 	reset_seals()
 	_fit_model()
+	_bring_head_details_forward()
 	_build_walkable_surfaces()
 	_retire_legacy()
 	scene.encounter.seals.changed.connect(_sync_seal_state)
@@ -117,11 +120,14 @@ func _start_attack(side: String) -> void:
 			var safe_ending: String = "_l" if previous == "left" else ("_r" if previous == "right" else "_f")
 			if bone.ends_with(ending) or bone.ends_with(safe_ending) or (previous == "forehead" and bone == "head"):
 				enable = false
-		# Keep the corrected resting pose on the sealed right side while another
-		# seal animates. Its own break animation is allowed to take control.
-		if side != "right" and not bool(broken.get("right", false)):
-			if bone.ends_with(".r") or bone.ends_with("_r"):
-				enable = false
+		# Only the active limb may move; queued breaks retain their sealed pose.
+		for inactive in ["left", "right"]:
+			if inactive != side:
+				var suffix: String = ".l" if inactive == "left" else ".r"
+				if bone.ends_with(suffix) or bone.ends_with(suffix.replace(".", "_")):
+					enable = false
+		if side != "forehead" and bone == "head":
+			enable = false
 		animation.track_set_enabled(index, enable)
 	player.play(_clips[side], 0.0)
 	player.advance(0.0)
@@ -181,7 +187,7 @@ func reset_seals() -> void:
 	player.play(_clips["left"], 0.0)
 	player.advance(0.0)
 	player.pause()
-	_apply_sealed_right_hand_clearance()
+	_apply_sealed_hand_clearance()
 	for side in ["left", "right", "forehead"]:
 		var fragments := model.find_child("Seal_Fragments_" + side.capitalize() + "_V5", true, false) as Node3D
 		if fragments != null:
@@ -280,17 +286,18 @@ func _fit_model() -> void:
 	statue.scale *= old_statue.size.y / statue_box.size.y
 	statue_box = statue.global_transform * statue.get_aabb()
 	statue.global_position.y += neck_y - statue_box.end.y
-	# Keep the authored palm contact after fitting the two characters' heights.
-	var palm_height := 0.0
-	for side: String in ["left", "right"]:
-		player.play(_clips[side], 0.0)
-		player.advance(42.0 / 30.0)
-		skeleton.force_update_all_bone_transforms()
-		palm_height += _palm_center(side).y * 0.5
-	player.stop()
+	# Fit the rock to the same corrected, persistent poses used during play.
+	# The lowest finger touches the platform; no part of either hand is buried.
 	_model_fitted = true
 	reset_seals()
-	statue.global_position.y += palm_height - 0.02 * sphere_scale - neck_y
+	var palm_bottom := INF
+	for side: String in ["left", "right"]:
+		_start_attack(side)
+		player.advance(1.5)
+		skeleton.force_update_all_bone_transforms()
+		palm_bottom = minf(palm_bottom, float(_sealed_hand_metrics(side).min_y))
+	reset_seals()
+	statue.global_position.y += palm_bottom - neck_y
 	statue_box = statue.global_transform * statue.get_aabb()
 	statue_top = _neck_top(statue)
 	baseline_dimensions = {"sphere_diameter":440.0*units,"goddess_height":old_goddess.size.y,"statue_height":old_statue.size.y}
@@ -377,6 +384,7 @@ func _sealed_hand_metrics(side: String) -> Dictionary:
 
 	var center := Vector3.ZERO
 	var minimum_radius := INF
+	var minimum_y := INF
 	var count := 0
 	var offset := 0
 	for surface: Dictionary in data.surfaces:
@@ -384,11 +392,15 @@ func _sealed_hand_metrics(side: String) -> Dictionary:
 			var hand_weight := 0.0
 			for k in surface.influences:
 				var slot: int = i * surface.influences + k
-				if data.binds[surface.bones[slot]] == bone:
+				var influenced_bone: int = data.binds[surface.bones[slot]]
+				while influenced_bone >= 0 and influenced_bone != bone:
+					influenced_bone = skeleton.get_bone_parent(influenced_bone)
+				if influenced_bone == bone:
 					hand_weight += surface.weights[slot]
 			if hand_weight > 0.55:
 				var point: Vector3 = points[offset + i]
 				center += point
+				minimum_y = minf(minimum_y, point.y)
 				minimum_radius = minf(
 					minimum_radius,
 					point.distance_to(model.global_position)
@@ -401,66 +413,125 @@ func _sealed_hand_metrics(side: String) -> Dictionary:
 	return {
 		"center": center / float(count),
 		"min_radius": minimum_radius,
+		"min_y": minimum_y,
 	}
 
 
-func _apply_sealed_right_hand_clearance() -> void:
+func _apply_sealed_hand_clearance() -> void:
 	if not _model_fitted:
 		return
-	if scene == null or model == null or skeleton == null:
-		return
-	var measurement := scene.get_node_or_null("MeasurementTool")
-	if measurement == null or not measurement.has_method("meters_to_world"):
-		return
+	var units: float = scene.measurement_tool.meters_to_world(1.0)
+	var target_radius := (PRISON_RADIUS_METERS + SEALED_HAND_CLEARANCE_METERS) * units
+	for side: String in ["left", "right"]:
+		var hand_bone := skeleton.find_bone("hand.l" if side == "left" else "hand.r")
+		if hand_bone < 0:
+			hand_bone = skeleton.find_bone("hand_l" if side == "left" else "hand_r")
+		if hand_bone < 0:
+			continue
+		var offset := Vector3.ZERO
+		# Re-evaluate after each push because finger skin weights blend at the wrist.
+		for iteration in range(4):
+			var metrics := _sealed_hand_metrics(side)
+			if metrics.is_empty():
+				break
+			var required_push := target_radius - float(metrics.min_radius)
+			if required_push <= 0.001:
+				break
+			var outward: Vector3 = (metrics.center - model.global_position).normalized()
+			var parent_world := skeleton.global_transform * skeleton.get_bone_global_pose(skeleton.get_bone_parent(hand_bone))
+			var local_push := parent_world.basis.inverse() * (outward * minf(required_push, SEALED_HAND_MAX_PUSH_METERS * units))
+			skeleton.set_bone_pose_position(hand_bone, skeleton.get_bone_pose_position(hand_bone) + local_push)
+			skeleton.force_update_all_bone_transforms()
+			offset += local_push
+		if not _sealed_hand_offsets.has(side):
+			_sealed_hand_offsets[side] = offset
+			_bake_hand_clearance(side, offset)
 
-	skeleton.force_update_all_bone_transforms()
-	var metrics := _sealed_hand_metrics("right")
-	if metrics.is_empty():
-		return
 
-	var units := float(measurement.call("meters_to_world", 1.0))
-	if units <= 0.0:
-		return
-	var target_radius := (
-		(PRISON_RADIUS_METERS + SEALED_RIGHT_HAND_CLEARANCE_METERS) * units
-	)
-	var minimum_radius := float(metrics.get("min_radius", target_radius))
-	var required_push := target_radius - minimum_radius
-	if required_push <= 0.0:
-		return
-	required_push = minf(
-		required_push,
-		SEALED_RIGHT_HAND_MAX_PUSH_METERS * units
-	)
+func _bake_hand_clearance(side: String, offset: Vector3) -> void:
+	var animation: Animation = player.get_animation(_clips[side])
+	var suffix: String = ".l" if side == "left" else ".r"
+	for track in animation.get_track_count():
+		var bone := String(animation.track_get_path(track)).get_slice(":", 1)
+		if bone not in ["hand" + suffix, "hand" + suffix.replace(".", "_")]:
+			continue
+		if animation.track_get_type(track) != Animation.TYPE_POSITION_3D:
+			continue
+		animation.track_set_interpolation_type(track, Animation.INTERPOLATION_LINEAR)
+		var resting: Vector3 = animation.track_get_key_value(track, 0)
+		animation.track_remove_key(track, 0)
+		for frame in range(43):
+			var time := frame / 30.0
+			var remaining := 1.0 - smoothstep(0.4, 1.1, time)
+			animation.position_track_insert_key(track, time, resting + offset * remaining)
 
-	var center: Vector3 = metrics.get("center", Vector3.ZERO)
-	var outward := center - model.global_position
-	if outward.length_squared() <= 0.000001:
-		return
-	outward = outward.normalized()
 
-	var hand_bone := skeleton.find_bone("hand.r")
-	if hand_bone < 0:
-		hand_bone = skeleton.find_bone("hand_r")
-	if hand_bone < 0:
-		return
+func _refine_animation_timing() -> void:
+	# Ease each phase and lead with the shoulder, then elbow, then wrist.
+	# The contact event at frame 38 and the final platform pose stay fixed.
+	for side: String in ["left", "right", "forehead"]:
+		var animation: Animation = player.get_animation(_clips[side])
+		var source := animation.duplicate(true) as Animation
+		for track in animation.get_track_count():
+			if animation.track_get_type(track) != Animation.TYPE_ROTATION_3D or animation.track_get_key_count(track) <= 1:
+				continue
+			var bone := String(animation.track_get_path(track)).get_slice(":", 1)
+			var lag := 0.035 if bone.begins_with("forearm") else (0.065 if bone.begins_with("hand") else 0.0)
+			for key in range(animation.track_get_key_count(track) - 1, -1, -1):
+				animation.track_remove_key(track, key)
+			for frame in range(43):
+				var time := frame / 30.0
+				var sample := time
+				# Release, anticipation, strike, and settle each have zero end velocity.
+				var phases := [0.0, 0.4, 0.7, 38.0 / 30.0, 1.4]
+				var authored := [0.0, 0.8, 1.0, 38.0 / 30.0, 1.4]
+				for phase in range(phases.size() - 1):
+					var start: float = phases[phase]
+					var end: float = phases[phase + 1]
+					if time >= start and time <= end:
+						var delayed := lag * sin(PI * clampf((time - start) / (end - start), 0.0, 1.0))
+						sample = lerpf(authored[phase], authored[phase + 1], smoothstep(start, end, time - delayed))
+						break
+				animation.rotation_track_insert_key(track, time, source.rotation_track_interpolate(track, sample))
 
-	var parent_bone := skeleton.get_bone_parent(hand_bone)
-	var parent_world := skeleton.global_transform
-	if parent_bone >= 0:
-		parent_world = (
-			skeleton.global_transform
-			* skeleton.get_bone_global_pose(parent_bone)
-		)
-	var local_push := (
-		parent_world.basis.inverse()
-		* (outward * required_push)
-	)
-	skeleton.set_bone_pose_position(
-		hand_bone,
-		skeleton.get_bone_pose_position(hand_bone) + local_push
-	)
-	skeleton.force_update_all_bone_transforms()
+
+func _bring_head_details_forward() -> void:
+	# Shift the existing details in head bind space so they follow its bow.
+	# The flowing hair blends this offset into its head weights only.
+	var head := skeleton.find_bone("head")
+	var cap := model.find_child("Klotis_Golden_Hair_Cap_V5", true, false) as MeshInstance3D
+	var scalp_center := cap.mesh.get_aabb().get_center()
+	for label: String in ["Klotis_Golden_Hair_Cap_V5", "Klotis_Full_Forehead_Hair", "Klotis_Fine_Scalp_Strands_V5", "Klotis_Flowing_Gold_Hair_V5", "Klotis_Curved_Horns_Six_V5"]:
+		var node := model.find_child(label, true, false) as MeshInstance3D
+		if node == null or node.skin == null:
+			continue
+		var source := node.mesh
+		var mesh := ArrayMesh.new()
+		for surface in source.get_surface_count():
+			var arrays: Array = source.surface_get_arrays(surface)
+			var vertices: PackedVector3Array = arrays[Mesh.ARRAY_VERTEX]
+			var bones: PackedInt32Array = arrays[Mesh.ARRAY_BONES]
+			var weights: PackedFloat32Array = arrays[Mesh.ARRAY_WEIGHTS]
+			var influences := int(bones.size() / float(vertices.size()))
+			for vertex in vertices.size():
+				for influence in influences:
+					var slot := vertex * influences + influence
+					var bind := bones[slot]
+					var bone := node.skin.get_bind_bone(bind)
+					if bone < 0:
+						bone = skeleton.find_bone(node.skin.get_bind_name(bind))
+					if bone == head and weights[slot] > 0.0:
+						var bind_pose := node.skin.get_bind_pose(bind)
+						var adjustment := Vector3(0, 0, 0.20)
+						if label not in ["Klotis_Curved_Horns_Six_V5", "Klotis_Flowing_Gold_Hair_V5"]:
+							var relative: Vector3 = bind_pose * vertices[vertex] - bind_pose * scalp_center
+							adjustment = Vector3(0, 0, 0.16) + relative * Vector3(0.08, 0.12, 0.28)
+						vertices[vertex] += bind_pose.basis.inverse() * adjustment * weights[slot]
+			arrays[Mesh.ARRAY_VERTEX] = vertices
+			mesh.add_surface_from_arrays(source.surface_get_primitive_type(surface), arrays)
+			mesh.surface_set_material(surface, source.surface_get_material(surface))
+		node.mesh = mesh
+		_skin_cache.erase(node)
 
 
 func _build_walkable_surfaces() -> void:

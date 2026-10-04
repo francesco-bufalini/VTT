@@ -1,0 +1,263 @@
+name: Blender Agent
+
+on:
+  workflow_dispatch:
+    inputs:
+      job:
+        description: Blender job JSON path
+        required: true
+        type: string
+  push:
+    branches:
+      - feature/campaign-hub
+    paths:
+      - "blender/jobs/**"
+
+permissions:
+  contents: write
+
+concurrency:
+  group: blender-agent-${{ github.ref }}
+  cancel-in-progress: false
+
+jobs:
+  blender:
+    name: Blender agent job
+    runs-on: [self-hosted, windows, x64, vtt-godot]
+    timeout-minutes: 20
+
+    steps:
+      - name: Checkout Blender surface
+        uses: actions/checkout@v4
+        with:
+          clean: false
+          fetch-depth: 2
+          sparse-checkout-cone-mode: false
+          sparse-checkout: |
+            /blender/jobs/
+            /blender/scene_previews/
+            /blender/agent_reports/
+            /blender/scenes/
+            /tools/blender_agent/
+            /tools/blender_env/
+            /encounter/encounter_scenery.gd
+            /encounter/hazard_allowed_area.gd
+            /encounter/assets/characters/titan_relief.glb
+            /measurement_tool.gd
+
+      - name: Resolve job
+        id: job
+        shell: powershell
+        run: |
+          $ErrorActionPreference = "Stop"
+          $job = "${{ github.event.inputs.job }}"
+
+          if ([string]::IsNullOrWhiteSpace($job)) {
+            $job = git diff-tree --diff-filter=AM --no-commit-id --name-only -r HEAD |
+              Where-Object { $_ -like "blender/jobs/*.json" } |
+              Select-Object -First 1
+          }
+
+          if ([string]::IsNullOrWhiteSpace($job)) {
+            "skip=true" >> $env:GITHUB_OUTPUT
+            Write-Host "No added/modified Blender job in this push; nothing to run."
+            exit 0
+          }
+
+          if (-not (Test-Path -LiteralPath $job -PathType Leaf)) {
+            throw "Blender job not found: $job"
+          }
+
+          $outputRoot = Join-Path $env:RUNNER_TEMP "blender-agent-${{ github.run_id }}"
+          "skip=false" >> $env:GITHUB_OUTPUT
+          "job=$job" >> $env:GITHUB_OUTPUT
+          "output_root=$outputRoot" >> $env:GITHUB_OUTPUT
+          Write-Host "Job: $job"
+          Write-Host "Output root: $outputRoot"
+
+      - name: Verify Blender runner environment
+        if: steps.job.outputs.skip != 'true'
+        shell: powershell
+        run: |
+          $ErrorActionPreference = "Stop"
+          if ([string]::IsNullOrWhiteSpace($env:VTT_BLENDER_EXE)) { throw "VTT_BLENDER_EXE is not available to the runner process. Restart run.cmd after setting the variable." }
+          if (-not (Test-Path -LiteralPath $env:VTT_BLENDER_EXE -PathType Leaf)) { throw "Blender executable not found: $env:VTT_BLENDER_EXE" }
+          if ([string]::IsNullOrWhiteSpace($env:VTT_BLENDER_ASSET_ROOT)) { throw "VTT_BLENDER_ASSET_ROOT is not available to the runner process. Restart run.cmd after setting the variable." }
+          if (-not (Test-Path -LiteralPath $env:VTT_BLENDER_ASSET_ROOT -PathType Container)) { throw "Blender asset root not found: $env:VTT_BLENDER_ASSET_ROOT" }
+          $versionLine = (& $env:VTT_BLENDER_EXE --version 2>&1 | Out-String)
+          Write-Host $versionLine
+          if ($LASTEXITCODE -ne 0) { exit $LASTEXITCODE }
+          if ($versionLine -notmatch "Blender 5\.2\.") { throw "Expected Blender 5.2.x." }
+
+      - name: Run Blender job
+        if: steps.job.outputs.skip != 'true'
+        shell: powershell
+        run: |
+          $ErrorActionPreference = "Stop"
+          Remove-Item -LiteralPath "${{ steps.job.outputs.output_root }}" -Recurse -Force -ErrorAction SilentlyContinue
+          New-Item -ItemType Directory -Path "${{ steps.job.outputs.output_root }}" -Force | Out-Null
+
+          $job = "${{ steps.job.outputs.job }}"
+          $stdoutPath = Join-Path $env:RUNNER_TEMP "blender-agent-${{ github.run_id }}.out"
+          $stderrPath = Join-Path $env:RUNNER_TEMP "blender-agent-${{ github.run_id }}.err"
+          Remove-Item -LiteralPath $stdoutPath,$stderrPath -Force -ErrorAction SilentlyContinue
+
+          $arguments = @(
+            "--background",
+            "--python", ".\tools\blender_agent\run_job.py",
+            "--",
+            "--job", $job,
+            "--project-root", $env:GITHUB_WORKSPACE,
+            "--output-root", "${{ steps.job.outputs.output_root }}"
+          )
+          $process = Start-Process -FilePath $env:VTT_BLENDER_EXE -ArgumentList $arguments -PassThru -Wait -NoNewWindow -RedirectStandardOutput $stdoutPath -RedirectStandardError $stderrPath
+          $stdout = if (Test-Path $stdoutPath) { Get-Content -LiteralPath $stdoutPath -Raw } else { "" }
+          $stderr = if (Test-Path $stderrPath) { Get-Content -LiteralPath $stderrPath -Raw } else { "" }
+
+          if ($stdout) { Write-Host $stdout.TrimEnd() }
+          if ($stderr) { Write-Host "== Blender stderr =="; Write-Host $stderr.TrimEnd() }
+
+          if ($process.ExitCode -ne 0) {
+            throw "Blender job failed with exit code $($process.ExitCode)."
+          }
+          if (($stdout + [Environment]::NewLine + $stderr) -notmatch "(?m)^BLENDER_AGENT_PASS ") {
+            throw "Blender job ended without BLENDER_AGENT_PASS marker."
+          }
+
+      - name: Show scene report
+        if: steps.job.outputs.skip != 'true'
+        shell: powershell
+        run: |
+          Get-ChildItem -Path "${{ steps.job.outputs.output_root }}" -Recurse -File | Select-Object FullName,Length
+          Get-ChildItem -Path "${{ steps.job.outputs.output_root }}" -Filter scene_report.json -Recurse -File | ForEach-Object { Write-Host "== $($_.FullName) =="; Get-Content -LiteralPath $_.FullName -Raw }
+
+      - name: Upload Blender outputs
+        if: steps.job.outputs.skip != 'true'
+        uses: actions/upload-artifact@v4
+        with:
+          name: blender-agent-${{ github.run_number }}
+          path: ${{ steps.job.outputs.output_root }}/**
+          if-no-files-found: error
+          retention-days: 7
+
+      - name: Publish Blender repository state
+        if: always() && steps.job.outputs.skip != 'true'
+        shell: powershell
+        run: |
+          $ErrorActionPreference = "Stop"
+
+          $outputRoot = "${{ steps.job.outputs.output_root }}"
+          $sceneReport = Get-ChildItem -Path $outputRoot -Filter scene_report.json -Recurse -File -ErrorAction SilentlyContinue | Select-Object -First 1
+          $scene = $null
+          $sceneId = ""
+
+          if ($sceneReport) {
+            $scene = Get-Content -LiteralPath $sceneReport.FullName -Raw | ConvertFrom-Json
+            $sceneId = [string]$scene.scene_id
+            if ([string]::IsNullOrWhiteSpace($sceneId) -or $sceneId -notmatch "^[A-Za-z0-9._-]+$") {
+              throw "Invalid scene_id in scene report: $sceneId"
+            }
+
+            # Lightweight canonical previews and metadata.
+            $previewDest = Join-Path "blender/scene_previews" $sceneId
+            New-Item -ItemType Directory -Path $previewDest -Force | Out-Null
+            Get-ChildItem -Path $sceneReport.Directory.FullName -Filter *.png -File | ForEach-Object {
+              if ($_.Length -gt 5MB) {
+                throw "Preview exceeds 5 MB Git guard: $($_.FullName)"
+              }
+              Copy-Item -LiteralPath $_.FullName -Destination (Join-Path $previewDest $_.Name) -Force
+            }
+
+            $metadata = [ordered]@{
+              schema_version = 1
+              scene_id = $sceneId
+              run_id = "${{ github.run_id }}"
+              run_number = "${{ github.run_number }}"
+              source_sha = "${{ github.sha }}"
+              blender_job = "${{ steps.job.outputs.job }}"
+              scene_report = $scene
+            }
+            $metadata | ConvertTo-Json -Depth 12 | Set-Content -LiteralPath (Join-Path $previewDest "metadata.json") -Encoding UTF8
+
+            # Keep the editable Blender source in Git while it is still small.
+            # GitHub rejects normal Git files >=100 MB; our 50 MB guard keeps
+            # the repository comfortably below that limit.
+            $blend = Get-ChildItem -Path $sceneReport.Directory.FullName -Filter *.blend -File | Select-Object -First 1
+            if ($blend) {
+              if ($blend.Length -le 50MB) {
+                $sceneDest = Join-Path "blender/scenes" $sceneId
+                New-Item -ItemType Directory -Path $sceneDest -Force | Out-Null
+                Copy-Item -LiteralPath $blend.FullName -Destination (Join-Path $sceneDest "$sceneId.blend") -Force
+                Write-Host "Tracked Blender source: $(Join-Path $sceneDest "$sceneId.blend") ($($blend.Length) bytes)"
+
+                # Keep only the latest Blender source for the same versioned family.
+                # Example: kaos_arena_v6 prunes kaos_arena_v1..v5; a different
+                # asset family is untouched.
+                if ($sceneId -match "^(.*)_v(\d+)$") {
+                  $family = $Matches[1]
+                  Get-ChildItem -Path "blender/scenes" -Directory -ErrorAction SilentlyContinue |
+                    Where-Object {
+                      $_.Name -ne $sceneId -and
+                      $_.Name -match ("^" + [regex]::Escape($family) + "_v\d+$")
+                    } |
+                    ForEach-Object {
+                      Write-Host "Pruning old Blender source version: $($_.FullName)"
+                      Remove-Item -LiteralPath $_.FullName -Recurse -Force
+                    }
+                }
+              }
+              else {
+                Write-Warning "Blend file is $($blend.Length) bytes (>50 MB); leaving it in the artifact only."
+              }
+            }
+          }
+
+          # Per-run status remains machine-readable, but is committed together
+          # with previews/source so publication needs a single fetch/rebase/push.
+          New-Item -ItemType Directory -Path "blender/agent_reports" -Force | Out-Null
+          $status = [ordered]@{
+            schema_version = 1
+            run_id = "${{ github.run_id }}"
+            run_number = "${{ github.run_number }}"
+            source_sha = "${{ github.sha }}"
+            workflow_status = "${{ job.status }}"
+            blender_job = "${{ steps.job.outputs.job }}"
+            scene_report = $scene
+          }
+          $statusPath = "blender/agent_reports/run-${{ github.run_id }}.json"
+          $status | ConvertTo-Json -Depth 12 | Set-Content -LiteralPath $statusPath -Encoding UTF8
+
+          git add --sparse blender/agent_reports
+          if (-not [string]::IsNullOrWhiteSpace($sceneId)) {
+            git add --sparse "blender/scene_previews/$sceneId"
+            if (Test-Path -LiteralPath "blender/scenes/$sceneId") {
+              git add --sparse "blender/scenes/$sceneId"
+            }
+            if ($sceneId -match "^(.*)_v(\d+)$") {
+              git add -A --sparse "blender/scenes"
+            }
+          }
+
+          if (git diff --cached --quiet) {
+            Write-Host "Blender repository state unchanged."
+            exit 0
+          }
+
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          $commitLabel = if ([string]::IsNullOrWhiteSpace($sceneId)) { "run ${{ github.run_id }}" } else { $sceneId }
+          git commit -m "Publish Blender scene state: $commitLabel"
+
+          for ($attempt = 1; $attempt -le 10; $attempt++) {
+            git fetch origin "${{ github.ref_name }}"
+            if ($LASTEXITCODE -ne 0) { exit $LASTEXITCODE }
+            git rebase "origin/${{ github.ref_name }}"
+            if ($LASTEXITCODE -ne 0) {
+              git rebase --abort
+              exit 1
+            }
+            git push origin "HEAD:${{ github.ref_name }}"
+            if ($LASTEXITCODE -eq 0) { exit 0 }
+            Write-Host "Remote moved during Blender state push; retrying rebase ($attempt/10)."
+          }
+          throw "Could not publish Blender repository state after ten retries."
