@@ -8,7 +8,7 @@ func build(parent: Node3D,units: float,stone: Material) -> void:
 	batch.mesh = mesh_node.mesh
 	batch.instance_count = 16
 	for i in range(16):
-		var row := i/4
+		var row: int = i >> 2
 		var yaw := -.95+float(i%4)*.63+(row%2)*.12
 		if row == 1 and i%4 in [1,2]:
 			yaw = -.48 if i%4==1 else .48

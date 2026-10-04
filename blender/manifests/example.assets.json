@@ -1,0 +1,13 @@
+{
+  "schema_version": 1,
+  "assets": [
+    {
+      "id": "replace_me",
+      "enabled": false,
+      "url": "https://example.org/asset.glb",
+      "path": "Architecture/replace_me.glb",
+      "license": "REPLACE_WITH_LICENSE",
+      "sha256": ""
+    }
+  ]
+}

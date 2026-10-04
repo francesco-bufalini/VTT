@@ -2,11 +2,19 @@ extends Node
 
 signal status_changed(message: String)
 const PORT := 45454
-const MAGIC := "DND_MAP_SYNC_V3"
+const SNAPSHOT_VERSION := 5
+const MAGIC := "DND_MAP_SYNC_V5"
 const BACKUP_DIR := "user://map_sync_backups"
 const MAX_BACKUPS := 20
 const MAX_BYTES := 4 * 1024 * 1024
+const BULK_SEND_TIMEOUT_MS := 3000
 const GROUPS := ["dnd_token", "tactical_platform", "encounter_obstacle"]
+const TOKEN_CONDITIONS := [
+	"blinded", "charmed", "deafened", "exhaustion", "frightened",
+	"grappled", "incapacitated", "invisible", "paralyzed", "petrified",
+	"poisoned", "prone", "restrained", "stunned", "unconscious",
+	"concentrating", "surprised", "hidden", "dead"
+]
 var board_root: Node
 var token_scene: PackedScene
 var tokens_root: Node
@@ -15,12 +23,28 @@ var server := TCPServer.new()
 var connections: Array = []
 var receiving := false
 var session_key := ""
+var _tailscale_last_error := ""
+var _bulk_generation := 0
+var _bulk_pending := 0
+var _bulk_total := 0
+var _bulk_accepted := 0
+var _bulk_rejected := 0
+var _bulk_failed := 0
 
 func setup(root: Node, scene: PackedScene, tokens: Node, measure: Node) -> void:
 	board_root = root
 	token_scene = scene
 	tokens_root = tokens
 	measurement_tool = measure
+
+
+func _initiative_tracker() -> Node:
+	if board_root == null or not is_instance_valid(board_root):
+		return null
+	var property_value: Variant = board_root.get("initiative_tracker")
+	if property_value is Node and is_instance_valid(property_value):
+		return property_value as Node
+	return board_root.get_node_or_null("InitiativeTracker")
 
 func listen(enabled: bool, key: String) -> Error:
 	server.stop()
@@ -44,24 +68,229 @@ func send_snapshot(host: String, key: String) -> Error:
 	if host.strip_edges().is_empty() or key.strip_edges().is_empty():
 		status_changed.emit("Inserisci indirizzo e codice sessione")
 		return ERR_INVALID_PARAMETER
-	var snapshot := create_snapshot()
+	var payload: PackedByteArray = _snapshot_payload(key)
+	if payload.is_empty():
+		return ERR_BUSY
+	var error: Error = _queue_snapshot_payload(
+		host.strip_edges(),
+		payload,
+		30000,
+		false
+	)
+	if error == OK:
+		status_changed.emit("Connessione e invio in corso…")
+	else:
+		status_changed.emit(error_string(error))
+	return error
+
+
+func send_snapshot_to_tailnet(key: String) -> Error:
+	var clean_key: String = key.strip_edges()
+	if clean_key.is_empty():
+		status_changed.emit("Numero partita non valido")
+		return ERR_INVALID_PARAMETER
+
+	var payload: PackedByteArray = _snapshot_payload(clean_key)
+	if payload.is_empty():
+		return ERR_BUSY
+
+	var hosts: Array[String] = _tailscale_peer_ipv4s()
+	if hosts.is_empty():
+		status_changed.emit(
+			"Nessun nodo Tailscale trovato. %s" % _tailscale_last_error
+		)
+		return ERR_DOES_NOT_EXIST
+
+	_bulk_generation += 1
+	_bulk_total = hosts.size()
+	_bulk_pending = 0
+	_bulk_accepted = 0
+	_bulk_rejected = 0
+	_bulk_failed = 0
+
+	for host: String in hosts:
+		var error: Error = _queue_snapshot_payload(
+			host,
+			payload,
+			BULK_SEND_TIMEOUT_MS,
+			true,
+			_bulk_generation
+		)
+		if error == OK:
+			_bulk_pending += 1
+		else:
+			_bulk_failed += 1
+
+	if _bulk_pending == 0:
+		status_changed.emit(
+			"Trovati %d nodi Tailscale, ma nessuna connessione è partita"
+			% _bulk_total
+		)
+		return ERR_CANT_CONNECT
+
+	status_changed.emit(
+		"Trovati %d nodi Tailscale · invio in corso…" % _bulk_total
+	)
+	return OK
+
+
+func _snapshot_payload(key: String) -> PackedByteArray:
+	var snapshot: Dictionary = create_snapshot()
 	if snapshot.is_empty():
 		status_changed.emit("Attendi la fine dell'avanzamento")
-		return ERR_BUSY
-	var payload := JSON.stringify({"magic": MAGIC, "key": key.strip_edges(), "snapshot": snapshot}).to_utf8_buffer()
+		return PackedByteArray()
+
+	var payload: PackedByteArray = JSON.stringify(
+		{
+			"magic": MAGIC,
+			"key": key.strip_edges(),
+			"snapshot": snapshot
+		}
+	).to_utf8_buffer()
 	if payload.size() > MAX_BYTES:
-		return ERR_OUT_OF_MEMORY
+		status_changed.emit("La mappa supera il limite di sincronizzazione")
+		return PackedByteArray()
+	return payload
+
+
+func _queue_snapshot_payload(
+	host: String,
+	payload: PackedByteArray,
+	timeout_ms: int,
+	quiet: bool,
+	bulk_id: int = -1
+) -> Error:
 	var peer := StreamPeerTCP.new()
-	var error := peer.connect_to_host(host.strip_edges(), PORT)
+	var error: Error = peer.connect_to_host(host, PORT)
 	if error != OK:
-		status_changed.emit(error_string(error))
 		return error
+
 	var frame := StreamPeerBuffer.new()
 	frame.put_u32(payload.size())
 	frame.put_data(payload)
-	connections.append({"peer": peer, "out": frame.data_array, "sent": 0, "buffer": PackedByteArray(), "size": -1, "sender": true, "deadline": Time.get_ticks_msec() + 30000})
-	status_changed.emit("Connessione e invio in corso…")
+	connections.append(
+		{
+			"peer": peer,
+			"out": frame.data_array,
+			"sent": 0,
+			"buffer": PackedByteArray(),
+			"size": -1,
+			"sender": true,
+			"quiet": quiet,
+			"bulk_id": bulk_id,
+			"host": host,
+			"deadline": Time.get_ticks_msec() + timeout_ms
+		}
+	)
 	return OK
+
+
+func _tailscale_peer_ipv4s() -> Array[String]:
+	_tailscale_last_error = ""
+	var candidates: Array[String] = []
+
+	if OS.get_name() == "Windows":
+		var program_files: String = OS.get_environment("ProgramFiles")
+		if not program_files.is_empty():
+			candidates.append(
+				program_files.path_join("Tailscale").path_join("tailscale.exe")
+			)
+		var program_files_x86: String = OS.get_environment("ProgramFiles(x86)")
+		if not program_files_x86.is_empty():
+			candidates.append(
+				program_files_x86.path_join("Tailscale").path_join("tailscale.exe")
+			)
+		candidates.append("tailscale.exe")
+	else:
+		candidates.append("tailscale")
+		candidates.append("/usr/bin/tailscale")
+		candidates.append("/usr/local/bin/tailscale")
+
+	var parsed: Variant = null
+	var attempted: Array[String] = []
+	for executable: String in candidates:
+		if executable in attempted:
+			continue
+		attempted.append(executable)
+
+		var output: Array = []
+		var exit_code: int = OS.execute(
+			executable,
+			PackedStringArray(["status", "--json"]),
+			output
+		)
+		if exit_code != 0:
+			continue
+
+		var raw: String = ""
+		for chunk: Variant in output:
+			raw += String(chunk)
+		parsed = JSON.parse_string(raw)
+		if parsed is Dictionary:
+			break
+
+	if not parsed is Dictionary:
+		_tailscale_last_error = (
+			"Impossibile eseguire o leggere 'tailscale status --json'. "
+			+ "Controlla che Tailscale sia installato."
+		)
+		return []
+
+	var peers_value: Variant = (parsed as Dictionary).get("Peer", {})
+	if not peers_value is Dictionary:
+		_tailscale_last_error = "Il JSON di Tailscale non contiene Peer."
+		return []
+
+	var hosts: Array[String] = []
+	var seen: Dictionary = {}
+	for peer_value: Variant in (peers_value as Dictionary).values():
+		if not peer_value is Dictionary:
+			continue
+		var ips_value: Variant = (peer_value as Dictionary).get(
+			"TailscaleIPs",
+			[]
+		)
+		if not ips_value is Array:
+			continue
+		for ip_value: Variant in ips_value:
+			var ip: String = String(ip_value).strip_edges()
+			if ip.is_empty() or ip.contains(":") or seen.has(ip):
+				continue
+			if not ip.is_valid_ip_address():
+				continue
+			seen[ip] = true
+			hosts.append(ip)
+
+	if hosts.is_empty():
+		_tailscale_last_error = "Il comando funziona, ma non ha restituito IPv4 peer."
+	return hosts
+
+
+func _finish_bulk_attempt(item: Dictionary, accepted: bool, rejected: bool) -> void:
+	if int(item.get("bulk_id", -1)) != _bulk_generation:
+		return
+	if _bulk_pending <= 0:
+		return
+
+	_bulk_pending -= 1
+	if accepted:
+		_bulk_accepted += 1
+	elif rejected:
+		_bulk_rejected += 1
+	else:
+		_bulk_failed += 1
+
+	if _bulk_pending == 0:
+		status_changed.emit(
+			"Sincronizzazione conclusa · ricevute %d/%d · rifiutate %d · non raggiungibili %d"
+			% [
+				_bulk_accepted,
+				_bulk_total,
+				_bulk_rejected,
+				_bulk_failed
+			]
+		)
+
 
 func _process(_delta: float) -> void:
 	if server.is_connection_available():
@@ -76,7 +305,9 @@ func _process(_delta: float) -> void:
 		peer.poll()
 		if Time.get_ticks_msec() > item.deadline or peer.get_status() in [StreamPeerTCP.STATUS_ERROR, StreamPeerTCP.STATUS_NONE]:
 			if item.sender:
-				status_changed.emit("Invio non confermato: connessione interrotta o timeout")
+				_finish_bulk_attempt(item, false, false)
+				if not bool(item.get("quiet", false)):
+					status_changed.emit("Invio non confermato: connessione interrotta o timeout")
 			peer.disconnect_from_host()
 			connections.remove_at(index)
 			continue
@@ -97,7 +328,14 @@ func _process(_delta: float) -> void:
 			item.buffer.append_array(result[1])
 		if item.sender:
 			if item.buffer.size() > 0:
-				status_changed.emit("Mappa ricevuta e applicata" if item.buffer[0] == 1 else "Mappa rifiutata: controlla codice, scena e stato della partita")
+				var accepted_by_receiver: bool = item.buffer[0] == 1
+				_finish_bulk_attempt(
+					item,
+					accepted_by_receiver,
+					not accepted_by_receiver
+				)
+				if not bool(item.get("quiet", false)):
+					status_changed.emit("Mappa ricevuta e applicata" if accepted_by_receiver else "Mappa rifiutata: controlla partita, scena e stato della mappa")
 				peer.disconnect_from_host()
 				connections.remove_at(index)
 			continue
@@ -108,15 +346,37 @@ func _process(_delta: float) -> void:
 				item.deadline = 0
 				continue
 		if item.size > 0 and item.buffer.size() >= item.size:
-			var message: Variant = JSON.parse_string(item.buffer.slice(0, item.size).get_string_from_utf8())
+			var message: Variant = JSON.parse_string(
+				item.buffer.slice(0, item.size).get_string_from_utf8()
+			)
 			var accepted := false
-			if message is Dictionary and message.get("magic") == MAGIC and message.get("key") == session_key:
-				var snapshot: Variant = message.get("snapshot")
-				if valid_snapshot(snapshot) and not create_snapshot().is_empty():
-					if _save_backup(create_snapshot(), "before_receive"):
+			var reject_reason := "messaggio non valido"
+			if message is Dictionary:
+				if message.get("magic") != MAGIC:
+					reject_reason = "protocollo non compatibile"
+				elif message.get("key") != session_key:
+					reject_reason = "numero partita diverso"
+				else:
+					var snapshot: Variant = message.get("snapshot")
+					if not valid_snapshot(snapshot):
+						reject_reason = "snapshot/scena non compatibile"
+					elif create_snapshot().is_empty():
+						reject_reason = "stato locale non sincronizzabile"
+					elif not _save_backup(
+						create_snapshot(),
+						"before_receive"
+					):
+						reject_reason = "backup locale fallito"
+					else:
 						accepted = apply_snapshot(snapshot)
+						if not accepted:
+							reject_reason = "applicazione snapshot fallita"
 			peer.put_data(PackedByteArray([1 if accepted else 0]))
-			status_changed.emit("Mappa ricevuta; backup locale salvato" if accepted else "Mappa rifiutata")
+			status_changed.emit(
+				"Mappa ricevuta; backup locale salvato"
+				if accepted
+				else "Mappa rifiutata: %s" % reject_reason
+			)
 			connections.remove_at(index)
 
 func _exit_tree() -> void:
@@ -125,7 +385,11 @@ func _exit_tree() -> void:
 		item.peer.disconnect_from_host()
 
 func valid_snapshot(snapshot: Variant) -> bool:
-	if not snapshot is Dictionary or snapshot.get("version") != 3 or snapshot.get("scene") != board_root.scene_file_path:
+	if (
+		not snapshot is Dictionary
+		or int(snapshot.get("version", -1)) != SNAPSHOT_VERSION
+		or snapshot.get("scene") != board_root.scene_file_path
+	):
 		return false
 	if not snapshot.get("objects") is Array or snapshot.objects.size() > 4096 or not measurement_tool.valid_aoes(snapshot.get("aoes")):
 		return false
@@ -133,6 +397,18 @@ func valid_snapshot(snapshot: Variant) -> bool:
 	if controller != null:
 		if not snapshot.get("encounter") is Dictionary or not controller._valid_state(snapshot.encounter) or controller.is_advancing:
 			return false
+	var initiative_tracker: Node = _initiative_tracker()
+	if initiative_tracker == null:
+		return false
+	if not snapshot.get("initiative") is Dictionary:
+		return false
+	if not bool(
+		initiative_tracker.call(
+			"valid_state",
+			snapshot.get("initiative")
+		)
+	):
+		return false
 	var ids := {}
 	for item in snapshot.objects:
 		if not item is Dictionary or not item.get("id") is String or item.id.is_empty() or ids.has(item.id):
@@ -157,12 +433,166 @@ func valid_snapshot(snapshot: Variant) -> bool:
 				return false
 			if float(item.footprint) <= 0 or float(item.footprint) > 100 or not item.get("color") is Dictionary:
 				return false
+			if item.has("reach_feet"):
+				var reach_value: Variant = item.get("reach_feet")
+				if not (reach_value is float or reach_value is int):
+					return false
+				if (
+					not is_finite(float(reach_value))
+					or float(reach_value) <= 0.0
+					or float(reach_value) > 1000.0
+				):
+					return false
 			for channel in ["r", "g", "b", "a"]:
 				var value: Variant = item.color.get(channel)
 				if not (value is int or value is float) or not is_finite(float(value)) or float(value) < 0 or float(value) > 1:
 					return false
 			if not item.get("size_name") is String or not item.get("flying") is bool:
 				return false
+			if item.has("gravity_applied") and not item.get("gravity_applied") is bool:
+				return false
+			if item.has("support_id") and not item.get("support_id") is String:
+				return false
+			# V4 makes logical token state mandatory. This prevents an older
+			# client from silently accepting a snapshot without names/conditions
+			# and then broadcasting blank state back to the table.
+			if not item.get("display_name") is String:
+				return false
+			if String(item.get("display_name", "")).length() > 80:
+				return false
+			if not item.get("conditions") is Array:
+				return false
+			var condition_values: Array = item.get("conditions", [])
+			if condition_values.size() > TOKEN_CONDITIONS.size():
+				return false
+			var seen_conditions: Dictionary = {}
+			for condition_value: Variant in condition_values:
+				if not condition_value is String:
+					return false
+				var condition_id := String(condition_value)
+				if not (condition_id in TOKEN_CONDITIONS) or seen_conditions.has(condition_id):
+					return false
+				seen_conditions[condition_id] = true
+			if item.has("height_cells"):
+				var height_value: Variant = item.get("height_cells")
+				if not (height_value is float or height_value is int):
+					return false
+				if (
+					not is_finite(float(height_value))
+					or float(height_value) <= 0.0
+					or float(height_value) > 100.0
+				):
+					return false
+			if item.has("visual_native_footprint"):
+				var native_footprint_value: Variant = item.get(
+					"visual_native_footprint"
+				)
+				if not (
+					native_footprint_value is float
+					or native_footprint_value is int
+				):
+					return false
+				if (
+					not is_finite(float(native_footprint_value))
+					or float(native_footprint_value) <= 0.0
+					or float(native_footprint_value) > 100.0
+				):
+					return false
+			if item.has("visual_asset"):
+				if not item.get("visual_asset") is String:
+					return false
+				var visual_asset := String(item.get("visual_asset", ""))
+				if (
+					not visual_asset.is_empty()
+					and not visual_asset.begins_with("res://assets/tokens/")
+				):
+					return false
+			var front_value: Variant = item.get(
+				"visual_front_quarter_turns",
+				-1
+			)
+			if not (front_value is int or front_value is float):
+				return false
+			var front_number: float = float(front_value)
+			if (
+				not is_finite(front_number)
+				or front_number != floor(front_number)
+				or int(front_number) < 0
+				or int(front_number) > 3
+			):
+				return false
+			if item.has("transformation_history"):
+				var history_value: Variant = item.get(
+					"transformation_history",
+					[]
+				)
+				if not history_value is Array:
+					return false
+				var history: Array = history_value as Array
+				if history.size() > 16:
+					return false
+				for state_value: Variant in history:
+					if not state_value is Dictionary:
+						return false
+					var appearance: Dictionary = state_value as Dictionary
+					if not appearance.get("visual_asset", "") is String:
+						return false
+					var previous_visual := String(
+						appearance.get("visual_asset", "")
+					)
+					if (
+						not previous_visual.is_empty()
+						and not previous_visual.begins_with(
+							"res://assets/tokens/"
+						)
+					):
+						return false
+					if not appearance.get("display_name", "") is String:
+						return false
+					if not appearance.get("size_name", "") is String:
+						return false
+					if appearance.has("visual_native_footprint"):
+						var previous_native: Variant = appearance.get(
+							"visual_native_footprint"
+						)
+						if not (
+							previous_native is float
+							or previous_native is int
+						):
+							return false
+						if (
+							not is_finite(float(previous_native))
+							or float(previous_native) <= 0.0
+							or float(previous_native) > 100.0
+						):
+							return false
+					for numeric_key: String in [
+						"footprint",
+						"height_cells",
+						"reach_feet"
+					]:
+						var numeric_value: Variant = appearance.get(
+							numeric_key
+						)
+						if not (
+							numeric_value is float
+							or numeric_value is int
+						):
+							return false
+						if float(numeric_value) <= 0.0:
+							return false
+					var previous_front: Variant = appearance.get(
+						"visual_front_quarter_turns",
+						0
+					)
+					if (
+						not previous_front is int
+						or int(previous_front) < 0
+						or int(previous_front) > 3
+					):
+						return false
+					if not appearance.get("reach_overridden", false) is bool:
+						return false
 		if not item.get("name") is String or not item.get("visible") is bool:
 			return false
 	return true
@@ -179,7 +609,25 @@ func create_snapshot() -> Dictionary:
 	var controller := board_root.get_node_or_null("EncounterProgressController")
 	var state: Dictionary = controller.get_save_state() if controller != null else {}
 	if controller != null and state.is_empty(): return {}
-	return {"version":3,"scene":board_root.scene_file_path,"objects":objects,"aoes":aoes,"encounter":state}
+	var initiative_tracker: Node = _initiative_tracker()
+	if initiative_tracker == null:
+		status_changed.emit("Iniziativa non disponibile: sincronizzazione annullata")
+		return {}
+	var initiative_value: Variant = initiative_tracker.call("get_save_state")
+	if not initiative_value is Dictionary:
+		status_changed.emit("Stato iniziativa non valido: sincronizzazione annullata")
+		return {}
+	var initiative: Dictionary = (
+		initiative_value as Dictionary
+	).duplicate(true)
+	return {
+		"version": SNAPSHOT_VERSION,
+		"scene": board_root.scene_file_path,
+		"objects": objects,
+		"aoes": aoes,
+		"encounter": state,
+		"initiative": initiative
+	}
 
 func apply_snapshot(snapshot: Dictionary) -> bool:
 	if not valid_snapshot(snapshot): return false
@@ -195,11 +643,62 @@ func apply_snapshot(snapshot: Dictionary) -> bool:
 			var n: Node = existing[id]
 			if is_instance_valid(n) and n.is_in_group("dnd_token") and n.get_parent() == tokens_root: n.queue_free()
 	for id in wanted.keys():
-		var data: Dictionary = wanted[id]; var node: Node3D = existing.get(id) as Node3D
-		if node == null: node = _instantiate_from_data(data)
-		if node != null: _apply_node_data(node,data)
+		var data: Dictionary = wanted[id]
+		var node: Node3D = existing.get(id) as Node3D
+		if node == null:
+			node = _instantiate_from_data(data)
+		if node == null:
+			continue
+		_apply_node_data(node, data)
+		if data.get("kind", "") == "token":
+			if not node.has_method("get_display_name") or not node.has_method("get_conditions"):
+				return false
+			if String(node.call("get_display_name")) != String(data.get("display_name", "")):
+				return false
+			var applied_conditions: Variant = node.call("get_conditions")
+			if not applied_conditions is Array:
+				return false
+			var expected_conditions: Array = data.get("conditions", [])
+			if (applied_conditions as Array) != expected_conditions:
+				return false
+	_restore_token_supports(wanted)
 	if is_instance_valid(measurement_tool) and measurement_tool.has_method("apply_persistent_aoes"): measurement_tool.call("apply_persistent_aoes", snapshot.get("aoes",[]))
+	var initiative_tracker: Node = _initiative_tracker()
+	if initiative_tracker == null:
+		return false
+	if not bool(
+		initiative_tracker.call(
+			"load_state",
+			snapshot.get("initiative")
+		)
+	):
+		return false
+	var token_list_value: Variant = board_root.get("token_list")
+	if token_list_value is Node and is_instance_valid(token_list_value):
+		var token_list_node := token_list_value as Node
+		if token_list_node.has_method("refresh"):
+			token_list_node.call("refresh")
 	return true
+
+func _restore_token_supports(wanted: Dictionary) -> void:
+	var current: Dictionary = _current_nodes_by_id()
+	for token_id: Variant in wanted.keys():
+		var data_value: Variant = wanted[token_id]
+		if not data_value is Dictionary:
+			continue
+		var data: Dictionary = data_value as Dictionary
+		if String(data.get("kind", "")) != "token":
+			continue
+		var support_id := String(data.get("support_id", ""))
+		if support_id.is_empty():
+			continue
+		var token: Node3D = current.get(String(token_id)) as Node3D
+		var support: Node3D = current.get(support_id) as Node3D
+		if token == null or support == null:
+			continue
+		token.set("grid_support", support)
+		token.set("_support_transform", support.global_transform)
+
 
 func _current_nodes_by_id() -> Dictionary:
 	var out := {}; var seen := {}
@@ -209,6 +708,12 @@ func _current_nodes_by_id() -> Dictionary:
 			seen[node]=true; out[_sync_id(node as Node3D)]=node
 	return out
 
+func get_sync_id_for_node(node: Node3D) -> String:
+	if node == null or not is_instance_valid(node):
+		return ""
+	return _sync_id(node)
+
+
 func _sync_id(node: Node3D) -> String:
 	if node.has_meta("sync_id"): return String(node.get_meta("sync_id"))
 	var id := "path:" + String(board_root.get_path_to(node)); node.set_meta("sync_id",id); return id
@@ -217,6 +722,54 @@ func _serialize_node(node: Node3D, group_name: String) -> Dictionary:
 	var data := {"id":_sync_id(node),"group":group_name,"path":String(board_root.get_path_to(node)),"scene":node.scene_file_path,"name":node.name,"transform":_transform(node.global_transform),"visible":node.visible}
 	if group_name == "dnd_token":
 		data["kind"]="token"; data["flying"]=bool(node.get("flying")); data["footprint"]=float(node.get("_footprint_cells")); data["size_name"]=String(node.get("_size_name")); data["color"]=_token_color(node)
+		# Nuovo significato esplicito: i salvataggi precedenti non avevano
+		# gravity_applied e vengono quindi migrati come token sospesi.
+		data["gravity_applied"] = not bool(node.get("flying"))
+		var support_value: Variant = node.get("grid_support")
+		if (
+			support_value is Node3D
+			and is_instance_valid(support_value)
+			and board_root.is_ancestor_of(support_value as Node3D)
+		):
+			data["support_id"] = _sync_id(support_value as Node3D)
+		data["height_cells"] = float(node.get("token_height_cells"))
+		data["display_name"] = (
+			String(node.call("get_display_name"))
+			if node.has_method("get_display_name")
+			else ""
+		)
+		if node.has_meta("player_character_id"):
+			data["player_character_id"] = String(
+				node.get_meta("player_character_id")
+			)
+			data["player_character_name"] = String(
+				node.get_meta("player_character_name", "")
+			)
+		data["conditions"] = (
+			node.call("get_conditions")
+			if node.has_method("get_conditions")
+			else []
+		)
+		data["reach_feet"] = (
+			float(node.call("get_reach_feet"))
+			if node.has_method("get_reach_feet")
+			else maxf(5.0, float(node.get("_footprint_cells")) * 5.0)
+		)
+		if node.has_method("get_visual_asset_path"):
+			data["visual_asset"] = String(node.call("get_visual_asset_path"))
+		if node.has_method("get_visual_native_footprint_cells"):
+			data["visual_native_footprint"] = float(
+				node.call("get_visual_native_footprint_cells")
+			)
+		data["visual_front_quarter_turns"] = (
+			int(node.call("get_visual_front_quarter_turns"))
+			if node.has_method("get_visual_front_quarter_turns")
+			else 0
+		)
+		if node.has_method("get_transformation_history"):
+			data["transformation_history"] = node.call(
+				"get_transformation_history"
+			)
 	else: data["kind"]="physical"
 	return data
 
@@ -236,8 +789,71 @@ func _instantiate_from_data(data: Dictionary) -> Node3D:
 func _apply_node_data(node: Node3D, data: Dictionary) -> void:
 	node.visible=bool(data.get("visible",true)); node.set_meta("sync_id",String(data.get("id","")))
 	if data.get("kind","") == "token":
-		if node.has_method("configure") and node.scene_file_path == "res://token.tscn": node.call("configure",_dict_color(data.get("color",{})),float(board_root.get("cell_size")),String(data.get("size_name","Medium")),float(data.get("footprint",1.0)))
-		if node.has_method("set_flying"): node.call("set_flying",bool(data.get("flying",false)))
+		# Applicare prima l'asset esplicito disattiva l'eventuale miniatura
+		# di default caricata dal token_scene appena istanziato.
+		if data.has("visual_asset") and node.has_method("set_visual_asset"):
+			var visual_asset := String(data.get("visual_asset", ""))
+			if not visual_asset.is_empty():
+				var native_footprint := maxf(
+					float(
+						data.get(
+							"visual_native_footprint",
+							data.get("footprint", 1.0)
+						)
+					),
+					0.5
+				)
+				node.call(
+					"set_visual_asset",
+					visual_asset,
+					native_footprint
+				)
+		if data.has("visual_front_quarter_turns") and node.has_method(
+			"set_visual_front_quarter_turns"
+		):
+			node.call(
+				"set_visual_front_quarter_turns",
+				int(data.get("visual_front_quarter_turns", 0))
+			)
+		if data.has("height_cells"):
+			node.set(
+				"token_height_cells",
+				maxf(float(data.get("height_cells", 2.0)), 0.1)
+			)
+		if node.has_method("configure"): node.call("configure",_dict_color(data.get("color",{})),float(board_root.get("cell_size")),String(data.get("size_name","Medium")),float(data.get("footprint",1.0)))
+		if data.has("reach_feet") and node.has_method("set_reach_feet"):
+			node.call("set_reach_feet", float(data.get("reach_feet", 5.0)), true)
+		elif node.has_method("reset_reach_to_default"):
+			# Snapshot precedenti: migrazione trasparente dal footprint/taglia.
+			node.call("reset_reach_to_default")
+		var gravity_applied: bool = bool(data.get("gravity_applied", false))
+		if gravity_applied and node.has_method("apply_gravity"):
+			node.call("apply_gravity")
+		elif node.has_method("set_flying"):
+			node.call("set_flying", true)
+		if node.has_method("set_display_name"):
+			node.call("set_display_name", String(data.get("display_name", "")))
+		var character_id: String = String(
+			data.get("player_character_id", "")
+		)
+		if character_id.is_empty():
+			if node.has_meta("player_character_id"):
+				node.remove_meta("player_character_id")
+			if node.has_meta("player_character_name"):
+				node.remove_meta("player_character_name")
+		else:
+			node.set_meta("player_character_id", character_id)
+			node.set_meta(
+				"player_character_name",
+				String(data.get("player_character_name", ""))
+			)
+		if node.has_method("set_conditions"):
+			node.call("set_conditions", data.get("conditions", []))
+		if node.has_method("set_transformation_history"):
+			node.call(
+				"set_transformation_history",
+				data.get("transformation_history", [])
+			)
 	# configure() snaps tokens; restore the exact shared transform afterwards.
 	node.global_transform = _dict_transform(data.get("transform", {}))
 
@@ -256,10 +872,10 @@ func _save_backup(snapshot: Dictionary, reason: String) -> bool:
 func _rotate_backups() -> void:
 	var dir := DirAccess.open(BACKUP_DIR); if dir == null: return
 	var files: Array[String]=[]; dir.list_dir_begin()
-	var name:=dir.get_next()
-	while not name.is_empty():
-		if not dir.current_is_dir() and name.ends_with(".json"): files.append(name)
-		name=dir.get_next()
+	var entry_name:=dir.get_next()
+	while not entry_name.is_empty():
+		if not dir.current_is_dir() and entry_name.ends_with(".json"): files.append(entry_name)
+		entry_name=dir.get_next()
 	dir.list_dir_end(); files.sort()
 	while files.size()>MAX_BACKUPS: DirAccess.remove_absolute(ProjectSettings.globalize_path(BACKUP_DIR.path_join(files.pop_front())))
 

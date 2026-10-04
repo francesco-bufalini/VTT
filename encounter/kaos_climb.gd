@@ -131,12 +131,31 @@ func _pose_arrays(source: Array, transform: Transform3D, pose: int, role: String
 	return st.commit().surface_get_arrays(0)
 
 func _air_pose(weight: float) -> void:
-	for mesh in _pose_meshes:
-		mesh.set_blend_shape_value(0,weight)
+	_set_pose_blend_shape(0, weight)
+
 
 func _one_hand_pose(weight: float) -> void:
-	for mesh in _pose_meshes:
-		mesh.set_blend_shape_value(1,weight)
+	_set_pose_blend_shape(1, weight)
+
+
+func _set_pose_blend_shape(index: int, weight: float) -> void:
+	# Post-Kaos/Scontro terrain processing can freeze an anatomy mesh into an
+	# ArrayMesh with no blend shapes and can also remove head-only render
+	# meshes. Keep the climb controller tolerant of those runtime edits.
+	var alive: Array[MeshInstance3D] = []
+	for mesh_instance in _pose_meshes:
+		if mesh_instance == null or not is_instance_valid(mesh_instance):
+			continue
+		alive.append(mesh_instance)
+
+		var current_mesh: Mesh = mesh_instance.mesh
+		if current_mesh == null:
+			continue
+		if current_mesh.get_blend_shape_count() <= index:
+			continue
+		mesh_instance.set_blend_shape_value(index, weight)
+
+	_pose_meshes = alive
 
 func _stage(value: String) -> void:
 	sequence_stage = value

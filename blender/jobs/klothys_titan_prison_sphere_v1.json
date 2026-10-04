@@ -1,0 +1,152 @@
+{
+  "schema_version": 1,
+  "scene_id": "klothys_titan_prison_sphere_v1",
+  "description": "Standalone Klothys Titan prison sphere aligned exactly to the Godot arena. No platform is generated. The nominal 220 m sphere keeps the current arena proportions while Godot's titan relief asset forms the imprisoned silhouettes pressing through the shell.",
+  "design_references": [
+    "encounter/encounter_scenery.gd",
+    "encounter/titan_reliefs.gd",
+    "encounter/assets/characters/titan_relief.glb",
+    "measurement_tool.gd"
+  ],
+  "combat_mapping": {
+    "meters_per_cell": 1.5,
+    "battlemap": {
+      "size_m": [
+        120,
+        180
+      ],
+      "center_godot_m": [
+        0,
+        0,
+        85.5
+      ]
+    },
+    "hazard_area": {
+      "cells": [
+        -38,
+        0,
+        76,
+        114
+      ]
+    },
+    "water": {
+      "radius_m": 337,
+      "center_godot_m": [
+        0,
+        -0.18,
+        -60
+      ]
+    },
+    "sphere": {
+      "radius_m": 220,
+      "center_godot_m": [
+        0,
+        385,
+        -230
+      ]
+    }
+  },
+  "reset_scene": true,
+  "operations": [
+    {
+      "op": "build_titan_prison_sphere",
+      "seed": 20261002,
+      "scale": 1,
+      "crack_count": 11,
+      "expected_mapping": {
+        "meters_per_cell": 1.5,
+        "battlemap": {
+          "size_m": [
+            120,
+            180
+          ],
+          "center_godot_m": [
+            0,
+            0,
+            85.5
+          ]
+        },
+        "hazard_area": {
+          "cells": [
+            -38,
+            0,
+            76,
+            114
+          ]
+        },
+        "water": {
+          "radius_m": 337,
+          "center_godot_m": [
+            0,
+            -0.18,
+            -60
+          ]
+        },
+        "sphere": {
+          "radius_m": 220,
+          "center_godot_m": [
+            0,
+            385,
+            -230
+          ]
+        }
+      }
+    }
+  ],
+  "outputs": {
+    "previews": [
+      {
+        "path": "outputs/blender_agent/klothys_titan_prison_sphere_v1/preview_hero.png",
+        "location": [
+          650,
+          170,
+          640
+        ],
+        "look_at": [
+          0,
+          -230,
+          385
+        ],
+        "lens": 68,
+        "width": 960,
+        "height": 540
+      },
+      {
+        "path": "outputs/blender_agent/klothys_titan_prison_sphere_v1/preview_reliefs.png",
+        "location": [
+          350,
+          230,
+          470
+        ],
+        "look_at": [
+          0,
+          -230,
+          390
+        ],
+        "lens": 82,
+        "width": 960,
+        "height": 540
+      },
+      {
+        "path": "outputs/blender_agent/klothys_titan_prison_sphere_v1/preview_scale.png",
+        "location": [
+          0,
+          470,
+          760
+        ],
+        "look_at": [
+          0,
+          -230,
+          350
+        ],
+        "lens": 58,
+        "width": 960,
+        "height": 540
+      }
+    ],
+    "report": "outputs/blender_agent/klothys_titan_prison_sphere_v1/scene_report.json",
+    "glb": "outputs/blender_agent/klothys_titan_prison_sphere_v1/klothys_titan_prison_sphere_v1.glb",
+    "blend": "outputs/blender_agent/klothys_titan_prison_sphere_v1/klothys_titan_prison_sphere_v1.blend"
+  },
+  "revision": 3
+}

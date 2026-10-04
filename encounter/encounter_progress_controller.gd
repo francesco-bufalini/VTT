@@ -126,6 +126,9 @@ func advance_encounter() -> void:
 		return
 	if get_parent().token_drag.active:
 		return
+	var board: Node = get_parent()
+	if board != null and board.has_method("push_undo_state"):
+		board.call("push_undo_state")
 	is_advancing = true
 	var healed := pending_regeneration()
 	giant_hp += healed

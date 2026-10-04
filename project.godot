@@ -10,14 +10,17 @@ config_version=5
 
 [application]
 
-config/name="astrolabe_puzzle"
-run/main_scene="res://encounter/kaos_klothis.tscn"
+config/name="VTT"
+run/main_scene="res://vtt/menu/main_menu.tscn"
 config/features=PackedStringArray("4.7", "Forward Plus")
 config/icon="res://icon.svg"
 
 [autoload]
 
+CampaignManager="*res://vtt/campaign_manager.gd"
 EncounterEvents="*res://encounter/encounter_events.gd"
+MenuAudioManager="*res://vtt/menu/menu_audio_manager.gd"
+TokenPackManager="*res://vtt/token_pack_manager.gd"
 
 [display]
 

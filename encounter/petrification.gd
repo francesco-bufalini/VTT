@@ -27,13 +27,8 @@ func apply(animate: bool = true) -> void:
 	var units: float = scene.measurement_tool.meters_to_world(1)
 	var visual: Node3D = actor.get_node("ClimbingVisual") if actor.has_node("ClimbingVisual") and actor.get_node("ClimbingVisual").visible else actor.get_node("KaosVisual")
 	var stone := ShaderMaterial.new()
-	var shader := Shader.new()
-	shader.code = FileAccess.get_file_as_string("res://encounter/sphere_surface.gdshader").replace("void fragment() {", "uniform vec3 giant_origin;\nuniform float unit_scale;\nvarying vec3 world_point;\nvoid vertex() { world_point=(MODEL_MATRIX*vec4(VERTEX,1.0)).xyz; }\nvoid fragment() {\n vec3 local=(world_point-giant_origin)/unit_scale;\n if(local.y>122.0 && abs(local.x)<11.5) { discard; }")
-	stone.shader = shader
-	shader.code = shader.code.replace("local.y>122.0", "local.y>119.8")
+	stone.shader = preload("res://encounter/sphere_surface.gdshader")
 	preload("res://encounter/pbr_assets.gd").apply(stone,"dark_rock")
-	stone.set_shader_parameter("giant_origin",actor.global_position)
-	stone.set_shader_parameter("unit_scale",units)
 	for child in visual.get_children():
 		if child is MeshInstance3D:
 			_originals.append([child,child.material_override,child.visible])

@@ -1,0 +1,83 @@
+name: Install supplied main menu background
+
+on:
+  push:
+    branches:
+      - feature/campaign-hub
+    paths:
+      - .github/workflows/install-menu-background.yml
+  workflow_dispatch:
+
+permissions:
+  contents: write
+
+jobs:
+  install:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: feature/campaign-hub
+
+      - name: Rebuild supplied background
+        run: |
+          python3 - <<'PY'
+          import base64
+          import hashlib
+          from pathlib import Path
+
+          parts = sorted(Path("tools/_menu_payload3").glob("background640.part*"))
+          if len(parts) != 4:
+              raise SystemExit(f"Expected 4 payload parts, found {len(parts)}")
+
+          encoded = "".join(p.read_text().strip() for p in parts)
+          data = base64.b64decode(encoded, validate=True)
+
+          expected = "e6b9cbc6fb3c125eb8c6aee337e854c5413bf44545c0c32373d0532ebd52b7e6"
+          digest = hashlib.sha256(data).hexdigest()
+          if digest != expected:
+              raise SystemExit(f"Checksum mismatch: {digest} != {expected}")
+
+          if not data.startswith(b"RIFF") or b"WEBP" not in data[:16]:
+              raise SystemExit("Decoded payload is not a WebP image")
+
+          target = Path("assets/menu/background/menu_background.webp")
+          target.parent.mkdir(parents=True, exist_ok=True)
+          target.write_bytes(data)
+          print(f"Installed {target}: {len(data)} bytes")
+
+          for root in [
+              Path("tools/_menu_payload"),
+              Path("tools/_menu_payload2"),
+              Path("tools/_menu_payload3"),
+          ]:
+              if root.exists():
+                  for p in root.glob("*"):
+                      if p.is_file():
+                          p.unlink()
+                  root.rmdir()
+
+          for p in [
+              Path("tools/menu_background_source.b64"),
+              Path("tools/menu_background_source.part1.b64"),
+              Path("tools/menu_background_source.part2.b64"),
+              Path("tools/menu_background.jpg.part01"),
+              Path("tools/menu_background.jpg.part02"),
+              Path("tools/menu_background.jpg.part03"),
+              Path("tools/menu_background.jpg.part04"),
+          ]:
+              if p.exists():
+                  p.unlink()
+
+          legacy = Path("assets/menu/background/lithophane_background.webp")
+          if legacy.exists():
+              legacy.unlink()
+          PY
+
+      - name: Commit installed background
+        run: |
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git add -A assets/menu/background tools
+          git commit -m "Install complete supplied menu background"
+          git push origin HEAD:feature/campaign-hub

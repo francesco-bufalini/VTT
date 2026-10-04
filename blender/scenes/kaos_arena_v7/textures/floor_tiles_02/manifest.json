@@ -1,0 +1,27 @@
+{
+  "asset_id": "floor_tiles_02",
+  "source": "https://polyhaven.com/a/floor_tiles_02",
+  "api": "https://api.polyhaven.com/files/floor_tiles_02",
+  "license": "CC0",
+  "resolution": "1k",
+  "maps": {
+    "diffuse": {
+      "file": "floor_tiles_02_1k_diffuse.jpg",
+      "source_url": "https://dl.polyhaven.org/file/ph-assets/Textures/jpg/1k/floor_tiles_02/floor_tiles_02_diff_1k.jpg",
+      "size_bytes": 354550,
+      "md5": "32de1779b8ddba55ad62df8d014264cd"
+    },
+    "normal": {
+      "file": "floor_tiles_02_1k_normal.jpg",
+      "source_url": "https://dl.polyhaven.org/file/ph-assets/Textures/jpg/1k/floor_tiles_02/floor_tiles_02_nor_gl_1k.jpg",
+      "size_bytes": 156697,
+      "md5": "0018f27bf5486fcf939232dff86dc68e"
+    },
+    "rough": {
+      "file": "floor_tiles_02_1k_rough.jpg",
+      "source_url": "https://dl.polyhaven.org/file/ph-assets/Textures/jpg/1k/floor_tiles_02/floor_tiles_02_rough_ao_1k.jpg",
+      "size_bytes": 541687,
+      "md5": "8c25a6bb33d5233416657f904d57829d"
+    }
+  }
+}

@@ -1,0 +1,10 @@
+[gd_scene load_steps=3 format=3]
+
+[ext_resource type="PackedScene" path="res://dnd_base.tscn" id="1_base"]
+[ext_resource type="Script" path="res://vtt/editor/campaign_editor.gd" id="2_editor"]
+
+[node name="CampaignEditor" instance=ExtResource("1_base")]
+grid_visible_on_start = true
+
+[node name="CampaignEditorController" type="Node" parent="."]
+script = ExtResource("2_editor")

@@ -1,0 +1,177 @@
+name: Bake Post-Kaos Editable Scene
+
+on:
+  workflow_dispatch:
+  push:
+    branches:
+      - main
+      - feature/campaign-hub
+    paths:
+      - "encounter/tools/bake_post_kaos_scene.gd"
+      - "encounter/tools/upgrade_post_kaos_scene.gd"
+      - "encounter/post_kaos_scene.gd"
+      - "encounter/post_kaos_helpers.gd"
+      - "encounter/encounter_scenery.gd"
+      - "encounter/tests/test_post_kaos_scene.gd"
+      - "encounter/tests/test_scontro_contro_kaos_scene.gd"
+      - "encounter/scontro_contro_kaos.gd"
+      - "encounter/scontro_contro_kaos.tscn"
+      - "encounter/kaos_climb.gd"
+      - "volumetric_grid.gd"
+      - ".github/workflows/bake-post-kaos-scene.yml"
+
+permissions:
+  contents: write
+
+concurrency:
+  group: bake-post-kaos-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  bake:
+    name: Bake post-Kaos scene
+    runs-on: [self-hosted, windows, x64, vtt-godot]
+    timeout-minutes: 12
+
+    steps:
+      - name: Sparse checkout bake surface
+        uses: actions/checkout@v4
+        with:
+          clean: false
+          fetch-depth: 1
+          sparse-checkout-cone-mode: false
+          sparse-checkout: |
+            /project.godot
+            /*.gd
+            /*.tscn
+            /interaction/
+            /network/
+            /vtt/
+            /scripts/
+            /encounter/*.gd
+            /encounter/*.tscn
+            /encounter/*.gdshader
+            /encounter/tools/
+            /encounter/tests/
+            /encounter/post_kaos_editable.scn
+            /encounter/assets/characters/*.glb
+            /encounter/assets/characters/*.glb.import
+            /encounter/assets/characters/*.jpg
+            /encounter/assets/characters/*.jpg.import
+            /encounter/assets/polyhaven/*.jpg
+            /encounter/assets/polyhaven/*.jpg.import
+            /assets/spell_area_geometry.json
+            /assets/tokens/token_library.json
+            /assets/tokens/generated/death_knight/
+            /assets/tokens/test/
+
+      - name: Clean generated files but keep Godot cache
+        shell: powershell
+        run: |
+          git reset --hard HEAD
+          git clean -ffdx -e .godot/
+
+      - name: Import bake dependencies
+        shell: powershell
+        run: |
+          $ErrorActionPreference = "Stop"
+          $godot = "C:\Program Files\Godot\Godot_v4.7.2-stable_win64_console.exe"
+          & $godot --headless --path . --editor --import --quit
+          if ($LASTEXITCODE -ne 0) { exit $LASTEXITCODE }
+
+      - name: Smoke test Scontro contro Kaos
+        shell: powershell
+        run: |
+          $ErrorActionPreference = "Continue"
+          $godot = "C:\Program Files\Godot\Godot_v4.7.2-stable_win64_console.exe"
+          $smokeOutput = @(& $godot --headless --path . --script res://encounter/tests/test_scontro_contro_kaos_scene.gd 2>&1)
+          $exitCode = $LASTEXITCODE
+          $ErrorActionPreference = "Stop"
+          $smokeOutput | ForEach-Object { Write-Host $_ }
+          if ($exitCode -ne 0) { exit $exitCode }
+          $joined = $smokeOutput -join "`n"
+          if ($joined -match "Cannot convert argument 1 from Object to Object|Index p_blend_shape|previously freed instance|Error calling deferred method") {
+            throw "Scontro smoke test reproduced a freed-object or blend-shape runtime error."
+          }
+          if ($joined -notmatch "(?m)^PASS: Scontro contro Kaos") {
+            throw "Scontro contro Kaos smoke test ended without PASS marker."
+          }
+
+      - name: Bake editable post-Kaos scene
+        shell: powershell
+        run: |
+          $ErrorActionPreference = "Stop"
+          $godot = "C:\Program Files\Godot\Godot_v4.7.2-stable_win64_console.exe"
+          if (Test-Path "encounter/post_kaos_editable.scn") {
+            Write-Host "Existing baked scene found: applying incremental upgrade."
+            & $godot --headless --path . --script res://encounter/tools/upgrade_post_kaos_scene.gd
+          } else {
+            Write-Host "No baked scene found: running full encounter bake."
+            & $godot --headless --path . --script res://encounter/tools/bake_post_kaos_scene.gd
+          }
+          if ($LASTEXITCODE -ne 0) { exit $LASTEXITCODE }
+          if (-not (Test-Path "encounter/post_kaos_editable.scn")) {
+            throw "Bake completed without encounter/post_kaos_editable.scn"
+          }
+          Get-Item "encounter/post_kaos_editable.scn" | Format-List Name,Length,LastWriteTime
+
+      - name: Smoke test post-Kaos scene
+        shell: powershell
+        run: |
+          $ErrorActionPreference = "Continue"
+          $godot = "C:\\Program Files\\Godot\\Godot_v4.7.2-stable_win64_console.exe"
+          $smokeOutput = @(& $godot --headless --path . --script res://encounter/tests/test_post_kaos_scene.gd 2>&1)
+          $exitCode = $LASTEXITCODE
+          $ErrorActionPreference = "Stop"
+          $smokeOutput | ForEach-Object { Write-Host $_ }
+          if ($exitCode -ne 0) { exit $exitCode }
+          $joined = $smokeOutput -join "`n"
+          if ($joined -match "Attempting to parent and popup a dialog that already has a parent") {
+            throw "Post-Kaos scene still contains duplicated runtime dialogs."
+          }
+          if ($joined -notmatch "(?m)^PASS: post-Kaos") {
+            throw "Post-Kaos smoke test ended without PASS marker."
+          }
+
+      - name: Commit baked scene
+        shell: powershell
+        run: |
+          $ErrorActionPreference = "Stop"
+          git add --sparse encounter/post_kaos_editable.scn
+          if ($LASTEXITCODE -ne 0) { exit $LASTEXITCODE }
+          if (git diff --cached --quiet) {
+            Write-Host "Baked scene is already up to date."
+            exit 0
+          }
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git commit -m "Bake editable post-Kaos encounter scene"
+          if ($LASTEXITCODE -ne 0) { exit $LASTEXITCODE }
+
+          # Godot import can refresh tracked UID files. Discard only those
+          # uncommitted/generated changes; the baked scene is already committed.
+          git reset --hard HEAD
+          if ($LASTEXITCODE -ne 0) { exit $LASTEXITCODE }
+          git clean -ffdx -e .godot/
+          if ($LASTEXITCODE -ne 0) { exit $LASTEXITCODE }
+
+          # Other ChatGPT tasks may update campaign-hub while this bake is
+          # serializing a large scene. Rebase instead of force-pushing.
+          for ($attempt = 1; $attempt -le 10; $attempt++) {
+            git fetch origin "${{ github.ref_name }}"
+            if ($LASTEXITCODE -ne 0) { exit $LASTEXITCODE }
+
+            git rebase "origin/${{ github.ref_name }}"
+            if ($LASTEXITCODE -ne 0) {
+              git rebase --abort
+              exit 1
+            }
+
+            git push origin "HEAD:${{ github.ref_name }}"
+            if ($LASTEXITCODE -eq 0) {
+              exit 0
+            }
+
+            Write-Host "Remote moved during push; retrying rebase ($attempt/10)."
+          }
+          throw "Could not push baked scene after rebasing ten times."

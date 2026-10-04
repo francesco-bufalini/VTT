@@ -2,3 +2,27 @@
 .godot/
 /android/
 .mcp-venv/
+*.import
+*.uid
+*.tmp
+/build/
+
+# Rebuildable Blender workspace and downloaded third-party assets
+.vtt_assets/
+.blender-cache/
+
+# Blender backup/autosave files (project .blend sources remain trackable)
+*.blend1
+*.blend2
+*.blend3
+*.blend~
+__pycache__/
+*.pyc
+/assets/tokens/generated/
+/assets/tokens/scenes/
+/assets/tokens/5etools_creature_index.json
+/dist/token_packs/
+/.token_pack_build/
+
+# Generated screenshots and analysis reports
+/outputs/

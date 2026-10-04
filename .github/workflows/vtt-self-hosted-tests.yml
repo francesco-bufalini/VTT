@@ -1,0 +1,90 @@
+name: VTT Godot Fast Tests
+
+on:
+  workflow_dispatch:
+  push:
+    branches:
+      - main
+      - feature/campaign-hub
+      - feature/tokens-lazy-load
+    paths:
+      - "**/*.gd"
+      - "**/*.tscn"
+      - "**/*.tres"
+      - "project.godot"
+      - "scripts/validate.ps1"
+      - "tools/build_token_packs.ps1"
+      - ".github/workflows/vtt-self-hosted-tests.yml"
+      - "assets/spell_area_geometry.json"
+
+concurrency:
+  group: vtt-godot-fast-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  validate:
+    name: Godot fast validation
+    runs-on: [self-hosted, windows, x64, vtt-godot]
+    timeout-minutes: 8
+
+    steps:
+      - name: Sparse checkout test surface
+        uses: actions/checkout@v4
+        with:
+          clean: false
+          fetch-depth: 1
+          sparse-checkout-cone-mode: false
+          sparse-checkout: |
+            /project.godot
+            /*.gd
+            /*.tscn
+            /scripts/
+            /tools/token_packs/
+            /tools/build_token_packs.ps1
+            /tests/
+            /vtt/
+            /network/
+            /interaction/
+            /encounter/encounter_events.gd
+            /assets/spell_area_geometry.json
+            /assets/tokens/test/test_token_visual.tscn
+
+      - name: Clean generated files but keep Godot cache
+        shell: powershell
+        run: |
+          git reset --hard HEAD
+          git clean -ffdx -e .godot/
+
+      - name: Show environment
+        shell: powershell
+        run: |
+          Write-Host "Runner: $env:RUNNER_NAME"
+          Write-Host "Workspace: $env:GITHUB_WORKSPACE"
+          & "C:\Program Files\Godot\Godot_v4.7.2-stable_win64.exe" --version
+
+      - name: Run fast Godot tests
+        shell: powershell
+        run: .\scripts\validate.ps1 -Godot "C:\Program Files\Godot\Godot_v4.7.2-stable_win64.exe" -Tests
+
+      - name: Parse token pack tooling
+        shell: powershell
+        run: |
+          $godot = "C:\Program Files\Godot\Godot_v4.7.2-stable_win64.exe"
+          & $godot --headless --path . --check-only --script res://tools/token_packs/build_one_token_pack.gd
+          if ($LASTEXITCODE -ne 0) { exit $LASTEXITCODE }
+          & $godot --headless --path . --check-only --script res://tools/token_packs/verify_token_pack.gd
+          if ($LASTEXITCODE -ne 0) { exit $LASTEXITCODE }
+
+      - name: Parse token pack PowerShell
+        shell: powershell
+        run: |
+          $errors = $null
+          [System.Management.Automation.Language.Parser]::ParseFile(
+            (Resolve-Path ".\tools\build_token_packs.ps1"),
+            [ref]$null,
+            [ref]$errors
+          ) | Out-Null
+          if ($errors.Count -gt 0) {
+            $errors | ForEach-Object { Write-Error $_.Message }
+            exit 1
+          }

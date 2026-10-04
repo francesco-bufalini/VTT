@@ -1,5 +1,33 @@
 # Kaos e Klothis
 
+## Scena post-Kaos editabile
+
+Per lavorare direttamente dal viewport 3D di Godot aprire
+`res://encounter/post_kaos_editable.scn`.
+
+Questa scena e' un bake separato di `kaos_klothis.tscn`: il baker lascia
+costruire una volta sola la geometria procedurale dell'incontro, porta Kaos
+nella posa canonica successiva al salto (`restore_phase_two()`), applica la
+pietrificazione senza animazione e salva il risultato come nodi/mesh
+persistenti. I controller della prima fase e lo script che ricostruisce lo
+scenario sono rimossi dal risultato, quindi riaprire la scena non rigenera
+l'ambiente e le modifiche fatte nell'editor 3D restano modifiche normali alla
+scena.
+
+Il file usa il formato binario Godot `.scn` con compressione lossless per
+contenere le mesh deformate senza superare il limite di GitHub. L'incontro
+originale `kaos_klothis.tscn` rimane invariato e continua a essere la
+versione procedurale/giocabile della prima fase.
+
+Il bake e' definito in
+`res://encounter/tools/bake_post_kaos_scene.gd` e la workflow
+`.github/workflows/bake-post-kaos-scene.yml` lo rigenera sul runner Godot.
+In locale, con Godot 4.7.2 disponibile, si puo' eseguire lo stesso baker con:
+
+```powershell
+godot --headless --path . --script res://encounter/tools/bake_post_kaos_scene.gd
+```
+
 Aprire `res://encounter/kaos_klothis.tscn` e premere F6. Le geometrie vengono
 costruite all'avvio. Il progetto mantiene le altre scene e il misuratore 5-10-5.
 La conversione segue i 5 piedi per cella del template (1.524 metri).

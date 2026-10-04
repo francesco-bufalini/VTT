@@ -1,0 +1,74 @@
+{
+  "schema_version": 1,
+  "scene_id": "kaos_arena_v1",
+  "description": "Second composition pass of the Blender-authored Kaos arena: monumental circular ruins over water, rear tholos fragment, larger arches, ceremonial approach and elevated sphere backdrop.",
+  "design_references": [
+    "Original Godot encounter layout in encounter/encounter_scenery.gd",
+    "Ancient Greek/Roman tholos and ruined colonnade composition",
+    "Planned external dressing: Fab Ancient Ruins free pack, Poly Haven stone/rock materials"
+  ],
+  "reset_scene": true,
+  "operations": [
+    {
+      "op": "build_kaos_arena",
+      "seed": 20261002,
+      "scale": 1
+    }
+  ],
+  "outputs": {
+    "previews": [
+      {
+        "path": "outputs/blender_agent/kaos_arena_v1/preview_perspective.png",
+        "location": [
+          205,
+          -225,
+          132
+        ],
+        "look_at": [
+          0,
+          40,
+          38
+        ],
+        "lens": 52,
+        "width": 1280,
+        "height": 720
+      },
+      {
+        "path": "outputs/blender_agent/kaos_arena_v1/preview_top.png",
+        "location": [
+          0,
+          -20,
+          380
+        ],
+        "look_at": [
+          0,
+          35,
+          0
+        ],
+        "lens": 58,
+        "width": 1280,
+        "height": 720
+      },
+      {
+        "path": "outputs/blender_agent/kaos_arena_v1/preview_front.png",
+        "location": [
+          0,
+          -275,
+          92
+        ],
+        "look_at": [
+          0,
+          55,
+          40
+        ],
+        "lens": 58,
+        "width": 1280,
+        "height": 720
+      }
+    ],
+    "report": "outputs/blender_agent/kaos_arena_v1/scene_report.json",
+    "glb": "outputs/blender_agent/kaos_arena_v1/kaos_arena_v1.glb",
+    "blend": "outputs/blender_agent/kaos_arena_v1/kaos_arena_v1.blend"
+  },
+  "revision": 4
+}

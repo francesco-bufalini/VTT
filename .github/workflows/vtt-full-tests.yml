@@ -1,0 +1,31 @@
+name: VTT Godot Full Tests
+
+on:
+  workflow_dispatch:
+
+concurrency:
+  group: vtt-godot-full
+  cancel-in-progress: false
+
+jobs:
+  validate:
+    name: Godot full validation
+    runs-on: [self-hosted, windows, x64, vtt-godot]
+    timeout-minutes: 30
+
+    steps:
+      - name: Checkout complete repository
+        uses: actions/checkout@v4
+        with:
+          clean: false
+          fetch-depth: 1
+
+      - name: Clean generated files but keep Godot cache
+        shell: powershell
+        run: |
+          git reset --hard HEAD
+          git clean -ffdx -e .godot/
+
+      - name: Full import and tests
+        shell: powershell
+        run: .\scripts\validate.ps1 -Godot "C:\Program Files\Godot\Godot_v4.7.2-stable_win64.exe" -FullTests

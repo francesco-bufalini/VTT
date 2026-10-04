@@ -88,46 +88,157 @@ func build(scene: Node3D) -> void:
 		_bindings(sphere)
 	var ruins: Node3D = scene.get_node("Board/MapGeometry")
 	preload("res://encounter/ruins_visual.gd").new().build(ruins, _units, _marble)
+	spawn_encounter_tokens(scene)
+
+func replace_klothis_sphere_and_ruins_from_encounter(scene: Node3D) -> void:
+	# Rebuild exactly the three visual groups requested for Post-Kaos using
+	# the same code path and transforms as Scontro contro Kaos.  Nothing else
+	# in the destination scene is modified.
+	_units = scene.measurement_tool.meters_to_world(1.0)
+	_marble = _material(Color(0.51, 0.53, 0.51))
+	_gold = _material(Color(0.62, 0.52, 0.35), 0.3)
+	_dark = _material(Color(0.11, 0.105, 0.10))
+
+	var klothis: Node3D = scene.get_node("KlothisRoot")
+	klothis.position = Vector3(0, klothis_group_elevation_meters, -12) * _units
+
+	var klothis_visual: Node3D = klothis.get_node("KlothisVisual")
+	for child in klothis_visual.get_children().duplicate():
+		child.free()
+	klothis_visual.position = Vector3(
+		0,
+		sphere_extra_elevation_meters,
+		12
+	) * _units
+	_giant(klothis_visual, true)
+
+	var sphere: Node3D = klothis.get_node("SphereVisual")
+	for child in sphere.get_children().duplicate():
+		child.free()
+	sphere.position = Vector3(
+		0,
+		160 + sphere_extra_elevation_meters,
+		-218
+	) * _units
+	var sphere_mesh := _sphere(sphere, 220, _dark)
+	var stone := ShaderMaterial.new()
+	stone.shader = preload("res://encounter/sphere_surface.gdshader")
+	preload("res://encounter/pbr_assets.gd").apply(stone, "dark_rock")
+	sphere_mesh.material_override = stone
+	preload("res://encounter/titan_reliefs.gd").new().build(
+		sphere,
+		_units,
+		stone
+	)
+	_bindings(sphere)
+
+	var ruins: Node3D = scene.get_node("Board/MapGeometry")
+	for node_name in [
+		"FlutedColumns",
+		"Capitals",
+		"RomanArches",
+		"Cornices",
+		"ColumnPlinths",
+		"ContinuousApseWall",
+	]:
+		var old := ruins.get_node_or_null(node_name)
+		if old != null:
+			old.free()
+	preload("res://encounter/ruins_visual.gd").new().build(
+		ruins,
+		_units,
+		_marble
+	)
+
+
+func spawn_encounter_tokens(
+	scene: Node3D,
+	chariot_deck_positions_world: Array[Vector3] = []
+) -> void:
+	var units: float = scene.measurement_tool.meters_to_world(1.0)
+	var roster_start: int = scene.tokens_root.get_child_count()
 	for index in range(6):
 		var token: CharacterBody3D = scene.token_scene.instantiate()
 		scene.tokens_root.add_child(token)
-		token.position = Vector3(5 + index * 3, 3, 80) * _units
-		token.configure(Color(0.15 + index * 0.17, 0.68, 0.76 - index * 0.12), scene.cell_size, "Medium", 1.0)
-		preload("res://encounter/party_skins.gd").new().apply(token,index)
+		token.position = Vector3(5 + index * 3, 3, 80) * units
+		token.configure(
+			Color(0.15 + index * 0.17, 0.68, 0.76 - index * 0.12),
+			scene.cell_size,
+			"Medium",
+			1.0
+		)
+		preload("res://encounter/party_skins.gd").new().apply(token, index)
+		token.set_meta("post_kaos_roster", true)
+
 	for index in range(3):
-		var chariot = scene.token_scene.instantiate()
+		var chariot: CharacterBody3D = scene.token_scene.instantiate()
 		chariot.set_script(preload("res://encounter/chariot_token.gd"))
 		chariot.cell_size = scene.cell_size
 		scene.tokens_root.add_child(chariot)
-		chariot.position = Vector3(-10+index*10,150,182)*_units
 		chariot.setup_chariot()
-		# Deck surface, rather than the collision body's centre, is exactly 150 m up.
-		chariot.position.y = 150*_units - chariot.deck.position.y
+		_place_chariot(
+			chariot,
+			Vector3(-10 + index * 10, 150, 182) * units,
+			chariot_deck_positions_world[index]
+				if index < chariot_deck_positions_world.size()
+				else Vector3.INF
+		)
 		chariot.set_flying(true)
+		chariot.set_meta("post_kaos_roster", true)
 		for seat in range(2):
-			var rider = scene.tokens_root.get_child(index*2+seat)
-			rider.global_position = chariot.deck.to_global(Vector3(-.5+seat, rider.token_height_cells*.5+.015, -.5)*scene.cell_size)
+			var rider_index: int = roster_start + index * 2 + seat
+			var rider := scene.tokens_root.get_child(rider_index) as CharacterBody3D
+			rider.global_position = chariot.deck.to_global(
+				Vector3(
+					-.5 + seat,
+					rider.token_height_cells * .5 + .015,
+					-.5
+				) * scene.cell_size
+			)
 			rider.grid_support = chariot.deck
 			rider._support_transform = chariot.deck.global_transform
-	# The seventh passenger is Large and reserves the whole fourth deck.
-	var phenax_chariot = scene.token_scene.instantiate()
+
+	var phenax_chariot: CharacterBody3D = scene.token_scene.instantiate()
 	phenax_chariot.name = "PhenaxChariot"
 	phenax_chariot.set_script(preload("res://encounter/chariot_token.gd"))
 	phenax_chariot.cell_size = scene.cell_size
 	scene.tokens_root.add_child(phenax_chariot)
-	phenax_chariot.position = Vector3(20,150,182)*_units
 	phenax_chariot.setup_chariot()
-	phenax_chariot.position.y = 150*_units-phenax_chariot.deck.position.y
+	_place_chariot(
+		phenax_chariot,
+		Vector3(20, 150, 182) * units,
+		chariot_deck_positions_world[3]
+			if chariot_deck_positions_world.size() > 3
+			else Vector3.INF
+	)
 	phenax_chariot.set_flying(true)
-	var phenax = scene.token_scene.instantiate()
+	phenax_chariot.set_meta("post_kaos_roster", true)
+
+	var phenax: CharacterBody3D = scene.token_scene.instantiate()
 	phenax.name = "Phenax"
 	phenax.token_height_cells = 3.0
 	scene.tokens_root.add_child(phenax)
-	phenax.configure(Color(.65,.30,.10),scene.cell_size,"Large",2.0)
+	phenax.configure(Color(.65, .30, .10), scene.cell_size, "Large", 2.0)
 	preload("res://encounter/phenax_skin.gd").new().apply(phenax)
-	phenax.global_position = phenax_chariot.deck.to_global(Vector3(0,1.515,0)*scene.cell_size)
+	phenax.global_position = phenax_chariot.deck.to_global(
+		Vector3(0, 1.515, 0) * scene.cell_size
+	)
 	phenax.grid_support = phenax_chariot.deck
 	phenax._support_transform = phenax_chariot.deck.global_transform
+	phenax.set_meta("post_kaos_roster", true)
+
+func _place_chariot(
+	chariot: CharacterBody3D,
+	default_root_world: Vector3,
+	custom_deck_world: Vector3
+) -> void:
+	if custom_deck_world != Vector3.INF:
+		var deck_offset_world: Vector3 = chariot.global_transform.basis * chariot.deck.position
+		chariot.global_position = custom_deck_world - deck_offset_world
+		return
+	chariot.position = default_root_world
+	# Deck surface, rather than the collision body's centre, is exactly 150 m up.
+	chariot.position.y = default_root_world.y - chariot.deck.position.y
 
 func _material(color: Color, emission: float = 0.0) -> StandardMaterial3D:
 	var material := StandardMaterial3D.new()
@@ -164,7 +275,11 @@ func _limb(parent: Node3D, from: Vector3, to: Vector3, radius: float, material: 
 	instance.basis = Basis(Quaternion(Vector3.UP, (to - from).normalized()))
 
 func _giant(parent: Node3D, luminous: bool) -> void:
-	var body: Material = _material(Color(0.69, 0.57, 0.44), 0.07) if luminous else _cosmic_material()
+	var body: Material
+	if luminous:
+		body = _material(Color(0.69, 0.57, 0.44), 0.07)
+	else:
+		body = _cosmic_material()
 	preload("res://encounter/sculpted_giant_visual.gd").new().build(parent, _units, body, _marble, _gold, luminous)
 
 func _cosmic_material() -> ShaderMaterial:
