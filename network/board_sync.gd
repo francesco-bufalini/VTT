@@ -890,7 +890,7 @@ func _party_manifest_matches_scene(value: Variant) -> bool:
 	if not value is Array:
 		return false
 	var expected: Dictionary = {}
-	for entry_value: Variant in value as Array:
+	for entry_value: Variant in (value as Array):
 		if not entry_value is Dictionary:
 			return false
 		var entry: Dictionary = entry_value as Dictionary
@@ -898,7 +898,7 @@ func _party_manifest_matches_scene(value: Variant) -> bool:
 		var token_ids_value: Variant = entry.get("token_ids", [])
 		if not token_ids_value is Array:
 			return false
-		for token_id_value: Variant in token_ids_value as Array:
+		for token_id_value: Variant in (token_ids_value as Array):
 			expected[String(token_id_value)] = party_key
 
 	var current := _current_nodes_by_id()
