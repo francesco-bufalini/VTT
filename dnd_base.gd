@@ -3969,7 +3969,7 @@ func _open_map_load_dialog() -> void:
 func _on_map_save_file_selected(path: String) -> void:
 	if board_sync == null or not is_instance_valid(board_sync):
 		return
-	var error: Error = board_sync.call("save_snapshot_to_file", path)
+	var error := int(board_sync.call("save_snapshot_to_file", path))
 	if error == OK:
 		var clean_path := path.strip_edges()
 		if clean_path.get_extension().is_empty():
@@ -3982,6 +3982,6 @@ func _on_map_load_file_selected(path: String) -> void:
 	if board_sync == null or not is_instance_valid(board_sync):
 		return
 	push_undo_state()
-	var error: Error = board_sync.call("load_snapshot_from_file", path)
+	var error := int(board_sync.call("load_snapshot_from_file", path))
 	if error != OK and not _undo_stack.is_empty():
 		_undo_stack.pop_back()
