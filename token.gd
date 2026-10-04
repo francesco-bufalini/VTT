@@ -999,6 +999,23 @@ func get_automatic_conditions() -> Array[String]:
 	return _automatic_conditions.duplicate()
 
 
+func get_active_condition_display_parts() -> PackedStringArray:
+	var parts := PackedStringArray()
+	for definition: Dictionary in CONDITION_DEFINITIONS:
+		var condition_id := String(definition.get("id", ""))
+		if (
+			condition_id in _conditions
+			or condition_id in _automatic_conditions
+		):
+			parts.append(
+				"%s %s" % [
+					String(definition.get("icon", "•")),
+					String(definition.get("name", condition_id))
+				]
+			)
+	return parts
+
+
 func has_condition(condition_id: String) -> bool:
 	var normalized := condition_id.strip_edges().to_lower()
 	return (
@@ -1653,18 +1670,12 @@ func _add_hp_bar_quad(
 
 func _update_status_overlay() -> void:
 	_ensure_token_overlay()
-	if not is_instance_valid(_status_label):
-		return
-	var icons: PackedStringArray = []
-	for definition: Dictionary in CONDITION_DEFINITIONS:
-		var condition_id := String(definition.get("id", ""))
-		if (
-			condition_id in _conditions
-			or condition_id in _automatic_conditions
-		):
-			icons.append(String(definition.get("icon", "•")))
-	_status_label.text = "  ".join(icons)
-	_status_label.visible = not icons.is_empty()
+	# Conditions are rendered by the shared 2D tactical badge together with
+	# derived states such as Affiancato. Keep the legacy 3D label disabled so
+	# names/HP/conditions never overlap or duplicate one another.
+	if is_instance_valid(_status_label):
+		_status_label.text = ""
+		_status_label.visible = false
 
 
 
