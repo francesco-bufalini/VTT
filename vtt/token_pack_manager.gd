@@ -536,42 +536,162 @@ func _refresh_catalog_via_gh() -> bool:
 	if gh_path.is_empty():
 		return false
 
-	var cache_absolute := ProjectSettings.globalize_path(CACHE_DIR)
-	var output: Array = []
-	var exit_code := OS.execute(
+	# While the repository is private, discover every release that publishes a
+	# token_catalog.json and merge them into one runtime catalog. This mirrors
+	# the future public setup where a single global catalog can point at PCKs
+	# spread across multiple releases.
+	var release_output: Array = []
+	var release_exit := OS.execute(
 		gh_path,
 		PackedStringArray([
 			"release",
-			"download",
-			GITHUB_RELEASE_TAG,
+			"list",
 			"--repo",
 			GITHUB_REPOSITORY,
-			"--pattern",
-			CATALOG_FILENAME,
-			"--dir",
-			cache_absolute,
-			"--clobber",
+			"--limit",
+			"100",
+			"--json",
+			"tagName,isDraft",
 		]),
-		output,
+		release_output,
 		true,
 		false
 	)
-	if exit_code != 0:
+	if release_exit != 0 or release_output.is_empty():
 		push_warning(
-			"TokenPackManager: gh fallback failed (exit %d): %s"
-			% [exit_code, "\n".join(output)]
+			"TokenPackManager: gh release discovery failed (exit %d): %s"
+			% [release_exit, "\n".join(release_output)]
 		)
 		return false
 
-	if not _load_cached_catalog():
+	var releases_value: Variant = JSON.parse_string(String(release_output[0]))
+	if not releases_value is Array:
+		push_warning("TokenPackManager: gh release list returned invalid JSON.")
+		return false
+
+	var sources_root := CACHE_DIR.path_join(".catalog_sources")
+	var sources_absolute := ProjectSettings.globalize_path(sources_root)
+	var mkdir_error := DirAccess.make_dir_recursive_absolute(sources_absolute)
+	if mkdir_error != OK and not DirAccess.dir_exists_absolute(sources_absolute):
 		push_warning(
-			"TokenPackManager: gh downloaded the catalog but it is invalid."
+			"TokenPackManager: cannot create catalog source cache: %s"
+			% error_string(mkdir_error)
 		)
+		return false
+
+	var merged_entries: Dictionary = {}
+	var catalogs_loaded := 0
+	var releases_checked := 0
+
+	for release_value: Variant in releases_value as Array:
+		if not release_value is Dictionary:
+			continue
+		var release := release_value as Dictionary
+		if bool(release.get("isDraft", false)):
+			continue
+		var tag := String(release.get("tagName", "")).strip_edges()
+		if tag.is_empty():
+			continue
+		releases_checked += 1
+
+		var safe_tag := tag.replace("/", "_").replace("\\", "_")
+		safe_tag = safe_tag.replace(":", "_")
+		var source_dir := sources_root.path_join(safe_tag)
+		var source_absolute := ProjectSettings.globalize_path(source_dir)
+		DirAccess.make_dir_recursive_absolute(source_absolute)
+
+		var download_output: Array = []
+		var download_exit := OS.execute(
+			gh_path,
+			PackedStringArray([
+				"release",
+				"download",
+				tag,
+				"--repo",
+				GITHUB_REPOSITORY,
+				"--pattern",
+				CATALOG_FILENAME,
+				"--dir",
+				source_absolute,
+				"--clobber",
+			]),
+			download_output,
+			true,
+			false
+		)
+		if download_exit != 0:
+			# A release is allowed to contain only PCK assets. It simply does
+			# not contribute metadata until a catalog is published there.
+			continue
+
+		var source_path := source_dir.path_join(CATALOG_FILENAME)
+		if not FileAccess.file_exists(source_path):
+			continue
+		var source_file := FileAccess.open(source_path, FileAccess.READ)
+		if source_file == null:
+			continue
+		var source_raw := source_file.get_as_text()
+		source_file.close()
+		var source_parsed: Variant = JSON.parse_string(source_raw)
+		if not source_parsed is Dictionary:
+			continue
+		var source_tokens: Variant = (source_parsed as Dictionary).get(
+			"tokens",
+			[]
+		)
+		if not source_tokens is Array:
+			continue
+
+		catalogs_loaded += 1
+		for token_value: Variant in source_tokens as Array:
+			if not token_value is Dictionary:
+				continue
+			var entry := (token_value as Dictionary).duplicate(true)
+			var token_id := String(entry.get("id", "")).strip_edges()
+			if token_id.is_empty():
+				continue
+
+			# Prefer the first occurrence from gh's newest-first release list.
+			# A catalog entry that already names its actual release keeps that
+			# tag; otherwise the catalog's own release is the source.
+			if merged_entries.has(token_id):
+				continue
+			if String(entry.get("release_tag", "")).strip_edges().is_empty():
+				entry["release_tag"] = tag
+			merged_entries[token_id] = entry
+
+	if catalogs_loaded == 0 or merged_entries.is_empty():
+		push_warning(
+			"TokenPackManager: no token catalogs found across %d releases."
+			% releases_checked
+		)
+		return false
+
+	var merged_tokens: Array = []
+	for entry_value: Variant in merged_entries.values():
+		if entry_value is Dictionary:
+			merged_tokens.append(entry_value)
+	merged_tokens.sort_custom(
+		func(a: Dictionary, b: Dictionary) -> bool:
+			return String(a.get("id", "")).nocasecmp_to(
+				String(b.get("id", ""))
+			) < 0
+	)
+
+	var merged_catalog := {
+		"version": 1,
+		"tokens": merged_tokens,
+	}
+	var merged_raw := JSON.stringify(merged_catalog, "\t")
+	if not _accept_catalog_text(merged_raw, true):
+		push_warning("TokenPackManager: merged gh catalog is invalid.")
 		return false
 
 	print(
-		"TokenPackManager: catalog loaded via gh fallback (%d tokens)"
-		% _entries_by_id.size()
+		(
+			"TokenPackManager: catalog loaded via gh fallback "
+			+ "(%d catalogs, %d tokens)"
+		) % [catalogs_loaded, _entries_by_id.size()]
 	)
 	return true
 
