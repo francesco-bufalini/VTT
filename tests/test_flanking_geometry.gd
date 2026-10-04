@@ -102,6 +102,13 @@ func run() -> void:
 	assert(is_equal_approx(projected[1].y, 0.03))
 	assert(is_equal_approx(projected[2].y, 0.03))
 
+	# Flanking remains mechanically active regardless of selection, but its
+	# visual relationship is contextual: any one of the three tokens is enough.
+	assert(not FlankingSystem.flanking_relationship_visible(false, false, false))
+	assert(FlankingSystem.flanking_relationship_visible(true, false, false))
+	assert(FlankingSystem.flanking_relationship_visible(false, true, false))
+	assert(FlankingSystem.flanking_relationship_visible(false, false, true))
+
 	# Two allies on opposite sides produce a segment through the enemy hitbox.
 	var valid := FlankingSystem.flanking_segment(
 		Vector3(-2.0, 0.0, 0.0),
