@@ -19,6 +19,11 @@ const INVALID_CELL := Vector3i(2147483647, 2147483647, 2147483647)
 @export_range(0.15, 2.0, 0.05) var cell_retention_seconds: float = 0.65
 @export_range(0.02, 0.5, 0.01) var visual_update_interval: float = 0.08
 @export_range(0.01, 0.25, 0.01) var surface_inset_fraction: float = 0.06
+# Legacy compatibility with encounter scripts created when the grid used
+# per-cell collision shape probes. The current raycast-based grid no longer
+# needs this value internally, but keeping the exported property lets older
+# scenes tune it without crashing at runtime.
+@export_range(0.75, 0.99, 0.005) var collision_probe_scale: float = 0.90
 # Visual-only displacement of rendered grid cells. Some encounter scenes set
 # this at runtime (for example Vector3(0, -0.5, 0)) so the voxel top face sits
 # on the walkable collision surface instead of being centered around it.
