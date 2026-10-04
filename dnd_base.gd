@@ -680,7 +680,7 @@ func _on_remote_token_downloaded(
 			_selected_token_profile["visual_asset"] = _remote_visual_path(token_id)
 			_forced_identity_profile_ready = true
 			_set_identity_placement_hint(
-				"Miniatura pronta · clicca sulla mappa per piazzarla. Esc è disabilitato finché non la piazzi."
+				"Miniatura pronta · muoviti con i controlli normali della camera e clicca per piazzarla. Esc è disabilitato finché non la piazzi."
 			)
 		else:
 			_fail_forced_identity_placement(
@@ -706,7 +706,7 @@ func _on_remote_token_mounted(
 		_selected_token_profile["visual_asset"] = _remote_visual_path(token_id)
 		_forced_identity_profile_ready = true
 		_set_identity_placement_hint(
-			"Miniatura pronta · clicca sulla mappa per piazzarla. Esc è disabilitato finché non la piazzi."
+			"Miniatura pronta · muoviti con i controlli normali della camera e clicca per piazzarla. Esc è disabilitato finché non la piazzi."
 		)
 	call_deferred("_reload_token_miniature_list", token_id)
 	_notify_identity_profile_catalog_changed()
@@ -1525,10 +1525,15 @@ func _handle_forced_identity_placement_input(event: InputEvent) -> bool:
 		if event.button_index == MOUSE_BUTTON_LEFT:
 			if not _forced_identity_profile_ready:
 				_set_identity_placement_hint(
-					"Preparazione della miniatura in corso… attendi il download, poi clicca sulla mappa."
+					"Preparazione della miniatura in corso… puoi muovere la camera mentre attendi."
 				)
 				return true
-			if not _set_pending_spawn_from_screen(event.position):
+			var placement_screen_position := (
+				_screen_center()
+				if Input.mouse_mode == Input.MOUSE_MODE_CAPTURED
+				else event.position
+			)
+			if not _set_pending_spawn_from_screen(placement_screen_position):
 				_set_identity_placement_hint(
 					"Punta una superficie calpestabile valida e clicca per piazzare il token."
 				)
@@ -3612,8 +3617,12 @@ func begin_identity_token_placement(
 	# Riusa lo stesso setup del generatore normale senza aprire il suo popup.
 	_refresh_token_miniature_filter("", _forced_identity_profile_id)
 	_prepare_shared_token_editor()
+
+	# Il controller della camera si muove solo con il mouse catturato. La
+	# modalità di piazzamento deve impedire l'annullamento, non bloccare la
+	# navigazione: riattiva quindi subito gli stessi controlli camera normali.
 	_ui_owns_mouse = false
-	_release_mouse()
+	_capture_mouse()
 
 	var origin := String(_selected_token_profile.get("_pack_origin", ""))
 	if origin == "remote":
@@ -3670,7 +3679,7 @@ func begin_identity_token_placement(
 
 	if _forced_identity_profile_ready:
 		_set_identity_placement_hint(
-			"Miniatura pronta · clicca sulla mappa per piazzarla. Esc è disabilitato finché non la piazzi."
+			"Miniatura pronta · muoviti con i controlli normali della camera e clicca per piazzarla. Esc è disabilitato finché non la piazzi."
 		)
 	return true
 
