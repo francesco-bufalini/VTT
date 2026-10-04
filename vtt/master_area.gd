@@ -923,6 +923,33 @@ func _sync_all_linked_health_bars() -> void:
 		_sync_creature_token(String(creature.get("id", "")))
 
 
+func get_owned_health_bar_sync_entries() -> Array[Dictionary]:
+	var entries: Array[Dictionary] = []
+	for creature: Dictionary in _creatures:
+		var token_id := String(
+			creature.get("linked_token_sync_id", "")
+		).strip_edges()
+		if token_id.is_empty():
+			continue
+		var max_hp := maxi(0, int(creature.get("max_hp", 0)))
+		if max_hp <= 0:
+			continue
+		var current_hp := clampi(
+			int(creature.get("current_hp", 0)),
+			0,
+			max_hp
+		)
+		entries.append({
+			"token_id": token_id,
+			"percent": clampi(
+				roundi(float(current_hp) / float(max_hp) * 100.0),
+				0,
+				100
+			)
+		})
+	return entries
+
+
 func _clear_form() -> void:
 	_loading_form = true
 	_name_edit.clear()
