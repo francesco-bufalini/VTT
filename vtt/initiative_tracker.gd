@@ -210,11 +210,13 @@ func _build_add_dialog() -> void:
 	add_dialog.add_theme_constant_override("buttons_min_width", 100)
 	add_dialog.add_theme_constant_override("buttons_min_height", 34)
 	ui_root.add_child(add_dialog)
-	add_dialog.get_ok_button().show()
-	var cancel_button := add_dialog.get_cancel_button()
-	if cancel_button != null:
-		cancel_button.text = "Annulla"
-		cancel_button.show()
+	# Non dipendere dal footer nativo: con alcuni scaling può essere fuori
+	# dalla finestra al primo popup.
+	add_dialog.get_ok_button().hide()
+	var native_cancel := add_dialog.get_cancel_button()
+	if native_cancel != null:
+		native_cancel.text = "Annulla"
+		native_cancel.hide()
 
 	# I figli di Accept/ConfirmationDialog partecipano già al layout interno.
 	# Ancorarli a PRESET_FULL_RECT può coprire la barra OK/Annulla al primo
@@ -253,6 +255,32 @@ func _build_add_dialog() -> void:
 	info.autowrap_mode = TextServer.AUTOWRAP_WORD_SMART
 	info.add_theme_font_size_override("font_size", 11)
 	body.add_child(info)
+
+	var actions := HBoxContainer.new()
+	actions.name = "InitiativeAddActions"
+	actions.alignment = BoxContainer.ALIGNMENT_END
+	actions.add_theme_constant_override("separation", 8)
+	body.add_child(actions)
+
+	var cancel_button := Button.new()
+	cancel_button.text = "Annulla"
+	cancel_button.custom_minimum_size = Vector2(100, 36)
+	cancel_button.pressed.connect(
+		func() -> void:
+			add_dialog.hide()
+			_release_dialog_mouse()
+	)
+	actions.add_child(cancel_button)
+
+	var add_button := Button.new()
+	add_button.text = "Aggiungi"
+	add_button.custom_minimum_size = Vector2(110, 36)
+	add_button.pressed.connect(
+		func() -> void:
+			_on_add_confirmed()
+			add_dialog.hide()
+	)
+	actions.add_child(add_button)
 
 	add_dialog.confirmed.connect(_on_add_confirmed)
 	add_dialog.canceled.connect(_release_dialog_mouse)

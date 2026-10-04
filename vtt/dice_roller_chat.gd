@@ -875,6 +875,12 @@ func _build_scene_identity_dialog() -> void:
 	scene_identity_dialog.add_theme_constant_override("buttons_min_width", 110)
 	scene_identity_dialog.add_theme_constant_override("buttons_min_height", 36)
 	ui_root.add_child(scene_identity_dialog)
+	# Su alcuni scaling il footer nativo del ConfirmationDialog finisce fuori
+	# dal rettangolo visibile. Le azioni reali vivono quindi nel contenuto.
+	scene_identity_dialog.get_ok_button().hide()
+	var native_cancel := scene_identity_dialog.get_cancel_button()
+	if native_cancel != null:
+		native_cancel.hide()
 
 	var body := VBoxContainer.new()
 	body.custom_minimum_size = Vector2(540, 430)
@@ -900,6 +906,32 @@ func _build_scene_identity_dialog() -> void:
 		_on_scene_identity_mode_selected
 	)
 	body.add_child(scene_identity_selector)
+
+	# Footer esplicito immediatamente sotto la scelta: resta visibile anche
+	# quando il popup viene clamped/scalato e non dipende dal footer nativo.
+	var actions := HBoxContainer.new()
+	actions.name = "SceneIdentityActions"
+	actions.alignment = BoxContainer.ALIGNMENT_END
+	actions.add_theme_constant_override("separation", 10)
+	body.add_child(actions)
+
+	var cancel_button := Button.new()
+	cancel_button.name = "SceneIdentityCancel"
+	cancel_button.text = "Annulla"
+	cancel_button.custom_minimum_size = Vector2(120, 40)
+	cancel_button.pressed.connect(
+		func() -> void:
+			scene_identity_dialog.hide()
+			_cancel_scene_identity_dialog()
+	)
+	actions.add_child(cancel_button)
+
+	var confirm_button := Button.new()
+	confirm_button.name = "SceneIdentityConfirm"
+	confirm_button.text = "Conferma"
+	confirm_button.custom_minimum_size = Vector2(140, 40)
+	confirm_button.pressed.connect(_confirm_scene_identity)
+	actions.add_child(confirm_button)
 
 	scene_identity_miniature_section = VBoxContainer.new()
 	scene_identity_miniature_section.add_theme_constant_override(
