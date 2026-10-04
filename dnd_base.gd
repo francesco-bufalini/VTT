@@ -2962,7 +2962,11 @@ func _on_token_dialog_confirmed() -> void:
 		else ""
 	)
 	var active_conditions := _shared_token_editor_conditions()
-	if display_name.is_empty():
+	var editing_existing := (
+		_token_generation_transform_target != null
+		and is_instance_valid(_token_generation_transform_target)
+	)
+	if display_name.is_empty() and not editing_existing:
 		display_name = String(
 			_selected_token_profile.get("name", "Token")
 		)
