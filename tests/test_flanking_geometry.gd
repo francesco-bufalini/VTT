@@ -185,13 +185,17 @@ func run() -> void:
 	# The visual replacement is two directional arrows converging on target.
 	var arrow := FlankingSystem.flanking_arrow_segment(
 		Vector3(-1.0, 0.03, 0.0),
-		Vector3.ZERO + Vector3(0.0, 0.03, 0.0),
+		half,
+		Vector3(0.0, 0.03, 0.0),
+		half,
 		1.0
 	)
 	assert(arrow.size() == 2)
+	assert(is_equal_approx(arrow[0].y, arrow[1].y))
+	assert(is_equal_approx(arrow[0].y, 0.048))
 	assert(
-		arrow[1].distance_to(Vector3(0.0, 0.03, 0.0))
-		< arrow[0].distance_to(Vector3(0.0, 0.03, 0.0))
+		arrow[1].distance_to(Vector3(0.0, 0.048, 0.0))
+		< arrow[0].distance_to(Vector3(0.0, 0.048, 0.0))
 	)
 
 	# A diagonal line that misses the target hitbox must not count.
