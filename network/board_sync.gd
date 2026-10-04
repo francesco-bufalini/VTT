@@ -98,6 +98,38 @@ func is_auto_sync_enabled() -> bool:
 	return auto_sync_enabled
 
 
+func sync_local_change_now() -> Error:
+	if not auto_sync_enabled or _applying_received_snapshot:
+		return OK
+	if session_key.is_empty():
+		return ERR_INVALID_PARAMETER
+
+	var snapshot := create_snapshot()
+	if snapshot.is_empty():
+		return ERR_BUSY
+	var signature := _snapshot_signature(snapshot)
+
+	# Unlike the polling path, an explicit UI mutation must never become the
+	# initial baseline without being sent. This is important when a token is
+	# edited immediately after a scene/session starts.
+	var error := send_snapshot_to_tailnet(session_key)
+	if error == OK:
+		_auto_sync_initialized = true
+		_auto_sync_last_signature = signature
+		_auto_sync_candidate_signature = ""
+		_auto_sync_candidate_since_msec = 0
+		_auto_sync_retry_after_msec = 0
+	else:
+		# Keep the state dirty so the normal debounced poll retries it.
+		_auto_sync_initialized = true
+		_auto_sync_candidate_signature = signature
+		_auto_sync_candidate_since_msec = Time.get_ticks_msec()
+		_auto_sync_retry_after_msec = (
+			_auto_sync_candidate_since_msec + AUTO_SYNC_RETRY_MS
+		)
+	return error
+
+
 func broadcast_sync_event(sync_event: Dictionary) -> Error:
 	if not auto_sync_enabled or sync_event.is_empty():
 		return OK
