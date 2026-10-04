@@ -2,8 +2,8 @@ extends Node
 
 signal status_changed(message: String)
 const PORT := 45454
-const SNAPSHOT_VERSION := 5
-const MAGIC := "DND_MAP_SYNC_V5"
+const SNAPSHOT_VERSION := 6
+const MAGIC := "DND_MAP_SYNC_V6"
 const LOCAL_SAVE_MAGIC := "DND_MAP_LOCAL_V1"
 const BACKUP_DIR := "user://map_sync_backups"
 const MAX_BACKUPS := 20
@@ -462,7 +462,7 @@ func _process(_delta: float) -> void:
 			var accepted := false
 			var reject_reason := "messaggio non valido"
 			if message is Dictionary:
-				if message.get("magic") != MAGIC:
+				if message.get("magic") not in [MAGIC, "DND_MAP_SYNC_V5"]:
 					reject_reason = "protocollo non compatibile"
 				elif message.get("key") != session_key:
 					reject_reason = "numero partita diverso"
@@ -503,7 +503,7 @@ func _exit_tree() -> void:
 func valid_snapshot(snapshot: Variant) -> bool:
 	if (
 		not snapshot is Dictionary
-		or int(snapshot.get("version", -1)) != SNAPSHOT_VERSION
+		or int(snapshot.get("version", -1)) not in [5, SNAPSHOT_VERSION]
 		or snapshot.get("scene") != board_root.scene_file_path
 	):
 		return false
@@ -526,10 +526,13 @@ func valid_snapshot(snapshot: Variant) -> bool:
 	):
 		return false
 	var ids := {}
+	var item_token_ids: Dictionary = {}
 	for item in snapshot.objects:
 		if not item is Dictionary or not item.get("id") is String or item.id.is_empty() or ids.has(item.id):
 			return false
 		ids[item.id] = true
+		if item.get("kind") == "token":
+			item_token_ids[item.id] = true
 		if item.get("kind") not in ["token", "physical"] or item.get("group") not in GROUPS:
 			return false
 		var transform: Variant = item.get("transform")
@@ -724,14 +727,18 @@ func valid_snapshot(snapshot: Variant) -> bool:
 						return false
 		if not item.get("name") is String or not item.get("visible") is bool:
 			return false
-	return true
+	if board_root.get("item_controller") != null:
+		return board_root.item_controller.valid_items(snapshot.get("items", []), item_token_ids)
+	return not snapshot.has("items") or snapshot.items == []
 
 func create_snapshot() -> Dictionary:
+	if board_root.get("item_controller") != null:
+		board_root.item_controller.flush_motion()
 	var objects: Array = []
 	var seen := {}
 	for group_name in GROUPS:
 		for node in get_tree().get_nodes_in_group(group_name):
-			if not (node is Node3D) or seen.has(node) or not board_root.is_ancestor_of(node) or node.is_queued_for_deletion(): continue
+			if not (node is Node3D) or node.is_in_group("dnd_item") or seen.has(node) or not board_root.is_ancestor_of(node) or node.is_queued_for_deletion(): continue
 			seen[node]=true; objects.append(_serialize_node(node as Node3D, group_name))
 	var aoes: Array = []
 	if is_instance_valid(measurement_tool) and measurement_tool.has_method("serialize_persistent_aoes"): aoes=measurement_tool.call("serialize_persistent_aoes")
@@ -753,6 +760,7 @@ func create_snapshot() -> Dictionary:
 		"version": SNAPSHOT_VERSION,
 		"scene": board_root.scene_file_path,
 		"objects": objects,
+		"items": board_root.item_controller.serialize_items() if board_root.get("item_controller") != null else [],
 		"aoes": aoes,
 		"encounter": state,
 		"initiative": initiative
@@ -885,6 +893,8 @@ func apply_snapshot(snapshot: Dictionary) -> bool:
 			var expected_conditions: Array = data.get("conditions", [])
 			if (applied_conditions as Array) != expected_conditions:
 				return false
+	if board_root.get("item_controller") != null:
+		board_root.item_controller.apply_items(snapshot.get("items", []))
 	_restore_token_supports(wanted)
 	if is_instance_valid(measurement_tool) and measurement_tool.has_method("apply_persistent_aoes"): measurement_tool.call("apply_persistent_aoes", snapshot.get("aoes",[]))
 	var initiative_tracker: Node = _initiative_tracker()
@@ -952,7 +962,7 @@ func _sync_id(node: Node3D) -> String:
 	return id
 
 func _serialize_node(node: Node3D, group_name: String) -> Dictionary:
-	var data := {"id":_sync_id(node),"group":group_name,"path":String(board_root.get_path_to(node)),"scene":node.scene_file_path,"name":node.name,"transform":_transform(node.global_transform),"visible":node.visible}
+	var data := {"id":_sync_id(node),"group":group_name,"path":String(board_root.get_path_to(node)),"scene":node.scene_file_path,"name":String(node.name),"transform":_transform(node.global_transform),"visible":node.visible}
 	if group_name == "dnd_token":
 		data["kind"]="token"; data["flying"]=bool(node.get("flying"));
 		data["token_id"] = (

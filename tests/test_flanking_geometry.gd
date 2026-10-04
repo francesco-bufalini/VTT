@@ -250,11 +250,7 @@ func run() -> void:
 	assert(is_equal_approx(mutual_marker[0].y, mutual_marker[1].y))
 	assert(mutual_marker[0].z > 0.0)
 	assert(mutual_marker[1].z > 0.0)
-	assert(is_equal_approx(
-		mutual_marker[0].distance_to(mutual_marker[1]),
-		0.44,
-		0.001
-	))
+	assert(absf(mutual_marker[0].distance_to(mutual_marker[1]) - 0.44) < 0.001)
 
 	# Reach uses a flat directional vector from the source base to the target
 	# base; the renderer now applies this to every in-range directed pair.

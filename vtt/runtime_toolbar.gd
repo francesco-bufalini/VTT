@@ -24,6 +24,8 @@ const TOKEN_ROTATE_RIGHT := 23
 const TOKEN_DELETE := 24
 const TOKEN_DETAILS := 25
 const TOKEN_LIST := 26
+const ITEM_CREATE := 80
+const ITEM_MANAGE := 81
 
 const MEASURE_RULER := 30
 const MEASURE_SPHERE := 31
@@ -95,6 +97,11 @@ func _build_toolbar() -> void:
 		["Lista token", TOKEN_LIST],
 		["Elimina", TOKEN_DELETE]
 	], _on_token))
+
+	row.add_child(_menu("Item", [
+		["Carro romano · posiziona (2×2)", ITEM_CREATE],
+		["Lista item / associa token…", ITEM_MANAGE]
+	], _on_item))
 
 	row.add_child(_menu("Gioco", [
 		["Incantesimi", GAME_SPELLS],
@@ -180,6 +187,17 @@ func _on_game(id: int) -> void:
 			board_root.call("toggle_spell_menu")
 		GAME_USER_IDENTITY:
 			board_root.call("request_change_user_identity")
+
+
+func _on_item(id: int) -> void:
+	var controller: Node = board_root.get("item_controller") as Node
+	if controller == null:
+		return
+	match id:
+		ITEM_CREATE:
+			controller.call("begin_placement")
+		ITEM_MANAGE:
+			controller.call("open_menu")
 
 
 func _on_combat(id: int) -> void:
