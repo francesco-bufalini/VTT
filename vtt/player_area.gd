@@ -5,6 +5,17 @@ const PlayerReference = preload("res://vtt/player_reference_catalog.gd")
 const Player5eToolsCatalog = preload("res://vtt/player_5etools_catalog.gd")
 const SpellCatalog = preload("res://vtt/spells/spell_catalog.gd")
 
+const ITEM_DESCRIPTION_URLS := {
+	"inventory_mundane": (
+		"https://raw.githubusercontent.com/5etools-mirror-3/"
+		+ "5etools-src/main/data/items-base.json"
+	),
+	"inventory_magic": (
+		"https://raw.githubusercontent.com/5etools-mirror-3/"
+		+ "5etools-src/main/data/items.json"
+	),
+}
+
 var board_root: Node3D
 var ui_root: CanvasLayer
 var _store: RefCounted
@@ -68,6 +79,12 @@ var _character_token_selector: OptionButton
 
 var _catalog_info_dialog: AcceptDialog
 var _catalog_info_text: RichTextLabel
+var _item_description_request: HTTPRequest
+var _item_description_cache: Dictionary = {}
+var _item_description_loaded: Dictionary = {}
+var _pending_info_entry: Dictionary = {}
+var _pending_info_character_key: String = ""
+var _description_request_character_key: String = ""
 
 
 func setup(root: Node3D) -> void:
@@ -84,6 +101,7 @@ func setup(root: Node3D) -> void:
 	_build_link_dialog()
 	_build_character_token_dialog()
 	_build_catalog_info_dialog()
+	_build_item_description_request()
 	_reload_characters()
 
 
@@ -1662,9 +1680,19 @@ func _build_catalog_info_dialog() -> void:
 	_catalog_info_dialog.add_child(_catalog_info_text)
 
 
+func _build_item_description_request() -> void:
+	_item_description_request = HTTPRequest.new()
+	_item_description_request.name = "PlayerItemDescriptionRequest"
+	_item_description_request.timeout = 15.0
+	ui_root.add_child(_item_description_request)
+	_item_description_request.request_completed.connect(
+		_on_item_description_request_completed
+	)
+
+
 func _show_catalog_info_from_list(
 	list_control: ItemList,
-	_character_key: String = ""
+	character_key: String = ""
 ) -> void:
 	if list_control == null:
 		return
@@ -1691,15 +1719,227 @@ func _show_catalog_info_from_list(
 		_set_status("Informazioni non disponibili per questa voce.")
 		return
 
+	var description: String = _cached_item_description(
+		character_key,
+		entry
+	)
+	var needs_description := (
+		character_key in ITEM_DESCRIPTION_URLS
+		and description.is_empty()
+	)
+	_show_catalog_info_entry(entry, description, needs_description)
+	if needs_description:
+		_request_item_description(entry, character_key)
+
+
+func _show_catalog_info_entry(
+	entry: Dictionary,
+	description: String = "",
+	loading_description: bool = false,
+	description_error: String = ""
+) -> void:
 	_catalog_info_dialog.title = String(
 		entry.get("name", "Informazioni 5e.tools")
 	)
-	_catalog_info_text.text = Player5eToolsCatalog.info_text(entry)
+	var text: String = Player5eToolsCatalog.info_text(
+		entry,
+		description
+	)
+	if loading_description:
+		text += "\n\nDescrizione:\nCaricamento descrizione…"
+	elif not description_error.is_empty():
+		text += "\n\nDescrizione:\n" + description_error
+	_catalog_info_text.text = text
 	_catalog_info_dialog.reset_size()
 	_catalog_info_dialog.popup_centered_clamped(
-		Vector2i(560, 520),
+		Vector2i(620, 560),
 		0.92
 	)
+
+
+func _cached_item_description(
+	character_key: String,
+	entry: Dictionary
+) -> String:
+	var category_cache: Variant = _item_description_cache.get(
+		character_key,
+		{}
+	)
+	if not category_cache is Dictionary:
+		return ""
+	return String(
+		(category_cache as Dictionary).get(
+			_item_description_key(entry),
+			""
+		)
+	).strip_edges()
+
+
+func _request_item_description(
+	entry: Dictionary,
+	character_key: String
+) -> void:
+	if character_key not in ITEM_DESCRIPTION_URLS:
+		return
+	_pending_info_entry = entry.duplicate(true)
+	_pending_info_character_key = character_key
+
+	if bool(_item_description_loaded.get(character_key, false)):
+		var cached := _cached_item_description(character_key, entry)
+		if cached.is_empty():
+			_show_catalog_info_entry(
+				entry,
+				"",
+				false,
+				"Descrizione completa non disponibile per questa voce."
+			)
+		else:
+			_show_catalog_info_entry(entry, cached)
+		return
+
+	if _item_description_request == null:
+		return
+	if _description_request_character_key == character_key:
+		return
+	if not _description_request_character_key.is_empty():
+		_item_description_request.cancel_request()
+
+	_description_request_character_key = character_key
+	var error: Error = _item_description_request.request(
+		String(ITEM_DESCRIPTION_URLS[character_key])
+	)
+	if error != OK:
+		_description_request_character_key = ""
+		_show_catalog_info_entry(
+			entry,
+			"",
+			false,
+			"Impossibile caricare la descrizione dalla sorgente 5e.tools."
+		)
+
+
+func _on_item_description_request_completed(
+	result: int,
+	response_code: int,
+	_headers: PackedStringArray,
+	body: PackedByteArray
+) -> void:
+	var requested_key := _description_request_character_key
+	_description_request_character_key = ""
+	if requested_key.is_empty():
+		return
+
+	if (
+		result != HTTPRequest.RESULT_SUCCESS
+		or response_code < 200
+		or response_code >= 300
+	):
+		if _pending_info_character_key == requested_key:
+			_show_catalog_info_entry(
+				_pending_info_entry,
+				"",
+				false,
+				"Descrizione non disponibile: controlla la connessione."
+			)
+		return
+
+	var parsed: Variant = JSON.parse_string(body.get_string_from_utf8())
+	if not parsed is Dictionary:
+		if _pending_info_character_key == requested_key:
+			_show_catalog_info_entry(
+				_pending_info_entry,
+				"",
+				false,
+				"Descrizione non disponibile: dati 5e.tools non validi."
+			)
+		return
+
+	_item_description_cache[requested_key] = (
+		_build_item_description_lookup(
+			parsed as Dictionary,
+			requested_key
+		)
+	)
+	_item_description_loaded[requested_key] = true
+
+	if _pending_info_character_key != requested_key:
+		return
+	var description := _cached_item_description(
+		requested_key,
+		_pending_info_entry
+	)
+	if description.is_empty():
+		_show_catalog_info_entry(
+			_pending_info_entry,
+			"",
+			false,
+			"Descrizione completa non disponibile per questa voce."
+		)
+	else:
+		_show_catalog_info_entry(_pending_info_entry, description)
+
+
+func _build_item_description_lookup(
+	payload: Dictionary,
+	character_key: String
+) -> Dictionary:
+	var lookup: Dictionary = {}
+	var source_key := (
+		"baseitem"
+		if character_key == "inventory_mundane"
+		else "item"
+	)
+	var raw_items: Variant = payload.get(source_key, [])
+	if raw_items is Array:
+		for raw_value: Variant in raw_items:
+			if not raw_value is Dictionary:
+				continue
+			var raw_item := raw_value as Dictionary
+			var description := (
+				Player5eToolsCatalog.description_text_from_raw_item(
+					raw_item
+				)
+			)
+			if description.is_empty():
+				continue
+			lookup[_item_description_key(raw_item)] = description
+
+	# 5e.tools represents some magic-item variants through an itemGroup.
+	# Map the shared group text to each concrete item reference as fallback.
+	if character_key == "inventory_magic":
+		var raw_groups: Variant = payload.get("itemGroup", [])
+		if raw_groups is Array:
+			for group_value: Variant in raw_groups:
+				if not group_value is Dictionary:
+					continue
+				var group := group_value as Dictionary
+				var group_description := (
+					Player5eToolsCatalog.description_text_from_raw_item(group)
+				)
+				if group_description.is_empty():
+					continue
+				var references: Variant = group.get("items", [])
+				if not references is Array:
+					continue
+				for reference_value: Variant in references:
+					var parts := String(reference_value).split("|")
+					if parts.is_empty():
+						continue
+					var referenced := {
+						"name": String(parts[0]),
+						"source": String(parts[1]) if parts.size() > 1 else ""
+					}
+					var lookup_key := _item_description_key(referenced)
+					if not lookup.has(lookup_key):
+						lookup[lookup_key] = group_description
+	return lookup
+
+
+func _item_description_key(entry: Dictionary) -> String:
+	return "%s|%s" % [
+		String(entry.get("name", "")).strip_edges().to_lower(),
+		String(entry.get("source", "")).strip_edges().to_lower()
+	]
 
 
 func _scroll_tab(tab_name: String) -> ScrollContainer:

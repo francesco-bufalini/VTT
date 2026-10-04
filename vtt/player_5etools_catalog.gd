@@ -141,7 +141,10 @@ static func has_property(entry: Dictionary, property_code: String) -> bool:
 	return false
 
 
-static func info_text(entry: Dictionary) -> String:
+static func info_text(
+	entry: Dictionary,
+	description: String = ""
+) -> String:
 	if entry.is_empty():
 		return "Nessuna informazione disponibile."
 
@@ -243,11 +246,109 @@ static func info_text(entry: Dictionary) -> String:
 		lines.append("")
 		lines.append(mechanic)
 
+	var clean_description := description.strip_edges()
+	if not clean_description.is_empty():
+		lines.append("")
+		lines.append("Descrizione:")
+		lines.append(clean_description)
+
 	lines.append("")
 	lines.append(
 		"Dati strutturati: catalogo locale derivato da 5e.tools."
 	)
 	return "\n".join(lines)
+
+
+static func description_text_from_raw_item(entry: Dictionary) -> String:
+	var parts: PackedStringArray = []
+	for field_name: String in ["entries", "additionalEntries"]:
+		if entry.has(field_name):
+			_flatten_description_value(entry.get(field_name), parts, 0)
+	return "\n\n".join(parts).strip_edges()
+
+
+static func _flatten_description_value(
+	value: Variant,
+	parts: PackedStringArray,
+	depth: int
+) -> void:
+	if depth > 12 or value == null:
+		return
+	if value is String:
+		var clean := _clean_5etools_markup(String(value)).strip_edges()
+		if not clean.is_empty():
+			parts.append(clean)
+		return
+	if value is Array:
+		for child: Variant in value:
+			_flatten_description_value(child, parts, depth + 1)
+		return
+	if not value is Dictionary:
+		return
+
+	var data := value as Dictionary
+	var entry_type := String(data.get("type", ""))
+	var heading := String(data.get("name", "")).strip_edges()
+	if not heading.is_empty() and entry_type in ["entries", "item"]:
+		parts.append(heading + ":")
+
+	if entry_type == "table":
+		var caption := String(data.get("caption", "")).strip_edges()
+		if not caption.is_empty():
+			parts.append(caption)
+		var labels: Variant = data.get("colLabels", [])
+		if labels is Array and not (labels as Array).is_empty():
+			var label_parts: PackedStringArray = []
+			for label_value: Variant in labels:
+				label_parts.append(_clean_5etools_markup(String(label_value)))
+			parts.append(" | ".join(label_parts))
+		var rows: Variant = data.get("rows", [])
+		if rows is Array:
+			for row_value: Variant in rows:
+				if not row_value is Array:
+					continue
+				var row_parts: PackedStringArray = []
+				for cell_value: Variant in row_value:
+					if cell_value is String:
+						row_parts.append(
+							_clean_5etools_markup(String(cell_value))
+						)
+					else:
+						row_parts.append(str(cell_value))
+				parts.append(" | ".join(row_parts))
+		return
+
+	for child_key: String in ["entries", "items"]:
+		if data.has(child_key):
+			_flatten_description_value(
+				data.get(child_key),
+				parts,
+				depth + 1
+			)
+
+
+static func _clean_5etools_markup(value: String) -> String:
+	var result := value
+	var regex := RegEx.new()
+	if regex.compile("\\{@([^ ]+) ([^}]+)\\}") != OK:
+		return result
+	var matches := regex.search_all(result)
+	for match_index: int in range(matches.size() - 1, -1, -1):
+		var match: RegExMatch = matches[match_index]
+		var tag := match.get_string(1).to_lower()
+		var payload := match.get_string(2)
+		var visible := payload.split("|")[0]
+		if tag == "dc":
+			visible = "DC " + visible
+		elif tag == "hit":
+			visible = visible + " al tiro per colpire"
+		result = (
+			result.substr(0, match.get_start())
+			+ visible
+			+ result.substr(match.get_end())
+		)
+	result = result.replace("\u00a0", " ")
+	return result
 
 
 static func _known_mechanic_summary(entry: Dictionary) -> String:
