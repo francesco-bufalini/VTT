@@ -48,6 +48,13 @@ func setup(hazard_controller: Node, kaos_controller: Node3D, effects: Node3D, ar
 
 
 func _on_seal_broken(index: int) -> void:
+	# Wait until register_damage() has also emitted all_seals_broken. On the
+	# third seal this guarantees encounter_finished is already coherent with
+	# the serialized seal damage before the network snapshot is built.
+	call_deferred("_broadcast_seal_break_sync_event", index)
+
+
+func _broadcast_seal_break_sync_event(index: int) -> void:
 	var board := get_parent()
 	if board != null and board.has_method("broadcast_sync_event"):
 		board.call("broadcast_sync_event", {
