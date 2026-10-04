@@ -1,9 +1,0 @@
-﻿{
-    "schema_version":  1,
-    "run_id":  "37018524660",
-    "run_number":  "27",
-    "source_sha":  "743dbd207e1ffb5c12c906db3fcefe937a8c37ca",
-    "workflow_status":  "failure",
-    "blender_job":  "blender/jobs/klothys_titan_prison_sphere_v2.json",
-    "scene_report":  null
-}

@@ -1,9 +1,0 @@
-﻿{
-    "schema_version":  1,
-    "run_id":  "36999789340",
-    "run_number":  "4",
-    "source_sha":  "325edcd31742c4a74307262e8e9f8d1f181b00de",
-    "workflow_status":  "failure",
-    "blender_job":  "blender/jobs/smoke_test.json",
-    "scene_report":  null
-}

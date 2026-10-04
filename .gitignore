@@ -23,3 +23,6 @@ __pycache__/
 /assets/tokens/5etools_creature_index.json
 /dist/token_packs/
 /.token_pack_build/
+
+# Generated screenshots and analysis reports
+/outputs/

@@ -179,6 +179,21 @@ jobs:
             }
             $metadata | ConvertTo-Json -Depth 12 | Set-Content -LiteralPath (Join-Path $previewDest "metadata.json") -Encoding UTF8
 
+            # Keep only the latest preview set for a versioned scene family.
+            # Example: kaos_arena_v7 prunes kaos_arena_v1..v6.
+            if ($sceneId -match "^(.*)_v(\d+)$") {
+              $previewFamily = $Matches[1]
+              Get-ChildItem -Path "blender/scene_previews" -Directory -ErrorAction SilentlyContinue |
+                Where-Object {
+                  $_.Name -ne $sceneId -and
+                  $_.Name -match ("^" + [regex]::Escape($previewFamily) + "_v\d+$")
+                } |
+                ForEach-Object {
+                  Write-Host "Pruning old Blender preview version: $($_.FullName)"
+                  Remove-Item -LiteralPath $_.FullName -Recurse -Force
+                }
+            }
+
             # Keep the editable Blender source in Git while it is still small.
             # GitHub rejects normal Git files >=100 MB; our 50 MB guard keeps
             # the repository comfortably below that limit.
@@ -212,9 +227,11 @@ jobs:
             }
           }
 
-          # Per-run status remains machine-readable, but is committed together
-          # with previews/source so publication needs a single fetch/rebase/push.
+          # Keep one machine-readable status snapshot instead of accumulating
+          # one committed JSON report for every workflow run.
           New-Item -ItemType Directory -Path "blender/agent_reports" -Force | Out-Null
+          Get-ChildItem -Path "blender/agent_reports" -Filter "run-*.json" -File -ErrorAction SilentlyContinue |
+            Remove-Item -Force
           $status = [ordered]@{
             schema_version = 1
             run_id = "${{ github.run_id }}"
@@ -224,12 +241,12 @@ jobs:
             blender_job = "${{ steps.job.outputs.job }}"
             scene_report = $scene
           }
-          $statusPath = "blender/agent_reports/run-${{ github.run_id }}.json"
+          $statusPath = "blender/agent_reports/latest.json"
           $status | ConvertTo-Json -Depth 12 | Set-Content -LiteralPath $statusPath -Encoding UTF8
 
-          git add --sparse blender/agent_reports
+          git add -A --sparse blender/agent_reports
           if (-not [string]::IsNullOrWhiteSpace($sceneId)) {
-            git add --sparse "blender/scene_previews/$sceneId"
+            git add -A --sparse blender/scene_previews
             if (Test-Path -LiteralPath "blender/scenes/$sceneId") {
               git add --sparse "blender/scenes/$sceneId"
             }
