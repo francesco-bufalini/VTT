@@ -1159,6 +1159,7 @@ func _ensure_flanking_badge() -> void:
 		return
 	if (
 		is_instance_valid(_flanking_badge_root)
+		and is_instance_valid(_flanking_badge_border)
 		and is_instance_valid(_flanking_badge_mesh)
 		and is_instance_valid(_flanking_badge_label)
 	):
