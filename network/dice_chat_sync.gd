@@ -374,6 +374,37 @@ static func valid_event(event: Dictionary) -> bool:
 	if rolls.size() != count:
 		return false
 
+	var roll_mode := String(event.get("roll_mode", "normal")).strip_edges().to_lower()
+	if roll_mode not in ["normal", "advantage", "disadvantage"]:
+		return false
+	if roll_mode != "normal":
+		if die != "d20":
+			return false
+		var candidate_value: Variant = event.get("candidate_rolls", [])
+		if not candidate_value is Array:
+			return false
+		var candidates: Array = candidate_value as Array
+		if candidates.size() != count:
+			return false
+		for index: int in range(candidates.size()):
+			var pair_value: Variant = candidates[index]
+			if not pair_value is Array:
+				return false
+			var pair: Array = pair_value as Array
+			if pair.size() != 2:
+				return false
+			var first := int(pair[0])
+			var second := int(pair[1])
+			if first < 1 or first > 20 or second < 1 or second > 20:
+				return false
+			var expected_kept := (
+				maxi(first, second)
+				if roll_mode == "advantage"
+				else mini(first, second)
+			)
+			if int(rolls[index]) != expected_kept:
+				return false
+
 	var sides := 100 if die in ["d%", "d100"] else int(
 		die.trim_prefix("d")
 	)
