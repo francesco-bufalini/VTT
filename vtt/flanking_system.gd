@@ -100,11 +100,16 @@ func _party_key(token: Node) -> String:
 	if token == null or not is_instance_valid(token):
 		return ""
 	var value := ""
-	if token.has_method("get_party_id"):
+	if token.has_method("get_effective_party_id"):
+		value = String(token.call("get_effective_party_id"))
+	elif token.has_method("get_party_id"):
 		value = String(token.call("get_party_id"))
 	elif token.has_meta("party_id"):
 		value = String(token.get_meta("party_id", ""))
-	return value.strip_edges().to_lower()
+	value = value.strip_edges()
+	if value.is_empty():
+		value = "Default"
+	return value.to_lower()
 
 
 func _token_reaches_target(
