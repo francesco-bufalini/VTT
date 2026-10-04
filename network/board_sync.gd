@@ -100,7 +100,15 @@ func broadcast_sync_event(sync_event: Dictionary) -> Error:
 		return OK
 	if session_key.is_empty():
 		return ERR_INVALID_PARAMETER
-	return send_snapshot_to_tailnet(session_key, sync_event)
+	var error := send_snapshot_to_tailnet(session_key, sync_event)
+	if error == OK:
+		var snapshot := create_snapshot()
+		if not snapshot.is_empty():
+			_auto_sync_initialized = true
+			_auto_sync_last_signature = _snapshot_signature(snapshot)
+			_auto_sync_candidate_signature = ""
+			_auto_sync_candidate_since_msec = 0
+	return error
 
 
 func _poll_auto_sync() -> void:
@@ -155,7 +163,10 @@ func _snapshot_signature(snapshot: Dictionary) -> String:
 
 func _accept_received_snapshot(snapshot: Dictionary) -> void:
 	_auto_sync_initialized = true
-	_auto_sync_last_signature = _snapshot_signature(snapshot)
+	var local_snapshot := create_snapshot()
+	_auto_sync_last_signature = _snapshot_signature(
+		local_snapshot if not local_snapshot.is_empty() else snapshot
+	)
 	_auto_sync_candidate_signature = ""
 	_auto_sync_candidate_since_msec = 0
 	_auto_sync_suppress_until_msec = (
