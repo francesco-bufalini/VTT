@@ -86,6 +86,32 @@ func run() -> void:
 		5.0
 	))
 
+	# Small vertical/base offsets must not switch reach to continuous AABB
+	# distance. With one full square between two Medium bases the tactical
+	# distance remains 10 ft even if one legacy token sits slightly higher.
+	assert(FlankingSystem.bases_share_tactical_plane(0.0, 0.15, 1.0))
+	assert(not FlankingSystem.bases_share_tactical_plane(0.0, 0.55, 1.0))
+	assert(is_equal_approx(
+		FlankingSystem.tactical_reach_distance_feet(
+			Vector3(0.0, 1.0, 0.0),
+			half,
+			Vector3(2.0, 1.15, 0.0),
+			half,
+			1.0
+		),
+		10.0
+	))
+	assert(is_equal_approx(
+		FlankingSystem.tactical_reach_distance_feet(
+			Vector3(0.0, 1.0, 0.0),
+			half,
+			Vector3(1.0, 1.15, 1.0),
+			half,
+			1.0
+		),
+		5.0
+	))
+
 	# Same-plane line geometry is projected down to the miniature bases.
 	var projected := FlankingSystem.project_centers_to_shared_base(
 		Vector3(-1.0, 1.0, 0.0),
