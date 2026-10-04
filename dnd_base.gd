@@ -1528,7 +1528,7 @@ func _handle_forced_identity_placement_input(event: InputEvent) -> bool:
 					"Preparazione della miniatura in corso… puoi muovere la camera mentre attendi."
 				)
 				return true
-			var placement_screen_position := (
+			var placement_screen_position: Vector2 = (
 				_screen_center()
 				if Input.mouse_mode == Input.MOUSE_MODE_CAPTURED
 				else event.position
