@@ -183,12 +183,12 @@ func _process(_delta: float) -> void:
 			if result[0] != OK:
 				item["deadline"] = 0
 				continue
-			var buffer: PackedByteArray = item.get(
+			var received_buffer: PackedByteArray = item.get(
 				"buffer",
 				PackedByteArray()
 			)
-			buffer.append_array(result[1])
-			item["buffer"] = buffer
+			received_buffer.append_array(result[1])
+			item["buffer"] = received_buffer
 
 		if bool(item.get("sender", false)):
 			# Receiver replies with one byte. The local event is already saved
@@ -291,60 +291,60 @@ static func valid_event(event: Dictionary) -> bool:
 	var total := int(total_value)
 
 	if die == "formula":
-		var count_value: Variant = event.get("count", 0)
-		var modifier_value: Variant = event.get("modifier", 0)
+		var formula_count_value: Variant = event.get("count", 0)
+		var formula_modifier_value: Variant = event.get("modifier", 0)
 		var terms_value: Variant = event.get("terms", [])
-		if not (count_value is int or count_value is float):
+		if not (formula_count_value is int or formula_count_value is float):
 			return false
-		if not (modifier_value is int or modifier_value is float):
+		if not (formula_modifier_value is int or formula_modifier_value is float):
 			return false
 		if not terms_value is Array:
 			return false
 
-		var count := int(count_value)
-		var modifier := int(modifier_value)
-		if count < 1 or count > 100:
+		var formula_count := int(formula_count_value)
+		var formula_modifier := int(formula_modifier_value)
+		if formula_count < 1 or formula_count > 100:
 			return false
-		if modifier < -9999 or modifier > 9999:
+		if formula_modifier < -9999 or formula_modifier > 9999:
 			return false
 		if String(event.get("notation", "")).length() > 500:
 			return false
 		if String(event.get("detail", "")).length() > 4000:
 			return false
 
-		var expected_total := modifier
+		var formula_expected_total := formula_modifier
 		var seen_dice := 0
 		for term_value: Variant in (terms_value as Array):
 			if not term_value is Dictionary:
 				return false
 			var term: Dictionary = term_value as Dictionary
 			var term_count := int(term.get("count", 0))
-			var sides := int(term.get("sides", 0))
-			var sign := int(term.get("sign", 1))
+			var formula_sides := int(term.get("sides", 0))
+			var term_sign := int(term.get("sign", 1))
 			if term_count < 1 or term_count > 100:
 				return false
-			if sides < 2 or sides > 1000:
+			if formula_sides < 2 or formula_sides > 1000:
 				return false
-			if sign not in [-1, 1]:
-				return false
-
-			var rolls_value: Variant = term.get("rolls", [])
-			if not rolls_value is Array:
-				return false
-			var rolls: Array = rolls_value as Array
-			if rolls.size() != term_count:
+			if term_sign not in [-1, 1]:
 				return false
 
-			for roll_value: Variant in rolls:
+			var formula_rolls_value: Variant = term.get("rolls", [])
+			if not formula_rolls_value is Array:
+				return false
+			var formula_rolls: Array = formula_rolls_value as Array
+			if formula_rolls.size() != term_count:
+				return false
+
+			for roll_value: Variant in formula_rolls:
 				if not (roll_value is int or roll_value is float):
 					return false
 				var roll := int(roll_value)
-				if roll < 1 or roll > sides:
+				if roll < 1 or roll > formula_sides:
 					return false
-				expected_total += sign * roll
+				formula_expected_total += term_sign * roll
 				seen_dice += 1
 
-		return seen_dice == count and total == expected_total
+		return seen_dice == formula_count and total == formula_expected_total
 
 	# Backward compatibility with history generated before multi-die rolls.
 	if not event.has("rolls"):

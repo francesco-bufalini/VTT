@@ -47,7 +47,7 @@ func run() -> void:
 
 	# Force the same JSON round-trip used by BoardSync over TCP.
 	var data: Dictionary = JSON.parse_string(JSON.stringify(sync.create_snapshot()))
-	assert(int(data.get("version", -1)) == 4)
+	assert(int(data.get("version", -1)) == preload("res://network/board_sync.gd").SNAPSHOT_VERSION)
 	assert(sync.valid_snapshot(data))
 	assert(not data.encounter.is_empty())
 	assert(data.initiative.active)

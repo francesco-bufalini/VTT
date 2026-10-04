@@ -644,16 +644,16 @@ func _roll_damage_expression(expression: String) -> int:
 		if d_index >= 0:
 			var count_text := term.substr(0, d_index)
 			var sides_text := term.substr(d_index + 1)
-			var sign := 1
+			var term_sign := 1
 			if count_text.begins_with("-"):
-				sign = -1
+				term_sign = -1
 				count_text = count_text.substr(1)
 			var count := 1 if count_text.is_empty() else int(count_text)
 			var sides := int(sides_text)
 			if count <= 0 or sides <= 0:
 				continue
 			for _roll_index: int in range(count):
-				total += sign * randi_range(1, sides)
+				total += term_sign * randi_range(1, sides)
 		else:
 			total += int(term)
 	return total

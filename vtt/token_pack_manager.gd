@@ -55,6 +55,9 @@ func _ready() -> void:
 
 
 func _refresh_catalog_on_start() -> void:
+	# Headless validation/builds use local data and must not invoke HTTP or gh.
+	if DisplayServer.get_name() == "headless":
+		return
 	print("TokenPackManager: refreshing remote catalog...")
 	var error := refresh_catalog()
 	if error != OK:

@@ -304,7 +304,7 @@ func _save_current_state() -> void:
 
 	var error: Error = int(
 		campaign_manager.call("save_active_runtime_state", snapshot)
-	)
+	) as Error
 	if error == OK:
 		_set_status("Salvato")
 	else:

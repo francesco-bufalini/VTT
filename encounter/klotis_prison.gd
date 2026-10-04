@@ -20,7 +20,6 @@ var health: Dictionary = {}
 var _clips: Dictionary = {}
 var _seals: Dictionary = {}
 var _lights: Dictionary = {}
-var _areas: Dictionary = {}
 var _pending: Array[String] = []
 var _completed: Array[String] = []
 var _active_side: String = ""
@@ -295,7 +294,7 @@ func _skin_data(mesh_node: MeshInstance3D) -> Dictionary:
 		var vertices: PackedVector3Array = arrays[Mesh.ARRAY_VERTEX]
 		var bones: PackedInt32Array = arrays[Mesh.ARRAY_BONES]
 		var weights: PackedFloat32Array = arrays[Mesh.ARRAY_WEIGHTS]
-		surfaces.append({"vertices":vertices,"bones":bones,"weights":weights,"indices":arrays[Mesh.ARRAY_INDEX],"influences":bones.size()/vertices.size()})
+		surfaces.append({"vertices":vertices,"bones":bones,"weights":weights,"indices":arrays[Mesh.ARRAY_INDEX],"influences":int(bones.size()/float(vertices.size()))})
 	var binds: Array[int] = []
 	for i in mesh_node.skin.get_bind_count():
 		var bone := mesh_node.skin.get_bind_bone(i)

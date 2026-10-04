@@ -381,6 +381,7 @@ static func _parse_core_fields(
 		},
 	]
 
+	var seen_fields: Dictionary = {}
 	for index: int in range(lines.size()):
 		for definition: Dictionary in field_definitions:
 			var labels: Array[String] = []
@@ -396,12 +397,15 @@ static func _parse_core_fields(
 				continue
 
 			var key := String(definition.get("key", ""))
+			if seen_fields.has(key):
+				break
 			var value := String(
 				collected.get("value", "")
 			).strip_edges()
 			if value.is_empty():
 				break
 
+			seen_fields[key] = true
 			if key == "hp":
 				stat[key] = _parse_hp(value)
 			else:
@@ -783,5 +787,10 @@ static func _is_field_line(lower_line: String) -> bool:
 	]
 	for prefix: String in prefixes:
 		if lower_line.begins_with(prefix):
+			if prefix in ["speed", "velocità", "velocita"]:
+				var remainder := lower_line.substr(prefix.length()).strip_edges().trim_prefix(":").strip_edges()
+				# Named actions such as Speed Clone are entries, not speed fields.
+				if not remainder.is_empty() and not remainder.substr(0, 1).is_valid_int():
+					continue
 			return true
 	return false

@@ -47,6 +47,9 @@ func run() -> void:
 	if not duplicate.objects.is_empty():
 		duplicate.objects.append(duplicate.objects[0])
 		assert(not sync.valid_snapshot(duplicate))
+	# Boards now start receiving automatically. Release the sender's listener
+	# so the receiver can own the shared port in this same-process test.
+	sync.listen(false, "test-key")
 	var other: Node = load("res://dnd_base.tscn").instantiate()
 	root.add_child(other)
 	await process_frame

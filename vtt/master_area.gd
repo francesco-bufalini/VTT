@@ -552,15 +552,15 @@ func _filter_catalog(query: String) -> void:
 	_bestiary_list.clear()
 	var needle := query.strip_edges().to_lower()
 	for entry: Dictionary in _catalog:
-		var name := String(entry.get("name", ""))
+		var entry_name := String(entry.get("name", ""))
 		var source := String(entry.get("source", ""))
 		if (
 			not needle.is_empty()
-			and needle not in name.to_lower()
+			and needle not in entry_name.to_lower()
 			and needle not in source.to_lower()
 		):
 			continue
-		_bestiary_list.add_item("%s  ·  %s" % [name, source])
+		_bestiary_list.add_item("%s  ·  %s" % [entry_name, source])
 		_bestiary_list.set_item_metadata(
 			_bestiary_list.item_count - 1,
 			entry.duplicate(true)
@@ -1172,10 +1172,10 @@ func _append_stat_section(
 func _render_stat_section_entry(value: Variant) -> String:
 	if value is Dictionary:
 		var data: Dictionary = value as Dictionary
-		var name := _plain_value(data.get("name", "")).strip_edges()
+		var entry_name := _plain_value(data.get("name", "")).strip_edges()
 		var body := _section_entry_body(data)
-		if not name.is_empty():
-			var heading := "[b]%s[/b]" % _escape_bb(name)
+		if not entry_name.is_empty():
+			var heading := "[b]%s[/b]" % _escape_bb(entry_name)
 			if not heading.ends_with("."):
 				heading += "."
 			if body.is_empty():

@@ -872,10 +872,10 @@ func _save_backup(snapshot: Dictionary, reason: String) -> bool:
 func _rotate_backups() -> void:
 	var dir := DirAccess.open(BACKUP_DIR); if dir == null: return
 	var files: Array[String]=[]; dir.list_dir_begin()
-	var name:=dir.get_next()
-	while not name.is_empty():
-		if not dir.current_is_dir() and name.ends_with(".json"): files.append(name)
-		name=dir.get_next()
+	var entry_name:=dir.get_next()
+	while not entry_name.is_empty():
+		if not dir.current_is_dir() and entry_name.ends_with(".json"): files.append(entry_name)
+		entry_name=dir.get_next()
 	dir.list_dir_end(); files.sort()
 	while files.size()>MAX_BACKUPS: DirAccess.remove_absolute(ProjectSettings.globalize_path(BACKUP_DIR.path_join(files.pop_front())))
 

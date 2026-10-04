@@ -621,7 +621,9 @@ func _update_following_aoes() -> void:
 		if root == null or not is_instance_valid(root):
 			continue
 
-		var follow_value: Variant = root.get_meta("follow_target", null)
+		if not root.has_meta("follow_target"):
+			continue
+		var follow_value: Variant = root.get_meta("follow_target")
 		if not follow_value is Node3D:
 			continue
 		var follow_target: Node3D = follow_value as Node3D
@@ -1697,7 +1699,7 @@ func clear_transient_spell_aoes() -> void:
 
 
 func show_teleport_cloud(
-	position: Vector3,
+	world_point: Vector3,
 	style: String = "arcane",
 	duration_seconds: float = 0.55
 ) -> void:
@@ -1706,7 +1708,7 @@ func show_teleport_cloud(
 	add_child(root)
 	SpellVFX.attach_teleport_cloud(
 		root,
-		position,
+		world_point,
 		style,
 		maxf(duration_seconds, 0.2),
 		cell_size

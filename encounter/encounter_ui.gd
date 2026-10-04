@@ -138,8 +138,8 @@ func refresh() -> void:
 		_status.text += "\nAvanzamento in corso"
 	for index in range(3):
 		_seals[index].value = controller.seals.break_damage - controller.seals.damage[index]
-		var name: String = ["Fronte", "Polso sinistro", "Polso destro"][index]
-		_seal_labels[index].text = name + (": infranto" if _seals[index].value == 0 else ": %.0f / %.0f danni" % [controller.seals.damage[index], controller.seals.break_damage])
+		var entry_name: String = ["Fronte", "Polso sinistro", "Polso destro"][index]
+		_seal_labels[index].text = entry_name + (": infranto" if _seals[index].value == 0 else ": %.0f / %.0f danni" % [controller.seals.damage[index], controller.seals.break_damage])
 		_seals[index].tooltip_text = "Danni: %.0f / %.0f" % [controller.seals.damage[index],controller.seals.break_damage]
 	_details.text = "Step %d | danni %.0f / %.0f\nMinacciate %d | collassate %d\nSeed %s" % [controller.kaos_step,controller.damage_since_last_advance,controller.config.slow_damage_threshold,controller.hazards.threatened_cells.size(),controller.hazards.collapsed_cells.size(),str(controller.encounter_seed)]
 	for button in _buttons:

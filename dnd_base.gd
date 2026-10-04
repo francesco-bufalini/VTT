@@ -700,8 +700,8 @@ func _append_remote_token_profiles() -> void:
 func _token_profile_status(profile: Dictionary) -> String:
 	var origin := String(profile.get("_pack_origin", ""))
 	if origin == "local_pack":
-		var token_id := String(profile.get("id", ""))
-		return "Montato" if TokenPackManager.is_mounted(token_id) else "Locale"
+		var local_token_id := String(profile.get("id", ""))
+		return "Montato" if TokenPackManager.is_mounted(local_token_id) else "Locale"
 	if origin == "character":
 		return "Locale"
 	var token_id := String(profile.get("id", ""))
@@ -1899,8 +1899,8 @@ func toggle_grid() -> void:
 	set_grid_visible(not volumetric_grid.visible)
 
 
-func set_grid_visible(is_visible: bool) -> void:
-	volumetric_grid.visible = is_visible
+func set_grid_visible(enabled: bool) -> void:
+	volumetric_grid.visible = enabled
 
 
 # Alias di compatibilita: ora esiste una sola griglia volumetrica.
@@ -1908,8 +1908,8 @@ func toggle_grid_3d() -> void:
 	toggle_grid()
 
 
-func set_grid_3d_visible(is_visible: bool) -> void:
-	set_grid_visible(is_visible)
+func set_grid_3d_visible(enabled: bool) -> void:
+	set_grid_visible(enabled)
 
 
 func toggle_vision_cones() -> void:
@@ -1917,13 +1917,13 @@ func toggle_vision_cones() -> void:
 	set_vision_cones_visible(not _vision_cones_visible)
 
 
-func set_vision_cones_visible(is_visible: bool) -> void:
-	_vision_cones_visible = is_visible
+func set_vision_cones_visible(enabled: bool) -> void:
+	_vision_cones_visible = enabled
 
 	for child_node: Node in tokens_root.get_children():
 		if child_node.is_in_group("dnd_token") \
 		and child_node.has_method("set_vision_cone_visible"):
-			child_node.call("set_vision_cone_visible", is_visible)
+			child_node.call("set_vision_cone_visible", enabled)
 
 
 func _toggle_measurement_mode() -> void:

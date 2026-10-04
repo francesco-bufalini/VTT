@@ -214,10 +214,9 @@ static func restore_encounter_decor(
 	var units := _scene_units(scene)
 	if units <= 0.0:
 		return
-	preload("res://encounter/encounter_scenery.gd").new().call(
-		"replace_klothis_sphere_and_ruins_from_encounter",
-		scene
-	)
+	var scenery: Node = preload("res://encounter/encounter_scenery.gd").new()
+	scenery.call("replace_klothis_sphere_and_ruins_from_encounter", scene)
+	scenery.free()
 	_ensure_decor_visible(scene)
 	scene.set_meta("post_kaos_decor_version", DECOR_VERSION)
 

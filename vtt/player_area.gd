@@ -1927,19 +1927,19 @@ func _reload_characters() -> void:
 func _refresh_character_list(select_id: String = "") -> void:
 	_character_list.clear()
 	for character: Dictionary in _characters:
-		var name: String = String(
+		var entry_name: String = String(
 			character.get("name", "Personaggio")
 		).strip_edges()
-		if name.is_empty():
-			name = "Personaggio senza nome"
+		if entry_name.is_empty():
+			entry_name = "Personaggio senza nome"
 
 		var linked_token: String = String(
 			character.get("linked_token_name", "")
 		).strip_edges()
 		if not linked_token.is_empty():
-			name += "  [↔ %s]" % linked_token
+			entry_name += "  [↔ %s]" % linked_token
 
-		_character_list.add_item(name)
+		_character_list.add_item(entry_name)
 		_character_list.set_item_metadata(
 			_character_list.item_count - 1,
 			String(character.get("id", ""))

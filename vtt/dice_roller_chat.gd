@@ -350,7 +350,7 @@ func roll_expression_from_sheet(
 		var term: Dictionary = term_value as Dictionary
 		var count := clampi(int(term.get("count", 1)), 1, 100)
 		var sides := int(term.get("sides", 0))
-		var sign := -1 if int(term.get("sign", 1)) < 0 else 1
+		var term_sign := -1 if int(term.get("sign", 1)) < 0 else 1
 		if sides <= 0:
 			continue
 
@@ -358,12 +358,12 @@ func roll_expression_from_sheet(
 		for _index: int in range(count):
 			var value := rng.randi_range(1, sides)
 			values.append(value)
-			total += sign * value
+			total += term_sign * value
 		total_dice += 1
 		rolled_terms.append({
 			"count": count,
 			"sides": sides,
-			"sign": sign,
+			"sign": term_sign,
 			"rolls": values
 		})
 
@@ -403,9 +403,9 @@ static func parse_dice_expression(expression: String) -> Dictionary:
 		if term.is_empty():
 			continue
 
-		var sign := 1
+		var term_sign := 1
 		if term.begins_with("-"):
-			sign = -1
+			term_sign = -1
 			term = term.substr(1)
 		if term.is_empty():
 			return {}
@@ -424,24 +424,24 @@ static func parse_dice_expression(expression: String) -> Dictionary:
 			terms.append({
 				"count": count,
 				"sides": sides,
-				"sign": sign
+				"sign": term_sign
 			})
 			var dice_text := "%dd%d" % [count, sides]
 			if notation_parts.is_empty():
 				notation_parts.append(
-					("-" if sign < 0 else "") + dice_text
+					("-" if term_sign < 0 else "") + dice_text
 				)
 			else:
 				notation_parts.append(
 					("%s %s" % [
-						"-" if sign < 0 else "+",
+						"-" if term_sign < 0 else "+",
 						dice_text
 					])
 				)
 		else:
 			if not term.is_valid_int():
 				return {}
-			var value := int(term) * sign
+			var value := int(term) * term_sign
 			modifier += value
 			if notation_parts.is_empty():
 				notation_parts.append(str(value))

@@ -38,13 +38,19 @@ function Invoke-Godot {
     $stdoutPath = Join-Path $env:TEMP ("vtt-godot-" + [guid]::NewGuid() + ".out")
     $stderrPath = Join-Path $env:TEMP ("vtt-godot-" + [guid]::NewGuid() + ".err")
     try {
+        # Start-Process joins arguments into one string; quote paths with spaces.
+        $quotedArguments = foreach ($argument in $Arguments) {
+            if ($argument -match '\s') { '"' + $argument + '"' } else { $argument }
+        }
         $process = Start-Process -FilePath $script:GodotExecutable `
-            -ArgumentList $Arguments -PassThru `
+            -ArgumentList $quotedArguments -PassThru -WindowStyle Hidden `
             -RedirectStandardOutput $stdoutPath `
             -RedirectStandardError $stderrPath
 
         if (-not $process.WaitForExit($TimeoutSeconds * 1000)) {
-            Stop-Process -Id $process.Id -Force -ErrorAction SilentlyContinue
+            # The console launcher may own a headless child; stop this test tree.
+            $process.Kill($true)
+            $process.WaitForExit()
             throw "Godot timed out after $TimeoutSeconds seconds: $($Arguments -join ' ')"
         }
         $process.Refresh()
@@ -63,8 +69,8 @@ function Invoke-Godot {
         }
 
         $combinedOutput = $stdout + [Environment]::NewLine + $stderr
-        if ($combinedOutput -match "(?m)^(SCRIPT ERROR:|ERROR: Failed to load script)") {
-            throw "Godot reported a script load/compile error: $($Arguments -join ' ')"
+        if ($combinedOutput -match "(?m)^(SCRIPT ERROR:|ERROR:)") {
+            throw "Godot reported an error: $($Arguments -join ' ')"
         }
 
         $exitCode = $process.ExitCode

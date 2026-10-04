@@ -72,7 +72,7 @@ static func spec_for_spell(spell_data: Dictionary) -> Dictionary:
 	if not name.is_empty() and not source.is_empty():
 		var exact_key: String = "%s::%s" % [source, name]
 		var exact_value: Variant = _catalog.get(exact_key, {})
-		if exact_value is Dictionary:
+		if exact_value is Dictionary and not (exact_value as Dictionary).is_empty():
 			return (exact_value as Dictionary).duplicate(true)
 
 	if name.is_empty():

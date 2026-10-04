@@ -447,8 +447,8 @@ func _parse_search_index(value: Variant) -> void:
 		var row: Dictionary = row_value as Dictionary
 		if int(row.get("c", -1)) != 1:
 			continue
-		var name: String = String(row.get("n", "")).strip_edges()
-		if name.is_empty():
+		var entry_name: String = String(row.get("n", "")).strip_edges()
+		if entry_name.is_empty():
 			continue
 
 		var source_variant: Variant = row.get("s", "")
@@ -460,12 +460,12 @@ func _parse_search_index(value: Variant) -> void:
 		if source.is_empty():
 			continue
 
-		var key := name.to_lower() + "|" + source.to_lower()
+		var key := entry_name.to_lower() + "|" + source.to_lower()
 		if seen.has(key):
 			continue
 		seen[key] = true
 		result.append({
-			"name": name,
+			"name": entry_name,
 			"source": source,
 			"page": int(row.get("p", 0)),
 			"hash": String(row.get("u", ""))

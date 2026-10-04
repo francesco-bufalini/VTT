@@ -28,7 +28,7 @@ var participant_name: LineEdit
 var participant_token: OptionButton
 var token_popup: PopupMenu
 var _linking_entry_id: String = ""
-var _restore_mouse_mode: int = Input.MOUSE_MODE_CAPTURED
+var _restore_mouse_mode: Input.MouseMode = Input.MOUSE_MODE_CAPTURED
 var _auto_filled_name: String = ""
 
 var combat_active: bool = false

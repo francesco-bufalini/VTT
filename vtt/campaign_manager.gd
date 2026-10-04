@@ -250,13 +250,13 @@ func create_campaign(display_name: String = "") -> String:
 		str(int(Time.get_unix_time_from_system())),
 		str(Time.get_ticks_usec())
 	]
-	var name := display_name.strip_edges()
-	if name.is_empty():
-		name = "Nuova campagna %d" % (_list_user_campaigns().size() + 1)
+	var entry_name := display_name.strip_edges()
+	if entry_name.is_empty():
+		entry_name = "Nuova campagna %d" % (_list_user_campaigns().size() + 1)
 
 	var metadata := {
 		"id": campaign_id,
-		"name": name,
+		"name": entry_name,
 		"description": "Campagna personalizzata",
 		"scene": CAMPAIGN_EDITOR_SCENE,
 		"preview": "",

@@ -365,6 +365,11 @@ func set_visual_asset(
 		_position_imported_visual()
 		return true
 
+	# Token packs may be absent locally. Keep the current/procedural visual
+	# until the caller supplies an installed asset instead of logging load errors.
+	if not ResourceLoader.exists(requested_path):
+		return false
+
 	var resource: Resource = ResourceLoader.load(requested_path)
 	if resource == null:
 		push_warning(
@@ -1654,7 +1659,7 @@ func _snap_coordinate(value: float) -> float:
 
 
 func snap_destination(point: Vector3, _support: Node3D = null) -> Vector3:
-	var snapped := point
-	snapped.x = _snap_coordinate(snapped.x)
-	snapped.z = _snap_coordinate(snapped.z)
-	return snapped
+	var snapped_point := point
+	snapped_point.x = _snap_coordinate(snapped_point.x)
+	snapped_point.z = _snap_coordinate(snapped_point.z)
+	return snapped_point

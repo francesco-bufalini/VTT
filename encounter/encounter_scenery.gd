@@ -275,7 +275,11 @@ func _limb(parent: Node3D, from: Vector3, to: Vector3, radius: float, material: 
 	instance.basis = Basis(Quaternion(Vector3.UP, (to - from).normalized()))
 
 func _giant(parent: Node3D, luminous: bool) -> void:
-	var body: Material = _material(Color(0.69, 0.57, 0.44), 0.07) if luminous else _cosmic_material()
+	var body: Material
+	if luminous:
+		body = _material(Color(0.69, 0.57, 0.44), 0.07)
+	else:
+		body = _cosmic_material()
 	preload("res://encounter/sculpted_giant_visual.gd").new().build(parent, _units, body, _marble, _gold, luminous)
 
 func _cosmic_material() -> ShaderMaterial:
