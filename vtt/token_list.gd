@@ -264,9 +264,13 @@ func _display_name(token: Node3D) -> String:
 
 
 func _party_id(token: Node3D) -> String:
+	if token.has_method("get_effective_party_id"):
+		return String(token.call("get_effective_party_id")).strip_edges()
 	if token.has_method("get_party_id"):
-		return String(token.call("get_party_id")).strip_edges()
-	return String(token.get_meta("party_id", "")).strip_edges()
+		var raw := String(token.call("get_party_id")).strip_edges()
+		return raw if not raw.is_empty() else "Default"
+	var metadata := String(token.get_meta("party_id", "")).strip_edges()
+	return metadata if not metadata.is_empty() else "Default"
 
 
 func _token_signature(tokens: Array[CharacterBody3D]) -> String:
