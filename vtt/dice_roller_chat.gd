@@ -356,7 +356,14 @@ func _roll(die: String) -> void:
 		count = clampi(int(dice_count_input.value), 1, 100)
 	if dice_modifier_input != null:
 		modifier = clampi(int(dice_modifier_input.value), -9999, 9999)
-	_roll_specific("", die, count, modifier)
+	_roll_specific(
+		"",
+		die,
+		count,
+		modifier,
+		"",
+		_selected_action_actor()
+	)
 
 
 func roll_from_sheet(
@@ -364,14 +371,16 @@ func roll_from_sheet(
 	die: String,
 	count: int = 1,
 	modifier: int = 0,
-	roll_mode: String = ""
+	roll_mode: String = "",
+	actor: Node3D = null
 ) -> void:
 	_roll_specific(
 		label.strip_edges(),
 		die,
 		clampi(count, 1, 100),
 		clampi(modifier, -9999, 9999),
-		roll_mode
+		roll_mode,
+		actor
 	)
 
 
@@ -380,7 +389,8 @@ func _roll_specific(
 	die: String,
 	count: int,
 	modifier: int,
-	roll_mode_override: String = ""
+	roll_mode_override: String = "",
+	actor: Node3D = null
 ) -> void:
 	if die not in [
 		"d20", "d12", "d10", "d8",
@@ -389,6 +399,10 @@ func _roll_specific(
 		return
 
 	var event := _new_event("roll")
+	var resolved_actor: Node3D = actor
+	if resolved_actor == null or not is_instance_valid(resolved_actor):
+		resolved_actor = _selected_action_actor()
+	_attach_actor_combat_context(event, resolved_actor)
 	event["die"] = die
 	event["count"] = count
 	event["modifier"] = modifier
@@ -445,7 +459,8 @@ func _roll_specific(
 
 func roll_expression_from_sheet(
 	label: String,
-	expression: String
+	expression: String,
+	actor: Node3D = null
 ) -> void:
 	var parsed := parse_dice_expression(expression)
 	if parsed.is_empty():
@@ -487,6 +502,10 @@ func roll_expression_from_sheet(
 		return
 
 	var event := _new_event("roll")
+	var resolved_actor: Node3D = actor
+	if resolved_actor == null or not is_instance_valid(resolved_actor):
+		resolved_actor = _selected_action_actor()
+	_attach_actor_combat_context(event, resolved_actor)
 	event["die"] = "formula"
 	event["count"] = total_dice
 	event["modifier"] = fixed_modifier
@@ -727,6 +746,96 @@ func _send_chat() -> void:
 	_append_event(event, true)
 
 
+func log_action(
+	text: String,
+	actor: Node3D = null,
+	round_override: int = 0
+) -> void:
+	var clean_text := text.strip_edges()
+	if clean_text.is_empty():
+		return
+
+	var event := _new_event("action")
+	event["text"] = clean_text.left(1000)
+	_attach_actor_combat_context(event, actor)
+	if round_override > 0:
+		event["round"] = round_override
+	_append_event(event, true)
+
+
+func _selected_action_actor() -> Node3D:
+	if board_root == null or not is_instance_valid(board_root):
+		return null
+	var selected_value: Variant = board_root.get("_selected_tokens")
+	if not selected_value is Array:
+		return null
+	var selected: Array = selected_value as Array
+	if selected.size() != 1 or not selected[0] is Node3D:
+		return null
+	var actor := selected[0] as Node3D
+	if (
+		actor == null
+		or not is_instance_valid(actor)
+		or not actor.is_in_group("dnd_token")
+	):
+		return null
+	return actor
+
+
+func _attach_actor_combat_context(
+	event: Dictionary,
+	actor: Node3D
+) -> void:
+	if actor == null or not is_instance_valid(actor):
+		return
+	var actor_name := _actor_display_name(actor)
+	if not actor_name.is_empty():
+		event["actor"] = actor_name.left(120)
+	var combat_round := _combat_round_for_actor(actor)
+	if combat_round > 0:
+		event["round"] = combat_round
+
+
+func _combat_round_for_actor(actor: Node3D) -> int:
+	if (
+		actor == null
+		or not is_instance_valid(actor)
+		or board_root == null
+		or not is_instance_valid(board_root)
+	):
+		return 0
+	var tracker_value: Variant = board_root.get("initiative_tracker")
+	if not tracker_value is Node:
+		return 0
+	var tracker := tracker_value as Node
+	if (
+		tracker == null
+		or not is_instance_valid(tracker)
+		or not tracker.has_method("combat_round_for_token")
+	):
+		return 0
+	return maxi(
+		0,
+		int(tracker.call("combat_round_for_token", actor))
+	)
+
+
+func _actor_display_name(actor: Node3D) -> String:
+	if actor == null or not is_instance_valid(actor):
+		return ""
+	if actor.has_method("get_display_name"):
+		var display_name := String(actor.call("get_display_name")).strip_edges()
+		if not display_name.is_empty():
+			return display_name
+	if actor.has_meta("player_character_name"):
+		var character_name := String(
+			actor.get_meta("player_character_name")
+		).strip_edges()
+		if not character_name.is_empty():
+			return character_name
+	return String(actor.name).strip_edges()
+
+
 func _new_event(kind: String) -> Dictionary:
 	var stamp := int(Time.get_unix_time_from_system())
 	var unique := "%d_%d_%d" % [
@@ -815,6 +924,13 @@ func _render_history() -> void:
 			String(event.get("author", "Giocatore"))
 		)
 		var kind := String(event.get("kind", ""))
+		var event_round := int(event.get("round", 0))
+		var round_prefix := ""
+		if event_round > 0:
+			round_prefix = (
+				"[color=#72849a][b]R%d[/b][/color] · "
+				% event_round
+			)
 
 		if kind == "roll":
 			var die_raw := String(event.get("die", "d?"))
@@ -834,7 +950,7 @@ func _render_history() -> void:
 			var total := int(event.get("total", 0))
 			var detail := String(event.get("detail", "")).strip_edges()
 			var label := String(event.get("label", "")).strip_edges()
-			var roll_text := (
+			var roll_text := round_prefix + (
 				"[color=#d5a64a][b]%s[/b][/color]  "
 				+ "[color=#8fa8c6]%s[/color] → "
 				+ "[font_size=18][b]%d[/b][/font_size]"
@@ -852,11 +968,30 @@ func _render_history() -> void:
 			lines.append(roll_text)
 		elif kind == "chat":
 			lines.append(
-				"[color=#d5a64a][b]%s[/b][/color]: %s"
+				round_prefix
+				+ "[color=#d5a64a][b]%s[/b][/color]: %s"
 				% [
 					author,
 					_escape_bb(String(event.get("text", "")))
 				]
+			)
+		elif kind == "action":
+			var action_text := _escape_bb(
+				String(event.get("text", ""))
+			)
+			var actor_name := _escape_bb(
+				String(event.get("actor", "")).strip_edges()
+			)
+			var action_body := action_text
+			if not actor_name.is_empty():
+				action_body = "[b]%s[/b] %s" % [
+					actor_name,
+					action_text
+				]
+			lines.append(
+				round_prefix
+				+ "[color=#d5a64a][b]%s[/b][/color] · %s"
+				% [author, action_body]
 			)
 
 	history_view.text = "\n\n".join(lines)

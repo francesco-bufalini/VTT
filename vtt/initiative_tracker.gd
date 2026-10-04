@@ -293,6 +293,30 @@ func is_panel_visible() -> bool:
 	return panel != null and panel.visible
 
 
+func _dice_chat() -> Node:
+	if board_root == null or not is_instance_valid(board_root):
+		return null
+	var value: Variant = board_root.get("dice_roller_chat")
+	if value is Node and is_instance_valid(value):
+		return value as Node
+	return board_root.get_node_or_null("DiceRollerChat")
+
+
+func _log_combat_action(
+	text: String,
+	round_override: int = 0
+) -> void:
+	var roller := _dice_chat()
+	if roller == null or not roller.has_method("log_action"):
+		return
+	roller.call(
+		"log_action",
+		text,
+		null,
+		round_override
+	)
+
+
 func start_combat() -> void:
 	if combat_active:
 		show_panel()
@@ -307,10 +331,12 @@ func start_combat() -> void:
 	show_panel()
 	_render()
 	combat_state_changed.emit(true)
+	_log_combat_action("Combattimento iniziato", round_number)
 	open_add_dialog()
 
 
 func end_combat() -> void:
+	var ending_round := round_number if combat_active else 0
 	if combat_active or not entries.is_empty():
 		_record_undo_state()
 	combat_active = false
@@ -321,6 +347,8 @@ func end_combat() -> void:
 	_next_entry_id = 1
 	_render()
 	combat_state_changed.emit(false)
+	if ending_round > 0:
+		_log_combat_action("Combattimento terminato", ending_round)
 
 
 func open_add_dialog() -> void:
@@ -377,6 +405,10 @@ func _on_add_confirmed() -> void:
 		"token_id": token_id
 	})
 	_next_entry_id += 1
+	_log_combat_action(
+		"%s entra nel combattimento" % name_value,
+		round_number
+	)
 	if entries.size() == 1:
 		active_index = 0
 		_emit_turn_changed()
@@ -462,6 +494,7 @@ func next_turn() -> void:
 	if not combat_active or entries.is_empty():
 		return
 	_record_undo_state()
+	var previous_round := round_number
 	active_index += 1
 	turn_count += 1
 	if active_index >= entries.size():
@@ -469,12 +502,18 @@ func next_turn() -> void:
 		round_number += 1
 	_render()
 	_emit_turn_changed()
+	if round_number != previous_round:
+		_log_combat_action(
+			"Inizia il round %d" % round_number,
+			round_number
+		)
 
 
 func previous_turn() -> void:
 	if not combat_active or entries.is_empty() or turn_count <= 0:
 		return
 	_record_undo_state()
+	var previous_round := round_number
 	if active_index == 0:
 		active_index = entries.size() - 1
 		round_number = maxi(1, round_number - 1)
@@ -483,6 +522,11 @@ func previous_turn() -> void:
 	turn_count = maxi(0, turn_count - 1)
 	_render()
 	_emit_turn_changed()
+	if round_number != previous_round:
+		_log_combat_action(
+			"Ritorno al round %d" % round_number,
+			round_number
+		)
 
 
 func refresh() -> void:
@@ -877,6 +921,22 @@ func get_active_entry() -> Dictionary:
 		return {}
 	_synchronize_linked_entry_names()
 	return entries[active_index].duplicate(true)
+
+
+func combat_round_for_token(token: Node3D) -> int:
+	if (
+		not combat_active
+		or token == null
+		or not is_instance_valid(token)
+	):
+		return 0
+	var token_id := _token_id(token)
+	if token_id.is_empty():
+		return 0
+	for entry: Dictionary in entries:
+		if String(entry.get("token_id", "")) == token_id:
+			return maxi(1, round_number)
+	return 0
 
 
 func get_save_state() -> Dictionary:

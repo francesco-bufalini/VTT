@@ -256,7 +256,7 @@ static func valid_event(event: Dictionary) -> bool:
 		return false
 
 	var kind := String(event.get("kind", ""))
-	if kind not in ["roll", "chat"]:
+	if kind not in ["roll", "chat", "action"]:
 		return false
 
 	var author := String(event.get("author", ""))
@@ -267,7 +267,20 @@ static func valid_event(event: Dictionary) -> bool:
 	if not (timestamp is int or timestamp is float):
 		return false
 
-	if kind == "chat":
+	if event.has("round"):
+		var round_value: Variant = event.get("round", 0)
+		if not (round_value is int or round_value is float):
+			return false
+		var round_number := int(round_value)
+		if round_number < 1 or round_number > 999999:
+			return false
+
+	if event.has("actor"):
+		var actor := String(event.get("actor", ""))
+		if actor.length() > 120:
+			return false
+
+	if kind in ["chat", "action"]:
 		var text_value := String(event.get("text", ""))
 		return (
 			not text_value.strip_edges().is_empty()

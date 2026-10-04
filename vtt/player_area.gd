@@ -2711,7 +2711,9 @@ func _roll_sheet_d20(action_name: String, modifier: int) -> void:
 		_character_roll_label(action_name),
 		"d20",
 		1,
-		modifier
+		modifier,
+		"",
+		_current_character_token()
 	)
 	_set_status(
 		"%s: 1d20 %s inviato al dice roller."
@@ -2852,7 +2854,8 @@ func _roll_selected_attack_damage() -> void:
 	roller.call(
 		"roll_expression_from_sheet",
 		_character_roll_label(label),
-		expression
+		expression,
+		_current_character_token()
 	)
 	_set_status(
 		"%s: %s inviato al dice roller."
@@ -3651,6 +3654,14 @@ func _consume_spell_slot(level: int) -> void:
 	_characters[_current_index] = character
 	_store.call("save_characters", _characters)
 	_refresh_slot_markers(level)
+
+
+func _current_character_token() -> CharacterBody3D:
+	if _current_index < 0 or _current_index >= _characters.size():
+		return null
+	return _linked_token_for_character(
+		String(_characters[_current_index].get("id", ""))
+	)
 
 
 func _linked_token_for_character(

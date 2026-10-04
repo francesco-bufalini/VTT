@@ -1231,6 +1231,10 @@ func _begin_cast_with_caster(
 		_cancel_pending_cast()
 		return
 
+	# Keep the caster available through every targeting branch so a
+	# successfully completed cast can be logged with combat context.
+	_pending_caster = caster
+
 	var target_mode: String = String(spell_data.get("target_mode", ""))
 	match target_mode:
 		"self_token":
@@ -5049,7 +5053,39 @@ func _return_control_to_camera() -> void:
 	Input.mouse_mode = Input.MOUSE_MODE_CAPTURED
 
 
+func _log_spell_use() -> void:
+	if (
+		_pending_caster == null
+		or not is_instance_valid(_pending_caster)
+	):
+		return
+	var spell_data := _pending_spell()
+	if spell_data.is_empty():
+		return
+	var roller_value: Variant = board_root.get("dice_roller_chat")
+	if not roller_value is Node:
+		return
+	var roller := roller_value as Node
+	if (
+		roller == null
+		or not is_instance_valid(roller)
+		or not roller.has_method("log_action")
+	):
+		return
+	var spell_name := String(
+		spell_data.get("name", "Incantesimo")
+	).strip_edges()
+	if spell_name.is_empty():
+		spell_name = "Incantesimo"
+	roller.call(
+		"log_action",
+		"usa %s" % spell_name,
+		_pending_caster
+	)
+
+
 func _finish_cast() -> void:
+	_log_spell_use()
 	_post_cast_cleanup_pending = true
 	_reset_cast_state(false, true)
 	_return_control_to_camera()
