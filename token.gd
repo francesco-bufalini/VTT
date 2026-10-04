@@ -1120,6 +1120,8 @@ func _condition_ring_color(condition_id: String) -> Color:
 
 func set_condition_visuals_visible(value: bool) -> void:
 	_condition_visuals_visible = value
+	if not is_node_ready():
+		return
 	_update_condition_rings()
 
 
