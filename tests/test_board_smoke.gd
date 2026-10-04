@@ -105,6 +105,14 @@ func run() -> void:
 	if not ("flying" in token.get_automatic_conditions()):
 		_fail("automatic flying condition was not tracked as derived state")
 		return
+	token.set_condition("poisoned", true)
+	var condition_parts: PackedStringArray = token.get_active_condition_display_parts()
+	if not ("☠️ Avvelenato" in condition_parts):
+		_fail("named poisoned condition is missing from shared badge data")
+		return
+	if not ("🪽 Volante" in condition_parts):
+		_fail("automatic flying condition is missing from shared badge data")
+		return
 
 	var snapshot: Dictionary = JSON.parse_string(
 		JSON.stringify(sync.create_snapshot())
