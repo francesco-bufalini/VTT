@@ -223,6 +223,10 @@ static func _base_particles(
 	particles.lifetime = _lifetime(style)
 	particles.preprocess = particles.lifetime
 	particles.randomness = 0.86
+	# Spell areas remain alive until clicked, so their particle animation must
+	# loop instead of behaving like a one-shot impact.
+	particles.one_shot = false
+	particles.emitting = true
 	root.add_child(particles)
 
 	var process: ParticleProcessMaterial = ParticleProcessMaterial.new()
