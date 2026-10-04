@@ -119,10 +119,16 @@ func refresh_now() -> void:
 	# other token currently inside its own reach, independent of party,
 	# selection and flanking state.
 	var reach_visuals := _build_reach_visuals(tokens)
-	arrow_points = reach_visuals.get("arrows", []) as Array[Vector3]
-	mutual_marker_points = (
-		reach_visuals.get("mutual_markers", []) as Array[Vector3]
-	)
+	var arrow_value: Variant = reach_visuals.get("arrows", [])
+	if arrow_value is Array:
+		for point: Variant in arrow_value as Array:
+			if point is Vector3:
+				arrow_points.append(point as Vector3)
+	var mutual_value: Variant = reach_visuals.get("mutual_markers", [])
+	if mutual_value is Array:
+		for point: Variant in mutual_value as Array:
+			if point is Vector3:
+				mutual_marker_points.append(point as Vector3)
 
 	# Affiancato is always shown. Condition text participates only when the
 	# View toggle for condition visuals is enabled.
