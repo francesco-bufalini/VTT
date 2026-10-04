@@ -6,6 +6,8 @@ func _initialize() -> void:
 func run() -> void:
 	var scene: Node = load("res://dnd_base.tscn").instantiate()
 	root.add_child(scene)
+	# Two boards share one test window; their identity dialogs must not compete.
+	scene.get_node("UI/SceneChatIdentityDialog").exclusive = false
 	await process_frame
 	var measure: Node = scene.measurement_tool
 	for shape in ["sphere", "cube", "cone", "line", "cylinder"]:
@@ -52,6 +54,7 @@ func run() -> void:
 	sync.listen(false, "test-key")
 	var other: Node = load("res://dnd_base.tscn").instantiate()
 	root.add_child(other)
+	other.get_node("UI/SceneChatIdentityDialog").exclusive = false
 	await process_frame
 	assert(sync.create_snapshot().objects.size() == snapshot.objects.size())
 	assert(other.board_sync.listen(true, "test-key") == OK)

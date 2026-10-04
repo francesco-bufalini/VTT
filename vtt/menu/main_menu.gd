@@ -95,11 +95,8 @@ func _build_image_background() -> void:
 
 func _discover_backgrounds() -> Array[String]:
 	var paths: Array[String] = []
-	var directory := DirAccess.open(MENU_BACKGROUND_DIRECTORY)
-	if directory == null:
-		return paths
-
-	for file_name in directory.get_files():
+	# Imported images use remapped filenames inside exported PCK files.
+	for file_name: String in ResourceLoader.list_directory(MENU_BACKGROUND_DIRECTORY):
 		var extension := file_name.get_extension().to_lower()
 		if extension not in ["jpg", "jpeg", "png", "webp"]:
 			continue

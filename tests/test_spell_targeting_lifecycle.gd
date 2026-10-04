@@ -41,8 +41,9 @@ func _fail(message: String) -> void:
 
 func _held_aoe_count(measure: Node) -> int:
 	var count: int = 0
-	for child: Node in measure.get_children():
-		if child is Node3D and String(child.name).begins_with("HeldSpellAoE"):
+	# Godot renames siblings with duplicate names; use the tracked area roots.
+	for child: Node3D in measure.get("_held_spell_aoes"):
+		if is_instance_valid(child) and child.get_parent() == measure:
 			count += 1
 	return count
 
@@ -208,9 +209,9 @@ func run() -> void:
 		"cold"
 	)
 	var held_roots: Array[Node3D] = []
-	for child: Node in measure.get_children():
-		if child is Node3D and String(child.name).begins_with("HeldSpellAoE"):
-			held_roots.append(child as Node3D)
+	for child: Node3D in measure.get("_held_spell_aoes"):
+		if is_instance_valid(child) and child.get_parent() == measure:
+			held_roots.append(child)
 	if held_roots.size() != 2:
 		_fail("second held spell AoE was not created for targeted cleanup")
 		return

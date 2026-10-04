@@ -473,7 +473,7 @@ func run() -> void:
 
 	# The remote/master bar is visible locally, but this client does not own
 	# its sheet: it must not be rebroadcast in the next full-map sync.
-	var partial_snapshot := sync.create_snapshot()
+	var partial_snapshot: Dictionary = sync.create_snapshot()
 	var partial_health: Array = partial_snapshot.get("health_bars", [])
 	if partial_health.size() != 1:
 		_fail("snapshot rebroadcast an unowned remote health bar")
