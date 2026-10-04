@@ -14,6 +14,10 @@ var _range_preview: MeshInstance3D
 var _range_preview_center: Vector3 = Vector3.INF
 var _range_preview_half_footprint: float = -1.0
 var _range_preview_radius: float = -1.0
+var _all_reaches_visible: bool = false
+var _all_reach_root: Node3D
+var _all_reach_elapsed: float = 0.0
+var _all_reach_signature: String = ""
 
 
 func setup(root: Node3D) -> void:
@@ -21,6 +25,9 @@ func setup(root: Node3D) -> void:
 	ui_root = board_root.get_node_or_null("UI") as CanvasLayer
 	measurement_tool = board_root.get_node_or_null("MeasurementTool") as Node3D
 	_build_instruction_ui()
+	_all_reach_root = Node3D.new()
+	_all_reach_root.name = "AllCreatureReachSpheres"
+	add_child(_all_reach_root)
 	set_process(true)
 
 
@@ -104,7 +111,13 @@ func handle_input(event: InputEvent) -> bool:
 	return false
 
 
-func _process(_delta: float) -> void:
+func _process(delta: float) -> void:
+	if _all_reaches_visible:
+		_all_reach_elapsed += delta
+		if _all_reach_elapsed >= 0.12:
+			_all_reach_elapsed = 0.0
+			_refresh_all_reach_spheres(false)
+
 	if not _targeting:
 		return
 	if _attacker == null or not is_instance_valid(_attacker):
@@ -121,6 +134,108 @@ func _process(_delta: float) -> void:
 		_set_target_highlight(target)
 	else:
 		_clear_target_highlight()
+
+
+func set_all_reaches_visible(enabled: bool) -> void:
+	_all_reaches_visible = enabled
+	_all_reach_signature = ""
+	if enabled:
+		_refresh_all_reach_spheres(true)
+	elif _all_reach_root != null:
+		for child: Node in _all_reach_root.get_children():
+			child.queue_free()
+
+
+func are_all_reaches_visible() -> bool:
+	return _all_reaches_visible
+
+
+func _reach_tokens() -> Array[CharacterBody3D]:
+	var result: Array[CharacterBody3D] = []
+	if board_root == null:
+		return result
+	for node: Node in get_tree().get_nodes_in_group("dnd_token"):
+		if (
+			node is CharacterBody3D
+			and is_instance_valid(node)
+			and board_root.is_ancestor_of(node)
+			and not node.is_queued_for_deletion()
+		):
+			result.append(node as CharacterBody3D)
+	return result
+
+
+func _refresh_all_reach_spheres(force: bool) -> void:
+	if not _all_reaches_visible or _all_reach_root == null:
+		return
+
+	var cell_size := maxf(0.001, float(board_root.get("cell_size")))
+	var tokens := _reach_tokens()
+	var parts := PackedStringArray()
+	for token: CharacterBody3D in tokens:
+		var reach_feet := 5.0
+		if token.has_method("get_reach_feet"):
+			reach_feet = maxf(float(token.call("get_reach_feet")), 5.0)
+		var footprint_world := _token_footprint_world(token, cell_size)
+		parts.append(
+			"%d:%s:%.3f:%.3f:%.3f:%.2f:%.2f"
+			% [
+				token.get_instance_id(),
+				str(token.global_position.x),
+				token.global_position.y,
+				token.global_position.z,
+				footprint_world,
+				reach_feet,
+				cell_size
+			]
+		)
+	var signature := "|".join(parts)
+	if not force and signature == _all_reach_signature:
+		return
+	_all_reach_signature = signature
+
+	for child: Node in _all_reach_root.get_children():
+		child.queue_free()
+
+	for token: CharacterBody3D in tokens:
+		_add_reach_sphere(token, cell_size)
+
+
+func _add_reach_sphere(
+	token: CharacterBody3D,
+	cell_size: float
+) -> void:
+	var reach_feet := 5.0
+	if token.has_method("get_reach_feet"):
+		reach_feet = maxf(float(token.call("get_reach_feet")), 5.0)
+	var footprint_world := _token_footprint_world(token, cell_size)
+	var radius := (
+		reach_feet / 5.0 * cell_size
+		+ footprint_world * 0.5
+	)
+
+	var sphere := SphereMesh.new()
+	sphere.radius = maxf(radius, cell_size * 0.5)
+	sphere.height = sphere.radius * 2.0
+	sphere.radial_segments = 32
+	sphere.rings = 16
+
+	var material := StandardMaterial3D.new()
+	material.transparency = BaseMaterial3D.TRANSPARENCY_ALPHA
+	material.shading_mode = BaseMaterial3D.SHADING_MODE_UNSHADED
+	material.cull_mode = BaseMaterial3D.CULL_DISABLED
+	material.albedo_color = Color(0.18, 0.58, 1.0, 0.045)
+	material.emission_enabled = true
+	material.emission = Color(0.08, 0.28, 0.72, 1.0)
+	material.emission_energy_multiplier = 0.10
+
+	var preview := MeshInstance3D.new()
+	preview.name = "Reach_%d" % token.get_instance_id()
+	preview.mesh = sphere
+	preview.material_override = material
+	preview.cast_shadow = GeometryInstance3D.SHADOW_CASTING_SETTING_OFF
+	_all_reach_root.add_child(preview)
+	preview.global_position = token.global_position
 
 
 func _try_attack_target(screen_position: Vector2) -> void:
