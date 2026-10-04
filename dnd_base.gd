@@ -106,7 +106,9 @@ var _affected_grid_multimesh: MultiMesh
 var _affected_grid_signature: String = ""
 var _affected_tokens: Array[CharacterBody3D] = []
 var token_state_dialog: ConfirmationDialog
-var opportunity_dialog: AcceptDialog
+var opportunity_dialog: PanelContainer
+var opportunity_label: Label
+var _opportunity_notice_generation: int = 0
 var token_state_name: LineEdit
 var token_party_input: LineEdit
 var token_identity_label: Label
@@ -2418,20 +2420,65 @@ func _ensure_token_name_input() -> void:
 
 
 func _build_opportunity_attack_dialog() -> void:
-	opportunity_dialog = AcceptDialog.new()
-	opportunity_dialog.name = "OpportunityAttackDialog"
-	opportunity_dialog.title = "Attacchi di opportunità disponibili"
-	opportunity_dialog.ok_button_text = "OK"
-	opportunity_dialog.min_size = Vector2i(560, 240)
+	opportunity_dialog = PanelContainer.new()
+	opportunity_dialog.name = "OpportunityAttackNotice"
+	opportunity_dialog.anchor_left = 0.5
+	opportunity_dialog.anchor_right = 0.5
+	opportunity_dialog.offset_left = -260.0
+	opportunity_dialog.offset_top = 82.0
+	opportunity_dialog.offset_right = 260.0
+	opportunity_dialog.offset_bottom = 132.0
+	opportunity_dialog.mouse_filter = Control.MOUSE_FILTER_IGNORE
+	opportunity_dialog.z_index = 95
+	opportunity_dialog.hide()
 	$UI.add_child(opportunity_dialog)
-	opportunity_dialog.confirmed.connect(_close_opportunity_attack_dialog)
-	opportunity_dialog.canceled.connect(_close_opportunity_attack_dialog)
-	opportunity_dialog.close_requested.connect(_close_opportunity_attack_dialog)
+
+	var style := StyleBoxFlat.new()
+	style.bg_color = Color(0.035, 0.04, 0.05, 0.86)
+	style.border_color = Color(0.72, 0.48, 0.20, 0.72)
+	style.set_border_width_all(1)
+	style.set_corner_radius_all(7)
+	style.content_margin_left = 12
+	style.content_margin_right = 12
+	style.content_margin_top = 7
+	style.content_margin_bottom = 7
+	opportunity_dialog.add_theme_stylebox_override("panel", style)
+
+	opportunity_label = Label.new()
+	opportunity_label.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
+	opportunity_label.vertical_alignment = VERTICAL_ALIGNMENT_CENTER
+	opportunity_label.autowrap_mode = TextServer.AUTOWRAP_WORD_SMART
+	opportunity_label.add_theme_font_size_override("font_size", 13)
+	opportunity_dialog.add_child(opportunity_label)
 
 
 func _close_opportunity_attack_dialog() -> void:
-	_ui_owns_mouse = false
-	call_deferred("_capture_mouse")
+	_opportunity_notice_generation += 1
+	if opportunity_dialog != null:
+		opportunity_dialog.hide()
+
+
+func _show_opportunity_notice(lines: PackedStringArray) -> void:
+	if (
+		opportunity_dialog == null
+		or opportunity_label == null
+		or lines.is_empty()
+	):
+		return
+	_opportunity_notice_generation += 1
+	var generation := _opportunity_notice_generation
+	opportunity_label.text = "\n".join(lines)
+	opportunity_dialog.show()
+
+	var timer := get_tree().create_timer(1.0)
+	timer.timeout.connect(
+		func() -> void:
+			if (
+				generation == _opportunity_notice_generation
+				and opportunity_dialog != null
+			):
+				opportunity_dialog.hide()
+	)
 
 
 func _token_reach_feet(token: CharacterBody3D) -> float:
@@ -2502,26 +2549,16 @@ func check_opportunity_attacks_after_movement(
 				before_feet <= reach_feet + 0.05
 				and after_feet > reach_feet + 0.05
 			):
-				var notice: String = (
-					"%s può effettuare un attacco di opportunità contro %s "
-					+ "(uscita dalla gittata di %g ft)."
-				) % [
+				var notice: String = "⚔ %s → %s · opportunità" % [
 					_token_notice_name(attacker),
-					_token_notice_name(moved_token),
-					reach_feet
+					_token_notice_name(moved_token)
 				]
 				notices.append(notice)
 
 	if notices.is_empty() or opportunity_dialog == null:
 		return
 
-	opportunity_dialog.dialog_text = (
-		"Il movimento appena concluso rende disponibili:\n\n"
-		+ "\n".join(notices)
-	)
-	_ui_owns_mouse = true
-	Input.mouse_mode = Input.MOUSE_MODE_VISIBLE
-	_popup_dialog_safe(opportunity_dialog, Vector2i(620, 300))
+	_show_opportunity_notice(notices)
 
 
 func _build_token_state_dialog() -> void:
