@@ -5,6 +5,13 @@ const MeasurementTool = preload("res://measurement_tool.gd")
 const TokenScene = preload("res://token.tscn")
 
 
+class HealthAreaMock extends Node:
+	var entries: Array[Dictionary] = []
+
+	func get_owned_health_bar_sync_entries() -> Array[Dictionary]:
+		return entries.duplicate(true)
+
+
 func _initialize() -> void:
 	call_deferred("run")
 
@@ -355,6 +362,129 @@ func run() -> void:
 		_fail("edited token conditions were not restored")
 		return
 
+	# Health bars are partial, owner-scoped state. Only sheets owned by this
+	# client contribute entries, and only percentage is transmitted.
+	var player_health := HealthAreaMock.new()
+	player_health.name = "PlayerArea"
+	arena.add_child(player_health)
+	var master_health := HealthAreaMock.new()
+	master_health.name = "MasterArea"
+	arena.add_child(master_health)
+
+	var master_token: CharacterBody3D = TokenScene.instantiate()
+	master_token.visual_asset_path = (
+		"res://assets/tokens/test/test_token_visual.tscn"
+	)
+	tokens_root.add_child(master_token)
+	master_token.set_token_id("token_health_master")
+	master_token.position = Vector3(4.0, 1.0, 2.0)
+
+	player_health.entries = [{
+		"token_id": stable_token_id,
+		"percent": 37.5
+	}]
+	master_health.entries = [{
+		"token_id": master_token.get_token_id(),
+		"percent": 62.25
+	}]
+	var health_snapshot: Dictionary = JSON.parse_string(
+		JSON.stringify(sync.create_snapshot())
+	)
+	if not sync.valid_snapshot(health_snapshot):
+		_fail("health-bar snapshot failed validation")
+		return
+	var health_entries: Array = health_snapshot.get("health_bars", [])
+	if health_entries.size() != 2:
+		_fail("owned player/master health bars were not both serialized")
+		return
+	for entry_value: Variant in health_entries:
+		if not entry_value is Dictionary:
+			_fail("health-bar entry is not a dictionary")
+			return
+		var entry := entry_value as Dictionary
+		if (
+			entry.has("current")
+			or entry.has("max")
+			or entry.has("current_hp")
+			or entry.has("max_hp")
+		):
+			_fail("health sync leaked absolute hit points")
+			return
+		if not entry.has("token_id") or not entry.has("percent"):
+			_fail("health sync entry is missing token_id/percent")
+			return
+
+	# On a receiving client, supplied entries update the visual bar only.
+	# Missing entries must never clear or alter another user's token bar.
+	player_health.entries = []
+	master_health.entries = []
+	token.clear_player_hit_points()
+	master_token.clear_master_hit_points()
+	sync.call(
+		"_apply_partial_health_bars",
+		health_snapshot.get("health_bars", [])
+	)
+	var player_hp: Dictionary = token.get_player_hit_points()
+	var master_hp: Dictionary = master_token.get_player_hit_points()
+	if (
+		not is_equal_approx(
+			float(player_hp.get("current", 0))
+			/ maxf(float(player_hp.get("max", 1)), 1.0),
+			0.375
+		)
+		or not is_equal_approx(
+			float(master_hp.get("current", 0))
+			/ maxf(float(master_hp.get("max", 1)), 1.0),
+			0.6225
+		)
+	):
+		_fail("received health percentages were not applied to bars")
+		return
+	if bool(token.get("_hp_bar_show_percentage")):
+		_fail("synced player health bar exposed numeric percentage")
+		return
+	if bool(master_token.get("_hp_bar_show_percentage")):
+		_fail("synced master health bar exposed numeric percentage")
+		return
+
+	# A locally-owned sheet wins for its token; an incoming peer cannot tell
+	# this client how to render a bar it owns.
+	token.set_player_hit_points(80, 100)
+	player_health.entries = [{
+		"token_id": stable_token_id,
+		"percent": 80.0
+	}]
+	sync.call("_apply_partial_health_bars", [
+		{"token_id": stable_token_id, "percent": 5.0},
+		{"token_id": master_token.get_token_id(), "percent": 30.0}
+	])
+	player_hp = token.get_player_hit_points()
+	master_hp = master_token.get_player_hit_points()
+	if int(player_hp.get("current", 0)) != 80:
+		_fail("remote health update overwrote locally-owned player bar")
+		return
+	if not is_equal_approx(
+		float(master_hp.get("current", 0))
+		/ maxf(float(master_hp.get("max", 1)), 1.0),
+		0.30
+	):
+		_fail("unowned remote health bar did not update")
+		return
+
+	# The remote/master bar is visible locally, but this client does not own
+	# its sheet: it must not be rebroadcast in the next full-map sync.
+	var partial_snapshot := sync.create_snapshot()
+	var partial_health: Array = partial_snapshot.get("health_bars", [])
+	if partial_health.size() != 1:
+		_fail("snapshot rebroadcast an unowned remote health bar")
+		return
+	if String(
+		(partial_health[0] as Dictionary).get("token_id", "")
+	) != stable_token_id:
+		_fail("snapshot health ownership selected the wrong token")
+		return
+
+	master_token.queue_free()
 	arena.queue_free()
 	await process_frame
 	print("PASS: lightweight board/token/snapshot arena")
