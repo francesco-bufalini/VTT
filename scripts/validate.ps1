@@ -152,7 +152,12 @@ foreach ($test in $testFiles) {
     } else {
         12
     }
-    Invoke-Godot -Arguments @("--headless", "--path", $ProjectRoot, "--script", $relative) -TimeoutSeconds $testTimeout -RequirePass
+    $testArguments = if ($test.Name -in @("test_item_transport.gd", "test_item_board_integration.gd")) {
+        @("--headless", "--editor", "--path", $ProjectRoot, "--script", $relative)
+    } else {
+        @("--headless", "--path", $ProjectRoot, "--script", $relative)
+    }
+    Invoke-Godot -Arguments $testArguments -TimeoutSeconds $testTimeout -RequirePass
 }
 
 Write-Host "Validation passed."
