@@ -27,6 +27,8 @@ var _burst_sent: bool = false
 var _impact_sent: bool = false
 var _model_fitted: bool = false
 var _sealed_hand_offsets: Dictionary = {}
+var _hand_target_positions: Dictionary = {}
+var _hand_target_radii: Dictionary = {}
 
 const PRISON_RADIUS_METERS := 220.0
 const SEALED_HAND_CLEARANCE_METERS := 0.35
@@ -291,10 +293,15 @@ func _fit_model() -> void:
 	_model_fitted = true
 	reset_seals()
 	var palm_bottom := INF
+	_hand_target_positions.clear()
+	_hand_target_radii.clear()
 	for side: String in ["left", "right"]:
 		_start_attack(side)
 		player.advance(1.5)
 		skeleton.force_update_all_bone_transforms()
+		var palm_center: Vector3 = _palm_center(side)
+		_hand_target_positions[side] = palm_center
+		_hand_target_radii[side] = _palm_footprint_radius(side, palm_center)
 		palm_bottom = minf(palm_bottom, float(_sealed_hand_metrics(side).min_y))
 	reset_seals()
 	statue.global_position.y += palm_bottom - neck_y
@@ -368,6 +375,53 @@ func _palm_center(side: String) -> Vector3:
 				count += 1
 		offset += surface.vertices.size()
 	return center / maxf(1, count)
+
+
+func get_hand_target_position(side: String) -> Vector3:
+	side = side.to_lower()
+	return _hand_target_positions.get(side, Vector3.ZERO)
+
+
+func get_hand_target_radius(side: String) -> float:
+	side = side.to_lower()
+	return float(_hand_target_radii.get(side, 0.0))
+
+
+func get_forehead_world_position() -> Vector3:
+	var seal := _seals.get("forehead") as Node3D
+	if seal != null and is_instance_valid(seal):
+		return seal.global_position
+	return model.global_position if model != null else global_position
+
+
+func _palm_footprint_radius(side: String, center: Vector3) -> float:
+	var body := model.find_child("Klotis_Body_V5", true, false) as MeshInstance3D
+	if body == null:
+		return 0.0
+	var data := _skin_data(body)
+	var points := _posed_vertices(body)
+	var bone := skeleton.find_bone("hand.l" if side == "left" else "hand.r")
+	if bone < 0:
+		bone = skeleton.find_bone("hand_l" if side == "left" else "hand_r")
+	if bone < 0:
+		return 0.0
+	var radius := 0.0
+	var offset := 0
+	for surface: Dictionary in data.surfaces:
+		for i in surface.vertices.size():
+			var hand_weight := 0.0
+			for k in surface.influences:
+				var slot: int = i * surface.influences + k
+				if data.binds[surface.bones[slot]] == bone:
+					hand_weight += surface.weights[slot]
+			if hand_weight > 0.55:
+				var point: Vector3 = points[offset + i]
+				radius = maxf(
+					radius,
+					Vector2(point.x - center.x, point.z - center.z).length()
+				)
+		offset += surface.vertices.size()
+	return radius
 
 
 func _sealed_hand_metrics(side: String) -> Dictionary:

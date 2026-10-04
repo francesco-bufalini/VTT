@@ -13,6 +13,20 @@ const CHARIOT_OFFSETS_METERS := [
 	Vector3(27.0, 24.0, 70.0),
 ]
 
+const HAND_TELEGRAPH_MIN_RADIUS_METERS := 3.0
+const HAND_TELEGRAPH_MAX_RADIUS_METERS := 10.0
+const HAND_TELEGRAPH_VERTICAL_TOLERANCE_METERS := 8.0
+const FOREHEAD_CONE_LENGTH_METERS := 18.0
+const FOREHEAD_CONE_RADIUS_FACTOR := 0.5
+const TELEGRAPH_SURFACE_OFFSET_METERS := 0.08
+
+var _klothys_attack_visual: MeshInstance3D
+var _active_klothys_attack_side: String = ""
+var _active_hand_center: Vector3 = Vector3.ZERO
+var _active_hand_radius: float = 0.0
+var _active_cone_origin: Vector3 = Vector3.ZERO
+var _active_cone_direction: Vector3 = Vector3.FORWARD
+
 
 func _ready() -> void:
 	super._ready()
@@ -158,9 +172,249 @@ func _install_imported_prison() -> void:
 	visual.name = "Visual"
 	klotis_prison.add_child(visual)
 	add_child(klotis_prison)
+	klotis_prison.seal_broken.connect(_on_klothys_seal_broken)
+	klotis_prison.arm_walkable.connect(_on_klothys_arm_walkable)
+	klotis_prison.head_bowed.connect(_on_klothys_head_bowed)
 	volumetric_grid.collision_probe_scale = 0.99
 	volumetric_grid.call("_configure_grid")
 	volumetric_grid.call_deferred("refresh")
+
+
+func _process(delta: float) -> void:
+	super._process(delta)
+	if _active_klothys_attack_side.is_empty():
+		return
+	if (
+		klotis_prison == null
+		or not is_instance_valid(klotis_prison)
+		or not bool(
+			klotis_prison.broken.get(
+				_active_klothys_attack_side,
+				false
+			)
+		)
+	):
+		_clear_klothys_attack_telegraph()
+		return
+	_refresh_klothys_attack_highlight()
+
+
+func _on_klothys_seal_broken(side: String) -> void:
+	if side == "forehead":
+		_show_forehead_cone_telegraph()
+	elif side in ["left", "right"]:
+		_show_hand_telegraph(side)
+
+
+func _on_klothys_arm_walkable(side: String) -> void:
+	if _active_klothys_attack_side == side:
+		_clear_klothys_attack_telegraph()
+
+
+func _on_klothys_head_bowed() -> void:
+	if _active_klothys_attack_side == "forehead":
+		_clear_klothys_attack_telegraph()
+
+
+func _show_hand_telegraph(side: String) -> void:
+	_clear_klothys_attack_telegraph()
+	var units: float = measurement_tool.meters_to_world(1.0)
+	var target: Vector3 = klotis_prison.get_hand_target_position(side)
+	if target == Vector3.ZERO:
+		return
+	_active_klothys_attack_side = side
+	_active_hand_center = _project_telegraph_to_surface(target)
+	_active_hand_radius = clampf(
+		klotis_prison.get_hand_target_radius(side) + cell_size * 0.5,
+		HAND_TELEGRAPH_MIN_RADIUS_METERS * units,
+		HAND_TELEGRAPH_MAX_RADIUS_METERS * units
+	)
+	var cylinder := CylinderMesh.new()
+	cylinder.top_radius = _active_hand_radius
+	cylinder.bottom_radius = _active_hand_radius
+	cylinder.height = maxf(0.04 * units, cell_size * 0.04)
+	cylinder.radial_segments = 64
+	cylinder.material = _klothys_telegraph_material(0.34)
+	_replace_klothys_attack_visual(cylinder, _active_hand_center)
+	_refresh_klothys_attack_highlight()
+
+
+func _show_forehead_cone_telegraph() -> void:
+	_clear_klothys_attack_telegraph()
+	var units: float = measurement_tool.meters_to_world(1.0)
+	var origin: Vector3 = klotis_prison.get_forehead_world_position()
+	var toward_shoulders: Vector3 = klotis_prison.statue_top - origin
+	if toward_shoulders.length_squared() <= 0.000001:
+		return
+	_active_klothys_attack_side = "forehead"
+	_active_cone_origin = origin
+	_active_cone_direction = toward_shoulders.normalized()
+	var length: float = FOREHEAD_CONE_LENGTH_METERS * units
+	var radius: float = length * FOREHEAD_CONE_RADIUS_FACTOR
+	var cone_mesh := _build_klothys_cone_mesh(
+		_active_cone_direction,
+		length,
+		radius
+	)
+	_replace_klothys_attack_visual(cone_mesh, _active_cone_origin)
+	_refresh_klothys_attack_highlight()
+
+
+func _replace_klothys_attack_visual(mesh: Mesh, position: Vector3) -> void:
+	if _klothys_attack_visual != null and is_instance_valid(_klothys_attack_visual):
+		_klothys_attack_visual.free()
+	_klothys_attack_visual = MeshInstance3D.new()
+	_klothys_attack_visual.name = "KlothysAttackTelegraph"
+	_klothys_attack_visual.mesh = mesh
+	_klothys_attack_visual.cast_shadow = (
+		GeometryInstance3D.SHADOW_CASTING_SETTING_OFF
+	)
+	add_child(_klothys_attack_visual)
+	_klothys_attack_visual.global_position = position
+
+
+func _klothys_telegraph_material(alpha: float) -> StandardMaterial3D:
+	var material := StandardMaterial3D.new()
+	material.shading_mode = BaseMaterial3D.SHADING_MODE_UNSHADED
+	material.transparency = BaseMaterial3D.TRANSPARENCY_ALPHA
+	material.albedo_color = Color(1.0, 0.03, 0.02, alpha)
+	material.emission_enabled = true
+	material.emission = Color(1.0, 0.015, 0.005, 1.0)
+	material.emission_energy_multiplier = 1.4
+	material.cull_mode = BaseMaterial3D.CULL_DISABLED
+	material.no_depth_test = true
+	return material
+
+
+func _build_klothys_cone_mesh(
+	direction: Vector3,
+	length: float,
+	radius: float
+) -> ImmediateMesh:
+	var mesh := ImmediateMesh.new()
+	var material := _klothys_telegraph_material(0.24)
+	var right: Vector3 = direction.cross(Vector3.UP)
+	if right.length_squared() <= 0.000001:
+		right = direction.cross(Vector3.RIGHT)
+	right = right.normalized()
+	var radial_up: Vector3 = right.cross(direction).normalized()
+	var end_center: Vector3 = direction * length
+	var segments := 40
+	mesh.surface_begin(Mesh.PRIMITIVE_TRIANGLES, material)
+	for index in range(segments):
+		var angle_a := TAU * float(index) / float(segments)
+		var angle_b := TAU * float(index + 1) / float(segments)
+		var edge_a := (
+			end_center
+			+ right * cos(angle_a) * radius
+			+ radial_up * sin(angle_a) * radius
+		)
+		var edge_b := (
+			end_center
+			+ right * cos(angle_b) * radius
+			+ radial_up * sin(angle_b) * radius
+		)
+		mesh.surface_add_vertex(Vector3.ZERO)
+		mesh.surface_add_vertex(edge_a)
+		mesh.surface_add_vertex(edge_b)
+		mesh.surface_add_vertex(end_center)
+		mesh.surface_add_vertex(edge_b)
+		mesh.surface_add_vertex(edge_a)
+	mesh.surface_end()
+	return mesh
+
+
+func _project_telegraph_to_surface(point: Vector3) -> Vector3:
+	var units: float = measurement_tool.meters_to_world(1.0)
+	var from := point + Vector3.UP * 20.0 * units
+	var to := point - Vector3.UP * 30.0 * units
+	var query := PhysicsRayQueryParameters3D.create(from, to)
+	query.collision_mask = (
+		PostKaosHelpers.WALKABLE_LAYER
+		| PostKaosHelpers.RIGHT_ARM_GRID_LAYER
+	)
+	query.collide_with_areas = false
+	query.collide_with_bodies = true
+	var hit := get_world_3d().direct_space_state.intersect_ray(query)
+	if not hit.is_empty():
+		var surface: Vector3 = hit["position"]
+		return (
+			surface
+			+ Vector3.UP * TELEGRAPH_SURFACE_OFFSET_METERS * units
+		)
+	return point
+
+
+func _refresh_klothys_attack_highlight() -> void:
+	var affected: Array = []
+	for node: Node in tokens_root.get_children():
+		if not node is CharacterBody3D:
+			continue
+		var token := node as CharacterBody3D
+		if _token_inside_klothys_telegraph(token):
+			affected.append(token)
+	set_affected_token_highlight(affected)
+
+
+func _token_inside_klothys_telegraph(token: CharacterBody3D) -> bool:
+	var token_radius := _token_effect_radius(token)
+	if _active_klothys_attack_side in ["left", "right"]:
+		var delta := token.global_position - _active_hand_center
+		var horizontal := Vector2(delta.x, delta.z).length()
+		var units: float = measurement_tool.meters_to_world(1.0)
+		return (
+			horizontal <= _active_hand_radius + token_radius
+			and absf(delta.y)
+				<= (
+					HAND_TELEGRAPH_VERTICAL_TOLERANCE_METERS
+					* units
+					+ token_radius
+				)
+		)
+	if _active_klothys_attack_side == "forehead":
+		var length := (
+			FOREHEAD_CONE_LENGTH_METERS
+			* measurement_tool.meters_to_world(1.0)
+		)
+		var relative := token.global_position - _active_cone_origin
+		var along := relative.dot(_active_cone_direction)
+		if along < -token_radius or along > length + token_radius:
+			return false
+		var radial := (
+			relative - _active_cone_direction * along
+		).length()
+		var effective_along := clampf(along, 0.0, length)
+		return radial <= (
+			effective_along * FOREHEAD_CONE_RADIUS_FACTOR
+			+ token_radius
+		)
+	return false
+
+
+func _token_effect_radius(token: CharacterBody3D) -> float:
+	if token.has_method("get_footprint_extent"):
+		var extent: Variant = token.call("get_footprint_extent")
+		if extent is Vector2:
+			return maxf(
+				cell_size * 0.5,
+				(extent as Vector2).length() * 0.5
+			)
+	return cell_size * 0.5
+
+
+func _clear_klothys_attack_telegraph() -> void:
+	_active_klothys_attack_side = ""
+	_active_hand_center = Vector3.ZERO
+	_active_hand_radius = 0.0
+	_active_cone_origin = Vector3.ZERO
+	_active_cone_direction = Vector3.FORWARD
+	if (
+		_klothys_attack_visual != null
+		and is_instance_valid(_klothys_attack_visual)
+	):
+		_klothys_attack_visual.free()
+	_klothys_attack_visual = null
+	set_affected_token_highlight([])
 
 
 func avvia_animazione_sigillo(lato: String) -> bool:
