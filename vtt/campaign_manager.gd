@@ -238,6 +238,18 @@ func _campaign_group_overrides() -> Dictionary:
 	return {}
 
 
+func _campaign_group_exists_raw(campaign_group_id: String) -> bool:
+	if campaign_group_id.is_empty():
+		return false
+	for campaign_group: Dictionary in BUILTIN_CAMPAIGN_GROUPS:
+		if String(campaign_group.get("id", "")) == campaign_group_id:
+			return true
+	for campaign_group: Dictionary in _user_campaign_groups():
+		if String(campaign_group.get("id", "")) == campaign_group_id:
+			return true
+	return false
+
+
 func get_campaign_group(campaign_group_id: String) -> Dictionary:
 	for campaign_group: Dictionary in list_campaign_groups():
 		if String(campaign_group.get("id", "")) == campaign_group_id:
@@ -275,8 +287,10 @@ func list_campaign_scenarios(
 	campaign_group_id: String
 ) -> Array[Dictionary]:
 	var result: Array[Dictionary] = []
-	var group: Dictionary = get_campaign_group(campaign_group_id)
-	if group.is_empty():
+	# Do not call get_campaign_group() here: list_campaign_groups() computes
+	# scenario_count through this function, and get_campaign_group() itself
+	# calls list_campaign_groups(), causing infinite recursion.
+	if not _campaign_group_exists_raw(campaign_group_id):
 		return result
 
 	for scenario: Dictionary in list_campaigns():
