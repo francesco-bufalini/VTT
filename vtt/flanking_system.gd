@@ -48,7 +48,7 @@ func refresh_now() -> void:
 		if token.has_method("set_flanking_indicator_visible"):
 			token.call("set_flanking_indicator_visible", false)
 
-	var line_points: Array[Vector3] = []
+	var arrow_points: Array[Vector3] = []
 	for target: CharacterBody3D in tokens:
 		for first_index: int in range(tokens.size()):
 			var first: CharacterBody3D = tokens[first_index]
@@ -111,12 +111,26 @@ func refresh_now() -> void:
 					_token_selected(target)
 				)
 				if relationship_visible:
-					line_points.append(segment[0])
-					line_points.append(segment[1])
+					var first_arrow := flanking_arrow_segment(
+						display_centers[0],
+						display_centers[2],
+						cell_size
+					)
+					var second_arrow := flanking_arrow_segment(
+						display_centers[1],
+						display_centers[2],
+						cell_size
+					)
+					if first_arrow.size() == 2:
+						arrow_points.append(first_arrow[0])
+						arrow_points.append(first_arrow[1])
+					if second_arrow.size() == 2:
+						arrow_points.append(second_arrow[0])
+						arrow_points.append(second_arrow[1])
 					if target.has_method("set_flanking_indicator_visible"):
 						target.call("set_flanking_indicator_visible", true)
 
-	_render_lines(line_points)
+	_render_arrows(arrow_points)
 
 
 func is_flanked(token: Node) -> bool:
@@ -323,10 +337,10 @@ static func flanking_segment(
 	target_center: Vector3,
 	target_half: Vector3
 ) -> PackedVector3Array:
-	# Treat flankers separated by at least three of the eight neighbouring
-	# directions (135 degrees) as occupying opposite flanking sectors. This
-	# includes the common diagonal-plus-opposite-side "L" arrangement.
-	if not centers_form_flanking_pair(
+	# D&D 5e DMG square-grid rule: the line between the centers of the
+	# flankers' spaces must cross opposite sides or opposite corners of the
+	# target's space. Adjacent side/corner "L" arrangements do not qualify.
+	if not centers_cross_opposite_borders(
 		first_center,
 		second_center,
 		target_center,
@@ -355,28 +369,9 @@ static func centers_form_flanking_pair(
 	target_center: Vector3,
 	target_half: Vector3
 ) -> bool:
-	var first := Vector2(
-		first_center.x - target_center.x,
-		first_center.z - target_center.z
-	)
-	var second := Vector2(
-		second_center.x - target_center.x,
-		second_center.z - target_center.z
-	)
-	if (
-		first.length_squared() <= EPSILON * EPSILON
-		or second.length_squared() <= EPSILON * EPSILON
-	):
-		return false
-
-	var cosine := first.normalized().dot(second.normalized())
-	var opposite_sector_limit := -0.70710678
-	if cosine > opposite_sector_limit + 0.0005:
-		return false
-
-	# Keep a geometric intersection requirement so reach-enabled flankers
-	# cannot qualify merely by being far away in broadly opposite directions.
-	return segment_intersects_horizontal_rect(
+	# Compatibility alias for callers/tests. The actual rule is the strict
+	# opposite-side/opposite-corner test below.
+	return centers_cross_opposite_borders(
 		first_center,
 		second_center,
 		target_center,
@@ -575,26 +570,45 @@ static func _box_boundary_distance(
 func _build_line_renderer() -> void:
 	_line_material = StandardMaterial3D.new()
 	_line_material.shading_mode = BaseMaterial3D.SHADING_MODE_UNSHADED
-	_line_material.albedo_color = Color(1.0, 0.78, 0.22, 1.0)
+	_line_material.albedo_color = Color(1.0, 0.76, 0.18, 0.98)
 	_line_material.emission_enabled = true
-	_line_material.emission = Color(1.0, 0.40, 0.04, 1.0)
-	_line_material.emission_energy_multiplier = 2.8
+	_line_material.emission = Color(1.0, 0.34, 0.03, 1.0)
+	_line_material.emission_energy_multiplier = 2.3
 	_line_material.no_depth_test = true
 
 	_line_outline_material = StandardMaterial3D.new()
 	_line_outline_material.shading_mode = BaseMaterial3D.SHADING_MODE_UNSHADED
-	_line_outline_material.albedo_color = Color(0.08, 0.035, 0.01, 0.92)
+	_line_outline_material.albedo_color = Color(0.055, 0.025, 0.008, 0.96)
 	_line_outline_material.emission_enabled = true
-	_line_outline_material.emission = Color(0.20, 0.07, 0.01, 1.0)
-	_line_outline_material.emission_energy_multiplier = 0.5
+	_line_outline_material.emission = Color(0.13, 0.045, 0.008, 1.0)
+	_line_outline_material.emission_energy_multiplier = 0.35
 	_line_outline_material.no_depth_test = true
 
 	_line_root = Node3D.new()
-	_line_root.name = "FlankingLines"
+	_line_root.name = "FlankingArrows"
 	add_child(_line_root)
 
 
-func _render_lines(points: Array[Vector3]) -> void:
+static func flanking_arrow_segment(
+	flanker_center: Vector3,
+	target_center: Vector3,
+	cell_size: float
+) -> PackedVector3Array:
+	var delta := target_center - flanker_center
+	var length := delta.length()
+	if length <= EPSILON:
+		return PackedVector3Array()
+
+	var direction := delta / length
+	var safe_cell := maxf(cell_size, 0.001)
+	var start := flanker_center + direction * minf(safe_cell * 0.12, length * 0.12)
+	var end := target_center - direction * minf(safe_cell * 0.10, length * 0.10)
+	if start.distance_squared_to(end) <= EPSILON * EPSILON:
+		return PackedVector3Array()
+	return PackedVector3Array([start, end])
+
+
+func _render_arrows(points: Array[Vector3]) -> void:
 	if _line_root == null:
 		return
 
@@ -605,49 +619,82 @@ func _render_lines(points: Array[Vector3]) -> void:
 		return
 
 	var cell_size := maxf(float(board_root.get("cell_size")), 0.001)
-	var radius := maxf(cell_size * 0.026, 0.012)
+	var shaft_radius := maxf(cell_size * 0.018, 0.009)
 	for index: int in range(0, points.size() - 1, 2):
-		_add_visible_segment(points[index], points[index + 1], radius)
+		_add_visible_arrow(
+			points[index],
+			points[index + 1],
+			shaft_radius,
+			cell_size
+		)
 
 
-func _add_visible_segment(
+func _add_visible_arrow(
 	start: Vector3,
 	end: Vector3,
-	radius: float
+	shaft_radius: float,
+	cell_size: float
 ) -> void:
 	var delta := end - start
-	var length := delta.length()
-	if length <= EPSILON:
+	var total_length := delta.length()
+	if total_length <= EPSILON:
 		return
 
-	var direction := delta / length
+	var direction := delta / total_length
+	var head_length := minf(
+		maxf(cell_size * 0.22, shaft_radius * 7.0),
+		total_length * 0.38
+	)
+	var shaft_length := maxf(total_length - head_length, 0.001)
+	var shaft_end := start + direction * shaft_length
+	var shaft_center := (start + shaft_end) * 0.5
+	var shaft_basis := _basis_y_along(direction)
+
+	# A dark silhouette keeps the indicator legible over bright maps without
+	# turning it into a heavy bar.
+	_add_arrow_cylinder(
+		shaft_center,
+		shaft_basis,
+		shaft_length,
+		shaft_radius * 1.8,
+		_line_outline_material
+	)
+	_add_arrow_cylinder(
+		shaft_center,
+		shaft_basis,
+		shaft_length,
+		shaft_radius,
+		_line_material
+	)
+
+	# Cone points toward the flanked creature.
+	var head_center := shaft_end + direction * head_length * 0.5
+	_add_arrow_cone(
+		head_center,
+		shaft_basis,
+		head_length,
+		shaft_radius * 4.0,
+		_line_outline_material
+	)
+	_add_arrow_cone(
+		head_center,
+		shaft_basis,
+		head_length * 0.88,
+		shaft_radius * 2.8,
+		_line_material
+	)
+
+
+static func _basis_y_along(direction: Vector3) -> Basis:
 	var reference := Vector3.UP
 	if absf(direction.dot(reference)) > 0.95:
 		reference = Vector3.FORWARD
 	var x_axis := reference.cross(direction).normalized()
 	var z_axis := x_axis.cross(direction).normalized()
-	var basis := Basis(x_axis, direction, z_axis)
-	var midpoint := (start + end) * 0.5
-
-	_add_segment_cylinder(
-		midpoint,
-		basis,
-		length,
-		radius * 1.75,
-		_line_outline_material
-	)
-	_add_segment_cylinder(
-		midpoint,
-		basis,
-		length,
-		radius,
-		_line_material
-	)
-	_add_segment_cap(start, radius * 1.65)
-	_add_segment_cap(end, radius * 1.65)
+	return Basis(x_axis, direction, z_axis)
 
 
-func _add_segment_cylinder(
+func _add_arrow_cylinder(
 	center: Vector3,
 	basis: Basis,
 	length: float,
@@ -658,7 +705,7 @@ func _add_segment_cylinder(
 	mesh.top_radius = radius
 	mesh.bottom_radius = radius
 	mesh.height = length
-	mesh.radial_segments = 12
+	mesh.radial_segments = 10
 	mesh.rings = 1
 
 	var instance := MeshInstance3D.new()
@@ -669,16 +716,26 @@ func _add_segment_cylinder(
 	instance.global_transform = Transform3D(basis, center)
 
 
-func _add_segment_cap(position_world: Vector3, radius: float) -> void:
-	var sphere := SphereMesh.new()
-	sphere.radius = radius
-	sphere.height = radius * 2.0
-	sphere.radial_segments = 12
-	sphere.rings = 6
+func _add_arrow_cone(
+	center: Vector3,
+	basis: Basis,
+	length: float,
+	radius: float,
+	material: Material
+) -> void:
+	var cone := CylinderMesh.new()
+	# CylinderMesh points along local Y. bottom_radius sits at -Y, while a
+	# zero top radius places the point at +Y, matching the arrow direction.
+	cone.bottom_radius = radius
+	cone.top_radius = 0.0
+	cone.height = length
+	cone.radial_segments = 12
+	cone.rings = 1
 
-	var cap := MeshInstance3D.new()
-	cap.mesh = sphere
-	cap.material_override = _line_material
-	cap.cast_shadow = GeometryInstance3D.SHADOW_CASTING_SETTING_OFF
-	_line_root.add_child(cap)
-	cap.global_position = position_world
+	var instance := MeshInstance3D.new()
+	instance.mesh = cone
+	instance.material_override = material
+	instance.cast_shadow = GeometryInstance3D.SHADOW_CASTING_SETTING_OFF
+	_line_root.add_child(instance)
+	instance.global_transform = Transform3D(basis, center)
+
