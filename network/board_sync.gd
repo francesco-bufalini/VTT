@@ -961,12 +961,37 @@ func valid_snapshot(snapshot: Variant) -> bool:
 						"visual_front_quarter_turns",
 						0
 					)
-					if (
-						not previous_front is int
-						or int(previous_front) < 0
-						or int(previous_front) > 3
+					if not (
+						previous_front is int
+						or previous_front is float
 					):
 						return false
+					var previous_front_number := float(previous_front)
+					if (
+						not is_finite(previous_front_number)
+						or previous_front_number != floor(previous_front_number)
+						or int(previous_front_number) < 0
+						or int(previous_front_number) > 3
+					):
+						return false
+					if appearance.has("visual_pitch_steps"):
+						var previous_pitch: Variant = appearance.get(
+							"visual_pitch_steps"
+						)
+						if not (
+							previous_pitch is int
+							or previous_pitch is float
+						):
+							return false
+						var previous_pitch_number := float(previous_pitch)
+						if (
+							not is_finite(previous_pitch_number)
+							or previous_pitch_number
+							!= floor(previous_pitch_number)
+							or int(previous_pitch_number) < -3
+							or int(previous_pitch_number) > 3
+						):
+							return false
 					if not appearance.get("reach_overridden", false) is bool:
 						return false
 		if not item.get("name") is String or not item.get("visible") is bool:
