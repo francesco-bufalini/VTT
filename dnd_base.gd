@@ -39,6 +39,7 @@ const CONTEXT_UNDO := 36
 const CONTEXT_REDO := 37
 const CONTEXT_TOGGLE_CONDITION_VISUALS := 38
 const CONTEXT_USER_IDENTITY := 39
+const CONTEXT_AUTO_SYNC := 40
 const CAMPAIGN_EDITOR_SCENE_PATH := "res://vtt/editor/campaign_editor.tscn"
 const LOCAL_TOKEN_CATALOG := "res://dist/token_packs/token_catalog.json"
 const LOCAL_TOKEN_PACK_ROOT := "res://dist/token_packs"
@@ -114,6 +115,7 @@ var _condition_visuals_visible: bool = true
 var board_sync: Node
 var share_dialog: AcceptDialog
 var share_session: SpinBox
+var share_auto_sync: CheckBox
 var share_status: Label
 var map_save_dialog: FileDialog
 var map_load_dialog: FileDialog
@@ -2698,6 +2700,14 @@ func _show_context_menu(screen_position: Vector2) -> void:
 		CONTEXT_LOAD_MAP_LOCAL
 	)
 	context_session_menu.add_separator()
+	context_session_menu.add_check_item(
+		"Sincronizzazione automatica",
+		CONTEXT_AUTO_SYNC
+	)
+	context_session_menu.set_item_checked(
+		context_session_menu.get_item_index(CONTEXT_AUTO_SYNC),
+		bool(board_sync.call("is_auto_sync_enabled"))
+	)
 	context_session_menu.add_item(
 		"Sincronizza mappa / Tailscale",
 		CONTEXT_SHARE_MAP
@@ -2841,6 +2851,13 @@ func _on_context_menu_id_pressed(id: int) -> void:
 		return
 	if id == CONTEXT_CLEAR_AOES:
 		measurement_tool.clear_persistent_aoes()
+		_close_context_menu_to_game()
+		return
+	if id == CONTEXT_AUTO_SYNC:
+		var enabled := not bool(board_sync.call("is_auto_sync_enabled"))
+		board_sync.call("set_auto_sync_enabled", enabled)
+		if share_auto_sync != null:
+			share_auto_sync.set_pressed_no_signal(enabled)
 		_close_context_menu_to_game()
 		return
 	if id == CONTEXT_SHARE_MAP:
@@ -4586,6 +4603,38 @@ func _release_mouse() -> void:
 	Input.mouse_mode = Input.MOUSE_MODE_VISIBLE
 
 
+func broadcast_sync_event(sync_event: Dictionary) -> Error:
+	if (
+		board_sync == null
+		or not is_instance_valid(board_sync)
+		or sync_event.is_empty()
+	):
+		return ERR_UNAVAILABLE
+	return int(board_sync.call("broadcast_sync_event", sync_event))
+
+
+func replay_sync_event(sync_event: Dictionary) -> void:
+	var event_type := String(sync_event.get("type", "")).strip_edges()
+	if event_type == "spell_visual":
+		if (
+			spell_system != null
+			and is_instance_valid(spell_system)
+			and spell_system.has_method("replay_sync_visual_event")
+		):
+			spell_system.call("replay_sync_visual_event", sync_event)
+		return
+
+	if event_type == "seal_break" or event_type == "encounter_advance":
+		var controller := get_node_or_null("EncounterProgressController")
+		if controller != null and controller.has_method("replay_sync_event"):
+			controller.call("replay_sync_event", sync_event)
+
+
+func _on_auto_sync_toggled(enabled: bool) -> void:
+	if board_sync != null and is_instance_valid(board_sync):
+		board_sync.call("set_auto_sync_enabled", enabled)
+
+
 func _share_session_key() -> String:
 	if share_session == null:
 		return "1"
@@ -4614,8 +4663,9 @@ func _build_share_dialog() -> void:
 	info.text = (
 		"Puoi salvare o caricare una copia locale della mappa, oppure "
 		+ "sincronizzarla con gli altri VTT via Tailscale. La ricezione "
-		+ "di rete resta sempre attiva. Dice roller e chat usano un canale "
-		+ "separato e non salvano né sincronizzano automaticamente la mappa."
+		+ "di rete resta sempre attiva. Con la sincronizzazione automatica "
+		+ "ogni modifica della mappa viene inviata agli altri dispositivi; "
+		+ "dice roller e chat restano su un canale separato."
 	)
 	info.autowrap_mode = TextServer.AUTOWRAP_WORD_SMART
 	layout.add_child(info)
@@ -4641,6 +4691,18 @@ func _build_share_dialog() -> void:
 	)
 	share_session.value_changed.connect(_on_share_session_changed)
 	session_row.add_child(share_session)
+
+	share_auto_sync = CheckBox.new()
+	share_auto_sync.text = "Sincronizzazione automatica"
+	share_auto_sync.tooltip_text = (
+		"Invia automaticamente la mappa dopo generazione, modifica, "
+		+ "movimento o eliminazione di token, AoE, item e stato encounter."
+	)
+	share_auto_sync.button_pressed = bool(
+		board_sync.call("is_auto_sync_enabled")
+	)
+	share_auto_sync.toggled.connect(_on_auto_sync_toggled)
+	layout.add_child(share_auto_sync)
 
 	var local_row := HBoxContainer.new()
 	local_row.add_theme_constant_override("separation", 8)
@@ -4668,7 +4730,7 @@ func _build_share_dialog() -> void:
 	_build_map_file_dialogs()
 
 	share_status = Label.new()
-	share_status.text = "Ricezione automatica · Partita 1"
+	share_status.text = "Ricezione e sincronizzazione automatica · Partita 1"
 	share_status.autowrap_mode = TextServer.AUTOWRAP_WORD_SMART
 	layout.add_child(share_status)
 	board_sync.status_changed.connect(
