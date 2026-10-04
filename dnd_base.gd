@@ -37,6 +37,7 @@ const CONTEXT_MASTER_LINK_TOKEN := 34
 const CONTEXT_MASTER_LINK_CREATURE := 35
 const CONTEXT_UNDO := 36
 const CONTEXT_REDO := 37
+const CONTEXT_TOGGLE_CONDITION_VISUALS := 38
 const CAMPAIGN_EDITOR_SCENE_PATH := "res://vtt/editor/campaign_editor.tscn"
 const LOCAL_TOKEN_CATALOG := "res://dist/token_packs/token_catalog.json"
 const LOCAL_TOKEN_PACK_ROOT := "res://dist/token_packs"
@@ -103,6 +104,7 @@ var _context_token: CharacterBody3D = null
 var _selected_tokens: Array[CharacterBody3D] = []
 var _ui_owns_mouse: bool = false
 var _vision_cones_visible: bool = false
+var _condition_visuals_visible: bool = true
 var board_sync: Node
 var share_dialog: AcceptDialog
 var share_session: SpinBox
@@ -269,11 +271,15 @@ func _ready() -> void:
 
 
 func _configure_token_volumetric_grid(node: Node) -> void:
-	if (
-		node is CharacterBody3D
-		and node.has_method("set_volumetric_grid")
-	):
+	if not node is CharacterBody3D:
+		return
+	if node.has_method("set_volumetric_grid"):
 		node.call("set_volumetric_grid", volumetric_grid)
+	if node.has_method("set_condition_visuals_visible"):
+		node.call(
+			"set_condition_visuals_visible",
+			_condition_visuals_visible
+		)
 
 
 func _read_local_token_catalog() -> Dictionary:
@@ -2086,6 +2092,30 @@ func set_vision_cones_visible(enabled: bool) -> void:
 			child_node.call("set_vision_cone_visible", enabled)
 
 
+func toggle_condition_visuals() -> void:
+	set_condition_visuals_visible(not _condition_visuals_visible)
+
+
+func set_condition_visuals_visible(enabled: bool) -> void:
+	_condition_visuals_visible = enabled
+	for child_node: Node in tokens_root.get_children():
+		if (
+			child_node.is_in_group("dnd_token")
+			and child_node.has_method("set_condition_visuals_visible")
+		):
+			child_node.call("set_condition_visuals_visible", enabled)
+	if (
+		flanking_system != null
+		and is_instance_valid(flanking_system)
+		and flanking_system.has_method("set_condition_visuals_visible")
+	):
+		flanking_system.call("set_condition_visuals_visible", enabled)
+
+
+func are_condition_visuals_visible() -> bool:
+	return _condition_visuals_visible
+
+
 func toggle_all_reach_spheres() -> void:
 	if attack_system == null or not is_instance_valid(attack_system):
 		return
@@ -2412,6 +2442,14 @@ func _show_context_menu(screen_position: Vector2) -> void:
 			"Mostra gittate di tutte le creature",
 			CONTEXT_TOGGLE_REACH_SPHERES
 		)
+	context_view_menu.add_item(
+		(
+			"Nascondi targhette e anelli condizioni"
+			if _condition_visuals_visible
+			else "Mostra targhette e anelli condizioni"
+		),
+		CONTEXT_TOGGLE_CONDITION_VISUALS
+	)
 	context_view_menu.add_separator()
 	context_view_menu.add_item("Velocità camera…", CONTEXT_CAMERA_SETTINGS)
 	context_menu.add_submenu_node_item("Vista", context_view_menu)
@@ -2637,6 +2675,10 @@ func _on_context_menu_id_pressed(id: int) -> void:
 
 		CONTEXT_TOGGLE_REACH_SPHERES:
 			toggle_all_reach_spheres()
+			_close_context_menu_to_game()
+
+		CONTEXT_TOGGLE_CONDITION_VISUALS:
+			toggle_condition_visuals()
 			_close_context_menu_to_game()
 
 		CONTEXT_CAMERA_SETTINGS:
