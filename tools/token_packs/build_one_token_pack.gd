@@ -103,10 +103,21 @@ func _load_obj_runtime(source_path: String) -> ArrayMesh:
 		push_error("Cannot open OBJ file: %s" % absolute)
 		return null
 
+	# Build ArrayMesh arrays directly. The previous implementation stored every
+	# triangle as strings and then fed every corner through SurfaceTool, which is
+	# extremely expensive for multi-million-face miniature OBJ files.
 	var positions := PackedVector3Array()
 	var texcoords := PackedVector2Array()
 	var normals := PackedVector3Array()
-	var triangles: Array[PackedStringArray] = []
+
+	var mesh_positions := PackedVector3Array()
+	var mesh_texcoords := PackedVector2Array()
+	var mesh_normals := PackedVector3Array()
+	var mesh_indices := PackedInt32Array()
+	var vertex_map: Dictionary = {}
+	var missing_normal_vertices: Dictionary = {}
+	var has_texcoords := false
+	var face_count := 0
 
 	while not file.eof_reached():
 		var line := file.get_line().strip_edges()
@@ -115,6 +126,7 @@ func _load_obj_runtime(source_path: String) -> ArrayMesh:
 		var parts := line.split(" ", false)
 		if parts.is_empty():
 			continue
+
 		match parts[0]:
 			"v":
 				if parts.size() >= 4:
@@ -137,66 +149,151 @@ func _load_obj_runtime(source_path: String) -> ArrayMesh:
 						float(parts[3])
 					).normalized())
 			"f":
-				if parts.size() >= 4:
-					var face := PackedStringArray()
-					for i in range(1, parts.size()):
-						face.append(parts[i])
-					# OBJ polygons are fan-triangulated. Reverse the triangle order
-					# for Godot's clockwise front-face convention.
-					for i in range(2, face.size()):
-						triangles.append(PackedStringArray([
-							face[0],
-							face[i],
-							face[i - 1],
-						]))
+				if parts.size() < 4:
+					continue
+
+				var face_indices := PackedInt32Array()
+				for part_index in range(1, parts.size()):
+					var vertex_ref := String(parts[part_index])
+					var refs := vertex_ref.split("/", true)
+					if refs.is_empty() or refs[0].is_empty():
+						push_error("Invalid OBJ face vertex: %s" % vertex_ref)
+						file.close()
+						return null
+
+					var position_index := _resolve_obj_index(
+						int(refs[0]),
+						positions.size()
+					)
+					if (
+						position_index < 0
+						or position_index >= positions.size()
+					):
+						push_error(
+							"OBJ position index out of range: %s"
+							% vertex_ref
+						)
+						file.close()
+						return null
+
+					var uv_index := -1
+					if refs.size() >= 2 and not refs[1].is_empty():
+						uv_index = _resolve_obj_index(
+							int(refs[1]),
+							texcoords.size()
+						)
+						if (
+							uv_index < 0
+							or uv_index >= texcoords.size()
+						):
+							uv_index = -1
+						else:
+							has_texcoords = true
+
+					var normal_index := -1
+					if refs.size() >= 3 and not refs[2].is_empty():
+						normal_index = _resolve_obj_index(
+							int(refs[2]),
+							normals.size()
+						)
+						if (
+							normal_index < 0
+							or normal_index >= normals.size()
+						):
+							normal_index = -1
+
+					var key := Vector3i(
+						position_index,
+						uv_index,
+						normal_index
+					)
+					var mesh_index := int(vertex_map.get(key, -1))
+					if mesh_index < 0:
+						mesh_index = mesh_positions.size()
+						vertex_map[key] = mesh_index
+						mesh_positions.append(positions[position_index])
+						mesh_texcoords.append(
+							texcoords[uv_index]
+							if uv_index >= 0
+							else Vector2.ZERO
+						)
+						if normal_index >= 0:
+							mesh_normals.append(normals[normal_index])
+						else:
+							mesh_normals.append(Vector3.ZERO)
+							missing_normal_vertices[mesh_index] = true
+
+					face_indices.append(mesh_index)
+
+				# Fan triangulation, retaining the clockwise winding used by the
+				# previous loader for Godot's front-face convention.
+				for i in range(2, face_indices.size()):
+					mesh_indices.append(face_indices[0])
+					mesh_indices.append(face_indices[i])
+					mesh_indices.append(face_indices[i - 1])
+					face_count += 1
+
 	file.close()
 
-	if positions.is_empty() or triangles.is_empty():
+	if mesh_positions.is_empty() or mesh_indices.is_empty():
 		push_error(
 			"OBJ has no usable geometry: %s (vertices=%d triangles=%d)"
-			% [source_path, positions.size(), triangles.size()]
+			% [source_path, positions.size(), face_count]
 		)
 		return null
 
-	var surface := SurfaceTool.new()
-	surface.begin(Mesh.PRIMITIVE_TRIANGLES)
-	var supplied_normals := not normals.is_empty()
+	# OBJ files can mix vertices with and without normals. Generate only the
+	# missing normals while preserving authored normals where they exist.
+	if not missing_normal_vertices.is_empty():
+		var generated := PackedVector3Array()
+		generated.resize(mesh_positions.size())
+		for i in range(0, mesh_indices.size(), 3):
+			var a := mesh_indices[i]
+			var b := mesh_indices[i + 1]
+			var d := mesh_indices[i + 2]
+			var edge_ab := mesh_positions[b] - mesh_positions[a]
+			var edge_ad := mesh_positions[d] - mesh_positions[a]
+			var face_normal := edge_ab.cross(edge_ad)
+			if face_normal.length_squared() > 0.0000001:
+				face_normal = face_normal.normalized()
+				generated[a] += face_normal
+				generated[b] += face_normal
+				generated[d] += face_normal
 
-	for triangle: PackedStringArray in triangles:
-		for vertex_ref: String in triangle:
-			var refs := vertex_ref.split("/", true)
-			if refs.is_empty() or refs[0].is_empty():
-				push_error("Invalid OBJ face vertex: %s" % vertex_ref)
-				return null
+		for key_value: Variant in missing_normal_vertices.keys():
+			var vertex_index := int(key_value)
+			var generated_normal := generated[vertex_index]
+			if generated_normal.length_squared() > 0.0000001:
+				mesh_normals[vertex_index] = generated_normal.normalized()
+			else:
+				mesh_normals[vertex_index] = Vector3.UP
 
-			var position_index := _resolve_obj_index(int(refs[0]), positions.size())
-			if position_index < 0 or position_index >= positions.size():
-				push_error("OBJ position index out of range: %s" % vertex_ref)
-				return null
+	var arrays: Array = []
+	arrays.resize(Mesh.ARRAY_MAX)
+	arrays[Mesh.ARRAY_VERTEX] = mesh_positions
+	arrays[Mesh.ARRAY_NORMAL] = mesh_normals
+	if has_texcoords:
+		# Every mesh vertex gets an UV value. Corners without an OBJ vt entry use
+		# Vector2.ZERO, avoiding SurfaceTool's mixed-UV format assertion.
+		arrays[Mesh.ARRAY_TEX_UV] = mesh_texcoords
+	arrays[Mesh.ARRAY_INDEX] = mesh_indices
 
-			if refs.size() >= 2 and not refs[1].is_empty():
-				var uv_index := _resolve_obj_index(int(refs[1]), texcoords.size())
-				if uv_index >= 0 and uv_index < texcoords.size():
-					surface.set_uv(texcoords[uv_index])
-
-			if refs.size() >= 3 and not refs[2].is_empty():
-				var normal_index := _resolve_obj_index(int(refs[2]), normals.size())
-				if normal_index >= 0 and normal_index < normals.size():
-					surface.set_normal(normals[normal_index])
-
-			surface.add_vertex(positions[position_index])
-
-	if not supplied_normals:
-		surface.generate_normals()
-
-	var mesh := surface.commit()
-	if mesh == null:
-		push_error("SurfaceTool could not commit OBJ mesh: %s" % source_path)
+	var mesh := ArrayMesh.new()
+	mesh.add_surface_from_arrays(Mesh.PRIMITIVE_TRIANGLES, arrays)
+	if mesh.get_surface_count() == 0:
+		push_error("ArrayMesh could not build OBJ surface: %s" % source_path)
 		return null
 
 	print(
-		"TOKEN_PACK_STAGE obj_runtime vertices=%d triangles=%d surfaces=%d"
-		% [positions.size(), triangles.size(), mesh.get_surface_count()]
+		(
+			"TOKEN_PACK_STAGE obj_runtime source_vertices=%d "
+			+ "unique_vertices=%d triangles=%d surfaces=%d"
+		) % [
+			positions.size(),
+			mesh_positions.size(),
+			face_count,
+			mesh.get_surface_count(),
+		]
 	)
 	return mesh
 
