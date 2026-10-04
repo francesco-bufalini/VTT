@@ -357,10 +357,10 @@ func _refresh_klothys_attack_highlight() -> void:
 
 
 func _token_inside_klothys_telegraph(token: CharacterBody3D) -> bool:
-	var token_radius := _token_effect_radius(token)
+	var token_radius: float = _token_effect_radius(token)
 	if _active_klothys_attack_side in ["left", "right"]:
-		var delta := token.global_position - _active_hand_center
-		var horizontal := Vector2(delta.x, delta.z).length()
+		var delta: Vector3 = token.global_position - _active_hand_center
+		var horizontal: float = Vector2(delta.x, delta.z).length()
 		var units: float = measurement_tool.meters_to_world(1.0)
 		return (
 			horizontal <= _active_hand_radius + token_radius
@@ -372,18 +372,18 @@ func _token_inside_klothys_telegraph(token: CharacterBody3D) -> bool:
 				)
 		)
 	if _active_klothys_attack_side == "forehead":
-		var length := (
+		var length: float = (
 			FOREHEAD_CONE_LENGTH_METERS
-			* measurement_tool.meters_to_world(1.0)
+			* float(measurement_tool.meters_to_world(1.0))
 		)
-		var relative := token.global_position - _active_cone_origin
-		var along := relative.dot(_active_cone_direction)
+		var relative: Vector3 = token.global_position - _active_cone_origin
+		var along: float = relative.dot(_active_cone_direction)
 		if along < -token_radius or along > length + token_radius:
 			return false
-		var radial := (
+		var radial: float = (
 			relative - _active_cone_direction * along
 		).length()
-		var effective_along := clampf(along, 0.0, length)
+		var effective_along: float = clampf(along, 0.0, length)
 		return radial <= (
 			effective_along * FOREHEAD_CONE_RADIUS_FACTOR
 			+ token_radius
