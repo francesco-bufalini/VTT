@@ -65,6 +65,13 @@ jobs:
           Write-Host "Workspace: $env:GITHUB_WORKSPACE"
           & "C:\Program Files\Godot\Godot_v4.7.2-stable_win64.exe" --version
 
+      - name: Import fast-test assets
+        shell: powershell
+        run: |
+          $godot = "C:\Program Files\Godot\Godot_v4.7.2-stable_win64.exe"
+          & $godot --headless --path . --editor --import --quit
+          if ($LASTEXITCODE -ne 0) { exit $LASTEXITCODE }
+
       - name: Run fast Godot tests
         shell: powershell
         run: .\scripts\validate.ps1 -Godot "C:\Program Files\Godot\Godot_v4.7.2-stable_win64.exe" -Tests
