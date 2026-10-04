@@ -2348,7 +2348,7 @@ func _show_context_menu(screen_position: Vector2) -> void:
 	)
 	context_game_menu.set_item_disabled(
 		context_game_menu.get_item_index(CONTEXT_PLAYER_LINK_TOKEN),
-		_selected_tokens.is_empty()
+		_selected_tokens.size() != 1
 	)
 	context_game_menu.add_item(
 		"Personaggio → token per nome",
@@ -2362,7 +2362,7 @@ func _show_context_menu(screen_position: Vector2) -> void:
 	)
 	context_game_menu.set_item_disabled(
 		context_game_menu.get_item_index(CONTEXT_MASTER_LINK_TOKEN),
-		_selected_tokens.is_empty()
+		_selected_tokens.size() != 1
 	)
 	context_game_menu.add_item(
 		"Creatura → token per nome",
