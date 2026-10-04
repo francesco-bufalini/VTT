@@ -1,6 +1,7 @@
 extends "res://encounter/final_encounter.gd"
 
 const PostKaosHelpers = preload("res://encounter/post_kaos_helpers.gd")
+const CosmicBackdrop = preload("res://encounter/cosmic_backdrop.gd")
 
 const ImportedPrison = preload("res://encounter/klotis_prison.gd")
 var klotis_prison: Node3D
@@ -15,6 +16,7 @@ const CHARIOT_OFFSETS_METERS := [
 
 func _ready() -> void:
 	super._ready()
+	CosmicBackdrop.install(self)
 	_clean_scontro_board()
 	_apply_post_kaos_terrain_rules()
 	_install_imported_prison()

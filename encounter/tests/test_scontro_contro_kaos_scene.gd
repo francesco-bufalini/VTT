@@ -135,6 +135,33 @@ func _run() -> void:
 		_fail("Background columns disappeared from Scontro.")
 		return
 
+	var cosmic_backdrop := scene.get_node_or_null(
+		"CosmicBackdrop/StarfieldRing"
+	) as MeshInstance3D
+	if cosmic_backdrop == null or not cosmic_backdrop.visible:
+		_fail("The seamless 360-degree cosmic backdrop is missing.")
+		return
+
+	var old_apse := scene.get_node_or_null(
+		"Board/MapGeometry/ContinuousApseWall"
+	) as VisualInstance3D
+	if old_apse != null and old_apse.visible:
+		_fail("The old partial black apse wall is still visible.")
+		return
+
+	var world_environment := scene.get_node_or_null(
+		"WorldEnvironment"
+	) as WorldEnvironment
+	if (
+		world_environment == null
+		or world_environment.environment == null
+		or world_environment.environment.background_mode
+			!= Environment.BG_SKY
+		or world_environment.environment.sky == null
+	):
+		_fail("Scontro does not use the starry sky environment.")
+		return
+
 	# Regression: terrain processing freezes/removes some ClimbingVisual
 	# meshes. Restoring phase two again must not address stale MeshInstance3D
 	# references or blend-shape tracks that no longer exist.
