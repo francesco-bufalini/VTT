@@ -27,6 +27,10 @@ var _active_side: String = ""
 var _burst_sent: bool = false
 var _impact_sent: bool = false
 
+const PRISON_RADIUS_METERS := 220.0
+const SEALED_RIGHT_HAND_CLEARANCE_METERS := 0.35
+const SEALED_RIGHT_HAND_MAX_PUSH_METERS := 30.0
+
 func _ready() -> void:
 	model = get_node("Visual") as Node3D
 	for node in model.find_children("*", "", true, false):
@@ -113,6 +117,12 @@ func _start_attack(side: String) -> void:
 			var safe_ending: String = "_l" if previous == "left" else ("_r" if previous == "right" else "_f")
 			if bone.ends_with(ending) or bone.ends_with(safe_ending) or (previous == "forehead" and bone == "head"):
 				enable = false
+		# While the right seal is intact, keep that side in its corrected
+		# resting pose even if another full-rig animation contains right-side
+		# tracks. The right-side tracks are re-enabled when its own seal breaks.
+		if side != "right" and not bool(broken.get("right", false)):
+			if bone.ends_with(".r") or bone.ends_with("_r"):
+				enable = false
 		animation.track_set_enabled(index, enable)
 	player.play(_clips[side], 0.0)
 	player.advance(0.0)
@@ -172,6 +182,7 @@ func reset_seals() -> void:
 	player.play(_clips["left"], 0.0)
 	player.advance(0.0)
 	player.pause()
+	_apply_sealed_right_hand_clearance()
 	for side in ["left", "right", "forehead"]:
 		var fragments := model.find_child("Seal_Fragments_" + side.capitalize() + "_V5", true, false) as Node3D
 		if fragments != null:
@@ -350,6 +361,105 @@ func _palm_center(side: String) -> Vector3:
 				count += 1
 		offset += surface.vertices.size()
 	return center / maxf(1, count)
+
+
+func _sealed_hand_metrics(side: String) -> Dictionary:
+	var body := model.find_child("Klotis_Body_V5", true, false) as MeshInstance3D
+	if body == null or skeleton == null:
+		return {}
+	var data := _skin_data(body)
+	var points := _posed_vertices(body)
+	var bone := skeleton.find_bone("hand.l" if side == "left" else "hand.r")
+	if bone < 0:
+		bone = skeleton.find_bone("hand_l" if side == "left" else "hand_r")
+	if bone < 0:
+		return {}
+
+	var center := Vector3.ZERO
+	var minimum_radius := INF
+	var count := 0
+	var offset := 0
+	for surface: Dictionary in data.surfaces:
+		for i in surface.vertices.size():
+			var hand_weight := 0.0
+			for k in surface.influences:
+				var slot: int = i * surface.influences + k
+				if data.binds[surface.bones[slot]] == bone:
+					hand_weight += surface.weights[slot]
+			if hand_weight > 0.55:
+				var point: Vector3 = points[offset + i]
+				center += point
+				minimum_radius = minf(
+					minimum_radius,
+					point.distance_to(model.global_position)
+				)
+				count += 1
+		offset += surface.vertices.size()
+
+	if count == 0:
+		return {}
+	return {
+		"center": center / float(count),
+		"min_radius": minimum_radius,
+	}
+
+
+func _apply_sealed_right_hand_clearance() -> void:
+	if scene == null or model == null or skeleton == null:
+		return
+	var measurement := scene.get_node_or_null("MeasurementTool")
+	if measurement == null or not measurement.has_method("meters_to_world"):
+		return
+
+	skeleton.force_update_all_bone_transforms()
+	var metrics := _sealed_hand_metrics("right")
+	if metrics.is_empty():
+		return
+
+	var units := float(measurement.call("meters_to_world", 1.0))
+	if units <= 0.0:
+		return
+	var target_radius := (
+		(PRISON_RADIUS_METERS + SEALED_RIGHT_HAND_CLEARANCE_METERS) * units
+	)
+	var minimum_radius := float(metrics.get("min_radius", target_radius))
+	var required_push := target_radius - minimum_radius
+	if required_push <= 0.0:
+		return
+	required_push = minf(
+		required_push,
+		SEALED_RIGHT_HAND_MAX_PUSH_METERS * units
+	)
+
+	var center: Vector3 = metrics.get("center", Vector3.ZERO)
+	var outward := center - model.global_position
+	if outward.length_squared() <= 0.000001:
+		return
+	outward = outward.normalized()
+
+	var hand_bone := skeleton.find_bone("hand.r")
+	if hand_bone < 0:
+		hand_bone = skeleton.find_bone("hand_r")
+	if hand_bone < 0:
+		return
+
+	var parent_bone := skeleton.get_bone_parent(hand_bone)
+	var parent_world := skeleton.global_transform
+	if parent_bone >= 0:
+		parent_world = (
+			skeleton.global_transform
+			* skeleton.get_bone_global_pose(parent_bone)
+		)
+	var local_push := (
+		parent_world.basis.inverse()
+		* (outward * required_push)
+	)
+	skeleton.set_bone_pose_position(
+		hand_bone,
+		skeleton.get_bone_pose_position(hand_bone) + local_push
+	)
+	skeleton.force_update_all_bone_transforms()
+
 
 func _build_walkable_surfaces() -> void:
 	for n in model.find_children("*", "MeshInstance3D", true, false):
