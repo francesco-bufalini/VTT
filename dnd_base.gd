@@ -2070,7 +2070,7 @@ func _show_context_menu(screen_position: Vector2) -> void:
 			context_token_menu.add_separator()
 
 		if _selected_tokens.size() == 1:
-			context_token_menu.add_item("Nome e stati…", CONTEXT_TOKEN_DETAILS)
+			context_token_menu.add_item("Nome, party e stati…", CONTEXT_TOKEN_DETAILS)
 			var selected_token: CharacterBody3D = _selected_tokens[0]
 			if (
 				selected_token != null
