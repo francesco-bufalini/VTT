@@ -198,6 +198,40 @@ func run() -> void:
 		half
 	))
 
+	# Reciprocal adjacent reach is rendered once as a compact ↔ marker,
+	# rather than as two overlapping directional arrows.
+	assert(FlankingSystem.should_use_mutual_adjacent_marker(
+		true,
+		true,
+		5.0
+	))
+	assert(not FlankingSystem.should_use_mutual_adjacent_marker(
+		true,
+		false,
+		5.0
+	))
+	assert(not FlankingSystem.should_use_mutual_adjacent_marker(
+		true,
+		true,
+		10.0
+	))
+	var mutual_marker := FlankingSystem.mutual_reach_marker_segment(
+		Vector3.ZERO,
+		half,
+		Vector3(1.0, 0.0, 0.0),
+		half,
+		1.0
+	)
+	assert(mutual_marker.size() == 2)
+	assert(is_equal_approx(mutual_marker[0].y, mutual_marker[1].y))
+	assert(mutual_marker[0].z > 0.0)
+	assert(mutual_marker[1].z > 0.0)
+	assert(is_equal_approx(
+		mutual_marker[0].distance_to(mutual_marker[1]),
+		0.44,
+		0.001
+	))
+
 	# Reach uses a flat directional vector from the source base to the target
 	# base; the renderer now applies this to every in-range directed pair.
 	var arrow := FlankingSystem.flanking_arrow_segment(
