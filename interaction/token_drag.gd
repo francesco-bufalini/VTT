@@ -207,8 +207,6 @@ func finish(commit: bool) -> void:
 				token._support_transform = token.grid_support.global_transform
 			token.velocity = Vector3.ZERO
 		token.set_physics_process(true)
-		if committed_move and token.has_method("refresh_automatic_conditions"):
-			token.call_deferred("refresh_automatic_conditions")
 	_tokens.clear()
 	_preview.visible = false
 	active = false
