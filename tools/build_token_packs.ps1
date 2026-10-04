@@ -269,15 +269,76 @@ function New-RemoteCatalogEntry {
 
 
 function Get-ProfileVisualPath {
-    param([Parameter(Mandatory = $true)]$Profile)
-    $visualPath = ""
+    param(
+        [Parameter(Mandatory = $true)]$Profile,
+        [string]$Id = ""
+    )
+
+    $candidates = New-Object System.Collections.Generic.List[string]
+
     if ($Profile.PSObject.Properties.Name -contains "visual_asset") {
-        $visualPath = [string]$Profile.visual_asset
+        $value = [string]$Profile.visual_asset
+        if (-not [string]::IsNullOrWhiteSpace($value)) {
+            $candidates.Add($value)
+        }
     }
-    if ([string]::IsNullOrWhiteSpace($visualPath) -and $Profile.PSObject.Properties.Name -contains "obj") {
-        $visualPath = [string]$Profile.obj
+
+    # Prefer a GLB/GLTF generated next to an older OBJ manifest entry. This
+    # allows character packs to be rebuilt with materials/textures without
+    # requiring token_library.json to be hand-edited first.
+    if (-not [string]::IsNullOrWhiteSpace($Id)) {
+        $base = "res://assets/tokens/generated/$Id/$Id"
+        foreach ($extension in @("glb", "gltf", "obj")) {
+            $candidate = "$base.$extension"
+            if (-not $candidates.Contains($candidate)) {
+                $candidates.Add($candidate)
+            }
+        }
     }
-    return $visualPath
+
+    if ($Profile.PSObject.Properties.Name -contains "obj") {
+        $value = [string]$Profile.obj
+        if (
+            -not [string]::IsNullOrWhiteSpace($value) -and
+            -not $candidates.Contains($value)
+        ) {
+            $candidates.Add($value)
+        }
+    }
+
+    # First pass: prefer an existing GLB/GLTF regardless of stale manifest
+    # ordering, because those formats preserve materials, embedded textures,
+    # rigs and animations.
+    foreach ($candidate in $candidates) {
+        if ([string]::IsNullOrWhiteSpace($candidate) -or -not $candidate.StartsWith("res://")) {
+            continue
+        }
+        $extension = [IO.Path]::GetExtension($candidate).TrimStart(".").ToLowerInvariant()
+        if ($extension -notin @("glb", "gltf")) {
+            continue
+        }
+        $relative = $candidate.Substring(6).Replace("/", [IO.Path]::DirectorySeparatorChar)
+        if (Test-Path (Join-Path $ProjectRoot $relative)) {
+            return $candidate
+        }
+    }
+
+    # Second pass: any other existing supported asset, including OBJ.
+    foreach ($candidate in $candidates) {
+        if ([string]::IsNullOrWhiteSpace($candidate) -or -not $candidate.StartsWith("res://")) {
+            continue
+        }
+        $relative = $candidate.Substring(6).Replace("/", [IO.Path]::DirectorySeparatorChar)
+        if (Test-Path (Join-Path $ProjectRoot $relative)) {
+            return $candidate
+        }
+    }
+
+    # Keep the first declared value for a useful error message.
+    if ($candidates.Count -gt 0) {
+        return $candidates[0]
+    }
+    return ""
 }
 
 function New-CatalogEntry {
@@ -330,7 +391,7 @@ function Build-OneTokenPack {
         [Parameter(Mandatory = $true)]$Profile
     )
 
-    $visualPath = Get-ProfileVisualPath -Profile $Profile
+    $visualPath = Get-ProfileVisualPath -Profile $Profile -Id $Id
     if ([string]::IsNullOrWhiteSpace($visualPath) -or -not $visualPath.StartsWith("res://")) {
         throw "Visual asset non valido per '$Id': $visualPath"
     }
@@ -356,6 +417,7 @@ function Build-OneTokenPack {
         "--script", "res://tools/token_packs/build_one_token_pack.gd",
         "--",
         "--token-id", $Id,
+        "--source", $visualPath,
         "--output", $pckResPath
     )
     Invoke-Godot -Arguments $buildArgs -Phase "Build PCK di $Id" -TimeoutSeconds 180
