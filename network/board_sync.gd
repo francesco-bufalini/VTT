@@ -715,13 +715,27 @@ func get_sync_id_for_node(node: Node3D) -> String:
 
 
 func _sync_id(node: Node3D) -> String:
-	if node.has_meta("sync_id"): return String(node.get_meta("sync_id"))
-	var id := "path:" + String(board_root.get_path_to(node)); node.set_meta("sync_id",id); return id
+	if node.is_in_group("dnd_token") and node.has_method("get_token_id"):
+		var token_identity := String(node.call("get_token_id")).strip_edges()
+		if not token_identity.is_empty():
+			node.set_meta("sync_id", token_identity)
+			return token_identity
+	if node.has_meta("sync_id"):
+		return String(node.get_meta("sync_id"))
+	var id := "path:" + String(board_root.get_path_to(node))
+	node.set_meta("sync_id", id)
+	return id
 
 func _serialize_node(node: Node3D, group_name: String) -> Dictionary:
 	var data := {"id":_sync_id(node),"group":group_name,"path":String(board_root.get_path_to(node)),"scene":node.scene_file_path,"name":node.name,"transform":_transform(node.global_transform),"visible":node.visible}
 	if group_name == "dnd_token":
-		data["kind"]="token"; data["flying"]=bool(node.get("flying")); data["footprint"]=float(node.get("_footprint_cells")); data["size_name"]=String(node.get("_size_name")); data["color"]=_token_color(node)
+		data["kind"]="token"; data["flying"]=bool(node.get("flying"));
+		data["token_id"] = (
+			String(node.call("get_token_id"))
+			if node.has_method("get_token_id")
+			else String(data.get("id", ""))
+		)
+		data["footprint"]=float(node.get("_footprint_cells")); data["footprint"]=float(node.get("_footprint_cells")); data["size_name"]=String(node.get("_size_name")); data["color"]=_token_color(node)
 		# Nuovo significato esplicito: i salvataggi precedenti non avevano
 		# gravity_applied e vengono quindi migrati come token sospesi.
 		data["gravity_applied"] = not bool(node.get("flying"))
@@ -792,7 +806,16 @@ func _instantiate_from_data(data: Dictionary) -> Node3D:
 	return node
 
 func _apply_node_data(node: Node3D, data: Dictionary) -> void:
-	node.visible=bool(data.get("visible",true)); node.set_meta("sync_id",String(data.get("id","")))
+	node.visible=bool(data.get("visible",true))
+	if data.get("kind","") == "token" and node.has_method("set_token_id"):
+		var restored_token_id := String(data.get("token_id", "")).strip_edges()
+		if restored_token_id.is_empty():
+			var legacy_id := String(data.get("id", "")).strip_edges()
+			if legacy_id.begins_with("token_"):
+				restored_token_id = legacy_id
+		if not restored_token_id.is_empty():
+			node.call("set_token_id", restored_token_id)
+	node.set_meta("sync_id", _sync_id(node))
 	if data.get("kind","") == "token":
 		# Applicare prima l'asset esplicito disattiva l'eventuale miniatura
 		# di default caricata dal token_scene appena istanziato.
