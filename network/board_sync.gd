@@ -738,6 +738,11 @@ func _serialize_node(node: Node3D, group_name: String) -> Dictionary:
 			if node.has_method("get_display_name")
 			else ""
 		)
+		data["party_id"] = (
+			String(node.call("get_party_id"))
+			if node.has_method("get_party_id")
+			else String(node.get_meta("party_id", ""))
+		)
 		if node.has_meta("player_character_id"):
 			data["player_character_id"] = String(
 				node.get_meta("player_character_id")
@@ -833,6 +838,12 @@ func _apply_node_data(node: Node3D, data: Dictionary) -> void:
 			node.call("set_flying", true)
 		if node.has_method("set_display_name"):
 			node.call("set_display_name", String(data.get("display_name", "")))
+		if node.has_method("set_party_id"):
+			node.call("set_party_id", String(data.get("party_id", "")))
+		elif not String(data.get("party_id", "")).strip_edges().is_empty():
+			node.set_meta("party_id", String(data.get("party_id", "")))
+		elif node.has_meta("party_id"):
+			node.remove_meta("party_id")
 		var character_id: String = String(
 			data.get("player_character_id", "")
 		)
