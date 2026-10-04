@@ -3309,9 +3309,17 @@ func _load_shared_token_editor_from_target(token: CharacterBody3D) -> void:
 			clampi(int(token.call("get_visual_front_quarter_turns")), 0, 3)
 		)
 
-	var conditions: Variant = []
+	var conditions: Array = []
 	if token.has_method("get_conditions"):
-		conditions = token.call("get_conditions")
+		var manual_value: Variant = token.call("get_conditions")
+		if manual_value is Array:
+			conditions.append_array(manual_value as Array)
+	if token.has_method("get_automatic_conditions"):
+		var automatic_value: Variant = token.call("get_automatic_conditions")
+		if automatic_value is Array:
+			for condition_value: Variant in automatic_value as Array:
+				if not (condition_value in conditions):
+					conditions.append(condition_value)
 	_set_shared_token_editor_conditions(conditions)
 
 
