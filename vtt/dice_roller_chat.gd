@@ -12,9 +12,10 @@ var session_key := "1"
 var history: Array[Dictionary] = []
 var seen_ids: Dictionary = {}
 var rng := RandomNumberGenerator.new()
-var _display_name := ""
+var _selected_identity_token_id := ""
+var _scene_identity_configured := false
 var _selected_die := "d20"
-var _pending_name_callback := Callable()
+var _pending_identity_callback := Callable()
 
 var toggle_button: Button
 var panel: PanelContainer
@@ -25,8 +26,8 @@ var dice_count_input: SpinBox
 var dice_modifier_input: SpinBox
 var roll_mode_input: OptionButton
 var roll_button: Button
-var display_name_dialog: ConfirmationDialog
-var display_name_input: LineEdit
+var scene_identity_dialog: ConfirmationDialog
+var scene_identity_selector: OptionButton
 var quick_result_panel: PanelContainer
 var quick_result_label: Label
 var _quick_result_generation := 0
@@ -49,7 +50,7 @@ func setup(
 	DirAccess.make_dir_recursive_absolute(
 		ProjectSettings.globalize_path(HISTORY_DIR)
 	)
-	_load_profile()
+	_load_scene_identity()
 
 	sync = DiceChatSync.new()
 	sync.name = "DiceChatSync"
@@ -59,8 +60,9 @@ func setup(
 	sync.status_changed.connect(_on_sync_status)
 
 	_build_ui()
-	_build_display_name_dialog()
+	_build_scene_identity_dialog()
 	set_session_key(initial_session_key)
+	call_deferred("ensure_scene_identity")
 
 
 func set_session_key(value: String) -> void:
@@ -93,7 +95,7 @@ func toggle_panel() -> void:
 func show_panel() -> void:
 	if panel == null:
 		return
-	if not ensure_display_name(Callable(self, "show_panel")):
+	if not ensure_scene_identity(Callable(self, "show_panel")):
 		return
 	if roll_mode_input != null:
 		roll_mode_input.select(0)
@@ -848,13 +850,13 @@ static func percentile_total(tens_face: int, ones_face: int) -> int:
 	return 100 if total == 0 else total
 
 
-func _build_display_name_dialog() -> void:
-	display_name_dialog = ConfirmationDialog.new()
-	display_name_dialog.name = "ChatDisplayNameDialog"
-	display_name_dialog.title = "Nome giocatore"
-	display_name_dialog.ok_button_text = "Conferma"
-	display_name_dialog.min_size = Vector2i(420, 180)
-	ui_root.add_child(display_name_dialog)
+func _build_scene_identity_dialog() -> void:
+	scene_identity_dialog = ConfirmationDialog.new()
+	scene_identity_dialog.name = "SceneChatIdentityDialog"
+	scene_identity_dialog.title = "Identità in questa scena"
+	scene_identity_dialog.ok_button_text = "Conferma"
+	scene_identity_dialog.min_size = Vector2i(480, 200)
+	ui_root.add_child(scene_identity_dialog)
 
 	var body := VBoxContainer.new()
 	body.set_anchors_and_offsets_preset(Control.PRESET_FULL_RECT)
@@ -862,92 +864,219 @@ func _build_display_name_dialog() -> void:
 	body.offset_right = -16.0
 	body.offset_top = 52.0
 	body.offset_bottom = -58.0
-	body.add_theme_constant_override("separation", 8)
-	display_name_dialog.add_child(body)
+	body.add_theme_constant_override("separation", 10)
+	scene_identity_dialog.add_child(body)
 
 	var info := Label.new()
-	info.text = "Scegli il nome che verrà mostrato nella chat."
+	info.text = (
+		"Seleziona il token associato a questo utente in questa scena. "
+		+ "Se scegli Nessuno, in chat apparirai come master "
+		+ "(nome dispositivo)."
+	)
 	info.autowrap_mode = TextServer.AUTOWRAP_WORD_SMART
 	body.add_child(info)
 
-	display_name_input = LineEdit.new()
-	display_name_input.placeholder_text = "Nome giocatore"
-	display_name_input.max_length = 40
-	display_name_input.text_changed.connect(_on_display_name_changed)
-	display_name_input.text_submitted.connect(
-		func(_value: String) -> void:
-			if not display_name_dialog.get_ok_button().disabled:
-				display_name_dialog.get_ok_button().emit_signal("pressed")
-	)
-	body.add_child(display_name_input)
+	scene_identity_selector = OptionButton.new()
+	scene_identity_selector.size_flags_horizontal = Control.SIZE_EXPAND_FILL
+	body.add_child(scene_identity_selector)
 
-	display_name_dialog.confirmed.connect(_confirm_display_name)
-	display_name_dialog.canceled.connect(_cancel_display_name_prompt)
-	display_name_dialog.close_requested.connect(_cancel_display_name_prompt)
+	scene_identity_dialog.confirmed.connect(_confirm_scene_identity)
+	scene_identity_dialog.canceled.connect(_use_master_scene_identity)
+	scene_identity_dialog.close_requested.connect(_use_master_scene_identity)
 
 
-func ensure_display_name(on_ready: Callable = Callable()) -> bool:
-	if not _display_name.is_empty():
+func ensure_scene_identity(on_ready: Callable = Callable()) -> bool:
+	if _scene_identity_configured:
 		return true
 	if on_ready.is_valid():
-		_pending_name_callback = on_ready
-	if display_name_dialog == null:
+		_pending_identity_callback = on_ready
+	if scene_identity_dialog == null:
 		return false
+
+	_refresh_scene_identity_options()
 	if board_root.has_method("release_camera_control"):
 		board_root.call("release_camera_control")
 	elif board_root.has_method("_release_mouse"):
 		board_root.call("_release_mouse")
-	display_name_input.clear()
-	display_name_dialog.get_ok_button().disabled = true
-	if not display_name_dialog.visible:
-		display_name_dialog.popup_centered_clamped(
-			Vector2i(440, 200),
+
+	if not scene_identity_dialog.visible:
+		scene_identity_dialog.popup_centered_clamped(
+			Vector2i(500, 220),
 			0.92
 		)
-	display_name_input.call_deferred("grab_focus")
+	if scene_identity_selector != null:
+		scene_identity_selector.call_deferred("grab_focus")
 	return false
 
 
-func _on_display_name_changed(value: String) -> void:
-	if display_name_dialog != null:
-		display_name_dialog.get_ok_button().disabled = (
-			value.strip_edges().is_empty()
+func _refresh_scene_identity_options() -> void:
+	if scene_identity_selector == null:
+		return
+	scene_identity_selector.clear()
+	scene_identity_selector.add_item(
+		"Nessuno — %s" % _master_author_name()
+	)
+	scene_identity_selector.set_item_metadata(0, "")
+	scene_identity_selector.select(0)
+
+	var tokens := _scene_identity_tokens()
+	for token: Node3D in tokens:
+		var display_name := _actor_display_name(token)
+		if display_name.is_empty():
+			display_name = String(token.name)
+		var item_index := scene_identity_selector.item_count
+		scene_identity_selector.add_item(display_name)
+		scene_identity_selector.set_item_metadata(
+			item_index,
+			_token_stable_id(token)
 		)
 
 
-func _confirm_display_name() -> void:
-	var clean_name := display_name_input.text.strip_edges().left(40)
-	if clean_name.is_empty():
-		call_deferred("ensure_display_name")
+func _scene_identity_tokens() -> Array[Node3D]:
+	var result: Array[Node3D] = []
+	if board_root == null or not is_instance_valid(board_root):
+		return result
+	for node: Node in get_tree().get_nodes_in_group("dnd_token"):
+		if (
+			node is Node3D
+			and is_instance_valid(node)
+			and board_root.is_ancestor_of(node)
+			and not node.is_queued_for_deletion()
+		):
+			result.append(node as Node3D)
+	result.sort_custom(
+		func(a: Node3D, b: Node3D) -> bool:
+			return _actor_display_name(a).naturalnocasecmp_to(
+				_actor_display_name(b)
+			) < 0
+	)
+	return result
+
+
+func _confirm_scene_identity() -> void:
+	var token_id := ""
+	if (
+		scene_identity_selector != null
+		and scene_identity_selector.selected >= 0
+	):
+		token_id = String(
+			scene_identity_selector.get_item_metadata(
+				scene_identity_selector.selected
+			)
+		).strip_edges()
+	_selected_identity_token_id = token_id
+	_scene_identity_configured = true
+	_save_scene_identity()
+	_resume_after_identity_choice()
+
+
+func _use_master_scene_identity() -> void:
+	if _scene_identity_configured:
 		return
-	_display_name = clean_name
-	_save_profile()
-	var callback := _pending_name_callback
-	_pending_name_callback = Callable()
+	_selected_identity_token_id = ""
+	_scene_identity_configured = true
+	_save_scene_identity()
+	_resume_after_identity_choice()
+
+
+func _resume_after_identity_choice() -> void:
+	var callback := _pending_identity_callback
+	_pending_identity_callback = Callable()
 	if callback.is_valid():
 		callback.call_deferred()
 
 
-func _cancel_display_name_prompt() -> void:
-	_pending_name_callback = Callable()
+func _scene_identity_section() -> String:
+	var scene_path := ""
+	if board_root != null and is_instance_valid(board_root):
+		scene_path = String(board_root.scene_file_path).strip_edges()
+		if scene_path.is_empty():
+			scene_path = String(board_root.name)
+	if scene_path.is_empty():
+		scene_path = "unknown_scene"
+	return "scene_%s" % scene_path.md5_text()
 
 
-func _load_profile() -> void:
-	_display_name = ""
+func _load_scene_identity() -> void:
+	_selected_identity_token_id = ""
+	_scene_identity_configured = false
 	var config := ConfigFile.new()
 	if config.load(PROFILE_PATH) != OK:
 		return
-	_display_name = String(
-		config.get_value("profile", "display_name", "")
-	).strip_edges().left(40)
+	var section := _scene_identity_section()
+	_scene_identity_configured = bool(
+		config.get_value(section, "configured", false)
+	)
+	_selected_identity_token_id = String(
+		config.get_value(section, "token_id", "")
+	).strip_edges()
 
 
-func _save_profile() -> void:
-	if _display_name.is_empty():
-		return
+func _save_scene_identity() -> void:
 	var config := ConfigFile.new()
-	config.set_value("profile", "display_name", _display_name)
+	config.load(PROFILE_PATH)
+	var section := _scene_identity_section()
+	config.set_value(section, "configured", true)
+	config.set_value(
+		section,
+		"token_id",
+		_selected_identity_token_id
+	)
+	if board_root != null and is_instance_valid(board_root):
+		config.set_value(
+			section,
+			"scene_path",
+			String(board_root.scene_file_path)
+		)
 	config.save(PROFILE_PATH)
+
+
+func _token_stable_id(token: Node3D) -> String:
+	if token == null or not is_instance_valid(token):
+		return ""
+	if token.has_method("get_token_id"):
+		var token_id := String(token.call("get_token_id")).strip_edges()
+		if not token_id.is_empty():
+			return token_id
+	if token.has_meta("sync_id"):
+		var sync_id := String(token.get_meta("sync_id")).strip_edges()
+		if not sync_id.is_empty():
+			return sync_id
+	if board_root != null and is_instance_valid(board_root):
+		var sync_value: Variant = board_root.get("board_sync")
+		if sync_value is Node:
+			var board_sync := sync_value as Node
+			if (
+				board_sync != null
+				and is_instance_valid(board_sync)
+				and board_sync.has_method("get_sync_id_for_node")
+			):
+				return String(
+					board_sync.call("get_sync_id_for_node", token)
+				).strip_edges()
+		return "path:" + String(board_root.get_path_to(token))
+	return ""
+
+
+func _identity_token() -> Node3D:
+	if _selected_identity_token_id.is_empty():
+		return null
+	for token: Node3D in _scene_identity_tokens():
+		if _token_stable_id(token) == _selected_identity_token_id:
+			return token
+	return null
+
+
+func _device_name() -> String:
+	for key: String in ["COMPUTERNAME", "HOSTNAME"]:
+		var value := OS.get_environment(key).strip_edges()
+		if not value.is_empty():
+			return value.left(40)
+	return "dispositivo"
+
+
+func _master_author_name() -> String:
+	return "master (%s)" % _device_name()
 
 
 func _send_chat() -> void:
@@ -1303,13 +1432,12 @@ func _save_history() -> void:
 
 
 func _author_name() -> String:
-	if not _display_name.is_empty():
-		return _display_name
-	for key: String in ["COMPUTERNAME", "HOSTNAME", "USERNAME", "USER"]:
-		var value := OS.get_environment(key).strip_edges()
-		if not value.is_empty():
-			return value.left(40)
-	return "Giocatore"
+	var identity_token := _identity_token()
+	if identity_token != null:
+		var token_name := _actor_display_name(identity_token)
+		if not token_name.is_empty():
+			return token_name.left(80)
+	return _master_author_name()
 
 
 func _author_id() -> String:

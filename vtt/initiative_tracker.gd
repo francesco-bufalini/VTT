@@ -285,9 +285,9 @@ func show_panel() -> void:
 	var roller := _dice_chat()
 	if (
 		roller != null
-		and roller.has_method("ensure_display_name")
+		and roller.has_method("ensure_scene_identity")
 	):
-		roller.call("ensure_display_name")
+		roller.call("ensure_scene_identity")
 
 
 func hide_panel() -> void:
@@ -330,10 +330,10 @@ func start_combat() -> void:
 	var roller := _dice_chat()
 	if (
 		roller != null
-		and roller.has_method("ensure_display_name")
+		and roller.has_method("ensure_scene_identity")
 		and not bool(
 			roller.call(
-				"ensure_display_name",
+				"ensure_scene_identity",
 				Callable(self, "start_combat")
 			)
 		)
