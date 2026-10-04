@@ -109,6 +109,29 @@ func run() -> void:
 	assert(FlankingSystem.flanking_relationship_visible(false, true, false))
 	assert(FlankingSystem.flanking_relationship_visible(false, false, true))
 
+	# Shared tactical badge keeps Affiancato and named conditions in one
+	# comma-separated popup, while perspective scaling shrinks with distance.
+	var badge_conditions := PackedStringArray([
+		"☠️ Avvelenato",
+		"🪽 Volante",
+	])
+	assert(
+		FlankingSystem.compose_status_badge_text(
+			true,
+			badge_conditions
+		)
+		== "⚔ Affiancato, ☠️ Avvelenato, 🪽 Volante"
+	)
+	var near_badge_scale := FlankingSystem.perspective_badge_scale(
+		90.0,
+		30.0
+	)
+	var far_badge_scale := FlankingSystem.perspective_badge_scale(
+		24.0,
+		30.0
+	)
+	assert(far_badge_scale < near_badge_scale)
+
 	# Two allies on opposite sides produce a segment through the enemy hitbox.
 	var valid := FlankingSystem.flanking_segment(
 		Vector3(-2.0, 0.0, 0.0),
