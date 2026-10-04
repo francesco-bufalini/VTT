@@ -250,7 +250,9 @@ func _show_forehead_cone_telegraph() -> void:
 	# seal_broken is emitted near the beginning, when her head is still close
 	# to the sealed pose, so using the live position would start the cone from
 	# the wrong place.
-	var origin: Vector3 = klotis_prison.get_forehead_final_world_position()
+	var origin: Vector3 = (
+		klotis_prison.get_final_eye_midpoint_world_position()
+	)
 	var neck_target: Vector3 = (
 		klotis_prison.get_petrified_neck_world_position()
 	)

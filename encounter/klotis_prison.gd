@@ -29,7 +29,7 @@ var _model_fitted: bool = false
 var _sealed_hand_offsets: Dictionary = {}
 var _hand_target_positions: Dictionary = {}
 var _hand_target_radii: Dictionary = {}
-var _forehead_final_position: Vector3 = Vector3.ZERO
+var _final_eye_midpoint_position: Vector3 = Vector3.ZERO
 
 const PRISON_RADIUS_METERS := 220.0
 const SEALED_HAND_CLEARANCE_METERS := 0.35
@@ -305,20 +305,26 @@ func _fit_model() -> void:
 		_hand_target_radii[side] = _palm_footprint_radius(side, palm_center)
 		palm_bottom = minf(palm_bottom, float(_sealed_hand_metrics(side).min_y))
 
-	# Cache the forehead in the FINAL pose of Break_Forehead_Seal.  The seal
-	# breaks early in the animation, so sampling its live position at that
-	# moment incorrectly places the cone under/in front of the initial pose.
 	reset_seals()
+
+	# First put the petrified creature in its definitive position.  The cone
+	# target must be the actual flat neck stump after this correction.
+	statue.global_position.y += palm_bottom - neck_y
+	statue_box = statue.global_transform * statue.get_aabb()
+	statue_top = _neck_top(statue)
+
+	# Only now sample Klothys at the END of Break_Forehead_Seal and derive the
+	# point between her eyes from the skinned head geometry.  seal_broken fires
+	# near the start of the animation, so the live pose is intentionally not
+	# used for this telegraph.
 	_start_attack("forehead")
 	var forehead_animation: Animation = player.get_animation(_clips["forehead"])
 	player.seek(forehead_animation.length, true)
 	skeleton.force_update_all_bone_transforms()
-	_forehead_final_position = _current_forehead_world_position()
+	_final_eye_midpoint_position = _current_eye_midpoint_world_position(
+		statue_top
+	)
 	reset_seals()
-
-	statue.global_position.y += palm_bottom - neck_y
-	statue_box = statue.global_transform * statue.get_aabb()
-	statue_top = _neck_top(statue)
 	baseline_dimensions = {"sphere_diameter":440.0*units,"goddess_height":old_goddess.size.y,"statue_height":old_statue.size.y}
 	for light in model.find_children("SealLight_*", "OmniLight3D", true, false):
 		light.omni_range = 1.4 * sphere_scale
@@ -404,9 +410,17 @@ func get_forehead_world_position() -> Vector3:
 
 
 func get_forehead_final_world_position() -> Vector3:
-	if _forehead_final_position != Vector3.ZERO:
-		return _forehead_final_position
-	return _current_forehead_world_position()
+	# Backward-compatible alias: this is now the true point between the eyes,
+	# not the forehead seal center.
+	return get_final_eye_midpoint_world_position()
+
+
+func get_final_eye_midpoint_world_position() -> Vector3:
+	if _final_eye_midpoint_position != Vector3.ZERO:
+		return _final_eye_midpoint_position
+	return _current_eye_midpoint_world_position(
+		get_petrified_neck_world_position()
+	)
 
 
 func _current_forehead_world_position() -> Vector3:
@@ -431,6 +445,141 @@ func _current_forehead_world_position() -> Vector3:
 			).origin
 
 	return model.global_position if model != null else global_position
+
+
+func _current_eye_midpoint_world_position(
+	neck_target: Vector3
+) -> Vector3:
+	var forehead: Vector3 = _current_forehead_world_position()
+	if skeleton == null or not is_instance_valid(skeleton):
+		return forehead
+
+	var head_bone: int = skeleton.find_bone("head")
+	if head_bone < 0:
+		return forehead
+
+	var body := model.find_child(
+		"Klotis_Body_V5",
+		true,
+		false
+	) as MeshInstance3D
+	if body == null or body.skin == null or body.mesh == null:
+		return forehead
+
+	var data: Dictionary = _skin_data(body)
+	var posed: PackedVector3Array = _posed_vertices(body)
+	var head_world: Transform3D = (
+		skeleton.global_transform
+		* skeleton.get_bone_global_pose(head_bone)
+	)
+	var inverse_head: Transform3D = head_world.affine_inverse()
+	var head_points := PackedVector3Array()
+	var offset := 0
+
+	for surface: Dictionary in data.surfaces:
+		for vertex_index in surface.vertices.size():
+			var head_weight := 0.0
+			for influence in surface.influences:
+				var slot: int = (
+					vertex_index * surface.influences + influence
+				)
+				var influenced_bone: int = data.binds[
+					surface.bones[slot]
+				]
+				while (
+					influenced_bone >= 0
+					and influenced_bone != head_bone
+				):
+					influenced_bone = skeleton.get_bone_parent(
+						influenced_bone
+					)
+				if influenced_bone == head_bone:
+					head_weight += surface.weights[slot]
+			if head_weight > 0.45:
+				head_points.append(
+					inverse_head * posed[offset + vertex_index]
+				)
+		offset += surface.vertices.size()
+
+	if head_points.is_empty():
+		return forehead
+
+	var minimum := head_points[0]
+	var maximum := head_points[0]
+	for point: Vector3 in head_points:
+		minimum = Vector3(
+			minf(minimum.x, point.x),
+			minf(minimum.y, point.y),
+			minf(minimum.z, point.z)
+		)
+		maximum = Vector3(
+			maxf(maximum.x, point.x),
+			maxf(maximum.y, point.y),
+			maxf(maximum.z, point.z)
+		)
+
+	var size: Vector3 = maximum - minimum
+	if size.length_squared() <= 0.000001:
+		return forehead
+
+	var forehead_local: Vector3 = inverse_head * forehead
+	# The visible forehead sigil is a reliable center-line landmark.  Moving
+	# down about 15% of the skinned head height reaches the bridge between the
+	# eyes while staying in the final animated head basis.
+	var eye_level: float = forehead_local.y - size.y * 0.15
+	var head_center: Vector3 = (minimum + maximum) * 0.5
+	var neck_local: Vector3 = inverse_head * neck_target
+	var face_direction: Vector3 = neck_local - head_center
+	if face_direction.length_squared() <= 0.000001:
+		face_direction = Vector3.FORWARD
+	else:
+		face_direction = face_direction.normalized()
+
+	# Pick actual face vertices around the center-line/eye-height band, then
+	# average the most forward ones.  This prevents the origin from ending up
+	# at the head bone, inside the skull, or on the forehead sigil itself.
+	var candidates: Array[Dictionary] = []
+	var x_band: float = maxf(size.x * 0.10, 0.001)
+	var y_band: float = maxf(size.y * 0.10, 0.001)
+	for point: Vector3 in head_points:
+		if absf(point.x - forehead_local.x) > x_band:
+			continue
+		if absf(point.y - eye_level) > y_band:
+			continue
+		candidates.append({
+			"point": point,
+			"score": (point - head_center).dot(face_direction),
+		})
+
+	if candidates.is_empty():
+		# Wider fallback for unusual imports/weights.
+		x_band = maxf(size.x * 0.20, 0.001)
+		y_band = maxf(size.y * 0.18, 0.001)
+		for point: Vector3 in head_points:
+			if absf(point.x - forehead_local.x) > x_band:
+				continue
+			if absf(point.y - eye_level) > y_band:
+				continue
+			candidates.append({
+				"point": point,
+				"score": (point - head_center).dot(face_direction),
+			})
+
+	if candidates.is_empty():
+		var fallback_local := forehead_local
+		fallback_local.y = eye_level
+		return head_world * fallback_local
+
+	candidates.sort_custom(
+		func(a: Dictionary, b: Dictionary) -> bool:
+			return float(a.score) > float(b.score)
+	)
+	var sample_count: int = mini(12, candidates.size())
+	var midpoint := Vector3.ZERO
+	for index in range(sample_count):
+		midpoint += candidates[index].point
+	midpoint /= float(sample_count)
+	return head_world * midpoint
 
 
 func get_petrified_neck_world_position() -> Vector3:
@@ -690,18 +839,92 @@ func _skin_faces(mesh_node: MeshInstance3D) -> PackedVector3Array:
 	return faces
 
 func _neck_top(statue: MeshInstance3D) -> Vector3:
-	var points := PackedVector3Array()
-	var height := -INF
-	for surface in statue.mesh.get_surface_count():
-		var arrays: Array = statue.mesh.surface_get_arrays(surface)
-		for vertex: Vector3 in arrays[Mesh.ARRAY_VERTEX]:
-			var point: Vector3 = statue.global_transform * vertex
-			points.append(point)
-			height = maxf(height, point.y)
-	var center := Vector3.ZERO
-	var count := 0
-	for point in points:
-		if height - point.y < 0.01:
-			center += point
-			count += 1
-	return center / maxf(1,count)
+	# Find the centre of the actual upward-facing flat cut at the top of the
+	# headless neck.  Using only the single highest vertex was unstable and
+	# could aim at one edge of the stump.
+	var all_points := PackedVector3Array()
+	var surface_data: Array[Dictionary] = []
+	var min_y := INF
+	var max_y := -INF
+
+	for surface_index in statue.mesh.get_surface_count():
+		var arrays: Array = statue.mesh.surface_get_arrays(surface_index)
+		var vertices: PackedVector3Array = arrays[Mesh.ARRAY_VERTEX]
+		var indices: PackedInt32Array = arrays[Mesh.ARRAY_INDEX]
+		surface_data.append({
+			"vertices": vertices,
+			"indices": indices,
+		})
+		for vertex: Vector3 in vertices:
+			var world_point: Vector3 = statue.global_transform * vertex
+			all_points.append(world_point)
+			min_y = minf(min_y, world_point.y)
+			max_y = maxf(max_y, world_point.y)
+
+	if all_points.is_empty():
+		return statue.global_position
+
+	var height: float = maxf(max_y - min_y, 0.001)
+	var top_band_min: float = max_y - height * 0.14
+	var weighted_center := Vector3.ZERO
+	var total_area := 0.0
+
+	for surface: Dictionary in surface_data:
+		var vertices: PackedVector3Array = surface.vertices
+		var indices: PackedInt32Array = surface.indices
+		var triangle_count: int = (
+			indices.size() / 3
+			if not indices.is_empty()
+			else vertices.size() / 3
+		)
+		for triangle_index in range(triangle_count):
+			var base: int = triangle_index * 3
+			var ia: int = (
+				indices[base]
+				if not indices.is_empty()
+				else base
+			)
+			var ib: int = (
+				indices[base + 1]
+				if not indices.is_empty()
+				else base + 1
+			)
+			var ic: int = (
+				indices[base + 2]
+				if not indices.is_empty()
+				else base + 2
+			)
+			var a: Vector3 = statue.global_transform * vertices[ia]
+			var b: Vector3 = statue.global_transform * vertices[ib]
+			var c: Vector3 = statue.global_transform * vertices[ic]
+			var centroid: Vector3 = (a + b + c) / 3.0
+			if centroid.y < top_band_min:
+				continue
+			var cross: Vector3 = (b - a).cross(c - a)
+			var twice_area: float = cross.length()
+			if twice_area <= 0.000001:
+				continue
+			var flatness: float = absf(
+				cross.normalized().dot(Vector3.UP)
+			)
+			if flatness < 0.72:
+				continue
+			var area: float = twice_area * 0.5
+			weighted_center += centroid * area
+			total_area += area
+
+	if total_area > 0.000001:
+		return weighted_center / total_area
+
+	# Fallback: average a small top-height band.  This is still much more
+	# stable than choosing only vertices exactly at max_y.
+	var fallback_center := Vector3.ZERO
+	var fallback_count := 0
+	var tolerance: float = maxf(height * 0.035, 0.01)
+	for point: Vector3 in all_points:
+		if max_y - point.y <= tolerance:
+			fallback_center += point
+			fallback_count += 1
+	if fallback_count > 0:
+		return fallback_center / float(fallback_count)
+	return statue.global_position
