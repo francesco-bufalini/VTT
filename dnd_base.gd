@@ -3161,6 +3161,12 @@ func _on_token_dialog_confirmed() -> void:
 				return
 		_selected_token_profile["visual_asset"] = _remote_visual_path(pack_id)
 
+	var selected_pack_id := ""
+	if selected_origin in ["remote", "local_pack"]:
+		selected_pack_id = String(
+			_selected_token_profile.get("id", "")
+		).strip_edges()
+
 	var selected_index: int = size_selector.selected
 	if selected_index < 0 or selected_index >= TOKEN_SIZES.size():
 		selected_index = 2
@@ -3279,6 +3285,8 @@ func _on_token_dialog_confirmed() -> void:
 		)
 
 	if created_token != null and is_instance_valid(created_token):
+		if created_token.has_method("set_token_pack_id"):
+			created_token.call("set_token_pack_id", selected_pack_id)
 		if created_token.has_method("set_party_id"):
 			created_token.call("set_party_id", party_value)
 		else:
