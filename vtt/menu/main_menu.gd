@@ -380,14 +380,12 @@ func _build_new_campaign_dialog() -> void:
 	_new_campaign_dialog.ok_button_text = "Crea campagna"
 	_new_campaign_dialog.cancel_button_text = "Annulla"
 	_new_campaign_dialog.min_size = Vector2i(440, 210)
+	_new_campaign_dialog.add_theme_constant_override("buttons_min_width", 100)
+	_new_campaign_dialog.add_theme_constant_override("buttons_min_height", 34)
 	add_child(_new_campaign_dialog)
 
 	var body := VBoxContainer.new()
-	body.set_anchors_and_offsets_preset(Control.PRESET_FULL_RECT)
-	body.offset_left = 18
-	body.offset_top = 18
-	body.offset_right = -18
-	body.offset_bottom = -68
+	body.custom_minimum_size = Vector2(390, 90)
 	body.add_theme_constant_override("separation", 10)
 	_new_campaign_dialog.add_child(body)
 
@@ -408,14 +406,12 @@ func _build_options_dialog() -> void:
 	_options_dialog.title = "Impostazioni menu"
 	_options_dialog.ok_button_text = "Chiudi"
 	_options_dialog.min_size = Vector2i(520, 300)
+	_options_dialog.add_theme_constant_override("buttons_min_width", 100)
+	_options_dialog.add_theme_constant_override("buttons_min_height", 34)
 	add_child(_options_dialog)
 
 	var body := VBoxContainer.new()
-	body.set_anchors_and_offsets_preset(Control.PRESET_FULL_RECT)
-	body.offset_left = 22
-	body.offset_top = 18
-	body.offset_right = -22
-	body.offset_bottom = -68
+	body.custom_minimum_size = Vector2(470, 205)
 	body.add_theme_constant_override("separation", 14)
 	_options_dialog.add_child(body)
 

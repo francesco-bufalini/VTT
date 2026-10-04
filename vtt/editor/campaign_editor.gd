@@ -506,12 +506,10 @@ func _build_grid_dialogs() -> void:
 
 
 func _dialog_body(dialog: ConfirmationDialog) -> VBoxContainer:
+	dialog.add_theme_constant_override("buttons_min_width", 100)
+	dialog.add_theme_constant_override("buttons_min_height", 34)
 	var body := VBoxContainer.new()
-	body.set_anchors_and_offsets_preset(Control.PRESET_FULL_RECT)
-	body.offset_left = 18
-	body.offset_top = 18
-	body.offset_right = -18
-	body.offset_bottom = -68
+	body.custom_minimum_size = Vector2(420, 0)
 	body.add_theme_constant_override("separation", 8)
 	dialog.add_child(body)
 	return body

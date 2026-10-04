@@ -206,22 +206,21 @@ func _build_add_dialog() -> void:
 	add_dialog.name = "InitiativeAddDialog"
 	add_dialog.title = "Aggiungi partecipante"
 	add_dialog.ok_button_text = "Aggiungi"
-	add_dialog.min_size = Vector2i(360, 220)
+	add_dialog.min_size = Vector2i(460, 300)
+	add_dialog.add_theme_constant_override("buttons_min_width", 100)
+	add_dialog.add_theme_constant_override("buttons_min_height", 34)
 	ui_root.add_child(add_dialog)
-	add_dialog.get_ok_button().custom_minimum_size = Vector2(100, 34)
 	add_dialog.get_ok_button().show()
 	var cancel_button := add_dialog.get_cancel_button()
 	if cancel_button != null:
 		cancel_button.text = "Annulla"
-		cancel_button.custom_minimum_size = Vector2(100, 34)
 		cancel_button.show()
 
+	# I figli di Accept/ConfirmationDialog partecipano già al layout interno.
+	# Ancorarli a PRESET_FULL_RECT può coprire la barra OK/Annulla al primo
+	# popup, specialmente con scaling UI elevato.
 	var body: VBoxContainer = VBoxContainer.new()
-	body.set_anchors_and_offsets_preset(Control.PRESET_FULL_RECT)
-	body.offset_left = 14.0
-	body.offset_right = -14.0
-	body.offset_top = 48.0
-	body.offset_bottom = -58.0
+	body.custom_minimum_size = Vector2(420, 175)
 	body.add_theme_constant_override("separation", 8)
 	add_dialog.add_child(body)
 
@@ -390,6 +389,7 @@ func _popup_dialog_safe(dialog: Window, preferred_size: Vector2i) -> void:
 		mini(preferred_size.x, maxi(320, int(viewport_size.x) - 48)),
 		mini(preferred_size.y, maxi(200, int(viewport_size.y) - 48))
 	)
+	dialog.reset_size()
 	dialog.popup_centered_clamped(safe_size, 0.92)
 
 

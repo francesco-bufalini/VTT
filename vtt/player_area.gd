@@ -1555,14 +1555,12 @@ func _build_name_dialog() -> void:
 	_name_dialog.ok_button_text = "Crea"
 	_name_dialog.cancel_button_text = "Annulla"
 	_name_dialog.min_size = Vector2i(440, 190)
+	_name_dialog.add_theme_constant_override("buttons_min_width", 100)
+	_name_dialog.add_theme_constant_override("buttons_min_height", 34)
 	ui_root.add_child(_name_dialog)
 
 	var body := VBoxContainer.new()
-	body.set_anchors_and_offsets_preset(Control.PRESET_FULL_RECT)
-	body.offset_left = 18
-	body.offset_top = 48
-	body.offset_right = -18
-	body.offset_bottom = -64
+	body.custom_minimum_size = Vector2(400, 78)
 	body.add_theme_constant_override("separation", 8)
 	_name_dialog.add_child(body)
 
@@ -1589,14 +1587,12 @@ func _build_link_dialog() -> void:
 	_link_dialog.cancel_button_text = "Annulla"
 	_link_dialog.dialog_text = ""
 	_link_dialog.min_size = Vector2i(520, 270)
+	_link_dialog.add_theme_constant_override("buttons_min_width", 100)
+	_link_dialog.add_theme_constant_override("buttons_min_height", 34)
 	ui_root.add_child(_link_dialog)
 
 	var body := VBoxContainer.new()
-	body.set_anchors_and_offsets_preset(Control.PRESET_FULL_RECT)
-	body.offset_left = 18
-	body.offset_top = 50
-	body.offset_right = -18
-	body.offset_bottom = -70
+	body.custom_minimum_size = Vector2(480, 145)
 	body.add_theme_constant_override("separation", 10)
 	_link_dialog.add_child(body)
 
@@ -1622,14 +1618,12 @@ func _build_character_token_dialog() -> void:
 	_character_token_dialog.cancel_button_text = "Annulla"
 	_character_token_dialog.dialog_text = ""
 	_character_token_dialog.min_size = Vector2i(520, 280)
+	_character_token_dialog.add_theme_constant_override("buttons_min_width", 100)
+	_character_token_dialog.add_theme_constant_override("buttons_min_height", 34)
 	ui_root.add_child(_character_token_dialog)
 
 	var body := VBoxContainer.new()
-	body.set_anchors_and_offsets_preset(Control.PRESET_FULL_RECT)
-	body.offset_left = 18
-	body.offset_top = 50
-	body.offset_right = -18
-	body.offset_bottom = -70
+	body.custom_minimum_size = Vector2(480, 145)
 	body.add_theme_constant_override("separation", 10)
 	_character_token_dialog.add_child(body)
 
@@ -1655,16 +1649,12 @@ func _build_catalog_info_dialog() -> void:
 	_catalog_info_dialog.title = "Informazioni 5e.tools"
 	_catalog_info_dialog.ok_button_text = "Chiudi"
 	_catalog_info_dialog.min_size = Vector2i(560, 520)
+	_catalog_info_dialog.add_theme_constant_override("buttons_min_width", 100)
+	_catalog_info_dialog.add_theme_constant_override("buttons_min_height", 34)
 	ui_root.add_child(_catalog_info_dialog)
 
 	_catalog_info_text = RichTextLabel.new()
-	_catalog_info_text.set_anchors_and_offsets_preset(
-		Control.PRESET_FULL_RECT
-	)
-	_catalog_info_text.offset_left = 18
-	_catalog_info_text.offset_top = 48
-	_catalog_info_text.offset_right = -18
-	_catalog_info_text.offset_bottom = -64
+	_catalog_info_text.custom_minimum_size = Vector2(520, 410)
 	_catalog_info_text.bbcode_enabled = false
 	_catalog_info_text.fit_content = false
 	_catalog_info_text.scroll_active = true

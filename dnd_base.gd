@@ -2401,6 +2401,7 @@ func _popup_dialog_safe(
 		mini(preferred_size.x, maxi(340, int(viewport_size.x) - 48)),
 		mini(preferred_size.y, maxi(260, int(viewport_size.y) - 48))
 	)
+	dialog.reset_size()
 	dialog.popup_centered_clamped(safe_size, fallback_ratio)
 
 
