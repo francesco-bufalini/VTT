@@ -4,6 +4,7 @@ on:
   workflow_dispatch:
   push:
     branches:
+      - main
       - feature/campaign-hub
       - feature/tokens-lazy-load
     paths:
