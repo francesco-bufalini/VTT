@@ -5,7 +5,7 @@ const BACKDROP_BOTTOM_METERS := -18.0
 const BACKDROP_TOP_METERS := 540.0
 
 
-static func install(scene: Node3D) -> void:
+static func install(scene: Node3D, include_arena_ring: bool = true) -> void:
 	if scene == null:
 		return
 
@@ -30,14 +30,15 @@ static func install(scene: Node3D) -> void:
 	if old_backdrop != null:
 		old_backdrop.free()
 
-	var root := Node3D.new()
-	root.name = "CosmicBackdrop"
-	root.set_meta("scontro_cosmic_backdrop", true)
-	scene.add_child(root)
+	if include_arena_ring:
+		var root := Node3D.new()
+		root.name = "CosmicBackdrop"
+		root.set_meta("scontro_cosmic_backdrop", true)
+		scene.add_child(root)
 
-	var material := _backdrop_material()
-	var ring := _build_ring(units, material)
-	root.add_child(ring)
+		var material := _backdrop_material()
+		var ring := _build_ring(units, material)
+		root.add_child(ring)
 
 	_install_star_sky(scene)
 
