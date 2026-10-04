@@ -1613,8 +1613,14 @@ func _remember_received_token_appearance(
 func mark_token_appearance_locally_edited(node: Node3D) -> void:
 	if node == null or not is_instance_valid(node):
 		return
+	# Drop any older received authority, serialize the appearance that the user
+	# has just explicitly confirmed, then make that exact representation the
+	# new authority for subsequent movement-only/full-map snapshots.
 	if node.has_meta(SYNC_APPEARANCE_META):
 		node.remove_meta(SYNC_APPEARANCE_META)
+	var live_data := _serialize_node(node, "dnd_token")
+	var authoritative := _serialized_token_appearance(live_data)
+	node.set_meta(SYNC_APPEARANCE_META, authoritative.duplicate(true))
 
 
 func _preserve_received_token_appearance(
