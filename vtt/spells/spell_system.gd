@@ -1998,6 +1998,17 @@ func _cast_teleport(
 		caster_target,
 		teleport_style
 	)
+	_broadcast_spell_visual_event({
+		"mode": "teleport",
+		"origin": _sync_event_v3(caster_origin),
+		"target": _sync_event_v3(caster_target),
+		"style": teleport_style,
+		"departure_radius_world": departure_radius / 5.0 * _cell_size(),
+		"departure_style": String(
+			spell_data.get("teleport_departure_style", "thunder_step")
+		),
+		"duration": float(spell_data.get("transient_seconds", 5.0))
+	})
 	return true
 
 
@@ -4070,6 +4081,203 @@ func _activate_selected_spell() -> void:
 		)
 
 
+func _sync_event_v3(value: Vector3) -> Dictionary:
+	return {"x": value.x, "y": value.y, "z": value.z}
+
+
+func _sync_event_vector3(value: Variant) -> Vector3:
+	if value is Dictionary:
+		return Vector3(
+			float((value as Dictionary).get("x", 0.0)),
+			float((value as Dictionary).get("y", 0.0)),
+			float((value as Dictionary).get("z", 0.0))
+		)
+	return Vector3.ZERO
+
+
+func _broadcast_spell_visual_event(event: Dictionary) -> void:
+	if (
+		event.is_empty()
+		or board_root == null
+		or not is_instance_valid(board_root)
+		or not board_root.has_method("broadcast_sync_event")
+	):
+		return
+	var payload := event.duplicate(true)
+	payload["type"] = "spell_visual"
+	payload["spell_id"] = _pending_spell_id
+	board_root.call("broadcast_sync_event", payload)
+
+
+func _broadcast_aoe_sync_visual(
+	start: Vector3,
+	end: Vector3,
+	shape: String,
+	style: String,
+	duration: float,
+	width_world: float
+) -> void:
+	_broadcast_spell_visual_event({
+		"mode": "aoe",
+		"start": _sync_event_v3(start),
+		"end": _sync_event_v3(end),
+		"shape": shape,
+		"style": style,
+		"duration": duration,
+		"width_world": width_world
+	})
+
+
+func _broadcast_projectile_sync_visual(
+	start: Vector3,
+	finish: Vector3,
+	style: String,
+	travel_seconds: float
+) -> void:
+	_broadcast_spell_visual_event({
+		"mode": "projectile",
+		"start": _sync_event_v3(start),
+		"finish": _sync_event_v3(finish),
+		"style": style,
+		"travel_seconds": travel_seconds
+	})
+
+
+func _broadcast_projectile_impact_sync_visual(
+	start: Vector3,
+	finish: Vector3,
+	projectile_style: String,
+	travel_seconds: float,
+	impact_shape: String,
+	impact_radius_world: float,
+	impact_style: String,
+	duration: float
+) -> void:
+	_broadcast_spell_visual_event({
+		"mode": "projectile_impact",
+		"start": _sync_event_v3(start),
+		"finish": _sync_event_v3(finish),
+		"projectile_style": projectile_style,
+		"travel_seconds": travel_seconds,
+		"impact_shape": impact_shape,
+		"impact_radius_world": impact_radius_world,
+		"impact_style": impact_style,
+		"duration": duration
+	})
+
+
+func replay_sync_visual_event(event: Dictionary) -> void:
+	var measurement_tool: Node = _measurement_tool()
+	if measurement_tool == null:
+		return
+	var mode := String(event.get("mode", ""))
+	match mode:
+		"aoe":
+			measurement_tool.call(
+				"show_transient_aoe",
+				_sync_event_vector3(event.get("start")),
+				_sync_event_vector3(event.get("end")),
+				String(event.get("shape", "sphere")),
+				float(event.get("duration", 5.0)),
+				String(event.get("style", "")),
+				float(event.get("width_world", 0.0))
+			)
+		"projectile":
+			measurement_tool.call(
+				"show_spell_projectile",
+				_sync_event_vector3(event.get("start")),
+				_sync_event_vector3(event.get("finish")),
+				String(event.get("style", "")),
+				float(event.get("travel_seconds", 0.65))
+			)
+		"projectile_impact":
+			measurement_tool.call(
+				"show_spell_projectile_with_impact",
+				_sync_event_vector3(event.get("start")),
+				_sync_event_vector3(event.get("finish")),
+				String(event.get("projectile_style", "")),
+				float(event.get("travel_seconds", 0.65)),
+				String(event.get("impact_shape", "sphere")),
+				float(event.get("impact_radius_world", 0.0)),
+				String(event.get("impact_style", "")),
+				float(event.get("duration", 5.0))
+			)
+		"projectiles":
+			var projectiles_value: Variant = event.get("projectiles", [])
+			if projectiles_value is Array:
+				for projectile_value: Variant in projectiles_value as Array:
+					if not projectile_value is Dictionary:
+						continue
+					var projectile: Dictionary = projectile_value as Dictionary
+					measurement_tool.call(
+						"show_spell_projectile",
+						_sync_event_vector3(projectile.get("start")),
+						_sync_event_vector3(projectile.get("finish")),
+						String(projectile.get("style", "")),
+						float(projectile.get("travel_seconds", 0.65))
+					)
+		"meteor_impacts":
+			var impacts_value: Variant = event.get("impacts", [])
+			if impacts_value is Array:
+				for impact_value: Variant in impacts_value as Array:
+					if not impact_value is Dictionary:
+						continue
+					var impact: Dictionary = impact_value as Dictionary
+					measurement_tool.call(
+						"show_spell_projectile_with_impact",
+						_sync_event_vector3(impact.get("start")),
+						_sync_event_vector3(impact.get("finish")),
+						String(impact.get("projectile_style", "")),
+						float(impact.get("travel_seconds", 0.8)),
+						String(impact.get("shape", "sphere")),
+						float(impact.get("radius_world", 0.0)),
+						String(impact.get("style", "")),
+						float(impact.get("duration", 5.0))
+					)
+		"aoes":
+			var aoes_value: Variant = event.get("aoes", [])
+			if aoes_value is Array:
+				for aoe_value: Variant in aoes_value as Array:
+					if not aoe_value is Dictionary:
+						continue
+					var aoe: Dictionary = aoe_value as Dictionary
+					measurement_tool.call(
+						"show_transient_aoe",
+						_sync_event_vector3(aoe.get("start")),
+						_sync_event_vector3(aoe.get("end")),
+						String(aoe.get("shape", "sphere")),
+						float(aoe.get("duration", 5.0)),
+						String(aoe.get("style", "")),
+						float(aoe.get("width_world", 0.0))
+					)
+		"teleport":
+			_replay_synced_teleport_visual(event)
+
+
+func _replay_synced_teleport_visual(event: Dictionary) -> void:
+	var measurement_tool: Node = _measurement_tool()
+	if measurement_tool == null:
+		return
+	var origin := _sync_event_vector3(event.get("origin"))
+	var target := _sync_event_vector3(event.get("target"))
+	var style := String(event.get("style", "teleport"))
+	var departure_radius_world := float(
+		event.get("departure_radius_world", 0.0)
+	)
+	if departure_radius_world > 0.0:
+		measurement_tool.call(
+			"show_transient_aoe",
+			origin,
+			origin + Vector3.RIGHT * departure_radius_world,
+			"sphere",
+			float(event.get("duration", 5.0)),
+			String(event.get("departure_style", style))
+		)
+	measurement_tool.call("show_teleport_cloud", origin, style, 0.55)
+	await get_tree().create_timer(0.40).timeout
+	measurement_tool.call("show_teleport_cloud", target, style, 0.62)
+
+
 func _cast_spell_from_caster(
 	caster: Node3D,
 	spell_data: Dictionary
@@ -4123,6 +4331,14 @@ func _cast_spell_at_point(
 				_spell_line_width_world(spell_data),
 				false
 			)
+	_broadcast_aoe_sync_visual(
+		target_point,
+		endpoint,
+		shape,
+		style,
+		float(spell_data.get("transient_seconds", 5.0)),
+		_spell_line_width_world(spell_data)
+	)
 
 func _cast_directional_aoe(
 	caster: Node3D,
@@ -4150,6 +4366,14 @@ func _cast_directional_aoe(
 		String(spell_data.get("aoe_shape", "cone")),
 		duration,
 		_spell_style(spell_data),
+		_spell_line_width_world(spell_data)
+	)
+	_broadcast_aoe_sync_visual(
+		geometry.get("start", Vector3.ZERO),
+		geometry.get("end", Vector3.ZERO),
+		String(spell_data.get("aoe_shape", "cone")),
+		_spell_style(spell_data),
+		duration,
 		_spell_line_width_world(spell_data)
 	)
 
@@ -4190,6 +4414,14 @@ func _cast_directional_spell_to_point(
 			_spell_style(spell_data),
 			_spell_line_width_world(spell_data)
 		)
+	_broadcast_aoe_sync_visual(
+		geometry.get("start", Vector3.ZERO),
+		geometry.get("end", Vector3.ZERO),
+		String(spell_data.get("aoe_shape", "line")),
+		_spell_style(spell_data),
+		float(spell_data.get("transient_seconds", 5.0)),
+		_spell_line_width_world(spell_data)
+	)
 
 func _cast_spell_at_token(
 	caster: Node3D,
@@ -4223,31 +4455,50 @@ func _cast_spell_at_token(
 		return
 
 	if impact_radius > 0.0:
+		var resolved_projectile_style := (
+			projectile_style
+			if not projectile_style.is_empty()
+			else _spell_style(spell_data)
+		)
+		var resolved_impact_style := String(
+			spell_data.get("impact_style", _spell_style(spell_data))
+		)
+		var impact_radius_world := impact_radius / 5.0 * _cell_size()
+		var impact_duration := float(
+			spell_data.get("transient_seconds", 5.0)
+		)
 		measurement_tool.call(
 			"show_spell_projectile_with_impact",
 			start,
 			finish,
-			(
-				projectile_style
-				if not projectile_style.is_empty()
-				else _spell_style(spell_data)
-			),
+			resolved_projectile_style,
 			travel_seconds,
 			String(spell_data.get("impact_aoe_shape", "sphere")),
-			impact_radius / 5.0 * _cell_size(),
-			String(
-				spell_data.get(
-					"impact_style",
-					_spell_style(spell_data)
-				)
-			),
-			float(spell_data.get("transient_seconds", 5.0))
+			impact_radius_world,
+			resolved_impact_style,
+			impact_duration
+		)
+		_broadcast_projectile_impact_sync_visual(
+			start,
+			finish,
+			resolved_projectile_style,
+			travel_seconds,
+			String(spell_data.get("impact_aoe_shape", "sphere")),
+			impact_radius_world,
+			resolved_impact_style,
+			impact_duration
 		)
 		return
 
 	if not projectile_style.is_empty():
 		measurement_tool.call(
 			"show_spell_projectile",
+			start,
+			finish,
+			projectile_style,
+			travel_seconds
+		)
+		_broadcast_projectile_sync_visual(
 			start,
 			finish,
 			projectile_style,
@@ -4293,6 +4544,14 @@ func _cast_spell_at_token(
 			style,
 			_spell_line_width_world(spell_data)
 		)
+	_broadcast_aoe_sync_visual(
+		finish,
+		endpoint,
+		shape,
+		style,
+		float(spell_data.get("transient_seconds", 5.0)),
+		_spell_line_width_world(spell_data)
+	)
 
 func _cast_spell_at_point_target(
 	caster: Node3D,
@@ -4345,6 +4604,12 @@ func _cast_spell_at_point_target(
 			projectile_style,
 			travel_seconds
 		)
+		_broadcast_projectile_sync_visual(
+			start,
+			target_point,
+			projectile_style,
+			travel_seconds
+		)
 		return
 
 	_cast_spell_at_point(caster, target_point, spell_data)
@@ -4388,6 +4653,14 @@ func _cast_self_emanation(
 			style,
 			_spell_line_width_world(spell_data)
 		)
+	_broadcast_aoe_sync_visual(
+		center,
+		endpoint,
+		shape,
+		style,
+		float(spell_data.get("transient_seconds", 5.0)),
+		_spell_line_width_world(spell_data)
+	)
 
 func _cast_multi_target_spell(
 	caster: Node3D,
@@ -4431,6 +4704,27 @@ func _cast_multi_target_spell(
 			travel_seconds
 		)
 
+	var projectiles: Array = []
+	for target: Node3D in targets:
+		if target != null and is_instance_valid(target):
+			projectiles.append({
+				"start": _sync_event_v3(start),
+				"finish": _sync_event_v3(_token_spell_origin(target)),
+				"style": style,
+				"travel_seconds": travel_seconds
+			})
+	for target_point: Vector3 in target_points:
+		projectiles.append({
+			"start": _sync_event_v3(start),
+			"finish": _sync_event_v3(target_point),
+			"style": style,
+			"travel_seconds": travel_seconds
+		})
+	_broadcast_spell_visual_event({
+		"mode": "projectiles",
+		"projectiles": projectiles
+	})
+
 
 func _cast_multi_point_spell(
 	_caster: Node3D,
@@ -4463,10 +4757,12 @@ func _cast_multi_point_spell(
 		var projectile_style: String = String(
 			spell_data.get("projectile_style", style)
 		)
+		var impacts: Array = []
 		for point: Vector3 in target_points:
+			var meteor_start := point + Vector3.UP * drop_height_world
 			measurement_tool.call(
 				"show_spell_projectile_with_impact",
-				point + Vector3.UP * drop_height_world,
+				meteor_start,
 				point,
 				projectile_style,
 				travel_seconds,
@@ -4475,18 +4771,43 @@ func _cast_multi_point_spell(
 				style,
 				duration
 			)
+			impacts.append({
+				"start": _sync_event_v3(meteor_start),
+				"finish": _sync_event_v3(point),
+				"projectile_style": projectile_style,
+				"travel_seconds": travel_seconds,
+				"shape": shape,
+				"radius_world": radius_world,
+				"style": style,
+				"duration": duration
+			})
+		_broadcast_spell_visual_event({
+			"mode": "meteor_impacts",
+			"impacts": impacts
+		})
 		return
 
+	var aoes: Array = []
 	for point: Vector3 in target_points:
+		var endpoint := point + Vector3.RIGHT * radius_world
 		measurement_tool.call(
 			"show_transient_aoe",
 			point,
-			point + Vector3.RIGHT * radius_world,
+			endpoint,
 			shape,
 			duration,
 			style,
 			_spell_line_width_world(spell_data)
 		)
+		aoes.append({
+			"start": _sync_event_v3(point),
+			"end": _sync_event_v3(endpoint),
+			"shape": shape,
+			"duration": duration,
+			"style": style,
+			"width_world": _spell_line_width_world(spell_data)
+		})
+	_broadcast_spell_visual_event({"mode": "aoes", "aoes": aoes})
 
 func _cast_chain_lightning(
 	_caster: Node3D,
