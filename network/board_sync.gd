@@ -4,6 +4,7 @@ signal status_changed(message: String)
 const PORT := 45454
 const SNAPSHOT_VERSION := 5
 const MAGIC := "DND_MAP_SYNC_V5"
+const LOCAL_SAVE_MAGIC := "DND_MAP_LOCAL_V1"
 const BACKUP_DIR := "user://map_sync_backups"
 const MAX_BACKUPS := 20
 const MAX_BYTES := 4 * 1024 * 1024
@@ -664,6 +665,101 @@ func create_snapshot() -> Dictionary:
 		"encounter": state,
 		"initiative": initiative
 	}
+
+
+func save_snapshot_to_file(path: String) -> Error:
+	var clean_path := path.strip_edges()
+	if clean_path.is_empty():
+		status_changed.emit("Percorso di salvataggio non valido")
+		return ERR_INVALID_PARAMETER
+	if clean_path.get_extension().is_empty():
+		clean_path += ".vttmap"
+
+	var snapshot := create_snapshot()
+	if snapshot.is_empty():
+		status_changed.emit("Impossibile salvare la mappa nello stato corrente")
+		return ERR_BUSY
+
+	var file := FileAccess.open(clean_path, FileAccess.WRITE)
+	if file == null:
+		var open_error := FileAccess.get_open_error()
+		status_changed.emit(
+			"Salvataggio mappa fallito: %s" % error_string(open_error)
+		)
+		return open_error
+
+	var payload := {
+		"magic": LOCAL_SAVE_MAGIC,
+		"saved_at": Time.get_datetime_string_from_system(),
+		"snapshot": snapshot
+	}
+	file.store_string(JSON.stringify(payload, "  "))
+	var write_error := file.get_error()
+	file.close()
+	if write_error != OK:
+		status_changed.emit(
+			"Salvataggio mappa fallito: %s" % error_string(write_error)
+		)
+		return write_error
+
+	status_changed.emit("Mappa salvata in locale: %s" % clean_path)
+	return OK
+
+
+func load_snapshot_from_file(path: String) -> Error:
+	var clean_path := path.strip_edges()
+	if clean_path.is_empty():
+		status_changed.emit("Percorso della mappa non valido")
+		return ERR_INVALID_PARAMETER
+	if not FileAccess.file_exists(clean_path):
+		status_changed.emit("Mappa locale non trovata: %s" % clean_path)
+		return ERR_FILE_NOT_FOUND
+
+	var file := FileAccess.open(clean_path, FileAccess.READ)
+	if file == null:
+		var open_error := FileAccess.get_open_error()
+		status_changed.emit(
+			"Apertura mappa fallita: %s" % error_string(open_error)
+		)
+		return open_error
+	var parsed: Variant = JSON.parse_string(file.get_as_text())
+	file.close()
+	if not parsed is Dictionary:
+		status_changed.emit("Il file selezionato non contiene una mappa VTT valida")
+		return ERR_PARSE_ERROR
+
+	var root: Dictionary = parsed as Dictionary
+	var snapshot_value: Variant = root
+	if root.has("magic"):
+		if String(root.get("magic", "")) != LOCAL_SAVE_MAGIC:
+			status_changed.emit("Formato mappa locale non riconosciuto")
+			return ERR_INVALID_DATA
+		snapshot_value = root.get("snapshot", {})
+
+	if not snapshot_value is Dictionary:
+		status_changed.emit("Snapshot locale mancante o non valido")
+		return ERR_INVALID_DATA
+	var snapshot: Dictionary = snapshot_value as Dictionary
+	if not valid_snapshot(snapshot):
+		status_changed.emit(
+			"Mappa locale incompatibile con la scena o la versione corrente"
+		)
+		return ERR_INVALID_DATA
+
+	var current_snapshot := create_snapshot()
+	if current_snapshot.is_empty():
+		status_changed.emit("Stato locale non salvabile: caricamento annullato")
+		return ERR_BUSY
+	if not _save_backup(current_snapshot, "before_local_load"):
+		status_changed.emit("Backup locale fallito: caricamento annullato")
+		return ERR_CANT_CREATE
+	if not apply_snapshot(snapshot):
+		status_changed.emit("Applicazione della mappa locale fallita")
+		return ERR_INVALID_DATA
+
+	status_changed.emit("Mappa locale caricata: %s" % clean_path)
+	return OK
+
 
 func apply_snapshot(snapshot: Dictionary) -> bool:
 	if not valid_snapshot(snapshot): return false
