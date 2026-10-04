@@ -21,6 +21,23 @@ const TOKEN_CONDITIONS := [
 	"poisoned", "prone", "restrained", "stunned", "unconscious",
 	"concentrating", "surprised", "hidden", "dead"
 ]
+const SYNC_APPEARANCE_META := "board_sync_authoritative_appearance"
+const SYNC_APPEARANCE_LIVE_SIGNATURE_META := (
+	"board_sync_authoritative_appearance_live_signature"
+)
+const SYNC_APPEARANCE_KEYS := [
+	"token_pack_id",
+	"footprint",
+	"size_name",
+	"color",
+	"height_cells",
+	"reach_feet",
+	"visual_asset",
+	"visual_native_footprint",
+	"visual_front_quarter_turns",
+	"visual_pitch_steps",
+	"transformation_history"
+]
 var board_root: Node
 var token_scene: PackedScene
 var tokens_root: Node
@@ -199,8 +216,8 @@ func _poll_auto_sync() -> void:
 
 func _snapshot_signature(snapshot: Dictionary) -> String:
 	var comparable := snapshot.duplicate(true)
-	# La camera viaggia con ogni sync, ma muoverla da sola non deve generare
-	# traffico continuo: viene allineata quando cambia la mappa.
+	# Snapshot V6 creati da versioni precedenti possono ancora contenere
+	# "camera". Ignorala nella firma: camera/vista sono sempre locali.
 	comparable.erase("camera")
 	return JSON.stringify(comparable).sha256_text()
 
@@ -1162,9 +1179,6 @@ func create_snapshot() -> Dictionary:
 		"encounter": state,
 		"initiative": initiative
 	}
-	var camera_state := _camera_state()
-	if not camera_state.is_empty():
-		snapshot["camera"] = camera_state
 	return snapshot
 
 
@@ -1322,7 +1336,6 @@ func apply_snapshot(snapshot: Dictionary) -> bool:
 		if flanking_node.has_method("refresh_now"):
 			flanking_node.call_deferred("refresh_now")
 	_queue_snapshot_token_packs(snapshot)
-	_apply_camera_state(snapshot.get("camera", {}))
 	return true
 
 func _restore_token_supports(wanted: Dictionary) -> void:
@@ -1448,6 +1461,7 @@ func _serialize_node(node: Node3D, group_name: String) -> Dictionary:
 			data["transformation_history"] = node.call(
 				"get_transformation_history"
 			)
+		_preserve_received_token_appearance(node, data)
 	else: data["kind"]="physical"
 	return data
 
@@ -1573,8 +1587,116 @@ func _apply_node_data(node: Node3D, data: Dictionary) -> void:
 				"set_transformation_history",
 				data.get("transformation_history", [])
 			)
+		_remember_received_token_appearance(node, data)
 	# configure() snaps tokens; restore the exact shared transform afterwards.
 	node.global_transform = _dict_transform(data.get("transform", {}))
+
+
+func _serialized_token_appearance(data: Dictionary) -> Dictionary:
+	var appearance: Dictionary = {}
+	for key_value: Variant in SYNC_APPEARANCE_KEYS:
+		var key := String(key_value)
+		if data.has(key):
+			appearance[key] = data.get(key)
+	return appearance
+
+
+func _live_token_appearance(node: Node3D) -> Dictionary:
+	var appearance: Dictionary = {}
+	var token_pack_id := ""
+	if node.has_method("get_token_pack_id"):
+		token_pack_id = String(node.call("get_token_pack_id")).strip_edges()
+	if not token_pack_id.is_empty():
+		appearance["token_pack_id"] = token_pack_id
+	appearance["footprint"] = float(node.get("_footprint_cells"))
+	appearance["size_name"] = String(node.get("_size_name"))
+	appearance["color"] = _token_color(node)
+	appearance["height_cells"] = float(node.get("token_height_cells"))
+	appearance["reach_feet"] = (
+		float(node.call("get_reach_feet"))
+		if node.has_method("get_reach_feet")
+		else maxf(5.0, float(node.get("_footprint_cells")) * 5.0)
+	)
+	if node.has_method("get_visual_asset_path"):
+		appearance["visual_asset"] = String(
+			node.call("get_visual_asset_path")
+		)
+	if node.has_method("get_visual_native_footprint_cells"):
+		appearance["visual_native_footprint"] = float(
+			node.call("get_visual_native_footprint_cells")
+		)
+	appearance["visual_front_quarter_turns"] = (
+		int(node.call("get_visual_front_quarter_turns"))
+		if node.has_method("get_visual_front_quarter_turns")
+		else 0
+	)
+	appearance["visual_pitch_steps"] = (
+		int(node.call("get_visual_pitch_steps"))
+		if node.has_method("get_visual_pitch_steps")
+		else 0
+	)
+	if node.has_method("get_transformation_history"):
+		appearance["transformation_history"] = node.call(
+			"get_transformation_history"
+		)
+	return appearance
+
+
+func _appearance_signature(appearance: Dictionary) -> String:
+	return JSON.stringify(appearance).sha256_text()
+
+
+func _remember_received_token_appearance(
+	node: Node3D,
+	data: Dictionary
+) -> void:
+	var authoritative := _serialized_token_appearance(data)
+	node.set_meta(SYNC_APPEARANCE_META, authoritative.duplicate(true))
+	node.set_meta(
+		SYNC_APPEARANCE_LIVE_SIGNATURE_META,
+		_appearance_signature(_live_token_appearance(node))
+	)
+
+
+func _preserve_received_token_appearance(
+	node: Node3D,
+	data: Dictionary
+) -> void:
+	if (
+		not node.has_meta(SYNC_APPEARANCE_META)
+		or not node.has_meta(SYNC_APPEARANCE_LIVE_SIGNATURE_META)
+	):
+		return
+	var stored_value: Variant = node.get_meta(SYNC_APPEARANCE_META)
+	if not stored_value is Dictionary:
+		node.remove_meta(SYNC_APPEARANCE_META)
+		node.remove_meta(SYNC_APPEARANCE_LIVE_SIGNATURE_META)
+		return
+
+	var current_signature := _appearance_signature(
+		_live_token_appearance(node)
+	)
+	var expected_signature := String(
+		node.get_meta(SYNC_APPEARANCE_LIVE_SIGNATURE_META, "")
+	)
+	if current_signature != expected_signature:
+		# A local appearance edit is now authoritative. From this point onward
+		# serialize the live node normally.
+		node.remove_meta(SYNC_APPEARANCE_META)
+		node.remove_meta(SYNC_APPEARANCE_LIVE_SIGNATURE_META)
+		return
+
+	# Only the transform/flying/support state changed locally (e.g. another
+	# player moved the token). Reuse the exact appearance received from the
+	# network so local asset/profile differences cannot resurrect defaults.
+	var authoritative: Dictionary = stored_value as Dictionary
+	for key_value: Variant in SYNC_APPEARANCE_KEYS:
+		var key := String(key_value)
+		if authoritative.has(key):
+			data[key] = authoritative.get(key)
+		else:
+			data.erase(key)
+
 
 func _remote_visual_path(token_pack_id: String) -> String:
 	return (
