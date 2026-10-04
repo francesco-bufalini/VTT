@@ -268,11 +268,13 @@ func _apply_material_strength() -> void:
 	if _grid_material == null:
 		return
 	var alpha: float = lerpf(0.16, 0.50, _interaction_strength)
-	_grid_material.albedo_color = Color(0.42, 0.75, 1.0, alpha)
+	# Warm, desaturated cartographic tone: keeps the current readability while
+	# feeling closer to a tabletop D&D map than a neon videogame overlay.
+	_grid_material.albedo_color = Color(0.72, 0.67, 0.56, alpha)
 	_grid_material.emission_enabled = true
-	_grid_material.emission = Color(0.04, 0.22, 0.38, 1.0)
+	_grid_material.emission = Color(0.13, 0.10, 0.065, 1.0)
 	_grid_material.emission_energy_multiplier = (
-		lerpf(0.28, 0.68, _interaction_strength)
+		lerpf(0.10, 0.22, _interaction_strength)
 	)
 
 
