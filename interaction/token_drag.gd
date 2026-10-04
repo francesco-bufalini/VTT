@@ -15,6 +15,7 @@ var _support: Node3D
 var _press_position: Vector2
 var _moved: bool = false
 var _anchor_token: CharacterBody3D
+var _undo_state: Dictionary = {}
 
 func setup(owner_board: Node3D) -> void:
 	board = owner_board
@@ -54,9 +55,6 @@ func handle_event(event: InputEvent) -> bool:
 	if hit.is_empty():
 		return false
 	var target: Node = board._find_interaction_target(hit.collider)
-	# Some encounter helpers are plain Node3D instances. Even if one is
-	# accidentally exposed through an interaction/group path, never treat it
-	# as a draggable token: token drag relies on CharacterBody3D/token.gd API.
 	if (
 		target == null
 		or not target.is_in_group("dnd_token")
@@ -65,7 +63,7 @@ func handle_event(event: InputEvent) -> bool:
 		or not target.has_method("get_footprint_extent")
 	):
 		return false
-	var target_token := target as CharacterBody3D
+	var target_token: CharacterBody3D = target as CharacterBody3D
 	if not board._selected_tokens.has(target_token):
 		board._interact_or_select_under_mouse(point, event.shift_pressed, false)
 	begin(board._selected_tokens, target_token)
@@ -76,6 +74,14 @@ func handle_event(event: InputEvent) -> bool:
 
 func begin(tokens: Array[CharacterBody3D], anchor_token: CharacterBody3D) -> void:
 	_tokens = tokens.duplicate()
+	_undo_state = {}
+	if board != null and board.has_method("begin_token_move_transaction"):
+		var history_value: Variant = board.call(
+			"begin_token_move_transaction",
+			_tokens
+		)
+		if history_value is Dictionary:
+			_undo_state = (history_value as Dictionary).duplicate(true)
 	_origins.clear()
 	for token in _tokens:
 		_origins.append(token.global_position)
@@ -101,13 +107,43 @@ func update_preview(screen_point: Vector2) -> void:
 				break
 	var position: Variant
 	var support: Node3D = _support
-	if _anchor_token.flying:
-		position = Plane(Vector3.UP, _anchor.y).intersects_ray(origin, direction)
-	elif not hit.is_empty() and Vector3(hit.normal).dot(Vector3.UP) > 0.7:
-		position = Vector3(hit.position) + Vector3.UP * _token_half_height(_anchor_token)
-		support = hit.collider if hit.collider.is_in_group("tactical_platform") else null
+	var tactical_support: Node3D = null
+	var hit_normal := Vector3.ZERO
+	if not hit.is_empty():
+		hit_normal = Vector3(hit.normal)
+		if hit.collider is Node3D and hit.collider.is_in_group("tactical_platform"):
+			tactical_support = hit.collider as Node3D
+
+	# Flying tokens normally stay on their current Y plane, but a deliberate
+	# drag onto a tactical surface should rest on that surface without
+	# requiring "Applica gravità". This is what makes the giant bodies and
+	# sphere usable as terrain while keeping free-air placement intact.
+	if (
+		_anchor_token.flying
+		and tactical_support != null
+		and hit_normal.dot(Vector3.UP) > 0.35
+	):
+		position = (
+			Vector3(hit.position)
+			+ Vector3.UP * _token_half_height(_anchor_token)
+		)
+		support = tactical_support
+	elif _anchor_token.flying:
+		position = Plane(Vector3.UP, _anchor.y).intersects_ray(
+			origin,
+			direction
+		)
+	elif not hit.is_empty() and hit_normal.dot(Vector3.UP) > 0.7:
+		position = (
+			Vector3(hit.position)
+			+ Vector3.UP * _token_half_height(_anchor_token)
+		)
+		support = tactical_support
 	else:
-		position = Plane(Vector3.UP, _anchor.y).intersects_ray(origin, direction)
+		position = Plane(Vector3.UP, _anchor.y).intersects_ray(
+			origin,
+			direction
+		)
 	if position == null:
 		_valid = false
 		return
@@ -154,13 +190,19 @@ func _token_half_height(token: CharacterBody3D) -> float:
 
 
 func finish(commit: bool) -> void:
+	var committed_move: bool = commit and _valid and _moved
+	var moved_tokens: Array[CharacterBody3D] = _tokens.duplicate()
+	var movement_origins: Array[Vector3] = _origins.duplicate()
 	for index in range(_tokens.size()):
 		var token := _tokens[index]
 		if not is_instance_valid(token):
 			continue
-		if commit and _valid:
+		if committed_move:
 			token.global_position = _targets[index]
-			token.grid_support = _support if not token.flying else null
+			if token.has_method("snap_horizontal_to_grid"):
+				token.call("snap_horizontal_to_grid")
+			# Il supporto del carro/piattaforma e' indipendente dalla gravita.
+			token.grid_support = _support
 			if is_instance_valid(token.grid_support):
 				token._support_transform = token.grid_support.global_transform
 			token.velocity = Vector3.ZERO
@@ -168,9 +210,26 @@ func finish(commit: bool) -> void:
 	_tokens.clear()
 	_preview.visible = false
 	active = false
+	if (
+		committed_move
+		and not _undo_state.is_empty()
+		and board.has_method("commit_undo_transaction")
+	):
+		board.call("commit_undo_transaction", _undo_state)
+	_undo_state = {}
 	if _was_captured:
 		Input.mouse_mode = Input.MOUSE_MODE_CAPTURED
 	interaction_changed.emit(false)
+	if (
+		committed_move
+		and board != null
+		and board.has_method("check_opportunity_attacks_after_movement")
+	):
+		board.call_deferred(
+			"check_opportunity_attacks_after_movement",
+			moved_tokens,
+			movement_origins
+		)
 
 func _notification(what: int) -> void:
 	if what == NOTIFICATION_APPLICATION_FOCUS_OUT and active:
