@@ -109,6 +109,7 @@ var token_state_dialog: ConfirmationDialog
 var opportunity_dialog: AcceptDialog
 var token_state_name: LineEdit
 var token_party_input: LineEdit
+var token_identity_label: Label
 var token_state_grid: GridContainer
 var token_state_checks: Dictionary = {}
 var _editing_token: CharacterBody3D
@@ -2533,6 +2534,13 @@ func _build_token_state_dialog() -> void:
 	if content_box == null:
 		return
 
+	token_identity_label = Label.new()
+	token_identity_label.name = "TokenIdentityLabel"
+	token_identity_label.text = "ID token: assegnato automaticamente alla creazione"
+	token_identity_label.selectable = true
+	token_identity_label.add_theme_font_size_override("font_size", 11)
+	content_box.add_child(token_identity_label)
+
 	var party_label := Label.new()
 	party_label.name = "PartyLabel"
 	party_label.text = "Party / gruppo tattico"
@@ -2827,6 +2835,15 @@ func _prepare_shared_token_editor() -> void:
 		color_dialog.title = "Modifica token"
 		color_dialog.ok_button_text = "Applica"
 		var target := _token_generation_transform_target
+		if token_identity_label != null:
+			token_identity_label.text = (
+				"ID token: %s"
+				% (
+					String(target.call("get_token_id"))
+					if target.has_method("get_token_id")
+					else str(target.get_instance_id())
+				)
+			)
 		var preferred_id := _existing_token_profile_id(target)
 		if token_miniature_search != null:
 			token_miniature_search.text = ""
@@ -2835,6 +2852,10 @@ func _prepare_shared_token_editor() -> void:
 	else:
 		color_dialog.title = "Crea token"
 		color_dialog.ok_button_text = "Crea"
+		if token_identity_label != null:
+			token_identity_label.text = (
+				"ID token: assegnato automaticamente alla creazione"
+			)
 		if token_party_input != null:
 			token_party_input.text = ""
 		_set_shared_token_editor_conditions([])
@@ -2934,6 +2955,12 @@ func _on_token_dialog_confirmed() -> void:
 		if token_name_input != null
 		else "Token"
 	)
+	var party_value := (
+		token_party_input.text.strip_edges()
+		if token_party_input != null
+		else ""
+	)
+	var active_conditions := _shared_token_editor_conditions()
 	if display_name.is_empty():
 		display_name = String(
 			_selected_token_profile.get("name", "Token")
@@ -3017,6 +3044,20 @@ func _on_token_dialog_confirmed() -> void:
 			reach_feet,
 			visual_native_footprint
 		)
+
+	if created_token != null and is_instance_valid(created_token):
+		if created_token.has_method("set_party_id"):
+			created_token.call("set_party_id", party_value)
+		else:
+			created_token.set_meta("party_id", party_value)
+		if created_token.has_method("set_conditions"):
+			created_token.call("set_conditions", active_conditions)
+		if flanking_system != null and is_instance_valid(flanking_system):
+			flanking_system.call("refresh_now")
+		if token_list != null and is_instance_valid(token_list):
+			token_list.call("refresh")
+		if initiative_tracker != null and is_instance_valid(initiative_tracker):
+			initiative_tracker.call("refresh")
 
 	var confirmed_callback: Callable = (
 		_token_generation_confirmed_callback
