@@ -12,8 +12,9 @@ func _initialize() -> void:
 		"--output",
 		"res://dist/token_packs/%s.pck" % token_id
 	).strip_edges()
+	var source_override := _arg_value(args, "--source", "").strip_edges()
 
-	var result := _build_pack(token_id, output_path)
+	var result := _build_pack(token_id, output_path, source_override)
 	if result != OK:
 		push_error("Token pack build failed: %s" % error_string(result))
 		quit(1)
@@ -281,14 +282,20 @@ func _write_text(path: String, content: String) -> Error:
 	return error
 
 
-func _build_pack(token_id: String, output_path: String) -> Error:
+func _build_pack(
+	token_id: String,
+	output_path: String,
+	source_override: String = ""
+) -> Error:
 	print("TOKEN_PACK_STAGE profile id=%s" % token_id)
 	var profile := _find_profile(token_id)
 	if profile.is_empty():
 		push_error("Token id not found in manifest: %s" % token_id)
 		return ERR_DOES_NOT_EXIST
 
-	var source_path := _profile_visual_path(profile)
+	var source_path := source_override.strip_edges()
+	if source_path.is_empty():
+		source_path = _profile_visual_path(profile)
 	if source_path.is_empty():
 		push_error("Token has no visual asset: %s" % token_id)
 		return ERR_INVALID_DATA
