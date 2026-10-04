@@ -1803,7 +1803,7 @@ func _unhandled_input(event: InputEvent) -> void:
 					direction = Vector2i(0, 1)
 
 			if direction != Vector2i.ZERO and not event.shift_pressed:
-				_move_selected(direction)
+				_move_selected(direction, event.ctrl_pressed)
 				get_viewport().set_input_as_handled()
 				return
 
@@ -4330,7 +4330,10 @@ func _clean_selection() -> void:
 	_selected_tokens = cleaned
 
 
-func _move_selected(direction: Vector2i) -> void:
+func _move_selected(
+	direction: Vector2i,
+	apply_gravity_after: bool = false
+) -> void:
 	_clean_selection()
 	if _selected_tokens.is_empty():
 		if _has_selected_item():
@@ -4350,6 +4353,18 @@ func _move_selected(direction: Vector2i) -> void:
 		item_controller.flush_motion(_selected_tokens)
 
 	var moved: bool = _selected_tokens_moved_from(origins)
+	if moved and apply_gravity_after:
+		for index: int in range(_selected_tokens.size()):
+			var token: CharacterBody3D = _selected_tokens[index]
+			if (
+				token != null
+				and is_instance_valid(token)
+				and index < origins.size()
+				and not token.global_position.is_equal_approx(origins[index])
+				and token.has_method("apply_gravity")
+			):
+				token.call("apply_gravity")
+
 	if moved:
 		commit_undo_transaction(before)
 		check_opportunity_attacks_after_movement(
