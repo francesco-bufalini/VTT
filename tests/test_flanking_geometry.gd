@@ -154,15 +154,15 @@ func run() -> void:
 		half
 	))
 
-	# Requested square-grid sector handling: diagonal + opposite side is a
-	# valid 135-degree flank ("L" arrangement), while a 90-degree pair is not.
-	assert(FlankingSystem.centers_form_flanking_pair(
+	# Strict DMG square-grid handling restored: diagonal + side ("L")
+	# arrangements do not qualify. Only opposite sides/corners do.
+	assert(not FlankingSystem.centers_form_flanking_pair(
 		Vector3(1.0, 0.0, 1.0),
 		Vector3(0.0, 0.0, -1.0),
 		Vector3.ZERO,
 		half
 	))
-	assert(FlankingSystem.centers_form_flanking_pair(
+	assert(not FlankingSystem.centers_form_flanking_pair(
 		Vector3(1.0, 0.0, 1.0),
 		Vector3(-1.0, 0.0, 0.0),
 		Vector3.ZERO,
@@ -175,14 +175,24 @@ func run() -> void:
 		half
 	))
 
-	# The stricter opposite-border helper remains available for exact DMG
-	# line diagnostics, but is no longer the only accepted tactical layout.
 	assert(not FlankingSystem.centers_cross_opposite_borders(
 		Vector3(-2.0, 0.0, 0.0),
 		Vector3(0.0, 0.0, 2.0),
 		Vector3.ZERO,
 		half
 	))
+
+	# The visual replacement is two directional arrows converging on target.
+	var arrow := FlankingSystem.flanking_arrow_segment(
+		Vector3(-1.0, 0.03, 0.0),
+		Vector3.ZERO + Vector3(0.0, 0.03, 0.0),
+		1.0
+	)
+	assert(arrow.size() == 2)
+	assert(
+		arrow[1].distance_to(Vector3(0.0, 0.03, 0.0))
+		< arrow[0].distance_to(Vector3(0.0, 0.03, 0.0))
+	)
 
 	# A diagonal line that misses the target hitbox must not count.
 	var miss := FlankingSystem.flanking_segment(
