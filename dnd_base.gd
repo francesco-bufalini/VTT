@@ -2835,6 +2835,8 @@ func _prepare_shared_token_editor() -> void:
 	if editing:
 		color_dialog.title = "Modifica token"
 		color_dialog.ok_button_text = "Applica"
+		color_dialog.get_ok_button().text = "Applica"
+		color_dialog.get_ok_button().show()
 		var target := _token_generation_transform_target
 		if token_identity_label != null:
 			token_identity_label.text = (
@@ -2853,6 +2855,8 @@ func _prepare_shared_token_editor() -> void:
 	else:
 		color_dialog.title = "Crea token"
 		color_dialog.ok_button_text = "Crea"
+		color_dialog.get_ok_button().text = "Crea"
+		color_dialog.get_ok_button().show()
 		if token_identity_label != null:
 			token_identity_label.text = (
 				"ID token: assegnato automaticamente alla creazione"
