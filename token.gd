@@ -43,6 +43,7 @@ const CONDITION_DEFINITIONS := [
 @export var visual_native_footprint_cells: float = 0.0
 @export_range(0, 3, 1) var visual_front_quarter_turns: int = 0
 @export var token_display_name: String = ""
+@export var party_id: String = ""
 @export var default_size_name: String = "Medium"
 @export var default_footprint_cells: float = 1.0
 
@@ -850,6 +851,14 @@ func set_display_name(value: String) -> void:
 
 func get_display_name() -> String:
 	return token_display_name
+
+
+func set_party_id(value: String) -> void:
+	party_id = value.strip_edges().left(80)
+
+
+func get_party_id() -> String:
+	return party_id
 
 
 func get_condition_definitions() -> Array:
