@@ -11,27 +11,35 @@ const MAX_IMPORTED_EXTENT_PER_FOOTPRINT := 3.0
 # stabili nei salvataggi; etichette e pittogrammi sono solo presentazione.
 const CONDITION_DEFINITIONS := [
 	# Le 15 condizioni ufficiali D&D 5e / SRD.
-	{"id": "blinded", "name": "Accecato", "icon": "[BL]", "official": true},
-	{"id": "charmed", "name": "Affascinato", "icon": "[CH]", "official": true},
-	{"id": "deafened", "name": "Assordato", "icon": "[DE]", "official": true},
-	{"id": "exhaustion", "name": "Sfinimento", "icon": "[EX]", "official": true},
-	{"id": "frightened", "name": "Spaventato", "icon": "[FR]", "official": true},
-	{"id": "grappled", "name": "Afferrato", "icon": "[GR]", "official": true},
-	{"id": "incapacitated", "name": "Incapacitato", "icon": "[IN]", "official": true},
-	{"id": "invisible", "name": "Invisibile", "icon": "[IV]", "official": true},
-	{"id": "paralyzed", "name": "Paralizzato", "icon": "[PA]", "official": true},
-	{"id": "petrified", "name": "Pietrificato", "icon": "[PE]", "official": true},
-	{"id": "poisoned", "name": "Avvelenato", "icon": "[PO]", "official": true},
-	{"id": "prone", "name": "Prono", "icon": "[PR]", "official": true},
-	{"id": "restrained", "name": "Trattenuto", "icon": "[RE]", "official": true},
-	{"id": "stunned", "name": "Stordito", "icon": "[ST]", "official": true},
-	{"id": "unconscious", "name": "Privo di sensi", "icon": "[UN]", "official": true},
+	{"id": "blinded", "name": "Accecato", "icon": "🙈", "official": true},
+	{"id": "charmed", "name": "Affascinato", "icon": "💘", "official": true},
+	{"id": "deafened", "name": "Assordato", "icon": "🔇", "official": true},
+	{"id": "exhaustion", "name": "Sfinimento", "icon": "🥱", "official": true},
+	{"id": "frightened", "name": "Spaventato", "icon": "😨", "official": true},
+	{"id": "grappled", "name": "Afferrato", "icon": "🪢", "official": true},
+	{"id": "incapacitated", "name": "Incapacitato", "icon": "⛔", "official": true},
+	{"id": "invisible", "name": "Invisibile", "icon": "👻", "official": true},
+	{"id": "paralyzed", "name": "Paralizzato", "icon": "🧊", "official": true},
+	{"id": "petrified", "name": "Pietrificato", "icon": "🗿", "official": true},
+	{"id": "poisoned", "name": "Avvelenato", "icon": "☠️", "official": true},
+	{"id": "prone", "name": "Prono", "icon": "⬇️", "official": true},
+	{"id": "restrained", "name": "Trattenuto", "icon": "⛓️", "official": true},
+	{"id": "stunned", "name": "Stordito", "icon": "💫", "official": true},
+	{"id": "unconscious", "name": "Privo di sensi", "icon": "😴", "official": true},
 
 	# Marker tattici utili nel VTT. Non sono condizioni ufficiali SRD.
-	{"id": "concentrating", "name": "Concentrazione", "icon": "[CO]", "official": false},
-	{"id": "surprised", "name": "Sorpreso", "icon": "[SU]", "official": false},
-	{"id": "hidden", "name": "Nascosto", "icon": "[HI]", "official": false},
-	{"id": "dead", "name": "Morto", "icon": "[KO]", "official": false},
+	{"id": "concentrating", "name": "Concentrazione", "icon": "🧠", "official": false},
+	{"id": "surprised", "name": "Sorpreso", "icon": "❗", "official": false},
+	{"id": "hidden", "name": "Nascosto", "icon": "🥷", "official": false},
+	{"id": "dead", "name": "Morto", "icon": "💀", "official": false},
+	{
+		"id": "flying",
+		"name": "Volante",
+		"icon": "🪽",
+		"official": false,
+		"automatic": true,
+		"ring": false
+	},
 ]
 
 @export var cell_size: float = 1.0
@@ -71,6 +79,9 @@ var _animation_set: String = ""
 var _default_animation: String = ""
 var _uses_manifest_default: bool = false
 var _conditions: Array[String] = []
+var _automatic_conditions: Array[String] = []
+var _automatic_condition_elapsed: float = 0.0
+const AUTOMATIC_CONDITION_INTERVAL := 0.25
 var _reach_feet: float = 5.0
 var _reach_overridden: bool = false
 var _condition_rings_root: Node3D
@@ -78,7 +89,11 @@ var _overlay_root: Node3D
 var _name_label: Label3D
 var _status_label: Label3D
 var _flanking_badge_root: Node3D
+var _flanking_badge_border: MeshInstance3D
+var _flanking_badge_background: MeshInstance3D
 var _flanking_badge_label: Label3D
+var _flanking_badge_border_material: StandardMaterial3D
+var _flanking_badge_background_material: StandardMaterial3D
 var _hp_bar_root: Node3D
 var _hp_bar_mesh: MeshInstance3D
 var _hp_bar_material: StandardMaterial3D
@@ -120,6 +135,12 @@ func _ready() -> void:
 
 
 func _physics_process(delta: float) -> void:
+	_update_flanking_badge_facing()
+	_automatic_condition_elapsed += delta
+	if _automatic_condition_elapsed >= AUTOMATIC_CONDITION_INTERVAL:
+		_automatic_condition_elapsed = 0.0
+		_refresh_automatic_flying_condition()
+
 	# L'aggancio a carro/piattaforma non dipende dalla gravita: un token
 	# sospeso ma appoggiato al carro continua a seguirne il transform.
 	if is_instance_valid(grid_support):
@@ -210,6 +231,67 @@ func set_flying(enabled: bool) -> void:
 
 func set_volumetric_grid(grid: Node3D) -> void:
 	volumetric_grid = grid
+	call_deferred("refresh_automatic_conditions")
+
+
+func refresh_automatic_conditions() -> void:
+	_automatic_condition_elapsed = 0.0
+	_refresh_automatic_flying_condition()
+
+
+func _refresh_automatic_flying_condition() -> void:
+	if (
+		volumetric_grid == null
+		or not is_instance_valid(volumetric_grid)
+		or not volumetric_grid.has_method(
+			"has_grid_cell_immediately_below"
+		)
+	):
+		return
+
+	var half_height := token_height_cells * cell_size * 0.5
+	var base_y := global_position.y - half_height
+	var has_support := bool(
+		volumetric_grid.call(
+			"has_grid_cell_immediately_below",
+			global_position,
+			_footprint_cells,
+			base_y,
+			cell_size * 0.10
+		)
+	)
+	_set_automatic_condition("flying", not has_support)
+
+
+func _set_automatic_condition(
+	condition_id: String,
+	enabled: bool
+) -> void:
+	var normalized := condition_id.strip_edges().to_lower()
+	if not _condition_is_automatic(normalized):
+		return
+	var changed := false
+	if enabled:
+		if not (normalized in _automatic_conditions):
+			_automatic_conditions.append(normalized)
+			changed = true
+	else:
+		if normalized in _automatic_conditions:
+			_automatic_conditions.erase(normalized)
+			changed = true
+	if changed:
+		_update_status_overlay()
+
+
+static func support_is_immediately_below(
+	base_y: float,
+	support_top_y: float,
+	cell_size_value: float
+) -> bool:
+	if support_top_y >= INF:
+		return false
+	var safe_cell := maxf(cell_size_value, 0.001)
+	return absf(base_y - support_top_y) <= safe_cell * 0.10 + 0.0001
 
 
 func _grid_landing_center_y(delta: float) -> float:
@@ -910,16 +992,28 @@ func get_condition_definitions() -> Array:
 
 
 func get_conditions() -> Array[String]:
+	# Only persistent/manual conditions are serialized.
 	return _conditions.duplicate()
 
 
+func get_automatic_conditions() -> Array[String]:
+	return _automatic_conditions.duplicate()
+
+
 func has_condition(condition_id: String) -> bool:
-	return condition_id.strip_edges().to_lower() in _conditions
+	var normalized := condition_id.strip_edges().to_lower()
+	return (
+		normalized in _conditions
+		or normalized in _automatic_conditions
+	)
 
 
 func set_condition(condition_id: String, enabled: bool) -> void:
 	var normalized := condition_id.strip_edges().to_lower()
-	if not _is_valid_condition(normalized):
+	if (
+		not _is_valid_condition(normalized)
+		or _condition_is_automatic(normalized)
+	):
 		return
 	if enabled:
 		if not (normalized in _conditions):
@@ -937,7 +1031,11 @@ func set_conditions(value: Variant) -> void:
 			if not item is String:
 				continue
 			var normalized := String(item).strip_edges().to_lower()
-			if _is_valid_condition(normalized) and not (normalized in resolved):
+			if (
+				_is_valid_condition(normalized)
+				and not _condition_is_automatic(normalized)
+				and not (normalized in resolved)
+			):
 				resolved.append(normalized)
 	_conditions = resolved
 	_update_status_overlay()
@@ -948,6 +1046,13 @@ func _is_valid_condition(condition_id: String) -> bool:
 	for definition: Dictionary in CONDITION_DEFINITIONS:
 		if String(definition.get("id", "")) == condition_id:
 			return true
+	return false
+
+
+func _condition_is_automatic(condition_id: String) -> bool:
+	for definition: Dictionary in CONDITION_DEFINITIONS:
+		if String(definition.get("id", "")) == condition_id:
+			return bool(definition.get("automatic", false))
 	return false
 
 
@@ -1078,7 +1183,10 @@ func _update_condition_rings() -> void:
 	var ring_index := 0
 	for definition: Dictionary in CONDITION_DEFINITIONS:
 		var condition_id := String(definition.get("id", ""))
-		if not (condition_id in _conditions):
+		if (
+			not (condition_id in _conditions)
+			or not bool(definition.get("ring", true))
+		):
 			continue
 
 		var center_radius := (
@@ -1160,6 +1268,8 @@ func _ensure_flanking_badge() -> void:
 		return
 	if (
 		is_instance_valid(_flanking_badge_root)
+		and is_instance_valid(_flanking_badge_border)
+		and is_instance_valid(_flanking_badge_background)
 		and is_instance_valid(_flanking_badge_label)
 	):
 		return
@@ -1172,34 +1282,87 @@ func _ensure_flanking_badge() -> void:
 		_flanking_badge_root.name = "FlankingBadge"
 		_overlay_root.add_child(_flanking_badge_root)
 
-	# Remove the old multi-plane badge if this scene survives a script reload.
-	# A single Label3D avoids the visible/mirrored "back side" that separate
-	# billboarded quads produced from oblique camera angles.
-	for legacy_name: String in ["Border", "Background"]:
+	for legacy_name: String in ["Border", "Background", "Label"]:
 		var legacy := _flanking_badge_root.get_node_or_null(legacy_name)
 		if legacy != null:
 			_flanking_badge_root.remove_child(legacy)
 			legacy.queue_free()
 
-	_flanking_badge_label = (
-		_flanking_badge_root.get_node_or_null("Label") as Label3D
+	_flanking_badge_border = MeshInstance3D.new()
+	_flanking_badge_border.name = "Border"
+	_flanking_badge_border.cast_shadow = (
+		GeometryInstance3D.SHADOW_CASTING_SETTING_OFF
 	)
-	if _flanking_badge_label == null:
-		_flanking_badge_label = Label3D.new()
-		_flanking_badge_label.name = "Label"
-		_flanking_badge_root.add_child(_flanking_badge_label)
+	_flanking_badge_root.add_child(_flanking_badge_border)
 
-	_flanking_badge_label.billboard = BaseMaterial3D.BILLBOARD_ENABLED
+	var border_quad := QuadMesh.new()
+	border_quad.size = Vector2(2.22 * cell_size, 0.46 * cell_size)
+	_flanking_badge_border.mesh = border_quad
+
+	_flanking_badge_border_material = StandardMaterial3D.new()
+	_flanking_badge_border_material.transparency = (
+		BaseMaterial3D.TRANSPARENCY_ALPHA
+	)
+	_flanking_badge_border_material.shading_mode = (
+		BaseMaterial3D.SHADING_MODE_UNSHADED
+	)
+	_flanking_badge_border_material.cull_mode = BaseMaterial3D.CULL_DISABLED
+	_flanking_badge_border_material.no_depth_test = true
+	_flanking_badge_border_material.albedo_color = Color(
+		0.72, 0.48, 0.20, 0.82
+	)
+	_flanking_badge_border_material.render_priority = 1
+	_flanking_badge_border.material_override = (
+		_flanking_badge_border_material
+	)
+
+	_flanking_badge_background = MeshInstance3D.new()
+	_flanking_badge_background.name = "Background"
+	_flanking_badge_background.cast_shadow = (
+		GeometryInstance3D.SHADOW_CASTING_SETTING_OFF
+	)
+	_flanking_badge_root.add_child(_flanking_badge_background)
+
+	var background_quad := QuadMesh.new()
+	background_quad.size = Vector2(2.12 * cell_size, 0.38 * cell_size)
+	_flanking_badge_background.mesh = background_quad
+
+	_flanking_badge_background_material = StandardMaterial3D.new()
+	_flanking_badge_background_material.transparency = (
+		BaseMaterial3D.TRANSPARENCY_ALPHA
+	)
+	_flanking_badge_background_material.shading_mode = (
+		BaseMaterial3D.SHADING_MODE_UNSHADED
+	)
+	_flanking_badge_background_material.cull_mode = (
+		BaseMaterial3D.CULL_DISABLED
+	)
+	_flanking_badge_background_material.no_depth_test = true
+	_flanking_badge_background_material.albedo_color = Color(
+		0.035, 0.04, 0.05, 0.90
+	)
+	_flanking_badge_background_material.render_priority = 2
+	_flanking_badge_background.material_override = (
+		_flanking_badge_background_material
+	)
+
+	_flanking_badge_label = Label3D.new()
+	_flanking_badge_label.name = "Label"
+	_flanking_badge_label.billboard = BaseMaterial3D.BILLBOARD_DISABLED
 	_flanking_badge_label.fixed_size = false
 	_flanking_badge_label.no_depth_test = true
-	_flanking_badge_label.font_size = 25
-	_flanking_badge_label.outline_size = 12
-	_flanking_badge_label.modulate = Color(1.0, 0.72, 0.22, 1.0)
-	_flanking_badge_label.outline_modulate = Color(0.025, 0.028, 0.036, 0.98)
-	_flanking_badge_label.text = "‹  AFFIANCATO  ›"
+	_flanking_badge_label.font_size = 22
+	_flanking_badge_label.outline_size = 4
+	_flanking_badge_label.modulate = Color(1.0, 0.94, 0.82, 1.0)
+	_flanking_badge_label.outline_modulate = Color(0.03, 0.035, 0.045, 1.0)
+	_flanking_badge_label.text = "🗡️  Affiancato"
 	_flanking_badge_label.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
 	_flanking_badge_label.vertical_alignment = VERTICAL_ALIGNMENT_CENTER
+	_flanking_badge_root.add_child(_flanking_badge_label)
 
+	_flanking_badge_border.position.z = 0.0
+	_flanking_badge_background.position.z = 0.004 * cell_size
+	_flanking_badge_label.position.z = 0.008 * cell_size
 	_flanking_badge_root.visible = false
 
 
@@ -1215,6 +1378,23 @@ func is_flanking_indicator_visible() -> bool:
 		is_instance_valid(_flanking_badge_root)
 		and _flanking_badge_root.visible
 	)
+
+
+func _update_flanking_badge_facing() -> void:
+	if (
+		not is_instance_valid(_flanking_badge_root)
+		or not _flanking_badge_root.visible
+	):
+		return
+	var camera := get_viewport().get_camera_3d()
+	if camera == null or not is_instance_valid(camera):
+		return
+	var target := camera.global_position
+	if _flanking_badge_root.global_position.distance_squared_to(target) <= 0.000001:
+		return
+	# Rotate the entire badge as one object. Border, background and text
+	# therefore never acquire different front/back orientations.
+	_flanking_badge_root.look_at(target, Vector3.UP, true)
 
 
 func _update_overlay_position() -> void:
@@ -1237,9 +1417,28 @@ func _update_overlay_position() -> void:
 			0.66 * cell_size,
 			0.0
 		)
+	if is_instance_valid(_flanking_badge_border):
+		var border_quad := _flanking_badge_border.mesh as QuadMesh
+		if border_quad != null:
+			border_quad.size = Vector2(
+				2.22 * cell_size,
+				0.46 * cell_size
+			)
+	if is_instance_valid(_flanking_badge_background):
+		var background_quad := _flanking_badge_background.mesh as QuadMesh
+		if background_quad != null:
+			background_quad.size = Vector2(
+				2.12 * cell_size,
+				0.38 * cell_size
+			)
+		_flanking_badge_background.position.z = 0.004 * cell_size
 	if is_instance_valid(_flanking_badge_label):
-		_flanking_badge_label.pixel_size = 0.0085 * cell_size
-		_flanking_badge_label.position = Vector3.ZERO
+		_flanking_badge_label.pixel_size = 0.0082 * cell_size
+		_flanking_badge_label.position = Vector3(
+			0.0,
+			0.0,
+			0.008 * cell_size
+		)
 	if is_instance_valid(_hp_bar_root):
 		_hp_bar_root.position = Vector3(0.0, 0.34 * cell_size, 0.0)
 		_update_health_bar_visual()
@@ -1462,7 +1661,10 @@ func _update_status_overlay() -> void:
 	var icons: PackedStringArray = []
 	for definition: Dictionary in CONDITION_DEFINITIONS:
 		var condition_id := String(definition.get("id", ""))
-		if condition_id in _conditions:
+		if (
+			condition_id in _conditions
+			or condition_id in _automatic_conditions
+		):
 			icons.append(String(definition.get("icon", "•")))
 	_status_label.text = "  ".join(icons)
 	_status_label.visible = not icons.is_empty()
