@@ -3,6 +3,14 @@ extends Control
 const ACTION_RENAME := 1
 const ACTION_DELETE := 2
 const ACTIVE_CAMPAIGNS_SCENE_PATH := "res://vtt/menu/active_campaigns.tscn"
+const FOREST_PRESET_ID := "forest_mountains"
+const FOREST_PRESET_PATH := (
+	"res://assets/presets/forest_mountains/forest_mountains_preset.glb"
+)
+const PIRATE_SHIP_PRESET_ID := "sirens_light_pirate_ship"
+const PIRATE_SHIP_PRESET_PATH := (
+	"res://assets/presets/pirate_ship/sirens_light_pirate_ship_preset.glb"
+)
 const MenuBackdrop = preload("res://vtt/menu/menu_backdrop.gd")
 const MenuStyle = preload("res://vtt/menu/menu_style.gd")
 
@@ -10,6 +18,9 @@ var _status_label: Label
 var _rename_dialog: ConfirmationDialog
 var _rename_input: LineEdit
 var _delete_dialog: ConfirmationDialog
+var _create_dialog: ConfirmationDialog
+var _create_name_input: LineEdit
+var _create_preset: OptionButton
 
 var _campaign_group_id: String = ""
 var _campaign_group_name: String = ""
@@ -23,6 +34,7 @@ func _ready() -> void:
 		return
 	_build_ui()
 	_build_action_dialogs()
+	_build_create_dialog()
 
 
 func _resolve_campaign_group() -> bool:
@@ -88,6 +100,13 @@ func _build_ui() -> void:
 	title.vertical_alignment = VERTICAL_ALIGNMENT_CENTER
 	MenuStyle.apply_title_style(title, 44)
 	header.add_child(title)
+
+	var create_button: Button = MenuStyle.menu_button(
+		"Crea scenario",
+		Vector2(170, 42)
+	)
+	create_button.pressed.connect(_request_create_scenario)
+	header.add_child(create_button)
 
 	var back: Button = MenuStyle.menu_button(
 		"Indietro",
@@ -299,6 +318,106 @@ func _build_action_dialogs() -> void:
 	_delete_dialog.min_size = Vector2i(460, 200)
 	add_child(_delete_dialog)
 	_delete_dialog.confirmed.connect(_confirm_delete)
+
+
+func _build_create_dialog() -> void:
+	_create_dialog = ConfirmationDialog.new()
+	_create_dialog.title = "Crea scenario"
+	_create_dialog.ok_button_text = "Crea"
+	_create_dialog.cancel_button_text = "Annulla"
+	_create_dialog.min_size = Vector2i(500, 300)
+	_create_dialog.add_theme_constant_override("buttons_min_width", 100)
+	_create_dialog.add_theme_constant_override("buttons_min_height", 34)
+	add_child(_create_dialog)
+
+	var body := VBoxContainer.new()
+	body.custom_minimum_size = Vector2(445, 175)
+	body.add_theme_constant_override("separation", 10)
+	_create_dialog.add_child(body)
+
+	var name_label := Label.new()
+	name_label.text = "Nome scenario"
+	body.add_child(name_label)
+
+	_create_name_input = LineEdit.new()
+	_create_name_input.placeholder_text = "Es. Porto di Meletis"
+	_create_name_input.max_length = 80
+	body.add_child(_create_name_input)
+
+	var preset_label := Label.new()
+	preset_label.text = "Preset iniziale"
+	body.add_child(preset_label)
+
+	_create_preset = OptionButton.new()
+	_create_preset.custom_minimum_size = Vector2(0, 38)
+	body.add_child(_create_preset)
+	_populate_create_presets()
+
+	var hint := Label.new()
+	hint.text = (
+		"Il preset appartiene allo scenario, non alla campagna. "
+		+ "Puoi creare altri scenari con preset diversi nella stessa campagna."
+	)
+	hint.autowrap_mode = TextServer.AUTOWRAP_WORD_SMART
+	hint.modulate = Color(0.72, 0.75, 0.82, 1.0)
+	body.add_child(hint)
+
+	_create_dialog.confirmed.connect(_confirm_create_scenario)
+
+
+func _populate_create_presets() -> void:
+	if _create_preset == null:
+		return
+	_create_preset.clear()
+	_create_preset.add_item("Vuoto bianco")
+	_create_preset.set_item_metadata(0, "")
+	if FileAccess.file_exists(FOREST_PRESET_PATH):
+		var forest_index := _create_preset.item_count
+		_create_preset.add_item("Foresta e montagne")
+		_create_preset.set_item_metadata(forest_index, FOREST_PRESET_ID)
+	if FileAccess.file_exists(PIRATE_SHIP_PRESET_PATH):
+		var ship_index := _create_preset.item_count
+		_create_preset.add_item("The Siren's Light")
+		_create_preset.set_item_metadata(ship_index, PIRATE_SHIP_PRESET_ID)
+	_create_preset.select(0)
+
+
+func _request_create_scenario() -> void:
+	_create_name_input.clear()
+	_populate_create_presets()
+	_create_dialog.reset_size()
+	_create_dialog.popup_centered_clamped(Vector2i(500, 300), 0.92)
+	_create_name_input.call_deferred("grab_focus")
+
+
+func _confirm_create_scenario() -> void:
+	var scenario_name: String = _create_name_input.text.strip_edges()
+	if scenario_name.is_empty():
+		_set_status("Inserisci un nome per lo scenario.")
+		return
+	var manager: Node = _campaign_manager()
+	if manager == null:
+		_set_status("CampaignManager non disponibile.")
+		return
+
+	var preset_id := ""
+	if _create_preset != null and _create_preset.selected >= 0:
+		preset_id = String(
+			_create_preset.get_item_metadata(_create_preset.selected)
+		).strip_edges()
+
+	var scenario_id: String = String(
+		manager.call(
+			"create_scenario",
+			_campaign_group_id,
+			scenario_name,
+			preset_id
+		)
+	)
+	if scenario_id.is_empty():
+		_set_status("Impossibile creare lo scenario.")
+		return
+	get_tree().reload_current_scene()
 
 
 func _on_card_action(
