@@ -77,12 +77,7 @@ func _configure_encounter_token(token: Node) -> void:
 func _show_context_menu(screen_position: Vector2) -> void:
 	super._show_context_menu(screen_position)
 	context_menu.add_separator()
-	context_menu.add_item("Avanza", CONTEXT_ADVANCE)
-	context_menu.add_separator()
 	context_menu.add_item("Inquadra spalle di Kaos", CONTEXT_SHOULDERS)
-	context_menu.add_item("Inquadra battlemap", CONTEXT_BOARD)
-	context_menu.add_item("Vista generale", CONTEXT_OVERVIEW)
-	_refresh_encounter_menu()
 
 func _refresh_encounter_menu() -> void:
 	var index := context_menu.get_item_index(CONTEXT_ADVANCE)
