@@ -2086,7 +2086,7 @@ func _show_context_menu(screen_position: Vector2) -> void:
 			context_token_menu.add_separator()
 
 		if _selected_tokens.size() == 1:
-			context_token_menu.add_item("Nome, party e stati…", CONTEXT_TOKEN_DETAILS)
+			context_token_menu.add_item("Modifica token…", CONTEXT_TOKEN_DETAILS)
 			var selected_token: CharacterBody3D = _selected_tokens[0]
 			if (
 				selected_token != null
@@ -2731,6 +2731,115 @@ func open_token_transformation(
 	_open_token_generation_dialog()
 
 
+func _existing_token_profile_id(token: CharacterBody3D) -> String:
+	var visual_asset := (
+		String(token.call("get_visual_asset_path")).strip_edges()
+		if token.has_method("get_visual_asset_path")
+		else ""
+	)
+	for profile: Dictionary in _token_profiles:
+		if _token_profile_visual_asset(profile) == visual_asset:
+			return String(profile.get("id", ""))
+
+	var stable_id := (
+		String(token.call("get_token_id"))
+		if token.has_method("get_token_id")
+		else str(token.get_instance_id())
+	)
+	var synthetic_id := "current:" + stable_id
+	for profile: Dictionary in _token_profiles:
+		if String(profile.get("id", "")) == synthetic_id:
+			return synthetic_id
+
+	var size_name := (
+		String(token.call("get_size_name"))
+		if token.has_method("get_size_name")
+		else "Medium"
+	)
+	var footprint := (
+		float(token.call("get_footprint_cells"))
+		if token.has_method("get_footprint_cells")
+		else 1.0
+	)
+	_token_profiles.append({
+		"id": synthetic_id,
+		"name": (
+			String(token.call("get_display_name"))
+			if token.has_method("get_display_name")
+			else "Token attuale"
+		),
+		"visual_asset": visual_asset,
+		"size_name": size_name,
+		"footprint": footprint,
+		"_pack_origin": "current",
+	})
+	_token_profiles.sort_custom(Callable(self, "_sort_token_profiles"))
+	return synthetic_id
+
+
+func _load_shared_token_editor_from_target(token: CharacterBody3D) -> void:
+	if token == null or not is_instance_valid(token):
+		return
+	if token_name_input != null:
+		token_name_input.text = (
+			String(token.call("get_display_name"))
+			if token.has_method("get_display_name")
+			else ""
+		)
+	if token_party_input != null:
+		token_party_input.text = (
+			String(token.call("get_party_id"))
+			if token.has_method("get_party_id")
+			else String(token.get_meta("party_id", ""))
+		)
+
+	var size_name := (
+		String(token.call("get_size_name"))
+		if token.has_method("get_size_name")
+		else "Medium"
+	)
+	for size_index: int in range(TOKEN_SIZES.size()):
+		if String(TOKEN_SIZES[size_index].get("name", "")) == size_name:
+			size_selector.select(size_index)
+			break
+
+	if token_reach_input != null and token.has_method("get_reach_feet"):
+		token_reach_input.value = float(token.call("get_reach_feet"))
+	if token_front_selector != null and token.has_method(
+		"get_visual_front_quarter_turns"
+	):
+		token_front_selector.select(
+			clampi(int(token.call("get_visual_front_quarter_turns")), 0, 3)
+		)
+
+	var conditions: Variant = []
+	if token.has_method("get_conditions"):
+		conditions = token.call("get_conditions")
+	_set_shared_token_editor_conditions(conditions)
+
+
+func _prepare_shared_token_editor() -> void:
+	var editing := (
+		_token_generation_transform_target != null
+		and is_instance_valid(_token_generation_transform_target)
+	)
+	if editing:
+		color_dialog.title = "Modifica token"
+		color_dialog.ok_button_text = "Applica"
+		var target := _token_generation_transform_target
+		var preferred_id := _existing_token_profile_id(target)
+		if token_miniature_search != null:
+			token_miniature_search.text = ""
+		_refresh_token_miniature_filter("", preferred_id)
+		_load_shared_token_editor_from_target(target)
+	else:
+		color_dialog.title = "Crea token"
+		color_dialog.ok_button_text = "Crea"
+		if token_party_input != null:
+			token_party_input.text = ""
+		_set_shared_token_editor_conditions([])
+
+
 func _open_token_generation_dialog() -> void:
 	if (
 		not _has_pending_spawn_position
@@ -2742,19 +2851,24 @@ func _open_token_generation_dialog() -> void:
 		return
 
 	_ui_owns_mouse = true
-	if token_miniature_list != null and not _token_profiles.is_empty():
-		var selected_items: PackedInt32Array = (
-			token_miniature_list.get_selected_items()
-		)
-		var selected_index: int = (
-			int(selected_items[0])
-			if not selected_items.is_empty()
-			else 0
-		)
-		token_miniature_list.select(selected_index)
-		_on_token_miniature_selected(selected_index)
+	if (
+		_token_generation_transform_target == null
+		or not is_instance_valid(_token_generation_transform_target)
+	):
+		if token_miniature_list != null and not _token_profiles.is_empty():
+			var selected_items: PackedInt32Array = (
+				token_miniature_list.get_selected_items()
+			)
+			var selected_index: int = (
+				int(selected_items[0])
+				if not selected_items.is_empty()
+				else 0
+			)
+			token_miniature_list.select(selected_index)
+			_on_token_miniature_selected(selected_index)
 
-	_popup_dialog_safe(color_dialog, Vector2i(650, 820))
+	_prepare_shared_token_editor()
+	_popup_dialog_safe(color_dialog, Vector2i(650, 760))
 	call_deferred("_release_mouse")
 
 
