@@ -253,7 +253,7 @@ func _ready() -> void:
 		"setup",
 		self,
 		_share_session_key(),
-		Callable(board_sync, "_tailscale_peer_ipv4s")
+		Callable(board_sync, "get_cached_tailscale_peer_ipv4s")
 	)
 
 	var runtime_toolbar: Node = (

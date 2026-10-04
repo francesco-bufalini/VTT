@@ -282,6 +282,12 @@ func show_panel() -> void:
 		return
 	panel.show()
 	_render()
+	var roller := _dice_chat()
+	if (
+		roller != null
+		and roller.has_method("ensure_display_name")
+	):
+		roller.call("ensure_display_name")
 
 
 func hide_panel() -> void:
@@ -320,6 +326,18 @@ func _log_combat_action(
 func start_combat() -> void:
 	if combat_active:
 		show_panel()
+		return
+	var roller := _dice_chat()
+	if (
+		roller != null
+		and roller.has_method("ensure_display_name")
+		and not bool(
+			roller.call(
+				"ensure_display_name",
+				Callable(self, "start_combat")
+			)
+		)
+	):
 		return
 	_record_undo_state()
 	combat_active = true

@@ -9,6 +9,7 @@ const BACKUP_DIR := "user://map_sync_backups"
 const MAX_BACKUPS := 20
 const MAX_BYTES := 4 * 1024 * 1024
 const BULK_SEND_TIMEOUT_MS := 3000
+const TAILSCALE_PEER_REFRESH_MS := 15000
 const GROUPS := ["dnd_token", "tactical_platform", "encounter_obstacle"]
 const TOKEN_CONDITIONS := [
 	"blinded", "charmed", "deafened", "exhaustion", "frightened",
@@ -25,6 +26,9 @@ var connections: Array = []
 var receiving := false
 var session_key := ""
 var _tailscale_last_error := ""
+var _tailscale_peer_cache: Array[String] = []
+var _tailscale_peer_cache_updated_msec := 0
+var _tailscale_peer_refresh_thread: Thread = null
 var _bulk_generation := 0
 var _bulk_pending := 0
 var _bulk_total := 0
@@ -40,6 +44,7 @@ func setup(root: Node, scene: PackedScene, tokens: Node, measure: Node) -> void:
 	tokens_root = tokens
 	measurement_tool = measure
 	_connect_token_pack_manager()
+	_request_tailscale_peer_refresh()
 
 
 func _connect_token_pack_manager() -> void:
@@ -209,8 +214,69 @@ func _queue_snapshot_payload(
 	return OK
 
 
+func get_cached_tailscale_peer_ipv4s() -> Array[String]:
+	var now := Time.get_ticks_msec()
+	if (
+		_tailscale_peer_cache_updated_msec <= 0
+		or now - _tailscale_peer_cache_updated_msec
+		>= TAILSCALE_PEER_REFRESH_MS
+	):
+		_request_tailscale_peer_refresh()
+	return _tailscale_peer_cache.duplicate()
+
+
+func _request_tailscale_peer_refresh() -> void:
+	if (
+		_tailscale_peer_refresh_thread != null
+		and _tailscale_peer_refresh_thread.is_started()
+	):
+		return
+	_tailscale_peer_refresh_thread = Thread.new()
+	var error := _tailscale_peer_refresh_thread.start(
+		Callable(self, "_query_tailscale_peer_ipv4s")
+	)
+	if error != OK:
+		_tailscale_peer_refresh_thread = null
+
+
+func _poll_tailscale_peer_refresh() -> void:
+	if (
+		_tailscale_peer_refresh_thread == null
+		or not _tailscale_peer_refresh_thread.is_started()
+		or _tailscale_peer_refresh_thread.is_alive()
+	):
+		return
+	var result: Variant = _tailscale_peer_refresh_thread.wait_to_finish()
+	_tailscale_peer_refresh_thread = null
+	if not result is Dictionary:
+		return
+	var data := result as Dictionary
+	var hosts_value: Variant = data.get("hosts", [])
+	if hosts_value is Array:
+		_tailscale_peer_cache.clear()
+		for value: Variant in hosts_value as Array:
+			var host := String(value).strip_edges()
+			if not host.is_empty():
+				_tailscale_peer_cache.append(host)
+	_tailscale_last_error = String(data.get("error", ""))
+	_tailscale_peer_cache_updated_msec = Time.get_ticks_msec()
+
+
 func _tailscale_peer_ipv4s() -> Array[String]:
-	_tailscale_last_error = ""
+	var result := _query_tailscale_peer_ipv4s()
+	_tailscale_last_error = String(result.get("error", ""))
+	_tailscale_peer_cache.clear()
+	var hosts_value: Variant = result.get("hosts", [])
+	if hosts_value is Array:
+		for value: Variant in hosts_value as Array:
+			var host := String(value).strip_edges()
+			if not host.is_empty():
+				_tailscale_peer_cache.append(host)
+	_tailscale_peer_cache_updated_msec = Time.get_ticks_msec()
+	return _tailscale_peer_cache.duplicate()
+
+
+func _query_tailscale_peer_ipv4s() -> Dictionary:
 	var candidates: Array[String] = []
 
 	if OS.get_name() == "Windows":
@@ -254,16 +320,20 @@ func _tailscale_peer_ipv4s() -> Array[String]:
 			break
 
 	if not parsed is Dictionary:
-		_tailscale_last_error = (
-			"Impossibile eseguire o leggere 'tailscale status --json'. "
-			+ "Controlla che Tailscale sia installato."
-		)
-		return []
+		return {
+			"hosts": [],
+			"error": (
+				"Impossibile eseguire o leggere 'tailscale status --json'. "
+				+ "Controlla che Tailscale sia installato."
+			)
+		}
 
 	var peers_value: Variant = (parsed as Dictionary).get("Peer", {})
 	if not peers_value is Dictionary:
-		_tailscale_last_error = "Il JSON di Tailscale non contiene Peer."
-		return []
+		return {
+			"hosts": [],
+			"error": "Il JSON di Tailscale non contiene Peer."
+		}
 
 	var hosts: Array[String] = []
 	var seen: Dictionary = {}
@@ -285,9 +355,14 @@ func _tailscale_peer_ipv4s() -> Array[String]:
 			seen[ip] = true
 			hosts.append(ip)
 
-	if hosts.is_empty():
-		_tailscale_last_error = "Il comando funziona, ma non ha restituito IPv4 peer."
-	return hosts
+	return {
+		"hosts": hosts,
+		"error": (
+			"Il comando funziona, ma non ha restituito IPv4 peer."
+			if hosts.is_empty()
+			else ""
+		)
+	}
 
 
 func _finish_bulk_attempt(item: Dictionary, accepted: bool, rejected: bool) -> void:
@@ -317,6 +392,17 @@ func _finish_bulk_attempt(item: Dictionary, accepted: bool, rejected: bool) -> v
 
 
 func _process(_delta: float) -> void:
+	_poll_tailscale_peer_refresh()
+	if (
+		_tailscale_peer_refresh_thread == null
+		and (
+			_tailscale_peer_cache_updated_msec <= 0
+			or Time.get_ticks_msec() - _tailscale_peer_cache_updated_msec
+			>= TAILSCALE_PEER_REFRESH_MS
+		)
+	):
+		_request_tailscale_peer_refresh()
+
 	if server.is_connection_available():
 		var peer := server.take_connection()
 		if connections.size() >= 8:
@@ -407,6 +493,12 @@ func _exit_tree() -> void:
 	server.stop()
 	for item in connections:
 		item.peer.disconnect_from_host()
+	if (
+		_tailscale_peer_refresh_thread != null
+		and _tailscale_peer_refresh_thread.is_started()
+	):
+		_tailscale_peer_refresh_thread.wait_to_finish()
+	_tailscale_peer_refresh_thread = null
 
 func valid_snapshot(snapshot: Variant) -> bool:
 	if (

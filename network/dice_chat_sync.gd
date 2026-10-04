@@ -327,6 +327,8 @@ static func valid_event(event: Dictionary) -> bool:
 
 		var formula_expected_total := formula_modifier
 		var seen_dice := 0
+		var sole_roll_sides := 0
+		var sole_roll_value := 0
 		for term_value: Variant in (terms_value as Array):
 			if not term_value is Dictionary:
 				return false
@@ -356,8 +358,54 @@ static func valid_event(event: Dictionary) -> bool:
 					return false
 				formula_expected_total += term_sign * roll
 				seen_dice += 1
+				if formula_count == 1:
+					sole_roll_sides = formula_sides
+					sole_roll_value = roll
 
-		return seen_dice == formula_count and total == formula_expected_total
+		var formula_roll_mode := String(
+			event.get("roll_mode", "normal")
+		).strip_edges().to_lower()
+		if formula_roll_mode not in [
+			"normal", "advantage", "disadvantage"
+		]:
+			return false
+		if formula_roll_mode != "normal":
+			if formula_count != 1:
+				return false
+			var formula_candidate_value: Variant = event.get(
+				"candidate_rolls",
+				[]
+			)
+			if not formula_candidate_value is Array:
+				return false
+			var formula_candidates := formula_candidate_value as Array
+			if formula_candidates.size() != 1:
+				return false
+			var pair_value: Variant = formula_candidates[0]
+			if not pair_value is Array or (pair_value as Array).size() != 2:
+				return false
+			var pair := pair_value as Array
+			var first := int(pair[0])
+			var second := int(pair[1])
+			if (
+				first < 1
+				or first > sole_roll_sides
+				or second < 1
+				or second > sole_roll_sides
+			):
+				return false
+			var expected_kept := (
+				maxi(first, second)
+				if formula_roll_mode == "advantage"
+				else mini(first, second)
+			)
+			if sole_roll_value != expected_kept:
+				return false
+
+		return (
+			seen_dice == formula_count
+			and total == formula_expected_total
+		)
 
 	# Backward compatibility with history generated before multi-die rolls.
 	if not event.has("rolls"):
@@ -391,7 +439,7 @@ static func valid_event(event: Dictionary) -> bool:
 	if roll_mode not in ["normal", "advantage", "disadvantage"]:
 		return false
 	if roll_mode != "normal":
-		if die != "d20":
+		if count != 1:
 			return false
 		var candidate_value: Variant = event.get("candidate_rolls", [])
 		if not candidate_value is Array:
@@ -408,7 +456,17 @@ static func valid_event(event: Dictionary) -> bool:
 				return false
 			var first := int(pair[0])
 			var second := int(pair[1])
-			if first < 1 or first > 20 or second < 1 or second > 20:
+			var candidate_sides := (
+				100
+				if die in ["d%", "d100"]
+				else int(die.trim_prefix("d"))
+			)
+			if (
+				first < 1
+				or first > candidate_sides
+				or second < 1
+				or second > candidate_sides
+			):
 				return false
 			var expected_kept := (
 				maxi(first, second)

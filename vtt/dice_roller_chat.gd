@@ -2,6 +2,7 @@ extends Node
 
 const DiceChatSync = preload("res://network/dice_chat_sync.gd")
 const HISTORY_DIR := "user://dice_chat"
+const PROFILE_PATH := "user://dice_chat/profile.cfg"
 const MAX_HISTORY := 300
 
 var board_root: Node3D
@@ -11,6 +12,9 @@ var session_key := "1"
 var history: Array[Dictionary] = []
 var seen_ids: Dictionary = {}
 var rng := RandomNumberGenerator.new()
+var _display_name := ""
+var _selected_die := "d20"
+var _pending_name_callback := Callable()
 
 var toggle_button: Button
 var panel: PanelContainer
@@ -20,6 +24,9 @@ var status_label: Label
 var dice_count_input: SpinBox
 var dice_modifier_input: SpinBox
 var roll_mode_input: OptionButton
+var roll_button: Button
+var display_name_dialog: ConfirmationDialog
+var display_name_input: LineEdit
 var quick_result_panel: PanelContainer
 var quick_result_label: Label
 var _quick_result_generation := 0
@@ -42,6 +49,7 @@ func setup(
 	DirAccess.make_dir_recursive_absolute(
 		ProjectSettings.globalize_path(HISTORY_DIR)
 	)
+	_load_profile()
 
 	sync = DiceChatSync.new()
 	sync.name = "DiceChatSync"
@@ -51,6 +59,7 @@ func setup(
 	sync.status_changed.connect(_on_sync_status)
 
 	_build_ui()
+	_build_display_name_dialog()
 	set_session_key(initial_session_key)
 
 
@@ -84,6 +93,10 @@ func toggle_panel() -> void:
 func show_panel() -> void:
 	if panel == null:
 		return
+	if not ensure_display_name(Callable(self, "show_panel")):
+		return
+	if roll_mode_input != null:
+		roll_mode_input.select(0)
 	panel.show()
 	if board_root.has_method("release_camera_control"):
 		board_root.call("release_camera_control")
@@ -219,6 +232,7 @@ func _build_ui() -> void:
 	dice_count_input.allow_lesser = false
 	dice_count_input.custom_minimum_size = Vector2(78, 32)
 	dice_count_input.tooltip_text = "Numero di dadi da lanciare"
+	dice_count_input.value_changed.connect(_on_dice_count_changed)
 	roll_settings.add_child(dice_count_input)
 
 	var modifier_label := Label.new()
@@ -249,7 +263,7 @@ func _build_ui() -> void:
 	outer.add_child(mode_row)
 
 	var mode_label := Label.new()
-	mode_label.text = "Modalità d20:"
+	mode_label.text = "Modalità:"
 	mode_row.add_child(mode_label)
 
 	roll_mode_input = OptionButton.new()
@@ -261,13 +275,13 @@ func _build_ui() -> void:
 	roll_mode_input.set_item_metadata(2, "disadvantage")
 	roll_mode_input.select(0)
 	roll_mode_input.tooltip_text = (
-		"Vantaggio/svantaggio tira due d20 per ogni dado e tiene "
-		+ "rispettivamente il risultato più alto o più basso."
+		"Con un solo dado, vantaggio/svantaggio tira due volte "
+		+ "quel dado e tiene rispettivamente il risultato più alto o più basso."
 	)
 	mode_row.add_child(roll_mode_input)
 
 	var mode_hint := Label.new()
-	mode_hint.text = "Si applica solo ai d20, anche dalla scheda."
+	mode_hint.text = "Disponibile quando Dadi = 1, per qualsiasi dado."
 	mode_hint.modulate = Color(0.55, 0.59, 0.66, 1.0)
 	mode_hint.size_flags_horizontal = Control.SIZE_EXPAND_FILL
 	mode_row.add_child(mode_hint)
@@ -278,21 +292,33 @@ func _build_ui() -> void:
 	dice_grid.add_theme_constant_override("v_separation", 5)
 	outer.add_child(dice_grid)
 
+	var dice_button_group := ButtonGroup.new()
 	for die: String in [
 		"d20", "d12", "d10", "d8",
 		"d6", "d4", "d100", "d%"
 	]:
 		var button := Button.new()
 		button.text = die
+		button.toggle_mode = true
+		button.button_group = dice_button_group
+		button.button_pressed = die == _selected_die
 		button.custom_minimum_size = Vector2(82, 34)
 		button.size_flags_horizontal = Control.SIZE_EXPAND_FILL
 		button.tooltip_text = (
-			"Dado percentuale (d100 + d10)"
+			"Seleziona il dado percentuale"
 			if die == "d%"
-			else "Lancia %s" % die
+			else "Seleziona %s" % die
 		)
-		button.pressed.connect(_roll.bind(die))
+		button.pressed.connect(_select_die.bind(die))
 		dice_grid.add_child(button)
+
+	roll_button = Button.new()
+	roll_button.text = "ROLL %s" % _selected_die
+	roll_button.custom_minimum_size = Vector2(0, 36)
+	roll_button.size_flags_horizontal = Control.SIZE_EXPAND_FILL
+	roll_button.tooltip_text = "Esegui il tiro con il dado selezionato"
+	roll_button.pressed.connect(_roll_selected_die)
+	outer.add_child(roll_button)
 
 	var chat_row := HBoxContainer.new()
 	chat_row.add_theme_constant_override("separation", 6)
@@ -347,6 +373,25 @@ func _build_quick_result_popup() -> void:
 	quick_result_label.add_theme_font_size_override("font_size", 18)
 	quick_result_panel.add_child(quick_result_label)
 	ui_root.add_child(quick_result_panel)
+
+
+func _select_die(die: String) -> void:
+	_selected_die = die
+	if roll_button != null:
+		roll_button.text = "ROLL %s" % _selected_die
+
+
+func _roll_selected_die() -> void:
+	_roll(_selected_die)
+
+
+func _on_dice_count_changed(value: float) -> void:
+	if roll_mode_input == null:
+		return
+	var single_die := int(value) == 1
+	roll_mode_input.disabled = not single_die
+	if not single_die:
+		roll_mode_input.select(0)
 
 
 func _roll(die: String) -> void:
@@ -411,8 +456,8 @@ func _roll_specific(
 
 	var roll_mode := normalize_roll_mode(roll_mode_override)
 	if roll_mode_override.strip_edges().is_empty():
-		roll_mode = _selected_roll_mode(die)
-	if die != "d20":
+		roll_mode = _selected_roll_mode(count)
+	if count != 1:
 		roll_mode = "normal"
 	event["roll_mode"] = roll_mode
 
@@ -421,18 +466,26 @@ func _roll_specific(
 	var percentile_faces: Array[Dictionary] = []
 	for _index: int in range(count):
 		if die == "d%":
-			var tens_face := rng.randi_range(0, 9) * 10
-			var ones_face := rng.randi_range(0, 9)
-			var value := percentile_total(tens_face, ones_face)
-			rolls.append(value)
-			percentile_faces.append({
-				"tens": tens_face,
-				"ones": ones_face,
-				"value": value
-			})
-		elif die == "d20" and roll_mode != "normal":
-			var first := rng.randi_range(1, 20)
-			var second := rng.randi_range(1, 20)
+			var first_face := _roll_percentile_face()
+			if roll_mode != "normal":
+				var second_face := _roll_percentile_face()
+				var first := int(first_face.get("value", 0))
+				var second := int(second_face.get("value", 0))
+				var kept := choose_d20_pair(first, second, roll_mode)
+				candidate_rolls.append([first, second])
+				rolls.append(kept)
+				percentile_faces.append(
+					first_face
+					if kept == first
+					else second_face
+				)
+			else:
+				rolls.append(int(first_face.get("value", 0)))
+				percentile_faces.append(first_face)
+		elif roll_mode != "normal":
+			var sides := int(die.trim_prefix("d"))
+			var first := rng.randi_range(1, sides)
+			var second := rng.randi_range(1, sides)
 			candidate_rolls.append([first, second])
 			rolls.append(choose_d20_pair(first, second, roll_mode))
 		else:
@@ -474,7 +527,18 @@ func roll_expression_from_sheet(
 	var rolled_terms: Array[Dictionary] = []
 	var total := fixed_modifier
 	var total_dice := 0
+	for term_value: Variant in terms:
+		if term_value is Dictionary:
+			total_dice += clampi(
+				int((term_value as Dictionary).get("count", 1)),
+				1,
+				100
+			)
+	if total_dice <= 0 or total_dice > 100:
+		return
 
+	var roll_mode := _selected_roll_mode(total_dice)
+	var candidate_rolls: Array = []
 	for term_value: Variant in terms:
 		if not term_value is Dictionary:
 			continue
@@ -487,10 +551,16 @@ func roll_expression_from_sheet(
 
 		var values: Array[int] = []
 		for _index: int in range(count):
-			var value := rng.randi_range(1, sides)
+			var value := 0
+			if roll_mode != "normal":
+				var first := rng.randi_range(1, sides)
+				var second := rng.randi_range(1, sides)
+				candidate_rolls.append([first, second])
+				value = choose_d20_pair(first, second, roll_mode)
+			else:
+				value = rng.randi_range(1, sides)
 			values.append(value)
 			total += term_sign * value
-		total_dice += 1
 		rolled_terms.append({
 			"count": count,
 			"sides": sides,
@@ -498,7 +568,7 @@ func roll_expression_from_sheet(
 			"rolls": values
 		})
 
-	if rolled_terms.is_empty() or total_dice > 100:
+	if rolled_terms.is_empty():
 		return
 
 	var event := _new_event("roll")
@@ -509,12 +579,22 @@ func roll_expression_from_sheet(
 	event["die"] = "formula"
 	event["count"] = total_dice
 	event["modifier"] = fixed_modifier
-	event["notation"] = String(parsed.get("notation", expression))
+	var notation := String(parsed.get("notation", expression))
+	if roll_mode == "advantage":
+		notation += " (vant.)"
+	elif roll_mode == "disadvantage":
+		notation += " (svant.)"
+	event["notation"] = notation
 	event["terms"] = rolled_terms
 	event["total"] = total
+	event["roll_mode"] = roll_mode
+	if not candidate_rolls.is_empty():
+		event["candidate_rolls"] = candidate_rolls
 	event["detail"] = _formula_roll_detail(
 		rolled_terms,
-		fixed_modifier
+		fixed_modifier,
+		roll_mode,
+		candidate_rolls
 	)
 	if not label.strip_edges().is_empty():
 		event["label"] = label.strip_edges().left(160)
@@ -599,7 +679,9 @@ static func parse_dice_expression(expression: String) -> Dictionary:
 
 static func _formula_roll_detail(
 	terms: Array[Dictionary],
-	modifier: int
+	modifier: int,
+	roll_mode: String = "normal",
+	candidate_rolls: Array = []
 ) -> String:
 	var parts := PackedStringArray()
 	for term: Dictionary in terms:
@@ -622,7 +704,30 @@ static func _formula_roll_detail(
 		parts.append("+%d" % modifier)
 	elif modifier < 0:
 		parts.append("-%d" % absi(modifier))
-	return " · ".join(parts)
+	var detail := " · ".join(parts)
+	var mode := normalize_roll_mode(roll_mode)
+	if mode != "normal" and candidate_rolls.size() == 1:
+		var pair_value: Variant = candidate_rolls[0]
+		if pair_value is Array and (pair_value as Array).size() == 2:
+			var pair := pair_value as Array
+			var kept := (
+				maxi(int(pair[0]), int(pair[1]))
+				if mode == "advantage"
+				else mini(int(pair[0]), int(pair[1]))
+			)
+			var mode_name := (
+				"Vantaggio"
+				if mode == "advantage"
+				else "Svantaggio"
+			)
+			detail = "%s [%d/%d → %d] · %s" % [
+				mode_name,
+				int(pair[0]),
+				int(pair[1]),
+				kept,
+				detail
+			]
+	return detail
 
 
 static func _roll_total(rolls: Array[int], modifier: int) -> int:
@@ -648,8 +753,8 @@ static func choose_d20_pair(first: int, second: int, roll_mode: String) -> int:
 	return first
 
 
-func _selected_roll_mode(die: String) -> String:
-	if die != "d20" or roll_mode_input == null:
+func _selected_roll_mode(count: int) -> String:
+	if count != 1 or roll_mode_input == null:
 		return "normal"
 	var selected := roll_mode_input.get_selected_id()
 	if selected < 0:
@@ -667,9 +772,9 @@ static func _roll_notation(
 ) -> String:
 	var notation := "%d%s" % [maxi(1, count), die]
 	var mode := normalize_roll_mode(roll_mode)
-	if die == "d20" and mode == "advantage":
+	if count == 1 and mode == "advantage":
 		notation += " (vant.)"
-	elif die == "d20" and mode == "disadvantage":
+	elif count == 1 and mode == "disadvantage":
 		notation += " (svant.)"
 	if modifier > 0:
 		notation += " + %d" % modifier
@@ -692,7 +797,7 @@ static func _roll_detail(
 
 	var mode := normalize_roll_mode(roll_mode)
 	var detail := "[%s]" % ", ".join(result_parts)
-	if die == "d20" and mode != "normal" and not candidate_rolls.is_empty():
+	if mode != "normal" and not candidate_rolls.is_empty():
 		var pair_parts := PackedStringArray()
 		for index: int in range(candidate_rolls.size()):
 			var pair_value: Variant = candidate_rolls[index]
@@ -725,12 +830,124 @@ static func _roll_detail(
 	return detail
 
 
+func _roll_percentile_face() -> Dictionary:
+	var tens_face := rng.randi_range(0, 9) * 10
+	var ones_face := rng.randi_range(0, 9)
+	return {
+		"tens": tens_face,
+		"ones": ones_face,
+		"value": percentile_total(tens_face, ones_face)
+	}
+
+
 static func percentile_total(tens_face: int, ones_face: int) -> int:
 	var tens := clampi(tens_face, 0, 90)
 	tens -= tens % 10
 	var ones := clampi(ones_face, 0, 9)
 	var total := tens + ones
 	return 100 if total == 0 else total
+
+
+func _build_display_name_dialog() -> void:
+	display_name_dialog = ConfirmationDialog.new()
+	display_name_dialog.name = "ChatDisplayNameDialog"
+	display_name_dialog.title = "Nome giocatore"
+	display_name_dialog.ok_button_text = "Conferma"
+	display_name_dialog.min_size = Vector2i(420, 180)
+	ui_root.add_child(display_name_dialog)
+
+	var body := VBoxContainer.new()
+	body.set_anchors_and_offsets_preset(Control.PRESET_FULL_RECT)
+	body.offset_left = 16.0
+	body.offset_right = -16.0
+	body.offset_top = 52.0
+	body.offset_bottom = -58.0
+	body.add_theme_constant_override("separation", 8)
+	display_name_dialog.add_child(body)
+
+	var info := Label.new()
+	info.text = "Scegli il nome che verrà mostrato nella chat."
+	info.autowrap_mode = TextServer.AUTOWRAP_WORD_SMART
+	body.add_child(info)
+
+	display_name_input = LineEdit.new()
+	display_name_input.placeholder_text = "Nome giocatore"
+	display_name_input.max_length = 40
+	display_name_input.text_changed.connect(_on_display_name_changed)
+	display_name_input.text_submitted.connect(
+		func(_value: String) -> void:
+			if not display_name_dialog.get_ok_button().disabled:
+				display_name_dialog.get_ok_button().emit_signal("pressed")
+	)
+	body.add_child(display_name_input)
+
+	display_name_dialog.confirmed.connect(_confirm_display_name)
+	display_name_dialog.canceled.connect(_cancel_display_name_prompt)
+	display_name_dialog.close_requested.connect(_cancel_display_name_prompt)
+
+
+func ensure_display_name(on_ready: Callable = Callable()) -> bool:
+	if not _display_name.is_empty():
+		return true
+	if on_ready.is_valid():
+		_pending_name_callback = on_ready
+	if display_name_dialog == null:
+		return false
+	if board_root.has_method("release_camera_control"):
+		board_root.call("release_camera_control")
+	elif board_root.has_method("_release_mouse"):
+		board_root.call("_release_mouse")
+	display_name_input.clear()
+	display_name_dialog.get_ok_button().disabled = true
+	if not display_name_dialog.visible:
+		display_name_dialog.popup_centered_clamped(
+			Vector2i(440, 200),
+			0.92
+		)
+	display_name_input.call_deferred("grab_focus")
+	return false
+
+
+func _on_display_name_changed(value: String) -> void:
+	if display_name_dialog != null:
+		display_name_dialog.get_ok_button().disabled = (
+			value.strip_edges().is_empty()
+		)
+
+
+func _confirm_display_name() -> void:
+	var clean_name := display_name_input.text.strip_edges().left(40)
+	if clean_name.is_empty():
+		call_deferred("ensure_display_name")
+		return
+	_display_name = clean_name
+	_save_profile()
+	var callback := _pending_name_callback
+	_pending_name_callback = Callable()
+	if callback.is_valid():
+		callback.call_deferred()
+
+
+func _cancel_display_name_prompt() -> void:
+	_pending_name_callback = Callable()
+
+
+func _load_profile() -> void:
+	_display_name = ""
+	var config := ConfigFile.new()
+	if config.load(PROFILE_PATH) != OK:
+		return
+	_display_name = String(
+		config.get_value("profile", "display_name", "")
+	).strip_edges().left(40)
+
+
+func _save_profile() -> void:
+	if _display_name.is_empty():
+		return
+	var config := ConfigFile.new()
+	config.set_value("profile", "display_name", _display_name)
+	config.save(PROFILE_PATH)
 
 
 func _send_chat() -> void:
@@ -1086,6 +1303,8 @@ func _save_history() -> void:
 
 
 func _author_name() -> String:
+	if not _display_name.is_empty():
+		return _display_name
 	for key: String in ["COMPUTERNAME", "HOSTNAME", "USERNAME", "USER"]:
 		var value := OS.get_environment(key).strip_edges()
 		if not value.is_empty():
