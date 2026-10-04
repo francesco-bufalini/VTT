@@ -8,6 +8,7 @@ const PRESET_LARGE := 102
 const PRESET_WHITE := 110
 const PRESET_EMPTY_ELEMENTS := 120
 const PRESET_FOREST_MOUNTAINS := 121
+const PRESET_PIRATE_SHIP := 122
 
 const FOREST_MOUNTAINS_PRESET_PATH := (
 	"res://assets/presets/forest_mountains/forest_mountains_preset.glb"
@@ -19,6 +20,22 @@ const FOREST_TERRAIN_MATERIALS := [
 	"Material.007",
 	"Material.008",
 	"Material.009",
+]
+
+const PIRATE_SHIP_PRESET_PATH := (
+	"res://assets/presets/pirate_ship/sirens_light_pirate_ship_preset.glb"
+)
+const PIRATE_SHIP_PRESET_ID := "sirens_light_pirate_ship"
+const PIRATE_SHIP_GRID_CELLS := 50
+const PIRATE_SHIP_COLLISION_KEYWORDS := [
+	"Ship_Hull",
+	"Main_Deck",
+	"Upper_Deck",
+	"Poop_Deck",
+	"Captain_Deck",
+	"Rudder",
+	"Keel",
+	"Ram",
 ]
 
 const GRID_RESIZE := 200
@@ -118,7 +135,8 @@ func _build_toolbar() -> void:
 		["Griglia grande · 50 × 50", PRESET_LARGE],
 		["Scenario · Vuoto bianco", PRESET_WHITE],
 		["Elementi · Nessuno", PRESET_EMPTY_ELEMENTS],
-		["Elementi · Foresta e montagne", PRESET_FOREST_MOUNTAINS]
+		["Elementi · Foresta e montagne", PRESET_FOREST_MOUNTAINS],
+		["Elementi · The Siren's Light", PRESET_PIRATE_SHIP]
 	], _on_preset_selected))
 
 	row.add_child(_make_menu_button("Griglia", [
@@ -250,6 +268,8 @@ func _on_preset_selected(id: int) -> void:
 			_set_status("Preset elementi: nessun elemento")
 		PRESET_FOREST_MOUNTAINS:
 			_apply_forest_mountains_preset(true)
+		PRESET_PIRATE_SHIP:
+			_apply_pirate_ship_preset(true)
 
 
 func _apply_forest_mountains_preset(resize_grid: bool = true) -> void:
@@ -297,6 +317,87 @@ func _apply_forest_mountains_preset(resize_grid: bool = true) -> void:
 	_set_status(
 		"Preset: foresta e montagne · alberi 2×2 × 8 celle · griglia 100×100"
 	)
+
+
+func _apply_pirate_ship_preset(resize_grid: bool = true) -> void:
+	_clear_element_presets()
+
+	if not FileAccess.file_exists(PIRATE_SHIP_PRESET_PATH):
+		active_element_preset = ""
+		_set_status(
+			"Preset nave non installato: manca sirens_light_pirate_ship_preset.glb"
+		)
+		return
+
+	var packed: Resource = load(PIRATE_SHIP_PRESET_PATH)
+	if not packed is PackedScene:
+		active_element_preset = ""
+		_set_status("Preset nave non caricabile")
+		return
+
+	var instance: Node = (packed as PackedScene).instantiate()
+	if not instance is Node3D:
+		instance.free()
+		active_element_preset = ""
+		_set_status("Preset nave non e' una scena 3D")
+		return
+
+	var root := instance as Node3D
+	root.name = "CampaignPreset_SirensLight"
+	# The prepared GLB is already normalized so one cannon is 2 grid cells
+	# long. Scaling by cell_size only preserves that reference at runtime.
+	root.scale = Vector3.ONE * _cell_size()
+	root.add_to_group("campaign_preset_element")
+	root.set_meta("campaign_preset_id", PIRATE_SHIP_PRESET_ID)
+	board_root.add_child(root)
+
+	_build_pirate_ship_collisions(root)
+	active_element_preset = PIRATE_SHIP_PRESET_ID
+
+	if resize_grid:
+		_resize_primary_grid(
+			PIRATE_SHIP_GRID_CELLS,
+			PIRATE_SHIP_GRID_CELLS
+		)
+
+	_refresh_volumetric_grid()
+	_set_status(
+		"Preset: The Siren's Light · cannone lungo 2 celle · griglia 50×50"
+	)
+
+
+func _build_pirate_ship_collisions(root: Node3D) -> void:
+	for candidate: Node in root.find_children("*", "MeshInstance3D", true, false):
+		var mesh_instance := candidate as MeshInstance3D
+		if mesh_instance == null or mesh_instance.mesh == null:
+			continue
+		if not _pirate_ship_mesh_needs_collision(mesh_instance):
+			continue
+
+		var faces: PackedVector3Array = mesh_instance.mesh.get_faces()
+		if faces.is_empty():
+			continue
+
+		var body := StaticBody3D.new()
+		body.name = "PresetShipCollision"
+		body.collision_layer = 1
+		body.collision_mask = 0
+		body.add_to_group("campaign_preset_terrain")
+		mesh_instance.add_child(body)
+
+		var collision := CollisionShape3D.new()
+		var shape := ConcavePolygonShape3D.new()
+		shape.set_faces(faces)
+		collision.shape = shape
+		body.add_child(collision)
+
+
+func _pirate_ship_mesh_needs_collision(mesh_instance: MeshInstance3D) -> bool:
+	var label := String(mesh_instance.name)
+	for keyword: String in PIRATE_SHIP_COLLISION_KEYWORDS:
+		if label.contains(keyword):
+			return true
+	return false
 
 
 func _build_forest_terrain_collisions(root: Node3D) -> void:
@@ -755,6 +856,8 @@ func _load_active_campaign() -> void:
 	).strip_edges()
 	if active_element_preset == FOREST_MOUNTAINS_PRESET_ID:
 		_apply_forest_mountains_preset(false)
+	elif active_element_preset == PIRATE_SHIP_PRESET_ID:
+		_apply_pirate_ship_preset(false)
 
 	_apply_view_state(state.get("view", {}))
 	await get_tree().process_frame
