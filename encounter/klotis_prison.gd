@@ -26,6 +26,7 @@ var _completed: Array[String] = []
 var _active_side: String = ""
 var _burst_sent: bool = false
 var _impact_sent: bool = false
+var _model_fitted: bool = false
 
 const PRISON_RADIUS_METERS := 220.0
 const SEALED_RIGHT_HAND_CLEARANCE_METERS := 0.35
@@ -289,6 +290,7 @@ func _fit_model() -> void:
 		skeleton.force_update_all_bone_transforms()
 		palm_height += _palm_center(side).y * 0.5
 	player.stop()
+	_model_fitted = true
 	reset_seals()
 	statue.global_position.y += palm_height - 0.02 * sphere_scale - neck_y
 	statue_box = statue.global_transform * statue.get_aabb()
@@ -405,6 +407,8 @@ func _sealed_hand_metrics(side: String) -> Dictionary:
 
 
 func _apply_sealed_right_hand_clearance() -> void:
+	if not _model_fitted:
+		return
 	if scene == null or model == null or skeleton == null:
 		return
 	var measurement := scene.get_node_or_null("MeasurementTool")
