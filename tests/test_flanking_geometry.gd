@@ -58,6 +58,41 @@ func run() -> void:
 	)
 	assert(invalid.is_empty())
 
+	# Opposite diagonal corners are valid under the DMG square-grid rule.
+	var diagonal_valid := FlankingSystem.flanking_segment(
+		Vector3(-2.0, 0.0, -2.0),
+		half,
+		Vector3(2.0, 0.0, 2.0),
+		half,
+		Vector3.ZERO,
+		half
+	)
+	assert(diagonal_valid.size() == 2)
+	assert(FlankingSystem.centers_cross_opposite_borders(
+		Vector3(-2.0, 0.0, -2.0),
+		Vector3(2.0, 0.0, 2.0),
+		Vector3.ZERO,
+		half
+	))
+
+	# Crossing adjacent borders is not flanking, even though the line
+	# intersects the target's space.
+	assert(not FlankingSystem.centers_cross_opposite_borders(
+		Vector3(-2.0, 0.0, 0.0),
+		Vector3(0.0, 0.0, 2.0),
+		Vector3.ZERO,
+		half
+	))
+
+	# Side-to-corner is deliberately rejected: the DMG requires opposite
+	# sides or opposite corners rather than any generic intersection.
+	assert(not FlankingSystem.centers_cross_opposite_borders(
+		Vector3(-2.0, 0.0, 0.0),
+		Vector3(2.0, 0.0, 2.0),
+		Vector3.ZERO,
+		half
+	))
+
 	# A diagonal line that misses the target hitbox must not count.
 	var miss := FlankingSystem.flanking_segment(
 		Vector3(-2.0, 0.0, 2.0),
@@ -69,5 +104,5 @@ func run() -> void:
 	)
 	assert(miss.is_empty())
 
-	print("PASS: flanking uses hitbox reach and line intersection geometry")
+	print("PASS: flanking follows opposite-side and opposite-corner grid geometry")
 	quit()
