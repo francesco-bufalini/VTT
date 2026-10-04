@@ -260,11 +260,15 @@ func _on_preset_selected(id: int) -> void:
 			_resize_primary_grid(50, 50)
 			_set_status("Preset griglia: 50 × 50")
 		PRESET_WHITE:
+			_clear_element_presets()
+			active_element_preset = ""
+			_set_base_platform_enabled(true)
 			_set_white_environment()
 			_set_status("Scenario: vuoto bianco")
 		PRESET_EMPTY_ELEMENTS:
 			_clear_element_presets()
 			active_element_preset = ""
+			_set_base_platform_enabled(true)
 			_set_status("Preset elementi: nessun elemento")
 		PRESET_FOREST_MOUNTAINS:
 			_apply_forest_mountains_preset(true)
@@ -279,6 +283,7 @@ func _apply_forest_mountains_preset(resize_grid: bool = true) -> void:
 	# not flood the Godot debugger with ResourceLoader errors.
 	if not FileAccess.file_exists(FOREST_MOUNTAINS_PRESET_PATH):
 		active_element_preset = ""
+		_set_base_platform_enabled(true)
 		_set_status(
 			"Preset foresta non installato: manca forest_mountains_preset.glb"
 		)
@@ -287,6 +292,7 @@ func _apply_forest_mountains_preset(resize_grid: bool = true) -> void:
 	var packed: Resource = load(FOREST_MOUNTAINS_PRESET_PATH)
 	if not packed is PackedScene:
 		active_element_preset = ""
+		_set_base_platform_enabled(true)
 		_set_status("Preset foresta non caricabile")
 		return
 
@@ -294,10 +300,12 @@ func _apply_forest_mountains_preset(resize_grid: bool = true) -> void:
 	if not instance is Node3D:
 		instance.free()
 		active_element_preset = ""
+		_set_base_platform_enabled(true)
 		_set_status("Preset foresta non e' una scena 3D")
 		return
 
 	var root := instance as Node3D
+	_set_base_platform_enabled(false)
 	root.name = "CampaignPreset_ForestMountains"
 	root.scale = Vector3.ONE * _cell_size()
 	root.add_to_group("campaign_preset_element")
@@ -324,6 +332,7 @@ func _apply_pirate_ship_preset(resize_grid: bool = true) -> void:
 
 	if not FileAccess.file_exists(PIRATE_SHIP_PRESET_PATH):
 		active_element_preset = ""
+		_set_base_platform_enabled(true)
 		_set_status(
 			"Preset nave non installato: manca sirens_light_pirate_ship_preset.glb"
 		)
@@ -332,6 +341,7 @@ func _apply_pirate_ship_preset(resize_grid: bool = true) -> void:
 	var packed: Resource = load(PIRATE_SHIP_PRESET_PATH)
 	if not packed is PackedScene:
 		active_element_preset = ""
+		_set_base_platform_enabled(true)
 		_set_status("Preset nave non caricabile")
 		return
 
@@ -339,10 +349,12 @@ func _apply_pirate_ship_preset(resize_grid: bool = true) -> void:
 	if not instance is Node3D:
 		instance.free()
 		active_element_preset = ""
+		_set_base_platform_enabled(true)
 		_set_status("Preset nave non e' una scena 3D")
 		return
 
 	var root := instance as Node3D
+	_set_base_platform_enabled(false)
 	root.name = "CampaignPreset_SirensLight"
 	# The prepared GLB is already normalized so one cannon is 2 grid cells
 	# long. Scaling by cell_size only preserves that reference at runtime.
@@ -827,7 +839,17 @@ func _load_active_campaign() -> void:
 
 	var state: Dictionary = _load_active_state()
 	if state.is_empty():
-		_set_status("%s · nuovo salvataggio" % _campaign_name())
+		var initial_preset: String = _initial_element_preset()
+		if initial_preset == FOREST_MOUNTAINS_PRESET_ID:
+			active_element_preset = initial_preset
+			_apply_forest_mountains_preset(true)
+		elif initial_preset == PIRATE_SHIP_PRESET_ID:
+			active_element_preset = initial_preset
+			_apply_pirate_ship_preset(true)
+		else:
+			active_element_preset = ""
+			_set_base_platform_enabled(true)
+			_set_status("%s · nuovo salvataggio" % _campaign_name())
 		return
 	if int(state.get("version", -1)) != SAVE_VERSION:
 		_set_status("Versione salvataggio non supportata")
@@ -858,6 +880,8 @@ func _load_active_campaign() -> void:
 		_apply_forest_mountains_preset(false)
 	elif active_element_preset == PIRATE_SHIP_PRESET_ID:
 		_apply_pirate_ship_preset(false)
+	else:
+		_set_base_platform_enabled(true)
 
 	_apply_view_state(state.get("view", {}))
 	await get_tree().process_frame
@@ -929,6 +953,44 @@ func _set_white_environment() -> void:
 	environment.ambient_light_color = Color(0.95, 0.96, 1.0, 1.0)
 	environment.ambient_light_energy = 0.8
 	world.environment = environment
+
+
+func _set_base_platform_enabled(enabled: bool) -> void:
+	var floor := board_root.get_node_or_null(
+		"Board/FloorCollision"
+	) as StaticBody3D
+	if floor == null:
+		return
+
+	# The collision layer changes immediately so the volumetric grid stops
+	# seeing the white base plane in the same frame. The shape itself is
+	# disabled deferred to stay safe around physics callbacks.
+	floor.collision_layer = 1 if enabled else 0
+	var collision := floor.get_node_or_null(
+		"CollisionShape3D"
+	) as CollisionShape3D
+	if collision != null:
+		collision.set_deferred("disabled", not enabled)
+
+	var visual := floor.get_node_or_null(
+		"CampaignPlatformVisual"
+	) as MeshInstance3D
+	if visual != null:
+		visual.visible = enabled
+
+	_refresh_volumetric_grid()
+
+
+func _initial_element_preset() -> String:
+	var manager := _campaign_manager()
+	if (
+		manager == null
+		or not manager.has_method("get_active_campaign_initial_preset")
+	):
+		return ""
+	return String(
+		manager.call("get_active_campaign_initial_preset")
+	).strip_edges()
 
 
 func _platform_material() -> StandardMaterial3D:

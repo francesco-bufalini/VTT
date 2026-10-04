@@ -10,6 +10,11 @@ const MAIN_MENU_SCENE := "res://vtt/menu/main_menu.tscn"
 const ACTIVE_CAMPAIGNS_SCENE := "res://vtt/menu/active_campaigns.tscn"
 const CAMPAIGN_SCENARIOS_SCENE := "res://vtt/menu/campaign_scenarios.tscn"
 const CAMPAIGN_EDITOR_SCENE := "res://vtt/editor/campaign_editor.tscn"
+const USER_CAMPAIGN_PRESET_IDS := [
+	"",
+	"forest_mountains",
+	"sirens_light_pirate_ship",
+]
 
 const BUILTIN_CAMPAIGN_GROUPS := [
 	{
@@ -243,7 +248,10 @@ func list_campaigns() -> Array[Dictionary]:
 	return campaigns
 
 
-func create_campaign(display_name: String = "") -> String:
+func create_campaign(
+	display_name: String = "",
+	initial_preset: String = ""
+) -> String:
 	_ensure_campaigns_directory()
 
 	var campaign_id := "campaign_%s_%s" % [
@@ -254,6 +262,10 @@ func create_campaign(display_name: String = "") -> String:
 	if entry_name.is_empty():
 		entry_name = "Nuova campagna %d" % (_list_user_campaigns().size() + 1)
 
+	var preset_id: String = initial_preset.strip_edges()
+	if preset_id not in USER_CAMPAIGN_PRESET_IDS:
+		preset_id = ""
+
 	var metadata := {
 		"id": campaign_id,
 		"name": entry_name,
@@ -261,6 +273,7 @@ func create_campaign(display_name: String = "") -> String:
 		"scene": CAMPAIGN_EDITOR_SCENE,
 		"preview": "",
 		"builtin": false,
+		"initial_preset": preset_id,
 		"created_at": Time.get_datetime_string_from_system(),
 		"last_saved": ""
 	}
@@ -403,6 +416,12 @@ func load_active_runtime_state() -> Dictionary:
 
 func get_active_campaign_name() -> String:
 	return String(active_campaign.get("name", "Campagna"))
+
+
+func get_active_campaign_initial_preset() -> String:
+	return String(
+		active_campaign.get("initial_preset", "")
+	).strip_edges()
 
 
 func is_active_user_campaign() -> bool:

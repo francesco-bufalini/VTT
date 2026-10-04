@@ -10,9 +10,19 @@ const MENU_BACKGROUND_FALLBACK := (
 const SLIDE_DURATION_SECONDS := 60.0
 const FADE_DURATION_SECONDS := 2.5
 
+const FOREST_PRESET_ID := "forest_mountains"
+const FOREST_PRESET_PATH := (
+	"res://assets/presets/forest_mountains/forest_mountains_preset.glb"
+)
+const PIRATE_SHIP_PRESET_ID := "sirens_light_pirate_ship"
+const PIRATE_SHIP_PRESET_PATH := (
+	"res://assets/presets/pirate_ship/sirens_light_pirate_ship_preset.glb"
+)
+
 var _options_dialog: AcceptDialog
 var _new_campaign_dialog: ConfirmationDialog
 var _new_campaign_name: LineEdit
+var _new_campaign_preset: OptionButton
 var _soundtrack_toggle: CheckButton
 var _soundtrack_volume: HSlider
 var _soundtrack_volume_label: Label
@@ -379,13 +389,13 @@ func _build_new_campaign_dialog() -> void:
 	_new_campaign_dialog.title = "Nuova campagna"
 	_new_campaign_dialog.ok_button_text = "Crea campagna"
 	_new_campaign_dialog.cancel_button_text = "Annulla"
-	_new_campaign_dialog.min_size = Vector2i(440, 210)
+	_new_campaign_dialog.min_size = Vector2i(500, 300)
 	_new_campaign_dialog.add_theme_constant_override("buttons_min_width", 100)
 	_new_campaign_dialog.add_theme_constant_override("buttons_min_height", 34)
 	add_child(_new_campaign_dialog)
 
 	var body := VBoxContainer.new()
-	body.custom_minimum_size = Vector2(390, 90)
+	body.custom_minimum_size = Vector2(445, 170)
 	body.add_theme_constant_override("separation", 10)
 	_new_campaign_dialog.add_child(body)
 
@@ -398,7 +408,49 @@ func _build_new_campaign_dialog() -> void:
 	_new_campaign_name.max_length = 80
 	body.add_child(_new_campaign_name)
 
+	var preset_label := Label.new()
+	preset_label.text = "Preset iniziale della scena:"
+	body.add_child(preset_label)
+
+	_new_campaign_preset = OptionButton.new()
+	_new_campaign_preset.custom_minimum_size = Vector2(0, 38)
+	body.add_child(_new_campaign_preset)
+	_populate_new_campaign_presets()
+
+	var preset_hint := Label.new()
+	preset_hint.text = (
+		"Con un preset la griglia viene generata sulle superfici solide "
+		+ "del modello; la piattaforma bianca di base non viene creata."
+	)
+	preset_hint.autowrap_mode = TextServer.AUTOWRAP_WORD_SMART
+	preset_hint.modulate = Color(0.72, 0.75, 0.82, 1.0)
+	body.add_child(preset_hint)
+
 	_new_campaign_dialog.confirmed.connect(_confirm_new_campaign)
+
+
+func _populate_new_campaign_presets() -> void:
+	_new_campaign_preset.clear()
+	_new_campaign_preset.add_item("Vuoto bianco")
+	_new_campaign_preset.set_item_metadata(0, "")
+
+	if FileAccess.file_exists(FOREST_PRESET_PATH):
+		var forest_index := _new_campaign_preset.item_count
+		_new_campaign_preset.add_item("Foresta e montagne")
+		_new_campaign_preset.set_item_metadata(
+			forest_index,
+			FOREST_PRESET_ID
+		)
+
+	if FileAccess.file_exists(PIRATE_SHIP_PRESET_PATH):
+		var ship_index := _new_campaign_preset.item_count
+		_new_campaign_preset.add_item("The Siren's Light")
+		_new_campaign_preset.set_item_metadata(
+			ship_index,
+			PIRATE_SHIP_PRESET_ID
+		)
+
+	_new_campaign_preset.select(0)
 
 
 func _build_options_dialog() -> void:
@@ -470,8 +522,9 @@ func _open_active_campaigns() -> void:
 
 func _request_new_campaign() -> void:
 	_new_campaign_name.clear()
+	_populate_new_campaign_presets()
 	_new_campaign_dialog.reset_size()
-	_new_campaign_dialog.popup_centered_clamped(Vector2i(440, 210), 0.92)
+	_new_campaign_dialog.popup_centered_clamped(Vector2i(500, 300), 0.92)
 	_new_campaign_name.call_deferred("grab_focus")
 
 
@@ -486,8 +539,19 @@ func _confirm_new_campaign() -> void:
 		_show_error("CampaignManager non disponibile.")
 		return
 
+	var preset_id: String = ""
+	if (
+		_new_campaign_preset != null
+		and _new_campaign_preset.selected >= 0
+	):
+		preset_id = String(
+			_new_campaign_preset.get_item_metadata(
+				_new_campaign_preset.selected
+			)
+		).strip_edges()
+
 	var campaign_id: String = String(
-		manager.call("create_campaign", campaign_name)
+		manager.call("create_campaign", campaign_name, preset_id)
 	)
 	if campaign_id.is_empty():
 		_show_error("Impossibile creare la campagna.")
