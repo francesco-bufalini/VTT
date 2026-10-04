@@ -56,6 +56,18 @@ function Invoke-Godot {
                 $process.Kill()
             }
             $process.WaitForExit()
+            $timeoutStdout = if (Test-Path $stdoutPath) {
+                Get-Content -LiteralPath $stdoutPath -Raw
+            } else { "" }
+            $timeoutStderr = if (Test-Path $stderrPath) {
+                Get-Content -LiteralPath $stderrPath -Raw
+            } else { "" }
+            if (-not [string]::IsNullOrWhiteSpace($timeoutStdout)) {
+                Write-Host $timeoutStdout.TrimEnd()
+            }
+            if (-not [string]::IsNullOrWhiteSpace($timeoutStderr)) {
+                Write-Host $timeoutStderr.TrimEnd()
+            }
             throw "Godot timed out after $TimeoutSeconds seconds: $($Arguments -join ' ')"
         }
         $process.Refresh()
