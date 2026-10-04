@@ -97,7 +97,8 @@ $fastTests = @(
     "test_spell_targeting_lifecycle.gd",
     "test_board_smoke.gd",
     "test_dice_chat_sync.gd",
-    "test_flanking_geometry.gd"
+    "test_flanking_geometry.gd",
+    "test_token_unique_names.gd"
 )
 
 if ($FullTests) {
