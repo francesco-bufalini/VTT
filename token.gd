@@ -80,6 +80,7 @@ var _default_animation: String = ""
 var _uses_manifest_default: bool = false
 var _conditions: Array[String] = []
 var _automatic_conditions: Array[String] = []
+var _condition_visuals_visible: bool = true
 var _automatic_condition_elapsed: float = 0.0
 const AUTOMATIC_CONDITION_INTERVAL := 0.25
 var _reach_feet: float = 5.0
@@ -1117,6 +1118,15 @@ func _condition_ring_color(condition_id: String) -> Color:
 			return Color.WHITE
 
 
+func set_condition_visuals_visible(value: bool) -> void:
+	_condition_visuals_visible = value
+	_update_condition_rings()
+
+
+func are_condition_visuals_visible() -> bool:
+	return _condition_visuals_visible
+
+
 func _ensure_condition_rings_root() -> void:
 	if is_instance_valid(_condition_rings_root):
 		return
@@ -1187,7 +1197,7 @@ func _visual_horizontal_radius_world() -> float:
 
 func _update_condition_rings() -> void:
 	_clear_condition_rings()
-	if _conditions.is_empty():
+	if not _condition_visuals_visible or _conditions.is_empty():
 		return
 
 	var visual_radius := _visual_horizontal_radius_world()
@@ -1415,7 +1425,9 @@ func _update_overlay_position() -> void:
 	if not is_instance_valid(_overlay_root):
 		return
 	var top_y := token_height_cells * cell_size * 0.5
-	_overlay_root.position = Vector3(0.0, top_y + 0.28 * cell_size, 0.0)
+	# Keep the token name slightly higher so the compact tactical badge can sit
+	# directly underneath it while remaining fully above the miniature.
+	_overlay_root.position = Vector3(0.0, top_y + 0.38 * cell_size, 0.0)
 	if is_instance_valid(_name_label):
 		# Label3D con fixed_size=false: la sua dimensione e' in unita' del
 		# mondo, quindi si comporta come il token e si rimpicciolisce con la
