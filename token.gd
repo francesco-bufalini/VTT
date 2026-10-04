@@ -78,9 +78,11 @@ var _overlay_root: Node3D
 var _name_label: Label3D
 var _status_label: Label3D
 var _flanking_badge_root: Node3D
+var _flanking_badge_border: MeshInstance3D
 var _flanking_badge_mesh: MeshInstance3D
 var _flanking_badge_label: Label3D
 var _flanking_badge_material: StandardMaterial3D
+var _flanking_badge_border_material: StandardMaterial3D
 var _hp_bar_root: Node3D
 var _hp_bar_mesh: MeshInstance3D
 var _hp_bar_material: StandardMaterial3D
@@ -1170,6 +1172,38 @@ func _ensure_flanking_badge() -> void:
 		_flanking_badge_root.name = "FlankingBadge"
 		_overlay_root.add_child(_flanking_badge_root)
 
+	_flanking_badge_border = (
+		_flanking_badge_root.get_node_or_null("Border") as MeshInstance3D
+	)
+	if _flanking_badge_border == null:
+		_flanking_badge_border = MeshInstance3D.new()
+		_flanking_badge_border.name = "Border"
+		_flanking_badge_border.cast_shadow = (
+			GeometryInstance3D.SHADOW_CASTING_SETTING_OFF
+		)
+		_flanking_badge_root.add_child(_flanking_badge_border)
+
+	var border_quad := QuadMesh.new()
+	border_quad.size = Vector2(2.04 * cell_size, 0.43 * cell_size)
+	_flanking_badge_border.mesh = border_quad
+
+	_flanking_badge_border_material = StandardMaterial3D.new()
+	_flanking_badge_border_material.transparency = (
+		BaseMaterial3D.TRANSPARENCY_ALPHA
+	)
+	_flanking_badge_border_material.shading_mode = (
+		BaseMaterial3D.SHADING_MODE_UNSHADED
+	)
+	_flanking_badge_border_material.billboard_mode = (
+		BaseMaterial3D.BILLBOARD_ENABLED
+	)
+	_flanking_badge_border_material.cull_mode = BaseMaterial3D.CULL_DISABLED
+	_flanking_badge_border_material.no_depth_test = true
+	_flanking_badge_border_material.albedo_color = Color(
+		0.72, 0.48, 0.20, 0.88
+	)
+	_flanking_badge_border.material_override = _flanking_badge_border_material
+
 	_flanking_badge_mesh = (
 		_flanking_badge_root.get_node_or_null("Background") as MeshInstance3D
 	)
@@ -1221,7 +1255,8 @@ func _ensure_flanking_badge() -> void:
 
 
 func set_flanking_indicator_visible(value: bool) -> void:
-	_ensure_token_overlay()
+	if not is_instance_valid(_flanking_badge_root):
+		_ensure_token_overlay()
 	if is_instance_valid(_flanking_badge_root):
 		_flanking_badge_root.visible = value
 
@@ -1259,6 +1294,18 @@ func _update_overlay_position() -> void:
 			0.0,
 			0.0,
 			0.012 * cell_size
+		)
+	if is_instance_valid(_flanking_badge_border):
+		var border_quad := _flanking_badge_border.mesh as QuadMesh
+		if border_quad != null:
+			border_quad.size = Vector2(
+				2.04 * cell_size,
+				0.43 * cell_size
+			)
+		_flanking_badge_border.position = Vector3(
+			0.0,
+			0.0,
+			-0.006 * cell_size
 		)
 	if is_instance_valid(_flanking_badge_mesh):
 		var badge_quad := _flanking_badge_mesh.mesh as QuadMesh
