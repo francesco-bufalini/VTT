@@ -668,6 +668,75 @@ func _prune_chunk_cache() -> void:
 	_chunk_cache = retained
 
 
+func pick_visible_top_cell_from_ray(
+	origin: Vector3,
+	direction: Vector3,
+	max_distance: float
+) -> Dictionary:
+	if _active_occupied.is_empty() or max_distance <= 0.0:
+		return {}
+
+	var ray_direction := direction.normalized()
+	if ray_direction.length_squared() < 0.000001:
+		return {}
+
+	# Token placement must follow the grid the player actually points at, not
+	# the collision mesh hidden underneath it. On shallow camera angles a ray
+	# can enter the visible top of one voxel and only hit the source mesh one
+	# or more cells farther away.
+	var safe := maxf(cell_size, 0.001)
+	var half := safe * 0.5
+	var epsilon := safe * 0.002
+	var visual_offset := display_offset_cells * safe
+	var best_distance := INF
+	var best_cell := INVALID_CELL
+	var best_top_center := Vector3.ZERO
+
+	if absf(ray_direction.y) <= 0.000001:
+		return {}
+
+	for key: Variant in _active_occupied.keys():
+		if not key is Vector3i:
+			continue
+		var cell: Vector3i = key as Vector3i
+		var visual_center := _cell_to_world_center(cell) + visual_offset
+		var top_y := visual_center.y + half
+		var distance := (top_y - origin.y) / ray_direction.y
+		if (
+			distance < 0.0
+			or distance > max_distance
+			or distance >= best_distance
+		):
+			continue
+
+		var ray_point := origin + ray_direction * distance
+		if (
+			ray_point.x < visual_center.x - half - epsilon
+			or ray_point.x > visual_center.x + half + epsilon
+			or ray_point.z < visual_center.z - half - epsilon
+			or ray_point.z > visual_center.z + half + epsilon
+		):
+			continue
+
+		best_distance = distance
+		best_cell = cell
+		best_top_center = Vector3(
+			visual_center.x,
+			top_y,
+			visual_center.z
+		)
+
+	if best_cell == INVALID_CELL:
+		return {}
+
+	return {
+		"valid": true,
+		"cell": best_cell,
+		"top_center": best_top_center,
+		"distance": best_distance,
+	}
+
+
 func get_support_top_y(
 	world_point: Vector3,
 	max_y: float,
