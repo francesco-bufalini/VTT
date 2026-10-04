@@ -14,6 +14,9 @@ var seen_ids: Dictionary = {}
 var rng := RandomNumberGenerator.new()
 var _selected_identity_token_id := ""
 var _scene_identity_configured := false
+var _identity_change_mode := false
+var _identity_placement_pending := false
+var _identity_profile_choices: Array[Dictionary] = []
 var _selected_die := "d20"
 var _pending_identity_callback := Callable()
 
@@ -28,6 +31,9 @@ var roll_mode_input: OptionButton
 var roll_button: Button
 var scene_identity_dialog: ConfirmationDialog
 var scene_identity_selector: OptionButton
+var scene_identity_miniature_section: VBoxContainer
+var scene_identity_miniature_search: LineEdit
+var scene_identity_miniature_list: ItemList
 var quick_result_panel: PanelContainer
 var quick_result_label: Label
 var _quick_result_generation := 0
@@ -62,7 +68,7 @@ func setup(
 	_build_ui()
 	_build_scene_identity_dialog()
 	set_session_key(initial_session_key)
-	call_deferred("ensure_scene_identity")
+	call_deferred("_prompt_initial_identity_after_scene_ready")
 
 
 func set_session_key(value: String) -> void:
@@ -850,63 +856,130 @@ static func percentile_total(tens_face: int, ones_face: int) -> int:
 	return 100 if total == 0 else total
 
 
+func _prompt_initial_identity_after_scene_ready() -> void:
+	# Il salvataggio della campagna viene applicato in deferred: attendere due
+	# frame fa sì che il primo popup veda davvero tutti i token caricati.
+	await get_tree().process_frame
+	await get_tree().process_frame
+	ensure_scene_identity()
+
+
 func _build_scene_identity_dialog() -> void:
 	scene_identity_dialog = ConfirmationDialog.new()
 	scene_identity_dialog.name = "SceneChatIdentityDialog"
 	scene_identity_dialog.title = "Identità in questa scena"
 	scene_identity_dialog.ok_button_text = "Conferma"
-	scene_identity_dialog.min_size = Vector2i(480, 200)
+	scene_identity_dialog.cancel_button_text = "Annulla"
+	scene_identity_dialog.dialog_hide_on_ok = false
+	scene_identity_dialog.min_size = Vector2i(600, 560)
+	scene_identity_dialog.add_theme_constant_override("buttons_min_width", 110)
+	scene_identity_dialog.add_theme_constant_override("buttons_min_height", 36)
 	ui_root.add_child(scene_identity_dialog)
 
 	var body := VBoxContainer.new()
-	body.set_anchors_and_offsets_preset(Control.PRESET_FULL_RECT)
-	body.offset_left = 16.0
-	body.offset_right = -16.0
-	body.offset_top = 52.0
-	body.offset_bottom = -58.0
+	body.custom_minimum_size = Vector2(540, 430)
 	body.add_theme_constant_override("separation", 10)
 	scene_identity_dialog.add_child(body)
 
 	var info := Label.new()
 	info.text = (
-		"Seleziona il token associato a questo utente in questa scena. "
-		+ "Se scegli Nessuno, in chat apparirai come master "
-		+ "(nome dispositivo)."
+		"Seleziona un token già in gioco, Nessuno, oppure scegli una "
+		+ "miniatura da generare. Se scegli Nessuno apparirai in chat come "
+		+ "master (nome dispositivo)."
 	)
 	info.autowrap_mode = TextServer.AUTOWRAP_WORD_SMART
 	body.add_child(info)
 
+	var identity_label := Label.new()
+	identity_label.text = "Token associato all'utente"
+	body.add_child(identity_label)
+
 	scene_identity_selector = OptionButton.new()
 	scene_identity_selector.size_flags_horizontal = Control.SIZE_EXPAND_FILL
+	scene_identity_selector.item_selected.connect(
+		_on_scene_identity_mode_selected
+	)
 	body.add_child(scene_identity_selector)
 
+	scene_identity_miniature_section = VBoxContainer.new()
+	scene_identity_miniature_section.add_theme_constant_override(
+		"separation",
+		6
+	)
+	body.add_child(scene_identity_miniature_section)
+
+	var miniature_label := Label.new()
+	miniature_label.text = "Miniatura da generare"
+	scene_identity_miniature_section.add_child(miniature_label)
+
+	scene_identity_miniature_search = LineEdit.new()
+	scene_identity_miniature_search.placeholder_text = "Cerca miniatura…"
+	scene_identity_miniature_search.clear_button_enabled = true
+	scene_identity_miniature_search.text_changed.connect(
+		_refresh_scene_identity_miniature_list
+	)
+	scene_identity_miniature_section.add_child(
+		scene_identity_miniature_search
+	)
+
+	scene_identity_miniature_list = ItemList.new()
+	scene_identity_miniature_list.custom_minimum_size = Vector2(520, 250)
+	scene_identity_miniature_list.size_flags_horizontal = (
+		Control.SIZE_EXPAND_FILL
+	)
+	scene_identity_miniature_section.add_child(
+		scene_identity_miniature_list
+	)
+
+	var miniature_hint := Label.new()
+	miniature_hint.text = (
+		"Le miniature remote vengono scaricate solo dopo Conferma. "
+		+ "Se ne scegli una, il passo successivo obbligatorio è piazzarla "
+		+ "sulla mappa."
+	)
+	miniature_hint.autowrap_mode = TextServer.AUTOWRAP_WORD_SMART
+	scene_identity_miniature_section.add_child(miniature_hint)
+
 	scene_identity_dialog.confirmed.connect(_confirm_scene_identity)
-	scene_identity_dialog.canceled.connect(_use_master_scene_identity)
-	scene_identity_dialog.close_requested.connect(_use_master_scene_identity)
+	scene_identity_dialog.canceled.connect(_cancel_scene_identity_dialog)
+	scene_identity_dialog.close_requested.connect(
+		_cancel_scene_identity_dialog
+	)
 
 
 func ensure_scene_identity(on_ready: Callable = Callable()) -> bool:
 	if _scene_identity_configured:
 		return true
+	if _identity_placement_pending:
+		return false
 	if on_ready.is_valid():
 		_pending_identity_callback = on_ready
-	if scene_identity_dialog == null:
-		return false
+	_show_scene_identity_dialog()
+	return false
 
+
+func request_change_scene_identity() -> void:
+	if _identity_placement_pending:
+		return
+	_identity_change_mode = true
+	_show_scene_identity_dialog()
+
+
+func _show_scene_identity_dialog() -> void:
+	if scene_identity_dialog == null:
+		return
 	_refresh_scene_identity_options()
 	if board_root.has_method("release_camera_control"):
 		board_root.call("release_camera_control")
 	elif board_root.has_method("_release_mouse"):
 		board_root.call("_release_mouse")
-
-	if not scene_identity_dialog.visible:
-		scene_identity_dialog.popup_centered_clamped(
-			Vector2i(500, 220),
-			0.92
-		)
+	scene_identity_dialog.reset_size()
+	scene_identity_dialog.popup_centered_clamped(
+		Vector2i(620, 620),
+		0.92
+	)
 	if scene_identity_selector != null:
 		scene_identity_selector.call_deferred("grab_focus")
-	return false
 
 
 func _refresh_scene_identity_options() -> void:
@@ -916,20 +989,231 @@ func _refresh_scene_identity_options() -> void:
 	scene_identity_selector.add_item(
 		"Nessuno — %s" % _master_author_name()
 	)
-	scene_identity_selector.set_item_metadata(0, "")
-	scene_identity_selector.select(0)
+	scene_identity_selector.set_item_metadata(
+		0,
+		{"kind": "master", "id": ""}
+	)
 
-	var tokens := _scene_identity_tokens()
-	for token: Node3D in tokens:
+	var selected_index := 0
+	for token: Node3D in _scene_identity_tokens():
 		var display_name := _actor_display_name(token)
 		if display_name.is_empty():
 			display_name = String(token.name)
 		var item_index := scene_identity_selector.item_count
+		var token_id := _token_stable_id(token)
 		scene_identity_selector.add_item(display_name)
 		scene_identity_selector.set_item_metadata(
 			item_index,
-			_token_stable_id(token)
+			{"kind": "token", "id": token_id}
 		)
+		if (
+			not _selected_identity_token_id.is_empty()
+			and token_id == _selected_identity_token_id
+		):
+			selected_index = item_index
+
+	scene_identity_selector.add_separator()
+	var generate_index := scene_identity_selector.item_count
+	scene_identity_selector.add_item("Genera una nuova miniatura…")
+	scene_identity_selector.set_item_metadata(
+		generate_index,
+		{"kind": "generate", "id": ""}
+	)
+	scene_identity_selector.select(selected_index)
+
+	_identity_profile_choices.clear()
+	if (
+		board_root != null
+		and is_instance_valid(board_root)
+		and board_root.has_method("get_token_identity_profiles")
+	):
+		var profiles_value: Variant = board_root.call(
+			"get_token_identity_profiles"
+		)
+		if profiles_value is Array:
+			for value: Variant in profiles_value as Array:
+				if value is Dictionary:
+					_identity_profile_choices.append(
+						(value as Dictionary).duplicate(true)
+					)
+
+	_refresh_scene_identity_miniature_list(
+		scene_identity_miniature_search.text
+		if scene_identity_miniature_search != null
+		else ""
+	)
+	_on_scene_identity_mode_selected(selected_index)
+
+
+func refresh_scene_identity_profiles() -> void:
+	if scene_identity_dialog == null or not scene_identity_dialog.visible:
+		return
+	var selected_metadata: Variant = (
+		scene_identity_selector.get_item_metadata(
+			scene_identity_selector.selected
+		)
+		if scene_identity_selector.selected >= 0
+		else {}
+	)
+	var keep_generate := (
+		selected_metadata is Dictionary
+		and String((selected_metadata as Dictionary).get("kind", ""))
+		== "generate"
+	)
+	_refresh_scene_identity_options()
+	if keep_generate:
+		for index: int in range(scene_identity_selector.item_count):
+			var metadata: Variant = (
+				scene_identity_selector.get_item_metadata(index)
+			)
+			if (
+				metadata is Dictionary
+				and String((metadata as Dictionary).get("kind", ""))
+				== "generate"
+			):
+				scene_identity_selector.select(index)
+				_on_scene_identity_mode_selected(index)
+				break
+
+
+func _on_scene_identity_mode_selected(index: int) -> void:
+	if scene_identity_miniature_section == null:
+		return
+	var metadata: Variant = scene_identity_selector.get_item_metadata(index)
+	var kind := (
+		String((metadata as Dictionary).get("kind", ""))
+		if metadata is Dictionary
+		else ""
+	)
+	scene_identity_miniature_section.visible = kind == "generate"
+
+
+func _refresh_scene_identity_miniature_list(query: String) -> void:
+	if scene_identity_miniature_list == null:
+		return
+	var previous_id := ""
+	var selected := scene_identity_miniature_list.get_selected_items()
+	if not selected.is_empty():
+		previous_id = String(
+			scene_identity_miniature_list.get_item_metadata(
+				int(selected[0])
+			)
+		)
+	scene_identity_miniature_list.clear()
+	var normalized := query.strip_edges().to_lower()
+	var target_index := -1
+	for profile: Dictionary in _identity_profile_choices:
+		var profile_id := String(profile.get("id", "")).strip_edges()
+		var name := String(profile.get("name", profile_id))
+		var size_name := String(profile.get("size_name", "Medium"))
+		var status := String(profile.get("status", ""))
+		var searchable := (
+			name + " " + profile_id + " " + size_name + " " + status
+		).to_lower()
+		if not normalized.is_empty() and not searchable.contains(normalized):
+			continue
+		var index := scene_identity_miniature_list.item_count
+		scene_identity_miniature_list.add_item(
+			"%s · %s · %s" % [name, size_name, status]
+		)
+		scene_identity_miniature_list.set_item_metadata(index, profile_id)
+		if profile_id == previous_id:
+			target_index = index
+	if target_index < 0 and scene_identity_miniature_list.item_count > 0:
+		target_index = 0
+	if target_index >= 0:
+		scene_identity_miniature_list.select(target_index)
+
+
+func _confirm_scene_identity() -> void:
+	if (
+		scene_identity_selector == null
+		or scene_identity_selector.selected < 0
+	):
+		return
+	var metadata: Variant = scene_identity_selector.get_item_metadata(
+		scene_identity_selector.selected
+	)
+	if not metadata is Dictionary:
+		return
+	var choice := metadata as Dictionary
+	var kind := String(choice.get("kind", ""))
+
+	if kind == "generate":
+		if scene_identity_miniature_list == null:
+			return
+		var selected := scene_identity_miniature_list.get_selected_items()
+		if selected.is_empty():
+			return
+		var profile_id := String(
+			scene_identity_miniature_list.get_item_metadata(
+				int(selected[0])
+			)
+		).strip_edges()
+		if profile_id.is_empty():
+			return
+		if (
+			board_root == null
+			or not is_instance_valid(board_root)
+			or not board_root.has_method(
+				"begin_identity_token_placement"
+			)
+		):
+			return
+		_identity_placement_pending = true
+		_identity_change_mode = false
+		scene_identity_dialog.hide()
+		var started := bool(
+			board_root.call(
+				"begin_identity_token_placement",
+				profile_id,
+				Callable(self, "_on_identity_token_placed"),
+				Callable(
+					self,
+					"_on_identity_token_placement_failed"
+				)
+			)
+		)
+		if not started:
+			_identity_placement_pending = false
+			_show_scene_identity_dialog()
+		return
+
+	_selected_identity_token_id = (
+		String(choice.get("id", "")).strip_edges()
+		if kind == "token"
+		else ""
+	)
+	_scene_identity_configured = true
+	_identity_change_mode = false
+	_save_scene_identity()
+	scene_identity_dialog.hide()
+	_resume_after_identity_choice()
+
+
+func _on_identity_token_placed(token: CharacterBody3D) -> void:
+	_identity_placement_pending = false
+	if token == null or not is_instance_valid(token):
+		_show_scene_identity_dialog()
+		return
+	_selected_identity_token_id = _token_stable_id(token)
+	_scene_identity_configured = true
+	_save_scene_identity()
+	_resume_after_identity_choice()
+
+
+func _on_identity_token_placement_failed() -> void:
+	_identity_placement_pending = false
+	_show_scene_identity_dialog()
+
+
+func _cancel_scene_identity_dialog() -> void:
+	_identity_change_mode = false
+	_pending_identity_callback = Callable()
+	if board_root.has_method("capture_camera_control"):
+		board_root.call("capture_camera_control")
+	elif board_root.has_method("_capture_mouse"):
+		board_root.call("_capture_mouse")
 
 
 func _scene_identity_tokens() -> Array[Node3D]:
@@ -970,20 +1254,13 @@ func _confirm_scene_identity() -> void:
 	_resume_after_identity_choice()
 
 
-func _use_master_scene_identity() -> void:
-	if _scene_identity_configured:
-		return
-	_selected_identity_token_id = ""
-	_scene_identity_configured = true
-	_save_scene_identity()
-	_resume_after_identity_choice()
-
-
 func _resume_after_identity_choice() -> void:
 	var callback := _pending_identity_callback
 	_pending_identity_callback = Callable()
 	if callback.is_valid():
 		callback.call_deferred()
+	elif board_root.has_method("capture_camera_control"):
+		board_root.call("capture_camera_control")
 
 
 func _scene_identity_section() -> String:

@@ -38,6 +38,7 @@ const CONTEXT_MASTER_LINK_CREATURE := 35
 const CONTEXT_UNDO := 36
 const CONTEXT_REDO := 37
 const CONTEXT_TOGGLE_CONDITION_VISUALS := 38
+const CONTEXT_USER_IDENTITY := 39
 const CAMPAIGN_EDITOR_SCENE_PATH := "res://vtt/editor/campaign_editor.tscn"
 const LOCAL_TOKEN_CATALOG := "res://dist/token_packs/token_catalog.json"
 const LOCAL_TOKEN_PACK_ROOT := "res://dist/token_packs"
@@ -90,6 +91,11 @@ var _token_generation_canceled_callback: Callable = Callable()
 var _token_generation_exact_position: bool = false
 var _token_generation_place_on_surface: bool = false
 var _token_generation_transform_target: CharacterBody3D
+var _forced_identity_placement_active: bool = false
+var _forced_identity_profile_ready: bool = false
+var _forced_identity_profile_id: String = ""
+var identity_placement_panel: PanelContainer
+var identity_placement_label: Label
 var token_resize_menu: PopupMenu
 var context_token_menu: PopupMenu
 var context_game_menu: PopupMenu
@@ -208,6 +214,7 @@ func _ready() -> void:
 	board_sync.listen(true, _share_session_key())
 	_build_camera_settings_dialog()
 	_build_token_generation_controls()
+	_build_identity_placement_hint()
 	_connect_token_pack_manager()
 	_build_token_resize_menu()
 	_build_token_state_dialog()
@@ -572,6 +579,39 @@ func _build_token_generation_controls() -> void:
 	_reload_token_miniature_list()
 
 
+func _build_identity_placement_hint() -> void:
+	identity_placement_panel = PanelContainer.new()
+	identity_placement_panel.name = "IdentityTokenPlacementHint"
+	identity_placement_panel.anchor_left = 0.5
+	identity_placement_panel.anchor_right = 0.5
+	identity_placement_panel.offset_left = -310.0
+	identity_placement_panel.offset_right = 310.0
+	identity_placement_panel.offset_top = 52.0
+	identity_placement_panel.offset_bottom = 104.0
+	identity_placement_panel.mouse_filter = Control.MOUSE_FILTER_IGNORE
+	identity_placement_panel.hide()
+	$UI.add_child(identity_placement_panel)
+
+	identity_placement_label = Label.new()
+	identity_placement_label.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
+	identity_placement_label.vertical_alignment = VERTICAL_ALIGNMENT_CENTER
+	identity_placement_label.autowrap_mode = TextServer.AUTOWRAP_WORD_SMART
+	identity_placement_label.add_theme_font_size_override("font_size", 15)
+	identity_placement_panel.add_child(identity_placement_label)
+
+
+func _set_identity_placement_hint(text: String) -> void:
+	if identity_placement_panel == null or identity_placement_label == null:
+		return
+	identity_placement_label.text = text
+	identity_placement_panel.show()
+
+
+func _hide_identity_placement_hint() -> void:
+	if identity_placement_panel != null:
+		identity_placement_panel.hide()
+
+
 func _connect_token_pack_manager() -> void:
 	if TokenPackManager == null:
 		return
@@ -610,6 +650,16 @@ func _connect_token_pack_manager() -> void:
 func _on_remote_token_catalog_updated(_entries: Array[Dictionary]) -> void:
 	if token_miniature_list != null:
 		_reload_token_miniature_list()
+	_notify_identity_profile_catalog_changed()
+
+
+func _notify_identity_profile_catalog_changed() -> void:
+	if (
+		dice_roller_chat != null
+		and is_instance_valid(dice_roller_chat)
+		and dice_roller_chat.has_method("refresh_scene_identity_profiles")
+	):
+		dice_roller_chat.call_deferred("refresh_scene_identity_profiles")
 
 
 func _remote_visual_path(token_id: String) -> String:
@@ -624,7 +674,20 @@ func _on_remote_token_downloaded(
 		var ok_button := color_dialog.get_ok_button()
 		if ok_button != null:
 			ok_button.disabled = false
+	if _forced_identity_placement_active and _forced_identity_profile_id == token_id:
+		var mount_error := TokenPackManager.mount_token(token_id)
+		if mount_error == OK:
+			_selected_token_profile["visual_asset"] = _remote_visual_path(token_id)
+			_forced_identity_profile_ready = true
+			_set_identity_placement_hint(
+				"Miniatura pronta · clicca sulla mappa per piazzarla. Esc è disabilitato finché non la piazzi."
+			)
+		else:
+			_fail_forced_identity_placement(
+				"Mount non riuscito: %s" % error_string(mount_error)
+			)
 	call_deferred("_reload_token_miniature_list", token_id)
+	_notify_identity_profile_catalog_changed()
 
 
 func _on_remote_token_mounted(
@@ -639,7 +702,14 @@ func _on_remote_token_mounted(
 		var ok_button := color_dialog.get_ok_button()
 		if ok_button != null:
 			ok_button.disabled = false
+	if _forced_identity_placement_active and _forced_identity_profile_id == token_id:
+		_selected_token_profile["visual_asset"] = _remote_visual_path(token_id)
+		_forced_identity_profile_ready = true
+		_set_identity_placement_hint(
+			"Miniatura pronta · clicca sulla mappa per piazzarla. Esc è disabilitato finché non la piazzi."
+		)
 	call_deferred("_reload_token_miniature_list", token_id)
+	_notify_identity_profile_catalog_changed()
 
 
 func _on_remote_token_download_failed(
@@ -654,6 +724,8 @@ func _on_remote_token_download_failed(
 			token_download_button.visible = true
 			token_download_button.disabled = false
 			token_download_button.text = "Scarica"
+	if _forced_identity_placement_active and _forced_identity_profile_id == token_id:
+		_fail_forced_identity_placement(message)
 	push_warning("DnDBase: download token remoto fallito: %s" % message)
 
 
@@ -665,6 +737,8 @@ func _on_remote_token_mount_failed(
 		var ok_button := color_dialog.get_ok_button()
 		if ok_button != null:
 			ok_button.disabled = true
+	if _forced_identity_placement_active and _forced_identity_profile_id == token_id:
+		_fail_forced_identity_placement(message)
 	push_warning("DnDBase: mount token remoto fallito: %s" % message)
 
 
@@ -1314,6 +1388,13 @@ func _process(_delta: float) -> void:
 
 func _input(event: InputEvent) -> void:
 	if (
+		_forced_identity_placement_active
+		and _handle_forced_identity_placement_input(event)
+	):
+		get_viewport().set_input_as_handled()
+		return
+
+	if (
 		event is InputEventMouseButton
 		and event.pressed
 		and event.button_index == MOUSE_BUTTON_LEFT
@@ -1426,6 +1507,101 @@ func _input(event: InputEvent) -> void:
 			_on_token_dialog_confirmed()
 			color_dialog.hide()
 			get_viewport().set_input_as_handled()
+
+
+func _handle_forced_identity_placement_input(event: InputEvent) -> bool:
+	if (
+		event is InputEventKey
+		and event.pressed
+		and not event.echo
+		and event.keycode == KEY_ESCAPE
+	):
+		_set_identity_placement_hint(
+			"Devi piazzare il token scelto prima di continuare. Clicca su una superficie valida."
+		)
+		return true
+
+	if event is InputEventMouseButton and event.pressed:
+		if event.button_index == MOUSE_BUTTON_LEFT:
+			if not _forced_identity_profile_ready:
+				_set_identity_placement_hint(
+					"Preparazione della miniatura in corso… attendi il download, poi clicca sulla mappa."
+				)
+				return true
+			if not _set_pending_spawn_from_screen(event.position):
+				_set_identity_placement_hint(
+					"Punta una superficie calpestabile valida e clicca per piazzare il token."
+				)
+				return true
+			_token_generation_exact_position = (
+				_pending_spawn_on_grid_surface
+				or (
+					_pending_spawn_support != null
+					and is_instance_valid(_pending_spawn_support)
+				)
+			)
+			_token_generation_place_on_surface = _token_generation_exact_position
+			_forced_identity_placement_active = false
+			_hide_identity_placement_hint()
+			_on_token_dialog_confirmed()
+			_clear_forced_identity_placement_runtime()
+			return true
+		if event.button_index == MOUSE_BUTTON_RIGHT:
+			return true
+
+	return false
+
+
+func _set_pending_spawn_from_screen(screen_position: Vector2) -> bool:
+	_pending_spawn_support = null
+	_pending_spawn_on_grid_surface = false
+	_has_pending_spawn_position = false
+
+	var hit: Dictionary = _raycast_from_screen(screen_position, 1 | 4, false)
+	if hit.is_empty():
+		return false
+	var hit_normal: Vector3 = hit.get("normal", Vector3.UP)
+	if hit_normal.dot(Vector3.UP) < 0.35:
+		return false
+
+	var hit_position: Vector3 = hit.get("position", Vector3.ZERO)
+	var spawn_position := hit_position
+	if (
+		volumetric_grid.visible
+		and volumetric_grid.has_method("pick_visible_top_cell_from_ray")
+	):
+		var ray_origin := camera.project_ray_origin(screen_position)
+		var ray_direction := camera.project_ray_normal(screen_position)
+		var max_grid_pick_distance := (
+			ray_origin.distance_to(hit_position)
+			+ cell_size * 1.5
+		)
+		var grid_pick: Variant = volumetric_grid.call(
+			"pick_visible_top_cell_from_ray",
+			ray_origin,
+			ray_direction,
+			max_grid_pick_distance
+		)
+		if grid_pick is Dictionary:
+			var grid_pick_data := grid_pick as Dictionary
+			if bool(grid_pick_data.get("valid", false)):
+				var top_center_value: Variant = grid_pick_data.get(
+					"top_center",
+					spawn_position
+				)
+				if top_center_value is Vector3:
+					spawn_position = top_center_value as Vector3
+					_pending_spawn_on_grid_surface = true
+
+	_pending_spawn_position = spawn_position
+	_has_pending_spawn_position = true
+	var hit_collider := hit.get("collider") as Node3D
+	if (
+		hit_collider != null
+		and hit_collider.is_in_group("tactical_platform")
+	):
+		_pending_spawn_support = hit_collider
+	return true
 
 
 func _unhandled_input(event: InputEvent) -> void:
@@ -2404,6 +2580,11 @@ func _show_context_menu(screen_position: Vector2) -> void:
 		"Creatura → token per nome",
 		CONTEXT_MASTER_LINK_CREATURE
 	)
+	context_game_menu.add_separator()
+	context_game_menu.add_item(
+		"Cambia token associato all'utente…",
+		CONTEXT_USER_IDENTITY
+	)
 	context_game_menu.add_separator("Combattimento")
 	context_game_menu.add_item("Inizia combattimento", CONTEXT_COMBAT_START)
 	var initiative_visible: bool = (
@@ -2567,6 +2748,11 @@ func _on_context_menu_id_pressed(id: int) -> void:
 			master_area.call_deferred(
 				"request_link_selected_creature_to_named_token"
 			)
+		return
+
+	if id == CONTEXT_USER_IDENTITY:
+		context_menu.hide()
+		request_change_user_identity()
 		return
 
 	if id == CONTEXT_COMBAT_START:
@@ -3365,6 +3551,147 @@ func _load_shared_token_editor_from_target(token: CharacterBody3D) -> void:
 	_set_shared_token_editor_conditions(conditions)
 
 
+func get_token_identity_profiles() -> Array[Dictionary]:
+	var result: Array[Dictionary] = []
+	for profile: Dictionary in _token_profiles:
+		var origin := String(profile.get("_pack_origin", ""))
+		if origin == "current":
+			continue
+		var token_id := String(profile.get("id", "")).strip_edges()
+		if token_id.is_empty():
+			continue
+		result.append({
+			"id": token_id,
+			"name": String(
+				profile.get("name", profile.get("id", "Token"))
+			),
+			"size_name": String(profile.get("size_name", "Medium")),
+			"status": _token_profile_status(profile),
+			"origin": origin
+		})
+	return result
+
+
+func _identity_profile_by_id(profile_id: String) -> Dictionary:
+	var wanted := profile_id.strip_edges()
+	for profile: Dictionary in _token_profiles:
+		if String(profile.get("id", "")).strip_edges() == wanted:
+			return profile.duplicate(true)
+	return {}
+
+
+func begin_identity_token_placement(
+	profile_id: String,
+	confirmed_callback: Callable,
+	failed_callback: Callable = Callable()
+) -> bool:
+	if (
+		_forced_identity_placement_active
+		or color_dialog.visible
+		or profile_id.strip_edges().is_empty()
+	):
+		return false
+
+	var profile := _identity_profile_by_id(profile_id)
+	if profile.is_empty():
+		return false
+
+	_forced_identity_placement_active = true
+	_forced_identity_profile_ready = false
+	_forced_identity_profile_id = profile_id.strip_edges()
+	_token_generation_transform_target = null
+	_token_generation_confirmed_callback = confirmed_callback
+	_token_generation_canceled_callback = failed_callback
+	_token_generation_exact_position = false
+	_token_generation_place_on_surface = false
+	_token_name_is_auto = true
+	_selected_token_profile = profile
+
+	# Riusa lo stesso setup del generatore normale senza aprire il suo popup.
+	_refresh_token_miniature_filter("", _forced_identity_profile_id)
+	_prepare_shared_token_editor()
+	_ui_owns_mouse = false
+	_release_mouse()
+
+	var origin := String(_selected_token_profile.get("_pack_origin", ""))
+	if origin == "remote":
+		if TokenPackManager.is_mounted(_forced_identity_profile_id):
+			_selected_token_profile["visual_asset"] = _remote_visual_path(
+				_forced_identity_profile_id
+			)
+			_forced_identity_profile_ready = true
+		elif TokenPackManager.is_downloaded(_forced_identity_profile_id):
+			var mount_error := TokenPackManager.mount_token(
+				_forced_identity_profile_id
+			)
+			if mount_error != OK:
+				_fail_forced_identity_placement(
+					"Mount non riuscito: %s" % error_string(mount_error)
+				)
+				return true
+			_selected_token_profile["visual_asset"] = _remote_visual_path(
+				_forced_identity_profile_id
+			)
+			_forced_identity_profile_ready = true
+		else:
+			_set_identity_placement_hint(
+				"Download della miniatura in corso… appena pronta dovrai cliccare sulla mappa per piazzarla."
+			)
+			var download_error := TokenPackManager.download_token(
+				_forced_identity_profile_id
+			)
+			if download_error != OK:
+				_fail_forced_identity_placement(
+					"Download non avviato: %s" % error_string(download_error)
+				)
+			return true
+	elif origin == "local_pack":
+		if not TokenPackManager.is_mounted(_forced_identity_profile_id):
+			var local_mount_error := TokenPackManager.mount_local_token(
+				_forced_identity_profile_id,
+				_selected_token_profile,
+				String(
+					_selected_token_profile.get("_local_pck_path", "")
+				)
+			)
+			if local_mount_error != OK:
+				_fail_forced_identity_placement(
+					"Mount non riuscito: %s" % error_string(local_mount_error)
+				)
+				return true
+		_selected_token_profile["visual_asset"] = _remote_visual_path(
+			_forced_identity_profile_id
+		)
+		_forced_identity_profile_ready = true
+	else:
+		_forced_identity_profile_ready = true
+
+	if _forced_identity_profile_ready:
+		_set_identity_placement_hint(
+			"Miniatura pronta · clicca sulla mappa per piazzarla. Esc è disabilitato finché non la piazzi."
+		)
+	return true
+
+
+func _fail_forced_identity_placement(message: String) -> void:
+	if not _forced_identity_placement_active:
+		return
+	push_warning("DnDBase: piazzamento token identità fallito: %s" % message)
+	var failed_callback := _token_generation_canceled_callback
+	_forced_identity_placement_active = false
+	_hide_identity_placement_hint()
+	_clear_forced_identity_placement_runtime()
+	_reset_token_generation_state()
+	if failed_callback.is_valid():
+		failed_callback.call_deferred()
+
+
+func _clear_forced_identity_placement_runtime() -> void:
+	_forced_identity_profile_ready = false
+	_forced_identity_profile_id = ""
+	_hide_identity_placement_hint()
+
+
 func _prepare_shared_token_editor() -> void:
 	var editing := (
 		_token_generation_transform_target != null
@@ -3869,6 +4196,18 @@ func focus_camera_on_token(token: CharacterBody3D) -> void:
 func toggle_token_list() -> void:
 	if token_list != null and is_instance_valid(token_list):
 		token_list.call("toggle_panel")
+
+
+func request_change_user_identity() -> void:
+	if (
+		dice_roller_chat == null
+		or not is_instance_valid(dice_roller_chat)
+		or not dice_roller_chat.has_method("request_change_scene_identity")
+	):
+		return
+	_ui_owns_mouse = true
+	_release_mouse()
+	dice_roller_chat.call_deferred("request_change_scene_identity")
 
 
 func _replace_selection(token: CharacterBody3D) -> void:
