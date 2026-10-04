@@ -597,6 +597,11 @@ func _finish_bulk_attempt(item: Dictionary, accepted: bool, rejected: bool) -> v
 		_bulk_failed += 1
 
 	if _bulk_pending == 0:
+		if (
+			auto_sync_enabled
+			and (_bulk_rejected > 0 or _bulk_failed > 0)
+		):
+			_mark_current_state_dirty_for_retry()
 		status_changed.emit(
 			"Sincronizzazione conclusa · ricevute %d/%d · rifiutate %d · non raggiungibili %d"
 			% [
@@ -606,6 +611,29 @@ func _finish_bulk_attempt(item: Dictionary, accepted: bool, rejected: bool) -> v
 				_bulk_failed
 			]
 		)
+
+
+func _mark_current_state_dirty_for_retry() -> void:
+	if (
+		board_root == null
+		or not is_instance_valid(board_root)
+		or _applying_received_snapshot
+	):
+		return
+	var snapshot := create_snapshot()
+	if snapshot.is_empty():
+		return
+	var now := Time.get_ticks_msec()
+	var signature := _snapshot_signature(snapshot)
+	_auto_sync_initialized = true
+	# Do not keep the optimistic signature that was recorded when the TCP send
+	# merely started. A rejected ACK means the current state is still dirty.
+	_auto_sync_last_signature = ""
+	_auto_sync_candidate_signature = signature
+	_auto_sync_candidate_since_msec = (
+		now - AUTO_SYNC_DEBOUNCE_MS
+	)
+	_auto_sync_retry_after_msec = now + AUTO_SYNC_RETRY_MS
 
 
 func _process(_delta: float) -> void:
