@@ -135,7 +135,20 @@ func refresh_now() -> void:
 					if second_arrow.size() == 2:
 						arrow_points.append(second_arrow[0])
 						arrow_points.append(second_arrow[1])
-					visible_badge_targets[target.get_instance_id()] = target
+
+	# Badges are always visible for active conditions and for flanked targets.
+	# Selection only controls the directional arrows above.
+	for token: CharacterBody3D in tokens:
+		var badge_text := compose_status_badge_text(
+			bool(token.get_meta("flanked", false)),
+			_token_condition_display_parts(token)
+		)
+		if badge_text.is_empty():
+			continue
+		visible_badge_targets[token.get_instance_id()] = {
+			"token": token,
+			"text": badge_text,
+		}
 
 	_render_arrows(arrow_points)
 	_refresh_flanking_badges(visible_badge_targets)
@@ -159,7 +172,11 @@ func _refresh_flanking_badges(targets: Dictionary) -> void:
 
 	for key: Variant in targets.keys():
 		var token_id := int(key)
-		var target_value: Variant = targets[key]
+		var item_value: Variant = targets[key]
+		if not item_value is Dictionary:
+			continue
+		var item := item_value as Dictionary
+		var target_value: Variant = item.get("token")
 		if not target_value is CharacterBody3D:
 			continue
 		var target := target_value as CharacterBody3D
@@ -171,6 +188,12 @@ func _refresh_flanking_badges(targets: Dictionary) -> void:
 			panel = _create_flanking_badge()
 			_flanking_badges[token_id] = panel
 
+		var label := panel.get_node_or_null("Label") as Label
+		if label != null:
+			label.text = String(item.get("text", ""))
+		panel.reset_size()
+		panel.size = panel.get_combined_minimum_size()
+
 		var world_anchor := target.global_position
 		var height_cells_value: Variant = target.get("token_height_cells")
 		var height_cells := (
@@ -179,19 +202,27 @@ func _refresh_flanking_badges(targets: Dictionary) -> void:
 			else 2.0
 		)
 		var safe_cell := maxf(float(board_root.get("cell_size")), 0.001)
-		world_anchor.y += height_cells * safe_cell * 0.5 + safe_cell * 0.55
+		world_anchor.y += height_cells * safe_cell * 0.5 + safe_cell * 0.34
 
 		if camera.is_position_behind(world_anchor):
 			panel.hide()
 			continue
 
 		var screen := camera.unproject_position(world_anchor)
-		var viewport_size := board_root.get_viewport().get_visible_rect().size
-		screen.x = clampf(screen.x, 12.0, viewport_size.x - 12.0)
-		screen.y = clampf(screen.y, 12.0, viewport_size.y - 12.0)
+		var camera_right := camera.global_transform.basis.x.normalized()
+		var right_screen := camera.unproject_position(
+			world_anchor + camera_right * safe_cell
+		)
+		var projected_cell_pixels := screen.distance_to(right_screen)
+		var badge_scale := perspective_badge_scale(
+			projected_cell_pixels,
+			panel.size.y
+		)
+		panel.scale = Vector2.ONE * badge_scale
+		var scaled_size := panel.size * badge_scale
 		panel.position = Vector2(
-			screen.x - panel.size.x * 0.5,
-			screen.y - panel.size.y
+			screen.x - scaled_size.x * 0.5,
+			screen.y - scaled_size.y
 		)
 		panel.show()
 
@@ -215,7 +246,7 @@ func _create_flanking_badge() -> PanelContainer:
 	panel.add_theme_stylebox_override("panel", style)
 
 	var label := Label.new()
-	label.text = "⚔  Affiancato"
+	label.name = "Label"
 	label.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
 	label.vertical_alignment = VERTICAL_ALIGNMENT_CENTER
 	label.add_theme_font_size_override("font_size", 13)
@@ -224,6 +255,54 @@ func _create_flanking_badge() -> PanelContainer:
 	ui_root.add_child(panel)
 	panel.reset_size()
 	return panel
+
+
+func _token_condition_display_parts(
+	token: CharacterBody3D
+) -> PackedStringArray:
+	if (
+		token != null
+		and is_instance_valid(token)
+		and token.has_method("get_active_condition_display_parts")
+	):
+		var value: Variant = token.call("get_active_condition_display_parts")
+		if value is PackedStringArray:
+			return value as PackedStringArray
+		if value is Array:
+			var converted := PackedStringArray()
+			for item: Variant in value as Array:
+				converted.append(String(item))
+			return converted
+	return PackedStringArray()
+
+
+static func compose_status_badge_text(
+	flanked: bool,
+	condition_parts: PackedStringArray
+) -> String:
+	var parts := PackedStringArray()
+	if flanked:
+		parts.append("⚔ Affiancato")
+	for part: String in condition_parts:
+		var clean := part.strip_edges()
+		if not clean.is_empty():
+			parts.append(clean)
+	return ", ".join(parts)
+
+
+static func perspective_badge_scale(
+	projected_cell_pixels: float,
+	natural_height_pixels: float
+) -> float:
+	if projected_cell_pixels <= EPSILON or natural_height_pixels <= EPSILON:
+		return 1.0
+	# The badge occupies roughly 0.38 grid cells in world height, matching the
+	# previous compact popup proportions while following camera perspective.
+	return clampf(
+		projected_cell_pixels * 0.38 / natural_height_pixels,
+		0.06,
+		2.2
+	)
 
 
 func _clear_flanking_badges() -> void:
