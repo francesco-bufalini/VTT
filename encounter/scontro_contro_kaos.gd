@@ -395,9 +395,10 @@ func _token_effect_radius(token: CharacterBody3D) -> float:
 	if token.has_method("get_footprint_extent"):
 		var extent: Variant = token.call("get_footprint_extent")
 		if extent is Vector2:
+			var footprint: Vector2 = extent
 			return maxf(
 				cell_size * 0.5,
-				(extent as Vector2).length() * 0.5
+				footprint.length() * 0.5
 			)
 	return cell_size * 0.5
 
