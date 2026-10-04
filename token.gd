@@ -77,6 +77,10 @@ var _condition_rings_root: Node3D
 var _overlay_root: Node3D
 var _name_label: Label3D
 var _status_label: Label3D
+var _flanking_badge_root: Node3D
+var _flanking_badge_mesh: MeshInstance3D
+var _flanking_badge_label: Label3D
+var _flanking_badge_material: StandardMaterial3D
 var _hp_bar_root: Node3D
 var _hp_bar_mesh: MeshInstance3D
 var _hp_bar_material: StandardMaterial3D
@@ -1108,6 +1112,9 @@ func _update_condition_rings() -> void:
 
 func _ensure_token_overlay() -> void:
 	if is_instance_valid(_overlay_root):
+		_ensure_health_bar()
+		_ensure_flanking_badge()
+		_update_overlay_position()
 		return
 
 	_overlay_root = get_node_or_null(TOKEN_OVERLAY_NAME) as Node3D
@@ -1141,7 +1148,89 @@ func _ensure_token_overlay() -> void:
 		_overlay_root.add_child(_status_label)
 
 	_ensure_health_bar()
+	_ensure_flanking_badge()
 	_update_overlay_position()
+
+
+func _ensure_flanking_badge() -> void:
+	if _overlay_root == null or not is_instance_valid(_overlay_root):
+		return
+	if (
+		is_instance_valid(_flanking_badge_root)
+		and is_instance_valid(_flanking_badge_mesh)
+		and is_instance_valid(_flanking_badge_label)
+	):
+		return
+
+	_flanking_badge_root = (
+		_overlay_root.get_node_or_null("FlankingBadge") as Node3D
+	)
+	if _flanking_badge_root == null:
+		_flanking_badge_root = Node3D.new()
+		_flanking_badge_root.name = "FlankingBadge"
+		_overlay_root.add_child(_flanking_badge_root)
+
+	_flanking_badge_mesh = (
+		_flanking_badge_root.get_node_or_null("Background") as MeshInstance3D
+	)
+	if _flanking_badge_mesh == null:
+		_flanking_badge_mesh = MeshInstance3D.new()
+		_flanking_badge_mesh.name = "Background"
+		_flanking_badge_mesh.cast_shadow = (
+			GeometryInstance3D.SHADOW_CASTING_SETTING_OFF
+		)
+		_flanking_badge_root.add_child(_flanking_badge_mesh)
+
+	var quad := QuadMesh.new()
+	quad.size = Vector2(1.95 * cell_size, 0.36 * cell_size)
+	_flanking_badge_mesh.mesh = quad
+
+	_flanking_badge_material = StandardMaterial3D.new()
+	_flanking_badge_material.transparency = (
+		BaseMaterial3D.TRANSPARENCY_ALPHA
+	)
+	_flanking_badge_material.shading_mode = (
+		BaseMaterial3D.SHADING_MODE_UNSHADED
+	)
+	_flanking_badge_material.billboard_mode = (
+		BaseMaterial3D.BILLBOARD_ENABLED
+	)
+	_flanking_badge_material.cull_mode = BaseMaterial3D.CULL_DISABLED
+	_flanking_badge_material.no_depth_test = true
+	_flanking_badge_material.albedo_color = Color(0.035, 0.04, 0.05, 0.90)
+	_flanking_badge_material.emission_enabled = true
+	_flanking_badge_material.emission = Color(0.12, 0.07, 0.02, 1.0)
+	_flanking_badge_material.emission_energy_multiplier = 0.25
+	_flanking_badge_mesh.material_override = _flanking_badge_material
+
+	_flanking_badge_label = (
+		_flanking_badge_root.get_node_or_null("Label") as Label3D
+	)
+	if _flanking_badge_label == null:
+		_flanking_badge_label = Label3D.new()
+		_flanking_badge_label.name = "Label"
+		_flanking_badge_label.billboard = BaseMaterial3D.BILLBOARD_ENABLED
+		_flanking_badge_label.fixed_size = false
+		_flanking_badge_label.font_size = 24
+		_flanking_badge_label.outline_size = 7
+		_flanking_badge_label.modulate = Color(1.0, 0.72, 0.22, 1.0)
+		_flanking_badge_label.text = "AFFIANCATO"
+		_flanking_badge_root.add_child(_flanking_badge_label)
+
+	_flanking_badge_root.visible = false
+
+
+func set_flanking_indicator_visible(value: bool) -> void:
+	_ensure_token_overlay()
+	if is_instance_valid(_flanking_badge_root):
+		_flanking_badge_root.visible = value
+
+
+func is_flanking_indicator_visible() -> bool:
+	return (
+		is_instance_valid(_flanking_badge_root)
+		and _flanking_badge_root.visible
+	)
 
 
 func _update_overlay_position() -> void:
@@ -1158,6 +1247,26 @@ func _update_overlay_position() -> void:
 	if is_instance_valid(_status_label):
 		_status_label.pixel_size = 0.010 * cell_size
 		_status_label.position = Vector3(0.0, -0.22 * cell_size, 0.0)
+	if is_instance_valid(_flanking_badge_root):
+		_flanking_badge_root.position = Vector3(
+			0.0,
+			0.68 * cell_size,
+			0.0
+		)
+	if is_instance_valid(_flanking_badge_label):
+		_flanking_badge_label.pixel_size = 0.009 * cell_size
+		_flanking_badge_label.position = Vector3(
+			0.0,
+			0.0,
+			0.012 * cell_size
+		)
+	if is_instance_valid(_flanking_badge_mesh):
+		var badge_quad := _flanking_badge_mesh.mesh as QuadMesh
+		if badge_quad != null:
+			badge_quad.size = Vector2(
+				1.95 * cell_size,
+				0.36 * cell_size
+			)
 	if is_instance_valid(_hp_bar_root):
 		_hp_bar_root.position = Vector3(0.0, 0.34 * cell_size, 0.0)
 		_update_health_bar_visual()
