@@ -89,6 +89,8 @@ var camera_sensitivity_slider: HSlider
 var camera_speed_value_label: Label
 var camera_sensitivity_value_label: Label
 var token_name_input: LineEdit
+var _token_name_is_auto: bool = true
+var _updating_token_name_input: bool = false
 var token_reach_input: SpinBox
 var token_miniature_search: LineEdit
 var token_miniature_list: ItemList
@@ -401,6 +403,10 @@ func _build_token_generation_controls() -> void:
 			"Il nome parte da quello della miniatura, ma puoi modificarlo "
 			+ "prima di creare il token."
 		)
+		if not token_name_input.text_changed.is_connected(
+			_on_token_name_input_changed
+		):
+			token_name_input.text_changed.connect(_on_token_name_input_changed)
 
 	var name_label := content_box.get_node_or_null("TokenNameLabel") as Label
 	if name_label != null:
@@ -879,19 +885,96 @@ func _refresh_token_miniature_filter(
 		_on_token_miniature_selected(target_index)
 
 
+static func unique_token_display_name(
+	base_name: String,
+	existing_names: Array[String]
+) -> String:
+	var resolved_base := base_name.strip_edges()
+	if resolved_base.is_empty():
+		resolved_base = "Token"
+
+	var used_names: Dictionary = {}
+	for existing_name: String in existing_names:
+		var normalized := existing_name.strip_edges().to_lower()
+		if not normalized.is_empty():
+			used_names[normalized] = true
+
+	if not used_names.has(resolved_base.to_lower()):
+		return resolved_base
+
+	var suffix := 1
+	while used_names.has(("%s %d" % [resolved_base, suffix]).to_lower()):
+		suffix += 1
+	return "%s %d" % [resolved_base, suffix]
+
+
+func _current_token_display_names(
+	excluded_token: CharacterBody3D = null
+) -> Array[String]:
+	var names: Array[String] = []
+	for node: Node in get_tree().get_nodes_in_group("dnd_token"):
+		if not node is CharacterBody3D:
+			continue
+		var token := node as CharacterBody3D
+		if (
+			token == excluded_token
+			or not is_instance_valid(token)
+			or not is_ancestor_of(token)
+		):
+			continue
+		var display_name := (
+			String(token.call("get_display_name")).strip_edges()
+			if token.has_method("get_display_name")
+			else String(token.name).strip_edges()
+		)
+		if not display_name.is_empty():
+			names.append(display_name)
+	return names
+
+
+func _unique_token_display_name(
+	base_name: String,
+	excluded_token: CharacterBody3D = null
+) -> String:
+	return unique_token_display_name(
+		base_name,
+		_current_token_display_names(excluded_token)
+	)
+
+
+func _token_profile_default_name(profile: Dictionary) -> String:
+	var profile_name := String(
+		profile.get("name", profile.get("id", "Token"))
+	).strip_edges()
+	return profile_name if not profile_name.is_empty() else "Token"
+
+
+func _set_token_name_input(value: String, automatic: bool) -> void:
+	if token_name_input == null:
+		return
+	_updating_token_name_input = true
+	token_name_input.text = value
+	_updating_token_name_input = false
+	_token_name_is_auto = automatic
+
+
+func _on_token_name_input_changed(_value: String) -> void:
+	if _updating_token_name_input:
+		return
+	_token_name_is_auto = false
+
+
 func _on_token_miniature_selected(index: int) -> void:
 	if index < 0 or index >= _visible_token_profiles.size():
 		return
 	_selected_token_profile = _visible_token_profiles[index].duplicate(true)
 
-	var token_name := String(
-		_selected_token_profile.get(
-			"name",
-			_selected_token_profile.get("id", "Token")
+	if token_name_input != null and _token_name_is_auto:
+		var token_name := _token_profile_default_name(_selected_token_profile)
+		_set_token_name_input(
+			_unique_token_display_name(token_name),
+			true
 		)
-	)
-	if token_name_input != null:
-		token_name_input.text = token_name
 
 	var size_name := String(
 		_selected_token_profile.get("size_name", "Medium")
@@ -2827,11 +2910,12 @@ func _load_shared_token_editor_from_target(token: CharacterBody3D) -> void:
 	if token == null or not is_instance_valid(token):
 		return
 	if token_name_input != null:
-		token_name_input.text = (
+		var current_display_name := (
 			String(token.call("get_display_name"))
 			if token.has_method("get_display_name")
 			else ""
 		)
+		_set_token_name_input(current_display_name, false)
 	if token_party_input != null:
 		token_party_input.text = (
 			String(token.call("get_party_id"))
@@ -2914,10 +2998,12 @@ func _open_token_generation_dialog() -> void:
 		return
 
 	_ui_owns_mouse = true
-	if (
-		_token_generation_transform_target == null
-		or not is_instance_valid(_token_generation_transform_target)
-	):
+	var editing_existing := (
+		_token_generation_transform_target != null
+		and is_instance_valid(_token_generation_transform_target)
+	)
+	_token_name_is_auto = not editing_existing
+	if not editing_existing:
 		if token_miniature_list != null and not _token_profiles.is_empty():
 			var selected_items: PackedInt32Array = (
 				token_miniature_list.get_selected_items()
@@ -2943,6 +3029,8 @@ func _reset_token_generation_state() -> void:
 	_token_generation_place_on_surface = false
 	_has_pending_spawn_position = false
 	_pending_spawn_support = null
+	_token_name_is_auto = true
+	_updating_token_name_input = false
 	_ui_owns_mouse = false
 	_capture_mouse()
 
@@ -3008,8 +3096,12 @@ func _on_token_dialog_confirmed() -> void:
 		and is_instance_valid(_token_generation_transform_target)
 	)
 	if display_name.is_empty() and not editing_existing:
-		display_name = String(
-			_selected_token_profile.get("name", "Token")
+		display_name = _token_profile_default_name(_selected_token_profile)
+
+	if editing_existing:
+		display_name = _unique_token_display_name(
+			display_name,
+			_token_generation_transform_target
 		)
 
 	var visual_asset := _token_profile_visual_asset(
@@ -3153,6 +3245,7 @@ func _spawn_token(
 		push_error("DnDBase: token_scene non assegnata.")
 		return null
 
+	display_name = _unique_token_display_name(display_name)
 	push_undo_state()
 	var token_instance: Node = token_scene.instantiate()
 	if not (token_instance is CharacterBody3D):
