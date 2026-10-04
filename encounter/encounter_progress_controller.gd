@@ -262,7 +262,10 @@ func _replay_synced_advance(sync_event: Dictionary) -> void:
 					int((value as Array)[1])
 				))
 	if collapse != null and is_instance_valid(collapse):
-		collapse.animate_collapse(collapsed)
+		if collapse.has_method("replay_collapse"):
+			collapse.call("replay_collapse", collapsed)
+		else:
+			collapse.animate_collapse(collapsed)
 	kaos.snap_to_step(from_step)
 	await kaos.animate_to_step(
 		to_step,
