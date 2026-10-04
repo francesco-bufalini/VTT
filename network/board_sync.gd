@@ -735,7 +735,7 @@ func _serialize_node(node: Node3D, group_name: String) -> Dictionary:
 			if node.has_method("get_token_id")
 			else String(data.get("id", ""))
 		)
-		data["footprint"]=float(node.get("_footprint_cells")); data["footprint"]=float(node.get("_footprint_cells")); data["size_name"]=String(node.get("_size_name")); data["color"]=_token_color(node)
+		data["footprint"]=float(node.get("_footprint_cells")); data["size_name"]=String(node.get("_size_name")); data["color"]=_token_color(node)
 		# Nuovo significato esplicito: i salvataggi precedenti non avevano
 		# gravity_applied e vengono quindi migrati come token sospesi.
 		data["gravity_applied"] = not bool(node.get("flying"))
