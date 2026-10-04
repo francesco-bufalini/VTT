@@ -106,14 +106,14 @@ func run() -> void:
 	# comma-separated popup, while perspective scaling shrinks with distance.
 	var badge_conditions := PackedStringArray([
 		"☠️ Avvelenato",
-		"🪽 Volante",
+		"⛓️ Trattenuto",
 	])
 	assert(
 		FlankingSystem.compose_status_badge_text(
 			true,
 			badge_conditions
 		)
-		== "⚔ Affiancato, ☠️ Avvelenato, 🪽 Volante"
+		== "⚔ Affiancato, ☠️ Avvelenato, ⛓️ Trattenuto"
 	)
 	var near_badge_scale := FlankingSystem.perspective_badge_scale(
 		90.0,
@@ -196,6 +196,30 @@ func run() -> void:
 		Vector3(0.0, 0.0, 2.0),
 		Vector3.ZERO,
 		half
+	))
+
+	# Reach indicators exist only between enemy parties. Blank party values
+	# normalize to Default, so two unassigned tokens are allies.
+	assert(not FlankingSystem.party_keys_are_enemies("Eroi", "eroi"))
+	assert(not FlankingSystem.party_keys_are_enemies("", "Default"))
+	assert(FlankingSystem.party_keys_are_enemies("Eroi", "Nemici"))
+
+	# Flankers only need to be enemies of the target. They may belong to
+	# different parties from one another.
+	assert(FlankingSystem.flankers_are_hostile_to_target(
+		"Eroi",
+		"Mercenari",
+		"Cultisti"
+	))
+	assert(not FlankingSystem.flankers_are_hostile_to_target(
+		"Eroi",
+		"Cultisti",
+		"Cultisti"
+	))
+	assert(not FlankingSystem.flankers_are_hostile_to_target(
+		"Cultisti",
+		"Eroi",
+		"Cultisti"
 	))
 
 	# Reciprocal adjacent reach is rendered once as a compact ↔ marker,
