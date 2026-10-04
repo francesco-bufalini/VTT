@@ -2301,7 +2301,7 @@ func _try_wall_radius(screen_position: Vector2) -> void:
 		var measurement_tool: Node = _measurement_tool()
 		if measurement_tool != null:
 			measurement_tool.call(
-				"add_wall_globe",
+				"add_spell_wall_globe",
 				_wall_center,
 				_wall_radius_world,
 				_spell_style(spell_data),
@@ -2440,7 +2440,7 @@ func _commit_wall_path(spell_data: Dictionary) -> void:
 		return
 
 	measurement_tool.call(
-		"add_wall_path",
+		"add_spell_wall_path",
 		_wall_points,
 		_wall_height_world(spell_data),
 		_wall_thickness_world(spell_data),
