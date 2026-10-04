@@ -248,6 +248,17 @@ func run() -> void:
 			)
 			return
 
+	# Simulate a peer-local asset/profile remount that corrupts only the
+	# visual native footprint. This used to make a Large token render Medium
+	# while its collider stayed Large, then poison the next full-map snapshot.
+	peer_token.set(
+		"_visual_native_footprint_cells",
+		float(edited_token.get("footprint", 2.0))
+	)
+	peer_token.call(
+		"set_token_size",
+		float(edited_token.get("footprint", 2.0))
+	)
 	peer_token.global_position += Vector3(1.0, 0.0, 0.0)
 	var peer_after_move: Dictionary = sync.call(
 		"_serialize_node",
@@ -270,6 +281,20 @@ func run() -> void:
 				% appearance_key
 			)
 			return
+	# An explicit local edit is the only operation allowed to replace the
+	# received appearance authority.
+	sync.call("mark_token_appearance_locally_edited", peer_token)
+	var peer_after_explicit_edit: Dictionary = sync.call(
+		"_serialize_node",
+		peer_token,
+		"dnd_token"
+	)
+	if is_equal_approx(
+		float(peer_after_explicit_edit.get("visual_native_footprint", 0.0)),
+		float(edited_token.get("visual_native_footprint", 0.0))
+	):
+		_fail("explicit local appearance edit did not replace received authority")
+		return
 	peer_token.queue_free()
 
 	token.set_size_category("Medium", 1.0, false)
