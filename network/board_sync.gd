@@ -1117,10 +1117,9 @@ func create_snapshot() -> Dictionary:
 	var initiative: Dictionary = (
 		initiative_value as Dictionary
 	).duplicate(true)
-	return {
+	var snapshot := {
 		"version": SNAPSHOT_VERSION,
 		"scene": board_root.scene_file_path,
-		"camera": _camera_state(),
 		"objects": objects,
 		"parties": _party_manifest_from_objects(objects),
 		"items": board_root.item_controller.serialize_items() if board_root.get("item_controller") != null else [],
@@ -1128,6 +1127,10 @@ func create_snapshot() -> Dictionary:
 		"encounter": state,
 		"initiative": initiative
 	}
+	var camera_state := _camera_state()
+	if not camera_state.is_empty():
+		snapshot["camera"] = camera_state
+	return snapshot
 
 
 func save_snapshot_to_file(path: String) -> Error:
