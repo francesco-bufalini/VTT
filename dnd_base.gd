@@ -2088,6 +2088,26 @@ func _popup_context_menu(screen_position: Vector2) -> void:
 		clampi(int(screen_position.y), 8, maxi(8, int(viewport_size.y) - 8))
 	)
 	context_menu.popup()
+	# Encounter subclasses append entries after super() returns. Reposition on
+	# the next idle step using the popup's final size so it stays fully visible.
+	call_deferred("_fit_context_menu_to_viewport", screen_position)
+
+
+func _fit_context_menu_to_viewport(screen_position: Vector2) -> void:
+	if context_menu == null or not is_instance_valid(context_menu):
+		return
+	if not context_menu.visible:
+		return
+	_limit_popup_menu(context_menu)
+	var viewport_size := Vector2i(get_viewport().get_visible_rect().size)
+	var popup_size := context_menu.size
+	var margin := 8
+	var max_x := maxi(margin, viewport_size.x - popup_size.x - margin)
+	var max_y := maxi(margin, viewport_size.y - popup_size.y - margin)
+	context_menu.position = Vector2i(
+		clampi(int(screen_position.x), margin, max_x),
+		clampi(int(screen_position.y), margin, max_y)
+	)
 
 
 func _popup_dialog_safe(
@@ -2191,14 +2211,6 @@ func _show_context_menu(screen_position: Vector2) -> void:
 		context_token_menu.add_item(
 			"Applica gravità" + suffix,
 			CONTEXT_FLYING
-		)
-		context_token_menu.add_item(
-			"Ruota 45° a sinistra" + suffix,
-			CONTEXT_ROTATE_LEFT
-		)
-		context_token_menu.add_item(
-			"Ruota 45° a destra" + suffix,
-			CONTEXT_ROTATE_RIGHT
 		)
 		context_token_menu.add_separator()
 		context_token_menu.add_item(
