@@ -43,7 +43,17 @@ func setup(hazard_controller: Node, kaos_controller: Node3D, effects: Node3D, ar
 	petrification = preload("res://encounter/petrification.gd").new()
 	kaos.add_child(petrification)
 	seals.all_seals_broken.connect(_on_all_seals_broken)
+	seals.seal_broken.connect(_on_seal_broken)
 	reset_encounter()
+
+
+func _on_seal_broken(index: int) -> void:
+	var board := get_parent()
+	if board != null and board.has_method("broadcast_sync_event"):
+		board.call("broadcast_sync_event", {
+			"type": "seal_break",
+			"index": index
+		})
 
 
 func _on_all_seals_broken() -> void:
@@ -136,6 +146,7 @@ func advance_encounter() -> void:
 	if get_parent().token_drag.active:
 		return
 	var board: Node = get_parent()
+	var sync_from_step := kaos_step
 	if board != null and board.has_method("push_undo_state"):
 		board.call("push_undo_state")
 	is_advancing = true
@@ -172,6 +183,72 @@ func advance_encounter() -> void:
 	is_advancing = false
 	refresh_obstacle_slowing()
 	state_changed.emit()
+	_broadcast_advance_sync_event(
+		sync_from_step,
+		kaos_step,
+		round_number,
+		resolved
+	)
+
+func _broadcast_advance_sync_event(
+	from_step: int,
+	to_step: int,
+	round_value: int,
+	resolved_cells: Array[Vector2i]
+) -> void:
+	var board := get_parent()
+	if board == null or not board.has_method("broadcast_sync_event"):
+		return
+	var cells: Array = []
+	for cell: Vector2i in resolved_cells:
+		cells.append([cell.x, cell.y])
+	board.call("broadcast_sync_event", {
+		"type": "encounter_advance",
+		"from_step": from_step,
+		"to_step": to_step,
+		"round": round_value,
+		"collapsed_cells": cells,
+		"phase_two": to_step == 0
+	})
+
+
+func replay_sync_event(sync_event: Dictionary) -> void:
+	var event_type := String(sync_event.get("type", ""))
+	if event_type == "seal_break":
+		if is_instance_valid(seals) and seals.has_method("replay_break"):
+			seals.call("replay_break", int(sync_event.get("index", -1)))
+		return
+	if event_type == "encounter_advance":
+		_replay_synced_advance(sync_event)
+
+
+func _replay_synced_advance(sync_event: Dictionary) -> void:
+	if kaos == null or not is_instance_valid(kaos):
+		return
+	var from_step := int(sync_event.get("from_step", kaos_step))
+	var to_step := int(sync_event.get("to_step", kaos_step))
+	var round_value := int(sync_event.get("round", round_number))
+	var collapsed: Array[Vector2i] = []
+	var raw_cells: Variant = sync_event.get("collapsed_cells", [])
+	if raw_cells is Array:
+		for value: Variant in raw_cells as Array:
+			if value is Array and (value as Array).size() == 2:
+				collapsed.append(Vector2i(
+					int((value as Array)[0]),
+					int((value as Array)[1])
+				))
+	if collapse != null and is_instance_valid(collapse):
+		collapse.animate_collapse(collapsed)
+	kaos.snap_to_step(from_step)
+	await kaos.animate_to_step(
+		to_step,
+		config.advance_duration,
+		round_value
+	)
+	if bool(sync_event.get("phase_two", false)) and to_step == 0:
+		if kaos.climb != null:
+			await kaos.climb.start()
+
 
 func refresh_obstacle_slowing() -> void:
 	obstacle_coverage = Coverage.fraction(kaos.get_swept_bounds(kaos_step, maxi(0, kaos_step - 2)), collapse.get_obstacle_boxes(), config.obstacle_min_height_cells * _cell_size) if kaos_step > 0 else 0.0
