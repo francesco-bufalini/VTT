@@ -10,7 +10,7 @@ config_version=5
 
 [application]
 
-config/name="VTT"
+config/name="Kruphix's Chessboard"
 run/main_scene="res://vtt/menu/main_menu.tscn"
 config/features=PackedStringArray("4.7", "Forward Plus")
 config/icon="res://icon.svg"

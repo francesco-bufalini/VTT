@@ -1,7 +1,6 @@
 extends Control
 
 const ACTIVE_CAMPAIGNS_SCENE_PATH := "res://vtt/menu/active_campaigns.tscn"
-const POST_KAOS_SCENE_PATH := "res://encounter/post_kaos_editable.scn"
 const MENU_BACKGROUND_DIRECTORY := (
 	"res://assets/menu/background/slideshow"
 )
@@ -17,6 +16,7 @@ var _new_campaign_name: LineEdit
 var _soundtrack_toggle: CheckButton
 var _soundtrack_volume: HSlider
 var _soundtrack_volume_label: Label
+var _mute_button: Button
 
 var _background_layers: Array[TextureRect] = []
 var _background_paths: Array[String] = []
@@ -201,7 +201,7 @@ func _build_title() -> void:
 
 	var title := Label.new()
 	title.name = "GameTitle"
-	title.text = "Virtual Table Story Teller"
+	title.text = "Kruphix's Chessboard"
 	title.horizontal_alignment = HORIZONTAL_ALIGNMENT_LEFT
 	title.vertical_alignment = VERTICAL_ALIGNMENT_TOP
 	title.add_theme_font_override("font", _medieval_title_font())
@@ -280,9 +280,6 @@ func _build_bottom_controls() -> void:
 	active_button.pressed.connect(_open_active_campaigns)
 	layout.add_child(active_button)
 
-	var post_kaos_button: Button = _menu_button("Incontro post-Kaos")
-	post_kaos_button.pressed.connect(_open_post_kaos_encounter)
-	layout.add_child(post_kaos_button)
 
 	var new_button: Button = _menu_button("Nuova campagna")
 	new_button.pressed.connect(_request_new_campaign)
@@ -291,6 +288,11 @@ func _build_bottom_controls() -> void:
 	var options_button: Button = _menu_button("Opzioni")
 	options_button.pressed.connect(_show_options_placeholder)
 	layout.add_child(options_button)
+
+	_mute_button = _menu_button("Muta musica")
+	_mute_button.pressed.connect(_toggle_soundtrack_muted)
+	layout.add_child(_mute_button)
+	_refresh_mute_button()
 
 	var exit_button: Button = _menu_button("Esci")
 	exit_button.pressed.connect(func() -> void: get_tree().quit())
@@ -469,11 +471,6 @@ func _build_options_dialog() -> void:
 func _open_active_campaigns() -> void:
 	get_tree().change_scene_to_file(ACTIVE_CAMPAIGNS_SCENE_PATH)
 
-func _open_post_kaos_encounter() -> void:
-	var error := get_tree().change_scene_to_file(POST_KAOS_SCENE_PATH)
-	if error != OK:
-		_show_error("Impossibile aprire l'incontro post-Kaos: %s" % error_string(error))
-
 
 func _request_new_campaign() -> void:
 	_new_campaign_name.clear()
@@ -559,11 +556,39 @@ func _refresh_audio_settings_ui() -> void:
 		_soundtrack_toggle.tooltip_text = ""
 		_soundtrack_volume.tooltip_text = "Volume della colonna sonora"
 
+	_refresh_mute_button()
+
+
+func _refresh_mute_button() -> void:
+	if _mute_button == null:
+		return
+
+	var manager := _menu_audio_manager()
+	if manager == null:
+		_mute_button.disabled = true
+		_mute_button.text = "Muta musica"
+		return
+
+	_mute_button.disabled = false
+	var enabled: bool = bool(manager.get("soundtrack_enabled"))
+	_mute_button.text = "Muta musica" if enabled else "Riattiva musica"
+
+
+func _toggle_soundtrack_muted() -> void:
+	var manager := _menu_audio_manager()
+	if manager == null:
+		return
+
+	var enabled: bool = bool(manager.get("soundtrack_enabled"))
+	manager.call("set_soundtrack_enabled", not enabled)
+	_refresh_audio_settings_ui()
+
 
 func _on_soundtrack_toggled(enabled: bool) -> void:
 	var manager := _menu_audio_manager()
 	if manager != null:
 		manager.call("set_soundtrack_enabled", enabled)
+	_refresh_mute_button()
 
 
 func _on_soundtrack_volume_changed(value: float) -> void:
