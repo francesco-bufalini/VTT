@@ -2445,33 +2445,47 @@ func _on_context_menu_id_pressed(id: int) -> void:
 		return
 
 	if id == CONTEXT_TOKEN_LIST:
-		toggle_token_list()
-		_close_context_menu_to_game()
+		context_menu.hide()
+		if token_list != null and is_instance_valid(token_list):
+			token_list.call_deferred("toggle_panel")
 		return
 
 	if id == CONTEXT_PLAYER_ADD_CHARACTER:
-		add_player_character()
-		_close_context_menu_to_game()
+		context_menu.hide()
+		if player_area != null and is_instance_valid(player_area):
+			player_area.call_deferred("add_character")
 		return
 
 	if id == CONTEXT_PLAYER_LINK_TOKEN:
-		link_player_character_to_selected_token()
-		_close_context_menu_to_game()
+		context_menu.hide()
+		if player_area != null and is_instance_valid(player_area):
+			player_area.call_deferred(
+				"request_link_character_to_selected_token"
+			)
 		return
 
 	if id == CONTEXT_PLAYER_LINK_CHARACTER:
-		link_selected_player_character_to_named_token()
-		_close_context_menu_to_game()
+		context_menu.hide()
+		if player_area != null and is_instance_valid(player_area):
+			player_area.call_deferred(
+				"request_link_selected_character_to_named_token"
+			)
 		return
 
 	if id == CONTEXT_MASTER_LINK_TOKEN:
-		link_master_creature_to_selected_token()
-		_close_context_menu_to_game()
+		context_menu.hide()
+		if master_area != null and is_instance_valid(master_area):
+			master_area.call_deferred(
+				"request_link_creature_to_selected_token"
+			)
 		return
 
 	if id == CONTEXT_MASTER_LINK_CREATURE:
-		link_selected_master_creature_to_named_token()
-		_close_context_menu_to_game()
+		context_menu.hide()
+		if master_area != null and is_instance_valid(master_area):
+			master_area.call_deferred(
+				"request_link_selected_creature_to_named_token"
+			)
 		return
 
 	if id == CONTEXT_COMBAT_START:
