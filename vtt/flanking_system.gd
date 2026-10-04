@@ -361,22 +361,6 @@ func is_flanked(token: Node) -> bool:
 	)
 
 
-func _token_selected(token: Node) -> bool:
-	if token == null or not is_instance_valid(token):
-		return false
-	if token.has_method("is_selected"):
-		return bool(token.call("is_selected"))
-	return false
-
-
-static func flanking_relationship_visible(
-	first_selected: bool,
-	second_selected: bool,
-	target_selected: bool
-) -> bool:
-	return first_selected or second_selected or target_selected
-
-
 func _party_key(token: Node) -> String:
 	if token == null or not is_instance_valid(token):
 		return ""
