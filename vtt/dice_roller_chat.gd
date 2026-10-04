@@ -1237,23 +1237,6 @@ func _scene_identity_tokens() -> Array[Node3D]:
 	return result
 
 
-func _confirm_scene_identity() -> void:
-	var token_id := ""
-	if (
-		scene_identity_selector != null
-		and scene_identity_selector.selected >= 0
-	):
-		token_id = String(
-			scene_identity_selector.get_item_metadata(
-				scene_identity_selector.selected
-			)
-		).strip_edges()
-	_selected_identity_token_id = token_id
-	_scene_identity_configured = true
-	_save_scene_identity()
-	_resume_after_identity_choice()
-
-
 func _resume_after_identity_choice() -> void:
 	var callback := _pending_identity_callback
 	_pending_identity_callback = Callable()
