@@ -52,11 +52,11 @@ jobs:
             /assets/spell_area_geometry.json
             /assets/tokens/test/test_token_visual.tscn
 
-      - name: Clean generated files but keep Godot cache
+      - name: Clean generated files and stale Godot cache
         shell: powershell
         run: |
           git reset --hard HEAD
-          git clean -ffdx -e .godot/
+          git clean -ffdx
 
       - name: Show environment
         shell: powershell
