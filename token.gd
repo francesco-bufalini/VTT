@@ -44,6 +44,7 @@ const CONDITION_DEFINITIONS := [
 @export_range(0, 3, 1) var visual_front_quarter_turns: int = 0
 @export var token_display_name: String = ""
 @export var token_id: String = ""
+@export var token_pack_id: String = ""
 @export var party_id: String = ""
 @export var default_size_name: String = "Medium"
 @export var default_footprint_cells: float = 1.0
@@ -864,6 +865,14 @@ func get_token_id() -> String:
 	return token_id
 
 
+func set_token_pack_id(value: String) -> void:
+	token_pack_id = value.strip_edges().left(96)
+
+
+func get_token_pack_id() -> String:
+	return token_pack_id.strip_edges()
+
+
 func set_display_name(value: String) -> void:
 	token_display_name = value.strip_edges()
 	_ensure_token_overlay()
@@ -1480,6 +1489,7 @@ func set_size_category(
 
 func get_appearance_state() -> Dictionary:
 	return {
+		"token_pack_id": get_token_pack_id(),
 		"visual_asset": get_visual_asset_path(),
 		"visual_native_footprint": _visual_native_footprint_cells,
 		"visual_front_quarter_turns": get_visual_front_quarter_turns(),
@@ -1502,6 +1512,8 @@ func apply_appearance_state(state: Dictionary) -> bool:
 		global_position.y
 		- token_height_cells * cell_size * 0.5
 	)
+
+	set_token_pack_id(String(state.get("token_pack_id", "")))
 
 	var visual_asset: String = String(
 		state.get("visual_asset", "")
@@ -1588,10 +1600,12 @@ func set_transformation_history(value: Variant) -> void:
 		var visual_asset: String = String(
 			item.get("visual_asset", "")
 		).strip_edges()
-		if (
-			not visual_asset.is_empty()
-			and not visual_asset.begins_with("res://assets/tokens/")
-		):
+		if not _is_supported_token_visual_path(visual_asset):
+			continue
+		var history_pack_id := String(
+			item.get("token_pack_id", "")
+		).strip_edges()
+		if history_pack_id.length() > 96:
 			continue
 		_transformation_history.append(item)
 		if _transformation_history.size() >= MAX_TRANSFORMATION_HISTORY:
@@ -1704,3 +1718,17 @@ func snap_destination(point: Vector3, _support: Node3D = null) -> Vector3:
 	snapped_point.x = _snap_coordinate(snapped_point.x)
 	snapped_point.z = _snap_coordinate(snapped_point.z)
 	return snapped_point
+
+
+func _is_supported_token_visual_path(path: String) -> bool:
+	var clean := path.strip_edges()
+	if clean.is_empty():
+		return true
+	if clean.begins_with("res://assets/tokens/"):
+		return not clean.contains("..")
+	if clean.begins_with("res://remote_tokens/"):
+		return (
+			not clean.contains("..")
+			and clean.ends_with("_visual.res")
+		)
+	return false
