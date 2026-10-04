@@ -497,31 +497,50 @@ func _on_catalog_request_completed(
 	_headers: PackedStringArray,
 	body: PackedByteArray
 ) -> void:
+	var http_catalog_loaded := false
 	if (
 		result == HTTPRequest.RESULT_SUCCESS
 		and response_code >= 200
 		and response_code < 300
 	):
 		var raw := body.get_string_from_utf8()
-		if _accept_catalog_text(raw, true):
+		if _accept_catalog_text(raw, false):
+			http_catalog_loaded = true
 			print(
-				"TokenPackManager: catalog loaded via HTTP (%d tokens)"
-				% _entries_by_id.size()
+				(
+					"TokenPackManager: base catalog loaded via HTTP "
+					+ "(%d tokens); checking all GitHub releases..."
+				) % _entries_by_id.size()
 			)
-			return
-		push_warning("TokenPackManager: HTTP catalog JSON is invalid.")
+		else:
+			push_warning("TokenPackManager: HTTP catalog JSON is invalid.")
+
+	# The default HTTP URL points to one release only. While the repository is
+	# private, gh is the authoritative discovery path because token PCKs and
+	# token_catalog.json files may be distributed across several releases.
+	# Never let a successful single-release HTTP request overwrite the merged
+	# catalog loaded from cache/startup.
+	if _refresh_catalog_via_gh():
+		return
+
+	if http_catalog_loaded:
+		# gh is optional (for example on a future public distribution). Keep the
+		# HTTP catalog as a usable fallback, and persist it only now that we know
+		# a merged catalog could not be obtained.
+		var raw := body.get_string_from_utf8()
+		_accept_catalog_text(raw, true)
+		print(
+			"TokenPackManager: using single HTTP catalog fallback (%d tokens)"
+			% _entries_by_id.size()
+		)
+		return
 
 	print(
 		(
-			"TokenPackManager: HTTP catalog unavailable (result=%d code=%d), "
-			+ "trying gh fallback..."
+			"TokenPackManager: HTTP catalog unavailable (result=%d code=%d) "
+			+ "and merged gh discovery failed."
 		) % [result, response_code]
 	)
-
-	# Current private-repository development fallback. This path is not required
-	# once the catalog URL is publicly downloadable.
-	if _refresh_catalog_via_gh():
-		return
 
 	var message := (
 		"Catalog refresh failed (HTTP result=%d code=%d) and gh fallback "
