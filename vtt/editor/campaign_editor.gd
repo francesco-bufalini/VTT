@@ -7,6 +7,19 @@ const PRESET_STANDARD := 101
 const PRESET_LARGE := 102
 const PRESET_WHITE := 110
 const PRESET_EMPTY_ELEMENTS := 120
+const PRESET_FOREST_MOUNTAINS := 121
+
+const FOREST_MOUNTAINS_PRESET_PATH := (
+	"res://assets/presets/forest_mountains/forest_mountains_preset.glb"
+)
+const FOREST_MOUNTAINS_PRESET_ID := "forest_mountains"
+const FOREST_MOUNTAINS_GRID_CELLS := 100
+const FOREST_TERRAIN_MATERIALS := [
+	"Material.001",
+	"Material.007",
+	"Material.008",
+	"Material.009",
+]
 
 const GRID_RESIZE := 200
 const GRID_ADD := 201
@@ -38,6 +51,7 @@ var status_label: Label
 var primary_width_cells := 30
 var primary_depth_cells := 30
 var next_grid_id := 1
+var active_element_preset: String = ""
 
 var resize_dialog: ConfirmationDialog
 var resize_width: SpinBox
@@ -103,7 +117,8 @@ func _build_toolbar() -> void:
 		["Griglia standard · 30 × 30", PRESET_STANDARD],
 		["Griglia grande · 50 × 50", PRESET_LARGE],
 		["Scenario · Vuoto bianco", PRESET_WHITE],
-		["Elementi · Nessuno", PRESET_EMPTY_ELEMENTS]
+		["Elementi · Nessuno", PRESET_EMPTY_ELEMENTS],
+		["Elementi · Foresta e montagne", PRESET_FOREST_MOUNTAINS]
 	], _on_preset_selected))
 
 	row.add_child(_make_menu_button("Griglia", [
@@ -230,7 +245,112 @@ func _on_preset_selected(id: int) -> void:
 			_set_white_environment()
 			_set_status("Scenario: vuoto bianco")
 		PRESET_EMPTY_ELEMENTS:
+			_clear_element_presets()
+			active_element_preset = ""
 			_set_status("Preset elementi: nessun elemento")
+		PRESET_FOREST_MOUNTAINS:
+			_apply_forest_mountains_preset(true)
+
+
+func _apply_forest_mountains_preset(resize_grid: bool = true) -> void:
+	_clear_element_presets()
+
+	# FileAccess is used before load() so a missing optional binary asset does
+	# not flood the Godot debugger with ResourceLoader errors.
+	if not FileAccess.file_exists(FOREST_MOUNTAINS_PRESET_PATH):
+		active_element_preset = ""
+		_set_status(
+			"Preset foresta non installato: manca forest_mountains_preset.glb"
+		)
+		return
+
+	var packed: Resource = load(FOREST_MOUNTAINS_PRESET_PATH)
+	if not packed is PackedScene:
+		active_element_preset = ""
+		_set_status("Preset foresta non caricabile")
+		return
+
+	var instance: Node = (packed as PackedScene).instantiate()
+	if not instance is Node3D:
+		instance.free()
+		active_element_preset = ""
+		_set_status("Preset foresta non e' una scena 3D")
+		return
+
+	var root := instance as Node3D
+	root.name = "CampaignPreset_ForestMountains"
+	root.scale = Vector3.ONE * _cell_size()
+	root.add_to_group("campaign_preset_element")
+	root.set_meta("campaign_preset_id", FOREST_MOUNTAINS_PRESET_ID)
+	board_root.add_child(root)
+
+	_build_forest_terrain_collisions(root)
+	active_element_preset = FOREST_MOUNTAINS_PRESET_ID
+
+	if resize_grid:
+		_resize_primary_grid(
+			FOREST_MOUNTAINS_GRID_CELLS,
+			FOREST_MOUNTAINS_GRID_CELLS
+		)
+
+	_refresh_volumetric_grid()
+	_set_status(
+		"Preset: foresta e montagne · alberi 2×2 × 8 celle · griglia 100×100"
+	)
+
+
+func _build_forest_terrain_collisions(root: Node3D) -> void:
+	for candidate: Node in root.find_children("*", "MeshInstance3D", true, false):
+		var mesh_instance := candidate as MeshInstance3D
+		if mesh_instance == null or mesh_instance.mesh == null:
+			continue
+		if not _forest_mesh_is_terrain(mesh_instance):
+			continue
+
+		var faces: PackedVector3Array = mesh_instance.mesh.get_faces()
+		if faces.is_empty():
+			continue
+
+		var body := StaticBody3D.new()
+		body.name = "PresetTerrainCollision"
+		body.collision_layer = 1
+		body.collision_mask = 0
+		body.add_to_group("campaign_preset_terrain")
+		mesh_instance.add_child(body)
+
+		var collision := CollisionShape3D.new()
+		var shape := ConcavePolygonShape3D.new()
+		shape.set_faces(faces)
+		collision.shape = shape
+		body.add_child(collision)
+
+
+func _forest_mesh_is_terrain(mesh_instance: MeshInstance3D) -> bool:
+	var mesh: Mesh = mesh_instance.mesh
+	for surface_index in range(mesh.get_surface_count()):
+		var material: Material = mesh.surface_get_material(surface_index)
+		if (
+			material != null
+			and material.resource_name in FOREST_TERRAIN_MATERIALS
+		):
+			return true
+
+	# The optimized GLB keeps its merged geometry names equal to the original
+	# material names. This fallback also works if Godot strips material names.
+	return String(mesh_instance.name) in FOREST_TERRAIN_MATERIALS
+
+
+func _clear_element_presets() -> void:
+	for candidate: Node in get_tree().get_nodes_in_group(
+		"campaign_preset_element"
+	):
+		if (
+			candidate is Node3D
+			and is_instance_valid(candidate)
+			and board_root.is_ancestor_of(candidate)
+		):
+			(candidate as Node3D).free()
+	_refresh_volumetric_grid()
 
 
 func _on_grid_selected(id: int) -> void:
@@ -587,6 +707,7 @@ func _save_campaign() -> void:
 			"depth": primary_depth_cells
 		},
 		"extra_grids": _serialize_extra_grids(),
+		"element_preset": active_element_preset,
 		"view": _serialize_view_state(),
 		"board_snapshot": _create_board_snapshot()
 	}
@@ -629,6 +750,13 @@ func _load_active_campaign() -> void:
 				_create_extra_grid(item)
 				max_id = maxi(max_id, int(item.get("id", 0)))
 	next_grid_id = max_id + 1
+
+	_clear_element_presets()
+	active_element_preset = String(
+		state.get("element_preset", "")
+	).strip_edges()
+	if active_element_preset == FOREST_MOUNTAINS_PRESET_ID:
+		_apply_forest_mountains_preset(false)
 
 	_apply_view_state(state.get("view", {}))
 	await get_tree().process_frame
