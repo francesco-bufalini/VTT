@@ -3052,7 +3052,13 @@ func _build_token_state_dialog() -> void:
 			String(definition.get("icon", "[--]")),
 			String(definition.get("name", condition_id))
 		]
-		if not bool(definition.get("official", true)):
+		if bool(definition.get("automatic", false)):
+			label_text += "  (automatico)"
+			check.disabled = true
+			check.tooltip_text = (
+				"Questa condizione è calcolata automaticamente dalla mappa."
+			)
+		elif not bool(definition.get("official", true)):
 			label_text += "  (marker)"
 		check.text = label_text
 		token_state_grid.add_child(check)
@@ -3083,7 +3089,11 @@ func _shared_token_editor_conditions() -> Array[String]:
 	var active: Array[String] = []
 	for condition_id: Variant in token_state_checks.keys():
 		var check: CheckButton = token_state_checks[condition_id] as CheckButton
-		if check != null and check.button_pressed:
+		if (
+			check != null
+			and not check.disabled
+			and check.button_pressed
+		):
 			active.append(String(condition_id))
 	return active
 
