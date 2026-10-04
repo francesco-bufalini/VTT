@@ -41,6 +41,9 @@ func _ready() -> void:
 	_apply_post_kaos_terrain_rules()
 	_install_imported_prison()
 	_position_starting_group_near_sphere()
+	# Start from the exact same viewpoint exposed by "Inquadra spalle di Kaos".
+	# Deferred execution wins over any camera initialization queued by the base.
+	call_deferred("_focus_kaos_shoulders_view")
 
 
 func _clean_scontro_board() -> void:
@@ -491,6 +494,18 @@ func _show_context_menu(screen_position: Vector2) -> void:
 	)
 
 
+func _focus_kaos_shoulders_view() -> void:
+	if (
+		not is_instance_valid(camera)
+		or not is_instance_valid(klotis_prison)
+	):
+		return
+	camera.exit_first_person()
+	var target: Vector3 = klotis_prison.statue_top
+	camera.global_position = target + Vector3(-18, 25, 24)
+	camera.look_at(target)
+
+
 func _on_context_menu_id_pressed(id: int) -> void:
 	if id in [
 		CONTEXT_BREAK_LEFT_SEAL,
@@ -505,10 +520,7 @@ func _on_context_menu_id_pressed(id: int) -> void:
 		resetta_tutti_i_sigilli()
 		_close_context_menu_to_game()
 	elif id == CONTEXT_SHOULDERS and is_instance_valid(klotis_prison):
-		camera.exit_first_person()
-		var target: Vector3 = klotis_prison.statue_top
-		camera.global_position = target + Vector3(-18,25,24)
-		camera.look_at(target)
+		_focus_kaos_shoulders_view()
 		_close_context_menu_to_game()
 	else:
 		super._on_context_menu_id_pressed(id)
