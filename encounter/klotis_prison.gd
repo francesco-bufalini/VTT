@@ -29,6 +29,7 @@ var _model_fitted: bool = false
 var _sealed_hand_offsets: Dictionary = {}
 var _hand_target_positions: Dictionary = {}
 var _hand_target_radii: Dictionary = {}
+var _forehead_final_position: Vector3 = Vector3.ZERO
 
 const PRISON_RADIUS_METERS := 220.0
 const SEALED_HAND_CLEARANCE_METERS := 0.35
@@ -303,7 +304,18 @@ func _fit_model() -> void:
 		_hand_target_positions[side] = palm_center
 		_hand_target_radii[side] = _palm_footprint_radius(side, palm_center)
 		palm_bottom = minf(palm_bottom, float(_sealed_hand_metrics(side).min_y))
+
+	# Cache the forehead in the FINAL pose of Break_Forehead_Seal.  The seal
+	# breaks early in the animation, so sampling its live position at that
+	# moment incorrectly places the cone under/in front of the initial pose.
 	reset_seals()
+	_start_attack("forehead")
+	var forehead_animation: Animation = player.get_animation(_clips["forehead"])
+	player.seek(forehead_animation.length, true)
+	skeleton.force_update_all_bone_transforms()
+	_forehead_final_position = _current_forehead_world_position()
+	reset_seals()
+
 	statue.global_position.y += palm_bottom - neck_y
 	statue_box = statue.global_transform * statue.get_aabb()
 	statue_top = _neck_top(statue)
@@ -388,9 +400,19 @@ func get_hand_target_radius(side: String) -> float:
 
 
 func get_forehead_world_position() -> Vector3:
+	return _current_forehead_world_position()
+
+
+func get_forehead_final_world_position() -> Vector3:
+	if _forehead_final_position != Vector3.ZERO:
+		return _forehead_final_position
+	return _current_forehead_world_position()
+
+
+func _current_forehead_world_position() -> Vector3:
 	# The forehead seal node pivot is near the imported model origin, not on
-	# Klothys' face. Use the actual seal geometry instead so effects originate
-	# from the visible forehead in the current pose.
+	# Klothys' face. Use the actual skinned seal geometry so this is the visible
+	# forehead position for whichever pose is currently sampled.
 	var seal := _seals.get("forehead") as MeshInstance3D
 	if seal != null and is_instance_valid(seal) and seal.mesh != null:
 		if seal.skin != null:

@@ -246,7 +246,11 @@ func _show_hand_telegraph(side: String) -> void:
 func _show_forehead_cone_telegraph() -> void:
 	_clear_klothys_attack_telegraph()
 	var units: float = measurement_tool.meters_to_world(1.0)
-	var origin: Vector3 = klotis_prison.get_forehead_world_position()
+	# Use the forehead location from the END of Klothys' head animation.
+	# seal_broken is emitted near the beginning, when her head is still close
+	# to the sealed pose, so using the live position would start the cone from
+	# the wrong place.
+	var origin: Vector3 = klotis_prison.get_forehead_final_world_position()
 	var neck_target: Vector3 = (
 		klotis_prison.get_petrified_neck_world_position()
 	)
