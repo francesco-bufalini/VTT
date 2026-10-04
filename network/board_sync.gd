@@ -1196,6 +1196,7 @@ func _apply_party_manifest(value: Variant) -> void:
 
 func _owned_health_bar_entries() -> Array[Dictionary]:
 	var by_token: Dictionary = {}
+	var current_nodes := _current_nodes_by_id()
 	for area_name: String in ["PlayerArea", "MasterArea"]:
 		var area := board_root.get_node_or_null(area_name)
 		if (
@@ -1220,6 +1221,12 @@ func _owned_health_bar_entries() -> Array[Dictionary]:
 			if (
 				token_id.is_empty()
 				or by_token.has(token_id)
+				or not current_nodes.has(token_id)
+				or not (
+					(current_nodes.get(token_id) as Node).is_in_group(
+						"dnd_token"
+					)
+				)
 				or not (percent_value is float or percent_value is int)
 			):
 				continue
