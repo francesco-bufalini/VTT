@@ -135,7 +135,6 @@ func _ready() -> void:
 
 
 func _physics_process(delta: float) -> void:
-	_update_flanking_badge_facing()
 	_automatic_condition_elapsed += delta
 	if _automatic_condition_elapsed >= AUTOMATIC_CONDITION_INTERVAL:
 		_automatic_condition_elapsed = 0.0
@@ -1224,7 +1223,6 @@ func _update_condition_rings() -> void:
 func _ensure_token_overlay() -> void:
 	if is_instance_valid(_overlay_root):
 		_ensure_health_bar()
-		_ensure_flanking_badge()
 		_update_overlay_position()
 		return
 
@@ -1259,7 +1257,6 @@ func _ensure_token_overlay() -> void:
 		_overlay_root.add_child(_status_label)
 
 	_ensure_health_bar()
-	_ensure_flanking_badge()
 	_update_overlay_position()
 
 
