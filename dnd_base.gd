@@ -1217,6 +1217,7 @@ func _on_token_resize_selected(id: int) -> void:
 	_token_resize_confirmed_callback = Callable()
 	_token_resize_canceled_callback = Callable()
 	_refresh_token_views_after_appearance_change()
+	call_deferred("_sync_explicit_token_change")
 
 	# Ora che il resize e' stato applicato possiamo chiudere il popup.
 	# _on_token_resize_menu_hidden vede target=null e non interpreta questa
@@ -4006,6 +4007,11 @@ func _on_token_dialog_confirmed() -> void:
 			token_list.call("refresh")
 		if initiative_tracker != null and is_instance_valid(initiative_tracker):
 			initiative_tracker.call("refresh")
+		if editing_existing:
+			# Party, condizioni, taglia, reach, nome e miniatura sono già stati
+			# applicati al nodo: forza uno snapshot adesso, invece di lasciare
+			# che il primo poll possa assorbirli come nuova baseline.
+			call_deferred("_sync_explicit_token_change")
 
 	var confirmed_callback: Callable = (
 		_token_generation_confirmed_callback
@@ -4601,6 +4607,14 @@ func _capture_mouse() -> void:
 
 func _release_mouse() -> void:
 	Input.mouse_mode = Input.MOUSE_MODE_VISIBLE
+
+
+func _sync_explicit_token_change() -> void:
+	if board_sync == null or not is_instance_valid(board_sync):
+		return
+	if not board_sync.has_method("sync_local_change_now"):
+		return
+	board_sync.call("sync_local_change_now")
 
 
 func broadcast_sync_event(sync_event: Dictionary) -> Error:
