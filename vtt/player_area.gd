@@ -3997,10 +3997,10 @@ func get_owned_health_bar_sync_entries() -> Array[Dictionary]:
 		)
 		entries.append({
 			"token_id": token_id,
-			"percent": clampi(
-				roundi(float(current_hp) / float(max_hp) * 100.0),
-				0,
-				100
+			"percent": clampf(
+				float(current_hp) / float(max_hp) * 100.0,
+				0.0,
+				100.0
 			)
 		})
 	return entries
