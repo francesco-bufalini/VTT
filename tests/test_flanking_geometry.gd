@@ -102,13 +102,6 @@ func run() -> void:
 	assert(is_equal_approx(projected[1].y, 0.03))
 	assert(is_equal_approx(projected[2].y, 0.03))
 
-	# Flanking remains mechanically active regardless of selection, but its
-	# visual relationship is contextual: any one of the three tokens is enough.
-	assert(not FlankingSystem.flanking_relationship_visible(false, false, false))
-	assert(FlankingSystem.flanking_relationship_visible(true, false, false))
-	assert(FlankingSystem.flanking_relationship_visible(false, true, false))
-	assert(FlankingSystem.flanking_relationship_visible(false, false, true))
-
 	# Shared tactical badge keeps Affiancato and named conditions in one
 	# comma-separated popup, while perspective scaling shrinks with distance.
 	var badge_conditions := PackedStringArray([
@@ -205,7 +198,8 @@ func run() -> void:
 		half
 	))
 
-	# The visual replacement is two directional arrows converging on target.
+	# Reach uses a flat directional vector from the source base to the target
+	# base; the renderer now applies this to every in-range directed pair.
 	var arrow := FlankingSystem.flanking_arrow_segment(
 		Vector3(-1.0, 0.03, 0.0),
 		half,
