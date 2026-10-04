@@ -1460,11 +1460,12 @@ func set_master_hit_points(current_hp: int, max_hp: int) -> void:
 	_update_health_bar_visual()
 
 
-func set_synced_hit_point_percent(percent: int) -> void:
-	var clean_percent := clampi(percent, 0, 100)
+func set_synced_hit_point_percent(percent: float) -> void:
+	var clean_percent := clampf(percent, 0.0, 100.0)
 	# Remote peers receive only a percentage, never the sheet's absolute HP.
-	_player_hp_current = clean_percent
-	_player_hp_max = 100
+	# Use a high internal denominator so fractional percentages remain smooth.
+	_player_hp_current = roundi(clean_percent * 100.0)
+	_player_hp_max = 10000
 	_hp_bar_show_percentage = false
 	_ensure_token_overlay()
 	_ensure_health_bar()
