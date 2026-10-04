@@ -247,12 +247,15 @@ func _show_forehead_cone_telegraph() -> void:
 	_clear_klothys_attack_telegraph()
 	var units: float = measurement_tool.meters_to_world(1.0)
 	var origin: Vector3 = klotis_prison.get_forehead_world_position()
-	var toward_shoulders: Vector3 = klotis_prison.statue_top - origin
-	if toward_shoulders.length_squared() <= 0.000001:
+	var neck_target: Vector3 = (
+		klotis_prison.get_petrified_neck_world_position()
+	)
+	var toward_neck: Vector3 = neck_target - origin
+	if toward_neck.length_squared() <= 0.000001:
 		return
 	_active_klothys_attack_side = "forehead"
 	_active_cone_origin = origin
-	_active_cone_direction = toward_shoulders.normalized()
+	_active_cone_direction = toward_neck.normalized()
 	var length: float = FOREHEAD_CONE_LENGTH_METERS * units
 	var radius: float = length * FOREHEAD_CONE_RADIUS_FACTOR
 	var cone_mesh := _build_klothys_cone_mesh(

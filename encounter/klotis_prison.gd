@@ -388,10 +388,38 @@ func get_hand_target_radius(side: String) -> float:
 
 
 func get_forehead_world_position() -> Vector3:
-	var seal := _seals.get("forehead") as Node3D
-	if seal != null and is_instance_valid(seal):
-		return seal.global_position
+	# The forehead seal node pivot is near the imported model origin, not on
+	# Klothys' face. Use the actual seal geometry instead so effects originate
+	# from the visible forehead in the current pose.
+	var seal := _seals.get("forehead") as MeshInstance3D
+	if seal != null and is_instance_valid(seal) and seal.mesh != null:
+		if seal.skin != null:
+			var posed_points: PackedVector3Array = _posed_vertices(seal)
+			if not posed_points.is_empty():
+				return _bounds(posed_points).get_center()
+		return seal.global_transform * seal.get_aabb().get_center()
+
+	# Fallback to the head bone rather than the model/root pivot.
+	if skeleton != null and is_instance_valid(skeleton):
+		var head_index: int = skeleton.find_bone("head")
+		if head_index >= 0:
+			return (
+				skeleton.global_transform
+				* skeleton.get_bone_global_pose(head_index)
+			).origin
+
 	return model.global_position if model != null else global_position
+
+
+func get_petrified_neck_world_position() -> Vector3:
+	var statue := model.find_child(
+		"Empyrean_Headless_Petrified",
+		true,
+		false
+	) as MeshInstance3D
+	if statue != null and is_instance_valid(statue):
+		return _neck_top(statue)
+	return statue_top
 
 
 func _palm_footprint_radius(side: String, center: Vector3) -> float:
