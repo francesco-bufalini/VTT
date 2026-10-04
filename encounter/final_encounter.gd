@@ -67,8 +67,8 @@ func _replace_selection(token: CharacterBody3D) -> void:
 	if is_node_ready():
 		_set_grid_interaction(false)
 
-func _clear_selection() -> void:
-	super._clear_selection()
+func _clear_selection(include_items: bool = true) -> void:
+	super._clear_selection(include_items)
 	if is_node_ready():
 		_set_grid_interaction(false)
 
