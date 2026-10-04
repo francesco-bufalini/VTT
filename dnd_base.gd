@@ -2995,6 +2995,11 @@ func _existing_token_profile_id(token: CharacterBody3D) -> String:
 		"visual_asset": visual_asset,
 		"size_name": size_name,
 		"footprint": footprint,
+		"token_pack_id": (
+			String(token.call("get_token_pack_id"))
+			if token.has_method("get_token_pack_id")
+			else ""
+		),
 		"_pack_origin": "current",
 	})
 	_token_profiles.sort_custom(Callable(self, "_sort_token_profiles"))
@@ -3165,6 +3170,10 @@ func _on_token_dialog_confirmed() -> void:
 	if selected_origin in ["remote", "local_pack"]:
 		selected_pack_id = String(
 			_selected_token_profile.get("id", "")
+		).strip_edges()
+	elif selected_origin == "current":
+		selected_pack_id = String(
+			_selected_token_profile.get("token_pack_id", "")
 		).strip_edges()
 
 	var selected_index: int = size_selector.selected
