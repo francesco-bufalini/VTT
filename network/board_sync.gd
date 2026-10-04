@@ -13,6 +13,7 @@ const TAILSCALE_PEER_REFRESH_MS := 15000
 const AUTO_SYNC_POLL_MS := 150
 const AUTO_SYNC_DEBOUNCE_MS := 280
 const AUTO_SYNC_REMOTE_SUPPRESS_MS := 900
+const AUTO_SYNC_RETRY_MS := 2000
 const GROUPS := ["dnd_token", "tactical_platform", "encounter_obstacle"]
 const TOKEN_CONDITIONS := [
 	"blinded", "charmed", "deafened", "exhaustion", "frightened",
@@ -47,6 +48,7 @@ var _auto_sync_candidate_signature := ""
 var _auto_sync_candidate_since_msec := 0
 var _auto_sync_last_poll_msec := 0
 var _auto_sync_suppress_until_msec := 0
+var _auto_sync_retry_after_msec := 0
 var _applying_received_snapshot := false
 
 func setup(root: Node, scene: PackedScene, tokens: Node, measure: Node) -> void:
@@ -85,6 +87,7 @@ func set_auto_sync_enabled(enabled: bool) -> void:
 	_auto_sync_initialized = false
 	_auto_sync_candidate_signature = ""
 	_auto_sync_candidate_since_msec = 0
+	_auto_sync_retry_after_msec = 0
 	if enabled:
 		status_changed.emit("Sincronizzazione automatica attiva")
 	else:
@@ -123,6 +126,8 @@ func _poll_auto_sync() -> void:
 	var now := Time.get_ticks_msec()
 	if now < _auto_sync_suppress_until_msec:
 		return
+	if now < _auto_sync_retry_after_msec:
+		return
 	if now - _auto_sync_last_poll_msec < AUTO_SYNC_POLL_MS:
 		return
 	_auto_sync_last_poll_msec = now
@@ -147,10 +152,17 @@ func _poll_auto_sync() -> void:
 	if now - _auto_sync_candidate_since_msec < AUTO_SYNC_DEBOUNCE_MS:
 		return
 
-	_auto_sync_last_signature = signature
-	_auto_sync_candidate_signature = ""
-	_auto_sync_candidate_since_msec = 0
-	send_snapshot_to_tailnet(session_key)
+	var error := send_snapshot_to_tailnet(session_key, {}, true)
+	if error == OK:
+		_auto_sync_last_signature = signature
+		_auto_sync_candidate_signature = ""
+		_auto_sync_candidate_since_msec = 0
+		_auto_sync_retry_after_msec = 0
+	else:
+		# Keep the candidate dirty so a transient missing peer/cache does not
+		# silently consume the change. Peer discovery refreshes asynchronously.
+		_auto_sync_candidate_since_msec = now
+		_auto_sync_retry_after_msec = now + AUTO_SYNC_RETRY_MS
 
 
 func _snapshot_signature(snapshot: Dictionary) -> String:
@@ -276,7 +288,8 @@ func send_snapshot(host: String, key: String) -> Error:
 
 func send_snapshot_to_tailnet(
 	key: String,
-	sync_event: Dictionary = {}
+	sync_event: Dictionary = {},
+	use_cached_peers: bool = false
 ) -> Error:
 	var clean_key: String = key.strip_edges()
 	if clean_key.is_empty():
@@ -287,7 +300,11 @@ func send_snapshot_to_tailnet(
 	if payload.is_empty():
 		return ERR_BUSY
 
-	var hosts: Array[String] = _tailscale_peer_ipv4s()
+	var hosts: Array[String] = (
+		get_cached_tailscale_peer_ipv4s()
+		if use_cached_peers
+		else _tailscale_peer_ipv4s()
+	)
 	if hosts.is_empty():
 		status_changed.emit(
 			"Nessun nodo Tailscale trovato. %s" % _tailscale_last_error
