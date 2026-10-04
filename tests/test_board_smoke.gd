@@ -178,6 +178,8 @@ func run() -> void:
 	token.set_reach_feet(15.0, true)
 	token.set_party_id("Mostri")
 	token.set_conditions(["prone", "poisoned"])
+	# "Applica" explicitly promotes the just-edited local appearance.
+	sync.call("mark_token_appearance_locally_edited", token)
 	var editor_snapshot: Dictionary = JSON.parse_string(
 		JSON.stringify(sync.create_snapshot())
 	)
