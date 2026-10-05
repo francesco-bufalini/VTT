@@ -11,27 +11,28 @@ const MAX_IMPORTED_EXTENT_PER_FOOTPRINT := 3.0
 # stabili nei salvataggi; etichette e pittogrammi sono solo presentazione.
 const CONDITION_DEFINITIONS := [
 	# Le 15 condizioni ufficiali D&D 5e / SRD.
-	{"id": "blinded", "name": "Accecato", "icon": "[BL]", "official": true},
-	{"id": "charmed", "name": "Affascinato", "icon": "[CH]", "official": true},
-	{"id": "deafened", "name": "Assordato", "icon": "[DE]", "official": true},
-	{"id": "exhaustion", "name": "Sfinimento", "icon": "[EX]", "official": true},
-	{"id": "frightened", "name": "Spaventato", "icon": "[FR]", "official": true},
-	{"id": "grappled", "name": "Afferrato", "icon": "[GR]", "official": true},
-	{"id": "incapacitated", "name": "Incapacitato", "icon": "[IN]", "official": true},
-	{"id": "invisible", "name": "Invisibile", "icon": "[IV]", "official": true},
-	{"id": "paralyzed", "name": "Paralizzato", "icon": "[PA]", "official": true},
-	{"id": "petrified", "name": "Pietrificato", "icon": "[PE]", "official": true},
-	{"id": "poisoned", "name": "Avvelenato", "icon": "[PO]", "official": true},
-	{"id": "prone", "name": "Prono", "icon": "[PR]", "official": true},
-	{"id": "restrained", "name": "Trattenuto", "icon": "[RE]", "official": true},
-	{"id": "stunned", "name": "Stordito", "icon": "[ST]", "official": true},
-	{"id": "unconscious", "name": "Privo di sensi", "icon": "[UN]", "official": true},
+	{"id": "blinded", "name": "Accecato", "icon": "🙈", "official": true},
+	{"id": "charmed", "name": "Affascinato", "icon": "💘", "official": true},
+	{"id": "deafened", "name": "Assordato", "icon": "🔇", "official": true},
+	{"id": "exhaustion", "name": "Sfinimento", "icon": "🥱", "official": true},
+	{"id": "frightened", "name": "Spaventato", "icon": "😨", "official": true},
+	{"id": "grappled", "name": "Afferrato", "icon": "🪢", "official": true},
+	{"id": "incapacitated", "name": "Incapacitato", "icon": "⛔", "official": true},
+	{"id": "invisible", "name": "Invisibile", "icon": "👻", "official": true},
+	{"id": "paralyzed", "name": "Paralizzato", "icon": "🧊", "official": true},
+	{"id": "petrified", "name": "Pietrificato", "icon": "🗿", "official": true},
+	{"id": "poisoned", "name": "Avvelenato", "icon": "☠️", "official": true},
+	{"id": "prone", "name": "Prono", "icon": "⬇️", "official": true},
+	{"id": "restrained", "name": "Trattenuto", "icon": "⛓️", "official": true},
+	{"id": "stunned", "name": "Stordito", "icon": "💫", "official": true},
+	{"id": "unconscious", "name": "Privo di sensi", "icon": "😴", "official": true},
 
 	# Marker tattici utili nel VTT. Non sono condizioni ufficiali SRD.
-	{"id": "concentrating", "name": "Concentrazione", "icon": "[CO]", "official": false},
-	{"id": "surprised", "name": "Sorpreso", "icon": "[SU]", "official": false},
-	{"id": "hidden", "name": "Nascosto", "icon": "[HI]", "official": false},
-	{"id": "dead", "name": "Morto", "icon": "[KO]", "official": false},
+	{"id": "concentrating", "name": "Concentrazione", "icon": "🧠", "official": false},
+	{"id": "surprised", "name": "Sorpreso", "icon": "❗", "official": false},
+	{"id": "hidden", "name": "Nascosto", "icon": "🥷", "official": false},
+	{"id": "dead", "name": "Morto", "icon": "💀", "official": false},
+
 ]
 
 @export var cell_size: float = 1.0
@@ -42,7 +43,11 @@ const CONDITION_DEFINITIONS := [
 @export var visual_asset_path: String = ""
 @export var visual_native_footprint_cells: float = 0.0
 @export_range(0, 3, 1) var visual_front_quarter_turns: int = 0
+@export_range(-3, 3, 1) var visual_pitch_steps: int = 0
 @export var token_display_name: String = ""
+@export var token_id: String = ""
+@export var token_pack_id: String = ""
+@export var party_id: String = ""
 @export var default_size_name: String = "Medium"
 @export var default_footprint_cells: float = 1.0
 
@@ -68,14 +73,31 @@ var _animation_set: String = ""
 var _default_animation: String = ""
 var _uses_manifest_default: bool = false
 var _conditions: Array[String] = []
+var _condition_visuals_visible: bool = true
 var _reach_feet: float = 5.0
 var _reach_overridden: bool = false
 var _condition_rings_root: Node3D
 var _overlay_root: Node3D
 var _name_label: Label3D
 var _status_label: Label3D
+var _flanking_badge_root: Node3D
+var _flanking_badge_border: MeshInstance3D
+var _flanking_badge_background: MeshInstance3D
+var _flanking_badge_label: Label3D
+var _flanking_badge_border_material: StandardMaterial3D
+var _flanking_badge_background_material: StandardMaterial3D
+var _hp_bar_root: Node3D
+var _hp_bar_mesh: MeshInstance3D
+var _hp_bar_material: StandardMaterial3D
+var _hp_bar_label: Label3D
+var _player_hp_current: int = 0
+var _player_hp_max: int = 0
+var _hp_bar_show_percentage: bool = true
 var movement_validator: Callable
 var grid_support: Node3D
+# The visible VolumetricGrid is the primary vertical support for tactical
+# tokens. Physics bodies remain a fallback for places without grid cells.
+var volumetric_grid: Node3D
 var _support_transform: Transform3D
 var _transformation_history: Array[Dictionary] = []
 const MAX_TRANSFORMATION_HISTORY := 16
@@ -88,10 +110,12 @@ func _ready() -> void:
 	_gravity = float(
 		ProjectSettings.get_setting("physics/3d/default_gravity", 9.8)
 	)
+	_ensure_token_id()
 	_size_name = default_size_name
 	_footprint_cells = maxf(default_footprint_cells, 0.5)
 	_reach_feet = _default_reach_feet()
 	_load_configured_visual()
+	_apply_visual_pitch()
 	_ensure_token_overlay()
 	set_token_size(_footprint_cells)
 	# I token partono sempre sospesi. La gravità viene attivata solo
@@ -142,6 +166,21 @@ func _physics_process(delta: float) -> void:
 
 	velocity.x = 0.0
 	velocity.z = 0.0
+
+	# Grid-first landing: stop at the rendered top face before the CharacterBody
+	# can enter the solid mesh underneath. This also prevents fast falls from
+	# tunnelling through a thin tactical cell.
+	var grid_landing_y := _grid_landing_center_y(delta)
+	if grid_landing_y < INF:
+		global_position.y = grid_landing_y
+		velocity = Vector3.ZERO
+		grid_support = null
+		_snap_horizontal_to_grid()
+		_finish_gravity_after_landing()
+		return
+
+	# No tactical cell under the footprint: preserve the old physical-floor
+	# behavior for carts, special platforms and non-gridded terrain.
 	move_and_slide()
 
 	if is_on_floor():
@@ -175,6 +214,51 @@ func set_flying(enabled: bool) -> void:
 			material.albedo_color = Color(0.3, 0.85, 1)
 			material.emission = Color(0.1, 0.5, 0.8)
 		selection_marker.material_override = material
+
+
+func set_volumetric_grid(grid: Node3D) -> void:
+	volumetric_grid = grid
+
+
+func _grid_landing_center_y(delta: float) -> float:
+	if (
+		volumetric_grid == null
+		or not is_instance_valid(volumetric_grid)
+		or not volumetric_grid.has_method("get_support_top_for_footprint")
+	):
+		return INF
+
+	var half_height := token_height_cells * cell_size * 0.5
+	var current_bottom := global_position.y - half_height
+	var projected_bottom := current_bottom + velocity.y * delta
+
+	# Allow one half-cell above the current bottom so an already half-embedded
+	# token is repaired onto the grid on its next gravity tick.
+	var max_support_y := current_bottom + cell_size * 0.55
+	var min_support_y := projected_bottom - cell_size * 0.05
+	var value: Variant = volumetric_grid.call(
+		"get_support_top_for_footprint",
+		global_position,
+		_footprint_cells,
+		max_support_y,
+		min_support_y
+	)
+	if typeof(value) != TYPE_FLOAT and typeof(value) != TYPE_INT:
+		return INF
+
+	var support_top := float(value)
+	if support_top >= INF:
+		return INF
+
+	# Land when the next gravity step would reach/cross the cell top, or repair
+	# a token whose bottom is already inside that grid cell.
+	if (
+		projected_bottom <= support_top + cell_size * 0.02
+		or current_bottom < support_top
+	):
+		return support_top + half_height + cell_size * 0.005
+
+	return INF
 
 
 func apply_gravity() -> void:
@@ -294,6 +378,16 @@ func set_visual_asset(
 		_apply_imported_visual_front()
 		_position_imported_visual()
 		return true
+
+	# Token packs may be absent locally. Do not ask ResourceLoader about a
+	# path that is not in the virtual filesystem: Godot logs a hard debugger
+	# error even when ResourceLoader.exists() is only used as a probe.
+	var source_exists := FileAccess.file_exists(requested_path)
+	var remap_exists := FileAccess.file_exists(requested_path + ".remap")
+	if not source_exists and not remap_exists:
+		return false
+	if not ResourceLoader.exists(requested_path):
+		return false
 
 	var resource: Resource = ResourceLoader.load(requested_path)
 	if resource == null:
@@ -765,6 +859,35 @@ func set_token_size(footprint_cells: float) -> void:
 	_update_condition_rings()
 
 
+func _ensure_token_id() -> void:
+	if not token_id.strip_edges().is_empty():
+		token_id = token_id.strip_edges().left(96)
+		return
+	var micros := int(Time.get_unix_time_from_system() * 1000000.0)
+	token_id = "token_%d_%d" % [micros, get_instance_id()]
+
+
+func set_token_id(value: String) -> void:
+	var clean := value.strip_edges()
+	if clean.is_empty():
+		_ensure_token_id()
+		return
+	token_id = clean.left(96)
+
+
+func get_token_id() -> String:
+	_ensure_token_id()
+	return token_id
+
+
+func set_token_pack_id(value: String) -> void:
+	token_pack_id = value.strip_edges().left(96)
+
+
+func get_token_pack_id() -> String:
+	return token_pack_id.strip_edges()
+
+
 func set_display_name(value: String) -> void:
 	token_display_name = value.strip_edges()
 	_ensure_token_overlay()
@@ -777,16 +900,45 @@ func get_display_name() -> String:
 	return token_display_name
 
 
+func set_party_id(value: String) -> void:
+	party_id = value.strip_edges().left(80)
+
+
+func get_party_id() -> String:
+	return party_id
+
+
+func get_effective_party_id() -> String:
+	var clean := party_id.strip_edges()
+	return clean if not clean.is_empty() else "Default"
+
+
 func get_condition_definitions() -> Array:
 	return CONDITION_DEFINITIONS.duplicate(true)
 
 
 func get_conditions() -> Array[String]:
+	# Only persistent/manual conditions are serialized.
 	return _conditions.duplicate()
 
 
+func get_active_condition_display_parts() -> PackedStringArray:
+	var parts := PackedStringArray()
+	for definition: Dictionary in CONDITION_DEFINITIONS:
+		var condition_id := String(definition.get("id", ""))
+		if condition_id in _conditions:
+			parts.append(
+				"%s %s" % [
+					String(definition.get("icon", "•")),
+					String(definition.get("name", condition_id))
+				]
+			)
+	return parts
+
+
 func has_condition(condition_id: String) -> bool:
-	return condition_id.strip_edges().to_lower() in _conditions
+	var normalized := condition_id.strip_edges().to_lower()
+	return normalized in _conditions
 
 
 func set_condition(condition_id: String, enabled: bool) -> void:
@@ -809,7 +961,10 @@ func set_conditions(value: Variant) -> void:
 			if not item is String:
 				continue
 			var normalized := String(item).strip_edges().to_lower()
-			if _is_valid_condition(normalized) and not (normalized in resolved):
+			if (
+				_is_valid_condition(normalized)
+				and not (normalized in resolved)
+			):
 				resolved.append(normalized)
 	_conditions = resolved
 	_update_status_overlay()
@@ -866,6 +1021,17 @@ func _condition_ring_color(condition_id: String) -> Color:
 			return Color(0.38, 0.02, 0.03, 1.0)
 		_:
 			return Color.WHITE
+
+
+func set_condition_visuals_visible(value: bool) -> void:
+	_condition_visuals_visible = value
+	if not is_node_ready():
+		return
+	_update_condition_rings()
+
+
+func are_condition_visuals_visible() -> bool:
+	return _condition_visuals_visible
 
 
 func _ensure_condition_rings_root() -> void:
@@ -938,7 +1104,7 @@ func _visual_horizontal_radius_world() -> float:
 
 func _update_condition_rings() -> void:
 	_clear_condition_rings()
-	if _conditions.is_empty():
+	if not _condition_visuals_visible or _conditions.is_empty():
 		return
 
 	var visual_radius := _visual_horizontal_radius_world()
@@ -950,7 +1116,10 @@ func _update_condition_rings() -> void:
 	var ring_index := 0
 	for definition: Dictionary in CONDITION_DEFINITIONS:
 		var condition_id := String(definition.get("id", ""))
-		if not (condition_id in _conditions):
+		if (
+			not (condition_id in _conditions)
+			or not bool(definition.get("ring", true))
+		):
 			continue
 
 		var center_radius := (
@@ -987,6 +1156,8 @@ func _update_condition_rings() -> void:
 
 func _ensure_token_overlay() -> void:
 	if is_instance_valid(_overlay_root):
+		_ensure_health_bar()
+		_update_overlay_position()
 		return
 
 	_overlay_root = get_node_or_null(TOKEN_OVERLAY_NAME) as Node3D
@@ -1019,14 +1190,151 @@ func _ensure_token_overlay() -> void:
 		_status_label.visible = false
 		_overlay_root.add_child(_status_label)
 
+	_ensure_health_bar()
 	_update_overlay_position()
+
+
+func _ensure_flanking_badge() -> void:
+	if _overlay_root == null or not is_instance_valid(_overlay_root):
+		return
+	if (
+		is_instance_valid(_flanking_badge_root)
+		and is_instance_valid(_flanking_badge_border)
+		and is_instance_valid(_flanking_badge_background)
+		and is_instance_valid(_flanking_badge_label)
+	):
+		return
+
+	_flanking_badge_root = (
+		_overlay_root.get_node_or_null("FlankingBadge") as Node3D
+	)
+	if _flanking_badge_root == null:
+		_flanking_badge_root = Node3D.new()
+		_flanking_badge_root.name = "FlankingBadge"
+		_overlay_root.add_child(_flanking_badge_root)
+
+	for legacy_name: String in ["Border", "Background", "Label"]:
+		var legacy := _flanking_badge_root.get_node_or_null(legacy_name)
+		if legacy != null:
+			_flanking_badge_root.remove_child(legacy)
+			legacy.queue_free()
+
+	_flanking_badge_border = MeshInstance3D.new()
+	_flanking_badge_border.name = "Border"
+	_flanking_badge_border.cast_shadow = (
+		GeometryInstance3D.SHADOW_CASTING_SETTING_OFF
+	)
+	_flanking_badge_root.add_child(_flanking_badge_border)
+
+	var border_quad := QuadMesh.new()
+	border_quad.size = Vector2(2.22 * cell_size, 0.46 * cell_size)
+	_flanking_badge_border.mesh = border_quad
+
+	_flanking_badge_border_material = StandardMaterial3D.new()
+	_flanking_badge_border_material.transparency = (
+		BaseMaterial3D.TRANSPARENCY_ALPHA
+	)
+	_flanking_badge_border_material.shading_mode = (
+		BaseMaterial3D.SHADING_MODE_UNSHADED
+	)
+	_flanking_badge_border_material.cull_mode = BaseMaterial3D.CULL_DISABLED
+	_flanking_badge_border_material.no_depth_test = true
+	_flanking_badge_border_material.albedo_color = Color(
+		0.72, 0.48, 0.20, 0.82
+	)
+	_flanking_badge_border_material.render_priority = 1
+	_flanking_badge_border.material_override = (
+		_flanking_badge_border_material
+	)
+
+	_flanking_badge_background = MeshInstance3D.new()
+	_flanking_badge_background.name = "Background"
+	_flanking_badge_background.cast_shadow = (
+		GeometryInstance3D.SHADOW_CASTING_SETTING_OFF
+	)
+	_flanking_badge_root.add_child(_flanking_badge_background)
+
+	var background_quad := QuadMesh.new()
+	background_quad.size = Vector2(2.12 * cell_size, 0.38 * cell_size)
+	_flanking_badge_background.mesh = background_quad
+
+	_flanking_badge_background_material = StandardMaterial3D.new()
+	_flanking_badge_background_material.transparency = (
+		BaseMaterial3D.TRANSPARENCY_ALPHA
+	)
+	_flanking_badge_background_material.shading_mode = (
+		BaseMaterial3D.SHADING_MODE_UNSHADED
+	)
+	_flanking_badge_background_material.cull_mode = (
+		BaseMaterial3D.CULL_DISABLED
+	)
+	_flanking_badge_background_material.no_depth_test = true
+	_flanking_badge_background_material.albedo_color = Color(
+		0.035, 0.04, 0.05, 0.90
+	)
+	_flanking_badge_background_material.render_priority = 2
+	_flanking_badge_background.material_override = (
+		_flanking_badge_background_material
+	)
+
+	_flanking_badge_label = Label3D.new()
+	_flanking_badge_label.name = "Label"
+	_flanking_badge_label.billboard = BaseMaterial3D.BILLBOARD_DISABLED
+	_flanking_badge_label.fixed_size = false
+	_flanking_badge_label.no_depth_test = true
+	_flanking_badge_label.font_size = 22
+	_flanking_badge_label.outline_size = 4
+	_flanking_badge_label.modulate = Color(1.0, 0.94, 0.82, 1.0)
+	_flanking_badge_label.outline_modulate = Color(0.03, 0.035, 0.045, 1.0)
+	_flanking_badge_label.text = "🗡️  Affiancato"
+	_flanking_badge_label.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
+	_flanking_badge_label.vertical_alignment = VERTICAL_ALIGNMENT_CENTER
+	_flanking_badge_root.add_child(_flanking_badge_label)
+
+	_flanking_badge_border.position.z = 0.0
+	_flanking_badge_background.position.z = 0.004 * cell_size
+	_flanking_badge_label.position.z = 0.008 * cell_size
+	_flanking_badge_root.visible = false
+
+
+func set_flanking_indicator_visible(value: bool) -> void:
+	if not is_instance_valid(_flanking_badge_root):
+		_ensure_token_overlay()
+	if is_instance_valid(_flanking_badge_root):
+		_flanking_badge_root.visible = value
+
+
+func is_flanking_indicator_visible() -> bool:
+	return (
+		is_instance_valid(_flanking_badge_root)
+		and _flanking_badge_root.visible
+	)
+
+
+func _update_flanking_badge_facing() -> void:
+	if (
+		not is_instance_valid(_flanking_badge_root)
+		or not _flanking_badge_root.visible
+	):
+		return
+	var camera := get_viewport().get_camera_3d()
+	if camera == null or not is_instance_valid(camera):
+		return
+	var target := camera.global_position
+	if _flanking_badge_root.global_position.distance_squared_to(target) <= 0.000001:
+		return
+	# Rotate the entire badge as one object. Border, background and text
+	# therefore never acquire different front/back orientations.
+	_flanking_badge_root.look_at(target, Vector3.UP, true)
 
 
 func _update_overlay_position() -> void:
 	if not is_instance_valid(_overlay_root):
 		return
 	var top_y := token_height_cells * cell_size * 0.5
-	_overlay_root.position = Vector3(0.0, top_y + 0.28 * cell_size, 0.0)
+	# Keep the token name slightly higher so the compact tactical badge can sit
+	# directly underneath it while remaining fully above the miniature.
+	_overlay_root.position = Vector3(0.0, top_y + 0.38 * cell_size, 0.0)
 	if is_instance_valid(_name_label):
 		# Label3D con fixed_size=false: la sua dimensione e' in unita' del
 		# mondo, quindi si comporta come il token e si rimpicciolisce con la
@@ -1036,19 +1344,270 @@ func _update_overlay_position() -> void:
 	if is_instance_valid(_status_label):
 		_status_label.pixel_size = 0.010 * cell_size
 		_status_label.position = Vector3(0.0, -0.22 * cell_size, 0.0)
+	if is_instance_valid(_flanking_badge_root):
+		_flanking_badge_root.position = Vector3(
+			0.0,
+			0.66 * cell_size,
+			0.0
+		)
+	if is_instance_valid(_flanking_badge_border):
+		var border_quad := _flanking_badge_border.mesh as QuadMesh
+		if border_quad != null:
+			border_quad.size = Vector2(
+				2.22 * cell_size,
+				0.46 * cell_size
+			)
+	if is_instance_valid(_flanking_badge_background):
+		var background_quad := _flanking_badge_background.mesh as QuadMesh
+		if background_quad != null:
+			background_quad.size = Vector2(
+				2.12 * cell_size,
+				0.38 * cell_size
+			)
+		_flanking_badge_background.position.z = 0.004 * cell_size
+	if is_instance_valid(_flanking_badge_label):
+		_flanking_badge_label.pixel_size = 0.0082 * cell_size
+		_flanking_badge_label.position = Vector3(
+			0.0,
+			0.0,
+			0.008 * cell_size
+		)
+	if is_instance_valid(_hp_bar_root):
+		_hp_bar_root.position = Vector3(0.0, 0.34 * cell_size, 0.0)
+		_update_health_bar_visual()
+
+
+func _ensure_health_bar() -> void:
+	if _overlay_root == null or not is_instance_valid(_overlay_root):
+		return
+	if (
+		is_instance_valid(_hp_bar_root)
+		and is_instance_valid(_hp_bar_mesh)
+		and is_instance_valid(_hp_bar_label)
+	):
+		return
+
+	_hp_bar_root = _overlay_root.get_node_or_null("HealthBar") as Node3D
+	if _hp_bar_root == null:
+		_hp_bar_root = Node3D.new()
+		_hp_bar_root.name = "HealthBar"
+		_overlay_root.add_child(_hp_bar_root)
+
+	# Remove the old two-billboard implementation if this scene survives a
+	# script reload. Two independently billboarded quads drift apart when the
+	# camera rotates because their local offsets are not billboarded together.
+	for legacy_name: String in ["Background", "Fill"]:
+		var legacy := _hp_bar_root.get_node_or_null(legacy_name)
+		if legacy != null:
+			_hp_bar_root.remove_child(legacy)
+			legacy.queue_free()
+
+	_hp_bar_mesh = _hp_bar_root.get_node_or_null("Bar") as MeshInstance3D
+	if _hp_bar_mesh == null:
+		_hp_bar_mesh = MeshInstance3D.new()
+		_hp_bar_mesh.name = "Bar"
+		_hp_bar_mesh.cast_shadow = (
+			GeometryInstance3D.SHADOW_CASTING_SETTING_OFF
+		)
+		_hp_bar_root.add_child(_hp_bar_mesh)
+
+	_hp_bar_material = _hp_bar_mesh.material_override as StandardMaterial3D
+	if _hp_bar_material == null:
+		_hp_bar_material = StandardMaterial3D.new()
+		_hp_bar_material.shading_mode = (
+			BaseMaterial3D.SHADING_MODE_UNSHADED
+		)
+		_hp_bar_material.billboard_mode = (
+			BaseMaterial3D.BILLBOARD_ENABLED
+		)
+		_hp_bar_material.vertex_color_use_as_albedo = true
+		_hp_bar_material.cull_mode = BaseMaterial3D.CULL_DISABLED
+		_hp_bar_material.transparency = (
+			BaseMaterial3D.TRANSPARENCY_DISABLED
+		)
+		_hp_bar_mesh.material_override = _hp_bar_material
+
+	_hp_bar_label = _hp_bar_root.get_node_or_null("Percent") as Label3D
+	if _hp_bar_label == null:
+		_hp_bar_label = Label3D.new()
+		_hp_bar_label.name = "Percent"
+		_hp_bar_label.billboard = BaseMaterial3D.BILLBOARD_ENABLED
+		_hp_bar_label.fixed_size = false
+		_hp_bar_label.font_size = 22
+		_hp_bar_label.outline_size = 7
+		_hp_bar_label.modulate = Color.WHITE
+		_hp_bar_root.add_child(_hp_bar_label)
+
+	_update_health_bar_visual()
+
+
+func set_player_hit_points(current_hp: int, max_hp: int) -> void:
+	_player_hp_current = current_hp
+	_player_hp_max = maxi(0, max_hp)
+	# The sheet contains the exact values. Above the token show only the bar.
+	_hp_bar_show_percentage = false
+	_ensure_token_overlay()
+	_ensure_health_bar()
+	_update_health_bar_visual()
+
+
+func set_master_hit_points(current_hp: int, max_hp: int) -> void:
+	_player_hp_current = current_hp
+	_player_hp_max = maxi(0, max_hp)
+	_hp_bar_show_percentage = false
+	_ensure_token_overlay()
+	_ensure_health_bar()
+	_update_health_bar_visual()
+
+
+func set_synced_hit_point_percent(percent: float) -> void:
+	var clean_percent := clampf(percent, 0.0, 100.0)
+	# Remote peers receive only a percentage, never the sheet's absolute HP.
+	# Use a high internal denominator so fractional percentages remain smooth.
+	_player_hp_current = roundi(clean_percent * 100.0)
+	_player_hp_max = 10000
+	_hp_bar_show_percentage = false
+	_ensure_token_overlay()
+	_ensure_health_bar()
+	_update_health_bar_visual()
+
+
+func clear_player_hit_points() -> void:
+	_player_hp_current = 0
+	_player_hp_max = 0
+	_hp_bar_show_percentage = true
+	if is_instance_valid(_hp_bar_root):
+		_hp_bar_root.visible = false
+
+
+func clear_master_hit_points() -> void:
+	_player_hp_current = 0
+	_player_hp_max = 0
+	_hp_bar_show_percentage = false
+	if is_instance_valid(_hp_bar_root):
+		_hp_bar_root.visible = false
+
+
+func get_player_hit_points() -> Dictionary:
+	return {
+		"current": _player_hp_current,
+		"max": _player_hp_max,
+	}
+
+
+func _update_health_bar_visual() -> void:
+	if not is_instance_valid(_hp_bar_root):
+		return
+	if _player_hp_max <= 0:
+		_hp_bar_root.visible = false
+		return
+
+	_hp_bar_root.visible = true
+	var clamped_current := clampi(
+		_player_hp_current,
+		0,
+		_player_hp_max
+	)
+	var ratio := clampf(
+		float(clamped_current) / float(_player_hp_max),
+		0.0,
+		1.0
+	)
+	var width := maxf(1.45, _footprint_cells * 1.05) * cell_size
+	var height := 0.14 * cell_size
+
+	if is_instance_valid(_hp_bar_mesh):
+		# Black total HP and red remaining HP are vertices of ONE billboarded
+		# mesh. They therefore rotate, scale and translate as one object from
+		# every camera direction.
+		var bar_mesh := ImmediateMesh.new()
+		bar_mesh.surface_begin(
+			Mesh.PRIMITIVE_TRIANGLES,
+			_hp_bar_material
+		)
+
+		var half_width := width * 0.5
+		var half_height := height * 0.5
+		var black := Color(0.015, 0.015, 0.02, 1.0)
+		_add_hp_bar_quad(
+			bar_mesh,
+			-half_width,
+			half_width,
+			-half_height,
+			half_height,
+			0.0,
+			black
+		)
+
+		if ratio > 0.0:
+			var inset := height * 0.12
+			var inner_left := -half_width + inset
+			var inner_right_max := half_width - inset
+			var inner_width := maxf(
+				0.0,
+				inner_right_max - inner_left
+			)
+			var red_right := inner_left + inner_width * ratio
+			var red := Color(0.92, 0.08, 0.08, 1.0)
+			_add_hp_bar_quad(
+				bar_mesh,
+				inner_left,
+				red_right,
+				-half_height + inset,
+				half_height - inset,
+				0.002 * cell_size,
+				red
+			)
+
+		bar_mesh.surface_end()
+		_hp_bar_mesh.mesh = bar_mesh
+
+	if is_instance_valid(_hp_bar_label):
+		_hp_bar_label.text = "%d%%" % roundi(ratio * 100.0)
+		_hp_bar_label.pixel_size = 0.008 * cell_size
+		_hp_bar_label.position = Vector3(
+			0.0,
+			0.12 * cell_size,
+			0.008 * cell_size
+		)
+		_hp_bar_label.visible = _hp_bar_show_percentage
+
+
+func _add_hp_bar_quad(
+	mesh: ImmediateMesh,
+	left: float,
+	right: float,
+	bottom: float,
+	top: float,
+	z_offset: float,
+	color: Color
+) -> void:
+	if mesh == null or right <= left or top <= bottom:
+		return
+
+	mesh.surface_set_color(color)
+	mesh.surface_add_vertex(Vector3(left, bottom, z_offset))
+	mesh.surface_set_color(color)
+	mesh.surface_add_vertex(Vector3(right, bottom, z_offset))
+	mesh.surface_set_color(color)
+	mesh.surface_add_vertex(Vector3(right, top, z_offset))
+
+	mesh.surface_set_color(color)
+	mesh.surface_add_vertex(Vector3(left, bottom, z_offset))
+	mesh.surface_set_color(color)
+	mesh.surface_add_vertex(Vector3(right, top, z_offset))
+	mesh.surface_set_color(color)
+	mesh.surface_add_vertex(Vector3(left, top, z_offset))
 
 
 func _update_status_overlay() -> void:
 	_ensure_token_overlay()
-	if not is_instance_valid(_status_label):
-		return
-	var icons: PackedStringArray = []
-	for definition: Dictionary in CONDITION_DEFINITIONS:
-		var condition_id := String(definition.get("id", ""))
-		if condition_id in _conditions:
-			icons.append(String(definition.get("icon", "•")))
-	_status_label.text = "  ".join(icons)
-	_status_label.visible = not icons.is_empty()
+	# Conditions are rendered by the shared 2D tactical badge together with
+	# derived states such as Affiancato. Keep the legacy 3D label disabled so
+	# names/HP/conditions never overlap or duplicate one another.
+	if is_instance_valid(_status_label):
+		_status_label.text = ""
+		_status_label.visible = false
 
 
 
@@ -1154,10 +1713,14 @@ func set_size_category(
 
 func get_appearance_state() -> Dictionary:
 	return {
+		"token_pack_id": get_token_pack_id(),
 		"visual_asset": get_visual_asset_path(),
 		"visual_native_footprint": _visual_native_footprint_cells,
 		"visual_front_quarter_turns": get_visual_front_quarter_turns(),
+		"visual_pitch_steps": get_visual_pitch_steps(),
 		"display_name": get_display_name(),
+		"party_id": get_party_id(),
+		"conditions": get_conditions(),
 		"size_name": _size_name,
 		"footprint": _footprint_cells,
 		"height_cells": token_height_cells,
@@ -1174,6 +1737,8 @@ func apply_appearance_state(state: Dictionary) -> bool:
 		global_position.y
 		- token_height_cells * cell_size * 0.5
 	)
+
+	set_token_pack_id(String(state.get("token_pack_id", "")))
 
 	var visual_asset: String = String(
 		state.get("visual_asset", "")
@@ -1201,6 +1766,9 @@ func apply_appearance_state(state: Dictionary) -> bool:
 	set_visual_front_quarter_turns(
 		int(state.get("visual_front_quarter_turns", 0))
 	)
+	set_visual_pitch_steps(
+		int(state.get("visual_pitch_steps", visual_pitch_steps))
+	)
 	token_height_cells = maxf(
 		float(state.get("height_cells", token_height_cells)),
 		0.1
@@ -1218,6 +1786,8 @@ func apply_appearance_state(state: Dictionary) -> bool:
 	)
 	_reach_overridden = bool(state.get("reach_overridden", false))
 	set_display_name(String(state.get("display_name", token_display_name)))
+	set_party_id(String(state.get("party_id", party_id)))
+	set_conditions(state.get("conditions", _conditions))
 	global_position.y = (
 		base_y
 		+ token_height_cells * cell_size * 0.5
@@ -1258,10 +1828,12 @@ func set_transformation_history(value: Variant) -> void:
 		var visual_asset: String = String(
 			item.get("visual_asset", "")
 		).strip_edges()
-		if (
-			not visual_asset.is_empty()
-			and not visual_asset.begins_with("res://assets/tokens/")
-		):
+		if not _is_supported_token_visual_path(visual_asset):
+			continue
+		var history_pack_id := String(
+			item.get("token_pack_id", "")
+		).strip_edges()
+		if history_pack_id.length() > 96:
 			continue
 		_transformation_history.append(item)
 		if _transformation_history.size() >= MAX_TRANSFORMATION_HISTORY:
@@ -1337,6 +1909,25 @@ func rotate_grid(rotation_steps: int) -> void:
 	rotation.y = snappedf(rotation.y, PI / 4.0)
 
 
+func rotate_vertical(rotation_steps: int) -> void:
+	set_visual_pitch_steps(visual_pitch_steps + rotation_steps)
+
+
+func set_visual_pitch_steps(steps: int) -> void:
+	visual_pitch_steps = clampi(steps, -3, 3)
+	_apply_visual_pitch()
+
+
+func get_visual_pitch_steps() -> int:
+	return visual_pitch_steps
+
+
+func _apply_visual_pitch() -> void:
+	if visuals == null or not is_instance_valid(visuals):
+		return
+	visuals.rotation.x = deg_to_rad(30.0 * float(visual_pitch_steps))
+
+
 func snap_horizontal_to_grid() -> void:
 	_snap_horizontal_to_grid()
 
@@ -1370,7 +1961,21 @@ func _snap_coordinate(value: float) -> float:
 
 
 func snap_destination(point: Vector3, _support: Node3D = null) -> Vector3:
-	var snapped := point
-	snapped.x = _snap_coordinate(snapped.x)
-	snapped.z = _snap_coordinate(snapped.z)
-	return snapped
+	var snapped_point := point
+	snapped_point.x = _snap_coordinate(snapped_point.x)
+	snapped_point.z = _snap_coordinate(snapped_point.z)
+	return snapped_point
+
+
+func _is_supported_token_visual_path(path: String) -> bool:
+	var clean := path.strip_edges()
+	if clean.is_empty():
+		return true
+	if clean.begins_with("res://assets/tokens/"):
+		return not clean.contains("..")
+	if clean.begins_with("res://remote_tokens/"):
+		return (
+			not clean.contains("..")
+			and clean.ends_with("_visual.res")
+		)
+	return false

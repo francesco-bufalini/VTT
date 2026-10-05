@@ -5,11 +5,17 @@ const CAMPAIGN_METADATA_FILE := "campaign.json"
 const CAMPAIGN_STATE_FILE := "state.json"
 const BUILTIN_STATES_DIR := "user://campaigns/_builtin_states"
 const CAMPAIGN_GROUP_OVERRIDES_FILE := "user://campaign_group_overrides.json"
+const USER_CAMPAIGN_GROUPS_FILE := "user://campaign_groups.json"
 
 const MAIN_MENU_SCENE := "res://vtt/menu/main_menu.tscn"
 const ACTIVE_CAMPAIGNS_SCENE := "res://vtt/menu/active_campaigns.tscn"
 const CAMPAIGN_SCENARIOS_SCENE := "res://vtt/menu/campaign_scenarios.tscn"
 const CAMPAIGN_EDITOR_SCENE := "res://vtt/editor/campaign_editor.tscn"
+const USER_CAMPAIGN_PRESET_IDS := [
+	"",
+	"forest_mountains",
+	"sirens_light_pirate_ship",
+]
 
 const BUILTIN_CAMPAIGN_GROUPS := [
 	{
@@ -97,16 +103,34 @@ func list_campaign_groups() -> Array[Dictionary]:
 		if override_value is Dictionary:
 			var override_data: Dictionary = override_value as Dictionary
 			if override_data.has("name"):
-				item["name"] = String(override_data.get("name", item.get("name", "")))
+				item["name"] = String(
+					override_data.get("name", item.get("name", ""))
+				)
 			if override_data.has("description"):
 				item["description"] = String(
-					override_data.get("description", item.get("description", ""))
+					override_data.get(
+						"description",
+						item.get("description", "")
+					)
 				)
-
 		item["scenario_count"] = list_campaign_scenarios(
 			campaign_group_id
 		).size()
 		result.append(item)
+
+	var user_groups: Array[Dictionary] = _user_campaign_groups()
+	user_groups.sort_custom(
+		func(a: Dictionary, b: Dictionary) -> bool:
+			return String(a.get("name", "")).naturalnocasecmp_to(
+				String(b.get("name", ""))
+			) < 0
+	)
+	for user_group: Dictionary in user_groups:
+		var group: Dictionary = user_group.duplicate(true)
+		var group_id: String = String(group.get("id", ""))
+		group["scenario_count"] = list_campaign_scenarios(group_id).size()
+		result.append(group)
+
 	return result
 
 
@@ -123,25 +147,88 @@ func update_campaign_group(
 	if campaign_group.is_empty():
 		return ERR_DOES_NOT_EXIST
 
-	var overrides: Dictionary = _campaign_group_overrides()
-	overrides[campaign_group_id] = {
-		"name": cleaned_name,
-		"description": new_description.strip_edges()
-	}
+	var error: Error = OK
+	if bool(campaign_group.get("builtin", false)):
+		var overrides: Dictionary = _campaign_group_overrides()
+		overrides[campaign_group_id] = {
+			"name": cleaned_name,
+			"description": new_description.strip_edges()
+		}
+		error = _write_json(
+			CAMPAIGN_GROUP_OVERRIDES_FILE,
+			overrides
+		)
+	else:
+		var groups: Array[Dictionary] = _user_campaign_groups()
+		var found := false
+		for index: int in range(groups.size()):
+			if String(groups[index].get("id", "")) != campaign_group_id:
+				continue
+			groups[index]["name"] = cleaned_name
+			groups[index]["description"] = new_description.strip_edges()
+			groups[index]["updated_at"] = Time.get_datetime_string_from_system()
+			found = true
+			break
+		if not found:
+			return ERR_DOES_NOT_EXIST
+		error = _write_user_campaign_groups(groups)
 
-	var error: Error = _write_json(
-		CAMPAIGN_GROUP_OVERRIDES_FILE,
-		overrides
-	)
 	if error != OK:
 		return error
-
 	if selected_campaign_group_id == campaign_group_id:
 		selected_campaign_group = get_campaign_group(
 			campaign_group_id
 		).duplicate(true)
-
 	return OK
+
+
+func create_campaign_group(
+	display_name: String,
+	description: String = ""
+) -> String:
+	var cleaned_name: String = display_name.strip_edges()
+	if cleaned_name.is_empty():
+		return ""
+
+	var group_id := "campaign_group_%s_%s" % [
+		str(int(Time.get_unix_time_from_system())),
+		str(Time.get_ticks_usec())
+	]
+	var groups: Array[Dictionary] = _user_campaign_groups()
+	groups.append({
+		"id": group_id,
+		"name": cleaned_name,
+		"description": description.strip_edges(),
+		"builtin": false,
+		"created_at": Time.get_datetime_string_from_system(),
+		"updated_at": ""
+	})
+	if _write_user_campaign_groups(groups) != OK:
+		return ""
+	return group_id
+
+
+func _user_campaign_groups() -> Array[Dictionary]:
+	var result: Array[Dictionary] = []
+	var value: Variant = _read_json(USER_CAMPAIGN_GROUPS_FILE)
+	if not value is Dictionary:
+		return result
+	var raw_groups: Variant = (value as Dictionary).get("groups", [])
+	if not raw_groups is Array:
+		return result
+	for raw_group: Variant in raw_groups:
+		if not raw_group is Dictionary:
+			continue
+		var group: Dictionary = (raw_group as Dictionary).duplicate(true)
+		if String(group.get("id", "")).is_empty():
+			continue
+		group["builtin"] = false
+		result.append(group)
+	return result
+
+
+func _write_user_campaign_groups(groups: Array[Dictionary]) -> Error:
+	return _write_json(USER_CAMPAIGN_GROUPS_FILE, {"groups": groups})
 
 
 func _campaign_group_overrides() -> Dictionary:
@@ -149,6 +236,18 @@ func _campaign_group_overrides() -> Dictionary:
 	if value is Dictionary:
 		return (value as Dictionary).duplicate(true)
 	return {}
+
+
+func _campaign_group_exists_raw(campaign_group_id: String) -> bool:
+	if campaign_group_id.is_empty():
+		return false
+	for campaign_group: Dictionary in BUILTIN_CAMPAIGN_GROUPS:
+		if String(campaign_group.get("id", "")) == campaign_group_id:
+			return true
+	for campaign_group: Dictionary in _user_campaign_groups():
+		if String(campaign_group.get("id", "")) == campaign_group_id:
+			return true
+	return false
 
 
 func get_campaign_group(campaign_group_id: String) -> Dictionary:
@@ -187,12 +286,28 @@ func get_selected_campaign_group_name() -> String:
 func list_campaign_scenarios(
 	campaign_group_id: String
 ) -> Array[Dictionary]:
-	# The first campaign groups the entries that the previous UI exposed
-	# directly as "campagne attive". This intentionally includes user-created
-	# entries such as "Test incantesimi", preserving their existing state.
-	if campaign_group_id == "i_figli_dell_apocalisse":
-		return list_campaigns()
-	return []
+	var result: Array[Dictionary] = []
+	# Do not call get_campaign_group() here: list_campaign_groups() computes
+	# scenario_count through this function, and get_campaign_group() itself
+	# calls list_campaign_groups(), causing infinite recursion.
+	if not _campaign_group_exists_raw(campaign_group_id):
+		return result
+
+	for scenario: Dictionary in list_campaigns():
+		var assigned_group: String = String(
+			scenario.get("campaign_group_id", "")
+		).strip_edges()
+		if campaign_group_id == "i_figli_dell_apocalisse":
+			# Compatibility: built-in scenarios and old user-created entries
+			# without an explicit group stay in the original campaign.
+			if bool(scenario.get("builtin", false)) or assigned_group.is_empty():
+				result.append(scenario.duplicate(true))
+		elif (
+			not bool(scenario.get("builtin", false))
+			and assigned_group == campaign_group_id
+		):
+			result.append(scenario.duplicate(true))
+	return result
 
 
 func open_scenario(
@@ -243,34 +358,72 @@ func list_campaigns() -> Array[Dictionary]:
 	return campaigns
 
 
-func create_campaign(display_name: String = "") -> String:
+func create_scenario(
+	campaign_group_id: String,
+	display_name: String = "",
+	initial_preset: String = ""
+) -> String:
+	if get_campaign_group(campaign_group_id).is_empty():
+		return ""
+	return _create_user_scenario(
+		campaign_group_id,
+		display_name,
+		initial_preset
+	)
+
+
+# Compatibility for older callers: this still creates a standalone/legacy
+# scenario in the original built-in campaign. New UI uses create_campaign_group
+# first and create_scenario only from inside a campaign.
+func create_campaign(
+	display_name: String = "",
+	initial_preset: String = ""
+) -> String:
+	return _create_user_scenario("", display_name, initial_preset)
+
+
+func _create_user_scenario(
+	campaign_group_id: String,
+	display_name: String,
+	initial_preset: String
+) -> String:
 	_ensure_campaigns_directory()
 
-	var campaign_id := "campaign_%s_%s" % [
+	var scenario_id := "scenario_%s_%s" % [
 		str(int(Time.get_unix_time_from_system())),
 		str(Time.get_ticks_usec())
 	]
-	var name := display_name.strip_edges()
-	if name.is_empty():
-		name = "Nuova campagna %d" % (_list_user_campaigns().size() + 1)
+	var entry_name := display_name.strip_edges()
+	if entry_name.is_empty():
+		entry_name = "Nuovo scenario %d" % (_list_user_campaigns().size() + 1)
+
+	var preset_id: String = initial_preset.strip_edges()
+	if preset_id not in USER_CAMPAIGN_PRESET_IDS:
+		preset_id = ""
 
 	var metadata := {
-		"id": campaign_id,
-		"name": name,
-		"description": "Campagna personalizzata",
+		"id": scenario_id,
+		"name": entry_name,
+		"description": "Scenario personalizzato",
 		"scene": CAMPAIGN_EDITOR_SCENE,
 		"preview": "",
 		"builtin": false,
+		"campaign_group_id": campaign_group_id,
+		"initial_preset": preset_id,
 		"created_at": Time.get_datetime_string_from_system(),
 		"last_saved": ""
 	}
 
-	var directory := _campaign_directory(campaign_id)
-	DirAccess.make_dir_recursive_absolute(ProjectSettings.globalize_path(directory))
-	if _write_json(directory.path_join(CAMPAIGN_METADATA_FILE), metadata) != OK:
+	var directory := _campaign_directory(scenario_id)
+	DirAccess.make_dir_recursive_absolute(
+		ProjectSettings.globalize_path(directory)
+	)
+	if _write_json(
+		directory.path_join(CAMPAIGN_METADATA_FILE),
+		metadata
+	) != OK:
 		return ""
-
-	return campaign_id
+	return scenario_id
 
 
 func rename_campaign(campaign_id: String, new_name: String) -> Error:
@@ -403,6 +556,12 @@ func load_active_runtime_state() -> Dictionary:
 
 func get_active_campaign_name() -> String:
 	return String(active_campaign.get("name", "Campagna"))
+
+
+func get_active_campaign_initial_preset() -> String:
+	return String(
+		active_campaign.get("initial_preset", "")
+	).strip_edges()
 
 
 func is_active_user_campaign() -> bool:

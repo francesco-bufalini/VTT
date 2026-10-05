@@ -1,9 +1,0 @@
-﻿{
-    "schema_version":  1,
-    "run_id":  "37008778649",
-    "run_number":  "14",
-    "source_sha":  "9502d5ef680be4df5eca7d7a4c02048639cf6081",
-    "workflow_status":  "failure",
-    "blender_job":  "blender/jobs/kaos_arena_v2.json",
-    "scene_report":  null
-}

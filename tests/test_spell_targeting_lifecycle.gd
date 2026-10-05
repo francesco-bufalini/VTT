@@ -41,8 +41,9 @@ func _fail(message: String) -> void:
 
 func _held_aoe_count(measure: Node) -> int:
 	var count: int = 0
-	for child: Node in measure.get_children():
-		if child is Node3D and String(child.name).begins_with("HeldSpellAoE"):
+	# Godot renames siblings with duplicate names; use the tracked area roots.
+	for child: Node3D in measure.get("_held_spell_aoes"):
+		if is_instance_valid(child) and child.get_parent() == measure:
 			count += 1
 	return count
 
@@ -168,7 +169,7 @@ func run() -> void:
 		return
 
 	# A confirmed point AoE is intentionally non-expiring: its final area and
-	# affected cells stay together until dismiss_post_cast_visuals().
+	# affected cells stay together until that specific area is clicked.
 	var caster := Node3D.new()
 	board.add_child(caster)
 	var fireball := {
@@ -192,10 +193,36 @@ func run() -> void:
 
 	await create_timer(0.12).timeout
 	if _held_aoe_count(measure) != 1:
-		_fail("confirmed point AoE disappeared before the next click")
+		_fail("confirmed point AoE disappeared without clicking its area")
 		return
 	if board.affected_tokens.size() != 1:
 		_fail("red affected cells did not persist with the confirmed AoE")
+		return
+
+	# Area cleanup must be targeted: removing one spell area cannot erase a
+	# different spell area that is still on the map.
+	measure.call(
+		"show_held_spell_aoe",
+		Vector3.RIGHT * 10.0,
+		Vector3.RIGHT * 12.0,
+		"sphere",
+		"cold"
+	)
+	var held_roots: Array[Node3D] = []
+	for child: Node3D in measure.get("_held_spell_aoes"):
+		if is_instance_valid(child) and child.get_parent() == measure:
+			held_roots.append(child)
+	if held_roots.size() != 2:
+		_fail("second held spell AoE was not created for targeted cleanup")
+		return
+	if not bool(
+		measure.call("_remove_post_cast_spell_root", held_roots[0])
+	):
+		_fail("clicked spell AoE could not be removed individually")
+		return
+	await process_frame
+	if _held_aoe_count(measure) != 1:
+		_fail("removing one spell AoE also removed another area")
 		return
 
 	if not bool(spell.call("dismiss_post_cast_visuals")):
@@ -204,7 +231,7 @@ func run() -> void:
 	await process_frame
 
 	if _held_aoe_count(measure) != 0:
-		_fail("confirmed AoE remained after post-cast cleanup")
+		_fail("remaining AoE survived explicit post-cast cleanup")
 		return
 	if not board.affected_tokens.is_empty():
 		_fail("red affected cells remained after post-cast cleanup")

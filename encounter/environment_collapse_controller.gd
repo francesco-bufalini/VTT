@@ -53,13 +53,13 @@ func _place(batch: MultiMeshInstance3D, cells: Array[Vector2i], rubble: bool = f
 	for i in range(cells.size()):
 		var cell := cells[i]
 		var center := Vector3(cell.x + 0.5, 0.035, cell.y + 0.5) * cell_size
-		var basis := Basis.IDENTITY
+		var rubble_basis := Basis.IDENTITY
 		if rubble:
 			# Geometry depends on the cell, never on the hazard RNG or animation.
 			var angle := float(posmod(cell.x * 17 + cell.y * 31, 100)) * 0.0628
-			basis = Basis.from_euler(Vector3(0.3, angle, 0.2))
+			rubble_basis = Basis.from_euler(Vector3(0.3, angle, 0.2))
 			center.y = 0.10 * cell_size
-		batch.multimesh.set_instance_transform(i, Transform3D(basis, center))
+		batch.multimesh.set_instance_transform(i, Transform3D(rubble_basis, center))
 
 func rebuild(hazards: Node, animate_objects: bool = false) -> void:
 	_place(_threats, hazards.threatened_cells)
@@ -80,6 +80,13 @@ func stop_effects() -> void:
 	if _fall_tween != null:
 		_fall_tween.kill()
 	_falling.visible = false
+
+func replay_collapse(cells: Array[Vector2i]) -> void:
+	for object in get_tree().get_nodes_in_group("encounter_obstacle"):
+		if object.has_method("replay_collapse"):
+			object.call("replay_collapse", cells, cell_size)
+	animate_collapse(cells)
+
 
 func animate_collapse(cells: Array[Vector2i]) -> void:
 	if _fall_tween != null:

@@ -621,7 +621,9 @@ func _update_following_aoes() -> void:
 		if root == null or not is_instance_valid(root):
 			continue
 
-		var follow_value: Variant = root.get_meta("follow_target", null)
+		if not root.has_meta("follow_target"):
+			continue
+		var follow_value: Variant = root.get_meta("follow_target")
 		if not follow_value is Node3D:
 			continue
 		var follow_target: Node3D = follow_value as Node3D
@@ -1596,6 +1598,14 @@ func show_held_spell_aoe(
 	DamageAreaParticles.attach_area(
 		root, start, end, shape, style, cell_size
 	)
+	_add_aoe_pick_area(
+		root,
+		start,
+		end,
+		shape,
+		style,
+		line_width_world
+	)
 	_held_spell_aoes.append(root)
 
 
@@ -1612,6 +1622,120 @@ func clear_post_cast_spell_visuals() -> void:
 	clear_transient_spell_aoes()
 
 
+func has_post_cast_spell_visuals() -> bool:
+	for root: Node3D in _held_spell_aoes:
+		if root != null and is_instance_valid(root):
+			return true
+	for child: Node in get_children():
+		if (
+			child is Node3D
+			and String(child.name).begins_with("TransientAoE")
+		):
+			return true
+	for data_value: Variant in persistent_aoes:
+		if (
+			data_value is Dictionary
+			and bool(
+				(data_value as Dictionary).get(
+					"spell_click_to_remove",
+					false
+				)
+			)
+		):
+			return true
+	return false
+
+
+func _remove_post_cast_spell_root(root: Node3D) -> bool:
+	if root == null or not is_instance_valid(root):
+		return false
+
+	var held_index: int = _held_spell_aoes.find(root)
+	if held_index >= 0:
+		_held_spell_aoes.remove_at(held_index)
+		root.hide()
+		root.queue_free()
+		_affected_tokens_signature = ""
+		_refresh_affected_token_highlight()
+		return true
+
+	var persistent_index: int = _aoe_nodes.find(root)
+	if (
+		persistent_index >= 0
+		and persistent_index < persistent_aoes.size()
+	):
+		var persistent_data_value: Variant = persistent_aoes[
+			persistent_index
+		]
+		if (
+			persistent_data_value is Dictionary
+			and bool(
+				(persistent_data_value as Dictionary).get(
+					"spell_click_to_remove",
+					false
+				)
+			)
+		):
+			return dissolve_aoe(persistent_index)
+
+	var root_id: int = root.get_instance_id()
+	for index: int in range(_transient_spell_aoes.size() - 1, -1, -1):
+		if int(_transient_spell_aoes[index].get("id", -1)) != root_id:
+			continue
+		_transient_spell_aoes.remove_at(index)
+		root.hide()
+		root.queue_free()
+		_affected_tokens_signature = ""
+		_refresh_affected_token_highlight()
+		return true
+
+	return false
+
+
+func remove_post_cast_spell_visual_at_screen(
+	screen_position: Vector2
+) -> bool:
+	if _camera == null or not is_instance_valid(_camera):
+		return false
+
+	var origin: Vector3 = _camera.project_ray_origin(screen_position)
+	var direction: Vector3 = _camera.project_ray_normal(screen_position)
+	var excluded: Array[RID] = []
+
+	# Post-cast spell areas share the normal AoE pick layer. Skip any manual
+	# persistent AoE in front of the ray instead of deleting it by accident.
+	for _attempt: int in range(16):
+		var query := PhysicsRayQueryParameters3D.create(
+			origin,
+			origin + direction * max_ray_distance
+		)
+		query.collision_mask = AOE_PICK_LAYER
+		query.collide_with_bodies = false
+		query.collide_with_areas = true
+		query.exclude = excluded
+
+		var hit: Dictionary = (
+			_camera.get_world_3d().direct_space_state.intersect_ray(query)
+		)
+		if hit.is_empty():
+			return false
+
+		var area: Area3D = hit.get("collider") as Area3D
+		if area == null:
+			return false
+
+		if area.has_meta("aoe_root"):
+			var root_value: Variant = area.get_meta("aoe_root")
+			if root_value is Node3D:
+				var root := root_value as Node3D
+				if _remove_post_cast_spell_root(root):
+					return true
+
+		excluded.append(area.get_rid())
+
+	return false
+
+
 func show_transient_aoe(
 	start: Vector3,
 	end: Vector3,
@@ -1619,7 +1743,7 @@ func show_transient_aoe(
 	duration_seconds: float = 5.0,
 	style: String = "",
 	line_width_world: float = -1.0,
-	auto_expire: bool = true
+	auto_expire: bool = false
 ) -> void:
 	if shape not in ["sphere", "cube", "cone", "line", "flat_square", "cylinder"]:
 		return
@@ -1642,6 +1766,14 @@ func show_transient_aoe(
 	)
 	DamageAreaParticles.attach_area(
 		root, start, end, shape, style, cell_size
+	)
+	_add_aoe_pick_area(
+		root,
+		start,
+		end,
+		shape,
+		style,
+		line_width_world
 	)
 
 	var transient_id: int = root.get_instance_id()
@@ -1697,7 +1829,7 @@ func clear_transient_spell_aoes() -> void:
 
 
 func show_teleport_cloud(
-	position: Vector3,
+	world_point: Vector3,
 	style: String = "arcane",
 	duration_seconds: float = 0.55
 ) -> void:
@@ -1706,7 +1838,7 @@ func show_teleport_cloud(
 	add_child(root)
 	SpellVFX.attach_teleport_cloud(
 		root,
-		position,
+		world_point,
 		style,
 		maxf(duration_seconds, 0.2),
 		cell_size
@@ -1908,6 +2040,27 @@ func add_wall_path(
 	_aoe_nodes.append(root)
 
 
+func add_spell_wall_path(
+	points: Array[Vector3],
+	height_world: float,
+	thickness_world: float,
+	style: String,
+	damage_side: int = 0,
+	metadata: Dictionary = {}
+) -> void:
+	var previous_count: int = persistent_aoes.size()
+	add_wall_path(
+		points,
+		height_world,
+		thickness_world,
+		style,
+		damage_side,
+		metadata
+	)
+	if persistent_aoes.size() > previous_count:
+		_mark_persistent_aoe_as_spell(persistent_aoes.size() - 1)
+
+
 func add_wall_globe(
 	center: Vector3,
 	radius_world: float,
@@ -1942,6 +2095,25 @@ func add_wall_globe(
 		false
 	)
 	_aoe_nodes.append(root)
+
+
+func add_spell_wall_globe(
+	center: Vector3,
+	radius_world: float,
+	style: String,
+	hemisphere: bool = false,
+	metadata: Dictionary = {}
+) -> void:
+	var previous_count: int = persistent_aoes.size()
+	add_wall_globe(
+		center,
+		radius_world,
+		style,
+		hemisphere,
+		metadata
+	)
+	if persistent_aoes.size() > previous_count:
+		_mark_persistent_aoe_as_spell(persistent_aoes.size() - 1)
 
 
 func _build_wall_path_root(
@@ -2300,6 +2472,53 @@ func add_aoe(
 		line_width_world
 	)
 	_aoe_nodes.append(root)
+
+
+func _mark_persistent_aoe_as_spell(index: int) -> void:
+	if (
+		index < 0
+		or index >= persistent_aoes.size()
+		or index >= _aoe_nodes.size()
+	):
+		return
+	var data_value: Variant = persistent_aoes[index]
+	if not data_value is Dictionary:
+		return
+	var data: Dictionary = data_value as Dictionary
+	data["spell_click_to_remove"] = true
+	persistent_aoes[index] = data
+	var root: Node3D = _aoe_nodes[index]
+	if root != null and is_instance_valid(root):
+		root.set_meta("post_cast_spell_area", true)
+
+
+func add_spell_aoe(
+	start: Vector3,
+	end: Vector3,
+	shape: String,
+	style: String = "",
+	color: Color = Color(0.0, 0.0, 0.0, -1.0),
+	line_width_world: float = -1.0,
+	movable_aoe_feet: float = 0.0,
+	movable_aoe_mode: String = "free",
+	caster_origin: Vector3 = Vector3(INF, INF, INF),
+	follow_target: Node3D = null
+) -> void:
+	var previous_count: int = persistent_aoes.size()
+	add_aoe(
+		start,
+		end,
+		shape,
+		style,
+		color,
+		line_width_world,
+		movable_aoe_feet,
+		movable_aoe_mode,
+		caster_origin,
+		follow_target
+	)
+	if persistent_aoes.size() > previous_count:
+		_mark_persistent_aoe_as_spell(persistent_aoes.size() - 1)
 
 
 func _aoe_line_radius(style: String) -> float:
@@ -2966,6 +3185,12 @@ func valid_aoes(data: Variant) -> bool:
 		if item.has("wall_meta") and not item.get("wall_meta") is Dictionary:
 			return false
 
+		if (
+			item.has("spell_click_to_remove")
+			and not item.get("spell_click_to_remove") is bool
+		):
+			return false
+
 		if item.has("color"):
 			var color_value: Variant = item.get("color")
 			if not color_value is Dictionary:
@@ -3014,6 +3239,8 @@ func apply_persistent_aoes(data: Array) -> void:
 				int(item_data.get("damage_side", 0)),
 				wall_meta
 			)
+			if bool(item_data.get("spell_click_to_remove", false)):
+				_mark_persistent_aoe_as_spell(_aoe_nodes.size() - 1)
 			continue
 
 		if shape == "wall_globe":
@@ -3035,6 +3262,8 @@ func apply_persistent_aoes(data: Array) -> void:
 				bool(item_data.get("hemisphere", false)),
 				globe_meta
 			)
+			if bool(item_data.get("spell_click_to_remove", false)):
+				_mark_persistent_aoe_as_spell(_aoe_nodes.size() - 1)
 			continue
 
 		var start_data: Array = item_data.get("start", [])
@@ -3072,5 +3301,7 @@ func apply_persistent_aoes(data: Array) -> void:
 			String(item_data.get("movable_aoe_mode", "free")),
 			caster_origin
 		)
+		if bool(item_data.get("spell_click_to_remove", false)):
+			_mark_persistent_aoe_as_spell(_aoe_nodes.size() - 1)
 
 	_suppress_undo_record = false

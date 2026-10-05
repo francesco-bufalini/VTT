@@ -64,6 +64,30 @@ func apply(animate: bool = true) -> void:
 	if animate:
 		_burst(visual.get_node("FaceAnchor").global_position,units)
 
+func replay_burst() -> void:
+	var actor := get_parent() as Node3D
+	if actor == null or not is_instance_valid(actor):
+		return
+	var scene := actor.get_parent()
+	if scene == null or not is_instance_valid(scene):
+		return
+	var units: float = scene.measurement_tool.meters_to_world(1)
+	var visual: Node3D = (
+		actor.get_node("ClimbingVisual")
+		if actor.has_node("ClimbingVisual")
+		and actor.get_node("ClimbingVisual").visible
+		else actor.get_node("KaosVisual")
+	)
+	var face := visual.get_node_or_null("FaceAnchor") as Node3D
+	if face == null:
+		return
+	if _effect != null and _effect.is_valid():
+		_effect.kill()
+	if is_instance_valid(_debris):
+		_debris.queue_free()
+	_burst(face.global_position, units)
+
+
 func _burst(origin: Vector3,units: float) -> void:
 	_debris = MultiMeshInstance3D.new()
 	_debris.multimesh = MultiMesh.new()

@@ -1199,7 +1199,11 @@ static func _is_runtime_usable(spell_data: Dictionary) -> bool:
 				and effect_value is Dictionary
 			):
 				var effect: Dictionary = effect_value as Dictionary
-				if effect.get("geometry", {}) is Dictionary:
+				var damage_value: Variant = effect.get("damage_types", [])
+				if damage_value is Array and not (damage_value as Array).is_empty():
+					return true
+				var geometry_value: Variant = effect.get("geometry", {})
+				if geometry_value is Dictionary and not (geometry_value as Dictionary).is_empty():
 					return true
 
 	if target_mode == "token_then_multi_token":
@@ -1241,7 +1245,7 @@ static func is_runtime_usable(spell_data: Dictionary) -> bool:
 
 static func catalog_spell(spell_id: String) -> Dictionary:
 	var value: Variant = SPELLS.get(spell_id, {})
-	if value is Dictionary:
+	if value is Dictionary and not (value as Dictionary).is_empty():
 		var manual_result: Dictionary = (value as Dictionary).duplicate(true)
 		var generated_value: Variant = GeneratedCatalog.SPELLS.get(
 			spell_id,

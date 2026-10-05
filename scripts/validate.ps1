@@ -38,13 +38,36 @@ function Invoke-Godot {
     $stdoutPath = Join-Path $env:TEMP ("vtt-godot-" + [guid]::NewGuid() + ".out")
     $stderrPath = Join-Path $env:TEMP ("vtt-godot-" + [guid]::NewGuid() + ".err")
     try {
+        # Start-Process joins arguments into one string; quote paths with spaces.
+        $quotedArguments = foreach ($argument in $Arguments) {
+            if ($argument -match '\s') { '"' + $argument + '"' } else { $argument }
+        }
         $process = Start-Process -FilePath $script:GodotExecutable `
-            -ArgumentList $Arguments -PassThru `
+            -ArgumentList $quotedArguments -PassThru -WindowStyle Hidden `
             -RedirectStandardOutput $stdoutPath `
             -RedirectStandardError $stderrPath
 
         if (-not $process.WaitForExit($TimeoutSeconds * 1000)) {
-            Stop-Process -Id $process.Id -Force -ErrorAction SilentlyContinue
+            # The Windows runner uses a .NET build without Process.Kill(bool).
+            # taskkill /T reliably terminates the console launcher and its Godot child.
+            if ($env:OS -eq "Windows_NT") {
+                & taskkill.exe /PID $process.Id /T /F 2>$null | Out-Null
+            } else {
+                $process.Kill()
+            }
+            $process.WaitForExit()
+            $timeoutStdout = if (Test-Path $stdoutPath) {
+                Get-Content -LiteralPath $stdoutPath -Raw
+            } else { "" }
+            $timeoutStderr = if (Test-Path $stderrPath) {
+                Get-Content -LiteralPath $stderrPath -Raw
+            } else { "" }
+            if (-not [string]::IsNullOrWhiteSpace($timeoutStdout)) {
+                Write-Host $timeoutStdout.TrimEnd()
+            }
+            if (-not [string]::IsNullOrWhiteSpace($timeoutStderr)) {
+                Write-Host $timeoutStderr.TrimEnd()
+            }
             throw "Godot timed out after $TimeoutSeconds seconds: $($Arguments -join ' ')"
         }
         $process.Refresh()
@@ -63,8 +86,8 @@ function Invoke-Godot {
         }
 
         $combinedOutput = $stdout + [Environment]::NewLine + $stderr
-        if ($combinedOutput -match "(?m)^(SCRIPT ERROR:|ERROR: Failed to load script)") {
-            throw "Godot reported a script load/compile error: $($Arguments -join ' ')"
+        if ($combinedOutput -match "(?m)^(SCRIPT ERROR:|ERROR:)") {
+            throw "Godot reported an error: $($Arguments -join ' ')"
         }
 
         $exitCode = $process.ExitCode
@@ -89,7 +112,14 @@ $fastTests = @(
     "test_initiative_tracker.gd",
     "test_spell_catalog_smoke.gd",
     "test_spell_targeting_lifecycle.gd",
-    "test_board_smoke.gd"
+    "test_board_smoke.gd",
+    "test_encounter_sync_scripts.gd",
+    "test_item_transport.gd",
+    "test_item_board_integration.gd",
+    "test_dice_chat_sync.gd",
+    "test_flanking_geometry.gd",
+    "test_token_unique_names.gd",
+    "test_token_spawn_targeting.gd"
 )
 
 if ($FullTests) {
@@ -115,8 +145,16 @@ if ($FullTests) {
 foreach ($test in $testFiles) {
     $relative = "res://tests/$($test.Name)"
     Write-Host "== $relative =="
-    $testTimeout = if ($FullTests) { 90 } else { 12 }
-    Invoke-Godot -Arguments @("--headless", "--path", $ProjectRoot, "--script", $relative) -TimeoutSeconds $testTimeout -RequirePass
+    $testTimeout = if ($FullTests) {
+        90
+    } elseif ($test.Name -in @("test_item_transport.gd", "test_item_board_integration.gd")) {
+        30
+    } else {
+        12
+    }
+    # Runtime integration tests need normal node initialization, not editor mode.
+    $testArguments = @("--headless", "--path", $ProjectRoot, "--script", $relative)
+    Invoke-Godot -Arguments $testArguments -TimeoutSeconds $testTimeout -RequirePass
 }
 
 Write-Host "Validation passed."

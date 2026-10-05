@@ -32,6 +32,31 @@ func get_world_bounds() -> AABB:
 	var size := size_cells * cell_size
 	return global_transform * AABB(Vector3(-size.x * 0.5, 0, -size.z * 0.5), size)
 
+func replay_collapse(cells: Array[Vector2i], hazard_cell_size: float) -> void:
+	if not collapsible or not collapsed or cells.is_empty():
+		return
+	var box := get_world_bounds()
+	var footprint := Rect2(box.position.x, box.position.z, box.size.x, box.size.z)
+	var affected := false
+	for cell: Vector2i in cells:
+		var point := Vector2(cell.x + 0.5, cell.y + 0.5) * hazard_cell_size
+		if footprint.has_point(point):
+			affected = true
+			break
+	if not affected:
+		return
+	if _tween != null:
+		_tween.kill()
+	_shape.disabled = true
+	_visual.scale = Vector3.ONE
+	_visual.position.y = size_cells.y * cell_size * 0.5
+	var target_scale := Vector3(1.2, 0.08, 1.2)
+	var target_y := size_cells.y * cell_size * 0.04
+	_tween = create_tween().set_parallel(true)
+	_tween.tween_property(_visual, "scale", target_scale, 0.7)
+	_tween.tween_property(_visual, "position:y", target_y, 0.7)
+
+
 func update_collapse(hazards: Node, animate: bool) -> void:
 	if not collapsible:
 		return

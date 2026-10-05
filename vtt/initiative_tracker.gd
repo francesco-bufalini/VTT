@@ -28,7 +28,7 @@ var participant_name: LineEdit
 var participant_token: OptionButton
 var token_popup: PopupMenu
 var _linking_entry_id: String = ""
-var _restore_mouse_mode: int = Input.MOUSE_MODE_CAPTURED
+var _restore_mouse_mode: Input.MouseMode = Input.MOUSE_MODE_CAPTURED
 var _auto_filled_name: String = ""
 
 var combat_active: bool = false
@@ -207,14 +207,22 @@ func _build_add_dialog() -> void:
 	add_dialog.title = "Aggiungi partecipante"
 	add_dialog.ok_button_text = "Aggiungi"
 	add_dialog.min_size = Vector2i(460, 300)
+	add_dialog.add_theme_constant_override("buttons_min_width", 100)
+	add_dialog.add_theme_constant_override("buttons_min_height", 34)
 	ui_root.add_child(add_dialog)
+	# Non dipendere dal footer nativo: con alcuni scaling può essere fuori
+	# dalla finestra al primo popup.
+	add_dialog.get_ok_button().hide()
+	var native_cancel := add_dialog.get_cancel_button()
+	if native_cancel != null:
+		native_cancel.text = "Annulla"
+		native_cancel.hide()
 
+	# I figli di Accept/ConfirmationDialog partecipano già al layout interno.
+	# Ancorarli a PRESET_FULL_RECT può coprire la barra OK/Annulla al primo
+	# popup, specialmente con scaling UI elevato.
 	var body: VBoxContainer = VBoxContainer.new()
-	body.set_anchors_and_offsets_preset(Control.PRESET_FULL_RECT)
-	body.offset_left = 14.0
-	body.offset_right = -14.0
-	body.offset_top = 48.0
-	body.offset_bottom = -58.0
+	body.custom_minimum_size = Vector2(420, 175)
 	body.add_theme_constant_override("separation", 8)
 	add_dialog.add_child(body)
 
@@ -248,6 +256,32 @@ func _build_add_dialog() -> void:
 	info.add_theme_font_size_override("font_size", 11)
 	body.add_child(info)
 
+	var actions := HBoxContainer.new()
+	actions.name = "InitiativeAddActions"
+	actions.alignment = BoxContainer.ALIGNMENT_END
+	actions.add_theme_constant_override("separation", 8)
+	body.add_child(actions)
+
+	var cancel_button := Button.new()
+	cancel_button.text = "Annulla"
+	cancel_button.custom_minimum_size = Vector2(100, 36)
+	cancel_button.pressed.connect(
+		func() -> void:
+			add_dialog.hide()
+			_release_dialog_mouse()
+	)
+	actions.add_child(cancel_button)
+
+	var add_button := Button.new()
+	add_button.text = "Aggiungi"
+	add_button.custom_minimum_size = Vector2(110, 36)
+	add_button.pressed.connect(
+		func() -> void:
+			_on_add_confirmed()
+			add_dialog.hide()
+	)
+	actions.add_child(add_button)
+
 	add_dialog.confirmed.connect(_on_add_confirmed)
 	add_dialog.canceled.connect(_release_dialog_mouse)
 	add_dialog.close_requested.connect(_release_dialog_mouse)
@@ -275,6 +309,12 @@ func show_panel() -> void:
 		return
 	panel.show()
 	_render()
+	var roller := _dice_chat()
+	if (
+		roller != null
+		and roller.has_method("ensure_scene_identity")
+	):
+		roller.call("ensure_scene_identity")
 
 
 func hide_panel() -> void:
@@ -286,9 +326,45 @@ func is_panel_visible() -> bool:
 	return panel != null and panel.visible
 
 
+func _dice_chat() -> Node:
+	if board_root == null or not is_instance_valid(board_root):
+		return null
+	var value: Variant = board_root.get("dice_roller_chat")
+	if value is Node and is_instance_valid(value):
+		return value as Node
+	return board_root.get_node_or_null("DiceRollerChat")
+
+
+func _log_combat_action(
+	text: String,
+	round_override: int = 0
+) -> void:
+	var roller := _dice_chat()
+	if roller == null or not roller.has_method("log_action"):
+		return
+	roller.call(
+		"log_action",
+		text,
+		null,
+		round_override
+	)
+
+
 func start_combat() -> void:
 	if combat_active:
 		show_panel()
+		return
+	var roller := _dice_chat()
+	if (
+		roller != null
+		and roller.has_method("ensure_scene_identity")
+		and not bool(
+			roller.call(
+				"ensure_scene_identity",
+				Callable(self, "start_combat")
+			)
+		)
+	):
 		return
 	_record_undo_state()
 	combat_active = true
@@ -300,10 +376,12 @@ func start_combat() -> void:
 	show_panel()
 	_render()
 	combat_state_changed.emit(true)
+	_log_combat_action("Combattimento iniziato", round_number)
 	open_add_dialog()
 
 
 func end_combat() -> void:
+	var ending_round := round_number if combat_active else 0
 	if combat_active or not entries.is_empty():
 		_record_undo_state()
 	combat_active = false
@@ -314,6 +392,8 @@ func end_combat() -> void:
 	_next_entry_id = 1
 	_render()
 	combat_state_changed.emit(false)
+	if ending_round > 0:
+		_log_combat_action("Combattimento terminato", ending_round)
 
 
 func open_add_dialog() -> void:
@@ -332,8 +412,13 @@ func open_add_dialog() -> void:
 func _popup_dialog_safe(dialog: Window, preferred_size: Vector2i) -> void:
 	if dialog == null or not is_instance_valid(dialog):
 		return
+	var viewport_size := board_root.get_viewport().get_visible_rect().size
+	var safe_size := Vector2i(
+		mini(preferred_size.x, maxi(320, int(viewport_size.x) - 48)),
+		mini(preferred_size.y, maxi(200, int(viewport_size.y) - 48))
+	)
 	dialog.reset_size()
-	dialog.popup_centered_clamped(preferred_size, 0.92)
+	dialog.popup_centered_clamped(safe_size, 0.92)
 
 
 func _focus_participant_name() -> void:
@@ -366,6 +451,10 @@ func _on_add_confirmed() -> void:
 		"token_id": token_id
 	})
 	_next_entry_id += 1
+	_log_combat_action(
+		"%s entra nel combattimento" % name_value,
+		round_number
+	)
 	if entries.size() == 1:
 		active_index = 0
 		_emit_turn_changed()
@@ -451,6 +540,7 @@ func next_turn() -> void:
 	if not combat_active or entries.is_empty():
 		return
 	_record_undo_state()
+	var previous_round := round_number
 	active_index += 1
 	turn_count += 1
 	if active_index >= entries.size():
@@ -458,12 +548,18 @@ func next_turn() -> void:
 		round_number += 1
 	_render()
 	_emit_turn_changed()
+	if round_number != previous_round:
+		_log_combat_action(
+			"Inizia il round %d" % round_number,
+			round_number
+		)
 
 
 func previous_turn() -> void:
 	if not combat_active or entries.is_empty() or turn_count <= 0:
 		return
 	_record_undo_state()
+	var previous_round := round_number
 	if active_index == 0:
 		active_index = entries.size() - 1
 		round_number = maxi(1, round_number - 1)
@@ -472,6 +568,11 @@ func previous_turn() -> void:
 	turn_count = maxi(0, turn_count - 1)
 	_render()
 	_emit_turn_changed()
+	if round_number != previous_round:
+		_log_combat_action(
+			"Ritorno al round %d" % round_number,
+			round_number
+		)
 
 
 func refresh() -> void:
@@ -782,6 +883,10 @@ func _tokens() -> Array[Node3D]:
 
 
 func _token_id(token: Node3D) -> String:
+	if token.has_method("get_token_id"):
+		var stable_id := String(token.call("get_token_id")).strip_edges()
+		if not stable_id.is_empty():
+			return stable_id
 	if token.has_meta("sync_id"):
 		return String(token.get_meta("sync_id"))
 	if board_sync != null and is_instance_valid(board_sync):
@@ -799,13 +904,20 @@ func _token_display_name(token: Node3D) -> String:
 	return ""
 
 
-func _token_display_name_by_id(token_id: String) -> String:
+func _token_by_id(token_id: String) -> Node3D:
 	if token_id.is_empty():
-		return ""
+		return null
 	for token: Node3D in _tokens():
 		if _token_id(token) == token_id:
-			return _token_display_name(token)
-	return ""
+			return token
+	return null
+
+
+func _token_display_name_by_id(token_id: String) -> String:
+	var token := _token_by_id(token_id)
+	if token == null:
+		return ""
+	return _token_display_name(token)
 
 
 func _token_name_by_id(token_id: String) -> String:
@@ -854,7 +966,28 @@ func _active_entry_id() -> String:
 
 func _emit_turn_changed() -> void:
 	var entry_id: String = _active_entry_id()
+	_focus_camera_on_active_token()
 	turn_changed.emit(entry_id, round_number, turn_count)
+
+
+func _focus_camera_on_active_token() -> void:
+	if (
+		entries.is_empty()
+		or active_index < 0
+		or active_index >= entries.size()
+		or board_root == null
+		or not is_instance_valid(board_root)
+		or not board_root.has_method("focus_camera_on_token")
+	):
+		return
+	var token_id := String(
+		entries[active_index].get("token_id", "")
+	).strip_edges()
+	var token := _token_by_id(token_id)
+	if token == null or not token is CharacterBody3D:
+		return
+	# Stessa azione del pulsante con l'occhio nella lista token.
+	board_root.call("focus_camera_on_token", token)
 
 
 func get_active_entry() -> Dictionary:
@@ -862,6 +995,22 @@ func get_active_entry() -> Dictionary:
 		return {}
 	_synchronize_linked_entry_names()
 	return entries[active_index].duplicate(true)
+
+
+func combat_round_for_token(token: Node3D) -> int:
+	if (
+		not combat_active
+		or token == null
+		or not is_instance_valid(token)
+	):
+		return 0
+	var token_id := _token_id(token)
+	if token_id.is_empty():
+		return 0
+	for entry: Dictionary in entries:
+		if String(entry.get("token_id", "")) == token_id:
+			return maxi(1, round_number)
+	return 0
 
 
 func get_save_state() -> Dictionary:

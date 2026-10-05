@@ -208,6 +208,8 @@ func finish(commit: bool) -> void:
 			token.velocity = Vector3.ZERO
 		token.set_physics_process(true)
 	_tokens.clear()
+	if committed_move and board.item_controller != null:
+		board.item_controller.flush_motion(moved_tokens)
 	_preview.visible = false
 	active = false
 	if (

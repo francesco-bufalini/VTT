@@ -7,6 +7,41 @@ const PRESET_STANDARD := 101
 const PRESET_LARGE := 102
 const PRESET_WHITE := 110
 const PRESET_EMPTY_ELEMENTS := 120
+const PRESET_FOREST_MOUNTAINS := 121
+const PRESET_PIRATE_SHIP := 122
+
+const FOREST_MOUNTAINS_PRESET_PATH := (
+	"res://assets/presets/forest_mountains/forest_mountains_preset.glb"
+)
+const FOREST_MOUNTAINS_PRESET_ID := "forest_mountains"
+const FOREST_MOUNTAINS_GRID_CELLS := 100
+const FOREST_TERRAIN_MATERIALS := [
+	"Material.001",
+	"Material.007",
+	"Material.008",
+	"Material.009",
+]
+
+const PIRATE_SHIP_PRESET_PATH := (
+	"res://assets/presets/pirate_ship/sirens_light_pirate_ship_preset.glb"
+)
+const PIRATE_SHIP_PRESET_ID := "sirens_light_pirate_ship"
+const PIRATE_SHIP_GRID_CELLS := 50
+const PIRATE_SHIP_COLLISION_KEYWORDS := [
+	"Ship_Hull",
+	"Main_Deck",
+	"Upper_Deck",
+	"Poop_Deck",
+	"Captain_Deck",
+	"Rudder",
+	"Keel",
+	"Ram",
+]
+const PIRATE_WATER_UV_SPEED := Vector2(0.010, 0.006)
+const PIRATE_WATER_BOB_SPEED := 0.65
+const PIRATE_WATER_BOB_AMPLITUDE_CELLS := 0.035
+const PIRATE_LANTERN_LIGHT_RANGE_CELLS := 6.0
+const PIRATE_LANTERN_LIGHT_ENERGY := 1.8
 
 const GRID_RESIZE := 200
 const GRID_ADD := 201
@@ -38,6 +73,12 @@ var status_label: Label
 var primary_width_cells := 30
 var primary_depth_cells := 30
 var next_grid_id := 1
+var active_element_preset: String = ""
+
+var _pirate_water_root: Node3D = null
+var _pirate_water_base_global_y: float = 0.0
+var _pirate_water_materials: Array[Dictionary] = []
+var _pirate_water_time: float = 0.0
 
 var resize_dialog: ConfirmationDialog
 var resize_width: SpinBox
@@ -63,6 +104,38 @@ func _ready() -> void:
 	# l'inizializzazione a quando dnd_base ha creato la griglia volumetrica,
 	# BoardSync, token drag e gli altri servizi runtime.
 	call_deferred("_initialize_editor")
+
+
+func _process(delta: float) -> void:
+	if active_element_preset != PIRATE_SHIP_PRESET_ID:
+		return
+	if _pirate_water_root == null or not is_instance_valid(_pirate_water_root):
+		return
+
+	_pirate_water_time += delta
+	_pirate_water_root.global_position.y = (
+		_pirate_water_base_global_y
+		+ sin(_pirate_water_time * PIRATE_WATER_BOB_SPEED)
+		* PIRATE_WATER_BOB_AMPLITUDE_CELLS
+		* _cell_size()
+	)
+
+	for entry: Dictionary in _pirate_water_materials:
+		var material := entry.get("material") as StandardMaterial3D
+		if material == null or not is_instance_valid(material):
+			continue
+		var base_offset: Vector3 = entry.get("base_offset", Vector3.ZERO)
+		material.uv1_offset = base_offset + Vector3(
+			fposmod(
+				_pirate_water_time * PIRATE_WATER_UV_SPEED.x,
+				1.0
+			),
+			fposmod(
+				_pirate_water_time * PIRATE_WATER_UV_SPEED.y,
+				1.0
+			),
+			0.0
+		)
 
 
 func _initialize_editor() -> void:
@@ -103,7 +176,9 @@ func _build_toolbar() -> void:
 		["Griglia standard · 30 × 30", PRESET_STANDARD],
 		["Griglia grande · 50 × 50", PRESET_LARGE],
 		["Scenario · Vuoto bianco", PRESET_WHITE],
-		["Elementi · Nessuno", PRESET_EMPTY_ELEMENTS]
+		["Elementi · Nessuno", PRESET_EMPTY_ELEMENTS],
+		["Elementi · Foresta e montagne", PRESET_FOREST_MOUNTAINS],
+		["Elementi · The Siren's Light", PRESET_PIRATE_SHIP]
 	], _on_preset_selected))
 
 	row.add_child(_make_menu_button("Griglia", [
@@ -227,10 +302,297 @@ func _on_preset_selected(id: int) -> void:
 			_resize_primary_grid(50, 50)
 			_set_status("Preset griglia: 50 × 50")
 		PRESET_WHITE:
+			_clear_element_presets()
+			active_element_preset = ""
+			_set_orientation_marker_enabled(true)
+			_set_base_platform_enabled(true)
 			_set_white_environment()
 			_set_status("Scenario: vuoto bianco")
 		PRESET_EMPTY_ELEMENTS:
+			_clear_element_presets()
+			active_element_preset = ""
+			_set_orientation_marker_enabled(true)
+			_set_base_platform_enabled(true)
 			_set_status("Preset elementi: nessun elemento")
+		PRESET_FOREST_MOUNTAINS:
+			_apply_forest_mountains_preset(true)
+		PRESET_PIRATE_SHIP:
+			_apply_pirate_ship_preset(true)
+
+
+func _apply_forest_mountains_preset(resize_grid: bool = true) -> void:
+	_clear_element_presets()
+
+	# FileAccess is used before load() so a missing optional binary asset does
+	# not flood the Godot debugger with ResourceLoader errors.
+	if not FileAccess.file_exists(FOREST_MOUNTAINS_PRESET_PATH):
+		active_element_preset = ""
+		_set_base_platform_enabled(true)
+		_set_status(
+			"Preset foresta non installato: manca forest_mountains_preset.glb"
+		)
+		return
+
+	var packed: Resource = load(FOREST_MOUNTAINS_PRESET_PATH)
+	if not packed is PackedScene:
+		active_element_preset = ""
+		_set_base_platform_enabled(true)
+		_set_status("Preset foresta non caricabile")
+		return
+
+	var instance: Node = (packed as PackedScene).instantiate()
+	if not instance is Node3D:
+		instance.free()
+		active_element_preset = ""
+		_set_base_platform_enabled(true)
+		_set_status("Preset foresta non e' una scena 3D")
+		return
+
+	var root := instance as Node3D
+	_set_base_platform_enabled(false)
+	_set_orientation_marker_enabled(false)
+	root.name = "CampaignPreset_ForestMountains"
+	root.scale = Vector3.ONE * _cell_size()
+	root.add_to_group("campaign_preset_element")
+	root.set_meta("campaign_preset_id", FOREST_MOUNTAINS_PRESET_ID)
+	board_root.add_child(root)
+
+	_build_forest_terrain_collisions(root)
+	active_element_preset = FOREST_MOUNTAINS_PRESET_ID
+
+	if resize_grid:
+		_resize_primary_grid(
+			FOREST_MOUNTAINS_GRID_CELLS,
+			FOREST_MOUNTAINS_GRID_CELLS
+		)
+
+	_refresh_volumetric_grid()
+	_set_status(
+		"Preset: foresta e montagne · alberi 2×2 × 8 celle · griglia 100×100"
+	)
+
+
+func _apply_pirate_ship_preset(resize_grid: bool = true) -> void:
+	_clear_element_presets()
+
+	if not FileAccess.file_exists(PIRATE_SHIP_PRESET_PATH):
+		active_element_preset = ""
+		_set_base_platform_enabled(true)
+		_set_status(
+			"Preset nave non installato: manca sirens_light_pirate_ship_preset.glb"
+		)
+		return
+
+	var packed: Resource = load(PIRATE_SHIP_PRESET_PATH)
+	if not packed is PackedScene:
+		active_element_preset = ""
+		_set_base_platform_enabled(true)
+		_set_status("Preset nave non caricabile")
+		return
+
+	var instance: Node = (packed as PackedScene).instantiate()
+	if not instance is Node3D:
+		instance.free()
+		active_element_preset = ""
+		_set_base_platform_enabled(true)
+		_set_status("Preset nave non e' una scena 3D")
+		return
+
+	var root := instance as Node3D
+	_set_base_platform_enabled(false)
+	_set_orientation_marker_enabled(false)
+	root.name = "CampaignPreset_SirensLight"
+	# The prepared GLB is already normalized so one cannon is 2 grid cells
+	# long. Scaling by cell_size only preserves that reference at runtime.
+	root.scale = Vector3.ONE * _cell_size()
+	root.add_to_group("campaign_preset_element")
+	root.set_meta("campaign_preset_id", PIRATE_SHIP_PRESET_ID)
+	board_root.add_child(root)
+
+	_build_pirate_ship_collisions(root)
+	_configure_pirate_ship_water(root)
+	_preserve_pirate_ship_lighting(root)
+	active_element_preset = PIRATE_SHIP_PRESET_ID
+
+	if resize_grid:
+		_resize_primary_grid(
+			PIRATE_SHIP_GRID_CELLS,
+			PIRATE_SHIP_GRID_CELLS
+		)
+
+	_refresh_volumetric_grid()
+	_set_status(
+		"Preset: The Siren's Light · cannone lungo 2 celle · griglia 50×50"
+	)
+
+
+func _configure_pirate_ship_water(root: Node3D) -> void:
+	_pirate_water_root = null
+	_pirate_water_materials.clear()
+	_pirate_water_time = 0.0
+
+	var water_parent := root.find_child("Water", true, false) as Node3D
+	if water_parent != null:
+		_pirate_water_root = water_parent
+		_pirate_water_base_global_y = water_parent.global_position.y
+
+	for candidate: Node in root.find_children(
+		"*",
+		"MeshInstance3D",
+		true,
+		false
+	):
+		var mesh_instance := candidate as MeshInstance3D
+		if (
+			mesh_instance == null
+			or mesh_instance.mesh == null
+			or not String(mesh_instance.name).contains("Water")
+		):
+			continue
+
+		for surface_index in range(mesh_instance.mesh.get_surface_count()):
+			var source := mesh_instance.mesh.surface_get_material(surface_index)
+			if not source is StandardMaterial3D:
+				continue
+			var animated := source.duplicate(true) as StandardMaterial3D
+			mesh_instance.set_surface_override_material(
+				surface_index,
+				animated
+			)
+			_pirate_water_materials.append({
+				"material": animated,
+				"base_offset": animated.uv1_offset,
+			})
+
+
+func _preserve_pirate_ship_lighting(root: Node3D) -> void:
+	var imported_lights := 0
+	for candidate: Node in root.find_children("*", "Light3D", true, false):
+		var imported_light := candidate as Light3D
+		if imported_light == null:
+			continue
+		imported_light.visible = true
+		imported_lights += 1
+
+	# The current GLB carries glowing lantern meshes but no
+	# KHR_lights_punctual nodes. Keep their original emissive materials intact
+	# and give those lanterns a small warm runtime light instead.
+	if imported_lights > 0:
+		return
+
+	for candidate: Node in root.find_children(
+		"*Lantern*",
+		"MeshInstance3D",
+		true,
+		false
+	):
+		var lantern := candidate as MeshInstance3D
+		if lantern == null or lantern.mesh == null:
+			continue
+		if lantern.get_node_or_null("PresetLanternLight") != null:
+			continue
+
+		var light := OmniLight3D.new()
+		light.name = "PresetLanternLight"
+		light.light_color = Color(1.0, 0.63, 0.32, 1.0)
+		light.light_energy = PIRATE_LANTERN_LIGHT_ENERGY
+		light.omni_range = (
+			PIRATE_LANTERN_LIGHT_RANGE_CELLS * _cell_size()
+		)
+		light.shadow_enabled = true
+		lantern.add_child(light)
+		light.position = lantern.get_aabb().get_center()
+
+
+func _build_pirate_ship_collisions(root: Node3D) -> void:
+	for candidate: Node in root.find_children("*", "MeshInstance3D", true, false):
+		var mesh_instance := candidate as MeshInstance3D
+		if mesh_instance == null or mesh_instance.mesh == null:
+			continue
+		if not _pirate_ship_mesh_needs_collision(mesh_instance):
+			continue
+
+		var faces: PackedVector3Array = mesh_instance.mesh.get_faces()
+		if faces.is_empty():
+			continue
+
+		var body := StaticBody3D.new()
+		body.name = "PresetShipCollision"
+		body.collision_layer = 1
+		body.collision_mask = 0
+		body.add_to_group("campaign_preset_terrain")
+		mesh_instance.add_child(body)
+
+		var collision := CollisionShape3D.new()
+		var shape := ConcavePolygonShape3D.new()
+		shape.set_faces(faces)
+		collision.shape = shape
+		body.add_child(collision)
+
+
+func _pirate_ship_mesh_needs_collision(mesh_instance: MeshInstance3D) -> bool:
+	var label := String(mesh_instance.name)
+	for keyword: String in PIRATE_SHIP_COLLISION_KEYWORDS:
+		if label.contains(keyword):
+			return true
+	return false
+
+
+func _build_forest_terrain_collisions(root: Node3D) -> void:
+	for candidate: Node in root.find_children("*", "MeshInstance3D", true, false):
+		var mesh_instance := candidate as MeshInstance3D
+		if mesh_instance == null or mesh_instance.mesh == null:
+			continue
+		if not _forest_mesh_is_terrain(mesh_instance):
+			continue
+
+		var faces: PackedVector3Array = mesh_instance.mesh.get_faces()
+		if faces.is_empty():
+			continue
+
+		var body := StaticBody3D.new()
+		body.name = "PresetTerrainCollision"
+		body.collision_layer = 1
+		body.collision_mask = 0
+		body.add_to_group("campaign_preset_terrain")
+		mesh_instance.add_child(body)
+
+		var collision := CollisionShape3D.new()
+		var shape := ConcavePolygonShape3D.new()
+		shape.set_faces(faces)
+		collision.shape = shape
+		body.add_child(collision)
+
+
+func _forest_mesh_is_terrain(mesh_instance: MeshInstance3D) -> bool:
+	var mesh: Mesh = mesh_instance.mesh
+	for surface_index in range(mesh.get_surface_count()):
+		var material: Material = mesh.surface_get_material(surface_index)
+		if (
+			material != null
+			and material.resource_name in FOREST_TERRAIN_MATERIALS
+		):
+			return true
+
+	# The optimized GLB keeps its merged geometry names equal to the original
+	# material names. This fallback also works if Godot strips material names.
+	return String(mesh_instance.name) in FOREST_TERRAIN_MATERIALS
+
+
+func _clear_element_presets() -> void:
+	_pirate_water_root = null
+	_pirate_water_materials.clear()
+	_pirate_water_time = 0.0
+	for candidate: Node in get_tree().get_nodes_in_group(
+		"campaign_preset_element"
+	):
+		if (
+			candidate is Node3D
+			and is_instance_valid(candidate)
+			and board_root.is_ancestor_of(candidate)
+		):
+			(candidate as Node3D).free()
+	_refresh_volumetric_grid()
 
 
 func _on_grid_selected(id: int) -> void:
@@ -386,12 +748,10 @@ func _build_grid_dialogs() -> void:
 
 
 func _dialog_body(dialog: ConfirmationDialog) -> VBoxContainer:
+	dialog.add_theme_constant_override("buttons_min_width", 100)
+	dialog.add_theme_constant_override("buttons_min_height", 34)
 	var body := VBoxContainer.new()
-	body.set_anchors_and_offsets_preset(Control.PRESET_FULL_RECT)
-	body.offset_left = 18
-	body.offset_top = 18
-	body.offset_right = -18
-	body.offset_bottom = -68
+	body.custom_minimum_size = Vector2(420, 0)
 	body.add_theme_constant_override("separation", 8)
 	dialog.add_child(body)
 	return body
@@ -587,6 +947,7 @@ func _save_campaign() -> void:
 			"depth": primary_depth_cells
 		},
 		"extra_grids": _serialize_extra_grids(),
+		"element_preset": active_element_preset,
 		"view": _serialize_view_state(),
 		"board_snapshot": _create_board_snapshot()
 	}
@@ -607,7 +968,18 @@ func _load_active_campaign() -> void:
 
 	var state: Dictionary = _load_active_state()
 	if state.is_empty():
-		_set_status("%s · nuovo salvataggio" % _campaign_name())
+		var initial_preset: String = _initial_element_preset()
+		if initial_preset == FOREST_MOUNTAINS_PRESET_ID:
+			active_element_preset = initial_preset
+			_apply_forest_mountains_preset(true)
+		elif initial_preset == PIRATE_SHIP_PRESET_ID:
+			active_element_preset = initial_preset
+			_apply_pirate_ship_preset(true)
+		else:
+			active_element_preset = ""
+			_set_orientation_marker_enabled(true)
+			_set_base_platform_enabled(true)
+			_set_status("%s · nuovo salvataggio" % _campaign_name())
 		return
 	if int(state.get("version", -1)) != SAVE_VERSION:
 		_set_status("Versione salvataggio non supportata")
@@ -629,6 +1001,18 @@ func _load_active_campaign() -> void:
 				_create_extra_grid(item)
 				max_id = maxi(max_id, int(item.get("id", 0)))
 	next_grid_id = max_id + 1
+
+	_clear_element_presets()
+	active_element_preset = String(
+		state.get("element_preset", "")
+	).strip_edges()
+	if active_element_preset == FOREST_MOUNTAINS_PRESET_ID:
+		_apply_forest_mountains_preset(false)
+	elif active_element_preset == PIRATE_SHIP_PRESET_ID:
+		_apply_pirate_ship_preset(false)
+	else:
+		_set_orientation_marker_enabled(true)
+		_set_base_platform_enabled(true)
 
 	_apply_view_state(state.get("view", {}))
 	await get_tree().process_frame
@@ -700,6 +1084,56 @@ func _set_white_environment() -> void:
 	environment.ambient_light_color = Color(0.95, 0.96, 1.0, 1.0)
 	environment.ambient_light_energy = 0.8
 	world.environment = environment
+
+
+func _set_orientation_marker_enabled(enabled: bool) -> void:
+	var marker := board_root.get_node_or_null(
+		"Board/MapGeometry/OrientationMarker"
+	) as StaticBody3D
+	if marker == null:
+		return
+	marker.visible = enabled
+	marker.collision_layer = 1 if enabled else 0
+	marker.collision_mask = 1 if enabled else 0
+	_refresh_volumetric_grid()
+
+
+func _set_base_platform_enabled(enabled: bool) -> void:
+	var floor := board_root.get_node_or_null(
+		"Board/FloorCollision"
+	) as StaticBody3D
+	if floor == null:
+		return
+
+	# The collision layer changes immediately so the volumetric grid stops
+	# seeing the white base plane in the same frame. The shape itself is
+	# disabled deferred to stay safe around physics callbacks.
+	floor.collision_layer = 1 if enabled else 0
+	var collision := floor.get_node_or_null(
+		"CollisionShape3D"
+	) as CollisionShape3D
+	if collision != null:
+		collision.set_deferred("disabled", not enabled)
+
+	var visual := floor.get_node_or_null(
+		"CampaignPlatformVisual"
+	) as MeshInstance3D
+	if visual != null:
+		visual.visible = enabled
+
+	_refresh_volumetric_grid()
+
+
+func _initial_element_preset() -> String:
+	var manager := _campaign_manager()
+	if (
+		manager == null
+		or not manager.has_method("get_active_campaign_initial_preset")
+	):
+		return ""
+	return String(
+		manager.call("get_active_campaign_initial_preset")
+	).strip_edges()
 
 
 func _platform_material() -> StandardMaterial3D:

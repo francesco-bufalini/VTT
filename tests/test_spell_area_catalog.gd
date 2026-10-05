@@ -167,10 +167,14 @@ func run() -> void:
 	assert(String(scorching_ray.get("visual_style", "")) == "fire")
 	assert(String(scorching_ray.get("projectile_style", "")) == "fire")
 
-	# ST/MT alone is not enough to invent a projectile. These spells still
-	# appear in the browser, but have no supported map effect yet.
-	assert(SpellCatalog.spell("charm_person").is_empty())
+	# Conditions have a supported token flow; ST/MT alone does not invent VFX.
+	var charm_person: Dictionary = SpellCatalog.spell("charm_person")
+	assert(not charm_person.is_empty())
+	assert(String(charm_person.get("target_mode", "")) == "token_then_token")
+	assert("charmed" in charm_person.get("condition_inflict", []))
+	assert(String(charm_person.get("projectile_style", "")).is_empty())
 	assert(SpellCatalog.spell("feather_fall").is_empty())
+	assert(SpellCatalog.spell("__missing_spell__").is_empty())
 
 	var misty_step: Dictionary = SpellCatalog.spell("misty_step")
 	assert(not misty_step.is_empty())
@@ -371,13 +375,13 @@ func run() -> void:
 		)),
 		40.0
 	))
-	# Meteor Swarm uses the same rule with its 40 ft sphere.
+	# Meteor Swarm requires the ground, so automatic air targeting is disabled.
 	assert(is_equal_approx(
 		float(spell_system.call(
 			"_point_target_air_distance_feet",
 			meteor_swarm
 		)),
-		80.0
+		-1.0
 	))
 	spell_system.free()
 
@@ -396,7 +400,7 @@ func run() -> void:
 	assert(String(entangle.get("aoe_shape", "")) == "flat_square")
 	assert(is_equal_approx(float(entangle.get("aoe_side_feet", 0.0)), 20.0))
 	assert(bool(entangle.get("persistent", false)))
-	assert(not bool(entangle.get("requires_ground", false)))
+	assert(bool(entangle.get("requires_ground", false)))
 	var entangle_conditions: Array = entangle.get("condition_inflict", [])
 	assert("restrained" in entangle_conditions)
 	var entangle_saves: Array = entangle.get("saving_throw", [])

@@ -42,8 +42,34 @@ func setup(hazard_controller: Node, kaos_controller: Node3D, effects: Node3D, ar
 	_cell_size = size
 	petrification = preload("res://encounter/petrification.gd").new()
 	kaos.add_child(petrification)
-	seals.all_seals_broken.connect(func(): finish_encounter("Tutti i sigilli sono infranti"))
+	seals.all_seals_broken.connect(_on_all_seals_broken)
+	seals.seal_broken.connect(_on_seal_broken)
 	reset_encounter()
+
+
+func _on_seal_broken(index: int) -> void:
+	# Wait until register_damage() has also emitted all_seals_broken. On the
+	# third seal this guarantees encounter_finished is already coherent with
+	# the serialized seal damage before the network snapshot is built.
+	call_deferred("_broadcast_seal_break_sync_event", index)
+
+
+func _broadcast_seal_break_sync_event(index: int) -> void:
+	var board := get_parent()
+	if board != null and board.has_method("broadcast_sync_event"):
+		board.call("broadcast_sync_event", {
+			"type": "seal_break",
+			"index": index
+		})
+
+
+func _on_all_seals_broken() -> void:
+	if _should_end_on_all_seals_broken():
+		finish_encounter("Tutti i sigilli sono infranti")
+
+
+func _should_end_on_all_seals_broken() -> bool:
+	return true
 
 func reset_encounter(seed_override: int = 0) -> bool:
 	if is_advancing:
@@ -94,10 +120,19 @@ func register_kaos_damage(amount: float) -> void:
 			hazards.threatened_cells.clear()
 			collapse.rebuild(hazards)
 			petrification.apply()
+			call_deferred("_broadcast_petrification_sync_event")
 			phase_two_started.emit()
 			get_node("/root/EncounterEvents").phase_two_started.emit()
 	refresh_obstacle_slowing()
 	state_changed.emit()
+
+func _broadcast_petrification_sync_event() -> void:
+	var board := get_parent()
+	if board != null and board.has_method("broadcast_sync_event"):
+		board.call("broadcast_sync_event", {
+			"type": "petrification"
+		})
+
 
 func finish_encounter(reason: String) -> void:
 	if encounter_finished:
@@ -127,6 +162,7 @@ func advance_encounter() -> void:
 	if get_parent().token_drag.active:
 		return
 	var board: Node = get_parent()
+	var sync_from_step := kaos_step
 	if board != null and board.has_method("push_undo_state"):
 		board.call("push_undo_state")
 	is_advancing = true
@@ -163,6 +199,83 @@ func advance_encounter() -> void:
 	is_advancing = false
 	refresh_obstacle_slowing()
 	state_changed.emit()
+	_broadcast_advance_sync_event(
+		sync_from_step,
+		kaos_step,
+		round_number,
+		resolved
+	)
+
+func _broadcast_advance_sync_event(
+	from_step: int,
+	to_step: int,
+	round_value: int,
+	resolved_cells: Array[Vector2i]
+) -> void:
+	var board := get_parent()
+	if board == null or not board.has_method("broadcast_sync_event"):
+		return
+	var cells: Array = []
+	for cell: Vector2i in resolved_cells:
+		cells.append([cell.x, cell.y])
+	board.call("broadcast_sync_event", {
+		"type": "encounter_advance",
+		"from_step": from_step,
+		"to_step": to_step,
+		"round": round_value,
+		"collapsed_cells": cells,
+		"phase_two": to_step == 0
+	})
+
+
+func replay_sync_event(sync_event: Dictionary) -> void:
+	var event_type := String(sync_event.get("type", ""))
+	if event_type == "seal_break":
+		if is_instance_valid(seals) and seals.has_method("replay_break"):
+			seals.call("replay_break", int(sync_event.get("index", -1)))
+		return
+	if event_type == "encounter_advance":
+		_replay_synced_advance(sync_event)
+		return
+	if event_type == "petrification":
+		if (
+			petrification != null
+			and is_instance_valid(petrification)
+			and petrification.has_method("replay_burst")
+		):
+			petrification.call("replay_burst")
+
+
+func _replay_synced_advance(sync_event: Dictionary) -> void:
+	if kaos == null or not is_instance_valid(kaos):
+		return
+	var from_step := int(sync_event.get("from_step", kaos_step))
+	var to_step := int(sync_event.get("to_step", kaos_step))
+	var round_value := int(sync_event.get("round", round_number))
+	var collapsed: Array[Vector2i] = []
+	var raw_cells: Variant = sync_event.get("collapsed_cells", [])
+	if raw_cells is Array:
+		for value: Variant in raw_cells as Array:
+			if value is Array and (value as Array).size() == 2:
+				collapsed.append(Vector2i(
+					int((value as Array)[0]),
+					int((value as Array)[1])
+				))
+	if collapse != null and is_instance_valid(collapse):
+		if collapse.has_method("replay_collapse"):
+			collapse.call("replay_collapse", collapsed)
+		else:
+			collapse.animate_collapse(collapsed)
+	kaos.snap_to_step(from_step)
+	await kaos.animate_to_step(
+		to_step,
+		config.advance_duration,
+		round_value
+	)
+	if bool(sync_event.get("phase_two", false)) and to_step == 0:
+		if kaos.climb != null:
+			await kaos.climb.start()
+
 
 func refresh_obstacle_slowing() -> void:
 	obstacle_coverage = Coverage.fraction(kaos.get_swept_bounds(kaos_step, maxi(0, kaos_step - 2)), collapse.get_obstacle_boxes(), config.obstacle_min_height_cells * _cell_size) if kaos_step > 0 else 0.0
@@ -267,7 +380,16 @@ func _valid_state(data: Dictionary) -> bool:
 		if not (value is float or value is int) or not is_finite(float(value)) or float(value) < 0 or float(value) > 100:
 			return false
 	if int(data.version) == 2:
-		var ended: bool = (data.giant_petrified and data.avatar_hp == 0) or seal_values.all(func(value): return float(value)>=seals.break_damage)
+		var seals_finished: bool = (
+			_should_end_on_all_seals_broken()
+			and seal_values.all(
+				func(value): return float(value) >= seals.break_damage
+			)
+		)
+		var ended: bool = (
+			(data.giant_petrified and data.avatar_hp == 0)
+			or seals_finished
+		)
 		if data.encounter_finished != ended:
 			return false
 		if data.giant_petrified and not data.threatened_cells.is_empty():

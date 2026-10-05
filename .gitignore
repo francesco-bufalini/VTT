@@ -23,3 +23,9 @@ __pycache__/
 /assets/tokens/5etools_creature_index.json
 /dist/token_packs/
 /.token_pack_build/
+
+# Generated screenshots and analysis reports
+/outputs/
+
+# Embedded images extracted automatically from the item GLB on import.
+/assets/items/roman_chariot_with_painted_front_*.png

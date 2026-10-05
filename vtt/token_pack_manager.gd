@@ -30,6 +30,7 @@ var _download_request: HTTPRequest
 var _download_token_id: String = ""
 var _download_target_path: String = ""
 var _mounted_token_ids: Dictionary = {}
+var _validated_cache_sha: Dictionary = {}
 
 
 func _ready() -> void:
@@ -55,6 +56,9 @@ func _ready() -> void:
 
 
 func _refresh_catalog_on_start() -> void:
+	# Headless validation/builds use local data and must not invoke HTTP or gh.
+	if DisplayServer.get_name() == "headless":
+		return
 	print("TokenPackManager: refreshing remote catalog...")
 	var error := refresh_catalog()
 	if error != OK:
@@ -144,6 +148,10 @@ func mount_token(token_id: String) -> Error:
 		return ERR_INVALID_PARAMETER
 	if not _entries_by_id.has(id):
 		return ERR_DOES_NOT_EXIST
+	# is_downloaded() also validates the current catalog SHA and removes stale
+	# cache files. This prevents an outdated PCK from reaching mount logic.
+	if not is_downloaded(id):
+		return ERR_FILE_NOT_FOUND
 	var entry := get_entry(id)
 	return _mount_token_pack(
 		id,
@@ -269,9 +277,11 @@ func _verify_cached_pck(token_id: String, expected_sha: String) -> bool:
 		return false
 	var actual_sha := FileAccess.get_sha256(path).to_lower()
 	if actual_sha == expected_sha.to_lower():
+		_validated_cache_sha[token_id] = expected_sha.to_lower()
 		return true
-	push_warning(
-		"TokenPackManager: SHA-256 mismatch for %s.pck (expected %s, got %s)"
+	_validated_cache_sha.erase(token_id)
+	print(
+		"TokenPackManager: cached %s.pck is stale (expected %s, got %s)."
 		% [token_id, expected_sha, actual_sha]
 	)
 	return false
@@ -279,6 +289,7 @@ func _verify_cached_pck(token_id: String, expected_sha: String) -> bool:
 
 func _remove_cached_file(path: String) -> void:
 	var absolute := ProjectSettings.globalize_path(path)
+	_validated_cache_sha.erase(path.get_file().get_basename())
 	if FileAccess.file_exists(path):
 		DirAccess.remove_absolute(absolute)
 
@@ -410,9 +421,38 @@ func cache_path_for(token_id: String) -> String:
 
 
 func is_downloaded(token_id: String) -> bool:
-	if token_id.is_empty():
+	var id := token_id.strip_edges()
+	if id.is_empty() or not _entries_by_id.has(id):
 		return false
-	return FileAccess.file_exists(cache_path_for(token_id))
+
+	var path := cache_path_for(id)
+	if not FileAccess.file_exists(path):
+		_validated_cache_sha.erase(id)
+		return false
+
+	var entry := get_entry(id)
+	var expected_sha := String(entry.get("sha256", "")).strip_edges().to_lower()
+	if expected_sha.is_empty():
+		_validated_cache_sha.erase(id)
+		return false
+
+	if String(_validated_cache_sha.get(id, "")) == expected_sha:
+		return true
+
+	var actual_sha := FileAccess.get_sha256(path).to_lower()
+	if actual_sha != expected_sha:
+		print(
+			(
+				"TokenPackManager: removing stale cached %s.pck "
+				+ "(catalog SHA changed)."
+			) % id
+		)
+		_remove_cached_file(path)
+		_validated_cache_sha.erase(id)
+		return false
+
+	_validated_cache_sha[id] = expected_sha
+	return true
 
 
 func downloaded_token_ids() -> Array[String]:
@@ -478,6 +518,7 @@ func _accept_catalog_text(raw: String, persist: bool) -> bool:
 
 	_catalog = catalog.duplicate(true)
 	_entries_by_id = entries
+	_validated_cache_sha.clear()
 
 	if persist:
 		var cache_error := _save_catalog_cache(raw)

@@ -1,7 +1,6 @@
 extends Control
 
 const ACTIVE_CAMPAIGNS_SCENE_PATH := "res://vtt/menu/active_campaigns.tscn"
-const POST_KAOS_SCENE_PATH := "res://encounter/post_kaos_editable.scn"
 const MENU_BACKGROUND_DIRECTORY := (
 	"res://assets/menu/background/slideshow"
 )
@@ -17,6 +16,7 @@ var _new_campaign_name: LineEdit
 var _soundtrack_toggle: CheckButton
 var _soundtrack_volume: HSlider
 var _soundtrack_volume_label: Label
+var _mute_button: Button
 
 var _background_layers: Array[TextureRect] = []
 var _background_paths: Array[String] = []
@@ -95,11 +95,8 @@ func _build_image_background() -> void:
 
 func _discover_backgrounds() -> Array[String]:
 	var paths: Array[String] = []
-	var directory := DirAccess.open(MENU_BACKGROUND_DIRECTORY)
-	if directory == null:
-		return paths
-
-	for file_name in directory.get_files():
+	# Imported images use remapped filenames inside exported PCK files.
+	for file_name: String in ResourceLoader.list_directory(MENU_BACKGROUND_DIRECTORY):
 		var extension := file_name.get_extension().to_lower()
 		if extension not in ["jpg", "jpeg", "png", "webp"]:
 			continue
@@ -201,7 +198,7 @@ func _build_title() -> void:
 
 	var title := Label.new()
 	title.name = "GameTitle"
-	title.text = "Virtual Table Story Teller"
+	title.text = "Kruphix's Chessboard"
 	title.horizontal_alignment = HORIZONTAL_ALIGNMENT_LEFT
 	title.vertical_alignment = VERTICAL_ALIGNMENT_TOP
 	title.add_theme_font_override("font", _medieval_title_font())
@@ -280,9 +277,6 @@ func _build_bottom_controls() -> void:
 	active_button.pressed.connect(_open_active_campaigns)
 	layout.add_child(active_button)
 
-	var post_kaos_button: Button = _menu_button("Incontro post-Kaos")
-	post_kaos_button.pressed.connect(_open_post_kaos_encounter)
-	layout.add_child(post_kaos_button)
 
 	var new_button: Button = _menu_button("Nuova campagna")
 	new_button.pressed.connect(_request_new_campaign)
@@ -291,6 +285,11 @@ func _build_bottom_controls() -> void:
 	var options_button: Button = _menu_button("Opzioni")
 	options_button.pressed.connect(_show_options_placeholder)
 	layout.add_child(options_button)
+
+	_mute_button = _menu_button("Muta musica")
+	_mute_button.pressed.connect(_toggle_soundtrack_muted)
+	layout.add_child(_mute_button)
+	_refresh_mute_button()
 
 	var exit_button: Button = _menu_button("Esci")
 	exit_button.pressed.connect(func() -> void: get_tree().quit())
@@ -377,15 +376,13 @@ func _build_new_campaign_dialog() -> void:
 	_new_campaign_dialog.title = "Nuova campagna"
 	_new_campaign_dialog.ok_button_text = "Crea campagna"
 	_new_campaign_dialog.cancel_button_text = "Annulla"
-	_new_campaign_dialog.min_size = Vector2i(440, 210)
+	_new_campaign_dialog.min_size = Vector2i(500, 220)
+	_new_campaign_dialog.add_theme_constant_override("buttons_min_width", 100)
+	_new_campaign_dialog.add_theme_constant_override("buttons_min_height", 34)
 	add_child(_new_campaign_dialog)
 
 	var body := VBoxContainer.new()
-	body.set_anchors_and_offsets_preset(Control.PRESET_FULL_RECT)
-	body.offset_left = 18
-	body.offset_top = 18
-	body.offset_right = -18
-	body.offset_bottom = -68
+	body.custom_minimum_size = Vector2(445, 95)
 	body.add_theme_constant_override("separation", 10)
 	_new_campaign_dialog.add_child(body)
 
@@ -398,6 +395,16 @@ func _build_new_campaign_dialog() -> void:
 	_new_campaign_name.max_length = 80
 	body.add_child(_new_campaign_name)
 
+	var hint := Label.new()
+	hint.text = (
+		"La campagna raccoglie uno o più scenari. "
+		+ "Dopo la creazione potrai aggiungere gli scenari e scegliere "
+		+ "il preset di ciascuno."
+	)
+	hint.autowrap_mode = TextServer.AUTOWRAP_WORD_SMART
+	hint.modulate = Color(0.72, 0.75, 0.82, 1.0)
+	body.add_child(hint)
+
 	_new_campaign_dialog.confirmed.connect(_confirm_new_campaign)
 
 
@@ -406,14 +413,12 @@ func _build_options_dialog() -> void:
 	_options_dialog.title = "Impostazioni menu"
 	_options_dialog.ok_button_text = "Chiudi"
 	_options_dialog.min_size = Vector2i(520, 300)
+	_options_dialog.add_theme_constant_override("buttons_min_width", 100)
+	_options_dialog.add_theme_constant_override("buttons_min_height", 34)
 	add_child(_options_dialog)
 
 	var body := VBoxContainer.new()
-	body.set_anchors_and_offsets_preset(Control.PRESET_FULL_RECT)
-	body.offset_left = 22
-	body.offset_top = 18
-	body.offset_right = -22
-	body.offset_bottom = -68
+	body.custom_minimum_size = Vector2(470, 205)
 	body.add_theme_constant_override("separation", 14)
 	_options_dialog.add_child(body)
 
@@ -469,16 +474,11 @@ func _build_options_dialog() -> void:
 func _open_active_campaigns() -> void:
 	get_tree().change_scene_to_file(ACTIVE_CAMPAIGNS_SCENE_PATH)
 
-func _open_post_kaos_encounter() -> void:
-	var error := get_tree().change_scene_to_file(POST_KAOS_SCENE_PATH)
-	if error != OK:
-		_show_error("Impossibile aprire l'incontro post-Kaos: %s" % error_string(error))
-
 
 func _request_new_campaign() -> void:
 	_new_campaign_name.clear()
 	_new_campaign_dialog.reset_size()
-	_new_campaign_dialog.popup_centered_clamped(Vector2i(440, 210), 0.92)
+	_new_campaign_dialog.popup_centered_clamped(Vector2i(500, 220), 0.92)
 	_new_campaign_name.call_deferred("grab_focus")
 
 
@@ -493,14 +493,16 @@ func _confirm_new_campaign() -> void:
 		_show_error("CampaignManager non disponibile.")
 		return
 
-	var campaign_id: String = String(
-		manager.call("create_campaign", campaign_name)
+	var campaign_group_id: String = String(
+		manager.call("create_campaign_group", campaign_name)
 	)
-	if campaign_id.is_empty():
+	if campaign_group_id.is_empty():
 		_show_error("Impossibile creare la campagna.")
 		return
 
-	var error: Error = int(manager.call("open_campaign", campaign_id))
+	var error: Error = int(
+		manager.call("open_campaign_group", campaign_group_id)
+	)
 	if error != OK:
 		_show_error(
 			"Impossibile aprire la nuova campagna: %s"
@@ -559,11 +561,39 @@ func _refresh_audio_settings_ui() -> void:
 		_soundtrack_toggle.tooltip_text = ""
 		_soundtrack_volume.tooltip_text = "Volume della colonna sonora"
 
+	_refresh_mute_button()
+
+
+func _refresh_mute_button() -> void:
+	if _mute_button == null:
+		return
+
+	var manager := _menu_audio_manager()
+	if manager == null:
+		_mute_button.disabled = true
+		_mute_button.text = "Muta musica"
+		return
+
+	_mute_button.disabled = false
+	var enabled: bool = bool(manager.get("soundtrack_enabled"))
+	_mute_button.text = "Muta musica" if enabled else "Riattiva musica"
+
+
+func _toggle_soundtrack_muted() -> void:
+	var manager := _menu_audio_manager()
+	if manager == null:
+		return
+
+	var enabled: bool = bool(manager.get("soundtrack_enabled"))
+	manager.call("set_soundtrack_enabled", not enabled)
+	_refresh_audio_settings_ui()
+
 
 func _on_soundtrack_toggled(enabled: bool) -> void:
 	var manager := _menu_audio_manager()
 	if manager != null:
 		manager.call("set_soundtrack_enabled", enabled)
+	_refresh_mute_button()
 
 
 func _on_soundtrack_volume_changed(value: float) -> void:

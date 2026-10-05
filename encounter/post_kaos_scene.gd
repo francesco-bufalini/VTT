@@ -38,6 +38,7 @@ func _ensure_post_kaos_roster() -> void:
 		return
 	var scenery := EncounterScenery.new()
 	scenery.spawn_encounter_tokens(self, _chariot_deck_targets())
+	scenery.free()
 
 func _move_existing_chariots_near_kaos() -> void:
 	var targets := _chariot_deck_targets()

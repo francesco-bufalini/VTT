@@ -2,18 +2,39 @@ extends Node
 
 signal status_changed(message: String)
 const PORT := 45454
-const SNAPSHOT_VERSION := 5
-const MAGIC := "DND_MAP_SYNC_V5"
+const SNAPSHOT_VERSION := 6
+const MAGIC := "DND_MAP_SYNC_V6"
+const LOCAL_SAVE_MAGIC := "DND_MAP_LOCAL_V1"
 const BACKUP_DIR := "user://map_sync_backups"
 const MAX_BACKUPS := 20
 const MAX_BYTES := 4 * 1024 * 1024
 const BULK_SEND_TIMEOUT_MS := 3000
+const TAILSCALE_PEER_REFRESH_MS := 15000
+const AUTO_SYNC_POLL_MS := 150
+const AUTO_SYNC_DEBOUNCE_MS := 280
+const AUTO_SYNC_REMOTE_SUPPRESS_MS := 900
+const AUTO_SYNC_RETRY_MS := 2000
 const GROUPS := ["dnd_token", "tactical_platform", "encounter_obstacle"]
 const TOKEN_CONDITIONS := [
 	"blinded", "charmed", "deafened", "exhaustion", "frightened",
 	"grappled", "incapacitated", "invisible", "paralyzed", "petrified",
 	"poisoned", "prone", "restrained", "stunned", "unconscious",
 	"concentrating", "surprised", "hidden", "dead"
+]
+const SYNC_APPEARANCE_META := "board_sync_authoritative_appearance"
+const SYNC_APPEARANCE_REVISION_META := "board_sync_appearance_revision"
+const SYNC_APPEARANCE_KEYS := [
+	"token_pack_id",
+	"footprint",
+	"size_name",
+	"color",
+	"height_cells",
+	"reach_feet",
+	"visual_asset",
+	"visual_native_footprint",
+	"visual_front_quarter_turns",
+	"visual_pitch_steps",
+	"transformation_history"
 ]
 var board_root: Node
 var token_scene: PackedScene
@@ -24,18 +45,246 @@ var connections: Array = []
 var receiving := false
 var session_key := ""
 var _tailscale_last_error := ""
+var _tailscale_peer_cache: Array[String] = []
+var _tailscale_peer_cache_updated_msec := 0
+var _tailscale_peer_refresh_thread: Thread = null
 var _bulk_generation := 0
 var _bulk_pending := 0
 var _bulk_total := 0
 var _bulk_accepted := 0
 var _bulk_rejected := 0
 var _bulk_failed := 0
+var _pending_token_pack_ids: Array[String] = []
+var _active_token_pack_id := ""
+var auto_sync_enabled := true
+var _auto_sync_initialized := false
+var _auto_sync_last_signature := ""
+var _auto_sync_candidate_signature := ""
+var _auto_sync_candidate_since_msec := 0
+var _auto_sync_last_poll_msec := 0
+var _auto_sync_suppress_until_msec := 0
+var _auto_sync_retry_after_msec := 0
+var _applying_received_snapshot := false
 
 func setup(root: Node, scene: PackedScene, tokens: Node, measure: Node) -> void:
 	board_root = root
 	token_scene = scene
 	tokens_root = tokens
 	measurement_tool = measure
+	_connect_token_pack_manager()
+	_request_tailscale_peer_refresh()
+
+
+func _connect_token_pack_manager() -> void:
+	if TokenPackManager == null:
+		return
+	var catalog_callback := Callable(self, "_on_token_pack_catalog_updated")
+	if not TokenPackManager.catalog_updated.is_connected(catalog_callback):
+		TokenPackManager.catalog_updated.connect(catalog_callback)
+	var downloaded_callback := Callable(self, "_on_token_pack_downloaded")
+	if not TokenPackManager.token_downloaded.is_connected(downloaded_callback):
+		TokenPackManager.token_downloaded.connect(downloaded_callback)
+	var download_failed_callback := Callable(self, "_on_token_pack_download_failed")
+	if not TokenPackManager.token_download_failed.is_connected(download_failed_callback):
+		TokenPackManager.token_download_failed.connect(download_failed_callback)
+	var mounted_callback := Callable(self, "_on_token_pack_mounted")
+	if not TokenPackManager.token_mounted.is_connected(mounted_callback):
+		TokenPackManager.token_mounted.connect(mounted_callback)
+	var mount_failed_callback := Callable(self, "_on_token_pack_mount_failed")
+	if not TokenPackManager.token_mount_failed.is_connected(mount_failed_callback):
+		TokenPackManager.token_mount_failed.connect(mount_failed_callback)
+
+
+func set_auto_sync_enabled(enabled: bool) -> void:
+	if auto_sync_enabled == enabled:
+		return
+	auto_sync_enabled = enabled
+	_auto_sync_initialized = false
+	_auto_sync_candidate_signature = ""
+	_auto_sync_candidate_since_msec = 0
+	_auto_sync_retry_after_msec = 0
+	if enabled:
+		status_changed.emit("Sincronizzazione automatica attiva")
+	else:
+		status_changed.emit("Sincronizzazione automatica disattivata")
+
+
+func is_auto_sync_enabled() -> bool:
+	return auto_sync_enabled
+
+
+func sync_local_change_now() -> Error:
+	if not auto_sync_enabled or _applying_received_snapshot:
+		return OK
+	if session_key.is_empty():
+		return ERR_INVALID_PARAMETER
+
+	var snapshot := create_snapshot()
+	if snapshot.is_empty():
+		return ERR_BUSY
+	var signature := _snapshot_signature(snapshot)
+
+	# Unlike the polling path, an explicit UI mutation must never become the
+	# initial baseline without being sent. This is important when a token is
+	# edited immediately after a scene/session starts.
+	var error := send_snapshot_to_tailnet(session_key)
+	if error == OK:
+		_auto_sync_initialized = true
+		_auto_sync_last_signature = signature
+		_auto_sync_candidate_signature = ""
+		_auto_sync_candidate_since_msec = 0
+		_auto_sync_retry_after_msec = 0
+	else:
+		# Keep the state dirty so the normal debounced poll retries it.
+		_auto_sync_initialized = true
+		_auto_sync_candidate_signature = signature
+		_auto_sync_candidate_since_msec = Time.get_ticks_msec()
+		_auto_sync_retry_after_msec = (
+			_auto_sync_candidate_since_msec + AUTO_SYNC_RETRY_MS
+		)
+	return error
+
+
+func broadcast_sync_event(sync_event: Dictionary) -> Error:
+	if not auto_sync_enabled or sync_event.is_empty():
+		return OK
+	if session_key.is_empty():
+		return ERR_INVALID_PARAMETER
+	var error := send_snapshot_to_tailnet(session_key, sync_event)
+	if error == OK:
+		var snapshot := create_snapshot()
+		if not snapshot.is_empty():
+			_auto_sync_initialized = true
+			_auto_sync_last_signature = _snapshot_signature(snapshot)
+			_auto_sync_candidate_signature = ""
+			_auto_sync_candidate_since_msec = 0
+	return error
+
+
+func _poll_auto_sync() -> void:
+	if (
+		not auto_sync_enabled
+		or _applying_received_snapshot
+		or board_root == null
+		or not is_instance_valid(board_root)
+		or session_key.is_empty()
+	):
+		return
+	var now := Time.get_ticks_msec()
+	if now < _auto_sync_suppress_until_msec:
+		return
+	if now < _auto_sync_retry_after_msec:
+		return
+	if now - _auto_sync_last_poll_msec < AUTO_SYNC_POLL_MS:
+		return
+	_auto_sync_last_poll_msec = now
+
+	var snapshot := create_snapshot()
+	if snapshot.is_empty():
+		return
+	var signature := _snapshot_signature(snapshot)
+	if not _auto_sync_initialized:
+		_auto_sync_initialized = true
+		_auto_sync_last_signature = signature
+		_auto_sync_candidate_signature = ""
+		return
+	if signature == _auto_sync_last_signature:
+		_auto_sync_candidate_signature = ""
+		_auto_sync_candidate_since_msec = 0
+		return
+	if signature != _auto_sync_candidate_signature:
+		_auto_sync_candidate_signature = signature
+		_auto_sync_candidate_since_msec = now
+		return
+	if now - _auto_sync_candidate_since_msec < AUTO_SYNC_DEBOUNCE_MS:
+		return
+
+	var error := send_snapshot_to_tailnet(session_key, {}, true)
+	if error == OK:
+		_auto_sync_last_signature = signature
+		_auto_sync_candidate_signature = ""
+		_auto_sync_candidate_since_msec = 0
+		_auto_sync_retry_after_msec = 0
+	else:
+		# Keep the candidate dirty so a transient missing peer/cache does not
+		# silently consume the change. Peer discovery refreshes asynchronously.
+		_auto_sync_candidate_since_msec = now
+		_auto_sync_retry_after_msec = now + AUTO_SYNC_RETRY_MS
+
+
+func _snapshot_signature(snapshot: Dictionary) -> String:
+	var comparable := snapshot.duplicate(true)
+	# Snapshot V6 creati da versioni precedenti possono ancora contenere
+	# "camera". Ignorala nella firma: camera/vista sono sempre locali.
+	comparable.erase("camera")
+	return JSON.stringify(comparable).sha256_text()
+
+
+func _accept_received_snapshot(snapshot: Dictionary) -> void:
+	_auto_sync_initialized = true
+	var local_snapshot := create_snapshot()
+	_auto_sync_last_signature = _snapshot_signature(
+		local_snapshot if not local_snapshot.is_empty() else snapshot
+	)
+	_auto_sync_candidate_signature = ""
+	_auto_sync_candidate_since_msec = 0
+	_auto_sync_suppress_until_msec = (
+		Time.get_ticks_msec() + AUTO_SYNC_REMOTE_SUPPRESS_MS
+	)
+
+
+func _replay_sync_event(sync_event: Dictionary) -> void:
+	if (
+		board_root != null
+		and is_instance_valid(board_root)
+		and board_root.has_method("replay_sync_event")
+	):
+		board_root.call("replay_sync_event", sync_event)
+
+
+func _camera_state() -> Dictionary:
+	if board_root == null or not is_instance_valid(board_root):
+		return {}
+	var camera := board_root.get_node_or_null("Camera3D") as Camera3D
+	if camera == null:
+		return {}
+	return _transform(camera.global_transform)
+
+
+func _apply_camera_state(value: Variant) -> void:
+	if not _valid_transform_payload(value):
+		return
+	var camera := board_root.get_node_or_null("Camera3D") as Camera3D
+	if camera == null:
+		return
+	if camera.has_method("is_first_person") and bool(camera.call("is_first_person")):
+		if camera.has_method("exit_first_person"):
+			camera.call("exit_first_person")
+	camera.global_transform = _dict_transform(value)
+
+
+func _valid_transform_payload(value: Variant) -> bool:
+	if not value is Dictionary:
+		return false
+	var transform: Dictionary = value as Dictionary
+	var basis_value: Variant = transform.get("basis", [])
+	if not basis_value is Array or (basis_value as Array).size() != 3:
+		return false
+	var vectors: Array = (basis_value as Array).duplicate()
+	vectors.append(transform.get("origin"))
+	for vector_value: Variant in vectors:
+		if not vector_value is Dictionary:
+			return false
+		var vector: Dictionary = vector_value as Dictionary
+		for axis: String in ["x", "y", "z"]:
+			var component: Variant = vector.get(axis)
+			if (
+				not (component is float or component is int)
+				or not is_finite(float(component))
+				or absf(float(component)) > 100000.0
+			):
+				return false
+	return absf(_dict_transform(transform).basis.determinant()) >= 0.000001
 
 
 func _initiative_tracker() -> Node:
@@ -84,17 +333,25 @@ func send_snapshot(host: String, key: String) -> Error:
 	return error
 
 
-func send_snapshot_to_tailnet(key: String) -> Error:
+func send_snapshot_to_tailnet(
+	key: String,
+	sync_event: Dictionary = {},
+	use_cached_peers: bool = false
+) -> Error:
 	var clean_key: String = key.strip_edges()
 	if clean_key.is_empty():
 		status_changed.emit("Numero partita non valido")
 		return ERR_INVALID_PARAMETER
 
-	var payload: PackedByteArray = _snapshot_payload(clean_key)
+	var payload: PackedByteArray = _snapshot_payload(clean_key, sync_event)
 	if payload.is_empty():
 		return ERR_BUSY
 
-	var hosts: Array[String] = _tailscale_peer_ipv4s()
+	var hosts: Array[String] = (
+		get_cached_tailscale_peer_ipv4s()
+		if use_cached_peers
+		else _tailscale_peer_ipv4s()
+	)
 	if hosts.is_empty():
 		status_changed.emit(
 			"Nessun nodo Tailscale trovato. %s" % _tailscale_last_error
@@ -134,19 +391,23 @@ func send_snapshot_to_tailnet(key: String) -> Error:
 	return OK
 
 
-func _snapshot_payload(key: String) -> PackedByteArray:
+func _snapshot_payload(
+	key: String,
+	sync_event: Dictionary = {}
+) -> PackedByteArray:
 	var snapshot: Dictionary = create_snapshot()
 	if snapshot.is_empty():
 		status_changed.emit("Attendi la fine dell'avanzamento")
 		return PackedByteArray()
 
-	var payload: PackedByteArray = JSON.stringify(
-		{
-			"magic": MAGIC,
-			"key": key.strip_edges(),
-			"snapshot": snapshot
-		}
-	).to_utf8_buffer()
+	var message := {
+		"magic": MAGIC,
+		"key": key.strip_edges(),
+		"snapshot": snapshot
+	}
+	if not sync_event.is_empty():
+		message["event"] = sync_event.duplicate(true)
+	var payload: PackedByteArray = JSON.stringify(message).to_utf8_buffer()
 	if payload.size() > MAX_BYTES:
 		status_changed.emit("La mappa supera il limite di sincronizzazione")
 		return PackedByteArray()
@@ -185,8 +446,69 @@ func _queue_snapshot_payload(
 	return OK
 
 
+func get_cached_tailscale_peer_ipv4s() -> Array[String]:
+	var now := Time.get_ticks_msec()
+	if (
+		_tailscale_peer_cache_updated_msec <= 0
+		or now - _tailscale_peer_cache_updated_msec
+		>= TAILSCALE_PEER_REFRESH_MS
+	):
+		_request_tailscale_peer_refresh()
+	return _tailscale_peer_cache.duplicate()
+
+
+func _request_tailscale_peer_refresh() -> void:
+	if (
+		_tailscale_peer_refresh_thread != null
+		and _tailscale_peer_refresh_thread.is_started()
+	):
+		return
+	_tailscale_peer_refresh_thread = Thread.new()
+	var error := _tailscale_peer_refresh_thread.start(
+		Callable(self, "_query_tailscale_peer_ipv4s")
+	)
+	if error != OK:
+		_tailscale_peer_refresh_thread = null
+
+
+func _poll_tailscale_peer_refresh() -> void:
+	if (
+		_tailscale_peer_refresh_thread == null
+		or not _tailscale_peer_refresh_thread.is_started()
+		or _tailscale_peer_refresh_thread.is_alive()
+	):
+		return
+	var result: Variant = _tailscale_peer_refresh_thread.wait_to_finish()
+	_tailscale_peer_refresh_thread = null
+	if not result is Dictionary:
+		return
+	var data := result as Dictionary
+	var hosts_value: Variant = data.get("hosts", [])
+	if hosts_value is Array:
+		_tailscale_peer_cache.clear()
+		for value: Variant in hosts_value as Array:
+			var host := String(value).strip_edges()
+			if not host.is_empty():
+				_tailscale_peer_cache.append(host)
+	_tailscale_last_error = String(data.get("error", ""))
+	_tailscale_peer_cache_updated_msec = Time.get_ticks_msec()
+
+
 func _tailscale_peer_ipv4s() -> Array[String]:
-	_tailscale_last_error = ""
+	var result := _query_tailscale_peer_ipv4s()
+	_tailscale_last_error = String(result.get("error", ""))
+	_tailscale_peer_cache.clear()
+	var hosts_value: Variant = result.get("hosts", [])
+	if hosts_value is Array:
+		for value: Variant in hosts_value as Array:
+			var host := String(value).strip_edges()
+			if not host.is_empty():
+				_tailscale_peer_cache.append(host)
+	_tailscale_peer_cache_updated_msec = Time.get_ticks_msec()
+	return _tailscale_peer_cache.duplicate()
+
+
+func _query_tailscale_peer_ipv4s() -> Dictionary:
 	var candidates: Array[String] = []
 
 	if OS.get_name() == "Windows":
@@ -230,16 +552,20 @@ func _tailscale_peer_ipv4s() -> Array[String]:
 			break
 
 	if not parsed is Dictionary:
-		_tailscale_last_error = (
-			"Impossibile eseguire o leggere 'tailscale status --json'. "
-			+ "Controlla che Tailscale sia installato."
-		)
-		return []
+		return {
+			"hosts": [],
+			"error": (
+				"Impossibile eseguire o leggere 'tailscale status --json'. "
+				+ "Controlla che Tailscale sia installato."
+			)
+		}
 
 	var peers_value: Variant = (parsed as Dictionary).get("Peer", {})
 	if not peers_value is Dictionary:
-		_tailscale_last_error = "Il JSON di Tailscale non contiene Peer."
-		return []
+		return {
+			"hosts": [],
+			"error": "Il JSON di Tailscale non contiene Peer."
+		}
 
 	var hosts: Array[String] = []
 	var seen: Dictionary = {}
@@ -261,9 +587,14 @@ func _tailscale_peer_ipv4s() -> Array[String]:
 			seen[ip] = true
 			hosts.append(ip)
 
-	if hosts.is_empty():
-		_tailscale_last_error = "Il comando funziona, ma non ha restituito IPv4 peer."
-	return hosts
+	return {
+		"hosts": hosts,
+		"error": (
+			"Il comando funziona, ma non ha restituito IPv4 peer."
+			if hosts.is_empty()
+			else ""
+		)
+	}
 
 
 func _finish_bulk_attempt(item: Dictionary, accepted: bool, rejected: bool) -> void:
@@ -281,6 +612,11 @@ func _finish_bulk_attempt(item: Dictionary, accepted: bool, rejected: bool) -> v
 		_bulk_failed += 1
 
 	if _bulk_pending == 0:
+		if (
+			auto_sync_enabled
+			and (_bulk_rejected > 0 or _bulk_failed > 0)
+		):
+			_mark_current_state_dirty_for_retry()
 		status_changed.emit(
 			"Sincronizzazione conclusa · ricevute %d/%d · rifiutate %d · non raggiungibili %d"
 			% [
@@ -292,7 +628,42 @@ func _finish_bulk_attempt(item: Dictionary, accepted: bool, rejected: bool) -> v
 		)
 
 
+func _mark_current_state_dirty_for_retry() -> void:
+	if (
+		board_root == null
+		or not is_instance_valid(board_root)
+		or _applying_received_snapshot
+	):
+		return
+	var snapshot := create_snapshot()
+	if snapshot.is_empty():
+		return
+	var now := Time.get_ticks_msec()
+	var signature := _snapshot_signature(snapshot)
+	_auto_sync_initialized = true
+	# Do not keep the optimistic signature that was recorded when the TCP send
+	# merely started. A rejected ACK means the current state is still dirty.
+	_auto_sync_last_signature = ""
+	_auto_sync_candidate_signature = signature
+	_auto_sync_candidate_since_msec = (
+		now - AUTO_SYNC_DEBOUNCE_MS
+	)
+	_auto_sync_retry_after_msec = now + AUTO_SYNC_RETRY_MS
+
+
 func _process(_delta: float) -> void:
+	_poll_tailscale_peer_refresh()
+	_poll_auto_sync()
+	if (
+		_tailscale_peer_refresh_thread == null
+		and (
+			_tailscale_peer_cache_updated_msec <= 0
+			or Time.get_ticks_msec() - _tailscale_peer_cache_updated_msec
+			>= TAILSCALE_PEER_REFRESH_MS
+		)
+	):
+		_request_tailscale_peer_refresh()
+
 	if server.is_connection_available():
 		var peer := server.take_connection()
 		if connections.size() >= 8:
@@ -352,7 +723,7 @@ func _process(_delta: float) -> void:
 			var accepted := false
 			var reject_reason := "messaggio non valido"
 			if message is Dictionary:
-				if message.get("magic") != MAGIC:
+				if message.get("magic") not in [MAGIC, "DND_MAP_SYNC_V5"]:
 					reject_reason = "protocollo non compatibile"
 				elif message.get("key") != session_key:
 					reject_reason = "numero partita diverso"
@@ -368,8 +739,15 @@ func _process(_delta: float) -> void:
 					):
 						reject_reason = "backup locale fallito"
 					else:
+						_applying_received_snapshot = true
 						accepted = apply_snapshot(snapshot)
-						if not accepted:
+						_applying_received_snapshot = false
+						if accepted:
+							_accept_received_snapshot(snapshot)
+							var sync_event: Variant = message.get("event", {})
+							if sync_event is Dictionary and not (sync_event as Dictionary).is_empty():
+								_replay_sync_event(sync_event as Dictionary)
+						else:
 							reject_reason = "applicazione snapshot fallita"
 			peer.put_data(PackedByteArray([1 if accepted else 0]))
 			status_changed.emit(
@@ -383,15 +761,23 @@ func _exit_tree() -> void:
 	server.stop()
 	for item in connections:
 		item.peer.disconnect_from_host()
+	if (
+		_tailscale_peer_refresh_thread != null
+		and _tailscale_peer_refresh_thread.is_started()
+	):
+		_tailscale_peer_refresh_thread.wait_to_finish()
+	_tailscale_peer_refresh_thread = null
 
 func valid_snapshot(snapshot: Variant) -> bool:
 	if (
 		not snapshot is Dictionary
-		or int(snapshot.get("version", -1)) != SNAPSHOT_VERSION
+		or int(snapshot.get("version", -1)) not in [5, SNAPSHOT_VERSION]
 		or snapshot.get("scene") != board_root.scene_file_path
 	):
 		return false
 	if not snapshot.get("objects") is Array or snapshot.objects.size() > 4096 or not measurement_tool.valid_aoes(snapshot.get("aoes")):
+		return false
+	if snapshot.has("camera") and not _valid_transform_payload(snapshot.get("camera")):
 		return false
 	var controller := board_root.get_node_or_null("EncounterProgressController")
 	if controller != null:
@@ -410,10 +796,13 @@ func valid_snapshot(snapshot: Variant) -> bool:
 	):
 		return false
 	var ids := {}
+	var item_token_ids: Dictionary = {}
 	for item in snapshot.objects:
 		if not item is Dictionary or not item.get("id") is String or item.id.is_empty() or ids.has(item.id):
 			return false
 		ids[item.id] = true
+		if item.get("kind") == "token":
+			item_token_ids[item.id] = true
 		if item.get("kind") not in ["token", "physical"] or item.get("group") not in GROUPS:
 			return false
 		var transform: Variant = item.get("transform")
@@ -449,6 +838,26 @@ func valid_snapshot(snapshot: Variant) -> bool:
 					return false
 			if not item.get("size_name") is String or not item.get("flying") is bool:
 				return false
+			if item.has("appearance_revision"):
+				var appearance_revision_value: Variant = item.get(
+					"appearance_revision"
+				)
+				if not (
+					appearance_revision_value is int
+					or appearance_revision_value is float
+				):
+					return false
+				var appearance_revision_number := float(
+					appearance_revision_value
+				)
+				if (
+					not is_finite(appearance_revision_number)
+					or appearance_revision_number
+					!= floor(appearance_revision_number)
+					or appearance_revision_number < 0.0
+					or appearance_revision_number > 2147483647.0
+				):
+					return false
 			if item.has("gravity_applied") and not item.get("gravity_applied") is bool:
 				return false
 			if item.has("support_id") and not item.get("support_id") is String:
@@ -459,6 +868,11 @@ func valid_snapshot(snapshot: Variant) -> bool:
 			if not item.get("display_name") is String:
 				return false
 			if String(item.get("display_name", "")).length() > 80:
+				return false
+			if item.has("party_id") and not item.get("party_id") is String:
+				return false
+			var party_id := String(item.get("party_id", "")).strip_edges()
+			if party_id.length() > 80:
 				return false
 			if not item.get("conditions") is Array:
 				return false
@@ -498,14 +912,16 @@ func valid_snapshot(snapshot: Variant) -> bool:
 					or float(native_footprint_value) > 100.0
 				):
 					return false
+			if item.has("token_pack_id") and not item.get("token_pack_id") is String:
+				return false
+			var token_pack_id := String(item.get("token_pack_id", "")).strip_edges()
+			if not token_pack_id.is_empty() and not _valid_token_pack_id(token_pack_id):
+				return false
 			if item.has("visual_asset"):
 				if not item.get("visual_asset") is String:
 					return false
 				var visual_asset := String(item.get("visual_asset", ""))
-				if (
-					not visual_asset.is_empty()
-					and not visual_asset.begins_with("res://assets/tokens/")
-				):
+				if not _valid_token_visual_asset(visual_asset, token_pack_id):
 					return false
 			var front_value: Variant = item.get(
 				"visual_front_quarter_turns",
@@ -521,6 +937,18 @@ func valid_snapshot(snapshot: Variant) -> bool:
 				or int(front_number) > 3
 			):
 				return false
+			if item.has("visual_pitch_steps"):
+				var pitch_value: Variant = item.get("visual_pitch_steps")
+				if not (pitch_value is int or pitch_value is float):
+					return false
+				var pitch_number: float = float(pitch_value)
+				if (
+					not is_finite(pitch_number)
+					or pitch_number != floor(pitch_number)
+					or int(pitch_number) < -3
+					or int(pitch_number) > 3
+				):
+					return false
 			if item.has("transformation_history"):
 				var history_value: Variant = item.get(
 					"transformation_history",
@@ -541,10 +969,21 @@ func valid_snapshot(snapshot: Variant) -> bool:
 						appearance.get("visual_asset", "")
 					)
 					if (
-						not previous_visual.is_empty()
-						and not previous_visual.begins_with(
-							"res://assets/tokens/"
-						)
+						appearance.has("token_pack_id")
+						and not appearance.get("token_pack_id") is String
+					):
+						return false
+					var previous_pack_id := String(
+						appearance.get("token_pack_id", "")
+					).strip_edges()
+					if (
+						not previous_pack_id.is_empty()
+						and not _valid_token_pack_id(previous_pack_id)
+					):
+						return false
+					if not _valid_token_visual_asset(
+						previous_visual,
+						previous_pack_id
 					):
 						return false
 					if not appearance.get("display_name", "") is String:
@@ -585,24 +1024,273 @@ func valid_snapshot(snapshot: Variant) -> bool:
 						"visual_front_quarter_turns",
 						0
 					)
-					if (
-						not previous_front is int
-						or int(previous_front) < 0
-						or int(previous_front) > 3
+					if not (
+						previous_front is int
+						or previous_front is float
 					):
 						return false
+					var previous_front_number := float(previous_front)
+					if (
+						not is_finite(previous_front_number)
+						or previous_front_number != floor(previous_front_number)
+						or int(previous_front_number) < 0
+						or int(previous_front_number) > 3
+					):
+						return false
+					if appearance.has("visual_pitch_steps"):
+						var previous_pitch: Variant = appearance.get(
+							"visual_pitch_steps"
+						)
+						if not (
+							previous_pitch is int
+							or previous_pitch is float
+						):
+							return false
+						var previous_pitch_number := float(previous_pitch)
+						if (
+							not is_finite(previous_pitch_number)
+							or previous_pitch_number
+							!= floor(previous_pitch_number)
+							or int(previous_pitch_number) < -3
+							or int(previous_pitch_number) > 3
+						):
+							return false
 					if not appearance.get("reach_overridden", false) is bool:
 						return false
 		if not item.get("name") is String or not item.get("visible") is bool:
 			return false
-	return true
+
+	if snapshot.has("health_bars"):
+		var health_value: Variant = snapshot.get("health_bars", [])
+		if not health_value is Array or (health_value as Array).size() > 4096:
+			return false
+		var seen_health_tokens: Dictionary = {}
+		for entry_value: Variant in health_value as Array:
+			if not entry_value is Dictionary:
+				return false
+			var entry: Dictionary = entry_value as Dictionary
+			var token_id_value: Variant = entry.get("token_id")
+			if not token_id_value is String:
+				return false
+			var health_token_id := String(token_id_value).strip_edges()
+			if (
+				health_token_id.is_empty()
+				or health_token_id.length() > 96
+				or seen_health_tokens.has(health_token_id)
+				or not item_token_ids.has(health_token_id)
+			):
+				return false
+			seen_health_tokens[health_token_id] = true
+			var percent_value: Variant = entry.get("percent")
+			if not (percent_value is float or percent_value is int):
+				return false
+			var percent := float(percent_value)
+			if (
+				not is_finite(percent)
+				or percent < 0.0
+				or percent > 100.0
+			):
+				return false
+
+	if board_root.get("item_controller") != null:
+		return board_root.item_controller.valid_items(snapshot.get("items", []), item_token_ids)
+	return not snapshot.has("items") or snapshot.items == []
+
+func _effective_party_id(value: String) -> String:
+	var clean := value.strip_edges().left(80)
+	return clean if not clean.is_empty() else "Default"
+
+
+func _party_key(value: String) -> String:
+	return _effective_party_id(value).to_lower()
+
+
+func _party_manifest_from_objects(objects: Array) -> Array[Dictionary]:
+	var by_key: Dictionary = {}
+	for value: Variant in objects:
+		if not value is Dictionary:
+			continue
+		var data: Dictionary = value as Dictionary
+		if String(data.get("kind", "")) != "token":
+			continue
+		var token_id := String(data.get("id", "")).strip_edges()
+		if token_id.is_empty():
+			continue
+		var party_id := _effective_party_id(
+			String(data.get("party_id", ""))
+		)
+		var key := _party_key(party_id)
+		if not by_key.has(key):
+			by_key[key] = {
+				"id": party_id,
+				"token_ids": []
+			}
+		var entry: Dictionary = by_key[key]
+		var token_ids: Array = entry.get("token_ids", [])
+		token_ids.append(token_id)
+		entry["token_ids"] = token_ids
+		by_key[key] = entry
+
+	var parties: Array[Dictionary] = []
+	for key: Variant in by_key.keys():
+		var entry: Dictionary = (by_key[key] as Dictionary).duplicate(true)
+		var token_ids: Array = entry.get("token_ids", [])
+		token_ids.sort()
+		entry["token_ids"] = token_ids
+		parties.append(entry)
+	parties.sort_custom(
+		func(a: Dictionary, b: Dictionary) -> bool:
+			var a_id := String(a.get("id", ""))
+			var b_id := String(b.get("id", ""))
+			if _party_key(a_id) == "default":
+				return _party_key(b_id) != "default"
+			if _party_key(b_id) == "default":
+				return false
+			return a_id.naturalnocasecmp_to(b_id) < 0
+	)
+	return parties
+
+
+func _node_party_id(node: Node3D) -> String:
+	if node == null or not is_instance_valid(node):
+		return "Default"
+	if node.has_method("get_effective_party_id"):
+		return _effective_party_id(
+			String(node.call("get_effective_party_id"))
+		)
+	if node.has_method("get_party_id"):
+		return _effective_party_id(String(node.call("get_party_id")))
+	return _effective_party_id(String(node.get_meta("party_id", "")))
+
+
+func _apply_party_manifest(value: Variant) -> void:
+	if not value is Array:
+		return
+	var current := _current_nodes_by_id()
+	for entry_value: Variant in (value as Array):
+		if not entry_value is Dictionary:
+			continue
+		var entry: Dictionary = entry_value as Dictionary
+		var party_id := String(entry.get("id", "")).strip_edges().left(80)
+		if party_id.is_empty():
+			continue
+		var token_ids_value: Variant = entry.get("token_ids", [])
+		if not token_ids_value is Array:
+			continue
+		var stored_party_id := "" if _party_key(party_id) == "default" else party_id
+		for token_id_value: Variant in (token_ids_value as Array):
+			var token_id := String(token_id_value).strip_edges()
+			if token_id.is_empty():
+				continue
+			var node_value: Variant = current.get(token_id)
+			if not node_value is Node3D:
+				continue
+			var node := node_value as Node3D
+			if not node.is_in_group("dnd_token"):
+				continue
+			if node.has_method("set_party_id"):
+				node.call("set_party_id", stored_party_id)
+			else:
+				node.set_meta("party_id", stored_party_id)
+
+
+func _owned_health_bar_entries() -> Array[Dictionary]:
+	var by_token: Dictionary = {}
+	var current_nodes := _current_nodes_by_id()
+	for area_name: String in ["PlayerArea", "MasterArea"]:
+		var area := board_root.get_node_or_null(area_name)
+		if (
+			area == null
+			or not is_instance_valid(area)
+			or not area.has_method("get_owned_health_bar_sync_entries")
+		):
+			continue
+		var entries_value: Variant = area.call(
+			"get_owned_health_bar_sync_entries"
+		)
+		if not entries_value is Array:
+			continue
+		for entry_value: Variant in entries_value as Array:
+			if not entry_value is Dictionary:
+				continue
+			var entry: Dictionary = entry_value as Dictionary
+			var token_id := String(
+				entry.get("token_id", "")
+			).strip_edges()
+			var percent_value: Variant = entry.get("percent")
+			if (
+				token_id.is_empty()
+				or by_token.has(token_id)
+				or not current_nodes.has(token_id)
+				or not (
+					(current_nodes.get(token_id) as Node).is_in_group(
+						"dnd_token"
+					)
+				)
+				or not (percent_value is float or percent_value is int)
+			):
+				continue
+			var percent := float(percent_value)
+			if not is_finite(percent):
+				continue
+			by_token[token_id] = {
+				"token_id": token_id,
+				"percent": clampf(percent, 0.0, 100.0)
+			}
+
+	var result: Array[Dictionary] = []
+	for token_id_value: Variant in by_token.keys():
+		result.append(
+			(by_token[token_id_value] as Dictionary).duplicate(true)
+		)
+	result.sort_custom(
+		func(a: Dictionary, b: Dictionary) -> bool:
+			return String(a.get("token_id", "")).naturalnocasecmp_to(
+				String(b.get("token_id", ""))
+			) < 0
+	)
+	return result
+
+
+func _locally_owned_health_token_ids() -> Dictionary:
+	var owned: Dictionary = {}
+	for entry: Dictionary in _owned_health_bar_entries():
+		owned[String(entry.get("token_id", ""))] = true
+	return owned
+
+
+func _apply_partial_health_bars(value: Variant) -> void:
+	if not value is Array:
+		return
+	var current := _current_nodes_by_id()
+	var locally_owned := _locally_owned_health_token_ids()
+	for entry_value: Variant in value as Array:
+		if not entry_value is Dictionary:
+			continue
+		var entry: Dictionary = entry_value as Dictionary
+		var token_id := String(entry.get("token_id", "")).strip_edges()
+		if token_id.is_empty() or locally_owned.has(token_id):
+			continue
+		var node_value: Variant = current.get(token_id)
+		if not node_value is Node3D:
+			continue
+		var token := node_value as Node3D
+		if not token.has_method("set_synced_hit_point_percent"):
+			continue
+		token.call(
+			"set_synced_hit_point_percent",
+			float(entry.get("percent", 0.0))
+		)
+
 
 func create_snapshot() -> Dictionary:
+	if board_root.get("item_controller") != null:
+		board_root.item_controller.flush_motion()
 	var objects: Array = []
 	var seen := {}
 	for group_name in GROUPS:
 		for node in get_tree().get_nodes_in_group(group_name):
-			if not (node is Node3D) or seen.has(node) or not board_root.is_ancestor_of(node) or node.is_queued_for_deletion(): continue
+			if not (node is Node3D) or node.is_in_group("dnd_item") or seen.has(node) or not board_root.is_ancestor_of(node) or node.is_queued_for_deletion(): continue
 			seen[node]=true; objects.append(_serialize_node(node as Node3D, group_name))
 	var aoes: Array = []
 	if is_instance_valid(measurement_tool) and measurement_tool.has_method("serialize_persistent_aoes"): aoes=measurement_tool.call("serialize_persistent_aoes")
@@ -620,14 +1308,113 @@ func create_snapshot() -> Dictionary:
 	var initiative: Dictionary = (
 		initiative_value as Dictionary
 	).duplicate(true)
-	return {
+	var snapshot := {
 		"version": SNAPSHOT_VERSION,
 		"scene": board_root.scene_file_path,
 		"objects": objects,
+		"parties": _party_manifest_from_objects(objects),
+		"items": board_root.item_controller.serialize_items() if board_root.get("item_controller") != null else [],
 		"aoes": aoes,
 		"encounter": state,
-		"initiative": initiative
+		"initiative": initiative,
+		"health_bars": _owned_health_bar_entries()
 	}
+	return snapshot
+
+
+func save_snapshot_to_file(path: String) -> Error:
+	var clean_path := path.strip_edges()
+	if clean_path.is_empty():
+		status_changed.emit("Percorso di salvataggio non valido")
+		return ERR_INVALID_PARAMETER
+	if clean_path.get_extension().is_empty():
+		clean_path += ".vttmap"
+
+	var snapshot := create_snapshot()
+	if snapshot.is_empty():
+		status_changed.emit("Impossibile salvare la mappa nello stato corrente")
+		return ERR_BUSY
+
+	var file := FileAccess.open(clean_path, FileAccess.WRITE)
+	if file == null:
+		var open_error := FileAccess.get_open_error()
+		status_changed.emit(
+			"Salvataggio mappa fallito: %s" % error_string(open_error)
+		)
+		return open_error
+
+	var payload := {
+		"magic": LOCAL_SAVE_MAGIC,
+		"saved_at": Time.get_datetime_string_from_system(),
+		"snapshot": snapshot
+	}
+	file.store_string(JSON.stringify(payload, "  "))
+	var write_error := file.get_error()
+	file.close()
+	if write_error != OK:
+		status_changed.emit(
+			"Salvataggio mappa fallito: %s" % error_string(write_error)
+		)
+		return write_error
+
+	status_changed.emit("Mappa salvata in locale: %s" % clean_path)
+	return OK
+
+
+func load_snapshot_from_file(path: String) -> Error:
+	var clean_path := path.strip_edges()
+	if clean_path.is_empty():
+		status_changed.emit("Percorso della mappa non valido")
+		return ERR_INVALID_PARAMETER
+	if not FileAccess.file_exists(clean_path):
+		status_changed.emit("Mappa locale non trovata: %s" % clean_path)
+		return ERR_FILE_NOT_FOUND
+
+	var file := FileAccess.open(clean_path, FileAccess.READ)
+	if file == null:
+		var open_error := FileAccess.get_open_error()
+		status_changed.emit(
+			"Apertura mappa fallita: %s" % error_string(open_error)
+		)
+		return open_error
+	var parsed: Variant = JSON.parse_string(file.get_as_text())
+	file.close()
+	if not parsed is Dictionary:
+		status_changed.emit("Il file selezionato non contiene una mappa VTT valida")
+		return ERR_PARSE_ERROR
+
+	var root: Dictionary = parsed as Dictionary
+	var snapshot_value: Variant = root
+	if root.has("magic"):
+		if String(root.get("magic", "")) != LOCAL_SAVE_MAGIC:
+			status_changed.emit("Formato mappa locale non riconosciuto")
+			return ERR_INVALID_DATA
+		snapshot_value = root.get("snapshot", {})
+
+	if not snapshot_value is Dictionary:
+		status_changed.emit("Snapshot locale mancante o non valido")
+		return ERR_INVALID_DATA
+	var snapshot: Dictionary = snapshot_value as Dictionary
+	if not valid_snapshot(snapshot):
+		status_changed.emit(
+			"Mappa locale incompatibile con la scena o la versione corrente"
+		)
+		return ERR_INVALID_DATA
+
+	var current_snapshot := create_snapshot()
+	if current_snapshot.is_empty():
+		status_changed.emit("Stato locale non salvabile: caricamento annullato")
+		return ERR_BUSY
+	if not _save_backup(current_snapshot, "before_local_load"):
+		status_changed.emit("Backup locale fallito: caricamento annullato")
+		return ERR_CANT_CREATE
+	if not apply_snapshot(snapshot):
+		status_changed.emit("Applicazione della mappa locale fallita")
+		return ERR_INVALID_DATA
+
+	status_changed.emit("Mappa locale caricata: %s" % clean_path)
+	return OK
+
 
 func apply_snapshot(snapshot: Dictionary) -> bool:
 	if not valid_snapshot(snapshot): return false
@@ -661,6 +1448,12 @@ func apply_snapshot(snapshot: Dictionary) -> bool:
 			var expected_conditions: Array = data.get("conditions", [])
 			if (applied_conditions as Array) != expected_conditions:
 				return false
+
+
+	_apply_party_manifest(snapshot.get("parties", []))
+	_apply_partial_health_bars(snapshot.get("health_bars", []))
+	if board_root.get("item_controller") != null:
+		board_root.item_controller.apply_items(snapshot.get("items", []))
 	_restore_token_supports(wanted)
 	if is_instance_valid(measurement_tool) and measurement_tool.has_method("apply_persistent_aoes"): measurement_tool.call("apply_persistent_aoes", snapshot.get("aoes",[]))
 	var initiative_tracker: Node = _initiative_tracker()
@@ -678,6 +1471,12 @@ func apply_snapshot(snapshot: Dictionary) -> bool:
 		var token_list_node := token_list_value as Node
 		if token_list_node.has_method("refresh"):
 			token_list_node.call("refresh")
+	var flanking_value: Variant = board_root.get("flanking_system")
+	if flanking_value is Node and is_instance_valid(flanking_value):
+		var flanking_node := flanking_value as Node
+		if flanking_node.has_method("refresh_now"):
+			flanking_node.call_deferred("refresh_now")
+	_queue_snapshot_token_packs(snapshot)
 	return true
 
 func _restore_token_supports(wanted: Dictionary) -> void:
@@ -715,13 +1514,40 @@ func get_sync_id_for_node(node: Node3D) -> String:
 
 
 func _sync_id(node: Node3D) -> String:
-	if node.has_meta("sync_id"): return String(node.get_meta("sync_id"))
-	var id := "path:" + String(board_root.get_path_to(node)); node.set_meta("sync_id",id); return id
+	if node.is_in_group("dnd_token") and node.has_method("get_token_id"):
+		var token_identity := String(node.call("get_token_id")).strip_edges()
+		if not token_identity.is_empty():
+			node.set_meta("sync_id", token_identity)
+			return token_identity
+	if node.has_meta("sync_id"):
+		return String(node.get_meta("sync_id"))
+	var id := "path:" + String(board_root.get_path_to(node))
+	node.set_meta("sync_id", id)
+	return id
 
 func _serialize_node(node: Node3D, group_name: String) -> Dictionary:
-	var data := {"id":_sync_id(node),"group":group_name,"path":String(board_root.get_path_to(node)),"scene":node.scene_file_path,"name":node.name,"transform":_transform(node.global_transform),"visible":node.visible}
+	var data := {"id":_sync_id(node),"group":group_name,"path":String(board_root.get_path_to(node)),"scene":node.scene_file_path,"name":String(node.name),"transform":_transform(node.global_transform),"visible":node.visible}
 	if group_name == "dnd_token":
-		data["kind"]="token"; data["flying"]=bool(node.get("flying")); data["footprint"]=float(node.get("_footprint_cells")); data["size_name"]=String(node.get("_size_name")); data["color"]=_token_color(node)
+		data["kind"]="token"; data["flying"]=bool(node.get("flying"));
+		data["token_id"] = (
+			String(node.call("get_token_id"))
+			if node.has_method("get_token_id")
+			else String(data.get("id", ""))
+		)
+		data["appearance_revision"] = maxi(
+			int(node.get_meta(SYNC_APPEARANCE_REVISION_META, 0)),
+			0
+		)
+		var token_pack_id := ""
+		if node.has_method("get_token_pack_id"):
+			token_pack_id = String(node.call("get_token_pack_id")).strip_edges()
+		if token_pack_id.is_empty() and node.has_method("get_visual_asset_path"):
+			token_pack_id = _pack_id_from_visual_asset(
+				String(node.call("get_visual_asset_path"))
+			)
+		if not token_pack_id.is_empty():
+			data["token_pack_id"] = token_pack_id
+		data["footprint"]=float(node.get("_footprint_cells")); data["size_name"]=String(node.get("_size_name")); data["color"]=_token_color(node)
 		# Nuovo significato esplicito: i salvataggi precedenti non avevano
 		# gravity_applied e vengono quindi migrati come token sospesi.
 		data["gravity_applied"] = not bool(node.get("flying"))
@@ -737,6 +1563,11 @@ func _serialize_node(node: Node3D, group_name: String) -> Dictionary:
 			String(node.call("get_display_name"))
 			if node.has_method("get_display_name")
 			else ""
+		)
+		data["party_id"] = (
+			String(node.call("get_party_id"))
+			if node.has_method("get_party_id")
+			else String(node.get_meta("party_id", ""))
 		)
 		if node.has_meta("player_character_id"):
 			data["player_character_id"] = String(
@@ -766,10 +1597,16 @@ func _serialize_node(node: Node3D, group_name: String) -> Dictionary:
 			if node.has_method("get_visual_front_quarter_turns")
 			else 0
 		)
+		data["visual_pitch_steps"] = (
+			int(node.call("get_visual_pitch_steps"))
+			if node.has_method("get_visual_pitch_steps")
+			else 0
+		)
 		if node.has_method("get_transformation_history"):
 			data["transformation_history"] = node.call(
 				"get_transformation_history"
 			)
+		_preserve_received_token_appearance(node, data)
 	else: data["kind"]="physical"
 	return data
 
@@ -787,11 +1624,47 @@ func _instantiate_from_data(data: Dictionary) -> Node3D:
 	return node
 
 func _apply_node_data(node: Node3D, data: Dictionary) -> void:
-	node.visible=bool(data.get("visible",true)); node.set_meta("sync_id",String(data.get("id","")))
+	node.visible=bool(data.get("visible",true))
+	if data.get("kind","") == "token" and node.has_method("set_token_id"):
+		var restored_token_id := String(data.get("token_id", "")).strip_edges()
+		if restored_token_id.is_empty():
+			var legacy_id := String(data.get("id", "")).strip_edges()
+			if legacy_id.begins_with("token_"):
+				restored_token_id = legacy_id
+		if not restored_token_id.is_empty():
+			node.call("set_token_id", restored_token_id)
+	node.set_meta("sync_id", _sync_id(node))
 	if data.get("kind","") == "token":
+		var incoming_appearance_revision := maxi(
+			int(data.get("appearance_revision", 0)),
+			0
+		)
+		var local_appearance_revision := maxi(
+			int(node.get_meta(SYNC_APPEARANCE_REVISION_META, 0)),
+			0
+		)
+		var apply_shared_appearance := (
+			incoming_appearance_revision >= local_appearance_revision
+		)
+		if apply_shared_appearance:
+			node.set_meta(
+				SYNC_APPEARANCE_REVISION_META,
+				incoming_appearance_revision
+			)
+		var token_pack_id := String(data.get("token_pack_id", "")).strip_edges()
+		if token_pack_id.is_empty():
+			token_pack_id = _pack_id_from_visual_asset(
+				String(data.get("visual_asset", ""))
+			)
+		if apply_shared_appearance and node.has_method("set_token_pack_id"):
+			node.call("set_token_pack_id", token_pack_id)
 		# Applicare prima l'asset esplicito disattiva l'eventuale miniatura
 		# di default caricata dal token_scene appena istanziato.
-		if data.has("visual_asset") and node.has_method("set_visual_asset"):
+		if (
+			apply_shared_appearance
+			and data.has("visual_asset")
+			and node.has_method("set_visual_asset")
+		):
 			var visual_asset := String(data.get("visual_asset", ""))
 			if not visual_asset.is_empty():
 				var native_footprint := maxf(
@@ -803,27 +1676,65 @@ func _apply_node_data(node: Node3D, data: Dictionary) -> void:
 					),
 					0.5
 				)
-				node.call(
-					"set_visual_asset",
-					visual_asset,
-					native_footprint
+				var visual_applied := bool(
+					node.call(
+						"set_visual_asset",
+						visual_asset,
+						native_footprint
+					)
 				)
-		if data.has("visual_front_quarter_turns") and node.has_method(
-			"set_visual_front_quarter_turns"
+				if not visual_applied and not token_pack_id.is_empty():
+					node.set_meta(
+						"pending_token_pack_native_footprint",
+						native_footprint
+					)
+				elif (
+					visual_applied
+					and node.has_meta("pending_token_pack_native_footprint")
+				):
+					node.remove_meta("pending_token_pack_native_footprint")
+		if (
+			apply_shared_appearance
+			and data.has("visual_front_quarter_turns")
+			and node.has_method("set_visual_front_quarter_turns")
 		):
 			node.call(
 				"set_visual_front_quarter_turns",
 				int(data.get("visual_front_quarter_turns", 0))
 			)
-		if data.has("height_cells"):
+		if (
+			apply_shared_appearance
+			and data.has("visual_pitch_steps")
+			and node.has_method("set_visual_pitch_steps")
+		):
+			node.call(
+				"set_visual_pitch_steps",
+				int(data.get("visual_pitch_steps", 0))
+			)
+		if apply_shared_appearance and data.has("height_cells"):
 			node.set(
 				"token_height_cells",
 				maxf(float(data.get("height_cells", 2.0)), 0.1)
 			)
-		if node.has_method("configure"): node.call("configure",_dict_color(data.get("color",{})),float(board_root.get("cell_size")),String(data.get("size_name","Medium")),float(data.get("footprint",1.0)))
-		if data.has("reach_feet") and node.has_method("set_reach_feet"):
-			node.call("set_reach_feet", float(data.get("reach_feet", 5.0)), true)
-		elif node.has_method("reset_reach_to_default"):
+		if apply_shared_appearance and node.has_method("configure"):
+			node.call(
+				"configure",
+				_dict_color(data.get("color", {})),
+				float(board_root.get("cell_size")),
+				String(data.get("size_name", "Medium")),
+				float(data.get("footprint", 1.0))
+			)
+		if (
+			apply_shared_appearance
+			and data.has("reach_feet")
+			and node.has_method("set_reach_feet")
+		):
+			node.call(
+				"set_reach_feet",
+				float(data.get("reach_feet", 5.0)),
+				true
+			)
+		elif apply_shared_appearance and node.has_method("reset_reach_to_default"):
 			# Snapshot precedenti: migrazione trasparente dal footprint/taglia.
 			node.call("reset_reach_to_default")
 		var gravity_applied: bool = bool(data.get("gravity_applied", false))
@@ -833,6 +1744,12 @@ func _apply_node_data(node: Node3D, data: Dictionary) -> void:
 			node.call("set_flying", true)
 		if node.has_method("set_display_name"):
 			node.call("set_display_name", String(data.get("display_name", "")))
+		if node.has_method("set_party_id"):
+			node.call("set_party_id", String(data.get("party_id", "")))
+		elif not String(data.get("party_id", "")).strip_edges().is_empty():
+			node.set_meta("party_id", String(data.get("party_id", "")))
+		elif node.has_meta("party_id"):
+			node.remove_meta("party_id")
 		var character_id: String = String(
 			data.get("player_character_id", "")
 		)
@@ -849,13 +1766,300 @@ func _apply_node_data(node: Node3D, data: Dictionary) -> void:
 			)
 		if node.has_method("set_conditions"):
 			node.call("set_conditions", data.get("conditions", []))
-		if node.has_method("set_transformation_history"):
+		if apply_shared_appearance and node.has_method(
+			"set_transformation_history"
+		):
 			node.call(
 				"set_transformation_history",
 				data.get("transformation_history", [])
 			)
+		if apply_shared_appearance:
+			_remember_received_token_appearance(node, data)
 	# configure() snaps tokens; restore the exact shared transform afterwards.
 	node.global_transform = _dict_transform(data.get("transform", {}))
+
+
+func _serialized_token_appearance(data: Dictionary) -> Dictionary:
+	var appearance: Dictionary = {}
+	for key_value: Variant in SYNC_APPEARANCE_KEYS:
+		var key := String(key_value)
+		if data.has(key):
+			appearance[key] = data.get(key)
+	return appearance
+
+
+func _remember_received_token_appearance(
+	node: Node3D,
+	data: Dictionary
+) -> void:
+	# The network representation is authoritative until this client performs
+	# an explicit local appearance edit. Never infer an edit from local mesh
+	# state: mounting a pack or recalculating native footprint can legitimately
+	# change the local representation without changing the shared token.
+	var authoritative := _serialized_token_appearance(data)
+	node.set_meta(SYNC_APPEARANCE_META, authoritative.duplicate(true))
+
+
+func mark_token_appearance_locally_edited(node: Node3D) -> void:
+	if node == null or not is_instance_valid(node):
+		return
+	# Appearance has its own causal revision. Movement and unrelated map
+	# actions never advance it, so an older full-scene snapshot cannot undo a
+	# newer explicit token edit.
+	var next_revision := maxi(
+		int(node.get_meta(SYNC_APPEARANCE_REVISION_META, 0)) + 1,
+		1
+	)
+	node.set_meta(SYNC_APPEARANCE_REVISION_META, next_revision)
+	if node.has_meta(SYNC_APPEARANCE_META):
+		node.remove_meta(SYNC_APPEARANCE_META)
+	var live_data := _serialize_node(node, "dnd_token")
+	var authoritative := _serialized_token_appearance(live_data)
+	node.set_meta(SYNC_APPEARANCE_META, authoritative.duplicate(true))
+
+
+func _preserve_received_token_appearance(
+	node: Node3D,
+	data: Dictionary
+) -> void:
+	if not node.has_meta(SYNC_APPEARANCE_META):
+		return
+	var stored_value: Variant = node.get_meta(SYNC_APPEARANCE_META)
+	if not stored_value is Dictionary:
+		node.remove_meta(SYNC_APPEARANCE_META)
+		return
+
+	# Movement, gravity, initiative changes, another token moving, etc. must
+	# never rewrite this token's shared visual state from a peer-local mesh
+	# representation. Reuse exactly what was received.
+	var authoritative: Dictionary = stored_value as Dictionary
+	for key_value: Variant in SYNC_APPEARANCE_KEYS:
+		var key := String(key_value)
+		if authoritative.has(key):
+			data[key] = authoritative.get(key)
+		else:
+			data.erase(key)
+
+
+func _remote_visual_path(token_pack_id: String) -> String:
+	return (
+		"res://remote_tokens/%s/%s_visual.res"
+		% [token_pack_id, token_pack_id]
+	)
+
+
+func _valid_token_pack_id(token_pack_id: String) -> bool:
+	var clean := token_pack_id.strip_edges()
+	return (
+		not clean.is_empty()
+		and clean.length() <= 96
+		and not clean.contains("/")
+		and not clean.contains("\\")
+		and not clean.contains("..")
+		and not clean.contains(":")
+	)
+
+
+func _pack_id_from_visual_asset(visual_asset: String) -> String:
+	var clean := visual_asset.strip_edges()
+	var prefix := "res://remote_tokens/"
+	if not clean.begins_with(prefix):
+		return ""
+	var remainder := clean.substr(prefix.length())
+	var slash_index := remainder.find("/")
+	if slash_index <= 0:
+		return ""
+	var token_pack_id := remainder.left(slash_index)
+	if not _valid_token_pack_id(token_pack_id):
+		return ""
+	if clean != _remote_visual_path(token_pack_id):
+		return ""
+	return token_pack_id
+
+
+func _valid_token_visual_asset(
+	visual_asset: String,
+	token_pack_id: String = ""
+) -> bool:
+	var clean := visual_asset.strip_edges()
+	if clean.is_empty():
+		return true
+	if clean.begins_with("res://assets/tokens/"):
+		return not clean.contains("..")
+	var resolved_pack_id := token_pack_id.strip_edges()
+	if resolved_pack_id.is_empty():
+		resolved_pack_id = _pack_id_from_visual_asset(clean)
+	return (
+		_valid_token_pack_id(resolved_pack_id)
+		and clean == _remote_visual_path(resolved_pack_id)
+	)
+
+
+func _queue_snapshot_token_packs(snapshot: Dictionary) -> void:
+	for item_value: Variant in snapshot.get("objects", []):
+		if not item_value is Dictionary:
+			continue
+		var item: Dictionary = item_value as Dictionary
+		if String(item.get("kind", "")) != "token":
+			continue
+		var current_pack_id := String(
+			item.get("token_pack_id", "")
+		).strip_edges()
+		if current_pack_id.is_empty():
+			current_pack_id = _pack_id_from_visual_asset(
+				String(item.get("visual_asset", ""))
+			)
+		_queue_token_pack_id(current_pack_id)
+		var history_value: Variant = item.get("transformation_history", [])
+		if history_value is Array:
+			var history: Array = history_value as Array
+			for state_value: Variant in history:
+				if not state_value is Dictionary:
+					continue
+				var appearance: Dictionary = state_value as Dictionary
+				var previous_pack_id := String(
+					appearance.get("token_pack_id", "")
+				).strip_edges()
+				if previous_pack_id.is_empty():
+					previous_pack_id = _pack_id_from_visual_asset(
+						String(appearance.get("visual_asset", ""))
+					)
+				_queue_token_pack_id(previous_pack_id)
+	_process_token_pack_queue()
+
+
+func _queue_token_pack_id(token_pack_id: String) -> void:
+	var clean := token_pack_id.strip_edges()
+	if (
+		not _valid_token_pack_id(clean)
+		or clean == _active_token_pack_id
+		or _pending_token_pack_ids.has(clean)
+	):
+		return
+	_pending_token_pack_ids.append(clean)
+
+
+func _process_token_pack_queue() -> void:
+	if TokenPackManager == null or not _active_token_pack_id.is_empty():
+		return
+	while not _pending_token_pack_ids.is_empty():
+		var candidate_index := -1
+		for index in range(_pending_token_pack_ids.size()):
+			if TokenPackManager.has_token(_pending_token_pack_ids[index]):
+				candidate_index = index
+				break
+		if candidate_index < 0:
+			# Il catalogo remoto potrebbe essere ancora in aggiornamento.
+			return
+
+		var token_pack_id := _pending_token_pack_ids[candidate_index]
+		_pending_token_pack_ids.remove_at(candidate_index)
+		if TokenPackManager.is_mounted(token_pack_id):
+			_apply_mounted_pack_to_tokens(token_pack_id)
+			continue
+
+		_active_token_pack_id = token_pack_id
+		if TokenPackManager.is_downloaded(token_pack_id):
+			var mount_error := TokenPackManager.mount_token(token_pack_id)
+			if mount_error == OK:
+				# token_mounted continua la coda; evitare reentrancy qui.
+				return
+			_active_token_pack_id = ""
+			push_warning(
+				"BoardSync: mount automatico fallito per %s: %s"
+				% [token_pack_id, error_string(mount_error)]
+			)
+			continue
+
+		var download_error := TokenPackManager.download_token(token_pack_id)
+		if download_error == OK:
+			return
+		_active_token_pack_id = ""
+		if download_error == ERR_BUSY:
+			_pending_token_pack_ids.push_front(token_pack_id)
+			return
+		push_warning(
+			"BoardSync: download automatico fallito per %s: %s"
+			% [token_pack_id, error_string(download_error)]
+		)
+
+
+func _apply_mounted_pack_to_tokens(token_pack_id: String) -> void:
+	if board_root == null or not is_instance_valid(board_root):
+		return
+	var visual_asset := _remote_visual_path(token_pack_id)
+	for node_value: Variant in get_tree().get_nodes_in_group("dnd_token"):
+		if not node_value is Node3D:
+			continue
+		var node: Node3D = node_value as Node3D
+		if not board_root.is_ancestor_of(node):
+			continue
+		var node_pack_id := ""
+		if node.has_method("get_token_pack_id"):
+			node_pack_id = String(node.call("get_token_pack_id")).strip_edges()
+		if node_pack_id != token_pack_id or not node.has_method("set_visual_asset"):
+			continue
+		var fallback_native := 1.0
+		if node.has_method("get_footprint_cells"):
+			fallback_native = maxf(
+				float(node.call("get_footprint_cells")),
+				0.5
+			)
+		var native_footprint := float(
+			node.get_meta(
+				"pending_token_pack_native_footprint",
+				fallback_native
+			)
+		)
+		if bool(node.call("set_visual_asset", visual_asset, native_footprint)):
+			if node.has_meta("pending_token_pack_native_footprint"):
+				node.remove_meta("pending_token_pack_native_footprint")
+
+
+func _on_token_pack_catalog_updated(_entries: Array[Dictionary]) -> void:
+	_process_token_pack_queue()
+
+
+func _on_token_pack_downloaded(token_pack_id: String, _cache_path: String) -> void:
+	if token_pack_id == _active_token_pack_id:
+		var mount_error := TokenPackManager.mount_token(token_pack_id)
+		if mount_error != OK:
+			_active_token_pack_id = ""
+			push_warning(
+				"BoardSync: mount dopo download fallito per %s: %s"
+				% [token_pack_id, error_string(mount_error)]
+			)
+			_process_token_pack_queue()
+	elif _active_token_pack_id.is_empty():
+		_process_token_pack_queue()
+
+
+func _on_token_pack_download_failed(token_pack_id: String, message: String) -> void:
+	if token_pack_id == _active_token_pack_id:
+		_active_token_pack_id = ""
+		push_warning(
+			"BoardSync: download automatico fallito per %s: %s"
+			% [token_pack_id, message]
+		)
+	_process_token_pack_queue()
+
+
+func _on_token_pack_mounted(token_pack_id: String, _scene_path: String) -> void:
+	_apply_mounted_pack_to_tokens(token_pack_id)
+	if token_pack_id == _active_token_pack_id:
+		_active_token_pack_id = ""
+	_process_token_pack_queue()
+
+
+func _on_token_pack_mount_failed(token_pack_id: String, message: String) -> void:
+	if token_pack_id == _active_token_pack_id:
+		_active_token_pack_id = ""
+		push_warning(
+			"BoardSync: mount automatico fallito per %s: %s"
+			% [token_pack_id, message]
+		)
+	_process_token_pack_queue()
+
 
 func _save_backup(snapshot: Dictionary, reason: String) -> bool:
 	DirAccess.make_dir_recursive_absolute(ProjectSettings.globalize_path(BACKUP_DIR))
@@ -872,10 +2076,10 @@ func _save_backup(snapshot: Dictionary, reason: String) -> bool:
 func _rotate_backups() -> void:
 	var dir := DirAccess.open(BACKUP_DIR); if dir == null: return
 	var files: Array[String]=[]; dir.list_dir_begin()
-	var name:=dir.get_next()
-	while not name.is_empty():
-		if not dir.current_is_dir() and name.ends_with(".json"): files.append(name)
-		name=dir.get_next()
+	var entry_name:=dir.get_next()
+	while not entry_name.is_empty():
+		if not dir.current_is_dir() and entry_name.ends_with(".json"): files.append(entry_name)
+		entry_name=dir.get_next()
 	dir.list_dir_end(); files.sort()
 	while files.size()>MAX_BACKUPS: DirAccess.remove_absolute(ProjectSettings.globalize_path(BACKUP_DIR.path_join(files.pop_front())))
 

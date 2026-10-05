@@ -62,7 +62,7 @@ var _saving_throw_targets: Array[Node3D] = []
 var _saving_throw_index: int = 0
 var _saving_throw_caster_origin: Vector3 = Vector3.ZERO
 var _saving_throw_undo_recorded: bool = false
-var _restore_mouse_mode: int = Input.MOUSE_MODE_VISIBLE
+var _restore_mouse_mode: Input.MouseMode = Input.MOUSE_MODE_VISIBLE
 var _wall_mode: String = ""
 var _wall_points: Array[Vector3] = []
 var _wall_center: Vector3 = Vector3.ZERO
@@ -291,6 +291,80 @@ func has_post_cast_cleanup() -> bool:
 	return _post_cast_cleanup_pending
 
 
+func activate_spell_from_caster(
+	spell_id: String,
+	caster: Node3D,
+	spell_name: String = "",
+	source: String = ""
+) -> bool:
+	if spell_id.is_empty() or caster == null or not is_instance_valid(caster):
+		return false
+
+	# Character sheets can contain entries saved before the runtime area
+	# catalogue was regenerated. Resolve through the same all_spells() data
+	# used by the normal spell browser so sheet casting and browser casting
+	# always agree on VTT support.
+	var spell_data: Dictionary = _runtime_spell_reference(
+		spell_id,
+		spell_name,
+		source
+	)
+	if spell_data.is_empty():
+		return false
+
+	var resolved_spell_id: String = String(
+		spell_data.get("id", spell_id)
+	)
+	_selected_spell_id = resolved_spell_id
+	_selected_spell_data = spell_data.duplicate(true)
+	_activate_selected_spell()
+
+	if (
+		_pending_spell_id != resolved_spell_id
+		or _targeting_phase != "caster"
+	):
+		return false
+
+	_begin_cast_with_caster(caster, _pending_spell())
+	return true
+
+
+func _runtime_spell_reference(
+	spell_id: String,
+	spell_name: String = "",
+	source: String = ""
+) -> Dictionary:
+	var direct: Dictionary = SpellCatalog.catalog_spell(spell_id)
+	if (
+		not direct.is_empty()
+		and SpellCatalog.is_runtime_usable(direct)
+	):
+		return direct
+
+	var normalized_name: String = spell_name.strip_edges().to_lower()
+	var normalized_source: String = source.strip_edges().to_lower()
+	for candidate: Dictionary in SpellCatalog.all_spells():
+		var candidate_id: String = String(candidate.get("id", ""))
+		var id_match: bool = candidate_id == spell_id
+		var name_match: bool = (
+			not normalized_name.is_empty()
+			and String(candidate.get("name", "")).strip_edges().to_lower()
+			== normalized_name
+		)
+		var source_match: bool = (
+			normalized_source.is_empty()
+			or String(candidate.get("source", "")).strip_edges().to_lower()
+			== normalized_source
+		)
+		if (
+			(id_match or (name_match and source_match))
+			and SpellCatalog.is_runtime_usable(candidate)
+		):
+			return candidate.duplicate(true)
+
+	return {}
+
+
 func _set_spell_affected_targets(
 	tokens: Array,
 	active: bool = true
@@ -374,6 +448,53 @@ func dismiss_post_cast_visuals() -> bool:
 		and board_root.has_method("set_affected_token_highlight")
 	):
 		board_root.call("set_affected_token_highlight", [])
+	return true
+
+
+func dismiss_post_cast_visual_at_screen(
+	screen_position: Vector2
+) -> bool:
+	var measurement_tool: Node = _measurement_tool()
+	if (
+		measurement_tool == null
+		or not measurement_tool.has_method(
+			"remove_post_cast_spell_visual_at_screen"
+		)
+	):
+		return false
+
+	var removed: bool = bool(
+		measurement_tool.call(
+			"remove_post_cast_spell_visual_at_screen",
+			screen_position
+		)
+	)
+	if not removed:
+		return false
+
+	var has_remaining: bool = false
+	if measurement_tool.has_method("has_post_cast_spell_visuals"):
+		has_remaining = bool(
+			measurement_tool.call("has_post_cast_spell_visuals")
+		)
+	_post_cast_cleanup_pending = has_remaining
+
+	if not has_remaining:
+		if measurement_tool.has_method(
+			"set_spell_affected_token_highlight"
+		):
+			measurement_tool.call(
+				"set_spell_affected_token_highlight",
+				[],
+				false
+			)
+		if (
+			board_root != null
+			and is_instance_valid(board_root)
+			and board_root.has_method("set_affected_token_highlight")
+		):
+			board_root.call("set_affected_token_highlight", [])
+
 	return true
 
 
@@ -1143,6 +1264,24 @@ func _try_select_caster(screen_position: Vector2) -> void:
 		_cancel_pending_cast()
 		return
 
+	_begin_cast_with_caster(caster, spell_data)
+
+
+func _begin_cast_with_caster(
+	caster: Node3D,
+	spell_data: Dictionary
+) -> void:
+	if caster == null or not is_instance_valid(caster):
+		_cancel_pending_cast()
+		return
+	if spell_data.is_empty():
+		_cancel_pending_cast()
+		return
+
+	# Keep the caster available through every targeting branch so a
+	# successfully completed cast can be logged with combat context.
+	_pending_caster = caster
+
 	var target_mode: String = String(spell_data.get("target_mode", ""))
 	match target_mode:
 		"self_token":
@@ -1906,6 +2045,17 @@ func _cast_teleport(
 		caster_target,
 		teleport_style
 	)
+	_broadcast_spell_visual_event({
+		"mode": "teleport",
+		"origin": _sync_event_v3(caster_origin),
+		"target": _sync_event_v3(caster_target),
+		"style": teleport_style,
+		"departure_radius_world": departure_radius / 5.0 * _cell_size(),
+		"departure_style": String(
+			spell_data.get("teleport_departure_style", "thunder_step")
+		),
+		"duration": float(spell_data.get("transient_seconds", 5.0))
+	})
 	return true
 
 
@@ -2151,7 +2301,7 @@ func _try_wall_radius(screen_position: Vector2) -> void:
 		var measurement_tool: Node = _measurement_tool()
 		if measurement_tool != null:
 			measurement_tool.call(
-				"add_wall_globe",
+				"add_spell_wall_globe",
 				_wall_center,
 				_wall_radius_world,
 				_spell_style(spell_data),
@@ -2290,7 +2440,7 @@ func _commit_wall_path(spell_data: Dictionary) -> void:
 		return
 
 	measurement_tool.call(
-		"add_wall_path",
+		"add_spell_wall_path",
 		_wall_points,
 		_wall_height_world(spell_data),
 		_wall_thickness_world(spell_data),
@@ -3554,6 +3704,17 @@ func _build_panel() -> void:
 	panel.offset_right = -4.0
 	panel.offset_bottom = -8.0
 	panel.mouse_filter = Control.MOUSE_FILTER_STOP
+
+	# The spell browser is an editing/targeting UI, not an overlay preview:
+	# make it fully opaque so the 3D scene and encounter HUD cannot bleed
+	# through the controls.
+	var panel_style := StyleBoxFlat.new()
+	panel_style.bg_color = Color(0.025, 0.028, 0.036, 1.0)
+	panel_style.border_color = Color(0.42, 0.34, 0.22, 1.0)
+	panel_style.set_border_width_all(1)
+	panel_style.set_corner_radius_all(6)
+	panel.add_theme_stylebox_override("panel", panel_style)
+
 	panel.hide()
 	ui_root.add_child(panel)
 
@@ -3915,7 +4076,7 @@ func _activate_selected_spell() -> void:
 	if not SpellCatalog.is_runtime_usable(spell_data):
 		return
 
-	dismiss_post_cast_visuals()
+	# Existing spell areas stay on the map until the user clicks the area.
 	if board_root.has_method("clear_token_selection"):
 		board_root.call("clear_token_selection")
 	_set_spell_affected_targets([], true)
@@ -3967,6 +4128,203 @@ func _activate_selected_spell() -> void:
 		)
 
 
+func _sync_event_v3(value: Vector3) -> Dictionary:
+	return {"x": value.x, "y": value.y, "z": value.z}
+
+
+func _sync_event_vector3(value: Variant) -> Vector3:
+	if value is Dictionary:
+		return Vector3(
+			float((value as Dictionary).get("x", 0.0)),
+			float((value as Dictionary).get("y", 0.0)),
+			float((value as Dictionary).get("z", 0.0))
+		)
+	return Vector3.ZERO
+
+
+func _broadcast_spell_visual_event(event: Dictionary) -> void:
+	if (
+		event.is_empty()
+		or board_root == null
+		or not is_instance_valid(board_root)
+		or not board_root.has_method("broadcast_sync_event")
+	):
+		return
+	var payload := event.duplicate(true)
+	payload["type"] = "spell_visual"
+	payload["spell_id"] = _pending_spell_id
+	board_root.call("broadcast_sync_event", payload)
+
+
+func _broadcast_aoe_sync_visual(
+	start: Vector3,
+	end: Vector3,
+	shape: String,
+	style: String,
+	duration: float,
+	width_world: float
+) -> void:
+	_broadcast_spell_visual_event({
+		"mode": "aoe",
+		"start": _sync_event_v3(start),
+		"end": _sync_event_v3(end),
+		"shape": shape,
+		"style": style,
+		"duration": duration,
+		"width_world": width_world
+	})
+
+
+func _broadcast_projectile_sync_visual(
+	start: Vector3,
+	finish: Vector3,
+	style: String,
+	travel_seconds: float
+) -> void:
+	_broadcast_spell_visual_event({
+		"mode": "projectile",
+		"start": _sync_event_v3(start),
+		"finish": _sync_event_v3(finish),
+		"style": style,
+		"travel_seconds": travel_seconds
+	})
+
+
+func _broadcast_projectile_impact_sync_visual(
+	start: Vector3,
+	finish: Vector3,
+	projectile_style: String,
+	travel_seconds: float,
+	impact_shape: String,
+	impact_radius_world: float,
+	impact_style: String,
+	duration: float
+) -> void:
+	_broadcast_spell_visual_event({
+		"mode": "projectile_impact",
+		"start": _sync_event_v3(start),
+		"finish": _sync_event_v3(finish),
+		"projectile_style": projectile_style,
+		"travel_seconds": travel_seconds,
+		"impact_shape": impact_shape,
+		"impact_radius_world": impact_radius_world,
+		"impact_style": impact_style,
+		"duration": duration
+	})
+
+
+func replay_sync_visual_event(event: Dictionary) -> void:
+	var measurement_tool: Node = _measurement_tool()
+	if measurement_tool == null:
+		return
+	var mode := String(event.get("mode", ""))
+	match mode:
+		"aoe":
+			measurement_tool.call(
+				"show_transient_aoe",
+				_sync_event_vector3(event.get("start")),
+				_sync_event_vector3(event.get("end")),
+				String(event.get("shape", "sphere")),
+				float(event.get("duration", 5.0)),
+				String(event.get("style", "")),
+				float(event.get("width_world", 0.0))
+			)
+		"projectile":
+			measurement_tool.call(
+				"show_spell_projectile",
+				_sync_event_vector3(event.get("start")),
+				_sync_event_vector3(event.get("finish")),
+				String(event.get("style", "")),
+				float(event.get("travel_seconds", 0.65))
+			)
+		"projectile_impact":
+			measurement_tool.call(
+				"show_spell_projectile_with_impact",
+				_sync_event_vector3(event.get("start")),
+				_sync_event_vector3(event.get("finish")),
+				String(event.get("projectile_style", "")),
+				float(event.get("travel_seconds", 0.65)),
+				String(event.get("impact_shape", "sphere")),
+				float(event.get("impact_radius_world", 0.0)),
+				String(event.get("impact_style", "")),
+				float(event.get("duration", 5.0))
+			)
+		"projectiles":
+			var projectiles_value: Variant = event.get("projectiles", [])
+			if projectiles_value is Array:
+				for projectile_value: Variant in projectiles_value as Array:
+					if not projectile_value is Dictionary:
+						continue
+					var projectile: Dictionary = projectile_value as Dictionary
+					measurement_tool.call(
+						"show_spell_projectile",
+						_sync_event_vector3(projectile.get("start")),
+						_sync_event_vector3(projectile.get("finish")),
+						String(projectile.get("style", "")),
+						float(projectile.get("travel_seconds", 0.65))
+					)
+		"meteor_impacts":
+			var impacts_value: Variant = event.get("impacts", [])
+			if impacts_value is Array:
+				for impact_value: Variant in impacts_value as Array:
+					if not impact_value is Dictionary:
+						continue
+					var impact: Dictionary = impact_value as Dictionary
+					measurement_tool.call(
+						"show_spell_projectile_with_impact",
+						_sync_event_vector3(impact.get("start")),
+						_sync_event_vector3(impact.get("finish")),
+						String(impact.get("projectile_style", "")),
+						float(impact.get("travel_seconds", 0.8)),
+						String(impact.get("shape", "sphere")),
+						float(impact.get("radius_world", 0.0)),
+						String(impact.get("style", "")),
+						float(impact.get("duration", 5.0))
+					)
+		"aoes":
+			var aoes_value: Variant = event.get("aoes", [])
+			if aoes_value is Array:
+				for aoe_value: Variant in aoes_value as Array:
+					if not aoe_value is Dictionary:
+						continue
+					var aoe: Dictionary = aoe_value as Dictionary
+					measurement_tool.call(
+						"show_transient_aoe",
+						_sync_event_vector3(aoe.get("start")),
+						_sync_event_vector3(aoe.get("end")),
+						String(aoe.get("shape", "sphere")),
+						float(aoe.get("duration", 5.0)),
+						String(aoe.get("style", "")),
+						float(aoe.get("width_world", 0.0))
+					)
+		"teleport":
+			_replay_synced_teleport_visual(event)
+
+
+func _replay_synced_teleport_visual(event: Dictionary) -> void:
+	var measurement_tool: Node = _measurement_tool()
+	if measurement_tool == null:
+		return
+	var origin := _sync_event_vector3(event.get("origin"))
+	var target := _sync_event_vector3(event.get("target"))
+	var style := String(event.get("style", "teleport"))
+	var departure_radius_world := float(
+		event.get("departure_radius_world", 0.0)
+	)
+	if departure_radius_world > 0.0:
+		measurement_tool.call(
+			"show_transient_aoe",
+			origin,
+			origin + Vector3.RIGHT * departure_radius_world,
+			"sphere",
+			float(event.get("duration", 5.0)),
+			String(event.get("departure_style", style))
+		)
+	measurement_tool.call("show_teleport_cloud", origin, style, 0.55)
+	await get_tree().create_timer(0.40).timeout
+	measurement_tool.call("show_teleport_cloud", target, style, 0.62)
+
+
 func _cast_spell_from_caster(
 	caster: Node3D,
 	spell_data: Dictionary
@@ -3988,7 +4346,7 @@ func _cast_spell_at_point(
 	var style: String = _spell_style(spell_data)
 	if bool(spell_data.get("persistent", false)):
 		measurement_tool.call(
-			"add_aoe",
+			"add_spell_aoe",
 			target_point,
 			endpoint,
 			shape,
@@ -4020,6 +4378,14 @@ func _cast_spell_at_point(
 				_spell_line_width_world(spell_data),
 				false
 			)
+	_broadcast_aoe_sync_visual(
+		target_point,
+		endpoint,
+		shape,
+		style,
+		float(spell_data.get("transient_seconds", 5.0)),
+		_spell_line_width_world(spell_data)
+	)
 
 func _cast_directional_aoe(
 	caster: Node3D,
@@ -4049,6 +4415,14 @@ func _cast_directional_aoe(
 		_spell_style(spell_data),
 		_spell_line_width_world(spell_data)
 	)
+	_broadcast_aoe_sync_visual(
+		geometry.get("start", Vector3.ZERO),
+		geometry.get("end", Vector3.ZERO),
+		String(spell_data.get("aoe_shape", "cone")),
+		_spell_style(spell_data),
+		duration,
+		_spell_line_width_world(spell_data)
+	)
 
 func _cast_directional_spell_to_point(
 	caster: Node3D,
@@ -4069,7 +4443,7 @@ func _cast_directional_spell_to_point(
 
 	if bool(spell_data.get("persistent", false)):
 		measurement_tool.call(
-			"add_aoe",
+			"add_spell_aoe",
 			geometry.get("start", Vector3.ZERO),
 			geometry.get("end", Vector3.ZERO),
 			String(spell_data.get("aoe_shape", "line")),
@@ -4087,6 +4461,14 @@ func _cast_directional_spell_to_point(
 			_spell_style(spell_data),
 			_spell_line_width_world(spell_data)
 		)
+	_broadcast_aoe_sync_visual(
+		geometry.get("start", Vector3.ZERO),
+		geometry.get("end", Vector3.ZERO),
+		String(spell_data.get("aoe_shape", "line")),
+		_spell_style(spell_data),
+		float(spell_data.get("transient_seconds", 5.0)),
+		_spell_line_width_world(spell_data)
+	)
 
 func _cast_spell_at_token(
 	caster: Node3D,
@@ -4111,40 +4493,67 @@ func _cast_spell_at_token(
 
 	if bool(spell_data.get("persistent_link", false)):
 		measurement_tool.call(
-			"add_aoe",
+			"add_spell_aoe",
 			start,
 			finish,
 			"line",
 			_spell_style(spell_data)
 		)
+		_broadcast_aoe_sync_visual(
+			start,
+			finish,
+			"line",
+			_spell_style(spell_data),
+			float(spell_data.get("transient_seconds", 5.0)),
+			_spell_line_width_world(spell_data)
+		)
 		return
 
 	if impact_radius > 0.0:
+		var resolved_projectile_style := (
+			projectile_style
+			if not projectile_style.is_empty()
+			else _spell_style(spell_data)
+		)
+		var resolved_impact_style := String(
+			spell_data.get("impact_style", _spell_style(spell_data))
+		)
+		var impact_radius_world := impact_radius / 5.0 * _cell_size()
+		var impact_duration := float(
+			spell_data.get("transient_seconds", 5.0)
+		)
 		measurement_tool.call(
 			"show_spell_projectile_with_impact",
 			start,
 			finish,
-			(
-				projectile_style
-				if not projectile_style.is_empty()
-				else _spell_style(spell_data)
-			),
+			resolved_projectile_style,
 			travel_seconds,
 			String(spell_data.get("impact_aoe_shape", "sphere")),
-			impact_radius / 5.0 * _cell_size(),
-			String(
-				spell_data.get(
-					"impact_style",
-					_spell_style(spell_data)
-				)
-			),
-			float(spell_data.get("transient_seconds", 5.0))
+			impact_radius_world,
+			resolved_impact_style,
+			impact_duration
+		)
+		_broadcast_projectile_impact_sync_visual(
+			start,
+			finish,
+			resolved_projectile_style,
+			travel_seconds,
+			String(spell_data.get("impact_aoe_shape", "sphere")),
+			impact_radius_world,
+			resolved_impact_style,
+			impact_duration
 		)
 		return
 
 	if not projectile_style.is_empty():
 		measurement_tool.call(
 			"show_spell_projectile",
+			start,
+			finish,
+			projectile_style,
+			travel_seconds
+		)
+		_broadcast_projectile_sync_visual(
 			start,
 			finish,
 			projectile_style,
@@ -4172,7 +4581,7 @@ func _cast_spell_at_token(
 	var style: String = _spell_style(spell_data)
 	if bool(spell_data.get("persistent", false)):
 		measurement_tool.call(
-			"add_aoe",
+			"add_spell_aoe",
 			finish,
 			endpoint,
 			shape,
@@ -4190,6 +4599,14 @@ func _cast_spell_at_token(
 			style,
 			_spell_line_width_world(spell_data)
 		)
+	_broadcast_aoe_sync_visual(
+		finish,
+		endpoint,
+		shape,
+		style,
+		float(spell_data.get("transient_seconds", 5.0)),
+		_spell_line_width_world(spell_data)
+	)
 
 func _cast_spell_at_point_target(
 	caster: Node3D,
@@ -4212,31 +4629,50 @@ func _cast_spell_at_point_target(
 	)
 
 	if impact_radius > 0.0:
+		var resolved_projectile_style := (
+			projectile_style
+			if not projectile_style.is_empty()
+			else _spell_style(spell_data)
+		)
+		var resolved_impact_style := String(
+			spell_data.get("impact_style", _spell_style(spell_data))
+		)
+		var impact_radius_world := impact_radius / 5.0 * _cell_size()
+		var impact_duration := float(
+			spell_data.get("transient_seconds", 5.0)
+		)
 		measurement_tool.call(
 			"show_spell_projectile_with_impact",
 			start,
 			target_point,
-			(
-				projectile_style
-				if not projectile_style.is_empty()
-				else _spell_style(spell_data)
-			),
+			resolved_projectile_style,
 			travel_seconds,
 			String(spell_data.get("impact_aoe_shape", "sphere")),
-			impact_radius / 5.0 * _cell_size(),
-			String(
-				spell_data.get(
-					"impact_style",
-					_spell_style(spell_data)
-				)
-			),
-			float(spell_data.get("transient_seconds", 5.0))
+			impact_radius_world,
+			resolved_impact_style,
+			impact_duration
+		)
+		_broadcast_projectile_impact_sync_visual(
+			start,
+			target_point,
+			resolved_projectile_style,
+			travel_seconds,
+			String(spell_data.get("impact_aoe_shape", "sphere")),
+			impact_radius_world,
+			resolved_impact_style,
+			impact_duration
 		)
 		return
 
 	if not projectile_style.is_empty():
 		measurement_tool.call(
 			"show_spell_projectile",
+			start,
+			target_point,
+			projectile_style,
+			travel_seconds
+		)
+		_broadcast_projectile_sync_visual(
 			start,
 			target_point,
 			projectile_style,
@@ -4263,7 +4699,7 @@ func _cast_self_emanation(
 		if bool(spell_data.get("follow_caster", true)):
 			follow_target = caster
 		measurement_tool.call(
-			"add_aoe",
+			"add_spell_aoe",
 			center,
 			endpoint,
 			shape,
@@ -4285,6 +4721,14 @@ func _cast_self_emanation(
 			style,
 			_spell_line_width_world(spell_data)
 		)
+	_broadcast_aoe_sync_visual(
+		center,
+		endpoint,
+		shape,
+		style,
+		float(spell_data.get("transient_seconds", 5.0)),
+		_spell_line_width_world(spell_data)
+	)
 
 func _cast_multi_target_spell(
 	caster: Node3D,
@@ -4328,6 +4772,27 @@ func _cast_multi_target_spell(
 			travel_seconds
 		)
 
+	var projectiles: Array = []
+	for target: Node3D in targets:
+		if target != null and is_instance_valid(target):
+			projectiles.append({
+				"start": _sync_event_v3(start),
+				"finish": _sync_event_v3(_token_spell_origin(target)),
+				"style": style,
+				"travel_seconds": travel_seconds
+			})
+	for target_point: Vector3 in target_points:
+		projectiles.append({
+			"start": _sync_event_v3(start),
+			"finish": _sync_event_v3(target_point),
+			"style": style,
+			"travel_seconds": travel_seconds
+		})
+	_broadcast_spell_visual_event({
+		"mode": "projectiles",
+		"projectiles": projectiles
+	})
+
 
 func _cast_multi_point_spell(
 	_caster: Node3D,
@@ -4360,10 +4825,12 @@ func _cast_multi_point_spell(
 		var projectile_style: String = String(
 			spell_data.get("projectile_style", style)
 		)
+		var impacts: Array = []
 		for point: Vector3 in target_points:
+			var meteor_start := point + Vector3.UP * drop_height_world
 			measurement_tool.call(
 				"show_spell_projectile_with_impact",
-				point + Vector3.UP * drop_height_world,
+				meteor_start,
 				point,
 				projectile_style,
 				travel_seconds,
@@ -4372,18 +4839,43 @@ func _cast_multi_point_spell(
 				style,
 				duration
 			)
+			impacts.append({
+				"start": _sync_event_v3(meteor_start),
+				"finish": _sync_event_v3(point),
+				"projectile_style": projectile_style,
+				"travel_seconds": travel_seconds,
+				"shape": shape,
+				"radius_world": radius_world,
+				"style": style,
+				"duration": duration
+			})
+		_broadcast_spell_visual_event({
+			"mode": "meteor_impacts",
+			"impacts": impacts
+		})
 		return
 
+	var aoes: Array = []
 	for point: Vector3 in target_points:
+		var endpoint := point + Vector3.RIGHT * radius_world
 		measurement_tool.call(
 			"show_transient_aoe",
 			point,
-			point + Vector3.RIGHT * radius_world,
+			endpoint,
 			shape,
 			duration,
 			style,
 			_spell_line_width_world(spell_data)
 		)
+		aoes.append({
+			"start": _sync_event_v3(point),
+			"end": _sync_event_v3(endpoint),
+			"shape": shape,
+			"duration": duration,
+			"style": style,
+			"width_world": _spell_line_width_world(spell_data)
+		})
+	_broadcast_spell_visual_event({"mode": "aoes", "aoes": aoes})
 
 func _cast_chain_lightning(
 	_caster: Node3D,
@@ -4444,7 +4936,7 @@ func _cast_persistent_sphere(
 	)
 
 	measurement_tool.call(
-		"add_aoe",
+		"add_spell_aoe",
 		target_point,
 		endpoint,
 		String(spell_data.get("aoe_shape", "sphere")),
@@ -4950,7 +5442,39 @@ func _return_control_to_camera() -> void:
 	Input.mouse_mode = Input.MOUSE_MODE_CAPTURED
 
 
+func _log_spell_use() -> void:
+	if (
+		_pending_caster == null
+		or not is_instance_valid(_pending_caster)
+	):
+		return
+	var spell_data := _pending_spell()
+	if spell_data.is_empty():
+		return
+	var roller_value: Variant = board_root.get("dice_roller_chat")
+	if not roller_value is Node:
+		return
+	var roller := roller_value as Node
+	if (
+		roller == null
+		or not is_instance_valid(roller)
+		or not roller.has_method("log_action")
+	):
+		return
+	var spell_name := String(
+		spell_data.get("name", "Incantesimo")
+	).strip_edges()
+	if spell_name.is_empty():
+		spell_name = "Incantesimo"
+	roller.call(
+		"log_action",
+		"usa %s" % spell_name,
+		_pending_caster
+	)
+
+
 func _finish_cast() -> void:
+	_log_spell_use()
 	_post_cast_cleanup_pending = true
 	_reset_cast_state(false, true)
 	_return_control_to_camera()

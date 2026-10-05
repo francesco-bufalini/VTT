@@ -27,7 +27,9 @@ func _ready() -> void:
 	$KaosRoot.configure_positions($KaosPositions, measurement_tool)
 	$EnvironmentCollapseController.setup(cell_size)
 	encounter.setup($HazardController, $KaosRoot, $EnvironmentCollapseController, $HazardAllowedArea, cell_size)
-	$UI/EncounterUI.setup(encounter)
+	var encounter_ui := get_node_or_null("UI/EncounterUI")
+	if encounter_ui != null and encounter_ui.has_method("setup"):
+		encounter_ui.call("setup", encounter)
 	tokens_root.child_entered_tree.connect(_configure_encounter_token)
 	encounter.state_changed.connect(_refresh_encounter_menu)
 	encounter.state_changed.connect(_sync_end_state)
@@ -43,6 +45,9 @@ func _sync_end_state() -> void:
 
 func _unhandled_input(event: InputEvent) -> void:
 	if is_instance_valid(encounter) and encounter.encounter_finished:
+		# Ending combat must still allow the player to release/capture the cursor.
+		if event is InputEventKey and event.pressed and not event.echo and event.keycode == KEY_ESCAPE:
+			super._unhandled_input(event)
 		return
 	super._unhandled_input(event)
 
@@ -64,8 +69,8 @@ func _replace_selection(token: CharacterBody3D) -> void:
 	if is_node_ready():
 		_set_grid_interaction(false)
 
-func _clear_selection() -> void:
-	super._clear_selection()
+func _clear_selection(include_items: bool = true) -> void:
+	super._clear_selection(include_items)
 	if is_node_ready():
 		_set_grid_interaction(false)
 
@@ -77,12 +82,7 @@ func _configure_encounter_token(token: Node) -> void:
 func _show_context_menu(screen_position: Vector2) -> void:
 	super._show_context_menu(screen_position)
 	context_menu.add_separator()
-	context_menu.add_item("Avanza", CONTEXT_ADVANCE)
-	context_menu.add_separator()
 	context_menu.add_item("Inquadra spalle di Kaos", CONTEXT_SHOULDERS)
-	context_menu.add_item("Inquadra battlemap", CONTEXT_BOARD)
-	context_menu.add_item("Vista generale", CONTEXT_OVERVIEW)
-	_refresh_encounter_menu()
 
 func _refresh_encounter_menu() -> void:
 	var index := context_menu.get_item_index(CONTEXT_ADVANCE)

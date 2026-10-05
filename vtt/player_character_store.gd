@@ -1,7 +1,7 @@
 extends RefCounted
 
 const ROOT_DIR := "user://player_characters"
-const FILE_VERSION := 1
+const FILE_VERSION := 2
 
 var _campaign_manager: Node
 
@@ -150,6 +150,17 @@ func create_character() -> Dictionary:
 		"spell_save_dc": 0,
 		"spell_attack_bonus": 0,
 		"spells": [],
+		"prepared_spells": [],
+		"weapons_catalog": [],
+		"armor_catalog": [],
+		"tools_catalog": [],
+		"languages_catalog": [],
+		"feats_catalog": [],
+		"class_features_catalog": [],
+		"species_traits_catalog": [],
+		"optional_features_catalog": [],
+		"inventory_mundane": [],
+		"inventory_magic": [],
 		"spell_slots_total": [
 			0, 0, 0, 0, 0, 0, 0, 0, 0, 0
 		],
@@ -186,7 +197,18 @@ func normalize_character(value: Dictionary) -> Dictionary:
 		"saving_throw_proficiencies",
 		"skill_proficiencies",
 		"skill_expertise",
-		"spells"
+		"spells",
+		"prepared_spells",
+		"weapons_catalog",
+		"armor_catalog",
+		"tools_catalog",
+		"languages_catalog",
+		"feats_catalog",
+		"class_features_catalog",
+		"species_traits_catalog",
+		"optional_features_catalog",
+		"inventory_mundane",
+		"inventory_magic"
 	]:
 		if not defaults.get(array_key, []) is Array:
 			defaults[array_key] = []

@@ -4,6 +4,7 @@ on:
   workflow_dispatch:
   push:
     branches:
+      - main
       - feature/campaign-hub
     paths:
       - "encounter/tools/bake_post_kaos_scene.gd"

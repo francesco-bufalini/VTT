@@ -28,9 +28,7 @@ func _ready() -> void:
 	add_child(_player)
 
 	if not ResourceLoader.exists(SOUNDTRACK_PATH):
-		push_warning(
-			"MenuAudioManager: soundtrack non trovata: " + SOUNDTRACK_PATH
-		)
+		# Optional asset: the menu already shows its unavailable state.
 		return
 
 	var stream: AudioStream = ResourceLoader.load(

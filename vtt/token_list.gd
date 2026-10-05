@@ -185,8 +185,12 @@ func _add_token_row(token: CharacterBody3D) -> void:
 
 	var name_label := Label.new()
 	var display_name := _display_name(token)
-	name_label.text = display_name if not display_name.is_empty() else "(senza nome)"
-	name_label.tooltip_text = name_label.text
+	var party_id := _party_id(token)
+	var row_name := display_name if not display_name.is_empty() else "(senza nome)"
+	if not party_id.is_empty():
+		row_name += "  ·  [%s]" % party_id
+	name_label.text = row_name
+	name_label.tooltip_text = row_name
 	name_label.clip_text = true
 	name_label.size_flags_horizontal = Control.SIZE_EXPAND_FILL
 	name_label.vertical_alignment = VERTICAL_ALIGNMENT_CENTER
@@ -259,8 +263,25 @@ func _display_name(token: Node3D) -> String:
 	return ""
 
 
+func _party_id(token: Node3D) -> String:
+	if token.has_method("get_effective_party_id"):
+		return String(token.call("get_effective_party_id")).strip_edges()
+	if token.has_method("get_party_id"):
+		var raw := String(token.call("get_party_id")).strip_edges()
+		return raw if not raw.is_empty() else "Default"
+	var metadata := String(token.get_meta("party_id", "")).strip_edges()
+	return metadata if not metadata.is_empty() else "Default"
+
+
 func _token_signature(tokens: Array[CharacterBody3D]) -> String:
 	var parts := PackedStringArray()
 	for token: CharacterBody3D in tokens:
-		parts.append("%d:%s" % [token.get_instance_id(), _display_name(token)])
+		parts.append(
+			"%d:%s:%s"
+			% [
+				token.get_instance_id(),
+				_display_name(token),
+				_party_id(token)
+			]
+		)
 	return "|".join(parts)

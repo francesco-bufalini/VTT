@@ -73,6 +73,22 @@ func restore(values: Array) -> void:
 			_visuals[index].visible = damage[index] < break_damage
 	changed.emit()
 
+func replay_break(index: int) -> void:
+	if index < 0 or index >= _visuals.size():
+		return
+	for tween: Tween in _tweens:
+		if tween != null and tween.is_valid():
+			tween.kill()
+	_tweens.clear()
+	var ring := _visuals[index]
+	ring.visible = true
+	ring.scale = Vector3.ONE
+	ring.rotation = Vector3(PI / 2.0, 0.0, 0.0)
+	ring.mesh = _rings[index]
+	_fragments[index].visible = false
+	_animate_break(index)
+
+
 func _animate_break(index: int) -> void:
 	if index >= _visuals.size():
 		return

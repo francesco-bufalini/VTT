@@ -24,6 +24,10 @@ const CHUNK_SIZE := 8
 @export_range(16, 2048, 1) var max_physics_queries_per_frame: int = 128
 @export_range(1, 32, 1) var max_query_results: int = 8
 @export_range(0.75, 0.99, 0.005) var collision_probe_scale: float = 0.90
+# Visual-only displacement of occupied grid cells. Useful for walkable
+# surface grids: -0.5 on Y puts the top face of a voxel on the collision
+# surface instead of centering the voxel around it.
+@export var display_offset_cells: Vector3 = Vector3.ZERO
 @export_range(0.25, 5.0, 0.25) var map_change_check_interval: float = 0.75
 @export_range(64, 8192, 64) var max_cached_chunks: int = 2048
 
@@ -264,11 +268,13 @@ func _apply_material_strength() -> void:
 	if _grid_material == null:
 		return
 	var alpha: float = lerpf(0.16, 0.50, _interaction_strength)
-	_grid_material.albedo_color = Color(0.42, 0.75, 1.0, alpha)
+	# Warm, desaturated cartographic tone: keeps the current readability while
+	# feeling closer to a tabletop D&D map than a neon videogame overlay.
+	_grid_material.albedo_color = Color(0.72, 0.67, 0.56, alpha)
 	_grid_material.emission_enabled = true
-	_grid_material.emission = Color(0.04, 0.22, 0.38, 1.0)
+	_grid_material.emission = Color(0.13, 0.10, 0.065, 1.0)
 	_grid_material.emission_energy_multiplier = (
-		lerpf(0.28, 0.68, _interaction_strength)
+		lerpf(0.10, 0.22, _interaction_strength)
 	)
 
 
@@ -593,6 +599,7 @@ func _update_multimesh_instances() -> void:
 		var world_transform := Transform3D(
 			Basis.IDENTITY,
 			_cell_to_world_center(cell)
+			+ display_offset_cells * cell_size
 		)
 		_multimesh.set_instance_transform(
 			index,
@@ -661,6 +668,178 @@ func _prune_chunk_cache() -> void:
 			retained[chunk] = _chunk_cache[chunk]
 
 	_chunk_cache = retained
+
+
+func pick_visible_top_cell_from_ray(
+	origin: Vector3,
+	direction: Vector3,
+	max_distance: float
+) -> Dictionary:
+	if _active_occupied.is_empty() or max_distance <= 0.0:
+		return {}
+
+	var ray_direction := direction.normalized()
+	if ray_direction.length_squared() < 0.000001:
+		return {}
+
+	# Token placement must follow the grid the player actually points at, not
+	# the collision mesh hidden underneath it. On shallow camera angles a ray
+	# can enter the visible top of one voxel and only hit the source mesh one
+	# or more cells farther away.
+	var safe := maxf(cell_size, 0.001)
+	var half := safe * 0.5
+	var epsilon := safe * 0.002
+	var visual_offset := display_offset_cells * safe
+	var best_distance := INF
+	var best_cell := INVALID_CELL
+	var best_top_center := Vector3.ZERO
+
+	if absf(ray_direction.y) <= 0.000001:
+		return {}
+
+	for key: Variant in _active_occupied.keys():
+		if not key is Vector3i:
+			continue
+		var cell: Vector3i = key as Vector3i
+		var visual_center := _cell_to_world_center(cell) + visual_offset
+		var top_y := visual_center.y + half
+		var distance := (top_y - origin.y) / ray_direction.y
+		if (
+			distance < 0.0
+			or distance > max_distance
+			or distance >= best_distance
+		):
+			continue
+
+		var ray_point := origin + ray_direction * distance
+		if (
+			ray_point.x < visual_center.x - half - epsilon
+			or ray_point.x > visual_center.x + half + epsilon
+			or ray_point.z < visual_center.z - half - epsilon
+			or ray_point.z > visual_center.z + half + epsilon
+		):
+			continue
+
+		best_distance = distance
+		best_cell = cell
+		best_top_center = Vector3(
+			visual_center.x,
+			top_y,
+			visual_center.z
+		)
+
+	if best_cell == INVALID_CELL:
+		return {}
+
+	return {
+		"valid": true,
+		"cell": best_cell,
+		"top_center": best_top_center,
+		"distance": best_distance,
+	}
+
+
+func get_support_top_y(
+	world_point: Vector3,
+	max_y: float,
+	min_y: float
+) -> float:
+	if max_y < min_y:
+		var swap_y := max_y
+		max_y = min_y
+		min_y = swap_y
+
+	var safe := maxf(cell_size, 0.001)
+	var x_cell := int(floor(world_point.x / safe))
+	var z_cell := int(floor(world_point.z / safe))
+
+	# The rendered cube can be displaced from the collision-probe cell.
+	# Search a small guard band so a token already intersecting a cell is
+	# repaired upward instead of being allowed to continue through it.
+	var max_cell_y := int(floor(max_y / safe)) + 2
+	var min_cell_y := int(floor(min_y / safe)) - 2
+	var epsilon := safe * 0.02
+
+	for y_cell: int in range(max_cell_y, min_cell_y - 1, -1):
+		var cell := Vector3i(x_cell, y_cell, z_cell)
+		if not _support_cell_is_occupied(cell):
+			continue
+		var top_y := _cell_visual_top_y(cell)
+		if (
+			top_y <= max_y + safe * 0.55
+			and top_y >= min_y - epsilon
+		):
+			return top_y
+
+	return INF
+
+
+func get_support_top_for_footprint(
+	world_center: Vector3,
+	footprint_cells: float,
+	max_y: float,
+	min_y: float
+) -> float:
+	var safe_footprint := maxf(footprint_cells, 0.5)
+	var rounded := maxi(1, roundi(safe_footprint))
+	var samples: Array[Vector2] = []
+
+	if (
+		is_equal_approx(safe_footprint, float(rounded))
+		and rounded > 1
+	):
+		var first_offset := -float(rounded - 1) * 0.5
+		for x_index: int in range(rounded):
+			for z_index: int in range(rounded):
+				samples.append(
+					Vector2(
+						first_offset + float(x_index),
+						first_offset + float(z_index)
+					)
+				)
+	else:
+		samples.append(Vector2.ZERO)
+
+	var highest := -INF
+	for sample: Vector2 in samples:
+		var point := world_center + Vector3(
+			sample.x * cell_size,
+			0.0,
+			sample.y * cell_size
+		)
+		var support_y := get_support_top_y(point, max_y, min_y)
+		if support_y < INF:
+			highest = maxf(highest, support_y)
+
+	return INF if highest == -INF else highest
+
+
+func _support_cell_is_occupied(cell: Vector3i) -> bool:
+	if _active_occupied.has(cell):
+		return true
+
+	var chunk := _cell_to_chunk(cell)
+	var cached_value: Variant = _chunk_cache.get(chunk)
+	if cached_value is Dictionary:
+		var cached: Dictionary = cached_value as Dictionary
+		if cached.has(cell):
+			return true
+
+	# A token may be falling over a chunk that has not been scanned yet.
+	# Query the same collision definition used to construct the visible grid,
+	# so the tactical grid remains authoritative even before rendering catches
+	# up with the camera.
+	if not _point_inside_volume(_cell_to_world_center(cell)):
+		return false
+	return _cell_intersects_map(cell)
+
+
+func _cell_visual_top_y(cell: Vector3i) -> float:
+	return (
+		_cell_to_world_center(cell).y
+		+ display_offset_cells.y * cell_size
+		+ cell_size * 0.5
+	)
 
 
 func _world_to_cell(point: Vector3) -> Vector3i:

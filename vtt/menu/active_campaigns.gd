@@ -188,14 +188,12 @@ func _build_edit_dialog() -> void:
 	_edit_dialog.ok_button_text = "Salva"
 	_edit_dialog.cancel_button_text = "Annulla"
 	_edit_dialog.min_size = Vector2i(560, 390)
+	_edit_dialog.add_theme_constant_override("buttons_min_width", 100)
+	_edit_dialog.add_theme_constant_override("buttons_min_height", 34)
 	add_child(_edit_dialog)
 
 	var body := VBoxContainer.new()
-	body.set_anchors_and_offsets_preset(Control.PRESET_FULL_RECT)
-	body.offset_left = 20
-	body.offset_top = 18
-	body.offset_right = -20
-	body.offset_bottom = -72
+	body.custom_minimum_size = Vector2(510, 285)
 	body.add_theme_constant_override("separation", 10)
 	_edit_dialog.add_child(body)
 

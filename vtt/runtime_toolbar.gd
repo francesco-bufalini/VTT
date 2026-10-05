@@ -2,11 +2,16 @@ extends Node
 
 const GRID := 10
 const GAME_SPELLS := 11
+const GAME_USER_IDENTITY := 12
 
 const PLAYER_AREA_OPEN := 60
 const PLAYER_ADD_CHARACTER := 61
 const PLAYER_LINK_TOKEN := 62
 const PLAYER_LINK_CHARACTER := 63
+
+const MASTER_AREA_OPEN := 64
+const MASTER_LINK_TOKEN := 65
+const MASTER_LINK_CREATURE := 66
 
 const COMBAT_START := 70
 const COMBAT_INITIATIVE := 71
@@ -19,6 +24,14 @@ const TOKEN_ROTATE_RIGHT := 23
 const TOKEN_DELETE := 24
 const TOKEN_DETAILS := 25
 const TOKEN_LIST := 26
+const TOKEN_TILT_UP := 27
+const TOKEN_TILT_DOWN := 28
+const ITEM_CREATE := 80
+const ITEM_MANAGE := 81
+const ITEM_ROTATE_LEFT := 82
+const ITEM_ROTATE_RIGHT := 83
+const ITEM_TILT_UP := 84
+const ITEM_TILT_DOWN := 85
 
 const MEASURE_RULER := 30
 const MEASURE_SPHERE := 31
@@ -29,6 +42,8 @@ const MEASURE_CLEAR := 35
 
 const VIEW_VISION := 40
 const VIEW_CAMERA_SETTINGS := 41
+const VIEW_REACHES := 42
+const VIEW_CONDITIONS := 43
 const SHARE_OPEN := 50
 const SESSION_SAVE := 51
 const SESSION_MAIN_MENU := 52
@@ -84,13 +99,25 @@ func _build_toolbar() -> void:
 		["Applica gravità", TOKEN_FLYING],
 		["Ruota sx", TOKEN_ROTATE_LEFT],
 		["Ruota dx", TOKEN_ROTATE_RIGHT],
+		["Inclina su · 30°", TOKEN_TILT_UP],
+		["Inclina giu · 30°", TOKEN_TILT_DOWN],
 		["Nome e stati…", TOKEN_DETAILS],
 		["Lista token", TOKEN_LIST],
 		["Elimina", TOKEN_DELETE]
 	], _on_token))
 
+	row.add_child(_menu("Item", [
+		["Carro romano · posiziona (2×2)", ITEM_CREATE],
+		["Lista item / associa token…", ITEM_MANAGE],
+		["Ruota sx · 45°", ITEM_ROTATE_LEFT],
+		["Ruota dx · 45°", ITEM_ROTATE_RIGHT],
+		["Inclina su · 30°", ITEM_TILT_UP],
+		["Inclina giu · 30°", ITEM_TILT_DOWN]
+	], _on_item))
+
 	row.add_child(_menu("Gioco", [
-		["Incantesimi", GAME_SPELLS]
+		["Incantesimi", GAME_SPELLS],
+		["Cambia token associato all'utente…", GAME_USER_IDENTITY]
 	], _on_game))
 
 	row.add_child(_menu("Combattimento", [
@@ -106,6 +133,12 @@ func _build_toolbar() -> void:
 		["Personaggio → token per nome", PLAYER_LINK_CHARACTER]
 	], _on_player))
 
+	row.add_child(_menu("Area Master", [
+		["Apri Area Master", MASTER_AREA_OPEN],
+		["Token selezionato → creatura", MASTER_LINK_TOKEN],
+		["Creatura → token per nome", MASTER_LINK_CREATURE]
+	], _on_master))
+
 	row.add_child(_menu("Misura", [
 		["Righello", MEASURE_RULER],
 		["AoE · Sfera", MEASURE_SPHERE],
@@ -118,6 +151,8 @@ func _build_toolbar() -> void:
 	row.add_child(_menu("Vista", [
 		["Mostra / nascondi griglia", GRID],
 		["Coni visivi", VIEW_VISION],
+		["Gittate di tutte le creature", VIEW_REACHES],
+		["Mostra / nascondi targhette e anelli", VIEW_CONDITIONS],
 		["Velocità camera…", VIEW_CAMERA_SETTINGS]
 	], _on_view))
 
@@ -162,6 +197,27 @@ func _on_game(id: int) -> void:
 	match id:
 		GAME_SPELLS:
 			board_root.call("toggle_spell_menu")
+		GAME_USER_IDENTITY:
+			board_root.call("request_change_user_identity")
+
+
+func _on_item(id: int) -> void:
+	var controller: Node = board_root.get("item_controller") as Node
+	if controller == null:
+		return
+	match id:
+		ITEM_CREATE:
+			controller.call("begin_placement")
+		ITEM_MANAGE:
+			controller.call("open_menu")
+		ITEM_ROTATE_LEFT:
+			controller.call("rotate_selected_yaw", -1)
+		ITEM_ROTATE_RIGHT:
+			controller.call("rotate_selected_yaw", 1)
+		ITEM_TILT_UP:
+			controller.call("rotate_selected_vertical", 1)
+		ITEM_TILT_DOWN:
+			controller.call("rotate_selected_vertical", -1)
 
 
 func _on_combat(id: int) -> void:
@@ -186,6 +242,16 @@ func _on_player(id: int) -> void:
 			board_root.call("link_selected_player_character_to_named_token")
 
 
+func _on_master(id: int) -> void:
+	match id:
+		MASTER_AREA_OPEN:
+			board_root.call("toggle_master_area")
+		MASTER_LINK_TOKEN:
+			board_root.call("link_master_creature_to_selected_token")
+		MASTER_LINK_CREATURE:
+			board_root.call("link_selected_master_creature_to_named_token")
+
+
 func _on_token(id: int) -> void:
 	match id:
 		TOKEN_CREATE:
@@ -197,6 +263,10 @@ func _on_token(id: int) -> void:
 			board_root.call("_on_context_menu_id_pressed", 3)
 		TOKEN_ROTATE_RIGHT:
 			board_root.call("_on_context_menu_id_pressed", 4)
+		TOKEN_TILT_UP:
+			board_root.call("_rotate_selected_vertical", 1)
+		TOKEN_TILT_DOWN:
+			board_root.call("_rotate_selected_vertical", -1)
 		TOKEN_DELETE:
 			board_root.call("_on_context_menu_id_pressed", 2)
 		TOKEN_DETAILS:
@@ -249,6 +319,10 @@ func _on_view(id: int) -> void:
 			board_root.call("toggle_grid")
 		VIEW_VISION:
 			board_root.call("toggle_vision_cones")
+		VIEW_REACHES:
+			board_root.call("toggle_all_reach_spheres")
+		VIEW_CONDITIONS:
+			board_root.call("toggle_condition_visuals")
 		VIEW_CAMERA_SETTINGS:
 			board_root.call("open_camera_settings")
 
@@ -284,7 +358,7 @@ func _save_current_state() -> void:
 
 	var error: Error = int(
 		campaign_manager.call("save_active_runtime_state", snapshot)
-	)
+	) as Error
 	if error == OK:
 		_set_status("Salvato")
 	else:

@@ -4,6 +4,7 @@ on:
   workflow_dispatch:
   push:
     branches:
+      - main
       - feature/campaign-hub
       - feature/tokens-lazy-load
     paths:
@@ -44,15 +45,18 @@ jobs:
             /vtt/
             /network/
             /interaction/
-            /encounter/encounter_events.gd
+            /items/
+            /encounter/*.gd
+            /encounter/*.gdshader
+            /assets/items/
             /assets/spell_area_geometry.json
             /assets/tokens/test/test_token_visual.tscn
 
-      - name: Clean generated files but keep Godot cache
+      - name: Clean generated files and stale Godot cache
         shell: powershell
         run: |
           git reset --hard HEAD
-          git clean -ffdx -e .godot/
+          git clean -ffdx
 
       - name: Show environment
         shell: powershell
@@ -60,6 +64,13 @@ jobs:
           Write-Host "Runner: $env:RUNNER_NAME"
           Write-Host "Workspace: $env:GITHUB_WORKSPACE"
           & "C:\Program Files\Godot\Godot_v4.7.2-stable_win64.exe" --version
+
+      - name: Import fast-test assets
+        shell: powershell
+        run: |
+          $godot = "C:\Program Files\Godot\Godot_v4.7.2-stable_win64.exe"
+          & $godot --headless --path . --editor --import --quit
+          if ($LASTEXITCODE -ne 0) { exit $LASTEXITCODE }
 
       - name: Run fast Godot tests
         shell: powershell
