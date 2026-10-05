@@ -6,6 +6,8 @@ func _initialize() -> void:
 func run() -> void:
 	var scene: Node = load("res://dnd_base.tscn").instantiate()
 	root.add_child(scene)
+	scene.board_sync.set_auto_sync_enabled(false)
+	scene.board_sync.listen(false, "test-key")
 	# Two boards share one test window; their identity dialogs must not compete.
 	scene.get_node("UI/SceneChatIdentityDialog").exclusive = false
 	await process_frame
@@ -39,6 +41,7 @@ func run() -> void:
 		measure.add_aoe(Vector3(i, 2, 3), Vector3(i + 2, 2, 3), "sphere")
 	for i in range(200):
 		var token: Node3D = load("res://token.tscn").instantiate()
+		token.visual_asset_path = "res://assets/tokens/test/test_token_visual.tscn"
 		scene.tokens_root.add_child(token)
 		token.position = Vector3(i + 0.25, 5.0, 0.75)
 		token.set_flying(true)
@@ -54,10 +57,15 @@ func run() -> void:
 	sync.listen(false, "test-key")
 	var other: Node = load("res://dnd_base.tscn").instantiate()
 	root.add_child(other)
+	other.board_sync.set_auto_sync_enabled(false)
+	other.board_sync.listen(false, "test-key")
+	# Reserve an OS-selected port so an open game cannot conflict with this test.
+	other.board_sync.port = 0
 	other.get_node("UI/SceneChatIdentityDialog").exclusive = false
 	await process_frame
 	assert(sync.create_snapshot().objects.size() == snapshot.objects.size())
 	assert(other.board_sync.listen(true, "test-key") == OK)
+	sync.port = other.board_sync.server.get_local_port()
 	assert(sync.send_snapshot("127.0.0.1", "test-key") == OK)
 	for frame in range(300):
 		await create_timer(0.01).timeout

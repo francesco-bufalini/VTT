@@ -41,6 +41,7 @@ var token_scene: PackedScene
 var tokens_root: Node
 var measurement_tool: Node
 var server := TCPServer.new()
+var port: int = PORT
 var connections: Array = []
 var receiving := false
 var session_key := ""
@@ -308,9 +309,9 @@ func listen(enabled: bool, key: String) -> Error:
 	if session_key.is_empty():
 		status_changed.emit("Inserisci un codice sessione condiviso")
 		return ERR_INVALID_PARAMETER
-	var error := server.listen(PORT)
+	var error := server.listen(port)
 	receiving = error == OK
-	status_changed.emit("In ascolto sulla porta TCP %d" % PORT if receiving else error_string(error))
+	status_changed.emit("In ascolto sulla porta TCP %d" % port if receiving else error_string(error))
 	return error
 
 func send_snapshot(host: String, key: String) -> Error:
@@ -422,7 +423,7 @@ func _queue_snapshot_payload(
 	bulk_id: int = -1
 ) -> Error:
 	var peer := StreamPeerTCP.new()
-	var error: Error = peer.connect_to_host(host, PORT)
+	var error: Error = peer.connect_to_host(host, port)
 	if error != OK:
 		return error
 

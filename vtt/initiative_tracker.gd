@@ -964,9 +964,10 @@ func _active_entry_id() -> String:
 	return String(entries[active_index].get("id", ""))
 
 
-func _emit_turn_changed() -> void:
+func _emit_turn_changed(focus_camera: bool = true) -> void:
 	var entry_id: String = _active_entry_id()
-	_focus_camera_on_active_token()
+	if focus_camera:
+		_focus_camera_on_active_token()
 	turn_changed.emit(entry_id, round_number, turn_count)
 
 
@@ -1107,7 +1108,9 @@ func load_state(value: Variant) -> bool:
 	_render()
 	combat_state_changed.emit(combat_active)
 	if combat_active and not entries.is_empty():
-		_emit_turn_changed()
+		# Restoring shared/saved state must preserve the local view. Only
+		# explicit local turn actions should focus the active token.
+		_emit_turn_changed(false)
 	return true
 
 
