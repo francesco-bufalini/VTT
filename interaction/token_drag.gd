@@ -58,7 +58,11 @@ func handle_event(event: InputEvent) -> bool:
 	# Il drag deve partire dal token, non dal primo collider 3D incontrato.
 	# È essenziale sulle mappe multiquota (es. Siren's Light), dove una vista
 	# zenitale può attraversare ponti e sovrastrutture prima della miniatura.
-	var hit: Dictionary = board._raycast_token_from_screen(point, true)
+	var hit: Dictionary = {}
+	if bool(board.call("is_2d_view_enabled")):
+		hit = board._raycast_token_from_screen(point, true)
+	else:
+		hit = board._raycast_from_screen(point, 0xFFFFFFFF, true)
 	if hit.is_empty():
 		return false
 	var target: Node = board._find_interaction_target(hit.collider)

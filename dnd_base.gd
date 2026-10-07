@@ -4279,7 +4279,9 @@ func _interact_or_select_under_mouse(
 	additive_selection: bool,
 	first_person_request: bool
 ) -> void:
-	var hit: Dictionary = _raycast_token_from_screen(screen_position, true)
+	var hit: Dictionary = {}
+	if _view_2d_enabled:
+		hit = _raycast_token_from_screen(screen_position, true)
 	if hit.is_empty():
 		hit = _raycast_from_screen(
 			screen_position,
@@ -4341,10 +4343,15 @@ func _interact_or_select_under_mouse(
 func get_attack_token_at_screen(
 	screen_position: Vector2
 ) -> CharacterBody3D:
-	var hit: Dictionary = _raycast_token_from_screen(
-		screen_position,
-		true
-	)
+	var hit: Dictionary = {}
+	if _view_2d_enabled:
+		hit = _raycast_token_from_screen(screen_position, true)
+	else:
+		hit = _raycast_from_screen(
+			screen_position,
+			TOKEN_PICK_COLLISION_MASK,
+			true
+		)
 	if hit.is_empty():
 		return null
 
@@ -4655,9 +4662,14 @@ func _prefer_passenger_token_hit(
 				if value is RID and not (value in exclusions):
 					exclusions.append(value)
 
+	var passenger_mask: int = (
+		TOKEN_BODY_COLLISION_LAYER
+		if _view_2d_enabled
+		else TOKEN_PICK_COLLISION_MASK
+	)
 	var passenger_hit := _raycast_from_screen_excluding(
 		screen_position,
-		TOKEN_BODY_COLLISION_LAYER,
+		passenger_mask,
 		exclusions,
 		true
 	)
