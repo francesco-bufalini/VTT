@@ -719,6 +719,8 @@ func _on_2d_view_selected(id: int) -> void:
 	match id:
 		VIEW_2D_TOGGLE:
 			board_root.call("toggle_2d_view")
+			if bool(board_root.call("is_2d_view_enabled")):
+				_set_map_edit_layer(map_edit_layer_active)
 			_set_status(
 				"Vista 2D attiva"
 				if bool(board_root.call("is_2d_view_enabled"))
@@ -1153,7 +1155,7 @@ func _on_map_transform_panel_input(event: InputEvent) -> void:
 		else:
 			_map_drag_mode = ""
 		_set_status("Posizione immagine aggiornata")
-		accept_event()
+		get_viewport().set_input_as_handled()
 		return
 
 	if (
@@ -1169,7 +1171,7 @@ func _on_map_transform_panel_input(event: InputEvent) -> void:
 		map_image_node.position.x = _map_drag_start_center.x + delta_world.x
 		map_image_node.position.z = _map_drag_start_center.z + delta_world.z
 		_clamp_map_image_center_to_grid()
-		accept_event()
+		get_viewport().set_input_as_handled()
 
 
 func _on_map_resize_handle_input(
@@ -1206,7 +1208,7 @@ func _on_map_resize_handle_input(
 				"Dimensioni immagine: %.2f × %.2f quadretti"
 				% [map_image_width_cells, map_image_depth_cells]
 			)
-		accept_event()
+		get_viewport().set_input_as_handled()
 		return
 
 	if (
@@ -1220,7 +1222,7 @@ func _on_map_resize_handle_input(
 		if current == null:
 			return
 		_resize_map_image_to_world_corner(current, signs)
-		accept_event()
+		get_viewport().set_input_as_handled()
 
 
 func _screen_to_map_plane(screen_position: Vector2) -> Variant:
