@@ -68,6 +68,10 @@ const VIEW_2D_TOGGLE := 510
 const VIEW_2D_IMAGE_LOAD := 511
 const VIEW_2D_IMAGE_RESIZE := 512
 const VIEW_2D_IMAGE_REMOVE := 513
+const VIEW_2D_LAYER_MAP := 514
+const VIEW_2D_LAYER_GAME := 515
+const VIEW_2D_OPACITY_UP := 516
+const VIEW_2D_OPACITY_DOWN := 517
 
 const SHARE_OPEN := 600
 
@@ -98,6 +102,17 @@ var map_image_node: MeshInstance3D
 var map_image_asset_path: String = ""
 var map_image_width_cells: float = 0.0
 var map_image_depth_cells: float = 0.0
+var map_image_opacity: float = 1.0
+var map_edit_layer_active: bool = false
+var map_transform_panel: Panel
+var map_transform_handles: Array[Button] = []
+var _map_drag_mode: String = ""
+var _map_drag_start_mouse_world: Vector3 = Vector3.ZERO
+var _map_drag_start_center: Vector3 = Vector3.ZERO
+var _map_drag_start_width_cells: float = 0.0
+var _map_drag_start_depth_cells: float = 0.0
+var _map_resize_sign := Vector2.ZERO
+var _map_resize_opposite_world := Vector3.ZERO
 
 var add_grid_dialog: ConfirmationDialog
 var add_x: SpinBox
@@ -122,6 +137,8 @@ func _ready() -> void:
 
 
 func _process(delta: float) -> void:
+	_update_map_transform_overlay()
+
 	if active_element_preset != PIRATE_SHIP_PRESET_ID:
 		return
 	if _pirate_water_root == null or not is_instance_valid(_pirate_water_root):
@@ -164,6 +181,7 @@ func _initialize_editor() -> void:
 	_build_toolbar()
 	_build_grid_dialogs()
 	_build_2d_image_dialogs()
+	_build_map_transform_overlay()
 	_build_leave_dialog()
 
 	# L'editor deve essere utilizzabile subito con il mouse. ESC continua a
@@ -249,8 +267,12 @@ func _build_toolbar() -> void:
 
 	row.add_child(_make_menu_button("Vista 2D", [
 		["Attiva / disattiva vista 2D", VIEW_2D_TOGGLE],
+		["Livello · Mappa", VIEW_2D_LAYER_MAP],
+		["Livello · Gioco", VIEW_2D_LAYER_GAME],
 		["Inserisci immagine sulla griglia…", VIEW_2D_IMAGE_LOAD],
-		["Ridimensiona immagine…", VIEW_2D_IMAGE_RESIZE],
+		["Ridimensiona immagine con valori…", VIEW_2D_IMAGE_RESIZE],
+		["Aumenta opacità immagine", VIEW_2D_OPACITY_UP],
+		["Diminuisci opacità immagine", VIEW_2D_OPACITY_DOWN],
 		["Rimuovi immagine", VIEW_2D_IMAGE_REMOVE]
 	], _on_2d_view_selected))
 
@@ -323,14 +345,14 @@ func _on_preset_selected(id: int) -> void:
 		PRESET_WHITE:
 			_clear_element_presets()
 			active_element_preset = ""
-			_set_orientation_marker_enabled(true)
+			_set_orientation_marker_enabled(false)
 			_set_base_platform_enabled(true)
 			_set_white_environment()
 			_set_status("Scenario: vuoto bianco")
 		PRESET_EMPTY_ELEMENTS:
 			_clear_element_presets()
 			active_element_preset = ""
-			_set_orientation_marker_enabled(true)
+			_set_orientation_marker_enabled(false)
 			_set_base_platform_enabled(true)
 			_set_status("Preset elementi: nessun elemento")
 		PRESET_FOREST_MOUNTAINS:
@@ -702,8 +724,16 @@ func _on_2d_view_selected(id: int) -> void:
 				if bool(board_root.call("is_2d_view_enabled"))
 				else "Vista 3D attiva"
 			)
+		VIEW_2D_LAYER_MAP:
+			board_root.call("set_2d_view_enabled", true)
+			_set_map_edit_layer(true)
+			_set_status("Livello Mappa · trascina immagine o maniglie")
+		VIEW_2D_LAYER_GAME:
+			_set_map_edit_layer(false)
+			_set_status("Livello Gioco")
 		VIEW_2D_IMAGE_LOAD:
 			board_root.call("set_2d_view_enabled", true)
+			_set_map_edit_layer(true)
 			if map_image_file_dialog != null:
 				map_image_file_dialog.reset_size()
 				map_image_file_dialog.popup_centered_clamped(
@@ -715,6 +745,10 @@ func _on_2d_view_selected(id: int) -> void:
 				_set_status("Nessuna immagine 2D da ridimensionare")
 				return
 			_open_map_image_size_dialog()
+		VIEW_2D_OPACITY_UP:
+			_adjust_map_image_opacity(0.1)
+		VIEW_2D_OPACITY_DOWN:
+			_adjust_map_image_opacity(-0.1)
 		VIEW_2D_IMAGE_REMOVE:
 			_clear_map_image()
 			_set_status("Immagine 2D rimossa")
@@ -745,7 +779,7 @@ func _build_grid_dialogs() -> void:
 			if _resize_from_preset:
 				_clear_element_presets()
 				active_element_preset = ""
-				_set_orientation_marker_enabled(true)
+				_set_orientation_marker_enabled(false)
 				_set_base_platform_enabled(true)
 				_set_white_environment()
 			_resize_from_preset = false
@@ -913,10 +947,12 @@ func _on_map_image_file_selected(path: String) -> void:
 	map_image_asset_path = target_path
 	_create_map_image_node(image)
 	_fit_map_image_to_grid(image)
+	map_image_opacity = 1.0
 	_apply_map_image_geometry()
+	_apply_map_image_opacity()
 	board_root.call("set_2d_view_enabled", true)
-	_set_status("Immagine caricata · regola ora le dimensioni")
-	call_deferred("_open_map_image_size_dialog")
+	_set_map_edit_layer(true)
+	_set_status("Immagine caricata · trascina per spostare, usa le maniglie per ridimensionare")
 
 
 func _create_map_image_node(image: Image) -> void:
@@ -931,7 +967,7 @@ func _create_map_image_node(image: Image) -> void:
 	map_image_node.name = "CampaignMapImage"
 	map_image_node.cast_shadow = GeometryInstance3D.SHADOW_CASTING_SETTING_OFF
 	map_image_node.position = Vector3(
-		0.0, maxf(0.002, _cell_size() * 0.01), 0.0
+		0.0, maxf(0.001, _cell_size() * 0.002), 0.0
 	)
 	map_geometry.add_child(map_image_node)
 
@@ -979,7 +1015,284 @@ func _apply_map_image_geometry() -> void:
 		map_image_width_cells * _cell_size(),
 		map_image_depth_cells * _cell_size()
 	)
-	map_image_node.position.y = maxf(0.002, _cell_size() * 0.01)
+	map_image_node.position.y = maxf(0.001, _cell_size() * 0.002)
+	_clamp_map_image_center_to_grid()
+
+
+func _map_image_material() -> StandardMaterial3D:
+	if map_image_node == null or not is_instance_valid(map_image_node):
+		return null
+	var plane := map_image_node.mesh as PlaneMesh
+	if plane == null:
+		return null
+	return plane.material as StandardMaterial3D
+
+
+func _apply_map_image_opacity() -> void:
+	map_image_opacity = clampf(map_image_opacity, 0.1, 1.0)
+	var material := _map_image_material()
+	if material != null:
+		material.albedo_color = Color(1.0, 1.0, 1.0, map_image_opacity)
+
+
+func _adjust_map_image_opacity(delta: float) -> void:
+	if map_image_node == null or not is_instance_valid(map_image_node):
+		_set_status("Nessuna immagine 2D caricata")
+		return
+	map_image_opacity = clampf(map_image_opacity + delta, 0.1, 1.0)
+	_apply_map_image_opacity()
+	_set_status("Opacità immagine: %d%%" % int(round(map_image_opacity * 100.0)))
+
+
+func _set_map_edit_layer(enabled: bool) -> void:
+	map_edit_layer_active = enabled
+	if board_root != null and board_root.has_method("set_map_edit_layer_active"):
+		board_root.call("set_map_edit_layer_active", enabled)
+	_update_map_transform_overlay()
+
+
+func _build_map_transform_overlay() -> void:
+	map_transform_panel = Panel.new()
+	map_transform_panel.name = "MapImageTransformOverlay"
+	map_transform_panel.visible = false
+	map_transform_panel.mouse_filter = Control.MOUSE_FILTER_STOP
+	map_transform_panel.z_index = 100
+	map_transform_panel.focus_mode = Control.FOCUS_NONE
+
+	var style := StyleBoxFlat.new()
+	style.bg_color = Color(0.05, 0.45, 0.95, 0.04)
+	style.border_color = Color(0.12, 0.58, 1.0, 0.95)
+	style.set_border_width_all(2)
+	map_transform_panel.add_theme_stylebox_override("panel", style)
+	map_transform_panel.gui_input.connect(_on_map_transform_panel_input)
+	ui_root.add_child(map_transform_panel)
+
+	for signs: Vector2 in [
+		Vector2(-1.0, -1.0),
+		Vector2(1.0, -1.0),
+		Vector2(-1.0, 1.0),
+		Vector2(1.0, 1.0)
+	]:
+		var handle := Button.new()
+		handle.custom_minimum_size = Vector2(14, 14)
+		handle.size = Vector2(14, 14)
+		handle.focus_mode = Control.FOCUS_NONE
+		handle.mouse_filter = Control.MOUSE_FILTER_STOP
+		handle.tooltip_text = "Trascina per ridimensionare"
+		handle.set_meta("resize_sign", signs)
+		handle.gui_input.connect(
+			_on_map_resize_handle_input.bind(signs)
+		)
+		map_transform_panel.add_child(handle)
+		map_transform_handles.append(handle)
+
+
+func _update_map_transform_overlay() -> void:
+	if map_transform_panel == null:
+		return
+	var should_show := (
+		map_edit_layer_active
+		and bool(board_root.call("is_2d_view_enabled"))
+		and map_image_node != null
+		and is_instance_valid(map_image_node)
+	)
+	map_transform_panel.visible = should_show
+	if not should_show:
+		return
+
+	var camera := board_root.get_node_or_null("Camera3D") as Camera3D
+	if camera == null:
+		map_transform_panel.visible = false
+		return
+
+	var half_x := map_image_width_cells * _cell_size() * 0.5
+	var half_z := map_image_depth_cells * _cell_size() * 0.5
+	var center := map_image_node.global_position
+	var screen_points: Array[Vector2] = [
+		camera.unproject_position(center + Vector3(-half_x, 0.0, -half_z)),
+		camera.unproject_position(center + Vector3(half_x, 0.0, -half_z)),
+		camera.unproject_position(center + Vector3(-half_x, 0.0, half_z)),
+		camera.unproject_position(center + Vector3(half_x, 0.0, half_z))
+	]
+	var min_point := screen_points[0]
+	var max_point := screen_points[0]
+	for point: Vector2 in screen_points:
+		min_point = min_point.min(point)
+		max_point = max_point.max(point)
+
+	map_transform_panel.position = min_point
+	map_transform_panel.size = (max_point - min_point).max(Vector2(24, 24))
+	var panel_size := map_transform_panel.size
+	for handle: Button in map_transform_handles:
+		var signs: Vector2 = handle.get_meta(
+			"resize_sign",
+			Vector2.ONE
+		)
+		handle.position = Vector2(
+			-7.0 if signs.x < 0.0 else panel_size.x - 7.0,
+			-7.0 if signs.y < 0.0 else panel_size.y - 7.0
+		)
+
+
+func _on_map_transform_panel_input(event: InputEvent) -> void:
+	if not map_edit_layer_active:
+		return
+	if (
+		event is InputEventMouseButton
+		and event.button_index == MOUSE_BUTTON_LEFT
+	):
+		if event.pressed:
+			var world := _screen_to_map_plane(
+				get_viewport().get_mouse_position()
+			)
+			if world == null:
+				return
+			_map_drag_mode = "move"
+			_map_drag_start_mouse_world = world
+			_map_drag_start_center = map_image_node.position
+		else:
+			_map_drag_mode = ""
+		_set_status("Posizione immagine aggiornata")
+		accept_event()
+		return
+
+	if (
+		event is InputEventMouseMotion
+		and _map_drag_mode == "move"
+	):
+		var current := _screen_to_map_plane(
+			get_viewport().get_mouse_position()
+		)
+		if current == null:
+			return
+		var delta_world: Vector3 = current - _map_drag_start_mouse_world
+		map_image_node.position.x = _map_drag_start_center.x + delta_world.x
+		map_image_node.position.z = _map_drag_start_center.z + delta_world.z
+		_clamp_map_image_center_to_grid()
+		accept_event()
+
+
+func _on_map_resize_handle_input(
+	event: InputEvent,
+	signs: Vector2
+) -> void:
+	if not map_edit_layer_active:
+		return
+	if (
+		event is InputEventMouseButton
+		and event.button_index == MOUSE_BUTTON_LEFT
+	):
+		if event.pressed:
+			var world := _screen_to_map_plane(
+				get_viewport().get_mouse_position()
+			)
+			if world == null:
+				return
+			_map_drag_mode = "resize"
+			_map_resize_sign = signs
+			_map_drag_start_center = map_image_node.position
+			_map_drag_start_width_cells = map_image_width_cells
+			_map_drag_start_depth_cells = map_image_depth_cells
+			var half_x := map_image_width_cells * _cell_size() * 0.5
+			var half_z := map_image_depth_cells * _cell_size() * 0.5
+			_map_resize_opposite_world = Vector3(
+				map_image_node.position.x - signs.x * half_x,
+				0.0,
+				map_image_node.position.z - signs.y * half_z
+			)
+		else:
+			_map_drag_mode = ""
+			_set_status(
+				"Dimensioni immagine: %.2f × %.2f quadretti"
+				% [map_image_width_cells, map_image_depth_cells]
+			)
+		accept_event()
+		return
+
+	if (
+		event is InputEventMouseMotion
+		and _map_drag_mode == "resize"
+		and signs == _map_resize_sign
+	):
+		var current := _screen_to_map_plane(
+			get_viewport().get_mouse_position()
+		)
+		if current == null:
+			return
+		_resize_map_image_to_world_corner(current, signs)
+		accept_event()
+
+
+func _screen_to_map_plane(screen_position: Vector2) -> Variant:
+	var camera := board_root.get_node_or_null("Camera3D") as Camera3D
+	if camera == null:
+		return null
+	var origin := camera.project_ray_origin(screen_position)
+	var direction := camera.project_ray_normal(screen_position)
+	if absf(direction.y) < 0.000001:
+		return null
+	var t := -origin.y / direction.y
+	if t < 0.0:
+		return null
+	return origin + direction * t
+
+
+func _resize_map_image_to_world_corner(
+	current_world: Vector3,
+	signs: Vector2
+) -> void:
+	var cell := _cell_size()
+	var half_grid_x := primary_width_cells * cell * 0.5
+	var half_grid_z := primary_depth_cells * cell * 0.5
+	var min_world_size := 0.25 * cell
+
+	var corner_x := clampf(current_world.x, -half_grid_x, half_grid_x)
+	var corner_z := clampf(current_world.z, -half_grid_z, half_grid_z)
+	var opposite_x := _map_resize_opposite_world.x
+	var opposite_z := _map_resize_opposite_world.z
+
+	if signs.x > 0.0:
+		corner_x = maxf(corner_x, opposite_x + min_world_size)
+	else:
+		corner_x = minf(corner_x, opposite_x - min_world_size)
+	if signs.y > 0.0:
+		corner_z = maxf(corner_z, opposite_z + min_world_size)
+	else:
+		corner_z = minf(corner_z, opposite_z - min_world_size)
+
+	map_image_width_cells = clampf(
+		absf(corner_x - opposite_x) / cell,
+		0.25,
+		float(primary_width_cells)
+	)
+	map_image_depth_cells = clampf(
+		absf(corner_z - opposite_z) / cell,
+		0.25,
+		float(primary_depth_cells)
+	)
+	map_image_node.position.x = (corner_x + opposite_x) * 0.5
+	map_image_node.position.z = (corner_z + opposite_z) * 0.5
+	_apply_map_image_geometry()
+
+
+func _clamp_map_image_center_to_grid() -> void:
+	if map_image_node == null or not is_instance_valid(map_image_node):
+		return
+	var cell := _cell_size()
+	var half_grid_x := primary_width_cells * cell * 0.5
+	var half_grid_z := primary_depth_cells * cell * 0.5
+	var half_image_x := map_image_width_cells * cell * 0.5
+	var half_image_z := map_image_depth_cells * cell * 0.5
+	map_image_node.position.x = clampf(
+		map_image_node.position.x,
+		-half_grid_x + half_image_x,
+		half_grid_x - half_image_x
+	)
+	map_image_node.position.z = clampf(
+		map_image_node.position.z,
+		-half_grid_z + half_image_z,
+		half_grid_z - half_image_z
+	)
 
 
 func _clear_map_image_node_only() -> void:
@@ -993,6 +1306,8 @@ func _clear_map_image() -> void:
 	map_image_asset_path = ""
 	map_image_width_cells = 0.0
 	map_image_depth_cells = 0.0
+	map_image_opacity = 1.0
+	_map_drag_mode = ""
 
 
 func _serialize_map_image() -> Dictionary:
@@ -1005,7 +1320,10 @@ func _serialize_map_image() -> Dictionary:
 	return {
 		"file": map_image_asset_path.get_file(),
 		"width_cells": map_image_width_cells,
-		"depth_cells": map_image_depth_cells
+		"depth_cells": map_image_depth_cells,
+		"center_x": map_image_node.position.x,
+		"center_z": map_image_node.position.z,
+		"opacity": map_image_opacity
 	}
 
 
@@ -1048,7 +1366,11 @@ func _apply_map_image_state(value: Variant) -> void:
 		0.25,
 		float(primary_depth_cells)
 	)
+	map_image_node.position.x = float(data.get("center_x", 0.0))
+	map_image_node.position.z = float(data.get("center_z", 0.0))
+	map_image_opacity = clampf(float(data.get("opacity", 1.0)), 0.1, 1.0)
 	_apply_map_image_geometry()
+	_apply_map_image_opacity()
 
 
 func _dialog_body(dialog: ConfirmationDialog) -> VBoxContainer:
@@ -1291,7 +1613,7 @@ func _load_active_campaign() -> void:
 			_apply_pirate_ship_preset(true)
 		else:
 			active_element_preset = ""
-			_set_orientation_marker_enabled(true)
+			_set_orientation_marker_enabled(false)
 			_set_base_platform_enabled(true)
 			_set_status("%s · nuovo salvataggio" % _campaign_name())
 		return
@@ -1325,7 +1647,7 @@ func _load_active_campaign() -> void:
 	elif active_element_preset == PIRATE_SHIP_PRESET_ID:
 		_apply_pirate_ship_preset(false)
 	else:
-		_set_orientation_marker_enabled(true)
+		_set_orientation_marker_enabled(false)
 		_set_base_platform_enabled(true)
 
 	_apply_map_image_state(state.get("map_image", {}))
@@ -1363,6 +1685,7 @@ func _serialize_view_state() -> Dictionary:
 	return {
 		"grid": grid_visible,
 		"top_down_2d": bool(board_root.call("is_2d_view_enabled")),
+		"map_edit_layer": map_edit_layer_active,
 		# Legacy keys are kept so existing campaign saves stay readable by
 		# older builds; both now represent the same unified grid.
 		"grid_2d": grid_visible,
@@ -1389,6 +1712,10 @@ func _apply_view_state(value: Variant) -> void:
 	board_root.call(
 		"set_2d_view_enabled",
 		bool(data.get("top_down_2d", false))
+	)
+	_set_map_edit_layer(
+		bool(data.get("map_edit_layer", false))
+		and bool(data.get("top_down_2d", false))
 	)
 
 

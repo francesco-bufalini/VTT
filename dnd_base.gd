@@ -112,6 +112,7 @@ var _selected_tokens: Array[CharacterBody3D] = []
 var _ui_owns_mouse: bool = false
 var _vision_cones_visible: bool = false
 var _view_2d_enabled: bool = false
+var _map_edit_layer_active: bool = false
 var _condition_visuals_visible: bool = true
 var board_sync: Node
 var share_dialog: AcceptDialog
@@ -1404,6 +1405,18 @@ func _input(event: InputEvent) -> void:
 		return
 
 	if (
+		_map_edit_layer_active
+		and (
+			event is InputEventMouseButton
+			or event is InputEventMouseMotion
+		)
+	):
+		# Il livello Mappa lascia gli eventi al Control di trasformazione.
+		# Se il puntatore è fuori dall'immagine verranno assorbiti in
+		# _unhandled_input(), impedendo interazioni accidentali con token/AoE.
+		return
+
+	if (
 		event is InputEventMouseButton
 		and event.pressed
 		and event.button_index == MOUSE_BUTTON_LEFT
@@ -1638,6 +1651,16 @@ func _set_pending_spawn_from_screen(screen_position: Vector2) -> bool:
 
 
 func _unhandled_input(event: InputEvent) -> void:
+	if (
+		_map_edit_layer_active
+		and (
+			event is InputEventMouseButton
+			or event is InputEventMouseMotion
+		)
+	):
+		get_viewport().set_input_as_handled()
+		return
+
 	if item_controller != null and item_controller.handle_event(event):
 		get_viewport().set_input_as_handled()
 		return
@@ -2304,12 +2327,28 @@ func is_2d_view_enabled() -> bool:
 	return _view_2d_enabled
 
 
+func set_map_edit_layer_active(enabled: bool) -> void:
+	_map_edit_layer_active = enabled and _view_2d_enabled
+
+
+func is_map_edit_layer_active() -> bool:
+	return _map_edit_layer_active
+
+
 func toggle_2d_view() -> void:
 	set_2d_view_enabled(not _view_2d_enabled)
 
 
 func set_2d_view_enabled(enabled: bool) -> void:
 	_view_2d_enabled = enabled
+	if not enabled:
+		_map_edit_layer_active = false
+
+	if volumetric_grid.has_method("set_surface_overlay_bias_cells"):
+		volumetric_grid.call(
+			"set_surface_overlay_bias_cells",
+			0.025 if enabled else 0.0
+		)
 
 	if enabled:
 		if camera.has_method("is_first_person") \

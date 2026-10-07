@@ -36,6 +36,7 @@ var _grid_mesh_instance: MultiMeshInstance3D = null
 var _multimesh: MultiMesh = null
 var _grid_material: StandardMaterial3D = null
 var _interaction_strength: float = 0.55
+var _surface_overlay_bias_cells: float = 0.0
 
 var _cell_probe_shape: BoxShape3D = null
 var _cell_query: PhysicsShapeQueryParameters3D = null
@@ -138,6 +139,11 @@ func refresh() -> void:
 func set_interaction_strength(value: float) -> void:
 	_interaction_strength = clampf(value, 0.0, 1.0)
 	_apply_material_strength()
+
+
+func set_surface_overlay_bias_cells(value: float) -> void:
+	_surface_overlay_bias_cells = clampf(value, 0.0, 0.25)
+	_visual_dirty = true
 
 
 func get_half_extent_world() -> float:
@@ -600,6 +606,7 @@ func _update_multimesh_instances() -> void:
 			Basis.IDENTITY,
 			_cell_to_world_center(cell)
 			+ display_offset_cells * cell_size
+			+ Vector3.UP * _surface_overlay_bias_cells * cell_size
 		)
 		_multimesh.set_instance_transform(
 			index,
