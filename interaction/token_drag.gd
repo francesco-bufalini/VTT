@@ -50,8 +50,15 @@ func handle_event(event: InputEvent) -> bool:
 		return false
 	if board._ui_owns_mouse or board.color_dialog.visible or board.measurement_tool.is_measurement_mode():
 		return false
-	var point: Vector2 = board._screen_center() if Input.mouse_mode == Input.MOUSE_MODE_CAPTURED else event.position
-	var hit: Dictionary = board._raycast_from_screen(point, 0xFFFFFFFF, true)
+	var point: Vector2 = (
+		board._screen_center()
+		if Input.mouse_mode == Input.MOUSE_MODE_CAPTURED
+		else event.position
+	)
+	# Il drag deve partire dal token, non dal primo collider 3D incontrato.
+	# È essenziale sulle mappe multiquota (es. Siren's Light), dove una vista
+	# zenitale può attraversare ponti e sovrastrutture prima della miniatura.
+	var hit: Dictionary = board._raycast_token_from_screen(point, true)
 	if hit.is_empty():
 		return false
 	var target: Node = board._find_interaction_target(hit.collider)

@@ -190,6 +190,7 @@ func _ready() -> void:
 
 
 func _process(delta: float) -> void:
+	_sync_edit_layers_with_2d_view()
 	_update_map_transform_overlay()
 
 	if active_element_preset != PIRATE_SHIP_PRESET_ID:
@@ -775,8 +776,11 @@ func _on_2d_view_selected(id: int) -> void:
 	match id:
 		VIEW_2D_TOGGLE:
 			board_root.call("toggle_2d_view")
-			if bool(board_root.call("is_2d_view_enabled")):
-				_set_map_edit_layer(map_edit_layer_active)
+			# Il cambio 3D/2D è un cambio di vista, non di strumento:
+			# si rientra sempre sul livello Gioco. Mappa e Fog vanno scelti
+			# esplicitamente per evitare che continuino a intercettare i token.
+			_set_map_edit_layer(false)
+			_set_fog_edit_layer(false)
 			_set_status(
 				"Vista 2D attiva"
 				if bool(board_root.call("is_2d_view_enabled"))
@@ -1120,6 +1124,20 @@ func _adjust_map_image_opacity(delta: float) -> void:
 	map_image_opacity = clampf(map_image_opacity + delta, 0.1, 1.0)
 	_apply_map_image_opacity()
 	_set_status("Opacità immagine: %d%%" % int(round(map_image_opacity * 100.0)))
+
+
+func _sync_edit_layers_with_2d_view() -> void:
+	if board_root == null or not is_instance_valid(board_root):
+		return
+	if bool(board_root.call("is_2d_view_enabled")):
+		return
+	if not map_edit_layer_active and not fog_edit_layer_active:
+		return
+	map_edit_layer_active = false
+	fog_edit_layer_active = false
+	_fog_painting = false
+	_map_drag_mode = ""
+	_sync_editor_input_layer()
 
 
 func _set_map_edit_layer(enabled: bool) -> void:

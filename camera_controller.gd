@@ -5,6 +5,7 @@ extends Camera3D
 @export_range(2.0, 20.0, 0.5) var top_down_min_size: float = 4.0
 @export_range(40.0, 800.0, 1.0) var top_down_max_size: float = 400.0
 @export_range(0.1, 3.0, 0.05) var top_down_zoom_rate: float = 0.9
+@export_range(12.0, 80.0, 1.0) var top_down_camera_height: float = 32.0
 
 var _first_person_target: CharacterBody3D = null
 var _saved_free_transform: Transform3D = Transform3D.IDENTITY
@@ -132,10 +133,12 @@ func _text_input_has_focus() -> bool:
 
 func enter_top_down_2d(
 	center: Vector3 = Vector3.ZERO,
-	fit_size: float = 30.0
+	fit_size: float = 30.0,
+	tilt_degrees: float = 0.0
 ) -> void:
 	if _top_down_2d_enabled:
 		size = clampf(fit_size, top_down_min_size, top_down_max_size)
+		_apply_top_down_pose(center, tilt_degrees)
 		return
 
 	if is_first_person():
@@ -151,12 +154,30 @@ func enter_top_down_2d(
 
 	projection = Camera3D.PROJECTION_ORTHOGONAL
 	size = clampf(fit_size, top_down_min_size, top_down_max_size)
+	_apply_top_down_pose(center, tilt_degrees)
+
+
+func _apply_top_down_pose(
+	center: Vector3,
+	tilt_degrees: float
+) -> void:
+	var tilt: float = clampf(tilt_degrees, 0.0, 30.0)
+	var height: float = maxf(top_down_camera_height, 12.0)
+	if is_zero_approx(tilt):
+		global_position = Vector3(center.x, center.y + height, center.z)
+		global_rotation = Vector3(-PI * 0.5, 0.0, 0.0)
+		return
+
+	# Una lieve inclinazione serve ai preset che usano alberi billboard:
+	# a -90° esatti i piani verticali hanno area proiettata quasi nulla.
+	# Spostiamo anche la camera così il centro ottico resta sulla mappa.
+	var tilt_radians: float = deg_to_rad(tilt)
 	global_position = Vector3(
 		center.x,
-		maxf(global_position.y, maxf(10.0, fit_size)),
-		center.z
+		center.y + height,
+		center.z + height * tan(tilt_radians)
 	)
-	global_rotation = Vector3(-PI * 0.5, 0.0, 0.0)
+	look_at(center, Vector3.UP)
 
 
 func exit_top_down_2d() -> void:

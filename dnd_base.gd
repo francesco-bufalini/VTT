@@ -56,6 +56,10 @@ const ALL_COLLISION_LAYERS := 0xFFFFFFFF
 # identify them. Token picking must see through this layer.
 const AOE_PICK_LAYER := 1 << 20
 const TOKEN_PICK_COLLISION_MASK := ALL_COLLISION_LAYERS & ~AOE_PICK_LAYER
+# I CharacterBody3D dei token usano collision_layer = 2 in token.tscn.
+# In 2D questo layer viene interrogato prima del terreno, così ponti, alberi
+# e sovrastrutture non possono rendere un token non selezionabile dall'alto.
+const TOKEN_BODY_COLLISION_LAYER := 2
 const UNDO_LIMIT := 50
 
 const TOKEN_SIZES := [
@@ -2358,7 +2362,8 @@ func set_2d_view_enabled(enabled: bool) -> void:
 			camera.call(
 				"enter_top_down_2d",
 				Vector3.ZERO,
-				_primary_board_fit_size_2d()
+				_primary_board_fit_size_2d(),
+				_top_down_tilt_degrees_2d()
 			)
 	else:
 		if camera.has_method("exit_top_down_2d"):
@@ -2372,6 +2377,15 @@ func set_2d_view_enabled(enabled: bool) -> void:
 		_release_mouse()
 	else:
 		_capture_mouse()
+
+
+func _top_down_tilt_degrees_2d() -> float:
+	# Il preset Forest & Mountains contiene 1.167 alberi come billboard
+	# verticali. Una vista perfettamente zenitale li rende edge-on; 12°
+	# mantengono l'aspetto top-down ma rendono di nuovo leggibile la chioma.
+	if find_child("CampaignPreset_ForestMountains", true, false) != null:
+		return 12.0
+	return 0.0
 
 
 func _primary_board_fit_size_2d() -> float:
@@ -4265,11 +4279,13 @@ func _interact_or_select_under_mouse(
 	additive_selection: bool,
 	first_person_request: bool
 ) -> void:
-	var hit: Dictionary = _raycast_from_screen(
-		screen_position,
-		TOKEN_PICK_COLLISION_MASK,
-		true
-	)
+	var hit: Dictionary = _raycast_token_from_screen(screen_position, true)
+	if hit.is_empty():
+		hit = _raycast_from_screen(
+			screen_position,
+			TOKEN_PICK_COLLISION_MASK,
+			true
+		)
 	hit = _prefer_passenger_token_hit(screen_position, hit)
 
 	if hit.is_empty():
@@ -4325,9 +4341,8 @@ func _interact_or_select_under_mouse(
 func get_attack_token_at_screen(
 	screen_position: Vector2
 ) -> CharacterBody3D:
-	var hit: Dictionary = _raycast_from_screen(
+	var hit: Dictionary = _raycast_token_from_screen(
 		screen_position,
-		TOKEN_PICK_COLLISION_MASK,
 		true
 	)
 	if hit.is_empty():
@@ -4345,6 +4360,30 @@ func get_attack_token_at_screen(
 	):
 		return target as CharacterBody3D
 	return null
+
+
+func _raycast_token_from_screen(
+	screen_position: Vector2,
+	collide_with_areas: bool = true
+) -> Dictionary:
+	var hit: Dictionary = _raycast_from_screen(
+		screen_position,
+		TOKEN_BODY_COLLISION_LAYER,
+		collide_with_areas
+	)
+	if hit.is_empty():
+		return {}
+	var collider: Node = hit.get("collider") as Node
+	if collider == null:
+		return {}
+	var target: Node = _find_interaction_target(collider)
+	if (
+		target != null
+		and target is CharacterBody3D
+		and target.is_in_group("dnd_token")
+	):
+		return hit
+	return {}
 
 
 func _find_interaction_target(start_node: Node) -> Node:
@@ -4618,7 +4657,7 @@ func _prefer_passenger_token_hit(
 
 	var passenger_hit := _raycast_from_screen_excluding(
 		screen_position,
-		TOKEN_PICK_COLLISION_MASK,
+		TOKEN_BODY_COLLISION_LAYER,
 		exclusions,
 		true
 	)
