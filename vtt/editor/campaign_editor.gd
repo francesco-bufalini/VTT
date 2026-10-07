@@ -72,6 +72,14 @@ const VIEW_2D_LAYER_MAP := 514
 const VIEW_2D_LAYER_GAME := 515
 const VIEW_2D_OPACITY_UP := 516
 const VIEW_2D_OPACITY_DOWN := 517
+const VIEW_2D_LAYER_FOG := 518
+const VIEW_2D_FOG_TOGGLE := 519
+const VIEW_2D_FOG_RESET := 520
+
+const FOG_PIXELS_PER_CELL := 16.0
+const FOG_MAX_TEXTURE_SIDE := 2048
+const FOG_MIN_TEXTURE_SIDE := 64
+const FOG_DEFAULT_BRUSH_RADIUS_CELLS := 1.25
 
 const SHARE_OPEN := 600
 
@@ -114,6 +122,16 @@ var _map_drag_start_depth_cells: float = 0.0
 var _map_resize_sign := Vector2.ZERO
 var _map_resize_opposite_world := Vector3.ZERO
 
+var fog_enabled: bool = false
+var fog_edit_layer_active: bool = false
+var fog_overlay_node: MeshInstance3D = null
+var fog_mask_image: Image = null
+var fog_mask_texture: ImageTexture = null
+var fog_mask_asset_path: String = ""
+var fog_brush_radius_cells: float = FOG_DEFAULT_BRUSH_RADIUS_CELLS
+var _fog_painting: bool = false
+var _fog_last_world: Vector3 = Vector3.ZERO
+
 var add_grid_dialog: ConfirmationDialog
 var add_x: SpinBox
 var add_y: SpinBox
@@ -122,6 +140,41 @@ var add_width: SpinBox
 var add_depth: SpinBox
 
 var leave_dialog: ConfirmationDialog
+
+
+func _input(event: InputEvent) -> void:
+	if not fog_edit_layer_active or not fog_enabled:
+		return
+	if not bool(board_root.call("is_2d_view_enabled")):
+		return
+
+	var hovered: Control = get_viewport().gui_get_hovered_control()
+	if hovered != null:
+		return
+
+	if (
+		event is InputEventMouseButton
+		and event.button_index == MOUSE_BUTTON_LEFT
+	):
+		if event.pressed:
+			var world: Vector3 = _screen_to_map_plane(event.position)
+			if not world.is_finite() or not _world_inside_primary_grid(world):
+				return
+			_fog_painting = true
+			_fog_last_world = world
+			_paint_fog_at_world(world)
+		else:
+			_fog_painting = false
+		get_viewport().set_input_as_handled()
+		return
+
+	if event is InputEventMouseMotion and _fog_painting:
+		var current: Vector3 = _screen_to_map_plane(event.position)
+		if not current.is_finite():
+			return
+		_paint_fog_path(_fog_last_world, current)
+		_fog_last_world = current
+		get_viewport().set_input_as_handled()
 
 
 func _ready() -> void:
@@ -269,6 +322,9 @@ func _build_toolbar() -> void:
 		["Attiva / disattiva vista 2D", VIEW_2D_TOGGLE],
 		["Livello · Mappa", VIEW_2D_LAYER_MAP],
 		["Livello · Gioco", VIEW_2D_LAYER_GAME],
+		["Livello · Ombra di guerra", VIEW_2D_LAYER_FOG],
+		["Attiva / disattiva ombra di guerra", VIEW_2D_FOG_TOGGLE],
+		["Ripristina ombra completa", VIEW_2D_FOG_RESET],
 		["Inserisci immagine sulla griglia…", VIEW_2D_IMAGE_LOAD],
 		["Ridimensiona immagine con valori…", VIEW_2D_IMAGE_RESIZE],
 		["Aumenta opacità immagine", VIEW_2D_OPACITY_UP],
@@ -733,7 +789,24 @@ func _on_2d_view_selected(id: int) -> void:
 		VIEW_2D_LAYER_GAME:
 			board_root.call("set_2d_view_enabled", true)
 			_set_map_edit_layer(false)
+			_set_fog_edit_layer(false)
 			_set_status("Livello Gioco")
+		VIEW_2D_LAYER_FOG:
+			board_root.call("set_2d_view_enabled", true)
+			if not fog_enabled:
+				_set_fog_enabled(true)
+			_set_fog_edit_layer(true)
+			_set_status("Livello Ombra di guerra · tieni premuto per rivelare")
+		VIEW_2D_FOG_TOGGLE:
+			_set_fog_enabled(not fog_enabled)
+			_set_status(
+				"Ombra di guerra attiva"
+				if fog_enabled
+				else "Ombra di guerra disattivata"
+			)
+		VIEW_2D_FOG_RESET:
+			_reset_fog_mask()
+			_set_status("Ombra di guerra ripristinata")
 		VIEW_2D_IMAGE_LOAD:
 			board_root.call("set_2d_view_enabled", true)
 			_set_map_edit_layer(true)
@@ -1049,9 +1122,28 @@ func _adjust_map_image_opacity(delta: float) -> void:
 
 func _set_map_edit_layer(enabled: bool) -> void:
 	map_edit_layer_active = enabled
-	if board_root != null and board_root.has_method("set_map_edit_layer_active"):
-		board_root.call("set_map_edit_layer_active", enabled)
+	if enabled:
+		fog_edit_layer_active = false
+	_fog_painting = false
+	_sync_editor_input_layer()
 	_update_map_transform_overlay()
+
+
+func _set_fog_edit_layer(enabled: bool) -> void:
+	fog_edit_layer_active = enabled
+	if enabled:
+		map_edit_layer_active = false
+	_fog_painting = false
+	_sync_editor_input_layer()
+	_update_map_transform_overlay()
+
+
+func _sync_editor_input_layer() -> void:
+	if board_root != null and board_root.has_method("set_map_edit_layer_active"):
+		board_root.call(
+			"set_map_edit_layer_active",
+			map_edit_layer_active or fog_edit_layer_active
+		)
 
 
 func _build_map_transform_overlay() -> void:
@@ -1299,6 +1391,301 @@ func _clamp_map_image_center_to_grid() -> void:
 	)
 
 
+
+
+func _set_fog_enabled(enabled: bool) -> void:
+	fog_enabled = enabled
+	if fog_enabled:
+		_ensure_fog_mask()
+		_ensure_fog_overlay()
+	elif fog_edit_layer_active:
+		_set_fog_edit_layer(false)
+	if fog_overlay_node != null and is_instance_valid(fog_overlay_node):
+		fog_overlay_node.visible = fog_enabled
+
+
+func _fog_texture_size() -> Vector2i:
+	var longest_cells: float = maxf(
+		float(primary_width_cells),
+		float(primary_depth_cells)
+	)
+	var pixels_per_cell: float = minf(
+		FOG_PIXELS_PER_CELL,
+		float(FOG_MAX_TEXTURE_SIDE) / maxf(longest_cells, 1.0)
+	)
+	var width: int = maxi(
+		FOG_MIN_TEXTURE_SIDE,
+		int(round(float(primary_width_cells) * pixels_per_cell))
+	)
+	var height: int = maxi(
+		FOG_MIN_TEXTURE_SIDE,
+		int(round(float(primary_depth_cells) * pixels_per_cell))
+	)
+	return Vector2i(
+		mini(width, FOG_MAX_TEXTURE_SIDE),
+		mini(height, FOG_MAX_TEXTURE_SIDE)
+	)
+
+
+func _ensure_fog_mask() -> void:
+	var target_size: Vector2i = _fog_texture_size()
+	if fog_mask_image == null or fog_mask_image.is_empty():
+		fog_mask_image = Image.create(
+			target_size.x,
+			target_size.y,
+			false,
+			Image.FORMAT_RGBA8
+		)
+		fog_mask_image.fill(Color(0.0, 0.0, 0.0, 1.0))
+	elif (
+		fog_mask_image.get_width() != target_size.x
+		or fog_mask_image.get_height() != target_size.y
+	):
+		fog_mask_image.resize(
+			target_size.x,
+			target_size.y,
+			Image.INTERPOLATE_BILINEAR
+		)
+
+	if fog_mask_texture == null:
+		fog_mask_texture = ImageTexture.create_from_image(fog_mask_image)
+	else:
+		fog_mask_texture.update(fog_mask_image)
+
+
+func _ensure_fog_overlay() -> void:
+	_ensure_fog_mask()
+	var map_geometry := board_root.get_node_or_null(
+		"Board/MapGeometry"
+	) as Node3D
+	if map_geometry == null:
+		return
+
+	if fog_overlay_node == null or not is_instance_valid(fog_overlay_node):
+		fog_overlay_node = MeshInstance3D.new()
+		fog_overlay_node.name = "CampaignFogOfWar"
+		fog_overlay_node.cast_shadow = (
+			GeometryInstance3D.SHADOW_CASTING_SETTING_OFF
+		)
+		map_geometry.add_child(fog_overlay_node)
+
+		var material := StandardMaterial3D.new()
+		material.shading_mode = BaseMaterial3D.SHADING_MODE_UNSHADED
+		material.transparency = BaseMaterial3D.TRANSPARENCY_ALPHA
+		material.cull_mode = BaseMaterial3D.CULL_DISABLED
+		material.albedo_color = Color.BLACK
+		material.albedo_texture = fog_mask_texture
+
+		var plane := PlaneMesh.new()
+		plane.material = material
+		fog_overlay_node.mesh = plane
+	else:
+		var material := _fog_material()
+		if material != null:
+			material.albedo_texture = fog_mask_texture
+
+	_apply_fog_overlay_geometry()
+	fog_overlay_node.visible = fog_enabled
+
+
+func _fog_material() -> StandardMaterial3D:
+	if fog_overlay_node == null or not is_instance_valid(fog_overlay_node):
+		return null
+	var plane := fog_overlay_node.mesh as PlaneMesh
+	if plane == null:
+		return null
+	return plane.material as StandardMaterial3D
+
+
+func _apply_fog_overlay_geometry() -> void:
+	if fog_overlay_node == null or not is_instance_valid(fog_overlay_node):
+		return
+	var plane := fog_overlay_node.mesh as PlaneMesh
+	if plane == null:
+		return
+	plane.size = Vector2(
+		float(primary_width_cells) * _cell_size(),
+		float(primary_depth_cells) * _cell_size()
+	)
+	# Immagine mappa: 0.002 celle. Fog: 0.008 celle. La griglia 2D
+	# riceve un bias di 0.025 celle, quindi resta sempre sopra il velo.
+	fog_overlay_node.position = Vector3(
+		0.0,
+		maxf(0.002, _cell_size() * 0.008),
+		0.0
+	)
+
+
+func _reset_fog_mask() -> void:
+	_ensure_fog_mask()
+	if fog_mask_image == null:
+		return
+	fog_mask_image.fill(Color(0.0, 0.0, 0.0, 1.0))
+	_update_fog_texture()
+	if fog_enabled:
+		_ensure_fog_overlay()
+
+
+func _update_fog_texture() -> void:
+	if fog_mask_image == null or fog_mask_image.is_empty():
+		return
+	if fog_mask_texture == null:
+		fog_mask_texture = ImageTexture.create_from_image(fog_mask_image)
+	else:
+		fog_mask_texture.update(fog_mask_image)
+	var material := _fog_material()
+	if material != null:
+		material.albedo_texture = fog_mask_texture
+
+
+func _world_inside_primary_grid(world: Vector3) -> bool:
+	var half_x: float = float(primary_width_cells) * _cell_size() * 0.5
+	var half_z: float = float(primary_depth_cells) * _cell_size() * 0.5
+	return (
+		world.x >= -half_x
+		and world.x <= half_x
+		and world.z >= -half_z
+		and world.z <= half_z
+	)
+
+
+func _paint_fog_path(from_world: Vector3, to_world: Vector3) -> void:
+	var distance: float = from_world.distance_to(to_world)
+	var spacing: float = maxf(
+		_cell_size() * fog_brush_radius_cells * 0.35,
+		_cell_size() * 0.12
+	)
+	var steps: int = maxi(1, int(ceil(distance / spacing)))
+	for index: int in range(1, steps + 1):
+		var t: float = float(index) / float(steps)
+		var point: Vector3 = from_world.lerp(to_world, t)
+		if _world_inside_primary_grid(point):
+			_paint_fog_at_world(point, false)
+	_update_fog_texture()
+
+
+func _paint_fog_at_world(
+	world: Vector3,
+	update_texture: bool = true
+) -> void:
+	_ensure_fog_mask()
+	if fog_mask_image == null or fog_mask_image.is_empty():
+		return
+
+	var world_width: float = float(primary_width_cells) * _cell_size()
+	var world_depth: float = float(primary_depth_cells) * _cell_size()
+	var u: float = clampf(world.x / world_width + 0.5, 0.0, 1.0)
+	var v: float = clampf(world.z / world_depth + 0.5, 0.0, 1.0)
+	var center_x: int = int(round(u * float(fog_mask_image.get_width() - 1)))
+	var center_y: int = int(round(v * float(fog_mask_image.get_height() - 1)))
+
+	var radius_x: int = maxi(
+		1,
+		int(round(
+			fog_brush_radius_cells
+			* float(fog_mask_image.get_width())
+			/ float(primary_width_cells)
+		))
+	)
+	var radius_y: int = maxi(
+		1,
+		int(round(
+			fog_brush_radius_cells
+			* float(fog_mask_image.get_height())
+			/ float(primary_depth_cells)
+		))
+	)
+
+	var min_x: int = maxi(0, center_x - radius_x)
+	var max_x: int = mini(fog_mask_image.get_width() - 1, center_x + radius_x)
+	var min_y: int = maxi(0, center_y - radius_y)
+	var max_y: int = mini(fog_mask_image.get_height() - 1, center_y + radius_y)
+
+	for py: int in range(min_y, max_y + 1):
+		for px: int in range(min_x, max_x + 1):
+			var dx: float = float(px - center_x) / float(radius_x)
+			var dy: float = float(py - center_y) / float(radius_y)
+			if dx * dx + dy * dy <= 1.0:
+				fog_mask_image.set_pixel(
+					px,
+					py,
+					Color(0.0, 0.0, 0.0, 0.0)
+				)
+
+	if update_texture:
+		_update_fog_texture()
+
+
+func _save_fog_mask_asset() -> void:
+	if fog_mask_image == null or fog_mask_image.is_empty():
+		return
+	var manager := _campaign_manager()
+	if manager == null or not manager.has_method(
+		"get_active_campaign_asset_directory"
+	):
+		return
+	var asset_directory: String = String(
+		manager.call("get_active_campaign_asset_directory")
+	)
+	if asset_directory.is_empty():
+		return
+	fog_mask_asset_path = asset_directory.path_join("fog_of_war.png")
+	fog_mask_image.save_png(fog_mask_asset_path)
+
+
+func _serialize_fog() -> Dictionary:
+	return {
+		"enabled": fog_enabled,
+		"file": fog_mask_asset_path.get_file(),
+		"brush_radius_cells": fog_brush_radius_cells
+	}
+
+
+func _apply_fog_state(value: Variant) -> void:
+	fog_enabled = false
+	fog_edit_layer_active = false
+	_fog_painting = false
+	if fog_overlay_node != null and is_instance_valid(fog_overlay_node):
+		fog_overlay_node.free()
+	fog_overlay_node = null
+	fog_mask_texture = null
+	fog_mask_image = null
+	fog_mask_asset_path = ""
+
+	if not value is Dictionary:
+		return
+	var data: Dictionary = value as Dictionary
+	fog_enabled = bool(data.get("enabled", false))
+	fog_brush_radius_cells = clampf(
+		float(data.get(
+			"brush_radius_cells",
+			FOG_DEFAULT_BRUSH_RADIUS_CELLS
+		)),
+		0.25,
+		10.0
+	)
+
+	var file_name: String = String(data.get("file", "")).get_file()
+	if not file_name.is_empty():
+		var manager := _campaign_manager()
+		if manager != null and manager.has_method(
+			"get_active_campaign_asset_directory"
+		):
+			var asset_directory: String = String(
+				manager.call("get_active_campaign_asset_directory")
+			)
+			var image_path: String = asset_directory.path_join(file_name)
+			if FileAccess.file_exists(image_path):
+				var loaded: Image = Image.new()
+				if loaded.load(image_path) == OK and not loaded.is_empty():
+					fog_mask_image = loaded
+					fog_mask_asset_path = image_path
+
+	if fog_enabled:
+		_ensure_fog_mask()
+		_ensure_fog_overlay()
+
+
 func _clear_map_image_node_only() -> void:
 	if map_image_node != null and is_instance_valid(map_image_node):
 		map_image_node.free()
@@ -1472,6 +1859,11 @@ func _resize_primary_grid(width_cells: int, depth_cells: int) -> void:
 		)
 		_apply_map_image_geometry()
 
+	if fog_mask_image != null and not fog_mask_image.is_empty():
+		_ensure_fog_mask()
+	if fog_overlay_node != null and is_instance_valid(fog_overlay_node):
+		_apply_fog_overlay_geometry()
+
 	_refresh_volumetric_grid()
 
 
@@ -1579,6 +1971,8 @@ func _save_campaign() -> void:
 		_set_status("Questa scena non e' una campagna utente salvabile")
 		return
 
+	_save_fog_mask_asset()
+
 	var state := {
 		"version": SAVE_VERSION,
 		"primary_grid": {
@@ -1588,6 +1982,7 @@ func _save_campaign() -> void:
 		"extra_grids": _serialize_extra_grids(),
 		"element_preset": active_element_preset,
 		"map_image": _serialize_map_image(),
+		"fog_of_war": _serialize_fog(),
 		"view": _serialize_view_state(),
 		"board_snapshot": _create_board_snapshot()
 	}
@@ -1655,6 +2050,7 @@ func _load_active_campaign() -> void:
 		_set_base_platform_enabled(true)
 
 	_apply_map_image_state(state.get("map_image", {}))
+	_apply_fog_state(state.get("fog_of_war", {}))
 	_apply_view_state(state.get("view", {}))
 	await get_tree().process_frame
 
@@ -1690,6 +2086,7 @@ func _serialize_view_state() -> Dictionary:
 		"grid": grid_visible,
 		"top_down_2d": bool(board_root.call("is_2d_view_enabled")),
 		"map_edit_layer": map_edit_layer_active,
+		"fog_edit_layer": fog_edit_layer_active,
 		# Legacy keys are kept so existing campaign saves stay readable by
 		# older builds; both now represent the same unified grid.
 		"grid_2d": grid_visible,
@@ -1717,10 +2114,18 @@ func _apply_view_state(value: Variant) -> void:
 		"set_2d_view_enabled",
 		bool(data.get("top_down_2d", false))
 	)
-	_set_map_edit_layer(
-		bool(data.get("map_edit_layer", false))
-		and bool(data.get("top_down_2d", false))
+	var top_down_2d: bool = bool(data.get("top_down_2d", false))
+	var restore_fog_layer: bool = (
+		bool(data.get("fog_edit_layer", false))
+		and top_down_2d
 	)
+	if restore_fog_layer:
+		_set_fog_edit_layer(true)
+	else:
+		_set_map_edit_layer(
+			bool(data.get("map_edit_layer", false))
+			and top_down_2d
+		)
 
 
 func _set_white_environment() -> void:
