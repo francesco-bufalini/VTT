@@ -9,6 +9,7 @@ const PRESET_WHITE := 110
 const PRESET_EMPTY_ELEMENTS := 120
 const PRESET_FOREST_MOUNTAINS := 121
 const PRESET_PIRATE_SHIP := 122
+const PRESET_CREATE_GRID := 123
 
 const FOREST_MOUNTAINS_PRESET_PATH := (
 	"res://assets/presets/forest_mountains/forest_mountains_preset.glb"
@@ -63,6 +64,10 @@ const MEASURE_CLEAR := 405
 
 const VIEW_GRID := 500
 const VIEW_VISION := 502
+const VIEW_2D_TOGGLE := 510
+const VIEW_2D_IMAGE_LOAD := 511
+const VIEW_2D_IMAGE_RESIZE := 512
+const VIEW_2D_IMAGE_REMOVE := 513
 
 const SHARE_OPEN := 600
 
@@ -83,6 +88,16 @@ var _pirate_water_time: float = 0.0
 var resize_dialog: ConfirmationDialog
 var resize_width: SpinBox
 var resize_depth: SpinBox
+var _resize_from_preset: bool = false
+
+var map_image_file_dialog: FileDialog
+var map_image_size_dialog: ConfirmationDialog
+var map_image_width: SpinBox
+var map_image_depth: SpinBox
+var map_image_node: MeshInstance3D
+var map_image_asset_path: String = ""
+var map_image_width_cells: float = 0.0
+var map_image_depth_cells: float = 0.0
 
 var add_grid_dialog: ConfirmationDialog
 var add_x: SpinBox
@@ -148,6 +163,7 @@ func _initialize_editor() -> void:
 	board_root.call("set_grid_visible", true)
 	_build_toolbar()
 	_build_grid_dialogs()
+	_build_2d_image_dialogs()
 	_build_leave_dialog()
 
 	# L'editor deve essere utilizzabile subito con il mouse. ESC continua a
@@ -172,13 +188,9 @@ func _build_toolbar() -> void:
 	panel.add_child(row)
 
 	row.add_child(_make_menu_button("Preset", [
-		["Griglia piccola · 15 × 15", PRESET_SMALL],
-		["Griglia standard · 30 × 30", PRESET_STANDARD],
-		["Griglia grande · 50 × 50", PRESET_LARGE],
-		["Scenario · Vuoto bianco", PRESET_WHITE],
-		["Elementi · Nessuno", PRESET_EMPTY_ELEMENTS],
-		["Elementi · Foresta e montagne", PRESET_FOREST_MOUNTAINS],
-		["Elementi · The Siren's Light", PRESET_PIRATE_SHIP]
+		["Scenario · Foresta e montagne", PRESET_FOREST_MOUNTAINS],
+		["Scenario · The Siren's Light", PRESET_PIRATE_SHIP],
+		["Crea griglia…", PRESET_CREATE_GRID]
 	], _on_preset_selected))
 
 	row.add_child(_make_menu_button("Griglia", [
@@ -234,6 +246,13 @@ func _build_toolbar() -> void:
 		["Mostra / nascondi griglia", VIEW_GRID],
 		["Mostra / nascondi coni visivi", VIEW_VISION]
 	], _on_view_selected))
+
+	row.add_child(_make_menu_button("Vista 2D", [
+		["Attiva / disattiva vista 2D", VIEW_2D_TOGGLE],
+		["Inserisci immagine sulla griglia…", VIEW_2D_IMAGE_LOAD],
+		["Ridimensiona immagine…", VIEW_2D_IMAGE_RESIZE],
+		["Rimuovi immagine", VIEW_2D_IMAGE_REMOVE]
+	], _on_2d_view_selected))
 
 	row.add_child(_make_menu_button("Rete", [
 		["Condividi mappa / Tailscale…", SHARE_OPEN]
@@ -318,6 +337,8 @@ func _on_preset_selected(id: int) -> void:
 			_apply_forest_mountains_preset(true)
 		PRESET_PIRATE_SHIP:
 			_apply_pirate_ship_preset(true)
+		PRESET_CREATE_GRID:
+			_open_primary_grid_resize_dialog(true)
 
 
 func _apply_forest_mountains_preset(resize_grid: bool = true) -> void:
@@ -598,10 +619,7 @@ func _clear_element_presets() -> void:
 func _on_grid_selected(id: int) -> void:
 	match id:
 		GRID_RESIZE:
-			resize_width.value = primary_width_cells
-			resize_depth.value = primary_depth_cells
-			resize_dialog.reset_size()
-			resize_dialog.popup_centered_clamped(Vector2i(460, 250), 0.92)
+			_open_primary_grid_resize_dialog(false)
 		GRID_ADD:
 			add_grid_dialog.reset_size()
 			add_grid_dialog.popup_centered_clamped(Vector2i(500, 430), 0.92)
@@ -675,6 +693,33 @@ func _on_view_selected(id: int) -> void:
 			board_root.call("toggle_vision_cones")
 
 
+func _on_2d_view_selected(id: int) -> void:
+	match id:
+		VIEW_2D_TOGGLE:
+			board_root.call("toggle_2d_view")
+			_set_status(
+				"Vista 2D attiva"
+				if bool(board_root.call("is_2d_view_enabled"))
+				else "Vista 3D attiva"
+			)
+		VIEW_2D_IMAGE_LOAD:
+			board_root.call("set_2d_view_enabled", true)
+			if map_image_file_dialog != null:
+				map_image_file_dialog.reset_size()
+				map_image_file_dialog.popup_centered_clamped(
+					Vector2i(900, 640),
+					0.96
+				)
+		VIEW_2D_IMAGE_RESIZE:
+			if map_image_node == null or not is_instance_valid(map_image_node):
+				_set_status("Nessuna immagine 2D da ridimensionare")
+				return
+			_open_map_image_size_dialog()
+		VIEW_2D_IMAGE_REMOVE:
+			_clear_map_image()
+			_set_status("Immagine 2D rimossa")
+
+
 func _on_share_selected(id: int) -> void:
 	if id == SHARE_OPEN:
 		# ID 25 e' gia' l'azione pubblicata dal context menu di dnd_base.
@@ -697,6 +742,13 @@ func _build_grid_dialogs() -> void:
 	)
 	resize_dialog.confirmed.connect(
 		func() -> void:
+			if _resize_from_preset:
+				_clear_element_presets()
+				active_element_preset = ""
+				_set_orientation_marker_enabled(true)
+				_set_base_platform_enabled(true)
+				_set_white_environment()
+			_resize_from_preset = false
 			_resize_primary_grid(
 				int(resize_width.value),
 				int(resize_depth.value)
@@ -705,6 +757,10 @@ func _build_grid_dialogs() -> void:
 				"Griglia principale: %d × %d"
 				% [primary_width_cells, primary_depth_cells]
 			)
+	)
+	resize_dialog.canceled.connect(
+		func() -> void:
+			_resize_from_preset = false
 	)
 
 	add_grid_dialog = ConfirmationDialog.new()
@@ -745,6 +801,254 @@ func _build_grid_dialogs() -> void:
 				% [int(data.width), int(data.depth), float(data.y)]
 			)
 	)
+
+
+func _open_primary_grid_resize_dialog(as_preset: bool) -> void:
+	_resize_from_preset = as_preset
+	resize_dialog.title = (
+		"Crea griglia"
+		if as_preset
+		else "Dimensioni griglia principale"
+	)
+	resize_width.value = primary_width_cells
+	resize_depth.value = primary_depth_cells
+	resize_dialog.reset_size()
+	resize_dialog.popup_centered_clamped(Vector2i(460, 250), 0.92)
+
+
+func _build_2d_image_dialogs() -> void:
+	map_image_file_dialog = FileDialog.new()
+	map_image_file_dialog.title = "Inserisci immagine nella griglia"
+	map_image_file_dialog.file_mode = FileDialog.FILE_MODE_OPEN_FILE
+	map_image_file_dialog.access = FileDialog.ACCESS_FILESYSTEM
+	map_image_file_dialog.filters = PackedStringArray([
+		"*.png,*.jpg,*.jpeg,*.webp ; Immagini",
+		"*.png ; PNG",
+		"*.jpg,*.jpeg ; JPEG",
+		"*.webp ; WebP"
+	])
+	var pictures_dir := OS.get_system_dir(OS.SYSTEM_DIR_PICTURES)
+	if not pictures_dir.is_empty():
+		map_image_file_dialog.current_dir = pictures_dir
+	ui_root.add_child(map_image_file_dialog)
+	map_image_file_dialog.file_selected.connect(_on_map_image_file_selected)
+
+	map_image_size_dialog = ConfirmationDialog.new()
+	map_image_size_dialog.title = "Dimensioni immagine 2D"
+	map_image_size_dialog.ok_button_text = "Applica"
+	map_image_size_dialog.min_size = Vector2i(470, 280)
+	ui_root.add_child(map_image_size_dialog)
+
+	var body := _dialog_body(map_image_size_dialog)
+	var hint := Label.new()
+	hint.text = (
+		"Le dimensioni sono espresse in quadretti. "
+		+ "L'immagine resta centrata e non può superare i bordi della griglia."
+	)
+	hint.autowrap_mode = TextServer.AUTOWRAP_WORD_SMART
+	body.add_child(hint)
+	map_image_width = _spin_row(
+		body, "Larghezza X", 0.25, primary_width_cells, 0.25, 1.0
+	)
+	map_image_depth = _spin_row(
+		body, "Profondità Z", 0.25, primary_depth_cells, 0.25, 1.0
+	)
+	map_image_size_dialog.confirmed.connect(
+		func() -> void:
+			map_image_width_cells = clampf(
+				float(map_image_width.value), 0.25, float(primary_width_cells)
+			)
+			map_image_depth_cells = clampf(
+				float(map_image_depth.value), 0.25, float(primary_depth_cells)
+			)
+			_apply_map_image_geometry()
+			_set_status(
+				"Immagine 2D: %.2f × %.2f quadretti"
+				% [map_image_width_cells, map_image_depth_cells]
+			)
+	)
+
+
+func _open_map_image_size_dialog() -> void:
+	if map_image_size_dialog == null:
+		return
+	map_image_width.max_value = float(primary_width_cells)
+	map_image_depth.max_value = float(primary_depth_cells)
+	map_image_width.value = clampf(
+		map_image_width_cells, 0.25, float(primary_width_cells)
+	)
+	map_image_depth.value = clampf(
+		map_image_depth_cells, 0.25, float(primary_depth_cells)
+	)
+	map_image_size_dialog.reset_size()
+	map_image_size_dialog.popup_centered_clamped(Vector2i(470, 280), 0.92)
+
+
+func _on_map_image_file_selected(path: String) -> void:
+	var image := Image.new()
+	var error := image.load(path)
+	if error != OK or image.is_empty():
+		_set_status("Impossibile caricare l'immagine selezionata")
+		return
+
+	var manager := _campaign_manager()
+	if manager == null or not manager.has_method(
+		"get_active_campaign_asset_directory"
+	):
+		_set_status("Cartella asset dello scenario non disponibile")
+		return
+	var asset_directory := String(
+		manager.call("get_active_campaign_asset_directory")
+	)
+	if asset_directory.is_empty():
+		_set_status("Salvataggio immagine disponibile solo negli scenari utente")
+		return
+
+	var target_path := asset_directory.path_join("map_background.png")
+	var save_error := image.save_png(target_path)
+	if save_error != OK:
+		_set_status("Impossibile salvare l'immagine nello scenario")
+		return
+
+	map_image_asset_path = target_path
+	_create_map_image_node(image)
+	_fit_map_image_to_grid(image)
+	_apply_map_image_geometry()
+	board_root.call("set_2d_view_enabled", true)
+	_set_status("Immagine caricata · regola ora le dimensioni")
+	call_deferred("_open_map_image_size_dialog")
+
+
+func _create_map_image_node(image: Image) -> void:
+	_clear_map_image_node_only()
+	var map_geometry := board_root.get_node_or_null(
+		"Board/MapGeometry"
+	) as Node3D
+	if map_geometry == null:
+		return
+
+	map_image_node = MeshInstance3D.new()
+	map_image_node.name = "CampaignMapImage"
+	map_image_node.cast_shadow = GeometryInstance3D.SHADOW_CASTING_SETTING_OFF
+	map_image_node.position = Vector3(
+		0.0, maxf(0.002, _cell_size() * 0.01), 0.0
+	)
+	map_geometry.add_child(map_image_node)
+
+	var material := StandardMaterial3D.new()
+	material.shading_mode = BaseMaterial3D.SHADING_MODE_UNSHADED
+	material.transparency = BaseMaterial3D.TRANSPARENCY_ALPHA
+	material.cull_mode = BaseMaterial3D.CULL_DISABLED
+	material.albedo_texture = ImageTexture.create_from_image(image)
+
+	var plane := PlaneMesh.new()
+	plane.material = material
+	map_image_node.mesh = plane
+
+
+func _fit_map_image_to_grid(image: Image) -> void:
+	var pixel_width := maxf(float(image.get_width()), 1.0)
+	var pixel_height := maxf(float(image.get_height()), 1.0)
+	var aspect := pixel_width / pixel_height
+	var width_cells := float(primary_width_cells)
+	var depth_cells := width_cells / aspect
+	if depth_cells > float(primary_depth_cells):
+		depth_cells = float(primary_depth_cells)
+		width_cells = depth_cells * aspect
+	map_image_width_cells = clampf(
+		width_cells, 0.25, float(primary_width_cells)
+	)
+	map_image_depth_cells = clampf(
+		depth_cells, 0.25, float(primary_depth_cells)
+	)
+
+
+func _apply_map_image_geometry() -> void:
+	if map_image_node == null or not is_instance_valid(map_image_node):
+		return
+	map_image_width_cells = clampf(
+		map_image_width_cells, 0.25, float(primary_width_cells)
+	)
+	map_image_depth_cells = clampf(
+		map_image_depth_cells, 0.25, float(primary_depth_cells)
+	)
+	var plane := map_image_node.mesh as PlaneMesh
+	if plane == null:
+		return
+	plane.size = Vector2(
+		map_image_width_cells * _cell_size(),
+		map_image_depth_cells * _cell_size()
+	)
+	map_image_node.position.y = maxf(0.002, _cell_size() * 0.01)
+
+
+func _clear_map_image_node_only() -> void:
+	if map_image_node != null and is_instance_valid(map_image_node):
+		map_image_node.free()
+	map_image_node = null
+
+
+func _clear_map_image() -> void:
+	_clear_map_image_node_only()
+	map_image_asset_path = ""
+	map_image_width_cells = 0.0
+	map_image_depth_cells = 0.0
+
+
+func _serialize_map_image() -> Dictionary:
+	if (
+		map_image_node == null
+		or not is_instance_valid(map_image_node)
+		or map_image_asset_path.is_empty()
+	):
+		return {}
+	return {
+		"file": map_image_asset_path.get_file(),
+		"width_cells": map_image_width_cells,
+		"depth_cells": map_image_depth_cells
+	}
+
+
+func _apply_map_image_state(value: Variant) -> void:
+	_clear_map_image()
+	if not value is Dictionary:
+		return
+	var data := value as Dictionary
+	var file_name := String(data.get("file", "")).get_file()
+	if file_name.is_empty():
+		return
+
+	var manager := _campaign_manager()
+	if manager == null or not manager.has_method(
+		"get_active_campaign_asset_directory"
+	):
+		return
+	var asset_directory := String(
+		manager.call("get_active_campaign_asset_directory")
+	)
+	if asset_directory.is_empty():
+		return
+
+	var image_path := asset_directory.path_join(file_name)
+	if not FileAccess.file_exists(image_path):
+		return
+	var image := Image.new()
+	if image.load(image_path) != OK or image.is_empty():
+		return
+
+	map_image_asset_path = image_path
+	_create_map_image_node(image)
+	map_image_width_cells = clampf(
+		float(data.get("width_cells", primary_width_cells)),
+		0.25,
+		float(primary_width_cells)
+	)
+	map_image_depth_cells = clampf(
+		float(data.get("depth_cells", primary_depth_cells)),
+		0.25,
+		float(primary_depth_cells)
+	)
+	_apply_map_image_geometry()
 
 
 func _dialog_body(dialog: ConfirmationDialog) -> VBoxContainer:
@@ -832,6 +1136,15 @@ func _resize_primary_grid(width_cells: int, depth_cells: int) -> void:
 	mesh.size = world_size
 	mesh.material = _platform_material()
 	visual.mesh = mesh
+
+	if map_image_node != null and is_instance_valid(map_image_node):
+		map_image_width_cells = minf(
+			map_image_width_cells, float(primary_width_cells)
+		)
+		map_image_depth_cells = minf(
+			map_image_depth_cells, float(primary_depth_cells)
+		)
+		_apply_map_image_geometry()
 
 	_refresh_volumetric_grid()
 
@@ -948,6 +1261,7 @@ func _save_campaign() -> void:
 		},
 		"extra_grids": _serialize_extra_grids(),
 		"element_preset": active_element_preset,
+		"map_image": _serialize_map_image(),
 		"view": _serialize_view_state(),
 		"board_snapshot": _create_board_snapshot()
 	}
@@ -1014,6 +1328,7 @@ func _load_active_campaign() -> void:
 		_set_orientation_marker_enabled(true)
 		_set_base_platform_enabled(true)
 
+	_apply_map_image_state(state.get("map_image", {}))
 	_apply_view_state(state.get("view", {}))
 	await get_tree().process_frame
 
@@ -1047,6 +1362,7 @@ func _serialize_view_state() -> Dictionary:
 	var grid_visible := volumetric != null and volumetric.visible
 	return {
 		"grid": grid_visible,
+		"top_down_2d": bool(board_root.call("is_2d_view_enabled")),
 		# Legacy keys are kept so existing campaign saves stay readable by
 		# older builds; both now represent the same unified grid.
 		"grid_2d": grid_visible,
@@ -1069,6 +1385,10 @@ func _apply_view_state(value: Variant) -> void:
 	board_root.call(
 		"set_vision_cones_visible",
 		bool(data.get("vision_cones", false))
+	)
+	board_root.call(
+		"set_2d_view_enabled",
+		bool(data.get("top_down_2d", false))
 	)
 
 

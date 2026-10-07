@@ -44,6 +44,7 @@ const VIEW_VISION := 40
 const VIEW_CAMERA_SETTINGS := 41
 const VIEW_REACHES := 42
 const VIEW_CONDITIONS := 43
+const VIEW_2D := 44
 const SHARE_OPEN := 50
 const SESSION_SAVE := 51
 const SESSION_MAIN_MENU := 52
@@ -153,6 +154,7 @@ func _build_toolbar() -> void:
 		["Coni visivi", VIEW_VISION],
 		["Gittate di tutte le creature", VIEW_REACHES],
 		["Mostra / nascondi targhette e anelli", VIEW_CONDITIONS],
+		["Vista 2D / 3D", VIEW_2D],
 		["Velocità camera…", VIEW_CAMERA_SETTINGS]
 	], _on_view))
 
@@ -323,6 +325,8 @@ func _on_view(id: int) -> void:
 			board_root.call("toggle_all_reach_spheres")
 		VIEW_CONDITIONS:
 			board_root.call("toggle_condition_visuals")
+		VIEW_2D:
+			board_root.call("toggle_2d_view")
 		VIEW_CAMERA_SETTINGS:
 			board_root.call("open_camera_settings")
 

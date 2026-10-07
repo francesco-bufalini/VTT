@@ -111,6 +111,7 @@ var _context_token: CharacterBody3D = null
 var _selected_tokens: Array[CharacterBody3D] = []
 var _ui_owns_mouse: bool = false
 var _vision_cones_visible: bool = false
+var _view_2d_enabled: bool = false
 var _condition_visuals_visible: bool = true
 var board_sync: Node
 var share_dialog: AcceptDialog
@@ -2297,6 +2298,51 @@ func toggle_grid() -> void:
 
 func set_grid_visible(enabled: bool) -> void:
 	volumetric_grid.visible = enabled
+
+
+func is_2d_view_enabled() -> bool:
+	return _view_2d_enabled
+
+
+func toggle_2d_view() -> void:
+	set_2d_view_enabled(not _view_2d_enabled)
+
+
+func set_2d_view_enabled(enabled: bool) -> void:
+	_view_2d_enabled = enabled
+
+	if enabled:
+		if camera.has_method("is_first_person") \
+		and bool(camera.call("is_first_person")):
+			camera.call("exit_first_person")
+		if camera.has_method("enter_top_down_2d"):
+			camera.call(
+				"enter_top_down_2d",
+				Vector3.ZERO,
+				_primary_board_fit_size_2d()
+			)
+	else:
+		if camera.has_method("exit_top_down_2d"):
+			camera.call("exit_top_down_2d")
+
+	var crosshair := get_node_or_null("UI/Crosshair") as Control
+	if crosshair != null:
+		crosshair.visible = not enabled
+
+	if _ui_owns_mouse:
+		_release_mouse()
+	else:
+		_capture_mouse()
+
+
+func _primary_board_fit_size_2d() -> float:
+	var collision := get_node_or_null(
+		"Board/FloorCollision/CollisionShape3D"
+	) as CollisionShape3D
+	if collision != null and collision.shape is BoxShape3D:
+		var box := collision.shape as BoxShape3D
+		return maxf(8.0, maxf(box.size.x, box.size.z) * 1.08)
+	return 30.0
 
 
 # Alias di compatibilita: ora esiste una sola griglia volumetrica.
@@ -4615,11 +4661,18 @@ func capture_camera_control() -> void:
 
 
 func _capture_mouse() -> void:
-	if not _ui_owns_mouse:
-		Input.mouse_mode = Input.MOUSE_MODE_CAPTURED
+	if _ui_owns_mouse:
+		return
+	if _view_2d_enabled:
+		Input.set_default_cursor_shape(Input.CURSOR_CROSS)
+		Input.mouse_mode = Input.MOUSE_MODE_VISIBLE
+		return
+	Input.set_default_cursor_shape(Input.CURSOR_ARROW)
+	Input.mouse_mode = Input.MOUSE_MODE_CAPTURED
 
 
 func _release_mouse() -> void:
+	Input.set_default_cursor_shape(Input.CURSOR_ARROW)
 	Input.mouse_mode = Input.MOUSE_MODE_VISIBLE
 
 

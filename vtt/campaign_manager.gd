@@ -564,6 +564,16 @@ func get_active_campaign_initial_preset() -> String:
 	).strip_edges()
 
 
+func get_active_campaign_asset_directory() -> String:
+	if not is_active_user_campaign():
+		return ""
+	var directory := _campaign_directory(active_campaign_id).path_join("assets")
+	DirAccess.make_dir_recursive_absolute(
+		ProjectSettings.globalize_path(directory)
+	)
+	return directory
+
+
 func is_active_user_campaign() -> bool:
 	return (
 		not active_campaign_id.is_empty()
