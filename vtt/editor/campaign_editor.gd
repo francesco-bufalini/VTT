@@ -1051,6 +1051,8 @@ func _create_map_image_node(image: Image) -> void:
 	material.shading_mode = BaseMaterial3D.SHADING_MODE_UNSHADED
 	material.transparency = BaseMaterial3D.TRANSPARENCY_ALPHA
 	material.cull_mode = BaseMaterial3D.CULL_DISABLED
+	# La mappa è lo strato trasparente più basso della Vista 2D.
+	material.render_priority = -20
 	material.albedo_texture = ImageTexture.create_from_image(image)
 
 	var plane := PlaneMesh.new()
@@ -1477,6 +1479,8 @@ func _ensure_fog_overlay() -> void:
 		material.shading_mode = BaseMaterial3D.SHADING_MODE_UNSHADED
 		material.transparency = BaseMaterial3D.TRANSPARENCY_ALPHA
 		material.cull_mode = BaseMaterial3D.CULL_DISABLED
+		# Il fog sta sopra la mappa, ma sotto la griglia-overlay.
+		material.render_priority = -10
 		material.albedo_color = Color.BLACK
 		material.albedo_texture = fog_mask_texture
 

@@ -143,6 +143,13 @@ func set_interaction_strength(value: float) -> void:
 
 func set_surface_overlay_bias_cells(value: float) -> void:
 	_surface_overlay_bias_cells = clampf(value, 0.0, 0.25)
+	var overlay_enabled: bool = _surface_overlay_bias_cells > 0.0
+	if _grid_material != null:
+		# In Vista 2D la griglia deve essere un overlay reale. Un semplice
+		# offset geometrico non basta perché mappa e fog sono nel pass
+		# trasparente e possono essere ordinati dopo le linee della griglia.
+		_grid_material.no_depth_test = overlay_enabled
+		_grid_material.render_priority = 127 if overlay_enabled else 0
 	_visual_dirty = true
 
 
@@ -232,6 +239,9 @@ func _build_multimesh() -> void:
 	_grid_material = StandardMaterial3D.new()
 	_grid_material.transparency = BaseMaterial3D.TRANSPARENCY_ALPHA
 	_grid_material.shading_mode = BaseMaterial3D.SHADING_MODE_UNSHADED
+	var overlay_enabled: bool = _surface_overlay_bias_cells > 0.0
+	_grid_material.no_depth_test = overlay_enabled
+	_grid_material.render_priority = 127 if overlay_enabled else 0
 	_apply_material_strength()
 
 	var wire_cube := ImmediateMesh.new()
