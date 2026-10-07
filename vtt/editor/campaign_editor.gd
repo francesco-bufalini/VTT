@@ -731,6 +731,7 @@ func _on_2d_view_selected(id: int) -> void:
 			_set_map_edit_layer(true)
 			_set_status("Livello Mappa · trascina immagine o maniglie")
 		VIEW_2D_LAYER_GAME:
+			board_root.call("set_2d_view_enabled", true)
 			_set_map_edit_layer(false)
 			_set_status("Livello Gioco")
 		VIEW_2D_IMAGE_LOAD:
