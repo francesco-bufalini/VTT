@@ -1145,10 +1145,10 @@ func _on_map_transform_panel_input(event: InputEvent) -> void:
 		and event.button_index == MOUSE_BUTTON_LEFT
 	):
 		if event.pressed:
-			var world := _screen_to_map_plane(
+			var world: Vector3 = _screen_to_map_plane(
 				get_viewport().get_mouse_position()
 			)
-			if world == null:
+			if not world.is_finite():
 				return
 			_map_drag_mode = "move"
 			_map_drag_start_mouse_world = world
@@ -1163,10 +1163,10 @@ func _on_map_transform_panel_input(event: InputEvent) -> void:
 		event is InputEventMouseMotion
 		and _map_drag_mode == "move"
 	):
-		var current := _screen_to_map_plane(
+		var current: Vector3 = _screen_to_map_plane(
 			get_viewport().get_mouse_position()
 		)
-		if current == null:
+		if not current.is_finite():
 			return
 		var delta_world: Vector3 = current - _map_drag_start_mouse_world
 		map_image_node.position.x = _map_drag_start_center.x + delta_world.x
@@ -1186,10 +1186,10 @@ func _on_map_resize_handle_input(
 		and event.button_index == MOUSE_BUTTON_LEFT
 	):
 		if event.pressed:
-			var world := _screen_to_map_plane(
+			var world: Vector3 = _screen_to_map_plane(
 				get_viewport().get_mouse_position()
 			)
-			if world == null:
+			if not world.is_finite():
 				return
 			_map_drag_mode = "resize"
 			_map_resize_sign = signs
@@ -1217,26 +1217,27 @@ func _on_map_resize_handle_input(
 		and _map_drag_mode == "resize"
 		and signs == _map_resize_sign
 	):
-		var current := _screen_to_map_plane(
+		var current: Vector3 = _screen_to_map_plane(
 			get_viewport().get_mouse_position()
 		)
-		if current == null:
+		if not current.is_finite():
 			return
 		_resize_map_image_to_world_corner(current, signs)
 		get_viewport().set_input_as_handled()
 
 
-func _screen_to_map_plane(screen_position: Vector2) -> Variant:
+func _screen_to_map_plane(screen_position: Vector2) -> Vector3:
+	var invalid_point := Vector3(INF, INF, INF)
 	var camera := board_root.get_node_or_null("Camera3D") as Camera3D
 	if camera == null:
-		return null
-	var origin := camera.project_ray_origin(screen_position)
-	var direction := camera.project_ray_normal(screen_position)
+		return invalid_point
+	var origin: Vector3 = camera.project_ray_origin(screen_position)
+	var direction: Vector3 = camera.project_ray_normal(screen_position)
 	if absf(direction.y) < 0.000001:
-		return null
-	var t := -origin.y / direction.y
+		return invalid_point
+	var t: float = -origin.y / direction.y
 	if t < 0.0:
-		return null
+		return invalid_point
 	return origin + direction * t
 
 
