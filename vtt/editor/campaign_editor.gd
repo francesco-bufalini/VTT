@@ -1447,7 +1447,11 @@ func _ensure_fog_mask() -> void:
 			Image.INTERPOLATE_BILINEAR
 		)
 
-	if fog_mask_texture == null:
+	if (
+		fog_mask_texture == null
+		or fog_mask_texture.get_width() != fog_mask_image.get_width()
+		or fog_mask_texture.get_height() != fog_mask_image.get_height()
+	):
 		fog_mask_texture = ImageTexture.create_from_image(fog_mask_image)
 	else:
 		fog_mask_texture.update(fog_mask_image)
@@ -1529,7 +1533,11 @@ func _reset_fog_mask() -> void:
 func _update_fog_texture() -> void:
 	if fog_mask_image == null or fog_mask_image.is_empty():
 		return
-	if fog_mask_texture == null:
+	if (
+		fog_mask_texture == null
+		or fog_mask_texture.get_width() != fog_mask_image.get_width()
+		or fog_mask_texture.get_height() != fog_mask_image.get_height()
+	):
 		fog_mask_texture = ImageTexture.create_from_image(fog_mask_image)
 	else:
 		fog_mask_texture.update(fog_mask_image)
