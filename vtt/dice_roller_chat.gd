@@ -511,14 +511,14 @@ func roll_expression_from_sheet(
 	label: String,
 	expression: String,
 	actor: Node3D = null
-) -> void:
+) -> int:
 	var parsed := parse_dice_expression(expression)
 	if parsed.is_empty():
-		return
+		return -1
 
 	var terms_value: Variant = parsed.get("terms", [])
 	if not terms_value is Array:
-		return
+		return -1
 	var terms: Array = terms_value as Array
 	var fixed_modifier := int(parsed.get("modifier", 0))
 	var rolled_terms: Array[Dictionary] = []
@@ -532,7 +532,7 @@ func roll_expression_from_sheet(
 				100
 			)
 	if total_dice <= 0 or total_dice > 100:
-		return
+		return -1
 
 	var roll_mode := _selected_roll_mode(total_dice)
 	var candidate_rolls: Array = []
@@ -566,7 +566,7 @@ func roll_expression_from_sheet(
 		})
 
 	if rolled_terms.is_empty():
-		return
+		return -1
 
 	var event := _new_event("roll")
 	var resolved_actor: Node3D = actor
@@ -596,6 +596,7 @@ func roll_expression_from_sheet(
 	if not label.strip_edges().is_empty():
 		event["label"] = label.strip_edges().left(160)
 	_append_event(event, true)
+	return total
 
 
 static func parse_dice_expression(expression: String) -> Dictionary:
