@@ -390,7 +390,6 @@ func _build_ui() -> void:
 
 	var left := VBoxContainer.new()
 	left.custom_minimum_size = Vector2(185, 0)
-	left.size_flags_horizontal = Control.SIZE_SHRINK_BEGIN
 	left.add_theme_constant_override("separation", 5)
 	columns.add_child(left)
 	var creatures_title := Label.new()
@@ -421,7 +420,8 @@ func _build_ui() -> void:
 	_creature_list.add_child(_creature_context_menu)
 
 	var add_general := Button.new()
-	add_general.text = "+ Aggiungi personaggio"
+	add_general.text = "+ Personaggio"
+	add_general.tooltip_text = "Crea una nuova scheda di personaggio"
 	add_general.pressed.connect(begin_add_creature)
 	left.add_child(add_general)
 	_catalog_filter = LineEdit.new()
@@ -434,7 +434,8 @@ func _build_ui() -> void:
 	_catalog_list.item_activated.connect(_request_monster)
 	left.add_child(_catalog_list)
 	var add_monster := Button.new()
-	add_monster.text = "+ Creatura del bestiario"
+	add_monster.text = "+ Dal bestiario"
+	add_monster.tooltip_text = "Aggiungi una creatura dalla voce selezionata nel bestiario"
 	add_monster.pressed.connect(_request_selected_monster)
 	left.add_child(add_monster)
 
