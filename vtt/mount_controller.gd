@@ -88,7 +88,7 @@ func mount(rider: CharacterBody3D, target: Node3D) -> bool:
 	var rider_half_height := _half_height(rider)
 	var world_position := target.global_position
 	if kind == KIND_TOKEN:
-		var deck: Node3D = target.get("deck") as Node3D
+		var deck: Node3D = target.get_node_or_null("ChariotDeck") as Node3D
 		if deck != null and is_instance_valid(deck):
 			world_position = deck.to_global(
 				Vector3.UP * (rider_half_height + 0.01 * board.cell_size)
