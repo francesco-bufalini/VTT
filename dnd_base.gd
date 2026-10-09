@@ -93,6 +93,9 @@ var _pending_spawn_position: Vector3 = Vector3.ZERO
 var _has_pending_spawn_position: bool = false
 var _pending_spawn_support: Node3D = null
 var _pending_spawn_on_grid_surface: bool = false
+var _sheet_spawn_picking: bool = false
+var _sheet_spawn_record: Dictionary = {}
+var _creature_spawn_sheet_id: String = ""
 var _token_generation_confirmed_callback: Callable = Callable()
 var _token_generation_canceled_callback: Callable = Callable()
 var _token_generation_exact_position: bool = false
@@ -1087,6 +1090,17 @@ func _current_token_display_names(
 		)
 		if not display_name.is_empty():
 			names.append(display_name)
+	var sheets: Node = get_node_or_null("CreatureArea")
+	if sheets != null and sheets.has_method("get_owned_creature_names"):
+		var except_sheet_id: String = _creature_spawn_sheet_id
+		if excluded_token != null and is_instance_valid(excluded_token):
+			except_sheet_id = String(excluded_token.get_meta("creature_id", ""))
+		var owned_names: Variant = sheets.call(
+			"get_owned_creature_names", except_sheet_id
+		)
+		if owned_names is Array:
+			for owned_name: Variant in owned_names:
+				names.append(String(owned_name))
 	return names
 
 
@@ -1430,6 +1444,10 @@ func _process(_delta: float) -> void:
 
 
 func _input(event: InputEvent) -> void:
+	if _sheet_spawn_picking and _handle_sheet_spawn_placement_input(event):
+		get_viewport().set_input_as_handled()
+		return
+
 	if (
 		_forced_identity_placement_active
 		and _handle_forced_identity_placement_input(event)
@@ -1580,6 +1598,111 @@ func _input(event: InputEvent) -> void:
 			_on_token_dialog_confirmed()
 			color_dialog.hide()
 			get_viewport().set_input_as_handled()
+
+
+func begin_creature_token_placement(record: Dictionary) -> bool:
+	if (
+		record.is_empty()
+		or _sheet_spawn_picking
+		or _forced_identity_placement_active
+		or color_dialog.visible
+	):
+		return false
+	_sheet_spawn_record = record.duplicate(true)
+	_sheet_spawn_picking = true
+	_ui_owns_mouse = false
+	_set_identity_placement_hint(
+		"Clicca sulla mappa per piazzare la creatura. "
+		+ "Se possiede già un token, sarà spostato senza duplicarlo. "
+		+ "Tasto destro per annullare."
+	)
+	return true
+
+
+func _handle_sheet_spawn_placement_input(event: InputEvent) -> bool:
+	if event is InputEventKey and event.pressed and event.keycode == KEY_ESCAPE:
+		_sheet_spawn_picking = false
+		_sheet_spawn_record.clear()
+		_hide_identity_placement_hint()
+		return true
+	if not event is InputEventMouseButton or not event.pressed:
+		return false
+	if event.button_index == MOUSE_BUTTON_RIGHT:
+		_sheet_spawn_picking = false
+		_sheet_spawn_record.clear()
+		_hide_identity_placement_hint()
+		return true
+	if event.button_index != MOUSE_BUTTON_LEFT:
+		return false
+	var point: Vector2 = (
+		_screen_center()
+		if Input.mouse_mode == Input.MOUSE_MODE_CAPTURED
+		else event.position
+	)
+	if not _set_pending_spawn_from_screen(point):
+		_set_identity_placement_hint(
+			"Punta una superficie valida e clicca per piazzare la creatura."
+		)
+		return true
+	var record: Dictionary = _sheet_spawn_record.duplicate(true)
+	_sheet_spawn_picking = false
+	_sheet_spawn_record.clear()
+	_hide_identity_placement_hint()
+	var area: Node = get_node_or_null("CreatureArea")
+	var token: CharacterBody3D
+	if area != null and area.has_method("find_linked_token_for_creature"):
+		token = area.call(
+			"find_linked_token_for_creature", String(record.get("id", ""))
+		) as CharacterBody3D
+	if token != null and is_instance_valid(token):
+		push_undo_state()
+		var token_height: float = float(token.get("token_height_cells"))
+		var token_cell: float = float(token.get("cell_size"))
+		token.global_position = Vector3(
+			_pending_spawn_position.x,
+			_pending_spawn_position.y + token_height * token_cell * 0.5,
+			_pending_spawn_position.z
+		)
+		if token.has_method("snap_horizontal_to_grid"):
+			token.call("snap_horizontal_to_grid")
+		var support_y: float = _pending_spawn_position.y
+		if volumetric_grid.has_method("get_clear_spawn_floor_for_footprint"):
+			support_y = float(volumetric_grid.call(
+				"get_clear_spawn_floor_for_footprint",
+				token.global_position,
+				float(token.call("get_footprint_cells")),
+				token_height,
+				support_y
+			))
+		token.global_position.y = support_y + token_height * token_cell * 0.5
+		token.set("grid_support", _pending_spawn_support)
+		if _pending_spawn_support != null and is_instance_valid(_pending_spawn_support):
+			token.set("_support_transform", _pending_spawn_support.global_transform)
+		_replace_selection(token)
+		_has_pending_spawn_position = false
+		call_deferred("_sync_explicit_token_change", token)
+		return true
+
+	_creature_spawn_sheet_id = String(record.get("id", ""))
+	_token_generation_confirmed_callback = Callable(
+		area, "link_spawned_token"
+	).bind(_creature_spawn_sheet_id)
+	_token_generation_canceled_callback = Callable()
+	_token_generation_transform_target = null
+	_token_generation_exact_position = true
+	_token_generation_place_on_surface = true
+	_open_token_generation_dialog()
+	var preferred_pack: String = String(
+		record.get("default_miniature_id", "")
+	).strip_edges()
+	if not preferred_pack.is_empty():
+		_refresh_token_miniature_filter("", preferred_pack)
+	_set_token_name_input(
+		_unique_token_display_name(String(record.get("name", "Creatura"))),
+		false
+	)
+	_set_shared_token_editor_conditions(record.get("conditions", []))
+	return true
 
 
 func _handle_forced_identity_placement_input(event: InputEvent) -> bool:
@@ -4038,6 +4161,7 @@ func _reset_token_generation_state() -> void:
 	_has_pending_spawn_position = false
 	_pending_spawn_support = null
 	_pending_spawn_on_grid_surface = false
+	_creature_spawn_sheet_id = ""
 	_token_name_is_auto = true
 	_updating_token_name_input = false
 	_ui_owns_mouse = false
@@ -4386,7 +4510,8 @@ func _spawn_token(
 	_replace_selection(token)
 	# The miniature profile is finalized after _spawn_token returns, so defer
 	# creation of the independent sheet until its pack ID is available.
-	call_deferred("_ensure_new_token_sheet", token)
+	if _creature_spawn_sheet_id.is_empty():
+		call_deferred("_ensure_new_token_sheet", token)
 	return token
 
 
