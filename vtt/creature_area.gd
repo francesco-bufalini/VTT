@@ -741,12 +741,15 @@ func _on_creature_context_action(action: int) -> void:
 func _build_automatic_dialog() -> void:
 	_automatic_dialog = ConfirmationDialog.new()
 	_automatic_dialog.title = "Calcola automaticamente"
+	_automatic_dialog.get_ok_button().text = "Applica"
+	_automatic_dialog.get_cancel_button().text = "Annulla"
 	_automatic_dialog.dialog_text = ""
 	_automatic_dialog.min_size = Vector2i(560, 360)
 	(board_root.get_node("UI") as CanvasLayer).add_child(_automatic_dialog)
 	var content := VBoxContainer.new()
 	content.add_theme_constant_override("separation", 10)
 	content.size_flags_horizontal = Control.SIZE_EXPAND_FILL
+	content.size_flags_vertical = Control.SIZE_EXPAND_FILL
 	_automatic_dialog.get_vbox().add_child(content)
 	var intro := Label.new()
 	intro.text = "Scegli i valori da ricalcolare. Gli altri campi restano invariati."
@@ -876,6 +879,8 @@ func _build_transfer_request_dialog() -> void:
 func _build_feat_dialog() -> void:
 	_feat_dialog = ConfirmationDialog.new()
 	_feat_dialog.title = "Talenti · 5e.tools e homebrew"
+	_feat_dialog.get_ok_button().text = "Aggiungi"
+	_feat_dialog.get_cancel_button().text = "Annulla"
 	_feat_dialog.dialog_text = ""
 	_feat_dialog.min_size = Vector2i(590, 400)
 	(board_root.get_node("UI") as CanvasLayer).add_child(_feat_dialog)
@@ -1420,6 +1425,7 @@ func _selected_size_footprint() -> float:
 func _build_hp_delta_dialog() -> void:
 	_hp_delta_dialog = ConfirmationDialog.new()
 	_hp_delta_dialog.title = "Modifica PF"
+	_hp_delta_dialog.get_cancel_button().text = "Annulla"
 	_hp_delta_dialog.dialog_text = ""
 	_hp_delta_dialog.min_size = Vector2i(390, 235)
 	(board_root.get_node("UI") as CanvasLayer).add_child(_hp_delta_dialog)
@@ -1998,12 +2004,15 @@ func begin_add_creature() -> void:
 func _build_miniature_dialog() -> void:
 	_miniature_dialog = ConfirmationDialog.new()
 	_miniature_dialog.title = "Miniatura predefinita"
+	_miniature_dialog.get_ok_button().text = "Conferma"
+	_miniature_dialog.get_cancel_button().text = "Annulla"
 	_miniature_dialog.dialog_text = ""
 	_miniature_dialog.min_size = Vector2i(540, 340)
 	(board_root.get_node("UI") as CanvasLayer).add_child(_miniature_dialog)
 	var body := VBoxContainer.new()
 	body.add_theme_constant_override("separation", 9)
 	body.size_flags_horizontal = Control.SIZE_EXPAND_FILL
+	body.size_flags_vertical = Control.SIZE_EXPAND_FILL
 	_miniature_dialog.get_vbox().add_child(body)
 	_miniature_hint = Label.new()
 	_miniature_hint.autowrap_mode = TextServer.AUTOWRAP_WORD_SMART
