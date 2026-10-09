@@ -80,6 +80,50 @@ func run() -> void:
 	assert(token.get_parent() == board)
 	assert(token.get_player_hit_points().max == 0)
 	assert(area._archive._stored("character", original_id).is_empty())
+	# New tokens automatically get an owned private creature sheet using the
+	# official miniature-to-bestiary map, even without a manual link action.
+	token.set_token_pack_id("ape")
+	token.set_display_name("Test Ape")
+	area.ensure_sheet_for_token(token, true)
+	var automatic_id := String(token.get_meta("creature_id", ""))
+	assert(not automatic_id.is_empty())
+	assert(token.get_meta("creature_owner_id") == Owner.local_id())
+	var automatic: Dictionary = area._archive._stored("monster", automatic_id)
+	assert(automatic.name == "Test Ape")
+	assert(automatic.stat_block.name == "Ape")
+	assert(automatic.stat_block.source == "MM")
+	assert(automatic.linked_token_sync_id == "ui-token")
+	area.ensure_sheet_for_token(token, true)
+	assert(area._archive.list_owned().size() == 1, "Repeat linking must not duplicate a sheet")
+	# Foreign-owned tokens are never claimed; transfer of their public owner
+	# field gives the new owner a sheet automatically without confirmation.
+	var received := TokenScene.instantiate()
+	board.add_child(received)
+	received.set_meta("sync_id", "received-token")
+	received.set_token_pack_id("ape")
+	received.set_meta("creature_id", "received-sheet")
+	received.set_meta("creature_owner_id", "remote-installation-0123456789")
+	area.ensure_sheet_for_token(received)
+	assert(area._archive._stored("monster", "received-sheet").is_empty())
+	received.set_meta("creature_owner_id", Owner.local_id())
+	area.refresh_owned_sheets()
+	assert(not area._archive._stored("monster", "received-sheet").is_empty())
+	# No startup token claim: chat and initiative can open without a prompt,
+	# and an unowned/foreign miniature is not available as our chat identity.
+	var dice: Node = load("res://vtt/dice_roller_chat.gd").new()
+	board.add_child(dice)
+	dice.board_root = board
+	assert(dice.ensure_scene_identity())
+	assert(dice._scene_identity_tokens().has(token))
+	assert(dice._scene_identity_tokens().has(received))
+	received.set_meta("creature_owner_id", "remote-installation-0123456789")
+	assert(not dice._scene_identity_tokens().has(received))
+	received.set_meta("creature_owner_id", Owner.local_id())
+	# Removing a token never erases the independent sheet.
+	token.queue_free()
+	await process_frame
+	assert(not area._archive._stored("monster", automatic_id).is_empty())
+	received.queue_free()
 	for path: String in ["user://player_characters/campaign_creature_ui_regression.json", "user://master_creatures/campaign_creature_ui_regression.json"]:
 		if FileAccess.file_exists(path):
 			DirAccess.remove_absolute(ProjectSettings.globalize_path(path))

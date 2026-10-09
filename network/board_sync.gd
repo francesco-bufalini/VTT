@@ -1495,6 +1495,11 @@ func apply_snapshot(snapshot: Dictionary) -> bool:
 		if flanking_node.has_method("refresh_now"):
 			flanking_node.call_deferred("refresh_now")
 	_queue_snapshot_token_packs(snapshot)
+	# Ownership changes are public token metadata. The receiving installation
+	# creates/reattaches its private sheet without an acceptance dialog.
+	var creature_area := board_root.get_node_or_null("CreatureArea")
+	if creature_area != null and creature_area.has_method("refresh_owned_sheets"):
+		creature_area.call_deferred("refresh_owned_sheets")
 	return true
 
 func _restore_token_supports(wanted: Dictionary) -> void:

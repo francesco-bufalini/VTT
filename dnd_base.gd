@@ -4357,7 +4357,18 @@ func _spawn_token(
 		token.call("set_vision_cone_visible", _vision_cones_visible)
 
 	_replace_selection(token)
+	# The miniature profile is finalized after _spawn_token returns, so defer
+	# creation of the independent sheet until its pack ID is available.
+	call_deferred("_ensure_new_token_sheet", token)
 	return token
+
+
+func _ensure_new_token_sheet(token: CharacterBody3D) -> void:
+	if token == null or not is_instance_valid(token):
+		return
+	var area := get_node_or_null("CreatureArea")
+	if area != null and area.has_method("ensure_sheet_for_token"):
+		area.call("ensure_sheet_for_token", token, true)
 
 
 func _interact_or_select_under_mouse(

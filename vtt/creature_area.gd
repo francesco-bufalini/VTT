@@ -48,6 +48,7 @@ var _trackers: VBoxContainer
 var _owner_target: LineEdit
 var _import_dialog: AcceptDialog
 var _import_text: TextEdit
+var _auto_reference_requests: Dictionary = {}
 
 
 func setup(root: Node3D) -> void:
@@ -61,15 +62,14 @@ func setup(root: Node3D) -> void:
 	_client.catalog_ready.connect(_on_catalog_ready)
 	_client.creature_ready.connect(_on_monster_received)
 	_client.catalog_failed.connect(func(message: String) -> void: _set_status(message))
-	_client.creature_failed.connect(
-		func(_key: String, message: String) -> void: _set_status(message)
-	)
+	_client.creature_failed.connect(_on_creature_request_failed)
 	_build_ui()
 	_build_transfer_dialog()
 	_reload()
 	if DisplayServer.get_name() != "headless":
 		_client.call("load_catalog")
 	_on_catalog_ready(ContentCatalog.home_entries("monsters"))
+	call_deferred("refresh_owned_sheets")
 
 
 func toggle_panel() -> void:
@@ -305,6 +305,7 @@ func _build_ui() -> void:
 	form.add_child(actions)
 	var link_token := Button.new()
 	link_token.text = "Associa a token selezionato"
+	link_token.tooltip_text = "Recupera una scheda esistente quando il vecchio token è stato eliminato."
 	link_token.pressed.connect(_link_selected_token)
 	actions.add_child(link_token)
 	_owner_target = LineEdit.new()
@@ -924,7 +925,12 @@ func _request_monster(index: int) -> void:
 	_set_status("Caricamento creatura da 5e.tools…")
 
 
-func _on_monster_received(_key: String, stat: Dictionary) -> void:
+func _on_monster_received(request_key: String, stat: Dictionary) -> void:
+	if _auto_reference_requests.has(request_key):
+		var record_id := String(_auto_reference_requests[request_key])
+		_auto_reference_requests.erase(request_key)
+		_complete_auto_reference(record_id, stat)
+		return
 	var record: Dictionary = _archive.create_monster(stat)
 	record["kind"] = "monster"
 	if _archive.save(record) != OK:
@@ -934,6 +940,140 @@ func _on_monster_received(_key: String, stat: Dictionary) -> void:
 	_selected_kind = "monster"
 	_reload()
 	_set_status("Creatura importata; ora ne controlli la scheda.")
+
+
+func refresh_owned_sheets() -> void:
+	for node: Node in get_tree().get_nodes_in_group("dnd_token"):
+		if node is Node3D and board_root.is_ancestor_of(node):
+			if String(node.get_meta("creature_owner_id", "")) == Owner.local_id():
+				ensure_sheet_for_token(node as Node3D)
+
+
+# Called only for tokens created locally, or for tokens whose public owner ID
+# now equals this installation after a remote ownership transfer. Never claim
+# unowned tokens just because they are visible in a received scene.
+func ensure_sheet_for_token(token: Node3D, locally_created: bool = false) -> void:
+	if token == null or not is_instance_valid(token) or not board_root.is_ancestor_of(token):
+		return
+	var local_owner := Owner.local_id()
+	var current_owner := String(token.get_meta("creature_owner_id", "")).strip_edges()
+	if current_owner != local_owner and (not locally_created or not current_owner.is_empty()):
+		return
+	var token_id := ""
+	var sync: Node = board_root.get("board_sync") as Node
+	if sync != null and sync.has_method("get_sync_id_for_node"):
+		token_id = String(sync.call("get_sync_id_for_node", token))
+	if token_id.is_empty():
+		return
+	var sheet_id := String(token.get_meta("creature_id", "")).strip_edges()
+	var record: Dictionary = {}
+	for owned: Dictionary in _archive.list_owned():
+		if not sheet_id.is_empty() and String(owned.get("id", "")) == sheet_id:
+			record = owned.duplicate(true)
+			break
+		if sheet_id.is_empty() and String(owned.get("linked_token_sync_id", "")) == token_id:
+			record = owned.duplicate(true)
+			break
+	if not record.is_empty() and String(record.get("linked_token_sync_id", "")) == token_id:
+		# Keep existing sheet data, including player edits and HP.
+		_set_token_sheet_metadata(token, record)
+		return
+
+	var display_name := String(token.call("get_display_name")) if token.has_method("get_display_name") else String(token.name)
+	var pack_id := String(token.call("get_token_pack_id")) if token.has_method("get_token_pack_id") else ""
+	var identity := String(token.call("get_miniature_identity")) if token.has_method("get_miniature_identity") else pack_id
+	var reference: Dictionary = {}
+	if TokenPackManager != null:
+		reference = TokenPackManager.get_bestiary_reference(identity, "2014")
+		if reference.is_empty():
+			reference = TokenPackManager.get_bestiary_reference(identity, "2024")
+	var is_character := String(token.get_meta("player_character_id", "")).strip_edges() != ""
+	if record.is_empty():
+		if is_character:
+			record = _archive.create_character()
+		else:
+			var stat: Dictionary = {
+				"name": String(reference.get("name", display_name)),
+				"source": String(reference.get("source", "")),
+			}
+			if not reference.is_empty():
+				# A lightweight official reference is always available even
+				# while the full stat block is downloading.
+				stat["bestiary_reference"] = reference.duplicate(true)
+				stat["reference_pending"] = true
+			record = _archive.create_monster(stat)
+		if not sheet_id.is_empty():
+			record["id"] = sheet_id
+		record["name"] = display_name
+	if pack_id.is_empty():
+		pack_id = identity
+	record["default_miniature_id"] = pack_id
+	record["owner_id"] = local_owner
+	record["linked_token_sync_id"] = token_id
+	record["linked_token_name"] = display_name
+	if _archive.save(record) != OK:
+		push_warning("CreatureArea: impossibile creare la scheda per %s" % display_name)
+		return
+	_set_token_sheet_metadata(token, record)
+	_sync_token_health(record)
+	_reload()
+	var saved_stat: Dictionary = record.get("stat_block", {})
+	if bool(saved_stat.get("reference_pending", false)) and DisplayServer.get_name() != "headless":
+		var key := "auto:%s" % String(record.get("id", ""))
+		_auto_reference_requests[key] = String(record.get("id", ""))
+		_client.call("request_creature", String(reference.get("name", "")), String(reference.get("source", "")), key)
+
+
+func _set_token_sheet_metadata(token: Node3D, record: Dictionary) -> void:
+	var id := String(record.get("id", ""))
+	token.set_meta("creature_id", id)
+	token.set_meta("creature_owner_id", Owner.local_id())
+	token.set_meta("default_miniature_id", String(record.get("default_miniature_id", "")))
+	if String(record.get("kind", "")) == "character":
+		for key: String in ["master_creature_id", "master_creature_name", "master_creature_side"]:
+			if token.has_meta(key):
+				token.remove_meta(key)
+		token.set_meta("player_character_id", id)
+		token.set_meta("player_character_name", String(record.get("name", "")))
+	else:
+		for key: String in ["player_character_id", "player_character_name"]:
+			if token.has_meta(key):
+				token.remove_meta(key)
+		token.set_meta("master_creature_id", id)
+		token.set_meta("master_creature_name", String(record.get("name", "")))
+		token.set_meta("master_creature_side", String(record.get("side", "ally")))
+
+
+func _complete_auto_reference(id: String, stat: Dictionary) -> void:
+	for owned: Dictionary in _archive.list_owned():
+		if String(owned.get("id", "")) != id or String(owned.get("kind", "")) != "monster":
+			continue
+		var previous: Dictionary = owned.get("stat_block", {})
+		if not bool(previous.get("reference_pending", false)):
+			return
+		owned["stat_block"] = stat.duplicate(true)
+		owned["source"] = String(stat.get("source", ""))
+		var completed: Dictionary = _archive.create_monster(stat)
+		# Change only provisional defaults: explicit user edits take precedence.
+		if int(owned.get("max_hp", 1)) == 1:
+			owned["max_hp"] = completed.get("max_hp", 1)
+			if int(owned.get("current_hp", 1)) == 1:
+				owned["current_hp"] = completed.get("current_hp", 1)
+		if int(owned.get("armor_class", 10)) == 10:
+			owned["armor_class"] = completed.get("armor_class", 10)
+		owned["trackers"] = Rules.reconcile_trackers(owned.get("trackers", []), completed.get("trackers", []))
+		if _archive.save(owned) == OK:
+			_reload()
+			_sync_token_health(owned)
+		return
+
+
+func _on_creature_request_failed(request_key: String, message: String) -> void:
+	if _auto_reference_requests.has(request_key):
+		_auto_reference_requests.erase(request_key)
+		push_warning("CreatureArea: scheda conservata senza stat block completo: %s" % message)
+	else:
+		_set_status(message)
 
 
 func _create_character() -> void:
@@ -1137,16 +1277,20 @@ func _transfer() -> void:
 		return
 	var linked_token := _find_linked_token(record)
 	if linked_token != null:
-		linked_token.set_meta(
-			"creature_owner_id", String(package.get("recipient", ""))
-		)
+		linked_token.set_meta("creature_owner_id", String(package.get("recipient", "")))
+		var sync: Node = board_root.get("board_sync") as Node
+		if sync != null and sync.has_method("sync_local_change_now"):
+			sync.call_deferred("sync_local_change_now")
+	# Optional recovery copy of the full private sheet; never required to
+	# accept ownership of the miniature in a synchronized scene.
 	DisplayServer.clipboard_set(JSON.stringify(package))
 	_selected_id = ""
 	_selected_kind = ""
 	_reload()
 	_set_status(
-		"Codice di cessione copiato. Invia il testo al nuovo controllore; "
-		+ "la creatura non appare più nel tuo archivio."
+		"Controllo trasferito automaticamente al destinatario tramite la mappa. "
+		+ "Il codice privato copiato è facoltativo per recuperare i dettagli "
+		+ "completi della scheda."
 	)
 
 
