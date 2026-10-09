@@ -2,6 +2,8 @@ extends Node
 
 const BestiaryClient = preload("res://vtt/bestiary_5etools_client.gd")
 const CreatureStore = preload("res://vtt/master_creature_store.gd")
+const CreatureRules = preload("res://vtt/creature_rules.gd")
+const CreatureOwner = preload("res://vtt/creature_owner.gd")
 const PDFStatblockImporter = preload("res://vtt/pdf_statblock_importer.gd")
 
 var board_root: Node3D
@@ -27,6 +29,11 @@ var _current_hp: SpinBox
 var _max_hp: SpinBox
 var _linked_token_label: Label
 var _stat_block: RichTextLabel
+var _armor_class: SpinBox
+var _ability_fields: Dictionary = {}
+var _tracker_list: VBoxContainer
+var _default_miniature_label: Label
+var _transfer_id_field: LineEdit
 
 var _token_dialog: ConfirmationDialog
 var _token_selector: OptionButton
@@ -382,10 +389,80 @@ func _build_ui() -> void:
 	)
 	identity.add_child(_max_hp)
 
+	_add_label(identity, "CA")
+	_armor_class = _hp_spin()
+	_armor_class.value_changed.connect(
+		func(_value: float) -> void:
+			_save_current_fields()
+	)
+	identity.add_child(_armor_class)
+
+	for ability: String in ["str", "dex", "con", "int", "wis", "cha"]:
+		_add_label(identity, ability.to_upper())
+		var score := _hp_spin()
+		score.min_value = 1
+		score.max_value = 30
+		score.value_changed.connect(
+			func(_value: float) -> void:
+				_save_current_fields()
+		)
+		identity.add_child(score)
+		_ability_fields[ability] = score
+
 	_linked_token_label = Label.new()
 	_linked_token_label.text = "Token collegato: nessuno"
 	_linked_token_label.modulate = Color(0.76, 0.80, 0.86, 1.0)
 	sheet_column.add_child(_linked_token_label)
+
+	_default_miniature_label = Label.new()
+	_default_miniature_label.text = "Miniatura predefinita: non identificata"
+	sheet_column.add_child(_default_miniature_label)
+
+	var tracker_header := HBoxContainer.new()
+	sheet_column.add_child(tracker_header)
+	_add_label(tracker_header, "Risorse e ricariche")
+	for reset_kind: String in ["turn", "short_rest", "long_rest"]:
+		var reset_button := Button.new()
+		match reset_kind:
+			"turn":
+				reset_button.text = "Nuovo turno"
+			"short_rest":
+				reset_button.text = "Riposo breve"
+			"long_rest":
+				reset_button.text = "Riposo lungo"
+		reset_button.pressed.connect(_reset_trackers.bind(reset_kind))
+		tracker_header.add_child(reset_button)
+	var custom_button := Button.new()
+	custom_button.text = "+ Tracker"
+	custom_button.pressed.connect(_add_custom_tracker)
+	tracker_header.add_child(custom_button)
+
+	var tracker_scroll := ScrollContainer.new()
+	tracker_scroll.custom_minimum_size = Vector2(0, 130)
+	tracker_scroll.size_flags_horizontal = Control.SIZE_EXPAND_FILL
+	sheet_column.add_child(tracker_scroll)
+	_tracker_list = VBoxContainer.new()
+	_tracker_list.size_flags_horizontal = Control.SIZE_EXPAND_FILL
+	tracker_scroll.add_child(_tracker_list)
+
+	var transfer_row := HBoxContainer.new()
+	sheet_column.add_child(transfer_row)
+	_transfer_id_field = LineEdit.new()
+	_transfer_id_field.placeholder_text = "ID del nuovo controllore"
+	_transfer_id_field.size_flags_horizontal = Control.SIZE_EXPAND_FILL
+	transfer_row.add_child(_transfer_id_field)
+	var copy_owner_id := Button.new()
+	copy_owner_id.text = "Copia il mio ID"
+	copy_owner_id.pressed.connect(
+		func() -> void:
+			DisplayServer.clipboard_set(CreatureOwner.local_id())
+			_set_status("ID personale copiato. Condividilo con chi ti cede la creatura.")
+	)
+	transfer_row.add_child(copy_owner_id)
+	var transfer_button := Button.new()
+	transfer_button.text = "Cedi creatura"
+	transfer_button.pressed.connect(_transfer_current_creature)
+	transfer_row.add_child(transfer_button)
 
 	_stat_block = RichTextLabel.new()
 	_stat_block.bbcode_enabled = true
@@ -719,6 +796,20 @@ func _load_current_form() -> void:
 	_name_edit.text = String(creature.get("name", ""))
 	_current_hp.value = int(creature.get("current_hp", 0))
 	_max_hp.value = int(creature.get("max_hp", 0))
+	_armor_class.value = int(creature.get("armor_class", 10))
+	var abilities_value: Variant = creature.get("abilities", {})
+	var abilities: Dictionary = (
+		abilities_value as Dictionary if abilities_value is Dictionary else {}
+	)
+	for ability: String in _ability_fields.keys():
+		var score: SpinBox = _ability_fields[ability] as SpinBox
+		score.value = int(abilities.get(ability, 10))
+	_default_miniature_label.text = "Miniatura predefinita: %s" % (
+		String(creature.get("default_miniature_id", ""))
+		if not String(creature.get("default_miniature_id", "")).is_empty()
+		else "non identificata"
+	)
+	_refresh_tracker_list(creature)
 	var token_name := String(creature.get("linked_token_name", "")).strip_edges()
 	_linked_token_label.text = (
 		"Token collegato: " + token_name
@@ -747,6 +838,11 @@ func _save_current_fields() -> void:
 		creature["name"] = String(creature.get("base_name", "Creatura"))
 	creature["current_hp"] = int(_current_hp.value)
 	creature["max_hp"] = int(_max_hp.value)
+	creature["armor_class"] = int(_armor_class.value)
+	var abilities: Dictionary = {}
+	for ability: String in _ability_fields.keys():
+		abilities[ability] = int((_ability_fields[ability] as SpinBox).value)
+	creature["abilities"] = abilities
 	_creatures[index] = creature
 	_store.call("save_creatures", _creatures)
 	_sync_creature_token(String(creature.get("id", "")))
@@ -950,11 +1046,194 @@ func get_owned_health_bar_sync_entries() -> Array[Dictionary]:
 	return entries
 
 
+
+func _refresh_tracker_list(creature: Dictionary) -> void:
+	if _tracker_list == null:
+		return
+	for child: Node in _tracker_list.get_children():
+		_tracker_list.remove_child(child)
+		child.queue_free()
+	var trackers_value: Variant = creature.get("trackers", [])
+	if not trackers_value is Array:
+		return
+	for raw: Variant in trackers_value as Array:
+		if not raw is Dictionary:
+			continue
+		var tracker: Dictionary = raw as Dictionary
+		var tracker_id := String(tracker.get("id", ""))
+		var row := HBoxContainer.new()
+		_tracker_list.add_child(row)
+		var label := Label.new()
+		label.text = String(tracker.get("label", "Risorsa"))
+		label.custom_minimum_size = Vector2(180, 0)
+		label.size_flags_horizontal = Control.SIZE_EXPAND_FILL
+		row.add_child(label)
+		var current := _hp_spin()
+		current.min_value = 0
+		current.max_value = 9999
+		current.custom_minimum_size = Vector2(65, 28)
+		current.value = int(tracker.get("current", 0))
+		current.value_changed.connect(
+			_on_tracker_value_changed.bind(tracker_id, "current")
+		)
+		row.add_child(current)
+		_add_label(row, "/")
+		var total := _hp_spin()
+		total.min_value = 0
+		total.max_value = 9999
+		total.custom_minimum_size = Vector2(65, 28)
+		total.value = int(tracker.get("maximum", 0))
+		total.value_changed.connect(
+			_on_tracker_value_changed.bind(tracker_id, "maximum")
+		)
+		row.add_child(total)
+		if String(tracker.get("kind", "")) == "recharge":
+			_add_label(row, "R%d+" % int(tracker.get("recharge_min", 6)))
+		elif tracker_id.begins_with("custom_"):
+			var remove_button := Button.new()
+			remove_button.text = "×"
+			remove_button.pressed.connect(_remove_custom_tracker.bind(tracker_id))
+			row.add_child(remove_button)
+
+
+func _on_tracker_value_changed(
+	value: float, tracker_id: String, key: String
+) -> void:
+	if _loading_form:
+		return
+	var index := _index_by_id(_current_id)
+	if index < 0:
+		return
+	var creature: Dictionary = _creatures[index].duplicate(true)
+	var trackers: Array = creature.get("trackers", [])
+	for i: int in range(trackers.size()):
+		if not trackers[i] is Dictionary:
+			continue
+		var entry: Dictionary = trackers[i]
+		if String(entry.get("id", "")) != tracker_id:
+			continue
+		entry[key] = int(value)
+		trackers[i] = CreatureRules.normalize_tracker(entry)
+		break
+	creature["trackers"] = trackers
+	_creatures[index] = creature
+	_store.call("save_creatures", _creatures)
+	# Rebuild to clamp the other spin when a maximum is decreased.
+	if key == "maximum":
+		_refresh_tracker_list(creature)
+
+
+func _add_custom_tracker() -> void:
+	var index := _index_by_id(_current_id)
+	if index < 0:
+		return
+	var creature: Dictionary = _creatures[index].duplicate(true)
+	var trackers: Array = creature.get("trackers", [])
+	trackers.append(CreatureRules.default_tracker(
+		"custom_%d" % Time.get_ticks_usec(),
+		"Risorsa personalizzata %d" % (trackers.size() + 1),
+		1, "long_rest"
+	))
+	creature["trackers"] = trackers
+	_creatures[index] = creature
+	_store.call("save_creatures", _creatures)
+	_refresh_tracker_list(creature)
+
+
+func _remove_custom_tracker(tracker_id: String) -> void:
+	var index := _index_by_id(_current_id)
+	if index < 0 or not tracker_id.begins_with("custom_"):
+		return
+	var creature: Dictionary = _creatures[index].duplicate(true)
+	var kept: Array = []
+	for raw: Variant in creature.get("trackers", []):
+		if raw is Dictionary and String(raw.get("id", "")) != tracker_id:
+			kept.append(raw)
+	creature["trackers"] = kept
+	_creatures[index] = creature
+	_store.call("save_creatures", _creatures)
+	_refresh_tracker_list(creature)
+
+
+func _reset_trackers(rest_type: String) -> void:
+	var index := _index_by_id(_current_id)
+	if index < 0:
+		return
+	var creature: Dictionary = _creatures[index].duplicate(true)
+	creature["trackers"] = CreatureRules.apply_reset(
+		creature.get("trackers", []), rest_type
+	)
+	_creatures[index] = creature
+	_store.call("save_creatures", _creatures)
+	_refresh_tracker_list(creature)
+
+
+func _transfer_current_creature() -> void:
+	var index := _index_by_id(_current_id)
+	if index < 0:
+		return
+	var target := _transfer_id_field.text.strip_edges()
+	if target.length() < 16 or target == CreatureOwner.local_id():
+		_set_status("Inserisci un ID destinatario valido e diverso dal tuo.")
+		return
+	var sync: Node = board_root.get("board_sync") as Node
+	if sync == null or not sync.has_method("broadcast_sync_event"):
+		_set_status("Sincronizzazione non disponibile.")
+		return
+	var creature: Dictionary = _creatures[index].duplicate(true)
+	creature["owner_id"] = target
+	var error: Error = sync.call("broadcast_sync_event", {
+		"type": "creature_transfer",
+		"area": "master",
+		"recipient": target,
+		"creature": creature
+	})
+	if error != OK:
+		_set_status("Cessione non inviata: %s" % error_string(error))
+		return
+	_unlink_creature_tokens(_current_id)
+	_creatures.remove_at(index)
+	_current_id = ""
+	_store.call("save_creatures", _creatures)
+	_refresh_rosters()
+	_set_status("Cessione inviata al nuovo controllore.")
+
+
+func receive_creature_transfer(event: Dictionary) -> void:
+	if String(event.get("recipient", "")) != CreatureOwner.local_id():
+		return
+	var raw: Variant = event.get("creature", {})
+	if not raw is Dictionary:
+		return
+	var creature: Dictionary = _store.call("normalize_creature", raw as Dictionary)
+	if not CreatureOwner.is_owner(creature):
+		return
+	var creature_id := String(creature.get("id", ""))
+	if creature_id.is_empty():
+		return
+	var index := _index_by_id(creature_id)
+	if index >= 0:
+		_creatures[index] = creature
+	else:
+		_creatures.append(creature)
+	_store.call("save_creatures", _creatures)
+	_current_id = creature_id
+	_refresh_rosters()
+	_load_current_form()
+	_set_status("Controllo ricevuto: %s" % String(creature.get("name", "")))
+
+
 func _clear_form() -> void:
 	_loading_form = true
 	_name_edit.clear()
 	_current_hp.value = 0
 	_max_hp.value = 0
+	_armor_class.value = 10
+	for ability: String in _ability_fields.keys():
+		(_ability_fields[ability] as SpinBox).value = 10
+	_default_miniature_label.text = "Miniatura predefinita: non identificata"
+	for row: Node in _tracker_list.get_children():
+		row.queue_free()
 	_linked_token_label.text = "Token collegato: nessuno"
 	_stat_block.text = "Seleziona una creatura da Nemici o Alleati."
 	_set_form_enabled(false)
@@ -968,6 +1247,10 @@ func _set_form_enabled(enabled: bool) -> void:
 		_current_hp.editable = enabled
 	if _max_hp != null:
 		_max_hp.editable = enabled
+	if _armor_class != null:
+		_armor_class.editable = enabled
+	for score: SpinBox in _ability_fields.values():
+		score.editable = enabled
 
 
 func _index_by_id(creature_id: String) -> int:
