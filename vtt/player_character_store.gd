@@ -133,7 +133,7 @@ func create_character() -> Dictionary:
 		"species_id": "",
 		"class_id": "",
 		"player_name": "",
-		"rules_version": "2024",
+		"rules_version": "2014",
 		"class": "",
 		"class_source": "",
 		"subclass": "",
