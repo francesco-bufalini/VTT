@@ -270,10 +270,14 @@ func _ready() -> void:
 	add_child(master_area)
 	master_area.call("setup", self)
 
-	var creature_area: Node = preload("res://vtt/creature_area.gd").new()
-	creature_area.name = "CreatureArea"
-	add_child(creature_area)
-	creature_area.call("setup", self)
+	var creature_script: Script = load("res://vtt/creature_area.gd")
+	if creature_script == null:
+		push_error("CreatureArea: script non disponibile")
+	else:
+		var creature_area: Node = creature_script.new()
+		creature_area.name = "CreatureArea"
+		add_child(creature_area)
+		creature_area.call("setup", self)
 
 	dice_roller_chat = preload("res://vtt/dice_roller_chat.gd").new()
 	dice_roller_chat.name = "DiceRollerChat"
