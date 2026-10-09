@@ -2151,6 +2151,27 @@ func _refresh_reference(record: Dictionary) -> void:
 			var description: String = FiveToolsText.blocks(feature_content)
 			if not description.is_empty():
 				parts.append(description)
+	# Subclass features are resolved against each class level, never total level.
+	for class_value: Variant in class_rows:
+		if not class_value is Dictionary:
+			continue
+		var class_data: Dictionary = class_value as Dictionary
+		var subclass_name: String = String(class_data.get("subclass", ""))
+		if subclass_name.is_empty():
+			continue
+		var class_name_value: String = String(class_data.get("name", ""))
+		var subclass_level: int = int(class_data.get("level", 1))
+		parts.append(FiveToolsText.section("%s · %s" % [class_name_value, subclass_name]))
+		for feature: Dictionary in Player5eTools.entries("subclass_features"):
+			if String(feature.get("class_name", feature.get("className", ""))).nocasecmp_to(class_name_value) != 0:
+				continue
+			if String(feature.get("subclass_name", feature.get("subclassName", ""))).nocasecmp_to(subclass_name) != 0:
+				continue
+			if int(feature.get("level", 0)) > subclass_level:
+				continue
+			parts.append(FiveToolsText.subtitle(Player5eTools.display_label(feature)))
+			var content: Variant = feature.get("entries", feature.get("description", ""))
+			parts.append(FiveToolsText.blocks(content))
 	parts.append(FiveToolsText.section("TRATTI DELLA SPECIE (5e.tools)"))
 	var species: String = String(record.get("species", ""))
 	for feature: Dictionary in Player5eTools.entries("races"):
