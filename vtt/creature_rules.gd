@@ -16,6 +16,47 @@ static func monster_armor_class(stat: Dictionary) -> int:
 	return 10
 
 
+# Preserve fractional 5etools Challenge Ratings (1/8, 1/4, 1/2).
+static func monster_cr_value(stat: Dictionary) -> float:
+	var raw: Variant = stat.get("cr", 0)
+	if raw is Dictionary:
+		raw = (raw as Dictionary).get("cr", 0)
+	if raw is float or raw is int:
+		return maxf(0.0, float(raw))
+	var label: String = String(raw).strip_edges()
+	if "/" in label:
+		var parts: PackedStringArray = label.split("/")
+		if parts.size() == 2 and parts[0].is_valid_float() and parts[1].is_valid_float():
+			var denominator: float = float(parts[1])
+			if denominator > 0:
+				return maxf(0.0, float(parts[0]) / denominator)
+	return maxf(0.0, float(label)) if label.is_valid_float() else 0.0
+
+
+# Bestiary reach is determined by its melee attack descriptions, not the
+# miniature or its physical footprint. Ranged attacks do not increase reach.
+static func monster_base_reach_feet(stat: Dictionary) -> float:
+	var explicit: Variant = stat.get("reach", null)
+	if explicit is float or explicit is int:
+		return maxf(5.0, float(explicit))
+	var maximum: float = 5.0
+	for section: String in ["action", "bonus", "reaction", "legendary", "mythic", "trait"]:
+		var entries: Variant = stat.get(section, [])
+		if not entries is Array:
+			continue
+		for raw: Variant in entries:
+			if not raw is Dictionary:
+				continue
+			var attack: Dictionary = raw as Dictionary
+			var text_value: String = JSON.stringify(attack.get("entries", [])).to_lower()
+			var pattern: RegEx = RegEx.create_from_string("reach\\s*(\\d+)\\s*(?:ft\\.?|feet)")
+			if pattern == null:
+				continue
+			for match_value: RegExMatch in pattern.search_all(text_value):
+				maximum = maxf(maximum, float(match_value.get_string(1)))
+	return maximum
+
+
 static func monster_abilities(stat: Dictionary) -> Dictionary:
 	var result: Dictionary = {}
 	for ability: String in ["str", "dex", "con", "int", "wis", "cha"]:
