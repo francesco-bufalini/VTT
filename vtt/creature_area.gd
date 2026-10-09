@@ -1594,6 +1594,8 @@ func _save() -> void:
 	_apply_sheet_properties(record)
 	# A visible sheet follows current level and race/class immediately.
 	_refresh_reference(record)
+	if _spellcasting_ui != null:
+		_spellcasting_ui.call("update_character_context", record)
 
 
 func _select_sheet_size(size_name: String) -> void:
