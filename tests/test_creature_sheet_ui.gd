@@ -156,15 +156,22 @@ func run() -> void:
 	assert(area._miniature_dialog.dialog_text.is_empty()
 		and area._automatic_dialog.dialog_text.is_empty(),
 		"Descriptions must not compete with popup custom controls")
-	assert(area._miniature_filter.get_parent().get_parent() == area._miniature_dialog.get_vbox())
-	assert(area._automatic_hp.get_parent().get_parent() == area._automatic_dialog.get_vbox())
+	assert(area._miniature_filter.get_parent().get_parent() == area._miniature_dialog)
+	assert(area._automatic_hp.get_parent().get_parent() == area._automatic_dialog,
+		"Godot 4 dialog content must use direct children, not nonexistent get_vbox()")
 	var original_id: String = area._current().id
 	# Before any token exists, the + row action enters token placement.
 	area._act_on_creature_token(original_id)
 	assert(board.requested_creature_id == original_id)
 	assert(not area.is_panel_open())
 	area.show_panel()
+	assert(area._add_class_button.disabled, "Cannot multiclass before selecting a base class")
+	area._add_multiclass_row("Fighter", 2, "PHB")
+	assert(area._multiclass_controls.is_empty(),
+		"Secondary class row is forbidden without a base class")
 	area._select_reference(area._class_name, "Wizard", "PHB")
+	area._refresh_multiclass_availability()
+	assert(not area._add_class_button.disabled)
 	assert(area._level is SpinBox and area._level.update_on_text_changed,
 		"Base class level must save edits while its input still has focus")
 	assert(area._hp.update_on_text_changed and area._max_hp.update_on_text_changed)
@@ -220,11 +227,16 @@ func run() -> void:
 	sheet = area._current()
 	assert(sheet.id == original_id and sheet.classes[0].level == 6)
 	var spells: Node = area._spellcasting_ui
+	assert(spells._description.get_index() > spells._pact_total_spin.get_parent().get_index(),
+		"Spell details must render below the slot controls")
+	assert(not spells._search_row.visible and spells._known_list.item_count > 0,
+		"Class spell list must be automatic and search optional")
+	spells._on_options_selected(1)
+	assert(spells._search_row.visible)
 	spells._search.text = "Magic Missile"
 	assert(not spells._visible.is_empty(), "5etools spell catalog must be searchable")
 	spells._available.select(0)
 	spells._add_selected_known()
-	spells._toggle_selected_prepared()
 	assert(area._current().spells.size() == 1)
 	assert(area._current().prepared_spells.size() == 1)
 	spells._calculate_slot_totals()
@@ -234,6 +246,9 @@ func run() -> void:
 	spells._change_slot(1, -1)
 	assert(area._current().spell_slots_spent[1] == 0)
 	spells._change_slot(1, 1)
+	spells._on_options_selected(3)
+	assert(area._current().spell_slots_spent[1] == 0,
+		"Automatic recharge must both recalculate class slots and restore availability")
 	spells._restore_all()
 	assert(area._current().spell_slots_spent[1] == 0)
 	area._reload()
