@@ -1918,7 +1918,7 @@ func _refresh_trackers(record: Dictionary) -> void:
 		source_button.size_flags_horizontal = Control.SIZE_EXPAND_FILL
 		source_button.alignment = HORIZONTAL_ALIGNMENT_LEFT
 		source_button.pressed.connect(
-			_open_tracker_trait.bind(String(tracker.get("origin", title)))
+			_open_tracker_trait.bind(String(tracker.get("origin", title)), source_label)
 		)
 		row.add_child(source_button)
 		var id: String = String(tracker["id"])
@@ -1987,21 +1987,28 @@ func _change_tracker(id: String, delta: int, maximum: int) -> void:
 	_refresh_trackers(record)
 
 
-func _open_tracker_trait(origin: String) -> void:
+func _open_tracker_trait(origin: String, source_label: String = "") -> void:
 	for i: int in range(_tabs.get_tab_count()):
 		if _tabs.get_tab_title(i) == "Tratti":
 			_tabs.current_tab = i
-			# Find the feature's rendered text and scroll to its actual line.
-			# Defer until the tab is visible and RichTextLabel has its layout.
-			call_deferred("_focus_tracker_trait", origin)
+			call_deferred("_focus_tracker_trait", origin, source_label)
 			return
 
 
-func _focus_tracker_trait(origin: String) -> void:
+func _focus_tracker_trait(origin: String, source_label: String = "") -> void:
 	if _reference == null or origin.is_empty():
 		return
 	var plain_text: String = _reference.get_parsed_text()
-	var position: int = plain_text.to_lower().find(origin.to_lower())
+	var normalized: String = plain_text.to_lower()
+	var from_position: int = 0
+	# Both a Cleric and a Paladin can have Channel Divinity; start the
+	# search inside the relevant class section instead of at document start.
+	if not source_label.is_empty():
+		var class_heading: String = source_label.get_slice(" · ", 0) + " (livello"
+		var class_offset: int = normalized.find(class_heading.to_lower())
+		if class_offset >= 0:
+			from_position = class_offset
+	var position: int = normalized.find(origin.to_lower(), from_position)
 	if position >= 0:
 		_reference.scroll_to_line(maxi(0, _reference.get_character_line(position) - 1))
 	else:
