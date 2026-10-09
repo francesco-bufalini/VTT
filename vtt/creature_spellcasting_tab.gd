@@ -39,6 +39,7 @@ var _pact_level_spin: SpinBox
 var _pact_remain: Label
 var _pact_use: Button
 var _pact_restore: Button
+var _calculate_button: Button
 
 
 func setup(on_change: Callable, on_status: Callable) -> void:
@@ -136,6 +137,7 @@ func setup(on_change: Callable, on_status: Callable) -> void:
 	calculate.tooltip_text = "Imposta i massimi secondo la progressione D&D 5e; non ripristina gli slot consumati"
 	calculate.pressed.connect(_calculate_slot_totals)
 	slot_title.add_child(calculate)
+	_calculate_button = calculate
 	var rest_all := Button.new()
 	rest_all.text = "Ricarica tutti"
 	rest_all.pressed.connect(_restore_all)
@@ -235,6 +237,7 @@ func load_record(record: Dictionary) -> void:
 	_pact_total_spin.value = _pact_total
 	_pact_level_spin.value = _pact_level
 	_class_only.disabled = _class_keys().is_empty()
+	_calculate_button.disabled = _class_keys().is_empty()
 	_search.text = ""
 	_refresh_saved_spell_lists()
 	_update_resource_labels()
@@ -365,6 +368,7 @@ func update_character_context(record: Dictionary) -> void:
 	_record["rules_version"] = String(record.get("rules_version", "2014"))
 	if previous_class != current_class or previous_primary != current_primary:
 		_class_only.disabled = _class_keys().is_empty()
+		_calculate_button.disabled = _class_keys().is_empty()
 		_filter_spells()
 
 
@@ -497,6 +501,10 @@ func _restore_all() -> void:
 
 
 func _calculate_slot_totals() -> void:
+	if _class_keys().is_empty():
+		if _on_status.is_valid():
+			_on_status.call("I mostri senza livelli di classe gestiscono gli slot manualmente.")
+		return
 	var result: Dictionary = Rules.spell_slot_progression(_record)
 	var totals: Variant = result.get("slots", [])
 	if not totals is Array:
