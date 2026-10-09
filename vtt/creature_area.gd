@@ -53,8 +53,8 @@ var _level: SpinBox
 var _feats: TextEdit
 var _default_miniature: LineEdit
 var _default_miniature_id := ""
-var _add_kind_dialog: ConfirmationDialog
 var _miniature_dialog: ConfirmationDialog
+var _miniature_hint: Label
 var _miniature_filter: LineEdit
 var _miniature_list: ItemList
 var _miniature_choices: Array[Dictionary] = []
@@ -95,7 +95,6 @@ func setup(root: Node3D) -> void:
 	_client.catalog_failed.connect(func(message: String) -> void: _set_status(message))
 	_client.creature_failed.connect(_on_creature_request_failed)
 	_build_ui()
-	_build_add_kind_dialog()
 	_build_miniature_dialog()
 	_build_transfer_dialog()
 	_build_transfer_request_dialog()
@@ -272,7 +271,6 @@ func _unhandled_input(event: InputEvent) -> void:
 		if event.keycode == KEY_ESCAPE and not (
 			_import_dialog.visible
 			or _miniature_dialog.visible
-			or _add_kind_dialog.visible
 			or _feat_dialog.visible
 			or _transfer_dialog.visible
 			or _delete_dialog.visible
@@ -360,7 +358,7 @@ func _build_ui() -> void:
 	left.add_child(spawn_selected)
 
 	var add_general := Button.new()
-	add_general.text = "+ Aggiungi creatura…"
+	add_general.text = "+ Aggiungi personaggio"
 	add_general.pressed.connect(begin_add_creature)
 	left.add_child(add_general)
 	_catalog_filter = LineEdit.new()
@@ -668,11 +666,18 @@ func _on_creature_context_action(action: int) -> void:
 func _build_automatic_dialog() -> void:
 	_automatic_dialog = ConfirmationDialog.new()
 	_automatic_dialog.title = "Calcola automaticamente"
-	_automatic_dialog.dialog_text = "Seleziona solo i campi da ricalcolare. Le altre scelte rimangono invariate."
-	_automatic_dialog.min_size = Vector2i(570, 420)
+	_automatic_dialog.dialog_text = ""
+	_automatic_dialog.min_size = Vector2i(560, 360)
 	(board_root.get_node("UI") as CanvasLayer).add_child(_automatic_dialog)
 	var content := VBoxContainer.new()
-	_automatic_dialog.add_child(content)
+	content.add_theme_constant_override("separation", 10)
+	content.size_flags_horizontal = Control.SIZE_EXPAND_FILL
+	_automatic_dialog.get_vbox().add_child(content)
+	var intro := Label.new()
+	intro.text = "Scegli i valori da ricalcolare. Gli altri campi restano invariati."
+	intro.autowrap_mode = TextServer.AUTOWRAP_WORD_SMART
+	intro.custom_minimum_size.y = 24
+	content.add_child(intro)
 	_automatic_hp = CheckBox.new()
 	_automatic_hp.text = "PF massimi: media dei dadi vita + Costituzione"
 	_automatic_hp.toggled.connect(func(_enabled: bool) -> void: _refresh_automatic_preview())
@@ -690,7 +695,9 @@ func _build_automatic_dialog() -> void:
 	explanation.autowrap_mode = TextServer.AUTOWRAP_WORD_SMART
 	content.add_child(explanation)
 	_automatic_preview = RichTextLabel.new()
-	_automatic_preview.custom_minimum_size = Vector2(520, 165)
+	_automatic_preview.custom_minimum_size = Vector2(0, 135)
+	_automatic_preview.size_flags_horizontal = Control.SIZE_EXPAND_FILL
+	_automatic_preview.size_flags_vertical = Control.SIZE_EXPAND_FILL
 	_automatic_preview.scroll_active = true
 	content.add_child(_automatic_preview)
 	_automatic_dialog.confirmed.connect(_apply_automatic_calculation)
@@ -714,7 +721,7 @@ func _open_automatic_calculation() -> void:
 	_automatic_proficiency.set_pressed_no_signal(false)
 	_automatic_spells.set_pressed_no_signal(false)
 	_refresh_automatic_preview()
-	_automatic_dialog.popup_centered_clamped(Vector2i(620, 450), 0.9)
+	_automatic_dialog.popup_centered_clamped(Vector2i(610, 430), 0.85)
 
 
 func _refresh_automatic_preview() -> void:
@@ -1732,44 +1739,35 @@ func _on_creature_request_failed(request_key: String, message: String) -> void:
 
 # All creation paths (character, bestiary and GUI) share this mandatory picker.
 func begin_add_creature() -> void:
+	# Importing a bestiary monster already has its own search below the list.
+	# The primary Add action creates a character directly.
 	show_panel()
-	_add_kind_dialog.popup_centered(Vector2i(500, 180))
-
-
-func _build_add_kind_dialog() -> void:
-	_add_kind_dialog = ConfirmationDialog.new()
-	_add_kind_dialog.title = "Aggiungi creatura"
-	_add_kind_dialog.dialog_text = "Scegli se creare un personaggio con classi o importare un mostro dal bestiario."
-	_add_kind_dialog.get_ok_button().text = "Personaggio / classi"
-	_add_kind_dialog.add_button("Dal bestiario", true, "bestiary")
-	(board_root.get_node("UI") as CanvasLayer).add_child(_add_kind_dialog)
-	_add_kind_dialog.confirmed.connect(_create_character)
-	_add_kind_dialog.custom_action.connect(_on_add_kind_action)
-
-
-func _on_add_kind_action(action: StringName) -> void:
-	if String(action) != "bestiary":
-		return
-	_add_kind_dialog.hide()
-	_catalog_filter.grab_focus()
-	_set_status("Cerca e seleziona un mostro nel bestiario, poi scegli la sua miniatura di default.")
+	_create_character()
 
 
 func _build_miniature_dialog() -> void:
 	_miniature_dialog = ConfirmationDialog.new()
 	_miniature_dialog.title = "Miniatura predefinita"
-	_miniature_dialog.dialog_text = "Seleziona la miniatura predefinita da usare quando generi il token."
-	_miniature_dialog.min_size = Vector2i(520, 310)
+	_miniature_dialog.dialog_text = ""
+	_miniature_dialog.min_size = Vector2i(540, 340)
 	(board_root.get_node("UI") as CanvasLayer).add_child(_miniature_dialog)
 	var body := VBoxContainer.new()
-	_miniature_dialog.add_child(body)
+	body.add_theme_constant_override("separation", 9)
+	body.size_flags_horizontal = Control.SIZE_EXPAND_FILL
+	_miniature_dialog.get_vbox().add_child(body)
+	_miniature_hint = Label.new()
+	_miniature_hint.autowrap_mode = TextServer.AUTOWRAP_WORD_SMART
+	_miniature_hint.custom_minimum_size.y = 24
+	body.add_child(_miniature_hint)
 	_miniature_filter = LineEdit.new()
 	_miniature_filter.placeholder_text = "Cerca miniatura per nome o ID..."
 	_miniature_filter.clear_button_enabled = true
 	_miniature_filter.text_changed.connect(_filter_miniatures)
 	body.add_child(_miniature_filter)
 	_miniature_list = ItemList.new()
-	_miniature_list.custom_minimum_size = Vector2(450, 140)
+	_miniature_list.custom_minimum_size = Vector2(0, 215)
+	_miniature_list.size_flags_horizontal = Control.SIZE_EXPAND_FILL
+	_miniature_list.size_flags_vertical = Control.SIZE_EXPAND_FILL
 	_miniature_list.item_selected.connect(_on_miniature_selected)
 	_miniature_list.item_activated.connect(_on_miniature_selected)
 	body.add_child(_miniature_list)
@@ -1823,10 +1821,10 @@ func _choose_miniature(record: Dictionary, is_new: bool, choose_current: bool = 
 				String(b.get("name", b_id))
 			) < 0
 	)
-	_miniature_dialog.dialog_text = (
-		"Miniature associate alla voce del bestiario in cima (★). Seleziona per confermare."
+	_miniature_hint.text = (
+		"★ Le miniature associate alla voce del bestiario sono mostrate per prime."
 		if not _suggested_miniature_ids.is_empty()
-		else "Scegli una miniatura predefinita dal catalogo."
+		else "Cerca nel catalogo e seleziona una miniatura."
 	)
 	_miniature_filter.text = ""
 	# New characters must make an explicit selection. Do not silently
@@ -1838,7 +1836,7 @@ func _choose_miniature(record: Dictionary, is_new: bool, choose_current: bool = 
 		))
 	)
 	_filter_miniatures("")
-	_miniature_dialog.popup_centered_clamped(Vector2i(620, 430), 0.88)
+	_miniature_dialog.popup_centered_clamped(Vector2i(620, 440), 0.85)
 
 
 func _filter_miniatures(query: String) -> void:
