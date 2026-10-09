@@ -954,6 +954,12 @@ func _link_creature_to_token(
 	token.set_meta("master_creature_id", creature_id)
 	token.set_meta("master_creature_name", String(creature.get("name", "")))
 	token.set_meta("master_creature_side", String(creature.get("side", "enemy")))
+	token.set_meta("creature_id", creature_id)
+	token.set_meta("creature_owner_id", String(creature.get("owner_id", "")))
+	token.set_meta(
+		"default_miniature_id",
+		String(creature.get("default_miniature_id", ""))
+	)
 
 	var sync_id := ""
 	var sync: Node = board_root.get("board_sync") as Node
@@ -984,6 +990,9 @@ func _unlink_creature_tokens(creature_id: String) -> void:
 			node.remove_meta("master_creature_id")
 			node.remove_meta("master_creature_name")
 			node.remove_meta("master_creature_side")
+			for field: String in ["creature_id", "creature_owner_id", "default_miniature_id"]:
+				if node.has_meta(field):
+					node.remove_meta(field)
 			if node.has_method("clear_master_hit_points"):
 				node.call("clear_master_hit_points")
 
@@ -1191,7 +1200,6 @@ func _transfer_current_creature() -> void:
 	if error != OK:
 		_set_status("Cessione non inviata: %s" % error_string(error))
 		return
-	_unlink_creature_tokens(_current_id)
 	_creatures.remove_at(index)
 	_current_id = ""
 	_store.call("save_creatures", _creatures)
