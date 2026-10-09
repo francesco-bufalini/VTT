@@ -202,7 +202,9 @@ func _show_selected(index: int) -> void:
 		_client.call("request_creature", String(entry.get("name", "")), String(entry.get("source", "")), _active_request)
 	else:
 		if _current_category() not in ["spells", "conditions", "diseases", "effects"]:
-			_details.text = PlayerCatalog.info_text(entry, ContentCatalog.description(entry))
+			_details.text = FiveToolsText.blocks(PlayerCatalog.info_text(
+				entry, ContentCatalog.description(entry)
+			))
 		else:
 			_render(entry)
 
@@ -215,7 +217,7 @@ func _on_creature_ready(request_key: String, stat: Dictionary) -> void:
 func _on_creature_failed(request_key: String, message: String) -> void:
 	if request_key == _active_request:
 		_active_request = ""
-		_details.text = message
+		_details.text = FiveToolsText.blocks(message)
 
 func _render(entry: Dictionary) -> void:
 	var lines: PackedStringArray = [FiveToolsText.title(String(entry.get("name", "Voce")))]
