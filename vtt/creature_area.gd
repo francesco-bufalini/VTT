@@ -21,7 +21,11 @@ var _loading := false
 
 var _panel: PanelContainer
 var _status: Label
-var _creature_list: ItemList
+var _creature_list: VBoxContainer
+var _creature_list_scroll: ScrollContainer
+var _creature_row_buttons: Array[Button] = []
+var _creature_eye_buttons: Array[Button] = []
+var _creature_presence_elapsed := 0.0
 var _creature_context_menu: PopupMenu
 var _automatic_dialog: ConfirmationDialog
 var _automatic_hp: CheckBox
@@ -334,13 +338,18 @@ func _build_ui() -> void:
 	var left := VBoxContainer.new()
 	left.custom_minimum_size = Vector2(260, 0)
 	columns.add_child(left)
-	_creature_list = ItemList.new()
-	_creature_list.custom_minimum_size.y = 75
-	_creature_list.tooltip_text = "Le mie creature · archivio indipendente dalle scene"
-	_creature_list.size_flags_vertical = Control.SIZE_EXPAND_FILL
-	_creature_list.item_selected.connect(_on_selected)
-	_creature_list.gui_input.connect(_on_creature_list_gui_input)
-	left.add_child(_creature_list)
+	_creature_list_scroll = ScrollContainer.new()
+	_creature_list_scroll.custom_minimum_size.y = 40
+	_creature_list_scroll.size_flags_horizontal = Control.SIZE_EXPAND_FILL
+	_creature_list_scroll.size_flags_vertical = Control.SIZE_SHRINK_BEGIN
+	_creature_list_scroll.horizontal_scroll_mode = ScrollContainer.SCROLL_MODE_DISABLED
+	left.add_child(_creature_list_scroll)
+	_creature_list = VBoxContainer.new()
+	_creature_list.name = "CreatureRows"
+	_creature_list.size_flags_horizontal = Control.SIZE_EXPAND_FILL
+	_creature_list.add_theme_constant_override("separation", 2)
+	_creature_list.tooltip_text = "Le mie creature · clic destro per le azioni"
+	_creature_list_scroll.add_child(_creature_list)
 	_creature_context_menu = PopupMenu.new()
 	_creature_context_menu.add_item("Genera token / riposiziona", 1)
 	_creature_context_menu.add_item("Calcola automaticamente…", 2)
@@ -633,24 +642,59 @@ func _on_options_selected(id: int) -> void:
 			_confirm_delete()
 
 
-func _on_creature_list_gui_input(event: InputEvent) -> void:
+func _on_creature_row_gui_input(event: InputEvent, index: int) -> void:
 	if not event is InputEventMouseButton:
 		return
 	var click: InputEventMouseButton = event as InputEventMouseButton
 	if not click.pressed or click.button_index != MOUSE_BUTTON_RIGHT:
 		return
-	var index: int = _creature_list.get_item_at_position(click.position, true)
-	if index < 0 or index >= _records.size():
-		return
-	if _selected_id != String(_records[index].get("id", "")):
-		_save()
-	_creature_list.select(index)
-	_on_selected(index)
+	_select_creature_row(index)
 	_creature_context_menu.position = Vector2i(
 		get_viewport().get_mouse_position()
 	)
 	_creature_context_menu.popup()
 	get_viewport().set_input_as_handled()
+
+
+func _select_creature_row(index: int) -> void:
+	if index < 0 or index >= _records.size():
+		return
+	if (
+		_selected_id != String(_records[index].get("id", ""))
+		or _selected_kind != String(_records[index].get("kind", ""))
+	):
+		_save()
+	_on_selected(index)
+
+
+func _focus_creature_token(creature_id: String) -> void:
+	var token: CharacterBody3D = find_linked_token_for_creature(creature_id)
+	if token == null or not is_instance_valid(token):
+		_refresh_creature_eye_buttons()
+		return
+	# The sheet covers the board; close it so the centered token is visible.
+	hide_panel()
+	if board_root.has_method("focus_camera_on_token"):
+		board_root.call("focus_camera_on_token", token)
+
+
+func _refresh_creature_eye_buttons() -> void:
+	for i: int in range(mini(_records.size(), _creature_eye_buttons.size())):
+		var token: CharacterBody3D = find_linked_token_for_creature(
+			String(_records[i].get("id", ""))
+		)
+		_creature_eye_buttons[i].visible = (
+			token != null and is_instance_valid(token)
+		)
+
+
+func _process(delta: float) -> void:
+	if _panel == null or not _panel.visible:
+		return
+	_creature_presence_elapsed += delta
+	if _creature_presence_elapsed >= 0.4:
+		_creature_presence_elapsed = 0.0
+		_refresh_creature_eye_buttons()
 
 
 func _on_creature_context_action(action: int) -> void:
@@ -1074,32 +1118,72 @@ func _reference_entry(option: OptionButton) -> Dictionary:
 
 func _reload() -> void:
 	_records = _archive.list_owned()
-	_creature_list.clear()
+	for child: Node in _creature_list.get_children():
+		if child == _creature_context_menu:
+			continue
+		_creature_list.remove_child(child)
+		child.queue_free()
+	_creature_row_buttons.clear()
+	_creature_eye_buttons.clear()
+
 	var selected_index := -1
 	for i: int in range(_records.size()):
-		var item := _records[i]
-		var kind := String(item.get("kind", ""))
-		var icon := "◇" if kind == "monster" else "♙"
-		_creature_list.add_item("%s %s" % [icon, String(item.get("name", ""))])
-		_creature_list.set_item_metadata(i, String(item.get("id", "")))
+		var item: Dictionary = _records[i]
+		var kind: String = String(item.get("kind", ""))
+		var icon: String = "◇" if kind == "monster" else "♙"
+		var creature_id: String = String(item.get("id", ""))
+		var row := HBoxContainer.new()
+		row.custom_minimum_size.y = 35
+		row.size_flags_horizontal = Control.SIZE_EXPAND_FILL
+		row.add_theme_constant_override("separation", 3)
+		_creature_list.add_child(row)
+		var select_button := Button.new()
+		select_button.text = "%s %s" % [icon, String(item.get("name", ""))]
+		select_button.alignment = HORIZONTAL_ALIGNMENT_LEFT
+		select_button.clip_text = true
+		select_button.toggle_mode = true
+		select_button.custom_minimum_size.y = 34
+		select_button.size_flags_horizontal = Control.SIZE_EXPAND_FILL
+		select_button.pressed.connect(_select_creature_row.bind(i))
+		select_button.gui_input.connect(_on_creature_row_gui_input.bind(i))
+		row.add_child(select_button)
+		_creature_row_buttons.append(select_button)
+		var eye := Button.new()
+		eye.name = "FocusToken"
+		eye.text = "👁"
+		eye.tooltip_text = "Centra la visuale sul token di questa creatura"
+		eye.custom_minimum_size = Vector2(35, 34)
+		eye.size_flags_horizontal = Control.SIZE_SHRINK_END
+		eye.pressed.connect(_focus_creature_token.bind(creature_id))
+		eye.gui_input.connect(_on_creature_row_gui_input.bind(i))
+		row.add_child(eye)
+		_creature_eye_buttons.append(eye)
 		if (
-			String(item.get("id", "")) == _selected_id
+			creature_id == _selected_id
 			and kind == _selected_kind
 		):
 			selected_index = i
+
+	# A short list takes only its actual height; larger archives scroll.
+	var visible_rows: int = mini(maxi(_records.size(), 1), 7)
+	_creature_list_scroll.custom_minimum_size.y = float(
+		visible_rows * 37 + 6
+	)
+	_refresh_creature_eye_buttons()
 	if selected_index < 0 and not _records.is_empty():
 		selected_index = 0
 	if _options_menu != null:
 		var options_popup := _options_menu.get_popup()
-		options_popup.set_item_disabled(options_popup.get_item_index(7), selected_index < 0)
+		options_popup.set_item_disabled(
+			options_popup.get_item_index(7), selected_index < 0
+		)
 	if selected_index >= 0:
-		_creature_list.select(selected_index)
 		_on_selected(selected_index)
 	else:
 		_selected_id = ""
 		_selected_kind = ""
 		_loading = true
-		_reference.text = "Crea una creatura o selezionala dall'archivio."
+		_reference.text = "Crea un personaggio o cerca una creatura nel bestiario."
 		_loading = false
 
 
@@ -1119,6 +1203,8 @@ func _on_selected(index: int) -> void:
 	var record := _records[index]
 	_selected_id = String(record.get("id", ""))
 	_selected_kind = String(record.get("kind", ""))
+	for i: int in range(_creature_row_buttons.size()):
+		_creature_row_buttons[i].set_pressed_no_signal(i == index)
 	_load_form(record)
 
 
