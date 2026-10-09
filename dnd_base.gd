@@ -3314,8 +3314,10 @@ func _on_context_menu_id_pressed(id: int) -> void:
 
 
 	if id == CONTEXT_COMBAT_START:
+		context_menu.hide()
+		# Starting combat opens a creature picker: do not recapture the
+		# pointer above that dialog as the old context-menu handler did.
 		start_combat_mode()
-		_close_context_menu_to_game()
 		return
 
 	if id == CONTEXT_COMBAT_END:
@@ -4017,6 +4019,13 @@ func _close_context_menu_to_game() -> void:
 
 func _on_context_menu_hidden() -> void:
 	if (
+		initiative_tracker != null
+		and is_instance_valid(initiative_tracker)
+		and initiative_tracker.get("add_dialog") is Window
+		and bool(initiative_tracker.get("add_dialog").visible)
+	):
+		return
+	if (
 		color_dialog.visible
 		or (is_instance_valid(share_dialog) and share_dialog.visible)
 		or (is_instance_valid(map_save_dialog) and map_save_dialog.visible)
@@ -4033,6 +4042,13 @@ func _on_context_menu_hidden() -> void:
 
 func _finish_context_menu_close() -> void:
 	if _mount_pick_rider != null:
+		return
+	if (
+		initiative_tracker != null
+		and is_instance_valid(initiative_tracker)
+		and initiative_tracker.get("add_dialog") is Window
+		and bool(initiative_tracker.get("add_dialog").visible)
+	):
 		return
 	if (
 		color_dialog.visible
