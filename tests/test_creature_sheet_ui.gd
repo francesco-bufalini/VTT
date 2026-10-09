@@ -201,6 +201,46 @@ func run() -> void:
 	var sheet: Dictionary = area._current()
 	assert(sheet.classes[0].source == "PHB" and sheet.rules_version == "2014")
 	assert(sheet.classes[0].level == 5 and sheet.level == 5)
+	# Traits from species, class and subclass must interleave by level;
+	# filters must use the actual class/subclass rather than data provider.
+	var Traits = load("res://vtt/creature_traits_tab.gd")
+	var multiclass_sheet: Dictionary = {
+		"kind": "character", "name": "Trait Test",
+		"species": "Elf", "species_id": "5etools:races:phb:elf",
+		"species_source": "PHB",
+		"classes": [
+			{"name": "Wizard", "source": "PHB", "level": 5,
+			 "subclass": "School of Abjuration", "subclass_source": "PHB"},
+			{"name": "Fighter", "source": "PHB", "level": 2}
+		]
+	}
+	var ordered_traits: Array[Dictionary] = Traits.collect_features(multiclass_sheet)
+	assert(not ordered_traits.is_empty(), "Trait catalog must supply real features")
+	var previous_level: int = -1
+	var trait_origins: Dictionary = {}
+	var has_action_surge := false
+	for trait: Dictionary in ordered_traits:
+		assert(int(trait["level"]) >= previous_level,
+			"Traits must sort by level regardless of their origin")
+		previous_level = int(trait["level"])
+		trait_origins[String(trait["origin"])] = true
+		if String(trait["name"]) == "Action Surge":
+			has_action_surge = true
+		if String(trait.get("class_name", "")) == "Wizard":
+			assert(String(trait["book"]) != "XPHB",
+				"2014 characters must not acquire 2024 features")
+	assert(trait_origins.has("Specie · Elf") and trait_origins.has("Classe · Wizard")
+		and trait_origins.has("Classe · Fighter")
+		and trait_origins.has("Sottoclasse · Wizard / School of Abjuration"),
+		"All sources must appear in a single ordered timeline")
+	assert(has_action_surge, "Fighter feature should be available to its tracker")
+	area._traits_ui.call("load_record", multiclass_sheet)
+	assert(area._traits_ui._origin_choice.item_count >= 5,
+		"Origin filter must include all selected class and subclass sources")
+	area._traits_ui.call("focus_feature", "Action Surge", "Fighter · PHB")
+	assert(String(area._traits_ui._active_origin).begins_with("class|fighter|phb"),
+		"Tracker links must reveal the feature even when another origin was filtered")
+	area._traits_ui.call("load_record", area._current())
 	area._ability_bonus_spins["con"].value = 2
 	area._save()
 	assert(area._current().ability_bonuses.con == 2)
