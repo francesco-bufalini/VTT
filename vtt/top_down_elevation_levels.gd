@@ -1,7 +1,7 @@
 extends Node3D
 
 # Queries tactical, solid map surfaces without relying on the grid's
-# progressively populated visual cache. Tokens never create floor levels.
+# progressively populated visual cache. Tokens supply additional navigable levels.
 const MAP_MASK := 1 | 4
 const MAX_RAY_HITS := 32
 const MAX_RAY_HEIGHT := 1500.0
@@ -96,6 +96,23 @@ func get_solid_levels() -> Array[float]:
 					MAX_RAY_HEIGHT
 				)
 			)
+	# Each token is a valid tactical elevation even when floating in midair
+	# with no floor collision. Token global Y is its centre, not its base.
+	var tokens_root: Node3D = board_root.get_node_or_null("Tokens") as Node3D
+	if tokens_root != null:
+		for node: Node in tokens_root.get_children():
+			if (
+				not node is CharacterBody3D
+				or not node.is_in_group("dnd_token")
+				or node.is_queued_for_deletion()
+			):
+				continue
+			var token: CharacterBody3D = node as CharacterBody3D
+			var height_value: Variant = token.get("token_height_cells")
+			var cell_value: Variant = token.get("cell_size")
+			var height_cells: float = float(height_value) if height_value is float or height_value is int else 1.0
+			var token_cell: float = float(cell_value) if cell_value is float or cell_value is int else cell_size
+			levels.append(token.global_position.y - height_cells * token_cell * 0.5)
 	return _unique_heights(levels)
 
 
