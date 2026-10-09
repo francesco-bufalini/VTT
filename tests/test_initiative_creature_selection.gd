@@ -11,7 +11,7 @@ func _initialize() -> void:
 func _make_token(parent: Node3D, name: String, creature_id: String) -> CharacterBody3D:
 	var token: CharacterBody3D = TokenScene.instantiate()
 	parent.add_child(token)
-	token.set_display_name(name)
+	token.call("set_display_name", name)
 	token.set_physics_process(false)
 	if not creature_id.is_empty():
 		token.set_meta("creature_id", creature_id)
@@ -36,7 +36,7 @@ func run() -> void:
 	var candidates: Array = tracker.call("_creature_candidates")
 	assert(candidates.size() == 2, "Only creatures with live linked tokens can join")
 	assert(String(candidates[0].get("name", "")) == "Aria")
-	assert(String(candidates[0].get("token_id", "")) == linked.get_token_id())
+	assert(String(candidates[0].get("token_id", "")) == String(linked.call("get_token_id")))
 	assert(String(candidates[0].get("creature_id", "")) == "creature-aria")
 	assert(String(candidates[1].get("name", "")) == "Borin")
 
@@ -49,7 +49,7 @@ func run() -> void:
 	enrolled.append({
 		"id": "initiative_1",
 		"name": "Aria",
-		"token_id": linked.get_token_id(),
+		"token_id": String(linked.call("get_token_id")),
 		"creature_id": "creature-aria",
 		"creature_owner_id": "test-owner"
 	})
