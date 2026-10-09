@@ -1,5 +1,7 @@
 extends Node
 
+const CreatureOwner = preload("res://vtt/creature_owner.gd")
+
 signal turn_changed(entry_id: String, round_number: int, turn_count: int)
 signal combat_state_changed(active: bool)
 
@@ -443,7 +445,7 @@ func _creature_candidates() -> Array[Dictionary]:
 	# The user selects creatures, never arbitrary tokens or optional links.
 	var candidates: Array[Dictionary] = []
 	var seen: Dictionary = {}
-	var local_owner := preload("res://vtt/creature_owner.gd").local_id()
+	var local_owner: String = CreatureOwner.local_id()
 	var local_names := _creature_names_from_archive()
 	for token: Node3D in _tokens():
 		var creature_id := String(token.get_meta("creature_id", "")).strip_edges()
@@ -563,6 +565,7 @@ func _selected_board_token_id() -> String:
 	if not is_instance_valid(token) or not token.is_in_group("dnd_token"):
 		return ""
 	return _token_id(token)
+
 
 func _record_undo_state() -> void:
 	if (
@@ -910,8 +913,10 @@ func _entry_display_name(entry: Dictionary) -> String:
 
 
 func _synchronize_linked_entry_names() -> void:
-	var names := _creature_names_from_archive() if board_root != null else {}
-	var local_owner := preload("res://vtt/creature_owner.gd").local_id()
+	var names: Dictionary = (
+		_creature_names_from_archive() if board_root != null else {}
+	)
+	var local_owner: String = CreatureOwner.local_id()
 	for entry: Dictionary in entries:
 		var creature_id := String(entry.get("creature_id", ""))
 		if not creature_id.is_empty():
