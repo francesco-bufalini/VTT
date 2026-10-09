@@ -941,6 +941,7 @@ func _load_form(record: Dictionary) -> void:
 	_name.text = String(record.get("name", ""))
 	_hp.value = int(record.get("current_hp", 1))
 	_max_hp.value = int(record.get("max_hp", 1))
+	_temp_hp.value = int(record.get("temporary_hp", 0))
 	_ac.value = int(record.get("armor_class", 10))
 	var abilities_value: Variant = record.get("abilities", {})
 	var abilities: Dictionary = (
@@ -981,6 +982,10 @@ func _load_form(record: Dictionary) -> void:
 	_feats.text = String(record.get("feats", ""))
 	_default_miniature_id = String(record.get("default_miniature_id", ""))
 	_default_miniature.text = _miniature_display_name(_default_miniature_id)
+	_select_sheet_size(String(record.get("size_name", "Medium")))
+	_reach.value = float(record.get("reach_feet", 5.0))
+	_front.select(clampi(int(record.get("visual_front_quarter_turns", 0)), 0, 3))
+	_party.text = String(record.get("party_id", ""))
 	_default_miniature.tooltip_text = (
 		"ID catalogo: " + _default_miniature_id
 		if not _default_miniature_id.is_empty()
@@ -1020,6 +1025,12 @@ func _save() -> void:
 	record["name"] = _name.text.strip_edges()
 	record["current_hp"] = int(_hp.value)
 	record["max_hp"] = int(_max_hp.value)
+	record["temporary_hp"] = int(_temp_hp.value)
+	record["size_name"] = _size_choice.get_item_text(_size_choice.selected)
+	record["footprint"] = _selected_size_footprint()
+	record["reach_feet"] = float(_reach.value)
+	record["visual_front_quarter_turns"] = _front.selected
+	record["party_id"] = _party.text.strip_edges()
 	record["armor_class"] = int(_ac.value)
 	var abilities: Dictionary = {}
 	for ability: String in _ability_spins.keys():
@@ -1074,8 +1085,80 @@ func _save() -> void:
 		return
 	_replace_current_record(record)
 	_sync_token_health(record)
+	_apply_sheet_properties(record)
 	# A visible sheet follows current level and race/class immediately.
 	_refresh_reference(record)
+
+
+func _select_sheet_size(size_name: String) -> void:
+	for i: int in range(_size_choice.item_count):
+		if _size_choice.get_item_text(i) == size_name:
+			_size_choice.select(i)
+			return
+	_size_choice.select(2)
+
+
+func _selected_size_footprint() -> float:
+	var sizes: Array[float] = [0.5, 1.0, 1.0, 2.0, 3.0, 4.0]
+	return sizes[clampi(_size_choice.selected, 0, sizes.size() - 1)]
+
+
+func _change_hit_points(delta: int) -> void:
+	if _current().is_empty():
+		return
+	var hp := int(_hp.value)
+	var temp := int(_temp_hp.value)
+	if delta < 0:
+		var absorbed := mini(temp, -delta)
+		temp -= absorbed
+		hp = maxi(0, hp - (-delta - absorbed))
+	else:
+		hp = mini(int(_max_hp.value), hp + delta)
+	_loading = true
+	_temp_hp.value = temp
+	_hp.value = hp
+	_loading = false
+	_save()
+
+
+func _apply_sheet_properties(record: Dictionary) -> void:
+	var token := find_linked_token_for_creature(String(record.get("id", "")))
+	if token != null and board_root.has_method("apply_creature_sheet_properties"):
+		board_root.call("apply_creature_sheet_properties", token, record)
+
+
+func _apply_current_appearance(record: Dictionary) -> void:
+	var token := find_linked_token_for_creature(String(record.get("id", "")))
+	if token != null and board_root.has_method("apply_creature_sheet_appearance"):
+		var applied: bool = bool(board_root.call(
+			"apply_creature_sheet_appearance", token, record
+		))
+		if not applied:
+			_set_status("Aspetto salvato. Se la miniatura è remota, sarà applicata quando sarà disponibile.")
+
+
+func _restore_default_appearance() -> void:
+	var record := _current()
+	if record.is_empty():
+		return
+	var original_id := String(record.get("default_miniature_id", ""))
+	if original_id.is_empty():
+		_set_status("Questa creatura non ha ancora una miniatura di base.")
+		return
+	_set_current_miniature(original_id)
+
+
+func _set_current_miniature(miniature_id: String) -> void:
+	var record: Dictionary = _current()
+	if record.is_empty() or miniature_id.is_empty():
+		return
+	record["current_miniature_id"] = miniature_id
+	if _archive.save(record) != OK:
+		_set_status("Impossibile salvare l'aspetto attuale.")
+		return
+	_replace_current_record(record)
+	_refresh_current_miniature(record)
+	_apply_current_appearance(record)
 
 
 func _restore_full_hp() -> void:
@@ -1493,11 +1576,16 @@ func _build_miniature_dialog() -> void:
 
 
 func _choose_miniature(record: Dictionary, is_new: bool) -> void:
+	if is_new:
+		_picker_current = false
 	if record.is_empty():
 		_set_status("Seleziona una creatura.")
 		return
 	_pending_miniature_record = record.duplicate(true)
 	_pending_new_creature = is_new
+	_miniature_dialog.title = (
+		"Scegli aspetto attuale" if _picker_current else "Miniatura di base"
+	)
 	_miniature_choices.clear()
 	_suggested_miniature_ids.clear()
 	var raw: Variant = board_root.call("list_available_miniatures")
@@ -1545,7 +1633,9 @@ func _choose_miniature(record: Dictionary, is_new: bool) -> void:
 	# accept the first available miniature or a guessed species match.
 	_chosen_miniature_id = (
 		"" if is_new
-		else String(record.get("default_miniature_id", ""))
+		else String(record.get(
+			"current_miniature_id" if _picker_current else "default_miniature_id", ""
+		))
 	)
 	_filter_miniatures("")
 	_miniature_dialog.popup_centered_clamped(Vector2i(620, 430), 0.88)
@@ -1585,16 +1675,26 @@ func _confirm_miniature() -> void:
 	if _chosen_miniature_id.is_empty() or _pending_miniature_record.is_empty():
 		return
 	var record: Dictionary = _pending_miniature_record.duplicate(true)
-	record["default_miniature_id"] = _chosen_miniature_id
+	if _picker_current:
+		record["current_miniature_id"] = _chosen_miniature_id
+	else:
+		record["default_miniature_id"] = _chosen_miniature_id
+		if _pending_new_creature or String(record.get("current_miniature_id", "")).is_empty():
+			record["current_miniature_id"] = _chosen_miniature_id
 	if _archive.save(record) != OK:
 		_set_status("Impossibile salvare la miniatura della creatura.")
 		return
 	_selected_id = String(record.get("id", ""))
 	_selected_kind = String(record.get("kind", ""))
+	var changed_current := _picker_current
 	_pending_miniature_record.clear()
 	_pending_new_creature = false
+	_picker_current = false
 	_reload()
-	_set_status("Miniatura predefinita selezionata: %s" % _chosen_miniature_id)
+	if changed_current:
+		_apply_current_appearance(record)
+	_set_status("Aspetto attuale aggiornato." if changed_current else
+		"Miniatura di base selezionata: %s" % _chosen_miniature_id)
 
 func _create_character() -> void:
 	var record: Dictionary = _archive.create_character()
@@ -1725,15 +1825,10 @@ func _species_default_miniature(species: String) -> String:
 
 func _edit_linked_token_appearance() -> void:
 	var record: Dictionary = _current()
-	var token := find_linked_token_for_creature(
-		String(record.get("id", ""))
-	)
-	if token == null:
-		_set_status("Questa creatura non ha un token in scena: usa Genera token / riposiziona.")
+	if record.is_empty():
 		return
-	hide_panel()
-	if board_root.has_method("open_token_transformation"):
-		board_root.call("open_token_transformation", token)
+	_picker_current = true
+	_choose_miniature(record, false)
 
 
 func _miniature_display_name(miniature_id: String) -> String:
@@ -1749,21 +1844,16 @@ func _miniature_display_name(miniature_id: String) -> String:
 
 
 func _refresh_current_miniature(record: Dictionary) -> void:
-	var token := find_linked_token_for_creature(
-		String(record.get("id", ""))
+	var current_id := String(record.get("current_miniature_id", ""))
+	if current_id.is_empty():
+		current_id = String(record.get("default_miniature_id", ""))
+	var token := find_linked_token_for_creature(String(record.get("id", "")))
+	_current_miniature.text = (
+		"Aspetto attuale: %s%s" % [
+			_miniature_display_name(current_id),
+			" · token in scena" if token != null else " · salvato per il prossimo token"
+		]
 	)
-	if token == null:
-		_current_miniature.text = "Aspetto attuale: nessun token associato"
-	elif token.has_method("get_visual_asset_path"):
-		var current_id: String = (
-			String(token.call("get_token_pack_id"))
-			if token.has_method("get_token_pack_id") else ""
-		)
-		_current_miniature.text = "Aspetto attuale: " + (
-			_miniature_display_name(current_id)
-			if not current_id.is_empty()
-			else String(token.call("get_visual_asset_path"))
-		)
 
 
 func _find_linked_token(record: Dictionary) -> Node3D:
