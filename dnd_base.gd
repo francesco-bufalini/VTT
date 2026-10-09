@@ -2426,6 +2426,17 @@ func get_selected_tokens_for_player_area() -> Array[CharacterBody3D]:
 	return _selected_tokens.duplicate()
 
 
+func list_available_miniatures() -> Array[Dictionary]:
+	# Same catalog as the existing Generate Token dialog: local packs,
+	# character miniatures, and downloadable packs from the releases.
+	# Do not expose raw filesystem paths as the persistent creature ID.
+	var available: Array[Dictionary] = []
+	for profile: Dictionary in _token_profiles:
+		if not String(profile.get("id", "")).strip_edges().is_empty():
+			available.append(profile.duplicate(true))
+	return available
+
+
 func toggle_creature_area() -> void:
 	var area := get_node_or_null("CreatureArea")
 	if area != null:
