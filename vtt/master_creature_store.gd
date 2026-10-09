@@ -171,6 +171,15 @@ func normalize_creature(value: Dictionary) -> Dictionary:
 	if base_name.is_empty():
 		base_name = "Creatura"
 	var fallback_hp := _default_hp(stat_block)
+	# Legacy sheets did not record whether reach was edited. Retain
+	# non-default values that differ from the bestiary, but migrate the
+	# historical fixed 5 ft default to the real 5etools melee reach.
+	var bestiary_reach: float = CreatureRules.monster_base_reach_feet(stat_block)
+	var saved_reach: float = float(value.get("reach_feet", 5.0))
+	var custom_reach: bool = bool(value.get(
+		"reach_is_custom",
+		absf(saved_reach - 5.0) > 0.01 and absf(saved_reach - bestiary_reach) > 0.01
+	))
 	var result := {
 		"id": String(value.get("id", "")),
 		"name": String(value.get("name", base_name)),
@@ -197,12 +206,8 @@ func normalize_creature(value: Dictionary) -> Dictionary:
 		"current_miniature_id": String(value.get("current_miniature_id", value.get("default_miniature_id", _default_miniature_id(stat_block)))),
 		"size_name": String(value.get("size_name", "Medium")),
 		"footprint": maxf(0.5, float(value.get("footprint", 1.0))),
-		"reach_feet": (
-			maxf(5.0, float(value.get("reach_feet", 5.0)))
-			if bool(value.get("reach_is_custom", false))
-			else CreatureRules.monster_base_reach_feet(stat_block)
-		),
-		"reach_is_custom": bool(value.get("reach_is_custom", false)),
+		"reach_feet": maxf(5.0, saved_reach) if custom_reach else bestiary_reach,
+		"reach_is_custom": custom_reach,
 		"visual_front_quarter_turns": clampi(int(value.get("visual_front_quarter_turns", 0)), 0, 3),
 		"party_id": String(value.get("party_id", "")),
 		"temporary_hp": maxi(0, int(value.get("temporary_hp", 0))),
