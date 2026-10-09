@@ -14,6 +14,7 @@ const FiveToolsText = preload("res://vtt/five_tools_rich_text.gd")
 const StructuredTrackers = preload("res://vtt/structured_resource_trackers.gd")
 const ManualBonus = preload("res://vtt/manual_bonus_style.gd")
 const InventoryTab = preload("res://vtt/creature_inventory_tab.gd")
+const TraitsTab = preload("res://vtt/creature_traits_tab.gd")
 
 var board_root: Node3D
 var _archive
@@ -91,7 +92,7 @@ var _picker_current := false
 var _chosen_miniature_id := ""
 var _current_miniature: Label
 var _tracker_rows: VBoxContainer
-var _reference: RichTextLabel
+var _traits_ui: Node
 var _condition_rows: VBoxContainer
 var _effect_dialog: AcceptDialog
 var _effect_text: RichTextLabel
@@ -688,17 +689,15 @@ func _build_ui() -> void:
 	_condition_rows = VBoxContainer.new()
 	conditions_tab.add_child(_condition_rows)
 
-	_reference = RichTextLabel.new()
-	FiveToolsText.style(_reference)
-	# Give the traits editor the entire pane; its own scrollbar handles text.
+	# The traits pane has a fixed toolbar and a single dedicated scroll area.
 	traits_tab.size_flags_vertical = Control.SIZE_EXPAND_FILL
 	(traits_tab.get_parent() as Control).size_flags_vertical = Control.SIZE_EXPAND_FILL
 	(traits_tab.get_parent().get_parent() as ScrollContainer).vertical_scroll_mode = ScrollContainer.SCROLL_MODE_DISABLED
-	_reference.size_flags_vertical = Control.SIZE_EXPAND_FILL
-	_reference.fit_content = false
-	traits_tab.add_child(_reference)
+	_traits_ui = TraitsTab.new()
+	traits_tab.add_child(_traits_ui)
+	_traits_ui.call("setup")
 	_effect_dialog = AcceptDialog.new()
-	_effect_dialog.title = "5etools · Effect details"
+	_effect_dialog.title = "Dettagli effetto"
 	_effect_dialog.min_size = Vector2i(560, 420)
 	add_child(_effect_dialog)
 	_effect_text = RichTextLabel.new()
@@ -1421,7 +1420,7 @@ func _reload() -> void:
 		_selected_id = ""
 		_selected_kind = ""
 		_loading = true
-		_reference.text = "Crea un personaggio o cerca una creatura nel bestiario."
+		_traits_ui.call("load_record", {})
 		_loading = false
 
 
@@ -2065,171 +2064,13 @@ func _open_tracker_trait(origin: String, source_label: String = "") -> void:
 
 
 func _focus_tracker_trait(origin: String, source_label: String = "") -> void:
-	if _reference == null or origin.is_empty():
-		return
-	var plain_text: String = _reference.get_parsed_text()
-	var normalized: String = plain_text.to_lower()
-	var from_position: int = 0
-	# Both a Cleric and a Paladin can have Channel Divinity; start the
-	# search inside the relevant class section instead of at document start.
-	if not source_label.is_empty():
-		var class_heading: String = source_label.get_slice(" · ", 0) + " (livello"
-		var class_offset: int = normalized.find(class_heading.to_lower())
-		if class_offset >= 0:
-			from_position = class_offset
-	var position: int = normalized.find(origin.to_lower(), from_position)
-	if position >= 0:
-		_reference.scroll_to_line(maxi(0, _reference.get_character_line(position) - 1))
-	else:
-		_reference.scroll_to_line(0)
-
-
-func _additional_monster_class_traits(record: Dictionary) -> PackedStringArray:
-	var result := PackedStringArray()
-	var raw_classes: Variant = record.get("classes", [])
-	if not raw_classes is Array:
-		return result
-	var features: Array[Dictionary] = Player5eTools.entries("class_features")
-	for class_value: Variant in raw_classes as Array:
-		if not class_value is Dictionary:
-			continue
-		var class_data: Dictionary = class_value as Dictionary
-		var class_label: String = String(class_data.get("name", ""))
-		if class_label.is_empty() or class_label.to_lower() == "mostro":
-			continue
-		var source: String = String(class_data.get("source", ""))
-		var class_level: int = int(class_data.get("level", 0))
-		if class_level < 1:
-			continue
-		result.append(FiveToolsText.section("%s (livello %d)" % [class_label, class_level]))
-		for feature: Dictionary in features:
-			if String(feature.get("class_name", "")).nocasecmp_to(class_label) != 0:
-				continue
-			if String(feature.get("class_source", "")) != source:
-				continue
-			if int(feature.get("level", 0)) > class_level:
-				continue
-			result.append(FiveToolsText.subtitle(Player5eTools.display_label(feature)))
-			result.append(FiveToolsText.blocks(feature.get("entries", feature.get("description", ""))))
-	return result
+	if _traits_ui != null and not origin.is_empty():
+		_traits_ui.call("focus_feature", origin, source_label)
 
 
 func _refresh_reference(record: Dictionary) -> void:
-	var parts: PackedStringArray = []
-	if String(record.get("kind", "")) == "monster":
-		var stat: Dictionary = record.get("stat_block", {})
-		parts.append(FiveToolsText.title(String(stat.get("name", record.get("name", "")))))
-		parts.append(FiveToolsText.meta("Fonte: %s  ·  GS: %s" % [
-			String(stat.get("source", "5e.tools")), str(stat.get("cr", "—"))
-		]))
-		var headings: Dictionary = {
-			"trait": "Tratti",
-			"spellcasting": "Incantesimi innati e di classe",
-			"action": "Azioni",
-			"bonus": "Azioni bonus",
-			"reaction": "Reazioni",
-			"legendary": "Azioni leggendarie",
-			"mythic": "Azioni mitiche",
-			"lairActions": "Azioni della tana"
-		}
-		for section_key: String in headings:
-			var entries: Variant = stat.get(section_key, [])
-			if not entries is Array or (entries as Array).is_empty():
-				continue
-			parts.append(FiveToolsText.section(String(headings[section_key])))
-			parts.append(FiveToolsText.blocks(entries))
-		parts.append_array(_additional_monster_class_traits(record))
-		_reference.text = "\n\n".join(parts)
-		return
-
-	parts.append(FiveToolsText.title("%s · %s" % [
-		String(record.get("name", "")), String(record.get("species", ""))
-	]))
-	parts.append(FiveToolsText.section("PRIVILEGI DI CLASSE (5e.tools)"))
-	var calculation_value: Variant = record.get("spellcasting_calculation", {})
-	if calculation_value is Dictionary:
-		var spell_summary: String = String(
-			(calculation_value as Dictionary).get("detail", "")
-		).strip_edges()
-		if not spell_summary.is_empty():
-			parts.append(FiveToolsText.section("LIMITI DEGLI INCANTESIMI (ULTIMO CALCOLO)"))
-			parts.append(FiveToolsText.blocks(spell_summary))
-
-	var primary_class_name: String = String(record.get("class", ""))
-	var character_level: int = clampi(int(record.get("level", 1)), 1, 20)
-	var class_rows: Array = record.get("classes", [])
-	if class_rows.is_empty() and not primary_class_name.is_empty():
-		class_rows = [{"name": primary_class_name, "level": character_level}]
-	var features: Array[Dictionary] = Player5eTools.entries("class_features")
-	for class_value: Variant in class_rows:
-		if not class_value is Dictionary:
-			continue
-		var class_data: Dictionary = class_value as Dictionary
-		var class_name_value: String = String(class_data.get("name", ""))
-		var this_level: int = clampi(
-			int(class_data.get("level", character_level)), 1, 20
-		)
-		parts.append(FiveToolsText.section("%s (livello %d)" % [
-			class_name_value, this_level
-		]))
-		for feature: Dictionary in features:
-			if String(feature.get("class_name", "")).nocasecmp_to(class_name_value) != 0:
-				continue
-			var level: int = int(feature.get("level", 0))
-			var selected_source: String = String(class_data.get(
-				"source", record.get("class_source", "")
-			))
-			if not selected_source.is_empty() and String(feature.get("class_source", "")) != selected_source:
-				continue
-			if level > this_level:
-				continue
-			parts.append(FiveToolsText.subtitle("Lv %d · %s" % [
-				level, Player5eTools.display_label(feature)
-			]))
-			var feature_content: Variant = feature.get("entries", feature.get("description", ""))
-			if feature_content is String and String(feature_content).strip_edges().is_empty():
-				feature_content = ContentCatalog.description(feature)
-			var description: String = FiveToolsText.blocks(feature_content)
-			if not description.is_empty():
-				parts.append(description)
-	# Subclass features are resolved against each class level, never total level.
-	for class_value: Variant in class_rows:
-		if not class_value is Dictionary:
-			continue
-		var class_data: Dictionary = class_value as Dictionary
-		var subclass_name: String = String(class_data.get("subclass", ""))
-		if subclass_name.is_empty():
-			continue
-		var class_name_value: String = String(class_data.get("name", ""))
-		var subclass_level: int = int(class_data.get("level", 1))
-		parts.append(FiveToolsText.section("%s · %s" % [class_name_value, subclass_name]))
-		for feature: Dictionary in Player5eTools.entries("subclass_features"):
-			if String(feature.get("class_name", feature.get("className", ""))).nocasecmp_to(class_name_value) != 0:
-				continue
-			if String(feature.get("subclass_name", feature.get("subclassName", ""))).nocasecmp_to(subclass_name) != 0:
-				continue
-			var subclass_source: String = String(class_data.get("subclass_source", ""))
-			if not subclass_source.is_empty() and String(feature.get("subclass_source", "")) != subclass_source:
-				continue
-			if int(feature.get("level", 0)) > subclass_level:
-				continue
-			parts.append(FiveToolsText.subtitle(Player5eTools.display_label(feature)))
-			var content: Variant = feature.get("entries", feature.get("description", ""))
-			parts.append(FiveToolsText.blocks(content))
-	parts.append(FiveToolsText.section("TRATTI DELLA SPECIE (5e.tools)"))
-	var species: String = String(record.get("species", ""))
-	for feature: Dictionary in Player5eTools.entries("races"):
-		if String(feature.get("id", "")) == String(record.get("species_id", "")) or (
-			String(feature.get("name", "")) == species
-			and String(feature.get("source", "")) == String(record.get("species_source", ""))
-		):
-			var feature_content: Variant = feature.get("entries", feature.get("description", ""))
-			if feature_content is String and String(feature_content).strip_edges().is_empty():
-				feature_content = ContentCatalog.description(feature)
-			var description: String = FiveToolsText.blocks(feature_content)
-			if not description.is_empty():
-				parts.append(description)
-	_reference.text = "\n\n".join(parts)
+	if _traits_ui != null:
+		_traits_ui.call("load_record", record)
 
 
 func _filter_catalog(query: String) -> void:
@@ -2339,7 +2180,7 @@ func _request_monster(index: int) -> void:
 		String(entry.get("name", "")), String(entry.get("source", "")),
 		"new_creature_%d" % Time.get_ticks_usec()
 	)
-	_set_status("Caricamento creatura da 5e.tools…")
+	_set_status("Caricamento creatura dal bestiario…")
 
 
 func _on_monster_received(request_key: String, stat: Dictionary) -> void:
@@ -3064,7 +2905,7 @@ func _refresh_conditions(record: Dictionary) -> void:
 				heading.text = {
 					"conditions": "Conditions",
 					"diseases": "Diseases / magical diseases",
-					"effects": "Other effects (5etools / homebrew)"
+					"effects": "Altri effetti"
 				}[category]
 				heading.add_theme_font_size_override("font_size", 15)
 				_condition_rows.add_child(heading)
