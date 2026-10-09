@@ -637,6 +637,9 @@ func _update_tracker(id: String, field: String, value: Variant) -> void:
 		if String(item.get("id", "")) != id:
 			continue
 		item[field] = value
+		var manual: Dictionary = item.get("overrides", {})
+		manual[field] = true
+		item["overrides"] = manual
 		rows[i] = Rules.normalize_tracker(item)
 		break
 	record["trackers"] = rows
