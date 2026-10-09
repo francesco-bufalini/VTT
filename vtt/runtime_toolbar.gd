@@ -110,15 +110,16 @@ func _build_toolbar() -> void:
 
 	row.add_child(_menu("Gioco", [
 		["Incantesimi", GAME_SPELLS],
-		["Combattimento"],
-		["Inizia combattimento", COMBAT_START],
 		["Mostra / nascondi iniziativa", COMBAT_INITIATIVE],
-		["Termina combattimento", COMBAT_END],
 		["Sessione"],
 		["Salva", SESSION_SAVE],
 		["Condividi / Tailscale", SHARE_OPEN],
 		["Torna al menu VTT", SESSION_MAIN_MENU]
 	], _on_game))
+	row.add_child(_menu("Master", [
+		["Inizia combattimento", COMBAT_START],
+		["Finisci combattimento", COMBAT_END]
+	], _on_master))
 
 	# Direct action: one click opens the creature archive, no submenu.
 	var creatures_button := Button.new()
@@ -197,12 +198,8 @@ func _on_game(id: int) -> void:
 	match id:
 		GAME_SPELLS:
 			board_root.call("toggle_spell_menu")
-		COMBAT_START:
-			board_root.call("start_combat_mode")
 		COMBAT_INITIATIVE:
 			board_root.call("toggle_initiative_panel")
-		COMBAT_END:
-			board_root.call("end_combat_mode")
 		SESSION_SAVE:
 			_save_current_state()
 		SHARE_OPEN:
@@ -211,6 +208,14 @@ func _on_game(id: int) -> void:
 			var campaign_manager: Node = _campaign_manager()
 			if campaign_manager != null:
 				campaign_manager.call("return_to_main_menu")
+
+
+func _on_master(id: int) -> void:
+	match id:
+		COMBAT_START:
+			board_root.call("start_combat_mode")
+		COMBAT_END:
+			board_root.call("end_combat_mode")
 
 
 func _on_item(id: int) -> void:
