@@ -22,7 +22,8 @@ func setup(board: Node3D, level_probe: Node3D) -> void:
 	cell_size = maxf(float(board.get("cell_size")), 0.001)
 	mouse_filter = Control.MOUSE_FILTER_IGNORE
 	# Tactical graphics stay underneath every sheet/dialog sharing the UI layer.
-	z_index = -20
+	# Even elevated token labels must remain behind any character sheet.
+	z_index = -50
 	set_anchors_and_offsets_preset(Control.PRESET_FULL_RECT)
 	visible = false
 	_hover_panel = PanelContainer.new()
@@ -115,17 +116,9 @@ func _new_badge() -> Control:
 	var height_label: Label = Label.new()
 	height_label.name = "Height"
 	height_label.mouse_filter = Control.MOUSE_FILTER_IGNORE
-	# Higher than every portrait badge, including adjacent tokens.
+	# No opaque background: the original discreet text remains legible above
+	# neighbouring token portraits but below the actual character sheet.
 	height_label.z_index = 25
-	height_label.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
-	var height_style := StyleBoxFlat.new()
-	height_style.bg_color = Color(0.08, 0.09, 0.12, 0.94)
-	height_style.border_color = Color(0.80, 0.62, 0.34, 0.95)
-	height_style.set_border_width_all(1)
-	height_style.set_corner_radius_all(5)
-	height_style.content_margin_left = 3
-	height_style.content_margin_right = 3
-	height_label.add_theme_stylebox_override("normal", height_style)
 	height_label.add_theme_color_override("font_color", Color.WHITE)
 	height_label.add_theme_color_override(
 		"font_shadow_color",
@@ -135,19 +128,18 @@ func _new_badge() -> Control:
 	height_label.add_theme_constant_override("shadow_offset_y", 1)
 	badge.add_child(height_label)
 
-	# Direction marker is projected separately from the 3D facing mesh.
-	var facing: Label = Label.new()
+	# Recreate the old orange 3D FacingMarker with an actual geometric arrow.
+	# A rotated label glyph used to orbit its token and did not render reliably.
+	var facing := Polygon2D.new()
 	facing.name = "FacingArrow"
-	facing.text = "▲"
-	facing.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
-	facing.vertical_alignment = VERTICAL_ALIGNMENT_CENTER
-	facing.size = Vector2(26.0, 26.0)
-	facing.add_theme_font_size_override("font_size", 20)
-	facing.add_theme_color_override("font_color", Color(1.0, 0.75, 0.36, 1.0))
-	facing.add_theme_color_override("font_outline_color", Color(0.07, 0.06, 0.08, 0.98))
-	facing.add_theme_constant_override("outline_size", 4)
-	facing.z_index = 5
-	facing.mouse_filter = Control.MOUSE_FILTER_IGNORE
+	facing.polygon = PackedVector2Array([
+		Vector2(0.0, -12.0), Vector2(8.0, 2.0),
+		Vector2(3.0, 1.0), Vector2(3.0, 11.0),
+		Vector2(-3.0, 11.0), Vector2(-3.0, 1.0),
+		Vector2(-8.0, 2.0)
+	])
+	facing.color = Color(1.0, 0.54, 0.15, 0.98)
+	facing.z_index = 7
 	badge.add_child(facing)
 	return badge
 
@@ -394,19 +386,23 @@ func _render_token_badge(token: CharacterBody3D, floor_y: float) -> void:
 	)
 	var delta: float = support_y - floor_y
 	var height_label: Label = badge.get_node("Height") as Label
-	# Keep the height INSIDE the source tile, away from the icon at its
-	# right. Elevated z-order keeps the label legible even over overlaps.
-	height_label.position = Vector2(2.0, icon_size - 20.0)
-	height_label.size = Vector2(76.0, 22.0)
+	# Restore the small, unboxed elevation label used before. Its z-index
+	# protects it from the token on the right without covering character UI.
+	height_label.position = Vector2(icon_size - 2.0, icon_size * 0.28)
 	height_label.add_theme_font_size_override("font_size", 13)
 	height_label.text = _format_difference(delta)
 	height_label.visible = _difference_cells(delta) != 0
 
-	var facing: Label = badge.get_node("FacingArrow") as Label
-	var yaw: float = token.global_rotation.y
-	var forward: Vector2 = Vector2(-sin(yaw), -cos(yaw))
-	facing.position = Vector2.ONE * icon_size * 0.5 + forward * icon_size * 0.44 - facing.size * 0.5
-	facing.rotation = -yaw
+	var facing: Polygon2D = badge.get_node("FacingArrow") as Polygon2D
+	var projected_forward: Vector3 = -token.global_transform.basis.z.normalized()
+	var forward_screen: Vector2 = camera.unproject_position(projected + projected_forward * cell_size) - screen_position
+	if forward_screen.length_squared() >= 1.0:
+		forward_screen = forward_screen.normalized()
+		facing.position = Vector2.ONE * icon_size * 0.5 + forward_screen * icon_size * 0.43
+		facing.rotation = forward_screen.angle() + PI * 0.5
+		facing.visible = true
+	else:
+		facing.hide()
 
 
 func _update_hover(floor_y: float) -> void:
@@ -477,19 +473,36 @@ func _draw() -> void:
 	var attacks: Node = board_root.get("attack_system") as Node
 	if attacks == null:
 		return
-	if attacks.has_method("are_all_reaches_visible") and bool(attacks.call("are_all_reaches_visible")):
-		for node: Node in tokens_root.get_children():
-			if not node is CharacterBody3D or not node.is_in_group("dnd_token"):
-				continue
-			var token: CharacterBody3D = node as CharacterBody3D
-			var footprint: float = 1.0
-			if token.has_method("get_footprint_cells"):
-				footprint = maxf(0.5, float(token.call("get_footprint_cells")))
-			var reach_feet: float = 5.0
-			if token.has_method("get_reach_feet"):
-				reach_feet = maxf(5.0, float(token.call("get_reach_feet")))
-			var radius: float = (reach_feet / 5.0 + footprint * 0.5) * cell_size
-			_draw_reach_indicator(token.global_position, floor_y, radius, Color(0.91, 0.68, 0.35, 0.85))
+	if tokens_root == null:
+		return
+	var show_all_reaches: bool = (
+		attacks.has_method("are_all_reaches_visible")
+		and bool(attacks.call("are_all_reaches_visible"))
+	)
+	# A selected token's engagement area remains visible even when the
+	# global "show all reaches" mode is turned off.
+	for node: Node in tokens_root.get_children():
+		if not node is CharacterBody3D or not node.is_in_group("dnd_token"):
+			continue
+		var token: CharacterBody3D = node as CharacterBody3D
+		var selected: bool = (
+			token.has_method("is_selected")
+			and bool(token.call("is_selected"))
+		)
+		if not show_all_reaches and not selected:
+			continue
+		var footprint: float = 1.0
+		if token.has_method("get_footprint_cells"):
+			footprint = maxf(0.5, float(token.call("get_footprint_cells")))
+		var reach_feet: float = 5.0
+		if token.has_method("get_reach_feet"):
+			reach_feet = maxf(5.0, float(token.call("get_reach_feet")))
+		var radius: float = (reach_feet / 5.0 + footprint * 0.5) * cell_size
+		var tint: Color = (
+			Color(1.0, 0.54, 0.15, 0.92)
+			if selected else Color(0.90, 0.67, 0.37, 0.52)
+		)
+		_draw_reach_indicator(token.global_position, floor_y, radius, tint)
 	if attacks.has_method("is_targeting") and bool(attacks.call("is_targeting")):
 		var attacker: CharacterBody3D = attacks.get("_attacker") as CharacterBody3D
 		var data_value: Variant = attacks.get("_attack_data")

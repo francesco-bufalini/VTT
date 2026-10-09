@@ -407,11 +407,11 @@ func _build_ui() -> void:
 
 	var split := HSplitContainer.new()
 	split.size_flags_vertical = Control.SIZE_EXPAND_FILL
-	split.split_offset = 190
+	split.split_offset = 155
 	outer.add_child(split)
 
 	var left := VBoxContainer.new()
-	left.custom_minimum_size = Vector2(180, 0)
+	left.custom_minimum_size = Vector2(150, 0)
 	left.add_theme_constant_override("separation", 6)
 	split.add_child(left)
 
@@ -484,8 +484,9 @@ func _build_identity_tab() -> void:
 
 	_section_title(body, "Identità")
 	var identity_grid := GridContainer.new()
-	identity_grid.columns = 4
-	identity_grid.add_theme_constant_override("h_separation", 10)
+	# One label/value pair per row prevents excess horizontal width.
+	identity_grid.columns = 2
+	identity_grid.add_theme_constant_override("h_separation", 6)
 	identity_grid.add_theme_constant_override("v_separation", 7)
 	body.add_child(identity_grid)
 
@@ -531,7 +532,7 @@ func _build_identity_tab() -> void:
 	_section_title(body, "Caratteristiche")
 	var abilities_grid := GridContainer.new()
 	abilities_grid.columns = 4
-	abilities_grid.add_theme_constant_override("h_separation", 12)
+	abilities_grid.add_theme_constant_override("h_separation", 6)
 	abilities_grid.add_theme_constant_override("v_separation", 6)
 	body.add_child(abilities_grid)
 
@@ -545,7 +546,7 @@ func _build_identity_tab() -> void:
 		score.min_value = 1
 		score.max_value = 30
 		score.step = 1
-		score.custom_minimum_size = Vector2(100, 32)
+		score.custom_minimum_size = Vector2(74, 30)
 		score.value_changed.connect(
 			func(_value: float) -> void:
 				_on_form_changed()
@@ -555,7 +556,7 @@ func _build_identity_tab() -> void:
 
 		var modifier := Label.new()
 		modifier.text = "+0"
-		modifier.custom_minimum_size = Vector2(54, 0)
+		modifier.custom_minimum_size = Vector2(42, 0)
 		abilities_grid.add_child(modifier)
 		_ability_mod_labels[ability_id] = modifier
 
@@ -565,7 +566,7 @@ func _build_identity_tab() -> void:
 			"Tira 1d20 usando il modificatore di %s"
 			% String(ability.get("name", ability_id))
 		)
-		roll_ability.custom_minimum_size = Vector2(38, 28)
+		roll_ability.custom_minimum_size = Vector2(32, 28)
 		roll_ability.pressed.connect(
 			_roll_ability_check.bind(
 				ability_id,
@@ -576,8 +577,8 @@ func _build_identity_tab() -> void:
 
 	_section_title(body, "Difese e risorse")
 	var stats_grid := GridContainer.new()
-	stats_grid.columns = 4
-	stats_grid.add_theme_constant_override("h_separation", 10)
+	stats_grid.columns = 2
+	stats_grid.add_theme_constant_override("h_separation", 6)
 	stats_grid.add_theme_constant_override("v_separation", 7)
 	body.add_child(stats_grid)
 	_add_int_field(stats_grid, "CA", "armor_class", 0, 40)
@@ -662,7 +663,7 @@ func _build_combat_tab() -> void:
 
 	_section_title(body, "Abilità")
 	var skills_grid := GridContainer.new()
-	skills_grid.columns = 2
+	skills_grid.columns = 1
 	skills_grid.add_theme_constant_override("h_separation", 16)
 	skills_grid.add_theme_constant_override("v_separation", 4)
 	body.add_child(skills_grid)
@@ -836,8 +837,8 @@ func _build_story_tab() -> void:
 
 	_section_title(body, "Aspetto del personaggio")
 	var appearance_grid := GridContainer.new()
-	appearance_grid.columns = 4
-	appearance_grid.add_theme_constant_override("h_separation", 10)
+	appearance_grid.columns = 2
+	appearance_grid.add_theme_constant_override("h_separation", 6)
 	appearance_grid.add_theme_constant_override("v_separation", 7)
 	body.add_child(appearance_grid)
 	_add_text_field(appearance_grid, "Età", "age")
@@ -898,8 +899,8 @@ func _build_spells_tab() -> void:
 
 	_section_title(body, "Incantatore")
 	var caster_grid := GridContainer.new()
-	caster_grid.columns = 4
-	caster_grid.add_theme_constant_override("h_separation", 10)
+	caster_grid.columns = 2
+	caster_grid.add_theme_constant_override("h_separation", 6)
 	caster_grid.add_theme_constant_override("v_separation", 7)
 	body.add_child(caster_grid)
 
@@ -1953,8 +1954,8 @@ func _scroll_tab(tab_name: String) -> ScrollContainer:
 
 	var margin := MarginContainer.new()
 	margin.size_flags_horizontal = Control.SIZE_EXPAND_FILL
-	margin.add_theme_constant_override("margin_left", 12)
-	margin.add_theme_constant_override("margin_right", 12)
+	margin.add_theme_constant_override("margin_left", 7)
+	margin.add_theme_constant_override("margin_right", 7)
 	margin.add_theme_constant_override("margin_top", 10)
 	margin.add_theme_constant_override("margin_bottom", 16)
 	scroll.add_child(margin)
@@ -1986,7 +1987,7 @@ func _add_text_field(
 	parent.add_child(label)
 
 	var field := LineEdit.new()
-	field.custom_minimum_size = Vector2(150, 32)
+	field.custom_minimum_size = Vector2(115, 30)
 	field.text_changed.connect(
 		func(_value: String) -> void:
 			_on_form_changed()
@@ -2030,7 +2031,7 @@ func _add_int_field(
 	field.min_value = min_value
 	field.max_value = max_value
 	field.step = 1
-	field.custom_minimum_size = Vector2(110, 32)
+	field.custom_minimum_size = Vector2(80, 30)
 	field.value_changed.connect(
 		func(_value: float) -> void:
 			_on_form_changed()
@@ -2062,7 +2063,7 @@ func _add_option_field(
 	parent.add_child(label)
 
 	var field := OptionButton.new()
-	field.custom_minimum_size = Vector2(150, 32)
+	field.custom_minimum_size = Vector2(115, 30)
 	for option_value: Variant in options:
 		if not option_value is Dictionary:
 			continue
@@ -2092,7 +2093,8 @@ func _add_reference_option(
 	parent.add_child(label)
 
 	var field := OptionButton.new()
-	field.custom_minimum_size = Vector2(170, 32)
+	field.custom_minimum_size = Vector2(125, 30)
+	field.clip_text = true
 	field.add_item("—")
 	field.set_item_metadata(0, {})
 

@@ -144,6 +144,7 @@ func _build_toolbar() -> void:
 	# Direct action: one click opens the creature archive, no submenu.
 	var creatures_button := Button.new()
 	creatures_button.text = "Creature"
+	creatures_button.focus_mode = Control.FOCUS_NONE
 	creatures_button.custom_minimum_size = Vector2(88, 34)
 	creatures_button.tooltip_text = "Apri direttamente la scheda delle creature"
 	creatures_button.pressed.connect(
@@ -201,7 +202,7 @@ func _menu(label_text: String, items: Array, callback: Callable) -> MenuButton:
 		34
 	)
 	button.add_theme_font_size_override("font_size", 13)
-	button.focus_mode = Control.FOCUS_ALL
+	button.focus_mode = Control.FOCUS_NONE
 	button.tooltip_text = "Apri le azioni: " + label_text
 
 	var popup: PopupMenu = button.get_popup()
