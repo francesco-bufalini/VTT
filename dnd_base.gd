@@ -36,6 +36,8 @@ const CONTEXT_AUTO_SYNC := 40
 const CONTEXT_BESTIARY_2024 := 41
 const CONTEXT_BESTIARY_2014 := 42
 const CONTEXT_REPOSITION_SELECTED := 43
+const CONTEXT_CHOOSE_MOUNT := 44
+const CONTEXT_DISMOUNT := 45
 const CONTEXT_CREATURE_AREA := 100
 const CONTEXT_ADD_CREATURE := 101
 const CAMPAIGN_EDITOR_SCENE_PATH := "res://vtt/editor/campaign_editor.tscn"
@@ -171,6 +173,8 @@ var _token_effect_text: RichTextLabel
 var _editing_token: CharacterBody3D
 var token_drag: Node
 var item_controller: Node
+var mount_controller: Node
+var _mount_pick_rider: CharacterBody3D
 var spell_system: Node
 var attack_system: Node
 var flanking_system: Node
@@ -240,6 +244,10 @@ func _ready() -> void:
 	item_controller.name = "ItemController"
 	add_child(item_controller)
 	item_controller.setup(self)
+	mount_controller = preload("res://vtt/mount_controller.gd").new()
+	mount_controller.name = "MountController"
+	add_child(mount_controller)
+	mount_controller.setup(self)
 	board_sync = preload("res://network/board_sync.gd").new()
 	add_child(board_sync)
 	board_sync.setup(self, token_scene, tokens_root, measurement_tool)
@@ -1430,6 +1438,9 @@ func _input(event: InputEvent) -> void:
 	# widget owns the keyboard.
 	if event is InputEventKey and get_viewport().gui_get_focus_owner() != null:
 		return
+	if _mount_pick_rider != null and _handle_mount_pick_input(event):
+		get_viewport().set_input_as_handled()
+		return
 	if _sheet_spawn_picking and _handle_sheet_spawn_placement_input(event):
 		get_viewport().set_input_as_handled()
 		return
@@ -2007,6 +2018,8 @@ func _reposition_selected_at_context() -> void:
 	var height: float = maxf(float(token.get("token_height_cells")), 0.1)
 	var target: Vector3 = _context_reposition_position
 	push_undo_state()
+	if mount_controller != null and mount_controller.is_mounted(token):
+		mount_controller.dismount(token)
 	token.global_position = Vector3(
 		target.x, target.y + height * token_cell * 0.5, target.z
 	)
@@ -2385,6 +2398,10 @@ func begin_token_move_transaction(tokens: Array) -> Dictionary:
 		return {}
 	if item_controller != null and not item_controller.items.is_empty():
 		return _capture_history_state()
+	if mount_controller != null:
+		for value: Variant in tokens:
+			if value is CharacterBody3D and mount_controller.is_mounted(value):
+				return _capture_history_state()
 	return _capture_token_move_state(tokens)
 
 
@@ -3100,6 +3117,9 @@ func _show_context_menu(screen_position: Vector2) -> void:
 	if not _selected_tokens.is_empty():
 		if _selected_tokens.size() == 1:
 			context_menu.add_item("Modifica token…", CONTEXT_TOKEN_DETAILS)
+			context_menu.add_item("Scegli cavalcatura", CONTEXT_CHOOSE_MOUNT)
+			if mount_controller != null and mount_controller.is_mounted(_selected_tokens[0]):
+				context_menu.add_item("Scendi dalla cavalcatura", CONTEXT_DISMOUNT)
 		var selection_count: int = _selected_tokens.size()
 		var selection_suffix: String = (
 			"" if selection_count == 1 else " (%d)" % selection_count
@@ -3308,6 +3328,20 @@ func _on_context_menu_id_pressed(id: int) -> void:
 
 	if id == CONTEXT_TOKEN_DETAILS:
 		open_selected_token_state_editor()
+		return
+
+	if id == CONTEXT_CHOOSE_MOUNT:
+		_begin_choose_mount()
+		return
+
+	if id == CONTEXT_DISMOUNT:
+		if mount_controller != null and _selected_tokens.size() == 1:
+			var mounted_token: CharacterBody3D = _selected_tokens[0]
+			if mount_controller.is_mounted(mounted_token):
+				push_undo_state()
+				mount_controller.dismount(mounted_token)
+				call_deferred("_sync_explicit_token_change", mounted_token)
+		_close_context_menu_to_game()
 		return
 
 	if id == CONTEXT_TOKEN_LIST:
@@ -3930,6 +3964,68 @@ func _shared_token_editor_conditions() -> Array[String]:
 	return active
 
 
+func _begin_choose_mount() -> void:
+	_clean_selection()
+	if mount_controller == null or _selected_tokens.size() != 1:
+		_close_context_menu_to_game()
+		return
+	_mount_pick_rider = _selected_tokens[0]
+	context_menu.hide()
+	_ui_owns_mouse = false
+	_release_mouse()
+	_set_identity_placement_hint(
+		"Clicca direttamente il token o l'oggetto da cavalcare. "
+		+ "Tasto destro o Esc per annullare."
+	)
+
+
+func _finish_choose_mount() -> void:
+	_mount_pick_rider = null
+	_hide_identity_placement_hint()
+	_capture_mouse()
+
+
+func _handle_mount_pick_input(event: InputEvent) -> bool:
+	if _mount_pick_rider == null or not is_instance_valid(_mount_pick_rider):
+		_finish_choose_mount()
+		return true
+	if event is InputEventKey:
+		if event.pressed and event.keycode == KEY_ESCAPE:
+			_finish_choose_mount()
+			return true
+		return event.keycode in [KEY_UP, KEY_DOWN, KEY_LEFT, KEY_RIGHT]
+	if not event is InputEventMouseButton or not event.pressed:
+		return false
+	if event.button_index == MOUSE_BUTTON_RIGHT:
+		_finish_choose_mount()
+		return true
+	if event.button_index != MOUSE_BUTTON_LEFT:
+		return false
+	var screen_position: Vector2 = (
+		_screen_center() if Input.mouse_mode == Input.MOUSE_MODE_CAPTURED else event.position
+	)
+	var hit: Dictionary = {}
+	if _view_2d_enabled:
+		hit = _raycast_token_from_screen(screen_position, true)
+	if hit.is_empty():
+		hit = _raycast_from_screen(screen_position, TOKEN_PICK_COLLISION_MASK, true)
+		hit = _prefer_passenger_token_hit(screen_position, hit)
+	var collider: Node = hit.get("collider") as Node
+	var target: Node = _find_interaction_target(collider) if collider != null else null
+	if not target is Node3D or not mount_controller.can_mount(_mount_pick_rider, target):
+		_set_identity_placement_hint(
+			"Seleziona un altro token-creatura oppure un oggetto della scena. "
+			+ "Non sono consentite associazioni circolari."
+		)
+		return true
+	var before: Dictionary = begin_undo_transaction()
+	if mount_controller.mount(_mount_pick_rider, target as Node3D):
+		commit_undo_transaction(before)
+		call_deferred("_sync_explicit_token_change", _mount_pick_rider)
+		_finish_choose_mount()
+	return true
+
+
 func open_selected_token_state_editor() -> void:
 	_clean_selection()
 	if _selected_tokens.size() != 1:
@@ -3971,6 +4067,8 @@ func _on_context_menu_hidden() -> void:
 
 
 func _finish_context_menu_close() -> void:
+	if _mount_pick_rider != null:
+		return
 	if (
 		color_dialog.visible
 		or (is_instance_valid(share_dialog) and share_dialog.visible)
@@ -4873,6 +4971,10 @@ func _move_selected(
 		return
 
 	var before: Dictionary = begin_token_move_transaction(_selected_tokens)
+	if mount_controller != null:
+		for moving_token: CharacterBody3D in _selected_tokens:
+			if mount_controller.is_mounted(moving_token):
+				mount_controller.dismount(moving_token)
 	var origins: Array[Vector3] = []
 	for token: CharacterBody3D in _selected_tokens:
 		origins.append(token.global_position)
@@ -4913,6 +5015,10 @@ func _move_selected_vertical(steps: int) -> void:
 		return
 
 	var before: Dictionary = begin_token_move_transaction(_selected_tokens)
+	if mount_controller != null:
+		for moving_token: CharacterBody3D in _selected_tokens:
+			if mount_controller.is_mounted(moving_token):
+				mount_controller.dismount(moving_token)
 	var origins: Array[Vector3] = []
 	for token: CharacterBody3D in _selected_tokens:
 		origins.append(token.global_position)
