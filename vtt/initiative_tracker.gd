@@ -645,16 +645,16 @@ func _add_entry_row(
 	row_panel.size_flags_horizontal = Control.SIZE_EXPAND_FILL
 	if is_active:
 		var active_style: StyleBoxFlat = StyleBoxFlat.new()
-		active_style.bg_color = Color(0.22, 0.31, 0.46, 0.92)
-		active_style.border_color = Color(0.82, 0.72, 0.30, 1.0)
+		active_style.bg_color = Color(0.39, 0.18, 0.21, 0.95)
+		active_style.border_color = Color(0.93, 0.72, 0.37, 1.0)
 		active_style.border_width_left = 1
 		active_style.border_width_top = 1
 		active_style.border_width_right = 1
 		active_style.border_width_bottom = 1
-		active_style.corner_radius_top_left = 4
-		active_style.corner_radius_top_right = 4
-		active_style.corner_radius_bottom_left = 4
-		active_style.corner_radius_bottom_right = 4
+		active_style.corner_radius_top_left = 7
+		active_style.corner_radius_top_right = 7
+		active_style.corner_radius_bottom_left = 7
+		active_style.corner_radius_bottom_right = 7
 		row_panel.add_theme_stylebox_override("panel", active_style)
 	list_box.add_child(row_panel)
 
