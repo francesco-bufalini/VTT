@@ -70,8 +70,8 @@ func setup(on_change: Callable, on_status: Callable) -> void:
 	_search.text_changed.connect(func(_v: String) -> void: _filter_spells())
 	_search_row.add_child(_search)
 	_class_only = CheckBox.new()
-	_class_only.text = "Solo le mie classi"
-	_class_only.button_pressed = true
+	_class_only.text = "Limita alle mie classi"
+	_class_only.button_pressed = false
 	_class_only.toggled.connect(func(_v: bool) -> void: _filter_spells())
 	_search_row.add_child(_class_only)
 	_level_filter = OptionButton.new()
