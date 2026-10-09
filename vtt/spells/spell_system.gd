@@ -2,6 +2,7 @@ extends Node
 
 const SpellCatalog = preload("res://vtt/spells/spell_catalog.gd")
 const WallGeometry = preload("res://vtt/spells/wall_geometry.gd")
+const DialogLayout = preload("res://vtt/dialog_layout.gd")
 const ALL_COLLISION_LAYERS := 0xFFFFFFFF
 const AOE_PICK_LAYER := 1 << 20
 const TOKEN_PICK_COLLISION_MASK := ALL_COLLISION_LAYERS & ~AOE_PICK_LAYER
@@ -5296,8 +5297,7 @@ func _show_current_saving_throw_prompt(
 			target_name
 		]
 	)
-	saving_throw_dialog.reset_size()
-	saving_throw_dialog.popup_centered_clamped(Vector2i(500, 220), 0.92)
+	DialogLayout.popup(saving_throw_dialog, Vector2i(500, 220), 0.92)
 
 
 func _resolve_current_saving_throw(succeeded: bool) -> void:

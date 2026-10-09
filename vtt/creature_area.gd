@@ -15,6 +15,7 @@ const StructuredTrackers = preload("res://vtt/structured_resource_trackers.gd")
 const ManualBonus = preload("res://vtt/manual_bonus_style.gd")
 const InventoryTab = preload("res://vtt/creature_inventory_tab.gd")
 const TraitsTab = preload("res://vtt/creature_traits_tab.gd")
+const DialogLayout = preload("res://vtt/dialog_layout.gd")
 
 var board_root: Node3D
 var _archive
@@ -2364,9 +2365,7 @@ func begin_add_creature() -> void:
 	_create_character()
 
 
-# Window layout is computed lazily. Reset before each opening and clamp
-# a second time after controls have received their final first-frame sizes.
-# Prevents the confirmation row falling below the visible viewport.
+# Keep all creature confirmations on the same first-open layout path.
 func _popup_sheet_dialog(
 	dialog: ConfirmationDialog,
 	preferred: Vector2i,
@@ -2374,33 +2373,9 @@ func _popup_sheet_dialog(
 ) -> void:
 	if dialog == null:
 		return
-	dialog.reset_size()
-	dialog.popup_centered_clamped(preferred, ratio)
 	dialog.get_ok_button().show()
 	dialog.get_cancel_button().show()
-	call_deferred("_reclamp_sheet_dialog", dialog, preferred, ratio)
-
-
-func _reclamp_sheet_dialog(
-	dialog: ConfirmationDialog,
-	preferred: Vector2i,
-	ratio: float
-) -> void:
-	# The first frame computes the final minimum size of nested controls.
-	await get_tree().process_frame
-	if dialog == null or not is_instance_valid(dialog) or not dialog.visible:
-		return
-	var viewport: Vector2i = Vector2i(get_viewport().get_visible_rect().size)
-	var maximum: Vector2i = Vector2i(
-		maxi(300, mini(preferred.x, floori(float(viewport.x) * ratio))),
-		maxi(200, mini(preferred.y, floori(float(viewport.y) * ratio)))
-	)
-	# Never increase a window's native size when reducing it to fit the screen.
-	dialog.size = Vector2i(
-		mini(dialog.size.x, maximum.x),
-		mini(dialog.size.y, maximum.y)
-	)
-	dialog.position = (viewport - dialog.size) / 2
+	DialogLayout.popup(dialog, preferred, ratio)
 
 
 func _build_miniature_dialog() -> void:
@@ -2861,7 +2836,7 @@ func _transfer() -> void:
 
 func _show_import() -> void:
 	_import_text.clear()
-	_import_dialog.popup_centered_clamped(Vector2i(720, 340), 0.9)
+	DialogLayout.popup(_import_dialog, Vector2i(720, 340), 0.9)
 
 
 func _import() -> void:
@@ -2934,7 +2909,7 @@ func _show_effect_description(definition: Dictionary) -> void:
 	_effect_text.text = FiveToolsText.blocks(definition.get(
 		"entries", definition.get("description", ContentCatalog.description(definition))
 	))
-	_effect_dialog.popup_centered(Vector2i(600, 450))
+	DialogLayout.popup(_effect_dialog, Vector2i(600, 450))
 
 
 func _set_sheet_condition(enabled: bool, id: String) -> void:

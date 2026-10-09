@@ -1,5 +1,7 @@
 extends Node3D
 
+const DialogLayout = preload("res://vtt/dialog_layout.gd")
+
 const CONTEXT_CREATE_TOKEN := 1
 const CONTEXT_DELETE_SELECTED := 2
 const CONTEXT_ROTATE_LEFT := 3
@@ -3038,16 +3040,7 @@ func _popup_dialog_safe(
 	preferred_size: Vector2i,
 	fallback_ratio: float = 0.92
 ) -> void:
-	if dialog == null or not is_instance_valid(dialog):
-		return
-	var viewport_size := get_viewport().get_visible_rect().size
-	var safe_size := Vector2i(
-		mini(preferred_size.x, maxi(340, int(viewport_size.x) - 48)),
-		mini(preferred_size.y, maxi(260, int(viewport_size.y) - 48))
-	)
-	dialog.reset_size()
-	dialog.popup_centered_clamped(safe_size, fallback_ratio)
-
+	DialogLayout.popup(dialog, preferred_size, fallback_ratio)
 
 func _show_context_menu(screen_position: Vector2) -> void:
 	_clean_selection()
@@ -3910,7 +3903,7 @@ func _show_shared_effect_description(definition: Dictionary) -> void:
 		return
 	_token_effect_dialog.title = String(definition.get("name", "Effect"))
 	_token_effect_text.text = TokenScript.ContentCatalog.description(definition)
-	_token_effect_dialog.popup_centered(Vector2i(560, 440))
+	DialogLayout.popup(_token_effect_dialog, Vector2i(560, 440))
 
 
 func _set_shared_token_editor_conditions(value: Variant) -> void:

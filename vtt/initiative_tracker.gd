@@ -1,6 +1,7 @@
 extends Node
 
 const CreatureOwner = preload("res://vtt/creature_owner.gd")
+const DialogLayout = preload("res://vtt/dialog_layout.gd")
 
 signal turn_changed(entry_id: String, round_number: int, turn_count: int)
 signal combat_state_changed(active: bool)
@@ -411,16 +412,8 @@ func open_add_dialog() -> void:
 
 
 func _popup_dialog_safe(dialog: Window, preferred_size: Vector2i) -> void:
-	if dialog == null or not is_instance_valid(dialog):
-		return
-	var viewport_size := board_root.get_viewport().get_visible_rect().size
-	var safe_size := Vector2i(
-		mini(preferred_size.x, maxi(320, int(viewport_size.x) - 48)),
-		mini(preferred_size.y, maxi(200, int(viewport_size.y) - 48))
-	)
-	dialog.reset_size()
-	dialog.popup_centered_clamped(safe_size, 0.92)
-
+	# This picker intentionally keeps its own footer buttons.
+	DialogLayout.popup(dialog, preferred_size, 0.92)
 
 func _creature_names_from_archive() -> Dictionary:
 	var names: Dictionary = {}

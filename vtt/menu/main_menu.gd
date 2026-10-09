@@ -2,6 +2,7 @@ extends Control
 
 const ACTIVE_CAMPAIGNS_SCENE_PATH := "res://vtt/menu/active_campaigns.tscn"
 const MenuStyle = preload("res://vtt/menu/menu_style.gd")
+const DialogLayout = preload("res://vtt/dialog_layout.gd")
 const MENU_BACKGROUND_DIRECTORY := (
 	"res://assets/menu/background/slideshow"
 )
@@ -423,8 +424,7 @@ func _open_active_campaigns() -> void:
 
 func _request_new_campaign() -> void:
 	_new_campaign_name.clear()
-	_new_campaign_dialog.reset_size()
-	_new_campaign_dialog.popup_centered_clamped(Vector2i(500, 220), 0.92)
+	DialogLayout.popup(_new_campaign_dialog, Vector2i(500, 220), 0.92)
 	_new_campaign_name.call_deferred("grab_focus")
 
 
@@ -465,8 +465,7 @@ func _campaign_manager() -> Node:
 
 func _show_options_placeholder() -> void:
 	_refresh_audio_settings_ui()
-	_options_dialog.reset_size()
-	_options_dialog.popup_centered_clamped(Vector2i(520, 300), 0.92)
+	DialogLayout.popup(_options_dialog, Vector2i(520, 300), 0.92)
 
 
 func _menu_audio_manager() -> Node:
@@ -554,6 +553,5 @@ func _show_error(message: String) -> void:
 	dialog.title = "Errore"
 	dialog.dialog_text = message
 	add_child(dialog)
-	dialog.reset_size()
-	dialog.popup_centered_clamped(Vector2i(480, 180), 0.92)
+	DialogLayout.popup(dialog, Vector2i(480, 180), 0.92)
 	dialog.close_requested.connect(dialog.queue_free)

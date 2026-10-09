@@ -1,5 +1,7 @@
 extends Node
 
+const DialogLayout = preload("res://vtt/dialog_layout.gd")
+
 const SAVE_VERSION := 1
 
 const PRESET_SMALL := 100
@@ -359,8 +361,7 @@ func _build_toolbar() -> void:
 	menu_button.add_theme_font_size_override("font_size", 13)
 	menu_button.pressed.connect(
 		func() -> void:
-			leave_dialog.reset_size()
-			leave_dialog.popup_centered_clamped(Vector2i(470, 190), 0.92)
+			DialogLayout.popup(leave_dialog, Vector2i(470, 190), 0.92)
 	)
 	row.add_child(menu_button)
 
@@ -700,8 +701,7 @@ func _on_grid_selected(id: int) -> void:
 		GRID_RESIZE:
 			_open_primary_grid_resize_dialog(false)
 		GRID_ADD:
-			add_grid_dialog.reset_size()
-			add_grid_dialog.popup_centered_clamped(Vector2i(500, 430), 0.92)
+			DialogLayout.popup(add_grid_dialog, Vector2i(500, 430), 0.92)
 		GRID_REMOVE_LAST:
 			_remove_last_extra_grid()
 
@@ -926,8 +926,7 @@ func _open_primary_grid_resize_dialog(as_preset: bool) -> void:
 	)
 	resize_width.value = primary_width_cells
 	resize_depth.value = primary_depth_cells
-	resize_dialog.reset_size()
-	resize_dialog.popup_centered_clamped(Vector2i(460, 250), 0.92)
+	DialogLayout.popup(resize_dialog, Vector2i(460, 250), 0.92)
 
 
 func _build_2d_image_dialogs() -> void:
@@ -994,8 +993,7 @@ func _open_map_image_size_dialog() -> void:
 	map_image_depth.value = clampf(
 		map_image_depth_cells, 0.25, float(primary_depth_cells)
 	)
-	map_image_size_dialog.reset_size()
-	map_image_size_dialog.popup_centered_clamped(Vector2i(470, 280), 0.92)
+	DialogLayout.popup(map_image_size_dialog, Vector2i(470, 280), 0.92)
 
 
 func _on_map_image_file_selected(path: String) -> void:
