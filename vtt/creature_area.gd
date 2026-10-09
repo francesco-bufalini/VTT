@@ -63,6 +63,7 @@ var _ability_bonus_spins: Dictionary = {}
 var _ability_modifier_labels: Dictionary = {}
 var _species: OptionButton
 var _class_name: OptionButton
+var _add_class_button: Button
 var _rules_edition: OptionButton
 var _multiclass_rows: VBoxContainer
 var _multiclass_controls: Array[Dictionary] = []
@@ -501,6 +502,10 @@ func _build_ui() -> void:
 	_add_label(temp_health, "CA")
 	_ac = _spin(temp_health, 0, 99)
 	_ac.custom_minimum_size.x = 72
+	_add_label(temp_health, "Gittata base (ft)")
+	_reach = _spin(temp_health, 5, 1000)
+	_reach.step = 5.0
+	_reach.custom_minimum_size.x = 76
 	_ac.size_flags_horizontal = Control.SIZE_SHRINK_BEGIN
 
 	var abilities_row := GridContainer.new()
@@ -544,6 +549,7 @@ func _build_ui() -> void:
 	_class_name = _reference_option(
 		classes_row, Player5eTools.class_choices(), false
 	)
+	_class_name.item_selected.connect(func(_i: int) -> void: _refresh_multiclass_availability())
 	_add_label(classes_row, "Livello classe base")
 	_level = SpinBox.new()
 	_level.min_value = 1
@@ -558,10 +564,10 @@ func _build_ui() -> void:
 	var multiclass_header := HBoxContainer.new()
 	form.add_child(multiclass_header)
 	_add_label(multiclass_header, "Classi aggiuntive (multiclasse)")
-	var add_class := Button.new()
-	add_class.text = "+ Classe"
-	add_class.pressed.connect(_add_multiclass_row)
-	multiclass_header.add_child(add_class)
+	_add_class_button = Button.new()
+	_add_class_button.text = "+ Classe"
+	_add_class_button.pressed.connect(_add_multiclass_row)
+	multiclass_header.add_child(_add_class_button)
 	_multiclass_rows = VBoxContainer.new()
 	form.add_child(_multiclass_rows)
 
@@ -610,9 +616,6 @@ func _build_ui() -> void:
 		_size_choice.add_item(size_name)
 	_size_choice.item_selected.connect(func(_i: int) -> void: _save())
 	geometry.add_child(_size_choice)
-	_add_label(geometry, "Gittata (ft)")
-	_reach = _spin(geometry, 5, 1000)
-	_reach.step = 5.0
 	_add_label(geometry, "Fronte della miniatura")
 	_front = OptionButton.new()
 	for direction: String in ["−Z · 0°", "+X · 90°", "+Z · 180°", "−X · 270°"]:
@@ -629,8 +632,12 @@ func _build_ui() -> void:
 	_reference.bbcode_enabled = false
 	_reference.selection_enabled = true
 	_reference.scroll_active = true
-	_reference.custom_minimum_size.y = 250
-	_reference.size_flags_vertical = Control.SIZE_SHRINK_BEGIN
+	# Give the traits editor the entire pane; its own scrollbar handles text.
+	traits_tab.size_flags_vertical = Control.SIZE_EXPAND_FILL
+	(traits_tab.get_parent() as Control).size_flags_vertical = Control.SIZE_EXPAND_FILL
+	(traits_tab.get_parent().get_parent() as ScrollContainer).vertical_scroll_mode = ScrollContainer.SCROLL_MODE_DISABLED
+	_reference.size_flags_vertical = Control.SIZE_EXPAND_FILL
+	_reference.fit_content = false
 	traits_tab.add_child(_reference)
 	_effect_dialog = AcceptDialog.new()
 	_effect_dialog.title = "5etools · Effect details"
@@ -1231,6 +1238,11 @@ func _selected_rules_version() -> String:
 	return "2024" if _rules_edition.selected == 1 else "2014"
 
 
+func _refresh_multiclass_availability() -> void:
+	if _add_class_button != null:
+		_add_class_button.disabled = _class_name.selected <= 0
+
+
 func _refresh_class_choices() -> void:
 	var primary := _reference_entry(_class_name)
 	var choices := Player5eTools.class_choices(_selected_rules_version())
@@ -1257,6 +1269,8 @@ func _add_multiclass_row(
 	source: String = "",
 	reference_id: String = ""
 ) -> void:
+	if not _loading and _class_name.selected <= 0:
+		return
 	var row := HBoxContainer.new()
 	_multiclass_rows.add_child(row)
 	var selector := _reference_option(row, Player5eTools.class_choices(_selected_rules_version()), false)
@@ -1427,6 +1441,15 @@ func _load_form(record: Dictionary) -> void:
 		(_ability_spins[ability] as SpinBox).value = int(abilities.get(ability, 10))
 		(_ability_bonus_spins[ability] as SpinBox).value = int(bonuses.get(ability, 0))
 		_update_ability_modifier(ability)
+	var is_character: bool = String(record.get("kind", "")) == "character"
+	if is_character:
+		_set_reference_choices(_species, Player5eTools.entries("races"))
+	else:
+		_set_reference_choices(_species, [{
+			"id": String(record.get("species", "")),
+			"name": String(record.get("species", "")),
+			"source": String(record.get("species_source", ""))
+		}])
 	_select_reference(_species, String(record.get("species", "")), String(record.get("species_source", "")), String(record.get("species_id", "")))
 	var class_source := String(record.get("class_source", ""))
 	var edition := String(record.get("rules_version", "2014"))
@@ -1436,7 +1459,14 @@ func _load_form(record: Dictionary) -> void:
 		edition = "2014"
 	_rules_edition.select(1 if edition == "2024" else 0)
 	_refresh_class_choices()
-	_select_reference(_class_name, String(record.get("class", "")), class_source, String(record.get("class_id", "")))
+	if not is_character:
+		_set_reference_choices(_class_name, [{
+			"id": "monster", "name": "Mostro", "source": "5etools"
+		}], false)
+		_class_name.select(1)
+	else:
+		_select_reference(_class_name, String(record.get("class", "")), class_source, String(record.get("class_id", "")))
+	_refresh_multiclass_availability()
 	_clear_multiclass()
 	var classes_value: Variant = record.get("classes", [])
 	if classes_value is Array:
@@ -1456,7 +1486,10 @@ func _load_form(record: Dictionary) -> void:
 		var first_class: Variant = (classes_value as Array)[0]
 		if first_class is Dictionary:
 			primary_level = int((first_class as Dictionary).get("level", primary_level))
-	_level.value = clampi(primary_level, 1, 20)
+	_level.min_value = 1.0 if is_character else 0.0
+	_level.max_value = 20.0 if is_character else 30.0
+	_level.step = 1.0 if is_character else 0.125
+	_level.value = clampi(primary_level, 1, 20) if is_character else Rules.monster_cr_value(record.get("stat_block", {}))
 	_feats.text = String(record.get("feats", ""))
 	_default_miniature_id = String(record.get("default_miniature_id", ""))
 	_default_miniature.text = _miniature_display_name(_default_miniature_id)
@@ -1469,7 +1502,6 @@ func _load_form(record: Dictionary) -> void:
 		if not _default_miniature_id.is_empty()
 		else "Scegli una miniatura con il pulsante Cerca…"
 	)
-	var is_character := String(record.get("kind", "")) == "character"
 	_species.disabled = not is_character
 	_class_name.disabled = not is_character
 	_rules_edition.disabled = not is_character
@@ -1555,6 +1587,31 @@ func _save() -> void:
 	record["ability_bonuses"] = ability_bonuses
 	record["default_miniature_id"] = _default_miniature_id
 	record["feats"] = _feats.text
+	if String(record.get("kind", "")) == "monster":
+		var stat: Dictionary = record.get("stat_block", {})
+		var monster_cr: float = Rules.monster_cr_value(stat)
+		record["species"] = String(stat.get("name", record.get("base_name", "")))
+		record["species_source"] = String(stat.get("source", ""))
+		record["class"] = "Mostro"
+		record["class_source"] = "5etools"
+		var monster_classes: Array[Dictionary] = [{
+			"name": "Mostro", "source": "5etools", "level": monster_cr
+		}]
+		var additional_levels: float = 0.0
+		for definition: Dictionary in _multiclass_controls:
+			var extra_ref: Dictionary = _reference_entry(definition["selector"])
+			if String(extra_ref.get("name", "")).is_empty():
+				continue
+			var extra_level: int = int((definition["level"] as SpinBox).value)
+			monster_classes.append({
+				"name": String(extra_ref.get("name", "")),
+				"source": String(extra_ref.get("source", "")),
+				"id": String(extra_ref.get("id", "")),
+				"level": extra_level
+			})
+			additional_levels += extra_level
+		record["classes"] = monster_classes
+		record["level"] = monster_cr + additional_levels
 	if String(record.get("kind", "")) == "character":
 		var species := _reference_entry(_species)
 		var class_ref := _reference_entry(_class_name)
@@ -1568,6 +1625,9 @@ func _save() -> void:
 		var primary_level: int = clampi(int(_level.value), 1, 20)
 		var classes: Array[Dictionary] = []
 		var extras_level := 0
+		if String(record["class"]).is_empty() and not _multiclass_controls.is_empty():
+			_set_status("Seleziona la classe base prima di aggiungere altre classi.")
+			return
 		for definition: Dictionary in _multiclass_controls:
 			var secondary_option: OptionButton = definition["selector"]
 			var extra_ref := _reference_entry(secondary_option)
