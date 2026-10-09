@@ -124,7 +124,7 @@ func run() -> void:
 	for tab_index: int in range(area._tabs.get_tab_count()):
 		tab_titles.append(area._tabs.get_tab_title(tab_index))
 	assert("Inventario" in tab_titles and "Incantesimi" in tab_titles)
-	assert("Risorse" not in tab_titles and area._tracker_rows.get_parent() == area._name.get_parent(),
+	assert("Risorse" not in tab_titles and area._tracker_rows.get_parent() == area._name.get_parent().get_parent(),
 		"Trackers must be inside Statistics, not a separate resources tab")
 	area._choose_miniature(area._current(), false, true)
 	area._miniature_filter.text = "ape"
