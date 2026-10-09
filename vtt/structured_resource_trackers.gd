@@ -81,13 +81,13 @@ static func _append_class_trackers(record: Dictionary, output: Array[Dictionary]
 		if not raw_class is Dictionary:
 			continue
 		var class_data: Dictionary = raw_class as Dictionary
-		var class_name: String = String(class_data.get("name", "")).to_lower()
+		var selected_class_name: String = String(class_data.get("name", "")).to_lower()
 		var class_source: String = String(class_data.get("source", "")).to_upper()
 		var class_level: int = int(class_data.get("level", 0))
 		if class_level < 1 or class_level > 20:
 			continue
 		for definition: Dictionary in definitions:
-			if String(definition.get("class_name", "")).to_lower() != class_name:
+			if String(definition.get("class_name", "")).to_lower() != selected_class_name:
 				continue
 			if String(definition.get("class_source", "")).to_upper() != class_source:
 				continue
@@ -102,7 +102,7 @@ static func _append_class_trackers(record: Dictionary, output: Array[Dictionary]
 				continue
 			var column: String = String(definition.get("column", ""))
 			var id: String = "class:%s:%s:%s" % [
-				class_name, class_source.to_lower(), column.to_lower().replace(" ", "_")
+				selected_class_name, class_source.to_lower(), column.to_lower().replace(" ", "_")
 			]
 			if seen.has(id):
 				continue
