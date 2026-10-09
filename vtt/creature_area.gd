@@ -83,6 +83,7 @@ var _pending_new_creature := false
 var _picker_current := false
 var _chosen_miniature_id := ""
 var _current_miniature: Label
+var _tracker_rows: VBoxContainer
 var _reference: RichTextLabel
 var _condition_rows: VBoxContainer
 var _effect_dialog: AcceptDialog
@@ -447,6 +448,9 @@ func _build_ui() -> void:
 	var form := _add_sheet_tab(_tabs, "Statistiche")
 	var appearance_tab := _add_sheet_tab(_tabs, "Aspetto")
 	var traits_tab := _add_sheet_tab(_tabs, "Tratti")
+	var resources_tab := _add_sheet_tab(_tabs, "Risorse")
+	_tracker_rows = VBoxContainer.new()
+	resources_tab.add_child(_tracker_rows)
 	var conditions_tab := _add_sheet_tab(_tabs, "Stati")
 	var spellcasting_tab := _add_sheet_tab(_tabs, "Incantesimi")
 	_spellcasting_ui = SpellcastingTab.new()
@@ -1466,6 +1470,7 @@ func _on_selected(index: int) -> void:
 
 
 func _load_form(record: Dictionary) -> void:
+	_refresh_trackers(record)
 	_loading = true
 	_name.text = String(record.get("name", ""))
 	_hp.value = int(record.get("current_hp", 1))
@@ -1925,6 +1930,85 @@ func _restore_full_hp() -> void:
 	_hp.value = maximum
 	_save()
 	_set_status("Punti ferita ripristinati al massimo.")
+
+func _structured_trackers(record: Dictionary) -> Array[Dictionary]:
+	var result: Array[Dictionary] = []
+	if String(record.get("kind", "")) != "monster":
+		return result
+	var stat: Dictionary = record.get("stat_block", {})
+	var count: int = maxi(0, int(stat.get("legendaryActions", 0)))
+	if count > 0:
+		result.append({"id": "legendary_actions", "name": "Azioni leggendarie", "max": count, "source": "legendary", "recharge": "turn"})
+	return result
+
+
+func _refresh_trackers(record: Dictionary) -> void:
+	if _tracker_rows == null:
+		return
+	for child: Node in _tracker_rows.get_children():
+		_tracker_rows.remove_child(child)
+		child.queue_free()
+	var trackers: Array[Dictionary] = _structured_trackers(record)
+	if trackers.is_empty():
+		var hint := Label.new()
+		hint.text = "Nessuna risorsa non magica con utilizzi strutturati disponibile."
+		_tracker_rows.add_child(hint)
+		return
+	var spent: Dictionary = record.get("resource_tracker_spent", {})
+	for tracker: Dictionary in trackers:
+		var row := HBoxContainer.new()
+		_tracker_rows.add_child(row)
+		var source_button := Button.new()
+		source_button.text = String(tracker["name"]) + "  ↗"
+		source_button.tooltip_text = "Apri il privilegio nella scheda Tratti"
+		source_button.size_flags_horizontal = Control.SIZE_EXPAND_FILL
+		source_button.pressed.connect(_open_tracker_trait.bind(String(tracker["source"])))
+		row.add_child(source_button)
+		var id: String = String(tracker["id"])
+		var maximum: int = int(tracker["max"])
+		var used: int = clampi(int(spent.get(id, 0)), 0, maximum)
+		var consume := Button.new()
+		consume.text = "−"
+		consume.disabled = used >= maximum
+		consume.pressed.connect(_change_tracker.bind(id, 1, maximum))
+		row.add_child(consume)
+		var remaining := Label.new()
+		remaining.text = "%d / %d" % [maximum - used, maximum]
+		row.add_child(remaining)
+		var restore := Button.new()
+		restore.text = "+"
+		restore.disabled = used <= 0
+		restore.pressed.connect(_change_tracker.bind(id, -1, maximum))
+		row.add_child(restore)
+		var reset := Button.new()
+		reset.text = "↺"
+		reset.tooltip_text = "Ripristina tutti gli utilizzi"
+		reset.pressed.connect(_change_tracker.bind(id, -maximum, maximum))
+		row.add_child(reset)
+
+
+func _change_tracker(id: String, delta: int, maximum: int) -> void:
+	var record: Dictionary = _current()
+	if record.is_empty():
+		return
+	var spent: Dictionary = record.get("resource_tracker_spent", {}).duplicate(true)
+	spent[id] = clampi(int(spent.get(id, 0)) + delta, 0, maximum)
+	record["resource_tracker_spent"] = spent
+	var error: Error = _archive.save(record)
+	if error != OK:
+		_set_status("Tracker non salvato: " + error_string(error))
+		return
+	_replace_current_record(record)
+	_refresh_trackers(record)
+
+
+func _open_tracker_trait(_source: String) -> void:
+	for i: int in range(_tabs.get_tab_count()):
+		if _tabs.get_tab_title(i) == "Tratti":
+			_tabs.current_tab = i
+			_reference.scroll_to_line(0)
+			return
+
 
 func _refresh_reference(record: Dictionary) -> void:
 	var parts: PackedStringArray = []
