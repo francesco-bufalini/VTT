@@ -59,7 +59,7 @@ func _run() -> void:
 	board.candidate = token
 	var expected := Vector3(2.5, 6.5, 4.5)
 	if not _check(
-		(ruler.call("_ruler_token_anchor", token) as Vector3).is_equal_approx(expected),
+		Vector3(ruler.call("_ruler_token_anchor", token)).is_equal_approx(expected),
 		"a flying token must be measured at its occupied base cell, not ground level"
 	):
 		return
@@ -72,7 +72,7 @@ func _run() -> void:
 	)
 	if not _check(
 		bool(target.get("valid", false))
-		and (target.get("center", Vector3.ZERO) as Vector3).is_equal_approx(expected),
+		and Vector3(target.get("center", Vector3.ZERO)).is_equal_approx(expected),
 		"3D ruler must use the frontmost token, rather than the space behind"
 	):
 		return
@@ -96,7 +96,7 @@ func _run() -> void:
 	)
 	if not _check(
 		bool(target.get("valid", false))
-		and (target.get("center", Vector3.ZERO) as Vector3).is_equal_approx(expected),
+		and Vector3(target.get("center", Vector3.ZERO)).is_equal_approx(expected),
 		"2D ruler must preserve floating token altitude instead of floor altitude"
 	):
 		return
