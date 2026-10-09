@@ -40,6 +40,9 @@ var _pact_remain: Label
 var _pact_use: Button
 var _pact_restore: Button
 var _calculate_button: Button
+var _spell_options: MenuButton
+var _search_row: HBoxContainer
+var _catalog_title: Label
 
 
 func setup(on_change: Callable, on_status: Callable) -> void:
@@ -47,48 +50,60 @@ func setup(on_change: Callable, on_status: Callable) -> void:
 	_on_status = on_status
 	add_theme_constant_override("separation", 10)
 	var title := Label.new()
-	title.text = "Incantesimi conosciuti e preparati"
+	title.text = "Incantesimi di classe e disponibili"
 	title.add_theme_font_size_override("font_size", 18)
 	add_child(title)
-	var search_row := HBoxContainer.new()
-	add_child(search_row)
+	_spell_options = MenuButton.new()
+	_spell_options.text = "Opzioni ▾"
+	add_child(_spell_options)
+	var menu: PopupMenu = _spell_options.get_popup()
+	menu.add_check_item("Mostra ricerca incantesimi", 1)
+	menu.add_item("Ricalcola slot dalle classi", 2)
+	menu.add_item("Ricarica automaticamente", 3)
+	menu.id_pressed.connect(_on_options_selected)
+	_search_row = HBoxContainer.new()
+	add_child(_search_row)
 	_search = LineEdit.new()
 	_search.placeholder_text = "Cerca incantesimo per nome, descrizione o fonte"
 	_search.clear_button_enabled = true
 	_search.size_flags_horizontal = Control.SIZE_EXPAND_FILL
 	_search.text_changed.connect(func(_v: String) -> void: _filter_spells())
-	search_row.add_child(_search)
+	_search_row.add_child(_search)
 	_class_only = CheckBox.new()
 	_class_only.text = "Solo le mie classi"
 	_class_only.button_pressed = true
 	_class_only.toggled.connect(func(_v: bool) -> void: _filter_spells())
-	search_row.add_child(_class_only)
+	_search_row.add_child(_class_only)
 	_level_filter = OptionButton.new()
 	_level_filter.add_item("Tutti i livelli")
 	_level_filter.add_item("Trucchetti")
 	for lvl: int in range(1, 10):
 		_level_filter.add_item("Livello %d" % lvl)
 	_level_filter.item_selected.connect(func(_index: int) -> void: _filter_spells())
-	search_row.add_child(_level_filter)
+	_search_row.add_child(_level_filter)
 
+	_catalog_title = Label.new()
+	_catalog_title.text = "Risultati ricerca (doppio clic per aggiungere)"
+	add_child(_catalog_title)
 	_available = ItemList.new()
 	_available.custom_minimum_size = Vector2(0, 160)
 	_available.size_flags_horizontal = Control.SIZE_EXPAND_FILL
 	_available.item_selected.connect(func(_index: int) -> void: _on_spell_list_selected("catalog"))
+	_available.item_activated.connect(func(_index: int) -> void: _add_selected_known())
 	add_child(_available)
 	var actions := HBoxContainer.new()
 	actions.add_theme_constant_override("separation", 8)
 	add_child(actions)
 	_add_known = Button.new()
-	_add_known.text = "+ Conosciuto"
+	_add_known.text = "+ Disponibile"
 	_add_known.pressed.connect(_add_selected_known)
 	actions.add_child(_add_known)
 	_prepare = Button.new()
-	_prepare.text = "Prepara / Rimuovi preparazione"
+	_prepare.text = "Aggiungi / Rimuovi"
 	_prepare.pressed.connect(_toggle_selected_prepared)
 	actions.add_child(_prepare)
 	_forget = Button.new()
-	_forget.text = "Dimentica"
+	_forget.text = "Rimuovi dai disponibili"
 	_forget.pressed.connect(_forget_selected_known)
 	actions.add_child(_forget)
 
@@ -99,18 +114,19 @@ func setup(on_change: Callable, on_status: Callable) -> void:
 	known_col.size_flags_horizontal = Control.SIZE_EXPAND_FILL
 	columns.add_child(known_col)
 	var known_title := Label.new()
-	known_title.text = "Conosciuti"
+	known_title.text = "Incantesimi di classe (fino al livello attuale)"
 	known_col.add_child(known_title)
 	_known_list = ItemList.new()
 	_known_list.custom_minimum_size = Vector2(0, 106)
 	_known_list.size_flags_horizontal = Control.SIZE_EXPAND_FILL
 	_known_list.item_selected.connect(func(_index: int) -> void: _on_spell_list_selected("known"))
+	_known_list.item_activated.connect(func(_index: int) -> void: _add_selected_known())
 	known_col.add_child(_known_list)
 	var prepared_col := VBoxContainer.new()
 	prepared_col.size_flags_horizontal = Control.SIZE_EXPAND_FILL
 	columns.add_child(prepared_col)
 	var prepared_title := Label.new()
-	prepared_title.text = "Preparati"
+	prepared_title.text = "Incantesimi disponibili"
 	prepared_col.add_child(prepared_title)
 	_prepared_list = ItemList.new()
 	_prepared_list.custom_minimum_size = Vector2(0, 106)
@@ -133,9 +149,9 @@ func setup(on_change: Callable, on_status: Callable) -> void:
 	heading.add_theme_font_size_override("font_size", 16)
 	slot_title.add_child(heading)
 	var calculate := Button.new()
-	calculate.text = "Calcola dalle classi"
+	calculate.text = "Ricarica automaticamente"
 	calculate.tooltip_text = "Imposta i massimi secondo la progressione D&D 5e; non ripristina gli slot consumati"
-	calculate.pressed.connect(_calculate_slot_totals)
+	calculate.pressed.connect(func() -> void: _calculate_slot_totals(true))
 	slot_title.add_child(calculate)
 	_calculate_button = calculate
 	var rest_all := Button.new()
@@ -220,13 +236,45 @@ func setup(on_change: Callable, on_status: Callable) -> void:
 	pact_row.add_child(_pact_restore)
 	_update_resource_labels()
 	_update_spell_controls()
+	# Description goes after all nine slot levels and Pact Magic, not above.
+	move_child(_description, get_child_count() - 1)
+	_set_search_visible(false)
+
+
+func _set_search_visible(show: bool) -> void:
+	_search_row.visible = show
+	_catalog_title.visible = show
+	_available.visible = show
+	_spell_options.get_popup().set_item_checked(
+		_spell_options.get_popup().get_item_index(1), show
+	)
+	if show:
+		_search.grab_focus()
+
+
+func _on_options_selected(item_id: int) -> void:
+	match item_id:
+		1:
+			_set_search_visible(not _search_row.visible)
+		2:
+			_calculate_slot_totals(false)
+		3:
+			_calculate_slot_totals(true)
 
 
 func load_record(record: Dictionary) -> void:
 	_loading = true
 	_record = record.duplicate(true)
-	_known = _copy_spell_array(record.get("spells", []))
+	# Older records separate known and prepared. Preserve BOTH collections
+	# in the new single available-spell selection on first load.
+	_known.clear()
 	_prepared = _copy_spell_array(record.get("prepared_spells", []))
+	for legacy: Variant in _copy_spell_array(record.get("spells", [])):
+		if not _has_spell(_prepared, _entry_id(legacy)):
+			_prepared.append(legacy)
+	if _catalog.is_empty():
+		_catalog = SpellCatalog.all_spells()
+	_rebuild_class_spells()
 	_totals = _normal_slots(record.get("spell_slots_total", []))
 	_spent = _normal_slots(record.get("spell_slots_spent", []))
 	_pact_total = maxi(0, int(record.get("pact_slots_total", 0)))
@@ -295,12 +343,57 @@ func _class_keys() -> Dictionary:
 		for raw: Variant in classes_value as Array:
 			if raw is Dictionary:
 				var name: String = String((raw as Dictionary).get("name", "")).strip_edges()
-				if not name.is_empty():
+				if not name.is_empty() and name.to_lower() != "mostro":
 					keys[SpellCatalog.canonical_class_name(name).to_lower()] = true
 	var primary: String = String(_record.get("class", "")).strip_edges()
-	if not primary.is_empty():
+	if not primary.is_empty() and primary.to_lower() != "mostro":
 		keys[SpellCatalog.canonical_class_name(primary).to_lower()] = true
 	return keys
+
+
+# Resolve each class independently: multiclass spell levels are limited
+# by that class's own progression, not by the overall character level.
+func _class_spell_level_limits() -> Dictionary:
+	var limits: Dictionary = {}
+	for cls: Dictionary in Rules.level_classes(_record):
+		var class_name: String = SpellCatalog.canonical_class_name(
+			String(cls.get("name", ""))
+		).to_lower()
+		if class_name.is_empty() or class_name == "mostro":
+			continue
+		var single: Dictionary = {
+			"classes": [cls], "rules_version": _record.get("rules_version", "2014")
+		}
+		var progression: Dictionary = Rules.spell_slot_progression(single)
+		var highest: int = 0
+		var slots_value: Variant = progression.get("slots", [])
+		if slots_value is Array:
+			for lvl: int in range(1, mini(10, (slots_value as Array).size())):
+				if int((slots_value as Array)[lvl]) > 0:
+					highest = lvl
+		if class_name == "warlock" and int(progression.get("pact_total", 0)) > 0:
+			highest = maxi(highest, int(progression.get("pact_level", 1)))
+		limits[class_name] = maxi(int(limits.get(class_name, 0)), highest)
+	return limits
+
+
+func _rebuild_class_spells() -> void:
+	_known.clear()
+	if _catalog.is_empty():
+		_catalog = SpellCatalog.all_spells()
+	var limits: Dictionary = _class_spell_level_limits()
+	for entry: Dictionary in _catalog:
+		var level: int = int(entry.get("level", 0))
+		var classes_value: Variant = entry.get("classes", [])
+		if not classes_value is Array:
+			continue
+		for cls: Variant in classes_value as Array:
+			var class_name: String = SpellCatalog.canonical_class_name(
+				String(cls)
+			).to_lower()
+			if limits.has(class_name) and level <= int(limits[class_name]):
+				_known.append(entry)
+				break
 
 
 func _filter_spells() -> void:
@@ -364,12 +457,13 @@ func update_character_context(record: Dictionary) -> void:
 	var current_primary: String = String(record.get("class", ""))
 	_record["classes"] = current_class
 	_record["class"] = current_primary
-	_record["level"] = int(record.get("level", 1))
+	_record["level"] = record.get("level", 1)
 	_record["rules_version"] = String(record.get("rules_version", "2014"))
-	if previous_class != current_class or previous_primary != current_primary:
-		_class_only.disabled = _class_keys().is_empty()
-		_calculate_button.disabled = _class_keys().is_empty()
-		_filter_spells()
+	_rebuild_class_spells()
+	_refresh_saved_spell_lists()
+	_class_only.disabled = _class_keys().is_empty()
+	_calculate_button.disabled = _class_keys().is_empty()
+	_filter_spells()
 
 
 func _selected_spell() -> Dictionary:
@@ -391,10 +485,10 @@ func _update_spell_controls() -> void:
 	var spell: Dictionary = _selected_spell()
 	var id: String = String(spell.get("id", ""))
 	var known: bool = _has_spell(_known, id)
-	_add_known.disabled = id.is_empty() or known
-	_prepare.disabled = id.is_empty() or not known
-	_prepare.text = "Rimuovi preparazione" if _has_spell(_prepared, id) else "Prepara"
-	_forget.disabled = id.is_empty() or not known
+	_add_known.disabled = id.is_empty() or _has_spell(_prepared, id)
+	_prepare.disabled = id.is_empty()
+	_prepare.text = "Rimuovi dai disponibili" if _has_spell(_prepared, id) else "Aggiungi ai disponibili"
+	_forget.disabled = id.is_empty() or not _has_spell(_prepared, id)
 	if id.is_empty():
 		_description.text = "Seleziona un incantesimo per consultare la descrizione."
 		return
@@ -409,9 +503,9 @@ func _update_spell_controls() -> void:
 func _add_selected_known() -> void:
 	var spell: Dictionary = _selected_spell()
 	var id: String = String(spell.get("id", ""))
-	if id.is_empty() or _has_spell(_known, id):
+	if id.is_empty() or _has_spell(_prepared, id):
 		return
-	_known.append({
+	_prepared.append({
 		"id": id, "name": String(spell.get("name", "")),
 		"source": String(spell.get("source", "")),
 		"level": int(spell.get("level", 0))
@@ -423,7 +517,7 @@ func _add_selected_known() -> void:
 func _toggle_selected_prepared() -> void:
 	var spell: Dictionary = _selected_spell()
 	var id: String = String(spell.get("id", ""))
-	if id.is_empty() or not _has_spell(_known, id):
+	if id.is_empty():
 		return
 	if _has_spell(_prepared, id):
 		for i: int in range(_prepared.size() - 1, -1, -1):
@@ -443,7 +537,7 @@ func _forget_selected_known() -> void:
 	var id: String = String(_selected_spell().get("id", ""))
 	if id.is_empty():
 		return
-	for items: Array in [_known, _prepared]:
+	for items: Array in [_prepared]:
 		for i: int in range(items.size() - 1, -1, -1):
 			if _entry_id(items[i]) == id:
 				items.remove_at(i)
@@ -500,7 +594,7 @@ func _restore_all() -> void:
 	_publish()
 
 
-func _calculate_slot_totals() -> void:
+func _calculate_slot_totals(recharge: bool = false) -> void:
 	if _class_keys().is_empty():
 		if _on_status.is_valid():
 			_on_status.call("I mostri senza livelli di classe gestiscono gli slot manualmente.")
@@ -512,11 +606,11 @@ func _calculate_slot_totals() -> void:
 	_loading = true
 	_totals = _normal_slots(totals)
 	for lvl: int in range(1, 10):
-		_spent[lvl] = mini(int(_spent[lvl]), int(_totals[lvl]))
+		_spent[lvl] = 0 if recharge else mini(int(_spent[lvl]), int(_totals[lvl]))
 		(_slot_totals[lvl] as SpinBox).value = int(_totals[lvl])
 	_pact_total = int(result.get("pact_total", 0))
 	_pact_level = int(result.get("pact_level", 1))
-	_pact_spent = mini(_pact_spent, _pact_total)
+	_pact_spent = 0 if recharge else mini(_pact_spent, _pact_total)
 	_pact_total_spin.value = _pact_total
 	_pact_level_spin.value = _pact_level
 	_loading = false
@@ -545,7 +639,7 @@ func _publish() -> void:
 	if _loading or not _on_change.is_valid():
 		return
 	_on_change.call({
-		"spells": _known.duplicate(true),
+		"spells": _prepared.duplicate(true),
 		"prepared_spells": _prepared.duplicate(true),
 		"spell_slots_total": _totals.duplicate(true),
 		"spell_slots_spent": _spent.duplicate(true),
