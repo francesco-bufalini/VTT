@@ -136,14 +136,21 @@ func _format_difference(delta_y: float) -> String:
 func _miniature_preview_signature(token: CharacterBody3D) -> String:
 	var imported: Node = token.get_node_or_null("Visuals/ImportedVisual")
 	var imported_id: int = imported.get_instance_id() if imported != null else 0
-	return "%s|%s|%d|%s|%s|%s|%s" % [
+	var visuals: Node3D = token.get_node_or_null("Visuals") as Node3D
+	var visual_transform: Transform3D = (
+		visuals.transform if visuals != null else Transform3D.IDENTITY
+	)
+	return "%s|%s|%d|%s|%s|%s|%s|%s|%s" % [
 		str(token.get("visual_asset_path")),
 		str(token.get("token_pack_id")),
 		imported_id,
 		str(token.get("visual_front_quarter_turns")),
 		str(token.get("visual_pitch_steps")),
 		str(token.get("token_height_cells")),
-		str(token.get("cell_size"))
+		str(token.get("cell_size")),
+		str(token.call("get_footprint_cells"))
+		if token.has_method("get_footprint_cells") else "1.0",
+		str(visual_transform)
 	]
 
 
