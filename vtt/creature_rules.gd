@@ -129,6 +129,7 @@ static func proficiency_bonus(character: Dictionary) -> int:
 static func spellcasting_limits(character: Dictionary) -> Dictionary:
 	var classes: Array[Dictionary] = level_classes(character)
 	var abilities: Dictionary = character.get("abilities", {})
+	var bonuses: Dictionary = character.get("ability_bonuses", {})
 	var edition: String = String(character.get("rules_version", "2014"))
 	var lines: PackedStringArray = []
 	var maximum_known: Dictionary = {}
@@ -144,7 +145,9 @@ static func spellcasting_limits(character: Dictionary) -> Dictionary:
 			lines.append("%s: %d incantesimi conosciuti (2014)" % [cls.get("name", ""), known_count])
 		elif edition == "2014" and name in ["cleric", "druid", "wizard", "paladin", "artificer"]:
 			var stat: String = "int" if name in ["wizard", "artificer"] else "wis" if name in ["cleric", "druid"] else "cha"
-			var modifier: int = floori((float(abilities.get(stat, 10)) - 10.0) / 2.0)
+			var modifier: int = ability_modifier(
+				int(abilities.get(stat, 10)) + int(bonuses.get(stat, 0))
+			)
 			var effective: int = lvl if name in ["cleric", "druid"] else ceili(float(lvl) / 2.0)
 			var capacity: int = maxi(1, effective + modifier)
 			if name == "paladin" and lvl < 2:
