@@ -1424,7 +1424,7 @@ func _refresh_conditions(record: Dictionary) -> void:
 			check.toggled.connect(_set_sheet_condition.bind(String(definition.id)))
 			row.add_child(check)
 			var info := Button.new()
-			info.text = "Read effects"
+			info.text = "Leggi effetti"
 			info.pressed.connect(_show_effect_description.bind(definition.duplicate(true)))
 			row.add_child(info)
 
