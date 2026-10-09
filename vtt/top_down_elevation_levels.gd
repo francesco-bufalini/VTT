@@ -59,6 +59,53 @@ func _surface_heights_at(x: float, z: float, starting_y: float) -> Array[float]:
 	return heights
 
 
+# The support of a creature is the FREE grid cell immediately below its
+# occupied footprint, not the lowest cell occupied by its body. Using an
+# epsilon below the bottom face also handles exact integer boundaries.
+static func token_support_air_level(token: Node3D, tactical_cell_size: float) -> float:
+	var safe: float = maxf(tactical_cell_size, 0.001)
+	var height_value: Variant = token.get("token_height_cells")
+	var size_value: Variant = token.get("cell_size")
+	var height_cells: float = maxf(
+		float(height_value) if height_value is float or height_value is int else 1.0,
+		0.1
+	)
+	var token_cell: float = maxf(
+		float(size_value) if size_value is float or size_value is int else safe,
+		0.001
+	)
+	var bottom_y: float = (
+		token.global_position.y - height_cells * token_cell * 0.5
+	)
+	return (floorf((bottom_y - safe * 0.001) / safe) + 0.5) * safe
+
+
+func _token_has_solid_support(token: CharacterBody3D) -> bool:
+	# A token standing on a real floor uses that floor's navigable level.
+	# Otherwise its adjacent air cell would insert an unwanted extra stop
+	# beneath the floor every time Space / Shift+Space is pressed.
+	var token_cell: float = maxf(float(token.get("cell_size")), 0.001)
+	var height_cells: float = maxf(float(token.get("token_height_cells")), 0.1)
+	var bottom_y: float = token.global_position.y - height_cells * token_cell * 0.5
+	var tolerance: float = cell_size * 0.13
+	var top: Vector3 = Vector3(
+		token.global_position.x, bottom_y + tolerance,
+		token.global_position.z
+	)
+	var bottom: Vector3 = top - Vector3.UP * tolerance * 2.0
+	var query: PhysicsRayQueryParameters3D = (
+		PhysicsRayQueryParameters3D.create(top, bottom, MAP_MASK)
+	)
+	query.collide_with_areas = false
+	var hit: Dictionary = get_world_3d().direct_space_state.intersect_ray(query)
+	return (
+		not hit.is_empty()
+		and _is_map_surface(hit.get("collider"))
+		and Vector3(hit.get("normal", Vector3.ZERO)).dot(Vector3.UP) > 0.35
+		and absf(float(Vector3(hit.get("position", Vector3.ZERO)).y) - bottom_y) <= tolerance
+	)
+
+
 func _unique_heights(values: Array[float]) -> Array[float]:
 	values.sort()
 	var unique: Array[float] = []
@@ -96,8 +143,8 @@ func get_solid_levels() -> Array[float]:
 					MAX_RAY_HEIGHT
 				)
 			)
-	# Each token is a valid tactical elevation even when floating in midair
-	# with no floor collision. Token global Y is its centre, not its base.
+	# A floating token contributes the AIR square supporting its feet;
+	# grounded tokens are already represented by the solid floor collision.
 	var tokens_root: Node3D = board_root.get_node_or_null("Tokens") as Node3D
 	if tokens_root != null:
 		for node: Node in tokens_root.get_children():
@@ -108,11 +155,8 @@ func get_solid_levels() -> Array[float]:
 			):
 				continue
 			var token: CharacterBody3D = node as CharacterBody3D
-			var height_value: Variant = token.get("token_height_cells")
-			var cell_value: Variant = token.get("cell_size")
-			var height_cells: float = float(height_value) if height_value is float or height_value is int else 1.0
-			var token_cell: float = float(cell_value) if cell_value is float or cell_value is int else cell_size
-			levels.append(token.global_position.y - height_cells * token_cell * 0.5)
+			if not _token_has_solid_support(token):
+				levels.append(token_support_air_level(token, cell_size))
 	return _unique_heights(levels)
 
 
