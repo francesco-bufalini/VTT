@@ -1407,10 +1407,14 @@ func _choose_miniature(record: Dictionary, is_new: bool) -> void:
 
 			if candidate is Dictionary and not String(candidate.get("id", "")).is_empty():
 				_miniature_choices.append((candidate as Dictionary).duplicate(true))
-	var associated_ids: Array[String] = _associated_miniature_ids(
-		String(record.get("name", record.get("base_name", ""))),
-		String(record.get("source", ""))
-	) if String(record.get("kind", "")) == "monster" else []
+	# A ternary with [] returns an untyped Array in GDScript. Keep the
+	# result typed on both paths, including creation of a new character.
+	var associated_ids: Array[String] = []
+	if String(record.get("kind", "")) == "monster":
+		associated_ids = _associated_miniature_ids(
+			String(record.get("name", record.get("base_name", ""))),
+			String(record.get("source", ""))
+		)
 	for associated_id: String in associated_ids:
 		for profile: Dictionary in _miniature_choices:
 			if String(profile.get("id", "")) == associated_id:
