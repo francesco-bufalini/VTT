@@ -5066,6 +5066,18 @@ func capture_camera_control() -> void:
 func _capture_mouse() -> void:
 	if _ui_owns_mouse:
 		return
+	# Context menus and deferred callbacks may request capture one frame
+	# after "Modifica token" opened the creature sheet. Keep the cursor
+	# visible for as long as that sheet is actually on screen.
+	var creature_sheet: Node = get_node_or_null("CreatureArea")
+	if (
+		creature_sheet != null
+		and creature_sheet.has_method("is_panel_open")
+		and bool(creature_sheet.call("is_panel_open"))
+	):
+		_ui_owns_mouse = true
+		_release_mouse()
+		return
 	if _view_2d_enabled:
 		Input.set_default_cursor_shape(Input.CURSOR_CROSS)
 		Input.mouse_mode = Input.MOUSE_MODE_VISIBLE
