@@ -341,12 +341,12 @@ func _reference_option(parent: Node, choices: Array[Dictionary]) -> OptionButton
 
 
 func _add_multiclass_row(
-	class_name: String = "", class_level: int = 1
+	class_value: String = "", class_level: int = 1
 ) -> void:
 	var row := HBoxContainer.new()
 	_multiclass_rows.add_child(row)
 	var selector := _reference_option(row, PlayerReference.CLASSES)
-	_select_reference(selector, class_name)
+	_select_reference(selector, class_value)
 	var level := SpinBox.new()
 	level.min_value = 1
 	level.max_value = 20
@@ -715,7 +715,7 @@ func _refresh_reference(record: Dictionary) -> void:
 		_reference.text = "\n".join(lines)
 		return
 
-	var class_name := String(record.get("class", ""))
+	var primary_class_name := String(record.get("class", ""))
 	var species := String(record.get("species", ""))
 	var max_level := clampi(int(_level.value), 1, 20)
 	var parts: PackedStringArray = [
@@ -725,8 +725,8 @@ func _refresh_reference(record: Dictionary) -> void:
 	]
 
 	var class_rows: Array = record.get("classes", [])
-	if class_rows.is_empty() and not class_name.is_empty():
-		class_rows = [{"name": class_name, "level": max_level}]
+	if class_rows.is_empty() and not primary_class_name.is_empty():
+		class_rows = [{"name": primary_class_name, "level": max_level}]
 	for class_value: Variant in class_rows:
 		if not class_value is Dictionary:
 			continue
