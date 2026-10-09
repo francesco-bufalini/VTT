@@ -73,6 +73,12 @@ func toggle_panel() -> void:
 
 
 func show_panel() -> void:
+	for area_name: String in ["PlayerArea", "MasterArea"]:
+		var area := board_root.get_node_or_null(area_name)
+		if area != null and area.has_method("hide_panel"):
+			var panel: Control = area.get("_panel") as Control
+			if panel != null and panel.visible:
+				area.call("hide_panel")
 	_reload()
 	_panel.show()
 	if board_root.has_method("release_camera_control"):
