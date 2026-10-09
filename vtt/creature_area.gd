@@ -22,6 +22,9 @@ var _loading := false
 var _panel: PanelContainer
 var _status: Label
 var _creature_list: ItemList
+var _delete_button: Button
+var _delete_dialog: ConfirmationDialog
+var _delete_target: Dictionary = {}
 var _catalog_list: ItemList
 var _catalog_filter: LineEdit
 var _name: LineEdit
@@ -31,6 +34,7 @@ var _ac: SpinBox
 var _ability_spins: Dictionary = {}
 var _species: OptionButton
 var _class_name: OptionButton
+var _rules_edition: OptionButton
 var _multiclass_rows: VBoxContainer
 var _multiclass_controls: Array[Dictionary] = []
 var _level: HSlider
@@ -163,6 +167,11 @@ func _build_ui() -> void:
 	add_character.text = "+ Personaggio / creatura con classi"
 	add_character.pressed.connect(_create_character)
 	left.add_child(add_character)
+	_delete_button = Button.new()
+	_delete_button.text = "Elimina creatura selezionata…"
+	_delete_button.disabled = true
+	_delete_button.pressed.connect(_confirm_delete)
+	left.add_child(_delete_button)
 
 	_add_label(left, "Aggiungi dal bestiario")
 	_catalog_filter = LineEdit.new()
@@ -218,12 +227,18 @@ func _build_ui() -> void:
 		_ability_spins[ability] = spin
 
 	var classes_row := GridContainer.new()
-	classes_row.columns = 4
+	classes_row.columns = 6
 	form.add_child(classes_row)
 	_add_label(classes_row, "Razza / Specie")
 	_species = _reference_option(classes_row, Player5eTools.entries("races"))
 	_add_label(classes_row, "Classe")
-	_class_name = _reference_option(classes_row, Player5eTools.entries("classes"))
+	_class_name = _reference_option(classes_row, Player5eTools.class_choices(), false)
+	_add_label(classes_row, "Regole")
+	_rules_edition = OptionButton.new()
+	_rules_edition.add_item("2014")
+	_rules_edition.add_item("2024")
+	_rules_edition.item_selected.connect(_on_rules_edition_changed)
+	classes_row.add_child(_rules_edition)
 	var multiclass_header := HBoxContainer.new()
 	form.add_child(multiclass_header)
 	_add_label(multiclass_header, "Classi aggiuntive (multiclasse)")
@@ -312,6 +327,11 @@ func _build_ui() -> void:
 	_reference.size_flags_vertical = Control.SIZE_EXPAND_FILL
 	right.add_child(_reference)
 
+	_delete_dialog = ConfirmationDialog.new()
+	_delete_dialog.title = "Elimina creatura"
+	_delete_dialog.confirmed.connect(_delete_selected_creature)
+	add_child(_delete_dialog)
+
 
 func _build_transfer_dialog() -> void:
 	_import_dialog = AcceptDialog.new()
@@ -342,16 +362,53 @@ func _spin(parent: Node, minimum: int, maximum: int) -> SpinBox:
 	return spin
 
 
-func _reference_option(parent: Node, choices: Array[Dictionary]) -> OptionButton:
+func _reference_option(
+	parent: Node, choices: Array[Dictionary], show_source: bool = true
+) -> OptionButton:
 	var select := OptionButton.new()
-	select.add_item("—")
-	select.set_item_metadata(0, {})
-	for item: Dictionary in choices:
-		select.add_item(PlayerReference.display_name(item) + " · " + String(item.get("source", "")))
-		select.set_item_metadata(select.item_count - 1, item.duplicate(true))
+	_set_reference_choices(select, choices, show_source)
 	select.item_selected.connect(func(_i: int) -> void: _save())
 	parent.add_child(select)
 	return select
+
+
+func _set_reference_choices(
+	option: OptionButton, choices: Array[Dictionary], show_source: bool = true
+) -> void:
+	option.clear()
+	option.add_item("—")
+	option.set_item_metadata(0, {})
+	for item: Dictionary in choices:
+		var label := PlayerReference.display_name(item)
+		if show_source:
+			label += " · " + String(item.get("source", ""))
+		option.add_item(label)
+		option.set_item_metadata(option.item_count - 1, item.duplicate(true))
+
+
+func _selected_rules_version() -> String:
+	return "2024" if _rules_edition.selected == 1 else "2014"
+
+
+func _refresh_class_choices() -> void:
+	var primary := _reference_entry(_class_name)
+	var choices := Player5eTools.class_choices(_selected_rules_version())
+	_set_reference_choices(_class_name, choices, false)
+	_select_reference(_class_name, String(primary.get("name", "")), String(primary.get("source", "")), String(primary.get("id", "")))
+	for definition: Dictionary in _multiclass_controls:
+		var option: OptionButton = definition["selector"]
+		var old := _reference_entry(option)
+		_set_reference_choices(option, choices, false)
+		_select_reference(option, String(old.get("name", "")), String(old.get("source", "")), String(old.get("id", "")))
+
+
+func _on_rules_edition_changed(_index: int) -> void:
+	if _loading:
+		return
+	_loading = true
+	_refresh_class_choices()
+	_loading = false
+	_save()
 
 
 func _add_multiclass_row(
@@ -361,7 +418,7 @@ func _add_multiclass_row(
 ) -> void:
 	var row := HBoxContainer.new()
 	_multiclass_rows.add_child(row)
-	var selector := _reference_option(row, Player5eTools.entries("classes"))
+	var selector := _reference_option(row, Player5eTools.class_choices(_selected_rules_version()), false)
 	_select_reference(selector, class_value, source, reference_id)
 	var level := SpinBox.new()
 	level.min_value = 1
@@ -396,11 +453,22 @@ func _clear_multiclass() -> void:
 
 func _select_reference(option: OptionButton, name: String, source: String = "", stable_id: String = "") -> void:
 	option.select(0)
+	if name.is_empty() and stable_id.is_empty():
+		return
+	var fallback := -1
 	for i: int in range(1, option.item_count):
 		var row: Dictionary = option.get_item_metadata(i)
-		if (not stable_id.is_empty() and String(row.get("id", "")) == stable_id) or (String(row.get("name", "")).nocasecmp_to(name) == 0 and (source.is_empty() or String(row.get("source", "")) == source)):
+		if not stable_id.is_empty() and String(row.get("id", "")) == stable_id:
 			option.select(i)
 			return
+		if String(row.get("name", "")).nocasecmp_to(name) == 0:
+			if source.is_empty() or String(row.get("source", "")) == source:
+				option.select(i)
+				return
+			if fallback < 0:
+				fallback = i
+	if fallback >= 0:
+		option.select(fallback)
 
 
 func _reference_entry(option: OptionButton) -> Dictionary:
@@ -425,6 +493,7 @@ func _reload() -> void:
 			selected_index = i
 	if selected_index < 0 and not _records.is_empty():
 		selected_index = 0
+	_delete_button.disabled = selected_index < 0
 	if selected_index >= 0:
 		_creature_list.select(selected_index)
 		_on_selected(selected_index)
@@ -468,7 +537,15 @@ func _load_form(record: Dictionary) -> void:
 	for ability: String in _ability_spins.keys():
 		(_ability_spins[ability] as SpinBox).value = int(abilities.get(ability, 10))
 	_select_reference(_species, String(record.get("species", "")), String(record.get("species_source", "")), String(record.get("species_id", "")))
-	_select_reference(_class_name, String(record.get("class", "")), String(record.get("class_source", "")), String(record.get("class_id", "")))
+	var class_source := String(record.get("class_source", ""))
+	var edition := String(record.get("rules_version", "2014"))
+	if class_source in ["XPHB", "EFA"]:
+		edition = "2024"
+	elif class_source in ["PHB", "TCE"]:
+		edition = "2014"
+	_rules_edition.select(1 if edition == "2024" else 0)
+	_refresh_class_choices()
+	_select_reference(_class_name, String(record.get("class", "")), class_source, String(record.get("class_id", "")))
 	_clear_multiclass()
 	var classes_value: Variant = record.get("classes", [])
 	if classes_value is Array:
@@ -488,6 +565,7 @@ func _load_form(record: Dictionary) -> void:
 	var is_character := String(record.get("kind", "")) == "character"
 	_species.disabled = not is_character
 	_class_name.disabled = not is_character
+	_rules_edition.disabled = not is_character
 	_level.editable = is_character
 	var derived: Array[Dictionary] = (
 		Rules.character_trackers(record) if is_character else
@@ -541,8 +619,7 @@ func _save() -> void:
 		record["species_source"] = String(species.get("source", ""))
 		record["class"] = String(class_ref.get("name", ""))
 		record["class_source"] = String(class_ref.get("source", ""))
-		if String(record["class_source"]) in ["PHB", "XPHB"]:
-			record["rules_version"] = "2024" if record["class_source"] == "XPHB" else "2014"
+		record["rules_version"] = _selected_rules_version()
 		record["level"] = int(_level.value)
 		var classes: Array[Dictionary] = []
 		var extras_level := 0
@@ -870,6 +947,52 @@ func _create_character() -> void:
 	_reload()
 
 
+func _confirm_delete() -> void:
+	var record := _current()
+	if record.is_empty():
+		return
+	_delete_target = record.duplicate(true)
+	_delete_dialog.dialog_text = "Eliminare definitivamente '%s' dal tuo archivio?\nI token già presenti rimarranno nella scena, ma non saranno più collegati alla scheda." % String(record.get("name", "Creatura"))
+	_delete_dialog.popup_centered()
+
+
+func _delete_selected_creature() -> void:
+	if _delete_target.is_empty():
+		return
+	var record := _delete_target.duplicate(true)
+	_delete_target.clear()
+	var error: Error = _archive.delete(record)
+	if error != OK:
+		_set_status("Eliminazione non riuscita: %s" % error_string(error))
+		return
+	_unlink_deleted_creature_tokens(record)
+	if _selected_id == String(record.get("id", "")) and _selected_kind == String(record.get("kind", "")):
+		_selected_id = ""
+		_selected_kind = ""
+	_reload()
+	_set_status("Creatura eliminata dall'archivio; i token della scena sono stati scollegati.")
+
+
+func _unlink_deleted_creature_tokens(record: Dictionary) -> void:
+	var id := String(record.get("id", ""))
+	for node: Node in get_tree().get_nodes_in_group("dnd_token"):
+		if not node is Node3D or not board_root.is_ancestor_of(node):
+			continue
+		if String(node.get_meta("creature_id", "")) != id or String(node.get_meta("creature_owner_id", "")) != Owner.local_id():
+			continue
+		if node.has_method("clear_player_hit_points"):
+			node.call("clear_player_hit_points")
+		elif node.has_method("clear_master_hit_points"):
+			node.call("clear_master_hit_points")
+		for field: String in [
+			"creature_id", "creature_owner_id", "default_miniature_id",
+			"player_character_id", "player_character_name",
+			"master_creature_id", "master_creature_name", "master_creature_side"
+		]:
+			if node.has_meta(field):
+				node.remove_meta(field)
+
+
 func _link_selected_token() -> void:
 	var selected_value: Variant = board_root.call(
 		"get_selected_tokens_for_creatures"
@@ -1093,14 +1216,8 @@ func _set_sheet_condition(enabled: bool, id: String) -> void:
 func _reload_homebrew() -> void:
 	_save()
 	ContentCatalog.reload_homebrew()
-	for pair: Array in [[_species, "races"], [_class_name, "classes"]]:
-		var option: OptionButton = pair[0]
-		option.clear()
-		option.add_item("—")
-		option.set_item_metadata(0, {})
-		for entry: Dictionary in Player5eTools.entries(pair[1]):
-			option.add_item(String(entry.name) + " · " + String(entry.source))
-			option.set_item_metadata(option.item_count - 1, entry)
+	_set_reference_choices(_species, Player5eTools.entries("races"))
+	_refresh_class_choices()
 	_reload()
 	_on_catalog_ready(_client.call("catalog"))
 	_set_status("Homebrew ricaricato. " + "\n".join(ContentCatalog.diagnostics))
