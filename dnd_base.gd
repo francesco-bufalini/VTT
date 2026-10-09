@@ -42,6 +42,8 @@ const CONTEXT_USER_IDENTITY := 39
 const CONTEXT_AUTO_SYNC := 40
 const CONTEXT_BESTIARY_2024 := 41
 const CONTEXT_BESTIARY_2014 := 42
+const CONTEXT_CREATURE_AREA := 100
+const CONTEXT_ADD_CREATURE := 101
 const CAMPAIGN_EDITOR_SCENE_PATH := "res://vtt/editor/campaign_editor.tscn"
 const LOCAL_TOKEN_CATALOG := "res://dist/token_packs/token_catalog.json"
 const LOCAL_TOKEN_PACK_ROOT := "res://dist/token_packs"
@@ -175,8 +177,8 @@ var attack_system: Node
 var flanking_system: Node
 var initiative_tracker: Node
 var token_list: Node
-var player_area: Node
-var master_area: Node
+var player_area: Node # Legacy compatibility only.
+var master_area: Node # The Compendio browser.
 var dice_roller_chat: Node
 var _undo_stack: Array[Dictionary] = []
 var _redo_stack: Array[Dictionary] = []
@@ -279,13 +281,9 @@ func _ready() -> void:
 	add_child(token_list)
 	token_list.call("setup", self)
 
-	player_area = preload("res://vtt/player_area.gd").new()
-	player_area.name = "PlayerArea"
-	add_child(player_area)
-	player_area.call("setup", self)
-
-	master_area = preload("res://vtt/master_area.gd").new()
-	master_area.name = "MasterArea"
+	# Private legacy sheet stores are retained for CreatureArchive migration.
+	master_area = preload("res://vtt/compendium.gd").new()
+	master_area.name = "Compendio"
 	add_child(master_area)
 	master_area.call("setup", self)
 
@@ -2392,13 +2390,21 @@ func _redo_last_action_now() -> bool:
 	return true
 
 func toggle_player_area() -> void:
-	if player_area != null and is_instance_valid(player_area):
-		player_area.call("toggle_panel")
+	toggle_creature_area()
 
 
 func add_player_character() -> void:
-	if player_area != null and is_instance_valid(player_area):
-		player_area.call("add_character")
+	add_creature()
+
+
+func add_creature() -> void:
+	var area: Node = get_node_or_null("CreatureArea")
+	if area != null and area.has_method("begin_add_creature"):
+		area.call("begin_add_creature")
+
+
+func toggle_compendium() -> void:
+	toggle_master_area()
 
 
 func link_player_character_to_selected_token() -> void:
@@ -2869,37 +2875,9 @@ func _show_context_menu(screen_position: Vector2) -> void:
 
 	context_game_menu.add_item("Incantesimi", CONTEXT_SPELLS)
 	context_game_menu.add_separator()
-	context_game_menu.add_item("Area Player", CONTEXT_PLAYER_AREA)
-	context_game_menu.add_item(
-		"Aggiungi personaggio",
-		CONTEXT_PLAYER_ADD_CHARACTER
-	)
-	context_game_menu.add_item(
-		"Token selezionato → personaggio",
-		CONTEXT_PLAYER_LINK_TOKEN
-	)
-	context_game_menu.set_item_disabled(
-		context_game_menu.get_item_index(CONTEXT_PLAYER_LINK_TOKEN),
-		_selected_tokens.size() != 1
-	)
-	context_game_menu.add_item(
-		"Personaggio → token per nome",
-		CONTEXT_PLAYER_LINK_CHARACTER
-	)
-	context_game_menu.add_separator()
-	context_game_menu.add_item("Area Master", CONTEXT_MASTER_AREA)
-	context_game_menu.add_item(
-		"Token selezionato → creatura",
-		CONTEXT_MASTER_LINK_TOKEN
-	)
-	context_game_menu.set_item_disabled(
-		context_game_menu.get_item_index(CONTEXT_MASTER_LINK_TOKEN),
-		_selected_tokens.size() != 1
-	)
-	context_game_menu.add_item(
-		"Creatura → token per nome",
-		CONTEXT_MASTER_LINK_CREATURE
-	)
+	context_game_menu.add_item("Creature · schede", CONTEXT_CREATURE_AREA)
+	context_game_menu.add_item("Aggiungi creatura", CONTEXT_ADD_CREATURE)
+	context_game_menu.add_item("Compendio", CONTEXT_MASTER_AREA)
 	context_game_menu.add_separator()
 	context_game_menu.add_item(
 		"Cambia token associato all'utente…",
@@ -3028,10 +3006,14 @@ func _on_context_menu_id_pressed(id: int) -> void:
 		context_menu.hide()
 		return
 
-	if id == CONTEXT_PLAYER_AREA:
+	if id == CONTEXT_CREATURE_AREA:
 		context_menu.hide()
-		if player_area != null and is_instance_valid(player_area):
-			player_area.call_deferred("show_panel")
+		call_deferred("toggle_creature_area")
+		return
+
+	if id == CONTEXT_ADD_CREATURE:
+		context_menu.hide()
+		call_deferred("add_creature")
 		return
 
 	if id == CONTEXT_MASTER_AREA:
@@ -3050,11 +3032,6 @@ func _on_context_menu_id_pressed(id: int) -> void:
 			token_list.call_deferred("toggle_panel")
 		return
 
-	if id == CONTEXT_PLAYER_ADD_CHARACTER:
-		context_menu.hide()
-		if player_area != null and is_instance_valid(player_area):
-			player_area.call_deferred("add_character")
-		return
 
 	if id == CONTEXT_PLAYER_LINK_TOKEN:
 		context_menu.hide()
