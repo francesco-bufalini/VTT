@@ -270,7 +270,7 @@ static func _normalize_ability_bonuses(value: Variant) -> Dictionary:
 	return bonuses
 
 
-static static func _normalize_spell_slot_bonuses(value: Variant) -> Array:
+static func _normalize_spell_slot_bonuses(value: Variant) -> Array:
 	var result: Array = []
 	for index: int in range(10):
 		var bonus: int = 0
@@ -280,7 +280,7 @@ static static func _normalize_spell_slot_bonuses(value: Variant) -> Array:
 	return result
 
 
-func _normalize_spell_slots(value: Variant) -> Array:
+static func _normalize_spell_slots(value: Variant) -> Array:
 	var result: Array = []
 	for i: int in range(10):
 		result.append(maxi(0, int((value as Array)[i])) if value is Array and (value as Array).size() > i else 0)
