@@ -76,6 +76,15 @@ func get_solid_levels() -> Array[float]:
 		return []
 	var levels: Array[float] = []
 	var center: Vector3 = camera.global_position
+	if camera.has_method("get_top_down_level"):
+		var screen_center: Vector2 = camera.get_viewport().get_visible_rect().size * 0.5
+		var ray_origin: Vector3 = camera.project_ray_origin(screen_center)
+		var ray_direction: Vector3 = camera.project_ray_normal(screen_center)
+		if absf(ray_direction.y) > 0.00001:
+			var floor_y: float = float(camera.call("get_top_down_level"))
+			var distance: float = (floor_y - ray_origin.y) / ray_direction.y
+			if distance > 0.0:
+				center = ray_origin + ray_direction * distance
 	# Sample nearby squares as well as the center: ships and other multilevel
 	# maps can have a gap or stairwell precisely beneath the camera.
 	for x_offset: float in [-2.0, 0.0, 2.0]:
