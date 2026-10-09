@@ -41,6 +41,13 @@ var _name: LineEdit
 var _hp: SpinBox
 var _max_hp: SpinBox
 var _temp_hp: SpinBox
+var _hp_delta_dialog: ConfirmationDialog
+var _hp_delta_sign := -1
+var _hp_delta_amount: SpinBox
+var _hp_amount_row: HBoxContainer
+var _hp_use_dice: CheckBox
+var _hp_dice_formula: LineEdit
+var _hp_formula_status: Label
 var _size_choice: OptionButton
 var _reach: SpinBox
 var _front: OptionButton
@@ -423,10 +430,9 @@ func _build_ui() -> void:
 	_add_label(health, "❤️")
 	var damage := Button.new()
 	damage.text = "−"
-	damage.tooltip_text = "Sottrai 1 PF (consuma prima quelli temporanei)"
-	damage.custom_minimum_size.x = 28
-	damage.pressed.connect(_change_hit_points.bind(-1))
-	health.add_child(damage)
+	damage.tooltip_text = "Sottrai PF: inserisci un valore o tira un dado"
+	damage.custom_minimum_size.x = 30
+	damage.pressed.connect(_open_hp_delta.bind(-1))
 	_hp = _spin(health, -999, 99999)
 	_hp.custom_minimum_size = Vector2(68, 30)
 	_hp.size_flags_horizontal = Control.SIZE_SHRINK_BEGIN
@@ -436,9 +442,11 @@ func _build_ui() -> void:
 	_max_hp.size_flags_horizontal = Control.SIZE_SHRINK_BEGIN
 	var heal := Button.new()
 	heal.text = "+"
-	heal.tooltip_text = "Aggiungi 1 PF (fino al massimo)"
-	heal.custom_minimum_size.x = 28
-	heal.pressed.connect(_change_hit_points.bind(1))
+	heal.tooltip_text = "Aggiungi PF: inserisci un valore o tira un dado"
+	heal.custom_minimum_size.x = 30
+	heal.pressed.connect(_open_hp_delta.bind(1))
+	# Adjacent − and + form a single compact health-action group.
+	health.add_child(damage)
 	health.add_child(heal)
 	var restore_hp := Button.new()
 	restore_hp.text = "↺"
@@ -484,6 +492,7 @@ func _build_ui() -> void:
 	_level.min_value = 1
 	_level.max_value = 20
 	_level.step = 1
+	_level.update_on_text_changed = true
 	_level.rounded = true
 	_level.custom_minimum_size = Vector2(82, 30)
 	_level.value_changed.connect(_on_level_changed)
@@ -597,6 +606,7 @@ func _build_ui() -> void:
 	_delete_dialog.confirmed.connect(_delete_selected_creature)
 	add_child(_delete_dialog)
 	_build_automatic_dialog()
+	_build_hp_delta_dialog()
 
 
 
@@ -996,6 +1006,7 @@ func _spin(parent: Node, minimum: int, maximum: int) -> SpinBox:
 	spin.min_value = minimum
 	spin.max_value = maximum
 	spin.step = 1
+	spin.update_on_text_changed = true
 	spin.custom_minimum_size = Vector2(84, 30)
 	spin.value_changed.connect(func(_v: float) -> void: _save())
 	parent.add_child(spin)
@@ -1064,6 +1075,7 @@ func _add_multiclass_row(
 	level.min_value = 1
 	level.max_value = 20
 	level.step = 1
+	level.update_on_text_changed = true
 	level.value = clampi(class_level, 1, 20)
 	level.custom_minimum_size = Vector2(82, 30)
 	level.value_changed.connect(func(_v: float) -> void: _save())
@@ -1373,6 +1385,110 @@ func _select_sheet_size(size_name: String) -> void:
 func _selected_size_footprint() -> float:
 	var sizes: Array[float] = [0.5, 1.0, 1.0, 2.0, 3.0, 4.0]
 	return sizes[clampi(_size_choice.selected, 0, sizes.size() - 1)]
+
+
+func _build_hp_delta_dialog() -> void:
+	_hp_delta_dialog = ConfirmationDialog.new()
+	_hp_delta_dialog.title = "Modifica PF"
+	_hp_delta_dialog.dialog_text = ""
+	_hp_delta_dialog.min_size = Vector2i(390, 235)
+	(board_root.get_node("UI") as CanvasLayer).add_child(_hp_delta_dialog)
+	var body := VBoxContainer.new()
+	body.add_theme_constant_override("separation", 10)
+	_hp_delta_dialog.get_vbox().add_child(body)
+	var explanation := Label.new()
+	explanation.text = "Scegli una quantità o tira un dado con il roller."
+	explanation.autowrap_mode = TextServer.AUTOWRAP_WORD_SMART
+	body.add_child(explanation)
+	_hp_amount_row = HBoxContainer.new()
+	body.add_child(_hp_amount_row)
+	_add_label(_hp_amount_row, "Quantità")
+	_hp_delta_amount = SpinBox.new()
+	_hp_delta_amount.min_value = 1
+	_hp_delta_amount.max_value = 99999
+	_hp_delta_amount.value = 1
+	_hp_delta_amount.rounded = true
+	_hp_delta_amount.update_on_text_changed = true
+	_hp_delta_amount.size_flags_horizontal = Control.SIZE_EXPAND_FILL
+	_hp_amount_row.add_child(_hp_delta_amount)
+	_hp_use_dice = CheckBox.new()
+	_hp_use_dice.text = "Usa una formula di dadi"
+	_hp_use_dice.toggled.connect(func(_value: bool) -> void: _refresh_hp_delta_mode())
+	body.add_child(_hp_use_dice)
+	_hp_dice_formula = LineEdit.new()
+	_hp_dice_formula.placeholder_text = "Esempio: 2d6+3"
+	_hp_dice_formula.text = "1d8"
+	_hp_dice_formula.text_changed.connect(func(_value: String) -> void: _refresh_hp_delta_mode())
+	body.add_child(_hp_dice_formula)
+	_hp_formula_status = Label.new()
+	_hp_formula_status.autowrap_mode = TextServer.AUTOWRAP_WORD_SMART
+	body.add_child(_hp_formula_status)
+	_hp_delta_dialog.confirmed.connect(_confirm_hp_delta)
+	_refresh_hp_delta_mode()
+
+
+func _open_hp_delta(sign: int) -> void:
+	if _current().is_empty():
+		return
+	_hp_delta_sign = -1 if sign < 0 else 1
+	_hp_delta_dialog.title = (
+		"Sottrai punti ferita" if sign < 0 else "Aggiungi punti ferita"
+	)
+	_hp_delta_amount.value = 1
+	_hp_use_dice.set_pressed_no_signal(false)
+	_refresh_hp_delta_mode()
+	_hp_delta_dialog.popup_centered_clamped(Vector2i(440, 260), 0.9)
+
+
+func _refresh_hp_delta_mode() -> void:
+	if _hp_delta_dialog == null:
+		return
+	var rolling: bool = _hp_use_dice.button_pressed
+	_hp_amount_row.visible = not rolling
+	_hp_dice_formula.visible = rolling
+	_hp_formula_status.visible = rolling
+	_hp_delta_dialog.get_ok_button().text = (
+		"Tira e applica" if rolling else "Applica"
+	)
+	if rolling:
+		var roller: Node = board_root.get_node_or_null("DiceRollerChat")
+		var valid: bool = (
+			roller != null and roller.has_method("roll_expression_from_sheet")
+			and not _hp_dice_formula.text.strip_edges().is_empty()
+		)
+		_hp_formula_status.text = (
+			"Il risultato sarà registrato nel roller della chat."
+			if valid else "Roller non disponibile o formula vuota."
+		)
+		_hp_delta_dialog.get_ok_button().disabled = not valid
+	else:
+		_hp_delta_dialog.get_ok_button().disabled = false
+
+
+func _confirm_hp_delta() -> void:
+	var amount: int = maxi(0, int(_hp_delta_amount.value))
+	if _hp_use_dice.button_pressed:
+		var roller: Node = board_root.get_node_or_null("DiceRollerChat")
+		if roller == null or not roller.has_method("roll_expression_from_sheet"):
+			_set_status("Il roller della chat non è disponibile.")
+			return
+		var actor: CharacterBody3D = find_linked_token_for_creature(_selected_id)
+		var rolled: Variant = roller.call(
+			"roll_expression_from_sheet",
+			("Danni" if _hp_delta_sign < 0 else "Cura")
+			+ " · " + String(_current().get("name", "Creatura")),
+			_hp_dice_formula.text,
+			actor
+		)
+		if not (rolled is int or rolled is float) or int(rolled) < 0:
+			_set_status("Formula di dadi non valida; nessun PF modificato.")
+			return
+		amount = maxi(0, int(rolled))
+	if amount > 0:
+		_change_hit_points(_hp_delta_sign * amount)
+		_set_status("%s %d PF." % [
+			"Sottratti" if _hp_delta_sign < 0 else "Aggiunti", amount
+		])
 
 
 func _change_hit_points(delta: int) -> void:
