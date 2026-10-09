@@ -85,7 +85,8 @@ func run() -> void:
 	area._miniature_dialog.hide()
 	area.begin_add_creature()
 	assert(area._current().is_empty(), "Creation must wait for the mandatory miniature choice")
-	assert(area._miniature_dialog.visible, "Add character must open miniature picker directly")
+	assert(not area._pending_miniature_record.is_empty(),
+		"Add character must go directly to the required miniature selection")
 	assert(area._miniature_dialog.get_ok_button().disabled,
 		"New character must explicitly select a default miniature")
 	area._miniature_filter.text = "Hero"
