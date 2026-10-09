@@ -40,6 +40,15 @@ var _multiclass_controls: Array[Dictionary] = []
 var _level: SpinBox
 var _feats: TextEdit
 var _default_miniature: LineEdit
+var _add_kind_dialog: ConfirmationDialog
+var _miniature_dialog: ConfirmationDialog
+var _miniature_filter: LineEdit
+var _miniature_list: ItemList
+var _miniature_choices: Array[Dictionary] = []
+var _visible_miniatures: Array[Dictionary] = []
+var _pending_miniature_record: Dictionary = {}
+var _pending_new_creature := false
+var _chosen_miniature_id := ""
 var _current_miniature: Label
 var _reference: RichTextLabel
 var _condition_rows: VBoxContainer
@@ -65,6 +74,8 @@ func setup(root: Node3D) -> void:
 	_client.catalog_failed.connect(func(message: String) -> void: _set_status(message))
 	_client.creature_failed.connect(_on_creature_request_failed)
 	_build_ui()
+	_build_add_kind_dialog()
+	_build_miniature_dialog()
 	_build_transfer_dialog()
 	_reload()
 	if DisplayServer.get_name() != "headless":
@@ -187,7 +198,7 @@ func toggle_panel() -> void:
 
 
 func show_panel() -> void:
-	for area_name: String in ["PlayerArea", "MasterArea"]:
+	for area_name: String in ["Compendio"]:
 		var area := board_root.get_node_or_null(area_name)
 		if area != null and area.has_method("hide_panel"):
 			var panel: Control = area.get("_panel") as Control
@@ -293,6 +304,10 @@ func _build_ui() -> void:
 	spawn_selected.pressed.connect(_request_spawn_selected_creature)
 	left.add_child(spawn_selected)
 
+	var add_general := Button.new()
+	add_general.text = "+ Aggiungi creatura…"
+	add_general.pressed.connect(begin_add_creature)
+	left.add_child(add_general)
 	var add_character := Button.new()
 	add_character.text = "+ Personaggio / creatura con classi"
 	add_character.pressed.connect(_create_character)
@@ -402,9 +417,13 @@ func _build_ui() -> void:
 	_add_label(miniature_row, "Miniatura base")
 	_default_miniature = LineEdit.new()
 	_default_miniature.size_flags_horizontal = Control.SIZE_EXPAND_FILL
-	_default_miniature.placeholder_text = "ID miniatura catalogo"
-	_default_miniature.text_changed.connect(func(_v: String) -> void: _save())
+	_default_miniature.placeholder_text = "Scegli una miniatura dal catalogo"
+	_default_miniature.editable = false
 	miniature_row.add_child(_default_miniature)
+	var choose_miniature := Button.new()
+	choose_miniature.text = "Scegli…"
+	choose_miniature.pressed.connect(func() -> void: _choose_miniature(_current(), false))
+	miniature_row.add_child(choose_miniature)
 	_current_miniature = Label.new()
 	_current_miniature.text = "Aspetto attuale: nessun token"
 	form.add_child(_current_miniature)
@@ -1074,12 +1093,7 @@ func _on_monster_received(request_key: String, stat: Dictionary) -> void:
 		return
 	var record: Dictionary = _archive.create_monster(stat)
 	record["kind"] = "monster"
-	if _archive.save(record) != OK:
-		_set_status("Impossibile salvare la creatura.")
-		return
-	_selected_id = String(record.get("id", ""))
-	_selected_kind = "monster"
-	_reload()
+	_choose_miniature(record, true)
 	_set_status("Creatura importata; ora ne controlli la scheda.")
 
 
@@ -1232,15 +1246,130 @@ func _on_creature_request_failed(request_key: String, message: String) -> void:
 		_set_status(message)
 
 
+
+# All creation paths (character, bestiary and GUI) share this mandatory picker.
+func begin_add_creature() -> void:
+	show_panel()
+	_add_kind_dialog.popup_centered(Vector2i(500, 180))
+
+
+func _build_add_kind_dialog() -> void:
+	_add_kind_dialog = ConfirmationDialog.new()
+	_add_kind_dialog.title = "Aggiungi creatura"
+	_add_kind_dialog.dialog_text = "Scegli se creare un personaggio con classi o importare un mostro dal bestiario."
+	_add_kind_dialog.get_ok_button().text = "Personaggio / classi"
+	_add_kind_dialog.add_button("Dal bestiario", true, "bestiary")
+	(board_root.get_node("UI") as CanvasLayer).add_child(_add_kind_dialog)
+	_add_kind_dialog.confirmed.connect(_create_character)
+	_add_kind_dialog.custom_action.connect(_on_add_kind_action)
+
+
+func _on_add_kind_action(action: StringName) -> void:
+	if String(action) != "bestiary":
+		return
+	_add_kind_dialog.hide()
+	_catalog_filter.grab_focus()
+	_set_status("Cerca e seleziona un mostro nel bestiario, poi scegli la sua miniatura di default.")
+
+
+func _build_miniature_dialog() -> void:
+	_miniature_dialog = ConfirmationDialog.new()
+	_miniature_dialog.title = "Miniatura predefinita"
+	_miniature_dialog.dialog_text = "Seleziona la miniatura predefinita da usare quando generi il token."
+	_miniature_dialog.min_size = Vector2i(590, 510)
+	(board_root.get_node("UI") as CanvasLayer).add_child(_miniature_dialog)
+	var body := VBoxContainer.new()
+	_miniature_dialog.add_child(body)
+	_miniature_filter = LineEdit.new()
+	_miniature_filter.placeholder_text = "Cerca miniatura per nome o ID..."
+	_miniature_filter.clear_button_enabled = true
+	_miniature_filter.text_changed.connect(_filter_miniatures)
+	body.add_child(_miniature_filter)
+	_miniature_list = ItemList.new()
+	_miniature_list.custom_minimum_size = Vector2(540, 325)
+	_miniature_list.item_selected.connect(_on_miniature_selected)
+	_miniature_list.item_activated.connect(_on_miniature_selected)
+	body.add_child(_miniature_list)
+	_miniature_dialog.confirmed.connect(_confirm_miniature)
+
+
+func _choose_miniature(record: Dictionary, is_new: bool) -> void:
+	if record.is_empty():
+		_set_status("Seleziona una creatura.")
+		return
+	_pending_miniature_record = record.duplicate(true)
+	_pending_new_creature = is_new
+	_miniature_choices.clear()
+	var raw: Variant = board_root.call("list_available_miniatures")
+	if raw is Array:
+		for candidate: Variant in raw:
+			if candidate is Dictionary and not String(candidate.get("id", "")).is_empty():
+				_miniature_choices.append((candidate as Dictionary).duplicate(true))
+	_miniature_filter.text = ""
+	var suggestion := String(record.get("default_miniature_id", ""))
+	if suggestion.is_empty():
+		var creature_name := String(record.get("name", "")).strip_edges()
+		if String(record.get("kind", "")) == "character":
+			creature_name = String(record.get("species", "")).strip_edges()
+		for entry: Dictionary in _miniature_choices:
+			if String(entry.get("name", "")).nocasecmp_to(creature_name) == 0:
+				suggestion = String(entry.get("id", ""))
+				break
+	_chosen_miniature_id = suggestion
+	_filter_miniatures("")
+	_miniature_dialog.popup_centered(Vector2i(590, 510))
+
+
+func _filter_miniatures(query: String) -> void:
+	_miniature_list.clear()
+	_visible_miniatures.clear()
+	var needle := query.strip_edges().to_lower()
+	var selected_index := -1
+	for profile: Dictionary in _miniature_choices:
+		var name := String(profile.get("name", profile.get("id", "Miniatura")))
+		var id := String(profile.get("id", ""))
+		if not needle.is_empty() and needle not in (name + " " + id).to_lower():
+			continue
+		var index := _visible_miniatures.size()
+		_visible_miniatures.append(profile)
+		_miniature_list.add_item("%s · %s" % [name, id])
+		if id == _chosen_miniature_id:
+			selected_index = index
+	if selected_index < 0 and not _visible_miniatures.is_empty():
+		selected_index = 0
+	if selected_index >= 0:
+		_miniature_list.select(selected_index)
+		_chosen_miniature_id = String(_visible_miniatures[selected_index].get("id", ""))
+	else:
+		_chosen_miniature_id = ""
+	_miniature_dialog.get_ok_button().disabled = _chosen_miniature_id.is_empty()
+
+
+func _on_miniature_selected(index: int) -> void:
+	if index >= 0 and index < _visible_miniatures.size():
+		_chosen_miniature_id = String(_visible_miniatures[index].get("id", ""))
+		_miniature_dialog.get_ok_button().disabled = _chosen_miniature_id.is_empty()
+
+
+func _confirm_miniature() -> void:
+	if _chosen_miniature_id.is_empty() or _pending_miniature_record.is_empty():
+		return
+	var record: Dictionary = _pending_miniature_record.duplicate(true)
+	record["default_miniature_id"] = _chosen_miniature_id
+	if _archive.save(record) != OK:
+		_set_status("Impossibile salvare la miniatura della creatura.")
+		return
+	_selected_id = String(record.get("id", ""))
+	_selected_kind = String(record.get("kind", ""))
+	_pending_miniature_record.clear()
+	_pending_new_creature = false
+	_reload()
+	_set_status("Miniatura predefinita selezionata: %s" % _chosen_miniature_id)
+
 func _create_character() -> void:
 	var record: Dictionary = _archive.create_character()
 	record["kind"] = "character"
-	if _archive.save(record) != OK:
-		_set_status("Impossibile creare il personaggio.")
-		return
-	_selected_id = String(record.get("id", ""))
-	_selected_kind = "character"
-	_reload()
+	_choose_miniature(record, true)
 
 
 func _confirm_delete() -> void:
