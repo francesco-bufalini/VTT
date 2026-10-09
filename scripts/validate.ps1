@@ -113,6 +113,7 @@ $fastTests = @(
     "test_spell_catalog_smoke.gd",
     "test_spell_targeting_lifecycle.gd",
     "test_board_smoke.gd",
+    "test_camera_2d_height.gd",
     "test_encounter_sync_scripts.gd",
     "test_item_transport.gd",
     "test_item_board_integration.gd",
