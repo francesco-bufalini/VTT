@@ -22,7 +22,6 @@ var _loading := false
 var _panel: PanelContainer
 var _status: Label
 var _creature_list: ItemList
-var _delete_button: Button
 var _delete_dialog: ConfirmationDialog
 var _delete_target: Dictionary = {}
 var _catalog_list: ItemList
@@ -55,8 +54,15 @@ var _reference: RichTextLabel
 var _condition_rows: VBoxContainer
 var _effect_dialog: AcceptDialog
 var _effect_text: RichTextLabel
-var _trackers: VBoxContainer
 var _owner_target: LineEdit
+var _options_menu: MenuButton
+var _transfer_dialog: ConfirmationDialog
+var _feat_dialog: ConfirmationDialog
+var _feat_filter: LineEdit
+var _feat_list: ItemList
+var _feat_details: RichTextLabel
+var _visible_feats: Array[Dictionary] = []
+var _suggested_miniature_ids: Array[String] = []
 var _import_dialog: AcceptDialog
 var _import_text: TextEdit
 var _auto_reference_requests: Dictionary = {}
@@ -78,6 +84,8 @@ func setup(root: Node3D) -> void:
 	_build_add_kind_dialog()
 	_build_miniature_dialog()
 	_build_transfer_dialog()
+	_build_transfer_request_dialog()
+	_build_feat_dialog()
 	_reload()
 	if DisplayServer.get_name() != "headless":
 		_client.call("load_catalog")
@@ -256,30 +264,33 @@ func _build_ui() -> void:
 	_panel.add_child(outer)
 	var header := HBoxContainer.new()
 	outer.add_child(header)
-	_add_label(header, "Creature · archivio personale 5e.tools")
-	var owned_id := Button.new()
-	owned_id.text = "Copia il mio ID"
-	owned_id.pressed.connect(
-		func() -> void:
-			DisplayServer.clipboard_set(Owner.local_id())
-			_set_status("ID copiato: condividilo solo con chi deve cederti una creatura.")
-	)
-	header.add_child(owned_id)
+
+	var spacer := Control.new()
+	spacer.size_flags_horizontal = Control.SIZE_EXPAND_FILL
+	header.add_child(spacer)
+	_options_menu = MenuButton.new()
+	_options_menu.text = "Opzioni ▾"
+	var popup := _options_menu.get_popup()
+	popup.add_item("Copia il mio ID", 1)
+	popup.add_item("Cartella homebrew", 2)
+	popup.add_item("Ricarica homebrew", 3)
+	popup.add_separator()
+	popup.add_item("Associa a token selezionato", 4)
+	popup.add_item("Cedi controllo…", 5)
+	popup.add_item("Ricevi creatura…", 6)
+	popup.add_separator()
+	popup.add_item("Elimina creatura selezionata…", 7)
+	popup.id_pressed.connect(_on_options_selected)
+	header.add_child(_options_menu)
 	var close := Button.new()
 	close.text = "Chiudi"
 	close.pressed.connect(hide_panel)
 	header.add_child(close)
-	var homebrew := Button.new()
-	homebrew.text = "Cartella homebrew"
-	homebrew.pressed.connect(func() -> void: OS.shell_open(ProjectSettings.globalize_path(ContentCatalog.HOME_DIR)))
-	header.add_child(homebrew)
-	var reload_homebrew := Button.new()
-	reload_homebrew.text = "Ricarica homebrew"
-	reload_homebrew.pressed.connect(_reload_homebrew)
-	header.add_child(reload_homebrew)
 
 	_status = Label.new()
 	_status.autowrap_mode = TextServer.AUTOWRAP_WORD_SMART
+	_status.max_lines_visible = 2
+	_status.clip_text = true
 	outer.add_child(_status)
 
 	var columns := HSplitContainer.new()
@@ -290,9 +301,9 @@ func _build_ui() -> void:
 	var left := VBoxContainer.new()
 	left.custom_minimum_size = Vector2(260, 0)
 	columns.add_child(left)
-	_add_label(left, "Le mie creature (indipendenti dalla scena)")
 	_creature_list = ItemList.new()
-	_creature_list.custom_minimum_size.y = 210
+	_creature_list.custom_minimum_size.y = 75
+	_creature_list.tooltip_text = "Le mie creature · archivio indipendente dalle scene"
 	_creature_list.size_flags_vertical = Control.SIZE_EXPAND_FILL
 	_creature_list.item_selected.connect(_on_selected)
 	left.add_child(_creature_list)
@@ -309,23 +320,12 @@ func _build_ui() -> void:
 	add_general.text = "+ Aggiungi creatura…"
 	add_general.pressed.connect(begin_add_creature)
 	left.add_child(add_general)
-	var add_character := Button.new()
-	add_character.text = "+ Personaggio / creatura con classi"
-	add_character.pressed.connect(_create_character)
-	left.add_child(add_character)
-	_delete_button = Button.new()
-	_delete_button.text = "Elimina creatura selezionata…"
-	_delete_button.disabled = true
-	_delete_button.pressed.connect(_confirm_delete)
-	left.add_child(_delete_button)
-
-	_add_label(left, "Aggiungi dal bestiario")
 	_catalog_filter = LineEdit.new()
-	_catalog_filter.placeholder_text = "Cerca nome o fonte (5e.tools)"
+	_catalog_filter.placeholder_text = "Bestiario · cerca per nome o fonte"
 	_catalog_filter.text_changed.connect(_filter_catalog)
 	left.add_child(_catalog_filter)
 	_catalog_list = ItemList.new()
-	_catalog_list.custom_minimum_size.y = 170
+	_catalog_list.custom_minimum_size.y = 75
 	_catalog_list.size_flags_vertical = Control.SIZE_EXPAND_FILL
 	_catalog_list.item_activated.connect(_request_monster)
 	left.add_child(_catalog_list)
@@ -334,15 +334,11 @@ func _build_ui() -> void:
 	add_monster.pressed.connect(_request_selected_monster)
 	left.add_child(add_monster)
 
-	var right := VSplitContainer.new()
-	right.size_flags_horizontal = Control.SIZE_EXPAND_FILL
-	right.size_flags_vertical = Control.SIZE_EXPAND_FILL
-	right.split_offset = 330
-	columns.add_child(right)
-
 	var edit_scroll := ScrollContainer.new()
+	edit_scroll.size_flags_horizontal = Control.SIZE_EXPAND_FILL
 	edit_scroll.size_flags_vertical = Control.SIZE_EXPAND_FILL
-	right.add_child(edit_scroll)
+	edit_scroll.follow_focus = true
+	columns.add_child(edit_scroll)
 	var form := VBoxContainer.new()
 	form.size_flags_horizontal = Control.SIZE_EXPAND_FILL
 	edit_scroll.add_child(form)
@@ -361,6 +357,11 @@ func _build_ui() -> void:
 	_hp = _spin(fields, -999, 99999)
 	_add_label(fields, "PF massimi")
 	_max_hp = _spin(fields, 0, 99999)
+	var restore_hp := Button.new()
+	restore_hp.text = "Ripristina PF"
+	restore_hp.tooltip_text = "Riporta i punti ferita attuali al massimo"
+	restore_hp.pressed.connect(_restore_full_hp)
+	form.add_child(restore_hp)
 
 	var abilities_row := GridContainer.new()
 	abilities_row.columns = 6
@@ -407,7 +408,13 @@ func _build_ui() -> void:
 	_multiclass_rows = VBoxContainer.new()
 	form.add_child(_multiclass_rows)
 
-	_add_label(form, "Talenti e scelte manuali (personalizzabili)")
+	var feats_header := HBoxContainer.new()
+	form.add_child(feats_header)
+	_add_label(feats_header, "Talenti e scelte manuali")
+	var search_feat := Button.new()
+	search_feat.text = "Cerca talenti…"
+	search_feat.pressed.connect(_open_feat_dialog)
+	feats_header.add_child(search_feat)
 	_feats = TextEdit.new()
 	_feats.custom_minimum_size = Vector2(0, 56)
 	_feats.text_changed.connect(_save)
@@ -434,53 +441,17 @@ func _build_ui() -> void:
 	edit_appearance.pressed.connect(_edit_linked_token_appearance)
 	form.add_child(edit_appearance)
 
-	var tracker_heading := HBoxContainer.new()
-	form.add_child(tracker_heading)
-	_add_label(tracker_heading, "Tracker e risorse")
-	for kind: String in ["turn", "short_rest", "long_rest"]:
-		var button := Button.new()
-		button.text = {
-			"turn": "Nuovo turno", "short_rest": "Riposo breve",
-			"long_rest": "Riposo lungo"
-		}[kind]
-		button.pressed.connect(_reset_resources.bind(kind))
-		tracker_heading.add_child(button)
-	var new_tracker := Button.new()
-	new_tracker.text = "+ Risorsa"
-	new_tracker.pressed.connect(_add_tracker)
-	tracker_heading.add_child(new_tracker)
-	_add_label(form, "Condizioni, malattie ed effetti (descrizione con il mouse)")
+
 	_condition_rows = VBoxContainer.new()
 	form.add_child(_condition_rows)
-	_trackers = VBoxContainer.new()
-	form.add_child(_trackers)
-
-	var actions := HBoxContainer.new()
-	form.add_child(actions)
-	var link_token := Button.new()
-	link_token.text = "Associa a token selezionato"
-	link_token.tooltip_text = "Recupera una scheda esistente quando il vecchio token è stato eliminato."
-	link_token.pressed.connect(_link_selected_token)
-	actions.add_child(link_token)
-	_owner_target = LineEdit.new()
-	_owner_target.placeholder_text = "ID controllore destinatario"
-	_owner_target.size_flags_horizontal = Control.SIZE_EXPAND_FILL
-	actions.add_child(_owner_target)
-	var transfer := Button.new()
-	transfer.text = "Cedi controllo"
-	transfer.pressed.connect(_transfer)
-	actions.add_child(transfer)
-	var import_button := Button.new()
-	import_button.text = "Ricevi creatura…"
-	import_button.pressed.connect(_show_import)
-	actions.add_child(import_button)
 
 	_reference = RichTextLabel.new()
 	_reference.bbcode_enabled = false
 	_reference.selection_enabled = true
 	_reference.scroll_active = true
-	_reference.size_flags_vertical = Control.SIZE_EXPAND_FILL
-	right.add_child(_reference)
+	_reference.custom_minimum_size.y = 250
+	_reference.size_flags_vertical = Control.SIZE_SHRINK_BEGIN
+	form.add_child(_reference)
 	_effect_dialog = AcceptDialog.new()
 	_effect_dialog.title = "5etools · Effect details"
 	_effect_dialog.min_size = Vector2i(560, 420)
@@ -657,7 +628,9 @@ func _reload() -> void:
 			selected_index = i
 	if selected_index < 0 and not _records.is_empty():
 		selected_index = 0
-	_delete_button.disabled = selected_index < 0
+	if _options_menu != null:
+		var options_popup := _options_menu.get_popup()
+		options_popup.set_item_disabled(options_popup.get_item_index(7), selected_index < 0)
 	if selected_index >= 0:
 		_creature_list.select(selected_index)
 		_on_selected(selected_index)
@@ -743,13 +716,6 @@ func _load_form(record: Dictionary) -> void:
 	_class_name.disabled = not is_character
 	_rules_edition.disabled = not is_character
 	_level.editable = is_character
-	var derived: Array[Dictionary] = (
-		Rules.character_trackers(record) if is_character else
-		Rules.monster_trackers(record.get("stat_block", {}))
-	)
-	record["trackers"] = Rules.reconcile_trackers(record.get("trackers", []), derived)
-	_replace_current_record(record)
-	_refresh_trackers(record)
 	_refresh_conditions(record)
 	_refresh_reference(record)
 	_refresh_current_miniature(record)
@@ -827,12 +793,6 @@ func _save() -> void:
 			})
 		record["classes"] = classes
 		record["feats"] = _feats.text
-	var derived: Array[Dictionary] = (
-		Rules.character_trackers(record)
-		if String(record.get("kind", "")) == "character"
-		else Rules.monster_trackers(record.get("stat_block", {}))
-	)
-	record["trackers"] = Rules.reconcile_trackers(record.get("trackers", []), derived)
 	var error: Error = _archive.save(record)
 	if error != OK:
 		_set_status("Salvataggio non riuscito: %s" % error_string(error))
@@ -841,125 +801,18 @@ func _save() -> void:
 	_sync_token_health(record)
 	# A visible sheet follows current level and race/class immediately.
 	_refresh_reference(record)
-	_refresh_trackers(record)
 
 
-func _refresh_trackers(record: Dictionary) -> void:
-	for child: Node in _trackers.get_children():
-		_trackers.remove_child(child)
-		child.queue_free()
-	var rows: Variant = record.get("trackers", [])
-	if not rows is Array:
-		return
-	for raw: Variant in rows as Array:
-		if not raw is Dictionary:
-			continue
-		var resource: Dictionary = raw as Dictionary
-		var resource_id := String(resource.get("id", ""))
-		var row := HBoxContainer.new()
-		_trackers.add_child(row)
-		var name := LineEdit.new()
-		name.text = String(resource.get("label", "Risorsa"))
-		name.size_flags_horizontal = Control.SIZE_EXPAND_FILL
-		name.text_submitted.connect(
-			func(new_name: String) -> void:
-				_update_tracker(resource_id, "label", new_name)
-		)
-		name.focus_exited.connect(
-			func() -> void:
-				_update_tracker(resource_id, "label", name.text)
-		)
-		row.add_child(name)
-		var count := SpinBox.new()
-		count.min_value = 0
-		count.max_value = 9999
-		count.value = int(resource.get("current", 0))
-		count.value_changed.connect(
-			func(new_value: float) -> void:
-				_update_tracker(resource_id, "current", int(new_value))
-		)
-		row.add_child(count)
-		_add_label(row, "/")
-		var maximum := SpinBox.new()
-		maximum.min_value = 0
-		maximum.max_value = 9999
-		maximum.value = int(resource.get("maximum", 0))
-		maximum.value_changed.connect(
-			func(new_value: float) -> void:
-				_update_tracker(resource_id, "maximum", int(new_value))
-		)
-		row.add_child(maximum)
-		if String(resource.get("kind", "")) == "recharge":
-			_add_label(row, "R%d+" % int(resource.get("recharge_min", 0)))
-		elif String(resource.get("id", "")).begins_with("custom_"):
-			var remove := Button.new()
-			remove.text = "×"
-			remove.pressed.connect(_remove_tracker.bind(resource_id))
-			row.add_child(remove)
-
-
-func _update_tracker(id: String, field: String, value: Variant) -> void:
-	var record := _current()
+func _restore_full_hp() -> void:
+	var record: Dictionary = _current()
 	if record.is_empty():
 		return
-	var rows: Array = record.get("trackers", [])
-	for i: int in range(rows.size()):
-		if not rows[i] is Dictionary:
-			continue
-		var item: Dictionary = rows[i]
-		if String(item.get("id", "")) != id:
-			continue
-		item[field] = value
-		var manual: Dictionary = item.get("overrides", {})
-		manual[field] = true
-		item["overrides"] = manual
-		rows[i] = Rules.normalize_tracker(item)
-		break
-	record["trackers"] = rows
-	if _archive.save(record) == OK:
-		_replace_current_record(record)
-		if field == "maximum":
-			_refresh_trackers(record)
-
-
-func _add_tracker() -> void:
-	var record := _current()
-	if record.is_empty():
+	var maximum: int = maxi(0, int(record.get("max_hp", 0)))
+	if maximum == int(record.get("current_hp", 0)):
 		return
-	var rows: Array = record.get("trackers", [])
-	rows.append(Rules.default_tracker(
-		"custom_%d" % Time.get_ticks_usec(), "Risorsa personalizzata",
-		1, "long_rest"
-	))
-	record["trackers"] = rows
-	if _archive.save(record) == OK:
-		_replace_current_record(record)
-		_refresh_trackers(record)
-
-
-func _remove_tracker(id: String) -> void:
-	var record := _current()
-	if record.is_empty() or not id.begins_with("custom_"):
-		return
-	var rows: Array = []
-	for raw: Variant in record.get("trackers", []):
-		if raw is Dictionary and String(raw.get("id", "")) != id:
-			rows.append(raw)
-	record["trackers"] = rows
-	if _archive.save(record) == OK:
-		_replace_current_record(record)
-		_refresh_trackers(record)
-
-
-func _reset_resources(kind: String) -> void:
-	var record := _current()
-	if record.is_empty():
-		return
-	record["trackers"] = Rules.apply_reset(record.get("trackers", []), kind)
-	if _archive.save(record) == OK:
-		_replace_current_record(record)
-		_refresh_trackers(record)
-
+	_hp.value = maximum
+	_save()
+	_set_status("Punti ferita ripristinati al massimo.")
 
 func _refresh_reference(record: Dictionary) -> void:
 	if String(record.get("kind", "")) == "monster":
