@@ -310,19 +310,27 @@ func _render_token_badge(token: CharacterBody3D, floor_y: float) -> void:
 		var active_parts: Variant = token.call("get_active_condition_display_parts")
 		if active_parts is PackedStringArray:
 			condition_parts = active_parts
-	conditions_label.text = "  ·  ".join(condition_parts)
+	var conditions_text: String = "  ·  ".join(condition_parts)
 	conditions_label.visible = not condition_parts.is_empty()
 	if conditions_label.visible:
-		# Grow upward to show the complete set of conditions without
-		# covering the portrait or the name, even with wrapped homebrew names.
+		# Reflow only when the content or icon size changes: updating hundreds
+		# of tactical badges every frame must not re-layout their text.
 		var text_width: float = clampf(icon_size * 3.0, 240.0, 360.0)
-		conditions_label.size = Vector2(text_width, 512.0)
-		var lines: int = maxi(1, conditions_label.get_line_count())
-		conditions_label.size.y = float(lines) * 25.0 + 6.0
+		if (
+			conditions_label.text != conditions_text
+			or not is_equal_approx(conditions_label.size.x, text_width)
+		):
+			conditions_label.text = conditions_text
+			conditions_label.size = Vector2(text_width, 512.0)
+			var lines: int = maxi(1, conditions_label.get_line_count())
+			conditions_label.size.y = float(lines) * 25.0 + 6.0
+		# Grow upward instead of covering the name or portrait.
 		conditions_label.position = Vector2(
 			(icon_size - text_width) * 0.5,
 			name_label.position.y - conditions_label.size.y - 2.0
 		)
+	elif not conditions_label.text.is_empty():
+		conditions_label.text = ""
 
 	var base_y: float = token.global_position.y - (
 		float(token.get("token_height_cells")) * float(token.get("cell_size")) * 0.5
