@@ -73,6 +73,23 @@ jobs:
           & $godot --headless --path . --editor --import --quit
           if ($LASTEXITCODE -ne 0) { exit $LASTEXITCODE }
 
+      - name: Parse structured creature scripts
+        shell: powershell
+        run: |
+          $godot = "C:\\Program Files\\Godot\\Godot_v4.7.2-stable_win64.exe"
+          $scripts = @(
+            "res://vtt/creature_owner.gd",
+            "res://vtt/creature_rules.gd",
+            "res://vtt/creature_archive.gd",
+            "res://vtt/creature_area.gd",
+            "res://vtt/player_character_store.gd",
+            "res://vtt/master_creature_store.gd"
+          )
+          foreach ($script in $scripts) {
+            & $godot --headless --path . --check-only --script $script
+            if ($LASTEXITCODE -ne 0) { exit $LASTEXITCODE }
+          }
+
       - name: Run fast Godot tests
         shell: powershell
         run: .\scripts\validate.ps1 -Godot "C:\Program Files\Godot\Godot_v4.7.2-stable_win64.exe" -Tests
