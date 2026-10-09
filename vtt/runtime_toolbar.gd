@@ -2,7 +2,6 @@ extends Node
 
 const GRID := 10
 const GAME_SPELLS := 11
-const GAME_USER_IDENTITY := 12
 
 const PLAYER_AREA_OPEN := 60
 const PLAYER_ADD_CHARACTER := 61
@@ -119,8 +118,7 @@ func _build_toolbar() -> void:
 	], _on_item))
 
 	row.add_child(_menu("Gioco", [
-		["Incantesimi", GAME_SPELLS],
-		["Cambia token associato all'utente…", GAME_USER_IDENTITY]
+		["Incantesimi", GAME_SPELLS]
 	], _on_game))
 
 	row.add_child(_menu("Combattimento", [
@@ -197,8 +195,6 @@ func _on_game(id: int) -> void:
 	match id:
 		GAME_SPELLS:
 			board_root.call("toggle_spell_menu")
-		GAME_USER_IDENTITY:
-			board_root.call("request_change_user_identity")
 
 
 func _on_item(id: int) -> void:
