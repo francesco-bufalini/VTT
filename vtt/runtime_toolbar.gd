@@ -10,6 +10,7 @@ const PLAYER_LINK_TOKEN := 62
 const PLAYER_LINK_CHARACTER := 63
 
 const CREATURE_AREA_OPEN := 59
+const CREATURE_ADD := 67
 const MASTER_AREA_OPEN := 64
 const MASTER_LINK_TOKEN := 65
 const MASTER_LINK_CREATURE := 66
@@ -129,20 +130,12 @@ func _build_toolbar() -> void:
 	], _on_combat))
 
 	row.add_child(_menu("Creature", [
-		["Apri schede e archivio creature", CREATURE_AREA_OPEN]
+		["Apri schede e archivio creature", CREATURE_AREA_OPEN],
+		["Aggiungi creatura", CREATURE_ADD]
 	], _on_creature))
 
-	row.add_child(_menu("Area Player", [
-		["Apri Area Player", PLAYER_AREA_OPEN],
-		["Aggiungi Personaggio", PLAYER_ADD_CHARACTER],
-		["Token selezionato → personaggio", PLAYER_LINK_TOKEN],
-		["Personaggio → token per nome", PLAYER_LINK_CHARACTER]
-	], _on_player))
-
-	row.add_child(_menu("Area Master", [
-		["Apri Area Master", MASTER_AREA_OPEN],
-		["Token selezionato → creatura", MASTER_LINK_TOKEN],
-		["Creatura → token per nome", MASTER_LINK_CREATURE]
+	row.add_child(_menu("Compendio", [
+		["Apri Compendio", MASTER_AREA_OPEN]
 	], _on_master))
 
 	row.add_child(_menu("Misura", [
@@ -238,8 +231,11 @@ func _on_combat(id: int) -> void:
 
 
 func _on_creature(id: int) -> void:
-	if id == CREATURE_AREA_OPEN:
-		board_root.call("toggle_creature_area")
+	match id:
+		CREATURE_AREA_OPEN:
+			board_root.call("toggle_creature_area")
+		CREATURE_ADD:
+			board_root.call("add_creature")
 
 
 func _on_player(id: int) -> void:
