@@ -142,6 +142,7 @@ func create_creature(stat_block: Dictionary, side: String) -> Dictionary:
 		"size_name": "Medium",
 		"footprint": 1.0,
 		"reach_feet": CreatureRules.monster_base_reach_feet(stat_block),
+		"reach_is_custom": false,
 		"visual_front_quarter_turns": 0,
 		"party_id": "",
 		"temporary_hp": 0,
@@ -196,7 +197,12 @@ func normalize_creature(value: Dictionary) -> Dictionary:
 		"current_miniature_id": String(value.get("current_miniature_id", value.get("default_miniature_id", _default_miniature_id(stat_block)))),
 		"size_name": String(value.get("size_name", "Medium")),
 		"footprint": maxf(0.5, float(value.get("footprint", 1.0))),
-		"reach_feet": maxf(5.0, float(value.get("reach_feet", CreatureRules.monster_base_reach_feet(stat_block)))),
+		"reach_feet": (
+			maxf(5.0, float(value.get("reach_feet", 5.0)))
+			if bool(value.get("reach_is_custom", false))
+			else CreatureRules.monster_base_reach_feet(stat_block)
+		),
+		"reach_is_custom": bool(value.get("reach_is_custom", false)),
 		"visual_front_quarter_turns": clampi(int(value.get("visual_front_quarter_turns", 0)), 0, 3),
 		"party_id": String(value.get("party_id", "")),
 		"temporary_hp": maxi(0, int(value.get("temporary_hp", 0))),
@@ -229,8 +235,9 @@ func normalize_creature(value: Dictionary) -> Dictionary:
 			if String(cls.get("name", "")).to_lower() != "mostro":
 				extra_classes.append(cls.duplicate(true))
 	var cr: float = CreatureRules.monster_cr_value(stat_block)
-	result["classes"] = [{"name": "Mostro", "source": "5etools", "level": cr}]
-	result["classes"].append_array(extra_classes)
+	var merged_classes: Array = [{"name": "Mostro", "source": "5etools", "level": cr}]
+	merged_classes.append_array(extra_classes)
+	result["classes"] = merged_classes
 	var added_levels: float = 0.0
 	for cls: Dictionary in extra_classes:
 		added_levels += maxf(0.0, float(cls.get("level", 0)))
