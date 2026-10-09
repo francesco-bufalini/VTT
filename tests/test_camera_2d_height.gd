@@ -21,7 +21,7 @@ class OverlayToken extends CharacterBody3D:
 		return 1.0
 
 	func get_active_condition_display_parts() -> PackedStringArray:
-		return PackedStringArray(["☠ Avvelenato", "✦ Accecato"])
+		return PackedStringArray(["☠ Poisoned", "✦ Blinded"])
 
 	func are_condition_visuals_visible() -> bool:
 		return show_conditions
@@ -186,27 +186,23 @@ func run() -> void:
 	# No centimeter conversions or fractional physical offsets should leak
 	# into the on-screen height labels.
 	if not _check(
-		String(overlay.call("_format_difference", 1.0)) ==
-		"+1.5 m · +5 ft · +1 quadretti",
-		"one square must display as 1.5 m / 5 ft"
+		String(overlay.call("_format_difference", 1.0)) == "+1 □",
+		"height overlay must display only tactical squares"
 	):
 		return
 	if not _check(
-		String(overlay.call("_format_difference", 2.0)) ==
-		"+3 m · +10 ft · +2 quadretti",
-		"two squares must display as 3 m, not 3.05 m"
+		String(overlay.call("_format_difference", 2.0)) == "+2 □",
+		"two squares must not show metres or feet"
 	):
 		return
 	if not _check(
-		String(overlay.call("_format_difference", -1.0)) ==
-		"-1.5 m · -5 ft · -1 quadretti",
-		"negative elevations must preserve sign in every unit"
+		String(overlay.call("_format_difference", -1.0)) == "-1 □",
+		"negative elevations must preserve their square sign"
 	):
 		return
 	if not _check(
-		String(overlay.call("_format_difference", 1.02)) ==
-		"+1.5 m · +5 ft · +1 quadretti",
-		"minor physics offsets must snap to whole grid squares"
+		String(overlay.call("_format_difference", 1.02)) == "+1 □",
+		"minor physics offsets must snap to whole tactical squares"
 	):
 		return
 	if not _check(
@@ -240,16 +236,18 @@ func run() -> void:
 	var token_height_label: Label = condition_badge.get_node("Height") as Label
 	if not _check(
 		condition_label.visible
-		and "Avvelenato" in condition_label.text
-		and "Accecato" in condition_label.text,
+		and "Poisoned" in condition_label.text
+		and "Blinded" in condition_label.text,
 		"all active conditions must appear above the 2D token"
 	):
 		return
 	if not _check(
 		token_name_label.get_theme_font_size("font_size") >= 18
-		and condition_label.get_theme_font_size("font_size") >= 16
-		and token_height_label.get_theme_font_size("font_size") >= 15,
-		"2D token texts must use readable font sizes"
+		and condition_label.get_theme_font_size("font_size") >= 13
+		and token_height_label.get_theme_font_size("font_size") >= 13
+		and condition_label.size.y <= 20.0
+		and condition_label.position.y > token_name_label.position.y,
+		"compact conditions must stay directly below the name"
 	):
 		return
 	camera.call("step_top_down_level", -1)
@@ -257,7 +255,7 @@ func run() -> void:
 	if not _check(
 		condition_badge.visible
 		and condition_label.visible
-		and "Avvelenato" in condition_label.text,
+		and "Poisoned" in condition_label.text,
 		"changing the camera floor must not hide active conditions"
 	):
 		return
@@ -268,6 +266,35 @@ func run() -> void:
 		"the existing show/hide conditions setting must be respected"
 	):
 		return
+	condition_token.set_meta("flanked", true)
+	overlay.call("_render_token_badge", condition_token, 0.0)
+	if not _check(
+		condition_label.visible and "Flanked" in condition_label.text,
+		"the 2D strip must show computed flanking even with manual conditions hidden"
+	):
+		return
+
+	# Floating creatures without a supporting collider add actual camera stops.
+	var floating_token: OverlayToken = OverlayToken.new()
+	floating_token.position = Vector3(2.0, 10.5, 2.0)
+	floating_token.add_to_group("dnd_token")
+	tokens_root.add_child(floating_token)
+	camera.call("set_top_down_level", 6.0)
+	var navigation_levels: Array = probe.call("get_solid_levels")
+	if not _check(
+		navigation_levels.size() == 3
+		and is_equal_approx(float(navigation_levels[2]), 10.0),
+		"a floating token base must create a navigable camera height"
+	):
+		return
+	camera.call("step_top_down_level", 1)
+	if not _check(
+		is_equal_approx(float(camera.call("get_top_down_level")), 10.0),
+		"Space must stop at the next token base as well as map floors"
+	):
+		return
+	camera.call("set_top_down_level", 0.0)
+	floating_token.queue_free()
 
 	camera.call("exit_top_down_2d")
 	if not _check(
