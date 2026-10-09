@@ -2032,7 +2032,13 @@ func set_2d_elevation_overlay_enabled(enabled: bool) -> void:
 
 
 func get_top_down_icon_texture() -> Texture2D:
-	if _top_down_token_sprite != null:
+	# A changed creature/appearance must not reuse the previous bestiary
+	# portrait while an image is missing or still downloading.
+	if (
+		_top_down_token_enabled
+		and not _top_down_token_url.is_empty()
+		and _top_down_token_sprite != null
+	):
 		return _top_down_token_sprite.texture
 	return null
 
@@ -2040,9 +2046,12 @@ func get_top_down_icon_texture() -> Texture2D:
 func _refresh_top_down_token() -> void:
 	if not is_node_ready():
 		return
+	var previous_url: String = _top_down_token_url
 	_top_down_token_url = _token_pack_manager().get_bestiary_token_url(get_miniature_identity())
 	if _top_down_token_sprite != null:
 		_top_down_token_sprite.visible = false
+		if _top_down_token_url != previous_url or not _top_down_token_enabled:
+			_top_down_token_sprite.texture = null
 	_update_overlay_position()
 	if not _top_down_token_enabled or _top_down_token_url.is_empty():
 		return
