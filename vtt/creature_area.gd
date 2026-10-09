@@ -37,7 +37,7 @@ var _class_name: OptionButton
 var _rules_edition: OptionButton
 var _multiclass_rows: VBoxContainer
 var _multiclass_controls: Array[Dictionary] = []
-var _level: HSlider
+var _level: SpinBox
 var _level_label: Label
 var _feats: TextEdit
 var _default_miniature: LineEdit
@@ -292,10 +292,11 @@ func _build_ui() -> void:
 	var level_row := HBoxContainer.new()
 	form.add_child(level_row)
 	_add_label(level_row, "Livello")
-	_level = HSlider.new()
+	_level = SpinBox.new()
 	_level.min_value = 1
 	_level.max_value = 20
 	_level.step = 1
+	_level.rounded = true
 	_level.size_flags_horizontal = Control.SIZE_EXPAND_FILL
 	_level.value_changed.connect(_on_level_changed)
 	level_row.add_child(_level)
