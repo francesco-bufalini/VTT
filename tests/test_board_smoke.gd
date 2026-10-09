@@ -100,7 +100,7 @@ func run() -> void:
 		return
 
 	var condition_parts: PackedStringArray = token.get_active_condition_display_parts()
-	if not ("☠️ Avvelenato" in condition_parts):
+	if not ("☠️ Poisoned" in condition_parts):
 		_fail("named poisoned condition is missing from shared badge data")
 		return
 
