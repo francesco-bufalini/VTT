@@ -298,10 +298,10 @@ func _render_token_badge(token: CharacterBody3D, floor_y: float) -> void:
 		if not provided_name.is_empty():
 			display_name = provided_name
 	name_label.text = display_name
-	name_label.size = Vector2(maxf(icon_size * 2.0, 220.0), 34.0)
+	name_label.size = Vector2(maxf(icon_size * 2.0, 180.0), 30.0)
 	name_label.position = Vector2(
 		(icon_size - name_label.size.x) * 0.5,
-		-66.0
+		-57.0
 	)
 
 	var conditions_label: Label = badge.get_node("Conditions") as Label
@@ -329,10 +329,10 @@ func _render_token_badge(token: CharacterBody3D, floor_y: float) -> void:
 		var text_width: float = status_font.get_string_size(
 			status_text, HORIZONTAL_ALIGNMENT_LEFT, -1, 17
 		).x
-		var width_px: float = clampf(text_width + 22.0, 100.0, 560.0)
+		var width_px: float = clampf(text_width + 16.0, 72.0, 250.0)
 		var offset_x: float = (icon_size - width_px) * 0.5
-		status_background.position = Vector2(offset_x, -30.0)
-		status_background.size = Vector2(width_px, 27.0)
+		status_background.position = Vector2(offset_x, -26.0)
+		status_background.size = Vector2(width_px, 24.0)
 		conditions_label.position = status_background.position
 		conditions_label.size = status_background.size
 		if conditions_label.text != status_text:
@@ -345,8 +345,8 @@ func _render_token_badge(token: CharacterBody3D, floor_y: float) -> void:
 	)
 	var delta: float = base_y - floor_y
 	var height_label: Label = badge.get_node("Height") as Label
-	height_label.position = Vector2(icon_size - 1.0, icon_size * 0.38)
-	height_label.add_theme_font_size_override("font_size", 17)
+	height_label.position = Vector2(icon_size - 2.0, icon_size * 0.28)
+	height_label.add_theme_font_size_override("font_size", 13)
 	height_label.text = _format_difference(delta)
 	height_label.visible = _difference_cells(delta) != 0
 
