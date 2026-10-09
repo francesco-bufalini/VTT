@@ -864,6 +864,27 @@ func valid_snapshot(snapshot: Variant) -> bool:
 				return false
 			if item.has("support_id") and not item.get("support_id") is String:
 				return false
+			if item.has("mount_target_id"):
+				if (
+					not item.get("mount_target_id") is String
+					or String(item.get("mount_target_id")).is_empty()
+					or String(item.get("mount_target_id")).length() > 96
+					or String(item.get("mount_target_kind", "")) not in ["token", "item"]
+				):
+					return false
+				var mount_local: Variant = item.get("mount_local_position")
+				if not mount_local is Dictionary:
+					return false
+				for axis: String in ["x", "y", "z"]:
+					var coordinate: Variant = mount_local.get(axis)
+					if (
+						not (coordinate is float or coordinate is int)
+						or not is_finite(float(coordinate))
+						or absf(float(coordinate)) > 100000
+					):
+						return false
+			elif item.has("mount_target_kind") or item.has("mount_local_position"):
+				return false
 			# V4 makes logical token state mandatory. This prevents an older
 			# client from silently accepting a snapshot without names/conditions
 			# and then broadcasting blank state back to the table.
@@ -1111,8 +1132,40 @@ func valid_snapshot(snapshot: Variant) -> bool:
 				return false
 
 	if board_root.get("item_controller") != null:
-		return board_root.item_controller.valid_items(snapshot.get("items", []), item_token_ids)
-	return not snapshot.has("items") or snapshot.items == []
+		if not board_root.item_controller.valid_items(snapshot.get("items", []), item_token_ids):
+			return false
+	elif snapshot.has("items") and snapshot.items != []:
+		return false
+	return _valid_mount_links(snapshot, item_token_ids)
+
+
+func _valid_mount_links(snapshot: Dictionary, token_ids: Dictionary) -> bool:
+	var item_ids: Dictionary = {}
+	for value: Variant in snapshot.get("items", []):
+		if value is Dictionary:
+			item_ids[String(value.get("id", ""))] = true
+	var parents: Dictionary = {}
+	for value: Variant in snapshot.get("objects", []):
+		if not value is Dictionary or not value.has("mount_target_id"):
+			continue
+		var token_id := String(value.get("id", ""))
+		var target_id := String(value.get("mount_target_id", ""))
+		var target_kind := String(value.get("mount_target_kind", ""))
+		if target_kind == "token":
+			if not token_ids.has(target_id) or token_id == target_id:
+				return false
+			parents[token_id] = target_id
+		elif not item_ids.has(target_id):
+			return false
+	for rider_id: Variant in parents.keys():
+		var checked: Dictionary = {}
+		var current_id := String(rider_id)
+		while parents.has(current_id):
+			if checked.has(current_id):
+				return false
+			checked[current_id] = true
+			current_id = String(parents[current_id])
+	return true
 
 func _effective_party_id(value: String) -> String:
 	var clean := value.strip_edges().left(80)
@@ -1304,6 +1357,8 @@ func _apply_partial_health_bars(value: Variant) -> void:
 func create_snapshot() -> Dictionary:
 	if board_root.get("item_controller") != null:
 		board_root.item_controller.flush_motion()
+	if board_root.get("mount_controller") != null:
+		board_root.mount_controller.refresh_all()
 	var objects: Array = []
 	var seen := {}
 	for group_name in GROUPS:
@@ -1473,6 +1528,8 @@ func apply_snapshot(snapshot: Dictionary) -> bool:
 	if board_root.get("item_controller") != null:
 		board_root.item_controller.apply_items(snapshot.get("items", []))
 	_restore_token_supports(wanted)
+	if board_root.get("mount_controller") != null:
+		board_root.mount_controller.refresh_all()
 	if is_instance_valid(measurement_tool) and measurement_tool.has_method("apply_persistent_aoes"): measurement_tool.call("apply_persistent_aoes", snapshot.get("aoes",[]))
 	var initiative_tracker: Node = _initiative_tracker()
 	if initiative_tracker == null:
@@ -1581,6 +1638,12 @@ func _serialize_node(node: Node3D, group_name: String) -> Dictionary:
 			and board_root.is_ancestor_of(support_value as Node3D)
 		):
 			data["support_id"] = _sync_id(support_value as Node3D)
+		var mount_id := String(node.get_meta("mount_target_id", ""))
+		var mount_local: Variant = node.get_meta("mount_local_position", Vector3.ZERO)
+		if not mount_id.is_empty() and mount_local is Vector3:
+			data["mount_target_kind"] = String(node.get_meta("mount_target_kind", ""))
+			data["mount_target_id"] = mount_id
+			data["mount_local_position"] = _v3(mount_local as Vector3)
 		data["height_cells"] = float(node.get("token_height_cells"))
 		data["display_name"] = (
 			String(node.call("get_display_name"))
@@ -1772,6 +1835,13 @@ func _apply_node_data(node: Node3D, data: Dictionary) -> void:
 			node.call("apply_gravity")
 		elif node.has_method("set_flying"):
 			node.call("set_flying", true)
+		for key: String in ["mount_target_kind", "mount_target_id", "mount_local_position"]:
+			if node.has_meta(key):
+				node.remove_meta(key)
+		if data.has("mount_target_id"):
+			node.set_meta("mount_target_kind", String(data.get("mount_target_kind", "")))
+			node.set_meta("mount_target_id", String(data.get("mount_target_id", "")))
+			node.set_meta("mount_local_position", _dv3(data.get("mount_local_position", {})))
 		if node.has_method("set_display_name"):
 			node.call("set_display_name", String(data.get("display_name", "")))
 		if node.has_method("set_party_id"):
