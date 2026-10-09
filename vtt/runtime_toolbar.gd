@@ -8,8 +8,6 @@ const PLAYER_ADD_CHARACTER := 61
 const PLAYER_LINK_TOKEN := 62
 const PLAYER_LINK_CHARACTER := 63
 
-const CREATURE_AREA_OPEN := 59
-const CREATURE_ADD := 67
 const MASTER_AREA_OPEN := 64
 const MASTER_LINK_TOKEN := 65
 const MASTER_LINK_CREATURE := 66
@@ -143,10 +141,18 @@ func _build_toolbar() -> void:
 		["Termina combattimento", COMBAT_END]
 	], _on_combat))
 
-	row.add_child(_menu("Creature", [
-		["Apri schede e archivio creature", CREATURE_AREA_OPEN],
-		["Aggiungi creatura", CREATURE_ADD]
-	], _on_creature))
+	# Direct action: one click opens the creature archive, no submenu.
+	var creatures_button := Button.new()
+	creatures_button.text = "Creature"
+	creatures_button.custom_minimum_size = Vector2(88, 34)
+	creatures_button.tooltip_text = "Apri direttamente la scheda delle creature"
+	creatures_button.pressed.connect(
+		func() -> void:
+			var area: Node = board_root.get_node_or_null("CreatureArea")
+			if area != null:
+				area.call("show_panel")
+	)
+	row.add_child(creatures_button)
 
 	row.add_child(_menu("Compendio", [
 		["Apri Compendio", MASTER_AREA_OPEN]
@@ -243,14 +249,6 @@ func _on_combat(id: int) -> void:
 			board_root.call("toggle_initiative_panel")
 		COMBAT_END:
 			board_root.call("end_combat_mode")
-
-
-func _on_creature(id: int) -> void:
-	match id:
-		CREATURE_AREA_OPEN:
-			board_root.call("toggle_creature_area")
-		CREATURE_ADD:
-			board_root.call("add_creature")
 
 
 func _on_player(id: int) -> void:
