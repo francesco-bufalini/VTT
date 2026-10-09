@@ -27,7 +27,7 @@ func setup(board: Node3D, level_probe: Node3D) -> void:
 	add_child(_hover_panel)
 	_hover_text = Label.new()
 	_hover_text.mouse_filter = Control.MOUSE_FILTER_IGNORE
-	_hover_text.add_theme_font_size_override("font_size", 16)
+	_hover_text.add_theme_font_size_override("font_size", 13)
 	_hover_panel.add_child(_hover_text)
 	_hover_panel.hide()
 
@@ -74,29 +74,38 @@ func _new_badge() -> Control:
 	name_label.mouse_filter = Control.MOUSE_FILTER_IGNORE
 	name_label.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
 	name_label.vertical_alignment = VERTICAL_ALIGNMENT_CENTER
-	name_label.add_theme_font_size_override("font_size", 19)
+	name_label.add_theme_font_size_override("font_size", 18)
 	name_label.add_theme_color_override("font_color", Color(1.0, 0.97, 0.88))
 	name_label.add_theme_color_override("font_outline_color", Color(0.07, 0.08, 0.11, 0.95))
 	name_label.add_theme_constant_override("outline_size", 5)
 	badge.add_child(name_label)
 
-	# Screen-space conditions must not be clipped when the camera changes
-	# elevation. World-space rings may be behind the current slice plane.
+	# Screen-space status replicates the compact 3D tactical strip and
+	# stays visible independently from 3D camera near-plane slicing.
+	var status_background: Panel = Panel.new()
+	status_background.name = "StatusBackground"
+	status_background.mouse_filter = Control.MOUSE_FILTER_IGNORE
+	var style := StyleBoxFlat.new()
+	style.bg_color = Color(0.035, 0.04, 0.05, 0.86)
+	style.border_color = Color(0.72, 0.48, 0.20, 0.72)
+	style.set_border_width_all(1)
+	style.set_corner_radius_all(5)
+	status_background.add_theme_stylebox_override("panel", style)
+	status_background.hide()
+	badge.add_child(status_background)
+
 	var conditions_label: Label = Label.new()
 	conditions_label.name = "Conditions"
 	conditions_label.mouse_filter = Control.MOUSE_FILTER_IGNORE
 	conditions_label.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
 	conditions_label.vertical_alignment = VERTICAL_ALIGNMENT_CENTER
-	conditions_label.autowrap_mode = TextServer.AUTOWRAP_WORD_SMART
-	conditions_label.add_theme_font_size_override("font_size", 17)
-	conditions_label.add_theme_color_override(
-		"font_color", Color(1.0, 0.86, 0.46)
-	)
-	conditions_label.add_theme_color_override(
-		"font_outline_color", Color(0.07, 0.08, 0.11, 0.98)
-	)
-	conditions_label.add_theme_constant_override("outline_size", 5)
-	conditions_label.visible = false
+	conditions_label.clip_text = true
+	conditions_label.text_overrun_behavior = TextServer.OVERRUN_TRIM_ELLIPSIS
+	conditions_label.add_theme_font_size_override("font_size", 13)
+	conditions_label.add_theme_color_override("font_color", Color(1.0, 0.91, 0.73))
+	conditions_label.add_theme_color_override("font_outline_color", Color(0.07, 0.08, 0.11, 0.98))
+	conditions_label.add_theme_constant_override("outline_size", 3)
+	conditions_label.hide()
 	badge.add_child(conditions_label)
 
 	var height_label: Label = Label.new()
@@ -120,13 +129,8 @@ func _difference_cells(delta_y: float) -> int:
 
 
 func _format_difference(delta_y: float) -> String:
-	var squares: int = _difference_cells(delta_y)
-	var meters_text: String = ("%+.1f" % (float(squares) * 1.5)).trim_suffix(".0")
-	return "%s m · %+d ft · %+d quadretti" % [
-		meters_text,
-		squares * 5,
-		squares
-	]
+	# The unit is always tactical grid squares; omit metres and feet.
+	return "%+d □" % _difference_cells(delta_y)
 
 
 # Render a transparent thumbnail of the original 3D miniature for
@@ -294,14 +298,19 @@ func _render_token_badge(token: CharacterBody3D, floor_y: float) -> void:
 		if not provided_name.is_empty():
 			display_name = provided_name
 	name_label.text = display_name
-	name_label.size = Vector2(maxf(icon_size * 2.0, 220.0), 30.0)
+	name_label.size = Vector2(maxf(icon_size * 1.6, 180.0), 26.0)
 	name_label.position = Vector2(
 		(icon_size - name_label.size.x) * 0.5,
-		-36.0
+		-49.0
 	)
 
 	var conditions_label: Label = badge.get_node("Conditions") as Label
-	var condition_parts := PackedStringArray()
+	var status_background: Panel = badge.get_node("StatusBackground") as Panel
+	var status_parts := PackedStringArray()
+	# Flanking is derived from current positions, not a manually selected
+	# condition. Keep it visible even when manual condition visuals are off.
+	if bool(token.get_meta("flanked", false)):
+		status_parts.append("⚔ Flanked")
 	var show_conditions: bool = (
 		not token.has_method("are_condition_visuals_visible")
 		or bool(token.call("are_condition_visuals_visible"))
@@ -309,26 +318,23 @@ func _render_token_badge(token: CharacterBody3D, floor_y: float) -> void:
 	if show_conditions and token.has_method("get_active_condition_display_parts"):
 		var active_parts: Variant = token.call("get_active_condition_display_parts")
 		if active_parts is PackedStringArray:
-			condition_parts = active_parts
-	var conditions_text: String = "  ·  ".join(condition_parts)
-	conditions_label.visible = not condition_parts.is_empty()
-	if conditions_label.visible:
-		# Reflow only when the content or icon size changes: updating hundreds
-		# of tactical badges every frame must not re-layout their text.
-		var text_width: float = clampf(icon_size * 3.0, 240.0, 360.0)
-		if (
-			conditions_label.text != conditions_text
-			or not is_equal_approx(conditions_label.size.x, text_width)
-		):
-			conditions_label.text = conditions_text
-			conditions_label.size = Vector2(text_width, 512.0)
-			var lines: int = maxi(1, conditions_label.get_line_count())
-			conditions_label.size.y = float(lines) * 25.0 + 6.0
-		# Grow upward instead of covering the name or portrait.
-		conditions_label.position = Vector2(
-			(icon_size - text_width) * 0.5,
-			name_label.position.y - conditions_label.size.y - 2.0
-		)
+			for part: String in active_parts:
+				status_parts.append(part)
+	var status_text: String = " · ".join(status_parts)
+	var has_status: bool = not status_parts.is_empty()
+	conditions_label.visible = has_status
+	status_background.visible = has_status
+	if has_status:
+		# One narrow line immediately under the name, never spanning multiple
+		# squares vertically; long sets use ellipsis instead of wrapping.
+		var width_px: float = clampf(icon_size * 1.5, 126.0, 220.0)
+		var offset_x: float = (icon_size - width_px) * 0.5
+		status_background.position = Vector2(offset_x, -23.0)
+		status_background.size = Vector2(width_px, 20.0)
+		conditions_label.position = status_background.position
+		conditions_label.size = status_background.size
+		if conditions_label.text != status_text:
+			conditions_label.text = status_text
 	elif not conditions_label.text.is_empty():
 		conditions_label.text = ""
 
@@ -337,8 +343,8 @@ func _render_token_badge(token: CharacterBody3D, floor_y: float) -> void:
 	)
 	var delta: float = base_y - floor_y
 	var height_label: Label = badge.get_node("Height") as Label
-	height_label.position = Vector2(icon_size + 6.0, icon_size * 0.3)
-	height_label.add_theme_font_size_override("font_size", 16)
+	height_label.position = Vector2(icon_size - 1.0, icon_size * 0.38)
+	height_label.add_theme_font_size_override("font_size", 13)
 	height_label.text = _format_difference(delta)
 	height_label.visible = _difference_cells(delta) != 0
 
