@@ -87,12 +87,17 @@ static func automatic_monster_hit_points(creature: Dictionary) -> Dictionary:
 	return {"available": false, "reason": "PF medi non presenti nel blocco statistiche."}
 
 
+static func ability_modifier(score: int) -> int:
+	return floori((float(score) - 10.0) / 2.0)
+
+
 static func automatic_hit_points(character: Dictionary) -> Dictionary:
 	var classes: Array[Dictionary] = level_classes(character)
 	if classes.is_empty():
 		return {"available": false, "reason": "Seleziona almeno una classe."}
 	var abilities: Dictionary = character.get("abilities", {})
-	var con_modifier: int = floori((float(abilities.get("con", 10)) - 10.0) / 2.0)
+	var bonuses: Dictionary = character.get("ability_bonuses", {})
+	var con_modifier: int = ability_modifier(int(abilities.get("con", 10)) + int(bonuses.get("con", 0)))
 	var total: int = 0
 	var parts: PackedStringArray = []
 	var first_level: bool = true
