@@ -1,5 +1,7 @@
 extends Node3D
 
+const TopDownElevationLevels = preload("res://vtt/top_down_elevation_levels.gd")
+
 const AOE_PICK_LAYER := 1 << 20
 const AOE_COLORS: Array[Color] = [
 	Color(1.00, 0.24, 0.10, 1.0),
@@ -1016,16 +1018,16 @@ func _spell_surface_target(hit: Dictionary) -> Dictionary:
 	}
 
 
-# A token is measured from the center of its occupied base grid cell,
-# NOT the floor below it and NOT the first collision point on its model.
+# Measure from the free square directly beneath the token's feet;
+# the lowest *occupied* square is part of the creature, not its support.
 # Keep X/Z at the creature's footprint center (important for Large+).
 func _ruler_token_anchor(token: Node3D) -> Vector3:
-	var height_cells: float = maxf(float(token.get("token_height_cells")), 0.1)
-	var token_cell_size: float = maxf(float(token.get("cell_size")), 0.001)
-	var base_y: float = token.global_position.y - height_cells * token_cell_size * 0.5
+	var support_y: float = TopDownElevationLevels.token_support_air_level(
+		token, cell_size
+	)
 	return Vector3(
 		token.global_position.x,
-		base_y + cell_size * 0.5,
+		support_y,
 		token.global_position.z
 	)
 
