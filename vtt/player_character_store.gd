@@ -145,6 +145,7 @@ func create_character() -> Dictionary:
 		"alignment": "",
 		"sex": "",
 		"inspiration": false,
+		"ability_bonuses": {"str": 0, "dex": 0, "con": 0, "int": 0, "wis": 0, "cha": 0},
 		"abilities": {
 			"str": 10,
 			"dex": 10,
@@ -218,6 +219,9 @@ func create_character() -> Dictionary:
 		"spell_slots_spent": [
 			0, 0, 0, 0, 0, 0, 0, 0, 0, 0
 		],
+		"pact_slots_total": 0,
+		"pact_slots_spent": 0,
+		"pact_slot_level": 1,
 		"linked_token_sync_id": "",
 		"linked_token_name": ""
 	}
@@ -244,6 +248,15 @@ func normalize_character(value: Dictionary) -> Dictionary:
 			)
 		defaults["abilities"] = abilities
 
+	var ability_bonuses: Dictionary = {}
+	var raw_bonuses: Variant = value.get("ability_bonuses", {})
+	for ability_id: String in ["str", "dex", "con", "int", "wis", "cha"]:
+		ability_bonuses[ability_id] = clampi(
+			int((raw_bonuses as Dictionary).get(ability_id, 0))
+			if raw_bonuses is Dictionary else 0, -30, 30
+		)
+	defaults["ability_bonuses"] = ability_bonuses
+
 	for array_key: String in [
 		"conditions",
 		"saving_throw_proficiencies",
@@ -265,6 +278,10 @@ func normalize_character(value: Dictionary) -> Dictionary:
 		if not defaults.get(array_key, []) is Array:
 			defaults[array_key] = []
 
+	# A character can track Pact Magic separately from shared spell slots.
+	defaults["pact_slots_total"] = maxi(0, int(defaults.get("pact_slots_total", 0)))
+	defaults["pact_slots_spent"] = clampi(int(defaults.get("pact_slots_spent", 0)), 0, int(defaults["pact_slots_total"]))
+	defaults["pact_slot_level"] = clampi(int(defaults.get("pact_slot_level", 1)), 1, 5)
 	for slots_key: String in ["spell_slots_total", "spell_slots_spent"]:
 		var slots_value: Variant = defaults.get(slots_key, [])
 		var slots: Array = slots_value if slots_value is Array else []
