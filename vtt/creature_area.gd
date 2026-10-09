@@ -1880,6 +1880,18 @@ func _confirm_miniature() -> void:
 		record["default_miniature_id"] = _chosen_miniature_id
 		if _pending_new_creature or String(record.get("current_miniature_id", "")).is_empty():
 			record["current_miniature_id"] = _chosen_miniature_id
+		if _pending_new_creature:
+			# The selected physical miniature supplies the initial size, but
+			# changing an existing creature's base never overrides its size.
+			for profile: Dictionary in _miniature_choices:
+				if String(profile.get("id", "")) != _chosen_miniature_id:
+					continue
+				var size_name := String(profile.get("size_name", "Medium"))
+				var footprint := maxf(0.5, float(profile.get("footprint", 1.0)))
+				record["size_name"] = size_name
+				record["footprint"] = footprint
+				record["reach_feet"] = maxf(5.0, footprint * 5.0)
+				break
 	if _archive.save(record) != OK:
 		_set_status("Impossibile salvare la miniatura della creatura.")
 		return
