@@ -468,6 +468,157 @@ func _build_ui() -> void:
 	add_child(_delete_dialog)
 
 
+
+func _on_options_selected(id: int) -> void:
+	match id:
+		1:
+			DisplayServer.clipboard_set(Owner.local_id())
+			_set_status("ID controllore copiato.")
+		2:
+			OS.shell_open(ProjectSettings.globalize_path(ContentCatalog.HOME_DIR))
+		3:
+			_reload_homebrew()
+		4:
+			_link_selected_token()
+		5:
+			if _current().is_empty():
+				_set_status("Seleziona una creatura da cedere.")
+				return
+			_owner_target.clear()
+			_transfer_dialog.popup_centered_clamped(Vector2i(520, 175), 0.9)
+		6:
+			_show_import()
+		7:
+			_confirm_delete()
+
+
+func _build_transfer_request_dialog() -> void:
+	_transfer_dialog = ConfirmationDialog.new()
+	_transfer_dialog.title = "Cedi il controllo della creatura"
+	_transfer_dialog.dialog_text = "ID controllore del destinatario:"
+	(board_root.get_node("UI") as CanvasLayer).add_child(_transfer_dialog)
+	_owner_target = LineEdit.new()
+	_owner_target.placeholder_text = "Incolla l'ID controllore"
+	_owner_target.custom_minimum_size.x = 430
+	_transfer_dialog.add_child(_owner_target)
+	_transfer_dialog.confirmed.connect(_transfer)
+
+
+func _build_feat_dialog() -> void:
+	_feat_dialog = ConfirmationDialog.new()
+	_feat_dialog.title = "Talenti · 5e.tools e homebrew"
+	_feat_dialog.dialog_text = "Cerca un talento e leggi la sua descrizione prima di aggiungerlo."
+	_feat_dialog.min_size = Vector2i(590, 400)
+	(board_root.get_node("UI") as CanvasLayer).add_child(_feat_dialog)
+	var body := VBoxContainer.new()
+	_feat_dialog.add_child(body)
+	_feat_filter = LineEdit.new()
+	_feat_filter.placeholder_text = "Cerca talenti per nome o fonte..."
+	_feat_filter.clear_button_enabled = true
+	_feat_filter.text_changed.connect(_search_feats)
+	body.add_child(_feat_filter)
+	_feat_list = ItemList.new()
+	_feat_list.custom_minimum_size = Vector2(510, 130)
+	_feat_list.item_selected.connect(_show_feat_details)
+	_feat_list.item_activated.connect(_show_feat_details)
+	body.add_child(_feat_list)
+	_feat_details = RichTextLabel.new()
+	_feat_details.selection_enabled = true
+	_feat_details.custom_minimum_size.y = 125
+	body.add_child(_feat_details)
+	_feat_dialog.confirmed.connect(_confirm_feat)
+
+
+func _open_feat_dialog() -> void:
+	if _current().is_empty():
+		_set_status("Seleziona prima una creatura.")
+		return
+	_feat_filter.text = ""
+	_search_feats("")
+	_feat_dialog.popup_centered_clamped(Vector2i(680, 465), 0.88)
+	_feat_filter.grab_focus()
+
+
+func _search_feats(query: String) -> void:
+	if _feat_list == null:
+		return
+	_feat_list.clear()
+	_visible_feats = Player5eTools.search("feats", query, {}, 400)
+	for entry: Dictionary in _visible_feats:
+		_feat_list.add_item(Player5eTools.display_label(entry))
+	_feat_details.text = "Seleziona un talento per leggerne gli effetti."
+	_feat_dialog.get_ok_button().disabled = true
+
+
+func _show_feat_details(index: int) -> void:
+	if index < 0 or index >= _visible_feats.size():
+		return
+	var entry: Dictionary = _visible_feats[index]
+	_feat_details.text = Player5eTools.info_text(entry, ContentCatalog.description(entry))
+	_feat_dialog.get_ok_button().disabled = false
+
+
+func _confirm_feat() -> void:
+	var chosen: PackedInt32Array = _feat_list.get_selected_items()
+	if chosen.is_empty() or chosen[0] >= _visible_feats.size():
+		return
+	var entry: Dictionary = _visible_feats[chosen[0]]
+	var source := String(entry.get("source", ""))
+	var label := String(entry.get("name", "Talento"))
+	if not source.is_empty():
+		label += " [" + source + "]"
+	for existing: String in _feats.text.split("\n", false):
+		if existing.strip_edges().nocasecmp_to(label) == 0:
+			_set_status("Talento già presente nella scheda.")
+			return
+	_feats.text += ("\n" if not _feats.text.strip_edges().is_empty() else "") + label
+	_save()
+	_set_status("Talento aggiunto: " + label)
+
+
+# Reverse lookup of the explicit, curated miniature-to-bestiary associations.
+# Never infer a connection from an approximate name match.
+static func _associated_miniature_ids(bestiary_name: String, source: String) -> Array[String]:
+	var exact: Array[String] = []
+	var alternate_edition: Array[String] = []
+	var file := FileAccess.open("res://vtt/data/miniature_bestiary.json", FileAccess.READ)
+	if file == null:
+		return exact
+	var parsed: Variant = JSON.parse_string(file.get_as_text())
+	file.close()
+	if not parsed is Dictionary:
+		return exact
+	var entries: Variant = (parsed as Dictionary).get("entries", {})
+	if not entries is Dictionary:
+		return exact
+	for id_value: Variant in (entries as Dictionary).keys():
+		var data: Dictionary = (entries as Dictionary)[id_value]
+		var editions: Variant = data.get("editions", {})
+		if not editions is Dictionary:
+			continue
+		var name_match := false
+		var precise_match := false
+		for edition: Variant in (editions as Dictionary).values():
+			if not edition is Dictionary:
+				continue
+			var reference: Dictionary = edition as Dictionary
+			if String(reference.get("name", "")).nocasecmp_to(bestiary_name) != 0:
+				continue
+			name_match = true
+			if String(reference.get("source", "")).nocasecmp_to(source) == 0:
+				precise_match = true
+		var miniature_id := String(id_value)
+		if precise_match:
+			exact.append(miniature_id)
+		elif name_match:
+			alternate_edition.append(miniature_id)
+	exact.sort()
+	alternate_edition.sort()
+	# Exact book matches take precedence, with references from other
+	# editions shown as alternatives at the start of the same list.
+	exact.append_array(alternate_edition)
+	return exact
+
 func _build_transfer_dialog() -> void:
 	_import_dialog = AcceptDialog.new()
 	_import_dialog.title = "Ricevi il controllo di una creatura"
@@ -1156,7 +1307,6 @@ func _complete_auto_reference(id: String, stat: Dictionary) -> void:
 				owned["current_hp"] = completed.get("current_hp", 1)
 		if int(owned.get("armor_class", 10)) == 10:
 			owned["armor_class"] = completed.get("armor_class", 10)
-		owned["trackers"] = Rules.reconcile_trackers(owned.get("trackers", []), completed.get("trackers", []))
 		if _archive.save(owned) == OK:
 			_reload()
 			_sync_token_health(owned)
@@ -1201,7 +1351,7 @@ func _build_miniature_dialog() -> void:
 	_miniature_dialog = ConfirmationDialog.new()
 	_miniature_dialog.title = "Miniatura predefinita"
 	_miniature_dialog.dialog_text = "Seleziona la miniatura predefinita da usare quando generi il token."
-	_miniature_dialog.min_size = Vector2i(590, 510)
+	_miniature_dialog.min_size = Vector2i(520, 310)
 	(board_root.get_node("UI") as CanvasLayer).add_child(_miniature_dialog)
 	var body := VBoxContainer.new()
 	_miniature_dialog.add_child(body)
@@ -1211,7 +1361,7 @@ func _build_miniature_dialog() -> void:
 	_miniature_filter.text_changed.connect(_filter_miniatures)
 	body.add_child(_miniature_filter)
 	_miniature_list = ItemList.new()
-	_miniature_list.custom_minimum_size = Vector2(540, 325)
+	_miniature_list.custom_minimum_size = Vector2(450, 140)
 	_miniature_list.item_selected.connect(_on_miniature_selected)
 	_miniature_list.item_activated.connect(_on_miniature_selected)
 	body.add_child(_miniature_list)
@@ -1225,11 +1375,43 @@ func _choose_miniature(record: Dictionary, is_new: bool) -> void:
 	_pending_miniature_record = record.duplicate(true)
 	_pending_new_creature = is_new
 	_miniature_choices.clear()
+	_suggested_miniature_ids.clear()
 	var raw: Variant = board_root.call("list_available_miniatures")
 	if raw is Array:
 		for candidate: Variant in raw:
+
 			if candidate is Dictionary and not String(candidate.get("id", "")).is_empty():
 				_miniature_choices.append((candidate as Dictionary).duplicate(true))
+	var associated_ids: Array[String] = _associated_miniature_ids(
+		String(record.get("name", record.get("base_name", ""))),
+		String(record.get("source", ""))
+	) if String(record.get("kind", "")) == "monster" else []
+	for associated_id: String in associated_ids:
+		for profile: Dictionary in _miniature_choices:
+			if String(profile.get("id", "")) == associated_id:
+				_suggested_miniature_ids.append(associated_id)
+				break
+	_miniature_choices.sort_custom(
+		func(a: Dictionary, b: Dictionary) -> bool:
+			var a_id := String(a.get("id", ""))
+			var b_id := String(b.get("id", ""))
+			var a_pos := _suggested_miniature_ids.find(a_id)
+			var b_pos := _suggested_miniature_ids.find(b_id)
+			if a_pos >= 0 or b_pos >= 0:
+				if a_pos < 0:
+					return false
+				if b_pos < 0:
+					return true
+				return a_pos < b_pos
+			return String(a.get("name", a_id)).naturalnocasecmp_to(
+				String(b.get("name", b_id))
+			) < 0
+	)
+	_miniature_dialog.dialog_text = (
+		"Miniature associate alla voce del bestiario in cima (★). Seleziona per confermare."
+		if not _suggested_miniature_ids.is_empty()
+		else "Scegli una miniatura predefinita dal catalogo."
+	)
 	_miniature_filter.text = ""
 	# New characters must make an explicit selection. Do not silently
 	# accept the first available miniature or a guessed species match.
@@ -1238,7 +1420,7 @@ func _choose_miniature(record: Dictionary, is_new: bool) -> void:
 		else String(record.get("default_miniature_id", ""))
 	)
 	_filter_miniatures("")
-	_miniature_dialog.popup_centered(Vector2i(590, 510))
+	_miniature_dialog.popup_centered_clamped(Vector2i(620, 430), 0.88)
 
 
 func _filter_miniatures(query: String) -> void:
@@ -1253,7 +1435,9 @@ func _filter_miniatures(query: String) -> void:
 			continue
 		var index := _visible_miniatures.size()
 		_visible_miniatures.append(profile)
-		_miniature_list.add_item("%s · %s" % [name, id])
+		_miniature_list.add_item("%s%s · %s" % [
+			"★ " if id in _suggested_miniature_ids else "", name, id
+		])
 		if id == _chosen_miniature_id:
 			selected_index = index
 	if selected_index >= 0:
@@ -1608,7 +1792,7 @@ func _refresh_conditions(record: Dictionary) -> void:
 	var definitions := ContentCatalog.condition_definitions(
 		String(record.get("rules_version", "2014"))
 	)
-	for category: String in ["conditions", "diseases", "effects"]:
+	for category: String in ["conditions", "effects", "diseases"]:
 		var has_section := false
 		for definition: Dictionary in definitions:
 			if String(definition.get("category", "conditions")) != category:
