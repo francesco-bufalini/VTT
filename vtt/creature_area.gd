@@ -3,6 +3,7 @@ extends Node
 # Reusable creature sheet for players and GMs. No role-specific permissions.
 const ContentCatalog = preload("res://vtt/content_catalog.gd")
 const Archive = preload("res://vtt/creature_archive.gd")
+const Rules = preload("res://vtt/creature_rules.gd")
 const Owner = preload("res://vtt/creature_owner.gd")
 const Bestiary = preload("res://vtt/bestiary_5etools_client.gd")
 const PlayerReference = preload("res://vtt/player_reference_catalog.gd")
