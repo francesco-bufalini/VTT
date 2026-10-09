@@ -34,7 +34,6 @@ const SYNC_APPEARANCE_KEYS := [
 	"visual_asset",
 	"visual_native_footprint",
 	"visual_front_quarter_turns",
-	"visual_pitch_steps",
 	"transformation_history"
 ]
 var board_root: Node
@@ -1698,11 +1697,6 @@ func _serialize_node(node: Node3D, group_name: String) -> Dictionary:
 			if node.has_method("get_visual_front_quarter_turns")
 			else 0
 		)
-		data["visual_pitch_steps"] = (
-			int(node.call("get_visual_pitch_steps"))
-			if node.has_method("get_visual_pitch_steps")
-			else 0
-		)
 		if node.has_method("get_transformation_history"):
 			data["transformation_history"] = node.call(
 				"get_transformation_history"
@@ -1802,15 +1796,6 @@ func _apply_node_data(node: Node3D, data: Dictionary) -> void:
 			node.call(
 				"set_visual_front_quarter_turns",
 				int(data.get("visual_front_quarter_turns", 0))
-			)
-		if (
-			apply_shared_appearance
-			and data.has("visual_pitch_steps")
-			and node.has_method("set_visual_pitch_steps")
-		):
-			node.call(
-				"set_visual_pitch_steps",
-				int(data.get("visual_pitch_steps", 0))
 			)
 		if apply_shared_appearance and data.has("height_cells"):
 			node.set(
