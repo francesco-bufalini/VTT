@@ -16,11 +16,13 @@ class TestBoard extends Node3D:
 	var selected_tokens: Array = []
 	var board_sync: Node
 	var requested_creature_id: String = ""
+	var requested_current_miniature_id: String = ""
 	var camera_released: bool = false
 	func is_2d_view_enabled() -> bool:
 		return true
 	func begin_creature_token_placement(record: Dictionary) -> bool:
 		requested_creature_id = String(record.get("id", ""))
+		requested_current_miniature_id = String(record.get("current_miniature_id", ""))
 		return true
 	func get_selected_tokens_for_creatures() -> Array:
 		return selected_tokens.duplicate()
@@ -78,6 +80,16 @@ func run() -> void:
 	assert(not area._miniature_dialog.get_ok_button().disabled)
 	area._confirm_miniature()
 	assert(area._current().default_miniature_id == "hero_test", "Default miniature must be saved with the creature")
+	assert(area._current().current_miniature_id == "hero_test", "First appearance inherits the base miniature")
+	assert(area._tabs.get_tab_count() == 4, "Creature sheet must expose 4 scrollable tabs")
+	area._choose_miniature(area._current(), false, true)
+	area._miniature_filter.text = "ape"
+	area._on_miniature_selected(0)
+	area._confirm_miniature()
+	assert(area._current().current_miniature_id == "ape" and area._current().default_miniature_id == "hero_test",
+		"Changing current appearance without a live token must preserve default miniature")
+	area._restore_default_appearance()
+	assert(area._current().current_miniature_id == "hero_test", "Reset appearance must restore base")
 	var original_id: String = area._current().id
 	area._select_reference(area._class_name, "Wizard", "PHB")
 	assert(area._level is SpinBox, "Base class level must use a numeric input")
@@ -112,6 +124,24 @@ func run() -> void:
 	area._save()
 	area._restore_full_hp()
 	assert(area._current().current_hp == 35, "Restore HP button must update the persistent sheet")
+	area._temp_hp.value = 2
+	area._save()
+	area._change_hit_points(-1)
+	assert(area._current().temporary_hp == 1 and area._current().current_hp == 35)
+	area._change_hit_points(-2)
+	assert(area._current().temporary_hp == 0 and area._current().current_hp == 34,
+		"Damage toolbar must consume temporary HP before current HP")
+	area._change_hit_points(1)
+	assert(area._current().current_hp == 35, "Healing toolbar must cap at max HP")
+	area._size_choice.select(3)
+	area._reach.value = 15
+	area._front.select(2)
+	area._party.text = "Explorers"
+	area._save()
+	area._reload()
+	assert(area._current().size_name == "Large" and area._current().footprint == 2.0)
+	assert(area._current().reach_feet == 15 and area._current().visual_front_quarter_turns == 2)
+	assert(area._current().party_id == "Explorers")
 	area._open_feat_dialog()
 	area._search_feats("Alert")
 	assert(not area._visible_feats.is_empty(), "5e.tools feats must be searchable.")
@@ -144,6 +174,7 @@ func run() -> void:
 	# spawning or relocating without creating another creature.
 	area._request_spawn_selected_creature()
 	assert(board.requested_creature_id == original_id)
+	assert(board.requested_current_miniature_id == "hero_test")
 	assert(not area.is_panel_open())
 	assert(overlay.visible, "Closing creature sheet must restore the 2D overlay")
 	assert(not board.camera_released, "Returning to placement must restore camera control")
