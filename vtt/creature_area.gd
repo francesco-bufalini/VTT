@@ -137,6 +137,20 @@ func sync_linked_token_editor(token: CharacterBody3D) -> void:
 			record["conditions"] = token.call("get_conditions")
 		if token.has_method("get_display_name"):
 			record["name"] = token.call("get_display_name")
+		if token.has_method("get_token_pack_id"):
+			var live_id := String(token.call("get_token_pack_id"))
+			if not live_id.is_empty():
+				record["current_miniature_id"] = live_id
+		if token.has_method("get_size_name"):
+			record["size_name"] = token.call("get_size_name")
+		if token.has_method("get_footprint_cells"):
+			record["footprint"] = token.call("get_footprint_cells")
+		if token.has_method("get_reach_feet"):
+			record["reach_feet"] = token.call("get_reach_feet")
+		if token.has_method("get_visual_front_quarter_turns"):
+			record["visual_front_quarter_turns"] = token.call("get_visual_front_quarter_turns")
+		if token.has_method("get_party_id"):
+			record["party_id"] = token.call("get_party_id")
 		if _archive.save(record) == OK:
 			_replace_current_record(record)
 			if _panel.visible and _selected_id == wanted_id:
@@ -386,6 +400,13 @@ func _build_ui() -> void:
 	_ac.custom_minimum_size.x = 64
 
 	var health_panel := PanelContainer.new()
+	var health_style := StyleBoxFlat.new()
+	health_style.bg_color = Color(0.12, 0.17, 0.22, 0.92)
+	health_style.border_color = Color(0.35, 0.54, 0.6, 0.5)
+	health_style.set_border_width_all(1)
+	health_style.set_corner_radius_all(7)
+	health_style.set_content_margin_all(7)
+	health_panel.add_theme_stylebox_override("panel", health_style)
 	health_panel.tooltip_text = "PF attuali, massimi e temporanei. I danni consumano prima i PF temporanei."
 	form.add_child(health_panel)
 	var health := HBoxContainer.new()
@@ -1608,6 +1629,18 @@ func ensure_sheet_for_token(token: Node3D, locally_created: bool = false) -> voi
 	# persistent sheet back to the token.
 	if newly_created and token.has_method("get_conditions"):
 		record["conditions"] = token.call("get_conditions")
+	if newly_created:
+		record["current_miniature_id"] = pack_id
+		if token.has_method("get_size_name"):
+			record["size_name"] = token.call("get_size_name")
+		if token.has_method("get_footprint_cells"):
+			record["footprint"] = token.call("get_footprint_cells")
+		if token.has_method("get_reach_feet"):
+			record["reach_feet"] = token.call("get_reach_feet")
+		if token.has_method("get_visual_front_quarter_turns"):
+			record["visual_front_quarter_turns"] = token.call("get_visual_front_quarter_turns")
+		if token.has_method("get_party_id"):
+			record["party_id"] = token.call("get_party_id")
 	record["default_miniature_id"] = pack_id
 	record["owner_id"] = local_owner
 	record["linked_token_sync_id"] = token_id
