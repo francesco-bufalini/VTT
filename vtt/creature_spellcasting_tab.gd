@@ -176,23 +176,34 @@ func setup(on_change: Callable, on_status: Callable) -> void:
 	prepared_col.add_child(_prepared_list)
 	_prepared_list.item_activated.connect(func(_index: int) -> void: _toggle_selected_prepared())
 
-	var actions := HBoxContainer.new()
-	actions.add_theme_constant_override("separation", 8)
+	# The action is a single compact row. Descriptions are a separate row
+	# underneath the persistent selection hint, never next to a tall button.
+	var actions := VBoxContainer.new()
+	actions.add_theme_constant_override("separation", 5)
 	add_child(actions)
+	var action_row := HBoxContainer.new()
+	action_row.add_theme_constant_override("separation", 8)
+	actions.add_child(action_row)
+	var selection_hint := Label.new()
+	selection_hint.text = "Seleziona un incantesimo per consultare la descrizione."
+	selection_hint.size_flags_horizontal = Control.SIZE_EXPAND_FILL
+	selection_hint.autowrap_mode = TextServer.AUTOWRAP_WORD_SMART
+	action_row.add_child(selection_hint)
 	_prepare = Button.new()
 	_prepare.text = "Aggiungi ai disponibili"
 	_prepare.custom_minimum_size = Vector2(170, 34)
+	_prepare.size_flags_vertical = Control.SIZE_SHRINK_CENTER
 	_prepare.tooltip_text = "Doppio clic su una magia oppure premi questo pulsante"
 	_prepare.pressed.connect(_toggle_selected_prepared)
-	actions.add_child(_prepare)
+	action_row.add_child(_prepare)
 
 	_description = RichTextLabel.new()
-	_description.custom_minimum_size.y = 180
+	_description.custom_minimum_size.y = 150
 	_description.size_flags_horizontal = Control.SIZE_EXPAND_FILL
 	_description.scroll_active = true
 	_description.selection_enabled = true
+	_description.hide()
 	actions.add_child(_description)
-	actions.move_child(_description, 0)
 
 	var slot_title := HBoxContainer.new()
 	add_child(slot_title)
@@ -594,8 +605,10 @@ func _update_spell_controls() -> void:
 		else "Aggiungi ai disponibili"
 	)
 	if id.is_empty():
-		_description.text = "Seleziona un incantesimo per consultare la descrizione."
+		_description.clear()
+		_description.hide()
 		return
+	_description.show()
 	_description.text = "%s · livello %d · %s\nGittata: %s · Componenti: %s\nDurata: %s\n%s" % [
 		String(spell.get("name", id)), int(spell.get("level", 0)),
 		String(spell.get("source", "")), String(spell.get("range", "—")),
