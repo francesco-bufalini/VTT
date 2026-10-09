@@ -24,6 +24,8 @@ class TestBoard extends Node3D:
 		return true
 	func get_selected_tokens_for_creatures() -> Array:
 		return selected_tokens.duplicate()
+	func list_available_miniatures() -> Array[Dictionary]:
+		return [{"id": "hero_test", "name": "Hero"}, {"id": "ape", "name": "Ape"}]
 	func release_camera_control() -> void:
 		camera_released = true
 	func capture_camera_control() -> void:
@@ -51,6 +53,10 @@ func run() -> void:
 	area._archive.setup(campaign)
 	area._reload()
 	area._create_character()
+	assert(area._current().is_empty(), "Creation must wait for the mandatory miniature choice")
+	assert(area._miniature_dialog.get_ok_button().disabled == false)
+	area._confirm_miniature()
+	assert(area._current().default_miniature_id == "hero_test", "Default miniature must be saved with the creature")
 	var original_id: String = area._current().id
 	area._select_reference(area._class_name, "Wizard", "PHB")
 	assert(area._level is SpinBox, "Use a numeric class level input, not a slider")
