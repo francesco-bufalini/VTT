@@ -4908,6 +4908,38 @@ func _rotate_selected_vertical(steps: int) -> void:
 			token.call("rotate_vertical", steps)
 
 
+func remove_owned_creature_tokens(tokens: Array[CharacterBody3D]) -> void:
+	# Deleting a persistent creature also removes its actual map instances.
+	# Detach them immediately so sync cannot accidentally broadcast ghosts.
+	var valid_tokens: Array[CharacterBody3D] = []
+	for token: CharacterBody3D in tokens:
+		if (
+			token != null
+			and is_instance_valid(token)
+			and is_ancestor_of(token)
+			and not token.is_queued_for_deletion()
+		):
+			valid_tokens.append(token)
+	if valid_tokens.is_empty():
+		return
+	push_undo_state()
+	if camera.has_method("get_first_person_target"):
+		var focused: Variant = camera.call("get_first_person_target")
+		if focused in valid_tokens and camera.has_method("exit_first_person"):
+			camera.call("exit_first_person")
+	for token: CharacterBody3D in valid_tokens:
+		_selected_tokens.erase(token)
+		if token.get_parent() != null:
+			token.get_parent().remove_child(token)
+		token.queue_free()
+	_refresh_selection_grid_highlight()
+	if token_list != null and is_instance_valid(token_list):
+		token_list.call("refresh")
+	if initiative_tracker != null and is_instance_valid(initiative_tracker):
+		initiative_tracker.call("refresh")
+	_sync_explicit_token_change()
+
+
 func _delete_selected() -> void:
 	_clean_selection()
 	if not _selected_tokens.is_empty():
