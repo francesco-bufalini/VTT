@@ -13,6 +13,7 @@ func _run() -> void:
 	assert(String(classic.get("source", "")) == "PHB")
 	assert(String(modern.get("source", "")) == "XPHB")
 	assert(String(classic.get("description", "")) != String(modern.get("description", "")))
+	assert("increases by 1d6" in String(classic.get("higher_levels", "")))
 	assert(classic.get("map_effect_spec", {}) == modern.get("map_effect_spec", {}))
 	assert(String(classic.get("aoe_shape", "")) == String(modern.get("aoe_shape", "")))
 	assert(is_equal_approx(float(classic.get("range_feet", 0)), 150.0))
