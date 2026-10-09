@@ -77,7 +77,10 @@ static func token_support_air_level(token: Node3D, tactical_cell_size: float) ->
 	var bottom_y: float = (
 		token.global_position.y - height_cells * token_cell * 0.5
 	)
-	return (floorf((bottom_y - safe * 0.001) / safe) + 0.5) * safe
+	# A grounded token is deliberately kept ~0.005 cells above its
+	# collision surface to prevent interpenetration. Include that clearance
+	# so the support never jumps into the creature's own lowest cell.
+	return (floorf((bottom_y - safe * 0.025) / safe) + 0.5) * safe
 
 
 func _token_has_solid_support(token: CharacterBody3D) -> bool:
