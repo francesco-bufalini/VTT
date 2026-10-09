@@ -12,12 +12,21 @@ class OverlayStub extends Control:
 	func set_2d_active(enabled: bool) -> void:
 		visible = enabled
 
+class TestDice extends Node:
+	var last_expression := ""
+	func roll_expression_from_sheet(_label: String, expression: String, _actor: Node3D = null) -> int:
+		last_expression = expression
+		return 4
+
 class TestBoard extends Node3D:
 	var selected_tokens: Array = []
 	var board_sync: Node
 	var requested_creature_id: String = ""
 	var requested_current_miniature_id: String = ""
 	var camera_released: bool = false
+	var focused_token: Node3D
+	func focus_camera_on_token(token: CharacterBody3D) -> void:
+		focused_token = token
 	func is_2d_view_enabled() -> bool:
 		return true
 	func begin_creature_token_placement(record: Dictionary) -> bool:
@@ -47,6 +56,9 @@ func run() -> void:
 	ui.add_child(overlay)
 	board.board_sync = TestSync.new()
 	board.add_child(board.board_sync)
+	var hp_roller := TestDice.new()
+	hp_roller.name = "DiceRollerChat"
+	board.add_child(hp_roller)
 	var campaign := TestCampaign.new()
 	root.add_child(campaign)
 	var area: Node = load("res://vtt/creature_area.gd").new()
@@ -71,8 +83,9 @@ func run() -> void:
 	assert(area._miniature_dialog.get_ok_button().disabled,
 		"Suggested pack must not bypass mandatory selection")
 	area._miniature_dialog.hide()
-	area._create_character()
+	area.begin_add_creature()
 	assert(area._current().is_empty(), "Creation must wait for the mandatory miniature choice")
+	assert(area._miniature_dialog.visible, "Add character must open miniature picker directly")
 	assert(area._miniature_dialog.get_ok_button().disabled,
 		"New character must explicitly select a default miniature")
 	area._miniature_filter.text = "Hero"
@@ -81,6 +94,10 @@ func run() -> void:
 	area._confirm_miniature()
 	assert(area._current().default_miniature_id == "hero_test", "Default miniature must be saved with the creature")
 	assert(area._current().current_miniature_id == "hero_test", "First appearance inherits the base miniature")
+	assert(area._creature_list_scroll.custom_minimum_size.y < 100.0,
+		"One creature must occupy only one short list row")
+	assert(not area._creature_eye_buttons[0].visible,
+		"No eye icon may appear before the creature has a token")
 	assert(area._tabs.get_tab_count() == 4, "Creature sheet must expose 4 scrollable tabs")
 	area._choose_miniature(area._current(), false, true)
 	area._miniature_filter.text = "ape"
@@ -104,9 +121,16 @@ func run() -> void:
 		"class": "Bard", "level": 3, "rules_version": "2014"
 	}).known_limits.bard == 6)
 	assert(area._creature_context_menu.get_item_count() >= 3)
+	assert(area._miniature_dialog.dialog_text.is_empty()
+		and area._automatic_dialog.dialog_text.is_empty(),
+		"Descriptions must not compete with popup custom controls")
+	assert(area._miniature_filter.get_parent().get_parent() == area._miniature_dialog.get_vbox())
+	assert(area._automatic_hp.get_parent().get_parent() == area._automatic_dialog.get_vbox())
 	var original_id: String = area._current().id
 	area._select_reference(area._class_name, "Wizard", "PHB")
-	assert(area._level is SpinBox, "Base class level must use a numeric input")
+	assert(area._level is SpinBox and area._level.update_on_text_changed,
+		"Base class level must save edits while its input still has focus")
+	assert(area._hp.update_on_text_changed and area._max_hp.update_on_text_changed)
 	area._level.value = 5
 	area._save()
 	var sheet: Dictionary = area._current()
@@ -158,6 +182,18 @@ func run() -> void:
 		"Damage toolbar must consume temporary HP before current HP")
 	area._change_hit_points(1)
 	assert(area._current().current_hp == 35, "Healing toolbar must cap at max HP")
+	area._open_hp_delta(-1)
+	area._hp_delta_amount.value = 3
+	area._confirm_hp_delta()
+	assert(area._current().current_hp == 32, "Numeric damage popup must apply entered HP")
+	area._open_hp_delta(1)
+	area._hp_use_dice.button_pressed = true
+	area._hp_dice_formula.text = "1d8"
+	area._confirm_hp_delta()
+	assert(area._current().current_hp == 35,
+		"Dice-roller HP healing must apply the rolled result and cap at maximum")
+	assert(hp_roller.last_expression == "1d8",
+		"Dice HP popup must use the existing chat roller")
 	area._size_choice.select(3)
 	area._reach.value = 15
 	area._front.select(2)
@@ -185,6 +221,11 @@ func run() -> void:
 	var appearance: Dictionary = token.get_appearance_state()
 	area._link_selected_token()
 	assert(token.get_meta("creature_id") == original_id and token.has_condition("poisoned"))
+	area._refresh_creature_eye_buttons()
+	assert(area._creature_eye_buttons[0].visible, "Linked token should show the eye button")
+	area._focus_creature_token(original_id)
+	assert(board.focused_token == token, "Eye must center the selected creature's token")
+	assert(not area.is_panel_open(), "Eye action must reveal the board")
 	assert(token.get_appearance_state().visual_asset == appearance.visual_asset)
 	# "Edit token" and "Edit sheet" now open and update the same record.
 	assert(area.open_for_token(token))
