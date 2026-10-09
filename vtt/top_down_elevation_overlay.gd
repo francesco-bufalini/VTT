@@ -22,6 +22,7 @@ func setup(board: Node3D, level_probe: Node3D) -> void:
 	set_anchors_and_offsets_preset(Control.PRESET_FULL_RECT)
 	visible = false
 	_hover_panel = PanelContainer.new()
+	_hover_panel.z_index = 20
 	_hover_panel.mouse_filter = Control.MOUSE_FILTER_IGNORE
 	add_child(_hover_panel)
 	_hover_text = Label.new()
@@ -42,6 +43,7 @@ func set_2d_active(enabled: bool) -> void:
 
 func _new_badge() -> Control:
 	var badge: Control = Control.new()
+	badge.z_index = 10
 	badge.mouse_filter = Control.MOUSE_FILTER_IGNORE
 	add_child(badge)
 
@@ -84,9 +86,9 @@ func _format_difference(delta_y: float) -> String:
 	var squares: float = delta_y / cell_size
 	var feet: float = squares * 5.0
 	var meters: float = feet * 0.3048
-	var cells_text: String = "%.0f" % squares
+	var cells_text: String = "%+.0f" % squares
 	if absf(squares - roundf(squares)) > 0.05:
-		cells_text = "%.1f" % squares
+		cells_text = "%+.1f" % squares
 	return "%+.2f m · %+.1f ft · %s quadretti" % [
 		meters,
 		feet,
