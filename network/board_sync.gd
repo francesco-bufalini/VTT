@@ -975,18 +975,6 @@ func valid_snapshot(snapshot: Variant) -> bool:
 				or int(front_number) > 3
 			):
 				return false
-			if item.has("visual_pitch_steps"):
-				var pitch_value: Variant = item.get("visual_pitch_steps")
-				if not (pitch_value is int or pitch_value is float):
-					return false
-				var pitch_number: float = float(pitch_value)
-				if (
-					not is_finite(pitch_number)
-					or pitch_number != floor(pitch_number)
-					or int(pitch_number) < -3
-					or int(pitch_number) > 3
-				):
-					return false
 			if item.has("transformation_history"):
 				var history_value: Variant = item.get(
 					"transformation_history",
@@ -1075,24 +1063,6 @@ func valid_snapshot(snapshot: Variant) -> bool:
 						or int(previous_front_number) > 3
 					):
 						return false
-					if appearance.has("visual_pitch_steps"):
-						var previous_pitch: Variant = appearance.get(
-							"visual_pitch_steps"
-						)
-						if not (
-							previous_pitch is int
-							or previous_pitch is float
-						):
-							return false
-						var previous_pitch_number := float(previous_pitch)
-						if (
-							not is_finite(previous_pitch_number)
-							or previous_pitch_number
-							!= floor(previous_pitch_number)
-							or int(previous_pitch_number) < -3
-							or int(previous_pitch_number) > 3
-						):
-							return false
 					if not appearance.get("reach_overridden", false) is bool:
 						return false
 		if not item.get("name") is String or not item.get("visible") is bool:
