@@ -1435,6 +1435,11 @@ func _process(_delta: float) -> void:
 
 
 func _input(event: InputEvent) -> void:
+	# _input runs BEFORE Godot dispatches events to focused Controls.
+	# Do not move tokens, undo actions or operate shortcuts while a GUI
+	# widget owns the keyboard.
+	if event is InputEventKey and get_viewport().gui_get_focus_owner() != null:
+		return
 	if _sheet_spawn_picking and _handle_sheet_spawn_placement_input(event):
 		get_viewport().set_input_as_handled()
 		return
@@ -2048,6 +2053,18 @@ func _reposition_selected_at_context() -> void:
 
 
 func _unhandled_input(event: InputEvent) -> void:
+	# A world click (including token selection) must dismiss the previously
+	# focused menu, otherwise Space can activate its last action.
+	if (
+		event is InputEventMouseButton
+		and event.pressed
+		and event.button_index in [MOUSE_BUTTON_LEFT, MOUSE_BUTTON_RIGHT]
+	):
+		var focused_control: Control = get_viewport().gui_get_focus_owner()
+		if focused_control != null:
+			focused_control.release_focus()
+	if event is InputEventKey and get_viewport().gui_get_focus_owner() != null:
+		return
 	if (
 		_map_edit_layer_active
 		and (
@@ -2788,6 +2805,10 @@ func set_2d_view_enabled(enabled: bool) -> void:
 		and bool(camera.call("is_first_person")):
 			camera.call("exit_first_person")
 		if camera.has_method("enter_top_down_2d"):
+			var remembered_2d: bool = (
+				camera.has_method("has_remembered_top_down_view")
+				and bool(camera.call("has_remembered_top_down_view"))
+			)
 			camera.call(
 				"enter_top_down_2d",
 				Vector3.ZERO,
@@ -2795,7 +2816,7 @@ func set_2d_view_enabled(enabled: bool) -> void:
 				_top_down_tilt_degrees_2d()
 			)
 			# Start at the real solid floor closest to the map origin.
-			if _top_down_levels != null:
+			if _top_down_levels != null and not remembered_2d:
 				var raw_levels: Variant = _top_down_levels.call("get_solid_levels")
 				if raw_levels is Array:
 					var solid_levels: Array = raw_levels as Array
