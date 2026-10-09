@@ -190,13 +190,9 @@ func set_top_down_level(level: float) -> void:
 		return
 	var delta_height: float = level - _top_down_center_y
 	_top_down_center_y = level
-	var tilt_radians: float = deg_to_rad(_top_down_tilt_degrees)
-	# Compensate tilt so the same XZ map point stays under the camera.
-	global_position += Vector3(
-		0.0,
-		delta_height,
-		delta_height * tan(tilt_radians)
-	)
+	# Move the floor and camera together; leaving X/Z unchanged keeps
+	# the same map point centered even in the slightly tilted forest preset.
+	global_position += Vector3.UP * delta_height
 
 
 func _update_top_down_slice() -> void:
