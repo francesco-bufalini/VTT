@@ -6,6 +6,10 @@ extends VBoxContainer
 const SpellCatalog = preload("res://vtt/spells/spell_catalog.gd")
 const Rules = preload("res://vtt/creature_rules.gd")
 
+const BOOK_VIEW_CLASS := 10
+const BOOK_VIEW_BOOK := 11
+const BOOK_EDIT := 12
+
 var _on_change: Callable
 var _on_status: Callable
 var _record: Dictionary = {}
@@ -14,6 +18,11 @@ var _catalog: Array[Dictionary] = []
 var _visible: Array[Dictionary] = []
 var _known: Array = []
 var _prepared: Array = []
+# The class list is generated automatically; the spellbook is user-selected.
+var _spellbook: Array = []
+var _displayed_known: Array = []
+var _show_spellbook := false
+var _editing_spellbook := false
 var _totals: Array = []
 var _spent: Array = []
 var _pact_total := 0
@@ -26,6 +35,9 @@ var _level_filter: OptionButton
 var _available: ItemList
 var _known_list: ItemList
 var _prepared_list: ItemList
+var _known_title: Label
+var _book_menu: MenuButton
+var _book_hint: Label
 var _description: RichTextLabel
 var _add_known: Button
 var _prepare: Button
@@ -114,14 +126,42 @@ func setup(on_change: Callable, on_status: Callable) -> void:
 	var known_col := VBoxContainer.new()
 	known_col.size_flags_horizontal = Control.SIZE_EXPAND_FILL
 	columns.add_child(known_col)
-	var known_title := Label.new()
-	known_title.text = "Incantesimi di classe (fino al livello attuale)"
-	known_col.add_child(known_title)
+	var known_header := HBoxContainer.new()
+	known_header.add_theme_constant_override("separation", 8)
+	known_col.add_child(known_header)
+	_known_title = Label.new()
+	_known_title.text = "Incantesimi di classe"
+	_known_title.tooltip_text = "Incantesimi delle classi fino al livello attuale"
+	_known_title.clip_text = true
+	_known_title.size_flags_horizontal = Control.SIZE_EXPAND_FILL
+	known_header.add_child(_known_title)
+	_book_menu = MenuButton.new()
+	_book_menu.text = "📖 ▾"
+	_book_menu.tooltip_text = "Libro degli incantesimi: vista e selezione delle magie trascritte"
+	_book_menu.custom_minimum_size = Vector2(46, 32)
+	known_header.add_child(_book_menu)
+	var book_popup: PopupMenu = _book_menu.get_popup()
+	book_popup.add_radio_check_item("Mostra incantesimi di classe", BOOK_VIEW_CLASS)
+	book_popup.add_radio_check_item("Mostra incantesimi del libro", BOOK_VIEW_BOOK)
+	book_popup.add_separator()
+	book_popup.add_check_item("Seleziona incantesimi nel libro", BOOK_EDIT)
+	book_popup.id_pressed.connect(_on_book_menu_selected)
+	_book_hint = Label.new()
+	_book_hint.text = "Modalità libro: clicca una magia per inserirla o rimuoverla."
+	_book_hint.add_theme_font_size_override("font_size", 12)
+	_book_hint.add_theme_color_override("font_color", Color(0.95, 0.78, 0.51, 1.0))
+	_book_hint.autowrap_mode = TextServer.AUTOWRAP_WORD_SMART
+	_book_hint.hide()
+	known_col.add_child(_book_hint)
 	_known_list = ItemList.new()
 	_known_list.custom_minimum_size = Vector2(0, 150)
 	_known_list.size_flags_horizontal = Control.SIZE_EXPAND_FILL
-	_known_list.item_selected.connect(func(_index: int) -> void: _on_spell_list_selected("known"))
-	_known_list.item_activated.connect(func(_index: int) -> void: _add_selected_known())
+	_known_list.item_selected.connect(_on_known_spell_selected)
+	_known_list.item_activated.connect(
+		func(_index: int) -> void:
+			if not _editing_spellbook:
+				_add_selected_known()
+	)
 	known_col.add_child(_known_list)
 	var prepared_col := VBoxContainer.new()
 	prepared_col.size_flags_horizontal = Control.SIZE_EXPAND_FILL
@@ -269,6 +309,10 @@ func load_record(record: Dictionary) -> void:
 	# Older records separate known and prepared. Preserve BOTH collections
 	# in the new single available-spell selection on first load.
 	_known.clear()
+	_spellbook = _copy_spell_array(record.get("spellbook_spells", []))
+	# Editing and view modes are UI-only and reset when changing creature.
+	_show_spellbook = false
+	_editing_spellbook = false
 	_prepared = _copy_spell_array(record.get("prepared_spells", []))
 	for legacy: Variant in _copy_spell_array(record.get("spells", [])):
 		if not _has_spell(_prepared, _entry_id(legacy)):
@@ -479,8 +523,8 @@ func _selected_spell() -> Dictionary:
 	if not available_selected.is_empty() and available_selected[0] < _visible.size():
 		return _visible[available_selected[0]]
 	var known_selected: PackedInt32Array = _known_list.get_selected_items()
-	if not known_selected.is_empty() and known_selected[0] < _known.size():
-		return _spell_by_id(_entry_id(_known[known_selected[0]]))
+	if not known_selected.is_empty() and known_selected[0] < _displayed_known.size():
+		return _spell_by_id(_entry_id(_displayed_known[known_selected[0]]))
 	var prepared_selected: PackedInt32Array = _prepared_list.get_selected_items()
 	if not prepared_selected.is_empty() and prepared_selected[0] < _prepared.size():
 		return _spell_by_id(_entry_id(_prepared[prepared_selected[0]]))
@@ -555,11 +599,79 @@ func _forget_selected_known() -> void:
 func _refresh_saved_spell_lists() -> void:
 	_known_list.clear()
 	_prepared_list.clear()
-	for item: Variant in _known:
-		_known_list.add_item(_spell_label(item))
+	_displayed_known = _spellbook.duplicate(true) if _show_spellbook else _known.duplicate(true)
+	for item: Variant in _displayed_known:
+		var prefix := ""
+		if _editing_spellbook:
+			prefix = "☑  " if _has_spell(_spellbook, _entry_id(item)) else "☐  "
+		elif not _show_spellbook and _has_spell(_spellbook, _entry_id(item)):
+			prefix = "📖  "
+		_known_list.add_item(prefix + _spell_label(item))
 	for item: Variant in _prepared:
 		_prepared_list.add_item(_spell_label(item))
+	_update_book_menu()
 	_update_spell_controls()
+
+
+func _on_book_menu_selected(item_id: int) -> void:
+	match item_id:
+		BOOK_VIEW_CLASS:
+			_show_spellbook = false
+			_editing_spellbook = false
+		BOOK_VIEW_BOOK:
+			_show_spellbook = true
+			_editing_spellbook = false
+		BOOK_EDIT:
+			_editing_spellbook = not _editing_spellbook
+			if _editing_spellbook:
+				# Show all class spells so the user can check or uncheck them.
+				_show_spellbook = false
+	_refresh_saved_spell_lists()
+
+
+func _update_book_menu() -> void:
+	if _book_menu == null:
+		return
+	_known_title.text = (
+		"Incantesimi del libro (%d)" % _spellbook.size()
+		if _show_spellbook
+		else "Incantesimi di classe"
+	)
+	_book_hint.visible = _editing_spellbook
+	var popup: PopupMenu = _book_menu.get_popup()
+	popup.set_item_checked(popup.get_item_index(BOOK_VIEW_CLASS), not _show_spellbook)
+	popup.set_item_checked(popup.get_item_index(BOOK_VIEW_BOOK), _show_spellbook)
+	popup.set_item_checked(popup.get_item_index(BOOK_EDIT), _editing_spellbook)
+	_book_menu.tooltip_text = (
+		"Libro: %d incantesimi · Apri per cambiare vista o modificare" % _spellbook.size()
+	)
+
+
+func _on_known_spell_selected(index: int) -> void:
+	_on_spell_list_selected("known")
+	if not _editing_spellbook or index < 0 or index >= _displayed_known.size():
+		return
+	var spell: Variant = _displayed_known[index]
+	var id: String = _entry_id(spell)
+	if id.is_empty():
+		return
+	if _has_spell(_spellbook, id):
+		for i: int in range(_spellbook.size() - 1, -1, -1):
+			if _entry_id(_spellbook[i]) == id:
+				_spellbook.remove_at(i)
+	else:
+		var detail: Dictionary = _spell_by_id(id)
+		if detail.is_empty() and spell is Dictionary:
+			detail = spell as Dictionary
+		_spellbook.append({
+			"id": id,
+			"name": String(detail.get("name", _spell_label(spell))),
+			"source": String(detail.get("source", "")),
+			"level": int(detail.get("level", 0))
+		})
+	_publish()
+	_refresh_saved_spell_lists()
+
 
 
 func _on_slot_total_changed(value: float, lvl: int) -> void:
@@ -648,6 +760,7 @@ func _publish() -> void:
 	_on_change.call({
 		"spells": _prepared.duplicate(true),
 		"prepared_spells": _prepared.duplicate(true),
+		"spellbook_spells": _spellbook.duplicate(true),
 		"spell_slots_total": _totals.duplicate(true),
 		"spell_slots_spent": _spent.duplicate(true),
 		"pact_slots_total": _pact_total,
