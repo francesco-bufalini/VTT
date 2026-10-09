@@ -163,3 +163,74 @@ static func spellcasting_limits(character: Dictionary) -> Dictionary:
 		"detail": "\n".join(lines),
 		"incomplete": incomplete
 	}
+
+
+# 5e spell-slot progressions. Index 0 represents cantrips (no slot).
+const FULL_CASTER_SLOTS := [
+	[0,0,0,0,0,0,0,0,0,0],
+	[0,2,0,0,0,0,0,0,0,0], [0,3,0,0,0,0,0,0,0,0],
+	[0,4,2,0,0,0,0,0,0,0], [0,4,3,0,0,0,0,0,0,0],
+	[0,4,3,2,0,0,0,0,0,0], [0,4,3,3,0,0,0,0,0,0],
+	[0,4,3,3,1,0,0,0,0,0], [0,4,3,3,2,0,0,0,0,0],
+	[0,4,3,3,3,1,0,0,0,0], [0,4,3,3,3,2,0,0,0,0],
+	[0,4,3,3,3,2,1,0,0,0], [0,4,3,3,3,2,1,0,0,0],
+	[0,4,3,3,3,2,1,1,0,0], [0,4,3,3,3,2,1,1,0,0],
+	[0,4,3,3,3,2,1,1,1,0], [0,4,3,3,3,2,1,1,1,0],
+	[0,4,3,3,3,2,1,1,1,1], [0,4,3,3,3,3,1,1,1,1],
+	[0,4,3,3,3,3,2,1,1,1], [0,4,3,3,3,3,2,2,1,1]
+]
+
+
+static func spell_slot_progression(character: Dictionary) -> Dictionary:
+	var classes: Array[Dictionary] = level_classes(character)
+	var edition: String = String(character.get("rules_version", "2014"))
+	var contributions: Array[Dictionary] = []
+	var warlock_level := 0
+	var warnings := PackedStringArray()
+	for cls: Dictionary in classes:
+		var name: String = String(cls.get("name", "")).to_lower()
+		var level: int = clampi(int(cls.get("level", 1)), 1, 20)
+		if name == "warlock":
+			warlock_level += level
+		elif name in ["bard", "cleric", "druid", "sorcerer", "wizard"]:
+			contributions.append({"name": name, "level": level, "kind": "full"})
+		elif name == "artificer":
+			contributions.append({"name": name, "level": level, "kind": "half_up"})
+		elif name in ["paladin", "ranger"]:
+			if level >= 2 or edition == "2024":
+				contributions.append({"name": name, "level": level, "kind": "half"})
+		elif name in ["fighter", "rogue"]:
+			warnings.append(
+				"Le sottoclassi magiche di %s richiedono il calcolo manuale." % String(cls.get("name", ""))
+			)
+		elif not name.is_empty() and not HIT_DICE.has(name):
+			warnings.append("Classe homebrew non calcolabile: " + String(cls.get("name", "")))
+	var caster_level := 0
+	var multiclass: bool = contributions.size() > 1
+	for contribution: Dictionary in contributions:
+		var level: int = int(contribution.get("level", 0))
+		match String(contribution.get("kind", "")):
+			"full":
+				caster_level += level
+			"half_up":
+				caster_level += ceili(float(level) / 2.0)
+			"half":
+				if multiclass and edition == "2014":
+					caster_level += floori(float(level) / 2.0)
+				else:
+					caster_level += ceili(float(level) / 2.0)
+	caster_level = clampi(caster_level, 0, 20)
+	var slots: Array = FULL_CASTER_SLOTS[caster_level].duplicate()
+	# Pact Magic uses a separate pool, refreshed on a short rest.
+	var pact_total: int = 0
+	var pact_level: int = 1
+	if warlock_level >= 1:
+		pact_total = 1 if warlock_level == 1 else 2 if warlock_level < 11 else 3 if warlock_level < 17 else 4
+		pact_level = mini(5, ceili(float(warlock_level) / 2.0))
+	return {
+		"slots": slots,
+		"pact_total": pact_total,
+		"pact_level": pact_level,
+		"warnings": "\n".join(warnings),
+		"caster_level": caster_level
+	}
