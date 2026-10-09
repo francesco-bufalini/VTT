@@ -62,6 +62,7 @@ const CONDITION_DEFINITIONS := [
 @onready var vision_cone: Node3D = $VisionCone
 
 var _top_down_token_enabled: bool = false
+var _top_down_elevation_overlay_enabled: bool = false
 var _top_down_token_url: String = ""
 var _top_down_token_sprite: Sprite3D
 
@@ -2013,6 +2014,21 @@ func set_top_down_token_enabled(enabled: bool) -> void:
 	_refresh_top_down_token()
 
 
+func set_2d_elevation_overlay_enabled(enabled: bool) -> void:
+	_top_down_elevation_overlay_enabled = enabled
+	if _top_down_token_sprite != null:
+		_top_down_token_sprite.visible = (
+			_top_down_token_enabled and not enabled
+			and _top_down_token_sprite.texture != null
+		)
+
+
+func get_top_down_icon_texture() -> Texture2D:
+	if _top_down_token_sprite != null:
+		return _top_down_token_sprite.texture
+	return null
+
+
 func _refresh_top_down_token() -> void:
 	if not is_node_ready():
 		return
@@ -2045,7 +2061,7 @@ func _show_top_down_token(texture: Texture2D) -> void:
 		_top_down_token_sprite.cast_shadow = GeometryInstance3D.SHADOW_CASTING_SETTING_OFF
 		add_child(_top_down_token_sprite)
 	_top_down_token_sprite.texture = texture
-	_top_down_token_sprite.visible = true
+	_top_down_token_sprite.visible = not _top_down_elevation_overlay_enabled
 	_refresh_top_down_token_geometry()
 	_update_overlay_position()
 
