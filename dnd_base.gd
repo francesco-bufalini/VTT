@@ -3571,7 +3571,7 @@ func _refresh_shared_condition_choices(definitions: Array) -> void:
 			token_state_grid.add_child(check)
 			token_state_checks[condition_id] = check
 			var info := Button.new()
-			info.text = "Read effects"
+			info.text = "Leggi effetti"
 			info.tooltip_text = "Read the full 5etools rules text"
 			info.pressed.connect(_show_shared_effect_description.bind(definition.duplicate(true)))
 			token_state_grid.add_child(info)
