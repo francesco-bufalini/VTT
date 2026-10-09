@@ -5,6 +5,7 @@ extends VBoxContainer
 # users choose the spells themselves rather than generating them from levels.
 const SpellCatalog = preload("res://vtt/spells/spell_catalog.gd")
 const Rules = preload("res://vtt/creature_rules.gd")
+const ManualBonus = preload("res://vtt/manual_bonus_style.gd")
 
 const BOOK_VIEW_CLASS := 10
 const BOOK_VIEW_BOOK := 11
@@ -54,7 +55,6 @@ var _pact_level_spin: SpinBox
 var _pact_remain: Label
 var _pact_use: Button
 var _pact_restore: Button
-var _calculate_button: Button
 var _spell_options: MenuButton
 var _search_row: HBoxContainer
 var _catalog_title: Label
@@ -179,11 +179,6 @@ func setup(on_change: Callable, on_status: Callable) -> void:
 	var actions := HBoxContainer.new()
 	actions.add_theme_constant_override("separation", 8)
 	add_child(actions)
-	var action_hint := Label.new()
-	action_hint.text = "Seleziona una magia"
-	action_hint.add_theme_font_size_override("font_size", 12)
-	action_hint.size_flags_horizontal = Control.SIZE_EXPAND_FILL
-	actions.add_child(action_hint)
 	_prepare = Button.new()
 	_prepare.text = "Aggiungi ai disponibili"
 	_prepare.custom_minimum_size = Vector2(170, 34)
@@ -196,7 +191,8 @@ func setup(on_change: Callable, on_status: Callable) -> void:
 	_description.size_flags_horizontal = Control.SIZE_EXPAND_FILL
 	_description.scroll_active = true
 	_description.selection_enabled = true
-	add_child(_description)
+	actions.add_child(_description)
+	actions.move_child(_description, 0)
 
 	var slot_title := HBoxContainer.new()
 	add_child(slot_title)
@@ -205,12 +201,6 @@ func setup(on_change: Callable, on_status: Callable) -> void:
 	heading.size_flags_horizontal = Control.SIZE_EXPAND_FILL
 	heading.add_theme_font_size_override("font_size", 16)
 	slot_title.add_child(heading)
-	var calculate := Button.new()
-	calculate.text = "Ricalcola + ricarica"
-	calculate.tooltip_text = "Ricalcola i massimi delle classi e ricarica gli slot consumati"
-	calculate.pressed.connect(func() -> void: _calculate_slot_totals(true))
-	slot_title.add_child(calculate)
-	_calculate_button = calculate
 	var rest_all := Button.new()
 	rest_all.text = "Ricarica"
 	rest_all.pressed.connect(_restore_all)
@@ -220,7 +210,7 @@ func setup(on_change: Callable, on_status: Callable) -> void:
 	slot_grid.add_theme_constant_override("h_separation", 6)
 	slot_grid.add_theme_constant_override("v_separation", 5)
 	add_child(slot_grid)
-	for label_text: String in ["Liv.", "Base", "Bonus", "Rimasti / max", "Usa", "Ricarica"]:
+	for label_text: String in ["Liv.", "Max", "Di cui bonus", "Rimasti / max", "Usa", "Ricarica"]:
 		var header := Label.new()
 		header.text = label_text
 		slot_grid.add_child(header)
@@ -243,7 +233,8 @@ func setup(on_change: Callable, on_status: Callable) -> void:
 		bonus.step = 1
 		bonus.rounded = true
 		bonus.custom_minimum_size.x = 62
-		bonus.tooltip_text = "Modificatore del numero massimo di slot di questo livello"
+		bonus.tooltip_text = "Bonus manuale agli slot massimi: aggiunto al massimo base"
+		ManualBonus.decorate(bonus)
 		bonus.value_changed.connect(_on_slot_bonus_changed.bind(lvl))
 		slot_grid.add_child(bonus)
 		_slot_bonus_controls[lvl] = bonus
@@ -292,14 +283,15 @@ func setup(on_change: Callable, on_status: Callable) -> void:
 	_pact_total_spin.value_changed.connect(_on_pact_values_changed)
 	pact_row.add_child(_pact_total_spin)
 	var bonus_label := Label.new()
-	bonus_label.text = "Bonus"
+	bonus_label.text = "Di cui bonus"
 	pact_row.add_child(bonus_label)
 	_pact_bonus_spin = SpinBox.new()
 	_pact_bonus_spin.min_value = -8
 	_pact_bonus_spin.max_value = 20
 	_pact_bonus_spin.step = 1
 	_pact_bonus_spin.custom_minimum_size.x = 54
-	_pact_bonus_spin.tooltip_text = "Bonus agli slot massimi della Magia del Patto"
+	_pact_bonus_spin.tooltip_text = "Bonus manuale agli slot massimi della Magia del Patto"
+	ManualBonus.decorate(_pact_bonus_spin)
 	_pact_bonus_spin.value_changed.connect(_on_pact_values_changed)
 	pact_row.add_child(_pact_bonus_spin)
 	_pact_remain = Label.new()
@@ -316,8 +308,6 @@ func setup(on_change: Callable, on_status: Callable) -> void:
 	pact_row.add_child(_pact_restore)
 	_update_resource_labels()
 	_update_spell_controls()
-	# Description goes after all nine slot levels and Pact Magic, not above.
-	move_child(_description, get_child_count() - 1)
 	_set_search_visible(false)
 
 
@@ -375,7 +365,6 @@ func load_record(record: Dictionary) -> void:
 	_pact_bonus_spin.value = _pact_bonus
 	_pact_level_spin.value = _pact_level
 	_class_only.disabled = _class_keys().is_empty()
-	_calculate_button.disabled = _class_keys().is_empty()
 	_search.text = ""
 	_refresh_saved_spell_lists()
 	_update_resource_labels()
