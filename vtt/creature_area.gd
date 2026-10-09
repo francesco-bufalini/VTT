@@ -1525,6 +1525,42 @@ func _find_linked_token(record: Dictionary) -> Node3D:
 	return null
 
 
+# Combat damage must use the same persistent sheet as the token's health bar.
+# The legacy PlayerArea is no longer instantiated.
+func apply_attack_damage_to_token(target: Node3D, damage: int) -> Dictionary:
+	if target == null or not is_instance_valid(target) or damage < 0:
+		return {"applied": false}
+	if String(target.get_meta("creature_owner_id", "")) != Owner.local_id():
+		return {"applied": false}
+	var creature_id := String(target.get_meta("creature_id", ""))
+	for owned: Dictionary in _archive.list_owned():
+		if String(owned.get("id", "")) != creature_id:
+			continue
+		var hp_max := maxi(0, int(owned.get("max_hp", 0)))
+		if hp_max <= 0:
+			return {"applied": false}
+		var hp_now := clampi(int(owned.get("current_hp", hp_max)), 0, hp_max)
+		var temp_hp := maxi(0, int(owned.get("temporary_hp", 0)))
+		var absorbed := mini(temp_hp, damage)
+		temp_hp -= absorbed
+		hp_now = maxi(0, hp_now - (damage - absorbed))
+		owned["current_hp"] = hp_now
+		owned["temporary_hp"] = temp_hp
+		if _archive.save(owned) != OK:
+			return {"applied": false}
+		_replace_current_record(owned)
+		_sync_token_health(owned)
+		if String(owned.get("id", "")) == _selected_id and is_panel_open():
+			_load_form(owned)
+		return {
+			"applied": true,
+			"current_hp": hp_now,
+			"max_hp": hp_max,
+			"temporary_hp": temp_hp
+		}
+	return {"applied": false}
+
+
 func _sync_token_health(record: Dictionary) -> void:
 	var token := _find_linked_token(record)
 	if token == null:
