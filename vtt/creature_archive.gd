@@ -38,11 +38,15 @@ func list_owned() -> Array[Dictionary]:
 
 
 func create_character() -> Dictionary:
-	return _characters.create_character()
+	var record: Dictionary = _characters.create_character()
+	record["kind"] = "character"
+	return record
 
 
 func create_monster(stat: Dictionary, side: String = "ally") -> Dictionary:
-	return _monsters.create_creature(stat, side)
+	var record: Dictionary = _monsters.create_creature(stat, side)
+	record["kind"] = "monster"
+	return record
 
 
 func save(record: Dictionary) -> Error:
@@ -60,6 +64,7 @@ func save(record: Dictionary) -> Error:
 	if kind == "character":
 		var characters: Array[Dictionary] = _characters.list_characters()
 		var normalized: Dictionary = _characters.normalize_character(record)
+		_sync_player_slots(normalized)
 		_upsert(characters, normalized)
 		return _characters.save_characters(characters)
 	return ERR_INVALID_PARAMETER
@@ -117,3 +122,28 @@ func _upsert(collection: Array[Dictionary], entry: Dictionary) -> void:
 			collection[index] = entry.duplicate(true)
 			return
 	collection.append(entry.duplicate(true))
+
+
+func _sync_player_slots(record: Dictionary) -> void:
+	var totals: Array = record.get("spell_slots_total", []).duplicate(true)
+	var spent: Array = record.get("spell_slots_spent", []).duplicate(true)
+	while totals.size() < 10:
+		totals.append(0)
+	while spent.size() < 10:
+		spent.append(0)
+	for raw: Variant in record.get("trackers", []):
+		if not raw is Dictionary:
+			continue
+		var tracker: Dictionary = raw as Dictionary
+		var id := String(tracker.get("id", ""))
+		if not id.begins_with("slot_"):
+			continue
+		var level := int(id.trim_prefix("slot_"))
+		if level < 1 or level > 9:
+			continue
+		var maximum := maxi(0, int(tracker.get("maximum", 0)))
+		var current := clampi(int(tracker.get("current", 0)), 0, maximum)
+		totals[level] = maximum
+		spent[level] = maximum - current
+	record["spell_slots_total"] = totals
+	record["spell_slots_spent"] = spent
