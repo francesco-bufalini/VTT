@@ -373,18 +373,30 @@ func _build_ui() -> void:
 		_ability_spins[ability] = spin
 
 	var classes_row := GridContainer.new()
-	classes_row.columns = 6
+	classes_row.columns = 4
 	form.add_child(classes_row)
 	_add_label(classes_row, "Razza / Specie")
 	_species = _reference_option(classes_row, Player5eTools.entries("races"))
-	_add_label(classes_row, "Classe")
-	_class_name = _reference_option(classes_row, Player5eTools.class_choices(), false)
 	_add_label(classes_row, "Regole")
 	_rules_edition = OptionButton.new()
 	_rules_edition.add_item("2014")
 	_rules_edition.add_item("2024")
 	_rules_edition.item_selected.connect(_on_rules_edition_changed)
 	classes_row.add_child(_rules_edition)
+	_add_label(classes_row, "Classe base")
+	_class_name = _reference_option(
+		classes_row, Player5eTools.class_choices(), false
+	)
+	_add_label(classes_row, "Livello classe base")
+	_level = SpinBox.new()
+	_level.min_value = 1
+	_level.max_value = 20
+	_level.step = 1
+	_level.rounded = true
+	_level.custom_minimum_size = Vector2(82, 30)
+	_level.value_changed.connect(_on_level_changed)
+	classes_row.add_child(_level)
+
 	var multiclass_header := HBoxContainer.new()
 	form.add_child(multiclass_header)
 	_add_label(multiclass_header, "Classi aggiuntive (multiclasse)")
@@ -394,18 +406,6 @@ func _build_ui() -> void:
 	multiclass_header.add_child(add_class)
 	_multiclass_rows = VBoxContainer.new()
 	form.add_child(_multiclass_rows)
-
-	var level_row := HBoxContainer.new()
-	form.add_child(level_row)
-	_add_label(level_row, "Livello classe base")
-	_level = SpinBox.new()
-	_level.min_value = 1
-	_level.max_value = 20
-	_level.step = 1
-	_level.rounded = true
-	_level.size_flags_horizontal = Control.SIZE_EXPAND_FILL
-	_level.value_changed.connect(_on_level_changed)
-	level_row.add_child(_level)
 
 	_add_label(form, "Talenti e scelte manuali (personalizzabili)")
 	_feats = TextEdit.new()
