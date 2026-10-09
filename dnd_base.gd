@@ -118,6 +118,8 @@ var _selected_tokens: Array[CharacterBody3D] = []
 var _ui_owns_mouse: bool = false
 var _vision_cones_visible: bool = false
 var _view_2d_enabled: bool = false
+var _top_down_levels: Node3D
+var _top_down_overlay: Control
 var _map_edit_layer_active: bool = false
 var _condition_visuals_visible: bool = true
 var board_sync: Node
@@ -201,6 +203,18 @@ func _ready() -> void:
 	size_selector.tooltip_text = "Taglia determinata dalla miniatura selezionata."
 
 	volumetric_grid.call("set_camera", camera)
+	_top_down_levels = preload("res://vtt/top_down_elevation_levels.gd").new()
+	_top_down_levels.name = "TopDownElevationLevels"
+	add_child(_top_down_levels)
+	_top_down_levels.call("setup", self)
+	camera.call(
+		"set_top_down_floor_levels_provider",
+		Callable(_top_down_levels, "get_solid_levels")
+	)
+	_top_down_overlay = preload("res://vtt/top_down_elevation_overlay.gd").new()
+	_top_down_overlay.name = "TopDownElevationOverlay"
+	$UI.add_child(_top_down_overlay)
+	_top_down_overlay.call("setup", self, _top_down_levels)
 
 	if not tokens_root.child_entered_tree.is_connected(
 		_configure_token_volumetric_grid
@@ -302,6 +316,8 @@ func _configure_token_volumetric_grid(node: Node) -> void:
 			"set_condition_visuals_visible",
 			_condition_visuals_visible
 		)
+	if node.has_method("set_2d_elevation_overlay_enabled"):
+		node.call("set_2d_elevation_overlay_enabled", _view_2d_enabled)
 
 
 func _read_local_token_catalog() -> Dictionary:
@@ -2348,8 +2364,12 @@ func toggle_2d_view() -> void:
 func set_2d_view_enabled(enabled: bool) -> void:
 	_view_2d_enabled = enabled
 	for token in get_tree().get_nodes_in_group("dnd_token"):
-		if is_ancestor_of(token) and token.has_method("set_top_down_token_enabled"):
+		if not is_ancestor_of(token):
+			continue
+		if token.has_method("set_top_down_token_enabled"):
 			token.call("set_top_down_token_enabled", enabled)
+		if token.has_method("set_2d_elevation_overlay_enabled"):
+			token.call("set_2d_elevation_overlay_enabled", enabled)
 	if not enabled:
 		_map_edit_layer_active = false
 
@@ -2370,9 +2390,25 @@ func set_2d_view_enabled(enabled: bool) -> void:
 				_primary_board_fit_size_2d(),
 				_top_down_tilt_degrees_2d()
 			)
+			# Start at the real solid floor closest to the map origin.
+			if _top_down_levels != null:
+				var raw_levels: Variant = _top_down_levels.call("get_solid_levels")
+				if raw_levels is Array:
+					var solid_levels: Array = raw_levels as Array
+					var nearest_level: float = 0.0
+					var smallest_distance: float = INF
+					for value: Variant in solid_levels:
+						var candidate: float = float(value)
+						if absf(candidate) < smallest_distance:
+							nearest_level = candidate
+							smallest_distance = absf(candidate)
+					if smallest_distance < INF:
+						camera.call("set_top_down_level", nearest_level)
 	else:
 		if camera.has_method("exit_top_down_2d"):
 			camera.call("exit_top_down_2d")
+	if _top_down_overlay != null:
+		_top_down_overlay.call("set_2d_active", enabled)
 
 	var crosshair := get_node_or_null("UI/Crosshair") as Control
 	if crosshair != null:
