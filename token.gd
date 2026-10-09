@@ -907,7 +907,7 @@ func get_effective_party_id() -> String:
 
 
 func get_condition_definitions() -> Array:
-	var rows := ContentCatalog.condition_definitions()
+	var rows := ContentCatalog.condition_definitions(String(get_meta("rules_version", "2014")))
 	var known: Dictionary = {}
 	for row: Dictionary in rows:
 		known[String(row.id)] = true
