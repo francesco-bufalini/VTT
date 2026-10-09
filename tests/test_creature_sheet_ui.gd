@@ -176,6 +176,15 @@ func run() -> void:
 	assert(area._multiclass_controls.is_empty(),
 		"Secondary class row is forbidden without a base class")
 	area._select_reference(area._class_name, "Wizard", "PHB")
+	area._on_class_choice_changed()
+	assert(area._subclass_name.item_count > 1, "2014 Wizard subclasses must be selectable")
+	area._subclass_name.select(1)
+	area._save()
+	var selected_subclass: String = String(area._current().get("subclass", ""))
+	assert(not selected_subclass.is_empty())
+	area._reload()
+	assert(String(area._current().get("subclass", "")) == selected_subclass,
+		"Primary subclass selection must survive archive normalization and reload")
 	area._refresh_multiclass_availability()
 	assert(not area._add_class_button.disabled)
 	assert(area._level is SpinBox and area._level.update_on_text_changed,
