@@ -40,6 +40,8 @@ const CONTEXT_REDO := 37
 const CONTEXT_TOGGLE_CONDITION_VISUALS := 38
 const CONTEXT_USER_IDENTITY := 39
 const CONTEXT_AUTO_SYNC := 40
+const CONTEXT_BESTIARY_2024 := 41
+const CONTEXT_BESTIARY_2014 := 42
 const CAMPAIGN_EDITOR_SCENE_PATH := "res://vtt/editor/campaign_editor.tscn"
 const LOCAL_TOKEN_CATALOG := "res://dist/token_packs/token_catalog.json"
 const LOCAL_TOKEN_PACK_ROOT := "res://dist/token_packs"
@@ -2345,6 +2347,9 @@ func toggle_2d_view() -> void:
 
 func set_2d_view_enabled(enabled: bool) -> void:
 	_view_2d_enabled = enabled
+	for token in get_tree().get_nodes_in_group("dnd_token"):
+		if is_ancestor_of(token) and token.has_method("set_top_down_token_enabled"):
+			token.call("set_top_down_token_enabled", enabled)
 	if not enabled:
 		_map_edit_layer_active = false
 
@@ -2685,6 +2690,8 @@ func _show_context_menu(screen_position: Vector2) -> void:
 					CONTEXT_RESTORE_TRANSFORMATION
 				)
 
+		_add_bestiary_context_items()
+
 		var count: int = _selected_tokens.size()
 		var suffix: String = "" if count == 1 else " (%d)" % count
 		context_token_menu.add_separator()
@@ -2841,6 +2848,16 @@ func _show_context_menu(screen_position: Vector2) -> void:
 
 
 func _on_context_menu_id_pressed(id: int) -> void:
+	if id == CONTEXT_BESTIARY_2024 or id == CONTEXT_BESTIARY_2014:
+		var identity := _selected_miniature_identity()
+		var edition := "2024" if id == CONTEXT_BESTIARY_2024 else "2014"
+		var reference := TokenPackManager.get_bestiary_reference(identity, edition)
+		var url := String(reference.get("url", ""))
+		if url.begins_with("https://5e.tools/bestiary.html#"):
+			OS.shell_open(url)
+		_close_context_menu_to_game()
+		return
+
 	if id == CONTEXT_INITIATIVE:
 		toggle_initiative_panel()
 		_close_context_menu_to_game()
@@ -4997,3 +5014,27 @@ func _on_map_load_file_selected(path: String) -> void:
 	var error := int(board_sync.call("load_snapshot_from_file", path))
 	if error != OK and not _undo_stack.is_empty():
 		_undo_stack.pop_back()
+
+
+func _selected_miniature_identity() -> String:
+	var identity := ""
+	for token in _selected_tokens:
+		if not is_instance_valid(token) or not token.has_method("get_miniature_identity"):
+			return ""
+		var current := String(token.call("get_miniature_identity"))
+		if current.is_empty() or (not identity.is_empty() and current != identity):
+			return ""
+		identity = current
+	return identity
+
+
+func _add_bestiary_context_items() -> void:
+	var identity := _selected_miniature_identity()
+	if identity.is_empty():
+		return
+	for edition in ["2024", "2014"]:
+		if not TokenPackManager.get_bestiary_reference(identity, edition).is_empty():
+			context_token_menu.add_item(
+				"Bestiario · " + edition + "…",
+				CONTEXT_BESTIARY_2024 if edition == "2024" else CONTEXT_BESTIARY_2014
+			)
