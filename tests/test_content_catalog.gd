@@ -29,13 +29,26 @@ func run() -> void:
 	assert(Catalog.diagnostics.size() == 1, "Duplicate ID must be diagnosed")
 	var definitions := Catalog.condition_definitions()
 	assert(definitions.size() > 30, "Conditions, diseases and related effects available offline")
-	for legacy: Dictionary in Catalog.LEGACY_CONDITIONS:
-		var found := false
-		for row: Dictionary in definitions:
-			if row.id == legacy.id:
-				found = true
-				assert(row.icon == legacy.icon and row.name == legacy.name, "Legacy ID/icon/label must be unchanged")
-		assert(found)
+	# Only real 5etools conditions/statuses are selectable, not the old
+	# hidden/dead tactical markers, while historical IDs remain valid.
+	var names_2014: Dictionary = {}
+	for row: Dictionary in definitions:
+		names_2014[String(row.id)] = true
+		assert(String(row.get("name", "")) not in ["Accecato", "Avvelenato"], "Use English effect names")
+		if String(row.get("origin", "")) == "5etools" and String(row.get("edition", "")) != "":
+			assert(String(row.edition) == "2014", "No mixed 2014/2024 sources")
+	assert(names_2014.has("blinded") and names_2014.has("concentrating") and names_2014.has("surprised"))
+	assert(not names_2014.has("hidden") and not names_2014.has("dead"))
+	assert(Catalog.valid_effect_id("hidden") and Catalog.valid_effect_id("dead"))
+	var definitions_2024 := Catalog.condition_definitions("2024")
+	var names_2024: Dictionary = {}
+	for row: Dictionary in definitions_2024:
+		names_2024[String(row.id)] = true
+		if String(row.get("origin", "")) == "5etools" and String(row.get("edition", "")) != "":
+			assert(String(row.edition) == "2024", "Edition must filter every 5etools entry")
+	assert(names_2024.has("5etools:effects:xphb:bloodied"))
+	assert(not names_2014.has("5etools:effects:xphb:bloodied"))
+
 	var custom: Dictionary = {}
 	for row: Dictionary in definitions:
 		if row.id == "homebrew:regression:conditions:mark":
