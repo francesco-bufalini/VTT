@@ -11,6 +11,8 @@ const ROW_B := "#302827"
 const ROW_HEAD := "#46352f"
 const MAX_DEPTH := 16
 
+static var _tag_regex: RegEx
+
 
 static func style(label: RichTextLabel) -> void:
 	label.bbcode_enabled = true
@@ -88,6 +90,9 @@ static func _block(value: Variant, depth: int) -> String:
 		return subtitle(name)
 	if kind == "item":
 		return subtitle(name) + " " + body
+	# Named 5etools traits keep their label attached to the first paragraph.
+	if not body.begins_with("[table="):
+		return subtitle(name) + ". " + body
 	return subtitle(name) + "\n" + body
 
 
@@ -128,9 +133,9 @@ static func _table(data: Dictionary, depth: int) -> String:
 		var raw_row: Variant = rows[row_index]
 		var row: Array = []
 		if raw_row is Array:
-			row = raw_row
+			row = raw_row as Array
 		elif raw_row is Dictionary and (raw_row as Dictionary).get("row") is Array:
-			row = (raw_row as Dictionary)["row"]
+			row = (raw_row as Dictionary)["row"] as Array
 		var background: String = ROW_A if row_index % 2 == 0 else ROW_B
 		for col: int in range(columns):
 			var value: String = _cell_value(row[col], depth + 1) if col < row.size() else ""
@@ -213,11 +218,12 @@ static func _spellcasting(data: Dictionary, depth: int) -> String:
 static func _inline(value: String) -> String:
 	# 5etools inline tags are data, not BBCode. Convert only supported tags;
 	# always escape literal brackets to prevent homebrew markup injection.
-	var tag_regex := RegEx.new()
-	tag_regex.compile("\\{@([A-Za-z][A-Za-z0-9]*)\\s*([^{}]*)\\}")
+	if _tag_regex == null:
+		_tag_regex = RegEx.new()
+		_tag_regex.compile("\\{@([A-Za-z][A-Za-z0-9]*)\\s*([^{}]*)\\}")
 	var parts: PackedStringArray = []
 	var position: int = 0
-	for match_value: RegExMatch in tag_regex.search_all(value):
+	for match_value: RegExMatch in _tag_regex.search_all(value):
 		parts.append(_escape(value.substr(position, match_value.get_start() - position)))
 		var tag_name: String = match_value.get_string(1).to_lower()
 		var args: PackedStringArray = match_value.get_string(2).split("|")
