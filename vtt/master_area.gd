@@ -105,6 +105,7 @@ func toggle_panel() -> void:
 func show_panel() -> void:
 	if _panel == null:
 		return
+	_reload_creatures()
 	_panel.show()
 	if board_root.has_method("release_camera_control"):
 		board_root.call("release_camera_control")
@@ -858,6 +859,9 @@ func _link_creature_to_token(
 	token.set_meta("master_creature_id", creature_id)
 	token.set_meta("master_creature_name", String(creature.get("name", "")))
 	token.set_meta("master_creature_side", String(creature.get("side", "enemy")))
+	token.set_meta("creature_id", creature_id)
+	token.set_meta("creature_owner_id", String(creature.get("owner_id", "")))
+	token.set_meta("default_miniature_id", String(creature.get("default_miniature_id", "")))
 
 	var sync_id := ""
 	var sync: Node = board_root.get("board_sync") as Node
@@ -924,6 +928,7 @@ func _sync_all_linked_health_bars() -> void:
 
 
 func get_owned_health_bar_sync_entries() -> Array[Dictionary]:
+	_creatures = _store.call("list_creatures")
 	var entries: Array[Dictionary] = []
 	for creature: Dictionary in _creatures:
 		var token_id := String(

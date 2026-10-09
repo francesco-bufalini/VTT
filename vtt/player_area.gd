@@ -150,6 +150,7 @@ func toggle_panel() -> void:
 func show_panel() -> void:
 	if _panel == null:
 		return
+	_reload_characters()
 	_collapse_all_catalog_sections(false)
 	_panel.show()
 	if board_root.has_method("release_camera_control"):
@@ -3980,6 +3981,7 @@ func _sync_all_character_health_bars() -> void:
 
 
 func get_owned_health_bar_sync_entries() -> Array[Dictionary]:
+	_characters = _store.call("list_characters")
 	var entries: Array[Dictionary] = []
 	for character: Dictionary in _characters:
 		var token_id := String(

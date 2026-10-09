@@ -1,0 +1,127 @@
+{
+  "schema_version": 1,
+  "namespace": "example",
+  "entries": [
+    {
+      "category": "monsters",
+      "id": "clockwork_owl",
+      "name": "Clockwork Owl",
+      "source": "Example",
+      "data": {
+        "hp": {
+          "average": 9
+        },
+        "ac": [
+          13
+        ],
+        "str": 3,
+        "dex": 16,
+        "con": 12,
+        "int": 5,
+        "wis": 14,
+        "cha": 6,
+        "cr": "1/8",
+        "action": [
+          {
+            "name": "Wing Burst {@recharge 5}",
+            "entries": [
+              "A homebrew gust; choose its effect at your table."
+            ]
+          }
+        ]
+      }
+    },
+    {
+      "category": "races",
+      "id": "starfolk",
+      "name": "Starfolk",
+      "data": {
+        "entries": [
+          "An original playable species. Choose ability scores manually."
+        ]
+      }
+    },
+    {
+      "category": "classes",
+      "id": "wayfinder",
+      "name": "Wayfinder",
+      "data": {
+        "entries": [
+          "An original homebrew class."
+        ],
+        "trackers": [
+          {
+            "id": "custom_wayfinder_charge",
+            "label": "Trail charges",
+            "maximum": 3,
+            "reset": "short_rest",
+            "min_level": 2
+          }
+        ]
+      }
+    },
+    {
+      "category": "class_features",
+      "id": "trail_sense",
+      "name": "Trail Sense",
+      "data": {
+        "class_name": "Wayfinder",
+        "class_source": "example",
+        "level": 2,
+        "entries": [
+          "You can spend one trail charge to mark your path."
+        ]
+      }
+    },
+    {
+      "category": "feats",
+      "id": "night_reader",
+      "name": "Night Reader",
+      "data": {
+        "entries": [
+          "An example player option."
+        ]
+      }
+    },
+    {
+      "category": "spells",
+      "id": "guiding_spark",
+      "name": "Guiding Spark",
+      "data": {
+        "level": 0,
+        "classes": [
+          "Mago"
+        ],
+        "description": "An original spark surrounds the caster.",
+        "target_mode": "self_emanation",
+        "aoe_shape": "sphere",
+        "aoe_radius_feet": 5,
+        "range_feet": 0,
+        "visual_style": "fire",
+        "transient_seconds": 2
+      }
+    },
+    {
+      "category": "conditions",
+      "id": "star_marked",
+      "name": "Star Marked",
+      "icon_id": "charmed",
+      "data": {
+        "entries": [
+          "An original effect. Its icon reuses the existing Charmed icon."
+        ]
+      }
+    },
+    {
+      "category": "diseases",
+      "id": "copper_fever",
+      "name": "Copper Fever",
+      "icon": "🦠",
+      "data": {
+        "entries": [
+          "An example custom disease with a selected icon."
+        ]
+      }
+    }
+  ]
+}

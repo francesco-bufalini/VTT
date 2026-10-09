@@ -284,6 +284,15 @@ func _ready() -> void:
 	add_child(master_area)
 	master_area.call("setup", self)
 
+	var creature_script: Script = load("res://vtt/creature_area.gd")
+	if creature_script == null:
+		push_error("CreatureArea: script non disponibile")
+	else:
+		var creature_area: Node = creature_script.new()
+		creature_area.name = "CreatureArea"
+		add_child(creature_area)
+		creature_area.call("setup", self)
+
 	dice_roller_chat = preload("res://vtt/dice_roller_chat.gd").new()
 	dice_roller_chat.name = "DiceRollerChat"
 	add_child(dice_roller_chat)
@@ -2250,9 +2259,19 @@ func link_selected_player_character_to_named_token() -> void:
 		player_area.call("request_link_selected_character_to_named_token")
 
 
+func get_selected_tokens_for_creatures() -> Array[CharacterBody3D]:
+	return get_selected_tokens_for_player_area()
+
+
 func get_selected_tokens_for_player_area() -> Array[CharacterBody3D]:
 	_clean_selection()
 	return _selected_tokens.duplicate()
+
+
+func toggle_creature_area() -> void:
+	var area := get_node_or_null("CreatureArea")
+	if area != null:
+		area.call("toggle_panel")
 
 
 func toggle_master_area() -> void:
@@ -3489,8 +3508,25 @@ func _build_token_state_dialog() -> void:
 	token_state_grid.add_theme_constant_override("v_separation", 4)
 	content_box.add_child(token_state_grid)
 
+	_refresh_shared_condition_choices(TokenScript.ContentCatalog.condition_definitions())
+
+	var help := Label.new()
+	help.name = "StatesHelp"
+	help.text = (
+		"Condizioni, malattie ed effetti di 5e.tools e homebrew. "
+		+ "Passa il mouse per leggere gli effetti e le versioni."
+	)
+	help.autowrap_mode = TextServer.AUTOWRAP_WORD_SMART
+	help.add_theme_font_size_override("font_size", 11)
+	content_box.add_child(help)
+
+
+func _refresh_shared_condition_choices(definitions: Array) -> void:
+	for child: Node in token_state_grid.get_children():
+		token_state_grid.remove_child(child)
+		child.queue_free()
 	token_state_checks.clear()
-	for value: Variant in TokenScript.CONDITION_DEFINITIONS:
+	for value: Variant in definitions:
 		if not value is Dictionary:
 			continue
 		var definition := value as Dictionary
@@ -3510,19 +3546,11 @@ func _build_token_state_dialog() -> void:
 			)
 		elif not bool(definition.get("official", true)):
 			label_text += "  (marker)"
+		check.tooltip_text = TokenScript.ContentCatalog.description(definition)
 		check.text = label_text
 		token_state_grid.add_child(check)
 		token_state_checks[condition_id] = check
 
-	var help := Label.new()
-	help.name = "StatesHelp"
-	help.text = (
-		"I primi 15 elementi sono le condizioni ufficiali 5e/SRD; "
-		+ "gli altri sono marker tattici."
-	)
-	help.autowrap_mode = TextServer.AUTOWRAP_WORD_SMART
-	help.add_theme_font_size_override("font_size", 11)
-	content_box.add_child(help)
 
 
 func _set_shared_token_editor_conditions(value: Variant) -> void:
@@ -3764,6 +3792,7 @@ func _load_shared_token_editor_from_target(token: CharacterBody3D) -> void:
 		var manual_value: Variant = token.call("get_conditions")
 		if manual_value is Array:
 			conditions.append_array(manual_value as Array)
+	_refresh_shared_condition_choices(token.call("get_condition_definitions"))
 	_set_shared_token_editor_conditions(conditions)
 
 

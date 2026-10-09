@@ -1,5 +1,6 @@
 extends RefCounted
 
+const ContentCatalog = preload("res://vtt/content_catalog.gd")
 const GeneratedCatalog = preload(
 	"res://vtt/spells/spell_catalog_5etools.gd"
 )
@@ -1244,6 +1245,11 @@ static func is_runtime_usable(spell_data: Dictionary) -> bool:
 
 
 static func catalog_spell(spell_id: String) -> Dictionary:
+	for row: Dictionary in ContentCatalog.home_entries("spells"):
+		if String(row.id) == spell_id or String(row.get("overrides", "")) == spell_id:
+			var custom := row.duplicate(true)
+			custom["id"] = spell_id
+			return _apply_runtime_overrides(custom)
 	var value: Variant = SPELLS.get(spell_id, {})
 	if value is Dictionary and not (value as Dictionary).is_empty():
 		var manual_result: Dictionary = (value as Dictionary).duplicate(true)
@@ -1318,6 +1324,14 @@ static func all_spells() -> Array[Dictionary]:
 					).duplicate(true)
 			merged[String(spell_id)] = manual_copy
 
+	for custom: Dictionary in ContentCatalog.home_entries("spells"):
+		var target := String(custom.get("overrides", ""))
+		if not target.is_empty() and not merged.has(target):
+			continue
+		var id := target if not target.is_empty() else String(custom.id)
+		var copy := custom.duplicate(true)
+		copy["id"] = id
+		merged[id] = copy
 	var result: Array[Dictionary] = []
 	for value: Variant in merged.values():
 		if value is Dictionary:

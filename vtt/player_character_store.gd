@@ -1,7 +1,9 @@
 extends RefCounted
 
+const CreatureOwner = preload("res://vtt/creature_owner.gd")
+
 const ROOT_DIR := "user://player_characters"
-const FILE_VERSION := 2
+const FILE_VERSION := 3
 
 var _campaign_manager: Node
 
@@ -30,7 +32,7 @@ func scope_id() -> String:
 	return "default"
 
 
-func list_characters() -> Array[Dictionary]:
+func list_characters(include_unowned: bool = false) -> Array[Dictionary]:
 	var path: String = _file_path()
 	if not FileAccess.file_exists(path):
 		return []
@@ -52,28 +54,62 @@ func list_characters() -> Array[Dictionary]:
 	var result: Array[Dictionary] = []
 	for item: Variant in characters_value:
 		if item is Dictionary:
-			result.append((item as Dictionary).duplicate(true))
+			var character := normalize_character(item as Dictionary)
+			if include_unowned or CreatureOwner.is_owner(character):
+				result.append(character)
 	return result
 
 
-func save_characters(characters: Array[Dictionary]) -> Error:
+func save_characters(characters: Array[Dictionary], allow_transfer: bool = false) -> Error:
 	DirAccess.make_dir_recursive_absolute(
 		ProjectSettings.globalize_path(ROOT_DIR)
 	)
 
+	# Keep private records transferred to another installation intact when
+	# a local controller saves their visible subset.
+	var merged: Array[Dictionary] = characters.duplicate(true)
+	var previous := FileAccess.open(_file_path(), FileAccess.READ)
+	if previous != null:
+		var root_value: Variant = JSON.parse_string(previous.get_as_text())
+		previous.close()
+		if root_value is Dictionary:
+			var saved_value: Variant = (root_value as Dictionary).get("characters", [])
+			if saved_value is Array:
+				for raw: Variant in saved_value as Array:
+					if not raw is Dictionary:
+						continue
+					var stored: Dictionary = raw as Dictionary
+					for candidate: Dictionary in merged:
+						if String(candidate.get("id", "")) != String(stored.get("id", "")):
+							continue
+						if not allow_transfer and (not CreatureOwner.is_owner(stored) or String(candidate.get("owner_id", "")) != String(stored.get("owner_id", CreatureOwner.local_id()))):
+							return ERR_UNAUTHORIZED
+					if CreatureOwner.is_owner(stored):
+						continue
+					var exists := false
+					for visible: Dictionary in merged:
+						if String(visible.get("id", "")) == String(stored.get("id", "")):
+							exists = true
+							break
+					if not exists:
+						merged.append(stored.duplicate(true))
 	var payload: Dictionary = {
 		"version": FILE_VERSION,
 		"scope": scope_id(),
-		"characters": characters
+		"characters": merged
 	}
-	var file := FileAccess.open(_file_path(), FileAccess.WRITE)
+	var destination := _file_path()
+	var temporary := destination + ".tmp"
+	var file := FileAccess.open(temporary, FileAccess.WRITE)
 	if file == null:
 		return FileAccess.get_open_error()
 
 	file.store_string(JSON.stringify(payload, "  "))
 	var error: Error = file.get_error()
 	file.close()
-	return error
+	if error != OK:
+		return error
+	return DirAccess.rename_absolute(ProjectSettings.globalize_path(temporary), ProjectSettings.globalize_path(destination))
 
 
 func create_character() -> Dictionary:
@@ -82,6 +118,15 @@ func create_character() -> Dictionary:
 	return {
 		"id": "character_%d_%d" % [now, unique],
 		"name": "Nuovo personaggio",
+		"owner_id": CreatureOwner.local_id(),
+		"default_miniature_id": "",
+		"current_miniature_id": "",
+		"classes": [],
+		"conditions": [],
+		"transfer_revision": 0,
+		"species_id": "",
+		"class_id": "",
+		"trackers": [],
 		"player_name": "",
 		"rules_version": "2024",
 		"class": "",
@@ -194,6 +239,7 @@ func normalize_character(value: Dictionary) -> Dictionary:
 		defaults["abilities"] = abilities
 
 	for array_key: String in [
+		"conditions",
 		"saving_throw_proficiencies",
 		"skill_proficiencies",
 		"skill_expertise",
@@ -224,7 +270,23 @@ func normalize_character(value: Dictionary) -> Dictionary:
 			slots[index] = maxi(0, int(slots[index]))
 		defaults[slots_key] = slots
 
+	defaults["owner_id"] = String(defaults.get("owner_id", CreatureOwner.local_id()))
+	if defaults["owner_id"].is_empty():
+		defaults["owner_id"] = CreatureOwner.local_id()
+	if not defaults.get("classes", []) is Array:
+		defaults["classes"] = []
+	if not defaults.get("trackers", []) is Array:
+		defaults["trackers"] = []
 	defaults["level"] = clampi(int(defaults.get("level", 1)), 1, 20)
+	var classes_value: Variant = defaults.get("classes", [])
+	if classes_value is Array and (classes_value as Array).size() == 1:
+		var first_value: Variant = (classes_value as Array)[0]
+		if first_value is Dictionary:
+			var first := (first_value as Dictionary).duplicate(true)
+			first["name"] = String(defaults.get("class", ""))
+			first["source"] = String(defaults.get("class_source", ""))
+			first["level"] = int(defaults["level"])
+			defaults["classes"] = [first]
 	defaults["max_hp"] = maxi(0, int(defaults.get("max_hp", 1)))
 	defaults["current_hp"] = int(defaults.get("current_hp", 1))
 	defaults["temporary_hp"] = maxi(0, int(defaults.get("temporary_hp", 0)))

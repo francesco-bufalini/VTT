@@ -1,8 +1,10 @@
 extends RefCounted
 
+const ContentCatalog = preload("res://vtt/content_catalog.gd")
 const CATALOG_PATH := "res://vtt/data/player_5etools_catalog.json"
 
 static var _catalog: Dictionary = {}
+static var _references: Dictionary = {}
 
 
 static func _ensure_loaded() -> void:
@@ -31,7 +33,30 @@ static func entries(category: String) -> Array[Dictionary]:
 		for item: Variant in value:
 			if item is Dictionary:
 				result.append((item as Dictionary).duplicate(true))
-	return result
+	if category in ["classes", "races", "class_features"]:
+		if _references.is_empty():
+			var reference_file := FileAccess.open("res://vtt/data/creature_references_5etools.json", FileAccess.READ)
+			if reference_file != null:
+				var reference_value: Variant = JSON.parse_string(reference_file.get_as_text())
+				reference_file.close()
+				if reference_value is Dictionary:
+					_references = reference_value
+		var reference_value: Variant = _references
+		if reference_value is Dictionary and reference_value.get(category) is Array:
+			if category == "class_features":
+				# Detailed core entries replace matching metadata IDs only.
+				var keys: Dictionary = {}
+				for row: Dictionary in reference_value[category]:
+					keys[String(row.name) + "|" + String(row.class_name) + "|" + String(row.class_source) + "|" + str(row.level)] = true
+				var retained: Array[Dictionary] = []
+				for row: Dictionary in result:
+					if not keys.has(String(row.name) + "|" + String(row.class_name) + "|" + String(row.class_source) + "|" + str(row.level)):
+						retained.append(row)
+				result = retained
+			for raw: Variant in reference_value[category]:
+				if raw is Dictionary:
+					result.append(raw.duplicate(true))
+	return ContentCatalog.merge(category, result)
 
 
 static func search(
@@ -260,6 +285,8 @@ static func info_text(
 
 
 static func description_text_from_raw_item(entry: Dictionary) -> String:
+	if entry.has("entries") or entry.has("description"):
+		return ContentCatalog.description(entry)
 	var parts: PackedStringArray = []
 	for field_name: String in ["entries", "additionalEntries"]:
 		if entry.has(field_name):
