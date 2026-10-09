@@ -24,13 +24,13 @@ func _hold_fixture_levels() -> Array[float]:
 	return [0.0, 6.0, 12.0, 18.0]
 
 
-func _add_floor(board: Node3D, y: float) -> void:
+func _add_floor(board: Node3D, y: float, side: float = 15.0) -> void:
 	var body: StaticBody3D = StaticBody3D.new()
 	body.collision_layer = 1
 	body.position.y = y - 0.1
 	var shape: CollisionShape3D = CollisionShape3D.new()
 	var box: BoxShape3D = BoxShape3D.new()
-	box.size = Vector3(15.0, 0.2, 15.0)
+	box.size = Vector3(side, 0.2, side)
 	shape.shape = box
 	body.add_child(shape)
 	board.add_child(body)
@@ -40,7 +40,9 @@ func run() -> void:
 	var board: Board = Board.new()
 	root.add_child(board)
 	_add_floor(board, 0.0)
-	_add_floor(board, 6.0)
+	# Upper deck covers only the central squares, leaving exposed ground
+	# around it for hover tests in the same view.
+	_add_floor(board, 6.0, 5.0)
 
 	var camera: Camera3D = CameraController.new()
 	camera.name = "Camera3D"
@@ -74,6 +76,18 @@ func run() -> void:
 	):
 		return
 
+	# Before ascending, the upper deck must not displace the visible
+	# ground floor in the tooltip's height calculation.
+	var ground_before: Dictionary = probe.call(
+		"get_visible_square_surface", Vector3(0.1, 0.0, 0.1), 0.0
+	) as Dictionary
+	if not _check(
+		not ground_before.is_empty()
+		and absf(float(ground_before.get("level", -100.0))) < 0.01,
+		"lower camera floor must pick visible ground, not a clipped upper deck"
+	):
+		return
+
 	var initial_position: Vector3 = camera.global_position
 	var initial_size: float = camera.size
 	var slice_near: float = camera.near
@@ -101,16 +115,36 @@ func run() -> void:
 	):
 		return
 
-	var lower_value: Variant = probe.call(
-		"get_lower_square_surface", Vector3(0.1, 6.0, 0.1), 6.0
-	)
-	var lower_square: Dictionary = lower_value as Dictionary
+	# Regression: the upper deck becomes visible when ascending. The
+	# tooltip must follow that deck, not the floor it used before the step.
+	var visible_upper: Dictionary = probe.call(
+		"get_visible_square_surface", Vector3(0.1, 6.0, 0.1), 6.0
+	) as Dictionary
 	if not _check(
-		not lower_square.is_empty()
-		and absf(float(lower_square.get("level", -100.0))) < 0.01,
-		"hovering over an upper square must identify the lower solid surface"
+		not visible_upper.is_empty()
+		and absf(float(visible_upper.get("level", -100.0)) - 6.0) < 0.01,
+		"after ascending, hovering the same square must pick the new upper deck"
 	):
 		return
+	var uncovered_lower: Dictionary = probe.call(
+		"get_visible_square_surface", Vector3(4.1, 6.0, 0.1), 6.0
+	) as Dictionary
+	if not _check(
+		not uncovered_lower.is_empty()
+		and absf(float(uncovered_lower.get("level", -100.0))) < 0.01,
+		"when no upper surface exists, hovering an uncovered square picks the lower deck"
+	):
+		return
+	var overlay_probe: Control = ElevationOverlay.new()
+	if not _check(
+		int(overlay_probe.call(
+			"_difference_cells",
+			float(visible_upper.get("level", -100.0)) - 6.0
+		)) == 0,
+		"same-level square must not display a stale lower-floor height tooltip"
+	):
+		return
+	overlay_probe.free()
 
 	camera.call("step_top_down_level", -1)
 	if not _check(
