@@ -1636,45 +1636,54 @@ func _set_pending_spawn_from_screen(screen_position: Vector2) -> bool:
 	_has_pending_spawn_position = false
 
 	var hit: Dictionary = _raycast_from_screen(screen_position, 1 | 4, false)
+	# Prefer the FIRST visible top face of the tactical voxel grid. In
+	# Scontro contro Kaos the stone sculpture has sloped collision surfaces
+	# and auxiliary voxel layers, so a physics ray alone may hit its SIDE,
+	# or the underlying geometry well inside the rendered grid.
+	if (
+		volumetric_grid != null
+		and volumetric_grid.visible
+		and volumetric_grid.has_method("pick_visible_top_cell_from_ray")
+	):
+		var ray_origin: Vector3 = camera.project_ray_origin(screen_position)
+		var ray_direction: Vector3 = camera.project_ray_normal(screen_position)
+		var max_distance: float = camera.far
+		if not hit.is_empty():
+			max_distance = minf(
+				max_distance,
+				ray_origin.distance_to(Vector3(hit.get("position", Vector3.ZERO)))
+				+ cell_size * 1.5
+			)
+		var grid_pick: Variant = volumetric_grid.call(
+			"pick_visible_top_cell_from_ray",
+			ray_origin,
+			ray_direction,
+			max_distance
+		)
+		if grid_pick is Dictionary:
+			var pick_data: Dictionary = grid_pick as Dictionary
+			if bool(pick_data.get("valid", false)):
+				var top_value: Variant = pick_data.get("top_center")
+				if top_value is Vector3:
+					_pending_spawn_position = top_value as Vector3
+					_has_pending_spawn_position = true
+					_pending_spawn_on_grid_surface = true
+					var grid_hit_collider: Node3D = hit.get("collider") as Node3D
+					if (
+						grid_hit_collider != null
+						and grid_hit_collider.is_in_group("tactical_platform")
+					):
+						_pending_spawn_support = grid_hit_collider
+					return true
+
 	if hit.is_empty():
 		return false
 	var hit_normal: Vector3 = hit.get("normal", Vector3.UP)
 	if hit_normal.dot(Vector3.UP) < 0.35:
 		return false
-
-	var hit_position: Vector3 = hit.get("position", Vector3.ZERO)
-	var spawn_position := hit_position
-	if (
-		volumetric_grid.visible
-		and volumetric_grid.has_method("pick_visible_top_cell_from_ray")
-	):
-		var ray_origin := camera.project_ray_origin(screen_position)
-		var ray_direction := camera.project_ray_normal(screen_position)
-		var max_grid_pick_distance := (
-			ray_origin.distance_to(hit_position)
-			+ cell_size * 1.5
-		)
-		var grid_pick: Variant = volumetric_grid.call(
-			"pick_visible_top_cell_from_ray",
-			ray_origin,
-			ray_direction,
-			max_grid_pick_distance
-		)
-		if grid_pick is Dictionary:
-			var grid_pick_data := grid_pick as Dictionary
-			if bool(grid_pick_data.get("valid", false)):
-				var top_center_value: Variant = grid_pick_data.get(
-					"top_center",
-					spawn_position
-				)
-				if top_center_value is Vector3:
-					var top_center: Vector3 = top_center_value
-					spawn_position = top_center
-					_pending_spawn_on_grid_surface = true
-
-	_pending_spawn_position = spawn_position
+	_pending_spawn_position = hit.get("position", Vector3.ZERO)
 	_has_pending_spawn_position = true
-	var hit_collider := hit.get("collider") as Node3D
+	var hit_collider: Node3D = hit.get("collider") as Node3D
 	if (
 		hit_collider != null
 		and hit_collider.is_in_group("tactical_platform")
@@ -2659,59 +2668,7 @@ func _show_context_menu(screen_position: Vector2) -> void:
 			):
 				_context_token = token_target as CharacterBody3D
 
-	var hit: Dictionary = _raycast_from_screen(screen_position, 1 | 4, false)
-	if not hit.is_empty():
-		var hit_normal: Vector3 = hit.get("normal", Vector3.UP)
-		if hit_normal.dot(Vector3.UP) >= 0.35:
-			var hit_position: Vector3 = hit.get("position", Vector3.ZERO)
-			var spawn_position := hit_position
-
-			# The volumetric grid is visual-only. At shallow camera angles its
-			# visible top face can be one or more cells in front of the actual
-			# collision point underneath. Pick the top grid cell crossed by the
-			# same mouse ray so the token appears on the square being pointed at.
-			if (
-				volumetric_grid.visible
-				and volumetric_grid.has_method(
-					"pick_visible_top_cell_from_ray"
-				)
-			):
-				var ray_origin := camera.project_ray_origin(screen_position)
-				var ray_direction := camera.project_ray_normal(screen_position)
-				var max_grid_pick_distance := (
-					ray_origin.distance_to(hit_position)
-					+ cell_size * 1.5
-				)
-				var grid_pick: Variant = volumetric_grid.call(
-					"pick_visible_top_cell_from_ray",
-					ray_origin,
-					ray_direction,
-					max_grid_pick_distance
-				)
-				if grid_pick is Dictionary:
-					var grid_pick_data := grid_pick as Dictionary
-					if bool(grid_pick_data.get("valid", false)):
-						var top_center_value: Variant = grid_pick_data.get(
-							"top_center",
-							spawn_position
-						)
-						if top_center_value is Vector3:
-							var top_center: Vector3 = top_center_value
-							# Use the visible voxel's TOP face as the support
-							# plane. Keeping hit_position.y here embedded the
-							# token's lowest cell inside the grid until its
-							# first move/gravity update repaired the height.
-							spawn_position = top_center
-							_pending_spawn_on_grid_surface = true
-
-			_pending_spawn_position = spawn_position
-			_has_pending_spawn_position = true
-			var hit_collider := hit.get("collider") as Node3D
-			if (
-				hit_collider != null
-				and hit_collider.is_in_group("tactical_platform")
-			):
-				_pending_spawn_support = hit_collider
+	_set_pending_spawn_from_screen(screen_position)
 
 	context_menu.clear()
 	_prepare_context_submenus()
@@ -4374,10 +4331,22 @@ func _spawn_token(
 
 	if _token_generation_exact_position and _token_generation_place_on_surface:
 		var token_height: float = float(token.get("token_height_cells"))
-		token.global_position.y = (
-			_pending_spawn_position.y
-			+ token_height * cell_size * 0.5
-		)
+		var support_y: float = _pending_spawn_position.y
+		# configure() has already snapped X/Z to the creature footprint.
+		# Recheck the ENTIRE new hitbox against the occupied grid here: the
+		# pointed voxel may be lower than adjacent voxels of the stone statue.
+		if (
+			volumetric_grid != null
+			and volumetric_grid.has_method("get_clear_spawn_floor_for_footprint")
+		):
+			support_y = float(volumetric_grid.call(
+				"get_clear_spawn_floor_for_footprint",
+				token.global_position,
+				float(token.call("get_footprint_cells")),
+				token_height,
+				support_y
+			))
+		token.global_position.y = support_y + token_height * cell_size * 0.5
 		if (
 			_pending_spawn_support != null
 			and is_instance_valid(_pending_spawn_support)
