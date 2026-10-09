@@ -112,6 +112,53 @@ func sync_linked_token_editor(token: CharacterBody3D) -> void:
 		return
 
 
+func is_panel_open() -> bool:
+	return _panel != null and _panel.visible
+
+
+func get_owned_creature_names(excluded_id: String = "") -> Array[String]:
+	var names: Array[String] = []
+	for record: Dictionary in _archive.list_owned():
+		if String(record.get("id", "")) == excluded_id:
+			continue
+		var record_name: String = String(record.get("name", "")).strip_edges()
+		if not record_name.is_empty():
+			names.append(record_name)
+	return names
+
+
+func find_linked_token_for_creature(creature_id: String) -> CharacterBody3D:
+	for record: Dictionary in _archive.list_owned():
+		if String(record.get("id", "")) == creature_id:
+			return _find_linked_token(record) as CharacterBody3D
+	return null
+
+
+func link_spawned_token(token: CharacterBody3D, creature_id: String) -> void:
+	if token == null or not is_instance_valid(token):
+		return
+	for record: Dictionary in _archive.list_owned():
+		if String(record.get("id", "")) != creature_id:
+			continue
+		_selected_id = creature_id
+		_selected_kind = String(record.get("kind", ""))
+		_reload()
+		_link_selected_token()
+		return
+
+
+func _request_spawn_selected_creature() -> void:
+	_save()
+	var record: Dictionary = _current()
+	if record.is_empty():
+		return
+	if not board_root.has_method("begin_creature_token_placement"):
+		_set_status("Piazzamento token non disponibile.")
+		return
+	if bool(board_root.call("begin_creature_token_placement", record)):
+		hide_panel()
+
+
 func toggle_panel() -> void:
 	if _panel.visible:
 		hide_panel()
@@ -202,6 +249,14 @@ func _build_ui() -> void:
 	_creature_list.size_flags_vertical = Control.SIZE_EXPAND_FILL
 	_creature_list.item_selected.connect(_on_selected)
 	left.add_child(_creature_list)
+	var spawn_selected := Button.new()
+	spawn_selected.text = "Genera token / riposiziona"
+	spawn_selected.tooltip_text = (
+		"Se la creatura ha già un token, spostalo senza duplicarlo. "
+		+ "Altrimenti genera un token e collegalo alla scheda."
+	)
+	spawn_selected.pressed.connect(_request_spawn_selected_creature)
+	left.add_child(spawn_selected)
 
 	var add_character := Button.new()
 	add_character.text = "+ Personaggio / creatura con classi"
@@ -1034,6 +1089,7 @@ func ensure_sheet_for_token(token: Node3D, locally_created: bool = false) -> voi
 		_set_token_sheet_metadata(token, record)
 		return
 
+	var newly_created: bool = record.is_empty()
 	var display_name := String(token.call("get_display_name")) if token.has_method("get_display_name") else String(token.name)
 	var pack_id := String(token.call("get_token_pack_id")) if token.has_method("get_token_pack_id") else ""
 	var identity := String(token.call("get_miniature_identity")) if token.has_method("get_miniature_identity") else pack_id
@@ -1062,6 +1118,10 @@ func ensure_sheet_for_token(token: Node3D, locally_created: bool = false) -> voi
 		record["name"] = display_name
 	if pack_id.is_empty():
 		pack_id = identity
+	# Preserve conditions set during token creation before syncing the new
+	# persistent sheet back to the token.
+	if newly_created and token.has_method("get_conditions"):
+		record["conditions"] = token.call("get_conditions")
 	record["default_miniature_id"] = pack_id
 	record["owner_id"] = local_owner
 	record["linked_token_sync_id"] = token_id
