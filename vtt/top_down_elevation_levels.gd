@@ -37,7 +37,7 @@ func _surface_heights_at(x: float, z: float, starting_y: float) -> Array[float]:
 	var heights: Array[float] = []
 	var origin_y: float = starting_y
 	var step: float = maxf(cell_size * 0.04, 0.025)
-	for hit_index: int in range(MAX_RAY_HITS):
+	for _hit_index: int in range(MAX_RAY_HITS):
 		if origin_y <= MIN_RAY_HEIGHT:
 			break
 		var query: PhysicsRayQueryParameters3D = (
