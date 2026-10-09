@@ -24,8 +24,11 @@ var _displayed_known: Array = []
 var _show_spellbook := false
 var _editing_spellbook := false
 var _totals: Array = []
+# Slot bonuses are tracked separately so automatic recalculation never erases them.
+var _slot_bonuses: Array = []
 var _spent: Array = []
 var _pact_total := 0
+var _pact_bonus := 0
 var _pact_spent := 0
 var _pact_level := 1
 
@@ -39,14 +42,14 @@ var _known_title: Label
 var _book_menu: MenuButton
 var _book_hint: Label
 var _description: RichTextLabel
-var _add_known: Button
 var _prepare: Button
-var _forget: Button
 var _slot_totals: Dictionary = {}
+var _slot_bonus_controls: Dictionary = {}
 var _remaining_labels: Dictionary = {}
 var _slot_use: Dictionary = {}
 var _slot_recharge: Dictionary = {}
 var _pact_total_spin: SpinBox
+var _pact_bonus_spin: SpinBox
 var _pact_level_spin: SpinBox
 var _pact_remain: Label
 var _pact_use: Button
@@ -61,13 +64,18 @@ func setup(on_change: Callable, on_status: Callable) -> void:
 	_on_change = on_change
 	_on_status = on_status
 	add_theme_constant_override("separation", 10)
+	var title_row := HBoxContainer.new()
+	title_row.add_theme_constant_override("separation", 10)
+	add_child(title_row)
 	var title := Label.new()
-	title.text = "Incantesimi di classe e disponibili"
-	title.add_theme_font_size_override("font_size", 18)
-	add_child(title)
+	title.text = "Grimorio e preparazione"
+	title.size_flags_horizontal = Control.SIZE_EXPAND_FILL
+	title.add_theme_font_size_override("font_size", 20)
+	title.add_theme_color_override("font_color", Color(0.96, 0.79, 0.51))
+	title_row.add_child(title)
 	_spell_options = MenuButton.new()
 	_spell_options.text = "Opzioni ▾"
-	add_child(_spell_options)
+	title_row.add_child(_spell_options)
 	var menu: PopupMenu = _spell_options.get_popup()
 	menu.add_check_item("Mostra ricerca incantesimi", 1)
 	menu.add_item("Ricalcola slot dalle classi", 2)
@@ -95,30 +103,16 @@ func setup(on_change: Callable, on_status: Callable) -> void:
 	_search_row.add_child(_level_filter)
 
 	_catalog_title = Label.new()
-	_catalog_title.text = "Risultati ricerca (doppio clic per aggiungere)"
+	_catalog_title.text = "Catalogo incantesimi · doppio clic per aggiungere o rimuovere"
 	add_child(_catalog_title)
 	_available = ItemList.new()
 	_available.custom_minimum_size = Vector2(0, 160)
 	_available.size_flags_horizontal = Control.SIZE_EXPAND_FILL
 	_available.item_selected.connect(func(_index: int) -> void: _on_spell_list_selected("catalog"))
-	_available.item_activated.connect(func(_index: int) -> void: _add_selected_known())
+	_available.item_activated.connect(func(_index: int) -> void: _toggle_selected_prepared())
 	add_child(_available)
-	var actions := HBoxContainer.new()
-	actions.add_theme_constant_override("separation", 8)
-	add_child(actions)
-	_add_known = Button.new()
-	_add_known.text = "+ Disponibile"
-	_add_known.pressed.connect(_add_selected_known)
-	actions.add_child(_add_known)
-	_prepare = Button.new()
-	_prepare.text = "Aggiungi / Rimuovi"
-	_prepare.pressed.connect(_toggle_selected_prepared)
-	actions.add_child(_prepare)
-	_forget = Button.new()
-	_forget.text = "Rimuovi dai disponibili"
-	_forget.pressed.connect(_forget_selected_known)
-	actions.add_child(_forget)
-
+	# Keep the library and chosen spells together; there is only one action
+	# for adding/removing the current selection.
 	var columns := HBoxContainer.new()
 	columns.add_theme_constant_override("separation", 12)
 	columns.size_flags_horizontal = Control.SIZE_EXPAND_FILL
@@ -160,7 +154,7 @@ func setup(on_change: Callable, on_status: Callable) -> void:
 	_known_list.item_activated.connect(
 		func(_index: int) -> void:
 			if not _editing_spellbook:
-				_add_selected_known()
+				_toggle_selected_prepared()
 	)
 	known_col.add_child(_known_list)
 	var prepared_col := VBoxContainer.new()
@@ -168,12 +162,30 @@ func setup(on_change: Callable, on_status: Callable) -> void:
 	columns.add_child(prepared_col)
 	var prepared_title := Label.new()
 	prepared_title.text = "Incantesimi disponibili"
+	prepared_title.add_theme_font_size_override("font_size", 16)
+	prepared_title.add_theme_color_override("font_color", Color(0.96, 0.79, 0.51))
 	prepared_col.add_child(prepared_title)
 	_prepared_list = ItemList.new()
 	_prepared_list.custom_minimum_size = Vector2(0, 150)
 	_prepared_list.size_flags_horizontal = Control.SIZE_EXPAND_FILL
 	_prepared_list.item_selected.connect(func(_index: int) -> void: _on_spell_list_selected("prepared"))
 	prepared_col.add_child(_prepared_list)
+	_prepared_list.item_activated.connect(func(_index: int) -> void: _toggle_selected_prepared())
+
+	var actions := HBoxContainer.new()
+	actions.add_theme_constant_override("separation", 8)
+	add_child(actions)
+	var action_hint := Label.new()
+	action_hint.text = "Seleziona una magia dagli elenchi"
+	action_hint.add_theme_font_size_override("font_size", 12)
+	action_hint.size_flags_horizontal = Control.SIZE_EXPAND_FILL
+	actions.add_child(action_hint)
+	_prepare = Button.new()
+	_prepare.text = "Aggiungi ai disponibili"
+	_prepare.custom_minimum_size = Vector2(200, 38)
+	_prepare.tooltip_text = "Doppio clic su una magia oppure premi questo pulsante"
+	_prepare.pressed.connect(_toggle_selected_prepared)
+	actions.add_child(_prepare)
 
 	_description = RichTextLabel.new()
 	_description.custom_minimum_size.y = 180
@@ -200,11 +212,11 @@ func setup(on_change: Callable, on_status: Callable) -> void:
 	rest_all.pressed.connect(_restore_all)
 	slot_title.add_child(rest_all)
 	var slot_grid := GridContainer.new()
-	slot_grid.columns = 5
+	slot_grid.columns = 6
 	slot_grid.add_theme_constant_override("h_separation", 12)
 	slot_grid.add_theme_constant_override("v_separation", 5)
 	add_child(slot_grid)
-	for label_text: String in ["Livello", "Totali", "Disponibili", "Usa", "Ricarica"]:
+	for label_text: String in ["Livello", "Base", "Bonus", "Disponibili / Max", "Usa", "Ricarica"]:
 		var header := Label.new()
 		header.text = label_text
 		slot_grid.add_child(header)
@@ -221,6 +233,16 @@ func setup(on_change: Callable, on_status: Callable) -> void:
 		total.value_changed.connect(_on_slot_total_changed.bind(lvl))
 		slot_grid.add_child(total)
 		_slot_totals[lvl] = total
+		var bonus := SpinBox.new()
+		bonus.min_value = -99
+		bonus.max_value = 99
+		bonus.step = 1
+		bonus.rounded = true
+		bonus.custom_minimum_size.x = 74
+		bonus.tooltip_text = "Modificatore del numero massimo di slot di questo livello"
+		bonus.value_changed.connect(_on_slot_bonus_changed.bind(lvl))
+		slot_grid.add_child(bonus)
+		_slot_bonus_controls[lvl] = bonus
 		var remaining := Label.new()
 		remaining.custom_minimum_size.x = 64
 		slot_grid.add_child(remaining)
@@ -264,6 +286,17 @@ func setup(on_change: Callable, on_status: Callable) -> void:
 	_pact_total_spin.custom_minimum_size.x = 65
 	_pact_total_spin.value_changed.connect(_on_pact_values_changed)
 	pact_row.add_child(_pact_total_spin)
+	var bonus_label := Label.new()
+	bonus_label.text = "Bonus"
+	pact_row.add_child(bonus_label)
+	_pact_bonus_spin = SpinBox.new()
+	_pact_bonus_spin.min_value = -8
+	_pact_bonus_spin.max_value = 20
+	_pact_bonus_spin.step = 1
+	_pact_bonus_spin.custom_minimum_size.x = 65
+	_pact_bonus_spin.tooltip_text = "Bonus agli slot massimi della Magia del Patto"
+	_pact_bonus_spin.value_changed.connect(_on_pact_values_changed)
+	pact_row.add_child(_pact_bonus_spin)
 	_pact_remain = Label.new()
 	_pact_remain.custom_minimum_size.x = 92
 	pact_row.add_child(_pact_remain)
@@ -321,13 +354,19 @@ func load_record(record: Dictionary) -> void:
 		_catalog = SpellCatalog.all_spells()
 	_rebuild_class_spells()
 	_totals = _normal_slots(record.get("spell_slots_total", []))
+	_slot_bonuses = _normal_slot_bonuses(record.get("spell_slots_bonus", []))
 	_spent = _normal_slots(record.get("spell_slots_spent", []))
+	for lvl: int in range(1, 10):
+		_spent[lvl] = mini(int(_spent[lvl]), _effective_slot_total(lvl))
 	_pact_total = maxi(0, int(record.get("pact_slots_total", 0)))
-	_pact_spent = clampi(int(record.get("pact_slots_spent", 0)), 0, _pact_total)
+	_pact_bonus = clampi(int(record.get("pact_slots_bonus", 0)), -8, 20)
+	_pact_spent = clampi(int(record.get("pact_slots_spent", 0)), 0, _effective_pact_total())
 	_pact_level = clampi(int(record.get("pact_slot_level", 1)), 1, 5)
 	for lvl: int in range(1, 10):
 		(_slot_totals[lvl] as SpinBox).value = int(_totals[lvl])
+		(_slot_bonus_controls[lvl] as SpinBox).value = int(_slot_bonuses[lvl])
 	_pact_total_spin.value = _pact_total
+	_pact_bonus_spin.value = _pact_bonus
 	_pact_level_spin.value = _pact_level
 	_class_only.disabled = _class_keys().is_empty()
 	_calculate_button.disabled = _class_keys().is_empty()
@@ -350,6 +389,24 @@ static func _normal_slots(value: Variant) -> Array:
 			number = maxi(0, int((value as Array)[index]))
 		result.append(number)
 	return result
+
+
+static func _normal_slot_bonuses(value: Variant) -> Array:
+	var result: Array = []
+	for index: int in range(10):
+		var number: int = 0
+		if value is Array and (value as Array).size() > index:
+			number = clampi(int((value as Array)[index]), -99, 99)
+		result.append(number)
+	return result
+
+
+func _effective_slot_total(lvl: int) -> int:
+	return maxi(0, int(_totals[lvl]) + int(_slot_bonuses[lvl]))
+
+
+func _effective_pact_total() -> int:
+	return maxi(0, _pact_total + _pact_bonus)
 
 
 static func _entry_id(item: Variant) -> String:
@@ -536,10 +593,12 @@ func _update_spell_controls() -> void:
 		return
 	var spell: Dictionary = _selected_spell()
 	var id: String = String(spell.get("id", ""))
-	_add_known.disabled = id.is_empty() or _has_spell(_prepared, id)
 	_prepare.disabled = id.is_empty()
-	_prepare.text = "Rimuovi dai disponibili" if _has_spell(_prepared, id) else "Aggiungi ai disponibili"
-	_forget.disabled = id.is_empty() or not _has_spell(_prepared, id)
+	_prepare.text = (
+		"Rimuovi dai disponibili"
+		if _has_spell(_prepared, id)
+		else "Aggiungi ai disponibili"
+	)
 	if id.is_empty():
 		_description.text = "Seleziona un incantesimo per consultare la descrizione."
 		return
@@ -549,20 +608,6 @@ func _update_spell_controls() -> void:
 		String(spell.get("components", "—")),
 		String(spell.get("duration", "—")), String(spell.get("description", ""))
 	]
-
-
-func _add_selected_known() -> void:
-	var spell: Dictionary = _selected_spell()
-	var id: String = String(spell.get("id", ""))
-	if id.is_empty() or _has_spell(_prepared, id):
-		return
-	_prepared.append({
-		"id": id, "name": String(spell.get("name", "")),
-		"source": String(spell.get("source", "")),
-		"level": int(spell.get("level", 0))
-	})
-	_publish()
-	_refresh_saved_spell_lists()
 
 
 func _toggle_selected_prepared() -> void:
@@ -580,18 +625,6 @@ func _toggle_selected_prepared() -> void:
 			"source": String(spell.get("source", "")),
 			"level": int(spell.get("level", 0))
 		})
-	_publish()
-	_refresh_saved_spell_lists()
-
-
-func _forget_selected_known() -> void:
-	var id: String = String(_selected_spell().get("id", ""))
-	if id.is_empty():
-		return
-	for items: Array in [_prepared]:
-		for i: int in range(items.size() - 1, -1, -1):
-			if _entry_id(items[i]) == id:
-				items.remove_at(i)
 	_publish()
 	_refresh_saved_spell_lists()
 
@@ -678,13 +711,22 @@ func _on_slot_total_changed(value: float, lvl: int) -> void:
 	if _loading:
 		return
 	_totals[lvl] = maxi(0, int(value))
-	_spent[lvl] = mini(int(_spent[lvl]), int(_totals[lvl]))
+	_spent[lvl] = mini(int(_spent[lvl]), _effective_slot_total(lvl))
+	_update_resource_labels()
+	_publish()
+
+
+func _on_slot_bonus_changed(value: float, lvl: int) -> void:
+	if _loading:
+		return
+	_slot_bonuses[lvl] = clampi(int(value), -99, 99)
+	_spent[lvl] = mini(int(_spent[lvl]), _effective_slot_total(lvl))
 	_update_resource_labels()
 	_publish()
 
 
 func _change_slot(lvl: int, spent_delta: int) -> void:
-	_spent[lvl] = clampi(int(_spent[lvl]) + spent_delta, 0, int(_totals[lvl]))
+	_spent[lvl] = clampi(int(_spent[lvl]) + spent_delta, 0, _effective_slot_total(lvl))
 	_update_resource_labels()
 	_publish()
 
@@ -693,14 +735,15 @@ func _on_pact_values_changed(_value: float) -> void:
 	if _loading:
 		return
 	_pact_total = maxi(0, int(_pact_total_spin.value))
+	_pact_bonus = clampi(int(_pact_bonus_spin.value), -8, 20)
 	_pact_level = clampi(int(_pact_level_spin.value), 1, 5)
-	_pact_spent = mini(_pact_spent, _pact_total)
+	_pact_spent = mini(_pact_spent, _effective_pact_total())
 	_update_resource_labels()
 	_publish()
 
 
 func _change_pact(spent_delta: int) -> void:
-	_pact_spent = clampi(_pact_spent + spent_delta, 0, _pact_total)
+	_pact_spent = clampi(_pact_spent + spent_delta, 0, _effective_pact_total())
 	_update_resource_labels()
 	_publish()
 
@@ -725,11 +768,11 @@ func _calculate_slot_totals(recharge: bool = false) -> void:
 	_loading = true
 	_totals = _normal_slots(totals)
 	for lvl: int in range(1, 10):
-		_spent[lvl] = 0 if recharge else mini(int(_spent[lvl]), int(_totals[lvl]))
+		_spent[lvl] = 0 if recharge else mini(int(_spent[lvl]), _effective_slot_total(lvl))
 		(_slot_totals[lvl] as SpinBox).value = int(_totals[lvl])
 	_pact_total = int(result.get("pact_total", 0))
 	_pact_level = int(result.get("pact_level", 1))
-	_pact_spent = 0 if recharge else mini(_pact_spent, _pact_total)
+	_pact_spent = 0 if recharge else mini(_pact_spent, _effective_pact_total())
 	_pact_total_spin.value = _pact_total
 	_pact_level_spin.value = _pact_level
 	_loading = false
@@ -744,13 +787,14 @@ func _update_resource_labels() -> void:
 	if _pact_remain == null:
 		return
 	for lvl: int in range(1, 10):
-		var total: int = maxi(0, int(_totals[lvl])) if _totals.size() > lvl else 0
+		var total: int = _effective_slot_total(lvl) if _totals.size() > lvl and _slot_bonuses.size() > lvl else 0
 		var spent: int = clampi(int(_spent[lvl]), 0, total) if _spent.size() > lvl else 0
 		(_remaining_labels[lvl] as Label).text = "%d / %d" % [total - spent, total]
 		(_slot_use[lvl] as Button).disabled = spent >= total
 		(_slot_recharge[lvl] as Button).disabled = spent <= 0
-	_pact_remain.text = "%d / %d" % [_pact_total - _pact_spent, _pact_total]
-	_pact_use.disabled = _pact_spent >= _pact_total
+	var pact_max: int = _effective_pact_total()
+	_pact_remain.text = "%d / %d" % [pact_max - _pact_spent, pact_max]
+	_pact_use.disabled = _pact_spent >= pact_max
 	_pact_restore.disabled = _pact_spent <= 0
 
 
@@ -762,8 +806,10 @@ func _publish() -> void:
 		"prepared_spells": _prepared.duplicate(true),
 		"spellbook_spells": _spellbook.duplicate(true),
 		"spell_slots_total": _totals.duplicate(true),
+		"spell_slots_bonus": _slot_bonuses.duplicate(true),
 		"spell_slots_spent": _spent.duplicate(true),
 		"pact_slots_total": _pact_total,
+		"pact_slots_bonus": _pact_bonus,
 		"pact_slots_spent": _pact_spent,
 		"pact_slot_level": _pact_level
 	})

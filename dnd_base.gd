@@ -3134,6 +3134,18 @@ func _show_context_menu(screen_position: Vector2) -> void:
 	context_menu.clear()
 	_prepare_context_submenus()
 
+	# Prioritize immediate token actions before all the category submenus.
+	if not _selected_tokens.is_empty():
+		if _selected_tokens.size() == 1:
+			context_menu.add_item("Modifica token…", CONTEXT_TOKEN_DETAILS)
+		var selection_count: int = _selected_tokens.size()
+		var selection_suffix: String = (
+			"" if selection_count == 1 else " (%d)" % selection_count
+		)
+		context_menu.add_item("Elimina token selezionati" + selection_suffix, CONTEXT_DELETE_SELECTED)
+		context_menu.add_item("Applica gravità" + selection_suffix, CONTEXT_FLYING)
+		context_menu.add_separator()
+
 	context_measure_menu.add_item("Righello", CONTEXT_MEASURE_RULER)
 	context_measure_menu.add_separator()
 	context_measure_menu.add_item("AoE: sfera", CONTEXT_AOE_SPHERE)
@@ -3164,7 +3176,6 @@ func _show_context_menu(screen_position: Vector2) -> void:
 				context_token_menu.add_item(
 					"Riposiziona token qui", CONTEXT_REPOSITION_SELECTED
 				)
-			context_token_menu.add_item("Modifica token…", CONTEXT_TOKEN_DETAILS)
 			var selected_token: CharacterBody3D = _selected_tokens[0]
 			if (
 				selected_token != null
@@ -3179,18 +3190,7 @@ func _show_context_menu(screen_position: Vector2) -> void:
 
 		_add_bestiary_context_items()
 
-		var count: int = _selected_tokens.size()
-		var suffix: String = "" if count == 1 else " (%d)" % count
-		context_token_menu.add_separator()
-		context_token_menu.add_item(
-			"Applica gravità" + suffix,
-			CONTEXT_FLYING
-		)
-		context_token_menu.add_separator()
-		context_token_menu.add_item(
-			"Elimina token selezionati" + suffix,
-			CONTEXT_DELETE_SELECTED
-		)
+		# Destructive actions are directly visible at the top of the menu.
 
 	if context_token_menu.item_count > 0:
 		context_menu.add_submenu_node_item("Token", context_token_menu)
@@ -5045,9 +5045,12 @@ func _rotate_selected(quarter_turns: int) -> void:
 		return
 
 	push_undo_state()
+	# A top-down camera reverses the apparent clockwise direction of +Y yaw.
+	# Preserve the existing 3D controls and invert only the 2D visual action.
+	var applied_turns: int = -quarter_turns if _view_2d_enabled else quarter_turns
 	for token: CharacterBody3D in _selected_tokens:
 		if token.has_method("rotate_grid"):
-			token.call("rotate_grid", quarter_turns)
+			token.call("rotate_grid", applied_turns)
 
 
 func _rotate_selected_vertical(steps: int) -> void:

@@ -115,6 +115,17 @@ func _new_badge() -> Control:
 	var height_label: Label = Label.new()
 	height_label.name = "Height"
 	height_label.mouse_filter = Control.MOUSE_FILTER_IGNORE
+	# Higher than every portrait badge, including adjacent tokens.
+	height_label.z_index = 25
+	height_label.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
+	var height_style := StyleBoxFlat.new()
+	height_style.bg_color = Color(0.08, 0.09, 0.12, 0.94)
+	height_style.border_color = Color(0.80, 0.62, 0.34, 0.95)
+	height_style.set_border_width_all(1)
+	height_style.set_corner_radius_all(5)
+	height_style.content_margin_left = 3
+	height_style.content_margin_right = 3
+	height_label.add_theme_stylebox_override("normal", height_style)
 	height_label.add_theme_color_override("font_color", Color.WHITE)
 	height_label.add_theme_color_override(
 		"font_shadow_color",
@@ -123,6 +134,21 @@ func _new_badge() -> Control:
 	height_label.add_theme_constant_override("shadow_offset_x", 1)
 	height_label.add_theme_constant_override("shadow_offset_y", 1)
 	badge.add_child(height_label)
+
+	# Direction marker is projected separately from the 3D facing mesh.
+	var facing: Label = Label.new()
+	facing.name = "FacingArrow"
+	facing.text = "▲"
+	facing.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
+	facing.vertical_alignment = VERTICAL_ALIGNMENT_CENTER
+	facing.size = Vector2(26.0, 26.0)
+	facing.add_theme_font_size_override("font_size", 20)
+	facing.add_theme_color_override("font_color", Color(1.0, 0.75, 0.36, 1.0))
+	facing.add_theme_color_override("font_outline_color", Color(0.07, 0.06, 0.08, 0.98))
+	facing.add_theme_constant_override("outline_size", 4)
+	facing.z_index = 5
+	facing.mouse_filter = Control.MOUSE_FILTER_IGNORE
+	badge.add_child(facing)
 	return badge
 
 
@@ -368,10 +394,19 @@ func _render_token_badge(token: CharacterBody3D, floor_y: float) -> void:
 	)
 	var delta: float = support_y - floor_y
 	var height_label: Label = badge.get_node("Height") as Label
-	height_label.position = Vector2(icon_size - 2.0, icon_size * 0.28)
+	# Keep the height INSIDE the source tile, away from the icon at its
+	# right. Elevated z-order keeps the label legible even over overlaps.
+	height_label.position = Vector2(2.0, icon_size - 20.0)
+	height_label.size = Vector2(76.0, 22.0)
 	height_label.add_theme_font_size_override("font_size", 13)
 	height_label.text = _format_difference(delta)
 	height_label.visible = _difference_cells(delta) != 0
+
+	var facing: Label = badge.get_node("FacingArrow") as Label
+	var yaw: float = token.global_rotation.y
+	var forward: Vector2 = Vector2(-sin(yaw), -cos(yaw))
+	facing.position = Vector2.ONE * icon_size * 0.5 + forward * icon_size * 0.44 - facing.size * 0.5
+	facing.rotation = -yaw
 
 
 func _update_hover(floor_y: float) -> void:
@@ -430,6 +465,74 @@ func _update_hover(floor_y: float) -> void:
 	)
 
 
+# Reach spheres and attack targeting are volumetric meshes in 3D. Those
+# meshes may be clipped by the orthographic slice in 2D, so repeat their
+# range as screen-space outlines and cardinal arrowheads.
+func _draw() -> void:
+	if not visible or camera == null or board_root == null:
+		return
+	if not camera.has_method("get_top_down_level"):
+		return
+	var floor_y: float = float(camera.call("get_top_down_level"))
+	var attacks: Node = board_root.get("attack_system") as Node
+	if attacks == null:
+		return
+	if attacks.has_method("are_all_reaches_visible") and bool(attacks.call("are_all_reaches_visible")):
+		for node: Node in tokens_root.get_children():
+			if not node is CharacterBody3D or not node.is_in_group("dnd_token"):
+				continue
+			var token: CharacterBody3D = node as CharacterBody3D
+			var footprint: float = 1.0
+			if token.has_method("get_footprint_cells"):
+				footprint = maxf(0.5, float(token.call("get_footprint_cells")))
+			var reach_feet: float = 5.0
+			if token.has_method("get_reach_feet"):
+				reach_feet = maxf(5.0, float(token.call("get_reach_feet")))
+			var radius: float = (reach_feet / 5.0 + footprint * 0.5) * cell_size
+			_draw_reach_indicator(token.global_position, floor_y, radius, Color(0.91, 0.68, 0.35, 0.85))
+	if attacks.has_method("is_targeting") and bool(attacks.call("is_targeting")):
+		var attacker: CharacterBody3D = attacks.get("_attacker") as CharacterBody3D
+		var data_value: Variant = attacks.get("_attack_data")
+		if attacker != null and is_instance_valid(attacker) and data_value is Dictionary:
+			var data: Dictionary = data_value as Dictionary
+			var footprint: float = 1.0
+			if attacker.has_method("get_footprint_cells"):
+				footprint = maxf(0.5, float(attacker.call("get_footprint_cells")))
+			var range_feet: float = maxf(0.0, float(data.get("range_feet", 5.0)))
+			_draw_reach_indicator(
+				attacker.global_position, floor_y,
+				(range_feet / 5.0 + footprint * 0.5) * cell_size,
+				Color(0.25, 0.78, 1.0, 0.95)
+			)
+
+
+func _draw_reach_indicator(center: Vector3, floor_y: float, radius: float, tint: Color) -> void:
+	if radius <= 0.0:
+		return
+	var points := PackedVector2Array()
+	var flat_center: Vector3 = Vector3(center.x, floor_y, center.z)
+	var screen_center: Vector2 = camera.unproject_position(flat_center)
+	for step: int in range(65):
+		var angle: float = TAU * float(step) / 64.0
+		var world: Vector3 = flat_center + Vector3(cos(angle), 0.0, sin(angle)) * radius
+		points.append(camera.unproject_position(world))
+	draw_polyline(points, tint, 2.0, true)
+	# Four arrowheads remain visible where an almost-flat mesh vanishes in 2D.
+	for quadrant: int in range(4):
+		var idx: int = quadrant * 16
+		var tip: Vector2 = points[idx]
+		var outward: Vector2 = tip - screen_center
+		if outward.length_squared() < 1.0:
+			continue
+		outward = outward.normalized()
+		var tangent: Vector2 = Vector2(-outward.y, outward.x)
+		var back: Vector2 = tip - outward * 11.0
+		draw_colored_polygon(
+			PackedVector2Array([tip, back + tangent * 5.0, back - tangent * 5.0]),
+			tint
+		)
+
+
 func _process(_delta: float) -> void:
 	if not visible or camera == null or not is_instance_valid(camera):
 		return
@@ -453,3 +556,4 @@ func _process(_delta: float) -> void:
 			badge.queue_free()
 		_badges.erase(key)
 	_update_hover(floor_y)
+	queue_redraw()
