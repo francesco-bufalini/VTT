@@ -15,6 +15,7 @@ var _features: Array[Dictionary] = []
 var _cards: Dictionary = {}
 var _expanded: Dictionary = {}
 var _active_origin := ""
+var _record_id := ""
 
 
 func setup() -> void:
@@ -69,8 +70,12 @@ func setup() -> void:
 
 
 func load_record(record: Dictionary) -> void:
+	var record_id: String = String(record.get("id", ""))
+	if record_id != _record_id:
+		_expanded.clear()
+		_search.clear()
+	_record_id = record_id
 	_features = collect_features(record)
-	_expanded.clear()
 	var previous_origin: String = _active_origin
 	_origin_choice.clear()
 	_origin_choice.add_item("Tutte le origini")
@@ -359,6 +364,7 @@ static func _collect_species(record: Dictionary, output: Array[Dictionary]) -> v
 					if String(entry_data.get("name", "")).is_empty():
 						entry_data["name"] = "Altri tratti · %d" % (index + 1)
 					entry_data["entries"] = (entry as Dictionary).get("entries", entry)
+					entry_data["source"] = species_book
 					_append(output, entry_data, maxi(1, int(entry_data.get("level", 1))),
 						"Specie · " + species, "species|" + species_id + "|" + species_book, "", "", 1)
 				elif entry is String and not String(entry).strip_edges().is_empty():
