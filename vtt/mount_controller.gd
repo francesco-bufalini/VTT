@@ -61,6 +61,11 @@ func can_mount(rider: CharacterBody3D, target: Node3D) -> bool:
 		or (target is StaticBody3D and target.is_in_group("dnd_item"))
 	):
 		return false
+	# A cart cannot simultaneously follow its driver and carry that driver
+	# as a mounted rider: this would create a transport dependency cycle.
+	if target is StaticBody3D and rider.has_method("get_token_id"):
+		if String(target.get("linked_token_id")) == String(rider.call("get_token_id")):
+			return false
 	# Do not allow mount chains that loop back onto their own rider.
 	var ancestor: Node3D = target
 	var visited: Dictionary = {}
