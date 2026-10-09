@@ -566,7 +566,6 @@ func update_character_context(record: Dictionary) -> void:
 	_rebuild_class_spells()
 	_refresh_saved_spell_lists()
 	_class_only.disabled = _class_keys().is_empty()
-	_calculate_button.disabled = _class_keys().is_empty()
 	_filter_spells()
 
 
