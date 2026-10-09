@@ -4889,63 +4889,6 @@ func _cast_chain_lightning(
 	# animations. Chain spells are filtered out until they gain a map effect.
 	return
 
-func _cast_fireball(
-	target_point: Vector3,
-	spell_data: Dictionary
-) -> void:
-	var measurement_tool: Node = _measurement_tool()
-	if measurement_tool == null:
-		return
-
-	var radius_feet: float = float(
-		spell_data.get("aoe_radius_feet", 20.0)
-	)
-	var radius_world: float = (
-		radius_feet / 5.0 * _cell_size()
-	)
-	var endpoint: Vector3 = (
-		target_point + Vector3.RIGHT * radius_world
-	)
-	var duration: float = float(
-		spell_data.get("transient_seconds", 5.0)
-	)
-
-	measurement_tool.call(
-		"show_transient_aoe",
-		target_point,
-		endpoint,
-		String(spell_data.get("aoe_shape", "sphere")),
-		duration,
-		String(spell_data.get("id", "fireball"))
-	)
-
-func _cast_persistent_sphere(
-	target_point: Vector3,
-	spell_data: Dictionary
-) -> void:
-	var measurement_tool: Node = _measurement_tool()
-	if measurement_tool == null:
-		return
-
-	var radius_feet: float = float(
-		spell_data.get("aoe_radius_feet", 15.0)
-	)
-	var radius_world: float = (
-		radius_feet / 5.0 * _cell_size()
-	)
-	var endpoint: Vector3 = (
-		target_point + Vector3.RIGHT * radius_world
-	)
-
-	measurement_tool.call(
-		"add_spell_aoe",
-		target_point,
-		endpoint,
-		String(spell_data.get("aoe_shape", "sphere")),
-		String(spell_data.get("id", ""))
-	)
-
-
 func _spell_targets_in_geometry(
 	start: Vector3,
 	end: Vector3,

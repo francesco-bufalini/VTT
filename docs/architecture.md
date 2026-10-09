@@ -82,3 +82,9 @@ A minimal test arena can be added once Godot execution is available in the agent
 - No snapshot version, serialized fields, scene paths, signals, or gameplay interaction APIs changed. The generated 5etools spell catalog remains untouched.
 
 These are deliberately narrow extractions. Keep the board controller, spell-cast lifecycle, creature UI, and networking state machines together until they have reliable behavioral integration coverage.
+
+### Legacy cleanup performed
+
+- Removed two obsolete, locally unreferenced private spell rendering helpers, `_cast_fireball` and `_cast_persistent_sphere`; the active `_cast_spell_at_point` pipeline already handles both transient and persistent AoEs.
+- Removed two unused board context action constants, `CONTEXT_PLAYER_AREA` and `CONTEXT_PLAYER_ADD_CHARACTER`. Kept all in-use action IDs unchanged (no renumbering).
+- Retained other apparent legacy APIs, including the original player area and dynamic call/signal entry points, pending full call-site and scene audits. In Godot, lack of a direct textual call alone is not proof that a method is safe to delete.
