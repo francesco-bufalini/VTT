@@ -69,6 +69,24 @@ static func average_die(die: int) -> int:
 	return maxi(1, (die + 2) / 2)
 
 
+static func automatic_monster_hit_points(creature: Dictionary) -> Dictionary:
+	var stat_value: Variant = creature.get("stat_block", {})
+	if not stat_value is Dictionary:
+		return {"available": false, "reason": "Blocco statistiche assente."}
+	var stat: Dictionary = stat_value as Dictionary
+	var hp_value: Variant = stat.get("hp", {})
+	if hp_value is Dictionary and (hp_value as Dictionary).has("average"):
+		return {
+			"available": true,
+			"value": maxi(1, int((hp_value as Dictionary).get("average", 1))),
+			"detail": "Valore medio del blocco statistiche 5etools"
+		}
+	if hp_value is int or hp_value is float:
+		return {"available": true, "value": maxi(1, int(hp_value)),
+			"detail": "PF del blocco statistiche"}
+	return {"available": false, "reason": "PF medi non presenti nel blocco statistiche."}
+
+
 static func automatic_hit_points(character: Dictionary) -> Dictionary:
 	var classes: Array[Dictionary] = level_classes(character)
 	if classes.is_empty():
