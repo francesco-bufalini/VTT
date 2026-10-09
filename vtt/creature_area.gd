@@ -1094,7 +1094,7 @@ func _on_monster_received(request_key: String, stat: Dictionary) -> void:
 	var record: Dictionary = _archive.create_monster(stat)
 	record["kind"] = "monster"
 	_choose_miniature(record, true)
-	_set_status("Creatura importata; ora ne controlli la scheda.")
+	_set_status("Seleziona la miniatura predefinita per completare l’importazione.")
 
 
 func refresh_owned_sheets() -> void:
