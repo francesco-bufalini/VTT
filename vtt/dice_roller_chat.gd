@@ -1,6 +1,7 @@
 extends Node
 
 const DiceChatSync = preload("res://network/dice_chat_sync.gd")
+const CreatureOwner = preload("res://vtt/creature_owner.gd")
 const HISTORY_DIR := "user://dice_chat"
 const PROFILE_PATH := "user://dice_chat/profile.cfg"
 const MAX_HISTORY := 300
@@ -57,6 +58,9 @@ func setup(
 		ProjectSettings.globalize_path(HISTORY_DIR)
 	)
 	_load_scene_identity()
+	# Token ownership is assigned when created or transferred, never claimed
+	# by selecting an arbitrary scene token at startup.
+	_scene_identity_configured = true
 
 	sync = DiceChatSync.new()
 	sync.name = "DiceChatSync"
@@ -68,7 +72,6 @@ func setup(
 	_build_ui()
 	_build_scene_identity_dialog()
 	set_session_key(initial_session_key)
-	call_deferred("_prompt_initial_identity_after_scene_ready")
 
 
 func set_session_key(value: String) -> void:
@@ -859,19 +862,6 @@ static func percentile_total(tens_face: int, ones_face: int) -> int:
 	return 100 if total == 0 else total
 
 
-func _prompt_initial_identity_after_scene_ready() -> void:
-	# Il salvataggio della campagna viene applicato in deferred: attendere due
-	# frame fa sì che il primo popup veda davvero tutti i token caricati.
-	await get_tree().process_frame
-	await get_tree().process_frame
-	# L’identità salvata serve solo come preselezione: a ogni avvio chiediamo
-	# comunque quale token appartiene all’utente, perché la composizione della
-	# scena può essere cambiata dall’ultima sessione.
-	if not _identity_placement_pending:
-		_identity_change_mode = false
-		_show_scene_identity_dialog()
-
-
 func _build_scene_identity_dialog() -> void:
 	scene_identity_dialog = ConfirmationDialog.new()
 	scene_identity_dialog.name = "SceneChatIdentityDialog"
@@ -897,15 +887,15 @@ func _build_scene_identity_dialog() -> void:
 
 	var info := Label.new()
 	info.text = (
-		"Seleziona un token già in gioco, Nessuno, oppure scegli una "
-		+ "miniatura da generare. Se scegli Nessuno apparirai in chat come "
-		+ "master (nome dispositivo)."
+		"Scegli soltanto quale delle tue miniature usare come nome in chat, "
+		+ "oppure genera una nuova miniatura. Questa scelta non assegna "
+		+ "il controllo: appartengono a te le miniature che crei o ricevi."
 	)
 	info.autowrap_mode = TextServer.AUTOWRAP_WORD_SMART
 	body.add_child(info)
 
 	var identity_label := Label.new()
-	identity_label.text = "Token associato all'utente"
+	identity_label.text = "Nome da usare in chat (miniature controllate)"
 	body.add_child(identity_label)
 
 	scene_identity_selector = OptionButton.new()
@@ -987,15 +977,9 @@ func _build_scene_identity_dialog() -> void:
 	)
 
 
-func ensure_scene_identity(on_ready: Callable = Callable()) -> bool:
-	if _scene_identity_configured:
-		return true
-	if _identity_placement_pending:
-		return false
-	if on_ready.is_valid():
-		_pending_identity_callback = on_ready
-	_show_scene_identity_dialog()
-	return false
+func ensure_scene_identity(_on_ready: Callable = Callable()) -> bool:
+	# Callers (combat, dice, sheet rolls) no longer require a confirmation.
+	return true
 
 
 func request_change_scene_identity() -> void:
@@ -1266,6 +1250,7 @@ func _scene_identity_tokens() -> Array[Node3D]:
 			and is_instance_valid(node)
 			and board_root.is_ancestor_of(node)
 			and not node.is_queued_for_deletion()
+			and String(node.get_meta("creature_owner_id", "")) == CreatureOwner.local_id()
 		):
 			result.append(node as Node3D)
 	result.sort_custom(
@@ -1359,11 +1344,18 @@ func _token_stable_id(token: Node3D) -> String:
 
 
 func _identity_token() -> Node3D:
-	if _selected_identity_token_id.is_empty():
-		return null
-	for token: Node3D in _scene_identity_tokens():
-		if _token_stable_id(token) == _selected_identity_token_id:
+	var owned_tokens := _scene_identity_tokens()
+	for token: Node3D in owned_tokens:
+		if not _selected_identity_token_id.is_empty() and _token_stable_id(token) == _selected_identity_token_id:
 			return token
+	# Use a currently selected owned miniature, without claiming ownership.
+	var selected_value: Variant = board_root.get("_selected_tokens") if board_root != null else []
+	if selected_value is Array and (selected_value as Array).size() == 1:
+		var selected: Variant = (selected_value as Array)[0]
+		if selected is Node3D and owned_tokens.has(selected as Node3D):
+			return selected as Node3D
+	if owned_tokens.size() == 1:
+		return owned_tokens[0]
 	return null
 
 
