@@ -40,6 +40,7 @@ var _multiclass_controls: Array[Dictionary] = []
 var _level: SpinBox
 var _feats: TextEdit
 var _default_miniature: LineEdit
+var _default_miniature_id := ""
 var _add_kind_dialog: ConfirmationDialog
 var _miniature_dialog: ConfirmationDialog
 var _miniature_filter: LineEdit
@@ -421,15 +422,15 @@ func _build_ui() -> void:
 	_default_miniature.editable = false
 	miniature_row.add_child(_default_miniature)
 	var choose_miniature := Button.new()
-	choose_miniature.text = "Scegli…"
+	choose_miniature.text = "Cerca e scegli…"
 	choose_miniature.pressed.connect(func() -> void: _choose_miniature(_current(), false))
 	miniature_row.add_child(choose_miniature)
 	_current_miniature = Label.new()
 	_current_miniature.text = "Aspetto attuale: nessun token"
 	form.add_child(_current_miniature)
 	var edit_appearance := Button.new()
-	edit_appearance.text = "Miniature · appearance / size / reach…"
-	edit_appearance.tooltip_text = "Open the common token visual editor for this creature's linked miniature."
+	edit_appearance.text = "Cambia aspetto attuale…"
+	edit_appearance.tooltip_text = "Cerca fra le miniature disponibili e modifica l'aspetto, la taglia o la gittata del token in scena."
 	edit_appearance.pressed.connect(_edit_linked_token_appearance)
 	form.add_child(edit_appearance)
 
@@ -730,7 +731,13 @@ func _load_form(record: Dictionary) -> void:
 			primary_level = int((first_class as Dictionary).get("level", primary_level))
 	_level.value = clampi(primary_level, 1, 20)
 	_feats.text = String(record.get("feats", ""))
-	_default_miniature.text = String(record.get("default_miniature_id", ""))
+	_default_miniature_id = String(record.get("default_miniature_id", ""))
+	_default_miniature.text = _miniature_display_name(_default_miniature_id)
+	_default_miniature.tooltip_text = (
+		"ID catalogo: " + _default_miniature_id
+		if not _default_miniature_id.is_empty()
+		else "Scegli una miniatura con il pulsante Cerca…"
+	)
 	var is_character := String(record.get("kind", "")) == "character"
 	_species.disabled = not is_character
 	_class_name.disabled = not is_character
@@ -777,7 +784,7 @@ func _save() -> void:
 	for ability: String in _ability_spins.keys():
 		abilities[ability] = int((_ability_spins[ability] as SpinBox).value)
 	record["abilities"] = abilities
-	record["default_miniature_id"] = _default_miniature.text.strip_edges()
+	record["default_miniature_id"] = _default_miniature_id
 	if String(record.get("kind", "")) == "character":
 		var species := _reference_entry(_species)
 		var class_ref := _reference_entry(_class_name)
@@ -820,15 +827,6 @@ func _save() -> void:
 			})
 		record["classes"] = classes
 		record["feats"] = _feats.text
-		if String(record["default_miniature_id"]).is_empty():
-			var suggestion := String(species.get("default_miniature_id", ""))
-			if suggestion.is_empty():
-				suggestion = _species_default_miniature(String(record.get("species", "")))
-			if not suggestion.is_empty():
-				record["default_miniature_id"] = suggestion
-				_loading = true
-				_default_miniature.text = suggestion
-				_loading = false
 	var derived: Array[Dictionary] = (
 		Rules.character_trackers(record)
 		if String(record.get("kind", "")) == "character"
@@ -1380,16 +1378,12 @@ func _choose_miniature(record: Dictionary, is_new: bool) -> void:
 			if candidate is Dictionary and not String(candidate.get("id", "")).is_empty():
 				_miniature_choices.append((candidate as Dictionary).duplicate(true))
 	_miniature_filter.text = ""
-	var suggestion := String(record.get("default_miniature_id", ""))
-	if suggestion.is_empty():
-		var creature_name := String(record.get("name", "")).strip_edges()
-		if String(record.get("kind", "")) == "character":
-			creature_name = String(record.get("species", "")).strip_edges()
-		for entry: Dictionary in _miniature_choices:
-			if String(entry.get("name", "")).nocasecmp_to(creature_name) == 0:
-				suggestion = String(entry.get("id", ""))
-				break
-	_chosen_miniature_id = suggestion
+	# New characters must make an explicit selection. Do not silently
+	# accept the first available miniature or a guessed species match.
+	_chosen_miniature_id = (
+		"" if is_new
+		else String(record.get("default_miniature_id", ""))
+	)
 	_filter_miniatures("")
 	_miniature_dialog.popup_centered(Vector2i(590, 510))
 
@@ -1409,11 +1403,8 @@ func _filter_miniatures(query: String) -> void:
 		_miniature_list.add_item("%s · %s" % [name, id])
 		if id == _chosen_miniature_id:
 			selected_index = index
-	if selected_index < 0 and not _visible_miniatures.is_empty():
-		selected_index = 0
 	if selected_index >= 0:
 		_miniature_list.select(selected_index)
-		_chosen_miniature_id = String(_visible_miniatures[selected_index].get("id", ""))
 	else:
 		_chosen_miniature_id = ""
 	_miniature_dialog.get_ok_button().disabled = _chosen_miniature_id.is_empty()
@@ -1568,22 +1559,45 @@ func _species_default_miniature(species: String) -> String:
 
 
 func _edit_linked_token_appearance() -> void:
-	var token := _find_linked_token(_current())
+	var record: Dictionary = _current()
+	var token := find_linked_token_for_creature(
+		String(record.get("id", ""))
+	)
 	if token == null:
-		_set_status("No linked miniature for this creature.")
+		_set_status("Questa creatura non ha un token in scena: usa Genera token / riposiziona.")
 		return
 	hide_panel()
 	if board_root.has_method("open_token_transformation"):
 		board_root.call("open_token_transformation", token)
 
 
+func _miniature_display_name(miniature_id: String) -> String:
+	if miniature_id.is_empty():
+		return "Nessuna miniatura selezionata"
+	if board_root.has_method("list_available_miniatures"):
+		var profiles: Variant = board_root.call("list_available_miniatures")
+		if profiles is Array:
+			for raw: Variant in profiles:
+				if raw is Dictionary and String(raw.get("id", "")) == miniature_id:
+					return String(raw.get("name", miniature_id))
+	return miniature_id
+
+
 func _refresh_current_miniature(record: Dictionary) -> void:
-	var token := _find_linked_token(record)
+	var token := find_linked_token_for_creature(
+		String(record.get("id", ""))
+	)
 	if token == null:
 		_current_miniature.text = "Aspetto attuale: nessun token associato"
 	elif token.has_method("get_visual_asset_path"):
-		_current_miniature.text = "Aspetto attuale: " + String(
-			token.call("get_visual_asset_path")
+		var current_id: String = (
+			String(token.call("get_token_pack_id"))
+			if token.has_method("get_token_pack_id") else ""
+		)
+		_current_miniature.text = "Aspetto attuale: " + (
+			_miniature_display_name(current_id)
+			if not current_id.is_empty()
+			else String(token.call("get_visual_asset_path"))
 		)
 
 
