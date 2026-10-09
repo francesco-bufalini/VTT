@@ -210,6 +210,18 @@ func run() -> void:
 		"sub-cell physics offsets must not generate zero-height badges"
 	):
 		return
+	# Map collision faces can sit half a grid square below the tactical
+	# slice without constituting a lower floor. They must not show -1.
+	if not _check(
+		int(overlay.call("_difference_cells", -0.5)) == 0,
+		"half-cell floor-face offsets must not produce false -1 square hover"
+	):
+		return
+	if not _check(
+		int(overlay.call("_difference_cells", -1.0)) == -1,
+		"a genuinely lower floor must still display -1 square"
+	):
+		return
 
 	# The 3D rings can be clipped by the selected camera floor, but the
 	# screen-space conditions and their legible labels must remain visible.
