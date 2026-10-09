@@ -136,6 +136,8 @@ func create_character() -> Dictionary:
 		"class": "",
 		"class_source": "",
 		"level": 1,
+		"proficiency_bonus": 2,
+		"spellcasting_calculation": {},
 		"species": "",
 		"species_source": "",
 		"background": "",
