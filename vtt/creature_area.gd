@@ -1548,7 +1548,7 @@ func _on_spellcasting_updated(values: Dictionary) -> void:
 	if record.is_empty():
 		return
 	for key: String in [
-		"spells", "prepared_spells",
+		"spells", "prepared_spells", "spellbook_spells",
 		"spell_slots_total", "spell_slots_spent",
 		"pact_slots_total", "pact_slots_spent", "pact_slot_level"
 	]:
