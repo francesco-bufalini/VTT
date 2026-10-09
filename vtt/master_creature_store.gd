@@ -63,10 +63,33 @@ func save_creatures(creatures: Array[Dictionary]) -> Error:
 	DirAccess.make_dir_recursive_absolute(
 		ProjectSettings.globalize_path(ROOT_DIR)
 	)
+	# Keep private records transferred to another installation intact when
+	# a local controller saves their visible subset.
+	var merged: Array[Dictionary] = creatures.duplicate(true)
+	var previous := FileAccess.open(_file_path(), FileAccess.READ)
+	if previous != null:
+		var root_value: Variant = JSON.parse_string(previous.get_as_text())
+		previous.close()
+		if root_value is Dictionary:
+			var saved_value: Variant = (root_value as Dictionary).get("creatures", [])
+			if saved_value is Array:
+				for raw: Variant in saved_value as Array:
+					if not raw is Dictionary:
+						continue
+					var stored: Dictionary = raw as Dictionary
+					if CreatureOwner.is_owner(stored):
+						continue
+					var exists := false
+					for visible: Dictionary in merged:
+						if String(visible.get("id", "")) == String(stored.get("id", "")):
+							exists = true
+							break
+					if not exists:
+						merged.append(stored.duplicate(true))
 	var payload := {
 		"version": FILE_VERSION,
 		"scope": scope_id(),
-		"creatures": creatures
+		"creatures": merged
 	}
 	var file := FileAccess.open(_file_path(), FileAccess.WRITE)
 	if file == null:
