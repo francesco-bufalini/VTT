@@ -20,6 +20,10 @@ func _check(condition: bool, message: String) -> bool:
 	return condition
 
 
+func _hold_fixture_levels() -> Array[float]:
+	return [0.0, 6.0, 12.0, 18.0]
+
+
 func _add_floor(board: Node3D, y: float) -> void:
 	var body: StaticBody3D = StaticBody3D.new()
 	body.collision_layer = 1
@@ -168,7 +172,80 @@ func run() -> void:
 	):
 		return
 
+	# Continuous 2D floor navigation: one initial step, a short delay,
+	# then repeat while Space is held, without skipping solid surfaces.
+	camera.call("set_top_down_floor_levels_provider", Callable(self, "_hold_fixture_levels"))
+	camera.call("enter_top_down_2d", Vector3.ZERO, 30.0, 0.0)
+	var repeat_size: float = camera.size
+	camera.call("_advance_top_down_level_hold", 1, 0.016)
+	if not _check(
+		is_equal_approx(float(camera.call("get_top_down_level")), 6.0),
+		"holding Space must start with an immediate step"
+	):
+		return
+	camera.call("_advance_top_down_level_hold", 1, 0.20)
+	if not _check(
+		is_equal_approx(float(camera.call("get_top_down_level")), 6.0),
+		"the initial repeat delay must prevent accidental double steps"
+	):
+		return
+	camera.call("_advance_top_down_level_hold", 1, 0.10)
+	if not _check(
+		is_equal_approx(float(camera.call("get_top_down_level")), 12.0),
+		"holding Space beyond the delay must reach the next floor"
+	):
+		return
+	camera.call("_advance_top_down_level_hold", 1, 0.12)
+	if not _check(
+		is_equal_approx(float(camera.call("get_top_down_level")), 18.0),
+		"holding Space must keep repeating through all solid floors"
+	):
+		return
+	camera.call("_advance_top_down_level_hold", 1, 0.5)
+	if not _check(
+		is_equal_approx(float(camera.call("get_top_down_level")), 18.0),
+		"holding Space at the highest floor must not create phantom levels"
+	):
+		return
+
+	camera.call("_advance_top_down_level_hold", 0, 0.016)
+	camera.call("_advance_top_down_level_hold", -1, 0.016)
+	if not _check(
+		is_equal_approx(float(camera.call("get_top_down_level")), 12.0),
+		"Shift+Space must start descending immediately"
+	):
+		return
+	camera.call("_advance_top_down_level_hold", -1, 0.29)
+	camera.call("_advance_top_down_level_hold", -1, 0.12)
+	if not _check(
+		is_equal_approx(float(camera.call("get_top_down_level")), 0.0),
+		"holding Shift+Space must keep descending to the lowest floor"
+	):
+		return
+
+	camera.call("_advance_top_down_level_hold", 1, 0.016)
+	camera.call("_advance_top_down_level_hold", -1, 0.016)
+	if not _check(
+		is_equal_approx(float(camera.call("get_top_down_level")), 0.0),
+		"toggling Shift while holding Space must reverse direction immediately"
+	):
+		return
+	camera.call("_advance_top_down_level_hold", 0, 0.016)
+	camera.call("_advance_top_down_level_hold", 1, 0.016)
+	if not _check(
+		is_equal_approx(float(camera.call("get_top_down_level")), 6.0)
+		and is_equal_approx(camera.size, repeat_size),
+		"releasing and pressing Space must rearm one step without changing zoom"
+	):
+		return
+	camera.call("exit_top_down_2d")
+	if not _check(
+		camera.global_transform.is_equal_approx(original_transform),
+		"held 2D movement must still restore the original 3D camera pose"
+	):
+		return
+
 	board.queue_free()
 	await process_frame
-	print("PASS: 2D floors are discrete, elevation units are consistent and 3D state restores")
+	print("PASS: 2D floors, elevation units, held Space/Shift+Space repeats and 3D restoration")
 	quit()
