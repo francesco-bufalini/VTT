@@ -4974,10 +4974,12 @@ func _move_selected(
 		return
 
 	var before: Dictionary = begin_token_move_transaction(_selected_tokens)
+	var dismounted := false
 	if mount_controller != null:
 		for moving_token: CharacterBody3D in _selected_tokens:
 			if mount_controller.is_mounted(moving_token):
 				mount_controller.dismount(moving_token)
+				dismounted = true
 	var origins: Array[Vector3] = []
 	for token: CharacterBody3D in _selected_tokens:
 		origins.append(token.global_position)
@@ -5002,8 +5004,9 @@ func _move_selected(
 			):
 				token.call("apply_gravity")
 
-	if moved:
+	if moved or dismounted:
 		commit_undo_transaction(before)
+	if moved:
 		check_opportunity_attacks_after_movement(
 			_selected_tokens.duplicate(),
 			origins
@@ -5018,10 +5021,12 @@ func _move_selected_vertical(steps: int) -> void:
 		return
 
 	var before: Dictionary = begin_token_move_transaction(_selected_tokens)
+	var dismounted := false
 	if mount_controller != null:
 		for moving_token: CharacterBody3D in _selected_tokens:
 			if mount_controller.is_mounted(moving_token):
 				mount_controller.dismount(moving_token)
+				dismounted = true
 	var origins: Array[Vector3] = []
 	for token: CharacterBody3D in _selected_tokens:
 		origins.append(token.global_position)
@@ -5034,8 +5039,9 @@ func _move_selected_vertical(steps: int) -> void:
 		item_controller.flush_motion(_selected_tokens)
 
 	var moved: bool = _selected_tokens_moved_from(origins)
-	if moved:
+	if moved or dismounted:
 		commit_undo_transaction(before)
+	if moved:
 		check_opportunity_attacks_after_movement(
 			_selected_tokens.duplicate(),
 			origins
