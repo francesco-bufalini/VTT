@@ -27,7 +27,7 @@ func setup(board: Node3D, level_probe: Node3D) -> void:
 	add_child(_hover_panel)
 	_hover_text = Label.new()
 	_hover_text.mouse_filter = Control.MOUSE_FILTER_IGNORE
-	_hover_text.add_theme_font_size_override("font_size", 13)
+	_hover_text.add_theme_font_size_override("font_size", 17)
 	_hover_panel.add_child(_hover_text)
 	_hover_panel.hide()
 
@@ -74,7 +74,7 @@ func _new_badge() -> Control:
 	name_label.mouse_filter = Control.MOUSE_FILTER_IGNORE
 	name_label.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
 	name_label.vertical_alignment = VERTICAL_ALIGNMENT_CENTER
-	name_label.add_theme_font_size_override("font_size", 18)
+	name_label.add_theme_font_size_override("font_size", 22)
 	name_label.add_theme_color_override("font_color", Color(1.0, 0.97, 0.88))
 	name_label.add_theme_color_override("font_outline_color", Color(0.07, 0.08, 0.11, 0.95))
 	name_label.add_theme_constant_override("outline_size", 5)
@@ -101,7 +101,7 @@ func _new_badge() -> Control:
 	conditions_label.vertical_alignment = VERTICAL_ALIGNMENT_CENTER
 	conditions_label.clip_text = true
 	conditions_label.text_overrun_behavior = TextServer.OVERRUN_TRIM_ELLIPSIS
-	conditions_label.add_theme_font_size_override("font_size", 13)
+	conditions_label.add_theme_font_size_override("font_size", 17)
 	conditions_label.add_theme_color_override("font_color", Color(1.0, 0.91, 0.73))
 	conditions_label.add_theme_color_override("font_outline_color", Color(0.07, 0.08, 0.11, 0.98))
 	conditions_label.add_theme_constant_override("outline_size", 3)
@@ -298,10 +298,10 @@ func _render_token_badge(token: CharacterBody3D, floor_y: float) -> void:
 		if not provided_name.is_empty():
 			display_name = provided_name
 	name_label.text = display_name
-	name_label.size = Vector2(maxf(icon_size * 1.6, 180.0), 26.0)
+	name_label.size = Vector2(maxf(icon_size * 2.0, 220.0), 34.0)
 	name_label.position = Vector2(
 		(icon_size - name_label.size.x) * 0.5,
-		-49.0
+		-66.0
 	)
 
 	var conditions_label: Label = badge.get_node("Conditions") as Label
@@ -311,11 +311,8 @@ func _render_token_badge(token: CharacterBody3D, floor_y: float) -> void:
 	# condition. Keep it visible even when manual condition visuals are off.
 	if bool(token.get_meta("flanked", false)):
 		status_parts.append("⚔ Flanked")
-	var show_conditions: bool = (
-		not token.has_method("are_condition_visuals_visible")
-		or bool(token.call("are_condition_visuals_visible"))
-	)
-	if show_conditions and token.has_method("get_active_condition_display_parts"):
+	# Screen-space conditions must not depend on clipped 3D visuals.
+	if token.has_method("get_active_condition_display_parts"):
 		var active_parts: Variant = token.call("get_active_condition_display_parts")
 		if active_parts is PackedStringArray:
 			for part: String in active_parts:
@@ -326,16 +323,16 @@ func _render_token_badge(token: CharacterBody3D, floor_y: float) -> void:
 	if has_status:
 		# Keep the strip tied to the token's screen footprint as the user zooms.
 		# At distant zoom use icons rather than pushing text across many cells.
-		var width_px: float = clampf(icon_size * 1.6, 60.0, 176.0)
 		var status_text: String = " · ".join(status_parts)
-		if width_px < 115.0:
-			var condensed := PackedStringArray()
-			for part: String in status_parts:
-				condensed.append(part.split(" ", false, 1)[0])
-			status_text = " ".join(condensed)
+		# Keep text legible independently of token footprint and camera zoom.
+		var status_font: Font = conditions_label.get_theme_font("font")
+		var text_width: float = status_font.get_string_size(
+			status_text, HORIZONTAL_ALIGNMENT_LEFT, -1, 17
+		).x
+		var width_px: float = clampf(text_width + 22.0, 100.0, 560.0)
 		var offset_x: float = (icon_size - width_px) * 0.5
-		status_background.position = Vector2(offset_x, -23.0)
-		status_background.size = Vector2(width_px, 20.0)
+		status_background.position = Vector2(offset_x, -30.0)
+		status_background.size = Vector2(width_px, 27.0)
 		conditions_label.position = status_background.position
 		conditions_label.size = status_background.size
 		if conditions_label.text != status_text:
@@ -349,7 +346,7 @@ func _render_token_badge(token: CharacterBody3D, floor_y: float) -> void:
 	var delta: float = base_y - floor_y
 	var height_label: Label = badge.get_node("Height") as Label
 	height_label.position = Vector2(icon_size - 1.0, icon_size * 0.38)
-	height_label.add_theme_font_size_override("font_size", 13)
+	height_label.add_theme_font_size_override("font_size", 17)
 	height_label.text = _format_difference(delta)
 	height_label.visible = _difference_cells(delta) != 0
 
