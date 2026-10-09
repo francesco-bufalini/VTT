@@ -3518,7 +3518,7 @@ func _build_token_state_dialog() -> void:
 	_token_effect_dialog = AcceptDialog.new()
 	_token_effect_dialog.title = "5etools · Effect details"
 	_token_effect_dialog.min_size = Vector2i(540, 400)
-	color_dialog.add_child(_token_effect_dialog)
+	add_child(_token_effect_dialog)
 	_token_effect_text = RichTextLabel.new()
 	_token_effect_text.custom_minimum_size = Vector2(520.0, 315.0)
 	_token_effect_text.selection_enabled = true
