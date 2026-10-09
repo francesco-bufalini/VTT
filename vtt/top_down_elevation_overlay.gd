@@ -42,16 +42,25 @@ func set_2d_active(enabled: bool) -> void:
 
 
 func _new_badge() -> Control:
+	# No opaque tile or initials: bestiary portraits keep their own alpha,
+	# while tokens without portraits show their real 3D miniatures below.
 	var badge: Control = Control.new()
 	badge.z_index = 10
 	badge.mouse_filter = Control.MOUSE_FILTER_IGNORE
 	add_child(badge)
 
-	var background: ColorRect = ColorRect.new()
-	background.name = "Background"
-	background.color = Color(0.08, 0.11, 0.15, 0.94)
-	background.mouse_filter = Control.MOUSE_FILTER_IGNORE
-	badge.add_child(background)
+	var selection: Panel = Panel.new()
+	selection.name = "SelectionRing"
+	selection.mouse_filter = Control.MOUSE_FILTER_IGNORE
+	var ring_style: StyleBoxFlat = StyleBoxFlat.new()
+	ring_style.bg_color = Color.TRANSPARENT
+	ring_style.draw_center = false
+	ring_style.border_color = Color(0.33, 0.85, 0.69, 0.96)
+	ring_style.set_border_width_all(3)
+	ring_style.set_corner_radius_all(100)
+	selection.add_theme_stylebox_override("panel", ring_style)
+	selection.visible = false
+	badge.add_child(selection)
 
 	var portrait: TextureRect = TextureRect.new()
 	portrait.name = "Portrait"
@@ -60,13 +69,16 @@ func _new_badge() -> Control:
 	portrait.stretch_mode = TextureRect.STRETCH_KEEP_ASPECT_CENTERED
 	badge.add_child(portrait)
 
-	var fallback: Label = Label.new()
-	fallback.name = "Fallback"
-	fallback.mouse_filter = Control.MOUSE_FILTER_IGNORE
-	fallback.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
-	fallback.vertical_alignment = VERTICAL_ALIGNMENT_CENTER
-	fallback.add_theme_color_override("font_color", Color.WHITE)
-	badge.add_child(fallback)
+	var name_label: Label = Label.new()
+	name_label.name = "Name"
+	name_label.mouse_filter = Control.MOUSE_FILTER_IGNORE
+	name_label.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
+	name_label.vertical_alignment = VERTICAL_ALIGNMENT_CENTER
+	name_label.add_theme_font_size_override("font_size", 14)
+	name_label.add_theme_color_override("font_color", Color(1.0, 0.97, 0.88))
+	name_label.add_theme_color_override("font_outline_color", Color(0.07, 0.08, 0.11, 0.95))
+	name_label.add_theme_constant_override("outline_size", 4)
+	badge.add_child(name_label)
 
 	var height_label: Label = Label.new()
 	height_label.name = "Height"
@@ -134,29 +146,38 @@ func _render_token_badge(token: CharacterBody3D, floor_y: float) -> void:
 		180.0
 	)
 	badge.position = screen_position - Vector2.ONE * icon_size * 0.5
-	var background: ColorRect = badge.get_node("Background") as ColorRect
-	var portrait: TextureRect = badge.get_node("Portrait") as TextureRect
-	var fallback: Label = badge.get_node("Fallback") as Label
-	for graphic: Control in [background, portrait, fallback]:
-		graphic.position = Vector2.ZERO
-		graphic.size = Vector2.ONE * icon_size
-	background.color = Color(0.09, 0.13, 0.20, 0.94)
 
+	var portrait: TextureRect = badge.get_node("Portrait") as TextureRect
+	portrait.position = Vector2.ZERO
+	portrait.size = Vector2.ONE * icon_size
 	var texture: Texture2D = null
 	if token.has_method("get_top_down_icon_texture"):
 		texture = token.call("get_top_down_icon_texture") as Texture2D
 	portrait.texture = texture
 	portrait.visible = texture != null
-	fallback.visible = texture == null
-	if texture == null:
-		var display_name: String = String(token.get("token_display_name"))
-		if display_name.is_empty():
-			display_name = token.name
-		fallback.text = display_name.left(2).to_upper()
-		fallback.add_theme_font_size_override(
-			"font_size",
-			maxi(10, mini(24, int(icon_size * 0.42)))
-		)
+
+	var selection: Panel = badge.get_node("SelectionRing") as Panel
+	selection.position = Vector2(-5.0, -5.0)
+	selection.size = Vector2.ONE * (icon_size + 10.0)
+	selection.visible = (
+		token.has_method("is_selected")
+		and bool(token.call("is_selected"))
+	)
+
+	# The 2D label replaces only the clipped world-space name, not the
+	# miniatures or their 3D identity. Always display the full name.
+	var name_label: Label = badge.get_node("Name") as Label
+	var display_name: String = token.name
+	if token.has_method("get_display_name"):
+		var provided_name: String = String(token.call("get_display_name")).strip_edges()
+		if not provided_name.is_empty():
+			display_name = provided_name
+	name_label.text = display_name
+	name_label.size = Vector2(maxf(icon_size * 2.0, 180.0), 24.0)
+	name_label.position = Vector2(
+		(icon_size - name_label.size.x) * 0.5,
+		-28.0
+	)
 
 	var base_y: float = token.global_position.y - (
 		float(token.get("token_height_cells")) * float(token.get("cell_size")) * 0.5
