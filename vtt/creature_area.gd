@@ -1709,6 +1709,7 @@ func _save() -> void:
 			if String(extra_ref.get("name", "")).is_empty():
 				continue
 			var extra_level: int = int((definition["level"] as SpinBox).value)
+			var extra_subclass: Dictionary = _reference_entry(definition["subclass"])
 			monster_classes.append({
 				"name": String(extra_ref.get("name", "")),
 				"source": String(extra_ref.get("source", "")),
@@ -1754,7 +1755,10 @@ func _save() -> void:
 				"name": extra_name,
 				"source": String(extra_ref.get("source", "")),
 				"id": String(extra_ref.get("id", "")),
-				"level": extra_level
+				"level": extra_level,
+				"subclass": String(extra_subclass.get("name", "")),
+				"subclass_source": String(extra_subclass.get("source", "")),
+				"subclass_id": String(extra_subclass.get("id", ""))
 			})
 		# Level is derived from the class levels, NEVER used as an input
 		# for calculating the base class. D&D 5e caps their sum at 20.
