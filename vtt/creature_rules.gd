@@ -206,7 +206,7 @@ static func spell_slot_progression(character: Dictionary) -> Dictionary:
 		elif not name.is_empty() and not HIT_DICE.has(name):
 			warnings.append("Classe homebrew non calcolabile: " + String(cls.get("name", "")))
 	var caster_level := 0
-	var multiclass: bool = contributions.size() > 1
+	var multiclass: bool = classes.size() > 1
 	for contribution: Dictionary in contributions:
 		var level: int = int(contribution.get("level", 0))
 		match String(contribution.get("kind", "")):
