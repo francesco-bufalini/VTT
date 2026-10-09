@@ -9,6 +9,7 @@ const PLAYER_ADD_CHARACTER := 61
 const PLAYER_LINK_TOKEN := 62
 const PLAYER_LINK_CHARACTER := 63
 
+const CREATURE_AREA_OPEN := 59
 const MASTER_AREA_OPEN := 64
 const MASTER_LINK_TOKEN := 65
 const MASTER_LINK_CREATURE := 66
@@ -127,6 +128,10 @@ func _build_toolbar() -> void:
 		["Termina combattimento", COMBAT_END]
 	], _on_combat))
 
+	row.add_child(_menu("Creature", [
+		["Apri schede e archivio creature", CREATURE_AREA_OPEN]
+	], _on_creature))
+
 	row.add_child(_menu("Area Player", [
 		["Apri Area Player", PLAYER_AREA_OPEN],
 		["Aggiungi Personaggio", PLAYER_ADD_CHARACTER],
@@ -230,6 +235,11 @@ func _on_combat(id: int) -> void:
 			board_root.call("toggle_initiative_panel")
 		COMBAT_END:
 			board_root.call("end_combat_mode")
+
+
+func _on_creature(id: int) -> void:
+	if id == CREATURE_AREA_OPEN:
+		board_root.call("toggle_creature_area")
 
 
 func _on_player(id: int) -> void:
