@@ -19,10 +19,12 @@ func setup(board: Node3D, level_probe: Node3D) -> void:
 	tokens_root = board.get_node_or_null("Tokens") as Node3D
 	cell_size = maxf(float(board.get("cell_size")), 0.001)
 	mouse_filter = Control.MOUSE_FILTER_IGNORE
+	# Tactical graphics stay underneath every sheet/dialog sharing the UI layer.
+	z_index = -20
 	set_anchors_and_offsets_preset(Control.PRESET_FULL_RECT)
 	visible = false
 	_hover_panel = PanelContainer.new()
-	_hover_panel.z_index = 20
+	_hover_panel.z_index = 1
 	_hover_panel.mouse_filter = Control.MOUSE_FILTER_IGNORE
 	add_child(_hover_panel)
 	_hover_text = Label.new()
@@ -45,7 +47,7 @@ func _new_badge() -> Control:
 	# No opaque tile or initials: bestiary portraits keep their own alpha,
 	# while tokens without portraits show their real 3D miniatures below.
 	var badge: Control = Control.new()
-	badge.z_index = 10
+	badge.z_index = 0
 	badge.mouse_filter = Control.MOUSE_FILTER_IGNORE
 	add_child(badge)
 
