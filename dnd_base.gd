@@ -162,6 +162,8 @@ var token_party_input: LineEdit
 var token_identity_label: Label
 var token_state_grid: GridContainer
 var token_state_checks: Dictionary = {}
+var _token_effect_dialog: AcceptDialog
+var _token_effect_text: RichTextLabel
 var _editing_token: CharacterBody3D
 var token_drag: Node
 var item_controller: Node
@@ -3513,6 +3515,15 @@ func _build_token_state_dialog() -> void:
 	content_box.add_child(token_state_grid)
 
 	_refresh_shared_condition_choices(TokenScript.ContentCatalog.condition_definitions())
+	_token_effect_dialog = AcceptDialog.new()
+	_token_effect_dialog.title = "5etools · Effect details"
+	_token_effect_dialog.min_size = Vector2i(540, 400)
+	color_dialog.add_child(_token_effect_dialog)
+	_token_effect_text = RichTextLabel.new()
+	_token_effect_text.custom_minimum_size = Vector2(520.0, 315.0)
+	_token_effect_text.selection_enabled = true
+	_token_effect_text.scroll_active = true
+	_token_effect_dialog.add_child(_token_effect_text)
 
 	var help := Label.new()
 	help.name = "StatesHelp"
@@ -3530,31 +3541,48 @@ func _refresh_shared_condition_choices(definitions: Array) -> void:
 		token_state_grid.remove_child(child)
 		child.queue_free()
 	token_state_checks.clear()
-	for value: Variant in definitions:
-		if not value is Dictionary:
+	for category: String in ["conditions", "diseases", "effects"]:
+		var category_rows: Array[Dictionary] = []
+		for value: Variant in definitions:
+			if value is Dictionary and String(value.get("category", "conditions")) == category:
+				category_rows.append(value as Dictionary)
+		if category_rows.is_empty():
 			continue
-		var definition := value as Dictionary
-		var condition_id := String(definition.get("id", ""))
-		if condition_id.is_empty():
-			continue
-		var check := CheckButton.new()
-		var label_text := "%s  %s" % [
-			String(definition.get("icon", "[--]")),
-			String(definition.get("name", condition_id))
-		]
-		if bool(definition.get("automatic", false)):
-			label_text += "  (automatico)"
-			check.disabled = true
-			check.tooltip_text = (
-				"Questa condizione è calcolata automaticamente dalla mappa."
-			)
-		elif not bool(definition.get("official", true)):
-			label_text += "  (marker)"
-		check.tooltip_text = TokenScript.ContentCatalog.description(definition)
-		check.text = label_text
-		token_state_grid.add_child(check)
-		token_state_checks[condition_id] = check
+		var heading := Label.new()
+		heading.text = {
+			"conditions": "Conditions · 5etools",
+			"diseases": "Diseases / magical diseases",
+			"effects": "Other effects · 5etools / homebrew"
+		}[category]
+		heading.add_theme_font_size_override("font_size", 15)
+		token_state_grid.add_child(heading)
+		var spacer := Control.new()
+		token_state_grid.add_child(spacer)
+		for definition: Dictionary in category_rows:
+			var condition_id := String(definition.get("id", ""))
+			if condition_id.is_empty() or token_state_checks.has(condition_id):
+				continue
+			var check := CheckButton.new()
+			check.text = "%s %s" % [
+				String(definition.get("icon", "•")),
+				String(definition.get("name", condition_id))
+			]
+			check.tooltip_text = TokenScript.ContentCatalog.description(definition)
+			token_state_grid.add_child(check)
+			token_state_checks[condition_id] = check
+			var info := Button.new()
+			info.text = "Read effects"
+			info.tooltip_text = "Read the full 5etools rules text"
+			info.pressed.connect(_show_shared_effect_description.bind(definition.duplicate(true)))
+			token_state_grid.add_child(info)
 
+
+func _show_shared_effect_description(definition: Dictionary) -> void:
+	if _token_effect_dialog == null or _token_effect_text == null:
+		return
+	_token_effect_dialog.title = String(definition.get("name", "Effect"))
+	_token_effect_text.text = TokenScript.ContentCatalog.description(definition)
+	_token_effect_dialog.popup_centered(Vector2i(560, 440))
 
 
 func _set_shared_token_editor_conditions(value: Variant) -> void:
@@ -3796,7 +3824,10 @@ func _load_shared_token_editor_from_target(token: CharacterBody3D) -> void:
 		var manual_value: Variant = token.call("get_conditions")
 		if manual_value is Array:
 			conditions.append_array(manual_value as Array)
-	_refresh_shared_condition_choices(token.call("get_condition_definitions"))
+	var catalog_edition := String(token.get_meta("rules_version", "2014"))
+	_refresh_shared_condition_choices(
+		TokenScript.ContentCatalog.condition_definitions(catalog_edition)
+	)
 	_set_shared_token_editor_conditions(conditions)
 
 
