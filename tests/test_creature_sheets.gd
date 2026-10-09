@@ -89,6 +89,24 @@ func run() -> void:
 		creature, "external_player_id_0123456789"
 	)
 	assert(incoming.format == "vtt_creature_transfer_v1")
+	assert(archive.save(creature) == ERR_UNAUTHORIZED, "Stale owner cannot resurrect a transferred sheet")
+	var returned: Dictionary = incoming.duplicate(true)
+	returned["recipient"] = Owner.local_id()
+	returned.creature["owner_id"] = Owner.local_id()
+	returned.creature["transfer_revision"] = int(incoming.creature.transfer_revision) + 1
+	assert(archive.import_transfer(returned) == OK)
+	assert(archive.import_transfer(returned) == ERR_ALREADY_EXISTS, "Replayed transfer must not overwrite edits")
+	returned.creature["conditions"] = ["poisoned", "homebrew:test:conditions:mark"]
+	assert(archive.save(returned.creature) == OK)
+	var reloaded := archive.list_owned()
+	var preserved := false
+	for row: Dictionary in reloaded:
+		if row.id == creature.id:
+			preserved = row.conditions == returned.creature.conditions
+	assert(preserved, "Independent conditions persist without token")
+	var fighter_2014 := Rules.character_trackers({"classes": [{"name": "Fighter", "source": "PHB", "level": 10}]})
+	assert(fighter_2014[0].maximum == 1 and fighter_2014[0].reset == "short_rest")
+	assert(Rules.monster_trackers({"action": [{"name": "Breath {@recharge 5}"} ]})[0].recharge_min == 5)
 	assert(archive.list_owned().size() >= 1)
 	# The receiving side cannot import another user's transfer code.
 	assert(archive.import_transfer(incoming) == ERR_UNAUTHORIZED)

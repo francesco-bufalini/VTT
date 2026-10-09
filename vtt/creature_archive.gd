@@ -56,6 +56,9 @@ func save(record: Dictionary) -> Error:
 	var id := String(record.get("id", "")).strip_edges()
 	if id.is_empty():
 		return ERR_INVALID_PARAMETER
+	var persisted := _stored(kind, id)
+	if not persisted.is_empty() and not CreatureOwner.is_owner(persisted):
+		return ERR_UNAUTHORIZED
 	if kind == "monster":
 		var monsters: Array[Dictionary] = _monsters.list_creatures()
 		var normalized: Dictionary = _monsters.normalize_creature(record)
@@ -79,7 +82,11 @@ func relinquish(record: Dictionary, new_owner: String) -> Dictionary:
 	if target.length() < 16 or target == CreatureOwner.local_id():
 		return {}
 	var transferred := record.duplicate(true)
+	var persisted := _stored(String(record.get("kind", "")), String(record.get("id", "")))
+	if persisted.is_empty() or not CreatureOwner.is_owner(persisted):
+		return {}
 	transferred["owner_id"] = target
+	transferred["transfer_revision"] = int(persisted.get("transfer_revision", 0)) + 1
 	var record_kind := String(transferred.get("kind", ""))
 	var error: Error = ERR_INVALID_DATA
 	# Save through the originating store: permissions now belong to another
@@ -87,11 +94,11 @@ func relinquish(record: Dictionary, new_owner: String) -> Dictionary:
 	if record_kind == "monster":
 		var monsters: Array[Dictionary] = _monsters.list_creatures()
 		_upsert(monsters, _monsters.normalize_creature(transferred))
-		error = _monsters.save_creatures(monsters)
+		error = _monsters.save_creatures(monsters, true)
 	elif record_kind == "character":
 		var characters: Array[Dictionary] = _characters.list_characters()
 		_upsert(characters, _characters.normalize_character(transferred))
-		error = _characters.save_characters(characters)
+		error = _characters.save_characters(characters, true)
 	if error != OK:
 		return {}
 	return {
@@ -112,7 +119,28 @@ func import_transfer(payload: Dictionary) -> Error:
 	var record: Dictionary = raw as Dictionary
 	if String(record.get("owner_id", "")) != CreatureOwner.local_id():
 		return ERR_UNAUTHORIZED
-	return save(record)
+	var kind := String(record.get("kind", ""))
+	var id := String(record.get("id", ""))
+	if id.is_empty() or kind not in ["monster", "character"]:
+		return ERR_INVALID_DATA
+	var persisted := _stored(kind, id)
+	if not persisted.is_empty() and int(record.get("transfer_revision", 0)) <= int(persisted.get("transfer_revision", 0)):
+		return ERR_ALREADY_EXISTS
+	if kind == "monster":
+		var records: Array[Dictionary] = _monsters.list_creatures()
+		_upsert(records, _monsters.normalize_creature(record))
+		return _monsters.save_creatures(records, true)
+	var records: Array[Dictionary] = _characters.list_characters()
+	_upsert(records, _characters.normalize_character(record))
+	return _characters.save_characters(records, true)
+
+
+func _stored(kind: String, id: String) -> Dictionary:
+	var rows: Array[Dictionary] = _monsters.list_creatures(true) if kind == "monster" else _characters.list_characters(true)
+	for row: Dictionary in rows:
+		if String(row.get("id", "")) == id:
+			return row
+	return {}
 
 
 func _upsert(collection: Array[Dictionary], entry: Dictionary) -> void:

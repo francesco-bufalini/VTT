@@ -17,6 +17,9 @@ on:
       - "tools/build_token_packs.ps1"
       - ".github/workflows/vtt-self-hosted-tests.yml"
       - "assets/spell_area_geometry.json"
+      - "vtt/data/**/*.json"
+      - "homebrew/**"
+      - "assets/items/**"
 
 concurrency:
   group: vtt-godot-fast-${{ github.ref }}
@@ -44,6 +47,7 @@ jobs:
             /tools/build_token_packs.ps1
             /tests/
             /vtt/
+            /homebrew/
             /network/
             /interaction/
             /items/
@@ -64,40 +68,30 @@ jobs:
         run: |
           Write-Host "Runner: $env:RUNNER_NAME"
           Write-Host "Workspace: $env:GITHUB_WORKSPACE"
-          & "C:\Program Files\Godot\Godot_v4.7.2-stable_win64.exe" --version
+          & "C:\Program Files\Godot\Godot_v4.7.2-stable_win64_console.exe" --version
+
+      - name: Check tracked item dependency
+        shell: powershell
+        run: |
+          if (-not (Test-Path -LiteralPath "assets/items/roman_chariot_with_painted_front.glb")) {
+            throw "Sparse checkout omitted the tracked chariot GLB required by item tests."
+          }
 
       - name: Import fast-test assets
         shell: powershell
         run: |
-          $godot = "C:\Program Files\Godot\Godot_v4.7.2-stable_win64.exe"
+          $godot = "C:\Program Files\Godot\Godot_v4.7.2-stable_win64_console.exe"
           & $godot --headless --path . --editor --import --quit
           if ($LASTEXITCODE -ne 0) { exit $LASTEXITCODE }
 
-      - name: Parse structured creature scripts
-        shell: powershell
-        run: |
-          $godot = "C:\\Program Files\\Godot\\Godot_v4.7.2-stable_win64.exe"
-          $scripts = @(
-            "res://vtt/creature_owner.gd",
-            "res://vtt/creature_rules.gd",
-            "res://vtt/creature_archive.gd",
-            "res://vtt/creature_area.gd",
-            "res://vtt/player_character_store.gd",
-            "res://vtt/master_creature_store.gd"
-          )
-          foreach ($script in $scripts) {
-            & $godot --headless --path . --check-only --script $script
-            if ($LASTEXITCODE -ne 0) { exit $LASTEXITCODE }
-          }
-
       - name: Run fast Godot tests
         shell: powershell
-        run: .\scripts\validate.ps1 -Godot "C:\Program Files\Godot\Godot_v4.7.2-stable_win64.exe" -Tests
+        run: .\scripts\validate.ps1 -Godot "C:\Program Files\Godot\Godot_v4.7.2-stable_win64_console.exe" -Tests
 
       - name: Parse token pack tooling
         shell: powershell
         run: |
-          $godot = "C:\Program Files\Godot\Godot_v4.7.2-stable_win64.exe"
+          $godot = "C:\Program Files\Godot\Godot_v4.7.2-stable_win64_console.exe"
           & $godot --headless --path . --check-only --script res://tools/token_packs/build_one_token_pack.gd
           if ($LASTEXITCODE -ne 0) { exit $LASTEXITCODE }
           & $godot --headless --path . --check-only --script res://tools/token_packs/verify_token_pack.gd

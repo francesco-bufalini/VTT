@@ -1,0 +1,61 @@
+"""Rebuild creature reference data from cached upstream classes and races.
+Core PHB/XPHB classes retain source-qualified features; no mixed editions.
+"""
+import argparse, hashlib, json, urllib.request
+from pathlib import Path
+from generate_effects_catalog import ROOT, normalize
+BASE = "https://raw.githubusercontent.com/5etools-mirror-3/5etools-src/main/data/"
+
+def build(offline=False, refresh=False):
+    hashes = {}
+    def read(name):
+        cache = ROOT / ".5etools-cache" / name
+        if refresh or not cache.exists():
+            if offline:
+                raise RuntimeError("Offline cache missing: " + name)
+            with urllib.request.urlopen(BASE + name, timeout=30) as response:
+                payload = response.read()
+            json.loads(payload)
+            cache.parent.mkdir(parents=True, exist_ok=True)
+            cache.write_bytes(payload)
+        payload = cache.read_bytes()
+        hashes[name] = hashlib.sha256(payload).hexdigest()
+        return json.loads(payload)
+    from urllib.parse import quote
+    def entry(category, raw):
+        return {"id": f"5etools:{category}:{raw['source'].lower()}:{quote(raw['name'].lower(),safe='')}", "name": raw['name'], "source": raw['source'], "entries": raw.get('entries', []), "origin": "5etools"}
+    classes, features = [], []
+    index = read('class/index.json')
+    for key, filename in sorted(index.items()):
+        if key in ('mystic','sidekick'):
+            continue
+        data = read('class/' + filename)
+        for raw in data.get('class', []):
+            if raw['source'] not in ('PHB','XPHB','TCE','EFA'):
+                continue
+            row = entry('classes', raw)
+            row['caster_progression'] = raw.get('casterProgression', '')
+            classes.append(row)
+        for raw in data.get('classFeature', []):
+            if raw.get('classSource') not in ('PHB','XPHB','TCE','EFA'):
+                continue
+            row = entry('class_features',raw)
+            row.update(class_name=raw['className'],class_source=raw['classSource'],level=raw['level'])
+            row['id'] += ':' + quote(raw['className'].lower(),safe='') + ':' + str(raw['level'])
+            features.append(row)
+    races = read('races.json')
+    race_rows = [entry('races',raw) for raw in races.get('race',[]) if '_copy' not in raw]
+    for raw in races.get('subrace',[]):
+        base = next((r for r in races['race'] if r['name']==raw.get('raceName') and r['source']==raw.get('raceSource')), None)
+        if not base:
+            continue
+        merged = dict(base)
+        merged.update(raw)
+        merged['name'] = raw.get('_baseName', base['name'] + ' (' + raw.get('name','') + ')')
+        merged['entries'] = base.get('entries',[]) + raw.get('entries',[])
+        race_rows.append(entry('races',merged))
+    output = {"meta":{"source_url":BASE,"sha256":hashes},"classes":classes,"races":race_rows,"class_features":features}
+    (ROOT/'vtt/data/creature_references_5etools.json').write_text(json.dumps(output,ensure_ascii=False,separators=(',',':'))+'\n',encoding='utf-8')
+    print(f"Generated {len(classes)} classes, {len(race_rows)} races and {len(features)} source-qualified features")
+if __name__=='__main__':
+    p=argparse.ArgumentParser(); p.add_argument('--offline',action='store_true'); p.add_argument('--refresh',action='store_true'); a=p.parse_args(); build(a.offline,a.refresh)

@@ -9,31 +9,9 @@ const MAX_IMPORTED_EXTENT_PER_FOOTPRINT := 3.0
 
 # Condizioni standard D&D 5e / SRD. Gli ID rimangono in inglese per essere
 # stabili nei salvataggi; etichette e pittogrammi sono solo presentazione.
-const CONDITION_DEFINITIONS := [
-	# Le 15 condizioni ufficiali D&D 5e / SRD.
-	{"id": "blinded", "name": "Accecato", "icon": "🙈", "official": true},
-	{"id": "charmed", "name": "Affascinato", "icon": "💘", "official": true},
-	{"id": "deafened", "name": "Assordato", "icon": "🔇", "official": true},
-	{"id": "exhaustion", "name": "Sfinimento", "icon": "🥱", "official": true},
-	{"id": "frightened", "name": "Spaventato", "icon": "😨", "official": true},
-	{"id": "grappled", "name": "Afferrato", "icon": "🪢", "official": true},
-	{"id": "incapacitated", "name": "Incapacitato", "icon": "⛔", "official": true},
-	{"id": "invisible", "name": "Invisibile", "icon": "👻", "official": true},
-	{"id": "paralyzed", "name": "Paralizzato", "icon": "🧊", "official": true},
-	{"id": "petrified", "name": "Pietrificato", "icon": "🗿", "official": true},
-	{"id": "poisoned", "name": "Avvelenato", "icon": "☠️", "official": true},
-	{"id": "prone", "name": "Prono", "icon": "⬇️", "official": true},
-	{"id": "restrained", "name": "Trattenuto", "icon": "⛓️", "official": true},
-	{"id": "stunned", "name": "Stordito", "icon": "💫", "official": true},
-	{"id": "unconscious", "name": "Privo di sensi", "icon": "😴", "official": true},
-
-	# Marker tattici utili nel VTT. Non sono condizioni ufficiali SRD.
-	{"id": "concentrating", "name": "Concentrazione", "icon": "🧠", "official": false},
-	{"id": "surprised", "name": "Sorpreso", "icon": "❗", "official": false},
-	{"id": "hidden", "name": "Nascosto", "icon": "🥷", "official": false},
-	{"id": "dead", "name": "Morto", "icon": "💀", "official": false},
-
-]
+const ContentCatalog = preload("res://vtt/content_catalog.gd")
+const CONDITION_DEFINITIONS = ContentCatalog.LEGACY_CONDITIONS
+var _remote_condition_presentations: Dictionary = {}
 
 @export var cell_size: float = 1.0
 @export var gravity_multiplier: float = 1.0
@@ -925,7 +903,14 @@ func get_effective_party_id() -> String:
 
 
 func get_condition_definitions() -> Array:
-	return CONDITION_DEFINITIONS.duplicate(true)
+	var rows := ContentCatalog.condition_definitions()
+	var known: Dictionary = {}
+	for row: Dictionary in rows:
+		known[String(row.id)] = true
+	for id: String in _conditions:
+		if not known.has(id):
+			rows.append(_remote_condition_presentations.get(id, {"id": id, "name": id, "icon": "•"}).duplicate(true))
+	return rows
 
 
 func get_conditions() -> Array[String]:
@@ -935,7 +920,7 @@ func get_conditions() -> Array[String]:
 
 func get_active_condition_display_parts() -> PackedStringArray:
 	var parts := PackedStringArray()
-	for definition: Dictionary in CONDITION_DEFINITIONS:
+	for definition: Dictionary in get_condition_definitions():
 		var condition_id := String(definition.get("id", ""))
 		if condition_id in _conditions:
 			parts.append(
@@ -983,10 +968,22 @@ func set_conditions(value: Variant) -> void:
 
 
 func _is_valid_condition(condition_id: String) -> bool:
-	for definition: Dictionary in CONDITION_DEFINITIONS:
-		if String(definition.get("id", "")) == condition_id:
-			return true
-	return false
+	return ContentCatalog.valid_effect_id(condition_id)
+
+
+func get_condition_presentations() -> Array[Dictionary]:
+	var rows: Array[Dictionary] = []
+	for definition: Dictionary in get_condition_definitions():
+		if String(definition.id) in _conditions:
+			rows.append({"id": String(definition.id), "name": String(definition.get("name", definition.id)).left(120), "icon": String(definition.get("icon", "•")).left(16)})
+	return rows
+
+
+func set_condition_presentations(rows: Array) -> void:
+	_remote_condition_presentations.clear()
+	for raw: Variant in rows:
+		if raw is Dictionary and ContentCatalog.valid_effect_id(String(raw.get("id", ""))):
+			_remote_condition_presentations[String(raw.id)] = {"id": String(raw.id), "name": String(raw.get("name", raw.id)).left(120), "icon": String(raw.get("icon", "•")).left(16)}
 
 
 func _condition_ring_color(condition_id: String) -> Color:
@@ -1125,7 +1122,7 @@ func _update_condition_rings() -> void:
 	var waist_y := token_height_cells * cell_size * 0.05
 
 	var ring_index := 0
-	for definition: Dictionary in CONDITION_DEFINITIONS:
+	for definition: Dictionary in get_condition_definitions():
 		var condition_id := String(definition.get("id", ""))
 		if (
 			not (condition_id in _conditions)
@@ -1735,6 +1732,7 @@ func get_appearance_state() -> Dictionary:
 		"display_name": get_display_name(),
 		"party_id": get_party_id(),
 		"conditions": get_conditions(),
+		"condition_presentations": get_condition_presentations(),
 		"size_name": _size_name,
 		"footprint": _footprint_cells,
 		"height_cells": token_height_cells,
@@ -1801,6 +1799,7 @@ func apply_appearance_state(state: Dictionary) -> bool:
 	_reach_overridden = bool(state.get("reach_overridden", false))
 	set_display_name(String(state.get("display_name", token_display_name)))
 	set_party_id(String(state.get("party_id", party_id)))
+	set_condition_presentations(state.get("condition_presentations", []))
 	set_conditions(state.get("conditions", _conditions))
 	global_position.y = (
 		base_y

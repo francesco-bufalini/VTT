@@ -1,0 +1,76 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "title": "VTT Homebrew Package v1",
+  "type": "object",
+  "required": [
+    "schema_version",
+    "namespace",
+    "entries"
+  ],
+  "properties": {
+    "schema_version": {
+      "const": 1
+    },
+    "namespace": {
+      "type": "string",
+      "pattern": "^[a-z0-9][a-z0-9_-]{0,47}$"
+    },
+    "entries": {
+      "type": "array",
+      "items": {
+        "type": "object",
+        "required": [
+          "category",
+          "id",
+          "name",
+          "data"
+        ],
+        "properties": {
+          "category": {
+            "enum": [
+              "monsters",
+              "races",
+              "classes",
+              "spells",
+              "conditions",
+              "diseases",
+              "effects",
+              "class_features",
+              "species_traits",
+              "feats",
+              "backgrounds",
+              "optional_features"
+            ]
+          },
+          "id": {
+            "type": "string",
+            "pattern": "^[a-z0-9][a-z0-9_-]{0,63}$"
+          },
+          "name": {
+            "type": "string",
+            "minLength": 1
+          },
+          "source": {
+            "type": "string"
+          },
+          "data": {
+            "type": "object"
+          },
+          "icon": {
+            "type": "string",
+            "maxLength": 16
+          },
+          "icon_id": {
+            "type": "string"
+          },
+          "overrides": {
+            "type": "string"
+          },
+          "default_miniature_id": {
+            "type": "string"
+          }
+        }
+      }
+    }
+  }
+}

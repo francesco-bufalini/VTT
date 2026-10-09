@@ -1,6 +1,7 @@
 extends Node
 
 # Reusable creature sheet for players and GMs. No role-specific permissions.
+const ContentCatalog = preload("res://vtt/content_catalog.gd")
 const Archive = preload("res://vtt/creature_archive.gd")
 const Rules = preload("res://vtt/creature_rules.gd")
 const Owner = preload("res://vtt/creature_owner.gd")
@@ -38,6 +39,7 @@ var _feats: TextEdit
 var _default_miniature: LineEdit
 var _current_miniature: Label
 var _reference: RichTextLabel
+var _condition_rows: VBoxContainer
 var _trackers: VBoxContainer
 var _owner_target: LineEdit
 var _import_dialog: AcceptDialog
@@ -63,6 +65,7 @@ func setup(root: Node3D) -> void:
 	_reload()
 	if DisplayServer.get_name() != "headless":
 		_client.call("load_catalog")
+	_on_catalog_ready(ContentCatalog.home_entries("monsters"))
 
 
 func toggle_panel() -> void:
@@ -128,6 +131,14 @@ func _build_ui() -> void:
 	close.text = "Chiudi"
 	close.pressed.connect(hide_panel)
 	header.add_child(close)
+	var homebrew := Button.new()
+	homebrew.text = "Cartella homebrew"
+	homebrew.pressed.connect(func() -> void: OS.shell_open(ProjectSettings.globalize_path(ContentCatalog.HOME_DIR)))
+	header.add_child(homebrew)
+	var reload_homebrew := Button.new()
+	reload_homebrew.text = "Ricarica homebrew"
+	reload_homebrew.pressed.connect(_reload_homebrew)
+	header.add_child(reload_homebrew)
 
 	_status = Label.new()
 	_status.autowrap_mode = TextServer.AUTOWRAP_WORD_SMART
@@ -210,9 +221,9 @@ func _build_ui() -> void:
 	classes_row.columns = 4
 	form.add_child(classes_row)
 	_add_label(classes_row, "Razza / Specie")
-	_species = _reference_option(classes_row, PlayerReference.SPECIES)
+	_species = _reference_option(classes_row, Player5eTools.entries("races"))
 	_add_label(classes_row, "Classe")
-	_class_name = _reference_option(classes_row, PlayerReference.CLASSES)
+	_class_name = _reference_option(classes_row, Player5eTools.entries("classes"))
 	var multiclass_header := HBoxContainer.new()
 	form.add_child(multiclass_header)
 	_add_label(multiclass_header, "Classi aggiuntive (multiclasse)")
@@ -269,6 +280,9 @@ func _build_ui() -> void:
 	new_tracker.text = "+ Risorsa"
 	new_tracker.pressed.connect(_add_tracker)
 	tracker_heading.add_child(new_tracker)
+	_add_label(form, "Condizioni, malattie ed effetti (descrizione con il mouse)")
+	_condition_rows = VBoxContainer.new()
+	form.add_child(_condition_rows)
 	_trackers = VBoxContainer.new()
 	form.add_child(_trackers)
 
@@ -333,7 +347,7 @@ func _reference_option(parent: Node, choices: Array[Dictionary]) -> OptionButton
 	select.add_item("—")
 	select.set_item_metadata(0, {})
 	for item: Dictionary in choices:
-		select.add_item(PlayerReference.display_name(item))
+		select.add_item(PlayerReference.display_name(item) + " · " + String(item.get("source", "")))
 		select.set_item_metadata(select.item_count - 1, item.duplicate(true))
 	select.item_selected.connect(func(_i: int) -> void: _save())
 	parent.add_child(select)
@@ -341,12 +355,14 @@ func _reference_option(parent: Node, choices: Array[Dictionary]) -> OptionButton
 
 
 func _add_multiclass_row(
-	class_value: String = "", class_level: int = 1
+	class_value: String = "", class_level: int = 1,
+	source: String = "",
+	reference_id: String = ""
 ) -> void:
 	var row := HBoxContainer.new()
 	_multiclass_rows.add_child(row)
-	var selector := _reference_option(row, PlayerReference.CLASSES)
-	_select_reference(selector, class_value)
+	var selector := _reference_option(row, Player5eTools.entries("classes"))
+	_select_reference(selector, class_value, source, reference_id)
 	var level := SpinBox.new()
 	level.min_value = 1
 	level.max_value = 20
@@ -378,11 +394,11 @@ func _clear_multiclass() -> void:
 	_multiclass_controls.clear()
 
 
-func _select_reference(option: OptionButton, name: String) -> void:
+func _select_reference(option: OptionButton, name: String, source: String = "", stable_id: String = "") -> void:
 	option.select(0)
 	for i: int in range(1, option.item_count):
 		var row: Dictionary = option.get_item_metadata(i)
-		if String(row.get("name", "")).nocasecmp_to(name) == 0:
+		if (not stable_id.is_empty() and String(row.get("id", "")) == stable_id) or (String(row.get("name", "")).nocasecmp_to(name) == 0 and (source.is_empty() or String(row.get("source", "")) == source)):
 			option.select(i)
 			return
 
@@ -451,8 +467,8 @@ func _load_form(record: Dictionary) -> void:
 	)
 	for ability: String in _ability_spins.keys():
 		(_ability_spins[ability] as SpinBox).value = int(abilities.get(ability, 10))
-	_select_reference(_species, String(record.get("species", "")))
-	_select_reference(_class_name, String(record.get("class", "")))
+	_select_reference(_species, String(record.get("species", "")), String(record.get("species_source", "")), String(record.get("species_id", "")))
+	_select_reference(_class_name, String(record.get("class", "")), String(record.get("class_source", "")), String(record.get("class_id", "")))
 	_clear_multiclass()
 	var classes_value: Variant = record.get("classes", [])
 	if classes_value is Array:
@@ -461,7 +477,9 @@ func _load_form(record: Dictionary) -> void:
 			if class_value is Dictionary:
 				_add_multiclass_row(
 					String(class_value.get("name", "")),
-					int(class_value.get("level", 1))
+					int(class_value.get("level", 1)),
+					String(class_value.get("source", "")),
+					String(class_value.get("id", ""))
 				)
 	_level.value = clampi(int(record.get("level", 1)), 1, 20)
 	_level_label.text = str(int(_level.value))
@@ -478,6 +496,7 @@ func _load_form(record: Dictionary) -> void:
 	record["trackers"] = Rules.reconcile_trackers(record.get("trackers", []), derived)
 	_replace_current_record(record)
 	_refresh_trackers(record)
+	_refresh_conditions(record)
 	_refresh_reference(record)
 	_refresh_current_miniature(record)
 	_loading = false
@@ -516,10 +535,14 @@ func _save() -> void:
 	if String(record.get("kind", "")) == "character":
 		var species := _reference_entry(_species)
 		var class_ref := _reference_entry(_class_name)
+		record["species_id"] = String(species.get("id", ""))
+		record["class_id"] = String(class_ref.get("id", ""))
 		record["species"] = String(species.get("name", ""))
 		record["species_source"] = String(species.get("source", ""))
 		record["class"] = String(class_ref.get("name", ""))
 		record["class_source"] = String(class_ref.get("source", ""))
+		if String(record["class_source"]) in ["PHB", "XPHB"]:
+			record["rules_version"] = "2024" if record["class_source"] == "XPHB" else "2014"
 		record["level"] = int(_level.value)
 		var classes: Array[Dictionary] = []
 		var extras_level := 0
@@ -534,21 +557,26 @@ func _save() -> void:
 			classes.append({
 				"name": extra_name,
 				"source": String(extra_ref.get("source", "")),
+				"id": String(extra_ref.get("id", "")),
 				"level": extra_level
 			})
+		if extras_level >= int(_level.value) or extras_level > 19:
+			_set_status("La somma dei livelli delle classi aggiuntive deve essere inferiore al livello totale.")
+			return
 		var primary_level := maxi(1, int(_level.value) - extras_level)
 		if not String(record["class"]).is_empty():
 			classes.push_front({
 				"name": record["class"],
 				"source": record["class_source"],
+				"id": record["class_id"],
 				"level": primary_level
 			})
 		record["classes"] = classes
 		record["feats"] = _feats.text
 		if String(record["default_miniature_id"]).is_empty():
-			var suggestion := _species_default_miniature(
-				String(record.get("species", ""))
-			)
+			var suggestion := String(species.get("default_miniature_id", ""))
+			if suggestion.is_empty():
+				suggestion = _species_default_miniature(String(record.get("species", "")))
 			if not suggestion.is_empty():
 				record["default_miniature_id"] = suggestion
 				_loading = true
@@ -741,17 +769,20 @@ func _refresh_reference(record: Dictionary) -> void:
 			if String(feature.get("class_name", "")).nocasecmp_to(this_name) != 0:
 				continue
 			var level := int(feature.get("level", 0))
+			var selected_source := String(class_data.get("source", record.get("class_source", "")))
+			if not selected_source.is_empty() and String(feature.get("class_source", "")) != selected_source:
+				continue
 			if level > this_level:
 				continue
 			parts.append("Lv %d · %s" % [level, Player5eTools.display_label(feature)])
-			var description := Player5eTools.description_text_from_raw_item(feature)
+			var description := ContentCatalog.description(feature)
 			if not description.is_empty():
 				parts.append(description)
 	parts.append("")
 	parts.append("TRATTI DELLA SPECIE (5e.tools)")
-	for feature: Dictionary in Player5eTools.entries("species_traits"):
-		if String(feature.get("species", "")).nocasecmp_to(species) == 0:
-			parts.append(Player5eTools.display_label(feature))
+	for feature: Dictionary in Player5eTools.entries("races"):
+		if String(feature.get("id", "")) == String(record.get("species_id", "")) or (String(feature.get("name", "")) == species and String(feature.get("source", "")) == String(record.get("species_source", ""))):
+			parts.append(ContentCatalog.description(feature))
 	_reference.text = "\n".join(parts)
 
 
@@ -768,7 +799,7 @@ func _text_entries(value: Variant) -> String:
 				if entry.has("name"):
 					parts.append(String(entry.get("name", "")))
 				parts.append(_text_entries(entry.get("entries", [])))
-	return "\n".join(parts)
+	return ContentCatalog.description({"entries": value})
 
 
 func _filter_catalog(query: String) -> void:
@@ -790,7 +821,7 @@ func _filter_catalog(query: String) -> void:
 
 
 func _on_catalog_ready(entries: Array[Dictionary]) -> void:
-	_catalog = entries
+	_catalog = ContentCatalog.merge("monsters", entries)
 	_filter_catalog(_catalog_filter.text)
 	_set_status("%d voci del bestiario disponibili" % entries.size())
 
@@ -805,6 +836,9 @@ func _request_monster(index: int) -> void:
 	if index < 0 or index >= _filtered_catalog.size():
 		return
 	var entry := _filtered_catalog[index]
+	if entry.get("origin") == "homebrew":
+		_on_monster_received("homebrew", entry)
+		return
 	_client.call(
 		"request_creature",
 		String(entry.get("name", "")), String(entry.get("source", "")),
@@ -838,7 +872,7 @@ func _create_character() -> void:
 
 func _link_selected_token() -> void:
 	var selected_value: Variant = board_root.call(
-		"get_selected_tokens_for_player_area"
+		"get_selected_tokens_for_creatures"
 	)
 	if not selected_value is Array or (selected_value as Array).size() != 1:
 		_set_status("Seleziona un solo token nella scena.")
@@ -848,6 +882,9 @@ func _link_selected_token() -> void:
 		return
 	var token: Node3D = (selected_value as Array)[0] as Node3D
 	if token == null:
+		return
+	if token.has_meta("creature_owner_id") and String(token.get_meta("creature_owner_id")) != Owner.local_id():
+		_set_status("Il token è associato a una creatura di un altro controllore.")
 		return
 	var creature_id := String(record.get("id", ""))
 	for other: Node in get_tree().get_nodes_in_group("dnd_token"):
@@ -896,7 +933,10 @@ func _species_default_miniature(species: String) -> String:
 		return ""
 	# Never guess token pack IDs. Pick an actually published pack only
 	# when its label unambiguously matches the 5e.tools species.
-	for entry: Dictionary in TokenPackManager.get_entries():
+	var packs := get_node_or_null("/root/TokenPackManager")
+	if packs == null:
+		return ""
+	for entry: Dictionary in packs.call("get_entries"):
 		if String(entry.get("name", "")).nocasecmp_to(species) == 0:
 			return String(entry.get("id", ""))
 	return ""
@@ -922,7 +962,7 @@ func _find_linked_token(record: Dictionary) -> Node3D:
 	for node: Node in get_tree().get_nodes_in_group("dnd_token"):
 		if not node is Node3D or not board_root.is_ancestor_of(node):
 			continue
-		if String(sync.call("get_sync_id_for_node", node)) == token_id:
+		if String(sync.call("get_sync_id_for_node", node)) == token_id and String(node.get_meta("creature_id", "")) == String(record.get("id", "")) and String(node.get_meta("creature_owner_id", "")) == Owner.local_id():
 			return node as Node3D
 	return null
 
@@ -936,6 +976,8 @@ func _sync_token_health(record: Dictionary) -> void:
 		if String(record.get("kind", "")) == "character"
 		else "set_master_hit_points"
 	)
+	if token.has_method("set_conditions"):
+		token.call("set_conditions", record.get("conditions", []))
 	if token.has_method(method):
 		token.call(
 			method, int(record.get("current_hp", 1)),
@@ -948,7 +990,7 @@ func get_owned_health_bar_sync_entries() -> Array[Dictionary]:
 	for record: Dictionary in _records:
 		var id := String(record.get("linked_token_sync_id", ""))
 		var maximum := int(record.get("max_hp", 0))
-		if id.is_empty() or maximum <= 0:
+		if id.is_empty() or maximum <= 0 or _find_linked_token(record) == null:
 			continue
 		rows.append({
 			"token_id": id,
@@ -1011,3 +1053,54 @@ func _import() -> void:
 func _set_status(message: String) -> void:
 	if _status != null:
 		_status.text = message
+
+
+func _refresh_conditions(record: Dictionary) -> void:
+	for child: Node in _condition_rows.get_children():
+		_condition_rows.remove_child(child)
+		child.queue_free()
+	var active: Array = record.get("conditions", [])
+	for definition: Dictionary in ContentCatalog.condition_definitions(String(record.get("rules_version", "2014"))):
+		var row := HBoxContainer.new()
+		_condition_rows.add_child(row)
+		var check := CheckButton.new()
+		check.text = String(definition.get("icon", "•")) + " " + String(definition.name)
+		check.tooltip_text = ContentCatalog.description(definition)
+		check.button_pressed = String(definition.id) in active
+		check.toggled.connect(_set_sheet_condition.bind(String(definition.id)))
+		row.add_child(check)
+		var info := Button.new()
+		info.text = "Leggi effetti"
+		info.pressed.connect(func() -> void: _reference.text = ContentCatalog.description(definition))
+		row.add_child(info)
+
+
+func _set_sheet_condition(enabled: bool, id: String) -> void:
+	var record := _current()
+	if record.is_empty():
+		return
+	var active: Array = record.get("conditions", []).duplicate()
+	if enabled and id not in active:
+		active.append(id)
+	elif not enabled:
+		active.erase(id)
+	record["conditions"] = active
+	if _archive.save(record) == OK:
+		_replace_current_record(record)
+		_sync_token_health(record)
+
+
+func _reload_homebrew() -> void:
+	_save()
+	ContentCatalog.reload_homebrew()
+	for pair: Array in [[_species, "races"], [_class_name, "classes"]]:
+		var option: OptionButton = pair[0]
+		option.clear()
+		option.add_item("—")
+		option.set_item_metadata(0, {})
+		for entry: Dictionary in Player5eTools.entries(pair[1]):
+			option.add_item(String(entry.name) + " · " + String(entry.source))
+			option.set_item_metadata(option.item_count - 1, entry)
+	_reload()
+	_on_catalog_ready(_client.call("catalog"))
+	_set_status("Homebrew ricaricato. " + "\n".join(ContentCatalog.diagnostics))

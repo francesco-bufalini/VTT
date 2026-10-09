@@ -33,7 +33,7 @@ func scope_id() -> String:
 	return "default"
 
 
-func list_creatures() -> Array[Dictionary]:
+func list_creatures(include_unowned: bool = false) -> Array[Dictionary]:
 	var path := _file_path()
 	if not FileAccess.file_exists(path):
 		return []
@@ -54,12 +54,12 @@ func list_creatures() -> Array[Dictionary]:
 	for item: Variant in (creatures_value as Array):
 		if item is Dictionary:
 			var creature := normalize_creature(item as Dictionary)
-			if CreatureOwner.is_owner(creature):
+			if include_unowned or CreatureOwner.is_owner(creature):
 				result.append(creature)
 	return result
 
 
-func save_creatures(creatures: Array[Dictionary]) -> Error:
+func save_creatures(creatures: Array[Dictionary], allow_transfer: bool = false) -> Error:
 	DirAccess.make_dir_recursive_absolute(
 		ProjectSettings.globalize_path(ROOT_DIR)
 	)
@@ -77,6 +77,11 @@ func save_creatures(creatures: Array[Dictionary]) -> Error:
 					if not raw is Dictionary:
 						continue
 					var stored: Dictionary = raw as Dictionary
+					for candidate: Dictionary in merged:
+						if String(candidate.get("id", "")) != String(stored.get("id", "")):
+							continue
+						if not allow_transfer and (not CreatureOwner.is_owner(stored) or String(candidate.get("owner_id", "")) != String(stored.get("owner_id", CreatureOwner.local_id()))):
+							return ERR_UNAUTHORIZED
 					if CreatureOwner.is_owner(stored):
 						continue
 					var exists := false
@@ -91,13 +96,17 @@ func save_creatures(creatures: Array[Dictionary]) -> Error:
 		"scope": scope_id(),
 		"creatures": merged
 	}
-	var file := FileAccess.open(_file_path(), FileAccess.WRITE)
+	var destination := _file_path()
+	var temporary := destination + ".tmp"
+	var file := FileAccess.open(temporary, FileAccess.WRITE)
 	if file == null:
 		return FileAccess.get_open_error()
 	file.store_string(JSON.stringify(payload, "  "))
 	var error := file.get_error()
 	file.close()
-	return error
+	if error != OK:
+		return error
+	return DirAccess.rename_absolute(ProjectSettings.globalize_path(temporary), ProjectSettings.globalize_path(destination))
 
 
 func create_creature(stat_block: Dictionary, side: String) -> Dictionary:
@@ -152,6 +161,8 @@ func normalize_creature(value: Dictionary) -> Dictionary:
 		"max_hp": maxi(0, int(value.get("max_hp", fallback_hp))),
 		"current_hp": int(value.get("current_hp", fallback_hp)),
 		"stat_block": stat_block,
+		"conditions": value.get("conditions", []).duplicate() if value.get("conditions", []) is Array else [],
+		"transfer_revision": maxi(0, int(value.get("transfer_revision", 0))),
 		"owner_id": String(value.get("owner_id", CreatureOwner.local_id())),
 		"default_miniature_id": String(value.get("default_miniature_id", _default_miniature_id(stat_block))),
 		"armor_class": maxi(0, int(value.get("armor_class", CreatureRules.monster_armor_class(stat_block)))),
@@ -180,6 +191,8 @@ func _normalize_abilities(value: Variant, stat: Dictionary) -> Dictionary:
 
 
 func _default_miniature_id(stat: Dictionary) -> String:
+	if not String(stat.get("default_miniature_id", "")).is_empty():
+		return String(stat.default_miniature_id)
 	var name := String(stat.get("name", "")).strip_edges()
 	var source := String(stat.get("source", "")).strip_edges()
 	var file := FileAccess.open("res://vtt/data/miniature_bestiary.json", FileAccess.READ)

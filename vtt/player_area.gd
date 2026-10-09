@@ -3981,6 +3981,7 @@ func _sync_all_character_health_bars() -> void:
 
 
 func get_owned_health_bar_sync_entries() -> Array[Dictionary]:
+	_characters = _store.call("list_characters")
 	var entries: Array[Dictionary] = []
 	for character: Dictionary in _characters:
 		var token_id := String(

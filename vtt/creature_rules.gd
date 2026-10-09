@@ -2,6 +2,7 @@ extends RefCounted
 
 # Pure rules adapter: 5e.tools data is reference data, the record's trackers
 # are mutable encounter state. Never send this record in a board snapshot.
+const ContentCatalog = preload("res://vtt/content_catalog.gd")
 const TRACKER_VERSION := 1
 
 
@@ -38,18 +39,20 @@ static func character_trackers(character: Dictionary) -> Array[Dictionary]:
 			continue
 		var cls: Dictionary = class_value as Dictionary
 		var name := String(cls.get("name", "")).to_lower()
+		var edition := "2024" if String(cls.get("source", character.get("class_source", ""))) == "XPHB" else String(character.get("rules_version", "2014"))
+		if String(cls.get("source", "")) == "PHB":
+			edition = "2014"
 		var level := clampi(int(cls.get("level", 1)), 1, 20)
 		match name:
 			"bard", "cleric", "druid", "sorcerer", "wizard":
 				caster_level += level
 			"artificer", "paladin", "ranger":
-				var edition := String(character.get("rules_version", "2024"))
 				# Artificer rounds up. The 2024 half-caster progression
 				# is supported at level 1; 2014 paladin/ranger at level 2.
 				if name == "artificer" or edition == "2024":
 					caster_level += ceili(float(level) / 2.0)
 				else:
-					caster_level += level / 2
+					caster_level += ceili(float(level) / 2.0) if classes.size() == 1 and level >= 2 else floori(float(level) / 2.0)
 			"warlock":
 				warlock_level = maxi(warlock_level, level)
 		match name:
@@ -70,13 +73,26 @@ static func character_trackers(character: Dictionary) -> Array[Dictionary]:
 					uses = 4
 				elif level >= 4:
 					uses = 3
-				result.append(default_tracker("second_wind", "Recuperare Energie", uses, "long_rest"))
+				result.append(default_tracker("second_wind", "Recuperare Energie", uses if edition == "2024" else 1, "long_rest" if edition == "2024" else "short_rest"))
+				if level >= 2:
+					result.append(default_tracker("action_surge", "Azione Impetuosa", 2 if level >= 17 else 1, "short_rest"))
+				if level >= 9:
+					result.append(default_tracker("indomitable", "Indomito", 3 if level >= 17 else 2 if level >= 13 else 1, "long_rest"))
 			"monk":
 				if level >= 2:
 					result.append(default_tracker("focus", "Punti Focus / Ki", level, "short_rest"))
 			"sorcerer":
 				if level >= 2:
 					result.append(default_tracker("sorcery_points", "Punti stregoneria", level, "long_rest"))
+		for custom_class: Dictionary in ContentCatalog.home_entries("classes"):
+			if String(custom_class.id) != String(cls.get("id", "")):
+				continue
+			for raw: Variant in custom_class.get("trackers", []):
+				if raw is Dictionary and level >= int(raw.get("min_level", 1)):
+					var tracker := normalize_tracker(raw)
+					tracker["id"] = "custom_" + String(custom_class.id).replace(":", "_") + "_" + String(raw.get("id", "resource"))
+					tracker["current"] = tracker.maximum
+					result.append(tracker)
 	if caster_level > 0:
 		var slots: Array = FULL_CASTER_SLOTS[clampi(caster_level, 1, 20)]
 		for i: int in range(slots.size()):
@@ -198,10 +214,10 @@ static func monster_trackers(stat: Dictionary) -> Array[Dictionary]:
 
 static func _recharge_threshold(name: String) -> int:
 	var regex := RegEx.new()
-	if regex.compile("(?i)recharge\\s+([2-6])(?:\\s*[-–—]\\s*6)?") != OK:
+	if regex.compile("(?i)recharge(?:\\s+([2-6])(?:\\s*[-–—]\\s*6)?)?") != OK:
 		return 0
 	var found: RegExMatch = regex.search(name)
-	return int(found.get_string(1)) if found != null else 0
+	return (int(found.get_string(1)) if not found.get_string(1).is_empty() else 6) if found != null else 0
 
 
 static func _daily_uses(name: String) -> int:
@@ -253,7 +269,7 @@ static func reconcile_trackers(
 		result.append(normalize_tracker(merged))
 	for id_value: Variant in existing.keys():
 		var id := String(id_value)
-		if not seen.has(id) and id.begins_with("custom_"):
+		if not seen.has(id) and (id.begins_with("custom_") or not (existing[id].get("overrides", {}) as Dictionary).is_empty()):
 			result.append(normalize_tracker(existing[id]))
 	return result
 

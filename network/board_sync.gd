@@ -1,6 +1,7 @@
 extends Node
 
 signal status_changed(message: String)
+const ContentCatalog = preload("res://vtt/content_catalog.gd")
 const PORT := 45454
 const SNAPSHOT_VERSION := 6
 const MAGIC := "DND_MAP_SYNC_V6"
@@ -328,7 +329,7 @@ func send_snapshot(host: String, key: String) -> Error:
 		false
 	)
 	if error == OK:
-		status_changed.emit("Connessione e invio in corso…")
+		status_changed.emit("Connessione e invio in corsoâ€¦")
 	else:
 		status_changed.emit(error_string(error))
 	return error
@@ -381,13 +382,13 @@ func send_snapshot_to_tailnet(
 
 	if _bulk_pending == 0:
 		status_changed.emit(
-			"Trovati %d nodi Tailscale, ma nessuna connessione è partita"
+			"Trovati %d nodi Tailscale, ma nessuna connessione Ã¨ partita"
 			% _bulk_total
 		)
 		return ERR_CANT_CONNECT
 
 	status_changed.emit(
-		"Trovati %d nodi Tailscale · invio in corso…" % _bulk_total
+		"Trovati %d nodi Tailscale Â· invio in corsoâ€¦" % _bulk_total
 	)
 	return OK
 
@@ -619,7 +620,7 @@ func _finish_bulk_attempt(item: Dictionary, accepted: bool, rejected: bool) -> v
 		):
 			_mark_current_state_dirty_for_retry()
 		status_changed.emit(
-			"Sincronizzazione conclusa · ricevute %d/%d · rifiutate %d · non raggiungibili %d"
+			"Sincronizzazione conclusa Â· ricevute %d/%d Â· rifiutate %d Â· non raggiungibili %d"
 			% [
 				_bulk_accepted,
 				_bulk_total,
@@ -878,16 +879,32 @@ func valid_snapshot(snapshot: Variant) -> bool:
 			if not item.get("conditions") is Array:
 				return false
 			var condition_values: Array = item.get("conditions", [])
-			if condition_values.size() > TOKEN_CONDITIONS.size():
+			if condition_values.size() > 128:
 				return false
 			var seen_conditions: Dictionary = {}
 			for condition_value: Variant in condition_values:
 				if not condition_value is String:
 					return false
 				var condition_id := String(condition_value)
-				if not (condition_id in TOKEN_CONDITIONS) or seen_conditions.has(condition_id):
+				if not ContentCatalog.valid_effect_id(condition_id) or seen_conditions.has(condition_id):
 					return false
 				seen_conditions[condition_id] = true
+			if item.has("condition_presentations"):
+				var presentations: Variant = item.get("condition_presentations")
+				if not presentations is Array or presentations.size() > 128:
+					return false
+				var presentation_ids: Dictionary = {}
+				for presentation: Variant in presentations:
+					if not presentation is Dictionary:
+						return false
+					if presentation.size() != 3 or not presentation.has("id") or not presentation.has("name") or not presentation.has("icon"):
+						return false
+					var presentation_id: Variant = presentation.get("id")
+					if not presentation_id is String or presentation_id not in condition_values or presentation_ids.has(presentation_id):
+						return false
+					presentation_ids[presentation_id] = true
+					if not presentation.get("name") is String or String(presentation.name).length() > 120 or not presentation.get("icon") is String or String(presentation.icon).length() > 16:
+						return false
 			if item.has("height_cells"):
 				var height_value: Variant = item.get("height_cells")
 				if not (height_value is float or height_value is int):
@@ -1583,6 +1600,7 @@ func _serialize_node(node: Node3D, group_name: String) -> Dictionary:
 			data["player_character_name"] = String(
 				node.get_meta("player_character_name", "")
 			)
+		data["condition_presentations"] = node.call("get_condition_presentations") if node.has_method("get_condition_presentations") else []
 		data["conditions"] = (
 			node.call("get_conditions")
 			if node.has_method("get_conditions")
@@ -1780,6 +1798,8 @@ func _apply_node_data(node: Node3D, data: Dictionary) -> void:
 				node.set_meta(field, value)
 			elif node.has_meta(field):
 				node.remove_meta(field)
+		if node.has_method("set_condition_presentations"):
+			node.call("set_condition_presentations", data.get("condition_presentations", []))
 		if node.has_method("set_conditions"):
 			node.call("set_conditions", data.get("conditions", []))
 		if apply_shared_appearance and node.has_method(

@@ -928,6 +928,7 @@ func _sync_all_linked_health_bars() -> void:
 
 
 func get_owned_health_bar_sync_entries() -> Array[Dictionary]:
+	_creatures = _store.call("list_creatures")
 	var entries: Array[Dictionary] = []
 	for creature: Dictionary in _creatures:
 		var token_id := String(

@@ -32,7 +32,7 @@ func scope_id() -> String:
 	return "default"
 
 
-func list_characters() -> Array[Dictionary]:
+func list_characters(include_unowned: bool = false) -> Array[Dictionary]:
 	var path: String = _file_path()
 	if not FileAccess.file_exists(path):
 		return []
@@ -55,12 +55,12 @@ func list_characters() -> Array[Dictionary]:
 	for item: Variant in characters_value:
 		if item is Dictionary:
 			var character := normalize_character(item as Dictionary)
-			if CreatureOwner.is_owner(character):
+			if include_unowned or CreatureOwner.is_owner(character):
 				result.append(character)
 	return result
 
 
-func save_characters(characters: Array[Dictionary]) -> Error:
+func save_characters(characters: Array[Dictionary], allow_transfer: bool = false) -> Error:
 	DirAccess.make_dir_recursive_absolute(
 		ProjectSettings.globalize_path(ROOT_DIR)
 	)
@@ -79,6 +79,11 @@ func save_characters(characters: Array[Dictionary]) -> Error:
 					if not raw is Dictionary:
 						continue
 					var stored: Dictionary = raw as Dictionary
+					for candidate: Dictionary in merged:
+						if String(candidate.get("id", "")) != String(stored.get("id", "")):
+							continue
+						if not allow_transfer and (not CreatureOwner.is_owner(stored) or String(candidate.get("owner_id", "")) != String(stored.get("owner_id", CreatureOwner.local_id()))):
+							return ERR_UNAUTHORIZED
 					if CreatureOwner.is_owner(stored):
 						continue
 					var exists := false
@@ -93,14 +98,18 @@ func save_characters(characters: Array[Dictionary]) -> Error:
 		"scope": scope_id(),
 		"characters": merged
 	}
-	var file := FileAccess.open(_file_path(), FileAccess.WRITE)
+	var destination := _file_path()
+	var temporary := destination + ".tmp"
+	var file := FileAccess.open(temporary, FileAccess.WRITE)
 	if file == null:
 		return FileAccess.get_open_error()
 
 	file.store_string(JSON.stringify(payload, "  "))
 	var error: Error = file.get_error()
 	file.close()
-	return error
+	if error != OK:
+		return error
+	return DirAccess.rename_absolute(ProjectSettings.globalize_path(temporary), ProjectSettings.globalize_path(destination))
 
 
 func create_character() -> Dictionary:
@@ -113,6 +122,10 @@ func create_character() -> Dictionary:
 		"default_miniature_id": "",
 		"current_miniature_id": "",
 		"classes": [],
+		"conditions": [],
+		"transfer_revision": 0,
+		"species_id": "",
+		"class_id": "",
 		"trackers": [],
 		"player_name": "",
 		"rules_version": "2024",
@@ -226,6 +239,7 @@ func normalize_character(value: Dictionary) -> Dictionary:
 		defaults["abilities"] = abilities
 
 	for array_key: String in [
+		"conditions",
 		"saving_throw_proficiencies",
 		"skill_proficiencies",
 		"skill_expertise",
