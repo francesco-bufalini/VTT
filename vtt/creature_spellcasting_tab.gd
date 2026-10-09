@@ -73,7 +73,7 @@ func setup(on_change: Callable, on_status: Callable) -> void:
 	_available = ItemList.new()
 	_available.custom_minimum_size = Vector2(0, 160)
 	_available.size_flags_horizontal = Control.SIZE_EXPAND_FILL
-	_available.item_selected.connect(func(_index: int) -> void: _update_spell_controls())
+	_available.item_selected.connect(func(_index: int) -> void: _on_spell_list_selected("catalog"))
 	add_child(_available)
 	var actions := HBoxContainer.new()
 	actions.add_theme_constant_override("separation", 8)
@@ -103,7 +103,7 @@ func setup(on_change: Callable, on_status: Callable) -> void:
 	_known_list = ItemList.new()
 	_known_list.custom_minimum_size = Vector2(0, 106)
 	_known_list.size_flags_horizontal = Control.SIZE_EXPAND_FILL
-	_known_list.item_selected.connect(func(_index: int) -> void: _update_spell_controls())
+	_known_list.item_selected.connect(func(_index: int) -> void: _on_spell_list_selected("known"))
 	known_col.add_child(_known_list)
 	var prepared_col := VBoxContainer.new()
 	prepared_col.size_flags_horizontal = Control.SIZE_EXPAND_FILL
@@ -114,7 +114,7 @@ func setup(on_change: Callable, on_status: Callable) -> void:
 	_prepared_list = ItemList.new()
 	_prepared_list.custom_minimum_size = Vector2(0, 106)
 	_prepared_list.size_flags_horizontal = Control.SIZE_EXPAND_FILL
-	_prepared_list.item_selected.connect(func(_index: int) -> void: _update_spell_controls())
+	_prepared_list.item_selected.connect(func(_index: int) -> void: _on_spell_list_selected("prepared"))
 	prepared_col.add_child(_prepared_list)
 
 	_description = RichTextLabel.new()
@@ -340,6 +340,32 @@ func _filter_spells() -> void:
 		if _visible.size() >= 300:
 			break
 	_update_spell_controls()
+
+
+func _on_spell_list_selected(origin: String) -> void:
+	# Only one source drives Prepara/Dimentica. Otherwise a stale search
+	# selection wins over a newly clicked known or prepared entry.
+	if origin != "catalog":
+		_available.deselect_all()
+	if origin != "known":
+		_known_list.deselect_all()
+	if origin != "prepared":
+		_prepared_list.deselect_all()
+	_update_spell_controls()
+
+
+func update_character_context(record: Dictionary) -> void:
+	var previous_class: Variant = _record.get("classes", [])
+	var current_class: Variant = record.get("classes", [])
+	var previous_primary: String = String(_record.get("class", ""))
+	var current_primary: String = String(record.get("class", ""))
+	_record["classes"] = current_class
+	_record["class"] = current_primary
+	_record["level"] = int(record.get("level", 1))
+	_record["rules_version"] = String(record.get("rules_version", "2014"))
+	if previous_class != current_class or previous_primary != current_primary:
+		_class_only.disabled = _class_keys().is_empty()
+		_filter_spells()
 
 
 func _selected_spell() -> Dictionary:
