@@ -39,6 +39,7 @@ func run() -> void:
 	area._create_character()
 	var original_id: String = area._current().id
 	area._select_reference(area._class_name, "Wizard", "PHB")
+	assert(area._level is SpinBox, "Use a numeric class level input, not a slider")
 	area._level.value = 5
 	area._save()
 	var sheet: Dictionary = area._current()
@@ -63,6 +64,7 @@ func run() -> void:
 	assert(token.get_appearance_state().visual_asset == appearance.visual_asset)
 	# "Edit token" and "Edit sheet" now open and update the same record.
 	assert(area.open_for_token(token))
+	assert(area.is_panel_open())
 	assert(area._current().id == original_id)
 	area._name.text = "Renamed adventurer"
 	area._save()
@@ -95,6 +97,7 @@ func run() -> void:
 	# official miniature-to-bestiary map, even without a manual link action.
 	token.set_token_pack_id("ape")
 	token.set_display_name("Test Ape")
+	token.set_conditions(["poisoned", "blinded"])
 	area.ensure_sheet_for_token(token, true)
 	var automatic_id := String(token.get_meta("creature_id", ""))
 	assert(not automatic_id.is_empty())
@@ -104,6 +107,12 @@ func run() -> void:
 	assert(automatic.stat_block.name == "Ape")
 	assert(automatic.stat_block.source == "MM")
 	assert(automatic.linked_token_sync_id == "ui-token")
+	assert("poisoned" in automatic.conditions and "blinded" in automatic.conditions,
+		"Auto-generated creature sheet must preserve creation-time token conditions")
+	assert(token.has_condition("poisoned") and token.has_condition("blinded"),
+		"Saving the new sheet must not clear selected creation conditions")
+	assert("Test Ape" in area.get_owned_creature_names())
+	assert(area.get_owned_creature_names(automatic_id).is_empty())
 	area.ensure_sheet_for_token(token, true)
 	assert(area._archive.list_owned().size() == 1, "Repeat linking must not duplicate a sheet")
 	# Foreign-owned tokens are never claimed; transfer of their public owner
