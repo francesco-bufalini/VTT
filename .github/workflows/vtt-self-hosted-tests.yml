@@ -6,6 +6,7 @@ on:
     branches:
       - main
       - feature/campaign-hub
+      - feature/structured-creature-sheets
       - feature/tokens-lazy-load
     paths:
       - "**/*.gd"
