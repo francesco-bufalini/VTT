@@ -87,13 +87,29 @@ func _initialize_toolbar() -> void:
 func _build_toolbar() -> void:
 	var panel: PanelContainer = PanelContainer.new()
 	panel.name = "RuntimeToolbar"
-	panel.position = Vector2(8, 8)
-	panel.custom_minimum_size = Vector2(0, 36)
+	# A single flexible command ribbon replaces the long overflowing menu strip.
+	panel.anchor_left = 0.0
+	panel.anchor_right = 1.0
+	panel.offset_left = 12.0
+	panel.offset_right = -12.0
+	panel.offset_top = 10.0
+	panel.custom_minimum_size = Vector2(0, 44)
 	panel.mouse_filter = Control.MOUSE_FILTER_STOP
+	var ribbon_style := StyleBoxFlat.new()
+	ribbon_style.bg_color = Color(0.11, 0.095, 0.10, 0.93)
+	ribbon_style.border_color = Color(0.68, 0.50, 0.29, 0.85)
+	ribbon_style.set_border_width_all(1)
+	ribbon_style.set_corner_radius_all(9)
+	ribbon_style.content_margin_left = 8.0
+	ribbon_style.content_margin_right = 8.0
+	ribbon_style.content_margin_top = 7.0
+	ribbon_style.content_margin_bottom = 7.0
+	panel.add_theme_stylebox_override("panel", ribbon_style)
 	ui_root.add_child(panel)
 
-	var row: HBoxContainer = HBoxContainer.new()
-	row.add_theme_constant_override("separation", 2)
+	var row: HFlowContainer = HFlowContainer.new()
+	row.add_theme_constant_override("h_separation", 6)
+	row.add_theme_constant_override("v_separation", 5)
 	panel.add_child(row)
 
 	row.add_child(_menu("Token", [
@@ -162,10 +178,11 @@ func _build_toolbar() -> void:
 
 	status_label = Label.new()
 	status_label.text = ""
-	status_label.custom_minimum_size = Vector2(90, 0)
+	status_label.custom_minimum_size = Vector2(130, 28)
 	status_label.horizontal_alignment = HORIZONTAL_ALIGNMENT_RIGHT
 	status_label.vertical_alignment = VERTICAL_ALIGNMENT_CENTER
-	status_label.add_theme_font_size_override("font_size", 11)
+	status_label.add_theme_font_size_override("font_size", 12)
+	status_label.add_theme_color_override("font_color", Color(0.91, 0.78, 0.56, 1.0))
 	status_label.clip_text = true
 	row.add_child(status_label)
 
@@ -174,10 +191,12 @@ func _menu(label_text: String, items: Array, callback: Callable) -> MenuButton:
 	var button: MenuButton = MenuButton.new()
 	button.text = label_text
 	button.custom_minimum_size = Vector2(
-		maxf(72.0, float(label_text.length() * 8 + 22)),
-		30
+		maxf(78.0, float(label_text.length() * 8 + 24)),
+		34
 	)
 	button.add_theme_font_size_override("font_size", 13)
+	button.focus_mode = Control.FOCUS_ALL
+	button.tooltip_text = "Apri le azioni: " + label_text
 
 	var popup: PopupMenu = button.get_popup()
 	var viewport_size: Vector2 = get_viewport().get_visible_rect().size
