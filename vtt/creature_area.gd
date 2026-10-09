@@ -10,6 +10,7 @@ const Bestiary = preload("res://vtt/bestiary_5etools_client.gd")
 const PlayerReference = preload("res://vtt/player_reference_catalog.gd")
 const Player5eTools = preload("res://vtt/player_5etools_catalog.gd")
 const SpellcastingTab = preload("res://vtt/creature_spellcasting_tab.gd")
+const FiveToolsText = preload("res://vtt/five_tools_rich_text.gd")
 
 var board_root: Node3D
 var _archive
@@ -647,9 +648,7 @@ func _build_ui() -> void:
 	conditions_tab.add_child(_condition_rows)
 
 	_reference = RichTextLabel.new()
-	_reference.bbcode_enabled = false
-	_reference.selection_enabled = true
-	_reference.scroll_active = true
+	FiveToolsText.style(_reference)
 	# Give the traits editor the entire pane; its own scrollbar handles text.
 	traits_tab.size_flags_vertical = Control.SIZE_EXPAND_FILL
 	(traits_tab.get_parent() as Control).size_flags_vertical = Control.SIZE_EXPAND_FILL
@@ -663,8 +662,7 @@ func _build_ui() -> void:
 	add_child(_effect_dialog)
 	_effect_text = RichTextLabel.new()
 	_effect_text.custom_minimum_size = Vector2(530, 320)
-	_effect_text.selection_enabled = true
-	_effect_text.scroll_active = true
+	FiveToolsText.style(_effect_text)
 	_effect_dialog.add_child(_effect_text)
 
 	_delete_dialog = ConfirmationDialog.new()
@@ -1904,99 +1902,96 @@ func _restore_full_hp() -> void:
 	_set_status("Punti ferita ripristinati al massimo.")
 
 func _refresh_reference(record: Dictionary) -> void:
+	var parts: PackedStringArray = []
 	if String(record.get("kind", "")) == "monster":
 		var stat: Dictionary = record.get("stat_block", {})
-		var lines: PackedStringArray = [
-			String(stat.get("name", record.get("name", ""))),
-			"Fonte: %s" % String(stat.get("source", "5e.tools")),
-			"GS: %s" % str(stat.get("cr", "—"))
-		]
-		for section: String in [
-			"trait", "spellcasting", "action", "bonus", "reaction",
-			"legendary", "mythic", "lairActions"
-		]:
-			var entries: Variant = stat.get(section, [])
-			if not entries is Array:
+		parts.append(FiveToolsText.title(String(stat.get("name", record.get("name", "")))))
+		parts.append(FiveToolsText.meta("Fonte: %s  ·  GS: %s" % [
+			String(stat.get("source", "5e.tools")), str(stat.get("cr", "—"))
+		]))
+		var headings: Dictionary = {
+			"trait": "Tratti",
+			"spellcasting": "Incantesimi innati e di classe",
+			"action": "Azioni",
+			"bonus": "Azioni bonus",
+			"reaction": "Reazioni",
+			"legendary": "Azioni leggendarie",
+			"mythic": "Azioni mitiche",
+			"lairActions": "Azioni della tana"
+		}
+		for section_key: String in headings:
+			var entries: Variant = stat.get(section_key, [])
+			if not entries is Array or (entries as Array).is_empty():
 				continue
-			lines.append("")
-			lines.append(section.to_upper())
-			for raw: Variant in entries as Array:
-				if raw is Dictionary:
-					var item: Dictionary = raw as Dictionary
-					lines.append("• " + String(item.get("name", section)))
-					lines.append(_text_entries(item.get("entries", [])))
-				elif raw is String:
-					lines.append(String(raw))
-		_reference.text = "\n".join(lines)
+			parts.append(FiveToolsText.section(String(headings[section_key])))
+			parts.append(FiveToolsText.blocks(entries))
+		_reference.bbcode_text = "\n\n".join(parts)
 		return
 
-	var primary_class_name := String(record.get("class", ""))
-	var species := String(record.get("species", ""))
-	var character_level: int = clampi(int(record.get("level", 1)), 1, 20)
-	var parts: PackedStringArray = [
-		"%s · %s" % [
-			String(record.get("name", "")), species
-		], "", "PRIVILEGI DI CLASSE (5e.tools)"
-	]
-
+	parts.append(FiveToolsText.title("%s · %s" % [
+		String(record.get("name", "")), String(record.get("species", ""))
+	]))
+	parts.append(FiveToolsText.section("PRIVILEGI DI CLASSE (5e.tools)"))
 	var calculation_value: Variant = record.get("spellcasting_calculation", {})
 	if calculation_value is Dictionary:
 		var spell_summary: String = String(
 			(calculation_value as Dictionary).get("detail", "")
 		).strip_edges()
 		if not spell_summary.is_empty():
-			parts.append("")
-			parts.append("LIMITI DEGLI INCANTESIMI (ULTIMO CALCOLO)")
-			parts.append(spell_summary)
-			parts.append("")
+			parts.append(FiveToolsText.section("LIMITI DEGLI INCANTESIMI (ULTIMO CALCOLO)"))
+			parts.append(FiveToolsText.blocks(spell_summary))
+
+	var primary_class_name: String = String(record.get("class", ""))
+	var character_level: int = clampi(int(record.get("level", 1)), 1, 20)
 	var class_rows: Array = record.get("classes", [])
 	if class_rows.is_empty() and not primary_class_name.is_empty():
 		class_rows = [{"name": primary_class_name, "level": character_level}]
+	var features: Array[Dictionary] = Player5eTools.entries("class_features")
 	for class_value: Variant in class_rows:
 		if not class_value is Dictionary:
 			continue
 		var class_data: Dictionary = class_value as Dictionary
-		var this_name := String(class_data.get("name", ""))
+		var class_name_value: String = String(class_data.get("name", ""))
 		var this_level: int = clampi(
 			int(class_data.get("level", character_level)), 1, 20
 		)
-		parts.append("")
-		parts.append("%s (livello %d)" % [this_name, this_level])
-		for feature: Dictionary in Player5eTools.entries("class_features"):
-			if String(feature.get("class_name", "")).nocasecmp_to(this_name) != 0:
+		parts.append(FiveToolsText.section("%s (livello %d)" % [
+			class_name_value, this_level
+		]))
+		for feature: Dictionary in features:
+			if String(feature.get("class_name", "")).nocasecmp_to(class_name_value) != 0:
 				continue
-			var level := int(feature.get("level", 0))
-			var selected_source := String(class_data.get("source", record.get("class_source", "")))
+			var level: int = int(feature.get("level", 0))
+			var selected_source: String = String(class_data.get(
+				"source", record.get("class_source", "")
+			))
 			if not selected_source.is_empty() and String(feature.get("class_source", "")) != selected_source:
 				continue
 			if level > this_level:
 				continue
-			parts.append("Lv %d · %s" % [level, Player5eTools.display_label(feature)])
-			var description := ContentCatalog.description(feature)
+			parts.append(FiveToolsText.subtitle("Lv %d · %s" % [
+				level, Player5eTools.display_label(feature)
+			]))
+			var feature_content: Variant = feature.get("entries", feature.get("description", ""))
+			if feature_content is String and String(feature_content).strip_edges().is_empty():
+				feature_content = ContentCatalog.description(feature)
+			var description: String = FiveToolsText.blocks(feature_content)
 			if not description.is_empty():
 				parts.append(description)
-	parts.append("")
-	parts.append("TRATTI DELLA SPECIE (5e.tools)")
+	parts.append(FiveToolsText.section("TRATTI DELLA SPECIE (5e.tools)"))
+	var species: String = String(record.get("species", ""))
 	for feature: Dictionary in Player5eTools.entries("races"):
-		if String(feature.get("id", "")) == String(record.get("species_id", "")) or (String(feature.get("name", "")) == species and String(feature.get("source", "")) == String(record.get("species_source", ""))):
-			parts.append(ContentCatalog.description(feature))
-	_reference.text = "\n".join(parts)
-
-
-func _text_entries(value: Variant) -> String:
-	var parts: PackedStringArray = []
-	if value is String:
-		return String(value)
-	if value is Array:
-		for raw: Variant in value as Array:
-			if raw is String:
-				parts.append(String(raw))
-			elif raw is Dictionary:
-				var entry: Dictionary = raw as Dictionary
-				if entry.has("name"):
-					parts.append(String(entry.get("name", "")))
-				parts.append(_text_entries(entry.get("entries", [])))
-	return ContentCatalog.description({"entries": value})
+		if String(feature.get("id", "")) == String(record.get("species_id", "")) or (
+			String(feature.get("name", "")) == species
+			and String(feature.get("source", "")) == String(record.get("species_source", ""))
+		):
+			var feature_content: Variant = feature.get("entries", feature.get("description", ""))
+			if feature_content is String and String(feature_content).strip_edges().is_empty():
+				feature_content = ContentCatalog.description(feature)
+			var description: String = FiveToolsText.blocks(feature_content)
+			if not description.is_empty():
+				parts.append(description)
+	_reference.bbcode_text = "\n\n".join(parts)
 
 
 func _filter_catalog(query: String) -> void:
@@ -2858,7 +2853,9 @@ func _show_effect_description(definition: Dictionary) -> void:
 	if _effect_dialog == null or _effect_text == null:
 		return
 	_effect_dialog.title = String(definition.get("name", "Effect"))
-	_effect_text.text = ContentCatalog.description(definition)
+	_effect_text.bbcode_text = FiveToolsText.blocks(definition.get(
+		"entries", definition.get("description", ContentCatalog.description(definition))
+	))
 	_effect_dialog.popup_centered(Vector2i(600, 450))
 
 
