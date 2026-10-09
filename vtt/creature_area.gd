@@ -11,6 +11,7 @@ const PlayerReference = preload("res://vtt/player_reference_catalog.gd")
 const Player5eTools = preload("res://vtt/player_5etools_catalog.gd")
 const SpellcastingTab = preload("res://vtt/creature_spellcasting_tab.gd")
 const FiveToolsText = preload("res://vtt/five_tools_rich_text.gd")
+const StructuredTrackers = preload("res://vtt/structured_resource_trackers.gd")
 
 var board_root: Node3D
 var _archive
@@ -1673,6 +1674,7 @@ func _save() -> void:
 	_apply_sheet_properties(record)
 	# A visible sheet follows current level and race/class immediately.
 	_refresh_reference(record)
+	_refresh_trackers(record)
 	if _spellcasting_ui != null:
 		_spellcasting_ui.call("update_character_context", record)
 
@@ -1883,14 +1885,7 @@ func _restore_full_hp() -> void:
 	_set_status("Punti ferita ripristinati al massimo.")
 
 func _structured_trackers(record: Dictionary) -> Array[Dictionary]:
-	var result: Array[Dictionary] = []
-	if String(record.get("kind", "")) != "monster":
-		return result
-	var stat: Dictionary = record.get("stat_block", {})
-	var count: int = maxi(0, int(stat.get("legendaryActions", 0)))
-	if count > 0:
-		result.append({"id": "legendary_actions", "name": "Azioni leggendarie", "max": count, "source": "legendary", "recharge": "turn"})
-	return result
+	return StructuredTrackers.for_creature(record)
 
 
 func _refresh_trackers(record: Dictionary) -> void:
@@ -1902,40 +1897,79 @@ func _refresh_trackers(record: Dictionary) -> void:
 	var trackers: Array[Dictionary] = _structured_trackers(record)
 	if trackers.is_empty():
 		var hint := Label.new()
-		hint.text = "Nessuna risorsa non magica con utilizzi strutturati disponibile."
+		hint.text = "Nessuna risorsa con utilizzi espliciti nei dati strutturati."
+		hint.autowrap_mode = TextServer.AUTOWRAP_WORD_SMART
 		_tracker_rows.add_child(hint)
 		return
-	var spent: Dictionary = record.get("resource_tracker_spent", {})
+	var spent_value: Variant = record.get("resource_tracker_spent", {})
+	var spent: Dictionary = spent_value as Dictionary if spent_value is Dictionary else {}
 	for tracker: Dictionary in trackers:
 		var row := HBoxContainer.new()
+		row.add_theme_constant_override("separation", 5)
 		_tracker_rows.add_child(row)
 		var source_button := Button.new()
-		source_button.text = String(tracker["name"]) + "  ↗"
-		source_button.tooltip_text = "Apri il privilegio nella scheda Tratti"
+		var title: String = String(tracker.get("name", "Risorsa"))
+		var source_label: String = String(tracker.get("source_label", ""))
+		source_button.text = title + "  ↗"
+		source_button.tooltip_text = (
+			"Vai al privilegio: " + String(tracker.get("origin", title))
+			+ (" · " + source_label if not source_label.is_empty() else "")
+		)
 		source_button.size_flags_horizontal = Control.SIZE_EXPAND_FILL
-		source_button.pressed.connect(_open_tracker_trait.bind(String(tracker["source"])))
+		source_button.alignment = HORIZONTAL_ALIGNMENT_LEFT
+		source_button.pressed.connect(
+			_open_tracker_trait.bind(String(tracker.get("origin", title)))
+		)
 		row.add_child(source_button)
 		var id: String = String(tracker["id"])
 		var maximum: int = int(tracker["max"])
 		var used: int = clampi(int(spent.get(id, 0)), 0, maximum)
 		var consume := Button.new()
 		consume.text = "−"
+		consume.tooltip_text = "Consuma un utilizzo"
 		consume.disabled = used >= maximum
 		consume.pressed.connect(_change_tracker.bind(id, 1, maximum))
 		row.add_child(consume)
 		var remaining := Label.new()
 		remaining.text = "%d / %d" % [maximum - used, maximum]
+		remaining.custom_minimum_size.x = 50
+		remaining.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
 		row.add_child(remaining)
 		var restore := Button.new()
 		restore.text = "+"
+		restore.tooltip_text = "Recupera un utilizzo"
 		restore.disabled = used <= 0
 		restore.pressed.connect(_change_tracker.bind(id, -1, maximum))
 		row.add_child(restore)
+		var recharge: String = String(tracker.get("recharge", "manual"))
+		if recharge == "d6":
+			var threshold: int = clampi(int(tracker.get("recharge_min", 6)), 1, 6)
+			var roll := Button.new()
+			roll.text = "d6"
+			roll.tooltip_text = "Tira d6: ricarica con %d–6" % threshold
+			roll.disabled = used == 0
+			roll.pressed.connect(_roll_tracker_recharge.bind(id, threshold, title, maximum))
+			row.add_child(roll)
 		var reset := Button.new()
 		reset.text = "↺"
-		reset.tooltip_text = "Ripristina tutti gli utilizzi"
+		reset.tooltip_text = (
+			"Ripristina le azioni all'inizio del turno"
+			if recharge == "turn" else "Ripristina tutti gli utilizzi (manuale)"
+		)
+		reset.disabled = used == 0
 		reset.pressed.connect(_change_tracker.bind(id, -maximum, maximum))
 		row.add_child(reset)
+
+
+func _roll_tracker_recharge(
+	id: String, threshold: int, label: String, maximum: int
+) -> void:
+	var roll: int = randi_range(1, 6)
+	if roll >= threshold:
+		_change_tracker(id, -maximum, maximum)
+	_set_status("%s · Ricarica d6: %d (%s, occorre %d–6)." % [
+		label, roll, "riuscita" if roll >= threshold else "fallita", threshold
+	])
 
 
 func _change_tracker(id: String, delta: int, maximum: int) -> void:
@@ -1953,12 +1987,22 @@ func _change_tracker(id: String, delta: int, maximum: int) -> void:
 	_refresh_trackers(record)
 
 
-func _open_tracker_trait(_source: String) -> void:
+func _open_tracker_trait(origin: String) -> void:
 	for i: int in range(_tabs.get_tab_count()):
 		if _tabs.get_tab_title(i) == "Tratti":
 			_tabs.current_tab = i
-			_reference.scroll_to_line(0)
+			# Search selects the feature text and scrolls to the match.
+			# Defer until the tab is visible and RichTextLabel has its layout.
+			call_deferred("_focus_tracker_trait", origin)
 			return
+
+
+func _focus_tracker_trait(origin: String) -> void:
+	if _reference == null or origin.is_empty():
+		return
+	_reference.selection_enabled = true
+	if not _reference.search(origin):
+		_reference.scroll_to_line(0)
 
 
 func _refresh_reference(record: Dictionary) -> void:
