@@ -27,6 +27,7 @@ func run() -> void:
 	var stat := {
 		"name": "Test Dragon",
 		"source": "MM",
+		"cr": "1/2",
 		"hp": {"average": 178},
 		"ac": [{"ac": 18, "from": ["natural armor"]}],
 		"str": 23,
@@ -34,7 +35,8 @@ func run() -> void:
 		"legendaryActions": 3,
 		"legendary": [{"name": "Tail Attack"}],
 		"action": [
-			{"name": "Fire Breath (Recharge 5–6)"},
+			{"name": "Tail", "entries": ["{@atk mw} reach 10 ft., one target."]},
+			{"name": "Fire Breath (Recharge 5–6)", "entries": ["range 90 ft."]},
 			{"name": "Frightful Presence (3/day)"}
 		],
 		"spellcasting": [{
@@ -45,10 +47,26 @@ func run() -> void:
 	var creature: Dictionary = monster.create_creature(stat, "enemy")
 	assert(creature.armor_class == 18)
 	assert(creature.abilities.str == 23)
+	assert(creature.species == "Test Dragon" and creature.species_source == "MM")
+	assert(creature.class == "Mostro" and is_equal_approx(float(creature.level), 0.5))
+	assert(creature.classes.size() == 1
+		and is_equal_approx(float(creature.classes[0].level), 0.5),
+		"Monster base class must preserve fractional 5etools CR")
+	assert(creature.reach_feet == 10.0,
+		"Monster melee reach must be derived from 5etools, not a fixed 5 ft")
 	assert(creature.owner_id == Owner.local_id())
 	assert(not creature.has("trackers"), "New creatures must not generate legacy resources.")
 	assert(Rules.monster_armor_class(stat) == 18)
 	assert(Rules.monster_abilities(stat).str == 23)
+	assert(is_equal_approx(Rules.monster_cr_value({"cr": {"cr": "1/8"}}), 0.125))
+	var multiclass_monster := creature.duplicate(true)
+	multiclass_monster["classes"].append({"name": "Wizard", "level": 3, "source": "PHB"})
+	var normalized_monster: Dictionary = monster.normalize_creature(multiclass_monster)
+	assert(normalized_monster.classes.size() == 2
+		and is_equal_approx(float(normalized_monster.classes[0].level), 0.5)
+		and normalized_monster.classes[1].name == "Wizard"
+		and is_equal_approx(float(normalized_monster.level), 3.5),
+		"Monster class normalization must not discard extra real classes")
 	# Editions are alternatives for a class, not separate entries for each book.
 	for edition: String in ["2014", "2024"]:
 		var class_names: Dictionary = {}
