@@ -599,7 +599,7 @@ func _build_ui() -> void:
 	_effect_text.custom_minimum_size = Vector2(530, 320)
 	_effect_text.selection_enabled = true
 	_effect_text.scroll_active = true
-	_effect_dialog.add_child(_effect_text)
+	_effect_dialog.get_vbox().add_child(_effect_text)
 
 	_delete_dialog = ConfirmationDialog.new()
 	_delete_dialog.title = "Elimina creatura"
@@ -840,30 +840,39 @@ func _apply_automatic_calculation() -> void:
 func _build_transfer_request_dialog() -> void:
 	_transfer_dialog = ConfirmationDialog.new()
 	_transfer_dialog.title = "Cedi il controllo della creatura"
-	_transfer_dialog.dialog_text = "ID controllore del destinatario:"
+	_transfer_dialog.dialog_text = ""
 	(board_root.get_node("UI") as CanvasLayer).add_child(_transfer_dialog)
+	var hint := Label.new()
+	hint.text = "ID controllore del destinatario"
+	_transfer_dialog.get_vbox().add_child(hint)
 	_owner_target = LineEdit.new()
 	_owner_target.placeholder_text = "Incolla l'ID controllore"
 	_owner_target.custom_minimum_size.x = 430
-	_transfer_dialog.add_child(_owner_target)
+	_transfer_dialog.get_vbox().add_child(_owner_target)
 	_transfer_dialog.confirmed.connect(_transfer)
 
 
 func _build_feat_dialog() -> void:
 	_feat_dialog = ConfirmationDialog.new()
 	_feat_dialog.title = "Talenti · 5e.tools e homebrew"
-	_feat_dialog.dialog_text = "Cerca un talento e leggi la sua descrizione prima di aggiungerlo."
+	_feat_dialog.dialog_text = ""
 	_feat_dialog.min_size = Vector2i(590, 400)
 	(board_root.get_node("UI") as CanvasLayer).add_child(_feat_dialog)
 	var body := VBoxContainer.new()
-	_feat_dialog.add_child(body)
+	body.add_theme_constant_override("separation", 8)
+	_feat_dialog.get_vbox().add_child(body)
+	var hint := Label.new()
+	hint.text = "Cerca un talento e leggi i suoi effetti prima di aggiungerlo."
+	hint.autowrap_mode = TextServer.AUTOWRAP_WORD_SMART
+	body.add_child(hint)
 	_feat_filter = LineEdit.new()
 	_feat_filter.placeholder_text = "Cerca talenti per nome o fonte..."
 	_feat_filter.clear_button_enabled = true
 	_feat_filter.text_changed.connect(_search_feats)
 	body.add_child(_feat_filter)
 	_feat_list = ItemList.new()
-	_feat_list.custom_minimum_size = Vector2(510, 130)
+	_feat_list.custom_minimum_size = Vector2(0, 130)
+	_feat_list.size_flags_horizontal = Control.SIZE_EXPAND_FILL
 	_feat_list.item_selected.connect(_show_feat_details)
 	_feat_list.item_activated.connect(_show_feat_details)
 	body.add_child(_feat_list)
@@ -992,7 +1001,7 @@ func _build_transfer_dialog() -> void:
 	_import_text = TextEdit.new()
 	_import_text.custom_minimum_size = Vector2(620, 220)
 	_import_text.placeholder_text = "Incolla qui il codice JSON ricevuto dal precedente controllore."
-	_import_dialog.add_child(_import_text)
+	_import_dialog.get_vbox().add_child(_import_text)
 
 
 func _add_label(parent: Node, text_value: String) -> void:
