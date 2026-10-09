@@ -1,4 +1,4 @@
-[gd_resource type="Theme" load_steps=18 format=3]
+[gd_resource type="Theme" load_steps=19 format=3]
 
 [sub_resource type="SystemFont" id="SystemFont_ui"]
 font_names = PackedStringArray("Segoe UI", "Noto Sans", "DejaVu Sans")
@@ -278,11 +278,18 @@ content_margin_right = 0
 content_margin_bottom = 7.0
 
 
+[sub_resource type="StyleBoxFlat" id="StyleBoxFlat_rule"]
+bg_color = Color(0.70, 0.50, 0.28, 0.70)
+content_margin_top = 1.0
+content_margin_bottom = 1.0
+
 [resource]
 default_font = SubResource("SystemFont_ui")
 default_font_size = 16
 Button/colors/font_color = Color(0.96, 0.90, 0.79, 1)
 Button/colors/font_hover_color = Color(1, 0.96, 0.84, 1)
+Button/colors/font_hover_pressed_color = Color(1, 0.96, 0.84, 1)
+Button/styles/hover_pressed = SubResource("StyleBoxFlat_button_pressed")
 Button/colors/font_pressed_color = Color(1, 0.97, 0.86, 1)
 Button/colors/font_disabled_color = Color(0.56, 0.54, 0.50, 1)
 Button/styles/normal = SubResource("StyleBoxFlat_button")
@@ -349,3 +356,13 @@ HScrollBar/styles/grabber_highlight = SubResource("StyleBoxFlat_scroll_hover")
 HScrollBar/styles/grabber_pressed = SubResource("StyleBoxFlat_scroll_hover")
 AcceptDialog/styles/panel = SubResource("StyleBoxFlat_raised")
 Window/styles/embedded_border = SubResource("StyleBoxFlat_raised")
+CheckButton/colors/font_color = Color(0.95, 0.89, 0.78, 1)
+CheckButton/colors/font_pressed_color = Color(1, 0.94, 0.83, 1)
+CheckBox/colors/font_color = Color(0.95, 0.89, 0.78, 1)
+CheckBox/colors/font_pressed_color = Color(1, 0.94, 0.83, 1)
+TooltipPanel/styles/panel = SubResource("StyleBoxFlat_raised")
+TooltipLabel/colors/font_color = Color(0.98, 0.91, 0.78, 1)
+HSeparator/styles/separator = SubResource("StyleBoxFlat_rule")
+HSlider/styles/slider = SubResource("StyleBoxFlat_bar_bg")
+HSlider/styles/grabber_area = SubResource("StyleBoxFlat_bar_fill")
+HSlider/styles/grabber_area_highlight = SubResource("StyleBoxFlat_bar_fill")
