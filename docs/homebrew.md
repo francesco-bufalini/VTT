@@ -20,7 +20,7 @@ Map snapshots never include private sheets, ability scores, exact HP, spell slot
 
 Open **Cartella homebrew** from Creature. User data lives in `user://homebrew` (Godot user data; on Windows normally `%APPDATA%/Godot/app_userdata/<project>/homebrew`). Developers can use `homebrew/local`, which Git ignores. Copy `homebrew/examples/starter.json` into an active directory to enable it. Examples are not auto-loaded. Press **Ricarica homebrew** after editing; invalid entries and duplicate IDs appear in the status message.
 
-`homebrew/package.schema.json` defines the package envelope. Categories include bestiary monsters, playable races/classes, player features/feats/backgrounds, spells, conditions, diseases and related effects. IDs are `homebrew:<namespace>:<category>:<local-id>`. Renaming display names does not change IDs. Do not rename namespace or ID after use. Data uses 5eTools-style `entries` (strings, lists, tables and named groups). No code is executed. Packaged data and user data are sorted deterministically; first duplicate ID wins. Same names from different sources coexist. Overrides require an exact existing target ID, keep its identity/icon, and never occur implicitly by name.
+`homebrew/package.schema.json` defines the package envelope. Categories include bestiary monsters, playable races/classes/subclasses, items, player features/feats/backgrounds, spells, conditions, diseases and related effects. IDs are `homebrew:<namespace>:<category>:<local-id>`. Renaming display names does not change IDs. Do not rename namespace or ID after use. Data uses 5eTools-style `entries` (strings, lists, tables and named groups). No code is executed. Packaged data and user data are sorted deterministically; first duplicate ID wins. Same names from different sources coexist. Overrides require an exact existing target ID, keep its identity/icon, and never occur implicitly by name.
 
 For condition icons set `icon_id` to an existing status (e.g. `poisoned`) or `icon` to a Unicode pictogram up to 16 characters. Empty icon defaults to a bullet. Custom class `trackers` support `id`, `label`, `maximum`, `reset`, and `min_level`; manual editing always remains available. Monster `default_miniature_id` can explicitly select a published token-pack ID.
 
@@ -33,9 +33,10 @@ Do not edit generated JSON/GDScript catalogs by hand. Run:
 ```powershell
 python scripts/generate_effects_catalog.py --refresh
 python scripts/generate_creature_references.py --refresh
+python scripts/generate_subclasses_catalog.py --refresh
 ```
 
-For deterministic offline regeneration, run the same scripts with `--offline` (the ignored `.5etools-cache` must exist). Generators validate responses and retain content hashes/source attribution. The effects generator prefers `https://5e.tools/data/conditionsdiseases.json` and falls back to the project's 5etools mirror. Creature references are fetched from the same mirror. Existing spell generation is unchanged; homebrew is an overlay in the normalization/runtime catalog layer. Respect upstream content licenses when redistributing.
+For deterministic offline regeneration, run the same scripts with `--offline` (the ignored `.5etools-cache` must exist). Generators validate responses and retain content hashes/source attribution. The effects generator prefers `https://5e.tools/data/conditionsdiseases.json` and falls back to the project's 5etools mirror. Creature references and the compact subclass/feature indexes are fetched from the same mirror. Subclass feature indexes contain structured metadata (names, sources and levels), not full upstream descriptions. Existing spell generation is unchanged; homebrew is an overlay in the normalization/runtime catalog layer. Respect upstream content licenses when redistributing.
 
 ## Validation
 
