@@ -5,6 +5,99 @@ extends RefCounted
 const TRACKER_VERSION := 1
 
 
+
+const FULL_CASTER_SLOTS := [
+	[], [2], [3], [4, 2], [4, 3], [4, 3, 2],
+	[4, 3, 3], [4, 3, 3, 1], [4, 3, 3, 2],
+	[4, 3, 3, 3, 1], [4, 3, 3, 3, 2],
+	[4, 3, 3, 3, 2, 1], [4, 3, 3, 3, 2, 1],
+	[4, 3, 3, 3, 2, 1, 1], [4, 3, 3, 3, 2, 1, 1],
+	[4, 3, 3, 3, 2, 1, 1, 1], [4, 3, 3, 3, 2, 1, 1, 1],
+	[4, 3, 3, 3, 2, 1, 1, 1, 1],
+	[4, 3, 3, 3, 3, 1, 1, 1, 1],
+	[4, 3, 3, 3, 3, 2, 1, 1, 1],
+	[4, 3, 3, 3, 3, 2, 2, 1, 1]
+]
+
+
+static func character_trackers(character: Dictionary) -> Array[Dictionary]:
+	var result: Array[Dictionary] = []
+	var classes_value: Variant = character.get("classes", [])
+	var classes: Array = (
+		classes_value if classes_value is Array else []
+	)
+	if classes.is_empty():
+		classes = [{
+			"name": String(character.get("class", "")),
+			"level": int(character.get("level", 1))
+		}]
+	var caster_level := 0
+	var warlock_level := 0
+	for class_value: Variant in classes:
+		if not class_value is Dictionary:
+			continue
+		var cls: Dictionary = class_value as Dictionary
+		var name := String(cls.get("name", "")).to_lower()
+		var level := clampi(int(cls.get("level", 1)), 1, 20)
+		match name:
+			"bard", "cleric", "druid", "sorcerer", "wizard":
+				caster_level += level
+			"artificer", "paladin", "ranger":
+				var edition := String(character.get("rules_version", "2024"))
+				# Artificer rounds up. The 2024 half-caster progression
+				# is supported at level 1; 2014 paladin/ranger at level 2.
+				if name == "artificer" or edition == "2024":
+					caster_level += ceili(float(level) / 2.0)
+				else:
+					caster_level += level / 2
+			"warlock":
+				warlock_level = maxi(warlock_level, level)
+		match name:
+			"barbarian":
+				var uses := 2
+				if level >= 17:
+					uses = 6
+				elif level >= 12:
+					uses = 5
+				elif level >= 6:
+					uses = 4
+				elif level >= 3:
+					uses = 3
+				result.append(default_tracker("rage", "Ira", uses, "long_rest"))
+			"fighter":
+				var uses := 2
+				if level >= 10:
+					uses = 4
+				elif level >= 4:
+					uses = 3
+				result.append(default_tracker("second_wind", "Recuperare Energie", uses, "long_rest"))
+			"monk":
+				if level >= 2:
+					result.append(default_tracker("focus", "Punti Focus / Ki", level, "short_rest"))
+			"sorcerer":
+				if level >= 2:
+					result.append(default_tracker("sorcery_points", "Punti stregoneria", level, "long_rest"))
+	if caster_level > 0:
+		var slots: Array = FULL_CASTER_SLOTS[clampi(caster_level, 1, 20)]
+		for i: int in range(slots.size()):
+			result.append(default_tracker(
+				"slot_%d" % (i + 1), "Slot livello %d" % (i + 1),
+				int(slots[i]), "long_rest", "spell_slot"
+			))
+	if warlock_level > 0:
+		var pact_slots := (
+			4 if warlock_level >= 17 else
+			3 if warlock_level >= 11 else
+			2 if warlock_level >= 2 else 1
+		)
+		var pact_level := mini(5, (warlock_level + 1) / 2)
+		result.append(default_tracker(
+			"pact_slot", "Magia del Patto (liv. %d)" % pact_level,
+			pact_slots, "short_rest", "spell_slot"
+		))
+	return result
+
+
 static func monster_armor_class(stat: Dictionary) -> int:
 	var ac_value: Variant = stat.get("ac", [])
 	if ac_value is Array:
