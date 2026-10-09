@@ -82,17 +82,19 @@ func _new_badge() -> Control:
 	return badge
 
 
+# Tactical elevation is expressed in whole grid squares, not arbitrary
+# physics fractions: a square corresponds to 5 ft (conventionally 1.5 m).
+func _difference_cells(delta_y: float) -> int:
+	return roundi(delta_y / maxf(cell_size, 0.001))
+
+
 func _format_difference(delta_y: float) -> String:
-	var squares: float = delta_y / cell_size
-	var feet: float = squares * 5.0
-	var meters: float = feet * 0.3048
-	var cells_text: String = "%+.0f" % squares
-	if absf(squares - roundf(squares)) > 0.05:
-		cells_text = "%+.1f" % squares
-	return "%+.2f m · %+.1f ft · %s quadretti" % [
-		meters,
-		feet,
-		cells_text
+	var squares: int = _difference_cells(delta_y)
+	var meters_text: String = ("%+.1f" % (float(squares) * 1.5)).trim_suffix(".0")
+	return "%s m · %+d ft · %+d quadretti" % [
+		meters_text,
+		squares * 5,
+		squares
 	]
 
 
@@ -164,7 +166,7 @@ func _render_token_badge(token: CharacterBody3D, floor_y: float) -> void:
 	height_label.position = Vector2(icon_size + 6.0, icon_size * 0.3)
 	height_label.add_theme_font_size_override("font_size", 12)
 	height_label.text = _format_difference(delta)
-	height_label.visible = absf(delta) >= cell_size * 0.1
+	height_label.visible = _difference_cells(delta) != 0
 
 
 func _update_hover(floor_y: float) -> void:
@@ -200,7 +202,7 @@ func _update_hover(floor_y: float) -> void:
 		return
 	var lower_y: float = float(result.get("level", floor_y))
 	var delta: float = lower_y - floor_y
-	if delta >= -cell_size * 0.1:
+	if _difference_cells(delta) >= 0:
 		return
 	_hover_text.text = _format_difference(delta)
 	_hover_panel.show()
