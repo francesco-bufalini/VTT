@@ -3615,7 +3615,16 @@ func open_selected_token_state_editor() -> void:
 		return
 	if context_menu.visible:
 		context_menu.hide()
-	open_token_transformation(_selected_tokens[0])
+	var token: CharacterBody3D = _selected_tokens[0]
+	var sheets: Node = get_node_or_null("CreatureArea")
+	if (
+		sheets != null
+		and sheets.has_method("open_for_token")
+		and bool(sheets.call("open_for_token", token))
+	):
+		return
+	# Unlinked or remotely owned tokens can still edit their appearance.
+	open_token_transformation(token)
 
 
 func _open_token_state_editor(token: CharacterBody3D) -> void:
@@ -4238,6 +4247,10 @@ func _on_token_dialog_confirmed() -> void:
 		if initiative_tracker != null and is_instance_valid(initiative_tracker):
 			initiative_tracker.call("refresh")
 		if editing_existing:
+			# Do not let a saved creature sheet overwrite a token edit later.
+			var linked_sheets: Node = get_node_or_null("CreatureArea")
+			if linked_sheets != null and linked_sheets.has_method("sync_linked_token_editor"):
+				linked_sheets.call("sync_linked_token_editor", created_token)
 			# Party, condizioni, taglia, reach, nome e miniatura sono già stati
 			# applicati al nodo: forza uno snapshot adesso, invece di lasciare
 			# che il primo poll possa assorbirli come nuova baseline.
