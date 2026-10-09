@@ -3657,7 +3657,13 @@ func _finish_context_menu_close() -> void:
 		and master_area.has_method("is_panel_open")
 		and bool(master_area.call("is_panel_open"))
 	)
-	if spell_panel_open or player_panel_open or master_panel_open:
+	var creature_sheet: Node = get_node_or_null("CreatureArea")
+	var creature_panel_open: bool = (
+		creature_sheet != null
+		and creature_sheet.has_method("is_panel_open")
+		and bool(creature_sheet.call("is_panel_open"))
+	)
+	if spell_panel_open or player_panel_open or master_panel_open or creature_panel_open:
 		_pending_aoe_index = -1
 		_context_token = null
 		_ui_owns_mouse = true
