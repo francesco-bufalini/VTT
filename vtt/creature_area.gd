@@ -241,7 +241,14 @@ func hide_panel() -> void:
 
 func _unhandled_input(event: InputEvent) -> void:
 	if _panel.visible and event is InputEventKey and event.pressed and not event.echo:
-		if event.keycode == KEY_ESCAPE and not _import_dialog.visible:
+		if event.keycode == KEY_ESCAPE and not (
+			_import_dialog.visible
+			or _miniature_dialog.visible
+			or _add_kind_dialog.visible
+			or _feat_dialog.visible
+			or _transfer_dialog.visible
+			or _delete_dialog.visible
+		):
 			hide_panel()
 			get_viewport().set_input_as_handled()
 
@@ -573,6 +580,25 @@ func _confirm_feat() -> void:
 			return
 	_feats.text += ("\n" if not _feats.text.strip_edges().is_empty() else "") + label
 	_save()
+	var record: Dictionary = _current()
+	if not record.is_empty():
+		var saved: Array = record.get("feats_catalog", []).duplicate(true)
+		var ref_id := String(entry.get("id", ""))
+		var duplicate_entry := false
+		for previous: Variant in saved:
+			if previous is Dictionary and String(previous.get("id", "")) == ref_id:
+				duplicate_entry = true
+				break
+		if not duplicate_entry:
+			saved.append({
+				"id": ref_id,
+				"name": String(entry.get("name", "")),
+				"source": source,
+				"origin": String(entry.get("origin", "5etools"))
+			})
+			record["feats_catalog"] = saved
+			if _archive.save(record) == OK:
+				_replace_current_record(record)
 	_set_status("Talento aggiunto: " + label)
 
 
@@ -902,6 +928,7 @@ func _save() -> void:
 		abilities[ability] = int((_ability_spins[ability] as SpinBox).value)
 	record["abilities"] = abilities
 	record["default_miniature_id"] = _default_miniature_id
+	record["feats"] = _feats.text
 	if String(record.get("kind", "")) == "character":
 		var species := _reference_entry(_species)
 		var class_ref := _reference_entry(_class_name)
@@ -943,7 +970,6 @@ func _save() -> void:
 				"level": primary_level
 			})
 		record["classes"] = classes
-		record["feats"] = _feats.text
 	var error: Error = _archive.save(record)
 	if error != OK:
 		_set_status("Salvataggio non riuscito: %s" % error_string(error))
