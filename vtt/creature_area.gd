@@ -1575,9 +1575,8 @@ func _build_miniature_dialog() -> void:
 	_miniature_dialog.confirmed.connect(_confirm_miniature)
 
 
-func _choose_miniature(record: Dictionary, is_new: bool) -> void:
-	if is_new:
-		_picker_current = false
+func _choose_miniature(record: Dictionary, is_new: bool, choose_current: bool = false) -> void:
+	_picker_current = choose_current
 	if record.is_empty():
 		_set_status("Seleziona una creatura.")
 		return
@@ -1827,8 +1826,7 @@ func _edit_linked_token_appearance() -> void:
 	var record: Dictionary = _current()
 	if record.is_empty():
 		return
-	_picker_current = true
-	_choose_miniature(record, false)
+	_choose_miniature(record, false, true)
 
 
 func _miniature_display_name(miniature_id: String) -> String:
