@@ -265,6 +265,20 @@ func are_condition_visuals_visible() -> bool:
 
 
 func _refresh_flanking_badges(targets: Dictionary) -> void:
+	# A creature sheet must never have condition text drawn on top of it,
+	# even while the 3D camera is active. The badges are recreated as soon
+	# as the sheet closes (the tactical system refreshes continuously).
+	var creature_area: Node = (
+		board_root.get_node_or_null("CreatureArea")
+		if board_root != null else null
+	)
+	if (
+		creature_area != null
+		and creature_area.has_method("is_panel_open")
+		and bool(creature_area.call("is_panel_open"))
+	):
+		_clear_flanking_badges()
+		return
 	# The 2D elevation overlay owns its compact status strip; avoid projecting
 	# the 3D badge a second time, which also drifts across sliced floors.
 	if (
@@ -351,7 +365,8 @@ func _create_flanking_badge() -> PanelContainer:
 	var panel := PanelContainer.new()
 	panel.name = "FlankingNotice"
 	panel.mouse_filter = Control.MOUSE_FILTER_IGNORE
-	panel.z_index = 95
+	# Below the creature-sheet interface (z=30).
+	panel.z_index = 10
 
 	# Deliberately identical to the opportunity-attack popup style.
 	var style := StyleBoxFlat.new()
