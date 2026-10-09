@@ -109,12 +109,10 @@ var _sheet_visual_waiting: Dictionary = {}
 var identity_placement_panel: PanelContainer
 var identity_placement_label: Label
 var token_resize_menu: PopupMenu
-var context_token_menu: PopupMenu
 var context_place_creature_menu: PopupMenu
 var context_game_menu: PopupMenu
 var context_measure_menu: PopupMenu
 var context_view_menu: PopupMenu
-var context_session_menu: PopupMenu
 var _token_resize_target: CharacterBody3D
 var _token_resize_confirmed_callback: Callable = Callable()
 var _token_resize_canceled_callback: Callable = Callable()
@@ -2220,19 +2218,6 @@ func _unhandled_input(event: InputEvent) -> void:
 
 		_clean_selection()
 		if not _selected_tokens.is_empty() or _has_selected_item():
-			# Ctrl+Shift+Su/Giu inclina di 30 gradi. Shift+Su/Giu resta
-			# disponibile per il movimento verticale gia' esistente.
-			if (
-				event.ctrl_pressed
-				and event.shift_pressed
-				and event.keycode in [KEY_UP, KEY_DOWN]
-			):
-				_rotate_selected_vertical(
-					1 if event.keycode == KEY_UP else -1
-				)
-				get_viewport().set_input_as_handled()
-				return
-
 			if event.shift_pressed:
 				if event.keycode == KEY_UP or event.keycode == KEY_DOWN:
 					_move_selected_vertical(
@@ -2899,17 +2884,14 @@ func _toggle_measurement_mode() -> void:
 
 
 func _build_context_submenus() -> void:
-	context_token_menu = _create_context_submenu("ContextTokenMenu")
-	# Nested under Token: the placement choice remains directly in the
-	# context menu, with no separate creature editor or generator dialog.
+	context_game_menu = _create_context_submenu("ContextGameMenu")
+	# Creature placement remains available, but has no separate Token menu.
 	context_place_creature_menu = PopupMenu.new()
 	context_place_creature_menu.name = "ContextPlaceCreatureMenu"
 	context_place_creature_menu.id_pressed.connect(_on_place_creature_id_pressed)
-	context_token_menu.add_child(context_place_creature_menu)
-	context_game_menu = _create_context_submenu("ContextGameMenu")
+	context_game_menu.add_child(context_place_creature_menu)
 	context_measure_menu = _create_context_submenu("ContextMeasureMenu")
 	context_view_menu = _create_context_submenu("ContextViewMenu")
-	context_session_menu = _create_context_submenu("ContextSessionMenu")
 
 
 func _create_context_submenu(menu_name: String) -> PopupMenu:
@@ -2921,19 +2903,15 @@ func _create_context_submenu(menu_name: String) -> PopupMenu:
 
 
 func _prepare_context_submenus() -> void:
-	context_token_menu.clear()
 	context_place_creature_menu.clear()
 	context_game_menu.clear()
 	context_measure_menu.clear()
 	context_view_menu.clear()
-	context_session_menu.clear()
 	_limit_popup_menu(context_menu)
-	_limit_popup_menu(context_token_menu)
 	_limit_popup_menu(context_place_creature_menu)
 	_limit_popup_menu(context_game_menu)
 	_limit_popup_menu(context_measure_menu)
 	_limit_popup_menu(context_view_menu)
-	_limit_popup_menu(context_session_menu)
 
 
 # Rebuild on each right-click so the chooser includes both present and
@@ -3138,50 +3116,36 @@ func _show_context_menu(screen_position: Vector2) -> void:
 	context_measure_menu.add_item("Cancella tutte le AoE", CONTEXT_CLEAR_AOES)
 	context_menu.add_submenu_node_item("Misura", context_measure_menu)
 
-	if _has_pending_spawn_position:
-		_populate_place_creature_menu()
-		context_token_menu.add_submenu_node_item(
-			"Piazza token", context_place_creature_menu
-		)
-		context_token_menu.add_item("Genera token", CONTEXT_CREATE_TOKEN)
-
-	if context_token_menu.item_count > 0:
-		context_token_menu.add_separator()
-	context_token_menu.add_item("Lista token", CONTEXT_TOKEN_LIST)
-
+	if _selected_tokens.size() == 1:
+		if _context_reposition_valid:
+			context_menu.add_item(
+				"Riposiziona creatura qui", CONTEXT_REPOSITION_SELECTED
+			)
+		var selected_token: CharacterBody3D = _selected_tokens[0]
+		if (
+			selected_token != null
+			and is_instance_valid(selected_token)
+			and selected_token.has_method("has_previous_transformation")
+			and bool(selected_token.call("has_previous_transformation"))
+		):
+			context_menu.add_item(
+				"Ripristina aspetto precedente",
+				CONTEXT_RESTORE_TRANSFORMATION
+			)
 	if not _selected_tokens.is_empty():
-		if context_token_menu.item_count > 0:
-			context_token_menu.add_separator()
-
-		if _selected_tokens.size() == 1:
-			if _context_reposition_valid:
-				context_token_menu.add_item(
-					"Riposiziona token qui", CONTEXT_REPOSITION_SELECTED
-				)
-			var selected_token: CharacterBody3D = _selected_tokens[0]
-			if (
-				selected_token != null
-				and is_instance_valid(selected_token)
-				and selected_token.has_method("has_previous_transformation")
-				and bool(selected_token.call("has_previous_transformation"))
-			):
-				context_token_menu.add_item(
-					"Ripristina aspetto precedente",
-					CONTEXT_RESTORE_TRANSFORMATION
-				)
-
 		_add_bestiary_context_items()
 
-		# Destructive actions are directly visible at the top of the menu.
-
-	if context_token_menu.item_count > 0:
-		context_menu.add_submenu_node_item("Token", context_token_menu)
 
 	context_game_menu.add_item("Incantesimi", CONTEXT_SPELLS)
 	context_game_menu.add_separator()
 	context_game_menu.add_item("Creature · schede", CONTEXT_CREATURE_AREA)
 	context_game_menu.add_item("Aggiungi creatura", CONTEXT_ADD_CREATURE)
 	context_game_menu.add_item("Compendio", CONTEXT_COMPENDIUM)
+	if _has_pending_spawn_position:
+		_populate_place_creature_menu()
+		context_game_menu.add_submenu_node_item(
+			"Piazza creatura", context_place_creature_menu
+		)
 	context_game_menu.add_separator("Combattimento")
 	context_game_menu.add_item("Inizia combattimento", CONTEXT_COMBAT_START)
 	var initiative_visible: bool = (
@@ -3194,8 +3158,6 @@ func _show_context_menu(screen_position: Vector2) -> void:
 		CONTEXT_INITIATIVE
 	)
 	context_game_menu.add_item("Termina combattimento", CONTEXT_COMBAT_END)
-	context_menu.add_submenu_node_item("Gioco", context_game_menu)
-
 	if volumetric_grid.visible:
 		context_view_menu.add_item("Nascondi griglia", CONTEXT_TOGGLE_GRID)
 	else:
@@ -3232,50 +3194,50 @@ func _show_context_menu(screen_position: Vector2) -> void:
 	context_view_menu.add_item("Velocità camera…", CONTEXT_CAMERA_SETTINGS)
 	context_menu.add_submenu_node_item("Vista", context_view_menu)
 
-	context_session_menu.add_item("Annulla ultima azione", CONTEXT_UNDO)
-	context_session_menu.set_item_disabled(
-		context_session_menu.get_item_index(CONTEXT_UNDO),
+	context_game_menu.add_item("Annulla ultima azione", CONTEXT_UNDO)
+	context_game_menu.set_item_disabled(
+		context_game_menu.get_item_index(CONTEXT_UNDO),
 		_undo_stack.is_empty()
 	)
-	context_session_menu.add_item("Ripeti ultima azione", CONTEXT_REDO)
-	context_session_menu.set_item_disabled(
-		context_session_menu.get_item_index(CONTEXT_REDO),
+	context_game_menu.add_item("Ripeti ultima azione", CONTEXT_REDO)
+	context_game_menu.set_item_disabled(
+		context_game_menu.get_item_index(CONTEXT_REDO),
 		_redo_stack.is_empty()
 	)
-	context_session_menu.add_separator("Salvataggi")
+	context_game_menu.add_separator("Salvataggi")
 	if scene_file_path != CAMPAIGN_EDITOR_SCENE_PATH:
-		context_session_menu.add_item(
+		context_game_menu.add_item(
 			"Salva stato campagna",
 			CONTEXT_SAVE_CAMPAIGN_STATE
 		)
-	context_session_menu.add_item(
+	context_game_menu.add_item(
 		"Salva mappa in locale…",
 		CONTEXT_SAVE_MAP_LOCAL
 	)
-	context_session_menu.add_item(
+	context_game_menu.add_item(
 		"Carica mappa locale…",
 		CONTEXT_LOAD_MAP_LOCAL
 	)
-	context_session_menu.add_separator()
-	context_session_menu.add_check_item(
+	context_game_menu.add_separator()
+	context_game_menu.add_check_item(
 		"Sincronizzazione automatica",
 		CONTEXT_AUTO_SYNC
 	)
-	context_session_menu.set_item_checked(
-		context_session_menu.get_item_index(CONTEXT_AUTO_SYNC),
+	context_game_menu.set_item_checked(
+		context_game_menu.get_item_index(CONTEXT_AUTO_SYNC),
 		bool(board_sync.call("is_auto_sync_enabled"))
 	)
-	context_session_menu.add_item(
+	context_game_menu.add_item(
 		"Sincronizza mappa / Tailscale",
 		CONTEXT_SHARE_MAP
 	)
 	if scene_file_path != CAMPAIGN_EDITOR_SCENE_PATH:
-		context_session_menu.add_separator()
-		context_session_menu.add_item(
+		context_game_menu.add_separator()
+		context_game_menu.add_item(
 			"Torna al menu VTT",
 			CONTEXT_MAIN_MENU
 		)
-	context_menu.add_submenu_node_item("Sessione", context_session_menu)
+	context_menu.add_submenu_node_item("Gioco", context_game_menu)
 
 	_ui_owns_mouse = true
 	_release_mouse()
@@ -5078,19 +5040,6 @@ func _rotate_selected(quarter_turns: int) -> void:
 			token.call("rotate_grid", applied_turns)
 
 
-func _rotate_selected_vertical(steps: int) -> void:
-	_clean_selection()
-	if _selected_tokens.is_empty():
-		if _has_selected_item():
-			item_controller.call("rotate_selected_vertical", steps)
-		return
-
-	push_undo_state()
-	for token: CharacterBody3D in _selected_tokens:
-		if token.has_method("rotate_vertical"):
-			token.call("rotate_vertical", steps)
-
-
 func remove_owned_creature_tokens(tokens: Array[CharacterBody3D]) -> void:
 	# Deleting a persistent creature also removes its actual map instances.
 	# Detach them immediately so sync cannot accidentally broadcast ghosts.
@@ -5547,7 +5496,7 @@ func _add_bestiary_context_items() -> void:
 		return
 	for edition in ["2024", "2014"]:
 		if not TokenPackManager.get_bestiary_reference(identity, edition).is_empty():
-			context_token_menu.add_item(
+			context_menu.add_item(
 				"Bestiario · " + edition + "…",
 				CONTEXT_BESTIARY_2024 if edition == "2024" else CONTEXT_BESTIARY_2014
 			)
