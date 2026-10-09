@@ -1,0 +1,5461 @@
+{
+  "schema_version": 1,
+  "generated_on": "2026-10-09",
+  "repository": "francesco-bufalini/VTT",
+  "inventory_basis": "Asset .pck elencati in tutte le release GitHub disponibili; contenuto dei pacchetti non ispezionato.",
+  "catalog_scope": {
+    "2014": {
+      "source": "MM",
+      "dataset_url": "https://raw.githubusercontent.com/5etools-mirror-3/5etools-src/main/data/bestiary/bestiary-mm.json"
+    },
+    "2024": {
+      "source": "XMM",
+      "description": "Regole revisionate 2024; Monster Manual pubblicato nel 2025.",
+      "dataset_url": "https://raw.githubusercontent.com/5etools-mirror-3/5etools-src/main/data/bestiary/bestiary-xmm.json"
+    }
+  },
+  "link_validation": "Hash generati secondo UrlUtil di 5etools e voci verificate nei dataset; navigazione di ogni pagina non testata.",
+  "selection_policy": "Solo matched ha selected valorizzato. Tutte le 27 proposte inizialmente needs_review sono state confermate dall utente il 9 ottobre 2026; confirmation conserva la provenienza della scelta. candidates conserva le proposte originali. unmatched è limitato ai cataloghi MM/XMM consultati.",
+  "summary": {
+    "2014": {
+      "matched": 136,
+      "needs_review": 0,
+      "unmatched": 8
+    },
+    "2024": {
+      "matched": 136,
+      "needs_review": 0,
+      "unmatched": 8
+    }
+  },
+  "miniatures": [
+    {
+      "miniature_key": "MM/ape.pck",
+      "release_tag": "MM",
+      "release_url": "https://github.com/francesco-bufalini/VTT/releases/tag/MM",
+      "asset_id": 610876979,
+      "asset_name": "ape.pck",
+      "asset_url": "https://github.com/francesco-bufalini/VTT/releases/download/MM/ape.pck",
+      "asset_digest": "sha256:17b7e85ea186d01927a8ccaf38d9abc46cf4887405df58099471428b515df5a2",
+      "normalized_name": "ape",
+      "editions": {
+        "2014": {
+          "status": "matched",
+          "match_method": "normalized_exact",
+          "selected": {
+            "name": "Ape",
+            "source": "MM",
+            "page": 317,
+            "url": "https://5e.tools/bestiary.html#ape_mm"
+          },
+          "candidates": [],
+          "note": null
+        },
+        "2024": {
+          "status": "matched",
+          "match_method": "normalized_exact",
+          "selected": {
+            "name": "Ape",
+            "source": "XMM",
+            "page": 348,
+            "url": "https://5e.tools/bestiary.html#ape_xmm"
+          },
+          "candidates": [],
+          "note": null
+        }
+      }
+    },
+    {
+      "miniature_key": "MM/awakened_tree.pck",
+      "release_tag": "MM",
+      "release_url": "https://github.com/francesco-bufalini/VTT/releases/tag/MM",
+      "asset_id": 610877019,
+      "asset_name": "awakened_tree.pck",
+      "asset_url": "https://github.com/francesco-bufalini/VTT/releases/download/MM/awakened_tree.pck",
+      "asset_digest": "sha256:1d25934defeb0f9be19ef0ca6d52d1c9cd7f27c64d30289f614c0d9d29dc3bc8",
+      "normalized_name": "awakened tree",
+      "editions": {
+        "2014": {
+          "status": "matched",
+          "match_method": "normalized_exact",
+          "selected": {
+            "name": "Awakened Tree",
+            "source": "MM",
+            "page": 317,
+            "url": "https://5e.tools/bestiary.html#awakened%20tree_mm"
+          },
+          "candidates": [],
+          "note": null
+        },
+        "2024": {
+          "status": "matched",
+          "match_method": "normalized_exact",
+          "selected": {
+            "name": "Awakened Tree",
+            "source": "XMM",
+            "page": 23,
+            "url": "https://5e.tools/bestiary.html#awakened%20tree_xmm"
+          },
+          "candidates": [],
+          "note": null
+        }
+      }
+    },
+    {
+      "miniature_key": "MM/awkened_shrub.pck",
+      "release_tag": "MM",
+      "release_url": "https://github.com/francesco-bufalini/VTT/releases/tag/MM",
+      "asset_id": 610877047,
+      "asset_name": "awkened_shrub.pck",
+      "asset_url": "https://github.com/francesco-bufalini/VTT/releases/download/MM/awkened_shrub.pck",
+      "asset_digest": "sha256:f5761f601f58e43c46540100df98b46261f27db24002063ae874317b0ed6547c",
+      "normalized_name": "awkened shrub",
+      "editions": {
+        "2014": {
+          "status": "matched",
+          "match_method": "spelling_correction",
+          "selected": {
+            "name": "Awakened Shrub",
+            "source": "MM",
+            "page": 317,
+            "url": "https://5e.tools/bestiary.html#awakened%20shrub_mm"
+          },
+          "candidates": [],
+          "note": null
+        },
+        "2024": {
+          "status": "matched",
+          "match_method": "spelling_correction",
+          "selected": {
+            "name": "Awakened Shrub",
+            "source": "XMM",
+            "page": 23,
+            "url": "https://5e.tools/bestiary.html#awakened%20shrub_xmm"
+          },
+          "candidates": [],
+          "note": null
+        }
+      }
+    },
+    {
+      "miniature_key": "MM/axe_beak.pck",
+      "release_tag": "MM",
+      "release_url": "https://github.com/francesco-bufalini/VTT/releases/tag/MM",
+      "asset_id": 610877073,
+      "asset_name": "axe_beak.pck",
+      "asset_url": "https://github.com/francesco-bufalini/VTT/releases/download/MM/axe_beak.pck",
+      "asset_digest": "sha256:c753f23244fa52037fbd87479ccdd5a97a42c0811f2647d24de4ac6f30a94836",
+      "normalized_name": "axe beak",
+      "editions": {
+        "2014": {
+          "status": "matched",
+          "match_method": "normalized_exact",
+          "selected": {
+            "name": "Axe Beak",
+            "source": "MM",
+            "page": 317,
+            "url": "https://5e.tools/bestiary.html#axe%20beak_mm"
+          },
+          "candidates": [],
+          "note": null
+        },
+        "2024": {
+          "status": "matched",
+          "match_method": "normalized_exact",
+          "selected": {
+            "name": "Axe Beak",
+            "source": "XMM",
+            "page": 24,
+            "url": "https://5e.tools/bestiary.html#axe%20beak_xmm"
+          },
+          "candidates": [],
+          "note": null
+        }
+      }
+    },
+    {
+      "miniature_key": "MM/axe_beak_mount.pck",
+      "release_tag": "MM",
+      "release_url": "https://github.com/francesco-bufalini/VTT/releases/tag/MM",
+      "asset_id": 610877116,
+      "asset_name": "axe_beak_mount.pck",
+      "asset_url": "https://github.com/francesco-bufalini/VTT/releases/download/MM/axe_beak_mount.pck",
+      "asset_digest": "sha256:4073a15ef07d6a11bebde9ad147d47bca08fb1ebaf68d6fccaec031711b03ec2",
+      "normalized_name": "axe beak",
+      "editions": {
+        "2014": {
+          "status": "matched",
+          "match_method": "variant_suffix_removed",
+          "selected": {
+            "name": "Axe Beak",
+            "source": "MM",
+            "page": 317,
+            "url": "https://5e.tools/bestiary.html#axe%20beak_mm"
+          },
+          "candidates": [],
+          "note": null
+        },
+        "2024": {
+          "status": "matched",
+          "match_method": "variant_suffix_removed",
+          "selected": {
+            "name": "Axe Beak",
+            "source": "XMM",
+            "page": 24,
+            "url": "https://5e.tools/bestiary.html#axe%20beak_xmm"
+          },
+          "candidates": [],
+          "note": null
+        }
+      }
+    },
+    {
+      "miniature_key": "MM/axe_beak_mount_w_mini_slot.pck",
+      "release_tag": "MM",
+      "release_url": "https://github.com/francesco-bufalini/VTT/releases/tag/MM",
+      "asset_id": 610877158,
+      "asset_name": "axe_beak_mount_w_mini_slot.pck",
+      "asset_url": "https://github.com/francesco-bufalini/VTT/releases/download/MM/axe_beak_mount_w_mini_slot.pck",
+      "asset_digest": "sha256:f53552bdac0483ccc4a4bf115f868712fc8ac691e7cf3558e8025b603253f40c",
+      "normalized_name": "axe beak",
+      "editions": {
+        "2014": {
+          "status": "matched",
+          "match_method": "variant_suffix_removed",
+          "selected": {
+            "name": "Axe Beak",
+            "source": "MM",
+            "page": 317,
+            "url": "https://5e.tools/bestiary.html#axe%20beak_mm"
+          },
+          "candidates": [],
+          "note": null
+        },
+        "2024": {
+          "status": "matched",
+          "match_method": "variant_suffix_removed",
+          "selected": {
+            "name": "Axe Beak",
+            "source": "XMM",
+            "page": 24,
+            "url": "https://5e.tools/bestiary.html#axe%20beak_xmm"
+          },
+          "candidates": [],
+          "note": null
+        }
+      }
+    },
+    {
+      "miniature_key": "MM/baboon.pck",
+      "release_tag": "MM",
+      "release_url": "https://github.com/francesco-bufalini/VTT/releases/tag/MM",
+      "asset_id": 610877191,
+      "asset_name": "baboon.pck",
+      "asset_url": "https://github.com/francesco-bufalini/VTT/releases/download/MM/baboon.pck",
+      "asset_digest": "sha256:c0e299d7d0384a4db17d3db10ee4d21476de1dbaa1a923be70cf92c7607d7fea",
+      "normalized_name": "baboon",
+      "editions": {
+        "2014": {
+          "status": "matched",
+          "match_method": "normalized_exact",
+          "selected": {
+            "name": "Baboon",
+            "source": "MM",
+            "page": 318,
+            "url": "https://5e.tools/bestiary.html#baboon_mm"
+          },
+          "candidates": [],
+          "note": null
+        },
+        "2024": {
+          "status": "matched",
+          "match_method": "normalized_exact",
+          "selected": {
+            "name": "Baboon",
+            "source": "XMM",
+            "page": 349,
+            "url": "https://5e.tools/bestiary.html#baboon_xmm"
+          },
+          "candidates": [],
+          "note": null
+        }
+      }
+    },
+    {
+      "miniature_key": "MM/badger.pck",
+      "release_tag": "MM",
+      "release_url": "https://github.com/francesco-bufalini/VTT/releases/tag/MM",
+      "asset_id": 610877320,
+      "asset_name": "badger.pck",
+      "asset_url": "https://github.com/francesco-bufalini/VTT/releases/download/MM/badger.pck",
+      "asset_digest": "sha256:24e60eac02d275a3c960ce6f2ac3808bb401a6c33a81652fdcaf6c012aba0902",
+      "normalized_name": "badger",
+      "editions": {
+        "2014": {
+          "status": "matched",
+          "match_method": "normalized_exact",
+          "selected": {
+            "name": "Badger",
+            "source": "MM",
+            "page": 318,
+            "url": "https://5e.tools/bestiary.html#badger_mm"
+          },
+          "candidates": [],
+          "note": null
+        },
+        "2024": {
+          "status": "matched",
+          "match_method": "normalized_exact",
+          "selected": {
+            "name": "Badger",
+            "source": "XMM",
+            "page": 349,
+            "url": "https://5e.tools/bestiary.html#badger_xmm"
+          },
+          "candidates": [],
+          "note": null
+        }
+      }
+    },
+    {
+      "miniature_key": "MM/bat.pck",
+      "release_tag": "MM",
+      "release_url": "https://github.com/francesco-bufalini/VTT/releases/tag/MM",
+      "asset_id": 610877337,
+      "asset_name": "bat.pck",
+      "asset_url": "https://github.com/francesco-bufalini/VTT/releases/download/MM/bat.pck",
+      "asset_digest": "sha256:a5df38a16f0b45ec5a3dcf773a32db77fce6b7a5e3dcf98240260bc02edcb1c3",
+      "normalized_name": "bat",
+      "editions": {
+        "2014": {
+          "status": "matched",
+          "match_method": "normalized_exact",
+          "selected": {
+            "name": "Bat",
+            "source": "MM",
+            "page": 318,
+            "url": "https://5e.tools/bestiary.html#bat_mm"
+          },
+          "candidates": [],
+          "note": null
+        },
+        "2024": {
+          "status": "matched",
+          "match_method": "normalized_exact",
+          "selected": {
+            "name": "Bat",
+            "source": "XMM",
+            "page": 349,
+            "url": "https://5e.tools/bestiary.html#bat_xmm"
+          },
+          "candidates": [],
+          "note": null
+        }
+      }
+    },
+    {
+      "miniature_key": "MM/battle_ape.pck",
+      "release_tag": "MM",
+      "release_url": "https://github.com/francesco-bufalini/VTT/releases/tag/MM",
+      "asset_id": 610877365,
+      "asset_name": "battle_ape.pck",
+      "asset_url": "https://github.com/francesco-bufalini/VTT/releases/download/MM/battle_ape.pck",
+      "asset_digest": "sha256:76f55d15d59b10f7c689f28360b89ebef1ada57f3850f6cb9ad7a44cb18c9c5c",
+      "normalized_name": "battle ape",
+      "editions": {
+        "2014": {
+          "status": "matched",
+          "match_method": "visual_variant_candidate",
+          "selected": {
+            "name": "Ape",
+            "source": "MM",
+            "page": 317,
+            "url": "https://5e.tools/bestiary.html#ape_mm"
+          },
+          "candidates": [
+            {
+              "name": "Ape",
+              "source": "MM",
+              "page": 317,
+              "url": "https://5e.tools/bestiary.html#ape_mm"
+            }
+          ],
+          "note": "Associazione proposta dal nome; identità della miniatura da confermare.",
+          "confirmation": {
+            "confirmed_by": "user",
+            "confirmed_on": "2026-10-09",
+            "instruction": "Confermo tutto"
+          }
+        },
+        "2024": {
+          "status": "matched",
+          "match_method": "visual_variant_candidate",
+          "selected": {
+            "name": "Ape",
+            "source": "XMM",
+            "page": 348,
+            "url": "https://5e.tools/bestiary.html#ape_xmm"
+          },
+          "candidates": [
+            {
+              "name": "Ape",
+              "source": "XMM",
+              "page": 348,
+              "url": "https://5e.tools/bestiary.html#ape_xmm"
+            }
+          ],
+          "note": "Associazione proposta dal nome; identità della miniatura da confermare.",
+          "confirmation": {
+            "confirmed_by": "user",
+            "confirmed_on": "2026-10-09",
+            "instruction": "Confermo tutto"
+          }
+        }
+      }
+    },
+    {
+      "miniature_key": "MM/black_bear.pck",
+      "release_tag": "MM",
+      "release_url": "https://github.com/francesco-bufalini/VTT/releases/tag/MM",
+      "asset_id": 610877382,
+      "asset_name": "black_bear.pck",
+      "asset_url": "https://github.com/francesco-bufalini/VTT/releases/download/MM/black_bear.pck",
+      "asset_digest": "sha256:8f7848a781691cedbdcb4c1b7bbcf992675401655ea57e3481336ebb71405d23",
+      "normalized_name": "black bear",
+      "editions": {
+        "2014": {
+          "status": "matched",
+          "match_method": "normalized_exact",
+          "selected": {
+            "name": "Black Bear",
+            "source": "MM",
+            "page": 318,
+            "url": "https://5e.tools/bestiary.html#black%20bear_mm"
+          },
+          "candidates": [],
+          "note": null
+        },
+        "2024": {
+          "status": "matched",
+          "match_method": "normalized_exact",
+          "selected": {
+            "name": "Black Bear",
+            "source": "XMM",
+            "page": 349,
+            "url": "https://5e.tools/bestiary.html#black%20bear_xmm"
+          },
+          "candidates": [],
+          "note": null
+        }
+      }
+    },
+    {
+      "miniature_key": "MM/blink_dog.pck",
+      "release_tag": "MM",
+      "release_url": "https://github.com/francesco-bufalini/VTT/releases/tag/MM",
+      "asset_id": 610877409,
+      "asset_name": "blink_dog.pck",
+      "asset_url": "https://github.com/francesco-bufalini/VTT/releases/download/MM/blink_dog.pck",
+      "asset_digest": "sha256:253dc67e29690fb9ab2765f076fce8fb130565c52688bcf65f78aa26b9620902",
+      "normalized_name": "blink dog",
+      "editions": {
+        "2014": {
+          "status": "matched",
+          "match_method": "normalized_exact",
+          "selected": {
+            "name": "Blink Dog",
+            "source": "MM",
+            "page": 318,
+            "url": "https://5e.tools/bestiary.html#blink%20dog_mm"
+          },
+          "candidates": [],
+          "note": null
+        },
+        "2024": {
+          "status": "matched",
+          "match_method": "normalized_exact",
+          "selected": {
+            "name": "Blink Dog",
+            "source": "XMM",
+            "page": 46,
+            "url": "https://5e.tools/bestiary.html#blink%20dog_xmm"
+          },
+          "candidates": [],
+          "note": null
+        }
+      }
+    },
+    {
+      "miniature_key": "MM/blood_hawk_updated.pck",
+      "release_tag": "MM",
+      "release_url": "https://github.com/francesco-bufalini/VTT/releases/tag/MM",
+      "asset_id": 610877428,
+      "asset_name": "blood_hawk_updated.pck",
+      "asset_url": "https://github.com/francesco-bufalini/VTT/releases/download/MM/blood_hawk_updated.pck",
+      "asset_digest": "sha256:7e127fca7b32b83bc4e705b4dcbedaea9bc1c0d867eab76212f59c1c21b6ee85",
+      "normalized_name": "blood hawk",
+      "editions": {
+        "2014": {
+          "status": "matched",
+          "match_method": "variant_suffix_removed",
+          "selected": {
+            "name": "Blood Hawk",
+            "source": "MM",
+            "page": 319,
+            "url": "https://5e.tools/bestiary.html#blood%20hawk_mm"
+          },
+          "candidates": [],
+          "note": null
+        },
+        "2024": {
+          "status": "matched",
+          "match_method": "variant_suffix_removed",
+          "selected": {
+            "name": "Blood Hawk",
+            "source": "XMM",
+            "page": 350,
+            "url": "https://5e.tools/bestiary.html#blood%20hawk_xmm"
+          },
+          "candidates": [],
+          "note": null
+        }
+      }
+    },
+    {
+      "miniature_key": "MM/boar_updated.pck",
+      "release_tag": "MM",
+      "release_url": "https://github.com/francesco-bufalini/VTT/releases/tag/MM",
+      "asset_id": 610877468,
+      "asset_name": "boar_updated.pck",
+      "asset_url": "https://github.com/francesco-bufalini/VTT/releases/download/MM/boar_updated.pck",
+      "asset_digest": "sha256:340fb67fda240ed128d1c37c6ee6416db7b3aeba3be5945b817ffa0a5005948f",
+      "normalized_name": "boar",
+      "editions": {
+        "2014": {
+          "status": "matched",
+          "match_method": "variant_suffix_removed",
+          "selected": {
+            "name": "Boar",
+            "source": "MM",
+            "page": 319,
+            "url": "https://5e.tools/bestiary.html#boar_mm"
+          },
+          "candidates": [],
+          "note": null
+        },
+        "2024": {
+          "status": "matched",
+          "match_method": "variant_suffix_removed",
+          "selected": {
+            "name": "Boar",
+            "source": "XMM",
+            "page": 350,
+            "url": "https://5e.tools/bestiary.html#boar_xmm"
+          },
+          "candidates": [],
+          "note": null
+        }
+      }
+    },
+    {
+      "miniature_key": "MM/camel_mount.pck",
+      "release_tag": "MM",
+      "release_url": "https://github.com/francesco-bufalini/VTT/releases/tag/MM",
+      "asset_id": 610877496,
+      "asset_name": "camel_mount.pck",
+      "asset_url": "https://github.com/francesco-bufalini/VTT/releases/download/MM/camel_mount.pck",
+      "asset_digest": "sha256:332beca43148ef6d291e175ab9ee35b5edf2f918b702118b8da76c8824f6d76b",
+      "normalized_name": "camel",
+      "editions": {
+        "2014": {
+          "status": "matched",
+          "match_method": "variant_suffix_removed",
+          "selected": {
+            "name": "Camel",
+            "source": "MM",
+            "page": 320,
+            "url": "https://5e.tools/bestiary.html#camel_mm"
+          },
+          "candidates": [],
+          "note": null
+        },
+        "2024": {
+          "status": "matched",
+          "match_method": "variant_suffix_removed",
+          "selected": {
+            "name": "Camel",
+            "source": "XMM",
+            "page": 351,
+            "url": "https://5e.tools/bestiary.html#camel_xmm"
+          },
+          "candidates": [],
+          "note": null
+        }
+      }
+    },
+    {
+      "miniature_key": "MM/camel_updated.pck",
+      "release_tag": "MM",
+      "release_url": "https://github.com/francesco-bufalini/VTT/releases/tag/MM",
+      "asset_id": 610877525,
+      "asset_name": "camel_updated.pck",
+      "asset_url": "https://github.com/francesco-bufalini/VTT/releases/download/MM/camel_updated.pck",
+      "asset_digest": "sha256:7024d95bc25576e295382894cb2cf22c488bf6a4d3e9c6f9730e7e3a68e7bf04",
+      "normalized_name": "camel",
+      "editions": {
+        "2014": {
+          "status": "matched",
+          "match_method": "variant_suffix_removed",
+          "selected": {
+            "name": "Camel",
+            "source": "MM",
+            "page": 320,
+            "url": "https://5e.tools/bestiary.html#camel_mm"
+          },
+          "candidates": [],
+          "note": null
+        },
+        "2024": {
+          "status": "matched",
+          "match_method": "variant_suffix_removed",
+          "selected": {
+            "name": "Camel",
+            "source": "XMM",
+            "page": 351,
+            "url": "https://5e.tools/bestiary.html#camel_xmm"
+          },
+          "candidates": [],
+          "note": null
+        }
+      }
+    },
+    {
+      "miniature_key": "MM/cat_in_armor.pck",
+      "release_tag": "MM",
+      "release_url": "https://github.com/francesco-bufalini/VTT/releases/tag/MM",
+      "asset_id": 610877569,
+      "asset_name": "cat_in_armor.pck",
+      "asset_url": "https://github.com/francesco-bufalini/VTT/releases/download/MM/cat_in_armor.pck",
+      "asset_digest": "sha256:62fe3a1240327ccc186354ffc1df3ba7aca62b45d6d62eb053aaf64a4d070d94",
+      "normalized_name": "cat in armor",
+      "editions": {
+        "2014": {
+          "status": "matched",
+          "match_method": "visual_variant_candidate",
+          "selected": {
+            "name": "Cat",
+            "source": "MM",
+            "page": 320,
+            "url": "https://5e.tools/bestiary.html#cat_mm"
+          },
+          "candidates": [
+            {
+              "name": "Cat",
+              "source": "MM",
+              "page": 320,
+              "url": "https://5e.tools/bestiary.html#cat_mm"
+            }
+          ],
+          "note": "Associazione proposta dal nome; identità della miniatura da confermare.",
+          "confirmation": {
+            "confirmed_by": "user",
+            "confirmed_on": "2026-10-09",
+            "instruction": "Confermo tutto"
+          }
+        },
+        "2024": {
+          "status": "matched",
+          "match_method": "visual_variant_candidate",
+          "selected": {
+            "name": "Cat",
+            "source": "XMM",
+            "page": 351,
+            "url": "https://5e.tools/bestiary.html#cat_xmm"
+          },
+          "candidates": [
+            {
+              "name": "Cat",
+              "source": "XMM",
+              "page": 351,
+              "url": "https://5e.tools/bestiary.html#cat_xmm"
+            }
+          ],
+          "note": "Associazione proposta dal nome; identità della miniatura da confermare.",
+          "confirmation": {
+            "confirmed_by": "user",
+            "confirmed_on": "2026-10-09",
+            "instruction": "Confermo tutto"
+          }
+        }
+      }
+    },
+    {
+      "miniature_key": "MM/cat_updated.pck",
+      "release_tag": "MM",
+      "release_url": "https://github.com/francesco-bufalini/VTT/releases/tag/MM",
+      "asset_id": 610877584,
+      "asset_name": "cat_updated.pck",
+      "asset_url": "https://github.com/francesco-bufalini/VTT/releases/download/MM/cat_updated.pck",
+      "asset_digest": "sha256:6d3a4dc8201d439d013a8f44c57b358aa0c997e05276bb1c99c0119c7371bbaf",
+      "normalized_name": "cat",
+      "editions": {
+        "2014": {
+          "status": "matched",
+          "match_method": "variant_suffix_removed",
+          "selected": {
+            "name": "Cat",
+            "source": "MM",
+            "page": 320,
+            "url": "https://5e.tools/bestiary.html#cat_mm"
+          },
+          "candidates": [],
+          "note": null
+        },
+        "2024": {
+          "status": "matched",
+          "match_method": "variant_suffix_removed",
+          "selected": {
+            "name": "Cat",
+            "source": "XMM",
+            "page": 351,
+            "url": "https://5e.tools/bestiary.html#cat_xmm"
+          },
+          "candidates": [],
+          "note": null
+        }
+      }
+    },
+    {
+      "miniature_key": "MM/cat_with_witch_hat.pck",
+      "release_tag": "MM",
+      "release_url": "https://github.com/francesco-bufalini/VTT/releases/tag/MM",
+      "asset_id": 610873231,
+      "asset_name": "cat_with_witch_hat.pck",
+      "asset_url": "https://github.com/francesco-bufalini/VTT/releases/download/MM/cat_with_witch_hat.pck",
+      "asset_digest": "sha256:b8c2a4707a2da0fd2c1427d98514e0751cacd15e851aa3be53c211a543fac6ed",
+      "normalized_name": "cat with witch hat",
+      "editions": {
+        "2014": {
+          "status": "matched",
+          "match_method": "visual_variant_candidate",
+          "selected": {
+            "name": "Cat",
+            "source": "MM",
+            "page": 320,
+            "url": "https://5e.tools/bestiary.html#cat_mm"
+          },
+          "candidates": [
+            {
+              "name": "Cat",
+              "source": "MM",
+              "page": 320,
+              "url": "https://5e.tools/bestiary.html#cat_mm"
+            }
+          ],
+          "note": "Associazione proposta dal nome; identità della miniatura da confermare.",
+          "confirmation": {
+            "confirmed_by": "user",
+            "confirmed_on": "2026-10-09",
+            "instruction": "Confermo tutto"
+          }
+        },
+        "2024": {
+          "status": "matched",
+          "match_method": "visual_variant_candidate",
+          "selected": {
+            "name": "Cat",
+            "source": "XMM",
+            "page": 351,
+            "url": "https://5e.tools/bestiary.html#cat_xmm"
+          },
+          "candidates": [
+            {
+              "name": "Cat",
+              "source": "XMM",
+              "page": 351,
+              "url": "https://5e.tools/bestiary.html#cat_xmm"
+            }
+          ],
+          "note": "Associazione proposta dal nome; identità della miniatura da confermare.",
+          "confirmation": {
+            "confirmed_by": "user",
+            "confirmed_on": "2026-10-09",
+            "instruction": "Confermo tutto"
+          }
+        }
+      }
+    },
+    {
+      "miniature_key": "MM/constrictor_snake_old.pck",
+      "release_tag": "MM",
+      "release_url": "https://github.com/francesco-bufalini/VTT/releases/tag/MM",
+      "asset_id": 610873345,
+      "asset_name": "constrictor_snake_old.pck",
+      "asset_url": "https://github.com/francesco-bufalini/VTT/releases/download/MM/constrictor_snake_old.pck",
+      "asset_digest": "sha256:3d678727674aa7f00fa5cc11a8b2416e9975265862b6012f0c10a89ada2411a3",
+      "normalized_name": "constrictor snake",
+      "editions": {
+        "2014": {
+          "status": "matched",
+          "match_method": "variant_suffix_removed",
+          "selected": {
+            "name": "Constrictor Snake",
+            "source": "MM",
+            "page": 320,
+            "url": "https://5e.tools/bestiary.html#constrictor%20snake_mm"
+          },
+          "candidates": [],
+          "note": null
+        },
+        "2024": {
+          "status": "matched",
+          "match_method": "variant_suffix_removed",
+          "selected": {
+            "name": "Constrictor Snake",
+            "source": "XMM",
+            "page": 351,
+            "url": "https://5e.tools/bestiary.html#constrictor%20snake_xmm"
+          },
+          "candidates": [],
+          "note": null
+        }
+      }
+    },
+    {
+      "miniature_key": "MM/constrictor_snake_updated.pck",
+      "release_tag": "MM",
+      "release_url": "https://github.com/francesco-bufalini/VTT/releases/tag/MM",
+      "asset_id": 610873375,
+      "asset_name": "constrictor_snake_updated.pck",
+      "asset_url": "https://github.com/francesco-bufalini/VTT/releases/download/MM/constrictor_snake_updated.pck",
+      "asset_digest": "sha256:2b108f16d5023d2554e7cef1a7a20409c3dee5aa1740a65bccc6b0ba4576f0d1",
+      "normalized_name": "constrictor snake",
+      "editions": {
+        "2014": {
+          "status": "matched",
+          "match_method": "variant_suffix_removed",
+          "selected": {
+            "name": "Constrictor Snake",
+            "source": "MM",
+            "page": 320,
+            "url": "https://5e.tools/bestiary.html#constrictor%20snake_mm"
+          },
+          "candidates": [],
+          "note": null
+        },
+        "2024": {
+          "status": "matched",
+          "match_method": "variant_suffix_removed",
+          "selected": {
+            "name": "Constrictor Snake",
+            "source": "XMM",
+            "page": 351,
+            "url": "https://5e.tools/bestiary.html#constrictor%20snake_xmm"
+          },
+          "candidates": [],
+          "note": null
+        }
+      }
+    },
+    {
+      "miniature_key": "MM/crab.pck",
+      "release_tag": "MM",
+      "release_url": "https://github.com/francesco-bufalini/VTT/releases/tag/MM",
+      "asset_id": 610873426,
+      "asset_name": "crab.pck",
+      "asset_url": "https://github.com/francesco-bufalini/VTT/releases/download/MM/crab.pck",
+      "asset_digest": "sha256:a7b301b9cf515ef8e35f607fb294640f54fa8e163c003fbbca16d47e163d9b72",
+      "normalized_name": "crab",
+      "editions": {
+        "2014": {
+          "status": "matched",
+          "match_method": "normalized_exact",
+          "selected": {
+            "name": "Crab",
+            "source": "MM",
+            "page": 320,
+            "url": "https://5e.tools/bestiary.html#crab_mm"
+          },
+          "candidates": [],
+          "note": null
+        },
+        "2024": {
+          "status": "matched",
+          "match_method": "normalized_exact",
+          "selected": {
+            "name": "Crab",
+            "source": "XMM",
+            "page": 351,
+            "url": "https://5e.tools/bestiary.html#crab_xmm"
+          },
+          "candidates": [],
+          "note": null
+        }
+      }
+    },
+    {
+      "miniature_key": "MM/crocodile.pck",
+      "release_tag": "MM",
+      "release_url": "https://github.com/francesco-bufalini/VTT/releases/tag/MM",
+      "asset_id": 610873445,
+      "asset_name": "crocodile.pck",
+      "asset_url": "https://github.com/francesco-bufalini/VTT/releases/download/MM/crocodile.pck",
+      "asset_digest": "sha256:1377428d16dcdd5c12ba4b23f0155edc57d242ed3f6b2d94170c99e3ac795575",
+      "normalized_name": "crocodile",
+      "editions": {
+        "2014": {
+          "status": "matched",
+          "match_method": "normalized_exact",
+          "selected": {
+            "name": "Crocodile",
+            "source": "MM",
+            "page": 320,
+            "url": "https://5e.tools/bestiary.html#crocodile_mm"
+          },
+          "candidates": [],
+          "note": null
+        },
+        "2024": {
+          "status": "matched",
+          "match_method": "normalized_exact",
+          "selected": {
+            "name": "Crocodile",
+            "source": "XMM",
+            "page": 352,
+            "url": "https://5e.tools/bestiary.html#crocodile_xmm"
+          },
+          "candidates": [],
+          "note": null
+        }
+      }
+    },
+    {
+      "miniature_key": "MM/death_dog.pck",
+      "release_tag": "MM",
+      "release_url": "https://github.com/francesco-bufalini/VTT/releases/tag/MM",
+      "asset_id": 610873464,
+      "asset_name": "death_dog.pck",
+      "asset_url": "https://github.com/francesco-bufalini/VTT/releases/download/MM/death_dog.pck",
+      "asset_digest": "sha256:9bf7b47951bcc4bc4c1260673557d9bfa66107b91d7163f572ab1d2d1de743c2",
+      "normalized_name": "death dog",
+      "editions": {
+        "2014": {
+          "status": "matched",
+          "match_method": "normalized_exact",
+          "selected": {
+            "name": "Death Dog",
+            "source": "MM",
+            "page": 321,
+            "url": "https://5e.tools/bestiary.html#death%20dog_mm"
+          },
+          "candidates": [],
+          "note": null
+        },
+        "2024": {
+          "status": "matched",
+          "match_method": "normalized_exact",
+          "selected": {
+            "name": "Death Dog",
+            "source": "XMM",
+            "page": 91,
+            "url": "https://5e.tools/bestiary.html#death%20dog_xmm"
+          },
+          "candidates": [],
+          "note": null
+        }
+      }
+    },
+    {
+      "miniature_key": "MM/deer.pck",
+      "release_tag": "MM",
+      "release_url": "https://github.com/francesco-bufalini/VTT/releases/tag/MM",
+      "asset_id": 610873491,
+      "asset_name": "deer.pck",
+      "asset_url": "https://github.com/francesco-bufalini/VTT/releases/download/MM/deer.pck",
+      "asset_digest": "sha256:05b4c00a2be80aa05fa072d8e1a88ef5e9fff420cf724879cde50343271ef6cb",
+      "normalized_name": "deer",
+      "editions": {
+        "2014": {
+          "status": "matched",
+          "match_method": "normalized_exact",
+          "selected": {
+            "name": "Deer",
+            "source": "MM",
+            "page": 321,
+            "url": "https://5e.tools/bestiary.html#deer_mm"
+          },
+          "candidates": [],
+          "note": null
+        },
+        "2024": {
+          "status": "matched",
+          "match_method": "normalized_exact",
+          "selected": {
+            "name": "Deer",
+            "source": "XMM",
+            "page": 352,
+            "url": "https://5e.tools/bestiary.html#deer_xmm"
+          },
+          "candidates": [],
+          "note": null
+        }
+      }
+    },
+    {
+      "miniature_key": "MM/dire_wolf_mount.pck",
+      "release_tag": "MM",
+      "release_url": "https://github.com/francesco-bufalini/VTT/releases/tag/MM",
+      "asset_id": 610873499,
+      "asset_name": "dire_wolf_mount.pck",
+      "asset_url": "https://github.com/francesco-bufalini/VTT/releases/download/MM/dire_wolf_mount.pck",
+      "asset_digest": "sha256:0ab54d42d05b0eab6938d73a7fed4a8dc41649c37c11ab45b25bca885c0dd303",
+      "normalized_name": "dire wolf",
+      "editions": {
+        "2014": {
+          "status": "matched",
+          "match_method": "variant_suffix_removed",
+          "selected": {
+            "name": "Dire Wolf",
+            "source": "MM",
+            "page": 321,
+            "url": "https://5e.tools/bestiary.html#dire%20wolf_mm"
+          },
+          "candidates": [],
+          "note": null
+        },
+        "2024": {
+          "status": "matched",
+          "match_method": "variant_suffix_removed",
+          "selected": {
+            "name": "Dire Wolf",
+            "source": "XMM",
+            "page": 352,
+            "url": "https://5e.tools/bestiary.html#dire%20wolf_xmm"
+          },
+          "candidates": [],
+          "note": null
+        }
+      }
+    },
+    {
+      "miniature_key": "MM/dire_wolf_mount_w_mini_slot.pck",
+      "release_tag": "MM",
+      "release_url": "https://github.com/francesco-bufalini/VTT/releases/tag/MM",
+      "asset_id": 610873539,
+      "asset_name": "dire_wolf_mount_w_mini_slot.pck",
+      "asset_url": "https://github.com/francesco-bufalini/VTT/releases/download/MM/dire_wolf_mount_w_mini_slot.pck",
+      "asset_digest": "sha256:3a9f233e11442a810ef790b74cfbb06127dbf8bd9d0dd79019a2af343b7266f2",
+      "normalized_name": "dire wolf",
+      "editions": {
+        "2014": {
+          "status": "matched",
+          "match_method": "variant_suffix_removed",
+          "selected": {
+            "name": "Dire Wolf",
+            "source": "MM",
+            "page": 321,
+            "url": "https://5e.tools/bestiary.html#dire%20wolf_mm"
+          },
+          "candidates": [],
+          "note": null
+        },
+        "2024": {
+          "status": "matched",
+          "match_method": "variant_suffix_removed",
+          "selected": {
+            "name": "Dire Wolf",
+            "source": "XMM",
+            "page": 352,
+            "url": "https://5e.tools/bestiary.html#dire%20wolf_xmm"
+          },
+          "candidates": [],
+          "note": null
+        }
+      }
+    },
+    {
+      "miniature_key": "MM/dire_wolf_updated.pck",
+      "release_tag": "MM",
+      "release_url": "https://github.com/francesco-bufalini/VTT/releases/tag/MM",
+      "asset_id": 610873572,
+      "asset_name": "dire_wolf_updated.pck",
+      "asset_url": "https://github.com/francesco-bufalini/VTT/releases/download/MM/dire_wolf_updated.pck",
+      "asset_digest": "sha256:fdaa4c6a06e880f2600d7dd827d0a73b78f7867884436969741b248025287abb",
+      "normalized_name": "dire wolf",
+      "editions": {
+        "2014": {
+          "status": "matched",
+          "match_method": "variant_suffix_removed",
+          "selected": {
+            "name": "Dire Wolf",
+            "source": "MM",
+            "page": 321,
+            "url": "https://5e.tools/bestiary.html#dire%20wolf_mm"
+          },
+          "candidates": [],
+          "note": null
+        },
+        "2024": {
+          "status": "matched",
+          "match_method": "variant_suffix_removed",
+          "selected": {
+            "name": "Dire Wolf",
+            "source": "XMM",
+            "page": 352,
+            "url": "https://5e.tools/bestiary.html#dire%20wolf_xmm"
+          },
+          "candidates": [],
+          "note": null
+        }
+      }
+    },
+    {
+      "miniature_key": "MM/draft_horse_updated.pck",
+      "release_tag": "MM",
+      "release_url": "https://github.com/francesco-bufalini/VTT/releases/tag/MM",
+      "asset_id": 610873624,
+      "asset_name": "draft_horse_updated.pck",
+      "asset_url": "https://github.com/francesco-bufalini/VTT/releases/download/MM/draft_horse_updated.pck",
+      "asset_digest": "sha256:24fd7c54157049989136368725f8837cc9b66849ea3c8c8a7d0e18ce53c98677",
+      "normalized_name": "draft horse",
+      "editions": {
+        "2014": {
+          "status": "matched",
+          "match_method": "variant_suffix_removed",
+          "selected": {
+            "name": "Draft Horse",
+            "source": "MM",
+            "page": 321,
+            "url": "https://5e.tools/bestiary.html#draft%20horse_mm"
+          },
+          "candidates": [],
+          "note": null
+        },
+        "2024": {
+          "status": "matched",
+          "match_method": "variant_suffix_removed",
+          "selected": {
+            "name": "Draft Horse",
+            "source": "XMM",
+            "page": 352,
+            "url": "https://5e.tools/bestiary.html#draft%20horse_xmm"
+          },
+          "candidates": [],
+          "note": null
+        }
+      }
+    },
+    {
+      "miniature_key": "MM/eagle_updated.pck",
+      "release_tag": "MM",
+      "release_url": "https://github.com/francesco-bufalini/VTT/releases/tag/MM",
+      "asset_id": 610873661,
+      "asset_name": "eagle_updated.pck",
+      "asset_url": "https://github.com/francesco-bufalini/VTT/releases/download/MM/eagle_updated.pck",
+      "asset_digest": "sha256:7f4324dcd9360f6e0a693321578d894b677b2ea8e4beb9cfa22f6060aac82fbc",
+      "normalized_name": "eagle",
+      "editions": {
+        "2014": {
+          "status": "matched",
+          "match_method": "variant_suffix_removed",
+          "selected": {
+            "name": "Eagle",
+            "source": "MM",
+            "page": 322,
+            "url": "https://5e.tools/bestiary.html#eagle_mm"
+          },
+          "candidates": [],
+          "note": null
+        },
+        "2024": {
+          "status": "matched",
+          "match_method": "variant_suffix_removed",
+          "selected": {
+            "name": "Eagle",
+            "source": "XMM",
+            "page": 353,
+            "url": "https://5e.tools/bestiary.html#eagle_xmm"
+          },
+          "candidates": [],
+          "note": null
+        }
+      }
+    },
+    {
+      "miniature_key": "MM/egyptian_queen_cat.pck",
+      "release_tag": "MM",
+      "release_url": "https://github.com/francesco-bufalini/VTT/releases/tag/MM",
+      "asset_id": 610873725,
+      "asset_name": "egyptian_queen_cat.pck",
+      "asset_url": "https://github.com/francesco-bufalini/VTT/releases/download/MM/egyptian_queen_cat.pck",
+      "asset_digest": "sha256:c0daf7a276a0682431108e74276105b874a98b6bb7100ba77802b82a349f3306",
+      "normalized_name": "egyptian queen cat",
+      "editions": {
+        "2014": {
+          "status": "matched",
+          "match_method": "visual_variant_candidate",
+          "selected": {
+            "name": "Cat",
+            "source": "MM",
+            "page": 320,
+            "url": "https://5e.tools/bestiary.html#cat_mm"
+          },
+          "candidates": [
+            {
+              "name": "Cat",
+              "source": "MM",
+              "page": 320,
+              "url": "https://5e.tools/bestiary.html#cat_mm"
+            }
+          ],
+          "note": "Associazione proposta dal nome; identità della miniatura da confermare.",
+          "confirmation": {
+            "confirmed_by": "user",
+            "confirmed_on": "2026-10-09",
+            "instruction": "Confermo tutto"
+          }
+        },
+        "2024": {
+          "status": "matched",
+          "match_method": "visual_variant_candidate",
+          "selected": {
+            "name": "Cat",
+            "source": "XMM",
+            "page": 351,
+            "url": "https://5e.tools/bestiary.html#cat_xmm"
+          },
+          "candidates": [
+            {
+              "name": "Cat",
+              "source": "XMM",
+              "page": 351,
+              "url": "https://5e.tools/bestiary.html#cat_xmm"
+            }
+          ],
+          "note": "Associazione proposta dal nome; identità della miniatura da confermare.",
+          "confirmation": {
+            "confirmed_by": "user",
+            "confirmed_on": "2026-10-09",
+            "instruction": "Confermo tutto"
+          }
+        }
+      }
+    },
+    {
+      "miniature_key": "MM/elephant.pck",
+      "release_tag": "MM",
+      "release_url": "https://github.com/francesco-bufalini/VTT/releases/tag/MM",
+      "asset_id": 610873774,
+      "asset_name": "elephant.pck",
+      "asset_url": "https://github.com/francesco-bufalini/VTT/releases/download/MM/elephant.pck",
+      "asset_digest": "sha256:1381889b2ae80d3ec1dd1d080cdfafeccae6853ce49a414c7875f5319e402e85",
+      "normalized_name": "elephant",
+      "editions": {
+        "2014": {
+          "status": "matched",
+          "match_method": "normalized_exact",
+          "selected": {
+            "name": "Elephant",
+            "source": "MM",
+            "page": 322,
+            "url": "https://5e.tools/bestiary.html#elephant_mm"
+          },
+          "candidates": [],
+          "note": null
+        },
+        "2024": {
+          "status": "matched",
+          "match_method": "normalized_exact",
+          "selected": {
+            "name": "Elephant",
+            "source": "XMM",
+            "page": 353,
+            "url": "https://5e.tools/bestiary.html#elephant_xmm"
+          },
+          "candidates": [],
+          "note": null
+        }
+      }
+    },
+    {
+      "miniature_key": "MM/elk.pck",
+      "release_tag": "MM",
+      "release_url": "https://github.com/francesco-bufalini/VTT/releases/tag/MM",
+      "asset_id": 610873815,
+      "asset_name": "elk.pck",
+      "asset_url": "https://github.com/francesco-bufalini/VTT/releases/download/MM/elk.pck",
+      "asset_digest": "sha256:1b8f94aca763739ba70bbb9168034514302997332c688896a6f88cfaa2c6d0eb",
+      "normalized_name": "elk",
+      "editions": {
+        "2014": {
+          "status": "matched",
+          "match_method": "normalized_exact",
+          "selected": {
+            "name": "Elk",
+            "source": "MM",
+            "page": 322,
+            "url": "https://5e.tools/bestiary.html#elk_mm"
+          },
+          "candidates": [],
+          "note": null
+        },
+        "2024": {
+          "status": "matched",
+          "match_method": "normalized_exact",
+          "selected": {
+            "name": "Elk",
+            "source": "XMM",
+            "page": 353,
+            "url": "https://5e.tools/bestiary.html#elk_xmm"
+          },
+          "candidates": [],
+          "note": null
+        }
+      }
+    },
+    {
+      "miniature_key": "MM/elk_mount.pck",
+      "release_tag": "MM",
+      "release_url": "https://github.com/francesco-bufalini/VTT/releases/tag/MM",
+      "asset_id": 610873858,
+      "asset_name": "elk_mount.pck",
+      "asset_url": "https://github.com/francesco-bufalini/VTT/releases/download/MM/elk_mount.pck",
+      "asset_digest": "sha256:f153fba9bf0a55ac86d3f47fe09bc552fbbce7f0d99517aab32431c66a0554ae",
+      "normalized_name": "elk",
+      "editions": {
+        "2014": {
+          "status": "matched",
+          "match_method": "variant_suffix_removed",
+          "selected": {
+            "name": "Elk",
+            "source": "MM",
+            "page": 322,
+            "url": "https://5e.tools/bestiary.html#elk_mm"
+          },
+          "candidates": [],
+          "note": null
+        },
+        "2024": {
+          "status": "matched",
+          "match_method": "variant_suffix_removed",
+          "selected": {
+            "name": "Elk",
+            "source": "XMM",
+            "page": 353,
+            "url": "https://5e.tools/bestiary.html#elk_xmm"
+          },
+          "candidates": [],
+          "note": null
+        }
+      }
+    },
+    {
+      "miniature_key": "MM/elk_mount_w_mini_slot.pck",
+      "release_tag": "MM",
+      "release_url": "https://github.com/francesco-bufalini/VTT/releases/tag/MM",
+      "asset_id": 610873878,
+      "asset_name": "elk_mount_w_mini_slot.pck",
+      "asset_url": "https://github.com/francesco-bufalini/VTT/releases/download/MM/elk_mount_w_mini_slot.pck",
+      "asset_digest": "sha256:4a174d8158d282cb60dfe510b500cc95b819b2f6b6adc7642d26b3d30d94fdef",
+      "normalized_name": "elk",
+      "editions": {
+        "2014": {
+          "status": "matched",
+          "match_method": "variant_suffix_removed",
+          "selected": {
+            "name": "Elk",
+            "source": "MM",
+            "page": 322,
+            "url": "https://5e.tools/bestiary.html#elk_mm"
+          },
+          "candidates": [],
+          "note": null
+        },
+        "2024": {
+          "status": "matched",
+          "match_method": "variant_suffix_removed",
+          "selected": {
+            "name": "Elk",
+            "source": "XMM",
+            "page": 353,
+            "url": "https://5e.tools/bestiary.html#elk_xmm"
+          },
+          "candidates": [],
+          "note": null
+        }
+      }
+    },
+    {
+      "miniature_key": "MM/flying_snake.pck",
+      "release_tag": "MM",
+      "release_url": "https://github.com/francesco-bufalini/VTT/releases/tag/MM",
+      "asset_id": 610873903,
+      "asset_name": "flying_snake.pck",
+      "asset_url": "https://github.com/francesco-bufalini/VTT/releases/download/MM/flying_snake.pck",
+      "asset_digest": "sha256:56ef3852555f282f4e7a26de9eee35b2b20c1731550a400abe4321ea24905f33",
+      "normalized_name": "flying snake",
+      "editions": {
+        "2014": {
+          "status": "matched",
+          "match_method": "normalized_exact",
+          "selected": {
+            "name": "Flying Snake",
+            "source": "MM",
+            "page": 322,
+            "url": "https://5e.tools/bestiary.html#flying%20snake_mm"
+          },
+          "candidates": [],
+          "note": null
+        },
+        "2024": {
+          "status": "matched",
+          "match_method": "normalized_exact",
+          "selected": {
+            "name": "Flying Snake",
+            "source": "XMM",
+            "page": 353,
+            "url": "https://5e.tools/bestiary.html#flying%20snake_xmm"
+          },
+          "candidates": [],
+          "note": null
+        }
+      }
+    },
+    {
+      "miniature_key": "MM/frog.pck",
+      "release_tag": "MM",
+      "release_url": "https://github.com/francesco-bufalini/VTT/releases/tag/MM",
+      "asset_id": 610873918,
+      "asset_name": "frog.pck",
+      "asset_url": "https://github.com/francesco-bufalini/VTT/releases/download/MM/frog.pck",
+      "asset_digest": "sha256:7bf43f849bbb5daefa342299786fb80dea1fa5c02916c0e75a4a3363ff40c676",
+      "normalized_name": "frog",
+      "editions": {
+        "2014": {
+          "status": "matched",
+          "match_method": "normalized_exact",
+          "selected": {
+            "name": "Frog",
+            "source": "MM",
+            "page": 322,
+            "url": "https://5e.tools/bestiary.html#frog_mm"
+          },
+          "candidates": [],
+          "note": null
+        },
+        "2024": {
+          "status": "matched",
+          "match_method": "normalized_exact",
+          "selected": {
+            "name": "Frog",
+            "source": "XMM",
+            "page": 354,
+            "url": "https://5e.tools/bestiary.html#frog_xmm"
+          },
+          "candidates": [],
+          "note": null
+        }
+      }
+    },
+    {
+      "miniature_key": "MM/giant_ape.pck",
+      "release_tag": "MM",
+      "release_url": "https://github.com/francesco-bufalini/VTT/releases/tag/MM",
+      "asset_id": 610873927,
+      "asset_name": "giant_ape.pck",
+      "asset_url": "https://github.com/francesco-bufalini/VTT/releases/download/MM/giant_ape.pck",
+      "asset_digest": "sha256:b16de4f879670ca56f1f4476c784c5f459c9c63eb78661c0e35c3fcbc2ded139",
+      "normalized_name": "giant ape",
+      "editions": {
+        "2014": {
+          "status": "matched",
+          "match_method": "normalized_exact",
+          "selected": {
+            "name": "Giant Ape",
+            "source": "MM",
+            "page": 323,
+            "url": "https://5e.tools/bestiary.html#giant%20ape_mm"
+          },
+          "candidates": [],
+          "note": null
+        },
+        "2024": {
+          "status": "matched",
+          "match_method": "normalized_exact",
+          "selected": {
+            "name": "Giant Ape",
+            "source": "XMM",
+            "page": 354,
+            "url": "https://5e.tools/bestiary.html#giant%20ape_xmm"
+          },
+          "candidates": [],
+          "note": null
+        }
+      }
+    },
+    {
+      "miniature_key": "MM/giant_badger.pck",
+      "release_tag": "MM",
+      "release_url": "https://github.com/francesco-bufalini/VTT/releases/tag/MM",
+      "asset_id": 610873946,
+      "asset_name": "giant_badger.pck",
+      "asset_url": "https://github.com/francesco-bufalini/VTT/releases/download/MM/giant_badger.pck",
+      "asset_digest": "sha256:ef1290f4f6ac58282304aff9e15d98c2aad220419a14f2eab77886d18ec3fdc3",
+      "normalized_name": "giant badger",
+      "editions": {
+        "2014": {
+          "status": "matched",
+          "match_method": "normalized_exact",
+          "selected": {
+            "name": "Giant Badger",
+            "source": "MM",
+            "page": 323,
+            "url": "https://5e.tools/bestiary.html#giant%20badger_mm"
+          },
+          "candidates": [],
+          "note": null
+        },
+        "2024": {
+          "status": "matched",
+          "match_method": "normalized_exact",
+          "selected": {
+            "name": "Giant Badger",
+            "source": "XMM",
+            "page": 354,
+            "url": "https://5e.tools/bestiary.html#giant%20badger_xmm"
+          },
+          "candidates": [],
+          "note": null
+        }
+      }
+    },
+    {
+      "miniature_key": "MM/giant_badger_mount.pck",
+      "release_tag": "MM",
+      "release_url": "https://github.com/francesco-bufalini/VTT/releases/tag/MM",
+      "asset_id": 610873972,
+      "asset_name": "giant_badger_mount.pck",
+      "asset_url": "https://github.com/francesco-bufalini/VTT/releases/download/MM/giant_badger_mount.pck",
+      "asset_digest": "sha256:43c984d8ad68b25de7f83d471b3f5f31a350d7aaf46f79711e6c73e97fb938f0",
+      "normalized_name": "giant badger",
+      "editions": {
+        "2014": {
+          "status": "matched",
+          "match_method": "variant_suffix_removed",
+          "selected": {
+            "name": "Giant Badger",
+            "source": "MM",
+            "page": 323,
+            "url": "https://5e.tools/bestiary.html#giant%20badger_mm"
+          },
+          "candidates": [],
+          "note": null
+        },
+        "2024": {
+          "status": "matched",
+          "match_method": "variant_suffix_removed",
+          "selected": {
+            "name": "Giant Badger",
+            "source": "XMM",
+            "page": 354,
+            "url": "https://5e.tools/bestiary.html#giant%20badger_xmm"
+          },
+          "candidates": [],
+          "note": null
+        }
+      }
+    },
+    {
+      "miniature_key": "MM/giant_bat_updated.pck",
+      "release_tag": "MM",
+      "release_url": "https://github.com/francesco-bufalini/VTT/releases/tag/MM",
+      "asset_id": 610874016,
+      "asset_name": "giant_bat_updated.pck",
+      "asset_url": "https://github.com/francesco-bufalini/VTT/releases/download/MM/giant_bat_updated.pck",
+      "asset_digest": "sha256:aa9a58251a867a8e4b8d537f1be947c7b222888e5959cf2ceb4a3c3a47928533",
+      "normalized_name": "giant bat",
+      "editions": {
+        "2014": {
+          "status": "matched",
+          "match_method": "variant_suffix_removed",
+          "selected": {
+            "name": "Giant Bat",
+            "source": "MM",
+            "page": 323,
+            "url": "https://5e.tools/bestiary.html#giant%20bat_mm"
+          },
+          "candidates": [],
+          "note": null
+        },
+        "2024": {
+          "status": "matched",
+          "match_method": "variant_suffix_removed",
+          "selected": {
+            "name": "Giant Bat",
+            "source": "XMM",
+            "page": 355,
+            "url": "https://5e.tools/bestiary.html#giant%20bat_xmm"
+          },
+          "candidates": [],
+          "note": null
+        }
+      }
+    },
+    {
+      "miniature_key": "MM/giant_boar.pck",
+      "release_tag": "MM",
+      "release_url": "https://github.com/francesco-bufalini/VTT/releases/tag/MM",
+      "asset_id": 610874038,
+      "asset_name": "giant_boar.pck",
+      "asset_url": "https://github.com/francesco-bufalini/VTT/releases/download/MM/giant_boar.pck",
+      "asset_digest": "sha256:fb6f60c5db3f25bd2619c6f136d0f44e09a88050ed07fab1da2804ad0efafb84",
+      "normalized_name": "giant boar",
+      "editions": {
+        "2014": {
+          "status": "matched",
+          "match_method": "normalized_exact",
+          "selected": {
+            "name": "Giant Boar",
+            "source": "MM",
+            "page": 323,
+            "url": "https://5e.tools/bestiary.html#giant%20boar_mm"
+          },
+          "candidates": [],
+          "note": null
+        },
+        "2024": {
+          "status": "matched",
+          "match_method": "normalized_exact",
+          "selected": {
+            "name": "Giant Boar",
+            "source": "XMM",
+            "page": 355,
+            "url": "https://5e.tools/bestiary.html#giant%20boar_xmm"
+          },
+          "candidates": [],
+          "note": null
+        }
+      }
+    },
+    {
+      "miniature_key": "MM/giant_boar_mount.pck",
+      "release_tag": "MM",
+      "release_url": "https://github.com/francesco-bufalini/VTT/releases/tag/MM",
+      "asset_id": 610874052,
+      "asset_name": "giant_boar_mount.pck",
+      "asset_url": "https://github.com/francesco-bufalini/VTT/releases/download/MM/giant_boar_mount.pck",
+      "asset_digest": "sha256:2aeff0bc5656e9b849f936d6edd02a09ab35882a6d3b299ef495a7fe72a19030",
+      "normalized_name": "giant boar",
+      "editions": {
+        "2014": {
+          "status": "matched",
+          "match_method": "variant_suffix_removed",
+          "selected": {
+            "name": "Giant Boar",
+            "source": "MM",
+            "page": 323,
+            "url": "https://5e.tools/bestiary.html#giant%20boar_mm"
+          },
+          "candidates": [],
+          "note": null
+        },
+        "2024": {
+          "status": "matched",
+          "match_method": "variant_suffix_removed",
+          "selected": {
+            "name": "Giant Boar",
+            "source": "XMM",
+            "page": 355,
+            "url": "https://5e.tools/bestiary.html#giant%20boar_xmm"
+          },
+          "candidates": [],
+          "note": null
+        }
+      }
+    },
+    {
+      "miniature_key": "MM/giant_boar_mount_w_mini_slot.pck",
+      "release_tag": "MM",
+      "release_url": "https://github.com/francesco-bufalini/VTT/releases/tag/MM",
+      "asset_id": 610874079,
+      "asset_name": "giant_boar_mount_w_mini_slot.pck",
+      "asset_url": "https://github.com/francesco-bufalini/VTT/releases/download/MM/giant_boar_mount_w_mini_slot.pck",
+      "asset_digest": "sha256:93f6e55e876ccaa6c97c66696144db464b67d74f798402a62a3922f5738d75f7",
+      "normalized_name": "giant boar",
+      "editions": {
+        "2014": {
+          "status": "matched",
+          "match_method": "variant_suffix_removed",
+          "selected": {
+            "name": "Giant Boar",
+            "source": "MM",
+            "page": 323,
+            "url": "https://5e.tools/bestiary.html#giant%20boar_mm"
+          },
+          "candidates": [],
+          "note": null
+        },
+        "2024": {
+          "status": "matched",
+          "match_method": "variant_suffix_removed",
+          "selected": {
+            "name": "Giant Boar",
+            "source": "XMM",
+            "page": 355,
+            "url": "https://5e.tools/bestiary.html#giant%20boar_xmm"
+          },
+          "candidates": [],
+          "note": null
+        }
+      }
+    },
+    {
+      "miniature_key": "MM/giant_centipede.pck",
+      "release_tag": "MM",
+      "release_url": "https://github.com/francesco-bufalini/VTT/releases/tag/MM",
+      "asset_id": 610874139,
+      "asset_name": "giant_centipede.pck",
+      "asset_url": "https://github.com/francesco-bufalini/VTT/releases/download/MM/giant_centipede.pck",
+      "asset_digest": "sha256:5311e123b15ced7e30c06933be5e59095fcf12b63e7c385987a728ffa69b424e",
+      "normalized_name": "giant centipede",
+      "editions": {
+        "2014": {
+          "status": "matched",
+          "match_method": "normalized_exact",
+          "selected": {
+            "name": "Giant Centipede",
+            "source": "MM",
+            "page": 323,
+            "url": "https://5e.tools/bestiary.html#giant%20centipede_mm"
+          },
+          "candidates": [],
+          "note": null
+        },
+        "2024": {
+          "status": "matched",
+          "match_method": "normalized_exact",
+          "selected": {
+            "name": "Giant Centipede",
+            "source": "XMM",
+            "page": 355,
+            "url": "https://5e.tools/bestiary.html#giant%20centipede_xmm"
+          },
+          "candidates": [],
+          "note": null
+        }
+      }
+    },
+    {
+      "miniature_key": "MM/giant_constrictor_snake.pck",
+      "release_tag": "MM",
+      "release_url": "https://github.com/francesco-bufalini/VTT/releases/tag/MM",
+      "asset_id": 610874177,
+      "asset_name": "giant_constrictor_snake.pck",
+      "asset_url": "https://github.com/francesco-bufalini/VTT/releases/download/MM/giant_constrictor_snake.pck",
+      "asset_digest": "sha256:c983bd21a9963167256d75a6f5b7827eac52e4b878b943aeff55c2cb9907bbf9",
+      "normalized_name": "giant constrictor snake",
+      "editions": {
+        "2014": {
+          "status": "matched",
+          "match_method": "normalized_exact",
+          "selected": {
+            "name": "Giant Constrictor Snake",
+            "source": "MM",
+            "page": 324,
+            "url": "https://5e.tools/bestiary.html#giant%20constrictor%20snake_mm"
+          },
+          "candidates": [],
+          "note": null
+        },
+        "2024": {
+          "status": "matched",
+          "match_method": "normalized_exact",
+          "selected": {
+            "name": "Giant Constrictor Snake",
+            "source": "XMM",
+            "page": 355,
+            "url": "https://5e.tools/bestiary.html#giant%20constrictor%20snake_xmm"
+          },
+          "candidates": [],
+          "note": null
+        }
+      }
+    },
+    {
+      "miniature_key": "MM/giant_crab.pck",
+      "release_tag": "MM",
+      "release_url": "https://github.com/francesco-bufalini/VTT/releases/tag/MM",
+      "asset_id": 610874236,
+      "asset_name": "giant_crab.pck",
+      "asset_url": "https://github.com/francesco-bufalini/VTT/releases/download/MM/giant_crab.pck",
+      "asset_digest": "sha256:7c04b720881028151a29ef3b78f3ac616872b2992957115cb687419481628c25",
+      "normalized_name": "giant crab",
+      "editions": {
+        "2014": {
+          "status": "matched",
+          "match_method": "normalized_exact",
+          "selected": {
+            "name": "Giant Crab",
+            "source": "MM",
+            "page": 324,
+            "url": "https://5e.tools/bestiary.html#giant%20crab_mm"
+          },
+          "candidates": [],
+          "note": null
+        },
+        "2024": {
+          "status": "matched",
+          "match_method": "normalized_exact",
+          "selected": {
+            "name": "Giant Crab",
+            "source": "XMM",
+            "page": 356,
+            "url": "https://5e.tools/bestiary.html#giant%20crab_xmm"
+          },
+          "candidates": [],
+          "note": null
+        }
+      }
+    },
+    {
+      "miniature_key": "MM/giant_crocodile.pck",
+      "release_tag": "MM",
+      "release_url": "https://github.com/francesco-bufalini/VTT/releases/tag/MM",
+      "asset_id": 610874318,
+      "asset_name": "giant_crocodile.pck",
+      "asset_url": "https://github.com/francesco-bufalini/VTT/releases/download/MM/giant_crocodile.pck",
+      "asset_digest": "sha256:b08a6c636555fb6ce0832daa597baaf6b1a6620b11185e8dc259f04a7baf31ce",
+      "normalized_name": "giant crocodile",
+      "editions": {
+        "2014": {
+          "status": "matched",
+          "match_method": "normalized_exact",
+          "selected": {
+            "name": "Giant Crocodile",
+            "source": "MM",
+            "page": 324,
+            "url": "https://5e.tools/bestiary.html#giant%20crocodile_mm"
+          },
+          "candidates": [],
+          "note": null
+        },
+        "2024": {
+          "status": "matched",
+          "match_method": "normalized_exact",
+          "selected": {
+            "name": "Giant Crocodile",
+            "source": "XMM",
+            "page": 356,
+            "url": "https://5e.tools/bestiary.html#giant%20crocodile_xmm"
+          },
+          "candidates": [],
+          "note": null
+        }
+      }
+    },
+    {
+      "miniature_key": "MM/giant_eagle_updated.pck",
+      "release_tag": "MM",
+      "release_url": "https://github.com/francesco-bufalini/VTT/releases/tag/MM",
+      "asset_id": 610874354,
+      "asset_name": "giant_eagle_updated.pck",
+      "asset_url": "https://github.com/francesco-bufalini/VTT/releases/download/MM/giant_eagle_updated.pck",
+      "asset_digest": "sha256:9f2a07d1a3f4db432fc8f93830cd67f01c051c1f228c417c55bd44df9395b6c9",
+      "normalized_name": "giant eagle",
+      "editions": {
+        "2014": {
+          "status": "matched",
+          "match_method": "variant_suffix_removed",
+          "selected": {
+            "name": "Giant Eagle",
+            "source": "MM",
+            "page": 324,
+            "url": "https://5e.tools/bestiary.html#giant%20eagle_mm"
+          },
+          "candidates": [],
+          "note": null
+        },
+        "2024": {
+          "status": "matched",
+          "match_method": "variant_suffix_removed",
+          "selected": {
+            "name": "Giant Eagle",
+            "source": "XMM",
+            "page": 356,
+            "url": "https://5e.tools/bestiary.html#giant%20eagle_xmm"
+          },
+          "candidates": [],
+          "note": null
+        }
+      }
+    },
+    {
+      "miniature_key": "MM/giant_elk.pck",
+      "release_tag": "MM",
+      "release_url": "https://github.com/francesco-bufalini/VTT/releases/tag/MM",
+      "asset_id": 610874397,
+      "asset_name": "giant_elk.pck",
+      "asset_url": "https://github.com/francesco-bufalini/VTT/releases/download/MM/giant_elk.pck",
+      "asset_digest": "sha256:653fb72e47398c2a777531bf4d551a94c3c4ee307a986240b2989d5b2a1439cb",
+      "normalized_name": "giant elk",
+      "editions": {
+        "2014": {
+          "status": "matched",
+          "match_method": "normalized_exact",
+          "selected": {
+            "name": "Giant Elk",
+            "source": "MM",
+            "page": 325,
+            "url": "https://5e.tools/bestiary.html#giant%20elk_mm"
+          },
+          "candidates": [],
+          "note": null
+        },
+        "2024": {
+          "status": "matched",
+          "match_method": "normalized_exact",
+          "selected": {
+            "name": "Giant Elk",
+            "source": "XMM",
+            "page": 356,
+            "url": "https://5e.tools/bestiary.html#giant%20elk_xmm"
+          },
+          "candidates": [],
+          "note": null
+        }
+      }
+    },
+    {
+      "miniature_key": "MM/giant_fire_beetle_updated.pck",
+      "release_tag": "MM",
+      "release_url": "https://github.com/francesco-bufalini/VTT/releases/tag/MM",
+      "asset_id": 610874413,
+      "asset_name": "giant_fire_beetle_updated.pck",
+      "asset_url": "https://github.com/francesco-bufalini/VTT/releases/download/MM/giant_fire_beetle_updated.pck",
+      "asset_digest": "sha256:0f59ab9daf0d98597e20369c5cfe2267dd882318ebd88eb84a0973ae86c9545d",
+      "normalized_name": "giant fire beetle",
+      "editions": {
+        "2014": {
+          "status": "matched",
+          "match_method": "variant_suffix_removed",
+          "selected": {
+            "name": "Giant Fire Beetle",
+            "source": "MM",
+            "page": 325,
+            "url": "https://5e.tools/bestiary.html#giant%20fire%20beetle_mm"
+          },
+          "candidates": [],
+          "note": null
+        },
+        "2024": {
+          "status": "matched",
+          "match_method": "variant_suffix_removed",
+          "selected": {
+            "name": "Giant Fire Beetle",
+            "source": "XMM",
+            "page": 357,
+            "url": "https://5e.tools/bestiary.html#giant%20fire%20beetle_xmm"
+          },
+          "candidates": [],
+          "note": null
+        }
+      }
+    },
+    {
+      "miniature_key": "MM/giant_frog.pck",
+      "release_tag": "MM",
+      "release_url": "https://github.com/francesco-bufalini/VTT/releases/tag/MM",
+      "asset_id": 610874449,
+      "asset_name": "giant_frog.pck",
+      "asset_url": "https://github.com/francesco-bufalini/VTT/releases/download/MM/giant_frog.pck",
+      "asset_digest": "sha256:97b7b1e274f6e8ad0b437c160b321f4fa0941fe140f2912e72cecb5d2d8f1ddd",
+      "normalized_name": "giant frog",
+      "editions": {
+        "2014": {
+          "status": "matched",
+          "match_method": "normalized_exact",
+          "selected": {
+            "name": "Giant Frog",
+            "source": "MM",
+            "page": 325,
+            "url": "https://5e.tools/bestiary.html#giant%20frog_mm"
+          },
+          "candidates": [],
+          "note": null
+        },
+        "2024": {
+          "status": "matched",
+          "match_method": "normalized_exact",
+          "selected": {
+            "name": "Giant Frog",
+            "source": "XMM",
+            "page": 357,
+            "url": "https://5e.tools/bestiary.html#giant%20frog_xmm"
+          },
+          "candidates": [],
+          "note": null
+        }
+      }
+    },
+    {
+      "miniature_key": "MM/giant_goat.pck",
+      "release_tag": "MM",
+      "release_url": "https://github.com/francesco-bufalini/VTT/releases/tag/MM",
+      "asset_id": 610874459,
+      "asset_name": "giant_goat.pck",
+      "asset_url": "https://github.com/francesco-bufalini/VTT/releases/download/MM/giant_goat.pck",
+      "asset_digest": "sha256:423bc9a28dda08a781ccdef1e22d1ae136ef1c9d663c3bf8f596656e4ea5e600",
+      "normalized_name": "giant goat",
+      "editions": {
+        "2014": {
+          "status": "matched",
+          "match_method": "normalized_exact",
+          "selected": {
+            "name": "Giant Goat",
+            "source": "MM",
+            "page": 326,
+            "url": "https://5e.tools/bestiary.html#giant%20goat_mm"
+          },
+          "candidates": [],
+          "note": null
+        },
+        "2024": {
+          "status": "matched",
+          "match_method": "normalized_exact",
+          "selected": {
+            "name": "Giant Goat",
+            "source": "XMM",
+            "page": 357,
+            "url": "https://5e.tools/bestiary.html#giant%20goat_xmm"
+          },
+          "candidates": [],
+          "note": null
+        }
+      }
+    },
+    {
+      "miniature_key": "MM/giant_goat_mount.pck",
+      "release_tag": "MM",
+      "release_url": "https://github.com/francesco-bufalini/VTT/releases/tag/MM",
+      "asset_id": 610874521,
+      "asset_name": "giant_goat_mount.pck",
+      "asset_url": "https://github.com/francesco-bufalini/VTT/releases/download/MM/giant_goat_mount.pck",
+      "asset_digest": "sha256:f5f7d284f56db9591ee634b4b4a28bb5666d3131602bbffffb06272552199b8a",
+      "normalized_name": "giant goat",
+      "editions": {
+        "2014": {
+          "status": "matched",
+          "match_method": "variant_suffix_removed",
+          "selected": {
+            "name": "Giant Goat",
+            "source": "MM",
+            "page": 326,
+            "url": "https://5e.tools/bestiary.html#giant%20goat_mm"
+          },
+          "candidates": [],
+          "note": null
+        },
+        "2024": {
+          "status": "matched",
+          "match_method": "variant_suffix_removed",
+          "selected": {
+            "name": "Giant Goat",
+            "source": "XMM",
+            "page": 357,
+            "url": "https://5e.tools/bestiary.html#giant%20goat_xmm"
+          },
+          "candidates": [],
+          "note": null
+        }
+      }
+    },
+    {
+      "miniature_key": "MM/giant_goat_mount_w_mini_slot.pck",
+      "release_tag": "MM",
+      "release_url": "https://github.com/francesco-bufalini/VTT/releases/tag/MM",
+      "asset_id": 610874568,
+      "asset_name": "giant_goat_mount_w_mini_slot.pck",
+      "asset_url": "https://github.com/francesco-bufalini/VTT/releases/download/MM/giant_goat_mount_w_mini_slot.pck",
+      "asset_digest": "sha256:944aae3f605347e01e67f16d325b3c736ccd6dfbeee013b4223f243f19fcc9fc",
+      "normalized_name": "giant goat",
+      "editions": {
+        "2014": {
+          "status": "matched",
+          "match_method": "variant_suffix_removed",
+          "selected": {
+            "name": "Giant Goat",
+            "source": "MM",
+            "page": 326,
+            "url": "https://5e.tools/bestiary.html#giant%20goat_mm"
+          },
+          "candidates": [],
+          "note": null
+        },
+        "2024": {
+          "status": "matched",
+          "match_method": "variant_suffix_removed",
+          "selected": {
+            "name": "Giant Goat",
+            "source": "XMM",
+            "page": 357,
+            "url": "https://5e.tools/bestiary.html#giant%20goat_xmm"
+          },
+          "candidates": [],
+          "note": null
+        }
+      }
+    },
+    {
+      "miniature_key": "MM/giant_hyena.pck",
+      "release_tag": "MM",
+      "release_url": "https://github.com/francesco-bufalini/VTT/releases/tag/MM",
+      "asset_id": 610874604,
+      "asset_name": "giant_hyena.pck",
+      "asset_url": "https://github.com/francesco-bufalini/VTT/releases/download/MM/giant_hyena.pck",
+      "asset_digest": "sha256:f302d7eb7234f47cbd34941f26c606bb6e75f579492bc3c835a0c94530be76a6",
+      "normalized_name": "giant hyena",
+      "editions": {
+        "2014": {
+          "status": "matched",
+          "match_method": "normalized_exact",
+          "selected": {
+            "name": "Giant Hyena",
+            "source": "MM",
+            "page": 326,
+            "url": "https://5e.tools/bestiary.html#giant%20hyena_mm"
+          },
+          "candidates": [],
+          "note": null
+        },
+        "2024": {
+          "status": "matched",
+          "match_method": "normalized_exact",
+          "selected": {
+            "name": "Giant Hyena",
+            "source": "XMM",
+            "page": 357,
+            "url": "https://5e.tools/bestiary.html#giant%20hyena_xmm"
+          },
+          "candidates": [],
+          "note": null
+        }
+      }
+    },
+    {
+      "miniature_key": "MM/giant_lizard.pck",
+      "release_tag": "MM",
+      "release_url": "https://github.com/francesco-bufalini/VTT/releases/tag/MM",
+      "asset_id": 610874645,
+      "asset_name": "giant_lizard.pck",
+      "asset_url": "https://github.com/francesco-bufalini/VTT/releases/download/MM/giant_lizard.pck",
+      "asset_digest": "sha256:19418bf003f16b2755bf0d07a15b31667a45afdf860d890c3bd8260e4b06c354",
+      "normalized_name": "giant lizard",
+      "editions": {
+        "2014": {
+          "status": "matched",
+          "match_method": "normalized_exact",
+          "selected": {
+            "name": "Giant Lizard",
+            "source": "MM",
+            "page": 326,
+            "url": "https://5e.tools/bestiary.html#giant%20lizard_mm"
+          },
+          "candidates": [],
+          "note": null
+        },
+        "2024": {
+          "status": "matched",
+          "match_method": "normalized_exact",
+          "selected": {
+            "name": "Giant Lizard",
+            "source": "XMM",
+            "page": 358,
+            "url": "https://5e.tools/bestiary.html#giant%20lizard_xmm"
+          },
+          "candidates": [],
+          "note": null
+        }
+      }
+    },
+    {
+      "miniature_key": "MM/giant_lizard_mount.pck",
+      "release_tag": "MM",
+      "release_url": "https://github.com/francesco-bufalini/VTT/releases/tag/MM",
+      "asset_id": 610874683,
+      "asset_name": "giant_lizard_mount.pck",
+      "asset_url": "https://github.com/francesco-bufalini/VTT/releases/download/MM/giant_lizard_mount.pck",
+      "asset_digest": "sha256:9c05275b092237b06ff192711fbfc821492d96029d8ded1f3fc0fb36cb1170cc",
+      "normalized_name": "giant lizard",
+      "editions": {
+        "2014": {
+          "status": "matched",
+          "match_method": "variant_suffix_removed",
+          "selected": {
+            "name": "Giant Lizard",
+            "source": "MM",
+            "page": 326,
+            "url": "https://5e.tools/bestiary.html#giant%20lizard_mm"
+          },
+          "candidates": [],
+          "note": null
+        },
+        "2024": {
+          "status": "matched",
+          "match_method": "variant_suffix_removed",
+          "selected": {
+            "name": "Giant Lizard",
+            "source": "XMM",
+            "page": 358,
+            "url": "https://5e.tools/bestiary.html#giant%20lizard_xmm"
+          },
+          "candidates": [],
+          "note": null
+        }
+      }
+    },
+    {
+      "miniature_key": "MM/giant_lizard_mount_w_mini_slot.pck",
+      "release_tag": "MM",
+      "release_url": "https://github.com/francesco-bufalini/VTT/releases/tag/MM",
+      "asset_id": 610874708,
+      "asset_name": "giant_lizard_mount_w_mini_slot.pck",
+      "asset_url": "https://github.com/francesco-bufalini/VTT/releases/download/MM/giant_lizard_mount_w_mini_slot.pck",
+      "asset_digest": "sha256:8f7f0144c26bc14eeceecb2a3672ee8935e08c57f11de2dffcd951f20261a9c9",
+      "normalized_name": "giant lizard",
+      "editions": {
+        "2014": {
+          "status": "matched",
+          "match_method": "variant_suffix_removed",
+          "selected": {
+            "name": "Giant Lizard",
+            "source": "MM",
+            "page": 326,
+            "url": "https://5e.tools/bestiary.html#giant%20lizard_mm"
+          },
+          "candidates": [],
+          "note": null
+        },
+        "2024": {
+          "status": "matched",
+          "match_method": "variant_suffix_removed",
+          "selected": {
+            "name": "Giant Lizard",
+            "source": "XMM",
+            "page": 358,
+            "url": "https://5e.tools/bestiary.html#giant%20lizard_xmm"
+          },
+          "candidates": [],
+          "note": null
+        }
+      }
+    },
+    {
+      "miniature_key": "MM/giant_lizard_with_chests_on_back.pck",
+      "release_tag": "MM",
+      "release_url": "https://github.com/francesco-bufalini/VTT/releases/tag/MM",
+      "asset_id": 610874749,
+      "asset_name": "giant_lizard_with_chests_on_back.pck",
+      "asset_url": "https://github.com/francesco-bufalini/VTT/releases/download/MM/giant_lizard_with_chests_on_back.pck",
+      "asset_digest": "sha256:deadc1017bb559830d4c97ee4f09d30a3871a274e57fea20995c28c4df241736",
+      "normalized_name": "giant lizard with chests on back",
+      "editions": {
+        "2014": {
+          "status": "matched",
+          "match_method": "visual_variant_candidate",
+          "selected": {
+            "name": "Giant Lizard",
+            "source": "MM",
+            "page": 326,
+            "url": "https://5e.tools/bestiary.html#giant%20lizard_mm"
+          },
+          "candidates": [
+            {
+              "name": "Giant Lizard",
+              "source": "MM",
+              "page": 326,
+              "url": "https://5e.tools/bestiary.html#giant%20lizard_mm"
+            }
+          ],
+          "note": "Associazione proposta dal nome; identità della miniatura da confermare.",
+          "confirmation": {
+            "confirmed_by": "user",
+            "confirmed_on": "2026-10-09",
+            "instruction": "Confermo tutto"
+          }
+        },
+        "2024": {
+          "status": "matched",
+          "match_method": "visual_variant_candidate",
+          "selected": {
+            "name": "Giant Lizard",
+            "source": "XMM",
+            "page": 358,
+            "url": "https://5e.tools/bestiary.html#giant%20lizard_xmm"
+          },
+          "candidates": [
+            {
+              "name": "Giant Lizard",
+              "source": "XMM",
+              "page": 358,
+              "url": "https://5e.tools/bestiary.html#giant%20lizard_xmm"
+            }
+          ],
+          "note": "Associazione proposta dal nome; identità della miniatura da confermare.",
+          "confirmation": {
+            "confirmed_by": "user",
+            "confirmed_on": "2026-10-09",
+            "instruction": "Confermo tutto"
+          }
+        }
+      }
+    },
+    {
+      "miniature_key": "MM/giant_octopus.pck",
+      "release_tag": "MM",
+      "release_url": "https://github.com/francesco-bufalini/VTT/releases/tag/MM",
+      "asset_id": 610874785,
+      "asset_name": "giant_octopus.pck",
+      "asset_url": "https://github.com/francesco-bufalini/VTT/releases/download/MM/giant_octopus.pck",
+      "asset_digest": "sha256:d6043339cb2324024b6034f828f74b89553906b41c09c5bb58e4e6467824f407",
+      "normalized_name": "giant octopus",
+      "editions": {
+        "2014": {
+          "status": "matched",
+          "match_method": "normalized_exact",
+          "selected": {
+            "name": "Giant Octopus",
+            "source": "MM",
+            "page": 326,
+            "url": "https://5e.tools/bestiary.html#giant%20octopus_mm"
+          },
+          "candidates": [],
+          "note": null
+        },
+        "2024": {
+          "status": "matched",
+          "match_method": "normalized_exact",
+          "selected": {
+            "name": "Giant Octopus",
+            "source": "XMM",
+            "page": 358,
+            "url": "https://5e.tools/bestiary.html#giant%20octopus_xmm"
+          },
+          "candidates": [],
+          "note": null
+        }
+      }
+    },
+    {
+      "miniature_key": "MM/giant_owl.pck",
+      "release_tag": "MM",
+      "release_url": "https://github.com/francesco-bufalini/VTT/releases/tag/MM",
+      "asset_id": 610874818,
+      "asset_name": "giant_owl.pck",
+      "asset_url": "https://github.com/francesco-bufalini/VTT/releases/download/MM/giant_owl.pck",
+      "asset_digest": "sha256:47ae42ca3eeec54a47825ae7fbc26f956ae80774c63545cf0b19b366330f83cd",
+      "normalized_name": "giant owl",
+      "editions": {
+        "2014": {
+          "status": "matched",
+          "match_method": "normalized_exact",
+          "selected": {
+            "name": "Giant Owl",
+            "source": "MM",
+            "page": 327,
+            "url": "https://5e.tools/bestiary.html#giant%20owl_mm"
+          },
+          "candidates": [],
+          "note": null
+        },
+        "2024": {
+          "status": "matched",
+          "match_method": "normalized_exact",
+          "selected": {
+            "name": "Giant Owl",
+            "source": "XMM",
+            "page": 358,
+            "url": "https://5e.tools/bestiary.html#giant%20owl_xmm"
+          },
+          "candidates": [],
+          "note": null
+        }
+      }
+    },
+    {
+      "miniature_key": "MM/giant_poisonous_snake.pck",
+      "release_tag": "MM",
+      "release_url": "https://github.com/francesco-bufalini/VTT/releases/tag/MM",
+      "asset_id": 610874855,
+      "asset_name": "giant_poisonous_snake.pck",
+      "asset_url": "https://github.com/francesco-bufalini/VTT/releases/download/MM/giant_poisonous_snake.pck",
+      "asset_digest": "sha256:b1417244dbd30d4bc5daf7aefe2a80a3e15fa05b4555e8741e5016df91514647",
+      "normalized_name": "giant poisonous snake",
+      "editions": {
+        "2014": {
+          "status": "matched",
+          "match_method": "normalized_exact",
+          "selected": {
+            "name": "Giant Poisonous Snake",
+            "source": "MM",
+            "page": 327,
+            "url": "https://5e.tools/bestiary.html#giant%20poisonous%20snake_mm"
+          },
+          "candidates": [],
+          "note": null
+        },
+        "2024": {
+          "status": "matched",
+          "match_method": "edition_rename",
+          "selected": {
+            "name": "Giant Venomous Snake",
+            "source": "XMM",
+            "page": 361,
+            "url": "https://5e.tools/bestiary.html#giant%20venomous%20snake_xmm"
+          },
+          "candidates": [],
+          "note": null
+        }
+      }
+    },
+    {
+      "miniature_key": "MM/giant_rat.pck",
+      "release_tag": "MM",
+      "release_url": "https://github.com/francesco-bufalini/VTT/releases/tag/MM",
+      "asset_id": 610874899,
+      "asset_name": "giant_rat.pck",
+      "asset_url": "https://github.com/francesco-bufalini/VTT/releases/download/MM/giant_rat.pck",
+      "asset_digest": "sha256:d3c5f6eb03457a456551fa4c4e6f7cee87f8501039761a9fc09716af412f7f1a",
+      "normalized_name": "giant rat",
+      "editions": {
+        "2014": {
+          "status": "matched",
+          "match_method": "normalized_exact",
+          "selected": {
+            "name": "Giant Rat",
+            "source": "MM",
+            "page": 327,
+            "url": "https://5e.tools/bestiary.html#giant%20rat_mm"
+          },
+          "candidates": [],
+          "note": null
+        },
+        "2024": {
+          "status": "matched",
+          "match_method": "normalized_exact",
+          "selected": {
+            "name": "Giant Rat",
+            "source": "XMM",
+            "page": 358,
+            "url": "https://5e.tools/bestiary.html#giant%20rat_xmm"
+          },
+          "candidates": [],
+          "note": null
+        }
+      }
+    },
+    {
+      "miniature_key": "MM/giant_scorpion.pck",
+      "release_tag": "MM",
+      "release_url": "https://github.com/francesco-bufalini/VTT/releases/tag/MM",
+      "asset_id": 610874939,
+      "asset_name": "giant_scorpion.pck",
+      "asset_url": "https://github.com/francesco-bufalini/VTT/releases/download/MM/giant_scorpion.pck",
+      "asset_digest": "sha256:65875bfb218362d94d1fd9bbc1cf451b24bb1e99d6eff203a4ff24bb3687405a",
+      "normalized_name": "giant scorpion",
+      "editions": {
+        "2014": {
+          "status": "matched",
+          "match_method": "normalized_exact",
+          "selected": {
+            "name": "Giant Scorpion",
+            "source": "MM",
+            "page": 327,
+            "url": "https://5e.tools/bestiary.html#giant%20scorpion_mm"
+          },
+          "candidates": [],
+          "note": null
+        },
+        "2024": {
+          "status": "matched",
+          "match_method": "normalized_exact",
+          "selected": {
+            "name": "Giant Scorpion",
+            "source": "XMM",
+            "page": 359,
+            "url": "https://5e.tools/bestiary.html#giant%20scorpion_xmm"
+          },
+          "candidates": [],
+          "note": null
+        }
+      }
+    },
+    {
+      "miniature_key": "MM/giant_seahorse_updated.pck",
+      "release_tag": "MM",
+      "release_url": "https://github.com/francesco-bufalini/VTT/releases/tag/MM",
+      "asset_id": 610874970,
+      "asset_name": "giant_seahorse_updated.pck",
+      "asset_url": "https://github.com/francesco-bufalini/VTT/releases/download/MM/giant_seahorse_updated.pck",
+      "asset_digest": "sha256:cfb77e2f31db9ea1eae7ea629d1137ae514448af759e0f0155cc4c14f51c7029",
+      "normalized_name": "giant seahorse",
+      "editions": {
+        "2014": {
+          "status": "matched",
+          "match_method": "variant_suffix_removed",
+          "selected": {
+            "name": "Giant Sea Horse",
+            "source": "MM",
+            "page": 328,
+            "url": "https://5e.tools/bestiary.html#giant%20sea%20horse_mm"
+          },
+          "candidates": [],
+          "note": null
+        },
+        "2024": {
+          "status": "matched",
+          "match_method": "variant_suffix_removed",
+          "selected": {
+            "name": "Giant Seahorse",
+            "source": "XMM",
+            "page": 359,
+            "url": "https://5e.tools/bestiary.html#giant%20seahorse_xmm"
+          },
+          "candidates": [],
+          "note": null
+        }
+      }
+    },
+    {
+      "miniature_key": "MM/giant_shark.pck",
+      "release_tag": "MM",
+      "release_url": "https://github.com/francesco-bufalini/VTT/releases/tag/MM",
+      "asset_id": 610875002,
+      "asset_name": "giant_shark.pck",
+      "asset_url": "https://github.com/francesco-bufalini/VTT/releases/download/MM/giant_shark.pck",
+      "asset_digest": "sha256:2639bca984298c133c08446c0d425e5fad5bcfac3db56047dd137891a48bd747",
+      "normalized_name": "giant shark",
+      "editions": {
+        "2014": {
+          "status": "matched",
+          "match_method": "normalized_exact",
+          "selected": {
+            "name": "Giant Shark",
+            "source": "MM",
+            "page": 328,
+            "url": "https://5e.tools/bestiary.html#giant%20shark_mm"
+          },
+          "candidates": [],
+          "note": null
+        },
+        "2024": {
+          "status": "matched",
+          "match_method": "normalized_exact",
+          "selected": {
+            "name": "Giant Shark",
+            "source": "XMM",
+            "page": 359,
+            "url": "https://5e.tools/bestiary.html#giant%20shark_xmm"
+          },
+          "candidates": [],
+          "note": null
+        }
+      }
+    },
+    {
+      "miniature_key": "MM/giant_shark_coming_out_of_water.pck",
+      "release_tag": "MM",
+      "release_url": "https://github.com/francesco-bufalini/VTT/releases/tag/MM",
+      "asset_id": 610875016,
+      "asset_name": "giant_shark_coming_out_of_water.pck",
+      "asset_url": "https://github.com/francesco-bufalini/VTT/releases/download/MM/giant_shark_coming_out_of_water.pck",
+      "asset_digest": "sha256:392dea631d54edca62efaa2a1cb02d76d1ce28ac29851ef105054b0eda539a8e",
+      "normalized_name": "giant shark coming out of water",
+      "editions": {
+        "2014": {
+          "status": "matched",
+          "match_method": "visual_variant_candidate",
+          "selected": {
+            "name": "Giant Shark",
+            "source": "MM",
+            "page": 328,
+            "url": "https://5e.tools/bestiary.html#giant%20shark_mm"
+          },
+          "candidates": [
+            {
+              "name": "Giant Shark",
+              "source": "MM",
+              "page": 328,
+              "url": "https://5e.tools/bestiary.html#giant%20shark_mm"
+            }
+          ],
+          "note": "Associazione proposta dal nome; identità della miniatura da confermare.",
+          "confirmation": {
+            "confirmed_by": "user",
+            "confirmed_on": "2026-10-09",
+            "instruction": "Confermo tutto"
+          }
+        },
+        "2024": {
+          "status": "matched",
+          "match_method": "visual_variant_candidate",
+          "selected": {
+            "name": "Giant Shark",
+            "source": "XMM",
+            "page": 359,
+            "url": "https://5e.tools/bestiary.html#giant%20shark_xmm"
+          },
+          "candidates": [
+            {
+              "name": "Giant Shark",
+              "source": "XMM",
+              "page": 359,
+              "url": "https://5e.tools/bestiary.html#giant%20shark_xmm"
+            }
+          ],
+          "note": "Associazione proposta dal nome; identità della miniatura da confermare.",
+          "confirmation": {
+            "confirmed_by": "user",
+            "confirmed_on": "2026-10-09",
+            "instruction": "Confermo tutto"
+          }
+        }
+      }
+    },
+    {
+      "miniature_key": "MM/giant_spider.pck",
+      "release_tag": "MM",
+      "release_url": "https://github.com/francesco-bufalini/VTT/releases/tag/MM",
+      "asset_id": 610875036,
+      "asset_name": "giant_spider.pck",
+      "asset_url": "https://github.com/francesco-bufalini/VTT/releases/download/MM/giant_spider.pck",
+      "asset_digest": "sha256:5a7da70928a14d7a47aec0a32303a6ea762ef3a4bdea9156b5180096b5461abd",
+      "normalized_name": "giant spider",
+      "editions": {
+        "2014": {
+          "status": "matched",
+          "match_method": "normalized_exact",
+          "selected": {
+            "name": "Giant Spider",
+            "source": "MM",
+            "page": 328,
+            "url": "https://5e.tools/bestiary.html#giant%20spider_mm"
+          },
+          "candidates": [],
+          "note": null
+        },
+        "2024": {
+          "status": "matched",
+          "match_method": "normalized_exact",
+          "selected": {
+            "name": "Giant Spider",
+            "source": "XMM",
+            "page": 359,
+            "url": "https://5e.tools/bestiary.html#giant%20spider_xmm"
+          },
+          "candidates": [],
+          "note": null
+        }
+      }
+    },
+    {
+      "miniature_key": "MM/giant_toad.pck",
+      "release_tag": "MM",
+      "release_url": "https://github.com/francesco-bufalini/VTT/releases/tag/MM",
+      "asset_id": 610875053,
+      "asset_name": "giant_toad.pck",
+      "asset_url": "https://github.com/francesco-bufalini/VTT/releases/download/MM/giant_toad.pck",
+      "asset_digest": "sha256:c058b225cf18c95044455f87379a624f9de63a44e58565f55754e84fba7399a7",
+      "normalized_name": "giant toad",
+      "editions": {
+        "2014": {
+          "status": "matched",
+          "match_method": "normalized_exact",
+          "selected": {
+            "name": "Giant Toad",
+            "source": "MM",
+            "page": 329,
+            "url": "https://5e.tools/bestiary.html#giant%20toad_mm"
+          },
+          "candidates": [],
+          "note": null
+        },
+        "2024": {
+          "status": "matched",
+          "match_method": "normalized_exact",
+          "selected": {
+            "name": "Giant Toad",
+            "source": "XMM",
+            "page": 360,
+            "url": "https://5e.tools/bestiary.html#giant%20toad_xmm"
+          },
+          "candidates": [],
+          "note": null
+        }
+      }
+    },
+    {
+      "miniature_key": "MM/giant_toad_eating_an_adventurer.pck",
+      "release_tag": "MM",
+      "release_url": "https://github.com/francesco-bufalini/VTT/releases/tag/MM",
+      "asset_id": 610875103,
+      "asset_name": "giant_toad_eating_an_adventurer.pck",
+      "asset_url": "https://github.com/francesco-bufalini/VTT/releases/download/MM/giant_toad_eating_an_adventurer.pck",
+      "asset_digest": "sha256:a66b30c74c3e8634740b323a47226d6dd4eb280105016a8503e3471055db6429",
+      "normalized_name": "giant toad eating an adventurer",
+      "editions": {
+        "2014": {
+          "status": "matched",
+          "match_method": "visual_variant_candidate",
+          "selected": {
+            "name": "Giant Toad",
+            "source": "MM",
+            "page": 329,
+            "url": "https://5e.tools/bestiary.html#giant%20toad_mm"
+          },
+          "candidates": [
+            {
+              "name": "Giant Toad",
+              "source": "MM",
+              "page": 329,
+              "url": "https://5e.tools/bestiary.html#giant%20toad_mm"
+            }
+          ],
+          "note": "Associazione proposta dal nome; identità della miniatura da confermare.",
+          "confirmation": {
+            "confirmed_by": "user",
+            "confirmed_on": "2026-10-09",
+            "instruction": "Confermo tutto"
+          }
+        },
+        "2024": {
+          "status": "matched",
+          "match_method": "visual_variant_candidate",
+          "selected": {
+            "name": "Giant Toad",
+            "source": "XMM",
+            "page": 360,
+            "url": "https://5e.tools/bestiary.html#giant%20toad_xmm"
+          },
+          "candidates": [
+            {
+              "name": "Giant Toad",
+              "source": "XMM",
+              "page": 360,
+              "url": "https://5e.tools/bestiary.html#giant%20toad_xmm"
+            }
+          ],
+          "note": "Associazione proposta dal nome; identità della miniatura da confermare.",
+          "confirmation": {
+            "confirmed_by": "user",
+            "confirmed_on": "2026-10-09",
+            "instruction": "Confermo tutto"
+          }
+        }
+      }
+    },
+    {
+      "miniature_key": "MM/giant_vulture_updated.pck",
+      "release_tag": "MM",
+      "release_url": "https://github.com/francesco-bufalini/VTT/releases/tag/MM",
+      "asset_id": 610875262,
+      "asset_name": "giant_vulture_updated.pck",
+      "asset_url": "https://github.com/francesco-bufalini/VTT/releases/download/MM/giant_vulture_updated.pck",
+      "asset_digest": "sha256:ebcf795f1de613fd43bfd4cc922b891f6748d337594ad241bb098170fabf7f36",
+      "normalized_name": "giant vulture",
+      "editions": {
+        "2014": {
+          "status": "matched",
+          "match_method": "variant_suffix_removed",
+          "selected": {
+            "name": "Giant Vulture",
+            "source": "MM",
+            "page": 329,
+            "url": "https://5e.tools/bestiary.html#giant%20vulture_mm"
+          },
+          "candidates": [],
+          "note": null
+        },
+        "2024": {
+          "status": "matched",
+          "match_method": "variant_suffix_removed",
+          "selected": {
+            "name": "Giant Vulture",
+            "source": "XMM",
+            "page": 361,
+            "url": "https://5e.tools/bestiary.html#giant%20vulture_xmm"
+          },
+          "candidates": [],
+          "note": null
+        }
+      }
+    },
+    {
+      "miniature_key": "MM/giant_wasp.pck",
+      "release_tag": "MM",
+      "release_url": "https://github.com/francesco-bufalini/VTT/releases/tag/MM",
+      "asset_id": 610875294,
+      "asset_name": "giant_wasp.pck",
+      "asset_url": "https://github.com/francesco-bufalini/VTT/releases/download/MM/giant_wasp.pck",
+      "asset_digest": "sha256:54dd8fafe6766ead4fba40adbeee2ab480c197878db7c33e47bfbdcb2e35077a",
+      "normalized_name": "giant wasp",
+      "editions": {
+        "2014": {
+          "status": "matched",
+          "match_method": "normalized_exact",
+          "selected": {
+            "name": "Giant Wasp",
+            "source": "MM",
+            "page": 329,
+            "url": "https://5e.tools/bestiary.html#giant%20wasp_mm"
+          },
+          "candidates": [],
+          "note": null
+        },
+        "2024": {
+          "status": "matched",
+          "match_method": "normalized_exact",
+          "selected": {
+            "name": "Giant Wasp",
+            "source": "XMM",
+            "page": 361,
+            "url": "https://5e.tools/bestiary.html#giant%20wasp_xmm"
+          },
+          "candidates": [],
+          "note": null
+        }
+      }
+    },
+    {
+      "miniature_key": "MM/giant_wasp_w_mini_slot.pck",
+      "release_tag": "MM",
+      "release_url": "https://github.com/francesco-bufalini/VTT/releases/tag/MM",
+      "asset_id": 610875305,
+      "asset_name": "giant_wasp_w_mini_slot.pck",
+      "asset_url": "https://github.com/francesco-bufalini/VTT/releases/download/MM/giant_wasp_w_mini_slot.pck",
+      "asset_digest": "sha256:5fb0fb1276e7c265160330bbee589c0578b25f4436fad7375989cf07fcca07e3",
+      "normalized_name": "giant wasp",
+      "editions": {
+        "2014": {
+          "status": "matched",
+          "match_method": "variant_suffix_removed",
+          "selected": {
+            "name": "Giant Wasp",
+            "source": "MM",
+            "page": 329,
+            "url": "https://5e.tools/bestiary.html#giant%20wasp_mm"
+          },
+          "candidates": [],
+          "note": null
+        },
+        "2024": {
+          "status": "matched",
+          "match_method": "variant_suffix_removed",
+          "selected": {
+            "name": "Giant Wasp",
+            "source": "XMM",
+            "page": 361,
+            "url": "https://5e.tools/bestiary.html#giant%20wasp_xmm"
+          },
+          "candidates": [],
+          "note": null
+        }
+      }
+    },
+    {
+      "miniature_key": "MM/giant_weasel.pck",
+      "release_tag": "MM",
+      "release_url": "https://github.com/francesco-bufalini/VTT/releases/tag/MM",
+      "asset_id": 610875318,
+      "asset_name": "giant_weasel.pck",
+      "asset_url": "https://github.com/francesco-bufalini/VTT/releases/download/MM/giant_weasel.pck",
+      "asset_digest": "sha256:6ca98145e634560d7abd755d43019e32307b44351780d164444dd7c1df49885d",
+      "normalized_name": "giant weasel",
+      "editions": {
+        "2014": {
+          "status": "matched",
+          "match_method": "normalized_exact",
+          "selected": {
+            "name": "Giant Weasel",
+            "source": "MM",
+            "page": 329,
+            "url": "https://5e.tools/bestiary.html#giant%20weasel_mm"
+          },
+          "candidates": [],
+          "note": null
+        },
+        "2024": {
+          "status": "matched",
+          "match_method": "normalized_exact",
+          "selected": {
+            "name": "Giant Weasel",
+            "source": "XMM",
+            "page": 361,
+            "url": "https://5e.tools/bestiary.html#giant%20weasel_xmm"
+          },
+          "candidates": [],
+          "note": null
+        }
+      }
+    },
+    {
+      "miniature_key": "MM/giant_wolf_spider.pck",
+      "release_tag": "MM",
+      "release_url": "https://github.com/francesco-bufalini/VTT/releases/tag/MM",
+      "asset_id": 610875334,
+      "asset_name": "giant_wolf_spider.pck",
+      "asset_url": "https://github.com/francesco-bufalini/VTT/releases/download/MM/giant_wolf_spider.pck",
+      "asset_digest": "sha256:553de63d9e3d8e756a178c2ec6e70bc1005474dd75227d4cdf332eb24020404d",
+      "normalized_name": "giant wolf spider",
+      "editions": {
+        "2014": {
+          "status": "matched",
+          "match_method": "normalized_exact",
+          "selected": {
+            "name": "Giant Wolf Spider",
+            "source": "MM",
+            "page": 330,
+            "url": "https://5e.tools/bestiary.html#giant%20wolf%20spider_mm"
+          },
+          "candidates": [],
+          "note": null
+        },
+        "2024": {
+          "status": "matched",
+          "match_method": "normalized_exact",
+          "selected": {
+            "name": "Giant Wolf Spider",
+            "source": "XMM",
+            "page": 362,
+            "url": "https://5e.tools/bestiary.html#giant%20wolf%20spider_xmm"
+          },
+          "candidates": [],
+          "note": null
+        }
+      }
+    },
+    {
+      "miniature_key": "MM/goat.pck",
+      "release_tag": "MM",
+      "release_url": "https://github.com/francesco-bufalini/VTT/releases/tag/MM",
+      "asset_id": 610875341,
+      "asset_name": "goat.pck",
+      "asset_url": "https://github.com/francesco-bufalini/VTT/releases/download/MM/goat.pck",
+      "asset_digest": "sha256:2c8aea031a8056f82a6fee778ba2ca3c001a332eae26cc4da0874058a051f1b6",
+      "normalized_name": "goat",
+      "editions": {
+        "2014": {
+          "status": "matched",
+          "match_method": "normalized_exact",
+          "selected": {
+            "name": "Goat",
+            "source": "MM",
+            "page": 330,
+            "url": "https://5e.tools/bestiary.html#goat_mm"
+          },
+          "candidates": [],
+          "note": null
+        },
+        "2024": {
+          "status": "matched",
+          "match_method": "normalized_exact",
+          "selected": {
+            "name": "Goat",
+            "source": "XMM",
+            "page": 362,
+            "url": "https://5e.tools/bestiary.html#goat_xmm"
+          },
+          "candidates": [],
+          "note": null
+        }
+      }
+    },
+    {
+      "miniature_key": "MM/hawk.pck",
+      "release_tag": "MM",
+      "release_url": "https://github.com/francesco-bufalini/VTT/releases/tag/MM",
+      "asset_id": 610875381,
+      "asset_name": "hawk.pck",
+      "asset_url": "https://github.com/francesco-bufalini/VTT/releases/download/MM/hawk.pck",
+      "asset_digest": "sha256:6d232527515127dcee8acab43efeeb5c8f3c5516ce39ad944466907bb09b991b",
+      "normalized_name": "hawk",
+      "editions": {
+        "2014": {
+          "status": "matched",
+          "match_method": "normalized_exact",
+          "selected": {
+            "name": "Hawk",
+            "source": "MM",
+            "page": 330,
+            "url": "https://5e.tools/bestiary.html#hawk_mm"
+          },
+          "candidates": [],
+          "note": null
+        },
+        "2024": {
+          "status": "matched",
+          "match_method": "normalized_exact",
+          "selected": {
+            "name": "Hawk",
+            "source": "XMM",
+            "page": 362,
+            "url": "https://5e.tools/bestiary.html#hawk_xmm"
+          },
+          "candidates": [],
+          "note": null
+        }
+      }
+    },
+    {
+      "miniature_key": "MM/hunter_shark.pck",
+      "release_tag": "MM",
+      "release_url": "https://github.com/francesco-bufalini/VTT/releases/tag/MM",
+      "asset_id": 610875415,
+      "asset_name": "hunter_shark.pck",
+      "asset_url": "https://github.com/francesco-bufalini/VTT/releases/download/MM/hunter_shark.pck",
+      "asset_digest": "sha256:aead3ffb1a80d3e3562e01d2265931c2d6c97ef440fff1160ea767c435daa84a",
+      "normalized_name": "hunter shark",
+      "editions": {
+        "2014": {
+          "status": "matched",
+          "match_method": "normalized_exact",
+          "selected": {
+            "name": "Hunter Shark",
+            "source": "MM",
+            "page": 330,
+            "url": "https://5e.tools/bestiary.html#hunter%20shark_mm"
+          },
+          "candidates": [],
+          "note": null
+        },
+        "2024": {
+          "status": "matched",
+          "match_method": "normalized_exact",
+          "selected": {
+            "name": "Hunter Shark",
+            "source": "XMM",
+            "page": 363,
+            "url": "https://5e.tools/bestiary.html#hunter%20shark_xmm"
+          },
+          "candidates": [],
+          "note": null
+        }
+      }
+    },
+    {
+      "miniature_key": "MM/hyena.pck",
+      "release_tag": "MM",
+      "release_url": "https://github.com/francesco-bufalini/VTT/releases/tag/MM",
+      "asset_id": 610875424,
+      "asset_name": "hyena.pck",
+      "asset_url": "https://github.com/francesco-bufalini/VTT/releases/download/MM/hyena.pck",
+      "asset_digest": "sha256:bdc794b01c8708647224c6038a4300bae707c68b72da2d479eedfe10117b2179",
+      "normalized_name": "hyena",
+      "editions": {
+        "2014": {
+          "status": "matched",
+          "match_method": "normalized_exact",
+          "selected": {
+            "name": "Hyena",
+            "source": "MM",
+            "page": 331,
+            "url": "https://5e.tools/bestiary.html#hyena_mm"
+          },
+          "candidates": [],
+          "note": null
+        },
+        "2024": {
+          "status": "matched",
+          "match_method": "normalized_exact",
+          "selected": {
+            "name": "Hyena",
+            "source": "XMM",
+            "page": 363,
+            "url": "https://5e.tools/bestiary.html#hyena_xmm"
+          },
+          "candidates": [],
+          "note": null
+        }
+      }
+    },
+    {
+      "miniature_key": "MM/jackel.pck",
+      "release_tag": "MM",
+      "release_url": "https://github.com/francesco-bufalini/VTT/releases/tag/MM",
+      "asset_id": 610875452,
+      "asset_name": "jackel.pck",
+      "asset_url": "https://github.com/francesco-bufalini/VTT/releases/download/MM/jackel.pck",
+      "asset_digest": "sha256:05a0388616e2d4d2d630b4027b2ea17129fed30dd3db6d70135c4ca8c84dc999",
+      "normalized_name": "jackel",
+      "editions": {
+        "2014": {
+          "status": "matched",
+          "match_method": "spelling_correction",
+          "selected": {
+            "name": "Jackal",
+            "source": "MM",
+            "page": 331,
+            "url": "https://5e.tools/bestiary.html#jackal_mm"
+          },
+          "candidates": [],
+          "note": null
+        },
+        "2024": {
+          "status": "matched",
+          "match_method": "spelling_correction",
+          "selected": {
+            "name": "Jackal",
+            "source": "XMM",
+            "page": 364,
+            "url": "https://5e.tools/bestiary.html#jackal_xmm"
+          },
+          "candidates": [],
+          "note": null
+        }
+      }
+    },
+    {
+      "miniature_key": "MM/killer_whale.pck",
+      "release_tag": "MM",
+      "release_url": "https://github.com/francesco-bufalini/VTT/releases/tag/MM",
+      "asset_id": 610875484,
+      "asset_name": "killer_whale.pck",
+      "asset_url": "https://github.com/francesco-bufalini/VTT/releases/download/MM/killer_whale.pck",
+      "asset_digest": "sha256:d40e3b90f40516977266998b02e40b0a36b62ed42a8578bb91cb7a8d049fdb69",
+      "normalized_name": "killer whale",
+      "editions": {
+        "2014": {
+          "status": "matched",
+          "match_method": "normalized_exact",
+          "selected": {
+            "name": "Killer Whale",
+            "source": "MM",
+            "page": 331,
+            "url": "https://5e.tools/bestiary.html#killer%20whale_mm"
+          },
+          "candidates": [],
+          "note": null
+        },
+        "2024": {
+          "status": "matched",
+          "match_method": "normalized_exact",
+          "selected": {
+            "name": "Killer Whale",
+            "source": "XMM",
+            "page": 364,
+            "url": "https://5e.tools/bestiary.html#killer%20whale_xmm"
+          },
+          "candidates": [],
+          "note": null
+        }
+      }
+    },
+    {
+      "miniature_key": "MM/lich_gattara.pck",
+      "release_tag": "MM",
+      "release_url": "https://github.com/francesco-bufalini/VTT/releases/tag/MM",
+      "asset_id": 610875498,
+      "asset_name": "lich_gattara.pck",
+      "asset_url": "https://github.com/francesco-bufalini/VTT/releases/download/MM/lich_gattara.pck",
+      "asset_digest": "sha256:c8fcbd50f525617432fea2058fbb0f0e7314c6471640208b42d13a8a9af6313c",
+      "normalized_name": "lich gattara",
+      "editions": {
+        "2014": {
+          "status": "matched",
+          "match_method": "visual_variant_candidate",
+          "selected": {
+            "name": "Lich",
+            "source": "MM",
+            "page": 202,
+            "url": "https://5e.tools/bestiary.html#lich_mm"
+          },
+          "candidates": [
+            {
+              "name": "Lich",
+              "source": "MM",
+              "page": 202,
+              "url": "https://5e.tools/bestiary.html#lich_mm"
+            }
+          ],
+          "note": "Associazione proposta dal nome; identità della miniatura da confermare.",
+          "confirmation": {
+            "confirmed_by": "user",
+            "confirmed_on": "2026-10-09",
+            "instruction": "Confermo tutto"
+          }
+        },
+        "2024": {
+          "status": "matched",
+          "match_method": "visual_variant_candidate",
+          "selected": {
+            "name": "Lich",
+            "source": "XMM",
+            "page": 196,
+            "url": "https://5e.tools/bestiary.html#lich_xmm"
+          },
+          "candidates": [
+            {
+              "name": "Lich",
+              "source": "XMM",
+              "page": 196,
+              "url": "https://5e.tools/bestiary.html#lich_xmm"
+            }
+          ],
+          "note": "Associazione proposta dal nome; identità della miniatura da confermare.",
+          "confirmation": {
+            "confirmed_by": "user",
+            "confirmed_on": "2026-10-09",
+            "instruction": "Confermo tutto"
+          }
+        }
+      }
+    },
+    {
+      "miniature_key": "MM/lion.pck",
+      "release_tag": "MM",
+      "release_url": "https://github.com/francesco-bufalini/VTT/releases/tag/MM",
+      "asset_id": 610875513,
+      "asset_name": "lion.pck",
+      "asset_url": "https://github.com/francesco-bufalini/VTT/releases/download/MM/lion.pck",
+      "asset_digest": "sha256:31371effc9df37d7dd7f25d030cf839b9ded5d78c6d4c0ad4ed49b7602733afe",
+      "normalized_name": "lion",
+      "editions": {
+        "2014": {
+          "status": "matched",
+          "match_method": "normalized_exact",
+          "selected": {
+            "name": "Lion",
+            "source": "MM",
+            "page": 331,
+            "url": "https://5e.tools/bestiary.html#lion_mm"
+          },
+          "candidates": [],
+          "note": null
+        },
+        "2024": {
+          "status": "matched",
+          "match_method": "normalized_exact",
+          "selected": {
+            "name": "Lion",
+            "source": "XMM",
+            "page": 364,
+            "url": "https://5e.tools/bestiary.html#lion_xmm"
+          },
+          "candidates": [],
+          "note": null
+        }
+      }
+    },
+    {
+      "miniature_key": "MM/lioness.pck",
+      "release_tag": "MM",
+      "release_url": "https://github.com/francesco-bufalini/VTT/releases/tag/MM",
+      "asset_id": 610875562,
+      "asset_name": "lioness.pck",
+      "asset_url": "https://github.com/francesco-bufalini/VTT/releases/download/MM/lioness.pck",
+      "asset_digest": "sha256:7f5835be71077028fb663c96735a2213d0e2bf24f1901eb27739649824e1a840",
+      "normalized_name": "lioness",
+      "editions": {
+        "2014": {
+          "status": "matched",
+          "match_method": "visual_variant_candidate",
+          "selected": {
+            "name": "Lion",
+            "source": "MM",
+            "page": 331,
+            "url": "https://5e.tools/bestiary.html#lion_mm"
+          },
+          "candidates": [
+            {
+              "name": "Lion",
+              "source": "MM",
+              "page": 331,
+              "url": "https://5e.tools/bestiary.html#lion_mm"
+            }
+          ],
+          "note": "Associazione proposta dal nome; identità della miniatura da confermare.",
+          "confirmation": {
+            "confirmed_by": "user",
+            "confirmed_on": "2026-10-09",
+            "instruction": "Confermo tutto"
+          }
+        },
+        "2024": {
+          "status": "matched",
+          "match_method": "visual_variant_candidate",
+          "selected": {
+            "name": "Lion",
+            "source": "XMM",
+            "page": 364,
+            "url": "https://5e.tools/bestiary.html#lion_xmm"
+          },
+          "candidates": [
+            {
+              "name": "Lion",
+              "source": "XMM",
+              "page": 364,
+              "url": "https://5e.tools/bestiary.html#lion_xmm"
+            }
+          ],
+          "note": "Associazione proposta dal nome; identità della miniatura da confermare.",
+          "confirmation": {
+            "confirmed_by": "user",
+            "confirmed_on": "2026-10-09",
+            "instruction": "Confermo tutto"
+          }
+        }
+      }
+    },
+    {
+      "miniature_key": "MM/lizard.pck",
+      "release_tag": "MM",
+      "release_url": "https://github.com/francesco-bufalini/VTT/releases/tag/MM",
+      "asset_id": 610875582,
+      "asset_name": "lizard.pck",
+      "asset_url": "https://github.com/francesco-bufalini/VTT/releases/download/MM/lizard.pck",
+      "asset_digest": "sha256:7e706373c33bf4cfe136d4cf32cac3dba324c0cb5060e12575240d7a840c960e",
+      "normalized_name": "lizard",
+      "editions": {
+        "2014": {
+          "status": "matched",
+          "match_method": "normalized_exact",
+          "selected": {
+            "name": "Lizard",
+            "source": "MM",
+            "page": 332,
+            "url": "https://5e.tools/bestiary.html#lizard_mm"
+          },
+          "candidates": [],
+          "note": null
+        },
+        "2024": {
+          "status": "matched",
+          "match_method": "normalized_exact",
+          "selected": {
+            "name": "Lizard",
+            "source": "XMM",
+            "page": 364,
+            "url": "https://5e.tools/bestiary.html#lizard_xmm"
+          },
+          "candidates": [],
+          "note": null
+        }
+      }
+    },
+    {
+      "miniature_key": "MM/mammoth.pck",
+      "release_tag": "MM",
+      "release_url": "https://github.com/francesco-bufalini/VTT/releases/tag/MM",
+      "asset_id": 610875595,
+      "asset_name": "mammoth.pck",
+      "asset_url": "https://github.com/francesco-bufalini/VTT/releases/download/MM/mammoth.pck",
+      "asset_digest": "sha256:26ae7357e23ad99f237e5553104a4ad8989dde73e2b2b8dc998abefcf2e0ab8b",
+      "normalized_name": "mammoth",
+      "editions": {
+        "2014": {
+          "status": "matched",
+          "match_method": "normalized_exact",
+          "selected": {
+            "name": "Mammoth",
+            "source": "MM",
+            "page": 332,
+            "url": "https://5e.tools/bestiary.html#mammoth_mm"
+          },
+          "candidates": [],
+          "note": null
+        },
+        "2024": {
+          "status": "matched",
+          "match_method": "normalized_exact",
+          "selected": {
+            "name": "Mammoth",
+            "source": "XMM",
+            "page": 365,
+            "url": "https://5e.tools/bestiary.html#mammoth_xmm"
+          },
+          "candidates": [],
+          "note": null
+        }
+      }
+    },
+    {
+      "miniature_key": "MM/mastiff.pck",
+      "release_tag": "MM",
+      "release_url": "https://github.com/francesco-bufalini/VTT/releases/tag/MM",
+      "asset_id": 610875629,
+      "asset_name": "mastiff.pck",
+      "asset_url": "https://github.com/francesco-bufalini/VTT/releases/download/MM/mastiff.pck",
+      "asset_digest": "sha256:a2eac9c0a7d59315d4c064889ac3ac294a2312dfa9c1f862ee38dcd47b485b1c",
+      "normalized_name": "mastiff",
+      "editions": {
+        "2014": {
+          "status": "matched",
+          "match_method": "normalized_exact",
+          "selected": {
+            "name": "Mastiff",
+            "source": "MM",
+            "page": 332,
+            "url": "https://5e.tools/bestiary.html#mastiff_mm"
+          },
+          "candidates": [],
+          "note": null
+        },
+        "2024": {
+          "status": "matched",
+          "match_method": "normalized_exact",
+          "selected": {
+            "name": "Mastiff",
+            "source": "XMM",
+            "page": 365,
+            "url": "https://5e.tools/bestiary.html#mastiff_xmm"
+          },
+          "candidates": [],
+          "note": null
+        }
+      }
+    },
+    {
+      "miniature_key": "MM/mastiff_mount.pck",
+      "release_tag": "MM",
+      "release_url": "https://github.com/francesco-bufalini/VTT/releases/tag/MM",
+      "asset_id": 610875662,
+      "asset_name": "mastiff_mount.pck",
+      "asset_url": "https://github.com/francesco-bufalini/VTT/releases/download/MM/mastiff_mount.pck",
+      "asset_digest": "sha256:81b80c6026e88ec22fe21b4d3c2cd28c4162813835a9d35fc24ed412c30b5fc4",
+      "normalized_name": "mastiff",
+      "editions": {
+        "2014": {
+          "status": "matched",
+          "match_method": "variant_suffix_removed",
+          "selected": {
+            "name": "Mastiff",
+            "source": "MM",
+            "page": 332,
+            "url": "https://5e.tools/bestiary.html#mastiff_mm"
+          },
+          "candidates": [],
+          "note": null
+        },
+        "2024": {
+          "status": "matched",
+          "match_method": "variant_suffix_removed",
+          "selected": {
+            "name": "Mastiff",
+            "source": "XMM",
+            "page": 365,
+            "url": "https://5e.tools/bestiary.html#mastiff_xmm"
+          },
+          "candidates": [],
+          "note": null
+        }
+      }
+    },
+    {
+      "miniature_key": "MM/mastiff_mount_w_mini_slot.pck",
+      "release_tag": "MM",
+      "release_url": "https://github.com/francesco-bufalini/VTT/releases/tag/MM",
+      "asset_id": 610875695,
+      "asset_name": "mastiff_mount_w_mini_slot.pck",
+      "asset_url": "https://github.com/francesco-bufalini/VTT/releases/download/MM/mastiff_mount_w_mini_slot.pck",
+      "asset_digest": "sha256:2e0eb72eb831941a1028245b16861048208dd5f0a0c62ce5ffdded1bb8cfd72f",
+      "normalized_name": "mastiff",
+      "editions": {
+        "2014": {
+          "status": "matched",
+          "match_method": "variant_suffix_removed",
+          "selected": {
+            "name": "Mastiff",
+            "source": "MM",
+            "page": 332,
+            "url": "https://5e.tools/bestiary.html#mastiff_mm"
+          },
+          "candidates": [],
+          "note": null
+        },
+        "2024": {
+          "status": "matched",
+          "match_method": "variant_suffix_removed",
+          "selected": {
+            "name": "Mastiff",
+            "source": "XMM",
+            "page": 365,
+            "url": "https://5e.tools/bestiary.html#mastiff_xmm"
+          },
+          "candidates": [],
+          "note": null
+        }
+      }
+    },
+    {
+      "miniature_key": "MM/mule.pck",
+      "release_tag": "MM",
+      "release_url": "https://github.com/francesco-bufalini/VTT/releases/tag/MM",
+      "asset_id": 610875706,
+      "asset_name": "mule.pck",
+      "asset_url": "https://github.com/francesco-bufalini/VTT/releases/download/MM/mule.pck",
+      "asset_digest": "sha256:3e36b2d5ddc8513d1ee34beff7e0150ef20e1eb39ef4826e5179a1eb4aebc01e",
+      "normalized_name": "mule",
+      "editions": {
+        "2014": {
+          "status": "matched",
+          "match_method": "normalized_exact",
+          "selected": {
+            "name": "Mule",
+            "source": "MM",
+            "page": 333,
+            "url": "https://5e.tools/bestiary.html#mule_mm"
+          },
+          "candidates": [],
+          "note": null
+        },
+        "2024": {
+          "status": "matched",
+          "match_method": "normalized_exact",
+          "selected": {
+            "name": "Mule",
+            "source": "XMM",
+            "page": 365,
+            "url": "https://5e.tools/bestiary.html#mule_xmm"
+          },
+          "candidates": [],
+          "note": null
+        }
+      }
+    },
+    {
+      "miniature_key": "MM/mule_w_chests.pck",
+      "release_tag": "MM",
+      "release_url": "https://github.com/francesco-bufalini/VTT/releases/tag/MM",
+      "asset_id": 610875740,
+      "asset_name": "mule_w_chests.pck",
+      "asset_url": "https://github.com/francesco-bufalini/VTT/releases/download/MM/mule_w_chests.pck",
+      "asset_digest": "sha256:6bea4d3c1d358a85c1657d6b2176b38cdba272f7b43f378d8d3af00458a63f16",
+      "normalized_name": "mule w chests",
+      "editions": {
+        "2014": {
+          "status": "matched",
+          "match_method": "visual_variant_candidate",
+          "selected": {
+            "name": "Mule",
+            "source": "MM",
+            "page": 333,
+            "url": "https://5e.tools/bestiary.html#mule_mm"
+          },
+          "candidates": [
+            {
+              "name": "Mule",
+              "source": "MM",
+              "page": 333,
+              "url": "https://5e.tools/bestiary.html#mule_mm"
+            }
+          ],
+          "note": "Associazione proposta dal nome; identità della miniatura da confermare.",
+          "confirmation": {
+            "confirmed_by": "user",
+            "confirmed_on": "2026-10-09",
+            "instruction": "Confermo tutto"
+          }
+        },
+        "2024": {
+          "status": "matched",
+          "match_method": "visual_variant_candidate",
+          "selected": {
+            "name": "Mule",
+            "source": "XMM",
+            "page": 365,
+            "url": "https://5e.tools/bestiary.html#mule_xmm"
+          },
+          "candidates": [
+            {
+              "name": "Mule",
+              "source": "XMM",
+              "page": 365,
+              "url": "https://5e.tools/bestiary.html#mule_xmm"
+            }
+          ],
+          "note": "Associazione proposta dal nome; identità della miniatura da confermare.",
+          "confirmation": {
+            "confirmed_by": "user",
+            "confirmed_on": "2026-10-09",
+            "instruction": "Confermo tutto"
+          }
+        }
+      }
+    },
+    {
+      "miniature_key": "MM/octopus.pck",
+      "release_tag": "MM",
+      "release_url": "https://github.com/francesco-bufalini/VTT/releases/tag/MM",
+      "asset_id": 610875757,
+      "asset_name": "octopus.pck",
+      "asset_url": "https://github.com/francesco-bufalini/VTT/releases/download/MM/octopus.pck",
+      "asset_digest": "sha256:a8fcaca4561c610eec994288158aec5b3012cdeee669d80a659264185697a371",
+      "normalized_name": "octopus",
+      "editions": {
+        "2014": {
+          "status": "matched",
+          "match_method": "normalized_exact",
+          "selected": {
+            "name": "Octopus",
+            "source": "MM",
+            "page": 333,
+            "url": "https://5e.tools/bestiary.html#octopus_mm"
+          },
+          "candidates": [],
+          "note": null
+        },
+        "2024": {
+          "status": "matched",
+          "match_method": "normalized_exact",
+          "selected": {
+            "name": "Octopus",
+            "source": "XMM",
+            "page": 365,
+            "url": "https://5e.tools/bestiary.html#octopus_xmm"
+          },
+          "candidates": [],
+          "note": null
+        }
+      }
+    },
+    {
+      "miniature_key": "MM/one_eyed_raven.pck",
+      "release_tag": "MM",
+      "release_url": "https://github.com/francesco-bufalini/VTT/releases/tag/MM",
+      "asset_id": 610875770,
+      "asset_name": "one_eyed_raven.pck",
+      "asset_url": "https://github.com/francesco-bufalini/VTT/releases/download/MM/one_eyed_raven.pck",
+      "asset_digest": "sha256:e68ecf4181727a6fe0bea4c5128c1b86982c7f2504f3d645a1eab1e66afea545",
+      "normalized_name": "one eyed raven",
+      "editions": {
+        "2014": {
+          "status": "matched",
+          "match_method": "visual_variant_candidate",
+          "selected": {
+            "name": "Raven",
+            "source": "MM",
+            "page": 335,
+            "url": "https://5e.tools/bestiary.html#raven_mm"
+          },
+          "candidates": [
+            {
+              "name": "Raven",
+              "source": "MM",
+              "page": 335,
+              "url": "https://5e.tools/bestiary.html#raven_mm"
+            }
+          ],
+          "note": "Associazione proposta dal nome; identità della miniatura da confermare.",
+          "confirmation": {
+            "confirmed_by": "user",
+            "confirmed_on": "2026-10-09",
+            "instruction": "Confermo tutto"
+          }
+        },
+        "2024": {
+          "status": "matched",
+          "match_method": "visual_variant_candidate",
+          "selected": {
+            "name": "Raven",
+            "source": "XMM",
+            "page": 368,
+            "url": "https://5e.tools/bestiary.html#raven_xmm"
+          },
+          "candidates": [
+            {
+              "name": "Raven",
+              "source": "XMM",
+              "page": 368,
+              "url": "https://5e.tools/bestiary.html#raven_xmm"
+            }
+          ],
+          "note": "Associazione proposta dal nome; identità della miniatura da confermare.",
+          "confirmation": {
+            "confirmed_by": "user",
+            "confirmed_on": "2026-10-09",
+            "instruction": "Confermo tutto"
+          }
+        }
+      }
+    },
+    {
+      "miniature_key": "MM/owl.pck",
+      "release_tag": "MM",
+      "release_url": "https://github.com/francesco-bufalini/VTT/releases/tag/MM",
+      "asset_id": 610875797,
+      "asset_name": "owl.pck",
+      "asset_url": "https://github.com/francesco-bufalini/VTT/releases/download/MM/owl.pck",
+      "asset_digest": "sha256:d40c5713aa9b937714d64789cb947fee90e506626e6e7b26c0e3fc41f43f8ae8",
+      "normalized_name": "owl",
+      "editions": {
+        "2014": {
+          "status": "matched",
+          "match_method": "normalized_exact",
+          "selected": {
+            "name": "Owl",
+            "source": "MM",
+            "page": 333,
+            "url": "https://5e.tools/bestiary.html#owl_mm"
+          },
+          "candidates": [],
+          "note": null
+        },
+        "2024": {
+          "status": "matched",
+          "match_method": "normalized_exact",
+          "selected": {
+            "name": "Owl",
+            "source": "XMM",
+            "page": 366,
+            "url": "https://5e.tools/bestiary.html#owl_xmm"
+          },
+          "candidates": [],
+          "note": null
+        }
+      }
+    },
+    {
+      "miniature_key": "MM/panther.pck",
+      "release_tag": "MM",
+      "release_url": "https://github.com/francesco-bufalini/VTT/releases/tag/MM",
+      "asset_id": 610875825,
+      "asset_name": "panther.pck",
+      "asset_url": "https://github.com/francesco-bufalini/VTT/releases/download/MM/panther.pck",
+      "asset_digest": "sha256:4ecf4b256d7bef3462f7a84a8154e3b1029cda1959b9b4c5ff5af07b41ab56b7",
+      "normalized_name": "panther",
+      "editions": {
+        "2014": {
+          "status": "matched",
+          "match_method": "normalized_exact",
+          "selected": {
+            "name": "Panther",
+            "source": "MM",
+            "page": 333,
+            "url": "https://5e.tools/bestiary.html#panther_mm"
+          },
+          "candidates": [],
+          "note": null
+        },
+        "2024": {
+          "status": "matched",
+          "match_method": "normalized_exact",
+          "selected": {
+            "name": "Panther",
+            "source": "XMM",
+            "page": 366,
+            "url": "https://5e.tools/bestiary.html#panther_xmm"
+          },
+          "candidates": [],
+          "note": null
+        }
+      }
+    },
+    {
+      "miniature_key": "MM/phase_spider.pck",
+      "release_tag": "MM",
+      "release_url": "https://github.com/francesco-bufalini/VTT/releases/tag/MM",
+      "asset_id": 610875847,
+      "asset_name": "phase_spider.pck",
+      "asset_url": "https://github.com/francesco-bufalini/VTT/releases/download/MM/phase_spider.pck",
+      "asset_digest": "sha256:829059b7d3f830737158ff0185e00660c8f75cb7531c4f19cf5283326bc34b7d",
+      "normalized_name": "phase spider",
+      "editions": {
+        "2014": {
+          "status": "matched",
+          "match_method": "normalized_exact",
+          "selected": {
+            "name": "Phase Spider",
+            "source": "MM",
+            "page": 334,
+            "url": "https://5e.tools/bestiary.html#phase%20spider_mm"
+          },
+          "candidates": [],
+          "note": null
+        },
+        "2024": {
+          "status": "matched",
+          "match_method": "normalized_exact",
+          "selected": {
+            "name": "Phase Spider",
+            "source": "XMM",
+            "page": 239,
+            "url": "https://5e.tools/bestiary.html#phase%20spider_xmm"
+          },
+          "candidates": [],
+          "note": null
+        }
+      }
+    },
+    {
+      "miniature_key": "MM/poisonous_snake.pck",
+      "release_tag": "MM",
+      "release_url": "https://github.com/francesco-bufalini/VTT/releases/tag/MM",
+      "asset_id": 610875883,
+      "asset_name": "poisonous_snake.pck",
+      "asset_url": "https://github.com/francesco-bufalini/VTT/releases/download/MM/poisonous_snake.pck",
+      "asset_digest": "sha256:636eae2bb765de78a4d47aaf88a043368ce33c814e9dfa3e3a58661edf40e4d5",
+      "normalized_name": "poisonous snake",
+      "editions": {
+        "2014": {
+          "status": "matched",
+          "match_method": "normalized_exact",
+          "selected": {
+            "name": "Poisonous Snake",
+            "source": "MM",
+            "page": 334,
+            "url": "https://5e.tools/bestiary.html#poisonous%20snake_mm"
+          },
+          "candidates": [],
+          "note": null
+        },
+        "2024": {
+          "status": "matched",
+          "match_method": "edition_rename",
+          "selected": {
+            "name": "Venomous Snake",
+            "source": "XMM",
+            "page": 372,
+            "url": "https://5e.tools/bestiary.html#venomous%20snake_xmm"
+          },
+          "candidates": [],
+          "note": null
+        }
+      }
+    },
+    {
+      "miniature_key": "MM/polar_bear.pck",
+      "release_tag": "MM",
+      "release_url": "https://github.com/francesco-bufalini/VTT/releases/tag/MM",
+      "asset_id": 610875916,
+      "asset_name": "polar_bear.pck",
+      "asset_url": "https://github.com/francesco-bufalini/VTT/releases/download/MM/polar_bear.pck",
+      "asset_digest": "sha256:079a3967aff4a8663cb8e651589cbd5b0d4428f885c4c8fde8c8584eecca6be0",
+      "normalized_name": "polar bear",
+      "editions": {
+        "2014": {
+          "status": "matched",
+          "match_method": "normalized_exact",
+          "selected": {
+            "name": "Polar Bear",
+            "source": "MM",
+            "page": 334,
+            "url": "https://5e.tools/bestiary.html#polar%20bear_mm"
+          },
+          "candidates": [],
+          "note": null
+        },
+        "2024": {
+          "status": "matched",
+          "match_method": "normalized_exact",
+          "selected": {
+            "name": "Polar Bear",
+            "source": "XMM",
+            "page": 367,
+            "url": "https://5e.tools/bestiary.html#polar%20bear_xmm"
+          },
+          "candidates": [],
+          "note": null
+        }
+      }
+    },
+    {
+      "miniature_key": "MM/polar_bear_mount.pck",
+      "release_tag": "MM",
+      "release_url": "https://github.com/francesco-bufalini/VTT/releases/tag/MM",
+      "asset_id": 610875953,
+      "asset_name": "polar_bear_mount.pck",
+      "asset_url": "https://github.com/francesco-bufalini/VTT/releases/download/MM/polar_bear_mount.pck",
+      "asset_digest": "sha256:dbc9daed3c0fb6d30405d357d481cc8294a4fcdd7fe15dac6cfeda6de51ce2c4",
+      "normalized_name": "polar bear",
+      "editions": {
+        "2014": {
+          "status": "matched",
+          "match_method": "variant_suffix_removed",
+          "selected": {
+            "name": "Polar Bear",
+            "source": "MM",
+            "page": 334,
+            "url": "https://5e.tools/bestiary.html#polar%20bear_mm"
+          },
+          "candidates": [],
+          "note": null
+        },
+        "2024": {
+          "status": "matched",
+          "match_method": "variant_suffix_removed",
+          "selected": {
+            "name": "Polar Bear",
+            "source": "XMM",
+            "page": 367,
+            "url": "https://5e.tools/bestiary.html#polar%20bear_xmm"
+          },
+          "candidates": [],
+          "note": null
+        }
+      }
+    },
+    {
+      "miniature_key": "MM/polar_bear_mount_w_mini_slot.pck",
+      "release_tag": "MM",
+      "release_url": "https://github.com/francesco-bufalini/VTT/releases/tag/MM",
+      "asset_id": 610875988,
+      "asset_name": "polar_bear_mount_w_mini_slot.pck",
+      "asset_url": "https://github.com/francesco-bufalini/VTT/releases/download/MM/polar_bear_mount_w_mini_slot.pck",
+      "asset_digest": "sha256:430a64f50659266498ee4b4feb812d7d6c537f119dc7a7e6dd7dcd648e600ebb",
+      "normalized_name": "polar bear",
+      "editions": {
+        "2014": {
+          "status": "matched",
+          "match_method": "variant_suffix_removed",
+          "selected": {
+            "name": "Polar Bear",
+            "source": "MM",
+            "page": 334,
+            "url": "https://5e.tools/bestiary.html#polar%20bear_mm"
+          },
+          "candidates": [],
+          "note": null
+        },
+        "2024": {
+          "status": "matched",
+          "match_method": "variant_suffix_removed",
+          "selected": {
+            "name": "Polar Bear",
+            "source": "XMM",
+            "page": 367,
+            "url": "https://5e.tools/bestiary.html#polar%20bear_xmm"
+          },
+          "candidates": [],
+          "note": null
+        }
+      }
+    },
+    {
+      "miniature_key": "MM/pony.pck",
+      "release_tag": "MM",
+      "release_url": "https://github.com/francesco-bufalini/VTT/releases/tag/MM",
+      "asset_id": 610876026,
+      "asset_name": "pony.pck",
+      "asset_url": "https://github.com/francesco-bufalini/VTT/releases/download/MM/pony.pck",
+      "asset_digest": "sha256:0c28d35dc5207b80bb0de97874a33dcf4fb1613f833f7b688c758151e11c2d40",
+      "normalized_name": "pony",
+      "editions": {
+        "2014": {
+          "status": "matched",
+          "match_method": "normalized_exact",
+          "selected": {
+            "name": "Pony",
+            "source": "MM",
+            "page": 335,
+            "url": "https://5e.tools/bestiary.html#pony_mm"
+          },
+          "candidates": [],
+          "note": null
+        },
+        "2024": {
+          "status": "matched",
+          "match_method": "normalized_exact",
+          "selected": {
+            "name": "Pony",
+            "source": "XMM",
+            "page": 367,
+            "url": "https://5e.tools/bestiary.html#pony_xmm"
+          },
+          "candidates": [],
+          "note": null
+        }
+      }
+    },
+    {
+      "miniature_key": "MM/pony_mount.pck",
+      "release_tag": "MM",
+      "release_url": "https://github.com/francesco-bufalini/VTT/releases/tag/MM",
+      "asset_id": 610876056,
+      "asset_name": "pony_mount.pck",
+      "asset_url": "https://github.com/francesco-bufalini/VTT/releases/download/MM/pony_mount.pck",
+      "asset_digest": "sha256:0d3ece69ba947c7bb6cb298e58ae4e032377e8fa6a55915b3d955d4f6056b375",
+      "normalized_name": "pony",
+      "editions": {
+        "2014": {
+          "status": "matched",
+          "match_method": "variant_suffix_removed",
+          "selected": {
+            "name": "Pony",
+            "source": "MM",
+            "page": 335,
+            "url": "https://5e.tools/bestiary.html#pony_mm"
+          },
+          "candidates": [],
+          "note": null
+        },
+        "2024": {
+          "status": "matched",
+          "match_method": "variant_suffix_removed",
+          "selected": {
+            "name": "Pony",
+            "source": "XMM",
+            "page": 367,
+            "url": "https://5e.tools/bestiary.html#pony_xmm"
+          },
+          "candidates": [],
+          "note": null
+        }
+      }
+    },
+    {
+      "miniature_key": "MM/pony_mount_w_mini_slot.pck",
+      "release_tag": "MM",
+      "release_url": "https://github.com/francesco-bufalini/VTT/releases/tag/MM",
+      "asset_id": 610876090,
+      "asset_name": "pony_mount_w_mini_slot.pck",
+      "asset_url": "https://github.com/francesco-bufalini/VTT/releases/download/MM/pony_mount_w_mini_slot.pck",
+      "asset_digest": "sha256:9472fb415f9cbe6b805b41125c6b315d3ec50de347b7f68586f407c02b140f7a",
+      "normalized_name": "pony",
+      "editions": {
+        "2014": {
+          "status": "matched",
+          "match_method": "variant_suffix_removed",
+          "selected": {
+            "name": "Pony",
+            "source": "MM",
+            "page": 335,
+            "url": "https://5e.tools/bestiary.html#pony_mm"
+          },
+          "candidates": [],
+          "note": null
+        },
+        "2024": {
+          "status": "matched",
+          "match_method": "variant_suffix_removed",
+          "selected": {
+            "name": "Pony",
+            "source": "XMM",
+            "page": 367,
+            "url": "https://5e.tools/bestiary.html#pony_xmm"
+          },
+          "candidates": [],
+          "note": null
+        }
+      }
+    },
+    {
+      "miniature_key": "MM/quipper.pck",
+      "release_tag": "MM",
+      "release_url": "https://github.com/francesco-bufalini/VTT/releases/tag/MM",
+      "asset_id": 610876130,
+      "asset_name": "quipper.pck",
+      "asset_url": "https://github.com/francesco-bufalini/VTT/releases/download/MM/quipper.pck",
+      "asset_digest": "sha256:149905b8623cc85ea0c9b0a9ea78ac8d4cdba07212e59a23a159b3c2ec2847bd",
+      "normalized_name": "quipper",
+      "editions": {
+        "2014": {
+          "status": "matched",
+          "match_method": "normalized_exact",
+          "selected": {
+            "name": "Quipper",
+            "source": "MM",
+            "page": 335,
+            "url": "https://5e.tools/bestiary.html#quipper_mm"
+          },
+          "candidates": [],
+          "note": null
+        },
+        "2024": {
+          "status": "matched",
+          "match_method": "edition_rename",
+          "selected": {
+            "name": "Piranha",
+            "source": "XMM",
+            "page": 366,
+            "url": "https://5e.tools/bestiary.html#piranha_xmm"
+          },
+          "candidates": [],
+          "note": null
+        }
+      }
+    },
+    {
+      "miniature_key": "MM/rat.pck",
+      "release_tag": "MM",
+      "release_url": "https://github.com/francesco-bufalini/VTT/releases/tag/MM",
+      "asset_id": 610876143,
+      "asset_name": "rat.pck",
+      "asset_url": "https://github.com/francesco-bufalini/VTT/releases/download/MM/rat.pck",
+      "asset_digest": "sha256:3ba7e279ae969c6f0f0a8a7c59f5142a40b1c5e7f2526dce11ade2d3b6e5ec0e",
+      "normalized_name": "rat",
+      "editions": {
+        "2014": {
+          "status": "matched",
+          "match_method": "normalized_exact",
+          "selected": {
+            "name": "Rat",
+            "source": "MM",
+            "page": 335,
+            "url": "https://5e.tools/bestiary.html#rat_mm"
+          },
+          "candidates": [],
+          "note": null
+        },
+        "2024": {
+          "status": "matched",
+          "match_method": "normalized_exact",
+          "selected": {
+            "name": "Rat",
+            "source": "XMM",
+            "page": 367,
+            "url": "https://5e.tools/bestiary.html#rat_xmm"
+          },
+          "candidates": [],
+          "note": null
+        }
+      }
+    },
+    {
+      "miniature_key": "MM/raven_flying.pck",
+      "release_tag": "MM",
+      "release_url": "https://github.com/francesco-bufalini/VTT/releases/tag/MM",
+      "asset_id": 610876180,
+      "asset_name": "raven_flying.pck",
+      "asset_url": "https://github.com/francesco-bufalini/VTT/releases/download/MM/raven_flying.pck",
+      "asset_digest": "sha256:7eb442f175445bd2196a4e04a4207f3f4d7592ad9a0dee0a149676746bfc4f3f",
+      "normalized_name": "raven flying",
+      "editions": {
+        "2014": {
+          "status": "matched",
+          "match_method": "visual_variant_candidate",
+          "selected": {
+            "name": "Raven",
+            "source": "MM",
+            "page": 335,
+            "url": "https://5e.tools/bestiary.html#raven_mm"
+          },
+          "candidates": [
+            {
+              "name": "Raven",
+              "source": "MM",
+              "page": 335,
+              "url": "https://5e.tools/bestiary.html#raven_mm"
+            }
+          ],
+          "note": "Associazione proposta dal nome; identità della miniatura da confermare.",
+          "confirmation": {
+            "confirmed_by": "user",
+            "confirmed_on": "2026-10-09",
+            "instruction": "Confermo tutto"
+          }
+        },
+        "2024": {
+          "status": "matched",
+          "match_method": "visual_variant_candidate",
+          "selected": {
+            "name": "Raven",
+            "source": "XMM",
+            "page": 368,
+            "url": "https://5e.tools/bestiary.html#raven_xmm"
+          },
+          "candidates": [
+            {
+              "name": "Raven",
+              "source": "XMM",
+              "page": 368,
+              "url": "https://5e.tools/bestiary.html#raven_xmm"
+            }
+          ],
+          "note": "Associazione proposta dal nome; identità della miniatura da confermare.",
+          "confirmation": {
+            "confirmed_by": "user",
+            "confirmed_on": "2026-10-09",
+            "instruction": "Confermo tutto"
+          }
+        }
+      }
+    },
+    {
+      "miniature_key": "MM/reef_shark.pck",
+      "release_tag": "MM",
+      "release_url": "https://github.com/francesco-bufalini/VTT/releases/tag/MM",
+      "asset_id": 610876203,
+      "asset_name": "reef_shark.pck",
+      "asset_url": "https://github.com/francesco-bufalini/VTT/releases/download/MM/reef_shark.pck",
+      "asset_digest": "sha256:8421a908ed60d7ca69cc49fc07628cbea7f5d4ab2cc87ad14bea22a61c43df9b",
+      "normalized_name": "reef shark",
+      "editions": {
+        "2014": {
+          "status": "matched",
+          "match_method": "normalized_exact",
+          "selected": {
+            "name": "Reef Shark",
+            "source": "MM",
+            "page": 336,
+            "url": "https://5e.tools/bestiary.html#reef%20shark_mm"
+          },
+          "candidates": [],
+          "note": null
+        },
+        "2024": {
+          "status": "matched",
+          "match_method": "normalized_exact",
+          "selected": {
+            "name": "Reef Shark",
+            "source": "XMM",
+            "page": 368,
+            "url": "https://5e.tools/bestiary.html#reef%20shark_xmm"
+          },
+          "candidates": [],
+          "note": null
+        }
+      }
+    },
+    {
+      "miniature_key": "MM/rhinoceros.pck",
+      "release_tag": "MM",
+      "release_url": "https://github.com/francesco-bufalini/VTT/releases/tag/MM",
+      "asset_id": 610876224,
+      "asset_name": "rhinoceros.pck",
+      "asset_url": "https://github.com/francesco-bufalini/VTT/releases/download/MM/rhinoceros.pck",
+      "asset_digest": "sha256:8010ddd788c03ec9daeb81e80ca765c0ae390a953966387a2a8d94b72a3a833f",
+      "normalized_name": "rhinoceros",
+      "editions": {
+        "2014": {
+          "status": "matched",
+          "match_method": "normalized_exact",
+          "selected": {
+            "name": "Rhinoceros",
+            "source": "MM",
+            "page": 336,
+            "url": "https://5e.tools/bestiary.html#rhinoceros_mm"
+          },
+          "candidates": [],
+          "note": null
+        },
+        "2024": {
+          "status": "matched",
+          "match_method": "normalized_exact",
+          "selected": {
+            "name": "Rhinoceros",
+            "source": "XMM",
+            "page": 368,
+            "url": "https://5e.tools/bestiary.html#rhinoceros_xmm"
+          },
+          "candidates": [],
+          "note": null
+        }
+      }
+    },
+    {
+      "miniature_key": "MM/riding_horse.pck",
+      "release_tag": "MM",
+      "release_url": "https://github.com/francesco-bufalini/VTT/releases/tag/MM",
+      "asset_id": 610876246,
+      "asset_name": "riding_horse.pck",
+      "asset_url": "https://github.com/francesco-bufalini/VTT/releases/download/MM/riding_horse.pck",
+      "asset_digest": "sha256:f293e72a5a6414a15c61c1a6031cab8dbb5e64bb73922a17fed5a04a8ad709cd",
+      "normalized_name": "riding horse",
+      "editions": {
+        "2014": {
+          "status": "matched",
+          "match_method": "normalized_exact",
+          "selected": {
+            "name": "Riding Horse",
+            "source": "MM",
+            "page": 336,
+            "url": "https://5e.tools/bestiary.html#riding%20horse_mm"
+          },
+          "candidates": [],
+          "note": null
+        },
+        "2024": {
+          "status": "matched",
+          "match_method": "normalized_exact",
+          "selected": {
+            "name": "Riding Horse",
+            "source": "XMM",
+            "page": 368,
+            "url": "https://5e.tools/bestiary.html#riding%20horse_xmm"
+          },
+          "candidates": [],
+          "note": null
+        }
+      }
+    },
+    {
+      "miniature_key": "MM/riding_horse_mount.pck",
+      "release_tag": "MM",
+      "release_url": "https://github.com/francesco-bufalini/VTT/releases/tag/MM",
+      "asset_id": 610876268,
+      "asset_name": "riding_horse_mount.pck",
+      "asset_url": "https://github.com/francesco-bufalini/VTT/releases/download/MM/riding_horse_mount.pck",
+      "asset_digest": "sha256:81a3b6cd62ed9cb72178f3df033e75be95d660315b94d34b44571382c5dd9ece",
+      "normalized_name": "riding horse",
+      "editions": {
+        "2014": {
+          "status": "matched",
+          "match_method": "variant_suffix_removed",
+          "selected": {
+            "name": "Riding Horse",
+            "source": "MM",
+            "page": 336,
+            "url": "https://5e.tools/bestiary.html#riding%20horse_mm"
+          },
+          "candidates": [],
+          "note": null
+        },
+        "2024": {
+          "status": "matched",
+          "match_method": "variant_suffix_removed",
+          "selected": {
+            "name": "Riding Horse",
+            "source": "XMM",
+            "page": 368,
+            "url": "https://5e.tools/bestiary.html#riding%20horse_xmm"
+          },
+          "candidates": [],
+          "note": null
+        }
+      }
+    },
+    {
+      "miniature_key": "MM/riding_horse_w_mini_slot.pck",
+      "release_tag": "MM",
+      "release_url": "https://github.com/francesco-bufalini/VTT/releases/tag/MM",
+      "asset_id": 610876297,
+      "asset_name": "riding_horse_w_mini_slot.pck",
+      "asset_url": "https://github.com/francesco-bufalini/VTT/releases/download/MM/riding_horse_w_mini_slot.pck",
+      "asset_digest": "sha256:dd828173b27276462fe7fc73334b3e66bb1cc3b8f3184d273831a05b692243b4",
+      "normalized_name": "riding horse",
+      "editions": {
+        "2014": {
+          "status": "matched",
+          "match_method": "variant_suffix_removed",
+          "selected": {
+            "name": "Riding Horse",
+            "source": "MM",
+            "page": 336,
+            "url": "https://5e.tools/bestiary.html#riding%20horse_mm"
+          },
+          "candidates": [],
+          "note": null
+        },
+        "2024": {
+          "status": "matched",
+          "match_method": "variant_suffix_removed",
+          "selected": {
+            "name": "Riding Horse",
+            "source": "XMM",
+            "page": 368,
+            "url": "https://5e.tools/bestiary.html#riding%20horse_xmm"
+          },
+          "candidates": [],
+          "note": null
+        }
+      }
+    },
+    {
+      "miniature_key": "MM/sabretooth_tiger.pck",
+      "release_tag": "MM",
+      "release_url": "https://github.com/francesco-bufalini/VTT/releases/tag/MM",
+      "asset_id": 610876326,
+      "asset_name": "sabretooth_tiger.pck",
+      "asset_url": "https://github.com/francesco-bufalini/VTT/releases/download/MM/sabretooth_tiger.pck",
+      "asset_digest": "sha256:e0ce375c37c6c916ad4ee5eaea25013fc6a51dce4377bc286cd574fe45f8362a",
+      "normalized_name": "sabretooth tiger",
+      "editions": {
+        "2014": {
+          "status": "matched",
+          "match_method": "spelling_correction",
+          "selected": {
+            "name": "Saber-Toothed Tiger",
+            "source": "MM",
+            "page": 336,
+            "url": "https://5e.tools/bestiary.html#saber-toothed%20tiger_mm"
+          },
+          "candidates": [],
+          "note": null
+        },
+        "2024": {
+          "status": "matched",
+          "match_method": "spelling_correction",
+          "selected": {
+            "name": "Saber-Toothed Tiger",
+            "source": "XMM",
+            "page": 369,
+            "url": "https://5e.tools/bestiary.html#saber-toothed%20tiger_xmm"
+          },
+          "candidates": [],
+          "note": null
+        }
+      }
+    },
+    {
+      "miniature_key": "MM/scorpion.pck",
+      "release_tag": "MM",
+      "release_url": "https://github.com/francesco-bufalini/VTT/releases/tag/MM",
+      "asset_id": 610876349,
+      "asset_name": "scorpion.pck",
+      "asset_url": "https://github.com/francesco-bufalini/VTT/releases/download/MM/scorpion.pck",
+      "asset_digest": "sha256:75fdf6072236bc0ed1ae55868192adb10c72247e5735ae20aba5b391102af926",
+      "normalized_name": "scorpion",
+      "editions": {
+        "2014": {
+          "status": "matched",
+          "match_method": "normalized_exact",
+          "selected": {
+            "name": "Scorpion",
+            "source": "MM",
+            "page": 337,
+            "url": "https://5e.tools/bestiary.html#scorpion_mm"
+          },
+          "candidates": [],
+          "note": null
+        },
+        "2024": {
+          "status": "matched",
+          "match_method": "normalized_exact",
+          "selected": {
+            "name": "Scorpion",
+            "source": "XMM",
+            "page": 369,
+            "url": "https://5e.tools/bestiary.html#scorpion_xmm"
+          },
+          "candidates": [],
+          "note": null
+        }
+      }
+    },
+    {
+      "miniature_key": "MM/seahorse.pck",
+      "release_tag": "MM",
+      "release_url": "https://github.com/francesco-bufalini/VTT/releases/tag/MM",
+      "asset_id": 610876368,
+      "asset_name": "seahorse.pck",
+      "asset_url": "https://github.com/francesco-bufalini/VTT/releases/download/MM/seahorse.pck",
+      "asset_digest": "sha256:8769b51619e916c9dc57605c7ea816d4e8afa62c0c01f3bac62777d9064bef0d",
+      "normalized_name": "seahorse",
+      "editions": {
+        "2014": {
+          "status": "matched",
+          "match_method": "normalized_exact",
+          "selected": {
+            "name": "Sea Horse",
+            "source": "MM",
+            "page": 337,
+            "url": "https://5e.tools/bestiary.html#sea%20horse_mm"
+          },
+          "candidates": [],
+          "note": null
+        },
+        "2024": {
+          "status": "matched",
+          "match_method": "normalized_exact",
+          "selected": {
+            "name": "Seahorse",
+            "source": "XMM",
+            "page": 369,
+            "url": "https://5e.tools/bestiary.html#seahorse_xmm"
+          },
+          "candidates": [],
+          "note": null
+        }
+      }
+    },
+    {
+      "miniature_key": "MM/spider.pck",
+      "release_tag": "MM",
+      "release_url": "https://github.com/francesco-bufalini/VTT/releases/tag/MM",
+      "asset_id": 610876392,
+      "asset_name": "spider.pck",
+      "asset_url": "https://github.com/francesco-bufalini/VTT/releases/download/MM/spider.pck",
+      "asset_digest": "sha256:fa904e3adbb6a476f7a878a5e83d41dfde92dffc3d39eb021e7a4caa16a79c0d",
+      "normalized_name": "spider",
+      "editions": {
+        "2014": {
+          "status": "matched",
+          "match_method": "normalized_exact",
+          "selected": {
+            "name": "Spider",
+            "source": "MM",
+            "page": 337,
+            "url": "https://5e.tools/bestiary.html#spider_mm"
+          },
+          "candidates": [],
+          "note": null
+        },
+        "2024": {
+          "status": "matched",
+          "match_method": "normalized_exact",
+          "selected": {
+            "name": "Spider",
+            "source": "XMM",
+            "page": 369,
+            "url": "https://5e.tools/bestiary.html#spider_xmm"
+          },
+          "candidates": [],
+          "note": null
+        }
+      }
+    },
+    {
+      "miniature_key": "MM/swarm_of_bats.pck",
+      "release_tag": "MM",
+      "release_url": "https://github.com/francesco-bufalini/VTT/releases/tag/MM",
+      "asset_id": 610876418,
+      "asset_name": "swarm_of_bats.pck",
+      "asset_url": "https://github.com/francesco-bufalini/VTT/releases/download/MM/swarm_of_bats.pck",
+      "asset_digest": "sha256:3a758714c46a8f397ab928eff0a8d7da08ea63190d30c7668bf22ec2b9420503",
+      "normalized_name": "swarm of bats",
+      "editions": {
+        "2014": {
+          "status": "matched",
+          "match_method": "normalized_exact",
+          "selected": {
+            "name": "Swarm of Bats",
+            "source": "MM",
+            "page": 337,
+            "url": "https://5e.tools/bestiary.html#swarm%20of%20bats_mm"
+          },
+          "candidates": [],
+          "note": null
+        },
+        "2024": {
+          "status": "matched",
+          "match_method": "normalized_exact",
+          "selected": {
+            "name": "Swarm of Bats",
+            "source": "XMM",
+            "page": 370,
+            "url": "https://5e.tools/bestiary.html#swarm%20of%20bats_xmm"
+          },
+          "candidates": [],
+          "note": null
+        }
+      }
+    },
+    {
+      "miniature_key": "MM/swarm_of_beetles.pck",
+      "release_tag": "MM",
+      "release_url": "https://github.com/francesco-bufalini/VTT/releases/tag/MM",
+      "asset_id": 610876488,
+      "asset_name": "swarm_of_beetles.pck",
+      "asset_url": "https://github.com/francesco-bufalini/VTT/releases/download/MM/swarm_of_beetles.pck",
+      "asset_digest": "sha256:036d62de82c8351594e35818f56a4e7176185185c6294d8dfaac6302b0214516",
+      "normalized_name": "swarm of beetles",
+      "editions": {
+        "2014": {
+          "status": "matched",
+          "match_method": "normalized_exact",
+          "selected": {
+            "name": "Swarm of Beetles",
+            "source": "MM",
+            "page": 338,
+            "url": "https://5e.tools/bestiary.html#swarm%20of%20beetles_mm"
+          },
+          "candidates": [],
+          "note": null
+        },
+        "2024": {
+          "status": "matched",
+          "match_method": "broader_equivalent",
+          "selected": {
+            "name": "Swarm of Insects",
+            "source": "XMM",
+            "page": 370,
+            "url": "https://5e.tools/bestiary.html#swarm%20of%20insects_xmm"
+          },
+          "candidates": [
+            {
+              "name": "Swarm of Insects",
+              "source": "XMM",
+              "page": 370,
+              "url": "https://5e.tools/bestiary.html#swarm%20of%20insects_xmm"
+            }
+          ],
+          "note": "La voce specifica non compare in XMM; proposta la categoria più ampia.",
+          "confirmation": {
+            "confirmed_by": "user",
+            "confirmed_on": "2026-10-09",
+            "instruction": "Confermo tutto"
+          }
+        }
+      }
+    },
+    {
+      "miniature_key": "MM/swarm_of_centipedes.pck",
+      "release_tag": "MM",
+      "release_url": "https://github.com/francesco-bufalini/VTT/releases/tag/MM",
+      "asset_id": 610876507,
+      "asset_name": "swarm_of_centipedes.pck",
+      "asset_url": "https://github.com/francesco-bufalini/VTT/releases/download/MM/swarm_of_centipedes.pck",
+      "asset_digest": "sha256:6d24c9fa1b2be8a28eb5f86374da22391c0c2bbd8d17bd9eceba84588e71e720",
+      "normalized_name": "swarm of centipedes",
+      "editions": {
+        "2014": {
+          "status": "matched",
+          "match_method": "normalized_exact",
+          "selected": {
+            "name": "Swarm of Centipedes",
+            "source": "MM",
+            "page": 338,
+            "url": "https://5e.tools/bestiary.html#swarm%20of%20centipedes_mm"
+          },
+          "candidates": [],
+          "note": null
+        },
+        "2024": {
+          "status": "matched",
+          "match_method": "broader_equivalent",
+          "selected": {
+            "name": "Swarm of Insects",
+            "source": "XMM",
+            "page": 370,
+            "url": "https://5e.tools/bestiary.html#swarm%20of%20insects_xmm"
+          },
+          "candidates": [
+            {
+              "name": "Swarm of Insects",
+              "source": "XMM",
+              "page": 370,
+              "url": "https://5e.tools/bestiary.html#swarm%20of%20insects_xmm"
+            }
+          ],
+          "note": "La voce specifica non compare in XMM; proposta la categoria più ampia.",
+          "confirmation": {
+            "confirmed_by": "user",
+            "confirmed_on": "2026-10-09",
+            "instruction": "Confermo tutto"
+          }
+        }
+      }
+    },
+    {
+      "miniature_key": "MM/swarm_of_insects.pck",
+      "release_tag": "MM",
+      "release_url": "https://github.com/francesco-bufalini/VTT/releases/tag/MM",
+      "asset_id": 610876525,
+      "asset_name": "swarm_of_insects.pck",
+      "asset_url": "https://github.com/francesco-bufalini/VTT/releases/download/MM/swarm_of_insects.pck",
+      "asset_digest": "sha256:e478019b71111317022275bb8db1caa2827acf77f65ba6755b32b656c8f16a34",
+      "normalized_name": "swarm of insects",
+      "editions": {
+        "2014": {
+          "status": "matched",
+          "match_method": "normalized_exact",
+          "selected": {
+            "name": "Swarm of Insects",
+            "source": "MM",
+            "page": 338,
+            "url": "https://5e.tools/bestiary.html#swarm%20of%20insects_mm"
+          },
+          "candidates": [],
+          "note": null
+        },
+        "2024": {
+          "status": "matched",
+          "match_method": "normalized_exact",
+          "selected": {
+            "name": "Swarm of Insects",
+            "source": "XMM",
+            "page": 370,
+            "url": "https://5e.tools/bestiary.html#swarm%20of%20insects_xmm"
+          },
+          "candidates": [],
+          "note": null
+        }
+      }
+    },
+    {
+      "miniature_key": "MM/swarm_of_posionous_snakes.pck",
+      "release_tag": "MM",
+      "release_url": "https://github.com/francesco-bufalini/VTT/releases/tag/MM",
+      "asset_id": 610876543,
+      "asset_name": "swarm_of_posionous_snakes.pck",
+      "asset_url": "https://github.com/francesco-bufalini/VTT/releases/download/MM/swarm_of_posionous_snakes.pck",
+      "asset_digest": "sha256:75fa3faa4b3538c25600351c2bce2ffba128a7059f6fb643790941215b591db6",
+      "normalized_name": "swarm of posionous snakes",
+      "editions": {
+        "2014": {
+          "status": "matched",
+          "match_method": "spelling_correction",
+          "selected": {
+            "name": "Swarm of Poisonous Snakes",
+            "source": "MM",
+            "page": 338,
+            "url": "https://5e.tools/bestiary.html#swarm%20of%20poisonous%20snakes_mm"
+          },
+          "candidates": [],
+          "note": null
+        },
+        "2024": {
+          "status": "matched",
+          "match_method": "edition_rename",
+          "selected": {
+            "name": "Swarm of Venomous Snakes",
+            "source": "XMM",
+            "page": 371,
+            "url": "https://5e.tools/bestiary.html#swarm%20of%20venomous%20snakes_xmm"
+          },
+          "candidates": [],
+          "note": null
+        }
+      }
+    },
+    {
+      "miniature_key": "MM/swarm_of_quippers.pck",
+      "release_tag": "MM",
+      "release_url": "https://github.com/francesco-bufalini/VTT/releases/tag/MM",
+      "asset_id": 610876551,
+      "asset_name": "swarm_of_quippers.pck",
+      "asset_url": "https://github.com/francesco-bufalini/VTT/releases/download/MM/swarm_of_quippers.pck",
+      "asset_digest": "sha256:e2ac7c577d241eb41bb4f966a26a70ade5549c416d1df18333f46ff8b6dacda3",
+      "normalized_name": "swarm of quippers",
+      "editions": {
+        "2014": {
+          "status": "matched",
+          "match_method": "normalized_exact",
+          "selected": {
+            "name": "Swarm of Quippers",
+            "source": "MM",
+            "page": 338,
+            "url": "https://5e.tools/bestiary.html#swarm%20of%20quippers_mm"
+          },
+          "candidates": [],
+          "note": null
+        },
+        "2024": {
+          "status": "matched",
+          "match_method": "edition_rename",
+          "selected": {
+            "name": "Swarm of Piranhas",
+            "source": "XMM",
+            "page": 370,
+            "url": "https://5e.tools/bestiary.html#swarm%20of%20piranhas_xmm"
+          },
+          "candidates": [],
+          "note": null
+        }
+      }
+    },
+    {
+      "miniature_key": "MM/swarm_of_rats.pck",
+      "release_tag": "MM",
+      "release_url": "https://github.com/francesco-bufalini/VTT/releases/tag/MM",
+      "asset_id": 610876581,
+      "asset_name": "swarm_of_rats.pck",
+      "asset_url": "https://github.com/francesco-bufalini/VTT/releases/download/MM/swarm_of_rats.pck",
+      "asset_digest": "sha256:ec2bcd1b410f64a5eba8b71801c97620520f9b5f795da1f1f72e129783ff6376",
+      "normalized_name": "swarm of rats",
+      "editions": {
+        "2014": {
+          "status": "matched",
+          "match_method": "normalized_exact",
+          "selected": {
+            "name": "Swarm of Rats",
+            "source": "MM",
+            "page": 339,
+            "url": "https://5e.tools/bestiary.html#swarm%20of%20rats_mm"
+          },
+          "candidates": [],
+          "note": null
+        },
+        "2024": {
+          "status": "matched",
+          "match_method": "normalized_exact",
+          "selected": {
+            "name": "Swarm of Rats",
+            "source": "XMM",
+            "page": 370,
+            "url": "https://5e.tools/bestiary.html#swarm%20of%20rats_xmm"
+          },
+          "candidates": [],
+          "note": null
+        }
+      }
+    },
+    {
+      "miniature_key": "MM/swarm_of_ravens.pck",
+      "release_tag": "MM",
+      "release_url": "https://github.com/francesco-bufalini/VTT/releases/tag/MM",
+      "asset_id": 610876636,
+      "asset_name": "swarm_of_ravens.pck",
+      "asset_url": "https://github.com/francesco-bufalini/VTT/releases/download/MM/swarm_of_ravens.pck",
+      "asset_digest": "sha256:66fc19f68e3b5f853815708b6d0ac3a6fd943818a2b5a34ad3cc9917fa6961cd",
+      "normalized_name": "swarm of ravens",
+      "editions": {
+        "2014": {
+          "status": "matched",
+          "match_method": "normalized_exact",
+          "selected": {
+            "name": "Swarm of Ravens",
+            "source": "MM",
+            "page": 339,
+            "url": "https://5e.tools/bestiary.html#swarm%20of%20ravens_mm"
+          },
+          "candidates": [],
+          "note": null
+        },
+        "2024": {
+          "status": "matched",
+          "match_method": "normalized_exact",
+          "selected": {
+            "name": "Swarm of Ravens",
+            "source": "XMM",
+            "page": 371,
+            "url": "https://5e.tools/bestiary.html#swarm%20of%20ravens_xmm"
+          },
+          "candidates": [],
+          "note": null
+        }
+      }
+    },
+    {
+      "miniature_key": "MM/swarm_of_spiders.pck",
+      "release_tag": "MM",
+      "release_url": "https://github.com/francesco-bufalini/VTT/releases/tag/MM",
+      "asset_id": 610876658,
+      "asset_name": "swarm_of_spiders.pck",
+      "asset_url": "https://github.com/francesco-bufalini/VTT/releases/download/MM/swarm_of_spiders.pck",
+      "asset_digest": "sha256:b46e66faada4e8e1773bc3a502e3b07f3248f8da55e01e8e4c4992b40cdf2672",
+      "normalized_name": "swarm of spiders",
+      "editions": {
+        "2014": {
+          "status": "matched",
+          "match_method": "normalized_exact",
+          "selected": {
+            "name": "Swarm of Spiders",
+            "source": "MM",
+            "page": 338,
+            "url": "https://5e.tools/bestiary.html#swarm%20of%20spiders_mm"
+          },
+          "candidates": [],
+          "note": null
+        },
+        "2024": {
+          "status": "matched",
+          "match_method": "broader_equivalent",
+          "selected": {
+            "name": "Swarm of Insects",
+            "source": "XMM",
+            "page": 370,
+            "url": "https://5e.tools/bestiary.html#swarm%20of%20insects_xmm"
+          },
+          "candidates": [
+            {
+              "name": "Swarm of Insects",
+              "source": "XMM",
+              "page": 370,
+              "url": "https://5e.tools/bestiary.html#swarm%20of%20insects_xmm"
+            }
+          ],
+          "note": "La voce specifica non compare in XMM; proposta la categoria più ampia.",
+          "confirmation": {
+            "confirmed_by": "user",
+            "confirmed_on": "2026-10-09",
+            "instruction": "Confermo tutto"
+          }
+        }
+      }
+    },
+    {
+      "miniature_key": "MM/tiger.pck",
+      "release_tag": "MM",
+      "release_url": "https://github.com/francesco-bufalini/VTT/releases/tag/MM",
+      "asset_id": 610876680,
+      "asset_name": "tiger.pck",
+      "asset_url": "https://github.com/francesco-bufalini/VTT/releases/download/MM/tiger.pck",
+      "asset_digest": "sha256:0129c092db329f69d58bf1f87eb94585e2fafd709b02b66af32b942f6b5c70ea",
+      "normalized_name": "tiger",
+      "editions": {
+        "2014": {
+          "status": "matched",
+          "match_method": "normalized_exact",
+          "selected": {
+            "name": "Tiger",
+            "source": "MM",
+            "page": 339,
+            "url": "https://5e.tools/bestiary.html#tiger_mm"
+          },
+          "candidates": [],
+          "note": null
+        },
+        "2024": {
+          "status": "matched",
+          "match_method": "normalized_exact",
+          "selected": {
+            "name": "Tiger",
+            "source": "XMM",
+            "page": 371,
+            "url": "https://5e.tools/bestiary.html#tiger_xmm"
+          },
+          "candidates": [],
+          "note": null
+        }
+      }
+    },
+    {
+      "miniature_key": "MM/vulture.pck",
+      "release_tag": "MM",
+      "release_url": "https://github.com/francesco-bufalini/VTT/releases/tag/MM",
+      "asset_id": 610876692,
+      "asset_name": "vulture.pck",
+      "asset_url": "https://github.com/francesco-bufalini/VTT/releases/download/MM/vulture.pck",
+      "asset_digest": "sha256:d2ef08d2d0cdaff1c49634d4b5b43361ee4429b9235014e2501be458a4057b4c",
+      "normalized_name": "vulture",
+      "editions": {
+        "2014": {
+          "status": "matched",
+          "match_method": "normalized_exact",
+          "selected": {
+            "name": "Vulture",
+            "source": "MM",
+            "page": 339,
+            "url": "https://5e.tools/bestiary.html#vulture_mm"
+          },
+          "candidates": [],
+          "note": null
+        },
+        "2024": {
+          "status": "matched",
+          "match_method": "normalized_exact",
+          "selected": {
+            "name": "Vulture",
+            "source": "XMM",
+            "page": 372,
+            "url": "https://5e.tools/bestiary.html#vulture_xmm"
+          },
+          "candidates": [],
+          "note": null
+        }
+      }
+    },
+    {
+      "miniature_key": "MM/warhorse.pck",
+      "release_tag": "MM",
+      "release_url": "https://github.com/francesco-bufalini/VTT/releases/tag/MM",
+      "asset_id": 610876732,
+      "asset_name": "warhorse.pck",
+      "asset_url": "https://github.com/francesco-bufalini/VTT/releases/download/MM/warhorse.pck",
+      "asset_digest": "sha256:9470dcce6a63c34bfa0efba1bb1e3bb3e30636801fa8c9e09675e80697208df7",
+      "normalized_name": "warhorse",
+      "editions": {
+        "2014": {
+          "status": "matched",
+          "match_method": "normalized_exact",
+          "selected": {
+            "name": "Warhorse",
+            "source": "MM",
+            "page": 340,
+            "url": "https://5e.tools/bestiary.html#warhorse_mm"
+          },
+          "candidates": [],
+          "note": null
+        },
+        "2024": {
+          "status": "matched",
+          "match_method": "normalized_exact",
+          "selected": {
+            "name": "Warhorse",
+            "source": "XMM",
+            "page": 373,
+            "url": "https://5e.tools/bestiary.html#warhorse_xmm"
+          },
+          "candidates": [],
+          "note": null
+        }
+      }
+    },
+    {
+      "miniature_key": "MM/warhorse_mount.pck",
+      "release_tag": "MM",
+      "release_url": "https://github.com/francesco-bufalini/VTT/releases/tag/MM",
+      "asset_id": 610876744,
+      "asset_name": "warhorse_mount.pck",
+      "asset_url": "https://github.com/francesco-bufalini/VTT/releases/download/MM/warhorse_mount.pck",
+      "asset_digest": "sha256:8e786a3d85d7dfc59a961ebe2c78d8bbbca8867d8b86a83f86ab0166746f6b1d",
+      "normalized_name": "warhorse",
+      "editions": {
+        "2014": {
+          "status": "matched",
+          "match_method": "variant_suffix_removed",
+          "selected": {
+            "name": "Warhorse",
+            "source": "MM",
+            "page": 340,
+            "url": "https://5e.tools/bestiary.html#warhorse_mm"
+          },
+          "candidates": [],
+          "note": null
+        },
+        "2024": {
+          "status": "matched",
+          "match_method": "variant_suffix_removed",
+          "selected": {
+            "name": "Warhorse",
+            "source": "XMM",
+            "page": 373,
+            "url": "https://5e.tools/bestiary.html#warhorse_xmm"
+          },
+          "candidates": [],
+          "note": null
+        }
+      }
+    },
+    {
+      "miniature_key": "MM/warhorse_w_mini_slot.pck",
+      "release_tag": "MM",
+      "release_url": "https://github.com/francesco-bufalini/VTT/releases/tag/MM",
+      "asset_id": 610876767,
+      "asset_name": "warhorse_w_mini_slot.pck",
+      "asset_url": "https://github.com/francesco-bufalini/VTT/releases/download/MM/warhorse_w_mini_slot.pck",
+      "asset_digest": "sha256:34d2dc0c46f5c990b7b7ed56ed654bb9d5b086eb202b549864cb39dec6de376e",
+      "normalized_name": "warhorse",
+      "editions": {
+        "2014": {
+          "status": "matched",
+          "match_method": "variant_suffix_removed",
+          "selected": {
+            "name": "Warhorse",
+            "source": "MM",
+            "page": 340,
+            "url": "https://5e.tools/bestiary.html#warhorse_mm"
+          },
+          "candidates": [],
+          "note": null
+        },
+        "2024": {
+          "status": "matched",
+          "match_method": "variant_suffix_removed",
+          "selected": {
+            "name": "Warhorse",
+            "source": "XMM",
+            "page": 373,
+            "url": "https://5e.tools/bestiary.html#warhorse_xmm"
+          },
+          "candidates": [],
+          "note": null
+        }
+      }
+    },
+    {
+      "miniature_key": "MM/weasel.pck",
+      "release_tag": "MM",
+      "release_url": "https://github.com/francesco-bufalini/VTT/releases/tag/MM",
+      "asset_id": 610876793,
+      "asset_name": "weasel.pck",
+      "asset_url": "https://github.com/francesco-bufalini/VTT/releases/download/MM/weasel.pck",
+      "asset_digest": "sha256:b2e97294a62d19f533bd9bf634767f4e0f725c5d3cfc97ac47cea5cd0c266bd7",
+      "normalized_name": "weasel",
+      "editions": {
+        "2014": {
+          "status": "matched",
+          "match_method": "normalized_exact",
+          "selected": {
+            "name": "Weasel",
+            "source": "MM",
+            "page": 340,
+            "url": "https://5e.tools/bestiary.html#weasel_mm"
+          },
+          "candidates": [],
+          "note": null
+        },
+        "2024": {
+          "status": "matched",
+          "match_method": "normalized_exact",
+          "selected": {
+            "name": "Weasel",
+            "source": "XMM",
+            "page": 372,
+            "url": "https://5e.tools/bestiary.html#weasel_xmm"
+          },
+          "candidates": [],
+          "note": null
+        }
+      }
+    },
+    {
+      "miniature_key": "MM/winter_wolf.pck",
+      "release_tag": "MM",
+      "release_url": "https://github.com/francesco-bufalini/VTT/releases/tag/MM",
+      "asset_id": 610876809,
+      "asset_name": "winter_wolf.pck",
+      "asset_url": "https://github.com/francesco-bufalini/VTT/releases/download/MM/winter_wolf.pck",
+      "asset_digest": "sha256:8a37ab343fbae53ea9ad45d5676e04adad8116cd644cdc21a1e0263970f39f71",
+      "normalized_name": "winter wolf",
+      "editions": {
+        "2014": {
+          "status": "matched",
+          "match_method": "normalized_exact",
+          "selected": {
+            "name": "Winter Wolf",
+            "source": "MM",
+            "page": 340,
+            "url": "https://5e.tools/bestiary.html#winter%20wolf_mm"
+          },
+          "candidates": [],
+          "note": null
+        },
+        "2024": {
+          "status": "matched",
+          "match_method": "normalized_exact",
+          "selected": {
+            "name": "Winter Wolf",
+            "source": "XMM",
+            "page": 334,
+            "url": "https://5e.tools/bestiary.html#winter%20wolf_xmm"
+          },
+          "candidates": [],
+          "note": null
+        }
+      }
+    },
+    {
+      "miniature_key": "MM/wolf.pck",
+      "release_tag": "MM",
+      "release_url": "https://github.com/francesco-bufalini/VTT/releases/tag/MM",
+      "asset_id": 610876853,
+      "asset_name": "wolf.pck",
+      "asset_url": "https://github.com/francesco-bufalini/VTT/releases/download/MM/wolf.pck",
+      "asset_digest": "sha256:d4e6a9002f1d915a97c598504ee0b1d076b2f4408d8a1586d3e2a96f54a7c798",
+      "normalized_name": "wolf",
+      "editions": {
+        "2014": {
+          "status": "matched",
+          "match_method": "normalized_exact",
+          "selected": {
+            "name": "Wolf",
+            "source": "MM",
+            "page": 341,
+            "url": "https://5e.tools/bestiary.html#wolf_mm"
+          },
+          "candidates": [],
+          "note": null
+        },
+        "2024": {
+          "status": "matched",
+          "match_method": "normalized_exact",
+          "selected": {
+            "name": "Wolf",
+            "source": "XMM",
+            "page": 373,
+            "url": "https://5e.tools/bestiary.html#wolf_xmm"
+          },
+          "candidates": [],
+          "note": null
+        }
+      }
+    },
+    {
+      "miniature_key": "MM/worg.pck",
+      "release_tag": "MM",
+      "release_url": "https://github.com/francesco-bufalini/VTT/releases/tag/MM",
+      "asset_id": 610876906,
+      "asset_name": "worg.pck",
+      "asset_url": "https://github.com/francesco-bufalini/VTT/releases/download/MM/worg.pck",
+      "asset_digest": "sha256:c9cbf0def844e873ffc1ccce906b84990237346689830b2331fa679a145d63c4",
+      "normalized_name": "worg",
+      "editions": {
+        "2014": {
+          "status": "matched",
+          "match_method": "normalized_exact",
+          "selected": {
+            "name": "Worg",
+            "source": "MM",
+            "page": 341,
+            "url": "https://5e.tools/bestiary.html#worg_mm"
+          },
+          "candidates": [],
+          "note": null
+        },
+        "2024": {
+          "status": "matched",
+          "match_method": "normalized_exact",
+          "selected": {
+            "name": "Worg",
+            "source": "XMM",
+            "page": 335,
+            "url": "https://5e.tools/bestiary.html#worg_xmm"
+          },
+          "candidates": [],
+          "note": null
+        }
+      }
+    },
+    {
+      "miniature_key": "MM/worg_mount.pck",
+      "release_tag": "MM",
+      "release_url": "https://github.com/francesco-bufalini/VTT/releases/tag/MM",
+      "asset_id": 610876941,
+      "asset_name": "worg_mount.pck",
+      "asset_url": "https://github.com/francesco-bufalini/VTT/releases/download/MM/worg_mount.pck",
+      "asset_digest": "sha256:934a28b26ddbb6ee307b2e1d5ea3342eb97d4772696ade6306f56cfdea893241",
+      "normalized_name": "worg",
+      "editions": {
+        "2014": {
+          "status": "matched",
+          "match_method": "variant_suffix_removed",
+          "selected": {
+            "name": "Worg",
+            "source": "MM",
+            "page": 341,
+            "url": "https://5e.tools/bestiary.html#worg_mm"
+          },
+          "candidates": [],
+          "note": null
+        },
+        "2024": {
+          "status": "matched",
+          "match_method": "variant_suffix_removed",
+          "selected": {
+            "name": "Worg",
+            "source": "XMM",
+            "page": 335,
+            "url": "https://5e.tools/bestiary.html#worg_xmm"
+          },
+          "candidates": [],
+          "note": null
+        }
+      }
+    },
+    {
+      "miniature_key": "token-packs-test-001/pegasus_updated.pck",
+      "release_tag": "token-packs-test-001",
+      "release_url": "https://github.com/francesco-bufalini/VTT/releases/tag/token-packs-test-001",
+      "asset_id": 610553770,
+      "asset_name": "pegasus_updated.pck",
+      "asset_url": "https://github.com/francesco-bufalini/VTT/releases/download/token-packs-test-001/pegasus_updated.pck",
+      "asset_digest": "sha256:15d8784dad618bd8ee68a09ef35d0d79d0d75baa245bd1b698deb95d4501eea2",
+      "normalized_name": "pegasus",
+      "editions": {
+        "2014": {
+          "status": "matched",
+          "match_method": "variant_suffix_removed",
+          "selected": {
+            "name": "Pegasus",
+            "source": "MM",
+            "page": 250,
+            "url": "https://5e.tools/bestiary.html#pegasus_mm"
+          },
+          "candidates": [],
+          "note": null
+        },
+        "2024": {
+          "status": "matched",
+          "match_method": "variant_suffix_removed",
+          "selected": {
+            "name": "Pegasus",
+            "source": "XMM",
+            "page": 235,
+            "url": "https://5e.tools/bestiary.html#pegasus_xmm"
+          },
+          "candidates": [],
+          "note": null
+        }
+      }
+    },
+    {
+      "miniature_key": "characters/gilliam.pck",
+      "release_tag": "characters",
+      "release_url": "https://github.com/francesco-bufalini/VTT/releases/tag/characters",
+      "asset_id": 610668371,
+      "asset_name": "gilliam.pck",
+      "asset_url": "https://github.com/francesco-bufalini/VTT/releases/download/characters/gilliam.pck",
+      "asset_digest": "sha256:3ef24387c7322eb7163b9eed555a867c0e75845d1886e1dd11e014a5166f23cc",
+      "normalized_name": "gilliam",
+      "editions": {
+        "2014": {
+          "status": "unmatched",
+          "match_method": null,
+          "selected": null,
+          "candidates": [],
+          "note": "Nessuna corrispondenza nel Monster Manual di questa edizione."
+        },
+        "2024": {
+          "status": "unmatched",
+          "match_method": null,
+          "selected": null,
+          "candidates": [],
+          "note": "Nessuna corrispondenza nel Monster Manual di questa edizione."
+        }
+      }
+    },
+    {
+      "miniature_key": "characters/kaos.pck",
+      "release_tag": "characters",
+      "release_url": "https://github.com/francesco-bufalini/VTT/releases/tag/characters",
+      "asset_id": 610668515,
+      "asset_name": "kaos.pck",
+      "asset_url": "https://github.com/francesco-bufalini/VTT/releases/download/characters/kaos.pck",
+      "asset_digest": "sha256:580ac9379000060d5138ee0165d1b1adcba1c4abd0890ee0c25fd7a9539a7239",
+      "normalized_name": "kaos",
+      "editions": {
+        "2014": {
+          "status": "unmatched",
+          "match_method": null,
+          "selected": null,
+          "candidates": [],
+          "note": "Nessuna corrispondenza nel Monster Manual di questa edizione."
+        },
+        "2024": {
+          "status": "unmatched",
+          "match_method": null,
+          "selected": null,
+          "candidates": [],
+          "note": "Nessuna corrispondenza nel Monster Manual di questa edizione."
+        }
+      }
+    },
+    {
+      "miniature_key": "characters/kryss.pck",
+      "release_tag": "characters",
+      "release_url": "https://github.com/francesco-bufalini/VTT/releases/tag/characters",
+      "asset_id": 610668797,
+      "asset_name": "kryss.pck",
+      "asset_url": "https://github.com/francesco-bufalini/VTT/releases/download/characters/kryss.pck",
+      "asset_digest": "sha256:8af2c506f722acc85fe0abfc6ed7e5719c7d38ff92c4bc8a1f78a3735052506a",
+      "normalized_name": "kryss",
+      "editions": {
+        "2014": {
+          "status": "unmatched",
+          "match_method": null,
+          "selected": null,
+          "candidates": [],
+          "note": "Nessuna corrispondenza nel Monster Manual di questa edizione."
+        },
+        "2024": {
+          "status": "unmatched",
+          "match_method": null,
+          "selected": null,
+          "candidates": [],
+          "note": "Nessuna corrispondenza nel Monster Manual di questa edizione."
+        }
+      }
+    },
+    {
+      "miniature_key": "characters/phenax.pck",
+      "release_tag": "characters",
+      "release_url": "https://github.com/francesco-bufalini/VTT/releases/tag/characters",
+      "asset_id": 610668933,
+      "asset_name": "phenax.pck",
+      "asset_url": "https://github.com/francesco-bufalini/VTT/releases/download/characters/phenax.pck",
+      "asset_digest": "sha256:baf45c991100a146adbf35450a201c8fe5fa92d1035244dfc268a35df2145d00",
+      "normalized_name": "phenax",
+      "editions": {
+        "2014": {
+          "status": "unmatched",
+          "match_method": null,
+          "selected": null,
+          "candidates": [],
+          "note": "Nessuna corrispondenza nel Monster Manual di questa edizione."
+        },
+        "2024": {
+          "status": "unmatched",
+          "match_method": null,
+          "selected": null,
+          "candidates": [],
+          "note": "Nessuna corrispondenza nel Monster Manual di questa edizione."
+        }
+      }
+    },
+    {
+      "miniature_key": "characters/sariel.pck",
+      "release_tag": "characters",
+      "release_url": "https://github.com/francesco-bufalini/VTT/releases/tag/characters",
+      "asset_id": 610669054,
+      "asset_name": "sariel.pck",
+      "asset_url": "https://github.com/francesco-bufalini/VTT/releases/download/characters/sariel.pck",
+      "asset_digest": "sha256:51ce6c04b4b03e55017bf1d3c43ab04e242878035f2b8cf822d5f27a4c33601f",
+      "normalized_name": "sariel",
+      "editions": {
+        "2014": {
+          "status": "unmatched",
+          "match_method": null,
+          "selected": null,
+          "candidates": [],
+          "note": "Nessuna corrispondenza nel Monster Manual di questa edizione."
+        },
+        "2024": {
+          "status": "unmatched",
+          "match_method": null,
+          "selected": null,
+          "candidates": [],
+          "note": "Nessuna corrispondenza nel Monster Manual di questa edizione."
+        }
+      }
+    },
+    {
+      "miniature_key": "characters/valandir.pck",
+      "release_tag": "characters",
+      "release_url": "https://github.com/francesco-bufalini/VTT/releases/tag/characters",
+      "asset_id": 610669450,
+      "asset_name": "valandir.pck",
+      "asset_url": "https://github.com/francesco-bufalini/VTT/releases/download/characters/valandir.pck",
+      "asset_digest": "sha256:d40e83eae6dca1148a50c66c88635077e24ef193ccf4abb61b1438e304785d25",
+      "normalized_name": "valandir",
+      "editions": {
+        "2014": {
+          "status": "unmatched",
+          "match_method": null,
+          "selected": null,
+          "candidates": [],
+          "note": "Nessuna corrispondenza nel Monster Manual di questa edizione."
+        },
+        "2024": {
+          "status": "unmatched",
+          "match_method": null,
+          "selected": null,
+          "candidates": [],
+          "note": "Nessuna corrispondenza nel Monster Manual di questa edizione."
+        }
+      }
+    },
+    {
+      "miniature_key": "characters/wilfred.pck",
+      "release_tag": "characters",
+      "release_url": "https://github.com/francesco-bufalini/VTT/releases/tag/characters",
+      "asset_id": 610669167,
+      "asset_name": "wilfred.pck",
+      "asset_url": "https://github.com/francesco-bufalini/VTT/releases/download/characters/wilfred.pck",
+      "asset_digest": "sha256:e647b1fbe3b883ed5c4f7afce1aeade01a4e0081c593a0b5cb09e497676da1ff",
+      "normalized_name": "wilfred",
+      "editions": {
+        "2014": {
+          "status": "unmatched",
+          "match_method": null,
+          "selected": null,
+          "candidates": [],
+          "note": "Nessuna corrispondenza nel Monster Manual di questa edizione."
+        },
+        "2024": {
+          "status": "unmatched",
+          "match_method": null,
+          "selected": null,
+          "candidates": [],
+          "note": "Nessuna corrispondenza nel Monster Manual di questa edizione."
+        }
+      }
+    },
+    {
+      "miniature_key": "characters/wyrda.pck",
+      "release_tag": "characters",
+      "release_url": "https://github.com/francesco-bufalini/VTT/releases/tag/characters",
+      "asset_id": 610669360,
+      "asset_name": "wyrda.pck",
+      "asset_url": "https://github.com/francesco-bufalini/VTT/releases/download/characters/wyrda.pck",
+      "asset_digest": "sha256:6f18c39126175730dacf5c587a38e59c4e5182502801bc73b1a61ead1c358f5f",
+      "normalized_name": "wyrda",
+      "editions": {
+        "2014": {
+          "status": "unmatched",
+          "match_method": null,
+          "selected": null,
+          "candidates": [],
+          "note": "Nessuna corrispondenza nel Monster Manual di questa edizione."
+        },
+        "2024": {
+          "status": "unmatched",
+          "match_method": null,
+          "selected": null,
+          "candidates": [],
+          "note": "Nessuna corrispondenza nel Monster Manual di questa edizione."
+        }
+      }
+    }
+  ]
+}

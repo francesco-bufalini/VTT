@@ -61,6 +61,10 @@ const CONDITION_DEFINITIONS := [
 @onready var facing_marker: Node3D = $FacingMarker
 @onready var vision_cone: Node3D = $VisionCone
 
+var _top_down_token_enabled: bool = false
+var _top_down_token_url: String = ""
+var _top_down_token_sprite: Sprite3D
+
 var _selected: bool = false
 var _gravity: float = 9.8
 var _footprint_cells: float = 1.0
@@ -104,6 +108,8 @@ const MAX_TRANSFORMATION_HISTORY := 16
 
 
 func _ready() -> void:
+	_token_pack_manager().bestiary_texture_ready.connect(_on_bestiary_texture_ready)
+	call_deferred("_sync_top_down_token_with_board")
 	add_to_group("dnd_token")
 	platform_floor_layers = 1
 	platform_on_leave = CharacterBody3D.PLATFORM_ON_LEAVE_DO_NOTHING
@@ -436,6 +442,7 @@ func set_visual_asset(
 
 	visual_asset_path = requested_path
 	_loaded_visual_asset_path = requested_path
+	call_deferred("_refresh_top_down_token")
 	_apply_imported_visual_front()
 	_position_imported_visual()
 	return true
@@ -676,6 +683,7 @@ func _clear_imported_visual() -> void:
 	visuals.remove_child(current)
 	current.queue_free()
 	_loaded_visual_asset_path = ""
+	call_deferred("_refresh_top_down_token")
 	_imported_visual_base_basis = Basis.IDENTITY
 	_visual_native_footprint_cells = 1.0
 	_rig_type = "static"
@@ -857,6 +865,7 @@ func set_token_size(footprint_cells: float) -> void:
 	_position_imported_visual()
 	_update_overlay_position()
 	_update_condition_rings()
+	_refresh_top_down_token_geometry()
 
 
 func _ensure_token_id() -> void:
@@ -882,6 +891,8 @@ func get_token_id() -> String:
 
 func set_token_pack_id(value: String) -> void:
 	token_pack_id = value.strip_edges().left(96)
+	if is_node_ready():
+		call_deferred("_refresh_top_down_token")
 
 
 func get_token_pack_id() -> String:
@@ -1334,7 +1345,10 @@ func _update_overlay_position() -> void:
 	var top_y := token_height_cells * cell_size * 0.5
 	# Keep the token name slightly higher so the compact tactical badge can sit
 	# directly underneath it while remaining fully above the miniature.
-	_overlay_root.position = Vector3(0.0, top_y + 0.38 * cell_size, 0.0)
+	var label_offset_z: float = 0.0
+	if _top_down_token_sprite != null and _top_down_token_sprite.visible:
+		label_offset_z = -(_footprint_cells * 0.5 + 0.25) * cell_size
+	_overlay_root.position = Vector3(0.0, top_y + 0.38 * cell_size, label_offset_z)
 	if is_instance_valid(_name_label):
 		# Label3D con fixed_size=false: la sua dimensione e' in unita' del
 		# mondo, quindi si comporta come il token e si rimpicciolisce con la
@@ -1979,3 +1993,71 @@ func _is_supported_token_visual_path(path: String) -> bool:
 			and clean.ends_with("_visual.res")
 		)
 	return false
+
+
+func get_miniature_identity() -> String:
+	return _token_pack_manager().miniature_identity(token_pack_id, get_visual_asset_path())
+
+
+func _sync_top_down_token_with_board() -> void:
+	var ancestor := get_parent()
+	while ancestor != null:
+		if ancestor.has_method("is_2d_view_enabled"):
+			set_top_down_token_enabled(bool(ancestor.call("is_2d_view_enabled")))
+			return
+		ancestor = ancestor.get_parent()
+
+
+func set_top_down_token_enabled(enabled: bool) -> void:
+	_top_down_token_enabled = enabled
+	_refresh_top_down_token()
+
+
+func _refresh_top_down_token() -> void:
+	if not is_node_ready():
+		return
+	_top_down_token_url = _token_pack_manager().get_bestiary_token_url(get_miniature_identity())
+	if _top_down_token_sprite != null:
+		_top_down_token_sprite.visible = false
+	_update_overlay_position()
+	if not _top_down_token_enabled or _top_down_token_url.is_empty():
+		return
+	var texture: Texture2D = _token_pack_manager().get_bestiary_texture(_top_down_token_url)
+	if texture != null:
+		_show_top_down_token(texture)
+	else:
+		_token_pack_manager().request_bestiary_texture(_top_down_token_url)
+
+
+func _on_bestiary_texture_ready(url: String, texture: Texture2D) -> void:
+	# A late request must not attach the previous appearance to a transformed token.
+	if _top_down_token_enabled and url == _top_down_token_url:
+		_show_top_down_token(texture)
+
+
+func _show_top_down_token(texture: Texture2D) -> void:
+	if _top_down_token_sprite == null:
+		_top_down_token_sprite = Sprite3D.new()
+		_top_down_token_sprite.name = "TopDownTokenHat"
+		_top_down_token_sprite.rotation.x = -PI * 0.5
+		_top_down_token_sprite.shaded = false
+		_top_down_token_sprite.double_sided = true
+		_top_down_token_sprite.cast_shadow = GeometryInstance3D.SHADOW_CASTING_SETTING_OFF
+		add_child(_top_down_token_sprite)
+	_top_down_token_sprite.texture = texture
+	_top_down_token_sprite.visible = true
+	_refresh_top_down_token_geometry()
+	_update_overlay_position()
+
+
+func _refresh_top_down_token_geometry() -> void:
+	if _top_down_token_sprite == null or _top_down_token_sprite.texture == null:
+		return
+	var pixels: float = maxf(_top_down_token_sprite.texture.get_width(), _top_down_token_sprite.texture.get_height())
+	_top_down_token_sprite.pixel_size = _footprint_cells * cell_size / maxf(pixels, 1.0)
+	# Keep the miniature and its physics intact; the image sits above its top.
+	_top_down_token_sprite.position.y = token_height_cells * cell_size * 0.5 + cell_size * 0.08
+
+
+func _token_pack_manager() -> Node:
+	return get_node("/root/TokenPackManager")
