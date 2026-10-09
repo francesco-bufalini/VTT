@@ -1549,8 +1549,8 @@ func _on_spellcasting_updated(values: Dictionary) -> void:
 		return
 	for key: String in [
 		"spells", "prepared_spells", "spellbook_spells",
-		"spell_slots_total", "spell_slots_spent",
-		"pact_slots_total", "pact_slots_spent", "pact_slot_level"
+		"spell_slots_total", "spell_slots_bonus", "spell_slots_spent",
+		"pact_slots_total", "pact_slots_bonus", "pact_slots_spent", "pact_slot_level"
 	]:
 		if values.has(key):
 			record[key] = values[key]
