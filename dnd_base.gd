@@ -41,6 +41,7 @@ const CONTEXT_TOGGLE_CONDITION_VISUALS := 38
 const CONTEXT_AUTO_SYNC := 40
 const CONTEXT_BESTIARY_2024 := 41
 const CONTEXT_BESTIARY_2014 := 42
+const CONTEXT_REPOSITION_SELECTED := 43
 const CONTEXT_CREATURE_AREA := 100
 const CONTEXT_ADD_CREATURE := 101
 const CAMPAIGN_EDITOR_SCENE_PATH := "res://vtt/editor/campaign_editor.tscn"
@@ -94,6 +95,10 @@ var _pending_spawn_position: Vector3 = Vector3.ZERO
 var _has_pending_spawn_position: bool = false
 var _pending_spawn_support: Node3D = null
 var _pending_spawn_on_grid_surface: bool = false
+var _context_reposition_position := Vector3.ZERO
+var _context_reposition_valid := false
+var _context_reposition_air := false
+var _context_reposition_support: Node3D
 var _sheet_spawn_picking: bool = false
 var _sheet_spawn_record: Dictionary = {}
 var _creature_spawn_sheet_id: String = ""
@@ -1929,6 +1934,97 @@ func _set_pending_spawn_from_screen(screen_position: Vector2) -> bool:
 	return true
 
 
+func _prepare_context_reposition(screen_position: Vector2) -> void:
+	_context_reposition_valid = false
+	_context_reposition_air = false
+	_context_reposition_support = null
+	_clean_selection()
+	if _selected_tokens.size() != 1:
+		return
+	var token: CharacterBody3D = _selected_tokens[0]
+	if token == null or not is_instance_valid(token):
+		return
+	if _has_pending_spawn_position:
+		_context_reposition_position = _pending_spawn_position
+		_context_reposition_support = _pending_spawn_support
+		_context_reposition_valid = true
+		return
+	# Empty space: 2D targets the selected floor plane; 3D targets the
+	# actual ray depth of the selected token, preserving free-flight support.
+	var ray_origin: Vector3 = camera.project_ray_origin(screen_position)
+	var direction: Vector3 = camera.project_ray_normal(screen_position)
+	var token_cell: float = maxf(float(token.get("cell_size")), 0.001)
+	var half_height: float = maxf(
+		float(token.get("token_height_cells")), 0.1
+	) * token_cell * 0.5
+	var point: Vector3 = token.global_position
+	if _view_2d_enabled and absf(direction.y) > 0.0001:
+		var target_y: float = token.global_position.y - half_height
+		if camera.has_method("get_top_down_level"):
+			target_y = float(camera.call("get_top_down_level"))
+		var distance: float = (target_y - ray_origin.y) / direction.y
+		if distance <= 0.0 or distance > camera.far:
+			return
+		point = ray_origin + direction * distance
+	else:
+		var distance: float = maxf(
+			0.1, (token.global_position - ray_origin).dot(direction)
+		)
+		if distance > camera.far:
+			return
+		point = ray_origin + direction * distance
+		point.y = snappedf(point.y - half_height, cell_size)
+	_context_reposition_position = point
+	_context_reposition_valid = true
+	_context_reposition_air = true
+
+
+func _reposition_selected_at_context() -> void:
+	_clean_selection()
+	if not _context_reposition_valid or _selected_tokens.size() != 1:
+		return
+	var token: CharacterBody3D = _selected_tokens[0]
+	if token == null or not is_instance_valid(token):
+		return
+	var token_cell: float = maxf(float(token.get("cell_size")), 0.001)
+	var height: float = maxf(float(token.get("token_height_cells")), 0.1)
+	var target: Vector3 = _context_reposition_position
+	push_undo_state()
+	token.global_position = Vector3(
+		target.x, target.y + height * token_cell * 0.5, target.z
+	)
+	if token.has_method("snap_horizontal_to_grid"):
+		token.call("snap_horizontal_to_grid")
+	if (
+		volumetric_grid != null
+		and volumetric_grid.has_method("get_clear_spawn_floor_for_footprint")
+	):
+		var floor_y: float = float(volumetric_grid.call(
+			"get_clear_spawn_floor_for_footprint",
+			token.global_position,
+			float(token.call("get_footprint_cells")),
+			height, target.y
+		))
+		token.global_position.y = floor_y + height * token_cell * 0.5
+	if _context_reposition_air:
+		if token.has_method("set_flying"):
+			token.call("set_flying", true)
+		token.set("grid_support", null)
+	else:
+		token.set("grid_support", _context_reposition_support)
+		if (
+			_context_reposition_support != null
+			and is_instance_valid(_context_reposition_support)
+		):
+			token.set(
+				"_support_transform",
+				_context_reposition_support.global_transform
+			)
+	_replace_selection(token)
+	_context_reposition_valid = false
+	call_deferred("_sync_explicit_token_change", token)
+
+
 func _unhandled_input(event: InputEvent) -> void:
 	if (
 		_map_edit_layer_active
@@ -2925,6 +3021,7 @@ func _show_context_menu(screen_position: Vector2) -> void:
 				_context_token = token_target as CharacterBody3D
 
 	_set_pending_spawn_from_screen(screen_position)
+	_prepare_context_reposition(screen_position)
 
 	context_menu.clear()
 	_prepare_context_submenus()
@@ -2951,6 +3048,10 @@ func _show_context_menu(screen_position: Vector2) -> void:
 			context_token_menu.add_separator()
 
 		if _selected_tokens.size() == 1:
+			if _context_reposition_valid:
+				context_token_menu.add_item(
+					"Riposiziona token qui", CONTEXT_REPOSITION_SELECTED
+				)
 			context_token_menu.add_item("Modifica token…", CONTEXT_TOKEN_DETAILS)
 			var selected_token: CharacterBody3D = _selected_tokens[0]
 			if (
@@ -3124,6 +3225,11 @@ func _on_context_menu_id_pressed(id: int) -> void:
 		context_menu.hide()
 		if master_area != null and is_instance_valid(master_area):
 			master_area.call_deferred("show_panel")
+		return
+
+	if id == CONTEXT_REPOSITION_SELECTED:
+		_reposition_selected_at_context()
+		_close_context_menu_to_game()
 		return
 
 	if id == CONTEXT_TOKEN_DETAILS:
