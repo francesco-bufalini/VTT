@@ -61,6 +61,17 @@ func run() -> void:
 	area._link_selected_token()
 	assert(token.get_meta("creature_id") == original_id and token.has_condition("poisoned"))
 	assert(token.get_appearance_state().visual_asset == appearance.visual_asset)
+	# "Edit token" and "Edit sheet" now open and update the same record.
+	assert(area.open_for_token(token))
+	assert(area._current().id == original_id)
+	area._name.text = "Renamed adventurer"
+	area._save()
+	assert(token.get_display_name() == "Renamed adventurer")
+	token.set_conditions(["blinded"])
+	area.sync_linked_token_editor(token)
+	assert("blinded" in area._current().conditions)
+	assert(not ("poisoned" in area._current().conditions))
+	area.hide_panel()
 	token.push_transformation_state()
 	token.set_size_category("Large", 2.0)
 	assert(area._current().id == original_id and token.get_meta("creature_id") == original_id)
