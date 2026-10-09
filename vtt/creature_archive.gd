@@ -73,6 +73,34 @@ func save(record: Dictionary) -> Error:
 	return ERR_INVALID_PARAMETER
 
 
+func delete(record: Dictionary) -> Error:
+	# Delete only the locally owned sheet. Source bestiary entries are immutable.
+	var kind := String(record.get("kind", ""))
+	var id := String(record.get("id", "")).strip_edges()
+	if id.is_empty() or kind not in ["character", "monster"]:
+		return ERR_INVALID_PARAMETER
+	if not CreatureOwner.is_owner(record):
+		return ERR_UNAUTHORIZED
+	var persisted := _stored(kind, id)
+	if persisted.is_empty():
+		return ERR_DOES_NOT_EXIST
+	if not CreatureOwner.is_owner(persisted):
+		return ERR_UNAUTHORIZED
+	if kind == "monster":
+		var monsters: Array[Dictionary] = _monsters.list_creatures()
+		for index: int in range(monsters.size()):
+			if String(monsters[index].get("id", "")) == id:
+				monsters.remove_at(index)
+				return _monsters.save_creatures(monsters)
+	else:
+		var characters: Array[Dictionary] = _characters.list_characters()
+		for index: int in range(characters.size()):
+			if String(characters[index].get("id", "")) == id:
+				characters.remove_at(index)
+				return _characters.save_characters(characters)
+	return ERR_DOES_NOT_EXIST
+
+
 func relinquish(record: Dictionary, new_owner: String) -> Dictionary:
 	# The transfer is a code, not a multiplayer board snapshot: other
 	# participants never receive the private sheet from automatic map sync.

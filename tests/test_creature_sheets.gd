@@ -5,6 +5,7 @@ const PlayerStore = preload("res://vtt/player_character_store.gd")
 const MonsterStore = preload("res://vtt/master_creature_store.gd")
 const Archive = preload("res://vtt/creature_archive.gd")
 const Owner = preload("res://vtt/creature_owner.gd")
+const Player5eTools = preload("res://vtt/player_5etools_catalog.gd")
 
 
 class FakeCampaign extends Node:
@@ -68,6 +69,23 @@ func run() -> void:
 	assert(slots.size() == 3)
 	assert(slots[0].maximum == 4 and slots[1].maximum == 3)
 	assert(slots[2].maximum == 2)
+	# Editions are alternatives for a class, not separate entries for each book.
+	for edition: String in ["2014", "2024"]:
+		var class_names: Dictionary = {}
+		for choice: Dictionary in Player5eTools.class_choices(edition):
+			var key := String(choice.get("name", "")).to_lower()
+			if String(choice.get("origin", "")) != "homebrew":
+				assert(not class_names.has(key), "Official class duplicated in %s: %s" % [edition, key])
+				class_names[key] = choice.get("source", "")
+		assert(class_names.get("wizard") == ("PHB" if edition == "2014" else "XPHB"))
+		assert(class_names.get("artificer") == ("TCE" if edition == "2014" else "EFA"))
+	# Supplemental books contribute source-qualified features to a base class.
+	var tce_feature_found := false
+	for feature: Dictionary in Player5eTools.entries("class_features"):
+		if String(feature.get("class_name", "")) == "Barbarian" and String(feature.get("class_source", "")) == "PHB" and String(feature.get("source", "")) == "TCE":
+			tce_feature_found = true
+			break
+	assert(tce_feature_found, "TCE optional class features must remain available for PHB classes")
 	var player := PlayerStore.new()
 	var character: Dictionary = player.normalize_character(player.create_character())
 	assert(character.owner_id == Owner.local_id())
@@ -84,6 +102,7 @@ func run() -> void:
 	# Authorization is enforced before mutation, independently of role.
 	character["owner_id"] = "external_player_id_0123456789"
 	assert(archive.save(character) == ERR_UNAUTHORIZED)
+	assert(archive.delete(character) == ERR_UNAUTHORIZED)
 	# Disk-level migration / compatibility uses the original store layouts.
 	var incoming: Dictionary = archive.relinquish(
 		creature, "external_player_id_0123456789"
@@ -110,6 +129,22 @@ func run() -> void:
 	assert(archive.list_owned().size() >= 1)
 	# The receiving side cannot import another user's transfer code.
 	assert(archive.import_transfer(incoming) == ERR_UNAUTHORIZED)
+
+	# Removal persists, is idempotent, and cannot remove a sheet owned by
+	# another installation or accidentally wipe unrelated records.
+	var doomed: Dictionary = player.create_character()
+	doomed["kind"] = "character"
+	assert(archive.save(doomed) == OK)
+	assert(archive.delete(doomed) == OK)
+	assert(archive.delete(doomed) == ERR_DOES_NOT_EXIST)
+	var removed_found := false
+	var retained_found := false
+	for sheet: Dictionary in archive.list_owned():
+		removed_found = removed_found or String(sheet.get("id", "")) == String(doomed.id)
+		retained_found = retained_found or String(sheet.get("id", "")) == String(returned.creature.id)
+	assert(not removed_found and retained_found)
+	assert(archive.delete(returned.creature) == OK)
+	assert(archive.delete(returned.creature) == ERR_DOES_NOT_EXIST)
 
 	var folder := ProjectSettings.globalize_path("user://master_creatures")
 	var filename := folder.path_join("campaign_test_creature_sheet_temp.json")

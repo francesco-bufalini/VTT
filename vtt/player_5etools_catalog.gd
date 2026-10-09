@@ -59,6 +59,51 @@ static func entries(category: String) -> Array[Dictionary]:
 	return ContentCatalog.merge(category, result)
 
 
+# One selectable class per name and rules edition. Supplements contribute
+# features to a class; they do not create new character classes.
+# Homebrew classes retain their own IDs and are not merged by display name.
+static func class_choices(rules_version: String = "2014") -> Array[Dictionary]:
+	var chosen: Dictionary = {}
+	var priorities: Dictionary = {}
+	for entry: Dictionary in entries("classes"):
+		var name := String(entry.get("name", "")).strip_edges()
+		if name.is_empty():
+			continue
+		var key := name.to_lower()
+		if String(entry.get("origin", "")) == "homebrew":
+			key = "homebrew:" + String(entry.get("id", ""))
+		var priority := _class_source_priority(String(entry.get("source", "")), rules_version)
+		if not chosen.has(key) or priority > int(priorities[key]):
+			chosen[key] = entry
+			priorities[key] = priority
+	var result: Array[Dictionary] = []
+	for selected: Variant in chosen.values():
+		result.append((selected as Dictionary).duplicate(true))
+	result.sort_custom(
+		func(a: Dictionary, b: Dictionary) -> bool:
+			return String(a.get("name", "")).naturalnocasecmp_to(
+				String(b.get("name", ""))
+			) < 0
+	)
+	return result
+
+
+static func _class_source_priority(source: String, rules_version: String) -> int:
+	if rules_version == "2024":
+		match source:
+			"XPHB": return 100
+			"EFA": return 95
+			"PHB": return 40
+			"TCE": return 35
+	else:
+		match source:
+			"PHB": return 100
+			"TCE": return 95
+			"XPHB": return 40
+			"EFA": return 35
+	return 10
+
+
 static func search(
 	category: String,
 	query: String = "",
