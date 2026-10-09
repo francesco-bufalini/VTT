@@ -28,8 +28,8 @@ func run() -> void:
 
 	var tracker: Node = InitiativeTracker.new()
 	board.add_child(tracker)
-	tracker.board_root = board
-	tracker.tokens_root = tokens
+	tracker.set("board_root", board)
+	tracker.set("tokens_root", tokens)
 	var linked := _make_token(tokens, "Aria", "creature-aria")
 	var unlinked := _make_token(tokens, "Token libero", "")
 	_make_token(tokens, "Borin", "creature-borin")
@@ -45,7 +45,8 @@ func run() -> void:
 	assert((tracker.call("_creature_candidates") as Array).size() == 2)
 
 	# Already enrolled creatures disappear from the chooser.
-	tracker.entries.append({
+	var enrolled: Array = tracker.get("entries")
+	enrolled.append({
 		"id": "initiative_1",
 		"name": "Aria",
 		"token_id": linked.get_token_id(),
@@ -60,28 +61,30 @@ func run() -> void:
 	var state: Dictionary = {
 		"version": 1,
 		"active": true,
-		"entries": tracker.entries.duplicate(true),
+		"entries": (tracker.get("entries") as Array).duplicate(true),
 		"active_index": 0,
 		"round": 1,
 		"turn_count": 0,
 		"next_entry_id": 2
 	}
-	assert(tracker.valid_state(state))
-	assert(tracker.load_state(state))
+	assert(bool(tracker.call("valid_state", state)))
+	assert(bool(tracker.call("load_state", state)))
+	var restored: Dictionary = tracker.call("get_save_state")
+	var restored_entries: Array = restored.get("entries", [])
 	assert(
-		String(tracker.get_save_state().entries[1].get("creature_id", ""))
+		String((restored_entries[1] as Dictionary).get("creature_id", ""))
 		== "creature-aria"
 	)
 
 	var invalid: Dictionary = state.duplicate(true)
 	invalid.entries[0]["token_id"] = ""
-	assert(not tracker.valid_state(invalid))
+	assert(not bool(tracker.call("valid_state", invalid)))
 
 	# Legacy snapshots without creature IDs are still accepted.
 	var legacy: Dictionary = state.duplicate(true)
 	legacy.entries[0].erase("creature_id")
 	legacy.entries[0].erase("creature_owner_id")
-	assert(tracker.valid_state(legacy))
+	assert(bool(tracker.call("valid_state", legacy)))
 
 	assert(unlinked != null)
 	board.free()
