@@ -4,6 +4,7 @@ const ContentCatalog = preload("res://vtt/content_catalog.gd")
 const GeneratedCatalog = preload(
 	"res://vtt/spells/spell_catalog_5etools.gd"
 )
+const PHB2014 = preload("res://vtt/spells/spell_catalog_phb_2014.gd")
 const SpellAreaCatalog = preload(
 	"res://vtt/spells/spell_area_catalog.gd"
 )
@@ -1245,6 +1246,16 @@ static func is_runtime_usable(spell_data: Dictionary) -> bool:
 
 
 static func catalog_spell(spell_id: String) -> Dictionary:
+	if PHB2014.SPELLS.has(spell_id):
+		# The VTT keeps spell runtime animations from the corresponding
+		# existing entry, while the edition-specific rules text, levels,
+		# range, components, and classes come from the PHB (2014).
+		var legacy: Dictionary = (PHB2014.SPELLS[spell_id] as Dictionary).duplicate(true)
+		var base_id := String(legacy.get("original_id", ""))
+		var base: Dictionary = catalog_spell(base_id) if not base_id.is_empty() else {}
+		for field: Variant in legacy.keys():
+			base[field] = legacy[field]
+		return _apply_runtime_overrides(base)
 	for row: Dictionary in ContentCatalog.home_entries("spells"):
 		if String(row.id) == spell_id or String(row.get("overrides", "")) == spell_id:
 			var custom := row.duplicate(true)
@@ -1339,6 +1350,34 @@ static func all_spells() -> Array[Dictionary]:
 				_apply_runtime_overrides(value as Dictionary)
 			)
 
+	result.sort_custom(
+		func(a: Dictionary, b: Dictionary) -> bool:
+			return String(a.get("name", "")).naturalnocasecmp_to(
+				String(b.get("name", ""))
+			) < 0
+	)
+	return result
+
+
+# The 2024 edition keeps the ordinary generated XPHB spell catalogue.
+# For 2014, restore PHB versions of core spells rather than simply hiding
+# XPHB and losing hundreds of otherwise missing spells. Supplemental
+# publications (XGE, TCE, etc.) remain available in either ruleset.
+static func all_spells_for_rules(edition: String = "2024") -> Array[Dictionary]:
+	var merged: Array[Dictionary] = all_spells()
+	if edition != "2014":
+		return merged
+	var result: Array[Dictionary] = []
+	for entry: Dictionary in merged:
+		var source := String(entry.get("source", "")).to_upper()
+		if source in ["XPHB", "EFA", "PHB"]:
+			continue
+		result.append(entry)
+	for value: Variant in PHB2014.SPELLS.values():
+		if not value is Dictionary:
+			continue
+		var legacy: Dictionary = value as Dictionary
+		result.append(catalog_spell(String(legacy.get("id", ""))))
 	result.sort_custom(
 		func(a: Dictionary, b: Dictionary) -> bool:
 			return String(a.get("name", "")).naturalnocasecmp_to(
