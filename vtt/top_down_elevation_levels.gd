@@ -126,9 +126,11 @@ func get_visible_square_surface(
 	# started *below* it, so hovering over an exposed upper deck still
 	# reported the deck underneath after changing camera floors.
 	#
-	# A small upward tolerance covers collision/voxel alignment without
-	# selecting geometry on a genuinely higher (clipped) floor.
-	var epsilon: float = maxf(cell_size * 0.12, 0.025)
+	# Physics/voxel faces may be offset by up to half a tactical cell
+	# from the selected camera level. Sample them before looking below;
+	# otherwise the probe can skip the visible floor and report -1 square.
+	# Do not admit the next full floor (+1 cell) into this camera slice.
+	var epsilon: float = maxf(cell_size * 0.55, 0.025)
 	var candidates: Array[float] = _surface_heights_at(
 		square_x,
 		square_z,
