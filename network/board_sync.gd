@@ -1141,13 +1141,18 @@ func valid_snapshot(snapshot: Variant) -> bool:
 
 func _valid_mount_links(snapshot: Dictionary, token_ids: Dictionary) -> bool:
 	var item_ids: Dictionary = {}
+	var item_drivers: Dictionary = {}
 	for value: Variant in snapshot.get("items", []):
 		if value is Dictionary:
-			item_ids[String(value.get("id", ""))] = true
+			var item_id := String(value.get("id", ""))
+			item_ids[item_id] = true
+			item_drivers[item_id] = String(value.get("linked_token_id", ""))
 	var parents: Dictionary = {}
 	for value: Variant in snapshot.get("objects", []):
 		if not value is Dictionary or not value.has("mount_target_id"):
 			continue
+		if String(value.get("kind", "")) != "token":
+			return false
 		var token_id := String(value.get("id", ""))
 		var target_id := String(value.get("mount_target_id", ""))
 		var target_kind := String(value.get("mount_target_kind", ""))
@@ -1156,6 +1161,9 @@ func _valid_mount_links(snapshot: Dictionary, token_ids: Dictionary) -> bool:
 				return false
 			parents[token_id] = target_id
 		elif not item_ids.has(target_id):
+			return false
+		elif String(item_drivers.get(target_id, "")) == token_id:
+			# An item must not be simultaneously pulled by its own rider.
 			return false
 	for rider_id: Variant in parents.keys():
 		var checked: Dictionary = {}
