@@ -235,6 +235,16 @@ func _accept_received_snapshot(snapshot: Dictionary) -> void:
 
 
 func _replay_sync_event(sync_event: Dictionary) -> void:
+	if String(sync_event.get("type", "")) == "creature_transfer":
+		var area_name := (
+			"MasterArea"
+			if String(sync_event.get("area", "")) == "master"
+			else "PlayerArea"
+		)
+		var area := board_root.get_node_or_null(area_name)
+		if area != null and area.has_method("receive_creature_transfer"):
+			area.call("receive_creature_transfer", sync_event)
+		return
 	if (
 		board_root != null
 		and is_instance_valid(board_root)
@@ -1570,6 +1580,12 @@ func _serialize_node(node: Node3D, group_name: String) -> Dictionary:
 			if node.has_method("get_party_id")
 			else String(node.get_meta("party_id", ""))
 		)
+		for field: String in [
+			"creature_id", "creature_owner_id", "default_miniature_id",
+			"master_creature_id", "master_creature_name", "master_creature_side"
+		]:
+			if node.has_meta(field):
+				data[field] = String(node.get_meta(field))
 		if node.has_meta("player_character_id"):
 			data["player_character_id"] = String(
 				node.get_meta("player_character_id")
@@ -1765,6 +1781,15 @@ func _apply_node_data(node: Node3D, data: Dictionary) -> void:
 				"player_character_name",
 				String(data.get("player_character_name", ""))
 			)
+		for field: String in [
+			"creature_id", "creature_owner_id", "default_miniature_id",
+			"master_creature_id", "master_creature_name", "master_creature_side"
+		]:
+			var value := String(data.get(field, "")).strip_edges()
+			if not value.is_empty():
+				node.set_meta(field, value)
+			elif node.has_meta(field):
+				node.remove_meta(field)
 		if node.has_method("set_conditions"):
 			node.call("set_conditions", data.get("conditions", []))
 		if apply_shared_appearance and node.has_method(
