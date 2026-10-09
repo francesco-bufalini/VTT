@@ -63,6 +63,7 @@ var _ability_spins: Dictionary = {}
 var _ability_bonus_spins: Dictionary = {}
 var _ability_modifier_labels: Dictionary = {}
 var _species: OptionButton
+var _subclass_name: OptionButton
 var _class_name: OptionButton
 var _add_class_button: Button
 var _rules_edition: OptionButton
@@ -585,7 +586,10 @@ func _build_ui() -> void:
 	_class_name = _reference_option(
 		classes_row, Player5eTools.class_choices(), false
 	)
-	_class_name.item_selected.connect(func(_i: int) -> void: _refresh_multiclass_availability())
+	_class_name.item_selected.connect(func(_i: int) -> void: _on_class_choice_changed())
+	_add_label(classes_row, "Sottoclasse")
+	_subclass_name = _reference_option(classes_row, [], false)
+	_subclass_name.item_selected.connect(func(_i: int) -> void: _save())
 	_add_label(classes_row, "Livello classe base / GS")
 	_level = SpinBox.new()
 	_level.min_value = 1
@@ -1283,6 +1287,34 @@ func _selected_rules_version() -> String:
 	return "2024" if _rules_edition.selected == 1 else "2014"
 
 
+func _subclass_choices(class_ref: Dictionary) -> Array[Dictionary]:
+	var result: Array[Dictionary] = []
+	var wanted: String = String(class_ref.get("name", ""))
+	var source: String = String(class_ref.get("source", ""))
+	if wanted.is_empty():
+		return result
+	for entry: Dictionary in Player5eTools.entries("subclasses"):
+		if String(entry.get("class_name", entry.get("className", ""))).nocasecmp_to(wanted) != 0:
+			continue
+		var parent_source: String = String(entry.get("class_source", entry.get("classSource", "")))
+		if not parent_source.is_empty() and parent_source != source:
+			continue
+		result.append(entry)
+	return result
+
+
+func _refresh_subclass_option(option: OptionButton, class_ref: Dictionary) -> void:
+	var old: Dictionary = _reference_entry(option)
+	_set_reference_choices(option, _subclass_choices(class_ref), false)
+	_select_reference(option, String(old.get("name", "")), String(old.get("source", "")), String(old.get("id", "")))
+
+
+func _on_class_choice_changed() -> void:
+	_refresh_multiclass_availability()
+	_refresh_subclass_option(_subclass_name, _reference_entry(_class_name))
+	_save()
+
+
 func _refresh_multiclass_availability() -> void:
 	if _add_class_button != null:
 		_add_class_button.disabled = _class_name.selected <= 0
@@ -1293,11 +1325,13 @@ func _refresh_class_choices() -> void:
 	var choices := Player5eTools.class_choices(_selected_rules_version())
 	_set_reference_choices(_class_name, choices, false)
 	_select_reference(_class_name, String(primary.get("name", "")), String(primary.get("source", "")), String(primary.get("id", "")))
+	_refresh_subclass_option(_subclass_name, _reference_entry(_class_name))
 	for definition: Dictionary in _multiclass_controls:
 		var option: OptionButton = definition["selector"]
 		var old := _reference_entry(option)
 		_set_reference_choices(option, choices, false)
 		_select_reference(option, String(old.get("name", "")), String(old.get("source", "")), String(old.get("id", "")))
+		_refresh_subclass_option(definition["subclass"], _reference_entry(option))
 
 
 func _on_rules_edition_changed(_index: int) -> void:
@@ -1320,6 +1354,9 @@ func _add_multiclass_row(
 	_multiclass_rows.add_child(row)
 	var selector := _reference_option(row, Player5eTools.class_choices(_selected_rules_version()), false)
 	_select_reference(selector, class_value, source, reference_id)
+	selector.item_selected.connect(func(_i: int) -> void: _on_secondary_class_changed(row))
+	var subclass := _reference_option(row, _subclass_choices(_reference_entry(selector)), false)
+	subclass.item_selected.connect(func(_i: int) -> void: _save())
 	var level := SpinBox.new()
 	level.min_value = 1
 	level.max_value = 20
@@ -1332,7 +1369,7 @@ func _add_multiclass_row(
 	var remove := Button.new()
 	remove.text = "×"
 	row.add_child(remove)
-	var definition := {"row": row, "selector": selector, "level": level}
+	var definition := {"row": row, "selector": selector, "subclass": subclass, "level": level}
 	_multiclass_controls.append(definition)
 	remove.pressed.connect(
 		func() -> void:
@@ -1342,6 +1379,14 @@ func _add_multiclass_row(
 			_save()
 	)
 	_save()
+
+
+func _on_secondary_class_changed(row: HBoxContainer) -> void:
+	for definition: Dictionary in _multiclass_controls:
+		if definition["row"] == row:
+			_refresh_subclass_option(definition["subclass"], _reference_entry(definition["selector"]))
+			_save()
+			return
 
 
 func _clear_multiclass() -> void:
@@ -1515,6 +1560,8 @@ func _load_form(record: Dictionary) -> void:
 	else:
 		_select_reference(_class_name, String(record.get("class", "")), class_source, String(record.get("class_id", "")))
 	_refresh_multiclass_availability()
+	_refresh_subclass_option(_subclass_name, _reference_entry(_class_name))
+	_select_reference(_subclass_name, String(record.get("subclass", "")), String(record.get("subclass_source", "")), String(record.get("subclass_id", "")))
 	_clear_multiclass()
 	var classes_value: Variant = record.get("classes", [])
 	if classes_value is Array:
@@ -1527,6 +1574,8 @@ func _load_form(record: Dictionary) -> void:
 					String(class_value.get("source", "")),
 					String(class_value.get("id", ""))
 				)
+				var last: Dictionary = _multiclass_controls.back()
+				_select_reference(last["subclass"], String(class_value.get("subclass", "")), String(class_value.get("subclass_source", "")), String(class_value.get("subclass_id", "")))
 	# Existing sheets store the primary class at classes[0]; older sheets
 	# with no class rows retain the legacy total-level fallback.
 	var primary_level: int = int(record.get("level", 1))
@@ -1664,7 +1713,10 @@ func _save() -> void:
 				"name": String(extra_ref.get("name", "")),
 				"source": String(extra_ref.get("source", "")),
 				"id": String(extra_ref.get("id", "")),
-				"level": extra_level
+				"level": extra_level,
+				"subclass": String(extra_subclass.get("name", "")),
+				"subclass_source": String(extra_subclass.get("source", "")),
+				"subclass_id": String(extra_subclass.get("id", ""))
 			})
 			additional_levels += extra_level
 		record["classes"] = monster_classes
@@ -1678,6 +1730,10 @@ func _save() -> void:
 		record["species_source"] = String(species.get("source", ""))
 		record["class"] = String(class_ref.get("name", ""))
 		record["class_source"] = String(class_ref.get("source", ""))
+		var primary_subclass: Dictionary = _reference_entry(_subclass_name)
+		record["subclass"] = String(primary_subclass.get("name", ""))
+		record["subclass_source"] = String(primary_subclass.get("source", ""))
+		record["subclass_id"] = String(primary_subclass.get("id", ""))
 		record["rules_version"] = _selected_rules_version()
 		var primary_level: int = clampi(int(_level.value), 1, 20)
 		var classes: Array[Dictionary] = []
@@ -1692,6 +1748,7 @@ func _save() -> void:
 			if extra_name.is_empty():
 				continue
 			var extra_level := int((definition["level"] as SpinBox).value)
+			var extra_subclass: Dictionary = _reference_entry(definition["subclass"])
 			extras_level += extra_level
 			classes.append({
 				"name": extra_name,
@@ -1710,7 +1767,10 @@ func _save() -> void:
 				"name": record["class"],
 				"source": record["class_source"],
 				"id": record["class_id"],
-				"level": primary_level
+				"level": primary_level,
+				"subclass": record["subclass"],
+				"subclass_source": record["subclass_source"],
+				"subclass_id": record["subclass_id"]
 			})
 		record["classes"] = classes
 	var error: Error = _archive.save(record)
