@@ -73,6 +73,7 @@ var _subclass_name: OptionButton
 var _class_name: OptionButton
 var _add_class_button: Button
 var _rules_edition: OptionButton
+var _rules_edition_caption: Label
 var _multiclass_rows: VBoxContainer
 var _multiclass_controls: Array[Dictionary] = []
 var _level: SpinBox
@@ -465,6 +466,19 @@ func _build_ui() -> void:
 	var name_row := HBoxContainer.new()
 	name_row.add_theme_constant_override("separation", 5)
 	form.add_child(name_row)
+	_rules_edition_caption = Label.new()
+	_rules_edition_caption.text = "Regole"
+	_rules_edition_caption.tooltip_text = "Edizione delle regole del personaggio"
+	name_row.add_child(_rules_edition_caption)
+	_rules_edition = OptionButton.new()
+	_rules_edition.fit_to_longest_item = false
+	_rules_edition.custom_minimum_size = Vector2(76, 30)
+	_rules_edition.size_flags_horizontal = Control.SIZE_SHRINK_BEGIN
+	_rules_edition.add_item("2014")
+	_rules_edition.add_item("2024")
+	_rules_edition.select(0)
+	_rules_edition.item_selected.connect(_on_rules_edition_changed)
+	name_row.add_child(_rules_edition)
 	_add_label(name_row, "Nome")
 	_name = LineEdit.new()
 	_name.size_flags_horizontal = Control.SIZE_EXPAND_FILL
@@ -585,20 +599,6 @@ func _build_ui() -> void:
 	form.add_child(classes_row)
 	_add_label(classes_row, "Razza / Specie")
 	_species = _reference_option(classes_row, Player5eTools.entries("races"))
-	var edition_caption := Label.new()
-	edition_caption.text = "Ed."
-	edition_caption.modulate = Color(0.68, 0.72, 0.76)
-	edition_caption.add_theme_font_size_override("font_size", 11)
-	classes_row.add_child(edition_caption)
-	_rules_edition = OptionButton.new()
-	_rules_edition.fit_to_longest_item = false
-	_rules_edition.custom_minimum_size = Vector2(72, 26)
-	_rules_edition.size_flags_horizontal = Control.SIZE_SHRINK_BEGIN
-	_rules_edition.add_theme_font_size_override("font_size", 11)
-	_rules_edition.add_item("2014")
-	_rules_edition.add_item("2024")
-	_rules_edition.item_selected.connect(_on_rules_edition_changed)
-	classes_row.add_child(_rules_edition)
 	_add_label(classes_row, "Classe base")
 	_class_name = _reference_option(
 		classes_row, Player5eTools.class_choices(), false
@@ -1479,11 +1479,11 @@ func _load_form(record: Dictionary) -> void:
 		_set_reference_choices(_species, bestiary_species)
 	_select_reference(_species, String(record.get("species", "")), String(record.get("species_source", "")), String(record.get("species_id", "")))
 	var class_source := String(record.get("class_source", ""))
-	var edition := String(record.get("rules_version", "2014"))
-	if class_source in ["XPHB", "EFA"]:
-		edition = "2024"
-	elif class_source in ["PHB", "TCE"]:
-		edition = "2014"
+	var edition := String(record.get("rules_version", ""))
+	# Existing sheets with an explicit edition are authoritative. Infer the
+	# edition from the class book only for older imported records without it.
+	if edition not in ["2014", "2024"]:
+		edition = "2024" if class_source in ["XPHB", "EFA"] else "2014"
 	_rules_edition.select(1 if edition == "2024" else 0)
 	_refresh_class_choices()
 	if not is_character:
@@ -1539,7 +1539,8 @@ func _load_form(record: Dictionary) -> void:
 	)
 	_species.disabled = not is_character
 	_class_name.disabled = not is_character
-	_rules_edition.disabled = not is_character
+	_rules_edition.visible = is_character
+	_rules_edition_caption.visible = is_character
 	_level.editable = is_character
 	_refresh_conditions(record)
 	_refresh_reference(record)
