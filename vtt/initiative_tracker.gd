@@ -535,11 +535,21 @@ func _on_add_confirmed() -> void:
 		if selected_index < 0 or selected_index >= _available_creatures.size():
 			continue
 		var candidate: Dictionary = _available_creatures[selected_index]
+		var token_id := String(candidate.get("token_id", ""))
+		var token: Node3D = _token_by_id(token_id)
+		if token == null or (
+			String(token.get_meta("creature_id", ""))
+			!= String(candidate.get("creature_id", ""))
+		) or (
+			String(token.get_meta("creature_owner_id", ""))
+			!= String(candidate.get("creature_owner_id", ""))
+		):
+			continue
 		var name_value := String(candidate.get("name", "Creatura"))
 		entries.append({
 			"id": "initiative_%d" % _next_entry_id,
 			"name": name_value,
-			"token_id": String(candidate.get("token_id", "")),
+			"token_id": token_id,
 			"creature_id": String(candidate.get("creature_id", "")),
 			"creature_owner_id": String(candidate.get("creature_owner_id", ""))
 		})
@@ -1026,6 +1036,7 @@ func valid_state(value: Variant) -> bool:
 		return false
 
 	var seen_ids: Dictionary = {}
+	var seen_creatures: Dictionary = {}
 	for item: Variant in state_entries:
 		if not item is Dictionary:
 			return false
@@ -1053,6 +1064,14 @@ func valid_state(value: Variant) -> bool:
 				or String(token_id).is_empty()
 			):
 				return false
+			var creature_key := (
+				String(entry.get("creature_owner_id", ""))
+				+ "|"
+				+ String(entry.get("creature_id", ""))
+			)
+			if seen_creatures.has(creature_key):
+				return false
+			seen_creatures[creature_key] = true
 
 	var index_value: Variant = state.get("active_index", 0)
 	var round_value: Variant = state.get("round", 1)
