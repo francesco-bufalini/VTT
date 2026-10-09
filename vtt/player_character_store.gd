@@ -217,10 +217,12 @@ func create_character() -> Dictionary:
 		"spell_slots_total": [
 			0, 0, 0, 0, 0, 0, 0, 0, 0, 0
 		],
+		"spell_slots_bonus": [0, 0, 0, 0, 0, 0, 0, 0, 0, 0],
 		"spell_slots_spent": [
 			0, 0, 0, 0, 0, 0, 0, 0, 0, 0
 		],
 		"pact_slots_total": 0,
+		"pact_slots_bonus": 0,
 		"pact_slots_spent": 0,
 		"pact_slot_level": 1,
 		"linked_token_sync_id": "",
@@ -282,9 +284,13 @@ func normalize_character(value: Dictionary) -> Dictionary:
 
 	# A character can track Pact Magic separately from shared spell slots.
 	defaults["pact_slots_total"] = maxi(0, int(defaults.get("pact_slots_total", 0)))
-	defaults["pact_slots_spent"] = clampi(int(defaults.get("pact_slots_spent", 0)), 0, int(defaults["pact_slots_total"]))
+	defaults["pact_slots_bonus"] = clampi(int(defaults.get("pact_slots_bonus", 0)), -8, 20)
+	defaults["pact_slots_spent"] = clampi(
+		int(defaults.get("pact_slots_spent", 0)),
+		0, maxi(0, int(defaults["pact_slots_total"]) + int(defaults["pact_slots_bonus"]))
+	)
 	defaults["pact_slot_level"] = clampi(int(defaults.get("pact_slot_level", 1)), 1, 5)
-	for slots_key: String in ["spell_slots_total", "spell_slots_spent"]:
+	for slots_key: String in ["spell_slots_total", "spell_slots_spent", "spell_slots_bonus"]:
 		var slots_value: Variant = defaults.get(slots_key, [])
 		var slots: Array = slots_value if slots_value is Array else []
 		while slots.size() < 10:
@@ -292,7 +298,11 @@ func normalize_character(value: Dictionary) -> Dictionary:
 		if slots.size() > 10:
 			slots.resize(10)
 		for index: int in range(slots.size()):
-			slots[index] = maxi(0, int(slots[index]))
+			slots[index] = (
+				clampi(int(slots[index]), -99, 99)
+				if slots_key == "spell_slots_bonus"
+				else maxi(0, int(slots[index]))
+			)
 		defaults[slots_key] = slots
 
 	defaults["owner_id"] = String(defaults.get("owner_id", CreatureOwner.local_id()))
