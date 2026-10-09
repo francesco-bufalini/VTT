@@ -375,7 +375,7 @@ func _build_ui() -> void:
 	_effect_dialog = AcceptDialog.new()
 	_effect_dialog.title = "5etools · Effect details"
 	_effect_dialog.min_size = Vector2i(560, 420)
-	_panel.add_child(_effect_dialog)
+	add_child(_effect_dialog)
 	_effect_text = RichTextLabel.new()
 	_effect_text.custom_minimum_size = Vector2(530, 320)
 	_effect_text.selection_enabled = true
