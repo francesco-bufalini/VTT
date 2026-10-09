@@ -109,6 +109,7 @@ func setup(on_change: Callable, on_status: Callable) -> void:
 
 	var columns := HBoxContainer.new()
 	columns.add_theme_constant_override("separation", 12)
+	columns.size_flags_horizontal = Control.SIZE_EXPAND_FILL
 	add_child(columns)
 	var known_col := VBoxContainer.new()
 	known_col.size_flags_horizontal = Control.SIZE_EXPAND_FILL
@@ -117,7 +118,7 @@ func setup(on_change: Callable, on_status: Callable) -> void:
 	known_title.text = "Incantesimi di classe (fino al livello attuale)"
 	known_col.add_child(known_title)
 	_known_list = ItemList.new()
-	_known_list.custom_minimum_size = Vector2(0, 106)
+	_known_list.custom_minimum_size = Vector2(0, 150)
 	_known_list.size_flags_horizontal = Control.SIZE_EXPAND_FILL
 	_known_list.item_selected.connect(func(_index: int) -> void: _on_spell_list_selected("known"))
 	_known_list.item_activated.connect(func(_index: int) -> void: _add_selected_known())
@@ -129,13 +130,13 @@ func setup(on_change: Callable, on_status: Callable) -> void:
 	prepared_title.text = "Incantesimi disponibili"
 	prepared_col.add_child(prepared_title)
 	_prepared_list = ItemList.new()
-	_prepared_list.custom_minimum_size = Vector2(0, 106)
+	_prepared_list.custom_minimum_size = Vector2(0, 150)
 	_prepared_list.size_flags_horizontal = Control.SIZE_EXPAND_FILL
 	_prepared_list.item_selected.connect(func(_index: int) -> void: _on_spell_list_selected("prepared"))
 	prepared_col.add_child(_prepared_list)
 
 	_description = RichTextLabel.new()
-	_description.custom_minimum_size.y = 112
+	_description.custom_minimum_size.y = 180
 	_description.size_flags_horizontal = Control.SIZE_EXPAND_FILL
 	_description.scroll_active = true
 	_description.selection_enabled = true
@@ -150,7 +151,7 @@ func setup(on_change: Callable, on_status: Callable) -> void:
 	slot_title.add_child(heading)
 	var calculate := Button.new()
 	calculate.text = "Ricarica automaticamente"
-	calculate.tooltip_text = "Imposta i massimi secondo la progressione D&D 5e; non ripristina gli slot consumati"
+	calculate.tooltip_text = "Ricalcola i massimi delle classi e ricarica gli slot consumati"
 	calculate.pressed.connect(func() -> void: _calculate_slot_totals(true))
 	slot_title.add_child(calculate)
 	_calculate_button = calculate
@@ -359,7 +360,11 @@ func _class_spell_level_limits() -> Dictionary:
 		var class_name: String = SpellCatalog.canonical_class_name(
 			String(cls.get("name", ""))
 		).to_lower()
-		if class_name.is_empty() or class_name == "mostro":
+		if (
+			class_name.is_empty()
+			or class_name == "mostro"
+			or class_name not in Rules.HIT_DICE
+		):
 			continue
 		var single: Dictionary = {
 			"classes": [cls], "rules_version": _record.get("rules_version", "2014")
@@ -373,7 +378,8 @@ func _class_spell_level_limits() -> Dictionary:
 					highest = lvl
 		if class_name == "warlock" and int(progression.get("pact_total", 0)) > 0:
 			highest = maxi(highest, int(progression.get("pact_level", 1)))
-		limits[class_name] = maxi(int(limits.get(class_name, 0)), highest)
+		if highest > 0:
+			limits[class_name] = maxi(int(limits.get(class_name, 0)), highest)
 	return limits
 
 
@@ -405,6 +411,7 @@ func _filter_spells() -> void:
 	_available.clear()
 	var needle: String = _search.text.strip_edges().to_lower()
 	var class_keys: Dictionary = _class_keys()
+	var level_limits: Dictionary = _class_spell_level_limits()
 	var limit_level: int = _level_filter.selected - 1
 	var filter_class: bool = _class_only.button_pressed and not class_keys.is_empty()
 	for entry: Dictionary in _catalog:
@@ -416,7 +423,10 @@ func _filter_spells() -> void:
 			var matches := false
 			if classes_value is Array:
 				for class_value: Variant in classes_value as Array:
-					if class_keys.has(SpellCatalog.canonical_class_name(String(class_value)).to_lower()):
+					var class_name: String = SpellCatalog.canonical_class_name(
+						String(class_value)
+					).to_lower()
+					if class_keys.has(class_name) and level_limits.has(class_name) and level <= int(level_limits[class_name]):
 						matches = true
 						break
 			if not matches:
@@ -451,9 +461,7 @@ func _on_spell_list_selected(origin: String) -> void:
 
 
 func update_character_context(record: Dictionary) -> void:
-	var previous_class: Variant = _record.get("classes", [])
 	var current_class: Variant = record.get("classes", [])
-	var previous_primary: String = String(_record.get("class", ""))
 	var current_primary: String = String(record.get("class", ""))
 	_record["classes"] = current_class
 	_record["class"] = current_primary
@@ -484,7 +492,6 @@ func _update_spell_controls() -> void:
 		return
 	var spell: Dictionary = _selected_spell()
 	var id: String = String(spell.get("id", ""))
-	var known: bool = _has_spell(_known, id)
 	_add_known.disabled = id.is_empty() or _has_spell(_prepared, id)
 	_prepare.disabled = id.is_empty()
 	_prepare.text = "Rimuovi dai disponibili" if _has_spell(_prepared, id) else "Aggiungi ai disponibili"
