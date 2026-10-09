@@ -270,6 +270,11 @@ func _ready() -> void:
 	add_child(master_area)
 	master_area.call("setup", self)
 
+	var creature_area: Node = preload("res://vtt/creature_area.gd").new()
+	creature_area.name = "CreatureArea"
+	add_child(creature_area)
+	creature_area.call("setup", self)
+
 	dice_roller_chat = preload("res://vtt/dice_roller_chat.gd").new()
 	dice_roller_chat.name = "DiceRollerChat"
 	add_child(dice_roller_chat)
@@ -2237,6 +2242,12 @@ func link_selected_player_character_to_named_token() -> void:
 func get_selected_tokens_for_player_area() -> Array[CharacterBody3D]:
 	_clean_selection()
 	return _selected_tokens.duplicate()
+
+
+func toggle_creature_area() -> void:
+	var area := get_node_or_null("CreatureArea")
+	if area != null:
+		area.call("toggle_panel")
 
 
 func toggle_master_area() -> void:
