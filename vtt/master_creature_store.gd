@@ -126,7 +126,6 @@ func create_creature(stat_block: Dictionary, side: String) -> Dictionary:
 		"current_hp": hp,
 		"armor_class": CreatureRules.monster_armor_class(stat_block),
 		"abilities": CreatureRules.monster_abilities(stat_block),
-		"trackers": CreatureRules.monster_trackers(stat_block),
 		"owner_id": CreatureOwner.local_id(),
 		"default_miniature_id": _default_miniature_id(stat_block),
 		"stat_block": stat_block.duplicate(true),
@@ -167,7 +166,6 @@ func normalize_creature(value: Dictionary) -> Dictionary:
 		"default_miniature_id": String(value.get("default_miniature_id", _default_miniature_id(stat_block))),
 		"armor_class": maxi(0, int(value.get("armor_class", CreatureRules.monster_armor_class(stat_block)))),
 		"abilities": _normalize_abilities(value.get("abilities", {}), stat_block),
-		"trackers": CreatureRules.reconcile_trackers(value.get("trackers", []), CreatureRules.monster_trackers(stat_block)),
 		"linked_token_sync_id": String(
 			value.get("linked_token_sync_id", "")
 		),
