@@ -2008,6 +2008,36 @@ func _focus_tracker_trait(origin: String) -> void:
 		_reference.scroll_to_line(0)
 
 
+func _additional_monster_class_traits(record: Dictionary) -> PackedStringArray:
+	var result := PackedStringArray()
+	var raw_classes: Variant = record.get("classes", [])
+	if not raw_classes is Array:
+		return result
+	var features: Array[Dictionary] = Player5eTools.entries("class_features")
+	for class_value: Variant in raw_classes as Array:
+		if not class_value is Dictionary:
+			continue
+		var class_data: Dictionary = class_value as Dictionary
+		var class_label: String = String(class_data.get("name", ""))
+		if class_label.is_empty() or class_label.to_lower() == "mostro":
+			continue
+		var source: String = String(class_data.get("source", ""))
+		var class_level: int = int(class_data.get("level", 0))
+		if class_level < 1:
+			continue
+		result.append(FiveToolsText.section("%s (livello %d)" % [class_label, class_level]))
+		for feature: Dictionary in features:
+			if String(feature.get("class_name", "")).nocasecmp_to(class_label) != 0:
+				continue
+			if String(feature.get("class_source", "")) != source:
+				continue
+			if int(feature.get("level", 0)) > class_level:
+				continue
+			result.append(FiveToolsText.subtitle(Player5eTools.display_label(feature)))
+			result.append(FiveToolsText.blocks(feature.get("entries", feature.get("description", ""))))
+	return result
+
+
 func _refresh_reference(record: Dictionary) -> void:
 	var parts: PackedStringArray = []
 	if String(record.get("kind", "")) == "monster":
@@ -2032,6 +2062,7 @@ func _refresh_reference(record: Dictionary) -> void:
 				continue
 			parts.append(FiveToolsText.section(String(headings[section_key])))
 			parts.append(FiveToolsText.blocks(entries))
+		parts.append_array(_additional_monster_class_traits(record))
 		_reference.text = "\n\n".join(parts)
 		return
 
