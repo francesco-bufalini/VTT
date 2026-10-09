@@ -90,6 +90,20 @@ func run() -> void:
 		"Changing current appearance without a live token must preserve default miniature")
 	area._restore_default_appearance()
 	assert(area._current().current_miniature_id == "hero_test", "Reset appearance must restore base")
+	# Automatic calculation is opt-in: HP average d8 = 5 after first
+	# level, and a selected calculation must not replace spell choices.
+	var Rules = load("res://vtt/creature_rules.gd")
+	assert(Rules.average_die(8) == 5)
+	assert(Rules.average_die(6) == 4)
+	assert(Rules.automatic_hit_points({
+		"class": "Fighter", "level": 3,
+		"abilities": {"con": 14}
+	}).value == 28, "Fighter 3 with CON +2: 12 + 8 + 8")
+	assert(Rules.proficiency_bonus({"class": "Wizard", "level": 5}) == 3)
+	assert(Rules.spellcasting_limits({
+		"class": "Bard", "level": 3, "rules_version": "2014"
+	}).known_limits.bard == 6)
+	assert(area._creature_context_menu.get_item_count() >= 3)
 	var original_id: String = area._current().id
 	area._select_reference(area._class_name, "Wizard", "PHB")
 	assert(area._level is SpinBox, "Base class level must use a numeric input")
@@ -98,6 +112,17 @@ func run() -> void:
 	var sheet: Dictionary = area._current()
 	assert(sheet.classes[0].source == "PHB" and sheet.rules_version == "2014")
 	assert(sheet.classes[0].level == 5 and sheet.level == 5)
+	area._open_automatic_calculation()
+	assert(not area._automatic_hp.button_pressed)
+	area._automatic_hp.button_pressed = true
+	area._automatic_proficiency.button_pressed = true
+	area._automatic_spells.button_pressed = true
+	area._apply_automatic_calculation()
+	var automatically_calculated: Dictionary = area._current()
+	assert(automatically_calculated.max_hp == 22, "Wizard 5, CON +0: 6 + 4 * 4")
+	assert(automatically_calculated.proficiency_bonus == 3)
+	assert(automatically_calculated.has("spellcasting_calculation"))
+	assert(automatically_calculated.spells.is_empty() and automatically_calculated.prepared_spells.is_empty())
 	assert(not sheet.has("trackers"), "Legacy trackers must not be created.")
 	# Multiclass levels are independent; the primary level never decreases
 	# because a secondary class is added.
