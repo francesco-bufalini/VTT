@@ -42,7 +42,8 @@ func run() -> void:
 	assert(cart.position.x > 1.0)
 	board._rotate_selected(1)
 	assert(is_equal_approx(rad_to_deg(cart.rotation.y), 45.0))
-	board._rotate_selected_vertical(1)
+	# Item tilt remains supported; only creature-token tilt was removed.
+	board.item_controller.rotate_selected_vertical(1)
 	assert(is_equal_approx(rad_to_deg(cart.rotation.x), 30.0))
 	board.free()
 	print("PASS: real toolbar, group token nudge and item undo/redo")
