@@ -113,12 +113,14 @@ $fastTests = @(
     "test_spell_catalog_smoke.gd",
     "test_spell_targeting_lifecycle.gd",
     "test_board_smoke.gd",
+    # Creature-sheet interactions are a common source of parser/UI regressions:
+    # validate them before independent tactical-grid rendering assertions.
+    "test_creature_sheet_ui.gd",
     "test_camera_2d_height.gd",
     "test_grid_2d_elevation_colors.gd",
     "test_encounter_sync_scripts.gd",
     "test_creature_sheets.gd",
     "test_content_catalog.gd",
-    "test_creature_sheet_ui.gd",
     "test_creature_sync.gd",
     "test_item_transport.gd",
     "test_item_board_integration.gd",
