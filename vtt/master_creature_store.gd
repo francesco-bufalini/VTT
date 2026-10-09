@@ -126,6 +126,14 @@ func create_creature(stat_block: Dictionary, side: String) -> Dictionary:
 		"current_hp": hp,
 		"armor_class": CreatureRules.monster_armor_class(stat_block),
 		"abilities": CreatureRules.monster_abilities(stat_block),
+		"ability_bonuses": {"str": 0, "dex": 0, "con": 0, "int": 0, "wis": 0, "cha": 0},
+		"spells": [],
+		"prepared_spells": [],
+		"spell_slots_total": [0, 0, 0, 0, 0, 0, 0, 0, 0, 0],
+		"spell_slots_spent": [0, 0, 0, 0, 0, 0, 0, 0, 0, 0],
+		"pact_slots_total": 0,
+		"pact_slots_spent": 0,
+		"pact_slot_level": 1,
 		"feats": "",
 		"feats_catalog": [],
 		"owner_id": CreatureOwner.local_id(),
@@ -182,6 +190,14 @@ func normalize_creature(value: Dictionary) -> Dictionary:
 		"temporary_hp": maxi(0, int(value.get("temporary_hp", 0))),
 		"armor_class": maxi(0, int(value.get("armor_class", CreatureRules.monster_armor_class(stat_block)))),
 		"abilities": _normalize_abilities(value.get("abilities", {}), stat_block),
+		"ability_bonuses": _normalize_ability_bonuses(value.get("ability_bonuses", {})),
+		"spells": value.get("spells", []).duplicate(true) if value.get("spells", []) is Array else [],
+		"prepared_spells": value.get("prepared_spells", []).duplicate(true) if value.get("prepared_spells", []) is Array else [],
+		"spell_slots_total": _normalize_spell_slots(value.get("spell_slots_total", [])),
+		"spell_slots_spent": _normalize_spell_slots(value.get("spell_slots_spent", [])),
+		"pact_slots_total": maxi(0, int(value.get("pact_slots_total", 0))),
+		"pact_slots_spent": maxi(0, int(value.get("pact_slots_spent", 0))),
+		"pact_slot_level": clampi(int(value.get("pact_slot_level", 1)), 1, 5),
 		"feats": String(value.get("feats", "")),
 		"feats_catalog": value.get("feats_catalog", []).duplicate(true) if value.get("feats_catalog", []) is Array else [],
 		"linked_token_sync_id": String(
@@ -193,6 +209,23 @@ func normalize_creature(value: Dictionary) -> Dictionary:
 		var now := int(Time.get_unix_time_from_system())
 		var unique := int(Time.get_ticks_usec())
 		result["id"] = "master_creature_%d_%d" % [now, unique]
+	return result
+
+
+static func _normalize_ability_bonuses(value: Variant) -> Dictionary:
+	var bonuses: Dictionary = {}
+	for ability: String in ["str", "dex", "con", "int", "wis", "cha"]:
+		bonuses[ability] = clampi(
+			int((value as Dictionary).get(ability, 0))
+			if value is Dictionary else 0, -30, 30
+		)
+	return bonuses
+
+
+static func _normalize_spell_slots(value: Variant) -> Array:
+	var result: Array = []
+	for i: int in range(10):
+		result.append(maxi(0, int((value as Array)[i])) if value is Array and (value as Array).size() > i else 0)
 	return result
 
 
