@@ -284,6 +284,10 @@ func run() -> void:
 	assert(dice._scene_identity_tokens().has(received))
 	received.set_meta("creature_owner_id", "remote-installation-0123456789")
 	assert(not dice._scene_identity_tokens().has(received))
+	assert(dice._identity_token() == token,
+		"Chat must automatically identify the sole owned miniature without a dialog.")
+	assert(not dice.has_method("request_change_scene_identity"),
+		"The obsolete user-token reassociation action must be removed.")
 	received.set_meta("creature_owner_id", Owner.local_id())
 	# Removing a token never erases the independent sheet.
 	token.queue_free()
