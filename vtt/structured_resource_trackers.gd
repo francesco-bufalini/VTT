@@ -57,7 +57,7 @@ static func _append_monster_trackers(record: Dictionary, output: Array[Dictionar
 
 static func _recharge_markup(title: String) -> Dictionary:
 	var regex := RegEx.new()
-	if regex.compile("\\{\\@recharge(?: ([1-6]))?\\}") != OK:
+	if regex.compile("\\{@recharge(?: ([1-6]))?\\}") != OK:
 		return {}
 	var found: RegExMatch = regex.search(title)
 	if found == null:
