@@ -19,6 +19,10 @@ func _initialize() -> void:
 
 
 func run() -> void:
+	var sheet_script: Script = load("res://vtt/creature_area.gd")
+	assert(sheet_script != null, "CreatureArea must load without parse errors")
+	var sheet_node: Node = sheet_script.new()
+	sheet_node.free()
 	var stat := {
 		"name": "Test Dragon",
 		"source": "MM",
