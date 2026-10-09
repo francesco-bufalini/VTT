@@ -1686,6 +1686,8 @@ func _handle_sheet_spawn_placement_input(event: InputEvent) -> bool:
 		call_deferred("_sync_explicit_token_change", token)
 		return true
 
+	if area == null or not area.has_method("link_spawned_token"):
+		return true
 	_creature_spawn_sheet_id = String(record.get("id", ""))
 	_token_generation_confirmed_callback = Callable(
 		area, "link_spawned_token"
@@ -1703,6 +1705,11 @@ func _handle_sheet_spawn_placement_input(event: InputEvent) -> bool:
 	_set_token_name_input(
 		_unique_token_display_name(String(record.get("name", "Creatura"))),
 		false
+	)
+	_refresh_shared_condition_choices(
+		TokenScript.ContentCatalog.condition_definitions(
+			String(record.get("rules_version", "2014"))
+		)
 	)
 	_set_shared_token_editor_conditions(record.get("conditions", []))
 	return true
