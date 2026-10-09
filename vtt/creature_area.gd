@@ -21,6 +21,13 @@ var _loading := false
 var _panel: PanelContainer
 var _status: Label
 var _creature_list: ItemList
+var _creature_context_menu: PopupMenu
+var _automatic_dialog: ConfirmationDialog
+var _automatic_hp: CheckBox
+var _automatic_proficiency: CheckBox
+var _automatic_spells: CheckBox
+var _automatic_preview: RichTextLabel
+var _automatic_target_id := ""
 var _delete_dialog: ConfirmationDialog
 var _delete_target: Dictionary = {}
 var _catalog_list: ItemList
@@ -319,7 +326,15 @@ func _build_ui() -> void:
 	_creature_list.tooltip_text = "Le mie creature · archivio indipendente dalle scene"
 	_creature_list.size_flags_vertical = Control.SIZE_EXPAND_FILL
 	_creature_list.item_selected.connect(_on_selected)
+	_creature_list.gui_input.connect(_on_creature_list_gui_input)
 	left.add_child(_creature_list)
+	_creature_context_menu = PopupMenu.new()
+	_creature_context_menu.add_item("Genera token / riposiziona", 1)
+	_creature_context_menu.add_item("Calcola automaticamente…", 2)
+	_creature_context_menu.add_separator()
+	_creature_context_menu.add_item("Elimina creatura…", 3)
+	_creature_context_menu.id_pressed.connect(_on_creature_context_action)
+	_creature_list.add_child(_creature_context_menu)
 	var spawn_selected := Button.new()
 	spawn_selected.text = "Genera token / riposiziona"
 	spawn_selected.tooltip_text = (
@@ -552,6 +567,7 @@ func _build_ui() -> void:
 	_delete_dialog.title = "Elimina creatura"
 	_delete_dialog.confirmed.connect(_delete_selected_creature)
 	add_child(_delete_dialog)
+	_build_automatic_dialog()
 
 
 
@@ -595,6 +611,138 @@ func _on_options_selected(id: int) -> void:
 			_show_import()
 		7:
 			_confirm_delete()
+
+
+func _on_creature_list_gui_input(event: InputEvent) -> void:
+	if not event is InputEventMouseButton:
+		return
+	var click: InputEventMouseButton = event as InputEventMouseButton
+	if not click.pressed or click.button_index != MOUSE_BUTTON_RIGHT:
+		return
+	var index: int = _creature_list.get_item_at_position(click.position, true)
+	if index < 0 or index >= _records.size():
+		return
+	if _selected_id != String(_records[index].get("id", "")):
+		_save()
+	_creature_list.select(index)
+	_on_selected(index)
+	_creature_context_menu.position = Vector2i(
+		get_viewport().get_mouse_position()
+	)
+	_creature_context_menu.popup()
+	get_viewport().set_input_as_handled()
+
+
+func _on_creature_context_action(action: int) -> void:
+	match action:
+		1:
+			_request_spawn_selected_creature()
+		2:
+			_open_automatic_calculation()
+		3:
+			_confirm_delete()
+
+
+func _build_automatic_dialog() -> void:
+	_automatic_dialog = ConfirmationDialog.new()
+	_automatic_dialog.title = "Calcola automaticamente"
+	_automatic_dialog.dialog_text = "Seleziona solo i campi da ricalcolare. Le altre scelte rimangono invariate."
+	_automatic_dialog.min_size = Vector2i(570, 420)
+	(board_root.get_node("UI") as CanvasLayer).add_child(_automatic_dialog)
+	var content := VBoxContainer.new()
+	_automatic_dialog.add_child(content)
+	_automatic_hp = CheckBox.new()
+	_automatic_hp.text = "PF massimi: media dei dadi vita + Costituzione"
+	_automatic_hp.toggled.connect(func(_enabled: bool) -> void: _refresh_automatic_preview())
+	content.add_child(_automatic_hp)
+	_automatic_proficiency = CheckBox.new()
+	_automatic_proficiency.text = "Bonus di competenza: somma livelli di classe"
+	_automatic_proficiency.toggled.connect(func(_enabled: bool) -> void: _refresh_automatic_preview())
+	content.add_child(_automatic_proficiency)
+	_automatic_spells = CheckBox.new()
+	_automatic_spells.text = "Limiti degli incantesimi conosciuti/preparabili"
+	_automatic_spells.toggled.connect(func(_enabled: bool) -> void: _refresh_automatic_preview())
+	content.add_child(_automatic_spells)
+	var explanation := Label.new()
+	explanation.text = "Gli incantesimi effettivamente scelti non vengono cambiati. I PF attuali sono conservati (limitati al nuovo massimo)."
+	explanation.autowrap_mode = TextServer.AUTOWRAP_WORD_SMART
+	content.add_child(explanation)
+	_automatic_preview = RichTextLabel.new()
+	_automatic_preview.custom_minimum_size = Vector2(520, 165)
+	_automatic_preview.scroll_active = true
+	content.add_child(_automatic_preview)
+	_automatic_dialog.confirmed.connect(_apply_automatic_calculation)
+
+
+func _open_automatic_calculation() -> void:
+	_save()
+	var record: Dictionary = _current()
+	if record.is_empty():
+		return
+	_automatic_target_id = String(record.get("id", ""))
+	var character: bool = String(record.get("kind", "")) == "character"
+	var hp_result: Dictionary = Rules.automatic_hit_points(record) if character else {}
+	_automatic_hp.disabled = not character or not bool(hp_result.get("available", false))
+	_automatic_proficiency.disabled = not character
+	_automatic_spells.disabled = not character
+	_automatic_hp.set_pressed_no_signal(false)
+	_automatic_proficiency.set_pressed_no_signal(false)
+	_automatic_spells.set_pressed_no_signal(false)
+	_refresh_automatic_preview()
+	_automatic_dialog.popup_centered_clamped(Vector2i(620, 450), 0.9)
+
+
+func _refresh_automatic_preview() -> void:
+	if _automatic_preview == null:
+		return
+	var record: Dictionary = _current()
+	var lines := PackedStringArray()
+	if String(record.get("kind", "")) != "character":
+		lines.append("Per i mostri si utilizzano i valori del blocco statistiche del bestiario.")
+	else:
+		var hp: Dictionary = Rules.automatic_hit_points(record)
+		if _automatic_hp.button_pressed and bool(hp.get("available", false)):
+			lines.append("PF massimi → %d (%s)" % [
+				int(hp.get("value", 0)), String(hp.get("detail", ""))
+			])
+		elif not bool(hp.get("available", false)):
+			lines.append("PF non calcolabili: " + String(hp.get("reason", "")))
+		if _automatic_proficiency.button_pressed:
+			lines.append("Competenza → +%d" % Rules.proficiency_bonus(record))
+		if _automatic_spells.button_pressed:
+			var limits: Dictionary = Rules.spellcasting_limits(record)
+			lines.append(String(limits.get("detail", "Nessuna classe magica.")))
+	if lines.is_empty():
+		lines.append("Seleziona almeno un valore per vedere l'anteprima.")
+	_automatic_preview.text = "\n".join(lines)
+	_automatic_dialog.get_ok_button().disabled = (
+		not _automatic_hp.button_pressed
+		and not _automatic_proficiency.button_pressed
+		and not _automatic_spells.button_pressed
+	)
+
+
+func _apply_automatic_calculation() -> void:
+	var record: Dictionary = _current()
+	if record.is_empty() or String(record.get("id", "")) != _automatic_target_id:
+		return
+	if _automatic_hp.button_pressed:
+		var hp: Dictionary = Rules.automatic_hit_points(record)
+		if bool(hp.get("available", false)):
+			var maximum: int = int(hp.get("value", 1))
+			record["max_hp"] = maximum
+			record["current_hp"] = mini(int(record.get("current_hp", maximum)), maximum)
+	if _automatic_proficiency.button_pressed:
+		record["proficiency_bonus"] = Rules.proficiency_bonus(record)
+	if _automatic_spells.button_pressed:
+		record["spellcasting_calculation"] = Rules.spellcasting_limits(record)
+	if _archive.save(record) != OK:
+		_set_status("Calcolo riuscito ma salvataggio non completato.")
+		return
+	_replace_current_record(record)
+	_load_form(record)
+	_sync_token_health(record)
+	_set_status("Calcoli selezionati applicati alla creatura.")
 
 
 func _build_transfer_request_dialog() -> void:
