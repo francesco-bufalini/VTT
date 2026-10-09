@@ -73,3 +73,12 @@ Preferred future layers:
     full encounter smoke tests
 
 A minimal test arena can be added once Godot execution is available in the agent sandbox. It should contain only geometry needed to reproduce generic VTT behavior, not campaign-specific content.
+
+## Geometry-only helpers (2026-10-09)
+
+- `vtt/aoe_snapshot_validator.gd` owns the pure validation rules for persistent AoE snapshots; `measurement_tool.gd.valid_aoes` remains the public API used by board synchronization and restores.
+- `vtt/spells/spell_target_geometry.gd` owns fallback spell hit-testing, with cell size and upcast-adjusted sphere radius passed explicitly. SpellSystem retains its original private method as the calling adapter.
+- `tests/test_geometry_refactor.gd` covers valid and invalid persistent AoEs, all six fallback shapes, empty directions, and expanded sphere radius.
+- No snapshot version, serialized fields, scene paths, signals, or gameplay interaction APIs changed. The generated 5etools spell catalog remains untouched.
+
+These are deliberately narrow extractions. Keep the board controller, spell-cast lifecycle, creature UI, and networking state machines together until they have reliable behavioral integration coverage.
