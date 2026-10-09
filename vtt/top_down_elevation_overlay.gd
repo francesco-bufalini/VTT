@@ -491,7 +491,9 @@ func _draw_engagement_segments(segments: Variant, mutual: bool) -> void:
 		var sideways: Vector2 = Vector2(-direction.y, direction.x)
 		draw_line(screen_start, screen_end, Color(0.015, 0.09, 0.085, 0.92), 5.0, true)
 		draw_line(screen_start, screen_end, tint, 2.6, true)
-		var tips: Array[Vector2] = [screen_start, screen_end] if mutual else [screen_end]
+		var tips: Array[Vector2] = [screen_end]
+		if mutual:
+			tips.push_front(screen_start)
 		for tip: Vector2 in tips:
 			var toward: Vector2 = -direction if mutual and tip == screen_start else direction
 			draw_colored_polygon(PackedVector2Array([
