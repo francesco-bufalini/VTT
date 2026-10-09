@@ -269,21 +269,12 @@ func _try_attack_target(screen_position: Vector2) -> void:
 
 	var applied := false
 	var hp_result: Dictionary = {}
-	var player_area_value: Variant = board_root.get("player_area")
-	if player_area_value is Node:
-		var player_area := player_area_value as Node
-		if (
-			is_instance_valid(player_area)
-			and player_area.has_method("apply_attack_damage_to_token")
-		):
-			var result: Variant = player_area.call(
-				"apply_attack_damage_to_token",
-				target,
-				damage
-			)
-			if result is Dictionary:
-				hp_result = result as Dictionary
-				applied = bool(hp_result.get("applied", false))
+	var sheets: Node = board_root.get_node_or_null("CreatureArea")
+	if sheets != null and is_instance_valid(sheets) and sheets.has_method("apply_attack_damage_to_token"):
+		var result: Variant = sheets.call("apply_attack_damage_to_token", target, damage)
+		if result is Dictionary:
+			hp_result = result as Dictionary
+			applied = bool(hp_result.get("applied", false))
 
 	# Keep the rolled damage on every token, including NPCs that do not yet
 	# have a managed HP pool. This lets later monster-sheet work reuse it.
