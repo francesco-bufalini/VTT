@@ -702,8 +702,11 @@ func _open_automatic_calculation() -> void:
 		return
 	_automatic_target_id = String(record.get("id", ""))
 	var character: bool = String(record.get("kind", "")) == "character"
-	var hp_result: Dictionary = Rules.automatic_hit_points(record) if character else {}
-	_automatic_hp.disabled = not character or not bool(hp_result.get("available", false))
+	var hp_result: Dictionary = (
+		Rules.automatic_hit_points(record)
+		if character else Rules.automatic_monster_hit_points(record)
+	)
+	_automatic_hp.disabled = not bool(hp_result.get("available", false))
 	_automatic_proficiency.disabled = not character
 	_automatic_spells.disabled = not character
 	_automatic_hp.set_pressed_no_signal(false)
@@ -718,16 +721,18 @@ func _refresh_automatic_preview() -> void:
 		return
 	var record: Dictionary = _current()
 	var lines := PackedStringArray()
-	if String(record.get("kind", "")) != "character":
-		lines.append("Per i mostri si utilizzano i valori del blocco statistiche del bestiario.")
-	else:
-		var hp: Dictionary = Rules.automatic_hit_points(record)
-		if _automatic_hp.button_pressed and bool(hp.get("available", false)):
-			lines.append("PF massimi → %d (%s)" % [
-				int(hp.get("value", 0)), String(hp.get("detail", ""))
-			])
-		elif not bool(hp.get("available", false)):
-			lines.append("PF non calcolabili: " + String(hp.get("reason", "")))
+	var is_character: bool = String(record.get("kind", "")) == "character"
+	var hp: Dictionary = (
+		Rules.automatic_hit_points(record)
+		if is_character else Rules.automatic_monster_hit_points(record)
+	)
+	if _automatic_hp.button_pressed and bool(hp.get("available", false)):
+		lines.append("PF massimi → %d (%s)" % [
+			int(hp.get("value", 0)), String(hp.get("detail", ""))
+		])
+	elif not bool(hp.get("available", false)):
+		lines.append("PF non calcolabili: " + String(hp.get("reason", "")))
+	if is_character:
 		if _automatic_proficiency.button_pressed:
 			lines.append("Competenza → +%d" % Rules.proficiency_bonus(record))
 		if _automatic_spells.button_pressed:
@@ -748,7 +753,11 @@ func _apply_automatic_calculation() -> void:
 	if record.is_empty() or String(record.get("id", "")) != _automatic_target_id:
 		return
 	if _automatic_hp.button_pressed:
-		var hp: Dictionary = Rules.automatic_hit_points(record)
+		var hp: Dictionary = (
+			Rules.automatic_hit_points(record)
+			if String(record.get("kind", "")) == "character"
+			else Rules.automatic_monster_hit_points(record)
+		)
 		if bool(hp.get("available", false)):
 			var maximum: int = int(hp.get("value", 1))
 			record["max_hp"] = maximum
