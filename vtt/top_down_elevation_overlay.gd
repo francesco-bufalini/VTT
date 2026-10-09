@@ -190,8 +190,10 @@ func _update_hover(floor_y: float) -> void:
 	if distance <= 0.0:
 		return
 	var world_point: Vector3 = origin + direction * distance
+	# Sample the topmost surface visible on this camera floor first.
+	# Only show a negative height when that square is genuinely lower.
 	var result_value: Variant = levels.call(
-		"get_lower_square_surface",
+		"get_visible_square_surface",
 		world_point,
 		floor_y
 	)
