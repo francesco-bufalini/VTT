@@ -2,7 +2,7 @@ extends RefCounted
 
 # Shared data normalization and local content overlays, never private sheets.
 const HOME_DIR := "user://homebrew"
-const CATEGORIES := ["monsters", "races", "classes", "spells", "conditions", "diseases", "effects", "class_features", "species_traits", "feats", "backgrounds", "optional_features"]
+const CATEGORIES := ["items", "subclasses", "subclass_features", "monsters", "races", "classes", "spells", "conditions", "diseases", "effects", "class_features", "species_traits", "feats", "backgrounds", "optional_features"]
 const EFFECT_CATEGORIES := ["conditions", "diseases", "effects"]
 const MAX_FILE_BYTES := 2 * 1024 * 1024
 const LEGACY_CONDITIONS := [
