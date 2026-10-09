@@ -104,7 +104,7 @@ func _request_creature_now(
 	if filename.is_empty():
 		creature_failed.emit(
 			request_key,
-			"Nessun file 5eTools trovato per la fonte %s." % source
+			"Nessun file del bestiario trovato per la fonte %s." % source
 		)
 		return
 
@@ -250,7 +250,7 @@ func _on_request_completed(
 				if creature.is_empty():
 					creature_failed.emit(
 						request_key,
-						"Creatura non trovata nel file 5eTools."
+						"Creatura non trovata nel bestiario."
 					)
 				else:
 					_deliver_or_resolve_copy(
@@ -314,7 +314,7 @@ func _retry_or_fail(message: String) -> void:
 		else:
 			_catalog_requested = false
 			catalog_failed.emit(
-				"Impossibile caricare il bestiario 5eTools: " + message
+				 "Impossibile caricare il bestiario: " + message
 			)
 			_queue.clear()
 
