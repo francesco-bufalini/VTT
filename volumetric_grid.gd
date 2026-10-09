@@ -6,6 +6,12 @@ const TOKEN_GROUP := "dnd_token"
 const INVALID_CELL := Vector3i(2147483647, 2147483647, 2147483647)
 const CHUNK_SIZE := 8
 
+# Preserve the warm tabletop grid at the selected floor. Squares on lower
+# floors get a subtle slate tint, not a neon highlight or a hidden grid.
+const GRID_NORMAL_INSTANCE_TINT := Color(1.0, 1.0, 1.0, 1.0)
+const GRID_LOWER_INSTANCE_TINT := Color(0.72, 0.84, 1.0, 0.88)
+const GRID_ELEVATION_EPSILON_CELLS := 0.1
+
 @export var cell_size: float = 1.0
 # Legacy: kept so older scenes keep loading without missing-property warnings.
 @export_range(4, 100, 1) var cells_per_side: int = 70
@@ -37,6 +43,8 @@ var _multimesh: MultiMesh = null
 var _grid_material: StandardMaterial3D = null
 var _interaction_strength: float = 0.55
 var _surface_overlay_bias_cells: float = 0.0
+var _last_tint_in_2d: bool = false
+var _last_tint_floor_y: float = 0.0
 
 var _cell_probe_shape: BoxShape3D = null
 var _cell_query: PhysicsShapeQueryParameters3D = null
@@ -88,6 +96,28 @@ func _physics_process(delta: float) -> void:
 	if _camera == null or not is_instance_valid(_camera):
 		return
 
+	# A floor change only alters the instance colors: reuse the cached
+	# collision grid without rescanning its occupied chunks.
+	var tint_in_2d: bool = (
+		_camera.has_method("is_top_down_2d")
+		and bool(_camera.call("is_top_down_2d"))
+	)
+	var tint_floor_y: float = (
+		float(_camera.call("get_top_down_level"))
+		if tint_in_2d and _camera.has_method("get_top_down_level")
+		else 0.0
+	)
+	if (
+		tint_in_2d != _last_tint_in_2d
+		or (
+			tint_in_2d
+			and not is_equal_approx(tint_floor_y, _last_tint_floor_y)
+		)
+	):
+		_last_tint_in_2d = tint_in_2d
+		_last_tint_floor_y = tint_floor_y
+		_visual_dirty = true
+
 	if not _was_visible:
 		_was_visible = true
 		_capture_volume_transform()
@@ -121,6 +151,9 @@ func _physics_process(delta: float) -> void:
 
 func set_camera(new_camera: Camera3D) -> void:
 	_camera = new_camera
+	_last_tint_in_2d = false
+	_last_tint_floor_y = 0.0
+	_visual_dirty = true
 	_center_cell = INVALID_CELL
 	_has_volume_transform = false
 	_view_dirty = true
@@ -239,6 +272,7 @@ func _build_multimesh() -> void:
 	_grid_material = StandardMaterial3D.new()
 	_grid_material.transparency = BaseMaterial3D.TRANSPARENCY_ALPHA
 	_grid_material.shading_mode = BaseMaterial3D.SHADING_MODE_UNSHADED
+	_grid_material.vertex_color_use_as_albedo = true
 	var overlay_enabled: bool = _surface_overlay_bias_cells > 0.0
 	_grid_material.no_depth_test = overlay_enabled
 	_grid_material.render_priority = 127 if overlay_enabled else 0
@@ -270,6 +304,9 @@ func _build_multimesh() -> void:
 
 	_multimesh = MultiMesh.new()
 	_multimesh.transform_format = MultiMesh.TRANSFORM_3D
+	# Per-voxel colors are GPU instance data, not separate draw calls.
+	# Enable before instance_count (Godot locks the format afterward).
+	_multimesh.use_colors = true
 	_multimesh.mesh = wire_cube
 	_multimesh.instance_count = 0
 
@@ -598,6 +635,22 @@ func _add_cached_chunk_to_active(chunk: Vector3i) -> void:
 			_active_occupied[cell] = true
 
 
+func _cell_instance_tint(
+	cell: Vector3i,
+	in_2d: bool,
+	floor_y: float
+) -> Color:
+	# Use the displayed voxel's *top* rather than its center so the
+	# selected walkable surface stays the ordinary parchment color.
+	if (
+		in_2d
+		and _cell_visual_top_y(cell)
+		< floor_y - GRID_ELEVATION_EPSILON_CELLS * cell_size
+	):
+		return GRID_LOWER_INSTANCE_TINT
+	return GRID_NORMAL_INSTANCE_TINT
+
+
 func _update_multimesh_instances() -> void:
 	if _multimesh == null:
 		return
@@ -609,6 +662,17 @@ func _update_multimesh_instances() -> void:
 		return
 
 	var inverse_grid_transform := global_transform.affine_inverse()
+	var in_2d: bool = (
+		_camera != null
+		and is_instance_valid(_camera)
+		and _camera.has_method("is_top_down_2d")
+		and bool(_camera.call("is_top_down_2d"))
+	)
+	var floor_y: float = (
+		float(_camera.call("get_top_down_level"))
+		if in_2d and _camera.has_method("get_top_down_level")
+		else 0.0
+	)
 	var index := 0
 	for key in _active_occupied.keys():
 		var cell: Vector3i = key
@@ -621,6 +685,10 @@ func _update_multimesh_instances() -> void:
 		_multimesh.set_instance_transform(
 			index,
 			inverse_grid_transform * world_transform
+		)
+		_multimesh.set_instance_color(
+			index,
+			_cell_instance_tint(cell, in_2d, floor_y)
 		)
 		index += 1
 
