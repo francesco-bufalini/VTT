@@ -4,6 +4,7 @@ extends Node
 const ContentCatalog = preload("res://vtt/content_catalog.gd")
 const Archive = preload("res://vtt/creature_archive.gd")
 const Rules = preload("res://vtt/creature_rules.gd")
+const DiceRoller = preload("res://vtt/dice_roller_chat.gd")
 const Owner = preload("res://vtt/creature_owner.gd")
 const Bestiary = preload("res://vtt/bestiary_5etools_client.gd")
 const PlayerReference = preload("res://vtt/player_reference_catalog.gd")
@@ -47,6 +48,7 @@ var _hp_delta_amount: SpinBox
 var _hp_amount_row: HBoxContainer
 var _hp_use_dice: CheckBox
 var _hp_dice_formula: LineEdit
+var _hp_quick_dice_row: HBoxContainer
 var _hp_formula_status: Label
 var _size_choice: OptionButton
 var _reach: SpinBox
@@ -1437,6 +1439,15 @@ func _build_hp_delta_dialog() -> void:
 	_hp_dice_formula.text = "1d8"
 	_hp_dice_formula.text_changed.connect(func(_value: String) -> void: _refresh_hp_delta_mode())
 	body.add_child(_hp_dice_formula)
+	_hp_quick_dice_row = HBoxContainer.new()
+	_hp_quick_dice_row.add_theme_constant_override("separation", 5)
+	body.add_child(_hp_quick_dice_row)
+	for die: String in ["d4", "d6", "d8", "d10", "d12", "d20"]:
+		var quick_die := Button.new()
+		quick_die.text = die
+		quick_die.size_flags_horizontal = Control.SIZE_EXPAND_FILL
+		quick_die.pressed.connect(_set_hp_dice_formula.bind("1" + die))
+		_hp_quick_dice_row.add_child(quick_die)
 	_hp_formula_status = Label.new()
 	_hp_formula_status.autowrap_mode = TextServer.AUTOWRAP_WORD_SMART
 	body.add_child(_hp_formula_status)
@@ -1454,7 +1465,12 @@ func _open_hp_delta(sign: int) -> void:
 	_hp_delta_amount.value = 1
 	_hp_use_dice.set_pressed_no_signal(false)
 	_refresh_hp_delta_mode()
-	_hp_delta_dialog.popup_centered_clamped(Vector2i(440, 260), 0.9)
+	_hp_delta_dialog.popup_centered_clamped(Vector2i(500, 295), 0.9)
+
+
+func _set_hp_dice_formula(expression: String) -> void:
+	_hp_dice_formula.text = expression
+	_refresh_hp_delta_mode()
 
 
 func _refresh_hp_delta_mode() -> void:
@@ -1463,19 +1479,23 @@ func _refresh_hp_delta_mode() -> void:
 	var rolling: bool = _hp_use_dice.button_pressed
 	_hp_amount_row.visible = not rolling
 	_hp_dice_formula.visible = rolling
+	_hp_quick_dice_row.visible = rolling
 	_hp_formula_status.visible = rolling
 	_hp_delta_dialog.get_ok_button().text = (
 		"Tira e applica" if rolling else "Applica"
 	)
 	if rolling:
 		var roller: Node = board_root.get_node_or_null("DiceRollerChat")
+		var parsed: Dictionary = DiceRoller.parse_dice_expression(
+			_hp_dice_formula.text
+		)
 		var valid: bool = (
 			roller != null and roller.has_method("roll_expression_from_sheet")
-			and not _hp_dice_formula.text.strip_edges().is_empty()
+			and not parsed.is_empty()
 		)
 		_hp_formula_status.text = (
 			"Il risultato sarà registrato nel roller della chat."
-			if valid else "Roller non disponibile o formula vuota."
+			if valid else "Inserisci una formula valida (es. 2d6+3)."
 		)
 		_hp_delta_dialog.get_ok_button().disabled = not valid
 	else:
