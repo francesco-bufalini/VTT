@@ -120,7 +120,7 @@ static func automatic_monster_hit_points(creature: Dictionary) -> Dictionary:
 		return {
 			"available": true,
 			"value": maxi(1, int((hp_value as Dictionary).get("average", 1))),
-			"detail": "Valore medio del blocco statistiche 5etools"
+			"detail": "Valore medio del blocco statistiche"
 		}
 	if hp_value is int or hp_value is float:
 		return {"available": true, "value": maxi(1, int(hp_value)),
