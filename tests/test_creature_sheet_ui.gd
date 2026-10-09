@@ -313,14 +313,18 @@ func run() -> void:
 	assert(area._current().size_name == "Large" and area._current().footprint == 2.0)
 	assert(area._current().reach_feet == 15 and area._current().visual_front_quarter_turns == 2)
 	assert(area._current().party_id == "Explorers")
-	area._open_feat_dialog()
-	area._search_feats("Alert")
-	assert(not area._visible_feats.is_empty(), "5e.tools feats must be searchable.")
-	area._feat_list.select(0)
-	area._show_feat_details(0)
-	area._confirm_feat()
+	# The obsolete feat picker was removed, but existing saved feats must
+	# survive an edit and save of the unified creature sheet.
+	var previous_feats: Dictionary = area._current().duplicate(true)
+	previous_feats["feats"] = "Alert [PHB]"
+	previous_feats["feats_catalog"] = [{"id": "alert|phb", "name": "Alert", "source": "PHB"}]
+	assert(area._archive.save(previous_feats) == OK)
+	area._reload()
+	area._save()
 	assert("Alert" in String(area._current().get("feats", "")),
-		"Choosing a catalog feat must save it to the character.")
+		"Legacy feat data must survive a creature sheet save.")
+	assert(not (area._current().get("feats_catalog", []) as Array).is_empty(),
+		"Saved feat catalog references must not be discarded.")
 	area._set_sheet_condition(true, "poisoned")
 	area._reload()
 	assert("poisoned" in area._current().conditions)
