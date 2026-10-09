@@ -46,35 +46,46 @@ func run() -> void:
 	assert(int(loaded.get("round", 0)) == 1)
 	assert(int(loaded.get("turn_count", -1)) == 0)
 	var entries: Array = loaded.get("entries", [])
-	assert(entries.size() == 3)
+	assert(entries.size() == 4)
+	assert(String((entries[0] as Dictionary).get("id", "")) == "initiative_environment")
+	assert(int((entries[0] as Dictionary).get("initiative", 0)) == 20)
 	assert(
-		String((entries[0] as Dictionary).get("token_id", ""))
+		String((entries[1] as Dictionary).get("token_id", ""))
 		== "path:Tokens/Sariel"
 	)
 
 	tracker.call("next_turn")
 	var after_next: Dictionary = tracker.call("get_save_state")
-	assert(int(after_next.get("active_index", -1)) == 1)
+	assert(int(after_next.get("active_index", -1)) == 2)
 	assert(int(after_next.get("round", 0)) == 1)
 	assert(int(after_next.get("turn_count", -1)) == 1)
 
 	tracker.call("next_turn")
 	tracker.call("next_turn")
+	tracker.call("next_turn")
 	var wrapped: Dictionary = tracker.call("get_save_state")
-	assert(int(wrapped.get("active_index", -1)) == 0)
+	assert(int(wrapped.get("active_index", -1)) == 1)
 	assert(int(wrapped.get("round", 0)) == 2)
-	assert(int(wrapped.get("turn_count", -1)) == 3)
+	assert(int(wrapped.get("turn_count", -1)) == 4)
 
 	tracker.call("previous_turn")
 	var after_previous: Dictionary = tracker.call("get_save_state")
-	assert(int(after_previous.get("active_index", -1)) == 2)
+	assert(int(after_previous.get("active_index", -1)) == 0)
 	assert(int(after_previous.get("round", 0)) == 1)
-	assert(int(after_previous.get("turn_count", -1)) == 2)
+	assert(int(after_previous.get("turn_count", -1)) == 3)
 
 	var duplicate_state: Dictionary = state.duplicate(true)
 	var duplicate_entries: Array = duplicate_state.get("entries", [])
-	(duplicate_entries[1] as Dictionary)["id"] = "initiative_1"
+	(duplicate_entries[2] as Dictionary)["id"] = "initiative_1"
 	assert(not bool(tracker.call("valid_state", duplicate_state)))
+
+	tracker.call("_remove_entry", "initiative_environment")
+	assert((tracker.call("get_save_state") as Dictionary).get("entries", []).size() == 4)
+	var legacy_state: Dictionary = state.duplicate(true)
+	assert(bool(tracker.call("load_state", legacy_state)))
+	assert((tracker.call("get_save_state") as Dictionary).get("entries", []).size() == 4)
+	assert(bool(tracker.call("load_state", tracker.call("get_save_state"))))
+	assert((tracker.call("get_save_state") as Dictionary).get("entries", []).size() == 4)
 
 	print(
 		"PASS: initiative order, linked token IDs, rounds and turn navigation"
