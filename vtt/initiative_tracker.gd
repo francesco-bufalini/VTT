@@ -717,13 +717,12 @@ func _add_entry_row(
 
 	var token_id: String = String(entry.get("token_id", ""))
 	var token_label: Label = Label.new()
-	token_label.text = (
-		"Iniziativa: 20" if entry_id_is_environment(entry)
-		else 
-		"Token: %s" % _token_name_by_id(token_id)
-		if not token_id.is_empty()
-		else "Token: —"
-	)
+	if entry_id_is_environment(entry):
+		token_label.text = "Iniziativa: 20"
+	elif not token_id.is_empty():
+		token_label.text = "Token: %s" % _token_name_by_id(token_id)
+	else:
+		token_label.text = "Token: —"
 	token_label.modulate = Color(0.78, 0.8, 0.84, 1.0)
 	token_label.add_theme_font_size_override("font_size", 10)
 	text_column.add_child(token_label)
