@@ -15,8 +15,7 @@ const CONTEXT_CAMERA_SETTINGS := 12
 const CONTEXT_INITIATIVE := 13
 const CONTEXT_TOKEN_DETAILS := 14
 const CONTEXT_RESTORE_TRANSFORMATION := 15
-const CONTEXT_PLAYER_AREA := 16
-const CONTEXT_MASTER_AREA := 17
+const CONTEXT_COMPENDIUM := 17
 const CONTEXT_TOKEN_LIST := 18
 const CONTEXT_MEASURE_RULER := 19
 const CONTEXT_AOE_SPHERE := 20
@@ -30,11 +29,6 @@ const CONTEXT_LOAD_MAP_LOCAL := 27
 const CONTEXT_SAVE_CAMPAIGN_STATE := 28
 const CONTEXT_COMBAT_START := 29
 const CONTEXT_COMBAT_END := 30
-const CONTEXT_PLAYER_ADD_CHARACTER := 31
-const CONTEXT_PLAYER_LINK_TOKEN := 32
-const CONTEXT_PLAYER_LINK_CHARACTER := 33
-const CONTEXT_MASTER_LINK_TOKEN := 34
-const CONTEXT_MASTER_LINK_CREATURE := 35
 const CONTEXT_UNDO := 36
 const CONTEXT_REDO := 37
 const CONTEXT_TOGGLE_CONDITION_VISUALS := 38
@@ -78,7 +72,6 @@ const TOKEN_SIZES := [
 ]
 
 @export var grid_visible_on_start: bool = true
-@export var grid_3d_visible_on_start: bool = false
 @export var vision_cones_visible_on_start: bool = false
 @export var cell_size: float = 1.0
 @export var token_spawn_height: float = 4.0
@@ -183,8 +176,7 @@ var attack_system: Node
 var flanking_system: Node
 var initiative_tracker: Node
 var token_list: Node
-var player_area: Node # Legacy compatibility only.
-var master_area: Node # The Compendio browser.
+var compendium: Node
 var dice_roller_chat: Node
 var creature_presence: Node
 var _undo_stack: Array[Dictionary] = []
@@ -196,9 +188,7 @@ var _undo_restoring: bool = false
 
 func _ready() -> void:
 	# Unica griglia tattica: la VolumetricGrid collision-aware.
-	# grid_3d_visible_on_start resta come alias di compatibilita per scene
-	# create prima della rimozione della SurfaceGrid.
-	set_grid_visible(grid_visible_on_start or grid_3d_visible_on_start)
+	set_grid_visible(grid_visible_on_start)
 	set_vision_cones_visible(vision_cones_visible_on_start)
 
 	context_menu.id_pressed.connect(_on_context_menu_id_pressed)
@@ -288,11 +278,11 @@ func _ready() -> void:
 	add_child(token_list)
 	token_list.call("setup", self)
 
-	# Private legacy sheet stores are retained for CreatureArchive migration.
-	master_area = preload("res://vtt/compendium.gd").new()
-	master_area.name = "Compendio"
-	add_child(master_area)
-	master_area.call("setup", self)
+	# The read-only Compendium is the only reference browser.
+	compendium = preload("res://vtt/compendium.gd").new()
+	compendium.name = "Compendio"
+	add_child(compendium)
+	compendium.call("setup", self)
 
 	var creature_script: Script = load("res://vtt/creature_area.gd")
 	if creature_script == null:
@@ -2622,14 +2612,6 @@ func _redo_last_action_now() -> bool:
 	_append_history_state(_undo_stack, current_state)
 	return true
 
-func toggle_player_area() -> void:
-	toggle_creature_area()
-
-
-func add_player_character() -> void:
-	add_creature()
-
-
 func add_creature() -> void:
 	var area: Node = get_node_or_null("CreatureArea")
 	if area != null and area.has_method("begin_add_creature"):
@@ -2637,24 +2619,11 @@ func add_creature() -> void:
 
 
 func toggle_compendium() -> void:
-	toggle_master_area()
-
-
-func link_player_character_to_selected_token() -> void:
-	if player_area != null and is_instance_valid(player_area):
-		player_area.call("request_link_character_to_selected_token")
-
-
-func link_selected_player_character_to_named_token() -> void:
-	if player_area != null and is_instance_valid(player_area):
-		player_area.call("request_link_selected_character_to_named_token")
+	if compendium != null and is_instance_valid(compendium):
+		compendium.call("toggle_panel")
 
 
 func get_selected_tokens_for_creatures() -> Array[CharacterBody3D]:
-	return get_selected_tokens_for_player_area()
-
-
-func get_selected_tokens_for_player_area() -> Array[CharacterBody3D]:
 	_clean_selection()
 	return _selected_tokens.duplicate()
 
@@ -2674,26 +2643,6 @@ func toggle_creature_area() -> void:
 	var area := get_node_or_null("CreatureArea")
 	if area != null:
 		area.call("toggle_panel")
-
-
-func toggle_master_area() -> void:
-	if master_area != null and is_instance_valid(master_area):
-		master_area.call("toggle_panel")
-
-
-func link_master_creature_to_selected_token() -> void:
-	if master_area != null and is_instance_valid(master_area):
-		master_area.call("request_link_creature_to_selected_token")
-
-
-func link_selected_master_creature_to_named_token() -> void:
-	if master_area != null and is_instance_valid(master_area):
-		master_area.call("request_link_selected_creature_to_named_token")
-
-
-func get_selected_tokens_for_master_area() -> Array[CharacterBody3D]:
-	_clean_selection()
-	return _selected_tokens.duplicate()
 
 
 func toggle_spell_menu() -> void:
@@ -2865,14 +2814,6 @@ func _primary_board_fit_size_2d() -> float:
 
 
 # Alias di compatibilita: ora esiste una sola griglia volumetrica.
-func toggle_grid_3d() -> void:
-	toggle_grid()
-
-
-func set_grid_3d_visible(enabled: bool) -> void:
-	set_grid_visible(enabled)
-
-
 func toggle_vision_cones() -> void:
 	push_undo_state()
 	set_vision_cones_visible(not _vision_cones_visible)
@@ -3220,7 +3161,7 @@ func _show_context_menu(screen_position: Vector2) -> void:
 	context_game_menu.add_separator()
 	context_game_menu.add_item("Creature · schede", CONTEXT_CREATURE_AREA)
 	context_game_menu.add_item("Aggiungi creatura", CONTEXT_ADD_CREATURE)
-	context_game_menu.add_item("Compendio", CONTEXT_MASTER_AREA)
+	context_game_menu.add_item("Compendio", CONTEXT_COMPENDIUM)
 	context_game_menu.add_separator("Combattimento")
 	context_game_menu.add_item("Inizia combattimento", CONTEXT_COMBAT_START)
 	var initiative_visible: bool = (
@@ -3354,10 +3295,10 @@ func _on_context_menu_id_pressed(id: int) -> void:
 		call_deferred("add_creature")
 		return
 
-	if id == CONTEXT_MASTER_AREA:
+	if id == CONTEXT_COMPENDIUM:
 		context_menu.hide()
-		if master_area != null and is_instance_valid(master_area):
-			master_area.call_deferred("show_panel")
+		if compendium != null and is_instance_valid(compendium):
+			compendium.call_deferred("show_panel")
 		return
 
 	if id == CONTEXT_REPOSITION_SELECTED:
@@ -3375,38 +3316,6 @@ func _on_context_menu_id_pressed(id: int) -> void:
 			token_list.call_deferred("toggle_panel")
 		return
 
-
-	if id == CONTEXT_PLAYER_LINK_TOKEN:
-		context_menu.hide()
-		if player_area != null and is_instance_valid(player_area):
-			player_area.call_deferred(
-				"request_link_character_to_selected_token"
-			)
-		return
-
-	if id == CONTEXT_PLAYER_LINK_CHARACTER:
-		context_menu.hide()
-		if player_area != null and is_instance_valid(player_area):
-			player_area.call_deferred(
-				"request_link_selected_character_to_named_token"
-			)
-		return
-
-	if id == CONTEXT_MASTER_LINK_TOKEN:
-		context_menu.hide()
-		if master_area != null and is_instance_valid(master_area):
-			master_area.call_deferred(
-				"request_link_creature_to_selected_token"
-			)
-		return
-
-	if id == CONTEXT_MASTER_LINK_CREATURE:
-		context_menu.hide()
-		if master_area != null and is_instance_valid(master_area):
-			master_area.call_deferred(
-				"request_link_selected_creature_to_named_token"
-			)
-		return
 
 	if id == CONTEXT_COMBAT_START:
 		start_combat_mode()
@@ -4040,20 +3949,6 @@ func open_selected_token_state_editor() -> void:
 	open_token_transformation(token)
 
 
-func _open_token_state_editor(token: CharacterBody3D) -> void:
-	# Compatibilità per eventuali chiamanti esistenti.
-	open_token_transformation(token)
-
-
-func _apply_token_state_editor() -> void:
-	# L'editor stato è ora lo stesso ConfirmationDialog dell'editor token.
-	_on_token_dialog_confirmed()
-
-
-func _close_token_state_editor() -> void:
-	_reset_token_generation_state()
-
-
 func _close_context_menu_to_game() -> void:
 	_ui_owns_mouse = false
 	_capture_mouse()
@@ -4093,17 +3988,11 @@ func _finish_context_menu_close() -> void:
 		and is_instance_valid(spell_system)
 		and bool(spell_system.call("is_panel_open"))
 	)
-	var player_panel_open: bool = (
-		player_area != null
-		and is_instance_valid(player_area)
-		and player_area.has_method("is_panel_open")
-		and bool(player_area.call("is_panel_open"))
-	)
-	var master_panel_open: bool = (
-		master_area != null
-		and is_instance_valid(master_area)
-		and master_area.has_method("is_panel_open")
-		and bool(master_area.call("is_panel_open"))
+	var compendium_panel_open: bool = (
+		compendium != null
+		and is_instance_valid(compendium)
+		and compendium.has_method("is_panel_open")
+		and bool(compendium.call("is_panel_open"))
 	)
 	var creature_sheet: Node = get_node_or_null("CreatureArea")
 	var creature_panel_open: bool = (
@@ -4111,7 +4000,7 @@ func _finish_context_menu_close() -> void:
 		and creature_sheet.has_method("is_panel_open")
 		and bool(creature_sheet.call("is_panel_open"))
 	)
-	if spell_panel_open or player_panel_open or master_panel_open or creature_panel_open:
+	if spell_panel_open or compendium_panel_open or creature_panel_open:
 		_pending_aoe_index = -1
 		_context_token = null
 		_ui_owns_mouse = true
