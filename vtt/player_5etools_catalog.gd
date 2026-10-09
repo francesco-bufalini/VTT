@@ -56,7 +56,21 @@ static func entries(category: String) -> Array[Dictionary]:
 			for raw: Variant in reference_value[category]:
 				if raw is Dictionary:
 					result.append(raw.duplicate(true))
-	return ContentCatalog.merge(category, result)
+var merged: Array[Dictionary] = ContentCatalog.merge(category, result)
+	if category in ["races", "feats"]:
+		# Merge first, then sort once. Core, supplements and homebrew must
+		# participate in a single alphabetical ordering.
+		merged.sort_custom(
+			func(a: Dictionary, b: Dictionary) -> bool:
+				var first := String(a.get("name", ""))
+				var second := String(b.get("name", ""))
+				if first.naturalnocasecmp_to(second) == 0:
+					return String(a.get("source", "")).naturalnocasecmp_to(
+						String(b.get("source", ""))
+					) < 0
+				return first.naturalnocasecmp_to(second) < 0
+		)
+	return merged
 
 
 # One selectable class per name and rules edition. Supplements contribute
