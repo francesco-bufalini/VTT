@@ -9,6 +9,24 @@ class Board extends Node3D:
 	var cell_size: float = 1.0
 
 
+class OverlayToken extends CharacterBody3D:
+	var token_height_cells: float = 1.0
+	var cell_size: float = 1.0
+	var show_conditions: bool = true
+
+	func get_display_name() -> String:
+		return "Guardia"
+
+	func get_footprint_cells() -> float:
+		return 1.0
+
+	func get_active_condition_display_parts() -> PackedStringArray:
+		return PackedStringArray(["☠ Avvelenato", "✦ Accecato"])
+
+	func are_condition_visuals_visible() -> bool:
+		return show_conditions
+
+
 func _initialize() -> void:
 	call_deferred("run")
 
@@ -197,6 +215,60 @@ func run() -> void:
 	):
 		return
 
+	# The 3D rings can be clipped by the selected camera floor, but the
+	# screen-space conditions and their legible labels must remain visible.
+	var tokens_root: Node3D = Node3D.new()
+	tokens_root.name = "Tokens"
+	board.add_child(tokens_root)
+	var condition_token: OverlayToken = OverlayToken.new()
+	condition_token.position = Vector3(0.0, 6.5, 0.0)
+	tokens_root.add_child(condition_token)
+	overlay.call("setup", board, probe)
+	overlay.call("set_2d_active", true)
+	overlay.call("_render_token_badge", condition_token, 6.0)
+	var badges_value: Variant = overlay.get("_badges")
+	var condition_badge: Control = (badges_value as Dictionary).get(
+		condition_token.get_instance_id()
+	) as Control
+	if not _check(
+		condition_badge != null and condition_badge.visible,
+		"2D conditions must have a visible screen-space badge"
+	):
+		return
+	var condition_label: Label = condition_badge.get_node("Conditions") as Label
+	var token_name_label: Label = condition_badge.get_node("Name") as Label
+	var token_height_label: Label = condition_badge.get_node("Height") as Label
+	if not _check(
+		condition_label.visible
+		and "Avvelenato" in condition_label.text
+		and "Accecato" in condition_label.text,
+		"all active conditions must appear above the 2D token"
+	):
+		return
+	if not _check(
+		token_name_label.get_theme_font_size("font_size") >= 18
+		and condition_label.get_theme_font_size("font_size") >= 16
+		and token_height_label.get_theme_font_size("font_size") >= 15,
+		"2D token texts must use readable font sizes"
+	):
+		return
+	camera.call("step_top_down_level", -1)
+	overlay.call("_render_token_badge", condition_token, 0.0)
+	if not _check(
+		condition_badge.visible
+		and condition_label.visible
+		and "Avvelenato" in condition_label.text,
+		"changing the camera floor must not hide active conditions"
+	):
+		return
+	condition_token.show_conditions = false
+	overlay.call("_render_token_badge", condition_token, 0.0)
+	if not _check(
+		not condition_label.visible,
+		"the existing show/hide conditions setting must be respected"
+	):
+		return
+
 	camera.call("exit_top_down_2d")
 	if not _check(
 		camera.global_transform.is_equal_approx(original_transform)
@@ -281,5 +353,5 @@ func run() -> void:
 
 	board.queue_free()
 	await process_frame
-	print("PASS: 2D floors, elevation units, held Space/Shift+Space repeats and 3D restoration")
+	print("PASS: 2D floors, persistent readable token conditions, held floor stepping and 3D restoration")
 	quit()
