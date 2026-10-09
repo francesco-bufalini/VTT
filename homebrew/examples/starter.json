@@ -32,6 +32,20 @@
       }
     },
     {
+      "category": "items",
+      "id": "starglass_compass",
+      "name": "Starglass Compass",
+      "source": "Example",
+      "data": {
+        "type": "G",
+        "rarity": "uncommon",
+        "weight": 1,
+        "entries": [
+          "A handcrafted compass that glows faintly under the stars. Its effects are determined by the GM."
+        ]
+      }
+    },
+    {
       "category": "races",
       "id": "starfolk",
       "name": "Starfolk",
