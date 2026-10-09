@@ -33,6 +33,31 @@ func run() -> void:
 	var top_center: Vector3 = pick.get("top_center", Vector3.ZERO)
 	assert(top_center.is_equal_approx(Vector3(0.5, 1.0, 0.5)))
 
+	# A medium token rests on the first visible top face.
+	assert(is_equal_approx(
+		grid.get_clear_spawn_floor_for_footprint(
+			Vector3(0.5, 1.5, 0.5), 1.0, 1.0, 1.0
+		),
+		1.0
+	))
+
+	# A Large token is snapped to four adjacent squares; the first
+	# pointed square is low but the statue rises two voxels in the next one.
+	# All four footprint columns must clear the grid BEFORE spawning.
+	grid._active_occupied[Vector3i(1, 1, 0)] = true
+	grid._active_occupied[Vector3i(1, 2, 0)] = true
+	var large_floor: float = grid.get_clear_spawn_floor_for_footprint(
+		Vector3(1.0, 2.0, 1.0), 2.0, 1.0, 1.0
+	)
+	assert(is_equal_approx(large_floor, 3.0))
+
+	# Tall models must also clear geometry above their original base.
+	grid._active_occupied[Vector3i(0, 3, 0)] = true
+	var tall_floor: float = grid.get_clear_spawn_floor_for_footprint(
+		Vector3(0.5, 1.5, 0.5), 1.0, 3.0, 1.0
+	)
+	assert(is_equal_approx(tall_floor, 4.0))
+
 	grid.free()
-	print("PASS: token spawn targeting follows the pointed visible grid cell")
+	print("PASS: token spawn follows visible grid and clears full body footprint")
 	quit()
