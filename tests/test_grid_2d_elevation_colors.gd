@@ -37,41 +37,42 @@ func _run() -> void:
 	grid.call("set_camera", camera)
 	grid.call("set_surface_overlay_bias_cells", 0.025)
 
-	var original_albedo: Color = grid._grid_material.albedo_color
+	var material: StandardMaterial3D = grid.get("_grid_material") as StandardMaterial3D
+	var mesh: MultiMesh = grid.get("_multimesh") as MultiMesh
+	var original_albedo: Color = material.albedo_color
 	if not _check(
-		grid._multimesh.use_colors
-		and grid._grid_material.vertex_color_use_as_albedo,
+		mesh.use_colors
+		and material.vertex_color_use_as_albedo,
 		"instances need their own vertex colors"
 	):
 		return
 	if not _check(
-		grid._grid_material.no_depth_test,
+		material.no_depth_test,
 		"2D grid needs an overlay so lower cells remain visible over the terrain"
 	):
 		return
 
-	grid._active_occupied = {
+	grid.set("_active_occupied", {
 		Vector3i(0, -2, 0): true,
 		Vector3i(1, -1, 0): true,
 		Vector3i(2, 0, 0): true,
 		Vector3i(3, 2, 0): true,
-	}
+	})
 	camera.call("enter_top_down_2d", Vector3.ZERO, 30.0, 0.0)
 	grid.call("_update_multimesh_instances")
-	var mesh: MultiMesh = grid._multimesh
 	if not _check(
 		mesh.instance_count == 4,
 		"all occupied squares must remain drawn"
 	):
 		return
 	if not _check(
-		_count_lower_tinted(mesh, grid.GRID_LOWER_INSTANCE_TINT) == 1,
+		_count_lower_tinted(mesh, VolumetricGrid.GRID_LOWER_INSTANCE_TINT) == 1,
 		"only squares fully below floor 0 should turn muted slate"
 	):
 		return
 	if not _check(
 		grid.call("_cell_instance_tint", Vector3i(1, -1, 0), true, 0.0)
-		== grid.GRID_NORMAL_INSTANCE_TINT,
+		== VolumetricGrid.GRID_NORMAL_INSTANCE_TINT,
 		"the floor-level square keeps its parchment tint"
 	):
 		return
@@ -79,7 +80,7 @@ func _run() -> void:
 	camera.call("set_top_down_level", 2.0)
 	grid.call("_update_multimesh_instances")
 	if not _check(
-		_count_lower_tinted(mesh, grid.GRID_LOWER_INSTANCE_TINT) == 3
+		_count_lower_tinted(mesh, VolumetricGrid.GRID_LOWER_INSTANCE_TINT) == 3
 		and mesh.instance_count == 4,
 		"changing levels must recolor existing instances without hiding them"
 	):
@@ -89,19 +90,19 @@ func _run() -> void:
 	grid.call("set_surface_overlay_bias_cells", 0.0)
 	grid.call("_update_multimesh_instances")
 	if not _check(
-		_count_lower_tinted(mesh, grid.GRID_LOWER_INSTANCE_TINT) == 0,
+		_count_lower_tinted(mesh, VolumetricGrid.GRID_LOWER_INSTANCE_TINT) == 0,
 		"3D mode must restore the single original grid color"
 	):
 		return
 	if not _check(
-		grid._grid_material.albedo_color.is_equal_approx(original_albedo)
-		and not grid._grid_material.no_depth_test,
+		material.albedo_color.is_equal_approx(original_albedo)
+		and not material.no_depth_test,
 		"grid base tint and depth-testing must be unchanged in 3D"
 	):
 		return
 	if not _check(
-		grid.GRID_LOWER_INSTANCE_TINT.a >= 0.75
-		and grid.GRID_LOWER_INSTANCE_TINT.r > 0.6,
+		VolumetricGrid.GRID_LOWER_INSTANCE_TINT.a >= 0.75
+		and VolumetricGrid.GRID_LOWER_INSTANCE_TINT.r > 0.6,
 		"lower squares must stay readable with a restrained color"
 	):
 		return
