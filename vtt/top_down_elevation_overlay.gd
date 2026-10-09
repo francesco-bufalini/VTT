@@ -320,14 +320,19 @@ func _render_token_badge(token: CharacterBody3D, floor_y: float) -> void:
 		if active_parts is PackedStringArray:
 			for part: String in active_parts:
 				status_parts.append(part)
-	var status_text: String = " · ".join(status_parts)
 	var has_status: bool = not status_parts.is_empty()
 	conditions_label.visible = has_status
 	status_background.visible = has_status
 	if has_status:
-		# One narrow line immediately under the name, never spanning multiple
-		# squares vertically; long sets use ellipsis instead of wrapping.
-		var width_px: float = clampf(icon_size * 1.5, 126.0, 220.0)
+		# Keep the strip tied to the token's screen footprint as the user zooms.
+		# At distant zoom use icons rather than pushing text across many cells.
+		var width_px: float = clampf(icon_size * 1.6, 60.0, 176.0)
+		var status_text: String = " · ".join(status_parts)
+		if width_px < 115.0:
+			var condensed := PackedStringArray()
+			for part: String in status_parts:
+				condensed.append(part.split(" ", false, 1)[0])
+			status_text = " ".join(condensed)
 		var offset_x: float = (icon_size - width_px) * 0.5
 		status_background.position = Vector2(offset_x, -23.0)
 		status_background.size = Vector2(width_px, 20.0)
