@@ -1223,9 +1223,9 @@ func _subclass_choices(class_ref: Dictionary) -> Array[Dictionary]:
 		var parent_source: String = String(entry.get("class_source", entry.get("classSource", ""))).to_upper()
 		# A 2024 class can still use compatible 2014 subclasses, including
 		# those published in supplements. The subclass book is NOT its class source.
-		if source == "XPHB" and parent_source not in ["XPHB", "PHB", ""]:
+		if source == "XPHB" and parent_source not in ["XPHB", ""]:
 			continue
-		if source == "EFA" and parent_source not in ["EFA", "TCE", ""]:
+		if source == "EFA" and parent_source not in ["EFA", ""]:
 			continue
 		if source not in ["XPHB", "EFA"] and not parent_source.is_empty() and parent_source != source:
 			continue
@@ -2207,6 +2207,9 @@ func _refresh_reference(record: Dictionary) -> void:
 				continue
 			if String(feature.get("subclass_name", feature.get("subclassName", ""))).nocasecmp_to(subclass_name) != 0:
 				continue
+			var subclass_source: String = String(class_data.get("subclass_source", ""))
+			if not subclass_source.is_empty() and String(feature.get("subclass_source", "")) != subclass_source:
+				continue
 			if int(feature.get("level", 0)) > subclass_level:
 				continue
 			parts.append(FiveToolsText.subtitle(Player5eTools.display_label(feature)))
@@ -3110,6 +3113,8 @@ func _set_sheet_condition(enabled: bool, id: String) -> void:
 func _reload_homebrew() -> void:
 	_save()
 	ContentCatalog.reload_homebrew()
+	if _inventory_ui != null:
+		_inventory_ui.call("reload_catalog")
 	_set_reference_choices(_species, Player5eTools.entries("races"))
 	_refresh_class_choices()
 	_reload()
