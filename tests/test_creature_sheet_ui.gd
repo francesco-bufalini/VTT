@@ -62,10 +62,18 @@ func run() -> void:
 	assert(not area._filtered_catalog.is_empty(), "Source-name search must work")
 
 	area._reload()
+	assert("ape" in area._associated_miniature_ids("Ape", "MM"))
+	area._choose_miniature({"name": "Ape", "source": "MM", "kind": "monster", "id": "suggestion-probe"}, true)
+	assert(area._visible_miniatures[0].id == "ape",
+		"The curated bestiary association must rank the correct pack first")
+	assert(area._miniature_dialog.get_ok_button().disabled,
+		"Suggested pack must not bypass mandatory selection")
+	area._miniature_dialog.hide()
 	area._create_character()
 	assert(area._current().is_empty(), "Creation must wait for the mandatory miniature choice")
 	assert(area._miniature_dialog.get_ok_button().disabled,
 		"New character must explicitly select a default miniature")
+	area._miniature_filter.text = "Hero"
 	area._on_miniature_selected(0)
 	assert(not area._miniature_dialog.get_ok_button().disabled)
 	area._confirm_miniature()
@@ -78,7 +86,7 @@ func run() -> void:
 	var sheet: Dictionary = area._current()
 	assert(sheet.classes[0].source == "PHB" and sheet.rules_version == "2014")
 	assert(sheet.classes[0].level == 5 and sheet.level == 5)
-	assert(sheet.trackers.size() == 3)
+	assert(not sheet.has("trackers"), "Legacy trackers must not be created.")
 	# Multiclass levels are independent; the primary level never decreases
 	# because a secondary class is added.
 	area._add_multiclass_row("Fighter", 2, "PHB")
@@ -95,12 +103,23 @@ func run() -> void:
 	# For the rest of the UI test, use a single-class wizard.
 	area._clear_multiclass()
 	area._save()
-	area._update_tracker("slot_1", "maximum", 7)
-	area._update_tracker("slot_1", "current", 5)
 	area._level.value = 6
 	area._reload()
 	sheet = area._current()
-	assert(sheet.id == original_id and sheet.trackers[0].maximum == 7 and sheet.trackers[0].current == 5)
+	assert(sheet.id == original_id and sheet.classes[0].level == 6)
+	area._max_hp.value = 35
+	area._hp.value = 7
+	area._save()
+	area._restore_full_hp()
+	assert(area._current().current_hp == 35, "Restore HP button must update the persistent sheet")
+	area._open_feat_dialog()
+	area._search_feats("Alert")
+	assert(not area._visible_feats.is_empty(), "5e.tools feats must be searchable.")
+	area._feat_list.select(0)
+	area._show_feat_details(0)
+	area._confirm_feat()
+	assert("Alert" in String(area._current().get("feats", "")),
+		"Choosing a catalog feat must save it to the character.")
 	area._set_sheet_condition(true, "poisoned")
 	area._reload()
 	assert("poisoned" in area._current().conditions)
