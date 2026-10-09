@@ -1,6 +1,10 @@
 extends Camera3D
 
 const TOP_DOWN_SLICE_PADDING := 0.12
+# A single press changes one floor; holding the key continues moving through
+# occupied elevations instead of depending on operating-system key repeats.
+const TOP_DOWN_LEVEL_REPEAT_DELAY := 0.28
+const TOP_DOWN_LEVEL_REPEAT_INTERVAL := 0.12
 
 @export_range(1.0, 100.0, 0.5) var speed: float = 5.0
 @export_range(0.0002, 0.01, 0.0001) var mouse_sensitivity: float = 0.002
@@ -24,6 +28,8 @@ var _top_down_center_y: float = 0.0
 var _top_down_tilt_degrees: float = 0.0
 var _top_down_floor_levels_provider: Callable = Callable()
 var _top_down_clearance: float = 32.0
+var _top_down_held_direction: int = 0
+var _top_down_repeat_remaining: float = 0.0
 
 
 func _ready() -> void:
@@ -32,14 +38,13 @@ func _ready() -> void:
 
 func _unhandled_input(event: InputEvent) -> void:
 	if _top_down_2d_enabled:
+		# Movement is polled per frame so a held Space keeps traversing
+		# solid levels; consume the shortcut without stepping twice here.
 		if (
 			event is InputEventKey
-			and event.pressed
-			and not event.echo
 			and event.keycode == KEY_SPACE
 			and not _text_input_has_focus()
 		):
-			step_top_down_level(-1 if event.shift_pressed else 1)
 			get_viewport().set_input_as_handled()
 		return
 	if event is InputEventMouseMotion \
@@ -106,9 +111,14 @@ func _process(delta: float) -> void:
 
 func _process_top_down_2d(delta: float) -> void:
 	if _text_input_has_focus():
+		_advance_top_down_level_hold(0, delta)
 		return
 
 	var shift_pressed := Input.is_key_pressed(KEY_SHIFT)
+	var level_direction: int = 0
+	if Input.is_key_pressed(KEY_SPACE):
+		level_direction = -1 if shift_pressed else 1
+	_advance_top_down_level_hold(level_direction, delta)
 	var zoom_direction := 0.0
 	if shift_pressed and Input.is_key_pressed(KEY_W):
 		zoom_direction -= 1.0
@@ -140,6 +150,26 @@ func _process_top_down_2d(delta: float) -> void:
 	if pan != Vector3.ZERO:
 		var pan_speed := maxf(speed, size * 0.45)
 		global_position += pan.normalized() * pan_speed * delta
+
+
+func _advance_top_down_level_hold(direction: int, delta: float) -> void:
+	# Press/release and reversing with Shift reset the repeat clock.
+	# The first change is immediate; then a held key repeats steadily.
+	if direction != _top_down_held_direction:
+		_top_down_held_direction = direction
+		_top_down_repeat_remaining = TOP_DOWN_LEVEL_REPEAT_DELAY
+		if direction != 0:
+			step_top_down_level(direction)
+		return
+	if direction == 0:
+		return
+
+	_top_down_repeat_remaining -= maxf(delta, 0.0)
+	if _top_down_repeat_remaining <= 0.0:
+		step_top_down_level(direction)
+		# One level at most per frame: a pause or frame hitch must never
+		# skip intermediate solid floors to catch up on elapsed time.
+		_top_down_repeat_remaining = TOP_DOWN_LEVEL_REPEAT_INTERVAL
 
 
 func set_top_down_floor_levels_provider(provider: Callable) -> void:
@@ -216,6 +246,7 @@ func enter_top_down_2d(
 	tilt_degrees: float = 0.0
 ) -> void:
 	if _top_down_2d_enabled:
+		_advance_top_down_level_hold(0, 0.0)
 		size = clampf(fit_size, top_down_min_size, top_down_max_size)
 		_apply_top_down_pose(center, tilt_degrees)
 		return
@@ -231,6 +262,7 @@ func enter_top_down_2d(
 	_saved_2d_near = near
 	_has_saved_2d_state = true
 	_top_down_2d_enabled = true
+	_advance_top_down_level_hold(0, 0.0)
 
 	projection = Camera3D.PROJECTION_ORTHOGONAL
 	size = clampf(fit_size, top_down_min_size, top_down_max_size)
@@ -269,6 +301,7 @@ func exit_top_down_2d() -> void:
 		return
 
 	_top_down_2d_enabled = false
+	_advance_top_down_level_hold(0, 0.0)
 	if _has_saved_2d_state:
 		projection = _saved_2d_projection
 		size = _saved_2d_size
