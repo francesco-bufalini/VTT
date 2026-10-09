@@ -115,8 +115,14 @@ func _run() -> void:
 	assert(a.selection_marker.visible)
 	assert(a._name_label.visible)
 
+	# A token that previously had a portrait must not retain it when its
+	# new identity lacks 2D art.
+	b.set_token_pack_id("wolf")
+	b.set_top_down_token_enabled(true)
+	assert(b.get_top_down_icon_texture() == texture)
 	b.set_token_pack_id("valandir")
 	b.set_top_down_token_enabled(true)
+	assert(b.get_top_down_icon_texture() == null)
 	b.set_2d_elevation_overlay_enabled(true)
 	b.set_display_name("Kryss")
 	elevation_ui.call("_render_token_badge", b, 0.0)
