@@ -883,7 +883,10 @@ func set_display_name(value: String) -> void:
 	_ensure_token_overlay()
 	if is_instance_valid(_name_label):
 		_name_label.text = token_display_name
-		_name_label.visible = not token_display_name.is_empty()
+		_name_label.visible = (
+			not token_display_name.is_empty()
+			and not _top_down_elevation_overlay_enabled
+		)
 
 
 func get_display_name() -> String:
@@ -1653,7 +1656,9 @@ func set_selected(value: bool) -> void:
 	_selected = value
 
 	if is_instance_valid(selection_marker):
-		selection_marker.visible = value
+		# In 2D the floor slicing plane can clip the 3D selection mesh.
+		# The transparent screen overlay draws a ring in its place.
+		selection_marker.visible = value and not _top_down_elevation_overlay_enabled
 
 
 func is_selected() -> bool:
@@ -2020,6 +2025,10 @@ func set_2d_elevation_overlay_enabled(enabled: bool) -> void:
 			_top_down_token_enabled and not enabled
 			and _top_down_token_sprite.texture != null
 		)
+	if is_instance_valid(_name_label):
+		_name_label.visible = not enabled and not token_display_name.is_empty()
+	if is_instance_valid(selection_marker):
+		selection_marker.visible = _selected and not enabled
 
 
 func get_top_down_icon_texture() -> Texture2D:
