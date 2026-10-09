@@ -51,7 +51,7 @@ func setup(root: Node3D) -> void:
 	_client = Bestiary.new()
 	_client.name = "CreatureBestiary"
 	add_child(_client)
-	_client.setup()
+	_client.call("setup")
 	_client.catalog_ready.connect(_on_catalog_ready)
 	_client.creature_ready.connect(_on_monster_received)
 	_client.catalog_failed.connect(func(message: String) -> void: _set_status(message))
@@ -62,7 +62,7 @@ func setup(root: Node3D) -> void:
 	_build_transfer_dialog()
 	_reload()
 	if DisplayServer.get_name() != "headless":
-		_client.load_catalog()
+		_client.call("load_catalog")
 
 
 func toggle_panel() -> void:
@@ -539,6 +539,15 @@ func _save() -> void:
 			})
 		record["classes"] = classes
 		record["feats"] = _feats.text
+		if String(record["default_miniature_id"]).is_empty():
+			var suggestion := _species_default_miniature(
+				String(record.get("species", ""))
+			)
+			if not suggestion.is_empty():
+				record["default_miniature_id"] = suggestion
+				_loading = true
+				_default_miniature.text = suggestion
+				_loading = false
 	var derived: Array[Dictionary] = (
 		Rules.character_trackers(record)
 		if String(record.get("kind", "")) == "character"
@@ -787,7 +796,8 @@ func _request_monster(index: int) -> void:
 	if index < 0 or index >= _filtered_catalog.size():
 		return
 	var entry := _filtered_catalog[index]
-	_client.request_creature(
+	_client.call(
+		"request_creature",
 		String(entry.get("name", "")), String(entry.get("source", "")),
 		"new_creature_%d" % Time.get_ticks_usec()
 	)
@@ -831,6 +841,24 @@ func _link_selected_token() -> void:
 	if token == null:
 		return
 	var creature_id := String(record.get("id", ""))
+	for other: Node in get_tree().get_nodes_in_group("dnd_token"):
+		if other != token and other.has_meta("creature_id"):
+			if String(other.get_meta("creature_id", "")) == creature_id:
+				for field: String in [
+					"creature_id", "creature_owner_id", "default_miniature_id",
+					"player_character_id", "player_character_name",
+					"master_creature_id", "master_creature_name",
+					"master_creature_side"
+				]:
+					if other.has_meta(field):
+						other.remove_meta(field)
+	for field: String in [
+		"player_character_id", "player_character_name",
+		"master_creature_id", "master_creature_name",
+		"master_creature_side"
+	]:
+		if token.has_meta(field):
+			token.remove_meta(field)
 	token.set_meta("creature_id", creature_id)
 	token.set_meta("creature_owner_id", Owner.local_id())
 	token.set_meta("default_miniature_id", String(record.get("default_miniature_id", "")))
@@ -852,6 +880,17 @@ func _link_selected_token() -> void:
 		_sync_token_health(record)
 		_refresh_current_miniature(record)
 		_set_status("Creatura associata alla miniatura senza modificarne l'aspetto.")
+
+
+func _species_default_miniature(species: String) -> String:
+	if species.is_empty():
+		return ""
+	# Never guess token pack IDs. Pick an actually published pack only
+	# when its label unambiguously matches the 5e.tools species.
+	for entry: Dictionary in TokenPackManager.get_entries():
+		if String(entry.get("name", "")).nocasecmp_to(species) == 0:
+			return String(entry.get("id", ""))
+	return ""
 
 
 func _refresh_current_miniature(record: Dictionary) -> void:
@@ -922,6 +961,11 @@ func _transfer() -> void:
 	if package.is_empty():
 		_set_status("ID non valido o cessione non salvata.")
 		return
+	var linked_token := _find_linked_token(record)
+	if linked_token != null:
+		linked_token.set_meta(
+			"creature_owner_id", String(package.get("recipient", ""))
+		)
 	DisplayServer.clipboard_set(JSON.stringify(package))
 	_selected_id = ""
 	_selected_kind = ""
