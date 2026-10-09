@@ -235,16 +235,6 @@ func _accept_received_snapshot(snapshot: Dictionary) -> void:
 
 
 func _replay_sync_event(sync_event: Dictionary) -> void:
-	if String(sync_event.get("type", "")) == "creature_transfer":
-		var area_name := (
-			"MasterArea"
-			if String(sync_event.get("area", "")) == "master"
-			else "PlayerArea"
-		)
-		var area := board_root.get_node_or_null(area_name)
-		if area != null and area.has_method("receive_creature_transfer"):
-			area.call("receive_creature_transfer", sync_event)
-		return
 	if (
 		board_root != null
 		and is_instance_valid(board_root)
@@ -1208,7 +1198,7 @@ func _apply_party_manifest(value: Variant) -> void:
 func _owned_health_bar_entries() -> Array[Dictionary]:
 	var by_token: Dictionary = {}
 	var current_nodes := _current_nodes_by_id()
-	for area_name: String in ["PlayerArea", "MasterArea"]:
+	for area_name: String in ["CreatureArea", "PlayerArea", "MasterArea"]:
 		var area := board_root.get_node_or_null(area_name)
 		if (
 			area == null
