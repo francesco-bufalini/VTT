@@ -1635,7 +1635,8 @@ func _handle_sheet_spawn_placement_input(event: InputEvent) -> bool:
 	_sheet_spawn_picking = false
 	_sheet_spawn_record.clear()
 	_hide_identity_placement_hint()
-	return _place_creature_at_pending_position(record)
+	_place_creature_at_pending_position(record)
+	return true
 
 
 # Both the creature sheet and the right-click placement menu use this
