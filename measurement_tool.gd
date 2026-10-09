@@ -773,6 +773,10 @@ func end_measurement() -> void:
 		_hide_measurement()
 		return
 
+	# Resolve the release position as well: when a token is under the mouse,
+	# the final endpoint must use its real elevation, even if the last input
+	# arrived after the previous _process() update.
+	_update_target_from_camera()
 	# A completed ruler measurement remains visible while measurement mode
 	# stays active. Starting another valid measurement reuses these visuals,
 	# while leaving measurement mode calls cancel_measurement() and clears them.
@@ -1012,6 +1016,60 @@ func _spell_surface_target(hit: Dictionary) -> Dictionary:
 	}
 
 
+# A token is measured from the center of its occupied base grid cell,
+# NOT the floor below it and NOT the first collision point on its model.
+# Keep X/Z at the creature's footprint center (important for Large+).
+func _ruler_token_anchor(token: Node3D) -> Vector3:
+	var height_cells: float = maxf(float(token.get("token_height_cells")), 0.1)
+	var token_cell_size: float = maxf(float(token.get("cell_size")), 0.001)
+	var base_y: float = token.global_position.y - height_cells * token_cell_size * 0.5
+	return Vector3(
+		token.global_position.x,
+		base_y + cell_size * 0.5,
+		token.global_position.z
+	)
+
+
+func _ruler_token_under_mouse(
+	screen_point: Vector2,
+	surface_hit: Dictionary,
+	ray_origin: Vector3
+) -> Dictionary:
+	# The board has a shared picker which raycasts hitboxes in 3D and uses
+	# the visible token badges in 2D (including flying tokens).
+	var board: Node = get_parent()
+	if board == null or not board.has_method("_raycast_token_from_screen"):
+		return {}
+	var hit_value: Variant = board.call(
+		"_raycast_token_from_screen", screen_point, true
+	)
+	if not hit_value is Dictionary:
+		return {}
+	var hit: Dictionary = hit_value as Dictionary
+	var token: Node3D = hit.get("collider") as Node3D
+	if token == null or not token.is_in_group("dnd_token"):
+		return {}
+	# In 3D do not measure a token through a wall or other closer surface.
+	# In 2D the token badge is itself the pickable surface, independent of
+	# the terrain at that screen coordinate.
+	var is_2d: bool = (
+		_camera.has_method("is_top_down_2d")
+		and bool(_camera.call("is_top_down_2d"))
+	)
+	if not is_2d and not surface_hit.is_empty():
+		var foreground: Vector3 = surface_hit.get("position", Vector3.ZERO)
+		var token_hit: Vector3 = hit.get("position", token.global_position)
+		if ray_origin.distance_to(foreground) + cell_size * 0.08 < ray_origin.distance_to(token_hit):
+			return {}
+	var anchor: Vector3 = _ruler_token_anchor(token)
+	return {
+		"valid": true,
+		"center": anchor,
+		"raw": anchor,
+		"token": token
+	}
+
+
 func _looked_cell() -> Dictionary:
 	if _camera == null or not is_instance_valid(_camera):
 		return {"valid": false}
@@ -1044,6 +1102,13 @@ func _looked_cell() -> Dictionary:
 	var hit: Dictionary = (
 		_camera.get_world_3d().direct_space_state.intersect_ray(query)
 	)
+
+	if not aoe_mode:
+		var token_target: Dictionary = _ruler_token_under_mouse(
+			screen_point, hit, origin
+		)
+		if not token_target.is_empty():
+			return token_target
 
 	if not hit.is_empty():
 		var point: Vector3 = hit.get("position", Vector3.ZERO)
