@@ -1,7 +1,9 @@
 extends RefCounted
 
+const CreatureOwner = preload("res://vtt/creature_owner.gd")
+
 const ROOT_DIR := "user://player_characters"
-const FILE_VERSION := 2
+const FILE_VERSION := 3
 
 var _campaign_manager: Node
 
@@ -52,7 +54,9 @@ func list_characters() -> Array[Dictionary]:
 	var result: Array[Dictionary] = []
 	for item: Variant in characters_value:
 		if item is Dictionary:
-			result.append((item as Dictionary).duplicate(true))
+			var character := normalize_character(item as Dictionary)
+			if CreatureOwner.is_owner(character):
+				result.append(character)
 	return result
 
 
@@ -82,6 +86,11 @@ func create_character() -> Dictionary:
 	return {
 		"id": "character_%d_%d" % [now, unique],
 		"name": "Nuovo personaggio",
+		"owner_id": CreatureOwner.local_id(),
+		"default_miniature_id": "",
+		"current_miniature_id": "",
+		"classes": [],
+		"trackers": [],
 		"player_name": "",
 		"rules_version": "2024",
 		"class": "",
@@ -224,6 +233,13 @@ func normalize_character(value: Dictionary) -> Dictionary:
 			slots[index] = maxi(0, int(slots[index]))
 		defaults[slots_key] = slots
 
+	defaults["owner_id"] = String(defaults.get("owner_id", CreatureOwner.local_id()))
+	if defaults["owner_id"].is_empty():
+		defaults["owner_id"] = CreatureOwner.local_id()
+	if not defaults.get("classes", []) is Array:
+		defaults["classes"] = []
+	if not defaults.get("trackers", []) is Array:
+		defaults["trackers"] = []
 	defaults["level"] = clampi(int(defaults.get("level", 1)), 1, 20)
 	defaults["max_hp"] = maxi(0, int(defaults.get("max_hp", 1)))
 	defaults["current_hp"] = int(defaults.get("current_hp", 1))
