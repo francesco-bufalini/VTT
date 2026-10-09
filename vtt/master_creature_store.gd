@@ -207,7 +207,7 @@ func _default_miniature_id(stat: Dictionary) -> String:
 				String(edition.get("name", "")).nocasecmp_to(name) == 0
 				and String(edition.get("source", "")).nocasecmp_to(source) == 0
 			):
-				return String(row.get("miniature_key", "")).trim_suffix(".pck")
+				return String(row.get("miniature_key", "")).get_file().trim_suffix(".pck")
 	return ""
 
 
