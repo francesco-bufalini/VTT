@@ -57,12 +57,23 @@ func _run() -> void:
 	token.add_to_group("dnd_token")
 	board.add_child(token)
 	board.candidate = token
-	var expected := Vector3(2.5, 6.5, 4.5)
+	var expected := Vector3(2.5, 5.5, 4.5)
 	if not _check(
 		Vector3(ruler.call("_ruler_token_anchor", token)).is_equal_approx(expected),
-		"a flying token must be measured at its occupied base cell, not ground level"
+		"a flying token must be measured from the supporting free air square, not its lowest occupied cell or ground"
 	):
 		return
+
+	# A taller creature has a different body center but its support is
+	# always the free voxel directly below its footprint.
+	token.token_height_cells = 4.0
+	var tall_expected := Vector3(2.5, 4.5, 4.5)
+	if not _check(
+		Vector3(ruler.call("_ruler_token_anchor", token)).is_equal_approx(tall_expected),
+		"large vertical token extent must not shift support into an occupied square"
+	):
+		return
+	token.token_height_cells = 2.0
 
 	# In 3D, a token in front of the floor should win over the terrain ray.
 	var ray_origin := Vector3(2.5, 20.0, 4.5)
