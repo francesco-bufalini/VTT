@@ -30,6 +30,8 @@ var _ac: SpinBox
 var _ability_spins: Dictionary = {}
 var _species: OptionButton
 var _class_name: OptionButton
+var _multiclass_rows: VBoxContainer
+var _multiclass_controls: Array[Dictionary] = []
 var _level: HSlider
 var _level_label: Label
 var _feats: TextEdit
@@ -205,6 +207,15 @@ func _build_ui() -> void:
 	_species = _reference_option(classes_row, PlayerReference.SPECIES)
 	_add_label(classes_row, "Classe")
 	_class_name = _reference_option(classes_row, PlayerReference.CLASSES)
+	var multiclass_header := HBoxContainer.new()
+	form.add_child(multiclass_header)
+	_add_label(multiclass_header, "Classi aggiuntive (multiclasse)")
+	var add_class := Button.new()
+	add_class.text = "+ Classe"
+	add_class.pressed.connect(_add_multiclass_row)
+	multiclass_header.add_child(add_class)
+	_multiclass_rows = VBoxContainer.new()
+	form.add_child(_multiclass_rows)
 
 	var level_row := HBoxContainer.new()
 	form.add_child(level_row)
@@ -323,6 +334,44 @@ func _reference_option(parent: Node, choices: Array[Dictionary]) -> OptionButton
 	return select
 
 
+func _add_multiclass_row(
+	class_name: String = "", class_level: int = 1
+) -> void:
+	var row := HBoxContainer.new()
+	_multiclass_rows.add_child(row)
+	var selector := _reference_option(row, PlayerReference.CLASSES)
+	_select_reference(selector, class_name)
+	var level := SpinBox.new()
+	level.min_value = 1
+	level.max_value = 20
+	level.step = 1
+	level.value = clampi(class_level, 1, 20)
+	level.custom_minimum_size = Vector2(82, 30)
+	level.value_changed.connect(func(_v: float) -> void: _save())
+	row.add_child(level)
+	var remove := Button.new()
+	remove.text = "×"
+	row.add_child(remove)
+	var definition := {"row": row, "selector": selector, "level": level}
+	_multiclass_controls.append(definition)
+	remove.pressed.connect(
+		func() -> void:
+			_multiclass_controls.erase(definition)
+			_multiclass_rows.remove_child(row)
+			row.queue_free()
+			_save()
+	)
+	_save()
+
+
+func _clear_multiclass() -> void:
+	for definition: Dictionary in _multiclass_controls:
+		var row: HBoxContainer = definition["row"]
+		_multiclass_rows.remove_child(row)
+		row.queue_free()
+	_multiclass_controls.clear()
+
+
 func _select_reference(option: OptionButton, name: String) -> void:
 	option.select(0)
 	for i: int in range(1, option.item_count):
@@ -398,6 +447,16 @@ func _load_form(record: Dictionary) -> void:
 		(_ability_spins[ability] as SpinBox).value = int(abilities.get(ability, 10))
 	_select_reference(_species, String(record.get("species", "")))
 	_select_reference(_class_name, String(record.get("class", "")))
+	_clear_multiclass()
+	var classes_value: Variant = record.get("classes", [])
+	if classes_value is Array:
+		for i: int in range(1, (classes_value as Array).size()):
+			var class_value: Variant = (classes_value as Array)[i]
+			if class_value is Dictionary:
+				_add_multiclass_row(
+					String(class_value.get("name", "")),
+					int(class_value.get("level", 1))
+				)
 	_level.value = clampi(int(record.get("level", 1)), 1, 20)
 	_level_label.text = str(int(_level.value))
 	_feats.text = String(record.get("feats", ""))
@@ -456,13 +515,29 @@ func _save() -> void:
 		record["class"] = String(class_ref.get("name", ""))
 		record["class_source"] = String(class_ref.get("source", ""))
 		record["level"] = int(_level.value)
-		record["classes"] = (
-			[{
-				"name": record["class"], "source": record["class_source"],
-				"level": record["level"]
-			}]
-			if not String(record["class"]).is_empty() else []
-		)
+		var classes: Array[Dictionary] = []
+		var extras_level := 0
+		for definition: Dictionary in _multiclass_controls:
+			var secondary_option: OptionButton = definition["selector"]
+			var extra_ref := _reference_entry(secondary_option)
+			var extra_name := String(extra_ref.get("name", ""))
+			if extra_name.is_empty():
+				continue
+			var extra_level := int((definition["level"] as SpinBox).value)
+			extras_level += extra_level
+			classes.append({
+				"name": extra_name,
+				"source": String(extra_ref.get("source", "")),
+				"level": extra_level
+			})
+		var primary_level := maxi(1, int(_level.value) - extras_level)
+		if not String(record["class"]).is_empty():
+			classes.push_front({
+				"name": record["class"],
+				"source": record["class_source"],
+				"level": primary_level
+			})
+		record["classes"] = classes
 		record["feats"] = _feats.text
 	var derived: Array[Dictionary] = (
 		Rules.character_trackers(record)
@@ -630,13 +705,30 @@ func _refresh_reference(record: Dictionary) -> void:
 			String(record.get("name", "")), species, max_level
 		], "", "PRIVILEGI DI CLASSE (5e.tools)"
 	]
-	for feature: Dictionary in Player5eTools.entries("class_features"):
-		if String(feature.get("class_name", "")).nocasecmp_to(class_name) != 0:
+
+	var class_rows: Array = record.get("classes", [])
+	if class_rows.is_empty() and not class_name.is_empty():
+		class_rows = [{"name": class_name, "level": max_level}]
+	for class_value: Variant in class_rows:
+		if not class_value is Dictionary:
 			continue
-		var level := int(feature.get("level", 0))
-		if level > max_level:
-			continue
-		parts.append("Lv %d · %s" % [level, Player5eTools.display_label(feature)])
+		var class_data: Dictionary = class_value as Dictionary
+		var this_name := String(class_data.get("name", ""))
+		var this_level := mini(
+			max_level, int(class_data.get("level", max_level))
+		)
+		parts.append("")
+		parts.append("%s (livello %d)" % [this_name, this_level])
+		for feature: Dictionary in Player5eTools.entries("class_features"):
+			if String(feature.get("class_name", "")).nocasecmp_to(this_name) != 0:
+				continue
+			var level := int(feature.get("level", 0))
+			if level > this_level:
+				continue
+			parts.append("Lv %d · %s" % [level, Player5eTools.display_label(feature)])
+			var description := Player5eTools.description_text_from_raw_item(feature)
+			if not description.is_empty():
+				parts.append(description)
 	parts.append("")
 	parts.append("TRATTI DELLA SPECIE (5e.tools)")
 	for feature: Dictionary in Player5eTools.entries("species_traits"):
