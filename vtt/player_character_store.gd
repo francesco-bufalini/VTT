@@ -264,6 +264,15 @@ func normalize_character(value: Dictionary) -> Dictionary:
 	if not defaults.get("trackers", []) is Array:
 		defaults["trackers"] = []
 	defaults["level"] = clampi(int(defaults.get("level", 1)), 1, 20)
+	var classes_value: Variant = defaults.get("classes", [])
+	if classes_value is Array and (classes_value as Array).size() == 1:
+		var first_value: Variant = (classes_value as Array)[0]
+		if first_value is Dictionary:
+			var first := (first_value as Dictionary).duplicate(true)
+			first["name"] = String(defaults.get("class", ""))
+			first["source"] = String(defaults.get("class_source", ""))
+			first["level"] = int(defaults["level"])
+			defaults["classes"] = [first]
 	defaults["max_hp"] = maxi(0, int(defaults.get("max_hp", 1)))
 	defaults["current_hp"] = int(defaults.get("current_hp", 1))
 	defaults["temporary_hp"] = maxi(0, int(defaults.get("temporary_hp", 0)))
