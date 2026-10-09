@@ -112,6 +112,43 @@ func run() -> void:
 		5.0
 	))
 
+	# Regression: immediately after spawning, token bases can be on
+	# different elevations (before placement/physics stabilizes). A full
+	# empty square between two Medium tokens must still be 10 ft, not the
+	# 5 ft physical gap between their hitbox edges.
+	assert(is_equal_approx(
+		FlankingSystem.tactical_reach_distance_feet(
+			Vector3(0.5, 1.0, 0.5),
+			half,
+			Vector3(2.5, 2.0, 0.5),
+			half,
+			1.0
+		),
+		10.0
+	))
+	# Adjacent squares remain in 5 ft reach at different elevations.
+	assert(is_equal_approx(
+		FlankingSystem.tactical_reach_distance_feet(
+			Vector3(0.5, 1.0, 0.5),
+			half,
+			Vector3(1.5, 2.0, 0.5),
+			half,
+			1.0
+		),
+		5.0
+	))
+	# An entirely empty vertical cell between two hitboxes is also 10 ft.
+	assert(is_equal_approx(
+		FlankingSystem.tactical_reach_distance_feet(
+			Vector3(0.5, 1.0, 0.5),
+			half,
+			Vector3(0.5, 4.0, 0.5),
+			half,
+			1.0
+		),
+		10.0
+	))
+
 	# Same-plane line geometry is projected down to the miniature bases.
 	var projected := FlankingSystem.project_centers_to_shared_base(
 		Vector3(-1.0, 1.0, 0.0),
