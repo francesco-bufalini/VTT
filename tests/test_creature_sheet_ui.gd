@@ -112,6 +112,13 @@ func run() -> void:
 	assert(area._creature_eye_buttons[0].visible
 		and area._creature_eye_buttons[0].text == "+",
 		"Missing token must show a + action instead of an eye")
+	# Right-click placement must enumerate private owned creature sheets,
+	# including a character that has not been placed on the map yet.
+	var placeable: Array = area.get_owned_creatures_for_placement()
+	assert(placeable.size() == 1
+		and placeable[0].id == area._current().id
+		and placeable[0].current_miniature_id == "hero_test",
+		"Context placement must include unspawned owned creatures and their saved appearance")
 	assert(area._tabs.get_tab_count() == 5, "Character sheet must expose spellcasting tab")
 	area._choose_miniature(area._current(), false, true)
 	area._miniature_filter.text = "ape"
@@ -355,6 +362,11 @@ func run() -> void:
 		"Saving the new sheet must not clear selected creation conditions")
 	assert("Test Ape" in area.get_owned_creature_names())
 	assert(area.get_owned_creature_names(automatic_id).is_empty())
+	placeable = area.get_owned_creatures_for_placement()
+	assert(placeable.size() == 1
+		and placeable[0].id == automatic_id
+		and placeable[0].current_miniature_id == automatic.current_miniature_id,
+		"Context placement must also enumerate already-present creatures")
 	# A sheet refresh can race the creation dialog: if it registers a sheet
 	# before the checkbox states are applied, the final creation state wins.
 	var stale_initial: Dictionary = automatic.duplicate(true)
