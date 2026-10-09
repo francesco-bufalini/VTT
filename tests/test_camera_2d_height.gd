@@ -287,27 +287,63 @@ func run() -> void:
 	):
 		return
 
-	# Floating creatures without a supporting collider add actual camera stops.
+	# Floating creatures contribute the free AIR square directly below
+	# their feet, not the lowest voxel occupied by the creature.
 	var floating_token: OverlayToken = OverlayToken.new()
 	floating_token.position = Vector3(2.0, 10.5, 2.0)
 	floating_token.add_to_group("dnd_token")
 	tokens_root.add_child(floating_token)
+	# A creature actually resting on a collidable floor must not add an
+	# artificial level half a square BELOW the floor.
+	var grounded_token: OverlayToken = OverlayToken.new()
+	grounded_token.position = Vector3(4.0, 0.5, 4.0)
+	grounded_token.add_to_group("dnd_token")
+	tokens_root.add_child(grounded_token)
 	camera.call("set_top_down_level", 6.0)
 	var navigation_levels: Array = probe.call("get_solid_levels")
 	if not _check(
 		navigation_levels.size() == 3
-		and is_equal_approx(float(navigation_levels[2]), 10.0),
-		"a floating token base must create a navigable camera height"
+		and is_equal_approx(float(navigation_levels[2]), 9.5),
+		"only the airborne support square, not an occupied token cell or a solid floor underside, must become a camera stop"
 	):
 		return
 	camera.call("step_top_down_level", 1)
 	if not _check(
-		is_equal_approx(float(camera.call("get_top_down_level")), 10.0),
-		"Space must stop at the next token base as well as map floors"
+		is_equal_approx(float(camera.call("get_top_down_level")), 9.5),
+		"Space must ascend from the collision floor to the supporting air cell"
+	):
+		return
+	camera.call("step_top_down_level", -1)
+	if not _check(
+		is_equal_approx(float(camera.call("get_top_down_level")), 6.0),
+		"Shift+Space must descend from a flying token's air base to the collision floor"
+	):
+		return
+	# A two-cell-tall creature's air base must not depend on its center or
+	# the height of its lowest occupied voxel.
+	var tall_token: OverlayToken = OverlayToken.new()
+	tall_token.token_height_cells = 2.0
+	tall_token.position = Vector3(4.0, 13.0, 4.0)
+	tall_token.add_to_group("dnd_token")
+	tokens_root.add_child(tall_token)
+	navigation_levels = probe.call("get_solid_levels")
+	if not _check(
+		navigation_levels.size() == 4
+		and is_equal_approx(float(navigation_levels[3]), 11.5),
+		"a two-cell-tall flying token must contribute its support AIR cell"
+	):
+		return
+	camera.call("step_top_down_level", 1)
+	camera.call("step_top_down_level", 1)
+	if not _check(
+		is_equal_approx(float(camera.call("get_top_down_level")), 11.5),
+		"Space must visit intermediate air supports in increasing order"
 	):
 		return
 	camera.call("set_top_down_level", 0.0)
 	floating_token.queue_free()
+	grounded_token.queue_free()
+	tall_token.queue_free()
 
 	camera.call("exit_top_down_2d")
 	if not _check(
