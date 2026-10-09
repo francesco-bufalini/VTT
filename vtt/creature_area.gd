@@ -9,6 +9,7 @@ const Owner = preload("res://vtt/creature_owner.gd")
 const Bestiary = preload("res://vtt/bestiary_5etools_client.gd")
 const PlayerReference = preload("res://vtt/player_reference_catalog.gd")
 const Player5eTools = preload("res://vtt/player_5etools_catalog.gd")
+const SpellcastingTab = preload("res://vtt/creature_spellcasting_tab.gd")
 
 var board_root: Node3D
 var _archive
@@ -55,6 +56,7 @@ var _reach: SpinBox
 var _front: OptionButton
 var _party: LineEdit
 var _tabs: TabContainer
+var _spellcasting_ui: Node
 var _ac: SpinBox
 var _ability_spins: Dictionary = {}
 var _ability_bonus_spins: Dictionary = {}
@@ -413,6 +415,13 @@ func _build_ui() -> void:
 	var traits_tab := _add_sheet_tab(_tabs, "Tratti")
 	var conditions_tab := _add_sheet_tab(_tabs, "Stati")
 	var spellcasting_tab := _add_sheet_tab(_tabs, "Incantesimi")
+	_spellcasting_ui = SpellcastingTab.new()
+	spellcasting_tab.add_child(_spellcasting_ui)
+	_spellcasting_ui.call(
+		"setup",
+		Callable(self, "_on_spellcasting_updated"),
+		Callable(self, "_set_status")
+	)
 	_tabs.current_tab = 0
 
 	var name_row := HBoxContainer.new()
@@ -1457,11 +1466,32 @@ func _load_form(record: Dictionary) -> void:
 	_refresh_conditions(record)
 	_refresh_reference(record)
 	_refresh_current_miniature(record)
+	_spellcasting_ui.call("load_record", record)
 	_loading = false
 
 
 func _on_level_changed(_value: float) -> void:
 	_save()
+
+
+func _on_spellcasting_updated(values: Dictionary) -> void:
+	if _loading:
+		return
+	var record: Dictionary = _current()
+	if record.is_empty():
+		return
+	for key: String in [
+		"spells", "prepared_spells",
+		"spell_slots_total", "spell_slots_spent",
+		"pact_slots_total", "pact_slots_spent", "pact_slot_level"
+	]:
+		if values.has(key):
+			record[key] = values[key]
+	var error: Error = _archive.save(record)
+	if error != OK:
+		_set_status("Salvataggio incantesimi non riuscito: " + error_string(error))
+		return
+	_replace_current_record(record)
 
 
 func _on_ability_value_changed(_value: float, ability: String) -> void:
