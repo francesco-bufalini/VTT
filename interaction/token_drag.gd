@@ -110,6 +110,24 @@ func begin(tokens: Array[CharacterBody3D], anchor_token: CharacterBody3D) -> voi
 func update_preview(screen_point: Vector2) -> void:
 	var origin: Vector3 = board.camera.project_ray_origin(screen_point)
 	var direction: Vector3 = board.camera.project_ray_normal(screen_point)
+	if (
+		bool(board.call("is_2d_view_enabled"))
+		and board.camera.has_method("get_top_down_level")
+	):
+		# The 2D icon is projected onto the selected slice, even when the
+		# real token lies above or below it. Drag on that slice while keeping
+		# the creature's actual elevation unchanged.
+		var slice_y: float = float(board.camera.call("get_top_down_level"))
+		var surface_point: Variant = Plane(Vector3.UP, slice_y).intersects_ray(
+			origin,
+			direction
+		)
+		if surface_point is Vector3:
+			var map_point: Vector3 = surface_point as Vector3
+			preview_at(Vector3(map_point.x, _anchor.y, map_point.z), _support)
+		else:
+			_valid = false
+		return
 	var hit: Dictionary = board._raycast_from_screen(screen_point, 1 | 4, false)
 	if not hit.is_empty():
 		for token in _tokens:
