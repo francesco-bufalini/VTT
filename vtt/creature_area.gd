@@ -324,10 +324,11 @@ func _build_ui() -> void:
 	_panel = PanelContainer.new()
 	_panel.name = "CreatureSheet"
 	_panel.set_anchors_and_offsets_preset(Control.PRESET_FULL_RECT)
-	_panel.offset_left = 26
+	# Reduce outer gutters; keep the window entirely inside the viewport.
+	_panel.offset_left = 12
 	_panel.offset_top = 52
-	_panel.offset_right = -26
-	_panel.offset_bottom = -24
+	_panel.offset_right = -12
+	_panel.offset_bottom = -12
 	_panel.mouse_filter = Control.MOUSE_FILTER_STOP
 	# Ensure UI sheets outrank any remaining tactical screen-space badges.
 	_panel.z_index = 30
@@ -382,12 +383,14 @@ func _build_ui() -> void:
 	outer.add_child(_status)
 
 	var columns := HSplitContainer.new()
+	columns.size_flags_horizontal = Control.SIZE_EXPAND_FILL
 	columns.size_flags_vertical = Control.SIZE_EXPAND_FILL
-	columns.split_offset = 300
+	columns.split_offset = 210
 	outer.add_child(columns)
 
 	var left := VBoxContainer.new()
-	left.custom_minimum_size = Vector2(260, 0)
+	left.custom_minimum_size = Vector2(185, 0)
+	left.add_theme_constant_override("separation", 5)
 	columns.add_child(left)
 	var creatures_title := Label.new()
 	creatures_title.text = "Le mie creature"
@@ -417,7 +420,8 @@ func _build_ui() -> void:
 	_creature_list.add_child(_creature_context_menu)
 
 	var add_general := Button.new()
-	add_general.text = "+ Aggiungi personaggio"
+	add_general.text = "+ Personaggio"
+	add_general.tooltip_text = "Crea una nuova scheda di personaggio"
 	add_general.pressed.connect(begin_add_creature)
 	left.add_child(add_general)
 	_catalog_filter = LineEdit.new()
@@ -430,7 +434,8 @@ func _build_ui() -> void:
 	_catalog_list.item_activated.connect(_request_monster)
 	left.add_child(_catalog_list)
 	var add_monster := Button.new()
-	add_monster.text = "+ Creatura del bestiario"
+	add_monster.text = "+ Dal bestiario"
+	add_monster.tooltip_text = "Aggiungi una creatura dalla voce selezionata nel bestiario"
 	add_monster.pressed.connect(_request_selected_monster)
 	left.add_child(add_monster)
 
@@ -454,7 +459,7 @@ func _build_ui() -> void:
 	_tabs.current_tab = 0
 
 	var name_row := HBoxContainer.new()
-	name_row.add_theme_constant_override("separation", 8)
+	name_row.add_theme_constant_override("separation", 5)
 	form.add_child(name_row)
 	_add_label(name_row, "Nome")
 	_name = LineEdit.new()
@@ -463,7 +468,7 @@ func _build_ui() -> void:
 	name_row.add_child(_name)
 	_add_label(name_row, "Fazione")
 	_party = LineEdit.new()
-	_party.custom_minimum_size.x = 105
+	_party.custom_minimum_size.x = 85
 	_party.size_flags_horizontal = Control.SIZE_SHRINK_END
 	_party.placeholder_text = "Default"
 	_party.text_changed.connect(func(_text: String) -> void: _save())
@@ -475,7 +480,7 @@ func _build_ui() -> void:
 	health_style.border_color = Color(0.76, 0.50, 0.30, 0.90)
 	health_style.set_border_width_all(1)
 	health_style.set_corner_radius_all(7)
-	health_style.set_content_margin_all(7)
+	health_style.set_content_margin_all(5)
 	health_panel.add_theme_stylebox_override("panel", health_style)
 	health_panel.tooltip_text = "PF attuali, massimi e temporanei. I danni consumano prima i PF temporanei."
 	form.add_child(health_panel)
@@ -514,21 +519,23 @@ func _build_ui() -> void:
 	form.add_child(temp_health)
 	_add_label(temp_health, "🛡 PF temporanei")
 	_temp_hp = _spin(temp_health, 0, 99999)
-	_temp_hp.custom_minimum_size.x = 85
+	_temp_hp.custom_minimum_size.x = 70
 	_temp_hp.size_flags_horizontal = Control.SIZE_SHRINK_BEGIN
 	_add_label(temp_health, "CA")
 	_ac = _spin(temp_health, 0, 99)
-	_ac.custom_minimum_size.x = 72
+	_ac.custom_minimum_size.x = 65
 	_add_label(temp_health, "Gittata base (ft)")
 	_reach = _spin(temp_health, 5, 1000)
 	_reach.step = 5.0
-	_reach.custom_minimum_size.x = 76
+	_reach.custom_minimum_size.x = 70
 	_ac.size_flags_horizontal = Control.SIZE_SHRINK_BEGIN
 
 	var abilities_row := GridContainer.new()
-	abilities_row.columns = 3
-	abilities_row.add_theme_constant_override("h_separation", 14)
-	abilities_row.add_theme_constant_override("v_separation", 10)
+	# Two columns keep all three score controls readable without widening
+	# the sheet on 1024 px and smaller displays.
+	abilities_row.columns = 2
+	abilities_row.add_theme_constant_override("h_separation", 8)
+	abilities_row.add_theme_constant_override("v_separation", 7)
 	form.add_child(abilities_row)
 	for ability: String in ["str", "dex", "con", "int", "wis", "cha"]:
 		var cell := VBoxContainer.new()
@@ -538,15 +545,15 @@ func _build_ui() -> void:
 		scores_row.add_theme_constant_override("separation", 4)
 		cell.add_child(scores_row)
 		var spin := _spin(scores_row, 1, 30)
-		spin.custom_minimum_size.x = 58
+		spin.custom_minimum_size.x = 54
 		spin.tooltip_text = "Punteggio base"
 		_ability_spins[ability] = spin
 		var bonus := _spin(scores_row, -30, 30)
-		bonus.custom_minimum_size.x = 57
+		bonus.custom_minimum_size.x = 54
 		bonus.tooltip_text = "Bonus al punteggio (per ora manuale; poi da oggetti e tratti)"
 		_ability_bonus_spins[ability] = bonus
 		var modifier := Label.new()
-		modifier.custom_minimum_size.x = 49
+		modifier.custom_minimum_size.x = 42
 		modifier.tooltip_text = "Modificatore calcolato dal punteggio e dal bonus"
 		scores_row.add_child(modifier)
 		_ability_modifier_labels[ability] = modifier
@@ -554,12 +561,18 @@ func _build_ui() -> void:
 		bonus.value_changed.connect(_on_ability_value_changed.bind(ability))
 
 	var classes_row := GridContainer.new()
-	classes_row.columns = 4
+	# One label / selector pair per line: long race names no longer force
+	# a second pair beyond the viewport edge.
+	classes_row.columns = 2
+	classes_row.add_theme_constant_override("h_separation", 7)
+	classes_row.add_theme_constant_override("v_separation", 6)
 	form.add_child(classes_row)
 	_add_label(classes_row, "Razza / Specie")
 	_species = _reference_option(classes_row, Player5eTools.entries("races"))
 	_add_label(classes_row, "Regole")
 	_rules_edition = OptionButton.new()
+	_rules_edition.fit_to_longest_item = false
+	_rules_edition.custom_minimum_size.x = 88
 	_rules_edition.add_item("2014")
 	_rules_edition.add_item("2024")
 	_rules_edition.item_selected.connect(_on_rules_edition_changed)
@@ -576,7 +589,7 @@ func _build_ui() -> void:
 	_level.step = 1
 	_level.update_on_text_changed = true
 	_level.rounded = true
-	_level.custom_minimum_size = Vector2(82, 30)
+	_level.custom_minimum_size = Vector2(72, 30)
 	_level.value_changed.connect(_on_level_changed)
 	classes_row.add_child(_level)
 
@@ -626,7 +639,7 @@ func _build_ui() -> void:
 
 	var geometry := GridContainer.new()
 	geometry.columns = 2
-	geometry.add_theme_constant_override("h_separation", 14)
+	geometry.add_theme_constant_override("h_separation", 7)
 	geometry.add_theme_constant_override("v_separation", 10)
 	appearance_tab.add_child(geometry)
 	_add_label(geometry, "Taglia")
@@ -679,15 +692,20 @@ func _add_sheet_tab(tabs: TabContainer, title: String) -> VBoxContainer:
 	scroll.name = title
 	scroll.size_flags_horizontal = Control.SIZE_EXPAND_FILL
 	scroll.size_flags_vertical = Control.SIZE_EXPAND_FILL
+	# The creature sheet should only scroll vertically, never a few pixels
+	# horizontally because a long bestiary reference expands a child.
+	scroll.horizontal_scroll_mode = ScrollContainer.SCROLL_MODE_DISABLED
 	scroll.follow_focus = true
 	tabs.add_child(scroll)
 	var margin := MarginContainer.new()
 	margin.size_flags_horizontal = Control.SIZE_EXPAND_FILL
-	for edge: String in ["margin_left", "margin_right", "margin_top", "margin_bottom"]:
-		margin.add_theme_constant_override(edge, 12)
+	for edge: String in ["margin_left", "margin_right"]:
+		margin.add_theme_constant_override(edge, 6)
+	for edge: String in ["margin_top", "margin_bottom"]:
+		margin.add_theme_constant_override(edge, 8)
 	scroll.add_child(margin)
 	var content := VBoxContainer.new()
-	content.add_theme_constant_override("separation", 12)
+	content.add_theme_constant_override("separation", 8)
 	content.size_flags_horizontal = Control.SIZE_EXPAND_FILL
 	margin.add_child(content)
 	return content
@@ -1220,7 +1238,7 @@ func _spin(parent: Node, minimum: int, maximum: int) -> SpinBox:
 	spin.max_value = maximum
 	spin.step = 1
 	spin.update_on_text_changed = true
-	spin.custom_minimum_size = Vector2(84, 30)
+	spin.custom_minimum_size = Vector2(76, 30)
 	spin.value_changed.connect(func(_v: float) -> void: _save())
 	parent.add_child(spin)
 	return spin
@@ -1230,6 +1248,10 @@ func _reference_option(
 	parent: Node, choices: Array[Dictionary], show_source: bool = true
 ) -> OptionButton:
 	var select := OptionButton.new()
+	select.fit_to_longest_item = false
+	select.clip_text = true
+	select.custom_minimum_size = Vector2(150, 30)
+	select.size_flags_horizontal = Control.SIZE_EXPAND_FILL
 	_set_reference_choices(select, choices, show_source)
 	select.item_selected.connect(func(_i: int) -> void: _save())
 	parent.add_child(select)
@@ -1239,6 +1261,9 @@ func _reference_option(
 func _set_reference_choices(
 	option: OptionButton, choices: Array[Dictionary], show_source: bool = true
 ) -> void:
+	# Godot otherwise bases the widget's minimum width on the longest
+	# 5etools name, pushing the entire creature tab beyond the viewport.
+	option.fit_to_longest_item = false
 	option.clear()
 	option.add_item("—")
 	option.set_item_metadata(0, {})
@@ -1297,7 +1322,7 @@ func _add_multiclass_row(
 	level.step = 1
 	level.update_on_text_changed = true
 	level.value = clampi(class_level, 1, 20)
-	level.custom_minimum_size = Vector2(82, 30)
+	level.custom_minimum_size = Vector2(72, 30)
 	level.value_changed.connect(func(_v: float) -> void: _save())
 	row.add_child(level)
 	var remove := Button.new()

@@ -63,9 +63,9 @@ var _catalog_title: Label
 func setup(on_change: Callable, on_status: Callable) -> void:
 	_on_change = on_change
 	_on_status = on_status
-	add_theme_constant_override("separation", 10)
+	add_theme_constant_override("separation", 7)
 	var title_row := HBoxContainer.new()
-	title_row.add_theme_constant_override("separation", 10)
+	title_row.add_theme_constant_override("separation", 6)
 	add_child(title_row)
 	var title := Label.new()
 	title.text = "Grimorio e preparazione"
@@ -90,11 +90,15 @@ func setup(on_change: Callable, on_status: Callable) -> void:
 	_search.text_changed.connect(func(_v: String) -> void: _filter_spells())
 	_search_row.add_child(_search)
 	_class_only = CheckBox.new()
-	_class_only.text = "Limita alle mie classi"
+	_class_only.text = "Mie classi"
+	_class_only.tooltip_text = "Limita la ricerca agli incantesimi delle mie classi"
 	_class_only.button_pressed = false
 	_class_only.toggled.connect(func(_v: bool) -> void: _filter_spells())
 	_search_row.add_child(_class_only)
 	_level_filter = OptionButton.new()
+	_level_filter.fit_to_longest_item = false
+	_level_filter.clip_text = true
+	_level_filter.custom_minimum_size.x = 105
 	_level_filter.add_item("Tutti i livelli")
 	_level_filter.add_item("Trucchetti")
 	for lvl: int in range(1, 10):
@@ -103,7 +107,7 @@ func setup(on_change: Callable, on_status: Callable) -> void:
 	_search_row.add_child(_level_filter)
 
 	_catalog_title = Label.new()
-	_catalog_title.text = "Catalogo incantesimi · doppio clic per aggiungere o rimuovere"
+	_catalog_title.text = "Catalogo · doppio clic per aggiungere / rimuovere"
 	add_child(_catalog_title)
 	_available = ItemList.new()
 	_available.custom_minimum_size = Vector2(0, 160)
@@ -114,7 +118,7 @@ func setup(on_change: Callable, on_status: Callable) -> void:
 	# Keep the library and chosen spells together; there is only one action
 	# for adding/removing the current selection.
 	var columns := HBoxContainer.new()
-	columns.add_theme_constant_override("separation", 12)
+	columns.add_theme_constant_override("separation", 7)
 	columns.size_flags_horizontal = Control.SIZE_EXPAND_FILL
 	add_child(columns)
 	var known_col := VBoxContainer.new()
@@ -132,7 +136,7 @@ func setup(on_change: Callable, on_status: Callable) -> void:
 	_book_menu = MenuButton.new()
 	_book_menu.text = "📖 ▾"
 	_book_menu.tooltip_text = "Libro degli incantesimi: vista e selezione delle magie trascritte"
-	_book_menu.custom_minimum_size = Vector2(46, 32)
+	_book_menu.custom_minimum_size = Vector2(40, 30)
 	known_header.add_child(_book_menu)
 	var book_popup: PopupMenu = _book_menu.get_popup()
 	book_popup.add_radio_check_item("Mostra incantesimi di classe", BOOK_VIEW_CLASS)
@@ -176,13 +180,13 @@ func setup(on_change: Callable, on_status: Callable) -> void:
 	actions.add_theme_constant_override("separation", 8)
 	add_child(actions)
 	var action_hint := Label.new()
-	action_hint.text = "Seleziona una magia dagli elenchi"
+	action_hint.text = "Seleziona una magia"
 	action_hint.add_theme_font_size_override("font_size", 12)
 	action_hint.size_flags_horizontal = Control.SIZE_EXPAND_FILL
 	actions.add_child(action_hint)
 	_prepare = Button.new()
 	_prepare.text = "Aggiungi ai disponibili"
-	_prepare.custom_minimum_size = Vector2(200, 38)
+	_prepare.custom_minimum_size = Vector2(170, 34)
 	_prepare.tooltip_text = "Doppio clic su una magia oppure premi questo pulsante"
 	_prepare.pressed.connect(_toggle_selected_prepared)
 	actions.add_child(_prepare)
@@ -197,26 +201,26 @@ func setup(on_change: Callable, on_status: Callable) -> void:
 	var slot_title := HBoxContainer.new()
 	add_child(slot_title)
 	var heading := Label.new()
-	heading.text = "Slot incantesimo (disponibili / totali)"
+	heading.text = "Slot · disponibili / max"
 	heading.size_flags_horizontal = Control.SIZE_EXPAND_FILL
 	heading.add_theme_font_size_override("font_size", 16)
 	slot_title.add_child(heading)
 	var calculate := Button.new()
-	calculate.text = "Ricarica automaticamente"
+	calculate.text = "Ricalcola + ricarica"
 	calculate.tooltip_text = "Ricalcola i massimi delle classi e ricarica gli slot consumati"
 	calculate.pressed.connect(func() -> void: _calculate_slot_totals(true))
 	slot_title.add_child(calculate)
 	_calculate_button = calculate
 	var rest_all := Button.new()
-	rest_all.text = "Ricarica tutti"
+	rest_all.text = "Ricarica"
 	rest_all.pressed.connect(_restore_all)
 	slot_title.add_child(rest_all)
 	var slot_grid := GridContainer.new()
 	slot_grid.columns = 6
-	slot_grid.add_theme_constant_override("h_separation", 12)
+	slot_grid.add_theme_constant_override("h_separation", 6)
 	slot_grid.add_theme_constant_override("v_separation", 5)
 	add_child(slot_grid)
-	for label_text: String in ["Livello", "Base", "Bonus", "Disponibili / Max", "Usa", "Ricarica"]:
+	for label_text: String in ["Liv.", "Base", "Bonus", "Rimasti / max", "Usa", "Ricarica"]:
 		var header := Label.new()
 		header.text = label_text
 		slot_grid.add_child(header)
@@ -229,7 +233,7 @@ func setup(on_change: Callable, on_status: Callable) -> void:
 		total.max_value = 99
 		total.rounded = true
 		total.update_on_text_changed = true
-		total.custom_minimum_size.x = 74
+		total.custom_minimum_size.x = 62
 		total.value_changed.connect(_on_slot_total_changed.bind(lvl))
 		slot_grid.add_child(total)
 		_slot_totals[lvl] = total
@@ -238,13 +242,13 @@ func setup(on_change: Callable, on_status: Callable) -> void:
 		bonus.max_value = 99
 		bonus.step = 1
 		bonus.rounded = true
-		bonus.custom_minimum_size.x = 74
+		bonus.custom_minimum_size.x = 62
 		bonus.tooltip_text = "Modificatore del numero massimo di slot di questo livello"
 		bonus.value_changed.connect(_on_slot_bonus_changed.bind(lvl))
 		slot_grid.add_child(bonus)
 		_slot_bonus_controls[lvl] = bonus
 		var remaining := Label.new()
-		remaining.custom_minimum_size.x = 64
+		remaining.custom_minimum_size.x = 58
 		slot_grid.add_child(remaining)
 		_remaining_labels[lvl] = remaining
 		var use := Button.new()
@@ -261,10 +265,11 @@ func setup(on_change: Callable, on_status: Callable) -> void:
 		_slot_recharge[lvl] = recharge
 
 	var pact_row := HBoxContainer.new()
-	pact_row.add_theme_constant_override("separation", 9)
+	pact_row.add_theme_constant_override("separation", 5)
 	add_child(pact_row)
 	var pact_label := Label.new()
-	pact_label.text = "Magia del Patto"
+	pact_label.text = "Patto"
+	pact_label.tooltip_text = "Slot di Magia del Patto"
 	pact_row.add_child(pact_label)
 	var level_label := Label.new()
 	level_label.text = "Liv."
@@ -273,17 +278,17 @@ func setup(on_change: Callable, on_status: Callable) -> void:
 	_pact_level_spin.min_value = 1
 	_pact_level_spin.max_value = 5
 	_pact_level_spin.update_on_text_changed = true
-	_pact_level_spin.custom_minimum_size.x = 65
+	_pact_level_spin.custom_minimum_size.x = 54
 	_pact_level_spin.value_changed.connect(_on_pact_values_changed)
 	pact_row.add_child(_pact_level_spin)
 	var total_label := Label.new()
-	total_label.text = "Totali"
+	total_label.text = "Base"
 	pact_row.add_child(total_label)
 	_pact_total_spin = SpinBox.new()
 	_pact_total_spin.min_value = 0
 	_pact_total_spin.max_value = 8
 	_pact_total_spin.update_on_text_changed = true
-	_pact_total_spin.custom_minimum_size.x = 65
+	_pact_total_spin.custom_minimum_size.x = 54
 	_pact_total_spin.value_changed.connect(_on_pact_values_changed)
 	pact_row.add_child(_pact_total_spin)
 	var bonus_label := Label.new()
@@ -293,19 +298,20 @@ func setup(on_change: Callable, on_status: Callable) -> void:
 	_pact_bonus_spin.min_value = -8
 	_pact_bonus_spin.max_value = 20
 	_pact_bonus_spin.step = 1
-	_pact_bonus_spin.custom_minimum_size.x = 65
+	_pact_bonus_spin.custom_minimum_size.x = 54
 	_pact_bonus_spin.tooltip_text = "Bonus agli slot massimi della Magia del Patto"
 	_pact_bonus_spin.value_changed.connect(_on_pact_values_changed)
 	pact_row.add_child(_pact_bonus_spin)
 	_pact_remain = Label.new()
-	_pact_remain.custom_minimum_size.x = 92
+	_pact_remain.custom_minimum_size.x = 64
 	pact_row.add_child(_pact_remain)
 	_pact_use = Button.new()
 	_pact_use.text = "Usa"
 	_pact_use.pressed.connect(_change_pact.bind(1))
 	pact_row.add_child(_pact_use)
 	_pact_restore = Button.new()
-	_pact_restore.text = "Ricarica"
+	_pact_restore.text = "+"
+	_pact_restore.tooltip_text = "Ricarica uno slot della Magia del Patto"
 	_pact_restore.pressed.connect(_change_pact.bind(-1))
 	pact_row.add_child(_pact_restore)
 	_update_resource_labels()
