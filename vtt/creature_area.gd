@@ -182,6 +182,17 @@ func is_panel_open() -> bool:
 	return _panel != null and _panel.visible
 
 
+# The board context menu must read the CURRENT owned archive, not the
+# selected sheet or the last UI refresh. This includes creatures whose
+# token is currently absent and creatures legitimately transferred to us.
+func get_owned_creatures_for_placement() -> Array[Dictionary]:
+	var owned: Array[Dictionary] = []
+	for record: Dictionary in _archive.list_owned():
+		if Owner.is_owner(record):
+			owned.append(record.duplicate(true))
+	return owned
+
+
 func get_owned_creature_names(excluded_id: String = "") -> Array[String]:
 	var names: Array[String] = []
 	for record: Dictionary in _archive.list_owned():
