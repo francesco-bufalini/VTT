@@ -3971,6 +3971,9 @@ func _begin_choose_mount() -> void:
 		return
 	_mount_pick_rider = _selected_tokens[0]
 	context_menu.hide()
+	var focused: Control = get_viewport().gui_get_focus_owner()
+	if focused != null:
+		focused.release_focus()
 	_ui_owns_mouse = false
 	_release_mouse()
 	_set_identity_placement_hint(
