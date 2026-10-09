@@ -117,6 +117,7 @@ $fastTests = @(
     # validate them before independent tactical-grid rendering assertions.
     "test_creature_sheet_ui.gd",
     "test_camera_2d_height.gd",
+    "test_measurement_token_elevation.gd",
     "test_grid_2d_elevation_colors.gd",
     "test_encounter_sync_scripts.gd",
     "test_creature_sheets.gd",
