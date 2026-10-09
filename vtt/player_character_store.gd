@@ -121,6 +121,11 @@ func create_character() -> Dictionary:
 		"owner_id": CreatureOwner.local_id(),
 		"default_miniature_id": "",
 		"current_miniature_id": "",
+		"size_name": "Medium",
+		"footprint": 1.0,
+		"reach_feet": 5.0,
+		"visual_front_quarter_turns": 0,
+		"party_id": "",
 		"classes": [],
 		"conditions": [],
 		"transfer_revision": 0,
@@ -287,6 +292,14 @@ func normalize_character(value: Dictionary) -> Dictionary:
 	defaults["max_hp"] = maxi(0, int(defaults.get("max_hp", 1)))
 	defaults["current_hp"] = int(defaults.get("current_hp", 1))
 	defaults["temporary_hp"] = maxi(0, int(defaults.get("temporary_hp", 0)))
+	defaults["current_miniature_id"] = String(defaults.get("current_miniature_id", "")).strip_edges()
+	if defaults["current_miniature_id"].is_empty():
+		defaults["current_miniature_id"] = String(defaults.get("default_miniature_id", ""))
+	defaults["size_name"] = String(defaults.get("size_name", "Medium"))
+	defaults["footprint"] = maxf(0.5, float(defaults.get("footprint", 1.0)))
+	defaults["reach_feet"] = maxf(5.0, float(defaults.get("reach_feet", 5.0)))
+	defaults["visual_front_quarter_turns"] = clampi(int(defaults.get("visual_front_quarter_turns", 0)), 0, 3)
+	defaults["party_id"] = String(defaults.get("party_id", ""))
 	defaults["armor_class"] = maxi(0, int(defaults.get("armor_class", 10)))
 	defaults["speed"] = maxi(0, int(defaults.get("speed", 30)))
 	defaults["darkvision"] = maxi(0, int(defaults.get("darkvision", 0)))
