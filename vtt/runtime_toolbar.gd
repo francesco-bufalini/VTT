@@ -9,15 +9,8 @@ const COMBAT_START := 70
 const COMBAT_INITIATIVE := 71
 const COMBAT_END := 72
 
-const TOKEN_CREATE := 20
-const TOKEN_FLYING := 21
-const TOKEN_ROTATE_LEFT := 22
-const TOKEN_ROTATE_RIGHT := 23
-const TOKEN_DELETE := 24
-const TOKEN_DETAILS := 25
-const TOKEN_LIST := 26
-const TOKEN_TILT_UP := 27
-const TOKEN_TILT_DOWN := 28
+
+
 const ITEM_CREATE := 80
 const ITEM_MANAGE := 81
 const ITEM_ROTATE_LEFT := 82
@@ -40,6 +33,7 @@ const VIEW_2D := 44
 const SHARE_OPEN := 50
 const SESSION_SAVE := 51
 const SESSION_MAIN_MENU := 52
+const SHARE_CONTEXT_ID := 25
 const CAMPAIGN_EDITOR_SCENE_PATH := "res://vtt/editor/campaign_editor.tscn"
 
 var board_root: Node3D
@@ -103,17 +97,7 @@ func _build_toolbar() -> void:
 	row.add_theme_constant_override("v_separation", 5)
 	panel.add_child(row)
 
-	row.add_child(_menu("Token", [
-		["Crea token", TOKEN_CREATE],
-		["Applica gravità", TOKEN_FLYING],
-		["Ruota sx", TOKEN_ROTATE_LEFT],
-		["Ruota dx", TOKEN_ROTATE_RIGHT],
-		["Inclina su · 30°", TOKEN_TILT_UP],
-		["Inclina giu · 30°", TOKEN_TILT_DOWN],
-		["Nome e stati…", TOKEN_DETAILS],
-		["Lista token", TOKEN_LIST],
-		["Elimina", TOKEN_DELETE]
-	], _on_token))
+
 
 	row.add_child(_menu("Item", [
 		["Carro romano · posiziona (2×2)", ITEM_CREATE],
@@ -125,14 +109,16 @@ func _build_toolbar() -> void:
 	], _on_item))
 
 	row.add_child(_menu("Gioco", [
-		["Incantesimi", GAME_SPELLS]
-	], _on_game))
-
-	row.add_child(_menu("Combattimento", [
+		["Incantesimi", GAME_SPELLS],
+		["Combattimento"],
 		["Inizia combattimento", COMBAT_START],
 		["Mostra / nascondi iniziativa", COMBAT_INITIATIVE],
-		["Termina combattimento", COMBAT_END]
-	], _on_combat))
+		["Termina combattimento", COMBAT_END],
+		["Sessione"],
+		["Salva", SESSION_SAVE],
+		["Condividi / Tailscale", SHARE_OPEN],
+		["Torna al menu VTT", SESSION_MAIN_MENU]
+	], _on_game))
 
 	# Direct action: one click opens the creature archive, no submenu.
 	var creatures_button := Button.new()
@@ -170,12 +156,6 @@ func _build_toolbar() -> void:
 		["Velocità camera…", VIEW_CAMERA_SETTINGS]
 	], _on_view))
 
-	row.add_child(_menu("Sessione", [
-		["Salva", SESSION_SAVE],
-		["Condividi / Tailscale", SHARE_OPEN],
-		["Torna al menu VTT", SESSION_MAIN_MENU]
-	], _on_session))
-
 	status_label = Label.new()
 	status_label.text = ""
 	status_label.custom_minimum_size = Vector2(130, 28)
@@ -205,7 +185,10 @@ func _menu(label_text: String, items: Array, callback: Callable) -> MenuButton:
 		maxi(160, int(viewport_size.y) - 24)
 	)
 	for item: Array in items:
-		popup.add_item(String(item[0]), int(item[1]))
+		if item.size() == 1:
+			popup.add_separator(String(item[0]))
+		else:
+			popup.add_item(String(item[0]), int(item[1]))
 	popup.id_pressed.connect(callback)
 	return button
 
@@ -214,6 +197,20 @@ func _on_game(id: int) -> void:
 	match id:
 		GAME_SPELLS:
 			board_root.call("toggle_spell_menu")
+		COMBAT_START:
+			board_root.call("start_combat_mode")
+		COMBAT_INITIATIVE:
+			board_root.call("toggle_initiative_panel")
+		COMBAT_END:
+			board_root.call("end_combat_mode")
+		SESSION_SAVE:
+			_save_current_state()
+		SHARE_OPEN:
+			board_root.call("_on_context_menu_id_pressed", SHARE_CONTEXT_ID)
+		SESSION_MAIN_MENU:
+			var campaign_manager: Node = _campaign_manager()
+			if campaign_manager != null:
+				campaign_manager.call("return_to_main_menu")
 
 
 func _on_item(id: int) -> void:
@@ -235,14 +232,6 @@ func _on_item(id: int) -> void:
 			controller.call("rotate_selected_vertical", -1)
 
 
-func _on_combat(id: int) -> void:
-	match id:
-		COMBAT_START:
-			board_root.call("start_combat_mode")
-		COMBAT_INITIATIVE:
-			board_root.call("toggle_initiative_panel")
-		COMBAT_END:
-			board_root.call("end_combat_mode")
 
 
 func _on_compendium(id: int) -> void:
@@ -250,27 +239,6 @@ func _on_compendium(id: int) -> void:
 		board_root.call("toggle_compendium")
 
 
-func _on_token(id: int) -> void:
-	match id:
-		TOKEN_CREATE:
-			var center: Vector2 = get_viewport().get_visible_rect().size * 0.5
-			board_root.call("_show_context_menu", center)
-		TOKEN_FLYING:
-			board_root.call("_on_context_menu_id_pressed", 8)
-		TOKEN_ROTATE_LEFT:
-			board_root.call("_on_context_menu_id_pressed", 3)
-		TOKEN_ROTATE_RIGHT:
-			board_root.call("_on_context_menu_id_pressed", 4)
-		TOKEN_TILT_UP:
-			board_root.call("_rotate_selected_vertical", 1)
-		TOKEN_TILT_DOWN:
-			board_root.call("_rotate_selected_vertical", -1)
-		TOKEN_DELETE:
-			board_root.call("_on_context_menu_id_pressed", 2)
-		TOKEN_DETAILS:
-			board_root.call("open_selected_token_state_editor")
-		TOKEN_LIST:
-			board_root.call("toggle_token_list")
 
 
 func _on_measure(id: int) -> void:
@@ -327,16 +295,6 @@ func _on_view(id: int) -> void:
 			board_root.call("open_camera_settings")
 
 
-func _on_session(id: int) -> void:
-	match id:
-		SESSION_SAVE:
-			_save_current_state()
-		SHARE_OPEN:
-			board_root.call("_on_context_menu_id_pressed", 25)
-		SESSION_MAIN_MENU:
-			var campaign_manager: Node = _campaign_manager()
-			if campaign_manager != null:
-				campaign_manager.call("return_to_main_menu")
 
 
 func _save_current_state() -> void:
