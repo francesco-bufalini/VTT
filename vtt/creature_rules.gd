@@ -247,6 +247,9 @@ static func spell_slot_progression(character: Dictionary) -> Dictionary:
 			warnings.append(
 				"Le sottoclassi magiche di %s richiedono il calcolo manuale." % String(cls.get("name", ""))
 			)
+		elif name == "mostro":
+			# CR is not a caster level; real class additions determine slots.
+			pass
 		elif not name.is_empty() and not HIT_DICE.has(name):
 			warnings.append("Classe homebrew non calcolabile: " + String(cls.get("name", "")))
 	var caster_level := 0
