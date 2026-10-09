@@ -647,6 +647,10 @@ func _passengers(
 	for token in _tokens():
 		if token in explicit or drivers.has(String(token.call("get_token_id"))):
 			continue
+		# Explicit mounts are followed by MountController, not the deck
+		# proximity heuristic. Moving them twice causes a displacement.
+		if not String(token.get_meta("mount_target_id", "")).is_empty():
+			continue
 		if item.contains_passenger(token, item.global_transform):
 			passengers.append(token)
 	return passengers
