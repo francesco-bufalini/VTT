@@ -7,27 +7,27 @@ const EFFECT_CATEGORIES := ["conditions", "diseases", "effects"]
 const MAX_FILE_BYTES := 2 * 1024 * 1024
 const LEGACY_CONDITIONS := [
 	# Le 15 condizioni ufficiali D&D 5e / SRD.
-	{"id": "blinded", "name": "Accecato", "icon": "🙈", "official": true},
-	{"id": "charmed", "name": "Affascinato", "icon": "💘", "official": true},
-	{"id": "deafened", "name": "Assordato", "icon": "🔇", "official": true},
-	{"id": "exhaustion", "name": "Sfinimento", "icon": "🥱", "official": true},
-	{"id": "frightened", "name": "Spaventato", "icon": "😨", "official": true},
-	{"id": "grappled", "name": "Afferrato", "icon": "🪢", "official": true},
-	{"id": "incapacitated", "name": "Incapacitato", "icon": "⛔", "official": true},
-	{"id": "invisible", "name": "Invisibile", "icon": "👻", "official": true},
-	{"id": "paralyzed", "name": "Paralizzato", "icon": "🧊", "official": true},
-	{"id": "petrified", "name": "Pietrificato", "icon": "🗿", "official": true},
-	{"id": "poisoned", "name": "Avvelenato", "icon": "☠️", "official": true},
-	{"id": "prone", "name": "Prono", "icon": "⬇️", "official": true},
-	{"id": "restrained", "name": "Trattenuto", "icon": "⛓️", "official": true},
-	{"id": "stunned", "name": "Stordito", "icon": "💫", "official": true},
-	{"id": "unconscious", "name": "Privo di sensi", "icon": "😴", "official": true},
+	{"id": "blinded", "name": "Blinded", "icon": "🙈", "official": true},
+	{"id": "charmed", "name": "Charmed", "icon": "💘", "official": true},
+	{"id": "deafened", "name": "Deafened", "icon": "🔇", "official": true},
+	{"id": "exhaustion", "name": "Exhaustion", "icon": "🥱", "official": true},
+	{"id": "frightened", "name": "Frightened", "icon": "😨", "official": true},
+	{"id": "grappled", "name": "Grappled", "icon": "🪢", "official": true},
+	{"id": "incapacitated", "name": "Incapacitated", "icon": "⛔", "official": true},
+	{"id": "invisible", "name": "Invisible", "icon": "👻", "official": true},
+	{"id": "paralyzed", "name": "Paralyzed", "icon": "🧊", "official": true},
+	{"id": "petrified", "name": "Petrified", "icon": "🗿", "official": true},
+	{"id": "poisoned", "name": "Poisoned", "icon": "☠️", "official": true},
+	{"id": "prone", "name": "Prone", "icon": "⬇️", "official": true},
+	{"id": "restrained", "name": "Restrained", "icon": "⛓️", "official": true},
+	{"id": "stunned", "name": "Stunned", "icon": "💫", "official": true},
+	{"id": "unconscious", "name": "Unconscious", "icon": "😴", "official": true},
 
 	# Marker tattici utili nel VTT. Non sono condizioni ufficiali SRD.
-	{"id": "concentrating", "name": "Concentrazione", "icon": "🧠", "official": false},
-	{"id": "surprised", "name": "Sorpreso", "icon": "❗", "official": false},
-	{"id": "hidden", "name": "Nascosto", "icon": "🥷", "official": false},
-	{"id": "dead", "name": "Morto", "icon": "💀", "official": false},
+	{"id": "concentrating", "name": "Concentration", "icon": "🧠", "official": false},
+	{"id": "surprised", "name": "Surprised", "icon": "❗", "official": false},
+	{"id": "hidden", "name": "Hidden", "icon": "🥷", "official": false},
+	{"id": "dead", "name": "Dead", "icon": "💀", "official": false},
 
 ]
 
@@ -171,33 +171,60 @@ static func _load_effects() -> void:
 
 static func condition_definitions(edition: String = "2014") -> Array[Dictionary]:
 	_load_effects()
+	var rules_edition := "2024" if edition == "2024" else "2014"
 	var result: Array[Dictionary] = []
 	var seen: Dictionary = {}
 	for legacy: Dictionary in LEGACY_CONDITIONS:
 		var row := legacy.duplicate(true)
 		var versions: Array[Dictionary] = []
 		for effect: Dictionary in _effects:
-			if String(effect.get("legacy_id", "")) == String(row.id):
+			var effect_id := String(effect.get("legacy_id", ""))
+			# Historic tactical IDs are retained for existing saved tokens, but
+			# only selections actually documented by 5etools appear in the UI.
+			if (
+				effect_id == String(row.id)
+				or (String(row.id) == "concentrating"
+					and String(effect.get("name", "")) == "Concentration")
+				or (String(row.id) == "surprised"
+					and String(effect.get("name", "")) == "Surprised")
+			):
 				versions.append(effect)
-		row["versions"] = versions
+		if versions.is_empty():
+			continue
+		var matched := false
 		for version: Dictionary in versions:
-			if String(version.get("edition", "")) == edition:
+			if String(version.get("edition", "")) == rules_edition:
 				row["entries"] = version.get("entries", [])
 				row["source"] = version.get("source", "")
-		row["category"] = "conditions" if bool(row.get("official", false)) else "effects"
+				row["edition"] = rules_edition
+				row["category"] = String(version.get("category", "conditions"))
+				matched = true
+				break
+		if not matched:
+			continue
+		row["versions"] = versions
 		result.append(row)
 		seen[String(row.id)] = true
 	for effect: Dictionary in _effects:
-		if String(effect.get("legacy_id", "")).is_empty():
-			var row := effect.duplicate(true)
-			row["icon"] = "🦠" if row.get("category") == "diseases" else "•"
-			row["official"] = true
-			result.append(row)
+		if (
+			String(effect.get("edition", "")) != rules_edition
+			or not String(effect.get("legacy_id", "")).is_empty()
+			or String(effect.get("name", "")) in ["Concentration", "Surprised"]
+		):
+			continue
+		var row := effect.duplicate(true)
+		row["icon"] = "🦠" if row.get("category") == "diseases" else "•"
+		row["official"] = true
+		result.append(row)
+	# Explicit homebrew additions remain selectable in their own categories.
 	for category: String in EFFECT_CATEGORIES:
 		result = merge(category, result) if category == "conditions" else _append_home_effects(result, category)
 	for row: Dictionary in result:
 		if String(row.get("icon", "")).is_empty():
 			row["icon"] = icon_for(String(row.get("icon_id", "")))
+	result.sort_custom(func(a: Dictionary, b: Dictionary) -> bool:
+		return String(a.get("name", "")).nocasecmp_to(String(b.get("name", ""))) < 0
+	)
 	return result
 
 static func _append_home_effects(base: Array[Dictionary], category: String) -> Array[Dictionary]:
