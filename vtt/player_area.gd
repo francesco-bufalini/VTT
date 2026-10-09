@@ -150,6 +150,7 @@ func toggle_panel() -> void:
 func show_panel() -> void:
 	if _panel == null:
 		return
+	_reload_characters()
 	_collapse_all_catalog_sections(false)
 	_panel.show()
 	if board_root.has_method("release_camera_control"):
