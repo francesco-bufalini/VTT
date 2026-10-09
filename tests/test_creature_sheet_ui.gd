@@ -119,7 +119,11 @@ func run() -> void:
 		and placeable[0].id == area._current().id
 		and placeable[0].current_miniature_id == "hero_test",
 		"Context placement must include unspawned owned creatures and their saved appearance")
-	assert(area._tabs.get_tab_count() == 5, "Character sheet must expose spellcasting tab")
+	assert(area._tabs.get_tab_count() == 6, "Character sheet must expose resources and spellcasting tabs")
+	var tab_titles: Array[String] = []
+	for tab_index: int in range(area._tabs.get_tab_count()):
+		tab_titles.append(area._tabs.get_tab_title(tab_index))
+	assert("Risorse" in tab_titles and "Incantesimi" in tab_titles)
 	area._choose_miniature(area._current(), false, true)
 	area._miniature_filter.text = "ape"
 	area._on_miniature_selected(0)
