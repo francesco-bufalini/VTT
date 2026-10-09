@@ -130,7 +130,9 @@ func setup(on_change: Callable, on_status: Callable) -> void:
 	known_header.add_theme_constant_override("separation", 8)
 	known_col.add_child(known_header)
 	_known_title = Label.new()
-	_known_title.text = "Incantesimi di classe (fino al livello attuale)"
+	_known_title.text = "Incantesimi di classe"
+	_known_title.tooltip_text = "Incantesimi delle classi fino al livello attuale"
+	_known_title.clip_text = true
 	_known_title.size_flags_horizontal = Control.SIZE_EXPAND_FILL
 	known_header.add_child(_known_title)
 	_book_menu = MenuButton.new()
@@ -633,7 +635,7 @@ func _update_book_menu() -> void:
 	_known_title.text = (
 		"Incantesimi del libro (%d)" % _spellbook.size()
 		if _show_spellbook
-		else "Incantesimi di classe (fino al livello attuale)"
+		else "Incantesimi di classe"
 	)
 	_book_hint.visible = _editing_spellbook
 	var popup: PopupMenu = _book_menu.get_popup()
