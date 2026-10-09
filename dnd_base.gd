@@ -1657,6 +1657,11 @@ func _place_creature_at_pending_position(record: Dictionary) -> bool:
 		) as CharacterBody3D
 	if token != null and is_instance_valid(token):
 		push_undo_state()
+		# Restore saved appearance/size BEFORE computing ground clearance.
+		# Otherwise switching back from a polymorphed/taller miniature
+		# would place its base too high or partially through the floor.
+		apply_creature_sheet_appearance(token, record)
+		apply_creature_sheet_properties(token, record)
 		var token_height: float = float(token.get("token_height_cells"))
 		var token_cell: float = float(token.get("cell_size"))
 		token.global_position = Vector3(
@@ -1681,9 +1686,8 @@ func _place_creature_at_pending_position(record: Dictionary) -> bool:
 			token.set("_support_transform", _pending_spawn_support.global_transform)
 		_replace_selection(token)
 		_has_pending_spawn_position = false
-		# Relocation uses the same saved current look, size and reach.
-		apply_creature_sheet_appearance(token, record)
-		apply_creature_sheet_properties(token, record)
+		# Reposition using the restored geometry, without duplicating a
+		# creature already on the board.
 		call_deferred("_sync_explicit_token_change", token)
 		return true
 
