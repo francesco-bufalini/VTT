@@ -1253,7 +1253,9 @@ static func catalog_spell(spell_id: String) -> Dictionary:
 		# Re-applying SpellAreaCatalog *after* changing the source to PHB would
 		# instead replace 2024 geometry with the less structured 2014 spec.
 		var legacy: Dictionary = (PHB2014.SPELLS[spell_id] as Dictionary).duplicate(true)
-		var base_id := String(legacy.get("original_id", ""))
+		var base_id := String(legacy.get(
+			"geometry_reference_id", legacy.get("original_id", "")
+		))
 		var base: Dictionary = (
 			catalog_spell(base_id) if not base_id.is_empty() else {}
 		)
@@ -1266,7 +1268,7 @@ static func catalog_spell(spell_id: String) -> Dictionary:
 		# In 2014 the casting range may differ. Preserve its gameplay value
 		# even when using the modern shape/visualization model.
 		if has_2024_geometry:
-			base["map_geometry_source"] = "XPHB"
+			base["map_geometry_source"] = "2024-counterpart"
 		return base
 	for row: Dictionary in ContentCatalog.home_entries("spells"):
 		if String(row.id) == spell_id or String(row.get("overrides", "")) == spell_id:
