@@ -109,6 +109,7 @@ var _sheet_visual_waiting: Dictionary = {}
 var identity_placement_panel: PanelContainer
 var identity_placement_label: Label
 var token_resize_menu: PopupMenu
+var context_token_menu: PopupMenu
 var context_place_creature_menu: PopupMenu
 var context_game_menu: PopupMenu
 var context_measure_menu: PopupMenu
@@ -2884,12 +2885,12 @@ func _toggle_measurement_mode() -> void:
 
 
 func _build_context_submenus() -> void:
+	context_token_menu = _create_context_submenu("ContextTokenMenu")
 	context_game_menu = _create_context_submenu("ContextGameMenu")
-	# Creature placement remains available, but has no separate Token menu.
 	context_place_creature_menu = PopupMenu.new()
 	context_place_creature_menu.name = "ContextPlaceCreatureMenu"
 	context_place_creature_menu.id_pressed.connect(_on_place_creature_id_pressed)
-	context_game_menu.add_child(context_place_creature_menu)
+	context_token_menu.add_child(context_place_creature_menu)
 	context_measure_menu = _create_context_submenu("ContextMeasureMenu")
 	context_view_menu = _create_context_submenu("ContextViewMenu")
 
@@ -2903,11 +2904,13 @@ func _create_context_submenu(menu_name: String) -> PopupMenu:
 
 
 func _prepare_context_submenus() -> void:
+	context_token_menu.clear()
 	context_place_creature_menu.clear()
 	context_game_menu.clear()
 	context_measure_menu.clear()
 	context_view_menu.clear()
 	_limit_popup_menu(context_menu)
+	_limit_popup_menu(context_token_menu)
 	_limit_popup_menu(context_place_creature_menu)
 	_limit_popup_menu(context_game_menu)
 	_limit_popup_menu(context_measure_menu)
@@ -3141,11 +3144,16 @@ func _show_context_menu(screen_position: Vector2) -> void:
 	context_game_menu.add_item("Creature · schede", CONTEXT_CREATURE_AREA)
 	context_game_menu.add_item("Aggiungi creatura", CONTEXT_ADD_CREATURE)
 	context_game_menu.add_item("Compendio", CONTEXT_COMPENDIUM)
+	# Generation and the token list stay grouped in the Token submenu;
+	# creature-sheet editing and combat controls remain separate.
 	if _has_pending_spawn_position:
 		_populate_place_creature_menu()
-		context_game_menu.add_submenu_node_item(
+		context_token_menu.add_submenu_node_item(
 			"Piazza creatura", context_place_creature_menu
 		)
+		context_token_menu.add_item("Genera token", CONTEXT_CREATE_TOKEN)
+	context_token_menu.add_item("Lista token", CONTEXT_TOKEN_LIST)
+	context_menu.add_submenu_node_item("Token", context_token_menu)
 	context_game_menu.add_separator("Combattimento")
 	context_game_menu.add_item("Inizia combattimento", CONTEXT_COMBAT_START)
 	var initiative_visible: bool = (
