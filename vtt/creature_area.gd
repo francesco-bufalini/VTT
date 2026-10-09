@@ -69,7 +69,6 @@ var _rules_edition: OptionButton
 var _multiclass_rows: VBoxContainer
 var _multiclass_controls: Array[Dictionary] = []
 var _level: SpinBox
-var _feats: TextEdit
 var _default_miniature: LineEdit
 var _default_miniature_id := ""
 var _miniature_dialog: ConfirmationDialog
@@ -93,11 +92,6 @@ var _transfer_hint: Label
 var _export_dialog: FileDialog
 var _options_menu: MenuButton
 var _transfer_dialog: ConfirmationDialog
-var _feat_dialog: ConfirmationDialog
-var _feat_filter: LineEdit
-var _feat_list: ItemList
-var _feat_details: RichTextLabel
-var _visible_feats: Array[Dictionary] = []
 var _suggested_miniature_ids: Array[String] = []
 var _import_dialog: AcceptDialog
 var _import_text: TextEdit
@@ -121,7 +115,6 @@ func setup(root: Node3D) -> void:
 	_build_transfer_dialog()
 	_build_transfer_request_dialog()
 	_build_export_dialog()
-	_build_feat_dialog()
 	_reload()
 	if DisplayServer.get_name() != "headless":
 		_client.call("load_catalog")
@@ -313,7 +306,6 @@ func _unhandled_input(event: InputEvent) -> void:
 		if event.keycode == KEY_ESCAPE and not (
 			_import_dialog.visible
 			or _miniature_dialog.visible
-			or _feat_dialog.visible
 			or _transfer_dialog.visible
 			or _delete_dialog.visible
 		):
@@ -606,10 +598,6 @@ func _build_ui() -> void:
 	multiclass_header.add_child(_add_class_button)
 	_multiclass_rows = VBoxContainer.new()
 	form.add_child(_multiclass_rows)
-
-	# Keep the hidden legacy feats field for old saved characters, but
-	# no longer expose the talent editor until the dedicated feature is ready.
-	_feats = TextEdit.new()
 
 	var miniature_row := HBoxContainer.new()
 	appearance_tab.add_child(miniature_row)
@@ -1076,105 +1064,6 @@ func _save_exported_creature(path: String) -> void:
 	)
 
 
-func _build_feat_dialog() -> void:
-	_feat_dialog = ConfirmationDialog.new()
-	_feat_dialog.title = "Talenti · 5e.tools e homebrew"
-	_feat_dialog.get_ok_button().text = "Aggiungi"
-	_feat_dialog.get_cancel_button().text = "Annulla"
-	_feat_dialog.dialog_text = ""
-	_feat_dialog.min_size = Vector2i(590, 400)
-	(board_root.get_node("UI") as CanvasLayer).add_child(_feat_dialog)
-	var body := VBoxContainer.new()
-	body.add_theme_constant_override("separation", 8)
-	_feat_dialog.add_child(body)
-	var hint := Label.new()
-	hint.text = "Cerca un talento e leggi i suoi effetti prima di aggiungerlo."
-	hint.autowrap_mode = TextServer.AUTOWRAP_WORD_SMART
-	body.add_child(hint)
-	_feat_filter = LineEdit.new()
-	_feat_filter.placeholder_text = "Cerca talenti per nome o fonte..."
-	_feat_filter.clear_button_enabled = true
-	_feat_filter.text_changed.connect(_search_feats)
-	body.add_child(_feat_filter)
-	_feat_list = ItemList.new()
-	_feat_list.custom_minimum_size = Vector2(0, 112)
-	_feat_list.size_flags_horizontal = Control.SIZE_EXPAND_FILL
-	_feat_list.item_selected.connect(_show_feat_details)
-	_feat_list.item_activated.connect(_show_feat_details)
-	body.add_child(_feat_list)
-	_feat_details = RichTextLabel.new()
-	_feat_details.selection_enabled = true
-	_feat_details.custom_minimum_size.y = 108
-	body.add_child(_feat_details)
-	_feat_dialog.confirmed.connect(_confirm_feat)
-
-
-func _open_feat_dialog() -> void:
-	if _current().is_empty():
-		_set_status("Seleziona prima una creatura.")
-		return
-	_feat_filter.text = ""
-	_search_feats("")
-	_popup_sheet_dialog(_feat_dialog, Vector2i(690, 480), 0.88)
-	_feat_filter.grab_focus()
-
-
-func _search_feats(query: String) -> void:
-	if _feat_list == null:
-		return
-	_feat_list.clear()
-	_visible_feats = Player5eTools.search("feats", query, {}, 400)
-	for entry: Dictionary in _visible_feats:
-		_feat_list.add_item(Player5eTools.display_label(entry))
-	_feat_details.text = "Seleziona un talento per leggerne gli effetti."
-	_feat_dialog.get_ok_button().disabled = true
-
-
-func _show_feat_details(index: int) -> void:
-	if index < 0 or index >= _visible_feats.size():
-		return
-	var entry: Dictionary = _visible_feats[index]
-	_feat_details.text = Player5eTools.info_text(entry, ContentCatalog.description(entry))
-	_feat_dialog.get_ok_button().disabled = false
-
-
-func _confirm_feat() -> void:
-	var chosen: PackedInt32Array = _feat_list.get_selected_items()
-	if chosen.is_empty() or chosen[0] >= _visible_feats.size():
-		return
-	var entry: Dictionary = _visible_feats[chosen[0]]
-	var source := String(entry.get("source", ""))
-	var label := String(entry.get("name", "Talento"))
-	if not source.is_empty():
-		label += " [" + source + "]"
-	for existing: String in _feats.text.split("\n", false):
-		if existing.strip_edges().nocasecmp_to(label) == 0:
-			_set_status("Talento già presente nella scheda.")
-			return
-	_feats.text += ("\n" if not _feats.text.strip_edges().is_empty() else "") + label
-	_save()
-	var record: Dictionary = _current()
-	if not record.is_empty():
-		var saved: Array = record.get("feats_catalog", []).duplicate(true)
-		var ref_id := String(entry.get("id", ""))
-		var duplicate_entry := false
-		for previous: Variant in saved:
-			if previous is Dictionary and String(previous.get("id", "")) == ref_id:
-				duplicate_entry = true
-				break
-		if not duplicate_entry:
-			saved.append({
-				"id": ref_id,
-				"name": String(entry.get("name", "")),
-				"source": source,
-				"origin": String(entry.get("origin", "5etools"))
-			})
-			record["feats_catalog"] = saved
-			if _archive.save(record) == OK:
-				_replace_current_record(record)
-	_set_status("Talento aggiunto: " + label)
-
-
 # Reverse lookup of the explicit, curated miniature-to-bestiary associations.
 # Never infer a connection from an approximate name match.
 static func _associated_miniature_ids(bestiary_name: String, source: String) -> Array[String]:
@@ -1542,7 +1431,6 @@ func _load_form(record: Dictionary) -> void:
 		"Livello della classe base" if is_character
 		else "Grado di Sfida (GS) della voce selezionata nel bestiario"
 	)
-	_feats.text = String(record.get("feats", ""))
 	_default_miniature_id = String(record.get("default_miniature_id", ""))
 	_default_miniature.text = _miniature_display_name(_default_miniature_id)
 	_select_sheet_size(String(record.get("size_name", "Medium")))
@@ -1643,7 +1531,6 @@ func _save() -> void:
 		ability_bonuses[ability] = int((_ability_bonus_spins[ability] as SpinBox).value)
 	record["ability_bonuses"] = ability_bonuses
 	record["default_miniature_id"] = _default_miniature_id
-	record["feats"] = _feats.text
 	if String(record.get("kind", "")) == "monster":
 		var stat: Dictionary = record.get("stat_block", {})
 		var monster_cr: float = Rules.monster_cr_value(stat)
@@ -2774,8 +2661,7 @@ func _find_linked_token(record: Dictionary) -> Node3D:
 	return null
 
 
-# Combat damage must use the same persistent sheet as the token's health bar.
-# The legacy PlayerArea is no longer instantiated.
+# Combat damage uses the same persistent creature sheet as the token health bar.
 func apply_attack_damage_to_token(target: Node3D, damage: int) -> Dictionary:
 	if target == null or not is_instance_valid(target) or damage < 0:
 		return {"applied": false}
