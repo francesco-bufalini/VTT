@@ -106,6 +106,8 @@ var _token_generation_transform_target: CharacterBody3D
 var _forced_identity_placement_active: bool = false
 var _forced_identity_profile_ready: bool = false
 var _forced_identity_profile_id: String = ""
+var _sheet_spawn_pending_record: Dictionary = {}
+var _sheet_visual_waiting: Dictionary = {}
 var identity_placement_panel: PanelContainer
 var identity_placement_label: Label
 var token_resize_menu: PopupMenu
@@ -729,6 +731,12 @@ func _on_remote_token_downloaded(
 			_fail_forced_identity_placement(
 				"Mount non riuscito: %s" % error_string(mount_error)
 			)
+	if not _sheet_spawn_pending_record.is_empty() and String(_sheet_spawn_pending_record.get(
+		"current_miniature_id", _sheet_spawn_pending_record.get("default_miniature_id", "")
+	)) == token_id:
+		call_deferred("_finish_sheet_spawn_without_dialog")
+	if _sheet_visual_waiting.values().has(token_id):
+		call_deferred("_apply_waiting_sheet_appearance", token_id)
 	call_deferred("_reload_token_miniature_list", token_id)
 	_notify_identity_profile_catalog_changed()
 
@@ -759,6 +767,12 @@ func _on_remote_token_download_failed(
 	token_id: String,
 	message: String
 ) -> void:
+	if not _sheet_spawn_pending_record.is_empty() and String(_sheet_spawn_pending_record.get(
+		"current_miniature_id", _sheet_spawn_pending_record.get("default_miniature_id", "")
+	)) == token_id:
+		_sheet_spawn_pending_record.clear()
+		_set_identity_placement_hint("Download fallito: " + message)
+
 	if String(_selected_token_profile.get("id", "")) == token_id:
 		var ok_button := color_dialog.get_ok_button()
 		if ok_button != null:
@@ -1686,6 +1700,71 @@ func _handle_sheet_spawn_placement_input(event: InputEvent) -> bool:
 
 	if area == null or not area.has_method("link_spawned_token"):
 		return true
+	# Appearance and combat parameters live on the creature sheet. Never
+	# reopen the token generator when a sheet already specifies them.
+	_begin_sheet_spawn_without_dialog(record)
+	return true
+
+
+
+# An appearance may refer to a downloadable PCK. Keep the clicked position
+# while it downloads and finish the spawn without an additional popup.
+func _begin_sheet_spawn_without_dialog(record: Dictionary) -> void:
+	var miniature_id := String(record.get(
+		"current_miniature_id", record.get("default_miniature_id", "")
+	)).strip_edges()
+	if miniature_id.is_empty():
+		miniature_id = String(record.get("default_miniature_id", "")).strip_edges()
+	var profile := _identity_profile_by_id(miniature_id)
+	if profile.is_empty():
+		_set_identity_placement_hint(
+			"Miniatura non disponibile nel catalogo: %s. Apri la scheda e scegli un altro aspetto." % miniature_id
+		)
+		return
+	_sheet_spawn_pending_record = record.duplicate(true)
+	var origin := String(profile.get("_pack_origin", ""))
+	if origin == "remote" and not TokenPackManager.is_downloaded(miniature_id) and not TokenPackManager.is_mounted(miniature_id):
+		_set_identity_placement_hint("Download dell'aspetto attuale in corso: %s" % miniature_id)
+		var error: Error = TokenPackManager.download_token(miniature_id)
+		if error != OK:
+			_sheet_spawn_pending_record.clear()
+			_set_identity_placement_hint("Download della miniatura non riuscito: %s" % error_string(error))
+		return
+	_finish_sheet_spawn_without_dialog()
+
+
+func _finish_sheet_spawn_without_dialog() -> void:
+	if _sheet_spawn_pending_record.is_empty():
+		return
+	var record: Dictionary = _sheet_spawn_pending_record.duplicate(true)
+	var miniature_id := String(record.get(
+		"current_miniature_id", record.get("default_miniature_id", "")
+	)).strip_edges()
+	if miniature_id.is_empty():
+		miniature_id = String(record.get("default_miniature_id", "")).strip_edges()
+	var profile := _identity_profile_by_id(miniature_id)
+	if profile.is_empty():
+		_sheet_spawn_pending_record.clear()
+		_set_identity_placement_hint("La miniatura non è più disponibile: %s" % miniature_id)
+		return
+	var origin := String(profile.get("_pack_origin", ""))
+	if origin == "remote" and not TokenPackManager.is_mounted(miniature_id):
+		if TokenPackManager.mount_token(miniature_id) != OK:
+			_sheet_spawn_pending_record.clear()
+			_set_identity_placement_hint("Impossibile montare la miniatura: %s" % miniature_id)
+			return
+	if origin == "local_pack" and not TokenPackManager.is_mounted(miniature_id):
+		var err: Error = TokenPackManager.mount_local_token(
+			miniature_id, profile, String(profile.get("_local_pck_path", ""))
+		)
+		if err != OK:
+			_sheet_spawn_pending_record.clear()
+			_set_identity_placement_hint("Impossibile montare la miniatura: %s" % miniature_id)
+			return
+	var area := get_node_or_null("CreatureArea")
+	if area == null:
+		_sheet_spawn_pending_record.clear()
+		return
 	_creature_spawn_sheet_id = String(record.get("id", ""))
 	_token_generation_confirmed_callback = Callable(
 		area, "link_spawned_token"
@@ -1694,23 +1773,123 @@ func _handle_sheet_spawn_placement_input(event: InputEvent) -> bool:
 	_token_generation_transform_target = null
 	_token_generation_exact_position = true
 	_token_generation_place_on_surface = true
-	_open_token_generation_dialog()
-	var preferred_pack: String = String(
-		record.get("default_miniature_id", "")
-	).strip_edges()
-	if not preferred_pack.is_empty():
-		_refresh_token_miniature_filter("", preferred_pack)
+	_token_name_is_auto = false
+	_refresh_token_miniature_filter("", miniature_id)
+	if String(_selected_token_profile.get("id", "")) != miniature_id:
+		_sheet_spawn_pending_record.clear()
+		_reset_token_generation_state()
+		_set_identity_placement_hint("Selezione miniatura non riuscita: %s" % miniature_id)
+		return
+	_prepare_shared_token_editor()
 	_set_token_name_input(
-		_unique_token_display_name(String(record.get("name", "Creatura"))),
-		false
+		_unique_token_display_name(String(record.get("name", "Creatura"))), false
 	)
+	if token_party_input != null:
+		token_party_input.text = String(record.get("party_id", ""))
+	var chosen_size := String(record.get("size_name", "Medium"))
+	for i: int in range(TOKEN_SIZES.size()):
+		if String(TOKEN_SIZES[i].get("name", "")) == chosen_size:
+			size_selector.select(i)
+			break
+	if token_reach_input != null:
+		token_reach_input.value = float(record.get("reach_feet", 5.0))
+	if token_front_selector != null:
+		token_front_selector.select(clampi(
+			int(record.get("visual_front_quarter_turns", 0)), 0, 3
+		))
 	_refresh_shared_condition_choices(
 		TokenScript.ContentCatalog.condition_definitions(
 			String(record.get("rules_version", "2014"))
 		)
 	)
 	_set_shared_token_editor_conditions(record.get("conditions", []))
+	_sheet_spawn_pending_record.clear()
+	_hide_identity_placement_hint()
+	_on_token_dialog_confirmed()
+
+
+# Change scene parameters without going through the token generator.
+func apply_creature_sheet_properties(token: CharacterBody3D, record: Dictionary) -> void:
+	if token == null or not is_instance_valid(token):
+		return
+	var size_name := String(record.get("size_name", "Medium"))
+	var footprint := maxf(0.5, float(record.get("footprint", 1.0)))
+	if token.has_method("get_size_name") and (
+		String(token.call("get_size_name")) != size_name or
+		absf(float(token.call("get_footprint_cells")) - footprint) > 0.01
+	):
+		token.call("set_size_category", size_name, footprint, false)
+	if token.has_method("get_reach_feet") and (
+		absf(float(token.call("get_reach_feet")) - float(record.get("reach_feet", 5.0))) > 0.01
+	):
+		token.call("set_reach_feet", float(record.get("reach_feet", 5.0)), true)
+	if token.has_method("get_visual_front_quarter_turns") and (
+		int(token.call("get_visual_front_quarter_turns")) != int(record.get("visual_front_quarter_turns", 0))
+	):
+		token.call("set_visual_front_quarter_turns", int(record.get("visual_front_quarter_turns", 0)))
+	if token.has_method("get_party_id") and String(token.call("get_party_id")) != String(record.get("party_id", "")):
+		token.call("set_party_id", String(record.get("party_id", "")))
+	call_deferred("_sync_explicit_token_change", token)
+
+
+# Apply an explicitly chosen miniature immediately when it is available.
+# Undownloaded PCKs are fetched; the selection is already safe in the sheet.
+func apply_creature_sheet_appearance(token: CharacterBody3D, record: Dictionary) -> bool:
+	if token == null or not is_instance_valid(token):
+		return false
+	var miniature_id := String(record.get(
+		"current_miniature_id", record.get("default_miniature_id", "")
+	)).strip_edges()
+	var profile := _identity_profile_by_id(miniature_id)
+	if profile.is_empty():
+		return false
+	var origin := String(profile.get("_pack_origin", ""))
+	if origin == "remote" and not TokenPackManager.is_mounted(miniature_id):
+		if not TokenPackManager.is_downloaded(miniature_id):
+			_sheet_visual_waiting[String(record.get("id", ""))] = miniature_id
+			TokenPackManager.download_token(miniature_id)
+			return false
+		if TokenPackManager.mount_token(miniature_id) != OK:
+			return false
+	if origin == "local_pack" and not TokenPackManager.is_mounted(miniature_id):
+		if TokenPackManager.mount_local_token(
+			miniature_id, profile, String(profile.get("_local_pck_path", ""))
+		) != OK:
+			return false
+	var visual := _token_profile_visual_asset(profile)
+	var footprint := maxf(0.5, float(profile.get("footprint", 1.0)))
+	if not visual.is_empty() and token.has_method("set_visual_asset"):
+		if not bool(token.call("set_visual_asset", visual, footprint)):
+			return false
+	if token.has_method("set_token_pack_id"):
+		token.call("set_token_pack_id", String(
+			profile.get("token_pack_id", miniature_id)
+			if origin == "current" else miniature_id
+		))
+	apply_creature_sheet_properties(token, record)
+	_refresh_token_views_after_appearance_change()
 	return true
+
+
+func _apply_waiting_sheet_appearance(miniature_id: String) -> void:
+	var sheet_area := get_node_or_null("CreatureArea")
+	if sheet_area == null:
+		return
+	for creature_id: String in _sheet_visual_waiting.keys():
+		if String(_sheet_visual_waiting.get(creature_id, "")) != miniature_id:
+			continue
+		_sheet_visual_waiting.erase(creature_id)
+		if not sheet_area.has_method("find_linked_token_for_creature"):
+			continue
+		var token: CharacterBody3D = sheet_area.call(
+			"find_linked_token_for_creature", creature_id
+		) as CharacterBody3D
+		if token == null:
+			continue
+		for record: Dictionary in sheet_area.get("_archive").list_owned():
+			if String(record.get("id", "")) == creature_id and String(record.get("current_miniature_id", "")) == miniature_id:
+				apply_creature_sheet_appearance(token, record)
+				break
 
 
 func _handle_forced_identity_placement_input(event: InputEvent) -> bool:
