@@ -555,16 +555,16 @@ static func tactical_reach_distance_feet(
 			second_half,
 			safe_cell
 		)
-	return (
-		aabb_gap_distance_world(
-			first_center,
-			first_half,
-			second_center,
-			second_half
-		)
-		/ safe_cell
-		* 5.0
-	)
+	# Never switch to continuous hitbox-edge distance just because the
+	# spawn heights differ. That used to turn a one-square gap (10 ft on
+	# the tactical grid) into a 5 ft edge gap until a token was moved.
+	# In 3D, count the intervening grid cells on all three axes using
+	# the same diagonal/Chebyshev convention as the flat tactical grid.
+	var delta: Vector3 = (second_center - first_center).abs()
+	var gap_x: float = maxf(delta.x - first_half.x - second_half.x, 0.0)
+	var gap_y: float = maxf(delta.y - first_half.y - second_half.y, 0.0)
+	var gap_z: float = maxf(delta.z - first_half.z - second_half.z, 0.0)
+	return _tactical_gap_feet(maxf(gap_x, maxf(gap_y, gap_z)), safe_cell)
 
 
 static func bases_share_tactical_plane(
@@ -580,6 +580,17 @@ static func bases_share_tactical_plane(
 	return absf(first_base_y - second_base_y) < safe_cell * 0.5
 
 
+static func _tactical_gap_feet(empty_span: float, cell_size: float) -> float:
+	var safe_cell := maxf(cell_size, EPSILON)
+	# The first occupied square always counts as the first 5 ft. Every
+	# complete or partial intervening square adds another tactical step.
+	# Bias integer boundaries only to suppress floating-point jitter.
+	var empty_cells: int = maxi(0, ceili(
+		(empty_span - EPSILON * safe_cell) / safe_cell
+	))
+	return float(empty_cells + 1) * 5.0
+
+
 static func grid_reach_distance_feet(
 	first_center: Vector3,
 	first_half: Vector3,
@@ -587,24 +598,10 @@ static func grid_reach_distance_feet(
 	second_half: Vector3,
 	cell_size: float
 ) -> float:
-	var safe_cell := maxf(cell_size, EPSILON)
-	var delta := (second_center - first_center).abs()
-	var gap_x := maxf(delta.x - first_half.x - second_half.x, 0.0)
-	var gap_z := maxf(delta.z - first_half.z - second_half.z, 0.0)
-	var empty_span := maxf(gap_x, gap_z)
-
-	# Adjacent bases have an empty span of zero and are one grid step apart.
-	# An exact one-cell empty span means there is one whole square between
-	# the creatures, hence two grid steps.
-	var empty_cells := int(floor((empty_span + EPSILON) / safe_cell))
-	if empty_span > EPSILON and is_equal_approx(
-		empty_span,
-		float(empty_cells) * safe_cell
-	):
-		empty_cells = maxi(empty_cells, 1)
-	elif empty_span > float(empty_cells) * safe_cell + EPSILON:
-		empty_cells += 1
-	return float(empty_cells + 1) * 5.0
+	var delta: Vector3 = (second_center - first_center).abs()
+	var gap_x: float = maxf(delta.x - first_half.x - second_half.x, 0.0)
+	var gap_z: float = maxf(delta.z - first_half.z - second_half.z, 0.0)
+	return _tactical_gap_feet(maxf(gap_x, gap_z), cell_size)
 
 
 static func project_centers_to_shared_base(
