@@ -82,9 +82,14 @@ func setup(on_change: Callable, on_status: Callable) -> void:
 	_details.scroll_active = true
 	_details.selection_enabled = true
 	add_child(_details)
-	_catalog = Player5eTools.entries("items")
-	_filter_catalog()
+	reload_catalog()
 	_refresh_inventory()
+
+
+func reload_catalog() -> void:
+	_catalog = Player5eTools.entries("items")
+	if _catalog_list != null:
+		_filter_catalog()
 
 
 func load_record(record: Dictionary) -> void:
