@@ -2312,6 +2312,8 @@ func _reclamp_sheet_dialog(
 	preferred: Vector2i,
 	ratio: float
 ) -> void:
+	# The first frame computes the final minimum size of nested controls.
+	await get_tree().process_frame
 	if dialog == null or not is_instance_valid(dialog) or not dialog.visible:
 		return
 	var viewport: Vector2i = Vector2i(get_viewport().get_visible_rect().size)
