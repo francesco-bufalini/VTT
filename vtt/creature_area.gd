@@ -549,7 +549,7 @@ func _build_ui() -> void:
 	_reach.step = 5.0
 	_add_label(geometry, "Fronte della miniatura")
 	_front = OptionButton.new()
-	for direction: String in ["0°", "90°", "180°", "270°"]:
+	for direction: String in ["−Z · 0°", "+X · 90°", "+Z · 180°", "−X · 270°"]:
 		_front.add_item(direction)
 	_front.item_selected.connect(func(_i: int) -> void: _save())
 	geometry.add_child(_front)
