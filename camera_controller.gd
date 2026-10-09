@@ -24,6 +24,12 @@ var _saved_2d_size: float = 20.0
 var _saved_2d_fov: float = 75.0
 var _saved_2d_near: float = 0.05
 var _has_saved_2d_state: bool = false
+# The 3D return pose and the last 2D pan/zoom are independent memories.
+var _has_remembered_top_down_view: bool = false
+var _remembered_top_down_transform: Transform3D = Transform3D.IDENTITY
+var _remembered_top_down_size: float = 30.0
+var _remembered_top_down_level: float = 0.0
+var _remembered_top_down_tilt: float = 0.0
 var _top_down_center_y: float = 0.0
 var _top_down_tilt_degrees: float = 0.0
 var _top_down_floor_levels_provider: Callable = Callable()
@@ -79,10 +85,13 @@ func set_mouse_sensitivity(value: float) -> void:
 
 func _process(delta: float) -> void:
 	if _top_down_2d_enabled:
-		_process_top_down_2d(delta)
+		if not _keyboard_blocked_by_ui():
+			_process_top_down_2d(delta)
+		else:
+			_advance_top_down_level_hold(0, delta)
 		return
 
-	if Input.mouse_mode != Input.MOUSE_MODE_CAPTURED:
+	if Input.mouse_mode != Input.MOUSE_MODE_CAPTURED or _keyboard_blocked_by_ui():
 		return
 	if is_first_person():
 		_update_first_person_camera()
@@ -235,9 +244,14 @@ func _update_top_down_slice() -> void:
 	)
 
 
+func _keyboard_blocked_by_ui() -> bool:
+	# A ribbon MenuButton can retain keyboard focus long after the menu
+	# closes. The board explicitly releases it when a world click occurs.
+	return get_viewport().gui_get_focus_owner() != null
+
+
 func _text_input_has_focus() -> bool:
-	var focus_owner := get_viewport().gui_get_focus_owner()
-	return focus_owner is LineEdit or focus_owner is TextEdit
+	return _keyboard_blocked_by_ui()
 
 
 func enter_top_down_2d(
@@ -265,8 +279,20 @@ func enter_top_down_2d(
 	_advance_top_down_level_hold(0, 0.0)
 
 	projection = Camera3D.PROJECTION_ORTHOGONAL
-	size = clampf(fit_size, top_down_min_size, top_down_max_size)
-	_apply_top_down_pose(center, tilt_degrees)
+	if _has_remembered_top_down_view:
+		size = clampf(_remembered_top_down_size, top_down_min_size, top_down_max_size)
+		_top_down_center_y = _remembered_top_down_level
+		_top_down_tilt_degrees = _remembered_top_down_tilt
+		_top_down_clearance = maxf(top_down_camera_height, 12.0)
+		_update_top_down_slice()
+		global_transform = _remembered_top_down_transform
+	else:
+		size = clampf(fit_size, top_down_min_size, top_down_max_size)
+		_apply_top_down_pose(center, tilt_degrees)
+
+
+func has_remembered_top_down_view() -> bool:
+	return _has_remembered_top_down_view
 
 
 func _apply_top_down_pose(
@@ -300,6 +326,12 @@ func exit_top_down_2d() -> void:
 	if not _top_down_2d_enabled:
 		return
 
+	# Store precisely what the player was looking at before going back to 3D.
+	_remembered_top_down_transform = global_transform
+	_remembered_top_down_size = size
+	_remembered_top_down_level = _top_down_center_y
+	_remembered_top_down_tilt = _top_down_tilt_degrees
+	_has_remembered_top_down_view = true
 	_top_down_2d_enabled = false
 	_advance_top_down_level_hold(0, 0.0)
 	if _has_saved_2d_state:
