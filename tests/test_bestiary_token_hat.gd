@@ -71,6 +71,68 @@ func _run() -> void:
 	a._on_bestiary_texture_ready(ape_url, texture)
 	assert(not a._top_down_token_sprite.visible)
 
+	# The 2D overlay must not cover the map with a filled blue tile or
+	# fall back to two initials. Token names and selection remain legible.
+	var scene_camera: Camera3D = Camera3D.new()
+	scene_camera.projection = Camera3D.PROJECTION_ORTHOGONAL
+	scene_camera.size = 20.0
+	root.add_child(scene_camera)
+	scene_camera.position = Vector3(0.0, 25.0, 0.0)
+	scene_camera.rotation = Vector3(-PI * 0.5, 0.0, 0.0)
+	scene_camera.current = true
+
+	var elevation_ui: Control = (
+		preload("res://vtt/top_down_elevation_overlay.gd").new()
+	)
+	root.add_child(elevation_ui)
+	elevation_ui.set("camera", scene_camera)
+	elevation_ui.set("cell_size", 1.0)
+
+	a.set_token_pack_id("ape")
+	a.set_top_down_token_enabled(true)
+	a.set_2d_elevation_overlay_enabled(true)
+	a.set_display_name("Gilliam")
+	a.set_selected(true)
+	assert(not a._name_label.visible)
+	assert(not a.selection_marker.visible)
+	elevation_ui.call("_render_token_badge", a, 0.0)
+	var badges: Dictionary = elevation_ui.get("_badges")
+	var a_badge: Control = badges[a.get_instance_id()] as Control
+	assert(a_badge.get_node_or_null("Background") == null)
+	assert(a_badge.get_node_or_null("Fallback") == null)
+	var a_portrait: TextureRect = a_badge.get_node("Portrait") as TextureRect
+	assert(a_portrait.texture == texture)
+	var a_name: Label = a_badge.get_node("Name") as Label
+	assert(a_name.text == "Gilliam")
+	assert(a_name.position.y < a_portrait.position.y)
+	var a_ring: Panel = a_badge.get_node("SelectionRing") as Panel
+	assert(a_ring.visible)
+	a.set_selected(false)
+	elevation_ui.call("_render_token_badge", a, 0.0)
+	assert(not a_ring.visible)
+	a.set_selected(true)
+	a.set_2d_elevation_overlay_enabled(false)
+	assert(a.selection_marker.visible)
+	assert(a._name_label.visible)
+
+	b.set_token_pack_id("valandir")
+	b.set_top_down_token_enabled(true)
+	b.set_2d_elevation_overlay_enabled(true)
+	b.set_display_name("Kryss")
+	elevation_ui.call("_render_token_badge", b, 0.0)
+	badges = elevation_ui.get("_badges")
+	var b_badge: Control = badges[b.get_instance_id()] as Control
+	assert(b_badge.get_node_or_null("Background") == null)
+	assert(b_badge.get_node_or_null("Fallback") == null)
+	assert((b_badge.get_node("Name") as Label).text == "Kryss")
+	# Transparent miniatures are rendered from the existing 3D visuals,
+	# rather than showing a colored rectangle and a monogram.
+	assert(b_badge.get_node_or_null("MiniaturePreview") is SubViewport)
+	assert((b_badge.get_node("Portrait") as TextureRect).texture != null)
+
+	elevation_ui.free()
+	scene_camera.free()
+
 	# A late-created token follows an ancestor already in 2D.
 	var arena := Node3D.new()
 	arena.set_script(load("res://tests/fixtures/bestiary_2d_board.gd"))
@@ -86,5 +148,5 @@ func _run() -> void:
 	a.free()
 	b.free()
 	arena.free()
-	print("PASS: bestiary references, homogeneous selections and 2D token hats preserve miniature and physics")
+	print("PASS: 2D token portraits and 3D miniature previews have no tiles or initials, with names and selection")
 	quit()
