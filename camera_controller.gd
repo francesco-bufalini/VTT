@@ -1,5 +1,7 @@
 extends Camera3D
 
+const TOP_DOWN_MIN_CLEARANCE := 0.5
+
 @export_range(1.0, 100.0, 0.5) var speed: float = 5.0
 @export_range(0.0002, 0.01, 0.0001) var mouse_sensitivity: float = 0.002
 @export_range(2.0, 20.0, 0.5) var top_down_min_size: float = 4.0
@@ -17,6 +19,8 @@ var _saved_2d_projection: int = Camera3D.PROJECTION_PERSPECTIVE
 var _saved_2d_size: float = 20.0
 var _saved_2d_fov: float = 75.0
 var _has_saved_2d_state: bool = false
+var _top_down_center_y: float = 0.0
+var _top_down_tilt_degrees: float = 0.0
 
 
 func _ready() -> void:
@@ -93,6 +97,10 @@ func _process_top_down_2d(delta: float) -> void:
 		return
 
 	var shift_pressed := Input.is_key_pressed(KEY_SHIFT)
+	# Stessi comandi della camera 3D: Spazio sale, Shift+Spazio scende.
+	if Input.is_key_pressed(KEY_SPACE):
+		var vertical_direction: float = -1.0 if shift_pressed else 1.0
+		adjust_top_down_height(vertical_direction * speed * delta)
 	var zoom_direction := 0.0
 	if shift_pressed and Input.is_key_pressed(KEY_W):
 		zoom_direction -= 1.0
@@ -124,6 +132,31 @@ func _process_top_down_2d(delta: float) -> void:
 	if pan != Vector3.ZERO:
 		var pan_speed := maxf(speed, size * 0.45)
 		global_position += pan.normalized() * pan_speed * delta
+
+
+func adjust_top_down_height(delta_height: float) -> void:
+	if not _top_down_2d_enabled or is_zero_approx(delta_height):
+		return
+
+	# Restiamo sopra il piano inquadrato ed entro il far clipping.
+	var tilt_radians: float = deg_to_rad(_top_down_tilt_degrees)
+	var max_clearance: float = maxf(
+		TOP_DOWN_MIN_CLEARANCE,
+		(far - 2.0) * cos(tilt_radians)
+	)
+	var next_y: float = clampf(
+		global_position.y + delta_height,
+		_top_down_center_y + TOP_DOWN_MIN_CLEARANCE,
+		_top_down_center_y + max_clearance
+	)
+	var actual_delta: float = next_y - global_position.y
+	# Nei preset con camera inclinata, compensiamo anche lungo Z per
+	# mantenere stabile il punto della mappa sotto il centro dello schermo.
+	global_position += Vector3(
+		0.0,
+		actual_delta,
+		actual_delta * tan(tilt_radians)
+	)
 
 
 func _text_input_has_focus() -> bool:
@@ -162,6 +195,8 @@ func _apply_top_down_pose(
 	tilt_degrees: float
 ) -> void:
 	var tilt: float = clampf(tilt_degrees, 0.0, 30.0)
+	_top_down_tilt_degrees = tilt
+	_top_down_center_y = center.y
 	var height: float = maxf(top_down_camera_height, 12.0)
 	if is_zero_approx(tilt):
 		global_position = Vector3(center.x, center.y + height, center.z)
