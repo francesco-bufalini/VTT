@@ -57,6 +57,8 @@ var _party: LineEdit
 var _tabs: TabContainer
 var _ac: SpinBox
 var _ability_spins: Dictionary = {}
+var _ability_bonus_spins: Dictionary = {}
+var _ability_modifier_labels: Dictionary = {}
 var _species: OptionButton
 var _class_name: OptionButton
 var _rules_edition: OptionButton
@@ -355,6 +357,10 @@ func _build_ui() -> void:
 	var left := VBoxContainer.new()
 	left.custom_minimum_size = Vector2(260, 0)
 	columns.add_child(left)
+	var creatures_title := Label.new()
+	creatures_title.text = "Le mie creature"
+	creatures_title.add_theme_font_size_override("font_size", 17)
+	left.add_child(creatures_title)
 	_creature_list_scroll = ScrollContainer.new()
 	_creature_list_scroll.custom_minimum_size.y = 40
 	_creature_list_scroll.size_flags_horizontal = Control.SIZE_EXPAND_FILL
@@ -368,20 +374,12 @@ func _build_ui() -> void:
 	_creature_list.tooltip_text = "Le mie creature · clic destro per le azioni"
 	_creature_list_scroll.add_child(_creature_list)
 	_creature_context_menu = PopupMenu.new()
-	_creature_context_menu.add_item("Genera token / riposiziona", 1)
 	_creature_context_menu.add_item("Calcola automaticamente…", 2)
+	_creature_context_menu.add_item("Cedi controllo…", 4)
 	_creature_context_menu.add_separator()
 	_creature_context_menu.add_item("Elimina creatura…", 3)
 	_creature_context_menu.id_pressed.connect(_on_creature_context_action)
 	_creature_list.add_child(_creature_context_menu)
-	var spawn_selected := Button.new()
-	spawn_selected.text = "Genera token / riposiziona"
-	spawn_selected.tooltip_text = (
-		"Se la creatura ha già un token, spostalo senza duplicarlo. "
-		+ "Altrimenti genera un token e collegalo alla scheda."
-	)
-	spawn_selected.pressed.connect(_request_spawn_selected_creature)
-	left.add_child(spawn_selected)
 
 	var add_general := Button.new()
 	add_general.text = "+ Aggiungi personaggio"
@@ -408,8 +406,9 @@ func _build_ui() -> void:
 	columns.add_child(_tabs)
 	var form := _add_sheet_tab(_tabs, "Statistiche")
 	var appearance_tab := _add_sheet_tab(_tabs, "Aspetto")
-	var traits_tab := _add_sheet_tab(_tabs, "Tratti e talenti")
+	var traits_tab := _add_sheet_tab(_tabs, "Tratti")
 	var conditions_tab := _add_sheet_tab(_tabs, "Stati")
+	var spellcasting_tab := _add_sheet_tab(_tabs, "Incantesimi")
 	_tabs.current_tab = 0
 
 	var name_row := HBoxContainer.new()
@@ -420,9 +419,13 @@ func _build_ui() -> void:
 	_name.size_flags_horizontal = Control.SIZE_EXPAND_FILL
 	_name.text_changed.connect(func(_v: String) -> void: _save())
 	name_row.add_child(_name)
-	_add_label(name_row, "CA")
-	_ac = _spin(name_row, 0, 99)
-	_ac.custom_minimum_size.x = 64
+	_add_label(name_row, "Fazione")
+	_party = LineEdit.new()
+	_party.custom_minimum_size.x = 105
+	_party.size_flags_horizontal = Control.SIZE_SHRINK_END
+	_party.placeholder_text = "Default"
+	_party.text_changed.connect(func(_text: String) -> void: _save())
+	name_row.add_child(_party)
 
 	var health_panel := PanelContainer.new()
 	var health_style := StyleBoxFlat.new()
@@ -471,16 +474,36 @@ func _build_ui() -> void:
 	_temp_hp = _spin(temp_health, 0, 99999)
 	_temp_hp.custom_minimum_size.x = 85
 	_temp_hp.size_flags_horizontal = Control.SIZE_SHRINK_BEGIN
+	_add_label(temp_health, "CA")
+	_ac = _spin(temp_health, 0, 99)
+	_ac.custom_minimum_size.x = 72
+	_ac.size_flags_horizontal = Control.SIZE_SHRINK_BEGIN
 
 	var abilities_row := GridContainer.new()
-	abilities_row.columns = 6
+	abilities_row.columns = 3
 	form.add_child(abilities_row)
 	for ability: String in ["str", "dex", "con", "int", "wis", "cha"]:
 		var cell := VBoxContainer.new()
 		abilities_row.add_child(cell)
 		_add_label(cell, ability.to_upper())
-		var spin := _spin(cell, 1, 30)
+		var scores_row := HBoxContainer.new()
+		scores_row.add_theme_constant_override("separation", 4)
+		cell.add_child(scores_row)
+		var spin := _spin(scores_row, 1, 30)
+		spin.custom_minimum_size.x = 58
+		spin.tooltip_text = "Punteggio base"
 		_ability_spins[ability] = spin
+		var bonus := _spin(scores_row, -30, 30)
+		bonus.custom_minimum_size.x = 57
+		bonus.tooltip_text = "Bonus al punteggio (per ora manuale; poi da oggetti e tratti)"
+		_ability_bonus_spins[ability] = bonus
+		var modifier := Label.new()
+		modifier.custom_minimum_size.x = 49
+		modifier.tooltip_text = "Modificatore calcolato dal punteggio e dal bonus"
+		scores_row.add_child(modifier)
+		_ability_modifier_labels[ability] = modifier
+		spin.value_changed.connect(_on_ability_value_changed.bind(ability))
+		bonus.value_changed.connect(_on_ability_value_changed.bind(ability))
 
 	var classes_row := GridContainer.new()
 	classes_row.columns = 4
@@ -518,17 +541,9 @@ func _build_ui() -> void:
 	_multiclass_rows = VBoxContainer.new()
 	form.add_child(_multiclass_rows)
 
-	var feats_header := HBoxContainer.new()
-	traits_tab.add_child(feats_header)
-	_add_label(feats_header, "Talenti e scelte manuali")
-	var search_feat := Button.new()
-	search_feat.text = "Cerca talenti…"
-	search_feat.pressed.connect(_open_feat_dialog)
-	feats_header.add_child(search_feat)
+	# Keep the hidden legacy feats field for old saved characters, but
+	# no longer expose the talent editor until the dedicated feature is ready.
 	_feats = TextEdit.new()
-	_feats.custom_minimum_size = Vector2(0, 56)
-	_feats.text_changed.connect(_save)
-	traits_tab.add_child(_feats)
 
 	var miniature_row := HBoxContainer.new()
 	appearance_tab.add_child(miniature_row)
@@ -544,7 +559,8 @@ func _build_ui() -> void:
 	miniature_row.add_child(choose_miniature)
 	_current_miniature = Label.new()
 	_current_miniature.text = "Aspetto attuale: nessun token"
-	appearance_tab.add_child(_current_miniature)
+	# The current appearance is controlled by the action buttons below,
+	# so the redundant opening caption is intentionally not displayed.
 	var appearance_actions := HBoxContainer.new()
 	appearance_actions.add_theme_constant_override("separation", 8)
 	appearance_tab.add_child(appearance_actions)
@@ -579,16 +595,7 @@ func _build_ui() -> void:
 		_front.add_item(direction)
 	_front.item_selected.connect(func(_i: int) -> void: _save())
 	geometry.add_child(_front)
-	_add_label(geometry, "Party")
-	_party = LineEdit.new()
-	_party.placeholder_text = "Default"
-	_party.text_changed.connect(func(_text: String) -> void: _save())
-	geometry.add_child(_party)
-	var hint := Label.new()
-	hint.text = "Questi parametri sono salvati sulla creatura e usati al prossimo piazzamento."
-	hint.autowrap_mode = TextServer.AUTOWRAP_WORD_SMART
-	hint.modulate.a = 0.7
-	appearance_tab.add_child(hint)
+	# Fazione is edited beside the creature name on the Statistics tab.
 
 
 	_condition_rows = VBoxContainer.new()
@@ -687,6 +694,18 @@ func _select_creature_row(index: int) -> void:
 	_on_selected(index)
 
 
+func _act_on_creature_token(creature_id: String) -> void:
+	var token: CharacterBody3D = find_linked_token_for_creature(creature_id)
+	if token == null or not is_instance_valid(token):
+		for i: int in range(_records.size()):
+			if String(_records[i].get("id", "")) == creature_id:
+				_select_creature_row(i)
+				_request_spawn_selected_creature()
+				return
+		return
+	_focus_creature_token(creature_id)
+
+
 func _focus_creature_token(creature_id: String) -> void:
 	var token: CharacterBody3D = find_linked_token_for_creature(creature_id)
 	if token == null or not is_instance_valid(token):
@@ -714,8 +733,13 @@ func _refresh_creature_eye_buttons() -> void:
 		if not creature_id.is_empty():
 			present[creature_id] = true
 	for i: int in range(mini(_records.size(), _creature_eye_buttons.size())):
-		_creature_eye_buttons[i].visible = present.has(
-			String(_records[i].get("id", ""))
+		var has_token: bool = present.has(String(_records[i].get("id", "")))
+		var action_button: Button = _creature_eye_buttons[i]
+		action_button.visible = true
+		action_button.text = "👁" if has_token else "+"
+		action_button.tooltip_text = (
+			"Centra la visuale sul token" if has_token
+			else "Genera il token di questa creatura"
 		)
 
 
@@ -730,12 +754,12 @@ func _process(delta: float) -> void:
 
 func _on_creature_context_action(action: int) -> void:
 	match action:
-		1:
-			_request_spawn_selected_creature()
 		2:
 			_open_automatic_calculation()
 		3:
 			_confirm_delete()
+		4:
+			_open_transfer_dialog()
 
 
 func _build_automatic_dialog() -> void:
@@ -1202,12 +1226,12 @@ func _reload() -> void:
 		row.add_child(select_button)
 		_creature_row_buttons.append(select_button)
 		var eye := Button.new()
-		eye.name = "FocusToken"
-		eye.text = "👁"
-		eye.tooltip_text = "Centra la visuale sul token di questa creatura"
+		eye.name = "CreatureTokenAction"
+		eye.text = "+"
+		eye.tooltip_text = "Genera il token di questa creatura"
 		eye.custom_minimum_size = Vector2(35, 34)
 		eye.size_flags_horizontal = Control.SIZE_SHRINK_END
-		eye.pressed.connect(_focus_creature_token.bind(creature_id))
+		eye.pressed.connect(_act_on_creature_token.bind(creature_id))
 		eye.gui_input.connect(_on_creature_row_gui_input.bind(i))
 		row.add_child(eye)
 		_creature_eye_buttons.append(eye)
@@ -1272,8 +1296,12 @@ func _load_form(record: Dictionary) -> void:
 	var abilities: Dictionary = (
 		abilities_value as Dictionary if abilities_value is Dictionary else {}
 	)
+	var bonus_value: Variant = record.get("ability_bonuses", {})
+	var bonuses: Dictionary = bonus_value if bonus_value is Dictionary else {}
 	for ability: String in _ability_spins.keys():
 		(_ability_spins[ability] as SpinBox).value = int(abilities.get(ability, 10))
+		(_ability_bonus_spins[ability] as SpinBox).value = int(bonuses.get(ability, 0))
+		_update_ability_modifier(ability)
 	_select_reference(_species, String(record.get("species", "")), String(record.get("species_source", "")), String(record.get("species_id", "")))
 	var class_source := String(record.get("class_source", ""))
 	var edition := String(record.get("rules_version", "2014"))
@@ -1331,6 +1359,20 @@ func _on_level_changed(_value: float) -> void:
 	_save()
 
 
+func _on_ability_value_changed(_value: float, ability: String) -> void:
+	_update_ability_modifier(ability)
+	_save()
+
+
+func _update_ability_modifier(ability: String) -> void:
+	if not _ability_spins.has(ability):
+		return
+	var score: int = int((_ability_spins[ability] as SpinBox).value)
+	var bonus: int = int((_ability_bonus_spins[ability] as SpinBox).value)
+	var value: int = Rules.ability_modifier(score + bonus)
+	(_ability_modifier_labels[ability] as Label).text = "%+d" % value
+
+
 func _replace_current_record(record: Dictionary) -> void:
 	for i: int in range(_records.size()):
 		if (
@@ -1361,6 +1403,10 @@ func _save() -> void:
 	for ability: String in _ability_spins.keys():
 		abilities[ability] = int((_ability_spins[ability] as SpinBox).value)
 	record["abilities"] = abilities
+	var ability_bonuses: Dictionary = {}
+	for ability: String in _ability_bonus_spins.keys():
+		ability_bonuses[ability] = int((_ability_bonus_spins[ability] as SpinBox).value)
+	record["ability_bonuses"] = ability_bonuses
 	record["default_miniature_id"] = _default_miniature_id
 	record["feats"] = _feats.text
 	if String(record.get("kind", "")) == "character":
