@@ -316,7 +316,10 @@ func _render_token_badge(token: CharacterBody3D, floor_y: float) -> void:
 		status_descriptions.append("Flanked")
 	# Use only condition icons in the tactical strip. Full names are much too
 	# wide at ordinary zoom and used to cover several squares of the map.
-	if token.has_method("get_active_condition_display_parts"):
+	var show_manual_conditions: bool = true
+	if token.has_method("are_condition_visuals_visible"):
+		show_manual_conditions = bool(token.call("are_condition_visuals_visible"))
+	if show_manual_conditions and token.has_method("get_active_condition_display_parts"):
 		var active_parts: Variant = token.call("get_active_condition_display_parts")
 		if active_parts is PackedStringArray:
 			for part: String in active_parts:
