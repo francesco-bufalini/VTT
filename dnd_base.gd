@@ -51,6 +51,7 @@ const CHARACTER_TOKEN_ROOT := "res://assets/tokens/Characters"
 const DEFAULT_TOKEN_PROFILE_ID := "death_knight"
 const GridHighlightRenderer = preload("res://vtt/grid_highlight_renderer.gd")
 const TopDownElevationLevels = preload("res://vtt/top_down_elevation_levels.gd")
+const CreatureOwner = preload("res://vtt/creature_owner.gd")
 const TokenScript = preload("res://token.gd")
 const FlankingGeometry = preload("res://vtt/flanking_system.gd")
 
@@ -114,6 +115,7 @@ var identity_placement_panel: PanelContainer
 var identity_placement_label: Label
 var token_resize_menu: PopupMenu
 var context_token_menu: PopupMenu
+var context_place_creature_menu: PopupMenu
 var context_game_menu: PopupMenu
 var context_measure_menu: PopupMenu
 var context_view_menu: PopupMenu
@@ -1633,6 +1635,20 @@ func _handle_sheet_spawn_placement_input(event: InputEvent) -> bool:
 	_sheet_spawn_picking = false
 	_sheet_spawn_record.clear()
 	_hide_identity_placement_hint()
+	return _place_creature_at_pending_position(record)
+
+
+# Both the creature sheet and the right-click placement menu use this
+# path. The context menu has ALREADY picked a valid world position, so it
+# must not require another click or open the token generator.
+func _place_creature_at_pending_position(record: Dictionary) -> bool:
+	if (
+		record.is_empty()
+		or not _has_pending_spawn_position
+		or not _sheet_spawn_pending_record.is_empty()
+		or color_dialog.visible
+	):
+		return false
 	var area: Node = get_node_or_null("CreatureArea")
 	var token: CharacterBody3D
 	if area != null and area.has_method("find_linked_token_for_creature"):
@@ -1672,7 +1688,7 @@ func _handle_sheet_spawn_placement_input(event: InputEvent) -> bool:
 		return true
 
 	if area == null or not area.has_method("link_spawned_token"):
-		return true
+		return false
 	# Appearance and combat parameters live on the creature sheet. Never
 	# reopen the token generator when a sheet already specifies them.
 	_begin_sheet_spawn_without_dialog(record)
@@ -2900,6 +2916,12 @@ func _toggle_measurement_mode() -> void:
 
 func _build_context_submenus() -> void:
 	context_token_menu = _create_context_submenu("ContextTokenMenu")
+	# Nested under Token: the placement choice remains directly in the
+	# context menu, with no separate creature editor or generator dialog.
+	context_place_creature_menu = PopupMenu.new()
+	context_place_creature_menu.name = "ContextPlaceCreatureMenu"
+	context_place_creature_menu.id_pressed.connect(_on_place_creature_id_pressed)
+	context_token_menu.add_child(context_place_creature_menu)
 	context_game_menu = _create_context_submenu("ContextGameMenu")
 	context_measure_menu = _create_context_submenu("ContextMeasureMenu")
 	context_view_menu = _create_context_submenu("ContextViewMenu")
@@ -2916,16 +2938,96 @@ func _create_context_submenu(menu_name: String) -> PopupMenu:
 
 func _prepare_context_submenus() -> void:
 	context_token_menu.clear()
+	context_place_creature_menu.clear()
 	context_game_menu.clear()
 	context_measure_menu.clear()
 	context_view_menu.clear()
 	context_session_menu.clear()
 	_limit_popup_menu(context_menu)
 	_limit_popup_menu(context_token_menu)
+	_limit_popup_menu(context_place_creature_menu)
 	_limit_popup_menu(context_game_menu)
 	_limit_popup_menu(context_measure_menu)
 	_limit_popup_menu(context_view_menu)
 	_limit_popup_menu(context_session_menu)
+
+
+# Rebuild on each right-click so the chooser includes both present and
+# absent creatures, including any just imported or transferred to us.
+func _populate_place_creature_menu() -> void:
+	context_place_creature_menu.clear()
+	var area: Node = get_node_or_null("CreatureArea")
+	if area == null or not area.has_method("get_owned_creatures_for_placement"):
+		context_place_creature_menu.add_item("Archivio creature non disponibile")
+		context_place_creature_menu.set_item_disabled(0, true)
+		return
+	var available_value: Variant = area.call("get_owned_creatures_for_placement")
+	if not available_value is Array:
+		return
+	var present_ids: Dictionary = {}
+	for node: Node in get_tree().get_nodes_in_group("dnd_token"):
+		if not node is CharacterBody3D or not is_ancestor_of(node):
+			continue
+		if node.is_queued_for_deletion():
+			continue
+		if String(node.get_meta("creature_owner_id", "")) != CreatureOwner.local_id():
+			continue
+		present_ids[String(node.get_meta("creature_id", ""))] = true
+	for value: Variant in available_value as Array:
+		if not value is Dictionary:
+			continue
+		var record: Dictionary = value as Dictionary
+		if not CreatureOwner.is_owner(record):
+			continue
+		var creature_id: String = String(record.get("id", "")).strip_edges()
+		var creature_kind: String = String(record.get("kind", ""))
+		if creature_id.is_empty() or creature_kind not in ["character", "monster"]:
+			continue
+		var display_name: String = String(record.get("name", "Creatura")).strip_edges()
+		if display_name.is_empty():
+			display_name = "Creatura"
+		var icon: String = "♙" if creature_kind == "character" else "◇"
+		var status: String = "in mappa" if present_ids.has(creature_id) else "non in mappa"
+		var index: int = context_place_creature_menu.item_count
+		context_place_creature_menu.add_item(
+			"%s %s · %s" % [icon, display_name, status], index + 1
+		)
+		context_place_creature_menu.set_item_metadata(
+			index, {"id": creature_id, "kind": creature_kind}
+		)
+	if context_place_creature_menu.item_count == 0:
+		context_place_creature_menu.add_item("Nessuna creatura posseduta")
+		context_place_creature_menu.set_item_disabled(0, true)
+
+
+func _on_place_creature_id_pressed(item_id: int) -> void:
+	var index: int = context_place_creature_menu.get_item_index(item_id)
+	if index < 0 or not _has_pending_spawn_position:
+		_close_context_menu_to_game()
+		return
+	var metadata_value: Variant = context_place_creature_menu.get_item_metadata(index)
+	if not metadata_value is Dictionary:
+		_close_context_menu_to_game()
+		return
+	var metadata: Dictionary = metadata_value as Dictionary
+	var area: Node = get_node_or_null("CreatureArea")
+	if area != null and area.has_method("get_owned_creatures_for_placement"):
+		# Validate from disk again: an owner transfer or edit may have occurred
+		# after the submenu opened. Never move a foreign-owned token.
+		var owned_value: Variant = area.call("get_owned_creatures_for_placement")
+		if owned_value is Array:
+			for value: Variant in owned_value as Array:
+				if not value is Dictionary:
+					continue
+				var record: Dictionary = value as Dictionary
+				if (
+					String(record.get("id", "")) == String(metadata.get("id", ""))
+					and String(record.get("kind", "")) == String(metadata.get("kind", ""))
+					and CreatureOwner.is_owner(record)
+				):
+					_place_creature_at_pending_position(record)
+					break
+	_close_context_menu_to_game()
 
 
 func _limit_popup_menu(menu: PopupMenu) -> void:
@@ -3038,6 +3140,10 @@ func _show_context_menu(screen_position: Vector2) -> void:
 	context_menu.add_submenu_node_item("Misura", context_measure_menu)
 
 	if _has_pending_spawn_position:
+		_populate_place_creature_menu()
+		context_token_menu.add_submenu_node_item(
+			"Piazza token", context_place_creature_menu
+		)
 		context_token_menu.add_item("Genera token", CONTEXT_CREATE_TOKEN)
 
 	if context_token_menu.item_count > 0:
