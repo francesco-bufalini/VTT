@@ -3627,7 +3627,7 @@ func _refresh_shared_condition_choices(definitions: Array) -> void:
 		token_state_grid.remove_child(child)
 		child.queue_free()
 	token_state_checks.clear()
-	for category: String in ["conditions", "diseases", "effects"]:
+	for category: String in ["conditions", "effects", "diseases"]:
 		var category_rows: Array[Dictionary] = []
 		for value: Variant in definitions:
 			if value is Dictionary and String(value.get("category", "conditions")) == category:
