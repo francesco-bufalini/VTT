@@ -18,6 +18,8 @@ var _mutual_material: StandardMaterial3D
 var _mutual_outline_material: StandardMaterial3D
 var _elapsed := 0.0
 var _flanked_ids: Dictionary = {}
+var _screen_reach_arrows: Array[Vector3] = []
+var _screen_mutual_markers: Array[Vector3] = []
 
 
 func setup(root: Node3D) -> void:
@@ -152,8 +154,14 @@ func refresh_now() -> void:
 			"text": badge_text,
 		}
 
+	_screen_reach_arrows = arrow_points
+	_screen_mutual_markers = mutual_marker_points
 	_render_arrows(arrow_points, mutual_marker_points)
 	_refresh_flanking_badges(visible_badge_targets)
+
+
+func get_screen_reach_visuals() -> Dictionary:
+	return {"arrows": _screen_reach_arrows, "mutual_markers": _screen_mutual_markers}
 
 
 func _build_reach_visuals(
