@@ -236,8 +236,8 @@ func run() -> void:
 	var token_height_label: Label = condition_badge.get_node("Height") as Label
 	if not _check(
 		condition_label.visible
-		and "Poisoned" in condition_label.text
-		and "Blinded" in condition_label.text,
+		and "☠" in condition_label.text
+		and "✦" in condition_label.text,
 		"all active conditions must appear above the 2D token"
 	):
 		return
@@ -246,6 +246,7 @@ func run() -> void:
 		and condition_label.get_theme_font_size("font_size") >= 13
 		and token_height_label.get_theme_font_size("font_size") >= 13
 		and condition_label.size.y <= 20.0
+		and condition_label.size.x <= 176.0
 		and condition_label.position.y > token_name_label.position.y,
 		"compact conditions must stay directly below the name"
 	):
@@ -255,7 +256,7 @@ func run() -> void:
 	if not _check(
 		condition_badge.visible
 		and condition_label.visible
-		and "Poisoned" in condition_label.text,
+		and "☠" in condition_label.text,
 		"changing the camera floor must not hide active conditions"
 	):
 		return
@@ -269,7 +270,7 @@ func run() -> void:
 	condition_token.set_meta("flanked", true)
 	overlay.call("_render_token_badge", condition_token, 0.0)
 	if not _check(
-		condition_label.visible and "Flanked" in condition_label.text,
+		condition_label.visible and "⚔" in condition_label.text,
 		"the 2D strip must show computed flanking even with manual conditions hidden"
 	):
 		return
