@@ -357,8 +357,9 @@ func load_record(record: Dictionary) -> void:
 	for legacy: Variant in _copy_spell_array(record.get("spells", [])):
 		if not _has_spell(_prepared, _entry_id(legacy)):
 			_prepared.append(legacy)
-	if _catalog.is_empty():
-		_catalog = SpellCatalog.all_spells()
+	_catalog = SpellCatalog.all_spells_for_rules(
+		String(_record.get("rules_version", "2014"))
+	)
 	_rebuild_class_spells()
 	_totals = _normal_slots(record.get("spell_slots_total", []))
 	_slot_bonuses = _normal_slot_bonuses(record.get("spell_slots_bonus", []))
@@ -493,7 +494,9 @@ func _class_spell_level_limits() -> Dictionary:
 func _rebuild_class_spells() -> void:
 	_known.clear()
 	if _catalog.is_empty():
-		_catalog = SpellCatalog.all_spells()
+		_catalog = SpellCatalog.all_spells_for_rules(
+			String(_record.get("rules_version", "2014"))
+		)
 	var limits: Dictionary = _class_spell_level_limits()
 	for entry: Dictionary in _catalog:
 		var level: int = int(entry.get("level", 0))
@@ -513,7 +516,9 @@ func _filter_spells() -> void:
 	if _search == null:
 		return
 	if _catalog.is_empty():
-		_catalog = SpellCatalog.all_spells()
+		_catalog = SpellCatalog.all_spells_for_rules(
+			String(_record.get("rules_version", "2014"))
+		)
 	_visible.clear()
 	_available.clear()
 	var needle: String = _search.text.strip_edges().to_lower()
@@ -574,6 +579,9 @@ func update_character_context(record: Dictionary) -> void:
 	_record["class"] = current_primary
 	_record["level"] = record.get("level", 1)
 	_record["rules_version"] = String(record.get("rules_version", "2014"))
+	_catalog = SpellCatalog.all_spells_for_rules(
+		String(_record.get("rules_version", "2014"))
+	)
 	_rebuild_class_spells()
 	_refresh_saved_spell_lists()
 	_class_only.disabled = _class_keys().is_empty()
