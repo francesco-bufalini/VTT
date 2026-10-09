@@ -231,6 +231,11 @@ func run() -> void:
 		"Spell details must render below the slot controls")
 	assert(not spells._search_row.visible and spells._known_list.item_count > 0,
 		"Class spell list must be automatic and search optional")
+	assert(spells._class_spell_level_limits().get("wizard", -1) == 3,
+		"Wizard 6 must unlock class spells through level 3")
+	for class_spell: Dictionary in spells._known:
+		assert(int(class_spell.get("level", 0)) <= 3,
+			"Spells above the class's unlocked level must not appear")
 	spells._on_options_selected(1)
 	assert(spells._search_row.visible)
 	spells._search.text = "Magic Missile"
@@ -255,6 +260,24 @@ func run() -> void:
 	assert(area._current().spells.size() == 1
 		and area._current().prepared_spells.size() == 1,
 		"Spell selections must survive character refresh")
+	# Optional search may add spells OUTSIDE the class list, without ever
+	# changing the automatic class spell selection.
+	spells._class_only.button_pressed = false
+	spells._search.text = "Cure Wounds"
+	var foreign_spell_index: int = -1
+	for index: int in range(spells._visible.size()):
+		if String(spells._visible[index].get("name", "")).to_lower() == "cure wounds":
+			foreign_spell_index = index
+			break
+	assert(foreign_spell_index >= 0, "Optional search must expose off-class spells")
+	spells._available.select(foreign_spell_index)
+	spells._on_spell_list_selected("catalog")
+	spells._add_selected_known()
+	assert(area._current().prepared_spells.size() == 2,
+		"An off-class spell can be added directly to available spells")
+	spells._forget_selected_known()
+	assert(area._current().prepared_spells.size() == 1,
+		"Available spells can be removed independently from class spells")
 	area._max_hp.value = 35
 	area._hp.value = 7
 	area._save()
