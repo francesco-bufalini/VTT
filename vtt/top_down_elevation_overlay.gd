@@ -103,10 +103,10 @@ func _new_badge() -> Control:
 	conditions_label.vertical_alignment = VERTICAL_ALIGNMENT_CENTER
 	conditions_label.clip_text = true
 	conditions_label.text_overrun_behavior = TextServer.OVERRUN_TRIM_ELLIPSIS
-	conditions_label.add_theme_font_size_override("font_size", 17)
+	conditions_label.add_theme_font_size_override("font_size", 13)
 	conditions_label.add_theme_color_override("font_color", Color(1.0, 0.91, 0.73))
 	conditions_label.add_theme_color_override("font_outline_color", Color(0.07, 0.08, 0.11, 0.98))
-	conditions_label.add_theme_constant_override("outline_size", 3)
+	conditions_label.add_theme_constant_override("outline_size", 2)
 	conditions_label.hide()
 	badge.add_child(conditions_label)
 
@@ -340,7 +340,7 @@ func _render_token_badge(token: CharacterBody3D, floor_y: float) -> void:
 		var status_text: String = " ".join(status_icons)
 		var status_font: Font = conditions_label.get_theme_font("font")
 		var text_width: float = status_font.get_string_size(
-			status_text, HORIZONTAL_ALIGNMENT_LEFT, -1, 16
+			status_text, HORIZONTAL_ALIGNMENT_LEFT, -1, 13
 		).x
 		var width_px: float = clampf(text_width + 12.0, 36.0, 176.0)
 		var offset_x: float = (icon_size - width_px) * 0.5
