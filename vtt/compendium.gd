@@ -71,7 +71,7 @@ func _build_ui() -> void:
 	var header := HBoxContainer.new()
 	outer.add_child(header)
 	var title := Label.new()
-	title.text = "Compendio · 5e.tools / homebrew"
+	title.text = "Compendio · Catalogo e contenuti personalizzati"
 	title.add_theme_font_size_override("font_size", 20)
 	title.size_flags_horizontal = Control.SIZE_EXPAND_FILL
 	header.add_child(title)
