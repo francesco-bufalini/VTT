@@ -50,6 +50,7 @@ const LOCAL_TOKEN_PACK_ROOT := "res://dist/token_packs"
 const CHARACTER_TOKEN_ROOT := "res://assets/tokens/Characters"
 const DEFAULT_TOKEN_PROFILE_ID := "death_knight"
 const GridHighlightRenderer = preload("res://vtt/grid_highlight_renderer.gd")
+const TopDownElevationLevels = preload("res://vtt/top_down_elevation_levels.gd")
 const TokenScript = preload("res://token.gd")
 const FlankingGeometry = preload("res://vtt/flanking_system.gd")
 
@@ -4709,14 +4710,12 @@ func _raycast_token_from_screen(
 			var offset: Vector2 = screen_position - token_screen
 			if absf(offset.x) > icon_size * 0.5 or absf(offset.y) > icon_size * 0.5:
 				continue
-			var base_y: float = (
-				token.global_position.y
-				- float(token.get("token_height_cells"))
-				* float(token.get("cell_size")) * 0.5
+			var support_y: float = TopDownElevationLevels.token_support_air_level(
+				token, cell_size
 			)
 			var score: float = (
 				offset.length_squared() / (icon_size * icon_size)
-				+ absf(base_y - reference_y) * 0.01
+				+ absf(support_y - reference_y) * 0.01
 			)
 			if score < best_score:
 				nearest = token
