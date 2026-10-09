@@ -99,13 +99,23 @@ func get_solid_levels() -> Array[float]:
 	return _unique_heights(levels)
 
 
-func get_lower_square_surface(world_point: Vector3, reference_level: float) -> Dictionary:
+func get_visible_square_surface(
+	world_point: Vector3,
+	reference_level: float
+) -> Dictionary:
 	var square_x: float = (floorf(world_point.x / cell_size) + 0.5) * cell_size
 	var square_z: float = (floorf(world_point.z / cell_size) + 0.5) * cell_size
+	# Include the surface at the selected camera level. The old probe
+	# started *below* it, so hovering over an exposed upper deck still
+	# reported the deck underneath after changing camera floors.
+	#
+	# A small upward tolerance covers collision/voxel alignment without
+	# selecting geometry on a genuinely higher (clipped) floor.
+	var epsilon: float = maxf(cell_size * 0.12, 0.025)
 	var candidates: Array[float] = _surface_heights_at(
 		square_x,
 		square_z,
-		reference_level - maxf(cell_size * 0.04, 0.025)
+		reference_level + epsilon
 	)
 	if candidates.is_empty():
 		return {}
@@ -114,3 +124,11 @@ func get_lower_square_surface(world_point: Vector3, reference_level: float) -> D
 		"level": top,
 		"world_position": Vector3(square_x, top, square_z)
 	}
+
+
+# Compatibility for external callers of the original square probe.
+func get_lower_square_surface(
+	world_point: Vector3,
+	reference_level: float
+) -> Dictionary:
+	return get_visible_square_surface(world_point, reference_level)
