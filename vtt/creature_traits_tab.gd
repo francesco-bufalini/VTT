@@ -73,6 +73,7 @@ func load_record(record: Dictionary) -> void:
 	var record_id: String = String(record.get("id", ""))
 	if record_id != _record_id:
 		_expanded.clear()
+		_active_origin = ""
 		_search.clear()
 	_record_id = record_id
 	_features = collect_features(record)
