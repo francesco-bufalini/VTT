@@ -123,7 +123,10 @@ func create_creature(stat_block: Dictionary, side: String) -> Dictionary:
 		"source": String(stat_block.get("source", "")),
 		"side": "ally" if side == "ally" else "enemy",
 		"max_hp": hp,
+		"max_hp_base": hp,
+		"max_hp_bonus": 0,
 		"current_hp": hp,
+		"inventory": [],
 		"armor_class": CreatureRules.monster_armor_class(stat_block),
 		"abilities": CreatureRules.monster_abilities(stat_block),
 		"ability_bonuses": {"str": 0, "dex": 0, "con": 0, "int": 0, "wis": 0, "cha": 0},
@@ -195,6 +198,9 @@ func normalize_creature(value: Dictionary) -> Dictionary:
 			else "enemy"
 		),
 		"max_hp": maxi(0, int(value.get("max_hp", fallback_hp))),
+		"max_hp_bonus": clampi(int(value.get("max_hp_bonus", 0)), -9999, 99999),
+		"max_hp_base": maxi(0, int(value.get("max_hp_base", int(value.get("max_hp", fallback_hp)) - int(value.get("max_hp_bonus", 0))))),
+		"inventory": value.get("inventory", []).duplicate(true) if value.get("inventory", []) is Array else [],
 		"current_hp": int(value.get("current_hp", fallback_hp)),
 		"stat_block": stat_block,
 		"species": String(stat_block.get("name", base_name)),
@@ -236,6 +242,7 @@ func normalize_creature(value: Dictionary) -> Dictionary:
 		),
 		"linked_token_name": String(value.get("linked_token_name", ""))
 	}
+	result["max_hp"] = maxi(0, int(result["max_hp_base"]) + int(result["max_hp_bonus"]))
 	# Rebuild the immutable monster base from the bestiary on every load,
 	# preserving any real class levels subsequently added by the user.
 	var extra_classes: Array = []
