@@ -235,7 +235,7 @@ func normalize_creature(value: Dictionary) -> Dictionary:
 	for cls: Dictionary in extra_classes:
 		added_levels += maxf(0.0, float(cls.get("level", 0)))
 	result["level"] = cr + added_levels
-		if String(result["id"]).is_empty():
+	if String(result["id"]).is_empty():
 		var now := int(Time.get_unix_time_from_system())
 		var unique := int(Time.get_ticks_usec())
 		result["id"] = "master_creature_%d_%d" % [now, unique]
