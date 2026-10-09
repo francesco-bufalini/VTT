@@ -3,14 +3,7 @@ extends Node
 const GRID := 10
 const GAME_SPELLS := 11
 
-const PLAYER_AREA_OPEN := 60
-const PLAYER_ADD_CHARACTER := 61
-const PLAYER_LINK_TOKEN := 62
-const PLAYER_LINK_CHARACTER := 63
-
-const MASTER_AREA_OPEN := 64
-const MASTER_LINK_TOKEN := 65
-const MASTER_LINK_CREATURE := 66
+const COMPENDIUM_OPEN := 64
 
 const COMBAT_START := 70
 const COMBAT_INITIATIVE := 71
@@ -156,8 +149,8 @@ func _build_toolbar() -> void:
 	row.add_child(creatures_button)
 
 	row.add_child(_menu("Compendio", [
-		["Apri Compendio", MASTER_AREA_OPEN]
-	], _on_master))
+		["Apri Compendio", COMPENDIUM_OPEN]
+	], _on_compendium))
 
 	row.add_child(_menu("Misura", [
 		["Righello", MEASURE_RULER],
@@ -252,26 +245,9 @@ func _on_combat(id: int) -> void:
 			board_root.call("end_combat_mode")
 
 
-func _on_player(id: int) -> void:
-	match id:
-		PLAYER_AREA_OPEN:
-			board_root.call("toggle_player_area")
-		PLAYER_ADD_CHARACTER:
-			board_root.call("add_player_character")
-		PLAYER_LINK_TOKEN:
-			board_root.call("link_player_character_to_selected_token")
-		PLAYER_LINK_CHARACTER:
-			board_root.call("link_selected_player_character_to_named_token")
-
-
-func _on_master(id: int) -> void:
-	match id:
-		MASTER_AREA_OPEN:
-			board_root.call("toggle_master_area")
-		MASTER_LINK_TOKEN:
-			board_root.call("link_master_creature_to_selected_token")
-		MASTER_LINK_CREATURE:
-			board_root.call("link_selected_master_creature_to_named_token")
+func _on_compendium(id: int) -> void:
+	if id == COMPENDIUM_OPEN:
+		board_root.call("toggle_compendium")
 
 
 func _on_token(id: int) -> void:
