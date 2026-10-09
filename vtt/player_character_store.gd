@@ -162,6 +162,8 @@ func create_character() -> Dictionary:
 		"temporary_ac": 0,
 		"initiative": 0,
 		"max_hp": 1,
+		"max_hp_base": 1,
+		"max_hp_bonus": 0,
 		"current_hp": 1,
 		"temporary_hp": 0,
 		"speed": 30,
@@ -215,6 +217,7 @@ func create_character() -> Dictionary:
 		"optional_features_catalog": [],
 		"inventory_mundane": [],
 		"inventory_magic": [],
+		"inventory": [],
 		"spell_slots_total": [
 			0, 0, 0, 0, 0, 0, 0, 0, 0, 0
 		],
@@ -282,7 +285,8 @@ func normalize_character(value: Dictionary) -> Dictionary:
 		"species_traits_catalog",
 		"optional_features_catalog",
 		"inventory_mundane",
-		"inventory_magic"
+		"inventory_magic",
+		"inventory"
 	]:
 		if not defaults.get(array_key, []) is Array:
 			defaults[array_key] = []
@@ -325,7 +329,11 @@ func normalize_character(value: Dictionary) -> Dictionary:
 			first["source"] = String(defaults.get("class_source", ""))
 			first["level"] = int(defaults["level"])
 			defaults["classes"] = [first]
-	defaults["max_hp"] = maxi(0, int(defaults.get("max_hp", 1)))
+	defaults["max_hp_bonus"] = clampi(int(value.get("max_hp_bonus", 0)), -9999, 99999)
+	defaults["max_hp_base"] = maxi(0, int(value.get(
+		"max_hp_base", int(value.get("max_hp", 1)) - int(defaults["max_hp_bonus"])
+	)))
+	defaults["max_hp"] = maxi(0, int(defaults["max_hp_base"]) + int(defaults["max_hp_bonus"]))
 	defaults["current_hp"] = int(defaults.get("current_hp", 1))
 	defaults["temporary_hp"] = maxi(0, int(defaults.get("temporary_hp", 0)))
 	defaults["current_miniature_id"] = String(defaults.get("current_miniature_id", "")).strip_edges()
