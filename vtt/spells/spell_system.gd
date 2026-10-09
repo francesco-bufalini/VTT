@@ -3700,7 +3700,9 @@ func _build_panel() -> void:
 	panel.anchor_right = 0.48
 	panel.anchor_bottom = 1.0
 	panel.offset_left = 8.0
-	panel.offset_top = 8.0
+	# The runtime toolbar occupies the top strip (10–55 px). Leave its
+	# buttons, including "Chiudi", fully visible and clickable.
+	panel.offset_top = 66.0
 	panel.offset_right = -4.0
 	panel.offset_bottom = -8.0
 	panel.mouse_filter = Control.MOUSE_FILTER_STOP
