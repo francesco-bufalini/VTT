@@ -129,8 +129,21 @@ func get_owned_creature_names(excluded_id: String = "") -> Array[String]:
 
 func find_linked_token_for_creature(creature_id: String) -> CharacterBody3D:
 	for record: Dictionary in _archive.list_owned():
-		if String(record.get("id", "")) == creature_id:
-			return _find_linked_token(record) as CharacterBody3D
+		if String(record.get("id", "")) != creature_id:
+			continue
+		var linked: CharacterBody3D = _find_linked_token(record) as CharacterBody3D
+		if linked != null:
+			return linked
+		# A restored map may assign a new board sync ID while preserving the
+		# creature ID on the token: do not create a duplicate in that case.
+		for node: Node in get_tree().get_nodes_in_group("dnd_token"):
+			if (
+				node is CharacterBody3D
+				and board_root.is_ancestor_of(node)
+				and String(node.get_meta("creature_id", "")) == creature_id
+				and String(node.get_meta("creature_owner_id", "")) == Owner.local_id()
+			):
+				return node as CharacterBody3D
 	return null
 
 
@@ -140,6 +153,14 @@ func link_spawned_token(token: CharacterBody3D, creature_id: String) -> void:
 	for record: Dictionary in _archive.list_owned():
 		if String(record.get("id", "")) != creature_id:
 			continue
+		# The generator reserves unique names against both live tokens and
+		# owned sheets. Keep the persistent sheet consistent with that name.
+		var placed_name: String = String(token.call("get_display_name")).strip_edges()
+		if not placed_name.is_empty() and placed_name != String(record.get("name", "")):
+			record["name"] = placed_name
+			if _archive.save(record) != OK:
+				_set_status("Impossibile aggiornare il nome della creatura.")
+				return
 		_selected_id = creature_id
 		_selected_kind = String(record.get("kind", ""))
 		_reload()
