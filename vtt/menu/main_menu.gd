@@ -1,6 +1,7 @@
 extends Control
 
 const ACTIVE_CAMPAIGNS_SCENE_PATH := "res://vtt/menu/active_campaigns.tscn"
+const MenuStyle = preload("res://vtt/menu/menu_style.gd")
 const MENU_BACKGROUND_DIRECTORY := (
 	"res://assets/menu/background/slideshow"
 )
@@ -17,6 +18,9 @@ var _soundtrack_toggle: CheckButton
 var _soundtrack_volume: HSlider
 var _soundtrack_volume_label: Label
 var _mute_button: Button
+var _controls_anchor: MarginContainer
+var _title_margin: MarginContainer
+var _title_label: Label
 
 var _background_layers: Array[TextureRect] = []
 var _background_paths: Array[String] = []
@@ -30,6 +34,7 @@ var _background_rng := RandomNumberGenerator.new()
 
 func _ready() -> void:
 	_build_ui()
+	_refresh_responsive_layout()
 
 
 func _process(delta: float) -> void:
@@ -183,192 +188,133 @@ void fragment() {
 
 
 func _build_title() -> void:
-	var title_margin := MarginContainer.new()
-	title_margin.name = "TitleArea"
-	title_margin.anchor_left = 0.0
-	title_margin.anchor_top = 0.0
-	title_margin.anchor_right = 0.0
-	title_margin.anchor_bottom = 0.0
-	title_margin.offset_left = 34.0
-	title_margin.offset_top = 24.0
-	title_margin.offset_right = 930.0
-	title_margin.offset_bottom = 160.0
-	title_margin.mouse_filter = Control.MOUSE_FILTER_IGNORE
-	add_child(title_margin)
+	_title_margin = MarginContainer.new()
+	_title_margin.name = "TitleArea"
+	_title_margin.mouse_filter = Control.MOUSE_FILTER_IGNORE
+	add_child(_title_margin)
 
-	var title := Label.new()
-	title.name = "GameTitle"
-	title.text = "Kruphix's Chessboard"
-	title.horizontal_alignment = HORIZONTAL_ALIGNMENT_LEFT
-	title.vertical_alignment = VERTICAL_ALIGNMENT_TOP
-	title.add_theme_font_override("font", _medieval_title_font())
-	title.add_theme_font_size_override("font_size", 64)
-	title.add_theme_color_override(
-		"font_color",
-		Color(0.94, 0.85, 0.64)
-	)
-	title.add_theme_color_override(
-		"font_outline_color",
-		Color(0.055, 0.035, 0.025, 1.0)
-	)
-	title.add_theme_color_override(
-		"font_shadow_color",
-		Color(0.0, 0.0, 0.0, 0.88)
-	)
-	title.add_theme_constant_override("outline_size", 8)
-	title.add_theme_constant_override("shadow_offset_x", 3)
-	title.add_theme_constant_override("shadow_offset_y", 4)
-	title_margin.add_child(title)
+	var copy := VBoxContainer.new()
+	copy.add_theme_constant_override("separation", 4)
+	_title_margin.add_child(copy)
+
+	var eyebrow := Label.new()
+	eyebrow.text = "VIRTUAL TABLETOP  /  CHRONICLES & ADVENTURES"
+	eyebrow.add_theme_font_override("font", MenuStyle.menu_font())
+	eyebrow.add_theme_font_size_override("font_size", 12)
+	eyebrow.add_theme_color_override("font_color", MenuStyle.GOLD_BRIGHT)
+	copy.add_child(eyebrow)
+
+	_title_label = Label.new()
+	_title_label.name = "GameTitle"
+	_title_label.text = "Kruphix's Chessboard"
+	_title_label.horizontal_alignment = HORIZONTAL_ALIGNMENT_LEFT
+	MenuStyle.apply_title_style(_title_label, 60)
+	copy.add_child(_title_label)
+
+	var subtitle := Label.new()
+	subtitle.text = "Le tue storie. Il tuo tavolo."
+	subtitle.add_theme_font_override("font", MenuStyle.menu_font())
+	subtitle.add_theme_font_size_override("font_size", 17)
+	subtitle.add_theme_color_override("font_color", MenuStyle.MUTED)
+	copy.add_child(subtitle)
 
 
-func _medieval_title_font() -> Font:
-	var font := SystemFont.new()
-	font.font_names = PackedStringArray([
-		"Old English Text MT",
-		"UnifrakturCook",
-		"UnifrakturMaguntia",
-		"Luminari",
-		"Georgia"
-	])
-	font.font_weight = 600
-	return font
-
-
-func _menu_font() -> Font:
-	var font := SystemFont.new()
-	font.font_names = PackedStringArray([
-		"Palatino Linotype",
-		"Book Antiqua",
-		"Palatino",
-		"Georgia"
-	])
-	return font
 
 
 func _build_bottom_controls() -> void:
-	var controls_anchor := MarginContainer.new()
-	controls_anchor.name = "BottomControls"
-	controls_anchor.anchor_left = 0.0
-	controls_anchor.anchor_top = 1.0
-	controls_anchor.anchor_right = 0.0
-	controls_anchor.anchor_bottom = 1.0
-	controls_anchor.offset_left = 28.0
-	controls_anchor.offset_top = -320.0
-	controls_anchor.offset_right = 390.0
-	controls_anchor.offset_bottom = -28.0
-	add_child(controls_anchor)
+	_controls_anchor = MarginContainer.new()
+	_controls_anchor.name = "BottomControls"
+	_controls_anchor.anchor_left = 0.0
+	_controls_anchor.anchor_right = 0.0
+	_controls_anchor.anchor_top = 1.0
+	_controls_anchor.anchor_bottom = 1.0
+	add_child(_controls_anchor)
 
 	var panel := PanelContainer.new()
-	panel.add_theme_stylebox_override("panel", _menu_panel_style())
-	controls_anchor.add_child(panel)
+	panel.add_theme_stylebox_override("panel", MenuStyle.menu_panel_style())
+	_controls_anchor.add_child(panel)
 
 	var margin := MarginContainer.new()
-	margin.add_theme_constant_override("margin_left", 28)
-	margin.add_theme_constant_override("margin_right", 28)
-	margin.add_theme_constant_override("margin_top", 22)
-	margin.add_theme_constant_override("margin_bottom", 22)
+	margin.add_theme_constant_override("margin_left", 22)
+	margin.add_theme_constant_override("margin_right", 22)
+	margin.add_theme_constant_override("margin_top", 18)
+	margin.add_theme_constant_override("margin_bottom", 18)
 	panel.add_child(margin)
 
 	var layout := VBoxContainer.new()
-	layout.add_theme_constant_override("separation", 10)
+	layout.add_theme_constant_override("separation", 8)
 	margin.add_child(layout)
 
-	var active_button: Button = _menu_button("Campagne attive")
+	var heading := Label.new()
+	heading.text = "IL TAVOLO"
+	heading.add_theme_font_override("font", MenuStyle.medieval_title_font())
+	heading.add_theme_font_size_override("font_size", 21)
+	heading.add_theme_color_override("font_color", MenuStyle.GOLD_BRIGHT)
+	layout.add_child(heading)
+
+	var subtitle := Label.new()
+	subtitle.text = "Scegli come iniziare la tua avventura"
+	subtitle.add_theme_font_override("font", MenuStyle.menu_font())
+	subtitle.add_theme_font_size_override("font_size", 13)
+	subtitle.add_theme_color_override("font_color", MenuStyle.MUTED)
+	layout.add_child(subtitle)
+
+	var separator := HSeparator.new()
+	separator.modulate = MenuStyle.GOLD
+	layout.add_child(separator)
+
+	var active_button: Button = MenuStyle.menu_button("Campagne attive", Vector2(0, 42))
+	active_button.size_flags_horizontal = Control.SIZE_EXPAND_FILL
 	active_button.pressed.connect(_open_active_campaigns)
 	layout.add_child(active_button)
 
-
-	var new_button: Button = _menu_button("Nuova campagna")
+	var new_button: Button = MenuStyle.menu_button("Nuova campagna", Vector2(0, 42))
+	new_button.size_flags_horizontal = Control.SIZE_EXPAND_FILL
 	new_button.pressed.connect(_request_new_campaign)
 	layout.add_child(new_button)
 
-	var options_button: Button = _menu_button("Opzioni")
+	var options_button: Button = MenuStyle.menu_button("Opzioni", Vector2(0, 42))
+	options_button.size_flags_horizontal = Control.SIZE_EXPAND_FILL
 	options_button.pressed.connect(_show_options_placeholder)
 	layout.add_child(options_button)
 
-	_mute_button = _menu_button("Muta musica")
+	_mute_button = MenuStyle.menu_button("Muta musica", Vector2(0, 42))
+	_mute_button.size_flags_horizontal = Control.SIZE_EXPAND_FILL
 	_mute_button.pressed.connect(_toggle_soundtrack_muted)
 	layout.add_child(_mute_button)
 	_refresh_mute_button()
 
-	var exit_button: Button = _menu_button("Esci")
+	var exit_button: Button = MenuStyle.menu_button("Esci", Vector2(0, 42))
+	exit_button.size_flags_horizontal = Control.SIZE_EXPAND_FILL
 	exit_button.pressed.connect(func() -> void: get_tree().quit())
 	layout.add_child(exit_button)
 
 
-func _menu_panel_style() -> StyleBoxFlat:
-	var style := StyleBoxFlat.new()
-	style.bg_color = Color(0.025, 0.027, 0.035, 0.72)
-	style.border_color = Color(0.56, 0.43, 0.24, 0.62)
-	style.border_width_left = 1
-	style.border_width_top = 1
-	style.border_width_right = 1
-	style.border_width_bottom = 1
-	style.corner_radius_top_left = 8
-	style.corner_radius_top_right = 8
-	style.corner_radius_bottom_left = 8
-	style.corner_radius_bottom_right = 8
-	style.shadow_color = Color(0.0, 0.0, 0.0, 0.52)
-	style.shadow_size = 12
-	return style
+func _notification(what: int) -> void:
+	if what == NOTIFICATION_RESIZED and _controls_anchor != null:
+		_refresh_responsive_layout()
 
 
-func _menu_button(label_text: String) -> Button:
-	var button := Button.new()
-	button.text = label_text
-	button.custom_minimum_size = Vector2(300, 40)
-	button.add_theme_font_override("font", _menu_font())
-	button.add_theme_font_size_override("font_size", 17)
-	button.add_theme_color_override(
-		"font_color",
-		Color(0.90, 0.84, 0.71)
-	)
-	button.add_theme_color_override(
-		"font_hover_color",
-		Color(1.0, 0.92, 0.72)
-	)
-	button.add_theme_stylebox_override(
-		"normal",
-		_button_style(
-			Color(0.075, 0.072, 0.074, 0.86),
-			Color(0.40, 0.31, 0.18, 0.74)
-		)
-	)
-	button.add_theme_stylebox_override(
-		"hover",
-		_button_style(
-			Color(0.15, 0.115, 0.075, 0.94),
-			Color(0.78, 0.57, 0.27, 0.92)
-		)
-	)
-	button.add_theme_stylebox_override(
-		"pressed",
-		_button_style(
-			Color(0.20, 0.135, 0.075, 0.98),
-			Color(0.93, 0.70, 0.34, 1.0)
-		)
-	)
-	return button
+func _refresh_responsive_layout() -> void:
+	if _title_margin == null or _controls_anchor == null:
+		return
+	var compact: bool = size.x < 1000.0 or size.y < 680.0
+	_title_margin.anchor_left = 0.0
+	_title_margin.anchor_right = 0.0
+	_title_margin.anchor_top = 0.0
+	_title_margin.anchor_bottom = 0.0
+	_title_margin.offset_left = 24.0 if compact else 40.0
+	_title_margin.offset_top = 16.0 if compact else 28.0
+	_title_margin.offset_right = maxf(320.0, minf(size.x - 18.0, 960.0))
+	_title_margin.offset_bottom = 135.0 if compact else 176.0
+	_title_label.add_theme_font_size_override("font_size", 43 if compact else 60)
+
+	_controls_anchor.offset_left = 20.0 if compact else 36.0
+	_controls_anchor.offset_right = minf(size.x - 20.0, 372.0 if compact else 408.0)
+	_controls_anchor.offset_top = -minf(367.0, size.y - 142.0)
+	_controls_anchor.offset_bottom = -16.0 if compact else -28.0
 
 
-func _button_style(
-	background_color: Color,
-	border_color: Color
-) -> StyleBoxFlat:
-	var style := StyleBoxFlat.new()
-	style.bg_color = background_color
-	style.border_color = border_color
-	style.border_width_left = 1
-	style.border_width_top = 1
-	style.border_width_right = 1
-	style.border_width_bottom = 1
-	style.corner_radius_top_left = 5
-	style.corner_radius_top_right = 5
-	style.corner_radius_bottom_left = 5
-	style.corner_radius_bottom_right = 5
-	style.content_margin_left = 18.0
-	style.content_margin_right = 18.0
-	return style
 
 
 func _build_new_campaign_dialog() -> void:
