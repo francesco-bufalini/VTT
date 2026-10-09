@@ -128,18 +128,14 @@ func _new_badge() -> Control:
 	height_label.add_theme_constant_override("shadow_offset_y", 1)
 	badge.add_child(height_label)
 
-	# Recreate the old orange 3D FacingMarker with an actual geometric arrow.
-	# A rotated label glyph used to orbit its token and did not render reliably.
+	# A small heading tab sits underneath the portrait, rather than on top.
 	var facing := Polygon2D.new()
 	facing.name = "FacingArrow"
 	facing.polygon = PackedVector2Array([
-		Vector2(0.0, -12.0), Vector2(8.0, 2.0),
-		Vector2(3.0, 1.0), Vector2(3.0, 11.0),
-		Vector2(-3.0, 11.0), Vector2(-3.0, 1.0),
-		Vector2(-8.0, 2.0)
+		Vector2(0.0, -9.0), Vector2(6.0, 7.0), Vector2(-6.0, 7.0)
 	])
-	facing.color = Color(1.0, 0.54, 0.15, 0.98)
-	facing.z_index = 7
+	facing.color = Color(0.60, 0.83, 0.81, 0.82)
+	facing.z_index = -1
 	badge.add_child(facing)
 	return badge
 
@@ -398,7 +394,7 @@ func _render_token_badge(token: CharacterBody3D, floor_y: float) -> void:
 	var forward_screen: Vector2 = camera.unproject_position(projected + projected_forward * cell_size) - screen_position
 	if forward_screen.length_squared() >= 1.0:
 		forward_screen = forward_screen.normalized()
-		facing.position = Vector2.ONE * icon_size * 0.5 + forward_screen * icon_size * 0.43
+		facing.position = Vector2.ONE * icon_size * 0.5 + forward_screen * icon_size * 0.48
 		facing.rotation = forward_screen.angle() + PI * 0.5
 		facing.visible = true
 	else:
@@ -461,89 +457,48 @@ func _update_hover(floor_y: float) -> void:
 	)
 
 
-# Reach spheres and attack targeting are volumetric meshes in 3D. Those
-# meshes may be clipped by the orthographic slice in 2D, so repeat their
-# range as screen-space outlines and cardinal arrowheads.
+# Engagement arrows use the same cached world-space segments as the 3D
+# renderer. Screen-space drawing bypasses the orthographic slice clipping.
 func _draw() -> void:
 	if not visible or camera == null or board_root == null:
 		return
-	if not camera.has_method("get_top_down_level"):
+	var flanking: Node = board_root.get("flanking_system") as Node
+	if flanking == null or not flanking.has_method("get_screen_reach_visuals"):
 		return
-	var floor_y: float = float(camera.call("get_top_down_level"))
-	var attacks: Node = board_root.get("attack_system") as Node
-	if attacks == null:
-		return
-	if tokens_root == null:
-		return
-	var show_all_reaches: bool = (
-		attacks.has_method("are_all_reaches_visible")
-		and bool(attacks.call("are_all_reaches_visible"))
-	)
-	# A selected token's engagement area remains visible even when the
-	# global "show all reaches" mode is turned off.
-	for node: Node in tokens_root.get_children():
-		if not node is CharacterBody3D or not node.is_in_group("dnd_token"):
-			continue
-		var token: CharacterBody3D = node as CharacterBody3D
-		var selected: bool = (
-			token.has_method("is_selected")
-			and bool(token.call("is_selected"))
-		)
-		if not show_all_reaches and not selected:
-			continue
-		var footprint: float = 1.0
-		if token.has_method("get_footprint_cells"):
-			footprint = maxf(0.5, float(token.call("get_footprint_cells")))
-		var reach_feet: float = 5.0
-		if token.has_method("get_reach_feet"):
-			reach_feet = maxf(5.0, float(token.call("get_reach_feet")))
-		var radius: float = (reach_feet / 5.0 + footprint * 0.5) * cell_size
-		var tint: Color = (
-			Color(1.0, 0.54, 0.15, 0.92)
-			if selected else Color(0.90, 0.67, 0.37, 0.52)
-		)
-		_draw_reach_indicator(token.global_position, floor_y, radius, tint)
-	if attacks.has_method("is_targeting") and bool(attacks.call("is_targeting")):
-		var attacker: CharacterBody3D = attacks.get("_attacker") as CharacterBody3D
-		var data_value: Variant = attacks.get("_attack_data")
-		if attacker != null and is_instance_valid(attacker) and data_value is Dictionary:
-			var data: Dictionary = data_value as Dictionary
-			var footprint: float = 1.0
-			if attacker.has_method("get_footprint_cells"):
-				footprint = maxf(0.5, float(attacker.call("get_footprint_cells")))
-			var range_feet: float = maxf(0.0, float(data.get("range_feet", 5.0)))
-			_draw_reach_indicator(
-				attacker.global_position, floor_y,
-				(range_feet / 5.0 + footprint * 0.5) * cell_size,
-				Color(0.25, 0.78, 1.0, 0.95)
-			)
+	var visuals: Dictionary = flanking.call("get_screen_reach_visuals")
+	_draw_engagement_segments(visuals.get("arrows", []), false)
+	_draw_engagement_segments(visuals.get("mutual_markers", []), true)
 
 
-func _draw_reach_indicator(center: Vector3, floor_y: float, radius: float, tint: Color) -> void:
-	if radius <= 0.0:
+func _draw_engagement_segments(segments: Variant, mutual: bool) -> void:
+	if not segments is Array:
 		return
-	var points := PackedVector2Array()
-	var flat_center: Vector3 = Vector3(center.x, floor_y, center.z)
-	var screen_center: Vector2 = camera.unproject_position(flat_center)
-	for step: int in range(65):
-		var angle: float = TAU * float(step) / 64.0
-		var world: Vector3 = flat_center + Vector3(cos(angle), 0.0, sin(angle)) * radius
-		points.append(camera.unproject_position(world))
-	draw_polyline(points, tint, 2.0, true)
-	# Four arrowheads remain visible where an almost-flat mesh vanishes in 2D.
-	for quadrant: int in range(4):
-		var idx: int = quadrant * 16
-		var tip: Vector2 = points[idx]
-		var outward: Vector2 = tip - screen_center
-		if outward.length_squared() < 1.0:
+	var points: Array = segments as Array
+	var tint: Color = Color(0.40, 0.92, 0.72, 0.94) if mutual else Color(0.20, 0.82, 0.78, 0.88)
+	for index: int in range(0, points.size() - 1, 2):
+		if not points[index] is Vector3 or not points[index + 1] is Vector3:
 			continue
-		outward = outward.normalized()
-		var tangent: Vector2 = Vector2(-outward.y, outward.x)
-		var back: Vector2 = tip - outward * 11.0
-		draw_colored_polygon(
-			PackedVector2Array([tip, back + tangent * 5.0, back - tangent * 5.0]),
-			tint
-		)
+		var start_world: Vector3 = points[index]
+		var end_world: Vector3 = points[index + 1]
+		# Project on the visible floor plane: the X/Z engagement geometry
+		# is unchanged and remains legible at any current slice elevation.
+		var screen_start: Vector2 = camera.unproject_position(start_world)
+		var screen_end: Vector2 = camera.unproject_position(end_world)
+		var delta: Vector2 = screen_end - screen_start
+		if delta.length_squared() < 16.0:
+			continue
+		var direction: Vector2 = delta.normalized()
+		var sideways: Vector2 = Vector2(-direction.y, direction.x)
+		draw_line(screen_start, screen_end, Color(0.015, 0.09, 0.085, 0.92), 5.0, true)
+		draw_line(screen_start, screen_end, tint, 2.6, true)
+		var tips: Array[Vector2] = [screen_start, screen_end] if mutual else [screen_end]
+		for tip: Vector2 in tips:
+			var toward: Vector2 = -direction if mutual and tip == screen_start else direction
+			draw_colored_polygon(PackedVector2Array([
+				tip,
+				tip - toward * 11.0 + sideways * 5.0,
+				tip - toward * 11.0 - sideways * 5.0
+			]), tint)
 
 
 func _process(_delta: float) -> void:
