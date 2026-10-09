@@ -253,7 +253,6 @@ func run() -> void:
 		"visual_asset",
 		"visual_native_footprint",
 		"visual_front_quarter_turns",
-		"visual_pitch_steps",
 		"transformation_history"
 	]:
 		if peer_after_receive.get(appearance_key) != edited_token.get(appearance_key):
@@ -287,7 +286,6 @@ func run() -> void:
 		"visual_asset",
 		"visual_native_footprint",
 		"visual_front_quarter_turns",
-		"visual_pitch_steps",
 		"transformation_history"
 	]:
 		if peer_after_move.get(appearance_key) != edited_token.get(appearance_key):
