@@ -25,7 +25,7 @@ func setup(on_change: Callable, on_status: Callable) -> void:
 	_on_status = on_status
 	add_theme_constant_override("separation", 7)
 	var heading := Label.new()
-	heading.text = "Inventario · oggetti 5etools e homebrew"
+	heading.text = "Inventario · Catalogo e oggetti personalizzati"
 	heading.add_theme_font_size_override("font_size", 17)
 	add_child(heading)
 
