@@ -4,6 +4,38 @@ signal turn_changed(entry_id: String, round_number: int, turn_count: int)
 signal combat_state_changed(active: bool)
 
 const MAX_ENTRIES := 256
+const ENVIRONMENT_ENTRY_ID := "initiative_environment"
+const ENVIRONMENT_INITIATIVE := 20
+
+
+func _environment_entry() -> Dictionary:
+	return {
+		"id": ENVIRONMENT_ENTRY_ID,
+		"name": "Turno ambientale",
+		"token_id": "",
+		"initiative": ENVIRONMENT_INITIATIVE
+	}
+
+
+func _ensure_environment_entry() -> void:
+	if not combat_active:
+		return
+	var active_id: String = _active_entry_id()
+	var found: bool = false
+	for index: int in range(entries.size() - 1, -1, -1):
+		if String(entries[index].get("id", "")) != ENVIRONMENT_ENTRY_ID:
+			continue
+		if found:
+			entries.remove_at(index)
+		else:
+			entries[index] = _environment_entry()
+			found = true
+	if not found:
+		entries.insert(0, _environment_entry())
+	if not active_id.is_empty():
+		active_index = maxi(0, _entry_index(active_id))
+	else:
+		active_index = 0
 
 var board_root: Node3D
 var ui_root: CanvasLayer
@@ -373,6 +405,7 @@ func start_combat() -> void:
 	round_number = 1
 	turn_count = 0
 	_next_entry_id = 1
+	_ensure_environment_entry()
 	show_panel()
 	_render()
 	combat_state_changed.emit(true)
@@ -685,6 +718,8 @@ func _add_entry_row(
 	var token_id: String = String(entry.get("token_id", ""))
 	var token_label: Label = Label.new()
 	token_label.text = (
+		"Iniziativa: 20" if entry_id_is_environment(entry)
+		else 
 		"Token: %s" % _token_name_by_id(token_id)
 		if not token_id.is_empty()
 		else "Token: —"
@@ -695,6 +730,7 @@ func _add_entry_row(
 
 	var link_button: Button = Button.new()
 	link_button.text = "Token"
+	link_button.disabled = entry_id_is_environment(entry)
 	link_button.tooltip_text = "Collega o scollega un token"
 	link_button.custom_minimum_size = Vector2(48, 30)
 	var entry_id: String = String(entry.get("id", ""))
@@ -707,7 +743,7 @@ func _add_entry_row(
 	var up_button: Button = Button.new()
 	up_button.text = "↑"
 	up_button.tooltip_text = "Sposta prima nell'ordine"
-	up_button.disabled = real_index == 0
+	up_button.disabled = real_index == 0 or entry_id_is_environment(entry)
 	up_button.custom_minimum_size = Vector2(28, 30)
 	up_button.pressed.connect(
 		func() -> void:
@@ -718,7 +754,7 @@ func _add_entry_row(
 	var down_button: Button = Button.new()
 	down_button.text = "↓"
 	down_button.tooltip_text = "Sposta dopo nell'ordine"
-	down_button.disabled = real_index >= entries.size() - 1
+	down_button.disabled = real_index >= entries.size() - 1 or entry_id_is_environment(entry)
 	down_button.custom_minimum_size = Vector2(28, 30)
 	down_button.pressed.connect(
 		func() -> void:
@@ -728,6 +764,7 @@ func _add_entry_row(
 
 	var remove_button: Button = Button.new()
 	remove_button.text = "×"
+	remove_button.disabled = entry_id_is_environment(entry)
 	remove_button.tooltip_text = "Rimuovi dall'iniziativa"
 	remove_button.custom_minimum_size = Vector2(28, 30)
 	remove_button.pressed.connect(
@@ -743,6 +780,8 @@ func _scroll_active_to_top() -> void:
 
 
 func _move_entry(entry_id: String, delta: int) -> void:
+	if entry_id == ENVIRONMENT_ENTRY_ID:
+		return
 	var index: int = _entry_index(entry_id)
 	if index < 0:
 		return
@@ -760,6 +799,8 @@ func _move_entry(entry_id: String, delta: int) -> void:
 
 
 func _remove_entry(entry_id: String) -> void:
+	if entry_id == ENVIRONMENT_ENTRY_ID:
+		return
 	var index: int = _entry_index(entry_id)
 	if index < 0:
 		return
@@ -780,6 +821,8 @@ func _remove_entry(entry_id: String) -> void:
 
 
 func _open_token_popup(entry_id: String, button: Control) -> void:
+	if entry_id == ENVIRONMENT_ENTRY_ID:
+		return
 	if token_popup == null:
 		return
 	_linking_entry_id = entry_id
@@ -930,6 +973,10 @@ func _token_name_by_id(token_id: String) -> String:
 	return "mancante"
 
 
+func entry_id_is_environment(entry: Dictionary) -> bool:
+	return String(entry.get("id", "")) == ENVIRONMENT_ENTRY_ID
+
+
 func _entry_display_name(entry: Dictionary) -> String:
 	var token_id := String(entry.get("token_id", ""))
 	if not token_id.is_empty():
@@ -1056,6 +1103,9 @@ func valid_state(value: Variant) -> bool:
 		if seen_ids.has(String(entry_id)):
 			return false
 		seen_ids[String(entry_id)] = true
+		if String(entry_id) == ENVIRONMENT_ENTRY_ID:
+			if String(entry_name) != "Turno ambientale" or String(token_id) != "":
+				return false
 		if not entry_name is String or String(entry_name).strip_edges().is_empty():
 			return false
 		if not token_id is String:
@@ -1100,6 +1150,7 @@ func load_state(value: Variant) -> bool:
 	round_number = int(state.get("round", 1))
 	turn_count = int(state.get("turn_count", 0))
 	_next_entry_id = int(state.get("next_entry_id", 1))
+	_ensure_environment_entry()
 	if not combat_active:
 		entries.clear()
 		active_index = 0
