@@ -237,12 +237,12 @@ func _build_bottom_controls() -> void:
 	var margin := MarginContainer.new()
 	margin.add_theme_constant_override("margin_left", 22)
 	margin.add_theme_constant_override("margin_right", 22)
-	margin.add_theme_constant_override("margin_top", 18)
-	margin.add_theme_constant_override("margin_bottom", 18)
+	margin.add_theme_constant_override("margin_top", 14)
+	margin.add_theme_constant_override("margin_bottom", 14)
 	panel.add_child(margin)
 
 	var layout := VBoxContainer.new()
-	layout.add_theme_constant_override("separation", 8)
+	layout.add_theme_constant_override("separation", 7)
 	margin.add_child(layout)
 
 	var heading := Label.new()
@@ -263,28 +263,28 @@ func _build_bottom_controls() -> void:
 	separator.modulate = MenuStyle.GOLD
 	layout.add_child(separator)
 
-	var active_button: Button = MenuStyle.menu_button("Campagne attive", Vector2(0, 42))
+	var active_button: Button = MenuStyle.menu_button("Campagne attive", Vector2(0, 40))
 	active_button.size_flags_horizontal = Control.SIZE_EXPAND_FILL
 	active_button.pressed.connect(_open_active_campaigns)
 	layout.add_child(active_button)
 
-	var new_button: Button = MenuStyle.menu_button("Nuova campagna", Vector2(0, 42))
+	var new_button: Button = MenuStyle.menu_button("Nuova campagna", Vector2(0, 40))
 	new_button.size_flags_horizontal = Control.SIZE_EXPAND_FILL
 	new_button.pressed.connect(_request_new_campaign)
 	layout.add_child(new_button)
 
-	var options_button: Button = MenuStyle.menu_button("Opzioni", Vector2(0, 42))
+	var options_button: Button = MenuStyle.menu_button("Opzioni", Vector2(0, 40))
 	options_button.size_flags_horizontal = Control.SIZE_EXPAND_FILL
 	options_button.pressed.connect(_show_options_placeholder)
 	layout.add_child(options_button)
 
-	_mute_button = MenuStyle.menu_button("Muta musica", Vector2(0, 42))
+	_mute_button = MenuStyle.menu_button("Muta musica", Vector2(0, 40))
 	_mute_button.size_flags_horizontal = Control.SIZE_EXPAND_FILL
 	_mute_button.pressed.connect(_toggle_soundtrack_muted)
 	layout.add_child(_mute_button)
 	_refresh_mute_button()
 
-	var exit_button: Button = MenuStyle.menu_button("Esci", Vector2(0, 42))
+	var exit_button: Button = MenuStyle.menu_button("Esci", Vector2(0, 40))
 	exit_button.size_flags_horizontal = Control.SIZE_EXPAND_FILL
 	exit_button.pressed.connect(func() -> void: get_tree().quit())
 	layout.add_child(exit_button)
