@@ -136,6 +136,9 @@ func create_character() -> Dictionary:
 		"rules_version": "2024",
 		"class": "",
 		"class_source": "",
+		"subclass": "",
+		"subclass_source": "",
+		"subclass_id": "",
 		"level": 1,
 		"proficiency_bonus": 2,
 		"spellcasting_calculation": {},
@@ -329,6 +332,13 @@ func normalize_character(value: Dictionary) -> Dictionary:
 			first["source"] = String(defaults.get("class_source", ""))
 			first["level"] = int(defaults["level"])
 			defaults["classes"] = [first]
+	# Older sheets kept the primary subclass only inside classes[0].
+	if classes_value is Array and not (classes_value as Array).is_empty():
+		var first_class: Variant = (classes_value as Array)[0]
+		if first_class is Dictionary and String(defaults.get("subclass", "")).is_empty():
+			defaults["subclass"] = String((first_class as Dictionary).get("subclass", ""))
+			defaults["subclass_source"] = String((first_class as Dictionary).get("subclass_source", ""))
+			defaults["subclass_id"] = String((first_class as Dictionary).get("subclass_id", ""))
 	defaults["max_hp_bonus"] = clampi(int(value.get("max_hp_bonus", 0)), -9999, 99999)
 	defaults["max_hp_base"] = maxi(0, int(value.get(
 		"max_hp_base", int(value.get("max_hp", 1)) - int(defaults["max_hp_bonus"])
