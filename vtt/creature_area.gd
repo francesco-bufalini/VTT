@@ -38,7 +38,6 @@ var _rules_edition: OptionButton
 var _multiclass_rows: VBoxContainer
 var _multiclass_controls: Array[Dictionary] = []
 var _level: SpinBox
-var _level_label: Label
 var _feats: TextEdit
 var _default_miniature: LineEdit
 var _current_miniature: Label
@@ -196,6 +195,12 @@ func show_panel() -> void:
 				area.call("hide_panel")
 	_reload()
 	_panel.show()
+	# Transparent UI themes must not leak tactical portraits through the sheet.
+	var tactical_overlay: Control = board_root.get_node_or_null(
+		"UI/TopDownElevationOverlay"
+	) as Control
+	if tactical_overlay != null:
+		tactical_overlay.hide()
 	if board_root.has_method("release_camera_control"):
 		board_root.call("release_camera_control")
 
@@ -203,6 +208,13 @@ func show_panel() -> void:
 func hide_panel() -> void:
 	_save()
 	_panel.hide()
+	var tactical_overlay: Control = board_root.get_node_or_null(
+		"UI/TopDownElevationOverlay"
+	) as Control
+	if tactical_overlay != null and board_root.has_method("is_2d_view_enabled"):
+		tactical_overlay.call(
+			"set_2d_active", bool(board_root.call("is_2d_view_enabled"))
+		)
 	if board_root.has_method("capture_camera_control"):
 		board_root.call("capture_camera_control")
 
@@ -223,6 +235,8 @@ func _build_ui() -> void:
 	_panel.offset_right = -26
 	_panel.offset_bottom = -24
 	_panel.mouse_filter = Control.MOUSE_FILTER_STOP
+	# Ensure UI sheets outrank any remaining tactical screen-space badges.
+	_panel.z_index = 30
 	_panel.hide()
 	(board_root.get_node("UI") as CanvasLayer).add_child(_panel)
 
@@ -376,8 +390,6 @@ func _build_ui() -> void:
 	_level.size_flags_horizontal = Control.SIZE_EXPAND_FILL
 	_level.value_changed.connect(_on_level_changed)
 	level_row.add_child(_level)
-	_level_label = Label.new()
-	level_row.add_child(_level_label)
 
 	_add_label(form, "Talenti e scelte manuali (personalizzabili)")
 	_feats = TextEdit.new()
@@ -691,7 +703,6 @@ func _load_form(record: Dictionary) -> void:
 					String(class_value.get("id", ""))
 				)
 	_level.value = clampi(int(record.get("level", 1)), 1, 20)
-	_level_label.text = str(int(_level.value))
 	_feats.text = String(record.get("feats", ""))
 	_default_miniature.text = String(record.get("default_miniature_id", ""))
 	var is_character := String(record.get("kind", "")) == "character"
@@ -712,8 +723,7 @@ func _load_form(record: Dictionary) -> void:
 	_loading = false
 
 
-func _on_level_changed(value: float) -> void:
-	_level_label.text = str(int(value))
+func _on_level_changed(_value: float) -> void:
 	_save()
 
 
@@ -1106,7 +1116,17 @@ func ensure_sheet_for_token(token: Node3D, locally_created: bool = false) -> voi
 			record = owned.duplicate(true)
 			break
 	if not record.is_empty() and String(record.get("linked_token_sync_id", "")) == token_id:
-		# Keep existing sheet data, including player edits and HP.
+		# A just-created token can be picked up by the sheet refresh before
+		# the creation dialog applies its selected conditions. On the explicit
+		# creation path persist those final conditions instead of letting the
+		# early return later restore stale empty conditions from the sheet.
+		if locally_created and token.has_method("get_conditions"):
+			var initial_conditions: Array = token.call("get_conditions")
+			if record.get("conditions", []) != initial_conditions:
+				record["conditions"] = initial_conditions.duplicate()
+				if _archive.save(record) == OK:
+					_replace_current_record(record)
+		# Keep all other existing sheet data, including player edits and HP.
 		_set_token_sheet_metadata(token, record)
 		return
 
