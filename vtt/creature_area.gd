@@ -1386,6 +1386,16 @@ func _refresh_reference(record: Dictionary) -> void:
 		], "", "PRIVILEGI DI CLASSE (5e.tools)"
 	]
 
+	var calculation_value: Variant = record.get("spellcasting_calculation", {})
+	if calculation_value is Dictionary:
+		var spell_summary: String = String(
+			(calculation_value as Dictionary).get("detail", "")
+		).strip_edges()
+		if not spell_summary.is_empty():
+			parts.append("")
+			parts.append("LIMITI DEGLI INCANTESIMI (ULTIMO CALCOLO)")
+			parts.append(spell_summary)
+			parts.append("")
 	var class_rows: Array = record.get("classes", [])
 	if class_rows.is_empty() and not primary_class_name.is_empty():
 		class_rows = [{"name": primary_class_name, "level": character_level}]
