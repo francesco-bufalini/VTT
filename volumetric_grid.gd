@@ -899,6 +899,34 @@ func get_support_top_for_footprint(
 	return INF if highest == -INF else highest
 
 
+func get_clear_spawn_floor_for_footprint(
+	world_center: Vector3,
+	footprint_cells: float,
+	token_height_cells: float,
+	requested_floor_y: float
+) -> float:
+	# Spawning on a statue must never leave part of the new token INSIDE
+	# any occupied voxel. The first ray pick identifies the intended surface;
+	# after footprint snapping, nearby higher voxels may still intersect
+	# the token (particularly for Large/Huge creatures).
+	var safe := maxf(cell_size, 0.001)
+	var height := maxf(token_height_cells, 0.1) * safe
+	var floor_y := requested_floor_y
+	var clearance := safe * 0.025
+	# Moving directly to the highest overlapping cell top makes this cheap
+	# even for tall sculptures without lifting the token to unrelated roofs.
+	for _attempt: int in range(128):
+		var overlap_top := get_support_top_for_footprint(
+			world_center,
+			footprint_cells,
+			floor_y + height - clearance,
+			floor_y + clearance
+		)
+		if overlap_top == INF or overlap_top <= floor_y + clearance:
+			return floor_y
+		floor_y = overlap_top
+	return floor_y
+
 func _support_cell_is_occupied(cell: Vector3i) -> bool:
 	if _active_occupied.has(cell):
 		return true
