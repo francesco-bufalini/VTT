@@ -110,6 +110,94 @@ func _format_difference(delta_y: float) -> String:
 	]
 
 
+# Render a transparent thumbnail of the original 3D miniature for
+# creatures without a bestiary token. The slice camera may clip their
+# world-space meshes, so relying on the scene's 3D draw is not sufficient.
+# A static SubViewport updates only when the token's visual identity changes.
+func _miniature_preview_signature(token: CharacterBody3D) -> String:
+	var imported: Node = token.get_node_or_null("Visuals/ImportedVisual")
+	var imported_id: int = imported.get_instance_id() if imported != null else 0
+	return "%s|%s|%d|%s|%s|%s|%s" % [
+		str(token.get("visual_asset_path")),
+		str(token.get("token_pack_id")),
+		imported_id,
+		str(token.get("visual_front_quarter_turns")),
+		str(token.get("visual_pitch_steps")),
+		str(token.get("token_height_cells")),
+		str(token.get("cell_size"))
+	]
+
+
+func _remove_miniature_preview(badge: Control) -> void:
+	var existing: Node = badge.get_node_or_null("MiniaturePreview")
+	if existing != null:
+		badge.remove_child(existing)
+		existing.queue_free()
+	badge.remove_meta("preview_signature")
+
+
+func _miniature_preview_texture(
+	badge: Control,
+	token: CharacterBody3D
+) -> Texture2D:
+	var source_visuals: Node3D = token.get_node_or_null("Visuals") as Node3D
+	if source_visuals == null:
+		return null
+	var signature: String = _miniature_preview_signature(token)
+	var viewport: SubViewport = (
+		badge.get_node_or_null("MiniaturePreview") as SubViewport
+	)
+	if viewport != null and str(badge.get_meta("preview_signature", "")) == signature:
+		return viewport.get_texture()
+	_remove_miniature_preview(badge)
+
+	viewport = SubViewport.new()
+	viewport.name = "MiniaturePreview"
+	viewport.size = Vector2i(192, 192)
+	viewport.transparent_bg = true
+	viewport.own_world_3d = true
+	viewport.render_target_update_mode = SubViewport.UPDATE_ONCE
+	badge.add_child(viewport)
+
+	var model: Node3D = source_visuals.duplicate(0) as Node3D
+	if model == null:
+		_remove_miniature_preview(badge)
+		return null
+	model.name = "Model"
+	viewport.add_child(model)
+
+	var height: float = maxf(
+		float(token.get("token_height_cells")) * float(token.get("cell_size")),
+		0.5
+	)
+	var width: float = maxf(
+		float(token.call("get_footprint_cells")) * float(token.get("cell_size")),
+		0.5
+	) if token.has_method("get_footprint_cells") else height
+	var preview_camera: Camera3D = Camera3D.new()
+	preview_camera.name = "PortraitCamera"
+	preview_camera.projection = Camera3D.PROJECTION_ORTHOGONAL
+	preview_camera.size = maxf(height * 1.65, width * 1.95)
+	preview_camera.near = 0.05
+	preview_camera.far = 500.0
+	viewport.add_child(preview_camera)
+	preview_camera.position = Vector3(
+		width * 1.1, height * 1.7, width * 1.65
+	)
+	preview_camera.look_at(Vector3.ZERO, Vector3.UP)
+	preview_camera.current = true
+
+	var light: DirectionalLight3D = DirectionalLight3D.new()
+	light.name = "PortraitLight"
+	light.light_energy = 1.8
+	light.shadow_enabled = false
+	viewport.add_child(light)
+	light.rotation = Vector3(deg_to_rad(-55.0), deg_to_rad(30.0), 0.0)
+
+	badge.set_meta("preview_signature", signature)
+	return viewport.get_texture()
+
+
 func _render_token_badge(token: CharacterBody3D, floor_y: float) -> void:
 	var token_key: int = token.get_instance_id()
 	var badge: Control = _badges.get(token_key) as Control
@@ -153,6 +241,13 @@ func _render_token_badge(token: CharacterBody3D, floor_y: float) -> void:
 	var texture: Texture2D = null
 	if token.has_method("get_top_down_icon_texture"):
 		texture = token.call("get_top_down_icon_texture") as Texture2D
+	if texture != null:
+		# Use the original transparent, round bestiary token unchanged.
+		if badge.get_node_or_null("MiniaturePreview") != null:
+			_remove_miniature_preview(badge)
+	else:
+		# No letters or colored squares: show the actual 3D model.
+		texture = _miniature_preview_texture(badge, token)
 	portrait.texture = texture
 	portrait.visible = texture != null
 
