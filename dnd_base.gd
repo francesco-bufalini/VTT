@@ -2637,11 +2637,15 @@ func _show_context_menu(screen_position: Vector2) -> void:
 
 	_context_token = null
 	_pending_spawn_support = null
-	var token_hit: Dictionary = _raycast_from_screen(
-		screen_position,
-		TOKEN_PICK_COLLISION_MASK,
-		true
-	)
+	var token_hit: Dictionary = {}
+	if _view_2d_enabled:
+		token_hit = _raycast_token_from_screen(screen_position, true)
+	if token_hit.is_empty():
+		token_hit = _raycast_from_screen(
+			screen_position,
+			TOKEN_PICK_COLLISION_MASK,
+			true
+		)
 	if not token_hit.is_empty():
 		var token_collider: Node = token_hit.get("collider") as Node
 		if token_collider != null:
@@ -4455,6 +4459,58 @@ func _raycast_token_from_screen(
 	screen_position: Vector2,
 	collide_with_areas: bool = true
 ) -> Dictionary:
+	if _view_2d_enabled and camera.has_method("get_top_down_level"):
+		# Pick the screen-space token proxies, not their off-floor 3D
+		# hitboxes: a roof or near clipping must never block a 2D token.
+		var reference_y: float = float(camera.call("get_top_down_level"))
+		var screen_height: float = get_viewport().get_visible_rect().size.y
+		var nearest: CharacterBody3D = null
+		var best_score: float = INF
+		for node: Node in tokens_root.get_children():
+			if not node is CharacterBody3D or not node.is_in_group("dnd_token"):
+				continue
+			var token: CharacterBody3D = node as CharacterBody3D
+			var projected: Vector3 = Vector3(
+				token.global_position.x,
+				reference_y,
+				token.global_position.z
+			)
+			if camera.is_position_behind(projected):
+				continue
+			var token_screen: Vector2 = camera.unproject_position(projected)
+			var footprint: float = (
+				float(token.call("get_footprint_cells"))
+				if token.has_method("get_footprint_cells")
+				else 1.0
+			)
+			var icon_size: float = clampf(
+				footprint * cell_size * screen_height / maxf(camera.size, 0.01),
+				16.0,
+				180.0
+			)
+			var offset: Vector2 = screen_position - token_screen
+			if absf(offset.x) > icon_size * 0.5 or absf(offset.y) > icon_size * 0.5:
+				continue
+			var base_y: float = (
+				token.global_position.y
+				- float(token.get("token_height_cells"))
+				* float(token.get("cell_size")) * 0.5
+			)
+			var score: float = (
+				offset.length_squared() / (icon_size * icon_size)
+				+ absf(base_y - reference_y) * 0.01
+			)
+			if score < best_score:
+				nearest = token
+				best_score = score
+		if nearest != null:
+			return {
+				"collider": nearest,
+				"position": nearest.global_position,
+				"normal": Vector3.UP
+			}
+		return {}
+
 	var hit: Dictionary = _raycast_from_screen(
 		screen_position,
 		TOKEN_BODY_COLLISION_LAYER,
@@ -4713,6 +4769,8 @@ func _prefer_passenger_token_hit(
 	screen_position: Vector2,
 	first_hit: Dictionary
 ) -> Dictionary:
+	if _view_2d_enabled:
+		return first_hit
 	if first_hit.is_empty():
 		return first_hit
 
