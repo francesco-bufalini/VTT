@@ -152,6 +152,11 @@ func run() -> void:
 	assert(area._miniature_filter.get_parent().get_parent() == area._miniature_dialog.get_vbox())
 	assert(area._automatic_hp.get_parent().get_parent() == area._automatic_dialog.get_vbox())
 	var original_id: String = area._current().id
+	# Before any token exists, the + row action enters token placement.
+	area._act_on_creature_token(original_id)
+	assert(board.requested_creature_id == original_id)
+	assert(not area.is_panel_open())
+	area.show_panel()
 	area._select_reference(area._class_name, "Wizard", "PHB")
 	assert(area._level is SpinBox and area._level.update_on_text_changed,
 		"Base class level must save edits while its input still has focus")
@@ -297,14 +302,12 @@ func run() -> void:
 	area._name.text = "Renamed adventurer"
 	area._save()
 	assert(token.get_display_name() == "Renamed adventurer")
-	# The creature sheet can initiate token placement; the board then handles
-	# spawning or relocating without creating another creature.
+	# Once a token exists, the same row action is the eye that focuses it.
 	area._act_on_creature_token(original_id)
-	assert(board.requested_creature_id == original_id)
-	assert(board.requested_current_miniature_id == "hero_test")
+	assert(board.focused_token == token)
 	assert(not area.is_panel_open())
 	assert(overlay.visible, "Closing creature sheet must restore the 2D overlay")
-	assert(not board.camera_released, "Returning to placement must restore camera control")
+	assert(not board.camera_released, "Returning to the board must restore camera control")
 	token.set_conditions(["blinded"])
 	area.sync_linked_token_editor(token)
 	assert("blinded" in area._current().conditions)
