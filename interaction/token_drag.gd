@@ -227,6 +227,10 @@ func finish(commit: bool) -> void:
 		if not is_instance_valid(token):
 			continue
 		if committed_move:
+			# Dragging a rider explicitly is a dismount action, not an
+			# attempt to move the mount underneath the rider.
+			if board.get("mount_controller") != null and board.mount_controller.is_mounted(token):
+				board.mount_controller.dismount(token)
 			token.global_position = _targets[index]
 			if token.has_method("snap_horizontal_to_grid"):
 				token.call("snap_horizontal_to_grid")
