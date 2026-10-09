@@ -228,6 +228,13 @@ func focus_feature(name: String, source_label: String = "") -> void:
 				target = feature
 				break
 	if target.is_empty():
+		# Group trackers (e.g. Legendary Actions) point to a bestiary
+		# section rather than to a specific action inside that section.
+		for feature: Dictionary in _features:
+			if String(feature["origin"]).to_lower().ends_with(name.to_lower()):
+				target = feature
+				break
+	if target.is_empty():
 		return
 	_active_origin = String(target["origin_key"])
 	for i: int in range(_origin_choice.item_count):
