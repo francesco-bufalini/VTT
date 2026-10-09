@@ -119,11 +119,13 @@ func run() -> void:
 		and placeable[0].id == area._current().id
 		and placeable[0].current_miniature_id == "hero_test",
 		"Context placement must include unspawned owned creatures and their saved appearance")
-	assert(area._tabs.get_tab_count() == 6, "Character sheet must expose resources and spellcasting tabs")
+	assert(area._tabs.get_tab_count() == 6, "Character sheet must expose inventory and spellcasting tabs")
 	var tab_titles: Array[String] = []
 	for tab_index: int in range(area._tabs.get_tab_count()):
 		tab_titles.append(area._tabs.get_tab_title(tab_index))
-	assert("Risorse" in tab_titles and "Incantesimi" in tab_titles)
+	assert("Inventario" in tab_titles and "Incantesimi" in tab_titles)
+	assert("Risorse" not in tab_titles and area._tracker_rows.get_parent() == area._name.get_parent(),
+		"Trackers must be inside Statistics, not a separate resources tab")
 	area._choose_miniature(area._current(), false, true)
 	area._miniature_filter.text = "ape"
 	area._on_miniature_selected(0)
@@ -193,6 +195,7 @@ func run() -> void:
 	area._ability_bonus_spins["con"].value = 2
 	area._save()
 	assert(area._current().ability_bonuses.con == 2)
+	assert(area._ability_bonus_spins["con"].get_line_edit().has_theme_stylebox_override("normal"))
 	assert(area._ability_modifier_labels["con"].text == "+1")
 	assert(Rules.automatic_hit_points(area._current()).value == 27,
 		"CON score bonus must change computed HP")
@@ -206,6 +209,12 @@ func run() -> void:
 	area._apply_automatic_calculation()
 	var automatically_calculated: Dictionary = area._current()
 	assert(automatically_calculated.max_hp == 22, "Wizard 5, CON +0: 6 + 4 * 4")
+	area._max_hp_bonus.value = 5
+	area._save()
+	assert(area._current().max_hp == 27 and area._current().max_hp_base == 22)
+	assert(area._current().max_hp_bonus == 5, "Manual HP bonus must increase effective maximum")
+	area._max_hp_bonus.value = 0
+	area._save()
 	assert(automatically_calculated.proficiency_bonus == 3)
 	assert(automatically_calculated.has("spellcasting_calculation"))
 	assert(automatically_calculated.spells.is_empty() and automatically_calculated.prepared_spells.is_empty())
@@ -231,8 +240,8 @@ func run() -> void:
 	sheet = area._current()
 	assert(sheet.id == original_id and sheet.classes[0].level == 6)
 	var spells: Node = area._spellcasting_ui
-	assert(spells._description.get_index() > spells._pact_total_spin.get_parent().get_index(),
-		"Spell details must render below the slot controls")
+	assert(spells._description.get_parent() == spells._prepare.get_parent(),
+		"Spell details must replace the selection hint alongside the action button")
 	assert(not spells._search_row.visible and spells._known_list.item_count > 0,
 		"Class spell list must be automatic and search optional")
 	assert(spells._class_spell_level_limits().get("wizard", -1) == 3,
@@ -250,6 +259,11 @@ func run() -> void:
 	assert(area._current().prepared_spells.size() == 1)
 	spells._calculate_slot_totals()
 	assert(area._current().spell_slots_total[1] == 4)
+	spells._slot_bonus_controls[1].value = 2
+	assert(area._current().spell_slots_bonus[1] == 2)
+	assert(spells._remaining_labels[1].text == "6 / 6")
+	assert(spells._slot_bonus_controls[1].get_line_edit().has_theme_stylebox_override("normal"))
+	spells._slot_bonus_controls[1].value = 0
 	spells._change_slot(1, 1)
 	assert(area._current().spell_slots_spent[1] == 1)
 	spells._change_slot(1, -1)
@@ -282,6 +296,22 @@ func run() -> void:
 	spells._forget_selected_known()
 	assert(area._current().prepared_spells.size() == 1,
 		"Available spells can be removed independently from class spells")
+	var references = load("res://vtt/player_5etools_catalog.gd")
+	assert(references.entries("subclasses").size() > 0,
+		"Subclasses must be loaded from the bundled 5etools references")
+	assert(not area._subclass_choices({"name": "Wizard", "source": "PHB"}).is_empty(),
+		"Subclass selection must include Wizard 2014 choices")
+	var inventory: Node = area._inventory_ui
+	assert(inventory._catalog.size() > 250,
+		"All five 5etools item categories must be included")
+	inventory._catalog_list.select(0)
+	inventory._add_selected()
+	assert(area._current().inventory.size() == 1)
+	area._reload()
+	assert(area._current().inventory.size() == 1, "Inventory must survive reload")
+	inventory._inventory_list.select(0)
+	inventory._remove_selected()
+	assert(area._current().inventory.is_empty())
 	area._max_hp.value = 35
 	area._hp.value = 7
 	area._save()
