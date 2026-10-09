@@ -1247,15 +1247,27 @@ static func is_runtime_usable(spell_data: Dictionary) -> bool:
 
 static func catalog_spell(spell_id: String) -> Dictionary:
 	if PHB2014.SPELLS.has(spell_id):
-		# The VTT keeps spell runtime animations from the corresponding
-		# existing entry, while the edition-specific rules text, levels,
-		# range, components, and classes come from the PHB (2014).
+		# Rules stay authoritative from PHB 2014, including the textual range
+		# and spell lists. Map geometry and targeting are inherited from the
+		# already-normalized 2024 spell, wherever a counterpart exists.
+		# Re-applying SpellAreaCatalog *after* changing the source to PHB would
+		# instead replace 2024 geometry with the less structured 2014 spec.
 		var legacy: Dictionary = (PHB2014.SPELLS[spell_id] as Dictionary).duplicate(true)
 		var base_id := String(legacy.get("original_id", ""))
-		var base: Dictionary = catalog_spell(base_id) if not base_id.is_empty() else {}
+		var base: Dictionary = (
+			catalog_spell(base_id) if not base_id.is_empty() else {}
+		)
+		var has_2024_geometry := (
+			String(base.get("source", "")).to_upper() == "XPHB"
+			and base.has("map_effect_spec")
+		)
 		for field: Variant in legacy.keys():
 			base[field] = legacy[field]
-		return _apply_runtime_overrides(base)
+		# In 2014 the casting range may differ. Preserve its gameplay value
+		# even when using the modern shape/visualization model.
+		if has_2024_geometry:
+			base["map_geometry_source"] = "XPHB"
+		return base
 	for row: Dictionary in ContentCatalog.home_entries("spells"):
 		if String(row.id) == spell_id or String(row.get("overrides", "")) == spell_id:
 			var custom := row.duplicate(true)
