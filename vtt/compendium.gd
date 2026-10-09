@@ -5,6 +5,7 @@ const BestiaryClient = preload("res://vtt/bestiary_5etools_client.gd")
 const PlayerCatalog = preload("res://vtt/player_5etools_catalog.gd")
 const SpellCatalog = preload("res://vtt/spells/spell_catalog.gd")
 const ContentCatalog = preload("res://vtt/content_catalog.gd")
+const FiveToolsText = preload("res://vtt/five_tools_rich_text.gd")
 
 const SECTIONS := {
 	"Bestiario": "monsters",
@@ -108,9 +109,7 @@ func _build_ui() -> void:
 	_list.item_activated.connect(_show_selected)
 	left.add_child(_list)
 	_details = RichTextLabel.new()
-	_details.bbcode_enabled = false
-	_details.selection_enabled = true
-	_details.scroll_active = true
+	FiveToolsText.style(_details)
 	_details.size_flags_horizontal = Control.SIZE_EXPAND_FILL
 	_details.size_flags_vertical = Control.SIZE_EXPAND_FILL
 	columns.add_child(_details)
@@ -219,27 +218,55 @@ func _on_creature_failed(request_key: String, message: String) -> void:
 		_details.text = message
 
 func _render(entry: Dictionary) -> void:
-	var lines := PackedStringArray()
-	lines.append(String(entry.get("name", "Voce")))
-	var source := String(entry.get("source", ""))
+	var lines: PackedStringArray = [FiveToolsText.title(String(entry.get("name", "Voce")))]
+	var source: String = String(entry.get("source", ""))
 	if not source.is_empty():
-		lines.append("Fonte: " + source)
-	for field: String in ["level", "school", "casting_time", "range", "components", "duration", "size", "type", "cr", "ac", "hp", "speed"]:
+		lines.append(FiveToolsText.meta("Fonte: " + source))
+	for field: String in [
+		"level", "school", "casting_time", "range", "components", "duration",
+		"size", "type", "cr", "ac", "hp", "speed"
+	]:
 		if entry.has(field):
-			lines.append("%s: %s" % [field.capitalize(), _plain(entry[field])])
-	var abilities := PackedStringArray()
+			lines.append(FiveToolsText.meta("%s: %s" % [
+				field.capitalize(), _plain(entry[field])
+			]))
+	var abilities: PackedStringArray = []
 	for stat: String in ["str", "dex", "con", "int", "wis", "cha"]:
 		if entry.has(stat):
 			abilities.append("%s %s" % [stat.to_upper(), _plain(entry[stat])])
 	if not abilities.is_empty():
-		lines.append("   ".join(abilities))
-	for field: String in ["save", "skill", "resist", "immune", "conditionImmune", "senses", "languages", "classes", "description", "higher_levels", "trait", "action", "bonus", "reaction", "legendary", "spellcasting", "entries"]:
+		lines.append(FiveToolsText.meta("   ".join(abilities)))
+	for field: String in [
+		"save", "skill", "resist", "immune", "conditionImmune",
+		"senses", "languages", "classes"
+	]:
 		if entry.has(field):
-			lines.append("\n%s:\n%s" % [field.capitalize(), _plain(entry[field])])
-	var extra := ContentCatalog.description(entry)
-	if not extra.is_empty() and not lines.has(extra):
-		lines.append("\n" + extra)
-	_details.text = "\n".join(lines)
+			lines.append(FiveToolsText.meta("%s: %s" % [
+				field.capitalize(), _plain(entry[field])
+			]))
+	var headings: Dictionary = {
+		"trait": "Tratti", "action": "Azioni", "bonus": "Azioni bonus",
+		"reaction": "Reazioni", "legendary": "Azioni leggendarie",
+		"mythic": "Azioni mitiche", "lairActions": "Azioni della tana",
+		"spellcasting": "Incantesimi"
+	}
+	for field: String in headings:
+		if entry.has(field):
+			var content: String = FiveToolsText.blocks(entry[field])
+			if not content.is_empty():
+				lines.append(FiveToolsText.section(String(headings[field])))
+				lines.append(content)
+	for field: String in ["description", "higher_levels", "entries"]:
+		if entry.has(field):
+			var content: String = FiveToolsText.blocks(entry[field])
+			if not content.is_empty():
+				lines.append(content)
+	if not entry.has("entries") and not entry.has("description"):
+		var extra: String = ContentCatalog.description(entry)
+		if not extra.is_empty() and lines.size() == 1:
+			lines.append(FiveToolsText.blocks(extra))
+	_details.text = "\n\n".join(lines)
+
 
 func _plain(value: Variant) -> String:
 	if value is String or value is int or value is float:
