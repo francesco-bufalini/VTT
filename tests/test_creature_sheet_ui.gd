@@ -11,6 +11,10 @@ class TestSync extends Node:
 class TestBoard extends Node3D:
 	var selected_tokens: Array = []
 	var board_sync: Node
+	var requested_creature_id: String = ""
+	func begin_creature_token_placement(record: Dictionary) -> bool:
+		requested_creature_id = String(record.get("id", ""))
+		return true
 	func get_selected_tokens_for_creatures() -> Array:
 		return selected_tokens.duplicate()
 	func release_camera_control() -> void:
@@ -69,6 +73,11 @@ func run() -> void:
 	area._name.text = "Renamed adventurer"
 	area._save()
 	assert(token.get_display_name() == "Renamed adventurer")
+	# The creature sheet can initiate token placement; the board then handles
+	# spawning or relocating without creating another creature.
+	area._request_spawn_selected_creature()
+	assert(board.requested_creature_id == original_id)
+	assert(not area.is_panel_open())
 	token.set_conditions(["blinded"])
 	area.sync_linked_token_editor(token)
 	assert("blinded" in area._current().conditions)
