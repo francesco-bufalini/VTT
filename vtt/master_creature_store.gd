@@ -131,8 +131,10 @@ func create_creature(stat_block: Dictionary, side: String) -> Dictionary:
 		"prepared_spells": [],
 		"spellbook_spells": [],
 		"spell_slots_total": [0, 0, 0, 0, 0, 0, 0, 0, 0, 0],
+		"spell_slots_bonus": [0, 0, 0, 0, 0, 0, 0, 0, 0, 0],
 		"spell_slots_spent": [0, 0, 0, 0, 0, 0, 0, 0, 0, 0],
 		"pact_slots_total": 0,
+		"pact_slots_bonus": 0,
 		"pact_slots_spent": 0,
 		"pact_slot_level": 1,
 		"feats": "",
@@ -219,8 +221,10 @@ func normalize_creature(value: Dictionary) -> Dictionary:
 		"prepared_spells": value.get("prepared_spells", []).duplicate(true) if value.get("prepared_spells", []) is Array else [],
 		"spellbook_spells": value.get("spellbook_spells", []).duplicate(true) if value.get("spellbook_spells", []) is Array else [],
 		"spell_slots_total": _normalize_spell_slots(value.get("spell_slots_total", [])),
+		"spell_slots_bonus": _normalize_spell_slot_bonuses(value.get("spell_slots_bonus", [])),
 		"spell_slots_spent": _normalize_spell_slots(value.get("spell_slots_spent", [])),
 		"pact_slots_total": maxi(0, int(value.get("pact_slots_total", 0))),
+		"pact_slots_bonus": clampi(int(value.get("pact_slots_bonus", 0)), -8, 20),
 		"pact_slots_spent": maxi(0, int(value.get("pact_slots_spent", 0))),
 		"pact_slot_level": clampi(int(value.get("pact_slot_level", 1)), 1, 5),
 		"feats": String(value.get("feats", "")),
@@ -266,7 +270,17 @@ static func _normalize_ability_bonuses(value: Variant) -> Dictionary:
 	return bonuses
 
 
-static func _normalize_spell_slots(value: Variant) -> Array:
+static static func _normalize_spell_slot_bonuses(value: Variant) -> Array:
+	var result: Array = []
+	for index: int in range(10):
+		var bonus: int = 0
+		if value is Array and index < (value as Array).size():
+			bonus = clampi(int((value as Array)[index]), -99, 99)
+		result.append(bonus)
+	return result
+
+
+func _normalize_spell_slots(value: Variant) -> Array:
 	var result: Array = []
 	for i: int in range(10):
 		result.append(maxi(0, int((value as Array)[i])) if value is Array and (value as Array).size() > i else 0)
