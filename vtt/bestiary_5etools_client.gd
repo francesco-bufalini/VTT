@@ -314,7 +314,7 @@ func _retry_or_fail(message: String) -> void:
 		else:
 			_catalog_requested = false
 			catalog_failed.emit(
-				 "Impossibile caricare il bestiario: " + message
+				"Impossibile caricare il bestiario: " + message
 			)
 			_queue.clear()
 
