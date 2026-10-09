@@ -240,6 +240,15 @@ func run() -> void:
 	area._traits_ui.call("focus_feature", "Action Surge", "Fighter · PHB")
 	assert(String(area._traits_ui._active_origin).begins_with("class|fighter|phb"),
 		"Tracker links must reveal the feature even when another origin was filtered")
+	area._traits_ui.call("load_record", {
+		"kind": "monster",
+		"stat_block": {"source": "MM", "legendary": [
+			{"name": "Tail Attack", "entries": ["A legendary action."]}
+		]}
+	})
+	area._traits_ui.call("focus_feature", "Azioni leggendarie")
+	assert(area._traits_ui._active_origin == "monster|legendary",
+		"Section-level legendary trackers must focus their bestiary actions")
 	area._traits_ui.call("load_record", area._current())
 	area._ability_bonus_spins["con"].value = 2
 	area._save()
