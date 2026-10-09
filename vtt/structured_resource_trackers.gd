@@ -73,11 +73,17 @@ static func _recharge_markup(title: String) -> Dictionary:
 
 static func _append_class_trackers(record: Dictionary, output: Array[Dictionary]) -> void:
 	var raw_classes: Variant = record.get("classes", [])
-	if not raw_classes is Array:
-		return
+	var classes: Array = raw_classes as Array if raw_classes is Array else []
+	# Old character files can have the primary class only in legacy fields.
+	if classes.is_empty() and not String(record.get("class", "")).is_empty():
+		classes = [{
+			"name": record.get("class", ""),
+			"source": record.get("class_source", ""),
+			"level": record.get("level", 0)
+		}]
 	var definitions: Array[Dictionary] = _progressions()
 	var seen: Dictionary = {}
-	for raw_class: Variant in raw_classes as Array:
+	for raw_class: Variant in classes:
 		if not raw_class is Dictionary:
 			continue
 		var class_data: Dictionary = raw_class as Dictionary
