@@ -3,7 +3,6 @@ extends Node
 const DiceChatSync = preload("res://network/dice_chat_sync.gd")
 const CreatureOwner = preload("res://vtt/creature_owner.gd")
 const HISTORY_DIR := "user://dice_chat"
-const PROFILE_PATH := "user://dice_chat/profile.cfg"
 const MAX_HISTORY := 300
 
 var board_root: Node3D
@@ -13,13 +12,7 @@ var session_key := "1"
 var history: Array[Dictionary] = []
 var seen_ids: Dictionary = {}
 var rng := RandomNumberGenerator.new()
-var _selected_identity_token_id := ""
-var _scene_identity_configured := false
-var _identity_change_mode := false
-var _identity_placement_pending := false
-var _identity_profile_choices: Array[Dictionary] = []
 var _selected_die := "d20"
-var _pending_identity_callback := Callable()
 
 var toggle_button: Button
 var panel: PanelContainer
@@ -30,11 +23,6 @@ var dice_count_input: SpinBox
 var dice_modifier_input: SpinBox
 var roll_mode_input: OptionButton
 var roll_button: Button
-var scene_identity_dialog: ConfirmationDialog
-var scene_identity_selector: OptionButton
-var scene_identity_miniature_section: VBoxContainer
-var scene_identity_miniature_search: LineEdit
-var scene_identity_miniature_list: ItemList
 var quick_result_panel: PanelContainer
 var quick_result_label: Label
 var _quick_result_generation := 0
@@ -57,10 +45,6 @@ func setup(
 	DirAccess.make_dir_recursive_absolute(
 		ProjectSettings.globalize_path(HISTORY_DIR)
 	)
-	_load_scene_identity()
-	# Token ownership is assigned when created or transferred, never claimed
-	# by selecting an arbitrary scene token at startup.
-	_scene_identity_configured = true
 
 	sync = DiceChatSync.new()
 	sync.name = "DiceChatSync"
@@ -70,7 +54,6 @@ func setup(
 	sync.status_changed.connect(_on_sync_status)
 
 	_build_ui()
-	_build_scene_identity_dialog()
 	set_session_key(initial_session_key)
 
 
@@ -862,382 +845,9 @@ static func percentile_total(tens_face: int, ones_face: int) -> int:
 	return 100 if total == 0 else total
 
 
-func _build_scene_identity_dialog() -> void:
-	scene_identity_dialog = ConfirmationDialog.new()
-	scene_identity_dialog.name = "SceneChatIdentityDialog"
-	scene_identity_dialog.title = "Identità in questa scena"
-	scene_identity_dialog.ok_button_text = "Conferma"
-	scene_identity_dialog.cancel_button_text = "Annulla"
-	scene_identity_dialog.dialog_hide_on_ok = false
-	scene_identity_dialog.min_size = Vector2i(600, 560)
-	scene_identity_dialog.add_theme_constant_override("buttons_min_width", 110)
-	scene_identity_dialog.add_theme_constant_override("buttons_min_height", 36)
-	ui_root.add_child(scene_identity_dialog)
-	# Su alcuni scaling il footer nativo del ConfirmationDialog finisce fuori
-	# dal rettangolo visibile. Le azioni reali vivono quindi nel contenuto.
-	scene_identity_dialog.get_ok_button().hide()
-	var native_cancel := scene_identity_dialog.get_cancel_button()
-	if native_cancel != null:
-		native_cancel.hide()
-
-	var body := VBoxContainer.new()
-	body.custom_minimum_size = Vector2(540, 430)
-	body.add_theme_constant_override("separation", 10)
-	scene_identity_dialog.add_child(body)
-
-	var info := Label.new()
-	info.text = (
-		"Scegli soltanto quale delle tue miniature usare come nome in chat, "
-		+ "oppure genera una nuova miniatura. Questa scelta non assegna "
-		+ "il controllo: appartengono a te le miniature che crei o ricevi."
-	)
-	info.autowrap_mode = TextServer.AUTOWRAP_WORD_SMART
-	body.add_child(info)
-
-	var identity_label := Label.new()
-	identity_label.text = "Nome da usare in chat (miniature controllate)"
-	body.add_child(identity_label)
-
-	scene_identity_selector = OptionButton.new()
-	scene_identity_selector.size_flags_horizontal = Control.SIZE_EXPAND_FILL
-	scene_identity_selector.item_selected.connect(
-		_on_scene_identity_mode_selected
-	)
-	body.add_child(scene_identity_selector)
-
-	# Footer esplicito immediatamente sotto la scelta: resta visibile anche
-	# quando il popup viene clamped/scalato e non dipende dal footer nativo.
-	var actions := HBoxContainer.new()
-	actions.name = "SceneIdentityActions"
-	actions.alignment = BoxContainer.ALIGNMENT_END
-	actions.add_theme_constant_override("separation", 10)
-	body.add_child(actions)
-
-	var cancel_button := Button.new()
-	cancel_button.name = "SceneIdentityCancel"
-	cancel_button.text = "Annulla"
-	cancel_button.custom_minimum_size = Vector2(120, 40)
-	cancel_button.pressed.connect(
-		func() -> void:
-			scene_identity_dialog.hide()
-			_cancel_scene_identity_dialog()
-	)
-	actions.add_child(cancel_button)
-
-	var confirm_button := Button.new()
-	confirm_button.name = "SceneIdentityConfirm"
-	confirm_button.text = "Conferma"
-	confirm_button.custom_minimum_size = Vector2(140, 40)
-	confirm_button.pressed.connect(_confirm_scene_identity)
-	actions.add_child(confirm_button)
-
-	scene_identity_miniature_section = VBoxContainer.new()
-	scene_identity_miniature_section.add_theme_constant_override(
-		"separation",
-		6
-	)
-	body.add_child(scene_identity_miniature_section)
-
-	var miniature_label := Label.new()
-	miniature_label.text = "Miniatura da generare"
-	scene_identity_miniature_section.add_child(miniature_label)
-
-	scene_identity_miniature_search = LineEdit.new()
-	scene_identity_miniature_search.placeholder_text = "Cerca miniatura…"
-	scene_identity_miniature_search.clear_button_enabled = true
-	scene_identity_miniature_search.text_changed.connect(
-		_refresh_scene_identity_miniature_list
-	)
-	scene_identity_miniature_section.add_child(
-		scene_identity_miniature_search
-	)
-
-	scene_identity_miniature_list = ItemList.new()
-	scene_identity_miniature_list.custom_minimum_size = Vector2(520, 250)
-	scene_identity_miniature_list.size_flags_horizontal = (
-		Control.SIZE_EXPAND_FILL
-	)
-	scene_identity_miniature_section.add_child(
-		scene_identity_miniature_list
-	)
-
-	var miniature_hint := Label.new()
-	miniature_hint.text = (
-		"Le miniature remote vengono scaricate solo dopo Conferma. "
-		+ "Se ne scegli una, il passo successivo obbligatorio è piazzarla "
-		+ "sulla mappa."
-	)
-	miniature_hint.autowrap_mode = TextServer.AUTOWRAP_WORD_SMART
-	scene_identity_miniature_section.add_child(miniature_hint)
-
-	scene_identity_dialog.confirmed.connect(_confirm_scene_identity)
-	scene_identity_dialog.canceled.connect(_cancel_scene_identity_dialog)
-	scene_identity_dialog.close_requested.connect(
-		_cancel_scene_identity_dialog
-	)
-
-
 func ensure_scene_identity(_on_ready: Callable = Callable()) -> bool:
 	# Callers (combat, dice, sheet rolls) no longer require a confirmation.
 	return true
-
-
-func request_change_scene_identity() -> void:
-	if _identity_placement_pending:
-		return
-	_identity_change_mode = true
-	_show_scene_identity_dialog()
-
-
-func _show_scene_identity_dialog() -> void:
-	if scene_identity_dialog == null:
-		return
-	_refresh_scene_identity_options()
-	if board_root.has_method("release_camera_control"):
-		board_root.call("release_camera_control")
-	elif board_root.has_method("_release_mouse"):
-		board_root.call("_release_mouse")
-	scene_identity_dialog.reset_size()
-	scene_identity_dialog.popup_centered_clamped(
-		Vector2i(620, 620),
-		0.92
-	)
-	if scene_identity_selector != null:
-		scene_identity_selector.call_deferred("grab_focus")
-
-
-func _refresh_scene_identity_options() -> void:
-	if scene_identity_selector == null:
-		return
-	scene_identity_selector.clear()
-	scene_identity_selector.add_item(
-		"Nessuno — %s" % _master_author_name()
-	)
-	scene_identity_selector.set_item_metadata(
-		0,
-		{"kind": "master", "id": ""}
-	)
-
-	var selected_index := 0
-	for token: Node3D in _scene_identity_tokens():
-		var display_name := _actor_display_name(token)
-		if display_name.is_empty():
-			display_name = String(token.name)
-		var item_index := scene_identity_selector.item_count
-		var token_id := _token_stable_id(token)
-		scene_identity_selector.add_item(display_name)
-		scene_identity_selector.set_item_metadata(
-			item_index,
-			{"kind": "token", "id": token_id}
-		)
-		if (
-			not _selected_identity_token_id.is_empty()
-			and token_id == _selected_identity_token_id
-		):
-			selected_index = item_index
-
-	scene_identity_selector.add_separator()
-	var generate_index := scene_identity_selector.item_count
-	scene_identity_selector.add_item("Genera una nuova miniatura…")
-	scene_identity_selector.set_item_metadata(
-		generate_index,
-		{"kind": "generate", "id": ""}
-	)
-	scene_identity_selector.select(selected_index)
-
-	_identity_profile_choices.clear()
-	if (
-		board_root != null
-		and is_instance_valid(board_root)
-		and board_root.has_method("get_token_identity_profiles")
-	):
-		var profiles_value: Variant = board_root.call(
-			"get_token_identity_profiles"
-		)
-		if profiles_value is Array:
-			for value: Variant in profiles_value as Array:
-				if value is Dictionary:
-					_identity_profile_choices.append(
-						(value as Dictionary).duplicate(true)
-					)
-
-	_refresh_scene_identity_miniature_list(
-		scene_identity_miniature_search.text
-		if scene_identity_miniature_search != null
-		else ""
-	)
-	_on_scene_identity_mode_selected(selected_index)
-
-
-func refresh_scene_identity_profiles() -> void:
-	if scene_identity_dialog == null or not scene_identity_dialog.visible:
-		return
-	var selected_metadata: Variant = (
-		scene_identity_selector.get_item_metadata(
-			scene_identity_selector.selected
-		)
-		if scene_identity_selector.selected >= 0
-		else {}
-	)
-	var keep_generate := (
-		selected_metadata is Dictionary
-		and String((selected_metadata as Dictionary).get("kind", ""))
-		== "generate"
-	)
-	_refresh_scene_identity_options()
-	if keep_generate:
-		for index: int in range(scene_identity_selector.item_count):
-			var metadata: Variant = (
-				scene_identity_selector.get_item_metadata(index)
-			)
-			if (
-				metadata is Dictionary
-				and String((metadata as Dictionary).get("kind", ""))
-				== "generate"
-			):
-				scene_identity_selector.select(index)
-				_on_scene_identity_mode_selected(index)
-				break
-
-
-func _on_scene_identity_mode_selected(index: int) -> void:
-	if scene_identity_miniature_section == null:
-		return
-	var metadata: Variant = scene_identity_selector.get_item_metadata(index)
-	var kind := (
-		String((metadata as Dictionary).get("kind", ""))
-		if metadata is Dictionary
-		else ""
-	)
-	scene_identity_miniature_section.visible = kind == "generate"
-
-
-func _refresh_scene_identity_miniature_list(query: String) -> void:
-	if scene_identity_miniature_list == null:
-		return
-	var previous_id := ""
-	var selected := scene_identity_miniature_list.get_selected_items()
-	if not selected.is_empty():
-		previous_id = String(
-			scene_identity_miniature_list.get_item_metadata(
-				int(selected[0])
-			)
-		)
-	scene_identity_miniature_list.clear()
-	var normalized := query.strip_edges().to_lower()
-	var target_index := -1
-	for profile: Dictionary in _identity_profile_choices:
-		var profile_id := String(profile.get("id", "")).strip_edges()
-		var name := String(profile.get("name", profile_id))
-		var size_name := String(profile.get("size_name", "Medium"))
-		var status := String(profile.get("status", ""))
-		var searchable := (
-			name + " " + profile_id + " " + size_name + " " + status
-		).to_lower()
-		if not normalized.is_empty() and not searchable.contains(normalized):
-			continue
-		var index := scene_identity_miniature_list.item_count
-		scene_identity_miniature_list.add_item(
-			"%s · %s · %s" % [name, size_name, status]
-		)
-		scene_identity_miniature_list.set_item_metadata(index, profile_id)
-		if profile_id == previous_id:
-			target_index = index
-	if target_index < 0 and scene_identity_miniature_list.item_count > 0:
-		target_index = 0
-	if target_index >= 0:
-		scene_identity_miniature_list.select(target_index)
-
-
-func _confirm_scene_identity() -> void:
-	if (
-		scene_identity_selector == null
-		or scene_identity_selector.selected < 0
-	):
-		return
-	var metadata: Variant = scene_identity_selector.get_item_metadata(
-		scene_identity_selector.selected
-	)
-	if not metadata is Dictionary:
-		return
-	var choice := metadata as Dictionary
-	var kind := String(choice.get("kind", ""))
-
-	if kind == "generate":
-		if scene_identity_miniature_list == null:
-			return
-		var selected := scene_identity_miniature_list.get_selected_items()
-		if selected.is_empty():
-			return
-		var profile_id := String(
-			scene_identity_miniature_list.get_item_metadata(
-				int(selected[0])
-			)
-		).strip_edges()
-		if profile_id.is_empty():
-			return
-		if (
-			board_root == null
-			or not is_instance_valid(board_root)
-			or not board_root.has_method(
-				"begin_identity_token_placement"
-			)
-		):
-			return
-		_identity_placement_pending = true
-		_identity_change_mode = false
-		scene_identity_dialog.hide()
-		var started := bool(
-			board_root.call(
-				"begin_identity_token_placement",
-				profile_id,
-				Callable(self, "_on_identity_token_placed"),
-				Callable(
-					self,
-					"_on_identity_token_placement_failed"
-				)
-			)
-		)
-		if not started:
-			_identity_placement_pending = false
-			_show_scene_identity_dialog()
-		return
-
-	_selected_identity_token_id = (
-		String(choice.get("id", "")).strip_edges()
-		if kind == "token"
-		else ""
-	)
-	_scene_identity_configured = true
-	_identity_change_mode = false
-	_save_scene_identity()
-	scene_identity_dialog.hide()
-	_resume_after_identity_choice()
-
-
-func _on_identity_token_placed(token: CharacterBody3D) -> void:
-	_identity_placement_pending = false
-	if token == null or not is_instance_valid(token):
-		_show_scene_identity_dialog()
-		return
-	_selected_identity_token_id = _token_stable_id(token)
-	_scene_identity_configured = true
-	_save_scene_identity()
-	_resume_after_identity_choice()
-
-
-func _on_identity_token_placement_failed() -> void:
-	_identity_placement_pending = false
-	_show_scene_identity_dialog()
-
-
-func _cancel_scene_identity_dialog() -> void:
-	_identity_change_mode = false
-	_pending_identity_callback = Callable()
-	if board_root.has_method("capture_camera_control"):
-		board_root.call("capture_camera_control")
-	elif board_root.has_method("_capture_mouse"):
-		board_root.call("_capture_mouse")
 
 
 func _scene_identity_tokens() -> Array[Node3D]:
@@ -1262,93 +872,10 @@ func _scene_identity_tokens() -> Array[Node3D]:
 	return result
 
 
-func _resume_after_identity_choice() -> void:
-	var callback := _pending_identity_callback
-	_pending_identity_callback = Callable()
-	if callback.is_valid():
-		callback.call_deferred()
-	elif board_root.has_method("capture_camera_control"):
-		board_root.call("capture_camera_control")
-
-
-func _scene_identity_section() -> String:
-	var scene_path := ""
-	if board_root != null and is_instance_valid(board_root):
-		scene_path = String(board_root.scene_file_path).strip_edges()
-		if scene_path.is_empty():
-			scene_path = String(board_root.name)
-	if scene_path.is_empty():
-		scene_path = "unknown_scene"
-	return "scene_%s" % scene_path.md5_text()
-
-
-func _load_scene_identity() -> void:
-	_selected_identity_token_id = ""
-	_scene_identity_configured = false
-	var config := ConfigFile.new()
-	if config.load(PROFILE_PATH) != OK:
-		return
-	var section := _scene_identity_section()
-	_scene_identity_configured = bool(
-		config.get_value(section, "configured", false)
-	)
-	_selected_identity_token_id = String(
-		config.get_value(section, "token_id", "")
-	).strip_edges()
-
-
-func _save_scene_identity() -> void:
-	var config := ConfigFile.new()
-	config.load(PROFILE_PATH)
-	var section := _scene_identity_section()
-	config.set_value(section, "configured", true)
-	config.set_value(
-		section,
-		"token_id",
-		_selected_identity_token_id
-	)
-	if board_root != null and is_instance_valid(board_root):
-		config.set_value(
-			section,
-			"scene_path",
-			String(board_root.scene_file_path)
-		)
-	config.save(PROFILE_PATH)
-
-
-func _token_stable_id(token: Node3D) -> String:
-	if token == null or not is_instance_valid(token):
-		return ""
-	if token.has_method("get_token_id"):
-		var token_id := String(token.call("get_token_id")).strip_edges()
-		if not token_id.is_empty():
-			return token_id
-	if token.has_meta("sync_id"):
-		var sync_id := String(token.get_meta("sync_id")).strip_edges()
-		if not sync_id.is_empty():
-			return sync_id
-	if board_root != null and is_instance_valid(board_root):
-		var sync_value: Variant = board_root.get("board_sync")
-		if sync_value is Node:
-			var board_sync := sync_value as Node
-			if (
-				board_sync != null
-				and is_instance_valid(board_sync)
-				and board_sync.has_method("get_sync_id_for_node")
-			):
-				return String(
-					board_sync.call("get_sync_id_for_node", token)
-				).strip_edges()
-		return "path:" + String(board_root.get_path_to(token))
-	return ""
-
-
 func _identity_token() -> Node3D:
+	# Chat identity follows the token currently selected by its rightful owner.
+	# No persistent user-to-token association or identity picker is needed.
 	var owned_tokens := _scene_identity_tokens()
-	for token: Node3D in owned_tokens:
-		if not _selected_identity_token_id.is_empty() and _token_stable_id(token) == _selected_identity_token_id:
-			return token
-	# Use a currently selected owned miniature, without claiming ownership.
 	var selected_value: Variant = board_root.get("_selected_tokens") if board_root != null else []
 	if selected_value is Array and (selected_value as Array).size() == 1:
 		var selected: Variant = (selected_value as Array)[0]
