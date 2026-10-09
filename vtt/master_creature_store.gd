@@ -141,11 +141,17 @@ func create_creature(stat_block: Dictionary, side: String) -> Dictionary:
 		"current_miniature_id": _default_miniature_id(stat_block),
 		"size_name": "Medium",
 		"footprint": 1.0,
-		"reach_feet": 5.0,
+		"reach_feet": CreatureRules.monster_base_reach_feet(stat_block),
 		"visual_front_quarter_turns": 0,
 		"party_id": "",
 		"temporary_hp": 0,
 		"stat_block": stat_block.duplicate(true),
+		"species": String(stat_block.get("name", base_name)),
+		"species_source": String(stat_block.get("source", "")),
+		"class": "Mostro",
+		"class_source": "5etools",
+		"level": CreatureRules.monster_cr_value(stat_block),
+		"classes": [{"name": "Mostro", "source": "5etools", "level": CreatureRules.monster_cr_value(stat_block)}],
 		"linked_token_sync_id": "",
 		"linked_token_name": ""
 	}
@@ -177,6 +183,12 @@ func normalize_creature(value: Dictionary) -> Dictionary:
 		"max_hp": maxi(0, int(value.get("max_hp", fallback_hp))),
 		"current_hp": int(value.get("current_hp", fallback_hp)),
 		"stat_block": stat_block,
+		"species": String(stat_block.get("name", base_name)),
+		"species_source": String(stat_block.get("source", value.get("source", ""))),
+		"class": "Mostro",
+		"class_source": "5etools",
+		"level": CreatureRules.monster_cr_value(stat_block),
+		"classes": [],
 		"conditions": value.get("conditions", []).duplicate() if value.get("conditions", []) is Array else [],
 		"transfer_revision": maxi(0, int(value.get("transfer_revision", 0))),
 		"owner_id": String(value.get("owner_id", CreatureOwner.local_id())),
@@ -184,7 +196,7 @@ func normalize_creature(value: Dictionary) -> Dictionary:
 		"current_miniature_id": String(value.get("current_miniature_id", value.get("default_miniature_id", _default_miniature_id(stat_block)))),
 		"size_name": String(value.get("size_name", "Medium")),
 		"footprint": maxf(0.5, float(value.get("footprint", 1.0))),
-		"reach_feet": maxf(5.0, float(value.get("reach_feet", 5.0))),
+		"reach_feet": maxf(5.0, float(value.get("reach_feet", CreatureRules.monster_base_reach_feet(stat_block)))),
 		"visual_front_quarter_turns": clampi(int(value.get("visual_front_quarter_turns", 0)), 0, 3),
 		"party_id": String(value.get("party_id", "")),
 		"temporary_hp": maxi(0, int(value.get("temporary_hp", 0))),
@@ -205,7 +217,25 @@ func normalize_creature(value: Dictionary) -> Dictionary:
 		),
 		"linked_token_name": String(value.get("linked_token_name", ""))
 	}
-	if String(result["id"]).is_empty():
+	# Rebuild the immutable monster base from the bestiary on every load,
+	# preserving any real class levels subsequently added by the user.
+	var extra_classes: Array = []
+	var old_classes: Variant = value.get("classes", [])
+	if old_classes is Array:
+		for raw_class: Variant in old_classes:
+			if not raw_class is Dictionary:
+				continue
+			var cls: Dictionary = raw_class as Dictionary
+			if String(cls.get("name", "")).to_lower() != "mostro":
+				extra_classes.append(cls.duplicate(true))
+	var cr: float = CreatureRules.monster_cr_value(stat_block)
+	result["classes"] = [{"name": "Mostro", "source": "5etools", "level": cr}]
+	result["classes"].append_array(extra_classes)
+	var added_levels: float = 0.0
+	for cls: Dictionary in extra_classes:
+		added_levels += maxf(0.0, float(cls.get("level", 0)))
+	result["level"] = cr + added_levels
+		if String(result["id"]).is_empty():
 		var now := int(Time.get_unix_time_from_system())
 		var unique := int(Time.get_ticks_usec())
 		result["id"] = "master_creature_%d_%d" % [now, unique]
