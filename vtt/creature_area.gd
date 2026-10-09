@@ -870,7 +870,7 @@ func _open_automatic_calculation() -> void:
 	_automatic_proficiency.set_pressed_no_signal(false)
 	_automatic_spells.set_pressed_no_signal(false)
 	_refresh_automatic_preview()
-	_automatic_dialog.popup_centered_clamped(Vector2i(610, 430), 0.85)
+	_popup_sheet_dialog(_automatic_dialog, Vector2i(620, 440), 0.88)
 
 
 func _refresh_automatic_preview() -> void:
@@ -963,7 +963,7 @@ func _open_transfer_dialog() -> void:
 		_set_status("Seleziona una creatura da cedere.")
 		return
 	_refresh_transfer_users()
-	_transfer_dialog.popup_centered_clamped(Vector2i(530, 260), 0.9)
+	_popup_sheet_dialog(_transfer_dialog, Vector2i(540, 270), 0.90)
 
 
 func _refresh_transfer_users() -> void:
@@ -1077,14 +1077,14 @@ func _build_feat_dialog() -> void:
 	_feat_filter.text_changed.connect(_search_feats)
 	body.add_child(_feat_filter)
 	_feat_list = ItemList.new()
-	_feat_list.custom_minimum_size = Vector2(0, 130)
+	_feat_list.custom_minimum_size = Vector2(0, 112)
 	_feat_list.size_flags_horizontal = Control.SIZE_EXPAND_FILL
 	_feat_list.item_selected.connect(_show_feat_details)
 	_feat_list.item_activated.connect(_show_feat_details)
 	body.add_child(_feat_list)
 	_feat_details = RichTextLabel.new()
 	_feat_details.selection_enabled = true
-	_feat_details.custom_minimum_size.y = 125
+	_feat_details.custom_minimum_size.y = 108
 	body.add_child(_feat_details)
 	_feat_dialog.confirmed.connect(_confirm_feat)
 
@@ -1095,7 +1095,7 @@ func _open_feat_dialog() -> void:
 		return
 	_feat_filter.text = ""
 	_search_feats("")
-	_feat_dialog.popup_centered_clamped(Vector2i(680, 465), 0.88)
+	_popup_sheet_dialog(_feat_dialog, Vector2i(690, 480), 0.88)
 	_feat_filter.grab_focus()
 
 
@@ -1771,7 +1771,7 @@ func _open_hp_delta(sign: int) -> void:
 	_hp_delta_amount.value = 1
 	_hp_use_dice.set_pressed_no_signal(false)
 	_refresh_hp_delta_mode()
-	_hp_delta_dialog.popup_centered_clamped(Vector2i(500, 295), 0.9)
+	_popup_sheet_dialog(_hp_delta_dialog, Vector2i(500, 300), 0.90)
 
 
 func _set_hp_dice_formula(expression: String) -> void:
@@ -2290,18 +2290,58 @@ func begin_add_creature() -> void:
 	_create_character()
 
 
+# Window layout is computed lazily. Reset before each opening and clamp
+# a second time after controls have received their final first-frame sizes.
+# Prevents the confirmation row falling below the visible viewport.
+func _popup_sheet_dialog(
+	dialog: ConfirmationDialog,
+	preferred: Vector2i,
+	ratio: float = 0.88
+) -> void:
+	if dialog == null:
+		return
+	dialog.reset_size()
+	dialog.popup_centered_clamped(preferred, ratio)
+	dialog.get_ok_button().show()
+	dialog.get_cancel_button().show()
+	call_deferred("_reclamp_sheet_dialog", dialog, preferred, ratio)
+
+
+func _reclamp_sheet_dialog(
+	dialog: ConfirmationDialog,
+	preferred: Vector2i,
+	ratio: float
+) -> void:
+	if dialog == null or not is_instance_valid(dialog) or not dialog.visible:
+		return
+	var viewport: Vector2i = Vector2i(get_viewport().get_visible_rect().size)
+	var maximum: Vector2i = Vector2i(
+		maxi(300, mini(preferred.x, floori(float(viewport.x) * ratio))),
+		maxi(200, mini(preferred.y, floori(float(viewport.y) * ratio)))
+	)
+	# Never increase a window's native size when reducing it to fit the screen.
+	dialog.size = Vector2i(
+		mini(dialog.size.x, maximum.x),
+		mini(dialog.size.y, maximum.y)
+	)
+	dialog.position = (viewport - dialog.size) / 2
+
+
 func _build_miniature_dialog() -> void:
 	_miniature_dialog = ConfirmationDialog.new()
 	_miniature_dialog.title = "Miniatura predefinita"
 	_miniature_dialog.get_ok_button().text = "Conferma"
 	_miniature_dialog.get_cancel_button().text = "Annulla"
+	_miniature_dialog.get_ok_button().custom_minimum_size = Vector2(112, 38)
+	_miniature_dialog.get_cancel_button().custom_minimum_size = Vector2(112, 38)
 	_miniature_dialog.dialog_text = ""
 	_miniature_dialog.min_size = Vector2i(540, 340)
 	(board_root.get_node("UI") as CanvasLayer).add_child(_miniature_dialog)
 	var body := VBoxContainer.new()
 	body.add_theme_constant_override("separation", 9)
 	body.size_flags_horizontal = Control.SIZE_EXPAND_FILL
-	body.size_flags_vertical = Control.SIZE_EXPAND_FILL
+	# The picker must not grow past the dialog action row on first opening.
+	body.size_flags_vertical = Control.SIZE_SHRINK_BEGIN
 	_miniature_dialog.add_child(body)
 	_miniature_hint = Label.new()
 	_miniature_hint.autowrap_mode = TextServer.AUTOWRAP_WORD_SMART
@@ -2313,9 +2353,9 @@ func _build_miniature_dialog() -> void:
 	_miniature_filter.text_changed.connect(_filter_miniatures)
 	body.add_child(_miniature_filter)
 	_miniature_list = ItemList.new()
-	_miniature_list.custom_minimum_size = Vector2(0, 215)
+	_miniature_list.custom_minimum_size = Vector2(0, 168)
 	_miniature_list.size_flags_horizontal = Control.SIZE_EXPAND_FILL
-	_miniature_list.size_flags_vertical = Control.SIZE_EXPAND_FILL
+	_miniature_list.size_flags_vertical = Control.SIZE_SHRINK_BEGIN
 	_miniature_list.item_selected.connect(_on_miniature_selected)
 	_miniature_list.item_activated.connect(_on_miniature_selected)
 	body.add_child(_miniature_list)
@@ -2384,7 +2424,7 @@ func _choose_miniature(record: Dictionary, is_new: bool, choose_current: bool = 
 		))
 	)
 	_filter_miniatures("")
-	_miniature_dialog.popup_centered_clamped(Vector2i(620, 440), 0.85)
+	_popup_sheet_dialog(_miniature_dialog, Vector2i(650, 450))
 
 
 func _filter_miniatures(query: String) -> void:
@@ -2466,7 +2506,7 @@ func _confirm_delete() -> void:
 		return
 	_delete_target = record.duplicate(true)
 	_delete_dialog.dialog_text = "Eliminare definitivamente '%s' dal tuo archivio?\nVerranno eliminati anche i suoi token presenti nella scena." % String(record.get("name", "Creatura"))
-	_delete_dialog.popup_centered()
+	_popup_sheet_dialog(_delete_dialog, Vector2i(520, 270), 0.90)
 
 
 func _delete_selected_creature() -> void:
