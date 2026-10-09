@@ -8,19 +8,26 @@ class TestCampaign extends Node:
 class TestSync extends Node:
 	func get_sync_id_for_node(node: Node) -> String:
 		return String(node.get_meta("sync_id", ""))
+class OverlayStub extends Control:
+	func set_2d_active(enabled: bool) -> void:
+		visible = enabled
+
 class TestBoard extends Node3D:
 	var selected_tokens: Array = []
 	var board_sync: Node
 	var requested_creature_id: String = ""
+	var camera_released: bool = false
+	func is_2d_view_enabled() -> bool:
+		return true
 	func begin_creature_token_placement(record: Dictionary) -> bool:
 		requested_creature_id = String(record.get("id", ""))
 		return true
 	func get_selected_tokens_for_creatures() -> Array:
 		return selected_tokens.duplicate()
 	func release_camera_control() -> void:
-		pass
+		camera_released = true
 	func capture_camera_control() -> void:
-		pass
+		camera_released = false
 
 func _initialize() -> void:
 	call_deferred("run")
@@ -31,6 +38,9 @@ func run() -> void:
 	var ui := CanvasLayer.new()
 	ui.name = "UI"
 	board.add_child(ui)
+	var overlay := OverlayStub.new()
+	overlay.name = "TopDownElevationOverlay"
+	ui.add_child(overlay)
 	board.board_sync = TestSync.new()
 	board.add_child(board.board_sync)
 	var campaign := TestCampaign.new()
@@ -70,6 +80,8 @@ func run() -> void:
 	assert(area.open_for_token(token))
 	assert(area.is_panel_open())
 	assert(area._current().id == original_id)
+	assert(not overlay.visible, "2D tactical portraits must not cover the sheet")
+	assert(board.camera_released, "Opening sheet from token must release the mouse")
 	area._name.text = "Renamed adventurer"
 	area._save()
 	assert(token.get_display_name() == "Renamed adventurer")
@@ -78,6 +90,8 @@ func run() -> void:
 	area._request_spawn_selected_creature()
 	assert(board.requested_creature_id == original_id)
 	assert(not area.is_panel_open())
+	assert(overlay.visible, "Closing creature sheet must restore the 2D overlay")
+	assert(not board.camera_released, "Returning to placement must restore camera control")
 	token.set_conditions(["blinded"])
 	area.sync_linked_token_editor(token)
 	assert("blinded" in area._current().conditions)
@@ -122,6 +136,15 @@ func run() -> void:
 		"Saving the new sheet must not clear selected creation conditions")
 	assert("Test Ape" in area.get_owned_creature_names())
 	assert(area.get_owned_creature_names(automatic_id).is_empty())
+	# A sheet refresh can race the creation dialog: if it registers a sheet
+	# before the checkbox states are applied, the final creation state wins.
+	var stale_initial: Dictionary = automatic.duplicate(true)
+	stale_initial["conditions"] = []
+	assert(area._archive.save(stale_initial) == OK)
+	area.ensure_sheet_for_token(token, true)
+	var after_creation: Dictionary = area._archive._stored("monster", automatic_id)
+	assert("poisoned" in after_creation.conditions and "blinded" in after_creation.conditions,
+		"Creation-time conditions must update any premature empty auto-sheet")
 	area.ensure_sheet_for_token(token, true)
 	assert(area._archive.list_owned().size() == 1, "Repeat linking must not duplicate a sheet")
 	# Foreign-owned tokens are never claimed; transfer of their public owner
