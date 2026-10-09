@@ -27,7 +27,7 @@ func setup(board: Node3D, level_probe: Node3D) -> void:
 	add_child(_hover_panel)
 	_hover_text = Label.new()
 	_hover_text.mouse_filter = Control.MOUSE_FILTER_IGNORE
-	_hover_text.add_theme_font_size_override("font_size", 13)
+	_hover_text.add_theme_font_size_override("font_size", 16)
 	_hover_panel.add_child(_hover_text)
 	_hover_panel.hide()
 
@@ -74,11 +74,30 @@ func _new_badge() -> Control:
 	name_label.mouse_filter = Control.MOUSE_FILTER_IGNORE
 	name_label.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
 	name_label.vertical_alignment = VERTICAL_ALIGNMENT_CENTER
-	name_label.add_theme_font_size_override("font_size", 14)
+	name_label.add_theme_font_size_override("font_size", 19)
 	name_label.add_theme_color_override("font_color", Color(1.0, 0.97, 0.88))
 	name_label.add_theme_color_override("font_outline_color", Color(0.07, 0.08, 0.11, 0.95))
-	name_label.add_theme_constant_override("outline_size", 4)
+	name_label.add_theme_constant_override("outline_size", 5)
 	badge.add_child(name_label)
+
+	# Screen-space conditions must not be clipped when the camera changes
+	# elevation. World-space rings may be behind the current slice plane.
+	var conditions_label: Label = Label.new()
+	conditions_label.name = "Conditions"
+	conditions_label.mouse_filter = Control.MOUSE_FILTER_IGNORE
+	conditions_label.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
+	conditions_label.vertical_alignment = VERTICAL_ALIGNMENT_CENTER
+	conditions_label.autowrap_mode = TextServer.AUTOWRAP_WORD_SMART
+	conditions_label.add_theme_font_size_override("font_size", 17)
+	conditions_label.add_theme_color_override(
+		"font_color", Color(1.0, 0.86, 0.46)
+	)
+	conditions_label.add_theme_color_override(
+		"font_outline_color", Color(0.07, 0.08, 0.11, 0.98)
+	)
+	conditions_label.add_theme_constant_override("outline_size", 5)
+	conditions_label.visible = false
+	badge.add_child(conditions_label)
 
 	var height_label: Label = Label.new()
 	height_label.name = "Height"
@@ -268,11 +287,35 @@ func _render_token_badge(token: CharacterBody3D, floor_y: float) -> void:
 		if not provided_name.is_empty():
 			display_name = provided_name
 	name_label.text = display_name
-	name_label.size = Vector2(maxf(icon_size * 2.0, 180.0), 24.0)
+	name_label.size = Vector2(maxf(icon_size * 2.0, 220.0), 30.0)
 	name_label.position = Vector2(
 		(icon_size - name_label.size.x) * 0.5,
-		-28.0
+		-36.0
 	)
+
+	var conditions_label: Label = badge.get_node("Conditions") as Label
+	var condition_parts := PackedStringArray()
+	var show_conditions: bool = (
+		not token.has_method("are_condition_visuals_visible")
+		or bool(token.call("are_condition_visuals_visible"))
+	)
+	if show_conditions and token.has_method("get_active_condition_display_parts"):
+		var active_parts: Variant = token.call("get_active_condition_display_parts")
+		if active_parts is PackedStringArray:
+			condition_parts = active_parts
+	conditions_label.text = "  ·  ".join(condition_parts)
+	conditions_label.visible = not condition_parts.is_empty()
+	if conditions_label.visible:
+		# Grow upward to show the complete set of conditions without
+		# covering the portrait or the name, even with wrapped homebrew names.
+		var text_width: float = clampf(icon_size * 3.0, 240.0, 360.0)
+		conditions_label.size = Vector2(text_width, 512.0)
+		var lines: int = maxi(1, conditions_label.get_line_count())
+		conditions_label.size.y = float(lines) * 25.0 + 6.0
+		conditions_label.position = Vector2(
+			(icon_size - text_width) * 0.5,
+			name_label.position.y - conditions_label.size.y - 2.0
+		)
 
 	var base_y: float = token.global_position.y - (
 		float(token.get("token_height_cells")) * float(token.get("cell_size")) * 0.5
@@ -280,7 +323,7 @@ func _render_token_badge(token: CharacterBody3D, floor_y: float) -> void:
 	var delta: float = base_y - floor_y
 	var height_label: Label = badge.get_node("Height") as Label
 	height_label.position = Vector2(icon_size + 6.0, icon_size * 0.3)
-	height_label.add_theme_font_size_override("font_size", 12)
+	height_label.add_theme_font_size_override("font_size", 16)
 	height_label.text = _format_difference(delta)
 	height_label.visible = _difference_cells(delta) != 0
 
