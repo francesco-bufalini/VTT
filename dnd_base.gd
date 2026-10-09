@@ -1635,7 +1635,14 @@ func _set_pending_spawn_from_screen(screen_position: Vector2) -> bool:
 	_pending_spawn_on_grid_surface = false
 	_has_pending_spawn_position = false
 
-	var hit: Dictionary = _raycast_from_screen(screen_position, 1 | 4, false)
+	# Include the grid's dedicated collision layers (e.g. Kaos's stone
+	# sculpture proxies on layer 8), not just regular terrain on 1 | 4.
+	var terrain_mask: int = 1 | 4
+	if volumetric_grid != null:
+		terrain_mask |= int(volumetric_grid.get("collision_mask"))
+	var hit: Dictionary = _raycast_from_screen(
+		screen_position, terrain_mask, false
+	)
 	# Prefer the FIRST visible top face of the tactical voxel grid. In
 	# Scontro contro Kaos the stone sculpture has sloped collision surfaces
 	# and auxiliary voxel layers, so a physics ray alone may hit its SIDE,
