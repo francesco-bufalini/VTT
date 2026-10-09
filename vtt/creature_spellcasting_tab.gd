@@ -357,13 +357,13 @@ func _class_keys() -> Dictionary:
 func _class_spell_level_limits() -> Dictionary:
 	var limits: Dictionary = {}
 	for cls: Dictionary in Rules.level_classes(_record):
-		var class_name: String = SpellCatalog.canonical_class_name(
+		var spell_class_key: String = SpellCatalog.canonical_class_name(
 			String(cls.get("name", ""))
 		).to_lower()
 		if (
-			class_name.is_empty()
-			or class_name == "mostro"
-			or class_name not in Rules.HIT_DICE
+			spell_class_key.is_empty()
+			or spell_class_key == "mostro"
+			or spell_class_key not in Rules.HIT_DICE
 		):
 			continue
 		var single: Dictionary = {
@@ -376,10 +376,10 @@ func _class_spell_level_limits() -> Dictionary:
 			for lvl: int in range(1, mini(10, (slots_value as Array).size())):
 				if int((slots_value as Array)[lvl]) > 0:
 					highest = lvl
-		if class_name == "warlock" and int(progression.get("pact_total", 0)) > 0:
+		if spell_class_key == "warlock" and int(progression.get("pact_total", 0)) > 0:
 			highest = maxi(highest, int(progression.get("pact_level", 1)))
 		if highest > 0:
-			limits[class_name] = maxi(int(limits.get(class_name, 0)), highest)
+			limits[spell_class_key] = maxi(int(limits.get(spell_class_key, 0)), highest)
 	return limits
 
 
@@ -394,10 +394,10 @@ func _rebuild_class_spells() -> void:
 		if not classes_value is Array:
 			continue
 		for cls: Variant in classes_value as Array:
-			var class_name: String = SpellCatalog.canonical_class_name(
+			var spell_class_key: String = SpellCatalog.canonical_class_name(
 				String(cls)
 			).to_lower()
-			if limits.has(class_name) and level <= int(limits[class_name]):
+			if limits.has(spell_class_key) and level <= int(limits[spell_class_key]):
 				_known.append(entry)
 				break
 
@@ -423,10 +423,10 @@ func _filter_spells() -> void:
 			var matches := false
 			if classes_value is Array:
 				for class_value: Variant in classes_value as Array:
-					var class_name: String = SpellCatalog.canonical_class_name(
+					var spell_class_key: String = SpellCatalog.canonical_class_name(
 						String(class_value)
 					).to_lower()
-					if class_keys.has(class_name) and level_limits.has(class_name) and level <= int(level_limits[class_name]):
+					if class_keys.has(spell_class_key) and level_limits.has(spell_class_key) and level <= int(level_limits[spell_class_key]):
 						matches = true
 						break
 			if not matches:
