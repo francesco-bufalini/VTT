@@ -127,7 +127,12 @@ func _new_badge() -> Control:
 # Tactical elevation is expressed in whole grid squares, not arbitrary
 # physics fractions: a square corresponds to 5 ft (conventionally 1.5 m).
 func _difference_cells(delta_y: float) -> int:
-	return roundi(delta_y / maxf(cell_size, 0.001))
+	var unit := maxf(cell_size, 0.001)
+	# A collidable floor face may be half a voxel below its tactical level.
+	# Rounding -0.5 away from zero used to produce a false "-1 □" hover.
+	if absf(delta_y) < unit * 0.65:
+		return 0
+	return roundi(delta_y / unit)
 
 
 func _format_difference(delta_y: float) -> String:
@@ -379,6 +384,14 @@ func _update_hover(floor_y: float) -> void:
 		return
 
 	var mouse: Vector2 = get_viewport().get_mouse_position()
+	# A 2D token icon is the visible object under the cursor. Its elevation
+	# already has a badge: never replace it with the floor underneath.
+	if board_root.has_method("_raycast_token_from_screen"):
+		var token_hit: Variant = board_root.call(
+			"_raycast_token_from_screen", mouse, true
+		)
+		if token_hit is Dictionary and not (token_hit as Dictionary).is_empty():
+			return
 	var origin: Vector3 = camera.project_ray_origin(mouse)
 	var direction: Vector3 = camera.project_ray_normal(mouse)
 	if absf(direction.y) <= 0.00001:
