@@ -18,6 +18,15 @@ class TestDice extends Node:
 		last_expression = expression
 		return 4
 
+class TestPresence extends Node:
+	var peers: Array[Dictionary] = [
+		{"id": "remote-player-0123456789abcdef", "label": "Giocatore remoto"}
+	]
+	func get_online_peers() -> Array[Dictionary]:
+		return peers.duplicate(true)
+	func request_refresh() -> void:
+		pass
+
 class TestBoard extends Node3D:
 	var selected_tokens: Array = []
 	var board_sync: Node
@@ -56,6 +65,9 @@ func run() -> void:
 	ui.add_child(overlay)
 	board.board_sync = TestSync.new()
 	board.add_child(board.board_sync)
+	var presence := TestPresence.new()
+	presence.name = "CreaturePresence"
+	board.add_child(presence)
 	var hp_roller := TestDice.new()
 	hp_roller.name = "DiceRollerChat"
 	board.add_child(hp_roller)
@@ -97,9 +109,10 @@ func run() -> void:
 	assert(area._current().current_miniature_id == "hero_test", "First appearance inherits the base miniature")
 	assert(area._creature_list_scroll.custom_minimum_size.y < 100.0,
 		"One creature must occupy only one short list row")
-	assert(not area._creature_eye_buttons[0].visible,
-		"No eye icon may appear before the creature has a token")
-	assert(area._tabs.get_tab_count() == 4, "Creature sheet must expose 4 scrollable tabs")
+	assert(area._creature_eye_buttons[0].visible
+		and area._creature_eye_buttons[0].text == "+",
+		"Missing token must show a + action instead of an eye")
+	assert(area._tabs.get_tab_count() == 5, "Character sheet must expose spellcasting tab")
 	area._choose_miniature(area._current(), false, true)
 	area._miniature_filter.text = "ape"
 	area._on_miniature_selected(0)
@@ -108,6 +121,17 @@ func run() -> void:
 		"Changing current appearance without a live token must preserve default miniature")
 	area._restore_default_appearance()
 	assert(area._current().current_miniature_id == "hero_test", "Reset appearance must restore base")
+	area._open_transfer_dialog()
+	assert(area._transfer_users.item_count == 1)
+	assert(area._transfer_users.get_item_metadata(0) == "remote-player-0123456789abcdef",
+		"Transfer must offer connected users, not ask for a pasted owner ID")
+	area._transfer_dialog.hide()
+	var export_path: String = "user://creature_ui_export_test.json"
+	area._save_exported_creature(export_path)
+	var exported: Variant = JSON.parse_string(FileAccess.get_file_as_string(export_path))
+	assert(exported is Dictionary and exported.format == "vtt_creature_export_v1")
+	assert(exported.creature.id == area._current().id)
+	DirAccess.remove_absolute(ProjectSettings.globalize_path(export_path))
 	# Automatic calculation is opt-in: HP average d8 = 5 after first
 	# level, and a selected calculation must not replace spell choices.
 	var Rules = load("res://vtt/creature_rules.gd")
@@ -132,11 +156,25 @@ func run() -> void:
 	assert(area._level is SpinBox and area._level.update_on_text_changed,
 		"Base class level must save edits while its input still has focus")
 	assert(area._hp.update_on_text_changed and area._max_hp.update_on_text_changed)
+	assert(area._ac.get_parent() == area._temp_hp.get_parent(),
+		"Armor class must be alongside temporary HP")
+	assert(area._party.get_parent() == area._name.get_parent(),
+		"Faction must be alongside character name")
+	assert(not area._current_miniature.is_inside_tree(),
+		"No redundant current-appearance heading in appearance tab")
 	area._level.value = 5
 	area._save()
 	var sheet: Dictionary = area._current()
 	assert(sheet.classes[0].source == "PHB" and sheet.rules_version == "2014")
 	assert(sheet.classes[0].level == 5 and sheet.level == 5)
+	area._ability_bonus_spins["con"].value = 2
+	area._save()
+	assert(area._current().ability_bonuses.con == 2)
+	assert(area._ability_modifier_labels["con"].text == "+1")
+	assert(Rules.automatic_hit_points(area._current()).value == 27,
+		"CON score bonus must change computed HP")
+	area._ability_bonus_spins["con"].value = 0
+	area._save()
 	area._open_automatic_calculation()
 	assert(not area._automatic_hp.button_pressed)
 	area._automatic_hp.button_pressed = true
@@ -169,6 +207,27 @@ func run() -> void:
 	area._reload()
 	sheet = area._current()
 	assert(sheet.id == original_id and sheet.classes[0].level == 6)
+	var spells: Node = area._spellcasting_ui
+	spells._search.text = "Magic Missile"
+	assert(not spells._visible.is_empty(), "5etools spell catalog must be searchable")
+	spells._available.select(0)
+	spells._add_selected_known()
+	spells._toggle_selected_prepared()
+	assert(area._current().spells.size() == 1)
+	assert(area._current().prepared_spells.size() == 1)
+	spells._calculate_slot_totals()
+	assert(area._current().spell_slots_total[1] == 4)
+	spells._change_slot(1, 1)
+	assert(area._current().spell_slots_spent[1] == 1)
+	spells._change_slot(1, -1)
+	assert(area._current().spell_slots_spent[1] == 0)
+	spells._change_slot(1, 1)
+	spells._restore_all()
+	assert(area._current().spell_slots_spent[1] == 0)
+	area._reload()
+	assert(area._current().spells.size() == 1
+		and area._current().prepared_spells.size() == 1,
+		"Spell selections must survive character refresh")
 	area._max_hp.value = 35
 	area._hp.value = 7
 	area._save()
@@ -223,7 +282,8 @@ func run() -> void:
 	area._link_selected_token()
 	assert(token.get_meta("creature_id") == original_id and token.has_condition("poisoned"))
 	area._refresh_creature_eye_buttons()
-	assert(area._creature_eye_buttons[0].visible, "Linked token should show the eye button")
+	assert(area._creature_eye_buttons[0].visible and area._creature_eye_buttons[0].text == "👁",
+		"Linked token should show the eye button")
 	area._focus_creature_token(original_id)
 	assert(board.focused_token == token, "Eye must center the selected creature's token")
 	assert(not area.is_panel_open(), "Eye action must reveal the board")
@@ -239,7 +299,7 @@ func run() -> void:
 	assert(token.get_display_name() == "Renamed adventurer")
 	# The creature sheet can initiate token placement; the board then handles
 	# spawning or relocating without creating another creature.
-	area._request_spawn_selected_creature()
+	area._act_on_creature_token(original_id)
 	assert(board.requested_creature_id == original_id)
 	assert(board.requested_current_miniature_id == "hero_test")
 	assert(not area.is_panel_open())
