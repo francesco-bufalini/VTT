@@ -265,6 +265,14 @@ func are_condition_visuals_visible() -> bool:
 
 
 func _refresh_flanking_badges(targets: Dictionary) -> void:
+	# The 2D elevation overlay owns its compact status strip; avoid projecting
+	# the 3D badge a second time, which also drifts across sliced floors.
+	if (
+		board_root != null and board_root.has_method("is_2d_view_enabled")
+		and bool(board_root.call("is_2d_view_enabled"))
+	):
+		_clear_flanking_badges()
+		return
 	if ui_root == null or camera == null or not is_instance_valid(camera):
 		_clear_flanking_badges()
 		return
