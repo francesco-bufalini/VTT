@@ -18,7 +18,14 @@ func _check(condition: bool, message: String) -> bool:
 func _count_lower_tinted(mesh: MultiMesh, lower_color: Color) -> int:
 	var count: int = 0
 	for index: int in range(mesh.instance_count):
-		if mesh.get_instance_color(index).is_equal_approx(lower_color):
+		var tint: Color = mesh.get_instance_color(index)
+		# Some Godot renderers pack per-instance colors to 8 bits.
+		if (
+			absf(tint.r - lower_color.r) < 0.02
+			and absf(tint.g - lower_color.g) < 0.02
+			and absf(tint.b - lower_color.b) < 0.02
+			and absf(tint.a - lower_color.a) < 0.02
+		):
 			count += 1
 	return count
 
