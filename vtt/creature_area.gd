@@ -44,6 +44,8 @@ var _default_miniature: LineEdit
 var _current_miniature: Label
 var _reference: RichTextLabel
 var _condition_rows: VBoxContainer
+var _effect_dialog: AcceptDialog
+var _effect_text: RichTextLabel
 var _trackers: VBoxContainer
 var _owner_target: LineEdit
 var _import_dialog: AcceptDialog
@@ -70,6 +72,44 @@ func setup(root: Node3D) -> void:
 		_client.call("load_catalog")
 	_on_catalog_ready(ContentCatalog.home_entries("monsters"))
 	call_deferred("refresh_owned_sheets")
+
+
+# Token context menu and the archive open the very same persistent sheet.
+# Non-owned / unlinked tokens retain their standalone visual editor.
+func open_for_token(token: CharacterBody3D) -> bool:
+	if token == null or not is_instance_valid(token):
+		return false
+	var wanted_id := String(token.get_meta("creature_id", ""))
+	if wanted_id.is_empty() or String(token.get_meta("creature_owner_id", "")) != Owner.local_id():
+		return false
+	for record: Dictionary in _archive.list_owned():
+		if String(record.get("id", "")) != wanted_id:
+			continue
+		_selected_id = wanted_id
+		_selected_kind = String(record.get("kind", ""))
+		show_panel()
+		return true
+	return false
+
+
+func sync_linked_token_editor(token: CharacterBody3D) -> void:
+	if token == null or not is_instance_valid(token):
+		return
+	var wanted_id := String(token.get_meta("creature_id", ""))
+	if wanted_id.is_empty() or String(token.get_meta("creature_owner_id", "")) != Owner.local_id():
+		return
+	for record: Dictionary in _archive.list_owned():
+		if String(record.get("id", "")) != wanted_id:
+			continue
+		if token.has_method("get_conditions"):
+			record["conditions"] = token.call("get_conditions")
+		if token.has_method("get_display_name"):
+			record["name"] = token.call("get_display_name")
+		if _archive.save(record) == OK:
+			_replace_current_record(record)
+			if _panel.visible and _selected_id == wanted_id:
+				_load_form(record)
+		return
 
 
 func toggle_panel() -> void:
@@ -327,6 +367,15 @@ func _build_ui() -> void:
 	_reference.scroll_active = true
 	_reference.size_flags_vertical = Control.SIZE_EXPAND_FILL
 	right.add_child(_reference)
+	_effect_dialog = AcceptDialog.new()
+	_effect_dialog.title = "5etools · Effect details"
+	_effect_dialog.min_size = Vector2i(560, 420)
+	_panel.add_child(_effect_dialog)
+	_effect_text = RichTextLabel.new()
+	_effect_text.custom_minimum_size = Vector2(530, 320)
+	_effect_text.selection_enabled = true
+	_effect_text.scroll_active = true
+	_effect_dialog.add_child(_effect_text)
 
 	_delete_dialog = ConfirmationDialog.new()
 	_delete_dialog.title = "Elimina creatura"
@@ -1239,6 +1288,7 @@ func _sync_token_health(record: Dictionary) -> void:
 		if String(record.get("kind", "")) == "character"
 		else "set_master_hit_points"
 	)
+	token.set_meta("rules_version", String(record.get("rules_version", "2014")))
 	if token.has_method("set_conditions"):
 		token.call("set_conditions", record.get("conditions", []))
 	if token.has_method(method):
@@ -1327,19 +1377,47 @@ func _refresh_conditions(record: Dictionary) -> void:
 		_condition_rows.remove_child(child)
 		child.queue_free()
 	var active: Array = record.get("conditions", [])
-	for definition: Dictionary in ContentCatalog.condition_definitions(String(record.get("rules_version", "2014"))):
-		var row := HBoxContainer.new()
-		_condition_rows.add_child(row)
-		var check := CheckButton.new()
-		check.text = String(definition.get("icon", "•")) + " " + String(definition.name)
-		check.tooltip_text = ContentCatalog.description(definition)
-		check.button_pressed = String(definition.id) in active
-		check.toggled.connect(_set_sheet_condition.bind(String(definition.id)))
-		row.add_child(check)
-		var info := Button.new()
-		info.text = "Leggi effetti"
-		info.pressed.connect(func() -> void: _reference.text = ContentCatalog.description(definition))
-		row.add_child(info)
+	var definitions := ContentCatalog.condition_definitions(
+		String(record.get("rules_version", "2014"))
+	)
+	for category: String in ["conditions", "diseases", "effects"]:
+		var has_section := false
+		for definition: Dictionary in definitions:
+			if String(definition.get("category", "conditions")) != category:
+				continue
+			if not has_section:
+				var heading := Label.new()
+				heading.text = {
+					"conditions": "Conditions",
+					"diseases": "Diseases / magical diseases",
+					"effects": "Other effects (5etools / homebrew)"
+				}[category]
+				heading.add_theme_font_size_override("font_size", 15)
+				_condition_rows.add_child(heading)
+				has_section = true
+			var row := HBoxContainer.new()
+			_condition_rows.add_child(row)
+			var check := CheckButton.new()
+			check.text = "%s %s" % [
+				String(definition.get("icon", "•")),
+				String(definition.get("name", String(definition.id)))
+			]
+			check.tooltip_text = ContentCatalog.description(definition)
+			check.button_pressed = String(definition.id) in active
+			check.toggled.connect(_set_sheet_condition.bind(String(definition.id)))
+			row.add_child(check)
+			var info := Button.new()
+			info.text = "Read effects"
+			info.pressed.connect(_show_effect_description.bind(definition.duplicate(true)))
+			row.add_child(info)
+
+
+func _show_effect_description(definition: Dictionary) -> void:
+	if _effect_dialog == null or _effect_text == null:
+		return
+	_effect_dialog.title = String(definition.get("name", "Effect"))
+	_effect_text.text = ContentCatalog.description(definition)
+	_effect_dialog.popup_centered(Vector2i(600, 450))
 
 
 func _set_sheet_condition(enabled: bool, id: String) -> void:
