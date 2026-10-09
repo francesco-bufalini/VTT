@@ -396,7 +396,7 @@ func _build_ui() -> void:
 
 	var level_row := HBoxContainer.new()
 	form.add_child(level_row)
-	_add_label(level_row, "Livello")
+	_add_label(level_row, "Livello classe base")
 	_level = SpinBox.new()
 	_level.min_value = 1
 	_level.max_value = 20
@@ -721,7 +721,14 @@ func _load_form(record: Dictionary) -> void:
 					String(class_value.get("source", "")),
 					String(class_value.get("id", ""))
 				)
-	_level.value = clampi(int(record.get("level", 1)), 1, 20)
+	# Existing sheets store the primary class at classes[0]; older sheets
+	# with no class rows retain the legacy total-level fallback.
+	var primary_level: int = int(record.get("level", 1))
+	if classes_value is Array and not (classes_value as Array).is_empty():
+		var first_class: Variant = (classes_value as Array)[0]
+		if first_class is Dictionary:
+			primary_level = int((first_class as Dictionary).get("level", primary_level))
+	_level.value = clampi(primary_level, 1, 20)
 	_feats.text = String(record.get("feats", ""))
 	_default_miniature.text = String(record.get("default_miniature_id", ""))
 	var is_character := String(record.get("kind", "")) == "character"
@@ -781,7 +788,7 @@ func _save() -> void:
 		record["class"] = String(class_ref.get("name", ""))
 		record["class_source"] = String(class_ref.get("source", ""))
 		record["rules_version"] = _selected_rules_version()
-		record["level"] = int(_level.value)
+		var primary_level: int = clampi(int(_level.value), 1, 20)
 		var classes: Array[Dictionary] = []
 		var extras_level := 0
 		for definition: Dictionary in _multiclass_controls:
@@ -798,10 +805,12 @@ func _save() -> void:
 				"id": String(extra_ref.get("id", "")),
 				"level": extra_level
 			})
-		if extras_level >= int(_level.value) or extras_level > 19:
-			_set_status("La somma dei livelli delle classi aggiuntive deve essere inferiore al livello totale.")
+		# Level is derived from the class levels, NEVER used as an input
+		# for calculating the base class. D&D 5e caps their sum at 20.
+		if primary_level + extras_level > 20:
+			_set_status("La somma dei livelli delle classi (base compresa) non può superare 20.")
 			return
-		var primary_level := maxi(1, int(_level.value) - extras_level)
+		record["level"] = primary_level + extras_level
 		if not String(record["class"]).is_empty():
 			classes.push_front({
 				"name": record["class"],
@@ -983,23 +992,23 @@ func _refresh_reference(record: Dictionary) -> void:
 
 	var primary_class_name := String(record.get("class", ""))
 	var species := String(record.get("species", ""))
-	var max_level := clampi(int(_level.value), 1, 20)
+	var character_level: int = clampi(int(record.get("level", 1)), 1, 20)
 	var parts: PackedStringArray = [
-		"%s · %s · Livello %d" % [
-			String(record.get("name", "")), species, max_level
+		"%s · %s" % [
+			String(record.get("name", "")), species
 		], "", "PRIVILEGI DI CLASSE (5e.tools)"
 	]
 
 	var class_rows: Array = record.get("classes", [])
 	if class_rows.is_empty() and not primary_class_name.is_empty():
-		class_rows = [{"name": primary_class_name, "level": max_level}]
+		class_rows = [{"name": primary_class_name, "level": character_level}]
 	for class_value: Variant in class_rows:
 		if not class_value is Dictionary:
 			continue
 		var class_data: Dictionary = class_value as Dictionary
 		var this_name := String(class_data.get("name", ""))
-		var this_level := mini(
-			max_level, int(class_data.get("level", max_level))
+		var this_level: int = clampi(
+			int(class_data.get("level", character_level)), 1, 20
 		)
 		parts.append("")
 		parts.append("%s (livello %d)" % [this_name, this_level])
@@ -1377,7 +1386,7 @@ func _confirm_delete() -> void:
 	if record.is_empty():
 		return
 	_delete_target = record.duplicate(true)
-	_delete_dialog.dialog_text = "Eliminare definitivamente '%s' dal tuo archivio?\nI token già presenti rimarranno nella scena, ma non saranno più collegati alla scheda." % String(record.get("name", "Creatura"))
+	_delete_dialog.dialog_text = "Eliminare definitivamente '%s' dal tuo archivio?\nVerranno eliminati anche i suoi token presenti nella scena." % String(record.get("name", "Creatura"))
 	_delete_dialog.popup_centered()
 
 
@@ -1390,32 +1399,35 @@ func _delete_selected_creature() -> void:
 	if error != OK:
 		_set_status("Eliminazione non riuscita: %s" % error_string(error))
 		return
-	_unlink_deleted_creature_tokens(record)
+	_remove_deleted_creature_tokens(record)
 	if _selected_id == String(record.get("id", "")) and _selected_kind == String(record.get("kind", "")):
 		_selected_id = ""
 		_selected_kind = ""
 	_reload()
-	_set_status("Creatura eliminata dall'archivio; i token della scena sono stati scollegati.")
+	_set_status("Creatura e relativi token eliminati.")
 
 
-func _unlink_deleted_creature_tokens(record: Dictionary) -> void:
-	var id := String(record.get("id", ""))
+func _remove_deleted_creature_tokens(record: Dictionary) -> void:
+	var creature_id: String = String(record.get("id", ""))
+	var local_owner: String = Owner.local_id()
+	var deleted: Array[CharacterBody3D] = []
 	for node: Node in get_tree().get_nodes_in_group("dnd_token"):
-		if not node is Node3D or not board_root.is_ancestor_of(node):
+		if not node is CharacterBody3D or not board_root.is_ancestor_of(node):
 			continue
-		if String(node.get_meta("creature_id", "")) != id or String(node.get_meta("creature_owner_id", "")) != Owner.local_id():
-			continue
-		if node.has_method("clear_player_hit_points"):
-			node.call("clear_player_hit_points")
-		elif node.has_method("clear_master_hit_points"):
-			node.call("clear_master_hit_points")
-		for field: String in [
-			"creature_id", "creature_owner_id", "default_miniature_id",
-			"player_character_id", "player_character_name",
-			"master_creature_id", "master_creature_name", "master_creature_side"
-		]:
-			if node.has_meta(field):
-				node.remove_meta(field)
+		if (
+			String(node.get_meta("creature_id", "")) == creature_id
+			and String(node.get_meta("creature_owner_id", "")) == local_owner
+		):
+			deleted.append(node as CharacterBody3D)
+	if deleted.is_empty():
+		return
+	# Let the board clear selection, first-person camera and undo state,
+	# and publish the deletion in the next synchronized board snapshot.
+	if board_root.has_method("remove_owned_creature_tokens"):
+		board_root.call("remove_owned_creature_tokens", deleted)
+	else:
+		for token: CharacterBody3D in deleted:
+			token.queue_free()
 
 
 func _link_selected_token() -> void:
