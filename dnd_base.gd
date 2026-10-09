@@ -178,6 +178,7 @@ var token_list: Node
 var player_area: Node # Legacy compatibility only.
 var master_area: Node # The Compendio browser.
 var dice_roller_chat: Node
+var creature_presence: Node
 var _undo_stack: Array[Dictionary] = []
 var _redo_stack: Array[Dictionary] = []
 var _pending_history_actions: Array[int] = []
@@ -300,6 +301,14 @@ func _ready() -> void:
 	dice_roller_chat.call(
 		"setup",
 		self,
+		_share_session_key(),
+		Callable(board_sync, "get_cached_tailscale_peer_ipv4s")
+	)
+	creature_presence = preload("res://network/creature_presence.gd").new()
+	creature_presence.name = "CreaturePresence"
+	add_child(creature_presence)
+	creature_presence.call(
+		"setup",
 		_share_session_key(),
 		Callable(board_sync, "get_cached_tailscale_peer_ipv4s")
 	)
@@ -5106,6 +5115,8 @@ func _on_share_session_changed(_value: float) -> void:
 	board_sync.listen(true, key)
 	if dice_roller_chat != null and is_instance_valid(dice_roller_chat):
 		dice_roller_chat.call("set_session_key", key)
+	if creature_presence != null and is_instance_valid(creature_presence):
+		creature_presence.call("set_session_key", key)
 
 
 func _build_share_dialog() -> void:
