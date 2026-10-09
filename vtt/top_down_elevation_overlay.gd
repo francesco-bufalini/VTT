@@ -404,7 +404,7 @@ func _render_token_badge(token: CharacterBody3D, floor_y: float) -> void:
 
 	var facing: Label = badge.get_node("FacingArrow") as Label
 	var yaw: float = token.global_rotation.y
-	var forward: Vector2 = Vector2(-sinf(yaw), -cosf(yaw))
+	var forward: Vector2 = Vector2(-sin(yaw), -cos(yaw))
 	facing.position = Vector2.ONE * icon_size * 0.5 + forward * icon_size * 0.44 - facing.size * 0.5
 	facing.rotation = -yaw
 
@@ -514,7 +514,7 @@ func _draw_reach_indicator(center: Vector3, floor_y: float, radius: float, tint:
 	var screen_center: Vector2 = camera.unproject_position(flat_center)
 	for step: int in range(65):
 		var angle: float = TAU * float(step) / 64.0
-		var world: Vector3 = flat_center + Vector3(cosf(angle), 0.0, sinf(angle)) * radius
+		var world: Vector3 = flat_center + Vector3(cos(angle), 0.0, sin(angle)) * radius
 		points.append(camera.unproject_position(world))
 	draw_polyline(points, tint, 2.0, true)
 	# Four arrowheads remain visible where an almost-flat mesh vanishes in 2D.
