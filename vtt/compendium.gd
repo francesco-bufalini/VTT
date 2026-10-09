@@ -22,8 +22,8 @@ const SECTIONS := {
 	"Tratti della specie": "species_traits",
 	"Privilegi opzionali": "optional_features",
 	"Condizioni": "conditions",
-	"Malattie": "diseases",
-	"Effetti": "effects"
+	"Effetti": "effects",
+	"Malattie": "diseases"
 }
 var board_root: Node3D
 var _panel: PanelContainer
