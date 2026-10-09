@@ -1,5 +1,7 @@
 extends Control
 
+const TopDownElevationLevels = preload("res://vtt/top_down_elevation_levels.gd")
+
 # Screen-space tactical proxies stay visible even when their 3D miniatures
 # lie above or below the currently sliced map floor.
 var board_root: Node3D
@@ -359,10 +361,12 @@ func _render_token_badge(token: CharacterBody3D, floor_y: float) -> void:
 	elif not conditions_label.text.is_empty():
 		conditions_label.text = ""
 
-	var base_y: float = token.global_position.y - (
-		float(token.get("token_height_cells")) * float(token.get("cell_size")) * 0.5
+	# Show the elevation of the free square supporting the token's feet,
+	# rather than the body's lowest occupied square.
+	var support_y: float = TopDownElevationLevels.token_support_air_level(
+		token, cell_size
 	)
-	var delta: float = base_y - floor_y
+	var delta: float = support_y - floor_y
 	var height_label: Label = badge.get_node("Height") as Label
 	height_label.position = Vector2(icon_size - 2.0, icon_size * 0.28)
 	height_label.add_theme_font_size_override("font_size", 13)
