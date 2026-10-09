@@ -83,7 +83,9 @@ var _reference: RichTextLabel
 var _condition_rows: VBoxContainer
 var _effect_dialog: AcceptDialog
 var _effect_text: RichTextLabel
-var _owner_target: LineEdit
+var _transfer_users: OptionButton
+var _transfer_hint: Label
+var _export_dialog: FileDialog
 var _options_menu: MenuButton
 var _transfer_dialog: ConfirmationDialog
 var _feat_dialog: ConfirmationDialog
@@ -113,6 +115,7 @@ func setup(root: Node3D) -> void:
 	_build_miniature_dialog()
 	_build_transfer_dialog()
 	_build_transfer_request_dialog()
+	_build_export_dialog()
 	_build_feat_dialog()
 	_reload()
 	if DisplayServer.get_name() != "headless":
@@ -334,6 +337,7 @@ func _build_ui() -> void:
 	popup.add_item("Associa a token selezionato", 4)
 	popup.add_item("Cedi controllo…", 5)
 	popup.add_item("Ricevi creatura…", 6)
+	popup.add_item("Scarica creatura…", 8)
 	popup.add_separator()
 	popup.add_item("Elimina creatura selezionata…", 7)
 	popup.id_pressed.connect(_on_options_selected)
@@ -658,15 +662,13 @@ func _on_options_selected(id: int) -> void:
 		4:
 			_link_selected_token()
 		5:
-			if _current().is_empty():
-				_set_status("Seleziona una creatura da cedere.")
-				return
-			_owner_target.clear()
-			_transfer_dialog.popup_centered_clamped(Vector2i(520, 175), 0.9)
+			_open_transfer_dialog()
 		6:
 			_show_import()
 		7:
 			_confirm_delete()
+		8:
+			_export_current_creature()
 
 
 func _on_creature_row_gui_input(event: InputEvent, index: int) -> void:
@@ -887,23 +889,126 @@ func _apply_automatic_calculation() -> void:
 
 func _build_transfer_request_dialog() -> void:
 	_transfer_dialog = ConfirmationDialog.new()
-	_transfer_dialog.title = "Cedi il controllo della creatura"
+	_transfer_dialog.title = "Cedi controllo della creatura"
 	_transfer_dialog.dialog_text = ""
+	_transfer_dialog.min_size = Vector2i(480, 220)
 	(board_root.get_node("UI") as CanvasLayer).add_child(_transfer_dialog)
-	# Godot 4 AcceptDialog/ConfirmationDialog has no get_vbox().
-	# A single VBoxContainer keeps the label and input stacked rather
-	# than letting two direct dialog children overlap.
 	var body := VBoxContainer.new()
-	body.add_theme_constant_override("separation", 8)
+	body.add_theme_constant_override("separation", 9)
 	_transfer_dialog.add_child(body)
-	var hint := Label.new()
-	hint.text = "ID controllore del destinatario"
-	body.add_child(hint)
-	_owner_target = LineEdit.new()
-	_owner_target.placeholder_text = "Incolla l'ID controllore"
-	_owner_target.custom_minimum_size.x = 430
-	body.add_child(_owner_target)
+	_transfer_hint = Label.new()
+	_transfer_hint.autowrap_mode = TextServer.AUTOWRAP_WORD_SMART
+	_transfer_hint.text = "Seleziona un giocatore con il VTT aperto nella stessa partita Tailscale."
+	body.add_child(_transfer_hint)
+	_transfer_users = OptionButton.new()
+	_transfer_users.custom_minimum_size.x = 420
+	_transfer_users.item_selected.connect(
+		func(_index: int) -> void: _update_transfer_confirmation()
+	)
+	body.add_child(_transfer_users)
+	var refresh := Button.new()
+	refresh.text = "Aggiorna giocatori online"
+	refresh.pressed.connect(_refresh_transfer_users)
+	body.add_child(refresh)
 	_transfer_dialog.confirmed.connect(_transfer)
+
+
+func _open_transfer_dialog() -> void:
+	if _current().is_empty():
+		_set_status("Seleziona una creatura da cedere.")
+		return
+	_refresh_transfer_users()
+	_transfer_dialog.popup_centered_clamped(Vector2i(530, 260), 0.9)
+
+
+func _refresh_transfer_users() -> void:
+	_transfer_users.clear()
+	var presence: Node = board_root.get_node_or_null("CreaturePresence")
+	var peers: Array[Dictionary] = []
+	if presence != null:
+		if presence.has_method("request_refresh"):
+			presence.call("request_refresh")
+		if presence.has_method("get_online_peers"):
+			var result: Variant = presence.call("get_online_peers")
+			if result is Array:
+				for peer: Variant in result:
+					if peer is Dictionary:
+						peers.append(peer as Dictionary)
+	for peer: Dictionary in peers:
+		var id: String = String(peer.get("id", ""))
+		if id.length() < 16 or id == Owner.local_id():
+			continue
+		_transfer_users.add_item(String(peer.get("label", "Giocatore online")))
+		_transfer_users.set_item_metadata(_transfer_users.item_count - 1, id)
+	if _transfer_users.item_count == 0:
+		_transfer_users.add_item("Nessun altro giocatore VTT online")
+		_transfer_users.set_item_disabled(0, true)
+		_transfer_users.select(0)
+		_transfer_hint.text = (
+			"Nessun VTT della stessa partita ha risposto. Verifica Tailscale "
+			+ "e riprova con Aggiorna dopo qualche secondo."
+		)
+	else:
+		_transfer_users.select(0)
+		_transfer_hint.text = (
+			"Scegli un destinatario online. Il codice privato di recupero "
+			+ "sarà copiato negli appunti, senza inviare la scheda attraverso la mappa."
+		)
+	_update_transfer_confirmation()
+
+
+func _update_transfer_confirmation() -> void:
+	var index: int = _transfer_users.selected
+	_transfer_dialog.get_ok_button().disabled = (
+		index < 0
+		or _transfer_users.is_item_disabled(index)
+		or String(_transfer_users.get_item_metadata(index)).is_empty()
+	)
+
+
+func _build_export_dialog() -> void:
+	_export_dialog = FileDialog.new()
+	_export_dialog.title = "Scarica creatura"
+	_export_dialog.access = FileDialog.ACCESS_FILESYSTEM
+	_export_dialog.file_mode = FileDialog.FILE_MODE_SAVE_FILE
+	_export_dialog.add_filter("*.json", "Scheda creatura JSON")
+	_export_dialog.file_selected.connect(_save_exported_creature)
+	(board_root.get_node("UI") as CanvasLayer).add_child(_export_dialog)
+
+
+func _export_current_creature() -> void:
+	_save()
+	var record: Dictionary = _current()
+	if record.is_empty():
+		_set_status("Seleziona una creatura da scaricare.")
+		return
+	var filename: String = String(record.get("name", "creatura")).strip_edges()
+	for forbidden: String in ["/", "\\", ":", "*", "?", "\"", "<", ">", "|"]:
+		filename = filename.replace(forbidden, "_")
+	_export_dialog.current_file = filename.substr(0, 75) + ".json"
+	_export_dialog.current_dir = OS.get_system_dir(OS.SYSTEM_DIR_DOWNLOADS)
+	_export_dialog.popup_centered_clamped(Vector2i(820, 550), 0.9)
+
+
+func _save_exported_creature(path: String) -> void:
+	var record: Dictionary = _current()
+	if record.is_empty():
+		return
+	var file := FileAccess.open(path, FileAccess.WRITE)
+	if file == null:
+		_set_status("Esportazione non riuscita: " + error_string(FileAccess.get_open_error()))
+		return
+	file.store_string(JSON.stringify({
+		"format": "vtt_creature_export_v1",
+		"version": 1,
+		"creature": record
+	}, "  "))
+	var error: Error = file.get_error()
+	file.close()
+	_set_status(
+		"Creatura esportata: " + path
+		if error == OK else "Esportazione non completata: " + error_string(error)
+	)
 
 
 func _build_feat_dialog() -> void:
@@ -2467,11 +2572,24 @@ func get_owned_health_bar_sync_entries() -> Array[Dictionary]:
 
 func _transfer() -> void:
 	var record := _current()
-	if record.is_empty():
+	if record.is_empty() or _transfer_users.selected < 0:
 		return
-	var package: Dictionary = _archive.relinquish(
-		record, _owner_target.text
-	)
+	if _transfer_users.is_item_disabled(_transfer_users.selected):
+		return
+	var recipient_id: String = String(_transfer_users.get_item_metadata(
+		_transfer_users.selected
+	))
+	var presence: Node = board_root.get_node_or_null("CreaturePresence")
+	var still_online := false
+	if presence != null and presence.has_method("get_online_peers"):
+		for peer: Dictionary in presence.call("get_online_peers"):
+			if String(peer.get("id", "")) == recipient_id:
+				still_online = true
+				break
+	if not still_online:
+		_set_status("Destinatario non più online: aggiorna l'elenco.")
+		return
+	var package: Dictionary = _archive.relinquish(record, recipient_id)
 	if package.is_empty():
 		_set_status("ID non valido o cessione non salvata.")
 		return
