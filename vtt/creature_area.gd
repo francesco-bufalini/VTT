@@ -550,7 +550,7 @@ func _build_ui() -> void:
 		classes_row, Player5eTools.class_choices(), false
 	)
 	_class_name.item_selected.connect(func(_i: int) -> void: _refresh_multiclass_availability())
-	_add_label(classes_row, "Livello classe base")
+	_add_label(classes_row, "Livello classe base / GS")
 	_level = SpinBox.new()
 	_level.min_value = 1
 	_level.max_value = 20
@@ -1445,11 +1445,12 @@ func _load_form(record: Dictionary) -> void:
 	if is_character:
 		_set_reference_choices(_species, Player5eTools.entries("races"))
 	else:
-		_set_reference_choices(_species, [{
+		var bestiary_species: Array[Dictionary] = [{
 			"id": String(record.get("species", "")),
 			"name": String(record.get("species", "")),
 			"source": String(record.get("species_source", ""))
-		}])
+		}]
+		_set_reference_choices(_species, bestiary_species)
 	_select_reference(_species, String(record.get("species", "")), String(record.get("species_source", "")), String(record.get("species_id", "")))
 	var class_source := String(record.get("class_source", ""))
 	var edition := String(record.get("rules_version", "2014"))
@@ -1460,9 +1461,10 @@ func _load_form(record: Dictionary) -> void:
 	_rules_edition.select(1 if edition == "2024" else 0)
 	_refresh_class_choices()
 	if not is_character:
-		_set_reference_choices(_class_name, [{
+		var monster_class: Array[Dictionary] = [{
 			"id": "monster", "name": "Mostro", "source": "5etools"
-		}], false)
+		}]
+		_set_reference_choices(_class_name, monster_class, false)
 		_class_name.select(1)
 	else:
 		_select_reference(_class_name, String(record.get("class", "")), class_source, String(record.get("class_id", "")))
@@ -1490,6 +1492,10 @@ func _load_form(record: Dictionary) -> void:
 	_level.max_value = 20.0 if is_character else 30.0
 	_level.step = 1.0 if is_character else 0.125
 	_level.value = clampi(primary_level, 1, 20) if is_character else Rules.monster_cr_value(record.get("stat_block", {}))
+	_level.tooltip_text = (
+		"Livello della classe base" if is_character
+		else "Grado di Sfida (GS) della voce selezionata nel bestiario"
+	)
 	_feats.text = String(record.get("feats", ""))
 	_default_miniature_id = String(record.get("default_miniature_id", ""))
 	_default_miniature.text = _miniature_display_name(_default_miniature_id)
