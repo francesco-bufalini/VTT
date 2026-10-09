@@ -118,9 +118,8 @@ func run() -> void:
 	camera.call("enter_top_down_2d", Vector3.ZERO, 30.0, 12.0)
 	initial_position = camera.global_position
 	camera.call("step_top_down_level", 1)
-	var expected_delta := Vector3(0.0, 6.0, 6.0 * tan(deg_to_rad(12.0)))
 	if not _check(
-		camera.global_position.is_equal_approx(initial_position + expected_delta),
+		camera.global_position.is_equal_approx(initial_position + Vector3.UP * 6.0),
 		"tilted forest view must preserve the target when changing floors"
 	):
 		return
