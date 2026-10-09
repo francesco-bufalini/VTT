@@ -1053,13 +1053,21 @@ func _filter_catalog(query: String) -> void:
 	_catalog_list.clear()
 	_filtered_catalog.clear()
 	var text_query := query.strip_edges().to_lower()
-	if text_query.length() < 2:
+	if text_query.is_empty():
 		return
 	for entry: Dictionary in _catalog:
 		var label := "%s %s" % [
 			String(entry.get("name", "")), String(entry.get("source", ""))
 		]
-		if text_query not in label.to_lower():
+		# Split search words so e.g. "red dragon" also matches
+		# reordered catalogue labels and edition/source metadata.
+		var searchable: String = label.to_lower()
+		var matches := true
+		for word: String in text_query.split(" ", false):
+			if word not in searchable:
+				matches = false
+				break
+		if not matches:
 			continue
 		_filtered_catalog.append(entry)
 		_catalog_list.add_item(label)
@@ -1067,10 +1075,67 @@ func _filter_catalog(query: String) -> void:
 			break
 
 
+# Bundled 5e.tools miniature references are a searchable fallback even
+# before the remote search index is downloaded (or while offline).
+static func _bundled_bestiary_entries() -> Array[Dictionary]:
+	var result: Array[Dictionary] = []
+	var file := FileAccess.open(
+		"res://vtt/data/miniature_bestiary.json", FileAccess.READ
+	)
+	if file == null:
+		return result
+	var parsed: Variant = JSON.parse_string(file.get_as_text())
+	file.close()
+	if not parsed is Dictionary:
+		return result
+	var entries_value: Variant = (parsed as Dictionary).get("entries", {})
+	if not entries_value is Dictionary:
+		return result
+	var seen: Dictionary = {}
+	for raw: Variant in (entries_value as Dictionary).values():
+		if not raw is Dictionary:
+			continue
+		var editions: Variant = (raw as Dictionary).get("editions", {})
+		if not editions is Dictionary:
+			continue
+		for edition: Variant in (editions as Dictionary).values():
+			if not edition is Dictionary:
+				continue
+			var ref: Dictionary = edition as Dictionary
+			var name: String = String(ref.get("name", "")).strip_edges()
+			var source: String = String(ref.get("source", "")).strip_edges()
+			if name.is_empty() or source.is_empty():
+				continue
+			var key: String = (name + "|" + source).to_lower()
+			if seen.has(key):
+				continue
+			seen[key] = true
+			result.append({
+				"name": name, "source": source,
+				"page": int(ref.get("page", 0))
+			})
+	return result
+
+
 func _on_catalog_ready(entries: Array[Dictionary]) -> void:
-	_catalog = ContentCatalog.merge("monsters", entries)
+	var combined: Array[Dictionary] = entries.duplicate(true)
+	var names_by_source: Dictionary = {}
+	for entry: Dictionary in combined:
+		names_by_source[(
+			String(entry.get("name", "")) + "|"
+			+ String(entry.get("source", ""))
+		).to_lower()] = true
+	for bundled: Dictionary in _bundled_bestiary_entries():
+		var key: String = (
+			String(bundled.get("name", "")) + "|"
+			+ String(bundled.get("source", ""))
+		).to_lower()
+		if not names_by_source.has(key):
+			names_by_source[key] = true
+			combined.append(bundled)
+	_catalog = ContentCatalog.merge("monsters", combined)
 	_filter_catalog(_catalog_filter.text)
-	_set_status("%d voci del bestiario disponibili" % entries.size())
+	_set_status("%d voci del bestiario ricercabili" % _catalog.size())
 
 
 func _request_selected_monster() -> void:
