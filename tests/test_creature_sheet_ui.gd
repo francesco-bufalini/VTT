@@ -51,20 +51,50 @@ func run() -> void:
 	board.add_child(area)
 	area.setup(board)
 	area._archive.setup(campaign)
+	# Search works from the bundled 5etools miniature references even
+	# while the remote bestiary index has not been downloaded.
+	area._on_catalog_ready([])
+	area._filter_catalog("ape")
+	assert(not area._filtered_catalog.is_empty(), "Offline name search must work")
+	area._filter_catalog("Ape")
+	assert(not area._filtered_catalog.is_empty(), "Search must ignore case")
+	area._filter_catalog("ape mm")
+	assert(not area._filtered_catalog.is_empty(), "Source-name search must work")
+
 	area._reload()
 	area._create_character()
 	assert(area._current().is_empty(), "Creation must wait for the mandatory miniature choice")
-	assert(area._miniature_dialog.get_ok_button().disabled == false)
+	assert(area._miniature_dialog.get_ok_button().disabled,
+		"New character must explicitly select a default miniature")
+	area._on_miniature_selected(0)
+	assert(not area._miniature_dialog.get_ok_button().disabled)
 	area._confirm_miniature()
 	assert(area._current().default_miniature_id == "hero_test", "Default miniature must be saved with the creature")
 	var original_id: String = area._current().id
 	area._select_reference(area._class_name, "Wizard", "PHB")
-	assert(area._level is SpinBox, "Use a numeric class level input, not a slider")
+	assert(area._level is SpinBox, "Base class level must use a numeric input")
 	area._level.value = 5
 	area._save()
 	var sheet: Dictionary = area._current()
 	assert(sheet.classes[0].source == "PHB" and sheet.rules_version == "2014")
+	assert(sheet.classes[0].level == 5 and sheet.level == 5)
 	assert(sheet.trackers.size() == 3)
+	# Multiclass levels are independent; the primary level never decreases
+	# because a secondary class is added.
+	area._add_multiclass_row("Fighter", 2, "PHB")
+	area._save()
+	sheet = area._current()
+	assert(sheet.classes.size() == 2)
+	assert(sheet.classes[0].level == 5 and sheet.classes[1].level == 2)
+	assert(sheet.level == 7, "Derived total must equal the class-level sum")
+	area._level.value = 6
+	area._save()
+	sheet = area._current()
+	assert(sheet.classes[0].level == 6 and sheet.classes[1].level == 2)
+	assert(sheet.level == 8)
+	# For the rest of the UI test, use a single-class wizard.
+	area._clear_multiclass()
+	area._save()
 	area._update_tracker("slot_1", "maximum", 7)
 	area._update_tracker("slot_1", "current", 5)
 	area._level.value = 6
@@ -112,16 +142,19 @@ func run() -> void:
 	assert(area.get_owned_health_bar_sync_entries().is_empty())
 	area._link_selected_token()
 	assert(token.get_meta("creature_owner_id") == "another-controller-0123456789")
-	# Deleting a sheet detaches its token without deleting or changing the token.
+	# Deleting a creature also removes every locally owned scene token.
 	token.set_meta("creature_owner_id", Owner.local_id())
 	area._delete_target = area._current()
 	area._delete_selected_creature()
 	assert(area._current().is_empty())
-	assert(not token.has_meta("creature_id"))
-	assert(not token.has_meta("creature_owner_id"))
-	assert(token.get_parent() == board)
-	assert(token.get_player_hit_points().max == 0)
+	assert(token.is_queued_for_deletion(), "Creature deletion must delete its token")
 	assert(area._archive._stored("character", original_id).is_empty())
+	await process_frame
+	# Use a fresh unrelated token to test independent automatic-sheet creation.
+	token = TokenScene.instantiate()
+	board.add_child(token)
+	token.set_meta("sync_id", "ui-token")
+	board.selected_tokens = [token]
 	# New tokens automatically get an owned private creature sheet using the
 	# official miniature-to-bestiary map, even without a manual link action.
 	token.set_token_pack_id("ape")
