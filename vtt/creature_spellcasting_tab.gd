@@ -356,6 +356,8 @@ func load_record(record: Dictionary) -> void:
 	_totals = _normal_slots(record.get("spell_slots_total", []))
 	_slot_bonuses = _normal_slot_bonuses(record.get("spell_slots_bonus", []))
 	_spent = _normal_slots(record.get("spell_slots_spent", []))
+	for lvl: int in range(1, 10):
+		_spent[lvl] = mini(int(_spent[lvl]), _effective_slot_total(lvl))
 	_pact_total = maxi(0, int(record.get("pact_slots_total", 0)))
 	_pact_bonus = clampi(int(record.get("pact_slots_bonus", 0)), -8, 20)
 	_pact_spent = clampi(int(record.get("pact_slots_spent", 0)), 0, _effective_pact_total())
