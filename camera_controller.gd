@@ -1,6 +1,6 @@
 extends Camera3D
 
-const TOP_DOWN_MIN_CLEARANCE := 0.5
+const TOP_DOWN_SLICE_PADDING := 0.12
 
 @export_range(1.0, 100.0, 0.5) var speed: float = 5.0
 @export_range(0.0002, 0.01, 0.0001) var mouse_sensitivity: float = 0.002
@@ -18,9 +18,12 @@ var _saved_2d_transform: Transform3D = Transform3D.IDENTITY
 var _saved_2d_projection: int = Camera3D.PROJECTION_PERSPECTIVE
 var _saved_2d_size: float = 20.0
 var _saved_2d_fov: float = 75.0
+var _saved_2d_near: float = 0.05
 var _has_saved_2d_state: bool = false
 var _top_down_center_y: float = 0.0
 var _top_down_tilt_degrees: float = 0.0
+var _top_down_floor_levels_provider: Callable = Callable()
+var _top_down_clearance: float = 32.0
 
 
 func _ready() -> void:
@@ -29,6 +32,15 @@ func _ready() -> void:
 
 func _unhandled_input(event: InputEvent) -> void:
 	if _top_down_2d_enabled:
+		if (
+			event is InputEventKey
+			and event.pressed
+			and not event.echo
+			and event.keycode == KEY_SPACE
+			and not _text_input_has_focus()
+		):
+			step_top_down_level(-1 if event.shift_pressed else 1)
+			get_viewport().set_input_as_handled()
 		return
 	if event is InputEventMouseMotion \
 	and Input.mouse_mode == Input.MOUSE_MODE_CAPTURED:
@@ -97,10 +109,6 @@ func _process_top_down_2d(delta: float) -> void:
 		return
 
 	var shift_pressed := Input.is_key_pressed(KEY_SHIFT)
-	# Stessi comandi della camera 3D: Spazio sale, Shift+Spazio scende.
-	if Input.is_key_pressed(KEY_SPACE):
-		var vertical_direction: float = -1.0 if shift_pressed else 1.0
-		adjust_top_down_height(vertical_direction * speed * delta)
 	var zoom_direction := 0.0
 	if shift_pressed and Input.is_key_pressed(KEY_W):
 		zoom_direction -= 1.0
@@ -134,28 +142,70 @@ func _process_top_down_2d(delta: float) -> void:
 		global_position += pan.normalized() * pan_speed * delta
 
 
-func adjust_top_down_height(delta_height: float) -> void:
-	if not _top_down_2d_enabled or is_zero_approx(delta_height):
-		return
+func set_top_down_floor_levels_provider(provider: Callable) -> void:
+	_top_down_floor_levels_provider = provider
 
-	# Restiamo sopra il piano inquadrato ed entro il far clipping.
+
+func get_top_down_level() -> float:
+	return _top_down_center_y
+
+
+func _available_top_down_levels() -> Array[float]:
+	var levels: Array[float] = []
+	if not _top_down_floor_levels_provider.is_valid():
+		return levels
+	var value: Variant = _top_down_floor_levels_provider.call()
+	if value is Array:
+		for item: Variant in value:
+			if item is float or item is int:
+				var height: float = float(item)
+				if not levels.has(height):
+					levels.append(height)
+	levels.sort()
+	return levels
+
+
+func step_top_down_level(direction: int) -> void:
+	if not _top_down_2d_enabled or direction == 0:
+		return
+	var levels: Array[float] = _available_top_down_levels()
+	if levels.is_empty():
+		return
+	var next_level: float = _top_down_center_y
+	if direction > 0:
+		for level: float in levels:
+			if level > _top_down_center_y + 0.01:
+				next_level = level
+				break
+	else:
+		for index: int in range(levels.size() - 1, -1, -1):
+			if levels[index] < _top_down_center_y - 0.01:
+				next_level = levels[index]
+				break
+	set_top_down_level(next_level)
+
+
+func set_top_down_level(level: float) -> void:
+	if not _top_down_2d_enabled or is_equal_approx(level, _top_down_center_y):
+		return
+	var delta_height: float = level - _top_down_center_y
+	_top_down_center_y = level
 	var tilt_radians: float = deg_to_rad(_top_down_tilt_degrees)
-	var max_clearance: float = maxf(
-		TOP_DOWN_MIN_CLEARANCE,
-		(far - 2.0) * cos(tilt_radians)
-	)
-	var next_y: float = clampf(
-		global_position.y + delta_height,
-		_top_down_center_y + TOP_DOWN_MIN_CLEARANCE,
-		_top_down_center_y + max_clearance
-	)
-	var actual_delta: float = next_y - global_position.y
-	# Nei preset con camera inclinata, compensiamo anche lungo Z per
-	# mantenere stabile il punto della mappa sotto il centro dello schermo.
+	# Compensate tilt so the same XZ map point stays under the camera.
 	global_position += Vector3(
 		0.0,
-		actual_delta,
-		actual_delta * tan(tilt_radians)
+		delta_height,
+		delta_height * tan(tilt_radians)
+	)
+
+
+func _update_top_down_slice() -> void:
+	# Clip surfaces above the selected floor, not just the camera position.
+	# This keeps the lower floors visible without changing the map geometry.
+	var radians: float = deg_to_rad(_top_down_tilt_degrees)
+	near = maxf(
+		0.05,
+		_top_down_clearance / cos(radians) - TOP_DOWN_SLICE_PADDING
 	)
 
 
@@ -182,6 +232,7 @@ func enter_top_down_2d(
 	_saved_2d_projection = projection
 	_saved_2d_size = size
 	_saved_2d_fov = fov
+	_saved_2d_near = near
 	_has_saved_2d_state = true
 	_top_down_2d_enabled = true
 
@@ -197,7 +248,9 @@ func _apply_top_down_pose(
 	var tilt: float = clampf(tilt_degrees, 0.0, 30.0)
 	_top_down_tilt_degrees = tilt
 	_top_down_center_y = center.y
-	var height: float = maxf(top_down_camera_height, 12.0)
+	_top_down_clearance = maxf(top_down_camera_height, 12.0)
+	var height: float = _top_down_clearance
+	_update_top_down_slice()
 	if is_zero_approx(tilt):
 		global_position = Vector3(center.x, center.y + height, center.z)
 		global_rotation = Vector3(-PI * 0.5, 0.0, 0.0)
@@ -224,6 +277,7 @@ func exit_top_down_2d() -> void:
 		projection = _saved_2d_projection
 		size = _saved_2d_size
 		fov = _saved_2d_fov
+		near = _saved_2d_near
 		global_transform = _saved_2d_transform
 	_has_saved_2d_state = false
 
