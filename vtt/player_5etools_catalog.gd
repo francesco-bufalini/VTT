@@ -5,6 +5,7 @@ const CATALOG_PATH := "res://vtt/data/player_5etools_catalog.json"
 
 static var _catalog: Dictionary = {}
 static var _references: Dictionary = {}
+static var _subclass_catalogs: Dictionary = {}
 
 
 static func _ensure_loaded() -> void:
@@ -28,11 +29,34 @@ static func _ensure_loaded() -> void:
 static func entries(category: String) -> Array[Dictionary]:
 	_ensure_loaded()
 	var result: Array[Dictionary] = []
-	var value: Variant = _catalog.get(category, [])
-	if value is Array:
-		for item: Variant in value:
-			if item is Dictionary:
-				result.append((item as Dictionary).duplicate(true))
+	var categories: Array[String] = [category]
+	if category == "items":
+		categories = ["weapons", "armor", "tools", "mundane_items", "magic_items"]
+	for source_category: String in categories:
+		var value: Variant = _catalog.get(source_category, [])
+		if value is Array:
+			for item: Variant in value:
+				if item is Dictionary:
+					result.append((item as Dictionary).duplicate(true))
+	if category in ["subclasses", "subclass_features"]:
+		if not _subclass_catalogs.has(category):
+			var path: String = (
+				"res://vtt/data/subclasses_5etools.json" if category == "subclasses"
+				else "res://vtt/data/subclass_features_5etools.json"
+			)
+			var data: Dictionary = {}
+			var extra_file: FileAccess = FileAccess.open(path, FileAccess.READ)
+			if extra_file != null:
+				var parsed: Variant = JSON.parse_string(extra_file.get_as_text())
+				extra_file.close()
+				if parsed is Dictionary:
+					data = parsed as Dictionary
+			_subclass_catalogs[category] = data.get(category, [])
+		var extra_rows: Variant = _subclass_catalogs.get(category, [])
+		if extra_rows is Array:
+			for item: Variant in extra_rows:
+				if item is Dictionary:
+					result.append((item as Dictionary).duplicate(true))
 	if category in ["classes", "races", "class_features"]:
 		if _references.is_empty():
 			var reference_file := FileAccess.open("res://vtt/data/creature_references_5etools.json", FileAccess.READ)
@@ -57,7 +81,7 @@ static func entries(category: String) -> Array[Dictionary]:
 				if raw is Dictionary:
 					result.append(raw.duplicate(true))
 	var merged: Array[Dictionary] = ContentCatalog.merge(category, result)
-	if category in ["races", "feats"]:
+	if category in ["races", "feats", "items", "subclasses"]:
 		# Merge first, then sort once. Core, supplements and homebrew must
 		# participate in a single alphabetical ordering.
 		merged.sort_custom(
