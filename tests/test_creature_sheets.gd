@@ -46,29 +46,9 @@ func run() -> void:
 	assert(creature.armor_class == 18)
 	assert(creature.abilities.str == 23)
 	assert(creature.owner_id == Owner.local_id())
-	assert(creature.trackers.size() == 5)
-	var recharge: Dictionary = {}
-	for item: Dictionary in creature.trackers:
-		if item.kind == "recharge":
-			recharge = item
-	assert(recharge.recharge_min == 5)
-	var spent: Array = creature.trackers.duplicate(true)
-	spent[0]["current"] = 0
-	var merged: Array[Dictionary] = Rules.reconcile_trackers(
-		spent, Rules.monster_trackers(stat)
-	)
-	assert(merged[0].current == 0)
-	assert(Rules.apply_reset(merged, "turn")[0].current == 3)
-
-	var wizard := {
-		"class": "Wizard", "level": 5,
-		"classes": [{"name": "Wizard", "level": 5}],
-		"rules_version": "2024"
-	}
-	var slots: Array[Dictionary] = Rules.character_trackers(wizard)
-	assert(slots.size() == 3)
-	assert(slots[0].maximum == 4 and slots[1].maximum == 3)
-	assert(slots[2].maximum == 2)
+	assert(not creature.has("trackers"), "New creatures must not generate legacy resources.")
+	assert(Rules.monster_armor_class(stat) == 18)
+	assert(Rules.monster_abilities(stat).str == 23)
 	# Editions are alternatives for a class, not separate entries for each book.
 	for edition: String in ["2014", "2024"]:
 		var class_names: Dictionary = {}
@@ -123,9 +103,14 @@ func run() -> void:
 		if row.id == creature.id:
 			preserved = row.conditions == returned.creature.conditions
 	assert(preserved, "Independent conditions persist without token")
-	var fighter_2014 := Rules.character_trackers({"classes": [{"name": "Fighter", "source": "PHB", "level": 10}]})
-	assert(fighter_2014[0].maximum == 1 and fighter_2014[0].reset == "short_rest")
-	assert(Rules.monster_trackers({"action": [{"name": "Breath {@recharge 5}"} ]})[0].recharge_min == 5)
+	# Official feats and homebrew merge into the same searchable catalog.
+	var races: Array[Dictionary] = Player5eTools.entries("races")
+	for index: int in range(1, races.size()):
+		assert(String(races[index - 1].get("name", "")).naturalnocasecmp_to(
+			String(races[index].get("name", ""))
+		) <= 0, "Races must have one alphabetical ordering across sources.")
+	assert(not Player5eTools.entries("feats").is_empty(),
+		"5e.tools feats must be available to the sheet search.")
 	assert(archive.list_owned().size() >= 1)
 	# The receiving side cannot import another user's transfer code.
 	assert(archive.import_transfer(incoming) == ERR_UNAUTHORIZED)
@@ -155,5 +140,5 @@ func run() -> void:
 	if FileAccess.file_exists(filename):
 		DirAccess.remove_absolute(filename)
 	campaign.queue_free()
-	print("PASS: creature sheets derive trackers, persist state and enforce local ownership")
+	print("PASS: creature sheets, sorted references, retired trackers and local ownership")
 	quit()
