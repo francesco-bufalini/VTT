@@ -1616,6 +1616,7 @@ func begin_creature_token_placement(record: Dictionary) -> bool:
 	if (
 		record.is_empty()
 		or _sheet_spawn_picking
+		or not _sheet_spawn_pending_record.is_empty()
 		or _forced_identity_placement_active
 		or color_dialog.visible
 	):
@@ -1695,6 +1696,9 @@ func _handle_sheet_spawn_placement_input(event: InputEvent) -> bool:
 			token.set("_support_transform", _pending_spawn_support.global_transform)
 		_replace_selection(token)
 		_has_pending_spawn_position = false
+		# Relocation uses the same saved current look, size and reach.
+		apply_creature_sheet_appearance(token, record)
+		apply_creature_sheet_properties(token, record)
 		call_deferred("_sync_explicit_token_change", token)
 		return true
 
