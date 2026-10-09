@@ -132,6 +132,7 @@ static func default_tracker(
 		"kind": kind,
 		"maximum": maxi(0, maximum),
 		"current": maxi(0, maximum),
+		"overrides": {},
 		"reset": reset,
 		"recharge_min": recharge_min
 	}
@@ -231,11 +232,25 @@ static func reconcile_trackers(
 		var merged: Dictionary = source.duplicate(true)
 		if existing.has(id):
 			var old: Dictionary = existing[id]
-			for key: String in ["current", "maximum", "label", "reset", "recharge_min"]:
-				if old.has(key):
+			var override_value: Variant = old.get("overrides", {})
+			var overrides: Dictionary = (
+				override_value as Dictionary if override_value is Dictionary else {}
+			)
+			merged["overrides"] = overrides.duplicate(true)
+			for key: String in ["maximum", "label", "reset", "recharge_min"]:
+				if bool(overrides.get(key, false)) and old.has(key):
 					merged[key] = old[key]
+			var old_max := maxi(0, int(old.get("maximum", 0)))
+			var old_current := clampi(
+				int(old.get("current", old_max)), 0, old_max
+			)
+			# Increasing level grants more total uses without restoring
+			# already spent ones. Manual maxima never get overwritten.
+			var new_max := maxi(0, int(merged.get("maximum", 0)))
+			merged["current"] = clampi(
+				new_max - (old_max - old_current), 0, new_max
+			)
 		result.append(normalize_tracker(merged))
-	# Explicitly user-created trackers persist even if the catalog changes.
 	for id_value: Variant in existing.keys():
 		var id := String(id_value)
 		if not seen.has(id) and id.begins_with("custom_"):
@@ -255,6 +270,11 @@ static func normalize_tracker(raw: Dictionary) -> Dictionary:
 		0, int(tracker["maximum"])
 	)
 	tracker["recharge_min"] = clampi(int(raw.get("recharge_min", 0)), 0, 6)
+	var manual_value: Variant = raw.get("overrides", {})
+	tracker["overrides"] = (
+		(manual_value as Dictionary).duplicate(true)
+		if manual_value is Dictionary else {}
+	)
 	return tracker
 
 
