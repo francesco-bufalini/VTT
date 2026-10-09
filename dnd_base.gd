@@ -1665,7 +1665,8 @@ func _set_pending_spawn_from_screen(screen_position: Vector2) -> bool:
 			if bool(pick_data.get("valid", false)):
 				var top_value: Variant = pick_data.get("top_center")
 				if top_value is Vector3:
-					_pending_spawn_position = top_value as Vector3
+					var top_center: Vector3 = top_value
+					_pending_spawn_position = top_center
 					_has_pending_spawn_position = true
 					_pending_spawn_on_grid_surface = true
 					var grid_hit_collider: Node3D = hit.get("collider") as Node3D
