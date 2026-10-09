@@ -1573,6 +1573,11 @@ func _save() -> void:
 	record["temporary_hp"] = int(_temp_hp.value)
 	record["size_name"] = _size_choice.get_item_text(_size_choice.selected)
 	record["footprint"] = _selected_size_footprint()
+	if (
+		String(record.get("kind", "")) == "monster"
+		and absf(float(_reach.value) - float(record.get("reach_feet", 5.0))) > 0.01
+	):
+		record["reach_is_custom"] = true
 	record["reach_feet"] = float(_reach.value)
 	record["visual_front_quarter_turns"] = _front.selected
 	record["party_id"] = _party.text.strip_edges()
