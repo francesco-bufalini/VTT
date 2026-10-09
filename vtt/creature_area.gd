@@ -12,6 +12,8 @@ const Player5eTools = preload("res://vtt/player_5etools_catalog.gd")
 const SpellcastingTab = preload("res://vtt/creature_spellcasting_tab.gd")
 const FiveToolsText = preload("res://vtt/five_tools_rich_text.gd")
 const StructuredTrackers = preload("res://vtt/structured_resource_trackers.gd")
+const ManualBonus = preload("res://vtt/manual_bonus_style.gd")
+const InventoryTab = preload("res://vtt/creature_inventory_tab.gd")
 
 var board_root: Node3D
 var _archive
@@ -44,6 +46,8 @@ var _catalog_filter: LineEdit
 var _name: LineEdit
 var _hp: SpinBox
 var _max_hp: SpinBox
+var _max_hp_bonus: SpinBox
+var _max_hp_effective: Label
 var _temp_hp: SpinBox
 var _hp_delta_dialog: ConfirmationDialog
 var _hp_delta_sign := -1
@@ -59,6 +63,7 @@ var _front: OptionButton
 var _party: LineEdit
 var _tabs: TabContainer
 var _spellcasting_ui: Node
+var _inventory_ui: Node
 var _ac: SpinBox
 var _ability_spins: Dictionary = {}
 var _ability_bonus_spins: Dictionary = {}
@@ -442,9 +447,6 @@ func _build_ui() -> void:
 	var form := _add_sheet_tab(_tabs, "Statistiche")
 	var appearance_tab := _add_sheet_tab(_tabs, "Aspetto")
 	var traits_tab := _add_sheet_tab(_tabs, "Tratti")
-	var resources_tab := _add_sheet_tab(_tabs, "Risorse")
-	_tracker_rows = VBoxContainer.new()
-	resources_tab.add_child(_tracker_rows)
 	var conditions_tab := _add_sheet_tab(_tabs, "Stati")
 	var spellcasting_tab := _add_sheet_tab(_tabs, "Incantesimi")
 	_spellcasting_ui = SpellcastingTab.new()
@@ -454,6 +456,10 @@ func _build_ui() -> void:
 		Callable(self, "_on_spellcasting_updated"),
 		Callable(self, "_set_status")
 	)
+	var inventory_tab := _add_sheet_tab(_tabs, "Inventario")
+	_inventory_ui = InventoryTab.new()
+	inventory_tab.add_child(_inventory_ui)
+	_inventory_ui.call("setup", Callable(self, "_on_inventory_updated"), Callable(self, "_set_status"))
 	_tabs.current_tab = 0
 
 	var name_row := HBoxContainer.new()
@@ -498,6 +504,17 @@ func _build_ui() -> void:
 	_max_hp = _spin(health, 0, 99999)
 	_max_hp.custom_minimum_size = Vector2(68, 30)
 	_max_hp.size_flags_horizontal = Control.SIZE_SHRINK_BEGIN
+	_max_hp.tooltip_text = "PF massimi base, senza bonus manuali"
+	_add_label(health, "+")
+	_max_hp_bonus = _spin(health, -9999, 99999)
+	_max_hp_bonus.custom_minimum_size = Vector2(57, 30)
+	_max_hp_bonus.tooltip_text = "Bonus manuale ai PF massimi (oggetti, tratti o altre regole non automatizzate)"
+	ManualBonus.decorate(_max_hp_bonus)
+	_max_hp_effective = Label.new()
+	_max_hp_effective.tooltip_text = "PF massimi effettivi (base + bonus)"
+	health.add_child(_max_hp_effective)
+	_max_hp.value_changed.connect(func(_v: float) -> void: _update_max_hp_display())
+	_max_hp_bonus.value_changed.connect(func(_v: float) -> void: _update_max_hp_display())
 	var heal := Button.new()
 	heal.text = "+"
 	heal.tooltip_text = "Aggiungi PF: inserisci un valore o tira un dado"
@@ -548,7 +565,8 @@ func _build_ui() -> void:
 		_ability_spins[ability] = spin
 		var bonus := _spin(scores_row, -30, 30)
 		bonus.custom_minimum_size.x = 54
-		bonus.tooltip_text = "Bonus al punteggio (per ora manuale; poi da oggetti e tratti)"
+		bonus.tooltip_text = "Bonus manuale al punteggio: compensa effetti non ancora gestiti automaticamente"
+		ManualBonus.decorate(bonus)
 		_ability_bonus_spins[ability] = bonus
 		var modifier := Label.new()
 		modifier.custom_minimum_size.x = 42
@@ -567,10 +585,16 @@ func _build_ui() -> void:
 	form.add_child(classes_row)
 	_add_label(classes_row, "Razza / Specie")
 	_species = _reference_option(classes_row, Player5eTools.entries("races"))
-	_add_label(classes_row, "Regole")
+	var edition_caption := Label.new()
+	edition_caption.text = "Ed."
+	edition_caption.modulate = Color(0.68, 0.72, 0.76)
+	edition_caption.add_theme_font_size_override("font_size", 11)
+	classes_row.add_child(edition_caption)
 	_rules_edition = OptionButton.new()
 	_rules_edition.fit_to_longest_item = false
-	_rules_edition.custom_minimum_size.x = 88
+	_rules_edition.custom_minimum_size = Vector2(72, 26)
+	_rules_edition.size_flags_horizontal = Control.SIZE_SHRINK_BEGIN
+	_rules_edition.add_theme_font_size_override("font_size", 11)
 	_rules_edition.add_item("2014")
 	_rules_edition.add_item("2024")
 	_rules_edition.item_selected.connect(_on_rules_edition_changed)
@@ -603,6 +627,13 @@ func _build_ui() -> void:
 	multiclass_header.add_child(_add_class_button)
 	_multiclass_rows = VBoxContainer.new()
 	form.add_child(_multiclass_rows)
+	var tracker_caption := Label.new()
+	tracker_caption.text = "Tracker risorse"
+	tracker_caption.add_theme_font_size_override("font_size", 15)
+	tracker_caption.add_theme_color_override("font_color", Color(0.85, 0.78, 0.65))
+	form.add_child(tracker_caption)
+	_tracker_rows = VBoxContainer.new()
+	form.add_child(_tracker_rows)
 
 	var miniature_row := HBoxContainer.new()
 	appearance_tab.add_child(miniature_row)
@@ -929,7 +960,9 @@ func _apply_automatic_calculation() -> void:
 			else Rules.automatic_monster_hit_points(record)
 		)
 		if bool(hp.get("available", false)):
-			var maximum: int = int(hp.get("value", 1))
+			var base_maximum: int = int(hp.get("value", 1))
+			record["max_hp_base"] = base_maximum
+			var maximum: int = maxi(0, base_maximum + int(record.get("max_hp_bonus", 0)))
 			record["max_hp"] = maximum
 			record["current_hp"] = mini(int(record.get("current_hp", maximum)), maximum)
 	if _automatic_proficiency.button_pressed:
@@ -1179,17 +1212,26 @@ func _selected_rules_version() -> String:
 
 func _subclass_choices(class_ref: Dictionary) -> Array[Dictionary]:
 	var result: Array[Dictionary] = []
-	var wanted: String = String(class_ref.get("name", ""))
-	var source: String = String(class_ref.get("source", ""))
-	if wanted.is_empty():
+	var wanted: String = String(class_ref.get("name", "")).strip_edges()
+	var source: String = String(class_ref.get("source", "")).to_upper()
+	if wanted.is_empty() or wanted == "Mostro":
 		return result
 	for entry: Dictionary in Player5eTools.entries("subclasses"):
-		if String(entry.get("class_name", entry.get("className", ""))).nocasecmp_to(wanted) != 0:
+		var parent: String = String(entry.get("class_name", entry.get("className", "")))
+		if parent.nocasecmp_to(wanted) != 0:
 			continue
-		var parent_source: String = String(entry.get("class_source", entry.get("classSource", "")))
-		if not parent_source.is_empty() and parent_source != source:
+		var parent_source: String = String(entry.get("class_source", entry.get("classSource", ""))).to_upper()
+		# A 2024 class can still use compatible 2014 subclasses, including
+		# those published in supplements. The subclass book is NOT its class source.
+		if source == "XPHB" and parent_source not in ["XPHB", "PHB", ""]:
+			continue
+		if source == "EFA" and parent_source not in ["EFA", "TCE", ""]:
+			continue
+		if source not in ["XPHB", "EFA"] and not parent_source.is_empty() and parent_source != source:
 			continue
 		result.append(entry)
+	result.sort_custom(func(a: Dictionary, b: Dictionary) -> bool:
+		return String(a.get("name", "")).naturalnocasecmp_to(String(b.get("name", ""))) < 0)
 	return result
 
 
@@ -1409,7 +1451,10 @@ func _load_form(record: Dictionary) -> void:
 	_loading = true
 	_name.text = String(record.get("name", ""))
 	_hp.value = int(record.get("current_hp", 1))
-	_max_hp.value = int(record.get("max_hp", 1))
+	var hp_bonus: int = int(record.get("max_hp_bonus", 0))
+	_max_hp_bonus.value = hp_bonus
+	_max_hp.value = maxi(0, int(record.get("max_hp_base", int(record.get("max_hp", 1)) - hp_bonus)))
+	_update_max_hp_display()
 	_temp_hp.value = int(record.get("temporary_hp", 0))
 	_ac.value = int(record.get("armor_class", 10))
 	var abilities_value: Variant = record.get("abilities", {})
@@ -1500,6 +1545,7 @@ func _load_form(record: Dictionary) -> void:
 	_refresh_reference(record)
 	_refresh_current_miniature(record)
 	_spellcasting_ui.call("load_record", record)
+	_inventory_ui.call("load_record", record)
 	_loading = false
 
 
@@ -1523,6 +1569,26 @@ func _on_spellcasting_updated(values: Dictionary) -> void:
 	var error: Error = _archive.save(record)
 	if error != OK:
 		_set_status("Salvataggio incantesimi non riuscito: " + error_string(error))
+		return
+	_replace_current_record(record)
+
+
+func _update_max_hp_display() -> void:
+	if _max_hp_effective == null or _max_hp_bonus == null or _max_hp == null:
+		return
+	_max_hp_effective.text = "= %d" % maxi(0, int(_max_hp.value) + int(_max_hp_bonus.value))
+
+
+func _on_inventory_updated(inventory: Array) -> void:
+	if _loading:
+		return
+	var record: Dictionary = _current()
+	if record.is_empty():
+		return
+	record["inventory"] = inventory.duplicate(true)
+	var error: Error = _archive.save(record)
+	if error != OK:
+		_set_status("Impossibile salvare inventario: " + error_string(error))
 		return
 	_replace_current_record(record)
 
@@ -1559,7 +1625,9 @@ func _save() -> void:
 		return
 	record["name"] = _name.text.strip_edges()
 	record["current_hp"] = int(_hp.value)
-	record["max_hp"] = int(_max_hp.value)
+	record["max_hp_base"] = int(_max_hp.value)
+	record["max_hp_bonus"] = int(_max_hp_bonus.value)
+	record["max_hp"] = maxi(0, int(_max_hp.value) + int(_max_hp_bonus.value))
 	record["temporary_hp"] = int(_temp_hp.value)
 	record["size_name"] = _size_choice.get_item_text(_size_choice.selected)
 	record["footprint"] = _selected_size_footprint()
@@ -1825,7 +1893,7 @@ func _change_hit_points(delta: int) -> void:
 		temp -= absorbed
 		hp = maxi(0, hp - (-delta - absorbed))
 	else:
-		hp = mini(int(_max_hp.value), hp + delta)
+		hp = mini(maxi(0, int(_max_hp.value) + int(_max_hp_bonus.value)), hp + delta)
 	_loading = true
 	_temp_hp.value = temp
 	_hp.value = hp
