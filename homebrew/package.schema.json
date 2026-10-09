@@ -28,6 +28,9 @@
         "properties": {
           "category": {
             "enum": [
+              "items",
+              "subclasses",
+              "subclass_features",
               "monsters",
               "races",
               "classes",
