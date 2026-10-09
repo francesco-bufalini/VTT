@@ -1625,19 +1625,22 @@ func _handle_sheet_spawn_placement_input(event: InputEvent) -> bool:
 		_sheet_spawn_record.clear()
 		_hide_identity_placement_hint()
 		return true
-	if not event is InputEventMouseButton or not event.pressed:
+	if not event is InputEventMouseButton:
 		return false
-	if event.button_index == MOUSE_BUTTON_RIGHT:
+	var button_event: InputEventMouseButton = event as InputEventMouseButton
+	if not button_event.pressed:
+		return false
+	if button_event.button_index == MOUSE_BUTTON_RIGHT:
 		_sheet_spawn_picking = false
 		_sheet_spawn_record.clear()
 		_hide_identity_placement_hint()
 		return true
-	if event.button_index != MOUSE_BUTTON_LEFT:
+	if button_event.button_index != MOUSE_BUTTON_LEFT:
 		return false
 	var point: Vector2 = (
 		_screen_center()
 		if Input.mouse_mode == Input.MOUSE_MODE_CAPTURED
-		else event.position
+		else button_event.position
 	)
 	if not _set_pending_spawn_from_screen(point):
 		_set_identity_placement_hint(
