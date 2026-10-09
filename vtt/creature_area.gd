@@ -699,12 +699,23 @@ func _focus_creature_token(creature_id: String) -> void:
 
 
 func _refresh_creature_eye_buttons() -> void:
+	# Scan the live tokens once instead of rereading the archive for each
+	# character on every UI refresh. Include restored tokens whose sync ID
+	# changed, but ignore remote-owned and queued-for-deletion instances.
+	var present: Dictionary = {}
+	for node: Node in get_tree().get_nodes_in_group("dnd_token"):
+		if not node is CharacterBody3D or not board_root.is_ancestor_of(node):
+			continue
+		if node.is_queued_for_deletion():
+			continue
+		if String(node.get_meta("creature_owner_id", "")) != Owner.local_id():
+			continue
+		var creature_id: String = String(node.get_meta("creature_id", ""))
+		if not creature_id.is_empty():
+			present[creature_id] = true
 	for i: int in range(mini(_records.size(), _creature_eye_buttons.size())):
-		var token: CharacterBody3D = find_linked_token_for_creature(
+		_creature_eye_buttons[i].visible = present.has(
 			String(_records[i].get("id", ""))
-		)
-		_creature_eye_buttons[i].visible = (
-			token != null and is_instance_valid(token)
 		)
 
 
