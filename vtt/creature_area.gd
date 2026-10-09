@@ -609,7 +609,7 @@ func _build_ui() -> void:
 	_effect_text.custom_minimum_size = Vector2(530, 320)
 	_effect_text.selection_enabled = true
 	_effect_text.scroll_active = true
-	_effect_dialog.get_vbox().add_child(_effect_text)
+	_effect_dialog.add_child(_effect_text)
 
 	_delete_dialog = ConfirmationDialog.new()
 	_delete_dialog.title = "Elimina creatura"
@@ -750,7 +750,7 @@ func _build_automatic_dialog() -> void:
 	content.add_theme_constant_override("separation", 10)
 	content.size_flags_horizontal = Control.SIZE_EXPAND_FILL
 	content.size_flags_vertical = Control.SIZE_EXPAND_FILL
-	_automatic_dialog.get_vbox().add_child(content)
+	_automatic_dialog.add_child(content)
 	var intro := Label.new()
 	intro.text = "Scegli i valori da ricalcolare. Gli altri campi restano invariati."
 	intro.autowrap_mode = TextServer.AUTOWRAP_WORD_SMART
@@ -866,13 +866,19 @@ func _build_transfer_request_dialog() -> void:
 	_transfer_dialog.title = "Cedi il controllo della creatura"
 	_transfer_dialog.dialog_text = ""
 	(board_root.get_node("UI") as CanvasLayer).add_child(_transfer_dialog)
+	# Godot 4 AcceptDialog/ConfirmationDialog has no get_vbox().
+	# A single VBoxContainer keeps the label and input stacked rather
+	# than letting two direct dialog children overlap.
+	var body := VBoxContainer.new()
+	body.add_theme_constant_override("separation", 8)
+	_transfer_dialog.add_child(body)
 	var hint := Label.new()
 	hint.text = "ID controllore del destinatario"
-	_transfer_dialog.get_vbox().add_child(hint)
+	body.add_child(hint)
 	_owner_target = LineEdit.new()
 	_owner_target.placeholder_text = "Incolla l'ID controllore"
 	_owner_target.custom_minimum_size.x = 430
-	_transfer_dialog.get_vbox().add_child(_owner_target)
+	body.add_child(_owner_target)
 	_transfer_dialog.confirmed.connect(_transfer)
 
 
@@ -886,7 +892,7 @@ func _build_feat_dialog() -> void:
 	(board_root.get_node("UI") as CanvasLayer).add_child(_feat_dialog)
 	var body := VBoxContainer.new()
 	body.add_theme_constant_override("separation", 8)
-	_feat_dialog.get_vbox().add_child(body)
+	_feat_dialog.add_child(body)
 	var hint := Label.new()
 	hint.text = "Cerca un talento e leggi i suoi effetti prima di aggiungerlo."
 	hint.autowrap_mode = TextServer.AUTOWRAP_WORD_SMART
@@ -1027,7 +1033,7 @@ func _build_transfer_dialog() -> void:
 	_import_text = TextEdit.new()
 	_import_text.custom_minimum_size = Vector2(620, 220)
 	_import_text.placeholder_text = "Incolla qui il codice JSON ricevuto dal precedente controllore."
-	_import_dialog.get_vbox().add_child(_import_text)
+	_import_dialog.add_child(_import_text)
 
 
 func _add_label(parent: Node, text_value: String) -> void:
@@ -1431,7 +1437,7 @@ func _build_hp_delta_dialog() -> void:
 	(board_root.get_node("UI") as CanvasLayer).add_child(_hp_delta_dialog)
 	var body := VBoxContainer.new()
 	body.add_theme_constant_override("separation", 10)
-	_hp_delta_dialog.get_vbox().add_child(body)
+	_hp_delta_dialog.add_child(body)
 	var explanation := Label.new()
 	explanation.text = "Scegli una quantità o tira un dado con il roller."
 	explanation.autowrap_mode = TextServer.AUTOWRAP_WORD_SMART
@@ -2013,7 +2019,7 @@ func _build_miniature_dialog() -> void:
 	body.add_theme_constant_override("separation", 9)
 	body.size_flags_horizontal = Control.SIZE_EXPAND_FILL
 	body.size_flags_vertical = Control.SIZE_EXPAND_FILL
-	_miniature_dialog.get_vbox().add_child(body)
+	_miniature_dialog.add_child(body)
 	_miniature_hint = Label.new()
 	_miniature_hint.autowrap_mode = TextServer.AUTOWRAP_WORD_SMART
 	_miniature_hint.custom_minimum_size.y = 24
