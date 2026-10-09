@@ -126,11 +126,36 @@ func run() -> void:
 
 	var overlay: Control = ElevationOverlay.new()
 	board.add_child(overlay)
-	var metric: String = String(overlay.call("_format_difference", 1.0))
+	# 1 square = 5 ft = 1.5 m by the VTT's tactical convention.
+	# No centimeter conversions or fractional physical offsets should leak
+	# into the on-screen height labels.
 	if not _check(
-		metric.contains("1.52") and metric.contains("5.0")
-		and metric.contains("quadretti"),
-		"relative elevations must be shown in meters, feet and squares"
+		String(overlay.call("_format_difference", 1.0)) ==
+		"+1.5 m · +5 ft · +1 quadretti",
+		"one square must display as 1.5 m / 5 ft"
+	):
+		return
+	if not _check(
+		String(overlay.call("_format_difference", 2.0)) ==
+		"+3 m · +10 ft · +2 quadretti",
+		"two squares must display as 3 m, not 3.05 m"
+	):
+		return
+	if not _check(
+		String(overlay.call("_format_difference", -1.0)) ==
+		"-1.5 m · -5 ft · -1 quadretti",
+		"negative elevations must preserve sign in every unit"
+	):
+		return
+	if not _check(
+		String(overlay.call("_format_difference", 1.02)) ==
+		"+1.5 m · +5 ft · +1 quadretti",
+		"minor physics offsets must snap to whole grid squares"
+	):
+		return
+	if not _check(
+		int(overlay.call("_difference_cells", 0.02)) == 0,
+		"sub-cell physics offsets must not generate zero-height badges"
 	):
 		return
 
