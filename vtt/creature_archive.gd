@@ -5,7 +5,6 @@ extends RefCounted
 const CharacterStore = preload("res://vtt/player_character_store.gd")
 const MonsterStore = preload("res://vtt/master_creature_store.gd")
 const CreatureOwner = preload("res://vtt/creature_owner.gd")
-const CreatureRules = preload("res://vtt/creature_rules.gd")
 
 var _characters
 var _monsters
