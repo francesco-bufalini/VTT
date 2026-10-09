@@ -336,7 +336,16 @@ func _build_ui() -> void:
 	var outer := VBoxContainer.new()
 	_panel.add_child(outer)
 	var header := HBoxContainer.new()
+	header.add_theme_constant_override("separation", 10)
 	outer.add_child(header)
+
+	var heading := Label.new()
+	heading.text = "ARCHIVIO DELLE CREATURE"
+	heading.add_theme_font_size_override("font_size", 21)
+	heading.add_theme_color_override(
+		"font_color", Color(0.96, 0.79, 0.51, 1.0)
+	)
+	header.add_child(heading)
 
 	var spacer := Control.new()
 	spacer.size_flags_horizontal = Control.SIZE_EXPAND_FILL
@@ -365,6 +374,10 @@ func _build_ui() -> void:
 	_status.autowrap_mode = TextServer.AUTOWRAP_WORD_SMART
 	_status.max_lines_visible = 2
 	_status.clip_text = true
+	_status.add_theme_font_size_override("font_size", 13)
+	_status.add_theme_color_override(
+		"font_color", Color(0.78, 0.71, 0.63, 1.0)
+	)
 	outer.add_child(_status)
 
 	var columns := HSplitContainer.new()
@@ -378,6 +391,9 @@ func _build_ui() -> void:
 	var creatures_title := Label.new()
 	creatures_title.text = "Le mie creature"
 	creatures_title.add_theme_font_size_override("font_size", 17)
+	creatures_title.add_theme_color_override(
+		"font_color", Color(0.94, 0.76, 0.46, 1.0)
+	)
 	left.add_child(creatures_title)
 	_creature_list_scroll = ScrollContainer.new()
 	_creature_list_scroll.custom_minimum_size.y = 40
@@ -454,8 +470,8 @@ func _build_ui() -> void:
 
 	var health_panel := PanelContainer.new()
 	var health_style := StyleBoxFlat.new()
-	health_style.bg_color = Color(0.12, 0.17, 0.22, 0.92)
-	health_style.border_color = Color(0.35, 0.54, 0.6, 0.5)
+	health_style.bg_color = Color(0.24, 0.14, 0.15, 0.96)
+	health_style.border_color = Color(0.76, 0.50, 0.30, 0.90)
 	health_style.set_border_width_all(1)
 	health_style.set_corner_radius_all(7)
 	health_style.set_content_margin_all(7)
@@ -510,6 +526,8 @@ func _build_ui() -> void:
 
 	var abilities_row := GridContainer.new()
 	abilities_row.columns = 3
+	abilities_row.add_theme_constant_override("h_separation", 14)
+	abilities_row.add_theme_constant_override("v_separation", 10)
 	form.add_child(abilities_row)
 	for ability: String in ["str", "dex", "con", "int", "wis", "cha"]:
 		var cell := VBoxContainer.new()

@@ -126,8 +126,8 @@ func _input(event: InputEvent) -> void:
 func _build_ui() -> void:
 	toggle_button = Button.new()
 	toggle_button.name = "DiceChatToggle"
-	toggle_button.text = "d20"
-	toggle_button.tooltip_text = "Dice roller e chat"
+	toggle_button.text = "D20"
+	toggle_button.tooltip_text = "Apri dadi e chat"
 	toggle_button.anchor_left = 1.0
 	toggle_button.anchor_top = 1.0
 	toggle_button.anchor_right = 1.0
@@ -137,6 +137,8 @@ func _build_ui() -> void:
 	toggle_button.offset_right = -12.0
 	toggle_button.offset_bottom = -12.0
 	toggle_button.mouse_filter = Control.MOUSE_FILTER_STOP
+	toggle_button.add_theme_font_size_override("font_size", 20)
+	toggle_button.add_theme_color_override("font_color", Color(1.0, 0.88, 0.63, 1.0))
 	toggle_button.pressed.connect(toggle_panel)
 	ui_root.add_child(toggle_button)
 
@@ -156,10 +158,10 @@ func _build_ui() -> void:
 	ui_root.add_child(panel)
 
 	var panel_style := StyleBoxFlat.new()
-	panel_style.bg_color = Color(0.025, 0.028, 0.036, 0.98)
-	panel_style.border_color = Color(0.48, 0.38, 0.24, 0.9)
+	panel_style.bg_color = Color(0.12, 0.105, 0.105, 0.98)
+	panel_style.border_color = Color(0.77, 0.57, 0.30, 0.96)
 	panel_style.set_border_width_all(1)
-	panel_style.set_corner_radius_all(8)
+	panel_style.set_corner_radius_all(10)
 	panel_style.content_margin_left = 10
 	panel_style.content_margin_right = 10
 	panel_style.content_margin_top = 9
@@ -175,8 +177,9 @@ func _build_ui() -> void:
 	outer.add_child(header)
 
 	var title := Label.new()
-	title.text = "Dice Roller · Chat"
-	title.add_theme_font_size_override("font_size", 17)
+	title.text = "Dadi e chat"
+	title.add_theme_font_size_override("font_size", 20)
+	title.add_theme_color_override("font_color", Color(0.99, 0.85, 0.58, 1.0))
 	title.size_flags_horizontal = Control.SIZE_EXPAND_FILL
 	header.add_child(title)
 
@@ -189,7 +192,7 @@ func _build_ui() -> void:
 
 	status_label = Label.new()
 	status_label.text = "Partita %s · sincronizzazione automatica" % session_key
-	status_label.modulate = Color(0.70, 0.74, 0.80, 1.0)
+	status_label.modulate = Color(0.78, 0.71, 0.62, 1.0)
 	status_label.autowrap_mode = TextServer.AUTOWRAP_WORD_SMART
 	status_label.add_theme_font_size_override("font_size", 12)
 	outer.add_child(status_label)
@@ -249,7 +252,7 @@ func _build_ui() -> void:
 
 	var settings_hint := Label.new()
 	settings_hint.text = "es. 3d20 + 5"
-	settings_hint.modulate = Color(0.55, 0.59, 0.66, 1.0)
+	settings_hint.modulate = Color(0.72, 0.67, 0.60, 1.0)
 	settings_hint.size_flags_horizontal = Control.SIZE_EXPAND_FILL
 	roll_settings.add_child(settings_hint)
 
@@ -277,7 +280,7 @@ func _build_ui() -> void:
 
 	var mode_hint := Label.new()
 	mode_hint.text = "Disponibile quando Dadi = 1, per qualsiasi dado."
-	mode_hint.modulate = Color(0.55, 0.59, 0.66, 1.0)
+	mode_hint.modulate = Color(0.72, 0.67, 0.60, 1.0)
 	mode_hint.size_flags_horizontal = Control.SIZE_EXPAND_FILL
 	mode_row.add_child(mode_hint)
 
@@ -308,7 +311,7 @@ func _build_ui() -> void:
 		dice_grid.add_child(button)
 
 	roll_button = Button.new()
-	roll_button.text = "ROLL %s" % _selected_die
+	roll_button.text = "Lancia %s" % _selected_die
 	roll_button.custom_minimum_size = Vector2(0, 36)
 	roll_button.size_flags_horizontal = Control.SIZE_EXPAND_FILL
 	roll_button.tooltip_text = "Esegui il tiro con il dado selezionato"
@@ -353,8 +356,8 @@ func _build_quick_result_popup() -> void:
 	quick_result_panel.hide()
 
 	var style := StyleBoxFlat.new()
-	style.bg_color = Color(0.025, 0.028, 0.036, 0.94)
-	style.border_color = Color(0.82, 0.62, 0.24, 0.95)
+	style.bg_color = Color(0.20, 0.13, 0.13, 0.97)
+	style.border_color = Color(0.94, 0.73, 0.37, 0.98)
 	style.set_border_width_all(1)
 	style.set_corner_radius_all(8)
 	style.content_margin_left = 12

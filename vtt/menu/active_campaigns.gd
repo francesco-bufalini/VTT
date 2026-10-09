@@ -5,6 +5,7 @@ const MenuBackdrop = preload("res://vtt/menu/menu_backdrop.gd")
 const MenuStyle = preload("res://vtt/menu/menu_style.gd")
 
 var _status_label: Label
+var _cards_grid: GridContainer
 var _edit_dialog: ConfirmationDialog
 var _edit_name_input: LineEdit
 var _edit_description_input: TextEdit
@@ -14,6 +15,19 @@ var _pending_campaign_group_id: String = ""
 func _ready() -> void:
 	_build_ui()
 	_build_edit_dialog()
+
+
+func _notification(what: int) -> void:
+	if what == NOTIFICATION_RESIZED and _cards_grid != null:
+		_update_grid_columns()
+
+
+func _update_grid_columns() -> void:
+	if _cards_grid == null:
+		return
+	# Reserve margins, scrollbar and gaps; never truncate the card actions.
+	var usable_width: float = maxf(1.0, size.x - 110.0)
+	_cards_grid.columns = maxi(1, mini(3, int((usable_width + 18.0) / 333.0)))
 
 
 func _build_ui() -> void:
@@ -82,7 +96,8 @@ func _build_ui() -> void:
 	scroll.add_child(cards_margin)
 
 	var cards := GridContainer.new()
-	cards.columns = 3
+	_cards_grid = cards
+	_update_grid_columns()
 	cards.size_flags_horizontal = Control.SIZE_EXPAND_FILL
 	cards.add_theme_constant_override("h_separation", 18)
 	cards.add_theme_constant_override("v_separation", 18)
@@ -99,7 +114,7 @@ func _build_ui() -> void:
 
 func _campaign_card(campaign: Dictionary) -> Control:
 	var panel := PanelContainer.new()
-	panel.custom_minimum_size = Vector2(350, 205)
+	panel.custom_minimum_size = Vector2(315, 205)
 	panel.size_flags_horizontal = Control.SIZE_EXPAND_FILL
 	panel.add_theme_stylebox_override(
 		"panel",
