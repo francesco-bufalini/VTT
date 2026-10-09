@@ -308,35 +308,44 @@ func _render_token_badge(token: CharacterBody3D, floor_y: float) -> void:
 
 	var conditions_label: Label = badge.get_node("Conditions") as Label
 	var status_background: Panel = badge.get_node("StatusBackground") as Panel
-	var status_parts := PackedStringArray()
-	# Flanking is derived from current positions, not a manually selected
-	# condition. Keep it visible even when manual condition visuals are off.
+	var status_icons := PackedStringArray()
+	var status_descriptions := PackedStringArray()
+	# Flanked is a derived combat state, not a manual 5e condition.
 	if bool(token.get_meta("flanked", false)):
-		status_parts.append("⚔ Flanked")
-	# Screen-space conditions must not depend on clipped 3D visuals.
+		status_icons.append("⚔")
+		status_descriptions.append("Flanked")
+	# Use only condition icons in the tactical strip. Full names are much too
+	# wide at ordinary zoom and used to cover several squares of the map.
 	if token.has_method("get_active_condition_display_parts"):
 		var active_parts: Variant = token.call("get_active_condition_display_parts")
 		if active_parts is PackedStringArray:
 			for part: String in active_parts:
-				status_parts.append(part)
-	var has_status: bool = not status_parts.is_empty()
+				var normalized: String = part.strip_edges()
+				if normalized.is_empty():
+					continue
+				var split_position: int = normalized.find(" ")
+				var icon_text: String = (
+					normalized.substr(0, split_position)
+					if split_position > 0 else normalized
+				)
+				status_icons.append(icon_text)
+				status_descriptions.append(normalized)
+	var has_status: bool = not status_icons.is_empty()
 	conditions_label.visible = has_status
 	status_background.visible = has_status
 	if has_status:
-		# Keep the strip tied to the token's screen footprint as the user zooms.
-		# At distant zoom use icons rather than pushing text across many cells.
-		var status_text: String = " · ".join(status_parts)
-		# Keep text legible independently of token footprint and camera zoom.
+		var status_text: String = " ".join(status_icons)
 		var status_font: Font = conditions_label.get_theme_font("font")
 		var text_width: float = status_font.get_string_size(
-			status_text, HORIZONTAL_ALIGNMENT_LEFT, -1, 17
+			status_text, HORIZONTAL_ALIGNMENT_LEFT, -1, 16
 		).x
-		var width_px: float = clampf(text_width + 16.0, 72.0, 250.0)
+		var width_px: float = clampf(text_width + 12.0, 36.0, 176.0)
 		var offset_x: float = (icon_size - width_px) * 0.5
-		status_background.position = Vector2(offset_x, -26.0)
-		status_background.size = Vector2(width_px, 24.0)
+		status_background.position = Vector2(offset_x, -24.0)
+		status_background.size = Vector2(width_px, 20.0)
 		conditions_label.position = status_background.position
 		conditions_label.size = status_background.size
+		conditions_label.tooltip_text = "\n".join(status_descriptions)
 		if conditions_label.text != status_text:
 			conditions_label.text = status_text
 	elif not conditions_label.text.is_empty():
@@ -357,7 +366,8 @@ func _update_hover(floor_y: float) -> void:
 	_hover_panel.hide()
 	if levels == null or not is_instance_valid(levels):
 		return
-	if bool(board_root.get("_ui_owns_mouse")):
+	var ui_mouse_owner: Variant = board_root.get("_ui_owns_mouse")
+	if ui_mouse_owner is bool and ui_mouse_owner:
 		return
 	if Input.mouse_mode != Input.MOUSE_MODE_VISIBLE:
 		return
