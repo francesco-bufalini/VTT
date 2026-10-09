@@ -98,7 +98,7 @@ func _build_ui() -> void:
 	_category.item_selected.connect(func(_index: int) -> void: _refresh())
 	left.add_child(_category)
 	_filter = LineEdit.new()
-	_filter.placeholder_text = "Cerca per nome, fonte o descrizione..."
+	_filter.placeholder_text = "Cerca per nome o fonte..."
 	_filter.clear_button_enabled = true
 	_filter.text_changed.connect(func(_query: String) -> void: _refresh())
 	left.add_child(_filter)
@@ -202,7 +202,10 @@ func _show_selected(index: int) -> void:
 		_active_request = "compendium:%d" % Time.get_ticks_usec()
 		_client.call("request_creature", String(entry.get("name", "")), String(entry.get("source", "")), _active_request)
 	else:
-		_render(entry)
+		if _current_category() not in ["spells", "conditions", "diseases", "effects"]:
+			_details.text = PlayerCatalog.info_text(entry, ContentCatalog.description(entry))
+		else:
+			_render(entry)
 
 func _on_creature_ready(request_key: String, stat: Dictionary) -> void:
 	if request_key != _active_request or _current_category() != "monsters":
