@@ -126,7 +126,6 @@ func create_character() -> Dictionary:
 		"transfer_revision": 0,
 		"species_id": "",
 		"class_id": "",
-		"trackers": [],
 		"player_name": "",
 		"rules_version": "2024",
 		"class": "",
@@ -275,8 +274,6 @@ func normalize_character(value: Dictionary) -> Dictionary:
 		defaults["owner_id"] = CreatureOwner.local_id()
 	if not defaults.get("classes", []) is Array:
 		defaults["classes"] = []
-	if not defaults.get("trackers", []) is Array:
-		defaults["trackers"] = []
 	defaults["level"] = clampi(int(defaults.get("level", 1)), 1, 20)
 	var classes_value: Variant = defaults.get("classes", [])
 	if classes_value is Array and (classes_value as Array).size() == 1:
