@@ -28,6 +28,12 @@ var _catalog_filter: LineEdit
 var _name: LineEdit
 var _hp: SpinBox
 var _max_hp: SpinBox
+var _temp_hp: SpinBox
+var _size_choice: OptionButton
+var _reach: SpinBox
+var _front: OptionButton
+var _party: LineEdit
+var _tabs: TabContainer
 var _ac: SpinBox
 var _ability_spins: Dictionary = {}
 var _species: OptionButton
@@ -47,6 +53,7 @@ var _miniature_choices: Array[Dictionary] = []
 var _visible_miniatures: Array[Dictionary] = []
 var _pending_miniature_record: Dictionary = {}
 var _pending_new_creature := false
+var _picker_current := false
 var _chosen_miniature_id := ""
 var _current_miniature: Label
 var _reference: RichTextLabel
@@ -340,34 +347,68 @@ func _build_ui() -> void:
 	add_monster.pressed.connect(_request_selected_monster)
 	left.add_child(add_monster)
 
-	var edit_scroll := ScrollContainer.new()
-	edit_scroll.size_flags_horizontal = Control.SIZE_EXPAND_FILL
-	edit_scroll.size_flags_vertical = Control.SIZE_EXPAND_FILL
-	edit_scroll.follow_focus = true
-	columns.add_child(edit_scroll)
-	var form := VBoxContainer.new()
-	form.size_flags_horizontal = Control.SIZE_EXPAND_FILL
-	edit_scroll.add_child(form)
+	_tabs = TabContainer.new()
+	_tabs.size_flags_horizontal = Control.SIZE_EXPAND_FILL
+	_tabs.size_flags_vertical = Control.SIZE_EXPAND_FILL
+	_tabs.mouse_filter = Control.MOUSE_FILTER_STOP
+	columns.add_child(_tabs)
+	var form := _add_sheet_tab(_tabs, "Statistiche")
+	var appearance_tab := _add_sheet_tab(_tabs, "Aspetto")
+	var traits_tab := _add_sheet_tab(_tabs, "Tratti e talenti")
+	var conditions_tab := _add_sheet_tab(_tabs, "Stati")
+	_tabs.current_tab = 0
 
-	var fields := GridContainer.new()
-	fields.columns = 4
-	form.add_child(fields)
-	_add_label(fields, "Nome")
+	var name_row := HBoxContainer.new()
+	name_row.add_theme_constant_override("separation", 8)
+	form.add_child(name_row)
+	_add_label(name_row, "Nome")
 	_name = LineEdit.new()
 	_name.size_flags_horizontal = Control.SIZE_EXPAND_FILL
 	_name.text_changed.connect(func(_v: String) -> void: _save())
-	fields.add_child(_name)
-	_add_label(fields, "CA")
-	_ac = _spin(fields, 0, 99)
-	_add_label(fields, "PF attuali")
-	_hp = _spin(fields, -999, 99999)
-	_add_label(fields, "PF massimi")
-	_max_hp = _spin(fields, 0, 99999)
+	name_row.add_child(_name)
+	_add_label(name_row, "CA")
+	_ac = _spin(name_row, 0, 99)
+	_ac.custom_minimum_size.x = 64
+
+	var health_panel := PanelContainer.new()
+	health_panel.tooltip_text = "PF attuali, massimi e temporanei. I danni consumano prima i PF temporanei."
+	form.add_child(health_panel)
+	var health := HBoxContainer.new()
+	health.add_theme_constant_override("separation", 4)
+	health_panel.add_child(health)
+	_add_label(health, "❤️")
+	var damage := Button.new()
+	damage.text = "−"
+	damage.tooltip_text = "Sottrai 1 PF (consuma prima quelli temporanei)"
+	damage.custom_minimum_size.x = 28
+	damage.pressed.connect(_change_hit_points.bind(-1))
+	health.add_child(damage)
+	_hp = _spin(health, -999, 99999)
+	_hp.custom_minimum_size = Vector2(68, 30)
+	_hp.size_flags_horizontal = Control.SIZE_SHRINK_BEGIN
+	_add_label(health, "/")
+	_max_hp = _spin(health, 0, 99999)
+	_max_hp.custom_minimum_size = Vector2(68, 30)
+	_max_hp.size_flags_horizontal = Control.SIZE_SHRINK_BEGIN
+	var heal := Button.new()
+	heal.text = "+"
+	heal.tooltip_text = "Aggiungi 1 PF (fino al massimo)"
+	heal.custom_minimum_size.x = 28
+	heal.pressed.connect(_change_hit_points.bind(1))
+	health.add_child(heal)
 	var restore_hp := Button.new()
-	restore_hp.text = "Ripristina PF"
-	restore_hp.tooltip_text = "Riporta i punti ferita attuali al massimo"
+	restore_hp.text = "↺"
+	restore_hp.tooltip_text = "Ripristina i PF al valore massimo"
+	restore_hp.custom_minimum_size.x = 30
 	restore_hp.pressed.connect(_restore_full_hp)
-	form.add_child(restore_hp)
+	health.add_child(restore_hp)
+	var temp_health := HBoxContainer.new()
+	temp_health.add_theme_constant_override("separation", 6)
+	form.add_child(temp_health)
+	_add_label(temp_health, "🛡 PF temporanei")
+	_temp_hp = _spin(temp_health, 0, 99999)
+	_temp_hp.custom_minimum_size.x = 85
+	_temp_hp.size_flags_horizontal = Control.SIZE_SHRINK_BEGIN
 
 	var abilities_row := GridContainer.new()
 	abilities_row.columns = 6
@@ -415,7 +456,7 @@ func _build_ui() -> void:
 	form.add_child(_multiclass_rows)
 
 	var feats_header := HBoxContainer.new()
-	form.add_child(feats_header)
+	traits_tab.add_child(feats_header)
 	_add_label(feats_header, "Talenti e scelte manuali")
 	var search_feat := Button.new()
 	search_feat.text = "Cerca talenti…"
@@ -424,10 +465,10 @@ func _build_ui() -> void:
 	_feats = TextEdit.new()
 	_feats.custom_minimum_size = Vector2(0, 56)
 	_feats.text_changed.connect(_save)
-	form.add_child(_feats)
+	traits_tab.add_child(_feats)
 
 	var miniature_row := HBoxContainer.new()
-	form.add_child(miniature_row)
+	appearance_tab.add_child(miniature_row)
 	_add_label(miniature_row, "Miniatura base")
 	_default_miniature = LineEdit.new()
 	_default_miniature.size_flags_horizontal = Control.SIZE_EXPAND_FILL
@@ -440,16 +481,55 @@ func _build_ui() -> void:
 	miniature_row.add_child(choose_miniature)
 	_current_miniature = Label.new()
 	_current_miniature.text = "Aspetto attuale: nessun token"
-	form.add_child(_current_miniature)
+	appearance_tab.add_child(_current_miniature)
+	var appearance_actions := HBoxContainer.new()
+	appearance_actions.add_theme_constant_override("separation", 8)
+	appearance_tab.add_child(appearance_actions)
 	var edit_appearance := Button.new()
-	edit_appearance.text = "Cambia aspetto attuale…"
-	edit_appearance.tooltip_text = "Cerca fra le miniature disponibili e modifica l'aspetto, la taglia o la gittata del token in scena."
+	edit_appearance.text = "Scegli aspetto attuale…"
+	edit_appearance.tooltip_text = "Cerca la miniatura attuale; funziona anche senza token in scena."
 	edit_appearance.pressed.connect(_edit_linked_token_appearance)
-	form.add_child(edit_appearance)
+	appearance_actions.add_child(edit_appearance)
+	var reset_appearance := Button.new()
+	reset_appearance.text = "↺ Aspetto di base"
+	reset_appearance.tooltip_text = "Reimposta l'aspetto attuale alla miniatura di base."
+	reset_appearance.pressed.connect(_restore_default_appearance)
+	appearance_actions.add_child(reset_appearance)
+
+	var geometry := GridContainer.new()
+	geometry.columns = 2
+	geometry.add_theme_constant_override("h_separation", 14)
+	geometry.add_theme_constant_override("v_separation", 10)
+	appearance_tab.add_child(geometry)
+	_add_label(geometry, "Taglia")
+	_size_choice = OptionButton.new()
+	for size_name: String in ["Tiny", "Small", "Medium", "Large", "Huge", "Gargantuan"]:
+		_size_choice.add_item(size_name)
+	_size_choice.item_selected.connect(func(_i: int) -> void: _save())
+	geometry.add_child(_size_choice)
+	_add_label(geometry, "Gittata (ft)")
+	_reach = _spin(geometry, 5, 1000)
+	_reach.step = 5.0
+	_add_label(geometry, "Fronte della miniatura")
+	_front = OptionButton.new()
+	for direction: String in ["0°", "90°", "180°", "270°"]:
+		_front.add_item(direction)
+	_front.item_selected.connect(func(_i: int) -> void: _save())
+	geometry.add_child(_front)
+	_add_label(geometry, "Party")
+	_party = LineEdit.new()
+	_party.placeholder_text = "Default"
+	_party.text_changed.connect(func(_text: String) -> void: _save())
+	geometry.add_child(_party)
+	var hint := Label.new()
+	hint.text = "Questi parametri sono salvati sulla creatura e usati al prossimo piazzamento."
+	hint.autowrap_mode = TextServer.AUTOWRAP_WORD_SMART
+	hint.modulate.a = 0.7
+	appearance_tab.add_child(hint)
 
 
 	_condition_rows = VBoxContainer.new()
-	form.add_child(_condition_rows)
+	conditions_tab.add_child(_condition_rows)
 
 	_reference = RichTextLabel.new()
 	_reference.bbcode_enabled = false
@@ -457,7 +537,7 @@ func _build_ui() -> void:
 	_reference.scroll_active = true
 	_reference.custom_minimum_size.y = 250
 	_reference.size_flags_vertical = Control.SIZE_SHRINK_BEGIN
-	form.add_child(_reference)
+	traits_tab.add_child(_reference)
 	_effect_dialog = AcceptDialog.new()
 	_effect_dialog.title = "5etools · Effect details"
 	_effect_dialog.min_size = Vector2i(560, 420)
@@ -473,6 +553,25 @@ func _build_ui() -> void:
 	_delete_dialog.confirmed.connect(_delete_selected_creature)
 	add_child(_delete_dialog)
 
+
+
+func _add_sheet_tab(tabs: TabContainer, title: String) -> VBoxContainer:
+	var scroll := ScrollContainer.new()
+	scroll.name = title
+	scroll.size_flags_horizontal = Control.SIZE_EXPAND_FILL
+	scroll.size_flags_vertical = Control.SIZE_EXPAND_FILL
+	scroll.follow_focus = true
+	tabs.add_child(scroll)
+	var margin := MarginContainer.new()
+	margin.size_flags_horizontal = Control.SIZE_EXPAND_FILL
+	for edge: String in ["margin_left", "margin_right", "margin_top", "margin_bottom"]:
+		margin.add_theme_constant_override(edge, 12)
+	scroll.add_child(margin)
+	var content := VBoxContainer.new()
+	content.add_theme_constant_override("separation", 12)
+	content.size_flags_horizontal = Control.SIZE_EXPAND_FILL
+	margin.add_child(content)
+	return content
 
 
 func _on_options_selected(id: int) -> void:
