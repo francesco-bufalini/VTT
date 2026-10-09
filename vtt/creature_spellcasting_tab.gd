@@ -64,13 +64,18 @@ func setup(on_change: Callable, on_status: Callable) -> void:
 	_on_change = on_change
 	_on_status = on_status
 	add_theme_constant_override("separation", 10)
+	var title_row := HBoxContainer.new()
+	title_row.add_theme_constant_override("separation", 10)
+	add_child(title_row)
 	var title := Label.new()
-	title.text = "Incantesimi di classe e disponibili"
-	title.add_theme_font_size_override("font_size", 18)
-	add_child(title)
+	title.text = "Grimorio e preparazione"
+	title.size_flags_horizontal = Control.SIZE_EXPAND_FILL
+	title.add_theme_font_size_override("font_size", 20)
+	title.add_theme_color_override("font_color", Color(0.96, 0.79, 0.51))
+	title_row.add_child(title)
 	_spell_options = MenuButton.new()
 	_spell_options.text = "Opzioni ▾"
-	add_child(_spell_options)
+	title_row.add_child(_spell_options)
 	var menu: PopupMenu = _spell_options.get_popup()
 	menu.add_check_item("Mostra ricerca incantesimi", 1)
 	menu.add_item("Ricalcola slot dalle classi", 2)
