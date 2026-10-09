@@ -259,6 +259,11 @@ func show_panel() -> void:
 	) as Control
 	if tactical_overlay != null:
 		tactical_overlay.hide()
+	# Immediately suppress tactical condition badges before they can draw
+	# on top of the newly opened panel (including the very first frame).
+	var flanking: Node = board_root.get_node_or_null("FlankingSystem")
+	if flanking != null and flanking.has_method("refresh_now"):
+		flanking.call("refresh_now")
 	if board_root.has_method("release_camera_control"):
 		board_root.call("release_camera_control")
 
@@ -273,6 +278,9 @@ func hide_panel() -> void:
 		tactical_overlay.call(
 			"set_2d_active", bool(board_root.call("is_2d_view_enabled"))
 		)
+	var flanking: Node = board_root.get_node_or_null("FlankingSystem")
+	if flanking != null and flanking.has_method("refresh_now"):
+		flanking.call("refresh_now")
 	if board_root.has_method("capture_camera_control"):
 		board_root.call("capture_camera_control")
 
