@@ -293,6 +293,17 @@ func run() -> void:
 	floating_token.position = Vector3(2.0, 10.5, 2.0)
 	floating_token.add_to_group("dnd_token")
 	tokens_root.add_child(floating_token)
+	# Godot lifts grounded bodies slightly (0.005 cells) to avoid
+	# interpenetration; that clearance must not change the supporting cell.
+	floating_token.position.y = 10.505
+	if not _check(
+		is_equal_approx(
+			ElevationLevels.token_support_air_level(floating_token, 1.0), 9.5
+		),
+		"subcell collision clearance must not move the air base into an occupied token square"
+	):
+		return
+	floating_token.position.y = 10.5
 	# A creature actually resting on a collidable floor must not add an
 	# artificial level half a square BELOW the floor.
 	var grounded_token: OverlayToken = OverlayToken.new()
