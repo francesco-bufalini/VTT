@@ -1925,7 +1925,7 @@ func _refresh_reference(record: Dictionary) -> void:
 				continue
 			parts.append(FiveToolsText.section(String(headings[section_key])))
 			parts.append(FiveToolsText.blocks(entries))
-		_reference.bbcode_text = "\n\n".join(parts)
+		_reference.text = "\n\n".join(parts)
 		return
 
 	parts.append(FiveToolsText.title("%s · %s" % [
@@ -1991,7 +1991,7 @@ func _refresh_reference(record: Dictionary) -> void:
 			var description: String = FiveToolsText.blocks(feature_content)
 			if not description.is_empty():
 				parts.append(description)
-	_reference.bbcode_text = "\n\n".join(parts)
+	_reference.text = "\n\n".join(parts)
 
 
 func _filter_catalog(query: String) -> void:
@@ -2853,7 +2853,7 @@ func _show_effect_description(definition: Dictionary) -> void:
 	if _effect_dialog == null or _effect_text == null:
 		return
 	_effect_dialog.title = String(definition.get("name", "Effect"))
-	_effect_text.bbcode_text = FiveToolsText.blocks(definition.get(
+	_effect_text.text = FiveToolsText.blocks(definition.get(
 		"entries", definition.get("description", ContentCatalog.description(definition))
 	))
 	_effect_dialog.popup_centered(Vector2i(600, 450))
