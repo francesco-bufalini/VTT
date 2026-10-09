@@ -235,10 +235,12 @@ func run() -> void:
 		"All sources must appear in a single ordered timeline")
 	assert(has_action_surge, "Fighter feature should be available to its tracker")
 	area._traits_ui.call("load_record", multiclass_sheet)
-	assert(area._traits_ui._origin_choice.item_count >= 5,
+	var traits_pane: Node = area._traits_ui
+	var trait_origin_filter: OptionButton = traits_pane.get("_origin_choice") as OptionButton
+	assert(trait_origin_filter.item_count >= 5,
 		"Origin filter must include all selected class and subclass sources")
 	area._traits_ui.call("focus_feature", "Action Surge", "Fighter · PHB")
-	assert(String(area._traits_ui._active_origin).begins_with("class|fighter|phb"),
+	assert(String(traits_pane.get("_active_origin")).begins_with("class|fighter|phb"),
 		"Tracker links must reveal the feature even when another origin was filtered")
 	area._traits_ui.call("load_record", {
 		"kind": "monster",
@@ -247,7 +249,7 @@ func run() -> void:
 		]}
 	})
 	area._traits_ui.call("focus_feature", "Azioni leggendarie")
-	assert(area._traits_ui._active_origin == "monster|legendary",
+	assert(String(traits_pane.get("_active_origin")) == "monster|legendary",
 		"Section-level legendary trackers must focus their bestiary actions")
 	area._traits_ui.call("load_record", area._current())
 	area._ability_bonus_spins["con"].value = 2
