@@ -319,6 +319,11 @@ func _build_ui() -> void:
 	_current_miniature = Label.new()
 	_current_miniature.text = "Aspetto attuale: nessun token"
 	form.add_child(_current_miniature)
+	var edit_appearance := Button.new()
+	edit_appearance.text = "Miniature · appearance / size / reach…"
+	edit_appearance.tooltip_text = "Open the common token visual editor for this creature's linked miniature."
+	edit_appearance.pressed.connect(_edit_linked_token_appearance)
+	form.add_child(edit_appearance)
 
 	var tracker_heading := HBoxContainer.new()
 	form.add_child(tracker_heading)
@@ -1254,6 +1259,16 @@ func _species_default_miniature(species: String) -> String:
 	return ""
 
 
+func _edit_linked_token_appearance() -> void:
+	var token := _find_linked_token(_current())
+	if token == null:
+		_set_status("No linked miniature for this creature.")
+		return
+	hide_panel()
+	if board_root.has_method("open_token_transformation"):
+		board_root.call("open_token_transformation", token)
+
+
 func _refresh_current_miniature(record: Dictionary) -> void:
 	var token := _find_linked_token(record)
 	if token == null:
@@ -1289,6 +1304,8 @@ func _sync_token_health(record: Dictionary) -> void:
 		else "set_master_hit_points"
 	)
 	token.set_meta("rules_version", String(record.get("rules_version", "2014")))
+	if token.has_method("set_display_name"):
+		token.call("set_display_name", String(record.get("name", "")))
 	if token.has_method("set_conditions"):
 		token.call("set_conditions", record.get("conditions", []))
 	if token.has_method(method):
