@@ -94,6 +94,9 @@ static func item_range(entry: Dictionary, long_range: bool = false) -> int:
 static func attack_ability(record: Dictionary, entry: Dictionary, thrown: bool = false) -> String:
 	var type_code := String(entry.get("type", "")).split("|")[0].to_upper()
 	if type_code == "R" and not thrown:
+		# Finesse ranged weapons such as the 2014 dart may also use STR.
+		if has_property(entry, "F") and String(record.get("attack_ability", "str")) == "str":
+			return "str"
 		return "dex"
 	# Thrown melee weapons keep their melee modifier in the 2014 rules.
 	if String(record.get("attack_ability", "str")) == "dex" and has_property(entry, "F"):
@@ -103,4 +106,4 @@ static func attack_ability(record: Dictionary, entry: Dictionary, thrown: bool =
 
 static func valid_slot(entry: Dictionary, slot: String) -> bool:
 	var item_kind := kind(entry)
-	return item_kind == "weapon" or (slot == "off" and item_kind == "shield")
+	return (item_kind == "weapon" and (slot == "main" or not is_two_handed(entry))) or (slot == "off" and item_kind == "shield")
