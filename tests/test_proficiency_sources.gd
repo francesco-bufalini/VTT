@@ -74,13 +74,15 @@ func run() -> void:
 	assert(Attacks.damage_expression(record, additive_attack).ends_with("+2+4"),
 		"Rolling damage must retain base and ability bonuses when both appear in the displayed formula")
 	record["proficiency_origins"] = [{"id": "class|phb|fighter", "name": "Starting Fighter", "automatic": true, "disabled": true}]
-	assert(Attacks.attack_bonus(record, weapon, 2) == 6,
-		"Legacy disabled flags cannot suppress mandatory class weapon proficiencies")
+	assert(Attacks.attack_bonus(record, weapon, 2) == 4,
+		"Muting a mandatory class origin temporarily removes its attack proficiency bonus")
 	var normalized_sources: Array[Dictionary] = Proficiencies.origins(record)
 	for normalized: Dictionary in normalized_sources:
 		if String(normalized.get("id", "")) == "class|phb|fighter":
-			assert(not bool(normalized.get("disabled", false)), "Mandatory origins must be repaired on load")
+			assert(bool(normalized.get("disabled", false)), "Mandatory sources retain their disabled state on load")
 	record["proficiency_origins"][0]["disabled"] = false
+	assert(Attacks.attack_bonus(record, weapon, 2) == 6,
+		"Reactivating a mandatory origin restores its unmodified grants")
 	Proficiencies.sync_legacy_fields(record, rows)
 	assert(record.skill_proficiencies == ["athletics"], "Legacy skill arrays remain synchronized")
 	assert(Proficiencies.unassigned_count(record) == 1,
@@ -397,8 +399,16 @@ func run() -> void:
 	assert(tab._proficiency_cards.get_child_count() == before_duplicate,
 		"Duplicate grants from different origins appear once in the UI")
 	tab._toggle_origin(false, "class|phb|fighter")
+	assert(not Proficiencies.has_proficiency(tab._effective_record(), "weapon", "martial"),
+		"Fixed class proficiencies can be muted by switching their origin off")
+	assert(not tab._group_enabled([tab._rows.find_custom(func(row: Dictionary) -> bool:
+		return String(row.get("origin_id", "")) == "class|phb|fighter"
+			and String(row.get("kind", "")) == "weapon"
+			and String(row.get("key", "")) == "martial"
+	)]), "Muted source must show its proficiencies as inactive")
+	tab._toggle_origin(true, "class|phb|fighter")
 	assert(Proficiencies.has_proficiency(tab._effective_record(), "weapon", "martial"),
-		"Fixed class proficiencies cannot be suppressed through their origin")
+		"Reactivating an origin restores fixed grants without rewriting rows")
 	# A 5etools background can require a language and an artisan tool.
 	# Both must be reachable in the same dialog, and opening again should
 	# focus the first incomplete category rather than always the language.
@@ -616,9 +626,38 @@ func run() -> void:
 			break
 	assert(mandatory_index >= 0 and tab._is_mandatory_choice(tab._rows[mandatory_index]))
 	tab._toggle_competence(false, mandatory_index)
+	assert(bool(tab._rows[mandatory_index].get("disabled", false)),
+		"Mandatory proficiency can be deactivated individually without deleting it")
+	assert(not Proficiencies.has_proficiency(tab._effective_record(), "weapon", "martial"),
+		"A muted fixed grant must stop contributing to the effective proficiency")
+	tab._refresh_competences()
+	var fixed_control: CheckButton = null
+	var fixed_card: PanelContainer = null
+	for card_node: Node in tab._proficiency_cards.get_children():
+		if not card_node is PanelContainer:
+			continue
+		for container_node: Node in card_node.get_children():
+			if container_node is HBoxContainer:
+				var has_martial := false
+				for child_node: Node in container_node.get_children():
+					if child_node is Label and String((child_node as Label).text).contains("martial"):
+						has_martial = true
+				if has_martial:
+					fixed_card = card_node as PanelContainer
+					for child_node: Node in container_node.get_children():
+						if child_node is CheckButton and (child_node as CheckButton).text == "⏻":
+							fixed_control = child_node as CheckButton
+	assert(fixed_control != null and not fixed_control.disabled
+		and fixed_card != null, "Fixed grants must have a usable on/off switch")
+	tab._toggle_group(true, [mandatory_index])
+	assert(not bool(tab._rows[mandatory_index].get("disabled", true)),
+		"Fixed grant can be reactivated without adding a new source grant")
 	tab._toggle_group(false, [mandatory_index])
-	assert(not bool(tab._rows[mandatory_index].get("disabled", false)),
-		"Mandatory proficiency cannot be disabled individually or by group")
+	var saved_fixed: Dictionary = tab._effective_record()
+	assert(not Proficiencies.has_proficiency(saved_fixed, "weapon", "martial")
+		and not Proficiencies.choices(saved_fixed).is_empty(),
+		"Disabled mandatory grant survives serialization and stays in the origin")
+	tab._toggle_group(true, [mandatory_index])
 	tab._select_origin("class|phb|fighter")
 	var unrelated := tab._rows.size()
 	tab._rows.append({"kind": "skill", "key": "nature", "origin_id": "custom|separate", "disabled": false})
