@@ -120,6 +120,9 @@ var _ability_modifier_labels: Dictionary = {}
 var _saving_throw_labels: Dictionary = {}
 var _tools_proficiency_label: Label
 var _species: OptionButton
+var _creature_type_display: Label
+var _subtype: LineEdit
+var _subtype_custom := false
 var _background: OptionButton
 var _subclass_name: OptionButton
 var _class_name: OptionButton
@@ -952,6 +955,20 @@ func _build_ui() -> void:
 	_add_label(species_row, "Razza / Specie")
 	_species = _reference_option(species_row, Player5eTools.entries("races"))
 	_species.item_selected.connect(func(_index: int) -> void: _on_species_changed())
+	var type_row := HBoxContainer.new()
+	type_row.add_theme_constant_override("separation", 7)
+	form.add_child(type_row)
+	_add_label(type_row, "Tipo")
+	_creature_type_display = Label.new()
+	_creature_type_display.custom_minimum_size.x = 110
+	type_row.add_child(_creature_type_display)
+	_add_label(type_row, "Sottotipo")
+	_subtype = LineEdit.new()
+	_subtype.size_flags_horizontal = Control.SIZE_EXPAND_FILL
+	_subtype.placeholder_text = "Nessuno"
+	_subtype.tooltip_text = "Per i mostri viene proposto dai tag del bestiario; puoi modificarlo."
+	_subtype.text_changed.connect(_on_subtype_changed)
+	type_row.add_child(_subtype)
 	var background_row := HBoxContainer.new()
 	form.add_child(background_row)
 	_add_label(background_row, "Background")
@@ -1002,7 +1019,7 @@ func _build_ui() -> void:
 	classes_row.add_child(_level)
 	var multiclass_header := HBoxContainer.new()
 	form.add_child(multiclass_header)
-	_add_label(multiclass_header, "Classi aggiuntive (multiclasse)")
+	_add_label(multiclass_header, "Classi aggiuntive")
 	_add_class_button = Button.new()
 	_add_class_button.text = "+ Classe"
 	_add_class_button.pressed.connect(_add_multiclass_row)
@@ -1784,12 +1801,7 @@ func _subclass_choices(class_ref: Dictionary) -> Array[Dictionary]:
 	var wanted: String = String(class_ref.get("name", "")).strip_edges()
 	var source: String = String(class_ref.get("source", "")).to_upper()
 	if wanted == "Mostro":
-		var record: Dictionary = _current()
-		var stat_value: Variant = record.get("stat_block", {})
-		if stat_value is Dictionary:
-			var monster_type: Dictionary = Rules.monster_type_reference(stat_value as Dictionary)
-			if not monster_type.is_empty():
-				result.append(monster_type)
+		# The monster's type/subtype belongs to its species, not its class.
 		return result
 	if wanted.is_empty():
 		return result
@@ -2162,6 +2174,10 @@ func _load_form(record: Dictionary) -> void:
 		}]
 		_set_reference_choices(_species, bestiary_species)
 	_select_reference(_species, String(record.get("species", "")), String(record.get("species_source", "")), String(record.get("species_id", "")))
+	_subtype_custom = bool(record.get("subtype_is_custom", false))
+	var bestiary_subtype: String = Rules.monster_subtype(record.get("stat_block", {})) if not is_character else ""
+	_subtype.text = String(record.get("subtype", "")) if _subtype_custom else bestiary_subtype
+	_refresh_creature_type(record)
 	_set_reference_choices(_background, Player5eTools.entries("backgrounds"))
 	_select_reference(_background, String(record.get("background", "")), String(record.get("background_source", "")), String(record.get("background_id", "")))
 	_speed_custom = bool(record.get("speed_is_custom", false))
@@ -2188,10 +2204,12 @@ func _load_form(record: Dictionary) -> void:
 		_select_reference(_class_name, String(record.get("class", "")), class_source, String(record.get("class_id", "")))
 	_refresh_multiclass_availability()
 	_refresh_subclass_option(_subclass_name, _reference_entry(_class_name))
-	_select_reference(_subclass_name, String(record.get("subclass", "")), String(record.get("subclass_source", "")), String(record.get("subclass_id", "")))
-	_subclass_caption.text = "Sottoclasse" if is_character else "Sottotipo"
+	if is_character:
+		_select_reference(_subclass_name, String(record.get("subclass", "")), String(record.get("subclass_source", "")), String(record.get("subclass_id", "")))
+	_subclass_caption.text = "Sottoclasse"
+	_subclass_caption.visible = is_character
+	_subclass_name.visible = is_character
 	_level_caption.text = "Livello" if is_character else "GS (intero)"
-	_subclass_name.disabled = not is_character
 	_clear_multiclass()
 	var classes_value: Variant = record.get("classes", [])
 	if classes_value is Array:
@@ -2288,9 +2306,28 @@ func _on_species_changed() -> void:
 	_speed_custom = false
 	_loading = true
 	_speed.value = _speed_from_species()
+	_subtype_custom = false
+	_subtype.text = ""
+	_refresh_creature_type({"kind": "character"})
 	_loading = false
 	_update_speed_display()
 	_save()
+
+
+func _on_subtype_changed(_value: String) -> void:
+	if _loading:
+		return
+	_subtype_custom = true
+	_save()
+
+
+func _refresh_creature_type(record: Dictionary) -> void:
+	if _creature_type_display == null:
+		return
+	if String(record.get("kind", "")) == "monster":
+		_creature_type_display.text = String(Rules.monster_type_reference(record.get("stat_block", {})).get("name", "Non definito"))
+	else:
+		_creature_type_display.text = Rules.species_creature_type(_reference_entry(_species))
 
 
 func _on_speed_changed(_value: float) -> void:
@@ -3059,6 +3096,8 @@ func _save() -> void:
 	record["second_form_max_hp"] = int(_second_form_max_hp.value)
 	record["second_form_hp"] = clampi(int(_second_form_hp.value), 0, int(_second_form_max_hp.value))
 	record["background_personality"] = _biography.text
+	record["subtype"] = _subtype.text.strip_edges()
+	record["subtype_is_custom"] = _subtype_custom
 	var background_entry: Dictionary = _reference_entry(_background)
 	record["background"] = String(background_entry.get("name", ""))
 	record["background_source"] = String(background_entry.get("source", ""))
@@ -3103,14 +3142,12 @@ func _save() -> void:
 		record["species_source"] = String(stat.get("source", ""))
 		record["class"] = "Mostro"
 		record["class_source"] = "5etools"
-		var monster_type: Dictionary = Rules.monster_type_reference(stat)
-		record["subclass"] = String(monster_type.get("name", ""))
-		record["subclass_source"] = "5etools"
-		record["subclass_id"] = String(monster_type.get("id", ""))
+		# Monster type and subtype are not a character subclass.
+		record["subclass"] = ""
+		record["subclass_source"] = ""
+		record["subclass_id"] = ""
 		var monster_classes: Array[Dictionary] = [{
-			"name": "Mostro", "source": "5etools", "level": Rules.monster_level(stat),
-			"subclass": record["subclass"],
-			"subclass_source": "5etools", "subclass_id": record["subclass_id"]
+			"name": "Mostro", "source": "5etools", "level": Rules.monster_level(stat)
 		}]
 		var additional_levels: int = 0
 		for definition: Dictionary in _multiclass_controls:
