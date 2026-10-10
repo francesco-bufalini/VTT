@@ -6,6 +6,7 @@ const CATEGORIES := {
 	"monster": "monsters",
 	"spell": "spells",
 	"item": "items",
+	"document": "documents",
 	"baseitem": "items",
 	"magicvariant": "items",
 	"class": "classes",
@@ -68,7 +69,8 @@ static func normalize(document: Dictionary, path: String) -> Dictionary:
 				diagnostics.append("Homebrew 5etools: nome/fonte non validi: " + path)
 				continue
 			var namespace: String = _slug(source, 48)
-			var local_id: String = _slug(name, 64)
+			var identifier := String(data.get("id", name)) if category == "documents" else name
+			var local_id: String = _slug(identifier, 64)
 			if namespace.is_empty() or local_id.is_empty():
 				diagnostics.append("Homebrew 5etools: ID non valido: " + name)
 				continue
