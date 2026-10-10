@@ -342,9 +342,11 @@ func _remove_choice() -> void:
 	var removed: Dictionary = _rows[idx]
 	_rows.remove_at(idx)
 	if String(removed.get("kind", "")) == "skill":
-		_rows = _rows.filter(func(row: Dictionary) -> bool:
-			return not (String(row.get("kind", "")) == "expertise" and String(row.get("key", "")) == String(removed.get("key", "")))
-		)
+		var retained: Array[Dictionary] = []
+		for row: Dictionary in _rows:
+			if not (String(row.get("kind", "")) == "expertise" and String(row.get("key", "")) == String(removed.get("key", ""))):
+				retained.append(row)
+		_rows = retained
 	_publish()
 
 
@@ -384,7 +386,6 @@ func _remove_feat() -> void:
 	var indexes: PackedInt32Array = _feat_owned.get_selected_items()
 	if indexes.is_empty() or indexes[0] >= _feats.size():
 		return
-	var removed: Dictionary = _feats[indexes[0]]
 	_feats.remove_at(indexes[0])
 	# Orphaned origins stay visible until the user reassigns them.
 	_publish()
