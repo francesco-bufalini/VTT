@@ -29,6 +29,7 @@ var _catalog_count: Label
 var _catalog_details: RichTextLabel
 var _equip_main: Button
 var _equip_off: Button
+var _equip_armor: Button
 var _unequip: Button
 var _search: LineEdit
 var _catalog_list: ItemList
@@ -148,8 +149,13 @@ func setup(on_change: Callable, on_status: Callable, on_document_change: Callabl
 	_equip_off.text = "🛡 Secondaria / Scudo"
 	_equip_off.pressed.connect(_equip_selected.bind("off"))
 	equipment_row.add_child(_equip_off)
+	_equip_armor = Button.new()
+	_equip_armor.text = "Indossa armatura"
+	_equip_armor.tooltip_text = "Seleziona questa armatura per calcolare automaticamente la CA"
+	_equip_armor.pressed.connect(_equip_selected.bind("body"))
+	equipment_row.add_child(_equip_armor)
 	_unequip = Button.new()
-	_unequip.text = "Rinfodera"
+	_unequip.text = "Rimuovi equipaggiamento"
 	_unequip.pressed.connect(_unequip_selected)
 	equipment_row.add_child(_unequip)
 
@@ -779,6 +785,8 @@ func _inventory_label(item: Dictionary) -> String:
 	var slots: Array = ItemRules.slots(item)
 	if "main" in slots:
 		tags.append("⚔ Principale")
+	if "body" in slots:
+		tags.append("Indossata")
 	if "off" in slots:
 		tags.append("🛡 Secondaria")
 	var equipment := (" [" + ", ".join(tags) + "]") if not tags.is_empty() else ""
@@ -806,7 +814,7 @@ func _sanitize_equipment() -> void:
 		var valid: Array = []
 		for raw_slot: Variant in ItemRules.slots(row):
 			var slot := String(raw_slot)
-			if slot not in ["main", "off"] or used.has(slot):
+			if slot not in ["main", "off", "body"] or used.has(slot):
 				continue
 			if not ItemRules.valid_slot(entry, slot):
 				continue
@@ -834,6 +842,7 @@ func _update_equip_buttons() -> void:
 	var entry: Dictionary = _catalog_entry(_inventory[index]) if present else {}
 	_equip_main.disabled = not present or not ItemRules.valid_slot(entry, "main")
 	_equip_off.disabled = not present or not ItemRules.valid_slot(entry, "off")
+	_equip_armor.disabled = not present or not ItemRules.valid_slot(entry, "body")
 	_unequip.disabled = not present or ItemRules.slots(_inventory[index]).is_empty()
 
 
