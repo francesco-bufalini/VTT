@@ -1,6 +1,45 @@
 extends RefCounted
 
-const Enrichment = preload("res://vtt/content_enrichment.gd")
+# Optional VTT extensions are loaded when needed, rather than preloaded into
+# every compendium consumer. Source definitions remain usable independently.
+const ENRICHMENT_SCRIPT_PATH := "res://vtt/content_enrichment.gd"
+const ENRICHMENT_USER_DIR := "user://vtt_enrichment"
+
+static var _enrichment_script: Script
+
+
+static func _extension() -> Script:
+	if _enrichment_script != null:
+		return _enrichment_script
+	var resource: Resource = load(ENRICHMENT_SCRIPT_PATH)
+	if resource is Script:
+		_enrichment_script = resource as Script
+	return _enrichment_script
+
+
+static func reload_enrichment() -> void:
+	var script: Script = _extension()
+	if script != null:
+		script.call("reload")
+
+
+static func enrichment_diagnostics() -> Array[String]:
+	var result: Array[String] = []
+	var script: Script = _extension()
+	if script != null:
+		var raw: Variant = script.get("diagnostics")
+		if raw is Array:
+			for item: Variant in raw:
+				result.append(String(item))
+	return result
+
+
+static func enrich(category: String, definition: Dictionary) -> Dictionary:
+	var script: Script = _extension()
+	if script == null:
+		return definition.duplicate(true)
+	var value: Variant = script.call("apply_to", category, definition)
+	return value as Dictionary if value is Dictionary else definition.duplicate(true)
 
 # Shared data normalization and local content overlays, never private sheets.
 const HOME_DIR := "user://homebrew"
@@ -61,7 +100,7 @@ static var diagnostics: Array[String] = []
 static var _effects: Array[Dictionary] = []
 
 static func reload_homebrew(paths: Array[String] = ["res://homebrew", HOME_DIR]) -> void:
-	Enrichment.reload()
+	reload_enrichment()
 	_home.clear()
 	diagnostics.clear()
 	_loaded = true
@@ -242,7 +281,7 @@ static func merge(category: String, base: Array[Dictionary]) -> Array[Dictionary
 			indexed[String(row.id)] = row
 	var result: Array[Dictionary] = []
 	for row: Dictionary in indexed.values():
-		result.append(Enrichment.apply_to(category, row))
+		result.append(enrich(category, row))
 	return result
 
 static func _load_effects() -> void:
