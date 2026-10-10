@@ -467,6 +467,12 @@ func run() -> void:
 	tab._delete_competence_from_source("weapon", "martial", "~all~")
 	assert(fixed_before and Proficiencies.has_choice(tab._rows, "weapon", "martial"),
 		"Required grants cannot be deleted even by choosing all origins")
+	assert(Proficiencies.is_mandatory_grant(_record(), "class|phb|fighter", "weapon", "martial"),
+		"Martial weapon category must be recognized as a fixed class grant")
+	assert(not Proficiencies.is_mandatory_grant(_record(), "", "weapon", "martial"),
+		"Unknown origin may always be explicitly removed")
+	assert(tab._deletable_sources("weapon", "martial").is_empty(),
+		"The UI must not offer a delete button when all sources are mandatory")
 	tab._select_origin("class|phb|fighter")
 	var unrelated := tab._rows.size()
 	tab._rows.append({"kind": "skill", "key": "nature", "origin_id": "custom|separate", "disabled": false})
