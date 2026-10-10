@@ -106,6 +106,7 @@ var _weapon_options: Array[Dictionary] = []
 var _attack_rows: VBoxContainer
 var _attack_hit_labels: Dictionary = {}
 var _attack_damage_labels: Dictionary = {}
+var _attack_range_labels: Dictionary = {}
 var _front: OptionButton
 var _party: LineEdit
 var _tabs: TabContainer
@@ -599,12 +600,12 @@ func _build_ui() -> void:
 	_rules_edition.select(0)
 	_rules_edition.item_selected.connect(_on_rules_edition_changed)
 	name_row.add_child(_rules_edition)
-	_add_label(name_row, "✏️ Nome")
+	_add_label(name_row, "Nome")
 	_name = LineEdit.new()
 	_name.size_flags_horizontal = Control.SIZE_EXPAND_FILL
 	_name.text_changed.connect(func(_v: String) -> void: _save())
 	name_row.add_child(_name)
-	_add_label(name_row, "🚩 Fazione")
+	_add_label(name_row, "Fazione")
 	_party = LineEdit.new()
 	_party.custom_minimum_size.x = 85
 	_party.size_flags_horizontal = Control.SIZE_SHRINK_END
@@ -625,9 +626,10 @@ func _build_ui() -> void:
 	var health_content := VBoxContainer.new()
 	health_panel.add_child(health_content)
 	var health_title := Label.new()
-	health_title.text = "❤️ Punti Ferita"
+	health_title.text = "PUNTI FERITA"
 	health_title.add_theme_font_size_override("font_size", 17)
 	health_title.add_theme_color_override("font_color", Color(1.0, 0.78, 0.65))
+	_style_statistics_heading(health_title)
 	health_content.add_child(health_title)
 	var health := HFlowContainer.new()
 	health.add_theme_constant_override("h_separation", 5)
@@ -659,7 +661,7 @@ func _build_ui() -> void:
 	# HP actions belong on the same row, directly before temporary HP.
 	var health_actions := HBoxContainer.new()
 	health.add_child(health_actions)
-	_add_label(health, "💙 TEMP")
+	_add_label(health, "TEMP")
 	_temp_hp = _spin(health, 0, 99999)
 	_temp_hp.custom_minimum_size.x = 64
 	_max_hp.value_changed.connect(func(_v: float) -> void: _update_max_hp_display())
@@ -683,7 +685,7 @@ func _build_ui() -> void:
 	var form_hp_row := HBoxContainer.new()
 	form_hp_row.add_theme_constant_override("separation", 6)
 	health_content.add_child(form_hp_row)
-	_add_label(form_hp_row, "🦋 Seconda forma")
+	_add_label(form_hp_row, "Seconda forma")
 	_second_form_hp = SpinBox.new()
 	_second_form_hp.min_value = 0
 	_second_form_hp.max_value = 99999
@@ -712,7 +714,7 @@ func _build_ui() -> void:
 	var temp_health := HBoxContainer.new()
 	temp_health.add_theme_constant_override("separation", 6)
 	defense_flow.add_child(temp_health)
-	_add_label(temp_health, "🛡 CA")
+	_add_label(temp_health, "CA")
 	_ac_effective = Label.new()
 	_ac_effective.custom_minimum_size.x = 28
 	temp_health.add_child(_ac_effective)
@@ -728,7 +730,7 @@ func _build_ui() -> void:
 	var movement_row := HBoxContainer.new()
 	movement_row.add_theme_constant_override("separation", 6)
 	defense_flow.add_child(movement_row)
-	_add_label(movement_row, "⚡ Iniziativa")
+	_add_label(movement_row, "Iniziativa")
 	_initiative_effective = Label.new()
 	_initiative_effective.custom_minimum_size.x = 32
 	movement_row.add_child(_initiative_effective)
@@ -744,7 +746,7 @@ func _build_ui() -> void:
 	var speed_row := HBoxContainer.new()
 	speed_row.add_theme_constant_override("separation", 4)
 	defense_flow.add_child(speed_row)
-	_add_label(speed_row, "👟 Velocità (ft)")
+	_add_label(speed_row, "Velocità (ft)")
 	_speed_effective = Label.new()
 	speed_row.add_child(_speed_effective)
 	_speed = SpinBox.new()
@@ -783,9 +785,10 @@ func _build_ui() -> void:
 	abilities_row.add_theme_constant_override("h_separation", 8)
 	abilities_row.add_theme_constant_override("v_separation", 7)
 	var ability_title := Label.new()
-	ability_title.text = "🎲 Caratteristiche"
+	ability_title.text = "CARATTERISTICHE"
 	ability_title.add_theme_font_size_override("font_size", 17)
 	ability_title.add_theme_color_override("font_color", Color(0.72, 0.88, 0.96))
+	_style_statistics_heading(ability_title)
 	skills_column.add_child(abilities_panel)
 	var abilities_content := VBoxContainer.new()
 	abilities_content.add_theme_constant_override("separation", 8)
@@ -825,6 +828,7 @@ func _build_ui() -> void:
 		modifier.tooltip_text = "Modificatore calcolato dal punteggio e dal bonus"
 		abilities_row.add_child(modifier)
 		_ability_modifier_labels[ability] = modifier
+		_install_formula("ability_mod:" + ability, modifier, [], [])
 		var saving_throw := Label.new()
 		saving_throw.text = "+0"
 		saving_throw.tooltip_text = "Tiro salvezza: modificatore caratteristica + competenza, se posseduta"
@@ -834,21 +838,24 @@ func _build_ui() -> void:
 		saving_throw.horizontal_alignment = HORIZONTAL_ALIGNMENT_LEFT
 		abilities_row.add_child(saving_throw)
 		_saving_throw_labels[ability] = saving_throw
+		_install_formula("save:" + ability, saving_throw, [], [])
 		spin.value_changed.connect(_on_ability_value_changed.bind(ability))
 		bonus.value_changed.connect(_on_ability_value_changed.bind(ability))
 
 	var proficiency_row := HBoxContainer.new()
 	skills_column.add_child(proficiency_row)
-	_add_label(proficiency_row, "🎓 Bonus competenza")
+	_add_label(proficiency_row, "Bonus competenza")
 	_proficiency_display = Label.new()
 	_proficiency_display.add_theme_font_size_override("font_size", 18)
 	proficiency_row.add_child(_proficiency_display)
+	_install_formula("proficiency", _proficiency_display, [], [])
 	var passive_row := HBoxContainer.new()
 	skills_column.add_child(passive_row)
-	_add_label(passive_row, "👁 Percezione passiva")
+	_add_label(passive_row, "Percezione passiva")
 	_passive_perception = Label.new()
 	_passive_perception.add_theme_font_size_override("font_size", 18)
 	passive_row.add_child(_passive_perception)
+	_install_formula("passive_perception", _passive_perception, [], [])
 	_tools_proficiency_label = Label.new()
 	_tools_proficiency_label.autowrap_mode = TextServer.AUTOWRAP_WORD_SMART
 	_tools_proficiency_label.tooltip_text = "Competenze negli strumenti provenienti dalle origini attive"
@@ -857,9 +864,10 @@ func _build_ui() -> void:
 	skills_header.add_theme_constant_override("separation", 1)
 	skills_column.add_child(skills_header)
 	var skills_heading := Label.new()
-	skills_heading.text = "🎓 Abilità"
+	skills_heading.text = "ABILITÀ"
 	skills_heading.add_theme_font_size_override("font_size", 20)
 	skills_heading.add_theme_color_override("font_color", Color(0.85, 0.93, 1.0))
+	_style_statistics_heading(skills_heading)
 	skills_heading.size_flags_horizontal = Control.SIZE_EXPAND_FILL
 	skills_header.add_child(skills_heading)
 	var skills_legend := Label.new()
@@ -888,8 +896,10 @@ func _build_ui() -> void:
 		modifier_label.horizontal_alignment = HORIZONTAL_ALIGNMENT_RIGHT
 		row.add_child(modifier_label)
 		_skill_values[key] = modifier_label
+		_install_formula("skill:" + key, modifier_label, [], [])
 	var attack_header := Label.new()
-	attack_header.text = "⚔ Attacchi disponibili"
+	attack_header.text = "ATTACCHI DISPONIBILI"
+	_style_statistics_heading(attack_header)
 	attack_header.add_theme_font_size_override("font_size", 16)
 	combat_column.add_child(attack_header)
 	var preference_row := HBoxContainer.new()
@@ -938,12 +948,12 @@ func _build_ui() -> void:
 
 	var species_row := HBoxContainer.new()
 	form.add_child(species_row)
-	_add_label(species_row, "🧬 Razza / Specie")
+	_add_label(species_row, "Razza / Specie")
 	_species = _reference_option(species_row, Player5eTools.entries("races"))
 	_species.item_selected.connect(func(_index: int) -> void: _on_species_changed())
 	var background_row := HBoxContainer.new()
 	form.add_child(background_row)
-	_add_label(background_row, "📖 Background")
+	_add_label(background_row, "Background")
 	_background = _reference_option(background_row, Player5eTools.entries("backgrounds"))
 	_background.tooltip_text = "Background strutturato del personaggio: competenze e scelte ottenute dai dati 5etools."
 
@@ -951,11 +961,12 @@ func _build_ui() -> void:
 	classes_title_row.add_theme_constant_override("separation", 12)
 	form.add_child(classes_title_row)
 	var classes_title := Label.new()
-	classes_title.text = "⚔ Classi"
+	classes_title.text = "CLASSI"
 	classes_title.add_theme_font_size_override("font_size", 17)
 	classes_title.add_theme_color_override("font_color", Color(0.96, 0.78, 0.54))
+	_style_statistics_heading(classes_title)
 	classes_title_row.add_child(classes_title)
-	_add_label(classes_title_row, "📈 XP")
+	_add_label(classes_title_row, "XP")
 	_xp = _spin(classes_title_row, 0, 999999999)
 	_xp.custom_minimum_size.x = 130
 	_xp.tooltip_text = "Minimo XP calcolato dai livelli di classe (esclusa la classe Mostro)"
@@ -998,9 +1009,10 @@ func _build_ui() -> void:
 	_multiclass_rows = VBoxContainer.new()
 	form.add_child(_multiclass_rows)
 	var tracker_caption := Label.new()
-	tracker_caption.text = "📊 Tracker risorse"
+	tracker_caption.text = "RISORSE"
 	tracker_caption.add_theme_font_size_override("font_size", 15)
 	tracker_caption.add_theme_color_override("font_color", Color(0.85, 0.78, 0.65))
+	_style_statistics_heading(tracker_caption)
 	combat_column.add_child(tracker_caption)
 	_tracker_rows = VBoxContainer.new()
 	combat_column.add_child(_tracker_rows)
@@ -1008,7 +1020,8 @@ func _build_ui() -> void:
 	combat_column.move_child(tracker_caption, attack_header.get_index())
 	combat_column.move_child(_tracker_rows, attack_header.get_index())
 	var biography_label := Label.new()
-	biography_label.text = "📜 Storia / personalità"
+	biography_label.text = "STORIA E PERSONALITÀ"
+	_style_statistics_heading(biography_label)
 	biography_label.add_theme_font_size_override("font_size", 17)
 	form.add_child(biography_label)
 	_biography = TextEdit.new()
@@ -1022,7 +1035,7 @@ func _build_ui() -> void:
 
 	var miniature_row := HBoxContainer.new()
 	appearance_tab.add_child(miniature_row)
-	_add_label(miniature_row, "🖼 Miniatura base")
+	_add_label(miniature_row, "Miniatura base")
 	_default_miniature = LineEdit.new()
 	_default_miniature.size_flags_horizontal = Control.SIZE_EXPAND_FILL
 	_default_miniature.placeholder_text = "Scegli una miniatura dal catalogo"
@@ -1035,7 +1048,7 @@ func _build_ui() -> void:
 	_current_miniature_row = HBoxContainer.new()
 	_current_miniature_row.add_theme_constant_override("separation", 6)
 	appearance_tab.add_child(_current_miniature_row)
-	_add_label(_current_miniature_row, "🦋 Forma attuale")
+	_add_label(_current_miniature_row, "Forma attuale")
 	_current_miniature_name = LineEdit.new()
 	_current_miniature_name.editable = false
 	_current_miniature_name.size_flags_horizontal = Control.SIZE_EXPAND_FILL
@@ -1639,6 +1652,13 @@ func _build_transfer_dialog() -> void:
 
 func _add_formula_label(parent: Node, value: String) -> void:
 	ManualBonus.add_formula_label(parent, value)
+
+
+func _style_statistics_heading(label: Label) -> void:
+	label.add_theme_font_size_override("font_size", 17)
+	label.add_theme_color_override("font_color", Color(0.82, 0.91, 0.97))
+	label.add_theme_color_override("font_shadow_color", Color(0.03, 0.05, 0.08, 0.7))
+	label.add_theme_constant_override("shadow_offset_y", 1)
 
 
 func _add_label(parent: Node, text_value: String) -> void:
@@ -2302,6 +2322,8 @@ func _refresh_skill_values(record: Dictionary) -> void:
 		return
 	var proficiency: int = _creature_proficiency(record)
 	_proficiency_display.text = "%+d" % proficiency
+	_set_formula("proficiency", _proficiency_display.text,
+		"Bonus competenza: %s" % ("grado di sfida del mostro" if String(record.get("kind", "")) == "monster" else "livelli di classe complessivi: %d" % int(record.get("level", 1))))
 	for skill: Dictionary in Skills5e.SKILLS:
 		var key: String = String(skill["id"])
 		var ability: String = String(skill["ability"])
@@ -2313,6 +2335,10 @@ func _refresh_skill_values(record: Dictionary) -> void:
 		(_skill_buttons[key] as Label).text = String(skill["label"]) + " · " + ability.to_upper() + marker
 		(_skill_buttons[key] as Label).tooltip_text = ["Nessuna competenza", "Competenza", "Maestria"][rank] + " · Modifica da Visualizza competenze"
 		(_skill_values[key] as Label).text = "%+d" % value
+		_set_formula("skill:" + key, "%+d" % value,
+			"%s: mod. %s %+d %s = %+d" % [String(skill["label"]), ability.to_upper(),
+				Rules.ability_modifier(score + bonus),
+				("nessuna competenza" if rank == 0 else "competenza %d × %+d" % [rank, proficiency]), value])
 	var saving_grants: Dictionary = ProficiencyRules.origin_enabled_map(record)
 	var all_grants: Array[Dictionary] = ProficiencyRules.choices(record)
 	for ability: String in _saving_throw_labels.keys():
@@ -2329,9 +2355,14 @@ func _refresh_skill_values(record: Dictionary) -> void:
 				modifier = int(published)
 				trained = true
 		var target: Label = _saving_throw_labels[ability]
-		target.text = "%+d%s" % [modifier, " 🎓" if trained else ""]
-		target.tooltip_text = "%s: mod. %+d%s = %+d" % [ability.to_upper(), base,
-			" + competenza %+d" % proficiency if trained else "", modifier]
+		target.text = ("%s%+d" % ["🎓 " if trained else "", modifier])
+		var reason := "mod. %+d" % base
+		if String(record.get("kind", "")) == "monster" and modifier != base + (proficiency if trained else 0):
+			reason = "bonus pubblicato dal bestiario"
+		elif trained:
+			reason += " + competenza %+d" % proficiency
+		_set_formula("save:" + ability, target.text,
+			"%s: %s = %+d" % [ability.to_upper(), reason, modifier])
 	if _tools_proficiency_label != null:
 		var tools: Array[String] = []
 		for grant: Dictionary in all_grants:
@@ -2347,6 +2378,10 @@ func _refresh_skill_values(record: Dictionary) -> void:
 		int((_ability_spins["wis"] as SpinBox).value) + int((_ability_bonus_spins["wis"] as SpinBox).value)
 	) + int(_skill_ranks.get("perception", 0)) * proficiency
 	_passive_perception.text = str(passive)
+	_set_formula("passive_perception", str(passive),
+		"Percezione passiva: 10 %+d Saggezza %+d competenza/maestria = %d" % [
+			Rules.ability_modifier(int((_ability_spins["wis"] as SpinBox).value) + int((_ability_bonus_spins["wis"] as SpinBox).value)),
+			int(_skill_ranks.get("perception", 0)) * proficiency, passive])
 
 
 func _refresh_weapon_picker(record: Dictionary) -> void:
@@ -2496,6 +2531,7 @@ func _refresh_attacks(record: Dictionary) -> void:
 	_refresh_weapon_picker(record)
 	_attack_hit_labels.clear()
 	_attack_damage_labels.clear()
+	_attack_range_labels.clear()
 	for child: Node in _attack_rows.get_children():
 		_attack_rows.remove_child(child)
 		child.queue_free()
@@ -2507,6 +2543,14 @@ func _refresh_attacks(record: Dictionary) -> void:
 			continue
 		var card := PanelContainer.new()
 		card.size_flags_horizontal = Control.SIZE_EXPAND_FILL
+		var active: bool = attack_id == String(record.get("equipped_attack_id", ""))
+		var card_style := StyleBoxFlat.new()
+		card_style.bg_color = Color(0.12, 0.16, 0.21, 0.88)
+		card_style.border_color = Color(0.54, 0.75, 0.82) if active else Color(0.30, 0.41, 0.49, 0.72)
+		card_style.set_border_width_all(2 if active else 1)
+		card_style.set_corner_radius_all(8)
+		card_style.set_content_margin_all(10)
+		card.add_theme_stylebox_override("panel", card_style)
 		_attack_rows.add_child(card)
 		var box := VBoxContainer.new()
 		box.add_theme_constant_override("separation", 4)
@@ -2515,7 +2559,15 @@ func _refresh_attacks(record: Dictionary) -> void:
 		header.add_theme_constant_override("h_separation", 8)
 		box.add_child(header)
 		var name_label := Label.new()
-		name_label.text = "⚔ " + String(attack.get("name", "Attacco"))
+		name_label.text = String(attack.get("name", "Attacco"))
+		name_label.add_theme_font_size_override("font_size", 17)
+		name_label.add_theme_color_override("font_color", Color(0.93, 0.95, 0.98))
+		if active:
+			var active_label := Label.new()
+			active_label.text = "IN USO"
+			active_label.add_theme_font_size_override("font_size", 11)
+			active_label.add_theme_color_override("font_color", Color(0.58, 0.85, 0.86))
+			header.add_child(active_label)
 		name_label.size_flags_horizontal = Control.SIZE_EXPAND_FILL
 		name_label.clip_text = true
 		header.add_child(name_label)
@@ -2528,6 +2580,7 @@ func _refresh_attacks(record: Dictionary) -> void:
 		roll_hit.pressed.connect(_roll_attack_from_sheet.bind(attack_id, false))
 		header.add_child(roll_hit)
 		var damage_row := HBoxContainer.new()
+		damage_row.add_theme_constant_override("separation", 10)
 		box.add_child(damage_row)
 		var damage_label := Label.new()
 		damage_label.autowrap_mode = TextServer.AUTOWRAP_WORD_SMART
@@ -2540,12 +2593,13 @@ func _refresh_attacks(record: Dictionary) -> void:
 		roll_damage.tooltip_text = "Tira i danni dell'attacco nel roller"
 		roll_damage.pressed.connect(_roll_attack_from_sheet.bind(attack_id, true))
 		damage_row.add_child(roll_damage)
+		box.add_child(HSeparator.new())
 		var settings := HFlowContainer.new()
 		settings.add_theme_constant_override("h_separation", 6)
 		settings.add_theme_constant_override("v_separation", 3)
 		box.add_child(settings)
 		var distance_caption := Label.new()
-		distance_caption.text = "Gittata (ft)"
+		distance_caption.text = "Gittata"
 		distance_caption.add_theme_font_size_override("font_size", 11)
 		distance_caption.modulate.a = 0.70
 		settings.add_child(distance_caption)
@@ -2559,6 +2613,22 @@ func _refresh_attacks(record: Dictionary) -> void:
 		distance.set_value_no_signal(AttackData.range_for(record, attack))
 		distance.value_changed.connect(_on_attack_range_changed.bind(attack_id))
 		settings.add_child(distance)
+		var range_bonus := SpinBox.new()
+		range_bonus.min_value = -1000
+		range_bonus.max_value = 1000
+		range_bonus.step = 5
+		range_bonus.rounded = true
+		range_bonus.custom_minimum_size.x = 68
+		range_bonus.tooltip_text = "Bonus manuale alla gittata di questo attacco (ft)"
+		ManualBonus.decorate(range_bonus)
+		var range_override: Dictionary = AttackData.override_for(record, attack_id)
+		range_bonus.set_value_no_signal(int(range_override.get("range_bonus", 0)))
+		range_bonus.value_changed.connect(_on_attack_range_bonus_changed.bind(attack_id))
+		settings.add_child(range_bonus)
+		var range_label := Label.new()
+		settings.add_child(range_label)
+		_attack_range_labels[attack_id] = range_label
+		_install_formula("attack_range:" + attack_id, range_label, [distance, range_bonus], ["Base (ft)", "Bonus (ft)"])
 		if int(attack.get("long_range_feet", 0)) > int(attack.get("range_feet", 5)):
 			var long_range := Label.new()
 			long_range.text = "Lunga: %d ft" % int(attack.get("long_range_feet", 0))
@@ -2644,6 +2714,12 @@ func _refresh_attack_values(record: Dictionary) -> void:
 		else:
 			(_attack_hit_labels[attack_id] as Label).text = "Colpire %+d" % hit
 		(_attack_damage_labels[attack_id] as Label).text = "Danni: " + AttackData.damage_label(record, attack)
+		if _attack_range_labels.has(attack_id):
+			var settings: Dictionary = AttackData.override_for(record, attack_id)
+			var base: int = int(settings.get("range_feet", attack.get("range_feet", 5)))
+			var bonus: int = int(settings.get("range_bonus", 0))
+			_set_formula("attack_range:" + attack_id, "%d ft" % AttackData.range_for(record, attack),
+				"Gittata: base %d ft %+d ft bonus = %d ft" % [base, bonus, AttackData.range_for(record, attack)])
 
 
 func _on_attack_ability_changed(_index: int) -> void:
@@ -2654,6 +2730,10 @@ func _on_attack_ability_changed(_index: int) -> void:
 
 func _on_attack_range_changed(value: float, attack_id: String) -> void:
 	_save_attack_setting(attack_id, "range_feet", int(value))
+
+
+func _on_attack_range_bonus_changed(value: float, attack_id: String) -> void:
+	_save_attack_setting(attack_id, "range_bonus", int(value))
 
 
 func _on_attack_bonus_changed(value: float, attack_id: String) -> void:
@@ -2879,6 +2959,8 @@ func _update_ability_modifier(ability: String) -> void:
 	var bonus: int = int((_ability_bonus_spins[ability] as SpinBox).value)
 	var value: int = Rules.ability_modifier(score + bonus)
 	(_ability_modifier_labels[ability] as Label).text = "%+d" % value
+	_set_formula("ability_mod:" + ability, "%+d" % value,
+		"%s: floor((%d %+d - 10) / 2) = %+d" % [ability.to_upper(), score, bonus, value])
 	if _ability_total_labels.has(ability):
 		(_ability_total_labels[ability] as Label).text = str(score + bonus)
 		_set_formula("ability:" + ability, str(score + bonus),
