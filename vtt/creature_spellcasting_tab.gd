@@ -388,7 +388,10 @@ func _set_search_visible(show: bool) -> void:
 	_search_toggle.tooltip_text = (
 		"Nascondi ricerca incantesimi" if show else "Mostra ricerca incantesimi"
 	)
-	if show and is_inside_tree():
+	if not show:
+		_available.deselect_all()
+		_update_spell_controls()
+	elif is_inside_tree():
 		_search.grab_focus()
 
 
@@ -723,12 +726,18 @@ func _update_spell_controls() -> void:
 		_description.clear()
 		_description.hide()
 		return
+	var body: String = String(spell.get("description", "")).strip_edges()
+	if body.is_empty():
+		body = "Descrizione non disponibile nel catalogo."
+	var higher_levels: String = String(spell.get("higher_levels", "")).strip_edges()
+	if not higher_levels.is_empty():
+		body += "\n\n" + higher_levels
 	_description.show()
-	_description.text = "%s · livello %d · %s\nGittata: %s · Componenti: %s\nDurata: %s\n%s" % [
+	_description.text = "%s · livello %d · %s\nGittata: %s · Componenti: %s\nDurata: %s\n\n%s" % [
 		String(spell.get("name", id)), int(spell.get("level", 0)),
 		String(spell.get("source", "")), String(spell.get("range", "—")),
 		String(spell.get("components", "—")),
-		String(spell.get("duration", "—")), String(spell.get("description", ""))
+		String(spell.get("duration", "—")), body
 	]
 
 
