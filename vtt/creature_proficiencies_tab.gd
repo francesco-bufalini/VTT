@@ -858,6 +858,10 @@ func _catalog_entries_for_kind(kind: String) -> Array[Dictionary]:
 		for item: Dictionary in Catalog.entries("tools" if kind == "tool" else "languages"):
 			if _valid_edition(item):
 				items.append({"key": String(item.get("name", "")).to_lower(), "label": String(item.get("name", ""))})
+		if kind == "tool":
+			for type_code: String in Rules.TOOL_TYPE_FALLBACK.keys():
+				for tool_name: String in Rules.TOOL_TYPE_FALLBACK[type_code]:
+					items.append({"key": tool_name, "label": tool_name.capitalize()})
 	return items
 
 
@@ -874,26 +878,6 @@ func _catalog_entries() -> Array[Dictionary]:
 			return restricted
 	return items
 
-
-
-# Fallback options for structured tool choices that are not represented by
-# the compact player tool catalog. The 5etools choose.from list is always
-# authoritative and does not require a matching catalogue item.
-const TOOL_CHOICE_FALLBACK := {
-	"anyArtisansTool": [
-		"alchemist's supplies", "brewer's supplies", "calligrapher's supplies",
-		"carpenter's tools", "cartographer's tools", "cobbler's tools",
-		"cook's utensils", "glassblower's tools", "jeweler's tools",
-		"leatherworker's tools", "mason's tools", "painter's supplies",
-		"potter's tools", "smith's tools", "tinker's tools", "weaver's tools",
-		"woodcarver's tools"
-	],
-	"anyGamingSet": ["dice set", "dragonchess set", "playing card set", "three-dragon ante set"],
-	"anyMusicalInstrument": [
-		"bagpipes", "drum", "dulcimer", "flute", "lute", "lyre",
-		"horn", "pan flute", "shawm", "viol"
-	]
-}
 
 
 func _choice_options_for_requirement(requirement: Dictionary) -> Array[Dictionary]:
@@ -917,15 +901,6 @@ func _choice_options_for_requirement(requirement: Dictionary) -> Array[Dictionar
 			for raw: Variant in options:
 				var key: String = Rules.normalized_key(String(raw)).split("|")[0]
 				if key.is_empty() or used.has(key):
-					continue
-				used[key] = true
-				result.append({"key": key, "label": key.capitalize()})
-	if kind == "tool":
-		for flag: String in TOOL_CHOICE_FALLBACK.keys():
-			if not data.has(flag):
-				continue
-			for key: String in TOOL_CHOICE_FALLBACK[flag]:
-				if used.has(key):
 					continue
 				used[key] = true
 				result.append({"key": key, "label": key.capitalize()})
