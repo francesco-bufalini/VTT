@@ -508,6 +508,9 @@ func _refresh_competences() -> void:
 				expert.text = "Mestria"
 				expert.tooltip_text = "Maestria (doppia competenza)"
 				expert.button_pressed = mastered
+				expert.disabled = _mandatory_expertise(key)
+				expert.tooltip_text = ("Maestria obbligatoria dell'origine"
+					if expert.disabled else "Maestria (doppia competenza)")
 				expert.toggled.connect(_toggle_group_expertise.bind(key, indices.duplicate()))
 				box.add_child(expert)
 			# Disabled switches have a greyed-out theme in Godot and incorrectly
@@ -560,6 +563,13 @@ func _is_mandatory_choice(row: Dictionary) -> bool:
 func _source_has_mandatory_grants(sid: String) -> bool:
 	for key: String in _mandatory_grants.keys():
 		if key.begins_with(sid + "|"):
+			return true
+	return false
+
+
+func _mandatory_expertise(key: String) -> bool:
+	for row: Dictionary in _rows:
+		if String(row.get("kind", "")) == "expertise" and String(row.get("key", "")) == key and _is_mandatory_choice(row):
 			return true
 	return false
 
@@ -712,6 +722,9 @@ func _toggle_group(on: bool, indices: Array) -> void:
 
 
 func _toggle_group_expertise(on: bool, key: String, indices: Array) -> void:
+	if not on and _mandatory_expertise(key):
+		_refresh()
+		return
 	var origin: Dictionary = {}
 	for index: Variant in indices:
 		var row: Dictionary = _rows[int(index)]
@@ -771,6 +784,8 @@ func _toggle_competence(on: bool, index: int) -> void:
 
 func _set_expertise(on: bool, index: int) -> void:
 	if index < 0 or index >= _rows.size():
+		return
+	if not on and _mandatory_expertise(String(_rows[index].get("key", ""))):
 		return
 	var source: Dictionary = _rows[index]
 	var sid: String = String(source.get("origin_id", ""))
