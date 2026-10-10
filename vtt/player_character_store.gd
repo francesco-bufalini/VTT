@@ -173,6 +173,7 @@ func create_character() -> Dictionary:
 		"current_hp": 1,
 		"temporary_hp": 0,
 		"speed": 30,
+		"speed_is_custom": false,
 		"darkvision": 0,
 		"exhaustion": 0,
 		"hit_dice": "",
@@ -366,6 +367,7 @@ func normalize_character(value: Dictionary) -> Dictionary:
 	defaults["party_id"] = String(defaults.get("party_id", ""))
 	defaults["armor_class"] = maxi(0, int(defaults.get("armor_class", 10)))
 	defaults["speed"] = maxi(0, int(defaults.get("speed", 30)))
+	defaults["speed_is_custom"] = bool(defaults.get("speed_is_custom", false))
 	defaults["darkvision"] = maxi(0, int(defaults.get("darkvision", 0)))
 	defaults["exhaustion"] = clampi(int(defaults.get("exhaustion", 0)), 0, 6)
 	return defaults
