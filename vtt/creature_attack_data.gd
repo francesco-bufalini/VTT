@@ -41,7 +41,7 @@ static func definitions(record: Dictionary) -> Array[Dictionary]:
 			if not has_attack:
 				continue
 			var reach: String = _capture(text_value.to_lower(), "reach\\s*(\\d+)\\s*(?:ft|feet)")
-			var range: String = _capture(text_value.to_lower(), "range\\s*(\\d+)\\s*(?:/|ft|feet)")
+			var ranged_distance_text: String = _capture(text_value.to_lower(), "range\\s*(\\d+)\\s*(?:/|ft|feet)")
 			var ranged: bool = (
 				"ranged" in text_value.to_lower()
 				or "{@atk rw}" in text_value
@@ -53,8 +53,9 @@ static func definitions(record: Dictionary) -> Array[Dictionary]:
 			result.append({
 				"id": "monster:%s:%d" % [section, index],
 				"name": title, "source": section, "melee": not ranged,
-				"range_feet": maxi(5, int(range if ranged and not range.is_empty() else reach if not reach.is_empty() else "5")),
+				"range_feet": maxi(5, int(ranged_distance_text if ranged and not ranged_distance_text.is_empty() else reach if not reach.is_empty() else "5")),
 				"proficient": true, "damage": dice, "base_hit": int(hit_tag) if not hit_tag.is_empty() else 0,
+				"source_ability": "dex" if ranged else "str",
 				"raw": action.duplicate(true)
 			})
 	var inventory: Variant = record.get("inventory", [])
@@ -112,14 +113,16 @@ static func ability_modifier(record: Dictionary) -> int:
 	return Rules.ability_modifier(int(scores.get(ability, 10)) + int(bonuses.get(ability, 0)))
 
 
-static func _ability_delta_for_monster(record: Dictionary) -> int:
-	if String(record.get("attack_ability", "str")) != "dex":
+static func _ability_delta_for_monster(record: Dictionary, attack: Dictionary) -> int:
+	var desired: String = "dex" if String(record.get("attack_ability", "str")) == "dex" else "str"
+	var original: String = String(attack.get("source_ability", "str"))
+	if desired == original:
 		return 0
 	var scores: Dictionary = record.get("abilities", {})
 	var bonuses: Dictionary = record.get("ability_bonuses", {})
 	return (
-		Rules.ability_modifier(int(scores.get("dex", 10)) + int(bonuses.get("dex", 0)))
-		- Rules.ability_modifier(int(scores.get("str", 10)) + int(bonuses.get("str", 0)))
+		Rules.ability_modifier(int(scores.get(desired, 10)) + int(bonuses.get(desired, 0)))
+		- Rules.ability_modifier(int(scores.get(original, 10)) + int(bonuses.get(original, 0)))
 	)
 
 
@@ -129,7 +132,7 @@ static func attack_bonus(record: Dictionary, attack: Dictionary, proficiency: in
 	if String(record.get("kind", "")) == "monster" and String(attack.get("source", "")) != "item":
 		# The bestiary hit value already includes its proficiency. Changing the
 		# preferred ability adjusts the ability component only.
-		return int(attack.get("base_hit", 0)) + _ability_delta_for_monster(record) + manual
+		return int(attack.get("base_hit", 0)) + _ability_delta_for_monster(record, attack) + manual
 	var trained: bool = bool(settings.get("proficient", attack.get("proficient", false)))
 	if String(attack.get("id", "")) == "unarmed":
 		trained = true
@@ -140,7 +143,7 @@ static func damage_label(record: Dictionary, attack: Dictionary) -> String:
 	var source: String = String(attack.get("source", ""))
 	var base: String = String(attack.get("damage", "")).strip_edges()
 	var modifier: int = (
-		_ability_delta_for_monster(record)
+		_ability_delta_for_monster(record, attack)
 		if String(record.get("kind", "")) == "monster" and source != "item"
 		else ability_modifier(record)
 	)
