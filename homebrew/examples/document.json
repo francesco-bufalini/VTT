@@ -1,0 +1,19 @@
+{
+  "_meta": {
+    "sources": [
+      {
+        "json": "HBDOC",
+        "full": "Documenti homebrew di esempio",
+        "abbreviation": "HBDOC"
+      }
+    ]
+  },
+  "document": [
+    {
+      "id": "lettera_del_ponte",
+      "name": "Lettera del Ponte",
+      "source": "HBDOC",
+      "description": "Al calar del sole, raggiungimi accanto al vecchio ponte."
+    }
+  ]
+}
