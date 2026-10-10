@@ -340,6 +340,17 @@ func run() -> void:
 		"Spell details must occupy a scrollable row below the compact action button")
 	assert(not spells._search_row.visible and spells._known_list.item_count > 0,
 		"Class spell list must be automatic and search optional")
+	assert(spells._slot_grid.columns == 5 and spells._slot_formula_labels[1].get_parent() is HBoxContainer,
+		"Slot maximum must share the HP formula format with the base and manual bonus")
+	assert(spells._pact_formula.get_parent().get_child_count() > 5,
+		"Pact maximum must also have its own inline formula")
+	spells._known_list.select(0)
+	spells._on_spell_list_selected("known")
+	assert(spells._description.visible and not spells._description.text.is_empty(),
+		"Class spell selection must always resolve a description")
+	spells._deselect_spell_item("known", 0)
+	assert(spells._known_list.get_selected_items().is_empty() and not spells._description.visible,
+		"Clicking an already selected class spell must deselect it")
 	assert(spells._class_spell_level_limits().get("wizard", -1) == 3,
 		"Wizard 6 must unlock class spells through level 3")
 	for class_spell: Dictionary in spells._known:
@@ -351,7 +362,19 @@ func run() -> void:
 	spells._search.text_changed.emit("Magic Missile")
 	assert(not spells._visible.is_empty(), "5etools spell catalog must be searchable")
 	spells._available.select(0)
+	spells._on_spell_list_selected("catalog")
+	assert(spells._description.visible and "Magic Missile" in spells._description.text,
+		"Selecting a search result must display its detailed spell text")
 	spells._toggle_selected_prepared()
+	assert(spells._description.visible and "Magic Missile" in spells._description.text,
+		"Updating prepared spells must not erase the description of a selected catalog spell")
+	spells._prepared_list.select(0)
+	spells._on_spell_list_selected("prepared")
+	assert(spells._description.visible and "Magic Missile" in spells._description.text,
+		"Available spell list must resolve the full description, not just saved metadata")
+	spells._deselect_spell_item("prepared", 0)
+	assert(spells._prepared_list.get_selected_items().is_empty() and not spells._description.visible,
+		"Clicking the selected available spell must deselect it")
 	assert(area._current().spells.size() == 1)
 	assert(area._current().prepared_spells.size() == 1)
 	spells._calculate_slot_totals()
@@ -426,6 +449,28 @@ func run() -> void:
 	inventory._inventory_list.select(0)
 	inventory._remove_selected()
 	assert(area._current().inventory.is_empty())
+	area._ac.value = 15
+	area._ac_bonus.value = 2
+	area._initiative_bonus.value = 3
+	area._save()
+	assert(area._current().armor_class_base == 15 and area._current().armor_class_bonus == 2
+		and area._current().armor_class == 17,
+		"CA must save base and modifier separately while exposing the effective value")
+	assert(area._current().initiative == int(area._initiative.value) + 3,
+		"Initiative must include its manual bonus")
+	area._reload()
+	assert(int(area._ac_bonus.value) == 2 and int(area._initiative_bonus.value) == 3
+		and area._ac_effective.text == "17",
+		"CA and initiative bonuses must survive reloading the sheet")
+	var transformation_preview: Dictionary = area._current().duplicate(true)
+	transformation_preview["current_miniature_id"] = "alternate-form-test"
+	area._update_current_appearance_display(transformation_preview)
+	assert(area._current_miniature_row.visible and "alternate-form-test" in area._current_miniature_name.text,
+		"A transformed creature must show the current appearance distinct from its base form")
+	transformation_preview["current_miniature_id"] = transformation_preview.get("default_miniature_id", "")
+	area._update_current_appearance_display(transformation_preview)
+	assert(not area._current_miniature_row.visible,
+		"The current-form row must hide when the base appearance is restored")
 	area._max_hp.value = 35
 	area._hp.value = 7
 	area._save()
