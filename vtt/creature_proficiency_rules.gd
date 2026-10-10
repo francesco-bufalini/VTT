@@ -130,7 +130,6 @@ static func sync_legacy_fields(record: Dictionary, rows: Array[Dictionary]) -> v
 static func candidate_sources(record: Dictionary) -> Array[Dictionary]:
 	_load_sources()
 	var candidates: Array[Dictionary] = []
-	var edition := String(record.get("rules_version", "2014"))
 	var kinds := ["class", "race", "subrace", "background", "feat"]
 	for group: String in kinds:
 		var rows: Variant = _sources.get(group, [])
@@ -249,9 +248,8 @@ static func grant_matches(grants: Variant, kind: String, key: String) -> int:
 			if options is Array and wanted in options:
 				best = maxi(best, 1)
 			var from_filter := String(choose.get("fromFilter", "")).to_lower()
-			if kind == "weapon" and wanted in ["simple", "martial"] and wanted in from_filter:
-				best = maxi(best, 1)
-			if options is Array and options.is_empty() and (choose.has("fromFilter") or choose.has("any")):
+			# fromFilter selects individual items, never a whole category.
+			if options is Array and options.is_empty() and choose.has("any"):
 				best = maxi(best, 1)
 		if value.has("any") or (kind == "skill" and value.has("anyProficientSkill")):
 			best = maxi(best, 1)
@@ -302,7 +300,7 @@ static func missing_structured(record: Dictionary) -> Array[Dictionary]:
 			continue
 		for kind: String in ["weapon", "armor", "save"]:
 			var data: Variant = _grants_data(candidate, kind)
-			var keys: Array[String] = ARMORS if kind == "armor" else ABILITIES if kind == "save" else ["simple", "martial"]
+			var keys: Array = ARMORS if kind == "armor" else ABILITIES if kind == "save" else ["simple", "martial"]
 			for key: String in keys:
 				if grant_matches(data, kind, key) == 2 and not has_proficiency(record, kind, key):
 					missing.append({"kind": kind, "key": key, "origin": String(candidate.get("name", ""))})
