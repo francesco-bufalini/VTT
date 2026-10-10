@@ -239,9 +239,14 @@ func _retire_legacy() -> void:
 			collider.collision_mask = 0
 	for path: String in ["KlothisRoot/KlothisVisual", "KlothisRoot/SphereVisual", "KaosRoot/KaosVisual", "KaosRoot/ClimbingVisual"]:
 		var old := scene.get_node_or_null(path) as Node3D
-		if old == null or old.has_meta("import_replaced"):
+		if old == null:
 			continue
-		old.hide()
+		# A later encounter phase may re-show a legacy root. Hide it only
+		# when its visibility actually changes; do not reconfigure it twice.
+		if old.visible:
+			old.hide()
+		if old.has_meta("import_replaced"):
+			continue
 		old.set_meta("import_replaced", true)
 		old.add_to_group("grid_3d_excluded")
 		for collider in old.find_children("*", "CollisionObject3D", true, false):
