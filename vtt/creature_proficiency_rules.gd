@@ -309,6 +309,8 @@ static func grant_matches(grants: Variant, kind: String, key: String) -> int:
 			best = maxi(best, 1)
 		if kind == "tool" and value.has("anyMusicalInstrument") and _tool_type(wanted) == "INS":
 			best = maxi(best, 1)
+		if kind == "tool" and value.has("anyGamingSet") and _tool_type(wanted) == "GS":
+			best = maxi(best, 1)
 		# A bare 'any' in 5etools is a structured choice, not a fixed grant.
 		# Standard/exotic languages must not be conflated.
 		if kind == "language" and value.has("anyStandard") and _language_group(wanted) == "standard":
