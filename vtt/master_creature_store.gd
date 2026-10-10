@@ -4,6 +4,7 @@ const CreatureRules = preload("res://vtt/creature_rules.gd")
 const ItemRules = preload("res://vtt/creature_item_rules.gd")
 const CreatureOwner = preload("res://vtt/creature_owner.gd")
 const Proficiencies = preload("res://vtt/creature_proficiency_rules.gd")
+const Bonuses = preload("res://vtt/creature_bonus_rules.gd")
 
 const ROOT_DIR := "user://master_creatures"
 const FILE_VERSION := 2
@@ -136,6 +137,7 @@ func create_creature(stat_block: Dictionary, side: String) -> Dictionary:
 		"equipped_attack_id": "",
 		"equipped_inventory_index": -1,
 		"proficiency_choices": [],
+		"formula_bonuses": [],
 		"saving_throw_proficiencies": [],
 		"skill_proficiencies": [],
 		"skill_expertise": [],
@@ -245,6 +247,7 @@ func normalize_creature(value: Dictionary) -> Dictionary:
 		"equipped_attack_id": String(value.get("equipped_attack_id", "")).strip_edges(),
 		"equipped_inventory_index": maxi(-1, int(value.get("equipped_inventory_index", -1))),
 		"proficiency_choices": Proficiencies.choices(proficiency_record),
+		"formula_bonuses": Bonuses.grants(value),
 		"proficiency_origins": Proficiencies.origins(proficiency_record),
 		"saving_throw_proficiencies": value.get("saving_throw_proficiencies", []).duplicate(true) if value.get("saving_throw_proficiencies", []) is Array else [],
 		"skill_proficiencies": value.get("skill_proficiencies", []).duplicate(true) if value.get("skill_proficiencies", []) is Array else [],
@@ -353,6 +356,11 @@ func normalize_creature(value: Dictionary) -> Dictionary:
 		var unique := int(Time.get_ticks_usec())
 		result["id"] = "master_creature_%d_%d" % [now, unique]
 	Proficiencies.sync_legacy_fields(result, Proficiencies.choices(result))
+	result["max_hp"] = maxi(0, Bonuses.value(result, "hp"))
+	result["armor_class"] = maxi(0, Bonuses.value(result, "ac"))
+	result["initiative_base"] = Bonuses.value(result, "ability_mod:dex")
+	result["initiative"] = Bonuses.value(result, "initiative")
+	result["speed"] = maxi(0, Bonuses.value(result, "speed"))
 	return result
 
 
