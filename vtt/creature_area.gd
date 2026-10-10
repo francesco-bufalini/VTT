@@ -2,6 +2,7 @@ extends Node
 
 # Reusable creature sheet for players and GMs. No role-specific permissions.
 const ContentCatalog = preload("res://vtt/content_catalog.gd")
+const ContentEnrichment = preload("res://vtt/content_enrichment.gd")
 const Archive = preload("res://vtt/creature_archive.gd")
 const Rules = preload("res://vtt/creature_rules.gd")
 const DiceRoller = preload("res://vtt/dice_roller_chat.gd")
@@ -408,6 +409,7 @@ func _build_ui() -> void:
 	var popup := _options_menu.get_popup()
 	popup.add_item("Copia il mio ID", 1)
 	popup.add_item("Cartella homebrew", 2)
+	popup.add_item("Cartella integrazioni VTT", 9)
 	popup.add_item("Ricarica homebrew", 3)
 	popup.add_separator()
 	popup.add_item("Associa a token selezionato", 4)
@@ -1074,6 +1076,9 @@ func _on_options_selected(id: int) -> void:
 			_confirm_delete()
 		8:
 			_export_current_creature()
+		9:
+			DirAccess.make_dir_recursive_absolute(ProjectSettings.globalize_path(ContentEnrichment.USER_DIR))
+			OS.shell_open(ProjectSettings.globalize_path(ContentEnrichment.USER_DIR))
 
 
 func _on_creature_row_gui_input(event: InputEvent, index: int) -> void:
@@ -4092,4 +4097,4 @@ func _reload_homebrew() -> void:
 	_refresh_class_choices()
 	_reload()
 	_on_catalog_ready(_client.call("catalog"))
-	_set_status("Homebrew ricaricato. " + "\n".join(ContentCatalog.diagnostics))
+	_set_status("Cataloghi e integrazioni ricaricati. " + "\n".join(ContentCatalog.diagnostics + ContentEnrichment.diagnostics))
