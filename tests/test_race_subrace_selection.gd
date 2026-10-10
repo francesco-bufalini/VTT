@@ -46,8 +46,15 @@ func run() -> void:
 		and Proficiencies.has_proficiency(record, "weapon", "longsword|phb"),
 		"Parent and selected child each contribute structured proficiencies")
 	record["subrace"] = "Wood"
-	assert(not Proficiencies.has_proficiency(record, "weapon", "longsword|phb"),
-		"Switching subrace revokes the previous child's grants")
+	var has_high := false
+	var has_wood := false
+	for origin: Dictionary in Proficiencies.candidate_sources(record):
+		if String(origin.get("id", "")) == "subrace|phb|high":
+			has_high = true
+		if String(origin.get("id", "")) == "subrace|phb|wood":
+			has_wood = true
+	assert(not has_high and has_wood,
+		"Switching subrace must revoke the previous origin without removing shared proficiencies")
 	var legacy := record.duplicate(true)
 	legacy["species"] = "Elf (High)"
 	legacy["species_source"] = "PHB"
