@@ -67,7 +67,7 @@ var _catalog_title: Label
 var _slot_grid: GridContainer
 var _restore_all_button: Button
 var _slots_eye: Button
-var _pact_row: HFlowContainer
+var _pact_row: HBoxContainer
 var _pact_eye: Button
 var _slots_visible := true
 var _pact_visible := true
@@ -257,19 +257,27 @@ func setup(
 	_slots_eye.custom_minimum_size = Vector2(36, 30)
 	_slots_eye.pressed.connect(_toggle_slots_visibility)
 	slot_title.add_child(_slots_eye)
+	var slot_scroll := ScrollContainer.new()
+	slot_scroll.name = "SlotHorizontalScroll"
+	slot_scroll.size_flags_horizontal = Control.SIZE_EXPAND_FILL
+	slot_scroll.horizontal_scroll_mode = ScrollContainer.SCROLL_MODE_AUTO
+	slot_scroll.vertical_scroll_mode = ScrollContainer.SCROLL_MODE_DISABLED
+	slot_scroll.custom_minimum_size.y = 425
+	add_child(slot_scroll)
 	_slot_grid = GridContainer.new()
 	_slot_grid.columns = 1
+	_slot_grid.size_flags_horizontal = Control.SIZE_SHRINK_BEGIN
 	_slot_grid.add_theme_constant_override("v_separation", 5)
-	add_child(_slot_grid)
+	slot_scroll.add_child(_slot_grid)
 	var hint := Label.new()
 	hint.text = "Liv.    Usa  ·  Rimasti / max = (base + bonus)  ·  Ricarica"
 	hint.add_theme_font_size_override("font_size", 12)
 	_slot_grid.add_child(hint)
 	for lvl: int in range(1, 10):
 		# Match the consumable tracker rows: − then current/max = (base bonus), then +.
-		var row := HFlowContainer.new()
-		row.add_theme_constant_override("h_separation", 5)
-		row.add_theme_constant_override("v_separation", 3)
+		var row := HBoxContainer.new()
+		row.add_theme_constant_override("separation", 5)
+		row.size_flags_horizontal = Control.SIZE_SHRINK_BEGIN
 		_slot_grid.add_child(row)
 		var caption := Label.new()
 		caption.text = "%d°" % lvl
@@ -330,10 +338,17 @@ func setup(
 	_pact_eye.custom_minimum_size = Vector2(36, 30)
 	_pact_eye.pressed.connect(_toggle_pact_visibility)
 	pact_header.add_child(_pact_eye)
-	_pact_row = HFlowContainer.new()
-	_pact_row.add_theme_constant_override("h_separation", 5)
-	_pact_row.add_theme_constant_override("v_separation", 5)
-	add_child(_pact_row)
+	var pact_scroll := ScrollContainer.new()
+	pact_scroll.name = "PactHorizontalScroll"
+	pact_scroll.size_flags_horizontal = Control.SIZE_EXPAND_FILL
+	pact_scroll.horizontal_scroll_mode = ScrollContainer.SCROLL_MODE_AUTO
+	pact_scroll.vertical_scroll_mode = ScrollContainer.SCROLL_MODE_DISABLED
+	pact_scroll.custom_minimum_size.y = 47
+	add_child(pact_scroll)
+	_pact_row = HBoxContainer.new()
+	_pact_row.add_theme_constant_override("separation", 5)
+	_pact_row.size_flags_horizontal = Control.SIZE_SHRINK_BEGIN
+	pact_scroll.add_child(_pact_row)
 	var level_group := HBoxContainer.new()
 	_pact_row.add_child(level_group)
 	var level_label := Label.new()
@@ -1058,9 +1073,9 @@ func _toggle_pact_visibility() -> void:
 
 
 func _apply_resource_visibility() -> void:
-	_slot_grid.visible = _slots_visible
+	_slot_grid.get_parent().visible = _slots_visible
 	_restore_all_button.visible = _slots_visible
-	_pact_row.visible = _pact_visible
+	_pact_row.get_parent().visible = _pact_visible
 	_slots_eye.text = "👁" if _slots_visible else "👁̸"
 	_slots_eye.tooltip_text = "Nascondi slot" if _slots_visible else "Mostra slot"
 	_pact_eye.text = "👁" if _pact_visible else "👁̸"
