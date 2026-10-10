@@ -17,6 +17,7 @@ const InventoryTab = preload("res://vtt/creature_inventory_tab.gd")
 const TraitsTab = preload("res://vtt/creature_traits_tab.gd")
 const DialogLayout = preload("res://vtt/dialog_layout.gd")
 const Skills5e = preload("res://vtt/creature_skills_5etools.gd")
+const AttackData = preload("res://vtt/creature_attack_data.gd")
 const DocumentInbox = preload("res://vtt/document_inbox.gd")
 
 var board_root: Node3D
@@ -93,7 +94,10 @@ var _hp_dice_formula: LineEdit
 var _hp_quick_dice_row: HBoxContainer
 var _hp_formula_status: Label
 var _size_choice: OptionButton
-var _reach: SpinBox
+var _attack_ability: OptionButton
+var _attack_rows: VBoxContainer
+var _attack_hit_labels: Dictionary = {}
+var _attack_damage_labels: Dictionary = {}
 var _front: OptionButton
 var _party: LineEdit
 var _tabs: TabContainer
@@ -515,11 +519,11 @@ func _build_ui() -> void:
 	statistics_tab.add_child(_statistics_columns)
 	var skills_column := VBoxContainer.new()
 	skills_column.size_flags_horizontal = Control.SIZE_EXPAND_FILL
-	skills_column.size_flags_stretch_ratio = 1.0
+	skills_column.size_flags_stretch_ratio = 0.75
 	_statistics_columns.add_child(skills_column)
 	var combat_column := VBoxContainer.new()
 	combat_column.size_flags_horizontal = Control.SIZE_EXPAND_FILL
-	combat_column.size_flags_stretch_ratio = 1.0
+	combat_column.size_flags_stretch_ratio = 1.75
 	_statistics_columns.add_child(combat_column)
 	var appearance_tab := _add_sheet_tab(_tabs, "Aspetto")
 	var traits_tab := _add_sheet_tab(_tabs, "Tratti")
@@ -682,13 +686,6 @@ func _build_ui() -> void:
 	_ac_bonus.tooltip_text = "Bonus manuale alla Classe Armatura"
 	ManualBonus.decorate(_ac_bonus)
 	_add_formula_label(temp_health, ")")
-	var reach_row := HBoxContainer.new()
-	reach_row.add_theme_constant_override("separation", 6)
-	defense_flow.add_child(reach_row)
-	_add_label(reach_row, "📏 Gittata base (ft)")
-	_reach = _spin(reach_row, 5, 1000)
-	_reach.step = 5.0
-	_reach.custom_minimum_size.x = 70
 	_ac.size_flags_horizontal = Control.SIZE_SHRINK_BEGIN
 	var movement_row := HBoxContainer.new()
 	movement_row.add_theme_constant_override("separation", 6)
@@ -828,9 +825,22 @@ func _build_ui() -> void:
 		row.add_child(modifier_label)
 		_skill_values[key] = modifier_label
 	var attack_header := Label.new()
-	attack_header.text = "⚔ Attacchi e azioni disponibili"
+	attack_header.text = "⚔ Attacchi disponibili"
 	attack_header.add_theme_font_size_override("font_size", 16)
 	combat_column.add_child(attack_header)
+	var preference_row := HBoxContainer.new()
+	preference_row.add_theme_constant_override("separation", 8)
+	combat_column.add_child(preference_row)
+	_add_label(preference_row, "Caratteristica attacchi")
+	_attack_ability = OptionButton.new()
+	_attack_ability.add_item("Forza")
+	_attack_ability.add_item("Destrezza")
+	_attack_ability.tooltip_text = "Cambia il modificatore degli attacchi e dei danni. I valori fissi del bestiario includono già la competenza."
+	_attack_ability.item_selected.connect(_on_attack_ability_changed)
+	preference_row.add_child(_attack_ability)
+	_attack_rows = VBoxContainer.new()
+	_attack_rows.add_theme_constant_override("separation", 7)
+	combat_column.add_child(_attack_rows)
 	_attacks_description = RichTextLabel.new()
 	_attacks_description.custom_minimum_size.y = 160
 	_attacks_description.fit_content = true
@@ -1858,7 +1868,7 @@ func _update_sheet_layout() -> void:
 	# Cap it to the pixels physically available before deciding to split.
 	var physical_width: float = viewport_size.x - _tabs.get_global_rect().position.x - 30.0
 	var tab_width: float = minf(_tabs.size.x, maxf(0.0, physical_width))
-	_statistics_columns.columns = 2 if tab_width >= 850.0 else 1
+	_statistics_columns.columns = 2 if tab_width >= 960.0 else 1
 	var cell_width: float = (_abilities_grid.get_child(0) as Control).get_combined_minimum_size().x
 	var gap_width: float = _abilities_grid.get_theme_constant("h_separation")
 	_abilities_grid.columns = (
@@ -2010,7 +2020,6 @@ func _load_form(record: Dictionary) -> void:
 	_default_miniature.text = _miniature_display_name(_default_miniature_id)
 	_update_current_appearance_display(record)
 	_select_sheet_size(String(record.get("size_name", "Medium")))
-	_reach.value = float(record.get("reach_feet", 5.0))
 	_front.select(clampi(int(record.get("visual_front_quarter_turns", 0)), 0, 3))
 	_party.text = String(record.get("party_id", ""))
 	_default_miniature.tooltip_text = (
@@ -2337,12 +2346,6 @@ func _save() -> void:
 	record["background_personality"] = _biography.text
 	record["size_name"] = _size_choice.get_item_text(_size_choice.selected)
 	record["footprint"] = _selected_size_footprint()
-	if (
-		String(record.get("kind", "")) == "monster"
-		and absf(float(_reach.value) - float(record.get("reach_feet", 5.0))) > 0.01
-	):
-		record["reach_is_custom"] = true
-	record["reach_feet"] = float(_reach.value)
 	record["visual_front_quarter_turns"] = _front.selected
 	record["party_id"] = _party.text.strip_edges()
 	record["armor_class_base"] = int(_ac.value)
