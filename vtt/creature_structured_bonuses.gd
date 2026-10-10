@@ -85,16 +85,7 @@ static func _item_grants(result: Array[Dictionary], record: Dictionary) -> void:
 		var kind: String = Items.kind(entry)
 		var slots: Array = Items.slots(owned)
 		var active: bool = bool(owned.get("active", true))
-		var attunement: Variant = _field(entry, "req_attune", "reqAttune")
-		# 5etools uses both booleans and condition strings ("by a cleric",
-		# etc.) for attunement. Comparing a String with false raises a
-		# runtime error in Godot 4, so test the variant type explicitly.
-		var needs_attunement := false
-		if attunement is bool:
-			needs_attunement = attunement
-		elif attunement is String:
-			needs_attunement = not String(attunement).strip_edges().is_empty()
-		if needs_attunement and not bool(owned.get("attuned", false)):
+		if Items.requires_attunement(entry) and not bool(owned.get("attuned", false)):
 			active = false
 		if not active:
 			continue
