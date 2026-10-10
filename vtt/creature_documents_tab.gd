@@ -154,6 +154,11 @@ func load_inventory(inventory: Array) -> void:
 	# Commit any pending text before swapping the owned creature's inventory.
 	_flush_edit()
 	_loading = true
+	# Selection indices refer to the previous inventory. Never interpret
+	# them against the new creature's rows.
+	if _list != null:
+		_list.deselect_all()
+	_indices.clear()
 	_inventory.clear()
 	for raw: Variant in inventory:
 		if raw is Dictionary:
@@ -167,8 +172,12 @@ func _refresh_list() -> void:
 		return
 	var selected_id := _active_id
 	var current: PackedInt32Array = _list.get_selected_items()
-	if selected_id.is_empty() and not current.is_empty() and current[0] < _indices.size():
-		selected_id = _instance_key(_inventory[_indices[current[0]]])
+	if selected_id.is_empty() and not current.is_empty():
+		var old_selection: int = int(current[0])
+		if old_selection >= 0 and old_selection < _indices.size():
+			var old_inventory_index: int = _indices[old_selection]
+			if old_inventory_index >= 0 and old_inventory_index < _inventory.size():
+				selected_id = _instance_key(_inventory[old_inventory_index])
 	_indices.clear()
 	_list.clear()
 	var selected_index := -1
@@ -186,10 +195,13 @@ func _refresh_list() -> void:
 			_list.set_item_tooltip(position, "Aggiunto: " + _format_date(unix_time))
 		if _instance_key(item) == selected_id:
 			selected_index = position
+	if selected_index < 0 and not _indices.is_empty():
+		selected_index = 0
 	if selected_index >= 0:
 		_list.select(selected_index)
-	elif not _indices.is_empty():
-		_list.select(0)
+		_active_id = _instance_key(_inventory[_indices[selected_index]])
+	else:
+		_active_id = ""
 	_remove_button.disabled = _selected_inventory_index() < 0
 
 
@@ -199,7 +211,8 @@ func _selected_inventory_index() -> int:
 	var selected: PackedInt32Array = _list.get_selected_items()
 	if selected.is_empty() or selected[0] < 0 or selected[0] >= _indices.size():
 		return -1
-	return _indices[selected[0]]
+	var index: int = _indices[selected[0]]
+	return index if index >= 0 and index < _inventory.size() else -1
 
 
 func _select_document(_index: int) -> void:
@@ -243,6 +256,8 @@ func _open_document(index: int) -> void:
 	_flush_edit()
 	_list.select(index)
 	var owned_index: int = _indices[index]
+	if owned_index < 0 or owned_index >= _inventory.size():
+		return
 	var item: Dictionary = _inventory[owned_index]
 	_active_id = _instance_key(item)
 	_editing_key = _active_id
