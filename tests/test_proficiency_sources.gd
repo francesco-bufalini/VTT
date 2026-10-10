@@ -401,11 +401,16 @@ func run() -> void:
 	tab._toggle_origin(false, "class|phb|fighter")
 	assert(not Proficiencies.has_proficiency(tab._effective_record(), "weapon", "martial"),
 		"Fixed class proficiencies can be muted by switching their origin off")
-	assert(not tab._group_enabled([tab._rows.find_custom(func(row: Dictionary) -> bool:
-		return String(row.get("origin_id", "")) == "class|phb|fighter"
-			and String(row.get("kind", "")) == "weapon"
-			and String(row.get("key", "")) == "martial"
-	)]), "Muted source must show its proficiencies as inactive")
+	var muted_index := -1
+	for row_index: int in range(tab._rows.size()):
+		var muted_row: Dictionary = tab._rows[row_index]
+		if (String(muted_row.get("origin_id", "")) == "class|phb|fighter"
+			and String(muted_row.get("kind", "")) == "weapon"
+			and String(muted_row.get("key", "")) == "martial"):
+			muted_index = row_index
+			break
+	assert(muted_index >= 0 and not tab._group_enabled([muted_index]),
+		"Muted source must show its proficiencies as inactive")
 	tab._toggle_origin(true, "class|phb|fighter")
 	assert(Proficiencies.has_proficiency(tab._effective_record(), "weapon", "martial"),
 		"Reactivating an origin restores fixed grants without rewriting rows")
