@@ -5,6 +5,12 @@ extends RefCounted
 static func decorate(spin: SpinBox) -> void:
 	if spin == null:
 		return
+	# The sign belongs to the highlighted bonus field, not to the formula.
+	# Negative values already render '-' and can be entered directly.
+	spin.prefix = "+" if spin.value >= 0.0 else ""
+	spin.value_changed.connect(func(value: float) -> void:
+		spin.prefix = "+" if value >= 0.0 else ""
+	)
 	var field: LineEdit = spin.get_line_edit()
 	var normal := StyleBoxFlat.new()
 	normal.bg_color = Color(0.25, 0.20, 0.13, 0.96)
