@@ -677,6 +677,8 @@ func _build_ui() -> void:
 	restore_hp.custom_minimum_size.x = 30
 	restore_hp.pressed.connect(_restore_full_hp)
 	health_actions.add_child(restore_hp)
+	# PF adjusters stay alongside the current HP tracker, not after its max bonus.
+	health.move_child(health_actions, _hp.get_index() + 1)
 	var form_hp_row := HBoxContainer.new()
 	form_hp_row.add_theme_constant_override("separation", 6)
 	health_content.add_child(form_hp_row)
@@ -2762,6 +2764,10 @@ func _on_inventory_updated(inventory: Array) -> void:
 	if record.is_empty():
 		return
 	record["inventory"] = inventory.duplicate(true)
+	AttackData.equip_first_inventory_weapon(record)
+	var active: Dictionary = AttackData.active_attack(record)
+	if not active.is_empty():
+		record["equipped_attack_id"] = String(active.get("id", ""))
 	# Delete the legacy documents array only after each entry is in inventory
 	# and its definition has been written to the homebrew directory.
 	var legacy: Variant = record.get("documents", [])
