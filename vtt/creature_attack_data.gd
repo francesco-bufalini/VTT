@@ -64,7 +64,7 @@ static func definitions(record: Dictionary) -> Array[Dictionary]:
 		for raw_item: Variant in inventory:
 			if raw_item is Dictionary:
 				owned[String((raw_item as Dictionary).get("id", ""))] = true
-		for item: Dictionary in Catalog.entries("items"):
+		for item: Dictionary in (Catalog.entries("items") if not owned.is_empty() else []):
 			if not owned.has(String(item.get("id", ""))):
 				continue
 			if String(item.get("weapon_category", "")).is_empty():
