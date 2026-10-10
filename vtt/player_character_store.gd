@@ -1,6 +1,7 @@
 extends RefCounted
 
 const CreatureOwner = preload("res://vtt/creature_owner.gd")
+const CreatureRules = preload("res://vtt/creature_rules.gd")
 
 const ROOT_DIR := "user://player_characters"
 const FILE_VERSION := 3
@@ -128,6 +129,7 @@ func create_character() -> Dictionary:
 		"party_id": "",
 		"classes": [],
 		"resource_tracker_spent": {},
+		"resource_tracker_bonuses": {},
 		"conditions": [],
 		"transfer_revision": 0,
 		"species_id": "",
@@ -140,6 +142,7 @@ func create_character() -> Dictionary:
 		"subclass_source": "",
 		"subclass_id": "",
 		"level": 1,
+		"xp": 0,
 		"proficiency_bonus": 2,
 		"spellcasting_calculation": {},
 		"species": "",
@@ -250,6 +253,12 @@ func normalize_character(value: Dictionary) -> Dictionary:
 	# Persistent usage counters survive reloads and level changes.
 	if not defaults.get("resource_tracker_spent", {}) is Dictionary:
 		defaults["resource_tracker_spent"] = {}
+	var tracker_bonuses: Dictionary = {}
+	var saved_bonuses: Variant = value.get("resource_tracker_bonuses", {})
+	if saved_bonuses is Dictionary:
+		for tracker_id: Variant in (saved_bonuses as Dictionary).keys():
+			tracker_bonuses[String(tracker_id)] = clampi(int(saved_bonuses[tracker_id]), -999, 9999)
+	defaults["resource_tracker_bonuses"] = tracker_bonuses
 
 	var abilities_value: Variant = value.get("abilities", {})
 	if abilities_value is Dictionary:
@@ -323,6 +332,7 @@ func normalize_character(value: Dictionary) -> Dictionary:
 	if not defaults.get("classes", []) is Array:
 		defaults["classes"] = []
 	defaults["level"] = clampi(int(defaults.get("level", 1)), 1, 20)
+	defaults["xp"] = maxi(CreatureRules.experience_for_level(int(defaults["level"])), int(value.get("xp", 0)))
 	var classes_value: Variant = defaults.get("classes", [])
 	if classes_value is Array and (classes_value as Array).size() == 1:
 		var first_value: Variant = (classes_value as Array)[0]
