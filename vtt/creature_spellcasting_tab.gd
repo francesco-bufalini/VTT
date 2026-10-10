@@ -825,7 +825,8 @@ func _update_resource_labels() -> void:
 		var spent: int = clampi(int(_spent[lvl]), 0, total) if _spent.size() > lvl else 0
 		(_remaining_labels[lvl] as Label).text = "%d / %d" % [total - spent, total]
 		(_slot_formula_labels[lvl] as Label).text = "= (%d %+d)" % [
-			int(_totals[lvl]), int(_slot_bonuses[lvl])
+			int(_totals[lvl]) if _totals.size() > lvl else 0,
+			int(_slot_bonuses[lvl]) if _slot_bonuses.size() > lvl else 0
 		]
 		(_slot_use[lvl] as Button).disabled = spent >= total
 		(_slot_recharge[lvl] as Button).disabled = spent <= 0
