@@ -687,7 +687,7 @@ func _build_ui() -> void:
 	_speed.custom_minimum_size = Vector2(69, 36)
 	_speed.value_changed.connect(_on_speed_changed)
 	movement_row.add_child(_speed)
-	_speed.tooltip_text = "Velocità base dalla specie o dal bestiario, modificabile"
+	_speed.tooltip_text = "Velocità dalla specie o dal bestiario, modificabile"
 	_speed_bonus = _spin(movement_row, -999, 999)
 	_speed_bonus.custom_minimum_size = Vector2(65, 36)
 	_speed_bonus.tooltip_text = "Bonus manuale alla velocità"
@@ -2641,7 +2641,7 @@ func _refresh_trackers(record: Dictionary) -> void:
 		manual_bonus.step = 1
 		manual_bonus.rounded = true
 		manual_bonus.update_on_text_changed = false
-		manual_bonus.custom_minimum_size = Vector2(63, 30)
+		manual_bonus.custom_minimum_size = Vector2(63, 36)
 		manual_bonus.tooltip_text = "Di cui bonus al massimo (%d utilizzi base)" % base_maximum
 		manual_bonus.set_value_no_signal(int(bonuses.get(id, 0)))
 		ManualBonus.decorate(manual_bonus)
