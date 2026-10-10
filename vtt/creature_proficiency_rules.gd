@@ -208,11 +208,12 @@ static func _grants_data(candidate: Dictionary, kind: String) -> Variant:
 			"tool": return granted.get("toolProficiencies", [])
 			"skill": return granted.get("skills", [])
 		return []
-	var field_name := {
+	var field_names: Dictionary = {
 		"weapon": "weaponProficiencies", "armor": "armorProficiencies",
 		"skill": "skillProficiencies", "expertise": "expertise",
 		"tool": "toolProficiencies", "language": "languageProficiencies"
-	}.get(kind, "")
+	}
+	var field_name: String = String(field_names.get(kind, ""))
 	return row.get(field_name, [])
 
 
