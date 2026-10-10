@@ -118,6 +118,7 @@ var _ability_modifier_labels: Dictionary = {}
 var _saving_throw_labels: Dictionary = {}
 var _tools_proficiency_label: Label
 var _species: OptionButton
+var _background: OptionButton
 var _subclass_name: OptionButton
 var _class_name: OptionButton
 var _add_class_button: Button
@@ -776,8 +777,9 @@ func _build_ui() -> void:
 	abilities_panel.add_theme_stylebox_override("panel", abilities_style)
 	_abilities_grid = GridContainer.new()
 	var abilities_row := _abilities_grid
-	# In a split sheet, two score boxes side by side are too wide.
-	abilities_row.columns = 1
+	# One four-column table keeps characteristic, score, modifier and
+	# saving throw aligned without repeating the TS label on every row.
+	abilities_row.columns = 4
 	abilities_row.add_theme_constant_override("h_separation", 8)
 	abilities_row.add_theme_constant_override("v_separation", 7)
 	var ability_title := Label.new()
@@ -790,18 +792,20 @@ func _build_ui() -> void:
 	abilities_panel.add_child(abilities_content)
 	abilities_content.add_child(ability_title)
 	abilities_content.add_child(abilities_row)
+	for heading: String in ["Car.", "Punteggio", "Mod.", "TS"]:
+		var column_heading := Label.new()
+		column_heading.text = heading
+		column_heading.add_theme_font_size_override("font_size", 12)
+		column_heading.add_theme_color_override("font_color", Color(0.80, 0.88, 0.95))
+		abilities_row.add_child(column_heading)
 	for ability: String in ["str", "dex", "con", "int", "wis", "cha"]:
-		var cell := HBoxContainer.new()
-		cell.add_theme_constant_override("separation", 6)
-		abilities_row.add_child(cell)
 		var ability_label := Label.new()
 		ability_label.text = ability.to_upper()
 		ability_label.custom_minimum_size.x = 34
-		cell.add_child(ability_label)
+		abilities_row.add_child(ability_label)
 		var scores_row := HBoxContainer.new()
 		scores_row.add_theme_constant_override("separation", 4)
-		scores_row.size_flags_horizontal = Control.SIZE_EXPAND_FILL
-		cell.add_child(scores_row)
+		abilities_row.add_child(scores_row)
 		var spin := _spin(scores_row, 1, 30)
 		spin.custom_minimum_size.x = 54
 		spin.tooltip_text = "Punteggio base"
@@ -819,16 +823,15 @@ func _build_ui() -> void:
 		var modifier := Label.new()
 		modifier.custom_minimum_size.x = 42
 		modifier.tooltip_text = "Modificatore calcolato dal punteggio e dal bonus"
-		scores_row.add_child(modifier)
+		abilities_row.add_child(modifier)
 		_ability_modifier_labels[ability] = modifier
 		var saving_throw := Label.new()
-		saving_throw.text = "TS +0"
+		saving_throw.text = "+0"
 		saving_throw.tooltip_text = "Tiro salvezza: modificatore caratteristica + competenza, se posseduta"
 		saving_throw.add_theme_font_size_override("font_size", 13)
-		saving_throw.custom_minimum_size.x = 65
-		saving_throw.horizontal_alignment = HORIZONTAL_ALIGNMENT_RIGHT
-		# A saving throw belongs to its ability row, beside the score/modifier.
-		cell.add_child(saving_throw)
+		saving_throw.custom_minimum_size.x = 72
+		saving_throw.horizontal_alignment = HORIZONTAL_ALIGNMENT_LEFT
+		abilities_row.add_child(saving_throw)
 		_saving_throw_labels[ability] = saving_throw
 		spin.value_changed.connect(_on_ability_value_changed.bind(ability))
 		bonus.value_changed.connect(_on_ability_value_changed.bind(ability))
@@ -937,6 +940,11 @@ func _build_ui() -> void:
 	_add_label(species_row, "🧬 Razza / Specie")
 	_species = _reference_option(species_row, Player5eTools.entries("races"))
 	_species.item_selected.connect(func(_index: int) -> void: _on_species_changed())
+	var background_row := HBoxContainer.new()
+	form.add_child(background_row)
+	_add_label(background_row, "📖 Background")
+	_background = _reference_option(background_row, Player5eTools.entries("backgrounds"))
+	_background.tooltip_text = "Background strutturato del personaggio: competenze e scelte ottenute dai dati 5etools."
 
 	var classes_title_row := HBoxContainer.new()
 	classes_title_row.add_theme_constant_override("separation", 12)
@@ -1988,9 +1996,8 @@ func _update_sheet_layout() -> void:
 	_creature_list_scroll.custom_minimum_size.y = minf(float(mini(maxi(visible_rows, 1), 7) * 37 + 6), row_budget)
 	if _abilities_grid == null or _abilities_grid.get_child_count() == 0:
 		return
-	# The columns never stack. Single-column ability scores keep the left
-	# side narrow; each section can scroll horizontally only if necessary.
-	_abilities_grid.columns = 1
+	# Keep the ability grid as a four-column table in every window size.
+	_abilities_grid.columns = 4
 
 
 func _on_selected(index: int) -> void:
@@ -2086,6 +2093,8 @@ func _load_form(record: Dictionary) -> void:
 		}]
 		_set_reference_choices(_species, bestiary_species)
 	_select_reference(_species, String(record.get("species", "")), String(record.get("species_source", "")), String(record.get("species_id", "")))
+	_set_reference_choices(_background, Player5eTools.entries("backgrounds"))
+	_select_reference(_background, String(record.get("background", "")), String(record.get("background_source", "")), String(record.get("background_id", "")))
 	_speed_custom = bool(record.get("speed_is_custom", false))
 	var source_speed: int = (Rules.walking_speed(_reference_entry(_species).get("speed", 30))
 		if is_character else Rules.walking_speed(record.get("stat_block", {}).get("speed", 30)))
@@ -2319,7 +2328,7 @@ func _refresh_skill_values(record: Dictionary) -> void:
 				modifier = int(published)
 				trained = true
 		var target: Label = _saving_throw_labels[ability]
-		target.text = "TS %+d%s" % [modifier, " 🎓" if trained else ""]
+		target.text = "%s%+d" % ["🎓 " if trained else "", modifier]
 		target.tooltip_text = "%s: mod. %+d%s = %+d" % [ability.to_upper(), base,
 			" + competenza %+d" % proficiency if trained else "", modifier]
 	if _tools_proficiency_label != null:
@@ -2905,6 +2914,10 @@ func _save() -> void:
 	record["second_form_max_hp"] = int(_second_form_max_hp.value)
 	record["second_form_hp"] = clampi(int(_second_form_hp.value), 0, int(_second_form_max_hp.value))
 	record["background_personality"] = _biography.text
+	var background_entry: Dictionary = _reference_entry(_background)
+	record["background"] = String(background_entry.get("name", ""))
+	record["background_source"] = String(background_entry.get("source", ""))
+	record["background_id"] = String(background_entry.get("id", ""))
 	record["size_name"] = _size_choice.get_item_text(_size_choice.selected)
 	record["footprint"] = _selected_size_footprint()
 	record["visual_front_quarter_turns"] = _front.selected
@@ -3030,6 +3043,16 @@ func _save() -> void:
 		record["classes"] = classes
 	_refresh_xp_minimum()
 	record["xp"] = maxi(int(_xp.value), Rules.experience_for_level(_class_xp_level()))
+	# Refresh the normalized grants only after species, background and classes
+	# have all been updated. This removes superseded racial origins immediately.
+	var current_grants: Array[Dictionary] = ProficiencyRules.choices(record)
+	ProficiencyRules.sync_legacy_fields(record, current_grants)
+	var saved_origins: Array[Dictionary] = []
+	for origin: Dictionary in ProficiencyRules.origins(record):
+		saved_origins.append({"id": origin.get("id", ""), "name": origin.get("name", ""),
+			"group": origin.get("group", ""), "automatic": bool(origin.get("automatic", false)),
+			"disabled": bool(origin.get("disabled", false))})
+	record["proficiency_origins"] = saved_origins
 	var error: Error = _archive.save(record)
 	if error != OK:
 		_set_status("Salvataggio non riuscito: %s" % error_string(error))
