@@ -129,6 +129,7 @@ var _class_name: OptionButton
 var _add_class_button: Button
 var _rules_edition: OptionButton
 var _rules_edition_caption: Label
+var _additional_classes_title: Label
 var _multiclass_rows: VBoxContainer
 var _multiclass_controls: Array[Dictionary] = []
 var _level: SpinBox
@@ -954,6 +955,7 @@ func _build_ui() -> void:
 	form.add_child(species_row)
 	_add_label(species_row, "Razza / Specie")
 	_species = _reference_option(species_row, Player5eTools.entries("races"))
+	_species.tooltip_text = "Le sottorazze di 5etools sono già voci complete (es. Elf (High)): scegli direttamente la variante."
 	_species.item_selected.connect(func(_index: int) -> void: _on_species_changed())
 	var type_row := HBoxContainer.new()
 	type_row.add_theme_constant_override("separation", 7)
@@ -1019,7 +1021,9 @@ func _build_ui() -> void:
 	classes_row.add_child(_level)
 	var multiclass_header := HBoxContainer.new()
 	form.add_child(multiclass_header)
-	_add_label(multiclass_header, "Classi aggiuntive")
+	_additional_classes_title = Label.new()
+	_additional_classes_title.text = "Classi aggiuntive (multiclasse)"
+	multiclass_header.add_child(_additional_classes_title)
 	_add_class_button = Button.new()
 	_add_class_button.text = "+ Classe"
 	_add_class_button.pressed.connect(_add_multiclass_row)
@@ -2164,6 +2168,7 @@ func _load_form(record: Dictionary) -> void:
 			_skill_ranks[skill_id] = int(inferred[skill_id])
 	_refresh_skill_values(record)
 	var is_character: bool = String(record.get("kind", "")) == "character"
+	_additional_classes_title.text = "Classi aggiuntive (multiclasse)" if is_character else "Classi principali aggiuntive"
 	if is_character:
 		_set_reference_choices(_species, Player5eTools.entries("races"))
 	else:
