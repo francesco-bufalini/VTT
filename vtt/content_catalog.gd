@@ -1,37 +1,13 @@
 extends RefCounted
 
-# Optional VTT extensions are loaded when needed, rather than preloaded into
-# every compendium consumer. Source definitions remain usable independently.
-const ENRICHMENT_SCRIPT_PATH := "res://vtt/content_enrichment.gd"
-const ENRICHMENT_USER_DIR := "user://vtt_enrichment"
-
 # Shared data normalization and local content overlays, never private sheets.
 const HOME_DIR := "user://homebrew"
+const ENRICHMENT_USER_DIR := "user://vtt_enrichment"
+const ENRICHMENT_SCRIPT_PATH := "res://vtt/content_enrichment.gd"
+const NATIVE_ADAPTER_PATH := "res://vtt/native_5etools_adapter.gd"
 const CATEGORIES := ["items", "subclasses", "subclass_features", "monsters", "races", "classes", "spells", "conditions", "diseases", "effects", "class_features", "species_traits", "feats", "backgrounds", "optional_features"]
 const EFFECT_CATEGORIES := ["conditions", "diseases", "effects"]
 const MAX_FILE_BYTES := 2 * 1024 * 1024
-# Native 5etools homebrew packages keep their _meta.sources and category
-# arrays intact on disk. Adapt them at the catalog boundary only.
-const NATIVE_CATEGORIES = {
-	"monster": "monsters",
-	"spell": "spells",
-	"item": "items",
-	"baseitem": "items",
-	"magicvariant": "items",
-	"class": "classes",
-	"subclass": "subclasses",
-	"subclassFeature": "subclass_features",
-	"classFeature": "class_features",
-	"race": "races",
-	"raceFeature": "species_traits",
-	"feat": "feats",
-	"background": "backgrounds",
-	"optionalfeature": "optional_features",
-	"condition": "conditions",
-	"disease": "diseases"
-}
-
-
 const LEGACY_CONDITIONS := [
 	# Le 15 condizioni ufficiali D&D 5e / SRD.
 	{"id": "blinded", "name": "Blinded", "icon": "🙈", "official": true},
@@ -63,41 +39,67 @@ static var _loaded := false
 static var diagnostics: Array[String] = []
 static var _effects: Array[Dictionary] = []
 
-static var _enrichment_script: Script
-
-
-static func _extension() -> Script:
-	if _enrichment_script != null:
-		return _enrichment_script
-	var resource: Resource = load(ENRICHMENT_SCRIPT_PATH)
+# The stable core catalog is deliberately independent from the two
+# optional adapters. Their scripts are loaded only when invoked; a problem
+# in the runtime extension cannot invalidate this script's preloads.
+static func _optional_script(path: String) -> Script:
+	var resource: Resource = load(path)
 	if resource is Script:
-		_enrichment_script = resource as Script
-	return _enrichment_script
+		return resource as Script
+	return null
 
 
 static func reload_enrichment() -> void:
-	var script: Script = _extension()
-	if script != null:
-		script.call("reload")
+	var extension := _optional_script(ENRICHMENT_SCRIPT_PATH)
+	if extension != null:
+		extension.call("reload")
 
 
 static func enrichment_diagnostics() -> Array[String]:
-	var result: Array[String] = []
-	var script: Script = _extension()
-	if script != null:
-		var raw: Variant = script.get("diagnostics")
-		if raw is Array:
-			for item: Variant in raw:
-				result.append(String(item))
-	return result
+	var output: Array[String] = []
+	var extension := _optional_script(ENRICHMENT_SCRIPT_PATH)
+	if extension == null:
+		return output
+	var messages: Variant = extension.get("diagnostics")
+	if messages is Array:
+		for raw: Variant in messages:
+			output.append(String(raw))
+	return output
 
 
 static func enrich(category: String, definition: Dictionary) -> Dictionary:
-	var script: Script = _extension()
-	if script == null:
+	var extension := _optional_script(ENRICHMENT_SCRIPT_PATH)
+	if extension == null:
 		return definition.duplicate(true)
-	var value: Variant = script.call("apply_to", category, definition)
-	return value as Dictionary if value is Dictionary else definition.duplicate(true)
+	var result: Variant = extension.call("apply_to", category, definition)
+	if result is Dictionary:
+		return result as Dictionary
+	return definition.duplicate(true)
+
+
+static func _load_native_package(package: Dictionary, path: String) -> void:
+	var adapter := _optional_script(NATIVE_ADAPTER_PATH)
+	if adapter == null:
+		_diagnose("Homebrew 5etools: adattatore non disponibile: " + path)
+		return
+	var parsed: Variant = adapter.call("normalize", package, path)
+	if not parsed is Dictionary:
+		_diagnose("Homebrew 5etools: adattatore non valido: " + path)
+		return
+	var result: Dictionary = parsed
+	for issue: Variant in result.get("diagnostics", []):
+		_diagnose(String(issue))
+	for value: Variant in result.get("entries", []):
+		if not value is Dictionary:
+			continue
+		var entry: Dictionary = value
+		var id: String = String(entry.get("id", ""))
+		if id.is_empty():
+			continue
+		if _home.has(id):
+			_diagnose("Homebrew: ID duplicato ignorato (vince il primo): " + id)
+			continue
+		_home[id] = entry
 
 
 static func reload_homebrew(paths: Array[String] = ["res://homebrew", HOME_DIR]) -> void:
@@ -184,64 +186,6 @@ static func _load_package(path: String) -> void:
 			if data.icon.length() > 16:
 				data["icon"] = ""
 		_home[id] = data
-
-static func _native_slug(value: String, max_length: int) -> String:
-	var regex := RegEx.new()
-	regex.compile("[^a-z0-9_-]+")
-	var slug: String = regex.sub(value.to_lower().strip_edges(), "_", true)
-	return slug.trim_prefix("_").trim_suffix("_").substr(0, max_length)
-
-
-static func _load_native_package(package: Dictionary, path: String) -> void:
-	var metadata: Variant = package.get("_meta", {})
-	if not metadata is Dictionary:
-		_diagnose("Homebrew 5etools: _meta non valido: " + path)
-		return
-	var defined_sources: Dictionary = {}
-	var sources: Variant = (metadata as Dictionary).get("sources", [])
-	if sources is Array:
-		for value: Variant in sources:
-			if value is Dictionary:
-				var code: String = String((value as Dictionary).get("json", "")).strip_edges()
-				if not code.is_empty():
-					defined_sources[code] = true
-	if defined_sources.is_empty():
-		_diagnose("Homebrew 5etools: _meta.sources mancante: " + path)
-		return
-	var fallback_source: String = String(defined_sources.keys()[0]) if defined_sources.size() == 1 else ""
-	for native_category: String in NATIVE_CATEGORIES.keys():
-		var entries: Variant = package.get(native_category, [])
-		if not entries is Array:
-			continue
-		var category: String = NATIVE_CATEGORIES[native_category]
-		for value: Variant in entries:
-			if not value is Dictionary:
-				_diagnose("Homebrew 5etools: voce non valida: " + path)
-				continue
-			var data: Dictionary = (value as Dictionary).duplicate(true)
-			var name: String = String(data.get("name", "")).strip_edges()
-			var source: String = String(data.get("source", fallback_source)).strip_edges()
-			if name.is_empty() or source.is_empty() or not defined_sources.has(source):
-				_diagnose("Homebrew 5etools: nome/fonte non validi: " + path)
-				continue
-			var namespace: String = _native_slug(source, 48)
-			var local_id: String = _native_slug(name, 64)
-			if namespace.is_empty() or local_id.is_empty():
-				_diagnose("Homebrew 5etools: impossibile creare ID: " + name)
-				continue
-			var id: String = "homebrew:%s:%s:%s" % [namespace, category, local_id]
-			if _home.has(id):
-				_diagnose("Homebrew: ID duplicato ignorato (vince il primo): " + id)
-				continue
-			data["id"] = id
-			data["source"] = source
-			data["category"] = category
-			data["origin"] = "homebrew"
-			data["asset_dir"] = path.get_base_dir()
-			if category in EFFECT_CATEGORIES and String(data.get("icon", "")).length() > 16:
-				data["icon"] = ""
-			_home[id] = data
-
 
 static func home_entries(category: String) -> Array[Dictionary]:
 	if not _loaded:
