@@ -2203,7 +2203,7 @@ func _refresh_attacks(record: Dictionary) -> void:
 			int(abilities.get("str", 10)) + int(bonuses.get("str", 0))
 		)
 		var hit_bonus: int = strength + _creature_proficiency(record)
-		lines.push_front(
+		lines.insert(0,
 			FiveToolsText.subtitle("Colpo senz'armi")
 			+ " · Mischia, portata 5 ft; colpire %+d; danni contundenti %d"
 			% [hit_bonus, maxi(0, 1 + strength)]
@@ -2875,7 +2875,7 @@ func _refresh_trackers(record: Dictionary) -> void:
 		var source_button := Button.new()
 		var title: String = String(tracker.get("name", "Risorsa"))
 		var source_label: String = String(tracker.get("source_label", ""))
-		source_button.text = title + "  ↗"
+		source_button.text = (title.substr(0, 23) + "…" if title.length() > 24 else title) + " ↗"
 		source_button.tooltip_text = (
 			"Vai al privilegio: " + String(tracker.get("origin", title))
 			+ (" · " + source_label if not source_label.is_empty() else "")
