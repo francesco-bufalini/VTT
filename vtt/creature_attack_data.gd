@@ -163,9 +163,10 @@ static func _attack_ability_modifier(record: Dictionary, attack: Dictionary) -> 
 	return ability_modifier(record)
 
 
-static func _weapon_magic_bonus(attack: Dictionary) -> int:
-	var value: Variant = attack.get("item_entry", {})
-	return int((value as Dictionary).get("bonus_weapon", 0)) if value is Dictionary else 0
+static func _weapon_magic_bonus(_attack: Dictionary) -> int:
+	# Structured enhancements are now grants in creature_bonus_rules.gd.
+	# Do not add them again outside the origin system.
+	return 0
 
 
 static func attack_bonus(record: Dictionary, attack: Dictionary, proficiency: int) -> int:
