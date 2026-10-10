@@ -180,20 +180,19 @@ static func candidate_sources(record: Dictionary) -> Array[Dictionary]:
 			var row: Dictionary = raw
 			var name := String(row.get("name", ""))
 			var source := String(row.get("source", ""))
-			if not _selected_source(record, group, name, source):
+			if not _selected_source(record, group, name, source, row):
 				continue
 			# Every indexed grant is taken from a structured 2014-compatible
 			# record, never from feature/feat prose.
 			var row_mode := "starting"
 			if group == "class":
 				var classes: Variant = record.get("classes", [])
-				if classes is Array and not (classes as Array).is_empty():
+				# Monster levels are separate from character classes: every
+				# class added to a monster receives starting privileges.
+				if String(record.get("kind", "")) != "monster" and classes is Array and not (classes as Array).is_empty():
 					var primary: Dictionary = {}
 					for candidate_class: Variant in classes:
 						if candidate_class is Dictionary and not String(candidate_class.get("name", "")).is_empty():
-							# The first class is the base class even for NPCs.
-							# Skipping "mostro" used to give the next class
-							# Starting instead of Multiclass grants.
 							primary = candidate_class
 							break
 					if not primary.is_empty() and (String(primary.get("name", "")).nocasecmp_to(name) != 0 or String(primary.get("source", "")) != source):
@@ -207,7 +206,7 @@ static func candidate_sources(record: Dictionary) -> Array[Dictionary]:
 	return candidates
 
 
-static func _selected_source(record: Dictionary, group: String, name: String, source: String) -> bool:
+static func _selected_source(record: Dictionary, group: String, name: String, source: String, indexed: Dictionary = {}) -> bool:
 	match group:
 		"class":
 			var list: Variant = record.get("classes", [])
@@ -217,7 +216,25 @@ static func _selected_source(record: Dictionary, group: String, name: String, so
 						return true
 			return String(record.get("class", "")).nocasecmp_to(name) == 0 and String(record.get("class_source", "")) == source
 		"race", "subrace":
-			return String(record.get("species", "")).nocasecmp_to(name) == 0 and String(record.get("species_source", "")) == source
+			var selected: String = String(record.get("species", ""))
+			var selected_source: String = String(record.get("species_source", ""))
+			if group == "subrace":
+				# Flattened 5etools entries include their parent's traits.
+				var race: String = String(indexed.get("raceName", ""))
+				return selected.nocasecmp_to(race + " (" + name + ")") == 0 and selected_source == source
+			if selected.nocasecmp_to(name) == 0 and selected_source == source:
+				return true
+			# A subrace also inherits structured parent race grants, even
+			# when its source book differs from the parent's.
+			var subraces: Variant = _sources.get("subrace", [])
+			if subraces is Array:
+				for item: Variant in subraces:
+					if not item is Dictionary:
+						continue
+					var child: Dictionary = item as Dictionary
+					if String(child.get("raceName", "")).nocasecmp_to(name) == 0 and String(child.get("raceSource", "")) == source and selected_source == String(child.get("source", "")) and selected.nocasecmp_to(name + " (" + String(child.get("name", "")) + ")") == 0:
+						return true
+			return false
 		"background":
 			if String(record.get("background", "")).nocasecmp_to(name) != 0:
 				return false
