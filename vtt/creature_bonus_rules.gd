@@ -93,9 +93,14 @@ static func _add_migrated(rows: Array[Dictionary], target: String, amount: int) 
 static func available_origins(record: Dictionary) -> Array[Dictionary]:
 	var results: Array[Dictionary] = []
 	var seen: Dictionary = {}
+	var disabled_live: Dictionary = {}
 	for source: Dictionary in Proficiencies.origins(record):
 		var sid: String = String(source.get("id", ""))
 		if sid.is_empty() or seen.has(sid):
+			continue
+		if sid.begins_with("item:") or sid.begins_with("feature:"):
+			# These identities are live only while the item/feature really exists.
+			disabled_live[sid] = bool(source.get("disabled", false))
 			continue
 		seen[sid] = true
 		results.append({"id": sid, "name": String(source.get("name", "")), "disabled": bool(source.get("disabled", false))})
@@ -104,7 +109,7 @@ static func available_origins(record: Dictionary) -> Array[Dictionary]:
 		if sid == "feature:" or seen.has(sid):
 			continue
 		seen[sid] = true
-		results.append({"id": sid, "name": "Tratto · " + String(feature.get("name", "")), "disabled": false})
+		results.append({"id": sid, "name": "Tratto · " + String(feature.get("name", "")), "disabled": bool(disabled_live.get(sid, false))})
 	var inv: Variant = record.get("inventory", [])
 	if inv is Array:
 		for owned: Variant in inv:
@@ -114,7 +119,7 @@ static func available_origins(record: Dictionary) -> Array[Dictionary]:
 			if sid == "item:" or seen.has(sid):
 				continue
 			seen[sid] = true
-			results.append({"id": sid, "name": "Oggetto · " + String((owned as Dictionary).get("name", "")), "disabled": false})
+			results.append({"id": sid, "name": "Oggetto · " + String((owned as Dictionary).get("name", "")), "disabled": bool(disabled_live.get(sid, false))})
 	return results
 
 
