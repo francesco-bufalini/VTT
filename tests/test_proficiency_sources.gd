@@ -112,6 +112,27 @@ func run() -> void:
 	assert(Proficiencies.has_choice(no_false_grant, "skill", "perception")
 		and not Proficiencies.has_choice(no_false_grant, "skill", "athletics"),
 		"Nested structured choose data must not become an unconditional grant")
+	# Smoke-test every bundled class, including optional pools and 2024
+	# variants: descriptions must never assume a nested grant is a boolean.
+	var index_file: FileAccess = FileAccess.open(
+		"res://vtt/data/proficiency_grants_5etools.json", FileAccess.READ
+	)
+	assert(index_file != null, "Structured proficiency index must be bundled")
+	var index_data: Variant = JSON.parse_string(index_file.get_as_text())
+	index_file.close()
+	assert(index_data is Dictionary, "Structured proficiency index must parse")
+	var class_count := 0
+	for indexed_class: Variant in (index_data as Dictionary).get("class", []):
+		if not indexed_class is Dictionary:
+			continue
+		for mode: String in ["starting", "multiclass"]:
+			var candidate: Dictionary = {"group": "class", "data": indexed_class, "mode": mode}
+			var description: String = Proficiencies.starting_description(candidate)
+			assert("Core Traits" in description,
+				"Every bundled Starting class description must render without type errors")
+			Proficiencies.fixed_grants(candidate)
+		class_count += 1
+	assert(class_count >= 20, "Both PHB 2014 and PHB 2024 structured classes should be covered")
 	var starting_trait_found := false
 	for feature_entry: Dictionary in Traits.collect_features(barbarian):
 		if String(feature_entry.get("name", "")) == "Starting Barbarian" and int(feature_entry.get("level", 0)) == 1:
