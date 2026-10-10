@@ -46,6 +46,13 @@ static func create_document(name: String = "Nuovo documento", description: Strin
 	}
 
 
+static func legacy_id(note: Dictionary) -> String:
+	var key: String = String(note.get("id", ""))
+	if key.is_empty():
+		key = JSON.stringify(note)
+	return OWN_PREFIX + "doc_" + key.sha256_text().substr(0, 28)
+
+
 static func from_legacy(note: Dictionary) -> Dictionary:
 	var key: String = String(note.get("id", ""))
 	if key.is_empty():
