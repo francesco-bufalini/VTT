@@ -80,6 +80,12 @@ func run() -> void:
 	var area: Node = load("res://vtt/creature_area.gd").new()
 	board.add_child(area)
 	area.setup(board)
+	for ability: String in ["str", "dex", "con", "int", "wis", "cha"]:
+		var icon: Label = area._saving_throw_icons[ability]
+		var numeric: Label = area._saving_throw_labels[ability]
+		assert(icon.get_parent() == numeric.get_parent()
+			and icon.get_index() + 1 == numeric.get_index(),
+			"Saving throw proficiency icons must have their own fixed-width cell")
 	area._archive.setup(campaign)
 	# Search works from the bundled 5etools miniature references even
 	# while the remote bestiary index has not been downloaded.
@@ -222,6 +228,14 @@ func run() -> void:
 	assert(area._temp_hp.get_parent() == area._hp.get_parent()
 		and area._ac.get_parent() != area._temp_hp.get_parent(),
 		"Temporary HP share the health panel; armor class belongs to Statistics")
+	var hp_row: Control = area._hp.get_parent()
+	assert(hp_row.get_child(0) is HBoxContainer
+		and (hp_row.get_child(1) as Label).text == "Attuali"
+		and area._hp.get_index() == 2,
+		"HP −/+ controls must precede the current HP label and value")
+	assert((hp_row.get_child(area._temp_hp.get_index() - 1) as Label).text == "+"
+		and (hp_row.get_child(area._temp_hp.get_index() + 1) as Label).text == "TEMP",
+		"Temporary HP must display + [value] TEMP")
 	assert(area._party.get_parent() == area._name.get_parent(),
 		"Faction must be alongside character name")
 	area._level.value = 5
@@ -366,12 +380,13 @@ func run() -> void:
 		"Passive perception must be calculated from Wisdom and skill ranks")
 	assert(area._saving_throw_labels.size() == 6,
 		"Each ability shows a saving throw result")
-	assert((area._saving_throw_labels["wis"] as Label).text.ends_with(" 🎓"),
-		"Proficient Wisdom saving throw must place the numeric bonus before the proficiency emoji")
+	assert((area._saving_throw_icons["wis"] as Label).text == "🎓"
+		and (area._saving_throw_labels["wis"] as Label).text.begins_with("+"),
+		"Proficient Wisdom saving throw must separate its marker from the numeric formula")
 	var wisdom_saving: Label = area._saving_throw_labels["wis"]
 	var wisdom_formula: Node = area._formula_values["ability:wis"]
 	assert(area._abilities_grid.columns == 4
-		and wisdom_saving.get_parent() == area._abilities_grid
+		and wisdom_saving.get_parent().get_parent() == area._abilities_grid
 		and wisdom_formula.get_parent().get_parent() == area._abilities_grid,
 		"Saving throws, scores and modifiers must share four aligned table columns")
 	assert((area._abilities_grid.get_child(3) as Label).text == "TS",
