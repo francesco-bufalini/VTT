@@ -344,15 +344,26 @@ func run() -> void:
 	area._reload()
 	assert(int(area._skill_ranks["perception"]) == (original_skill_rank + 1) % 3,
 		"Skill proficiency must survive reload")
-	assert(area._statistics_columns is GridContainer,
-		"Statistics columns must be able to stack at narrow viewport widths")
+	assert(area._statistics_columns is HBoxContainer
+		and area._statistics_columns.get_child_count() == 2,
+		"Statistics must always retain side-by-side skill and combat columns")
 	area._update_sheet_layout()
-	var usable_tab_width: float = minf(
-		area._tabs.size.x,
-		maxf(0.0, area._panel.get_viewport_rect().size.x - area._tabs.get_global_rect().position.x - 30.0)
-	)
-	assert(area._statistics_columns.columns == (2 if usable_tab_width >= 960.0 else 1),
-		"Stats columns must use screen space actually available after the sidebar")
+	var skills_view: ScrollContainer = area._statistics_columns.get_child(0)
+	var combat_view: ScrollContainer = area._statistics_columns.get_child(1)
+	assert(skills_view.get_child(0) is VBoxContainer
+		and combat_view.get_child(0) is VBoxContainer,
+		"Skill and combat details must stay in separate columns")
+	assert(is_equal_approx(skills_view.size_flags_stretch_ratio, 0.9)
+		and is_equal_approx(combat_view.size_flags_stretch_ratio, 1.1),
+		"Combat should get moderately more width, rather than a vertically stacked layout")
+	assert(skills_view.horizontal_scroll_mode == ScrollContainer.SCROLL_MODE_AUTO
+		and combat_view.horizontal_scroll_mode == ScrollContainer.SCROLL_MODE_AUTO
+		and area._abilities_grid.columns == 1,
+		"Oversized details should scroll inside their own columns without widening the sheet")
+	area._update_stats_column_heights()
+	assert(skills_view.custom_minimum_size.y > 0
+		and is_equal_approx(skills_view.custom_minimum_size.y, combat_view.custom_minimum_size.y),
+		"Both columns should expose the full height of their contents to the outer vertical scroll")
 	var combat_stats: Node = area._attacks_description.get_parent()
 	assert(area._tracker_rows.get_parent() == combat_stats
 		and area._tracker_rows.get_index() < area._attacks_description.get_index(),

@@ -36,7 +36,7 @@ var _creature_list: VBoxContainer
 var _creature_filter: LineEdit
 var _creature_empty: Label
 var _abilities_grid: GridContainer
-var _statistics_columns: GridContainer
+var _statistics_columns: HBoxContainer
 var _skills_panel: VBoxContainer
 var _skill_buttons: Dictionary = {}
 var _skill_values: Dictionary = {}
@@ -506,20 +506,34 @@ func _build_ui() -> void:
 	columns.add_child(_tabs)
 	var form := _add_sheet_tab(_tabs, "Info")
 	var statistics_tab := _add_sheet_tab(_tabs, "Statistiche")
-	_statistics_columns = GridContainer.new()
-	_statistics_columns.columns = 1
-	_statistics_columns.add_theme_constant_override("h_separation", 10)
-	_statistics_columns.add_theme_constant_override("v_separation", 12)
+	# Always keep skills and combat side by side (45% / 55%).  Scroll
+	# their oversized contents locally instead of expanding the whole sheet.
+	_statistics_columns = HBoxContainer.new()
+	_statistics_columns.add_theme_constant_override("separation", 10)
 	_statistics_columns.size_flags_horizontal = Control.SIZE_EXPAND_FILL
 	statistics_tab.add_child(_statistics_columns)
+	var skills_view := ScrollContainer.new()
+	skills_view.name = "SkillsColumnView"
+	skills_view.size_flags_horizontal = Control.SIZE_EXPAND_FILL
+	skills_view.size_flags_stretch_ratio = 0.9
+	skills_view.horizontal_scroll_mode = ScrollContainer.SCROLL_MODE_AUTO
+	skills_view.vertical_scroll_mode = ScrollContainer.SCROLL_MODE_DISABLED
+	skills_view.follow_focus = true
+	_statistics_columns.add_child(skills_view)
 	var skills_column := VBoxContainer.new()
 	skills_column.size_flags_horizontal = Control.SIZE_EXPAND_FILL
-	skills_column.size_flags_stretch_ratio = 0.75
-	_statistics_columns.add_child(skills_column)
+	skills_view.add_child(skills_column)
+	var combat_view := ScrollContainer.new()
+	combat_view.name = "CombatColumnView"
+	combat_view.size_flags_horizontal = Control.SIZE_EXPAND_FILL
+	combat_view.size_flags_stretch_ratio = 1.1
+	combat_view.horizontal_scroll_mode = ScrollContainer.SCROLL_MODE_AUTO
+	combat_view.vertical_scroll_mode = ScrollContainer.SCROLL_MODE_DISABLED
+	combat_view.follow_focus = true
+	_statistics_columns.add_child(combat_view)
 	var combat_column := VBoxContainer.new()
 	combat_column.size_flags_horizontal = Control.SIZE_EXPAND_FILL
-	combat_column.size_flags_stretch_ratio = 1.75
-	_statistics_columns.add_child(combat_column)
+	combat_view.add_child(combat_column)
 	var appearance_tab := _add_sheet_tab(_tabs, "Aspetto")
 	var traits_tab := _add_sheet_tab(_tabs, "Tratti")
 	var conditions_tab := _add_sheet_tab(_tabs, "Stati")
@@ -1005,6 +1019,11 @@ func _build_ui() -> void:
 	_build_automatic_dialog()
 	_build_hp_delta_dialog()
 	_build_second_form_dialogs()
+	# The horizontal scrollers must expose the full content height to the
+	# outer vertical sheet scroll; otherwise the bottom of an attack is clipped.
+	skills_column.minimum_size_changed.connect(_update_stats_column_heights)
+	combat_column.minimum_size_changed.connect(_update_stats_column_heights)
+	call_deferred("_update_stats_column_heights")
 	_tabs.item_rect_changed.connect(_update_sheet_layout)
 	_panel.resized.connect(_update_sheet_layout)
 	call_deferred("_update_sheet_layout")
@@ -1838,6 +1857,24 @@ func _filter_owned_creatures(query: String) -> void:
 	_update_sheet_layout()
 
 
+func _update_stats_column_heights() -> void:
+	if _statistics_columns == null or _statistics_columns.get_child_count() != 2:
+		return
+	var left_view := _statistics_columns.get_child(0) as ScrollContainer
+	var right_view := _statistics_columns.get_child(1) as ScrollContainer
+	if left_view == null or right_view == null:
+		return
+	var left_contents := left_view.get_child(0) as Control
+	var right_contents := right_view.get_child(0) as Control
+	var needed_height: float = maxf(
+		left_contents.get_combined_minimum_size().y,
+		right_contents.get_combined_minimum_size().y
+	) + 18.0
+	if absf(left_view.custom_minimum_size.y - needed_height) > 1.0:
+		left_view.custom_minimum_size.y = needed_height
+		right_view.custom_minimum_size.y = needed_height
+
+
 func _update_sheet_layout() -> void:
 	if _panel == null or _creature_list_scroll == null:
 		return
@@ -1857,19 +1894,9 @@ func _update_sheet_layout() -> void:
 	_creature_list_scroll.custom_minimum_size.y = minf(float(mini(maxi(visible_rows, 1), 7) * 37 + 6), row_budget)
 	if _abilities_grid == null or _abilities_grid.get_child_count() == 0:
 		return
-	# Use the actual inner tab width, not the outer viewport: the sidebar
-	# already consumes space. Stack both sections when a split won't fit.
-	# TabContainer may report a width inflated by descendants' minimum sizes.
-	# Cap it to the pixels physically available before deciding to split.
-	var physical_width: float = viewport_size.x - _tabs.get_global_rect().position.x - 30.0
-	var tab_width: float = minf(_tabs.size.x, maxf(0.0, physical_width))
-	_statistics_columns.columns = 2 if tab_width >= 960.0 else 1
-	var cell_width: float = (_abilities_grid.get_child(0) as Control).get_combined_minimum_size().x
-	var gap_width: float = _abilities_grid.get_theme_constant("h_separation")
-	_abilities_grid.columns = (
-		2 if _statistics_columns.columns == 1 and tab_width >= cell_width * 2.0 + gap_width + 60.0
-		else 1
-	)
+	# The columns never stack. Single-column ability scores keep the left
+	# side narrow; each section can scroll horizontally only if necessary.
+	_abilities_grid.columns = 1
 
 
 func _on_selected(index: int) -> void:
