@@ -1436,7 +1436,7 @@ func _refresh_automatic_preview() -> void:
 		if _automatic_proficiency.button_pressed:
 			lines.append("Competenza → +%d" % Rules.proficiency_bonus(record))
 		if _automatic_spells.button_pressed:
-			var limits: Dictionary = Rules.spellcasting_limits(record)
+			var limits: Dictionary = Rules.spellcasting_limits(_with_effective_modifiers(record))
 			lines.append(String(limits.get("detail", "Nessuna classe magica.")))
 		if _automatic_derived.button_pressed:
 			var dice: String = Rules.automatic_hit_dice(record)
@@ -1497,7 +1497,7 @@ func _apply_automatic_calculation() -> void:
 	if _automatic_proficiency.button_pressed:
 		record["proficiency_bonus"] = Rules.proficiency_bonus(record)
 	if _automatic_spells.button_pressed:
-		record["spellcasting_calculation"] = Rules.spellcasting_limits(record)
+		record["spellcasting_calculation"] = Rules.spellcasting_limits(_with_effective_modifiers(record))
 	if _automatic_slots.button_pressed:
 		var progression: Dictionary = Rules.spell_slot_progression(record)
 		var derived_slots: Array = progression.get("slots", [])
@@ -1774,6 +1774,15 @@ func _set_formula(key: String, text_value: String, explanation: String) -> void:
 	if _formula_values.has(key):
 		var detail: String = BonusRules.description(_live_stats_record(), key)
 		_formula_values[key].set_formula(text_value, explanation + ("\n" + detail if not detail.is_empty() else ""))
+
+
+func _with_effective_modifiers(record: Dictionary) -> Dictionary:
+	var context: Dictionary = record.duplicate(true)
+	var modifiers: Dictionary = {}
+	for ability: String in BonusRules.ABILITIES:
+		modifiers[ability] = BonusRules.value(record, "ability_mod:" + ability)
+	context["effective_ability_modifiers"] = modifiers
+	return context
 
 
 func _on_formula_bonus_requested(key: String) -> void:
