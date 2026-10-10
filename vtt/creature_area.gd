@@ -687,9 +687,12 @@ func _build_ui() -> void:
 	ability_title.text = "✨ Caratteristiche"
 	ability_title.add_theme_font_size_override("font_size", 17)
 	ability_title.add_theme_color_override("font_color", Color(0.72, 0.88, 0.96))
-	statistics_tab.add_child(ability_title)
 	statistics_tab.add_child(abilities_panel)
-	abilities_panel.add_child(abilities_row)
+	var abilities_content := VBoxContainer.new()
+	abilities_content.add_theme_constant_override("separation", 8)
+	abilities_panel.add_child(abilities_content)
+	abilities_content.add_child(ability_title)
+	abilities_content.add_child(abilities_row)
 	for ability: String in ["str", "dex", "con", "int", "wis", "cha"]:
 		var cell := VBoxContainer.new()
 		abilities_row.add_child(cell)
