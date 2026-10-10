@@ -51,8 +51,8 @@ func setup(on_change: Callable) -> void:
 	columns.add_theme_constant_override("separation", 9)
 	columns.size_flags_horizontal = Control.SIZE_EXPAND_FILL
 	add_child(columns)
-	var left := _create_column(columns, "Origini delle competenze", 220)
-	var right := _create_column(columns, "Singole competenze", 285)
+	var left := _create_column(columns, "Origini delle competenze", 190)
+	var right := _create_column(columns, "Singole competenze", 225)
 
 	var origin_scroller := ScrollContainer.new()
 	origin_scroller.custom_minimum_size.y = 245
@@ -245,6 +245,7 @@ func _refresh_origins() -> void:
 		var selected := _selected_id == sid
 		select.toggle_mode = true
 		select.button_pressed = selected
+		select.clip_text = true
 		select.text = ("%s%s" % ["◇ " if not missing.is_empty() else "• ", String(item.get("name", ""))]) + " (%d)" % matching
 		select.tooltip_text = ("Da scegliere: " + ", ".join(missing)) if not missing.is_empty() else String(item.get("name", ""))
 		select.pressed.connect(_select_origin.bind(sid))
