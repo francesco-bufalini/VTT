@@ -1782,6 +1782,7 @@ func _with_effective_modifiers(record: Dictionary) -> Dictionary:
 	for ability: String in BonusRules.ABILITIES:
 		modifiers[ability] = BonusRules.value(record, "ability_mod:" + ability)
 	context["effective_ability_modifiers"] = modifiers
+	context["effective_con_modifier"] = int(modifiers.get("con", 0))
 	return context
 
 
