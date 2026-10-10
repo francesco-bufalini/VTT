@@ -389,6 +389,30 @@ func run() -> void:
 	tab._delete_manual_group([fixed_index])
 	assert(Proficiencies.has_choice(tab._rows, "weapon", "martial"),
 		"Fixed class proficiencies cannot be deleted from the manual-choice editor")
+	# Interleave types to ensure headings are rendered only once.
+	tab._rows.append({"kind": "weapon", "key": "rapier", "origin_id": "", "disabled": false})
+	tab._rows.append({"kind": "skill", "key": "arcana", "origin_id": "", "disabled": false})
+	tab._rows.append({"kind": "weapon", "key": "dagger", "origin_id": "", "disabled": false})
+	tab._refresh_competences()
+	var heading_names: Array[String] = []
+	var has_link_button := false
+	var has_mastery_word := false
+	for card: Node in tab._proficiency_cards.get_children():
+		if card is Label:
+			heading_names.append((card as Label).text)
+		for child: Node in card.get_children():
+			if child is HBoxContainer:
+				for control: Node in child.get_children():
+					if control is Button and (control as Button).text == "↳":
+						has_link_button = true
+					if control is CheckButton and (control as CheckButton).text == "Mestria":
+						has_mastery_word = true
+	assert(heading_names.count("Abilità") == 1
+		and heading_names.count("Categorie di armi") == 1
+		and heading_names.count("Singole armi") == 1,
+		"Skill and weapon headings must never repeat with interleaved grants")
+	assert(not has_link_button and has_mastery_word,
+		"Manual linking action is removed and stars are replaced by Mestria")
 	tab.queue_free()
 	await process_frame
 	print("PASS: automatically granted structured proficiencies, choose warnings, toggles, source highlights and migration")
