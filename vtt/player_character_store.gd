@@ -149,6 +149,8 @@ func create_character() -> Dictionary:
 		"spellcasting_calculation": {},
 		"species": "",
 		"species_source": "",
+		"subtype": "",
+		"subtype_is_custom": false,
 		"background": "",
 		"background_source": "",
 		"alignment": "",
