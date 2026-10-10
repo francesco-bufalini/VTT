@@ -1,0 +1,102 @@
+extends SceneTree
+
+class TestCampaign extends Node:
+	var selected_campaign_group_id := "creature_gui_layout"
+	var active_campaign_id := ""
+class TestBoard extends Node3D:
+	var board_sync: Node
+	func list_available_miniatures() -> Array[Dictionary]:
+		return [{"id": "hero_test", "name": "Hero"}]
+	func release_camera_control() -> void:
+		pass
+	func capture_camera_control() -> void:
+		pass
+
+func _initialize() -> void:
+	call_deferred("run")
+
+func visible_rows(area: Node) -> Array[Button]:
+	var result: Array[Button] = []
+	for button: Button in area._creature_row_buttons:
+		if (button.get_parent() as Control).visible:
+			result.append(button)
+	return result
+
+func run() -> void:
+	root.gui_embed_subwindows = true
+	root.content_scale_mode = Window.CONTENT_SCALE_MODE_DISABLED
+	var campaign := TestCampaign.new()
+	campaign.selected_campaign_group_id += "_%d" % Time.get_ticks_usec()
+	root.add_child(campaign)
+	var board := TestBoard.new()
+	root.add_child(board)
+	var ui := CanvasLayer.new()
+	ui.name = "UI"
+	board.add_child(ui)
+	var area: Node = load("res://vtt/creature_area.gd").new()
+	board.add_child(area)
+	area.setup(board)
+	area._archive.setup(campaign)
+	for label: String in ["Alpha", "Beta", "Gamma"]:
+		var record: Dictionary = area._archive.create_character()
+		record["name"] = label
+		record["party_id"] = "Delta" if label == "Beta" else "Explorers"
+		record["default_miniature_id"] = "hero_test"
+		assert(area._archive.save(record) == OK)
+	area._reload()
+	var original_id: String = area._current().id
+	area._creature_filter.text = " DELTA "
+	area._creature_filter.text_changed.emit(area._creature_filter.text)
+	assert(visible_rows(area).size() == 1 and "Beta" in visible_rows(area)[0].text,
+		"Owned creature search must match factions without changing stable row indices")
+	assert(area._current().id == original_id, "Searching must not switch or overwrite the selected sheet")
+	visible_rows(area)[0].pressed.emit()
+	var beta_id: String = area._current().id
+	assert(beta_id != original_id and area._current().name == "Beta")
+	area._name.text = "Omega"
+	area._name.text_changed.emit("Omega")
+	assert("Omega" in visible_rows(area)[0].text, "Edited names must update the archive row immediately")
+	assert(area._archive._stored("character", beta_id).name == "Omega")
+	area._creature_filter.text = "missing"
+	area._creature_filter.text_changed.emit("missing")
+	assert(visible_rows(area).is_empty() and area._creature_empty.visible)
+	assert(area._current().id == beta_id, "No search results must preserve the selected sheet")
+	area._creature_filter.text = ""
+	area._creature_filter.text_changed.emit("")
+	area._reload()
+	assert(visible_rows(area).size() == 3 and area._current().id == beta_id)
+	for index: int in range(12):
+		var record: Dictionary = area._archive.create_character()
+		record["name"] = "Extra %d" % index
+		assert(area._archive.save(record) == OK)
+	area._reload()
+	for viewport_size: Vector2i in [Vector2i(1200, 720), Vector2i(800, 600)]:
+		root.size = viewport_size
+		area.show_panel()
+		for index: int in range(4):
+			await process_frame
+		var bounds: Rect2 = root.get_visible_rect()
+		var sheet_rect: Rect2 = area._panel.get_global_rect()
+		assert(bounds.encloses(sheet_rect), "Creature sheet must fit the game viewport after resize")
+		assert(area._level.size.x < 150.0, "Numeric class level must remain a compact input")
+		var sidebar: Control = area._creature_list_scroll.get_parent()
+		var add_bestiary: Control = sidebar.get_child(sidebar.get_child_count() - 1)
+		assert(sheet_rect.encloses(add_bestiary.get_global_rect()),
+			"A large archive must leave the bestiary creation button reachable")
+		area._choose_miniature(area._current(), false)
+		await process_frame
+		await process_frame
+		var dialog: ConfirmationDialog = area._miniature_dialog
+		var confirm_rect: Rect2 = dialog.get_ok_button().get_global_rect()
+		assert(Rect2(Vector2.ZERO, Vector2(dialog.size)).encloses(confirm_rect))
+		assert(dialog.position.y + confirm_rect.end.y <= bounds.size.y,
+			"First-open miniature Confirm must be on screen")
+		dialog.hide()
+	for store in [area._archive._characters, area._archive._monsters]:
+		DirAccess.remove_absolute(ProjectSettings.globalize_path(store._file_path()))
+	board.queue_free()
+	campaign.queue_free()
+	await process_frame
+	await process_frame
+	print("PASS: creature archive search, stable selection, live names, compact fields and first-open confirmation")
+	quit()

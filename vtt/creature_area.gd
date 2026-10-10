@@ -30,6 +30,9 @@ var _loading := false
 var _panel: PanelContainer
 var _status: Label
 var _creature_list: VBoxContainer
+var _creature_filter: LineEdit
+var _creature_empty: Label
+var _abilities_grid: GridContainer
 var _creature_list_scroll: ScrollContainer
 var _creature_row_buttons: Array[Button] = []
 var _creature_eye_buttons: Array[Button] = []
@@ -348,6 +351,9 @@ func _build_ui() -> void:
 
 	var heading := Label.new()
 	heading.text = "ARCHIVIO DELLE CREATURE"
+	heading.clip_text = true
+	heading.size_flags_horizontal = Control.SIZE_EXPAND_FILL
+	heading.tooltip_text = heading.text
 	heading.add_theme_font_size_override("font_size", 21)
 	heading.add_theme_color_override(
 		"font_color", Color(0.96, 0.79, 0.51, 1.0)
@@ -404,6 +410,16 @@ func _build_ui() -> void:
 		"font_color", Color(0.94, 0.76, 0.46, 1.0)
 	)
 	left.add_child(creatures_title)
+	_creature_filter = LineEdit.new()
+	_creature_filter.placeholder_text = "Cerca tra le mie creature…"
+	_creature_filter.clear_button_enabled = true
+	_creature_filter.text_changed.connect(_filter_owned_creatures)
+	left.add_child(_creature_filter)
+	_creature_empty = Label.new()
+	_creature_empty.autowrap_mode = TextServer.AUTOWRAP_WORD_SMART
+	_creature_empty.add_theme_font_size_override("font_size", 13)
+	_creature_empty.hide()
+	left.add_child(_creature_empty)
 	_creature_list_scroll = ScrollContainer.new()
 	_creature_list_scroll.custom_minimum_size.y = 40
 	_creature_list_scroll.size_flags_horizontal = Control.SIZE_EXPAND_FILL
@@ -506,9 +522,21 @@ func _build_ui() -> void:
 	health_panel.add_theme_stylebox_override("panel", health_style)
 	health_panel.tooltip_text = "PF attuali, massimi e temporanei. I danni consumano prima i PF temporanei."
 	form.add_child(health_panel)
+	var health_content := VBoxContainer.new()
+	health_panel.add_child(health_content)
+	var health_header := HBoxContainer.new()
+	health_content.add_child(health_header)
+	var health_caption := Label.new()
+	health_caption.text = "PF attuali / base + bonus = massimo"
+	health_caption.add_theme_font_size_override("font_size", 13)
+	health_caption.size_flags_horizontal = Control.SIZE_EXPAND_FILL
+	health_caption.autowrap_mode = TextServer.AUTOWRAP_WORD_SMART
+	health_header.add_child(health_caption)
+	var health_actions := HBoxContainer.new()
+	health_header.add_child(health_actions)
 	var health := HBoxContainer.new()
 	health.add_theme_constant_override("separation", 4)
-	health_panel.add_child(health)
+	health_content.add_child(health)
 	_add_label(health, "❤️")
 	var damage := Button.new()
 	damage.text = "−"
@@ -516,6 +544,7 @@ func _build_ui() -> void:
 	damage.custom_minimum_size.x = 30
 	damage.pressed.connect(_open_hp_delta.bind(-1))
 	_hp = _spin(health, -999, 99999)
+	_hp.tooltip_text = "Punti ferita attuali"
 	_hp.custom_minimum_size = Vector2(68, 30)
 	_hp.size_flags_horizontal = Control.SIZE_SHRINK_BEGIN
 	_add_label(health, "/")
@@ -539,17 +568,21 @@ func _build_ui() -> void:
 	heal.custom_minimum_size.x = 30
 	heal.pressed.connect(_open_hp_delta.bind(1))
 	# Adjacent − and + form a single compact health-action group.
-	health.add_child(damage)
-	health.add_child(heal)
+	health_actions.add_child(damage)
+	health_actions.add_child(heal)
 	var restore_hp := Button.new()
 	restore_hp.text = "↺"
 	restore_hp.tooltip_text = "Ripristina i PF al valore massimo"
 	restore_hp.custom_minimum_size.x = 30
 	restore_hp.pressed.connect(_restore_full_hp)
-	health.add_child(restore_hp)
+	health_actions.add_child(restore_hp)
+	var defense_flow := HFlowContainer.new()
+	defense_flow.add_theme_constant_override("h_separation", 8)
+	defense_flow.add_theme_constant_override("v_separation", 5)
+	form.add_child(defense_flow)
 	var temp_health := HBoxContainer.new()
 	temp_health.add_theme_constant_override("separation", 6)
-	form.add_child(temp_health)
+	defense_flow.add_child(temp_health)
 	_add_label(temp_health, "🛡 PF temporanei")
 	_temp_hp = _spin(temp_health, 0, 99999)
 	_temp_hp.custom_minimum_size.x = 70
@@ -557,15 +590,18 @@ func _build_ui() -> void:
 	_add_label(temp_health, "CA")
 	_ac = _spin(temp_health, 0, 99)
 	_ac.custom_minimum_size.x = 65
-	_add_label(temp_health, "Gittata base (ft)")
-	_reach = _spin(temp_health, 5, 1000)
+	var reach_row := HBoxContainer.new()
+	reach_row.add_theme_constant_override("separation", 6)
+	defense_flow.add_child(reach_row)
+	_add_label(reach_row, "Portata (ft)")
+	_reach = _spin(reach_row, 5, 1000)
 	_reach.step = 5.0
 	_reach.custom_minimum_size.x = 70
 	_ac.size_flags_horizontal = Control.SIZE_SHRINK_BEGIN
 
-	var abilities_row := GridContainer.new()
-	# Two columns keep all three score controls readable without widening
-	# the sheet on 1024 px and smaller displays.
+	_abilities_grid = GridContainer.new()
+	var abilities_row := _abilities_grid
+	# Use the available tab width to keep ability controls readable.
 	abilities_row.columns = 2
 	abilities_row.add_theme_constant_override("h_separation", 8)
 	abilities_row.add_theme_constant_override("v_separation", 7)
@@ -619,6 +655,7 @@ func _build_ui() -> void:
 	_level.update_on_text_changed = true
 	_level.rounded = true
 	_level.custom_minimum_size = Vector2(72, 30)
+	_level.size_flags_horizontal = Control.SIZE_SHRINK_BEGIN
 	_level.value_changed.connect(_on_level_changed)
 	classes_row.add_child(_level)
 
@@ -651,8 +688,9 @@ func _build_ui() -> void:
 	choose_miniature.text = "Cerca e scegli…"
 	choose_miniature.pressed.connect(func() -> void: _choose_miniature(_current(), false))
 	miniature_row.add_child(choose_miniature)
-	var appearance_actions := HBoxContainer.new()
-	appearance_actions.add_theme_constant_override("separation", 8)
+	var appearance_actions := HFlowContainer.new()
+	appearance_actions.add_theme_constant_override("h_separation", 8)
+	appearance_actions.add_theme_constant_override("v_separation", 5)
 	appearance_tab.add_child(appearance_actions)
 	var edit_appearance := Button.new()
 	edit_appearance.text = "Scegli aspetto attuale…"
@@ -710,6 +748,9 @@ func _build_ui() -> void:
 	add_child(_delete_dialog)
 	_build_automatic_dialog()
 	_build_hp_delta_dialog()
+	_tabs.item_rect_changed.connect(_update_sheet_layout)
+	_panel.resized.connect(_update_sheet_layout)
+	call_deferred("_update_sheet_layout")
 
 
 
@@ -1377,6 +1418,7 @@ func _reload() -> void:
 		select_button.text = "%s %s" % [icon, String(item.get("name", ""))]
 		select_button.alignment = HORIZONTAL_ALIGNMENT_LEFT
 		select_button.clip_text = true
+		select_button.tooltip_text = String(item.get("name", ""))
 		select_button.toggle_mode = true
 		select_button.custom_minimum_size.y = 34
 		select_button.size_flags_horizontal = Control.SIZE_EXPAND_FILL
@@ -1400,11 +1442,7 @@ func _reload() -> void:
 		):
 			selected_index = i
 
-	# A short list takes only its actual height; larger archives scroll.
-	var visible_rows: int = mini(maxi(_records.size(), 1), 7)
-	_creature_list_scroll.custom_minimum_size.y = float(
-		visible_rows * 37 + 6
-	)
+	_filter_owned_creatures(_creature_filter.text)
 	_refresh_creature_eye_buttons()
 	if selected_index < 0 and not _records.is_empty():
 		selected_index = 0
@@ -1431,6 +1469,51 @@ func _current() -> Dictionary:
 		):
 			return item.duplicate(true)
 	return {}
+
+
+func _filter_owned_creatures(query: String) -> void:
+	var needle := query.strip_edges().to_lower()
+	var visible_count := 0
+	for index: int in range(_creature_row_buttons.size()):
+		var record: Dictionary = _records[index]
+		var searchable := "%s %s" % [record.get("name", ""), record.get("party_id", "")]
+		var matches := needle.is_empty() or needle in searchable.to_lower()
+		_creature_row_buttons[index].get_parent().visible = matches
+		if matches:
+			visible_count += 1
+	_creature_empty.text = "Crea o importa una creatura." if _records.is_empty() else "Nessuna creatura corrispondente."
+	_creature_empty.visible = visible_count == 0
+	_update_sheet_layout()
+
+
+func _update_sheet_layout() -> void:
+	if _panel == null or _creature_list_scroll == null:
+		return
+	# Leave room for search, creation buttons and the bestiary even when
+	# many owned creatures are listed in a short game window.
+	var sidebar := _creature_list_scroll.get_parent() as VBoxContainer
+	var reserved_height := 100.0
+	var visible_rows := 0
+	for child: Node in sidebar.get_children():
+		if child is Control and child.visible and child != _creature_list_scroll:
+			reserved_height += (child as Control).get_combined_minimum_size().y + sidebar.get_theme_constant("separation")
+	for button: Button in _creature_row_buttons:
+		if button.get_parent().visible:
+			visible_rows += 1
+	var viewport_size := _panel.get_viewport_rect().size
+	var row_budget := maxf(40.0, viewport_size.y - _panel.offset_top + _panel.offset_bottom - reserved_height)
+	_creature_list_scroll.custom_minimum_size.y = minf(float(mini(maxi(visible_rows, 1), 7) * 37 + 6), row_budget)
+	if _abilities_grid == null or _abilities_grid.get_child_count() == 0:
+		return
+	var cell_width := (_abilities_grid.get_child(0) as Control).get_combined_minimum_size().x
+	var available_width := viewport_size.x - _tabs.get_global_rect().position.x - 30.0
+	var separation := _abilities_grid.get_theme_constant("h_separation")
+	if available_width >= cell_width * 3.0 + separation * 2:
+		_abilities_grid.columns = 3
+	elif available_width >= cell_width * 2.0 + separation:
+		_abilities_grid.columns = 2
+	else:
+		_abilities_grid.columns = 1
 
 
 func _on_selected(index: int) -> void:
@@ -1612,6 +1695,10 @@ func _replace_current_record(record: Dictionary) -> void:
 			and String(_records[i].get("kind", "")) == _selected_kind
 		):
 			_records[i] = record
+			var icon := "◇" if String(record.get("kind", "")) == "monster" else "♙"
+			_creature_row_buttons[i].text = "%s %s" % [icon, record.get("name", "")]
+			_creature_row_buttons[i].tooltip_text = String(record.get("name", ""))
+			_filter_owned_creatures(_creature_filter.text)
 			break
 
 

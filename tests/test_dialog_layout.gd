@@ -33,6 +33,13 @@ func run() -> void:
 	await process_frame
 	assert(dialog.size.y >= ceili(dialog.get_contents_minimum_size().y),
 		"The native footer must fit after first-frame layout")
+	# Content can finish measuring or receive data after the first popup.
+	body.set_deferred("custom_minimum_size", Vector2(400, 1100))
+	await process_frame
+	await process_frame
+	assert(body.get_parent() is ScrollContainer, "Late first-open content must scroll instead of hiding Confirm")
+	assert(dialog.position.y + dialog.get_ok_button().get_global_rect().end.y <= root.get_visible_rect().size.y,
+		"Late content must keep Confirm reachable on screen")
 	dialog.hide()
 
 	# Custom-button dialogs (the initiative picker) hide the native footer.

@@ -31,11 +31,12 @@ static func _keep_body_within_viewport(dialog: AcceptDialog, ratio: float) -> vo
 	if children.size() != 1 or not children[0] is Control or children[0] is ScrollContainer:
 		return
 	var body := children[0] as Control
-	var minimum := body.get_combined_minimum_size()
-	if minimum.x + 32 <= available.x and minimum.y + 80 <= available.y:
-		return
+	# Reserve the native footer before the first measurement. Content may
+	# grow later (wrapped text, downloaded data); it must grow inside a
+	# scrollable body rather than pushing Confirm beyond the viewport.
 	var scroll := ScrollContainer.new()
 	scroll.name = "DialogScrollBody"
+	scroll.follow_focus = true
 	dialog.remove_child(body)
 	dialog.add_child(scroll)
 	scroll.add_child(body)

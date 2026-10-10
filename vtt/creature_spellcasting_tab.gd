@@ -266,36 +266,43 @@ func setup(on_change: Callable, on_status: Callable) -> void:
 		slot_grid.add_child(recharge)
 		_slot_recharge[lvl] = recharge
 
-	var pact_row := HBoxContainer.new()
-	pact_row.add_theme_constant_override("separation", 5)
+	var pact_row := HFlowContainer.new()
+	pact_row.add_theme_constant_override("h_separation", 5)
+	pact_row.add_theme_constant_override("v_separation", 5)
 	add_child(pact_row)
 	var pact_label := Label.new()
 	pact_label.text = "Patto"
 	pact_label.tooltip_text = "Slot di Magia del Patto"
 	pact_row.add_child(pact_label)
+	var level_group := HBoxContainer.new()
+	pact_row.add_child(level_group)
 	var level_label := Label.new()
 	level_label.text = "Liv."
-	pact_row.add_child(level_label)
+	level_group.add_child(level_label)
 	_pact_level_spin = SpinBox.new()
 	_pact_level_spin.min_value = 1
 	_pact_level_spin.max_value = 5
 	_pact_level_spin.update_on_text_changed = true
 	_pact_level_spin.custom_minimum_size.x = 54
 	_pact_level_spin.value_changed.connect(_on_pact_values_changed)
-	pact_row.add_child(_pact_level_spin)
+	level_group.add_child(_pact_level_spin)
+	var total_group := HBoxContainer.new()
+	pact_row.add_child(total_group)
 	var total_label := Label.new()
 	total_label.text = "Base"
-	pact_row.add_child(total_label)
+	total_group.add_child(total_label)
 	_pact_total_spin = SpinBox.new()
 	_pact_total_spin.min_value = 0
 	_pact_total_spin.max_value = 8
 	_pact_total_spin.update_on_text_changed = true
 	_pact_total_spin.custom_minimum_size.x = 54
 	_pact_total_spin.value_changed.connect(_on_pact_values_changed)
-	pact_row.add_child(_pact_total_spin)
+	total_group.add_child(_pact_total_spin)
+	var bonus_group := HBoxContainer.new()
+	pact_row.add_child(bonus_group)
 	var bonus_label := Label.new()
 	bonus_label.text = "Di cui bonus"
-	pact_row.add_child(bonus_label)
+	bonus_group.add_child(bonus_label)
 	_pact_bonus_spin = SpinBox.new()
 	_pact_bonus_spin.min_value = -8
 	_pact_bonus_spin.max_value = 20
@@ -304,7 +311,7 @@ func setup(on_change: Callable, on_status: Callable) -> void:
 	_pact_bonus_spin.tooltip_text = "Bonus manuale agli slot massimi della Magia del Patto"
 	ManualBonus.decorate(_pact_bonus_spin)
 	_pact_bonus_spin.value_changed.connect(_on_pact_values_changed)
-	pact_row.add_child(_pact_bonus_spin)
+	bonus_group.add_child(_pact_bonus_spin)
 	_pact_remain = Label.new()
 	_pact_remain.custom_minimum_size.x = 64
 	pact_row.add_child(_pact_remain)
