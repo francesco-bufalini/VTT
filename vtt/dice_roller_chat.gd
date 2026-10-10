@@ -347,10 +347,10 @@ func _build_quick_result_popup() -> void:
 	quick_result_panel.name = "DiceQuickResult"
 	quick_result_panel.anchor_left = 0.5
 	quick_result_panel.anchor_right = 0.5
-	quick_result_panel.offset_left = -175.0
-	quick_result_panel.offset_top = 72.0
-	quick_result_panel.offset_right = 175.0
-	quick_result_panel.offset_bottom = 132.0
+	quick_result_panel.offset_left = -245.0
+	quick_result_panel.offset_top = 66.0
+	quick_result_panel.offset_right = 245.0
+	quick_result_panel.offset_bottom = 178.0
 	quick_result_panel.mouse_filter = Control.MOUSE_FILTER_IGNORE
 	quick_result_panel.z_index = 100
 	quick_result_panel.hide()
@@ -1052,16 +1052,19 @@ func _show_quick_roll_result(event: Dictionary) -> void:
 	var generation := _quick_result_generation
 	var total := int(event.get("total", 0))
 	var label := String(event.get("label", "")).strip_edges()
-	var mode := normalize_roll_mode(String(event.get("roll_mode", "normal")))
-	var mode_text := ""
-	if mode == "advantage":
-		mode_text = "VANTAGGIO · "
-	elif mode == "disadvantage":
-		mode_text = "SVANTAGGIO · "
-
+	var notation := String(event.get("notation", ""))
+	if notation.is_empty():
+		notation = _roll_notation(
+			String(event.get("die", "d20")),
+			maxi(1, int(event.get("count", 1))),
+			int(event.get("modifier", 0)),
+			String(event.get("roll_mode", "normal"))
+		)
+	var detail := String(event.get("detail", "")).strip_edges()
 	quick_result_label.text = (
 		("%s\n" % label if not label.is_empty() else "")
-		+ "%s%d" % [mode_text, total]
+		+ "%s = %d" % [notation, total]
+		+ ("\n%s" % detail if not detail.is_empty() else "")
 	)
 	quick_result_panel.show()
 
