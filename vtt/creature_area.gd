@@ -2515,7 +2515,9 @@ func _refresh_skill_values(record: Dictionary) -> void:
 		live = _live_stats_record()
 	var proficiency: int = BonusRules.value(live, "proficiency")
 	_set_formula("proficiency", "%+d" % proficiency,
-		"Competenza da livello/GS, più bonus delle origini = %+d" % proficiency)
+		"Competenza: base %+d %+d bonus da origini = %+d" % [
+			proficiency - BonusRules.bonus(live, "proficiency"),
+			BonusRules.bonus(live, "proficiency"), proficiency])
 	for skill: Dictionary in Skills5e.SKILLS:
 		var key: String = String(skill["id"])
 		var ability: String = String(skill["ability"])
@@ -2524,8 +2526,11 @@ func _refresh_skill_values(record: Dictionary) -> void:
 		var marker: String = "" if rank == 0 else " 🎓" if rank == 1 else " 🎓🎓"
 		(_skill_buttons[key] as Label).text = String(skill["label"]) + " · " + ability.to_upper() + marker
 		(_skill_buttons[key] as Label).tooltip_text = ["Nessuna competenza", "Competenza", "Maestria"][clampi(rank, 0, 2)] + " · Modifica da Visualizza competenze"
+		var ability_modifier: int = BonusRules.value(live, "ability_mod:" + ability)
+		var extra: int = BonusRules.bonus(live, "skill:" + key)
 		_set_formula("skill:" + key, "%+d" % value,
-			"%s: modificatore %s, competenza/maestria e bonus dalle origini = %+d" % [String(skill["label"]), ability.to_upper(), value])
+			"%s: mod. %s %+d + competenza %d × %+d + bonus origini %+d = %+d" % [
+				String(skill["label"]), ability.to_upper(), ability_modifier, rank, proficiency, extra, value])
 	var enabled: Dictionary = ProficiencyRules.origin_enabled_map(live)
 	var all_grants: Array[Dictionary] = ProficiencyRules.choices(live)
 	for ability: String in _saving_throw_labels.keys():
@@ -2535,8 +2540,12 @@ func _refresh_skill_values(record: Dictionary) -> void:
 		if String(live.get("kind", "")) == "monster" and published is Dictionary and String((published as Dictionary).get(ability, "")).is_valid_int():
 			trained = true
 		var modifier: int = BonusRules.value(live, "save:" + ability)
+		var save_mod: int = BonusRules.value(live, "ability_mod:" + ability)
+		var save_extra: int = BonusRules.bonus(live, "save:" + ability)
+		var save_source: int = modifier - save_mod - save_extra
 		_set_formula("save:" + ability, ("%+d%s" % [modifier, " 🎓" if trained else ""]),
-			"%s: modificatore, eventuale competenza/bestiario e bonus da origini = %+d" % [ability.to_upper(), modifier])
+			"%s: mod. %+d + competenza o bestiario %+d + origini %+d = %+d" % [
+				ability.to_upper(), save_mod, save_source, save_extra, modifier])
 	if _tools_proficiency_label != null:
 		var tools: Array[String] = []
 		for grant: Dictionary in all_grants:
@@ -2550,7 +2559,9 @@ func _refresh_skill_values(record: Dictionary) -> void:
 		_tools_proficiency_label.text = "Strumenti: " + (", ".join(tools) if not tools.is_empty() else "nessuna competenza")
 	var passive: int = BonusRules.value(live, "passive_perception")
 	_set_formula("passive_perception", str(passive),
-		"Percezione passiva: 10 + Percezione (inclusi bonus) + bonus propri = %d" % passive)
+		"Percezione passiva: 10 + Percezione %+d + bonus propri %+d = %d" % [
+			BonusRules.value(live, "skill:perception"),
+			BonusRules.bonus(live, "passive_perception"), passive])
 
 
 func _refresh_weapon_picker(record: Dictionary) -> void:
