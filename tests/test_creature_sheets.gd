@@ -49,6 +49,17 @@ func run() -> void:
 	var creature: Dictionary = monster.create_creature(stat, "enemy")
 	assert(creature.armor_class == 18)
 	assert(creature.abilities.str == 23)
+	var skill_catalog: Script = load("res://vtt/creature_skills_5etools.gd")
+	assert(skill_catalog.SKILLS.size() == 18,
+		"The complete 5etools skills table must remain available")
+	var bestiary_skill_record: Dictionary = {
+		"stat_block": {"skill": {"perception": "+2", "stealth": "+4"}}
+	}
+	var inferred: Dictionary = skill_catalog.ranks_from_bestiary(
+		bestiary_skill_record, 2, {"wis": 10, "dex": 10}
+	)
+	assert(inferred.get("perception", 0) == 1 and inferred.get("stealth", 0) == 2,
+		"Monster skill modifiers must determine proficiency and expertise")
 	assert(creature.species == "Test Dragon" and creature.species_source == "MM")
 	assert(creature.class == "Mostro" and creature.level == Rules.monster_level(stat))
 	assert(creature.classes.size() == 1
