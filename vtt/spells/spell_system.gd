@@ -292,11 +292,20 @@ func has_post_cast_cleanup() -> bool:
 	return _post_cast_cleanup_pending
 
 
+func has_runtime_spell_effect(
+	spell_id: String,
+	spell_name: String = "",
+	source: String = ""
+) -> bool:
+	return not _runtime_spell_reference(spell_id, spell_name, source).is_empty()
+
+
 func activate_spell_from_caster(
 	spell_id: String,
 	caster: Node3D,
 	spell_name: String = "",
-	source: String = ""
+	source: String = "",
+	cast_slot_level: int = -1
 ) -> bool:
 	if spell_id.is_empty() or caster == null or not is_instance_valid(caster):
 		return false
@@ -318,6 +327,12 @@ func activate_spell_from_caster(
 	)
 	_selected_spell_id = resolved_spell_id
 	_selected_spell_data = spell_data.duplicate(true)
+	_configure_slot_selector(spell_data)
+	var base_level: int = int(spell_data.get("level", 0))
+	if cast_slot_level >= 0:
+		_selected_slot_level = (
+			clampi(cast_slot_level, base_level, 9) if base_level > 0 else 0
+		)
 	_activate_selected_spell()
 
 	if (
