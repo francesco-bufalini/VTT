@@ -282,19 +282,47 @@ func _origin_description(origin: Dictionary) -> String:
 		if not catalogue.is_empty():
 			for entry: Dictionary in Catalog.entries(catalogue):
 				if String(entry.get("name", "")).nocasecmp_to(String(data.get("name", ""))) == 0 and String(entry.get("source", "")) == String(data.get("source", "")):
-					return Catalog.info_text(entry)
-		return Catalog.info_text(data) + "\nCompetenze strutturate: " + JSON.stringify(data)
+					return Catalog.info_text(entry, _source_description_text(entry))
+		return Catalog.info_text(data, _source_description_text(data)) + "\nCompetenze strutturate: " + JSON.stringify(data)
 	if sid.begins_with("feature:"):
 		for feature_entry: Dictionary in Traits.collect_features(source_record):
 			if sid == "feature:" + String(feature_entry.get("key", "")):
-				return Catalog.info_text(feature_entry)
+				return Catalog.info_text(feature_entry, _source_description_text(feature_entry))
 	if sid.begins_with("item:"):
 		var raw: Variant = source_record.get("inventory", [])
 		if raw is Array:
 			for owned: Variant in raw:
 				if owned is Dictionary and sid == "item:" + String(owned.get("id", "")):
-					return Catalog.info_text(owned)
+					var definition: Dictionary = owned
+					# Live inventory entries often omit the item's description.
+					# Resolve the original catalogue or homebrew definition.
+					for catalog_item: Dictionary in Catalog.entries("items"):
+						if String(catalog_item.get("id", "")) == String(owned.get("id", "")):
+							definition = catalog_item
+							break
+					return Catalog.info_text(definition, _source_description_text(definition))
 	return String(origin.get("name", "Origine personalizzata"))
+
+
+func _source_description_text(entry: Dictionary) -> String:
+	var raw: Variant = entry.get("description", entry.get("entries", entry.get("text", "")))
+	if raw is String:
+		return String(raw)
+	if raw is Array:
+		var parts := PackedStringArray()
+		for section: Variant in raw:
+			if section is String:
+				parts.append(String(section))
+			elif section is Dictionary:
+				var nested: Variant = (section as Dictionary).get("entry", (section as Dictionary).get("entries", ""))
+				if nested is String:
+					parts.append(String(nested))
+				elif nested is Array:
+					for sentence: Variant in nested:
+						if sentence is String:
+							parts.append(String(sentence))
+		return "\n".join(parts)
+	return ""
 
 
 func _refresh_competences() -> void:
