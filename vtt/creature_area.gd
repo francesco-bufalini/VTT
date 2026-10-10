@@ -1033,6 +1033,9 @@ func _build_ui() -> void:
 	_biography.placeholder_text = "Storia, carattere, ideali, legami, difetti e annotazioni…"
 	_biography.text_changed.connect(_save)
 	form.add_child(_biography)
+	# Feats are owned character data, edited in Info rather than the
+	# proficiency-origin inspector. Both views share the same record.
+	_proficiencies_ui.call("move_feats_to_info", form)
 
 	var miniature_row := HBoxContainer.new()
 	appearance_tab.add_child(miniature_row)
