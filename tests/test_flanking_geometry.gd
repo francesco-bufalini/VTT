@@ -403,13 +403,20 @@ func run() -> void:
 		Vector3.ZERO, Vector3(1.5, 2.0, 1.5)
 	).size() == 2, "Vertical flanking must cross both height faces")
 
-	# Merely grazing a target edge (two flankers arranged in an L) is not
-	# sufficient; the segment must cross the interior of the occupied box.
+	# The new volume-to-volume rule can flank even in an L formation:
+	# offset points inside both footprints cross the target on opposite faces.
 	assert(FlankingSystem.flanking_segment(
 		Vector3(1.0, 0.0, 1.0), half,
 		Vector3(0.0, 0.0, -1.0), half,
 		Vector3.ZERO, half
-	).is_empty(), "Edge-only tangencies cannot count as flanking")
+	).size() == 2, "Do not restrict flanking to miniature centres")
+
+	# A pair confined to one side cannot create an opposing-face crossing.
+	assert(FlankingSystem.flanking_segment(
+		Vector3(2.0, 0.0, 0.0), half,
+		Vector3(3.0, 0.0, 0.0), half,
+		Vector3.ZERO, half
+	).is_empty())
 
 	# The first melee attack wins even when later ones have longer reach;
 	# explicit per-attack range overrides apply immediately.

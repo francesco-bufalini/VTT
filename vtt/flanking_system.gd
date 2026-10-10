@@ -691,11 +691,12 @@ static func flanking_segment(
 	target_center: Vector3,
 	target_half: Vector3
 ) -> PackedVector3Array:
-	# A real 3D test: ANY two points in the flankers' occupied boxes may
-	# connect across two opposing faces of the target's occupied box.
-	# Test each of the three face axes in both directions. Within each
-	# candidate axial slice, the transverse coordinates are solved by
-	# clipping a small convex polygon (not by sampling mesh vertices).
+	# Exact AABB transversal feasibility (up to floating-point tolerance).
+	# Let t and s be the fractions of the line between two box points at
+	# its entry and exit through a chosen pair of opposite target faces.
+	# Both the longitudinal box bounds and the transverse box/face bounds
+	# reduce to LINEAR inequalities in (t, s). Clip a 2D convex polygon
+	# instead of sampling endpoints, corners, voxels or world-space rays.
 	for axis: int in range(3):
 		var result := _flanking_on_axis(
 			first_center, first_half, second_center, second_half,
@@ -721,90 +722,191 @@ static func _flanking_on_axis(
 	target_half: Vector3,
 	axis: int
 ) -> PackedVector3Array:
-	var low := target_center[axis] - target_half[axis]
-	var high := target_center[axis] + target_half[axis]
-	var first_low := first_center[axis] - first_half[axis]
-	var first_high := first_center[axis] + first_half[axis]
-	var second_low := second_center[axis] - second_half[axis]
-	var second_high := second_center[axis] + second_half[axis]
-	# Require a genuine crossing, not a segment that merely touches a face.
-	var margin := maxf(0.000001, minf(target_half.x, minf(
-		target_half.y, target_half.z
-	)) * 0.0001)
-	if first_low >= low - margin or second_high <= high + margin:
+	var target_min := target_center[axis] - target_half[axis]
+	var target_max := target_center[axis] + target_half[axis]
+	var first_min := first_center[axis] - first_half[axis]
+	var first_max := first_center[axis] + first_half[axis]
+	var second_min := second_center[axis] - second_half[axis]
+	var second_max := second_center[axis] + second_half[axis]
+	var margin := maxf(0.000001, minf(
+		target_half.x, minf(target_half.y, target_half.z)
+	) * 0.0001)
+	if first_min >= target_min - margin or second_max <= target_max + margin:
 		return PackedVector3Array()
+	var width := target_max - target_min
 
-	var left_limit := minf(first_high, low - margin)
-	var right_limit := maxf(second_low, high + margin)
-	if left_limit < first_low or right_limit > second_high:
-		return PackedVector3Array()
+	# 0 < t < s < 1: the segment spans both opposing faces rather
+	# than merely touching the outside of the target.
+	var e := 0.000001
+	var base_polygon := PackedVector2Array([
+		Vector2(e, e * 2.0),
+		Vector2(e, 1.0 - e),
+		Vector2(1.0 - e * 2.0, 1.0 - e)
+	])
+	var constraints: Array[Vector3] = [
+		# p_axis >= first_min, p_axis <= first_max
+		Vector3(0.0, target_max - first_min, first_min - target_min),
+		Vector3(0.0, first_max - target_max, target_min - first_max),
+		# q_axis >= second_min, q_axis <= second_max
+		Vector3(-width, target_max - second_min, second_min - target_min),
+		Vector3(width, second_max - target_max, target_min - second_max),
+		# p_axis <= target_min - margin, q_axis >= target_max + margin
+		Vector3(0.0, -(width + margin), margin),
+		Vector3(-width, -margin, width + margin)
+	]
+	for constraint: Vector3 in constraints:
+		base_polygon = _clip_flanking_parameters(base_polygon, constraint)
+		if base_polygon.is_empty():
+			return PackedVector3Array()
 
-	# Prefer central slices. Additional slices handle partial axial overlaps
-	# and asymmetrically sized/offset miniature volumes. Only a constant
-	# number of 2D polygon clips is needed; no voxel or ray enumeration.
-	var fractions := PackedFloat32Array([0.5, 0.0, 1.0, 0.25, 0.75])
-	for left_fraction: float in fractions:
-		var a := lerpf(first_low, left_limit, left_fraction)
-		for right_fraction: float in fractions:
-			var b := lerpf(right_limit, second_high, right_fraction)
-			var near_fraction := (low - a) / (b - a)
-			var far_fraction := (high - a) / (b - a)
+	var transverse: Array[int] = []
+	for coordinate: int in range(3):
+		if coordinate != axis:
+			transverse.append(coordinate)
+	# Increasing and decreasing transverse directions are each one convex
+	# system. There are only four sign combinations for the two other axes.
+	for first_sign: int in range(2):
+		var a_index := transverse[0]
+		var a_positive := first_sign == 0
+		var first_polygon := _clip_flanking_transverse(
+			base_polygon,
+			first_center[a_index] - first_half[a_index],
+			first_center[a_index] + first_half[a_index],
+			second_center[a_index] - second_half[a_index],
+			second_center[a_index] + second_half[a_index],
+			target_center[a_index] - target_half[a_index] + margin,
+			target_center[a_index] + target_half[a_index] - margin,
+			a_positive
+		)
+		if first_polygon.is_empty():
+			continue
+		for second_sign: int in range(2):
+			var b_index := transverse[1]
+			var b_positive := second_sign == 0
+			var possible := _clip_flanking_transverse(
+				first_polygon,
+				first_center[b_index] - first_half[b_index],
+				first_center[b_index] + first_half[b_index],
+				second_center[b_index] - second_half[b_index],
+				second_center[b_index] + second_half[b_index],
+				target_center[b_index] - target_half[b_index] + margin,
+				target_center[b_index] + target_half[b_index] - margin,
+				b_positive
+			)
+			if possible.is_empty():
+				continue
+
+			# The centroid of feasible fractions also satisfies every linear
+			# constraint. Recover points inside the two occupied volumes.
+			var fractions := Vector2.ZERO
+			for candidate: Vector2 in possible:
+				fractions += candidate
+			fractions /= float(possible.size())
+			var t := fractions.x
+			var u := fractions.y
 			var start := first_center
 			var end := second_center
-			start[axis] = a
-			end[axis] = b
+			start[axis] = (u * target_min - t * target_max) / (u - t)
+			end[axis] = ((1.0 - t) * target_max - (1.0 - u) * target_min) / (u - t)
+			var signs := [a_positive, b_positive]
 			var valid := true
-			for transverse_axis: int in range(3):
-				if transverse_axis == axis:
-					continue
-				var a_min := first_center[transverse_axis] - first_half[transverse_axis]
-				var a_max := first_center[transverse_axis] + first_half[transverse_axis]
-				var b_min := second_center[transverse_axis] - second_half[transverse_axis]
-				var b_max := second_center[transverse_axis] + second_half[transverse_axis]
-				var target_min := target_center[transverse_axis] - target_half[transverse_axis] + margin
-				var target_max := target_center[transverse_axis] + target_half[transverse_axis] - margin
-				var polygon := PackedVector2Array([
-					Vector2(a_min, b_min), Vector2(a_max, b_min),
-					Vector2(a_max, b_max), Vector2(a_min, b_max)
-				])
-				for fraction: float in [near_fraction, far_fraction]:
-					polygon = _clip_flanking_pair(polygon, fraction, target_min, true)
-					if polygon.is_empty():
-						break
-					polygon = _clip_flanking_pair(polygon, fraction, target_max, false)
-					if polygon.is_empty():
-						break
-				if polygon.is_empty():
+			for index: int in range(2):
+				var j := transverse[index]
+				var endpoints := _flanking_transverse_witness(
+					t, u,
+					first_center[j] - first_half[j],
+					first_center[j] + first_half[j],
+					second_center[j] - second_half[j],
+					second_center[j] + second_half[j],
+					target_center[j] - target_half[j] + margin,
+					target_center[j] + target_half[j] - margin,
+					bool(signs[index])
+				)
+				if not is_finite(endpoints.x) or not is_finite(endpoints.y):
 					valid = false
 					break
-				# The polygon contains exactly the (first, second) coordinates
-				# whose straight line stays inside both transverse face bounds.
-				var witness := Vector2.ZERO
-				for point: Vector2 in polygon:
-					witness += point
-				witness /= float(polygon.size())
-				start[transverse_axis] = witness.x
-				end[transverse_axis] = witness.y
+				start[j] = endpoints.x
+				end[j] = endpoints.y
 			if valid:
 				return PackedVector3Array([start, end])
 	return PackedVector3Array()
 
 
-static func _clip_flanking_pair(
+static func _clip_flanking_transverse(
 	polygon: PackedVector2Array,
-	fraction: float,
-	bound: float,
-	keep_above: bool
+	first_min: float,
+	first_max: float,
+	second_min: float,
+	second_max: float,
+	target_min: float,
+	target_max: float,
+	increasing: bool
+) -> PackedVector2Array:
+	# Write transverse endpoints as p and q=p+w (increasing), or q=p-w
+	# (decreasing), with w>=0. Eliminating p and w gives 16 constraints
+	# lower_w <= upper_w. Each denominator is one of
+	# 1, t, u, 1-t, 1-u, u-t (all strictly positive).
+	var one := Vector3(1.0, 0.0, 0.0)
+	var t := Vector3(0.0, 1.0, 0.0)
+	var u := Vector3(0.0, 0.0, 1.0)
+	var one_minus_t := Vector3(1.0, -1.0, 0.0)
+	var one_minus_u := Vector3(1.0, 0.0, -1.0)
+	var delta := Vector3(0.0, -1.0, 1.0)
+	var lower_numbers := PackedFloat32Array()
+	var upper_numbers := PackedFloat32Array()
+	var lower_denominators: Array[Vector3] = []
+	var upper_denominators: Array[Vector3] = []
+	if increasing:
+		lower_numbers = PackedFloat32Array([
+			0.0, second_min - first_max,
+			second_min - target_max, target_min - first_max
+		])
+		lower_denominators = [one, one, one_minus_u, t]
+		upper_numbers = PackedFloat32Array([
+			second_max - first_min, target_max - first_min,
+			second_max - target_min, target_max - target_min
+		])
+		upper_denominators = [one, u, one_minus_t, delta]
+	else:
+		lower_numbers = PackedFloat32Array([
+			0.0, first_min - second_max,
+			first_min - target_max, target_min - second_max
+		])
+		lower_denominators = [one, one, t, one_minus_u]
+		upper_numbers = PackedFloat32Array([
+			first_max - second_min, target_max - second_min,
+			first_max - target_min, target_max - target_min
+		])
+		upper_denominators = [one, one_minus_t, u, delta]
+
+	for lo: int in range(4):
+		for hi: int in range(4):
+			# lower_num / lower_den <= upper_num / upper_den.
+			# Both denominators are positive, so cross multiplication
+			# produces a linear half-plane in (t,u).
+			var plane: Vector3 = (
+				upper_denominators[hi] * lower_numbers[lo]
+				- lower_denominators[lo] * upper_numbers[hi]
+			)
+			polygon = _clip_flanking_parameters(polygon, plane)
+			if polygon.is_empty():
+				return polygon
+	return polygon
+
+
+static func _clip_flanking_parameters(
+	polygon: PackedVector2Array,
+	plane: Vector3
 ) -> PackedVector2Array:
 	if polygon.is_empty():
 		return polygon
 	var clipped := PackedVector2Array()
 	var previous: Vector2 = polygon[polygon.size() - 1]
-	var previous_delta := lerpf(previous.x, previous.y, fraction) - bound
-	var previous_inside := previous_delta >= 0.0 if keep_above else previous_delta <= 0.0
+	var previous_delta := plane.x + plane.y * previous.x + plane.z * previous.y
+	var previous_inside := previous_delta <= 0.0
 	for current: Vector2 in polygon:
-		var current_delta := lerpf(current.x, current.y, fraction) - bound
-		var current_inside := current_delta >= 0.0 if keep_above else current_delta <= 0.0
+		var current_delta := plane.x + plane.y * current.x + plane.z * current.y
+		var current_inside := current_delta <= 0.0
 		if previous_inside != current_inside:
 			var crossing := previous_delta / (previous_delta - current_delta)
 			clipped.append(previous.lerp(current, clampf(crossing, 0.0, 1.0)))
@@ -814,6 +916,65 @@ static func _clip_flanking_pair(
 		previous_delta = current_delta
 		previous_inside = current_inside
 	return clipped
+
+
+static func _flanking_transverse_witness(
+	t: float,
+	u: float,
+	first_min: float,
+	first_max: float,
+	second_min: float,
+	second_max: float,
+	target_min: float,
+	target_max: float,
+	increasing: bool
+) -> Vector2:
+	var lower: Array[float] = []
+	var upper: Array[float] = []
+	if increasing:
+		lower = [
+			0.0, second_min - first_max,
+			(second_min - target_max) / (1.0 - u),
+			(target_min - first_max) / t
+		]
+		upper = [
+			second_max - first_min,
+			(target_max - first_min) / u,
+			(second_max - target_min) / (1.0 - t),
+			(target_max - target_min) / (u - t)
+		]
+	else:
+		lower = [
+			0.0, first_min - second_max,
+			(first_min - target_max) / t,
+			(target_min - second_max) / (1.0 - u)
+		]
+		upper = [
+			first_max - second_min,
+			(target_max - second_min) / (1.0 - t),
+			(first_max - target_min) / u,
+			(target_max - target_min) / (u - t)
+		]
+	var minimum_slope := lower.max()
+	var maximum_slope := upper.min()
+	if minimum_slope > maximum_slope + EPSILON:
+		return Vector2(INF, INF)
+	var w: float = (minimum_slope + maximum_slope) * 0.5
+	var low: float
+	var high: float
+	if increasing:
+		low = maxf(first_min, maxf(second_min - w, target_min - t * w))
+		high = minf(first_max, minf(second_max - w, target_max - u * w))
+	else:
+		low = maxf(first_min, maxf(second_min + w, target_min + u * w))
+		high = minf(first_max, minf(second_max + w, target_max + t * w))
+	if low > high + EPSILON:
+		return Vector2(INF, INF)
+	var first_coordinate := (low + high) * 0.5
+	return Vector2(
+		first_coordinate,
+		first_coordinate + w if increasing else first_coordinate - w
+	)
 
 
 static func centers_form_flanking_pair(
