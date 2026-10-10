@@ -83,9 +83,11 @@ func run() -> void:
 	for ability: String in ["str", "dex", "con", "int", "wis", "cha"]:
 		var icon: Label = area._saving_throw_icons[ability]
 		var numeric: Label = area._saving_throw_labels[ability]
-		assert(icon.get_parent() == numeric.get_parent()
-			and icon.get_index() + 1 == numeric.get_index(),
-			"Saving throw proficiency icons must have their own fixed-width cell")
+		var formula: Control = area._formula_values["save:" + ability]
+		assert(icon.get_parent() == formula.get_parent()
+			and icon.get_index() + 1 == formula.get_index()
+			and formula.is_ancestor_of(numeric) and icon.custom_minimum_size.x >= 28,
+			"Saving throw proficiency icons must have an independent fixed-width cell immediately before the formula")
 	area._archive.setup(campaign)
 	# Search works from the bundled 5etools miniature references even
 	# while the remote bestiary index has not been downloaded.
