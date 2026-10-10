@@ -13,6 +13,7 @@ var _loading := false
 var _dirty := false
 var _save_revision := 0
 var _active_id := ""
+var _editing_key := ""
 
 var _list: ItemList
 var _remove_button: Button
@@ -242,6 +243,7 @@ func _open_document(index: int) -> void:
 	var owned_index: int = _indices[index]
 	var item: Dictionary = _inventory[owned_index]
 	_active_id = _instance_key(item)
+	_editing_key = _active_id
 	var definition: Dictionary = DocumentStore.definition_for(item)
 	_loading = true
 	_title_edit.text = String(definition.get("name", item.get("name", "")))
@@ -300,7 +302,11 @@ func _save_later(revision: int) -> void:
 func _flush_edit() -> void:
 	if not _dirty:
 		return
-	var owned_index: int = _selected_inventory_index()
+	var owned_index := -1
+	for i: int in range(_inventory.size()):
+		if _instance_key(_inventory[i]) == _editing_key:
+			owned_index = i
+			break
 	if owned_index < 0:
 		return
 	var item: Dictionary = _inventory[owned_index]
