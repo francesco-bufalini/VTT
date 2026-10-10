@@ -81,8 +81,10 @@ func setup(root: Node3D) -> void:
 
 
 func _process(_delta: float) -> void:
+	# Previews are cleared synchronously by _reset_cast_state(). Repeating
+	# that cleanup every rendered frame while idle does redundant scene-tree
+	# work (notably on geometry-heavy encounter maps).
 	if _pending_spell_id.is_empty():
-		_hide_all_spell_previews()
 		return
 	_update_spell_preview()
 
