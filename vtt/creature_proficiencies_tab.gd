@@ -362,20 +362,23 @@ func _refresh_competences() -> void:
 			_proficiency_cards.add_child(heading)
 		var active := false
 		var selected := false
+		var selected_active := false
 		var linked: Array[String] = []
 		for index: Variant in indices:
 			var link: Dictionary = _rows[int(index)]
 			var sid: String = String(link.get("origin_id", ""))
+			var grant_active: bool = not bool(link.get("disabled", false)) and bool(enabled.get(sid, true))
 			if sid == _selected_id:
 				selected = true
-			if not bool(link.get("disabled", false)) and bool(enabled.get(sid, true)):
-				active = true
-			var label: String = _origin_display(sid) if not sid.is_empty() else "Senza origine"
-			if label not in linked:
-				linked.append(label)
+				selected_active = selected_active or grant_active
+			active = active or grant_active
+			var origin_label: String = _origin_display(sid) if not sid.is_empty() else "Senza origine"
+			var status_label: String = ("✓ " if grant_active else "○ ") + origin_label
+			if status_label not in linked:
+				linked.append(status_label)
 		var cell := PanelContainer.new()
 		_proficiency_cards.add_child(cell)
-		if selected:
+		if selected_active:
 			var background := StyleBoxFlat.new()
 			background.bg_color = Color(0.18, 0.43, 0.62, 0.32)
 			background.set_corner_radius_all(5)
