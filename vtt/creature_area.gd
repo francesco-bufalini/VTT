@@ -18,6 +18,8 @@ const TraitsTab = preload("res://vtt/creature_traits_tab.gd")
 const DialogLayout = preload("res://vtt/dialog_layout.gd")
 const Skills5e = preload("res://vtt/creature_skills_5etools.gd")
 const AttackData = preload("res://vtt/creature_attack_data.gd")
+const ProficiencyRules = preload("res://vtt/creature_proficiency_rules.gd")
+const ProficiencyTab = preload("res://vtt/creature_proficiencies_tab.gd")
 const ItemRules = preload("res://vtt/creature_item_rules.gd")
 const DocumentInbox = preload("res://vtt/document_inbox.gd")
 
@@ -132,6 +134,7 @@ var _pending_new_creature := false
 var _picker_current := false
 var _chosen_miniature_id := ""
 var _tracker_rows: VBoxContainer
+var _proficiencies_ui: Node
 var _traits_ui: Node
 var _condition_rows: VBoxContainer
 var _effect_dialog: AcceptDialog
@@ -537,6 +540,10 @@ func _build_ui() -> void:
 	combat_view.add_child(combat_column)
 	var appearance_tab := _add_sheet_tab(_tabs, "Aspetto")
 	var traits_tab := _add_sheet_tab(_tabs, "Tratti")
+	var proficiency_tab := _add_sheet_tab(_tabs, "Competenze")
+	_proficiencies_ui = ProficiencyTab.new()
+	proficiency_tab.add_child(_proficiencies_ui)
+	_proficiencies_ui.call("setup", Callable(self, "_on_proficiencies_updated"))
 	var conditions_tab := _add_sheet_tab(_tabs, "Stati")
 	var spellcasting_tab := _add_sheet_tab(_tabs, "Incantesimi")
 	_spellcasting_ui = SpellcastingTab.new()
@@ -2060,6 +2067,7 @@ func _load_form(record: Dictionary) -> void:
 	_refresh_reference(record)
 	_spellcasting_ui.call("load_record", record)
 	_inventory_ui.call("load_record", record)
+	_proficiencies_ui.call("load_record", record)
 	_loading = false
 
 
@@ -2301,10 +2309,15 @@ func _refresh_attacks(record: Dictionary) -> void:
 			trained.text = "✓ Competente"
 			settings.add_child(trained)
 		else:
-			var proficiency := CheckBox.new()
-			proficiency.text = "Competenza"
-			proficiency.button_pressed = bool(overrides.get("proficient", attack.get("proficient", false)))
-			proficiency.toggled.connect(_on_attack_proficiency_changed.bind(attack_id))
+			var proficiency := Label.new()
+			var trained := false
+			if String(attack.get("source", "")) == "item":
+				var item_info: Dictionary = attack.get("item_entry", {})
+				trained = ProficiencyRules.weapon_proficient(record, item_info)
+			else:
+				trained = bool(attack.get("proficient", false))
+			proficiency.text = "✓ Competente" if trained else "○ Non competente"
+			proficiency.tooltip_text = "Gestisci competenze e origini nella scheda Competenze, non sul singolo attacco."
 			settings.add_child(proficiency)
 		if attack.has("raw"):
 			var original_caption := Label.new()
@@ -2350,10 +2363,6 @@ func _on_attack_range_changed(value: float, attack_id: String) -> void:
 
 func _on_attack_bonus_changed(value: float, attack_id: String) -> void:
 	_save_attack_setting(attack_id, "bonus", int(value))
-
-
-func _on_attack_proficiency_changed(enabled: bool, attack_id: String) -> void:
-	_save_attack_setting(attack_id, "proficient", enabled)
 
 
 func _on_attack_two_handed_changed(enabled: bool, attack_id: String) -> void:
@@ -2438,6 +2447,37 @@ func _on_documents_updated(documents: Array) -> void:
 		_replace_current_record(record)
 	else:
 		_set_status("Impossibile salvare i documenti: " + error_string(err))
+
+
+func _on_proficiencies_updated(rows: Array, feats: Array) -> void:
+	if _loading:
+		return
+	var record: Dictionary = _current()
+	if record.is_empty():
+		return
+	var typed_rows: Array[Dictionary] = []
+	for raw: Variant in rows:
+		if raw is Dictionary:
+			typed_rows.append((raw as Dictionary).duplicate(true))
+	ProficiencyRules.sync_legacy_fields(record, typed_rows)
+	record["feats_catalog"] = feats.duplicate(true)
+	for definition: Dictionary in Skills5e.SKILLS:
+		var key := String(definition["id"])
+		_skill_ranks[key] = (
+			2 if key in record.get("skill_expertise", [])
+			else 1 if key in record.get("skill_proficiencies", [])
+			else 0
+		)
+	_skill_ranks_custom = true
+	var error: Error = _archive.save(record)
+	if error != OK:
+		_set_status("Impossibile salvare competenze: " + error_string(error))
+		return
+	_replace_current_record(record)
+	_refresh_skill_values(record)
+	_refresh_attacks(record)
+	_apply_sheet_properties(record)
+	_refresh_reference(record)
 
 
 func _on_inventory_updated(inventory: Array) -> void:
@@ -2546,6 +2586,7 @@ func _save() -> void:
 			expertise.append(key)
 	record["skill_proficiencies"] = proficient
 	record["skill_expertise"] = expertise
+	record["proficiency_choices"] = ProficiencyRules.reconcile_skills(record)
 	if _skill_ranks_custom:
 		record["skill_ranks_custom"] = true
 	record["default_miniature_id"] = _default_miniature_id
@@ -3187,6 +3228,8 @@ func _focus_tracker_trait(origin: String, source_label: String = "") -> void:
 func _refresh_reference(record: Dictionary) -> void:
 	if _traits_ui != null:
 		_traits_ui.call("load_record", record)
+	if _proficiencies_ui != null:
+		_proficiencies_ui.call("load_record", record)
 
 
 func _filter_catalog(query: String) -> void:
