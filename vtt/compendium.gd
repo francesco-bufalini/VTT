@@ -12,6 +12,7 @@ const SECTIONS := {
 	"Incantesimi": "spells",
 	"Oggetti magici": "magic_items",
 	"Oggetti mondani": "mundane_items",
+	"Documenti": "documents",
 	"Armi": "weapons",
 	"Armature": "armor",
 	"Strumenti": "tools",
