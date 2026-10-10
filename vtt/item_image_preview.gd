@@ -46,6 +46,8 @@ static func _load_official_images() -> void:
 
 
 static func image_source(item: Dictionary) -> String:
+	if String(item.get("category", "")) == "documents":
+		return ""
 	var source := ""
 	for key: String in ["image", "images", "imageUrl", "img", "fluffImages", "fluff_images", "fluff"]:
 		if not item.has(key):
