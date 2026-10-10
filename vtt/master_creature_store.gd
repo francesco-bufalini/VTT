@@ -349,6 +349,7 @@ func normalize_creature(value: Dictionary) -> Dictionary:
 		var now := int(Time.get_unix_time_from_system())
 		var unique := int(Time.get_ticks_usec())
 		result["id"] = "master_creature_%d_%d" % [now, unique]
+	Proficiencies.sync_legacy_fields(result, Proficiencies.choices(result))
 	return result
 
 
