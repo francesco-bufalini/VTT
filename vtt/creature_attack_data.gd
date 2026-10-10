@@ -45,7 +45,7 @@ static func definitions(record: Dictionary) -> Array[Dictionary]:
 			)
 			var dice: String = _capture(text_value, "\\{@damage\\s*([^}]+)\\}")
 			if dice.is_empty():
-				dice = _capture(text_value, "(\\d+d\\d+(?:\\s*[+-]\\s*\\d+)?)")
+				dice = _capture(text_value, "(\\d+d\\d+(?:\\s*[+-]\\s*\\d+)*)")
 			var distance_feet: int = 5
 			if ranged and not ranged_distance_text.is_empty():
 				distance_feet = int(ranged_distance_text)
