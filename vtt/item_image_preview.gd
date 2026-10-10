@@ -74,6 +74,8 @@ static func image_source(item: Dictionary) -> String:
 		return ""
 	if source.begins_with("res://") or source.begins_with("user://"):
 		return source if FileAccess.file_exists(source) or ResourceLoader.exists(source) else ""
+	if source.begins_with("items/"):
+		return "https://5e.tools/img/" + source.uri_encode().replace("%2F", "/")
 	if source.begins_with("img/"):
 		return "https://5e.tools/" + source.uri_encode().replace("%2F", "/")
 	if source.begins_with("/img/"):
