@@ -102,10 +102,10 @@ static func choices(record: Dictionary) -> Array[Dictionary]:
 			var exists: bool = false
 			for row: Dictionary in result:
 				if String(row.get("kind", "")) == String(grant.get("kind", "")) and String(row.get("key", "")) == String(grant.get("key", "")) and String(row.get("origin_id", "")) == String(source.get("id", "")):
-					# A required grant remains required even if an older save
-					# originally stored it as a manual choice.
+					# Catalog-fixed grants cannot be deleted, but may be
+					# temporarily disabled like any other proficiency.
+					# Preserve an explicitly stored disabled flag.
 					row["automatic"] = true
-					row["disabled"] = false
 					exists = true
 					break
 			if not exists:
@@ -626,12 +626,11 @@ static func origins(record: Dictionary) -> Array[Dictionary]:
 			continue
 		var sid: String = String(source.get("id", ""))
 		var previous: Dictionary = saved.get(sid, {})
-		# A mandatory grant cannot be turned off through the source-level
-		# power switch either. This also heals older saved disabled flags.
-		var has_required: bool = not fixed_grants(source).is_empty()
+		# Sources can be muted even when they grant fixed proficiencies.
+		# Muting never deletes their structural entitlement.
 		result.append({"id": sid, "name": String(source.get("name", "")),
 			"group": String(source.get("group", "")),
-			"disabled": false if has_required else bool(previous.get("disabled", false)),
+			"disabled": bool(previous.get("disabled", false)),
 			"automatic": true, "requirements": choice_requirements(source)})
 	for sid: String in saved.keys():
 		var item: Dictionary = saved[sid]
