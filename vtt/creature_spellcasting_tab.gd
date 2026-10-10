@@ -56,7 +56,7 @@ var _prepare: Button
 var _slot_totals: Dictionary = {}
 var _slot_bonus_controls: Dictionary = {}
 var _slot_formula_values: Dictionary = {}
-var _pact_formula_value: HBoxContainer
+var _pact_formula_value: FormulaValue
 var _remaining_labels: Dictionary = {}
 var _slot_use: Dictionary = {}
 var _slot_recharge: Dictionary = {}
