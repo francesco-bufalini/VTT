@@ -84,6 +84,11 @@ func setup(
 	_on_change = on_change
 	_on_status = on_status
 	_on_cast_spell = on_cast_spell
+	# setup() paints resource labels before load_record() is called.
+	# Keep all three slot arrays in their canonical 0-9 shape from the start.
+	_totals = _normal_slots(_totals)
+	_slot_bonuses = _normal_slot_bonuses(_slot_bonuses)
+	_spent = _normal_slots(_spent)
 	add_theme_constant_override("separation", 7)
 	_search_row = HBoxContainer.new()
 	add_child(_search_row)
@@ -594,6 +599,8 @@ static func _normal_slot_bonuses(value: Variant) -> Array:
 
 
 func _effective_slot_total(lvl: int) -> int:
+	if lvl < 0 or lvl >= _totals.size() or lvl >= _slot_bonuses.size():
+		return 0
 	return maxi(0, int(_totals[lvl]) + int(_slot_bonuses[lvl]))
 
 
@@ -1102,13 +1109,15 @@ func _update_resource_labels() -> void:
 	if _pact_remain == null:
 		return
 	for lvl: int in range(1, 10):
-		var total: int = _effective_slot_total(lvl) if _totals.size() > lvl and _slot_bonuses.size() > lvl else 0
+		var base: int = int(_totals[lvl]) if _totals.size() > lvl else 0
+		var bonus: int = int(_slot_bonuses[lvl]) if _slot_bonuses.size() > lvl else 0
+		var total: int = maxi(0, base + bonus)
 		var spent: int = clampi(int(_spent[lvl]), 0, total) if _spent.size() > lvl else 0
 		(_remaining_labels[lvl] as Label).text = "%d /" % (total - spent)
 		if _slot_formula_values.has(lvl):
 			_slot_formula_values[lvl].set_formula(str(total),
 				"Slot livello %d: base %d %+d bonus = %d" % [
-					lvl, int(_totals[lvl]), int(_slot_bonuses[lvl]), total
+					lvl, base, bonus, total
 				])
 		(_slot_use[lvl] as Button).disabled = spent >= total
 		(_slot_recharge[lvl] as Button).disabled = spent <= 0
