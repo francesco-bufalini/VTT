@@ -54,6 +54,7 @@ var _max_hp: SpinBox
 var _max_hp_bonus: SpinBox
 var _max_hp_effective: Label
 var _subclass_caption: Label
+var _level_caption: Label
 var _xp: SpinBox
 var _initiative: SpinBox
 var _speed_custom := false
@@ -664,17 +665,19 @@ func _build_ui() -> void:
 	form.add_child(classes_row)
 	_add_label(classes_row, "Classe base")
 	_class_name = _reference_option(classes_row, Player5eTools.class_choices(), false)
-	_class_name.custom_minimum_size.x = 140
+	_class_name.custom_minimum_size.x = 150
 	_class_name.size_flags_horizontal = Control.SIZE_SHRINK_BEGIN
 	_class_name.item_selected.connect(func(_i: int) -> void: _on_class_choice_changed())
 	_subclass_caption = Label.new()
 	_subclass_caption.text = "Sottoclasse"
 	classes_row.add_child(_subclass_caption)
 	_subclass_name = _reference_option(classes_row, [], false)
-	_subclass_name.custom_minimum_size.x = 140
+	_subclass_name.custom_minimum_size.x = 150
 	_subclass_name.size_flags_horizontal = Control.SIZE_SHRINK_BEGIN
 	_subclass_name.item_selected.connect(func(_i: int) -> void: _save())
-	_add_label(classes_row, "Livello")
+	_level_caption = Label.new()
+	_level_caption.text = "Livello"
+	classes_row.add_child(_level_caption)
 	_level = SpinBox.new()
 	_level.min_value = 1
 	_level.max_value = 20
@@ -685,13 +688,6 @@ func _build_ui() -> void:
 	_level.size_flags_horizontal = Control.SIZE_SHRINK_BEGIN
 	_level.value_changed.connect(_on_level_changed)
 	classes_row.add_child(_level)
-	var xp_row := HBoxContainer.new()
-	form.add_child(xp_row)
-	_add_label(xp_row, "XP")
-	_xp = _spin(xp_row, 0, 999999999)
-	_xp.custom_minimum_size.x = 130
-	_xp.tooltip_text = "Punti esperienza: minimo corrispondente ai livelli delle classi diverse da Mostro"
-
 	var multiclass_header := HBoxContainer.new()
 	form.add_child(multiclass_header)
 	_add_label(multiclass_header, "Classi aggiuntive (multiclasse)")
@@ -701,6 +697,12 @@ func _build_ui() -> void:
 	multiclass_header.add_child(_add_class_button)
 	_multiclass_rows = VBoxContainer.new()
 	form.add_child(_multiclass_rows)
+	var xp_row := HBoxContainer.new()
+	form.add_child(xp_row)
+	_add_label(xp_row, "XP")
+	_xp = _spin(xp_row, 0, 999999999)
+	_xp.custom_minimum_size.x = 130
+	_xp.tooltip_text = "Minimo XP calcolato dai livelli di classe (esclusa la classe Mostro)"
 	var tracker_caption := Label.new()
 	tracker_caption.text = "Tracker risorse"
 	tracker_caption.add_theme_font_size_override("font_size", 15)
@@ -1377,7 +1379,10 @@ func _add_multiclass_row(
 	level.update_on_text_changed = true
 	level.value = clampi(class_level, 1, 20)
 	level.custom_minimum_size = Vector2(72, 30)
-	level.value_changed.connect(func(_v: float) -> void: _save())
+	level.value_changed.connect(func(_v: float) -> void:
+		_refresh_xp_minimum()
+		_save()
+	)
 	row.add_child(level)
 	var remove := Button.new()
 	remove.text = "×"
@@ -1626,6 +1631,7 @@ func _load_form(record: Dictionary) -> void:
 	_refresh_subclass_option(_subclass_name, _reference_entry(_class_name))
 	_select_reference(_subclass_name, String(record.get("subclass", "")), String(record.get("subclass_source", "")), String(record.get("subclass_id", "")))
 	_subclass_caption.text = "Sottoclasse" if is_character else "Sottotipo"
+	_level_caption.text = "Livello" if is_character else "GS (intero)"
 	_subclass_name.disabled = not is_character
 	_clear_multiclass()
 	var classes_value: Variant = record.get("classes", [])
