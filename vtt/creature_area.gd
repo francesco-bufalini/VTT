@@ -53,6 +53,10 @@ var _hp: SpinBox
 var _max_hp: SpinBox
 var _max_hp_bonus: SpinBox
 var _max_hp_effective: Label
+var _subclass_caption: Label
+var _xp: SpinBox
+var _initiative: SpinBox
+var _speed: SpinBox
 var _temp_hp: SpinBox
 var _hp_delta_dialog: ConfirmationDialog
 var _hp_delta_sign := -1
@@ -465,7 +469,8 @@ func _build_ui() -> void:
 	_tabs.size_flags_vertical = Control.SIZE_EXPAND_FILL
 	_tabs.mouse_filter = Control.MOUSE_FILTER_STOP
 	columns.add_child(_tabs)
-	var form := _add_sheet_tab(_tabs, "Statistiche")
+	var statistics_tab := _add_sheet_tab(_tabs, "Statistiche")
+	var form := _add_sheet_tab(_tabs, "Generale")
 	var appearance_tab := _add_sheet_tab(_tabs, "Aspetto")
 	var traits_tab := _add_sheet_tab(_tabs, "Tratti")
 	var conditions_tab := _add_sheet_tab(_tabs, "Stati")
@@ -521,23 +526,15 @@ func _build_ui() -> void:
 	health_style.set_content_margin_all(5)
 	health_panel.add_theme_stylebox_override("panel", health_style)
 	health_panel.tooltip_text = "PF attuali, massimi e temporanei. I danni consumano prima i PF temporanei."
-	form.add_child(health_panel)
+	statistics_tab.add_child(health_panel)
 	var health_content := VBoxContainer.new()
 	health_panel.add_child(health_content)
-	var health_header := HBoxContainer.new()
-	health_content.add_child(health_header)
-	var health_caption := Label.new()
-	health_caption.text = "PF attuali / base + bonus = massimo"
-	health_caption.add_theme_font_size_override("font_size", 13)
-	health_caption.size_flags_horizontal = Control.SIZE_EXPAND_FILL
-	health_caption.autowrap_mode = TextServer.AUTOWRAP_WORD_SMART
-	health_header.add_child(health_caption)
 	var health_actions := HBoxContainer.new()
-	health_header.add_child(health_actions)
+	health_content.add_child(health_actions)
 	var health := HBoxContainer.new()
 	health.add_theme_constant_override("separation", 4)
 	health_content.add_child(health)
-	_add_label(health, "❤️")
+	_add_label(health, "PF")
 	var damage := Button.new()
 	damage.text = "−"
 	damage.tooltip_text = "Sottrai PF: inserisci un valore o tira un dado"
@@ -548,18 +545,22 @@ func _build_ui() -> void:
 	_hp.custom_minimum_size = Vector2(68, 30)
 	_hp.size_flags_horizontal = Control.SIZE_SHRINK_BEGIN
 	_add_label(health, "/")
+	_max_hp_effective = Label.new()
+	_max_hp_effective.tooltip_text = "PF massimi effettivi"
+	health.add_child(_max_hp_effective)
+	_add_label(health, "(")
 	_max_hp = _spin(health, 0, 99999)
-	_max_hp.custom_minimum_size = Vector2(68, 30)
+	_max_hp.custom_minimum_size = Vector2(62, 30)
 	_max_hp.size_flags_horizontal = Control.SIZE_SHRINK_BEGIN
 	_max_hp.tooltip_text = "PF massimi base, senza bonus manuali"
-	_add_label(health, "+")
 	_max_hp_bonus = _spin(health, -9999, 99999)
-	_max_hp_bonus.custom_minimum_size = Vector2(57, 30)
-	_max_hp_bonus.tooltip_text = "Bonus manuale ai PF massimi (oggetti, tratti o altre regole non automatizzate)"
+	_max_hp_bonus.custom_minimum_size = Vector2(60, 30)
+	_max_hp_bonus.tooltip_text = "Bonus manuale ai PF massimi"
 	ManualBonus.decorate(_max_hp_bonus)
-	_max_hp_effective = Label.new()
-	_max_hp_effective.tooltip_text = "PF massimi effettivi (base + bonus)"
-	health.add_child(_max_hp_effective)
+	_add_label(health, ")")
+	_add_label(health, "TEMP")
+	_temp_hp = _spin(health, 0, 99999)
+	_temp_hp.custom_minimum_size.x = 64
 	_max_hp.value_changed.connect(func(_v: float) -> void: _update_max_hp_display())
 	_max_hp_bonus.value_changed.connect(func(_v: float) -> void: _update_max_hp_display())
 	var heal := Button.new()
@@ -579,14 +580,10 @@ func _build_ui() -> void:
 	var defense_flow := HFlowContainer.new()
 	defense_flow.add_theme_constant_override("h_separation", 8)
 	defense_flow.add_theme_constant_override("v_separation", 5)
-	form.add_child(defense_flow)
+	statistics_tab.add_child(defense_flow)
 	var temp_health := HBoxContainer.new()
 	temp_health.add_theme_constant_override("separation", 6)
 	defense_flow.add_child(temp_health)
-	_add_label(temp_health, "🛡 PF temporanei")
-	_temp_hp = _spin(temp_health, 0, 99999)
-	_temp_hp.custom_minimum_size.x = 70
-	_temp_hp.size_flags_horizontal = Control.SIZE_SHRINK_BEGIN
 	_add_label(temp_health, "CA")
 	_ac = _spin(temp_health, 0, 99)
 	_ac.custom_minimum_size.x = 65
@@ -598,14 +595,31 @@ func _build_ui() -> void:
 	_reach.step = 5.0
 	_reach.custom_minimum_size.x = 70
 	_ac.size_flags_horizontal = Control.SIZE_SHRINK_BEGIN
+	var movement_row := HBoxContainer.new()
+	movement_row.add_theme_constant_override("separation", 6)
+	defense_flow.add_child(movement_row)
+	_add_label(movement_row, "Iniziativa")
+	_initiative = _spin(movement_row, -99, 99)
+	_initiative.custom_minimum_size.x = 66
+	_initiative.tooltip_text = "Iniziativa: modificatore di Destrezza, modificabile manualmente"
+	_add_label(movement_row, "Velocità (ft)")
+	_speed = _spin(movement_row, 0, 999)
+	_speed.custom_minimum_size.x = 69
+	_speed.tooltip_text = "Velocità base della razza/specie (modificabile)"
 
+	var abilities_panel := PanelContainer.new()
+	var abilities_style := health_style.duplicate() as StyleBoxFlat
+	abilities_style.bg_color = Color(0.13, 0.20, 0.23, 0.96)
+	abilities_style.border_color = Color(0.39, 0.61, 0.67, 0.92)
+	abilities_panel.add_theme_stylebox_override("panel", abilities_style)
+	statistics_tab.add_child(abilities_panel)
 	_abilities_grid = GridContainer.new()
 	var abilities_row := _abilities_grid
 	# Use the available tab width to keep ability controls readable.
 	abilities_row.columns = 2
 	abilities_row.add_theme_constant_override("h_separation", 8)
 	abilities_row.add_theme_constant_override("v_separation", 7)
-	form.add_child(abilities_row)
+	abilities_panel.add_child(abilities_row)
 	for ability: String in ["str", "dex", "con", "int", "wis", "cha"]:
 		var cell := VBoxContainer.new()
 		abilities_row.add_child(cell)
@@ -630,24 +644,29 @@ func _build_ui() -> void:
 		spin.value_changed.connect(_on_ability_value_changed.bind(ability))
 		bonus.value_changed.connect(_on_ability_value_changed.bind(ability))
 
-	var classes_row := GridContainer.new()
-	# One label / selector pair per line: long race names no longer force
-	# a second pair beyond the viewport edge.
-	classes_row.columns = 2
+	var species_row := HBoxContainer.new()
+	form.add_child(species_row)
+	_add_label(species_row, "Razza / Specie")
+	_species = _reference_option(species_row, Player5eTools.entries("races"))
+	_species.item_selected.connect(func(_index: int) -> void: _on_species_changed())
+
+	var classes_row := HFlowContainer.new()
 	classes_row.add_theme_constant_override("h_separation", 7)
 	classes_row.add_theme_constant_override("v_separation", 6)
 	form.add_child(classes_row)
-	_add_label(classes_row, "Razza / Specie")
-	_species = _reference_option(classes_row, Player5eTools.entries("races"))
 	_add_label(classes_row, "Classe base")
-	_class_name = _reference_option(
-		classes_row, Player5eTools.class_choices(), false
-	)
+	_class_name = _reference_option(classes_row, Player5eTools.class_choices(), false)
+	_class_name.custom_minimum_size.x = 140
+	_class_name.size_flags_horizontal = Control.SIZE_SHRINK_BEGIN
 	_class_name.item_selected.connect(func(_i: int) -> void: _on_class_choice_changed())
-	_add_label(classes_row, "Sottoclasse")
+	_subclass_caption = Label.new()
+	_subclass_caption.text = "Sottoclasse"
+	classes_row.add_child(_subclass_caption)
 	_subclass_name = _reference_option(classes_row, [], false)
+	_subclass_name.custom_minimum_size.x = 140
+	_subclass_name.size_flags_horizontal = Control.SIZE_SHRINK_BEGIN
 	_subclass_name.item_selected.connect(func(_i: int) -> void: _save())
-	_add_label(classes_row, "Livello classe base / GS")
+	_add_label(classes_row, "Livello")
 	_level = SpinBox.new()
 	_level.min_value = 1
 	_level.max_value = 20
@@ -658,6 +677,12 @@ func _build_ui() -> void:
 	_level.size_flags_horizontal = Control.SIZE_SHRINK_BEGIN
 	_level.value_changed.connect(_on_level_changed)
 	classes_row.add_child(_level)
+	var xp_row := HBoxContainer.new()
+	form.add_child(xp_row)
+	_add_label(xp_row, "XP")
+	_xp = _spin(xp_row, 0, 999999999)
+	_xp.custom_minimum_size.x = 130
+	_xp.tooltip_text = "Punti esperienza: minimo corrispondente ai livelli delle classi diverse da Mostro"
 
 	var multiclass_header := HBoxContainer.new()
 	form.add_child(multiclass_header)
@@ -1657,7 +1682,7 @@ func _on_spellcasting_updated(values: Dictionary) -> void:
 func _update_max_hp_display() -> void:
 	if _max_hp_effective == null or _max_hp_bonus == null or _max_hp == null:
 		return
-	_max_hp_effective.text = "= %d" % maxi(0, int(_max_hp.value) + int(_max_hp_bonus.value))
+	_max_hp_effective.text = str(maxi(0, int(_max_hp.value) + int(_max_hp_bonus.value)))
 
 
 func _on_inventory_updated(inventory: Array) -> void:
