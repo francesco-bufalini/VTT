@@ -185,16 +185,14 @@ func create_creature(stat_block: Dictionary, side: String) -> Dictionary:
 		"stat_block": stat_block.duplicate(true),
 		"species": String(stat_block.get("name", base_name)),
 		"species_source": String(stat_block.get("source", "")),
+		"subtype": CreatureRules.monster_subtype(stat_block),
+		"subtype_is_custom": false,
 		"class": "Mostro",
 		"class_source": "5etools",
 		"level": CreatureRules.monster_level(stat_block),
-		"subclass": String(CreatureRules.monster_type_reference(stat_block).get("name", "")),
-		"subclass_source": "5etools",
-		"subclass_id": String(CreatureRules.monster_type_reference(stat_block).get("id", "")),
-		"classes": [{"name": "Mostro", "source": "5etools", "level": CreatureRules.monster_level(stat_block),
-			"subclass": String(CreatureRules.monster_type_reference(stat_block).get("name", "")),
-			"subclass_source": "5etools",
-			"subclass_id": String(CreatureRules.monster_type_reference(stat_block).get("id", ""))}],
+		"subclass": "", "subclass_source": "", "subclass_id": "",
+		"classes": [{"name": "Mostro", "source": "5etools",
+			"level": CreatureRules.monster_level(stat_block)}],
 		"linked_token_sync_id": "",
 		"linked_token_name": ""
 	}
@@ -252,12 +250,12 @@ func normalize_creature(value: Dictionary) -> Dictionary:
 		"stat_block": stat_block,
 		"species": String(stat_block.get("name", base_name)),
 		"species_source": String(stat_block.get("source", value.get("source", ""))),
+		"subtype": String(value.get("subtype", "")) if bool(value.get("subtype_is_custom", false)) else CreatureRules.monster_subtype(stat_block),
+		"subtype_is_custom": bool(value.get("subtype_is_custom", false)),
 		"class": "Mostro",
 		"class_source": "5etools",
 		"level": CreatureRules.monster_level(stat_block),
-		"subclass": String(CreatureRules.monster_type_reference(stat_block).get("name", "")),
-		"subclass_source": "5etools",
-		"subclass_id": String(CreatureRules.monster_type_reference(stat_block).get("id", "")),
+		"subclass": "", "subclass_source": "", "subclass_id": "",
 		"classes": [],
 		"conditions": value.get("conditions", []).duplicate() if value.get("conditions", []) is Array else [],
 		"transfer_revision": maxi(0, int(value.get("transfer_revision", 0))),
@@ -333,10 +331,7 @@ func normalize_creature(value: Dictionary) -> Dictionary:
 			if String(cls.get("name", "")).to_lower() != "mostro":
 				extra_classes.append(cls.duplicate(true))
 	var monster_level: int = CreatureRules.monster_level(stat_block)
-	var monster_type: Dictionary = CreatureRules.monster_type_reference(stat_block)
-	var merged_classes: Array = [{"name": "Mostro", "source": "5etools", "level": monster_level,
-		"subclass": String(monster_type.get("name", "")), "subclass_source": "5etools",
-		"subclass_id": String(monster_type.get("id", ""))}]
+	var merged_classes: Array = [{"name": "Mostro", "source": "5etools", "level": monster_level}]
 	merged_classes.append_array(extra_classes)
 	result["classes"] = merged_classes
 	var added_levels: int = 0
