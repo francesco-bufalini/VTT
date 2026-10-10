@@ -37,6 +37,40 @@ static func monster_type_reference(stat: Dictionary) -> Dictionary:
 
 
 # 5etools speed may be a number, or a map with walk/fly/swim speeds.
+# The creature type and subtype are distinct from any character class.
+# 5etools monster type tags describe subtypes, not class archetypes.
+static func monster_subtype(stat: Dictionary) -> String:
+	var raw: Variant = stat.get("type", {})
+	if not raw is Dictionary:
+		return ""
+	var tags: Variant = (raw as Dictionary).get("tags", [])
+	if not tags is Array:
+		return ""
+	var labels: PackedStringArray = []
+	for item: Variant in tags:
+		var label: String = String(item.get("tag", "") if item is Dictionary else item).strip_edges()
+		if not label.is_empty() and label not in labels:
+			labels.append(label)
+	return ", ".join(labels)
+
+
+static func species_creature_type(species: Dictionary) -> String:
+	# Most playable races are humanoids. Some 5etools races (e.g. an
+	# Autognome or a Fairy) state a non-humanoid Creature Type explicitly.
+	var raw: String = String(species.get("creature_type", "")).to_lower()
+	if raw.is_empty():
+		var entries: Variant = species.get("entries", [])
+		if entries is Array:
+			for value: Variant in entries:
+				if value is Dictionary and String((value as Dictionary).get("name", "")).to_lower() == "creature type":
+					raw = JSON.stringify((value as Dictionary).get("entries", [] )).to_lower()
+					break
+	for code: String in MONSTER_TYPES.keys():
+		if code in raw:
+			return String(MONSTER_TYPES[code])
+	return String(MONSTER_TYPES["humanoid"])
+
+
 static func walking_speed(raw: Variant, fallback: int = 30) -> int:
 	if raw is int or raw is float:
 		return maxi(0, int(raw))
