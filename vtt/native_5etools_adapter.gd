@@ -68,13 +68,13 @@ static func normalize(document: Dictionary, path: String) -> Dictionary:
 			if name.is_empty() or not defined_sources.has(source):
 				diagnostics.append("Homebrew 5etools: nome/fonte non validi: " + path)
 				continue
-			var namespace: String = _slug(source, 48)
+			var source_namespace: String = _slug(source, 48)
 			var identifier := String(data.get("id", name)) if category == "documents" else name
 			var local_id: String = _slug(identifier, 64)
-			if namespace.is_empty() or local_id.is_empty():
+			if source_namespace.is_empty() or local_id.is_empty():
 				diagnostics.append("Homebrew 5etools: ID non valido: " + name)
 				continue
-			data["id"] = "homebrew:%s:%s:%s" % [namespace, category, local_id]
+			data["id"] = "homebrew:%s:%s:%s" % [source_namespace, category, local_id]
 			data["source"] = source
 			data["category"] = category
 			data["origin"] = "homebrew"
