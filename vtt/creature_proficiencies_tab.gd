@@ -375,6 +375,7 @@ func _refresh_competences() -> void:
 		toggle.text = "⏻"
 		toggle.tooltip_text = "Disattiva " + ("il collegamento con l'origine selezionata" if selected else "tutte le concessioni di questa competenza")
 		toggle.button_pressed = _group_enabled(indices)
+		toggle.disabled = _selected_id not in ["~none~", ""] and not selected
 		toggle.toggled.connect(_toggle_group.bind(indices.duplicate()))
 		box.add_child(toggle)
 		if _selected_id not in ["~none~", ""] and not selected:
@@ -436,7 +437,7 @@ func _toggle_group_expertise(on: bool, key: String, indices: Array) -> void:
 
 
 func _link_group(kind: String, key: String) -> void:
-	if _selected_id in ["~none~", ""]:
+	if _selected_id in ["~none~", ""] or not _valid_structured_choice(kind, key):
 		return
 	for entry: Dictionary in _rows:
 		if String(entry.get("kind", "")) == kind and String(entry.get("key", "")) == key and String(entry.get("origin_id", "")) == _selected_id:
@@ -608,6 +609,33 @@ func _refresh_proficiency_picker() -> void:
 			_proficiency_picker.set_item_metadata(_proficiency_picker.item_count - 1, key)
 
 
+# Free-form sources allow any manual link. Structured skill choice lists
+# and counts, when provided, constrain both Add and Attach actions.
+func _valid_structured_choice(kind: String, key: String) -> bool:
+	if kind != "skill":
+		return true
+	var source: Dictionary = _selected_source_record()
+	var allowed: Array[String] = Rules.restricted_choices(source, kind)
+	if not allowed.is_empty() and key not in allowed:
+		return false
+	for entry: Dictionary in _rows:
+		if String(entry.get("kind", "")) == kind and String(entry.get("key", "")) == key and String(entry.get("origin_id", "")) == _selected_id:
+			return true
+	var max_choices := 0
+	for requirement: Dictionary in source.get("requirements", []):
+		if String(requirement.get("kind", "")) == kind:
+			max_choices += int(requirement.get("count", 0))
+	if max_choices == 0:
+		return true
+	var assigned := 0
+	for entry: Dictionary in _rows:
+		if String(entry.get("origin_id", "")) != _selected_id or String(entry.get("kind", "")) != kind or bool(entry.get("disabled", false)):
+			continue
+		if allowed.is_empty() or String(entry.get("key", "")) in allowed:
+			assigned += 1
+	return assigned < max_choices
+
+
 func _add_competence() -> void:
 	if _selected_id in ["~none~", ""]:
 		return
@@ -617,25 +645,9 @@ func _add_competence() -> void:
 		key = String(_proficiency_picker.get_item_metadata(_proficiency_picker.selected))
 	if key.is_empty():
 		return
-	var source: Dictionary = _selected_source_record()
-	if kind == "skill":
-		var allowed: Array[String] = Rules.restricted_choices(source, kind)
-		if not allowed.is_empty() and key not in allowed:
-			_proficiency_name.tooltip_text = "Questa origine permette soltanto: " + ", ".join(allowed)
-			return
-		var max_choices := 0
-		for requirement: Dictionary in source.get("requirements", []):
-			if String(requirement.get("kind", "")) == kind:
-				max_choices += int(requirement.get("count", 0))
-		if max_choices > 0:
-			var current := 0
-			for existing: Dictionary in _rows:
-				if String(existing.get("origin_id", "")) == _selected_id and String(existing.get("kind", "")) == kind and not bool(existing.get("disabled", false)):
-					if Rules.grant_matches({"choose": {"from": allowed}}, kind, String(existing.get("key", ""))) == 1 or allowed.is_empty():
-						current += 1
-			if current >= max_choices:
-				_proficiency_name.tooltip_text = "Tutte le scelte disponibili per questa origine sono state utilizzate."
-				return
+	if not _valid_structured_choice(kind, key):
+		_proficiency_name.tooltip_text = "Scelta non prevista dai dati strutturati o limite dell'origine raggiunto."
+		return
 	for row: Dictionary in _rows:
 		if String(row.get("origin_id", "")) == _selected_id and String(row.get("kind", "")) == kind and String(row.get("key", "")) == key:
 			row["disabled"] = false
