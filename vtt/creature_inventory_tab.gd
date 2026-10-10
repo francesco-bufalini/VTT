@@ -13,6 +13,7 @@ var _catalog: Array[Dictionary] = []
 var _filtered: Array[Dictionary] = []
 var _inventory: Array[Dictionary] = []
 var _loading: bool = false
+var _rules_version := "2014"
 
 var _category_filter: OptionButton
 var _equip_main: Button
@@ -167,6 +168,10 @@ func reload_catalog() -> void:
 
 
 func load_record(record: Dictionary) -> void:
+	var edition := String(record.get("rules_version", "2014"))
+	if edition != _rules_version:
+		_rules_version = edition
+		_filter_catalog()
 	_loading = true
 	_inventory.clear()
 	var saved: Variant = record.get("inventory", [])
@@ -240,6 +245,13 @@ func _filter_catalog() -> void:
 	_filtered.clear()
 	_catalog_list.clear()
 	for item: Dictionary in _catalog:
+		# The same base item appears in PHB and XPHB. A 2014 creature
+		# must not accidentally choose the rewritten 2024 version.
+		if _rules_version == "2014" and (
+			String(item.get("type", "")).to_upper().contains("|XPHB")
+			or String(item.get("id", "")).to_lower().ends_with("|xphb")
+		):
+			continue
 		var name: String = String(item.get("name", ""))
 		if name.is_empty():
 			continue
