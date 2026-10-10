@@ -17,6 +17,7 @@ const InventoryTab = preload("res://vtt/creature_inventory_tab.gd")
 const TraitsTab = preload("res://vtt/creature_traits_tab.gd")
 const DialogLayout = preload("res://vtt/dialog_layout.gd")
 const Skills5e = preload("res://vtt/creature_skills_5etools.gd")
+const DocumentInbox = preload("res://vtt/document_inbox.gd")
 
 var board_root: Node3D
 var _archive
@@ -532,7 +533,11 @@ func _build_ui() -> void:
 	var inventory_tab := _add_sheet_tab(_tabs, "Inventario")
 	_inventory_ui = InventoryTab.new()
 	inventory_tab.add_child(_inventory_ui)
-	_inventory_ui.call("setup", Callable(self, "_on_inventory_updated"), Callable(self, "_set_status"))
+	_inventory_ui.call(
+		"setup", Callable(self, "_on_inventory_updated"), Callable(self, "_set_status"),
+		Callable(self, "_on_documents_updated"),
+		Callable(self, "_send_document_to_peer"), Callable(self, "_get_document_peers")
+	)
 	_tabs.current_tab = 0
 
 	var name_row := HBoxContainer.new()
@@ -2155,6 +2160,47 @@ func _update_max_hp_display() -> void:
 	if _max_hp_effective == null or _max_hp_bonus == null or _max_hp == null:
 		return
 	_max_hp_effective.text = str(maxi(0, int(_max_hp.value) + int(_max_hp_bonus.value)))
+
+
+func _get_document_peers() -> Array[Dictionary]:
+	var presence: Node = board_root.get_node_or_null("CreaturePresence")
+	if presence == null:
+		return []
+	presence.call("request_refresh")
+	return presence.call("get_online_peers")
+
+
+func _send_document_to_peer(recipient_id: String, document: Dictionary) -> String:
+	var presence: Node = board_root.get_node_or_null("CreaturePresence")
+	if presence == null:
+		return ""
+	return String(presence.call("send_document", recipient_id, document))
+
+
+func receive_shared_document(document: Dictionary, sender_id: String) -> void:
+	if not DocumentInbox.receive(document):
+		_set_status("Documento ricevuto ma non salvato: controlla i permessi dei file.")
+		return
+	var current: Dictionary = _current()
+	if not current.is_empty() and _inventory_ui != null:
+		_inventory_ui.call("receive_document")
+	_set_status("Lettera ricevuta da giocatore %s: %s" % [
+		sender_id.substr(0, 8), String(document.get("title", "Documento"))
+	])
+
+
+func _on_documents_updated(documents: Array) -> void:
+	if _loading:
+		return
+	var record: Dictionary = _current()
+	if record.is_empty():
+		return
+	record["documents"] = documents.duplicate(true)
+	var err: Error = _archive.save(record)
+	if err == OK:
+		_replace_current_record(record)
+	else:
+		_set_status("Impossibile salvare i documenti: " + error_string(err))
 
 
 func _on_inventory_updated(inventory: Array) -> void:
