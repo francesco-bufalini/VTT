@@ -464,7 +464,7 @@ func _refresh_competences() -> void:
 		if not removable.is_empty():
 			var remove := Button.new()
 			remove.text = "✕"
-			remove.tooltip_text = "Elimina definitivamente " + ("la scelta di questa origine" if _selected_id not in ["~none~", ""] else "le concessioni manuali (le automatiche restano)")
+			remove.tooltip_text = "Elimina definitivamente le concessioni manuali (le automatiche restano)"
 			remove.flat = true
 			remove.pressed.connect(_delete_manual_group.bind(removable))
 			box.add_child(remove)
