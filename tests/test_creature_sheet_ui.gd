@@ -346,6 +346,11 @@ func run() -> void:
 		"Each ability shows a saving throw result")
 	assert((area._saving_throw_labels["wis"] as Label).text.begins_with("TS "),
 		"Wisdom saving throw must show its current numerical bonus")
+	var wisdom_saving: Label = area._saving_throw_labels["wis"]
+	var wisdom_formula: Node = area._formula_values["ability:wis"]
+	assert(wisdom_saving.get_parent() is HBoxContainer
+		and wisdom_formula.get_parent().get_parent() == wisdom_saving.get_parent(),
+		"Saving throws and their associated characteristic values must share one row")
 	assert(area._tools_proficiency_label != null and "Strumenti:" in area._tools_proficiency_label.text,
 		"Statistics must expose the character's tool proficiencies")
 	assert(not area._formula_values.is_empty(), "Computed score formulas remain available")
