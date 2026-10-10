@@ -1245,6 +1245,22 @@ static func is_runtime_usable(spell_data: Dictionary) -> bool:
 	return _is_runtime_usable(spell_data)
 
 
+static func _manual_spell(spell_id: String) -> Dictionary:
+	var result: Dictionary = (SPELLS[spell_id] as Dictionary).duplicate(true)
+	var generated_value: Variant = GeneratedCatalog.SPELLS.get(spell_id, {})
+	if generated_value is Dictionary:
+		var generated: Dictionary = generated_value as Dictionary
+		# Visual/mechanical overrides can omit their source. Retain it so
+		# edition filtering and modern geometry lookup still identify them.
+		if String(result.get("source", "")).is_empty():
+			result["source"] = String(generated.get("source", ""))
+		for field: String in ["classes", "condition_inflict", "saving_throw", "misc_tags"]:
+			var metadata: Variant = generated.get(field, [])
+			if metadata is Array:
+				result[field] = (metadata as Array).duplicate(true)
+	return result
+
+
 static func catalog_spell(spell_id: String) -> Dictionary:
 	if PHB2014.SPELLS.has(spell_id):
 		# Rules stay authoritative from PHB 2014, including the textual range
@@ -1277,32 +1293,7 @@ static func catalog_spell(spell_id: String) -> Dictionary:
 			return _apply_runtime_overrides(custom)
 	var value: Variant = SPELLS.get(spell_id, {})
 	if value is Dictionary and not (value as Dictionary).is_empty():
-		var manual_result: Dictionary = (value as Dictionary).duplicate(true)
-		var generated_value: Variant = GeneratedCatalog.SPELLS.get(
-			spell_id,
-			{}
-		)
-		if generated_value is Dictionary:
-			var generated_classes: Variant = (
-				generated_value as Dictionary
-			).get("classes", [])
-			if generated_classes is Array:
-				manual_result["classes"] = (
-					generated_classes as Array
-				).duplicate(true)
-			for metadata_field: String in [
-				"condition_inflict",
-				"saving_throw",
-				"misc_tags"
-			]:
-				var generated_metadata: Variant = (
-					generated_value as Dictionary
-				).get(metadata_field, [])
-				if generated_metadata is Array:
-					manual_result[metadata_field] = (
-						generated_metadata as Array
-					).duplicate(true)
-		return _apply_runtime_overrides(manual_result)
+		return _apply_runtime_overrides(_manual_spell(spell_id))
 
 	value = GeneratedCatalog.SPELLS.get(spell_id, {})
 	if value is Dictionary:
@@ -1332,22 +1323,7 @@ static func all_spells() -> Array[Dictionary]:
 	for spell_id: Variant in SPELLS.keys():
 		var value: Variant = SPELLS.get(spell_id, {})
 		if value is Dictionary:
-			var manual_copy: Dictionary = (
-				value as Dictionary
-			).duplicate(true)
-			var generated_value: Variant = GeneratedCatalog.SPELLS.get(
-				spell_id,
-				{}
-			)
-			if generated_value is Dictionary:
-				var generated_classes: Variant = (
-					generated_value as Dictionary
-				).get("classes", [])
-				if generated_classes is Array:
-					manual_copy["classes"] = (
-						generated_classes as Array
-					).duplicate(true)
-			merged[String(spell_id)] = manual_copy
+			merged[String(spell_id)] = _manual_spell(String(spell_id))
 
 	for custom: Dictionary in ContentCatalog.home_entries("spells"):
 		var target := String(custom.get("overrides", ""))

@@ -86,6 +86,34 @@ func run() -> void:
 	legacy.entries[0].erase("creature_owner_id")
 	assert(bool(tracker.call("valid_state", legacy)))
 
+	# A legacy state can omit or carry a stale ID counter. Adding a real
+	# selected creature must still produce a valid, unique snapshot.
+	var stale_counter: Dictionary = state.duplicate(true)
+	stale_counter.erase("next_entry_id")
+	assert(bool(tracker.call("load_state", stale_counter)))
+	var ui := CanvasLayer.new()
+	board.add_child(ui)
+	tracker.set("ui_root", ui)
+	tracker.call("_build_add_dialog")
+	tracker.call("_refresh_creature_selector")
+	var chooser: ItemList = tracker.get("participant_creatures") as ItemList
+	chooser.select(0)
+	tracker.call("_on_add_confirmed")
+	var after_add: Dictionary = tracker.call("get_save_state")
+	assert(after_add.entries.size() == 3)
+	assert(after_add.entries[1].id == "initiative_1" and after_add.entries[2].id == "initiative_2")
+	assert(bool(tracker.call("valid_state", after_add)), "Restored combat must not allocate duplicate entry IDs")
+
+	var capacity_state: Dictionary = state.duplicate(true)
+	capacity_state["entries"] = []
+	for index: int in range(257):
+		capacity_state.entries.append({"id": "capacity_%d" % index, "name": "Creature %d" % index, "token_id": ""})
+	assert(not bool(tracker.call("load_state", capacity_state)), "Environment migration must respect snapshot capacity")
+	assert((tracker.call("get_save_state") as Dictionary).entries.size() == 3, "Rejected state must not change current combat")
+	capacity_state.entries.pop_back()
+	assert(bool(tracker.call("load_state", capacity_state)))
+	assert(bool(tracker.call("valid_state", tracker.call("get_save_state"))), "Largest migrated combat must serialize validly")
+
 	assert(unlinked != null)
 	board.free()
 	print("PASS: initiative picks only on-board creatures, de-duplicates and saves identity")

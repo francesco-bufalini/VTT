@@ -72,6 +72,7 @@ func run() -> void:
 	hp_roller.name = "DiceRollerChat"
 	board.add_child(hp_roller)
 	var campaign := TestCampaign.new()
+	campaign.selected_campaign_group_id += "_%d" % Time.get_ticks_usec()
 	root.add_child(campaign)
 	var area: Node = load("res://vtt/creature_area.gd").new()
 	board.add_child(area)
@@ -79,7 +80,8 @@ func run() -> void:
 	area._archive.setup(campaign)
 	# Search works from the bundled 5etools miniature references even
 	# while the remote bestiary index has not been downloaded.
-	area._on_catalog_ready([])
+	var empty_catalog: Array[Dictionary] = []
+	area._on_catalog_ready(empty_catalog)
 	area._filter_catalog("ape")
 	assert(not area._filtered_catalog.is_empty(), "Offline name search must work")
 	area._filter_catalog("Ape")
@@ -102,9 +104,11 @@ func run() -> void:
 	assert(area._miniature_dialog.get_ok_button().disabled,
 		"New character must explicitly select a default miniature")
 	area._miniature_filter.text = "Hero"
+	area._miniature_filter.text_changed.emit("Hero")
 	area._on_miniature_selected(0)
 	assert(not area._miniature_dialog.get_ok_button().disabled)
 	area._confirm_miniature()
+	area._miniature_dialog.hide()
 	assert(area._current().default_miniature_id == "hero_test", "Default miniature must be saved with the creature")
 	assert(area._current().current_miniature_id == "hero_test", "First appearance inherits the base miniature")
 	assert(area._creature_list_scroll.custom_minimum_size.y < 100.0,
@@ -128,8 +132,10 @@ func run() -> void:
 		"Trackers must be inside Statistics, not a separate resources tab")
 	area._choose_miniature(area._current(), false, true)
 	area._miniature_filter.text = "ape"
+	area._miniature_filter.text_changed.emit("ape")
 	area._on_miniature_selected(0)
 	area._confirm_miniature()
+	area._miniature_dialog.hide()
 	assert(area._current().current_miniature_id == "ape" and area._current().default_miniature_id == "hero_test",
 		"Changing current appearance without a live token must preserve default miniature")
 	area._restore_default_appearance()
@@ -194,7 +200,7 @@ func run() -> void:
 		"Armor class must be alongside temporary HP")
 	assert(area._party.get_parent() == area._name.get_parent(),
 		"Faction must be alongside character name")
-	assert(not area._current_miniature.is_inside_tree(),
+	assert(area._current_miniature.is_inside_tree() and not area._current_miniature.visible,
 		"No redundant current-appearance heading in appearance tab")
 	area._level.value = 5
 	area._save()
@@ -219,15 +225,15 @@ func run() -> void:
 	var previous_level: int = -1
 	var trait_origins: Dictionary = {}
 	var has_action_surge := false
-	for trait: Dictionary in ordered_traits:
-		assert(int(trait["level"]) >= previous_level,
+	for feature_data: Dictionary in ordered_traits:
+		assert(int(feature_data["level"]) >= previous_level,
 			"Traits must sort by level regardless of their origin")
-		previous_level = int(trait["level"])
-		trait_origins[String(trait["origin"])] = true
-		if String(trait["name"]) == "Action Surge":
+		previous_level = int(feature_data["level"])
+		trait_origins[String(feature_data["origin"])] = true
+		if String(feature_data["name"]) == "Action Surge":
 			has_action_surge = true
-		if String(trait.get("class_name", "")) == "Wizard":
-			assert(String(trait["book"]) != "XPHB",
+		if String(feature_data.get("class_name", "")) == "Wizard":
+			assert(String(feature_data["book"]) != "XPHB",
 				"2014 characters must not acquire 2024 features")
 	assert(trait_origins.has("Specie · Elf") and trait_origins.has("Classe · Wizard")
 		and trait_origins.has("Classe · Fighter")
@@ -267,6 +273,7 @@ func run() -> void:
 	area._automatic_proficiency.button_pressed = true
 	area._automatic_spells.button_pressed = true
 	area._apply_automatic_calculation()
+	area._automatic_dialog.hide()
 	var automatically_calculated: Dictionary = area._current()
 	assert(automatically_calculated.max_hp == 22, "Wizard 5, CON +0: 6 + 4 * 4")
 	area._max_hp_bonus.value = 5
@@ -300,8 +307,8 @@ func run() -> void:
 	sheet = area._current()
 	assert(sheet.id == original_id and sheet.classes[0].level == 6)
 	var spells: Node = area._spellcasting_ui
-	assert(spells._description.get_parent() == spells._prepare.get_parent(),
-		"Spell details must replace the selection hint alongside the action button")
+	assert(spells._description.get_parent() == spells._prepare.get_parent().get_parent() and spells._description.scroll_active,
+		"Spell details must occupy a scrollable row below the compact action button")
 	assert(not spells._search_row.visible and spells._known_list.item_count > 0,
 		"Class spell list must be automatic and search optional")
 	assert(spells._class_spell_level_limits().get("wizard", -1) == 3,
@@ -312,9 +319,10 @@ func run() -> void:
 	spells._on_options_selected(1)
 	assert(spells._search_row.visible)
 	spells._search.text = "Magic Missile"
+	spells._search.text_changed.emit("Magic Missile")
 	assert(not spells._visible.is_empty(), "5etools spell catalog must be searchable")
 	spells._available.select(0)
-	spells._add_selected_known()
+	spells._toggle_selected_prepared()
 	assert(area._current().spells.size() == 1)
 	assert(area._current().prepared_spells.size() == 1)
 	spells._calculate_slot_totals()
@@ -342,6 +350,7 @@ func run() -> void:
 	# changing the automatic class spell selection.
 	spells._class_only.button_pressed = false
 	spells._search.text = "Cure Wounds"
+	spells._search.text_changed.emit("Cure Wounds")
 	var foreign_spell_index: int = -1
 	for index: int in range(spells._visible.size()):
 		if String(spells._visible[index].get("name", "")).to_lower() == "cure wounds":
@@ -350,10 +359,10 @@ func run() -> void:
 	assert(foreign_spell_index >= 0, "Optional search must expose off-class spells")
 	spells._available.select(foreign_spell_index)
 	spells._on_spell_list_selected("catalog")
-	spells._add_selected_known()
+	spells._toggle_selected_prepared()
 	assert(area._current().prepared_spells.size() == 2,
 		"An off-class spell can be added directly to available spells")
-	spells._forget_selected_known()
+	spells._toggle_selected_prepared()
 	assert(area._current().prepared_spells.size() == 1,
 		"Available spells can be removed independently from class spells")
 	var references = load("res://vtt/player_5etools_catalog.gd")
@@ -472,6 +481,9 @@ func run() -> void:
 	assert(area._current().is_empty())
 	assert(token.is_queued_for_deletion(), "Creature deletion must delete its token")
 	assert(area._archive._stored("character", original_id).is_empty())
+	area.refresh_owned_sheets()
+	assert(area._archive.list_owned().is_empty(),
+		"Queued deleted tokens must not recreate their creature sheets")
 	await process_frame
 	# Use a fresh unrelated token to test independent automatic-sheet creation.
 	token = TokenScene.instantiate()
@@ -489,6 +501,11 @@ func run() -> void:
 	assert(token.get_meta("creature_owner_id") == Owner.local_id())
 	var automatic: Dictionary = area._archive._stored("monster", automatic_id)
 	assert(automatic.name == "Test Ape")
+	token.set_reach_feet(15.0)
+	area.sync_linked_token_editor(token)
+	automatic = area._archive._stored("monster", automatic_id)
+	assert(automatic.reach_feet == 15.0 and automatic.reach_is_custom,
+		"Token editor must persist explicit monster reach instead of reverting to bestiary reach")
 	assert(automatic.stat_block.name == "Ape")
 	assert(automatic.stat_block.source == "MM")
 	assert(automatic.linked_token_sync_id == "ui-token")
@@ -506,6 +523,7 @@ func run() -> void:
 	# A sheet refresh can race the creation dialog: if it registers a sheet
 	# before the checkbox states are applied, the final creation state wins.
 	var stale_initial: Dictionary = automatic.duplicate(true)
+	stale_initial["kind"] = "monster"
 	stale_initial["conditions"] = []
 	assert(area._archive.save(stale_initial) == OK)
 	area.ensure_sheet_for_token(token, true)
@@ -547,7 +565,7 @@ func run() -> void:
 	await process_frame
 	assert(not area._archive._stored("monster", automatic_id).is_empty())
 	received.queue_free()
-	for path: String in ["user://player_characters/campaign_creature_ui_regression.json", "user://master_creatures/campaign_creature_ui_regression.json"]:
+	for path: String in [area._archive._characters._file_path(), area._archive._monsters._file_path()]:
 		if FileAccess.file_exists(path):
 			DirAccess.remove_absolute(ProjectSettings.globalize_path(path))
 	board.queue_free()

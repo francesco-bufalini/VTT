@@ -40,4 +40,6 @@ func run() -> void:
 		"The shared popup must preserve deliberately hidden native buttons")
 	dialog.hide()
 	dialog.queue_free()
+	await process_frame
+	print("PASS: first-open dialog layout and native/custom confirmation buttons")
 	quit()

@@ -6,7 +6,8 @@ const DialogLayout = preload("res://vtt/dialog_layout.gd")
 signal turn_changed(entry_id: String, round_number: int, turn_count: int)
 signal combat_state_changed(active: bool)
 
-const MAX_ENTRIES := 256
+# Preserve all 256 legacy participants when adding the environment turn.
+const MAX_ENTRIES := 257
 const ENVIRONMENT_ENTRY_ID := "initiative_environment"
 const ENVIRONMENT_INITIATIVE := 20
 
@@ -539,6 +540,8 @@ func _on_add_confirmed() -> void:
 		):
 			continue
 		var name_value := String(candidate.get("name", "Creatura"))
+		while _entry_index("initiative_%d" % _next_entry_id) >= 0:
+			_next_entry_id += 1
 		entries.append({
 			"id": "initiative_%d" % _next_entry_id,
 			"name": name_value,
@@ -1065,6 +1068,11 @@ func valid_state(value: Variant) -> bool:
 			if seen_creatures.has(creature_key):
 				return false
 			seen_creatures[creature_key] = true
+
+	# Migration adds an environment turn. Reject an over-capacity legacy
+	# state before loading it, so get_save_state() always remains valid.
+	if bool(state.get("active", false)) and not seen_ids.has(ENVIRONMENT_ENTRY_ID) and state_entries.size() >= MAX_ENTRIES:
+		return false
 
 	var index_value: Variant = state.get("active_index", 0)
 	var round_value: Variant = state.get("round", 1)

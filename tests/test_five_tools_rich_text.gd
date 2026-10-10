@@ -50,5 +50,5 @@ func run() -> void:
 	assert(label.bbcode_enabled, "Godot RichTextLabel must parse the table markup")
 	assert("Danno" in label.get_parsed_text(), "Cells must render as visible text")
 	label.queue_free()
-	print("5etools rich text renderer: PASS")
+	print("PASS: 5etools rich text renderer")
 	quit()

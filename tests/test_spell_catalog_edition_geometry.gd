@@ -18,6 +18,13 @@ func _run() -> void:
 	assert(String(classic.get("aoe_shape", "")) == String(modern.get("aoe_shape", "")))
 	assert(is_equal_approx(float(classic.get("range_feet", 0)), 150.0))
 
+	# Direct lookup and searchable lists must carry the same authoritative
+	# source and condition metadata for spells with manual visual overrides.
+	for entry: Dictionary in Spells.all_spells():
+		var direct: Dictionary = Spells.catalog_spell(String(entry.id))
+		for field: String in ["source", "classes", "condition_inflict", "saving_throw", "misc_tags"]:
+			assert(entry.get(field, []) == direct.get(field, []), "Catalog paths disagree on %s for %s" % [field, entry.id])
+
 	var classic_lists: Array[Dictionary] = Spells.all_spells_for_rules("2014")
 	var modern_lists: Array[Dictionary] = Spells.all_spells_for_rules("2024")
 	assert(classic_lists.size() > 350)

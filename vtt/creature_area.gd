@@ -172,7 +172,10 @@ func sync_linked_token_editor(token: CharacterBody3D) -> void:
 		if token.has_method("get_footprint_cells"):
 			record["footprint"] = token.call("get_footprint_cells")
 		if token.has_method("get_reach_feet"):
-			record["reach_feet"] = token.call("get_reach_feet")
+			var token_reach: float = float(token.call("get_reach_feet"))
+			if String(record.get("kind", "")) == "monster" and absf(token_reach - float(record.get("reach_feet", 5.0))) > 0.01:
+				record["reach_is_custom"] = true
+			record["reach_feet"] = token_reach
 		if token.has_method("get_visual_front_quarter_turns"):
 			record["visual_front_quarter_turns"] = token.call("get_visual_front_quarter_turns")
 		if token.has_method("get_party_id"):
@@ -653,6 +656,8 @@ func _build_ui() -> void:
 	_current_miniature.text = "Aspetto attuale: nessun token"
 	# The current appearance is controlled by the action buttons below,
 	# so the redundant opening caption is intentionally not displayed.
+	_current_miniature.hide()
+	appearance_tab.add_child(_current_miniature)
 	var appearance_actions := HBoxContainer.new()
 	appearance_actions.add_theme_constant_override("separation", 8)
 	appearance_tab.add_child(appearance_actions)
@@ -2207,7 +2212,7 @@ func refresh_owned_sheets() -> void:
 # now equals this installation after a remote ownership transfer. Never claim
 # unowned tokens just because they are visible in a received scene.
 func ensure_sheet_for_token(token: Node3D, locally_created: bool = false) -> void:
-	if token == null or not is_instance_valid(token) or not board_root.is_ancestor_of(token):
+	if token == null or not is_instance_valid(token) or token.is_queued_for_deletion() or not board_root.is_ancestor_of(token):
 		return
 	var local_owner := Owner.local_id()
 	var current_owner := String(token.get_meta("creature_owner_id", "")).strip_edges()
@@ -2336,10 +2341,11 @@ func _complete_auto_reference(id: String, stat: Dictionary) -> void:
 		owned["source"] = String(stat.get("source", ""))
 		var completed: Dictionary = _archive.create_monster(stat)
 		# Change only provisional defaults: explicit user edits take precedence.
-		if int(owned.get("max_hp", 1)) == 1:
-			owned["max_hp"] = completed.get("max_hp", 1)
+		if int(owned.get("max_hp_base", 1)) == 1:
+			owned["max_hp_base"] = completed.get("max_hp_base", 1)
+			owned["max_hp"] = maxi(0, int(owned["max_hp_base"]) + int(owned.get("max_hp_bonus", 0)))
 			if int(owned.get("current_hp", 1)) == 1:
-				owned["current_hp"] = completed.get("current_hp", 1)
+				owned["current_hp"] = owned["max_hp"]
 		if int(owned.get("armor_class", 10)) == 10:
 			owned["armor_class"] = completed.get("armor_class", 10)
 		if _archive.save(owned) == OK:

@@ -80,7 +80,7 @@ func save_creatures(creatures: Array[Dictionary], allow_transfer: bool = false) 
 					for candidate: Dictionary in merged:
 						if String(candidate.get("id", "")) != String(stored.get("id", "")):
 							continue
-						if not allow_transfer and (not CreatureOwner.is_owner(stored) or String(candidate.get("owner_id", "")) != String(stored.get("owner_id", CreatureOwner.local_id()))):
+						if not allow_transfer and (not CreatureOwner.can_edit(candidate, stored) or String(candidate.get("owner_id", "")) != String(stored.get("owner_id", CreatureOwner.local_id()))):
 							return ERR_UNAUTHORIZED
 					if CreatureOwner.is_owner(stored):
 						continue

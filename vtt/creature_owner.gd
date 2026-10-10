@@ -26,6 +26,17 @@ static func is_owner(record: Dictionary) -> bool:
 	return owner.is_empty() or owner == local_id()
 
 
+static func can_edit(record: Dictionary, persisted: Dictionary) -> bool:
+	# A sheet cached before an ownership round-trip cannot overwrite or
+	# delete the newer sheet, even when the local owner ID matches again.
+	return is_owner(record) and (
+		persisted.is_empty() or (
+			is_owner(persisted)
+			and int(record.get("transfer_revision", 0)) == int(persisted.get("transfer_revision", 0))
+		)
+	)
+
+
 static func public_identity(record: Dictionary) -> Dictionary:
 	return {
 		"creature_id": String(record.get("id", "")),

@@ -10,8 +10,16 @@ func run() -> void:
 	await process_frame
 	await process_frame
 	var row: Node = board.get_node("UI/RuntimeToolbar").get_child(0)
-	assert(row.get_child(0).text == "Token")
-	assert(row.get_child(1).text == "Item")
+	var item_menu: MenuButton = null
+	var has_creatures := false
+	for child: Node in row.get_children():
+		if child is MenuButton and child.text == "Item":
+			item_menu = child
+		if child is Button and child.text == "Creature":
+			has_creatures = true
+	assert(item_menu != null and item_menu.get_popup().item_count == 6,
+		"The runtime ribbon must expose all item actions")
+	assert(has_creatures, "The current ribbon must expose the creature archive")
 	var driver: CharacterBody3D = load("res://token.tscn").instantiate()
 	var rider: CharacterBody3D = load("res://token.tscn").instantiate()
 	board.tokens_root.add_child(driver)

@@ -51,7 +51,7 @@ func run() -> void:
 	assert(sync.valid_snapshot(data))
 	assert(not data.encounter.is_empty())
 	assert(data.initiative.active)
-	assert(data.initiative.entries.size() == 1)
+	assert(data.initiative.entries.size() == 2)
 
 	var serialized_token: Dictionary = {}
 	for item: Variant in data.objects:
@@ -75,17 +75,18 @@ func run() -> void:
 
 	var restored_initiative: Dictionary = initiative.call("get_save_state")
 	assert(restored_initiative.active)
-	assert(restored_initiative.entries.size() == 1)
-	assert(restored_initiative.entries[0].name == "Sync Hero")
-	assert(restored_initiative.entries[0].token_id == token_id)
-	assert(restored_initiative.active_index == 0)
+	assert(restored_initiative.entries.size() == 2)
+	assert(restored_initiative.entries[1].name == "Sync Hero")
+	assert(restored_initiative.entries[1].token_id == token_id)
+	assert(restored_initiative.active_index == 1)
+	assert(restored_initiative.entries[0].id == "initiative_environment")
 	assert(restored_initiative.round == 3)
 	assert(restored_initiative.turn_count == 7)
 
 	var again: Dictionary = sync.create_snapshot()
 	assert(again.objects.size() == data.objects.size())
 	assert(again.initiative.active)
-	assert(again.initiative.entries.size() == 1)
+	assert(again.initiative.entries.size() == 2)
 
 	scene.encounter.is_advancing = true
 	assert(sync.create_snapshot().is_empty())

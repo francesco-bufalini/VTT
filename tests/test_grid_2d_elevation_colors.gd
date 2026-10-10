@@ -15,10 +15,21 @@ func _check(condition: bool, message: String) -> bool:
 	return condition
 
 
-func _count_lower_tinted(mesh: MultiMesh, lower_color: Color) -> int:
+func _count_lower_tinted(grid: Node3D, mesh: MultiMesh, lower_color: Color) -> int:
 	var count: int = 0
+	var cells: Array = (grid.get("_active_occupied") as Dictionary).keys()
+	var camera: Camera3D = grid.get("_camera") as Camera3D
+	var in_2d: bool = bool(camera.call("is_top_down_2d"))
+	var floor_y: float = float(camera.call("get_top_down_level"))
 	for index: int in range(mesh.instance_count):
-		var tint: Color = mesh.get_instance_color(index)
+		# The headless dummy renderer returns black for all instance-color
+		# readbacks. Check production tint math there; real renderers also
+		# verify the actual per-instance color buffer.
+		var tint: Color = (
+			grid.call("_cell_instance_tint", cells[index], in_2d, floor_y)
+			if DisplayServer.get_name() == "headless"
+			else mesh.get_instance_color(index)
+		)
 		# Some Godot renderers pack per-instance colors to 8 bits.
 		if (
 			absf(tint.r - lower_color.r) < 0.02
@@ -73,7 +84,7 @@ func _run() -> void:
 	):
 		return
 	if not _check(
-		_count_lower_tinted(mesh, VolumetricGrid.GRID_LOWER_INSTANCE_TINT) == 1,
+		_count_lower_tinted(grid, mesh, VolumetricGrid.GRID_LOWER_INSTANCE_TINT) == 1,
 		"only squares fully below floor 0 should turn muted slate"
 	):
 		return
@@ -87,7 +98,7 @@ func _run() -> void:
 	camera.call("set_top_down_level", 2.0)
 	grid.call("_update_multimesh_instances")
 	if not _check(
-		_count_lower_tinted(mesh, VolumetricGrid.GRID_LOWER_INSTANCE_TINT) == 3
+		_count_lower_tinted(grid, mesh, VolumetricGrid.GRID_LOWER_INSTANCE_TINT) == 3
 		and mesh.instance_count == 4,
 		"changing levels must recolor existing instances without hiding them"
 	):
@@ -97,7 +108,7 @@ func _run() -> void:
 	grid.call("set_surface_overlay_bias_cells", 0.0)
 	grid.call("_update_multimesh_instances")
 	if not _check(
-		_count_lower_tinted(mesh, VolumetricGrid.GRID_LOWER_INSTANCE_TINT) == 0,
+		_count_lower_tinted(grid, mesh, VolumetricGrid.GRID_LOWER_INSTANCE_TINT) == 0,
 		"3D mode must restore the single original grid color"
 	):
 		return

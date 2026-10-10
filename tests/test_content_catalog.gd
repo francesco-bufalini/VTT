@@ -3,7 +3,7 @@ const Catalog = preload("res://vtt/content_catalog.gd")
 const Player = preload("res://vtt/player_5etools_catalog.gd")
 const Spells = preload("res://vtt/spells/spell_catalog.gd")
 const Token = preload("res://token.tscn")
-const Rules = preload("res://vtt/creature_rules.gd")
+const Trackers = preload("res://vtt/structured_resource_trackers.gd")
 
 func _initialize() -> void:
 	call_deferred("run")
@@ -60,8 +60,11 @@ func run() -> void:
 	assert(Player.entries("races").size() > 100)
 	assert(Player.entries("classes").size() > 20)
 	assert(Spells.catalog_spell("homebrew:regression:spells:spark").name == "Spark")
-	var resource := Rules.character_trackers({"classes": [{"name": "Mage", "id": "homebrew:regression:classes:mage", "level": 2}]})
-	assert(resource.size() == 1 and resource[0].maximum == 4)
+	var home_classes: Array[Dictionary] = Catalog.home_entries("classes")
+	assert(home_classes.size() == 1 and home_classes[0].id == "homebrew:regression:classes:mage")
+	assert(home_classes[0].trackers[0].maximum == 4, "Homebrew class metadata must survive catalog loading")
+	assert(Trackers.for_creature({"classes": [{"name": "Mage", "id": home_classes[0].id, "level": 2}]}).is_empty(),
+		"Retired legacy tracker metadata must not generate structured counters")
 	var features := Player.entries("class_features")
 	var described := false
 	for feature: Dictionary in features:

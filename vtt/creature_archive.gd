@@ -56,7 +56,7 @@ func save(record: Dictionary) -> Error:
 	if id.is_empty():
 		return ERR_INVALID_PARAMETER
 	var persisted := _stored(kind, id)
-	if not persisted.is_empty() and not CreatureOwner.is_owner(persisted):
+	if not CreatureOwner.can_edit(record, persisted):
 		return ERR_UNAUTHORIZED
 	if kind == "monster":
 		var monsters: Array[Dictionary] = _monsters.list_creatures()
@@ -82,7 +82,7 @@ func delete(record: Dictionary) -> Error:
 	var persisted := _stored(kind, id)
 	if persisted.is_empty():
 		return ERR_DOES_NOT_EXIST
-	if not CreatureOwner.is_owner(persisted):
+	if not CreatureOwner.can_edit(record, persisted):
 		return ERR_UNAUTHORIZED
 	if kind == "monster":
 		var monsters: Array[Dictionary] = _monsters.list_creatures()
@@ -109,7 +109,7 @@ func relinquish(record: Dictionary, new_owner: String) -> Dictionary:
 		return {}
 	var transferred := record.duplicate(true)
 	var persisted := _stored(String(record.get("kind", "")), String(record.get("id", "")))
-	if persisted.is_empty() or not CreatureOwner.is_owner(persisted):
+	if persisted.is_empty() or not CreatureOwner.can_edit(record, persisted):
 		return {}
 	transferred["owner_id"] = target
 	transferred["transfer_revision"] = int(persisted.get("transfer_revision", 0)) + 1

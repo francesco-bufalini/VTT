@@ -53,9 +53,9 @@ func _run() -> void:
 	ruler.call("set_camera", camera)
 
 	var token: PickToken = PickToken.new()
-	token.global_position = Vector3(2.5, 7.0, 4.5)
 	token.add_to_group("dnd_token")
 	board.add_child(token)
+	token.global_position = Vector3(2.5, 7.0, 4.5)
 	board.candidate = token
 	var expected := Vector3(2.5, 5.5, 4.5)
 	if not _check(

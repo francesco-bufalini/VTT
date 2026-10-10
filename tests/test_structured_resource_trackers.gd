@@ -72,5 +72,5 @@ func run() -> void:
 	assert(int(_find_resource(monster, "Flame Breath").get("recharge_min", 0)) == 5)
 	assert(int(_find_resource(monster, "Shadow Breath").get("recharge_min", 0)) == 6)
 	assert(_find_resource(monster, "Legendary Resistance").is_empty())
-	print("Structured 5etools resource trackers: PASS")
+	print("PASS: structured 5etools resource trackers")
 	quit()
