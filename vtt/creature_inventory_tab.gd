@@ -3,6 +3,8 @@ extends VBoxContainer
 # Private creature inventory. These are catalog references, not scene items:
 # placing or deleting physical objects on the board never changes a sheet.
 const Player5eTools = preload("res://vtt/player_5etools_catalog.gd")
+const DocumentsTab = preload("res://vtt/creature_documents_tab.gd")
+const ItemImagePreview = preload("res://vtt/item_image_preview.gd")
 
 var _on_change: Callable
 var _on_status: Callable
@@ -18,11 +20,19 @@ var _quantity: SpinBox
 var _details: RichTextLabel
 var _add_button: Button
 var _remove_button: Button
+var _documents_tab: Node
+var _image_preview: AcceptDialog
+var _document_change: Callable
+var _send_document: Callable
+var _peer_provider: Callable
 
 
-func setup(on_change: Callable, on_status: Callable) -> void:
+func setup(on_change: Callable, on_status: Callable, on_document_change: Callable = Callable(), send_document: Callable = Callable(), peer_provider: Callable = Callable()) -> void:
 	_on_change = on_change
 	_on_status = on_status
+	_document_change = on_document_change
+	_send_document = send_document
+	_peer_provider = peer_provider
 	add_theme_constant_override("separation", 7)
 	var heading := Label.new()
 	heading.text = "Inventario · Catalogo e oggetti personalizzati"
@@ -39,6 +49,7 @@ func setup(on_change: Callable, on_status: Callable) -> void:
 	_catalog_list.custom_minimum_size.y = 145
 	_catalog_list.size_flags_horizontal = Control.SIZE_EXPAND_FILL
 	_catalog_list.item_selected.connect(_on_catalog_selected)
+	_catalog_list.gui_input.connect(_on_image_click.bind(true))
 	_catalog_list.item_activated.connect(func(_index: int) -> void: _add_selected())
 	add_child(_catalog_list)
 	_add_button = Button.new()
@@ -54,6 +65,7 @@ func setup(on_change: Callable, on_status: Callable) -> void:
 	_inventory_list.custom_minimum_size.y = 145
 	_inventory_list.size_flags_horizontal = Control.SIZE_EXPAND_FILL
 	_inventory_list.item_selected.connect(_on_inventory_selected)
+	_inventory_list.gui_input.connect(_on_image_click.bind(false))
 	add_child(_inventory_list)
 
 	var actions := HBoxContainer.new()
