@@ -13,6 +13,7 @@ const SpellcastingTab = preload("res://vtt/creature_spellcasting_tab.gd")
 const FiveToolsText = preload("res://vtt/five_tools_rich_text.gd")
 const StructuredTrackers = preload("res://vtt/structured_resource_trackers.gd")
 const ManualBonus = preload("res://vtt/manual_bonus_style.gd")
+const FormulaValue = preload("res://vtt/formula_value.gd")
 const InventoryTab = preload("res://vtt/creature_inventory_tab.gd")
 const TraitsTab = preload("res://vtt/creature_traits_tab.gd")
 const DialogLayout = preload("res://vtt/dialog_layout.gd")
@@ -88,6 +89,7 @@ var _speed: SpinBox
 var _speed_bonus: SpinBox
 var _speed_effective: Label
 var _ability_total_labels: Dictionary = {}
+var _formula_values: Dictionary = {}
 var _temp_hp: SpinBox
 var _hp_delta_dialog: ConfirmationDialog
 var _hp_delta_sign := -1
@@ -630,8 +632,6 @@ func _build_ui() -> void:
 	_max_hp_effective = Label.new()
 	_max_hp_effective.tooltip_text = "PF massimi effettivi"
 	health.add_child(_max_hp_effective)
-	_add_formula_label(health, "=")
-	_add_formula_label(health, "(")
 	_max_hp = _spin(health, 0, 99999)
 	_max_hp.custom_minimum_size = Vector2(62, 36)
 	_max_hp.size_flags_horizontal = Control.SIZE_SHRINK_BEGIN
@@ -640,7 +640,7 @@ func _build_ui() -> void:
 	_max_hp_bonus.custom_minimum_size = Vector2(60, 36)
 	_max_hp_bonus.tooltip_text = "Bonus manuale ai PF massimi"
 	ManualBonus.decorate(_max_hp_bonus)
-	_add_formula_label(health, ")")
+	_install_formula("hp", _max_hp_effective, [_max_hp, _max_hp_bonus], ["Base", "Bonus"])
 	# HP actions belong on the same row, directly before temporary HP.
 	var health_actions := HBoxContainer.new()
 	health.add_child(health_actions)
@@ -678,11 +678,15 @@ func _build_ui() -> void:
 	_add_label(form_hp_row, "/")
 	_second_form_max_hp = _spin(form_hp_row, 0, 99999)
 	_second_form_max_hp.custom_minimum_size.x = 78
+	var second_max_label := Label.new()
+	form_hp_row.add_child(second_max_label)
+	_install_formula("second_max", second_max_label, [_second_form_max_hp], ["Massimo"])
 	_second_form_max_hp.value_changed.connect(func(_v: float) -> void:
 		if not _loading and int(_second_form_hp.value) > int(_second_form_max_hp.value):
 			_second_form_hp.value = _second_form_max_hp.value
 	)
 	_second_form_hp.tooltip_text = "PF attuali della seconda forma; si consumano dopo quelli temporanei."
+	_second_form_max_hp.value_changed.connect(func(_v: float) -> void: _update_second_max_formula())
 	_second_form_max_hp.tooltip_text = "PF massimi della seconda forma (polimorfia o forma selvatica)"
 	var defense_flow := HFlowContainer.new()
 	defense_flow.add_theme_constant_override("h_separation", 8)
@@ -695,8 +699,6 @@ func _build_ui() -> void:
 	_ac_effective = Label.new()
 	_ac_effective.custom_minimum_size.x = 28
 	temp_health.add_child(_ac_effective)
-	_add_formula_label(temp_health, "=")
-	_add_formula_label(temp_health, "(")
 	_ac = _spin(temp_health, 0, 99)
 	_ac.custom_minimum_size = Vector2(62, 36)
 	_ac.tooltip_text = "Classe Armatura base, senza bonus manuali"
@@ -704,7 +706,7 @@ func _build_ui() -> void:
 	_ac_bonus.custom_minimum_size = Vector2(60, 36)
 	_ac_bonus.tooltip_text = "Bonus manuale alla Classe Armatura"
 	ManualBonus.decorate(_ac_bonus)
-	_add_formula_label(temp_health, ")")
+	_install_formula("ac", _ac_effective, [_ac, _ac_bonus], ["Base", "Bonus"])
 	_ac.size_flags_horizontal = Control.SIZE_SHRINK_BEGIN
 	var movement_row := HBoxContainer.new()
 	movement_row.add_theme_constant_override("separation", 6)
@@ -713,8 +715,6 @@ func _build_ui() -> void:
 	_initiative_effective = Label.new()
 	_initiative_effective.custom_minimum_size.x = 32
 	movement_row.add_child(_initiative_effective)
-	_add_formula_label(movement_row, "=")
-	_add_formula_label(movement_row, "(")
 	_initiative = _spin(movement_row, -99, 99)
 	_initiative.custom_minimum_size = Vector2(62, 36)
 	_initiative.tooltip_text = "Iniziativa base, calcolata dal modificatore di Destrezza"
@@ -722,12 +722,14 @@ func _build_ui() -> void:
 	_initiative_bonus.custom_minimum_size = Vector2(60, 36)
 	_initiative_bonus.tooltip_text = "Bonus manuale all'iniziativa"
 	ManualBonus.decorate(_initiative_bonus)
-	_add_formula_label(movement_row, ")")
+	_initiative.hide() # The DEX-derived part must never become editable.
+	_install_formula("initiative", _initiative_effective, [_initiative_bonus], ["Bonus"])
 	var speed_row := HBoxContainer.new()
 	speed_row.add_theme_constant_override("separation", 4)
 	defense_flow.add_child(speed_row)
 	_add_label(speed_row, "👟 Velocità (ft)")
-	_add_formula_label(speed_row, "(")
+	_speed_effective = Label.new()
+	speed_row.add_child(_speed_effective)
 	_speed = SpinBox.new()
 	_speed.min_value = 0
 	_speed.max_value = 999
@@ -741,10 +743,7 @@ func _build_ui() -> void:
 	_speed_bonus.custom_minimum_size = Vector2(65, 36)
 	_speed_bonus.tooltip_text = "Bonus manuale alla velocità"
 	ManualBonus.decorate(_speed_bonus)
-	_add_formula_label(speed_row, ")")
-	_add_formula_label(speed_row, "=")
-	_speed_effective = Label.new()
-	speed_row.add_child(_speed_effective)
+	_install_formula("speed", _speed_effective, [_speed, _speed_bonus], ["Base", "Bonus"])
 	_speed.value_changed.connect(func(_value: float) -> void: _update_speed_display())
 	_speed_bonus.value_changed.connect(func(_value: float) -> void: _update_speed_display())
 	_ac.value_changed.connect(func(_value: float) -> void: _update_defense_display())
@@ -790,11 +789,11 @@ func _build_ui() -> void:
 		bonus.tooltip_text = "Bonus manuale al punteggio: compensa effetti non ancora gestiti automaticamente"
 		ManualBonus.decorate(bonus)
 		_ability_bonus_spins[ability] = bonus
-		_add_formula_label(scores_row, "=")
 		var total_score := Label.new()
 		total_score.custom_minimum_size.x = 28
 		scores_row.add_child(total_score)
 		_ability_total_labels[ability] = total_score
+		_install_formula("ability:" + ability, total_score, [spin, bonus], ["Base", "Bonus"])
 		var modifier := Label.new()
 		modifier.custom_minimum_size.x = 42
 		modifier.tooltip_text = "Modificatore calcolato dal punteggio e dal bonus"
@@ -1574,6 +1573,23 @@ func _add_label(parent: Node, text_value: String) -> void:
 	parent.add_child(label)
 
 
+# Existing controls keep their save signals; only their display is compacted.
+func _install_formula(key: String, label: Label, inputs: Array, captions: Array) -> void:
+	var parent: Node = label.get_parent()
+	var index: int = label.get_index()
+	parent.remove_child(label)
+	var widget := FormulaValue.new()
+	parent.add_child(widget)
+	parent.move_child(widget, index)
+	widget.setup(label, inputs, captions)
+	_formula_values[key] = widget
+
+
+func _set_formula(key: String, text_value: String, explanation: String) -> void:
+	if _formula_values.has(key):
+		_formula_values[key].set_formula(text_value, explanation)
+
+
 func _spin(parent: Node, minimum: int, maximum: int) -> SpinBox:
 	var spin := SpinBox.new()
 	spin.min_value = minimum
@@ -1935,6 +1951,7 @@ func _load_form(record: Dictionary) -> void:
 	_temp_hp.value = int(record.get("temporary_hp", 0))
 	_second_form_max_hp.value = int(record.get("second_form_max_hp", record.get("second_form_hp", 0)))
 	_second_form_hp.value = int(record.get("second_form_hp", 0))
+	_update_second_max_formula()
 	var biography: String = String(record.get("background_personality", ""))
 	if biography.strip_edges().is_empty():
 		var legacy_parts: PackedStringArray = []
@@ -2131,7 +2148,10 @@ func _on_speed_changed(_value: float) -> void:
 
 func _update_speed_display() -> void:
 	if _speed_effective != null and _speed != null and _speed_bonus != null:
-		_speed_effective.text = str(maxi(0, int(_speed.value) + int(_speed_bonus.value)))
+		var base: int = int(_speed.value)
+		var bonus: int = int(_speed_bonus.value)
+		_set_formula("speed", str(maxi(0, base + bonus)),
+			"Velocità: base %d %+d bonus = %d ft" % [base, bonus, maxi(0, base + bonus)])
 
 
 # The creature sheet casts from class, available and searched spells alike.
@@ -2403,15 +2423,32 @@ func _update_defense_display() -> void:
 		var current: Dictionary = _current()
 		var shield: int = ItemRules.shield_bonus(current.get("inventory", []))
 		_ac_effective.text = str(maxi(0, int(_ac.value) + int(_ac_bonus.value) + shield))
-		_ac_effective.tooltip_text = "Incluso scudo equipaggiato: %+d CA" % shield
+		_set_formula("ac", _ac_effective.text,
+			"CA: base %d %+d bonus %+d scudo = %s" % [
+				int(_ac.value), int(_ac_bonus.value), shield, _ac_effective.text
+			])
 	if _initiative != null and _initiative_bonus != null and _initiative_effective != null:
 		_initiative_effective.text = "%+d" % (int(_initiative.value) + int(_initiative_bonus.value))
+		_set_formula("initiative", _initiative_effective.text,
+			"Iniziativa: base %+d (Destrezza) %+d bonus = %s" % [
+				int(_initiative.value), int(_initiative_bonus.value), _initiative_effective.text
+			])
 
 
 func _update_max_hp_display() -> void:
 	if _max_hp_effective == null or _max_hp_bonus == null or _max_hp == null:
 		return
 	_max_hp_effective.text = str(maxi(0, int(_max_hp.value) + int(_max_hp_bonus.value)))
+	_set_formula("hp", _max_hp_effective.text,
+		"PF massimi: base %d %+d bonus = %s" % [
+			int(_max_hp.value), int(_max_hp_bonus.value), _max_hp_effective.text
+		])
+
+
+func _update_second_max_formula() -> void:
+	if _second_form_max_hp != null:
+		_set_formula("second_max", str(int(_second_form_max_hp.value)),
+			"PF massimi della seconda forma: %d (valore manuale)" % int(_second_form_max_hp.value))
 
 
 func _get_document_peers() -> Array[Dictionary]:
@@ -2546,6 +2583,10 @@ func _update_ability_modifier(ability: String) -> void:
 	(_ability_modifier_labels[ability] as Label).text = "%+d" % value
 	if _ability_total_labels.has(ability):
 		(_ability_total_labels[ability] as Label).text = str(score + bonus)
+		_set_formula("ability:" + ability, str(score + bonus),
+			"%s: base %d %+d bonus = %d (mod. %+d)" % [
+				ability.to_upper(), score, bonus, score + bonus, value
+			])
 	if ability == "dex" and _initiative != null and not _loading:
 		_initiative.value = value
 		_update_defense_display()
@@ -3148,13 +3189,12 @@ func _refresh_trackers(record: Dictionary) -> void:
 		consume.pressed.connect(_change_tracker.bind(id, 1, maximum))
 		row.add_child(consume)
 		var remaining := Label.new()
-		remaining.text = "%d / %d" % [maximum - used, maximum]
+		remaining.text = "%d /" % (maximum - used)
 		remaining.custom_minimum_size.x = 50
 		remaining.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
 		row.add_child(remaining)
-		_add_formula_label(row, "=")
-		_add_formula_label(row, "(")
-		_add_label(row, str(base_maximum))
+		var maximum_label := Label.new()
+		row.add_child(maximum_label)
 		var manual_bonus := SpinBox.new()
 		manual_bonus.min_value = -999
 		manual_bonus.max_value = 9999
@@ -3167,7 +3207,14 @@ func _refresh_trackers(record: Dictionary) -> void:
 		ManualBonus.decorate(manual_bonus)
 		manual_bonus.value_changed.connect(_change_tracker_bonus.bind(id))
 		row.add_child(manual_bonus)
-		_add_formula_label(row, ")")
+		var max_index: int = maximum_label.get_index()
+		row.remove_child(maximum_label)
+		var formula := FormulaValue.new()
+		row.add_child(formula)
+		row.move_child(formula, max_index)
+		formula.setup(maximum_label, [manual_bonus], ["Bonus"])
+		formula.set_formula(str(maximum),
+			"%s: base %d %+d bonus = %d" % [title, base_maximum, int(bonuses.get(id, 0)), maximum])
 		var restore := Button.new()
 		restore.text = "+"
 		restore.tooltip_text = "Recupera un utilizzo"
