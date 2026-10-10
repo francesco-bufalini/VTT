@@ -35,7 +35,7 @@ var _creature_list: VBoxContainer
 var _creature_filter: LineEdit
 var _creature_empty: Label
 var _abilities_grid: GridContainer
-var _statistics_columns: HBoxContainer
+var _statistics_columns: GridContainer
 var _skills_panel: VBoxContainer
 var _skill_buttons: Dictionary = {}
 var _skill_values: Dictionary = {}
@@ -44,7 +44,6 @@ var _skill_ranks_custom := false
 var _proficiency_display: Label
 var _passive_perception: Label
 var _attacks_description: RichTextLabel
-var _custom_attacks: TextEdit
 var _creature_list_scroll: ScrollContainer
 var _creature_row_buttons: Array[Button] = []
 var _creature_eye_buttons: Array[Button] = []
@@ -508,8 +507,10 @@ func _build_ui() -> void:
 	columns.add_child(_tabs)
 	var form := _add_sheet_tab(_tabs, "Info")
 	var statistics_tab := _add_sheet_tab(_tabs, "Statistiche")
-	_statistics_columns = HBoxContainer.new()
-	_statistics_columns.add_theme_constant_override("separation", 12)
+	_statistics_columns = GridContainer.new()
+	_statistics_columns.columns = 2
+	_statistics_columns.add_theme_constant_override("h_separation", 10)
+	_statistics_columns.add_theme_constant_override("v_separation", 12)
 	_statistics_columns.size_flags_horizontal = Control.SIZE_EXPAND_FILL
 	statistics_tab.add_child(_statistics_columns)
 	var skills_column := VBoxContainer.new()
@@ -620,7 +621,7 @@ func _build_ui() -> void:
 	# HP actions belong on the same row, directly before temporary HP.
 	var health_actions := HBoxContainer.new()
 	health.add_child(health_actions)
-	_add_label(health, "🛡 TEMP")
+	_add_label(health, "💙 TEMP")
 	_temp_hp = _spin(health, 0, 99999)
 	_temp_hp.custom_minimum_size.x = 64
 	_max_hp.value_changed.connect(func(_v: float) -> void: _update_max_hp_display())
@@ -684,7 +685,7 @@ func _build_ui() -> void:
 	var reach_row := HBoxContainer.new()
 	reach_row.add_theme_constant_override("separation", 6)
 	defense_flow.add_child(reach_row)
-	_add_label(reach_row, "🏹 Gittata base (ft)")
+	_add_label(reach_row, "📏 Gittata base (ft)")
 	_reach = _spin(reach_row, 5, 1000)
 	_reach.step = 5.0
 	_reach.custom_minimum_size.x = 70
@@ -706,8 +707,11 @@ func _build_ui() -> void:
 	_initiative_bonus.tooltip_text = "Bonus manuale all'iniziativa"
 	ManualBonus.decorate(_initiative_bonus)
 	_add_formula_label(movement_row, ")")
-	_add_label(movement_row, "👟 Velocità (ft)")
-	_add_formula_label(movement_row, "(")
+	var speed_row := HBoxContainer.new()
+	speed_row.add_theme_constant_override("separation", 4)
+	defense_flow.add_child(speed_row)
+	_add_label(speed_row, "👟 Velocità (ft)")
+	_add_formula_label(speed_row, "(")
 	_speed = SpinBox.new()
 	_speed.min_value = 0
 	_speed.max_value = 999
@@ -715,16 +719,16 @@ func _build_ui() -> void:
 	_speed.update_on_text_changed = true
 	_speed.custom_minimum_size = Vector2(69, 36)
 	_speed.value_changed.connect(_on_speed_changed)
-	movement_row.add_child(_speed)
+	speed_row.add_child(_speed)
 	_speed.tooltip_text = "Velocità dalla specie o dal bestiario, modificabile"
-	_speed_bonus = _spin(movement_row, -999, 999)
+	_speed_bonus = _spin(speed_row, -999, 999)
 	_speed_bonus.custom_minimum_size = Vector2(65, 36)
 	_speed_bonus.tooltip_text = "Bonus manuale alla velocità"
 	ManualBonus.decorate(_speed_bonus)
-	_add_formula_label(movement_row, ")")
-	_add_formula_label(movement_row, "=")
+	_add_formula_label(speed_row, ")")
+	_add_formula_label(speed_row, "=")
 	_speed_effective = Label.new()
-	movement_row.add_child(_speed_effective)
+	speed_row.add_child(_speed_effective)
 	_speed.value_changed.connect(func(_value: float) -> void: _update_speed_display())
 	_speed_bonus.value_changed.connect(func(_value: float) -> void: _update_speed_display())
 	_ac.value_changed.connect(func(_value: float) -> void: _update_defense_display())
@@ -740,8 +744,8 @@ func _build_ui() -> void:
 	abilities_panel.add_theme_stylebox_override("panel", abilities_style)
 	_abilities_grid = GridContainer.new()
 	var abilities_row := _abilities_grid
-	# Use the available tab width to keep ability controls readable.
-	abilities_row.columns = 2
+	# In a split sheet, two score boxes side by side are too wide.
+	abilities_row.columns = 1
 	abilities_row.add_theme_constant_override("h_separation", 8)
 	abilities_row.add_theme_constant_override("v_separation", 7)
 	var ability_title := Label.new()
@@ -834,12 +838,6 @@ func _build_ui() -> void:
 	_attacks_description.selection_enabled = true
 	FiveToolsText.style(_attacks_description)
 	combat_column.add_child(_attacks_description)
-	_add_label(combat_column, "Attacchi personali (uno per riga)")
-	_custom_attacks = TextEdit.new()
-	_custom_attacks.custom_minimum_size.y = 95
-	_custom_attacks.wrap_mode = TextEdit.LINE_WRAPPING_BOUNDARY
-	_custom_attacks.text_changed.connect(_save)
-	combat_column.add_child(_custom_attacks)
 
 	var species_row := HBoxContainer.new()
 	form.add_child(species_row)
@@ -904,6 +902,9 @@ func _build_ui() -> void:
 	combat_column.add_child(tracker_caption)
 	_tracker_rows = VBoxContainer.new()
 	combat_column.add_child(_tracker_rows)
+	# Keep consumable resources above the attack list in combat statistics.
+	combat_column.move_child(tracker_caption, attack_header.get_index())
+	combat_column.move_child(_tracker_rows, attack_header.get_index())
 	var biography_label := Label.new()
 	biography_label.text = "📜 Background / personalità"
 	biography_label.add_theme_font_size_override("font_size", 17)
@@ -1851,12 +1852,16 @@ func _update_sheet_layout() -> void:
 	_creature_list_scroll.custom_minimum_size.y = minf(float(mini(maxi(visible_rows, 1), 7) * 37 + 6), row_budget)
 	if _abilities_grid == null or _abilities_grid.get_child_count() == 0:
 		return
-	var cell_width := (_abilities_grid.get_child(0) as Control).get_combined_minimum_size().x
-	var available_width := viewport_size.x - _tabs.get_global_rect().position.x - 30.0
-	var separation := _abilities_grid.get_theme_constant("h_separation")
-	# Two statistics columns own half of the sheet, not the full viewport.
-	var column_width := maxf(100.0, (available_width - 16.0) / 2.0)
-	_abilities_grid.columns = 2 if column_width >= cell_width * 2.0 + separation else 1
+	# Use the actual inner tab width, not the outer viewport: the sidebar
+	# already consumes space. Stack both sections when a split won't fit.
+	var tab_width: float = _tabs.size.x
+	_statistics_columns.columns = 2 if tab_width >= 850.0 else 1
+	var cell_width: float = (_abilities_grid.get_child(0) as Control).get_combined_minimum_size().x
+	var gap_width: float = _abilities_grid.get_theme_constant("h_separation")
+	_abilities_grid.columns = (
+		2 if _statistics_columns.columns == 1 and tab_width >= cell_width * 2.0 + gap_width + 60.0
+		else 1
+	)
 
 
 func _on_selected(index: int) -> void:
@@ -1911,7 +1916,6 @@ func _load_form(record: Dictionary) -> void:
 			else 1 if known_proficiencies is Array and key in known_proficiencies
 			else 0
 		)
-	_custom_attacks.text = String(record.get("attacks", ""))
 	_refresh_attacks(record)
 	var abilities_value: Variant = record.get("abilities", {})
 	var abilities: Dictionary = (
@@ -2192,6 +2196,18 @@ func _refresh_attacks(record: Dictionary) -> void:
 		for item: Dictionary in Player5eTools.entries("items"):
 			if ids.has(String(item.get("id", ""))) and not String(item.get("weapon_category", "")).is_empty():
 				lines.append(FiveToolsText.subtitle(String(item.get("name", ""))) + " · arma nell'inventario")
+	if String(record.get("kind", "")) != "monster":
+		var abilities: Dictionary = record.get("abilities", {})
+		var bonuses: Dictionary = record.get("ability_bonuses", {})
+		var strength: int = Rules.ability_modifier(
+			int(abilities.get("str", 10)) + int(bonuses.get("str", 0))
+		)
+		var hit_bonus: int = strength + _creature_proficiency(record)
+		lines.push_front(
+			FiveToolsText.subtitle("Colpo senz'armi")
+			+ " · Mischia, portata 5 ft; colpire %+d; danni contundenti %d"
+			% [hit_bonus, maxi(0, 1 + strength)]
+		)
 	if lines.is_empty():
 		lines.append("Nessun attacco del bestiario o arma nell'inventario.")
 	_attacks_description.text = "\n\n".join(lines)
@@ -2355,7 +2371,6 @@ func _save() -> void:
 	record["skill_expertise"] = expertise
 	if _skill_ranks_custom:
 		record["skill_ranks_custom"] = true
-	record["attacks"] = _custom_attacks.text
 	record["default_miniature_id"] = _default_miniature_id
 	if String(record.get("kind", "")) == "monster":
 		var stat: Dictionary = record.get("stat_block", {})
