@@ -594,7 +594,8 @@ func _build_ui() -> void:
 		"setup",
 		Callable(self, "_on_spellcasting_updated"),
 		Callable(self, "_set_status"),
-		Callable(self, "_on_spellcasting_cast_requested")
+		Callable(self, "_on_spellcasting_cast_requested"),
+		Callable(self, "_on_formula_bonus_requested")
 	)
 	var inventory_tab := _add_sheet_tab(_tabs, "Inventario")
 	_inventory_ui = InventoryTab.new()
@@ -2485,11 +2486,7 @@ func _on_spellcasting_updated(values: Dictionary) -> void:
 
 
 func _creature_proficiency(record: Dictionary) -> int:
-	if String(record.get("kind", "")) == "monster":
-		var stat: Dictionary = record.get("stat_block", {})
-		var cr: float = Rules.monster_cr_value(stat)
-		return 2 + maxi(0, floori((cr - 1.0) / 4.0))
-	return Rules.proficiency_bonus(record)
+	return BonusRules.value(record, "proficiency")
 
 
 func _refresh_skill_values(record: Dictionary) -> void:
@@ -2919,7 +2916,8 @@ func _refresh_attack_values(record: Dictionary) -> void:
 			var base: int = int(settings.get("range_feet", attack.get("range_feet", 5)))
 			var bonus: int = int(settings.get("range_bonus", 0))
 			_set_formula("attack_range:" + attack_id, "%d ft" % AttackData.range_for(record, attack),
-				"Gittata: base %d ft %+d ft bonus = %d ft" % [base, bonus, AttackData.range_for(record, attack)])
+				"Gittata: base %d ft %+d ft manuale %+d ft origini = %d ft" % [base, bonus,
+					BonusRules.bonus(record, "attack_range:" + attack_id), AttackData.range_for(record, attack)])
 
 
 func _on_attack_ability_changed(_index: int) -> void:
