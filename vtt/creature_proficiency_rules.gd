@@ -31,10 +31,6 @@ static func normalized_key(value: String) -> String:
 	return value.strip_edges().to_lower()
 
 
-static func selection_id(kind: String, key: String) -> String:
-	return kind + "|" + normalized_key(key)
-
-
 static func choices(record: Dictionary) -> Array[Dictionary]:
 	var raw: Variant = record.get("proficiency_choices", [])
 	var result: Array[Dictionary] = []
@@ -247,7 +243,6 @@ static func grant_matches(grants: Variant, kind: String, key: String) -> int:
 			var options: Variant = choose.get("from", [])
 			if options is Array and wanted in options:
 				best = maxi(best, 1)
-			var from_filter := String(choose.get("fromFilter", "")).to_lower()
 			# fromFilter selects individual items, never a whole category.
 			if options is Array and options.is_empty() and choose.has("any"):
 				best = maxi(best, 1)
@@ -274,10 +269,16 @@ static func _tool_type(key: String) -> String:
 
 
 static func _language_group(key: String) -> String:
+	var fallback := ""
 	for item: Dictionary in Catalog.entries("languages"):
-		if normalized_key(String(item.get("name", ""))) == key:
-			return String(item.get("type", "")).to_lower()
-	return ""
+		if normalized_key(String(item.get("name", ""))) != key:
+			continue
+		var type_name := String(item.get("type", "")).to_lower()
+		if String(item.get("source", "")) == "PHB":
+			return type_name
+		if fallback.is_empty() and type_name in ["standard", "exotic"]:
+			fallback = type_name
+	return fallback
 
 
 static func suggest_origins(record: Dictionary, kind: String, key: String) -> Array[Dictionary]:
