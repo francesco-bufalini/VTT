@@ -29,7 +29,8 @@ func _record() -> Dictionary:
 		"attack_overrides": {"item:weapon:rapier|phb|m": {"proficient": true}},
 		"skill_proficiencies": ["athletics"], "skill_expertise": [],
 		"saving_throw_proficiencies": [],
-		"proficiency_choices": []
+		"proficiency_choices": [{"kind": "skill", "key": "athletics", "origin_id": "",
+			"origin_name": "", "disabled": false}]
 	}
 
 
