@@ -18,6 +18,7 @@ var _mutual_material: StandardMaterial3D
 var _mutual_outline_material: StandardMaterial3D
 var _elapsed := 0.0
 var _flanked_ids: Dictionary = {}
+var _last_flanking_state: Array[Dictionary] = []
 var _screen_reach_arrows: Array[Vector3] = []
 var _screen_mutual_markers: Array[Vector3] = []
 var _screen_reach_links: Array[Dictionary] = []
@@ -55,7 +56,7 @@ func refresh_now() -> void:
 		):
 			tokens.append(node as CharacterBody3D)
 
-	_flanked_ids.clear()
+	var current_state: Array[Dictionary] = []
 	var visible_badge_targets: Dictionary = {}
 	# The hitbox and faction for each token are invariant for this refresh.
 	# Gather hostile attackers within melee reach once per target; test pairs
@@ -63,48 +64,62 @@ func refresh_now() -> void:
 	var half_extents: Dictionary = {}
 	var parties: Dictionary = {}
 	for token: CharacterBody3D in tokens:
-		token.set_meta("flanked", false)
 		half_extents[token.get_instance_id()] = _token_half_extents(token)
 		parties[token.get_instance_id()] = _party_key(token)
 
 	var arrow_points: Array[Vector3] = []
 	var mutual_marker_points: Array[Vector3] = []
-	for target: CharacterBody3D in tokens:
-		var target_id := target.get_instance_id()
-		var eligible: Array[CharacterBody3D] = []
-		for attacker: CharacterBody3D in tokens:
-			if attacker == target:
+	for token: CharacterBody3D in tokens:
+		current_state.append({
+			"id": token.get_instance_id(),
+			"position": token.global_position,
+			"half": half_extents[token.get_instance_id()],
+			"party": parties[token.get_instance_id()],
+			"reach": float(token.call("get_reach_feet")) if token.has_method("get_reach_feet") else 5.0
+		})
+	if current_state != _last_flanking_state:
+		_last_flanking_state = current_state
+		_flanked_ids.clear()
+		for target: CharacterBody3D in tokens:
+			var target_id := target.get_instance_id()
+			var eligible: Array[CharacterBody3D] = []
+			for attacker: CharacterBody3D in tokens:
+				if attacker == target:
+					continue
+				if not party_keys_are_enemies(
+					String(parties[attacker.get_instance_id()]),
+					String(parties[target_id])
+				):
+					continue
+				if _token_reaches_target(attacker, target):
+					eligible.append(attacker)
+			if eligible.size() < 2:
 				continue
-			if not party_keys_are_enemies(
-				String(parties[attacker.get_instance_id()]),
-				String(parties[target_id])
-			):
-				continue
-			if _token_reaches_target(attacker, target):
-				eligible.append(attacker)
-		if eligible.size() < 2:
-			continue
 
-		var target_half: Vector3 = half_extents[target_id]
-		var found := false
-		for i: int in range(eligible.size() - 1):
-			var first: CharacterBody3D = eligible[i]
-			var first_half: Vector3 = half_extents[first.get_instance_id()]
-			for j: int in range(i + 1, eligible.size()):
-				var second: CharacterBody3D = eligible[j]
-				var second_half: Vector3 = half_extents[second.get_instance_id()]
-				if flanking_segment(
-					first.global_position, first_half,
-					second.global_position, second_half,
-					target.global_position, target_half
-				).size() == 2:
-					found = true
+			var target_half: Vector3 = half_extents[target_id]
+			var found := false
+			for i: int in range(eligible.size() - 1):
+				var first: CharacterBody3D = eligible[i]
+				var first_half: Vector3 = half_extents[first.get_instance_id()]
+				for j: int in range(i + 1, eligible.size()):
+					var second: CharacterBody3D = eligible[j]
+					var second_half: Vector3 = half_extents[second.get_instance_id()]
+					if flanking_segment(
+						first.global_position, first_half,
+						second.global_position, second_half,
+						target.global_position, target_half
+					).size() == 2:
+						found = true
+						break
+				if found:
 					break
 			if found:
-				break
-		if found:
-			_flanked_ids[target_id] = true
-			target.set_meta("flanked", true)
+				_flanked_ids[target_id] = true
+				target.set_meta("flanked", true)
+
+
+	for token: CharacterBody3D in tokens:
+		token.set_meta("flanked", _flanked_ids.has(token.get_instance_id()))
 
 	# Reach arrows are a tactical hostility layer: every token points only
 	# toward enemy-party tokens currently inside its own reach. Selection and
