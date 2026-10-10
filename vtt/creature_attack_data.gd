@@ -105,6 +105,13 @@ static func definitions(record: Dictionary) -> Array[Dictionary]:
 			"source": "unarmed", "melee": true, "range_feet": 5,
 			"proficient": true, "damage": "", "base_hit": 0
 		})
+		# Keep both fallback attacks in the underlying definitions. The sheet
+		# hides them while a weapon (but not a shield) is equipped.
+		result.append({
+			"id": "improvised", "name": "Arma improvvisata",
+			"source": "improvised", "melee": true, "range_feet": 5,
+			"proficient": false, "damage": "1d4", "base_hit": 0
+		})
 	return result
 
 
@@ -150,7 +157,7 @@ static func _attack_ability_modifier(record: Dictionary, attack: Dictionary) -> 
 		var scores: Dictionary = record.get("abilities", {})
 		var bonuses: Dictionary = record.get("ability_bonuses", {})
 		return Rules.ability_modifier(int(scores.get(ability, 10)) + int(bonuses.get(ability, 0)))
-	if String(attack.get("id", "")) == "unarmed":
+	if String(attack.get("id", "")) in ["unarmed", "improvised"]:
 		var scores: Dictionary = record.get("abilities", {})
 		var bonuses: Dictionary = record.get("ability_bonuses", {})
 		return Rules.ability_modifier(int(scores.get("str", 10)) + int(bonuses.get("str", 0)))
@@ -186,6 +193,8 @@ static func damage_label(record: Dictionary, attack: Dictionary) -> String:
 	modifier += int(settings.get("bonus", 0)) + _weapon_magic_bonus(attack)
 	if String(attack.get("id", "")) == "unarmed":
 		return str(maxi(1, 1 + modifier)) + " contundenti"
+	if String(attack.get("id", "")) == "improvised":
+		return "1d4" + (" %+d" % modifier if modifier != 0 else "") + " contundenti"
 	if source == "item":
 		var entry: Dictionary = attack.get("item_entry", {})
 		if base.is_empty():

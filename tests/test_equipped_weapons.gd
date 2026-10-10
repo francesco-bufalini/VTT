@@ -41,6 +41,25 @@ func run() -> void:
 	var rapier := _item("test:rapier", "Rapier", "M", "1d8", ["F"])
 	var shield := {"id": "test:shield", "name": "Shield", "source": "PHB", "quantity": 1, "type": "S", "ac": 2, "equipped_slots": ["off"]}
 	rapier["equipped_slots"] = ["main"]
+	var fallback_record := _record([])
+	var fallback_attacks: Array[Dictionary] = AttackData.definitions(fallback_record)
+	var unarmed := _attack(fallback_attacks, "unarmed")
+	var improvised := _attack(fallback_attacks, "improvised")
+	assert(not unarmed.is_empty() and not improvised.is_empty(), "Both fallback attacks exist for characters")
+	assert(unarmed.proficient and not improvised.proficient, "Only unarmed strikes are automatically proficient")
+	assert(AttackData.attack_bonus(fallback_record, improvised, 2) == 1
+		and AttackData.damage_label(fallback_record, improvised) == "1d4 +1 contundenti",
+		"Improvised weapons use STR and base d4 damage without automatic proficiency")
+	assert(not ItemRules.has_equipped_weapon([]), "No equipment must allow fallback attacks")
+	assert(not ItemRules.has_equipped_weapon([shield]), "A shield is not an equipped weapon")
+	var stowed_rapier := rapier.duplicate(true)
+	stowed_rapier["equipped_slots"] = []
+	assert(not ItemRules.has_equipped_weapon([stowed_rapier, shield]),
+		"Owning a weapon without equipping it does not hide fallback attacks")
+	assert(ItemRules.has_equipped_weapon([rapier, shield]), "An equipped melee weapon hides fallback attacks")
+	var offhand_rapier := rapier.duplicate(true)
+	offhand_rapier["equipped_slots"] = ["off"]
+	assert(ItemRules.has_equipped_weapon([offhand_rapier]), "An offhand weapon counts too")
 	var record := _record([rapier, shield])
 	var attacks: Array[Dictionary] = AttackData.definitions(record)
 	var weapon := _attack(attacks, "item:test:rapier")

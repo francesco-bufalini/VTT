@@ -368,8 +368,34 @@ func run() -> void:
 	assert(area._tracker_rows.get_parent() == combat_stats
 		and area._tracker_rows.get_index() < area._attacks_description.get_index(),
 		"Trackers should appear above the list of available attacks")
-	assert("Colpo senz'armi" in area._attacks_description.text,
-		"Non-monster creatures must always display an unarmed strike")
+	assert("Colpo senz'armi" in area._attacks_description.text
+		and "Arma improvvisata" in area._attacks_description.text,
+		"Unarmed and improvised attacks must appear while no weapon is equipped")
+	var fallback_view_record: Dictionary = area._current().duplicate(true)
+	var shield_only: Dictionary = {
+		"id": "test:shield", "name": "Shield", "type": "S", "ac": 2,
+		"source": "PHB", "quantity": 1, "equipped_slots": ["off"]
+	}
+	fallback_view_record["inventory"] = [shield_only]
+	area._refresh_attacks(fallback_view_record)
+	assert(area._attack_hit_labels.has("unarmed") and area._attack_hit_labels.has("improvised"),
+		"Equipping only a shield must not hide either fallback attack")
+	var test_weapon: Dictionary = {
+		"id": "test:sword", "name": "Sword", "type": "M", "damage": "1d8",
+		"source": "PHB", "quantity": 1, "equipped_slots": ["main"]
+	}
+	fallback_view_record["inventory"] = [test_weapon, shield_only]
+	area._refresh_attacks(fallback_view_record)
+	assert(not area._attack_hit_labels.has("unarmed") and not area._attack_hit_labels.has("improvised")
+		and "Colpo senz'armi" not in area._attacks_description.text
+		and "Arma improvvisata" not in area._attacks_description.text,
+		"Equipping a weapon must hide both fallback attacks from the combat UI")
+	test_weapon["equipped_slots"] = []
+	fallback_view_record["inventory"] = [test_weapon, shield_only]
+	area._refresh_attacks(fallback_view_record)
+	assert(area._attack_hit_labels.has("unarmed") and area._attack_hit_labels.has("improvised"),
+		"Unequipping the last weapon must restore both attacks immediately")
+	area._refresh_attacks(area._current())
 	var spells: Node = area._spellcasting_ui
 	assert(spells._known_list.custom_minimum_size.y == spells._prepared_list.custom_minimum_size.y,
 		"Class and available spell boxes must have the same height")

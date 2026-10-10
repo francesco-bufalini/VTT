@@ -2221,9 +2221,10 @@ func _refresh_attacks(record: Dictionary) -> void:
 		_attack_rows.remove_child(child)
 		child.queue_free()
 	var summary: PackedStringArray = []
+	var has_equipped_weapon: bool = ItemRules.has_equipped_weapon(record.get("inventory", []))
 	for attack: Dictionary in AttackData.definitions(record):
 		var attack_id: String = String(attack.get("id", ""))
-		if attack_id.is_empty():
+		if attack_id.is_empty() or (has_equipped_weapon and attack_id in ["unarmed", "improvised"]):
 			continue
 		var card := PanelContainer.new()
 		card.size_flags_horizontal = Control.SIZE_EXPAND_FILL

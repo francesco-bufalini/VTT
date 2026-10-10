@@ -75,6 +75,16 @@ static func occupying(inventory: Variant, slot: String) -> Dictionary:
 	return {}
 
 
+# An equipped shield does not suppress fallback unarmed/improvised options.
+# Check only occupied hand slots, not weapons merely owned in the inventory.
+static func has_equipped_weapon(inventory: Variant) -> bool:
+	for slot: String in ["main", "off"]:
+		var saved: Dictionary = occupying(inventory, slot)
+		if not saved.is_empty() and kind(entry_for(saved)) == "weapon":
+			return true
+	return false
+
+
 static func shield_bonus(inventory: Variant) -> int:
 	var shield: Dictionary = occupying(inventory, "off")
 	if shield.is_empty():
