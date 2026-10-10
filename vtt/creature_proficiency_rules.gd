@@ -215,26 +215,17 @@ static func _selected_source(record: Dictionary, group: String, name: String, so
 					if raw is Dictionary and String(raw.get("name", "")).nocasecmp_to(name) == 0 and String(raw.get("source", "")) == source:
 						return true
 			return String(record.get("class", "")).nocasecmp_to(name) == 0 and String(record.get("class_source", "")) == source
-		"race", "subrace":
-			var selected: String = String(record.get("species", ""))
-			var selected_source: String = String(record.get("species_source", ""))
-			if group == "subrace":
-				# Flattened 5etools entries include their parent's traits.
-				var race: String = String(indexed.get("raceName", ""))
-				return selected.nocasecmp_to(race + " (" + name + ")") == 0 and selected_source == source
-			if selected.nocasecmp_to(name) == 0 and selected_source == source:
-				return true
-			# A subrace also inherits structured parent race grants, even
-			# when its source book differs from the parent's.
-			var subraces: Variant = _sources.get("subrace", [])
-			if subraces is Array:
-				for item: Variant in subraces:
-					if not item is Dictionary:
-						continue
-					var child: Dictionary = item as Dictionary
-					if String(child.get("raceName", "")).nocasecmp_to(name) == 0 and String(child.get("raceSource", "")) == source and selected_source == String(child.get("source", "")) and selected.nocasecmp_to(name + " (" + String(child.get("name", "")) + ")") == 0:
-						return true
-			return false
+		"race":
+			return (String(record.get("species", "")).nocasecmp_to(name) == 0
+				and String(record.get("species_source", "")) == source)
+		"subrace":
+			return (
+				String(record.get("subrace", "")).nocasecmp_to(name) == 0
+				and String(record.get("subrace_source", "")) == source
+				and String(record.get("species", "")).nocasecmp_to(
+					String(indexed.get("raceName", ""))) == 0
+				and String(record.get("species_source", "")) == String(indexed.get("raceSource", ""))
+			)
 		"background":
 			if String(record.get("background", "")).nocasecmp_to(name) != 0:
 				return false
