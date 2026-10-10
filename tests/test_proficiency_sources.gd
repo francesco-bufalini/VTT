@@ -76,10 +76,16 @@ func run() -> void:
 
 	var feat_record := _record()
 	feat_record["feats_catalog"] = [{"name": "Lightly Armored", "source": "PHB", "id": "feat:lightly armored|phb|"}]
-	assert(not Proficiencies.suggest_origins(feat_record, "armor", "light").is_empty(),
-		"An acquired feat with structured armor proficiency is a suggested origin")
-	assert(Proficiencies.suggest_origins(feat_record, "armor", "heavy").is_empty(),
-		"The feat does not grant proficiency with all armor")
+	var lightly_grants := false
+	for suggestion: Dictionary in Proficiencies.suggest_origins(feat_record, "armor", "light"):
+		if String(suggestion.get("group", "")) == "feat":
+			lightly_grants = int(suggestion.get("certainty", 0)) == 2
+	assert(lightly_grants, "Acquired Lightly Armored offers its structured light armor grant")
+	var feat_grants_heavy := false
+	for suggestion: Dictionary in Proficiencies.suggest_origins(feat_record, "armor", "heavy"):
+		if String(suggestion.get("group", "")) == "feat":
+			feat_grants_heavy = true
+	assert(not feat_grants_heavy, "Lightly Armored feat does not grant heavy armor; the Fighter class does")
 	feat_record["feats_catalog"] = [{"name": "Weapon Master", "source": "PHB", "id": "feat:weapon master|phb|"}]
 	var master_suggestions: Array[Dictionary] = Proficiencies.suggest_origins(feat_record, "weapon", "rapier")
 	var feat_is_optional := false
