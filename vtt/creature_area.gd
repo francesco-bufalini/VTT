@@ -40,6 +40,7 @@ var _skills_panel: VBoxContainer
 var _skill_buttons: Dictionary = {}
 var _skill_values: Dictionary = {}
 var _skill_ranks: Dictionary = {}
+var _skill_ranks_custom := false
 var _proficiency_display: Label
 var _passive_perception: Label
 var _attacks_description: RichTextLabel
@@ -1897,6 +1898,7 @@ func _load_form(record: Dictionary) -> void:
 	))
 	_update_defense_display()
 	_skill_ranks.clear()
+	_skill_ranks_custom = bool(record.get("skill_ranks_custom", false))
 	var known_proficiencies: Variant = record.get("skill_proficiencies", [])
 	var known_expertise: Variant = record.get("skill_expertise", [])
 	for skill: Dictionary in Skills5e.SKILLS:
@@ -1918,6 +1920,10 @@ func _load_form(record: Dictionary) -> void:
 		(_ability_spins[ability] as SpinBox).value = int(abilities.get(ability, 10))
 		(_ability_bonus_spins[ability] as SpinBox).value = int(bonuses.get(ability, 0))
 		_update_ability_modifier(ability)
+	if String(record.get("kind", "")) == "monster" and not bool(record.get("skill_ranks_custom", false)):
+		var inferred: Dictionary = Skills5e.ranks_from_bestiary(record, Rules.proficiency_bonus(record), abilities)
+		for skill_id: String in inferred.keys():
+			_skill_ranks[skill_id] = int(inferred[skill_id])
 	_refresh_skill_values(record)
 	var is_character: bool = String(record.get("kind", "")) == "character"
 	if is_character:
@@ -2097,6 +2103,7 @@ func _cycle_skill_rank(skill_id: String) -> void:
 	if _loading or not _skill_ranks.has(skill_id):
 		return
 	_skill_ranks[skill_id] = (int(_skill_ranks[skill_id]) + 1) % 3
+	_skill_ranks_custom = true
 	_refresh_skill_values(_current())
 	_save()
 
@@ -2304,6 +2311,8 @@ func _save() -> void:
 			expertise.append(key)
 	record["skill_proficiencies"] = proficient
 	record["skill_expertise"] = expertise
+	if _skill_ranks_custom:
+		record["skill_ranks_custom"] = true
 	record["attacks"] = _custom_attacks.text
 	record["default_miniature_id"] = _default_miniature_id
 	if String(record.get("kind", "")) == "monster":
