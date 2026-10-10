@@ -859,6 +859,26 @@ func _catalog_entries() -> Array[Dictionary]:
 
 
 
+# Fallback options for structured tool choices that are not represented by
+# the compact player tool catalog. The 5etools choose.from list is always
+# authoritative and does not require a matching catalogue item.
+const TOOL_CHOICE_FALLBACK := {
+	"anyArtisansTool": [
+		"alchemist's supplies", "brewer's supplies", "calligrapher's supplies",
+		"carpenter's tools", "cartographer's tools", "cobbler's tools",
+		"cook's utensils", "glassblower's tools", "jeweler's tools",
+		"leatherworker's tools", "mason's tools", "painter's supplies",
+		"potter's tools", "smith's tools", "tinker's tools", "weaver's tools",
+		"woodcarver's tools"
+	],
+	"anyGamingSet": ["dice set", "dragonchess set", "playing card set", "three-dragon ante set"],
+	"anyMusicalInstrument": [
+		"bagpipes", "drum", "dulcimer", "flute", "lute", "lyre",
+		"horn", "pan flute", "shawm", "viol"
+	]
+}
+
+
 func _choice_options_for_requirement(requirement: Dictionary) -> Array[Dictionary]:
 	var kind: String = String(requirement.get("kind", ""))
 	var data: Dictionary = requirement.get("data", {})
@@ -868,12 +888,33 @@ func _choice_options_for_requirement(requirement: Dictionary) -> Array[Dictionar
 		var key: String = String(entry.get("key", ""))
 		if key.is_empty() or used.has(key):
 			continue
-		# Use each requirement's structured pool, not the union from all
-		# the source's choices. This also handles "any" and typed tools.
 		if Rules.grant_matches([data], kind, key) != 1:
 			continue
 		used[key] = true
 		result.append(entry)
+	# from-lists can name tools and languages absent from the small catalog.
+	var choose: Variant = data.get("choose", {})
+	if choose is Dictionary:
+		var options: Variant = (choose as Dictionary).get("from", [])
+		if options is Array:
+			for raw: Variant in options:
+				var key: String = Rules.normalized_key(String(raw)).split("|")[0]
+				if key.is_empty() or used.has(key):
+					continue
+				used[key] = true
+				result.append({"key": key, "label": key.capitalize()})
+	if kind == "tool":
+		for flag: String in TOOL_CHOICE_FALLBACK.keys():
+			if not data.has(flag):
+				continue
+			for key: String in TOOL_CHOICE_FALLBACK[flag]:
+				if used.has(key):
+					continue
+				used[key] = true
+				result.append({"key": key, "label": key.capitalize()})
+	result.sort_custom(func(left: Dictionary, right: Dictionary) -> bool:
+		return String(left.get("label", "")).naturalnocasecmp_to(String(right.get("label", ""))) < 0
+	)
 	return result
 
 
@@ -883,6 +924,11 @@ func _has_active_source_grant(sid: String, kind: String, key: String) -> bool:
 			if not bool(row.get("disabled", false)):
 				return true
 	return false
+
+
+func _choice_kind_name(kind: String) -> String:
+	return {"skill": "Abilità", "tool": "Strumenti", "language": "Lingue",
+		"weapon": "Armi", "armor": "Armature", "save": "Tiri salvezza"}.get(kind, kind.capitalize())
 
 
 func _open_missing_choices(sid: String) -> void:
@@ -901,36 +947,72 @@ func _open_missing_choices(sid: String) -> void:
 		return
 	_choice_dialog.title = "Completa · " + String(source.get("name", "Origine"))
 	var intro := Label.new()
-	intro.text = "Seleziona le competenze concesse dall'origine. Puoi completare le scelte anche in più volte."
+	intro.text = "Scegli il tipo di competenza qui sotto. Le scelte rimangono selezionate mentre passi fra lingue, strumenti e abilità."
 	intro.autowrap_mode = TextServer.AUTOWRAP_WORD_SMART
 	_choice_contents.add_child(intro)
+	_choice_selector = OptionButton.new()
+	_choice_selector.fit_to_longest_item = false
+	_choice_selector.custom_minimum_size.y = 35
+	_choice_selector.item_selected.connect(_show_choice_group)
+	_choice_contents.add_child(_choice_selector)
 	for requirement: Dictionary in source.get("requirements", []):
 		var kind: String = String(requirement.get("kind", ""))
 		var count: int = maxi(1, int(requirement.get("count", 1)))
+		var panel := VBoxContainer.new()
+		panel.size_flags_horizontal = Control.SIZE_EXPAND_FILL
+		panel.add_theme_constant_override("separation", 4)
+		panel.visible = false
+		_choice_contents.add_child(panel)
 		var title := Label.new()
 		title.add_theme_font_size_override("font_size", 16)
-		_choice_contents.add_child(title)
-		var group: Dictionary = {"kind": kind, "count": count, "title": title, "boxes": []}
+		panel.add_child(title)
+		var group: Dictionary = {
+			"kind": kind, "count": count, "title": title, "boxes": [],
+			"panel": panel, "index": _choice_groups.size()
+		}
 		var options: Array[Dictionary] = _choice_options_for_requirement(requirement)
 		if options.is_empty():
-			title.text = "%s · scegli %d" % [kind.capitalize(), count]
 			var note := Label.new()
-			note.text = "Elenco non disponibile nei dati strutturati. Usa + Competenza per un'aggiunta manuale."
+			note.text = "L'elenco non è presente nei dati disponibili. Puoi usare + Competenza per una scelta manuale."
 			note.autowrap_mode = TextServer.AUTOWRAP_WORD_SMART
-			_choice_contents.add_child(note)
-			continue
+			panel.add_child(note)
 		for option: Dictionary in options:
 			var key: String = String(option.get("key", ""))
 			var check := CheckBox.new()
 			check.text = String(option.get("label", key))
 			check.button_pressed = _has_active_source_grant(sid, kind, key)
 			check.tooltip_text = "Competenza: " + key
-			_choice_contents.add_child(check)
+			panel.add_child(check)
 			(group["boxes"] as Array).append({"key": key, "check": check})
 			check.toggled.connect(_on_choice_check_toggled.bind(group))
 		_choice_groups.append(group)
+		_choice_selector.add_item(_choice_kind_name(kind))
 		_refresh_choice_limit(group)
-	DialogLayout.popup(_choice_dialog, Vector2i(540, 630), 0.90)
+	# Opening again should focus on the next *incomplete* type rather than
+	# always returning to the first language choice.
+	var first_incomplete := 0
+	for i: int in range(_choice_groups.size()):
+		var choice_group: Dictionary = _choice_groups[i]
+		var chosen := 0
+		for entry: Dictionary in choice_group.get("boxes", []):
+			if (entry.get("check") as CheckBox).button_pressed:
+				chosen += 1
+		if chosen < int(choice_group.get("count", 1)):
+			first_incomplete = i
+			break
+	if not _choice_groups.is_empty():
+		_choice_selector.select(first_incomplete)
+		_show_choice_group(first_incomplete)
+	DialogLayout.popup(_choice_dialog, Vector2i(540, 600), 0.90)
+
+
+func _show_choice_group(index: int) -> void:
+	for i: int in range(_choice_groups.size()):
+		var panel: VBoxContainer = _choice_groups[i].get("panel")
+		if panel != null:
+			panel.visible = i == index
+	if _choice_scroll != null:
+		_choice_scroll.scroll_vertical = 0
 
 
 func _on_choice_check_toggled(_checked: bool, group: Dictionary) -> void:
@@ -943,7 +1025,13 @@ func _refresh_choice_limit(group: Dictionary) -> void:
 		if (entry.get("check") as CheckBox).button_pressed:
 			chosen += 1
 	var count: int = int(group.get("count", 1))
-	(group.get("title") as Label).text = "%s · %d/%d scelte" % [String(group.get("kind", "")).capitalize(), chosen, count]
+	var text_label: String = "%s · %d/%d scelte" % [
+		_choice_kind_name(String(group.get("kind", ""))), chosen, count
+	]
+	(group.get("title") as Label).text = text_label
+	var index: int = int(group.get("index", -1))
+	if _choice_selector != null and index >= 0 and index < _choice_selector.item_count:
+		_choice_selector.set_item_text(index, text_label)
 	for entry: Dictionary in group.get("boxes", []):
 		var check: CheckBox = entry.get("check")
 		check.disabled = chosen >= count and not check.button_pressed
