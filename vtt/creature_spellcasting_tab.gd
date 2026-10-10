@@ -110,14 +110,14 @@ func setup(
 	_search_row.add_child(_level_filter)
 
 	_catalog_title = Label.new()
-	_catalog_title.text = "Catalogo · doppio clic per aggiungere / rimuovere"
+	_catalog_title.text = "Catalogo · doppio clic per lanciare"
 	add_child(_catalog_title)
 	_available = ItemList.new()
 	_available.custom_minimum_size = Vector2(0, 160)
 	_available.size_flags_horizontal = Control.SIZE_EXPAND_FILL
 	_available.item_selected.connect(func(_index: int) -> void: _on_spell_list_selected("catalog"))
 	_available.gui_input.connect(_on_spell_list_gui_input.bind("catalog"))
-	_available.item_activated.connect(func(_index: int) -> void: _toggle_selected_prepared())
+	_available.item_activated.connect(func(index: int) -> void: _on_spell_activated("catalog", index))
 	add_child(_available)
 	# Keep the library and chosen spells together; there is only one action
 	# for adding/removing the current selection.
@@ -164,11 +164,7 @@ func setup(
 	_known_list.size_flags_vertical = Control.SIZE_EXPAND_FILL
 	_known_list.item_selected.connect(_on_known_spell_selected)
 	_known_list.gui_input.connect(_on_spell_list_gui_input.bind("known"))
-	_known_list.item_activated.connect(
-		func(_index: int) -> void:
-			if not _editing_spellbook:
-				_toggle_selected_prepared()
-	)
+	_known_list.item_activated.connect(func(index: int) -> void: _on_spell_activated("known", index))
 	known_col.add_child(_known_list)
 	# Keep the book's explanatory hint below, so both lists begin at the same height.
 	known_col.move_child(_book_hint, _known_list.get_index() + 1)
@@ -196,7 +192,7 @@ func setup(
 	_prepared_list.item_selected.connect(func(_index: int) -> void: _on_spell_list_selected("prepared"))
 	_prepared_list.gui_input.connect(_on_spell_list_gui_input.bind("prepared"))
 	prepared_col.add_child(_prepared_list)
-	_prepared_list.item_activated.connect(func(_index: int) -> void: _toggle_selected_prepared())
+	_prepared_list.item_activated.connect(func(index: int) -> void: _on_spell_activated("prepared", index))
 
 	# Search is the only optional panel and opens beneath the paired spell lists.
 	var search_toggle_row := HBoxContainer.new()
@@ -229,16 +225,16 @@ func setup(
 	_prepare.text = "Aggiungi ai disponibili"
 	_prepare.custom_minimum_size = Vector2(170, 34)
 	_prepare.size_flags_vertical = Control.SIZE_SHRINK_CENTER
-	_prepare.tooltip_text = "Doppio clic su una magia oppure premi questo pulsante"
+	_prepare.tooltip_text = "Aggiungi o rimuovi l’incantesimo selezionato dai disponibili"
 	_prepare.pressed.connect(_toggle_selected_prepared)
-	action_row.add_child(_prepare)
+	search_toggle_row.add_child(_prepare)
 	_cast_button = Button.new()
 	_cast_button.text = "✨ Lancia"
 	_cast_button.custom_minimum_size = Vector2(100, 34)
 	_cast_button.disabled = true
 	_cast_button.tooltip_text = "Lancia l'incantesimo selezionato da una qualsiasi delle tre liste"
 	_cast_button.pressed.connect(_request_cast_spell)
-	action_row.add_child(_cast_button)
+	search_toggle_row.add_child(_cast_button)
 
 	_description = RichTextLabel.new()
 	_description.custom_minimum_size.y = 150
@@ -744,6 +740,16 @@ func _on_spell_list_gui_input(event: InputEvent, origin: String) -> void:
 		# deselection until its built-in click processing has finished.
 		call_deferred("_deselect_spell_item", origin, index)
 
+
+func _on_spell_activated(origin: String, index: int) -> void:
+	# Double-click always casts, regardless of the list it came from.
+	# Re-select by index: a previous single click may have queued deselection.
+	var list: ItemList = _list_for_origin(origin)
+	if list == null or index < 0 or index >= list.item_count:
+		return
+	list.select(index)
+	_on_spell_list_selected(origin)
+	_request_cast_spell()
 
 func _list_for_origin(origin: String) -> ItemList:
 	match origin:
