@@ -672,7 +672,6 @@ func _build_ui() -> void:
 	abilities_style.bg_color = Color(0.13, 0.20, 0.23, 0.96)
 	abilities_style.border_color = Color(0.39, 0.61, 0.67, 0.92)
 	abilities_panel.add_theme_stylebox_override("panel", abilities_style)
-	statistics_tab.add_child(abilities_panel)
 	_abilities_grid = GridContainer.new()
 	var abilities_row := _abilities_grid
 	# Use the available tab width to keep ability controls readable.
@@ -684,6 +683,7 @@ func _build_ui() -> void:
 	ability_title.add_theme_font_size_override("font_size", 17)
 	ability_title.add_theme_color_override("font_color", Color(0.72, 0.88, 0.96))
 	statistics_tab.add_child(ability_title)
+	statistics_tab.add_child(abilities_panel)
 	abilities_panel.add_child(abilities_row)
 	for ability: String in ["str", "dex", "con", "int", "wis", "cha"]:
 		var cell := VBoxContainer.new()
@@ -1674,6 +1674,9 @@ func _load_form(record: Dictionary) -> void:
 	_max_hp.value = maxi(0, int(record.get("max_hp_base", int(record.get("max_hp", 1)) - hp_bonus)))
 	_update_max_hp_display()
 	_temp_hp.value = int(record.get("temporary_hp", 0))
+	_second_form_max_hp.value = int(record.get("second_form_max_hp", record.get("second_form_hp", 0)))
+	_second_form_hp.value = int(record.get("second_form_hp", 0))
+	_biography.text = String(record.get("background_personality", ""))
 	_ac.value = int(record.get("armor_class", 10))
 	_initiative.value = int(record.get("initiative", 0))
 	var abilities_value: Variant = record.get("abilities", {})
@@ -1698,9 +1701,11 @@ func _load_form(record: Dictionary) -> void:
 		_set_reference_choices(_species, bestiary_species)
 	_select_reference(_species, String(record.get("species", "")), String(record.get("species_source", "")), String(record.get("species_id", "")))
 	_speed_custom = bool(record.get("speed_is_custom", false))
-	_speed.value = (Rules.walking_speed(_reference_entry(_species).get("speed", 30))
-		if is_character and not _speed_custom
-		else int(record.get("speed", 30)))
+	var source_speed: int = (Rules.walking_speed(_reference_entry(_species).get("speed", 30))
+		if is_character else Rules.walking_speed(record.get("stat_block", {}).get("speed", 30)))
+	_speed.value = maxi(0, int(record.get("speed_base", int(record.get("speed", source_speed)) - int(record.get("speed_bonus", 0)))) if _speed_custom else source_speed)
+	_speed_bonus.value = int(record.get("speed_bonus", 0))
+	_update_speed_display()
 	var class_source := String(record.get("class_source", ""))
 	var edition := String(record.get("rules_version", ""))
 	# Existing sheets with an explicit edition are authoritative. Infer the
@@ -1819,14 +1824,21 @@ func _on_species_changed() -> void:
 	_loading = true
 	_speed.value = _speed_from_species()
 	_loading = false
+	_update_speed_display()
 	_save()
 
 
 func _on_speed_changed(_value: float) -> void:
+	_update_speed_display()
 	if _loading:
 		return
 	_speed_custom = true
 	_save()
+
+
+func _update_speed_display() -> void:
+	if _speed_effective != null and _speed != null and _speed_bonus != null:
+		_speed_effective.text = str(maxi(0, int(_speed.value) + int(_speed_bonus.value)))
 
 
 func _on_spellcasting_updated(values: Dictionary) -> void:
@@ -1881,6 +1893,8 @@ func _update_ability_modifier(ability: String) -> void:
 	var bonus: int = int((_ability_bonus_spins[ability] as SpinBox).value)
 	var value: int = Rules.ability_modifier(score + bonus)
 	(_ability_modifier_labels[ability] as Label).text = "%+d" % value
+	if _ability_total_labels.has(ability):
+		(_ability_total_labels[ability] as Label).text = str(score + bonus)
 	if ability == "dex" and _initiative != null:
 		_initiative.value = value
 
@@ -1911,6 +1925,9 @@ func _save() -> void:
 	record["max_hp_bonus"] = int(_max_hp_bonus.value)
 	record["max_hp"] = maxi(0, int(_max_hp.value) + int(_max_hp_bonus.value))
 	record["temporary_hp"] = int(_temp_hp.value)
+	record["second_form_max_hp"] = int(_second_form_max_hp.value)
+	record["second_form_hp"] = clampi(int(_second_form_hp.value), 0, int(_second_form_max_hp.value))
+	record["background_personality"] = _biography.text
 	record["size_name"] = _size_choice.get_item_text(_size_choice.selected)
 	record["footprint"] = _selected_size_footprint()
 	if (
@@ -1923,7 +1940,9 @@ func _save() -> void:
 	record["party_id"] = _party.text.strip_edges()
 	record["armor_class"] = int(_ac.value)
 	record["initiative"] = int(_initiative.value)
-	record["speed"] = int(_speed.value)
+	record["speed_base"] = int(_speed.value)
+	record["speed_bonus"] = int(_speed_bonus.value)
+	record["speed"] = maxi(0, int(_speed.value) + int(_speed_bonus.value))
 	record["speed_is_custom"] = _speed_custom
 	var abilities: Dictionary = {}
 	for ability: String in _ability_spins.keys():
@@ -2179,19 +2198,26 @@ func _confirm_hp_delta() -> void:
 func _change_hit_points(delta: int) -> void:
 	if _current().is_empty():
 		return
-	var hp := int(_hp.value)
-	var temp := int(_temp_hp.value)
+	var old_form: int = int(_second_form_hp.value)
+	var record: Dictionary = _current()
+	var hp: int = int(_hp.value)
+	var temp: int = int(_temp_hp.value)
+	var form_hp: int = old_form
 	if delta < 0:
-		var absorbed := mini(temp, -delta)
-		temp -= absorbed
-		hp = maxi(0, hp - (-delta - absorbed))
+		var damage_result: Dictionary = Rules.apply_damage_layers(record, -delta)
+		temp = int(damage_result.get("temporary_hp", temp))
+		form_hp = int(damage_result.get("second_form_hp", form_hp))
+		hp = int(damage_result.get("current_hp", hp))
 	else:
 		hp = mini(maxi(0, int(_max_hp.value) + int(_max_hp_bonus.value)), hp + delta)
 	_loading = true
 	_temp_hp.value = temp
+	_second_form_hp.value = form_hp
 	_hp.value = hp
 	_loading = false
 	_save()
+	if old_form > 0 and form_hp == 0:
+		_offer_restore_after_form_depleted()
 
 
 func _apply_sheet_properties(record: Dictionary) -> void:
@@ -2231,6 +2257,16 @@ func _set_current_miniature(miniature_id: String) -> void:
 		return
 	_replace_current_record(record)
 	_apply_current_appearance(record)
+
+
+func _on_form_hp_changed(value: float) -> void:
+	if _loading:
+		return
+	var record: Dictionary = _current()
+	var previous: int = int(record.get("second_form_hp", 0))
+	_save()
+	if previous > 0 and int(value) == 0:
+		_offer_restore_after_form_depleted()
 
 
 func _restore_full_hp() -> void:
@@ -3050,23 +3086,26 @@ func apply_attack_damage_to_token(target: Node3D, damage: int) -> Dictionary:
 		if hp_max <= 0:
 			return {"applied": false}
 		var hp_now := clampi(int(owned.get("current_hp", hp_max)), 0, hp_max)
-		var temp_hp := maxi(0, int(owned.get("temporary_hp", 0)))
-		var absorbed := mini(temp_hp, damage)
-		temp_hp -= absorbed
-		hp_now = maxi(0, hp_now - (damage - absorbed))
-		owned["current_hp"] = hp_now
-		owned["temporary_hp"] = temp_hp
+		var prior_form: int = maxi(0, int(owned.get("second_form_hp", 0)))
+		var resolved: Dictionary = Rules.apply_damage_layers(owned, damage)
+		owned["current_hp"] = int(resolved.get("current_hp", hp_now))
+		owned["temporary_hp"] = int(resolved.get("temporary_hp", 0))
+		owned["second_form_hp"] = int(resolved.get("second_form_hp", 0))
 		if _archive.save(owned) != OK:
 			return {"applied": false}
 		_replace_current_record(owned)
 		_sync_token_health(owned)
-		if String(owned.get("id", "")) == _selected_id and is_panel_open():
-			_load_form(owned)
+		if String(owned.get("id", "")) == _selected_id:
+			if is_panel_open():
+				_load_form(owned)
+			if prior_form > 0 and int(owned["second_form_hp"]) == 0:
+				_offer_restore_after_form_depleted()
 		return {
 			"applied": true,
-			"current_hp": hp_now,
+			"current_hp": int(owned["current_hp"]),
 			"max_hp": hp_max,
-			"temporary_hp": temp_hp
+			"temporary_hp": int(owned["temporary_hp"]),
+			"second_form_hp": int(owned["second_form_hp"])
 		}
 	return {"applied": false}
 
