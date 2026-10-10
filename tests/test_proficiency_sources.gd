@@ -590,6 +590,50 @@ func run() -> void:
 		"Skill and weapon headings must never repeat with interleaved grants")
 	assert(not has_link_button and has_mastery_word,
 		"Manual linking action is removed and stars are replaced by Mestria")
+	# Fixed and manually removable rows must have the same layout, even
+	# while another origin is highlighted (the reported armor/tool mismatch).
+	tab._selected_id = "class|phb|fighter"
+	tab._rows.append({"kind": "tool", "key": "dice set", "origin_id": "", "disabled": false})
+	tab._refresh_competences()
+	var armor_card: PanelContainer = null
+	var tool_card: PanelContainer = null
+	var manual_switch: CheckButton = null
+	for node: Node in tab._proficiency_cards.get_children():
+		if not node is PanelContainer:
+			continue
+		var content: HBoxContainer = node.get_child(0) as HBoxContainer
+		if content == null:
+			continue
+		for control: Node in content.get_children():
+			if not control is Label:
+				continue
+			var title_text: String = String((control as Label).text)
+			if title_text.ends_with("light"):
+				armor_card = node as PanelContainer
+			if title_text.ends_with("dice set"):
+				tool_card = node as PanelContainer
+				for sibling: Node in content.get_children():
+					if sibling is CheckButton and (sibling as CheckButton).text == "⏻":
+						manual_switch = sibling as CheckButton
+	assert(armor_card != null and tool_card != null and manual_switch != null,
+		"Mandatory armor and separately sourced tool must render with activation switches")
+	var armor_style: StyleBox = armor_card.get_theme_stylebox("panel")
+	var tool_style: StyleBox = tool_card.get_theme_stylebox("panel")
+	assert(armor_card.custom_minimum_size.y == tool_card.custom_minimum_size.y
+		and is_equal_approx(armor_style.get_content_margin(SIDE_LEFT), tool_style.get_content_margin(SIDE_LEFT))
+		and is_equal_approx(armor_style.get_content_margin(SIDE_TOP), tool_style.get_content_margin(SIDE_TOP)),
+		"Armor and tool rows must use exactly the same padding and height")
+	assert(not manual_switch.disabled, "An unrelated selected origin must not block the tool switch")
+	var tool_index: int = -1
+	for i: int in range(tab._rows.size()):
+		if String(tab._rows[i].get("kind", "")) == "tool" and String(tab._rows[i].get("key", "")) == "dice set":
+			tool_index = i
+			break
+	assert(tool_index >= 0, "The manual tool must be present in its origin")
+	tab._toggle_group(false, [tool_index])
+	assert(not tab._group_enabled([tool_index]) and bool(tab._rows[tool_index].get("disabled", false)),
+		"Competences from other origins remain individually deactivatable")
+	tab._toggle_group(true, [tool_index])
 	# Deleting a shared skill requires the source (or all sources).
 	tab.load_record(_record())
 	tab._rows.append({"kind": "skill", "key": "insight", "origin_id": "custom|first", "disabled": false})
