@@ -855,8 +855,7 @@ func _update_equip_buttons() -> void:
 	_equip_main.disabled = not present or not ItemRules.valid_slot(entry, "main")
 	_equip_off.disabled = not present or not ItemRules.valid_slot(entry, "off")
 	_equip_armor.disabled = not present or not ItemRules.valid_slot(entry, "body")
-	var req: Variant = entry.get("req_attune", entry.get("reqAttune", false))
-	_attuned.disabled = not present or req == false
+	_attuned.disabled = not present or not ItemRules.requires_attunement(entry)
 	_attuned.set_pressed_no_signal(present and bool(_inventory[index].get("attuned", false)))
 	_active_item.disabled = not present or ItemRules.kind(entry) == "document"
 	_active_item.set_pressed_no_signal(present and bool(_inventory[index].get("active", true)))
