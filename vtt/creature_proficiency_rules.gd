@@ -626,8 +626,12 @@ static func origins(record: Dictionary) -> Array[Dictionary]:
 			continue
 		var sid: String = String(source.get("id", ""))
 		var previous: Dictionary = saved.get(sid, {})
+		# A mandatory grant cannot be turned off through the source-level
+		# power switch either. This also heals older saved disabled flags.
+		var has_required: bool = not fixed_grants(source).is_empty()
 		result.append({"id": sid, "name": String(source.get("name", "")),
-			"group": String(source.get("group", "")), "disabled": bool(previous.get("disabled", false)),
+			"group": String(source.get("group", "")),
+			"disabled": false if has_required else bool(previous.get("disabled", false)),
 			"automatic": true, "requirements": choice_requirements(source)})
 	for sid: String in saved.keys():
 		var item: Dictionary = saved[sid]

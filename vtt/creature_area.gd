@@ -944,8 +944,8 @@ func _build_ui() -> void:
 	_attack_rows.add_theme_constant_override("separation", 7)
 	combat_column.add_child(_attack_rows)
 	_attacks_description = RichTextLabel.new()
-	_attacks_description.custom_minimum_size.y = 160
-	_attacks_description.fit_content = true
+	_attacks_description.custom_minimum_size.y = 55
+	_attacks_description.fit_content = false
 	_attacks_description.scroll_active = false
 	_attacks_description.selection_enabled = true
 	FiveToolsText.style(_attacks_description)
@@ -2630,13 +2630,24 @@ func _refresh_attacks(record: Dictionary) -> void:
 		child.queue_free()
 	var summary: PackedStringArray = []
 	var has_equipped_weapon: bool = ItemRules.has_equipped_weapon(record.get("inventory", []))
-	for attack: Dictionary in AttackData.definitions(record):
+	var available_attacks: Array[Dictionary] = AttackData.definitions(record)
+	var actual_active_id: String = String(AttackData.active_attack(record).get("id", ""))
+	# Stable presentation: the active attack first, then all remaining
+	# attacks in bestiary/inventory order without an unstable partial sort.
+	var attacks: Array[Dictionary] = []
+	for candidate: Dictionary in available_attacks:
+		if String(candidate.get("id", "")) == actual_active_id:
+			attacks.append(candidate)
+	for candidate: Dictionary in available_attacks:
+		if String(candidate.get("id", "")) != actual_active_id:
+			attacks.append(candidate)
+	for attack: Dictionary in attacks:
 		var attack_id: String = String(attack.get("id", ""))
 		if attack_id.is_empty() or (has_equipped_weapon and attack_id in ["unarmed", "improvised"]):
 			continue
 		var card := PanelContainer.new()
 		card.size_flags_horizontal = Control.SIZE_EXPAND_FILL
-		var active: bool = attack_id == String(record.get("equipped_attack_id", ""))
+		var active: bool = attack_id == actual_active_id
 		var card_style := StyleBoxFlat.new()
 		card_style.bg_color = Color(0.12, 0.16, 0.21, 0.88)
 		card_style.border_color = Color(0.54, 0.75, 0.82) if active else Color(0.30, 0.41, 0.49, 0.72)
@@ -2648,43 +2659,58 @@ func _refresh_attacks(record: Dictionary) -> void:
 		var box := VBoxContainer.new()
 		box.add_theme_constant_override("separation", 4)
 		card.add_child(box)
-		var header := HFlowContainer.new()
-		header.add_theme_constant_override("h_separation", 8)
+		# A dedicated name row prevents long bestiary action names from
+		# pushing the dice buttons out of the combat column.
+		var header := HBoxContainer.new()
+		header.add_theme_constant_override("separation", 7)
 		box.add_child(header)
 		var name_label := Label.new()
 		name_label.text = String(attack.get("name", "Attacco"))
-		name_label.add_theme_font_size_override("font_size", 17)
+		name_label.add_theme_font_size_override("font_size", 16)
 		name_label.add_theme_color_override("font_color", Color(0.93, 0.95, 0.98))
 		name_label.size_flags_horizontal = Control.SIZE_EXPAND_FILL
-		name_label.clip_text = true
+		name_label.autowrap_mode = TextServer.AUTOWRAP_WORD_SMART
 		header.add_child(name_label)
 		if active:
 			var active_label := Label.new()
 			active_label.text = "IN USO"
 			active_label.add_theme_font_size_override("font_size", 11)
-			active_label.add_theme_color_override("font_color", Color(0.58, 0.85, 0.86))
+			active_label.add_theme_color_override("font_color", Color(0.76, 0.84, 0.68))
 			header.add_child(active_label)
+		# Hit and damage each have their own self-contained line. HFlow
+		# wraps the dice button if the pane is narrow, without clipping it.
+		var hit_row := HFlowContainer.new()
+		hit_row.add_theme_constant_override("h_separation", 8)
+		hit_row.add_theme_constant_override("v_separation", 4)
+		box.add_child(hit_row)
+		var hit_caption := Label.new()
+		hit_caption.text = "Colpire"
+		hit_caption.add_theme_font_size_override("font_size", 12)
+		hit_row.add_child(hit_caption)
 		var hit_label := Label.new()
-		header.add_child(hit_label)
+		hit_row.add_child(hit_label)
 		_attack_hit_labels[attack_id] = hit_label
 		_install_formula("attack_hit:" + attack_id, hit_label, [], [])
 		var roll_hit := Button.new()
-		roll_hit.text = "🎲 Colpire"
+		roll_hit.text = "Tira per colpire"
 		roll_hit.tooltip_text = "Tira 1d20 e il bonus per colpire nel roller"
 		roll_hit.pressed.connect(_roll_attack_from_sheet.bind(attack_id, false))
-		header.add_child(roll_hit)
-		var damage_row := HBoxContainer.new()
-		damage_row.add_theme_constant_override("separation", 10)
+		hit_row.add_child(roll_hit)
+		var damage_row := HFlowContainer.new()
+		damage_row.add_theme_constant_override("h_separation", 8)
+		damage_row.add_theme_constant_override("v_separation", 4)
 		box.add_child(damage_row)
+		var damage_caption := Label.new()
+		damage_caption.text = "Danni"
+		damage_caption.add_theme_font_size_override("font_size", 12)
+		damage_row.add_child(damage_caption)
 		var damage_label := Label.new()
-		damage_label.autowrap_mode = TextServer.AUTOWRAP_WORD_SMART
-		damage_label.size_flags_horizontal = Control.SIZE_EXPAND_FILL
-		damage_label.add_theme_font_size_override("font_size", 16)
+		damage_label.add_theme_font_size_override("font_size", 17)
 		damage_row.add_child(damage_label)
 		_attack_damage_labels[attack_id] = damage_label
 		_install_formula("attack_damage:" + attack_id, damage_label, [], [])
 		var roll_damage := Button.new()
-		roll_damage.text = "🎲 Danni"
+		roll_damage.text = "Tira danni"
 		roll_damage.tooltip_text = "Tira i danni dell'attacco nel roller"
 		roll_damage.pressed.connect(_roll_attack_from_sheet.bind(attack_id, true))
 		damage_row.add_child(roll_damage)
@@ -2780,22 +2806,33 @@ func _refresh_attacks(record: Dictionary) -> void:
 			proficiency.tooltip_text = "Gestisci competenze e origini nella scheda Competenze, non sul singolo attacco."
 			settings.add_child(proficiency)
 		if attack.has("raw"):
-			var original_caption := Label.new()
-			original_caption.text = "Testo originale 5etools (bonus non modificati)"
-			original_caption.add_theme_font_size_override("font_size", 11)
-			box.add_child(original_caption)
+			var details_toggle := Button.new()
+			details_toggle.text = "▸ Descrizione del bestiario"
+			details_toggle.flat = true
+			details_toggle.alignment = HORIZONTAL_ALIGNMENT_LEFT
+			details_toggle.tooltip_text = "Mostra il testo originale di 5etools"
+			box.add_child(details_toggle)
 			var details := RichTextLabel.new()
-			details.custom_minimum_size.y = 48
-			details.fit_content = true
-			details.scroll_active = false
+			details.custom_minimum_size.y = 100
+			details.custom_minimum_size.x = 0
+			details.size_flags_horizontal = Control.SIZE_EXPAND_FILL
+			details.fit_content = false
+			details.scroll_active = true
+			details.visible = false
 			FiveToolsText.style(details)
 			details.text = FiveToolsText.blocks(attack.get("raw", {}))
 			box.add_child(details)
+			details_toggle.pressed.connect(func() -> void:
+				details.visible = not details.visible
+				details_toggle.text = "▾ Nascondi descrizione" if details.visible else "▸ Descrizione del bestiario"
+				call_deferred("_update_stats_column_heights")
+			)
 		summary.append(String(attack.get("name", "Attacco")))
 	_attacks_description.text = "\n".join(summary) if not summary.is_empty() else "Nessun attacco disponibile."
-	# The individual cards contain all the details; avoid showing duplicate text.
-	_attacks_description.hide()
+	# Show an empty state instead of a blank panel when there are no attacks.
+	_attacks_description.visible = summary.is_empty()
 	_refresh_attack_values(record)
+	call_deferred("_update_stats_column_heights")
 
 
 func _refresh_attack_values(record: Dictionary) -> void:
@@ -2805,12 +2842,12 @@ func _refresh_attack_values(record: Dictionary) -> void:
 			continue
 		var hit: int = AttackData.attack_bonus(record, attack, _creature_proficiency(record))
 		if String(record.get("kind", "")) == "monster" and String(attack.get("source", "")) != "item" and not bool(attack.get("hit_known", false)):
-			_set_formula("attack_hit:" + attack_id, "Colpire: n.d.", "Bonus per colpire non presente nei dati del bestiario")
+			_set_formula("attack_hit:" + attack_id, "n.d.", "Bonus per colpire non presente nei dati del bestiario")
 		else:
-			_set_formula("attack_hit:" + attack_id, "Colpire %+d" % hit,
+			_set_formula("attack_hit:" + attack_id, "%+d" % hit,
 				AttackData.attack_bonus_formula(record, attack, _creature_proficiency(record)))
 		var damage: String = AttackData.damage_label(record, attack)
-		_set_formula("attack_damage:" + attack_id, "Danni: " + damage,
+		_set_formula("attack_damage:" + attack_id, damage,
 			"Danni: %s. Include bonus di caratteristica e arma quando applicabili, oltre al bonus manuale dell'attacco." % damage)
 		if _attack_range_labels.has(attack_id):
 			var settings: Dictionary = AttackData.override_for(record, attack_id)
