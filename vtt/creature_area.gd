@@ -831,6 +831,7 @@ func _build_ui() -> void:
 	_attacks_description.fit_content = true
 	_attacks_description.scroll_active = false
 	_attacks_description.selection_enabled = true
+	FiveToolsText.style(_attacks_description)
 	combat_column.add_child(_attacks_description)
 	_add_label(combat_column, "Attacchi personali (uno per riga)")
 	_custom_attacks = TextEdit.new()
@@ -2143,25 +2144,28 @@ func _refresh_attacks(record: Dictionary) -> void:
 	var lines: PackedStringArray = []
 	var stat: Dictionary = record.get("stat_block", {})
 	for section: String in ["action", "bonus", "reaction", "legendary", "mythic"]:
-		var value: Variant = stat.get(section, [])
-		if not value is Array:
+		var entries: Variant = stat.get(section, [])
+		if not entries is Array:
 			continue
-		for raw: Variant in value:
+		for raw: Variant in entries:
 			if not raw is Dictionary:
 				continue
 			var action: Dictionary = raw as Dictionary
-			var name: String = String(action.get("name", ""))
-			if name.is_empty():
+			if String(action.get("name", "")).is_empty():
 				continue
-			lines.append("• %s [%s]" % [name, section])
-			var descriptions: Variant = action.get("entries", [])
-			if descriptions is Array:
-				for entry: Variant in descriptions:
-					if entry is String:
-						lines.append("    " + String(entry).substr(0, 380))
+			lines.append(FiveToolsText.section(section.capitalize()) + "\n" + FiveToolsText.blocks(action))
+	var owned: Variant = record.get("inventory", [])
+	if owned is Array and not (owned as Array).is_empty():
+		var ids: Dictionary = {}
+		for item: Variant in owned:
+			if item is Dictionary:
+				ids[String((item as Dictionary).get("id", ""))] = true
+		for item: Dictionary in Player5eTools.entries("items"):
+			if ids.has(String(item.get("id", ""))) and not String(item.get("weapon_category", "")).is_empty():
+				lines.append(FiveToolsText.subtitle(String(item.get("name", ""))) + " · arma nell'inventario")
 	if lines.is_empty():
-		lines.append("Nessun attacco del bestiario. Puoi aggiungerne manualmente qui sotto.")
-	_attacks_description.text = "\n".join(lines)
+		lines.append("Nessun attacco del bestiario o arma nell'inventario.")
+	_attacks_description.text = "\n\n".join(lines)
 
 
 func _update_defense_display() -> void:
@@ -2230,6 +2234,7 @@ func _on_inventory_updated(inventory: Array) -> void:
 		_set_status("Impossibile salvare inventario: " + error_string(error))
 		return
 	_replace_current_record(record)
+	_refresh_attacks(record)
 
 
 func _on_ability_value_changed(_value: float, ability: String) -> void:
