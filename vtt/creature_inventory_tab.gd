@@ -30,6 +30,8 @@ var _catalog_details: RichTextLabel
 var _equip_main: Button
 var _equip_off: Button
 var _equip_armor: Button
+var _attuned: CheckButton
+var _active_item: CheckButton
 var _unequip: Button
 var _search: LineEdit
 var _catalog_list: ItemList
@@ -158,6 +160,16 @@ func setup(on_change: Callable, on_status: Callable, on_document_change: Callabl
 	_unequip.text = "Rimuovi equipaggiamento"
 	_unequip.pressed.connect(_unequip_selected)
 	equipment_row.add_child(_unequip)
+	_attuned = CheckButton.new()
+	_attuned.text = "Sintonia"
+	_attuned.tooltip_text = "Gli oggetti che richiedono sintonia conferiscono bonus solo quando sintonizzati."
+	_attuned.toggled.connect(_set_attunement)
+	equipment_row.add_child(_attuned)
+	_active_item = CheckButton.new()
+	_active_item.text = "Attivo"
+	_active_item.tooltip_text = "Disattiva gli effetti di un oggetto senza rimuoverlo dall'inventario."
+	_active_item.toggled.connect(_set_active_item)
+	equipment_row.add_child(_active_item)
 
 	var actions := HBoxContainer.new()
 	actions.add_theme_constant_override("separation", 6)
@@ -843,6 +855,11 @@ func _update_equip_buttons() -> void:
 	_equip_main.disabled = not present or not ItemRules.valid_slot(entry, "main")
 	_equip_off.disabled = not present or not ItemRules.valid_slot(entry, "off")
 	_equip_armor.disabled = not present or not ItemRules.valid_slot(entry, "body")
+	var req: Variant = entry.get("req_attune", entry.get("reqAttune", false))
+	_attuned.disabled = not present or req == false
+	_attuned.set_pressed_no_signal(present and bool(_inventory[index].get("attuned", false)))
+	_active_item.disabled = not present or ItemRules.kind(entry) == "document"
+	_active_item.set_pressed_no_signal(present and bool(_inventory[index].get("active", true)))
 	_unequip.disabled = not present or ItemRules.slots(_inventory[index]).is_empty()
 
 
@@ -873,6 +890,26 @@ func _equip_selected(slot: String) -> void:
 	_inventory[index] = updated
 	_sanitize_equipment()
 	_refresh_inventory(index)
+	_publish()
+
+
+func _set_attunement(value: bool) -> void:
+	if _loading:
+		return
+	var index: int = _selected_inventory_index()
+	if index < 0 or index >= _inventory.size():
+		return
+	_inventory[index]["attuned"] = value
+	_publish()
+
+
+func _set_active_item(value: bool) -> void:
+	if _loading:
+		return
+	var index: int = _selected_inventory_index()
+	if index < 0 or index >= _inventory.size():
+		return
+	_inventory[index]["active"] = value
 	_publish()
 
 
