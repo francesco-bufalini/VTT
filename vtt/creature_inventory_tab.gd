@@ -153,6 +153,41 @@ func load_record(record: Dictionary) -> void:
 			})
 	_refresh_inventory()
 	_loading = false
+	if _documents_tab != null:
+		_documents_tab.call("load_record", record)
+
+
+func _catalog_entry(item: Dictionary) -> Dictionary:
+	for row: Dictionary in _catalog:
+		if String(row.get("id", "")) == String(item.get("id", "")):
+			return row
+	return item
+
+
+func _image_label(item: Dictionary, caption: String) -> String:
+	return ("🖼  " if not ItemImagePreview.image_source(item).is_empty() else "") + caption
+
+
+func _on_image_click(event: InputEvent, from_catalog: bool) -> void:
+	var click: InputEventMouseButton = event as InputEventMouseButton
+	if click == null or not click.pressed or click.button_index != MOUSE_BUTTON_LEFT:
+		return
+	var list: ItemList = _catalog_list if from_catalog else _inventory_list
+	var index: int = list.get_item_at_position(click.position, true)
+	if index < 0:
+		return
+	var rect: Rect2 = list.get_item_rect(index)
+	if click.position.x - rect.position.x > 38:
+		return
+	var item: Dictionary = {}
+	if from_catalog and index < _filtered.size():
+		item = _filtered[index]
+	elif not from_catalog and index < _inventory.size():
+		item = _catalog_entry(_inventory[index])
+	if ItemImagePreview.image_source(item).is_empty():
+		return
+	_image_preview.call("preview", item)
+	get_viewport().set_input_as_handled()
 
 
 func _filter_catalog() -> void:
@@ -171,7 +206,7 @@ func _filter_catalog() -> void:
 		if not query.is_empty() and query not in haystack:
 			continue
 		_filtered.append(item)
-		_catalog_list.add_item(Player5eTools.display_label(item))
+		_catalog_list.add_item(_image_label(item, Player5eTools.display_label(item)))
 		if _filtered.size() >= 250:
 			break
 	_add_button.disabled = true
@@ -259,7 +294,7 @@ func _refresh_inventory(selected_index: int = -1) -> void:
 	_loading = true
 	_inventory_list.clear()
 	for item: Dictionary in _inventory:
-		_inventory_list.add_item(_inventory_label(item))
+		_inventory_list.add_item(_image_label(_catalog_entry(item), _inventory_label(item)))
 	if selected_index >= 0 and selected_index < _inventory.size():
 		_inventory_list.select(selected_index)
 		_quantity.value = int(_inventory[selected_index].get("quantity", 1))
