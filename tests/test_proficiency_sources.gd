@@ -69,6 +69,10 @@ func run() -> void:
 	assert(weapon.source == "item", "Equipped weapon comes before unarmed strike")
 	assert(Attacks.attack_bonus(record, weapon, 2) == 6,
 		"Starting Fighter martial training applies automatically, per creature")
+	var additive_attack: Dictionary = weapon.duplicate(true)
+	additive_attack["damage"] = "1d8+2"
+	assert(Attacks.damage_expression(record, additive_attack).ends_with("+2+4"),
+		"Rolling damage must retain base and ability bonuses when both appear in the displayed formula")
 	record["proficiency_origins"] = [{"id": "class|phb|fighter", "name": "Starting Fighter", "automatic": true, "disabled": true}]
 	assert(Attacks.attack_bonus(record, weapon, 2) == 6,
 		"Legacy disabled flags cannot suppress mandatory class weapon proficiencies")
