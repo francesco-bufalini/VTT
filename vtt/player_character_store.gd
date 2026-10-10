@@ -241,6 +241,8 @@ func create_character() -> Dictionary:
 		"pact_slots_bonus": 0,
 		"pact_slots_spent": 0,
 		"pact_slot_level": 1,
+		"spell_slots_visible": true,
+		"pact_slots_visible": true,
 		"linked_token_sync_id": "",
 		"linked_token_name": ""
 	}
@@ -309,6 +311,8 @@ func normalize_character(value: Dictionary) -> Dictionary:
 		if not defaults.get(array_key, []) is Array:
 			defaults[array_key] = []
 
+	defaults["spell_slots_visible"] = bool(defaults.get("spell_slots_visible", true))
+	defaults["pact_slots_visible"] = bool(defaults.get("pact_slots_visible", true))
 	# A character can track Pact Magic separately from shared spell slots.
 	defaults["pact_slots_total"] = maxi(0, int(defaults.get("pact_slots_total", 0)))
 	defaults["pact_slots_bonus"] = clampi(int(defaults.get("pact_slots_bonus", 0)), -8, 20)
