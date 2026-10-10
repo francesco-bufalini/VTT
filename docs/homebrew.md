@@ -26,6 +26,18 @@ For condition icons set `icon_id` to an existing status (e.g. `poisoned`) or `ic
 
 Homebrew spell `data` uses runtime catalog fields: `level`, `classes`, `description`, `target_mode`, `range_feet`, and geometry such as `aoe_shape`/`aoe_radius_feet`. See the starter example and `vtt/spells/spell_catalog.gd`. A spell without supported runtime mechanics may remain reference-only. Catalog-level support does not invent new spell mechanics.
 
+## Separazione compendio / integrazioni / istanze
+
+I dati homebrew per il **compendio** accettano ora anche il JSON nativo di 5etools (ad es. `_meta.sources` con array `monster`, `spell`, `item`): vedi `homebrew/examples/native_5etools.json`. Il vecchio envelope VTT v1 resta leggibile, con gli stessi ID persistenti e la stessa semantica di `overrides`. Per gli import nativi senza ID espliciti, l'ID è derivato da codice fonte, categoria e nome; non rinominare la voce dopo averla inserita nelle schede. Il loader non riscrive mai i JSON originali e mantiene `entries` e i tag 5etools.
+
+Il codice `vtt/content_enrichment.gd` gestisce le **estensioni VTT**: cerca documenti `{schema_version:1,category,entries:[{id,fields}]}` in `res://vtt/enrichment/` e `user://vtt_enrichment/` (sottocartelle incluse). Usa l'ID esatto restituito dal catalogo. Per esempio, `vtt/enrichment/spells.json` contiene ora le precedenti eccezioni di targeting, movimento e geometria (`meteor_swarm`, `thunderwave`, ecc.). L'asset già generato `assets/spell_area_geometry.json` continua a fornire la geometria ufficiale quando disponibile: il nuovo layer può aggiungere o correggere i campi finali. Per le voci homebrew **non** si ereditano automaticamente geometrie ufficiali solo perché il nome coincide.
+
+Le voci 2014 mantengono le regole PHB e la geometria ricavata dalle rispettive controparti 2024. Parte delle meccaniche legacy speciali resta ancora in `spell_catalog.gd`; questa modifica non riscrive le formule esistenti, ma stabilisce il punto unico in cui aggiungere nuove estensioni per qualunque origine. Integrazioni diverse per lo stesso ID vengono applicate in ordine deterministico: prima asset del progetto, poi utente; i singoli campi successivi prevalgono.
+
+`vtt/item_instance.gd` distingue la voce di **catalogo** dall'oggetto posseduto. Gli inventari già salvati mantengono `id`, `quantity`, `equipped_slots` e gli snapshot meccanici per funzionare quando manca il catalogo; i nuovi `instance_overrides` consentono proprietà per copia, ad esempio `dimensions_m: {length: 1.2, width: 0.1, height: 0.02}`. Il pannello inventario separa una copia dalla pila prima di cambiarne le dimensioni. Le misure descrittive non cambiano automaticamente la portata tattica. Lo stato delle creature continua a essere salvato in `CreatureArchive` tramite gli adattatori esistenti: né `ContentCatalog` né `ContentEnrichment` serializzano HP, inventari o proprietà private.
+
+Test di regressione dedicati: `tests/test_content_layer_separation.gd` e `tests/test_item_instance_overrides.gd`. Anche `tests/test_content_catalog.gd`, `tests/test_spell_catalog_edition_geometry.gd`, `tests/test_inventory_quantities.gd` e `tests/test_equipped_weapons.gd` devono continuare a passare.
+
 ## Rebuilding upstream catalogs
 
 Do not edit generated JSON/GDScript catalogs by hand. Run:
