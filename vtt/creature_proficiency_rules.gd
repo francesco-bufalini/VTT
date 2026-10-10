@@ -630,17 +630,17 @@ static func starting_description(source: Dictionary) -> String:
 	var meta: Dictionary = data.get("startingMeta", {})
 	var mode: String = String(source.get("mode", "starting"))
 	var lines := PackedStringArray()
-	lines.append("Core Traits")
+	lines.append("Multiclassing" if mode == "multiclass" else "Core Traits")
 	var dice: String = String(meta.get("hitDice", ""))
-	if not dice.is_empty():
+	if mode == "starting" and not dice.is_empty():
 		lines.append("Hit Point Die: %s per level" % dice)
 		lines.append("Hit Points at Level 1: %d + Constitution modifier" % int(meta.get("hitPointsAtFirst", 0)))
 		lines.append("Hit Points per additional level: %s + Constitution modifier" % dice)
 	var saving: String = _readable_grants(data.get("savingThrows", []))
-	if not saving.is_empty():
+	if mode == "starting" and not saving.is_empty():
 		lines.append("Saving Throw Proficiencies: " + saving)
 	var start: Dictionary = data.get("startingProficiencies", {})
-	for group: String in ["skills", "weapons", "armor", "tools"]:
+	for group: String in (["skills", "weapons", "armor", "tools"] if mode == "starting" else []):
 		var raw: Variant = start.get(group, [])
 		if group == "armor":
 			raw = start.get("armor", [])
@@ -650,7 +650,7 @@ static func starting_description(source: Dictionary) -> String:
 			var title: String = String(names.get(group, group.capitalize()))
 			lines.append(title + ": " + _clean_equipment(displayed))
 	var equipment: Variant = meta.get("equipment", [])
-	if equipment is Array and not (equipment as Array).is_empty():
+	if mode == "starting" and equipment is Array and not (equipment as Array).is_empty():
 		lines.append("")
 		lines.append("Starting Equipment")
 		for item: Variant in equipment:
@@ -658,8 +658,9 @@ static func starting_description(source: Dictionary) -> String:
 		var gold_option: String = String(meta.get("gold", ""))
 		if not gold_option.is_empty():
 			lines.append("Alternativamente: " + _clean_equipment(gold_option) + " per acquistare l'equipaggiamento")
-	lines.append("")
-	lines.append("Multiclassing")
+	if mode == "starting":
+		lines.append("")
+		lines.append("Multiclassing")
 	var requirements: Variant = meta.get("multiclass", {})
 	if requirements is Dictionary and not (requirements as Dictionary).is_empty():
 		var requirement_pieces := PackedStringArray()
