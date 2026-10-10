@@ -80,10 +80,34 @@ static func entries(category: String) -> Array[Dictionary]:
 			for raw: Variant in reference_value[category]:
 				if raw is Dictionary:
 					result.append(raw.duplicate(true))
+	# The compact player catalog can omit backgrounds even though the
+	# bundled structured proficiency index contains their full identifiers.
+	# Include those options while keeping catalog/homebrew entries authoritative.
+	if category == "backgrounds":
+		var existing: Dictionary = {}
+		for entry: Dictionary in result:
+			existing[String(entry.get("name", "")).to_lower() + "|" + String(entry.get("source", "")).to_lower()] = true
+		var index_file := FileAccess.open("res://vtt/data/proficiency_grants_5etools.json", FileAccess.READ)
+		if index_file != null:
+			var indexed: Variant = JSON.parse_string(index_file.get_as_text())
+			index_file.close()
+			if indexed is Dictionary:
+				var background_rows: Variant = (indexed as Dictionary).get("background", [])
+				if background_rows is Array:
+					for row: Variant in background_rows:
+						if not row is Dictionary:
+							continue
+						var name: String = String(row.get("name", "")).strip_edges()
+						var source: String = String(row.get("source", "")).strip_edges()
+						var key: String = name.to_lower() + "|" + source.to_lower()
+						if name.is_empty() or existing.has(key):
+							continue
+						existing[key] = true
+						result.append({"id": "background:" + key, "name": name, "source": source})
 	var merged: Array[Dictionary] = ContentCatalog.merge(category, result)
 	if category == "items":
 		merged.append_array(ContentCatalog.merge("documents", []))
-	if category in ["races", "feats", "items", "subclasses"]:
+	if category in ["races", "feats", "items", "subclasses", "backgrounds"]:
 		# Merge first, then sort once. Core, supplements and homebrew must
 		# participate in a single alphabetical ordering.
 		merged.sort_custom(
