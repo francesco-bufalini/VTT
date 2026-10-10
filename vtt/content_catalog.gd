@@ -207,7 +207,15 @@ static func merge(category: String, base: Array[Dictionary]) -> Array[Dictionary
 			entry["id"] = stable_id(category, entry)
 		entry["origin"] = String(entry.get("origin", "5etools"))
 		indexed[String(entry.id)] = entry
-	for row: Dictionary in home_entries(category):
+	# Base definitions must be indexed before local document overrides,
+	# regardless of filesystem traversal order.
+	var home_rows: Array[Dictionary] = home_entries(category)
+	if category == "documents":
+		home_rows.sort_custom(
+			func(a: Dictionary, b: Dictionary) -> bool:
+				return String(a.get("overrides", "")).is_empty() and not String(b.get("overrides", "")).is_empty()
+		)
+	for row: Dictionary in home_rows:
 		var target := String(row.get("overrides", ""))
 		if not target.is_empty():
 			if not indexed.has(target):
