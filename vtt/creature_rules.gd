@@ -3,6 +3,39 @@ extends RefCounted
 # Static, public creature-rule helpers. Mutable resources/trackers have been
 # retired from the creature sheet and are no longer generated here.
 
+const LEVEL_XP := [0, 0, 300, 900, 2700, 6500, 14000, 23000, 34000, 48000, 64000, 85000, 100000, 120000, 140000, 165000, 195000, 225000, 265000, 305000, 355000]
+const MONSTER_TYPES := {
+	"aberration": "Aberrazione", "beast": "Bestia", "celestial": "Celestiale",
+	"construct": "Costrutto", "dragon": "Drago", "elemental": "Elementale",
+	"fey": "Folletto", "fiend": "Immondo", "giant": "Gigante",
+	"humanoid": "Umanoide", "monstrosity": "Mostruosità", "ooze": "Melma",
+	"plant": "Vegetale", "undead": "Non morto"
+}
+
+
+static func experience_for_level(level: int) -> int:
+	return LEVEL_XP[clampi(level, 0, 20)]
+
+
+# The monster's challenge rating remains in the original stat block (including
+# fractions), while the displayed class level is always an integer.
+static func monster_level(stat: Dictionary) -> int:
+	return maxi(0, roundi(monster_cr_value(stat)))
+
+
+static func monster_type_reference(stat: Dictionary) -> Dictionary:
+	var raw: Variant = stat.get("type", "")
+	var type_code: String = String(raw.get("type", "") if raw is Dictionary else raw).strip_edges().to_lower()
+	if type_code.is_empty():
+		return {}
+	return {
+		"id": "monster_type|" + type_code,
+		"name": String(MONSTER_TYPES.get(type_code, type_code.capitalize())),
+		"source": "5etools",
+		"type_code": type_code
+	}
+
+
 static func monster_armor_class(stat: Dictionary) -> int:
 	var ac_value: Variant = stat.get("ac", [])
 	if ac_value is Array:
