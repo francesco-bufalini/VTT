@@ -618,6 +618,10 @@ func _build_ui() -> void:
 	_add_label(form_hp_row, "/")
 	_second_form_max_hp = _spin(form_hp_row, 0, 99999)
 	_second_form_max_hp.custom_minimum_size.x = 78
+	_second_form_max_hp.value_changed.connect(func(_v: float) -> void:
+		if not _loading and int(_second_form_hp.value) > int(_second_form_max_hp.value):
+			_second_form_hp.value = _second_form_max_hp.value
+	)
 	_second_form_hp.tooltip_text = "PF attuali della seconda forma; si consumano dopo quelli temporanei."
 	_second_form_max_hp.tooltip_text = "PF massimi della seconda forma (polimorfia o forma selvatica)"
 	var defense_flow := HFlowContainer.new()
@@ -646,6 +650,7 @@ func _build_ui() -> void:
 	_initiative.custom_minimum_size.x = 66
 	_initiative.tooltip_text = "Iniziativa calcolata automaticamente dal modificatore di Destrezza"
 	_add_label(movement_row, "👟 Velocità base (ft)")
+	_add_formula_label(movement_row, "(")
 	_speed = SpinBox.new()
 	_speed.min_value = 0
 	_speed.max_value = 999
@@ -655,12 +660,12 @@ func _build_ui() -> void:
 	_speed.value_changed.connect(_on_speed_changed)
 	movement_row.add_child(_speed)
 	_speed.tooltip_text = "Velocità base dalla specie o dal bestiario, modificabile"
-	_add_formula_label(movement_row, "(")
 	_speed_bonus = _spin(movement_row, -999, 999)
 	_speed_bonus.custom_minimum_size.x = 65
 	_speed_bonus.tooltip_text = "Bonus manuale alla velocità"
 	ManualBonus.decorate(_speed_bonus)
-	_add_formula_label(movement_row, ") =")
+	_add_formula_label(movement_row, ")")
+	_add_formula_label(movement_row, "=")
 	_speed_effective = Label.new()
 	movement_row.add_child(_speed_effective)
 	_speed.value_changed.connect(func(_value: float) -> void: _update_speed_display())
@@ -2508,8 +2513,9 @@ func _refresh_trackers(record: Dictionary) -> void:
 	var bonus_value: Variant = record.get("resource_tracker_bonuses", {})
 	var bonuses: Dictionary = bonus_value as Dictionary if bonus_value is Dictionary else {}
 	for tracker: Dictionary in trackers:
-		var row := HBoxContainer.new()
-		row.add_theme_constant_override("separation", 5)
+		var row := HFlowContainer.new()
+		row.add_theme_constant_override("h_separation", 5)
+		row.add_theme_constant_override("v_separation", 3)
 		_tracker_rows.add_child(row)
 		var source_button := Button.new()
 		var title: String = String(tracker.get("name", "Risorsa"))
@@ -2541,6 +2547,9 @@ func _refresh_trackers(record: Dictionary) -> void:
 		remaining.custom_minimum_size.x = 50
 		remaining.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
 		row.add_child(remaining)
+		_add_formula_label(row, "=")
+		_add_formula_label(row, "(")
+		_add_label(row, str(base_maximum))
 		var manual_bonus := SpinBox.new()
 		manual_bonus.min_value = -999
 		manual_bonus.max_value = 9999
@@ -2553,6 +2562,7 @@ func _refresh_trackers(record: Dictionary) -> void:
 		ManualBonus.decorate(manual_bonus)
 		manual_bonus.value_changed.connect(_change_tracker_bonus.bind(id))
 		row.add_child(manual_bonus)
+		_add_formula_label(row, ")")
 		var restore := Button.new()
 		restore.text = "+"
 		restore.tooltip_text = "Recupera un utilizzo"
@@ -3359,9 +3369,10 @@ func _sync_token_health(record: Dictionary) -> void:
 	if token.has_method("set_conditions"):
 		token.call("set_conditions", record.get("conditions", []))
 	if token.has_method(method):
-		token.call(
-			method, int(record.get("current_hp", 1)),
-			int(record.get("max_hp", 1))
+		var transformed: bool = int(record.get("second_form_hp", 0)) > 0
+		token.call(method,
+			int(record.get("second_form_hp", 0)) if transformed else int(record.get("current_hp", 1)),
+			int(record.get("second_form_max_hp", 0)) if transformed else int(record.get("max_hp", 1))
 		)
 
 
@@ -3369,13 +3380,14 @@ func get_owned_health_bar_sync_entries() -> Array[Dictionary]:
 	var rows: Array[Dictionary] = []
 	for record: Dictionary in _records:
 		var id := String(record.get("linked_token_sync_id", ""))
-		var maximum := int(record.get("max_hp", 0))
+		var transformed: bool = int(record.get("second_form_hp", 0)) > 0
+		var maximum: int = int(record.get("second_form_max_hp", 0)) if transformed else int(record.get("max_hp", 0))
 		if id.is_empty() or maximum <= 0 or _find_linked_token(record) == null:
 			continue
 		rows.append({
 			"token_id": id,
 			"percent": clampf(
-				float(record.get("current_hp", 0)) / float(maximum) * 100.0,
+				float(record.get("second_form_hp", 0) if transformed else record.get("current_hp", 0)) / float(maximum) * 100.0,
 				0.0, 100.0
 			)
 		})
