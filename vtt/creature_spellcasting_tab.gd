@@ -6,6 +6,7 @@ extends VBoxContainer
 const SpellCatalog = preload("res://vtt/spells/spell_catalog.gd")
 const Rules = preload("res://vtt/creature_rules.gd")
 const ManualBonus = preload("res://vtt/manual_bonus_style.gd")
+const FormulaValue = preload("res://vtt/formula_value.gd")
 const DialogLayout = preload("res://vtt/dialog_layout.gd")
 
 const BOOK_VIEW_CLASS := 10
@@ -52,6 +53,8 @@ var _description: RichTextLabel
 var _prepare: Button
 var _slot_totals: Dictionary = {}
 var _slot_bonus_controls: Dictionary = {}
+var _slot_formula_values: Dictionary = {}
+var _pact_formula_value: HBoxContainer
 var _remaining_labels: Dictionary = {}
 var _slot_use: Dictionary = {}
 var _slot_recharge: Dictionary = {}
@@ -270,7 +273,7 @@ func setup(
 	_slot_grid.add_theme_constant_override("v_separation", 5)
 	slot_scroll.add_child(_slot_grid)
 	var hint := Label.new()
-	hint.text = "Liv.    Usa  ·  Rimasti / max = (base + bonus)  ·  Ricarica"
+	hint.text = "Liv.   Usa  ·  Rimasti / max ƒ  ·  Ricarica     (doppio clic sul massimo)"
 	hint.add_theme_font_size_override("font_size", 12)
 	_slot_grid.add_child(hint)
 	for lvl: int in range(1, 10):
@@ -295,8 +298,8 @@ func setup(
 		remaining.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
 		row.add_child(remaining)
 		_remaining_labels[lvl] = remaining
-		ManualBonus.add_formula_label(row, "=")
-		ManualBonus.add_formula_label(row, "(")
+		var max_label := Label.new()
+		row.add_child(max_label)
 		var total := SpinBox.new()
 		total.min_value = 0
 		total.max_value = 99
@@ -318,7 +321,13 @@ func setup(
 		bonus.value_changed.connect(_on_slot_bonus_changed.bind(lvl))
 		row.add_child(bonus)
 		_slot_bonus_controls[lvl] = bonus
-		ManualBonus.add_formula_label(row, ")")
+		var max_index: int = max_label.get_index()
+		row.remove_child(max_label)
+		var formula := FormulaValue.new()
+		row.add_child(formula)
+		row.move_child(formula, max_index)
+		formula.setup(max_label, [total, bonus], ["Base", "Bonus"])
+		_slot_formula_values[lvl] = formula
 		var recharge := Button.new()
 		recharge.text = "+"
 		recharge.custom_minimum_size.x = 30
@@ -364,8 +373,8 @@ func setup(
 	var total_group := HBoxContainer.new()
 	total_group.add_theme_constant_override("separation", 3)
 	_pact_row.add_child(total_group)
-	ManualBonus.add_formula_label(total_group, "=")
-	ManualBonus.add_formula_label(total_group, "(")
+	var pact_max_label := Label.new()
+	total_group.add_child(pact_max_label)
 	_pact_total_spin = SpinBox.new()
 	_pact_total_spin.min_value = 0
 	_pact_total_spin.max_value = 8
@@ -382,7 +391,13 @@ func setup(
 	ManualBonus.decorate(_pact_bonus_spin)
 	_pact_bonus_spin.value_changed.connect(_on_pact_values_changed)
 	total_group.add_child(_pact_bonus_spin)
-	ManualBonus.add_formula_label(total_group, ")")
+	var pact_index: int = pact_max_label.get_index()
+	total_group.remove_child(pact_max_label)
+	_pact_formula_value = FormulaValue.new()
+	total_group.add_child(_pact_formula_value)
+	total_group.move_child(_pact_formula_value, pact_index)
+	_pact_formula_value.call("setup", pact_max_label,
+		[_pact_total_spin, _pact_bonus_spin], ["Base", "Bonus"])
 	_pact_remain = Label.new()
 	_pact_remain.custom_minimum_size.x = 68
 	_pact_row.add_child(_pact_remain)
@@ -398,6 +413,7 @@ func setup(
 	_pact_use.text = "−"
 	_pact_row.move_child(_pact_use, level_group.get_index() + 1)
 	_pact_row.move_child(_pact_remain, _pact_use.get_index() + 1)
+	_pact_row.move_child(total_group, _pact_remain.get_index() + 1)
 
 	_apply_resource_visibility()
 	_update_resource_labels()
@@ -1088,11 +1104,21 @@ func _update_resource_labels() -> void:
 	for lvl: int in range(1, 10):
 		var total: int = _effective_slot_total(lvl) if _totals.size() > lvl and _slot_bonuses.size() > lvl else 0
 		var spent: int = clampi(int(_spent[lvl]), 0, total) if _spent.size() > lvl else 0
-		(_remaining_labels[lvl] as Label).text = "%d / %d" % [total - spent, total]
+		(_remaining_labels[lvl] as Label).text = "%d /" % (total - spent)
+		if _slot_formula_values.has(lvl):
+			_slot_formula_values[lvl].set_formula(str(total),
+				"Slot livello %d: base %d %+d bonus = %d" % [
+					lvl, int(_totals[lvl]), int(_slot_bonuses[lvl]), total
+				])
 		(_slot_use[lvl] as Button).disabled = spent >= total
 		(_slot_recharge[lvl] as Button).disabled = spent <= 0
 	var pact_max: int = _effective_pact_total()
-	_pact_remain.text = "%d / %d" % [pact_max - _pact_spent, pact_max]
+	_pact_remain.text = "%d /" % (pact_max - _pact_spent)
+	if _pact_formula_value != null:
+		_pact_formula_value.call("set_formula", str(pact_max),
+			"Magia del Patto: base %d %+d bonus = %d" % [
+				_pact_total, _pact_bonus, pact_max
+			])
 	_pact_use.disabled = _pact_spent >= pact_max
 	_pact_restore.disabled = _pact_spent <= 0
 
