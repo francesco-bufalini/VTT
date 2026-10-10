@@ -124,13 +124,14 @@ func run() -> void:
 		and placeable[0].id == area._current().id
 		and placeable[0].current_miniature_id == "hero_test",
 		"Context placement must include unspawned owned creatures and their saved appearance")
-	assert(area._tabs.get_tab_count() == 6, "Character sheet must expose inventory and spellcasting tabs")
+	assert(area._tabs.get_tab_count() == 7, "Character sheet must expose separate statistics and general tabs")
 	var tab_titles: Array[String] = []
 	for tab_index: int in range(area._tabs.get_tab_count()):
 		tab_titles.append(area._tabs.get_tab_title(tab_index))
-	assert("Inventario" in tab_titles and "Incantesimi" in tab_titles)
+	assert("Inventario" in tab_titles and "Incantesimi" in tab_titles
+		and "Statistiche" in tab_titles and "Generale" in tab_titles)
 	assert("Risorse" not in tab_titles and area._tracker_rows.get_parent() == area._name.get_parent().get_parent(),
-		"Trackers must be inside Statistics, not a separate resources tab")
+		"Trackers must remain in General, not a separate resources tab")
 	area._choose_miniature(area._current(), false, true)
 	area._miniature_filter.text = "ape"
 	area._miniature_filter.text_changed.emit("ape")
@@ -294,6 +295,7 @@ func run() -> void:
 	assert(sheet.classes.size() == 2)
 	assert(sheet.classes[0].level == 5 and sheet.classes[1].level == 2)
 	assert(sheet.level == 7, "Derived total must equal the class-level sum")
+	assert(int(sheet.xp) >= Rules.experience_for_level(7), "XP must meet the total class-level threshold")
 	area._level.value = 6
 	area._save()
 	sheet = area._current()
