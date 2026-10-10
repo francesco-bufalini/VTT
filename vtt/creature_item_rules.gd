@@ -3,6 +3,7 @@ extends RefCounted
 # 5etools item semantics shared by inventory, attack calculations and saves.
 # The compact item catalog stores type M/R/S, damage, range and properties.
 const Catalog = preload("res://vtt/player_5etools_catalog.gd")
+const ItemInstance = preload("res://vtt/item_instance.gd")
 
 static var _catalog_by_id: Dictionary = {}
 
@@ -16,7 +17,8 @@ static func entry_for(saved: Dictionary) -> Dictionary:
 	if _catalog_by_id.is_empty():
 		for item: Dictionary in Catalog.entries("items"):
 			_catalog_by_id[String(item.get("id", ""))] = item
-	return _catalog_by_id.get(item_id, saved)
+	var definition: Dictionary = _catalog_by_id.get(item_id, saved)
+	return ItemInstance.resolve(definition, saved)
 
 
 static func kind(entry: Dictionary) -> String:

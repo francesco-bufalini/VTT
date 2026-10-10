@@ -1,5 +1,7 @@
 extends RefCounted
 
+const Enrichment = preload("res://vtt/content_enrichment.gd")
+
 # Shared data normalization and local content overlays, never private sheets.
 const HOME_DIR := "user://homebrew"
 const CATEGORIES := ["items", "subclasses", "subclass_features", "monsters", "races", "classes", "spells", "conditions", "diseases", "effects", "class_features", "species_traits", "feats", "backgrounds", "optional_features"]
@@ -37,6 +39,7 @@ static var diagnostics: Array[String] = []
 static var _effects: Array[Dictionary] = []
 
 static func reload_homebrew(paths: Array[String] = ["res://homebrew", HOME_DIR]) -> void:
+	Enrichment.reload()
 	_home.clear()
 	diagnostics.clear()
 	_loaded = true
@@ -74,6 +77,9 @@ static func _load_package(path: String) -> void:
 		_diagnose("Homebrew: JSON non valido: " + path)
 		return
 	var package: Dictionary = parser.data
+	if package.has("_meta") and not package.has("schema_version"):
+		_load_native_package(package, path)
+		return
 	if package.get("schema_version") != 1 or not package.get("entries") is Array:
 		_diagnose("Homebrew: schema non valido: " + path)
 		return
@@ -117,6 +123,86 @@ static func _load_package(path: String) -> void:
 				data["icon"] = ""
 		_home[id] = data
 
+# Native 5etools homebrew packages keep their _meta.sources and category
+# arrays intact on disk. Adapt them at the catalog boundary only.
+const NATIVE_CATEGORIES := {
+	"monster": "monsters",
+	"spell": "spells",
+	"item": "items",
+	"baseitem": "items",
+	"magicvariant": "items",
+	"class": "classes",
+	"subclass": "subclasses",
+	"subclassFeature": "subclass_features",
+	"classFeature": "class_features",
+	"race": "races",
+	"raceFeature": "species_traits",
+	"feat": "feats",
+	"background": "backgrounds",
+	"optionalfeature": "optional_features",
+	"condition": "conditions",
+	"disease": "diseases"
+}
+
+
+static func _native_slug(value: String, max_length: int) -> String:
+	var regex := RegEx.new()
+	regex.compile("[^a-z0-9_-]+")
+	var slug: String = regex.sub(value.to_lower().strip_edges(), "_", true)
+	return slug.trim_prefix("_").trim_suffix("_").substr(0, max_length)
+
+
+static func _load_native_package(package: Dictionary, path: String) -> void:
+	var metadata: Variant = package.get("_meta", {})
+	if not metadata is Dictionary:
+		_diagnose("Homebrew 5etools: _meta non valido: " + path)
+		return
+	var defined_sources: Dictionary = {}
+	var sources: Variant = (metadata as Dictionary).get("sources", [])
+	if sources is Array:
+		for value: Variant in sources:
+			if value is Dictionary:
+				var code: String = String((value as Dictionary).get("json", "")).strip_edges()
+				if not code.is_empty():
+					defined_sources[code] = true
+	if defined_sources.is_empty():
+		_diagnose("Homebrew 5etools: _meta.sources mancante: " + path)
+		return
+	var fallback_source: String = String(defined_sources.keys()[0]) if defined_sources.size() == 1 else ""
+	for native_category: String in NATIVE_CATEGORIES.keys():
+		var entries: Variant = package.get(native_category, [])
+		if not entries is Array:
+			continue
+		var category: String = NATIVE_CATEGORIES[native_category]
+		for value: Variant in entries:
+			if not value is Dictionary:
+				_diagnose("Homebrew 5etools: voce non valida: " + path)
+				continue
+			var data: Dictionary = (value as Dictionary).duplicate(true)
+			var name: String = String(data.get("name", "")).strip_edges()
+			var source: String = String(data.get("source", fallback_source)).strip_edges()
+			if name.is_empty() or source.is_empty() or not defined_sources.has(source):
+				_diagnose("Homebrew 5etools: nome/fonte non validi: " + path)
+				continue
+			var namespace: String = _native_slug(source, 48)
+			var local_id: String = _native_slug(name, 64)
+			if namespace.is_empty() or local_id.is_empty():
+				_diagnose("Homebrew 5etools: impossibile creare ID: " + name)
+				continue
+			var id: String = "homebrew:%s:%s:%s" % [namespace, category, local_id]
+			if _home.has(id):
+				_diagnose("Homebrew: ID duplicato ignorato (vince il primo): " + id)
+				continue
+			data["id"] = id
+			data["source"] = source
+			data["category"] = category
+			data["origin"] = "homebrew"
+			data["asset_dir"] = path.get_base_dir()
+			if category in EFFECT_CATEGORIES and String(data.get("icon", "")).length() > 16:
+				data["icon"] = ""
+			_home[id] = data
+
+
 static func home_entries(category: String) -> Array[Dictionary]:
 	if not _loaded:
 		reload_homebrew()
@@ -156,7 +242,7 @@ static func merge(category: String, base: Array[Dictionary]) -> Array[Dictionary
 			indexed[String(row.id)] = row
 	var result: Array[Dictionary] = []
 	for row: Dictionary in indexed.values():
-		result.append(row)
+		result.append(Enrichment.apply_to(category, row))
 	return result
 
 static func _load_effects() -> void:

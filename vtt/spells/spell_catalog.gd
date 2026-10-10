@@ -40,48 +40,8 @@ const LEVEL_NAMES: Array[String] = [
 	"5° livello", "6° livello", "7° livello", "8° livello", "9° livello"
 ]
 
-# Runtime-only mechanics layered on top of the generated 5eTools catalog.
-# Keeping these here avoids modifying the generated file by hand.
-const RUNTIME_OVERRIDES: Dictionary = {
-	"cloudkill": {
-		"movable_aoe_feet": 10.0,
-		"movable_aoe_mode": "away_from_caster"
-	},
-	"doomtide": {
-		"movable_aoe_feet": 10.0,
-		"movable_aoe_mode": "away_from_caster"
-	},
-	"incendiary_cloud": {
-		"movable_aoe_feet": 10.0,
-		"movable_aoe_mode": "free_exact"
-	},
-	"whirlwind": {
-		"movable_aoe_feet": 30.0,
-		"movable_aoe_mode": "free"
-	},
-	"conjure_celestial": {
-		"movable_aoe_feet": 30.0,
-		"movable_aoe_mode": "free"
-	},
-	"meteor_swarm": {
-		"target_mode": "token_then_multi_point",
-		"range_feet": 5280.0,
-		"base_target_clicks": 4,
-		"aoe_shape": "sphere",
-		"aoe_radius_feet": 40.0,
-		"visual_style": "fire",
-		"projectile_style": "fire",
-		"projectile_travel_seconds": 0.8,
-		"meteor_drop_height_feet": 60.0,
-		"requires_ground": true,
-		"transient_seconds": 5.0
-	},
-	"thunderwave": {
-		"forced_movement_feet": 15.0,
-		"forced_movement_mode": "away_from_caster",
-		"forced_movement_on_failed_save": true
-	}
-}
+# Source-independent extensions are stored in vtt/enrichment/*.json and user://vtt_enrichment.
+const Enrichment = preload("res://vtt/content_enrichment.gd")
 
 # Runtime fields used by the VTT:
 # target_mode:
@@ -1110,22 +1070,19 @@ const SPELLS: Dictionary = {
 
 
 static func _apply_runtime_overrides(data: Dictionary) -> Dictionary:
-	var result: Dictionary = data.duplicate(true)
-	var spell_id: String = String(result.get("id", ""))
-	var override_value: Variant = RUNTIME_OVERRIDES.get(spell_id, {})
-	if override_value is Dictionary:
-		for key: Variant in (override_value as Dictionary).keys():
-			result[key] = (override_value as Dictionary).get(key)
+	# Preserve hand-authored legacy runtime fields, then apply VTT-only
+	# extensions. Never write the resolved result back into compendium JSON.
+	var result: Dictionary = Enrichment.apply_to("spells", data)
+	if String(result.get("origin", "")) != "homebrew":
+		# Official geometries are inferred from the separately generated map
+		# catalog. Never infer a homebrew spell's geometry by coincident name.
+		result = SpellAreaCatalog.apply_to_spell(result)
+	result = Enrichment.apply_to("spells", result)
 
-	# Geometry, range, targeting and generic VFX come from the generated
-	# runtime map catalogue. Hand-authored entries still carry descriptive
-	# metadata and special mechanics, but no longer need to be the authority
-	# for ordinary AoE dimensions.
-	result = SpellAreaCatalog.apply_to_spell(result)
+	if String(result.get("description", "")).is_empty() and result.has("entries"):
+		result["description"] = ContentCatalog.description(result)
 
-	# Condition-only spells such as Hold Person have no map geometry, so the
-	# area catalogue has nothing from which to infer targeting. The runtime
-	# condition flow still needs a token target.
+	# Condition-only spells still need a target even without map geometry.
 	if String(result.get("target_mode", "")).is_empty():
 		var conditions_value: Variant = result.get("condition_inflict", [])
 		if conditions_value is Array and not (conditions_value as Array).is_empty():
@@ -1284,7 +1241,7 @@ static func catalog_spell(spell_id: String) -> Dictionary:
 		# even when using the modern shape/visualization model.
 		if has_2024_geometry:
 			base["map_geometry_source"] = "2024-counterpart"
-		return base
+		return Enrichment.apply_to("spells", base)
 	for row: Dictionary in ContentCatalog.home_entries("spells"):
 		if String(row.id) == spell_id or String(row.get("overrides", "")) == spell_id:
 			var custom := row.duplicate(true)

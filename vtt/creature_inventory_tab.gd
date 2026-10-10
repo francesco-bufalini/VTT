@@ -4,6 +4,7 @@ extends VBoxContainer
 # placing or deleting physical objects on the board never changes a sheet.
 const Player5eTools = preload("res://vtt/player_5etools_catalog.gd")
 const ItemRules = preload("res://vtt/creature_item_rules.gd")
+const ItemInstance = preload("res://vtt/item_instance.gd")
 const DocumentsTab = preload("res://vtt/creature_documents_tab.gd")
 const ItemImagePreview = preload("res://vtt/item_image_preview.gd")
 
@@ -23,6 +24,7 @@ var _search: LineEdit
 var _catalog_list: ItemList
 var _inventory_list: ItemList
 var _quantity: SpinBox
+var _size_fields: Dictionary = {}
 var _details: RichTextLabel
 var _add_button: Button
 var _remove_button: Button
@@ -117,6 +119,29 @@ func setup(on_change: Callable, on_status: Callable, on_document_change: Callabl
 	_quantity.custom_minimum_size.x = 95
 	_quantity.value_changed.connect(_on_quantity_changed)
 	actions.add_child(_quantity)
+
+	# Optional physical dimensions belong to the owned item, not its
+	# 5etools compendium definition or VTT-wide enrichment.
+	var dimensions_row := HFlowContainer.new()
+	dimensions_row.add_theme_constant_override("h_separation", 6)
+	add_child(dimensions_row)
+	for axis: String in ["length", "width", "height"]:
+		var caption := Label.new()
+		match axis:
+			"length": caption.text = "Lunghezza (m)"
+			"width": caption.text = "Larghezza (m)"
+			"height": caption.text = "Altezza (m)"
+		dimensions_row.add_child(caption)
+		var input := SpinBox.new()
+		input.min_value = 0.0
+		input.max_value = 1000.0
+		input.step = 0.01
+		input.custom_minimum_size.x = 90
+		input.editable = false
+		input.tooltip_text = "0 = non specificata. Modifica solo questa istanza, non il catalogo."
+		input.value_changed.connect(_on_dimension_changed.bind(axis))
+		dimensions_row.add_child(input)
+		_size_fields[axis] = input
 	_remove_button = Button.new()
 	_remove_button.text = "Rimuovi"
 	_remove_button.pressed.connect(_remove_selected)
@@ -184,19 +209,7 @@ func load_record(record: Dictionary) -> void:
 			var name: String = String(item.get("name", "")).strip_edges()
 			if item_id.is_empty() or name.is_empty():
 				continue
-			var saved_row: Dictionary = {
-				"id": item_id,
-				"name": name,
-				"source": String(item.get("source", "")),
-				"quantity": clampi(int(item.get("quantity", 1)), 1, 99999),
-				"equipped_slots": ItemRules.slots(item)
-			}
-			# Keep a minimal structured snapshot for homebrew items when a
-			# catalog entry is unavailable on another installation.
-			for key: String in ["type", "weapon_category", "damage", "versatile_damage", "damage_type", "range", "properties", "ac", "bonus_ac", "bonus_weapon"]:
-				if item.has(key):
-					saved_row[key] = item[key]
-			_inventory.append(saved_row)
+			_inventory.append(ItemInstance.from_saved(item))
 	_sanitize_equipment()
 	_refresh_inventory()
 	_loading = false
@@ -207,8 +220,8 @@ func load_record(record: Dictionary) -> void:
 func _catalog_entry(item: Dictionary) -> Dictionary:
 	for row: Dictionary in _catalog:
 		if String(row.get("id", "")) == String(item.get("id", "")):
-			return row
-	return item
+			return ItemInstance.resolve(row, item)
+	return ItemInstance.resolve(item, item)
 
 
 func _image_label(item: Dictionary, caption: String) -> String:
@@ -289,6 +302,7 @@ func _on_inventory_selected(index: int) -> void:
 	if index < 0 or index >= _inventory.size():
 		return
 	_quantity.set_value_no_signal(int(_inventory[index].get("quantity", 1)))
+	_set_size_fields(_inventory[index], true)
 	_quantity.editable = true
 	_remove_button.disabled = false
 	_update_equip_buttons()
@@ -312,23 +326,62 @@ func _add_selected() -> void:
 	if item_id.is_empty():
 		return
 	for i: int in range(_inventory.size()):
-		if String(_inventory[i].get("id", "")) == item_id:
+		if String(_inventory[i].get("id", "")) == item_id and not ItemInstance.has_customizations(_inventory[i]):
 			_inventory[i]["quantity"] = mini(99999, int(_inventory[i]["quantity"]) + 1)
 			_refresh_inventory(i)
 			_publish()
 			return
-	var new_item: Dictionary = {
-		"id": item_id,
-		"name": String(source_item.get("name", "")),
-		"source": String(source_item.get("source", "")),
-		"quantity": 1,
-		"equipped_slots": []
-	}
-	for key: String in ["type", "weapon_category", "damage", "versatile_damage", "damage_type", "range", "properties", "ac", "bonus_ac", "bonus_weapon"]:
-		if source_item.has(key):
-			new_item[key] = source_item[key]
+	var new_item: Dictionary = ItemInstance.from_catalog(source_item)
 	_inventory.append(new_item)
 	_refresh_inventory(_inventory.size() - 1)
+	_publish()
+
+
+func _set_size_fields(item: Dictionary, enabled: bool) -> void:
+	var overrides: Variant = item.get("instance_overrides", {})
+	var dimensions: Variant = (overrides as Dictionary).get("dimensions_m", {}) if overrides is Dictionary else {}
+	for axis: String in ["length", "width", "height"]:
+		if not _size_fields.has(axis):
+			continue
+		var input: SpinBox = _size_fields[axis]
+		input.editable = enabled
+		input.set_value_no_signal(float((dimensions as Dictionary).get(axis, 0.0)) if dimensions is Dictionary else 0.0)
+
+
+func _on_dimension_changed(value: float, axis: String) -> void:
+	if _loading:
+		return
+	var index := _selected_inventory_index()
+	if index < 0 or index >= _inventory.size():
+		return
+	var row: Dictionary = _inventory[index].duplicate(true)
+	var existing: Variant = row.get("instance_overrides", {})
+	var old_size: Variant = (existing as Dictionary).get("dimensions_m", {}) if existing is Dictionary else {}
+	var previous: float = float((old_size as Dictionary).get(axis, 0.0)) if old_size is Dictionary else 0.0
+	if is_equal_approx(previous, value):
+		return
+	# A personalized physical object is not a stack of otherwise identical
+	# catalog copies. Split one unit before applying its individual property.
+	if int(row.get("quantity", 1)) > 1:
+		_inventory[index]["quantity"] = int(row.quantity) - 1
+		row["quantity"] = 1
+		row["equipped_slots"] = []
+		index += 1
+		_inventory.insert(index, row)
+	var overrides: Dictionary = row.get("instance_overrides", {}).duplicate(true)
+	var dimensions: Dictionary = overrides.get("dimensions_m", {}).duplicate(true)
+	if value <= 0.0:
+		dimensions.erase(axis)
+	else:
+		dimensions[axis] = snappedf(value, 0.01)
+	if dimensions.is_empty():
+		overrides.erase("dimensions_m")
+	else:
+		overrides["dimensions_m"] = dimensions
+	row["instance_overrides"] = overrides
+	_inventory[index] = row
+	_sanitize_equipment()
+	_refresh_inventory(index)
 	_publish()
 
 
@@ -366,6 +419,7 @@ func _refresh_inventory(selected_index: int = -1) -> void:
 	if selected_index >= 0 and selected_index < _inventory.size():
 		_inventory_list.select(selected_index)
 		_quantity.value = int(_inventory[selected_index].get("quantity", 1))
+	_set_size_fields(_inventory[selected_index] if selected_index >= 0 and selected_index < _inventory.size() else {}, selected_index >= 0)
 	_remove_button.disabled = selected_index < 0
 	_quantity.editable = selected_index >= 0
 	_update_equip_buttons()
@@ -380,7 +434,12 @@ func _inventory_label(item: Dictionary) -> String:
 	if "off" in slots:
 		tags.append("🛡 Secondaria")
 	var equipment := (" [" + ", ".join(tags) + "]") if not tags.is_empty() else ""
-	return "%d × %s%s · %s" % [item.get("quantity", 1), item.get("name", ""), equipment, item.get("source", "")]
+	var extra: Variant = item.get("instance_overrides", {})
+	var dimensions: Variant = (extra as Dictionary).get("dimensions_m", {}) if extra is Dictionary else {}
+	var size_label := ""
+	if dimensions is Dictionary and not (dimensions as Dictionary).is_empty():
+		size_label = " · misure personalizzate"
+	return "%d × %s%s%s · %s" % [item.get("quantity", 1), item.get("name", ""), equipment, size_label, item.get("source", "")]
 
 
 func _show_details(item: Dictionary) -> void:
