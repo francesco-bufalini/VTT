@@ -880,6 +880,7 @@ func _build_ui() -> void:
 	var weapon_bar := HBoxContainer.new()
 	weapon_bar.add_theme_constant_override("separation", 5)
 	combat_column.add_child(weapon_bar)
+	combat_column.move_child(weapon_bar, attack_header.get_index())
 	var weapon_caption := Label.new()
 	weapon_caption.text = "Arma attiva"
 	weapon_bar.add_child(weapon_caption)
@@ -2778,8 +2779,9 @@ func _on_inventory_updated(inventory: Array) -> void:
 	# Equipment changes made on the inventory page also select the weapon
 	# displayed above attacks. Unrelated quantity/armor changes do not.
 	var new_main: Dictionary = ItemRules.occupying(record.get("inventory", []), "main")
-	var previous_signature: String = JSON.stringify(prior_main)
-	var current_signature: String = JSON.stringify(new_main)
+	# Ignore quantity changes: they do not mean the user switched weapons.
+	var previous_signature: String = String(prior_main.get("id", "")) + "|" + String(prior_main.get("instance_id", "")) + "|" + JSON.stringify(prior_main.get("instance_overrides", {}))
+	var current_signature: String = String(new_main.get("id", "")) + "|" + String(new_main.get("instance_id", "")) + "|" + JSON.stringify(new_main.get("instance_overrides", {}))
 	if previous_signature != current_signature:
 		if not new_main.is_empty() and ItemRules.kind(ItemRules.entry_for(new_main)) == "weapon":
 			record["equipped_attack_id"] = "item:" + String(new_main.get("id", ""))
