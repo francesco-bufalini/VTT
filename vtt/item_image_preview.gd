@@ -54,6 +54,17 @@ static func image_source(item: Dictionary) -> String:
 		if not source.is_empty():
 			break
 	if source.is_empty():
+		if String(item.get("origin", "")) == "homebrew":
+			var directory: String = String(item.get("asset_dir", ""))
+			if directory.begins_with("user://") or directory.begins_with("res://"):
+				for name: String in [String(item.get("name", "")), String(item.get("id", "")).get_file()]:
+					if name.is_empty() or ".." in name or "/" in name or "\\" in name:
+						continue
+					for ext: String in [".webp", ".png", ".jpg"]:
+						for folder: String in [directory, directory.path_join("images"), directory.path_join("img")]:
+							var candidate: String = folder.path_join(name + ext)
+							if FileAccess.file_exists(candidate) or ResourceLoader.exists(candidate):
+								return candidate
 		_load_official_images()
 		var key: String = String(item.get("source", "")).to_lower() + "|" + String(item.get("name", "")).to_lower()
 		return String(_official_images.get(key, ""))
