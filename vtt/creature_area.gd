@@ -770,7 +770,8 @@ func _build_ui() -> void:
 
 	var abilities_panel := PanelContainer.new()
 	var abilities_style := health_style.duplicate() as StyleBoxFlat
-	abilities_style.bg_color = Color(0.13, 0.20, 0.23, 0.96)
+	# Keep the section outline but no tinted fill behind proficiency emojis.
+	abilities_style.draw_center = false
 	abilities_style.border_color = Color(0.39, 0.61, 0.67, 0.92)
 	abilities_panel.add_theme_stylebox_override("panel", abilities_style)
 	_abilities_grid = GridContainer.new()
@@ -790,11 +791,16 @@ func _build_ui() -> void:
 	abilities_content.add_child(ability_title)
 	abilities_content.add_child(abilities_row)
 	for ability: String in ["str", "dex", "con", "int", "wis", "cha"]:
-		var cell := VBoxContainer.new()
+		var cell := HBoxContainer.new()
+		cell.add_theme_constant_override("separation", 6)
 		abilities_row.add_child(cell)
-		_add_label(cell, ability.to_upper())
+		var ability_label := Label.new()
+		ability_label.text = ability.to_upper()
+		ability_label.custom_minimum_size.x = 34
+		cell.add_child(ability_label)
 		var scores_row := HBoxContainer.new()
 		scores_row.add_theme_constant_override("separation", 4)
+		scores_row.size_flags_horizontal = Control.SIZE_EXPAND_FILL
 		cell.add_child(scores_row)
 		var spin := _spin(scores_row, 1, 30)
 		spin.custom_minimum_size.x = 54
@@ -819,6 +825,9 @@ func _build_ui() -> void:
 		saving_throw.text = "TS +0"
 		saving_throw.tooltip_text = "Tiro salvezza: modificatore caratteristica + competenza, se posseduta"
 		saving_throw.add_theme_font_size_override("font_size", 13)
+		saving_throw.custom_minimum_size.x = 65
+		saving_throw.horizontal_alignment = HORIZONTAL_ALIGNMENT_RIGHT
+		# A saving throw belongs to its ability row, beside the score/modifier.
 		cell.add_child(saving_throw)
 		_saving_throw_labels[ability] = saving_throw
 		spin.value_changed.connect(_on_ability_value_changed.bind(ability))
@@ -840,10 +849,22 @@ func _build_ui() -> void:
 	_tools_proficiency_label.autowrap_mode = TextServer.AUTOWRAP_WORD_SMART
 	_tools_proficiency_label.tooltip_text = "Competenze negli strumenti provenienti dalle origini attive"
 	skills_column.add_child(_tools_proficiency_label)
+	var skills_header := HBoxContainer.new()
+	skills_header.add_theme_constant_override("separation", 8)
+	skills_column.add_child(skills_header)
 	var skills_heading := Label.new()
-	skills_heading.text = "Abilità · 🎓 competenza · 🎓🎓 maestria"
-	skills_heading.add_theme_font_size_override("font_size", 16)
-	skills_column.add_child(skills_heading)
+	skills_heading.text = "🎓 Abilità"
+	skills_heading.add_theme_font_size_override("font_size", 20)
+	skills_heading.add_theme_color_override("font_color", Color(0.85, 0.93, 1.0))
+	skills_heading.size_flags_horizontal = Control.SIZE_EXPAND_FILL
+	skills_header.add_child(skills_heading)
+	var skills_legend := Label.new()
+	skills_legend.text = "🎓 Competenza  ·  🎓🎓 Maestria"
+	skills_legend.add_theme_font_size_override("font_size", 11)
+	skills_legend.add_theme_color_override("font_color", Color(0.77, 0.84, 0.90))
+	skills_header.add_child(skills_legend)
+	var skills_divider := HSeparator.new()
+	skills_column.add_child(skills_divider)
 	_skills_panel = VBoxContainer.new()
 	_skills_panel.add_theme_constant_override("separation", 3)
 	skills_column.add_child(_skills_panel)
