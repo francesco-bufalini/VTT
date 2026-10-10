@@ -9,6 +9,7 @@ const Owner = preload("res://vtt/creature_owner.gd")
 const Bestiary = preload("res://vtt/bestiary_5etools_client.gd")
 const PlayerReference = preload("res://vtt/player_reference_catalog.gd")
 const Player5eTools = preload("res://vtt/player_5etools_catalog.gd")
+const RaceRules = preload("res://vtt/creature_race_rules.gd")
 const SpellcastingTab = preload("res://vtt/creature_spellcasting_tab.gd")
 const FiveToolsText = preload("res://vtt/five_tools_rich_text.gd")
 const StructuredTrackers = preload("res://vtt/structured_resource_trackers.gd")
@@ -122,10 +123,13 @@ var _ability_modifier_labels: Dictionary = {}
 var _saving_throw_labels: Dictionary = {}
 var _saving_throw_icons: Dictionary = {}
 var _tools_proficiency_label: Label
+var _languages_proficiency_label: Label
 var _species: OptionButton
+var _subrace_choice: OptionButton
+var _subrace_caption: Label
+var _challenge_caption: Label
+var _challenge_rating: LineEdit
 var _creature_type_display: Label
-var _subtype: LineEdit
-var _subtype_custom := false
 var _background: OptionButton
 var _subclass_name: OptionButton
 var _class_name: OptionButton
@@ -608,9 +612,10 @@ func _build_ui() -> void:
 	)
 	_tabs.current_tab = 0
 
+	var identity_box := _info_panel(form, "IDENTITÀ")
 	var name_row := HBoxContainer.new()
 	name_row.add_theme_constant_override("separation", 5)
-	form.add_child(name_row)
+	identity_box.add_child(name_row)
 	_rules_edition_caption = Label.new()
 	_rules_edition_caption.text = "Regole"
 	_rules_edition_caption.tooltip_text = "Edizione delle regole del personaggio"
@@ -984,37 +989,49 @@ func _build_ui() -> void:
 	FiveToolsText.style(_attacks_description)
 	combat_column.add_child(_attacks_description)
 
-	var species_row := HBoxContainer.new()
-	form.add_child(species_row)
+	var species_row := HFlowContainer.new()
+	species_row.add_theme_constant_override("h_separation", 6)
+	identity_box.add_child(species_row)
 	_add_label(species_row, "Razza / Specie")
-	_species = _reference_option(species_row, Player5eTools.entries("races"))
-	_species.tooltip_text = "Le sottorazze di 5etools sono già voci complete (es. Elf (High)): scegli direttamente la variante."
+	_species = _reference_option(species_row, RaceRules.base_races())
+	_species.custom_minimum_size.x = 150
 	_species.item_selected.connect(func(_index: int) -> void: _on_species_changed())
+	_subrace_caption = Label.new()
+	_subrace_caption.text = "Sottorazza"
+	species_row.add_child(_subrace_caption)
+	_subrace_choice = _reference_option(species_row, [])
+	_subrace_choice.custom_minimum_size.x = 135
+	_subrace_choice.tooltip_text = "Solo le sottorazze della razza selezionata, in base a raceName e raceSource."
+	_subrace_choice.item_selected.connect(func(_index: int) -> void: _on_subrace_changed())
+	_challenge_caption = Label.new()
+	_challenge_caption.text = "GS"
+	species_row.add_child(_challenge_caption)
+	_challenge_rating = LineEdit.new()
+	_challenge_rating.custom_minimum_size.x = 63
+	_challenge_rating.size_flags_horizontal = Control.SIZE_SHRINK_BEGIN
+	_challenge_rating.tooltip_text = "Grado sfida del bestiario, anche frazionario (es. 1/4). Non è un livello di classe."
+	_challenge_rating.text_submitted.connect(func(_text: String) -> void: _save())
+	_challenge_rating.focus_exited.connect(_save)
+	species_row.add_child(_challenge_rating)
 	var type_row := HBoxContainer.new()
 	type_row.add_theme_constant_override("separation", 7)
-	form.add_child(type_row)
+	identity_box.add_child(type_row)
 	_add_label(type_row, "Tipo")
 	_creature_type_display = Label.new()
 	_creature_type_display.custom_minimum_size.x = 110
 	type_row.add_child(_creature_type_display)
-	_add_label(type_row, "Sottotipo")
-	_subtype = LineEdit.new()
-	_subtype.size_flags_horizontal = Control.SIZE_EXPAND_FILL
-	_subtype.placeholder_text = "Nessuno"
-	_subtype.tooltip_text = "Per i mostri viene proposto dai tag del bestiario; puoi modificarlo."
-	_subtype.text_changed.connect(_on_subtype_changed)
-	type_row.add_child(_subtype)
 	var background_row := HBoxContainer.new()
-	form.add_child(background_row)
+	identity_box.add_child(background_row)
 	_add_label(background_row, "Background")
 	_background = _reference_option(background_row, Player5eTools.entries("backgrounds"))
 	_background.tooltip_text = "Background strutturato del personaggio: competenze e scelte ottenute dai dati 5etools."
 
+	var classes_box := _info_panel(form, "CLASSI E PROGRESSIONE")
 	var classes_title_row := HBoxContainer.new()
 	classes_title_row.add_theme_constant_override("separation", 12)
-	form.add_child(classes_title_row)
+	classes_box.add_child(classes_title_row)
 	var classes_title := Label.new()
-	classes_title.text = "CLASSI"
+	classes_title.text = "Progressione"
 	classes_title.add_theme_font_size_override("font_size", 17)
 	classes_title.add_theme_color_override("font_color", Color(0.96, 0.78, 0.54))
 	_style_statistics_heading(classes_title)
@@ -1022,11 +1039,11 @@ func _build_ui() -> void:
 	_add_label(classes_title_row, "XP")
 	_xp = _spin(classes_title_row, 0, 999999999)
 	_xp.custom_minimum_size.x = 130
-	_xp.tooltip_text = "Minimo XP calcolato dai livelli di classe (esclusa la classe Mostro)"
+	_xp.tooltip_text = "XP calcolati unicamente dai livelli di classe effettivi; il GS è indipendente"
 	var classes_row := HFlowContainer.new()
 	classes_row.add_theme_constant_override("h_separation", 7)
 	classes_row.add_theme_constant_override("v_separation", 6)
-	form.add_child(classes_row)
+	classes_box.add_child(classes_row)
 	_add_label(classes_row, "Classe base")
 	_class_name = _reference_option(classes_row, Player5eTools.class_choices(), false)
 	_class_name.custom_minimum_size.x = 150
@@ -1053,7 +1070,7 @@ func _build_ui() -> void:
 	_level.value_changed.connect(_on_level_changed)
 	classes_row.add_child(_level)
 	var multiclass_header := HBoxContainer.new()
-	form.add_child(multiclass_header)
+	classes_box.add_child(multiclass_header)
 	_additional_classes_title = Label.new()
 	_additional_classes_title.text = "Classi aggiuntive (multiclasse)"
 	multiclass_header.add_child(_additional_classes_title)
@@ -1062,7 +1079,7 @@ func _build_ui() -> void:
 	_add_class_button.pressed.connect(_add_multiclass_row)
 	multiclass_header.add_child(_add_class_button)
 	_multiclass_rows = VBoxContainer.new()
-	form.add_child(_multiclass_rows)
+	classes_box.add_child(_multiclass_rows)
 	var tracker_caption := Label.new()
 	tracker_caption.text = "RISORSE"
 	tracker_caption.add_theme_font_size_override("font_size", 15)
@@ -1074,22 +1091,20 @@ func _build_ui() -> void:
 	# Keep consumable resources above the attack list in combat statistics.
 	combat_column.move_child(tracker_caption, attack_header.get_index())
 	combat_column.move_child(_tracker_rows, attack_header.get_index())
+	var biography_box := _info_panel(form, "STORIA E PERSONALITÀ")
 	var biography_label := Label.new()
-	biography_label.text = "STORIA E PERSONALITÀ"
+	biography_label.text = "Note"
 	_style_statistics_heading(biography_label)
 	biography_label.add_theme_font_size_override("font_size", 17)
-	form.add_child(biography_label)
+	biography_box.add_child(biography_label)
 	_biography = TextEdit.new()
-	_biography.custom_minimum_size.y = 240
+	_biography.custom_minimum_size.y = 150
 	_biography.size_flags_horizontal = Control.SIZE_EXPAND_FILL
 	_biography.scroll_fit_content_height = false
 	_biography.wrap_mode = TextEdit.LINE_WRAPPING_BOUNDARY
 	_biography.placeholder_text = "Storia, carattere, ideali, legami, difetti e annotazioni…"
 	_biography.text_changed.connect(_save)
-	form.add_child(_biography)
-	# Feats are owned character data, edited in Info rather than the
-	# proficiency-origin inspector. Both views share the same record.
-	_proficiencies_ui.call("move_feats_to_info", form)
+	biography_box.add_child(_biography)
 
 	var miniature_row := HBoxContainer.new()
 	appearance_tab.add_child(miniature_row)
@@ -1891,6 +1906,28 @@ func _spin(parent: Node, minimum: int, maximum: int) -> SpinBox:
 	spin.value_changed.connect(func(_v: float) -> void: _save())
 	parent.add_child(spin)
 	return spin
+
+
+func _info_panel(parent: VBoxContainer, section: String) -> VBoxContainer:
+	var frame := PanelContainer.new()
+	var frame_style := StyleBoxFlat.new()
+	frame_style.bg_color = Color(0.11, 0.15, 0.20, 0.56)
+	frame_style.border_color = Color(0.33, 0.47, 0.58, 0.80)
+	frame_style.set_border_width_all(1)
+	frame_style.set_corner_radius_all(7)
+	frame_style.set_content_margin_all(8)
+	frame.add_theme_stylebox_override("panel", frame_style)
+	parent.add_child(frame)
+	var content := VBoxContainer.new()
+	content.add_theme_constant_override("separation", 6)
+	frame.add_child(content)
+	var heading := Label.new()
+	heading.text = section
+	heading.add_theme_color_override("font_color", Color(0.82, 0.90, 0.98))
+	heading.add_theme_font_size_override("font_size", 17)
+	_style_statistics_heading(heading)
+	content.add_child(heading)
+	return content
 
 
 func _reference_option(
