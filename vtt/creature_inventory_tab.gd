@@ -17,6 +17,13 @@ var _loading: bool = false
 var _rules_version := "2014"
 
 var _category_filter: OptionButton
+var _rarity_filter: OptionButton
+var _source_filter: OptionButton
+var _property_filter: OptionButton
+var _search_toggle: Button
+var _search_panel: VBoxContainer
+var _catalog_count: Label
+var _catalog_details: RichTextLabel
 var _equip_main: Button
 var _equip_off: Button
 var _unequip: Button
@@ -47,35 +54,73 @@ func setup(on_change: Callable, on_status: Callable, on_document_change: Callabl
 	heading.add_theme_font_size_override("font_size", 17)
 	add_child(heading)
 
-	var categories_row := HBoxContainer.new()
-	add_child(categories_row)
-	var category_caption := Label.new()
-	category_caption.text = "Categoria"
-	categories_row.add_child(category_caption)
+	# Keep the owned inventory visible while catalog search can be collapsed.
+	_search_panel = VBoxContainer.new()
+	_search_panel.add_theme_constant_override("separation", 6)
+	add_child(_search_panel)
+	var search_row := HBoxContainer.new()
+	_search_panel.add_child(search_row)
+	_search = LineEdit.new()
+	_search.placeholder_text = "Nome, fonte, rarità, danno o proprietà…"
+	_search.clear_button_enabled = true
+	_search.size_flags_horizontal = Control.SIZE_EXPAND_FILL
+	_search.text_changed.connect(func(_value: String) -> void: _filter_catalog())
+	search_row.add_child(_search)
+	var reset_button := Button.new()
+	reset_button.text = "Azzera filtri"
+	reset_button.pressed.connect(_reset_catalog_filters)
+	search_row.add_child(reset_button)
+
+	var filter_row := HFlowContainer.new()
+	filter_row.add_theme_constant_override("h_separation", 9)
+	filter_row.add_theme_constant_override("v_separation", 5)
+	_search_panel.add_child(filter_row)
 	_category_filter = OptionButton.new()
 	for category_name: String in ["Tutti", "Armi", "Scudi", "Armature", "Strumenti", "Oggetti magici", "Altri oggetti"]:
 		_category_filter.add_item(category_name)
 	_category_filter.item_selected.connect(func(_index: int) -> void: _filter_catalog())
-	_category_filter.size_flags_horizontal = Control.SIZE_EXPAND_FILL
-	categories_row.add_child(_category_filter)
+	_add_catalog_filter(filter_row, "Categoria", _category_filter, 145)
+	_rarity_filter = OptionButton.new()
+	_rarity_filter.item_selected.connect(func(_index: int) -> void: _filter_catalog())
+	_add_catalog_filter(filter_row, "Rarità", _rarity_filter, 140)
+	_source_filter = OptionButton.new()
+	_source_filter.item_selected.connect(func(_index: int) -> void: _filter_catalog())
+	_add_catalog_filter(filter_row, "Fonte", _source_filter, 110)
+	_property_filter = OptionButton.new()
+	for choice: Array in [
+		["Tutte", ""], ["Accurata (Finesse)", "F"], ["Portata", "R"],
+		["Da lancio", "T"], ["A due mani", "2H"], ["Leggera", "L"],
+		["Pesante", "H"], ["Versatile", "V"]
+	]:
+		_property_filter.add_item(String(choice[0]))
+		_property_filter.set_item_metadata(_property_filter.item_count - 1, String(choice[1]))
+	_property_filter.item_selected.connect(func(_index: int) -> void: _filter_catalog())
+	_add_catalog_filter(filter_row, "Proprietà arma", _property_filter, 160)
 
-	_search = LineEdit.new()
-	_search.placeholder_text = "Cerca oggetto per nome, fonte o rarità…"
-	_search.clear_button_enabled = true
-	_search.text_changed.connect(func(_value: String) -> void: _filter_catalog())
-	add_child(_search)
-
+	var results_row := HBoxContainer.new()
+	_search_panel.add_child(results_row)
+	_catalog_count = Label.new()
+	_catalog_count.size_flags_horizontal = Control.SIZE_EXPAND_FILL
+	results_row.add_child(_catalog_count)
+	_add_button = Button.new()
+	_add_button.text = "+ Aggiungi all'inventario"
+	_add_button.tooltip_text = "Aggiungi l'oggetto selezionato; doppio clic sulla lista per aggiungere"
+	_add_button.pressed.connect(_add_selected)
+	results_row.add_child(_add_button)
 	_catalog_list = ItemList.new()
-	_catalog_list.custom_minimum_size.y = 145
+	_catalog_list.custom_minimum_size.y = 190
 	_catalog_list.size_flags_horizontal = Control.SIZE_EXPAND_FILL
 	_catalog_list.item_selected.connect(_on_catalog_selected)
 	_catalog_list.gui_input.connect(_on_image_click.bind(true))
 	_catalog_list.item_activated.connect(func(_index: int) -> void: _add_selected())
-	add_child(_catalog_list)
-	_add_button = Button.new()
-	_add_button.text = "+ Aggiungi all'inventario"
-	_add_button.pressed.connect(_add_selected)
-	add_child(_add_button)
+	_search_panel.add_child(_catalog_list)
+	_catalog_details = RichTextLabel.new()
+	_catalog_details.custom_minimum_size.y = 125
+	_catalog_details.size_flags_horizontal = Control.SIZE_EXPAND_FILL
+	_catalog_details.scroll_active = true
+	_catalog_details.selection_enabled = true
+	_catalog_details.hide()
+	_search_panel.add_child(_catalog_details)
 
 	var inventory_title := Label.new()
 	inventory_title.text = "Oggetti posseduti"
@@ -152,7 +197,20 @@ func setup(on_change: Callable, on_status: Callable, on_document_change: Callabl
 	_details.size_flags_horizontal = Control.SIZE_EXPAND_FILL
 	_details.scroll_active = true
 	_details.selection_enabled = true
+	_details.hide()
 	add_child(_details)
+	# Identical interaction to the spell search: a magnifier opens the catalog
+	# below the permanently visible owned items.
+	var search_toggle_row := HBoxContainer.new()
+	search_toggle_row.alignment = BoxContainer.ALIGNMENT_END
+	add_child(search_toggle_row)
+	_search_toggle = Button.new()
+	_search_toggle.text = "🔍 Cerca oggetti"
+	_search_toggle.toggle_mode = true
+	_search_toggle.tooltip_text = "Mostra ricerca oggetti"
+	_search_toggle.toggled.connect(_set_search_visible)
+	search_toggle_row.add_child(_search_toggle)
+	move_child(_search_panel, search_toggle_row.get_index() + 1)
 	var inner_tabs := TabContainer.new()
 	inner_tabs.size_flags_horizontal = Control.SIZE_EXPAND_FILL
 	inner_tabs.size_flags_vertical = Control.SIZE_EXPAND_FILL
@@ -173,6 +231,40 @@ func setup(on_change: Callable, on_status: Callable, on_document_change: Callabl
 	_image_preview.call("setup")
 	reload_catalog()
 	_refresh_inventory()
+	_set_search_visible(false)
+
+
+func _add_catalog_filter(parent: HFlowContainer, caption: String, option: OptionButton, width_px: float) -> void:
+	var group := VBoxContainer.new()
+	group.custom_minimum_size.x = width_px
+	parent.add_child(group)
+	var label := Label.new()
+	label.text = caption
+	group.add_child(label)
+	option.fit_to_longest_item = false
+	option.size_flags_horizontal = Control.SIZE_EXPAND_FILL
+	group.add_child(option)
+
+
+func _set_search_visible(show: bool) -> void:
+	_search_panel.visible = show
+	_search_toggle.set_pressed_no_signal(show)
+	_search_toggle.tooltip_text = "Nascondi ricerca oggetti" if show else "Mostra ricerca oggetti"
+	if not show:
+		_catalog_list.deselect_all()
+		_catalog_details.hide()
+		_add_button.disabled = true
+	elif is_inside_tree():
+		_search.grab_focus()
+
+
+func _reset_catalog_filters() -> void:
+	_search.clear()
+	_category_filter.select(0)
+	_rarity_filter.select(0)
+	_source_filter.select(0)
+	_property_filter.select(0)
+	_filter_catalog()
 
 
 func _documents_changed(documents: Array) -> void:
@@ -188,6 +280,7 @@ func receive_document() -> void:
 func reload_catalog() -> void:
 	ItemRules.reset_catalog()
 	_catalog = Player5eTools.entries("items")
+	_populate_catalog_options()
 	if _catalog_list != null:
 		_filter_catalog()
 
@@ -196,6 +289,7 @@ func load_record(record: Dictionary) -> void:
 	var edition := String(record.get("rules_version", "2014"))
 	if edition != _rules_version:
 		_rules_version = edition
+		_populate_catalog_options()
 		_filter_catalog()
 	_loading = true
 	_inventory.clear()
@@ -250,45 +344,184 @@ func _on_image_click(event: InputEvent, from_catalog: bool) -> void:
 	get_viewport().set_input_as_handled()
 
 
+func _edition_allows_item(item: Dictionary) -> bool:
+	return _rules_version != "2014" or not (
+		String(item.get("type", "")).to_upper().contains("|XPHB")
+		or String(item.get("id", "")).to_lower().ends_with("|xphb")
+	)
+
+
+func _option_value(option: OptionButton) -> String:
+	if option == null or option.selected < 0:
+		return ""
+	return String(option.get_item_metadata(option.selected))
+
+
+func _add_option(option: OptionButton, label: String, value: String) -> void:
+	option.add_item(label)
+	option.set_item_metadata(option.item_count - 1, value)
+
+
+func _restore_option(option: OptionButton, old_value: String) -> void:
+	for index: int in range(option.item_count):
+		if String(option.get_item_metadata(index)) == old_value:
+			option.select(index)
+			return
+	option.select(0)
+
+
+func _rarity_label(rarity: String) -> String:
+	match rarity:
+		"common": return "Comune"
+		"uncommon": return "Non comune"
+		"rare": return "Raro"
+		"very rare": return "Molto raro"
+		"legendary": return "Leggendario"
+		"artifact": return "Artefatto"
+		"varies": return "Variabile"
+		_: return rarity.capitalize()
+
+
+func _item_rarity(item: Dictionary) -> String:
+	var rarity := String(item.get("rarity", "")).strip_edges().to_lower()
+	return "__none__" if rarity.is_empty() or rarity == "none" else rarity
+
+
+func _populate_catalog_options() -> void:
+	if _rarity_filter == null or _source_filter == null:
+		return
+	var old_rarity := _option_value(_rarity_filter)
+	var old_source := _option_value(_source_filter)
+	_rarity_filter.clear()
+	_source_filter.clear()
+	_add_option(_rarity_filter, "Tutte", "")
+	_add_option(_source_filter, "Tutte", "")
+	var rarities: Array[String] = []
+	var sources: Array[String] = []
+	for item: Dictionary in _catalog:
+		if not _edition_allows_item(item):
+			continue
+		var rarity := _item_rarity(item)
+		if rarity not in rarities:
+			rarities.append(rarity)
+		var source := String(item.get("source", "")).strip_edges()
+		if not source.is_empty() and source not in sources:
+			sources.append(source)
+	rarities.sort()
+	sources.sort()
+	for rarity: String in rarities:
+		_add_option(_rarity_filter, "Senza rarità" if rarity == "__none__" else _rarity_label(rarity), rarity)
+	for source: String in sources:
+		_add_option(_source_filter, source, source)
+	_restore_option(_rarity_filter, old_rarity)
+	_restore_option(_source_filter, old_source)
+
+
+func _catalog_matches(item: Dictionary, words: PackedStringArray) -> bool:
+	if not _edition_allows_item(item):
+		return false
+	var category := _category_filter.get_item_text(_category_filter.selected)
+	if category == "Oggetti magici":
+		if not String(item.get("id", "")).begins_with("magic_item:") and not bool(item.get("magic", false)):
+			return false
+	elif category != "Tutti" and ItemRules.category_name(item) != category:
+		return false
+	var rarity := _option_value(_rarity_filter)
+	if not rarity.is_empty() and _item_rarity(item) != rarity:
+		return false
+	var source := _option_value(_source_filter)
+	if not source.is_empty() and String(item.get("source", "")) != source:
+		return false
+	var property_code := _option_value(_property_filter)
+	if not property_code.is_empty() and (
+		ItemRules.kind(item) != "weapon" or not ItemRules.has_property(item, property_code)
+	):
+		return false
+	var searchable := ("%s %s %s %s %s %s %s %s %s" % [
+		item.get("name", ""), item.get("source", ""), item.get("rarity", ""),
+		item.get("weapon_category", ""), ItemRules.category_name(item),
+		item.get("damage", ""), item.get("range", ""), item.get("type", ""),
+		JSON.stringify(item.get("properties", []))
+	]).to_lower()
+	for word: String in words:
+		if word not in searchable:
+			return false
+	return true
+
+
+func _catalog_row_label(item: Dictionary) -> String:
+	var marker := "📦"
+	match ItemRules.kind(item):
+		"weapon": marker = "⚔"
+		"shield", "armor": marker = "🛡"
+		"tool": marker = "🛠"
+		"magic": marker = "✨"
+	var tags: PackedStringArray = []
+	var damage := String(item.get("damage", "")).strip_edges()
+	if not damage.is_empty():
+		tags.append(damage)
+	var rarity := _item_rarity(item)
+	if rarity != "__none__":
+		tags.append(_rarity_label(rarity))
+	var source := String(item.get("source", "")).strip_edges()
+	if not source.is_empty():
+		tags.append(source)
+	if String(item.get("origin", "")) == "homebrew":
+		tags.append("Homebrew")
+	var owned := false
+	for saved: Dictionary in _inventory:
+		if String(saved.get("id", "")) == String(item.get("id", "")):
+			owned = true
+			break
+	return marker + "  " + ("✓ " if owned else "") + String(item.get("name", "")) + (
+		"    ·    " + " · ".join(tags) if not tags.is_empty() else ""
+	)
+
+
 func _filter_catalog() -> void:
 	if _catalog_list == null:
 		return
-	var query: String = _search.text.strip_edges().to_lower()
-	var selected_category := _category_filter.get_item_text(_category_filter.selected)
+	var selected_id := ""
+	var selected: PackedInt32Array = _catalog_list.get_selected_items()
+	if not selected.is_empty() and selected[0] < _filtered.size():
+		selected_id = String(_filtered[selected[0]].get("id", ""))
+	var words: PackedStringArray = _search.text.strip_edges().to_lower().split(" ", false)
 	_filtered.clear()
 	_catalog_list.clear()
+	var matches := 0
+	var selected_index := -1
 	for item: Dictionary in _catalog:
-		# The same base item appears in PHB and XPHB. A 2014 creature
-		# must not accidentally choose the rewritten 2024 version.
-		if _rules_version == "2014" and (
-			String(item.get("type", "")).to_upper().contains("|XPHB")
-			or String(item.get("id", "")).to_lower().ends_with("|xphb")
-		):
+		if String(item.get("name", "")).strip_edges().is_empty() or not _catalog_matches(item, words):
 			continue
-		var name: String = String(item.get("name", ""))
-		if name.is_empty():
-			continue
-		var haystack: String = ("%s %s %s" % [
-			name, String(item.get("source", "")), String(item.get("rarity", ""))
-		]).to_lower()
-		if not query.is_empty() and query not in haystack:
-			continue
-		if selected_category == "Oggetti magici":
-			if not String(item.get("id", "")).begins_with("magic_item:") and not bool(item.get("magic", false)):
-				continue
-		elif selected_category != "Tutti" and ItemRules.category_name(item) != selected_category:
-			continue
-		_filtered.append(item)
-		_catalog_list.add_item(_image_label(item, ItemRules.category_name(item) + " · " + Player5eTools.display_label(item)))
+		matches += 1
 		if _filtered.size() >= 250:
-			break
+			continue
+		if String(item.get("id", "")) == selected_id:
+			selected_index = _filtered.size()
+		_filtered.append(item)
+		_catalog_list.add_item(_image_label(item, _catalog_row_label(item)))
+		_catalog_list.set_item_tooltip(_catalog_list.item_count - 1, Player5eTools.info_text(item))
+	_catalog_count.text = (
+		"Risultati: %d" % matches if matches <= 250
+		else "Risultati: 250 di %d · Affina i filtri per vedere gli altri" % matches
+	)
 	_add_button.disabled = true
+	_catalog_details.hide()
+	if selected_index >= 0:
+		_catalog_list.select(selected_index)
+		_on_catalog_selected(selected_index)
 
 
 func _on_catalog_selected(index: int) -> void:
 	_add_button.disabled = index < 0 or index >= _filtered.size()
 	if index >= 0 and index < _filtered.size():
-		_show_details(_filtered[index])
+		var item: Dictionary = _filtered[index]
+		_catalog_details.text = ItemRules.category_name(item) + "\n" + Player5eTools.info_text(
+			item, Player5eTools.description_text_from_raw_item(item)
+		)
+		_catalog_details.show()
+	else:
+		_catalog_details.hide()
 
 
 func _selected_inventory_index() -> int:
@@ -315,6 +548,7 @@ func _on_inventory_selected(index: int) -> void:
 		String(_inventory[index].get("name", "")),
 		String(_inventory[index].get("source", ""))
 	]
+	_details.show()
 
 
 func _add_selected() -> void:
@@ -330,11 +564,13 @@ func _add_selected() -> void:
 			_inventory[i]["quantity"] = mini(99999, int(_inventory[i]["quantity"]) + 1)
 			_refresh_inventory(i)
 			_publish()
+			_filter_catalog()
 			return
 	var new_item: Dictionary = ItemInstance.from_catalog(source_item)
 	_inventory.append(new_item)
 	_refresh_inventory(_inventory.size() - 1)
 	_publish()
+	_filter_catalog()
 
 
 func _set_size_fields(item: Dictionary, enabled: bool) -> void:
@@ -406,6 +642,8 @@ func _remove_selected() -> void:
 	_inventory.remove_at(index)
 	_refresh_inventory()
 	_publish()
+	if _search_panel.visible:
+		_filter_catalog()
 
 
 func _refresh_inventory(selected_index: int = -1) -> void:
@@ -419,6 +657,9 @@ func _refresh_inventory(selected_index: int = -1) -> void:
 	if selected_index >= 0 and selected_index < _inventory.size():
 		_inventory_list.select(selected_index)
 		_quantity.value = int(_inventory[selected_index].get("quantity", 1))
+		_show_details(_catalog_entry(_inventory[selected_index]))
+	else:
+		_details.hide()
 	_set_size_fields(_inventory[selected_index] if selected_index >= 0 and selected_index < _inventory.size() else {}, selected_index >= 0)
 	_remove_button.disabled = selected_index < 0
 	_quantity.editable = selected_index >= 0
@@ -445,6 +686,7 @@ func _inventory_label(item: Dictionary) -> String:
 func _show_details(item: Dictionary) -> void:
 	var description: String = Player5eTools.description_text_from_raw_item(item)
 	_details.text = ItemRules.category_name(item) + "\n" + Player5eTools.info_text(item, description)
+	_details.show()
 
 
 
