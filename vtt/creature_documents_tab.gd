@@ -200,7 +200,10 @@ func _selected_inventory_index() -> int:
 
 
 func _select_document(_index: int) -> void:
-	_remove_button.disabled = _selected_inventory_index() < 0
+	var index: int = _selected_inventory_index()
+	if index >= 0:
+		_active_id = _instance_key(_inventory[index])
+	_remove_button.disabled = index < 0
 
 
 func _add_document() -> void:
