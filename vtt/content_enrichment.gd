@@ -80,6 +80,17 @@ static func apply_to(category: String, definition: Dictionary) -> Dictionary:
 	if not _loaded:
 		reload()
 	var result: Dictionary = definition.duplicate(true)
+	if category == "items":
+		# Native 5etools item terminology is adapted on the view, never in
+		# the original homebrew JSON. Existing VTT-normalized fields win.
+		for names: Array in [
+			["dmg1", "damage"],
+			["dmg2", "versatile_damage"],
+			["dmgType", "damage_type"],
+			["property", "properties"]
+		]:
+			if result.has(names[0]) and not result.has(names[1]):
+				result[names[1]] = result[names[0]]
 	var catalog_id: String = String(result.get("id", ""))
 	var extension: Variant = _overlays.get(category + "|" + catalog_id, {})
 	if extension is Dictionary:
