@@ -120,16 +120,16 @@ func run() -> void:
 		and attack_data.damage_label(character_attack, unarmed) == "4 contundenti",
 		"Unarmed hit and damage use STR; proficiency only affects hit")
 	character_attack["attack_ability"] = "dex"
-	assert(attack_data.attack_bonus(character_attack, unarmed, 2) == 3
-		and attack_data.damage_label(character_attack, unarmed) == "2 contundenti",
-		"DEX preference must change both hit and damage")
+	assert(attack_data.attack_bonus(character_attack, unarmed, 2) == 5
+		and attack_data.damage_label(character_attack, unarmed) == "4 contundenti",
+		"2014 unarmed strikes remain STR without a specific class feature")
 	character_attack["attack_overrides"] = {"unarmed": {"bonus": 2, "range_feet": 15}}
 	var normalized_character: Dictionary = PlayerStore.new().normalize_character(character_attack)
 	assert(normalized_character.attack_ability == "dex"
 		and normalized_character.attack_overrides.unarmed.bonus == 2,
 		"Character attack ability and per-attack bonus must survive normalization")
 	assert(attack_data.range_for(normalized_character, unarmed) == 15
-		and attack_data.attack_bonus(normalized_character, unarmed, 2) == 5,
+		and attack_data.attack_bonus(normalized_character, unarmed, 2) == 7,
 		"Range and enhancement bonus belong to the attack, not to the creature")
 	var monster_attack: Dictionary = monster.normalize_creature(creature.duplicate(true))
 	monster_attack["stat_block"] = {
@@ -149,8 +149,8 @@ func run() -> void:
 	assert(attack_data.max_melee_range(monster_attack) == 15.0,
 		"Legacy token engagement distance must use the longest melee attack")
 	monster_attack["attack_ability"] = "dex"
-	assert(attack_data.attack_bonus(monster_attack, monster_attacks[0], 3) == 1,
-		"Monster ability switch adjusts the published bonus without double proficiency")
+	assert(attack_data.attack_bonus(monster_attack, monster_attacks[0], 3) == 7,
+		"Bestiary fixed hit bonuses do not change without structured finesse")
 	var normalized_attack: Dictionary = monster.normalize_creature(monster_attack)
 	assert(normalized_attack.attack_ability == "dex"
 		and normalized_attack.attack_overrides["monster:action:0"].range_feet == 15,

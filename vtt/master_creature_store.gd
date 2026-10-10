@@ -1,6 +1,7 @@
 extends RefCounted
 
 const CreatureRules = preload("res://vtt/creature_rules.gd")
+const ItemRules = preload("res://vtt/creature_item_rules.gd")
 const CreatureOwner = preload("res://vtt/creature_owner.gd")
 
 const ROOT_DIR := "user://master_creatures"
@@ -304,7 +305,7 @@ func normalize_creature(value: Dictionary) -> Dictionary:
 		"linked_token_name": String(value.get("linked_token_name", ""))
 	}
 	result["max_hp"] = maxi(0, int(result["max_hp_base"]) + int(result["max_hp_bonus"]))
-	result["armor_class"] = maxi(0, int(result["armor_class_base"]) + int(result["armor_class_bonus"]))
+	result["armor_class"] = maxi(0, int(result["armor_class_base"]) + int(result["armor_class_bonus"]) + ItemRules.shield_bonus(result.get("inventory", [])))
 	result["initiative"] = int(result["initiative_base"]) + int(result["initiative_bonus"])
 	if not bool(result["speed_is_custom"]):
 		result["speed_base"] = CreatureRules.walking_speed(stat_block.get("speed", 30))

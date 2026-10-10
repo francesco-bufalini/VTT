@@ -3,6 +3,7 @@ extends VBoxContainer
 # Private creature inventory. These are catalog references, not scene items:
 # placing or deleting physical objects on the board never changes a sheet.
 const Player5eTools = preload("res://vtt/player_5etools_catalog.gd")
+const ItemRules = preload("res://vtt/creature_item_rules.gd")
 const DocumentsTab = preload("res://vtt/creature_documents_tab.gd")
 const ItemImagePreview = preload("res://vtt/item_image_preview.gd")
 
@@ -12,7 +13,12 @@ var _catalog: Array[Dictionary] = []
 var _filtered: Array[Dictionary] = []
 var _inventory: Array[Dictionary] = []
 var _loading: bool = false
+var _rules_version := "2014"
 
+var _category_filter: OptionButton
+var _equip_main: Button
+var _equip_off: Button
+var _unequip: Button
 var _search: LineEdit
 var _catalog_list: ItemList
 var _inventory_list: ItemList
@@ -38,6 +44,18 @@ func setup(on_change: Callable, on_status: Callable, on_document_change: Callabl
 	heading.text = "Inventario · Catalogo e oggetti personalizzati"
 	heading.add_theme_font_size_override("font_size", 17)
 	add_child(heading)
+
+	var categories_row := HBoxContainer.new()
+	add_child(categories_row)
+	var category_caption := Label.new()
+	category_caption.text = "Categoria"
+	categories_row.add_child(category_caption)
+	_category_filter = OptionButton.new()
+	for category_name: String in ["Tutti", "Armi", "Scudi", "Armature", "Strumenti", "Oggetti magici", "Altri oggetti"]:
+		_category_filter.add_item(category_name)
+	_category_filter.item_selected.connect(func(_index: int) -> void: _filter_catalog())
+	_category_filter.size_flags_horizontal = Control.SIZE_EXPAND_FILL
+	categories_row.add_child(_category_filter)
 
 	_search = LineEdit.new()
 	_search.placeholder_text = "Cerca oggetto per nome, fonte o rarità…"
@@ -67,6 +85,22 @@ func setup(on_change: Callable, on_status: Callable, on_document_change: Callabl
 	_inventory_list.item_selected.connect(_on_inventory_selected)
 	_inventory_list.gui_input.connect(_on_image_click.bind(false))
 	add_child(_inventory_list)
+	var equipment_row := HFlowContainer.new()
+	equipment_row.add_theme_constant_override("h_separation", 6)
+	equipment_row.add_theme_constant_override("v_separation", 3)
+	add_child(equipment_row)
+	_equip_main = Button.new()
+	_equip_main.text = "⚔ Mano principale"
+	_equip_main.pressed.connect(_equip_selected.bind("main"))
+	equipment_row.add_child(_equip_main)
+	_equip_off = Button.new()
+	_equip_off.text = "🛡 Secondaria / Scudo"
+	_equip_off.pressed.connect(_equip_selected.bind("off"))
+	equipment_row.add_child(_equip_off)
+	_unequip = Button.new()
+	_unequip.text = "Rinfodera"
+	_unequip.pressed.connect(_unequip_selected)
+	equipment_row.add_child(_unequip)
 
 	var actions := HBoxContainer.new()
 	actions.add_theme_constant_override("separation", 6)
@@ -127,12 +161,17 @@ func receive_document() -> void:
 
 
 func reload_catalog() -> void:
+	ItemRules.reset_catalog()
 	_catalog = Player5eTools.entries("items")
 	if _catalog_list != null:
 		_filter_catalog()
 
 
 func load_record(record: Dictionary) -> void:
+	var edition := String(record.get("rules_version", "2014"))
+	if edition != _rules_version:
+		_rules_version = edition
+		_filter_catalog()
 	_loading = true
 	_inventory.clear()
 	var saved: Variant = record.get("inventory", [])
@@ -145,12 +184,20 @@ func load_record(record: Dictionary) -> void:
 			var name: String = String(item.get("name", "")).strip_edges()
 			if item_id.is_empty() or name.is_empty():
 				continue
-			_inventory.append({
+			var saved_row: Dictionary = {
 				"id": item_id,
 				"name": name,
 				"source": String(item.get("source", "")),
-				"quantity": clampi(int(item.get("quantity", 1)), 1, 99999)
-			})
+				"quantity": clampi(int(item.get("quantity", 1)), 1, 99999),
+				"equipped_slots": ItemRules.slots(item)
+			}
+			# Keep a minimal structured snapshot for homebrew items when a
+			# catalog entry is unavailable on another installation.
+			for key: String in ["type", "weapon_category", "damage", "versatile_damage", "damage_type", "range", "properties", "ac", "bonus_ac", "bonus_weapon"]:
+				if item.has(key):
+					saved_row[key] = item[key]
+			_inventory.append(saved_row)
+	_sanitize_equipment()
 	_refresh_inventory()
 	_loading = false
 	if _documents_tab != null:
@@ -194,9 +241,17 @@ func _filter_catalog() -> void:
 	if _catalog_list == null:
 		return
 	var query: String = _search.text.strip_edges().to_lower()
+	var selected_category := _category_filter.get_item_text(_category_filter.selected)
 	_filtered.clear()
 	_catalog_list.clear()
 	for item: Dictionary in _catalog:
+		# The same base item appears in PHB and XPHB. A 2014 creature
+		# must not accidentally choose the rewritten 2024 version.
+		if _rules_version == "2014" and (
+			String(item.get("type", "")).to_upper().contains("|XPHB")
+			or String(item.get("id", "")).to_lower().ends_with("|xphb")
+		):
+			continue
 		var name: String = String(item.get("name", ""))
 		if name.is_empty():
 			continue
@@ -205,8 +260,13 @@ func _filter_catalog() -> void:
 		]).to_lower()
 		if not query.is_empty() and query not in haystack:
 			continue
+		if selected_category == "Oggetti magici":
+			if not String(item.get("id", "")).begins_with("magic_item:") and not bool(item.get("magic", false)):
+				continue
+		elif selected_category != "Tutti" and ItemRules.category_name(item) != selected_category:
+			continue
 		_filtered.append(item)
-		_catalog_list.add_item(_image_label(item, Player5eTools.display_label(item)))
+		_catalog_list.add_item(_image_label(item, ItemRules.category_name(item) + " · " + Player5eTools.display_label(item)))
 		if _filtered.size() >= 250:
 			break
 	_add_button.disabled = true
@@ -231,6 +291,7 @@ func _on_inventory_selected(index: int) -> void:
 	_quantity.set_value_no_signal(int(_inventory[index].get("quantity", 1)))
 	_quantity.editable = true
 	_remove_button.disabled = false
+	_update_equip_buttons()
 	var item_id: String = String(_inventory[index].get("id", ""))
 	for catalog_item: Dictionary in _catalog:
 		if String(catalog_item.get("id", "")) == item_id:
@@ -256,12 +317,17 @@ func _add_selected() -> void:
 			_refresh_inventory(i)
 			_publish()
 			return
-	_inventory.append({
+	var new_item: Dictionary = {
 		"id": item_id,
 		"name": String(source_item.get("name", "")),
 		"source": String(source_item.get("source", "")),
-		"quantity": 1
-	})
+		"quantity": 1,
+		"equipped_slots": []
+	}
+	for key: String in ["type", "weapon_category", "damage", "versatile_damage", "damage_type", "range", "properties", "ac", "bonus_ac", "bonus_weapon"]:
+		if source_item.has(key):
+			new_item[key] = source_item[key]
+	_inventory.append(new_item)
 	_refresh_inventory(_inventory.size() - 1)
 	_publish()
 
@@ -273,6 +339,8 @@ func _on_quantity_changed(value: float) -> void:
 	if index < 0 or index >= _inventory.size():
 		return
 	_inventory[index]["quantity"] = clampi(int(value), 1, 99999)
+	_sanitize_equipment()
+	_update_equip_buttons()
 	# Keep the active editor and selection intact while typing multiple digits.
 	_inventory_list.set_item_text(index, _image_label(_catalog_entry(_inventory[index]), _inventory_label(_inventory[index])))
 	_publish()
@@ -300,16 +368,103 @@ func _refresh_inventory(selected_index: int = -1) -> void:
 		_quantity.value = int(_inventory[selected_index].get("quantity", 1))
 	_remove_button.disabled = selected_index < 0
 	_quantity.editable = selected_index >= 0
+	_update_equip_buttons()
 	_loading = old_loading
 
 
 func _inventory_label(item: Dictionary) -> String:
-	return "%d × %s · %s" % [item.get("quantity", 1), item.get("name", ""), item.get("source", "")]
+	var tags: PackedStringArray = []
+	var slots: Array = ItemRules.slots(item)
+	if "main" in slots:
+		tags.append("⚔ Principale")
+	if "off" in slots:
+		tags.append("🛡 Secondaria")
+	var equipment := (" [" + ", ".join(tags) + "]") if not tags.is_empty() else ""
+	return "%d × %s%s · %s" % [item.get("quantity", 1), item.get("name", ""), equipment, item.get("source", "")]
 
 
 func _show_details(item: Dictionary) -> void:
 	var description: String = Player5eTools.description_text_from_raw_item(item)
-	_details.text = Player5eTools.info_text(item, description)
+	_details.text = ItemRules.category_name(item) + "\n" + Player5eTools.info_text(item, description)
+
+
+
+func _sanitize_equipment() -> void:
+	var used: Dictionary = {}
+	for i: int in range(_inventory.size()):
+		var row: Dictionary = _inventory[i]
+		var entry: Dictionary = _catalog_entry(row) if not _catalog.is_empty() else ItemRules.entry_for(row)
+		var valid: Array = []
+		for raw_slot: Variant in ItemRules.slots(row):
+			var slot := String(raw_slot)
+			if slot not in ["main", "off"] or used.has(slot):
+				continue
+			if not ItemRules.valid_slot(entry, slot):
+				continue
+			if valid.size() >= int(row.get("quantity", 1)):
+				continue
+			valid.append(slot)
+			used[slot] = true
+		row["equipped_slots"] = valid
+		_inventory[i] = row
+	var main: Dictionary = ItemRules.occupying(_inventory, "main")
+	if not main.is_empty() and ItemRules.is_two_handed(_catalog_entry(main)) and used.has("off"):
+		for i: int in range(_inventory.size()):
+			var row: Dictionary = _inventory[i]
+			var slots: Array = ItemRules.slots(row)
+			slots.erase("off")
+			row["equipped_slots"] = slots
+			_inventory[i] = row
+
+
+func _update_equip_buttons() -> void:
+	if _equip_main == null:
+		return
+	var index := _selected_inventory_index()
+	var present := index >= 0 and index < _inventory.size()
+	var entry: Dictionary = _catalog_entry(_inventory[index]) if present else {}
+	_equip_main.disabled = not present or not ItemRules.valid_slot(entry, "main")
+	_equip_off.disabled = not present or not ItemRules.valid_slot(entry, "off")
+	_unequip.disabled = not present or ItemRules.slots(_inventory[index]).is_empty()
+
+
+func _equip_selected(slot: String) -> void:
+	var index := _selected_inventory_index()
+	if index < 0 or index >= _inventory.size():
+		return
+	var entry: Dictionary = _catalog_entry(_inventory[index])
+	if not ItemRules.valid_slot(entry, slot):
+		return
+	for i: int in range(_inventory.size()):
+		var item: Dictionary = _inventory[i]
+		var item_slots: Array = ItemRules.slots(item)
+		item_slots.erase(slot)
+		if slot == "main" and ItemRules.is_two_handed(entry):
+			item_slots.erase("off")
+		if slot == "off" and ItemRules.is_two_handed(_catalog_entry(item)):
+			item_slots.erase("main")
+		item["equipped_slots"] = item_slots
+		_inventory[i] = item
+	var updated: Dictionary = _inventory[index]
+	var updated_slots: Array = ItemRules.slots(updated)
+	if int(updated.get("quantity", 1)) < 2 and not updated_slots.is_empty() and slot not in updated_slots:
+		updated_slots.clear()
+	if slot not in updated_slots:
+		updated_slots.append(slot)
+	updated["equipped_slots"] = updated_slots
+	_inventory[index] = updated
+	_sanitize_equipment()
+	_refresh_inventory(index)
+	_publish()
+
+
+func _unequip_selected() -> void:
+	var index := _selected_inventory_index()
+	if index < 0 or index >= _inventory.size():
+		return
+	_inventory[index]["equipped_slots"] = []
+	_refresh_inventory(index)
+	_publish()
 
 
 func _publish() -> void:

@@ -2,6 +2,7 @@ extends RefCounted
 
 const CreatureOwner = preload("res://vtt/creature_owner.gd")
 const CreatureRules = preload("res://vtt/creature_rules.gd")
+const ItemRules = preload("res://vtt/creature_item_rules.gd")
 
 const ROOT_DIR := "user://player_characters"
 const FILE_VERSION := 3
@@ -271,7 +272,7 @@ func normalize_character(value: Dictionary) -> Dictionary:
 	defaults["armor_class_base"] = maxi(0, int(value.get(
 		"armor_class_base", int(value.get("armor_class", 10)) - int(defaults["armor_class_bonus"])
 	)))
-	defaults["armor_class"] = maxi(0, int(defaults["armor_class_base"]) + int(defaults["armor_class_bonus"]))
+	defaults["armor_class"] = maxi(0, int(defaults["armor_class_base"]) + int(defaults["armor_class_bonus"]) + ItemRules.shield_bonus(defaults.get("inventory", [])))
 	defaults["initiative_bonus"] = clampi(int(value.get("initiative_bonus", 0)), -99, 99)
 	defaults["initiative_base"] = int(value.get(
 		"initiative_base", int(value.get("initiative", 0)) - int(defaults["initiative_bonus"])
