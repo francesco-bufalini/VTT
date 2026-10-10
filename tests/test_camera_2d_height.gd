@@ -453,8 +453,12 @@ func run() -> void:
 	await physics_frame
 	camera.call("enter_top_down_2d", Vector3.ZERO, 30.0, 0.0)
 	var prop_levels: Array = probe.call("get_solid_levels")
+	var found_upper_prop := false
+	for value: Variant in prop_levels:
+		if is_equal_approx(float(value), 14.0):
+			found_upper_prop = true
 	if not _check(
-		prop_levels.has(14.0),
+		found_upper_prop,
 		"collidable upper props outside the center probe and on layer 8 must provide a camera level"
 	):
 		return
