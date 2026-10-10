@@ -331,6 +331,24 @@ func run() -> void:
 	area._reload()
 	sheet = area._current()
 	assert(sheet.id == original_id and sheet.classes[0].level == 6)
+	assert(area._statistics_columns.get_child_count() == 2,
+		"Statistics must have dedicated skill and combat columns")
+	assert(area._skill_buttons.size() == 18,
+		"All canonical 5etools/D&D 5e skills must be present")
+	assert(int(area._passive_perception.text) >= 10,
+		"Passive perception must be calculated from Wisdom and skill ranks")
+	var original_skill_rank: int = int(area._skill_ranks["perception"])
+	area._cycle_skill_rank("perception")
+	assert(int(area._skill_ranks["perception"]) == (original_skill_rank + 1) % 3,
+		"Skill rank toggles from untrained to proficient to expert")
+	area._reload()
+	assert(int(area._skill_ranks["perception"]) == (original_skill_rank + 1) % 3,
+		"Skill proficiency must survive reload")
+	area._custom_attacks.text = "Longbow: 1d8 piercing"
+	area._save()
+	area._reload()
+	assert("Longbow" in area._custom_attacks.text,
+		"Additional combat attacks must remain editable and persistent")
 	var spells: Node = area._spellcasting_ui
 	assert(spells._known_list.custom_minimum_size.y == spells._prepared_list.custom_minimum_size.y,
 		"Class and available spell boxes must have the same height")
@@ -439,6 +457,26 @@ func run() -> void:
 	assert(not area._subclass_choices({"name": "Wizard", "source": "PHB"}).is_empty(),
 		"Subclass selection must include Wizard 2014 choices")
 	var inventory: Node = area._inventory_ui
+	var document_editor: Node = inventory._documents_tab
+	assert(document_editor != null, "Inventario must contain a Documents subtab")
+	document_editor._add_document()
+	assert(area._current().documents.size() == 1,
+		"Adding a document must persist its inventory reference")
+	document_editor._title_edit.text = "Lettera d'invito"
+	document_editor._body_edit.text = "Presentarsi al castello al tramonto."
+	document_editor._update_document()
+	assert("Lettera" in document_editor._paper_text.text,
+		"Document parchment preview must be regenerated from text")
+	area._reload()
+	assert(area._current().documents.size() == 1
+		and String(area._current().documents[0].get("title", "")) == "Lettera d'invito",
+		"Documents and contents must survive a creature reload")
+	document_editor._remove_document()
+	assert(area._current().documents.is_empty(),
+		"Deleting a document must persist its removal")
+	var image_helper: Script = load("res://vtt/item_image_preview.gd")
+	assert(not String(image_helper.image_source({"name": "Bag of Holding", "source": "DMG"})).is_empty(),
+		"Verified official item artwork must be indexed by source and name")
 	assert(inventory._catalog.size() > 250,
 		"All five 5etools item categories must be included")
 	inventory._catalog_list.select(0)

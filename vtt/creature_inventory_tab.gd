@@ -3,6 +3,8 @@ extends VBoxContainer
 # Private creature inventory. These are catalog references, not scene items:
 # placing or deleting physical objects on the board never changes a sheet.
 const Player5eTools = preload("res://vtt/player_5etools_catalog.gd")
+const DocumentsTab = preload("res://vtt/creature_documents_tab.gd")
+const ItemImagePreview = preload("res://vtt/item_image_preview.gd")
 
 var _on_change: Callable
 var _on_status: Callable
@@ -18,11 +20,19 @@ var _quantity: SpinBox
 var _details: RichTextLabel
 var _add_button: Button
 var _remove_button: Button
+var _documents_tab: Node
+var _image_preview: AcceptDialog
+var _document_change: Callable
+var _send_document: Callable
+var _peer_provider: Callable
 
 
-func setup(on_change: Callable, on_status: Callable) -> void:
+func setup(on_change: Callable, on_status: Callable, on_document_change: Callable = Callable(), send_document: Callable = Callable(), peer_provider: Callable = Callable()) -> void:
 	_on_change = on_change
 	_on_status = on_status
+	_document_change = on_document_change
+	_send_document = send_document
+	_peer_provider = peer_provider
 	add_theme_constant_override("separation", 7)
 	var heading := Label.new()
 	heading.text = "Inventario · Catalogo e oggetti personalizzati"
@@ -39,6 +49,7 @@ func setup(on_change: Callable, on_status: Callable) -> void:
 	_catalog_list.custom_minimum_size.y = 145
 	_catalog_list.size_flags_horizontal = Control.SIZE_EXPAND_FILL
 	_catalog_list.item_selected.connect(_on_catalog_selected)
+	_catalog_list.gui_input.connect(_on_image_click.bind(true))
 	_catalog_list.item_activated.connect(func(_index: int) -> void: _add_selected())
 	add_child(_catalog_list)
 	_add_button = Button.new()
@@ -54,6 +65,7 @@ func setup(on_change: Callable, on_status: Callable) -> void:
 	_inventory_list.custom_minimum_size.y = 145
 	_inventory_list.size_flags_horizontal = Control.SIZE_EXPAND_FILL
 	_inventory_list.item_selected.connect(_on_inventory_selected)
+	_inventory_list.gui_input.connect(_on_image_click.bind(false))
 	add_child(_inventory_list)
 
 	var actions := HBoxContainer.new()
@@ -82,8 +94,36 @@ func setup(on_change: Callable, on_status: Callable) -> void:
 	_details.scroll_active = true
 	_details.selection_enabled = true
 	add_child(_details)
+	var inner_tabs := TabContainer.new()
+	inner_tabs.size_flags_horizontal = Control.SIZE_EXPAND_FILL
+	inner_tabs.size_flags_vertical = Control.SIZE_EXPAND_FILL
+	add_child(inner_tabs)
+	var objects_page := VBoxContainer.new()
+	objects_page.name = "Oggetti"
+	inner_tabs.add_child(objects_page)
+	for child: Node in get_children():
+		if child != inner_tabs:
+			remove_child(child)
+			objects_page.add_child(child)
+	_documents_tab = DocumentsTab.new()
+	_documents_tab.name = "Documenti"
+	inner_tabs.add_child(_documents_tab)
+	_documents_tab.call("setup", Callable(self, "_documents_changed"), _on_status, _send_document, _peer_provider)
+	_image_preview = ItemImagePreview.new()
+	add_child(_image_preview)
+	_image_preview.call("setup")
 	reload_catalog()
 	_refresh_inventory()
+
+
+func _documents_changed(documents: Array) -> void:
+	if _document_change.is_valid():
+		_document_change.call(documents)
+
+
+func receive_document() -> void:
+	if _documents_tab != null:
+		_documents_tab.call("receive_document")
 
 
 func reload_catalog() -> void:
@@ -113,6 +153,41 @@ func load_record(record: Dictionary) -> void:
 			})
 	_refresh_inventory()
 	_loading = false
+	if _documents_tab != null:
+		_documents_tab.call("load_record", record)
+
+
+func _catalog_entry(item: Dictionary) -> Dictionary:
+	for row: Dictionary in _catalog:
+		if String(row.get("id", "")) == String(item.get("id", "")):
+			return row
+	return item
+
+
+func _image_label(item: Dictionary, caption: String) -> String:
+	return ("🖼  " if not ItemImagePreview.image_source(item).is_empty() else "") + caption
+
+
+func _on_image_click(event: InputEvent, from_catalog: bool) -> void:
+	var click: InputEventMouseButton = event as InputEventMouseButton
+	if click == null or not click.pressed or click.button_index != MOUSE_BUTTON_LEFT:
+		return
+	var list: ItemList = _catalog_list if from_catalog else _inventory_list
+	var index: int = list.get_item_at_position(click.position, true)
+	if index < 0:
+		return
+	var rect: Rect2 = list.get_item_rect(index)
+	if click.position.x - rect.position.x > 38:
+		return
+	var item: Dictionary = {}
+	if from_catalog and index < _filtered.size():
+		item = _filtered[index]
+	elif not from_catalog and index < _inventory.size():
+		item = _catalog_entry(_inventory[index])
+	if ItemImagePreview.image_source(item).is_empty():
+		return
+	_image_preview.call("preview", item)
+	get_viewport().set_input_as_handled()
 
 
 func _filter_catalog() -> void:
@@ -131,7 +206,7 @@ func _filter_catalog() -> void:
 		if not query.is_empty() and query not in haystack:
 			continue
 		_filtered.append(item)
-		_catalog_list.add_item(Player5eTools.display_label(item))
+		_catalog_list.add_item(_image_label(item, Player5eTools.display_label(item)))
 		if _filtered.size() >= 250:
 			break
 	_add_button.disabled = true
@@ -199,7 +274,7 @@ func _on_quantity_changed(value: float) -> void:
 		return
 	_inventory[index]["quantity"] = clampi(int(value), 1, 99999)
 	# Keep the active editor and selection intact while typing multiple digits.
-	_inventory_list.set_item_text(index, _inventory_label(_inventory[index]))
+	_inventory_list.set_item_text(index, _image_label(_catalog_entry(_inventory[index]), _inventory_label(_inventory[index])))
 	_publish()
 
 
@@ -219,7 +294,7 @@ func _refresh_inventory(selected_index: int = -1) -> void:
 	_loading = true
 	_inventory_list.clear()
 	for item: Dictionary in _inventory:
-		_inventory_list.add_item(_inventory_label(item))
+		_inventory_list.add_item(_image_label(_catalog_entry(item), _inventory_label(item)))
 	if selected_index >= 0 and selected_index < _inventory.size():
 		_inventory_list.select(selected_index)
 		_quantity.value = int(_inventory[selected_index].get("quantity", 1))

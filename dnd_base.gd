@@ -317,6 +317,15 @@ func _ready() -> void:
 		_share_session_key(),
 		Callable(board_sync, "get_cached_tailscale_peer_ipv4s")
 	)
+	var creature_sheet: Node = get_node_or_null("CreatureArea")
+	if creature_sheet != null:
+		creature_presence.document_received.connect(
+			Callable(creature_sheet, "receive_shared_document")
+		)
+		creature_presence.document_delivered.connect(
+			func(_delivery_id: String) -> void:
+				creature_sheet.call("_set_status", "Documento consegnato al destinatario.")
+		)
 
 	var runtime_toolbar: Node = (
 		preload("res://vtt/runtime_toolbar.gd").new() as Node
