@@ -75,6 +75,7 @@ func run() -> void:
 	tab.call("_update_spell_controls")
 	var cast_button: Button = tab.get("_cast_button") as Button
 	assert(not cast_button.disabled)
-	root.queue_free()
+	tab.queue_free()
+	sink.queue_free()
 	print("PASS: selected spell casting, ordinary/pact/no-slot use and cantrips")
 	quit()
