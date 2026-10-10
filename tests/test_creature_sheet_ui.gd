@@ -427,15 +427,15 @@ func run() -> void:
 	assert(spells._slot_grid.get_parent().visible and spells._pact_row.get_parent().visible,
 		"Both resource groups are visible by default")
 	spells._toggle_slots_visibility()
-	assert(not spells._slot_grid.visible and spells._pact_row.visible,
+	assert(not spells._slot_grid.get_parent().visible and spells._pact_row.get_parent().visible,
 		"Slot visibility must not affect Pact Magic")
 	spells._toggle_pact_visibility()
-	assert(not spells._pact_row.visible and not spells._slot_grid.visible,
+	assert(not spells._pact_row.get_parent().visible and not spells._slot_grid.get_parent().visible,
 		"Pact Magic must collapse independently")
 	assert(not area._current().spell_slots_visible and not area._current().pact_slots_visible,
 		"Resource visibility must be stored")
 	area._reload()
-	assert(not spells._slot_grid.visible and not spells._pact_row.visible,
+	assert(not spells._slot_grid.get_parent().visible and not spells._pact_row.get_parent().visible,
 		"Visibility must survive sheet reload")
 	spells._toggle_slots_visibility()
 	spells._toggle_pact_visibility()
