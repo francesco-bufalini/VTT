@@ -13,6 +13,9 @@ class PickCamera extends Camera3D:
 class PickToken extends CharacterBody3D:
 	var token_height_cells: float = 2.0
 	var cell_size: float = 1.0
+	var footprint_cells: float = 1.0
+	func get_footprint_cells() -> float:
+		return footprint_cells
 
 
 class PickBoard extends Node3D:
@@ -110,6 +113,32 @@ func _run() -> void:
 		and Vector3(target.get("center", Vector3.ZERO)).is_equal_approx(expected),
 		"2D ruler must preserve floating token altitude instead of floor altitude"
 	):
+		return
+
+
+	# Measure to the nearest occupied grid-square centre (not the middle
+	# of a 2x2 or 3x3 miniature). Height still uses the free support square.
+	token.footprint_cells = 2.0
+	var nearest: Vector3 = ruler.call(
+		"_ruler_closest_footprint_cell", token, Vector3(5.5, 5.5, 4.0)
+	)
+	if not _check(nearest.is_equal_approx(Vector3(3.0, 5.5, 4.0)),
+		"Large footprint measures from its nearest occupied square"):
+		return
+	var small_nearest: Vector3
+	token.footprint_cells = 0.5
+	small_nearest = ruler.call(
+		"_ruler_closest_footprint_cell", token, Vector3(5.5, 5.5, 4.0)
+	)
+	if not _check(small_nearest.is_equal_approx(expected),
+		"Tiny creatures still occupy one tactical square"):
+		return
+	token.footprint_cells = 3.0
+	nearest = ruler.call(
+		"_ruler_closest_footprint_cell", token, Vector3(5.5, 5.5, 4.5)
+	)
+	if not _check(nearest.is_equal_approx(Vector3(3.5, 5.5, 4.5)),
+		"Huge footprint picks its outermost occupied square"):
 		return
 
 	board.queue_free()

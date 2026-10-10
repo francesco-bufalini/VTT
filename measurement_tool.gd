@@ -70,6 +70,7 @@ var _measurement_mode: bool = false
 var _dragging: bool = false
 var _start_center: Vector3 = Vector3.ZERO
 var _start_cell_center: Vector3 = Vector3.ZERO
+var _start_token: Node3D = null
 var _start_raw_point: Vector3 = Vector3.ZERO
 var _end_center: Vector3 = Vector3.ZERO
 var _air_depth_world: float = 8.0
@@ -733,6 +734,7 @@ func begin_measurement() -> bool:
 		return false
 
 	_start_cell_center = cell.get("center", Vector3.ZERO)
+	_start_token = null if aoe_mode else cell.get("token") as Node3D
 	_start_raw_point = cell.get("raw", _start_cell_center)
 	_start_center = _start_cell_center
 
@@ -788,6 +790,7 @@ func end_measurement() -> void:
 
 func cancel_measurement() -> void:
 	_dragging = false
+	_start_token = null
 	_hide_measurement()
 
 
@@ -850,6 +853,18 @@ func _update_target_from_camera() -> void:
 	else:
 		_start_center = _start_cell_center
 		_end_center = target_center
+		var target_token: Node3D = cell.get("token") as Node3D
+		# The ruler measures between occupied grid squares rather than the
+		# centers of Large/Huge/Gargantuan creatures.
+		if is_instance_valid(_start_token):
+			if _start_token == target_token:
+				_end_center = _start_cell_center
+			else:
+				_start_center = _ruler_closest_footprint_cell(_start_token, target_center)
+		if is_instance_valid(target_token) and target_token != _start_token:
+			_end_center = _ruler_closest_footprint_cell(target_token, _start_center)
+			if is_instance_valid(_start_token):
+				_start_center = _ruler_closest_footprint_cell(_start_token, _end_center)
 
 	_update_visuals()
 
@@ -1029,6 +1044,27 @@ func _ruler_token_anchor(token: Node3D) -> Vector3:
 		token.global_position.x,
 		support_y,
 		token.global_position.z
+	)
+
+
+# Pick the centre of the occupied square nearest the other endpoint.
+# For even footprints the token centre lies between four cells; for Tiny
+# the occupied footprint remains a full tactical square. Y stays at the
+# free supporting square, so flying and tall tokens keep their real altitude.
+func _ruler_closest_footprint_cell(token: Node3D, toward: Vector3) -> Vector3:
+	var anchor: Vector3 = _ruler_token_anchor(token)
+	var footprint: float = 1.0
+	if token.has_method("get_footprint_cells"):
+		footprint = maxf(float(token.call("get_footprint_cells")), 1.0)
+	var count: int = maxi(1, ceili(footprint - 0.0001))
+	var unit: float = maxf(cell_size, 0.0001)
+	var half_span: float = float(count - 1) * unit * 0.5
+	var x_index: int = clampi(roundi((toward.x - anchor.x + half_span) / unit), 0, count - 1)
+	var z_index: int = clampi(roundi((toward.z - anchor.z + half_span) / unit), 0, count - 1)
+	return Vector3(
+		anchor.x - half_span + float(x_index) * unit,
+		anchor.y,
+		anchor.z - half_span + float(z_index) * unit
 	)
 
 

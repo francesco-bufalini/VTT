@@ -1505,8 +1505,9 @@ func is_vision_cone_visible() -> bool:
 
 
 func _default_reach_feet() -> float:
-	# 5 ft per Medium o inferiore, poi +5 ft per ogni cella di footprint.
-	return maxf(5.0, _footprint_cells * 5.0)
+	# Size determines occupied squares, not melee reach. A Large/Huge
+	# creature has 5 ft reach unless its bestiary entry/traits override it.
+	return 5.0
 
 
 func set_reach_feet(value: float, overridden: bool = true) -> void:

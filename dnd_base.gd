@@ -48,6 +48,7 @@ const CHARACTER_TOKEN_ROOT := "res://assets/tokens/Characters"
 const DEFAULT_TOKEN_PROFILE_ID := "death_knight"
 const GridHighlightRenderer = preload("res://vtt/grid_highlight_renderer.gd")
 const TopDownElevationLevels = preload("res://vtt/top_down_elevation_levels.gd")
+const TopDownTokenOverlay = preload("res://vtt/top_down_elevation_overlay.gd")
 const CreatureOwner = preload("res://vtt/creature_owner.gd")
 const TokenScript = preload("res://token.gd")
 const FlankingGeometry = preload("res://vtt/flanking_system.gd")
@@ -4756,7 +4757,6 @@ func _raycast_token_from_screen(
 		# Pick the screen-space token proxies, not their off-floor 3D
 		# hitboxes: a roof or near clipping must never block a 2D token.
 		var reference_y: float = float(camera.call("get_top_down_level"))
-		var screen_height: float = get_viewport().get_visible_rect().size.y
 		var nearest: CharacterBody3D = null
 		var best_score: float = INF
 		for node: Node in tokens_root.get_children():
@@ -4776,19 +4776,17 @@ func _raycast_token_from_screen(
 				if token.has_method("get_footprint_cells")
 				else 1.0
 			)
-			var icon_size: float = clampf(
-				footprint * cell_size * screen_height / maxf(camera.size, 0.01),
-				16.0,
-				180.0
+			var icon_extent: Vector2 = TopDownTokenOverlay.token_icon_extent_pixels(
+				camera, projected, maxf(footprint, 1.0) * cell_size
 			)
 			var offset: Vector2 = screen_position - token_screen
-			if absf(offset.x) > icon_size * 0.5 or absf(offset.y) > icon_size * 0.5:
+			if absf(offset.x) > icon_extent.x * 0.5 or absf(offset.y) > icon_extent.y * 0.5:
 				continue
 			var support_y: float = TopDownElevationLevels.token_support_air_level(
 				token, cell_size
 			)
 			var score: float = (
-				offset.length_squared() / (icon_size * icon_size)
+				pow(offset.x / icon_extent.x, 2.0) + pow(offset.y / icon_extent.y, 2.0)
 				+ absf(support_y - reference_y) * 0.01
 			)
 			if score < best_score:

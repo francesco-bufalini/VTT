@@ -57,6 +57,18 @@ func run() -> void:
 		for height: float in [-10.0, 0.0, 12.0]:
 			assert(overlay.project_engagement_point(Vector3(1, height, 2), floor_y).is_equal_approx(expected),
 				"Reach arrows must share the token badge plane at every camera floor")
+	# At every orthographic zoom level a portrait occupies exactly its
+	# projected world-grid footprint (no 16/180 pixel cap).
+	var portrait_origin := Vector3.ZERO
+	camera.size = 20.0
+	var normal_extent: Vector2 = Overlay.token_icon_extent_pixels(camera, portrait_origin, 2.0)
+	camera.size = 5.0
+	var close_extent: Vector2 = Overlay.token_icon_extent_pixels(camera, portrait_origin, 2.0)
+	assert(close_extent.is_equal_approx(normal_extent * 4.0),
+		"2D portrait footprint must scale linearly with camera zoom")
+	assert(close_extent.x > 180.0,
+		"Zoomed Large portraits must not be capped at 180 pixels")
+	camera.size = 20.0
 	board.top_down = true
 	flanking.refresh_now()
 	assert(not flanking._arrow_instance.visible, "2D must not draw duplicate 3D arrows")
