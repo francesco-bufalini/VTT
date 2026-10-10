@@ -64,6 +64,14 @@ func run() -> void:
 	assert(Rules.monster_armor_class(stat) == 18)
 	assert(Rules.monster_abilities(stat).str == 23)
 	assert(is_equal_approx(Rules.monster_cr_value({"cr": {"cr": "1/8"}}), 0.125))
+	assert(Rules.experience_for_level(5) == 6500 and Rules.experience_for_level(20) == 355000)
+	assert(Rules.walking_speed({"walk": 25, "fly": 50}) == 25)
+	var found_racial_speed := false
+	for race: Dictionary in Player5eTools.entries("races"):
+		if String(race.get("name", "")) == "Aarakocra" and String(race.get("source", "")) == "DMG":
+			found_racial_speed = Rules.walking_speed(race.get("speed", 30)) == 20
+			break
+	assert(found_racial_speed, "5etools race movement must remain available in the offline catalogue")
 	var multiclass_monster := creature.duplicate(true)
 	multiclass_monster["classes"].append({"name": "Wizard", "level": 3, "source": "PHB"})
 	var normalized_monster: Dictionary = monster.normalize_creature(multiclass_monster)
