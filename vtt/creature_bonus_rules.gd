@@ -8,10 +8,11 @@ const Proficiencies = preload("res://vtt/creature_proficiency_rules.gd")
 const Skills = preload("res://vtt/creature_skills_5etools.gd")
 const Items = preload("res://vtt/creature_item_rules.gd")
 const Traits = preload("res://vtt/creature_traits_tab.gd")
+const Structured = preload("res://vtt/creature_structured_bonuses.gd")
 const ABILITIES := ["str", "dex", "con", "int", "wis", "cha"]
 
 
-static func grants(record: Dictionary) -> Array[Dictionary]:
+static func _saved_grants(record: Dictionary) -> Array[Dictionary]:
 	var result: Array[Dictionary] = []
 	var raw: Variant = record.get("formula_bonuses", [])
 	if raw is Array:
@@ -27,15 +28,30 @@ static func grants(record: Dictionary) -> Array[Dictionary]:
 				"expression": String(row.get("expression", "0")),
 				"origin_id": String(row.get("origin_id", "")),
 				"origin_name": String(row.get("origin_name", "Manuale")),
-				"disabled": bool(row.get("disabled", false))
+				"disabled": bool(row.get("disabled", false)),
+				"automatic": bool(row.get("automatic", false)) or String(row.get("id", "")).begins_with("auto|")
 			})
+	return result
+
+
+static func grants(record: Dictionary) -> Array[Dictionary]:
+	var result: Array[Dictionary] = []
+	var disabled_auto: Dictionary = {}
+	for row: Dictionary in _saved_grants(record):
+		if bool(row.get("automatic", false)):
+			disabled_auto[String(row.get("id", ""))] = bool(row.get("disabled", false))
+		else:
+			result.append(row)
+	for automatic: Dictionary in Structured.derive(record):
+		automatic["disabled"] = bool(disabled_auto.get(String(automatic.get("id", "")), false))
+		result.append(automatic)
 	return result
 
 
 # The old editable compensation boxes become ordinary manual-source grants on
 # first normalization. Migration is idempotent and preserves the final total.
 static func migrate_legacy(record: Dictionary, preserve_old_initiative: bool = false) -> void:
-	var rows: Array[Dictionary] = grants(record)
+	var rows: Array[Dictionary] = _saved_grants(record)
 	# A legacy initiative base could be manually overridden. Convert any
 	# difference from the DEX-derived base into a separate source bonus.
 	if preserve_old_initiative:
@@ -143,6 +159,12 @@ static func available_origins(record: Dictionary) -> Array[Dictionary]:
 				continue
 			seen[sid] = true
 			results.append({"id": sid, "name": "Oggetto · " + String((owned as Dictionary).get("name", "")), "disabled": bool(disabled_live.get(sid, false))})
+	for row: Dictionary in Structured.derive(record):
+		var sid: String = String(row.get("origin_id", ""))
+		if sid.is_empty() or seen.has(sid):
+			continue
+		seen[sid] = true
+		results.append({"id": sid, "name": String(row.get("origin_name", sid)), "disabled": bool(disabled_live.get(sid, false))})
 	return results
 
 
