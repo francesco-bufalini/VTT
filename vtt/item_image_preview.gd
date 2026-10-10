@@ -132,6 +132,12 @@ func preview(item: Dictionary) -> void:
 
 
 func _show_file(path: String) -> void:
+	if ResourceLoader.exists(path):
+		var imported: Resource = ResourceLoader.load(path)
+		if imported is Texture2D:
+			_picture.texture = imported as Texture2D
+			_status.text = ""
+			return
 	var img: Image = Image.load_from_file(path)
 	if img == null or img.is_empty():
 		_status.text = "File immagine non leggibile."
