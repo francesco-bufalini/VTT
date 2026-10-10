@@ -47,6 +47,8 @@ var _prepare: Button
 var _slot_totals: Dictionary = {}
 var _slot_bonus_controls: Dictionary = {}
 var _remaining_labels: Dictionary = {}
+var _slot_formula_labels: Dictionary = {}
+var _pact_formula: Label
 var _slot_use: Dictionary = {}
 var _slot_recharge: Dictionary = {}
 var _pact_total_spin: SpinBox
@@ -249,10 +251,17 @@ func setup(on_change: Callable, on_status: Callable) -> void:
 		bonus.value_changed.connect(_on_slot_bonus_changed.bind(lvl))
 		slot_grid.add_child(bonus)
 		_slot_bonus_controls[lvl] = bonus
+		var remaining_group := VBoxContainer.new()
+		slot_grid.add_child(remaining_group)
 		var remaining := Label.new()
-		remaining.custom_minimum_size.x = 58
-		slot_grid.add_child(remaining)
+		remaining.custom_minimum_size.x = 65
+		remaining_group.add_child(remaining)
 		_remaining_labels[lvl] = remaining
+		var formula := Label.new()
+		formula.add_theme_font_size_override("font_size", 12)
+		formula.add_theme_color_override("font_color", Color(0.86, 0.76, 0.61))
+		remaining_group.add_child(formula)
+		_slot_formula_labels[lvl] = formula
 		var use := Button.new()
 		use.text = "−"
 		use.tooltip_text = "Consuma uno slot di livello %d" % lvl
@@ -315,6 +324,9 @@ func setup(on_change: Callable, on_status: Callable) -> void:
 	_pact_remain = Label.new()
 	_pact_remain.custom_minimum_size.x = 64
 	pact_row.add_child(_pact_remain)
+	_pact_formula = Label.new()
+	_pact_formula.add_theme_font_size_override("font_size", 12)
+	pact_row.add_child(_pact_formula)
 	_pact_use = Button.new()
 	_pact_use.text = "Usa"
 	_pact_use.pressed.connect(_change_pact.bind(1))
@@ -812,10 +824,14 @@ func _update_resource_labels() -> void:
 		var total: int = _effective_slot_total(lvl) if _totals.size() > lvl and _slot_bonuses.size() > lvl else 0
 		var spent: int = clampi(int(_spent[lvl]), 0, total) if _spent.size() > lvl else 0
 		(_remaining_labels[lvl] as Label).text = "%d / %d" % [total - spent, total]
+		(_slot_formula_labels[lvl] as Label).text = "= (%d %+d)" % [
+			int(_totals[lvl]), int(_slot_bonuses[lvl])
+		]
 		(_slot_use[lvl] as Button).disabled = spent >= total
 		(_slot_recharge[lvl] as Button).disabled = spent <= 0
 	var pact_max: int = _effective_pact_total()
 	_pact_remain.text = "%d / %d" % [pact_max - _pact_spent, pact_max]
+	_pact_formula.text = "= (%d %+d)" % [_pact_total, _pact_bonus]
 	_pact_use.disabled = _pact_spent >= pact_max
 	_pact_restore.disabled = _pact_spent <= 0
 
