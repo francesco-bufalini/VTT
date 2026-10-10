@@ -179,13 +179,19 @@ func load_record(record: Dictionary) -> void:
 			var name: String = String(item.get("name", "")).strip_edges()
 			if item_id.is_empty() or name.is_empty():
 				continue
-			_inventory.append({
+			var saved_row: Dictionary = {
 				"id": item_id,
 				"name": name,
 				"source": String(item.get("source", "")),
 				"quantity": clampi(int(item.get("quantity", 1)), 1, 99999),
 				"equipped_slots": ItemRules.slots(item)
-			})
+			}
+			# Keep a minimal structured snapshot for homebrew items when a
+			# catalog entry is unavailable on another installation.
+			for key: String in ["type", "weapon_category", "damage", "versatile_damage", "damage_type", "range", "properties", "ac", "bonus_ac", "bonus_weapon"]:
+				if item.has(key):
+					saved_row[key] = item[key]
+			_inventory.append(saved_row)
 	_sanitize_equipment()
 	_refresh_inventory()
 	_loading = false
@@ -296,13 +302,17 @@ func _add_selected() -> void:
 			_refresh_inventory(i)
 			_publish()
 			return
-	_inventory.append({
+	var new_item: Dictionary = {
 		"id": item_id,
 		"name": String(source_item.get("name", "")),
 		"source": String(source_item.get("source", "")),
 		"quantity": 1,
 		"equipped_slots": []
-	})
+	}
+	for key: String in ["type", "weapon_category", "damage", "versatile_damage", "damage_type", "range", "properties", "ac", "bonus_ac", "bonus_weapon"]:
+		if source_item.has(key):
+			new_item[key] = source_item[key]
+	_inventory.append(new_item)
 	_refresh_inventory(_inventory.size() - 1)
 	_publish()
 
