@@ -3382,7 +3382,8 @@ func apply_attack_damage_to_token(target: Node3D, damage: int) -> Dictionary:
 			"current_hp": int(owned["current_hp"]),
 			"max_hp": hp_max,
 			"temporary_hp": int(owned["temporary_hp"]),
-			"second_form_hp": int(owned["second_form_hp"])
+			"second_form_hp": int(owned["second_form_hp"]),
+			"second_form_max_hp": int(owned.get("second_form_max_hp", 0))
 		}
 	return {"applied": false}
 
