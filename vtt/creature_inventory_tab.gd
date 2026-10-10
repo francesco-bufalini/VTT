@@ -94,8 +94,36 @@ func setup(on_change: Callable, on_status: Callable, on_document_change: Callabl
 	_details.scroll_active = true
 	_details.selection_enabled = true
 	add_child(_details)
+	var inner_tabs := TabContainer.new()
+	inner_tabs.size_flags_horizontal = Control.SIZE_EXPAND_FILL
+	inner_tabs.size_flags_vertical = Control.SIZE_EXPAND_FILL
+	add_child(inner_tabs)
+	var objects_page := VBoxContainer.new()
+	objects_page.name = "Oggetti"
+	inner_tabs.add_child(objects_page)
+	for child: Node in get_children():
+		if child != inner_tabs:
+			remove_child(child)
+			objects_page.add_child(child)
+	_documents_tab = DocumentsTab.new()
+	_documents_tab.name = "Documenti"
+	inner_tabs.add_child(_documents_tab)
+	_documents_tab.call("setup", Callable(self, "_documents_changed"), _on_status, _send_document, _peer_provider)
+	_image_preview = ItemImagePreview.new()
+	add_child(_image_preview)
+	_image_preview.call("setup")
 	reload_catalog()
 	_refresh_inventory()
+
+
+func _documents_changed(documents: Array) -> void:
+	if _document_change.is_valid():
+		_document_change.call(documents)
+
+
+func receive_document() -> void:
+	if _documents_tab != null:
+		_documents_tab.call("receive_document")
 
 
 func reload_catalog() -> void:
