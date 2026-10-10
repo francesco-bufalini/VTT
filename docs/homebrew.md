@@ -24,7 +24,7 @@ Open **Cartella homebrew** from Creature. User data lives in `user://homebrew` (
 
 For condition icons set `icon_id` to an existing status (e.g. `poisoned`) or `icon` to a Unicode pictogram up to 16 characters. Empty icon defaults to a bullet. Custom class `trackers` support `id`, `label`, `maximum`, `reset`, and `min_level`; manual editing always remains available. Monster `default_miniature_id` can explicitly select a published token-pack ID.
 
-Homebrew spell `data` uses runtime catalog fields: `level`, `classes`, `description`, `target_mode`, `range_feet`, and geometry such as `aoe_shape`/`aoe_radius_feet`. See the starter example and `vtt/spells/spell_catalog.gd`. A spell without supported runtime mechanics may remain reference-only. Catalog-level support does not invent new spell mechanics.
+Legacy homebrew spell `data` may contain runtime catalog fields (`level`, `classes`, `description`, `target_mode`, `range_feet`, `aoe_shape`, etc.) and remains supported. For new native 5etools JSON, put VTT-only targeting/geometry in `user://vtt_enrichment` or `vtt/enrichment`, keyed by the spell catalog ID. See the examples and `vtt/spells/spell_catalog.gd`. A spell without supported runtime mechanics may remain reference-only; catalog-level support does not invent them.
 
 ## Separazione compendio / integrazioni / istanze
 
