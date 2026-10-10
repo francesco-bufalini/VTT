@@ -1799,7 +1799,12 @@ func _on_formula_bonus_requested(key: String) -> void:
 
 
 func _recalculate_bonus_mirrors(record: Dictionary) -> void:
-	_recalculate_bonus_mirrors(record)
+	record["max_hp"] = maxi(0, BonusRules.value(record, "hp"))
+	record["armor_class"] = maxi(0, BonusRules.value(record, "ac"))
+	record["initiative_base"] = BonusRules.value(record, "ability_mod:dex")
+	record["initiative"] = BonusRules.value(record, "initiative")
+	record["proficiency_bonus"] = BonusRules.value(record, "proficiency")
+	record["speed"] = maxi(0, BonusRules.value(record, "speed"))
 	record["reach_feet"] = AttackData.active_range(record)
 
 
