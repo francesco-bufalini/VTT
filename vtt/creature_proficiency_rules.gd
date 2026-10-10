@@ -183,7 +183,10 @@ static func candidate_sources(record: Dictionary) -> Array[Dictionary]:
 				if classes is Array and not (classes as Array).is_empty():
 					var primary: Dictionary = {}
 					for candidate_class: Variant in classes:
-						if candidate_class is Dictionary and String(candidate_class.get("name", "")).to_lower() != "mostro":
+						if candidate_class is Dictionary and not String(candidate_class.get("name", "")).is_empty():
+							# The first class is the base class even for NPCs.
+							# Skipping "mostro" used to give the next class
+							# Starting instead of Multiclass grants.
 							primary = candidate_class
 							break
 					if not primary.is_empty() and (String(primary.get("name", "")).nocasecmp_to(name) != 0 or String(primary.get("source", "")) != source):
