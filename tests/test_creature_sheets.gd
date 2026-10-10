@@ -28,6 +28,8 @@ func run() -> void:
 		"name": "Test Dragon",
 		"source": "MM",
 		"cr": "1/2",
+		"type": "dragon",
+		"speed": 40,
 		"hp": {"average": 178},
 		"ac": [{"ac": 18, "from": ["natural armor"]}],
 		"str": 23,
@@ -48,10 +50,13 @@ func run() -> void:
 	assert(creature.armor_class == 18)
 	assert(creature.abilities.str == 23)
 	assert(creature.species == "Test Dragon" and creature.species_source == "MM")
-	assert(creature.class == "Mostro" and is_equal_approx(float(creature.level), 0.5))
+	assert(creature.class == "Mostro" and creature.level == Rules.monster_level(stat))
 	assert(creature.classes.size() == 1
-		and is_equal_approx(float(creature.classes[0].level), 0.5),
-		"Monster base class must preserve fractional 5etools CR")
+		and creature.classes[0].level == Rules.monster_level(stat),
+		"Monster base class level is an integer, while stat_block.cr retains fractions")
+	assert(creature.subclass == "Drago" and creature.subclass_id == "monster_type|dragon",
+		"Monster subtype must come from structured 5etools monster type")
+	assert(creature.speed == 40, "Monster speed should come from structured 5etools speed")
 	assert(creature.reach_feet == 10.0,
 		"Monster melee reach must be derived from 5etools, not a fixed 5 ft")
 	assert(creature.owner_id == Owner.local_id())
@@ -63,10 +68,12 @@ func run() -> void:
 	multiclass_monster["classes"].append({"name": "Wizard", "level": 3, "source": "PHB"})
 	var normalized_monster: Dictionary = monster.normalize_creature(multiclass_monster)
 	assert(normalized_monster.classes.size() == 2
-		and is_equal_approx(float(normalized_monster.classes[0].level), 0.5)
+		and normalized_monster.classes[0].level == Rules.monster_level(stat)
 		and normalized_monster.classes[1].name == "Wizard"
-		and is_equal_approx(float(normalized_monster.level), 3.5),
+		and normalized_monster.level == Rules.monster_level(stat) + 3,
 		"Monster class normalization must not discard extra real classes")
+	assert(normalized_monster.xp >= Rules.experience_for_level(3),
+		"Monster CR must not contribute to class-level XP requirements")
 	# Editions are alternatives for a class, not separate entries for each book.
 	for edition: String in ["2014", "2024"]:
 		var class_names: Dictionary = {}
