@@ -344,11 +344,17 @@ func run() -> void:
 	area._reload()
 	assert(int(area._skill_ranks["perception"]) == (original_skill_rank + 1) % 3,
 		"Skill proficiency must survive reload")
-	area._custom_attacks.text = "Longbow: 1d8 piercing"
-	area._save()
-	area._reload()
-	assert("Longbow" in area._custom_attacks.text,
-		"Additional combat attacks must remain editable and persistent")
+	assert(area._statistics_columns is GridContainer,
+		"Statistics columns must be able to stack at narrow viewport widths")
+	area._update_sheet_layout()
+	assert(area._statistics_columns.columns == (2 if area._tabs.size.x >= 850.0 else 1),
+		"Stats column count must follow the actual tab width, not the desktop screen width")
+	var combat_stats: Node = area._attacks_description.get_parent()
+	assert(area._tracker_rows.get_parent() == combat_stats
+		and area._tracker_rows.get_index() < area._attacks_description.get_index(),
+		"Trackers should appear above the list of available attacks")
+	assert("Colpo senz'armi" in area._attacks_description.text,
+		"Non-monster creatures must always display an unarmed strike")
 	var spells: Node = area._spellcasting_ui
 	assert(spells._known_list.custom_minimum_size.y == spells._prepared_list.custom_minimum_size.y,
 		"Class and available spell boxes must have the same height")
@@ -358,10 +364,11 @@ func run() -> void:
 		"Spell details must occupy a scrollable row below the compact action button")
 	assert(not spells._search_row.visible and spells._known_list.item_count > 0,
 		"Class spell list must be automatic and search optional")
-	assert(spells._slot_grid.columns == 5 and spells._slot_formula_labels[1].get_parent() is HBoxContainer,
-		"Slot maximum must share the HP formula format with the base and manual bonus")
-	assert(spells._pact_formula.get_parent().get_child_count() > 5,
-		"Pact maximum must also have its own inline formula")
+	assert(spells._slot_grid.columns == 1
+		and spells._remaining_labels[1].get_parent() is HFlowContainer,
+		"Slots should use wrapped tracker rows with remaining/max and an inline bonus")
+	assert(spells._pact_remain.get_index() < spells._pact_bonus_spin.get_parent().get_index(),
+		"Pact Magic remaining/max must precede its base-and-bonus formula")
 	spells._known_list.select(0)
 	spells._on_spell_list_selected("known")
 	assert(spells._description.visible and not spells._description.text.is_empty(),
@@ -467,6 +474,12 @@ func run() -> void:
 	document_editor._update_document()
 	assert("Lettera" in document_editor._paper_text.text,
 		"Document parchment preview must be regenerated from text")
+	assert(document_editor._viewport.render_target_update_mode == SubViewport.UPDATE_ALWAYS,
+		"Document image should keep rendering even when the tab is not visible")
+	assert(document_editor._image_button != null
+		and document_editor._preview.texture == document_editor._full_image.texture
+		and document_editor._paper.size == Vector2(640, 780),
+		"Document thumbnail and zoom window must share the generated paper image")
 	area._reload()
 	assert(area._current().documents.size() == 1
 		and String(area._current().documents[0].get("title", "")) == "Lettera d'invito",
