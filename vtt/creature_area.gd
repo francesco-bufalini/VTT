@@ -56,6 +56,7 @@ var _max_hp_effective: Label
 var _subclass_caption: Label
 var _xp: SpinBox
 var _initiative: SpinBox
+var _speed_custom := false
 var _speed: SpinBox
 var _temp_hp: SpinBox
 var _hp_delta_dialog: ConfirmationDialog
@@ -603,9 +604,16 @@ func _build_ui() -> void:
 	_initiative.custom_minimum_size.x = 66
 	_initiative.tooltip_text = "Iniziativa: modificatore di Destrezza, modificabile manualmente"
 	_add_label(movement_row, "Velocità (ft)")
-	_speed = _spin(movement_row, 0, 999)
-	_speed.custom_minimum_size.x = 69
+	_speed = SpinBox.new()
+	_speed.min_value = 0
+	_speed.max_value = 999
+	_speed.step = 1
+	_speed.update_on_text_changed = true
+	_speed.custom_minimum_size = Vector2(69, 30)
+	_speed.value_changed.connect(_on_speed_changed)
+	movement_row.add_child(_speed)
 	_speed.tooltip_text = "Velocità base della razza/specie (modificabile)"
+	_initiative.editable = false
 
 	var abilities_panel := PanelContainer.new()
 	var abilities_style := health_style.duplicate() as StyleBoxFlat
@@ -1278,7 +1286,15 @@ func _subclass_choices(class_ref: Dictionary) -> Array[Dictionary]:
 	var result: Array[Dictionary] = []
 	var wanted: String = String(class_ref.get("name", "")).strip_edges()
 	var source: String = String(class_ref.get("source", "")).to_upper()
-	if wanted.is_empty() or wanted == "Mostro":
+	if wanted == "Mostro":
+		var record: Dictionary = _current()
+		var stat_value: Variant = record.get("stat_block", {})
+		if stat_value is Dictionary:
+			var monster_type: Dictionary = Rules.monster_type_reference(stat_value as Dictionary)
+			if not monster_type.is_empty():
+				result.append(monster_type)
+		return result
+	if wanted.is_empty():
 		return result
 	for entry: Dictionary in Player5eTools.entries("subclasses"):
 		var parent: String = String(entry.get("class_name", entry.get("className", "")))
@@ -1308,6 +1324,7 @@ func _refresh_subclass_option(option: OptionButton, class_ref: Dictionary) -> vo
 func _on_class_choice_changed() -> void:
 	_refresh_multiclass_availability()
 	_refresh_subclass_option(_subclass_name, _reference_entry(_class_name))
+	_refresh_xp_minimum()
 	_save()
 
 
@@ -1563,6 +1580,7 @@ func _load_form(record: Dictionary) -> void:
 	_update_max_hp_display()
 	_temp_hp.value = int(record.get("temporary_hp", 0))
 	_ac.value = int(record.get("armor_class", 10))
+	_initiative.value = int(record.get("initiative", 0))
 	var abilities_value: Variant = record.get("abilities", {})
 	var abilities: Dictionary = (
 		abilities_value as Dictionary if abilities_value is Dictionary else {}
@@ -1584,6 +1602,10 @@ func _load_form(record: Dictionary) -> void:
 		}]
 		_set_reference_choices(_species, bestiary_species)
 	_select_reference(_species, String(record.get("species", "")), String(record.get("species_source", "")), String(record.get("species_id", "")))
+	_speed_custom = bool(record.get("speed_is_custom", false))
+	_speed.value = (Rules.walking_speed(_reference_entry(_species).get("speed", 30))
+		if is_character and not _speed_custom
+		else int(record.get("speed", 30)))
 	var class_source := String(record.get("class_source", ""))
 	var edition := String(record.get("rules_version", ""))
 	# Existing sheets with an explicit edition are authoritative. Infer the
@@ -1603,6 +1625,8 @@ func _load_form(record: Dictionary) -> void:
 	_refresh_multiclass_availability()
 	_refresh_subclass_option(_subclass_name, _reference_entry(_class_name))
 	_select_reference(_subclass_name, String(record.get("subclass", "")), String(record.get("subclass_source", "")), String(record.get("subclass_id", "")))
+	_subclass_caption.text = "Sottoclasse" if is_character else "Sottotipo"
+	_subclass_name.disabled = not is_character
 	_clear_multiclass()
 	var classes_value: Variant = record.get("classes", [])
 	if classes_value is Array:
@@ -1624,13 +1648,16 @@ func _load_form(record: Dictionary) -> void:
 		var first_class: Variant = (classes_value as Array)[0]
 		if first_class is Dictionary:
 			primary_level = int((first_class as Dictionary).get("level", primary_level))
-	_level.min_value = 1.0 if is_character else 0.0
-	_level.max_value = 20.0 if is_character else 30.0
-	_level.step = 1.0 if is_character else 0.125
-	_level.value = clampi(primary_level, 1, 20) if is_character else Rules.monster_cr_value(record.get("stat_block", {}))
+	_level.min_value = 1
+	_level.max_value = 20 if is_character else 30
+	_level.step = 1
+	_level.rounded = true
+	_level.value = clampi(primary_level, 1, 20) if is_character else Rules.monster_level(record.get("stat_block", {}))
+	_refresh_xp_minimum()
+	_xp.value = maxi(int(record.get("xp", 0)), Rules.experience_for_level(_class_xp_level()))
 	_level.tooltip_text = (
 		"Livello della classe base" if is_character
-		else "Grado di Sfida (GS) della voce selezionata nel bestiario"
+		else "Livello intero derivato dal grado di sfida (il GS originale resta nel bestiario)"
 	)
 	_default_miniature_id = String(record.get("default_miniature_id", ""))
 	_default_miniature.text = _miniature_display_name(_default_miniature_id)
@@ -1656,6 +1683,53 @@ func _load_form(record: Dictionary) -> void:
 
 
 func _on_level_changed(_value: float) -> void:
+	_refresh_xp_minimum()
+	_save()
+
+
+func _class_xp_level() -> int:
+	var level: int = 0
+	if _selected_kind == "character" and _class_name.selected > 0:
+		level += int(_level.value)
+	for definition: Dictionary in _multiclass_controls:
+		var extra_ref: Dictionary = _reference_entry(definition["selector"])
+		if not String(extra_ref.get("name", "")).is_empty():
+			level += int((definition["level"] as SpinBox).value)
+	return clampi(level, 0, 20)
+
+
+func _refresh_xp_minimum() -> void:
+	if _xp == null:
+		return
+	var minimum: int = Rules.experience_for_level(_class_xp_level())
+	# Avoid another save when changing the floor programmatically.
+	var previously_loading: bool = _loading
+	_loading = true
+	_xp.min_value = minimum
+	if int(_xp.value) < minimum:
+		_xp.set_value_no_signal(minimum)
+	_loading = previously_loading
+
+
+func _speed_from_species() -> int:
+	var species: Dictionary = _reference_entry(_species)
+	return Rules.walking_speed(species.get("speed", 30))
+
+
+func _on_species_changed() -> void:
+	if _loading:
+		return
+	_speed_custom = false
+	_loading = true
+	_speed.value = _speed_from_species()
+	_loading = false
+	_save()
+
+
+func _on_speed_changed(_value: float) -> void:
+	if _loading:
+		return
+	_speed_custom = true
 	_save()
 
 
@@ -1672,6 +1746,8 @@ func _on_spellcasting_updated(values: Dictionary) -> void:
 	]:
 		if values.has(key):
 			record[key] = values[key]
+	_refresh_xp_minimum()
+	record["xp"] = maxi(int(_xp.value), Rules.experience_for_level(_class_xp_level()))
 	var error: Error = _archive.save(record)
 	if error != OK:
 		_set_status("Salvataggio incantesimi non riuscito: " + error_string(error))
@@ -1711,6 +1787,8 @@ func _update_ability_modifier(ability: String) -> void:
 	var bonus: int = int((_ability_bonus_spins[ability] as SpinBox).value)
 	var value: int = Rules.ability_modifier(score + bonus)
 	(_ability_modifier_labels[ability] as Label).text = "%+d" % value
+	if ability == "dex" and _initiative != null:
+		_initiative.value = value
 
 
 func _replace_current_record(record: Dictionary) -> void:
@@ -1750,6 +1828,9 @@ func _save() -> void:
 	record["visual_front_quarter_turns"] = _front.selected
 	record["party_id"] = _party.text.strip_edges()
 	record["armor_class"] = int(_ac.value)
+	record["initiative"] = int(_initiative.value)
+	record["speed"] = int(_speed.value)
+	record["speed_is_custom"] = _speed_custom
 	var abilities: Dictionary = {}
 	for ability: String in _ability_spins.keys():
 		abilities[ability] = int((_ability_spins[ability] as SpinBox).value)
@@ -1766,10 +1847,16 @@ func _save() -> void:
 		record["species_source"] = String(stat.get("source", ""))
 		record["class"] = "Mostro"
 		record["class_source"] = "5etools"
+		var monster_type: Dictionary = Rules.monster_type_reference(stat)
+		record["subclass"] = String(monster_type.get("name", ""))
+		record["subclass_source"] = "5etools"
+		record["subclass_id"] = String(monster_type.get("id", ""))
 		var monster_classes: Array[Dictionary] = [{
-			"name": "Mostro", "source": "5etools", "level": monster_cr
+			"name": "Mostro", "source": "5etools", "level": Rules.monster_level(stat),
+			"subclass": record["subclass"],
+			"subclass_source": "5etools", "subclass_id": record["subclass_id"]
 		}]
-		var additional_levels: float = 0.0
+		var additional_levels: int = 0
 		for definition: Dictionary in _multiclass_controls:
 			var extra_ref: Dictionary = _reference_entry(definition["selector"])
 			if String(extra_ref.get("name", "")).is_empty():
@@ -1787,7 +1874,7 @@ func _save() -> void:
 			})
 			additional_levels += extra_level
 		record["classes"] = monster_classes
-		record["level"] = monster_cr + additional_levels
+		record["level"] = Rules.monster_level(stat) + additional_levels
 	if String(record.get("kind", "")) == "character":
 		var species := _reference_entry(_species)
 		var class_ref := _reference_entry(_class_name)
