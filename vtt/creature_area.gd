@@ -1511,6 +1511,7 @@ func _apply_automatic_calculation() -> void:
 		return
 	_replace_current_record(record)
 	_load_form(record)
+	_apply_sheet_properties(record)
 	_sync_token_health(record)
 	_set_status("Calcoli selezionati applicati alla creatura.")
 
