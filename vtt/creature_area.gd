@@ -2459,8 +2459,13 @@ func _on_proficiencies_updated(rows: Array, feats: Array) -> void:
 	for raw: Variant in rows:
 		if raw is Dictionary:
 			typed_rows.append((raw as Dictionary).duplicate(true))
+	var previous_skills: Variant = record.get("skill_proficiencies", [])
+	var previous_expertise: Variant = record.get("skill_expertise", [])
 	ProficiencyRules.sync_legacy_fields(record, typed_rows)
 	record["feats_catalog"] = feats.duplicate(true)
+	if previous_skills != record.get("skill_proficiencies", []) or previous_expertise != record.get("skill_expertise", []):
+		# Do not re-infer deliberately edited monster skills from the bestiary.
+		record["skill_ranks_custom"] = true
 	for definition: Dictionary in Skills5e.SKILLS:
 		var key := String(definition["id"])
 		_skill_ranks[key] = (
@@ -2468,7 +2473,7 @@ func _on_proficiencies_updated(rows: Array, feats: Array) -> void:
 			else 1 if key in record.get("skill_proficiencies", [])
 			else 0
 		)
-	_skill_ranks_custom = true
+	_skill_ranks_custom = bool(record.get("skill_ranks_custom", false))
 	var error: Error = _archive.save(record)
 	if error != OK:
 		_set_status("Impossibile salvare competenze: " + error_string(error))
