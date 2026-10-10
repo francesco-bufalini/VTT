@@ -119,9 +119,9 @@ $fastTests = @(
     # validate them before independent tactical-grid rendering assertions.
     "test_structured_numeric_bonuses.gd",
     "test_bonus_origin_highlight.gd",
+    "test_inventory_quantities.gd",
     "test_creature_sheet_ui.gd",
     "test_creature_gui_layout.gd",
-    "test_inventory_quantities.gd",
     "test_equipped_weapons.gd",
     "test_creature_formula_bonuses.gd",
     "test_proficiency_sources.gd",
