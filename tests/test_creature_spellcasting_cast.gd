@@ -75,6 +75,28 @@ func run() -> void:
 	tab.call("_update_spell_controls")
 	var cast_button: Button = tab.get("_cast_button") as Button
 	assert(not cast_button.disabled)
+	var before_available: int = (tab.get("_prepared") as Array).size()
+	tab.call("_on_spell_activated", "catalog", 0)
+	assert(sink.calls.back().id == "test_cantrip" and sink.calls.back().slot_level == 0)
+	assert((tab.get("_prepared") as Array).size() == before_available,
+		"Double-clicking a catalog spell must not add/remove it from available spells")
+	var known_list: ItemList = tab.get("_known_list") as ItemList
+	known_list.add_item("Known Cantrip")
+	tab.set("_displayed_known", [{"id": "known_cantrip", "name": "Known Cantrip", "level": 0}])
+	tab.call("_on_spell_activated", "known", 0)
+	assert(sink.calls.back().id == "known_cantrip",
+		"Double-clicking a class spell must cast instead of preparing it")
+	var prepared_list: ItemList = tab.get("_prepared_list") as ItemList
+	prepared_list.add_item("Prepared Cantrip")
+	tab.set("_prepared", [{"id": "prepared_cantrip", "name": "Prepared Cantrip", "level": 0}])
+	tab.call("_on_spell_activated", "prepared", 0)
+	assert(sink.calls.back().id == "prepared_cantrip",
+		"Double-clicking an available spell must cast instead of removing it")
+	assert((tab.get("_prepared") as Array).size() == 1,
+		"Double-clicking must leave the prepared list unchanged")
+	assert(cast_button.get_parent() == tab.get("_search_toggle").get_parent()
+		and (tab.get("_prepare") as Button).get_parent() == cast_button.get_parent(),
+		"Add/remove and cast buttons must stay in the same row as search")
 	tab.queue_free()
 	sink.queue_free()
 	print("PASS: selected spell casting, ordinary/pact/no-slot use and cantrips")

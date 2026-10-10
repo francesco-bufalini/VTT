@@ -78,6 +78,8 @@ func _new_badge() -> Control:
 
 	var name_label: Label = Label.new()
 	name_label.name = "Name"
+	# Names stay readable above reach connectors, without covering the sheet.
+	name_label.z_index = 2
 	name_label.mouse_filter = Control.MOUSE_FILTER_IGNORE
 	name_label.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
 	name_label.vertical_alignment = VERTICAL_ALIGNMENT_CENTER
@@ -479,8 +481,9 @@ func _update_hover(floor_y: float) -> void:
 	)
 
 
-# Engagement arrows use the same cached world-space segments as the 3D
-# renderer. Screen-space drawing bypasses the orthographic slice clipping.
+# Draw 2D reach from actual token portrait bounds. The 3D line segments
+# have fixed world-space offsets which can start inside large 2D portraits.
+# Only the link's reach/hostility comes from the existing flanking system.
 func _draw() -> void:
 	if not visible or camera == null or board_root == null:
 		return
@@ -488,43 +491,111 @@ func _draw() -> void:
 	if flanking == null or not flanking.has_method("get_screen_reach_visuals"):
 		return
 	var visuals: Dictionary = flanking.call("get_screen_reach_visuals")
-	_draw_engagement_segments(visuals.get("arrows", []), false)
-	_draw_engagement_segments(visuals.get("mutual_markers", []), true)
-
-
-func _draw_engagement_segments(segments: Variant, mutual: bool) -> void:
-	if not segments is Array:
+	var value: Variant = visuals.get("links", [])
+	if not value is Array:
 		return
-	var points: Array = segments as Array
 	var floor_y: float = float(camera.call("get_top_down_level"))
-	var tint: Color = Color(0.40, 0.92, 0.72, 0.94) if mutual else Color(0.20, 0.82, 0.78, 0.88)
-	for index: int in range(0, points.size() - 1, 2):
-		if not points[index] is Vector3 or not points[index + 1] is Vector3:
+	for entry: Variant in value as Array:
+		if not entry is Dictionary:
 			continue
-		var start_world: Vector3 = points[index]
-		var end_world: Vector3 = points[index + 1]
-		# Project on the visible floor plane: the X/Z engagement geometry
-		# is unchanged and remains legible at any current slice elevation.
-		var screen_start: Vector2 = project_engagement_point(start_world, floor_y)
-		var screen_end: Vector2 = project_engagement_point(end_world, floor_y)
-		var delta: Vector2 = screen_end - screen_start
-		if delta.length_squared() < 16.0:
+		var link: Dictionary = entry as Dictionary
+		var from_token: CharacterBody3D = link.get("from") as CharacterBody3D
+		var to_token: CharacterBody3D = link.get("to") as CharacterBody3D
+		if (
+			from_token == null or to_token == null
+			or not is_instance_valid(from_token) or not is_instance_valid(to_token)
+		):
 			continue
-		var direction: Vector2 = delta.normalized()
-		var sideways: Vector2 = Vector2(-direction.y, direction.x)
-		draw_line(screen_start, screen_end, Color(0.015, 0.09, 0.085, 0.92), 5.0, true)
-		draw_line(screen_start, screen_end, tint, 2.6, true)
-		var tips: Array[Vector2] = [screen_end]
+		var from_world := Vector3(from_token.global_position.x, floor_y, from_token.global_position.z)
+		var to_world := Vector3(to_token.global_position.x, floor_y, to_token.global_position.z)
+		if camera.is_position_behind(from_world) or camera.is_position_behind(to_world):
+			continue
+		var from_size: float = maxf(float(from_token.call("get_footprint_cells")), 1.0) if from_token.has_method("get_footprint_cells") else 1.0
+		var to_size: float = maxf(float(to_token.call("get_footprint_cells")), 1.0) if to_token.has_method("get_footprint_cells") else 1.0
+		var geometry: Dictionary = screen_reach_geometry(
+			camera.unproject_position(from_world),
+			token_icon_extent_pixels(camera, from_world, from_size * cell_size),
+			camera.unproject_position(to_world),
+			token_icon_extent_pixels(camera, to_world, to_size * cell_size)
+		)
+		if geometry.is_empty():
+			continue
+		var mutual: bool = bool(link.get("mutual", false))
+		var tint: Color = Color(0.40, 0.92, 0.72, 0.94) if mutual else Color(0.20, 0.82, 0.78, 0.88)
+		var direction: Vector2 = geometry["direction"]
+		if bool(geometry.get("compact", false)):
+			# Adjacent hitboxes leave no free shaft. A tiny edge badge is
+			# clearer than arrows starting inside the token art.
+			var center: Vector2 = geometry["center"]
+			draw_circle(center, 10.0, Color(0.015, 0.09, 0.085, 0.82))
+			if mutual:
+				_draw_reach_tip(center + direction * 7.0, direction, tint, 7.0)
+				_draw_reach_tip(center - direction * 7.0, -direction, tint, 7.0)
+			else:
+				_draw_reach_tip(center + direction * 5.0, direction, tint, 8.0)
+			continue
+		var start_point: Vector2 = geometry["start"]
+		var end_point: Vector2 = geometry["end"]
+		draw_line(start_point, end_point, Color(0.015, 0.09, 0.085, 0.88), 4.0, true)
+		draw_line(start_point, end_point, tint, 2.0, true)
+		_draw_reach_tip(end_point, direction, tint, 10.0)
 		if mutual:
-			tips.push_front(screen_start)
-		for tip: Vector2 in tips:
-			var toward: Vector2 = -direction if mutual and tip == screen_start else direction
-			draw_colored_polygon(PackedVector2Array([
-				tip,
-				tip - toward * 11.0 + sideways * 5.0,
-				tip - toward * 11.0 - sideways * 5.0
-			]), tint)
+			_draw_reach_tip(start_point, -direction, tint, 10.0)
 
+
+static func _screen_box_boundary(half_extent: Vector2, direction: Vector2) -> float:
+	var x_distance: float = INF if absf(direction.x) < 0.00001 else maxf(half_extent.x, 0.0) / absf(direction.x)
+	var y_distance: float = INF if absf(direction.y) < 0.00001 else maxf(half_extent.y, 0.0) / absf(direction.y)
+	return minf(x_distance, y_distance)
+
+
+# Pure geometry used by the painter and the regression tests. A connector
+# exists only in the free space between the two projected token rectangles.
+static func screen_reach_geometry(
+	from_center: Vector2,
+	from_extent: Vector2,
+	to_center: Vector2,
+	to_extent: Vector2
+) -> Dictionary:
+	var delta: Vector2 = to_center - from_center
+	var distance: float = delta.length()
+	if distance < 0.001:
+		return {}
+	var direction: Vector2 = delta / distance
+	var from_edge: float = _screen_box_boundary(from_extent * 0.5, direction)
+	var to_edge: float = _screen_box_boundary(to_extent * 0.5, -direction)
+	var free_gap: float = distance - from_edge - to_edge
+	# Overlapping projected footprints do not have a meaningful 2D connector.
+	if free_gap < -2.0:
+		return {}
+	if free_gap < 20.0:
+		return {
+			"compact": true,
+			"center": from_center + direction * (from_edge + free_gap * 0.5),
+			"direction": direction
+		}
+	var margin: float = minf(6.0, free_gap * 0.18)
+	return {
+		"compact": false,
+		"start": from_center + direction * (from_edge + margin),
+		"end": to_center - direction * (to_edge + margin),
+		"direction": direction
+	}
+
+
+func _draw_reach_tip(tip: Vector2, direction: Vector2, tint: Color, size_px: float) -> void:
+	var side: Vector2 = Vector2(-direction.y, direction.x)
+	var dark := Color(0.015, 0.09, 0.085, 0.92)
+	draw_colored_polygon(PackedVector2Array([
+		tip + direction * 1.5,
+		tip - direction * (size_px + 2.0) + side * (size_px * 0.55 + 1.0),
+		tip - direction * (size_px + 2.0) - side * (size_px * 0.55 + 1.0)
+	]), dark)
+	draw_colored_polygon(PackedVector2Array([
+		tip,
+		tip - direction * size_px + side * (size_px * 0.5),
+		tip - direction * size_px - side * (size_px * 0.5)
+	]), tint)
 
 func project_engagement_point(point: Vector3, floor_y: float) -> Vector2:
 	# Token badges and reach arrows must share the visible floor even when

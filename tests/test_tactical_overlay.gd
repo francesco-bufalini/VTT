@@ -48,6 +48,9 @@ func run() -> void:
 	flanking.setup(board)
 	assert(tokens.get_child(1).get_meta("flanked", false), "Opposite enemies must flank the middle token")
 	assert(not flanking.get_screen_reach_visuals().mutual_markers.is_empty())
+	var reach_links: Array = flanking.get_screen_reach_visuals().get("links", [])
+	assert(reach_links.size() == 2 and bool((reach_links[0] as Dictionary).get("mutual", false)),
+		"2D reach must expose one mutual link per hostile pair, not duplicate arrows")
 	assert(flanking._arrow_instance.visible and flanking._arrow_mesh.get_surface_count() > 0)
 	var overlay := Overlay.new()
 	ui.add_child(overlay)
@@ -55,6 +58,34 @@ func run() -> void:
 	var z_test_badge: Control = overlay.call("_new_badge") as Control
 	assert(z_test_badge.z_index < 0,
 		"2D reach arrows rendered by the parent must be in front of token portraits")
+	assert((z_test_badge.get_node("Name") as Label).z_index > 0,
+		"Name labels must remain readable above reach connectors")
+	var long_link: Dictionary = Overlay.screen_reach_geometry(
+		Vector2(0, 0), Vector2(60, 60),
+		Vector2(140, 0), Vector2(60, 60)
+	)
+	assert(not long_link.is_empty() and not long_link.compact)
+	assert((long_link.start as Vector2).x > 30.0 and (long_link.end as Vector2).x < 110.0,
+		"Long arrows must remain outside both portrait footprints")
+	var huge_link: Dictionary = Overlay.screen_reach_geometry(
+		Vector2(100, 100), Vector2(180, 180),
+		Vector2(240, 100), Vector2(60, 60)
+	)
+	assert(not huge_link.is_empty() and not huge_link.compact)
+	assert((huge_link.start as Vector2).x >= 190.0,
+		"An arrow from a huge token cannot start inside its 2D portrait")
+	assert((huge_link.end as Vector2).x <= 210.0,
+		"An arrow cannot enter the target portrait")
+	var touching: Dictionary = Overlay.screen_reach_geometry(
+		Vector2.ZERO, Vector2(100, 100),
+		Vector2(100, 0), Vector2(100, 100)
+	)
+	assert(bool(touching.get("compact", false)),
+		"Adjacent portraits must use a compact edge marker rather than an interior shaft")
+	assert(Overlay.screen_reach_geometry(
+		Vector2.ZERO, Vector2(100, 100),
+		Vector2(30, 0), Vector2(100, 100)
+	).is_empty(), "Overlapping token portraits must not draw a reach segment")
 	z_test_badge.queue_free()
 	for floor_y: float in [0.0, 8.0, -3.0]:
 		var expected := camera.unproject_position(Vector3(1.0, floor_y, 2.0))
