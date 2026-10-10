@@ -37,6 +37,7 @@ var _feat_filter: LineEdit
 var _feat_list: ItemList
 var _feat_owned: ItemList
 var _feat_available: Array[Dictionary] = []
+var _add_competence_button: Button
 
 
 func setup(on_change: Callable) -> void:
@@ -120,13 +121,14 @@ func setup(on_change: Callable) -> void:
 	_proficiency_cards.size_flags_horizontal = Control.SIZE_EXPAND_FILL
 	_proficiency_cards.add_theme_constant_override("separation", 4)
 	competence_scroller.add_child(_proficiency_cards)
-	var add_competence := Button.new()
-	add_competence.text = "+ Competenza all'origine selezionata"
-	add_competence.pressed.connect(func() -> void:
-		if _selected_id != "~none~":
+	_add_competence_button = Button.new()
+	_add_competence_button.text = "+ Competenza all'origine selezionata"
+	_add_competence_button.disabled = true
+	_add_competence_button.pressed.connect(func() -> void:
+		if _selected_id not in ["~none~", ""]:
 			_competence_editor.visible = not _competence_editor.visible
 	)
-	right.add_child(add_competence)
+	right.add_child(_add_competence_button)
 	_competence_editor = VBoxContainer.new()
 	_competence_editor.visible = false
 	right.add_child(_competence_editor)
@@ -205,6 +207,7 @@ func _enabled_map() -> Dictionary:
 
 
 func _refresh() -> void:
+	_add_competence_button.disabled = _selected_id in ["~none~", ""]
 	_refresh_origins()
 	_refresh_competences()
 	_refresh_origin_picker()
@@ -338,6 +341,7 @@ func _has_expertise(sid: String, key: String) -> bool:
 
 func _select_origin(sid: String) -> void:
 	_selected_id = "~none~" if _selected_id == sid else sid
+	_add_competence_button.disabled = _selected_id in ["~none~", ""]
 	_competence_editor.visible = false
 	_refresh_origins()
 	_refresh_competences()
@@ -452,11 +456,11 @@ func _catalog_entries() -> Array[Dictionary]:
 		for key: String in ["simple", "martial"]:
 			items.append({"key": key, "label": key.capitalize()})
 		for item: Dictionary in Catalog.entries("weapons"):
-			if String(item.get("source", "")) not in ["XPHB", "XDMG"] and String(item.get("edition", "")) != "one":
+			if _valid_edition(item):
 				items.append({"key": String(item.get("name", "")).to_lower(), "label": String(item.get("name", ""))})
 	elif kind in ["tool", "language"]:
 		for item: Dictionary in Catalog.entries("tools" if kind == "tool" else "languages"):
-			if String(item.get("source", "")) not in ["XPHB", "XDMG"] and String(item.get("edition", "")) != "one":
+			if _valid_edition(item):
 				items.append({"key": String(item.get("name", "")).to_lower(), "label": String(item.get("name", ""))})
 	return items
 
@@ -473,7 +477,7 @@ func _refresh_proficiency_picker() -> void:
 
 
 func _add_competence() -> void:
-	if _selected_id == "~none~":
+	if _selected_id in ["~none~", ""]:
 		return
 	var kind: String = String(GROUPS[_kind_picker.selected].get("kind", "skill"))
 	var key: String = _proficiency_name.text.strip_edges().to_lower()
@@ -493,6 +497,14 @@ func _add_competence() -> void:
 	_publish()
 
 
+func _valid_edition(item: Dictionary) -> bool:
+	var source: String = String(item.get("source", ""))
+	var edition: String = String(_record.get("rules_version", "2014"))
+	if edition == "2014":
+		return source not in ["XPHB", "XDMG", "EFA"] and String(item.get("edition", "")) != "one"
+	return source not in ["XDMG", "EFA"]
+
+
 func _refresh_feat_lists() -> void:
 	if _feat_list == null:
 		return
@@ -500,7 +512,7 @@ func _refresh_feat_lists() -> void:
 	_feat_list.clear()
 	var needle: String = _feat_filter.text.to_lower()
 	for item: Dictionary in Catalog.entries("feats"):
-		if String(item.get("source", "")) in ["XPHB", "XDMG"] or String(item.get("edition", "")) == "one":
+		if not _valid_edition(item):
 			continue
 		if not needle.is_empty() and needle not in String(item.get("name", "")).to_lower():
 			continue
