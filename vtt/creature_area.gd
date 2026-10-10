@@ -792,9 +792,9 @@ func _build_ui() -> void:
 	abilities_panel.add_child(abilities_content)
 	abilities_content.add_child(ability_title)
 	abilities_content.add_child(abilities_row)
-	for heading: String in ["Car.", "Punteggio", "Mod.", "TS"]:
+	for ability_column_title: String in ["Car.", "Punteggio", "Mod.", "TS"]:
 		var column_heading := Label.new()
-		column_heading.text = heading
+		column_heading.text = ability_column_title
 		column_heading.add_theme_font_size_override("font_size", 12)
 		column_heading.add_theme_color_override("font_color", Color(0.80, 0.88, 0.95))
 		abilities_row.add_child(column_heading)
