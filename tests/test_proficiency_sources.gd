@@ -70,10 +70,13 @@ func run() -> void:
 	assert(Attacks.attack_bonus(record, weapon, 2) == 6,
 		"Starting Fighter martial training applies automatically, per creature")
 	record["proficiency_origins"] = [{"id": "class|phb|fighter", "name": "Starting Fighter", "automatic": true, "disabled": true}]
-	assert(Attacks.attack_bonus(record, weapon, 2) == 4,
-		"Disabling the origin removes its whole category bonus without deleting choices")
+	assert(Attacks.attack_bonus(record, weapon, 2) == 6,
+		"Legacy disabled flags cannot suppress mandatory class weapon proficiencies")
+	var normalized_sources: Array[Dictionary] = Proficiencies.origins(record)
+	for normalized: Dictionary in normalized_sources:
+		if String(normalized.get("id", "")) == "class|phb|fighter":
+			assert(not bool(normalized.get("disabled", false)), "Mandatory origins must be repaired on load")
 	record["proficiency_origins"][0]["disabled"] = false
-	assert(Attacks.attack_bonus(record, weapon, 2) == 6, "Re-enabling an origin restores its grants")
 	Proficiencies.sync_legacy_fields(record, rows)
 	assert(record.skill_proficiencies == ["athletics"], "Legacy skill arrays remain synchronized")
 	assert(Proficiencies.unassigned_count(record) == 1,
@@ -390,8 +393,8 @@ func run() -> void:
 	assert(tab._proficiency_cards.get_child_count() == before_duplicate,
 		"Duplicate grants from different origins appear once in the UI")
 	tab._toggle_origin(false, "class|phb|fighter")
-	assert(not Proficiencies.has_proficiency(tab._effective_record(), "weapon", "martial"),
-		"Disabling a source suppresses all its linked proficiencies")
+	assert(Proficiencies.has_proficiency(tab._effective_record(), "weapon", "martial"),
+		"Fixed class proficiencies cannot be suppressed through their origin")
 	# A 5etools background can require a language and an artisan tool.
 	# Both must be reachable in the same dialog, and opening again should
 	# focus the first incomplete category rather than always the language.
@@ -602,6 +605,16 @@ func run() -> void:
 		"Unknown origin may always be explicitly removed")
 	assert(tab._deletable_sources("weapon", "martial").is_empty(),
 		"The UI must not offer a delete button when all sources are mandatory")
+	var mandatory_index: int = -1
+	for i: int in range(tab._rows.size()):
+		if String(tab._rows[i].get("origin_id", "")) == "class|phb|fighter" and String(tab._rows[i].get("kind", "")) == "weapon" and String(tab._rows[i].get("key", "")) == "martial":
+			mandatory_index = i
+			break
+	assert(mandatory_index >= 0 and tab._is_mandatory_choice(tab._rows[mandatory_index]))
+	tab._toggle_competence(false, mandatory_index)
+	tab._toggle_group(false, [mandatory_index])
+	assert(not bool(tab._rows[mandatory_index].get("disabled", false)),
+		"Mandatory proficiency cannot be disabled individually or by group")
 	tab._select_origin("class|phb|fighter")
 	var unrelated := tab._rows.size()
 	tab._rows.append({"kind": "skill", "key": "nature", "origin_id": "custom|separate", "disabled": false})
