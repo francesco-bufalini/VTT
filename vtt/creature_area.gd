@@ -2851,6 +2851,8 @@ func _on_inventory_updated(inventory: Array) -> void:
 		if all_migrated:
 			record.erase("documents")
 	record["armor_class"] = maxi(0, int(record.get("armor_class_base", 10)) + int(record.get("armor_class_bonus", 0)) + ItemRules.shield_bonus(inventory))
+	# Removing an item also revokes proficiencies assigned to that item.
+	ProficiencyRules.sync_legacy_fields(record, ProficiencyRules.choices(record))
 	record["reach_feet"] = AttackData.active_range(record)
 	if String(record.get("kind", "")) == "monster":
 		record["reach_is_custom"] = true
