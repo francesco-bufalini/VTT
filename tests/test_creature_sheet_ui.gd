@@ -434,6 +434,16 @@ func run() -> void:
 	assert("Colpo senz'armi" in area._attacks_description.text
 		and "Arma improvvisata" in area._attacks_description.text,
 		"Unarmed and improvised attacks must appear while no weapon is equipped")
+	assert(area._attack_rows.get_child_count() > 0,
+		"The attack panel must show at least one complete card")
+	var first_attack_card: PanelContainer = area._attack_rows.get_child(0) as PanelContainer
+	var first_attack_content: VBoxContainer = first_attack_card.get_child(0) as VBoxContainer
+	assert(first_attack_content.get_child(0) is HBoxContainer
+		and first_attack_content.get_child(1) is HFlowContainer
+		and first_attack_content.get_child(2) is HFlowContainer,
+		"Attack names, hit and damage must occupy separate responsive rows")
+	assert((area._attack_hit_labels["unarmed"] as Label).text.begins_with("+"),
+		"Attack hit formulas use compact numeric readouts without repeated labels")
 	var fallback_view_record: Dictionary = area._current().duplicate(true)
 	var shield_only: Dictionary = {
 		"id": "test:shield", "name": "Shield", "type": "S", "ac": 2,
@@ -448,6 +458,9 @@ func run() -> void:
 		"source": "PHB", "quantity": 1, "equipped_slots": ["main"]
 	}
 	fallback_view_record["inventory"] = [test_weapon, shield_only]
+	fallback_view_record["equipped_attack_id"] = "unarmed"
+	assert(String(AttackData.active_attack(fallback_view_record).get("id", "")) == "item:test:sword",
+		"A newly equipped weapon must replace an outdated unarmed active choice")
 	area._refresh_attacks(fallback_view_record)
 	assert(not area._attack_hit_labels.has("unarmed") and not area._attack_hit_labels.has("improvised")
 		and "Colpo senz'armi" not in area._attacks_description.text
@@ -682,7 +695,7 @@ func run() -> void:
 	assert(area._current().attack_overrides.unarmed.range_feet == 15
 		and area._current().attack_overrides.unarmed.bonus == 2,
 		"Each attack must persist its own reach and enhancement bonus")
-	assert("Colpire" in (area._attack_hit_labels["unarmed"] as Label).text,
+	assert((area._attack_hit_labels["unarmed"] as Label).text.begins_with("+"),
 		"Unarmed attack must show its proficiency-adjusted hit modifier")
 	area._attack_ability.select(1)
 	area._on_attack_ability_changed(1)
