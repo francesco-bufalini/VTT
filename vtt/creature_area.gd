@@ -523,12 +523,12 @@ func _build_ui() -> void:
 	_rules_edition.select(0)
 	_rules_edition.item_selected.connect(_on_rules_edition_changed)
 	name_row.add_child(_rules_edition)
-	_add_label(name_row, "Nome")
+	_add_label(name_row, "✏️ Nome")
 	_name = LineEdit.new()
 	_name.size_flags_horizontal = Control.SIZE_EXPAND_FILL
 	_name.text_changed.connect(func(_v: String) -> void: _save())
 	name_row.add_child(_name)
-	_add_label(name_row, "Fazione")
+	_add_label(name_row, "🚩 Fazione")
 	_party = LineEdit.new()
 	_party.custom_minimum_size.x = 85
 	_party.size_flags_horizontal = Control.SIZE_SHRINK_END
@@ -727,7 +727,7 @@ func _build_ui() -> void:
 
 	var species_row := HBoxContainer.new()
 	form.add_child(species_row)
-	_add_label(species_row, "Razza / Specie")
+	_add_label(species_row, "🧬 Razza / Specie")
 	_species = _reference_option(species_row, Player5eTools.entries("races"))
 	_species.item_selected.connect(func(_index: int) -> void: _on_species_changed())
 
@@ -776,7 +776,7 @@ func _build_ui() -> void:
 	form.add_child(_multiclass_rows)
 	var xp_row := HBoxContainer.new()
 	form.add_child(xp_row)
-	_add_label(xp_row, "XP")
+	_add_label(xp_row, "📈 XP")
 	_xp = _spin(xp_row, 0, 999999999)
 	_xp.custom_minimum_size.x = 130
 	_xp.tooltip_text = "Minimo XP calcolato dai livelli di classe (esclusa la classe Mostro)"
@@ -802,7 +802,7 @@ func _build_ui() -> void:
 
 	var miniature_row := HBoxContainer.new()
 	appearance_tab.add_child(miniature_row)
-	_add_label(miniature_row, "Miniatura base")
+	_add_label(miniature_row, "🖼 Miniatura base")
 	_default_miniature = LineEdit.new()
 	_default_miniature.size_flags_horizontal = Control.SIZE_EXPAND_FILL
 	_default_miniature.placeholder_text = "Scegli una miniatura dal catalogo"
@@ -2499,7 +2499,13 @@ func _on_form_hp_changed(value: float) -> void:
 	if _loading:
 		return
 	var record: Dictionary = _current()
+	if record.is_empty():
+		return
 	var previous: int = int(record.get("second_form_hp", 0))
+	if int(value) > int(_second_form_max_hp.value):
+		_loading = true
+		_second_form_max_hp.value = int(value)
+		_loading = false
 	_save()
 	if previous > 0 and int(value) == 0:
 		_offer_restore_after_form_depleted()
