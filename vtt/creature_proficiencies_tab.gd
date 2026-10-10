@@ -48,6 +48,7 @@ var _delete_dialog: ConfirmationDialog
 var _delete_picker: OptionButton
 var _delete_kind := ""
 var _delete_key := ""
+var _mandatory_grants: Dictionary = {}
 
 
 func setup(on_change: Callable) -> void:
@@ -255,6 +256,7 @@ func _enabled_map() -> Dictionary:
 
 func _refresh() -> void:
 	_add_competence_button.disabled = _selected_id in ["~none~", ""]
+	_rebuild_mandatory_grants()
 	_refresh_origins()
 	_refresh_competences()
 	_refresh_origin_picker()
@@ -503,11 +505,22 @@ func _refresh_competences() -> void:
 
 
 
+func _rebuild_mandatory_grants() -> void:
+	_mandatory_grants.clear()
+	var state: Dictionary = _record.duplicate(true)
+	state["feats_catalog"] = _feats.duplicate(true)
+	for source: Dictionary in Rules.candidate_sources(state):
+		var sid: String = String(source.get("id", ""))
+		for grant: Dictionary in Rules.fixed_grants(source):
+			var identity: String = sid + "|" + String(grant.get("kind", "")) + "|" + String(grant.get("key", ""))
+			_mandatory_grants[identity] = true
+
+
 func _is_mandatory_choice(row: Dictionary) -> bool:
 	var sid: String = String(row.get("origin_id", ""))
-	return not sid.is_empty() and Rules.is_mandatory_grant(
-		_effective_record(), sid, String(row.get("kind", "")), String(row.get("key", ""))
-	)
+	if sid.is_empty():
+		return false
+	return _mandatory_grants.has(sid + "|" + String(row.get("kind", "")) + "|" + String(row.get("key", "")))
 
 
 func _has_mandatory_in_scope(indices: Array) -> bool:
