@@ -1,6 +1,7 @@
 extends SceneTree
 const Owner = preload("res://vtt/creature_owner.gd")
 const ProficiencyRules = preload("res://vtt/creature_proficiency_rules.gd")
+const Bonuses = preload("res://vtt/creature_bonus_rules.gd")
 const AttackData = preload("res://vtt/creature_attack_data.gd")
 const TokenScene = preload("res://token.tscn")
 
@@ -279,15 +280,16 @@ func run() -> void:
 	assert(String(traits_pane.get("_active_origin")) == "monster|legendary",
 		"Section-level legendary trackers must focus their bestiary actions")
 	area._traits_ui.call("load_record", area._current())
-	area._ability_bonus_spins["con"].value = 2
-	area._save()
-	assert(area._current().ability_bonuses.con == 2)
-	assert(area._ability_bonus_spins["con"].get_line_edit().has_theme_stylebox_override("normal"))
+	var bonus_rows: Array = area._current().get("formula_bonuses", []).duplicate(true)
+	bonus_rows.append({"id": "test-con", "target": "ability:con", "expression": "2",
+		"origin_id": "", "origin_name": "UI test", "disabled": false})
+	area._on_bonuses_updated(bonus_rows, area._current().get("proficiency_origins", []))
+	assert(area._current().ability_bonuses.con == 0 and Bonuses.value(area._current(), "ability:con") == 12,
+		"Legacy compensation must be represented by an additive source grant")
 	assert(area._ability_modifier_labels["con"].text == "+1")
-	assert(Rules.automatic_hit_points(area._current()).value == 27,
+	assert(Rules.automatic_hit_points(area._with_effective_modifiers(area._current())).value == 27,
 		"CON score bonus must change computed HP")
-	area._ability_bonus_spins["con"].value = 0
-	area._save()
+	area._on_bonuses_updated([], area._current().get("proficiency_origins", []))
 	area._open_automatic_calculation()
 	assert(not area._automatic_hp.button_pressed)
 	area._automatic_hp.button_pressed = true
@@ -297,18 +299,22 @@ func run() -> void:
 	area._automatic_dialog.hide()
 	var automatically_calculated: Dictionary = area._current()
 	assert(automatically_calculated.max_hp == 22, "Wizard 5, CON +0: 6 + 4 * 4")
-	area._max_hp_bonus.value = 5
-	area._save()
+	area._on_bonuses_updated([{
+		"id": "test-hp", "target": "hp", "expression": "5",
+		"origin_id": "", "origin_name": "UI test"
+	}], area._current().get("proficiency_origins", []))
 	assert(area._max_hp_effective.text == "27", "Health formula shows effective max before base + bonus")
-	assert(area._current().max_hp == 27 and area._current().max_hp_base == 22)
-	assert(area._current().max_hp_bonus == 5, "Manual HP bonus must increase effective maximum")
-	area._max_hp_bonus.value = 0
-	area._save()
-	area._speed_bonus.value = 10
-	area._save()
+	assert(area._current().max_hp == 27 and area._current().max_hp_base == 22
+		and Bonuses.bonus(area._current(), "hp") == 5,
+		"Origin-scoped HP bonus must increase effective maximum")
+	area._on_bonuses_updated([{
+		"id": "test-speed", "target": "speed", "expression": "10",
+		"origin_id": "", "origin_name": "UI test"
+	}], area._current().get("proficiency_origins", []))
 	assert(area._current().speed == area._current().speed_base + 10
 		and area._speed_effective.text == str(area._current().speed),
 		"Movement bonus must add to the structured speed base")
+	area._on_bonuses_updated([], area._current().get("proficiency_origins", []))
 	area._biography.text = "Storia e personalità di prova"
 	area._save()
 	assert(area._current().background_personality == "Storia e personalità di prova",
@@ -422,16 +428,13 @@ func run() -> void:
 	assert(area._formula_values["hp"].value_label == area._max_hp_effective
 		and area._formula_values["hp"]._editor.visible == false,
 		"HP maximum should be a compact readout, not a permanently visible formula")
-	assert(area._formula_values["initiative"]._fields.size() == 1
-		and area._formula_values["initiative"]._fields[0] == area._initiative_bonus,
-		"Initiative must only expose its manual bonus, never the derived DEX base")
-	area._formula_values["initiative"].open_editor()
-	assert(area._formula_values["initiative"]._editor.visible
-		and not area._formula_values["initiative"]._readout.visible)
-	area._formula_values["initiative"].close_editor()
-	assert(area._formula_values["initiative"]._readout.visible)
-	assert(area._formula_values["ability:con"]._fields.size() == 2,
-		"Ability scores can still edit their base and manual modifier")
+	assert(area._formula_values["initiative"]._fields.is_empty(),
+		"Initiative is derived from DEX and has no editable base")
+	area._on_formula_bonus_requested("initiative")
+	assert(area._bonuses_ui.visible and String(area._bonuses_ui.get("_selected_target")) == "initiative",
+		"Framed values must navigate to the selected cumulative bonus editor")
+	assert(area._formula_values["ability:con"]._fields.size() == 1,
+		"Ability scores retain only their static base editor")
 	assert("Colpo senz'armi" in area._attacks_description.text
 		and "Arma improvvisata" in area._attacks_description.text,
 		"Unarmed and improvised attacks must appear while no weapon is equipped")
@@ -555,11 +558,15 @@ func run() -> void:
 	assert(area._current().prepared_spells.size() == 1)
 	spells._calculate_slot_totals()
 	assert(area._current().spell_slots_total[1] == 4)
-	spells._slot_bonus_controls[1].value = 2
-	assert(area._current().spell_slots_bonus[1] == 2)
-	assert(spells._remaining_labels[1].text == "6 / 6")
-	assert(spells._slot_bonus_controls[1].get_line_edit().has_theme_stylebox_override("normal"))
-	spells._slot_bonus_controls[1].value = 0
+	area._on_bonuses_updated([{
+		"id": "test-slot", "target": "slot:1", "expression": "2",
+		"origin_id": "", "origin_name": "UI test"
+	}], area._current().get("proficiency_origins", []))
+	assert(area._current().spell_slots_bonus[1] == 0
+		and Bonuses.bonus(area._current(), "slot:1") == 2
+		and spells._remaining_labels[1].text == "6 / 6",
+		"Spell slot bonuses stack on the maximum and persist independently of the base")
+	area._on_bonuses_updated([], area._current().get("proficiency_origins", []))
 	spells._change_slot(1, 1)
 	assert(area._current().spell_slots_spent[1] == 1)
 	spells._change_slot(1, -1)
@@ -655,15 +662,17 @@ func run() -> void:
 	area._ac_bonus.value = 2
 	area._initiative_bonus.value = 3
 	area._save()
-	assert(area._current().armor_class_base == 15 and area._current().armor_class_bonus == 2
+	assert(area._current().armor_class_base == 15
+		and Bonuses.bonus(area._current(), "ac") == 2
 		and area._current().armor_class == 17,
-		"CA must save base and modifier separately while exposing the effective value")
+		"CA must persist its static base and additive origin bonus separately")
 	assert(area._current().initiative == int(area._initiative.value) + 3,
 		"Initiative must include its manual bonus")
 	area._reload()
-	assert(int(area._ac_bonus.value) == 2 and int(area._initiative_bonus.value) == 3
+	assert(Bonuses.bonus(area._current(), "ac") == 2
+		and Bonuses.bonus(area._current(), "initiative") == 3
 		and area._ac_effective.text == "17",
-		"CA and initiative bonuses must survive reloading the sheet")
+		"Origin-backed AC and initiative bonuses must survive reloading the sheet")
 	var transformation_preview: Dictionary = area._current().duplicate(true)
 	transformation_preview["current_miniature_id"] = "alternate-form-test"
 	area._update_current_appearance_display(transformation_preview)
@@ -723,8 +732,9 @@ func run() -> void:
 	assert(area._current().size_name == "Large" and area._current().footprint == 2.0)
 	assert(area._current().reach_feet == 15 and area._current().visual_front_quarter_turns == 2)
 	assert(area._current().attack_overrides.unarmed.range_feet == 15
-		and area._current().attack_overrides.unarmed.bonus == 2,
-		"Each attack must persist its own reach and enhancement bonus")
+		and Bonuses.bonus(area._current(), "attack_hit:unarmed") == 2
+		and Bonuses.bonus(area._current(), "attack_damage:unarmed") == 2,
+		"Each attack must persist its own range and cumulative hit/damage grants")
 	assert((area._attack_hit_labels["unarmed"] as Label).text.begins_with("+"),
 		"Unarmed attack must show its proficiency-adjusted hit modifier")
 	area._attack_ability.select(1)
