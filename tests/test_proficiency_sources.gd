@@ -223,6 +223,10 @@ func run() -> void:
 		if String(suggestion.get("group", "")) == "feat" and int(suggestion.get("certainty", 0)) == 1:
 			feat_is_optional = true
 	assert(feat_is_optional, "Weapon Master structured selectable martial weapon is only an optional source")
+	assert(Proficiencies.grant_matches([{"any": 3}], "weapon", "martial") == 0,
+		"Choosing individual weapons must not offer the whole martial weapon category")
+	assert(Proficiencies.grant_matches([{"any": 3}], "weapon", "rapier") == 1,
+		"Choosing individual weapons continues to offer specific weapons")
 
 	var legacy := _record()
 	legacy.erase("proficiency_choices")
@@ -302,6 +306,61 @@ func run() -> void:
 	tab._toggle_origin(false, "class|phb|fighter")
 	assert(not Proficiencies.has_proficiency(tab._effective_record(), "weapon", "martial"),
 		"Disabling a source suppresses all its linked proficiencies")
+	# The missing-choice warning is a separate, clickable control rather
+	# than a clipped glyph at the start of a long origin name.
+	tab.load_record(record)
+	var warning_visible := false
+	for card: Node in tab._origin_cards.get_children():
+		var line: Node = card.get_child(0)
+		for child: Node in line.get_children():
+			if child is Button and (child as Button).text == "⚠":
+				warning_visible = true
+	assert(warning_visible, "Unresolved structured choices must have a visible warning button")
+	tab._open_missing_choices("class|phb|fighter")
+	var skill_group: Dictionary = {}
+	for candidate: Dictionary in tab._choice_groups:
+		if String(candidate.get("kind", "")) == "skill":
+			skill_group = candidate
+	assert(not skill_group.is_empty() and (skill_group.get("boxes") as Array).size() == 6,
+		"Fighter's warning opens the six structured skill options")
+	for entry: Dictionary in skill_group.get("boxes", []):
+		if String(entry.get("key", "")) in ["athletics", "perception"]:
+			(entry.get("check") as CheckBox).set_pressed_no_signal(true)
+	tab._refresh_choice_limit(skill_group)
+	var enabled_unchecked := 0
+	for entry: Dictionary in skill_group.get("boxes", []):
+		var check: CheckBox = entry.get("check")
+		if not check.button_pressed and not check.disabled:
+			enabled_unchecked += 1
+	assert(enabled_unchecked == 0, "A full choice quota prevents selecting more proficiencies")
+	tab._apply_choice_dialog()
+	tab._choice_dialog.hide()
+	var chosen_index := -1
+	for i: int in range(tab._rows.size()):
+		var grant: Dictionary = tab._rows[i]
+		if String(grant.get("origin_id", "")) == "class|phb|fighter" and String(grant.get("kind", "")) == "skill" and String(grant.get("key", "")) == "perception":
+			chosen_index = i
+			break
+	assert(chosen_index >= 0 and Proficiencies.has_proficiency(tab._effective_record(), "skill", "perception"),
+		"Confirming the warning dialog persists the selected skill")
+	tab._delete_manual_group([chosen_index])
+	assert(not Proficiencies.has_proficiency(tab._effective_record(), "skill", "perception"),
+		"Selected source choices can be permanently removed, not just disabled")
+	var orphan_index: int = tab._rows.size()
+	tab._rows.append({"kind": "language", "key": "draconic", "origin_id": "", "disabled": false})
+	tab._selected_id = "~none~"
+	tab._delete_manual_group([orphan_index])
+	assert(not Proficiencies.has_choice(tab._rows, "language", "draconic"),
+		"Unassigned manual proficiency can be permanently removed")
+	var fixed_index := -1
+	for i: int in range(tab._rows.size()):
+		if String(tab._rows[i].get("kind", "")) == "weapon" and String(tab._rows[i].get("key", "")) == "martial":
+			fixed_index = i
+			break
+	assert(fixed_index >= 0 and bool(tab._rows[fixed_index].get("automatic", false)))
+	tab._delete_manual_group([fixed_index])
+	assert(Proficiencies.has_choice(tab._rows, "weapon", "martial"),
+		"Fixed class proficiencies cannot be deleted from the manual-choice editor")
 	tab.queue_free()
 	await process_frame
 	print("PASS: automatically granted structured proficiencies, choose warnings, toggles, source highlights and migration")

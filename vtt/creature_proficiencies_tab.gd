@@ -5,6 +5,7 @@ extends VBoxContainer
 const Rules = preload("res://vtt/creature_proficiency_rules.gd")
 const Catalog = preload("res://vtt/player_5etools_catalog.gd")
 const Traits = preload("res://vtt/creature_traits_tab.gd")
+const DialogLayout = preload("res://vtt/dialog_layout.gd")
 
 const GROUPS := [
 	{"kind": "weapon", "label": "Armi"},
@@ -38,6 +39,10 @@ var _feat_list: ItemList
 var _feat_owned: ItemList
 var _feat_available: Array[Dictionary] = []
 var _add_competence_button: Button
+var _choice_dialog: ConfirmationDialog
+var _choice_contents: VBoxContainer
+var _choice_source_id := ""
+var _choice_groups: Array[Dictionary] = []
 
 
 func setup(on_change: Callable) -> void:
@@ -146,6 +151,21 @@ func setup(on_change: Callable) -> void:
 	competence_confirm.text = "Aggiungi competenza"
 	competence_confirm.pressed.connect(_add_competence)
 	_competence_editor.add_child(competence_confirm)
+	_choice_dialog = ConfirmationDialog.new()
+	_choice_dialog.title = "Completa le competenze"
+	_choice_dialog.ok_button_text = "Applica"
+	_choice_dialog.cancel_button_text = "Annulla"
+	_choice_dialog.confirmed.connect(_apply_choice_dialog)
+	add_child(_choice_dialog)
+	var choice_scroll := ScrollContainer.new()
+	choice_scroll.custom_minimum_size = Vector2(460, 370)
+	choice_scroll.size_flags_horizontal = Control.SIZE_EXPAND_FILL
+	choice_scroll.size_flags_vertical = Control.SIZE_EXPAND_FILL
+	_choice_dialog.add_child(choice_scroll)
+	_choice_contents = VBoxContainer.new()
+	_choice_contents.size_flags_horizontal = Control.SIZE_EXPAND_FILL
+	_choice_contents.add_theme_constant_override("separation", 9)
+	choice_scroll.add_child(_choice_contents)
 	_refresh_proficiency_picker()
 	load_record({})
 
@@ -167,6 +187,11 @@ func _create_column(parent: HBoxContainer, heading: String, width: float) -> VBo
 
 func load_record(record: Dictionary) -> void:
 	_loading = true
+	# A still-open choice dialog must not modify the next selected creature.
+	if _choice_dialog != null:
+		_choice_dialog.hide()
+	_choice_source_id = ""
+	_choice_groups.clear()
 	_record = record.duplicate(true)
 	_rows = Rules.choices(record)
 	_origins = Rules.origins(record)
@@ -246,11 +271,21 @@ func _refresh_origins() -> void:
 		select.toggle_mode = true
 		select.button_pressed = selected
 		select.clip_text = true
-		select.text = ("%s%s" % ["◇ " if not missing.is_empty() else "• ", String(item.get("name", ""))]) + " (%d)" % matching
+		select.text = String(item.get("name", "")) + " (%d)" % matching
 		var description: String = _origin_description(item)
-		select.tooltip_text = description + ("\n\n◇ Da scegliere: " + ", ".join(missing) if not missing.is_empty() else "")
+		select.tooltip_text = description + ("\n\n⚠ Da scegliere: " + ", ".join(missing) if not missing.is_empty() else "")
 		select.pressed.connect(_select_origin.bind(sid))
 		line.add_child(select)
+		# The warning has its own button: long source names must not clip it.
+		if not missing.is_empty() and not sid.is_empty():
+			var warning := Button.new()
+			warning.text = "⚠"
+			warning.flat = true
+			warning.custom_minimum_size.x = 32
+			warning.add_theme_color_override("font_color", Color(1.0, 0.80, 0.33))
+			warning.tooltip_text = "Completa le scelte: " + ", ".join(missing)
+			warning.pressed.connect(_open_missing_choices.bind(sid))
+			line.add_child(warning)
 		if not sid.is_empty():
 			var active := CheckButton.new()
 			active.text = "⏻"
@@ -260,7 +295,9 @@ func _refresh_origins() -> void:
 			line.add_child(active)
 		if selected:
 			var highlight := StyleBoxFlat.new()
-			highlight.bg_color = Color(0.18, 0.39, 0.54, 0.28)
+			highlight.draw_center = false
+			highlight.border_color = Color(0.40, 0.72, 0.91)
+			highlight.set_border_width_all(2)
 			highlight.set_corner_radius_all(5)
 			card.add_theme_stylebox_override("panel", highlight)
 		elif bool(item.get("disabled", false)):
@@ -380,11 +417,11 @@ func _refresh_competences() -> void:
 		_proficiency_cards.add_child(cell)
 		if selected_active:
 			var background := StyleBoxFlat.new()
-			background.bg_color = Color(0.18, 0.43, 0.62, 0.32)
+			background.draw_center = false
+			background.border_color = Color(0.44, 0.75, 0.95)
+			background.set_border_width_all(2)
 			background.set_corner_radius_all(5)
 			cell.add_theme_stylebox_override("panel", background)
-		if not active:
-			cell.modulate.a = 0.58
 		var box := HBoxContainer.new()
 		box.add_theme_constant_override("separation", 4)
 		cell.add_child(box)
@@ -415,6 +452,52 @@ func _refresh_competences() -> void:
 			attach.tooltip_text = "Aggiungi anche l'origine selezionata, senza rimuovere le altre"
 			attach.pressed.connect(_link_group.bind(kind, key))
 			box.add_child(attach)
+		var removable: Array[int] = []
+		for index: Variant in indices:
+			var grant: Dictionary = _rows[int(index)]
+			if bool(grant.get("automatic", false)):
+				continue
+			var grant_source: String = String(grant.get("origin_id", ""))
+			if _selected_id not in ["~none~", ""] and not grant_source.is_empty() and grant_source != _selected_id:
+				continue
+			removable.append(int(index))
+		if not removable.is_empty():
+			var remove := Button.new()
+			remove.text = "✕"
+			remove.tooltip_text = "Elimina definitivamente le concessioni manuali (le automatiche restano)"
+			remove.flat = true
+			remove.pressed.connect(_delete_manual_group.bind(removable))
+			box.add_child(remove)
+
+
+func _delete_manual_group(indices: Array) -> void:
+	# Only user-made grants/choices can be deleted: fixed structured grants
+	# always return from the source catalog on the next load.
+	var removed_skills: Array[String] = []
+	for i: int in range(_rows.size() - 1, -1, -1):
+		if i not in indices or bool(_rows[i].get("automatic", false)):
+			continue
+		var row: Dictionary = _rows[i]
+		if String(row.get("kind", "")) == "skill":
+			removed_skills.append(String(row.get("origin_id", "")) + "|" + String(row.get("key", "")))
+		_rows.remove_at(i)
+	_remove_orphaned_manual_expertise(removed_skills)
+	_publish()
+
+
+func _remove_orphaned_manual_expertise(removed_skills: Array[String]) -> void:
+	for pair: String in removed_skills:
+		var still_granted := false
+		for row: Dictionary in _rows:
+			if String(row.get("kind", "")) == "skill" and String(row.get("origin_id", "")) + "|" + String(row.get("key", "")) == pair:
+				still_granted = true
+				break
+		if still_granted:
+			continue
+		for i: int in range(_rows.size() - 1, -1, -1):
+			var row: Dictionary = _rows[i]
+			if String(row.get("kind", "")) == "expertise" and not bool(row.get("automatic", false)) and String(row.get("origin_id", "")) + "|" + String(row.get("key", "")) == pair:
+				_rows.remove_at(i)
 
 
 func _group_enabled(indices: Array) -> bool:
@@ -596,8 +679,7 @@ func _selected_source_record() -> Dictionary:
 	return {}
 
 
-func _catalog_entries() -> Array[Dictionary]:
-	var kind: String = String(GROUPS[_kind_picker.selected].get("kind", "skill"))
+func _catalog_entries_for_kind(kind: String) -> Array[Dictionary]:
 	var items: Array[Dictionary] = []
 	if kind == "skill":
 		for key: String in Rules.SKILLS:
@@ -618,6 +700,12 @@ func _catalog_entries() -> Array[Dictionary]:
 		for item: Dictionary in Catalog.entries("tools" if kind == "tool" else "languages"):
 			if _valid_edition(item):
 				items.append({"key": String(item.get("name", "")).to_lower(), "label": String(item.get("name", ""))})
+	return items
+
+
+func _catalog_entries() -> Array[Dictionary]:
+	var kind: String = String(GROUPS[_kind_picker.selected].get("kind", "skill"))
+	var items: Array[Dictionary] = _catalog_entries_for_kind(kind)
 	if kind == "skill":
 		var allowed: Array[String] = Rules.restricted_choices(_selected_source_record(), kind)
 		if not allowed.is_empty():
@@ -627,6 +715,136 @@ func _catalog_entries() -> Array[Dictionary]:
 					restricted.append(item)
 			return restricted
 	return items
+
+
+
+func _choice_options_for_requirement(requirement: Dictionary) -> Array[Dictionary]:
+	var kind: String = String(requirement.get("kind", ""))
+	var data: Dictionary = requirement.get("data", {})
+	var result: Array[Dictionary] = []
+	var used: Dictionary = {}
+	for entry: Dictionary in _catalog_entries_for_kind(kind):
+		var key: String = String(entry.get("key", ""))
+		if key.is_empty() or used.has(key):
+			continue
+		# Use each requirement's structured pool, not the union from all
+		# the source's choices. This also handles "any" and typed tools.
+		if Rules.grant_matches([data], kind, key) != 1:
+			continue
+		used[key] = true
+		result.append(entry)
+	return result
+
+
+func _has_active_source_grant(sid: String, kind: String, key: String) -> bool:
+	for row: Dictionary in _rows:
+		if String(row.get("origin_id", "")) == sid and String(row.get("kind", "")) == kind and String(row.get("key", "")) == key:
+			if not bool(row.get("disabled", false)):
+				return true
+	return false
+
+
+func _open_missing_choices(sid: String) -> void:
+	_choice_source_id = sid
+	_selected_id = sid
+	_add_competence_button.disabled = false
+	_refresh_origins()
+	_refresh_competences()
+	_refresh_proficiency_picker()
+	for node: Node in _choice_contents.get_children():
+		_choice_contents.remove_child(node)
+		node.queue_free()
+	_choice_groups.clear()
+	var source: Dictionary = _selected_source_record()
+	if source.is_empty():
+		return
+	_choice_dialog.title = "Completa · " + String(source.get("name", "Origine"))
+	var intro := Label.new()
+	intro.text = "Seleziona le competenze concesse dall'origine. Puoi completare le scelte anche in più volte."
+	intro.autowrap_mode = TextServer.AUTOWRAP_WORD_SMART
+	_choice_contents.add_child(intro)
+	for requirement: Dictionary in source.get("requirements", []):
+		var kind: String = String(requirement.get("kind", ""))
+		var count: int = maxi(1, int(requirement.get("count", 1)))
+		var title := Label.new()
+		title.add_theme_font_size_override("font_size", 16)
+		_choice_contents.add_child(title)
+		var group: Dictionary = {"kind": kind, "count": count, "title": title, "boxes": []}
+		var options: Array[Dictionary] = _choice_options_for_requirement(requirement)
+		if options.is_empty():
+			title.text = "%s · scegli %d" % [kind.capitalize(), count]
+			var note := Label.new()
+			note.text = "Elenco non disponibile nei dati strutturati. Usa + Competenza per un'aggiunta manuale."
+			note.autowrap_mode = TextServer.AUTOWRAP_WORD_SMART
+			_choice_contents.add_child(note)
+			continue
+		for option: Dictionary in options:
+			var key: String = String(option.get("key", ""))
+			var check := CheckBox.new()
+			check.text = String(option.get("label", key))
+			check.button_pressed = _has_active_source_grant(sid, kind, key)
+			check.tooltip_text = "Competenza: " + key
+			_choice_contents.add_child(check)
+			(group["boxes"] as Array).append({"key": key, "check": check})
+			check.toggled.connect(_on_choice_check_toggled.bind(group))
+		_choice_groups.append(group)
+		_refresh_choice_limit(group)
+	DialogLayout.popup(_choice_dialog, Vector2i(540, 630), 0.90)
+
+
+func _on_choice_check_toggled(_checked: bool, group: Dictionary) -> void:
+	_refresh_choice_limit(group)
+
+
+func _refresh_choice_limit(group: Dictionary) -> void:
+	var chosen := 0
+	for entry: Dictionary in group.get("boxes", []):
+		if (entry.get("check") as CheckBox).button_pressed:
+			chosen += 1
+	var count: int = int(group.get("count", 1))
+	(group.get("title") as Label).text = "%s · %d/%d scelte" % [String(group.get("kind", "")).capitalize(), chosen, count]
+	for entry: Dictionary in group.get("boxes", []):
+		var check: CheckBox = entry.get("check")
+		check.disabled = chosen >= count and not check.button_pressed
+
+
+func _apply_choice_dialog() -> void:
+	if _choice_source_id.is_empty():
+		return
+	var offered: Dictionary = {}
+	var chosen: Dictionary = {}
+	for group: Dictionary in _choice_groups:
+		var kind: String = String(group.get("kind", ""))
+		for entry: Dictionary in group.get("boxes", []):
+			var identity: String = kind + "|" + String(entry.get("key", ""))
+			offered[identity] = true
+			if (entry.get("check") as CheckBox).button_pressed:
+				chosen[identity] = true
+	var removed_skills: Array[String] = []
+	for i: int in range(_rows.size() - 1, -1, -1):
+		var row: Dictionary = _rows[i]
+		if String(row.get("origin_id", "")) != _choice_source_id or bool(row.get("automatic", false)):
+			continue
+		var identity: String = String(row.get("kind", "")) + "|" + String(row.get("key", ""))
+		if offered.has(identity) and not chosen.has(identity):
+			if String(row.get("kind", "")) == "skill":
+				removed_skills.append(_choice_source_id + "|" + String(row.get("key", "")))
+			_rows.remove_at(i)
+	for raw_identity: Variant in chosen.keys():
+		var identity: String = String(raw_identity)
+		var kind: String = identity.get_slice("|", 0)
+		var key: String = identity.substr(kind.length() + 1)
+		var existing := false
+		for row: Dictionary in _rows:
+			if String(row.get("origin_id", "")) == _choice_source_id and String(row.get("kind", "")) == kind and String(row.get("key", "")) == key:
+				row["disabled"] = false
+				existing = true
+		if not existing:
+			_rows.append({"kind": kind, "key": key, "origin_id": _choice_source_id,
+				"origin_name": _origin_display(_choice_source_id), "disabled": false})
+	_remove_orphaned_manual_expertise(removed_skills)
+	_choice_source_id = ""
+	_publish()
 
 
 func _refresh_proficiency_picker() -> void:
