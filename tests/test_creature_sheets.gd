@@ -57,6 +57,25 @@ func run() -> void:
 	assert(creature.subclass == "Drago" and creature.subclass_id == "monster_type|dragon",
 		"Monster subtype must come from structured 5etools monster type")
 	assert(creature.speed == 40, "Monster speed should come from structured 5etools speed")
+	assert(creature.second_form_hp == 0 and creature.second_form_max_hp == 0,
+		"All new creatures must start without transformed HP")
+	var layered: Dictionary = creature.duplicate(true)
+	layered["current_hp"] = 20
+	layered["temporary_hp"] = 3
+	layered["second_form_hp"] = 7
+	layered["second_form_max_hp"] = 7
+	layered = Rules.apply_damage_layers(layered, 12)
+	assert(layered.temporary_hp == 0 and layered.second_form_hp == 0
+		and layered.current_hp == 18,
+		"Damage must cross temporary -> transformed -> base HP in order")
+	layered = Rules.apply_damage_layers(layered, 2)
+	assert(layered.current_hp == 16 and layered.second_form_hp == 0,
+		"Damage beyond a spent second-form pool must reduce the original HP")
+	var manual_speed: Dictionary = creature.duplicate(true)
+	manual_speed["speed_bonus"] = 10
+	manual_speed = monster.normalize_creature(manual_speed)
+	assert(manual_speed.speed == 50 and manual_speed.speed_base == 40,
+		"Monster speed bonus must survive normalization separately from the bestiary base")
 	assert(creature.reach_feet == 10.0,
 		"Monster melee reach must be derived from 5etools, not a fixed 5 ft")
 	assert(creature.owner_id == Owner.local_id())
