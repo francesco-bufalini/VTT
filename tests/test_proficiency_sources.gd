@@ -4,6 +4,7 @@ const Proficiencies = preload("res://vtt/creature_proficiency_rules.gd")
 const ProficiencyTab = preload("res://vtt/creature_proficiencies_tab.gd")
 const Attacks = preload("res://vtt/creature_attack_data.gd")
 const PlayerStore = preload("res://vtt/player_character_store.gd")
+const Traits = preload("res://vtt/creature_traits_tab.gd")
 
 
 func _initialize() -> void:
@@ -76,6 +77,50 @@ func run() -> void:
 	assert(record.skill_proficiencies == ["athletics"], "Legacy skill arrays remain synchronized")
 	assert(Proficiencies.unassigned_count(record) == 1,
 		"Unassigned pre-existing skill proficiency remains visible")
+
+	var barbarian := _record()
+	barbarian["class"] = "Barbarian"
+	barbarian["classes"] = [{"name": "Barbarian", "source": "PHB", "level": 1}]
+	var barbarian_origins: Array[Dictionary] = Proficiencies.origins(barbarian)
+	var barbarian_start: Dictionary = {}
+	for source: Dictionary in barbarian_origins:
+		if String(source.get("id", "")) == "class|phb|barbarian":
+			barbarian_start = source
+	assert(not barbarian_start.is_empty(), "Starting Barbarian automatically appears among sources")
+	var barbarian_rows: Array[Dictionary] = Proficiencies.choices(barbarian)
+	for key: String in ["simple", "martial"]:
+		assert(Proficiencies.has_choice(barbarian_rows, "weapon", key), "Barbarian starting weapon proficiencies")
+	for key: String in ["light", "medium", "shield"]:
+		assert(Proficiencies.has_choice(barbarian_rows, "armor", key), "Barbarian starting armor")
+	assert(Proficiencies.has_choice(barbarian_rows, "save", "con"), "Barbarian Constitution save")
+	assert(not Proficiencies.has_choice(barbarian_rows, "skill", "survival"),
+		"Starting Barbarian cannot preselect any choose-2 skill")
+	var starting_trait_found := false
+	for trait: Dictionary in Traits.collect_features(barbarian):
+		if String(trait.get("name", "")) == "Starting Barbarian" and int(trait.get("level", 0)) == 1:
+			starting_trait_found = "Hit Point Die: 1d12" in String(trait.get("entries", ""))
+	assert(starting_trait_found, "Synthetic Starting Barbarian trait includes structured hit dice and core summary")
+	var secondary := _record()
+	secondary["class"] = "Bard"
+	secondary["class_source"] = "PHB"
+	secondary["classes"] = [
+		{"name": "Bard", "source": "PHB", "level": 1},
+		{"name": "Barbarian", "source": "PHB", "level": 1}
+	]
+	var multiclass_rows: Array[Dictionary] = Proficiencies.choices(secondary)
+	var barbarian_armor: Array[String] = []
+	for row: Dictionary in multiclass_rows:
+		if String(row.get("origin_id", "")) == "class|phb|barbarian" and String(row.get("kind", "")) == "armor":
+			barbarian_armor.append(String(row.get("key", "")))
+	assert(barbarian_armor == ["shield"],
+		"Barbarian secondary starting trait grants shield but not starting light/medium armor")
+	var revised := _record()
+	revised["rules_version"] = "2024"
+	revised["class"] = "Barbarian"
+	revised["class_source"] = "XPHB"
+	revised["classes"] = [{"name": "Barbarian", "source": "XPHB", "level": 1}]
+	assert(Proficiencies.has_proficiency(revised, "weapon", "martial"),
+		"XPHB 2024 Barbarian starting class also uses structured grants")
 
 	var background_record := _record()
 	background_record["background"] = "Acolyte"
