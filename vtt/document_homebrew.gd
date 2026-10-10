@@ -24,9 +24,9 @@ static func definition_for(item: Dictionary) -> Dictionary:
 
 
 static func create_document(name: String = "Nuovo documento", description: String = "", legacy_key: String = "") -> Dictionary:
-	var local_id: String = "doc_" + legacy_key.sha256_text().substr(0, 28) if not legacy_key.is_empty() else (
-		"doc_%d_%d" % [int(Time.get_unix_time_from_system()), Time.get_ticks_usec()]
-	)
+	var local_id: String = "doc_%d_%d" % [int(Time.get_unix_time_from_system()), Time.get_ticks_usec()]
+	if not legacy_key.is_empty():
+		local_id = "doc_" + legacy_key.sha256_text().substr(0, 28)
 	var document_id: String = OWN_PREFIX + local_id
 	var file_path: String = ROOT_DIR.path_join(local_id + ".json")
 	if not FileAccess.file_exists(file_path):
@@ -42,7 +42,8 @@ static func create_document(name: String = "Nuovo documento", description: Strin
 		"equipped_slots": [],
 		"instance_overrides": {},
 		"added_at": int(Time.get_unix_time_from_system()),
-		"display_style": "pergamena"
+		"display_style": "pergamena",
+		"instance_id": "owned_doc_%d_%d" % [int(Time.get_unix_time_from_system()), Time.get_ticks_usec()]
 	}
 
 
