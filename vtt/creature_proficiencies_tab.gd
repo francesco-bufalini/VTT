@@ -557,6 +557,13 @@ func _add_origin() -> void:
 	_publish()
 
 
+func _selected_source_record() -> Dictionary:
+	for item: Dictionary in _origins:
+		if String(item.get("id", "")) == _selected_id:
+			return item
+	return {}
+
+
 func _catalog_entries() -> Array[Dictionary]:
 	var kind: String = String(GROUPS[_kind_picker.selected].get("kind", "skill"))
 	var items: Array[Dictionary] = []
@@ -579,6 +586,14 @@ func _catalog_entries() -> Array[Dictionary]:
 		for item: Dictionary in Catalog.entries("tools" if kind == "tool" else "languages"):
 			if _valid_edition(item):
 				items.append({"key": String(item.get("name", "")).to_lower(), "label": String(item.get("name", ""))})
+	if kind == "skill":
+		var allowed: Array[String] = Rules.restricted_choices(_selected_source_record(), kind)
+		if not allowed.is_empty():
+			var restricted: Array[Dictionary] = []
+			for item: Dictionary in items:
+				if String(item.get("key", "")) in allowed:
+					restricted.append(item)
+			return restricted
 	return items
 
 
@@ -602,6 +617,25 @@ func _add_competence() -> void:
 		key = String(_proficiency_picker.get_item_metadata(_proficiency_picker.selected))
 	if key.is_empty():
 		return
+	var source: Dictionary = _selected_source_record()
+	if kind == "skill":
+		var allowed: Array[String] = Rules.restricted_choices(source, kind)
+		if not allowed.is_empty() and key not in allowed:
+			_proficiency_name.tooltip_text = "Questa origine permette soltanto: " + ", ".join(allowed)
+			return
+		var max_choices := 0
+		for requirement: Dictionary in source.get("requirements", []):
+			if String(requirement.get("kind", "")) == kind:
+				max_choices += int(requirement.get("count", 0))
+		if max_choices > 0:
+			var current := 0
+			for existing: Dictionary in _rows:
+				if String(existing.get("origin_id", "")) == _selected_id and String(existing.get("kind", "")) == kind and not bool(existing.get("disabled", false)):
+					if Rules.grant_matches({"choose": {"from": allowed}}, kind, String(existing.get("key", ""))) == 1 or allowed.is_empty():
+						current += 1
+			if current >= max_choices:
+				_proficiency_name.tooltip_text = "Tutte le scelte disponibili per questa origine sono state utilizzate."
+				return
 	for row: Dictionary in _rows:
 		if String(row.get("origin_id", "")) == _selected_id and String(row.get("kind", "")) == kind and String(row.get("key", "")) == key:
 			row["disabled"] = false
