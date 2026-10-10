@@ -52,7 +52,7 @@ Per sviluppare nel repository usa `homebrew/local/`, ignorata da Git. `homebrew/
 
 Ogni pacchetto ha `schema_version: 1`, un `namespace` stabile e una lista `entries`. Una voce richiede `category`, `id`, `name` e `data`. Namespace e ID usano lettere minuscole ASCII, cifre, trattini e underscore. L'ID completo è `homebrew:<namespace>:<category>:<id>`: rinominare il titolo non cambia i riferimenti nelle schede.
 
-Categorie: monsters, races, classes, spells, conditions, diseases, effects, class_features, species_traits, feats, backgrounds, optional_features. `data` usa la forma 5eTools per mostri e riferimenti; gli incantesimi richiedono i campi runtime descritti in `docs/homebrew.md` per essere lanciabili. I contenuti sono dati: nessuno script viene eseguito.
+Categorie: monsters, races, classes, spells, conditions, diseases, effects, class_features, species_traits, feats, backgrounds, optional_features. `data` usa la forma 5eTools per mostri e riferimenti; gli incantesimi richiedono i campi runtime descritti in `docs/homebrew.md` per essere lanciabili. I pacchetti VTT legacy possono ancora contenere campi runtime per compatibilità; per i nuovi contenuti 5etools, i campi VTT aggiuntivi vanno nei JSON di integrazione separati. I contenuti sono dati: nessuno script viene eseguito.
 
 Per condizioni e malattie usa `icon_id` per scegliere una delle icone esistenti (ad esempio `poisoned`, `charmed`) oppure `icon` con un pittogramma Unicode. Senza scelta viene mostrato un punto. Gli ID e le icone delle condizioni storiche non cambiano.
 
