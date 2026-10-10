@@ -131,7 +131,7 @@ func run() -> void:
 	assert("Inventario" in tab_titles and "Incantesimi" in tab_titles
 		and tab_titles[0] == "Info" and tab_titles[1] == "Statistiche")
 	assert("Risorse" not in tab_titles and area._tracker_rows.get_parent() != area._name.get_parent().get_parent()
-		and area._tracker_rows.get_parent() == area._max_hp.get_parent().get_parent().get_parent(),
+		and area._tracker_rows.get_parent() == area._max_hp.get_parent().get_parent().get_parent().get_parent(),
 		"Trackers must be inside Statistics rather than Info or a separate tab")
 	area._choose_miniature(area._current(), false, true)
 	area._miniature_filter.text = "ape"
@@ -431,6 +431,7 @@ func run() -> void:
 		"Excess damage from the depleted form must reach base HP")
 	area._second_form_max_hp.value = 0
 	area._save()
+	area._restore_full_hp()
 	area._change_hit_points(1)
 	assert(area._current().current_hp == 35, "Healing toolbar must cap at max HP")
 	area._open_hp_delta(-1)
