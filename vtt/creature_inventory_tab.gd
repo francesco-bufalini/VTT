@@ -781,7 +781,10 @@ func _inventory_label(item: Dictionary) -> String:
 	var size_label := ""
 	if dimensions is Dictionary and not (dimensions as Dictionary).is_empty():
 		size_label = " · misure personalizzate"
-	return "%d × %s%s%s · %s" % [item.get("quantity", 1), item.get("name", ""), equipment, size_label, item.get("source", "")]
+	var item_name: String = String(item.get("name", ""))
+	if DocumentStore.is_document(item):
+		item_name = String(_catalog_entry(item).get("name", item_name))
+	return "%d × %s%s%s · %s" % [item.get("quantity", 1), item_name, equipment, size_label, item.get("source", "")]
 
 
 func _show_details(item: Dictionary) -> void:
