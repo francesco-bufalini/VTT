@@ -135,7 +135,8 @@ static func override_for(record: Dictionary, attack_id: String) -> Dictionary:
 
 static func range_for(record: Dictionary, attack: Dictionary) -> int:
 	var settings: Dictionary = override_for(record, String(attack.get("id", "")))
-	return clampi(int(settings.get("range_feet", attack.get("range_feet", 5))), 5, 1000)
+	var base: int = int(settings.get("range_feet", attack.get("range_feet", 5)))
+	return clampi(base + int(settings.get("range_bonus", 0)), 5, 1000)
 
 
 static func ability_modifier(record: Dictionary) -> int:
@@ -261,7 +262,7 @@ static func active_range(record: Dictionary) -> float:
 	if bool(attack.get("melee", false)) and attack.has("melee_reach_feet"):
 		var setting: Dictionary = override_for(record, String(attack.get("id", "")))
 		if not setting.has("range_feet"):
-			return float(attack.get("melee_reach_feet", 5))
+			return float(clampi(int(attack.get("melee_reach_feet", 5)) + int(setting.get("range_bonus", 0)), 5, 1000))
 	return float(range_for(record, attack))
 
 
