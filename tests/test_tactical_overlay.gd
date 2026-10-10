@@ -52,6 +52,10 @@ func run() -> void:
 	var overlay := Overlay.new()
 	ui.add_child(overlay)
 	overlay.setup(board, null)
+	var z_test_badge: Control = overlay.call("_new_badge") as Control
+	assert(z_test_badge.z_index < 0,
+		"2D reach arrows rendered by the parent must be in front of token portraits")
+	z_test_badge.queue_free()
 	for floor_y: float in [0.0, 8.0, -3.0]:
 		var expected := camera.unproject_position(Vector3(1.0, floor_y, 2.0))
 		for height: float in [-10.0, 0.0, 12.0]:
