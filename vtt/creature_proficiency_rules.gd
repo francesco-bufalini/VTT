@@ -254,7 +254,8 @@ static func _selected_source(record: Dictionary, group: String, name: String, so
 static func _origin_title(group: String, name: String, mode: String) -> String:
 	match group:
 		"class": return ("Multiclass " if mode == "multiclass" else "Starting ") + name
-		"race", "subrace": return "Specie · " + name
+		"race": return "Specie · " + name
+		"subrace": return "Sottorazza · " + name
 		"background": return "Background · " + name
 		"feat": return "Talento · " + name
 	return name
