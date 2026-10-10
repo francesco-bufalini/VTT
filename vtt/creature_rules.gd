@@ -236,7 +236,7 @@ static func automatic_hit_points(character: Dictionary) -> Dictionary:
 		return {"available": false, "reason": "Seleziona almeno una classe."}
 	var abilities: Dictionary = character.get("abilities", {})
 	var bonuses: Dictionary = character.get("ability_bonuses", {})
-	var con_modifier: int = ability_modifier(int(abilities.get("con", 10)) + int(bonuses.get("con", 0)))
+	var con_modifier: int = int(character.get("effective_con_modifier", ability_modifier(int(abilities.get("con", 10)) + int(bonuses.get("con", 0)))))
 	var total: int = 0
 	var parts: PackedStringArray = []
 	var first_level: bool = true
