@@ -849,8 +849,8 @@ func _build_ui() -> void:
 	_tools_proficiency_label.autowrap_mode = TextServer.AUTOWRAP_WORD_SMART
 	_tools_proficiency_label.tooltip_text = "Competenze negli strumenti provenienti dalle origini attive"
 	skills_column.add_child(_tools_proficiency_label)
-	var skills_header := HBoxContainer.new()
-	skills_header.add_theme_constant_override("separation", 8)
+	var skills_header := VBoxContainer.new()
+	skills_header.add_theme_constant_override("separation", 1)
 	skills_column.add_child(skills_header)
 	var skills_heading := Label.new()
 	skills_heading.text = "🎓 Abilità"
