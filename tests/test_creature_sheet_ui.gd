@@ -1,5 +1,6 @@
 extends SceneTree
 const Owner = preload("res://vtt/creature_owner.gd")
+const ProficiencyRules = preload("res://vtt/creature_proficiency_rules.gd")
 const TokenScene = preload("res://token.tscn")
 
 class TestCampaign extends Node:
