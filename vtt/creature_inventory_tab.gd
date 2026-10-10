@@ -127,7 +127,10 @@ func setup(on_change: Callable, on_status: Callable, on_document_change: Callabl
 	add_child(dimensions_row)
 	for axis: String in ["length", "width", "height"]:
 		var caption := Label.new()
-		caption.text = {"length": "Lunghezza (m)", "width": "Larghezza (m)", "height": "Altezza (m)"}[axis]
+		match axis:
+			"length": caption.text = "Lunghezza (m)"
+			"width": caption.text = "Larghezza (m)"
+			"height": caption.text = "Altezza (m)"
 		dimensions_row.add_child(caption)
 		var input := SpinBox.new()
 		input.min_value = 0.0
