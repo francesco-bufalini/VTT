@@ -3435,19 +3435,23 @@ func _refresh_trackers(record: Dictionary) -> void:
 		var base_maximum: int = int(tracker["max"])
 		var maximum: int = maxi(0, base_maximum + int(bonuses.get(id, 0)))
 		var used: int = clampi(int(spent.get(id, 0)), 0, maximum)
+		var counter_group := HBoxContainer.new()
+		counter_group.add_theme_constant_override("separation", 4)
+		# HFlowContainer may wrap the whole counter but never split its buttons.
+		row.add_child(counter_group)
 		var consume := Button.new()
 		consume.text = "−"
 		consume.tooltip_text = "Consuma un utilizzo"
 		consume.disabled = used >= maximum
 		consume.pressed.connect(_change_tracker.bind(id, 1, maximum))
-		row.add_child(consume)
+		counter_group.add_child(consume)
 		var remaining := Label.new()
 		remaining.text = "%d /" % (maximum - used)
 		remaining.custom_minimum_size.x = 50
 		remaining.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
-		row.add_child(remaining)
+		counter_group.add_child(remaining)
 		var maximum_label := Label.new()
-		row.add_child(maximum_label)
+		counter_group.add_child(maximum_label)
 		var manual_bonus := SpinBox.new()
 		manual_bonus.min_value = -999
 		manual_bonus.max_value = 9999
@@ -3461,10 +3465,10 @@ func _refresh_trackers(record: Dictionary) -> void:
 		manual_bonus.value_changed.connect(_change_tracker_bonus.bind(id))
 		row.add_child(manual_bonus)
 		var max_index: int = maximum_label.get_index()
-		row.remove_child(maximum_label)
+		counter_group.remove_child(maximum_label)
 		var formula := FormulaValue.new()
-		row.add_child(formula)
-		row.move_child(formula, max_index)
+		counter_group.add_child(formula)
+		counter_group.move_child(formula, max_index)
 		formula.setup(maximum_label, [manual_bonus], ["Bonus"])
 		formula.set_formula(str(maximum),
 			"%s: base %d %+d bonus = %d" % [title, base_maximum, int(bonuses.get(id, 0)), maximum])
@@ -3473,8 +3477,7 @@ func _refresh_trackers(record: Dictionary) -> void:
 		restore.tooltip_text = "Recupera un utilizzo"
 		restore.disabled = used <= 0
 		restore.pressed.connect(_change_tracker.bind(id, -1, maximum))
-		row.add_child(restore)
-		row.move_child(restore, formula.get_index() + 1)
+		counter_group.add_child(restore)
 		# Both adjustments flank the live current/max tracker; manual bonus,
 		# d6 recharge and reset remain secondary controls to its right.
 		# The "+" belongs after the complete "remaining / max" value;
