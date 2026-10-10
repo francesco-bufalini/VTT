@@ -453,5 +453,4 @@ func _safe_id(value: String) -> String:
 			result += character
 		else:
 			result += "_"
-	Proficiencies.sync_legacy_fields(result, Proficiencies.choices(result))
 	return result
