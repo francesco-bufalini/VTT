@@ -391,20 +391,24 @@ func run() -> void:
 	var tool_option: Dictionary = (tool_choice.get("boxes") as Array)[0]
 	(tool_option.get("check") as CheckBox).set_pressed_no_signal(true)
 	tab._refresh_choice_limit(tool_choice)
-	if not (language_choice.get("boxes") as Array).is_empty():
-		var language_option: Dictionary = (language_choice.get("boxes") as Array)[0]
-		(language_option.get("check") as CheckBox).set_pressed_no_signal(true)
-		tab._refresh_choice_limit(language_choice)
 	tab._apply_choice_dialog()
 	tab._choice_dialog.hide()
 	assert(Proficiencies.has_proficiency(tab._effective_record(), "tool", String(tool_option.get("key", ""))),
 		"Confirming the dialog must persist the selected artisan tool")
 	tab._open_missing_choices("background|phb|guild artisan")
-	assert(tab._choice_selector.selected == language_group_index
-		if (language_choice.get("boxes") as Array).is_empty()
-		else tab._choice_selector.selected == tool_group_index or tab._choice_selector.selected == language_group_index,
-		"Reopening multi-type choice dialog must show a valid available category")
+	assert(tab._choice_selector.selected == language_group_index,
+		"After choosing an artisan tool, the popup must focus the still-missing language")
+	var remaining_language_group: Dictionary = tab._choice_groups[language_group_index]
+	assert(not (remaining_language_group.get("boxes") as Array).is_empty(),
+		"A language selection must still be available after completing the tool group")
+	var language_option: Dictionary = (remaining_language_group.get("boxes") as Array)[0]
+	(language_option.get("check") as CheckBox).set_pressed_no_signal(true)
+	tab._refresh_choice_limit(remaining_language_group)
+	tab._apply_choice_dialog()
 	tab._choice_dialog.hide()
+	assert(Proficiencies.has_proficiency(tab._effective_record(), "tool", String(tool_option.get("key", "")))
+		and Proficiencies.has_proficiency(tab._effective_record(), "language", String(language_option.get("key", ""))),
+		"The confirmed language and artisan tool must coexist on the same background")
 	tab.load_record(record)
 	var illuminated_record: Dictionary = record.duplicate(true)
 	illuminated_record["proficiency_origins"] = [
