@@ -61,6 +61,7 @@ var _automatic_proficiency: CheckBox
 var _automatic_spells: CheckBox
 var _automatic_slots: CheckBox
 var _automatic_derived: CheckBox
+var _automatic_combat: CheckBox
 var _automatic_trackers: CheckBox
 var _automatic_preview: RichTextLabel
 var _automatic_target_id := ""
@@ -1309,6 +1310,10 @@ func _build_automatic_dialog() -> void:
 	_automatic_derived.text = "Dadi vita, XP minimo, iniziativa e velocità base"
 	_automatic_derived.toggled.connect(func(_enabled: bool) -> void: _refresh_automatic_preview())
 	content.add_child(_automatic_derived)
+	_automatic_combat = CheckBox.new()
+	_automatic_combat.text = "Difese, iniziativa, competenze e portata attiva da dati strutturati"
+	_automatic_combat.toggled.connect(func(_enabled: bool) -> void: _refresh_automatic_preview())
+	content.add_child(_automatic_combat)
 	var explanation := Label.new()
 	explanation.text = "Gli incantesimi effettivamente scelti non vengono cambiati. I PF attuali sono conservati (limitati al nuovo massimo)."
 	explanation.autowrap_mode = TextServer.AUTOWRAP_WORD_SMART
@@ -1336,17 +1341,38 @@ func _open_automatic_calculation() -> void:
 	_automatic_hp.disabled = not bool(hp_result.get("available", false))
 	_automatic_proficiency.disabled = not character
 	_automatic_spells.disabled = not character
-	_automatic_slots.disabled = not character and Rules.level_classes(record).size() < 2
+	_automatic_slots.disabled = not character
 	_automatic_trackers.disabled = _structured_trackers(record).is_empty()
 	_automatic_derived.disabled = not character
+	_automatic_combat.disabled = false
 	_automatic_hp.set_pressed_no_signal(false)
 	_automatic_proficiency.set_pressed_no_signal(false)
 	_automatic_spells.set_pressed_no_signal(false)
 	_automatic_slots.set_pressed_no_signal(false)
 	_automatic_trackers.set_pressed_no_signal(false)
 	_automatic_derived.set_pressed_no_signal(false)
+	_automatic_combat.set_pressed_no_signal(false)
 	_refresh_automatic_preview()
 	_popup_sheet_dialog(_automatic_dialog, Vector2i(675, 545), 0.90)
+
+
+func _automatic_combat_values(record: Dictionary) -> Dictionary:
+	var bonuses: Dictionary = record.get("ability_bonuses", {})
+	var abilities: Dictionary = record.get("abilities", {})
+	var dex: int = Rules.ability_modifier(int(abilities.get("dex", 10)) + int(bonuses.get("dex", 0)))
+	var shield: int = ItemRules.shield_bonus(record.get("inventory", []))
+	var armor_bonus: int = int(record.get("armor_class_bonus", 0))
+	var base: int = int(record.get("armor_class_base",
+		int(record.get("armor_class", 10)) - armor_bonus - shield))
+	var active_attack: Dictionary = AttackData.active_attack(record)
+	var reach: int = int(AttackData.active_range(record))
+	return {
+		"armor_class": maxi(0, base + armor_bonus + shield),
+		"initiative_base": dex,
+		"initiative": dex + int(record.get("initiative_bonus", 0)),
+		"attack_id": String(active_attack.get("id", "")),
+		"reach_feet": reach
+	}
 
 
 func _refresh_automatic_preview() -> void:
@@ -1381,6 +1407,12 @@ func _refresh_automatic_preview() -> void:
 				Rules.experience_for_level(int(record.get("level", 1))),
 				Rules.ability_modifier(dexterity)
 			])
+	if _automatic_combat.button_pressed:
+		var combat: Dictionary = _automatic_combat_values(record)
+		lines.append("CA %d (scudo compreso) · Iniziativa %+d · Portata %d ft" % [
+			int(combat["armor_class"]), int(combat["initiative"]), int(combat["reach_feet"])
+		])
+		lines.append("Competenze e abilità: risincronizzate dalle origini; TS, abilità e modificatori si aggiornano dalle formule.")
 	if _automatic_slots.button_pressed:
 		var slot_result: Dictionary = Rules.spell_slot_progression(record)
 		var slots: Array = slot_result.get("slots", [])
@@ -1402,6 +1434,7 @@ func _refresh_automatic_preview() -> void:
 		and not _automatic_slots.button_pressed
 		and not _automatic_trackers.button_pressed
 		and not _automatic_derived.button_pressed
+		and not _automatic_combat.button_pressed
 	)
 
 
@@ -1445,7 +1478,8 @@ func _apply_automatic_calculation() -> void:
 		record["xp"] = maxi(int(record.get("xp", 0)), Rules.experience_for_level(int(record.get("level", 1))))
 		var abilities: Dictionary = record.get("abilities", {})
 		var bonuses: Dictionary = record.get("ability_bonuses", {})
-		record["initiative"] = Rules.ability_modifier(int(abilities.get("dex", 10)) + int(bonuses.get("dex", 0)))
+		record["initiative_base"] = Rules.ability_modifier(int(abilities.get("dex", 10)) + int(bonuses.get("dex", 0)))
+		record["initiative"] = int(record["initiative_base"]) + int(record.get("initiative_bonus", 0))
 		if not bool(record.get("speed_is_custom", false)):
 			for race: Dictionary in Player5eTools.entries("races"):
 				if (String(race.get("id", "")) == String(record.get("species_id", ""))
@@ -1454,6 +1488,16 @@ func _apply_automatic_calculation() -> void:
 					record["speed_base"] = Rules.walking_speed(race.get("speed", 30))
 					record["speed"] = maxi(0, int(record["speed_base"]) + int(record.get("speed_bonus", 0)))
 					break
+	if _automatic_combat.button_pressed:
+		var combat: Dictionary = _automatic_combat_values(record)
+		record["armor_class"] = int(combat["armor_class"])
+		record["initiative_base"] = int(combat["initiative_base"])
+		record["initiative"] = int(combat["initiative"])
+		record["equipped_attack_id"] = String(combat["attack_id"])
+		record["reach_feet"] = int(combat["reach_feet"])
+		# Only legacy mirrors are persisted: the normalized origin grants
+		# remain the authority for skill and saving-throw calculations.
+		ProficiencyRules.sync_legacy_fields(record, ProficiencyRules.choices(record))
 	if _automatic_trackers.button_pressed:
 		var spent_values: Dictionary = record.get("resource_tracker_spent", {}).duplicate(true)
 		var bonus_values: Dictionary = record.get("resource_tracker_bonuses", {})
