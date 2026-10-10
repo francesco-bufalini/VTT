@@ -295,9 +295,10 @@ static func spellcasting_limits(character: Dictionary) -> Dictionary:
 			lines.append("%s: %d incantesimi conosciuti (2014)" % [cls.get("name", ""), known_count])
 		elif edition == "2014" and name in ["cleric", "druid", "wizard", "paladin", "artificer"]:
 			var stat: String = "int" if name in ["wizard", "artificer"] else "wis" if name in ["cleric", "druid"] else "cha"
-			var modifier: int = ability_modifier(
+			var supplied: Dictionary = character.get("effective_ability_modifiers", {})
+			var modifier: int = int(supplied.get(stat, ability_modifier(
 				int(abilities.get(stat, 10)) + int(bonuses.get(stat, 0))
-			)
+			)))
 			var effective: int = lvl if name in ["cleric", "druid"] else ceili(float(lvl) / 2.0)
 			var capacity: int = maxi(1, effective + modifier)
 			if name == "paladin" and lvl < 2:
