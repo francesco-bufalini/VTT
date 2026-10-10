@@ -18,6 +18,7 @@ const TraitsTab = preload("res://vtt/creature_traits_tab.gd")
 const DialogLayout = preload("res://vtt/dialog_layout.gd")
 const Skills5e = preload("res://vtt/creature_skills_5etools.gd")
 const AttackData = preload("res://vtt/creature_attack_data.gd")
+const ItemRules = preload("res://vtt/creature_item_rules.gd")
 const DocumentInbox = preload("res://vtt/document_inbox.gd")
 
 var board_root: Node3D
@@ -844,7 +845,7 @@ func _build_ui() -> void:
 	_attack_ability = OptionButton.new()
 	_attack_ability.add_item("Forza")
 	_attack_ability.add_item("Destrezza")
-	_attack_ability.tooltip_text = "Cambia il modificatore degli attacchi e dei danni. I valori fissi del bestiario includono già la competenza."
+	_attack_ability.tooltip_text = "Preferenza per armi Finesse: le armi da mischia normali usano Forza, quelle a distanza Destrezza. I valori del bestiario includono la competenza."
 	_attack_ability.item_selected.connect(_on_attack_ability_changed)
 	preference_row.add_child(_attack_ability)
 	_attack_rows = VBoxContainer.new()
@@ -2255,6 +2256,21 @@ func _refresh_attacks(record: Dictionary) -> void:
 		distance.set_value_no_signal(AttackData.range_for(record, attack))
 		distance.value_changed.connect(_on_attack_range_changed.bind(attack_id))
 		settings.add_child(distance)
+		if int(attack.get("long_range_feet", 0)) > int(attack.get("range_feet", 5)):
+			var long_range := Label.new()
+			long_range.text = "Lunga: %d ft" % int(attack.get("long_range_feet", 0))
+			long_range.tooltip_text = "Oltre la gittata normale si applica svantaggio (regole 2014)"
+			settings.add_child(long_range)
+		if String(attack.get("source", "")) == "item":
+			var item_data: Dictionary = attack.get("item_entry", {})
+			var properties: PackedStringArray = []
+			for code: String in ["F", "R", "T", "V", "2H", "L", "H", "A", "LD"]:
+				if ItemRules.has_property(item_data, code):
+					properties.append(code)
+			var info := Label.new()
+			info.text = "Proprietà: " + ", ".join(properties) if not properties.is_empty() else "Arma"
+			info.tooltip_text = "Proprietà strutturate 5etools dell'arma equipaggiata"
+			settings.add_child(info)
 		_add_label(settings, "Bonus")
 		var extra := SpinBox.new()
 		extra.min_value = -99
@@ -2357,7 +2373,10 @@ func _save_attack_setting(attack_id: String, setting: String, value: Variant) ->
 
 func _update_defense_display() -> void:
 	if _ac != null and _ac_bonus != null and _ac_effective != null:
-		_ac_effective.text = str(maxi(0, int(_ac.value) + int(_ac_bonus.value)))
+		var current: Dictionary = _current()
+		var shield: int = ItemRules.shield_bonus(current.get("inventory", []))
+		_ac_effective.text = str(maxi(0, int(_ac.value) + int(_ac_bonus.value) + shield))
+		_ac_effective.tooltip_text = "Incluso scudo equipaggiato: %+d CA" % shield
 	if _initiative != null and _initiative_bonus != null and _initiative_effective != null:
 		_initiative_effective.text = "%+d" % (int(_initiative.value) + int(_initiative_bonus.value))
 
@@ -2416,6 +2435,7 @@ func _on_inventory_updated(inventory: Array) -> void:
 	if record.is_empty():
 		return
 	record["inventory"] = inventory.duplicate(true)
+	record["armor_class"] = maxi(0, int(record.get("armor_class_base", 10)) + int(record.get("armor_class_bonus", 0)) + ItemRules.shield_bonus(inventory))
 	record["reach_feet"] = AttackData.first_melee_range(record)
 	if String(record.get("kind", "")) == "monster":
 		record["reach_is_custom"] = true
@@ -2425,6 +2445,7 @@ func _on_inventory_updated(inventory: Array) -> void:
 		return
 	_replace_current_record(record)
 	_refresh_attacks(record)
+	_update_defense_display()
 	_apply_sheet_properties(record)
 
 
@@ -2484,7 +2505,7 @@ func _save() -> void:
 	record["party_id"] = _party.text.strip_edges()
 	record["armor_class_base"] = int(_ac.value)
 	record["armor_class_bonus"] = int(_ac_bonus.value)
-	record["armor_class"] = maxi(0, int(_ac.value) + int(_ac_bonus.value))
+	record["armor_class"] = maxi(0, int(_ac.value) + int(_ac_bonus.value) + ItemRules.shield_bonus(record.get("inventory", [])))
 	record["initiative_base"] = int(_initiative.value)
 	record["initiative_bonus"] = int(_initiative_bonus.value)
 	record["initiative"] = int(_initiative.value) + int(_initiative_bonus.value)
