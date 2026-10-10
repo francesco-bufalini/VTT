@@ -279,6 +279,19 @@ static func equip_first_inventory_weapon(record: Dictionary) -> bool:
 		if int(owned.get("quantity", 0)) <= 0 or Items.kind(Items.entry_for(owned)) != "weapon":
 			continue
 		var slots: Array = Items.slots(owned)
+		if Items.is_two_handed(Items.entry_for(owned)):
+			# Do not leave a shield/offhand item in the same two hands.
+			for other_index: int in range(rows.size()):
+				if not rows[other_index] is Dictionary:
+					continue
+				var other: Dictionary = rows[other_index]
+				var other_slots: Array = Items.slots(other)
+				other_slots.erase("off")
+				other["equipped_slots"] = other_slots
+				rows[other_index] = other
+			slots.erase("off")
+		elif "off" in slots and int(owned.get("quantity", 1)) == 1:
+			slots.erase("off")
 		if not "main" in slots:
 			slots.append("main")
 		owned["equipped_slots"] = slots
