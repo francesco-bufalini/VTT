@@ -62,12 +62,6 @@ var _condition_rings_root: Node3D
 var _overlay_root: Node3D
 var _name_label: Label3D
 var _status_label: Label3D
-var _flanking_badge_root: Node3D
-var _flanking_badge_border: MeshInstance3D
-var _flanking_badge_background: MeshInstance3D
-var _flanking_badge_label: Label3D
-var _flanking_badge_border_material: StandardMaterial3D
-var _flanking_badge_background_material: StandardMaterial3D
 var _hp_bar_root: Node3D
 var _hp_bar_mesh: MeshInstance3D
 var _hp_bar_material: StandardMaterial3D
@@ -1204,140 +1198,6 @@ func _ensure_token_overlay() -> void:
 	_update_overlay_position()
 
 
-func _ensure_flanking_badge() -> void:
-	if _overlay_root == null or not is_instance_valid(_overlay_root):
-		return
-	if (
-		is_instance_valid(_flanking_badge_root)
-		and is_instance_valid(_flanking_badge_border)
-		and is_instance_valid(_flanking_badge_background)
-		and is_instance_valid(_flanking_badge_label)
-	):
-		return
-
-	_flanking_badge_root = (
-		_overlay_root.get_node_or_null("FlankingBadge") as Node3D
-	)
-	if _flanking_badge_root == null:
-		_flanking_badge_root = Node3D.new()
-		_flanking_badge_root.name = "FlankingBadge"
-		_overlay_root.add_child(_flanking_badge_root)
-
-	for legacy_name: String in ["Border", "Background", "Label"]:
-		var legacy := _flanking_badge_root.get_node_or_null(legacy_name)
-		if legacy != null:
-			_flanking_badge_root.remove_child(legacy)
-			legacy.queue_free()
-
-	_flanking_badge_border = MeshInstance3D.new()
-	_flanking_badge_border.name = "Border"
-	_flanking_badge_border.cast_shadow = (
-		GeometryInstance3D.SHADOW_CASTING_SETTING_OFF
-	)
-	_flanking_badge_root.add_child(_flanking_badge_border)
-
-	var border_quad := QuadMesh.new()
-	border_quad.size = Vector2(2.22 * cell_size, 0.46 * cell_size)
-	_flanking_badge_border.mesh = border_quad
-
-	_flanking_badge_border_material = StandardMaterial3D.new()
-	_flanking_badge_border_material.transparency = (
-		BaseMaterial3D.TRANSPARENCY_ALPHA
-	)
-	_flanking_badge_border_material.shading_mode = (
-		BaseMaterial3D.SHADING_MODE_UNSHADED
-	)
-	_flanking_badge_border_material.cull_mode = BaseMaterial3D.CULL_DISABLED
-	_flanking_badge_border_material.no_depth_test = true
-	_flanking_badge_border_material.albedo_color = Color(
-		0.72, 0.48, 0.20, 0.82
-	)
-	_flanking_badge_border_material.render_priority = 1
-	_flanking_badge_border.material_override = (
-		_flanking_badge_border_material
-	)
-
-	_flanking_badge_background = MeshInstance3D.new()
-	_flanking_badge_background.name = "Background"
-	_flanking_badge_background.cast_shadow = (
-		GeometryInstance3D.SHADOW_CASTING_SETTING_OFF
-	)
-	_flanking_badge_root.add_child(_flanking_badge_background)
-
-	var background_quad := QuadMesh.new()
-	background_quad.size = Vector2(2.12 * cell_size, 0.38 * cell_size)
-	_flanking_badge_background.mesh = background_quad
-
-	_flanking_badge_background_material = StandardMaterial3D.new()
-	_flanking_badge_background_material.transparency = (
-		BaseMaterial3D.TRANSPARENCY_ALPHA
-	)
-	_flanking_badge_background_material.shading_mode = (
-		BaseMaterial3D.SHADING_MODE_UNSHADED
-	)
-	_flanking_badge_background_material.cull_mode = (
-		BaseMaterial3D.CULL_DISABLED
-	)
-	_flanking_badge_background_material.no_depth_test = true
-	_flanking_badge_background_material.albedo_color = Color(
-		0.035, 0.04, 0.05, 0.90
-	)
-	_flanking_badge_background_material.render_priority = 2
-	_flanking_badge_background.material_override = (
-		_flanking_badge_background_material
-	)
-
-	_flanking_badge_label = Label3D.new()
-	_flanking_badge_label.name = "Label"
-	_flanking_badge_label.billboard = BaseMaterial3D.BILLBOARD_DISABLED
-	_flanking_badge_label.fixed_size = false
-	_flanking_badge_label.no_depth_test = true
-	_flanking_badge_label.font_size = 22
-	_flanking_badge_label.outline_size = 4
-	_flanking_badge_label.modulate = Color(1.0, 0.94, 0.82, 1.0)
-	_flanking_badge_label.outline_modulate = Color(0.03, 0.035, 0.045, 1.0)
-	_flanking_badge_label.text = "🗡️  Affiancato"
-	_flanking_badge_label.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
-	_flanking_badge_label.vertical_alignment = VERTICAL_ALIGNMENT_CENTER
-	_flanking_badge_root.add_child(_flanking_badge_label)
-
-	_flanking_badge_border.position.z = 0.0
-	_flanking_badge_background.position.z = 0.004 * cell_size
-	_flanking_badge_label.position.z = 0.008 * cell_size
-	_flanking_badge_root.visible = false
-
-
-func set_flanking_indicator_visible(value: bool) -> void:
-	if not is_instance_valid(_flanking_badge_root):
-		_ensure_token_overlay()
-	if is_instance_valid(_flanking_badge_root):
-		_flanking_badge_root.visible = value
-
-
-func is_flanking_indicator_visible() -> bool:
-	return (
-		is_instance_valid(_flanking_badge_root)
-		and _flanking_badge_root.visible
-	)
-
-
-func _update_flanking_badge_facing() -> void:
-	if (
-		not is_instance_valid(_flanking_badge_root)
-		or not _flanking_badge_root.visible
-	):
-		return
-	var camera := get_viewport().get_camera_3d()
-	if camera == null or not is_instance_valid(camera):
-		return
-	var target := camera.global_position
-	if _flanking_badge_root.global_position.distance_squared_to(target) <= 0.000001:
-		return
-	# Rotate the entire badge as one object. Border, background and text
-	# therefore never acquire different front/back orientations.
-	_flanking_badge_root.look_at(target, Vector3.UP, true)
-
-
 func _update_overlay_position() -> void:
 	if not is_instance_valid(_overlay_root):
 		return
@@ -1357,34 +1217,6 @@ func _update_overlay_position() -> void:
 	if is_instance_valid(_status_label):
 		_status_label.pixel_size = 0.010 * cell_size
 		_status_label.position = Vector3(0.0, -0.22 * cell_size, 0.0)
-	if is_instance_valid(_flanking_badge_root):
-		_flanking_badge_root.position = Vector3(
-			0.0,
-			0.66 * cell_size,
-			0.0
-		)
-	if is_instance_valid(_flanking_badge_border):
-		var border_quad := _flanking_badge_border.mesh as QuadMesh
-		if border_quad != null:
-			border_quad.size = Vector2(
-				2.22 * cell_size,
-				0.46 * cell_size
-			)
-	if is_instance_valid(_flanking_badge_background):
-		var background_quad := _flanking_badge_background.mesh as QuadMesh
-		if background_quad != null:
-			background_quad.size = Vector2(
-				2.12 * cell_size,
-				0.38 * cell_size
-			)
-		_flanking_badge_background.position.z = 0.004 * cell_size
-	if is_instance_valid(_flanking_badge_label):
-		_flanking_badge_label.pixel_size = 0.0082 * cell_size
-		_flanking_badge_label.position = Vector3(
-			0.0,
-			0.0,
-			0.008 * cell_size
-		)
 	if is_instance_valid(_hp_bar_root):
 		_hp_bar_root.position = Vector3(0.0, 0.34 * cell_size, 0.0)
 		_update_health_bar_visual()
@@ -1673,8 +1505,9 @@ func is_vision_cone_visible() -> bool:
 
 
 func _default_reach_feet() -> float:
-	# 5 ft per Medium o inferiore, poi +5 ft per ogni cella di footprint.
-	return maxf(5.0, _footprint_cells * 5.0)
+	# Size determines occupied squares, not melee reach. A Large/Huge
+	# creature has 5 ft reach unless its bestiary entry/traits override it.
+	return 5.0
 
 
 func set_reach_feet(value: float, overridden: bool = true) -> void:
@@ -1792,11 +1625,13 @@ func apply_appearance_state(state: Dictionary) -> bool:
 	)
 	set_token_size(_footprint_cells)
 
-	_reach_feet = maxf(
-		float(state.get("reach_feet", _default_reach_feet())),
-		5.0
-	)
 	_reach_overridden = bool(state.get("reach_overridden", false))
+	# Legacy saves may contain size-derived 10/15/20 ft defaults. Only
+	# restore stored reach when it was actually customized.
+	_reach_feet = (
+		maxf(float(state.get("reach_feet", 5.0)), 5.0)
+		if _reach_overridden else _default_reach_feet()
+	)
 	set_display_name(String(state.get("display_name", token_display_name)))
 	set_party_id(String(state.get("party_id", party_id)))
 	set_condition_presentations(state.get("condition_presentations", []))
@@ -2062,7 +1897,7 @@ func _refresh_top_down_token_geometry() -> void:
 	if _top_down_token_sprite == null or _top_down_token_sprite.texture == null:
 		return
 	var pixels: float = maxf(_top_down_token_sprite.texture.get_width(), _top_down_token_sprite.texture.get_height())
-	_top_down_token_sprite.pixel_size = _footprint_cells * cell_size / maxf(pixels, 1.0)
+	_top_down_token_sprite.pixel_size = maxf(_footprint_cells, 1.0) * cell_size / maxf(pixels, 1.0)
 	# Keep the miniature and its physics intact; the image sits above its top.
 	_top_down_token_sprite.position.y = token_height_cells * cell_size * 0.5 + cell_size * 0.08
 

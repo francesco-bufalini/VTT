@@ -540,12 +540,12 @@ static func token_half_extents_world(
 	if token != null and token.has_method("get_footprint_cells"):
 		footprint_cells = maxf(
 			float(token.call("get_footprint_cells")),
-			0.5
+			1.0 # Tiny still occupies one tactical square.
 		)
 	elif token != null:
 		var footprint_value: Variant = token.get("_footprint_cells")
 		if footprint_value is float or footprint_value is int:
-			footprint_cells = maxf(float(footprint_value), 0.5)
+			footprint_cells = maxf(float(footprint_value), 1.0)
 
 	var height_cells := 2.0
 	if token != null:
@@ -1115,6 +1115,14 @@ func _render_arrows(
 		return
 
 	_arrow_mesh.clear_surfaces()
+	# The 2D overlay projects the same segments onto the visible floor.
+	# Keep the world-space mesh from drawing a second, offset set of arrows.
+	_arrow_instance.visible = not (
+		board_root.has_method("is_2d_view_enabled")
+		and bool(board_root.call("is_2d_view_enabled"))
+	)
+	if not _arrow_instance.visible:
+		return
 	if points.is_empty() and mutual_points.is_empty():
 		return
 
@@ -1295,4 +1303,3 @@ static func _append_double_arrow_vertices(
 	])
 	for vertex: Vector3 in vertices:
 		mesh.surface_add_vertex(vertex)
-

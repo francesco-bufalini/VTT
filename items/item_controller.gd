@@ -1,6 +1,7 @@
 extends Node
 
 const BoardItem = preload("res://items/board_item.gd")
+const DialogLayout = preload("res://vtt/dialog_layout.gd")
 
 var board: Node3D
 var items: Array[StaticBody3D] = []
@@ -60,7 +61,7 @@ func setup(owner_board: Node3D) -> void:
 	notice = Label.new()
 	notice.autowrap_mode = TextServer.AUTOWRAP_WORD_SMART
 	notice.text = (
-		"Crea un carro dal menu Item. Seleziona qui il token che lo traina."
+		"Crea un carro dal menu Master. Seleziona qui il token che lo traina."
 	)
 	column.add_child(notice)
 
@@ -168,7 +169,7 @@ func open_menu() -> void:
 	)
 	board._ui_owns_mouse = true
 	Input.mouse_mode = Input.MOUSE_MODE_VISIBLE
-	panel.popup_centered()
+	DialogLayout.popup(panel, Vector2i(560, 300))
 
 
 func _restore_mouse(force_capture: bool = false) -> void:

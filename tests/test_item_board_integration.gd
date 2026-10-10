@@ -10,16 +10,32 @@ func run() -> void:
 	await process_frame
 	await process_frame
 	var row: Node = board.get_node("UI/RuntimeToolbar").get_child(0)
-	var item_menu: MenuButton = null
-	var has_creatures := false
+	var master: MenuButton
 	for child: Node in row.get_children():
-		if child is MenuButton and child.text == "Item":
-			item_menu = child
-		if child is Button and child.text == "Creature":
-			has_creatures = true
-	assert(item_menu != null and item_menu.get_popup().item_count == 6,
-		"The runtime ribbon must expose all item actions")
-	assert(has_creatures, "The current ribbon must expose the creature archive")
+		if child is MenuButton:
+			assert(child.text != "Item", "Item actions must live under Master")
+			if child.text == "Master":
+				master = child
+	assert(master != null)
+	assert(master.get_popup().get_item_index(board.CONTEXT_ITEM_MANAGE) >= 0)
+	board._show_context_menu(Vector2(100, 100))
+	var master_context: PopupMenu = board.context_menu.get_node("ContextMasterMenu")
+	assert(master_context.get_item_index(board.CONTEXT_ITEM_CREATE) >= 0)
+	assert(board.context_game_menu.get_item_index(101) == -1, "Retired Add Creature action must be absent")
+	board._on_context_menu_id_pressed(board.CONTEXT_ITEM_MANAGE)
+	await process_frame
+	await process_frame
+	assert(board.item_controller.panel.visible and board._ui_owns_mouse)
+	assert(Input.mouse_mode == Input.MOUSE_MODE_VISIBLE)
+	board.item_controller.panel.hide()
+	board._on_context_menu_id_pressed(board.CONTEXT_ITEM_CREATE)
+	await process_frame
+	assert(board.item_controller.placing and Input.mouse_mode == Input.MOUSE_MODE_VISIBLE)
+	var cancel := InputEventKey.new()
+	cancel.keycode = KEY_ESCAPE
+	cancel.pressed = true
+	assert(board.item_controller.handle_event(cancel))
+	assert(not board.item_controller.placing)
 	var driver: CharacterBody3D = load("res://token.tscn").instantiate()
 	var rider: CharacterBody3D = load("res://token.tscn").instantiate()
 	board.tokens_root.add_child(driver)
@@ -53,6 +69,7 @@ func run() -> void:
 	# Item tilt remains supported; only creature-token tilt was removed.
 	board.item_controller.rotate_selected_vertical(1)
 	assert(is_equal_approx(rad_to_deg(cart.rotation.x), 30.0))
-	board.free()
+	board.queue_free()
+	await process_frame
 	print("PASS: real toolbar, group token nudge and item undo/redo")
 	quit()

@@ -27,13 +27,13 @@ TokenPackManager="*res://vtt/token_pack_manager.gd"
 window/stretch/mode="canvas_items"
 window/stretch/aspect="expand"
 
-[gui]
-
-theme/custom="res://vtt/ui/dnd5e_theme.tres"
-
 [editor_plugins]
 
 enabled=PackedStringArray("res://addons/godot_mcp/plugin.cfg")
+
+[gui]
+
+theme/custom="res://vtt/ui/dnd5e_theme.tres"
 
 [input]
 

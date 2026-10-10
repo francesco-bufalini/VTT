@@ -31,8 +31,6 @@ func run() -> void:
 	var area: Node = load("res://vtt/creature_area.gd").new()
 	board.add_child(area)
 	area.setup(board)
-	check(area._current_miniature.get_parent() != null and not area._current_miniature.visible,
-		"Hidden appearance caption must have a parent to be freed with the sheet")
 	area._archive.setup(campaign)
 	var full_stat := {"name": "Ape", "source": "MM", "hp": {"average": 19}, "ac": [12]}
 	for bonus: int in [0, 5]:

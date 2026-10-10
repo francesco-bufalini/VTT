@@ -1,6 +1,6 @@
 [gd_scene format=3 uid="uid://bdp3cjs2oeblw"]
 
-[ext_resource type="PackedScene" uid="uid://c2iuskp15jilc" path="res://dnd_base.tscn" id="1"]
+[ext_resource type="PackedScene" path="res://dnd_base.tscn" id="1"]
 [ext_resource type="Script" uid="uid://kx5r8vr4ddeb" path="res://encounter/final_encounter.gd" id="2"]
 [ext_resource type="Script" uid="uid://cfc6kt8njycfx" path="res://encounter/encounter_progress_controller.gd" id="3"]
 [ext_resource type="Script" uid="uid://bicdlnsd3w86e" path="res://encounter/kaos_controller.gd" id="4"]

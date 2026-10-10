@@ -1252,8 +1252,7 @@ static func _manual_spell(spell_id: String) -> Dictionary:
 		var generated: Dictionary = generated_value as Dictionary
 		# Visual/mechanical overrides can omit their source. Retain it so
 		# edition filtering and modern geometry lookup still identify them.
-		if String(result.get("source", "")).is_empty():
-			result["source"] = String(generated.get("source", ""))
+		result["source"] = String(generated.get("source", result.get("source", "")))
 		for field: String in ["classes", "condition_inflict", "saving_throw", "misc_tags"]:
 			var metadata: Variant = generated.get(field, [])
 			if metadata is Array:

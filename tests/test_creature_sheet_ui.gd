@@ -3,7 +3,7 @@ const Owner = preload("res://vtt/creature_owner.gd")
 const TokenScene = preload("res://token.tscn")
 
 class TestCampaign extends Node:
-	var selected_campaign_group_id := "creature_ui_regression"
+	var selected_campaign_group_id := "creature_ui_regression_" + str(Time.get_ticks_usec())
 	var active_campaign_id := ""
 class TestSync extends Node:
 	func get_sync_id_for_node(node: Node) -> String:
@@ -107,6 +107,7 @@ func run() -> void:
 	area._miniature_filter.text_changed.emit("Hero")
 	area._on_miniature_selected(0)
 	assert(not area._miniature_dialog.get_ok_button().disabled)
+	area._miniature_dialog.hide() # Native confirmation closes the window before emitting.
 	area._confirm_miniature()
 	area._miniature_dialog.hide()
 	assert(area._current().default_miniature_id == "hero_test", "Default miniature must be saved with the creature")
@@ -134,6 +135,7 @@ func run() -> void:
 	area._miniature_filter.text = "ape"
 	area._miniature_filter.text_changed.emit("ape")
 	area._on_miniature_selected(0)
+	area._miniature_dialog.hide() # Native confirmation closes the window before emitting.
 	area._confirm_miniature()
 	area._miniature_dialog.hide()
 	assert(area._current().current_miniature_id == "ape" and area._current().default_miniature_id == "hero_test",
@@ -168,9 +170,9 @@ func run() -> void:
 	assert(area._miniature_dialog.dialog_text.is_empty()
 		and area._automatic_dialog.dialog_text.is_empty(),
 		"Descriptions must not compete with popup custom controls")
-	assert(area._miniature_filter.get_parent().get_parent() == area._miniature_dialog)
-	assert(area._automatic_hp.get_parent().get_parent() == area._automatic_dialog,
-		"Godot 4 dialog content must use direct children, not nonexistent get_vbox()")
+	assert(area._miniature_dialog.is_ancestor_of(area._miniature_filter))
+	assert(area._automatic_dialog.is_ancestor_of(area._automatic_hp),
+		"Dialog content must remain inside its scrollable body and native footer")
 	var original_id: String = area._current().id
 	# Before any token exists, the + row action enters token placement.
 	area._act_on_creature_token(original_id)
@@ -200,8 +202,6 @@ func run() -> void:
 		"Armor class must be alongside temporary HP")
 	assert(area._party.get_parent() == area._name.get_parent(),
 		"Faction must be alongside character name")
-	assert(area._current_miniature.is_inside_tree() and not area._current_miniature.visible,
-		"No redundant current-appearance heading in appearance tab")
 	area._level.value = 5
 	area._save()
 	var sheet: Dictionary = area._current()

@@ -71,7 +71,7 @@ func _new_badge() -> Control:
 	portrait.name = "Portrait"
 	portrait.mouse_filter = Control.MOUSE_FILTER_IGNORE
 	portrait.expand_mode = TextureRect.EXPAND_IGNORE_SIZE
-	portrait.stretch_mode = TextureRect.STRETCH_KEEP_ASPECT_CENTERED
+	portrait.stretch_mode = TextureRect.STRETCH_SCALE
 	badge.add_child(portrait)
 
 	var name_label: Label = Label.new()
@@ -251,6 +251,27 @@ func _miniature_preview_texture(
 	return viewport.get_texture()
 
 
+# Size in screen pixels is computed from projected world-space grid cells.
+# No pixel clamps: zoom must never decouple a portrait from its footprint.
+# The separate axes also account for tilted orthographic 2D cameras.
+static func token_icon_extent_pixels(
+	view_camera: Camera3D,
+	world_center: Vector3,
+	footprint_world: float
+) -> Vector2:
+	var center: Vector2 = view_camera.unproject_position(world_center)
+	var projected_x: Vector2 = view_camera.unproject_position(
+		world_center + Vector3.RIGHT * footprint_world
+	)
+	var projected_z: Vector2 = view_camera.unproject_position(
+		world_center + Vector3.BACK * footprint_world
+	)
+	return Vector2(
+		maxf(center.distance_to(projected_x), 0.001),
+		maxf(center.distance_to(projected_z), 0.001)
+	)
+
+
 func _render_token_badge(token: CharacterBody3D, floor_y: float) -> void:
 	var token_key: int = token.get_instance_id()
 	var badge: Control = _badges.get(token_key) as Control
@@ -267,30 +288,29 @@ func _render_token_badge(token: CharacterBody3D, floor_y: float) -> void:
 		badge.hide()
 		return
 	var screen_position: Vector2 = camera.unproject_position(projected)
+	var footprint: float = 1.0
+	if token.has_method("get_footprint_cells"):
+		footprint = maxf(float(token.call("get_footprint_cells")), 1.0)
+	var icon_extent: Vector2 = token_icon_extent_pixels(
+		camera, projected, footprint * cell_size
+	)
 	var view_size: Vector2 = get_viewport().get_visible_rect().size
+	var half_extent: Vector2 = icon_extent * 0.5
 	if (
-		screen_position.x < -100.0
-		or screen_position.x > view_size.x + 100.0
-		or screen_position.y < -100.0
-		or screen_position.y > view_size.y + 100.0
+		screen_position.x + half_extent.x < 0.0
+		or screen_position.x - half_extent.x > view_size.x
+		or screen_position.y + half_extent.y < 0.0
+		or screen_position.y - half_extent.y > view_size.y
 	):
 		badge.hide()
 		return
 
 	badge.show()
-	var footprint: float = 1.0
-	if token.has_method("get_footprint_cells"):
-		footprint = maxf(float(token.call("get_footprint_cells")), 0.5)
-	var icon_size: float = clampf(
-		footprint * cell_size * view_size.y / maxf(camera.size, 0.01),
-		16.0,
-		180.0
-	)
-	badge.position = screen_position - Vector2.ONE * icon_size * 0.5
+	badge.position = screen_position - half_extent
 
 	var portrait: TextureRect = badge.get_node("Portrait") as TextureRect
 	portrait.position = Vector2.ZERO
-	portrait.size = Vector2.ONE * icon_size
+	portrait.size = icon_extent
 	var texture: Texture2D = null
 	if token.has_method("get_top_down_icon_texture"):
 		texture = token.call("get_top_down_icon_texture") as Texture2D
@@ -306,7 +326,7 @@ func _render_token_badge(token: CharacterBody3D, floor_y: float) -> void:
 
 	var selection: Panel = badge.get_node("SelectionRing") as Panel
 	selection.position = Vector2(-5.0, -5.0)
-	selection.size = Vector2.ONE * (icon_size + 10.0)
+	selection.size = icon_extent + Vector2.ONE * 10.0
 	selection.visible = (
 		token.has_method("is_selected")
 		and bool(token.call("is_selected"))
@@ -321,9 +341,9 @@ func _render_token_badge(token: CharacterBody3D, floor_y: float) -> void:
 		if not provided_name.is_empty():
 			display_name = provided_name
 	name_label.text = display_name
-	name_label.size = Vector2(maxf(icon_size * 2.0, 180.0), 30.0)
+	name_label.size = Vector2(maxf(icon_extent.x * 2.0, 180.0), 30.0)
 	name_label.position = Vector2(
-		(icon_size - name_label.size.x) * 0.5,
+		(icon_extent.x - name_label.size.x) * 0.5,
 		-57.0
 	)
 
@@ -334,7 +354,7 @@ func _render_token_badge(token: CharacterBody3D, floor_y: float) -> void:
 	# Flanked is a derived combat state, not a manual 5e condition.
 	if bool(token.get_meta("flanked", false)):
 		status_icons.append("⚔")
-		status_descriptions.append("Flanked")
+		status_descriptions.append("Affiancato")
 	# Use only condition icons in the tactical strip. Full names are much too
 	# wide at ordinary zoom and used to cover several squares of the map.
 	var show_manual_conditions: bool = true
@@ -364,7 +384,7 @@ func _render_token_badge(token: CharacterBody3D, floor_y: float) -> void:
 			status_text, HORIZONTAL_ALIGNMENT_LEFT, -1, 13
 		).x
 		var width_px: float = clampf(text_width + 12.0, 36.0, 176.0)
-		var offset_x: float = (icon_size - width_px) * 0.5
+		var offset_x: float = (icon_extent.x - width_px) * 0.5
 		status_background.position = Vector2(offset_x, -24.0)
 		status_background.size = Vector2(width_px, 20.0)
 		conditions_label.position = status_background.position
@@ -384,7 +404,7 @@ func _render_token_badge(token: CharacterBody3D, floor_y: float) -> void:
 	var height_label: Label = badge.get_node("Height") as Label
 	# Restore the small, unboxed elevation label used before. Its z-index
 	# protects it from the token on the right without covering character UI.
-	height_label.position = Vector2(icon_size - 2.0, icon_size * 0.28)
+	height_label.position = Vector2(icon_extent.x - 2.0, icon_extent.y * 0.28)
 	height_label.add_theme_font_size_override("font_size", 13)
 	height_label.text = _format_difference(delta)
 	height_label.visible = _difference_cells(delta) != 0
@@ -394,7 +414,7 @@ func _render_token_badge(token: CharacterBody3D, floor_y: float) -> void:
 	var forward_screen: Vector2 = camera.unproject_position(projected + projected_forward * cell_size) - screen_position
 	if forward_screen.length_squared() >= 1.0:
 		forward_screen = forward_screen.normalized()
-		facing.position = Vector2.ONE * icon_size * 0.5 + forward_screen * icon_size * 0.48
+		facing.position = icon_extent * 0.5 + forward_screen * icon_extent * 0.48
 		facing.rotation = forward_screen.angle() + PI * 0.5
 		facing.visible = true
 	else:
@@ -474,6 +494,7 @@ func _draw_engagement_segments(segments: Variant, mutual: bool) -> void:
 	if not segments is Array:
 		return
 	var points: Array = segments as Array
+	var floor_y: float = float(camera.call("get_top_down_level"))
 	var tint: Color = Color(0.40, 0.92, 0.72, 0.94) if mutual else Color(0.20, 0.82, 0.78, 0.88)
 	for index: int in range(0, points.size() - 1, 2):
 		if not points[index] is Vector3 or not points[index + 1] is Vector3:
@@ -482,8 +503,8 @@ func _draw_engagement_segments(segments: Variant, mutual: bool) -> void:
 		var end_world: Vector3 = points[index + 1]
 		# Project on the visible floor plane: the X/Z engagement geometry
 		# is unchanged and remains legible at any current slice elevation.
-		var screen_start: Vector2 = camera.unproject_position(start_world)
-		var screen_end: Vector2 = camera.unproject_position(end_world)
+		var screen_start: Vector2 = project_engagement_point(start_world, floor_y)
+		var screen_end: Vector2 = project_engagement_point(end_world, floor_y)
 		var delta: Vector2 = screen_end - screen_start
 		if delta.length_squared() < 16.0:
 			continue
@@ -501,6 +522,12 @@ func _draw_engagement_segments(segments: Variant, mutual: bool) -> void:
 				tip - toward * 11.0 + sideways * 5.0,
 				tip - toward * 11.0 - sideways * 5.0
 			]), tint)
+
+
+func project_engagement_point(point: Vector3, floor_y: float) -> Vector2:
+	# Token badges and reach arrows must share the visible floor even when
+	# the camera is tilted or the creatures occupy different elevations.
+	return camera.unproject_position(Vector3(point.x, floor_y, point.z))
 
 
 func _process(_delta: float) -> void:

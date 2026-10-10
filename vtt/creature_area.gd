@@ -91,7 +91,6 @@ var _pending_miniature_record: Dictionary = {}
 var _pending_new_creature := false
 var _picker_current := false
 var _chosen_miniature_id := ""
-var _current_miniature: Label
 var _tracker_rows: VBoxContainer
 var _traits_ui: Node
 var _condition_rows: VBoxContainer
@@ -652,12 +651,6 @@ func _build_ui() -> void:
 	choose_miniature.text = "Cerca e scegli…"
 	choose_miniature.pressed.connect(func() -> void: _choose_miniature(_current(), false))
 	miniature_row.add_child(choose_miniature)
-	_current_miniature = Label.new()
-	_current_miniature.text = "Aspetto attuale: nessun token"
-	# The current appearance is controlled by the action buttons below,
-	# so the redundant opening caption is intentionally not displayed.
-	_current_miniature.hide()
-	appearance_tab.add_child(_current_miniature)
 	var appearance_actions := HBoxContainer.new()
 	appearance_actions.add_theme_constant_override("separation", 8)
 	appearance_tab.add_child(appearance_actions)
@@ -1549,7 +1542,6 @@ func _load_form(record: Dictionary) -> void:
 	_level.editable = is_character
 	_refresh_conditions(record)
 	_refresh_reference(record)
-	_refresh_current_miniature(record)
 	_spellcasting_ui.call("load_record", record)
 	_inventory_ui.call("load_record", record)
 	_loading = false
@@ -1943,7 +1935,6 @@ func _set_current_miniature(miniature_id: String) -> void:
 		_set_status("Impossibile salvare l'aspetto attuale.")
 		return
 	_replace_current_record(record)
-	_refresh_current_miniature(record)
 	_apply_current_appearance(record)
 
 
@@ -2660,7 +2651,6 @@ func _link_selected_token() -> void:
 	if _archive.save(record) == OK:
 		_replace_current_record(record)
 		_sync_token_health(record)
-		_refresh_current_miniature(record)
 		_set_status("Creatura associata alla miniatura senza modificarne l'aspetto.")
 
 
@@ -2695,19 +2685,6 @@ func _miniature_display_name(miniature_id: String) -> String:
 				if raw is Dictionary and String(raw.get("id", "")) == miniature_id:
 					return String(raw.get("name", miniature_id))
 	return miniature_id
-
-
-func _refresh_current_miniature(record: Dictionary) -> void:
-	var current_id := String(record.get("current_miniature_id", ""))
-	if current_id.is_empty():
-		current_id = String(record.get("default_miniature_id", ""))
-	var token := find_linked_token_for_creature(String(record.get("id", "")))
-	_current_miniature.text = (
-		"Aspetto attuale: %s%s" % [
-			_miniature_display_name(current_id),
-			" · token in scena" if token != null else " · salvato per il prossimo token"
-		]
-	)
 
 
 func _find_linked_token(record: Dictionary) -> Node3D:
