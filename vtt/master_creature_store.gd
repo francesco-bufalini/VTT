@@ -128,6 +128,9 @@ func create_creature(stat_block: Dictionary, side: String) -> Dictionary:
 		"current_hp": hp,
 		"inventory": [],
 		"armor_class": CreatureRules.monster_armor_class(stat_block),
+		"speed": CreatureRules.walking_speed(stat_block.get("speed", 30)),
+		"speed_is_custom": false,
+		"initiative": CreatureRules.ability_modifier(int(stat_block.get("dex", 10))),
 		"abilities": CreatureRules.monster_abilities(stat_block),
 		"ability_bonuses": {"str": 0, "dex": 0, "con": 0, "int": 0, "wis": 0, "cha": 0},
 		"resource_tracker_spent": {},
@@ -233,6 +236,9 @@ func normalize_creature(value: Dictionary) -> Dictionary:
 		"party_id": String(value.get("party_id", "")),
 		"temporary_hp": maxi(0, int(value.get("temporary_hp", 0))),
 		"armor_class": maxi(0, int(value.get("armor_class", CreatureRules.monster_armor_class(stat_block)))),
+		"speed": maxi(0, int(value.get("speed", CreatureRules.walking_speed(stat_block.get("speed", 30))))),
+		"speed_is_custom": bool(value.get("speed_is_custom", false)),
+		"initiative": int(value.get("initiative", CreatureRules.ability_modifier(int(stat_block.get("dex", 10))))),
 		"abilities": _normalize_abilities(value.get("abilities", {}), stat_block),
 		"ability_bonuses": _normalize_ability_bonuses(value.get("ability_bonuses", {})),
 		"resource_tracker_spent": value.get("resource_tracker_spent", {}).duplicate(true) if value.get("resource_tracker_spent", {}) is Dictionary else {},
@@ -256,6 +262,8 @@ func normalize_creature(value: Dictionary) -> Dictionary:
 		"linked_token_name": String(value.get("linked_token_name", ""))
 	}
 	result["max_hp"] = maxi(0, int(result["max_hp_base"]) + int(result["max_hp_bonus"]))
+	if not bool(result["speed_is_custom"]):
+		result["speed"] = CreatureRules.walking_speed(stat_block.get("speed", 30))
 	# Rebuild the immutable monster base from the bestiary on every load,
 	# preserving any real class levels subsequently added by the user.
 	var extra_classes: Array = []
