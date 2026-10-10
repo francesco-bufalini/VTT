@@ -1001,13 +1001,13 @@ func _build_ui() -> void:
 	species_row.add_theme_constant_override("h_separation", 6)
 	identity_box.add_child(species_row)
 	_add_label(species_row, "Razza / Specie")
-	_species = _reference_option(species_row, RaceRules.base_races())
+	_species = _reference_option(species_row, RaceRules.base_races(), true, false)
 	_species.custom_minimum_size.x = 150
 	_species.item_selected.connect(func(_index: int) -> void: _on_species_changed())
 	_subrace_caption = Label.new()
 	_subrace_caption.text = "Sottorazza"
 	species_row.add_child(_subrace_caption)
-	_subrace_choice = _reference_option(species_row, [])
+	_subrace_choice = _reference_option(species_row, [], true, false)
 	_subrace_choice.custom_minimum_size.x = 135
 	_subrace_choice.tooltip_text = "Solo le sottorazze della razza selezionata, in base a raceName e raceSource."
 	_subrace_choice.item_selected.connect(func(_index: int) -> void: _on_subrace_changed())
@@ -1053,7 +1053,7 @@ func _build_ui() -> void:
 	classes_row.add_theme_constant_override("v_separation", 6)
 	classes_box.add_child(classes_row)
 	_add_label(classes_row, "Classe base")
-	_class_name = _reference_option(classes_row, Player5eTools.class_choices(), false)
+	_class_name = _reference_option(classes_row, Player5eTools.class_choices(), false, false)
 	_class_name.custom_minimum_size.x = 150
 	_class_name.size_flags_horizontal = Control.SIZE_SHRINK_BEGIN
 	_class_name.item_selected.connect(func(_i: int) -> void: _on_class_choice_changed())
@@ -1939,7 +1939,8 @@ func _info_panel(parent: VBoxContainer, section: String) -> VBoxContainer:
 
 
 func _reference_option(
-	parent: Node, choices: Array[Dictionary], show_source: bool = true
+	parent: Node, choices: Array[Dictionary], show_source: bool = true,
+	autosave: bool = true
 ) -> OptionButton:
 	var select := OptionButton.new()
 	select.fit_to_longest_item = false
@@ -1947,7 +1948,8 @@ func _reference_option(
 	select.custom_minimum_size = Vector2(150, 30)
 	select.size_flags_horizontal = Control.SIZE_EXPAND_FILL
 	_set_reference_choices(select, choices, show_source)
-	select.item_selected.connect(func(_i: int) -> void: _save())
+	if autosave:
+		select.item_selected.connect(func(_i: int) -> void: _save())
 	parent.add_child(select)
 	return select
 
@@ -2052,7 +2054,7 @@ func _add_multiclass_row(
 		return
 	var row := HBoxContainer.new()
 	_multiclass_rows.add_child(row)
-	var selector := _reference_option(row, Player5eTools.class_choices(_selected_rules_version()), false)
+	var selector := _reference_option(row, Player5eTools.class_choices(_selected_rules_version()), false, false)
 	_select_reference(selector, class_value, source, reference_id)
 	selector.item_selected.connect(func(_i: int) -> void: _on_secondary_class_changed(row))
 	var subclass := _reference_option(row, _subclass_choices(_reference_entry(selector)), false)
