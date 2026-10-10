@@ -105,6 +105,9 @@ static func _load_package(path: String) -> void:
 		data["category"] = category
 		data["source"] = String(entry.get("source", package_namespace))
 		data["origin"] = "homebrew"
+		# Keep the asset folder so a custom item's image can be
+		# stored beside the JSON file that defines it.
+		data["asset_dir"] = path.get_base_dir()
 		data["default_miniature_id"] = String(entry.get("default_miniature_id", data.get("default_miniature_id", "")))
 		data["overrides"] = String(entry.get("overrides", ""))
 		if category in EFFECT_CATEGORIES:
