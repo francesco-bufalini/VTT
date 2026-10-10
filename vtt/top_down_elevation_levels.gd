@@ -5,7 +5,7 @@ extends Node3D
 # World geometry may use different physics layers (imported structures,
 # collidable props, bridges). Exclude only transient spell AoEs; token
 # bodies are explicitly rejected by _is_map_surface().
-const MAP_MASK := 0xFFFFFFFF & ~(1 << 20)
+const MAP_MASK := 0xFFFFFFFF & ~((1 << 20) | 2)
 const MAX_RAY_HITS := 32
 const MAX_RAY_HEIGHT := 1500.0
 const MIN_RAY_HEIGHT := -1500.0
