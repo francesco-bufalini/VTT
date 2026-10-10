@@ -8,6 +8,8 @@ const Items = preload("res://vtt/creature_item_rules.gd")
 const Traits = preload("res://vtt/creature_traits_tab.gd")
 const Skills = preload("res://vtt/creature_skills_5etools.gd")
 const ABILITIES := ["str", "dex", "con", "int", "wis", "cha"]
+static var _cached_signature := ""
+static var _cached_results: Array[Dictionary] = []
 
 
 static func _field(entry: Dictionary, snake: String, camel: String = "") -> Variant:
@@ -156,6 +158,16 @@ static func _catalog_origins(result: Array[Dictionary], record: Dictionary) -> v
 
 
 static func derive(record: Dictionary) -> Array[Dictionary]:
+	# Avoid repeating catalog scans for every formula, saving throw or attack.
+	var signature: String = JSON.stringify({
+		"species": record.get("species", ""), "species_source": record.get("species_source", ""),
+		"background": record.get("background", ""), "background_source": record.get("background_source", ""),
+		"feats_catalog": record.get("feats_catalog", []), "classes": record.get("classes", []),
+		"level": record.get("level", 1), "kind": record.get("kind", ""),
+		"inventory": record.get("inventory", []), "stat_block": record.get("stat_block", {})
+	})
+	if signature == _cached_signature:
+		return _cached_results.duplicate(true)
 	var result: Array[Dictionary] = []
 	_item_grants(result, record)
 	_catalog_origins(result, record)
@@ -171,4 +183,6 @@ static func derive(record: Dictionary) -> Array[Dictionary]:
 			if grant is Dictionary:
 				_add(result, sid, label, "bonuses", String(grant.get("target", "")),
 					grant.get("expression", ""), "|" + String(grant.get("target", "")))
+	_cached_signature = signature
+	_cached_results = result.duplicate(true)
 	return result
