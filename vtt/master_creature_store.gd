@@ -239,6 +239,7 @@ func normalize_creature(value: Dictionary) -> Dictionary:
 		"attack_ability": "dex" if String(value.get("attack_ability", "str")) == "dex" else "str",
 		"attack_overrides": value.get("attack_overrides", {}).duplicate(true) if value.get("attack_overrides", {}) is Dictionary else {},
 		"proficiency_choices": Proficiencies.choices(value),
+		"proficiency_origins": Proficiencies.origins(value),
 		"saving_throw_proficiencies": value.get("saving_throw_proficiencies", []).duplicate(true) if value.get("saving_throw_proficiencies", []) is Array else [],
 		"skill_proficiencies": value.get("skill_proficiencies", []).duplicate(true) if value.get("skill_proficiencies", []) is Array else [],
 		"skill_expertise": value.get("skill_expertise", []).duplicate(true) if value.get("skill_expertise", []) is Array else [],
@@ -451,4 +452,5 @@ func _safe_id(value: String) -> String:
 			result += character
 		else:
 			result += "_"
+	Proficiencies.sync_legacy_fields(result, Proficiencies.choices(result))
 	return result
