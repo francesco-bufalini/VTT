@@ -87,6 +87,10 @@ func run() -> void:
 		if String(source.get("id", "")) == "class|phb|barbarian":
 			barbarian_start = source
 	assert(not barbarian_start.is_empty(), "Starting Barbarian automatically appears among sources")
+	var armor_quests: Array[Dictionary] = Proficiencies.choice_requirements(barbarian_start)
+	for request: Dictionary in armor_quests:
+		assert(String(request.get("kind", "")) != "armor",
+			"Fixed Barbarian armor proficiency must not create phantom choose requirements")
 	var barbarian_rows: Array[Dictionary] = Proficiencies.choices(barbarian)
 	for key: String in ["simple", "martial"]:
 		assert(Proficiencies.has_choice(barbarian_rows, "weapon", key), "Barbarian starting weapon proficiencies")
@@ -128,11 +132,21 @@ func run() -> void:
 		for mode: String in ["starting", "multiclass"]:
 			var candidate: Dictionary = {"group": "class", "data": indexed_class, "mode": mode}
 			var description: String = Proficiencies.starting_description(candidate)
-			assert("Core Traits" in description,
-				"Every bundled Starting class description must render without type errors")
+			assert(("Core Traits" if mode == "starting" else "Multiclassing") in description,
+				"Every bundled class summary must match its mode and render without type errors")
 			Proficiencies.fixed_grants(candidate)
 		class_count += 1
 	assert(class_count >= 20, "Both PHB 2014 and PHB 2024 structured classes should be covered")
+	var specific: Array[Dictionary] = Proficiencies.fixed_grants({
+		"group": "class", "mode": "starting",
+		"data": {"startingProficiencies": {
+			"weapons": ["simple", "{@item rapier|PHB|rapiers}"],
+			"toolProficiencies": [{"thieves' tools": true}]
+		}}
+	})
+	assert(Proficiencies.has_choice(specific, "weapon", "rapier")
+		and Proficiencies.has_choice(specific, "tool", "thieves' tools"),
+		"Individual weapon and tool proficiencies from structured data remain visible")
 	var starting_trait_found := false
 	for feature_entry: Dictionary in Traits.collect_features(barbarian):
 		if String(feature_entry.get("name", "")) == "Starting Barbarian" and int(feature_entry.get("level", 0)) == 1:
@@ -145,6 +159,12 @@ func run() -> void:
 		{"name": "Bard", "source": "PHB", "level": 1},
 		{"name": "Barbarian", "source": "PHB", "level": 1}
 	]
+	var secondary_features: Array[Dictionary] = Traits.collect_features(secondary)
+	var multiclass_found := false
+	for feature_entry: Dictionary in secondary_features:
+		if String(feature_entry.get("name", "")) == "Multiclass Barbarian":
+			multiclass_found = not ("Starting Equipment" in String(feature_entry.get("entries", "")))
+	assert(multiclass_found, "Secondary classes show Multiclass rather than Starting and omit starting equipment")
 	var multiclass_rows: Array[Dictionary] = Proficiencies.choices(secondary)
 	var barbarian_armor: Array[String] = []
 	for row: Dictionary in multiclass_rows:
@@ -217,6 +237,17 @@ func run() -> void:
 	tab._select_origin("class|phb|fighter")
 	assert(tab._selected_id == "~none~", "Clicking the same origin clears the highlight")
 	tab._select_origin("class|phb|fighter")
+	assert("Hit Point Die" in tab._origin_description(tab._selected_source_record()),
+		"Source hover includes the original class overview description")
+	tab._kind_picker.select(2)
+	tab._refresh_proficiency_picker()
+	var restricted: Array[String] = Proficiencies.restricted_choices(tab._selected_source_record(), "skill")
+	assert("athletics" in restricted and "arcana" not in restricted,
+		"Fighter choices are limited to the structured skill list")
+	tab._proficiency_name.text = "arcana"
+	var count_before: int = tab._rows.size()
+	tab._add_competence()
+	assert(tab._rows.size() == count_before, "Cannot add an unlisted skill from this source")
 	tab._kind_picker.select(0)
 	tab._proficiency_name.text = "longsword"
 	tab._add_competence()
@@ -231,6 +262,14 @@ func run() -> void:
 	last = tab._rows.size() - 1
 	tab._set_expertise(true, last)
 	assert(Proficiencies.has_choice(tab._rows, "expertise", "perception"), "Switch upgrades a skill to expertise")
+	# The same competence is shown once even if different sources grant it.
+	tab._rows.append({"kind": "tool", "key": "thieves' tools", "origin_id": "custom|a", "disabled": false})
+	tab._refresh_competences()
+	var before_duplicate: int = tab._proficiency_cards.get_child_count()
+	tab._rows.append({"kind": "tool", "key": "thieves' tools", "origin_id": "custom|b", "disabled": false})
+	tab._refresh_competences()
+	assert(tab._proficiency_cards.get_child_count() == before_duplicate,
+		"Duplicate grants from different origins appear once in the UI")
 	tab._toggle_origin(false, "class|phb|fighter")
 	assert(not Proficiencies.has_proficiency(tab._effective_record(), "weapon", "martial"),
 		"Disabling a source suppresses all its linked proficiencies")
