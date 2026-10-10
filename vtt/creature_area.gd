@@ -22,6 +22,7 @@ const ProficiencyRules = preload("res://vtt/creature_proficiency_rules.gd")
 const ProficiencyTab = preload("res://vtt/creature_proficiencies_tab.gd")
 const ItemRules = preload("res://vtt/creature_item_rules.gd")
 const DocumentInbox = preload("res://vtt/document_inbox.gd")
+const DocumentStore = preload("res://vtt/document_homebrew.gd")
 
 var board_root: Node3D
 var _archive
@@ -2498,6 +2499,25 @@ func _on_inventory_updated(inventory: Array) -> void:
 	if record.is_empty():
 		return
 	record["inventory"] = inventory.duplicate(true)
+	# Delete the legacy documents array only after each entry is in inventory
+	# and its definition has been written to the homebrew directory.
+	var legacy: Variant = record.get("documents", [])
+	if legacy is Array:
+		var all_migrated := true
+		for raw: Variant in legacy:
+			if not raw is Dictionary:
+				continue
+			var target_id: String = DocumentStore.legacy_id(raw as Dictionary)
+			var found := false
+			for item: Variant in inventory:
+				if item is Dictionary and String((item as Dictionary).get("id", "")) == target_id:
+					found = true
+					break
+			if not found:
+				all_migrated = false
+				break
+		if all_migrated:
+			record.erase("documents")
 	record["armor_class"] = maxi(0, int(record.get("armor_class_base", 10)) + int(record.get("armor_class_bonus", 0)) + ItemRules.shield_bonus(inventory))
 	record["reach_feet"] = AttackData.first_melee_range(record)
 	if String(record.get("kind", "")) == "monster":
