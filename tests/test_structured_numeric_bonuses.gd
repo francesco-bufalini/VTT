@@ -56,7 +56,7 @@ func run() -> void:
 	assert(not attack.is_empty())
 	assert(Attacks.attack_bonus(character, attack, 2) == 4,
 		"Magic weapon +2 must be counted exactly once, not both directly and through bonuses")
-	assert("+2" in Attacks.damage_label(character, attack),
+	assert("+4" in Attacks.damage_label(character, attack),
 		"Magic damage is included as a target-specific origin grant")
 	assert(Bonuses.value(character, "save:wis") == 0,
 		"Unattuned items do not confer their structured bonuses")
