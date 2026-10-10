@@ -360,6 +360,85 @@ func run() -> void:
 	tab._toggle_origin(false, "class|phb|fighter")
 	assert(not Proficiencies.has_proficiency(tab._effective_record(), "weapon", "martial"),
 		"Disabling a source suppresses all its linked proficiencies")
+	# A 5etools background can require a language and an artisan tool.
+	# Both must be reachable in the same dialog, and opening again should
+	# focus the first incomplete category rather than always the language.
+	var dual_choice_record: Dictionary = _record()
+	dual_choice_record["background"] = "Guild Artisan"
+	dual_choice_record["background_source"] = "PHB"
+	tab.load_record(dual_choice_record)
+	tab._open_missing_choices("background|phb|guild artisan")
+	var tool_choice: Dictionary = {}
+	var language_choice: Dictionary = {}
+	for choice: Dictionary in tab._choice_groups:
+		if String(choice.get("kind", "")) == "tool":
+			tool_choice = choice
+		if String(choice.get("kind", "")) == "language":
+			language_choice = choice
+	assert(not tool_choice.is_empty() and not language_choice.is_empty(),
+		"Guild Artisan must expose tool and language as separate selectable groups")
+	assert(not (tool_choice.get("boxes") as Array).is_empty(),
+		"Artisan tool choice must work even without a complete player tool catalog")
+	var tool_group_index: int = int(tool_choice.get("index", -1))
+	var language_group_index: int = int(language_choice.get("index", -1))
+	tab._show_choice_group(tool_group_index)
+	assert((tool_choice.get("panel") as VBoxContainer).visible
+		and not (language_choice.get("panel") as VBoxContainer).visible,
+		"Tool group must become visible when chosen in the popup")
+	tab._show_choice_group(language_group_index)
+	assert((language_choice.get("panel") as VBoxContainer).visible,
+		"Language choices must still be reachable afterwards")
+	var tool_option: Dictionary = (tool_choice.get("boxes") as Array)[0]
+	(tool_option.get("check") as CheckBox).set_pressed_no_signal(true)
+	tab._refresh_choice_limit(tool_choice)
+	if not (language_choice.get("boxes") as Array).is_empty():
+		var language_option: Dictionary = (language_choice.get("boxes") as Array)[0]
+		(language_option.get("check") as CheckBox).set_pressed_no_signal(true)
+		tab._refresh_choice_limit(language_choice)
+	tab._apply_choice_dialog()
+	tab._choice_dialog.hide()
+	assert(Proficiencies.has_proficiency(tab._effective_record(), "tool", String(tool_option.get("key", ""))),
+		"Confirming the dialog must persist the selected artisan tool")
+	tab._open_missing_choices("background|phb|guild artisan")
+	assert(tab._choice_selector.selected == language_group_index
+		if (language_choice.get("boxes") as Array).is_empty()
+		else tab._choice_selector.selected == tool_group_index or tab._choice_selector.selected == language_group_index,
+		"Reopening multi-type choice dialog must show a valid available category")
+	tab._choice_dialog.hide()
+	tab.load_record(record)
+	var illuminated_record: Dictionary = record.duplicate(true)
+	illuminated_record["proficiency_origins"] = [
+		{"id": "custom|light", "name": "Luce", "group": "custom", "disabled": false}
+	]
+	illuminated_record["proficiency_choices"] = [
+		{"kind": "skill", "key": "nature", "origin_id": "custom|light", "disabled": false}
+	]
+	tab.load_record(illuminated_record)
+	tab._select_origin("class|phb|fighter")
+	var light_card: PanelContainer = null
+	for node: Node in tab._proficiency_cards.get_children():
+		if not node is PanelContainer:
+			continue
+		for row_node: Node in node.get_children():
+			if row_node is HBoxContainer:
+				for entry_node: Node in row_node.get_children():
+					if entry_node is Label and String((entry_node as Label).text).contains("nature"):
+						light_card = node as PanelContainer
+	assert(light_card != null and light_card.has_theme_stylebox_override("panel"),
+		"Other-source active skills must remain illuminated while a different origin is selected")
+	tab._select_origin("class|phb|fighter")
+	assert(light_card != null, "Previously selected source can be deselected")
+	var nature_outline := false
+	for node: Node in tab._proficiency_cards.get_children():
+		if not node is PanelContainer or not (node as PanelContainer).has_theme_stylebox_override("panel"):
+			continue
+		for row_node: Node in node.get_children():
+			if row_node is HBoxContainer:
+				for entry_node: Node in row_node.get_children():
+					if entry_node is Label and String((entry_node as Label).text).contains("nature"):
+						nature_outline = true
+	assert(nature_outline, "Skills must remain lit after deselecting the focused origin")
+	tab.load_record(record)
 	# The missing-choice warning is a separate, clickable control rather
 	# than a clipped glyph at the start of a long origin name.
 	tab.load_record(record)
