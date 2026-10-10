@@ -1763,7 +1763,15 @@ func _load_form(record: Dictionary) -> void:
 	_temp_hp.value = int(record.get("temporary_hp", 0))
 	_second_form_max_hp.value = int(record.get("second_form_max_hp", record.get("second_form_hp", 0)))
 	_second_form_hp.value = int(record.get("second_form_hp", 0))
-	_biography.text = String(record.get("background_personality", ""))
+	var biography: String = String(record.get("background_personality", ""))
+	if biography.strip_edges().is_empty():
+		var legacy_parts: PackedStringArray = []
+		for field: String in ["background", "personality_traits", "ideals", "bonds", "flaws"]:
+			var value: String = String(record.get(field, "")).strip_edges()
+			if not value.is_empty():
+				legacy_parts.append(field.capitalize().replace("_", " ") + ": " + value)
+		biography = "\n\n".join(legacy_parts)
+	_biography.text = biography
 	_ac.value = int(record.get("armor_class", 10))
 	_initiative.value = int(record.get("initiative", 0))
 	var abilities_value: Variant = record.get("abilities", {})
