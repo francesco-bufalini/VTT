@@ -261,7 +261,7 @@ func _filter_catalog() -> void:
 		if not query.is_empty() and query not in haystack:
 			continue
 		if selected_category == "Oggetti magici":
-			if not String(item.get("id", "")).begins_with("magic_item:") and String(item.get("origin", "")) != "homebrew":
+			if not String(item.get("id", "")).begins_with("magic_item:") and not bool(item.get("magic", false)):
 				continue
 		elif selected_category != "Tutti" and ItemRules.category_name(item) != selected_category:
 			continue
