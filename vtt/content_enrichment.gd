@@ -5,7 +5,7 @@ extends RefCounted
 const BUNDLED_DIR := "res://vtt/enrichment"
 const USER_DIR := "user://vtt_enrichment"
 const MAX_FILE_BYTES := 2 * 1024 * 1024
-const CATEGORIES := ["spells", "monsters", "items", "races", "classes", "subclasses", "subclass_features", "class_features", "species_traits", "feats", "backgrounds", "optional_features", "conditions", "diseases", "effects"]
+const CATEGORIES := ["spells", "monsters", "items", "documents", "races", "classes", "subclasses", "subclass_features", "class_features", "species_traits", "feats", "backgrounds", "optional_features", "conditions", "diseases", "effects"]
 const PROTECTED_FIELDS := ["id", "name", "source", "category", "origin", "asset_dir", "overrides", "quantity", "equipped_slots", "inventory", "hp_current", "current_hp", "owner_id", "instance_overrides"]
 
 static var _loaded := false
