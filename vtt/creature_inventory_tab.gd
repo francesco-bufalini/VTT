@@ -17,6 +17,7 @@ var _filtered: Array[Dictionary] = []
 var _inventory: Array[Dictionary] = []
 var _loading: bool = false
 var _rules_version := "2014"
+var _loaded_creature_id := ""
 
 var _category_filter: OptionButton
 var _rarity_filter: OptionButton
@@ -320,6 +321,7 @@ func reload_catalog() -> void:
 
 
 func load_record(record: Dictionary) -> void:
+	_loaded_creature_id = String(record.get("id", ""))
 	var edition := String(record.get("rules_version", "2014"))
 	if edition != _rules_version:
 		_rules_version = edition
@@ -369,7 +371,7 @@ func load_record(record: Dictionary) -> void:
 		reload_catalog()
 		# CreatureArea is still loading the sheet here; publishing synchronously
 		# would be ignored by its _loading guard.
-		call_deferred("_publish")
+		call_deferred("_publish_migration", _loaded_creature_id)
 
 
 func _catalog_entry(item: Dictionary) -> Dictionary:
@@ -848,6 +850,11 @@ func _unequip_selected() -> void:
 	_inventory[index]["equipped_slots"] = []
 	_refresh_inventory(index)
 	_publish()
+
+
+func _publish_migration(expected_creature_id: String) -> void:
+	if _loaded_creature_id == expected_creature_id:
+		_publish()
 
 
 func _publish() -> void:
