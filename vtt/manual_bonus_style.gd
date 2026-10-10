@@ -26,3 +26,16 @@ static func decorate(spin: SpinBox) -> void:
 	field.add_theme_color_override("font_color", Color(1.0, 0.88, 0.63))
 	field.add_theme_color_override("font_selected_color", Color(0.1, 0.1, 0.1))
 	field.add_theme_font_size_override("font_size", 13)
+
+
+# Shared formula typography: the parenthesis glyph and each SpinBox
+# occupy the same 36 px high visual row, even in wrapping containers.
+static func add_formula_label(parent: Node, value: String) -> Label:
+	var label := Label.new()
+	label.text = value
+	label.custom_minimum_size.y = 36.0
+	label.vertical_alignment = VERTICAL_ALIGNMENT_CENTER
+	label.size_flags_vertical = Control.SIZE_SHRINK_CENTER
+	label.add_theme_font_size_override("font_size", 30 if value in ["(", ")"] else 18)
+	parent.add_child(label)
+	return label

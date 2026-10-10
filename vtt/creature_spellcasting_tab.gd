@@ -105,6 +105,7 @@ func setup(on_change: Callable, on_status: Callable) -> void:
 	_available.custom_minimum_size = Vector2(0, 160)
 	_available.size_flags_horizontal = Control.SIZE_EXPAND_FILL
 	_available.item_selected.connect(func(_index: int) -> void: _on_spell_list_selected("catalog"))
+	_available.gui_input.connect(_on_spell_list_gui_input.bind("catalog"))
 	_available.item_activated.connect(func(_index: int) -> void: _toggle_selected_prepared())
 	add_child(_available)
 	# Keep the library and chosen spells together; there is only one action
@@ -151,6 +152,7 @@ func setup(on_change: Callable, on_status: Callable) -> void:
 	_known_list.size_flags_horizontal = Control.SIZE_EXPAND_FILL
 	_known_list.size_flags_vertical = Control.SIZE_EXPAND_FILL
 	_known_list.item_selected.connect(_on_known_spell_selected)
+	_known_list.gui_input.connect(_on_spell_list_gui_input.bind("known"))
 	_known_list.item_activated.connect(
 		func(_index: int) -> void:
 			if not _editing_spellbook:
@@ -181,6 +183,7 @@ func setup(on_change: Callable, on_status: Callable) -> void:
 	_prepared_list.size_flags_horizontal = Control.SIZE_EXPAND_FILL
 	_prepared_list.size_flags_vertical = Control.SIZE_EXPAND_FILL
 	_prepared_list.item_selected.connect(func(_index: int) -> void: _on_spell_list_selected("prepared"))
+	_prepared_list.gui_input.connect(_on_spell_list_gui_input.bind("prepared"))
 	prepared_col.add_child(_prepared_list)
 	_prepared_list.item_activated.connect(func(_index: int) -> void: _toggle_selected_prepared())
 
@@ -243,11 +246,11 @@ func setup(on_change: Callable, on_status: Callable) -> void:
 	_slots_eye.pressed.connect(_toggle_slots_visibility)
 	slot_title.add_child(_slots_eye)
 	_slot_grid = GridContainer.new()
-	_slot_grid.columns = 6
+	_slot_grid.columns = 5
 	_slot_grid.add_theme_constant_override("h_separation", 6)
 	_slot_grid.add_theme_constant_override("v_separation", 5)
 	add_child(_slot_grid)
-	for label_text: String in ["Liv.", "Max", "Di cui bonus", "Rimasti / max", "Usa", "Ricarica"]:
+	for label_text: String in ["Liv.", "Massimi", "Rimasti / max", "Usa", "Ricarica"]:
 		var header := Label.new()
 		header.text = label_text
 		_slot_grid.add_child(header)
@@ -255,25 +258,35 @@ func setup(on_change: Callable, on_status: Callable) -> void:
 		var caption := Label.new()
 		caption.text = "%d°" % lvl
 		_slot_grid.add_child(caption)
+		var max_formula := HBoxContainer.new()
+		max_formula.add_theme_constant_override("separation", 3)
+		_slot_grid.add_child(max_formula)
+		var effective_label := Label.new()
+		effective_label.custom_minimum_size.x = 25
+		max_formula.add_child(effective_label)
+		_slot_formula_labels[lvl] = effective_label
+		ManualBonus.add_formula_label(max_formula, "=")
+		ManualBonus.add_formula_label(max_formula, "(")
 		var total := SpinBox.new()
 		total.min_value = 0
 		total.max_value = 99
 		total.rounded = true
 		total.update_on_text_changed = true
-		total.custom_minimum_size.x = 62
+		total.custom_minimum_size = Vector2(62, 36)
 		total.value_changed.connect(_on_slot_total_changed.bind(lvl))
-		_slot_grid.add_child(total)
+		max_formula.add_child(total)
 		_slot_totals[lvl] = total
 		var bonus := SpinBox.new()
 		bonus.min_value = -99
 		bonus.max_value = 99
 		bonus.step = 1
 		bonus.rounded = true
-		bonus.custom_minimum_size.x = 62
+		bonus.custom_minimum_size = Vector2(62, 36)
 		bonus.tooltip_text = "Bonus manuale agli slot massimi: aggiunto al massimo base"
 		ManualBonus.decorate(bonus)
 		bonus.value_changed.connect(_on_slot_bonus_changed.bind(lvl))
-		_slot_grid.add_child(bonus)
+		max_formula.add_child(bonus)
+		ManualBonus.add_formula_label(max_formula, ")")
 		_slot_bonus_controls[lvl] = bonus
 		var remaining_group := VBoxContainer.new()
 		_slot_grid.add_child(remaining_group)
@@ -281,11 +294,6 @@ func setup(on_change: Callable, on_status: Callable) -> void:
 		remaining.custom_minimum_size.x = 65
 		remaining_group.add_child(remaining)
 		_remaining_labels[lvl] = remaining
-		var formula := Label.new()
-		formula.add_theme_font_size_override("font_size", 12)
-		formula.add_theme_color_override("font_color", Color(0.86, 0.76, 0.61))
-		remaining_group.add_child(formula)
-		_slot_formula_labels[lvl] = formula
 		var use := Button.new()
 		use.text = "−"
 		use.tooltip_text = "Consuma uno slot di livello %d" % lvl
@@ -327,37 +335,36 @@ func setup(on_change: Callable, on_status: Callable) -> void:
 	_pact_level_spin.value_changed.connect(_on_pact_values_changed)
 	level_group.add_child(_pact_level_spin)
 	var total_group := HBoxContainer.new()
+	total_group.add_theme_constant_override("separation", 3)
 	_pact_row.add_child(total_group)
 	var total_label := Label.new()
-	total_label.text = "Base"
+	total_label.text = "Max"
 	total_group.add_child(total_label)
+	_pact_formula = Label.new()
+	_pact_formula.custom_minimum_size.x = 25
+	total_group.add_child(_pact_formula)
+	ManualBonus.add_formula_label(total_group, "=")
+	ManualBonus.add_formula_label(total_group, "(")
 	_pact_total_spin = SpinBox.new()
 	_pact_total_spin.min_value = 0
 	_pact_total_spin.max_value = 8
 	_pact_total_spin.update_on_text_changed = true
-	_pact_total_spin.custom_minimum_size.x = 54
+	_pact_total_spin.custom_minimum_size = Vector2(54, 36)
 	_pact_total_spin.value_changed.connect(_on_pact_values_changed)
 	total_group.add_child(_pact_total_spin)
-	var bonus_group := HBoxContainer.new()
-	_pact_row.add_child(bonus_group)
-	var bonus_label := Label.new()
-	bonus_label.text = "Di cui bonus"
-	bonus_group.add_child(bonus_label)
 	_pact_bonus_spin = SpinBox.new()
 	_pact_bonus_spin.min_value = -8
 	_pact_bonus_spin.max_value = 20
 	_pact_bonus_spin.step = 1
-	_pact_bonus_spin.custom_minimum_size.x = 54
+	_pact_bonus_spin.custom_minimum_size = Vector2(54, 36)
 	_pact_bonus_spin.tooltip_text = "Bonus manuale agli slot massimi della Magia del Patto"
 	ManualBonus.decorate(_pact_bonus_spin)
 	_pact_bonus_spin.value_changed.connect(_on_pact_values_changed)
-	bonus_group.add_child(_pact_bonus_spin)
+	total_group.add_child(_pact_bonus_spin)
+	ManualBonus.add_formula_label(total_group, ")")
 	_pact_remain = Label.new()
 	_pact_remain.custom_minimum_size.x = 64
 	_pact_row.add_child(_pact_remain)
-	_pact_formula = Label.new()
-	_pact_formula.add_theme_font_size_override("font_size", 12)
-	_pact_row.add_child(_pact_formula)
 	_pact_use = Button.new()
 	_pact_use.text = "Usa"
 	_pact_use.pressed.connect(_change_pact.bind(1))
@@ -381,7 +388,10 @@ func _set_search_visible(show: bool) -> void:
 	_search_toggle.tooltip_text = (
 		"Nascondi ricerca incantesimi" if show else "Mostra ricerca incantesimi"
 	)
-	if show and is_inside_tree():
+	if not show:
+		_available.deselect_all()
+		_update_spell_controls()
+	elif is_inside_tree():
 		_search.grab_focus()
 
 
@@ -605,6 +615,39 @@ func _filter_spells() -> void:
 	_update_spell_controls()
 
 
+func _on_spell_list_gui_input(event: InputEvent, origin: String) -> void:
+	var click: InputEventMouseButton = event as InputEventMouseButton
+	if click == null or not click.pressed or click.double_click or click.button_index != MOUSE_BUTTON_LEFT:
+		return
+	var list: ItemList = _list_for_origin(origin)
+	if list == null:
+		return
+	var index: int = list.get_item_at_position(click.position, true)
+	if index >= 0 and list.is_selected(index):
+		# ItemList does not emit item_selected for a repeated click. Defer
+		# deselection until its built-in click processing has finished.
+		call_deferred("_deselect_spell_item", origin, index)
+
+
+func _list_for_origin(origin: String) -> ItemList:
+	match origin:
+		"catalog":
+			return _available
+		"known":
+			return _known_list
+		"prepared":
+			return _prepared_list
+	return null
+
+
+func _deselect_spell_item(origin: String, index: int) -> void:
+	var list: ItemList = _list_for_origin(origin)
+	if list == null or index < 0 or index >= list.item_count or not list.is_selected(index):
+		return
+	list.deselect(index)
+	_update_spell_controls()
+
+
 func _on_spell_list_selected(origin: String) -> void:
 	# Only one source drives Prepara/Dimentica. Otherwise a stale search
 	# selection wins over a newly clicked known or prepared entry.
@@ -639,10 +682,32 @@ func _selected_spell() -> Dictionary:
 		return _visible[available_selected[0]]
 	var known_selected: PackedInt32Array = _known_list.get_selected_items()
 	if not known_selected.is_empty() and known_selected[0] < _displayed_known.size():
-		return _spell_by_id(_entry_id(_displayed_known[known_selected[0]]))
+		return _spell_detail(_displayed_known[known_selected[0]])
 	var prepared_selected: PackedInt32Array = _prepared_list.get_selected_items()
 	if not prepared_selected.is_empty() and prepared_selected[0] < _prepared.size():
-		return _spell_by_id(_entry_id(_prepared[prepared_selected[0]]))
+		return _spell_detail(_prepared[prepared_selected[0]])
+	return {}
+
+
+func _spell_detail(entry: Variant) -> Dictionary:
+	var id: String = _entry_id(entry)
+	var found: Dictionary = _spell_by_id(id)
+	if not found.is_empty():
+		return found
+	# Class entries often carry their whole description; imported/homebrew
+	# entries may use an alternative catalogue identifier.
+	for candidate: Dictionary in _catalog:
+		if String(candidate.get("id", "")) == id:
+			return candidate
+	if entry is Dictionary:
+		var saved: Dictionary = entry as Dictionary
+		for candidate: Dictionary in _catalog:
+			if (
+				String(candidate.get("name", "")).nocasecmp_to(String(saved.get("name", ""))) == 0
+				and String(candidate.get("source", "")) == String(saved.get("source", ""))
+			):
+				return candidate
+		return saved
 	return {}
 
 
@@ -661,12 +726,18 @@ func _update_spell_controls() -> void:
 		_description.clear()
 		_description.hide()
 		return
+	var body: String = String(spell.get("description", "")).strip_edges()
+	if body.is_empty():
+		body = "Descrizione non disponibile nel catalogo."
+	var higher_levels: String = String(spell.get("higher_levels", "")).strip_edges()
+	if not higher_levels.is_empty():
+		body += "\n\n" + higher_levels
 	_description.show()
-	_description.text = "%s · livello %d · %s\nGittata: %s · Componenti: %s\nDurata: %s\n%s" % [
+	_description.text = "%s · livello %d · %s\nGittata: %s · Componenti: %s\nDurata: %s\n\n%s" % [
 		String(spell.get("name", id)), int(spell.get("level", 0)),
 		String(spell.get("source", "")), String(spell.get("range", "—")),
 		String(spell.get("components", "—")),
-		String(spell.get("duration", "—")), String(spell.get("description", ""))
+		String(spell.get("duration", "—")), body
 	]
 
 
@@ -690,6 +761,9 @@ func _toggle_selected_prepared() -> void:
 
 
 func _refresh_saved_spell_lists() -> void:
+	# Rebuilding ItemList otherwise clears the chosen row and its description.
+	var known_id: String = _selected_list_id(_known_list, _displayed_known)
+	var prepared_id: String = _selected_list_id(_prepared_list, _prepared)
 	_known_list.clear()
 	_prepared_list.clear()
 	_displayed_known = _spellbook.duplicate(true) if _show_spellbook else _known.duplicate(true)
@@ -702,8 +776,26 @@ func _refresh_saved_spell_lists() -> void:
 		_known_list.add_item(prefix + _spell_label(item))
 	for item: Variant in _prepared:
 		_prepared_list.add_item(_spell_label(item))
+	_restore_list_selection(_known_list, _displayed_known, known_id)
+	_restore_list_selection(_prepared_list, _prepared, prepared_id)
 	_update_book_menu()
 	_update_spell_controls()
+
+
+func _selected_list_id(list: ItemList, entries: Array) -> String:
+	var selected: PackedInt32Array = list.get_selected_items()
+	if selected.is_empty() or selected[0] < 0 or selected[0] >= entries.size():
+		return ""
+	return _entry_id(entries[selected[0]])
+
+
+func _restore_list_selection(list: ItemList, entries: Array, id: String) -> void:
+	if id.is_empty():
+		return
+	for i: int in range(entries.size()):
+		if _entry_id(entries[i]) == id:
+			list.select(i)
+			return
 
 
 func _on_book_menu_selected(item_id: int) -> void:
@@ -872,15 +964,12 @@ func _update_resource_labels() -> void:
 		var total: int = _effective_slot_total(lvl) if _totals.size() > lvl and _slot_bonuses.size() > lvl else 0
 		var spent: int = clampi(int(_spent[lvl]), 0, total) if _spent.size() > lvl else 0
 		(_remaining_labels[lvl] as Label).text = "%d / %d" % [total - spent, total]
-		(_slot_formula_labels[lvl] as Label).text = "= (%d %+d)" % [
-			int(_totals[lvl]) if _totals.size() > lvl else 0,
-			int(_slot_bonuses[lvl]) if _slot_bonuses.size() > lvl else 0
-		]
+		(_slot_formula_labels[lvl] as Label).text = str(total)
 		(_slot_use[lvl] as Button).disabled = spent >= total
 		(_slot_recharge[lvl] as Button).disabled = spent <= 0
 	var pact_max: int = _effective_pact_total()
 	_pact_remain.text = "%d / %d" % [pact_max - _pact_spent, pact_max]
-	_pact_formula.text = "= (%d %+d)" % [_pact_total, _pact_bonus]
+	_pact_formula.text = str(pact_max)
 	_pact_use.disabled = _pact_spent >= pact_max
 	_pact_restore.disabled = _pact_spent <= 0
 

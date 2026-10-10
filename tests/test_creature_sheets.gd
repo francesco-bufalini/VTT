@@ -76,6 +76,22 @@ func run() -> void:
 	manual_speed = monster.normalize_creature(manual_speed)
 	assert(manual_speed.speed == 50 and manual_speed.speed_base == 40,
 		"Monster speed bonus must survive normalization separately from the bestiary base")
+	var defense_bonus: Dictionary = creature.duplicate(true)
+	defense_bonus["armor_class_bonus"] = 3
+	defense_bonus["initiative_bonus"] = 2
+	defense_bonus = monster.normalize_creature(defense_bonus)
+	assert(defense_bonus.armor_class == 21 and defense_bonus.armor_class_base == 18,
+		"Monster armor class bonus must be applied without losing its base")
+	assert(defense_bonus.initiative == 2 and defense_bonus.initiative_base == 0,
+		"Monster initiative bonus must be applied without losing the dexterity base")
+	var legacy_defense: Dictionary = creature.duplicate(true)
+	legacy_defense.erase("armor_class_base")
+	legacy_defense.erase("initiative_base")
+	legacy_defense["armor_class"] = 23
+	legacy_defense["initiative"] = 4
+	legacy_defense = monster.normalize_creature(legacy_defense)
+	assert(legacy_defense.armor_class_base == 23 and legacy_defense.initiative_base == 4,
+		"Legacy monster AC and initiative must remain unchanged after migration")
 	assert(creature.reach_feet == 10.0,
 		"Monster melee reach must be derived from 5etools, not a fixed 5 ft")
 	assert(creature.owner_id == Owner.local_id())
@@ -121,6 +137,13 @@ func run() -> void:
 	var player := PlayerStore.new()
 	var character: Dictionary = player.normalize_character(player.create_character())
 	assert(character.owner_id == Owner.local_id())
+	character["armor_class_base"] = 12
+	character["armor_class_bonus"] = 4
+	character["initiative_base"] = 2
+	character["initiative_bonus"] = 3
+	character = player.normalize_character(character)
+	assert(character.armor_class == 16 and character.initiative == 5,
+		"Character bonuses must contribute to effective AC and initiative")
 
 	var campaign := FakeCampaign.new()
 	root.add_child(campaign)

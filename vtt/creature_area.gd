@@ -63,6 +63,10 @@ var _subclass_caption: Label
 var _level_caption: Label
 var _xp: SpinBox
 var _initiative: SpinBox
+var _initiative_bonus: SpinBox
+var _initiative_effective: Label
+var _ac_bonus: SpinBox
+var _ac_effective: Label
 var _speed_custom := false
 var _speed: SpinBox
 var _speed_bonus: SpinBox
@@ -98,6 +102,8 @@ var _multiclass_rows: VBoxContainer
 var _multiclass_controls: Array[Dictionary] = []
 var _level: SpinBox
 var _default_miniature: LineEdit
+var _current_miniature_row: HBoxContainer
+var _current_miniature_name: LineEdit
 var _default_miniature_id := ""
 var _miniature_dialog: ConfirmationDialog
 var _miniature_hint: Label
@@ -565,7 +571,7 @@ func _build_ui() -> void:
 	damage.pressed.connect(_open_hp_delta.bind(-1))
 	_hp = _spin(health, -999, 99999)
 	_hp.tooltip_text = "Punti ferita attuali"
-	_hp.custom_minimum_size = Vector2(68, 30)
+	_hp.custom_minimum_size = Vector2(68, 36)
 	_hp.size_flags_horizontal = Control.SIZE_SHRINK_BEGIN
 	_add_label(health, "/")
 	_max_hp_effective = Label.new()
@@ -574,11 +580,11 @@ func _build_ui() -> void:
 	_add_formula_label(health, "=")
 	_add_formula_label(health, "(")
 	_max_hp = _spin(health, 0, 99999)
-	_max_hp.custom_minimum_size = Vector2(62, 30)
+	_max_hp.custom_minimum_size = Vector2(62, 36)
 	_max_hp.size_flags_horizontal = Control.SIZE_SHRINK_BEGIN
 	_max_hp.tooltip_text = "PF massimi base, senza bonus manuali"
 	_max_hp_bonus = _spin(health, -9999, 99999)
-	_max_hp_bonus.custom_minimum_size = Vector2(60, 30)
+	_max_hp_bonus.custom_minimum_size = Vector2(60, 36)
 	_max_hp_bonus.tooltip_text = "Bonus manuale ai PF massimi"
 	ManualBonus.decorate(_max_hp_bonus)
 	_add_formula_label(health, ")")
@@ -633,8 +639,19 @@ func _build_ui() -> void:
 	temp_health.add_theme_constant_override("separation", 6)
 	defense_flow.add_child(temp_health)
 	_add_label(temp_health, "🛡 CA")
+	_ac_effective = Label.new()
+	_ac_effective.custom_minimum_size.x = 28
+	temp_health.add_child(_ac_effective)
+	_add_formula_label(temp_health, "=")
+	_add_formula_label(temp_health, "(")
 	_ac = _spin(temp_health, 0, 99)
-	_ac.custom_minimum_size.x = 65
+	_ac.custom_minimum_size = Vector2(62, 36)
+	_ac.tooltip_text = "Classe Armatura base, senza bonus manuali"
+	_ac_bonus = _spin(temp_health, -99, 99)
+	_ac_bonus.custom_minimum_size = Vector2(60, 36)
+	_ac_bonus.tooltip_text = "Bonus manuale alla Classe Armatura"
+	ManualBonus.decorate(_ac_bonus)
+	_add_formula_label(temp_health, ")")
 	var reach_row := HBoxContainer.new()
 	reach_row.add_theme_constant_override("separation", 6)
 	defense_flow.add_child(reach_row)
@@ -647,22 +664,32 @@ func _build_ui() -> void:
 	movement_row.add_theme_constant_override("separation", 6)
 	defense_flow.add_child(movement_row)
 	_add_label(movement_row, "⚡ Iniziativa")
+	_initiative_effective = Label.new()
+	_initiative_effective.custom_minimum_size.x = 32
+	movement_row.add_child(_initiative_effective)
+	_add_formula_label(movement_row, "=")
+	_add_formula_label(movement_row, "(")
 	_initiative = _spin(movement_row, -99, 99)
-	_initiative.custom_minimum_size.x = 66
-	_initiative.tooltip_text = "Iniziativa calcolata automaticamente dal modificatore di Destrezza"
-	_add_label(movement_row, "👟 Velocità base (ft)")
+	_initiative.custom_minimum_size = Vector2(62, 36)
+	_initiative.tooltip_text = "Iniziativa base, calcolata dal modificatore di Destrezza"
+	_initiative_bonus = _spin(movement_row, -99, 99)
+	_initiative_bonus.custom_minimum_size = Vector2(60, 36)
+	_initiative_bonus.tooltip_text = "Bonus manuale all'iniziativa"
+	ManualBonus.decorate(_initiative_bonus)
+	_add_formula_label(movement_row, ")")
+	_add_label(movement_row, "👟 Velocità (ft)")
 	_add_formula_label(movement_row, "(")
 	_speed = SpinBox.new()
 	_speed.min_value = 0
 	_speed.max_value = 999
 	_speed.step = 1
 	_speed.update_on_text_changed = true
-	_speed.custom_minimum_size = Vector2(69, 30)
+	_speed.custom_minimum_size = Vector2(69, 36)
 	_speed.value_changed.connect(_on_speed_changed)
 	movement_row.add_child(_speed)
-	_speed.tooltip_text = "Velocità base dalla specie o dal bestiario, modificabile"
+	_speed.tooltip_text = "Velocità dalla specie o dal bestiario, modificabile"
 	_speed_bonus = _spin(movement_row, -999, 999)
-	_speed_bonus.custom_minimum_size.x = 65
+	_speed_bonus.custom_minimum_size = Vector2(65, 36)
 	_speed_bonus.tooltip_text = "Bonus manuale alla velocità"
 	ManualBonus.decorate(_speed_bonus)
 	_add_formula_label(movement_row, ")")
@@ -671,6 +698,10 @@ func _build_ui() -> void:
 	movement_row.add_child(_speed_effective)
 	_speed.value_changed.connect(func(_value: float) -> void: _update_speed_display())
 	_speed_bonus.value_changed.connect(func(_value: float) -> void: _update_speed_display())
+	_ac.value_changed.connect(func(_value: float) -> void: _update_defense_display())
+	_ac_bonus.value_changed.connect(func(_value: float) -> void: _update_defense_display())
+	_initiative.value_changed.connect(func(_value: float) -> void: _update_defense_display())
+	_initiative_bonus.value_changed.connect(func(_value: float) -> void: _update_defense_display())
 	_initiative.editable = false
 
 	var abilities_panel := PanelContainer.new()
@@ -685,7 +716,7 @@ func _build_ui() -> void:
 	abilities_row.add_theme_constant_override("h_separation", 8)
 	abilities_row.add_theme_constant_override("v_separation", 7)
 	var ability_title := Label.new()
-	ability_title.text = "✨ Caratteristiche"
+	ability_title.text = "🎲 Caratteristiche"
 	ability_title.add_theme_font_size_override("font_size", 17)
 	ability_title.add_theme_color_override("font_color", Color(0.72, 0.88, 0.96))
 	statistics_tab.add_child(abilities_panel)
@@ -701,7 +732,6 @@ func _build_ui() -> void:
 		var scores_row := HBoxContainer.new()
 		scores_row.add_theme_constant_override("separation", 4)
 		cell.add_child(scores_row)
-		_add_formula_label(scores_row, "(")
 		var spin := _spin(scores_row, 1, 30)
 		spin.custom_minimum_size.x = 54
 		spin.tooltip_text = "Punteggio base"
@@ -716,7 +746,6 @@ func _build_ui() -> void:
 		total_score.custom_minimum_size.x = 28
 		scores_row.add_child(total_score)
 		_ability_total_labels[ability] = total_score
-		_add_formula_label(scores_row, ")")
 		var modifier := Label.new()
 		modifier.custom_minimum_size.x = 42
 		modifier.tooltip_text = "Modificatore calcolato dal punteggio e dal bonus"
@@ -812,6 +841,15 @@ func _build_ui() -> void:
 	choose_miniature.text = "Cerca e scegli…"
 	choose_miniature.pressed.connect(func() -> void: _choose_miniature(_current(), false))
 	miniature_row.add_child(choose_miniature)
+	_current_miniature_row = HBoxContainer.new()
+	_current_miniature_row.add_theme_constant_override("separation", 6)
+	appearance_tab.add_child(_current_miniature_row)
+	_add_label(_current_miniature_row, "🦋 Forma attuale")
+	_current_miniature_name = LineEdit.new()
+	_current_miniature_name.editable = false
+	_current_miniature_name.size_flags_horizontal = Control.SIZE_EXPAND_FILL
+	_current_miniature_row.add_child(_current_miniature_name)
+	_current_miniature_row.hide()
 	var appearance_actions := HFlowContainer.new()
 	appearance_actions.add_theme_constant_override("h_separation", 8)
 	appearance_actions.add_theme_constant_override("v_separation", 5)
@@ -1401,12 +1439,7 @@ func _build_transfer_dialog() -> void:
 
 
 func _add_formula_label(parent: Node, value: String) -> void:
-	var label := Label.new()
-	label.text = value
-	label.custom_minimum_size.y = 30
-	label.vertical_alignment = VERTICAL_ALIGNMENT_CENTER
-	label.add_theme_font_size_override("font_size", 22 if value in ["(", ")"] else 17)
-	parent.add_child(label)
+	ManualBonus.add_formula_label(parent, value)
 
 
 func _add_label(parent: Node, text_value: String) -> void:
@@ -1773,8 +1806,15 @@ func _load_form(record: Dictionary) -> void:
 				legacy_parts.append(field.capitalize().replace("_", " ") + ": " + value)
 		biography = "\n\n".join(legacy_parts)
 	_biography.text = biography
-	_ac.value = int(record.get("armor_class", 10))
-	_initiative.value = int(record.get("initiative", 0))
+	_ac_bonus.value = int(record.get("armor_class_bonus", 0))
+	_ac.value = maxi(0, int(record.get(
+		"armor_class_base", int(record.get("armor_class", 10)) - int(_ac_bonus.value)
+	)))
+	_initiative_bonus.value = int(record.get("initiative_bonus", 0))
+	_initiative.value = int(record.get(
+		"initiative_base", int(record.get("initiative", 0)) - int(_initiative_bonus.value)
+	))
+	_update_defense_display()
 	var abilities_value: Variant = record.get("abilities", {})
 	var abilities: Dictionary = (
 		abilities_value as Dictionary if abilities_value is Dictionary else {}
@@ -1858,6 +1898,7 @@ func _load_form(record: Dictionary) -> void:
 	)
 	_default_miniature_id = String(record.get("default_miniature_id", ""))
 	_default_miniature.text = _miniature_display_name(_default_miniature_id)
+	_update_current_appearance_display(record)
 	_select_sheet_size(String(record.get("size_name", "Medium")))
 	_reach.value = float(record.get("reach_feet", 5.0))
 	_front.select(clampi(int(record.get("visual_front_quarter_turns", 0)), 0, 3))
@@ -1958,6 +1999,13 @@ func _on_spellcasting_updated(values: Dictionary) -> void:
 	_replace_current_record(record)
 
 
+func _update_defense_display() -> void:
+	if _ac != null and _ac_bonus != null and _ac_effective != null:
+		_ac_effective.text = str(maxi(0, int(_ac.value) + int(_ac_bonus.value)))
+	if _initiative != null and _initiative_bonus != null and _initiative_effective != null:
+		_initiative_effective.text = "%+d" % (int(_initiative.value) + int(_initiative_bonus.value))
+
+
 func _update_max_hp_display() -> void:
 	if _max_hp_effective == null or _max_hp_bonus == null or _max_hp == null:
 		return
@@ -1992,8 +2040,9 @@ func _update_ability_modifier(ability: String) -> void:
 	(_ability_modifier_labels[ability] as Label).text = "%+d" % value
 	if _ability_total_labels.has(ability):
 		(_ability_total_labels[ability] as Label).text = str(score + bonus)
-	if ability == "dex" and _initiative != null:
+	if ability == "dex" and _initiative != null and not _loading:
 		_initiative.value = value
+		_update_defense_display()
 
 
 func _replace_current_record(record: Dictionary) -> void:
@@ -2035,8 +2084,12 @@ func _save() -> void:
 	record["reach_feet"] = float(_reach.value)
 	record["visual_front_quarter_turns"] = _front.selected
 	record["party_id"] = _party.text.strip_edges()
-	record["armor_class"] = int(_ac.value)
-	record["initiative"] = int(_initiative.value)
+	record["armor_class_base"] = int(_ac.value)
+	record["armor_class_bonus"] = int(_ac_bonus.value)
+	record["armor_class"] = maxi(0, int(_ac.value) + int(_ac_bonus.value))
+	record["initiative_base"] = int(_initiative.value)
+	record["initiative_bonus"] = int(_initiative_bonus.value)
+	record["initiative"] = int(_initiative.value) + int(_initiative_bonus.value)
 	record["speed_base"] = int(_speed.value)
 	record["speed_bonus"] = int(_speed_bonus.value)
 	record["speed"] = maxi(0, int(_speed.value) + int(_speed_bonus.value))
@@ -2492,6 +2545,7 @@ func _set_current_miniature(miniature_id: String) -> void:
 		_set_status("Impossibile salvare l'aspetto attuale.")
 		return
 	_replace_current_record(record)
+	_update_current_appearance_display(record)
 	_apply_current_appearance(record)
 
 
@@ -2587,7 +2641,7 @@ func _refresh_trackers(record: Dictionary) -> void:
 		manual_bonus.step = 1
 		manual_bonus.rounded = true
 		manual_bonus.update_on_text_changed = false
-		manual_bonus.custom_minimum_size = Vector2(63, 30)
+		manual_bonus.custom_minimum_size = Vector2(63, 36)
 		manual_bonus.tooltip_text = "Di cui bonus al massimo (%d utilizzi base)" % base_maximum
 		manual_bonus.set_value_no_signal(int(bonuses.get(id, 0)))
 		ManualBonus.decorate(manual_bonus)
@@ -3321,6 +3375,21 @@ func _edit_linked_token_appearance() -> void:
 	if record.is_empty():
 		return
 	_choose_miniature(record, false, true)
+
+
+func _update_current_appearance_display(record: Dictionary) -> void:
+	if _current_miniature_row == null:
+		return
+	var base_id: String = String(record.get("default_miniature_id", ""))
+	var current_id: String = String(record.get("current_miniature_id", base_id))
+	var changed: bool = not current_id.is_empty() and current_id != base_id
+	_current_miniature_row.visible = changed
+	if changed:
+		_current_miniature_name.text = _miniature_display_name(current_id)
+		_current_miniature_name.tooltip_text = "ID catalogo: " + current_id
+	else:
+		_current_miniature_name.text = ""
+		_current_miniature_name.tooltip_text = ""
 
 
 func _miniature_display_name(miniature_id: String) -> String:

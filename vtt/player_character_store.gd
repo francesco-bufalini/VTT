@@ -165,8 +165,12 @@ func create_character() -> Dictionary:
 		"skill_proficiencies": [],
 		"skill_expertise": [],
 		"armor_class": 10,
+		"armor_class_base": 10,
+		"armor_class_bonus": 0,
 		"temporary_ac": 0,
 		"initiative": 0,
+		"initiative_base": 0,
+		"initiative_bonus": 0,
 		"max_hp": 1,
 		"max_hp_base": 1,
 		"max_hp_bonus": 0,
@@ -257,6 +261,19 @@ func normalize_character(value: Dictionary) -> Dictionary:
 	for key: Variant in defaults.keys():
 		if value.has(key):
 			defaults[key] = value[key]
+
+	# Legacy records contain only the effective totals. Migrate them to
+	# separate base and manual bonus fields without changing the result.
+	defaults["armor_class_bonus"] = clampi(int(value.get("armor_class_bonus", 0)), -99, 99)
+	defaults["armor_class_base"] = maxi(0, int(value.get(
+		"armor_class_base", int(value.get("armor_class", 10)) - int(defaults["armor_class_bonus"])
+	)))
+	defaults["armor_class"] = maxi(0, int(defaults["armor_class_base"]) + int(defaults["armor_class_bonus"]))
+	defaults["initiative_bonus"] = clampi(int(value.get("initiative_bonus", 0)), -99, 99)
+	defaults["initiative_base"] = int(value.get(
+		"initiative_base", int(value.get("initiative", 0)) - int(defaults["initiative_bonus"])
+	))
+	defaults["initiative"] = int(defaults["initiative_base"]) + int(defaults["initiative_bonus"])
 
 	# Persistent usage counters survive reloads and level changes.
 	if not defaults.get("resource_tracker_spent", {}) is Dictionary:
