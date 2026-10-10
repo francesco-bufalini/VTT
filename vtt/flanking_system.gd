@@ -20,6 +20,7 @@ var _elapsed := 0.0
 var _flanked_ids: Dictionary = {}
 var _screen_reach_arrows: Array[Vector3] = []
 var _screen_mutual_markers: Array[Vector3] = []
+var _screen_reach_links: Array[Dictionary] = []
 
 
 func setup(root: Node3D) -> void:
@@ -156,12 +157,17 @@ func refresh_now() -> void:
 
 	_screen_reach_arrows = arrow_points
 	_screen_mutual_markers = mutual_marker_points
+	_screen_reach_links = reach_visuals.get("links", [])
 	_render_arrows(arrow_points, mutual_marker_points)
 	_refresh_flanking_badges(visible_badge_targets)
 
 
 func get_screen_reach_visuals() -> Dictionary:
-	return {"arrows": _screen_reach_arrows, "mutual_markers": _screen_mutual_markers}
+	return {
+		"arrows": _screen_reach_arrows,
+		"mutual_markers": _screen_mutual_markers,
+		"links": _screen_reach_links
+	}
 
 
 func _build_reach_visuals(
@@ -169,6 +175,7 @@ func _build_reach_visuals(
 ) -> Dictionary:
 	var arrows: Array[Vector3] = []
 	var mutual_markers: Array[Vector3] = []
+	var links: Array[Dictionary] = []
 	var safe_cell := maxf(float(board_root.get("cell_size")), 0.001)
 
 	# Work on unordered pairs so reciprocal adjacent reach can be represented
@@ -194,6 +201,13 @@ func _build_reach_visuals(
 			var second_reaches := _token_reaches_target(second, first)
 			if not first_reaches and not second_reaches:
 				continue
+			# The 2D painter uses actual portrait bounds, not 3D mesh segments.
+			# Combine reciprocal links at any reach into one legible marker.
+			links.append({
+				"from": first if first_reaches else second,
+				"to": second if first_reaches else first,
+				"mutual": first_reaches and second_reaches
+			})
 
 			var first_base := first.global_position
 			var second_base := second.global_position
@@ -260,6 +274,7 @@ func _build_reach_visuals(
 	return {
 		"arrows": arrows,
 		"mutual_markers": mutual_markers,
+		"links": links
 	}
 
 
