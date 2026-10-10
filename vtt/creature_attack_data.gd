@@ -249,9 +249,6 @@ static func active_attack(record: Dictionary) -> Dictionary:
 	for attack: Dictionary in attacks:
 		if String(attack.get("slot", "")) == "main" and not bool(attack.get("thrown", false)):
 			return attack
-	for attack: Dictionary in attacks:
-		if bool(attack.get("melee", false)) and String(attack.get("source", "")) != "item":
-			return attack
 	return attacks[0] if not attacks.is_empty() else {}
 
 
