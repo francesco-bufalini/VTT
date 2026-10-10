@@ -274,30 +274,30 @@ static func collect_features(record: Dictionary) -> Array[Dictionary]:
 		if not raw is Dictionary:
 			continue
 		var definition: Dictionary = raw as Dictionary
-		var class_name: String = String(definition.get("name", ""))
-		if class_name.is_empty() or class_name.to_lower() == "mostro":
+		var class_label: String = String(definition.get("name", ""))
+		if class_label.is_empty() or class_label.to_lower() == "mostro":
 			continue
 		var class_book: String = String(definition.get("source", record.get("class_source", "")))
 		var class_level: int = clampi(int(definition.get("level", 1)), 1, 20)
-		var class_origin: String = "Classe · " + class_name
-		var class_key: String = "class|" + class_name.to_lower() + "|" + class_book.to_lower()
+		var class_origin: String = "Classe · " + class_label
+		var class_key: String = "class|" + class_label.to_lower() + "|" + class_book.to_lower()
 		for feature: Dictionary in class_features:
-			if String(feature.get("class_name", "")).nocasecmp_to(class_name) != 0:
+			if String(feature.get("class_name", "")).nocasecmp_to(class_label) != 0:
 				continue
 			if not class_book.is_empty() and String(feature.get("class_source", "")) != class_book:
 				continue
 			var level: int = int(feature.get("level", 0))
 			if level < 1 or level > class_level:
 				continue
-			_append(result, feature, level, class_origin, class_key, class_name, class_book)
+			_append(result, feature, level, class_origin, class_key, class_label, class_book)
 		var subclass_name: String = String(definition.get("subclass", ""))
 		if subclass_name.is_empty():
 			continue
 		var subclass_book: String = String(definition.get("subclass_source", ""))
-		var subclass_origin: String = "Sottoclasse · %s / %s" % [class_name, subclass_name]
+		var subclass_origin: String = "Sottoclasse · %s / %s" % [class_label, subclass_name]
 		var subclass_key: String = class_key + "|subclass|" + subclass_name.to_lower() + "|" + subclass_book.to_lower()
 		for feature: Dictionary in subclass_features:
-			if String(feature.get("class_name", feature.get("className", ""))).nocasecmp_to(class_name) != 0:
+			if String(feature.get("class_name", feature.get("className", ""))).nocasecmp_to(class_label) != 0:
 				continue
 			if not class_book.is_empty() and String(feature.get("class_source", "")) != class_book:
 				continue
@@ -311,7 +311,7 @@ static func collect_features(record: Dictionary) -> Array[Dictionary]:
 			var level: int = int(feature.get("level", 0))
 			if level < 1 or level > class_level:
 				continue
-			_append(result, feature, level, subclass_origin, subclass_key, class_name, class_book)
+			_append(result, feature, level, subclass_origin, subclass_key, class_label, class_book)
 	result.sort_custom(func(a: Dictionary, b: Dictionary) -> bool:
 		if int(a["level"]) != int(b["level"]):
 			return int(a["level"]) < int(b["level"])
@@ -327,7 +327,7 @@ static func collect_features(record: Dictionary) -> Array[Dictionary]:
 
 static func _append(
 	output: Array[Dictionary], feature: Dictionary, level: int, origin: String,
-	origin_key: String, class_name: String = "", class_book: String = "",
+	origin_key: String, class_label: String = "", class_book: String = "",
 	rank: int = 2
 ) -> void:
 	var name: String = String(feature.get("name", "")).strip_edges()
@@ -345,7 +345,7 @@ static func _append(
 		"key": key, "name": name, "level": level, "rank": rank,
 		"origin": origin, "origin_key": origin_key,
 		"book": String(feature.get("source", "")),
-		"class_name": class_name, "class_source": class_book,
+		"class_name": class_label, "class_source": class_book,
 		"entries": description
 	})
 
