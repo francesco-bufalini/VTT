@@ -2532,7 +2532,7 @@ func _refresh_skill_values(record: Dictionary) -> void:
 		if String(live.get("kind", "")) == "monster" and published is Dictionary and String((published as Dictionary).get(ability, "")).is_valid_int():
 			trained = true
 		var modifier: int = BonusRules.value(live, "save:" + ability)
-		_set_formula("save:" + ability, ("%s%+d" % ["🎓 " if trained else "", modifier]),
+		_set_formula("save:" + ability, ("%+d%s" % [modifier, " 🎓" if trained else ""]),
 			"%s: modificatore, eventuale competenza/bestiario e bonus da origini = %+d" % [ability.to_upper(), modifier])
 	if _tools_proficiency_label != null:
 		var tools: Array[String] = []
