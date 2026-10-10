@@ -3,6 +3,7 @@ extends VBoxContainer
 # Documents are inventory items with a unique identifier and an image
 # rendered locally from their title and text. No image bytes cross the network.
 const Inbox = preload("res://vtt/document_inbox.gd")
+const DialogLayout = preload("res://vtt/dialog_layout.gd")
 
 var _on_change: Callable
 var _on_status: Callable
@@ -286,7 +287,7 @@ func _show_image() -> void:
 		return
 	_update_preview()
 	_image_dialog.title = "Documento · " + String(_documents[index].get("title", ""))
-	_image_dialog.popup_centered_clamped(Vector2i(640, 830), 0.90)
+	DialogLayout.popup(_image_dialog, Vector2i(640, 830), 0.90)
 
 
 func _refresh_peers() -> void:
