@@ -75,6 +75,10 @@ static func choices(record: Dictionary) -> Array[Dictionary]:
 				if not attack_id.begins_with("item:") or not flags is Dictionary or not bool(flags.get("proficient", false)):
 					continue
 				var item_id := attack_id.substr(5)
+				for prefix: String in ["throw:main:", "throw:off:", "off:"]:
+					if item_id.begins_with(prefix):
+						item_id = item_id.substr(prefix.length())
+						break
 				var inv: Variant = record.get("inventory", [])
 				if inv is Array:
 					for raw_item: Variant in inv:
