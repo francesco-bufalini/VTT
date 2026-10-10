@@ -1809,6 +1809,7 @@ func _on_bonuses_updated(rows: Array, origins: Array) -> void:
 	record["initiative_base"] = BonusRules.value(record, "ability_mod:dex")
 	record["initiative"] = BonusRules.value(record, "initiative")
 	record["speed"] = maxi(0, BonusRules.value(record, "speed"))
+	record["reach_feet"] = AttackData.active_range(record)
 	if _archive.save(record) != OK:
 		_set_status("Impossibile salvare i bonus.")
 		return
