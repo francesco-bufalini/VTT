@@ -331,8 +331,9 @@ func _refresh_origins() -> void:
 		if not sid.is_empty():
 			var active := CheckButton.new()
 			active.text = "⏻"
-			active.tooltip_text = "Origine attiva / disattivata"
+			active.tooltip_text = "L'origine contiene competenze obbligatorie" if _source_has_mandatory_grants(sid) else "Origine attiva / disattivata"
 			active.button_pressed = not bool(item.get("disabled", false))
+			active.disabled = _source_has_mandatory_grants(sid)
 			active.toggled.connect(_toggle_origin.bind(sid))
 			line.add_child(active)
 		if selected:
@@ -480,17 +481,16 @@ func _refresh_competences() -> void:
 					linked.append(status_label)
 			var cell := PanelContainer.new()
 			_proficiency_cards.add_child(cell)
-			# Every currently effective grant remains visibly illuminated, even
-			# after deselecting a source or focusing an unrelated source.
-			# A stronger outline distinguishes grants from the selected origin.
-			if active:
-				var highlight := StyleBoxFlat.new()
-				highlight.draw_center = false
-				highlight.border_color = (Color(0.44, 0.80, 1.0)
-					if selected_active else Color(0.38, 0.64, 0.78))
-				highlight.set_border_width_all(2 if selected_active else 1)
-				highlight.set_corner_radius_all(5)
-				cell.add_theme_stylebox_override("panel", highlight)
+			# Only the explicitly selected source receives a discreet marker.
+			# Active training stays visible through its checkmark and text,
+			# never through a permanently illuminated blue outline.
+			if selected_active:
+				var source_outline := StyleBoxFlat.new()
+				source_outline.draw_center = false
+				source_outline.border_color = Color(0.82, 0.70, 0.48, 0.76)
+				source_outline.set_border_width_all(1)
+				source_outline.set_corner_radius_all(5)
+				cell.add_theme_stylebox_override("panel", source_outline)
 			var box := HBoxContainer.new()
 			box.add_theme_constant_override("separation", 4)
 			cell.add_child(box)
@@ -500,9 +500,8 @@ func _refresh_competences() -> void:
 			var mastered: bool = kind == "skill" and _effective_expertise(key, enabled)
 			label.text = ("✓ " if active else "○ ") + key + (" 🎓🎓" if mastered else "")
 			label.tooltip_text = "Origini:\n" + "\n".join(linked)
-			if active:
-				label.add_theme_color_override("font_color",
-					Color(0.94, 0.97, 1.0) if selected_active else Color(0.82, 0.93, 0.98))
+			if selected_active:
+				label.add_theme_color_override("font_color", Color(0.96, 0.87, 0.66))
 			box.add_child(label)
 			if kind == "skill":
 				var expert := CheckButton.new()
@@ -556,6 +555,13 @@ func _is_mandatory_choice(row: Dictionary) -> bool:
 	if sid.is_empty():
 		return false
 	return _mandatory_grants.has(sid + "|" + String(row.get("kind", "")) + "|" + String(row.get("key", "")))
+
+
+func _source_has_mandatory_grants(sid: String) -> bool:
+	for key: String in _mandatory_grants.keys():
+		if key.begins_with(sid + "|"):
+			return true
+	return false
 
 
 func _has_mandatory_in_scope(indices: Array) -> bool:
@@ -744,6 +750,9 @@ func _select_origin(sid: String) -> void:
 
 
 func _toggle_origin(on: bool, sid: String) -> void:
+	if not on and _source_has_mandatory_grants(sid):
+		_refresh()
+		return
 	for item: Dictionary in _origins:
 		if String(item.get("id", "")) == sid:
 			item["disabled"] = not on
