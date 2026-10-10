@@ -120,6 +120,7 @@ var _ability_spins: Dictionary = {}
 var _ability_bonus_spins: Dictionary = {}
 var _ability_modifier_labels: Dictionary = {}
 var _saving_throw_labels: Dictionary = {}
+var _saving_throw_icons: Dictionary = {}
 var _tools_proficiency_label: Label
 var _species: OptionButton
 var _creature_type_display: Label
@@ -658,7 +659,6 @@ func _build_ui() -> void:
 	health.add_theme_constant_override("h_separation", 5)
 	health.add_theme_constant_override("v_separation", 5)
 	health_content.add_child(health)
-	_add_label(health, "Attuali")
 	var damage := Button.new()
 	damage.text = "−"
 	damage.tooltip_text = "Sottrai PF: inserisci un valore o tira un dado"
@@ -682,12 +682,13 @@ func _build_ui() -> void:
 	ManualBonus.decorate(_max_hp_bonus)
 	_max_hp_bonus.hide() # Legacy value is migrated to an origin bonus.
 	_install_formula("hp", _max_hp_effective, [_max_hp], ["Base"])
-	# HP actions belong on the same row, directly before temporary HP.
+	# Current HP actions lead the row; the TEMP caption follows its input.
 	var health_actions := HBoxContainer.new()
 	health.add_child(health_actions)
-	_add_label(health, "TEMP")
+	_add_label(health, "+")
 	_temp_hp = _spin(health, 0, 99999)
 	_temp_hp.custom_minimum_size.x = 64
+	_add_label(health, "TEMP")
 	_max_hp.value_changed.connect(func(_v: float) -> void: _update_max_hp_display())
 	_max_hp_bonus.value_changed.connect(func(_v: float) -> void: _update_max_hp_display())
 	var heal := Button.new()
@@ -704,8 +705,9 @@ func _build_ui() -> void:
 	restore_hp.custom_minimum_size.x = 30
 	restore_hp.pressed.connect(_restore_full_hp)
 	health_actions.add_child(restore_hp)
-	# PF adjusters stay alongside the current HP tracker, not after its max bonus.
-	health.move_child(health_actions, _hp.get_index() + 1)
+	health.move_child(health_actions, 0)
+	_add_label(health, "Attuali")
+	health.move_child(health.get_child(health.get_child_count() - 1), 1)
 	var form_hp_row := HBoxContainer.new()
 	form_hp_row.add_theme_constant_override("separation", 6)
 	health_content.add_child(form_hp_row)
@@ -860,11 +862,19 @@ func _build_ui() -> void:
 		var saving_throw := Label.new()
 		saving_throw.text = "+0"
 		saving_throw.tooltip_text = "Tiro salvezza: modificatore caratteristica + competenza, se posseduta"
-		# The proficiency icon precedes the bonus and remains legible.
+		# Keep proficiency icon and numeric formula in independent, aligned cells.
+		var save_cell := HBoxContainer.new()
+		save_cell.add_theme_constant_override("separation", 3)
+		abilities_row.add_child(save_cell)
+		var save_icon := Label.new()
+		save_icon.custom_minimum_size.x = 28
+		save_icon.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
+		save_cell.add_child(save_icon)
+		_saving_throw_icons[ability] = save_icon
 		saving_throw.add_theme_font_size_override("font_size", 17)
-		saving_throw.custom_minimum_size.x = 82
-		saving_throw.horizontal_alignment = HORIZONTAL_ALIGNMENT_LEFT
-		abilities_row.add_child(saving_throw)
+		saving_throw.custom_minimum_size.x = 50
+		saving_throw.horizontal_alignment = HORIZONTAL_ALIGNMENT_RIGHT
+		save_cell.add_child(saving_throw)
 		_saving_throw_labels[ability] = saving_throw
 		_install_formula("save:" + ability, saving_throw, [], [])
 		spin.value_changed.connect(_on_ability_value_changed.bind(ability))
@@ -2564,9 +2574,12 @@ func _refresh_skill_values(record: Dictionary) -> void:
 		var save_mod: int = BonusRules.value(live, "ability_mod:" + ability)
 		var save_extra: int = BonusRules.bonus(live, "save:" + ability)
 		var save_source: int = modifier - save_mod - save_extra
-		_set_formula("save:" + ability, ("%+d%s" % [modifier, " 🎓" if trained else ""]),
+		_set_formula("save:" + ability, "%+d" % modifier,
 			"%s: mod. %+d + competenza o bestiario %+d + origini %+d = %+d" % [
 				ability.to_upper(), save_mod, save_source, save_extra, modifier])
+		var save_icon: Label = _saving_throw_icons[ability]
+		save_icon.text = "🎓" if trained else ""
+		save_icon.tooltip_text = "Competente" if trained else "Nessuna competenza"
 	if _tools_proficiency_label != null:
 		var tools: Array[String] = []
 		for grant: Dictionary in all_grants:
@@ -2845,19 +2858,7 @@ func _refresh_attacks(record: Dictionary) -> void:
 		distance.set_value_no_signal(int(AttackData.override_for(record, attack_id).get("range_feet", attack.get("range_feet", 5))))
 		distance.value_changed.connect(_on_attack_range_changed.bind(attack_id))
 		settings.add_child(distance)
-		var range_bonus := SpinBox.new()
-		range_bonus.min_value = -1000
-		range_bonus.max_value = 1000
-		range_bonus.step = 5
-		range_bonus.rounded = true
-		range_bonus.custom_minimum_size.x = 68
-		range_bonus.tooltip_text = "Bonus manuale alla gittata di questo attacco (ft)"
-		ManualBonus.decorate(range_bonus)
-		range_bonus.hide()
-		var range_override: Dictionary = AttackData.override_for(record, attack_id)
-		range_bonus.set_value_no_signal(int(range_override.get("range_bonus", 0)))
-		range_bonus.value_changed.connect(_on_attack_range_bonus_changed.bind(attack_id))
-		settings.add_child(range_bonus)
+		# Legacy range corrections are migrated to source grants, not inline.
 		var range_label := Label.new()
 		settings.add_child(range_label)
 		_attack_range_labels[attack_id] = range_label
@@ -2873,10 +2874,36 @@ func _refresh_attacks(record: Dictionary) -> void:
 			for code: String in ["F", "R", "T", "V", "2H", "L", "H", "A", "LD"]:
 				if ItemRules.has_property(item_data, code):
 					properties.append(code)
-			var info := Label.new()
-			info.text = "Proprietà: " + ", ".join(properties) if not properties.is_empty() else "Arma"
-			info.tooltip_text = "Proprietà strutturate 5etools dell'arma equipaggiata"
-			settings.add_child(info)
+			var property_names := {
+				"F": "Accurata", "R": "Portata", "T": "Lancio",
+				"V": "Versatile", "2H": "Due mani", "L": "Leggera",
+				"H": "Pesante", "A": "Munizioni", "LD": "Ricarica"
+			}
+			var chips := HFlowContainer.new()
+			chips.add_theme_constant_override("h_separation", 5)
+			chips.add_theme_constant_override("v_separation", 4)
+			box.add_child(chips)
+			for code: String in properties:
+				var chip := PanelContainer.new()
+				var chip_style := StyleBoxFlat.new()
+				chip_style.bg_color = Color(0.18, 0.23, 0.29, 0.90)
+				chip_style.border_color = Color(0.37, 0.47, 0.53, 0.80)
+				chip_style.set_border_width_all(1)
+				chip_style.set_corner_radius_all(6)
+				chip_style.set_content_margin_all(5)
+				chip.add_theme_stylebox_override("panel", chip_style)
+				var chip_text := Label.new()
+				chip_text.text = String(property_names.get(code, code))
+				chip_text.add_theme_font_size_override("font_size", 12)
+				chip.add_child(chip_text)
+				chips.add_child(chip)
+			var weapon_size: String = String(attack.get("weapon_size", "Medium"))
+			var size_chip := Label.new()
+			size_chip.text = "Taglia · " + weapon_size
+			size_chip.add_theme_font_size_override("font_size", 12)
+			size_chip.modulate.a = 0.78
+			size_chip.tooltip_text = "Modificabile nell'inventario; in assenza di scelta segue la taglia della creatura."
+			chips.add_child(size_chip)
 			if ItemRules.has_property(item_data, "V") and String(attack.get("slot", "")) == "main":
 				var versatile := CheckBox.new()
 				versatile.text = "Due mani (versatile)"
@@ -3264,6 +3291,8 @@ func _save() -> void:
 	record["background_source"] = String(background_entry.get("source", ""))
 	record["background_id"] = String(background_entry.get("id", ""))
 	record["size_name"] = _size_choice.get_item_text(_size_choice.selected)
+	if _inventory_ui != null:
+		_inventory_ui.call("update_creature_size", String(record["size_name"]))
 	record["footprint"] = _selected_size_footprint()
 	record["visual_front_quarter_turns"] = _front.selected
 	record["party_id"] = _party.text.strip_edges()
@@ -3876,10 +3905,8 @@ func _refresh_trackers(record: Dictionary) -> void:
 		restore.disabled = used <= 0
 		restore.pressed.connect(_change_tracker.bind(id, -1, maximum))
 		counter_group.add_child(restore)
-		# Both adjustments flank the live current/max tracker; manual bonus,
-		# d6 recharge and reset remain secondary controls to its right.
-		# The "+" belongs after the complete "remaining / max" value;
-		# placing it after "remaining /" would break the formula visually.
+		counter_group.move_child(restore, consume.get_index() + 1)
+		# Keep both resource adjustments immediately before remaining / max.
 		var recharge: String = String(tracker.get("recharge", "manual"))
 		if recharge == "d6":
 			var threshold: int = clampi(int(tracker.get("recharge_min", 6)), 1, 6)
