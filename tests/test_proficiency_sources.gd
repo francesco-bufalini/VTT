@@ -252,6 +252,7 @@ func run() -> void:
 	assert("Descrizione dell'oggetto origine" in tab._origin_description(item_origin),
 		"Origin hover must show the full description of the item")
 	tab.load_record(record)
+	tab._selected_id = "~none~"
 	tab._select_origin("class|phb|fighter")
 	tab._kind_picker.select(2)
 	tab._refresh_proficiency_picker()
