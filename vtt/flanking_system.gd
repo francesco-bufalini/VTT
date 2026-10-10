@@ -955,8 +955,8 @@ static func _flanking_transverse_witness(
 			(first_max - target_min) / u,
 			(target_max - target_min) / (u - t)
 		]
-	var minimum_slope := lower.max()
-	var maximum_slope := upper.min()
+	var minimum_slope: float = float(lower.max())
+	var maximum_slope: float = float(upper.min())
 	if minimum_slope > maximum_slope + EPSILON:
 		return Vector2(INF, INF)
 	var w: float = (minimum_slope + maximum_slope) * 0.5
