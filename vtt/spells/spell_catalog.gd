@@ -40,8 +40,7 @@ const LEVEL_NAMES: Array[String] = [
 	"5° livello", "6° livello", "7° livello", "8° livello", "9° livello"
 ]
 
-# Source-independent extensions are stored in vtt/enrichment/*.json and user://vtt_enrichment.
-const Enrichment = preload("res://vtt/content_enrichment.gd")
+# Source-independent extensions are provided by ContentCatalog.enrich().
 
 # Runtime fields used by the VTT:
 # target_mode:
@@ -1072,12 +1071,12 @@ const SPELLS: Dictionary = {
 static func _apply_runtime_overrides(data: Dictionary) -> Dictionary:
 	# Preserve hand-authored legacy runtime fields, then apply VTT-only
 	# extensions. Never write the resolved result back into compendium JSON.
-	var result: Dictionary = Enrichment.apply_to("spells", data)
+	var result: Dictionary = ContentCatalog.enrich("spells", data)
 	if String(result.get("origin", "")) != "homebrew":
 		# Official geometries are inferred from the separately generated map
 		# catalog. Never infer a homebrew spell's geometry by coincident name.
 		result = SpellAreaCatalog.apply_to_spell(result)
-	result = Enrichment.apply_to("spells", result)
+	result = ContentCatalog.enrich("spells", result)
 
 	if String(result.get("description", "")).is_empty() and result.has("entries"):
 		result["description"] = ContentCatalog.description(result)
@@ -1241,7 +1240,7 @@ static func catalog_spell(spell_id: String) -> Dictionary:
 		# even when using the modern shape/visualization model.
 		if has_2024_geometry:
 			base["map_geometry_source"] = "2024-counterpart"
-		return Enrichment.apply_to("spells", base)
+		return ContentCatalog.enrich("spells", base)
 	for row: Dictionary in ContentCatalog.home_entries("spells"):
 		if String(row.id) == spell_id or String(row.get("overrides", "")) == spell_id:
 			var custom := row.duplicate(true)
