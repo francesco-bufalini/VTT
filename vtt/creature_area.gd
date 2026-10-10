@@ -3852,6 +3852,12 @@ func _sync_token_health(record: Dictionary) -> void:
 		else "set_master_hit_points"
 	)
 	token.set_meta("rules_version", String(record.get("rules_version", "2014")))
+	# Restore tactical reach from the saved attacks as well as on live edits.
+	# This repairs tokens loaded from older maps with an aggregate reach.
+	if token.has_method("get_reach_feet") and token.has_method("set_reach_feet"):
+		var first_melee: float = AttackData.first_melee_range(record)
+		if absf(float(token.call("get_reach_feet")) - first_melee) > 0.01:
+			token.call("set_reach_feet", first_melee, true)
 	if token.has_method("set_display_name"):
 		token.call("set_display_name", String(record.get("name", "")))
 	if token.has_method("set_conditions"):
