@@ -136,7 +136,9 @@ func _start_attack(side: String) -> void:
 	player.advance(0.0)
 
 func _process(_delta: float) -> void:
-	_retire_legacy()
+	# Legacy hierarchies are retired in _ready() and on encounter state
+	# changes. Hiding the huge Kaos/Klothys visual trees every render frame
+	# needlessly repeats visibility work even while the encounter is idle.
 	if player == null or _active_side.is_empty():
 		return
 	var time: float = player.current_animation_position
@@ -237,11 +239,9 @@ func _retire_legacy() -> void:
 			collider.collision_mask = 0
 	for path: String in ["KlothisRoot/KlothisVisual", "KlothisRoot/SphereVisual", "KaosRoot/KaosVisual", "KaosRoot/ClimbingVisual"]:
 		var old := scene.get_node_or_null(path) as Node3D
-		if old == null:
+		if old == null or old.has_meta("import_replaced"):
 			continue
 		old.hide()
-		if old.has_meta("import_replaced"):
-			continue
 		old.set_meta("import_replaced", true)
 		old.add_to_group("grid_3d_excluded")
 		for collider in old.find_children("*", "CollisionObject3D", true, false):
