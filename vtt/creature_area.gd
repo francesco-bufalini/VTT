@@ -217,11 +217,6 @@ func sync_linked_token_editor(token: CharacterBody3D) -> void:
 			record["size_name"] = token.call("get_size_name")
 		if token.has_method("get_footprint_cells"):
 			record["footprint"] = token.call("get_footprint_cells")
-		if token.has_method("get_reach_feet"):
-			var token_reach: float = float(token.call("get_reach_feet"))
-			if String(record.get("kind", "")) == "monster" and absf(token_reach - float(record.get("reach_feet", 5.0))) > 0.01:
-				record["reach_is_custom"] = true
-			record["reach_feet"] = token_reach
 		if token.has_method("get_visual_front_quarter_turns"):
 			record["visual_front_quarter_turns"] = token.call("get_visual_front_quarter_turns")
 		if token.has_method("get_party_id"):
@@ -3606,7 +3601,6 @@ func _confirm_miniature() -> void:
 				var footprint := maxf(0.5, float(profile.get("footprint", 1.0)))
 				record["size_name"] = size_name
 				record["footprint"] = footprint
-				record["reach_feet"] = maxf(5.0, footprint * 5.0)
 				break
 	if _archive.save(record) != OK:
 		_set_status("Impossibile salvare la miniatura della creatura.")
