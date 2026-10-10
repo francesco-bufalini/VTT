@@ -5,6 +5,7 @@ const ProficiencyTab = preload("res://vtt/creature_proficiencies_tab.gd")
 const Attacks = preload("res://vtt/creature_attack_data.gd")
 const PlayerStore = preload("res://vtt/player_character_store.gd")
 const Traits = preload("res://vtt/creature_traits_tab.gd")
+const Catalog = preload("res://vtt/player_5etools_catalog.gd")
 
 
 func _initialize() -> void:
@@ -194,6 +195,12 @@ func run() -> void:
 	assert(Proficiencies.has_proficiency(revised, "weapon", "martial"),
 		"XPHB 2024 Barbarian starting class also uses structured grants")
 
+	var background_options: Array[Dictionary] = Catalog.entries("backgrounds")
+	var acolyte_selectable := false
+	for option: Dictionary in background_options:
+		if String(option.get("name", "")) == "Acolyte" and String(option.get("source", "")) == "PHB":
+			acolyte_selectable = true
+	assert(acolyte_selectable, "Background dropdown must include structured Acolyte even when player catalog is empty")
 	var background_record := _record()
 	background_record["background"] = "Acolyte"
 	# Legacy character sheets keep only a background name.
@@ -231,6 +238,25 @@ func run() -> void:
 	assert(not Proficiencies.source_has_grants({"group": "race",
 		"data": {"name": "Empty Race", "skillProficiencies": [{"choose": {}}]}}),
 		"Races without fixed grants or valid choices must not create automatic origins")
+	# A manually attributed trait must vanish when its originating feature
+	# is removed (e.g. when a race or creature trait changes).
+	var trait_creature: Dictionary = {
+		"kind": "monster", "stat_block": {"trait": [{"name": "Guardiano", "entries": ["Protegge gli alleati"]}]},
+		"proficiency_origins": [], "proficiency_choices": []
+	}
+	var live_traits: Array[Dictionary] = Traits.collect_features(trait_creature)
+	assert(not live_traits.is_empty(), "Monster should expose its structured trait")
+	var trait_sid: String = "feature:" + String(live_traits[0].get("key", ""))
+	trait_creature["proficiency_origins"] = [{"id": trait_sid, "name": "Tratto · Guardiano", "automatic": false}]
+	trait_creature["proficiency_choices"] = [{"kind": "skill", "key": "stealth", "origin_id": trait_sid, "disabled": false}]
+	assert(Proficiencies.has_proficiency(trait_creature, "skill", "stealth"),
+		"An existing trait can explicitly grant a proficiency")
+	(trait_creature["stat_block"] as Dictionary)["trait"] = []
+	assert(not Proficiencies.has_proficiency(trait_creature, "skill", "stealth"),
+		"Removed trait must revoke its related proficiency")
+	for withdrawn: Dictionary in Proficiencies.origins(trait_creature):
+		assert(String(withdrawn.get("id", "")) != trait_sid,
+			"Removed feature must not persist as an orphan origin")
 
 	var feat_record := _record()
 	feat_record["feats_catalog"] = [{"name": "Lightly Armored", "source": "PHB", "id": "feat:lightly armored|phb|"}]
@@ -413,6 +439,38 @@ func run() -> void:
 		"Skill and weapon headings must never repeat with interleaved grants")
 	assert(not has_link_button and has_mastery_word,
 		"Manual linking action is removed and stars are replaced by Mestria")
+	# Deleting a shared skill requires the source (or all sources).
+	tab.load_record(_record())
+	tab._rows.append({"kind": "skill", "key": "insight", "origin_id": "custom|first", "disabled": false})
+	tab._rows.append({"kind": "skill", "key": "insight", "origin_id": "custom|second", "disabled": false})
+	tab._refresh_competences()
+	tab._request_delete_competence("skill", "insight")
+	assert(tab._delete_dialog.visible and tab._delete_picker.item_count == 3,
+		"Shared proficiency deletion must ask for a specific origin or all origins")
+	tab._delete_picker.select(1)
+	tab._confirm_delete_competence()
+	tab._delete_dialog.hide()
+	assert(tab._deletable_sources("skill", "insight").size() == 1,
+		"Deleting from one source must preserve other sources")
+	tab._request_delete_competence("skill", "insight")
+	assert(tab._deletable_sources("skill", "insight").size() == 0,
+		"Deleting the last remaining source removes the skill")
+	var required: Array[Dictionary] = Proficiencies.choices(_record())
+	var fighter_index := -1
+	for i: int in range(required.size()):
+		if String(required[i].get("origin_id", "")) == "class|phb|fighter" and String(required[i].get("kind", "")) == "weapon" and String(required[i].get("key", "")) == "martial":
+			fighter_index = i
+			break
+	assert(fighter_index >= 0, "Fighter's martial training is a required grant")
+	tab.load_record(_record())
+	var fixed_before := Proficiencies.has_choice(tab._rows, "weapon", "martial")
+	tab._delete_competence_from_source("weapon", "martial", "~all~")
+	assert(fixed_before and Proficiencies.has_choice(tab._rows, "weapon", "martial"),
+		"Required grants cannot be deleted even by choosing all origins")
+	tab._select_origin("class|phb|fighter")
+	var unrelated := tab._rows.size()
+	tab._rows.append({"kind": "skill", "key": "nature", "origin_id": "custom|separate", "disabled": false})
+	assert(tab._group_enabled([unrelated]), "Selecting a different origin must not show active proficiencies as off")
 	tab.queue_free()
 	await process_frame
 	print("PASS: automatically granted structured proficiencies, choose warnings, toggles, source highlights and migration")
