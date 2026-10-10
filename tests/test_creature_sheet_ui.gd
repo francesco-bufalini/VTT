@@ -360,6 +360,10 @@ func run() -> void:
 		and combat_view.horizontal_scroll_mode == ScrollContainer.SCROLL_MODE_AUTO
 		and area._abilities_grid.columns == 1,
 		"Oversized details should scroll inside their own columns without widening the sheet")
+	area._update_stats_column_heights()
+	assert(skills_view.custom_minimum_size.y > 0
+		and is_equal_approx(skills_view.custom_minimum_size.y, combat_view.custom_minimum_size.y),
+		"Both columns should expose the full height of their contents to the outer vertical scroll")
 	var combat_stats: Node = area._attacks_description.get_parent()
 	assert(area._tracker_rows.get_parent() == combat_stats
 		and area._tracker_rows.get_index() < area._attacks_description.get_index(),
