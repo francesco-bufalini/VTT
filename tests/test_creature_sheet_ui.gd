@@ -131,7 +131,7 @@ func run() -> void:
 	assert("Inventario" in tab_titles and "Incantesimi" in tab_titles and "Competenze" in tab_titles
 		and tab_titles[0] == "Info" and tab_titles[1] == "Statistiche")
 	assert("Risorse" not in tab_titles and area._tracker_rows.get_parent() != area._name.get_parent().get_parent()
-		and area._tracker_rows.get_parent() == area._max_hp.get_parent().get_parent().get_parent().get_parent(),
+		and area._tracker_rows.get_parent() == area._attacks_description.get_parent(),
 		"Trackers must be inside Statistics rather than Info or a separate tab")
 	area._choose_miniature(area._current(), false, true)
 	area._miniature_filter.text = "ape"
@@ -368,7 +368,20 @@ func run() -> void:
 	assert(area._tracker_rows.get_parent() == combat_stats
 		and area._tracker_rows.get_index() < area._attacks_description.get_index(),
 		"Trackers should appear above the list of available attacks")
-	assert("Colpo senz'armi" in area._attacks_description.text
+	assert(area._formula_values["hp"].value_label == area._max_hp_effective
+		and area._formula_values["hp"]._editor.visible == false,
+		"HP maximum should be a compact readout, not a permanently visible formula")
+	assert(area._formula_values["initiative"]._fields.size() == 1
+		and area._formula_values["initiative"]._fields[0] == area._initiative_bonus,
+		"Initiative must only expose its manual bonus, never the derived DEX base")
+	area._formula_values["initiative"].open_editor()
+	assert(area._formula_values["initiative"]._editor.visible
+		and not area._formula_values["initiative"]._readout.visible)
+	area._formula_values["initiative"].close_editor()
+	assert(area._formula_values["initiative"]._readout.visible)
+	assert(area._formula_values["ability:con"]._fields.size() == 2,
+		"Ability scores can still edit their base and manual modifier")
+		assert("Colpo senz'armi" in area._attacks_description.text
 		and "Arma improvvisata" in area._attacks_description.text,
 		"Unarmed and improvised attacks must appear while no weapon is equipped")
 	var fallback_view_record: Dictionary = area._current().duplicate(true)
@@ -408,8 +421,11 @@ func run() -> void:
 	assert(spells._slot_grid.columns == 1
 		and spells._remaining_labels[1].get_parent() is HBoxContainer
 		and spells._slot_grid.get_parent() is ScrollContainer,
-		"Slots should use wrapped tracker rows with remaining/max and an inline bonus")
-	assert(spells._pact_remain.get_index() < spells._pact_bonus_spin.get_parent().get_index(),
+		"Slots should use wrapped tracker rows with remaining/max and on-demand editing")
+	assert(spells._slot_formula_values[1].value_label.text == "2"
+		and spells._slot_formula_values[1]._readout.tooltip_text.contains("bonus"),
+		"Spell slot maximum must expose a compact number and full hover formula")
+	assert(spells._pact_remain.get_index() < spells._pact_formula_value.get_parent().get_index(),
 		"Pact Magic remaining/max must precede its base-and-bonus formula")
 	spells._known_list.select(0)
 	spells._on_spell_list_selected("known")
