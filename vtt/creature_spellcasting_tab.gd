@@ -53,8 +53,6 @@ var _prepare: Button
 var _slot_totals: Dictionary = {}
 var _slot_bonus_controls: Dictionary = {}
 var _remaining_labels: Dictionary = {}
-var _slot_formula_labels: Dictionary = {}
-var _pact_formula: Label
 var _slot_use: Dictionary = {}
 var _slot_recharge: Dictionary = {}
 var _pact_total_spin: SpinBox
@@ -260,44 +258,46 @@ func setup(
 	_slots_eye.pressed.connect(_toggle_slots_visibility)
 	slot_title.add_child(_slots_eye)
 	_slot_grid = GridContainer.new()
-	_slot_grid.columns = 5
-	_slot_grid.add_theme_constant_override("h_separation", 12)
-	_slot_grid.add_theme_constant_override("v_separation", 9)
+	_slot_grid.columns = 1
+	_slot_grid.add_theme_constant_override("v_separation", 5)
 	add_child(_slot_grid)
-	for label_text: String in ["Liv.", "Massimo (= base + bonus)", "Rimasti", "Usa", "Ricarica"]:
-		var header := Label.new()
-		header.text = label_text
-		_slot_grid.add_child(header)
+	var hint := Label.new()
+	hint.text = "Liv.    Usa  ·  Rimasti / max = (base + bonus)  ·  Ricarica"
+	hint.add_theme_font_size_override("font_size", 12)
+	_slot_grid.add_child(hint)
 	for lvl: int in range(1, 10):
+		# Match the consumable tracker rows: − then current/max = (base bonus), then +.
+		var row := HFlowContainer.new()
+		row.add_theme_constant_override("h_separation", 5)
+		row.add_theme_constant_override("v_separation", 3)
+		_slot_grid.add_child(row)
 		var caption := Label.new()
 		caption.text = "%d°" % lvl
-		_slot_grid.add_child(caption)
-		var max_panel := PanelContainer.new()
-		var max_style := StyleBoxFlat.new()
-		max_style.bg_color = Color(0.18, 0.16, 0.14, 0.7)
-		max_style.border_color = Color(0.46, 0.37, 0.27, 0.75)
-		max_style.set_border_width_all(1)
-		max_style.set_corner_radius_all(5)
-		max_style.set_content_margin_all(3)
-		max_panel.add_theme_stylebox_override("panel", max_style)
-		_slot_grid.add_child(max_panel)
-		var max_formula := HBoxContainer.new()
-		max_formula.add_theme_constant_override("separation", 3)
-		max_panel.add_child(max_formula)
-		var effective_label := Label.new()
-		effective_label.custom_minimum_size.x = 25
-		max_formula.add_child(effective_label)
-		_slot_formula_labels[lvl] = effective_label
-		ManualBonus.add_formula_label(max_formula, "=")
-		ManualBonus.add_formula_label(max_formula, "(")
+		caption.custom_minimum_size.x = 28
+		row.add_child(caption)
+		var use := Button.new()
+		use.text = "−"
+		use.tooltip_text = "Consuma uno slot di livello %d" % lvl
+		use.custom_minimum_size.x = 30
+		use.pressed.connect(_change_slot.bind(lvl, 1))
+		row.add_child(use)
+		_slot_use[lvl] = use
+		var remaining := Label.new()
+		remaining.custom_minimum_size.x = 65
+		remaining.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
+		row.add_child(remaining)
+		_remaining_labels[lvl] = remaining
+		ManualBonus.add_formula_label(row, "=")
+		ManualBonus.add_formula_label(row, "(")
 		var total := SpinBox.new()
 		total.min_value = 0
 		total.max_value = 99
 		total.rounded = true
 		total.update_on_text_changed = true
 		total.custom_minimum_size = Vector2(62, 36)
+		total.tooltip_text = "Numero base di slot massimi"
 		total.value_changed.connect(_on_slot_total_changed.bind(lvl))
-		max_formula.add_child(total)
+		row.add_child(total)
 		_slot_totals[lvl] = total
 		var bonus := SpinBox.new()
 		bonus.min_value = -99
@@ -305,29 +305,18 @@ func setup(
 		bonus.step = 1
 		bonus.rounded = true
 		bonus.custom_minimum_size = Vector2(62, 36)
-		bonus.tooltip_text = "Bonus manuale agli slot massimi: aggiunto al massimo base"
+		bonus.tooltip_text = "Bonus manuale agli slot massimi"
 		ManualBonus.decorate(bonus)
 		bonus.value_changed.connect(_on_slot_bonus_changed.bind(lvl))
-		max_formula.add_child(bonus)
-		ManualBonus.add_formula_label(max_formula, ")")
+		row.add_child(bonus)
 		_slot_bonus_controls[lvl] = bonus
-		var remaining_group := VBoxContainer.new()
-		_slot_grid.add_child(remaining_group)
-		var remaining := Label.new()
-		remaining.custom_minimum_size.x = 65
-		remaining_group.add_child(remaining)
-		_remaining_labels[lvl] = remaining
-		var use := Button.new()
-		use.text = "−"
-		use.tooltip_text = "Consuma uno slot di livello %d" % lvl
-		use.pressed.connect(_change_slot.bind(lvl, 1))
-		_slot_grid.add_child(use)
-		_slot_use[lvl] = use
+		ManualBonus.add_formula_label(row, ")")
 		var recharge := Button.new()
 		recharge.text = "+"
+		recharge.custom_minimum_size.x = 30
 		recharge.tooltip_text = "Ricarica uno slot di livello %d" % lvl
 		recharge.pressed.connect(_change_slot.bind(lvl, -1))
-		_slot_grid.add_child(recharge)
+		row.add_child(recharge)
 		_slot_recharge[lvl] = recharge
 
 	var pact_header := HBoxContainer.new()
@@ -360,12 +349,6 @@ func setup(
 	var total_group := HBoxContainer.new()
 	total_group.add_theme_constant_override("separation", 3)
 	_pact_row.add_child(total_group)
-	var total_label := Label.new()
-	total_label.text = "Max"
-	total_group.add_child(total_label)
-	_pact_formula = Label.new()
-	_pact_formula.custom_minimum_size.x = 25
-	total_group.add_child(_pact_formula)
 	ManualBonus.add_formula_label(total_group, "=")
 	ManualBonus.add_formula_label(total_group, "(")
 	_pact_total_spin = SpinBox.new()
@@ -386,7 +369,7 @@ func setup(
 	total_group.add_child(_pact_bonus_spin)
 	ManualBonus.add_formula_label(total_group, ")")
 	_pact_remain = Label.new()
-	_pact_remain.custom_minimum_size.x = 64
+	_pact_remain.custom_minimum_size.x = 68
 	_pact_row.add_child(_pact_remain)
 	_pact_use = Button.new()
 	_pact_use.text = "Usa"
@@ -397,6 +380,10 @@ func setup(
 	_pact_restore.tooltip_text = "Ricarica uno slot della Magia del Patto"
 	_pact_restore.pressed.connect(_change_pact.bind(-1))
 	_pact_row.add_child(_pact_restore)
+	_pact_use.text = "−"
+	_pact_row.move_child(_pact_use, level_group.get_index() + 1)
+	_pact_row.move_child(_pact_remain, _pact_use.get_index() + 1)
+
 	_apply_resource_visibility()
 	_update_resource_labels()
 	_update_spell_controls()
@@ -1087,12 +1074,10 @@ func _update_resource_labels() -> void:
 		var total: int = _effective_slot_total(lvl) if _totals.size() > lvl and _slot_bonuses.size() > lvl else 0
 		var spent: int = clampi(int(_spent[lvl]), 0, total) if _spent.size() > lvl else 0
 		(_remaining_labels[lvl] as Label).text = "%d / %d" % [total - spent, total]
-		(_slot_formula_labels[lvl] as Label).text = str(total)
 		(_slot_use[lvl] as Button).disabled = spent >= total
 		(_slot_recharge[lvl] as Button).disabled = spent <= 0
 	var pact_max: int = _effective_pact_total()
 	_pact_remain.text = "%d / %d" % [pact_max - _pact_spent, pact_max]
-	_pact_formula.text = str(pact_max)
 	_pact_use.disabled = _pact_spent >= pact_max
 	_pact_restore.disabled = _pact_spent <= 0
 
