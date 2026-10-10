@@ -348,6 +348,11 @@ func run() -> void:
 	assert(sheet.id == original_id and sheet.classes[0].level == 6)
 	assert(area._statistics_columns.get_child_count() == 2,
 		"Statistics must have dedicated skill and combat columns")
+	var feat_section: VBoxContainer = area._proficiencies_ui.get("_feat_section") as VBoxContainer
+	var feat_editor: VBoxContainer = area._proficiencies_ui.get("_feat_editor") as VBoxContainer
+	assert(feat_section != null and feat_section.get_parent() == area._biography.get_parent()
+		and feat_editor != null and feat_editor.visible,
+		"Feat list and add/remove controls belong to Info, not proficiency origins")
 	assert(area._skill_buttons.size() == 18,
 		"All canonical 5etools/D&D 5e skills must be present")
 	assert(int(area._passive_perception.text) >= 10,
