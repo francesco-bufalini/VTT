@@ -7,6 +7,28 @@ const HOME_DIR := "user://homebrew"
 const CATEGORIES := ["items", "subclasses", "subclass_features", "monsters", "races", "classes", "spells", "conditions", "diseases", "effects", "class_features", "species_traits", "feats", "backgrounds", "optional_features"]
 const EFFECT_CATEGORIES := ["conditions", "diseases", "effects"]
 const MAX_FILE_BYTES := 2 * 1024 * 1024
+# Native 5etools homebrew packages keep their _meta.sources and category
+# arrays intact on disk. Adapt them at the catalog boundary only.
+const NATIVE_CATEGORIES = {
+	"monster": "monsters",
+	"spell": "spells",
+	"item": "items",
+	"baseitem": "items",
+	"magicvariant": "items",
+	"class": "classes",
+	"subclass": "subclasses",
+	"subclassFeature": "subclass_features",
+	"classFeature": "class_features",
+	"race": "races",
+	"raceFeature": "species_traits",
+	"feat": "feats",
+	"background": "backgrounds",
+	"optionalfeature": "optional_features",
+	"condition": "conditions",
+	"disease": "diseases"
+}
+
+
 const LEGACY_CONDITIONS := [
 	# Le 15 condizioni ufficiali D&D 5e / SRD.
 	{"id": "blinded", "name": "Blinded", "icon": "🙈", "official": true},
@@ -122,28 +144,6 @@ static func _load_package(path: String) -> void:
 			if data.icon.length() > 16:
 				data["icon"] = ""
 		_home[id] = data
-
-# Native 5etools homebrew packages keep their _meta.sources and category
-# arrays intact on disk. Adapt them at the catalog boundary only.
-const NATIVE_CATEGORIES := {
-	"monster": "monsters",
-	"spell": "spells",
-	"item": "items",
-	"baseitem": "items",
-	"magicvariant": "items",
-	"class": "classes",
-	"subclass": "subclasses",
-	"subclassFeature": "subclass_features",
-	"classFeature": "class_features",
-	"race": "races",
-	"raceFeature": "species_traits",
-	"feat": "feats",
-	"background": "backgrounds",
-	"optionalfeature": "optional_features",
-	"condition": "conditions",
-	"disease": "diseases"
-}
-
 
 static func _native_slug(value: String, max_length: int) -> String:
 	var regex := RegEx.new()
