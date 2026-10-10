@@ -214,7 +214,7 @@ static func _selected_source(record: Dictionary, group: String, name: String, so
 
 static func _origin_title(group: String, name: String, mode: String) -> String:
 	match group:
-		"class": return "Starting " + name + (" · Multiclasse" if mode == "multiclass" else "")
+		"class": return "Starting " + name
 		"race", "subrace": return "Specie · " + name
 		"background": return "Background · " + name
 		"feat": return "Talento · " + name
@@ -532,22 +532,89 @@ static func requirement_missing(source: Dictionary, rows: Array[Dictionary], ena
 	return result
 
 
+static func _readable_grants(value: Variant) -> String:
+	var pieces := PackedStringArray()
+	if not value is Array:
+		return ""
+	for raw: Variant in value:
+		if raw is String:
+			var label: String = String(raw)
+			if label.begins_with("{@item "):
+				label = label.substr(7).split("|")[0].strip_edges()
+			pieces.append(label.capitalize() if label in ["simple", "martial", "light", "medium", "heavy", "shield"] else label)
+		elif raw is Dictionary:
+			var item: Dictionary = raw
+			for field: String in item.keys():
+				if item[field] == true and field != "choose":
+					pieces.append(field.capitalize())
+			var choose: Variant = item.get("choose", {})
+			if choose is Dictionary:
+				var count: int = maxi(1, int((choose as Dictionary).get("count", 1)))
+				var options: Variant = (choose as Dictionary).get("from", [])
+				if options is Array and not (options as Array).is_empty():
+					pieces.append("Choose %d: %s" % [count, ", ".join(PackedStringArray(options))])
+				else:
+					pieces.append("Choose %d from %s" % [count, String((choose as Dictionary).get("fromFilter", "the available options"))])
+			for field: String in ["any", "anyStandard", "anyExotic", "anyArtisansTool", "anyMusicalInstrument", "anyGamingSet", "anyProficientSkill"]:
+				if item.has(field):
+					pieces.append("Choose %d (%s)" % [int(item[field]), field])
+	return "; ".join(pieces)
+
+
+static func _clean_equipment(text_value: String) -> String:
+	var pattern: RegEx = RegEx.create_from_string("\\{@(?:item|filter|dice) ([^}|]+)(?:\\|[^}]*)?\\}")
+	if pattern == null:
+		return text_value
+	var replaced: String = text_value
+	for match_result: RegExMatch in pattern.search_all(text_value):
+		replaced = replaced.replace(match_result.get_string(0), match_result.get_string(1))
+	return replaced
+
+
 static func starting_description(source: Dictionary) -> String:
 	var data: Dictionary = source.get("data", {})
+	var meta: Dictionary = data.get("startingMeta", {})
 	var mode: String = String(source.get("mode", "starting"))
 	var lines := PackedStringArray()
-	lines.append("Competenze iniziali" if mode == "starting" else "Competenze da multiclasse")
-	for kind: String in TYPES:
-		var raw: Variant = _grants_data(source, kind)
-		if raw is Array and not (raw as Array).is_empty():
-			lines.append("%s: %s" % [kind.capitalize(), JSON.stringify(raw)])
-	var meta: Dictionary = data.get("startingMeta", {})
-	if mode == "starting":
-		if meta.has("hitDice"):
-			lines.insert(0, "Dado Vita: " + String(meta.get("hitDice", "")))
-		if meta.has("equipment"):
-			lines.append("Equipaggiamento iniziale: " + String(meta.get("equipment", "")))
-	else:
-		if meta.has("multiclass"):
-			lines.append("Requisiti di multiclasse: " + String(meta.get("multiclass", "")))
+	lines.append("Core Traits")
+	var dice: String = String(meta.get("hitDice", ""))
+	if not dice.is_empty():
+		lines.append("Hit Point Die: %s per level" % dice)
+		lines.append("Hit Points at Level 1: %d + Constitution modifier" % int(meta.get("hitPointsAtFirst", 0)))
+		lines.append("Hit Points per additional level: %s + Constitution modifier" % dice)
+	var saving: String = _readable_grants(data.get("savingThrows", []))
+	if not saving.is_empty():
+		lines.append("Saving Throw Proficiencies: " + saving)
+	var start: Dictionary = data.get("startingProficiencies", {})
+	for group: String in ["skills", "weapons", "armor", "tools"]:
+		var raw: Variant = start.get(group, [])
+		if group == "armor":
+			raw = start.get("armor", [])
+		var displayed := _readable_grants(raw)
+		if not displayed.is_empty():
+			var title: String = {"skills": "Skill Proficiencies", "weapons": "Weapon Proficiencies", "armor": "Armor Training", "tools": "Tool Proficiencies"}[group]
+			lines.append(title + ": " + _clean_equipment(displayed))
+	var equipment: Variant = meta.get("equipment", [])
+	if equipment is Array and not (equipment as Array).is_empty():
+		lines.append("")
+		lines.append("Starting Equipment")
+		for item: Variant in equipment:
+			lines.append("• " + _clean_equipment(String(item)))
+	lines.append("")
+	lines.append("Multiclassing")
+	var requirements: Variant = meta.get("multiclass", {})
+	if requirements is Dictionary and not (requirements as Dictionary).is_empty():
+		var requirement_pieces := PackedStringArray()
+		for ability: String in (requirements as Dictionary).keys():
+			requirement_pieces.append(ability.to_upper() + " " + str((requirements as Dictionary)[ability]))
+		lines.append("Ability Score Minimum: " + ", ".join(requirement_pieces))
+	var multi: Dictionary = data.get("multiclassProficiencies", {})
+	for group: String in ["skills", "weapons", "armor", "tools"]:
+		var displayed := _readable_grants(multi.get(group, []))
+		if not displayed.is_empty():
+			var title: String = {"skills": "Skill Proficiencies", "weapons": "Weapon Proficiencies", "armor": "Armor Training", "tools": "Tool Proficiencies"}[group]
+			lines.append(title + ": " + _clean_equipment(displayed))
+	lines.append("")
+	lines.append("Applicate a questa creatura: " + ("competenze iniziali" if mode == "starting" else "competenze da multiclasse"))
+	lines.append("Source: " + String(data.get("source", "")))
 	return "\n".join(lines)
