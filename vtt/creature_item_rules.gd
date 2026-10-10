@@ -6,6 +6,29 @@ const Catalog = preload("res://vtt/player_5etools_catalog.gd")
 const ItemInstance = preload("res://vtt/item_instance.gd")
 
 static var _catalog_by_id: Dictionary = {}
+const WEAPON_SIZES := ["Tiny", "Small", "Medium", "Large", "Huge", "Gargantuan"]
+
+
+# The saved override exists only when an individual weapon differs from its wielder.
+static func weapon_size(record: Dictionary, owned: Dictionary) -> String:
+	var raw: Variant = owned.get("instance_overrides", {})
+	var explicit: String = String((raw as Dictionary).get("weapon_size", "")) if raw is Dictionary else ""
+	if explicit in WEAPON_SIZES:
+		return explicit
+	var creature_size: String = String(record.get("size_name", "Medium"))
+	return creature_size if creature_size in WEAPON_SIZES else "Medium"
+
+
+# DMG 2014, monster weapon sizing: Small/Medium (and Tiny) use catalog dice;
+# Large, Huge and Gargantuan weapons have 2x, 3x and 4x weapon dice.
+static func weapon_dice_multiplier(size_name: String) -> int:
+	match size_name:
+		"Large": return 2
+		"Huge": return 3
+		"Gargantuan": return 4
+		_: return 1
+
+
 
 
 static func reset_catalog() -> void:

@@ -67,6 +67,29 @@ func run() -> void:
 	assert(AttackData.attack_bonus(record, weapon, 2) == 4)
 	assert("1d8 +4" in AttackData.damage_label(record, weapon))
 	assert(ItemRules.shield_bonus(record.inventory) == 2)
+	# The weapon's effective size follows its wielder unless explicitly
+	# overridden, including for Tiny/Small (standard catalog damage).
+	var big_record := _record([rapier])
+	big_record["size_name"] = "Large"
+	var big_attack := _attack(AttackData.definitions(big_record), "item:test:rapier")
+	assert(big_attack.weapon_size == "Large")
+	assert(AttackData.damage_label(big_record, big_attack).begins_with("1d8 + 1d8 +4"))
+	assert(AttackData.damage_expression(big_record, big_attack) == "1d8+1d8+4")
+	assert(ItemRules.weapon_dice_multiplier("Huge") == 3
+		and ItemRules.weapon_dice_multiplier("Gargantuan") == 4)
+	big_record["size_name"] = "Tiny"
+	big_attack = _attack(AttackData.definitions(big_record), "item:test:rapier")
+	assert(AttackData.damage_label(big_record, big_attack).begins_with("1d8 +4"))
+	var oversized := rapier.duplicate(true)
+	oversized["instance_overrides"] = {"weapon_size": "Huge"}
+	big_record["inventory"] = [oversized]
+	big_attack = _attack(AttackData.definitions(big_record), "item:test:rapier")
+	assert(big_attack.weapon_size == "Huge"
+		and AttackData.damage_label(big_record, big_attack).begins_with("1d8 + 2d8 +4"))
+	assert(AttackData.damage_expression(big_record, big_attack) == "1d8+2d8+4")
+	assert(AttackData.weapon_size_dice("2d6 + 1d4", "Large") == "2d6 + 2d6 + 1d4",
+		"Only the first weapon dice pool, not additional damage riders, scales with size")
+
 	record["attack_ability"] = "str"
 	assert(AttackData.attack_bonus(record, weapon, 2) == 1, "Finesse respects the preferred STR/DEX ability")
 	record["attack_ability"] = "dex"

@@ -23,6 +23,10 @@ func run() -> void:
 			"Slot maximum formula must render as zero before a creature loads")
 		assert(tab._slot_use[lvl].disabled and tab._slot_recharge[lvl].disabled,
 			"No slots should be usable or recharged before load_record")
+		assert(tab._slot_use[lvl].get_index() + 1 == tab._slot_recharge[lvl].get_index(),
+			"Slot − and + must be adjacent before remaining/max")
+	assert(tab._pact_use.get_index() + 1 == tab._pact_restore.get_index(),
+		"Pact slots must use the same − + remaining/max ordering")
 
 	# Defensive rendering also works if a caller resets the buffers early.
 	tab._totals.clear()

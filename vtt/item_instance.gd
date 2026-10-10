@@ -3,7 +3,7 @@ extends RefCounted
 # An owned object references a catalog definition; mutable data lives in the
 # creature save. Legacy saved snapshots remain usable when catalog is absent.
 const SNAPSHOT_FIELDS := ["type", "weapon_category", "damage", "versatile_damage", "damage_type", "range", "properties", "ac", "bonus_ac", "bonus_weapon"]
-const INSTANCE_FIELD_OVERRIDES := ["damage", "versatile_damage", "damage_type", "range", "properties", "ac", "bonus_ac", "bonus_weapon", "weight", "dimensions_m"]
+const INSTANCE_FIELD_OVERRIDES := ["damage", "versatile_damage", "damage_type", "range", "properties", "ac", "bonus_ac", "bonus_weapon", "weight", "weapon_size"]
 
 
 static func from_catalog(definition: Dictionary) -> Dictionary:
@@ -44,6 +44,8 @@ static func from_saved(saved: Dictionary) -> Dictionary:
 	var extra: Variant = saved.get("instance_overrides", {})
 	if extra is Dictionary:
 		result["instance_overrides"] = (extra as Dictionary).duplicate(true)
+		# Old physical measurements are no longer a supported customization.
+		result["instance_overrides"].erase("dimensions_m")
 	return result
 
 

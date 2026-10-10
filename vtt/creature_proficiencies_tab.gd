@@ -331,9 +331,8 @@ func _refresh_origins() -> void:
 		if not sid.is_empty():
 			var active := CheckButton.new()
 			active.text = "⏻"
-			active.tooltip_text = "L'origine contiene competenze obbligatorie" if _source_has_mandatory_grants(sid) else "Origine attiva / disattivata"
+			active.tooltip_text = "Disattiva temporaneamente tutti i benefici di questa origine, anche quelli obbligatori. Non elimina le concessioni."
 			active.button_pressed = not bool(item.get("disabled", false))
-			active.disabled = _source_has_mandatory_grants(sid)
 			active.toggled.connect(_toggle_origin.bind(sid))
 			line.add_child(active)
 		if selected:
@@ -480,23 +479,27 @@ func _refresh_competences() -> void:
 				if status_label not in linked:
 					linked.append(status_label)
 			var cell := PanelContainer.new()
+			cell.custom_minimum_size.y = 52
 			_proficiency_cards.add_child(cell)
-			# Only the explicitly selected source receives a discreet marker.
-			# Active training stays visible through its checkmark and text,
-			# never through a permanently illuminated blue outline.
-			if selected_active:
-				var source_outline := StyleBoxFlat.new()
-				source_outline.draw_center = false
-				source_outline.border_color = Color(0.82, 0.70, 0.48, 0.76)
-				source_outline.set_border_width_all(1)
-				source_outline.set_corner_radius_all(5)
-				cell.add_theme_stylebox_override("panel", source_outline)
+			# The previous selected-only StyleBox removed the theme's inner
+			# margins; rows from other sources therefore grew considerably.
+			# Give EVERY card identical background, borders and padding.
+			var row_style := StyleBoxFlat.new()
+			row_style.bg_color = Color(0.13, 0.12, 0.12, 0.88)
+			row_style.border_color = (Color(0.79, 0.66, 0.43, 0.78)
+				if selected_active else Color(0.36, 0.31, 0.27, 0.75))
+			row_style.set_border_width_all(1)
+			row_style.set_corner_radius_all(5)
+			row_style.set_content_margin_all(7)
+			cell.add_theme_stylebox_override("panel", row_style)
 			var box := HBoxContainer.new()
 			box.add_theme_constant_override("separation", 4)
+			box.alignment = BoxContainer.ALIGNMENT_CENTER
 			cell.add_child(box)
 			var label := Label.new()
 			label.size_flags_horizontal = Control.SIZE_EXPAND_FILL
 			label.clip_text = true
+			label.vertical_alignment = VERTICAL_ALIGNMENT_CENTER
 			var mastered: bool = kind == "skill" and _effective_expertise(key, enabled)
 			label.text = ("✓ " if active else "○ ") + key + (" 🎓🎓" if mastered else "")
 			label.tooltip_text = "Origini:\n" + "\n".join(linked)
@@ -508,37 +511,34 @@ func _refresh_competences() -> void:
 				expert.text = "Mestria"
 				expert.tooltip_text = "Maestria (doppia competenza)"
 				expert.button_pressed = mastered
-				expert.disabled = _mandatory_expertise(key)
-				expert.tooltip_text = ("Maestria obbligatoria dell'origine"
-					if expert.disabled else "Maestria (doppia competenza)")
+				expert.custom_minimum_size.y = 34
 				expert.toggled.connect(_toggle_group_expertise.bind(key, indices.duplicate()))
 				box.add_child(expert)
-			# Disabled switches have a greyed-out theme in Godot and incorrectly
-			# look like missing proficiency. Display a read-only state label
-			# instead whenever this particular source cannot be edited.
-			if (_selected_id not in ["~none~", ""] and not selected) or _has_mandatory_in_scope(indices):
-				var state_label := Label.new()
-				state_label.text = "✓ Attiva" if active else "○ Inattiva"
-				state_label.add_theme_font_size_override("font_size", 12)
-				state_label.add_theme_color_override("font_color",
-					Color(0.70, 0.93, 0.76) if active else Color(0.64, 0.63, 0.62))
-				state_label.tooltip_text = ("Competenza obbligatoria" if _has_mandatory_in_scope(indices)
-					else "Competenza concessa da altre origini; seleziona l'origine per modificarla")
-				box.add_child(state_label)
-			else:
-				var toggle := CheckButton.new()
-				toggle.text = "⏻"
-				toggle.tooltip_text = "Abilita o disabilita le concessioni modificabili"
-				toggle.button_pressed = _group_enabled(indices)
-				toggle.toggled.connect(_toggle_group.bind(indices.duplicate()))
-				box.add_child(toggle)
-			if not _deletable_sources(kind, key).is_empty():
+			# Activation and deletion are separate concepts. All displayed
+			# proficiencies can be temporarily muted, including fixed grants
+			# and those linked only to a different highlighted source.
+			var toggle := CheckButton.new()
+			toggle.text = "⏻"
+			toggle.custom_minimum_size.y = 34
+			toggle.tooltip_text = "Attiva o disattiva questa competenza, da tutte le origini, senza eliminarla."
+			toggle.button_pressed = active
+			toggle.toggled.connect(_toggle_group.bind(indices.duplicate()))
+			box.add_child(toggle)
+			var deletable: bool = not _deletable_sources(kind, key).is_empty()
+			if deletable:
 				var remove := Button.new()
 				remove.text = "✕"
-				remove.tooltip_text = "Elimina una competenza scelta. Se concessa da più origini, scegli quale."
 				remove.flat = true
+				remove.custom_minimum_size = Vector2(34, 34)
+				remove.tooltip_text = "Elimina una concessione dall'origine scelta. Le competenze obbligatorie non sono eliminabili."
 				remove.pressed.connect(_request_delete_competence.bind(kind, key))
 				box.add_child(remove)
+			else:
+				# Reserve the delete-button footprint even when removal
+				# is forbidden, keeping all rows in the same proportions.
+				var delete_spacer := Control.new()
+				delete_spacer.custom_minimum_size = Vector2(34, 34)
+				box.add_child(delete_spacer)
 
 
 
@@ -558,31 +558,6 @@ func _is_mandatory_choice(row: Dictionary) -> bool:
 	if sid.is_empty():
 		return false
 	return _mandatory_grants.has(sid + "|" + String(row.get("kind", "")) + "|" + String(row.get("key", "")))
-
-
-func _source_has_mandatory_grants(sid: String) -> bool:
-	for key: String in _mandatory_grants.keys():
-		if key.begins_with(sid + "|"):
-			return true
-	return false
-
-
-func _mandatory_expertise(key: String) -> bool:
-	for row: Dictionary in _rows:
-		if String(row.get("kind", "")) == "expertise" and String(row.get("key", "")) == key and _is_mandatory_choice(row):
-			return true
-	return false
-
-
-func _has_mandatory_in_scope(indices: Array) -> bool:
-	for raw_index: Variant in indices:
-		var row: Dictionary = _rows[int(raw_index)]
-		var sid: String = String(row.get("origin_id", ""))
-		if _selected_id not in ["~none~", ""] and sid != _selected_id:
-			continue
-		if _is_mandatory_choice(row):
-			return true
-	return false
 
 
 func _deletable_sources(kind: String, key: String) -> Array[String]:
@@ -711,20 +686,14 @@ func _effective_expertise(key: String, enabled: Dictionary) -> bool:
 
 
 func _toggle_group(on: bool, indices: Array) -> void:
+	# The switch controls the displayed proficiency as a whole, even when
+	# multiple sources grant it. Each grant keeps its separate disabled flag.
 	for index: Variant in indices:
-		var row: Dictionary = _rows[int(index)]
-		if _selected_id not in ["~none~", ""] and String(row.get("origin_id", "")) != _selected_id:
-			continue
-		if _is_mandatory_choice(row):
-			continue
-		row["disabled"] = not on
+		_rows[int(index)]["disabled"] = not on
 	_publish()
 
 
 func _toggle_group_expertise(on: bool, key: String, indices: Array) -> void:
-	if not on and _mandatory_expertise(key):
-		_refresh()
-		return
 	var origin: Dictionary = {}
 	for index: Variant in indices:
 		var row: Dictionary = _rows[int(index)]
@@ -763,9 +732,6 @@ func _select_origin(sid: String) -> void:
 
 
 func _toggle_origin(on: bool, sid: String) -> void:
-	if not on and _source_has_mandatory_grants(sid):
-		_refresh()
-		return
 	for item: Dictionary in _origins:
 		if String(item.get("id", "")) == sid:
 			item["disabled"] = not on
@@ -776,16 +742,12 @@ func _toggle_origin(on: bool, sid: String) -> void:
 func _toggle_competence(on: bool, index: int) -> void:
 	if index < 0 or index >= _rows.size():
 		return
-	if _is_mandatory_choice(_rows[index]):
-		return
 	_rows[index]["disabled"] = not on
 	_publish()
 
 
 func _set_expertise(on: bool, index: int) -> void:
 	if index < 0 or index >= _rows.size():
-		return
-	if not on and _mandatory_expertise(String(_rows[index].get("key", ""))):
 		return
 	var source: Dictionary = _rows[index]
 	var sid: String = String(source.get("origin_id", ""))

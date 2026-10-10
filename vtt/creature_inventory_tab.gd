@@ -34,7 +34,8 @@ var _search: LineEdit
 var _catalog_list: ItemList
 var _inventory_list: ItemList
 var _quantity: SpinBox
-var _size_fields: Dictionary = {}
+var _weapon_size_choice: OptionButton
+var _creature_size_name := "Medium"
 var _details: RichTextLabel
 var _add_button: Button
 var _remove_button: Button
@@ -168,28 +169,22 @@ func setup(on_change: Callable, on_status: Callable, on_document_change: Callabl
 	_quantity.value_changed.connect(_on_quantity_changed)
 	actions.add_child(_quantity)
 
-	# Optional physical dimensions belong to the owned item, not its
-	# 5etools compendium definition or VTT-wide enrichment.
-	var dimensions_row := HFlowContainer.new()
-	dimensions_row.add_theme_constant_override("h_separation", 6)
-	add_child(dimensions_row)
-	for axis: String in ["length", "width", "height"]:
-		var caption := Label.new()
-		match axis:
-			"length": caption.text = "Lunghezza (m)"
-			"width": caption.text = "Larghezza (m)"
-			"height": caption.text = "Altezza (m)"
-		dimensions_row.add_child(caption)
-		var input := SpinBox.new()
-		input.min_value = 0.0
-		input.max_value = 1000.0
-		input.step = 0.01
-		input.custom_minimum_size.x = 90
-		input.editable = false
-		input.tooltip_text = "0 = non specificata. Modifica solo questa istanza, non il catalogo."
-		input.value_changed.connect(_on_dimension_changed.bind(axis))
-		dimensions_row.add_child(input)
-		_size_fields[axis] = input
+	# Weapon sizes are instance overrides. Without one, the weapon always
+	# follows the current creature's size, even after a transformation.
+	var size_row := HBoxContainer.new()
+	size_row.add_theme_constant_override("separation", 6)
+	add_child(size_row)
+	var size_caption := Label.new()
+	size_caption.text = "Taglia arma"
+	size_row.add_child(size_caption)
+	_weapon_size_choice = OptionButton.new()
+	_weapon_size_choice.add_item("Come creatura (Medium)")
+	for size_name: String in ItemRules.WEAPON_SIZES:
+		_weapon_size_choice.add_item(size_name)
+	_weapon_size_choice.disabled = true
+	_weapon_size_choice.tooltip_text = "Default: taglia della creatura. Le armi Grandi/Enormi/Mastodontiche usano dadi aggiuntivi."
+	_weapon_size_choice.item_selected.connect(_on_weapon_size_changed)
+	size_row.add_child(_weapon_size_choice)
 	_remove_button = Button.new()
 	_remove_button.text = "Rimuovi"
 	_remove_button.pressed.connect(_remove_selected)
@@ -322,6 +317,10 @@ func reload_catalog() -> void:
 
 func load_record(record: Dictionary) -> void:
 	_loaded_creature_id = String(record.get("id", ""))
+	_creature_size_name = String(record.get("size_name", "Medium"))
+	if _creature_size_name not in ItemRules.WEAPON_SIZES:
+		_creature_size_name = "Medium"
+	_weapon_size_choice.set_item_text(0, "Come creatura (%s)" % _creature_size_name)
 	var edition := String(record.get("rules_version", "2014"))
 	if edition != _rules_version:
 		_rules_version = edition
@@ -636,7 +635,7 @@ func _on_inventory_selected(index: int) -> void:
 	if index < 0 or index >= _inventory.size():
 		return
 	_quantity.set_value_no_signal(int(_inventory[index].get("quantity", 1)))
-	_set_size_fields(_inventory[index], true)
+	_set_weapon_size_choice(_inventory[index])
 	_quantity.editable = not DocumentStore.is_document(_inventory[index])
 	_remove_button.disabled = false
 	_update_equip_buttons()
@@ -674,47 +673,51 @@ func _add_selected() -> void:
 	_filter_catalog()
 
 
-func _set_size_fields(item: Dictionary, enabled: bool) -> void:
+func update_creature_size(size_name: String) -> void:
+	if size_name not in ItemRules.WEAPON_SIZES or _creature_size_name == size_name:
+		return
+	_creature_size_name = size_name
+	_weapon_size_choice.set_item_text(0, "Come creatura (%s)" % size_name)
+
+
+func _set_weapon_size_choice(item: Dictionary) -> void:
+	var is_weapon: bool = not item.is_empty() and ItemRules.kind(_catalog_entry(item)) == "weapon"
+	_weapon_size_choice.disabled = not is_weapon
 	var overrides: Variant = item.get("instance_overrides", {})
-	var dimensions: Variant = (overrides as Dictionary).get("dimensions_m", {}) if overrides is Dictionary else {}
-	for axis: String in ["length", "width", "height"]:
-		if not _size_fields.has(axis):
-			continue
-		var input: SpinBox = _size_fields[axis]
-		input.editable = enabled
-		input.set_value_no_signal(float((dimensions as Dictionary).get(axis, 0.0)) if dimensions is Dictionary else 0.0)
+	var explicit: String = String((overrides as Dictionary).get("weapon_size", "")) if overrides is Dictionary else ""
+	var choice := 0
+	if is_weapon and explicit in ItemRules.WEAPON_SIZES:
+		choice = ItemRules.WEAPON_SIZES.find(explicit) + 1
+	_weapon_size_choice.select(choice)
 
 
-func _on_dimension_changed(value: float, axis: String) -> void:
+func _on_weapon_size_changed(choice: int) -> void:
 	if _loading:
 		return
-	var index := _selected_inventory_index()
+	var index: int = _selected_inventory_index()
 	if index < 0 or index >= _inventory.size():
 		return
 	var row: Dictionary = _inventory[index].duplicate(true)
-	var existing: Variant = row.get("instance_overrides", {})
-	var old_size: Variant = (existing as Dictionary).get("dimensions_m", {}) if existing is Dictionary else {}
-	var previous: float = float((old_size as Dictionary).get(axis, 0.0)) if old_size is Dictionary else 0.0
-	if is_equal_approx(previous, value):
+	if ItemRules.kind(_catalog_entry(row)) != "weapon":
 		return
-	# A personalized physical object is not a stack of otherwise identical
-	# catalog copies. Split one unit before applying its individual property.
+	var override_size: String = (
+		String(ItemRules.WEAPON_SIZES[choice - 1])
+		if choice > 0 and choice <= ItemRules.WEAPON_SIZES.size() else ""
+	)
+	var overrides: Dictionary = row.get("instance_overrides", {}).duplicate(true)
+	if String(overrides.get("weapon_size", "")) == override_size:
+		return
+	# Changing one weapon in a stack must leave the other copies untouched.
 	if int(row.get("quantity", 1)) > 1:
-		_inventory[index]["quantity"] = int(row.quantity) - 1
+		_inventory[index]["quantity"] = int(row["quantity"]) - 1
 		row["quantity"] = 1
 		row["equipped_slots"] = []
 		index += 1
 		_inventory.insert(index, row)
-	var overrides: Dictionary = row.get("instance_overrides", {}).duplicate(true)
-	var dimensions: Dictionary = overrides.get("dimensions_m", {}).duplicate(true)
-	if value <= 0.0:
-		dimensions.erase(axis)
+	if override_size.is_empty():
+		overrides.erase("weapon_size")
 	else:
-		dimensions[axis] = snappedf(value, 0.01)
-	if dimensions.is_empty():
-		overrides.erase("dimensions_m")
-	else:
-		overrides["dimensions_m"] = dimensions
+		overrides["weapon_size"] = override_size
 	row["instance_overrides"] = overrides
 	_inventory[index] = row
 	_sanitize_equipment()
@@ -764,7 +767,7 @@ func _refresh_inventory(selected_index: int = -1) -> void:
 		_show_details(_catalog_entry(_inventory[selected_index]))
 	else:
 		_details.hide()
-	_set_size_fields(_inventory[selected_index] if selected_index >= 0 and selected_index < _inventory.size() else {}, selected_index >= 0)
+	_set_weapon_size_choice(_inventory[selected_index] if selected_index >= 0 and selected_index < _inventory.size() else {})
 	_remove_button.disabled = selected_index < 0
 	_quantity.editable = selected_index >= 0 and not DocumentStore.is_document(_inventory[selected_index])
 	_update_equip_buttons()
@@ -780,10 +783,8 @@ func _inventory_label(item: Dictionary) -> String:
 		tags.append("🛡 Secondaria")
 	var equipment := (" [" + ", ".join(tags) + "]") if not tags.is_empty() else ""
 	var extra: Variant = item.get("instance_overrides", {})
-	var dimensions: Variant = (extra as Dictionary).get("dimensions_m", {}) if extra is Dictionary else {}
-	var size_label := ""
-	if dimensions is Dictionary and not (dimensions as Dictionary).is_empty():
-		size_label = " · misure personalizzate"
+	var size_name: String = String((extra as Dictionary).get("weapon_size", "")) if extra is Dictionary else ""
+	var size_label := " · taglia " + size_name if size_name in ItemRules.WEAPON_SIZES else ""
 	var item_name: String = String(item.get("name", ""))
 	if DocumentStore.is_document(item):
 		item_name = String(_catalog_entry(item).get("name", item_name))
