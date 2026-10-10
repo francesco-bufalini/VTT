@@ -603,7 +603,7 @@ func _build_ui() -> void:
 	_add_label(movement_row, "Iniziativa")
 	_initiative = _spin(movement_row, -99, 99)
 	_initiative.custom_minimum_size.x = 66
-	_initiative.tooltip_text = "Iniziativa: modificatore di Destrezza, modificabile manualmente"
+	_initiative.tooltip_text = "Iniziativa calcolata automaticamente dal modificatore di Destrezza"
 	_add_label(movement_row, "Velocità (ft)")
 	_speed = SpinBox.new()
 	_speed.min_value = 0
