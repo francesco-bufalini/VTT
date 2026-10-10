@@ -83,8 +83,13 @@ static func update_definition(item: Dictionary, name: String, description: Strin
 		if local_id.is_empty() or "/" in local_id or "\\" in local_id:
 			return false
 		path = ROOT_DIR.path_join(local_id + ".json")
-		payload = _native_package(local_id, title, body)
-	else:
+		if FileAccess.file_exists(path):
+			payload = _native_package(local_id, title, body)
+		else:
+			# A separately installed pack can also use this source prefix.
+			# Preserve that pack and create a local override instead.
+			path = ""
+	if path.is_empty():
 		# A document supplied by another homebrew pack is edited through a
 		# local override: its original file and stable ID remain untouched.
 		if identifier.is_empty():
