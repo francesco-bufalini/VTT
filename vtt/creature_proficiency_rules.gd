@@ -102,6 +102,10 @@ static func choices(record: Dictionary) -> Array[Dictionary]:
 			var exists: bool = false
 			for row: Dictionary in result:
 				if String(row.get("kind", "")) == String(grant.get("kind", "")) and String(row.get("key", "")) == String(grant.get("key", "")) and String(row.get("origin_id", "")) == String(source.get("id", "")):
+					# A required grant remains required even if an older save
+					# originally stored it as a manual choice.
+					row["automatic"] = true
+					row["disabled"] = false
 					exists = true
 					break
 			if not exists:
@@ -435,15 +439,56 @@ static func _active_identity_sources(record: Dictionary) -> Dictionary:
 	for source: Dictionary in candidate_sources(record):
 		if source_has_grants(source):
 			active[String(source.get("id", ""))] = true
+	# Explicit item-based origins only exist while the owned item exists.
+	var inventory: Variant = record.get("inventory", [])
+	if inventory is Array:
+		for item: Variant in inventory:
+			if item is Dictionary:
+				active["item:" + String((item as Dictionary).get("id", ""))] = true
+	# Trait origins depend on the creature's current species/classes/feats.
+	# Delay loading the traits script: it already preloads these rules.
+	var needs_features := false
+	for field: String in ["proficiency_origins", "proficiency_choices"]:
+		var existing: Variant = record.get(field, [])
+		if existing is Array:
+			for row: Variant in existing:
+				if row is Dictionary and String((row as Dictionary).get("id", (row as Dictionary).get("origin_id", ""))).begins_with("feature:"):
+					needs_features = true
+					break
+		if needs_features:
+			break
+	if needs_features:
+		var traits: Script = load("res://vtt/creature_traits_tab.gd") as Script
+		if traits != null:
+			var features: Variant = traits.call("collect_features", record)
+			if features is Array:
+				for feature: Variant in features:
+					if feature is Dictionary:
+						active["feature:" + String((feature as Dictionary).get("key", ""))] = true
 	return active
 
 
 static func _is_replaced_identity(sid: String, active: Dictionary) -> bool:
-	# Race and background follow the current selection rather than retaining
-	# withdrawn automatic entries in the player's proficiency editor.
-	if not (sid.begins_with("race|") or sid.begins_with("subrace|") or sid.begins_with("background|")):
+	# Historical catalog origins must not survive a change of race, class,
+	# background or trait. Unknown (empty) and custom origins remain editable.
+	if not (sid.begins_with("race|") or sid.begins_with("subrace|")
+		or sid.begins_with("background|") or sid.begins_with("class|")
+		or sid.begins_with("feat|") or sid.begins_with("feature:")
+		or sid.begins_with("item:")):
 		return false
 	return not active.has(sid)
+
+
+static func is_mandatory_grant(record: Dictionary, sid: String, kind: String, key: String) -> bool:
+	if sid.is_empty():
+		return false
+	for source: Dictionary in candidate_sources(record):
+		if String(source.get("id", "")) != sid:
+			continue
+		for grant: Dictionary in fixed_grants(source):
+			if String(grant.get("kind", "")) == kind and String(grant.get("key", "")) == key:
+				return true
+	return false
 
 
 static func fixed_grants(source: Dictionary) -> Array[Dictionary]:
