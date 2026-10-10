@@ -81,6 +81,8 @@ static func entries(category: String) -> Array[Dictionary]:
 				if raw is Dictionary:
 					result.append(raw.duplicate(true))
 	var merged: Array[Dictionary] = ContentCatalog.merge(category, result)
+	if category == "items":
+		merged.append_array(ContentCatalog.merge("documents", []))
 	if category in ["races", "feats", "items", "subclasses"]:
 		# Merge first, then sort once. Core, supplements and homebrew must
 		# participate in a single alphabetical ordering.
