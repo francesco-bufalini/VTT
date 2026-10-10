@@ -155,7 +155,7 @@ func run() -> void:
 	# reach just like Medium ones. Larger footprints are measured edge-to-edge.
 	var tiny := TokenScene.instantiate()
 	root.add_child(tiny)
-	tiny.set_token_size(0.5)
+	tiny.call("set_token_size", 0.5)
 	var tiny_half: Vector3 = FlankingSystem.token_half_extents_world(tiny, 1.0)
 	assert(is_equal_approx(tiny_half.x, 0.5))
 	assert(is_equal_approx(FlankingSystem.grid_reach_distance_feet(
@@ -163,14 +163,14 @@ func run() -> void:
 	), 5.0))
 	var huge := TokenScene.instantiate()
 	root.add_child(huge)
-	huge.set_size_category("Huge", 3.0, true)
-	assert(is_equal_approx(huge.get_reach_feet(), 5.0),
+	huge.call("set_size_category", "Huge", 3.0, true)
+	assert(is_equal_approx(float(huge.call("get_reach_feet")), 5.0),
 		"Footprint alone must not increase melee reach")
-	var legacy_state: Dictionary = huge.get_appearance_state()
+	var legacy_state: Dictionary = huge.call("get_appearance_state")
 	legacy_state["reach_feet"] = 15.0
 	legacy_state["reach_overridden"] = false
-	assert(huge.apply_appearance_state(legacy_state))
-	assert(is_equal_approx(huge.get_reach_feet(), 5.0),
+	assert(bool(huge.call("apply_appearance_state", legacy_state)))
+	assert(is_equal_approx(float(huge.call("get_reach_feet")), 5.0),
 		"Legacy size-derived reach must not persist after reload")
 	var huge_half: Vector3 = FlankingSystem.token_half_extents_world(huge, 1.0)
 	assert(is_equal_approx(huge_half.x, 1.5))

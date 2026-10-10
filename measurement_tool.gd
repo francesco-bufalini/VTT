@@ -734,7 +734,9 @@ func begin_measurement() -> bool:
 		return false
 
 	_start_cell_center = cell.get("center", Vector3.ZERO)
-	_start_token = null if aoe_mode else cell.get("token") as Node3D
+	_start_token = null
+	if not aoe_mode:
+		_start_token = cell.get("token") as Node3D
 	_start_raw_point = cell.get("raw", _start_cell_center)
 	_start_center = _start_cell_center
 

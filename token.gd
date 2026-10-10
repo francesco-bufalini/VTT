@@ -1897,7 +1897,7 @@ func _refresh_top_down_token_geometry() -> void:
 	if _top_down_token_sprite == null or _top_down_token_sprite.texture == null:
 		return
 	var pixels: float = maxf(_top_down_token_sprite.texture.get_width(), _top_down_token_sprite.texture.get_height())
-	_top_down_token_sprite.pixel_size = _footprint_cells * cell_size / maxf(pixels, 1.0)
+	_top_down_token_sprite.pixel_size = maxf(_footprint_cells, 1.0) * cell_size / maxf(pixels, 1.0)
 	# Keep the miniature and its physics intact; the image sits above its top.
 	_top_down_token_sprite.position.y = token_height_cells * cell_size * 0.5 + cell_size * 0.08
 
