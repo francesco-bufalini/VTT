@@ -277,6 +277,38 @@ static func suggest_origins(record: Dictionary, kind: String, key: String) -> Ar
 	return matches
 
 
+
+static func reconcile_skills(record: Dictionary) -> Array[Dictionary]:
+	# The Statistics tab still owns skill rank editing. Drop obsolete rank
+	# rows and retain source associations for ranks still selected there.
+	var rows: Array[Dictionary] = []
+	for row: Dictionary in choices(record):
+		var kind := String(row.get("kind", ""))
+		var key := String(row.get("key", ""))
+		var field := "skill_expertise" if kind == "expertise" else "skill_proficiencies"
+		if kind in ["skill", "expertise"]:
+			if key not in record.get(field, []):
+				continue
+		rows.append(row)
+	return rows
+
+
+static func missing_structured(record: Dictionary) -> Array[Dictionary]:
+	# Only unconditional machine-readable class grants are reported as
+	# omissions. Choice pools and optional feats must never be auto-assigned.
+	var missing: Array[Dictionary] = []
+	for candidate: Dictionary in candidate_sources(record):
+		if String(candidate.get("group", "")) != "class":
+			continue
+		for kind: String in ["weapon", "armor", "save"]:
+			var data: Variant = _grants_data(candidate, kind)
+			var keys: Array[String] = ARMORS if kind == "armor" else ABILITIES if kind == "save" else ["simple", "martial"]
+			for key: String in keys:
+				if grant_matches(data, kind, key) == 2 and not has_proficiency(record, kind, key):
+					missing.append({"kind": kind, "key": key, "origin": String(candidate.get("name", ""))})
+	return missing
+
+
 static func unassigned_count(record: Dictionary) -> int:
 	var count := 0
 	for row: Dictionary in choices(record):
