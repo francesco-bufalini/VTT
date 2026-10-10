@@ -2133,7 +2133,7 @@ func _refresh_skill_values(record: Dictionary) -> void:
 		(_skill_buttons[key] as Button).tooltip_text = ["Nessuna competenza", "Competenza", "Maestria"][rank]
 		(_skill_values[key] as Label).text = "%+d" % value
 	var passive: int = 10 + Rules.ability_modifier(
-		int(_ability_spins["wis"].value) + int(_ability_bonus_spins["wis"].value)
+		int((_ability_spins["wis"] as SpinBox).value) + int((_ability_bonus_spins["wis"] as SpinBox).value)
 	) + int(_skill_ranks.get("perception", 0)) * proficiency
 	_passive_perception.text = str(passive)
 
