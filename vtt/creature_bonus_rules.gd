@@ -259,7 +259,14 @@ static func _base(record: Dictionary, target: String, stack: Dictionary) -> Dict
 			return dex
 		return {"ok": true, "value": int(dex["value"]) + int(record.get("initiative_bonus", 0))}
 	if target == "ac":
-		return {"ok": true, "value": int(record.get("armor_class_base", 10)) + int(record.get("armor_class_bonus", 0)) + Items.shield_bonus(record.get("inventory", []))}
+		var armor_record: Dictionary = record
+		if not Items.equipped_armor(record.get("inventory", [])).is_empty():
+			var dex: Dictionary = _resolve(record, "ability_mod:dex", stack)
+			if not bool(dex.get("ok", false)):
+				return dex
+			armor_record = record.duplicate(false)
+			armor_record["effective_armor_dex"] = int(dex["value"])
+		return {"ok": true, "value": int(Items.armor_base(armor_record).get("value", 10)) + int(record.get("armor_class_bonus", 0)) + Items.shield_bonus(record.get("inventory", []))}
 	if target == "speed":
 		return {"ok": true, "value": int(record.get("speed_base", record.get("speed", 30))) + int(record.get("speed_bonus", 0))}
 	if target == "hp":
