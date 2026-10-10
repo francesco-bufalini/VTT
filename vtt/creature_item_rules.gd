@@ -111,6 +111,35 @@ static func has_equipped_weapon(inventory: Variant) -> bool:
 	return false
 
 
+static func equipped_armor(inventory: Variant) -> Dictionary:
+	var owned: Dictionary = occupying(inventory, "body")
+	if not owned.is_empty() and kind(entry_for(owned)) == "armor":
+		return owned
+	return {}
+
+
+# An armor replaces the AC base, it does not add an armor bonus to another
+# base. Light/medium/heavy armor differ in permitted Dexterity modifiers.
+static func armor_base(record: Dictionary) -> Dictionary:
+	var owned: Dictionary = equipped_armor(record.get("inventory", []))
+	if owned.is_empty():
+		return {"equipped": false, "value": int(record.get("armor_class_base", 10)), "description": "Base manuale"}
+	var entry: Dictionary = entry_for(owned)
+	var type_code: String = String(entry.get("type", "")).split("|")[0].to_upper()
+	var dex: int = int(record.get("effective_armor_dex", 0))
+	var limit: int = 99
+	if type_code == "MA":
+		limit = 2
+	elif type_code == "HA":
+		limit = 0
+	if entry.has("dexterity_max"):
+		limit = int(entry["dexterity_max"])
+	var allowed: int = mini(dex, limit)
+	var base: int = int(entry.get("ac", 10))
+	return {"equipped": true, "value": base + allowed,
+		"description": "%s: %d %+d DES" % [String(entry.get("name", owned.get("name", "Armatura"))), base, allowed]}
+
+
 static func shield_bonus(inventory: Variant) -> int:
 	var shield: Dictionary = occupying(inventory, "off")
 	if shield.is_empty():
@@ -119,7 +148,7 @@ static func shield_bonus(inventory: Variant) -> int:
 	if kind(entry) != "shield":
 		return 0
 	# The base value and a magic +AC bonus are separate structured fields.
-	return maxi(0, int(entry.get("ac", 2)) + int(entry.get("bonus_ac", 0)))
+	return maxi(0, int(entry.get("ac", 2)))
 
 
 static func item_range(entry: Dictionary, long_range: bool = false) -> int:
@@ -144,4 +173,4 @@ static func attack_ability(record: Dictionary, entry: Dictionary, thrown: bool =
 
 static func valid_slot(entry: Dictionary, slot: String) -> bool:
 	var item_kind := kind(entry)
-	return (item_kind == "weapon" and (slot == "main" or not is_two_handed(entry))) or (slot == "off" and item_kind == "shield")
+	return (item_kind == "weapon" and (slot == "main" or not is_two_handed(entry))) or (slot == "off" and item_kind == "shield") or (slot == "body" and item_kind == "armor")
