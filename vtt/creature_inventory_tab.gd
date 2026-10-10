@@ -274,7 +274,7 @@ func _on_quantity_changed(value: float) -> void:
 		return
 	_inventory[index]["quantity"] = clampi(int(value), 1, 99999)
 	# Keep the active editor and selection intact while typing multiple digits.
-	_inventory_list.set_item_text(index, _inventory_label(_inventory[index]))
+	_inventory_list.set_item_text(index, _image_label(_catalog_entry(_inventory[index]), _inventory_label(_inventory[index])))
 	_publish()
 
 
