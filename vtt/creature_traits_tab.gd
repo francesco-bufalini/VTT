@@ -266,6 +266,32 @@ static func collect_features(record: Dictionary) -> Array[Dictionary]:
 	else:
 		_collect_species(record, result)
 
+	# Explicitly selected feats are traits in their own right. Their catalog
+	# metadata is shown without extracting any mechanics from prose.
+	var raw_feats: Variant = record.get("feats_catalog", [])
+	if raw_feats is Array:
+		var all_feats: Array[Dictionary] = PlayerCatalog.entries("feats")
+		for raw_feat: Variant in raw_feats:
+			if not raw_feat is Dictionary:
+				continue
+			var owned: Dictionary = raw_feat
+			var feat_name: String = String(owned.get("name", ""))
+			if feat_name.is_empty():
+				continue
+			var feat_source: String = String(owned.get("source", ""))
+			var feat_entry: Dictionary = owned
+			for candidate: Dictionary in all_feats:
+				if String(candidate.get("name", "")) == feat_name and String(candidate.get("source", "")) == feat_source:
+					feat_entry = candidate
+					break
+			var feat_id: String = String(owned.get("id", ""))
+			if feat_id.is_empty():
+				feat_id = feat_name.to_lower() + "|" + feat_source.to_lower()
+			_append(result, {
+				"id": feat_id, "name": feat_name, "source": feat_source,
+				"entries": PlayerCatalog.info_text(feat_entry)
+			}, 1, "Talento · " + feat_name, "feat|" + feat_id, "", "", 3)
+
 	var raw_classes: Variant = record.get("classes", [])
 	var classes: Array = raw_classes as Array if raw_classes is Array else []
 	if classes.is_empty() and not String(record.get("class", "")).is_empty():
