@@ -427,6 +427,7 @@ func normalize_character(value: Dictionary) -> Dictionary:
 	defaults["armor_class"] = maxi(0, Bonuses.value(defaults, "ac"))
 	defaults["initiative_base"] = Bonuses.value(defaults, "ability_mod:dex")
 	defaults["initiative"] = Bonuses.value(defaults, "initiative")
+	defaults["proficiency_bonus"] = Bonuses.value(defaults, "proficiency")
 	defaults["speed"] = maxi(0, Bonuses.value(defaults, "speed"))
 	return defaults
 
