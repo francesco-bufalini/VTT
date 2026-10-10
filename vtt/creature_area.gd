@@ -592,7 +592,7 @@ func _build_ui() -> void:
 	var reach_row := HBoxContainer.new()
 	reach_row.add_theme_constant_override("separation", 6)
 	defense_flow.add_child(reach_row)
-	_add_label(reach_row, "Portata (ft)")
+	_add_label(reach_row, "Gittata base (ft)")
 	_reach = _spin(reach_row, 5, 1000)
 	_reach.step = 5.0
 	_reach.custom_minimum_size.x = 70
