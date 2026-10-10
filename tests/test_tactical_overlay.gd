@@ -48,6 +48,9 @@ func run() -> void:
 	flanking.setup(board)
 	assert(tokens.get_child(1).get_meta("flanked", false), "Opposite enemies must flank the middle token")
 	assert(not flanking.get_screen_reach_visuals().mutual_markers.is_empty())
+	var reach_links: Array = flanking.get_screen_reach_visuals().get("links", [])
+	assert(reach_links.size() == 2 and bool((reach_links[0] as Dictionary).get("mutual", false)),
+		"2D reach must expose one mutual link per hostile pair, not duplicate arrows")
 	assert(flanking._arrow_instance.visible and flanking._arrow_mesh.get_surface_count() > 0)
 	var overlay := Overlay.new()
 	ui.add_child(overlay)
