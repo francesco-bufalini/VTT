@@ -87,6 +87,7 @@ static func definitions(record: Dictionary) -> Array[Dictionary]:
 				"long_range_feet": Items.item_range(entry, true) if is_ranged else 0,
 				"proficient": false, "damage": String(entry.get("damage", "")),
 				"item_entry": entry, "slot": slot, "thrown": false,
+				"weapon_size": Items.weapon_size(record, owned),
 				"base_hit": 0
 			})
 			if not is_ranged and Items.has_property(entry, "T") and normal_range > 0:
@@ -98,6 +99,7 @@ static func definitions(record: Dictionary) -> Array[Dictionary]:
 					"long_range_feet": Items.item_range(entry, true),
 					"proficient": false, "damage": String(entry.get("damage", "")),
 					"item_entry": entry, "slot": slot, "thrown": true,
+					"weapon_size": Items.weapon_size(record, owned),
 					"base_hit": 0
 				})
 	if kind != "monster":
@@ -212,6 +214,22 @@ static func attack_bonus_formula(record: Dictionary, attack: Dictionary, profici
 	]
 
 
+# Add only weapon dice: ability, magic, damage-type riders and static bonuses
+# must never be multiplied by weapon size.
+static func weapon_size_dice(base: String, size_name: String) -> String:
+	var multiplier: int = Items.weapon_dice_multiplier(size_name)
+	if multiplier <= 1:
+		return base
+	var pattern := RegEx.create_from_string("^(\\\\s*)(\\\\d+)d(\\\\d+)")
+	var found: RegExMatch = pattern.search(base) if pattern != null else null
+	if found == null:
+		return base
+	var count: int = int(found.get_string(2))
+	var die: int = int(found.get_string(3))
+	var extra: String = "%dd%d" % [count * (multiplier - 1), die]
+	return base.substr(0, found.get_end()) + " + " + extra + base.substr(found.get_end())
+
+
 static func damage_label(record: Dictionary, attack: Dictionary) -> String:
 	var source: String = String(attack.get("source", ""))
 	var base: String = String(attack.get("damage", "")).strip_edges()
@@ -241,7 +259,10 @@ static func damage_label(record: Dictionary, attack: Dictionary) -> String:
 		):
 			base = String(entry.get("versatile_damage", ""))
 		var damage_type := Catalog._damage_type_name(String(entry.get("damage_type", "")))
-		return base + (" %+d" % modifier if modifier != 0 else "") + (" " + damage_type if not damage_type.is_empty() else "")
+		var size_name: String = String(attack.get("weapon_size", "Medium"))
+		var resized: String = weapon_size_dice(base, size_name)
+		var size_note := " (taglia %s)" % size_name if resized != base else ""
+		return resized + (" %+d" % modifier if modifier != 0 else "") + (" " + damage_type if not damage_type.is_empty() else "") + size_note
 	if base.is_empty():
 		return "Come da bestiario"
 	if String(record.get("kind", "")) == "monster" and modifier == 0:
