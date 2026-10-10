@@ -268,6 +268,12 @@ static func max_melee_range(record: Dictionary) -> float:
 static func active_attack(record: Dictionary) -> Dictionary:
 	var attacks: Array[Dictionary] = definitions(record)
 	var selected: String = String(record.get("equipped_attack_id", ""))
+	var weapon_equipped: bool = Items.has_equipped_weapon(record.get("inventory", []))
+	# A previously selected fallback attack is no longer usable when an
+	# actual weapon is equipped. Never leave the carousel pointing at a
+	# hidden unarmed/improvised card.
+	if weapon_equipped and selected in ["unarmed", "improvised"]:
+		selected = ""
 	if not selected.is_empty():
 		for attack: Dictionary in attacks:
 			if String(attack.get("id", "")) == selected:
@@ -331,7 +337,9 @@ static func equip_first_inventory_weapon(record: Dictionary) -> bool:
 # Fixed damage and unstructured effects are not passed to the dice parser.
 static func damage_expression(record: Dictionary, attack: Dictionary) -> String:
 	var display: String = damage_label(record, attack)
-	var pattern: RegEx = RegEx.create_from_string("(\\d+d\\d+(?:\\s*[+-]\\s*\\d+)?)")
+	var pattern: RegEx = RegEx.create_from_string(
+		"^\\s*(\\d+d\\d+(?:\\s*[+-]\\s*(?:\\d+d\\d+|\\d+))*)"
+	)
 	if pattern == null:
 		return ""
 	var found: RegExMatch = pattern.search(display.to_lower())
