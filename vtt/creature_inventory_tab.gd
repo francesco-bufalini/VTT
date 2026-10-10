@@ -638,7 +638,7 @@ func _add_selected() -> void:
 	if item_id.is_empty():
 		return
 	for i: int in range(_inventory.size()):
-		if String(_inventory[i].get("id", "")) == item_id and not ItemInstance.has_customizations(_inventory[i]):
+		if not DocumentStore.is_document(source_item) and String(_inventory[i].get("id", "")) == item_id and not ItemInstance.has_customizations(_inventory[i]):
 			_inventory[i]["quantity"] = mini(99999, int(_inventory[i]["quantity"]) + 1)
 			_refresh_inventory(i)
 			_publish()
