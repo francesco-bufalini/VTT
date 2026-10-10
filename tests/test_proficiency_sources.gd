@@ -95,6 +95,23 @@ func run() -> void:
 	assert(Proficiencies.has_choice(barbarian_rows, "save", "con"), "Barbarian Constitution save")
 	assert(not Proficiencies.has_choice(barbarian_rows, "skill", "survival"),
 		"Starting Barbarian cannot preselect any choose-2 skill")
+	# The Barbarian's choose field is a nested Dictionary, not a fixed
+	# boolean proficiency. It must render without a runtime type error.
+	var choice_summary: String = Proficiencies._readable_grants([{
+		"choose": {"from": ["athletics", "survival"], "count": 1},
+		"acrobatics": true, "anyStandard": 1
+	}])
+	assert("Choose 1" in choice_summary and "Acrobatics" in choice_summary,
+		"Structured nested choices and fixed boolean grants render together")
+	var no_false_grant: Array[Dictionary] = Proficiencies.fixed_grants({
+		"group": "feat", "data": {"skillProficiencies": [{
+			"choose": {"from": ["athletics", "survival"], "count": 1},
+			"perception": true
+		}]}
+	})
+	assert(Proficiencies.has_choice(no_false_grant, "skill", "perception")
+		and not Proficiencies.has_choice(no_false_grant, "skill", "athletics"),
+		"Nested structured choose data must not become an unconditional grant")
 	var starting_trait_found := false
 	for feature_entry: Dictionary in Traits.collect_features(barbarian):
 		if String(feature_entry.get("name", "")) == "Starting Barbarian" and int(feature_entry.get("level", 0)) == 1:
