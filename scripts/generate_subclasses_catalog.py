@@ -1,7 +1,7 @@
 """Rebuild the local, compact 5etools subclass and feature indexes.
 
 This generator retains identifiers, class/source associations and feature levels.
-It does not redistribute the full upstream feature text. For reproducible
+It retains the upstream structured feature text for offline display. For reproducible
 offline builds, populate .5etools-cache/class from the upstream repository.
 """
 import argparse
@@ -81,6 +81,7 @@ def build(offline=False, refresh=False):
                 "subclass_short_name": short_name,
                 "subclass_source": subclass_source,
                 "level": level,
+                "entries": raw.get("entries", []),
                 "origin": "5etools",
             }
 
