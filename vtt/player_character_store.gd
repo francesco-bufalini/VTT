@@ -422,7 +422,7 @@ func normalize_character(value: Dictionary) -> Dictionary:
 	defaults["speed_is_custom"] = bool(defaults.get("speed_is_custom", false))
 	defaults["darkvision"] = maxi(0, int(defaults.get("darkvision", 0)))
 	defaults["exhaustion"] = clampi(int(defaults.get("exhaustion", 0)), 0, 6)
-	Bonuses.migrate_legacy(defaults, not value.has("formula_bonuses") or not value.has("initiative_base"))
+	Bonuses.migrate_legacy(defaults, Bonuses.grants(value).is_empty() or not value.has("initiative_base"))
 	defaults["max_hp"] = maxi(0, Bonuses.value(defaults, "hp"))
 	defaults["armor_class"] = maxi(0, Bonuses.value(defaults, "ac"))
 	defaults["initiative_base"] = Bonuses.value(defaults, "ability_mod:dex")
