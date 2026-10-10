@@ -3,6 +3,7 @@ extends VBoxContainer
 # The traits sheet is a unified, level-ordered list. The data retains its
 # catalog identifiers and source books; the UI exposes only useful origins.
 const PlayerCatalog = preload("res://vtt/player_5etools_catalog.gd")
+const RaceRules = preload("res://vtt/creature_race_rules.gd")
 const ContentCatalog = preload("res://vtt/content_catalog.gd")
 const TraitText = preload("res://vtt/five_tools_rich_text.gd")
 const Proficiencies = preload("res://vtt/creature_proficiency_rules.gd")
@@ -405,11 +406,18 @@ static func _collect_species(record: Dictionary, output: Array[Dictionary]) -> v
 	var species_id: String = String(record.get("species_id", ""))
 	if species.is_empty():
 		return
+	var subrace_name := String(record.get("subrace", ""))
+	var effective := RaceRules.effective_race(
+		{"name": species, "source": species_book},
+		{"name": subrace_name, "source": record.get("subrace_source", "")}
+		if not subrace_name.is_empty() else {})
+	var wanted_name: String = String(effective.get("name", species))
+	var wanted_source: String = String(effective.get("source", species_book))
 	for race: Dictionary in PlayerCatalog.entries("races"):
 		if not (
-			(not species_id.is_empty() and String(race.get("id", "")) == species_id)
-			or (String(race.get("name", "")).nocasecmp_to(species) == 0
-				and String(race.get("source", "")) == species_book)
+			(subrace_name.is_empty() and not species_id.is_empty() and String(race.get("id", "")) == species_id)
+			or (String(race.get("name", "")).nocasecmp_to(wanted_name) == 0
+				and String(race.get("source", "")) == wanted_source)
 		):
 			continue
 		var raw: Variant = race.get("entries", race.get("description", []))
@@ -421,7 +429,7 @@ static func _collect_species(record: Dictionary, output: Array[Dictionary]) -> v
 					if String(entry_data.get("name", "")).is_empty():
 						entry_data["name"] = "Altri tratti · %d" % (index + 1)
 					entry_data["entries"] = (entry as Dictionary).get("entries", entry)
-					entry_data["source"] = species_book
+					entry_data["source"] = wanted_source
 					_append(output, entry_data, maxi(1, int(entry_data.get("level", 1))),
 						"Specie · " + species, "species|" + species_id + "|" + species_book, "", "", 1)
 				elif entry is String and not String(entry).strip_edges().is_empty():
