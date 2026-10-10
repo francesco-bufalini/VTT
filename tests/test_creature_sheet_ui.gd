@@ -332,6 +332,10 @@ func run() -> void:
 	sheet = area._current()
 	assert(sheet.id == original_id and sheet.classes[0].level == 6)
 	var spells: Node = area._spellcasting_ui
+	assert(spells._known_list.custom_minimum_size.y == spells._prepared_list.custom_minimum_size.y,
+		"Class and available spell boxes must have the same height")
+	assert(spells._search_toggle.get_parent().get_index() > spells._known_list.get_parent().get_parent().get_index(),
+		"Spell search button must be underneath both spell lists")
 	assert(spells._description.get_parent() == spells._prepare.get_parent().get_parent() and spells._description.scroll_active,
 		"Spell details must occupy a scrollable row below the compact action button")
 	assert(not spells._search_row.visible and spells._known_list.item_count > 0,
@@ -341,7 +345,7 @@ func run() -> void:
 	for class_spell: Dictionary in spells._known:
 		assert(int(class_spell.get("level", 0)) <= 3,
 			"Spells above the class's unlocked level must not appear")
-	spells._on_options_selected(1)
+	spells._set_search_visible(true)
 	assert(spells._search_row.visible)
 	spells._search.text = "Magic Missile"
 	spells._search.text_changed.emit("Magic Missile")
@@ -362,11 +366,27 @@ func run() -> void:
 	spells._change_slot(1, -1)
 	assert(area._current().spell_slots_spent[1] == 0)
 	spells._change_slot(1, 1)
-	spells._on_options_selected(3)
+	spells._calculate_slot_totals(true)
 	assert(area._current().spell_slots_spent[1] == 0,
 		"Automatic recharge must both recalculate class slots and restore availability")
 	spells._restore_all()
 	assert(area._current().spell_slots_spent[1] == 0)
+	assert(spells._slot_grid.visible and spells._pact_row.visible,
+		"Both resource groups are visible by default")
+	spells._toggle_slots_visibility()
+	assert(not spells._slot_grid.visible and spells._pact_row.visible,
+		"Slot visibility must not affect Pact Magic")
+	spells._toggle_pact_visibility()
+	assert(not spells._pact_row.visible and not spells._slot_grid.visible,
+		"Pact Magic must collapse independently")
+	assert(not area._current().spell_slots_visible and not area._current().pact_slots_visible,
+		"Resource visibility must be stored")
+	area._reload()
+	assert(not spells._slot_grid.visible and not spells._pact_row.visible,
+		"Visibility must survive sheet reload")
+	spells._toggle_slots_visibility()
+	spells._toggle_pact_visibility()
+	assert(area._current().spell_slots_visible and area._current().pact_slots_visible)
 	area._reload()
 	assert(area._current().spells.size() == 1
 		and area._current().prepared_spells.size() == 1,

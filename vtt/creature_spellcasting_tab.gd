@@ -57,32 +57,22 @@ var _pact_level_spin: SpinBox
 var _pact_remain: Label
 var _pact_use: Button
 var _pact_restore: Button
-var _spell_options: MenuButton
+var _search_toggle: Button
 var _search_row: HBoxContainer
 var _catalog_title: Label
+var _slot_grid: GridContainer
+var _restore_all_button: Button
+var _slots_eye: Button
+var _pact_row: HFlowContainer
+var _pact_eye: Button
+var _slots_visible := true
+var _pact_visible := true
 
 
 func setup(on_change: Callable, on_status: Callable) -> void:
 	_on_change = on_change
 	_on_status = on_status
 	add_theme_constant_override("separation", 7)
-	var title_row := HBoxContainer.new()
-	title_row.add_theme_constant_override("separation", 6)
-	add_child(title_row)
-	var title := Label.new()
-	title.text = "Grimorio e preparazione"
-	title.size_flags_horizontal = Control.SIZE_EXPAND_FILL
-	title.add_theme_font_size_override("font_size", 20)
-	title.add_theme_color_override("font_color", Color(0.96, 0.79, 0.51))
-	title_row.add_child(title)
-	_spell_options = MenuButton.new()
-	_spell_options.text = "Opzioni ▾"
-	title_row.add_child(_spell_options)
-	var menu: PopupMenu = _spell_options.get_popup()
-	menu.add_check_item("Mostra ricerca incantesimi", 1)
-	menu.add_item("Ricalcola slot dalle classi", 2)
-	menu.add_item("Ricarica automaticamente", 3)
-	menu.id_pressed.connect(_on_options_selected)
 	_search_row = HBoxContainer.new()
 	add_child(_search_row)
 	_search = LineEdit.new()
@@ -125,6 +115,7 @@ func setup(on_change: Callable, on_status: Callable) -> void:
 	add_child(columns)
 	var known_col := VBoxContainer.new()
 	known_col.size_flags_horizontal = Control.SIZE_EXPAND_FILL
+	known_col.size_flags_stretch_ratio = 1.0
 	columns.add_child(known_col)
 	var known_header := HBoxContainer.new()
 	known_header.add_theme_constant_override("separation", 8)
@@ -134,6 +125,8 @@ func setup(on_change: Callable, on_status: Callable) -> void:
 	_known_title.tooltip_text = "Incantesimi delle classi fino al livello attuale"
 	_known_title.clip_text = true
 	_known_title.size_flags_horizontal = Control.SIZE_EXPAND_FILL
+	_known_title.add_theme_font_size_override("font_size", 16)
+	_known_title.add_theme_color_override("font_color", Color(0.96, 0.79, 0.51))
 	known_header.add_child(_known_title)
 	_book_menu = MenuButton.new()
 	_book_menu.text = "📖 ▾"
@@ -154,8 +147,9 @@ func setup(on_change: Callable, on_status: Callable) -> void:
 	_book_hint.hide()
 	known_col.add_child(_book_hint)
 	_known_list = ItemList.new()
-	_known_list.custom_minimum_size = Vector2(0, 150)
+	_known_list.custom_minimum_size = Vector2(0, 170)
 	_known_list.size_flags_horizontal = Control.SIZE_EXPAND_FILL
+	_known_list.size_flags_vertical = Control.SIZE_EXPAND_FILL
 	_known_list.item_selected.connect(_on_known_spell_selected)
 	_known_list.item_activated.connect(
 		func(_index: int) -> void:
@@ -163,20 +157,46 @@ func setup(on_change: Callable, on_status: Callable) -> void:
 				_toggle_selected_prepared()
 	)
 	known_col.add_child(_known_list)
+	# Keep the book's explanatory hint below, so both lists begin at the same height.
+	known_col.move_child(_book_hint, _known_list.get_index() + 1)
 	var prepared_col := VBoxContainer.new()
 	prepared_col.size_flags_horizontal = Control.SIZE_EXPAND_FILL
+	prepared_col.size_flags_stretch_ratio = 1.0
 	columns.add_child(prepared_col)
+	var prepared_header := HBoxContainer.new()
+	prepared_header.add_theme_constant_override("separation", 8)
+	prepared_col.add_child(prepared_header)
 	var prepared_title := Label.new()
 	prepared_title.text = "Incantesimi disponibili"
+	prepared_title.clip_text = true
+	prepared_title.size_flags_horizontal = Control.SIZE_EXPAND_FILL
 	prepared_title.add_theme_font_size_override("font_size", 16)
 	prepared_title.add_theme_color_override("font_color", Color(0.96, 0.79, 0.51))
-	prepared_col.add_child(prepared_title)
+	prepared_header.add_child(prepared_title)
+	var header_spacer := Control.new()
+	header_spacer.custom_minimum_size = Vector2(40, 30)
+	prepared_header.add_child(header_spacer)
 	_prepared_list = ItemList.new()
-	_prepared_list.custom_minimum_size = Vector2(0, 150)
+	_prepared_list.custom_minimum_size = Vector2(0, 170)
 	_prepared_list.size_flags_horizontal = Control.SIZE_EXPAND_FILL
+	_prepared_list.size_flags_vertical = Control.SIZE_EXPAND_FILL
 	_prepared_list.item_selected.connect(func(_index: int) -> void: _on_spell_list_selected("prepared"))
 	prepared_col.add_child(_prepared_list)
 	_prepared_list.item_activated.connect(func(_index: int) -> void: _toggle_selected_prepared())
+
+	# Search is the only optional panel and opens beneath the paired spell lists.
+	var search_toggle_row := HBoxContainer.new()
+	search_toggle_row.alignment = BoxContainer.ALIGNMENT_END
+	add_child(search_toggle_row)
+	_search_toggle = Button.new()
+	_search_toggle.text = "🔍"
+	_search_toggle.toggle_mode = true
+	_search_toggle.tooltip_text = "Mostra ricerca incantesimi"
+	_search_toggle.toggled.connect(_set_search_visible)
+	search_toggle_row.add_child(_search_toggle)
+	move_child(_search_row, search_toggle_row.get_index() + 1)
+	move_child(_catalog_title, _search_row.get_index() + 1)
+	move_child(_available, _catalog_title.get_index() + 1)
 
 	# The action is a single compact row. Descriptions are a separate row
 	# underneath the persistent selection hint, never next to a tall button.
@@ -214,23 +234,27 @@ func setup(on_change: Callable, on_status: Callable) -> void:
 	heading.size_flags_horizontal = Control.SIZE_EXPAND_FILL
 	heading.add_theme_font_size_override("font_size", 16)
 	slot_title.add_child(heading)
-	var rest_all := Button.new()
-	rest_all.text = "Ricarica"
-	rest_all.pressed.connect(_restore_all)
-	slot_title.add_child(rest_all)
-	var slot_grid := GridContainer.new()
-	slot_grid.columns = 6
-	slot_grid.add_theme_constant_override("h_separation", 6)
-	slot_grid.add_theme_constant_override("v_separation", 5)
-	add_child(slot_grid)
+	_restore_all_button = Button.new()
+	_restore_all_button.text = "Ricarica"
+	_restore_all_button.pressed.connect(_restore_all)
+	slot_title.add_child(_restore_all_button)
+	_slots_eye = Button.new()
+	_slots_eye.custom_minimum_size = Vector2(36, 30)
+	_slots_eye.pressed.connect(_toggle_slots_visibility)
+	slot_title.add_child(_slots_eye)
+	_slot_grid = GridContainer.new()
+	_slot_grid.columns = 6
+	_slot_grid.add_theme_constant_override("h_separation", 6)
+	_slot_grid.add_theme_constant_override("v_separation", 5)
+	add_child(_slot_grid)
 	for label_text: String in ["Liv.", "Max", "Di cui bonus", "Rimasti / max", "Usa", "Ricarica"]:
 		var header := Label.new()
 		header.text = label_text
-		slot_grid.add_child(header)
+		_slot_grid.add_child(header)
 	for lvl: int in range(1, 10):
 		var caption := Label.new()
 		caption.text = "%d°" % lvl
-		slot_grid.add_child(caption)
+		_slot_grid.add_child(caption)
 		var total := SpinBox.new()
 		total.min_value = 0
 		total.max_value = 99
@@ -238,7 +262,7 @@ func setup(on_change: Callable, on_status: Callable) -> void:
 		total.update_on_text_changed = true
 		total.custom_minimum_size.x = 62
 		total.value_changed.connect(_on_slot_total_changed.bind(lvl))
-		slot_grid.add_child(total)
+		_slot_grid.add_child(total)
 		_slot_totals[lvl] = total
 		var bonus := SpinBox.new()
 		bonus.min_value = -99
@@ -249,10 +273,10 @@ func setup(on_change: Callable, on_status: Callable) -> void:
 		bonus.tooltip_text = "Bonus manuale agli slot massimi: aggiunto al massimo base"
 		ManualBonus.decorate(bonus)
 		bonus.value_changed.connect(_on_slot_bonus_changed.bind(lvl))
-		slot_grid.add_child(bonus)
+		_slot_grid.add_child(bonus)
 		_slot_bonus_controls[lvl] = bonus
 		var remaining_group := VBoxContainer.new()
-		slot_grid.add_child(remaining_group)
+		_slot_grid.add_child(remaining_group)
 		var remaining := Label.new()
 		remaining.custom_minimum_size.x = 65
 		remaining_group.add_child(remaining)
@@ -266,25 +290,32 @@ func setup(on_change: Callable, on_status: Callable) -> void:
 		use.text = "−"
 		use.tooltip_text = "Consuma uno slot di livello %d" % lvl
 		use.pressed.connect(_change_slot.bind(lvl, 1))
-		slot_grid.add_child(use)
+		_slot_grid.add_child(use)
 		_slot_use[lvl] = use
 		var recharge := Button.new()
 		recharge.text = "+"
 		recharge.tooltip_text = "Ricarica uno slot di livello %d" % lvl
 		recharge.pressed.connect(_change_slot.bind(lvl, -1))
-		slot_grid.add_child(recharge)
+		_slot_grid.add_child(recharge)
 		_slot_recharge[lvl] = recharge
 
-	var pact_row := HFlowContainer.new()
-	pact_row.add_theme_constant_override("h_separation", 5)
-	pact_row.add_theme_constant_override("v_separation", 5)
-	add_child(pact_row)
+	var pact_header := HBoxContainer.new()
+	add_child(pact_header)
 	var pact_label := Label.new()
 	pact_label.text = "Patto"
 	pact_label.tooltip_text = "Slot di Magia del Patto"
-	pact_row.add_child(pact_label)
+	pact_label.size_flags_horizontal = Control.SIZE_EXPAND_FILL
+	pact_header.add_child(pact_label)
+	_pact_eye = Button.new()
+	_pact_eye.custom_minimum_size = Vector2(36, 30)
+	_pact_eye.pressed.connect(_toggle_pact_visibility)
+	pact_header.add_child(_pact_eye)
+	_pact_row = HFlowContainer.new()
+	_pact_row.add_theme_constant_override("h_separation", 5)
+	_pact_row.add_theme_constant_override("v_separation", 5)
+	add_child(_pact_row)
 	var level_group := HBoxContainer.new()
-	pact_row.add_child(level_group)
+	_pact_row.add_child(level_group)
 	var level_label := Label.new()
 	level_label.text = "Liv."
 	level_group.add_child(level_label)
@@ -296,7 +327,7 @@ func setup(on_change: Callable, on_status: Callable) -> void:
 	_pact_level_spin.value_changed.connect(_on_pact_values_changed)
 	level_group.add_child(_pact_level_spin)
 	var total_group := HBoxContainer.new()
-	pact_row.add_child(total_group)
+	_pact_row.add_child(total_group)
 	var total_label := Label.new()
 	total_label.text = "Base"
 	total_group.add_child(total_label)
@@ -308,7 +339,7 @@ func setup(on_change: Callable, on_status: Callable) -> void:
 	_pact_total_spin.value_changed.connect(_on_pact_values_changed)
 	total_group.add_child(_pact_total_spin)
 	var bonus_group := HBoxContainer.new()
-	pact_row.add_child(bonus_group)
+	_pact_row.add_child(bonus_group)
 	var bonus_label := Label.new()
 	bonus_label.text = "Di cui bonus"
 	bonus_group.add_child(bonus_label)
@@ -323,19 +354,20 @@ func setup(on_change: Callable, on_status: Callable) -> void:
 	bonus_group.add_child(_pact_bonus_spin)
 	_pact_remain = Label.new()
 	_pact_remain.custom_minimum_size.x = 64
-	pact_row.add_child(_pact_remain)
+	_pact_row.add_child(_pact_remain)
 	_pact_formula = Label.new()
 	_pact_formula.add_theme_font_size_override("font_size", 12)
-	pact_row.add_child(_pact_formula)
+	_pact_row.add_child(_pact_formula)
 	_pact_use = Button.new()
 	_pact_use.text = "Usa"
 	_pact_use.pressed.connect(_change_pact.bind(1))
-	pact_row.add_child(_pact_use)
+	_pact_row.add_child(_pact_use)
 	_pact_restore = Button.new()
 	_pact_restore.text = "+"
 	_pact_restore.tooltip_text = "Ricarica uno slot della Magia del Patto"
 	_pact_restore.pressed.connect(_change_pact.bind(-1))
-	pact_row.add_child(_pact_restore)
+	_pact_row.add_child(_pact_restore)
+	_apply_resource_visibility()
 	_update_resource_labels()
 	_update_spell_controls()
 	_set_search_visible(false)
@@ -345,21 +377,12 @@ func _set_search_visible(show: bool) -> void:
 	_search_row.visible = show
 	_catalog_title.visible = show
 	_available.visible = show
-	_spell_options.get_popup().set_item_checked(
-		_spell_options.get_popup().get_item_index(1), show
+	_search_toggle.set_pressed_no_signal(show)
+	_search_toggle.tooltip_text = (
+		"Nascondi ricerca incantesimi" if show else "Mostra ricerca incantesimi"
 	)
-	if show:
+	if show and is_inside_tree():
 		_search.grab_focus()
-
-
-func _on_options_selected(item_id: int) -> void:
-	match item_id:
-		1:
-			_set_search_visible(not _search_row.visible)
-		2:
-			_calculate_slot_totals(false)
-		3:
-			_calculate_slot_totals(true)
 
 
 func load_record(record: Dictionary) -> void:
@@ -389,6 +412,9 @@ func load_record(record: Dictionary) -> void:
 	_pact_bonus = clampi(int(record.get("pact_slots_bonus", 0)), -8, 20)
 	_pact_spent = clampi(int(record.get("pact_slots_spent", 0)), 0, _effective_pact_total())
 	_pact_level = clampi(int(record.get("pact_slot_level", 1)), 1, 5)
+	_slots_visible = bool(record.get("spell_slots_visible", true))
+	_pact_visible = bool(record.get("pact_slots_visible", true))
+	_apply_resource_visibility()
 	for lvl: int in range(1, 10):
 		(_slot_totals[lvl] as SpinBox).value = int(_totals[lvl])
 		(_slot_bonus_controls[lvl] as SpinBox).value = int(_slot_bonuses[lvl])
@@ -817,6 +843,28 @@ func _calculate_slot_totals(recharge: bool = false) -> void:
 		_on_status.call(warnings)
 
 
+func _toggle_slots_visibility() -> void:
+	_slots_visible = not _slots_visible
+	_apply_resource_visibility()
+	_publish()
+
+
+func _toggle_pact_visibility() -> void:
+	_pact_visible = not _pact_visible
+	_apply_resource_visibility()
+	_publish()
+
+
+func _apply_resource_visibility() -> void:
+	_slot_grid.visible = _slots_visible
+	_restore_all_button.visible = _slots_visible
+	_pact_row.visible = _pact_visible
+	_slots_eye.text = "👁" if _slots_visible else "👁̸"
+	_slots_eye.tooltip_text = "Nascondi slot" if _slots_visible else "Mostra slot"
+	_pact_eye.text = "👁" if _pact_visible else "👁̸"
+	_pact_eye.tooltip_text = "Nascondi patto" if _pact_visible else "Mostra patto"
+
+
 func _update_resource_labels() -> void:
 	if _pact_remain == null:
 		return
@@ -850,5 +898,7 @@ func _publish() -> void:
 		"pact_slots_total": _pact_total,
 		"pact_slots_bonus": _pact_bonus,
 		"pact_slots_spent": _pact_spent,
-		"pact_slot_level": _pact_level
+		"pact_slot_level": _pact_level,
+		"spell_slots_visible": _slots_visible,
+		"pact_slots_visible": _pact_visible
 	})
