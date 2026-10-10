@@ -2774,8 +2774,11 @@ func _on_proficiencies_updated(rows: Array, feats: Array, origins: Array) -> voi
 	var previous_skills: Variant = record.get("skill_proficiencies", [])
 	var previous_expertise: Variant = record.get("skill_expertise", [])
 	record["proficiency_origins"] = origins.duplicate(true)
-	ProficiencyRules.sync_legacy_fields(record, typed_rows)
 	record["feats_catalog"] = feats.duplicate(true)
+	record["proficiency_choices"] = typed_rows.duplicate(true)
+	# Reconcile the saved editor state with the current traits and the
+	# unremovable grants before persisting it.
+	ProficiencyRules.sync_legacy_fields(record, ProficiencyRules.choices(record))
 	if previous_skills != record.get("skill_proficiencies", []) or previous_expertise != record.get("skill_expertise", []):
 		# Do not re-infer deliberately edited monster skills from the bestiary.
 		record["skill_ranks_custom"] = true
