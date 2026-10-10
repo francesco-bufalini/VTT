@@ -6,6 +6,7 @@ extends VBoxContainer
 const SpellCatalog = preload("res://vtt/spells/spell_catalog.gd")
 const Rules = preload("res://vtt/creature_rules.gd")
 const ManualBonus = preload("res://vtt/manual_bonus_style.gd")
+const DialogLayout = preload("res://vtt/dialog_layout.gd")
 
 const BOOK_VIEW_CLASS := 10
 const BOOK_VIEW_BOOK := 11
@@ -13,6 +14,11 @@ const BOOK_EDIT := 12
 
 var _on_change: Callable
 var _on_status: Callable
+var _on_cast_spell: Callable
+var _cast_button: Button
+var _cast_dialog: ConfirmationDialog
+var _cast_slot_choice: OptionButton
+var _pending_cast_spell: Dictionary = {}
 var _record: Dictionary = {}
 var _loading := false
 var _catalog: Array[Dictionary] = []
@@ -69,9 +75,14 @@ var _slots_visible := true
 var _pact_visible := true
 
 
-func setup(on_change: Callable, on_status: Callable) -> void:
+func setup(
+	on_change: Callable,
+	on_status: Callable,
+	on_cast_spell: Callable = Callable()
+) -> void:
 	_on_change = on_change
 	_on_status = on_status
+	_on_cast_spell = on_cast_spell
 	add_theme_constant_override("separation", 7)
 	_search_row = HBoxContainer.new()
 	add_child(_search_row)
@@ -221,6 +232,13 @@ func setup(on_change: Callable, on_status: Callable) -> void:
 	_prepare.tooltip_text = "Doppio clic su una magia oppure premi questo pulsante"
 	_prepare.pressed.connect(_toggle_selected_prepared)
 	action_row.add_child(_prepare)
+	_cast_button = Button.new()
+	_cast_button.text = "✨ Lancia"
+	_cast_button.custom_minimum_size = Vector2(100, 34)
+	_cast_button.disabled = true
+	_cast_button.tooltip_text = "Lancia l'incantesimo selezionato da una qualsiasi delle tre liste"
+	_cast_button.pressed.connect(_request_cast_spell)
+	action_row.add_child(_cast_button)
 
 	_description = RichTextLabel.new()
 	_description.custom_minimum_size.y = 150
@@ -378,6 +396,95 @@ func setup(on_change: Callable, on_status: Callable) -> void:
 	_update_resource_labels()
 	_update_spell_controls()
 	_set_search_visible(false)
+	_build_cast_dialog()
+
+
+func _build_cast_dialog() -> void:
+	_cast_dialog = ConfirmationDialog.new()
+	_cast_dialog.title = "Lancia incantesimo"
+	_cast_dialog.ok_button_text = "Lancia"
+	_cast_dialog.cancel_button_text = "Annulla"
+	_cast_dialog.min_size = Vector2i(380, 170)
+	add_child(_cast_dialog)
+	var slot_row: HBoxContainer = HBoxContainer.new()
+	slot_row.add_theme_constant_override("separation", 10)
+	_cast_dialog.add_child(slot_row)
+	var caption: Label = Label.new()
+	caption.text = "Slot:"
+	slot_row.add_child(caption)
+	_cast_slot_choice = OptionButton.new()
+	_cast_slot_choice.size_flags_horizontal = Control.SIZE_EXPAND_FILL
+	_cast_slot_choice.custom_minimum_size.x = 270
+	slot_row.add_child(_cast_slot_choice)
+	_cast_dialog.confirmed.connect(_confirm_cast_spell)
+
+
+func _request_cast_spell() -> void:
+	var spell: Dictionary = _selected_spell()
+	if String(spell.get("id", "")).is_empty() or not _on_cast_spell.is_valid():
+		return
+	var base_level: int = int(spell.get("level", 0))
+	if base_level <= 0:
+		_dispatch_cast(spell, 0)
+		return
+	_pending_cast_spell = spell.duplicate(true)
+	_cast_slot_choice.clear()
+	_cast_slot_choice.add_item("Nessuno slot (non consumare)", 0)
+	var default_index: int = 0
+	for level: int in range(base_level, 10):
+		var remaining: int = maxi(0, _effective_slot_total(level) - int(_spent[level]))
+		if remaining <= 0:
+			continue
+		_cast_slot_choice.add_item("%d° livello · %d rimasti" % [level, remaining], level)
+		if default_index == 0:
+			default_index = _cast_slot_choice.item_count - 1
+	if _pact_level >= base_level and _pact_spent < _effective_pact_total():
+		_cast_slot_choice.add_item(
+			"Patto · %d° livello · %d rimasti" % [
+				_pact_level, _effective_pact_total() - _pact_spent
+			],
+			100 + _pact_level
+		)
+		if default_index == 0:
+			default_index = _cast_slot_choice.item_count - 1
+	_cast_slot_choice.select(default_index)
+	_cast_dialog.dialog_text = "Lancia %s (livello %d). Scegli quale slot consumare." % [
+		String(spell.get("name", "Incantesimo")), base_level
+	]
+	DialogLayout.popup(_cast_dialog, Vector2i(430, 190))
+
+
+func _confirm_cast_spell() -> void:
+	if _pending_cast_spell.is_empty():
+		return
+	var spell: Dictionary = _pending_cast_spell.duplicate(true)
+	_pending_cast_spell.clear()
+	_dispatch_cast(spell, _cast_slot_choice.get_selected_id())
+
+
+func _dispatch_cast(spell: Dictionary, slot_choice: int) -> void:
+	if not _on_cast_spell.is_valid():
+		return
+	var base_level: int = int(spell.get("level", 0))
+	var level: int = base_level
+	if slot_choice >= 100:
+		level = slot_choice - 100
+		if level != _pact_level or level < base_level or _pact_spent >= _effective_pact_total():
+			return
+	elif slot_choice > 0:
+		level = slot_choice
+		if level < base_level or level > 9 or _spent.size() <= level:
+			return
+		if _effective_slot_total(level) <= int(_spent[level]):
+			return
+	# The sheet's owner invokes the existing VTT system if the spell has an
+	# effect and a linked caster. A spell with no VTT effect is still cast.
+	if not bool(_on_cast_spell.call(spell, level)):
+		return
+	if slot_choice >= 100:
+		_change_pact(1)
+	elif slot_choice > 0:
+		_change_slot(slot_choice, 1)
 
 
 func _set_search_visible(show: bool) -> void:
@@ -717,6 +824,7 @@ func _update_spell_controls() -> void:
 	var spell: Dictionary = _selected_spell()
 	var id: String = String(spell.get("id", ""))
 	_prepare.disabled = id.is_empty()
+	_cast_button.disabled = id.is_empty() or not _on_cast_spell.is_valid()
 	_prepare.text = (
 		"Rimuovi dai disponibili"
 		if _has_spell(_prepared, id)
