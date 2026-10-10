@@ -146,6 +146,8 @@ func create_creature(stat_block: Dictionary, side: String) -> Dictionary:
 		"pact_slots_bonus": 0,
 		"pact_slots_spent": 0,
 		"pact_slot_level": 1,
+		"spell_slots_visible": true,
+		"pact_slots_visible": true,
 		"feats": "",
 		"feats_catalog": [],
 		"owner_id": CreatureOwner.local_id(),
@@ -264,6 +266,8 @@ func normalize_creature(value: Dictionary) -> Dictionary:
 		"pact_slots_bonus": clampi(int(value.get("pact_slots_bonus", 0)), -8, 20),
 		"pact_slots_spent": maxi(0, int(value.get("pact_slots_spent", 0))),
 		"pact_slot_level": clampi(int(value.get("pact_slot_level", 1)), 1, 5),
+		"spell_slots_visible": bool(value.get("spell_slots_visible", true)),
+		"pact_slots_visible": bool(value.get("pact_slots_visible", true)),
 		"feats": String(value.get("feats", "")),
 		"feats_catalog": value.get("feats_catalog", []).duplicate(true) if value.get("feats_catalog", []) is Array else [],
 		"linked_token_sync_id": String(
