@@ -3441,6 +3441,9 @@ func _refresh_trackers(record: Dictionary) -> void:
 		restore.disabled = used <= 0
 		restore.pressed.connect(_change_tracker.bind(id, -1, maximum))
 		row.add_child(restore)
+		# Both adjustments flank the live current/max tracker; manual bonus,
+		# d6 recharge and reset remain secondary controls to its right.
+		row.move_child(restore, remaining.get_index() + 1)
 		var recharge: String = String(tracker.get("recharge", "manual"))
 		if recharge == "d6":
 			var threshold: int = clampi(int(tracker.get("recharge_min", 6)), 1, 6)
