@@ -52,7 +52,11 @@ static func choices(record: Dictionary) -> Array[Dictionary]:
 			})
 	# Only import the old rank arrays before the new choice model exists:
 	# otherwise an intentionally disabled proficiency would be resurrected.
-	if not record.has("proficiency_choices"):
+	var migrate_legacy: bool = not record.has("proficiency_choices")
+	if record.has("proficiency_choices") and not record.has("proficiency_origins"):
+		var previous: Variant = record.get("proficiency_choices", [])
+		migrate_legacy = previous is Array and (previous as Array).is_empty()
+	if migrate_legacy:
 		for pair: Dictionary in [
 			{"kind": "skill", "field": "skill_proficiencies"},
 			{"kind": "expertise", "field": "skill_expertise"},
