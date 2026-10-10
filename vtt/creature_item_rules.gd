@@ -84,6 +84,18 @@ static func is_two_handed(entry: Dictionary) -> bool:
 	return has_property(entry, "2H")
 
 
+# 5etools reqAttune/req_attune is either a boolean or a conditional
+# requirement string ("by a spellcaster", etc.). Never compare a String
+# with false: Godot 4 rejects mixed-type == / != operations at runtime.
+static func requires_attunement(entry: Dictionary) -> bool:
+	var requirement: Variant = entry.get("req_attune", entry.get("reqAttune", false))
+	if requirement is bool:
+		return requirement
+	if requirement is String:
+		return not String(requirement).strip_edges().is_empty()
+	return false
+
+
 static func slots(saved: Dictionary) -> Array:
 	var value: Variant = saved.get("equipped_slots", [])
 	if value is Array:
