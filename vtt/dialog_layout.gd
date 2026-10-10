@@ -14,11 +14,32 @@ static func popup(
 		var accept: AcceptDialog = dialog as AcceptDialog
 		accept.add_theme_constant_override("buttons_min_width", 100)
 		accept.add_theme_constant_override("buttons_min_height", 34)
+		_keep_body_within_viewport(accept, fallback_ratio)
 	dialog.wrap_controls = true
 	dialog.child_controls_changed()
 	dialog.reset_size()
 	dialog.popup_centered_clamped(preferred_size, fallback_ratio)
 	_check_first_frame_layout(dialog)
+
+
+static func _keep_body_within_viewport(dialog: AcceptDialog, ratio: float) -> void:
+	var available := Vector2i(dialog.get_parent().get_viewport().get_visible_rect().size * ratio)
+	dialog.min_size = dialog.min_size.min(available)
+	# AcceptDialog lays out the native buttons outside its custom body. A tall
+	# body must scroll; growing the entire window pushes Confirm off-screen.
+	var children := dialog.get_children()
+	if children.size() != 1 or not children[0] is Control or children[0] is ScrollContainer:
+		return
+	var body := children[0] as Control
+	var minimum := body.get_combined_minimum_size()
+	if minimum.x + 32 <= available.x and minimum.y + 80 <= available.y:
+		return
+	var scroll := ScrollContainer.new()
+	scroll.name = "DialogScrollBody"
+	dialog.remove_child(body)
+	dialog.add_child(scroll)
+	scroll.add_child(body)
+	body.size_flags_horizontal = Control.SIZE_EXPAND_FILL
 
 
 static func _check_first_frame_layout(dialog: Window) -> void:

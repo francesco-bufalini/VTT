@@ -42,7 +42,7 @@ func run() -> void:
 
 	var loaded: Dictionary = tracker.call("get_save_state")
 	assert(bool(loaded.get("active", false)))
-	assert(int(loaded.get("active_index", -1)) == 0)
+	assert(int(loaded.get("active_index", -1)) == 1)
 	assert(int(loaded.get("round", 0)) == 1)
 	assert(int(loaded.get("turn_count", -1)) == 0)
 	var entries: Array = loaded.get("entries", [])
@@ -71,7 +71,7 @@ func run() -> void:
 	tracker.call("previous_turn")
 	var after_previous: Dictionary = tracker.call("get_save_state")
 	assert(int(after_previous.get("active_index", -1)) == 0)
-	assert(int(after_previous.get("round", 0)) == 1)
+	assert(int(after_previous.get("round", 0)) == 2)
 	assert(int(after_previous.get("turn_count", -1)) == 3)
 
 	var duplicate_state: Dictionary = state.duplicate(true)

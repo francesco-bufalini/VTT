@@ -474,6 +474,7 @@ func _draw_engagement_segments(segments: Variant, mutual: bool) -> void:
 	if not segments is Array:
 		return
 	var points: Array = segments as Array
+	var floor_y: float = float(camera.call("get_top_down_level"))
 	var tint: Color = Color(0.40, 0.92, 0.72, 0.94) if mutual else Color(0.20, 0.82, 0.78, 0.88)
 	for index: int in range(0, points.size() - 1, 2):
 		if not points[index] is Vector3 or not points[index + 1] is Vector3:
@@ -482,8 +483,8 @@ func _draw_engagement_segments(segments: Variant, mutual: bool) -> void:
 		var end_world: Vector3 = points[index + 1]
 		# Project on the visible floor plane: the X/Z engagement geometry
 		# is unchanged and remains legible at any current slice elevation.
-		var screen_start: Vector2 = camera.unproject_position(start_world)
-		var screen_end: Vector2 = camera.unproject_position(end_world)
+		var screen_start: Vector2 = project_engagement_point(start_world, floor_y)
+		var screen_end: Vector2 = project_engagement_point(end_world, floor_y)
 		var delta: Vector2 = screen_end - screen_start
 		if delta.length_squared() < 16.0:
 			continue
@@ -501,6 +502,12 @@ func _draw_engagement_segments(segments: Variant, mutual: bool) -> void:
 				tip - toward * 11.0 + sideways * 5.0,
 				tip - toward * 11.0 - sideways * 5.0
 			]), tint)
+
+
+func project_engagement_point(point: Vector3, floor_y: float) -> Vector2:
+	# Token badges and reach arrows must share the visible floor even when
+	# the camera is tilted or the creatures occupy different elevations.
+	return camera.unproject_position(Vector3(point.x, floor_y, point.z))
 
 
 func _process(_delta: float) -> void:

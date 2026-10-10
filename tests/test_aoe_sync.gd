@@ -8,8 +8,6 @@ func run() -> void:
 	root.add_child(scene)
 	scene.board_sync.set_auto_sync_enabled(false)
 	scene.board_sync.listen(false, "test-key")
-	# Two boards share one test window; their identity dialogs must not compete.
-	scene.get_node("UI/SceneChatIdentityDialog").exclusive = false
 	await process_frame
 	var measure: Node = scene.measurement_tool
 	for shape in ["sphere", "cube", "cone", "line", "cylinder"]:
@@ -61,7 +59,6 @@ func run() -> void:
 	other.board_sync.listen(false, "test-key")
 	# Reserve an OS-selected port so an open game cannot conflict with this test.
 	other.board_sync.port = 0
-	other.get_node("UI/SceneChatIdentityDialog").exclusive = false
 	await process_frame
 	assert(sync.create_snapshot().objects.size() == snapshot.objects.size())
 	assert(other.board_sync.listen(true, "test-key") == OK)
@@ -83,5 +80,4 @@ func run() -> void:
 	await process_frame
 	print("PASS: AoE cylinder/movable round-trip, validation, scene isolation, TCP transfer, wrong key rejection")
 	quit()
-
 

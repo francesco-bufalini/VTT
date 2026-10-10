@@ -1115,6 +1115,14 @@ func _render_arrows(
 		return
 
 	_arrow_mesh.clear_surfaces()
+	# The 2D overlay projects the same segments onto the visible floor.
+	# Keep the world-space mesh from drawing a second, offset set of arrows.
+	_arrow_instance.visible = not (
+		board_root.has_method("is_2d_view_enabled")
+		and bool(board_root.call("is_2d_view_enabled"))
+	)
+	if not _arrow_instance.visible:
+		return
 	if points.is_empty() and mutual_points.is_empty():
 		return
 
@@ -1295,4 +1303,3 @@ static func _append_double_arrow_vertices(
 	])
 	for vertex: Vector3 in vertices:
 		mesh.surface_add_vertex(vertex)
-

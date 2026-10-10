@@ -15,10 +15,15 @@ func _check(condition: bool, message: String) -> bool:
 	return condition
 
 
-func _count_lower_tinted(mesh: MultiMesh, lower_color: Color) -> int:
+func _count_lower_tinted(mesh: MultiMesh, lower_color: Color, grid: Node3D, floor_y: float, in_2d: bool = true) -> int:
 	var count: int = 0
 	for index: int in range(mesh.instance_count):
 		var tint: Color = mesh.get_instance_color(index)
+		# The dummy headless renderer does not retain per-instance colors.
+		# Validate the CPU tint policy there; real renderers still verify GPU data.
+		if DisplayServer.get_name() == "headless":
+			var cells: Array = grid.get("_active_occupied").keys()
+			tint = grid.call("_cell_instance_tint", cells[index], in_2d, floor_y)
 		# Some Godot renderers pack per-instance colors to 8 bits.
 		if (
 			absf(tint.r - lower_color.r) < 0.02
@@ -73,7 +78,7 @@ func _run() -> void:
 	):
 		return
 	if not _check(
-		_count_lower_tinted(mesh, VolumetricGrid.GRID_LOWER_INSTANCE_TINT) == 1,
+		_count_lower_tinted(mesh, VolumetricGrid.GRID_LOWER_INSTANCE_TINT, grid, 0.0) == 1,
 		"only squares fully below floor 0 should turn muted slate"
 	):
 		return
@@ -87,7 +92,7 @@ func _run() -> void:
 	camera.call("set_top_down_level", 2.0)
 	grid.call("_update_multimesh_instances")
 	if not _check(
-		_count_lower_tinted(mesh, VolumetricGrid.GRID_LOWER_INSTANCE_TINT) == 3
+		_count_lower_tinted(mesh, VolumetricGrid.GRID_LOWER_INSTANCE_TINT, grid, 2.0) == 3
 		and mesh.instance_count == 4,
 		"changing levels must recolor existing instances without hiding them"
 	):
@@ -97,7 +102,7 @@ func _run() -> void:
 	grid.call("set_surface_overlay_bias_cells", 0.0)
 	grid.call("_update_multimesh_instances")
 	if not _check(
-		_count_lower_tinted(mesh, VolumetricGrid.GRID_LOWER_INSTANCE_TINT) == 0,
+		_count_lower_tinted(mesh, VolumetricGrid.GRID_LOWER_INSTANCE_TINT, grid, 2.0, false) == 0,
 		"3D mode must restore the single original grid color"
 	):
 		return

@@ -153,9 +153,9 @@ func _selected_inventory_index() -> int:
 func _on_inventory_selected(index: int) -> void:
 	if index < 0 or index >= _inventory.size():
 		return
-	_loading = true
-	_quantity.value = int(_inventory[index].get("quantity", 1))
-	_loading = false
+	_quantity.set_value_no_signal(int(_inventory[index].get("quantity", 1)))
+	_quantity.editable = true
+	_remove_button.disabled = false
 	var item_id: String = String(_inventory[index].get("id", ""))
 	for catalog_item: Dictionary in _catalog:
 		if String(catalog_item.get("id", "")) == item_id:
@@ -198,7 +198,8 @@ func _on_quantity_changed(value: float) -> void:
 	if index < 0 or index >= _inventory.size():
 		return
 	_inventory[index]["quantity"] = clampi(int(value), 1, 99999)
-	_refresh_inventory(index)
+	# Keep the active editor and selection intact while typing multiple digits.
+	_inventory_list.set_item_text(index, _inventory_label(_inventory[index]))
 	_publish()
 
 
@@ -218,17 +219,17 @@ func _refresh_inventory(selected_index: int = -1) -> void:
 	_loading = true
 	_inventory_list.clear()
 	for item: Dictionary in _inventory:
-		_inventory_list.add_item("%d × %s · %s" % [
-			int(item.get("quantity", 1)),
-			String(item.get("name", "")),
-			String(item.get("source", ""))
-		])
+		_inventory_list.add_item(_inventory_label(item))
 	if selected_index >= 0 and selected_index < _inventory.size():
 		_inventory_list.select(selected_index)
 		_quantity.value = int(_inventory[selected_index].get("quantity", 1))
 	_remove_button.disabled = selected_index < 0
 	_quantity.editable = selected_index >= 0
 	_loading = old_loading
+
+
+func _inventory_label(item: Dictionary) -> String:
+	return "%d × %s · %s" % [item.get("quantity", 1), item.get("name", ""), item.get("source", "")]
 
 
 func _show_details(item: Dictionary) -> void:

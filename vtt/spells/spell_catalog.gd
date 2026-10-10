@@ -1283,6 +1283,8 @@ static func catalog_spell(spell_id: String) -> Dictionary:
 			{}
 		)
 		if generated_value is Dictionary:
+			# Hand-authored map mechanics must retain the catalog's rules edition.
+			manual_result["source"] = generated_value.get("source", manual_result.get("source", ""))
 			var generated_classes: Variant = (
 				generated_value as Dictionary
 			).get("classes", [])
@@ -1340,6 +1342,7 @@ static func all_spells() -> Array[Dictionary]:
 				{}
 			)
 			if generated_value is Dictionary:
+				manual_copy["source"] = generated_value.get("source", manual_copy.get("source", ""))
 				var generated_classes: Variant = (
 					generated_value as Dictionary
 				).get("classes", [])

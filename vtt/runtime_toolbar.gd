@@ -13,10 +13,6 @@ const COMBAT_END := 72
 
 const ITEM_CREATE := 80
 const ITEM_MANAGE := 81
-const ITEM_ROTATE_LEFT := 82
-const ITEM_ROTATE_RIGHT := 83
-const ITEM_TILT_UP := 84
-const ITEM_TILT_DOWN := 85
 
 const MEASURE_RULER := 30
 const MEASURE_SPHERE := 31
@@ -99,15 +95,6 @@ func _build_toolbar() -> void:
 
 
 
-	row.add_child(_menu("Item", [
-		["Carro romano · posiziona (2×2)", ITEM_CREATE],
-		["Lista item / associa token…", ITEM_MANAGE],
-		["Ruota sx · 45°", ITEM_ROTATE_LEFT],
-		["Ruota dx · 45°", ITEM_ROTATE_RIGHT],
-		["Inclina su · 30°", ITEM_TILT_UP],
-		["Inclina giu · 30°", ITEM_TILT_DOWN]
-	], _on_item))
-
 	row.add_child(_menu("Gioco", [
 		["Incantesimi", GAME_SPELLS],
 		["Mostra / nascondi iniziativa", COMBAT_INITIATIVE],
@@ -118,7 +105,10 @@ func _build_toolbar() -> void:
 	], _on_game))
 	row.add_child(_menu("Master", [
 		["Inizia combattimento", COMBAT_START],
-		["Finisci combattimento", COMBAT_END]
+		["Finisci combattimento", COMBAT_END],
+		["Oggetti sulla mappa"],
+		["Posiziona carro romano (2×2)", ITEM_CREATE],
+		["Gestisci item / associa token…", ITEM_MANAGE]
 	], _on_master))
 
 	# Direct action: one click opens the creature archive, no submenu.
@@ -216,25 +206,8 @@ func _on_master(id: int) -> void:
 			board_root.call("start_combat_mode")
 		COMBAT_END:
 			board_root.call("end_combat_mode")
-
-
-func _on_item(id: int) -> void:
-	var controller: Node = board_root.get("item_controller") as Node
-	if controller == null:
-		return
-	match id:
-		ITEM_CREATE:
-			controller.call("begin_placement")
-		ITEM_MANAGE:
-			controller.call("open_menu")
-		ITEM_ROTATE_LEFT:
-			controller.call("rotate_selected_yaw", -1)
-		ITEM_ROTATE_RIGHT:
-			controller.call("rotate_selected_yaw", 1)
-		ITEM_TILT_UP:
-			controller.call("rotate_selected_vertical", 1)
-		ITEM_TILT_DOWN:
-			controller.call("rotate_selected_vertical", -1)
+		ITEM_CREATE, ITEM_MANAGE:
+			board_root.call("_on_context_menu_id_pressed", id)
 
 
 

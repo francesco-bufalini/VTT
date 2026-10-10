@@ -53,7 +53,7 @@ func _run() -> void:
 	ruler.call("set_camera", camera)
 
 	var token: PickToken = PickToken.new()
-	token.global_position = Vector3(2.5, 7.0, 4.5)
+	token.position = Vector3(2.5, 7.0, 4.5)
 	token.add_to_group("dnd_token")
 	board.add_child(token)
 	board.candidate = token

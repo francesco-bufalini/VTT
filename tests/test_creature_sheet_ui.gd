@@ -3,7 +3,7 @@ const Owner = preload("res://vtt/creature_owner.gd")
 const TokenScene = preload("res://token.tscn")
 
 class TestCampaign extends Node:
-	var selected_campaign_group_id := "creature_ui_regression"
+	var selected_campaign_group_id := "creature_ui_regression_" + str(Time.get_ticks_usec())
 	var active_campaign_id := ""
 class TestSync extends Node:
 	func get_sync_id_for_node(node: Node) -> String:
@@ -79,7 +79,8 @@ func run() -> void:
 	area._archive.setup(campaign)
 	# Search works from the bundled 5etools miniature references even
 	# while the remote bestiary index has not been downloaded.
-	area._on_catalog_ready([])
+	var empty_catalog: Array[Dictionary] = []
+	area._on_catalog_ready(empty_catalog)
 	area._filter_catalog("ape")
 	assert(not area._filtered_catalog.is_empty(), "Offline name search must work")
 	area._filter_catalog("Ape")
@@ -102,6 +103,7 @@ func run() -> void:
 	assert(area._miniature_dialog.get_ok_button().disabled,
 		"New character must explicitly select a default miniature")
 	area._miniature_filter.text = "Hero"
+	area._filter_miniatures("Hero")
 	area._on_miniature_selected(0)
 	assert(not area._miniature_dialog.get_ok_button().disabled)
 	area._confirm_miniature()
@@ -128,6 +130,7 @@ func run() -> void:
 		"Trackers must be inside Statistics, not a separate resources tab")
 	area._choose_miniature(area._current(), false, true)
 	area._miniature_filter.text = "ape"
+	area._filter_miniatures("ape")
 	area._on_miniature_selected(0)
 	area._confirm_miniature()
 	assert(area._current().current_miniature_id == "ape" and area._current().default_miniature_id == "hero_test",
@@ -219,15 +222,15 @@ func run() -> void:
 	var previous_level: int = -1
 	var trait_origins: Dictionary = {}
 	var has_action_surge := false
-	for trait: Dictionary in ordered_traits:
-		assert(int(trait["level"]) >= previous_level,
+	for feature_entry: Dictionary in ordered_traits:
+		assert(int(feature_entry["level"]) >= previous_level,
 			"Traits must sort by level regardless of their origin")
-		previous_level = int(trait["level"])
-		trait_origins[String(trait["origin"])] = true
-		if String(trait["name"]) == "Action Surge":
+		previous_level = int(feature_entry["level"])
+		trait_origins[String(feature_entry["origin"])] = true
+		if String(feature_entry["name"]) == "Action Surge":
 			has_action_surge = true
-		if String(trait.get("class_name", "")) == "Wizard":
-			assert(String(trait["book"]) != "XPHB",
+		if String(feature_entry.get("class_name", "")) == "Wizard":
+			assert(String(feature_entry["book"]) != "XPHB",
 				"2014 characters must not acquire 2024 features")
 	assert(trait_origins.has("Specie · Elf") and trait_origins.has("Classe · Wizard")
 		and trait_origins.has("Classe · Fighter")
@@ -547,7 +550,8 @@ func run() -> void:
 	await process_frame
 	assert(not area._archive._stored("monster", automatic_id).is_empty())
 	received.queue_free()
-	for path: String in ["user://player_characters/campaign_creature_ui_regression.json", "user://master_creatures/campaign_creature_ui_regression.json"]:
+	for folder: String in ["player_characters", "master_creatures"]:
+		var path := "user://%s/campaign_%s.json" % [folder, campaign.selected_campaign_group_id]
 		if FileAccess.file_exists(path):
 			DirAccess.remove_absolute(ProjectSettings.globalize_path(path))
 	board.queue_free()

@@ -27,7 +27,7 @@ func _run() -> void:
 
 	var board = BoardScript.new()
 	# Keep the board out of the tree: its selection helpers need no full scene.
-	board.context_token_menu = PopupMenu.new()
+	board.context_menu = PopupMenu.new()
 	var a = TokenScene.instantiate()
 	var b = TokenScene.instantiate()
 	a.visual_asset_path = "res://absent/ape.res"
@@ -41,11 +41,11 @@ func _run() -> void:
 	board._selected_tokens.assign([a, b])
 	assert(board._selected_miniature_identity() == "ape")
 	board._add_bestiary_context_items()
-	assert(board.context_token_menu.item_count == 2)
+	assert(board.context_menu.item_count == 2)
 	b.set_token_pack_id("wolf")
-	board.context_token_menu.clear()
+	board.context_menu.clear()
 	board._add_bestiary_context_items()
-	assert(board.context_token_menu.item_count == 0)
+	assert(board.context_menu.item_count == 0)
 
 	var shape_before: Shape3D = a.collision_shape.shape
 	var id_before: String = a.get_token_id()
@@ -149,7 +149,7 @@ func _run() -> void:
 	arena.add_child(late)
 	await process_frame
 	assert(late._top_down_token_sprite.visible)
-	board.context_token_menu.free()
+	board.context_menu.free()
 	board.free()
 	a.free()
 	b.free()

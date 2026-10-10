@@ -4,8 +4,6 @@ const DialogLayout = preload("res://vtt/dialog_layout.gd")
 
 const CONTEXT_CREATE_TOKEN := 1
 const CONTEXT_DELETE_SELECTED := 2
-const CONTEXT_ROTATE_LEFT := 3
-const CONTEXT_ROTATE_RIGHT := 4
 const CONTEXT_TOGGLE_GRID := 5
 const CONTEXT_TOGGLE_VISION_CONES := 6
 const CONTEXT_TOGGLE_REACH_SPHERES := 7
@@ -41,7 +39,8 @@ const CONTEXT_REPOSITION_SELECTED := 43
 const CONTEXT_CHOOSE_MOUNT := 44
 const CONTEXT_DISMOUNT := 45
 const CONTEXT_CREATURE_AREA := 100
-const CONTEXT_ADD_CREATURE := 101
+const CONTEXT_ITEM_CREATE := 80
+const CONTEXT_ITEM_MANAGE := 81
 const CAMPAIGN_EDITOR_SCENE_PATH := "res://vtt/editor/campaign_editor.tscn"
 const LOCAL_TOKEN_CATALOG := "res://dist/token_packs/token_catalog.json"
 const LOCAL_TOKEN_PACK_ROOT := "res://dist/token_packs"
@@ -2617,12 +2616,6 @@ func _redo_last_action_now() -> bool:
 	_append_history_state(_undo_stack, current_state)
 	return true
 
-func add_creature() -> void:
-	var area: Node = get_node_or_null("CreatureArea")
-	if area != null and area.has_method("begin_add_creature"):
-		area.call("begin_add_creature")
-
-
 func toggle_compendium() -> void:
 	if compendium != null and is_instance_valid(compendium):
 		compendium.call("toggle_panel")
@@ -2889,6 +2882,7 @@ func _toggle_measurement_mode() -> void:
 func _build_context_submenus() -> void:
 	context_token_menu = _create_context_submenu("ContextTokenMenu")
 	context_game_menu = _create_context_submenu("ContextGameMenu")
+	_create_context_submenu("ContextMasterMenu")
 	context_place_creature_menu = PopupMenu.new()
 	context_place_creature_menu.name = "ContextPlaceCreatureMenu"
 	context_place_creature_menu.id_pressed.connect(_on_place_creature_id_pressed)
@@ -2906,17 +2900,13 @@ func _create_context_submenu(menu_name: String) -> PopupMenu:
 
 
 func _prepare_context_submenus() -> void:
-	context_token_menu.clear()
 	context_place_creature_menu.clear()
-	context_game_menu.clear()
-	context_measure_menu.clear()
-	context_view_menu.clear()
 	_limit_popup_menu(context_menu)
-	_limit_popup_menu(context_token_menu)
 	_limit_popup_menu(context_place_creature_menu)
-	_limit_popup_menu(context_game_menu)
-	_limit_popup_menu(context_measure_menu)
-	_limit_popup_menu(context_view_menu)
+	for child: Node in context_menu.get_children():
+		if child is PopupMenu:
+			child.clear()
+			_limit_popup_menu(child)
 
 
 # Rebuild on each right-click so the chooser includes both present and
@@ -3135,7 +3125,6 @@ func _show_context_menu(screen_position: Vector2) -> void:
 	context_game_menu.add_item("Incantesimi", CONTEXT_SPELLS)
 	context_game_menu.add_separator()
 	context_game_menu.add_item("Creature · schede", CONTEXT_CREATURE_AREA)
-	context_game_menu.add_item("Aggiungi creatura", CONTEXT_ADD_CREATURE)
 	context_game_menu.add_item("Compendio", CONTEXT_COMPENDIUM)
 	# Generation and the token list stay grouped in the Token submenu;
 	# creature-sheet editing and combat controls remain separate.
@@ -3147,8 +3136,14 @@ func _show_context_menu(screen_position: Vector2) -> void:
 		context_token_menu.add_item("Genera token", CONTEXT_CREATE_TOKEN)
 	context_token_menu.add_item("Lista token", CONTEXT_TOKEN_LIST)
 	context_menu.add_submenu_node_item("Token", context_token_menu)
+	var master_menu: PopupMenu = context_menu.get_node("ContextMasterMenu")
+	master_menu.add_item("Inizia combattimento", CONTEXT_COMBAT_START)
+	master_menu.add_item("Termina combattimento", CONTEXT_COMBAT_END)
+	master_menu.add_separator("Oggetti sulla mappa")
+	master_menu.add_item("Posiziona carro romano (2×2)", CONTEXT_ITEM_CREATE)
+	master_menu.add_item("Gestisci item / associa token…", CONTEXT_ITEM_MANAGE)
+	context_menu.add_submenu_node_item("Master", master_menu)
 	context_game_menu.add_separator("Combattimento")
-	context_game_menu.add_item("Inizia combattimento", CONTEXT_COMBAT_START)
 	var initiative_visible: bool = (
 		initiative_tracker != null
 		and is_instance_valid(initiative_tracker)
@@ -3158,7 +3153,6 @@ func _show_context_menu(screen_position: Vector2) -> void:
 		"Nascondi iniziativa" if initiative_visible else "Mostra iniziativa",
 		CONTEXT_INITIATIVE
 	)
-	context_game_menu.add_item("Termina combattimento", CONTEXT_COMBAT_END)
 	if volumetric_grid.visible:
 		context_view_menu.add_item("Nascondi griglia", CONTEXT_TOGGLE_GRID)
 	else:
@@ -3273,9 +3267,12 @@ func _on_context_menu_id_pressed(id: int) -> void:
 		call_deferred("toggle_creature_area")
 		return
 
-	if id == CONTEXT_ADD_CREATURE:
+	if id == CONTEXT_ITEM_CREATE or id == CONTEXT_ITEM_MANAGE:
 		context_menu.hide()
-		call_deferred("add_creature")
+		if item_controller != null:
+			item_controller.call_deferred(
+				"begin_placement" if id == CONTEXT_ITEM_CREATE else "open_menu"
+			)
 		return
 
 	if id == CONTEXT_COMPENDIUM:
@@ -3455,14 +3452,6 @@ func _on_context_menu_id_pressed(id: int) -> void:
 
 		CONTEXT_DELETE_SELECTED:
 			_delete_selected()
-			_close_context_menu_to_game()
-
-		CONTEXT_ROTATE_LEFT:
-			_rotate_selected(-1)
-			_close_context_menu_to_game()
-
-		CONTEXT_ROTATE_RIGHT:
-			_rotate_selected(1)
 			_close_context_menu_to_game()
 
 
@@ -4019,30 +4008,14 @@ func _close_context_menu_to_game() -> void:
 
 
 func _on_context_menu_hidden() -> void:
-	if (
-		initiative_tracker != null
-		and is_instance_valid(initiative_tracker)
-		and initiative_tracker.get("add_dialog") is Window
-		and bool(initiative_tracker.get("add_dialog").visible)
-	):
-		return
-	if (
-		color_dialog.visible
-		or (is_instance_valid(share_dialog) and share_dialog.visible)
-		or (is_instance_valid(map_save_dialog) and map_save_dialog.visible)
-		or (is_instance_valid(map_load_dialog) and map_load_dialog.visible)
-		or (is_instance_valid(token_state_dialog) and token_state_dialog.visible)
-		or (
-			is_instance_valid(camera_settings_dialog)
-			and camera_settings_dialog.visible
-		)
-	):
-		return
+	# Evaluate modal ownership once, after the selected action opens its UI.
 	call_deferred("_finish_context_menu_close")
 
 
 func _finish_context_menu_close() -> void:
 	if _mount_pick_rider != null:
+		return
+	if item_controller != null and (item_controller.placing or item_controller.panel.visible):
 		return
 	if (
 		initiative_tracker != null
