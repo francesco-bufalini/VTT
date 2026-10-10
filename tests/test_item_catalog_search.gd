@@ -43,6 +43,8 @@ func _run() -> void:
 	tab.load_record({"rules_version": "2014", "inventory": [
 		{"id": "old-rope", "name": "Rope", "source": "PHB", "quantity": 2}
 	]})
+	# Test fixture replaces the catalog after setup; rebuild its visible results.
+	tab._filter_catalog()
 	assert(tab._filtered.size() == 3 and tab._catalog_count.text == "Risultati: 3")
 	tab._set_search_visible(true)
 	assert(tab._search_panel.visible and tab._search_toggle.button_pressed)
