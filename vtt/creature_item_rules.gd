@@ -22,6 +22,8 @@ static func entry_for(saved: Dictionary) -> Dictionary:
 
 
 static func kind(entry: Dictionary) -> String:
+	if String(entry.get("category", "")) == "documents":
+		return "document"
 	var type_code := String(entry.get("type", "")).split("|")[0].to_upper()
 	if type_code in ["M", "R"] and (
 		not String(entry.get("weapon_category", "")).is_empty()
@@ -47,6 +49,7 @@ static func category_name(entry: Dictionary) -> String:
 		"armor": return "Armature"
 		"tool": return "Strumenti"
 		"magic": return "Oggetti magici"
+		"document": return "Documenti"
 		_: return "Altri oggetti"
 
 
