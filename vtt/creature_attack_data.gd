@@ -189,6 +189,29 @@ static func attack_bonus(record: Dictionary, attack: Dictionary, proficiency: in
 	return _attack_ability_modifier(record, attack) + (proficiency if trained else 0) + manual + _weapon_magic_bonus(attack)
 
 
+# The tooltip uses exactly the same components as attack_bonus, including
+# published monster totals and the optional weapon enhancement.
+static func attack_bonus_formula(record: Dictionary, attack: Dictionary, proficiency: int) -> String:
+	var settings: Dictionary = override_for(record, String(attack.get("id", "")))
+	var manual: int = int(settings.get("bonus", 0))
+	var total: int = attack_bonus(record, attack, proficiency)
+	if String(record.get("kind", "")) == "monster" and String(attack.get("source", "")) != "item":
+		return "Bestiario %+d %+d bonus manuale = %+d (competenza già inclusa)" % [
+			int(attack.get("base_hit", 0)), manual, total
+		]
+	var trained: bool = String(attack.get("id", "")) == "unarmed"
+	if String(attack.get("source", "")) == "item":
+		var entry: Variant = attack.get("item_entry", {})
+		if entry is Dictionary:
+			trained = Proficiencies.weapon_proficient(record, entry as Dictionary)
+	elif not trained:
+		trained = bool(attack.get("proficient", false))
+	return "Caratteristica %+d + competenza %+d + bonus manuale %+d + magia %+d = %+d" % [
+		_attack_ability_modifier(record, attack), proficiency if trained else 0,
+		manual, _weapon_magic_bonus(attack), total
+	]
+
+
 static func damage_label(record: Dictionary, attack: Dictionary) -> String:
 	var source: String = String(attack.get("source", ""))
 	var base: String = String(attack.get("damage", "")).strip_edges()
