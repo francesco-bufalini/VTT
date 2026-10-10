@@ -5,42 +5,6 @@ extends RefCounted
 const ENRICHMENT_SCRIPT_PATH := "res://vtt/content_enrichment.gd"
 const ENRICHMENT_USER_DIR := "user://vtt_enrichment"
 
-static var _enrichment_script: Script
-
-
-static func _extension() -> Script:
-	if _enrichment_script != null:
-		return _enrichment_script
-	var resource: Resource = load(ENRICHMENT_SCRIPT_PATH)
-	if resource is Script:
-		_enrichment_script = resource as Script
-	return _enrichment_script
-
-
-static func reload_enrichment() -> void:
-	var script: Script = _extension()
-	if script != null:
-		script.call("reload")
-
-
-static func enrichment_diagnostics() -> Array[String]:
-	var result: Array[String] = []
-	var script: Script = _extension()
-	if script != null:
-		var raw: Variant = script.get("diagnostics")
-		if raw is Array:
-			for item: Variant in raw:
-				result.append(String(item))
-	return result
-
-
-static func enrich(category: String, definition: Dictionary) -> Dictionary:
-	var script: Script = _extension()
-	if script == null:
-		return definition.duplicate(true)
-	var value: Variant = script.call("apply_to", category, definition)
-	return value as Dictionary if value is Dictionary else definition.duplicate(true)
-
 # Shared data normalization and local content overlays, never private sheets.
 const HOME_DIR := "user://homebrew"
 const CATEGORIES := ["items", "subclasses", "subclass_features", "monsters", "races", "classes", "spells", "conditions", "diseases", "effects", "class_features", "species_traits", "feats", "backgrounds", "optional_features"]
@@ -98,6 +62,43 @@ static var _home: Dictionary = {}
 static var _loaded := false
 static var diagnostics: Array[String] = []
 static var _effects: Array[Dictionary] = []
+
+static var _enrichment_script: Script
+
+
+static func _extension() -> Script:
+	if _enrichment_script != null:
+		return _enrichment_script
+	var resource: Resource = load(ENRICHMENT_SCRIPT_PATH)
+	if resource is Script:
+		_enrichment_script = resource as Script
+	return _enrichment_script
+
+
+static func reload_enrichment() -> void:
+	var script: Script = _extension()
+	if script != null:
+		script.call("reload")
+
+
+static func enrichment_diagnostics() -> Array[String]:
+	var result: Array[String] = []
+	var script: Script = _extension()
+	if script != null:
+		var raw: Variant = script.get("diagnostics")
+		if raw is Array:
+			for item: Variant in raw:
+				result.append(String(item))
+	return result
+
+
+static func enrich(category: String, definition: Dictionary) -> Dictionary:
+	var script: Script = _extension()
+	if script == null:
+		return definition.duplicate(true)
+	var value: Variant = script.call("apply_to", category, definition)
+	return value as Dictionary if value is Dictionary else definition.duplicate(true)
+
 
 static func reload_homebrew(paths: Array[String] = ["res://homebrew", HOME_DIR]) -> void:
 	reload_enrichment()
