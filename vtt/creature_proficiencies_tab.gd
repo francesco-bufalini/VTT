@@ -556,4 +556,11 @@ func _refresh_from_current_state() -> void:
 func _publish() -> void:
 	_refresh()
 	if not _loading and _changed.is_valid():
-		_changed.call(_rows.duplicate(true), _feats.duplicate(true), _origins.duplicate(true))
+		# Requirements are recalculated from the bundled 5etools index on load,
+		# and must not be duplicated into every character's saved file.
+		var stored: Array[Dictionary] = []
+		for item: Dictionary in _origins:
+			stored.append({"id": item.get("id", ""), "name": item.get("name", ""),
+				"group": item.get("group", ""), "automatic": bool(item.get("automatic", false)),
+				"disabled": bool(item.get("disabled", false))})
+		_changed.call(_rows.duplicate(true), _feats.duplicate(true), stored)
