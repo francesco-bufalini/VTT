@@ -3361,7 +3361,7 @@ func apply_attack_damage_to_token(target: Node3D, damage: int) -> Dictionary:
 		if String(owned.get("id", "")) != creature_id:
 			continue
 		var hp_max := maxi(0, int(owned.get("max_hp", 0)))
-		if hp_max <= 0:
+		if hp_max <= 0 and int(owned.get("second_form_hp", 0)) <= 0:
 			return {"applied": false}
 		var hp_now := clampi(int(owned.get("current_hp", hp_max)), 0, hp_max)
 		var prior_form: int = maxi(0, int(owned.get("second_form_hp", 0)))
