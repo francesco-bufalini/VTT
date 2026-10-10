@@ -480,13 +480,17 @@ func _refresh_competences() -> void:
 					linked.append(status_label)
 			var cell := PanelContainer.new()
 			_proficiency_cards.add_child(cell)
-			if selected_active:
-				var background := StyleBoxFlat.new()
-				background.draw_center = false
-				background.border_color = Color(0.44, 0.75, 0.95)
-				background.set_border_width_all(2)
-				background.set_corner_radius_all(5)
-				cell.add_theme_stylebox_override("panel", background)
+			# Every currently effective grant remains visibly illuminated, even
+			# after deselecting a source or focusing an unrelated source.
+			# A stronger outline distinguishes grants from the selected origin.
+			if active:
+				var highlight := StyleBoxFlat.new()
+				highlight.draw_center = false
+				highlight.border_color = (Color(0.44, 0.80, 1.0)
+					if selected_active else Color(0.38, 0.64, 0.78))
+				highlight.set_border_width_all(2 if selected_active else 1)
+				highlight.set_corner_radius_all(5)
+				cell.add_theme_stylebox_override("panel", highlight)
 			var box := HBoxContainer.new()
 			box.add_theme_constant_override("separation", 4)
 			cell.add_child(box)
@@ -496,6 +500,9 @@ func _refresh_competences() -> void:
 			var mastered: bool = kind == "skill" and _effective_expertise(key, enabled)
 			label.text = ("✓ " if active else "○ ") + key + (" 🎓🎓" if mastered else "")
 			label.tooltip_text = "Origini:\n" + "\n".join(linked)
+			if active:
+				label.add_theme_color_override("font_color",
+					Color(0.94, 0.97, 1.0) if selected_active else Color(0.82, 0.93, 0.98))
 			box.add_child(label)
 			if kind == "skill":
 				var expert := CheckButton.new()
@@ -504,15 +511,25 @@ func _refresh_competences() -> void:
 				expert.button_pressed = mastered
 				expert.toggled.connect(_toggle_group_expertise.bind(key, indices.duplicate()))
 				box.add_child(expert)
-			var toggle := CheckButton.new()
-			toggle.text = "⏻"
-			toggle.tooltip_text = "Competenza effettiva da almeno un'origine attiva. Seleziona l'origine per modificare solo le sue concessioni."
-			toggle.button_pressed = _group_enabled(indices)
-			# An origin filter is for highlighting, not for turning unrelated
-			# proficiencies off. Mandatory grants remain immutable individually.
-			toggle.disabled = (_selected_id not in ["~none~", ""] and not selected) or _has_mandatory_in_scope(indices)
-			toggle.toggled.connect(_toggle_group.bind(indices.duplicate()))
-			box.add_child(toggle)
+			# Disabled switches have a greyed-out theme in Godot and incorrectly
+			# look like missing proficiency. Display a read-only state label
+			# instead whenever this particular source cannot be edited.
+			if (_selected_id not in ["~none~", ""] and not selected) or _has_mandatory_in_scope(indices):
+				var state_label := Label.new()
+				state_label.text = "✓ Attiva" if active else "○ Inattiva"
+				state_label.add_theme_font_size_override("font_size", 12)
+				state_label.add_theme_color_override("font_color",
+					Color(0.70, 0.93, 0.76) if active else Color(0.64, 0.63, 0.62))
+				state_label.tooltip_text = ("Competenza obbligatoria" if _has_mandatory_in_scope(indices)
+					else "Competenza concessa da altre origini; seleziona l'origine per modificarla")
+				box.add_child(state_label)
+			else:
+				var toggle := CheckButton.new()
+				toggle.text = "⏻"
+				toggle.tooltip_text = "Abilita o disabilita le concessioni modificabili"
+				toggle.button_pressed = _group_enabled(indices)
+				toggle.toggled.connect(_toggle_group.bind(indices.duplicate()))
+				box.add_child(toggle)
 			if not _deletable_sources(kind, key).is_empty():
 				var remove := Button.new()
 				remove.text = "✕"
