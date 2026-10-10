@@ -3151,6 +3151,7 @@ func _confirm_miniature() -> void:
 	if _chosen_miniature_id.is_empty() or _pending_miniature_record.is_empty():
 		return
 	var record: Dictionary = _pending_miniature_record.duplicate(true)
+	var previous_current_id: String = String(record.get("current_miniature_id", ""))
 	if _picker_current:
 		record["current_miniature_id"] = _chosen_miniature_id
 	else:
@@ -3174,7 +3175,7 @@ func _confirm_miniature() -> void:
 		return
 	_selected_id = String(record.get("id", ""))
 	_selected_kind = String(record.get("kind", ""))
-	var changed_current := _picker_current
+	var changed_current: bool = _picker_current and previous_current_id != _chosen_miniature_id
 	_pending_miniature_record.clear()
 	_pending_new_creature = false
 	_picker_current = false
@@ -3184,6 +3185,8 @@ func _confirm_miniature() -> void:
 		if (String(record.get("current_miniature_id", ""))
 			!= String(record.get("default_miniature_id", ""))):
 			_prompt_second_form_hp(record)
+		elif int(record.get("second_form_hp", 0)) > 0:
+			_popup_sheet_dialog(_restore_form_dialog, Vector2i(510, 200))
 	_set_status("Aspetto attuale aggiornato." if changed_current else
 		"Miniatura di base selezionata: %s" % _chosen_miniature_id)
 
