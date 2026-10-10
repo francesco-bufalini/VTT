@@ -253,11 +253,31 @@ static func grant_matches(grants: Variant, kind: String, key: String) -> int:
 				best = maxi(best, 1)
 		if value.has("any") or (kind == "skill" and value.has("anyProficientSkill")):
 			best = maxi(best, 1)
-		if kind == "tool" and ("anyArtisansTool" in value or "anyMusicalInstrument" in value):
+		if kind == "tool" and value.has("anyArtisansTool") and _tool_type(wanted) == "AT":
 			best = maxi(best, 1)
-		if kind == "language" and ("anyStandard" in value or "anyExotic" in value):
+		if kind == "tool" and value.has("anyMusicalInstrument") and _tool_type(wanted) == "INS":
+			best = maxi(best, 1)
+		# A bare 'any' in 5etools is a structured choice, not a fixed grant.
+		# Standard/exotic languages must not be conflated.
+		if kind == "language" and value.has("anyStandard") and _language_group(wanted) == "standard":
+			best = maxi(best, 1)
+		if kind == "language" and value.has("anyExotic") and _language_group(wanted) == "exotic":
 			best = maxi(best, 1)
 	return best
+
+
+static func _tool_type(key: String) -> String:
+	for item: Dictionary in Catalog.entries("tools"):
+		if normalized_key(String(item.get("name", ""))) == key:
+			return String(item.get("type", "")).split("|")[0].to_upper()
+	return ""
+
+
+static func _language_group(key: String) -> String:
+	for item: Dictionary in Catalog.entries("languages"):
+		if normalized_key(String(item.get("name", ""))) == key:
+			return String(item.get("type", "")).to_lower()
+	return ""
 
 
 static func suggest_origins(record: Dictionary, kind: String, key: String) -> Array[Dictionary]:
