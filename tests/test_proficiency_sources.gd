@@ -395,6 +395,20 @@ func run() -> void:
 	tab._choice_dialog.hide()
 	assert(Proficiencies.has_proficiency(tab._effective_record(), "tool", String(tool_option.get("key", ""))),
 		"Confirming the dialog must persist the selected artisan tool")
+	var guild_origin: Dictionary = {}
+	for source: Dictionary in Proficiencies.origins(tab._effective_record()):
+		if String(source.get("id", "")) == "background|phb|guild artisan":
+			guild_origin = source
+	assert(not guild_origin.is_empty(), "The selected background is a proficiency origin")
+	var still_missing: Array[String] = Proficiencies.requirement_missing(
+		guild_origin, tab._rows, tab._enabled_map())
+	var tool_missing := false
+	var language_missing := false
+	for missing_entry: String in still_missing:
+		tool_missing = tool_missing or missing_entry.begins_with("tool ")
+		language_missing = language_missing or missing_entry.begins_with("language ")
+	assert(not tool_missing and language_missing,
+		"Artisan tool choice must count toward its quota while language remains missing")
 	tab._open_missing_choices("background|phb|guild artisan")
 	assert(tab._choice_selector.selected == language_group_index,
 		"After choosing an artisan tool, the popup must focus the still-missing language")
