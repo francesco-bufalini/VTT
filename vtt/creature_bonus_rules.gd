@@ -78,6 +78,11 @@ static func migrate_legacy(record: Dictionary, preserve_old_initiative: bool = f
 		record["spell_slots_bonus"] = cleaned
 	_add_migrated(rows, "pact_slot", int(record.get("pact_slots_bonus", 0)))
 	record["pact_slots_bonus"] = 0
+	var tracker_bonuses: Variant = record.get("resource_tracker_bonuses", {})
+	if tracker_bonuses is Dictionary:
+		for tracker_id: Variant in (tracker_bonuses as Dictionary).keys():
+			_add_migrated(rows, "tracker:" + String(tracker_id), int(tracker_bonuses[tracker_id]))
+		record["resource_tracker_bonuses"] = {}
 	var overrides: Variant = record.get("attack_overrides", {})
 	if overrides is Dictionary:
 		var cleaned_overrides: Dictionary = (overrides as Dictionary).duplicate(true)
