@@ -150,6 +150,10 @@ static func sync_legacy_fields(record: Dictionary, rows: Array[Dictionary]) -> v
 			if String(row.get("kind", "")) != String(pair.kind) or bool(row.get("disabled", false)) or not bool(enabled.get(String(row.get("origin_id", "")), true)):
 				continue
 			var key: String = normalized_key(String(row.get("key", "")))
+			if String(pair.kind) == "expertise" and key not in record.get("skill_proficiencies", []):
+				# A retained expertise switch stays dormant if all sources
+				# of the underlying skill have been disabled.
+				continue
 			if key not in entries:
 				entries.append(key)
 		record[String(pair.field)] = entries
