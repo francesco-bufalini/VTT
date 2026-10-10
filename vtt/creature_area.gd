@@ -1798,6 +1798,28 @@ func _on_formula_bonus_requested(key: String) -> void:
 	call_deferred("_update_stats_column_heights")
 
 
+func _recalculate_bonus_mirrors(record: Dictionary) -> void:
+	_recalculate_bonus_mirrors(record)
+	record["reach_feet"] = AttackData.active_range(record)
+
+
+func _refresh_formula_dependents(record: Dictionary) -> void:
+	var previous_loading: bool = _loading
+	_loading = true
+	for ability: String in _ability_spins.keys():
+		_update_ability_modifier(ability)
+	_loading = previous_loading
+	if _initiative != null:
+		_initiative.set_value_no_signal(BonusRules.value(record, "ability_mod:dex"))
+	_refresh_skill_values(record)
+	_update_max_hp_display()
+	_update_second_max_formula()
+	_update_defense_display()
+	_update_speed_display()
+	_refresh_attacks(record)
+	_refresh_trackers(record)
+
+
 func _on_bonuses_updated(rows: Array, origins: Array) -> void:
 	if _loading:
 		return
@@ -1807,13 +1829,7 @@ func _on_bonuses_updated(rows: Array, origins: Array) -> void:
 	record["formula_bonuses"] = rows.duplicate(true)
 	record["proficiency_origins"] = origins.duplicate(true)
 	# Recalculate every dependent field from its base and active grants.
-	record["max_hp"] = maxi(0, BonusRules.value(record, "hp"))
-	record["armor_class"] = maxi(0, BonusRules.value(record, "ac"))
-	record["initiative_base"] = BonusRules.value(record, "ability_mod:dex")
-	record["initiative"] = BonusRules.value(record, "initiative")
-	record["proficiency_bonus"] = BonusRules.value(record, "proficiency")
-	record["speed"] = maxi(0, BonusRules.value(record, "speed"))
-	record["reach_feet"] = AttackData.active_range(record)
+	_recalculate_bonus_mirrors(record)
 	if _archive.save(record) != OK:
 		_set_status("Impossibile salvare i bonus.")
 		return
@@ -3099,13 +3115,14 @@ func _on_proficiencies_updated(rows: Array, feats: Array, origins: Array) -> voi
 			else 0
 		)
 	_skill_ranks_custom = bool(record.get("skill_ranks_custom", false))
+	_recalculate_bonus_mirrors(record)
 	var error: Error = _archive.save(record)
 	if error != OK:
 		_set_status("Impossibile salvare competenze: " + error_string(error))
 		return
 	_replace_current_record(record)
-	_refresh_skill_values(record)
-	_refresh_attacks(record)
+	_refresh_formula_dependents(record)
+	_sync_token_health(record)
 	_apply_sheet_properties(record)
 	if _bonuses_ui != null:
 		_bonuses_ui.call("load_record", record)
@@ -3164,7 +3181,7 @@ func _on_inventory_updated(inventory: Array) -> void:
 	record["armor_class"] = maxi(0, BonusRules.value(record, "ac"))
 	# Removing an item also revokes proficiencies assigned to that item.
 	ProficiencyRules.sync_legacy_fields(record, ProficiencyRules.choices(record))
-	record["reach_feet"] = AttackData.active_range(record)
+	_recalculate_bonus_mirrors(record)
 	if String(record.get("kind", "")) == "monster":
 		record["reach_is_custom"] = true
 	var error: Error = _archive.save(record)
@@ -3172,10 +3189,12 @@ func _on_inventory_updated(inventory: Array) -> void:
 		_set_status("Impossibile salvare inventario: " + error_string(error))
 		return
 	_replace_current_record(record)
-	_refresh_attacks(record)
-	_update_defense_display()
+	_refresh_formula_dependents(record)
+	_sync_token_health(record)
 	_apply_sheet_properties(record)
 	_refresh_reference(record)
+	if _bonuses_ui != null:
+		_bonuses_ui.call("load_record", record)
 
 
 func _on_ability_value_changed(_value: float, ability: String) -> void:
@@ -3373,12 +3392,7 @@ func _save() -> void:
 			"disabled": bool(origin.get("disabled", false))})
 	record["proficiency_origins"] = saved_origins
 	# Mirrors used by tokens/combat always include every active formula bonus.
-	record["max_hp"] = maxi(0, BonusRules.value(record, "hp"))
-	record["armor_class"] = maxi(0, BonusRules.value(record, "ac"))
-	record["initiative_base"] = BonusRules.value(record, "ability_mod:dex")
-	record["initiative"] = BonusRules.value(record, "initiative")
-	record["proficiency_bonus"] = BonusRules.value(record, "proficiency")
-	record["speed"] = maxi(0, BonusRules.value(record, "speed"))
+	_recalculate_bonus_mirrors(record)
 	var error: Error = _archive.save(record)
 	if error != OK:
 		_set_status("Salvataggio non riuscito: %s" % error_string(error))
