@@ -50,11 +50,19 @@ static func definitions(record: Dictionary) -> Array[Dictionary]:
 			var dice: String = _capture(text_value, "\\{@damage\\s*([^}]+)\\}")
 			if dice.is_empty():
 				dice = _capture(text_value, "(\\d+d\\d+(?:\\s*[+-]\\s*\\d+)?)")
+			var distance_feet: int = 5
+			if ranged and not ranged_distance_text.is_empty():
+				distance_feet = int(ranged_distance_text)
+			elif not reach.is_empty():
+				distance_feet = int(reach)
+			var melee: bool = not ranged or "melee or ranged" in text_value.to_lower()
 			result.append({
 				"id": "monster:%s:%d" % [section, index],
-				"name": title, "source": section, "melee": not ranged,
-				"range_feet": maxi(5, int(ranged_distance_text if ranged and not ranged_distance_text.is_empty() else reach if not reach.is_empty() else "5")),
-				"proficient": true, "damage": dice, "base_hit": int(hit_tag) if not hit_tag.is_empty() else 0,
+				"name": title, "source": section, "melee": melee,
+				"range_feet": maxi(5, distance_feet),
+				"proficient": true, "damage": dice,
+				"base_hit": int(hit_tag) if not hit_tag.is_empty() else 0,
+				"hit_known": not hit_tag.is_empty(),
 				"source_ability": "dex" if ranged else "str",
 				"raw": action.duplicate(true)
 			})
