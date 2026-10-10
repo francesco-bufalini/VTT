@@ -2040,7 +2040,7 @@ func _update_ability_modifier(ability: String) -> void:
 	(_ability_modifier_labels[ability] as Label).text = "%+d" % value
 	if _ability_total_labels.has(ability):
 		(_ability_total_labels[ability] as Label).text = str(score + bonus)
-	if ability == "dex" and _initiative != null:
+	if ability == "dex" and _initiative != null and not _loading:
 		_initiative.value = value
 		_update_defense_display()
 
