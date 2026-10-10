@@ -2271,6 +2271,14 @@ func _refresh_attacks(record: Dictionary) -> void:
 			info.text = "Proprietà: " + ", ".join(properties) if not properties.is_empty() else "Arma"
 			info.tooltip_text = "Proprietà strutturate 5etools dell'arma equipaggiata"
 			settings.add_child(info)
+			if ItemRules.has_property(item_data, "V") and String(attack.get("slot", "")) == "main":
+				var versatile := CheckBox.new()
+				versatile.text = "Due mani (versatile)"
+				versatile.tooltip_text = "Usa il dado versatile solo quando la mano secondaria è libera"
+				versatile.button_pressed = bool(AttackData.override_for(record, attack_id).get("two_handed", false))
+				versatile.disabled = not ItemRules.occupying(record.get("inventory", []), "off").is_empty()
+				versatile.toggled.connect(_on_attack_two_handed_changed.bind(attack_id))
+				settings.add_child(versatile)
 		_add_label(settings, "Bonus")
 		var extra := SpinBox.new()
 		extra.min_value = -99
@@ -2346,6 +2354,10 @@ func _on_attack_bonus_changed(value: float, attack_id: String) -> void:
 
 func _on_attack_proficiency_changed(enabled: bool, attack_id: String) -> void:
 	_save_attack_setting(attack_id, "proficient", enabled)
+
+
+func _on_attack_two_handed_changed(enabled: bool, attack_id: String) -> void:
+	_save_attack_setting(attack_id, "two_handed", enabled)
 
 
 func _save_attack_setting(attack_id: String, setting: String, value: Variant) -> void:
