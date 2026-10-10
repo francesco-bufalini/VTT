@@ -19,6 +19,7 @@ static func from_catalog(definition: Dictionary) -> Dictionary:
 		item["category"] = "documents"
 		item["added_at"] = int(Time.get_unix_time_from_system())
 		item["display_style"] = "pergamena"
+		item["instance_id"] = "owned_doc_%d_%d" % [int(Time.get_unix_time_from_system()), Time.get_ticks_usec()]
 	for field: String in SNAPSHOT_FIELDS:
 		if definition.has(field):
 			item[field] = definition[field]
@@ -34,7 +35,7 @@ static func from_saved(saved: Dictionary) -> Dictionary:
 		"equipped_slots": saved.get("equipped_slots", []).duplicate(true) if saved.get("equipped_slots", []) is Array else [],
 		"instance_overrides": {}
 	}
-	for field: String in ["category", "added_at", "display_style"]:
+	for field: String in ["category", "added_at", "display_style", "instance_id"]:
 		if saved.has(field):
 			result[field] = saved[field]
 	for field: String in SNAPSHOT_FIELDS:
