@@ -279,9 +279,9 @@ func _documents_changed(inventory: Array) -> void:
 		if raw is Dictionary:
 			_inventory.append(ItemInstance.from_saved(raw as Dictionary))
 	_sanitize_equipment()
+	reload_catalog()
 	_refresh_inventory()
 	_loading = false
-	reload_catalog()
 	_publish()
 
 
@@ -367,7 +367,9 @@ func load_record(record: Dictionary) -> void:
 		_documents_tab.call("load_inventory", _inventory)
 	if migrated:
 		reload_catalog()
-		_publish()
+		# CreatureArea is still loading the sheet here; publishing synchronously
+		# would be ignored by its _loading guard.
+		call_deferred("_publish")
 
 
 func _catalog_entry(item: Dictionary) -> Dictionary:
@@ -405,6 +407,8 @@ func _on_image_click(event: InputEvent, from_catalog: bool) -> void:
 		return
 	var rect: Rect2 = list.get_item_rect(index)
 	var font: Font = list.get_theme_font("font")
+	if font == null:
+		return
 	var size: int = list.get_theme_font_size("font_size")
 	var before: String = label.substr(0, image_offset)
 	var glyph_x: float = rect.position.x + font.get_string_size(before, HORIZONTAL_ALIGNMENT_LEFT, -1, size).x
