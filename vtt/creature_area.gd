@@ -505,7 +505,8 @@ func _build_ui() -> void:
 	_spellcasting_ui.call(
 		"setup",
 		Callable(self, "_on_spellcasting_updated"),
-		Callable(self, "_set_status")
+		Callable(self, "_set_status"),
+		Callable(self, "_on_spellcasting_cast_requested")
 	)
 	var inventory_tab := _add_sheet_tab(_tabs, "Inventario")
 	_inventory_ui = InventoryTab.new()
@@ -760,11 +761,18 @@ func _build_ui() -> void:
 	_species = _reference_option(species_row, Player5eTools.entries("races"))
 	_species.item_selected.connect(func(_index: int) -> void: _on_species_changed())
 
+	var classes_title_row := HBoxContainer.new()
+	classes_title_row.add_theme_constant_override("separation", 12)
+	form.add_child(classes_title_row)
 	var classes_title := Label.new()
 	classes_title.text = "⚔ Classi"
 	classes_title.add_theme_font_size_override("font_size", 17)
 	classes_title.add_theme_color_override("font_color", Color(0.96, 0.78, 0.54))
-	form.add_child(classes_title)
+	classes_title_row.add_child(classes_title)
+	_add_label(classes_title_row, "📈 XP")
+	_xp = _spin(classes_title_row, 0, 999999999)
+	_xp.custom_minimum_size.x = 130
+	_xp.tooltip_text = "Minimo XP calcolato dai livelli di classe (esclusa la classe Mostro)"
 	var classes_row := HFlowContainer.new()
 	classes_row.add_theme_constant_override("h_separation", 7)
 	classes_row.add_theme_constant_override("v_separation", 6)
@@ -803,12 +811,6 @@ func _build_ui() -> void:
 	multiclass_header.add_child(_add_class_button)
 	_multiclass_rows = VBoxContainer.new()
 	form.add_child(_multiclass_rows)
-	var xp_row := HBoxContainer.new()
-	form.add_child(xp_row)
-	_add_label(xp_row, "📈 XP")
-	_xp = _spin(xp_row, 0, 999999999)
-	_xp.custom_minimum_size.x = 130
-	_xp.tooltip_text = "Minimo XP calcolato dai livelli di classe (esclusa la classe Mostro)"
 	var tracker_caption := Label.new()
 	tracker_caption.text = "📊 Tracker risorse"
 	tracker_caption.add_theme_font_size_override("font_size", 15)
@@ -1976,6 +1978,33 @@ func _on_speed_changed(_value: float) -> void:
 func _update_speed_display() -> void:
 	if _speed_effective != null and _speed != null and _speed_bonus != null:
 		_speed_effective.text = str(maxi(0, int(_speed.value) + int(_speed_bonus.value)))
+
+
+# The creature sheet casts from class, available and searched spells alike.
+# When no linked token or VTT effect exists, casting still records slot use.
+func _on_spellcasting_cast_requested(spell: Dictionary, slot_level: int) -> bool:
+	if _current().is_empty():
+		return false
+	var spell_name: String = String(spell.get("name", "Incantesimo"))
+	var spell_id: String = String(spell.get("id", ""))
+	var source: String = String(spell.get("source", ""))
+	var caster: CharacterBody3D = find_linked_token_for_creature(_selected_id)
+	var runtime: Node = board_root.get_node_or_null("SpellSystem")
+	if caster == null or runtime == null or not runtime.has_method("has_runtime_spell_effect"):
+		_set_status("%s lanciato · effetto VTT non attivabile senza un token collegato." % spell_name)
+		return true
+	if not bool(runtime.call("has_runtime_spell_effect", spell_id, spell_name, source)):
+		_set_status("%s lanciato · nessun effetto VTT associato." % spell_name)
+		return true
+	# Return to the board before entering the existing target-selection mode.
+	hide_panel()
+	var activated: bool = bool(runtime.call(
+		"activate_spell_from_caster", spell_id, caster, spell_name, source, slot_level
+	))
+	if not activated:
+		show_panel()
+		_set_status("Impossibile attivare l'effetto VTT di %s." % spell_name)
+	return activated
 
 
 func _on_spellcasting_updated(values: Dictionary) -> void:

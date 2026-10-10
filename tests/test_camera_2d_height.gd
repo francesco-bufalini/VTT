@@ -438,6 +438,38 @@ func run() -> void:
 	):
 		return
 
+	# A higher prop on a non-default physics layer and away from the
+	# camera center must remain navigable above all creature elevations.
+	var upper_prop := StaticBody3D.new()
+	upper_prop.collision_layer = 8
+	upper_prop.position = Vector3(12.0, 13.9, 0.0)
+	var upper_shape := CollisionShape3D.new()
+	var upper_box := BoxShape3D.new()
+	upper_box.size = Vector3(16.0, 0.2, 16.0)
+	upper_shape.shape = upper_box
+	upper_prop.add_child(upper_shape)
+	board.add_child(upper_prop)
+	await physics_frame
+	await physics_frame
+	camera.call("enter_top_down_2d", Vector3.ZERO, 30.0, 0.0)
+	var prop_levels: Array = probe.call("get_solid_levels")
+	var found_upper_prop := false
+	for value: Variant in prop_levels:
+		if is_equal_approx(float(value), 14.0):
+			found_upper_prop = true
+	if not _check(
+		found_upper_prop,
+		"collidable upper props outside the center probe and on layer 8 must provide a camera level"
+	):
+		return
+	camera.call("set_top_down_level", 9.5)
+	camera.call("step_top_down_level", 1)
+	if not _check(
+		is_equal_approx(float(camera.call("get_top_down_level")), 14.0),
+		"camera must ascend past floating tokens when higher colliders exist"
+	):
+		return
+
 	board.queue_free()
 	await process_frame
 	print("PASS: 2D floors, persistent readable token conditions, held floor stepping and 3D restoration")

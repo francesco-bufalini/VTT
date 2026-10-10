@@ -33,8 +33,6 @@ const CONTEXT_UNDO := 36
 const CONTEXT_REDO := 37
 const CONTEXT_TOGGLE_CONDITION_VISUALS := 38
 const CONTEXT_AUTO_SYNC := 40
-const CONTEXT_BESTIARY_2024 := 41
-const CONTEXT_BESTIARY_2014 := 42
 const CONTEXT_REPOSITION_SELECTED := 43
 const CONTEXT_CHOOSE_MOUNT := 44
 const CONTEXT_DISMOUNT := 45
@@ -3078,20 +3076,39 @@ func _show_context_menu(screen_position: Vector2) -> void:
 	context_menu.clear()
 	_prepare_context_submenus()
 
-	# Prioritize immediate token actions before all the category submenus.
+	# Token is always the first category. Actions concerning the selected
+	# token(s) appear before token generation and the general token list.
 	if not _selected_tokens.is_empty():
 		if _selected_tokens.size() == 1:
-			context_menu.add_item("Modifica token…", CONTEXT_TOKEN_DETAILS)
-			context_menu.add_item("Scegli cavalcatura", CONTEXT_CHOOSE_MOUNT)
+			context_token_menu.add_item("Modifica token…", CONTEXT_TOKEN_DETAILS)
+			context_token_menu.add_item("Scegli cavalcatura", CONTEXT_CHOOSE_MOUNT)
 			if mount_controller != null and mount_controller.is_mounted(_selected_tokens[0]):
-				context_menu.add_item("Scendi dalla cavalcatura", CONTEXT_DISMOUNT)
+				context_token_menu.add_item("Scendi dalla cavalcatura", CONTEXT_DISMOUNT)
+			if _context_reposition_valid:
+				context_token_menu.add_item("Riposiziona creatura qui", CONTEXT_REPOSITION_SELECTED)
+			var selected_token: CharacterBody3D = _selected_tokens[0]
+			if (
+				selected_token != null
+				and is_instance_valid(selected_token)
+				and selected_token.has_method("has_previous_transformation")
+				and bool(selected_token.call("has_previous_transformation"))
+			):
+				context_token_menu.add_item("Ripristina aspetto precedente", CONTEXT_RESTORE_TRANSFORMATION)
 		var selection_count: int = _selected_tokens.size()
 		var selection_suffix: String = (
 			"" if selection_count == 1 else " (%d)" % selection_count
 		)
-		context_menu.add_item("Elimina token selezionati" + selection_suffix, CONTEXT_DELETE_SELECTED)
-		context_menu.add_item("Applica gravità" + selection_suffix, CONTEXT_FLYING)
-		context_menu.add_separator()
+		context_token_menu.add_item("Elimina token selezionati" + selection_suffix, CONTEXT_DELETE_SELECTED)
+		context_token_menu.add_item("Applica gravità" + selection_suffix, CONTEXT_FLYING)
+		context_token_menu.add_separator()
+	if _has_pending_spawn_position:
+		_populate_place_creature_menu()
+		context_token_menu.add_submenu_node_item(
+			"Piazza creatura", context_place_creature_menu
+		)
+		context_token_menu.add_item("Genera token", CONTEXT_CREATE_TOKEN)
+	context_token_menu.add_item("Lista token", CONTEXT_TOKEN_LIST)
+	context_menu.add_submenu_node_item("Token", context_token_menu)
 
 	context_measure_menu.add_item("Righello", CONTEXT_MEASURE_RULER)
 	context_measure_menu.add_separator()
@@ -3103,40 +3120,11 @@ func _show_context_menu(screen_position: Vector2) -> void:
 	context_measure_menu.add_item("Cancella tutte le AoE", CONTEXT_CLEAR_AOES)
 	context_menu.add_submenu_node_item("Misura", context_measure_menu)
 
-	if _selected_tokens.size() == 1:
-		if _context_reposition_valid:
-			context_menu.add_item(
-				"Riposiziona creatura qui", CONTEXT_REPOSITION_SELECTED
-			)
-		var selected_token: CharacterBody3D = _selected_tokens[0]
-		if (
-			selected_token != null
-			and is_instance_valid(selected_token)
-			and selected_token.has_method("has_previous_transformation")
-			and bool(selected_token.call("has_previous_transformation"))
-		):
-			context_menu.add_item(
-				"Ripristina aspetto precedente",
-				CONTEXT_RESTORE_TRANSFORMATION
-			)
-	if not _selected_tokens.is_empty():
-		_add_bestiary_context_items()
-
 
 	context_game_menu.add_item("Incantesimi", CONTEXT_SPELLS)
 	context_game_menu.add_separator()
 	context_game_menu.add_item("Creature · schede", CONTEXT_CREATURE_AREA)
 	context_game_menu.add_item("Compendio", CONTEXT_COMPENDIUM)
-	# Generation and the token list stay grouped in the Token submenu;
-	# creature-sheet editing and combat controls remain separate.
-	if _has_pending_spawn_position:
-		_populate_place_creature_menu()
-		context_token_menu.add_submenu_node_item(
-			"Piazza creatura", context_place_creature_menu
-		)
-		context_token_menu.add_item("Genera token", CONTEXT_CREATE_TOKEN)
-	context_token_menu.add_item("Lista token", CONTEXT_TOKEN_LIST)
-	context_menu.add_submenu_node_item("Token", context_token_menu)
 	var master_menu: PopupMenu = context_menu.get_node("ContextMasterMenu")
 	master_menu.add_item("Inizia combattimento", CONTEXT_COMBAT_START)
 	master_menu.add_item("Termina combattimento", CONTEXT_COMBAT_END)
@@ -3242,16 +3230,6 @@ func _show_context_menu(screen_position: Vector2) -> void:
 
 
 func _on_context_menu_id_pressed(id: int) -> void:
-	if id == CONTEXT_BESTIARY_2024 or id == CONTEXT_BESTIARY_2014:
-		var identity := _selected_miniature_identity()
-		var edition := "2024" if id == CONTEXT_BESTIARY_2024 else "2014"
-		var reference := TokenPackManager.get_bestiary_reference(identity, edition)
-		var url := String(reference.get("url", ""))
-		if url.begins_with("https://5e.tools/bestiary.html#"):
-			OS.shell_open(url)
-		_close_context_menu_to_game()
-		return
-
 	if id == CONTEXT_INITIATIVE:
 		toggle_initiative_panel()
 		_close_context_menu_to_game()
@@ -5466,25 +5444,3 @@ func _on_map_load_file_selected(path: String) -> void:
 		_undo_stack.pop_back()
 
 
-func _selected_miniature_identity() -> String:
-	var identity := ""
-	for token in _selected_tokens:
-		if not is_instance_valid(token) or not token.has_method("get_miniature_identity"):
-			return ""
-		var current := String(token.call("get_miniature_identity"))
-		if current.is_empty() or (not identity.is_empty() and current != identity):
-			return ""
-		identity = current
-	return identity
-
-
-func _add_bestiary_context_items() -> void:
-	var identity := _selected_miniature_identity()
-	if identity.is_empty():
-		return
-	for edition in ["2024", "2014"]:
-		if not TokenPackManager.get_bestiary_reference(identity, edition).is_empty():
-			context_menu.add_item(
-				"Bestiario · " + edition + "…",
-				CONTEXT_BESTIARY_2024 if edition == "2024" else CONTEXT_BESTIARY_2014
-			)

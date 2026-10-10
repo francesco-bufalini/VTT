@@ -2,7 +2,10 @@ extends Node3D
 
 # Queries tactical, solid map surfaces without relying on the grid's
 # progressively populated visual cache. Tokens supply additional navigable levels.
-const MAP_MASK := 1 | 4
+# World geometry may use different physics layers (imported structures,
+# collidable props, bridges). Exclude only transient spell AoEs; token
+# bodies are explicitly rejected by _is_map_surface().
+const MAP_MASK := 0xFFFFFFFF & ~((1 << 20) | 2)
 const MAX_RAY_HITS := 32
 const MAX_RAY_HEIGHT := 1500.0
 const MIN_RAY_HEIGHT := -1500.0
@@ -135,14 +138,19 @@ func get_solid_levels() -> Array[float]:
 			var distance: float = (floor_y - ray_origin.y) / ray_direction.y
 			if distance > 0.0:
 				center = ray_origin + ray_direction * distance
-	# Sample nearby squares as well as the center: ships and other multilevel
-	# maps can have a gap or stairwell precisely beneath the camera.
-	for x_offset: float in [-2.0, 0.0, 2.0]:
-		for z_offset: float in [-2.0, 0.0, 2.0]:
+	# Sample the camera's visible footprint, not just a 5-cell square around
+	# the center. A tower/deck outside that small area must still offer an
+	# elevation above the tokens. This runs on floor stepping, not per frame.
+	var viewport_size: Vector2 = camera.get_viewport().get_visible_rect().size
+	var aspect: float = viewport_size.x / maxf(viewport_size.y, 1.0)
+	var radius_x: float = maxf(2.0 * cell_size, camera.size * 0.45 * aspect)
+	var radius_z: float = maxf(2.0 * cell_size, camera.size * 0.45)
+	for x_fraction: float in [-1.0, -0.5, 0.0, 0.5, 1.0]:
+		for z_fraction: float in [-1.0, -0.5, 0.0, 0.5, 1.0]:
 			levels.append_array(
 				_surface_heights_at(
-					center.x + x_offset * cell_size,
-					center.z + z_offset * cell_size,
+					center.x + x_fraction * radius_x,
+					center.z + z_fraction * radius_z,
 					MAX_RAY_HEIGHT
 				)
 			)

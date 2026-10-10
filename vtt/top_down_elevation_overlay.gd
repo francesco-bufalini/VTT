@@ -50,7 +50,9 @@ func _new_badge() -> Control:
 	# No opaque tile or initials: bestiary portraits keep their own alpha,
 	# while tokens without portraits show their real 3D miniatures below.
 	var badge: Control = Control.new()
-	badge.z_index = 0
+	# Parent _draw() renders the reach arrows at z=0. Portraits and
+	# previewed 3D miniatures must be underneath, never occlude arrows.
+	badge.z_index = -1
 	badge.mouse_filter = Control.MOUSE_FILTER_IGNORE
 	add_child(badge)
 
@@ -118,7 +120,7 @@ func _new_badge() -> Control:
 	height_label.mouse_filter = Control.MOUSE_FILTER_IGNORE
 	# No opaque background: the original discreet text remains legible above
 	# neighbouring token portraits but below the actual character sheet.
-	height_label.z_index = 25
+	height_label.z_index = 0
 	height_label.add_theme_color_override("font_color", Color.WHITE)
 	height_label.add_theme_color_override(
 		"font_shadow_color",
