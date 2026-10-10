@@ -282,19 +282,47 @@ func _origin_description(origin: Dictionary) -> String:
 		if not catalogue.is_empty():
 			for entry: Dictionary in Catalog.entries(catalogue):
 				if String(entry.get("name", "")).nocasecmp_to(String(data.get("name", ""))) == 0 and String(entry.get("source", "")) == String(data.get("source", "")):
-					return Catalog.info_text(entry)
-		return Catalog.info_text(data) + "\nCompetenze strutturate: " + JSON.stringify(data)
+					return Catalog.info_text(entry, _source_description_text(entry))
+		return Catalog.info_text(data, _source_description_text(data)) + "\nCompetenze strutturate: " + JSON.stringify(data)
 	if sid.begins_with("feature:"):
 		for feature_entry: Dictionary in Traits.collect_features(source_record):
 			if sid == "feature:" + String(feature_entry.get("key", "")):
-				return Catalog.info_text(feature_entry)
+				return Catalog.info_text(feature_entry, _source_description_text(feature_entry))
 	if sid.begins_with("item:"):
 		var raw: Variant = source_record.get("inventory", [])
 		if raw is Array:
 			for owned: Variant in raw:
 				if owned is Dictionary and sid == "item:" + String(owned.get("id", "")):
-					return Catalog.info_text(owned)
+					var definition: Dictionary = owned
+					# Live inventory entries often omit the item's description.
+					# Resolve the original catalogue or homebrew definition.
+					for catalog_item: Dictionary in Catalog.entries("items"):
+						if String(catalog_item.get("id", "")) == String(owned.get("id", "")):
+							definition = catalog_item
+							break
+					return Catalog.info_text(definition, _source_description_text(definition))
 	return String(origin.get("name", "Origine personalizzata"))
+
+
+func _source_description_text(entry: Dictionary) -> String:
+	var raw: Variant = entry.get("description", entry.get("entries", entry.get("text", "")))
+	if raw is String:
+		return String(raw)
+	if raw is Array:
+		var parts := PackedStringArray()
+		for section: Variant in raw:
+			if section is String:
+				parts.append(String(section))
+			elif section is Dictionary:
+				var nested: Variant = (section as Dictionary).get("entry", (section as Dictionary).get("entries", ""))
+				if nested is String:
+					parts.append(String(nested))
+				elif nested is Array:
+					for sentence: Variant in nested:
+						if sentence is String:
+							parts.append(String(sentence))
+		return "\n".join(parts)
+	return ""
 
 
 func _refresh_competences() -> void:
@@ -334,20 +362,23 @@ func _refresh_competences() -> void:
 			_proficiency_cards.add_child(heading)
 		var active := false
 		var selected := false
+		var selected_active := false
 		var linked: Array[String] = []
 		for index: Variant in indices:
 			var link: Dictionary = _rows[int(index)]
 			var sid: String = String(link.get("origin_id", ""))
+			var grant_active: bool = not bool(link.get("disabled", false)) and bool(enabled.get(sid, true))
 			if sid == _selected_id:
 				selected = true
-			if not bool(link.get("disabled", false)) and bool(enabled.get(sid, true)):
-				active = true
-			var label: String = _origin_display(sid) if not sid.is_empty() else "Senza origine"
-			if label not in linked:
-				linked.append(label)
+				selected_active = selected_active or grant_active
+			active = active or grant_active
+			var origin_label: String = _origin_display(sid) if not sid.is_empty() else "Senza origine"
+			var status_label: String = ("✓ " if grant_active else "○ ") + origin_label
+			if status_label not in linked:
+				linked.append(status_label)
 		var cell := PanelContainer.new()
 		_proficiency_cards.add_child(cell)
-		if selected:
+		if selected_active:
 			var background := StyleBoxFlat.new()
 			background.bg_color = Color(0.18, 0.43, 0.62, 0.32)
 			background.set_corner_radius_all(5)
@@ -362,7 +393,7 @@ func _refresh_competences() -> void:
 		label.clip_text = true
 		var mastered: bool = kind == "skill" and _effective_expertise(key, enabled)
 		label.text = ("✓ " if active else "○ ") + key + (" 🎓🎓" if mastered else "")
-		label.tooltip_text = "Origini: " + ", ".join(linked)
+		label.tooltip_text = "Origini:\n" + "\n".join(linked)
 		box.add_child(label)
 		if kind == "skill":
 			var expert := CheckButton.new()

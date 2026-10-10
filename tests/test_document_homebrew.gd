@@ -57,6 +57,23 @@ func _run() -> void:
 	assert(migrated.get("id") == Documents.legacy_id(legacy))
 	assert(migrated.get("display_style") == "lettera")
 	assert(Documents.definition_for(migrated).get("description") == "Consegna originale")
+	# Regression: ItemList's prior selection must not index the replacement
+	# inventory while switching from a creature with documents to one without.
+	var documents_tab: Node = tab._documents_tab
+	var document_list: ItemList = documents_tab.get("_list")
+	assert(document_list.item_count == 2)
+	document_list.select(0)
+	documents_tab.call("load_inventory", [])
+	assert(document_list.item_count == 0
+		and document_list.get_selected_items().is_empty()
+		and (documents_tab.get("_indices") as Array).is_empty(),
+		"Switching to an empty inventory clears stale document selection")
+	documents_tab.call("_refresh_list")
+	documents_tab.call("load_inventory", [row])
+	assert(document_list.item_count == 1
+		and int(documents_tab.call("_selected_inventory_index")) == 0,
+		"Documents can be selected again after an empty inventory")
+	documents_tab.call("load_inventory", [])
 	tab.queue_free()
 	await process_frame
 
