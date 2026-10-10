@@ -57,71 +57,54 @@ func refresh_now() -> void:
 
 	_flanked_ids.clear()
 	var visible_badge_targets: Dictionary = {}
+	# The hitbox and faction for each token are invariant for this refresh.
+	# Gather hostile attackers within melee reach once per target; test pairs
+	# only if at least two can actually reach it.
+	var half_extents: Dictionary = {}
+	var parties: Dictionary = {}
 	for token: CharacterBody3D in tokens:
 		token.set_meta("flanked", false)
+		half_extents[token.get_instance_id()] = _token_half_extents(token)
+		parties[token.get_instance_id()] = _party_key(token)
 
 	var arrow_points: Array[Vector3] = []
 	var mutual_marker_points: Array[Vector3] = []
 	for target: CharacterBody3D in tokens:
-		for first_index: int in range(tokens.size()):
-			var first: CharacterBody3D = tokens[first_index]
-			if first == target:
+		var target_id := target.get_instance_id()
+		var eligible: Array[CharacterBody3D] = []
+		for attacker: CharacterBody3D in tokens:
+			if attacker == target:
 				continue
-
-			var target_party := _party_key(target)
-			var first_party := _party_key(first)
-			if not party_keys_are_enemies(first_party, target_party):
+			if not party_keys_are_enemies(
+				String(parties[attacker.get_instance_id()]),
+				String(parties[target_id])
+			):
 				continue
-			if not _token_reaches_target(first, target):
-				continue
+			if _token_reaches_target(attacker, target):
+				eligible.append(attacker)
+		if eligible.size() < 2:
+			continue
 
-			for second_index: int in range(first_index + 1, tokens.size()):
-				var second: CharacterBody3D = tokens[second_index]
-				if second == target or second == first:
-					continue
-				var second_party := _party_key(second)
-				if not flankers_are_hostile_to_target(
-					first_party,
-					second_party,
-					target_party
-				):
-					continue
-				if not _token_reaches_target(second, target):
-					continue
-
-				var first_half := _token_half_extents(first)
-				var second_half := _token_half_extents(second)
-				var target_half := _token_half_extents(target)
-				var first_center := first.global_position
-				var second_center := second.global_position
-				var target_center := target.global_position
-				var cell_size := maxf(
-					float(board_root.get("cell_size")),
-					0.001
-				)
-				var display_centers := project_centers_to_shared_base(
-					first_center,
-					first_half,
-					second_center,
-					second_half,
-					target_center,
-					target_half,
-					cell_size * 0.49,
-					cell_size * 0.035
-				)
-				var segment := flanking_segment(
-					display_centers[0],
-					first_half,
-					display_centers[1],
-					second_half,
-					display_centers[2],
-					target_half
-				)
-				if segment.size() != 2:
-					continue
-
-				_flanked_ids[target.get_instance_id()] = true
-				target.set_meta("flanked", true)
+		var target_half: Vector3 = half_extents[target_id]
+		var found := false
+		for i: int in range(eligible.size() - 1):
+			var first: CharacterBody3D = eligible[i]
+			var first_half: Vector3 = half_extents[first.get_instance_id()]
+			for j: int in range(i + 1, eligible.size()):
+				var second: CharacterBody3D = eligible[j]
+				var second_half: Vector3 = half_extents[second.get_instance_id()]
+				if flanking_segment(
+					first.global_position, first_half,
+					second.global_position, second_half,
+					target.global_position, target_half
+				).size() == 2:
+					found = true
+					break
+			if found:
+				break
+		if found:
+			_flanked_ids[target_id] = true
+			target.set_meta("flanked", true)
 
 	# Reach arrows are a tactical hostility layer: every token points only
 	# toward enemy-party tokens currently inside its own reach. Selection and
@@ -693,30 +676,129 @@ static func flanking_segment(
 	target_center: Vector3,
 	target_half: Vector3
 ) -> PackedVector3Array:
-	# D&D 5e DMG square-grid rule: the line between the centers of the
-	# flankers' spaces must cross opposite sides or opposite corners of the
-	# target's space. Adjacent side/corner "L" arrangements do not qualify.
-	if not centers_cross_opposite_borders(
-		first_center,
-		second_center,
-		target_center,
-		target_half
-	):
+	# A real 3D test: ANY two points in the flankers' occupied boxes may
+	# connect across two opposing faces of the target's occupied box.
+	# Test each of the three face axes in both directions. Within each
+	# candidate axial slice, the transverse coordinates are solved by
+	# clipping a small convex polygon (not by sampling mesh vertices).
+	for axis: int in range(3):
+		var result := _flanking_on_axis(
+			first_center, first_half, second_center, second_half,
+			target_center, target_half, axis
+		)
+		if result.size() == 2:
+			return result
+		result = _flanking_on_axis(
+			second_center, second_half, first_center, first_half,
+			target_center, target_half, axis
+		)
+		if result.size() == 2:
+			return PackedVector3Array([result[1], result[0]])
+	return PackedVector3Array()
+
+
+static func _flanking_on_axis(
+	first_center: Vector3,
+	first_half: Vector3,
+	second_center: Vector3,
+	second_half: Vector3,
+	target_center: Vector3,
+	target_half: Vector3,
+	axis: int
+) -> PackedVector3Array:
+	var low := target_center[axis] - target_half[axis]
+	var high := target_center[axis] + target_half[axis]
+	var first_low := first_center[axis] - first_half[axis]
+	var first_high := first_center[axis] + first_half[axis]
+	var second_low := second_center[axis] - second_half[axis]
+	var second_high := second_center[axis] + second_half[axis]
+	# Require a genuine crossing, not a segment that merely touches a face.
+	var margin := maxf(0.000001, minf(target_half.x, minf(
+		target_half.y, target_half.z
+	)) * 0.0001)
+	if first_low >= low - margin or second_high <= high + margin:
 		return PackedVector3Array()
 
-	var delta := second_center - first_center
-	if delta.length_squared() <= EPSILON * EPSILON:
+	var left_limit := minf(first_high, low - margin)
+	var right_limit := maxf(second_low, high + margin)
+	if left_limit < first_low or right_limit > second_high:
 		return PackedVector3Array()
 
-	var direction := delta.normalized()
-	var first_boundary := _box_boundary_distance(first_half, direction)
-	var second_boundary := _box_boundary_distance(second_half, -direction)
-	var start := first_center + direction * first_boundary
-	var end := second_center - direction * second_boundary
-	if start.distance_squared_to(end) <= EPSILON * EPSILON:
-		return PackedVector3Array()
+	# Prefer central slices. Additional slices handle partial axial overlaps
+	# and asymmetrically sized/offset miniature volumes. Only a constant
+	# number of 2D polygon clips is needed; no voxel or ray enumeration.
+	var fractions := PackedFloat32Array([0.5, 0.0, 1.0, 0.25, 0.75])
+	for left_fraction: float in fractions:
+		var a := lerpf(first_low, left_limit, left_fraction)
+		for right_fraction: float in fractions:
+			var b := lerpf(right_limit, second_high, right_fraction)
+			var near_fraction := (low - a) / (b - a)
+			var far_fraction := (high - a) / (b - a)
+			var start := first_center
+			var end := second_center
+			start[axis] = a
+			end[axis] = b
+			var valid := true
+			for transverse_axis: int in range(3):
+				if transverse_axis == axis:
+					continue
+				var a_min := first_center[transverse_axis] - first_half[transverse_axis]
+				var a_max := first_center[transverse_axis] + first_half[transverse_axis]
+				var b_min := second_center[transverse_axis] - second_half[transverse_axis]
+				var b_max := second_center[transverse_axis] + second_half[transverse_axis]
+				var target_min := target_center[transverse_axis] - target_half[transverse_axis] + margin
+				var target_max := target_center[transverse_axis] + target_half[transverse_axis] - margin
+				var polygon := PackedVector2Array([
+					Vector2(a_min, b_min), Vector2(a_max, b_min),
+					Vector2(a_max, b_max), Vector2(a_min, b_max)
+				])
+				for fraction: float in [near_fraction, far_fraction]:
+					polygon = _clip_flanking_pair(polygon, fraction, target_min, true)
+					if polygon.is_empty():
+						break
+					polygon = _clip_flanking_pair(polygon, fraction, target_max, false)
+					if polygon.is_empty():
+						break
+				if polygon.is_empty():
+					valid = false
+					break
+				# The polygon contains exactly the (first, second) coordinates
+				# whose straight line stays inside both transverse face bounds.
+				var witness := Vector2.ZERO
+				for point: Vector2 in polygon:
+					witness += point
+				witness /= float(polygon.size())
+				start[transverse_axis] = witness.x
+				end[transverse_axis] = witness.y
+			if valid:
+				return PackedVector3Array([start, end])
+	return PackedVector3Array()
 
-	return PackedVector3Array([start, end])
+
+static func _clip_flanking_pair(
+	polygon: PackedVector2Array,
+	fraction: float,
+	bound: float,
+	keep_above: bool
+) -> PackedVector2Array:
+	if polygon.is_empty():
+		return polygon
+	var clipped := PackedVector2Array()
+	var previous: Vector2 = polygon[polygon.size() - 1]
+	var previous_delta := lerpf(previous.x, previous.y, fraction) - bound
+	var previous_inside := previous_delta >= 0.0 if keep_above else previous_delta <= 0.0
+	for current: Vector2 in polygon:
+		var current_delta := lerpf(current.x, current.y, fraction) - bound
+		var current_inside := current_delta >= 0.0 if keep_above else current_delta <= 0.0
+		if previous_inside != current_inside:
+			var crossing := previous_delta / (previous_delta - current_delta)
+			clipped.append(previous.lerp(current, clampf(crossing, 0.0, 1.0)))
+		if current_inside:
+			clipped.append(current)
+		previous = current
+		previous_delta = current_delta
+		previous_inside = current_inside
+	return clipped
 
 
 static func centers_form_flanking_pair(

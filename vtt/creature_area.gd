@@ -2316,7 +2316,7 @@ func _save_attack_setting(attack_id: String, setting: String, value: Variant) ->
 	attack_settings[setting] = value
 	updated[attack_id] = attack_settings
 	record["attack_overrides"] = updated
-	record["reach_feet"] = AttackData.max_melee_range(record)
+	record["reach_feet"] = AttackData.first_melee_range(record)
 	if String(record.get("kind", "")) == "monster":
 		record["reach_is_custom"] = true
 	var error: Error = _archive.save(record)
@@ -2389,7 +2389,7 @@ func _on_inventory_updated(inventory: Array) -> void:
 	if record.is_empty():
 		return
 	record["inventory"] = inventory.duplicate(true)
-	record["reach_feet"] = AttackData.max_melee_range(record)
+	record["reach_feet"] = AttackData.first_melee_range(record)
 	if String(record.get("kind", "")) == "monster":
 		record["reach_is_custom"] = true
 	var error: Error = _archive.save(record)
@@ -2474,7 +2474,7 @@ func _save() -> void:
 		ability_bonuses[ability] = int((_ability_bonus_spins[ability] as SpinBox).value)
 	record["ability_bonuses"] = ability_bonuses
 	record["attack_ability"] = "dex" if _attack_ability.selected == 1 else "str"
-	record["reach_feet"] = AttackData.max_melee_range(record)
+	record["reach_feet"] = AttackData.first_melee_range(record)
 	if String(record.get("kind", "")) == "monster":
 		record["reach_is_custom"] = true
 	var proficient: Array[String] = []

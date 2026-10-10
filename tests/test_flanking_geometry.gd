@@ -2,6 +2,7 @@ extends SceneTree
 
 const FlankingSystem = preload("res://vtt/flanking_system.gd")
 const TokenScene = preload("res://token.tscn")
+const AttackData = preload("res://vtt/creature_attack_data.gd")
 
 
 func _initialize() -> void:
@@ -379,5 +380,52 @@ func run() -> void:
 	)
 	assert(miss.is_empty())
 
-	print("PASS: flanking follows opposite-side and opposite-corner grid geometry")
+
+	# A line through the flankers' centres would miss; the occupied volumes
+	# contain points connected across both opposite X faces.
+	assert(FlankingSystem.flanking_segment(
+		Vector3(-2.0, 0.0, 1.1), Vector3(0.5, 1.0, 1.0),
+		Vector3(2.0, 0.0, 1.1), Vector3(0.5, 1.0, 1.0),
+		Vector3.ZERO, half
+	).size() == 2, "Flanking must use any points within both occupied volumes")
+
+	# Facing one another above the target is not flanking in 3D.
+	assert(FlankingSystem.flanking_segment(
+		Vector3(-2.0, 3.0, 0.0), half,
+		Vector3(2.0, 3.0, 0.0), half,
+		Vector3.ZERO, half
+	).is_empty(), "A horizontal projection must not ignore elevation")
+
+	# The top and bottom count as opposing faces, including a tall target.
+	assert(FlankingSystem.flanking_segment(
+		Vector3(0.0, -3.0, 0.0), half,
+		Vector3(0.0, 3.0, 0.0), half,
+		Vector3.ZERO, Vector3(1.5, 2.0, 1.5)
+	).size() == 2, "Vertical flanking must cross both height faces")
+
+	# Merely grazing a target edge (two flankers arranged in an L) is not
+	# sufficient; the segment must cross the interior of the occupied box.
+	assert(FlankingSystem.flanking_segment(
+		Vector3(1.0, 0.0, 1.0), half,
+		Vector3(0.0, 0.0, -1.0), half,
+		Vector3.ZERO, half
+	).is_empty(), "Edge-only tangencies cannot count as flanking")
+
+	# The first melee attack wins even when later ones have longer reach;
+	# explicit per-attack range overrides apply immediately.
+	var monster := {
+		"kind": "monster",
+		"stat_block": {
+			"action": [
+				{"name": "Tiro", "entries": ["{@atk rw} {@hit 4} range 100 ft."]},
+				{"name": "Spada", "entries": ["{@atk mw} {@hit 4} reach 10 ft."]},
+				{"name": "Tentacolo", "entries": ["{@atk mw} {@hit 4} reach 15 ft."]}
+			]
+		}
+	}
+	assert(is_equal_approx(AttackData.first_melee_range(monster), 10.0))
+	monster["attack_overrides"] = {"monster:action:1": {"range_feet": 20}}
+	assert(is_equal_approx(AttackData.first_melee_range(monster), 20.0))
+	assert(is_equal_approx(AttackData.first_melee_range({"kind": "character"}), 5.0))
+	print("PASS: volume-based 3D flanking and first melee reach")
 	quit()

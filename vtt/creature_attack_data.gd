@@ -181,3 +181,22 @@ static func max_melee_range(record: Dictionary) -> float:
 				value = float(attack.get("melee_reach_feet", 5))
 			maximum = maxf(maximum, value)
 	return maximum
+
+
+# Tactical reach is determined by the first available melee attack in the
+# sheet's order; a later long-reach attack must not silently enlarge it.
+static func first_melee_range(record: Dictionary) -> float:
+	for attack: Dictionary in definitions(record):
+		if not bool(attack.get("melee", false)):
+			continue
+		var settings := override_for(record, String(attack.get("id", "")))
+		if settings.has("range_feet"):
+			return float(range_for(record, attack))
+		# A bestiary attack that supports both melee and ranged modes must
+		# use its melee reach, never the projectile range.
+		if attack.has("melee_reach_feet") and "ranged" in JSON.stringify(
+			attack.get("raw", {})
+		).to_lower():
+			return float(attack.get("melee_reach_feet", 5))
+		return float(range_for(record, attack))
+	return 5.0

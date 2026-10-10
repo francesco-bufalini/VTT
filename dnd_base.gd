@@ -50,6 +50,7 @@ const TopDownTokenOverlay = preload("res://vtt/top_down_elevation_overlay.gd")
 const CreatureOwner = preload("res://vtt/creature_owner.gd")
 const TokenScript = preload("res://token.gd")
 const FlankingGeometry = preload("res://vtt/flanking_system.gd")
+const CreatureAttackData = preload("res://vtt/creature_attack_data.gd")
 
 const CAMERA_SPEED_DEFAULT := 5.0
 const CAMERA_SENSITIVITY_DEFAULT := 0.002
@@ -1831,10 +1832,13 @@ func apply_creature_sheet_properties(token: CharacterBody3D, record: Dictionary)
 		absf(float(token.call("get_footprint_cells")) - footprint) > 0.01
 	):
 		token.call("set_size_category", size_name, footprint, false)
+	# All tactical range overlays and flanking use the first melee attack.
+	# Derive it from the record rather than an obsolete aggregate reach field.
+	var melee_reach: float = CreatureAttackData.first_melee_range(record)
 	if token.has_method("get_reach_feet") and (
-		absf(float(token.call("get_reach_feet")) - float(record.get("reach_feet", 5.0))) > 0.01
+		absf(float(token.call("get_reach_feet")) - melee_reach) > 0.01
 	):
-		token.call("set_reach_feet", float(record.get("reach_feet", 5.0)), true)
+		token.call("set_reach_feet", melee_reach, true)
 	if token.has_method("get_visual_front_quarter_turns") and (
 		int(token.call("get_visual_front_quarter_turns")) != int(record.get("visual_front_quarter_turns", 0))
 	):
