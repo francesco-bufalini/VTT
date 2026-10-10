@@ -85,9 +85,9 @@ func run() -> void:
 		var numeric: Label = area._saving_throw_labels[ability]
 		var formula: Control = area._formula_values["save:" + ability]
 		assert(icon.get_parent() == formula.get_parent()
-			and icon.get_index() + 1 == formula.get_index()
+			and formula.get_index() + 1 == icon.get_index()
 			and formula.is_ancestor_of(numeric) and icon.custom_minimum_size.x >= 28,
-			"Saving throw proficiency icons must have an independent fixed-width cell immediately before the formula")
+			"Saving throw proficiency icons must be right of their fixed-width numeric formula")
 	area._archive.setup(campaign)
 	# Search works from the bundled 5etools miniature references even
 	# while the remote bestiary index has not been downloaded.
@@ -373,9 +373,9 @@ func run() -> void:
 		"Statistics must have dedicated skill and combat columns")
 	var feat_section: VBoxContainer = area._proficiencies_ui.get("_feat_section") as VBoxContainer
 	var feat_editor: VBoxContainer = area._proficiencies_ui.get("_feat_editor") as VBoxContainer
-	assert(feat_section != null and feat_section.get_parent() == area._biography.get_parent()
-		and feat_editor != null and feat_editor.visible,
-		"Feat list and add/remove controls belong to Info, not proficiency origins")
+	assert(feat_section != null and feat_section.get_parent() != area._biography.get_parent()
+		and feat_editor != null,
+		"Info must no longer contain the feat editor")
 	assert(area._skill_buttons.size() == 18,
 		"All canonical 5etools/D&D 5e skills must be present")
 	assert(int(area._passive_perception.text) >= 10,
@@ -393,8 +393,10 @@ func run() -> void:
 		"Saving throws, scores and modifiers must share four aligned table columns")
 	assert((area._abilities_grid.get_child(3) as Label).text == "TS",
 		"TS should appear once as a table header, not beside every saving throw")
-	assert(area._tools_proficiency_label != null and "Strumenti:" in area._tools_proficiency_label.text,
-		"Statistics must expose the character's tool proficiencies")
+	assert(area._tools_proficiency_label != null and "Strumenti:" in area._tools_proficiency_label.text
+		and area._languages_proficiency_label != null
+		and "Linguaggi:" in area._languages_proficiency_label.text,
+		"Statistics must display tool and language proficiencies together")
 	assert(not area._formula_values.is_empty(), "Computed score formulas remain available")
 	var formula_widget: Node = area._formula_values["ability:wis"]
 	var frame: StyleBox = formula_widget.value_label.get_theme_stylebox("normal") as StyleBox
