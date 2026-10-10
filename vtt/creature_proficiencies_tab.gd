@@ -30,6 +30,8 @@ var _status: Label
 var _origin_editor: VBoxContainer
 var _competence_editor: VBoxContainer
 var _feat_editor: VBoxContainer
+var _feat_section: VBoxContainer
+var _feat_toggle_button: Button
 var _origin_picker: OptionButton
 var _origin_name: LineEdit
 var _kind_picker: OptionButton
@@ -42,6 +44,8 @@ var _feat_available: Array[Dictionary] = []
 var _add_competence_button: Button
 var _choice_dialog: ConfirmationDialog
 var _choice_contents: VBoxContainer
+var _choice_selector: OptionButton
+var _choice_scroll: ScrollContainer
 var _choice_source_id := ""
 var _choice_groups: Array[Dictionary] = []
 var _delete_dialog: ConfirmationDialog
@@ -92,16 +96,22 @@ func setup(on_change: Callable) -> void:
 	origin_confirm.pressed.connect(_add_origin)
 	_origin_editor.add_child(origin_confirm)
 
-	var manage_feats := Button.new()
-	manage_feats.text = "Talenti posseduti ▸"
-	manage_feats.pressed.connect(func() -> void:
+	# Feats belong to Info. Construct the section here so the same
+	# catalog and synchronization logic can be kept, then reparent it.
+	_feat_section = VBoxContainer.new()
+	left.add_child(_feat_section)
+	_feat_toggle_button = Button.new()
+	_feat_toggle_button.text = "TALENTI ▾"
+	_feat_toggle_button.alignment = HORIZONTAL_ALIGNMENT_LEFT
+	_feat_toggle_button.add_theme_font_size_override("font_size", 17)
+	_feat_toggle_button.pressed.connect(func() -> void:
 		_feat_editor.visible = not _feat_editor.visible
-		manage_feats.text = "Talenti posseduti ▾" if _feat_editor.visible else "Talenti posseduti ▸"
+		_feat_toggle_button.text = "TALENTI ▾" if _feat_editor.visible else "TALENTI ▸"
 	)
-	left.add_child(manage_feats)
+	_feat_section.add_child(_feat_toggle_button)
 	_feat_editor = VBoxContainer.new()
-	_feat_editor.visible = false
-	left.add_child(_feat_editor)
+	_feat_editor.visible = true
+	_feat_section.add_child(_feat_editor)
 	_feat_filter = LineEdit.new()
 	_feat_filter.placeholder_text = "Cerca talento…"
 	_feat_filter.clear_button_enabled = true
@@ -172,6 +182,7 @@ func setup(on_change: Callable) -> void:
 	_choice_contents.size_flags_horizontal = Control.SIZE_EXPAND_FILL
 	_choice_contents.add_theme_constant_override("separation", 9)
 	choice_scroll.add_child(_choice_contents)
+	_choice_scroll = choice_scroll
 	_delete_dialog = ConfirmationDialog.new()
 	_delete_dialog.title = "Elimina competenza"
 	_delete_dialog.ok_button_text = "Elimina"
@@ -189,6 +200,13 @@ func setup(on_change: Callable) -> void:
 	delete_content.add_child(_delete_picker)
 	_refresh_proficiency_picker()
 	load_record({})
+
+
+func move_feats_to_info(destination: VBoxContainer) -> void:
+	if destination == null or _feat_section == null:
+		return
+	_feat_section.reparent(destination)
+	_feat_section.size_flags_horizontal = Control.SIZE_EXPAND_FILL
 
 
 func _create_column(parent: HBoxContainer, heading: String, width: float) -> VBoxContainer:
