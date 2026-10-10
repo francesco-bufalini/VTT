@@ -220,6 +220,10 @@ func normalize_creature(value: Dictionary) -> Dictionary:
 		"reach_is_custom",
 		absf(saved_reach - 5.0) > 0.01 and absf(saved_reach - bestiary_reach) > 0.01
 	))
+	# Persisted monster rows may have no kind field. Proficiency rules must
+	# still treat every added character class as a starting class.
+	var proficiency_record: Dictionary = value.duplicate(true)
+	proficiency_record["kind"] = "monster"
 	var result := {
 		"id": String(value.get("id", "")),
 		"name": String(value.get("name", base_name)),
@@ -240,8 +244,8 @@ func normalize_creature(value: Dictionary) -> Dictionary:
 		"attack_overrides": value.get("attack_overrides", {}).duplicate(true) if value.get("attack_overrides", {}) is Dictionary else {},
 		"equipped_attack_id": String(value.get("equipped_attack_id", "")).strip_edges(),
 		"equipped_inventory_index": maxi(-1, int(value.get("equipped_inventory_index", -1))),
-		"proficiency_choices": Proficiencies.choices(value),
-		"proficiency_origins": Proficiencies.origins(value),
+		"proficiency_choices": Proficiencies.choices(proficiency_record),
+		"proficiency_origins": Proficiencies.origins(proficiency_record),
 		"saving_throw_proficiencies": value.get("saving_throw_proficiencies", []).duplicate(true) if value.get("saving_throw_proficiencies", []) is Array else [],
 		"skill_proficiencies": value.get("skill_proficiencies", []).duplicate(true) if value.get("skill_proficiencies", []) is Array else [],
 		"skill_expertise": value.get("skill_expertise", []).duplicate(true) if value.get("skill_expertise", []) is Array else [],
