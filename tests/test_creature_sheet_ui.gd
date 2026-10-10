@@ -473,6 +473,35 @@ func run() -> void:
 	assert(area._attack_hit_labels.has("unarmed") and area._attack_hit_labels.has("improvised"),
 		"Unequipping the last weapon must restore both attacks immediately")
 	area._refresh_attacks(area._current())
+	# Monster descriptions used to expand every card permanently and could
+	# make the combat pane taller than the viewport.
+	var monster_attacks: Dictionary = area._current().duplicate(true)
+	monster_attacks["kind"] = "monster"
+	monster_attacks["equipped_attack_id"] = "monster:action:0"
+	monster_attacks["stat_block"] = {
+		"action": [{"name": "Artiglio", "entries": [
+			"{@atk mw} {@hit +5} to hit, reach 5 ft. {@damage 1d6+3} slashing damage."
+		]}]
+	}
+	monster_attacks["inventory"] = []
+	area._refresh_attacks(monster_attacks)
+	var raw_card: PanelContainer = area._attack_rows.get_child(0) as PanelContainer
+	var raw_content: VBoxContainer = raw_card.get_child(0) as VBoxContainer
+	var raw_toggle: Button = null
+	var raw_description: RichTextLabel = null
+	for child: Node in raw_content.get_children():
+		if child is Button and (child as Button).text.contains("Descrizione del bestiario"):
+			raw_toggle = child as Button
+		if child is RichTextLabel:
+			raw_description = child as RichTextLabel
+	assert(raw_toggle != null and raw_description != null
+		and not raw_description.visible and raw_description.scroll_active,
+		"Monster attack source text must be collapsed and scrollable by default")
+	raw_toggle.pressed.emit()
+	assert(raw_description.visible, "The original monster description should expand on demand")
+	raw_toggle.pressed.emit()
+	assert(not raw_description.visible, "The original monster description should collapse again")
+	area._refresh_attacks(area._current())
 	var spells: Node = area._spellcasting_ui
 	assert(spells._known_list.custom_minimum_size.y == spells._prepared_list.custom_minimum_size.y,
 		"Class and available spell boxes must have the same height")
