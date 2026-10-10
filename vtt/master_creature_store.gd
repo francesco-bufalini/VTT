@@ -361,6 +361,7 @@ func normalize_creature(value: Dictionary) -> Dictionary:
 	result["armor_class"] = maxi(0, Bonuses.value(result, "ac"))
 	result["initiative_base"] = Bonuses.value(result, "ability_mod:dex")
 	result["initiative"] = Bonuses.value(result, "initiative")
+	result["proficiency_bonus"] = Bonuses.value(result, "proficiency")
 	result["speed"] = maxi(0, Bonuses.value(result, "speed"))
 	return result
 
