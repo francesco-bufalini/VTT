@@ -2217,8 +2217,8 @@ func _refresh_trackers(record: Dictionary) -> void:
 		manual_bonus.update_on_text_changed = false
 		manual_bonus.custom_minimum_size = Vector2(63, 30)
 		manual_bonus.tooltip_text = "Di cui bonus al massimo (%d utilizzi base)" % base_maximum
-		ManualBonus.decorate(manual_bonus)
 		manual_bonus.set_value_no_signal(int(bonuses.get(id, 0)))
+		ManualBonus.decorate(manual_bonus)
 		manual_bonus.value_changed.connect(_change_tracker_bonus.bind(id))
 		row.add_child(manual_bonus)
 		var restore := Button.new()
