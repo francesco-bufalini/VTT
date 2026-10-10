@@ -101,6 +101,8 @@ var _hp_quick_dice_row: HBoxContainer
 var _hp_formula_status: Label
 var _size_choice: OptionButton
 var _attack_ability: OptionButton
+var _weapon_picker: OptionButton
+var _weapon_options: Array[Dictionary] = []
 var _attack_rows: VBoxContainer
 var _attack_hit_labels: Dictionary = {}
 var _attack_damage_labels: Dictionary = {}
@@ -873,6 +875,28 @@ func _build_ui() -> void:
 	_attack_ability.tooltip_text = "Preferenza per armi Finesse: le armi da mischia normali usano Forza, quelle a distanza Destrezza. I valori del bestiario includono la competenza."
 	_attack_ability.item_selected.connect(_on_attack_ability_changed)
 	preference_row.add_child(_attack_ability)
+	var weapon_bar := HBoxContainer.new()
+	weapon_bar.add_theme_constant_override("separation", 5)
+	combat_column.add_child(weapon_bar)
+	var weapon_caption := Label.new()
+	weapon_caption.text = "Arma attiva"
+	weapon_bar.add_child(weapon_caption)
+	var previous_weapon := Button.new()
+	previous_weapon.text = "‹"
+	previous_weapon.tooltip_text = "Arma / attacco precedente"
+	previous_weapon.pressed.connect(_step_active_weapon.bind(-1))
+	weapon_bar.add_child(previous_weapon)
+	_weapon_picker = OptionButton.new()
+	_weapon_picker.size_flags_horizontal = Control.SIZE_EXPAND_FILL
+	_weapon_picker.clip_text = true
+	_weapon_picker.tooltip_text = "Scegli un'arma dall'inventario o un attacco naturale; la portata visibile sulla mappa seguirà questa scelta."
+	_weapon_picker.item_selected.connect(_on_active_weapon_selected)
+	weapon_bar.add_child(_weapon_picker)
+	var next_weapon := Button.new()
+	next_weapon.text = "›"
+	next_weapon.tooltip_text = "Arma / attacco successivo"
+	next_weapon.pressed.connect(_step_active_weapon.bind(1))
+	weapon_bar.add_child(next_weapon)
 	_attack_rows = VBoxContainer.new()
 	_attack_rows.add_theme_constant_override("separation", 7)
 	combat_column.add_child(_attack_rows)
@@ -1957,6 +1981,13 @@ func _on_selected(index: int) -> void:
 
 
 func _load_form(record: Dictionary) -> void:
+	# A carried weapon starts equipped if no weapon is already active. This
+	# applies to player and monster inventories alike.
+	if AttackData.equip_first_inventory_weapon(record):
+		record["equipped_attack_id"] = String(AttackData.active_attack(record).get("id", ""))
+		record["reach_feet"] = AttackData.active_range(record)
+		if _archive.save(record) == OK:
+			_replace_current_record(record)
 	_refresh_trackers(record)
 	_loading = true
 	_name.text = String(record.get("name", ""))
@@ -2281,9 +2312,144 @@ func _refresh_skill_values(record: Dictionary) -> void:
 	_passive_perception.text = str(passive)
 
 
+func _refresh_weapon_picker(record: Dictionary) -> void:
+	if _weapon_picker == null:
+		return
+	_weapon_picker.clear()
+	_weapon_options.clear()
+	var inventory: Variant = record.get("inventory", [])
+	# Inventory weapons appear even when sheathed. Selecting one equips it.
+	if inventory is Array:
+		for index: int in range((inventory as Array).size()):
+			var value: Variant = (inventory as Array)[index]
+			if not value is Dictionary:
+				continue
+			var owned: Dictionary = value
+			if int(owned.get("quantity", 0)) <= 0:
+				continue
+			var entry: Dictionary = ItemRules.entry_for(owned)
+			if ItemRules.kind(entry) != "weapon":
+				continue
+			_weapon_picker.add_item(String(entry.get("name", owned.get("name", "Arma"))))
+			_weapon_options.append({"kind": "item", "index": index, "id": "item:" + String(owned.get("id", ""))})
+	# All bestiary attacks remain selectable for monsters, including natural
+	# weapons that have no corresponding entry in the inventory.
+	for attack: Dictionary in AttackData.definitions(record):
+		if String(attack.get("source", "")) == "item":
+			continue
+		if ItemRules.has_equipped_weapon(inventory) and String(attack.get("id", "")) in ["unarmed", "improvised"]:
+			continue
+		_weapon_picker.add_item(String(attack.get("name", "Attacco")))
+		_weapon_options.append({"kind": "attack", "id": String(attack.get("id", ""))})
+	if _weapon_options.is_empty():
+		_weapon_picker.add_item("Nessuna arma")
+		_weapon_picker.disabled = true
+		return
+	_weapon_picker.disabled = false
+	var active: String = String(AttackData.active_attack(record).get("id", ""))
+	for i: int in range(_weapon_options.size()):
+		if String(_weapon_options[i].get("id", "")) == active:
+			_weapon_picker.select(i)
+			return
+	_weapon_picker.select(0)
+
+
+func _step_active_weapon(direction: int) -> void:
+	if _weapon_options.is_empty() or _weapon_picker == null:
+		return
+	var next: int = posmod(_weapon_picker.selected + direction, _weapon_options.size())
+	_weapon_picker.select(next)
+	_on_active_weapon_selected(next)
+
+
+func _on_active_weapon_selected(index: int) -> void:
+	if _loading or index < 0 or index >= _weapon_options.size():
+		return
+	var record: Dictionary = _current()
+	if record.is_empty():
+		return
+	var choice: Dictionary = _weapon_options[index]
+	if String(choice.get("kind", "")) == "item":
+		var inventory: Array = record.get("inventory", []).duplicate(true)
+		var selected: int = int(choice.get("index", -1))
+		if selected < 0 or selected >= inventory.size():
+			return
+		var chosen: Dictionary = inventory[selected]
+		var two_handed: bool = ItemRules.is_two_handed(ItemRules.entry_for(chosen))
+		# Exactly one main-hand weapon; keep an unrelated shield or offhand
+		# weapon unless the new weapon requires both hands.
+		for i: int in range(inventory.size()):
+			var owned: Dictionary = inventory[i]
+			var slots: Array = ItemRules.slots(owned)
+			slots.erase("main")
+			if two_handed or (i == selected and int(owned.get("quantity", 1)) == 1):
+				slots.erase("off")
+			if i == selected:
+				slots.append("main")
+			owned["equipped_slots"] = slots
+			inventory[i] = owned
+		record["inventory"] = inventory
+	else:
+		# A bestiary natural attack becomes active without equipping a new item.
+		pass
+	record["equipped_attack_id"] = String(choice.get("id", ""))
+	record["reach_feet"] = AttackData.active_range(record)
+	if String(record.get("kind", "")) == "monster":
+		record["reach_is_custom"] = true
+	var error: Error = _archive.save(record)
+	if error != OK:
+		_set_status("Arma attiva non salvata: " + error_string(error))
+		return
+	_replace_current_record(record)
+	if _inventory_ui != null:
+		_inventory_ui.call("load_record", record)
+	_refresh_attacks(record)
+	_refresh_attack_values(record)
+	_apply_sheet_properties(record)
+	_sync_token_health(record)
+
+
+func _roll_attack_from_sheet(attack_id: String, damage: bool) -> void:
+	var record: Dictionary = _current()
+	var attack: Dictionary = {}
+	for candidate: Dictionary in AttackData.definitions(record):
+		if String(candidate.get("id", "")) == attack_id:
+			attack = candidate
+			break
+	if attack.is_empty():
+		return
+	var roller: Node = board_root.get_node_or_null("DiceRollerChat")
+	if roller == null or not roller.has_method("roll_expression_from_sheet"):
+		_set_status("Il roller della chat non è disponibile.")
+		return
+	var label: String = String(record.get("name", "Creatura")) + " · " + String(attack.get("name", "Attacco"))
+	var expression := ""
+	if damage:
+		expression = AttackData.damage_expression(record, attack)
+		label += " · Danni"
+	else:
+		if String(record.get("kind", "")) == "monster" and String(attack.get("source", "")) != "item" and not bool(attack.get("hit_known", false)):
+			_set_status("Tiro per colpire non specificato nel bestiario.")
+			return
+		var bonus: int = AttackData.attack_bonus(record, attack, _creature_proficiency(record))
+		expression = "1d20%+d" % bonus
+		label += " · Colpire"
+	if expression.is_empty():
+		# Fixed unarmed damage does not involve a die. Report the result via
+		# the roller log rather than inventing a random roll.
+		var fixed: String = AttackData.damage_label(record, attack)
+		if roller.has_method("log_action"):
+			roller.call("log_action", label + " · " + fixed)
+		else:
+			_set_status("Nessuna formula di danno per questo attacco.")
+		return
+	roller.call("roll_expression_from_sheet", label, expression, find_linked_token_for_creature(_selected_id))
+
+
 func _refresh_attacks(record: Dictionary) -> void:
 	if _attack_rows == null:
 		return
+	_refresh_weapon_picker(record)
 	_attack_hit_labels.clear()
 	_attack_damage_labels.clear()
 	for child: Node in _attack_rows.get_children():
@@ -2312,21 +2478,39 @@ func _refresh_attacks(record: Dictionary) -> void:
 		var hit_label := Label.new()
 		header.add_child(hit_label)
 		_attack_hit_labels[attack_id] = hit_label
+		var roll_hit := Button.new()
+		roll_hit.text = "🎲 Colpire"
+		roll_hit.tooltip_text = "Tira 1d20 e il bonus per colpire nel roller"
+		roll_hit.pressed.connect(_roll_attack_from_sheet.bind(attack_id, false))
+		header.add_child(roll_hit)
+		var damage_row := HBoxContainer.new()
+		box.add_child(damage_row)
 		var damage_label := Label.new()
 		damage_label.autowrap_mode = TextServer.AUTOWRAP_WORD_SMART
-		box.add_child(damage_label)
+		damage_label.size_flags_horizontal = Control.SIZE_EXPAND_FILL
+		damage_label.add_theme_font_size_override("font_size", 16)
+		damage_row.add_child(damage_label)
 		_attack_damage_labels[attack_id] = damage_label
+		var roll_damage := Button.new()
+		roll_damage.text = "🎲 Danni"
+		roll_damage.tooltip_text = "Tira i danni dell'attacco nel roller"
+		roll_damage.pressed.connect(_roll_attack_from_sheet.bind(attack_id, true))
+		damage_row.add_child(roll_damage)
 		var settings := HFlowContainer.new()
 		settings.add_theme_constant_override("h_separation", 6)
 		settings.add_theme_constant_override("v_separation", 3)
 		box.add_child(settings)
-		_add_label(settings, "📏 Gittata (ft)")
+		var distance_caption := Label.new()
+		distance_caption.text = "Gittata (ft)"
+		distance_caption.add_theme_font_size_override("font_size", 11)
+		distance_caption.modulate.a = 0.70
+		settings.add_child(distance_caption)
 		var distance := SpinBox.new()
 		distance.min_value = 5
 		distance.max_value = 1000
 		distance.step = 5
 		distance.rounded = true
-		distance.custom_minimum_size.x = 82
+		distance.custom_minimum_size.x = 68
 		distance.tooltip_text = "Portata o gittata di questo attacco, indipendente dalle altre armi"
 		distance.set_value_no_signal(AttackData.range_for(record, attack))
 		distance.value_changed.connect(_on_attack_range_changed.bind(attack_id))
@@ -2447,7 +2631,7 @@ func _save_attack_setting(attack_id: String, setting: String, value: Variant) ->
 	attack_settings[setting] = value
 	updated[attack_id] = attack_settings
 	record["attack_overrides"] = updated
-	record["reach_feet"] = AttackData.first_melee_range(record)
+	record["reach_feet"] = AttackData.active_range(record)
 	if String(record.get("kind", "")) == "monster":
 		record["reach_is_custom"] = true
 	var error: Error = _archive.save(record)
@@ -2598,7 +2782,7 @@ func _on_inventory_updated(inventory: Array) -> void:
 		if all_migrated:
 			record.erase("documents")
 	record["armor_class"] = maxi(0, int(record.get("armor_class_base", 10)) + int(record.get("armor_class_bonus", 0)) + ItemRules.shield_bonus(inventory))
-	record["reach_feet"] = AttackData.first_melee_range(record)
+	record["reach_feet"] = AttackData.active_range(record)
 	if String(record.get("kind", "")) == "monster":
 		record["reach_is_custom"] = true
 	var error: Error = _archive.save(record)
@@ -2688,7 +2872,7 @@ func _save() -> void:
 		ability_bonuses[ability] = int((_ability_bonus_spins[ability] as SpinBox).value)
 	record["ability_bonuses"] = ability_bonuses
 	record["attack_ability"] = "dex" if _attack_ability.selected == 1 else "str"
-	record["reach_feet"] = AttackData.first_melee_range(record)
+	record["reach_feet"] = AttackData.active_range(record)
 	if String(record.get("kind", "")) == "monster":
 		record["reach_is_custom"] = true
 	# Proficiencies are now owned exclusively by the origin editor.
@@ -4072,7 +4256,7 @@ func _sync_token_health(record: Dictionary) -> void:
 	# Restore tactical reach from the saved attacks as well as on live edits.
 	# This repairs tokens loaded from older maps with an aggregate reach.
 	if token.has_method("get_reach_feet") and token.has_method("set_reach_feet"):
-		var first_melee: float = AttackData.first_melee_range(record)
+		var first_melee: float = AttackData.active_range(record)
 		if absf(float(token.call("get_reach_feet")) - first_melee) > 0.01:
 			token.call("set_reach_feet", first_melee, true)
 	if token.has_method("set_display_name"):
