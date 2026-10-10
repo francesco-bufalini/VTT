@@ -293,10 +293,16 @@ func _try_attack_target(screen_position: Vector2) -> void:
 		damage,
 	]
 	if applied:
-		message += " · PF %d/%d" % [
-			int(hp_result.get("current_hp", 0)),
-			int(hp_result.get("max_hp", 0)),
-		]
+		if int(hp_result.get("second_form_hp", 0)) > 0:
+			message += " · Forma %d/%d PF" % [
+				int(hp_result.get("second_form_hp", 0)),
+				int(hp_result.get("second_form_max_hp", 0))
+			]
+		else:
+			message += " · PF %d/%d" % [
+				int(hp_result.get("current_hp", 0)),
+				int(hp_result.get("max_hp", 0)),
+			]
 	else:
 		message += " · bersaglio senza PF gestiti"
 	_show_temporary_result(message, 3.0)
