@@ -3,6 +3,7 @@ extends VBoxContainer
 # Documents are inventory items with a unique identifier and an image
 # rendered locally from their title and text. No image bytes cross the network.
 const Inbox = preload("res://vtt/document_inbox.gd")
+const DialogLayout = preload("res://vtt/dialog_layout.gd")
 
 var _on_change: Callable
 var _on_status: Callable
@@ -18,6 +19,9 @@ var _paper: ColorRect
 var _paper_text: Label
 var _viewport: SubViewport
 var _preview: TextureRect
+var _image_button: Button
+var _image_dialog: AcceptDialog
+var _full_image: TextureRect
 var _recipients: OptionButton
 var _send_button: Button
 var _remove_button: Button
@@ -43,6 +47,8 @@ func setup(on_change: Callable, on_status: Callable, send: Callable, peers: Call
 	_list.custom_minimum_size.y = 132
 	_list.size_flags_horizontal = Control.SIZE_EXPAND_FILL
 	_list.item_selected.connect(_select_document)
+	_list.item_activated.connect(func(_index: int) -> void: _show_image())
+	_list.gui_input.connect(_on_document_list_input)
 	add_child(_list)
 	var fields := VBoxContainer.new()
 	fields.add_theme_constant_override("separation", 5)
@@ -57,6 +63,11 @@ func setup(on_change: Callable, on_status: Callable, send: Callable, peers: Call
 	_style_picker.add_item("✉ Lettera")
 	_style_picker.item_selected.connect(func(_i: int) -> void: _update_document())
 	fields.add_child(_style_picker)
+	_image_button = Button.new()
+	_image_button.text = "🖼 Mostra immagine"
+	_image_button.tooltip_text = "Apri a grandezza maggiore l'immagine generata del documento"
+	_image_button.pressed.connect(_show_image)
+	fields.add_child(_image_button)
 	_body_edit = TextEdit.new()
 	_body_edit.custom_minimum_size.y = 155
 	_body_edit.wrap_mode = TextEdit.LINE_WRAPPING_BOUNDARY
@@ -69,12 +80,17 @@ func setup(on_change: Callable, on_status: Callable, send: Callable, peers: Call
 	_viewport = SubViewport.new()
 	_viewport.size = Vector2i(640, 780)
 	_viewport.render_target_update_mode = SubViewport.UPDATE_ALWAYS
+	_viewport.render_target_clear_mode = SubViewport.CLEAR_MODE_ALWAYS
 	_viewport.transparent_bg = false
 	add_child(_viewport)
 	_paper = ColorRect.new()
 	_paper.set_anchors_and_offsets_preset(Control.PRESET_FULL_RECT)
 	_paper.color = Color(0.90, 0.81, 0.64)
 	_viewport.add_child(_paper)
+	# SubViewport is not a Control: size the canvas explicitly so the page
+	# cannot accidentally render as a zero-size rect.
+	_paper.position = Vector2.ZERO
+	_paper.size = Vector2(640, 780)
 	_paper_text = Label.new()
 	_paper_text.position = Vector2(45, 35)
 	_paper_text.size = Vector2(550, 700)
@@ -89,7 +105,21 @@ func setup(on_change: Callable, on_status: Callable, send: Callable, peers: Call
 	_preview.expand_mode = TextureRect.EXPAND_IGNORE_SIZE
 	_preview.stretch_mode = TextureRect.STRETCH_KEEP_ASPECT_CENTERED
 	_preview.texture = _viewport.get_texture()
+	_preview.mouse_filter = Control.MOUSE_FILTER_STOP
+	_preview.gui_input.connect(_on_preview_input)
+	_preview.tooltip_text = "Clicca per aprire il documento"
 	add_child(_preview)
+	_image_dialog = AcceptDialog.new()
+	_image_dialog.title = "Immagine documento"
+	_image_dialog.min_size = Vector2i(540, 670)
+	_image_dialog.get_ok_button().text = "Chiudi"
+	add_child(_image_dialog)
+	_full_image = TextureRect.new()
+	_full_image.custom_minimum_size = Vector2(510, 620)
+	_full_image.expand_mode = TextureRect.EXPAND_IGNORE_SIZE
+	_full_image.stretch_mode = TextureRect.STRETCH_KEEP_ASPECT_CENTERED
+	_full_image.texture = _viewport.get_texture()
+	_image_dialog.add_child(_full_image)
 	var send_row := HBoxContainer.new()
 	add_child(send_row)
 	_recipients = OptionButton.new()
@@ -178,6 +208,7 @@ func _select_document(index: int) -> void:
 	_update_preview()
 	_refresh_peers()
 	_remove_button.disabled = false
+	_image_button.disabled = false
 
 
 func _refresh_list(selected_index: int = -1) -> void:
@@ -195,6 +226,7 @@ func _refresh_list(selected_index: int = -1) -> void:
 		_body_edit.text = ""
 		_paper_text.text = ""
 		_remove_button.disabled = true
+	_image_button.disabled = selected_index < 0
 	_title_edit.editable = selected_index >= 0
 	_body_edit.editable = selected_index >= 0
 	_style_picker.disabled = selected_index < 0
@@ -223,7 +255,39 @@ func _update_preview() -> void:
 		("✉  " if is_letter else "❧  ") + _title_edit.text
 		+ "\n\n" + _body_edit.text
 	)
-	_viewport.render_target_update_mode = SubViewport.UPDATE_ONCE
+	# The same live ViewportTexture powers the thumbnail and full-size image.
+	# UPDATE_ONCE could fire while the Documents tab is hidden and leave both blank.
+	_viewport.render_target_update_mode = SubViewport.UPDATE_ALWAYS
+
+
+func _on_preview_input(event: InputEvent) -> void:
+	var click: InputEventMouseButton = event as InputEventMouseButton
+	if click != null and click.pressed and click.button_index == MOUSE_BUTTON_LEFT:
+		_show_image()
+
+
+func _on_document_list_input(event: InputEvent) -> void:
+	var click: InputEventMouseButton = event as InputEventMouseButton
+	if click == null or not click.pressed or click.button_index != MOUSE_BUTTON_LEFT:
+		return
+	var index: int = _list.get_item_at_position(click.position, true)
+	if index < 0:
+		return
+	var bounds: Rect2 = _list.get_item_rect(index)
+	if click.position.x - bounds.position.x <= 38:
+		_list.select(index)
+		_select_document(index)
+		_show_image()
+		get_viewport().set_input_as_handled()
+
+
+func _show_image() -> void:
+	var index: int = _selected_index()
+	if index < 0:
+		return
+	_update_preview()
+	_image_dialog.title = "Documento · " + String(_documents[index].get("title", ""))
+	DialogLayout.popup(_image_dialog, Vector2i(640, 830), 0.90)
 
 
 func _refresh_peers() -> void:
