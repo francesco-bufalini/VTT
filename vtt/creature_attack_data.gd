@@ -137,17 +137,10 @@ static func ability_modifier(record: Dictionary) -> int:
 	return Rules.ability_modifier(int(scores.get(ability, 10)) + int(bonuses.get(ability, 0)))
 
 
-static func _ability_delta_for_monster(record: Dictionary, attack: Dictionary) -> int:
-	var desired: String = "dex" if String(record.get("attack_ability", "str")) == "dex" else "str"
-	var original: String = String(attack.get("source_ability", "str"))
-	if desired == original:
-		return 0
-	var scores: Dictionary = record.get("abilities", {})
-	var bonuses: Dictionary = record.get("ability_bonuses", {})
-	return (
-		Rules.ability_modifier(int(scores.get(desired, 10)) + int(bonuses.get(desired, 0)))
-		- Rules.ability_modifier(int(scores.get(original, 10)) + int(bonuses.get(original, 0)))
-	)
+static func _ability_delta_for_monster(_record: Dictionary, _attack: Dictionary) -> int:
+	# Bestiary attacks have no structured Finesse flag and publish a complete
+	# attack/damage modifier: do not reinterpret it using the global preference.
+	return 0
 
 
 static func _attack_ability_modifier(record: Dictionary, attack: Dictionary) -> int:
@@ -203,6 +196,7 @@ static func damage_label(record: Dictionary, attack: Dictionary) -> String:
 			and String(attack.get("slot", "")) == "main"
 			and Items.has_property(entry, "V")
 			and Items.occupying(inventory, "off").is_empty()
+			and bool(settings.get("two_handed", false))
 			and not String(entry.get("versatile_damage", "")).is_empty()
 		):
 			base = String(entry.get("versatile_damage", ""))
