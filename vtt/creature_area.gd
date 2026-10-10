@@ -1495,7 +1495,7 @@ func _apply_automatic_calculation() -> void:
 			record["max_hp"] = maximum
 			record["current_hp"] = mini(int(record.get("current_hp", maximum)), maximum)
 	if _automatic_proficiency.button_pressed:
-		record["proficiency_bonus"] = Rules.proficiency_bonus(record)
+		record["proficiency_bonus"] = BonusRules.value(record, "proficiency")
 	if _automatic_spells.button_pressed:
 		record["spellcasting_calculation"] = Rules.spellcasting_limits(_with_effective_modifiers(record))
 	if _automatic_slots.button_pressed:
@@ -1550,6 +1550,7 @@ func _apply_automatic_calculation() -> void:
 	record["armor_class"] = maxi(0, BonusRules.value(record, "ac"))
 	record["initiative_base"] = BonusRules.value(record, "ability_mod:dex")
 	record["initiative"] = BonusRules.value(record, "initiative")
+	record["proficiency_bonus"] = BonusRules.value(record, "proficiency")
 	record["speed"] = maxi(0, BonusRules.value(record, "speed"))
 	if _archive.save(record) != OK:
 		_set_status("Calcolo riuscito ma salvataggio non completato.")
@@ -1810,6 +1811,7 @@ func _on_bonuses_updated(rows: Array, origins: Array) -> void:
 	record["armor_class"] = maxi(0, BonusRules.value(record, "ac"))
 	record["initiative_base"] = BonusRules.value(record, "ability_mod:dex")
 	record["initiative"] = BonusRules.value(record, "initiative")
+	record["proficiency_bonus"] = BonusRules.value(record, "proficiency")
 	record["speed"] = maxi(0, BonusRules.value(record, "speed"))
 	record["reach_feet"] = AttackData.active_range(record)
 	if _archive.save(record) != OK:
@@ -3364,6 +3366,7 @@ func _save() -> void:
 	record["armor_class"] = maxi(0, BonusRules.value(record, "ac"))
 	record["initiative_base"] = BonusRules.value(record, "ability_mod:dex")
 	record["initiative"] = BonusRules.value(record, "initiative")
+	record["proficiency_bonus"] = BonusRules.value(record, "proficiency")
 	record["speed"] = maxi(0, BonusRules.value(record, "speed"))
 	var error: Error = _archive.save(record)
 	if error != OK:
