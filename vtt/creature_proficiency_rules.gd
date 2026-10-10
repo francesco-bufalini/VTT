@@ -498,7 +498,10 @@ static func origins(record: Dictionary) -> Array[Dictionary]:
 				"group": String(item.get("group", "custom")),
 				"disabled": withdrawn or bool(item.get("disabled", false)),
 				"automatic": withdrawn, "requirements": []})
-	for row: Dictionary in record.get("proficiency_choices", []):
+	var stored_choices: Variant = record.get("proficiency_choices", [])
+	if not stored_choices is Array:
+		stored_choices = []
+	for row: Variant in stored_choices:
 		if not row is Dictionary:
 			continue
 		var sid: String = String(row.get("origin_id", ""))
