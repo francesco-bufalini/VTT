@@ -96,9 +96,9 @@ func run() -> void:
 	assert(not Proficiencies.has_choice(barbarian_rows, "skill", "survival"),
 		"Starting Barbarian cannot preselect any choose-2 skill")
 	var starting_trait_found := false
-	for trait: Dictionary in Traits.collect_features(barbarian):
-		if String(trait.get("name", "")) == "Starting Barbarian" and int(trait.get("level", 0)) == 1:
-			starting_trait_found = "Hit Point Die: 1d12" in String(trait.get("entries", ""))
+	for feature_entry: Dictionary in Traits.collect_features(barbarian):
+		if String(feature_entry.get("name", "")) == "Starting Barbarian" and int(feature_entry.get("level", 0)) == 1:
+			starting_trait_found = "Hit Point Die: 1d12" in String(feature_entry.get("entries", ""))
 	assert(starting_trait_found, "Synthetic Starting Barbarian trait includes structured hit dice and core summary")
 	var secondary := _record()
 	secondary["class"] = "Bard"
