@@ -131,6 +131,8 @@ func create_creature(stat_block: Dictionary, side: String) -> Dictionary:
 		"abilities": CreatureRules.monster_abilities(stat_block),
 		"ability_bonuses": {"str": 0, "dex": 0, "con": 0, "int": 0, "wis": 0, "cha": 0},
 		"resource_tracker_spent": {},
+		"resource_tracker_bonuses": {},
+		"xp": 0,
 		"spells": [],
 		"prepared_spells": [],
 		"spellbook_spells": [],
@@ -158,8 +160,14 @@ func create_creature(stat_block: Dictionary, side: String) -> Dictionary:
 		"species_source": String(stat_block.get("source", "")),
 		"class": "Mostro",
 		"class_source": "5etools",
-		"level": CreatureRules.monster_cr_value(stat_block),
-		"classes": [{"name": "Mostro", "source": "5etools", "level": CreatureRules.monster_cr_value(stat_block)}],
+		"level": CreatureRules.monster_level(stat_block),
+		"subclass": String(CreatureRules.monster_type_reference(stat_block).get("name", "")),
+		"subclass_source": "5etools",
+		"subclass_id": String(CreatureRules.monster_type_reference(stat_block).get("id", "")),
+		"classes": [{"name": "Mostro", "source": "5etools", "level": CreatureRules.monster_level(stat_block),
+			"subclass": String(CreatureRules.monster_type_reference(stat_block).get("name", "")),
+			"subclass_source": "5etools",
+			"subclass_id": String(CreatureRules.monster_type_reference(stat_block).get("id", ""))}],
 		"linked_token_sync_id": "",
 		"linked_token_name": ""
 	}
@@ -207,7 +215,10 @@ func normalize_creature(value: Dictionary) -> Dictionary:
 		"species_source": String(stat_block.get("source", value.get("source", ""))),
 		"class": "Mostro",
 		"class_source": "5etools",
-		"level": CreatureRules.monster_cr_value(stat_block),
+		"level": CreatureRules.monster_level(stat_block),
+		"subclass": String(CreatureRules.monster_type_reference(stat_block).get("name", "")),
+		"subclass_source": "5etools",
+		"subclass_id": String(CreatureRules.monster_type_reference(stat_block).get("id", "")),
 		"classes": [],
 		"conditions": value.get("conditions", []).duplicate() if value.get("conditions", []) is Array else [],
 		"transfer_revision": maxi(0, int(value.get("transfer_revision", 0))),
@@ -225,6 +236,8 @@ func normalize_creature(value: Dictionary) -> Dictionary:
 		"abilities": _normalize_abilities(value.get("abilities", {}), stat_block),
 		"ability_bonuses": _normalize_ability_bonuses(value.get("ability_bonuses", {})),
 		"resource_tracker_spent": value.get("resource_tracker_spent", {}).duplicate(true) if value.get("resource_tracker_spent", {}) is Dictionary else {},
+		"resource_tracker_bonuses": value.get("resource_tracker_bonuses", {}).duplicate(true) if value.get("resource_tracker_bonuses", {}) is Dictionary else {},
+		"xp": maxi(0, int(value.get("xp", 0))),
 		"spells": value.get("spells", []).duplicate(true) if value.get("spells", []) is Array else [],
 		"prepared_spells": value.get("prepared_spells", []).duplicate(true) if value.get("prepared_spells", []) is Array else [],
 		"spellbook_spells": value.get("spellbook_spells", []).duplicate(true) if value.get("spellbook_spells", []) is Array else [],
@@ -254,14 +267,23 @@ func normalize_creature(value: Dictionary) -> Dictionary:
 			var cls: Dictionary = raw_class as Dictionary
 			if String(cls.get("name", "")).to_lower() != "mostro":
 				extra_classes.append(cls.duplicate(true))
-	var cr: float = CreatureRules.monster_cr_value(stat_block)
-	var merged_classes: Array = [{"name": "Mostro", "source": "5etools", "level": cr}]
+	var monster_level: int = CreatureRules.monster_level(stat_block)
+	var monster_type: Dictionary = CreatureRules.monster_type_reference(stat_block)
+	var merged_classes: Array = [{"name": "Mostro", "source": "5etools", "level": monster_level,
+		"subclass": String(monster_type.get("name", "")), "subclass_source": "5etools",
+		"subclass_id": String(monster_type.get("id", ""))}]
 	merged_classes.append_array(extra_classes)
 	result["classes"] = merged_classes
-	var added_levels: float = 0.0
+	var added_levels: int = 0
 	for cls: Dictionary in extra_classes:
-		added_levels += maxf(0.0, float(cls.get("level", 0)))
-	result["level"] = cr + added_levels
+		added_levels += maxi(0, int(cls.get("level", 0)))
+	result["level"] = monster_level + added_levels
+	# Only class levels other than Mostro contribute to the XP threshold.
+	result["xp"] = maxi(int(result["xp"]), CreatureRules.experience_for_level(added_levels))
+	var normalized_bonuses: Dictionary = {}
+	for tracker_id: Variant in (result["resource_tracker_bonuses"] as Dictionary).keys():
+		normalized_bonuses[String(tracker_id)] = clampi(int(result["resource_tracker_bonuses"][tracker_id]), -999, 9999)
+	result["resource_tracker_bonuses"] = normalized_bonuses
 	if String(result["id"]).is_empty():
 		var now := int(Time.get_unix_time_from_system())
 		var unique := int(Time.get_ticks_usec())
