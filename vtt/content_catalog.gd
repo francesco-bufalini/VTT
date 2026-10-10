@@ -194,6 +194,7 @@ static func _load_native_package(package: Dictionary, path: String) -> void:
 				_diagnose("Homebrew: ID duplicato ignorato (vince il primo): " + id)
 				continue
 			data["id"] = id
+			data["source"] = source
 			data["category"] = category
 			data["origin"] = "homebrew"
 			data["asset_dir"] = path.get_base_dir()
