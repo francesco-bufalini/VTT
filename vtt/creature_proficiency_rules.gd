@@ -275,11 +275,13 @@ static func grant_matches(grants: Variant, kind: String, key: String) -> int:
 		if not raw is Dictionary:
 			continue
 		var value: Dictionary = raw
-		if bool(value.get(wanted, false)):
+		var exact: Variant = value.get(wanted, false)
+		if exact is bool and exact:
 			return 2
 		for found: Variant in value.keys():
 			var literal: String = normalized_key(String(found).split("|")[0])
-			if literal == wanted and value[found] == true:
+			var granted: Variant = value[found]
+			if literal == wanted and granted is bool and granted:
 				return 2
 		var choose: Variant = value.get("choose", {})
 		if choose is Dictionary:
@@ -442,7 +444,8 @@ static func fixed_grants(source: Dictionary) -> Array[Dictionary]:
 					var key: String = normalized_key(String(raw_key))
 					if key in ["choose", "any", "anyArtisansTool", "anyGamingSet", "anyMusicalInstrument", "anyStandard", "anyExotic", "anyProficientSkill"]:
 						continue
-					if (item as Dictionary)[raw_key] == true:
+					var granted: Variant = (item as Dictionary)[raw_key]
+					if granted is bool and granted:
 						_add_fixed_grant(result, kind, key.split("|")[0])
 	return result
 
@@ -570,7 +573,10 @@ static func _readable_grants(value: Variant) -> String:
 		elif raw is Dictionary:
 			var item: Dictionary = raw
 			for field: String in item.keys():
-				if item[field] == true and field != "choose":
+				# A 5etools grant may also contain nested dictionaries (choose),
+				# counts or filters. Only a literal boolean true is fixed.
+				var granted: Variant = item[field]
+				if field != "choose" and granted is bool and granted:
 					pieces.append(field.capitalize())
 			var choose: Variant = item.get("choose", {})
 			if choose is Dictionary:
