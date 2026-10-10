@@ -42,7 +42,8 @@ func setup(label: Label, inputs: Array, captions: Array) -> void:
 		spin.reparent(group)
 		spin.custom_minimum_size.x = minf(72.0, maxf(55.0, spin.custom_minimum_size.x))
 		spin.get_line_edit().focus_exited.connect(_close_if_outside.call_deferred)
-		spin.get_line_edit().text_submitted.connect(func(_text: String) -> void: close_editor())
+		# Let SpinBox commit the typed number before hiding its LineEdit.
+		spin.get_line_edit().text_submitted.connect(func(_text: String) -> void: call_deferred("close_editor"))
 		_fields.append(spin)
 	_editor.hide()
 
