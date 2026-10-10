@@ -2329,7 +2329,7 @@ func _refresh_skill_values(record: Dictionary) -> void:
 				modifier = int(published)
 				trained = true
 		var target: Label = _saving_throw_labels[ability]
-		target.text = "%s%+d" % ["🎓 " if trained else "", modifier]
+		target.text = "%+d%s" % [modifier, " 🎓" if trained else ""]
 		target.tooltip_text = "%s: mod. %+d%s = %+d" % [ability.to_upper(), base,
 			" + competenza %+d" % proficiency if trained else "", modifier]
 	if _tools_proficiency_label != null:
