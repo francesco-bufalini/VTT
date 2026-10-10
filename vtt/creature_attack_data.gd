@@ -255,7 +255,9 @@ static func max_melee_range(record: Dictionary) -> float:
 		if bool(attack.get("melee", false)):
 			var value: float = float(range_for(record, attack))
 			if attack.has("melee_reach_feet") and "ranged" in JSON.stringify(attack.get("raw", {})).to_lower():
-				value = float(attack.get("melee_reach_feet", 5))
+				var settings: Dictionary = override_for(record, String(attack.get("id", "")))
+				if not settings.has("range_feet"):
+					value = float(clampi(int(attack.get("melee_reach_feet", 5)) + int(settings.get("range_bonus", 0)), 5, 1000))
 			maximum = maxf(maximum, value)
 	return maximum
 
@@ -350,6 +352,6 @@ static func first_melee_range(record: Dictionary) -> float:
 		if attack.has("melee_reach_feet") and "ranged" in JSON.stringify(
 			attack.get("raw", {})
 		).to_lower():
-			return float(attack.get("melee_reach_feet", 5))
+			return float(clampi(int(attack.get("melee_reach_feet", 5)) + int(settings.get("range_bonus", 0)), 5, 1000))
 		return float(range_for(record, attack))
 	return 5.0
