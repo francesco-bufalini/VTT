@@ -944,8 +944,8 @@ func _build_ui() -> void:
 	_attack_rows.add_theme_constant_override("separation", 7)
 	combat_column.add_child(_attack_rows)
 	_attacks_description = RichTextLabel.new()
-	_attacks_description.custom_minimum_size.y = 160
-	_attacks_description.fit_content = true
+	_attacks_description.custom_minimum_size.y = 55
+	_attacks_description.fit_content = false
 	_attacks_description.scroll_active = false
 	_attacks_description.selection_enabled = true
 	FiveToolsText.style(_attacks_description)
@@ -2630,16 +2630,17 @@ func _refresh_attacks(record: Dictionary) -> void:
 		child.queue_free()
 	var summary: PackedStringArray = []
 	var has_equipped_weapon: bool = ItemRules.has_equipped_weapon(record.get("inventory", []))
-	var attacks: Array[Dictionary] = AttackData.definitions(record)
+	var available_attacks: Array[Dictionary] = AttackData.definitions(record)
 	var actual_active_id: String = String(AttackData.active_attack(record).get("id", ""))
-	# Keep the equipped/current attack at the top; list all others below.
-	attacks.sort_custom(func(a: Dictionary, b: Dictionary) -> bool:
-		if String(a.get("id", "")) == actual_active_id:
-			return true
-		if String(b.get("id", "")) == actual_active_id:
-			return false
-		return false
-	)
+	# Stable presentation: the active attack first, then all remaining
+	# attacks in bestiary/inventory order without an unstable partial sort.
+	var attacks: Array[Dictionary] = []
+	for candidate: Dictionary in available_attacks:
+		if String(candidate.get("id", "")) == actual_active_id:
+			attacks.append(candidate)
+	for candidate: Dictionary in available_attacks:
+		if String(candidate.get("id", "")) != actual_active_id:
+			attacks.append(candidate)
 	for attack: Dictionary in attacks:
 		var attack_id: String = String(attack.get("id", ""))
 		if attack_id.is_empty() or (has_equipped_weapon and attack_id in ["unarmed", "improvised"]):
