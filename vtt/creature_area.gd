@@ -760,11 +760,18 @@ func _build_ui() -> void:
 	_species = _reference_option(species_row, Player5eTools.entries("races"))
 	_species.item_selected.connect(func(_index: int) -> void: _on_species_changed())
 
+	var classes_title_row := HBoxContainer.new()
+	classes_title_row.add_theme_constant_override("separation", 12)
+	form.add_child(classes_title_row)
 	var classes_title := Label.new()
 	classes_title.text = "⚔ Classi"
 	classes_title.add_theme_font_size_override("font_size", 17)
 	classes_title.add_theme_color_override("font_color", Color(0.96, 0.78, 0.54))
-	form.add_child(classes_title)
+	classes_title_row.add_child(classes_title)
+	_add_label(classes_title_row, "📈 XP")
+	_xp = _spin(classes_title_row, 0, 999999999)
+	_xp.custom_minimum_size.x = 130
+	_xp.tooltip_text = "Minimo XP calcolato dai livelli di classe (esclusa la classe Mostro)"
 	var classes_row := HFlowContainer.new()
 	classes_row.add_theme_constant_override("h_separation", 7)
 	classes_row.add_theme_constant_override("v_separation", 6)
@@ -803,12 +810,6 @@ func _build_ui() -> void:
 	multiclass_header.add_child(_add_class_button)
 	_multiclass_rows = VBoxContainer.new()
 	form.add_child(_multiclass_rows)
-	var xp_row := HBoxContainer.new()
-	form.add_child(xp_row)
-	_add_label(xp_row, "📈 XP")
-	_xp = _spin(xp_row, 0, 999999999)
-	_xp.custom_minimum_size.x = 130
-	_xp.tooltip_text = "Minimo XP calcolato dai livelli di classe (esclusa la classe Mostro)"
 	var tracker_caption := Label.new()
 	tracker_caption.text = "📊 Tracker risorse"
 	tracker_caption.add_theme_font_size_override("font_size", 15)
