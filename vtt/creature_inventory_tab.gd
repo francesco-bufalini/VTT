@@ -882,4 +882,6 @@ func _publish_migration(expected_creature_id: String) -> void:
 
 func _publish() -> void:
 	if not _loading and _on_change.is_valid():
+		if _documents_tab != null:
+			_documents_tab.call("load_inventory", _inventory)
 		_on_change.call(_inventory.duplicate(true))
