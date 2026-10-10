@@ -327,6 +327,7 @@ func setup(
 		bonus.custom_minimum_size = Vector2(62, 36)
 		bonus.tooltip_text = "Bonus manuale agli slot massimi"
 		ManualBonus.decorate(bonus)
+		bonus.hide()
 		bonus.value_changed.connect(_on_slot_bonus_changed.bind(lvl))
 		row.add_child(bonus)
 		_slot_bonus_controls[lvl] = bonus
@@ -335,7 +336,7 @@ func setup(
 		var formula := FormulaValue.new()
 		row.add_child(formula)
 		row.move_child(formula, max_index)
-		formula.setup(max_label, [total, bonus], ["Base", "Bonus"])
+		formula.setup(max_label, [total], ["Base"])
 		formula.target_key = "slot:" + str(lvl)
 		formula.bonus_requested.connect(_request_formula_bonus)
 		_slot_formula_values[lvl] = formula
@@ -401,6 +402,7 @@ func setup(
 	_pact_bonus_spin.custom_minimum_size = Vector2(54, 36)
 	_pact_bonus_spin.tooltip_text = "Bonus manuale agli slot massimi della Magia del Patto"
 	ManualBonus.decorate(_pact_bonus_spin)
+	_pact_bonus_spin.hide()
 	_pact_bonus_spin.value_changed.connect(_on_pact_values_changed)
 	total_group.add_child(_pact_bonus_spin)
 	var pact_index: int = pact_max_label.get_index()
@@ -409,7 +411,7 @@ func setup(
 	total_group.add_child(_pact_formula_value)
 	total_group.move_child(_pact_formula_value, pact_index)
 	_pact_formula_value.call("setup", pact_max_label,
-		[_pact_total_spin, _pact_bonus_spin], ["Base", "Bonus"])
+		[_pact_total_spin], ["Base"])
 	_pact_formula_value.target_key = "pact_slot"
 	_pact_formula_value.bonus_requested.connect(_request_formula_bonus)
 	_pact_remain = Label.new()
