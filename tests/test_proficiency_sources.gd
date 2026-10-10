@@ -184,10 +184,9 @@ func run() -> void:
 		"Barbarian secondary class grants only its multiclass shield training")
 	var monster_base := _record()
 	monster_base["kind"] = "monster"
-	monster_base["class"] = "mostro"
-	monster_base["class_source"] = "BESTIARY"
+	monster_base["class"] = "Barbarian"
+	monster_base["class_source"] = "PHB"
 	monster_base["classes"] = [
-		{"name": "mostro", "source": "BESTIARY", "level": 2},
 		{"name": "Barbarian", "source": "PHB", "level": 1}
 	]
 	var monster_starting_found := false
@@ -207,8 +206,10 @@ func run() -> void:
 	# Flattened 5etools subrace entries include all parent racial features.
 	# Origin-grant bookkeeping still needs two distinct source identities.
 	var high_elf := _record()
-	high_elf["species"] = "Elf (High)"
+	high_elf["species"] = "Elf"
 	high_elf["species_source"] = "PHB"
+	high_elf["subrace"] = "High"
+	high_elf["subrace_source"] = "PHB"
 	assert(Proficiencies.has_proficiency(high_elf, "skill", "perception"),
 		"High Elf inherits the parent Elf's Perception proficiency")
 	assert(Proficiencies.has_proficiency(high_elf, "weapon", "longsword|phb"),
@@ -222,7 +223,7 @@ func run() -> void:
 			subrace_found = true
 	assert(race_found and subrace_found, "Base and subrace grants have distinct origins")
 	var wood_elf := high_elf.duplicate(true)
-	wood_elf["species"] = "Elf (Wood)"
+	wood_elf["subrace"] = "Wood"
 	var stale_high_origin := false
 	for origin: Dictionary in Proficiencies.candidate_sources(wood_elf):
 		if String(origin.get("id", "")) == "subrace|phb|high":
