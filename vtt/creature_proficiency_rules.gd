@@ -327,10 +327,38 @@ static func grant_matches(grants: Variant, kind: String, key: String) -> int:
 	return best
 
 
+# The reduced 5etools item catalog may omit tool metadata. Keep a
+# canonical fallback for structured "any artisan tool / gaming set /
+# instrument" choices, so their count is recognized after selection.
+const TOOL_TYPE_FALLBACK := {
+	"AT": [
+		"alchemist's supplies", "brewer's supplies", "calligrapher's supplies",
+		"carpenter's tools", "cartographer's tools", "cobbler's tools",
+		"cook's utensils", "glassblower's tools", "jeweler's tools",
+		"leatherworker's tools", "mason's tools", "painter's supplies",
+		"potter's tools", "smith's tools", "tinker's tools", "weaver's tools",
+		"woodcarver's tools"
+	],
+	"GS": ["dice set", "dragonchess set", "playing card set", "three-dragon ante set"],
+	"INS": [
+		"bagpipes", "drum", "dulcimer", "flute", "lute", "lyre",
+		"horn", "pan flute", "shawm", "viol"
+	],
+	"OTHER": [
+		"disguise kit", "forgery kit", "herbalism kit",
+		"navigator's tools", "poisoner's kit", "thieves' tools",
+		"vehicles (land)", "vehicles (water)"
+	]
+}
+
+
 static func _tool_type(key: String) -> String:
 	for item: Dictionary in Catalog.entries("tools"):
 		if normalized_key(String(item.get("name", ""))) == key:
 			return String(item.get("type", "")).split("|")[0].to_upper()
+	for type_code: String in TOOL_TYPE_FALLBACK.keys():
+		if key in TOOL_TYPE_FALLBACK[type_code]:
+			return type_code
 	return ""
 
 
