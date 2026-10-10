@@ -223,6 +223,10 @@ func run() -> void:
 		if String(suggestion.get("group", "")) == "feat" and int(suggestion.get("certainty", 0)) == 1:
 			feat_is_optional = true
 	assert(feat_is_optional, "Weapon Master structured selectable martial weapon is only an optional source")
+	assert(Proficiencies.grant_matches([{"any": 3}], "weapon", "martial") == 0,
+		"Choosing individual weapons must not offer the whole martial weapon category")
+	assert(Proficiencies.grant_matches([{"any": 3}], "weapon", "rapier") == 1,
+		"Choosing individual weapons continues to offer specific weapons")
 
 	var legacy := _record()
 	legacy.erase("proficiency_choices")
