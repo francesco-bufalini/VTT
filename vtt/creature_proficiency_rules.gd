@@ -301,9 +301,9 @@ static func grant_matches(grants: Variant, kind: String, key: String) -> int:
 			if kind == "weapon" and wanted not in ["simple", "martial", "all"]:
 				if "type=martial weapon" in filter_text and _weapon_group(wanted) == "martial":
 					best = maxi(best, 1)
-			if options is Array and options.is_empty() and choose.has("any"):
+			if options is Array and options.is_empty() and choose.has("any") and (kind != "weapon" or wanted not in ["simple", "martial", "all"]):
 				best = maxi(best, 1)
-		if value.has("any") or (kind == "skill" and value.has("anyProficientSkill")):
+		if (value.has("any") and (kind != "weapon" or wanted not in ["simple", "martial", "all"])) or (kind == "skill" and value.has("anyProficientSkill")):
 			best = maxi(best, 1)
 		if kind == "tool" and value.has("anyArtisansTool") and _tool_type(wanted) == "AT":
 			best = maxi(best, 1)
