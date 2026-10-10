@@ -119,7 +119,7 @@ static func _evaluate_expression(record: Dictionary, expression: String, stack: 
 	var number: Variant = parser.execute(values, null, false)
 	if parser.has_execute_failed() or not (number is int or number is float):
 		return {"ok": false, "error": "Impossibile calcolare: " + expr}
-	if not is_finite(float(number)):
+	if is_nan(float(number)) or is_inf(float(number)):
 		return {"ok": false, "error": "Risultato non finito"}
 	return {"ok": true, "value": roundi(float(number))}
 
@@ -141,7 +141,7 @@ static func _base(record: Dictionary, target: String, stack: Dictionary) -> Dict
 	if target == "level":
 		return {"ok": true, "value": int(record.get("level", 1))}
 	if target == "proficiency":
-		if String(record.get("kind", "")) == "monster":
+		if String(record.get("kind", "")) == "monster" or record.has("stat_block"):
 			var cr: float = Rules.monster_cr_value(record.get("stat_block", {}))
 			return {"ok": true, "value": 2 + maxi(0, floori((cr - 1.0) / 4.0))}
 		return {"ok": true, "value": Rules.proficiency_bonus(record)}
@@ -215,8 +215,14 @@ static func _sum(record: Dictionary, target: String, stack: Dictionary) -> Dicti
 	var total := 0
 	var details: PackedStringArray = []
 	var errors: PackedStringArray = []
-	var enabled: Dictionary = _source_map(record)
+	var target_grants: Array[Dictionary] = []
 	for row: Dictionary in grants(record):
+		if String(row.get("target", "")) == target and not bool(row.get("disabled", false)):
+			target_grants.append(row)
+	if target_grants.is_empty():
+		return {"value": 0, "details": details, "errors": errors}
+	var enabled: Dictionary = _source_map(record)
+	for row: Dictionary in target_grants:
 		if String(row.get("target", "")) != target or bool(row.get("disabled", false)):
 			continue
 		var sid: String = String(row.get("origin_id", ""))
