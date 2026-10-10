@@ -6,6 +6,8 @@ const Player5eTools = preload("res://vtt/player_5etools_catalog.gd")
 const ItemRules = preload("res://vtt/creature_item_rules.gd")
 const ItemInstance = preload("res://vtt/item_instance.gd")
 const DocumentsTab = preload("res://vtt/creature_documents_tab.gd")
+const DocumentStore = preload("res://vtt/document_homebrew.gd")
+const DocumentInbox = preload("res://vtt/document_inbox.gd")
 const ItemImagePreview = preload("res://vtt/item_image_preview.gd")
 
 var _on_change: Callable
@@ -76,7 +78,7 @@ func setup(on_change: Callable, on_status: Callable, on_document_change: Callabl
 	filter_row.add_theme_constant_override("v_separation", 5)
 	_search_panel.add_child(filter_row)
 	_category_filter = OptionButton.new()
-	for category_name: String in ["Tutti", "Armi", "Scudi", "Armature", "Strumenti", "Oggetti magici", "Altri oggetti"]:
+	for category_name: String in ["Tutti", "Armi", "Scudi", "Armature", "Strumenti", "Oggetti magici", "Documenti", "Altri oggetti"]:
 		_category_filter.add_item(category_name)
 	_category_filter.item_selected.connect(func(_index: int) -> void: _filter_catalog())
 	_add_catalog_filter(filter_row, "Categoria", _category_filter, 145)
@@ -225,7 +227,7 @@ func setup(on_change: Callable, on_status: Callable, on_document_change: Callabl
 	_documents_tab = DocumentsTab.new()
 	_documents_tab.name = "Documenti"
 	inner_tabs.add_child(_documents_tab)
-	_documents_tab.call("setup", Callable(self, "_documents_changed"), _on_status, _send_document, _peer_provider)
+	_documents_tab.call("setup", Callable(self, "_documents_changed"), _on_status)
 	_image_preview = ItemImagePreview.new()
 	add_child(_image_preview)
 	_image_preview.call("setup")
@@ -267,14 +269,46 @@ func _reset_catalog_filters() -> void:
 	_filter_catalog()
 
 
-func _documents_changed(documents: Array) -> void:
-	if _document_change.is_valid():
-		_document_change.call(documents)
+func _documents_changed(inventory: Array) -> void:
+	# Documents share the exact same live inventory array and persistence path.
+	if _loading:
+		return
+	_loading = true
+	_inventory.clear()
+	for raw: Variant in inventory:
+		if raw is Dictionary:
+			_inventory.append(ItemInstance.from_saved(raw as Dictionary))
+	_sanitize_equipment()
+	_refresh_inventory()
+	_loading = false
+	reload_catalog()
+	_publish()
 
 
 func receive_document() -> void:
-	if _documents_tab != null:
-		_documents_tab.call("receive_document")
+	# Compatibility for incoming documents from older peers. The new editor
+	# does not expose sending; this migrates any pre-existing inbox deliveries.
+	var incoming: Array[Dictionary] = DocumentInbox.take_all()
+	var changed := false
+	for note: Dictionary in incoming:
+		var item: Dictionary = DocumentStore.from_legacy(note)
+		if item.is_empty():
+			# Preserve failed deliveries in the inbox rather than losing them.
+			DocumentInbox.receive(note)
+			continue
+		var already_owned := false
+		for saved: Dictionary in _inventory:
+			if String(saved.get("id", "")) == String(item.get("id", "")):
+				already_owned = true
+				break
+		if not already_owned:
+			_inventory.append(item)
+			changed = true
+	if changed:
+		reload_catalog()
+		_refresh_inventory()
+		_documents_tab.call("load_inventory", _inventory)
+		_publish()
 
 
 func reload_catalog() -> void:
@@ -304,11 +338,36 @@ func load_record(record: Dictionary) -> void:
 			if item_id.is_empty() or name.is_empty():
 				continue
 			_inventory.append(ItemInstance.from_saved(item))
+	# One-time migration from record.documents to ordinary owned items.
+	# Keep the old save property until every document is safely materialized.
+	var migrated := false
+	var legacy: Variant = record.get("documents", [])
+	if legacy is Array:
+		for raw: Variant in legacy:
+			if not raw is Dictionary:
+				continue
+			var note: Dictionary = raw
+			var existing_id: String = DocumentStore.legacy_id(note)
+			var found := false
+			for owned: Dictionary in _inventory:
+				if String(owned.get("id", "")) == existing_id:
+					found = true
+					break
+			if found:
+				continue
+			var item: Dictionary = DocumentStore.from_legacy(note)
+			if item.is_empty():
+				continue
+			_inventory.append(item)
+			migrated = true
 	_sanitize_equipment()
 	_refresh_inventory()
 	_loading = false
 	if _documents_tab != null:
-		_documents_tab.call("load_record", record)
+		_documents_tab.call("load_inventory", _inventory)
+	if migrated:
+		reload_catalog()
+		_publish()
 
 
 func _catalog_entry(item: Dictionary) -> Dictionary:
@@ -319,7 +378,17 @@ func _catalog_entry(item: Dictionary) -> Dictionary:
 
 
 func _image_label(item: Dictionary, caption: String) -> String:
-	return ("🖼  " if not ItemImagePreview.image_source(item).is_empty() else "") + caption
+	if DocumentStore.is_document(item) or ItemImagePreview.image_source(item).is_empty():
+		return caption
+	# Image marker follows the manual/source abbreviation, not the item name.
+	var source: String = String(item.get("source", "")).strip_edges()
+	if source.is_empty():
+		return caption + "  🖼"
+	var index: int = caption.rfind(source)
+	if index < 0:
+		return caption + "  🖼"
+	var end: int = index + source.length()
+	return caption.substr(0, end) + "  🖼" + caption.substr(end)
 
 
 func _on_image_click(event: InputEvent, from_catalog: bool) -> void:
@@ -330,15 +399,23 @@ func _on_image_click(event: InputEvent, from_catalog: bool) -> void:
 	var index: int = list.get_item_at_position(click.position, true)
 	if index < 0:
 		return
+	var label: String = list.get_item_text(index)
+	var image_offset: int = label.find("🖼")
+	if image_offset < 0:
+		return
 	var rect: Rect2 = list.get_item_rect(index)
-	if click.position.x - rect.position.x > 38:
+	var font: Font = list.get_theme_font("font")
+	var size: int = list.get_theme_font_size("font_size")
+	var before: String = label.substr(0, image_offset)
+	var glyph_x: float = rect.position.x + font.get_string_size(before, HORIZONTAL_ALIGNMENT_LEFT, -1, size).x
+	if absf(click.position.x - glyph_x) > 24.0:
 		return
 	var item: Dictionary = {}
 	if from_catalog and index < _filtered.size():
 		item = _filtered[index]
 	elif not from_catalog and index < _inventory.size():
 		item = _catalog_entry(_inventory[index])
-	if ItemImagePreview.image_source(item).is_empty():
+	if DocumentStore.is_document(item) or ItemImagePreview.image_source(item).is_empty():
 		return
 	_image_preview.call("preview", item)
 	get_viewport().set_input_as_handled()
@@ -456,6 +533,7 @@ func _catalog_row_label(item: Dictionary) -> String:
 		"shield", "armor": marker = "🛡"
 		"tool": marker = "🛠"
 		"magic": marker = "✨"
+		"document": marker = "📄"
 	var tags: PackedStringArray = []
 	var damage := String(item.get("damage", "")).strip_edges()
 	if not damage.is_empty():
