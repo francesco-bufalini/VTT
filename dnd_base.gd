@@ -48,7 +48,7 @@ const GridHighlightRenderer = preload("res://vtt/grid_highlight_renderer.gd")
 const TopDownElevationLevels = preload("res://vtt/top_down_elevation_levels.gd")
 const TopDownTokenOverlay = preload("res://vtt/top_down_elevation_overlay.gd")
 const CreatureOwner = preload("res://vtt/creature_owner.gd")
-const TokenScript = preload("res://token.gd")
+const ContentCatalog = preload("res://vtt/content_catalog.gd")
 const FlankingGeometry = preload("res://vtt/flanking_system.gd")
 const CreatureAttackData = preload("res://vtt/creature_attack_data.gd")
 
@@ -1811,7 +1811,7 @@ func _finish_sheet_spawn_without_dialog() -> void:
 			int(record.get("visual_front_quarter_turns", 0)), 0, 3
 		))
 	_refresh_shared_condition_choices(
-		TokenScript.ContentCatalog.condition_definitions(
+		ContentCatalog.condition_definitions(
 			String(record.get("rules_version", "2014"))
 		)
 	)
@@ -3832,7 +3832,7 @@ func _build_token_state_dialog() -> void:
 	token_state_grid.add_theme_constant_override("v_separation", 4)
 	content_box.add_child(token_state_grid)
 
-	_refresh_shared_condition_choices(TokenScript.ContentCatalog.condition_definitions())
+	_refresh_shared_condition_choices(ContentCatalog.condition_definitions())
 	_token_effect_dialog = AcceptDialog.new()
 	_token_effect_dialog.title = "5etools · Effect details"
 	_token_effect_dialog.min_size = Vector2i(540, 400)
@@ -3885,7 +3885,7 @@ func _refresh_shared_condition_choices(definitions: Array) -> void:
 				String(definition.get("icon", "•")),
 				String(definition.get("name", condition_id))
 			]
-			check.tooltip_text = TokenScript.ContentCatalog.description(definition)
+			check.tooltip_text = ContentCatalog.description(definition)
 			token_state_grid.add_child(check)
 			token_state_checks[condition_id] = check
 			var info := Button.new()
@@ -3899,7 +3899,7 @@ func _show_shared_effect_description(definition: Dictionary) -> void:
 	if _token_effect_dialog == null or _token_effect_text == null:
 		return
 	_token_effect_dialog.title = String(definition.get("name", "Effect"))
-	_token_effect_text.text = TokenScript.ContentCatalog.description(definition)
+	_token_effect_text.text = ContentCatalog.description(definition)
 	DialogLayout.popup(_token_effect_dialog, Vector2i(560, 440))
 
 
@@ -4204,7 +4204,7 @@ func _load_shared_token_editor_from_target(token: CharacterBody3D) -> void:
 			conditions.append_array(manual_value as Array)
 	var catalog_edition := String(token.get_meta("rules_version", "2014"))
 	_refresh_shared_condition_choices(
-		TokenScript.ContentCatalog.condition_definitions(catalog_edition)
+		ContentCatalog.condition_definitions(catalog_edition)
 	)
 	_set_shared_token_editor_conditions(conditions)
 
