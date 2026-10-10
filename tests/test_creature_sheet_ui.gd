@@ -227,6 +227,14 @@ func run() -> void:
 	assert(area._temp_hp.get_parent() == area._hp.get_parent()
 		and area._ac.get_parent() != area._temp_hp.get_parent(),
 		"Temporary HP share the health panel; armor class belongs to Statistics")
+	var hp_row: Control = area._hp.get_parent()
+	assert(hp_row.get_child(0) is HBoxContainer
+		and (hp_row.get_child(1) as Label).text == "Attuali"
+		and area._hp.get_index() == 2,
+		"HP −/+ controls must precede the current HP label and value")
+	assert((hp_row.get_child(area._temp_hp.get_index() - 1) as Label).text == "+"
+		and (hp_row.get_child(area._temp_hp.get_index() + 1) as Label).text == "TEMP",
+		"Temporary HP must display + [value] TEMP")
 	assert(area._party.get_parent() == area._name.get_parent(),
 		"Faction must be alongside character name")
 	area._level.value = 5
