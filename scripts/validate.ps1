@@ -119,6 +119,8 @@ $fastTests = @(
     "test_creature_sheet_ui.gd",
     "test_creature_gui_layout.gd",
     "test_inventory_quantities.gd",
+    "test_equipped_weapons.gd",
+    "test_proficiency_sources.gd",
     "test_dialog_layout.gd",
     "test_tactical_overlay.gd",
     "test_creature_presence.gd",
@@ -166,7 +168,7 @@ foreach ($test in $testFiles) {
     Write-Host "== $relative =="
     $testTimeout = if ($FullTests) {
         90
-    } elseif ($test.Name -in @("test_item_transport.gd", "test_item_board_integration.gd")) {
+    } elseif ($test.Name -in @("test_item_transport.gd", "test_item_board_integration.gd", "test_equipped_weapons.gd", "test_proficiency_sources.gd")) {
         30
     } else {
         12
