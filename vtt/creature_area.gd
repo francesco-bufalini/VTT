@@ -2337,7 +2337,7 @@ func _load_form(record: Dictionary) -> void:
 	var is_character: bool = String(record.get("kind", "")) == "character"
 	_additional_classes_title.text = "Classi aggiuntive (multiclasse)" if is_character else "Classi principali aggiuntive"
 	if is_character:
-		_set_reference_choices(_species, Player5eTools.entries("races"))
+		_set_reference_choices(_species, RaceRules.base_races())
 	else:
 		var bestiary_species: Array[Dictionary] = [{
 			"id": String(record.get("species", "")),
@@ -2346,14 +2346,20 @@ func _load_form(record: Dictionary) -> void:
 		}]
 		_set_reference_choices(_species, bestiary_species)
 	_select_reference(_species, String(record.get("species", "")), String(record.get("species_source", "")), String(record.get("species_id", "")))
-	_subtype_custom = bool(record.get("subtype_is_custom", false))
-	var bestiary_subtype: String = Rules.monster_subtype(record.get("stat_block", {})) if not is_character else ""
-	_subtype.text = String(record.get("subtype", "")) if _subtype_custom else bestiary_subtype
+	_refresh_subrace_choices()
+	_select_reference(_subrace_choice, String(record.get("subrace", "")),
+		String(record.get("subrace_source", "")), String(record.get("subrace_id", "")))
+	_subrace_caption.visible = is_character
+	_subrace_choice.visible = is_character
+	_challenge_caption.visible = not is_character
+	_challenge_rating.visible = not is_character
+	var challenge: Variant = record.get("stat_block", {}).get("cr", "0")
+	_challenge_rating.text = String(challenge.get("cr", "0") if challenge is Dictionary else challenge)
 	_refresh_creature_type(record)
 	_set_reference_choices(_background, Player5eTools.entries("backgrounds"))
 	_select_reference(_background, String(record.get("background", "")), String(record.get("background_source", "")), String(record.get("background_id", "")))
 	_speed_custom = bool(record.get("speed_is_custom", false))
-	var source_speed: int = (Rules.walking_speed(_reference_entry(_species).get("speed", 30))
+	var source_speed: int = (Rules.walking_speed(_effective_species().get("speed", 30))
 		if is_character else Rules.walking_speed(record.get("stat_block", {}).get("speed", 30)))
 	_speed.value = maxi(0, int(record.get("speed_base", int(record.get("speed", source_speed)) - int(record.get("speed_bonus", 0)))) if _speed_custom else source_speed)
 	_speed_bonus.value = int(record.get("speed_bonus", 0))
@@ -2366,54 +2372,44 @@ func _load_form(record: Dictionary) -> void:
 		edition = "2024" if class_source in ["XPHB", "EFA"] else "2014"
 	_rules_edition.select(1 if edition == "2024" else 0)
 	_refresh_class_choices()
-	if not is_character:
-		var monster_class: Array[Dictionary] = [{
-			"id": "monster", "name": "Mostro", "source": "5etools"
-		}]
-		_set_reference_choices(_class_name, monster_class, false)
-		_class_name.select(1)
-	else:
-		_select_reference(_class_name, String(record.get("class", "")), class_source, String(record.get("class_id", "")))
+	# All sheets use real classes; challenge rating is not a class level.
+	_select_reference(_class_name, String(record.get("class", "")), class_source,
+		String(record.get("class_id", "")))
 	_refresh_multiclass_availability()
 	_refresh_subclass_option(_subclass_name, _reference_entry(_class_name))
-	if is_character:
-		_select_reference(_subclass_name, String(record.get("subclass", "")), String(record.get("subclass_source", "")), String(record.get("subclass_id", "")))
+	_select_reference(_subclass_name, String(record.get("subclass", "")),
+		String(record.get("subclass_source", "")), String(record.get("subclass_id", "")))
 	_subclass_caption.text = "Sottoclasse"
-	_subclass_caption.visible = is_character
-	_subclass_name.visible = is_character
-	_level_caption.text = "Livello" if is_character else "GS (intero)"
+	_subclass_caption.show()
+	_subclass_name.show()
+	_level_caption.text = "Livello"
 	_clear_multiclass()
 	var classes_value: Variant = record.get("classes", [])
 	if classes_value is Array:
 		for i: int in range(1, (classes_value as Array).size()):
 			var class_value: Variant = (classes_value as Array)[i]
 			if class_value is Dictionary:
-				_add_multiclass_row(
-					String(class_value.get("name", "")),
-					int(class_value.get("level", 1)),
-					String(class_value.get("source", "")),
-					String(class_value.get("id", ""))
-				)
+				_add_multiclass_row(String(class_value.get("name", "")),
+					int(class_value.get("level", 1)), String(class_value.get("source", "")),
+					String(class_value.get("id", "")))
 				var last: Dictionary = _multiclass_controls.back()
-				_select_reference(last["subclass"], String(class_value.get("subclass", "")), String(class_value.get("subclass_source", "")), String(class_value.get("subclass_id", "")))
-	# Existing sheets store the primary class at classes[0]; older sheets
-	# with no class rows retain the legacy total-level fallback.
-	var primary_level: int = int(record.get("level", 1))
+				_select_reference(last["subclass"], String(class_value.get("subclass", "")),
+					String(class_value.get("subclass_source", "")), String(class_value.get("subclass_id", "")))
+	var primary_level: int = 1
 	if classes_value is Array and not (classes_value as Array).is_empty():
 		var first_class: Variant = (classes_value as Array)[0]
 		if first_class is Dictionary:
-			primary_level = int((first_class as Dictionary).get("level", primary_level))
+			primary_level = int((first_class as Dictionary).get("level", 1))
+	elif not String(record.get("class", "")).is_empty():
+		primary_level = int(record.get("level", 1))
 	_level.min_value = 1
-	_level.max_value = 20 if is_character else 30
+	_level.max_value = 20
 	_level.step = 1
 	_level.rounded = true
-	_level.value = clampi(primary_level, 1, 20) if is_character else Rules.monster_level(record.get("stat_block", {}))
+	_level.value = clampi(primary_level, 1, 20)
 	_refresh_xp_minimum()
 	_xp.value = maxi(int(record.get("xp", 0)), Rules.experience_for_level(_class_xp_level()))
-	_level.tooltip_text = (
-		"Livello della classe base" if is_character
-		else "Livello intero derivato dal grado di sfida (il GS originale resta nel bestiario)"
-	)
+	_level.tooltip_text = "Livello della classe base (il GS dei mostri è indipendente)"
 	_default_miniature_id = String(record.get("default_miniature_id", ""))
 	_default_miniature.text = _miniature_display_name(_default_miniature_id)
 	_update_current_appearance_display(record)
@@ -2426,10 +2422,11 @@ func _load_form(record: Dictionary) -> void:
 		else "Scegli una miniatura con il pulsante Cerca…"
 	)
 	_species.disabled = not is_character
-	_class_name.disabled = not is_character
-	_rules_edition.visible = is_character
-	_rules_edition_caption.visible = is_character
-	_level.editable = is_character
+	_subrace_choice.disabled = not is_character or _subrace_choice.item_count <= 1
+	_class_name.disabled = false
+	_rules_edition.visible = true
+	_rules_edition_caption.visible = true
+	_level.editable = _class_name.selected > 0
 	_refresh_conditions(record)
 	_refresh_reference(record)
 	_spellcasting_ui.call("load_record", record)
@@ -2446,7 +2443,7 @@ func _on_level_changed(_value: float) -> void:
 
 func _class_xp_level() -> int:
 	var level: int = 0
-	if _selected_kind == "character" and _class_name.selected > 0:
+	if _class_name.selected > 0:
 		level += int(_level.value)
 	for definition: Dictionary in _multiclass_controls:
 		var extra_ref: Dictionary = _reference_entry(definition["selector"])
@@ -2468,9 +2465,18 @@ func _refresh_xp_minimum() -> void:
 	_loading = previously_loading
 
 
+func _effective_species() -> Dictionary:
+	return RaceRules.effective_race(_reference_entry(_species), _reference_entry(_subrace_choice))
+
+
+func _refresh_subrace_choices() -> void:
+	var available: Array[Dictionary] = RaceRules.subraces_for(_reference_entry(_species))
+	_set_reference_choices(_subrace_choice, available)
+	_subrace_choice.disabled = available.is_empty()
+
+
 func _speed_from_species() -> int:
-	var species: Dictionary = _reference_entry(_species)
-	return Rules.walking_speed(species.get("speed", 30))
+	return Rules.walking_speed(_effective_species().get("speed", 30))
 
 
 func _on_species_changed() -> void:
@@ -2478,19 +2484,23 @@ func _on_species_changed() -> void:
 		return
 	_speed_custom = false
 	_loading = true
+	_refresh_subrace_choices()
 	_speed.value = _speed_from_species()
-	_subtype_custom = false
-	_subtype.text = ""
 	_refresh_creature_type({"kind": "character"})
 	_loading = false
 	_update_speed_display()
 	_save()
 
 
-func _on_subtype_changed(_value: String) -> void:
+func _on_subrace_changed() -> void:
 	if _loading:
 		return
-	_subtype_custom = true
+	_loading = true
+	_speed_custom = false
+	_speed.value = _speed_from_species()
+	_refresh_creature_type({"kind": "character"})
+	_loading = false
+	_update_speed_display()
 	_save()
 
 
@@ -2500,7 +2510,7 @@ func _refresh_creature_type(record: Dictionary) -> void:
 	if String(record.get("kind", "")) == "monster":
 		_creature_type_display.text = String(Rules.monster_type_reference(record.get("stat_block", {})).get("name", "Non definito"))
 	else:
-		_creature_type_display.text = Rules.species_creature_type(_reference_entry(_species))
+		_creature_type_display.text = Rules.species_creature_type(_effective_species())
 
 
 func _on_speed_changed(_value: float) -> void:
