@@ -187,6 +187,11 @@ func _create_column(parent: HBoxContainer, heading: String, width: float) -> VBo
 
 func load_record(record: Dictionary) -> void:
 	_loading = true
+	# A still-open choice dialog must not modify the next selected creature.
+	if _choice_dialog != null:
+		_choice_dialog.hide()
+	_choice_source_id = ""
+	_choice_groups.clear()
 	_record = record.duplicate(true)
 	_rows = Rules.choices(record)
 	_origins = Rules.origins(record)
