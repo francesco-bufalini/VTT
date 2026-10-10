@@ -3,6 +3,7 @@ extends RefCounted
 const CreatureOwner = preload("res://vtt/creature_owner.gd")
 const CreatureRules = preload("res://vtt/creature_rules.gd")
 const ItemRules = preload("res://vtt/creature_item_rules.gd")
+const Proficiencies = preload("res://vtt/creature_proficiency_rules.gd")
 
 const ROOT_DIR := "user://player_characters"
 const FILE_VERSION := 3
@@ -192,6 +193,7 @@ func create_character() -> Dictionary:
 		"attacks": "",
 		"attack_ability": "str",
 		"attack_overrides": {},
+		"proficiency_choices": [],
 		"documents": [],
 		"ammunition": "",
 		"armor_proficiencies": "",
@@ -398,6 +400,7 @@ func normalize_character(value: Dictionary) -> Dictionary:
 	defaults["footprint"] = maxf(0.5, float(defaults.get("footprint", 1.0)))
 	defaults["attack_ability"] = "dex" if String(value.get("attack_ability", "str")) == "dex" else "str"
 	defaults["attack_overrides"] = value.get("attack_overrides", {}).duplicate(true) if value.get("attack_overrides", {}) is Dictionary else {}
+	defaults["proficiency_choices"] = Proficiencies.choices(value)
 	defaults["reach_feet"] = maxf(5.0, float(defaults.get("reach_feet", 5.0)))
 	defaults["visual_front_quarter_turns"] = clampi(int(defaults.get("visual_front_quarter_turns", 0)), 0, 3)
 	defaults["party_id"] = String(defaults.get("party_id", ""))
