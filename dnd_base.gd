@@ -4626,11 +4626,11 @@ func _spawn_token(
 				_pending_spawn_support.global_transform
 			)
 
-	if token.has_method("set_reach_feet"):
-		var resolved_reach: float = reach_feet
-		if resolved_reach <= 0.0:
-			resolved_reach = maxf(5.0, footprint_cells * 5.0)
-		token.call("set_reach_feet", resolved_reach, true)
+	if reach_feet > 0.0 and token.has_method("set_reach_feet"):
+		# Only an explicit creature/spell reach can override the 5 ft base.
+		token.call("set_reach_feet", reach_feet, true)
+	elif token.has_method("reset_reach_to_default"):
+		token.call("reset_reach_to_default")
 
 	if token.has_method("set_display_name"):
 		token.call("set_display_name", display_name)

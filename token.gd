@@ -1625,11 +1625,13 @@ func apply_appearance_state(state: Dictionary) -> bool:
 	)
 	set_token_size(_footprint_cells)
 
-	_reach_feet = maxf(
-		float(state.get("reach_feet", _default_reach_feet())),
-		5.0
-	)
 	_reach_overridden = bool(state.get("reach_overridden", false))
+	# Legacy saves may contain size-derived 10/15/20 ft defaults. Only
+	# restore stored reach when it was actually customized.
+	_reach_feet = (
+		maxf(float(state.get("reach_feet", 5.0)), 5.0)
+		if _reach_overridden else _default_reach_feet()
+	)
 	set_display_name(String(state.get("display_name", token_display_name)))
 	set_party_id(String(state.get("party_id", party_id)))
 	set_condition_presentations(state.get("condition_presentations", []))
