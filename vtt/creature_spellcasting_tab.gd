@@ -282,11 +282,11 @@ func setup(
 	_slot_grid.add_theme_constant_override("v_separation", 5)
 	slot_scroll.add_child(_slot_grid)
 	var hint := Label.new()
-	hint.text = "Liv.   −  Rimasti / max  +     (doppio clic sul massimo)"
+	hint.text = "Liv.   −  +  Rimasti / max     (doppio clic sul massimo)"
 	hint.add_theme_font_size_override("font_size", 12)
 	_slot_grid.add_child(hint)
 	for lvl: int in range(1, 10):
-		# Match the consumable tracker rows: − then current/max = (base bonus), then +.
+		# Match consumable trackers: −, +, then remaining / max (base and bonus).
 		var row := HBoxContainer.new()
 		row.add_theme_constant_override("separation", 5)
 		row.size_flags_horizontal = Control.SIZE_SHRINK_BEGIN
@@ -346,7 +346,7 @@ func setup(
 		recharge.tooltip_text = "Ricarica uno slot di livello %d" % lvl
 		recharge.pressed.connect(_change_slot.bind(lvl, -1))
 		row.add_child(recharge)
-		row.move_child(recharge, formula.get_index() + 1)
+		row.move_child(recharge, use.get_index() + 1)
 		_slot_recharge[lvl] = recharge
 
 	var pact_header := HBoxContainer.new()
@@ -428,9 +428,9 @@ func setup(
 	_pact_row.add_child(_pact_restore)
 	_pact_use.text = "−"
 	_pact_row.move_child(_pact_use, level_group.get_index() + 1)
-	_pact_row.move_child(_pact_remain, _pact_use.get_index() + 1)
+	_pact_row.move_child(_pact_restore, _pact_use.get_index() + 1)
+	_pact_row.move_child(_pact_remain, _pact_restore.get_index() + 1)
 	_pact_row.move_child(total_group, _pact_remain.get_index() + 1)
-	_pact_row.move_child(_pact_restore, total_group.get_index() + 1)
 
 	_apply_resource_visibility()
 	_update_resource_labels()
