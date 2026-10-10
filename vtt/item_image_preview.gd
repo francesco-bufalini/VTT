@@ -18,6 +18,8 @@ static func _image_href(value: Variant) -> String:
 		var info: Dictionary = value as Dictionary
 		if info.has("href"):
 			return _image_href(info["href"])
+		if info.has("images"):
+			return _image_href(info["images"])
 		if String(info.get("type", "")) == "external":
 			return String(info.get("url", ""))
 		return String(info.get("path", info.get("url", ""))).strip_edges()
@@ -68,6 +70,11 @@ static func image_source(item: Dictionary) -> String:
 	if String(item.get("origin", "")) == "homebrew":
 		if ".." in source:
 			return ""
+		var package_path: String = String(item.get("asset_dir", ""))
+		if package_path.begins_with("user://") or package_path.begins_with("res://"):
+			var beside_json: String = package_path.path_join(source)
+			if FileAccess.file_exists(beside_json) or ResourceLoader.exists(beside_json):
+				return beside_json
 		for folder: String in ["user://homebrew", "res://homebrew"]:
 			var candidate: String = folder.path_join(source)
 			if FileAccess.file_exists(candidate) or ResourceLoader.exists(candidate):
