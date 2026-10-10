@@ -32,6 +32,7 @@ var _feat_search: LineEdit
 var _feat_options: ItemList
 var _feat_owned: ItemList
 var _entry_text: LineEdit
+var _manual_origin: LineEdit
 
 
 func setup(on_change: Callable) -> void:
@@ -113,6 +114,13 @@ func setup(on_change: Callable) -> void:
 	description.autowrap_mode = TextServer.AUTOWRAP_WORD_SMART
 	description.text = "Prima le fonti suggerite dai campi strutturati; puoi associare anche un altro tratto, senza attribuirgli automaticamente competenze."
 	origin_col.add_child(description)
+	_manual_origin = LineEdit.new()
+	_manual_origin.placeholder_text = "Origine personalizzata (facoltativa)"
+	origin_col.add_child(_manual_origin)
+	var custom_origin := Button.new()
+	custom_origin.text = "Associa origine personalizzata"
+	custom_origin.pressed.connect(_assign_manual_origin)
+	origin_col.add_child(custom_origin)
 
 	var rule := HSeparator.new()
 	add_child(rule)
@@ -315,6 +323,20 @@ func _on_origin_selected(option: int) -> void:
 	_publish(i)
 
 
+func _assign_manual_origin() -> void:
+	var selected: PackedInt32Array = _owned.get_selected_items()
+	if selected.is_empty() or selected[0] >= _rows.size():
+		return
+	var name := _manual_origin.text.strip_edges()
+	if name.is_empty():
+		return
+	var i: int = selected[0]
+	_rows[i]["origin_id"] = "custom|" + name.to_lower().uri_encode()
+	_rows[i]["origin_name"] = name
+	_manual_origin.clear()
+	_publish(i)
+
+
 func _add_choice() -> void:
 	var kind := _current_kind()
 	var key := _entry_text.text.strip_edges().to_lower()
@@ -398,7 +420,10 @@ func _update_status() -> void:
 	_status.text = ("• %d competenze senza origine" % unattached if unattached > 0 else "Origini associate")
 	if not missing.is_empty():
 		_status.text += "   ·   %d competenze iniziali da verificare" % missing.size()
-	_status.tooltip_text = "Le competenze iniziali mancanti sono suggerimenti, non vengono assegnate automaticamente."
+	var explanation := PackedStringArray(["I suggerimenti derivano solo da campi strutturati; nessuna competenza è aggiunta automaticamente."])
+	for item: Dictionary in missing:
+		explanation.append("%s · %s (%s)" % [item.get("kind", ""), item.get("key", ""), item.get("origin", "")])
+	_status.tooltip_text = "\n".join(explanation)
 
 
 func _publish(selected_index: int = -1) -> void:
