@@ -393,7 +393,7 @@ func _refresh_competences() -> void:
 		label.clip_text = true
 		var mastered: bool = kind == "skill" and _effective_expertise(key, enabled)
 		label.text = ("✓ " if active else "○ ") + key + (" 🎓🎓" if mastered else "")
-		label.tooltip_text = "Origini: " + ", ".join(linked)
+		label.tooltip_text = "Origini:\n" + "\n".join(linked)
 		box.add_child(label)
 		if kind == "skill":
 			var expert := CheckButton.new()
