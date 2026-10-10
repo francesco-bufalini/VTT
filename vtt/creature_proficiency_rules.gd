@@ -150,7 +150,8 @@ static func candidate_sources(record: Dictionary) -> Array[Dictionary]:
 						row_mode = "multiclass"
 			var stable_id := group + "|" + source.to_lower() + "|" + name.to_lower()
 			candidates.append({
-				"id": stable_id, "name": _origin_title(group, name, row_mode),
+				"id": stable_id,
+				"name": _origin_title(group, name, row_mode) + " · " + source,
 				"group": group, "data": row, "mode": row_mode
 			})
 	return candidates
@@ -168,7 +169,12 @@ static func _selected_source(record: Dictionary, group: String, name: String, so
 		"race", "subrace":
 			return String(record.get("species", "")).nocasecmp_to(name) == 0 and String(record.get("species_source", "")) == source
 		"background":
-			return String(record.get("background", "")).nocasecmp_to(name) == 0 and String(record.get("background_source", "")) == source
+			if String(record.get("background", "")).nocasecmp_to(name) != 0:
+				return false
+			# Free-form older sheets may not store a book. Offer all structured
+			# candidates with their source visible, never silently pick one.
+			var selected_book := String(record.get("background_source", ""))
+			return selected_book.is_empty() or selected_book == source
 		"feat":
 			var list: Variant = record.get("feats_catalog", [])
 			if list is Array:
@@ -243,7 +249,12 @@ static func grant_matches(grants: Variant, kind: String, key: String) -> int:
 			var options: Variant = choose.get("from", [])
 			if options is Array and wanted in options:
 				best = maxi(best, 1)
-			# fromFilter selects individual items, never a whole category.
+			# A structured filter can offer individual martial weapons,
+			# but cannot grant proficiency with the entire category.
+			var filter_text := String(choose.get("fromFilter", "")).to_lower()
+			if kind == "weapon" and wanted not in ["simple", "martial", "all"]:
+				if "type=martial weapon" in filter_text and _weapon_group(wanted) == "martial":
+					best = maxi(best, 1)
 			if options is Array and options.is_empty() and choose.has("any"):
 				best = maxi(best, 1)
 		if value.has("any") or (kind == "skill" and value.has("anyProficientSkill")):
@@ -281,10 +292,33 @@ static func _language_group(key: String) -> String:
 	return fallback
 
 
+static func _weapon_group(key: String) -> String:
+	if key in ["simple", "martial"]:
+		return key
+	var fallback := ""
+	for item: Dictionary in Catalog.entries("items"):
+		if normalized_key(String(item.get("name", ""))) != key:
+			continue
+		if String(item.get("type", "")).split("|")[0].to_upper() not in ["M", "R"]:
+			continue
+		var category := normalized_key(String(item.get("weapon_category", "")))
+		if category not in ["simple", "martial"]:
+			continue
+		if String(item.get("source", "")) == "PHB":
+			return category
+		if fallback.is_empty():
+			fallback = category
+	return fallback
+
+
 static func suggest_origins(record: Dictionary, kind: String, key: String) -> Array[Dictionary]:
 	var matches: Array[Dictionary] = []
+	var group := _weapon_group(normalized_key(key)) if kind == "weapon" else ""
 	for candidate: Dictionary in candidate_sources(record):
-		var matching := grant_matches(_grants_data(candidate, kind), kind, key)
+		var grants: Variant = _grants_data(candidate, kind)
+		var matching := grant_matches(grants, kind, key)
+		if matching == 0 and kind == "weapon" and not group.is_empty() and group != normalized_key(key):
+			matching = grant_matches(grants, kind, group)
 		if matching > 0:
 			var row := candidate.duplicate(false)
 			row.erase("data")
