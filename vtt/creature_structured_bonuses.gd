@@ -3,13 +3,14 @@ extends RefCounted
 # Numeric 5etools mechanics only. Never interpret descriptive prose as a grant.
 # Stable IDs let the sheet disable a specific automatic grant without freezing
 # the value in the save file. Source removal automatically withdraws the grant.
-const Catalog = preload("res://vtt/player_5etools_catalog.gd")
+const ABILITY_GRANTS_PATH := "res://vtt/data/structured_ability_grants_5etools.json"
 const Items = preload("res://vtt/creature_item_rules.gd")
 const Traits = preload("res://vtt/creature_traits_tab.gd")
 const Skills = preload("res://vtt/creature_skills_5etools.gd")
 const ABILITIES := ["str", "dex", "con", "int", "wis", "cha"]
 static var _cached_signature := ""
 static var _cached_results: Array[Dictionary] = []
+static var _ability_index: Dictionary = {}
 
 
 static func _field(entry: Dictionary, snake: String, camel: String = "") -> Variant:
@@ -44,17 +45,25 @@ static func _add(result: Array[Dictionary], sid: String, label: String, field: S
 static func _ability_grants(result: Array[Dictionary], sid: String, label: String, data: Dictionary) -> void:
 	var raw: Variant = data.get("ability", [])
 	var options: Array = raw if raw is Array else [raw]
+	var fixed: Dictionary = {}
+	var first := true
 	for item: Variant in options:
 		if not item is Dictionary:
-			continue
-		var row: Dictionary = item
-		# 5etools 'choose' and weighted choices require a player decision.
-		# Do not treat the possible selections as simultaneously granted.
-		if row.has("choose"):
-			continue
+			return
+		var option: Dictionary = item
+		var current: Dictionary = {}
 		for stat: String in ABILITIES:
-			if row.has(stat):
-				_add(result, sid, label, "ability", "ability:" + stat, row[stat])
+			if option.has(stat) and (option[stat] is int or option[stat] is float):
+				current[stat] = option[stat]
+		if first:
+			fixed = current
+			first = false
+		else:
+			for stat: String in fixed.keys():
+				if not current.has(stat) or current[stat] != fixed[stat]:
+					fixed.erase(stat)
+	for stat: String in fixed.keys():
+		_add(result, sid, label, "ability", "ability:" + stat, fixed[stat])
 
 
 static func _item_grants(result: Array[Dictionary], record: Dictionary) -> void:
@@ -127,34 +136,63 @@ static func _item_grants(result: Array[Dictionary], record: Dictionary) -> void:
 		]:
 			_add(result, sid, label, String(mapping.field), String(mapping.target),
 				_field(entry, String(mapping.field), String(mapping.camel)))
-		_ability_grants(result, sid, label, entry)
+		# Item ability fields may SET a score (giant-strength belts), not add.
+		# Only explicitly additive item metadata can produce formula bonuses.
+		var additive_ability: Variant = _field(entry, "bonus_ability", "bonusAbility")
+		if additive_ability is Dictionary:
+			_ability_grants(result, sid, label, {"ability": additive_ability})
+
+
+static func _load_ability_index() -> void:
+	if not _ability_index.is_empty():
+		return
+	var file: FileAccess = FileAccess.open(ABILITY_GRANTS_PATH, FileAccess.READ)
+	if file == null:
+		return
+	var raw: Variant = JSON.parse_string(file.get_as_text())
+	file.close()
+	if raw is Dictionary:
+		_ability_index = raw
 
 
 static func _catalog_origins(result: Array[Dictionary], record: Dictionary) -> void:
-	var candidates: Array[Dictionary] = []
+	_load_ability_index()
 	var species: String = String(record.get("species", ""))
 	var species_book: String = String(record.get("species_source", ""))
-	for source: Dictionary in Catalog.entries("races"):
-		if String(source.get("name", "")).nocasecmp_to(species) == 0 and String(source.get("source", "")) == species_book:
-			candidates.append({"group": "race", "data": source})
+	var parent_name := ""
+	var parent_book := ""
+	if not species.is_empty():
+		for row: Dictionary in _ability_index.get("subrace", []):
+			var label: String = String(row.get("raceName", "")) + " (" + String(row.get("name", "")) + ")"
+			if species.nocasecmp_to(label) != 0 or String(row.get("source", "")) != species_book:
+				continue
+			parent_name = String(row.get("raceName", ""))
+			parent_book = String(row.get("raceSource", ""))
+			var sid: String = "subrace|" + species_book.to_lower() + "|" + String(row.get("name", "")).to_lower()
+			_ability_grants(result, sid, "Sottorazza · " + String(row.get("name", "")), row)
+			break
+		for row: Dictionary in _ability_index.get("race", []):
+			var is_base: bool = String(row.get("name", "")).nocasecmp_to(species) == 0 and String(row.get("source", "")) == species_book
+			var is_parent: bool = not parent_name.is_empty() and String(row.get("name", "")).nocasecmp_to(parent_name) == 0 and String(row.get("source", "")) == parent_book
+			if is_base or is_parent:
+				var sid: String = "race|" + String(row.get("source", "")).to_lower() + "|" + String(row.get("name", "")).to_lower()
+				_ability_grants(result, sid, "Specie · " + String(row.get("name", "")), row)
 	var background: String = String(record.get("background", ""))
 	var background_book: String = String(record.get("background_source", ""))
-	for source: Dictionary in Catalog.entries("backgrounds"):
-		if String(source.get("name", "")).nocasecmp_to(background) == 0 and (background_book.is_empty() or String(source.get("source", "")) == background_book):
-			candidates.append({"group": "background", "data": source})
+	if not background.is_empty():
+		for row: Dictionary in _ability_index.get("background", []):
+			if String(row.get("name", "")).nocasecmp_to(background) != 0 or (not background_book.is_empty() and String(row.get("source", "")) != background_book):
+				continue
+			var sid: String = "background|" + String(row.get("source", "")).to_lower() + "|" + String(row.get("name", "")).to_lower()
+			_ability_grants(result, sid, "Background · " + String(row.get("name", "")), row)
 	var selected: Variant = record.get("feats_catalog", [])
 	if selected is Array and not (selected as Array).is_empty():
-		for source: Dictionary in Catalog.entries("feats"):
+		for row: Dictionary in _ability_index.get("feat", []):
 			for feat: Variant in selected:
-				if feat is Dictionary and String(source.get("name", "")).nocasecmp_to(String(feat.get("name", ""))) == 0 and String(source.get("source", "")) == String(feat.get("source", "")):
-					candidates.append({"group": "feat", "data": source})
+				if feat is Dictionary and String(row.get("name", "")).nocasecmp_to(String(feat.get("name", ""))) == 0 and String(row.get("source", "")) == String(feat.get("source", "")):
+					var sid: String = "feat|" + String(row.get("source", "")).to_lower() + "|" + String(row.get("name", "")).to_lower()
+					_ability_grants(result, sid, "Talento · " + String(row.get("name", "")), row)
 					break
-	for choice: Dictionary in candidates:
-		var group: String = String(choice.group)
-		var data: Dictionary = choice.data
-		var sid: String = group + "|" + String(data.get("source", "")).to_lower() + "|" + String(data.get("name", "")).to_lower()
-		var label: String = String(data.get("name", ""))
-		_ability_grants(result, sid, label, data)
 
 
 static func derive(record: Dictionary) -> Array[Dictionary]:
