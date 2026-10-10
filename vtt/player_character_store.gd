@@ -189,6 +189,8 @@ func create_character() -> Dictionary:
 		"death_save_successes": 0,
 		"death_save_failures": 0,
 		"attacks": "",
+		"attack_ability": "str",
+		"attack_overrides": {},
 		"documents": [],
 		"ammunition": "",
 		"armor_proficiencies": "",
@@ -393,6 +395,8 @@ func normalize_character(value: Dictionary) -> Dictionary:
 		defaults["current_miniature_id"] = String(defaults.get("default_miniature_id", ""))
 	defaults["size_name"] = String(defaults.get("size_name", "Medium"))
 	defaults["footprint"] = maxf(0.5, float(defaults.get("footprint", 1.0)))
+	defaults["attack_ability"] = "dex" if String(value.get("attack_ability", "str")) == "dex" else "str"
+	defaults["attack_overrides"] = value.get("attack_overrides", {}).duplicate(true) if value.get("attack_overrides", {}) is Dictionary else {}
 	defaults["reach_feet"] = maxf(5.0, float(defaults.get("reach_feet", 5.0)))
 	defaults["visual_front_quarter_turns"] = clampi(int(defaults.get("visual_front_quarter_turns", 0)), 0, 3)
 	defaults["party_id"] = String(defaults.get("party_id", ""))

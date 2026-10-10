@@ -17,6 +17,7 @@ const InventoryTab = preload("res://vtt/creature_inventory_tab.gd")
 const TraitsTab = preload("res://vtt/creature_traits_tab.gd")
 const DialogLayout = preload("res://vtt/dialog_layout.gd")
 const Skills5e = preload("res://vtt/creature_skills_5etools.gd")
+const AttackData = preload("res://vtt/creature_attack_data.gd")
 const DocumentInbox = preload("res://vtt/document_inbox.gd")
 
 var board_root: Node3D
@@ -93,7 +94,10 @@ var _hp_dice_formula: LineEdit
 var _hp_quick_dice_row: HBoxContainer
 var _hp_formula_status: Label
 var _size_choice: OptionButton
-var _reach: SpinBox
+var _attack_ability: OptionButton
+var _attack_rows: VBoxContainer
+var _attack_hit_labels: Dictionary = {}
+var _attack_damage_labels: Dictionary = {}
 var _front: OptionButton
 var _party: LineEdit
 var _tabs: TabContainer
@@ -213,11 +217,6 @@ func sync_linked_token_editor(token: CharacterBody3D) -> void:
 			record["size_name"] = token.call("get_size_name")
 		if token.has_method("get_footprint_cells"):
 			record["footprint"] = token.call("get_footprint_cells")
-		if token.has_method("get_reach_feet"):
-			var token_reach: float = float(token.call("get_reach_feet"))
-			if String(record.get("kind", "")) == "monster" and absf(token_reach - float(record.get("reach_feet", 5.0))) > 0.01:
-				record["reach_is_custom"] = true
-			record["reach_feet"] = token_reach
 		if token.has_method("get_visual_front_quarter_turns"):
 			record["visual_front_quarter_turns"] = token.call("get_visual_front_quarter_turns")
 		if token.has_method("get_party_id"):
@@ -515,11 +514,11 @@ func _build_ui() -> void:
 	statistics_tab.add_child(_statistics_columns)
 	var skills_column := VBoxContainer.new()
 	skills_column.size_flags_horizontal = Control.SIZE_EXPAND_FILL
-	skills_column.size_flags_stretch_ratio = 1.0
+	skills_column.size_flags_stretch_ratio = 0.75
 	_statistics_columns.add_child(skills_column)
 	var combat_column := VBoxContainer.new()
 	combat_column.size_flags_horizontal = Control.SIZE_EXPAND_FILL
-	combat_column.size_flags_stretch_ratio = 1.0
+	combat_column.size_flags_stretch_ratio = 1.75
 	_statistics_columns.add_child(combat_column)
 	var appearance_tab := _add_sheet_tab(_tabs, "Aspetto")
 	var traits_tab := _add_sheet_tab(_tabs, "Tratti")
@@ -682,13 +681,6 @@ func _build_ui() -> void:
 	_ac_bonus.tooltip_text = "Bonus manuale alla Classe Armatura"
 	ManualBonus.decorate(_ac_bonus)
 	_add_formula_label(temp_health, ")")
-	var reach_row := HBoxContainer.new()
-	reach_row.add_theme_constant_override("separation", 6)
-	defense_flow.add_child(reach_row)
-	_add_label(reach_row, "📏 Gittata base (ft)")
-	_reach = _spin(reach_row, 5, 1000)
-	_reach.step = 5.0
-	_reach.custom_minimum_size.x = 70
 	_ac.size_flags_horizontal = Control.SIZE_SHRINK_BEGIN
 	var movement_row := HBoxContainer.new()
 	movement_row.add_theme_constant_override("separation", 6)
@@ -828,9 +820,22 @@ func _build_ui() -> void:
 		row.add_child(modifier_label)
 		_skill_values[key] = modifier_label
 	var attack_header := Label.new()
-	attack_header.text = "⚔ Attacchi e azioni disponibili"
+	attack_header.text = "⚔ Attacchi disponibili"
 	attack_header.add_theme_font_size_override("font_size", 16)
 	combat_column.add_child(attack_header)
+	var preference_row := HBoxContainer.new()
+	preference_row.add_theme_constant_override("separation", 8)
+	combat_column.add_child(preference_row)
+	_add_label(preference_row, "Caratteristica attacchi")
+	_attack_ability = OptionButton.new()
+	_attack_ability.add_item("Forza")
+	_attack_ability.add_item("Destrezza")
+	_attack_ability.tooltip_text = "Cambia il modificatore degli attacchi e dei danni. I valori fissi del bestiario includono già la competenza."
+	_attack_ability.item_selected.connect(_on_attack_ability_changed)
+	preference_row.add_child(_attack_ability)
+	_attack_rows = VBoxContainer.new()
+	_attack_rows.add_theme_constant_override("separation", 7)
+	combat_column.add_child(_attack_rows)
 	_attacks_description = RichTextLabel.new()
 	_attacks_description.custom_minimum_size.y = 160
 	_attacks_description.fit_content = true
@@ -1858,7 +1863,7 @@ func _update_sheet_layout() -> void:
 	# Cap it to the pixels physically available before deciding to split.
 	var physical_width: float = viewport_size.x - _tabs.get_global_rect().position.x - 30.0
 	var tab_width: float = minf(_tabs.size.x, maxf(0.0, physical_width))
-	_statistics_columns.columns = 2 if tab_width >= 850.0 else 1
+	_statistics_columns.columns = 2 if tab_width >= 960.0 else 1
 	var cell_width: float = (_abilities_grid.get_child(0) as Control).get_combined_minimum_size().x
 	var gap_width: float = _abilities_grid.get_theme_constant("h_separation")
 	_abilities_grid.columns = (
@@ -1919,6 +1924,7 @@ func _load_form(record: Dictionary) -> void:
 			else 1 if known_proficiencies is Array and key in known_proficiencies
 			else 0
 		)
+	_attack_ability.select(1 if String(record.get("attack_ability", "str")) == "dex" else 0)
 	_refresh_attacks(record)
 	var abilities_value: Variant = record.get("abilities", {})
 	var abilities: Dictionary = (
@@ -2010,7 +2016,6 @@ func _load_form(record: Dictionary) -> void:
 	_default_miniature.text = _miniature_display_name(_default_miniature_id)
 	_update_current_appearance_display(record)
 	_select_sheet_size(String(record.get("size_name", "Medium")))
-	_reach.value = float(record.get("reach_feet", 5.0))
 	_front.select(clampi(int(record.get("visual_front_quarter_turns", 0)), 0, 3))
 	_party.text = String(record.get("party_id", ""))
 	_default_miniature.tooltip_text = (
@@ -2175,45 +2180,152 @@ func _refresh_skill_values(record: Dictionary) -> void:
 
 
 func _refresh_attacks(record: Dictionary) -> void:
-	if _attacks_description == null:
+	if _attack_rows == null:
 		return
-	var lines: PackedStringArray = []
-	var stat: Dictionary = record.get("stat_block", {})
-	for section: String in ["action", "bonus", "reaction", "legendary", "mythic"]:
-		var entries: Variant = stat.get(section, [])
-		if not entries is Array:
+	_attack_hit_labels.clear()
+	_attack_damage_labels.clear()
+	for child: Node in _attack_rows.get_children():
+		_attack_rows.remove_child(child)
+		child.queue_free()
+	var summary: PackedStringArray = []
+	for attack: Dictionary in AttackData.definitions(record):
+		var attack_id: String = String(attack.get("id", ""))
+		if attack_id.is_empty():
 			continue
-		for raw: Variant in entries:
-			if not raw is Dictionary:
-				continue
-			var action: Dictionary = raw as Dictionary
-			if String(action.get("name", "")).is_empty():
-				continue
-			lines.append(FiveToolsText.section(section.capitalize()) + "\n" + FiveToolsText.blocks(action))
-	var owned: Variant = record.get("inventory", [])
-	if owned is Array and not (owned as Array).is_empty():
-		var ids: Dictionary = {}
-		for item: Variant in owned:
-			if item is Dictionary:
-				ids[String((item as Dictionary).get("id", ""))] = true
-		for item: Dictionary in Player5eTools.entries("items"):
-			if ids.has(String(item.get("id", ""))) and not String(item.get("weapon_category", "")).is_empty():
-				lines.append(FiveToolsText.subtitle(String(item.get("name", ""))) + " · arma nell'inventario")
-	if String(record.get("kind", "")) != "monster":
-		var abilities: Dictionary = record.get("abilities", {})
-		var bonuses: Dictionary = record.get("ability_bonuses", {})
-		var strength: int = Rules.ability_modifier(
-			int(abilities.get("str", 10)) + int(bonuses.get("str", 0))
-		)
-		var hit_bonus: int = strength + _creature_proficiency(record)
-		lines.insert(0,
-			FiveToolsText.subtitle("Colpo senz'armi")
-			+ " · Mischia, portata 5 ft; colpire %+d; danni contundenti %d"
-			% [hit_bonus, maxi(0, 1 + strength)]
-		)
-	if lines.is_empty():
-		lines.append("Nessun attacco del bestiario o arma nell'inventario.")
-	_attacks_description.text = "\n\n".join(lines)
+		var card := PanelContainer.new()
+		card.size_flags_horizontal = Control.SIZE_EXPAND_FILL
+		_attack_rows.add_child(card)
+		var box := VBoxContainer.new()
+		box.add_theme_constant_override("separation", 4)
+		card.add_child(box)
+		var header := HFlowContainer.new()
+		header.add_theme_constant_override("h_separation", 8)
+		box.add_child(header)
+		var name_label := Label.new()
+		name_label.text = "⚔ " + String(attack.get("name", "Attacco"))
+		name_label.size_flags_horizontal = Control.SIZE_EXPAND_FILL
+		name_label.clip_text = true
+		header.add_child(name_label)
+		var hit_label := Label.new()
+		header.add_child(hit_label)
+		_attack_hit_labels[attack_id] = hit_label
+		var damage_label := Label.new()
+		damage_label.autowrap_mode = TextServer.AUTOWRAP_WORD_SMART
+		box.add_child(damage_label)
+		_attack_damage_labels[attack_id] = damage_label
+		var settings := HFlowContainer.new()
+		settings.add_theme_constant_override("h_separation", 6)
+		settings.add_theme_constant_override("v_separation", 3)
+		box.add_child(settings)
+		_add_label(settings, "📏 Gittata (ft)")
+		var distance := SpinBox.new()
+		distance.min_value = 5
+		distance.max_value = 1000
+		distance.step = 5
+		distance.rounded = true
+		distance.custom_minimum_size.x = 82
+		distance.tooltip_text = "Portata o gittata di questo attacco, indipendente dalle altre armi"
+		distance.set_value_no_signal(AttackData.range_for(record, attack))
+		distance.value_changed.connect(_on_attack_range_changed.bind(attack_id))
+		settings.add_child(distance)
+		_add_label(settings, "Bonus")
+		var extra := SpinBox.new()
+		extra.min_value = -99
+		extra.max_value = 99
+		extra.rounded = true
+		extra.custom_minimum_size.x = 75
+		extra.tooltip_text = "Bonus manuale di questo attacco, oltre a competenza e caratteristica"
+		ManualBonus.decorate(extra)
+		var overrides: Dictionary = AttackData.override_for(record, attack_id)
+		extra.set_value_no_signal(int(overrides.get("bonus", 0)))
+		extra.value_changed.connect(_on_attack_bonus_changed.bind(attack_id))
+		settings.add_child(extra)
+		if String(record.get("kind", "")) == "monster" and String(attack.get("source", "")) != "item":
+			var fixed := Label.new()
+			fixed.text = "Competenza inclusa (bestiario)"
+			fixed.tooltip_text = "Il bonus al tiro per colpire pubblicato da 5etools include già la competenza"
+			settings.add_child(fixed)
+		elif attack_id == "unarmed":
+			var trained := Label.new()
+			trained.text = "✓ Competente"
+			settings.add_child(trained)
+		else:
+			var proficiency := CheckBox.new()
+			proficiency.text = "Competenza"
+			proficiency.button_pressed = bool(overrides.get("proficient", attack.get("proficient", false)))
+			proficiency.toggled.connect(_on_attack_proficiency_changed.bind(attack_id))
+			settings.add_child(proficiency)
+		if attack.has("raw"):
+			var original_caption := Label.new()
+			original_caption.text = "Testo originale 5etools (bonus non modificati)"
+			original_caption.add_theme_font_size_override("font_size", 11)
+			box.add_child(original_caption)
+			var details := RichTextLabel.new()
+			details.custom_minimum_size.y = 48
+			details.fit_content = true
+			details.scroll_active = false
+			FiveToolsText.style(details)
+			details.text = FiveToolsText.blocks(attack.get("raw", {}))
+			box.add_child(details)
+		summary.append(String(attack.get("name", "Attacco")))
+	_attacks_description.text = "\n".join(summary) if not summary.is_empty() else "Nessun attacco disponibile."
+	# The individual cards contain all the details; avoid showing duplicate text.
+	_attacks_description.hide()
+	_refresh_attack_values(record)
+
+
+func _refresh_attack_values(record: Dictionary) -> void:
+	for attack: Dictionary in AttackData.definitions(record):
+		var attack_id: String = String(attack.get("id", ""))
+		if not _attack_hit_labels.has(attack_id):
+			continue
+		var hit: int = AttackData.attack_bonus(record, attack, _creature_proficiency(record))
+		if String(record.get("kind", "")) == "monster" and String(attack.get("source", "")) != "item" and not bool(attack.get("hit_known", false)):
+			(_attack_hit_labels[attack_id] as Label).text = "Colpire: n.d."
+		else:
+			(_attack_hit_labels[attack_id] as Label).text = "Colpire %+d" % hit
+		(_attack_damage_labels[attack_id] as Label).text = "Danni: " + AttackData.damage_label(record, attack)
+
+
+func _on_attack_ability_changed(_index: int) -> void:
+	if _loading:
+		return
+	_save()
+
+
+func _on_attack_range_changed(value: float, attack_id: String) -> void:
+	_save_attack_setting(attack_id, "range_feet", int(value))
+
+
+func _on_attack_bonus_changed(value: float, attack_id: String) -> void:
+	_save_attack_setting(attack_id, "bonus", int(value))
+
+
+func _on_attack_proficiency_changed(enabled: bool, attack_id: String) -> void:
+	_save_attack_setting(attack_id, "proficient", enabled)
+
+
+func _save_attack_setting(attack_id: String, setting: String, value: Variant) -> void:
+	if _loading:
+		return
+	var record: Dictionary = _current()
+	if record.is_empty():
+		return
+	var updated: Dictionary = record.get("attack_overrides", {}).duplicate(true)
+	var attack_settings: Dictionary = updated.get(attack_id, {})
+	attack_settings[setting] = value
+	updated[attack_id] = attack_settings
+	record["attack_overrides"] = updated
+	record["reach_feet"] = AttackData.max_melee_range(record)
+	if String(record.get("kind", "")) == "monster":
+		record["reach_is_custom"] = true
+	var error: Error = _archive.save(record)
+	if error != OK:
+		_set_status("Impossibile salvare attacco: " + error_string(error))
+		return
+	_replace_current_record(record)
+	_refresh_attack_values(record)
+	_apply_sheet_properties(record)
 
 
 func _update_defense_display() -> void:
@@ -2277,12 +2389,16 @@ func _on_inventory_updated(inventory: Array) -> void:
 	if record.is_empty():
 		return
 	record["inventory"] = inventory.duplicate(true)
+	record["reach_feet"] = AttackData.max_melee_range(record)
+	if String(record.get("kind", "")) == "monster":
+		record["reach_is_custom"] = true
 	var error: Error = _archive.save(record)
 	if error != OK:
 		_set_status("Impossibile salvare inventario: " + error_string(error))
 		return
 	_replace_current_record(record)
 	_refresh_attacks(record)
+	_apply_sheet_properties(record)
 
 
 func _on_ability_value_changed(_value: float, ability: String) -> void:
@@ -2337,12 +2453,6 @@ func _save() -> void:
 	record["background_personality"] = _biography.text
 	record["size_name"] = _size_choice.get_item_text(_size_choice.selected)
 	record["footprint"] = _selected_size_footprint()
-	if (
-		String(record.get("kind", "")) == "monster"
-		and absf(float(_reach.value) - float(record.get("reach_feet", 5.0))) > 0.01
-	):
-		record["reach_is_custom"] = true
-	record["reach_feet"] = float(_reach.value)
 	record["visual_front_quarter_turns"] = _front.selected
 	record["party_id"] = _party.text.strip_edges()
 	record["armor_class_base"] = int(_ac.value)
@@ -2363,6 +2473,10 @@ func _save() -> void:
 	for ability: String in _ability_bonus_spins.keys():
 		ability_bonuses[ability] = int((_ability_bonus_spins[ability] as SpinBox).value)
 	record["ability_bonuses"] = ability_bonuses
+	record["attack_ability"] = "dex" if _attack_ability.selected == 1 else "str"
+	record["reach_feet"] = AttackData.max_melee_range(record)
+	if String(record.get("kind", "")) == "monster":
+		record["reach_is_custom"] = true
 	var proficient: Array[String] = []
 	var expertise: Array[String] = []
 	for key: String in _skill_ranks.keys():
@@ -2473,6 +2587,7 @@ func _save() -> void:
 		return
 	_replace_current_record(record)
 	_refresh_skill_values(record)
+	_refresh_attack_values(record)
 	_sync_token_health(record)
 	_apply_sheet_properties(record)
 	# A visible sheet follows current level and race/class immediately.
@@ -3243,8 +3358,6 @@ func ensure_sheet_for_token(token: Node3D, locally_created: bool = false) -> voi
 			record["size_name"] = token.call("get_size_name")
 		if token.has_method("get_footprint_cells"):
 			record["footprint"] = token.call("get_footprint_cells")
-		if token.has_method("get_reach_feet"):
-			record["reach_feet"] = token.call("get_reach_feet")
 		if token.has_method("get_visual_front_quarter_turns"):
 			record["visual_front_quarter_turns"] = token.call("get_visual_front_quarter_turns")
 		if token.has_method("get_party_id"):
@@ -3495,7 +3608,6 @@ func _confirm_miniature() -> void:
 				var footprint := maxf(0.5, float(profile.get("footprint", 1.0)))
 				record["size_name"] = size_name
 				record["footprint"] = footprint
-				record["reach_feet"] = maxf(5.0, footprint * 5.0)
 				break
 	if _archive.save(record) != OK:
 		_set_status("Impossibile salvare la miniatura della creatura.")
