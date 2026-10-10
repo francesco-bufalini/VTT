@@ -399,11 +399,11 @@ func _refresh_origin_picker() -> void:
 	_origin_picker.clear()
 	_origin_picker.add_item("Origine personalizzata")
 	_origin_picker.set_item_metadata(0, {"name": "", "id": ""})
-	for trait: Dictionary in Traits.collect_features(_effective_record()):
-		_origin_picker.add_item("Tratto · " + String(trait.get("name", "")))
+	for feature_entry: Dictionary in Traits.collect_features(_effective_record()):
+		_origin_picker.add_item("Tratto · " + String(feature_entry.get("name", "")))
 		_origin_picker.set_item_metadata(_origin_picker.item_count - 1, {
-			"id": "feature:" + String(trait.get("key", "")),
-			"name": "Tratto · " + String(trait.get("name", ""))
+			"id": "feature:" + String(feature_entry.get("key", "")),
+			"name": "Tratto · " + String(feature_entry.get("name", ""))
 		})
 	var inv: Variant = _record.get("inventory", [])
 	if inv is Array:
