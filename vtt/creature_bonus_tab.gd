@@ -372,21 +372,19 @@ func _refresh_bonuses() -> void:
 			_bonus_cards.add_child(card)
 			var style := StyleBoxFlat.new()
 			style.bg_color = Color(0.13, 0.12, 0.12, 0.88)
-			style.border_color = (Color(0.79, 0.66, 0.43, 0.78) if sid == _selected_origin and active else Color(0.36, 0.31, 0.27, 0.75))
-			style.set_border_width_all(1)
+			var selected_source: bool = sid == _selected_origin
+			style.border_color = (Color(0.40, 0.72, 0.91, 1.0)
+				if selected_source else Color(0.36, 0.31, 0.27, 0.75))
+			style.set_border_width_all(2 if selected_source else 1)
 			style.set_corner_radius_all(5)
 			style.set_content_margin_all(7)
 			card.add_theme_stylebox_override("panel", style)
 			var line := HBoxContainer.new()
 			line.add_theme_constant_override("separation", 5)
 			card.add_child(line)
-			var name := Label.new()
-			name.text = _origin_label(sid)
-			name.tooltip_text = _origin_description(sid)
-			name.custom_minimum_size.x = 88
-			name.size_flags_horizontal = Control.SIZE_EXPAND_FILL
-			name.clip_text = true
-			line.add_child(name)
+			# The source is shown once, in the left column. The card's
+			# outline links this bonus to the selected origin instead.
+			card.tooltip_text = _origin_description(sid)
 			var expression := LineEdit.new()
 			expression.text = String(grant.get("expression", "0"))
 			expression.custom_minimum_size.x = 70
@@ -415,7 +413,7 @@ func _refresh_bonuses() -> void:
 				var spacer := Control.new()
 				spacer.custom_minimum_size.x = 29
 				line.add_child(spacer)
-			if not active:
+			if not active and not selected_source:
 				card.modulate.a = 0.55
 
 
