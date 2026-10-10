@@ -34,6 +34,7 @@ def build(offline=False, refresh=False):
 
     subclasses = {}
     features = {}
+    feature_raws = {}
     class_index = read("class/index.json")
     for key, filename in sorted(class_index.items()):
         if key in ("mystic", "sidekick"):
@@ -72,6 +73,7 @@ def build(offline=False, refresh=False):
             row_id = "5etools:subclass_features:" + encode(
                 [class_name, class_source, short_name, subclass_source, level, source, name]
             )
+            feature_raws[row_id] = raw
             features[row_id] = {
                 "id": row_id,
                 "name": name,
@@ -84,6 +86,35 @@ def build(offline=False, refresh=False):
                 "entries": raw.get("entries", []),
                 "origin": "5etools",
             }
+
+    # Resolve 5etools inheritance: newer-edition records frequently use
+    # _copy rather than repeating the structured feature text.
+    def inherited_entries(feature_id, seen=None):
+        seen = set() if seen is None else seen
+        if feature_id in seen or feature_id not in features:
+            return []
+        seen.add(feature_id)
+        feature = features[feature_id]
+        if feature["entries"]:
+            return feature["entries"]
+        raw = feature_raws[feature_id]
+        copy = raw.get("_copy", {})
+        if not copy:
+            return []
+        target = "5etools:subclass_features:" + encode([
+            copy.get("className", raw.get("className", "")),
+            copy.get("classSource", raw.get("classSource", "")),
+            copy.get("subclassShortName", raw.get("subclassShortName", "")),
+            copy.get("subclassSource", raw.get("subclassSource", "")),
+            copy.get("level", raw.get("level", 0)),
+            copy.get("source", raw.get("source", "")),
+            copy.get("name", raw.get("name", "")),
+        ])
+        return inherited_entries(target, seen)
+
+    for feature_id, feature in features.items():
+        if not feature["entries"]:
+            feature["entries"] = inherited_entries(feature_id)
 
     full_names = {
         (row["class_name"].lower(), row["class_source"].lower(),
