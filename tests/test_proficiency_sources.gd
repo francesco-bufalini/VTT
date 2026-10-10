@@ -171,7 +171,21 @@ func run() -> void:
 		if String(row.get("origin_id", "")) == "class|phb|barbarian" and String(row.get("kind", "")) == "armor":
 			barbarian_armor.append(String(row.get("key", "")))
 	assert(barbarian_armor == ["shield"],
-		"Barbarian secondary starting trait grants shield but not starting light/medium armor")
+		"Barbarian secondary class grants only its multiclass shield training")
+	var monster_base := _record()
+	monster_base["kind"] = "monster"
+	monster_base["class"] = "mostro"
+	monster_base["class_source"] = "BESTIARY"
+	monster_base["classes"] = [
+		{"name": "mostro", "source": "BESTIARY", "level": 2},
+		{"name": "Barbarian", "source": "PHB", "level": 1}
+	]
+	var monster_multiclass_found := false
+	for source: Dictionary in Proficiencies.candidate_sources(monster_base):
+		if String(source.get("id", "")) == "class|phb|barbarian":
+			monster_multiclass_found = String(source.get("mode", "")) == "multiclass"
+	assert(monster_multiclass_found,
+		"Character classes added after a monster base must use Multiclass grants")
 	var revised := _record()
 	revised["rules_version"] = "2024"
 	revised["class"] = "Barbarian"
