@@ -38,6 +38,16 @@ Le voci 2014 mantengono le regole PHB e la geometria ricavata dalle rispettive c
 
 Test di regressione dedicati: `tests/test_content_layer_separation.gd` e `tests/test_item_instance_overrides.gd`. Anche `tests/test_content_catalog.gd`, `tests/test_spell_catalog_edition_geometry.gd`, `tests/test_inventory_quantities.gd` e `tests/test_equipped_weapons.gd` devono continuare a passare.
 
+## Documenti homebrew
+
+La nuova categoria **Documenti** (`documents`) è un'estensione del compendio del VTT. Come per gli altri homebrew, il testo appartiene alla **definizione** dell'oggetto: solo `name` e `description` sono i suoi dati descrittivi. La sorgente e l'ID sono metadati necessari per identificarlo. Il formato importabile accetta `_meta.sources` e un array `document` (vedi `homebrew/examples/document.json`); l'interfaccia salva automaticamente i nuovi documenti come file JSON separati in `user://homebrew/documents`. Diversamente da `item` o `spell`, `document` è una categoria aggiunta dal VTT e non fa parte dello schema ufficiale di 5etools.
+
+Ogni **istanza posseduta** risiede direttamente in `record.inventory`, con `category: "documents"`, riferimento stabile `id`, `added_at` (timestamp Unix), `instance_id` univoco e `display_style` (`pergamena` oppure `lettera`). Lo stile e la data non vengono scritti nel file del compendio. Una seconda copia dello stesso documento non si somma alla quantità della prima: mantiene data e visualizzazione proprie. Modificare nome o testo dall'editor aggiorna invece la definizione, quindi il cambiamento appare in tutte le copie collegate. I file homebrew forniti da altri pacchetti non vengono sovrascritti: le modifiche locali usano un override con ID stabile.
+
+La scheda **Documenti** dell'inventario mostra soltanto l'elenco con **Nuovo documento** ed **Elimina** (che rimuove la copia posseduta, non il file homebrew). Doppio clic per la finestra di lettura; all'interno si scelgono Pergamena/Lettera e **Modifica** apre l'editor a fianco dell'anteprima dal vivo. La visualizzazione Lettera non antepone più un'emoji al titolo. L'invio tra giocatori non è disponibile in questa interfaccia, in attesa della condivisione generica degli oggetti homebrew.
+
+Le vecchie schede che contengono `record.documents` vengono migrate quando si apre l'inventario: i testi diventano definizioni JSON e le copie diventano normali elementi di inventario. La proprietà `documents` viene rimossa dal salvataggio soltanto dopo che tutte le copie risultano migrate. La ricezione del vecchio inbox rimane supportata per compatibilità. Test: `tests/test_document_homebrew.gd`.
+
 ## Rebuilding upstream catalogs
 
 Do not edit generated JSON/GDScript catalogs by hand. Run:
