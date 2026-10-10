@@ -2477,7 +2477,8 @@ func _on_proficiencies_updated(rows: Array, feats: Array) -> void:
 	_refresh_skill_values(record)
 	_refresh_attacks(record)
 	_apply_sheet_properties(record)
-	_refresh_reference(record)
+	if _traits_ui != null:
+		_traits_ui.call("load_record", record)
 
 
 func _on_inventory_updated(inventory: Array) -> void:
