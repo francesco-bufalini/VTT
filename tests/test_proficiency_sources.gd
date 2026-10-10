@@ -203,6 +203,34 @@ func run() -> void:
 		if String(suggestion.get("group", "")) == "background" and int(suggestion.get("certainty", 0)) == 2:
 			has_acolyte = true
 	assert(has_acolyte, "Structured background proficiencies are suggested without a stored source book")
+	background_record["background_source"] = "PHB"
+	assert(Proficiencies.has_proficiency(background_record, "skill", "insight")
+		and Proficiencies.has_proficiency(background_record, "skill", "religion"),
+		"Acolyte should grant its structured background skills")
+	background_record["proficiency_origins"] = Proficiencies.origins(background_record)
+	background_record["proficiency_choices"] = Proficiencies.choices(background_record)
+	background_record["background"] = "Folk Hero"
+	assert(not Proficiencies.has_proficiency(background_record, "skill", "religion")
+		and Proficiencies.has_proficiency(background_record, "skill", "survival"),
+		"Changing background must replace old structured proficiencies")
+	for source: Dictionary in Proficiencies.origins(background_record):
+		assert(not String(source.get("id", "")).begins_with("background|phb|acolyte"),
+			"Obsolete backgrounds must disappear from stored origins")
+	var changed_race := _record()
+	changed_race["species"] = "Elf"
+	changed_race["species_source"] = "PHB"
+	assert(Proficiencies.has_proficiency(changed_race, "skill", "perception"))
+	changed_race["proficiency_origins"] = Proficiencies.origins(changed_race)
+	changed_race["proficiency_choices"] = Proficiencies.choices(changed_race)
+	changed_race["species"] = "Dwarf"
+	assert(not Proficiencies.has_proficiency(changed_race, "skill", "perception"),
+		"Racial proficiencies from the previous species must no longer apply")
+	for source: Dictionary in Proficiencies.origins(changed_race):
+		assert(not String(source.get("id", "")).begins_with("race|phb|elf"),
+			"Old race must disappear rather than linger as a disabled origin")
+	assert(not Proficiencies.source_has_grants({"group": "race",
+		"data": {"name": "Empty Race", "skillProficiencies": [{"choose": {}}]}}),
+		"Races without fixed grants or valid choices must not create automatic origins")
 
 	var feat_record := _record()
 	feat_record["feats_catalog"] = [{"name": "Lightly Armored", "source": "PHB", "id": "feat:lightly armored|phb|"}]
