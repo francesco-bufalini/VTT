@@ -2256,6 +2256,10 @@ func _refresh_attacks(record: Dictionary) -> void:
 			proficiency.toggled.connect(_on_attack_proficiency_changed.bind(attack_id))
 			settings.add_child(proficiency)
 		if attack.has("raw"):
+			var original_caption := Label.new()
+			original_caption.text = "Testo originale 5etools (bonus non modificati)"
+			original_caption.add_theme_font_size_override("font_size", 11)
+			box.add_child(original_caption)
 			var details := RichTextLabel.new()
 			details.custom_minimum_size.y = 48
 			details.fit_content = true
@@ -2276,7 +2280,10 @@ func _refresh_attack_values(record: Dictionary) -> void:
 		if not _attack_hit_labels.has(attack_id):
 			continue
 		var hit: int = AttackData.attack_bonus(record, attack, _creature_proficiency(record))
-		(_attack_hit_labels[attack_id] as Label).text = "Colpire %+d" % hit
+		if String(record.get("kind", "")) == "monster" and String(attack.get("source", "")) != "item" and not bool(attack.get("hit_known", false)):
+			(_attack_hit_labels[attack_id] as Label).text = "Colpire: n.d."
+		else:
+			(_attack_hit_labels[attack_id] as Label).text = "Colpire %+d" % hit
 		(_attack_damage_labels[attack_id] as Label).text = "Danni: " + AttackData.damage_label(record, attack)
 
 
