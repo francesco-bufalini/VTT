@@ -508,7 +508,7 @@ func _build_ui() -> void:
 	var form := _add_sheet_tab(_tabs, "Info")
 	var statistics_tab := _add_sheet_tab(_tabs, "Statistiche")
 	_statistics_columns = GridContainer.new()
-	_statistics_columns.columns = 2
+	_statistics_columns.columns = 1
 	_statistics_columns.add_theme_constant_override("h_separation", 10)
 	_statistics_columns.add_theme_constant_override("v_separation", 12)
 	_statistics_columns.size_flags_horizontal = Control.SIZE_EXPAND_FILL
@@ -1854,7 +1854,10 @@ func _update_sheet_layout() -> void:
 		return
 	# Use the actual inner tab width, not the outer viewport: the sidebar
 	# already consumes space. Stack both sections when a split won't fit.
-	var tab_width: float = _tabs.size.x
+	# TabContainer may report a width inflated by descendants' minimum sizes.
+	# Cap it to the pixels physically available before deciding to split.
+	var physical_width: float = viewport_size.x - _tabs.get_global_rect().position.x - 30.0
+	var tab_width: float = minf(_tabs.size.x, maxf(0.0, physical_width))
 	_statistics_columns.columns = 2 if tab_width >= 850.0 else 1
 	var cell_width: float = (_abilities_grid.get_child(0) as Control).get_combined_minimum_size().x
 	var gap_width: float = _abilities_grid.get_theme_constant("h_separation")
