@@ -131,7 +131,10 @@ static func effective_race(race: Dictionary, subrace: Dictionary) -> Dictionary:
 static func migrate_legacy_species(record: Dictionary) -> Dictionary:
 	var name := String(record.get("species", ""))
 	var source := String(record.get("species_source", ""))
-	if name.is_empty() or not String(record.get("subrace", "")).is_empty():
+	# Most saves already have a base race; avoid remerging the entire
+	# 5etools catalog every time a creature sheet is normalized.
+	if (name.is_empty() or not String(record.get("subrace", "")).is_empty()
+		or not name.ends_with(")") or name.rfind(" (") < 0):
 		return record
 	var rows: Array[Dictionary] = Catalog.entries("races")
 	for entry: Dictionary in rows:
