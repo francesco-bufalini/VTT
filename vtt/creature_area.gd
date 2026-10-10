@@ -2576,6 +2576,9 @@ func _refresh_attacks(record: Dictionary) -> void:
 	_attack_hit_labels.clear()
 	_attack_damage_labels.clear()
 	_attack_range_labels.clear()
+	for key: Variant in _formula_values.keys():
+		if String(key).begins_with("attack_range:") or String(key).begins_with("attack_hit:") or String(key).begins_with("attack_damage:"):
+			_formula_values.erase(key)
 	for child: Node in _attack_rows.get_children():
 		_attack_rows.remove_child(child)
 		child.queue_free()
@@ -2606,18 +2609,19 @@ func _refresh_attacks(record: Dictionary) -> void:
 		name_label.text = String(attack.get("name", "Attacco"))
 		name_label.add_theme_font_size_override("font_size", 17)
 		name_label.add_theme_color_override("font_color", Color(0.93, 0.95, 0.98))
+		name_label.size_flags_horizontal = Control.SIZE_EXPAND_FILL
+		name_label.clip_text = true
+		header.add_child(name_label)
 		if active:
 			var active_label := Label.new()
 			active_label.text = "IN USO"
 			active_label.add_theme_font_size_override("font_size", 11)
 			active_label.add_theme_color_override("font_color", Color(0.58, 0.85, 0.86))
 			header.add_child(active_label)
-		name_label.size_flags_horizontal = Control.SIZE_EXPAND_FILL
-		name_label.clip_text = true
-		header.add_child(name_label)
 		var hit_label := Label.new()
 		header.add_child(hit_label)
 		_attack_hit_labels[attack_id] = hit_label
+		_install_formula("attack_hit:" + attack_id, hit_label, [], [])
 		var roll_hit := Button.new()
 		roll_hit.text = "🎲 Colpire"
 		roll_hit.tooltip_text = "Tira 1d20 e il bonus per colpire nel roller"
@@ -2632,6 +2636,7 @@ func _refresh_attacks(record: Dictionary) -> void:
 		damage_label.add_theme_font_size_override("font_size", 16)
 		damage_row.add_child(damage_label)
 		_attack_damage_labels[attack_id] = damage_label
+		_install_formula("attack_damage:" + attack_id, damage_label, [], [])
 		var roll_damage := Button.new()
 		roll_damage.text = "🎲 Danni"
 		roll_damage.tooltip_text = "Tira i danni dell'attacco nel roller"
@@ -2654,7 +2659,7 @@ func _refresh_attacks(record: Dictionary) -> void:
 		distance.rounded = true
 		distance.custom_minimum_size.x = 68
 		distance.tooltip_text = "Portata o gittata di questo attacco, indipendente dalle altre armi"
-		distance.set_value_no_signal(AttackData.range_for(record, attack))
+		distance.set_value_no_signal(int(AttackData.override_for(record, attack_id).get("range_feet", attack.get("range_feet", 5))))
 		distance.value_changed.connect(_on_attack_range_changed.bind(attack_id))
 		settings.add_child(distance)
 		var range_bonus := SpinBox.new()
@@ -2754,10 +2759,13 @@ func _refresh_attack_values(record: Dictionary) -> void:
 			continue
 		var hit: int = AttackData.attack_bonus(record, attack, _creature_proficiency(record))
 		if String(record.get("kind", "")) == "monster" and String(attack.get("source", "")) != "item" and not bool(attack.get("hit_known", false)):
-			(_attack_hit_labels[attack_id] as Label).text = "Colpire: n.d."
+			_set_formula("attack_hit:" + attack_id, "Colpire: n.d.", "Bonus per colpire non presente nei dati del bestiario")
 		else:
-			(_attack_hit_labels[attack_id] as Label).text = "Colpire %+d" % hit
-		(_attack_damage_labels[attack_id] as Label).text = "Danni: " + AttackData.damage_label(record, attack)
+			_set_formula("attack_hit:" + attack_id, "Colpire %+d" % hit,
+				AttackData.attack_bonus_formula(record, attack, _creature_proficiency(record)))
+		var damage: String = AttackData.damage_label(record, attack)
+		_set_formula("attack_damage:" + attack_id, "Danni: " + damage,
+			"Danni: %s. Include bonus di caratteristica e arma quando applicabili, oltre al bonus manuale dell'attacco." % damage)
 		if _attack_range_labels.has(attack_id):
 			var settings: Dictionary = AttackData.override_for(record, attack_id)
 			var base: int = int(settings.get("range_feet", attack.get("range_feet", 5)))
