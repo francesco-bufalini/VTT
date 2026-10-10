@@ -505,7 +505,8 @@ func _build_ui() -> void:
 	_spellcasting_ui.call(
 		"setup",
 		Callable(self, "_on_spellcasting_updated"),
-		Callable(self, "_set_status")
+		Callable(self, "_set_status"),
+		Callable(self, "_on_spellcasting_cast_requested")
 	)
 	var inventory_tab := _add_sheet_tab(_tabs, "Inventario")
 	_inventory_ui = InventoryTab.new()
@@ -1977,6 +1978,33 @@ func _on_speed_changed(_value: float) -> void:
 func _update_speed_display() -> void:
 	if _speed_effective != null and _speed != null and _speed_bonus != null:
 		_speed_effective.text = str(maxi(0, int(_speed.value) + int(_speed_bonus.value)))
+
+
+# The creature sheet casts from class, available and searched spells alike.
+# When no linked token or VTT effect exists, casting still records slot use.
+func _on_spellcasting_cast_requested(spell: Dictionary, slot_level: int) -> bool:
+	if _current().is_empty():
+		return false
+	var spell_name: String = String(spell.get("name", "Incantesimo"))
+	var spell_id: String = String(spell.get("id", ""))
+	var source: String = String(spell.get("source", ""))
+	var caster: CharacterBody3D = find_linked_token_for_creature(_selected_id)
+	var runtime: Node = board_root.get_node_or_null("SpellSystem")
+	if caster == null or runtime == null or not runtime.has_method("has_runtime_spell_effect"):
+		_set_status("%s lanciato · effetto VTT non attivabile senza un token collegato." % spell_name)
+		return true
+	if not bool(runtime.call("has_runtime_spell_effect", spell_id, spell_name, source)):
+		_set_status("%s lanciato · nessun effetto VTT associato." % spell_name)
+		return true
+	# Return to the board before entering the existing target-selection mode.
+	hide_panel()
+	var activated: bool = bool(runtime.call(
+		"activate_spell_from_caster", spell_id, caster, spell_name, source, slot_level
+	))
+	if not activated:
+		show_panel()
+		_set_status("Impossibile attivare l'effetto VTT di %s." % spell_name)
+	return activated
 
 
 func _on_spellcasting_updated(values: Dictionary) -> void:
