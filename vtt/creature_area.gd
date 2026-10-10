@@ -1008,7 +1008,7 @@ func _build_ui() -> void:
 	combat_column.move_child(tracker_caption, attack_header.get_index())
 	combat_column.move_child(_tracker_rows, attack_header.get_index())
 	var biography_label := Label.new()
-	biography_label.text = "📜 Background / personalità"
+	biography_label.text = "📜 Storia / personalità"
 	biography_label.add_theme_font_size_override("font_size", 17)
 	form.add_child(biography_label)
 	_biography = TextEdit.new()
