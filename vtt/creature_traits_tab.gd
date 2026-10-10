@@ -60,7 +60,8 @@ func setup() -> void:
 	_scroll.size_flags_horizontal = Control.SIZE_EXPAND_FILL
 	_scroll.size_flags_vertical = Control.SIZE_EXPAND_FILL
 	_scroll.horizontal_scroll_mode = ScrollContainer.SCROLL_MODE_DISABLED
-	_scroll.follow_focus = true
+	# Rebuilding expanded cards must not drag the scroll to the focused button.
+	_scroll.follow_focus = false
 	add_child(_scroll)
 	_cards_container = VBoxContainer.new()
 	_cards_container.size_flags_horizontal = Control.SIZE_EXPAND_FILL
@@ -199,9 +200,16 @@ func _rebuild() -> void:
 
 
 func _toggle(key: String) -> void:
+	var previous_scroll: int = _scroll.scroll_vertical
 	_expanded[key] = not bool(_expanded.get(key, false))
 	_rebuild()
-	call_deferred("_ensure_visible", key)
+	_scroll.scroll_vertical = previous_scroll
+	call_deferred("_restore_scroll", previous_scroll)
+
+
+func _restore_scroll(position: int) -> void:
+	if _scroll != null:
+		_scroll.scroll_vertical = position
 
 
 func _ensure_visible(key: String) -> void:
