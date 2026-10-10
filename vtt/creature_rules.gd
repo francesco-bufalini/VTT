@@ -47,6 +47,26 @@ static func walking_speed(raw: Variant, fallback: int = 30) -> int:
 	return fallback
 
 
+# Damage is resolved in layers: temporary HP, transformed-form HP, then base HP.
+# Both UI actions and combat attacks call this helper to remain consistent.
+static func apply_damage_layers(record: Dictionary, amount: int) -> Dictionary:
+	var result: Dictionary = record.duplicate(true)
+	var remaining: int = maxi(0, amount)
+	var temp: int = maxi(0, int(result.get("temporary_hp", 0)))
+	var form_hp: int = maxi(0, int(result.get("second_form_hp", 0)))
+	var base_hp: int = maxi(0, int(result.get("current_hp", 0)))
+	var absorbed: int = mini(remaining, temp)
+	temp -= absorbed
+	remaining -= absorbed
+	absorbed = mini(remaining, form_hp)
+	form_hp -= absorbed
+	remaining -= absorbed
+	result["temporary_hp"] = temp
+	result["second_form_hp"] = form_hp
+	result["current_hp"] = maxi(0, base_hp - remaining)
+	return result
+
+
 static func monster_armor_class(stat: Dictionary) -> int:
 	var ac_value: Variant = stat.get("ac", [])
 	if ac_value is Array:
