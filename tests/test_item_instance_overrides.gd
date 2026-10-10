@@ -17,14 +17,14 @@ func _run() -> void:
 	var owned: Dictionary = Instances.from_catalog(definition)
 	assert(owned.id == definition.id and owned.quantity == 1)
 	owned["instance_overrides"] = {
-		"dimensions_m": {"length": 1.25},
+		"weapon_size": "Large",
 		"damage": "1d10"
 	}
 	var changed: Dictionary = Instances.resolve(definition, owned)
 	assert(changed.damage == "1d10")
-	assert(changed.dimensions_m.length == 1.25)
-	assert(definition.damage == "1d8" and not definition.has("dimensions_m"))
-	assert(Instances.from_saved(owned).instance_overrides.dimensions_m.length == 1.25)
+	assert(changed.weapon_size == "Large")
+	assert(definition.damage == "1d8" and not definition.has("weapon_size"))
+	assert(Instances.from_saved(owned).instance_overrides.weapon_size == "Large")
 	assert(ItemRules.entry_for(owned).damage == "1d10", "Instance effects reach attack mechanics")
 
 	var events: Array = []
@@ -36,17 +36,22 @@ func _run() -> void:
 	]})
 	tab._inventory_list.select(0)
 	tab._inventory_list.item_selected.emit(0)
-	var length_box: SpinBox = tab._size_fields["length"]
-	length_box.value = 1.25
+	assert(tab._weapon_size_choice.selected == 0, "Default weapon size follows the creature")
+	tab._weapon_size_choice.select(4) # Large
+	tab._weapon_size_choice.item_selected.emit(4)
 	assert(events.size() == 1)
 	assert(events[0].size() == 2, "Editing an individual object splits a stack")
 	assert(events[0][0].quantity == 2 and events[0][1].quantity == 1)
-	assert(not events[0][0].instance_overrides.has("dimensions_m"))
-	assert(events[0][1].instance_overrides.dimensions_m.length == 1.25)
+	assert(not events[0][0].instance_overrides.has("weapon_size"))
+	assert(events[0][1].instance_overrides.weapon_size == "Large")
 	tab.load_record({"inventory": events.back()})
 	assert(tab._inventory.size() == 2)
-	assert(tab._inventory[1].instance_overrides.dimensions_m.length == 1.25)
+	assert(tab._inventory[1].instance_overrides.weapon_size == "Large")
+	assert(ItemRules.weapon_size({"size_name": "Huge"}, tab._inventory[0]) == "Huge")
+	assert(ItemRules.weapon_size({"size_name": "Huge"}, tab._inventory[1]) == "Large")
+	tab.update_creature_size("Huge")
+	assert(tab._weapon_size_choice.get_item_text(0) == "Come creatura (Huge)")
 	tab.queue_free()
 	await process_frame
-	print("PASS: item instance dimensions and mechanics do not mutate compendium; legacy inventory persists")
+	print("PASS: weapon size overrides and mechanics do not mutate compendium; legacy inventory persists")
 	quit()
