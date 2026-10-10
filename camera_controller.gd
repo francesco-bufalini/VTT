@@ -5,6 +5,10 @@ const TOP_DOWN_SLICE_PADDING := 0.12
 # occupied elevations instead of depending on operating-system key repeats.
 const TOP_DOWN_LEVEL_REPEAT_DELAY := 0.28
 const TOP_DOWN_LEVEL_REPEAT_INTERVAL := 0.12
+# A wheel detent or touchpad scroll unit maps to a screen-space distance.
+const TOP_DOWN_SCROLL_PIXELS_PER_UNIT := 60.0
+const TOP_DOWN_GESTURE_PIXELS_PER_UNIT := 24.0
+const TOP_DOWN_SCROLL_ZOOM_BASE := 1.13
 
 @export_range(1.0, 100.0, 0.5) var speed: float = 5.0
 @export_range(0.0002, 0.01, 0.0001) var mouse_sensitivity: float = 0.002
@@ -36,6 +40,7 @@ var _top_down_floor_levels_provider: Callable = Callable()
 var _top_down_clearance: float = 32.0
 var _top_down_held_direction: int = 0
 var _top_down_repeat_remaining: float = 0.0
+var _top_down_middle_pan_active: bool = false
 
 
 func _ready() -> void:
@@ -60,6 +65,108 @@ func _unhandled_input(event: InputEvent) -> void:
 			Vector3.RIGHT,
 			-event.relative.y * mouse_sensitivity
 		)
+
+
+# The board calls this for unhandled world input only: dialogs, map editing,
+# token dragging, and measurement tools keep their existing input priority.
+func handle_top_down_navigation_input(event: InputEvent) -> bool:
+	if not _top_down_2d_enabled:
+		return false
+
+	if event is InputEventMagnifyGesture:
+		var magnify: InputEventMagnifyGesture = event as InputEventMagnifyGesture
+		if magnify.factor > 0.0:
+			_zoom_top_down(1.0 / magnify.factor)
+		return true
+
+	if event is InputEventPanGesture:
+		var gesture: InputEventPanGesture = event as InputEventPanGesture
+		if gesture.shift_pressed:
+			# Some drivers convert Shift+vertical scrolling to horizontal.
+			var scroll_amount: float = gesture.delta.y
+			if absf(gesture.delta.x) > absf(scroll_amount):
+				scroll_amount = gesture.delta.x
+			_zoom_top_down(pow(TOP_DOWN_SCROLL_ZOOM_BASE, scroll_amount))
+		else:
+			_pan_top_down_pixels(
+				gesture.delta * TOP_DOWN_GESTURE_PIXELS_PER_UNIT
+			)
+		return true
+
+	if event is InputEventMouseButton:
+		var button: InputEventMouseButton = event as InputEventMouseButton
+		if button.button_index == MOUSE_BUTTON_MIDDLE:
+			_top_down_middle_pan_active = button.pressed
+			return true
+		if not button.pressed:
+			return false
+
+		# Precision trackpads can emit wheel events instead of pan gestures,
+		# so ordinary scrolling pans. Shift/Ctrl+wheel zooms the map.
+		var scroll: Vector2 = Vector2.ZERO
+		match button.button_index:
+			MOUSE_BUTTON_WHEEL_UP:
+				scroll.y = -button.factor
+			MOUSE_BUTTON_WHEEL_DOWN:
+				scroll.y = button.factor
+			MOUSE_BUTTON_WHEEL_LEFT:
+				scroll.x = -button.factor
+			MOUSE_BUTTON_WHEEL_RIGHT:
+				scroll.x = button.factor
+			_:
+				return false
+
+		if button.shift_pressed or button.ctrl_pressed:
+			var zoom_scroll: float = (
+				scroll.y if not is_zero_approx(scroll.y) else scroll.x
+			)
+			_zoom_top_down(pow(TOP_DOWN_SCROLL_ZOOM_BASE, zoom_scroll))
+		else:
+			_pan_top_down_pixels(
+				scroll * TOP_DOWN_SCROLL_PIXELS_PER_UNIT
+			)
+		return true
+
+	if event is InputEventMouseMotion and _top_down_middle_pan_active:
+		var motion: InputEventMouseMotion = event as InputEventMouseMotion
+		if (motion.button_mask & MOUSE_BUTTON_MASK_MIDDLE) == 0:
+			_top_down_middle_pan_active = false
+			return false
+		_pan_top_down_pixels(motion.relative)
+		return true
+
+	return false
+
+
+func _pan_top_down_pixels(pixel_delta: Vector2) -> void:
+	if pixel_delta.is_zero_approx():
+		return
+	# Orthographic camera.size is the visible vertical span in world units.
+	# Moving opposite to a swipe makes the map follow the user's fingers.
+	var height: float = maxf(
+		get_viewport().get_visible_rect().size.y, 1.0
+	)
+	var right: Vector3 = global_transform.basis.x
+	var up: Vector3 = global_transform.basis.y
+	right.y = 0.0
+	up.y = 0.0
+	if right.length_squared() < 0.0001 or up.length_squared() < 0.0001:
+		return
+	var units_per_pixel: float = size / height
+	global_position += (
+		-right.normalized() * pixel_delta.x
+		+ up.normalized() * pixel_delta.y
+	) * units_per_pixel
+
+
+func _zoom_top_down(multiplier: float) -> void:
+	if multiplier <= 0.0:
+		return
+	size = clampf(
+		size * multiplier,
+		top_down_min_size,
+		top_down_max_size
+	)
 
 
 func get_move_speed() -> float:
@@ -276,6 +383,7 @@ func enter_top_down_2d(
 	_saved_2d_near = near
 	_has_saved_2d_state = true
 	_top_down_2d_enabled = true
+	_top_down_middle_pan_active = false
 	_advance_top_down_level_hold(0, 0.0)
 
 	projection = Camera3D.PROJECTION_ORTHOGONAL
@@ -333,6 +441,7 @@ func exit_top_down_2d() -> void:
 	_remembered_top_down_tilt = _top_down_tilt_degrees
 	_has_remembered_top_down_view = true
 	_top_down_2d_enabled = false
+	_top_down_middle_pan_active = false
 	_advance_top_down_level_hold(0, 0.0)
 	if _has_saved_2d_state:
 		projection = _saved_2d_projection

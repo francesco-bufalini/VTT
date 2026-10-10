@@ -2202,6 +2202,18 @@ func _unhandled_input(event: InputEvent) -> void:
 				measurement_tool.end_measurement()
 			get_viewport().set_input_as_handled()
 			return
+	# World navigation only runs after token/AoE/measurement interaction
+	# and GUI handlers have had their opportunity to consume the event.
+	if (
+		_view_2d_enabled
+		and not _map_edit_layer_active
+		and (token_drag == null or not token_drag.active)
+		and not bool(measurement_tool.call("is_movable_aoe_dragging"))
+		and camera.has_method("handle_top_down_navigation_input")
+		and bool(camera.call("handle_top_down_navigation_input", event))
+	):
+		get_viewport().set_input_as_handled()
+		return
 	if token_drag != null and token_drag.handle_event(event):
 		get_viewport().set_input_as_handled()
 		return
