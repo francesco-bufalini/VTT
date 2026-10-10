@@ -144,6 +144,10 @@ static func damage_label(record: Dictionary, attack: Dictionary) -> String:
 		if String(record.get("kind", "")) == "monster" and source != "item"
 		else ability_modifier(record)
 	)
+	# A weapon's manually entered enhancement applies both to hit and damage,
+	# but proficiency continues to affect only the attack roll.
+	var settings: Dictionary = override_for(record, String(attack.get("id", "")))
+	modifier += int(settings.get("bonus", 0))
 	if String(attack.get("id", "")) == "unarmed":
 		return str(maxi(1, 1 + modifier)) + " contundenti"
 	if base.is_empty():
