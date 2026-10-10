@@ -129,9 +129,10 @@ func run() -> void:
 	for tab_index: int in range(area._tabs.get_tab_count()):
 		tab_titles.append(area._tabs.get_tab_title(tab_index))
 	assert("Inventario" in tab_titles and "Incantesimi" in tab_titles
-		and "Statistiche" in tab_titles and "Generale" in tab_titles)
-	assert("Risorse" not in tab_titles and area._tracker_rows.get_parent() == area._name.get_parent().get_parent(),
-		"Trackers must remain in General, not a separate resources tab")
+		and tab_titles[0] == "Info" and tab_titles[1] == "Statistiche")
+	assert("Risorse" not in tab_titles and area._tracker_rows.get_parent() != area._name.get_parent().get_parent()
+		and area._tracker_rows.get_parent() == area._max_hp.get_parent().get_parent().get_parent(),
+		"Trackers must be inside Statistics rather than Info or a separate tab")
 	area._choose_miniature(area._current(), false, true)
 	area._miniature_filter.text = "ape"
 	area._miniature_filter.text_changed.emit("ape")
@@ -139,10 +140,21 @@ func run() -> void:
 	area._miniature_dialog.hide() # Native confirmation closes the window before emitting.
 	area._confirm_miniature()
 	area._miniature_dialog.hide()
+	assert(area._form_hp_dialog.visible, "Switching current appearance should offer a transformed HP pool")
+	area._form_hp_choice.select(0)
+	area._form_hp_manual.value = 12
+	area._form_hp_dialog.hide()
+	area._apply_second_form_choice()
+	assert(area._current().second_form_hp == 12)
 	assert(area._current().current_miniature_id == "ape" and area._current().default_miniature_id == "hero_test",
 		"Changing current appearance without a live token must preserve default miniature")
 	area._restore_default_appearance()
-	assert(area._current().current_miniature_id == "hero_test", "Reset appearance must restore base")
+	assert(area._restore_form_dialog.visible,
+		"Returning to base appearance should ask about nonzero transformed HP")
+	area._restore_form_dialog.hide()
+	area._restore_base_form(true)
+	assert(area._current().current_miniature_id == "hero_test" and area._current().second_form_hp == 0,
+		"Reset appearance should restore base and clear the transformed HP pool when confirmed")
 	area._open_transfer_dialog()
 	assert(area._transfer_users.item_count == 1)
 	assert(area._transfer_users.get_item_metadata(0) == "remote-player-0123456789abcdef",
@@ -199,8 +211,9 @@ func run() -> void:
 	assert(area._level is SpinBox and area._level.update_on_text_changed,
 		"Base class level must save edits while its input still has focus")
 	assert(area._hp.update_on_text_changed and area._max_hp.update_on_text_changed)
-	assert(area._ac.get_parent() == area._temp_hp.get_parent(),
-		"Armor class must be alongside temporary HP")
+	assert(area._temp_hp.get_parent() == area._hp.get_parent()
+		and area._ac.get_parent() != area._temp_hp.get_parent(),
+		"Temporary HP share the health panel; armor class belongs to Statistics")
 	assert(area._party.get_parent() == area._name.get_parent(),
 		"Faction must be alongside character name")
 	area._level.value = 5
@@ -279,10 +292,20 @@ func run() -> void:
 	assert(automatically_calculated.max_hp == 22, "Wizard 5, CON +0: 6 + 4 * 4")
 	area._max_hp_bonus.value = 5
 	area._save()
+	assert(area._max_hp_effective.text == "27", "Health formula shows effective max before base + bonus")
 	assert(area._current().max_hp == 27 and area._current().max_hp_base == 22)
 	assert(area._current().max_hp_bonus == 5, "Manual HP bonus must increase effective maximum")
 	area._max_hp_bonus.value = 0
 	area._save()
+	area._speed_bonus.value = 10
+	area._save()
+	assert(area._current().speed == area._current().speed_base + 10
+		and area._speed_effective.text == str(area._current().speed),
+		"Movement bonus must add to the structured speed base")
+	area._biography.text = "Storia e personalità di prova"
+	area._save()
+	assert(area._current().background_personality == "Storia e personalità di prova",
+		"Freeform background and personality must persist")
 	assert(automatically_calculated.proficiency_bonus == 3)
 	assert(automatically_calculated.has("spellcasting_calculation"))
 	assert(automatically_calculated.spells.is_empty() and automatically_calculated.prepared_spells.is_empty())
@@ -395,6 +418,19 @@ func run() -> void:
 	area._change_hit_points(-2)
 	assert(area._current().temporary_hp == 0 and area._current().current_hp == 34,
 		"Damage toolbar must consume temporary HP before current HP")
+	area._second_form_max_hp.value = 6
+	area._second_form_hp.value = 6
+	area._temp_hp.value = 2
+	area._save()
+	area._change_hit_points(-5)
+	assert(area._current().temporary_hp == 0 and area._current().second_form_hp == 3
+		and area._current().current_hp == 34,
+		"Damage must consume the form after temporary HP, but before base HP")
+	area._change_hit_points(-5)
+	assert(area._current().second_form_hp == 0 and area._current().current_hp == 32,
+		"Excess damage from the depleted form must reach base HP")
+	area._second_form_max_hp.value = 0
+	area._save()
 	area._change_hit_points(1)
 	assert(area._current().current_hp == 35, "Healing toolbar must cap at max HP")
 	area._open_hp_delta(-1)
