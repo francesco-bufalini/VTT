@@ -5,6 +5,7 @@ extends VBoxContainer
 const Bonuses = preload("res://vtt/creature_bonus_rules.gd")
 const Skills = preload("res://vtt/creature_skills_5etools.gd")
 const Attacks = preload("res://vtt/creature_attack_data.gd")
+const Trackers = preload("res://vtt/structured_resource_trackers.gd")
 
 var _changed: Callable
 var _record: Dictionary = {}
@@ -111,6 +112,9 @@ func _all_targets() -> Array[Dictionary]:
 	for lvl: int in range(1, 10):
 		result.append({"key": "slot:" + str(lvl), "name": "Slot livello " + str(lvl)})
 	result.append({"key": "pact_slot", "name": "Slot del Patto"})
+	for tracker: Dictionary in Trackers.for_creature(_record):
+		result.append({"key": "tracker:" + String(tracker.get("id", "")),
+			"name": "Risorsa · " + String(tracker.get("name", ""))})
 	for row: Dictionary in _rows:
 		var key: String = String(row.get("target", ""))
 		var exists := false
