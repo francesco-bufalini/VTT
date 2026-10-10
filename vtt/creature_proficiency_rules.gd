@@ -599,7 +599,8 @@ static func starting_description(source: Dictionary) -> String:
 			raw = start.get("armor", [])
 		var displayed := _readable_grants(raw)
 		if not displayed.is_empty():
-			var title: String = {"skills": "Skill Proficiencies", "weapons": "Weapon Proficiencies", "armor": "Armor Training", "tools": "Tool Proficiencies"}[group]
+			var names: Dictionary = {"skills": "Skill Proficiencies", "weapons": "Weapon Proficiencies", "armor": "Armor Training", "tools": "Tool Proficiencies"}
+			var title: String = String(names.get(group, group.capitalize()))
 			lines.append(title + ": " + _clean_equipment(displayed))
 	var equipment: Variant = meta.get("equipment", [])
 	if equipment is Array and not (equipment as Array).is_empty():
@@ -607,6 +608,9 @@ static func starting_description(source: Dictionary) -> String:
 		lines.append("Starting Equipment")
 		for item: Variant in equipment:
 			lines.append("• " + _clean_equipment(String(item)))
+		var gold_option: String = String(meta.get("gold", ""))
+		if not gold_option.is_empty():
+			lines.append("Alternativamente: " + _clean_equipment(gold_option) + " per acquistare l'equipaggiamento")
 	lines.append("")
 	lines.append("Multiclassing")
 	var requirements: Variant = meta.get("multiclass", {})
@@ -619,7 +623,8 @@ static func starting_description(source: Dictionary) -> String:
 	for group: String in ["skills", "weapons", "armor", "tools"]:
 		var displayed := _readable_grants(multi.get(group, []))
 		if not displayed.is_empty():
-			var title: String = {"skills": "Skill Proficiencies", "weapons": "Weapon Proficiencies", "armor": "Armor Training", "tools": "Tool Proficiencies"}[group]
+			var names: Dictionary = {"skills": "Skill Proficiencies", "weapons": "Weapon Proficiencies", "armor": "Armor Training", "tools": "Tool Proficiencies"}
+			var title: String = String(names.get(group, group.capitalize()))
 			lines.append(title + ": " + _clean_equipment(displayed))
 	lines.append("")
 	lines.append("Applicate a questa creatura: " + ("competenze iniziali" if mode == "starting" else "competenze da multiclasse"))
