@@ -1746,8 +1746,6 @@ func _on_spellcasting_updated(values: Dictionary) -> void:
 	]:
 		if values.has(key):
 			record[key] = values[key]
-	_refresh_xp_minimum()
-	record["xp"] = maxi(int(_xp.value), Rules.experience_for_level(_class_xp_level()))
 	var error: Error = _archive.save(record)
 	if error != OK:
 		_set_status("Salvataggio incantesimi non riuscito: " + error_string(error))
@@ -1842,7 +1840,7 @@ func _save() -> void:
 	record["default_miniature_id"] = _default_miniature_id
 	if String(record.get("kind", "")) == "monster":
 		var stat: Dictionary = record.get("stat_block", {})
-		var monster_cr: float = Rules.monster_cr_value(stat)
+		# The original (possibly fractional) GS remains in the stat block.
 		record["species"] = String(stat.get("name", record.get("base_name", "")))
 		record["species_source"] = String(stat.get("source", ""))
 		record["class"] = "Mostro"
@@ -1930,6 +1928,8 @@ func _save() -> void:
 				"subclass_id": record["subclass_id"]
 			})
 		record["classes"] = classes
+	_refresh_xp_minimum()
+	record["xp"] = maxi(int(_xp.value), Rules.experience_for_level(_class_xp_level()))
 	var error: Error = _archive.save(record)
 	if error != OK:
 		_set_status("Salvataggio non riuscito: %s" % error_string(error))
