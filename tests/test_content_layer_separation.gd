@@ -26,6 +26,8 @@ func _run() -> void:
 	assert(creatures.size() == 1 and creatures[0].id == "homebrew:hbx:monsters:crystal_owl")
 	assert(spells.size() == 1 and spells[0].id == "homebrew:hbx:spells:prism_pulse")
 	assert(items.size() == 1 and items[0].id == "homebrew:hbx:items:prismatic_sword")
+	assert(not items[0].has("damage"), "Raw 5etools definition is not rewritten")
+	assert(Catalog.merge("items", [])[0].damage == "1d8", "Native item stats are projected into the runtime view")
 	assert(spells[0].has("entries") and not spells[0].has("target_mode"))
 	var plain: Dictionary = Spells.catalog_spell(String(spells[0].id))
 	assert(String(plain.get("target_mode", "")).is_empty(), "No guessed 5etools geometry for homebrew")
