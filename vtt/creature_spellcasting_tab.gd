@@ -233,7 +233,7 @@ func setup(on_change: Callable, on_status: Callable) -> void:
 	var slot_title := HBoxContainer.new()
 	add_child(slot_title)
 	var heading := Label.new()
-	heading.text = "Slot · disponibili / max"
+	heading.text = "Slot incantesimo"
 	heading.size_flags_horizontal = Control.SIZE_EXPAND_FILL
 	heading.add_theme_font_size_override("font_size", 16)
 	slot_title.add_child(heading)
@@ -247,10 +247,10 @@ func setup(on_change: Callable, on_status: Callable) -> void:
 	slot_title.add_child(_slots_eye)
 	_slot_grid = GridContainer.new()
 	_slot_grid.columns = 5
-	_slot_grid.add_theme_constant_override("h_separation", 6)
-	_slot_grid.add_theme_constant_override("v_separation", 5)
+	_slot_grid.add_theme_constant_override("h_separation", 12)
+	_slot_grid.add_theme_constant_override("v_separation", 9)
 	add_child(_slot_grid)
-	for label_text: String in ["Liv.", "Massimi", "Rimasti / max", "Usa", "Ricarica"]:
+	for label_text: String in ["Liv.", "Massimo (= base + bonus)", "Rimasti", "Usa", "Ricarica"]:
 		var header := Label.new()
 		header.text = label_text
 		_slot_grid.add_child(header)
@@ -258,9 +258,18 @@ func setup(on_change: Callable, on_status: Callable) -> void:
 		var caption := Label.new()
 		caption.text = "%d°" % lvl
 		_slot_grid.add_child(caption)
+		var max_panel := PanelContainer.new()
+		var max_style := StyleBoxFlat.new()
+		max_style.bg_color = Color(0.18, 0.16, 0.14, 0.7)
+		max_style.border_color = Color(0.46, 0.37, 0.27, 0.75)
+		max_style.set_border_width_all(1)
+		max_style.set_corner_radius_all(5)
+		max_style.set_content_margin_all(3)
+		max_panel.add_theme_stylebox_override("panel", max_style)
+		_slot_grid.add_child(max_panel)
 		var max_formula := HBoxContainer.new()
 		max_formula.add_theme_constant_override("separation", 3)
-		_slot_grid.add_child(max_formula)
+		max_panel.add_child(max_formula)
 		var effective_label := Label.new()
 		effective_label.custom_minimum_size.x = 25
 		max_formula.add_child(effective_label)
