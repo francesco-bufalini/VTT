@@ -680,7 +680,8 @@ func _build_ui() -> void:
 	_max_hp_bonus.custom_minimum_size = Vector2(60, 36)
 	_max_hp_bonus.tooltip_text = "Bonus manuale ai PF massimi"
 	ManualBonus.decorate(_max_hp_bonus)
-	_install_formula("hp", _max_hp_effective, [_max_hp, _max_hp_bonus], ["Base", "Bonus"])
+	_max_hp_bonus.hide() # Legacy value is migrated to an origin bonus.
+	_install_formula("hp", _max_hp_effective, [_max_hp], ["Base"])
 	# HP actions belong on the same row, directly before temporary HP.
 	var health_actions := HBoxContainer.new()
 	health.add_child(health_actions)
@@ -748,7 +749,8 @@ func _build_ui() -> void:
 	_ac_bonus.custom_minimum_size = Vector2(60, 36)
 	_ac_bonus.tooltip_text = "Bonus manuale alla Classe Armatura"
 	ManualBonus.decorate(_ac_bonus)
-	_install_formula("ac", _ac_effective, [_ac, _ac_bonus], ["Base", "Bonus"])
+	_ac_bonus.hide() # Legacy value is migrated to an origin bonus.
+	_install_formula("ac", _ac_effective, [_ac], ["Base"])
 	_ac.size_flags_horizontal = Control.SIZE_SHRINK_BEGIN
 	var movement_row := HBoxContainer.new()
 	movement_row.add_theme_constant_override("separation", 6)
@@ -764,8 +766,9 @@ func _build_ui() -> void:
 	_initiative_bonus.custom_minimum_size = Vector2(60, 36)
 	_initiative_bonus.tooltip_text = "Bonus manuale all'iniziativa"
 	ManualBonus.decorate(_initiative_bonus)
+	_initiative_bonus.hide() # Legacy value is migrated to an origin bonus.
 	_initiative.hide() # The DEX-derived part must never become editable.
-	_install_formula("initiative", _initiative_effective, [_initiative_bonus], ["Bonus"])
+	_install_formula("initiative", _initiative_effective, [], [])
 	var speed_row := HBoxContainer.new()
 	speed_row.add_theme_constant_override("separation", 4)
 	defense_flow.add_child(speed_row)
@@ -785,7 +788,8 @@ func _build_ui() -> void:
 	_speed_bonus.custom_minimum_size = Vector2(65, 36)
 	_speed_bonus.tooltip_text = "Bonus manuale alla velocità"
 	ManualBonus.decorate(_speed_bonus)
-	_install_formula("speed", _speed_effective, [_speed, _speed_bonus], ["Base", "Bonus"])
+	_speed_bonus.hide() # Legacy value is migrated to an origin bonus.
+	_install_formula("speed", _speed_effective, [_speed], ["Base"])
 	_speed.value_changed.connect(func(_value: float) -> void: _update_speed_display())
 	_speed_bonus.value_changed.connect(func(_value: float) -> void: _update_speed_display())
 	_ac.value_changed.connect(func(_value: float) -> void: _update_defense_display())
@@ -840,12 +844,13 @@ func _build_ui() -> void:
 		bonus.custom_minimum_size.x = 54
 		bonus.tooltip_text = "Bonus manuale al punteggio: compensa effetti non ancora gestiti automaticamente"
 		ManualBonus.decorate(bonus)
+		bonus.hide() # Use origin grants instead of an inline compensation box.
 		_ability_bonus_spins[ability] = bonus
 		var total_score := Label.new()
 		total_score.custom_minimum_size.x = 28
 		scores_row.add_child(total_score)
 		_ability_total_labels[ability] = total_score
-		_install_formula("ability:" + ability, total_score, [spin, bonus], ["Base", "Bonus"])
+		_install_formula("ability:" + ability, total_score, [spin], ["Base"])
 		var modifier := Label.new()
 		modifier.custom_minimum_size.x = 42
 		modifier.tooltip_text = "Modificatore calcolato dal punteggio e dal bonus"
@@ -2802,6 +2807,7 @@ func _refresh_attacks(record: Dictionary) -> void:
 		range_bonus.custom_minimum_size.x = 68
 		range_bonus.tooltip_text = "Bonus manuale alla gittata di questo attacco (ft)"
 		ManualBonus.decorate(range_bonus)
+		range_bonus.hide()
 		var range_override: Dictionary = AttackData.override_for(record, attack_id)
 		range_bonus.set_value_no_signal(int(range_override.get("range_bonus", 0)))
 		range_bonus.value_changed.connect(_on_attack_range_bonus_changed.bind(attack_id))
@@ -2809,7 +2815,7 @@ func _refresh_attacks(record: Dictionary) -> void:
 		var range_label := Label.new()
 		settings.add_child(range_label)
 		_attack_range_labels[attack_id] = range_label
-		_install_formula("attack_range:" + attack_id, range_label, [distance, range_bonus], ["Base (ft)", "Bonus (ft)"])
+		_install_formula("attack_range:" + attack_id, range_label, [distance], ["Base (ft)"])
 		if int(attack.get("long_range_feet", 0)) > int(attack.get("range_feet", 5)):
 			var long_range := Label.new()
 			long_range.text = "Lunga: %d ft" % int(attack.get("long_range_feet", 0))
@@ -2833,7 +2839,6 @@ func _refresh_attacks(record: Dictionary) -> void:
 				versatile.disabled = not ItemRules.occupying(record.get("inventory", []), "off").is_empty()
 				versatile.toggled.connect(_on_attack_two_handed_changed.bind(attack_id))
 				settings.add_child(versatile)
-		_add_label(settings, "Bonus")
 		var extra := SpinBox.new()
 		extra.min_value = -99
 		extra.max_value = 99
@@ -2845,6 +2850,7 @@ func _refresh_attacks(record: Dictionary) -> void:
 		extra.set_value_no_signal(int(overrides.get("bonus", 0)))
 		extra.value_changed.connect(_on_attack_bonus_changed.bind(attack_id))
 		settings.add_child(extra)
+		extra.hide() # Legacy shared hit/damage bonus is migrated into two grants.
 		if String(record.get("kind", "")) == "monster" and String(attack.get("source", "")) != "item":
 			var fixed := Label.new()
 			fixed.text = "Competenza inclusa (bestiario)"
