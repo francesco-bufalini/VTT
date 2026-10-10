@@ -44,6 +44,11 @@ var _choice_dialog: ConfirmationDialog
 var _choice_contents: VBoxContainer
 var _choice_source_id := ""
 var _choice_groups: Array[Dictionary] = []
+var _delete_dialog: ConfirmationDialog
+var _delete_picker: OptionButton
+var _delete_kind := ""
+var _delete_key := ""
+var _mandatory_grants: Dictionary = {}
 
 
 func setup(on_change: Callable) -> void:
@@ -167,6 +172,21 @@ func setup(on_change: Callable) -> void:
 	_choice_contents.size_flags_horizontal = Control.SIZE_EXPAND_FILL
 	_choice_contents.add_theme_constant_override("separation", 9)
 	choice_scroll.add_child(_choice_contents)
+	_delete_dialog = ConfirmationDialog.new()
+	_delete_dialog.title = "Elimina competenza"
+	_delete_dialog.ok_button_text = "Elimina"
+	_delete_dialog.cancel_button_text = "Annulla"
+	_delete_dialog.confirmed.connect(_confirm_delete_competence)
+	add_child(_delete_dialog)
+	var delete_content := VBoxContainer.new()
+	_delete_dialog.add_child(delete_content)
+	var delete_info := Label.new()
+	delete_info.text = "Da quale origine vuoi eliminare la competenza?"
+	delete_info.autowrap_mode = TextServer.AUTOWRAP_WORD_SMART
+	delete_content.add_child(delete_info)
+	_delete_picker = OptionButton.new()
+	_delete_picker.custom_minimum_size.x = 345
+	delete_content.add_child(_delete_picker)
 	_refresh_proficiency_picker()
 	load_record({})
 
@@ -191,6 +211,8 @@ func load_record(record: Dictionary) -> void:
 	# A still-open choice dialog must not modify the next selected creature.
 	if _choice_dialog != null:
 		_choice_dialog.hide()
+	if _delete_dialog != null:
+		_delete_dialog.hide()
 	_choice_source_id = ""
 	_choice_groups.clear()
 	_record = record.duplicate(true)
@@ -234,6 +256,7 @@ func _enabled_map() -> Dictionary:
 
 func _refresh() -> void:
 	_add_competence_button.disabled = _selected_id in ["~none~", ""]
+	_rebuild_mandatory_grants()
 	_refresh_origins()
 	_refresh_competences()
 	_refresh_origin_picker()
@@ -465,40 +488,139 @@ func _refresh_competences() -> void:
 				box.add_child(expert)
 			var toggle := CheckButton.new()
 			toggle.text = "⏻"
-			toggle.tooltip_text = "Disattiva " + ("il collegamento con l'origine selezionata" if selected else "tutte le concessioni di questa competenza")
+			toggle.tooltip_text = "Competenza effettiva da almeno un'origine attiva. Seleziona l'origine per modificare solo le sue concessioni."
 			toggle.button_pressed = _group_enabled(indices)
-			toggle.disabled = _selected_id not in ["~none~", ""] and not selected
+			# An origin filter is for highlighting, not for turning unrelated
+			# proficiencies off. Mandatory grants remain immutable individually.
+			toggle.disabled = (_selected_id not in ["~none~", ""] and not selected) or _has_mandatory_in_scope(indices)
 			toggle.toggled.connect(_toggle_group.bind(indices.duplicate()))
 			box.add_child(toggle)
-			var removable: Array[int] = []
-			for index: Variant in indices:
-				var grant: Dictionary = _rows[int(index)]
-				if bool(grant.get("automatic", false)):
-					continue
-				var grant_source: String = String(grant.get("origin_id", ""))
-				if _selected_id not in ["~none~", ""] and not grant_source.is_empty() and grant_source != _selected_id:
-					continue
-				removable.append(int(index))
-			if not removable.is_empty():
+			if not _deletable_sources(kind, key).is_empty():
 				var remove := Button.new()
 				remove.text = "✕"
-				remove.tooltip_text = "Elimina definitivamente le concessioni manuali (le automatiche restano)"
+				remove.tooltip_text = "Elimina una competenza scelta. Se concessa da più origini, scegli quale."
 				remove.flat = true
-				remove.pressed.connect(_delete_manual_group.bind(removable))
+				remove.pressed.connect(_request_delete_competence.bind(kind, key))
 				box.add_child(remove)
 
 
 
-func _delete_manual_group(indices: Array) -> void:
-	# Only user-made grants/choices can be deleted: fixed structured grants
-	# always return from the source catalog on the next load.
+func _rebuild_mandatory_grants() -> void:
+	_mandatory_grants.clear()
+	var state: Dictionary = _record.duplicate(true)
+	state["feats_catalog"] = _feats.duplicate(true)
+	for source: Dictionary in Rules.candidate_sources(state):
+		var sid: String = String(source.get("id", ""))
+		for grant: Dictionary in Rules.fixed_grants(source):
+			var identity: String = sid + "|" + String(grant.get("kind", "")) + "|" + String(grant.get("key", ""))
+			_mandatory_grants[identity] = true
+
+
+func _is_mandatory_choice(row: Dictionary) -> bool:
+	var sid: String = String(row.get("origin_id", ""))
+	if sid.is_empty():
+		return false
+	return _mandatory_grants.has(sid + "|" + String(row.get("kind", "")) + "|" + String(row.get("key", "")))
+
+
+func _has_mandatory_in_scope(indices: Array) -> bool:
+	for raw_index: Variant in indices:
+		var row: Dictionary = _rows[int(raw_index)]
+		var sid: String = String(row.get("origin_id", ""))
+		if _selected_id not in ["~none~", ""] and sid != _selected_id:
+			continue
+		if _is_mandatory_choice(row):
+			return true
+	return false
+
+
+func _deletable_sources(kind: String, key: String) -> Array[String]:
+	var sources: Array[String] = []
+	for row: Dictionary in _rows:
+		if String(row.get("kind", "")) != kind or String(row.get("key", "")) != key:
+			continue
+		var sid: String = String(row.get("origin_id", ""))
+		if _is_mandatory_choice(row) or (bool(row.get("automatic", false)) and not sid.is_empty()):
+			continue
+		if sid not in sources:
+			sources.append(sid)
+	return sources
+
+
+func _request_delete_competence(kind: String, key: String) -> void:
+	var eligible: Array[String] = _deletable_sources(kind, key)
+	if eligible.is_empty():
+		return
+	var all_sources: Dictionary = {}
+	for row: Dictionary in _rows:
+		if String(row.get("kind", "")) == kind and String(row.get("key", "")) == key:
+			all_sources[String(row.get("origin_id", ""))] = true
+	if all_sources.size() <= 1:
+		_delete_competence_from_source(kind, key, eligible[0])
+		return
+	_delete_kind = kind
+	_delete_key = key
+	_delete_dialog.title = "Elimina · " + key.capitalize()
+	_delete_picker.clear()
+	_delete_picker.add_item("Da tutte le origini (tranne concessioni obbligatorie)")
+	_delete_picker.set_item_metadata(0, "~all~")
+	var source_ids: Array = all_sources.keys()
+	source_ids.sort()
+	for raw_id: Variant in source_ids:
+		var sid: String = String(raw_id)
+		var label: String = "Senza origine" if sid.is_empty() else _origin_display(sid)
+		if label.is_empty():
+			label = sid
+		_delete_picker.add_item(label)
+		var index: int = _delete_picker.item_count - 1
+		_delete_picker.set_item_metadata(index, sid)
+		_delete_picker.set_item_disabled(index, sid not in eligible)
+	_delete_picker.select(0)
+	DialogLayout.popup(_delete_dialog, Vector2i(445, 185), 0.90)
+
+
+func _confirm_delete_competence() -> void:
+	if _delete_picker.selected < 0 or _delete_kind.is_empty():
+		return
+	var sid: String = String(_delete_picker.get_item_metadata(_delete_picker.selected))
+	_delete_competence_from_source(_delete_kind, _delete_key, sid)
+	_delete_kind = ""
+	_delete_key = ""
+
+
+func _delete_competence_from_source(kind: String, key: String, sid: String) -> void:
 	var removed_skills: Array[String] = []
 	for i: int in range(_rows.size() - 1, -1, -1):
-		if i not in indices or bool(_rows[i].get("automatic", false)):
+		var row: Dictionary = _rows[i]
+		if String(row.get("kind", "")) != kind or String(row.get("key", "")) != key:
+			continue
+		var row_sid: String = String(row.get("origin_id", ""))
+		if sid != "~all~" and row_sid != sid:
+			continue
+		if _is_mandatory_choice(row) or (bool(row.get("automatic", false)) and not row_sid.is_empty()):
+			continue
+		if kind == "skill":
+			removed_skills.append(row_sid + "|" + key)
+		_rows.remove_at(i)
+	_remove_orphaned_manual_expertise(removed_skills)
+	_publish()
+
+
+func _delete_manual_group(indices: Array) -> void:
+	# Older callers can still delete their explicitly selected, nonmandatory
+	# rows; mandatory catalog grants never disappear from one origin.
+	var removed_skills: Array[String] = []
+	for i: int in range(_rows.size() - 1, -1, -1):
+		if i not in indices:
 			continue
 		var row: Dictionary = _rows[i]
+		if _is_mandatory_choice(row):
+			continue
+		var sid: String = String(row.get("origin_id", ""))
+		if bool(row.get("automatic", false)) and not sid.is_empty():
+			continue
 		if String(row.get("kind", "")) == "skill":
-			removed_skills.append(String(row.get("origin_id", "")) + "|" + String(row.get("key", "")))
+			removed_skills.append(sid + "|" + String(row.get("key", "")))
 		_rows.remove_at(i)
 	_remove_orphaned_manual_expertise(removed_skills)
 	_publish()
@@ -520,11 +642,10 @@ func _remove_orphaned_manual_expertise(removed_skills: Array[String]) -> void:
 
 
 func _group_enabled(indices: Array) -> bool:
+	var enabled: Dictionary = _enabled_map()
 	for index: Variant in indices:
 		var row: Dictionary = _rows[int(index)]
-		if _selected_id not in ["~none~", ""] and String(row.get("origin_id", "")) != _selected_id:
-			continue
-		if not bool(row.get("disabled", false)):
+		if not bool(row.get("disabled", false)) and bool(enabled.get(String(row.get("origin_id", "")), true)):
 			return true
 	return false
 
@@ -542,6 +663,8 @@ func _toggle_group(on: bool, indices: Array) -> void:
 	for index: Variant in indices:
 		var row: Dictionary = _rows[int(index)]
 		if _selected_id not in ["~none~", ""] and String(row.get("origin_id", "")) != _selected_id:
+			continue
+		if _is_mandatory_choice(row):
 			continue
 		row["disabled"] = not on
 	_publish()
@@ -595,6 +718,8 @@ func _toggle_origin(on: bool, sid: String) -> void:
 
 func _toggle_competence(on: bool, index: int) -> void:
 	if index < 0 or index >= _rows.size():
+		return
+	if _is_mandatory_choice(_rows[index]):
 		return
 	_rows[index]["disabled"] = not on
 	_publish()

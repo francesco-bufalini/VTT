@@ -2329,7 +2329,7 @@ func _refresh_skill_values(record: Dictionary) -> void:
 				modifier = int(published)
 				trained = true
 		var target: Label = _saving_throw_labels[ability]
-		target.text = "%s%+d" % ["🎓 " if trained else "", modifier]
+		target.text = "%+d%s" % [modifier, " 🎓" if trained else ""]
 		target.tooltip_text = "%s: mod. %+d%s = %+d" % [ability.to_upper(), base,
 			" + competenza %+d" % proficiency if trained else "", modifier]
 	if _tools_proficiency_label != null:
@@ -2774,8 +2774,11 @@ func _on_proficiencies_updated(rows: Array, feats: Array, origins: Array) -> voi
 	var previous_skills: Variant = record.get("skill_proficiencies", [])
 	var previous_expertise: Variant = record.get("skill_expertise", [])
 	record["proficiency_origins"] = origins.duplicate(true)
-	ProficiencyRules.sync_legacy_fields(record, typed_rows)
 	record["feats_catalog"] = feats.duplicate(true)
+	record["proficiency_choices"] = typed_rows.duplicate(true)
+	# Reconcile the saved editor state with the current traits and the
+	# unremovable grants before persisting it.
+	ProficiencyRules.sync_legacy_fields(record, ProficiencyRules.choices(record))
 	if previous_skills != record.get("skill_proficiencies", []) or previous_expertise != record.get("skill_expertise", []):
 		# Do not re-infer deliberately edited monster skills from the bestiary.
 		record["skill_ranks_custom"] = true
@@ -2848,6 +2851,8 @@ func _on_inventory_updated(inventory: Array) -> void:
 		if all_migrated:
 			record.erase("documents")
 	record["armor_class"] = maxi(0, int(record.get("armor_class_base", 10)) + int(record.get("armor_class_bonus", 0)) + ItemRules.shield_bonus(inventory))
+	# Removing an item also revokes proficiencies assigned to that item.
+	ProficiencyRules.sync_legacy_fields(record, ProficiencyRules.choices(record))
 	record["reach_feet"] = AttackData.active_range(record)
 	if String(record.get("kind", "")) == "monster":
 		record["reach_is_custom"] = true
@@ -2859,6 +2864,7 @@ func _on_inventory_updated(inventory: Array) -> void:
 	_refresh_attacks(record)
 	_update_defense_display()
 	_apply_sheet_properties(record)
+	_refresh_reference(record)
 
 
 func _on_ability_value_changed(_value: float, ability: String) -> void:

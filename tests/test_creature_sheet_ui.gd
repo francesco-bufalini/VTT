@@ -354,8 +354,8 @@ func run() -> void:
 		"Passive perception must be calculated from Wisdom and skill ranks")
 	assert(area._saving_throw_labels.size() == 6,
 		"Each ability shows a saving throw result")
-	assert((area._saving_throw_labels["wis"] as Label).text.begins_with("🎓 "),
-		"Proficient Wisdom saving throw must place the proficiency emoji before its bonus")
+	assert((area._saving_throw_labels["wis"] as Label).text.ends_with(" 🎓"),
+		"Proficient Wisdom saving throw must place the numeric bonus before the proficiency emoji")
 	var wisdom_saving: Label = area._saving_throw_labels["wis"]
 	var wisdom_formula: Node = area._formula_values["ability:wis"]
 	assert(area._abilities_grid.columns == 4
