@@ -224,6 +224,17 @@ static func automatic_hit_points(character: Dictionary) -> Dictionary:
 	return {"available": true, "value": total, "detail": "; ".join(parts)}
 
 
+static func automatic_hit_dice(character: Dictionary) -> String:
+	var parts: PackedStringArray = []
+	for cls: Dictionary in level_classes(character):
+		var name: String = String(cls.get("name", "")).to_lower()
+		var sides: int = int(HIT_DICE.get(name, 0))
+		if sides > 0:
+			parts.append("%dd%d (%s)" % [maxi(0, int(cls.get("level", 0))),
+				sides, String(cls.get("name", ""))])
+	return ", ".join(parts)
+
+
 static func proficiency_bonus(character: Dictionary) -> int:
 	var total: int = 0
 	for cls: Dictionary in level_classes(character):
@@ -317,7 +328,11 @@ static func spell_slot_progression(character: Dictionary) -> Dictionary:
 		elif not name.is_empty() and not HIT_DICE.has(name):
 			warnings.append("Classe homebrew non calcolabile: " + String(cls.get("name", "")))
 	var caster_level := 0
-	var multiclass: bool = classes.size() > 1
+	var playable_classes: int = 0
+	for cls: Dictionary in classes:
+		if String(cls.get("name", "")).to_lower() != "mostro":
+			playable_classes += 1
+	var multiclass: bool = playable_classes > 1
 	for contribution: Dictionary in contributions:
 		var level: int = int(contribution.get("level", 0))
 		match String(contribution.get("kind", "")):
