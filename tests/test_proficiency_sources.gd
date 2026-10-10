@@ -239,6 +239,20 @@ func run() -> void:
 	tab._select_origin("class|phb|fighter")
 	assert("Hit Point Die" in tab._origin_description(tab._selected_source_record()),
 		"Source hover includes the original class overview description")
+	var item_record: Dictionary = _record()
+	item_record["inventory"] = [{"id": "test:tool", "name": "Manuale di prova",
+		"description": "Descrizione dell'oggetto origine"}]
+	item_record["proficiency_origins"] = [{"id": "item:test:tool",
+		"name": "Oggetto · Manuale di prova", "group": "custom", "disabled": false}]
+	tab.load_record(item_record)
+	var item_origin: Dictionary = {}
+	for source: Dictionary in tab._origins:
+		if String(source.get("id", "")) == "item:test:tool":
+			item_origin = source
+	assert("Descrizione dell'oggetto origine" in tab._origin_description(item_origin),
+		"Origin hover must show the full description of the item")
+	tab.load_record(record)
+	tab._select_origin("class|phb|fighter")
 	tab._kind_picker.select(2)
 	tab._refresh_proficiency_picker()
 	var restricted: Array[String] = Proficiencies.restricted_choices(tab._selected_source_record(), "skill")
