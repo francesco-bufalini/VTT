@@ -44,7 +44,13 @@ def build(offline=False, refresh=False):
             row['id'] += ':' + quote(raw['className'].lower(),safe='') + ':' + str(raw['level'])
             features.append(row)
     races = read('races.json')
-    race_rows = [entry('races',raw) for raw in races.get('race',[]) if '_copy' not in raw]
+    race_rows = []
+    for raw in races.get('race', []):
+        if '_copy' in raw:
+            continue
+        row = entry('races', raw)
+        row['speed'] = raw.get('speed', 30)
+        race_rows.append(row)
     for raw in races.get('subrace',[]):
         base = next((r for r in races['race'] if r['name']==raw.get('raceName') and r['source']==raw.get('raceSource')), None)
         if not base:
@@ -53,7 +59,9 @@ def build(offline=False, refresh=False):
         merged.update(raw)
         merged['name'] = raw.get('_baseName', base['name'] + ' (' + raw.get('name','') + ')')
         merged['entries'] = base.get('entries',[]) + raw.get('entries',[])
-        race_rows.append(entry('races',merged))
+        row = entry('races', merged)
+        row['speed'] = merged.get('speed', 30)
+        race_rows.append(row)
     output = {"meta":{"source_url":BASE,"sha256":hashes},"classes":classes,"races":race_rows,"class_features":features}
     (ROOT/'vtt/data/creature_references_5etools.json').write_text(json.dumps(output,ensure_ascii=False,separators=(',',':'))+'\n',encoding='utf-8')
     print(f"Generated {len(classes)} classes, {len(race_rows)} races and {len(features)} source-qualified features")
