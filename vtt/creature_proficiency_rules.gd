@@ -506,8 +506,15 @@ static func origins(record: Dictionary) -> Array[Dictionary]:
 				present = true
 				break
 		if not present:
-			result.append({"id": sid, "name": String(row.get("origin_name", sid)),
-				"group": "custom", "disabled": false, "automatic": false, "requirements": []})
+			var structured: bool = false
+			for prefix: String in ["class|", "race|", "subrace|", "background|", "feat|"]:
+				if sid.begins_with(prefix):
+					structured = true
+					break
+			result.append({"id": sid,
+				"name": ("⚠ Origine non più disponibile · " if structured else "") + String(row.get("origin_name", sid)),
+				"group": "custom", "disabled": structured,
+				"automatic": structured, "requirements": []})
 	return result
 
 
