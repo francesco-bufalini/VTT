@@ -32,49 +32,52 @@ static func normalized_key(value: String) -> String:
 
 
 static func choices(record: Dictionary) -> Array[Dictionary]:
-	var raw: Variant = record.get("proficiency_choices", [])
 	var result: Array[Dictionary] = []
+	var raw: Variant = record.get("proficiency_choices", [])
 	if raw is Array:
 		for value: Variant in raw:
 			if not value is Dictionary:
 				continue
-			var row: Dictionary = value as Dictionary
-			var kind := String(row.get("kind", ""))
-			var key := normalized_key(String(row.get("key", "")))
+			var row: Dictionary = value
+			var kind: String = String(row.get("kind", ""))
+			var key: String = normalized_key(String(row.get("key", "")))
 			if kind not in TYPES or key.is_empty():
 				continue
 			result.append({
-				"kind": kind,
-				"key": key,
+				"kind": kind, "key": key,
 				"origin_id": String(row.get("origin_id", "")),
-				"origin_name": String(row.get("origin_name", ""))
+				"origin_name": String(row.get("origin_name", "")),
+				"disabled": bool(row.get("disabled", false)),
+				"automatic": bool(row.get("automatic", false))
 			})
-	# Legacy skill ranks/saving throws are already authoritative; attach
-	# empty origins rather than silently granting or removing anything.
-	for pair: Dictionary in [
-		{"kind": "skill", "field": "skill_proficiencies"},
-		{"kind": "expertise", "field": "skill_expertise"},
-		{"kind": "save", "field": "saving_throw_proficiencies"}
-	]:
-		var list: Variant = record.get(String(pair.field), [])
-		if not list is Array:
-			continue
-		for value: Variant in list:
-			var kind := String(pair.kind)
-			var key := normalized_key(String(value))
-			if not has_choice(result, kind, key):
-				result.append({"kind": kind, "key": key, "origin_id": "", "origin_name": ""})
-	# Pre-change per-attack proficiency is migrated to a shared weapon-name
-	# proficiency, not kept on attack instances. It needs a source assignment.
-	if not record.has("proficiency_choices"):
+	# Only import the old rank arrays before the new choice model exists:
+	# otherwise an intentionally disabled proficiency would be resurrected.
+	var migrate_legacy: bool = not record.has("proficiency_choices")
+	if record.has("proficiency_choices") and not record.has("proficiency_origins"):
+		var previous: Variant = record.get("proficiency_choices", [])
+		migrate_legacy = previous is Array and (previous as Array).is_empty()
+	if migrate_legacy:
+		for pair: Dictionary in [
+			{"kind": "skill", "field": "skill_proficiencies"},
+			{"kind": "expertise", "field": "skill_expertise"},
+			{"kind": "save", "field": "saving_throw_proficiencies"}
+		]:
+			var list: Variant = record.get(String(pair.field), [])
+			if not list is Array:
+				continue
+			for value: Variant in list:
+				var kind: String = String(pair.kind)
+				var key: String = normalized_key(String(value))
+				if not has_choice(result, kind, key):
+					result.append({"kind": kind, "key": key, "origin_id": "", "origin_name": "", "disabled": false})
 		var overrides: Variant = record.get("attack_overrides", {})
 		if overrides is Dictionary:
 			for raw_id: Variant in overrides.keys():
-				var attack_id := String(raw_id)
+				var attack_id: String = String(raw_id)
 				var flags: Variant = overrides[raw_id]
 				if not attack_id.begins_with("item:") or not flags is Dictionary or not bool(flags.get("proficient", false)):
 					continue
-				var item_id := attack_id.substr(5)
+				var item_id: String = attack_id.substr(5)
 				for prefix: String in ["throw:main:", "throw:off:", "off:"]:
 					if item_id.begins_with(prefix):
 						item_id = item_id.substr(prefix.length())
@@ -83,9 +86,28 @@ static func choices(record: Dictionary) -> Array[Dictionary]:
 				if inv is Array:
 					for raw_item: Variant in inv:
 						if raw_item is Dictionary and String(raw_item.get("id", "")) == item_id:
-							var item_name := normalized_key(String(raw_item.get("name", "")))
+							var item_name: String = normalized_key(String(raw_item.get("name", "")))
 							if not item_name.is_empty() and not has_choice(result, "weapon", item_name):
-								result.append({"kind": "weapon", "key": item_name, "origin_id": "", "origin_name": ""})
+								result.append({"kind": "weapon", "key": item_name, "origin_id": "", "origin_name": "", "disabled": false})
+	# Structured unconditional grants are materialized for every eligible
+	# origin, including a fresh sheet that has never opened the editor.
+	for source: Dictionary in candidate_sources(record):
+		if not source_has_grants(source):
+			continue
+		var fixed: Array[Dictionary] = fixed_grants(source)
+		for grant: Dictionary in fixed:
+			var exists: bool = false
+			for row: Dictionary in result:
+				if String(row.get("kind", "")) == String(grant.get("kind", "")) and String(row.get("key", "")) == String(grant.get("key", "")) and String(row.get("origin_id", "")) == String(source.get("id", "")):
+					exists = true
+					break
+			if not exists:
+				var automatic: Dictionary = grant.duplicate(true)
+				automatic["origin_id"] = String(source.get("id", ""))
+				automatic["origin_name"] = String(source.get("name", ""))
+				automatic["automatic"] = true
+				automatic["disabled"] = false
+				result.append(automatic)
 	return result
 
 
@@ -97,7 +119,11 @@ static func has_choice(rows: Array[Dictionary], kind: String, key: String) -> bo
 
 
 static func has_proficiency(record: Dictionary, kind: String, key: String) -> bool:
-	return has_choice(choices(record), kind, key)
+	var origin_state: Dictionary = origin_enabled_map(record)
+	for row: Dictionary in choices(record):
+		if String(row.get("kind", "")) == kind and normalized_key(String(row.get("key", ""))) == normalized_key(key) and not bool(row.get("disabled", false)) and bool(origin_state.get(String(row.get("origin_id", "")), true)):
+			return true
+	return false
 
 
 static func weapon_proficient(record: Dictionary, entry: Dictionary) -> bool:
@@ -113,6 +139,7 @@ static func weapon_proficient(record: Dictionary, entry: Dictionary) -> bool:
 
 static func sync_legacy_fields(record: Dictionary, rows: Array[Dictionary]) -> void:
 	record["proficiency_choices"] = rows.duplicate(true)
+	var enabled: Dictionary = origin_enabled_map(record)
 	for pair: Dictionary in [
 		{"kind": "skill", "field": "skill_proficiencies"},
 		{"kind": "expertise", "field": "skill_expertise"},
@@ -120,10 +147,15 @@ static func sync_legacy_fields(record: Dictionary, rows: Array[Dictionary]) -> v
 	]:
 		var entries: Array[String] = []
 		for row: Dictionary in rows:
-			if String(row.get("kind", "")) == String(pair.kind):
-				var key := normalized_key(String(row.get("key", "")))
-				if key not in entries:
-					entries.append(key)
+			if String(row.get("kind", "")) != String(pair.kind) or bool(row.get("disabled", false)) or not bool(enabled.get(String(row.get("origin_id", "")), true)):
+				continue
+			var key: String = normalized_key(String(row.get("key", "")))
+			if String(pair.kind) == "expertise" and key not in record.get("skill_proficiencies", []):
+				# A retained expertise switch stays dormant if all sources
+				# of the underlying skill have been disabled.
+				continue
+			if key not in entries:
+				entries.append(key)
 		record[String(pair.field)] = entries
 
 
@@ -190,7 +222,7 @@ static func _selected_source(record: Dictionary, group: String, name: String, so
 
 static func _origin_title(group: String, name: String, mode: String) -> String:
 	match group:
-		"class": return "Classe · " + name + (" (multiclasse)" if mode == "multiclass" else " (iniziale)")
+		"class": return "Starting " + name
 		"race", "subrace": return "Specie · " + name
 		"background": return "Background · " + name
 		"feat": return "Talento · " + name
@@ -373,3 +405,246 @@ static func unassigned_count(record: Dictionary) -> int:
 		if String(row.get("origin_id", "")).is_empty():
 			count += 1
 	return count
+
+
+
+# Automatic source and proficiency materialization. The permanent identity is
+# source ID + kind + key: two different origins may grant the same competence.
+static func source_has_grants(source: Dictionary) -> bool:
+	for kind: String in TYPES:
+		var data: Variant = _grants_data(source, kind)
+		if data is Array and not (data as Array).is_empty():
+			return true
+		if data is Dictionary and not (data as Dictionary).is_empty():
+			return true
+	return false
+
+
+static func fixed_grants(source: Dictionary) -> Array[Dictionary]:
+	var result: Array[Dictionary] = []
+	for kind: String in TYPES:
+		var raw: Variant = _grants_data(source, kind)
+		if not raw is Array:
+			continue
+		for item: Variant in raw:
+			if item is String:
+				var key: String = normalized_key(String(item))
+				if key.begins_with("{@item ") and key.ends_with("}"):
+					key = key.substr(7).split("|")[0].strip_edges()
+				elif " " in key and kind not in ["skill", "language"]:
+					# Never interpret sentences such as "one artisan tool of your choice".
+					if not key in ["simple", "martial", "all"]:
+						continue
+				if not key.is_empty() and not key.begins_with("{@"):
+					_add_fixed_grant(result, kind, key)
+			elif item is Dictionary:
+				for raw_key: Variant in (item as Dictionary).keys():
+					var key: String = normalized_key(String(raw_key))
+					if key in ["choose", "any", "anyArtisansTool", "anyGamingSet", "anyMusicalInstrument", "anyStandard", "anyExotic", "anyProficientSkill"]:
+						continue
+					if (item as Dictionary)[raw_key] == true:
+						_add_fixed_grant(result, kind, key.split("|")[0])
+	return result
+
+
+static func _add_fixed_grant(rows: Array[Dictionary], kind: String, key: String) -> void:
+	if not has_choice(rows, kind, key):
+		rows.append({"kind": kind, "key": key})
+
+
+static func choice_requirements(source: Dictionary) -> Array[Dictionary]:
+	var result: Array[Dictionary] = []
+	for kind: String in TYPES:
+		var data: Variant = _grants_data(source, kind)
+		if not data is Array:
+			continue
+		for raw: Variant in data:
+			if not raw is Dictionary:
+				continue
+			var item: Dictionary = raw
+			var choose: Variant = item.get("choose", {})
+			if choose is Dictionary:
+				var count: int = maxi(1, int((choose as Dictionary).get("count", 1)))
+				result.append({"kind": kind, "count": count, "label": "Scegli %d · %s" % [count, kind], "data": item})
+			for field: String in ["any", "anyArtisansTool", "anyGamingSet", "anyMusicalInstrument", "anyStandard", "anyExotic", "anyProficientSkill"]:
+				if item.has(field):
+					result.append({"kind": kind, "count": maxi(1, int(item[field])), "label": "Scegli %d · %s" % [maxi(1, int(item[field])), kind], "data": item})
+	return result
+
+
+static func origins(record: Dictionary) -> Array[Dictionary]:
+	var result: Array[Dictionary] = []
+	var saved: Dictionary = {}
+	var raw: Variant = record.get("proficiency_origins", [])
+	if raw is Array:
+		for item: Variant in raw:
+			if item is Dictionary and not String(item.get("id", "")).is_empty():
+				saved[String(item.get("id", ""))] = item
+	for source: Dictionary in candidate_sources(record):
+		if not source_has_grants(source):
+			continue
+		var sid: String = String(source.get("id", ""))
+		var previous: Dictionary = saved.get(sid, {})
+		result.append({"id": sid, "name": String(source.get("name", "")),
+			"group": String(source.get("group", "")), "disabled": bool(previous.get("disabled", false)),
+			"automatic": true, "requirements": choice_requirements(source)})
+	for sid: String in saved.keys():
+		var item: Dictionary = saved[sid]
+		var found := false
+		for row: Dictionary in result:
+			if String(row.get("id", "")) == sid:
+				found = true
+				break
+		if not found:
+			var withdrawn: bool = bool(item.get("automatic", false))
+			result.append({"id": sid,
+				"name": ("⚠ Origine non più disponibile · " if withdrawn else "") + String(item.get("name", "Origine")),
+				"group": String(item.get("group", "custom")),
+				"disabled": withdrawn or bool(item.get("disabled", false)),
+				"automatic": withdrawn, "requirements": []})
+	var stored_choices: Variant = record.get("proficiency_choices", [])
+	if not stored_choices is Array:
+		stored_choices = []
+	for row: Variant in stored_choices:
+		if not row is Dictionary:
+			continue
+		var sid: String = String(row.get("origin_id", ""))
+		if sid.is_empty():
+			continue
+		var present := false
+		for item: Dictionary in result:
+			if String(item.get("id", "")) == sid:
+				present = true
+				break
+		if not present:
+			var structured: bool = false
+			for prefix: String in ["class|", "race|", "subrace|", "background|", "feat|"]:
+				if sid.begins_with(prefix):
+					structured = true
+					break
+			result.append({"id": sid,
+				"name": ("⚠ Origine non più disponibile · " if structured else "") + String(row.get("origin_name", sid)),
+				"group": "custom", "disabled": structured,
+				"automatic": structured, "requirements": []})
+	return result
+
+
+static func origin_enabled_map(record: Dictionary) -> Dictionary:
+	var result: Dictionary = {}
+	for item: Dictionary in origins(record):
+		result[String(item.get("id", ""))] = not bool(item.get("disabled", false))
+	return result
+
+
+static func requirement_missing(source: Dictionary, rows: Array[Dictionary], enabled: Dictionary) -> Array[String]:
+	var result: Array[String] = []
+	var sid: String = String(source.get("id", ""))
+	for requirement: Dictionary in source.get("requirements", []):
+		var kind: String = String(requirement.get("kind", ""))
+		var present := 0
+		for row: Dictionary in rows:
+			if String(row.get("origin_id", "")) != sid or String(row.get("kind", "")) != kind:
+				continue
+			if bool(row.get("disabled", false)) or not bool(enabled.get(sid, true)):
+				continue
+			# Fixed grants in the same group do not satisfy a choose quota.
+			if grant_matches(requirement.get("data", {}), kind, String(row.get("key", ""))) == 1:
+				present += 1
+		var count: int = int(requirement.get("count", 1))
+		# Chosen proficiencies are represented only after manual selection.
+		if present < count:
+			result.append("%s · %d/%d" % [kind, present, count])
+	return result
+
+
+static func _readable_grants(value: Variant) -> String:
+	var pieces := PackedStringArray()
+	if not value is Array:
+		return ""
+	for raw: Variant in value:
+		if raw is String:
+			var label: String = String(raw)
+			if label.begins_with("{@item "):
+				label = label.substr(7).split("|")[0].strip_edges()
+			pieces.append(label.capitalize() if label in ["simple", "martial", "light", "medium", "heavy", "shield"] else label)
+		elif raw is Dictionary:
+			var item: Dictionary = raw
+			for field: String in item.keys():
+				if item[field] == true and field != "choose":
+					pieces.append(field.capitalize())
+			var choose: Variant = item.get("choose", {})
+			if choose is Dictionary:
+				var count: int = maxi(1, int((choose as Dictionary).get("count", 1)))
+				var options: Variant = (choose as Dictionary).get("from", [])
+				if options is Array and not (options as Array).is_empty():
+					pieces.append("Choose %d: %s" % [count, ", ".join(PackedStringArray(options))])
+				else:
+					pieces.append("Choose %d from %s" % [count, String((choose as Dictionary).get("fromFilter", "the available options"))])
+			for field: String in ["any", "anyStandard", "anyExotic", "anyArtisansTool", "anyMusicalInstrument", "anyGamingSet", "anyProficientSkill"]:
+				if item.has(field):
+					pieces.append("Choose %d (%s)" % [int(item[field]), field])
+	return "; ".join(pieces)
+
+
+static func _clean_equipment(text_value: String) -> String:
+	var pattern: RegEx = RegEx.create_from_string("\\{@(?:item|filter|dice) ([^}|]+)(?:\\|[^}]*)?\\}")
+	if pattern == null:
+		return text_value
+	var replaced: String = text_value
+	for match_result: RegExMatch in pattern.search_all(text_value):
+		replaced = replaced.replace(match_result.get_string(0), match_result.get_string(1))
+	return replaced
+
+
+static func starting_description(source: Dictionary) -> String:
+	var data: Dictionary = source.get("data", {})
+	var meta: Dictionary = data.get("startingMeta", {})
+	var mode: String = String(source.get("mode", "starting"))
+	var lines := PackedStringArray()
+	lines.append("Core Traits")
+	var dice: String = String(meta.get("hitDice", ""))
+	if not dice.is_empty():
+		lines.append("Hit Point Die: %s per level" % dice)
+		lines.append("Hit Points at Level 1: %d + Constitution modifier" % int(meta.get("hitPointsAtFirst", 0)))
+		lines.append("Hit Points per additional level: %s + Constitution modifier" % dice)
+	var saving: String = _readable_grants(data.get("savingThrows", []))
+	if not saving.is_empty():
+		lines.append("Saving Throw Proficiencies: " + saving)
+	var start: Dictionary = data.get("startingProficiencies", {})
+	for group: String in ["skills", "weapons", "armor", "tools"]:
+		var raw: Variant = start.get(group, [])
+		if group == "armor":
+			raw = start.get("armor", [])
+		var displayed := _readable_grants(raw)
+		if not displayed.is_empty():
+			var names: Dictionary = {"skills": "Skill Proficiencies", "weapons": "Weapon Proficiencies", "armor": "Armor Training", "tools": "Tool Proficiencies"}
+			var title: String = String(names.get(group, group.capitalize()))
+			lines.append(title + ": " + _clean_equipment(displayed))
+	var equipment: Variant = meta.get("equipment", [])
+	if equipment is Array and not (equipment as Array).is_empty():
+		lines.append("")
+		lines.append("Starting Equipment")
+		for item: Variant in equipment:
+			lines.append("• " + _clean_equipment(String(item)))
+		var gold_option: String = String(meta.get("gold", ""))
+		if not gold_option.is_empty():
+			lines.append("Alternativamente: " + _clean_equipment(gold_option) + " per acquistare l'equipaggiamento")
+	lines.append("")
+	lines.append("Multiclassing")
+	var requirements: Variant = meta.get("multiclass", {})
+	if requirements is Dictionary and not (requirements as Dictionary).is_empty():
+		var requirement_pieces := PackedStringArray()
+		for ability: String in (requirements as Dictionary).keys():
+			requirement_pieces.append(ability.to_upper() + " " + str((requirements as Dictionary)[ability]))
+		lines.append("Ability Score Minimum: " + ", ".join(requirement_pieces))
+	var multi: Dictionary = data.get("multiclassProficiencies", {})
+	for group: String in ["skills", "weapons", "armor", "tools"]:
+		var displayed := _readable_grants(multi.get(group, []))
+		if not displayed.is_empty():
+			var names: Dictionary = {"skills": "Skill Proficiencies", "weapons": "Weapon Proficiencies", "armor": "Armor Training", "tools": "Tool Proficiencies"}
+			var title: String = String(names.get(group, group.capitalize()))
+			lines.append(title + ": " + _clean_equipment(displayed))
+	lines.append("")
+	lines.append("Applicate a questa creatura: " + ("competenze iniziali" if mode == "starting" else "competenze da multiclasse"))
+	lines.append("Source: " + String(data.get("source", "")))
+	return "\n".join(lines)

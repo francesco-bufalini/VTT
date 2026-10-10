@@ -19,7 +19,7 @@ FIELDS = (
     "languageProficiencies",
     "expertise",
 )
-IGNORED_SOURCES = {"XPHB", "XDMG", "EFA"}
+IGNORED_SOURCES = {"XDMG", "EFA"}
 
 
 def read_json(path: Path) -> dict:
@@ -31,7 +31,7 @@ def convert(kind: str, records: list[dict]) -> list[dict]:
     for record in records:
         if not record.get("name") or not record.get("source"):
             continue
-        if record.get("edition") == "one" or record["source"] in IGNORED_SOURCES:
+        if (record.get("edition") == "one" and record["source"] != "XPHB") or record["source"] in IGNORED_SOURCES:
             continue
         row = {"name": record["name"], "source": record["source"]}
         if kind == "subrace":
@@ -48,6 +48,15 @@ def convert(kind: str, records: list[dict]) -> list[dict]:
             multiclass = record.get("multiclassing", {})
             if "proficienciesGained" in multiclass:
                 row["multiclassProficiencies"] = multiclass["proficienciesGained"]
+            hit_dice = record.get("hd", {})
+            equipment = record.get("startingEquipment", {})
+            row["startingMeta"] = {
+                "hitDice": f"1d{hit_dice['faces']}" if hit_dice.get("faces") else "",
+                "hitPointsAtFirst": hit_dice.get("faces"),
+                "equipment": equipment.get("default", []),
+                "multiclass": multiclass.get("requirements", {}),
+                "gold": equipment.get("goldAlternative", ""),
+            }
         if any(key in row for key in FIELDS + (
             "savingThrows", "startingProficiencies", "multiclassProficiencies"
         )):

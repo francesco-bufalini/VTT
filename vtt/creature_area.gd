@@ -138,6 +138,7 @@ var _picker_current := false
 var _chosen_miniature_id := ""
 var _tracker_rows: VBoxContainer
 var _proficiencies_ui: Node
+var _proficiencies_toggle_button: Button
 var _traits_ui: Node
 var _condition_rows: VBoxContainer
 var _effect_dialog: AcceptDialog
@@ -514,6 +515,19 @@ func _build_ui() -> void:
 	columns.add_child(_tabs)
 	var form := _add_sheet_tab(_tabs, "Info")
 	var statistics_tab := _add_sheet_tab(_tabs, "Statistiche")
+	_proficiencies_toggle_button = Button.new()
+	_proficiencies_toggle_button.text = "▸ Visualizza competenze"
+	_proficiencies_toggle_button.tooltip_text = "Mostra o nasconde le origini e le competenze della creatura"
+	statistics_tab.add_child(_proficiencies_toggle_button)
+	_proficiencies_ui = ProficiencyTab.new()
+	_proficiencies_ui.visible = false
+	statistics_tab.add_child(_proficiencies_ui)
+	_proficiencies_ui.call("setup", Callable(self, "_on_proficiencies_updated"))
+	_proficiencies_toggle_button.pressed.connect(func() -> void:
+		_proficiencies_ui.visible = not _proficiencies_ui.visible
+		_proficiencies_toggle_button.text = "▾ Nascondi competenze" if _proficiencies_ui.visible else "▸ Visualizza competenze"
+		call_deferred("_update_stats_column_heights")
+	)
 	# Always keep skills and combat side by side (45% / 55%).  Scroll
 	# their oversized contents locally instead of expanding the whole sheet.
 	_statistics_columns = HBoxContainer.new()
@@ -544,10 +558,6 @@ func _build_ui() -> void:
 	combat_view.add_child(combat_column)
 	var appearance_tab := _add_sheet_tab(_tabs, "Aspetto")
 	var traits_tab := _add_sheet_tab(_tabs, "Tratti")
-	var proficiency_tab := _add_sheet_tab(_tabs, "Competenze")
-	_proficiencies_ui = ProficiencyTab.new()
-	proficiency_tab.add_child(_proficiencies_ui)
-	_proficiencies_ui.call("setup", Callable(self, "_on_proficiencies_updated"))
 	var conditions_tab := _add_sheet_tab(_tabs, "Stati")
 	var spellcasting_tab := _add_sheet_tab(_tabs, "Incantesimi")
 	_spellcasting_ui = SpellcastingTab.new()
@@ -815,7 +825,7 @@ func _build_ui() -> void:
 	_passive_perception.add_theme_font_size_override("font_size", 18)
 	passive_row.add_child(_passive_perception)
 	var skills_heading := Label.new()
-	skills_heading.text = "Abilità · clicca per cambiare grado"
+	skills_heading.text = "Abilità · 🎓 competenza · 🎓🎓 maestria"
 	skills_heading.add_theme_font_size_override("font_size", 16)
 	skills_column.add_child(skills_heading)
 	_skills_panel = VBoxContainer.new()
@@ -826,13 +836,8 @@ func _build_ui() -> void:
 		var row := HBoxContainer.new()
 		row.add_theme_constant_override("separation", 4)
 		_skills_panel.add_child(row)
-		var rank_button := Button.new()
-		rank_button.custom_minimum_size.x = 40
-		rank_button.tooltip_text = "Clicca: nessuna → competenza → maestria"
-		rank_button.pressed.connect(_cycle_skill_rank.bind(key))
-		row.add_child(rank_button)
-		_skill_buttons[key] = rank_button
 		var skill_label := Label.new()
+		_skill_buttons[key] = skill_label
 		skill_label.text = String(skill["label"]) + " · " + String(skill["ability"]).to_upper()
 		skill_label.clip_text = true
 		skill_label.size_flags_horizontal = Control.SIZE_EXPAND_FILL
@@ -1972,8 +1977,10 @@ func _load_form(record: Dictionary) -> void:
 	_update_defense_display()
 	_skill_ranks.clear()
 	_skill_ranks_custom = bool(record.get("skill_ranks_custom", false))
-	var known_proficiencies: Variant = record.get("skill_proficiencies", [])
-	var known_expertise: Variant = record.get("skill_expertise", [])
+	var sheet_skills: Dictionary = record.duplicate(true)
+	ProficiencyRules.sync_legacy_fields(sheet_skills, ProficiencyRules.choices(record))
+	var known_proficiencies: Variant = sheet_skills.get("skill_proficiencies", [])
+	var known_expertise: Variant = sheet_skills.get("skill_expertise", [])
 	for skill: Dictionary in Skills5e.SKILLS:
 		var key: String = String(skill["id"])
 		_skill_ranks[key] = (
@@ -2202,15 +2209,6 @@ func _on_spellcasting_updated(values: Dictionary) -> void:
 	_replace_current_record(record)
 
 
-func _cycle_skill_rank(skill_id: String) -> void:
-	if _loading or not _skill_ranks.has(skill_id):
-		return
-	_skill_ranks[skill_id] = (int(_skill_ranks[skill_id]) + 1) % 3
-	_skill_ranks_custom = true
-	_refresh_skill_values(_current())
-	_save()
-
-
 func _creature_proficiency(record: Dictionary) -> int:
 	if String(record.get("kind", "")) == "monster":
 		var stat: Dictionary = record.get("stat_block", {})
@@ -2231,8 +2229,9 @@ func _refresh_skill_values(record: Dictionary) -> void:
 		var bonus: int = int((_ability_bonus_spins[ability] as SpinBox).value)
 		var rank: int = int(_skill_ranks.get(key, 0))
 		var value: int = Rules.ability_modifier(score + bonus) + rank * proficiency
-		(_skill_buttons[key] as Button).text = ["○", "●", "◆"][rank]
-		(_skill_buttons[key] as Button).tooltip_text = ["Nessuna competenza", "Competenza", "Maestria"][rank]
+		var marker: String = "" if rank == 0 else " 🎓" if rank == 1 else " 🎓🎓"
+		(_skill_buttons[key] as Label).text = String(skill["label"]) + " · " + ability.to_upper() + marker
+		(_skill_buttons[key] as Label).tooltip_text = ["Nessuna competenza", "Competenza", "Maestria"][rank] + " · Modifica da Visualizza competenze"
 		(_skill_values[key] as Label).text = "%+d" % value
 	var passive: int = 10 + Rules.ability_modifier(
 		int((_ability_spins["wis"] as SpinBox).value) + int((_ability_bonus_spins["wis"] as SpinBox).value)
@@ -2492,7 +2491,7 @@ func _on_documents_updated(documents: Array) -> void:
 		_set_status("Impossibile salvare i documenti: " + error_string(err))
 
 
-func _on_proficiencies_updated(rows: Array, feats: Array) -> void:
+func _on_proficiencies_updated(rows: Array, feats: Array, origins: Array) -> void:
 	if _loading:
 		return
 	var record: Dictionary = _current()
@@ -2504,6 +2503,7 @@ func _on_proficiencies_updated(rows: Array, feats: Array) -> void:
 			typed_rows.append((raw as Dictionary).duplicate(true))
 	var previous_skills: Variant = record.get("skill_proficiencies", [])
 	var previous_expertise: Variant = record.get("skill_expertise", [])
+	record["proficiency_origins"] = origins.duplicate(true)
 	ProficiencyRules.sync_legacy_fields(record, typed_rows)
 	record["feats_catalog"] = feats.duplicate(true)
 	if previous_skills != record.get("skill_proficiencies", []) or previous_expertise != record.get("skill_expertise", []):
@@ -2649,16 +2649,10 @@ func _save() -> void:
 	record["reach_feet"] = AttackData.first_melee_range(record)
 	if String(record.get("kind", "")) == "monster":
 		record["reach_is_custom"] = true
-	var proficient: Array[String] = []
-	var expertise: Array[String] = []
-	for key: String in _skill_ranks.keys():
-		if int(_skill_ranks[key]) >= 1:
-			proficient.append(key)
-		if int(_skill_ranks[key]) >= 2:
-			expertise.append(key)
-	record["skill_proficiencies"] = proficient
-	record["skill_expertise"] = expertise
-	record["proficiency_choices"] = ProficiencyRules.reconcile_skills(record)
+	# Proficiencies are now owned exclusively by the origin editor.
+	# Saving unrelated statistics must never change expertise or resurrect
+	# rows that were deliberately disabled.
+	ProficiencyRules.sync_legacy_fields(record, ProficiencyRules.choices(record))
 	if _skill_ranks_custom:
 		record["skill_ranks_custom"] = true
 	record["default_miniature_id"] = _default_miniature_id

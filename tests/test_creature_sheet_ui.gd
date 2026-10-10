@@ -124,12 +124,17 @@ func run() -> void:
 		and placeable[0].id == area._current().id
 		and placeable[0].current_miniature_id == "hero_test",
 		"Context placement must include unspawned owned creatures and their saved appearance")
-	assert(area._tabs.get_tab_count() == 8, "Character sheet includes proficiencies alongside statistics and general tabs")
+	assert(area._tabs.get_tab_count() == 7, "Creature proficiencies are embedded in Statistics, not a separate tab")
 	var tab_titles: Array[String] = []
 	for tab_index: int in range(area._tabs.get_tab_count()):
 		tab_titles.append(area._tabs.get_tab_title(tab_index))
-	assert("Inventario" in tab_titles and "Incantesimi" in tab_titles and "Competenze" in tab_titles
+	assert("Inventario" in tab_titles and "Incantesimi" in tab_titles and "Competenze" not in tab_titles
 		and tab_titles[0] == "Info" and tab_titles[1] == "Statistiche")
+	assert(not area._proficiencies_ui.visible, "Competence editor starts collapsed")
+	area._proficiencies_toggle_button.pressed.emit()
+	assert(area._proficiencies_ui.visible, "Statistics button expands competence boxes")
+	area._proficiencies_toggle_button.pressed.emit()
+	assert(not area._proficiencies_ui.visible, "Statistics button collapses competence boxes")
 	assert("Risorse" not in tab_titles and area._tracker_rows.get_parent() != area._name.get_parent().get_parent()
 		and area._tracker_rows.get_parent() == area._attacks_description.get_parent(),
 		"Trackers must be inside Statistics rather than Info or a separate tab")
@@ -337,13 +342,20 @@ func run() -> void:
 		"All canonical 5etools/D&D 5e skills must be present")
 	assert(int(area._passive_perception.text) >= 10,
 		"Passive perception must be calculated from Wisdom and skill ranks")
-	var original_skill_rank: int = int(area._skill_ranks["perception"])
-	area._cycle_skill_rank("perception")
-	assert(int(area._skill_ranks["perception"]) == (original_skill_rank + 1) % 3,
-		"Skill rank toggles from untrained to proficient to expert")
+	var rows: Array = area._current().get("proficiency_choices", []).duplicate(true)
+	rows.append({"kind": "skill", "key": "perception", "origin_id": "custom|ui-regression",
+		"origin_name": "Test source", "disabled": false})
+	var sources: Array = area._current().get("proficiency_origins", []).duplicate(true)
+	sources.append({"id": "custom|ui-regression", "name": "Test source", "disabled": false,
+		"automatic": false})
+	area._on_proficiencies_updated(rows, area._current().get("feats_catalog", []), sources)
+	assert(int(area._skill_ranks["perception"]) == 1,
+		"Adding skill competence through the origin editor updates Statistics")
+	assert("🎓" in (area._skill_buttons["perception"] as Label).text,
+		"Skill training appears as an emoji after the skill name")
 	area._reload()
-	assert(int(area._skill_ranks["perception"]) == (original_skill_rank + 1) % 3,
-		"Skill proficiency must survive reload")
+	assert(int(area._skill_ranks["perception"]) == 1,
+		"Skill competence must survive reload")
 	assert(area._statistics_columns is HBoxContainer
 		and area._statistics_columns.get_child_count() == 2,
 		"Statistics must always retain side-by-side skill and combat columns")
