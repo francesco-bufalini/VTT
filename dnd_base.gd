@@ -5471,5 +5471,3 @@ func _on_map_load_file_selected(path: String) -> void:
 	var error := int(board_sync.call("load_snapshot_from_file", path))
 	if error != OK and not _undo_stack.is_empty():
 		_undo_stack.pop_back()
-
-

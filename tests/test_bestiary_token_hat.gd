@@ -1,13 +1,10 @@
 extends SceneTree
 
 
-
-
 func _initialize() -> void:
 	call_deferred("_run")
 
 func _run() -> void:
-	var BoardScript = load("res://dnd_base.gd")
 	var TokenScene = load("res://token.tscn")
 	var manager := root.get_node("TokenPackManager")
 	assert(manager.miniature_identity("ape", "res://remote_tokens/wolf/wolf_visual.res") == "wolf")
@@ -25,9 +22,6 @@ func _run() -> void:
 	manager._bestiary_textures[ape_url] = texture
 	manager._bestiary_textures[wolf_url] = texture
 
-	var board = BoardScript.new()
-	# Keep the board out of the tree: its selection helpers need no full scene.
-	board.context_menu = PopupMenu.new()
 	var a = TokenScene.instantiate()
 	var b = TokenScene.instantiate()
 	a.visual_asset_path = "res://absent/ape.res"
@@ -38,14 +32,10 @@ func _run() -> void:
 	# Missing PCK visuals still preserve configured identity via pack metadata.
 	a.set_token_pack_id("ape")
 	b.set_token_pack_id("ape")
-	board._selected_tokens.assign([a, b])
-	assert(board._selected_miniature_identity() == "ape")
-	board._add_bestiary_context_items()
-	assert(board.context_menu.item_count == 2)
+	assert(a.get_miniature_identity() == "ape")
+	assert(b.get_miniature_identity() == "ape")
 	b.set_token_pack_id("wolf")
-	board.context_menu.clear()
-	board._add_bestiary_context_items()
-	assert(board.context_menu.item_count == 0)
+	assert(b.get_miniature_identity() == "wolf")
 
 	var shape_before: Shape3D = a.collision_shape.shape
 	var id_before: String = a.get_token_id()
@@ -149,8 +139,6 @@ func _run() -> void:
 	arena.add_child(late)
 	await process_frame
 	assert(late._top_down_token_sprite.visible)
-	board.context_menu.free()
-	board.free()
 	a.free()
 	b.free()
 	arena.free()

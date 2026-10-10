@@ -4,6 +4,12 @@ const Flanking = preload("res://vtt/flanking_system.gd")
 const Overlay = preload("res://vtt/top_down_elevation_overlay.gd")
 const Token = preload("res://token.tscn")
 
+class CountingFlanking extends Flanking:
+	var geometry_builds := 0
+	func _build_reach_visuals(tokens: Array[CharacterBody3D], states: Array[Dictionary]) -> Dictionary:
+		geometry_builds += 1
+		return super._build_reach_visuals(tokens, states)
+
 class Board extends Node3D:
 	var cell_size := 1.0
 	var top_down := false
@@ -43,7 +49,7 @@ func run() -> void:
 		assert(token.get_node_or_null("TokenOverlay/FlankingBadge") == null,
 			"Flanking badges belong to the shared tactical renderer")
 		assert(token.get_player_hit_points() == {"current": 7, "max": 12})
-	var flanking := Flanking.new()
+	var flanking := CountingFlanking.new()
 	board.add_child(flanking)
 	flanking.setup(board)
 	assert(tokens.get_child(1).get_meta("flanked", false), "Opposite enemies must flank the middle token")
@@ -52,6 +58,41 @@ func run() -> void:
 	assert(reach_links.size() == 2 and bool((reach_links[0] as Dictionary).get("mutual", false)),
 		"2D reach must expose one mutual link per hostile pair, not duplicate arrows")
 	assert(flanking._arrow_instance.visible and flanking._arrow_mesh.get_surface_count() > 0)
+	for iteration: int in range(10):
+		flanking.refresh_now()
+	assert(flanking.geometry_builds == 1, "Stationary tokens must reuse tactical geometry")
+	var middle: CharacterBody3D = tokens.get_child(1)
+	middle.position.x = 50.0
+	flanking.refresh_now()
+	assert(not flanking.is_flanked(middle) and flanking.get_screen_reach_visuals().links.is_empty())
+	middle.position.x = 0.0
+	flanking.refresh_now()
+	assert(flanking.is_flanked(middle), "Movement must invalidate flanking and reach")
+	middle.set_party_id("party")
+	flanking.refresh_now()
+	assert(flanking.get_screen_reach_visuals().links.is_empty(), "Faction changes must invalidate reach")
+	middle.set_party_id("enemies")
+	middle.set_conditions(["blinded"])
+	flanking.refresh_now()
+	var builds := flanking.geometry_builds
+	flanking.set_condition_visuals_visible(false)
+	assert(flanking.geometry_builds == builds, "Condition visibility must not rebuild geometry")
+	flanking.set_condition_visuals_visible(true)
+	assert("Blinded" in (flanking._flanking_badges[middle.get_instance_id()].get_node("Label") as Label).text)
+	middle.set_reach_feet(10.0)
+	flanking.refresh_now()
+	assert(flanking.geometry_builds == builds + 1, "Reach changes must invalidate geometry")
+	middle.set_reach_feet(5.0)
+	middle.set_token_size(2.0)
+	flanking.refresh_now()
+	assert(flanking.geometry_builds == builds + 2, "Size changes must invalidate geometry")
+	middle.set_token_size(1.0)
+	board.cell_size = 2.0
+	flanking.refresh_now()
+	assert(flanking.geometry_builds == builds + 3, "Grid scale changes must invalidate geometry")
+	board.cell_size = 1.0
+	flanking.refresh_now()
+
 	var overlay := Overlay.new()
 	ui.add_child(overlay)
 	overlay.setup(board, null)
@@ -109,6 +150,12 @@ func run() -> void:
 	board.top_down = false
 	flanking.refresh_now()
 	assert(flanking._arrow_instance.visible and flanking._arrow_mesh.get_surface_count() > 0)
+	var builds_before_deletion := flanking.geometry_builds
+	middle.queue_free()
+	flanking.refresh_now()
+	assert(flanking.geometry_builds == builds_before_deletion + 1)
+	assert(flanking.get_screen_reach_visuals().links.is_empty(), "Deleted tokens must leave no cached links")
+
 	board.queue_free()
 	await process_frame
 	print("PASS: tactical badges, token health, 2D reach projection and 3D arrow restoration")

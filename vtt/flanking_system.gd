@@ -57,88 +57,50 @@ func refresh_now() -> void:
 			tokens.append(node as CharacterBody3D)
 
 	var current_state: Array[Dictionary] = []
-	var visible_badge_targets: Dictionary = {}
-	# The hitbox and faction for each token are invariant for this refresh.
-	# Gather hostile attackers within melee reach once per target; test pairs
-	# only if at least two can actually reach it.
-	var half_extents: Dictionary = {}
-	var parties: Dictionary = {}
-	for token: CharacterBody3D in tokens:
-		half_extents[token.get_instance_id()] = _token_half_extents(token)
-		parties[token.get_instance_id()] = _party_key(token)
-
-	var arrow_points: Array[Vector3] = []
-	var mutual_marker_points: Array[Vector3] = []
+	var safe_cell := maxf(float(board_root.get("cell_size")), 0.001)
 	for token: CharacterBody3D in tokens:
 		current_state.append({
 			"id": token.get_instance_id(),
 			"position": token.global_position,
-			"half": half_extents[token.get_instance_id()],
-			"party": parties[token.get_instance_id()],
-			"reach": float(token.call("get_reach_feet")) if token.has_method("get_reach_feet") else 5.0
+			"half": _token_half_extents(token),
+			"party": _party_key(token),
+			"reach": maxf(float(token.call("get_reach_feet")), 0.0) if token.has_method("get_reach_feet") else 5.0,
+			"cell": safe_cell
 		})
 	if current_state != _last_flanking_state:
 		_last_flanking_state = current_state
 		_flanked_ids.clear()
-		for target: CharacterBody3D in tokens:
-			var target_id := target.get_instance_id()
-			var eligible: Array[CharacterBody3D] = []
-			for attacker: CharacterBody3D in tokens:
-				if attacker == target:
-					continue
-				if not party_keys_are_enemies(
-					String(parties[attacker.get_instance_id()]),
-					String(parties[target_id])
-				):
-					continue
-				if _token_reaches_target(attacker, target):
+		for target: Dictionary in current_state:
+			var eligible: Array[Dictionary] = []
+			for attacker: Dictionary in current_state:
+				if party_keys_are_enemies(attacker.party, target.party) and tactical_reach_distance_feet(
+					attacker.position, attacker.half, target.position, target.half, safe_cell
+				) <= attacker.reach + EPSILON:
 					eligible.append(attacker)
-			if eligible.size() < 2:
-				continue
-
-			var target_half: Vector3 = half_extents[target_id]
-			var found := false
-			for i: int in range(eligible.size() - 1):
-				var first: CharacterBody3D = eligible[i]
-				var first_half: Vector3 = half_extents[first.get_instance_id()]
-				for j: int in range(i + 1, eligible.size()):
-					var second: CharacterBody3D = eligible[j]
-					var second_half: Vector3 = half_extents[second.get_instance_id()]
-					if flanking_segment(
-						first.global_position, first_half,
-						second.global_position, second_half,
-						target.global_position, target_half
-					).size() == 2:
-						found = true
+			for first_index: int in range(eligible.size() - 1):
+				var first := eligible[first_index]
+				for second_index: int in range(first_index + 1, eligible.size()):
+					var second := eligible[second_index]
+					if flanking_segment(first.position, first.half, second.position,
+						second.half, target.position, target.half).size() == 2:
+						_flanked_ids[target.id] = true
 						break
-				if found:
+				if _flanked_ids.has(target.id):
 					break
-			if found:
-				_flanked_ids[target_id] = true
-				target.set_meta("flanked", true)
-
-
-	for token: CharacterBody3D in tokens:
-		token.set_meta("flanked", _flanked_ids.has(token.get_instance_id()))
-
-	# Reach arrows are a tactical hostility layer: every token points only
-	# toward enemy-party tokens currently inside its own reach. Selection and
-	# flanking state do not affect this visualization.
-	var reach_visuals := _build_reach_visuals(tokens)
-	var arrow_value: Variant = reach_visuals.get("arrows", [])
-	if arrow_value is Array:
-		for point: Variant in arrow_value as Array:
-			if point is Vector3:
-				arrow_points.append(point)
-	var mutual_value: Variant = reach_visuals.get("mutual_markers", [])
-	if mutual_value is Array:
-		for point: Variant in mutual_value as Array:
-			if point is Vector3:
-				mutual_marker_points.append(point)
-
+		var reach_visuals := _build_reach_visuals(tokens, current_state)
+		_screen_reach_arrows = reach_visuals.arrows
+		_screen_mutual_markers = reach_visuals.mutual_markers
+		_screen_reach_links = reach_visuals.links
+		_render_arrows(_screen_reach_arrows, _screen_mutual_markers)
+	# Visibility can change without any change to the tactical geometry.
+	_arrow_instance.visible = not (
+		board_root.has_method("is_2d_view_enabled") and bool(board_root.call("is_2d_view_enabled"))
+	)
+	var visible_badge_targets: Dictionary = {}
 	# Affiancato is always shown. Condition text participates only when the
 	# View toggle for condition visuals is enabled.
 	for token: CharacterBody3D in tokens:
+		token.set_meta("flanked", _flanked_ids.has(token.get_instance_id()))
 		var condition_parts := PackedStringArray()
 		if _condition_visuals_visible:
 			condition_parts = _token_condition_display_parts(token)
@@ -153,10 +115,6 @@ func refresh_now() -> void:
 			"text": badge_text,
 		}
 
-	_screen_reach_arrows = arrow_points
-	_screen_mutual_markers = mutual_marker_points
-	_screen_reach_links = reach_visuals.get("links", [])
-	_render_arrows(arrow_points, mutual_marker_points)
 	_refresh_flanking_badges(visible_badge_targets)
 
 
@@ -169,7 +127,7 @@ func get_screen_reach_visuals() -> Dictionary:
 
 
 func _build_reach_visuals(
-	tokens: Array[CharacterBody3D]
+	tokens: Array[CharacterBody3D], states: Array[Dictionary]
 ) -> Dictionary:
 	var arrows: Array[Vector3] = []
 	var mutual_markers: Array[Vector3] = []
@@ -180,23 +138,21 @@ func _build_reach_visuals(
 	# once instead of drawing two arrows on top of each other.
 	for first_index: int in range(tokens.size()):
 		var first := tokens[first_index]
-		if first == null or not is_instance_valid(first):
-			continue
-		var first_half := _token_half_extents(first)
+		var first_state := states[first_index]
+		var first_half: Vector3 = first_state.half
 
 		for second_index: int in range(first_index + 1, tokens.size()):
 			var second := tokens[second_index]
-			if second == null or not is_instance_valid(second):
-				continue
-			if not party_keys_are_enemies(
-				_party_key(first),
-				_party_key(second)
-			):
+			var second_state := states[second_index]
+			if not party_keys_are_enemies(first_state.party, second_state.party):
 				continue
 
-			var second_half := _token_half_extents(second)
-			var first_reaches := _token_reaches_target(first, second)
-			var second_reaches := _token_reaches_target(second, first)
+			var second_half: Vector3 = second_state.half
+			var tactical_distance := tactical_reach_distance_feet(
+				first.global_position, first_half, second.global_position, second_half, safe_cell
+			)
+			var first_reaches: bool = tactical_distance <= first_state.reach + EPSILON
+			var second_reaches: bool = tactical_distance <= second_state.reach + EPSILON
 			if not first_reaches and not second_reaches:
 				continue
 			# The 2D painter uses actual portrait bounds, not 3D mesh segments.
@@ -221,13 +177,6 @@ func _build_reach_visuals(
 				first_base.y = shared_y
 				second_base.y = shared_y
 
-			var tactical_distance := tactical_reach_distance_feet(
-				first.global_position,
-				first_half,
-				second.global_position,
-				second_half,
-				safe_cell
-			)
 			if should_use_mutual_adjacent_marker(
 				first_reaches,
 				second_reaches,
@@ -240,34 +189,13 @@ func _build_reach_visuals(
 					second_half,
 					safe_cell
 				)
-				if marker.size() == 2:
-					mutual_markers.append(marker[0])
-					mutual_markers.append(marker[1])
+				mutual_markers.append_array(marker)
 				continue
 
 			if first_reaches:
-				var first_arrow := reach_arrow_segment(
-					first_base,
-					first_half,
-					second_base,
-					second_half,
-					safe_cell
-				)
-				if first_arrow.size() == 2:
-					arrows.append(first_arrow[0])
-					arrows.append(first_arrow[1])
-
+				arrows.append_array(reach_arrow_segment(first_base, first_half, second_base, second_half, safe_cell))
 			if second_reaches:
-				var second_arrow := reach_arrow_segment(
-					second_base,
-					second_half,
-					first_base,
-					first_half,
-					safe_cell
-				)
-				if second_arrow.size() == 2:
-					arrows.append(second_arrow[0])
-					arrows.append(second_arrow[1])
+				arrows.append_array(reach_arrow_segment(second_base, second_half, first_base, first_half, safe_cell))
 
 	return {
 		"arrows": arrows,
@@ -312,27 +240,17 @@ func _refresh_flanking_badges(targets: Dictionary) -> void:
 		_clear_flanking_badges()
 		return
 
-	var stale: Array[int] = []
-	for key: Variant in _flanking_badges.keys():
-		var token_id := int(key)
+	for token_id: int in _flanking_badges.keys():
 		if not targets.has(token_id):
-			stale.append(token_id)
-	for token_id: int in stale:
-		var stale_panel: Variant = _flanking_badges.get(token_id)
-		if stale_panel is Control and is_instance_valid(stale_panel):
-			(stale_panel as Control).queue_free()
-		_flanking_badges.erase(token_id)
+			var stale_panel: Control = _flanking_badges[token_id]
+			if is_instance_valid(stale_panel):
+				stale_panel.queue_free()
+			_flanking_badges.erase(token_id)
 
-	for key: Variant in targets.keys():
-		var token_id := int(key)
-		var item_value: Variant = targets[key]
-		if not item_value is Dictionary:
-			continue
-		var item := item_value as Dictionary
-		var target_value: Variant = item.get("token")
-		if not target_value is CharacterBody3D:
-			continue
-		var target := target_value as CharacterBody3D
+	# Targets are constructed synchronously by refresh_now, never deserialized.
+	for token_id: int in targets:
+		var item: Dictionary = targets[token_id]
+		var target: CharacterBody3D = item.token
 		if not is_instance_valid(target):
 			continue
 
@@ -341,11 +259,10 @@ func _refresh_flanking_badges(targets: Dictionary) -> void:
 			panel = _create_flanking_badge()
 			_flanking_badges[token_id] = panel
 
-		var label := panel.get_node_or_null("Label") as Label
-		if label != null:
-			label.text = String(item.get("text", ""))
-		panel.reset_size()
-		panel.size = panel.get_combined_minimum_size()
+		var label := panel.get_node("Label") as Label
+		if label.text != item.text:
+			label.text = item.text
+			panel.reset_size()
 
 		var world_anchor := target.global_position
 		var height_cells_value: Variant = target.get("token_height_cells")
@@ -515,26 +432,6 @@ func _party_key(token: Node) -> String:
 	elif token.has_meta("party_id"):
 		value = String(token.get_meta("party_id", ""))
 	return normalized_party_key(value)
-
-
-func _token_reaches_target(
-	attacker: CharacterBody3D,
-	target: CharacterBody3D
-) -> bool:
-	var cell_size := maxf(float(board_root.get("cell_size")), 0.001)
-	var reach_feet := 5.0
-	if attacker.has_method("get_reach_feet"):
-		reach_feet = maxf(float(attacker.call("get_reach_feet")), 0.0)
-	return (
-		tactical_reach_distance_feet(
-			attacker.global_position,
-			_token_half_extents(attacker),
-			target.global_position,
-			_token_half_extents(target),
-			cell_size
-		)
-		<= reach_feet + EPSILON
-	)
 
 
 func _token_half_extents(token: CharacterBody3D) -> Vector3:
@@ -1388,90 +1285,28 @@ func _render_arrows(
 		return
 
 	_arrow_mesh.clear_surfaces()
-	# The 2D overlay projects the same segments onto the visible floor.
-	# Keep the world-space mesh from drawing a second, offset set of arrows.
-	_arrow_instance.visible = not (
-		board_root.has_method("is_2d_view_enabled")
-		and bool(board_root.call("is_2d_view_enabled"))
-	)
-	if not _arrow_instance.visible:
-		return
-	if points.is_empty() and mutual_points.is_empty():
-		return
-
 	var safe_cell := maxf(float(board_root.get("cell_size")), 0.001)
-	var body_half_width := safe_cell * 0.028
-	var head_half_width := safe_cell * 0.095
-
-	if not points.is_empty():
-		# One-way / longer-range arrows.
-		_arrow_mesh.surface_begin(
-			Mesh.PRIMITIVE_TRIANGLES,
-			_line_outline_material
-		)
-		for index: int in range(0, points.size() - 1, 2):
-			_append_flat_arrow_vertices(
-				_arrow_mesh,
-				points[index],
-				points[index + 1],
-				body_half_width * 1.55,
-				head_half_width * 1.28,
-				safe_cell,
-				0.0
-			)
-		_arrow_mesh.surface_end()
-
-		_arrow_mesh.surface_begin(
-			Mesh.PRIMITIVE_TRIANGLES,
-			_line_material
-		)
-		for index: int in range(0, points.size() - 1, 2):
-			_append_flat_arrow_vertices(
-				_arrow_mesh,
-				points[index],
-				points[index + 1],
-				body_half_width,
-				head_half_width,
-				safe_cell,
-				safe_cell * 0.002
-			)
-		_arrow_mesh.surface_end()
-
-	if not mutual_points.is_empty():
-		var mutual_body_half_width := safe_cell * 0.024
-		var mutual_head_half_width := safe_cell * 0.080
-
-		_arrow_mesh.surface_begin(
-			Mesh.PRIMITIVE_TRIANGLES,
-			_mutual_outline_material
-		)
-		for index: int in range(0, mutual_points.size() - 1, 2):
-			_append_double_arrow_vertices(
-				_arrow_mesh,
-				mutual_points[index],
-				mutual_points[index + 1],
-				mutual_body_half_width * 1.55,
-				mutual_head_half_width * 1.30,
-				safe_cell,
-				0.0
-			)
-		_arrow_mesh.surface_end()
-
-		_arrow_mesh.surface_begin(
-			Mesh.PRIMITIVE_TRIANGLES,
-			_mutual_material
-		)
-		for index: int in range(0, mutual_points.size() - 1, 2):
-			_append_double_arrow_vertices(
-				_arrow_mesh,
-				mutual_points[index],
-				mutual_points[index + 1],
-				mutual_body_half_width,
-				mutual_head_half_width,
-				safe_cell,
-				safe_cell * 0.002
-			)
-		_arrow_mesh.surface_end()
+	# Share the surface lifecycle while retaining each arrow's original geometry.
+	for mutual: bool in [false, true]:
+		var segments := mutual_points if mutual else points
+		if segments.is_empty():
+			continue
+		var append_vertices: Callable = _append_double_arrow_vertices if mutual else _append_flat_arrow_vertices
+		var body_half_width := safe_cell * (0.024 if mutual else 0.028)
+		var head_half_width := safe_cell * (0.080 if mutual else 0.095)
+		for outline: bool in [true, false]:
+			var material := _mutual_material if mutual else _line_material
+			if outline:
+				material = _mutual_outline_material if mutual else _line_outline_material
+			_arrow_mesh.surface_begin(Mesh.PRIMITIVE_TRIANGLES, material)
+			for index: int in range(0, segments.size() - 1, 2):
+				append_vertices.call(
+					_arrow_mesh, segments[index], segments[index + 1],
+					body_half_width * (1.55 if outline else 1.0),
+					head_half_width * ((1.30 if mutual else 1.28) if outline else 1.0),
+					safe_cell, 0.0 if outline else safe_cell * 0.002
+				)
+			_arrow_mesh.surface_end()
 
 
 static func _append_flat_arrow_vertices(
