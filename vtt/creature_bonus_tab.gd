@@ -27,6 +27,7 @@ var _origin_name: LineEdit
 var _target_filter: OptionButton
 var _new_target: OptionButton
 var _loading := false
+var _description_cache: Dictionary = {}
 
 
 func setup(on_change: Callable) -> void:
@@ -119,6 +120,7 @@ func _make_column(parent: HBoxContainer, title: String, width: float) -> VBoxCon
 func load_record(record: Dictionary) -> void:
 	_loading = true
 	_record = record.duplicate(true)
+	_description_cache.clear()
 	_rows = Bonuses.grants(_record)
 	_origins = Proficiencies.origins(_record)
 	# Sources without proficiencies are also available to the bonus editor.
@@ -245,6 +247,12 @@ func _origin_label(sid: String) -> String:
 
 
 func _origin_description(sid: String) -> String:
+	if not _description_cache.has(sid):
+		_description_cache[sid] = _resolve_origin_description(sid)
+	return String(_description_cache[sid])
+
+
+func _resolve_origin_description(sid: String) -> String:
 	if sid.is_empty():
 		return "Bonus senza origine specifica."
 	for feature: Dictionary in Traits.collect_features(_record):
