@@ -1,5 +1,8 @@
 extends HBoxContainer
 
+signal bonus_requested(target: String)
+var target_key := ""
+
 # A compact number and formula hint. All editing uses the existing SpinBoxes
 # and their original save callbacks, with no additional persisted state.
 var value_label: Label
@@ -54,13 +57,22 @@ func setup(label: Label, inputs: Array, captions: Array) -> void:
 func set_formula(result: String, explanation: String) -> void:
 	value_label.text = result
 	_readout.tooltip_text = explanation + ("\nDoppio clic per modificare i valori consentiti." if not _fields.is_empty() else "")
+	_readout.tooltip_text += "\nClic destro per gestire i bonus e le loro origini."
 	value_label.tooltip_text = _readout.tooltip_text
 
 
 func _on_readout_input(event: InputEvent) -> void:
 	var mouse := event as InputEventMouseButton
-	if mouse != null and mouse.pressed and mouse.button_index == MOUSE_BUTTON_LEFT and mouse.double_click:
-		open_editor()
+	if mouse == null or not mouse.pressed:
+		return
+	if mouse.button_index == MOUSE_BUTTON_RIGHT:
+		bonus_requested.emit(target_key)
+		accept_event()
+	elif mouse.button_index == MOUSE_BUTTON_LEFT and mouse.double_click:
+		if _fields.is_empty():
+			bonus_requested.emit(target_key)
+		else:
+			open_editor()
 		accept_event()
 
 

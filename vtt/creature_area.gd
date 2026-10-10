@@ -14,6 +14,8 @@ const FiveToolsText = preload("res://vtt/five_tools_rich_text.gd")
 const StructuredTrackers = preload("res://vtt/structured_resource_trackers.gd")
 const ManualBonus = preload("res://vtt/manual_bonus_style.gd")
 const FormulaValue = preload("res://vtt/formula_value.gd")
+const BonusRules = preload("res://vtt/creature_bonus_rules.gd")
+const BonusTab = preload("res://vtt/creature_bonus_tab.gd")
 const InventoryTab = preload("res://vtt/creature_inventory_tab.gd")
 const TraitsTab = preload("res://vtt/creature_traits_tab.gd")
 const DialogLayout = preload("res://vtt/dialog_layout.gd")
@@ -149,6 +151,8 @@ var _pending_new_creature := false
 var _picker_current := false
 var _chosen_miniature_id := ""
 var _tracker_rows: VBoxContainer
+var _bonuses_ui: Node
+var _bonuses_toggle_button: Button
 var _proficiencies_ui: Node
 var _proficiencies_toggle_button: Button
 var _traits_ui: Node
@@ -540,6 +544,19 @@ func _build_ui() -> void:
 		_proficiencies_toggle_button.text = "▾ Nascondi competenze" if _proficiencies_ui.visible else "▸ Visualizza competenze"
 		call_deferred("_update_stats_column_heights")
 	)
+	_bonuses_toggle_button = Button.new()
+	_bonuses_toggle_button.text = "▸ Visualizza bonus"
+	_bonuses_toggle_button.tooltip_text = "Visualizza i bonus cumulabili di ogni valore con cornice blu"
+	statistics_tab.add_child(_bonuses_toggle_button)
+	_bonuses_ui = BonusTab.new()
+	_bonuses_ui.hide()
+	statistics_tab.add_child(_bonuses_ui)
+	_bonuses_ui.call("setup", Callable(self, "_on_bonuses_updated"))
+	_bonuses_toggle_button.pressed.connect(func() -> void:
+		_bonuses_ui.visible = not _bonuses_ui.visible
+		_bonuses_toggle_button.text = "▾ Nascondi bonus" if _bonuses_ui.visible else "▸ Visualizza bonus"
+		call_deferred("_update_stats_column_heights")
+	)
 	# Always keep skills and combat side by side (45% / 55%).  Scroll
 	# their oversized contents locally instead of expanding the whole sheet.
 	_statistics_columns = HBoxContainer.new()
@@ -578,7 +595,8 @@ func _build_ui() -> void:
 		"setup",
 		Callable(self, "_on_spellcasting_updated"),
 		Callable(self, "_set_status"),
-		Callable(self, "_on_spellcasting_cast_requested")
+		Callable(self, "_on_spellcasting_cast_requested"),
+		Callable(self, "_on_formula_bonus_requested")
 	)
 	var inventory_tab := _add_sheet_tab(_tabs, "Inventario")
 	_inventory_ui = InventoryTab.new()
@@ -662,8 +680,9 @@ func _build_ui() -> void:
 	_max_hp_bonus.custom_minimum_size = Vector2(60, 36)
 	_max_hp_bonus.tooltip_text = "Bonus manuale ai PF massimi"
 	ManualBonus.decorate(_max_hp_bonus)
-	_install_formula("hp", _max_hp_effective, [_max_hp, _max_hp_bonus], ["Base", "Bonus"])
-	# Current HP adjustments lead the row. The temp-HP label follows its box.
+	_max_hp_bonus.hide() # Legacy value is migrated to an origin bonus.
+	_install_formula("hp", _max_hp_effective, [_max_hp], ["Base"])
+	# Current HP actions lead the row; the TEMP caption follows its input.
 	var health_actions := HBoxContainer.new()
 	health.add_child(health_actions)
 	_add_label(health, "+")
@@ -732,7 +751,8 @@ func _build_ui() -> void:
 	_ac_bonus.custom_minimum_size = Vector2(60, 36)
 	_ac_bonus.tooltip_text = "Bonus manuale alla Classe Armatura"
 	ManualBonus.decorate(_ac_bonus)
-	_install_formula("ac", _ac_effective, [_ac, _ac_bonus], ["Base", "Bonus"])
+	_ac_bonus.hide() # Legacy value is migrated to an origin bonus.
+	_install_formula("ac", _ac_effective, [_ac], ["Base"])
 	_ac.size_flags_horizontal = Control.SIZE_SHRINK_BEGIN
 	var movement_row := HBoxContainer.new()
 	movement_row.add_theme_constant_override("separation", 6)
@@ -748,8 +768,9 @@ func _build_ui() -> void:
 	_initiative_bonus.custom_minimum_size = Vector2(60, 36)
 	_initiative_bonus.tooltip_text = "Bonus manuale all'iniziativa"
 	ManualBonus.decorate(_initiative_bonus)
+	_initiative_bonus.hide() # Legacy value is migrated to an origin bonus.
 	_initiative.hide() # The DEX-derived part must never become editable.
-	_install_formula("initiative", _initiative_effective, [_initiative_bonus], ["Bonus"])
+	_install_formula("initiative", _initiative_effective, [], [])
 	var speed_row := HBoxContainer.new()
 	speed_row.add_theme_constant_override("separation", 4)
 	defense_flow.add_child(speed_row)
@@ -769,7 +790,8 @@ func _build_ui() -> void:
 	_speed_bonus.custom_minimum_size = Vector2(65, 36)
 	_speed_bonus.tooltip_text = "Bonus manuale alla velocità"
 	ManualBonus.decorate(_speed_bonus)
-	_install_formula("speed", _speed_effective, [_speed, _speed_bonus], ["Base", "Bonus"])
+	_speed_bonus.hide() # Legacy value is migrated to an origin bonus.
+	_install_formula("speed", _speed_effective, [_speed], ["Base"])
 	_speed.value_changed.connect(func(_value: float) -> void: _update_speed_display())
 	_speed_bonus.value_changed.connect(func(_value: float) -> void: _update_speed_display())
 	_ac.value_changed.connect(func(_value: float) -> void: _update_defense_display())
@@ -824,12 +846,13 @@ func _build_ui() -> void:
 		bonus.custom_minimum_size.x = 54
 		bonus.tooltip_text = "Bonus manuale al punteggio: compensa effetti non ancora gestiti automaticamente"
 		ManualBonus.decorate(bonus)
+		bonus.hide() # Use origin grants instead of an inline compensation box.
 		_ability_bonus_spins[ability] = bonus
 		var total_score := Label.new()
 		total_score.custom_minimum_size.x = 28
 		scores_row.add_child(total_score)
 		_ability_total_labels[ability] = total_score
-		_install_formula("ability:" + ability, total_score, [spin, bonus], ["Base", "Bonus"])
+		_install_formula("ability:" + ability, total_score, [spin], ["Base"])
 		var modifier := Label.new()
 		modifier.custom_minimum_size.x = 42
 		modifier.tooltip_text = "Modificatore calcolato dal punteggio e dal bonus"
@@ -839,7 +862,7 @@ func _build_ui() -> void:
 		var saving_throw := Label.new()
 		saving_throw.text = "+0"
 		saving_throw.tooltip_text = "Tiro salvezza: modificatore caratteristica + competenza, se posseduta"
-		# Fixed-width proficiency glyph and numeric label are separate cells.
+		# Keep proficiency icon and numeric formula in independent, aligned cells.
 		var save_cell := HBoxContainer.new()
 		save_cell.add_theme_constant_override("separation", 3)
 		abilities_row.add_child(save_cell)
@@ -1391,21 +1414,13 @@ func _open_automatic_calculation() -> void:
 
 
 func _automatic_combat_values(record: Dictionary) -> Dictionary:
-	var bonuses: Dictionary = record.get("ability_bonuses", {})
-	var abilities: Dictionary = record.get("abilities", {})
-	var dex: int = Rules.ability_modifier(int(abilities.get("dex", 10)) + int(bonuses.get("dex", 0)))
-	var shield: int = ItemRules.shield_bonus(record.get("inventory", []))
-	var armor_bonus: int = int(record.get("armor_class_bonus", 0))
-	var base: int = int(record.get("armor_class_base",
-		int(record.get("armor_class", 10)) - armor_bonus - shield))
 	var active_attack: Dictionary = AttackData.active_attack(record)
-	var reach: int = int(AttackData.active_range(record))
 	return {
-		"armor_class": maxi(0, base + armor_bonus + shield),
-		"initiative_base": dex,
-		"initiative": dex + int(record.get("initiative_bonus", 0)),
+		"armor_class": maxi(0, BonusRules.value(record, "ac")),
+		"initiative_base": BonusRules.value(record, "ability_mod:dex"),
+		"initiative": BonusRules.value(record, "initiative"),
 		"attack_id": String(active_attack.get("id", "")),
-		"reach_feet": reach
+		"reach_feet": int(AttackData.active_range(record))
 	}
 
 
@@ -1415,8 +1430,10 @@ func _refresh_automatic_preview() -> void:
 	var record: Dictionary = _current()
 	var lines := PackedStringArray()
 	var is_character: bool = String(record.get("kind", "")) == "character"
+	var hp_context: Dictionary = record.duplicate(true)
+	hp_context["effective_con_modifier"] = BonusRules.value(record, "ability_mod:con")
 	var hp: Dictionary = (
-		Rules.automatic_hit_points(record)
+		Rules.automatic_hit_points(hp_context)
 		if is_character else Rules.automatic_monster_hit_points(record)
 	)
 	if _automatic_hp.button_pressed and bool(hp.get("available", false)):
@@ -1429,17 +1446,14 @@ func _refresh_automatic_preview() -> void:
 		if _automatic_proficiency.button_pressed:
 			lines.append("Competenza → +%d" % Rules.proficiency_bonus(record))
 		if _automatic_spells.button_pressed:
-			var limits: Dictionary = Rules.spellcasting_limits(record)
+			var limits: Dictionary = Rules.spellcasting_limits(_with_effective_modifiers(record))
 			lines.append(String(limits.get("detail", "Nessuna classe magica.")))
 		if _automatic_derived.button_pressed:
 			var dice: String = Rules.automatic_hit_dice(record)
-			var abilities: Dictionary = record.get("abilities", {})
-			var bonuses: Dictionary = record.get("ability_bonuses", {})
-			var dexterity: int = int(abilities.get("dex", 10)) + int(bonuses.get("dex", 0))
 			lines.append("Dadi vita: %s · XP minimi: %d · Iniziativa: %+d" % [
 				dice if not dice.is_empty() else "non disponibili",
 				Rules.experience_for_level(int(record.get("level", 1))),
-				Rules.ability_modifier(dexterity)
+				BonusRules.value(record, "initiative")
 			])
 	if _automatic_combat.button_pressed:
 		var combat: Dictionary = _automatic_combat_values(record)
@@ -1477,21 +1491,23 @@ func _apply_automatic_calculation() -> void:
 	if record.is_empty() or String(record.get("id", "")) != _automatic_target_id:
 		return
 	if _automatic_hp.button_pressed:
+		var hp_context: Dictionary = record.duplicate(true)
+		hp_context["effective_con_modifier"] = BonusRules.value(record, "ability_mod:con")
 		var hp: Dictionary = (
-			Rules.automatic_hit_points(record)
+			Rules.automatic_hit_points(hp_context)
 			if String(record.get("kind", "")) == "character"
 			else Rules.automatic_monster_hit_points(record)
 		)
 		if bool(hp.get("available", false)):
 			var base_maximum: int = int(hp.get("value", 1))
 			record["max_hp_base"] = base_maximum
-			var maximum: int = maxi(0, base_maximum + int(record.get("max_hp_bonus", 0)))
+			var maximum: int = maxi(0, BonusRules.value(record, "hp"))
 			record["max_hp"] = maximum
 			record["current_hp"] = mini(int(record.get("current_hp", maximum)), maximum)
 	if _automatic_proficiency.button_pressed:
-		record["proficiency_bonus"] = Rules.proficiency_bonus(record)
+		record["proficiency_bonus"] = BonusRules.value(record, "proficiency")
 	if _automatic_spells.button_pressed:
-		record["spellcasting_calculation"] = Rules.spellcasting_limits(record)
+		record["spellcasting_calculation"] = Rules.spellcasting_limits(_with_effective_modifiers(record))
 	if _automatic_slots.button_pressed:
 		var progression: Dictionary = Rules.spell_slot_progression(record)
 		var derived_slots: Array = progression.get("slots", [])
@@ -1510,17 +1526,15 @@ func _apply_automatic_calculation() -> void:
 	if _automatic_derived.button_pressed:
 		record["hit_dice"] = Rules.automatic_hit_dice(record)
 		record["xp"] = maxi(int(record.get("xp", 0)), Rules.experience_for_level(int(record.get("level", 1))))
-		var abilities: Dictionary = record.get("abilities", {})
-		var bonuses: Dictionary = record.get("ability_bonuses", {})
-		record["initiative_base"] = Rules.ability_modifier(int(abilities.get("dex", 10)) + int(bonuses.get("dex", 0)))
-		record["initiative"] = int(record["initiative_base"]) + int(record.get("initiative_bonus", 0))
+		record["initiative_base"] = BonusRules.value(record, "ability_mod:dex")
+		record["initiative"] = BonusRules.value(record, "initiative")
 		if not bool(record.get("speed_is_custom", false)):
 			for race: Dictionary in Player5eTools.entries("races"):
 				if (String(race.get("id", "")) == String(record.get("species_id", ""))
 					or (String(race.get("name", "")) == String(record.get("species", ""))
 					and String(race.get("source", "")) == String(record.get("species_source", "")))):
 					record["speed_base"] = Rules.walking_speed(race.get("speed", 30))
-					record["speed"] = maxi(0, int(record["speed_base"]) + int(record.get("speed_bonus", 0)))
+					record["speed"] = maxi(0, BonusRules.value(record, "speed"))
 					break
 	if _automatic_combat.button_pressed:
 		var combat: Dictionary = _automatic_combat_values(record)
@@ -1537,9 +1551,17 @@ func _apply_automatic_calculation() -> void:
 		var bonus_values: Dictionary = record.get("resource_tracker_bonuses", {})
 		for tracker: Dictionary in _structured_trackers(record):
 			var tracker_id: String = String(tracker.get("id", ""))
-			var cap: int = maxi(0, int(tracker.get("max", 0)) + int(bonus_values.get(tracker_id, 0)))
+			var cap: int = maxi(0, BonusRules.add(record, "tracker:" + tracker_id,
+				int(tracker.get("max", 0)) + int(bonus_values.get(tracker_id, 0))))
 			spent_values[tracker_id] = clampi(int(spent_values.get(tracker_id, 0)), 0, cap)
 		record["resource_tracker_spent"] = spent_values
+	# Normalize all mirrors even when recalculating a subset of base inputs.
+	record["max_hp"] = maxi(0, BonusRules.value(record, "hp"))
+	record["armor_class"] = maxi(0, BonusRules.value(record, "ac"))
+	record["initiative_base"] = BonusRules.value(record, "ability_mod:dex")
+	record["initiative"] = BonusRules.value(record, "initiative")
+	record["proficiency_bonus"] = BonusRules.value(record, "proficiency")
+	record["speed"] = maxi(0, BonusRules.value(record, "speed"))
 	if _archive.save(record) != OK:
 		_set_status("Calcolo riuscito ma salvataggio non completato.")
 		return
@@ -1755,12 +1777,108 @@ func _install_formula(key: String, label: Label, inputs: Array, captions: Array)
 	parent.add_child(widget)
 	parent.move_child(widget, index)
 	widget.setup(label, inputs, captions)
+	widget.target_key = key
+	widget.bonus_requested.connect(_on_formula_bonus_requested)
 	_formula_values[key] = widget
 
 
 func _set_formula(key: String, text_value: String, explanation: String) -> void:
 	if _formula_values.has(key):
-		_formula_values[key].set_formula(text_value, explanation)
+		var detail: String = BonusRules.description(_live_stats_record(), key)
+		_formula_values[key].set_formula(text_value, explanation + ("\n" + detail if not detail.is_empty() else ""))
+
+
+func _with_effective_modifiers(record: Dictionary) -> Dictionary:
+	var context: Dictionary = record.duplicate(true)
+	var modifiers: Dictionary = {}
+	for ability: String in BonusRules.ABILITIES:
+		modifiers[ability] = BonusRules.value(record, "ability_mod:" + ability)
+	context["effective_ability_modifiers"] = modifiers
+	context["effective_con_modifier"] = int(modifiers.get("con", 0))
+	return context
+
+
+func _on_formula_bonus_requested(key: String) -> void:
+	if _bonuses_ui == null or key.is_empty():
+		return
+	_tabs.current_tab = 1
+	_bonuses_ui.show()
+	_bonuses_toggle_button.text = "▾ Nascondi bonus"
+	_bonuses_ui.call("select_target", key)
+	call_deferred("_update_stats_column_heights")
+
+
+func _recalculate_bonus_mirrors(record: Dictionary) -> void:
+	record["max_hp"] = maxi(0, BonusRules.value(record, "hp"))
+	record["armor_class"] = maxi(0, BonusRules.value(record, "ac"))
+	record["initiative_base"] = BonusRules.value(record, "ability_mod:dex")
+	record["initiative"] = BonusRules.value(record, "initiative")
+	record["proficiency_bonus"] = BonusRules.value(record, "proficiency")
+	record["speed"] = maxi(0, BonusRules.value(record, "speed"))
+	record["reach_feet"] = AttackData.active_range(record)
+
+
+func _refresh_formula_dependents(record: Dictionary) -> void:
+	var previous_loading: bool = _loading
+	_loading = true
+	for ability: String in _ability_spins.keys():
+		_update_ability_modifier(ability)
+	_loading = previous_loading
+	if _initiative != null:
+		_initiative.set_value_no_signal(BonusRules.value(record, "ability_mod:dex"))
+	_refresh_skill_values(record)
+	_update_max_hp_display()
+	_update_second_max_formula()
+	_update_defense_display()
+	_update_speed_display()
+	_refresh_attacks(record)
+	_refresh_trackers(record)
+
+
+func _on_bonuses_updated(rows: Array, origins: Array) -> void:
+	if _loading:
+		return
+	var record: Dictionary = _current()
+	if record.is_empty():
+		return
+	record["formula_bonuses"] = rows.duplicate(true)
+	record["proficiency_origins"] = origins.duplicate(true)
+	# Recalculate every dependent field from its base and active grants.
+	_recalculate_bonus_mirrors(record)
+	if _archive.save(record) != OK:
+		_set_status("Impossibile salvare i bonus.")
+		return
+	_replace_current_record(record)
+	_load_form(record)
+	_apply_sheet_properties(record)
+	_sync_token_health(record)
+
+
+func _live_stats_record() -> Dictionary:
+	var record: Dictionary = _current().duplicate(true)
+	if record.is_empty() or _ability_spins.is_empty():
+		return record
+	var abilities: Dictionary = record.get("abilities", {}).duplicate(true)
+	var manual: Dictionary = record.get("ability_bonuses", {}).duplicate(true)
+	for ability: String in _ability_spins.keys():
+		abilities[ability] = int((_ability_spins[ability] as SpinBox).value)
+		manual[ability] = int((_ability_bonus_spins[ability] as SpinBox).value)
+	record["abilities"] = abilities
+	record["ability_bonuses"] = manual
+	if _ac != null:
+		record["armor_class_base"] = int(_ac.value)
+		record["armor_class_bonus"] = int(_ac_bonus.value)
+	if _initiative_bonus != null:
+		record["initiative_bonus"] = int(_initiative_bonus.value)
+	if _max_hp != null:
+		record["max_hp_base"] = int(_max_hp.value)
+		record["max_hp_bonus"] = int(_max_hp_bonus.value)
+	if _second_form_max_hp != null:
+		record["second_form_max_hp"] = int(_second_form_max_hp.value)
+	if _speed != null:
+		record["speed_base"] = int(_speed.value)
+		record["speed_bonus"] = int(_speed_bonus.value)
+	return record
 
 
 func _spin(parent: Node, minimum: int, maximum: int) -> SpinBox:
@@ -2026,6 +2144,7 @@ func _reload() -> void:
 		_selected_kind = ""
 		_loading = true
 		_traits_ui.call("load_record", {})
+		_bonuses_ui.call("load_record", {})
 		_loading = false
 
 
@@ -2171,6 +2290,7 @@ func _load_form(record: Dictionary) -> void:
 	for ability: String in _ability_spins.keys():
 		(_ability_spins[ability] as SpinBox).value = int(abilities.get(ability, 10))
 		(_ability_bonus_spins[ability] as SpinBox).value = int(bonuses.get(ability, 0))
+	for ability: String in _ability_spins.keys():
 		_update_ability_modifier(ability)
 	if String(record.get("kind", "")) == "monster" and not bool(record.get("skill_ranks_custom", false)):
 		var inferred: Dictionary = Skills5e.ranks_from_bestiary(record, _creature_proficiency(record), abilities)
@@ -2278,6 +2398,7 @@ func _load_form(record: Dictionary) -> void:
 	_spellcasting_ui.call("load_record", record)
 	_inventory_ui.call("load_record", record)
 	_proficiencies_ui.call("load_record", record)
+	_bonuses_ui.call("load_record", record)
 	_loading = false
 
 
@@ -2355,10 +2476,13 @@ func _on_speed_changed(_value: float) -> void:
 
 func _update_speed_display() -> void:
 	if _speed_effective != null and _speed != null and _speed_bonus != null:
+		var live: Dictionary = _live_stats_record()
 		var base: int = int(_speed.value)
-		var bonus: int = int(_speed_bonus.value)
-		_set_formula("speed", str(maxi(0, base + bonus)),
-			"Velocità: base %d %+d bonus = %d ft" % [base, bonus, maxi(0, base + bonus)])
+		var manual: int = int(_speed_bonus.value)
+		var total: int = maxi(0, BonusRules.value(live, "speed"))
+		_set_formula("speed", str(total),
+			"Velocità: base %d %+d manuale %+d bonus da origini = %d ft" % [
+				base, manual, BonusRules.bonus(live, "speed"), total])
 
 
 # The creature sheet casts from class, available and searched spells alike.
@@ -2410,81 +2534,68 @@ func _on_spellcasting_updated(values: Dictionary) -> void:
 
 
 func _creature_proficiency(record: Dictionary) -> int:
-	if String(record.get("kind", "")) == "monster":
-		var stat: Dictionary = record.get("stat_block", {})
-		var cr: float = Rules.monster_cr_value(stat)
-		return 2 + maxi(0, floori((cr - 1.0) / 4.0))
-	return Rules.proficiency_bonus(record)
+	return BonusRules.value(record, "proficiency")
 
 
 func _refresh_skill_values(record: Dictionary) -> void:
 	if _proficiency_display == null:
 		return
-	var proficiency: int = _creature_proficiency(record)
-	_proficiency_display.text = "%+d" % proficiency
-	_set_formula("proficiency", _proficiency_display.text,
-		"Bonus competenza: %s" % ("grado di sfida del mostro" if String(record.get("kind", "")) == "monster" else "livelli di classe complessivi: %d" % int(record.get("level", 1))))
+	var live: Dictionary = record.duplicate(true)
+	# The sheet may have unsaved characteristic edits when signals fire.
+	if String(record.get("id", "")) == _selected_id:
+		live = _live_stats_record()
+	var proficiency: int = BonusRules.value(live, "proficiency")
+	_set_formula("proficiency", "%+d" % proficiency,
+		"Competenza: base %+d %+d bonus da origini = %+d" % [
+			proficiency - BonusRules.bonus(live, "proficiency"),
+			BonusRules.bonus(live, "proficiency"), proficiency])
 	for skill: Dictionary in Skills5e.SKILLS:
 		var key: String = String(skill["id"])
 		var ability: String = String(skill["ability"])
-		var score: int = int((_ability_spins[ability] as SpinBox).value)
-		var bonus: int = int((_ability_bonus_spins[ability] as SpinBox).value)
 		var rank: int = int(_skill_ranks.get(key, 0))
-		var value: int = Rules.ability_modifier(score + bonus) + rank * proficiency
+		var value: int = BonusRules.value(live, "skill:" + key)
 		var marker: String = "" if rank == 0 else " 🎓" if rank == 1 else " 🎓🎓"
 		(_skill_buttons[key] as Label).text = String(skill["label"]) + " · " + ability.to_upper() + marker
-		(_skill_buttons[key] as Label).tooltip_text = ["Nessuna competenza", "Competenza", "Maestria"][rank] + " · Modifica da Visualizza competenze"
-		(_skill_values[key] as Label).text = "%+d" % value
+		(_skill_buttons[key] as Label).tooltip_text = ["Nessuna competenza", "Competenza", "Maestria"][clampi(rank, 0, 2)] + " · Modifica da Visualizza competenze"
+		var ability_modifier: int = BonusRules.value(live, "ability_mod:" + ability)
+		var extra: int = BonusRules.bonus(live, "skill:" + key)
 		_set_formula("skill:" + key, "%+d" % value,
-			"%s: mod. %s %+d %s = %+d" % [String(skill["label"]), ability.to_upper(),
-				Rules.ability_modifier(score + bonus),
-				("nessuna competenza" if rank == 0 else "competenza %d × %+d" % [rank, proficiency]), value])
-	var saving_grants: Dictionary = ProficiencyRules.origin_enabled_map(record)
-	var all_grants: Array[Dictionary] = ProficiencyRules.choices(record)
+			"%s: mod. %s %+d + competenza %d × %+d + bonus origini %+d = %+d" % [
+				String(skill["label"]), ability.to_upper(), ability_modifier, rank, proficiency, extra, value])
+	var enabled: Dictionary = ProficiencyRules.origin_enabled_map(live)
+	var all_grants: Array[Dictionary] = ProficiencyRules.choices(live)
 	for ability: String in _saving_throw_labels.keys():
-		var base: int = Rules.ability_modifier(int((_ability_spins[ability] as SpinBox).value)
-			+ int((_ability_bonus_spins[ability] as SpinBox).value))
-		var trained: bool = ProficiencyRules.has_proficiency(record, "save", ability)
-		var modifier: int = base + (proficiency if trained else 0)
-		# Monster stat blocks can include a complete published save bonus.
-		var stat: Dictionary = record.get("stat_block", {})
-		var saves: Variant = stat.get("save", {})
-		if String(record.get("kind", "")) == "monster" and saves is Dictionary and (saves as Dictionary).has(ability) and not trained:
-			var published: String = String((saves as Dictionary)[ability])
-			if published.is_valid_int():
-				modifier = int(published)
-				trained = true
-		var target: Label = _saving_throw_labels[ability]
-		target.text = "%+d" % modifier
+		var trained: bool = ProficiencyRules.has_proficiency(live, "save", ability)
+		var stat: Dictionary = live.get("stat_block", {})
+		var published: Variant = stat.get("save", {})
+		if String(live.get("kind", "")) == "monster" and published is Dictionary and String((published as Dictionary).get(ability, "")).is_valid_int():
+			trained = true
+		var modifier: int = BonusRules.value(live, "save:" + ability)
+		var save_mod: int = BonusRules.value(live, "ability_mod:" + ability)
+		var save_extra: int = BonusRules.bonus(live, "save:" + ability)
+		var save_source: int = modifier - save_mod - save_extra
+		_set_formula("save:" + ability, "%+d" % modifier,
+			"%s: mod. %+d + competenza o bestiario %+d + origini %+d = %+d" % [
+				ability.to_upper(), save_mod, save_source, save_extra, modifier])
 		var save_icon: Label = _saving_throw_icons[ability]
 		save_icon.text = "🎓" if trained else ""
 		save_icon.tooltip_text = "Competente" if trained else "Nessuna competenza"
-		var reason := "mod. %+d" % base
-		if String(record.get("kind", "")) == "monster" and modifier != base + (proficiency if trained else 0):
-			reason = "bonus pubblicato dal bestiario"
-		elif trained:
-			reason += " + competenza %+d" % proficiency
-		_set_formula("save:" + ability, target.text,
-			"%s: %s = %+d" % [ability.to_upper(), reason, modifier])
 	if _tools_proficiency_label != null:
 		var tools: Array[String] = []
 		for grant: Dictionary in all_grants:
 			if String(grant.get("kind", "")) != "tool" or bool(grant.get("disabled", false)):
 				continue
-			if not bool(saving_grants.get(String(grant.get("origin_id", "")), true)):
+			if not bool(enabled.get(String(grant.get("origin_id", "")), true)):
 				continue
 			var tool_name: String = String(grant.get("key", "")).capitalize()
 			if tool_name not in tools:
 				tools.append(tool_name)
-		_tools_proficiency_label.text = "🛠 Strumenti: " + (", ".join(tools) + " 🎓" if not tools.is_empty() else "nessuna competenza")
-	var passive: int = 10 + Rules.ability_modifier(
-		int((_ability_spins["wis"] as SpinBox).value) + int((_ability_bonus_spins["wis"] as SpinBox).value)
-	) + int(_skill_ranks.get("perception", 0)) * proficiency
-	_passive_perception.text = str(passive)
+		_tools_proficiency_label.text = "Strumenti: " + (", ".join(tools) if not tools.is_empty() else "nessuna competenza")
+	var passive: int = BonusRules.value(live, "passive_perception")
 	_set_formula("passive_perception", str(passive),
-		"Percezione passiva: 10 %+d Saggezza %+d competenza/maestria = %d" % [
-			Rules.ability_modifier(int((_ability_spins["wis"] as SpinBox).value) + int((_ability_bonus_spins["wis"] as SpinBox).value)),
-			int(_skill_ranks.get("perception", 0)) * proficiency, passive])
+		"Percezione passiva: 10 + Percezione %+d + bonus propri %+d = %d" % [
+			BonusRules.value(live, "skill:perception"),
+			BonusRules.bonus(live, "passive_perception"), passive])
 
 
 func _refresh_weapon_picker(record: Dictionary) -> void:
@@ -2747,8 +2858,7 @@ func _refresh_attacks(record: Dictionary) -> void:
 		distance.set_value_no_signal(int(AttackData.override_for(record, attack_id).get("range_feet", attack.get("range_feet", 5))))
 		distance.value_changed.connect(_on_attack_range_changed.bind(attack_id))
 		settings.add_child(distance)
-		# Range bonuses already stored on the attack are still applied by the
-		# formula, but no longer occupy a separate field beside the range.
+		# Legacy range corrections are migrated to source grants, not inline.
 		var range_label := Label.new()
 		settings.add_child(range_label)
 		_attack_range_labels[attack_id] = range_label
@@ -2764,8 +2874,6 @@ func _refresh_attacks(record: Dictionary) -> void:
 			for code: String in ["F", "R", "T", "V", "2H", "L", "H", "A", "LD"]:
 				if ItemRules.has_property(item_data, code):
 					properties.append(code)
-			# Named, muted chips make the weapon properties scannable without
-			# a long run of cryptic 5etools abbreviations.
 			var property_names := {
 				"F": "Accurata", "R": "Portata", "T": "Lancio",
 				"V": "Versatile", "2H": "Due mani", "L": "Leggera",
@@ -2804,7 +2912,6 @@ func _refresh_attacks(record: Dictionary) -> void:
 				versatile.disabled = not ItemRules.occupying(record.get("inventory", []), "off").is_empty()
 				versatile.toggled.connect(_on_attack_two_handed_changed.bind(attack_id))
 				settings.add_child(versatile)
-		_add_label(settings, "Bonus")
 		var extra := SpinBox.new()
 		extra.min_value = -99
 		extra.max_value = 99
@@ -2816,6 +2923,7 @@ func _refresh_attacks(record: Dictionary) -> void:
 		extra.set_value_no_signal(int(overrides.get("bonus", 0)))
 		extra.value_changed.connect(_on_attack_bonus_changed.bind(attack_id))
 		settings.add_child(extra)
+		extra.hide() # Legacy shared hit/damage bonus is migrated into two grants.
 		if String(record.get("kind", "")) == "monster" and String(attack.get("source", "")) != "item":
 			var fixed := Label.new()
 			fixed.text = "Competenza inclusa (bestiario)"
@@ -2885,7 +2993,8 @@ func _refresh_attack_values(record: Dictionary) -> void:
 			var base: int = int(settings.get("range_feet", attack.get("range_feet", 5)))
 			var bonus: int = int(settings.get("range_bonus", 0))
 			_set_formula("attack_range:" + attack_id, "%d ft" % AttackData.range_for(record, attack),
-				"Gittata: base %d ft %+d ft bonus = %d ft" % [base, bonus, AttackData.range_for(record, attack)])
+				"Gittata: base %d ft %+d ft manuale %+d ft origini = %d ft" % [base, bonus,
+					BonusRules.bonus(record, "attack_range:" + attack_id), AttackData.range_for(record, attack)])
 
 
 func _on_attack_ability_changed(_index: int) -> void:
@@ -2934,36 +3043,38 @@ func _save_attack_setting(attack_id: String, setting: String, value: Variant) ->
 
 
 func _update_defense_display() -> void:
+	var live: Dictionary = _live_stats_record()
 	if _ac != null and _ac_bonus != null and _ac_effective != null:
-		var current: Dictionary = _current()
-		var shield: int = ItemRules.shield_bonus(current.get("inventory", []))
-		_ac_effective.text = str(maxi(0, int(_ac.value) + int(_ac_bonus.value) + shield))
-		_set_formula("ac", _ac_effective.text,
-			"CA: base %d %+d bonus %+d scudo = %s" % [
-				int(_ac.value), int(_ac_bonus.value), shield, _ac_effective.text
-			])
+		var ac: int = maxi(0, BonusRules.value(live, "ac"))
+		_set_formula("ac", str(ac), "CA: base %d + bonus manuale %+d + scudo %+d + origini %+d = %d" % [
+			int(_ac.value), int(_ac_bonus.value),
+			ItemRules.shield_bonus(live.get("inventory", [])), BonusRules.bonus(live, "ac"), ac])
 	if _initiative != null and _initiative_bonus != null and _initiative_effective != null:
-		_initiative_effective.text = "%+d" % (int(_initiative.value) + int(_initiative_bonus.value))
-		_set_formula("initiative", _initiative_effective.text,
-			"Iniziativa: base %+d (Destrezza) %+d bonus = %s" % [
-				int(_initiative.value), int(_initiative_bonus.value), _initiative_effective.text
-			])
+		var init: int = BonusRules.value(live, "initiative")
+		_set_formula("initiative", "%+d" % init,
+			"Iniziativa: modificatore DES %+d, bonus manuale %+d, bonus da origini %+d = %+d" % [
+				BonusRules.value(live, "ability_mod:dex"), int(_initiative_bonus.value),
+				BonusRules.bonus(live, "initiative"), init])
 
 
 func _update_max_hp_display() -> void:
 	if _max_hp_effective == null or _max_hp_bonus == null or _max_hp == null:
 		return
-	_max_hp_effective.text = str(maxi(0, int(_max_hp.value) + int(_max_hp_bonus.value)))
-	_set_formula("hp", _max_hp_effective.text,
-		"PF massimi: base %d %+d bonus = %s" % [
-			int(_max_hp.value), int(_max_hp_bonus.value), _max_hp_effective.text
-		])
+	var live: Dictionary = _live_stats_record()
+	var maximum: int = maxi(0, BonusRules.value(live, "hp"))
+	_set_formula("hp", str(maximum),
+		"PF massimi: base %d %+d manuale %+d origini = %d" % [
+			int(_max_hp.value), int(_max_hp_bonus.value),
+			BonusRules.bonus(live, "hp"), maximum])
 
 
 func _update_second_max_formula() -> void:
 	if _second_form_max_hp != null:
-		_set_formula("second_max", str(int(_second_form_max_hp.value)),
-			"PF massimi della seconda forma: %d (valore manuale)" % int(_second_form_max_hp.value))
+		var live: Dictionary = _live_stats_record()
+		var maximum: int = maxi(0, BonusRules.value(live, "second_max"))
+		_set_formula("second_max", str(maximum),
+			"PF seconda forma: base %d %+d origini = %d" % [
+				int(_second_form_max_hp.value), BonusRules.bonus(live, "second_max"), maximum])
 
 
 func _get_document_peers() -> Array[Dictionary]:
@@ -3036,14 +3147,17 @@ func _on_proficiencies_updated(rows: Array, feats: Array, origins: Array) -> voi
 			else 0
 		)
 	_skill_ranks_custom = bool(record.get("skill_ranks_custom", false))
+	_recalculate_bonus_mirrors(record)
 	var error: Error = _archive.save(record)
 	if error != OK:
 		_set_status("Impossibile salvare competenze: " + error_string(error))
 		return
 	_replace_current_record(record)
-	_refresh_skill_values(record)
-	_refresh_attacks(record)
+	_refresh_formula_dependents(record)
+	_sync_token_health(record)
 	_apply_sheet_properties(record)
+	if _bonuses_ui != null:
+		_bonuses_ui.call("load_record", record)
 	if _traits_ui != null:
 		_traits_ui.call("load_record", record)
 
@@ -3096,10 +3210,10 @@ func _on_inventory_updated(inventory: Array) -> void:
 				break
 		if all_migrated:
 			record.erase("documents")
-	record["armor_class"] = maxi(0, int(record.get("armor_class_base", 10)) + int(record.get("armor_class_bonus", 0)) + ItemRules.shield_bonus(inventory))
+	record["armor_class"] = maxi(0, BonusRules.value(record, "ac"))
 	# Removing an item also revokes proficiencies assigned to that item.
 	ProficiencyRules.sync_legacy_fields(record, ProficiencyRules.choices(record))
-	record["reach_feet"] = AttackData.active_range(record)
+	_recalculate_bonus_mirrors(record)
 	if String(record.get("kind", "")) == "monster":
 		record["reach_is_custom"] = true
 	var error: Error = _archive.save(record)
@@ -3107,10 +3221,12 @@ func _on_inventory_updated(inventory: Array) -> void:
 		_set_status("Impossibile salvare inventario: " + error_string(error))
 		return
 	_replace_current_record(record)
-	_refresh_attacks(record)
-	_update_defense_display()
+	_refresh_formula_dependents(record)
+	_sync_token_health(record)
 	_apply_sheet_properties(record)
 	_refresh_reference(record)
+	if _bonuses_ui != null:
+		_bonuses_ui.call("load_record", record)
 
 
 func _on_ability_value_changed(_value: float, ability: String) -> void:
@@ -3121,23 +3237,22 @@ func _on_ability_value_changed(_value: float, ability: String) -> void:
 func _update_ability_modifier(ability: String) -> void:
 	if not _ability_spins.has(ability):
 		return
-	var score: int = int((_ability_spins[ability] as SpinBox).value)
-	var bonus: int = int((_ability_bonus_spins[ability] as SpinBox).value)
-	var value: int = Rules.ability_modifier(score + bonus)
-	(_ability_modifier_labels[ability] as Label).text = "%+d" % value
+	var live: Dictionary = _live_stats_record()
+	var score: int = BonusRules.value(live, "ability:" + ability)
+	var value: int = BonusRules.value(live, "ability_mod:" + ability)
 	_set_formula("ability_mod:" + ability, "%+d" % value,
-		"%s: floor((%d %+d - 10) / 2) = %+d" % [ability.to_upper(), score, bonus, value])
-	if _ability_total_labels.has(ability):
-		(_ability_total_labels[ability] as Label).text = str(score + bonus)
-		_set_formula("ability:" + ability, str(score + bonus),
-			"%s: base %d %+d bonus = %d (mod. %+d)" % [
-				ability.to_upper(), score, bonus, score + bonus, value
-			])
+		"%s: floor((%d - 10) / 2) %+d bonus sul modificatore = %+d" % [
+			ability.to_upper(), score, BonusRules.bonus(live, "ability_mod:" + ability), value])
+	_set_formula("ability:" + ability, str(score),
+		"%s: base %d %+d manuale %+d bonus da origini = %d" % [
+			ability.to_upper(), int((_ability_spins[ability] as SpinBox).value),
+			int((_ability_bonus_spins[ability] as SpinBox).value),
+			BonusRules.bonus(live, "ability:" + ability), score])
 	if ability == "dex" and _initiative != null and not _loading:
 		_initiative.value = value
 		_update_defense_display()
 	if not _loading:
-		_refresh_skill_values(_current())
+		_refresh_skill_values(live)
 
 
 func _replace_current_record(record: Dictionary) -> void:
@@ -3164,7 +3279,7 @@ func _save() -> void:
 	record["current_hp"] = int(_hp.value)
 	record["max_hp_base"] = int(_max_hp.value)
 	record["max_hp_bonus"] = int(_max_hp_bonus.value)
-	record["max_hp"] = maxi(0, int(_max_hp.value) + int(_max_hp_bonus.value))
+	record["max_hp"] = maxi(0, int(_max_hp.value) + int(_max_hp_bonus.value)) # Effective value updated after all inputs
 	record["temporary_hp"] = int(_temp_hp.value)
 	record["second_form_max_hp"] = int(_second_form_max_hp.value)
 	record["second_form_hp"] = clampi(int(_second_form_hp.value), 0, int(_second_form_max_hp.value))
@@ -3310,6 +3425,8 @@ func _save() -> void:
 			"group": origin.get("group", ""), "automatic": bool(origin.get("automatic", false)),
 			"disabled": bool(origin.get("disabled", false))})
 	record["proficiency_origins"] = saved_origins
+	# Mirrors used by tokens/combat always include every active formula bonus.
+	_recalculate_bonus_mirrors(record)
 	var error: Error = _archive.save(record)
 	if error != OK:
 		_set_status("Salvataggio non riuscito: %s" % error_string(error))
@@ -3736,7 +3853,8 @@ func _refresh_trackers(record: Dictionary) -> void:
 		row.add_child(source_button)
 		var id: String = String(tracker["id"])
 		var base_maximum: int = int(tracker["max"])
-		var maximum: int = maxi(0, base_maximum + int(bonuses.get(id, 0)))
+		var maximum: int = maxi(0, BonusRules.add(record, "tracker:" + id,
+			base_maximum + int(bonuses.get(id, 0))))
 		var used: int = clampi(int(spent.get(id, 0)), 0, maximum)
 		var counter_group := HBoxContainer.new()
 		counter_group.add_theme_constant_override("separation", 4)
@@ -3765,6 +3883,7 @@ func _refresh_trackers(record: Dictionary) -> void:
 		manual_bonus.tooltip_text = "Di cui bonus al massimo (%d utilizzi base)" % base_maximum
 		manual_bonus.set_value_no_signal(int(bonuses.get(id, 0)))
 		ManualBonus.decorate(manual_bonus)
+		manual_bonus.hide()
 		manual_bonus.value_changed.connect(_change_tracker_bonus.bind(id))
 		row.add_child(manual_bonus)
 		var max_index: int = maximum_label.get_index()
@@ -3772,9 +3891,14 @@ func _refresh_trackers(record: Dictionary) -> void:
 		var formula := FormulaValue.new()
 		counter_group.add_child(formula)
 		counter_group.move_child(formula, max_index)
-		formula.setup(maximum_label, [manual_bonus], ["Bonus"])
+		formula.setup(maximum_label, [], [])
+		formula.target_key = "tracker:" + id
+		formula.bonus_requested.connect(_on_formula_bonus_requested)
 		formula.set_formula(str(maximum),
-			"%s: base %d %+d bonus = %d" % [title, base_maximum, int(bonuses.get(id, 0)), maximum])
+			"%s: base %d %+d manuale %+d origini = %d" % [
+				title, base_maximum, int(bonuses.get(id, 0)),
+				BonusRules.bonus(record, "tracker:" + id), maximum
+			] + ("\n" + BonusRules.description(record, "tracker:" + id)))
 		var restore := Button.new()
 		restore.text = "+"
 		restore.tooltip_text = "Recupera un utilizzo"
@@ -3782,7 +3906,7 @@ func _refresh_trackers(record: Dictionary) -> void:
 		restore.pressed.connect(_change_tracker.bind(id, -1, maximum))
 		counter_group.add_child(restore)
 		counter_group.move_child(restore, consume.get_index() + 1)
-		# Keep the + immediately after − and before current/max.
+		# Keep both resource adjustments immediately before remaining / max.
 		var recharge: String = String(tracker.get("recharge", "manual"))
 		if recharge == "d6":
 			var threshold: int = clampi(int(tracker.get("recharge_min", 6)), 1, 6)

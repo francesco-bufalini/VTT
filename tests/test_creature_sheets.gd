@@ -1,6 +1,7 @@
 extends SceneTree
 
 const Rules = preload("res://vtt/creature_rules.gd")
+const Bonuses = preload("res://vtt/creature_bonus_rules.gd")
 const PlayerStore = preload("res://vtt/player_character_store.gd")
 const MonsterStore = preload("res://vtt/master_creature_store.gd")
 const Archive = preload("res://vtt/creature_archive.gd")
@@ -85,8 +86,9 @@ func run() -> void:
 	var manual_speed: Dictionary = creature.duplicate(true)
 	manual_speed["speed_bonus"] = 10
 	manual_speed = monster.normalize_creature(manual_speed)
-	assert(manual_speed.speed == 50 and manual_speed.speed_base == 40,
-		"Monster speed bonus must survive normalization separately from the bestiary base")
+	assert(manual_speed.speed == 50 and manual_speed.speed_base == 40
+		and Bonuses.bonus(manual_speed, "speed") == 10 and manual_speed.speed_bonus == 0,
+		"Monster speed bonus must migrate into an origin grant without changing the effective value")
 	var defense_bonus: Dictionary = creature.duplicate(true)
 	defense_bonus["armor_class_bonus"] = 3
 	defense_bonus["initiative_bonus"] = 2
@@ -101,8 +103,9 @@ func run() -> void:
 	legacy_defense["armor_class"] = 23
 	legacy_defense["initiative"] = 4
 	legacy_defense = monster.normalize_creature(legacy_defense)
-	assert(legacy_defense.armor_class_base == 23 and legacy_defense.initiative_base == 4,
-		"Legacy monster AC and initiative must remain unchanged after migration")
+	assert(legacy_defense.armor_class_base == 23 and legacy_defense.initiative_base == 0
+		and legacy_defense.initiative == 4 and Bonuses.bonus(legacy_defense, "initiative") == 4,
+		"Legacy monster static initiative is now an origin grant with a DEX-derived base")
 	assert(creature.reach_feet == 10.0,
 		"Monster melee reach must be derived from 5etools, not a fixed 5 ft")
 	var attack_data: Script = load("res://vtt/creature_attack_data.gd")
@@ -126,8 +129,10 @@ func run() -> void:
 	character_attack["attack_overrides"] = {"unarmed": {"bonus": 2, "range_feet": 15}}
 	var normalized_character: Dictionary = PlayerStore.new().normalize_character(character_attack)
 	assert(normalized_character.attack_ability == "dex"
-		and normalized_character.attack_overrides.unarmed.bonus == 2,
-		"Character attack ability and per-attack bonus must survive normalization")
+		and normalized_character.attack_overrides.unarmed.bonus == 0
+		and Bonuses.bonus(normalized_character, "attack_hit:unarmed") == 2
+		and Bonuses.bonus(normalized_character, "attack_damage:unarmed") == 2,
+		"Character attack bonus migrates into separate cumulative hit and damage grants")
 	assert(attack_data.range_for(normalized_character, unarmed) == 15
 		and attack_data.attack_bonus(normalized_character, unarmed, 2) == 7,
 		"Range and enhancement bonus belong to the attack, not to the creature")

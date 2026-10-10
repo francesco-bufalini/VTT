@@ -4,6 +4,7 @@ const CreatureOwner = preload("res://vtt/creature_owner.gd")
 const CreatureRules = preload("res://vtt/creature_rules.gd")
 const ItemRules = preload("res://vtt/creature_item_rules.gd")
 const Proficiencies = preload("res://vtt/creature_proficiency_rules.gd")
+const Bonuses = preload("res://vtt/creature_bonus_rules.gd")
 
 const ROOT_DIR := "user://player_characters"
 const FILE_VERSION := 3
@@ -198,6 +199,7 @@ func create_character() -> Dictionary:
 		"equipped_attack_id": "",
 		"equipped_inventory_index": -1,
 		"proficiency_choices": [],
+		"formula_bonuses": [],
 		"documents": [],
 		"ammunition": "",
 		"armor_proficiencies": "",
@@ -408,6 +410,7 @@ func normalize_character(value: Dictionary) -> Dictionary:
 	defaults["equipped_inventory_index"] = maxi(-1, int(value.get("equipped_inventory_index", -1)))
 	defaults["proficiency_origins"] = Proficiencies.origins(value)
 	defaults["proficiency_choices"] = Proficiencies.choices(value)
+	defaults["formula_bonuses"] = Bonuses.grants(value)
 	Proficiencies.sync_legacy_fields(defaults, Proficiencies.choices(defaults))
 	defaults["reach_feet"] = maxf(5.0, float(defaults.get("reach_feet", 5.0)))
 	defaults["visual_front_quarter_turns"] = clampi(int(defaults.get("visual_front_quarter_turns", 0)), 0, 3)
@@ -419,6 +422,13 @@ func normalize_character(value: Dictionary) -> Dictionary:
 	defaults["speed_is_custom"] = bool(defaults.get("speed_is_custom", false))
 	defaults["darkvision"] = maxi(0, int(defaults.get("darkvision", 0)))
 	defaults["exhaustion"] = clampi(int(defaults.get("exhaustion", 0)), 0, 6)
+	Bonuses.migrate_legacy(defaults, value.has("initiative") and (Bonuses.grants(value).is_empty() or not value.has("initiative_base")))
+	defaults["max_hp"] = maxi(0, Bonuses.value(defaults, "hp"))
+	defaults["armor_class"] = maxi(0, Bonuses.value(defaults, "ac"))
+	defaults["initiative_base"] = Bonuses.value(defaults, "ability_mod:dex")
+	defaults["initiative"] = Bonuses.value(defaults, "initiative")
+	defaults["proficiency_bonus"] = Bonuses.value(defaults, "proficiency")
+	defaults["speed"] = maxi(0, Bonuses.value(defaults, "speed"))
 	return defaults
 
 

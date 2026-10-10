@@ -7,6 +7,7 @@ const SpellCatalog = preload("res://vtt/spells/spell_catalog.gd")
 const Rules = preload("res://vtt/creature_rules.gd")
 const ManualBonus = preload("res://vtt/manual_bonus_style.gd")
 const FormulaValue = preload("res://vtt/formula_value.gd")
+const Bonuses = preload("res://vtt/creature_bonus_rules.gd")
 const DialogLayout = preload("res://vtt/dialog_layout.gd")
 
 const BOOK_VIEW_CLASS := 10
@@ -16,6 +17,7 @@ const BOOK_EDIT := 12
 var _on_change: Callable
 var _on_status: Callable
 var _on_cast_spell: Callable
+var _on_bonus_request: Callable
 var _cast_button: Button
 var _cast_dialog: ConfirmationDialog
 var _cast_slot_choice: OptionButton
@@ -54,7 +56,7 @@ var _prepare: Button
 var _slot_totals: Dictionary = {}
 var _slot_bonus_controls: Dictionary = {}
 var _slot_formula_values: Dictionary = {}
-var _pact_formula_value: HBoxContainer
+var _pact_formula_value: FormulaValue
 var _remaining_labels: Dictionary = {}
 var _slot_use: Dictionary = {}
 var _slot_recharge: Dictionary = {}
@@ -79,11 +81,13 @@ var _pact_visible := true
 func setup(
 	on_change: Callable,
 	on_status: Callable,
-	on_cast_spell: Callable = Callable()
+	on_cast_spell: Callable = Callable(),
+	on_bonus_request: Callable = Callable()
 ) -> void:
 	_on_change = on_change
 	_on_status = on_status
 	_on_cast_spell = on_cast_spell
+	_on_bonus_request = on_bonus_request
 	# setup() paints resource labels before load_record() is called.
 	# Keep all three slot arrays in their canonical 0-9 shape from the start.
 	_totals = _normal_slots(_totals)
@@ -323,6 +327,7 @@ func setup(
 		bonus.custom_minimum_size = Vector2(62, 36)
 		bonus.tooltip_text = "Bonus manuale agli slot massimi"
 		ManualBonus.decorate(bonus)
+		bonus.hide()
 		bonus.value_changed.connect(_on_slot_bonus_changed.bind(lvl))
 		row.add_child(bonus)
 		_slot_bonus_controls[lvl] = bonus
@@ -331,7 +336,9 @@ func setup(
 		var formula := FormulaValue.new()
 		row.add_child(formula)
 		row.move_child(formula, max_index)
-		formula.setup(max_label, [total, bonus], ["Base", "Bonus"])
+		formula.setup(max_label, [total], ["Base"])
+		formula.target_key = "slot:" + str(lvl)
+		formula.bonus_requested.connect(_request_formula_bonus)
 		_slot_formula_values[lvl] = formula
 		var recharge := Button.new()
 		recharge.text = "+"
@@ -395,6 +402,7 @@ func setup(
 	_pact_bonus_spin.custom_minimum_size = Vector2(54, 36)
 	_pact_bonus_spin.tooltip_text = "Bonus manuale agli slot massimi della Magia del Patto"
 	ManualBonus.decorate(_pact_bonus_spin)
+	_pact_bonus_spin.hide()
 	_pact_bonus_spin.value_changed.connect(_on_pact_values_changed)
 	total_group.add_child(_pact_bonus_spin)
 	var pact_index: int = pact_max_label.get_index()
@@ -403,7 +411,9 @@ func setup(
 	total_group.add_child(_pact_formula_value)
 	total_group.move_child(_pact_formula_value, pact_index)
 	_pact_formula_value.call("setup", pact_max_label,
-		[_pact_total_spin, _pact_bonus_spin], ["Base", "Bonus"])
+		[_pact_total_spin], ["Base"])
+	_pact_formula_value.target_key = "pact_slot"
+	_pact_formula_value.bonus_requested.connect(_request_formula_bonus)
 	_pact_remain = Label.new()
 	_pact_remain.custom_minimum_size.x = 68
 	_pact_row.add_child(_pact_remain)
@@ -603,11 +613,16 @@ static func _normal_slot_bonuses(value: Variant) -> Array:
 func _effective_slot_total(lvl: int) -> int:
 	if lvl < 0 or lvl >= _totals.size() or lvl >= _slot_bonuses.size():
 		return 0
-	return maxi(0, int(_totals[lvl]) + int(_slot_bonuses[lvl]))
+	return maxi(0, Bonuses.add(_record, "slot:" + str(lvl), int(_totals[lvl]) + int(_slot_bonuses[lvl])))
 
 
 func _effective_pact_total() -> int:
-	return maxi(0, _pact_total + _pact_bonus)
+	return maxi(0, Bonuses.add(_record, "pact_slot", _pact_total + _pact_bonus))
+
+
+func _request_formula_bonus(target: String) -> void:
+	if _on_bonus_request.is_valid():
+		_on_bonus_request.call(target)
 
 
 static func _entry_id(item: Variant) -> String:
@@ -1113,23 +1128,23 @@ func _update_resource_labels() -> void:
 	for lvl: int in range(1, 10):
 		var base: int = int(_totals[lvl]) if _totals.size() > lvl else 0
 		var bonus: int = int(_slot_bonuses[lvl]) if _slot_bonuses.size() > lvl else 0
-		var total: int = maxi(0, base + bonus)
+		var total: int = _effective_slot_total(lvl)
 		var spent: int = clampi(int(_spent[lvl]), 0, total) if _spent.size() > lvl else 0
 		(_remaining_labels[lvl] as Label).text = "%d /" % (total - spent)
 		if _slot_formula_values.has(lvl):
 			_slot_formula_values[lvl].set_formula(str(total),
-				"Slot livello %d: base %d %+d bonus = %d" % [
-					lvl, base, bonus, total
-				])
+				"Slot livello %d: base %d %+d manuale %+d origini = %d" % [
+					lvl, base, bonus, Bonuses.bonus(_record, "slot:" + str(lvl)), total
+				] + ("\n" + Bonuses.description(_record, "slot:" + str(lvl))))
 		(_slot_use[lvl] as Button).disabled = spent >= total
 		(_slot_recharge[lvl] as Button).disabled = spent <= 0
 	var pact_max: int = _effective_pact_total()
 	_pact_remain.text = "%d /" % (pact_max - _pact_spent)
 	if _pact_formula_value != null:
 		_pact_formula_value.call("set_formula", str(pact_max),
-			"Magia del Patto: base %d %+d bonus = %d" % [
-				_pact_total, _pact_bonus, pact_max
-			])
+			"Magia del Patto: base %d %+d manuale %+d origini = %d" % [
+				_pact_total, _pact_bonus, Bonuses.bonus(_record, "pact_slot"), pact_max
+			] + ("\n" + Bonuses.description(_record, "pact_slot")))
 	_pact_use.disabled = _pact_spent >= pact_max
 	_pact_restore.disabled = _pact_spent <= 0
 

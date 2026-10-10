@@ -6,6 +6,7 @@ const Rules = preload("res://vtt/creature_rules.gd")
 const Catalog = preload("res://vtt/player_5etools_catalog.gd")
 const Items = preload("res://vtt/creature_item_rules.gd")
 const Proficiencies = preload("res://vtt/creature_proficiency_rules.gd")
+const Bonuses = preload("res://vtt/creature_bonus_rules.gd")
 
 
 static func definitions(record: Dictionary) -> Array[Dictionary]:
@@ -138,14 +139,12 @@ static func override_for(record: Dictionary, attack_id: String) -> Dictionary:
 static func range_for(record: Dictionary, attack: Dictionary) -> int:
 	var settings: Dictionary = override_for(record, String(attack.get("id", "")))
 	var base: int = int(settings.get("range_feet", attack.get("range_feet", 5)))
-	return clampi(base + int(settings.get("range_bonus", 0)), 5, 1000)
+	return clampi(Bonuses.add(record, "attack_range:" + String(attack.get("id", "")), base + int(settings.get("range_bonus", 0))), 5, 1000)
 
 
 static func ability_modifier(record: Dictionary) -> int:
 	var ability: String = "dex" if String(record.get("attack_ability", "str")) == "dex" else "str"
-	var scores: Dictionary = record.get("abilities", {})
-	var bonuses: Dictionary = record.get("ability_bonuses", {})
-	return Rules.ability_modifier(int(scores.get(ability, 10)) + int(bonuses.get(ability, 0)))
+	return Bonuses.value(record, "ability_mod:" + ability)
 
 
 static func _ability_delta_for_monster(_record: Dictionary, _attack: Dictionary) -> int:
@@ -158,13 +157,9 @@ static func _attack_ability_modifier(record: Dictionary, attack: Dictionary) -> 
 	var item_value: Variant = attack.get("item_entry", {})
 	if item_value is Dictionary and not (item_value as Dictionary).is_empty():
 		var ability: String = Items.attack_ability(record, item_value as Dictionary, bool(attack.get("thrown", false)))
-		var scores: Dictionary = record.get("abilities", {})
-		var bonuses: Dictionary = record.get("ability_bonuses", {})
-		return Rules.ability_modifier(int(scores.get(ability, 10)) + int(bonuses.get(ability, 0)))
+		return Bonuses.value(record, "ability_mod:" + ability)
 	if String(attack.get("id", "")) in ["unarmed", "improvised"]:
-		var scores: Dictionary = record.get("abilities", {})
-		var bonuses: Dictionary = record.get("ability_bonuses", {})
-		return Rules.ability_modifier(int(scores.get("str", 10)) + int(bonuses.get("str", 0)))
+		return Bonuses.value(record, "ability_mod:str")
 	return ability_modifier(record)
 
 
@@ -178,7 +173,7 @@ static func attack_bonus(record: Dictionary, attack: Dictionary, proficiency: in
 	var manual: int = int(settings.get("bonus", 0))
 	if String(record.get("kind", "")) == "monster" and String(attack.get("source", "")) != "item":
 		# Published monster hit modifiers already include proficiency.
-		return int(attack.get("base_hit", 0)) + _ability_delta_for_monster(record, attack) + manual
+		return Bonuses.add(record, "attack_hit:" + String(attack.get("id", "")), int(attack.get("base_hit", 0)) + _ability_delta_for_monster(record, attack) + manual)
 	var trained: bool = false
 	if String(attack.get("id", "")) == "unarmed":
 		trained = true
@@ -188,7 +183,7 @@ static func attack_bonus(record: Dictionary, attack: Dictionary, proficiency: in
 			trained = Proficiencies.weapon_proficient(record, item_value)
 	else:
 		trained = bool(attack.get("proficient", false))
-	return _attack_ability_modifier(record, attack) + (proficiency if trained else 0) + manual + _weapon_magic_bonus(attack)
+	return Bonuses.add(record, "attack_hit:" + String(attack.get("id", "")), _attack_ability_modifier(record, attack) + (proficiency if trained else 0) + manual + _weapon_magic_bonus(attack))
 
 
 # The tooltip uses exactly the same components as attack_bonus, including
@@ -198,8 +193,8 @@ static func attack_bonus_formula(record: Dictionary, attack: Dictionary, profici
 	var manual: int = int(settings.get("bonus", 0))
 	var total: int = attack_bonus(record, attack, proficiency)
 	if String(record.get("kind", "")) == "monster" and String(attack.get("source", "")) != "item":
-		return "Bestiario %+d %+d bonus manuale = %+d (competenza già inclusa)" % [
-			int(attack.get("base_hit", 0)), manual, total
+		return "Bestiario %+d %+d manuale %+d origini = %+d (competenza già inclusa)" % [
+			int(attack.get("base_hit", 0)), manual, Bonuses.bonus(record, "attack_hit:" + String(attack.get("id", ""))), total
 		]
 	var trained: bool = String(attack.get("id", "")) == "unarmed"
 	if String(attack.get("source", "")) == "item":
@@ -208,14 +203,13 @@ static func attack_bonus_formula(record: Dictionary, attack: Dictionary, profici
 			trained = Proficiencies.weapon_proficient(record, entry as Dictionary)
 	elif not trained:
 		trained = bool(attack.get("proficient", false))
-	return "Caratteristica %+d + competenza %+d + bonus manuale %+d + magia %+d = %+d" % [
+	return "Caratteristica %+d + competenza %+d + manuale %+d + magia %+d + origini %+d = %+d" % [
 		_attack_ability_modifier(record, attack), proficiency if trained else 0,
-		manual, _weapon_magic_bonus(attack), total
+		manual, _weapon_magic_bonus(attack), Bonuses.bonus(record, "attack_hit:" + String(attack.get("id", ""))), total
 	]
 
 
-# Add only weapon dice: ability, magic, damage-type riders and static bonuses
-# must never be multiplied by weapon size.
+# Multiply only the weapon's dice; flat magic, ability and origin bonuses stay fixed.
 static func weapon_size_dice(base: String, size_name: String) -> String:
 	var multiplier: int = Items.weapon_dice_multiplier(size_name)
 	if multiplier <= 1:
@@ -240,6 +234,7 @@ static func damage_label(record: Dictionary, attack: Dictionary) -> String:
 	)
 	var settings: Dictionary = override_for(record, String(attack.get("id", "")))
 	modifier += int(settings.get("bonus", 0)) + _weapon_magic_bonus(attack)
+	modifier += Bonuses.bonus(record, "attack_damage:" + String(attack.get("id", "")))
 	if String(attack.get("id", "")) == "unarmed":
 		return str(maxi(1, 1 + modifier)) + " contundenti"
 	if String(attack.get("id", "")) == "improvised":
