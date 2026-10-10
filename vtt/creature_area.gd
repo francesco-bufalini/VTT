@@ -2236,15 +2236,142 @@ func _apply_current_appearance(record: Dictionary) -> void:
 			_set_status("Aspetto salvato. Se la miniatura è remota, sarà applicata quando sarà disponibile.")
 
 
-func _restore_default_appearance() -> void:
-	var record := _current()
+func _build_second_form_dialogs() -> void:
+	_form_hp_dialog = ConfirmationDialog.new()
+	_form_hp_dialog.title = "PF della seconda forma"
+	_form_hp_dialog.dialog_text = ""
+	_form_hp_dialog.min_size = Vector2i(500, 265)
+	_form_hp_dialog.get_ok_button().text = "Applica"
+	_form_hp_dialog.get_cancel_button().text = "Annulla"
+	(board_root.get_node("UI") as CanvasLayer).add_child(_form_hp_dialog)
+	var content := VBoxContainer.new()
+	content.add_theme_constant_override("separation", 9)
+	_form_hp_dialog.add_child(content)
+	var description := Label.new()
+	description.text = "Vuoi assegnare PF alla nuova forma?"
+	content.add_child(description)
+	_form_hp_choice = OptionButton.new()
+	_form_hp_choice.add_item("Sì · Inserisci manualmente", 0)
+	_form_hp_choice.add_item("Sì · Prendi dal bestiario", 1)
+	_form_hp_choice.add_item("No · Senza PF di seconda forma", 2)
+	content.add_child(_form_hp_choice)
+	_form_hp_manual = SpinBox.new()
+	_form_hp_manual.min_value = 0
+	_form_hp_manual.max_value = 99999
+	_form_hp_manual.step = 1
+	_form_hp_manual.rounded = true
+	_form_hp_manual.value = 1
+	content.add_child(_form_hp_manual)
+	_form_hp_choice.item_selected.connect(func(index: int) -> void:
+		_form_hp_manual.visible = index == 0
+	)
+	_form_hp_dialog.confirmed.connect(_apply_second_form_choice)
+	_restore_form_dialog = ConfirmationDialog.new()
+	_restore_form_dialog.title = "Ripristino della forma base"
+	_restore_form_dialog.dialog_text = "Rimuovere anche i PF della seconda forma?"
+	_restore_form_dialog.get_ok_button().text = "Sì, rimuovi"
+	_restore_form_dialog.get_cancel_button().text = "No, conserva"
+	_restore_form_dialog.confirmed.connect(func() -> void: _restore_base_form(true))
+	_restore_form_dialog.canceled.connect(func() -> void: _restore_base_form(false))
+	(board_root.get_node("UI") as CanvasLayer).add_child(_restore_form_dialog)
+	_form_depleted_dialog = ConfirmationDialog.new()
+	_form_depleted_dialog.title = "Seconda forma esaurita"
+	_form_depleted_dialog.dialog_text = "I PF della seconda forma sono a 0. Ripristinare l'aspetto di base?"
+	_form_depleted_dialog.get_ok_button().text = "Sì, ripristina"
+	_form_depleted_dialog.get_cancel_button().text = "No, mantieni"
+	_form_depleted_dialog.confirmed.connect(func() -> void: _restore_base_form(true))
+	(board_root.get_node("UI") as CanvasLayer).add_child(_form_depleted_dialog)
+
+
+func _prompt_second_form_hp(record: Dictionary) -> void:
+	_form_hp_pending_id = String(record.get("id", ""))
+	_form_hp_choice.select(0)
+	_form_hp_manual.visible = true
+	_form_hp_manual.value = maxi(1, int(record.get("second_form_max_hp", 1)))
+	_popup_sheet_dialog(_form_hp_dialog, Vector2i(530, 290), 0.88)
+
+
+func _apply_second_form_choice() -> void:
+	var record: Dictionary = _current()
+	if record.is_empty() or String(record.get("id", "")) != _form_hp_pending_id:
+		return
+	match _form_hp_choice.selected:
+		0:
+			_set_second_form_hp(maxi(0, int(_form_hp_manual.value)))
+		1:
+			var miniature_id: String = String(record.get("current_miniature_id", ""))
+			var reference: Dictionary = TokenPackManager.get_bestiary_reference(miniature_id, "2014")
+			if reference.is_empty():
+				reference = TokenPackManager.get_bestiary_reference(miniature_id, "2024")
+			if reference.is_empty():
+				_set_status("La miniatura non ha una voce del bestiario associata: scegli PF manuali.")
+				_prompt_second_form_hp(record)
+				return
+			var request_key := "form_hp_%d" % Time.get_ticks_usec()
+			_form_hp_requests[request_key] = {
+				"id": _form_hp_pending_id, "miniature_id": miniature_id
+			}
+			_client.call("request_creature", String(reference.get("name", "")),
+				String(reference.get("source", "")), request_key)
+			_set_status("Caricamento PF della forma dal bestiario…")
+		2:
+			_set_second_form_hp(0)
+
+
+func _set_second_form_hp(maximum: int) -> void:
+	var record: Dictionary = _current()
 	if record.is_empty():
 		return
-	var original_id := String(record.get("default_miniature_id", ""))
+	record["second_form_max_hp"] = maxi(0, maximum)
+	record["second_form_hp"] = maxi(0, maximum)
+	if _archive.save(record) != OK:
+		_set_status("Impossibile salvare i PF della seconda forma.")
+		return
+	_replace_current_record(record)
+	_load_form(record)
+	_sync_token_health(record)
+
+
+func _restore_base_form(clear_hp: bool) -> void:
+	var record: Dictionary = _current()
+	if record.is_empty():
+		return
+	var original_id: String = String(record.get("default_miniature_id", ""))
 	if original_id.is_empty():
+		return
+	record["current_miniature_id"] = original_id
+	if clear_hp:
+		record["second_form_hp"] = 0
+		record["second_form_max_hp"] = 0
+	if _archive.save(record) != OK:
+		_set_status("Impossibile ripristinare l'aspetto.")
+		return
+	_replace_current_record(record)
+	_load_form(record)
+	_apply_current_appearance(record)
+	_sync_token_health(record)
+
+
+func _offer_restore_after_form_depleted() -> void:
+	var record: Dictionary = _current()
+	if record.is_empty() or String(record.get("current_miniature_id", "")).is_empty():
+		return
+	if String(record.get("current_miniature_id", "")) == String(record.get("default_miniature_id", "")):
+		return
+	_popup_sheet_dialog(_form_depleted_dialog, Vector2i(525, 215))
+
+
+func _restore_default_appearance() -> void:
+	var record: Dictionary = _current()
+	if record.is_empty():
+		return
+	if String(record.get("default_miniature_id", "")).is_empty():
 		_set_status("Questa creatura non ha ancora una miniatura di base.")
 		return
-	_set_current_miniature(original_id)
+	if int(record.get("second_form_hp", 0)) > 0:
+		_popup_sheet_dialog(_restore_form_dialog, Vector2i(510, 200))
+	else:
+		_restore_base_form(true)
 
 
 func _set_current_miniature(miniature_id: String) -> void:
@@ -2551,6 +2678,27 @@ func _request_monster(index: int) -> void:
 
 
 func _on_monster_received(request_key: String, stat: Dictionary) -> void:
+	if _form_hp_requests.has(request_key):
+		var pending: Dictionary = _form_hp_requests[request_key]
+		_form_hp_requests.erase(request_key)
+		for owned: Dictionary in _archive.list_owned():
+			if (String(owned.get("id", "")) != String(pending.get("id", ""))
+				or String(owned.get("current_miniature_id", "")) != String(pending.get("miniature_id", ""))):
+				continue
+			var hp_result: Dictionary = Rules.automatic_monster_hit_points({"stat_block": stat})
+			if not bool(hp_result.get("available", false)):
+				_set_status("Bestiario senza PF medi strutturati: inserisci PF manualmente.")
+				return
+			owned["second_form_max_hp"] = int(hp_result.get("value", 0))
+			owned["second_form_hp"] = int(hp_result.get("value", 0))
+			if _archive.save(owned) == OK:
+				_replace_current_record(owned)
+				if String(owned.get("id", "")) == _selected_id:
+					_load_form(owned)
+				_sync_token_health(owned)
+				_set_status("PF della seconda forma caricati dal bestiario.")
+			return
+		return
 	if _auto_reference_requests.has(request_key):
 		var record_id := String(_auto_reference_requests[request_key])
 		_auto_reference_requests.erase(request_key)
@@ -2716,6 +2864,10 @@ func _complete_auto_reference(id: String, stat: Dictionary) -> void:
 
 
 func _on_creature_request_failed(request_key: String, message: String) -> void:
+	if _form_hp_requests.has(request_key):
+		_form_hp_requests.erase(request_key)
+		_set_status("PF della forma non disponibili: " + message + " · Inserisci PF manualmente.")
+		return
 	if _auto_reference_requests.has(request_key):
 		_auto_reference_requests.erase(request_key)
 		push_warning("CreatureArea: scheda conservata senza stat block completo: %s" % message)
@@ -2909,6 +3061,9 @@ func _confirm_miniature() -> void:
 	_reload()
 	if changed_current:
 		_apply_current_appearance(record)
+		if (String(record.get("current_miniature_id", ""))
+			!= String(record.get("default_miniature_id", ""))):
+			_prompt_second_form_hp(record)
 	_set_status("Aspetto attuale aggiornato." if changed_current else
 		"Miniatura di base selezionata: %s" % _chosen_miniature_id)
 
