@@ -1541,7 +1541,8 @@ func _apply_automatic_calculation() -> void:
 		var bonus_values: Dictionary = record.get("resource_tracker_bonuses", {})
 		for tracker: Dictionary in _structured_trackers(record):
 			var tracker_id: String = String(tracker.get("id", ""))
-			var cap: int = maxi(0, int(tracker.get("max", 0)) + int(bonus_values.get(tracker_id, 0)))
+			var cap: int = maxi(0, BonusRules.add(record, "tracker:" + tracker_id,
+				int(tracker.get("max", 0)) + int(bonus_values.get(tracker_id, 0))))
 			spent_values[tracker_id] = clampi(int(spent_values.get(tracker_id, 0)), 0, cap)
 		record["resource_tracker_spent"] = spent_values
 	# Normalize all mirrors even when recalculating a subset of base inputs.
@@ -3790,7 +3791,8 @@ func _refresh_trackers(record: Dictionary) -> void:
 		row.add_child(source_button)
 		var id: String = String(tracker["id"])
 		var base_maximum: int = int(tracker["max"])
-		var maximum: int = maxi(0, base_maximum + int(bonuses.get(id, 0)))
+		var maximum: int = maxi(0, BonusRules.add(record, "tracker:" + id,
+			base_maximum + int(bonuses.get(id, 0))))
 		var used: int = clampi(int(spent.get(id, 0)), 0, maximum)
 		var counter_group := HBoxContainer.new()
 		counter_group.add_theme_constant_override("separation", 4)
@@ -3819,6 +3821,7 @@ func _refresh_trackers(record: Dictionary) -> void:
 		manual_bonus.tooltip_text = "Di cui bonus al massimo (%d utilizzi base)" % base_maximum
 		manual_bonus.set_value_no_signal(int(bonuses.get(id, 0)))
 		ManualBonus.decorate(manual_bonus)
+		manual_bonus.hide()
 		manual_bonus.value_changed.connect(_change_tracker_bonus.bind(id))
 		row.add_child(manual_bonus)
 		var max_index: int = maximum_label.get_index()
@@ -3826,9 +3829,14 @@ func _refresh_trackers(record: Dictionary) -> void:
 		var formula := FormulaValue.new()
 		counter_group.add_child(formula)
 		counter_group.move_child(formula, max_index)
-		formula.setup(maximum_label, [manual_bonus], ["Bonus"])
+		formula.setup(maximum_label, [], [])
+		formula.target_key = "tracker:" + id
+		formula.bonus_requested.connect(_on_formula_bonus_requested)
 		formula.set_formula(str(maximum),
-			"%s: base %d %+d bonus = %d" % [title, base_maximum, int(bonuses.get(id, 0)), maximum])
+			"%s: base %d %+d manuale %+d origini = %d" % [
+				title, base_maximum, int(bonuses.get(id, 0)),
+				BonusRules.bonus(record, "tracker:" + id), maximum
+			] + ("\n" + BonusRules.description(record, "tracker:" + id)))
 		var restore := Button.new()
 		restore.text = "+"
 		restore.tooltip_text = "Recupera un utilizzo"
