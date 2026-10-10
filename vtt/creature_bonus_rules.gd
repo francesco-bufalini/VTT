@@ -34,8 +34,26 @@ static func grants(record: Dictionary) -> Array[Dictionary]:
 
 # The old editable compensation boxes become ordinary manual-source grants on
 # first normalization. Migration is idempotent and preserves the final total.
-static func migrate_legacy(record: Dictionary) -> void:
+static func migrate_legacy(record: Dictionary, preserve_old_initiative: bool = false) -> void:
 	var rows: Array[Dictionary] = grants(record)
+	# A legacy initiative base could be manually overridden. Convert any
+	# difference from the DEX-derived base into a separate source bonus.
+	if preserve_old_initiative:
+		var abilities: Dictionary = record.get("abilities", {})
+		var old_manual: Dictionary = record.get("ability_bonuses", {})
+		var dex: int = Rules.ability_modifier(int(abilities.get("dex", 10)) + int(old_manual.get("dex", 0)))
+		var difference: int = int(record.get("initiative_base", dex)) - dex
+		if difference != 0:
+			var found := false
+			for grant: Dictionary in rows:
+				if String(grant.get("id", "")) == "legacy|initiative_base_adjustment":
+					found = true
+					break
+			if not found:
+				rows.append({"id": "legacy|initiative_base_adjustment",
+					"target": "initiative", "expression": str(difference),
+					"origin_id": "", "origin_name": "Correzione iniziativa precedente",
+					"disabled": false})
 	for mapping: Dictionary in [
 		{"field": "max_hp_bonus", "target": "hp"},
 		{"field": "armor_class_bonus", "target": "ac"},
