@@ -6,6 +6,8 @@ const DialogLayout = preload("res://vtt/dialog_layout.gd")
 var _request: HTTPRequest
 var _picture: TextureRect
 var _status: Label
+static var _official_images: Dictionary = {}
+static var _images_loaded := false
 var _expected_url := ""
 
 
@@ -25,6 +27,20 @@ static func _image_href(value: Variant) -> String:
 			if not path.is_empty():
 				return path
 	return ""
+
+
+static func _load_official_images() -> void:
+	if _images_loaded:
+		return
+	_images_loaded = true
+	for index: int in range(5):
+		var file: FileAccess = FileAccess.open("res://vtt/data/item_images_%d.json" % index, FileAccess.READ)
+		if file == null:
+			continue
+		var parsed: Variant = JSON.parse_string(file.get_as_text())
+		file.close()
+		if parsed is Dictionary:
+			_official_images.merge(parsed as Dictionary, true)
 
 
 static func image_source(item: Dictionary) -> String:
