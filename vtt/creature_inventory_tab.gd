@@ -362,6 +362,23 @@ func load_record(record: Dictionary) -> void:
 				continue
 			_inventory.append(item)
 			migrated = true
+	# Retain the previous inbox import behavior for deliveries received when
+	# no creature was selected. There is no document-only sending UI.
+	for note: Dictionary in DocumentInbox.take_all():
+		var received_id: String = DocumentStore.legacy_id(note)
+		var already_owned := false
+		for owned: Dictionary in _inventory:
+			if String(owned.get("id", "")) == received_id:
+				already_owned = true
+				break
+		if already_owned:
+			continue
+		var received: Dictionary = DocumentStore.from_legacy(note)
+		if received.is_empty():
+			DocumentInbox.receive(note)
+			continue
+		_inventory.append(received)
+		migrated = true
 	_sanitize_equipment()
 	_refresh_inventory()
 	_loading = false
