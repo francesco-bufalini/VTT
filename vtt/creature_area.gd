@@ -1989,6 +1989,8 @@ func _load_form(record: Dictionary) -> void:
 		AttackData.equip_first_inventory_weapon(record)
 		record["equipped_attack_id"] = String(AttackData.active_attack(record).get("id", ""))
 		record["reach_feet"] = AttackData.active_range(record)
+		if String(record.get("kind", "")) == "monster":
+			record["reach_is_custom"] = true
 		if _archive.save(record) == OK:
 			_replace_current_record(record)
 	_refresh_trackers(record)
