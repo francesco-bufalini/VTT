@@ -89,5 +89,26 @@ func run() -> void:
 	assert(Bonuses.value(character, "ac") == 16)
 	assert(Bonuses.grants(character).size() == 2,
 		"Withdrawing items removes automatic grants, not unrelated manual grants")
+	# 5etools reqAttune is bool OR a qualifying String (e.g. "by a
+	# spellcaster"). Comparing the two variant types must never throw.
+	var conditional_ring := _owned("test:string-attunement", "Anello riservato", "RG", "", {
+		"bonus_saving_throw": 2, "reqAttune": "by a spellcaster"
+	})
+	character.inventory = [conditional_ring]
+	assert(Bonuses.value(character, "save:wis") == 0,
+		"String attunement requirements must suppress bonuses before attunement")
+	(character.inventory[0] as Dictionary)["attuned"] = true
+	assert(Bonuses.value(character, "save:wis") == 2,
+		"Attuning an item with a string requirement must enable its bonus")
+	(character.inventory[0] as Dictionary)["reqAttune"] = ""
+	(character.inventory[0] as Dictionary)["attuned"] = false
+	assert(Bonuses.value(character, "save:wis") == 2,
+		"An empty attunement string must not require attunement")
+	(character.inventory[0] as Dictionary)["reqAttune"] = false
+	assert(Bonuses.value(character, "save:wis") == 2,
+		"A boolean false requirement must not require attunement")
+	(character.inventory[0] as Dictionary)["reqAttune"] = true
+	assert(Bonuses.value(character, "save:wis") == 0,
+		"A boolean true requirement must still require attunement")
 	print("PASS: structured item bonuses, equipped armor AC, attunement, provenance and stacking")
 	quit()
