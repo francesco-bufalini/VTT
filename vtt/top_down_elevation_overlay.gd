@@ -1,5 +1,12 @@
 extends Control
 
+# Surface probing is expensive on imported, collision-heavy maps. Reuse
+# the last sampled tactical square and refresh it periodically so dynamic
+# terrain is still reflected without doing raycasts on every render frame.
+var _hover_surface_cache_key := Vector3i(2147483647, 2147483647, 2147483647)
+var _hover_surface_cache_result: Dictionary = {}
+var _hover_surface_cache_at_msec := 0
+
 const TopDownElevationLevels = preload("res://vtt/top_down_elevation_levels.gd")
 
 # Screen-space tactical proxies stay visible even when their 3D miniatures
@@ -457,14 +464,23 @@ func _update_hover(floor_y: float) -> void:
 	var world_point: Vector3 = origin + direction * distance
 	# Sample the topmost surface visible on this camera floor first.
 	# Only show a negative height when that square is genuinely lower.
-	var result_value: Variant = levels.call(
-		"get_visible_square_surface",
-		world_point,
-		floor_y
+	var safe_cell: float = maxf(float(board_root.get("cell_size")), 0.001)
+	var hover_key := Vector3i(
+		floori(world_point.x / safe_cell),
+		roundi(floor_y / safe_cell),
+		floori(world_point.z / safe_cell)
 	)
-	if not result_value is Dictionary:
-		return
-	var result: Dictionary = result_value as Dictionary
+	var now_msec: int = Time.get_ticks_msec()
+	var result: Dictionary = _hover_surface_cache_result
+	if (hover_key != _hover_surface_cache_key
+		or now_msec - _hover_surface_cache_at_msec >= 250):
+		var result_value: Variant = levels.call(
+			"get_visible_square_surface", world_point, floor_y
+		)
+		result = result_value as Dictionary if result_value is Dictionary else {}
+		_hover_surface_cache_key = hover_key
+		_hover_surface_cache_result = result
+		_hover_surface_cache_at_msec = now_msec
 	if result.is_empty():
 		return
 	var lower_y: float = float(result.get("level", floor_y))
