@@ -128,6 +128,7 @@ var _form_hp_dialog: ConfirmationDialog
 var _form_hp_choice: OptionButton
 var _form_hp_manual: SpinBox
 var _form_hp_pending_id := ""
+var _form_depleted_target_id := ""
 var _restore_form_dialog: ConfirmationDialog
 var _form_depleted_dialog: ConfirmationDialog
 
@@ -2375,7 +2376,9 @@ func _build_second_form_dialogs() -> void:
 	_form_depleted_dialog.dialog_text = "I PF della seconda forma sono a 0. Ripristinare l'aspetto di base?"
 	_form_depleted_dialog.get_ok_button().text = "Sì, ripristina"
 	_form_depleted_dialog.get_cancel_button().text = "No, mantieni"
-	_form_depleted_dialog.confirmed.connect(func() -> void: _restore_base_form(true))
+	_form_depleted_dialog.confirmed.connect(func() -> void:
+		_restore_base_form(true, _form_depleted_target_id)
+	)
 	(board_root.get_node("UI") as CanvasLayer).add_child(_form_depleted_dialog)
 
 
@@ -2396,9 +2399,10 @@ func _apply_second_form_choice() -> void:
 			_set_second_form_hp(maxi(0, int(_form_hp_manual.value)))
 		1:
 			var miniature_id: String = String(record.get("current_miniature_id", ""))
-			var reference: Dictionary = TokenPackManager.get_bestiary_reference(miniature_id, "2014")
+			var identity: String = TokenPackManager.miniature_identity(miniature_id, "")
+			var reference: Dictionary = TokenPackManager.get_bestiary_reference(identity, "2014")
 			if reference.is_empty():
-				reference = TokenPackManager.get_bestiary_reference(miniature_id, "2024")
+				reference = TokenPackManager.get_bestiary_reference(identity, "2024")
 			if reference.is_empty():
 				_set_status("La miniatura non ha una voce del bestiario associata: scegli PF manuali.")
 				_prompt_second_form_hp(record)
@@ -2428,8 +2432,14 @@ func _set_second_form_hp(maximum: int) -> void:
 	_sync_token_health(record)
 
 
-func _restore_base_form(clear_hp: bool) -> void:
+func _restore_base_form(clear_hp: bool, target_id: String = "") -> void:
 	var record: Dictionary = _current()
+	if not target_id.is_empty() and String(record.get("id", "")) != target_id:
+		record = {}
+		for owned: Dictionary in _archive.list_owned():
+			if String(owned.get("id", "")) == target_id:
+				record = owned
+				break
 	if record.is_empty():
 		return
 	var original_id: String = String(record.get("default_miniature_id", ""))
@@ -2443,17 +2453,20 @@ func _restore_base_form(clear_hp: bool) -> void:
 		_set_status("Impossibile ripristinare l'aspetto.")
 		return
 	_replace_current_record(record)
-	_load_form(record)
+	if String(record.get("id", "")) == _selected_id:
+		_load_form(record)
 	_apply_current_appearance(record)
 	_sync_token_health(record)
 
 
-func _offer_restore_after_form_depleted() -> void:
-	var record: Dictionary = _current()
-	if record.is_empty() or String(record.get("current_miniature_id", "")).is_empty():
+func _offer_restore_after_form_depleted(record: Dictionary = {}) -> void:
+	var target: Dictionary = record if not record.is_empty() else _current()
+	if target.is_empty() or String(target.get("current_miniature_id", "")).is_empty():
 		return
-	if String(record.get("current_miniature_id", "")) == String(record.get("default_miniature_id", "")):
+	if String(target.get("current_miniature_id", "")) == String(target.get("default_miniature_id", "")):
 		return
+	_form_depleted_target_id = String(target.get("id", ""))
+	_form_depleted_dialog.dialog_text = "I PF della seconda forma di %s sono a 0. Ripristinare l'aspetto di base?" % String(target.get("name", "Creatura"))
 	_popup_sheet_dialog(_form_depleted_dialog, Vector2i(525, 215))
 
 
@@ -3351,11 +3364,10 @@ func apply_attack_damage_to_token(target: Node3D, damage: int) -> Dictionary:
 			return {"applied": false}
 		_replace_current_record(owned)
 		_sync_token_health(owned)
-		if String(owned.get("id", "")) == _selected_id:
-			if is_panel_open():
-				_load_form(owned)
-			if prior_form > 0 and int(owned["second_form_hp"]) == 0:
-				_offer_restore_after_form_depleted()
+		if String(owned.get("id", "")) == _selected_id and is_panel_open():
+			_load_form(owned)
+		if prior_form > 0 and int(owned["second_form_hp"]) == 0:
+			_offer_restore_after_form_depleted(owned)
 		return {
 			"applied": true,
 			"current_hp": int(owned["current_hp"]),
