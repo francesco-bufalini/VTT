@@ -151,6 +151,8 @@ func setup(on_change: Callable, on_status: Callable) -> void:
 
 
 func load_inventory(inventory: Array) -> void:
+	# Commit any pending text before swapping the owned creature's inventory.
+	_flush_edit()
 	_loading = true
 	_inventory.clear()
 	for raw: Variant in inventory:
