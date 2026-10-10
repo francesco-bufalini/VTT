@@ -79,6 +79,12 @@ func run() -> void:
 	var area: Node = load("res://vtt/creature_area.gd").new()
 	board.add_child(area)
 	area.setup(board)
+	for ability: String in ["str", "dex", "con", "int", "wis", "cha"]:
+		var icon: Label = area._saving_throw_icons[ability]
+		var numeric: Label = area._saving_throw_labels[ability]
+		assert(icon.get_parent() == numeric.get_parent()
+			and icon.get_index() + 1 == numeric.get_index(),
+			"Saving throw proficiency icons must have their own fixed-width cell")
 	area._archive.setup(campaign)
 	# Search works from the bundled 5etools miniature references even
 	# while the remote bestiary index has not been downloaded.
