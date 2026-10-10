@@ -29,6 +29,7 @@
           "category": {
             "enum": [
               "items",
+              "documents",
               "subclasses",
               "subclass_features",
               "monsters",
