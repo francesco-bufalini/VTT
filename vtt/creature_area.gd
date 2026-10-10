@@ -874,35 +874,34 @@ func _build_ui() -> void:
 		var save_icon := Label.new()
 		save_icon.custom_minimum_size.x = 28
 		save_icon.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
-		save_cell.add_child(save_icon)
 		_saving_throw_icons[ability] = save_icon
 		saving_throw.add_theme_font_size_override("font_size", 17)
 		saving_throw.custom_minimum_size.x = 50
 		saving_throw.horizontal_alignment = HORIZONTAL_ALIGNMENT_RIGHT
 		save_cell.add_child(saving_throw)
+		save_cell.add_child(save_icon)
 		_saving_throw_labels[ability] = saving_throw
 		_install_formula("save:" + ability, saving_throw, [], [])
 		spin.value_changed.connect(_on_ability_value_changed.bind(ability))
 		bonus.value_changed.connect(_on_ability_value_changed.bind(ability))
 
+	# Compact quick-statistics panel immediately below characteristics.
+	var quick_box := _info_panel(skills_column, "RIEPILOGO")
+	movement_row.reparent(quick_box)
 	var proficiency_row := HBoxContainer.new()
-	skills_column.add_child(proficiency_row)
+	quick_box.add_child(proficiency_row)
 	_add_label(proficiency_row, "Bonus competenza")
 	_proficiency_display = Label.new()
 	_proficiency_display.add_theme_font_size_override("font_size", 18)
 	proficiency_row.add_child(_proficiency_display)
 	_install_formula("proficiency", _proficiency_display, [], [])
 	var passive_row := HBoxContainer.new()
-	skills_column.add_child(passive_row)
+	quick_box.add_child(passive_row)
 	_add_label(passive_row, "Percezione passiva")
 	_passive_perception = Label.new()
 	_passive_perception.add_theme_font_size_override("font_size", 18)
 	passive_row.add_child(_passive_perception)
 	_install_formula("passive_perception", _passive_perception, [], [])
-	_tools_proficiency_label = Label.new()
-	_tools_proficiency_label.autowrap_mode = TextServer.AUTOWRAP_WORD_SMART
-	_tools_proficiency_label.tooltip_text = "Competenze negli strumenti provenienti dalle origini attive"
-	skills_column.add_child(_tools_proficiency_label)
 	var skills_header := VBoxContainer.new()
 	skills_header.add_theme_constant_override("separation", 1)
 	skills_column.add_child(skills_header)
@@ -940,6 +939,15 @@ func _build_ui() -> void:
 		row.add_child(modifier_label)
 		_skill_values[key] = modifier_label
 		_install_formula("skill:" + key, modifier_label, [], [])
+	var prof_box := _info_panel(skills_column, "STRUMENTI E LINGUAGGI")
+	_tools_proficiency_label = Label.new()
+	_tools_proficiency_label.autowrap_mode = TextServer.AUTOWRAP_WORD_SMART
+	_tools_proficiency_label.tooltip_text = "Competenze negli strumenti delle origini attive"
+	prof_box.add_child(_tools_proficiency_label)
+	_languages_proficiency_label = Label.new()
+	_languages_proficiency_label.autowrap_mode = TextServer.AUTOWRAP_WORD_SMART
+	_languages_proficiency_label.tooltip_text = "Linguaggi delle origini attive"
+	prof_box.add_child(_languages_proficiency_label)
 	var attack_header := Label.new()
 	attack_header.text = "ATTACCHI DISPONIBILI"
 	_style_statistics_heading(attack_header)
@@ -2639,6 +2647,17 @@ func _refresh_skill_values(record: Dictionary) -> void:
 			if tool_name not in tools:
 				tools.append(tool_name)
 		_tools_proficiency_label.text = "Strumenti: " + (", ".join(tools) if not tools.is_empty() else "nessuna competenza")
+	if _languages_proficiency_label != null:
+		var languages: Array[String] = []
+		for grant: Dictionary in all_grants:
+			if String(grant.get("kind", "")) != "language" or bool(grant.get("disabled", false)):
+				continue
+			if not bool(enabled.get(String(grant.get("origin_id", "")), true)):
+				continue
+			var language: String = String(grant.get("key", "")).capitalize()
+			if language not in languages:
+				languages.append(language)
+		_languages_proficiency_label.text = "Linguaggi: " + (", ".join(languages) if not languages.is_empty() else "nessuno")
 	var passive: int = BonusRules.value(live, "passive_perception")
 	_set_formula("passive_perception", str(passive),
 		"Percezione passiva: 10 + Percezione %+d + bonus propri %+d = %d" % [
@@ -3910,7 +3929,7 @@ func _refresh_trackers(record: Dictionary) -> void:
 		counter_group.add_child(consume)
 		var remaining := Label.new()
 		remaining.text = "%d /" % (maximum - used)
-		remaining.custom_minimum_size.x = 50
+		remaining.custom_minimum_size.x = 64
 		remaining.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
 		counter_group.add_child(remaining)
 		var maximum_label := Label.new()
