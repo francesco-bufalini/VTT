@@ -351,7 +351,7 @@ func run() -> void:
 		area._tabs.size.x,
 		maxf(0.0, area._panel.get_viewport_rect().size.x - area._tabs.get_global_rect().position.x - 30.0)
 	)
-	assert(area._statistics_columns.columns == (2 if usable_tab_width >= 850.0 else 1),
+	assert(area._statistics_columns.columns == (2 if usable_tab_width >= 960.0 else 1),
 		"Stats columns must use screen space actually available after the sidebar")
 	var combat_stats: Node = area._attacks_description.get_parent()
 	assert(area._tracker_rows.get_parent() == combat_stats
@@ -369,7 +369,8 @@ func run() -> void:
 	assert(not spells._search_row.visible and spells._known_list.item_count > 0,
 		"Class spell list must be automatic and search optional")
 	assert(spells._slot_grid.columns == 1
-		and spells._remaining_labels[1].get_parent() is HFlowContainer,
+		and spells._remaining_labels[1].get_parent() is HBoxContainer
+		and spells._slot_grid.get_parent() is ScrollContainer,
 		"Slots should use wrapped tracker rows with remaining/max and an inline bonus")
 	assert(spells._pact_remain.get_index() < spells._pact_bonus_spin.get_parent().get_index(),
 		"Pact Magic remaining/max must precede its base-and-bonus formula")
@@ -423,7 +424,7 @@ func run() -> void:
 		"Automatic recharge must both recalculate class slots and restore availability")
 	spells._restore_all()
 	assert(area._current().spell_slots_spent[1] == 0)
-	assert(spells._slot_grid.visible and spells._pact_row.visible,
+	assert(spells._slot_grid.get_parent().visible and spells._pact_row.get_parent().visible,
 		"Both resource groups are visible by default")
 	spells._toggle_slots_visibility()
 	assert(not spells._slot_grid.visible and spells._pact_row.visible,
@@ -567,13 +568,26 @@ func run() -> void:
 	assert(hp_roller.last_expression == "1d8",
 		"Dice HP popup must use the existing chat roller")
 	area._size_choice.select(3)
-	area._reach.value = 15
+	area._save_attack_setting("unarmed", "range_feet", 15)
+	area._save_attack_setting("unarmed", "bonus", 2)
 	area._front.select(2)
 	area._party.text = "Explorers"
 	area._save()
 	area._reload()
 	assert(area._current().size_name == "Large" and area._current().footprint == 2.0)
 	assert(area._current().reach_feet == 15 and area._current().visual_front_quarter_turns == 2)
+	assert(area._current().attack_overrides.unarmed.range_feet == 15
+		and area._current().attack_overrides.unarmed.bonus == 2,
+		"Each attack must persist its own reach and enhancement bonus")
+	assert("Colpire" in (area._attack_hit_labels["unarmed"] as Label).text,
+		"Unarmed attack must show its proficiency-adjusted hit modifier")
+	area._attack_ability.select(1)
+	area._on_attack_ability_changed(1)
+	assert(area._current().attack_ability == "dex",
+		"STR/DEX preference must be persisted on the creature")
+	area._reload()
+	assert(area._attack_ability.selected == 1,
+		"Attack ability selection must survive reload")
 	assert(area._current().party_id == "Explorers")
 	# The obsolete feat picker was removed, but existing saved feats must
 	# survive an edit and save of the unified creature sheet.
@@ -663,8 +677,8 @@ func run() -> void:
 	token.set_reach_feet(15.0)
 	area.sync_linked_token_editor(token)
 	automatic = area._archive._stored("monster", automatic_id)
-	assert(automatic.reach_feet == 15.0 and automatic.reach_is_custom,
-		"Token editor must persist explicit monster reach instead of reverting to bestiary reach")
+	assert(automatic.reach_feet != 15.0,
+		"Token editor must not replace the range owned by individual attacks")
 	assert(automatic.stat_block.name == "Ape")
 	assert(automatic.stat_block.source == "MM")
 	assert(automatic.linked_token_sync_id == "ui-token")
