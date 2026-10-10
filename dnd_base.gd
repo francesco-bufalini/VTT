@@ -1834,7 +1834,7 @@ func apply_creature_sheet_properties(token: CharacterBody3D, record: Dictionary)
 		token.call("set_size_category", size_name, footprint, false)
 	# All tactical range overlays and flanking use the first melee attack.
 	# Derive it from the record rather than an obsolete aggregate reach field.
-	var melee_reach: float = CreatureAttackData.first_melee_range(record)
+	var melee_reach: float = CreatureAttackData.active_range(record)
 	if token.has_method("get_reach_feet") and (
 		absf(float(token.call("get_reach_feet")) - melee_reach) > 0.01
 	):
