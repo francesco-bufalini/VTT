@@ -77,6 +77,11 @@
       "rarity": "rare",
       "entries": [
         "This sword glimmers with shifting colors."
+      ],
+      "dmg1": "1d8",
+      "dmgType": "S",
+      "property": [
+        "V"
       ]
     }
   ]
