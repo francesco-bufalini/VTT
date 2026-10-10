@@ -3,6 +3,7 @@ extends RefCounted
 const CreatureOwner = preload("res://vtt/creature_owner.gd")
 const CreatureRules = preload("res://vtt/creature_rules.gd")
 const ItemRules = preload("res://vtt/creature_item_rules.gd")
+const RaceRules = preload("res://vtt/creature_race_rules.gd")
 const Proficiencies = preload("res://vtt/creature_proficiency_rules.gd")
 const Bonuses = preload("res://vtt/creature_bonus_rules.gd")
 
@@ -150,6 +151,7 @@ func create_character() -> Dictionary:
 		"spellcasting_calculation": {},
 		"species": "",
 		"species_source": "",
+		"subrace": "", "subrace_source": "", "subrace_id": "",
 		"subtype": "",
 		"subtype_is_custom": false,
 		"background": "",
@@ -265,6 +267,7 @@ func create_character() -> Dictionary:
 
 
 func normalize_character(value: Dictionary) -> Dictionary:
+	value = RaceRules.migrate_legacy_species(value)
 	var defaults: Dictionary = create_character()
 	defaults["id"] = String(
 		value.get("id", defaults.get("id", ""))
