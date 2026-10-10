@@ -1399,21 +1399,13 @@ func _open_automatic_calculation() -> void:
 
 
 func _automatic_combat_values(record: Dictionary) -> Dictionary:
-	var bonuses: Dictionary = record.get("ability_bonuses", {})
-	var abilities: Dictionary = record.get("abilities", {})
-	var dex: int = Rules.ability_modifier(int(abilities.get("dex", 10)) + int(bonuses.get("dex", 0)))
-	var shield: int = ItemRules.shield_bonus(record.get("inventory", []))
-	var armor_bonus: int = int(record.get("armor_class_bonus", 0))
-	var base: int = int(record.get("armor_class_base",
-		int(record.get("armor_class", 10)) - armor_bonus - shield))
 	var active_attack: Dictionary = AttackData.active_attack(record)
-	var reach: int = int(AttackData.active_range(record))
 	return {
-		"armor_class": maxi(0, base + armor_bonus + shield),
-		"initiative_base": dex,
-		"initiative": dex + int(record.get("initiative_bonus", 0)),
+		"armor_class": maxi(0, BonusRules.value(record, "ac")),
+		"initiative_base": BonusRules.value(record, "ability_mod:dex"),
+		"initiative": BonusRules.value(record, "initiative"),
 		"attack_id": String(active_attack.get("id", "")),
-		"reach_feet": reach
+		"reach_feet": int(AttackData.active_range(record))
 	}
 
 
@@ -1423,8 +1415,10 @@ func _refresh_automatic_preview() -> void:
 	var record: Dictionary = _current()
 	var lines := PackedStringArray()
 	var is_character: bool = String(record.get("kind", "")) == "character"
+	var hp_context: Dictionary = record.duplicate(true)
+	hp_context["effective_con_modifier"] = BonusRules.value(record, "ability_mod:con")
 	var hp: Dictionary = (
-		Rules.automatic_hit_points(record)
+		Rules.automatic_hit_points(hp_context)
 		if is_character else Rules.automatic_monster_hit_points(record)
 	)
 	if _automatic_hp.button_pressed and bool(hp.get("available", false)):
@@ -1441,13 +1435,10 @@ func _refresh_automatic_preview() -> void:
 			lines.append(String(limits.get("detail", "Nessuna classe magica.")))
 		if _automatic_derived.button_pressed:
 			var dice: String = Rules.automatic_hit_dice(record)
-			var abilities: Dictionary = record.get("abilities", {})
-			var bonuses: Dictionary = record.get("ability_bonuses", {})
-			var dexterity: int = int(abilities.get("dex", 10)) + int(bonuses.get("dex", 0))
 			lines.append("Dadi vita: %s · XP minimi: %d · Iniziativa: %+d" % [
 				dice if not dice.is_empty() else "non disponibili",
 				Rules.experience_for_level(int(record.get("level", 1))),
-				Rules.ability_modifier(dexterity)
+				BonusRules.value(record, "initiative")
 			])
 	if _automatic_combat.button_pressed:
 		var combat: Dictionary = _automatic_combat_values(record)
@@ -1485,15 +1476,17 @@ func _apply_automatic_calculation() -> void:
 	if record.is_empty() or String(record.get("id", "")) != _automatic_target_id:
 		return
 	if _automatic_hp.button_pressed:
+		var hp_context: Dictionary = record.duplicate(true)
+		hp_context["effective_con_modifier"] = BonusRules.value(record, "ability_mod:con")
 		var hp: Dictionary = (
-			Rules.automatic_hit_points(record)
+			Rules.automatic_hit_points(hp_context)
 			if String(record.get("kind", "")) == "character"
 			else Rules.automatic_monster_hit_points(record)
 		)
 		if bool(hp.get("available", false)):
 			var base_maximum: int = int(hp.get("value", 1))
 			record["max_hp_base"] = base_maximum
-			var maximum: int = maxi(0, base_maximum + int(record.get("max_hp_bonus", 0)))
+			var maximum: int = maxi(0, BonusRules.value(record, "hp"))
 			record["max_hp"] = maximum
 			record["current_hp"] = mini(int(record.get("current_hp", maximum)), maximum)
 	if _automatic_proficiency.button_pressed:
@@ -1518,17 +1511,15 @@ func _apply_automatic_calculation() -> void:
 	if _automatic_derived.button_pressed:
 		record["hit_dice"] = Rules.automatic_hit_dice(record)
 		record["xp"] = maxi(int(record.get("xp", 0)), Rules.experience_for_level(int(record.get("level", 1))))
-		var abilities: Dictionary = record.get("abilities", {})
-		var bonuses: Dictionary = record.get("ability_bonuses", {})
-		record["initiative_base"] = Rules.ability_modifier(int(abilities.get("dex", 10)) + int(bonuses.get("dex", 0)))
-		record["initiative"] = int(record["initiative_base"]) + int(record.get("initiative_bonus", 0))
+		record["initiative_base"] = BonusRules.value(record, "ability_mod:dex")
+		record["initiative"] = BonusRules.value(record, "initiative")
 		if not bool(record.get("speed_is_custom", false)):
 			for race: Dictionary in Player5eTools.entries("races"):
 				if (String(race.get("id", "")) == String(record.get("species_id", ""))
 					or (String(race.get("name", "")) == String(record.get("species", ""))
 					and String(race.get("source", "")) == String(record.get("species_source", "")))):
 					record["speed_base"] = Rules.walking_speed(race.get("speed", 30))
-					record["speed"] = maxi(0, int(record["speed_base"]) + int(record.get("speed_bonus", 0)))
+					record["speed"] = maxi(0, BonusRules.value(record, "speed"))
 					break
 	if _automatic_combat.button_pressed:
 		var combat: Dictionary = _automatic_combat_values(record)
@@ -1548,6 +1539,12 @@ func _apply_automatic_calculation() -> void:
 			var cap: int = maxi(0, int(tracker.get("max", 0)) + int(bonus_values.get(tracker_id, 0)))
 			spent_values[tracker_id] = clampi(int(spent_values.get(tracker_id, 0)), 0, cap)
 		record["resource_tracker_spent"] = spent_values
+	# Normalize all mirrors even when recalculating a subset of base inputs.
+	record["max_hp"] = maxi(0, BonusRules.value(record, "hp"))
+	record["armor_class"] = maxi(0, BonusRules.value(record, "ac"))
+	record["initiative_base"] = BonusRules.value(record, "ability_mod:dex")
+	record["initiative"] = BonusRules.value(record, "initiative")
+	record["speed"] = maxi(0, BonusRules.value(record, "speed"))
 	if _archive.save(record) != OK:
 		_set_status("Calcolo riuscito ma salvataggio non completato.")
 		return
@@ -2243,6 +2240,7 @@ func _load_form(record: Dictionary) -> void:
 	for ability: String in _ability_spins.keys():
 		(_ability_spins[ability] as SpinBox).value = int(abilities.get(ability, 10))
 		(_ability_bonus_spins[ability] as SpinBox).value = int(bonuses.get(ability, 0))
+	for ability: String in _ability_spins.keys():
 		_update_ability_modifier(ability)
 	if String(record.get("kind", "")) == "monster" and not bool(record.get("skill_ranks_custom", false)):
 		var inferred: Dictionary = Skills5e.ranks_from_bestiary(record, _creature_proficiency(record), abilities)
@@ -3132,7 +3130,7 @@ func _on_inventory_updated(inventory: Array) -> void:
 				break
 		if all_migrated:
 			record.erase("documents")
-	record["armor_class"] = maxi(0, int(record.get("armor_class_base", 10)) + int(record.get("armor_class_bonus", 0)) + ItemRules.shield_bonus(inventory))
+	record["armor_class"] = maxi(0, BonusRules.value(record, "ac"))
 	# Removing an item also revokes proficiencies assigned to that item.
 	ProficiencyRules.sync_legacy_fields(record, ProficiencyRules.choices(record))
 	record["reach_feet"] = AttackData.active_range(record)
