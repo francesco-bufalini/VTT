@@ -1985,7 +1985,7 @@ func _on_selected(index: int) -> void:
 func _load_form(record: Dictionary) -> void:
 	# Initialize once for old sheets. Afterwards intentional sheathing and
 	# natural-attack selections must never be undone on a later load.
-	if not record.has("equipped_attack_id"):
+	if String(record.get("equipped_attack_id", "")).is_empty():
 		AttackData.equip_first_inventory_weapon(record)
 		record["equipped_attack_id"] = String(AttackData.active_attack(record).get("id", ""))
 		record["reach_feet"] = AttackData.active_range(record)
