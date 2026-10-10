@@ -2387,12 +2387,16 @@ func _on_inventory_updated(inventory: Array) -> void:
 	if record.is_empty():
 		return
 	record["inventory"] = inventory.duplicate(true)
+	record["reach_feet"] = AttackData.max_melee_range(record)
+	if String(record.get("kind", "")) == "monster":
+		record["reach_is_custom"] = true
 	var error: Error = _archive.save(record)
 	if error != OK:
 		_set_status("Impossibile salvare inventario: " + error_string(error))
 		return
 	_replace_current_record(record)
 	_refresh_attacks(record)
+	_apply_sheet_properties(record)
 
 
 func _on_ability_value_changed(_value: float, ability: String) -> void:
@@ -3352,8 +3356,6 @@ func ensure_sheet_for_token(token: Node3D, locally_created: bool = false) -> voi
 			record["size_name"] = token.call("get_size_name")
 		if token.has_method("get_footprint_cells"):
 			record["footprint"] = token.call("get_footprint_cells")
-		if token.has_method("get_reach_feet"):
-			record["reach_feet"] = token.call("get_reach_feet")
 		if token.has_method("get_visual_front_quarter_turns"):
 			record["visual_front_quarter_turns"] = token.call("get_visual_front_quarter_turns")
 		if token.has_method("get_party_id"):
