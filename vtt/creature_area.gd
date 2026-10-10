@@ -42,6 +42,9 @@ var _automatic_dialog: ConfirmationDialog
 var _automatic_hp: CheckBox
 var _automatic_proficiency: CheckBox
 var _automatic_spells: CheckBox
+var _automatic_slots: CheckBox
+var _automatic_derived: CheckBox
+var _automatic_trackers: CheckBox
 var _automatic_preview: RichTextLabel
 var _automatic_target_id := ""
 var _delete_dialog: ConfirmationDialog
@@ -53,12 +56,18 @@ var _hp: SpinBox
 var _max_hp: SpinBox
 var _max_hp_bonus: SpinBox
 var _max_hp_effective: Label
+var _second_form_hp: SpinBox
+var _second_form_max_hp: SpinBox
+var _biography: TextEdit
 var _subclass_caption: Label
 var _level_caption: Label
 var _xp: SpinBox
 var _initiative: SpinBox
 var _speed_custom := false
 var _speed: SpinBox
+var _speed_bonus: SpinBox
+var _speed_effective: Label
+var _ability_total_labels: Dictionary = {}
 var _temp_hp: SpinBox
 var _hp_delta_dialog: ConfirmationDialog
 var _hp_delta_sign := -1
@@ -114,6 +123,13 @@ var _suggested_miniature_ids: Array[String] = []
 var _import_dialog: AcceptDialog
 var _import_text: TextEdit
 var _auto_reference_requests: Dictionary = {}
+var _form_hp_requests: Dictionary = {}
+var _form_hp_dialog: ConfirmationDialog
+var _form_hp_choice: OptionButton
+var _form_hp_manual: SpinBox
+var _form_hp_pending_id := ""
+var _restore_form_dialog: ConfirmationDialog
+var _form_depleted_dialog: ConfirmationDialog
 
 
 func setup(root: Node3D) -> void:
@@ -471,8 +487,8 @@ func _build_ui() -> void:
 	_tabs.size_flags_vertical = Control.SIZE_EXPAND_FILL
 	_tabs.mouse_filter = Control.MOUSE_FILTER_STOP
 	columns.add_child(_tabs)
+	var form := _add_sheet_tab(_tabs, "Info")
 	var statistics_tab := _add_sheet_tab(_tabs, "Statistiche")
-	var form := _add_sheet_tab(_tabs, "Generale")
 	var appearance_tab := _add_sheet_tab(_tabs, "Aspetto")
 	var traits_tab := _add_sheet_tab(_tabs, "Tratti")
 	var conditions_tab := _add_sheet_tab(_tabs, "Stati")
@@ -527,16 +543,20 @@ func _build_ui() -> void:
 	health_style.set_corner_radius_all(7)
 	health_style.set_content_margin_all(5)
 	health_panel.add_theme_stylebox_override("panel", health_style)
-	health_panel.tooltip_text = "PF attuali, massimi e temporanei. I danni consumano prima i PF temporanei."
+	health_panel.tooltip_text = "Danni: prima temporanei, poi PF della seconda forma, infine PF normali."
 	statistics_tab.add_child(health_panel)
 	var health_content := VBoxContainer.new()
 	health_panel.add_child(health_content)
-	var health_actions := HBoxContainer.new()
-	health_content.add_child(health_actions)
-	var health := HBoxContainer.new()
-	health.add_theme_constant_override("separation", 4)
+	var health_title := Label.new()
+	health_title.text = "❤️ Punti Ferita"
+	health_title.add_theme_font_size_override("font_size", 17)
+	health_title.add_theme_color_override("font_color", Color(1.0, 0.78, 0.65))
+	health_content.add_child(health_title)
+	var health := HFlowContainer.new()
+	health.add_theme_constant_override("h_separation", 5)
+	health.add_theme_constant_override("v_separation", 5)
 	health_content.add_child(health)
-	_add_label(health, "PF")
+	_add_label(health, "Attuali")
 	var damage := Button.new()
 	damage.text = "−"
 	damage.tooltip_text = "Sottrai PF: inserisci un valore o tira un dado"
@@ -550,7 +570,8 @@ func _build_ui() -> void:
 	_max_hp_effective = Label.new()
 	_max_hp_effective.tooltip_text = "PF massimi effettivi"
 	health.add_child(_max_hp_effective)
-	_add_label(health, "(")
+	_add_formula_label(health, "=")
+	_add_formula_label(health, "(")
 	_max_hp = _spin(health, 0, 99999)
 	_max_hp.custom_minimum_size = Vector2(62, 30)
 	_max_hp.size_flags_horizontal = Control.SIZE_SHRINK_BEGIN
@@ -559,8 +580,11 @@ func _build_ui() -> void:
 	_max_hp_bonus.custom_minimum_size = Vector2(60, 30)
 	_max_hp_bonus.tooltip_text = "Bonus manuale ai PF massimi"
 	ManualBonus.decorate(_max_hp_bonus)
-	_add_label(health, ")")
-	_add_label(health, "TEMP")
+	_add_formula_label(health, ")")
+	# HP actions belong on the same row, directly before temporary HP.
+	var health_actions := HBoxContainer.new()
+	health.add_child(health_actions)
+	_add_label(health, "🛡 TEMP")
 	_temp_hp = _spin(health, 0, 99999)
 	_temp_hp.custom_minimum_size.x = 64
 	_max_hp.value_changed.connect(func(_v: float) -> void: _update_max_hp_display())
@@ -579,6 +603,23 @@ func _build_ui() -> void:
 	restore_hp.custom_minimum_size.x = 30
 	restore_hp.pressed.connect(_restore_full_hp)
 	health_actions.add_child(restore_hp)
+	var form_hp_row := HBoxContainer.new()
+	form_hp_row.add_theme_constant_override("separation", 6)
+	health_content.add_child(form_hp_row)
+	_add_label(form_hp_row, "🦋 Seconda forma")
+	_second_form_hp = SpinBox.new()
+	_second_form_hp.min_value = 0
+	_second_form_hp.max_value = 99999
+	_second_form_hp.step = 1
+	_second_form_hp.rounded = true
+	_second_form_hp.custom_minimum_size = Vector2(78, 30)
+	_second_form_hp.value_changed.connect(_on_form_hp_changed)
+	form_hp_row.add_child(_second_form_hp)
+	_add_label(form_hp_row, "/")
+	_second_form_max_hp = _spin(form_hp_row, 0, 99999)
+	_second_form_max_hp.custom_minimum_size.x = 78
+	_second_form_hp.tooltip_text = "PF attuali della seconda forma; si consumano dopo quelli temporanei."
+	_second_form_max_hp.tooltip_text = "PF massimi della seconda forma (polimorfia o forma selvatica)"
 	var defense_flow := HFlowContainer.new()
 	defense_flow.add_theme_constant_override("h_separation", 8)
 	defense_flow.add_theme_constant_override("v_separation", 5)
@@ -586,13 +627,13 @@ func _build_ui() -> void:
 	var temp_health := HBoxContainer.new()
 	temp_health.add_theme_constant_override("separation", 6)
 	defense_flow.add_child(temp_health)
-	_add_label(temp_health, "CA")
+	_add_label(temp_health, "🛡 CA")
 	_ac = _spin(temp_health, 0, 99)
 	_ac.custom_minimum_size.x = 65
 	var reach_row := HBoxContainer.new()
 	reach_row.add_theme_constant_override("separation", 6)
 	defense_flow.add_child(reach_row)
-	_add_label(reach_row, "Gittata base (ft)")
+	_add_label(reach_row, "🏹 Gittata base (ft)")
 	_reach = _spin(reach_row, 5, 1000)
 	_reach.step = 5.0
 	_reach.custom_minimum_size.x = 70
@@ -600,11 +641,11 @@ func _build_ui() -> void:
 	var movement_row := HBoxContainer.new()
 	movement_row.add_theme_constant_override("separation", 6)
 	defense_flow.add_child(movement_row)
-	_add_label(movement_row, "Iniziativa")
+	_add_label(movement_row, "⚡ Iniziativa")
 	_initiative = _spin(movement_row, -99, 99)
 	_initiative.custom_minimum_size.x = 66
 	_initiative.tooltip_text = "Iniziativa calcolata automaticamente dal modificatore di Destrezza"
-	_add_label(movement_row, "Velocità (ft)")
+	_add_label(movement_row, "👟 Velocità base (ft)")
 	_speed = SpinBox.new()
 	_speed.min_value = 0
 	_speed.max_value = 999
@@ -613,7 +654,17 @@ func _build_ui() -> void:
 	_speed.custom_minimum_size = Vector2(69, 30)
 	_speed.value_changed.connect(_on_speed_changed)
 	movement_row.add_child(_speed)
-	_speed.tooltip_text = "Velocità base della razza/specie (modificabile)"
+	_speed.tooltip_text = "Velocità base dalla specie o dal bestiario, modificabile"
+	_add_formula_label(movement_row, "(")
+	_speed_bonus = _spin(movement_row, -999, 999)
+	_speed_bonus.custom_minimum_size.x = 65
+	_speed_bonus.tooltip_text = "Bonus manuale alla velocità"
+	ManualBonus.decorate(_speed_bonus)
+	_add_formula_label(movement_row, ") =")
+	_speed_effective = Label.new()
+	movement_row.add_child(_speed_effective)
+	_speed.value_changed.connect(func(_value: float) -> void: _update_speed_display())
+	_speed_bonus.value_changed.connect(func(_value: float) -> void: _update_speed_display())
 	_initiative.editable = false
 
 	var abilities_panel := PanelContainer.new()
@@ -628,6 +679,11 @@ func _build_ui() -> void:
 	abilities_row.columns = 2
 	abilities_row.add_theme_constant_override("h_separation", 8)
 	abilities_row.add_theme_constant_override("v_separation", 7)
+	var ability_title := Label.new()
+	ability_title.text = "✨ Caratteristiche"
+	ability_title.add_theme_font_size_override("font_size", 17)
+	ability_title.add_theme_color_override("font_color", Color(0.72, 0.88, 0.96))
+	statistics_tab.add_child(ability_title)
 	abilities_panel.add_child(abilities_row)
 	for ability: String in ["str", "dex", "con", "int", "wis", "cha"]:
 		var cell := VBoxContainer.new()
@@ -636,6 +692,7 @@ func _build_ui() -> void:
 		var scores_row := HBoxContainer.new()
 		scores_row.add_theme_constant_override("separation", 4)
 		cell.add_child(scores_row)
+		_add_formula_label(scores_row, "(")
 		var spin := _spin(scores_row, 1, 30)
 		spin.custom_minimum_size.x = 54
 		spin.tooltip_text = "Punteggio base"
@@ -645,6 +702,12 @@ func _build_ui() -> void:
 		bonus.tooltip_text = "Bonus manuale al punteggio: compensa effetti non ancora gestiti automaticamente"
 		ManualBonus.decorate(bonus)
 		_ability_bonus_spins[ability] = bonus
+		_add_formula_label(scores_row, "=")
+		var total_score := Label.new()
+		total_score.custom_minimum_size.x = 28
+		scores_row.add_child(total_score)
+		_ability_total_labels[ability] = total_score
+		_add_formula_label(scores_row, ")")
 		var modifier := Label.new()
 		modifier.custom_minimum_size.x = 42
 		modifier.tooltip_text = "Modificatore calcolato dal punteggio e dal bonus"
@@ -659,6 +722,11 @@ func _build_ui() -> void:
 	_species = _reference_option(species_row, Player5eTools.entries("races"))
 	_species.item_selected.connect(func(_index: int) -> void: _on_species_changed())
 
+	var classes_title := Label.new()
+	classes_title.text = "⚔ Classi"
+	classes_title.add_theme_font_size_override("font_size", 17)
+	classes_title.add_theme_color_override("font_color", Color(0.96, 0.78, 0.54))
+	form.add_child(classes_title)
 	var classes_row := HFlowContainer.new()
 	classes_row.add_theme_constant_override("h_separation", 7)
 	classes_row.add_theme_constant_override("v_separation", 6)
@@ -704,12 +772,24 @@ func _build_ui() -> void:
 	_xp.custom_minimum_size.x = 130
 	_xp.tooltip_text = "Minimo XP calcolato dai livelli di classe (esclusa la classe Mostro)"
 	var tracker_caption := Label.new()
-	tracker_caption.text = "Tracker risorse"
+	tracker_caption.text = "📊 Tracker risorse"
 	tracker_caption.add_theme_font_size_override("font_size", 15)
 	tracker_caption.add_theme_color_override("font_color", Color(0.85, 0.78, 0.65))
-	form.add_child(tracker_caption)
+	statistics_tab.add_child(tracker_caption)
 	_tracker_rows = VBoxContainer.new()
-	form.add_child(_tracker_rows)
+	statistics_tab.add_child(_tracker_rows)
+	var biography_label := Label.new()
+	biography_label.text = "📜 Background / personalità"
+	biography_label.add_theme_font_size_override("font_size", 17)
+	form.add_child(biography_label)
+	_biography = TextEdit.new()
+	_biography.custom_minimum_size.y = 240
+	_biography.size_flags_horizontal = Control.SIZE_EXPAND_FILL
+	_biography.scroll_fit_content_height = false
+	_biography.wrap_mode = TextEdit.LINE_WRAPPING_BOUNDARY
+	_biography.placeholder_text = "Storia, carattere, ideali, legami, difetti e annotazioni…"
+	_biography.text_changed.connect(_save)
+	form.add_child(_biography)
 
 	var miniature_row := HBoxContainer.new()
 	appearance_tab.add_child(miniature_row)
@@ -783,6 +863,7 @@ func _build_ui() -> void:
 	add_child(_delete_dialog)
 	_build_automatic_dialog()
 	_build_hp_delta_dialog()
+	_build_second_form_dialogs()
 	_tabs.item_rect_changed.connect(_update_sheet_layout)
 	_panel.resized.connect(_update_sheet_layout)
 	call_deferred("_update_sheet_layout")
@@ -1229,6 +1310,15 @@ func _build_transfer_dialog() -> void:
 	_import_text.custom_minimum_size = Vector2(620, 220)
 	_import_text.placeholder_text = "Incolla qui il codice JSON ricevuto dal precedente controllore."
 	_import_dialog.add_child(_import_text)
+
+
+func _add_formula_label(parent: Node, value: String) -> void:
+	var label := Label.new()
+	label.text = value
+	label.custom_minimum_size.y = 30
+	label.vertical_alignment = VERTICAL_ALIGNMENT_CENTER
+	label.add_theme_font_size_override("font_size", 22 if value in ["(", ")"] else 17)
+	parent.add_child(label)
 
 
 func _add_label(parent: Node, text_value: String) -> void:
