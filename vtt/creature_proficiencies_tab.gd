@@ -457,7 +457,8 @@ func _refresh_competences() -> void:
 			var grant: Dictionary = _rows[int(index)]
 			if bool(grant.get("automatic", false)):
 				continue
-			if _selected_id not in ["~none~", ""] and String(grant.get("origin_id", "")) != _selected_id:
+			var grant_source: String = String(grant.get("origin_id", ""))
+			if _selected_id not in ["~none~", ""] and not grant_source.is_empty() and grant_source != _selected_id:
 				continue
 			removable.append(int(index))
 		if not removable.is_empty():
