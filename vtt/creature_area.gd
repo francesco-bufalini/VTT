@@ -3045,10 +3045,17 @@ func _save_attack_setting(attack_id: String, setting: String, value: Variant) ->
 func _update_defense_display() -> void:
 	var live: Dictionary = _live_stats_record()
 	if _ac != null and _ac_bonus != null and _ac_effective != null:
+		var equipped: bool = not ItemRules.equipped_armor(live.get("inventory", [])).is_empty()
+		_ac.editable = not equipped
+		_ac.tooltip_text = "La CA base viene dall'armatura indossata nell'inventario" if equipped else "Classe Armatura base manuale"
+		var armor_record: Dictionary = live.duplicate(false)
+		armor_record["effective_armor_dex"] = BonusRules.value(live, "ability_mod:dex") if equipped else 0
+		var base: Dictionary = ItemRules.armor_base(armor_record)
 		var ac: int = maxi(0, BonusRules.value(live, "ac"))
-		_set_formula("ac", str(ac), "CA: base %d + bonus manuale %+d + scudo %+d + origini %+d = %d" % [
-			int(_ac.value), int(_ac_bonus.value),
-			ItemRules.shield_bonus(live.get("inventory", [])), BonusRules.bonus(live, "ac"), ac])
+		_set_formula("ac", str(ac), "CA: %s + scudo %+d + bonus manuale %+d + origini %+d = %d" % [
+			String(base.get("description", "Base manuale")),
+			ItemRules.shield_bonus(live.get("inventory", [])), int(_ac_bonus.value),
+			BonusRules.bonus(live, "ac"), ac])
 	if _initiative != null and _initiative_bonus != null and _initiative_effective != null:
 		var init: int = BonusRules.value(live, "initiative")
 		_set_formula("initiative", "%+d" % init,
