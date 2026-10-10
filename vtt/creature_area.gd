@@ -678,7 +678,7 @@ func _build_ui() -> void:
 	_max_hp_effective.tooltip_text = "PF massimi effettivi"
 	health.add_child(_max_hp_effective)
 	_max_hp = _spin(health, 0, 99999)
-	_max_hp.custom_minimum_size = Vector2(62, 36)
+	_max_hp.custom_minimum_size = Vector2(68, 36)
 	_max_hp.size_flags_horizontal = Control.SIZE_SHRINK_BEGIN
 	_max_hp.tooltip_text = "PF massimi base, senza bonus manuali"
 	_max_hp_bonus = _spin(health, -9999, 99999)
@@ -692,7 +692,7 @@ func _build_ui() -> void:
 	health.add_child(health_actions)
 	_add_label(health, "+")
 	_temp_hp = _spin(health, 0, 99999)
-	_temp_hp.custom_minimum_size.x = 64
+	_temp_hp.custom_minimum_size.x = 68
 	_add_label(health, "TEMP")
 	_max_hp.value_changed.connect(func(_v: float) -> void: _update_max_hp_display())
 	_max_hp_bonus.value_changed.connect(func(_v: float) -> void: _update_max_hp_display())
@@ -722,12 +722,12 @@ func _build_ui() -> void:
 	_second_form_hp.max_value = 99999
 	_second_form_hp.step = 1
 	_second_form_hp.rounded = true
-	_second_form_hp.custom_minimum_size = Vector2(78, 30)
+	_second_form_hp.custom_minimum_size = Vector2(68, 30)
 	_second_form_hp.value_changed.connect(_on_form_hp_changed)
 	form_hp_row.add_child(_second_form_hp)
 	_add_label(form_hp_row, "/")
 	_second_form_max_hp = _spin(form_hp_row, 0, 99999)
-	_second_form_max_hp.custom_minimum_size.x = 78
+	_second_form_max_hp.custom_minimum_size.x = 68
 	var second_max_label := Label.new()
 	form_hp_row.add_child(second_max_label)
 	_install_formula("second_max", second_max_label, [_second_form_max_hp], ["Massimo"])
@@ -3931,7 +3931,7 @@ func _refresh_trackers(record: Dictionary) -> void:
 		counter_group.add_child(consume)
 		var remaining := Label.new()
 		remaining.text = "%d /" % (maximum - used)
-		remaining.custom_minimum_size.x = 64
+		remaining.custom_minimum_size.x = 68
 		remaining.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
 		counter_group.add_child(remaining)
 		var maximum_label := Label.new()
