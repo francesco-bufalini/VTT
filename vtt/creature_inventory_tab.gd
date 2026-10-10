@@ -355,6 +355,11 @@ func _on_dimension_changed(value: float, axis: String) -> void:
 	if index < 0 or index >= _inventory.size():
 		return
 	var row: Dictionary = _inventory[index].duplicate(true)
+	var existing: Variant = row.get("instance_overrides", {})
+	var old_size: Variant = (existing as Dictionary).get("dimensions_m", {}) if existing is Dictionary else {}
+	var previous: float = float((old_size as Dictionary).get(axis, 0.0)) if old_size is Dictionary else 0.0
+	if is_equal_approx(previous, value):
+		return
 	# A personalized physical object is not a stack of otherwise identical
 	# catalog copies. Split one unit before applying its individual property.
 	if int(row.get("quantity", 1)) > 1:
