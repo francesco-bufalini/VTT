@@ -16,6 +16,7 @@ const ManualBonus = preload("res://vtt/manual_bonus_style.gd")
 const InventoryTab = preload("res://vtt/creature_inventory_tab.gd")
 const TraitsTab = preload("res://vtt/creature_traits_tab.gd")
 const DialogLayout = preload("res://vtt/dialog_layout.gd")
+const Skills5e = preload("res://vtt/creature_skills_5etools.gd")
 
 var board_root: Node3D
 var _archive
@@ -33,6 +34,15 @@ var _creature_list: VBoxContainer
 var _creature_filter: LineEdit
 var _creature_empty: Label
 var _abilities_grid: GridContainer
+var _statistics_columns: HBoxContainer
+var _skills_panel: VBoxContainer
+var _skill_buttons: Dictionary = {}
+var _skill_values: Dictionary = {}
+var _skill_ranks: Dictionary = {}
+var _proficiency_display: Label
+var _passive_perception: Label
+var _attacks_description: RichTextLabel
+var _custom_attacks: TextEdit
 var _creature_list_scroll: ScrollContainer
 var _creature_row_buttons: Array[Button] = []
 var _creature_eye_buttons: Array[Button] = []
@@ -496,6 +506,18 @@ func _build_ui() -> void:
 	columns.add_child(_tabs)
 	var form := _add_sheet_tab(_tabs, "Info")
 	var statistics_tab := _add_sheet_tab(_tabs, "Statistiche")
+	_statistics_columns = HBoxContainer.new()
+	_statistics_columns.add_theme_constant_override("separation", 12)
+	_statistics_columns.size_flags_horizontal = Control.SIZE_EXPAND_FILL
+	statistics_tab.add_child(_statistics_columns)
+	var skills_column := VBoxContainer.new()
+	skills_column.size_flags_horizontal = Control.SIZE_EXPAND_FILL
+	skills_column.size_flags_stretch_ratio = 1.0
+	_statistics_columns.add_child(skills_column)
+	var combat_column := VBoxContainer.new()
+	combat_column.size_flags_horizontal = Control.SIZE_EXPAND_FILL
+	combat_column.size_flags_stretch_ratio = 1.0
+	_statistics_columns.add_child(combat_column)
 	var appearance_tab := _add_sheet_tab(_tabs, "Aspetto")
 	var traits_tab := _add_sheet_tab(_tabs, "Tratti")
 	var conditions_tab := _add_sheet_tab(_tabs, "Stati")
@@ -551,7 +573,7 @@ func _build_ui() -> void:
 	health_style.set_content_margin_all(5)
 	health_panel.add_theme_stylebox_override("panel", health_style)
 	health_panel.tooltip_text = "Danni: prima temporanei, poi PF della seconda forma, infine PF normali."
-	statistics_tab.add_child(health_panel)
+	combat_column.add_child(health_panel)
 	var health_content := VBoxContainer.new()
 	health_panel.add_child(health_content)
 	var health_title := Label.new()
@@ -634,7 +656,7 @@ func _build_ui() -> void:
 	var defense_flow := HFlowContainer.new()
 	defense_flow.add_theme_constant_override("h_separation", 8)
 	defense_flow.add_theme_constant_override("v_separation", 5)
-	statistics_tab.add_child(defense_flow)
+	combat_column.add_child(defense_flow)
 	var temp_health := HBoxContainer.new()
 	temp_health.add_theme_constant_override("separation", 6)
 	defense_flow.add_child(temp_health)
@@ -719,7 +741,7 @@ func _build_ui() -> void:
 	ability_title.text = "🎲 Caratteristiche"
 	ability_title.add_theme_font_size_override("font_size", 17)
 	ability_title.add_theme_color_override("font_color", Color(0.72, 0.88, 0.96))
-	statistics_tab.add_child(abilities_panel)
+	skills_column.add_child(abilities_panel)
 	var abilities_content := VBoxContainer.new()
 	abilities_content.add_theme_constant_override("separation", 8)
 	abilities_panel.add_child(abilities_content)
@@ -753,6 +775,63 @@ func _build_ui() -> void:
 		_ability_modifier_labels[ability] = modifier
 		spin.value_changed.connect(_on_ability_value_changed.bind(ability))
 		bonus.value_changed.connect(_on_ability_value_changed.bind(ability))
+
+	var proficiency_row := HBoxContainer.new()
+	skills_column.add_child(proficiency_row)
+	_add_label(proficiency_row, "🎓 Bonus competenza")
+	_proficiency_display = Label.new()
+	_proficiency_display.add_theme_font_size_override("font_size", 18)
+	proficiency_row.add_child(_proficiency_display)
+	var passive_row := HBoxContainer.new()
+	skills_column.add_child(passive_row)
+	_add_label(passive_row, "👁 Percezione passiva")
+	_passive_perception = Label.new()
+	_passive_perception.add_theme_font_size_override("font_size", 18)
+	passive_row.add_child(_passive_perception)
+	var skills_heading := Label.new()
+	skills_heading.text = "Abilità · clicca per cambiare grado"
+	skills_heading.add_theme_font_size_override("font_size", 16)
+	skills_column.add_child(skills_heading)
+	_skills_panel = VBoxContainer.new()
+	_skills_panel.add_theme_constant_override("separation", 3)
+	skills_column.add_child(_skills_panel)
+	for skill: Dictionary in Skills5e.SKILLS:
+		var key: String = String(skill["id"])
+		var row := HBoxContainer.new()
+		row.add_theme_constant_override("separation", 4)
+		_skills_panel.add_child(row)
+		var rank_button := Button.new()
+		rank_button.custom_minimum_size.x = 40
+		rank_button.tooltip_text = "Clicca: nessuna → competenza → maestria"
+		rank_button.pressed.connect(_cycle_skill_rank.bind(key))
+		row.add_child(rank_button)
+		_skill_buttons[key] = rank_button
+		var skill_label := Label.new()
+		skill_label.text = String(skill["label"]) + " · " + String(skill["ability"]).to_upper()
+		skill_label.clip_text = true
+		skill_label.size_flags_horizontal = Control.SIZE_EXPAND_FILL
+		row.add_child(skill_label)
+		var modifier_label := Label.new()
+		modifier_label.custom_minimum_size.x = 42
+		modifier_label.horizontal_alignment = HORIZONTAL_ALIGNMENT_RIGHT
+		row.add_child(modifier_label)
+		_skill_values[key] = modifier_label
+	var attack_header := Label.new()
+	attack_header.text = "⚔ Attacchi e azioni disponibili"
+	attack_header.add_theme_font_size_override("font_size", 16)
+	combat_column.add_child(attack_header)
+	_attacks_description = RichTextLabel.new()
+	_attacks_description.custom_minimum_size.y = 160
+	_attacks_description.fit_content = true
+	_attacks_description.scroll_active = false
+	_attacks_description.selection_enabled = true
+	combat_column.add_child(_attacks_description)
+	_add_label(combat_column, "Attacchi personali (uno per riga)")
+	_custom_attacks = TextEdit.new()
+	_custom_attacks.custom_minimum_size.y = 95
+	_custom_attacks.wrap_mode = TextEdit.LINE_WRAPPING_BOUNDARY
+	_custom_attacks.text_changed.connect(_save)
+	combat_column.add_child(_custom_attacks)
 
 	var species_row := HBoxContainer.new()
 	form.add_child(species_row)
@@ -813,9 +892,9 @@ func _build_ui() -> void:
 	tracker_caption.text = "📊 Tracker risorse"
 	tracker_caption.add_theme_font_size_override("font_size", 15)
 	tracker_caption.add_theme_color_override("font_color", Color(0.85, 0.78, 0.65))
-	statistics_tab.add_child(tracker_caption)
+	combat_column.add_child(tracker_caption)
 	_tracker_rows = VBoxContainer.new()
-	statistics_tab.add_child(_tracker_rows)
+	combat_column.add_child(_tracker_rows)
 	var biography_label := Label.new()
 	biography_label.text = "📜 Background / personalità"
 	biography_label.add_theme_font_size_override("font_size", 17)
@@ -1766,12 +1845,9 @@ func _update_sheet_layout() -> void:
 	var cell_width := (_abilities_grid.get_child(0) as Control).get_combined_minimum_size().x
 	var available_width := viewport_size.x - _tabs.get_global_rect().position.x - 30.0
 	var separation := _abilities_grid.get_theme_constant("h_separation")
-	if available_width >= cell_width * 3.0 + separation * 2:
-		_abilities_grid.columns = 3
-	elif available_width >= cell_width * 2.0 + separation:
-		_abilities_grid.columns = 2
-	else:
-		_abilities_grid.columns = 1
+	# Two statistics columns own half of the sheet, not the full viewport.
+	var column_width := maxf(100.0, (available_width - 16.0) / 2.0)
+	_abilities_grid.columns = 2 if column_width >= cell_width * 2.0 + separation else 1
 
 
 func _on_selected(index: int) -> void:
@@ -1815,6 +1891,18 @@ func _load_form(record: Dictionary) -> void:
 		"initiative_base", int(record.get("initiative", 0)) - int(_initiative_bonus.value)
 	))
 	_update_defense_display()
+	_skill_ranks.clear()
+	var known_proficiencies: Variant = record.get("skill_proficiencies", [])
+	var known_expertise: Variant = record.get("skill_expertise", [])
+	for skill: Dictionary in Skills5e.SKILLS:
+		var key: String = String(skill["id"])
+		_skill_ranks[key] = (
+			2 if known_expertise is Array and key in known_expertise
+			else 1 if known_proficiencies is Array and key in known_proficiencies
+			else 0
+		)
+	_custom_attacks.text = String(record.get("attacks", ""))
+	_refresh_attacks(record)
 	var abilities_value: Variant = record.get("abilities", {})
 	var abilities: Dictionary = (
 		abilities_value as Dictionary if abilities_value is Dictionary else {}
@@ -1825,6 +1913,7 @@ func _load_form(record: Dictionary) -> void:
 		(_ability_spins[ability] as SpinBox).value = int(abilities.get(ability, 10))
 		(_ability_bonus_spins[ability] as SpinBox).value = int(bonuses.get(ability, 0))
 		_update_ability_modifier(ability)
+	_refresh_skill_values(record)
 	var is_character: bool = String(record.get("kind", "")) == "character"
 	if is_character:
 		_set_reference_choices(_species, Player5eTools.entries("races"))
@@ -1999,6 +2088,62 @@ func _on_spellcasting_updated(values: Dictionary) -> void:
 	_replace_current_record(record)
 
 
+func _cycle_skill_rank(skill_id: String) -> void:
+	if _loading or not _skill_ranks.has(skill_id):
+		return
+	_skill_ranks[skill_id] = (int(_skill_ranks[skill_id]) + 1) % 3
+	_refresh_skill_values(_current())
+	_save()
+
+
+func _refresh_skill_values(record: Dictionary) -> void:
+	if _proficiency_display == null:
+		return
+	var proficiency: int = Rules.proficiency_bonus(record)
+	_proficiency_display.text = "%+d" % proficiency
+	for skill: Dictionary in Skills5e.SKILLS:
+		var key: String = String(skill["id"])
+		var ability: String = String(skill["ability"])
+		var score: int = int((_ability_spins[ability] as SpinBox).value)
+		var bonus: int = int((_ability_bonus_spins[ability] as SpinBox).value)
+		var rank: int = int(_skill_ranks.get(key, 0))
+		var value: int = Rules.ability_modifier(score + bonus) + rank * proficiency
+		(_skill_buttons[key] as Button).text = ["○", "●", "◆"][rank]
+		(_skill_buttons[key] as Button).tooltip_text = ["Nessuna competenza", "Competenza", "Maestria"][rank]
+		(_skill_values[key] as Label).text = "%+d" % value
+	var passive: int = 10 + Rules.ability_modifier(
+		int(_ability_spins["wis"].value) + int(_ability_bonus_spins["wis"].value)
+	) + int(_skill_ranks.get("perception", 0)) * proficiency
+	_passive_perception.text = str(passive)
+
+
+func _refresh_attacks(record: Dictionary) -> void:
+	if _attacks_description == null:
+		return
+	var lines: PackedStringArray = []
+	var stat: Dictionary = record.get("stat_block", {})
+	for section: String in ["action", "bonus", "reaction", "legendary", "mythic"]:
+		var value: Variant = stat.get(section, [])
+		if not value is Array:
+			continue
+		for raw: Variant in value:
+			if not raw is Dictionary:
+				continue
+			var action: Dictionary = raw as Dictionary
+			var name: String = String(action.get("name", ""))
+			if name.is_empty():
+				continue
+			lines.append("• %s [%s]" % [name, section])
+			var descriptions: Variant = action.get("entries", [])
+			if descriptions is Array:
+				for entry: Variant in descriptions:
+					if entry is String:
+						lines.append("    " + String(entry).substr(0, 380))
+	if lines.is_empty():
+		lines.append("Nessun attacco del bestiario. Puoi aggiungerne manualmente qui sotto.")
+	_attacks_description.text = "\n".join(lines)
+
+
 func _update_defense_display() -> void:
 	if _ac != null and _ac_bonus != null and _ac_effective != null:
 		_ac_effective.text = str(maxi(0, int(_ac.value) + int(_ac_bonus.value)))
@@ -2043,6 +2188,8 @@ func _update_ability_modifier(ability: String) -> void:
 	if ability == "dex" and _initiative != null and not _loading:
 		_initiative.value = value
 		_update_defense_display()
+	if not _loading:
+		_refresh_skill_values(_current())
 
 
 func _replace_current_record(record: Dictionary) -> void:
@@ -2102,6 +2249,16 @@ func _save() -> void:
 	for ability: String in _ability_bonus_spins.keys():
 		ability_bonuses[ability] = int((_ability_bonus_spins[ability] as SpinBox).value)
 	record["ability_bonuses"] = ability_bonuses
+	var proficient: Array[String] = []
+	var expertise: Array[String] = []
+	for key: String in _skill_ranks.keys():
+		if int(_skill_ranks[key]) >= 1:
+			proficient.append(key)
+		if int(_skill_ranks[key]) >= 2:
+			expertise.append(key)
+	record["skill_proficiencies"] = proficient
+	record["skill_expertise"] = expertise
+	record["attacks"] = _custom_attacks.text
 	record["default_miniature_id"] = _default_miniature_id
 	if String(record.get("kind", "")) == "monster":
 		var stat: Dictionary = record.get("stat_block", {})
