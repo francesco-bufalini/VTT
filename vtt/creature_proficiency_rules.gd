@@ -487,11 +487,13 @@ static func origins(record: Dictionary) -> Array[Dictionary]:
 			if String(row.get("id", "")) == sid:
 				found = true
 				break
-		if not found and not bool(item.get("automatic", false)):
-			result.append({"id": sid, "name": String(item.get("name", "Origine")),
+		if not found:
+			var withdrawn: bool = bool(item.get("automatic", false))
+			result.append({"id": sid,
+				"name": ("⚠ Origine non più disponibile · " if withdrawn else "") + String(item.get("name", "Origine")),
 				"group": String(item.get("group", "custom")),
-				"disabled": bool(item.get("disabled", false)), "automatic": false,
-				"requirements": []})
+				"disabled": withdrawn or bool(item.get("disabled", false)),
+				"automatic": withdrawn, "requirements": []})
 	for row: Dictionary in record.get("proficiency_choices", []):
 		if not row is Dictionary:
 			continue
@@ -523,7 +525,12 @@ static func requirement_missing(source: Dictionary, rows: Array[Dictionary], ena
 		var kind: String = String(requirement.get("kind", ""))
 		var present := 0
 		for row: Dictionary in rows:
-			if String(row.get("origin_id", "")) == sid and String(row.get("kind", "")) == kind and not bool(row.get("disabled", false)) and bool(enabled.get(sid, true)):
+			if String(row.get("origin_id", "")) != sid or String(row.get("kind", "")) != kind:
+				continue
+			if bool(row.get("disabled", false)) or not bool(enabled.get(sid, true)):
+				continue
+			# Fixed grants in the same group do not satisfy a choose quota.
+			if grant_matches(requirement.get("data", {}), kind, String(row.get("key", ""))) == 1:
 				present += 1
 		var count: int = int(requirement.get("count", 1))
 		# Chosen proficiencies are represented only after manual selection.
