@@ -158,6 +158,11 @@ func create_creature(stat_block: Dictionary, side: String) -> Dictionary:
 		"visual_front_quarter_turns": 0,
 		"party_id": "",
 		"temporary_hp": 0,
+		"second_form_hp": 0,
+		"second_form_max_hp": 0,
+		"speed_bonus": 0,
+		"speed_base": CreatureRules.walking_speed(stat_block.get("speed", 30)),
+		"background_personality": "",
 		"stat_block": stat_block.duplicate(true),
 		"species": String(stat_block.get("name", base_name)),
 		"species_source": String(stat_block.get("source", "")),
@@ -235,6 +240,11 @@ func normalize_creature(value: Dictionary) -> Dictionary:
 		"visual_front_quarter_turns": clampi(int(value.get("visual_front_quarter_turns", 0)), 0, 3),
 		"party_id": String(value.get("party_id", "")),
 		"temporary_hp": maxi(0, int(value.get("temporary_hp", 0))),
+		"second_form_hp": maxi(0, int(value.get("second_form_hp", 0))),
+		"second_form_max_hp": maxi(0, int(value.get("second_form_max_hp", value.get("second_form_hp", 0)))),
+		"speed_base": maxi(0, int(value.get("speed_base", int(value.get("speed", CreatureRules.walking_speed(stat_block.get("speed", 30)))) - int(value.get("speed_bonus", 0))))),
+		"speed_bonus": clampi(int(value.get("speed_bonus", 0)), -999, 999),
+		"background_personality": String(value.get("background_personality", "")),
 		"armor_class": maxi(0, int(value.get("armor_class", CreatureRules.monster_armor_class(stat_block)))),
 		"speed": maxi(0, int(value.get("speed", CreatureRules.walking_speed(stat_block.get("speed", 30))))),
 		"speed_is_custom": bool(value.get("speed_is_custom", false)),
@@ -263,7 +273,9 @@ func normalize_creature(value: Dictionary) -> Dictionary:
 	}
 	result["max_hp"] = maxi(0, int(result["max_hp_base"]) + int(result["max_hp_bonus"]))
 	if not bool(result["speed_is_custom"]):
-		result["speed"] = CreatureRules.walking_speed(stat_block.get("speed", 30))
+		result["speed_base"] = CreatureRules.walking_speed(stat_block.get("speed", 30))
+	result["speed"] = maxi(0, int(result["speed_base"]) + int(result["speed_bonus"]))
+	result["second_form_hp"] = mini(int(result["second_form_hp"]), int(result["second_form_max_hp"]))
 	# Rebuild the immutable monster base from the bestiary on every load,
 	# preserving any real class levels subsequently added by the user.
 	var extra_classes: Array = []
