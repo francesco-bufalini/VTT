@@ -105,6 +105,57 @@ func run() -> void:
 		"Legacy monster AC and initiative must remain unchanged after migration")
 	assert(creature.reach_feet == 10.0,
 		"Monster melee reach must be derived from 5etools, not a fixed 5 ft")
+	var attack_data: Script = load("res://vtt/creature_attack_data.gd")
+	assert(attack_data != null, "Attack calculation helper must load")
+	var character_attack: Dictionary = {
+		"kind": "character", "attack_ability": "str",
+		"abilities": {"str": 16, "dex": 12},
+		"ability_bonuses": {"str": 0, "dex": 0},
+		"attack_overrides": {}, "inventory": []
+	}
+	var unarmed: Dictionary = attack_data.definitions(character_attack)[0]
+	assert(unarmed.id == "unarmed" and unarmed.proficient,
+		"Characters must always be proficient in unarmed strikes")
+	assert(attack_data.attack_bonus(character_attack, unarmed, 2) == 5
+		and attack_data.damage_label(character_attack, unarmed) == "4 contundenti",
+		"Unarmed hit and damage use STR; proficiency only affects hit")
+	character_attack["attack_ability"] = "dex"
+	assert(attack_data.attack_bonus(character_attack, unarmed, 2) == 3
+		and attack_data.damage_label(character_attack, unarmed) == "2 contundenti",
+		"DEX preference must change both hit and damage")
+	character_attack["attack_overrides"] = {"unarmed": {"bonus": 2, "range_feet": 15}}
+	var normalized_character: Dictionary = PlayerStore.new().normalize_character(character_attack)
+	assert(normalized_character.attack_ability == "dex"
+		and normalized_character.attack_overrides.unarmed.bonus == 2,
+		"Character attack ability and per-attack bonus must survive normalization")
+	assert(attack_data.range_for(normalized_character, unarmed) == 15
+		and attack_data.attack_bonus(normalized_character, unarmed, 2) == 5,
+		"Range and enhancement bonus belong to the attack, not to the creature")
+	var monster_attack: Dictionary = monster.normalize_creature(creature.duplicate(true))
+	monster_attack["stat_block"] = {
+		"action": [
+			{"name": "Claw", "entries": ["{@atk mw} {@hit 5}, reach 10 ft, {@damage 2d6+3}"]},
+			{"name": "Bow", "entries": ["{@atk rw} {@hit 5}, range 80/320 ft, {@damage 1d8+3}"]}
+		]
+	}
+	monster_attack["attack_ability"] = "str"
+	monster_attack["attack_overrides"] = {"monster:action:0": {"bonus": 2, "range_feet": 15}}
+	var monster_attacks: Array[Dictionary] = attack_data.definitions(monster_attack)
+	assert(monster_attacks.size() == 2
+		and monster_attacks[0].range_feet == 10 and monster_attacks[1].range_feet == 80,
+		"Every 5etools attack must retain its own melee or ranged distance")
+	assert(attack_data.attack_bonus(monster_attack, monster_attacks[0], 3) == 7,
+		"Monster hit already contains proficiency: apply only manual bonus")
+	assert(attack_data.max_melee_range(monster_attack) == 15.0,
+		"Legacy token engagement distance must use the longest melee attack")
+	monster_attack["attack_ability"] = "dex"
+	assert(attack_data.attack_bonus(monster_attack, monster_attacks[0], 3) == 1,
+		"Monster ability switch adjusts the published bonus without double proficiency")
+	var normalized_attack: Dictionary = monster.normalize_creature(monster_attack)
+	assert(normalized_attack.attack_ability == "dex"
+		and normalized_attack.attack_overrides["monster:action:0"].range_feet == 15,
+		"Monster attack reach and bonus must persist independently of its stat block")
+
 	assert(creature.owner_id == Owner.local_id())
 	assert(not creature.has("trackers"), "New creatures must not generate legacy resources.")
 	assert(Rules.monster_armor_class(stat) == 18)
