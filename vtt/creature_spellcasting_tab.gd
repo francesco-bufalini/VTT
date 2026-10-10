@@ -303,7 +303,7 @@ func setup(
 		row.add_child(use)
 		_slot_use[lvl] = use
 		var remaining := Label.new()
-		remaining.custom_minimum_size.x = 65
+		remaining.custom_minimum_size.x = 68
 		remaining.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
 		row.add_child(remaining)
 		_remaining_labels[lvl] = remaining
@@ -314,7 +314,7 @@ func setup(
 		total.max_value = 99
 		total.rounded = true
 		total.update_on_text_changed = true
-		total.custom_minimum_size = Vector2(62, 36)
+		total.custom_minimum_size = Vector2(68, 36)
 		total.tooltip_text = "Numero base di slot massimi"
 		total.value_changed.connect(_on_slot_total_changed.bind(lvl))
 		row.add_child(total)
