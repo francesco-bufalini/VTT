@@ -391,6 +391,10 @@ func run() -> void:
 	assert(area._tracker_rows.get_parent() == combat_stats
 		and area._tracker_rows.get_index() < area._attacks_description.get_index(),
 		"Trackers should appear above the list of available attacks")
+	assert(area._weapon_picker != null and area._weapon_picker.item_count > 0,
+		"Weapon/attack carousel must be available above the attack cards")
+	assert(area._weapon_picker.get_parent().get_index() < area._attack_rows.get_index(),
+		"Active weapon carousel should precede available attacks")
 	assert(area._formula_values["hp"].value_label == area._max_hp_effective
 		and area._formula_values["hp"]._editor.visible == false,
 		"HP maximum should be a compact readout, not a permanently visible formula")
