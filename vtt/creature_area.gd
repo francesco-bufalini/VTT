@@ -2001,6 +2001,7 @@ func _refresh_subclass_option(option: OptionButton, class_ref: Dictionary) -> vo
 
 func _on_class_choice_changed() -> void:
 	_refresh_multiclass_availability()
+	_level.editable = _class_name.selected > 0
 	_refresh_subclass_option(_subclass_name, _reference_entry(_class_name))
 	_refresh_xp_minimum()
 	_save()
@@ -3338,8 +3339,6 @@ func _save() -> void:
 	record["second_form_max_hp"] = int(_second_form_max_hp.value)
 	record["second_form_hp"] = clampi(int(_second_form_hp.value), 0, int(_second_form_max_hp.value))
 	record["background_personality"] = _biography.text
-	record["subtype"] = _subtype.text.strip_edges()
-	record["subtype_is_custom"] = _subtype_custom
 	var background_entry: Dictionary = _reference_entry(_background)
 	record["background"] = String(background_entry.get("name", ""))
 	record["background_source"] = String(background_entry.get("source", ""))
@@ -3379,94 +3378,83 @@ func _save() -> void:
 	if _skill_ranks_custom:
 		record["skill_ranks_custom"] = true
 	record["default_miniature_id"] = _default_miniature_id
-	if String(record.get("kind", "")) == "monster":
-		var stat: Dictionary = record.get("stat_block", {})
-		# The original (possibly fractional) GS remains in the stat block.
+	var is_monster: bool = String(record.get("kind", "")) == "monster"
+	if is_monster:
+		# Keep fractional CR independent of classes and level.
+		var stat: Dictionary = record.get("stat_block", {}).duplicate(true)
+		var cr_text: String = _challenge_rating.text.strip_edges()
+		var valid_cr := cr_text.is_valid_float() and float(cr_text) >= 0.0
+		if "/" in cr_text:
+			var fraction: PackedStringArray = cr_text.split("/")
+			valid_cr = (fraction.size() == 2 and fraction[0].is_valid_int()
+				and fraction[1].is_valid_int() and int(fraction[0]) >= 0 and int(fraction[1]) > 0)
+		if not valid_cr:
+			_set_status("GS non valido: inserisci un numero o una frazione come 1/4.")
+			return
+		var old_cr: Variant = stat.get("cr", 0)
+		if old_cr is Dictionary:
+			var updated_cr: Dictionary = (old_cr as Dictionary).duplicate(true)
+			updated_cr["cr"] = cr_text
+			stat["cr"] = updated_cr
+		else:
+			stat["cr"] = cr_text
+		record["stat_block"] = stat
 		record["species"] = String(stat.get("name", record.get("base_name", "")))
 		record["species_source"] = String(stat.get("source", ""))
-		record["class"] = "Mostro"
-		record["class_source"] = "5etools"
-		# Monster type and subtype are not a character subclass.
-		record["subclass"] = ""
-		record["subclass_source"] = ""
-		record["subclass_id"] = ""
-		var monster_classes: Array[Dictionary] = [{
-			"name": "Mostro", "source": "5etools", "level": Rules.monster_level(stat)
-		}]
-		var additional_levels: int = 0
-		for definition: Dictionary in _multiclass_controls:
-			var extra_ref: Dictionary = _reference_entry(definition["selector"])
-			if String(extra_ref.get("name", "")).is_empty():
-				continue
-			var extra_level: int = int((definition["level"] as SpinBox).value)
-			var extra_subclass: Dictionary = _reference_entry(definition["subclass"])
-			monster_classes.append({
-				"name": String(extra_ref.get("name", "")),
-				"source": String(extra_ref.get("source", "")),
-				"id": String(extra_ref.get("id", "")),
-				"level": extra_level,
-				"subclass": String(extra_subclass.get("name", "")),
-				"subclass_source": String(extra_subclass.get("source", "")),
-				"subclass_id": String(extra_subclass.get("id", ""))
-			})
-			additional_levels += extra_level
-		record["classes"] = monster_classes
-		record["level"] = Rules.monster_level(stat) + additional_levels
-	if String(record.get("kind", "")) == "character":
-		var species := _reference_entry(_species)
-		var class_ref := _reference_entry(_class_name)
+	else:
+		var species: Dictionary = _reference_entry(_species)
+		var subrace: Dictionary = _reference_entry(_subrace_choice)
 		record["species_id"] = String(species.get("id", ""))
-		record["class_id"] = String(class_ref.get("id", ""))
 		record["species"] = String(species.get("name", ""))
 		record["species_source"] = String(species.get("source", ""))
-		record["class"] = String(class_ref.get("name", ""))
-		record["class_source"] = String(class_ref.get("source", ""))
-		var primary_subclass: Dictionary = _reference_entry(_subclass_name)
-		record["subclass"] = String(primary_subclass.get("name", ""))
-		record["subclass_source"] = String(primary_subclass.get("source", ""))
-		record["subclass_id"] = String(primary_subclass.get("id", ""))
-		record["rules_version"] = _selected_rules_version()
-		var primary_level: int = clampi(int(_level.value), 1, 20)
-		var classes: Array[Dictionary] = []
-		var extras_level := 0
-		if String(record["class"]).is_empty() and not _multiclass_controls.is_empty():
-			_set_status("Seleziona la classe base prima di aggiungere altre classi.")
-			return
-		for definition: Dictionary in _multiclass_controls:
-			var secondary_option: OptionButton = definition["selector"]
-			var extra_ref := _reference_entry(secondary_option)
-			var extra_name := String(extra_ref.get("name", ""))
-			if extra_name.is_empty():
-				continue
-			var extra_level := int((definition["level"] as SpinBox).value)
-			var extra_subclass: Dictionary = _reference_entry(definition["subclass"])
-			extras_level += extra_level
-			classes.append({
-				"name": extra_name,
-				"source": String(extra_ref.get("source", "")),
-				"id": String(extra_ref.get("id", "")),
-				"level": extra_level,
-				"subclass": String(extra_subclass.get("name", "")),
-				"subclass_source": String(extra_subclass.get("source", "")),
-				"subclass_id": String(extra_subclass.get("id", ""))
-			})
-		# Level is derived from the class levels, NEVER used as an input
-		# for calculating the base class. D&D 5e caps their sum at 20.
-		if primary_level + extras_level > 20:
-			_set_status("La somma dei livelli delle classi (base compresa) non può superare 20.")
-			return
-		record["level"] = primary_level + extras_level
-		if not String(record["class"]).is_empty():
-			classes.push_front({
-				"name": record["class"],
-				"source": record["class_source"],
-				"id": record["class_id"],
-				"level": primary_level,
-				"subclass": record["subclass"],
-				"subclass_source": record["subclass_source"],
-				"subclass_id": record["subclass_id"]
-			})
-		record["classes"] = classes
+		record["subrace"] = String(subrace.get("name", ""))
+		record["subrace_source"] = String(subrace.get("source", ""))
+		record["subrace_id"] = String(subrace.get("id", ""))
+	var class_ref: Dictionary = _reference_entry(_class_name)
+	record["class_id"] = String(class_ref.get("id", ""))
+	record["class"] = String(class_ref.get("name", ""))
+	record["class_source"] = String(class_ref.get("source", ""))
+	var primary_subclass: Dictionary = _reference_entry(_subclass_name)
+	record["subclass"] = String(primary_subclass.get("name", ""))
+	record["subclass_source"] = String(primary_subclass.get("source", ""))
+	record["subclass_id"] = String(primary_subclass.get("id", ""))
+	record["rules_version"] = _selected_rules_version()
+	var primary_level: int = clampi(int(_level.value), 1, 20)
+	var classes: Array[Dictionary] = []
+	var extras_level := 0
+	if String(record["class"]).is_empty() and not _multiclass_controls.is_empty():
+		_set_status("Seleziona la classe base prima di aggiungere altre classi.")
+		return
+	for definition: Dictionary in _multiclass_controls:
+		var extra_ref: Dictionary = _reference_entry(definition["selector"])
+		if String(extra_ref.get("name", "")).is_empty():
+			continue
+		var extra_level: int = int((definition["level"] as SpinBox).value)
+		var extra_subclass: Dictionary = _reference_entry(definition["subclass"])
+		extras_level += extra_level
+		classes.append({
+			"name": String(extra_ref.get("name", "")),
+			"source": String(extra_ref.get("source", "")),
+			"id": String(extra_ref.get("id", "")),
+			"level": extra_level,
+			"subclass": String(extra_subclass.get("name", "")),
+			"subclass_source": String(extra_subclass.get("source", "")),
+			"subclass_id": String(extra_subclass.get("id", ""))
+		})
+	var actual_primary_level: int = primary_level if not String(record["class"]).is_empty() else 0
+	if actual_primary_level + extras_level > 20:
+		_set_status("La somma dei livelli delle classi non può superare 20.")
+		return
+	record["level"] = actual_primary_level + extras_level
+	if actual_primary_level > 0:
+		classes.push_front({
+			"name": record["class"], "source": record["class_source"],
+			"id": record["class_id"], "level": primary_level,
+			"subclass": record["subclass"],
+			"subclass_source": record["subclass_source"],
+			"subclass_id": record["subclass_id"]
+		})
+	record["classes"] = classes
 	_refresh_xp_minimum()
 	record["xp"] = maxi(int(_xp.value), Rules.experience_for_level(_class_xp_level()))
 	# Refresh the normalized grants only after species, background and classes
