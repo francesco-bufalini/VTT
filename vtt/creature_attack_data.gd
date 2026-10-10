@@ -236,6 +236,72 @@ static func max_melee_range(record: Dictionary) -> float:
 	return maximum
 
 
+# The currently chosen attack drives tactical range, not the first melee
+# definition in bestiary order. Old sheets without a choice fall back to the
+# equipped main-hand weapon, then their first available attack.
+static func active_attack(record: Dictionary) -> Dictionary:
+	var attacks: Array[Dictionary] = definitions(record)
+	var selected: String = String(record.get("equipped_attack_id", ""))
+	if not selected.is_empty():
+		for attack: Dictionary in attacks:
+			if String(attack.get("id", "")) == selected:
+				return attack
+	for attack: Dictionary in attacks:
+		if String(attack.get("slot", "")) == "main" and not bool(attack.get("thrown", false)):
+			return attack
+	for attack: Dictionary in attacks:
+		if bool(attack.get("melee", false)) and String(attack.get("source", "")) != "item":
+			return attack
+	return attacks[0] if not attacks.is_empty() else {}
+
+
+static func active_range(record: Dictionary) -> float:
+	var attack: Dictionary = active_attack(record)
+	if attack.is_empty():
+		return 5.0
+	# Hybrid bestiary attacks use the melee reach for engagement, regardless
+	# of their longer ranged alternative.
+	if bool(attack.get("melee", false)) and attack.has("melee_reach_feet"):
+		var setting: Dictionary = override_for(record, String(attack.get("id", "")))
+		if not setting.has("range_feet"):
+			return float(attack.get("melee_reach_feet", 5))
+	return float(range_for(record, attack))
+
+
+# The active weapon selection is also the equipment setting. No shields are
+# touched, and monsters without an inventory use their natural attacks.
+static func equip_first_inventory_weapon(record: Dictionary) -> bool:
+	var raw: Variant = record.get("inventory", [])
+	if not raw is Array or Items.has_equipped_weapon(raw):
+		return false
+	var rows: Array = raw
+	for index: int in range(rows.size()):
+		if not rows[index] is Dictionary:
+			continue
+		var owned: Dictionary = rows[index]
+		if int(owned.get("quantity", 0)) <= 0 or Items.kind(Items.entry_for(owned)) != "weapon":
+			continue
+		var slots: Array = Items.slots(owned)
+		if not "main" in slots:
+			slots.append("main")
+		owned["equipped_slots"] = slots
+		rows[index] = owned
+		record["inventory"] = rows
+		return true
+	return false
+
+
+# Extract an actual dice formula without its displayed damage-type suffix.
+# Fixed damage and unstructured effects are not passed to the dice parser.
+static func damage_expression(record: Dictionary, attack: Dictionary) -> String:
+	var display: String = damage_label(record, attack)
+	var pattern: RegEx = RegEx.create_from_string("(\\d+d\\d+(?:\\s*[+-]\\s*\\d+)?)")
+	if pattern == null:
+		return ""
+	var found: RegExMatch = pattern.search(display.to_lower())
+	return found.get_string(1).replace(" ", "") if found != null else ""
+
+
 # Tactical reach is determined by the first available melee attack in the
 # sheet's order; a later long-reach attack must not silently enlarge it.
 static func first_melee_range(record: Dictionary) -> float:
