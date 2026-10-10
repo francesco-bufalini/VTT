@@ -214,7 +214,7 @@ static func weapon_size_dice(base: String, size_name: String) -> String:
 	var multiplier: int = Items.weapon_dice_multiplier(size_name)
 	if multiplier <= 1:
 		return base
-	var pattern := RegEx.create_from_string("^(\\\\s*)(\\\\d+)d(\\\\d+)")
+	var pattern := RegEx.create_from_string("^(\\s*)(\\d+)d(\\d+)")
 	var found: RegExMatch = pattern.search(base) if pattern != null else null
 	if found == null:
 		return base
