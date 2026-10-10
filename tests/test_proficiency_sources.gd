@@ -703,9 +703,18 @@ func run() -> void:
 		"Fixed grant can be reactivated without adding a new source grant")
 	tab._toggle_group(false, [mandatory_index])
 	var saved_fixed: Dictionary = tab._effective_record()
+	var reloaded_fixed: Dictionary = {}
+	for stored_row: Dictionary in Proficiencies.choices(saved_fixed):
+		if (String(stored_row.get("origin_id", "")) == "class|phb|fighter"
+			and String(stored_row.get("kind", "")) == "weapon"
+			and String(stored_row.get("key", "")) == "martial"):
+			reloaded_fixed = stored_row
+			break
 	assert(not Proficiencies.has_proficiency(saved_fixed, "weapon", "martial")
-		and not Proficiencies.choices(saved_fixed).is_empty(),
-		"Disabled mandatory grant survives serialization and stays in the origin")
+		and not reloaded_fixed.is_empty()
+		and bool(reloaded_fixed.get("disabled", false))
+		and bool(reloaded_fixed.get("automatic", false)),
+		"Disabled mandatory grant survives serialization without becoming removable")
 	tab._toggle_group(true, [mandatory_index])
 	tab._select_origin("class|phb|fighter")
 	var unrelated := tab._rows.size()
