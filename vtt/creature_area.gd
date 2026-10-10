@@ -1929,6 +1929,7 @@ func _load_form(record: Dictionary) -> void:
 			else 1 if known_proficiencies is Array and key in known_proficiencies
 			else 0
 		)
+	_attack_ability.select(1 if String(record.get("attack_ability", "str")) == "dex" else 0)
 	_refresh_attacks(record)
 	var abilities_value: Variant = record.get("abilities", {})
 	var abilities: Dictionary = (
@@ -2184,45 +2185,145 @@ func _refresh_skill_values(record: Dictionary) -> void:
 
 
 func _refresh_attacks(record: Dictionary) -> void:
-	if _attacks_description == null:
+	if _attack_rows == null:
 		return
-	var lines: PackedStringArray = []
-	var stat: Dictionary = record.get("stat_block", {})
-	for section: String in ["action", "bonus", "reaction", "legendary", "mythic"]:
-		var entries: Variant = stat.get(section, [])
-		if not entries is Array:
+	_attack_hit_labels.clear()
+	_attack_damage_labels.clear()
+	for child: Node in _attack_rows.get_children():
+		_attack_rows.remove_child(child)
+		child.queue_free()
+	var summary: PackedStringArray = []
+	for attack: Dictionary in AttackData.definitions(record):
+		var attack_id: String = String(attack.get("id", ""))
+		if attack_id.is_empty():
 			continue
-		for raw: Variant in entries:
-			if not raw is Dictionary:
-				continue
-			var action: Dictionary = raw as Dictionary
-			if String(action.get("name", "")).is_empty():
-				continue
-			lines.append(FiveToolsText.section(section.capitalize()) + "\n" + FiveToolsText.blocks(action))
-	var owned: Variant = record.get("inventory", [])
-	if owned is Array and not (owned as Array).is_empty():
-		var ids: Dictionary = {}
-		for item: Variant in owned:
-			if item is Dictionary:
-				ids[String((item as Dictionary).get("id", ""))] = true
-		for item: Dictionary in Player5eTools.entries("items"):
-			if ids.has(String(item.get("id", ""))) and not String(item.get("weapon_category", "")).is_empty():
-				lines.append(FiveToolsText.subtitle(String(item.get("name", ""))) + " · arma nell'inventario")
-	if String(record.get("kind", "")) != "monster":
-		var abilities: Dictionary = record.get("abilities", {})
-		var bonuses: Dictionary = record.get("ability_bonuses", {})
-		var strength: int = Rules.ability_modifier(
-			int(abilities.get("str", 10)) + int(bonuses.get("str", 0))
-		)
-		var hit_bonus: int = strength + _creature_proficiency(record)
-		lines.insert(0,
-			FiveToolsText.subtitle("Colpo senz'armi")
-			+ " · Mischia, portata 5 ft; colpire %+d; danni contundenti %d"
-			% [hit_bonus, maxi(0, 1 + strength)]
-		)
-	if lines.is_empty():
-		lines.append("Nessun attacco del bestiario o arma nell'inventario.")
-	_attacks_description.text = "\n\n".join(lines)
+		var card := PanelContainer.new()
+		card.size_flags_horizontal = Control.SIZE_EXPAND_FILL
+		_attack_rows.add_child(card)
+		var box := VBoxContainer.new()
+		box.add_theme_constant_override("separation", 4)
+		card.add_child(box)
+		var header := HFlowContainer.new()
+		header.add_theme_constant_override("h_separation", 8)
+		box.add_child(header)
+		var name_label := Label.new()
+		name_label.text = "⚔ " + String(attack.get("name", "Attacco"))
+		name_label.size_flags_horizontal = Control.SIZE_EXPAND_FILL
+		name_label.clip_text = true
+		header.add_child(name_label)
+		var hit_label := Label.new()
+		header.add_child(hit_label)
+		_attack_hit_labels[attack_id] = hit_label
+		var damage_label := Label.new()
+		damage_label.autowrap_mode = TextServer.AUTOWRAP_WORD_SMART
+		box.add_child(damage_label)
+		_attack_damage_labels[attack_id] = damage_label
+		var settings := HFlowContainer.new()
+		settings.add_theme_constant_override("h_separation", 6)
+		settings.add_theme_constant_override("v_separation", 3)
+		box.add_child(settings)
+		_add_label(settings, "📏 Gittata (ft)")
+		var distance := SpinBox.new()
+		distance.min_value = 5
+		distance.max_value = 1000
+		distance.step = 5
+		distance.rounded = true
+		distance.custom_minimum_size.x = 82
+		distance.tooltip_text = "Portata o gittata di questo attacco, indipendente dalle altre armi"
+		distance.set_value_no_signal(AttackData.range_for(record, attack))
+		distance.value_changed.connect(_on_attack_range_changed.bind(attack_id))
+		settings.add_child(distance)
+		_add_label(settings, "Bonus")
+		var extra := SpinBox.new()
+		extra.min_value = -99
+		extra.max_value = 99
+		extra.rounded = true
+		extra.custom_minimum_size.x = 75
+		extra.tooltip_text = "Bonus manuale di questo attacco, oltre a competenza e caratteristica"
+		ManualBonus.decorate(extra)
+		var overrides: Dictionary = AttackData.override_for(record, attack_id)
+		extra.set_value_no_signal(int(overrides.get("bonus", 0)))
+		extra.value_changed.connect(_on_attack_bonus_changed.bind(attack_id))
+		settings.add_child(extra)
+		if String(record.get("kind", "")) == "monster" and String(attack.get("source", "")) != "item":
+			var fixed := Label.new()
+			fixed.text = "Competenza inclusa (bestiario)"
+			fixed.tooltip_text = "Il bonus al tiro per colpire pubblicato da 5etools include già la competenza"
+			settings.add_child(fixed)
+		elif attack_id == "unarmed":
+			var trained := Label.new()
+			trained.text = "✓ Competente"
+			settings.add_child(trained)
+		else:
+			var proficiency := CheckBox.new()
+			proficiency.text = "Competenza"
+			proficiency.button_pressed = bool(overrides.get("proficient", attack.get("proficient", false)))
+			proficiency.toggled.connect(_on_attack_proficiency_changed.bind(attack_id))
+			settings.add_child(proficiency)
+		if attack.has("raw"):
+			var details := RichTextLabel.new()
+			details.custom_minimum_size.y = 48
+			details.fit_content = true
+			details.scroll_active = false
+			FiveToolsText.style(details)
+			details.text = FiveToolsText.blocks(attack.get("raw", {}))
+			box.add_child(details)
+		summary.append(String(attack.get("name", "Attacco")))
+	_attacks_description.text = "\n".join(summary) if not summary.is_empty() else "Nessun attacco disponibile."
+	# The individual cards contain all the details; avoid showing duplicate text.
+	_attacks_description.hide()
+	_refresh_attack_values(record)
+
+
+func _refresh_attack_values(record: Dictionary) -> void:
+	for attack: Dictionary in AttackData.definitions(record):
+		var attack_id: String = String(attack.get("id", ""))
+		if not _attack_hit_labels.has(attack_id):
+			continue
+		var hit: int = AttackData.attack_bonus(record, attack, _creature_proficiency(record))
+		(_attack_hit_labels[attack_id] as Label).text = "Colpire %+d" % hit
+		(_attack_damage_labels[attack_id] as Label).text = "Danni: " + AttackData.damage_label(record, attack)
+
+
+func _on_attack_ability_changed(_index: int) -> void:
+	if _loading:
+		return
+	_save()
+
+
+func _on_attack_range_changed(value: float, attack_id: String) -> void:
+	_save_attack_setting(attack_id, "range_feet", int(value))
+
+
+func _on_attack_bonus_changed(value: float, attack_id: String) -> void:
+	_save_attack_setting(attack_id, "bonus", int(value))
+
+
+func _on_attack_proficiency_changed(enabled: bool, attack_id: String) -> void:
+	_save_attack_setting(attack_id, "proficient", enabled)
+
+
+func _save_attack_setting(attack_id: String, setting: String, value: Variant) -> void:
+	if _loading:
+		return
+	var record: Dictionary = _current()
+	if record.is_empty():
+		return
+	var updated: Dictionary = record.get("attack_overrides", {}).duplicate(true)
+	var attack_settings: Dictionary = updated.get(attack_id, {})
+	attack_settings[setting] = value
+	updated[attack_id] = attack_settings
+	record["attack_overrides"] = updated
+	record["reach_feet"] = AttackData.max_melee_range(record)
+	if String(record.get("kind", "")) == "monster":
+		record["reach_is_custom"] = true
+	var error: Error = _archive.save(record)
+	if error != OK:
+		_set_status("Impossibile salvare attacco: " + error_string(error))
+		return
+	_replace_current_record(record)
+	_refresh_attack_values(record)
+	_apply_sheet_properties(record)
 
 
 func _update_defense_display() -> void:
@@ -2366,6 +2467,10 @@ func _save() -> void:
 	for ability: String in _ability_bonus_spins.keys():
 		ability_bonuses[ability] = int((_ability_bonus_spins[ability] as SpinBox).value)
 	record["ability_bonuses"] = ability_bonuses
+	record["attack_ability"] = "dex" if _attack_ability.selected == 1 else "str"
+	record["reach_feet"] = AttackData.max_melee_range(record)
+	if String(record.get("kind", "")) == "monster":
+		record["reach_is_custom"] = true
 	var proficient: Array[String] = []
 	var expertise: Array[String] = []
 	for key: String in _skill_ranks.keys():
@@ -2476,6 +2581,7 @@ func _save() -> void:
 		return
 	_replace_current_record(record)
 	_refresh_skill_values(record)
+	_refresh_attack_values(record)
 	_sync_token_health(record)
 	_apply_sheet_properties(record)
 	# A visible sheet follows current level and race/class immediately.
