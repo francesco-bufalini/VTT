@@ -124,6 +124,7 @@ $fastTests = @(
     "test_creature_formula_bonuses.gd",
     "test_structured_numeric_bonuses.gd",
     "test_proficiency_sources.gd",
+    "test_race_subrace_selection.gd",
     "test_dialog_layout.gd",
     "test_tactical_overlay.gd",
     "test_creature_presence.gd",
