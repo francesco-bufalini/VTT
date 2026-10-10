@@ -1038,6 +1038,18 @@ func _build_automatic_dialog() -> void:
 	_automatic_spells.text = "Limiti degli incantesimi conosciuti/preparabili"
 	_automatic_spells.toggled.connect(func(_enabled: bool) -> void: _refresh_automatic_preview())
 	content.add_child(_automatic_spells)
+	_automatic_slots = CheckBox.new()
+	_automatic_slots.text = "Slot incantesimo e Magia del Patto dal livello di classe"
+	_automatic_slots.toggled.connect(func(_enabled: bool) -> void: _refresh_automatic_preview())
+	content.add_child(_automatic_slots)
+	_automatic_trackers = CheckBox.new()
+	_automatic_trackers.text = "Aggiorna i massimi dei tracker strutturati e limita gli utilizzi"
+	_automatic_trackers.toggled.connect(func(_enabled: bool) -> void: _refresh_automatic_preview())
+	content.add_child(_automatic_trackers)
+	_automatic_derived = CheckBox.new()
+	_automatic_derived.text = "Dadi vita, XP minimo, iniziativa e velocità base"
+	_automatic_derived.toggled.connect(func(_enabled: bool) -> void: _refresh_automatic_preview())
+	content.add_child(_automatic_derived)
 	var explanation := Label.new()
 	explanation.text = "Gli incantesimi effettivamente scelti non vengono cambiati. I PF attuali sono conservati (limitati al nuovo massimo)."
 	explanation.autowrap_mode = TextServer.AUTOWRAP_WORD_SMART
@@ -1065,11 +1077,17 @@ func _open_automatic_calculation() -> void:
 	_automatic_hp.disabled = not bool(hp_result.get("available", false))
 	_automatic_proficiency.disabled = not character
 	_automatic_spells.disabled = not character
+	_automatic_slots.disabled = not character and Rules.level_classes(record).size() < 2
+	_automatic_trackers.disabled = _structured_trackers(record).is_empty()
+	_automatic_derived.disabled = not character
 	_automatic_hp.set_pressed_no_signal(false)
 	_automatic_proficiency.set_pressed_no_signal(false)
 	_automatic_spells.set_pressed_no_signal(false)
+	_automatic_slots.set_pressed_no_signal(false)
+	_automatic_trackers.set_pressed_no_signal(false)
+	_automatic_derived.set_pressed_no_signal(false)
 	_refresh_automatic_preview()
-	_popup_sheet_dialog(_automatic_dialog, Vector2i(620, 440), 0.88)
+	_popup_sheet_dialog(_automatic_dialog, Vector2i(675, 545), 0.90)
 
 
 func _refresh_automatic_preview() -> void:
@@ -1094,6 +1112,27 @@ func _refresh_automatic_preview() -> void:
 		if _automatic_spells.button_pressed:
 			var limits: Dictionary = Rules.spellcasting_limits(record)
 			lines.append(String(limits.get("detail", "Nessuna classe magica.")))
+		if _automatic_derived.button_pressed:
+			var dice: String = Rules.automatic_hit_dice(record)
+			var abilities: Dictionary = record.get("abilities", {})
+			var bonuses: Dictionary = record.get("ability_bonuses", {})
+			var dexterity: int = int(abilities.get("dex", 10)) + int(bonuses.get("dex", 0))
+			lines.append("Dadi vita: %s · XP minimi: %d · Iniziativa: %+d" % [
+				dice if not dice.is_empty() else "non disponibili",
+				Rules.experience_for_level(int(record.get("level", 1))),
+				Rules.ability_modifier(dexterity)
+			])
+	if _automatic_slots.button_pressed:
+		var slot_result: Dictionary = Rules.spell_slot_progression(record)
+		var slots: Array = slot_result.get("slots", [])
+		lines.append("Slot dal livello: %s · Patto %d (livello %d)" % [
+			str(slots.slice(1)), int(slot_result.get("pact_total", 0)),
+			int(slot_result.get("pact_level", 1))
+		])
+		if not String(slot_result.get("warnings", "")).is_empty():
+			lines.append(String(slot_result["warnings"]))
+	if _automatic_trackers.button_pressed:
+		lines.append("Massimi derivati dai dati strutturati: %d tracker; i bonus manuali restano invariati." % _structured_trackers(record).size())
 	if lines.is_empty():
 		lines.append("Seleziona almeno un valore per vedere l'anteprima.")
 	_automatic_preview.text = "\n".join(lines)
@@ -1101,6 +1140,9 @@ func _refresh_automatic_preview() -> void:
 		not _automatic_hp.button_pressed
 		and not _automatic_proficiency.button_pressed
 		and not _automatic_spells.button_pressed
+		and not _automatic_slots.button_pressed
+		and not _automatic_trackers.button_pressed
+		and not _automatic_derived.button_pressed
 	)
 
 
@@ -1124,6 +1166,43 @@ func _apply_automatic_calculation() -> void:
 		record["proficiency_bonus"] = Rules.proficiency_bonus(record)
 	if _automatic_spells.button_pressed:
 		record["spellcasting_calculation"] = Rules.spellcasting_limits(record)
+	if _automatic_slots.button_pressed:
+		var progression: Dictionary = Rules.spell_slot_progression(record)
+		var derived_slots: Array = progression.get("slots", [])
+		if derived_slots is Array and derived_slots.size() >= 10:
+			record["spell_slots_total"] = derived_slots.duplicate()
+			var spent: Array = record.get("spell_slots_spent", []).duplicate()
+			var bonuses: Array = record.get("spell_slots_bonus", []).duplicate()
+			for index: int in range(1, mini(10, spent.size())):
+				var bonus: int = int(bonuses[index]) if index < bonuses.size() else 0
+				spent[index] = clampi(int(spent[index]), 0, maxi(0, int(derived_slots[index]) + bonus))
+			record["spell_slots_spent"] = spent
+		record["pact_slots_total"] = int(progression.get("pact_total", 0))
+		record["pact_slot_level"] = int(progression.get("pact_level", 1))
+		record["pact_slots_spent"] = mini(int(record.get("pact_slots_spent", 0)),
+			maxi(0, int(record["pact_slots_total"]) + int(record.get("pact_slots_bonus", 0))))
+	if _automatic_derived.button_pressed:
+		record["hit_dice"] = Rules.automatic_hit_dice(record)
+		record["xp"] = maxi(int(record.get("xp", 0)), Rules.experience_for_level(int(record.get("level", 1))))
+		var abilities: Dictionary = record.get("abilities", {})
+		var bonuses: Dictionary = record.get("ability_bonuses", {})
+		record["initiative"] = Rules.ability_modifier(int(abilities.get("dex", 10)) + int(bonuses.get("dex", 0)))
+		if not bool(record.get("speed_is_custom", false)):
+			for race: Dictionary in Player5eTools.entries("races"):
+				if (String(race.get("id", "")) == String(record.get("species_id", ""))
+					or (String(race.get("name", "")) == String(record.get("species", ""))
+					and String(race.get("source", "")) == String(record.get("species_source", "")))):
+					record["speed_base"] = Rules.walking_speed(race.get("speed", 30))
+					record["speed"] = maxi(0, int(record["speed_base"]) + int(record.get("speed_bonus", 0)))
+					break
+	if _automatic_trackers.button_pressed:
+		var spent_values: Dictionary = record.get("resource_tracker_spent", {}).duplicate(true)
+		var bonus_values: Dictionary = record.get("resource_tracker_bonuses", {})
+		for tracker: Dictionary in _structured_trackers(record):
+			var tracker_id: String = String(tracker.get("id", ""))
+			var cap: int = maxi(0, int(tracker.get("max", 0)) + int(bonus_values.get(tracker_id, 0)))
+			spent_values[tracker_id] = clampi(int(spent_values.get(tracker_id, 0)), 0, cap)
+		record["resource_tracker_spent"] = spent_values
 	if _archive.save(record) != OK:
 		_set_status("Calcolo riuscito ma salvataggio non completato.")
 		return
