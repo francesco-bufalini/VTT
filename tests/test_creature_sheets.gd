@@ -62,12 +62,12 @@ func run() -> void:
 	assert(inferred.get("perception", 0) == 1 and inferred.get("stealth", 0) == 2,
 		"Monster skill modifiers must determine proficiency and expertise")
 	assert(creature.species == "Test Dragon" and creature.species_source == "MM")
-	assert(creature.class == "Mostro" and creature.level == Rules.monster_level(stat))
-	assert(creature.classes.size() == 1
-		and creature.classes[0].level == Rules.monster_level(stat),
-		"Monster base class level is an integer, while stat_block.cr retains fractions")
-	assert(creature.subclass == "Drago" and creature.subclass_id == "monster_type|dragon",
-		"Monster subtype must come from structured 5etools monster type")
+	assert(creature.class == "" and creature.level == 0 and creature.classes.is_empty(),
+		"A new monster has no class levels regardless of CR")
+	assert(creature.stat_block.cr == "1/2" and is_equal_approx(Rules.monster_cr_value(creature.stat_block), 0.5),
+		"Monster challenge rating retains its exact fractional bestiary value")
+	assert(creature.subclass == "" and Rules.monster_type_reference(creature.stat_block).name == "Drago",
+		"Monster creature type does not become a subclass")
 	assert(creature.speed == 40, "Monster speed should come from structured 5etools speed")
 	assert(creature.second_form_hp == 0 and creature.second_form_max_hp == 0,
 		"All new creatures must start without transformed HP")
@@ -177,11 +177,10 @@ func run() -> void:
 	var multiclass_monster := creature.duplicate(true)
 	multiclass_monster["classes"].append({"name": "Wizard", "level": 3, "source": "PHB"})
 	var normalized_monster: Dictionary = monster.normalize_creature(multiclass_monster)
-	assert(normalized_monster.classes.size() == 2
-		and normalized_monster.classes[0].level == Rules.monster_level(stat)
-		and normalized_monster.classes[1].name == "Wizard"
-		and normalized_monster.level == Rules.monster_level(stat) + 3,
-		"Monster class normalization must not discard extra real classes")
+	assert(normalized_monster.classes.size() == 1
+		and normalized_monster.classes[0].name == "Wizard"
+		and normalized_monster.level == 3 and normalized_monster.class == "Wizard",
+		"The first actual monster class becomes primary and CR never adds levels")
 	assert(normalized_monster.xp >= Rules.experience_for_level(3),
 		"Monster CR must not contribute to class-level XP requirements")
 	# Editions are alternatives for a class, not separate entries for each book.
