@@ -301,7 +301,7 @@ func _refresh_origins(index: int = -1) -> void:
 func _effective_record() -> Dictionary:
 	var current := _record.duplicate(true)
 	current["feats_catalog"] = _feats.duplicate(true)
-	current["proficiency_choices"] = _rows.duplicate(true)
+	Rules.sync_legacy_fields(current, _rows)
 	return current
 
 
