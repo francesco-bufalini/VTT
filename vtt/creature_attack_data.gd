@@ -5,6 +5,7 @@ extends RefCounted
 const Rules = preload("res://vtt/creature_rules.gd")
 const Catalog = preload("res://vtt/player_5etools_catalog.gd")
 const Items = preload("res://vtt/creature_item_rules.gd")
+const Proficiencies = preload("res://vtt/creature_proficiency_rules.gd")
 
 
 static func definitions(record: Dictionary) -> Array[Dictionary]:
@@ -168,9 +169,15 @@ static func attack_bonus(record: Dictionary, attack: Dictionary, proficiency: in
 	if String(record.get("kind", "")) == "monster" and String(attack.get("source", "")) != "item":
 		# Published monster hit modifiers already include proficiency.
 		return int(attack.get("base_hit", 0)) + _ability_delta_for_monster(record, attack) + manual
-	var trained: bool = bool(settings.get("proficient", attack.get("proficient", false)))
+	var trained: bool = false
 	if String(attack.get("id", "")) == "unarmed":
 		trained = true
+	elif String(attack.get("source", "")) == "item":
+		var item_value: Variant = attack.get("item_entry", {})
+		if item_value is Dictionary:
+			trained = Proficiencies.weapon_proficient(record, item_value)
+	else:
+		trained = bool(attack.get("proficient", false))
 	return _attack_ability_modifier(record, attack) + (proficiency if trained else 0) + manual + _weapon_magic_bonus(attack)
 
 
