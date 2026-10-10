@@ -1,5 +1,6 @@
 extends SceneTree
 const Owner = preload("res://vtt/creature_owner.gd")
+const ProficiencyRules = preload("res://vtt/creature_proficiency_rules.gd")
 const TokenScene = preload("res://token.tscn")
 
 class TestCampaign extends Node:
@@ -311,6 +312,15 @@ func run() -> void:
 	area._save()
 	assert(area._current().background_personality == "Storia e personalità di prova",
 		"Freeform background and personality must persist")
+	assert(area._background != null, "The Info tab must expose a background selector")
+	area._select_reference(area._background, "Acolyte", "PHB")
+	area._save()
+	assert(String(area._current().get("background", "")) == "Acolyte"
+		and String(area._current().get("background_source", "")) == "PHB",
+		"Selecting a structured background must persist its name and source")
+	area._reload()
+	assert(ProficiencyRules.has_proficiency(area._current(), "skill", "insight"),
+		"The selected Acolyte background must grant its structured Insight proficiency")
 	assert(automatically_calculated.proficiency_bonus == 3)
 	assert(automatically_calculated.has("spellcasting_calculation"))
 	assert(automatically_calculated.spells.is_empty() and automatically_calculated.prepared_spells.is_empty())
@@ -344,13 +354,16 @@ func run() -> void:
 		"Passive perception must be calculated from Wisdom and skill ranks")
 	assert(area._saving_throw_labels.size() == 6,
 		"Each ability shows a saving throw result")
-	assert((area._saving_throw_labels["wis"] as Label).text.begins_with("TS "),
-		"Wisdom saving throw must show its current numerical bonus")
+	assert((area._saving_throw_labels["wis"] as Label).text.begins_with("🎓 "),
+		"Proficient Wisdom saving throw must place the proficiency emoji before its bonus")
 	var wisdom_saving: Label = area._saving_throw_labels["wis"]
 	var wisdom_formula: Node = area._formula_values["ability:wis"]
-	assert(wisdom_saving.get_parent() is HBoxContainer
-		and wisdom_formula.get_parent().get_parent() == wisdom_saving.get_parent(),
-		"Saving throws and their associated characteristic values must share one row")
+	assert(area._abilities_grid.columns == 4
+		and wisdom_saving.get_parent() == area._abilities_grid
+		and wisdom_formula.get_parent().get_parent() == area._abilities_grid,
+		"Saving throws, scores and modifiers must share four aligned table columns")
+	assert((area._abilities_grid.get_child(3) as Label).text == "TS",
+		"TS should appear once as a table header, not beside every saving throw")
 	assert(area._tools_proficiency_label != null and "Strumenti:" in area._tools_proficiency_label.text,
 		"Statistics must expose the character's tool proficiencies")
 	assert(not area._formula_values.is_empty(), "Computed score formulas remain available")
@@ -386,8 +399,8 @@ func run() -> void:
 		"Combat should get moderately more width, rather than a vertically stacked layout")
 	assert(skills_view.horizontal_scroll_mode == ScrollContainer.SCROLL_MODE_AUTO
 		and combat_view.horizontal_scroll_mode == ScrollContainer.SCROLL_MODE_AUTO
-		and area._abilities_grid.columns == 1,
-		"Oversized details should scroll inside their own columns without widening the sheet")
+		and area._abilities_grid.columns == 4,
+		"Oversized details should scroll inside their own columns while ability values remain tabular")
 	area._update_stats_column_heights()
 	assert(skills_view.custom_minimum_size.y > 0
 		and is_equal_approx(skills_view.custom_minimum_size.y, combat_view.custom_minimum_size.y),

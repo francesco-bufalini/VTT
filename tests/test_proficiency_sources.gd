@@ -203,6 +203,34 @@ func run() -> void:
 		if String(suggestion.get("group", "")) == "background" and int(suggestion.get("certainty", 0)) == 2:
 			has_acolyte = true
 	assert(has_acolyte, "Structured background proficiencies are suggested without a stored source book")
+	background_record["background_source"] = "PHB"
+	assert(Proficiencies.has_proficiency(background_record, "skill", "insight")
+		and Proficiencies.has_proficiency(background_record, "skill", "religion"),
+		"Acolyte should grant its structured background skills")
+	background_record["proficiency_origins"] = Proficiencies.origins(background_record)
+	background_record["proficiency_choices"] = Proficiencies.choices(background_record)
+	background_record["background"] = "Folk Hero"
+	assert(not Proficiencies.has_proficiency(background_record, "skill", "religion")
+		and Proficiencies.has_proficiency(background_record, "skill", "survival"),
+		"Changing background must replace old structured proficiencies")
+	for source: Dictionary in Proficiencies.origins(background_record):
+		assert(not String(source.get("id", "")).begins_with("background|phb|acolyte"),
+			"Obsolete backgrounds must disappear from stored origins")
+	var changed_race := _record()
+	changed_race["species"] = "Elf"
+	changed_race["species_source"] = "PHB"
+	assert(Proficiencies.has_proficiency(changed_race, "skill", "perception"))
+	changed_race["proficiency_origins"] = Proficiencies.origins(changed_race)
+	changed_race["proficiency_choices"] = Proficiencies.choices(changed_race)
+	changed_race["species"] = "Dwarf"
+	assert(not Proficiencies.has_proficiency(changed_race, "skill", "perception"),
+		"Racial proficiencies from the previous species must no longer apply")
+	for source: Dictionary in Proficiencies.origins(changed_race):
+		assert(not String(source.get("id", "")).begins_with("race|phb|elf"),
+			"Old race must disappear rather than linger as a disabled origin")
+	assert(not Proficiencies.source_has_grants({"group": "race",
+		"data": {"name": "Empty Race", "skillProficiencies": [{"choose": {}}]}}),
+		"Races without fixed grants or valid choices must not create automatic origins")
 
 	var feat_record := _record()
 	feat_record["feats_catalog"] = [{"name": "Lightly Armored", "source": "PHB", "id": "feat:lightly armored|phb|"}]
@@ -361,6 +389,30 @@ func run() -> void:
 	tab._delete_manual_group([fixed_index])
 	assert(Proficiencies.has_choice(tab._rows, "weapon", "martial"),
 		"Fixed class proficiencies cannot be deleted from the manual-choice editor")
+	# Interleave types to ensure headings are rendered only once.
+	tab._rows.append({"kind": "weapon", "key": "rapier", "origin_id": "", "disabled": false})
+	tab._rows.append({"kind": "skill", "key": "arcana", "origin_id": "", "disabled": false})
+	tab._rows.append({"kind": "weapon", "key": "dagger", "origin_id": "", "disabled": false})
+	tab._refresh_competences()
+	var heading_names: Array[String] = []
+	var has_link_button := false
+	var has_mastery_word := false
+	for card: Node in tab._proficiency_cards.get_children():
+		if card is Label:
+			heading_names.append((card as Label).text)
+		for child: Node in card.get_children():
+			if child is HBoxContainer:
+				for control: Node in child.get_children():
+					if control is Button and (control as Button).text == "↳":
+						has_link_button = true
+					if control is CheckButton and (control as CheckButton).text == "Mestria":
+						has_mastery_word = true
+	assert(heading_names.count("Abilità") == 1
+		and heading_names.count("Categorie di armi") == 1
+		and heading_names.count("Singole armi") == 1,
+		"Skill and weapon headings must never repeat with interleaved grants")
+	assert(not has_link_button and has_mastery_word,
+		"Manual linking action is removed and stars are replaced by Mestria")
 	tab.queue_free()
 	await process_frame
 	print("PASS: automatically granted structured proficiencies, choose warnings, toggles, source highlights and migration")

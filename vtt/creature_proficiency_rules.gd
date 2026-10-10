@@ -33,12 +33,15 @@ static func normalized_key(value: String) -> String:
 
 static func choices(record: Dictionary) -> Array[Dictionary]:
 	var result: Array[Dictionary] = []
+	var current_sources: Dictionary = _active_identity_sources(record)
 	var raw: Variant = record.get("proficiency_choices", [])
 	if raw is Array:
 		for value: Variant in raw:
 			if not value is Dictionary:
 				continue
 			var row: Dictionary = value
+			if _is_replaced_identity(String(row.get("origin_id", "")), current_sources):
+				continue
 			var kind: String = String(row.get("kind", ""))
 			var key: String = normalized_key(String(row.get("key", "")))
 			if kind not in TYPES or key.is_empty():
@@ -422,13 +425,25 @@ static func unassigned_count(record: Dictionary) -> int:
 # Automatic source and proficiency materialization. The permanent identity is
 # source ID + kind + key: two different origins may grant the same competence.
 static func source_has_grants(source: Dictionary) -> bool:
-	for kind: String in TYPES:
-		var data: Variant = _grants_data(source, kind)
-		if data is Array and not (data as Array).is_empty():
-			return true
-		if data is Dictionary and not (data as Dictionary).is_empty():
-			return true
-	return false
+	# A non-empty source JSON field is not necessarily a proficiency grant.
+	# Only real fixed proficiencies or actionable structured choices qualify.
+	return not fixed_grants(source).is_empty() or not choice_requirements(source).is_empty()
+
+
+static func _active_identity_sources(record: Dictionary) -> Dictionary:
+	var active: Dictionary = {}
+	for source: Dictionary in candidate_sources(record):
+		if source_has_grants(source):
+			active[String(source.get("id", ""))] = true
+	return active
+
+
+static func _is_replaced_identity(sid: String, active: Dictionary) -> bool:
+	# Race and background follow the current selection rather than retaining
+	# withdrawn automatic entries in the player's proficiency editor.
+	if not (sid.begins_with("race|") or sid.begins_with("subrace|") or sid.begins_with("background|")):
+		return false
+	return not active.has(sid)
 
 
 static func fixed_grants(source: Dictionary) -> Array[Dictionary]:
@@ -505,12 +520,16 @@ static func restricted_choices(origin: Dictionary, kind: String) -> Array[String
 
 static func origins(record: Dictionary) -> Array[Dictionary]:
 	var result: Array[Dictionary] = []
+	var live: Dictionary = _active_identity_sources(record)
 	var saved: Dictionary = {}
 	var raw: Variant = record.get("proficiency_origins", [])
 	if raw is Array:
 		for item: Variant in raw:
 			if item is Dictionary and not String(item.get("id", "")).is_empty():
-				saved[String(item.get("id", ""))] = item
+				var sid: String = String(item.get("id", ""))
+				if _is_replaced_identity(sid, live):
+					continue
+				saved[sid] = item
 	for source: Dictionary in candidate_sources(record):
 		if not source_has_grants(source):
 			continue
@@ -540,7 +559,7 @@ static func origins(record: Dictionary) -> Array[Dictionary]:
 		if not row is Dictionary:
 			continue
 		var sid: String = String(row.get("origin_id", ""))
-		if sid.is_empty():
+		if sid.is_empty() or _is_replaced_identity(sid, live):
 			continue
 		var present := false
 		for item: Dictionary in result:

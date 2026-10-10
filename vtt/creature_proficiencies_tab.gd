@@ -6,6 +6,7 @@ const Rules = preload("res://vtt/creature_proficiency_rules.gd")
 const Catalog = preload("res://vtt/player_5etools_catalog.gd")
 const Traits = preload("res://vtt/creature_traits_tab.gd")
 const DialogLayout = preload("res://vtt/dialog_layout.gd")
+const OriginButton = preload("res://vtt/bounded_tooltip_button.gd")
 
 const GROUPS := [
 	{"kind": "weapon", "label": "Armi"},
@@ -264,7 +265,7 @@ func _refresh_origins() -> void:
 		_origin_cards.add_child(card)
 		var line := HBoxContainer.new()
 		card.add_child(line)
-		var select := Button.new()
+		var select := OriginButton.new()
 		select.size_flags_horizontal = Control.SIZE_EXPAND_FILL
 		select.alignment = HORIZONTAL_ALIGNMENT_LEFT
 		var selected := _selected_id == sid
@@ -362,112 +363,130 @@ func _source_description_text(entry: Dictionary) -> String:
 	return ""
 
 
+func _section_for_proficiency(kind: String, key: String) -> String:
+	if kind == "weapon" and key in ["simple", "martial", "all"]:
+		return "weapon_category"
+	return kind
+
+
 func _refresh_competences() -> void:
 	for node: Node in _proficiency_cards.get_children():
-		node.queue_free()
 		_proficiency_cards.remove_child(node)
+		node.queue_free()
 	var enabled: Dictionary = _enabled_map()
 	var grouped: Dictionary = {}
-	var ordered: Array[String] = []
+	var by_section: Dictionary = {}
 	for index: int in range(_rows.size()):
 		var entry: Dictionary = _rows[index]
 		var kind: String = String(entry.get("kind", ""))
 		if kind == "expertise":
 			continue
-		var identity: String = kind + "|" + String(entry.get("key", ""))
+		var key: String = String(entry.get("key", ""))
+		var identity: String = kind + "|" + key
 		if not grouped.has(identity):
 			grouped[identity] = []
-			ordered.append(identity)
+			var section: String = _section_for_proficiency(kind, key)
+			if not by_section.has(section):
+				by_section[section] = []
+			by_section[section].append(identity)
 		grouped[identity].append(index)
-	if ordered.is_empty():
+	if grouped.is_empty():
 		var empty := Label.new()
-		empty.text = "Nessuna competenza. Seleziona un'origine per aggiungerne."
+		empty.text = "Nessuna competenza disponibile."
 		_proficiency_cards.add_child(empty)
 		return
-	var last_kind := ""
-	for identity: String in ordered:
-		var indices: Array = grouped[identity]
-		var example: Dictionary = _rows[int(indices[0])]
-		var kind: String = String(example.get("kind", ""))
-		var key: String = String(example.get("key", ""))
-		if kind != last_kind:
-			last_kind = kind
-			var heading := Label.new()
-			heading.text = {"tool": "Strumenti", "save": "Tiri salvezza", "weapon": "Armi",
-				"armor": "Armature e scudi", "skill": "Abilità", "language": "Lingue"}.get(kind, kind.capitalize())
-			heading.add_theme_font_size_override("font_size", 14)
-			_proficiency_cards.add_child(heading)
-		var active := false
-		var selected := false
-		var selected_active := false
-		var linked: Array[String] = []
-		for index: Variant in indices:
-			var link: Dictionary = _rows[int(index)]
-			var sid: String = String(link.get("origin_id", ""))
-			var grant_active: bool = not bool(link.get("disabled", false)) and bool(enabled.get(sid, true))
-			if sid == _selected_id:
-				selected = true
-				selected_active = selected_active or grant_active
-			active = active or grant_active
-			var origin_label: String = _origin_display(sid) if not sid.is_empty() else "Senza origine"
-			var status_label: String = ("✓ " if grant_active else "○ ") + origin_label
-			if status_label not in linked:
-				linked.append(status_label)
-		var cell := PanelContainer.new()
-		_proficiency_cards.add_child(cell)
-		if selected_active:
-			var background := StyleBoxFlat.new()
-			background.draw_center = false
-			background.border_color = Color(0.44, 0.75, 0.95)
-			background.set_border_width_all(2)
-			background.set_corner_radius_all(5)
-			cell.add_theme_stylebox_override("panel", background)
-		var box := HBoxContainer.new()
-		box.add_theme_constant_override("separation", 4)
-		cell.add_child(box)
-		var label := Label.new()
-		label.size_flags_horizontal = Control.SIZE_EXPAND_FILL
-		label.clip_text = true
-		var mastered: bool = kind == "skill" and _effective_expertise(key, enabled)
-		label.text = ("✓ " if active else "○ ") + key + (" 🎓🎓" if mastered else "")
-		label.tooltip_text = "Origini:\n" + "\n".join(linked)
-		box.add_child(label)
-		if kind == "skill":
-			var expert := CheckButton.new()
-			expert.text = "✦✦"
-			expert.tooltip_text = "Maestria (doppia competenza)"
-			expert.button_pressed = mastered
-			expert.toggled.connect(_toggle_group_expertise.bind(key, indices.duplicate()))
-			box.add_child(expert)
-		var toggle := CheckButton.new()
-		toggle.text = "⏻"
-		toggle.tooltip_text = "Disattiva " + ("il collegamento con l'origine selezionata" if selected else "tutte le concessioni di questa competenza")
-		toggle.button_pressed = _group_enabled(indices)
-		toggle.disabled = _selected_id not in ["~none~", ""] and not selected
-		toggle.toggled.connect(_toggle_group.bind(indices.duplicate()))
-		box.add_child(toggle)
-		if _selected_id not in ["~none~", ""] and not selected:
-			var attach := Button.new()
-			attach.text = "↳"
-			attach.tooltip_text = "Aggiungi anche l'origine selezionata, senza rimuovere le altre"
-			attach.pressed.connect(_link_group.bind(kind, key))
-			box.add_child(attach)
-		var removable: Array[int] = []
-		for index: Variant in indices:
-			var grant: Dictionary = _rows[int(index)]
-			if bool(grant.get("automatic", false)):
-				continue
-			var grant_source: String = String(grant.get("origin_id", ""))
-			if _selected_id not in ["~none~", ""] and not grant_source.is_empty() and grant_source != _selected_id:
-				continue
-			removable.append(int(index))
-		if not removable.is_empty():
-			var remove := Button.new()
-			remove.text = "✕"
-			remove.tooltip_text = "Elimina definitivamente le concessioni manuali (le automatiche restano)"
-			remove.flat = true
-			remove.pressed.connect(_delete_manual_group.bind(removable))
-			box.add_child(remove)
+	var headings: Dictionary = {
+		"skill": "Abilità",
+		"save": "Tiri salvezza",
+		"weapon_category": "Categorie di armi",
+		"weapon": "Singole armi",
+		"armor": "Armature e scudi",
+		"tool": "Strumenti",
+		"language": "Lingue"
+	}
+	var sections: Array[String] = ["skill", "save", "weapon_category", "weapon", "armor", "tool", "language"]
+	for section: String in sections:
+		if not by_section.has(section):
+			continue
+		var heading := Label.new()
+		heading.text = String(headings.get(section, section.capitalize()))
+		heading.add_theme_font_size_override("font_size", 15)
+		_proficiency_cards.add_child(heading)
+		var entries: Array = by_section[section]
+		entries.sort_custom(func(a: Variant, b: Variant) -> bool:
+			return String(a).naturalnocasecmp_to(String(b)) < 0
+		)
+		for identity: String in entries:
+			var indices: Array = grouped[identity]
+			var example: Dictionary = _rows[int(indices[0])]
+			var kind: String = String(example.get("kind", ""))
+			var key: String = String(example.get("key", ""))
+			var active := false
+			var selected := false
+			var selected_active := false
+			var linked: Array[String] = []
+			for index: Variant in indices:
+				var link: Dictionary = _rows[int(index)]
+				var sid: String = String(link.get("origin_id", ""))
+				var grant_active: bool = not bool(link.get("disabled", false)) and bool(enabled.get(sid, true))
+				if sid == _selected_id:
+					selected = true
+					selected_active = selected_active or grant_active
+				active = active or grant_active
+				var origin_label: String = _origin_display(sid) if not sid.is_empty() else "Senza origine"
+				var status_label: String = ("✓ " if grant_active else "○ ") + origin_label
+				if status_label not in linked:
+					linked.append(status_label)
+			var cell := PanelContainer.new()
+			_proficiency_cards.add_child(cell)
+			if selected_active:
+				var background := StyleBoxFlat.new()
+				background.draw_center = false
+				background.border_color = Color(0.44, 0.75, 0.95)
+				background.set_border_width_all(2)
+				background.set_corner_radius_all(5)
+				cell.add_theme_stylebox_override("panel", background)
+			var box := HBoxContainer.new()
+			box.add_theme_constant_override("separation", 4)
+			cell.add_child(box)
+			var label := Label.new()
+			label.size_flags_horizontal = Control.SIZE_EXPAND_FILL
+			label.clip_text = true
+			var mastered: bool = kind == "skill" and _effective_expertise(key, enabled)
+			label.text = ("✓ " if active else "○ ") + key + (" 🎓🎓" if mastered else "")
+			label.tooltip_text = "Origini:\n" + "\n".join(linked)
+			box.add_child(label)
+			if kind == "skill":
+				var expert := CheckButton.new()
+				expert.text = "Mestria"
+				expert.tooltip_text = "Maestria (doppia competenza)"
+				expert.button_pressed = mastered
+				expert.toggled.connect(_toggle_group_expertise.bind(key, indices.duplicate()))
+				box.add_child(expert)
+			var toggle := CheckButton.new()
+			toggle.text = "⏻"
+			toggle.tooltip_text = "Disattiva " + ("il collegamento con l'origine selezionata" if selected else "tutte le concessioni di questa competenza")
+			toggle.button_pressed = _group_enabled(indices)
+			toggle.disabled = _selected_id not in ["~none~", ""] and not selected
+			toggle.toggled.connect(_toggle_group.bind(indices.duplicate()))
+			box.add_child(toggle)
+			var removable: Array[int] = []
+			for index: Variant in indices:
+				var grant: Dictionary = _rows[int(index)]
+				if bool(grant.get("automatic", false)):
+					continue
+				var grant_source: String = String(grant.get("origin_id", ""))
+				if _selected_id not in ["~none~", ""] and not grant_source.is_empty() and grant_source != _selected_id:
+					continue
+				removable.append(int(index))
+			if not removable.is_empty():
+				var remove := Button.new()
+				remove.text = "✕"
+				remove.tooltip_text = "Elimina definitivamente le concessioni manuali (le automatiche restano)"
+				remove.flat = true
+				remove.pressed.connect(_delete_manual_group.bind(removable))
+				box.add_child(remove)
+
 
 
 func _delete_manual_group(indices: Array) -> void:
@@ -550,19 +569,6 @@ func _toggle_group_expertise(on: bool, key: String, indices: Array) -> void:
 	_publish()
 
 
-func _link_group(kind: String, key: String) -> void:
-	if _selected_id in ["~none~", ""] or not _valid_structured_choice(kind, key):
-		return
-	for entry: Dictionary in _rows:
-		if String(entry.get("kind", "")) == kind and String(entry.get("key", "")) == key and String(entry.get("origin_id", "")) == _selected_id:
-			entry["disabled"] = false
-			_publish()
-			return
-	_rows.append({"kind": kind, "key": key, "origin_id": _selected_id,
-		"origin_name": _origin_display(_selected_id), "disabled": false})
-	_publish()
-
-
 func _has_expertise(sid: String, key: String) -> bool:
 	for item: Dictionary in _rows:
 		if String(item.get("kind", "")) == "expertise" and String(item.get("key", "")) == key and String(item.get("origin_id", "")) == sid:
@@ -608,14 +614,6 @@ func _set_expertise(on: bool, index: int) -> void:
 	if on:
 		_rows.append({"kind": "expertise", "key": key, "origin_id": sid,
 			"origin_name": source.get("origin_name", ""), "disabled": false})
-	_publish()
-
-
-func _reassign(index: int) -> void:
-	if _selected_id == "~none~" or index < 0 or index >= _rows.size():
-		return
-	_rows[index]["origin_id"] = _selected_id
-	_rows[index]["origin_name"] = _origin_display(_selected_id)
 	_publish()
 
 
