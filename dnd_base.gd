@@ -596,6 +596,10 @@ func _build_token_generation_controls() -> void:
 		token_reach_input.allow_greater = true
 		token_reach_input.tooltip_text = reach_label.tooltip_text
 		content_box.add_child(token_reach_input)
+	# Gittata e portata sono ora definite dai singoli attacchi della scheda.
+	# Il valore nascosto rimane per compatibilità con il volume tattico del token.
+	reach_label.hide()
+	token_reach_input.hide()
 
 	var front_label := content_box.get_node_or_null("FrontLabel") as Label
 	if front_label == null:
