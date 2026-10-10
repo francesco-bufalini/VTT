@@ -113,6 +113,8 @@ var _ac: SpinBox
 var _ability_spins: Dictionary = {}
 var _ability_bonus_spins: Dictionary = {}
 var _ability_modifier_labels: Dictionary = {}
+var _saving_throw_labels: Dictionary = {}
+var _tools_proficiency_label: Label
 var _species: OptionButton
 var _subclass_name: OptionButton
 var _class_name: OptionButton
@@ -809,6 +811,12 @@ func _build_ui() -> void:
 		modifier.tooltip_text = "Modificatore calcolato dal punteggio e dal bonus"
 		scores_row.add_child(modifier)
 		_ability_modifier_labels[ability] = modifier
+		var saving_throw := Label.new()
+		saving_throw.text = "TS +0"
+		saving_throw.tooltip_text = "Tiro salvezza: modificatore caratteristica + competenza, se posseduta"
+		saving_throw.add_theme_font_size_override("font_size", 13)
+		cell.add_child(saving_throw)
+		_saving_throw_labels[ability] = saving_throw
 		spin.value_changed.connect(_on_ability_value_changed.bind(ability))
 		bonus.value_changed.connect(_on_ability_value_changed.bind(ability))
 
@@ -824,6 +832,10 @@ func _build_ui() -> void:
 	_passive_perception = Label.new()
 	_passive_perception.add_theme_font_size_override("font_size", 18)
 	passive_row.add_child(_passive_perception)
+	_tools_proficiency_label = Label.new()
+	_tools_proficiency_label.autowrap_mode = TextServer.AUTOWRAP_WORD_SMART
+	_tools_proficiency_label.tooltip_text = "Competenze negli strumenti provenienti dalle origini attive"
+	skills_column.add_child(_tools_proficiency_label)
 	var skills_heading := Label.new()
 	skills_heading.text = "Abilità · 🎓 competenza · 🎓🎓 maestria"
 	skills_heading.add_theme_font_size_override("font_size", 16)
@@ -2233,6 +2245,36 @@ func _refresh_skill_values(record: Dictionary) -> void:
 		(_skill_buttons[key] as Label).text = String(skill["label"]) + " · " + ability.to_upper() + marker
 		(_skill_buttons[key] as Label).tooltip_text = ["Nessuna competenza", "Competenza", "Maestria"][rank] + " · Modifica da Visualizza competenze"
 		(_skill_values[key] as Label).text = "%+d" % value
+	var saving_grants: Dictionary = ProficiencyRules.origin_enabled_map(record)
+	var all_grants: Array[Dictionary] = ProficiencyRules.choices(record)
+	for ability: String in _saving_throw_labels.keys():
+		var base: int = Rules.ability_modifier(int((_ability_spins[ability] as SpinBox).value)
+			+ int((_ability_bonus_spins[ability] as SpinBox).value))
+		var trained: bool = ProficiencyRules.has_proficiency(record, "save", ability)
+		var modifier: int = base + (proficiency if trained else 0)
+		# Monster stat blocks can include a complete published save bonus.
+		var stat: Dictionary = record.get("stat_block", {})
+		var saves: Variant = stat.get("save", {})
+		if String(record.get("kind", "")) == "monster" and saves is Dictionary and (saves as Dictionary).has(ability) and not trained:
+			var published: String = String((saves as Dictionary)[ability])
+			if published.is_valid_int():
+				modifier = int(published)
+				trained = true
+		var target: Label = _saving_throw_labels[ability]
+		target.text = "TS %+d%s" % [modifier, " 🎓" if trained else ""]
+		target.tooltip_text = "%s: mod. %+d%s = %+d" % [ability.to_upper(), base,
+			" + competenza %+d" % proficiency if trained else "", modifier]
+	if _tools_proficiency_label != null:
+		var tools: Array[String] = []
+		for grant: Dictionary in all_grants:
+			if String(grant.get("kind", "")) != "tool" or bool(grant.get("disabled", false)):
+				continue
+			if not bool(saving_grants.get(String(grant.get("origin_id", "")), true)):
+				continue
+			var tool_name: String = String(grant.get("key", "")).capitalize()
+			if tool_name not in tools:
+				tools.append(tool_name)
+		_tools_proficiency_label.text = "🛠 Strumenti: " + (", ".join(tools) + " 🎓" if not tools.is_empty() else "nessuna competenza")
 	var passive: int = 10 + Rules.ability_modifier(
 		int((_ability_spins["wis"] as SpinBox).value) + int((_ability_bonus_spins["wis"] as SpinBox).value)
 	) + int(_skill_ranks.get("perception", 0)) * proficiency
