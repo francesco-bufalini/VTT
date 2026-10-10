@@ -52,7 +52,9 @@ static func image_source(item: Dictionary) -> String:
 		if not source.is_empty():
 			break
 	if source.is_empty():
-		return ""
+		_load_official_images()
+		var key: String = String(item.get("source", "")).to_lower() + "|" + String(item.get("name", "")).to_lower()
+		return String(_official_images.get(key, ""))
 	if source.begins_with("https://"):
 		return source
 	if source.begins_with("http://"):
