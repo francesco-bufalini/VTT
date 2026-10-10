@@ -1983,9 +1983,10 @@ func _on_selected(index: int) -> void:
 
 
 func _load_form(record: Dictionary) -> void:
-	# A carried weapon starts equipped if no weapon is already active. This
-	# applies to player and monster inventories alike.
-	if AttackData.equip_first_inventory_weapon(record):
+	# Initialize once for old sheets. Afterwards intentional sheathing and
+	# natural-attack selections must never be undone on a later load.
+	if not record.has("equipped_attack_id"):
+		AttackData.equip_first_inventory_weapon(record)
 		record["equipped_attack_id"] = String(AttackData.active_attack(record).get("id", ""))
 		record["reach_feet"] = AttackData.active_range(record)
 		if _archive.save(record) == OK:
@@ -2349,8 +2350,14 @@ func _refresh_weapon_picker(record: Dictionary) -> void:
 		return
 	_weapon_picker.disabled = false
 	var active: String = String(AttackData.active_attack(record).get("id", ""))
+	var selected_inventory_index: int = int(record.get("equipped_inventory_index", -1))
 	for i: int in range(_weapon_options.size()):
-		if String(_weapon_options[i].get("id", "")) == active:
+		var option: Dictionary = _weapon_options[i]
+		if String(option.get("id", "")) == active and (
+			String(option.get("kind", "")) != "item"
+			or selected_inventory_index < 0
+			or int(option.get("index", -1)) == selected_inventory_index
+		):
 			_weapon_picker.select(i)
 			return
 	_weapon_picker.select(0)
@@ -2391,9 +2398,10 @@ func _on_active_weapon_selected(index: int) -> void:
 			owned["equipped_slots"] = slots
 			inventory[i] = owned
 		record["inventory"] = inventory
+		record["equipped_inventory_index"] = selected
 	else:
-		# A bestiary natural attack becomes active without equipping a new item.
-		pass
+		# Bestiary natural attacks can be selected without deleting gear.
+		record.erase("equipped_inventory_index")
 	record["equipped_attack_id"] = String(choice.get("id", ""))
 	record["reach_feet"] = AttackData.active_range(record)
 	if String(record.get("kind", "")) == "monster":
@@ -2764,7 +2772,7 @@ func _on_inventory_updated(inventory: Array) -> void:
 	if record.is_empty():
 		return
 	record["inventory"] = inventory.duplicate(true)
-	AttackData.equip_first_inventory_weapon(record)
+	# Do not automatically re-equip a weapon the player just sheathed.
 	var active: Dictionary = AttackData.active_attack(record)
 	if not active.is_empty():
 		record["equipped_attack_id"] = String(active.get("id", ""))
