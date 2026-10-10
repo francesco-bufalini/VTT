@@ -100,6 +100,14 @@ func run() -> void:
 	legacy = PlayerStore.new().normalize_character(legacy)
 	assert(Proficiencies.has_proficiency(legacy, "weapon", "rapier"),
 		"Legacy per-attack item proficiency migrates to shared weapon-name training")
+	for old_attack_id: String in ["item:off:weapon:rapier|phb|m", "item:throw:main:weapon:rapier|phb|m"]:
+		var old_record := _record()
+		old_record.erase("proficiency_choices")
+		old_record["skill_proficiencies"] = []
+		old_record["attack_overrides"] = {old_attack_id: {"proficient": true}}
+		old_record = PlayerStore.new().normalize_character(old_record)
+		assert(Proficiencies.has_proficiency(old_record, "weapon", "rapier"),
+			"Legacy offhand and thrown proficiencies must migrate to shared weapon training")
 
 	var tab := ProficiencyTab.new()
 	root.add_child(tab)
