@@ -1921,7 +1921,7 @@ func _load_form(record: Dictionary) -> void:
 		(_ability_bonus_spins[ability] as SpinBox).value = int(bonuses.get(ability, 0))
 		_update_ability_modifier(ability)
 	if String(record.get("kind", "")) == "monster" and not bool(record.get("skill_ranks_custom", false)):
-		var inferred: Dictionary = Skills5e.ranks_from_bestiary(record, Rules.proficiency_bonus(record), abilities)
+		var inferred: Dictionary = Skills5e.ranks_from_bestiary(record, _creature_proficiency(record), abilities)
 		for skill_id: String in inferred.keys():
 			_skill_ranks[skill_id] = int(inferred[skill_id])
 	_refresh_skill_values(record)
@@ -2108,10 +2108,18 @@ func _cycle_skill_rank(skill_id: String) -> void:
 	_save()
 
 
+func _creature_proficiency(record: Dictionary) -> int:
+	if String(record.get("kind", "")) == "monster":
+		var stat: Dictionary = record.get("stat_block", {})
+		var cr: float = Rules.monster_cr_value(stat)
+		return 2 + maxi(0, floori((cr - 1.0) / 4.0))
+	return Rules.proficiency_bonus(record)
+
+
 func _refresh_skill_values(record: Dictionary) -> void:
 	if _proficiency_display == null:
 		return
-	var proficiency: int = Rules.proficiency_bonus(record)
+	var proficiency: int = _creature_proficiency(record)
 	_proficiency_display.text = "%+d" % proficiency
 	for skill: Dictionary in Skills5e.SKILLS:
 		var key: String = String(skill["id"])
@@ -2412,6 +2420,7 @@ func _save() -> void:
 		_set_status("Salvataggio non riuscito: %s" % error_string(error))
 		return
 	_replace_current_record(record)
+	_refresh_skill_values(record)
 	_sync_token_health(record)
 	_apply_sheet_properties(record)
 	# A visible sheet follows current level and race/class immediately.
