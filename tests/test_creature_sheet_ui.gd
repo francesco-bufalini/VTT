@@ -399,8 +399,8 @@ func run() -> void:
 		"Combat should get moderately more width, rather than a vertically stacked layout")
 	assert(skills_view.horizontal_scroll_mode == ScrollContainer.SCROLL_MODE_AUTO
 		and combat_view.horizontal_scroll_mode == ScrollContainer.SCROLL_MODE_AUTO
-		and area._abilities_grid.columns == 1,
-		"Oversized details should scroll inside their own columns without widening the sheet")
+		and area._abilities_grid.columns == 4,
+		"Oversized details should scroll inside their own columns while ability values remain tabular")
 	area._update_stats_column_heights()
 	assert(skills_view.custom_minimum_size.y > 0
 		and is_equal_approx(skills_view.custom_minimum_size.y, combat_view.custom_minimum_size.y),
