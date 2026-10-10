@@ -36,6 +36,17 @@ static func monster_type_reference(stat: Dictionary) -> Dictionary:
 	}
 
 
+# 5etools speed may be a number, or a map with walk/fly/swim speeds.
+static func walking_speed(raw: Variant, fallback: int = 30) -> int:
+	if raw is int or raw is float:
+		return maxi(0, int(raw))
+	if raw is Dictionary:
+		var walk: Variant = (raw as Dictionary).get("walk", fallback)
+		if walk is int or walk is float:
+			return maxi(0, int(walk))
+	return fallback
+
+
 static func monster_armor_class(stat: Dictionary) -> int:
 	var ac_value: Variant = stat.get("ac", [])
 	if ac_value is Array:
