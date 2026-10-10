@@ -60,6 +60,7 @@ static func definitions(record: Dictionary) -> Array[Dictionary]:
 				"id": "monster:%s:%d" % [section, index],
 				"name": title, "source": section, "melee": melee,
 				"range_feet": maxi(5, distance_feet),
+				"melee_reach_feet": maxi(5, int(reach)) if not reach.is_empty() else 5,
 				"proficient": true, "damage": dice,
 				"base_hit": int(hit_tag) if not hit_tag.is_empty() else 0,
 				"hit_known": not hit_tag.is_empty(),
@@ -72,7 +73,10 @@ static func definitions(record: Dictionary) -> Array[Dictionary]:
 		for raw_item: Variant in inventory:
 			if raw_item is Dictionary:
 				owned[String((raw_item as Dictionary).get("id", ""))] = true
-		for item: Dictionary in (Catalog.entries("items") if not owned.is_empty() else []):
+		var catalog_items: Array[Dictionary] = []
+		if not owned.is_empty():
+			catalog_items = Catalog.entries("items")
+		for item: Dictionary in catalog_items:
 			if not owned.has(String(item.get("id", ""))):
 				continue
 			if String(item.get("weapon_category", "")).is_empty():
@@ -172,5 +176,8 @@ static func max_melee_range(record: Dictionary) -> float:
 	var maximum: float = 5.0
 	for attack: Dictionary in definitions(record):
 		if bool(attack.get("melee", false)):
-			maximum = maxf(maximum, float(range_for(record, attack)))
+			var value: float = float(range_for(record, attack))
+			if attack.has("melee_reach_feet") and "ranged" in JSON.stringify(attack.get("raw", {})).to_lower():
+				value = float(attack.get("melee_reach_feet", 5))
+			maximum = maxf(maximum, value)
 	return maximum
