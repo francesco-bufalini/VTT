@@ -181,12 +181,44 @@ func run() -> void:
 		{"name": "mostro", "source": "BESTIARY", "level": 2},
 		{"name": "Barbarian", "source": "PHB", "level": 1}
 	]
-	var monster_multiclass_found := false
+	var monster_starting_found := false
 	for source: Dictionary in Proficiencies.candidate_sources(monster_base):
 		if String(source.get("id", "")) == "class|phb|barbarian":
-			monster_multiclass_found = String(source.get("mode", "")) == "multiclass"
-	assert(monster_multiclass_found,
-		"Character classes added after a monster base must use Multiclass grants")
+			monster_starting_found = String(source.get("mode", "")) == "starting"
+	assert(monster_starting_found,
+		"Each playable class added to a monster uses Starting grants")
+	assert(Proficiencies.has_proficiency(monster_base, "weapon", "martial"),
+		"Starting monster-added Barbarian receives martial weapon training")
+	monster_base["classes"].append({"name": "Fighter", "source": "PHB", "level": 1})
+	var fighter_starting := false
+	for source: Dictionary in Proficiencies.candidate_sources(monster_base):
+		if String(source.get("id", "")) == "class|phb|fighter":
+			fighter_starting = String(source.get("mode", "")) == "starting"
+	assert(fighter_starting, "Multiple added monster classes each receive Starting privileges")
+	# Flattened 5etools subrace entries include all parent racial features.
+	# Origin-grant bookkeeping still needs two distinct source identities.
+	var high_elf := _record()
+	high_elf["species"] = "Elf (High)"
+	high_elf["species_source"] = "PHB"
+	assert(Proficiencies.has_proficiency(high_elf, "skill", "perception"),
+		"High Elf inherits the parent Elf's Perception proficiency")
+	assert(Proficiencies.has_proficiency(high_elf, "weapon", "longsword|phb"),
+		"High Elf receives structured subrace weapon proficiency")
+	var race_found := false
+	var subrace_found := false
+	for origin: Dictionary in Proficiencies.candidate_sources(high_elf):
+		if String(origin.get("id", "")) == "race|phb|elf":
+			race_found = true
+		if String(origin.get("id", "")) == "subrace|phb|high":
+			subrace_found = true
+	assert(race_found and subrace_found, "Base and subrace grants have distinct origins")
+	var wood_elf := high_elf.duplicate(true)
+	wood_elf["species"] = "Elf (Wood)"
+	var stale_high_origin := false
+	for origin: Dictionary in Proficiencies.candidate_sources(wood_elf):
+		if String(origin.get("id", "")) == "subrace|phb|high":
+			stale_high_origin = true
+	assert(not stale_high_origin, "Changing subrace removes the old source")
 	var revised := _record()
 	revised["rules_version"] = "2024"
 	revised["class"] = "Barbarian"
