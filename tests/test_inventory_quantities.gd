@@ -1,6 +1,7 @@
 extends SceneTree
 
 const InventoryTab = preload("res://vtt/creature_inventory_tab.gd")
+const ItemRules = preload("res://vtt/creature_item_rules.gd")
 var changes: Array[Array] = []
 
 
@@ -34,10 +35,10 @@ func run() -> void:
 	assert(not tab._quantity.editable and tab._remove_button.disabled)
 	# 5etools stores conditional attunement as a String, unlike the
 	# boolean for unconditional attunement. Selecting it must not crash.
-	assert(not tab.ItemRules.requires_attunement({"reqAttune": false}))
-	assert(not tab.ItemRules.requires_attunement({"reqAttune": ""}))
-	assert(tab.ItemRules.requires_attunement({"reqAttune": true}))
-	assert(tab.ItemRules.requires_attunement({"req_attune": "by a cleric"}))
+	assert(not ItemRules.requires_attunement({"reqAttune": false}))
+	assert(not ItemRules.requires_attunement({"reqAttune": ""}))
+	assert(ItemRules.requires_attunement({"reqAttune": true}))
+	assert(ItemRules.requires_attunement({"req_attune": "by a cleric"}))
 	tab._catalog.append({
 		"id": "test:attunement-string", "name": "Anello della prova",
 		"source": "Test", "type": "RG", "reqAttune": "by a spellcaster"
