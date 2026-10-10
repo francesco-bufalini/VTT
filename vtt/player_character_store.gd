@@ -193,6 +193,8 @@ func create_character() -> Dictionary:
 		"attacks": "",
 		"attack_ability": "str",
 		"attack_overrides": {},
+		"equipped_attack_id": "",
+		"equipped_inventory_index": -1,
 		"proficiency_choices": [],
 		"documents": [],
 		"ammunition": "",
@@ -400,6 +402,8 @@ func normalize_character(value: Dictionary) -> Dictionary:
 	defaults["footprint"] = maxf(0.5, float(defaults.get("footprint", 1.0)))
 	defaults["attack_ability"] = "dex" if String(value.get("attack_ability", "str")) == "dex" else "str"
 	defaults["attack_overrides"] = value.get("attack_overrides", {}).duplicate(true) if value.get("attack_overrides", {}) is Dictionary else {}
+	defaults["equipped_attack_id"] = String(value.get("equipped_attack_id", "")).strip_edges()
+	defaults["equipped_inventory_index"] = maxi(-1, int(value.get("equipped_inventory_index", -1)))
 	defaults["proficiency_origins"] = Proficiencies.origins(value)
 	defaults["proficiency_choices"] = Proficiencies.choices(value)
 	Proficiencies.sync_legacy_fields(defaults, Proficiencies.choices(defaults))
