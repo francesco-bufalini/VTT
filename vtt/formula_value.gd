@@ -53,7 +53,7 @@ func setup(label: Label, inputs: Array, captions: Array) -> void:
 
 func set_formula(result: String, explanation: String) -> void:
 	value_label.text = result
-	_readout.tooltip_text = explanation + "\nDoppio clic per modificare i valori consentiti."
+	_readout.tooltip_text = explanation + ("\nDoppio clic per modificare i valori consentiti." if not _fields.is_empty() else "")
 	value_label.tooltip_text = _readout.tooltip_text
 
 
