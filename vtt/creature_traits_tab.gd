@@ -5,6 +5,7 @@ extends VBoxContainer
 const PlayerCatalog = preload("res://vtt/player_5etools_catalog.gd")
 const ContentCatalog = preload("res://vtt/content_catalog.gd")
 const TraitText = preload("res://vtt/five_tools_rich_text.gd")
+const Proficiencies = preload("res://vtt/creature_proficiency_rules.gd")
 
 var _origin_choice: OptionButton
 var _search: LineEdit
@@ -315,6 +316,20 @@ static func collect_features(record: Dictionary) -> Array[Dictionary]:
 		var class_level: int = clampi(int(definition.get("level", 1)), 1, 20)
 		var class_origin: String = "Classe · " + class_label
 		var class_key: String = "class|" + class_label.to_lower() + "|" + class_book.to_lower()
+		# Level-one synthetic feature: a structured 5etools class overview.
+		# The source ID used by the proficiency editor remains the same.
+		for source: Dictionary in Proficiencies.candidate_sources(record):
+			if String(source.get("group", "")) != "class":
+				continue
+			var indexed: Dictionary = source.get("data", {})
+			if String(indexed.get("name", "")).nocasecmp_to(class_label) != 0 or String(indexed.get("source", "")) != class_book:
+				continue
+			_append(result, {
+				"name": "Starting " + class_label,
+				"source": class_book,
+				"entries": Proficiencies.starting_description(source)
+			}, 1, class_origin, class_key, class_label, class_book, 0)
+			break
 		for feature: Dictionary in class_features:
 			if String(feature.get("class_name", "")).nocasecmp_to(class_label) != 0:
 				continue
