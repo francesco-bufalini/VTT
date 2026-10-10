@@ -46,20 +46,32 @@ func run() -> void:
 		"Individual martial weapons inherit the fixed category-level class suggestion")
 	assert(Proficiencies.suggest_origins(record, "save", "cha").is_empty(),
 		"Unlisted saving throw must not be inferred from text")
-	var required: Array[Dictionary] = Proficiencies.missing_structured(record)
-	assert(not required.is_empty(), "Missing fixed grants produce only a hint")
-
+	var sources: Array[Dictionary] = Proficiencies.origins(record)
+	var fighter: Dictionary = {}
+	for candidate: Dictionary in sources:
+		if String(candidate.get("id", "")) == "class|phb|fighter":
+			fighter = candidate
+	assert(not fighter.is_empty() and not fighter.get("requirements", []).is_empty(),
+		"Starting Fighter has a source with missing structured choose skills")
+	var rows: Array[Dictionary] = Proficiencies.choices(record)
+	assert(Proficiencies.has_choice(rows, "weapon", "martial")
+		and Proficiencies.has_choice(rows, "armor", "heavy")
+		and Proficiencies.has_choice(rows, "save", "str"),
+		"Mandatory class grants are created before the editor opens")
+	assert(not Proficiencies.has_choice(rows, "skill", "perception"),
+		"Choose-2 never silently selects a skill")
+	assert(not Proficiencies.requirement_missing(fighter, rows, {"class|phb|fighter": true}).is_empty(),
+		"Unresolved skill choices show a warning")
 	var weapon: Dictionary = Attacks.definitions(record)[0]
 	assert(weapon.source == "item", "Equipped weapon comes before unarmed strike")
-	assert(Attacks.attack_bonus(record, weapon, 2) == 4,
-		"Legacy per-attack proficiency is ignored in favor of creature choices")
-	var rows: Array[Dictionary] = Proficiencies.choices(record)
-	assert(Proficiencies.has_choice(rows, "skill", "athletics"))
-	rows.append({"kind": "weapon", "key": "martial",
-		"origin_id": "class|phb|fighter", "origin_name": "Classe · Fighter (iniziale)"})
-	Proficiencies.sync_legacy_fields(record, rows)
 	assert(Attacks.attack_bonus(record, weapon, 2) == 6,
-		"Martial competence applies to every equipped martial weapon")
+		"Starting Fighter martial training applies automatically, per creature")
+	record["proficiency_origins"] = [{"id": "class|phb|fighter", "name": "Starting Fighter", "automatic": true, "disabled": true}]
+	assert(Attacks.attack_bonus(record, weapon, 2) == 4,
+		"Disabling the origin removes its whole category bonus without deleting choices")
+	record["proficiency_origins"][0]["disabled"] = false
+	assert(Attacks.attack_bonus(record, weapon, 2) == 6, "Re-enabling an origin restores its grants")
+	Proficiencies.sync_legacy_fields(record, rows)
 	assert(record.skill_proficiencies == ["athletics"], "Legacy skill arrays remain synchronized")
 	assert(Proficiencies.unassigned_count(record) == 1,
 		"Unassigned pre-existing skill proficiency remains visible")
@@ -112,19 +124,33 @@ func run() -> void:
 	var tab := ProficiencyTab.new()
 	root.add_child(tab)
 	var changed: Array = []
-	tab.setup(func(profs: Array, feats: Array) -> void:
-		changed.append({"profs": profs, "feats": feats}))
+	tab.setup(func(profs: Array, feats: Array, origin_rows: Array) -> void:
+		changed.append({"profs": profs, "feats": feats, "origins": origin_rows}))
 	tab.load_record(record)
-	tab._group.select(0)
-	tab._entry_text.text = "longsword"
-	tab._add_choice()
+	assert(tab._origins.size() > 0, "Source list is populated by eligible structured origins")
+	tab._select_origin("class|phb|fighter")
+	assert(tab._selected_id == "class|phb|fighter", "Clicking an origin selects/highlights its proficiencies")
+	tab._select_origin("class|phb|fighter")
+	assert(tab._selected_id == "~none~", "Clicking the same origin clears the highlight")
+	tab._select_origin("class|phb|fighter")
+	tab._kind_picker.select(0)
+	tab._proficiency_name.text = "longsword"
+	tab._add_competence()
 	assert(not changed.is_empty() and Proficiencies.has_choice(changed.back().profs, "weapon", "longsword"),
-		"Users can explicitly add a weapon proficiency")
+		"Users can explicitly add a proficiency to a selected origin")
 	var last: int = tab._rows.size() - 1
-	tab._owned.select(last)
-	tab._owned.item_selected.emit(last)
-	assert(tab._origin.item_count >= 2, "Source selector lists matching or available traits")
+	tab._toggle_competence(false, last)
+	assert(bool(tab._rows[last].get("disabled", false)), "Individual competence can be disabled")
+	tab._kind_picker.select(2)
+	tab._proficiency_name.text = "perception"
+	tab._add_competence()
+	last = tab._rows.size() - 1
+	tab._set_expertise(true, last)
+	assert(Proficiencies.has_choice(tab._rows, "expertise", "perception"), "Switch upgrades a skill to expertise")
+	tab._toggle_origin(false, "class|phb|fighter")
+	assert(not Proficiencies.has_proficiency(tab._effective_record(), "weapon", "martial"),
+		"Disabling a source suppresses all its linked proficiencies")
 	tab.queue_free()
 	await process_frame
-	print("PASS: structured proficiency hints, feat grants, shared weapon bonus, migration and origin selector")
+	print("PASS: automatically granted structured proficiencies, choose warnings, toggles, source highlights and migration")
 	quit()
