@@ -1019,6 +1019,11 @@ func _build_ui() -> void:
 	_build_automatic_dialog()
 	_build_hp_delta_dialog()
 	_build_second_form_dialogs()
+	# The horizontal scrollers must expose the full content height to the
+	# outer vertical sheet scroll; otherwise the bottom of an attack is clipped.
+	skills_column.minimum_size_changed.connect(_update_stats_column_heights)
+	combat_column.minimum_size_changed.connect(_update_stats_column_heights)
+	call_deferred("_update_stats_column_heights")
 	_tabs.item_rect_changed.connect(_update_sheet_layout)
 	_panel.resized.connect(_update_sheet_layout)
 	call_deferred("_update_sheet_layout")
@@ -1850,6 +1855,24 @@ func _filter_owned_creatures(query: String) -> void:
 	_creature_empty.text = "Crea o importa una creatura." if _records.is_empty() else "Nessuna creatura corrispondente."
 	_creature_empty.visible = visible_count == 0
 	_update_sheet_layout()
+
+
+func _update_stats_column_heights() -> void:
+	if _statistics_columns == null or _statistics_columns.get_child_count() != 2:
+		return
+	var left_view := _statistics_columns.get_child(0) as ScrollContainer
+	var right_view := _statistics_columns.get_child(1) as ScrollContainer
+	if left_view == null or right_view == null:
+		return
+	var left_contents := left_view.get_child(0) as Control
+	var right_contents := right_view.get_child(0) as Control
+	var needed_height: float = maxf(
+		left_contents.get_combined_minimum_size().y,
+		right_contents.get_combined_minimum_size().y
+	) + 18.0
+	if absf(left_view.custom_minimum_size.y - needed_height) > 1.0:
+		left_view.custom_minimum_size.y = needed_height
+		right_view.custom_minimum_size.y = needed_height
 
 
 func _update_sheet_layout() -> void:
