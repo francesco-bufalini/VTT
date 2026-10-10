@@ -154,6 +154,7 @@ func run() -> void:
 	# Tiny still occupies a full square; adjacent Tiny creatures have 5 ft
 	# reach just like Medium ones. Larger footprints are measured edge-to-edge.
 	var tiny := TokenScene.instantiate()
+	root.add_child(tiny)
 	tiny.set_token_size(0.5)
 	var tiny_half: Vector3 = FlankingSystem.token_half_extents_world(tiny, 1.0)
 	assert(is_equal_approx(tiny_half.x, 0.5))
@@ -161,6 +162,7 @@ func run() -> void:
 		Vector3.ZERO, tiny_half, Vector3(1.0, 0.0, 0.0), tiny_half, 1.0
 	), 5.0))
 	var huge := TokenScene.instantiate()
+	root.add_child(huge)
 	huge.set_size_category("Huge", 3.0, true)
 	assert(is_equal_approx(huge.get_reach_feet(), 5.0),
 		"Footprint alone must not increase melee reach")
@@ -174,8 +176,8 @@ func run() -> void:
 		Vector3(2.0, 0.0, 0.0), half,
 		Vector3.ZERO, huge_half
 	).size() == 2)
-	tiny.free()
-	huge.free()
+	tiny.queue_free()
+	huge.queue_free()
 
 	# Same-plane line geometry is projected down to the miniature bases.
 	var projected := FlankingSystem.project_centers_to_shared_base(

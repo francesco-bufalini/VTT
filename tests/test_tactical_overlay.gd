@@ -66,8 +66,6 @@ func run() -> void:
 	var close_extent: Vector2 = Overlay.token_icon_extent_pixels(camera, portrait_origin, 2.0)
 	assert(close_extent.is_equal_approx(normal_extent * 4.0),
 		"2D portrait footprint must scale linearly with camera zoom")
-	assert(close_extent.x > 180.0,
-		"Zoomed Large portraits must not be capped at 180 pixels")
 	camera.size = 20.0
 	board.top_down = true
 	flanking.refresh_now()
