@@ -260,7 +260,10 @@ func _filter_catalog() -> void:
 		]).to_lower()
 		if not query.is_empty() and query not in haystack:
 			continue
-		if selected_category != "Tutti" and ItemRules.category_name(item) != selected_category:
+		if selected_category == "Oggetti magici":
+			if not String(item.get("id", "")).begins_with("magic_item:") and String(item.get("origin", "")) != "homebrew":
+				continue
+		elif selected_category != "Tutti" and ItemRules.category_name(item) != selected_category:
 			continue
 		_filtered.append(item)
 		_catalog_list.add_item(_image_label(item, ItemRules.category_name(item) + " · " + Player5eTools.display_label(item)))
