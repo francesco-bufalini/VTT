@@ -637,7 +637,7 @@ func _on_inventory_selected(index: int) -> void:
 		return
 	_quantity.set_value_no_signal(int(_inventory[index].get("quantity", 1)))
 	_set_size_fields(_inventory[index], true)
-	_quantity.editable = true
+	_quantity.editable = not DocumentStore.is_document(_inventory[index])
 	_remove_button.disabled = false
 	_update_equip_buttons()
 	var item_id: String = String(_inventory[index].get("id", ""))
@@ -728,6 +728,9 @@ func _on_quantity_changed(value: float) -> void:
 	var index: int = _selected_inventory_index()
 	if index < 0 or index >= _inventory.size():
 		return
+	if DocumentStore.is_document(_inventory[index]):
+		_quantity.set_value_no_signal(1)
+		return
 	_inventory[index]["quantity"] = clampi(int(value), 1, 99999)
 	_sanitize_equipment()
 	_update_equip_buttons()
@@ -763,7 +766,7 @@ func _refresh_inventory(selected_index: int = -1) -> void:
 		_details.hide()
 	_set_size_fields(_inventory[selected_index] if selected_index >= 0 and selected_index < _inventory.size() else {}, selected_index >= 0)
 	_remove_button.disabled = selected_index < 0
-	_quantity.editable = selected_index >= 0
+	_quantity.editable = selected_index >= 0 and not DocumentStore.is_document(_inventory[selected_index])
 	_update_equip_buttons()
 	_loading = old_loading
 
