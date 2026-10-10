@@ -2864,6 +2864,7 @@ func _on_inventory_updated(inventory: Array) -> void:
 	_refresh_attacks(record)
 	_update_defense_display()
 	_apply_sheet_properties(record)
+	_refresh_reference(record)
 
 
 func _on_ability_value_changed(_value: float, ability: String) -> void:
