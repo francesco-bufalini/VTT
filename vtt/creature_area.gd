@@ -2167,6 +2167,8 @@ func _refresh_trackers(record: Dictionary) -> void:
 		return
 	var spent_value: Variant = record.get("resource_tracker_spent", {})
 	var spent: Dictionary = spent_value as Dictionary if spent_value is Dictionary else {}
+	var bonus_value: Variant = record.get("resource_tracker_bonuses", {})
+	var bonuses: Dictionary = bonus_value as Dictionary if bonus_value is Dictionary else {}
 	for tracker: Dictionary in trackers:
 		var row := HBoxContainer.new()
 		row.add_theme_constant_override("separation", 5)
@@ -2180,13 +2182,15 @@ func _refresh_trackers(record: Dictionary) -> void:
 			+ (" · " + source_label if not source_label.is_empty() else "")
 		)
 		source_button.size_flags_horizontal = Control.SIZE_EXPAND_FILL
+		source_button.clip_text = true
 		source_button.alignment = HORIZONTAL_ALIGNMENT_LEFT
 		source_button.pressed.connect(
 			_open_tracker_trait.bind(String(tracker.get("origin", title)), source_label)
 		)
 		row.add_child(source_button)
 		var id: String = String(tracker["id"])
-		var maximum: int = int(tracker["max"])
+		var base_maximum: int = int(tracker["max"])
+		var maximum: int = maxi(0, base_maximum + int(bonuses.get(id, 0)))
 		var used: int = clampi(int(spent.get(id, 0)), 0, maximum)
 		var consume := Button.new()
 		consume.text = "−"
@@ -2199,6 +2203,18 @@ func _refresh_trackers(record: Dictionary) -> void:
 		remaining.custom_minimum_size.x = 50
 		remaining.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
 		row.add_child(remaining)
+		var manual_bonus := SpinBox.new()
+		manual_bonus.min_value = -999
+		manual_bonus.max_value = 9999
+		manual_bonus.step = 1
+		manual_bonus.rounded = true
+		manual_bonus.update_on_text_changed = false
+		manual_bonus.custom_minimum_size = Vector2(63, 30)
+		manual_bonus.tooltip_text = "Di cui bonus al massimo (%d utilizzi base)" % base_maximum
+		ManualBonus.decorate(manual_bonus)
+		manual_bonus.set_value_no_signal(int(bonuses.get(id, 0)))
+		manual_bonus.value_changed.connect(_change_tracker_bonus.bind(id))
+		row.add_child(manual_bonus)
 		var restore := Button.new()
 		restore.text = "+"
 		restore.tooltip_text = "Recupera un utilizzo"
@@ -2234,6 +2250,29 @@ func _roll_tracker_recharge(
 	_set_status("%s · Ricarica d6: %d (%s, occorre %d–6)." % [
 		label, roll, "riuscita" if roll >= threshold else "fallita", threshold
 	])
+
+
+func _change_tracker_bonus(value: float, id: String) -> void:
+	var record: Dictionary = _current()
+	if record.is_empty():
+		return
+	var bonuses: Dictionary = record.get("resource_tracker_bonuses", {}).duplicate(true)
+	bonuses[id] = clampi(int(value), -999, 9999)
+	record["resource_tracker_bonuses"] = bonuses
+	var maximum: int = 0
+	for tracker: Dictionary in _structured_trackers(record):
+		if String(tracker.get("id", "")) == id:
+			maximum = maxi(0, int(tracker.get("max", 0)) + int(bonuses[id]))
+			break
+	var spent: Dictionary = record.get("resource_tracker_spent", {}).duplicate(true)
+	spent[id] = clampi(int(spent.get(id, 0)), 0, maximum)
+	record["resource_tracker_spent"] = spent
+	var error: Error = _archive.save(record)
+	if error != OK:
+		_set_status("Bonus tracker non salvato: " + error_string(error))
+		return
+	_replace_current_record(record)
+	_refresh_trackers(record)
 
 
 func _change_tracker(id: String, delta: int, maximum: int) -> void:
