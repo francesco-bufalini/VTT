@@ -277,6 +277,10 @@ func _refresh_competences() -> void:
 	for idx: int in range(_rows.size()):
 		var row: Dictionary = _rows[idx]
 		var kind: String = String(row.get("kind", ""))
+		# Expertise is edited with the skill's switch; it is not a second
+		# entry in the visual competence list.
+		if kind == "expertise":
+			continue
 		if kind != last_kind:
 			last_kind = kind
 			var section := Label.new()
@@ -301,7 +305,7 @@ func _refresh_competences() -> void:
 		var label := Label.new()
 		label.size_flags_horizontal = Control.SIZE_EXPAND_FILL
 		label.clip_text = true
-		label.text = ("%s %s" % ["✓" if is_active else "○", String(row.get("key", ""))]) + (" ✦✦" if kind == "expertise" else "")
+		label.text = ("%s %s" % ["✓" if is_active else "○", String(row.get("key", ""))]) + (" 🎓🎓" if kind == "skill" and _has_expertise(sid, String(row.get("key", ""))) else "")
 		label.tooltip_text = String(row.get("origin_name", "Senza origine"))
 		box.add_child(label)
 		if kind == "skill":
