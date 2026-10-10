@@ -51,8 +51,9 @@ func run() -> void:
 	record["attack_ability"] = "str"
 	assert(AttackData.attack_bonus(record, weapon, 2) == 1, "Finesse respects the preferred STR/DEX ability")
 	record["attack_ability"] = "dex"
-	record["attack_overrides"] = {"item:test:rapier": {"proficient": true, "bonus": 1}}
-	assert(AttackData.attack_bonus(record, weapon, 2) == 7, "Proficiency and manual bonus apply only once")
+	record["attack_overrides"] = {"item:test:rapier": {"bonus": 1}}
+	record["proficiency_choices"] = [{"kind": "weapon", "key": "martial", "origin_id": "class|phb|fighter"}]
+	assert(AttackData.attack_bonus(record, weapon, 2) == 7, "Shared martial proficiency and manual bonus apply only once")
 	var normalized: Dictionary = PlayerStore.new().normalize_character({
 		"inventory": [rapier, shield], "armor_class_base": 12, "armor_class_bonus": 1
 	})
