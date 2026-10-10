@@ -342,6 +342,17 @@ func run() -> void:
 		"All canonical 5etools/D&D 5e skills must be present")
 	assert(int(area._passive_perception.text) >= 10,
 		"Passive perception must be calculated from Wisdom and skill ranks")
+	assert(area._saving_throw_labels.size() == 6,
+		"Each ability shows a saving throw result")
+	assert((area._saving_throw_labels["wis"] as Label).text.begins_with("TS "),
+		"Wisdom saving throw must show its current numerical bonus")
+	assert(area._tools_proficiency_label != null and "Strumenti:" in area._tools_proficiency_label.text,
+		"Statistics must expose the character's tool proficiencies")
+	assert(not area._formula_values.is_empty(), "Computed score formulas remain available")
+	var formula_widget: Node = area._formula_values["ability:wis"]
+	var frame: StyleBox = formula_widget.value_label.get_theme_stylebox("normal") as StyleBox
+	assert(frame is StyleBoxFlat and not (frame as StyleBoxFlat).draw_center,
+		"Formula indicator is a transparent outline, not an inline ƒ glyph")
 	var rows: Array = area._current().get("proficiency_choices", []).duplicate(true)
 	rows.append({"kind": "skill", "key": "perception", "origin_id": "custom|ui-regression",
 		"origin_name": "Test source", "disabled": false})

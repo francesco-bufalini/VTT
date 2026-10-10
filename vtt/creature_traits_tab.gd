@@ -325,7 +325,7 @@ static func collect_features(record: Dictionary) -> Array[Dictionary]:
 			if String(indexed.get("name", "")).nocasecmp_to(class_label) != 0 or String(indexed.get("source", "")) != class_book:
 				continue
 			_append(result, {
-				"name": "Starting " + class_label,
+				"name": ("Multiclass " if String(source.get("mode", "starting")) == "multiclass" else "Starting ") + class_label,
 				"source": class_book,
 				"entries": Proficiencies.starting_description(source)
 			}, 1, class_origin, class_key, class_label, class_book, 0)

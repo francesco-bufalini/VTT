@@ -180,9 +180,13 @@ static func candidate_sources(record: Dictionary) -> Array[Dictionary]:
 			var row_mode := "starting"
 			if group == "class":
 				var classes: Variant = record.get("classes", [])
-				if classes is Array and (classes as Array).size() > 0:
-					var first: Dictionary = classes[0] if classes[0] is Dictionary else {}
-					if String(first.get("name", "")).nocasecmp_to(name) != 0:
+				if classes is Array and not (classes as Array).is_empty():
+					var primary: Dictionary = {}
+					for candidate_class: Variant in classes:
+						if candidate_class is Dictionary and String(candidate_class.get("name", "")).to_lower() != "mostro":
+							primary = candidate_class
+							break
+					if not primary.is_empty() and (String(primary.get("name", "")).nocasecmp_to(name) != 0 or String(primary.get("source", "")) != source):
 						row_mode = "multiclass"
 			var stable_id := group + "|" + source.to_lower() + "|" + name.to_lower()
 			candidates.append({
@@ -222,7 +226,7 @@ static func _selected_source(record: Dictionary, group: String, name: String, so
 
 static func _origin_title(group: String, name: String, mode: String) -> String:
 	match group:
-		"class": return "Starting " + name
+		"class": return ("Multiclass " if mode == "multiclass" else "Starting ") + name
 		"race", "subrace": return "Specie · " + name
 		"background": return "Background · " + name
 		"feat": return "Talento · " + name
@@ -239,9 +243,9 @@ static func _grants_data(candidate: Dictionary, kind: String) -> Variant:
 			"multiclassProficiencies" if mode == "multiclass" else "startingProficiencies", {}
 		)
 		match kind:
-			"weapon": return granted.get("weapons", [])
+			"weapon": return granted.get("weaponProficiencies", granted.get("weapons", []))
 			"armor": return granted.get("armorProficiencies", granted.get("armor", []))
-			"tool": return granted.get("toolProficiencies", [])
+			"tool": return granted.get("toolProficiencies", granted.get("tools", []))
 			"skill": return granted.get("skills", [])
 		return []
 	var field_names: Dictionary = {
@@ -466,13 +470,32 @@ static func choice_requirements(source: Dictionary) -> Array[Dictionary]:
 				continue
 			var item: Dictionary = raw
 			var choose: Variant = item.get("choose", {})
-			if choose is Dictionary:
+			if item.has("choose") and choose is Dictionary and not (choose as Dictionary).is_empty():
 				var count: int = maxi(1, int((choose as Dictionary).get("count", 1)))
 				result.append({"kind": kind, "count": count, "label": "Scegli %d · %s" % [count, kind], "data": item})
 			for field: String in ["any", "anyArtisansTool", "anyGamingSet", "anyMusicalInstrument", "anyStandard", "anyExotic", "anyProficientSkill"]:
 				if item.has(field):
 					result.append({"kind": kind, "count": maxi(1, int(item[field])), "label": "Scegli %d · %s" % [maxi(1, int(item[field])), kind], "data": item})
 	return result
+
+
+# An explicit 5etools from-list is authoritative for the origin picker.
+# Empty result means there is no restricted list (e.g. any skill).
+static func restricted_choices(origin: Dictionary, kind: String) -> Array[String]:
+	var options: Array[String] = []
+	for requirement: Dictionary in origin.get("requirements", []):
+		if String(requirement.get("kind", "")) != kind:
+			continue
+		var data: Dictionary = requirement.get("data", {})
+		var choose: Variant = data.get("choose", {})
+		if choose is Dictionary:
+			var raw: Variant = (choose as Dictionary).get("from", [])
+			if raw is Array:
+				for value: Variant in raw:
+					var key: String = normalized_key(String(value))
+					if not key.is_empty() and key not in options:
+						options.append(key)
+	return options
 
 
 static func origins(record: Dictionary) -> Array[Dictionary]:
@@ -579,7 +602,7 @@ static func _readable_grants(value: Variant) -> String:
 				if field != "choose" and granted is bool and granted:
 					pieces.append(field.capitalize())
 			var choose: Variant = item.get("choose", {})
-			if choose is Dictionary:
+			if item.has("choose") and choose is Dictionary and not (choose as Dictionary).is_empty():
 				var count: int = maxi(1, int((choose as Dictionary).get("count", 1)))
 				var options: Variant = (choose as Dictionary).get("from", [])
 				if options is Array and not (options as Array).is_empty():
@@ -607,17 +630,17 @@ static func starting_description(source: Dictionary) -> String:
 	var meta: Dictionary = data.get("startingMeta", {})
 	var mode: String = String(source.get("mode", "starting"))
 	var lines := PackedStringArray()
-	lines.append("Core Traits")
+	lines.append("Multiclassing" if mode == "multiclass" else "Core Traits")
 	var dice: String = String(meta.get("hitDice", ""))
-	if not dice.is_empty():
+	if mode == "starting" and not dice.is_empty():
 		lines.append("Hit Point Die: %s per level" % dice)
 		lines.append("Hit Points at Level 1: %d + Constitution modifier" % int(meta.get("hitPointsAtFirst", 0)))
 		lines.append("Hit Points per additional level: %s + Constitution modifier" % dice)
 	var saving: String = _readable_grants(data.get("savingThrows", []))
-	if not saving.is_empty():
+	if mode == "starting" and not saving.is_empty():
 		lines.append("Saving Throw Proficiencies: " + saving)
 	var start: Dictionary = data.get("startingProficiencies", {})
-	for group: String in ["skills", "weapons", "armor", "tools"]:
+	for group: String in (["skills", "weapons", "armor", "tools"] if mode == "starting" else []):
 		var raw: Variant = start.get(group, [])
 		if group == "armor":
 			raw = start.get("armor", [])
@@ -627,7 +650,7 @@ static func starting_description(source: Dictionary) -> String:
 			var title: String = String(names.get(group, group.capitalize()))
 			lines.append(title + ": " + _clean_equipment(displayed))
 	var equipment: Variant = meta.get("equipment", [])
-	if equipment is Array and not (equipment as Array).is_empty():
+	if mode == "starting" and equipment is Array and not (equipment as Array).is_empty():
 		lines.append("")
 		lines.append("Starting Equipment")
 		for item: Variant in equipment:
@@ -635,8 +658,9 @@ static func starting_description(source: Dictionary) -> String:
 		var gold_option: String = String(meta.get("gold", ""))
 		if not gold_option.is_empty():
 			lines.append("Alternativamente: " + _clean_equipment(gold_option) + " per acquistare l'equipaggiamento")
-	lines.append("")
-	lines.append("Multiclassing")
+	if mode == "starting":
+		lines.append("")
+		lines.append("Multiclassing")
 	var requirements: Variant = meta.get("multiclass", {})
 	if requirements is Dictionary and not (requirements as Dictionary).is_empty():
 		var requirement_pieces := PackedStringArray()
