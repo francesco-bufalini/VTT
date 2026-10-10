@@ -2771,8 +2771,25 @@ func _on_inventory_updated(inventory: Array) -> void:
 	var record: Dictionary = _current()
 	if record.is_empty():
 		return
+	var prior_main: Dictionary = ItemRules.occupying(record.get("inventory", []), "main")
 	record["inventory"] = inventory.duplicate(true)
-	# Do not automatically re-equip a weapon the player just sheathed.
+	# Equipment changes made on the inventory page also select the weapon
+	# displayed above attacks. Unrelated quantity/armor changes do not.
+	var new_main: Dictionary = ItemRules.occupying(record.get("inventory", []), "main")
+	var previous_signature: String = JSON.stringify(prior_main)
+	var current_signature: String = JSON.stringify(new_main)
+	if previous_signature != current_signature:
+		if not new_main.is_empty() and ItemRules.kind(ItemRules.entry_for(new_main)) == "weapon":
+			record["equipped_attack_id"] = "item:" + String(new_main.get("id", ""))
+			var rows: Array = record.get("inventory", [])
+			for i: int in range(rows.size()):
+				if rows[i] is Dictionary and "main" in ItemRules.slots(rows[i]):
+					record["equipped_inventory_index"] = i
+					break
+		else:
+			record.erase("equipped_inventory_index")
+			if String(record.get("equipped_attack_id", "")).begins_with("item:"):
+				record.erase("equipped_attack_id")
 	var active: Dictionary = AttackData.active_attack(record)
 	if not active.is_empty():
 		record["equipped_attack_id"] = String(active.get("id", ""))
