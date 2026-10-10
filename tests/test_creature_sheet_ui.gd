@@ -347,8 +347,12 @@ func run() -> void:
 	assert(area._statistics_columns is GridContainer,
 		"Statistics columns must be able to stack at narrow viewport widths")
 	area._update_sheet_layout()
-	assert(area._statistics_columns.columns == (2 if area._tabs.size.x >= 850.0 else 1),
-		"Stats column count must follow the actual tab width, not the desktop screen width")
+	var usable_tab_width: float = minf(
+		area._tabs.size.x,
+		maxf(0.0, area._panel.get_viewport_rect().size.x - area._tabs.get_global_rect().position.x - 30.0)
+	)
+	assert(area._statistics_columns.columns == (2 if usable_tab_width >= 850.0 else 1),
+		"Stats columns must use screen space actually available after the sidebar")
 	var combat_stats: Node = area._attacks_description.get_parent()
 	assert(area._tracker_rows.get_parent() == combat_stats
 		and area._tracker_rows.get_index() < area._attacks_description.get_index(),
