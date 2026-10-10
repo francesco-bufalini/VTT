@@ -128,9 +128,13 @@ func create_creature(stat_block: Dictionary, side: String) -> Dictionary:
 		"current_hp": hp,
 		"inventory": [],
 		"armor_class": CreatureRules.monster_armor_class(stat_block),
+		"armor_class_base": CreatureRules.monster_armor_class(stat_block),
+		"armor_class_bonus": 0,
 		"speed": CreatureRules.walking_speed(stat_block.get("speed", 30)),
 		"speed_is_custom": false,
 		"initiative": CreatureRules.ability_modifier(int(stat_block.get("dex", 10))),
+		"initiative_base": CreatureRules.ability_modifier(int(stat_block.get("dex", 10))),
+		"initiative_bonus": 0,
 		"abilities": CreatureRules.monster_abilities(stat_block),
 		"ability_bonuses": {"str": 0, "dex": 0, "con": 0, "int": 0, "wis": 0, "cha": 0},
 		"resource_tracker_spent": {},
@@ -248,9 +252,19 @@ func normalize_creature(value: Dictionary) -> Dictionary:
 		"speed_bonus": clampi(int(value.get("speed_bonus", 0)), -999, 999),
 		"background_personality": String(value.get("background_personality", "")),
 		"armor_class": maxi(0, int(value.get("armor_class", CreatureRules.monster_armor_class(stat_block)))),
+		"armor_class_bonus": clampi(int(value.get("armor_class_bonus", 0)), -99, 99),
+		"armor_class_base": maxi(0, int(value.get(
+			"armor_class_base", int(value.get("armor_class", CreatureRules.monster_armor_class(stat_block)))
+			- int(value.get("armor_class_bonus", 0))
+		))),
 		"speed": maxi(0, int(value.get("speed", CreatureRules.walking_speed(stat_block.get("speed", 30))))),
 		"speed_is_custom": bool(value.get("speed_is_custom", false)),
 		"initiative": int(value.get("initiative", CreatureRules.ability_modifier(int(stat_block.get("dex", 10))))),
+		"initiative_bonus": clampi(int(value.get("initiative_bonus", 0)), -99, 99),
+		"initiative_base": int(value.get(
+			"initiative_base", int(value.get("initiative", CreatureRules.ability_modifier(int(stat_block.get("dex", 10)))))
+			- int(value.get("initiative_bonus", 0))
+		)),
 		"abilities": _normalize_abilities(value.get("abilities", {}), stat_block),
 		"ability_bonuses": _normalize_ability_bonuses(value.get("ability_bonuses", {})),
 		"resource_tracker_spent": value.get("resource_tracker_spent", {}).duplicate(true) if value.get("resource_tracker_spent", {}) is Dictionary else {},
@@ -276,6 +290,8 @@ func normalize_creature(value: Dictionary) -> Dictionary:
 		"linked_token_name": String(value.get("linked_token_name", ""))
 	}
 	result["max_hp"] = maxi(0, int(result["max_hp_base"]) + int(result["max_hp_bonus"]))
+	result["armor_class"] = maxi(0, int(result["armor_class_base"]) + int(result["armor_class_bonus"]))
+	result["initiative"] = int(result["initiative_base"]) + int(result["initiative_bonus"])
 	if not bool(result["speed_is_custom"]):
 		result["speed_base"] = CreatureRules.walking_speed(stat_block.get("speed", 30))
 	result["speed"] = maxi(0, int(result["speed_base"]) + int(result["speed_bonus"]))
