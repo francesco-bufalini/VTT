@@ -32,6 +32,64 @@ static func grants(record: Dictionary) -> Array[Dictionary]:
 	return result
 
 
+# The old editable compensation boxes become ordinary manual-source grants on
+# first normalization. Migration is idempotent and preserves the final total.
+static func migrate_legacy(record: Dictionary) -> void:
+	var rows: Array[Dictionary] = grants(record)
+	for mapping: Dictionary in [
+		{"field": "max_hp_bonus", "target": "hp"},
+		{"field": "armor_class_bonus", "target": "ac"},
+		{"field": "initiative_bonus", "target": "initiative"},
+		{"field": "speed_bonus", "target": "speed"}
+	]:
+		var field: String = String(mapping["field"])
+		var amount: int = int(record.get(field, 0))
+		_add_migrated(rows, String(mapping["target"]), amount)
+		record[field] = 0
+	var scores: Dictionary = record.get("ability_bonuses", {}).duplicate(true)
+	for ability: String in ABILITIES:
+		_add_migrated(rows, "ability:" + ability, int(scores.get(ability, 0)))
+		scores[ability] = 0
+	record["ability_bonuses"] = scores
+	var slots: Variant = record.get("spell_slots_bonus", [])
+	if slots is Array:
+		var cleaned: Array = (slots as Array).duplicate(true)
+		for level: int in range(1, mini(cleaned.size(), 10)):
+			_add_migrated(rows, "slot:" + str(level), int(cleaned[level]))
+			cleaned[level] = 0
+		record["spell_slots_bonus"] = cleaned
+	_add_migrated(rows, "pact_slot", int(record.get("pact_slots_bonus", 0)))
+	record["pact_slots_bonus"] = 0
+	var overrides: Variant = record.get("attack_overrides", {})
+	if overrides is Dictionary:
+		var cleaned_overrides: Dictionary = (overrides as Dictionary).duplicate(true)
+		for attack_id: Variant in cleaned_overrides.keys():
+			var settings: Variant = cleaned_overrides[attack_id]
+			if not settings is Dictionary:
+				continue
+			var entry: Dictionary = settings as Dictionary
+			_add_migrated(rows, "attack_hit:" + String(attack_id), int(entry.get("bonus", 0)))
+			_add_migrated(rows, "attack_damage:" + String(attack_id), int(entry.get("bonus", 0)))
+			_add_migrated(rows, "attack_range:" + String(attack_id), int(entry.get("range_bonus", 0)))
+			entry["bonus"] = 0
+			entry["range_bonus"] = 0
+			cleaned_overrides[attack_id] = entry
+		record["attack_overrides"] = cleaned_overrides
+	record["formula_bonuses"] = rows
+
+
+static func _add_migrated(rows: Array[Dictionary], target: String, amount: int) -> void:
+	if amount == 0:
+		return
+	for row: Dictionary in rows:
+		if String(row.get("id", "")) == "legacy|" + target:
+			return
+	rows.append({
+		"id": "legacy|" + target, "target": target, "expression": str(amount),
+		"origin_id": "", "origin_name": "Bonus manuale precedente", "disabled": false
+	})
+
+
 static func available_origins(record: Dictionary) -> Array[Dictionary]:
 	var results: Array[Dictionary] = []
 	var seen: Dictionary = {}
