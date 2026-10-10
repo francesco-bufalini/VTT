@@ -395,7 +395,7 @@ static func _append(
 		"origin": origin, "origin_key": origin_key,
 		"book": String(feature.get("source", "")),
 		"class_name": class_label, "class_source": class_book,
-		"entries": description
+		"entries": description, "bonuses": feature.get("bonuses", [])
 	})
 
 
