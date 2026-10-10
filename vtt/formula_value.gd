@@ -19,12 +19,15 @@ func setup(label: Label, inputs: Array, captions: Array) -> void:
 	_readout.add_child(value_label)
 	value_label.add_theme_font_size_override("font_size", 17)
 	value_label.mouse_filter = Control.MOUSE_FILTER_PASS
-	var mark := Label.new()
-	mark.text = "ƒ"
-	mark.add_theme_font_size_override("font_size", 10)
-	mark.add_theme_color_override("font_color", Color(0.63, 0.72, 0.77, 0.85))
-	mark.mouse_filter = Control.MOUSE_FILTER_PASS
-	_readout.add_child(mark)
+	# A thin outline, with no fill, denotes a computed value.
+	# The detailed formula remains in the hover tooltip.
+	var outline := StyleBoxFlat.new()
+	outline.draw_center = false
+	outline.border_color = Color(0.55, 0.72, 0.81, 0.82)
+	outline.set_border_width_all(1)
+	outline.set_corner_radius_all(5)
+	outline.set_content_margin_all(4)
+	value_label.add_theme_stylebox_override("normal", outline)
 	_editor = HBoxContainer.new()
 	_editor.add_theme_constant_override("separation", 5)
 	add_child(_editor)
