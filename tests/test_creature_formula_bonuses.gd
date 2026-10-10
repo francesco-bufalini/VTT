@@ -69,11 +69,15 @@ func run() -> void:
 	migrated["initiative_bonus"] = 3
 	migrated["spell_slots_bonus"] = [0, 1, 0, 0, 0, 0, 0, 0, 0, 0]
 	migrated["attack_overrides"] = {"test": {"bonus": 2, "range_bonus": 10}}
+	migrated["resource_tracker_bonuses"] = {"rage": 2}
 	Bonuses.migrate_legacy(migrated)
 	assert(Bonuses.value(migrated, "ability:str") == 16)
 	assert(Bonuses.value(migrated, "initiative") == 4)
 	assert(Bonuses.add(migrated, "slot:1", 2) == 3)
 	assert(Attacks.range_for(migrated, {"id": "test", "range_feet": 30}) == 40)
+	assert(Bonuses.add(migrated, "tracker:rage", 3) == 5
+		and migrated.get("resource_tracker_bonuses", {}).is_empty(),
+		"Structured resource maxima must also migrate to cumulative origin grants")
 	var saved: String = JSON.stringify(migrated)
 	var restored: Dictionary = JSON.parse_string(saved)
 	Bonuses.migrate_legacy(restored)
