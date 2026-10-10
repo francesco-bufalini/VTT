@@ -239,7 +239,7 @@ func _refresh_peers() -> void:
 	if _recipients.item_count == 0:
 		_recipients.add_item("Nessun giocatore online")
 		_recipients.set_item_disabled(0, true)
-	_send_button.disabled = true
+		_send_button.disabled = true
 	elif _selected_index() >= 0:
 		_send_button.disabled = false
 
