@@ -124,11 +124,11 @@ func run() -> void:
 		and placeable[0].id == area._current().id
 		and placeable[0].current_miniature_id == "hero_test",
 		"Context placement must include unspawned owned creatures and their saved appearance")
-	assert(area._tabs.get_tab_count() == 7, "Character sheet must expose separate statistics and general tabs")
+	assert(area._tabs.get_tab_count() == 8, "Character sheet includes proficiencies alongside statistics and general tabs")
 	var tab_titles: Array[String] = []
 	for tab_index: int in range(area._tabs.get_tab_count()):
 		tab_titles.append(area._tabs.get_tab_title(tab_index))
-	assert("Inventario" in tab_titles and "Incantesimi" in tab_titles
+	assert("Inventario" in tab_titles and "Incantesimi" in tab_titles and "Competenze" in tab_titles
 		and tab_titles[0] == "Info" and tab_titles[1] == "Statistiche")
 	assert("Risorse" not in tab_titles and area._tracker_rows.get_parent() != area._name.get_parent().get_parent()
 		and area._tracker_rows.get_parent() == area._max_hp.get_parent().get_parent().get_parent().get_parent(),

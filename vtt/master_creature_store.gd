@@ -3,6 +3,7 @@ extends RefCounted
 const CreatureRules = preload("res://vtt/creature_rules.gd")
 const ItemRules = preload("res://vtt/creature_item_rules.gd")
 const CreatureOwner = preload("res://vtt/creature_owner.gd")
+const Proficiencies = preload("res://vtt/creature_proficiency_rules.gd")
 
 const ROOT_DIR := "user://master_creatures"
 const FILE_VERSION := 2
@@ -132,6 +133,8 @@ func create_creature(stat_block: Dictionary, side: String) -> Dictionary:
 		"attacks": "",
 		"attack_ability": "str",
 		"attack_overrides": {},
+		"proficiency_choices": [],
+		"saving_throw_proficiencies": [],
 		"skill_proficiencies": [],
 		"skill_expertise": [],
 		"skill_ranks_custom": false,
@@ -235,6 +238,8 @@ func normalize_creature(value: Dictionary) -> Dictionary:
 		"attacks": String(value.get("attacks", "")),
 		"attack_ability": "dex" if String(value.get("attack_ability", "str")) == "dex" else "str",
 		"attack_overrides": value.get("attack_overrides", {}).duplicate(true) if value.get("attack_overrides", {}) is Dictionary else {},
+		"proficiency_choices": Proficiencies.choices(value),
+		"saving_throw_proficiencies": value.get("saving_throw_proficiencies", []).duplicate(true) if value.get("saving_throw_proficiencies", []) is Array else [],
 		"skill_proficiencies": value.get("skill_proficiencies", []).duplicate(true) if value.get("skill_proficiencies", []) is Array else [],
 		"skill_expertise": value.get("skill_expertise", []).duplicate(true) if value.get("skill_expertise", []) is Array else [],
 		"skill_ranks_custom": bool(value.get("skill_ranks_custom", false)),
