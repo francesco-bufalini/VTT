@@ -828,8 +828,9 @@ func _build_ui() -> void:
 		var saving_throw := Label.new()
 		saving_throw.text = "+0"
 		saving_throw.tooltip_text = "Tiro salvezza: modificatore caratteristica + competenza, se posseduta"
-		saving_throw.add_theme_font_size_override("font_size", 13)
-		saving_throw.custom_minimum_size.x = 72
+		# The proficiency icon precedes the bonus and remains legible.
+		saving_throw.add_theme_font_size_override("font_size", 17)
+		saving_throw.custom_minimum_size.x = 82
 		saving_throw.horizontal_alignment = HORIZONTAL_ALIGNMENT_LEFT
 		abilities_row.add_child(saving_throw)
 		_saving_throw_labels[ability] = saving_throw
