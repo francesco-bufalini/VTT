@@ -104,7 +104,7 @@ func run() -> void:
 	pinch.factor = 1000.0
 	camera.call("handle_top_down_navigation_input", pinch)
 	if not _check(
-		is_equal_approx(camera.size, camera.top_down_min_size),
+		is_equal_approx(camera.size, float(camera.get("top_down_min_size"))),
 		"gesture zoom must respect the minimum orthographic size"
 	):
 		return
