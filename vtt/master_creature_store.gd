@@ -356,7 +356,7 @@ func normalize_creature(value: Dictionary) -> Dictionary:
 		var unique := int(Time.get_ticks_usec())
 		result["id"] = "master_creature_%d_%d" % [now, unique]
 	Proficiencies.sync_legacy_fields(result, Proficiencies.choices(result))
-	Bonuses.migrate_legacy(result, not value.has("formula_bonuses") or not value.has("initiative_base"))
+	Bonuses.migrate_legacy(result, Bonuses.grants(value).is_empty() or not value.has("initiative_base"))
 	result["max_hp"] = maxi(0, Bonuses.value(result, "hp"))
 	result["armor_class"] = maxi(0, Bonuses.value(result, "ac"))
 	result["initiative_base"] = Bonuses.value(result, "ability_mod:dex")
