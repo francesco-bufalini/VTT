@@ -29,6 +29,10 @@ var _paper_text: Label
 var _full_image: TextureRect
 
 
+func _instance_key(item: Dictionary) -> String:
+	return String(item.get("instance_id", item.get("id", "")))
+
+
 func setup(on_change: Callable, on_status: Callable) -> void:
 	_on_change = on_change
 	_on_status = on_status
@@ -161,7 +165,7 @@ func _refresh_list() -> void:
 	var selected_id := _active_id
 	var current: PackedInt32Array = _list.get_selected_items()
 	if selected_id.is_empty() and not current.is_empty() and current[0] < _indices.size():
-		selected_id = String(_inventory[_indices[current[0]]].get("id", ""))
+		selected_id = _instance_key(_inventory[_indices[current[0]]])
 	_indices.clear()
 	_list.clear()
 	var selected_index := -1
@@ -177,7 +181,7 @@ func _refresh_list() -> void:
 		var unix_time: int = int(item.get("added_at", 0))
 		if unix_time > 0:
 			_list.set_item_tooltip(position, "Aggiunto: " + _format_date(unix_time))
-		if String(item.get("id", "")) == selected_id:
+		if _instance_key(item) == selected_id:
 			selected_index = position
 	if selected_index >= 0:
 		_list.select(selected_index)
@@ -206,7 +210,7 @@ func _add_document() -> void:
 		_status("Impossibile creare il file homebrew del documento.")
 		return
 	_inventory.append(item)
-	_active_id = String(item.get("id", ""))
+	_active_id = _instance_key(item)
 	_refresh_list()
 	_publish()
 	var selected: PackedInt32Array = _list.get_selected_items()
@@ -234,7 +238,7 @@ func _open_document(index: int) -> void:
 	_list.select(index)
 	var owned_index: int = _indices[index]
 	var item: Dictionary = _inventory[owned_index]
-	_active_id = String(item.get("id", ""))
+	_active_id = _instance_key(item)
 	var definition: Dictionary = DocumentStore.definition_for(item)
 	_loading = true
 	_title_edit.text = String(definition.get("name", item.get("name", "")))
