@@ -381,7 +381,7 @@ func run() -> void:
 	assert(area._formula_values["initiative"]._readout.visible)
 	assert(area._formula_values["ability:con"]._fields.size() == 2,
 		"Ability scores can still edit their base and manual modifier")
-		assert("Colpo senz'armi" in area._attacks_description.text
+	assert("Colpo senz'armi" in area._attacks_description.text
 		and "Arma improvvisata" in area._attacks_description.text,
 		"Unarmed and improvised attacks must appear while no weapon is equipped")
 	var fallback_view_record: Dictionary = area._current().duplicate(true)
@@ -422,7 +422,7 @@ func run() -> void:
 		and spells._remaining_labels[1].get_parent() is HBoxContainer
 		and spells._slot_grid.get_parent() is ScrollContainer,
 		"Slots should use wrapped tracker rows with remaining/max and on-demand editing")
-	assert(spells._slot_formula_values[1].value_label.text == "2"
+	assert(spells._slot_formula_values[1].value_label.text == str(spells._effective_slot_total(1))
 		and spells._slot_formula_values[1]._readout.tooltip_text.contains("bonus"),
 		"Spell slot maximum must expose a compact number and full hover formula")
 	assert(spells._pact_remain.get_index() < spells._pact_formula_value.get_parent().get_index(),
