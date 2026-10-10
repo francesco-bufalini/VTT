@@ -42,6 +42,8 @@ func run() -> void:
 		"Fighter's fixed martial weapons proficiency is a structured grant")
 	assert(Proficiencies.suggest_origins(record, "save", "str")[0].certainty == 2,
 		"Fighter's STR saving throw proficiency is structured")
+	assert(Proficiencies.suggest_origins(record, "weapon", "rapier")[0].certainty == 2,
+		"Individual martial weapons inherit the fixed category-level class suggestion")
 	assert(Proficiencies.suggest_origins(record, "save", "cha").is_empty(),
 		"Unlisted saving throw must not be inferred from text")
 	var required: Array[Dictionary] = Proficiencies.missing_structured(record)
@@ -62,12 +64,29 @@ func run() -> void:
 	assert(Proficiencies.unassigned_count(record) == 1,
 		"Unassigned pre-existing skill proficiency remains visible")
 
+	var background_record := _record()
+	background_record["background"] = "Acolyte"
+	# Legacy character sheets keep only a background name.
+	var background_sources: Array[Dictionary] = Proficiencies.suggest_origins(background_record, "skill", "insight")
+	var has_acolyte := false
+	for suggestion: Dictionary in background_sources:
+		if String(suggestion.get("group", "")) == "background" and int(suggestion.get("certainty", 0)) == 2:
+			has_acolyte = true
+	assert(has_acolyte, "Structured background proficiencies are suggested without a stored source book")
+
 	var feat_record := _record()
 	feat_record["feats_catalog"] = [{"name": "Lightly Armored", "source": "PHB", "id": "feat:lightly armored|phb|"}]
 	assert(not Proficiencies.suggest_origins(feat_record, "armor", "light").is_empty(),
 		"An acquired feat with structured armor proficiency is a suggested origin")
 	assert(Proficiencies.suggest_origins(feat_record, "armor", "heavy").is_empty(),
 		"The feat does not grant proficiency with all armor")
+	feat_record["feats_catalog"] = [{"name": "Weapon Master", "source": "PHB", "id": "feat:weapon master|phb|"}]
+	var master_suggestions: Array[Dictionary] = Proficiencies.suggest_origins(feat_record, "weapon", "rapier")
+	var feat_is_optional := false
+	for suggestion: Dictionary in master_suggestions:
+		if String(suggestion.get("group", "")) == "feat" and int(suggestion.get("certainty", 0)) == 1:
+			feat_is_optional = true
+	assert(feat_is_optional, "Weapon Master structured selectable martial weapon is only an optional source")
 
 	var legacy := _record()
 	legacy.erase("proficiency_choices")
