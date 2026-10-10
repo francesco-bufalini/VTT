@@ -318,7 +318,11 @@ func _flush_edit() -> void:
 		return
 	_dirty = false
 	_save_revision += 1
-	_inventory[owned_index]["name"] = title
+	# The shared definition has changed. Refresh saved fallback names on
+	# every copy without touching their individual date or presentation.
+	for i: int in range(_inventory.size()):
+		if String(_inventory[i].get("id", "")) == String(item.get("id", "")):
+			_inventory[i]["name"] = title
 	_dialog.title = "Documento · " + title
 	_refresh_list()
 	_publish()
