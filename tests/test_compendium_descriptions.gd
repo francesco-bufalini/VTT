@@ -43,13 +43,13 @@ func run() -> void:
 	var traits: Array[Dictionary] = Traits.collect_features(owned)
 	var found_background := false
 	var found_feat := false
-	for trait: Dictionary in traits:
-		if String(trait.get("origin", "")).begins_with("Background · Acolyte"):
+	for feature_entry: Dictionary in traits:
+		if String(feature_entry.get("origin", "")).begins_with("Background · Acolyte"):
 			found_background = true
-			assert(not String(trait.get("entries", "")).is_empty(), "Background feature has text.")
-		if String(trait.get("origin", "")).begins_with("Talento · Alert"):
+			assert(not String(feature_entry.get("entries", "")).is_empty(), "Background feature has text.")
+		if String(feature_entry.get("origin", "")).begins_with("Talento · Alert"):
 			found_feat = true
-			assert("Descrizione:" in String(trait.get("entries", "")), "Owned feat shows description.")
+			assert("Descrizione:" in String(feature_entry.get("entries", "")), "Owned feat shows description.")
 	assert(found_background and found_feat, "Tratti must contain the background and owned feat.")
 
 	var proficiency := ProficiencyTab.new()
