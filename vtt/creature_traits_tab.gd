@@ -560,11 +560,11 @@ static func _append_named_entries(
 		if name.is_empty() or (not data.has("entries") and not data.has("entry")):
 			index += 1
 			continue
-		var trait: Dictionary = data.duplicate(true)
-		trait["id"] = String(data.get("id", "section-%d" % index))
-		trait["entries"] = data.get("entries", data.get("entry", ""))
-		trait["source"] = book
-		_append(output, trait, 1, origin, origin_key, "", "", rank)
+		var feature_data: Dictionary = data.duplicate(true)
+		feature_data["id"] = String(data.get("id", "section-%d" % index))
+		feature_data["entries"] = data.get("entries", data.get("entry", ""))
+		feature_data["source"] = book
+		_append(output, feature_data, 1, origin, origin_key, "", "", rank)
 		index += 1
 
 
