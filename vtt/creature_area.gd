@@ -3416,6 +3416,14 @@ func _save() -> void:
 	var record := _current()
 	if record.is_empty():
 		return
+	# Ordinary statistic edits must not rebuild the entire feat/trait graph.
+	var previous_identity: Dictionary = {}
+	for field: String in ["species", "species_source", "species_id",
+		"subrace", "subrace_source", "subrace_id",
+		"class", "class_source", "class_id", "subclass",
+		"subclass_source", "subclass_id", "classes",
+		"background", "background_source", "background_id", "rules_version"]:
+		previous_identity[field] = record.get(field)
 	record["name"] = _name.text.strip_edges()
 	record["current_hp"] = int(_hp.value)
 	record["max_hp_base"] = int(_max_hp.value)
@@ -3530,9 +3538,15 @@ func _save() -> void:
 	record["classes"] = classes
 	_refresh_xp_minimum()
 	record["xp"] = maxi(int(_xp.value), Rules.experience_for_level(_class_xp_level()))
-	# Refresh the normalized grants only after species, background and classes
-	# have all been updated. This removes superseded racial origins immediately.
-	ProficiencyRules.reconcile_origin_dependents(record)
+	# Refresh grants only if actual identity/source selections changed,
+	# not for HP, counters, weapon range or individual stat edits.
+	var identity_changed := false
+	for field: String in previous_identity.keys():
+		if previous_identity[field] != record.get(field):
+			identity_changed = true
+			break
+	if identity_changed:
+		ProficiencyRules.reconcile_origin_dependents(record)
 	var current_grants: Array[Dictionary] = ProficiencyRules.choices(record)
 	ProficiencyRules.sync_legacy_fields(record, current_grants)
 	var saved_origins: Array[Dictionary] = []
