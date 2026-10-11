@@ -3,6 +3,7 @@ extends SceneTree
 const Proficiencies = preload("res://vtt/creature_proficiency_rules.gd")
 const ProficiencyTab = preload("res://vtt/creature_proficiencies_tab.gd")
 const Attacks = preload("res://vtt/creature_attack_data.gd")
+const Bonuses = preload("res://vtt/creature_bonus_rules.gd")
 const PlayerStore = preload("res://vtt/player_character_store.gd")
 const Traits = preload("res://vtt/creature_traits_tab.gd")
 const Catalog = preload("res://vtt/player_5etools_catalog.gd")
@@ -38,6 +39,7 @@ func _record() -> Dictionary:
 
 func run() -> void:
 	_check_index_parity()
+	_check_feat_origin_chains()
 	var record := _record()
 	var skilled: Array[Dictionary] = Proficiencies.suggest_origins(record, "skill", "athletics")
 	assert(not skilled.is_empty() and int(skilled[0]["certainty"]) == 1,
@@ -722,10 +724,89 @@ func run() -> void:
 	var unrelated := tab._rows.size()
 	tab._rows.append({"kind": "skill", "key": "nature", "origin_id": "custom|separate", "disabled": false})
 	assert(tab._group_enabled([unrelated]), "Selecting a different origin must not show active proficiencies as off")
+	# Both hidden catalog languages must appear in the 2014 picker.
+	tab.load_record(_record())
+	for expected: String in ["deep speech", "druidic"]:
+		var found := false
+		for entry: Dictionary in tab._catalog_entries_for_kind("language"):
+			if String(entry.get("key", "")) == expected:
+				found = true
+				break
+		assert(found, "Missing core/secret 5etools language: " + expected)
+	assert(Proficiencies.grant_matches([{"anyExotic": 1}], "language", "deep speech") == 1,
+		"Deep Speech is a selectable exotic language")
+	assert(Proficiencies.grant_matches([{"anyExotic": 1}], "language", "druidic") == 0,
+		"Secret Druidic must not be offered as an arbitrary exotic language")
+	tab.load_record(_record())
+	var owned_feat: Dictionary = {"id": "feat:test-source", "name": "Feat Source", "source": "HB"}
+	tab._attach_feat(owned_feat, "class|phb|fighter")
+	tab._refresh_from_current_state()
+	assert(not tab._feats.is_empty() and String(tab._feats[0].get("origin_id", "")) == "class|phb|fighter",
+		"Adding a feat to a chosen origin stores the granting source")
+	var feat_source_sid: String = Proficiencies.feat_source_id(owned_feat)
+	assert(tab._origin_exists(feat_source_sid),
+		"Even homebrew feats without a structured proficiency grant are usable origins")
+	tab._toggle_feat_grants(false, [0])
+	assert(not bool(Proficiencies.origin_enabled_map(tab._effective_record()).get(feat_source_sid, true)),
+		"Feat switch disables the source without deleting the feat")
+	tab._toggle_feat_grants(true, [0])
+	assert(bool(Proficiencies.origin_enabled_map(tab._effective_record()).get(feat_source_sid, false)),
+		"Feat switch restores the origin")
 	tab.queue_free()
 	await process_frame
 	print("PASS: automatically granted structured proficiencies, choose warnings, toggles, source highlights and migration")
 	quit()
+
+
+func _check_feat_origin_chains() -> void:
+	var record: Dictionary = _record()
+	var feat_a: Dictionary = {"id": "feat:a", "name": "A", "source": "HB",
+		"origin_id": "class|phb|fighter", "disabled": false}
+	var feat_b: Dictionary = {"id": "feat:b", "name": "B", "source": "HB",
+		"origin_id": "feat|hb|a", "disabled": false}
+	var feat_independent: Dictionary = {"id": "feat:c", "name": "Independent", "source": "HB",
+		"origin_id": "", "disabled": false}
+	record["feats_catalog"] = [feat_a, feat_b, feat_independent]
+	record["proficiency_choices"] = [
+		{"kind": "skill", "key": "arcana", "origin_id": "feat|hb|b", "disabled": false},
+		{"kind": "skill", "key": "arcana", "origin_id": "", "disabled": false},
+		{"kind": "tool", "key": "disguise kit", "origin_id": "feat|hb|a", "disabled": false}
+	]
+	record["formula_bonuses"] = [{"id": "feat:bonus", "target": "initiative",
+		"expression": "3", "origin_id": "feat|hb|b", "disabled": false}]
+	var initial: Dictionary = Proficiencies.origin_enabled_map(record)
+	assert(bool(initial.get("feat|hb|a", false)) and bool(initial.get("feat|hb|b", false))
+		and bool(initial.get("feat|hb|independent", false)),
+		"Origin-linked feat chains are active when their ancestors are active")
+	assert(Bonuses.bonus(record, "initiative") == 3,
+		"Active grandchild feat contributes a linked formula bonus")
+	record["proficiency_origins"] = [
+		{"id": "class|phb|fighter", "disabled": true, "automatic": true}]
+	var muted: Dictionary = Proficiencies.origin_enabled_map(record)
+	assert(not bool(muted.get("feat|hb|a", true)) and not bool(muted.get("feat|hb|b", true))
+		and bool(muted.get("feat|hb|independent", false)),
+		"Muting an ancestor recursively mutes feat descendants but not unrelated feats")
+	assert(not Proficiencies.has_proficiency(record, "tool", "disguise kit")
+		and Proficiencies.has_proficiency(record, "skill", "arcana"),
+		"Independent skill grants survive while the feat-derived grant is inactive")
+	assert(Bonuses.bonus(record, "initiative") == 0,
+		"Grandchild feat bonuses must not survive a muted ancestor")
+	record["proficiency_origins"] = []
+	assert(Bonuses.bonus(record, "initiative") == 3,
+		"Re-enabling the ancestor restores the full chain automatically")
+	(record["feats_catalog"] as Array)[0]["disabled"] = true
+	assert(not bool(Proficiencies.origin_enabled_map(record).get("feat|hb|b", true)),
+		"Muting a feat also mutes a feat granted by that feat")
+	assert(Bonuses.bonus(record, "initiative") == 0,
+		"Individual feat disabling also cascades into bonuses")
+	(record["feats_catalog"] as Array)[0]["disabled"] = false
+	assert(Bonuses.bonus(record, "initiative") == 3,
+		"Unmuting the feat restores dependent bonuses without rewriting them")
+	(record["feats_catalog"] as Array).remove_at(0)
+	var removed: Dictionary = Proficiencies.origin_enabled_map(record)
+	assert(not bool(removed.get("feat|hb|b", true))
+		and not Proficiencies.has_proficiency(record, "tool", "disguise kit"),
+		"Deleting a granting feat invalidates its dependent origins and grants")
 
 
 func _check_index_parity() -> void:
