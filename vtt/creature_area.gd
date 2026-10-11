@@ -3072,7 +3072,7 @@ func _save_attack_setting(attack_id: String, setting: String, value: Variant) ->
 
 func _update_defense_display() -> void:
 	var live: Dictionary = _live_stats_record()
-	if _ac != null and _ac_bonus != null and _ac_effective != null:
+	if _ac != null and _ac_effective != null:
 		var equipped: bool = not ItemRules.equipped_armor(live.get("inventory", [])).is_empty()
 		_ac.editable = not equipped
 		_ac.tooltip_text = "La CA base viene dall'armatura indossata nell'inventario" if equipped else "Classe Armatura base manuale"
@@ -3080,27 +3080,26 @@ func _update_defense_display() -> void:
 		armor_record["effective_armor_dex"] = BonusRules.value(live, "ability_mod:dex") if equipped else 0
 		var base: Dictionary = ItemRules.armor_base(armor_record)
 		var ac: int = maxi(0, BonusRules.value(live, "ac"))
-		_set_formula("ac", str(ac), "CA: %s + scudo %+d + bonus manuale %+d + origini %+d = %d" % [
+		_set_formula("ac", str(ac), "CA: %s + scudo %+d + bonus cumulabili %+d = %d" % [
 			String(base.get("description", "Base manuale")),
-			ItemRules.shield_bonus(live.get("inventory", [])), int(_ac_bonus.value),
+			ItemRules.shield_bonus(live.get("inventory", [])),
 			BonusRules.bonus(live, "ac"), ac])
-	if _initiative != null and _initiative_bonus != null and _initiative_effective != null:
+	if _initiative_effective != null:
 		var init: int = BonusRules.value(live, "initiative")
 		_set_formula("initiative", "%+d" % init,
-			"Iniziativa: modificatore DES %+d, bonus manuale %+d, bonus da origini %+d = %+d" % [
-				BonusRules.value(live, "ability_mod:dex"), int(_initiative_bonus.value),
+			"Iniziativa: modificatore DES %+d + bonus cumulabili %+d = %+d" % [
+				BonusRules.value(live, "ability_mod:dex"),
 				BonusRules.bonus(live, "initiative"), init])
 
 
 func _update_max_hp_display() -> void:
-	if _max_hp_effective == null or _max_hp_bonus == null or _max_hp == null:
+	if _max_hp_effective == null or _max_hp == null:
 		return
 	var live: Dictionary = _live_stats_record()
 	var maximum: int = maxi(0, BonusRules.value(live, "hp"))
 	_set_formula("hp", str(maximum),
-		"PF massimi: base %d %+d manuale %+d origini = %d" % [
-			int(_max_hp.value), int(_max_hp_bonus.value),
-			BonusRules.bonus(live, "hp"), maximum])
+		"PF massimi: base %d + bonus cumulabili %+d = %d" % [
+			int(_max_hp.value), BonusRules.bonus(live, "hp"), maximum])
 
 
 func _update_second_max_formula() -> void:
@@ -3279,14 +3278,12 @@ func _update_ability_modifier(ability: String) -> void:
 		"%s: floor((%d - 10) / 2) %+d bonus sul modificatore = %+d" % [
 			ability.to_upper(), score, BonusRules.bonus(live, "ability_mod:" + ability), value])
 	_set_formula("ability:" + ability, str(score),
-		"%s: base %d %+d manuale %+d bonus da origini = %d" % [
+		"%s: base %d + bonus cumulabili %+d = %d" % [
 			ability.to_upper(), int((_ability_spins[ability] as SpinBox).value),
-			int((_ability_bonus_spins[ability] as SpinBox).value),
 			BonusRules.bonus(live, "ability:" + ability), score])
-	if ability == "dex" and _initiative != null and not _loading:
+	if ability == "dex" and _initiative_effective != null and not _loading:
 		# Initiative is derived; changing the readout must not trigger a
 		# second full archive save while updating the Dexterity field.
-		_initiative.set_value_no_signal(value)
 		_update_defense_display()
 	if not _loading:
 		_refresh_skill_values(live)
@@ -3318,8 +3315,6 @@ func _save() -> void:
 	record["name"] = _name.text.strip_edges()
 	record["current_hp"] = int(_hp.value)
 	record["max_hp_base"] = int(_max_hp.value)
-	record["max_hp_bonus"] = int(_max_hp_bonus.value)
-	record["max_hp"] = maxi(0, int(_max_hp.value) + int(_max_hp_bonus.value)) # Effective value updated after all inputs
 	record["temporary_hp"] = int(_temp_hp.value)
 	record["second_form_max_hp"] = int(_second_form_max_hp.value)
 	record["second_form_hp"] = clampi(int(_second_form_hp.value), 0, int(_second_form_max_hp.value))
@@ -3335,23 +3330,12 @@ func _save() -> void:
 	record["visual_front_quarter_turns"] = _front.selected
 	record["party_id"] = _party.text.strip_edges()
 	record["armor_class_base"] = int(_ac.value)
-	record["armor_class_bonus"] = int(_ac_bonus.value)
-	record["armor_class"] = maxi(0, int(_ac.value) + int(_ac_bonus.value) + ItemRules.shield_bonus(record.get("inventory", [])))
-	record["initiative_base"] = int(_initiative.value)
-	record["initiative_bonus"] = int(_initiative_bonus.value)
-	record["initiative"] = int(_initiative.value) + int(_initiative_bonus.value)
 	record["speed_base"] = int(_speed.value)
-	record["speed_bonus"] = int(_speed_bonus.value)
-	record["speed"] = maxi(0, int(_speed.value) + int(_speed_bonus.value))
 	record["speed_is_custom"] = _speed_custom
 	var abilities: Dictionary = {}
 	for ability: String in _ability_spins.keys():
 		abilities[ability] = int((_ability_spins[ability] as SpinBox).value)
 	record["abilities"] = abilities
-	var ability_bonuses: Dictionary = {}
-	for ability: String in _ability_bonus_spins.keys():
-		ability_bonuses[ability] = int((_ability_bonus_spins[ability] as SpinBox).value)
-	record["ability_bonuses"] = ability_bonuses
 	record["attack_ability"] = "dex" if _attack_ability.selected == 1 else "str"
 	record["reach_feet"] = AttackData.active_range(record)
 	if String(record.get("kind", "")) == "monster":
@@ -3620,7 +3604,7 @@ func _change_hit_points(delta: int) -> void:
 		form_hp = int(damage_result.get("second_form_hp", form_hp))
 		hp = int(damage_result.get("current_hp", hp))
 	else:
-		hp = mini(maxi(0, int(_max_hp.value) + int(_max_hp_bonus.value)), hp + delta)
+		hp = mini(maxi(0, BonusRules.value(record, "hp")), hp + delta)
 	_loading = true
 	_temp_hp.value = temp
 	_second_form_hp.value = form_hp
@@ -4318,7 +4302,7 @@ func _complete_auto_reference(id: String, stat: Dictionary) -> void:
 		# Change only provisional defaults: explicit user edits take precedence.
 		if int(owned.get("max_hp_base", 1)) == 1:
 			owned["max_hp_base"] = completed.get("max_hp_base", 1)
-			owned["max_hp"] = maxi(0, int(owned["max_hp_base"]) + int(owned.get("max_hp_bonus", 0)))
+			owned["max_hp"] = maxi(0, BonusRules.value(owned, "hp"))
 			if int(owned.get("current_hp", 1)) == 1:
 				owned["current_hp"] = owned["max_hp"]
 		if int(owned.get("armor_class", 10)) == 10:
