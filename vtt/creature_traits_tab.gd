@@ -597,6 +597,7 @@ static func _collect_species(record: Dictionary, output: Array[Dictionary]) -> v
 	var species: String = String(record.get("species", ""))
 	var species_book: String = String(record.get("species_source", ""))
 	var species_id: String = String(record.get("species_id", ""))
+	var species_origin_id: String = "species|" + (species_id if not species_id.is_empty() else species.to_lower()) + "|" + species_book.to_lower()
 	if species.is_empty():
 		return
 	var subrace_name := String(record.get("subrace", ""))
@@ -616,7 +617,7 @@ static func _collect_species(record: Dictionary, output: Array[Dictionary]) -> v
 		_append(output, {"id": "overview", "name": "Descrizione · " + species,
 			"source": wanted_source, "entries": PlayerCatalog.description_text("races", race),
 			"feats": PlayerCatalog.detailed_entry("races", race).get("feats", race.get("feats", []))},
-			1, "Specie · " + species, "species|" + species_id + "|" + species_book, "", "", 0)
+			1, "Specie · " + species, species_origin_id, "", "", 0)
 		var raw: Variant = race.get("entries", race.get("description", []))
 		if raw is Array:
 			for index: int in range((raw as Array).size()):
@@ -628,14 +629,14 @@ static func _collect_species(record: Dictionary, output: Array[Dictionary]) -> v
 					entry_data["entries"] = (entry as Dictionary).get("entries", entry)
 					entry_data["source"] = wanted_source
 					_append(output, entry_data, maxi(1, int(entry_data.get("level", 1))),
-						"Specie · " + species, "species|" + species_id + "|" + species_book, "", "", 1)
+						"Specie · " + species, species_origin_id, "", "", 1)
 				elif entry is String and not String(entry).strip_edges().is_empty():
 					_append(output, {"name": "Tratto · %d" % (index + 1), "entries": entry, "source": species_book},
 						1, "Specie · " + species,
-						"species|" + species_id + "|" + species_book, "", "", 1)
+						species_origin_id, "", "", 1)
 		else:
 			_append(output, {"name": "Tratti della specie", "entries": raw, "source": species_book},
-				1, "Specie · " + species, "species|" + species_id + "|" + species_book, "", "", 1)
+				1, "Specie · " + species, species_origin_id, "", "", 1)
 		break
 
 
