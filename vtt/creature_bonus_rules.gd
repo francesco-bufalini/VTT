@@ -2,7 +2,6 @@ extends RefCounted
 
 # Every numeric formula target may receive several independent, additive grants.
 # "expression" is deliberately arithmetic only: no dice and no method calls.
-# Existing manual bonus fields are retained as legacy components of the base.
 const Rules = preload("res://vtt/creature_rules.gd")
 const Proficiencies = preload("res://vtt/creature_proficiency_rules.gd")
 const Skills = preload("res://vtt/creature_skills_5etools.gd")
@@ -27,7 +26,7 @@ static func _saved_grants(record: Dictionary) -> Array[Dictionary]:
 				"target": String(row.get("target", "")),
 				"expression": String(row.get("expression", "0")),
 				"origin_id": String(row.get("origin_id", "")),
-				"origin_name": String(row.get("origin_name", "Manuale")),
+				"origin_name": String(row.get("origin_name", "Senza origine")),
 				"disabled": bool(row.get("disabled", false)),
 				"automatic": bool(row.get("automatic", false)) or String(row.get("id", "")).begins_with("auto|")
 			})
@@ -47,86 +46,6 @@ static func grants(record: Dictionary) -> Array[Dictionary]:
 		result.append(automatic)
 	return result
 
-
-# The old editable compensation boxes become ordinary manual-source grants on
-# first normalization. Migration is idempotent and preserves the final total.
-static func migrate_legacy(record: Dictionary, preserve_old_initiative: bool = false) -> void:
-	var rows: Array[Dictionary] = _saved_grants(record)
-	# A legacy initiative base could be manually overridden. Convert any
-	# difference from the DEX-derived base into a separate source bonus.
-	if preserve_old_initiative:
-		var abilities: Dictionary = record.get("abilities", {})
-		var old_manual: Dictionary = record.get("ability_bonuses", {})
-		var dex: int = Rules.ability_modifier(int(abilities.get("dex", 10)) + int(old_manual.get("dex", 0)))
-		var difference: int = int(record.get("initiative_base", dex)) - dex
-		if difference != 0:
-			var found := false
-			for grant: Dictionary in rows:
-				if String(grant.get("id", "")) == "legacy|initiative_base_adjustment":
-					found = true
-					break
-			if not found:
-				rows.append({"id": "legacy|initiative_base_adjustment",
-					"target": "initiative", "expression": str(difference),
-					"origin_id": "", "origin_name": "Correzione iniziativa precedente",
-					"disabled": false})
-	for mapping: Dictionary in [
-		{"field": "max_hp_bonus", "target": "hp"},
-		{"field": "armor_class_bonus", "target": "ac"},
-		{"field": "initiative_bonus", "target": "initiative"},
-		{"field": "speed_bonus", "target": "speed"}
-	]:
-		var field: String = String(mapping["field"])
-		var amount: int = int(record.get(field, 0))
-		_add_migrated(rows, String(mapping["target"]), amount)
-		record[field] = 0
-	var scores: Dictionary = record.get("ability_bonuses", {}).duplicate(true)
-	for ability: String in ABILITIES:
-		_add_migrated(rows, "ability:" + ability, int(scores.get(ability, 0)))
-		scores[ability] = 0
-	record["ability_bonuses"] = scores
-	var slots: Variant = record.get("spell_slots_bonus", [])
-	if slots is Array:
-		var cleaned: Array = (slots as Array).duplicate(true)
-		for level: int in range(1, mini(cleaned.size(), 10)):
-			_add_migrated(rows, "slot:" + str(level), int(cleaned[level]))
-			cleaned[level] = 0
-		record["spell_slots_bonus"] = cleaned
-	_add_migrated(rows, "pact_slot", int(record.get("pact_slots_bonus", 0)))
-	record["pact_slots_bonus"] = 0
-	var tracker_bonuses: Variant = record.get("resource_tracker_bonuses", {})
-	if tracker_bonuses is Dictionary:
-		for tracker_id: Variant in (tracker_bonuses as Dictionary).keys():
-			_add_migrated(rows, "tracker:" + String(tracker_id), int(tracker_bonuses[tracker_id]))
-		record["resource_tracker_bonuses"] = {}
-	var overrides: Variant = record.get("attack_overrides", {})
-	if overrides is Dictionary:
-		var cleaned_overrides: Dictionary = (overrides as Dictionary).duplicate(true)
-		for attack_id: Variant in cleaned_overrides.keys():
-			var settings: Variant = cleaned_overrides[attack_id]
-			if not settings is Dictionary:
-				continue
-			var entry: Dictionary = settings as Dictionary
-			_add_migrated(rows, "attack_hit:" + String(attack_id), int(entry.get("bonus", 0)))
-			_add_migrated(rows, "attack_damage:" + String(attack_id), int(entry.get("bonus", 0)))
-			_add_migrated(rows, "attack_range:" + String(attack_id), int(entry.get("range_bonus", 0)))
-			entry["bonus"] = 0
-			entry["range_bonus"] = 0
-			cleaned_overrides[attack_id] = entry
-		record["attack_overrides"] = cleaned_overrides
-	record["formula_bonuses"] = rows
-
-
-static func _add_migrated(rows: Array[Dictionary], target: String, amount: int) -> void:
-	if amount == 0:
-		return
-	for row: Dictionary in rows:
-		if String(row.get("id", "")) == "legacy|" + target:
-			return
-	rows.append({
-		"id": "legacy|" + target, "target": target, "expression": str(amount),
-		"origin_id": "", "origin_name": "Bonus manuale precedente", "disabled": false
-	})
 
 
 static func available_origins(record: Dictionary) -> Array[Dictionary]:
@@ -310,11 +229,10 @@ static func _evaluate_expression(record: Dictionary, expression: String, stack: 
 
 static func _base(record: Dictionary, target: String, stack: Dictionary) -> Dictionary:
 	var abilities: Dictionary = record.get("abilities", {})
-	var legacy: Dictionary = record.get("ability_bonuses", {})
 	if target.begins_with("ability:"):
 		var ability: String = target.substr(8)
 		if ability in ABILITIES:
-			return {"ok": true, "value": int(abilities.get(ability, 10)) + int(legacy.get(ability, 0))}
+			return {"ok": true, "value": int(abilities.get(ability, 10))}
 	if target.begins_with("ability_mod:"):
 		var ability: String = target.substr(12)
 		if ability in ABILITIES:
@@ -333,7 +251,7 @@ static func _base(record: Dictionary, target: String, stack: Dictionary) -> Dict
 		var dex: Dictionary = _resolve(record, "ability_mod:dex", stack)
 		if not bool(dex.get("ok", false)):
 			return dex
-		return {"ok": true, "value": int(dex["value"]) + int(record.get("initiative_bonus", 0))}
+		return {"ok": true, "value": int(dex["value"])}
 	if target == "ac":
 		var armor_record: Dictionary = record
 		var armor := Items.equipped_armor(record.get("inventory", []))
@@ -343,11 +261,11 @@ static func _base(record: Dictionary, target: String, stack: Dictionary) -> Dict
 				return dex
 			armor_record = record.duplicate(false)
 			armor_record["effective_armor_dex"] = int(dex["value"])
-		return {"ok": true, "value": int(Items.armor_base(armor_record).get("value", 10)) + int(record.get("armor_class_bonus", 0)) + Items.shield_bonus(record.get("inventory", []))}
+		return {"ok": true, "value": int(Items.armor_base(armor_record).get("value", 10)) + Items.shield_bonus(record.get("inventory", []))}
 	if target == "speed":
-		return {"ok": true, "value": int(record.get("speed_base", record.get("speed", 30))) + int(record.get("speed_bonus", 0))}
+		return {"ok": true, "value": int(record.get("speed_base", record.get("speed", 30)))}
 	if target == "hp":
-		return {"ok": true, "value": int(record.get("max_hp_base", record.get("max_hp", 1))) + int(record.get("max_hp_bonus", 0))}
+		return {"ok": true, "value": int(record.get("max_hp_base", record.get("max_hp", 1)))}
 	if target == "second_max":
 		return {"ok": true, "value": int(record.get("second_form_max_hp", 0))}
 	if target.begins_with("save:"):
@@ -421,7 +339,7 @@ static func _sum(record: Dictionary, target: String, stack: Dictionary) -> Dicti
 		var sid: String = String(row.get("origin_id", ""))
 		if not _origin_active(sid, enabled):
 			continue
-		var origin: String = String(row.get("origin_name", "Manuale"))
+		var origin: String = String(row.get("origin_name", "Senza origine"))
 		# Reject cyclic grants consistently, not only whichever one happens to
 		# hit _resolve's recursion guard first. Other additive grants survive.
 		if _would_cycle(record, target, String(row.get("expression", "0")), all_grants, enabled):
