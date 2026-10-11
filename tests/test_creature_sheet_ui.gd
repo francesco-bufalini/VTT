@@ -307,8 +307,8 @@ func run() -> void:
 	bonus_rows.append({"id": "test-con", "target": "ability:con", "expression": "2",
 		"origin_id": "", "origin_name": "UI test", "disabled": false})
 	area._on_bonuses_updated(bonus_rows, area._current().get("proficiency_origins", []))
-	assert(area._current().ability_bonuses.con == 0 and Bonuses.value(area._current(), "ability:con") == 12,
-		"Legacy compensation must be represented by an additive source grant")
+	assert(Bonuses.value(area._current(), "ability:con") == 12,
+		"An originless CON grant must modify the effective score")
 	assert(area._ability_modifier_labels["con"].text == "+1")
 	assert(Rules.automatic_hit_points(area._with_effective_modifiers(area._current())).value == 27,
 		"CON score bonus must change computed HP")
@@ -597,8 +597,7 @@ func run() -> void:
 		"id": "test-slot", "target": "slot:1", "expression": "2",
 		"origin_id": "", "origin_name": "UI test"
 	}], area._current().get("proficiency_origins", []))
-	assert(area._current().spell_slots_bonus[1] == 0
-		and Bonuses.bonus(area._current(), "slot:1") == 2
+	assert(Bonuses.bonus(area._current(), "slot:1") == 2
 		and spells._remaining_labels[1].text == "6 /"
 		and spells._slot_formula_values[1].value_label.text == "6",
 		"Spell slot bonuses stack on the maximum and persist independently of the base")
@@ -695,15 +694,17 @@ func run() -> void:
 	inventory._remove_selected()
 	assert(area._current().inventory.is_empty())
 	area._ac.value = 15
-	area._ac_bonus.value = 2
-	area._initiative_bonus.value = 3
 	area._save()
+	var combat_bonus_rows: Array = area._current().get("formula_bonuses", []).duplicate(true)
+	combat_bonus_rows.append({"id": "ui-ac", "target": "ac", "expression": "2", "origin_id": ""})
+	combat_bonus_rows.append({"id": "ui-initiative", "target": "initiative", "expression": "3", "origin_id": ""})
+	area._on_bonuses_updated(combat_bonus_rows, area._current().get("proficiency_origins", []))
 	assert(area._current().armor_class_base == 15
 		and Bonuses.bonus(area._current(), "ac") == 2
 		and area._current().armor_class == 17,
 		"CA must persist its static base and additive origin bonus separately")
-	assert(area._current().initiative == int(area._initiative.value) + 3,
-		"Initiative must include its manual bonus")
+	assert(area._current().initiative == Bonuses.value(area._current(), "ability_mod:dex") + 3,
+		"Initiative must include its originless grant")
 	area._reload()
 	assert(Bonuses.bonus(area._current(), "ac") == 2
 		and Bonuses.bonus(area._current(), "initiative") == 3
@@ -760,10 +761,13 @@ func run() -> void:
 		"Dice HP popup must use the existing chat roller")
 	area._size_choice.select(3)
 	area._save_attack_setting("unarmed", "range_feet", 15)
-	area._save_attack_setting("unarmed", "bonus", 2)
 	area._front.select(2)
 	area._party.text = "Explorers"
 	area._save()
+	var attack_bonus_rows: Array = area._current().get("formula_bonuses", []).duplicate(true)
+	attack_bonus_rows.append({"id": "ui-hit", "target": "attack_hit:unarmed", "expression": "2", "origin_id": ""})
+	attack_bonus_rows.append({"id": "ui-damage", "target": "attack_damage:unarmed", "expression": "2", "origin_id": ""})
+	area._on_bonuses_updated(attack_bonus_rows, area._current().get("proficiency_origins", []))
 	area._reload()
 	assert(area._current().size_name == "Large" and area._current().footprint == 2.0)
 	assert(area._current().reach_feet == 15 and area._current().visual_front_quarter_turns == 2)
