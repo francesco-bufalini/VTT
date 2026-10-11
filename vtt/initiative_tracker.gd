@@ -1003,7 +1003,10 @@ func combat_round_for_token(token: Node3D) -> int:
 
 
 func get_save_state() -> Dictionary:
-	_synchronize_linked_entry_names()
+	# Diagnostic branch only. Test whether repeated archive normalization in
+	# map snapshots causes frame stalls when a character sheet exists.
+	if OS.get_environment("VTT_PERF_SKIP_INITIATIVE_ARCHIVE") != "1":
+		_synchronize_linked_entry_names()
 	return {
 		"version": 1,
 		"active": combat_active,
