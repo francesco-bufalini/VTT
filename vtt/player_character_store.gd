@@ -133,7 +133,6 @@ func create_character() -> Dictionary:
 		"party_id": "",
 		"classes": [],
 		"resource_tracker_spent": {},
-		"resource_tracker_bonuses": {},
 		"conditions": [],
 		"transfer_revision": 0,
 		"species_id": "",
@@ -159,7 +158,6 @@ func create_character() -> Dictionary:
 		"alignment": "",
 		"sex": "",
 		"inspiration": false,
-		"ability_bonuses": {"str": 0, "dex": 0, "con": 0, "int": 0, "wis": 0, "cha": 0},
 		"abilities": {
 			"str": 10,
 			"dex": 10,
@@ -173,19 +171,15 @@ func create_character() -> Dictionary:
 		"skill_expertise": [],
 		"armor_class": 10,
 		"armor_class_base": 10,
-		"armor_class_bonus": 0,
 		"temporary_ac": 0,
 		"initiative": 0,
 		"initiative_base": 0,
-		"initiative_bonus": 0,
 		"max_hp": 1,
 		"max_hp_base": 1,
-		"max_hp_bonus": 0,
 		"current_hp": 1,
 		"temporary_hp": 0,
 		"second_form_hp": 0,
 		"second_form_max_hp": 0,
-		"speed_bonus": 0,
 		"speed_base": 30,
 		"background_personality": "",
 		"speed": 30,
@@ -251,12 +245,10 @@ func create_character() -> Dictionary:
 		"spell_slots_total": [
 			0, 0, 0, 0, 0, 0, 0, 0, 0, 0
 		],
-		"spell_slots_bonus": [0, 0, 0, 0, 0, 0, 0, 0, 0, 0],
 		"spell_slots_spent": [
 			0, 0, 0, 0, 0, 0, 0, 0, 0, 0
 		],
 		"pact_slots_total": 0,
-		"pact_slots_bonus": 0,
 		"pact_slots_spent": 0,
 		"pact_slot_level": 1,
 		"spell_slots_visible": true,
@@ -277,28 +269,12 @@ func normalize_character(value: Dictionary) -> Dictionary:
 		if value.has(key):
 			defaults[key] = value[key]
 
-	# Legacy records contain only the effective totals. Migrate them to
-	# separate base and manual bonus fields without changing the result.
-	defaults["armor_class_bonus"] = clampi(int(value.get("armor_class_bonus", 0)), -99, 99)
-	defaults["armor_class_base"] = maxi(0, int(value.get(
-		"armor_class_base", int(value.get("armor_class", 10)) - int(defaults["armor_class_bonus"])
-	)))
-	defaults["armor_class"] = maxi(0, int(defaults["armor_class_base"]) + int(defaults["armor_class_bonus"]) + ItemRules.shield_bonus(defaults.get("inventory", [])))
-	defaults["initiative_bonus"] = clampi(int(value.get("initiative_bonus", 0)), -99, 99)
-	defaults["initiative_base"] = int(value.get(
-		"initiative_base", int(value.get("initiative", 0)) - int(defaults["initiative_bonus"])
-	))
-	defaults["initiative"] = int(defaults["initiative_base"]) + int(defaults["initiative_bonus"])
+	defaults["armor_class_base"] = maxi(0, int(value.get("armor_class_base", value.get("armor_class", 10))))
+	defaults["initiative_base"] = 0
 
 	# Persistent usage counters survive reloads and level changes.
 	if not defaults.get("resource_tracker_spent", {}) is Dictionary:
 		defaults["resource_tracker_spent"] = {}
-	var tracker_bonuses: Dictionary = {}
-	var saved_bonuses: Variant = value.get("resource_tracker_bonuses", {})
-	if saved_bonuses is Dictionary:
-		for tracker_id: Variant in (saved_bonuses as Dictionary).keys():
-			tracker_bonuses[String(tracker_id)] = clampi(int(saved_bonuses[tracker_id]), -999, 9999)
-	defaults["resource_tracker_bonuses"] = tracker_bonuses
 
 	var abilities_value: Variant = value.get("abilities", {})
 	if abilities_value is Dictionary:
@@ -311,14 +287,6 @@ func normalize_character(value: Dictionary) -> Dictionary:
 			)
 		defaults["abilities"] = abilities
 
-	var ability_bonuses: Dictionary = {}
-	var raw_bonuses: Variant = value.get("ability_bonuses", {})
-	for ability_id: String in ["str", "dex", "con", "int", "wis", "cha"]:
-		ability_bonuses[ability_id] = clampi(
-			int((raw_bonuses as Dictionary).get(ability_id, 0))
-			if raw_bonuses is Dictionary else 0, -30, 30
-		)
-	defaults["ability_bonuses"] = ability_bonuses
 
 	for array_key: String in [
 		"conditions",
@@ -348,13 +316,12 @@ func normalize_character(value: Dictionary) -> Dictionary:
 	defaults["pact_slots_visible"] = bool(defaults.get("pact_slots_visible", true))
 	# A character can track Pact Magic separately from shared spell slots.
 	defaults["pact_slots_total"] = maxi(0, int(defaults.get("pact_slots_total", 0)))
-	defaults["pact_slots_bonus"] = clampi(int(defaults.get("pact_slots_bonus", 0)), -8, 20)
 	defaults["pact_slots_spent"] = clampi(
 		int(defaults.get("pact_slots_spent", 0)),
-		0, maxi(0, int(defaults["pact_slots_total"]) + int(defaults["pact_slots_bonus"]))
+		0, maxi(0, int(defaults["pact_slots_total"]))
 	)
 	defaults["pact_slot_level"] = clampi(int(defaults.get("pact_slot_level", 1)), 1, 5)
-	for slots_key: String in ["spell_slots_total", "spell_slots_spent", "spell_slots_bonus"]:
+	for slots_key: String in ["spell_slots_total", "spell_slots_spent"]:
 		var slots_value: Variant = defaults.get(slots_key, [])
 		var slots: Array = slots_value if slots_value is Array else []
 		while slots.size() < 10:
@@ -362,11 +329,7 @@ func normalize_character(value: Dictionary) -> Dictionary:
 		if slots.size() > 10:
 			slots.resize(10)
 		for index: int in range(slots.size()):
-			slots[index] = (
-				clampi(int(slots[index]), -99, 99)
-				if slots_key == "spell_slots_bonus"
-				else maxi(0, int(slots[index]))
-			)
+			slots[index] = maxi(0, int(slots[index]))
 		defaults[slots_key] = slots
 
 	defaults["owner_id"] = String(defaults.get("owner_id", CreatureOwner.local_id()))
@@ -392,11 +355,8 @@ func normalize_character(value: Dictionary) -> Dictionary:
 			defaults["subclass"] = String((first_class as Dictionary).get("subclass", ""))
 			defaults["subclass_source"] = String((first_class as Dictionary).get("subclass_source", ""))
 			defaults["subclass_id"] = String((first_class as Dictionary).get("subclass_id", ""))
-	defaults["max_hp_bonus"] = clampi(int(value.get("max_hp_bonus", 0)), -9999, 99999)
-	defaults["max_hp_base"] = maxi(0, int(value.get(
-		"max_hp_base", int(value.get("max_hp", 1)) - int(defaults["max_hp_bonus"])
-	)))
-	defaults["max_hp"] = maxi(0, int(defaults["max_hp_base"]) + int(defaults["max_hp_bonus"]))
+	defaults["max_hp_base"] = maxi(0, int(value.get("max_hp_base", value.get("max_hp", 1))))
+	defaults["max_hp"] = int(defaults["max_hp_base"])
 	defaults["current_hp"] = int(defaults.get("current_hp", 1))
 	defaults["temporary_hp"] = maxi(0, int(defaults.get("temporary_hp", 0)))
 	defaults["second_form_max_hp"] = maxi(0, int(defaults.get("second_form_max_hp", defaults.get("second_form_hp", 0))))
@@ -419,13 +379,11 @@ func normalize_character(value: Dictionary) -> Dictionary:
 	defaults["visual_front_quarter_turns"] = clampi(int(defaults.get("visual_front_quarter_turns", 0)), 0, 3)
 	defaults["party_id"] = String(defaults.get("party_id", ""))
 	defaults["armor_class"] = maxi(0, int(defaults.get("armor_class", 10)))
-	defaults["speed_bonus"] = clampi(int(defaults.get("speed_bonus", 0)), -999, 999)
-	defaults["speed_base"] = maxi(0, int(value.get("speed_base", int(defaults.get("speed", 30)) - int(defaults["speed_bonus"]))))
-	defaults["speed"] = maxi(0, int(defaults["speed_base"]) + int(defaults["speed_bonus"]))
+	defaults["speed_base"] = maxi(0, int(value.get("speed_base", value.get("speed", 30))))
+	defaults["speed"] = int(defaults["speed_base"])
 	defaults["speed_is_custom"] = bool(defaults.get("speed_is_custom", false))
 	defaults["darkvision"] = maxi(0, int(defaults.get("darkvision", 0)))
 	defaults["exhaustion"] = clampi(int(defaults.get("exhaustion", 0)), 0, 6)
-	Bonuses.migrate_legacy(defaults, value.has("initiative") and (Bonuses.grants(value).is_empty() or not value.has("initiative_base")))
 	defaults["max_hp"] = maxi(0, Bonuses.value(defaults, "hp"))
 	defaults["armor_class"] = maxi(0, Bonuses.value(defaults, "ac"))
 	defaults["initiative_base"] = Bonuses.value(defaults, "ability_mod:dex")
