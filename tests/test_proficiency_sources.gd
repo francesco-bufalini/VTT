@@ -2,6 +2,7 @@ extends SceneTree
 
 const Proficiencies = preload("res://vtt/creature_proficiency_rules.gd")
 const ProficiencyTab = preload("res://vtt/creature_proficiencies_tab.gd")
+const FeatsTab = preload("res://vtt/creature_feats_tab.gd")
 const Attacks = preload("res://vtt/creature_attack_data.gd")
 const Bonuses = preload("res://vtt/creature_bonus_rules.gd")
 const PlayerStore = preload("res://vtt/player_character_store.gd")
@@ -737,21 +738,47 @@ func run() -> void:
 		"Deep Speech is a selectable exotic language")
 	assert(Proficiencies.grant_matches([{"anyExotic": 1}], "language", "druidic") == 0,
 		"Secret Druidic must not be offered as an arbitrary exotic language")
-	tab.load_record(_record())
+	# Feats have a separate full-width section with the same columns/cards.
+	var feats_editor := FeatsTab.new()
+	root.add_child(feats_editor)
+	var feat_changes: Array = []
+	feats_editor.setup(func(feats: Array, origins: Array) -> void:
+		feat_changes.append({"feats": feats, "origins": origins})
+	)
+	feats_editor.load_record(_record())
+	assert(feats_editor._origin_cards != null and feats_editor._feat_cards != null
+		and feats_editor.get_child(1) is HBoxContainer,
+		"Talenti must have the same two-column origins/grants layout as Competenze and Bonus")
 	var owned_feat: Dictionary = {"id": "feat:test-source", "name": "Feat Source", "source": "HB"}
-	tab._attach_feat(owned_feat, "class|phb|fighter")
-	tab._refresh_from_current_state()
-	assert(not tab._feats.is_empty() and String(tab._feats[0].get("origin_id", "")) == "class|phb|fighter",
-		"Adding a feat to a chosen origin stores the granting source")
+	feats_editor._feats.append({"id": owned_feat.id, "name": owned_feat.name,
+		"source": owned_feat.source, "origin_id": "class|phb|fighter", "disabled": false})
+	feats_editor._publish()
+	assert(not feat_changes.is_empty() and String(feat_changes.back().feats[0].get("origin_id", "")) == "class|phb|fighter",
+		"Adding a feat to an origin persists the source")
 	var feat_source_sid: String = Proficiencies.feat_source_id(owned_feat)
-	assert(tab._origin_exists(feat_source_sid),
-		"Even homebrew feats without a structured proficiency grant are usable origins")
-	tab._toggle_feat_grants(false, [0])
-	assert(not bool(Proficiencies.origin_enabled_map(tab._effective_record()).get(feat_source_sid, true)),
-		"Feat switch disables the source without deleting the feat")
-	tab._toggle_feat_grants(true, [0])
-	assert(bool(Proficiencies.origin_enabled_map(tab._effective_record()).get(feat_source_sid, false)),
-		"Feat switch restores the origin")
+	assert(feats_editor._has_origin(feat_source_sid),
+		"Even homebrew feats without structured proficiency grants become origins")
+	var found_feat_card := false
+	for card: Node in feats_editor._feat_cards.get_children():
+		if not card is PanelContainer:
+			continue
+		var line: Node = card.get_child(0)
+		var has_toggle := false
+		var has_remove := false
+		for child: Node in line.get_children():
+			if child is CheckButton:
+				has_toggle = true
+			elif child is Button and (child as Button).text == "✕":
+				has_remove = true
+		found_feat_card = has_toggle and has_remove and (card as PanelContainer).has_theme_stylebox_override("panel")
+	assert(found_feat_card, "Feat cards use the same outlined styling, power toggle and removal as proficiencies")
+	feats_editor._toggle_grants(false, [0])
+	assert(not bool(Proficiencies.origin_enabled_map(feats_editor._effective_record()).get(feat_source_sid, true)),
+		"Muting the feat disables its origin and all descendants")
+	feats_editor._toggle_grants(true, [0])
+	assert(bool(Proficiencies.origin_enabled_map(feats_editor._effective_record()).get(feat_source_sid, false)),
+		"Unmuting the feat restores the origin")
+	feats_editor.queue_free()
 	tab.queue_free()
 	await process_frame
 	print("PASS: automatically granted structured proficiencies, choose warnings, toggles, source highlights and migration")
