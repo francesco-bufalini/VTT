@@ -853,7 +853,78 @@ static func _live_origin_ids(record: Dictionary) -> Dictionary:
 	return live
 
 
+# 5etools uses the structured "feats" field for fixed grants as well as
+# choose/any options. Only fixed references are created automatically;
+# selectable variants remain choices for the user, not guessed feats.
+static func _fixed_feat_refs(value: Variant) -> Array[Dictionary]:
+	var result: Array[Dictionary] = []
+	if value is String:
+		var token: String = String(value).strip_edges()
+		if token.is_empty():
+			return result
+		var parts: PackedStringArray = token.split("|")
+		result.append({"name": parts[0], "source": parts[1] if parts.size() > 1 else ""})
+	elif value is Array:
+		for part: Variant in value:
+			result.append_array(_fixed_feat_refs(part))
+	elif value is Dictionary:
+		var data: Dictionary = value
+		if data.has("name"):
+			result.append({"name": String(data.get("name", "")), "source": String(data.get("source", ""))})
+		else:
+			for key: String in data.keys():
+				if key in ["choose", "any", "count", "from", "weighted"]:
+					continue
+				if data[key] is bool and not bool(data[key]):
+					continue
+				if data[key] is Dictionary or data[key] is Array:
+					continue
+				result.append_array(_fixed_feat_refs(key))
+	return result
+
+
+static func _grant_fixed_feats(record: Dictionary) -> void:
+	var feats: Array = record.get("feats_catalog", []).duplicate(true)
+	# An inherited feat can itself carry a structured grant. Iterate until
+	# no new grant appears, with identity+parent deduplication for cycles.
+	for _pass: int in range(20):
+		record["feats_catalog"] = feats
+		var sources: Array[Dictionary] = trait_origins(record, true)
+		var additions := 0
+		var feat_catalog: Array[Dictionary] = []
+		for source: Dictionary in sources:
+			var sid: String = String(source.get("id", ""))
+			for ref: Dictionary in _fixed_feat_refs(source.get("feats", [])):
+				var feat_name: String = String(ref.get("name", ""))
+				var feat_book: String = String(ref.get("source", ""))
+				if feat_name.is_empty():
+					continue
+				if feat_catalog.is_empty():
+					feat_catalog = Catalog.entries("feats")
+				for candidate: Dictionary in feat_catalog:
+					if String(candidate.get("name", "")).nocasecmp_to(feat_name) != 0:
+						continue
+					if not feat_book.is_empty() and String(candidate.get("source", "")).nocasecmp_to(feat_book) != 0:
+						continue
+					var duplicate := false
+					for owned: Variant in feats:
+						if owned is Dictionary and feat_source_id(owned) == feat_source_id(candidate) and String(owned.get("origin_id", "")) == sid:
+							duplicate = true
+							break
+					if not duplicate:
+						feats.append({"id": candidate.get("id", ""),
+							"name": candidate.get("name", ""), "source": candidate.get("source", ""),
+							"origin_id": sid, "origin_name": source.get("name", ""),
+							"automatic": true, "disabled": false})
+						additions += 1
+					break
+		if additions == 0:
+			break
+	record["feats_catalog"] = feats
+
+
 static func reconcile_origin_dependents(record: Dictionary) -> void:
+	_grant_fixed_feats(record)
 	# Iterative fixed point: a deleted item may have granted a feat which
 	# granted another feat, a competence, and a formula bonus.
 	var feats: Array = record.get("feats_catalog", []).duplicate(true)
