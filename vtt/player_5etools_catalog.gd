@@ -67,7 +67,7 @@ static func detailed_entry(category: String, entry: Dictionary) -> Dictionary:
 	var raw: Variant = indexed.get(_description_key(lookup_category, entry), {})
 	if raw is Dictionary:
 		var detail: Dictionary = raw
-		for field: String in ["entries", "fluff"]:
+		for field: String in ["entries", "fluff", "feats"]:
 			if (not output.has(field) or output.get(field) in [null, "", []]) and detail.has(field):
 				output[field] = detail[field]
 	return output
