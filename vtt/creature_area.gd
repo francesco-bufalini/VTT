@@ -1001,13 +1001,13 @@ func _build_ui() -> void:
 	species_row.add_theme_constant_override("h_separation", 6)
 	identity_box.add_child(species_row)
 	_add_label(species_row, "Razza / Specie")
-	_species = _reference_option(species_row, RaceRules.base_races(), true, false)
+	_species = _reference_option(species_row, RaceRules.base_races(), true, false, "races")
 	_species.custom_minimum_size.x = 150
 	_species.item_selected.connect(func(_index: int) -> void: _on_species_changed())
 	_subrace_caption = Label.new()
 	_subrace_caption.text = "Sottorazza"
 	species_row.add_child(_subrace_caption)
-	_subrace_choice = _reference_option(species_row, [], true, false)
+	_subrace_choice = _reference_option(species_row, [], true, false, "races")
 	_subrace_choice.custom_minimum_size.x = 135
 	_subrace_choice.tooltip_text = "Solo le sottorazze della razza selezionata, in base a raceName e raceSource."
 	_subrace_choice.item_selected.connect(func(_index: int) -> void: _on_subrace_changed())
@@ -1031,8 +1031,8 @@ func _build_ui() -> void:
 	var background_row := HBoxContainer.new()
 	identity_box.add_child(background_row)
 	_add_label(background_row, "Background")
-	_background = _reference_option(background_row, Player5eTools.entries("backgrounds"))
-	_background.tooltip_text = "Background strutturato del personaggio: competenze e scelte ottenute dai dati 5etools."
+	_background = _reference_option(background_row, Player5eTools.entries("backgrounds"), true, true, "backgrounds")
+	_update_reference_tooltip(_background)
 
 	var classes_box := _info_panel(form, "CLASSI E PROGRESSIONE")
 	var classes_title_row := HBoxContainer.new()
@@ -1053,14 +1053,14 @@ func _build_ui() -> void:
 	classes_row.add_theme_constant_override("v_separation", 6)
 	classes_box.add_child(classes_row)
 	_add_label(classes_row, "Classe base")
-	_class_name = _reference_option(classes_row, Player5eTools.class_choices(), false, false)
+	_class_name = _reference_option(classes_row, Player5eTools.class_choices(), false, false, "classes")
 	_class_name.custom_minimum_size.x = 150
 	_class_name.size_flags_horizontal = Control.SIZE_SHRINK_BEGIN
 	_class_name.item_selected.connect(func(_i: int) -> void: _on_class_choice_changed())
 	_subclass_caption = Label.new()
 	_subclass_caption.text = "Sottoclasse"
 	classes_row.add_child(_subclass_caption)
-	_subclass_name = _reference_option(classes_row, [], false)
+	_subclass_name = _reference_option(classes_row, [], false, true, "subclasses")
 	_subclass_name.custom_minimum_size.x = 150
 	_subclass_name.size_flags_horizontal = Control.SIZE_SHRINK_BEGIN
 	_subclass_name.item_selected.connect(func(_i: int) -> void: _save())
@@ -1943,9 +1943,12 @@ func _info_panel(parent: VBoxContainer, section: String) -> VBoxContainer:
 
 func _reference_option(
 	parent: Node, choices: Array[Dictionary], show_source: bool = true,
-	autosave: bool = true
+	autosave: bool = true, category: String = ""
 ) -> OptionButton:
 	var select := OptionButton.new()
+	select.set_meta("catalog_category", category)
+	select.item_selected.connect(func(_index: int) -> void: _update_reference_tooltip(select))
+	select.get_popup().about_to_popup.connect(_populate_reference_popup.bind(select))
 	select.fit_to_longest_item = false
 	select.clip_text = true
 	select.custom_minimum_size = Vector2(150, 30)
@@ -1972,6 +1975,47 @@ func _set_reference_choices(
 			label += " · " + String(item.get("source", ""))
 		option.add_item(label)
 		option.set_item_metadata(option.item_count - 1, item.duplicate(true))
+	option.set_meta("reference_popups_ready", false)
+	_update_reference_tooltip(option)
+
+
+func _reference_preview(option: OptionButton, entry: Dictionary) -> String:
+	if entry.is_empty():
+		return "Nessuna voce selezionata."
+	var category: String = String(option.get_meta("catalog_category", ""))
+	if category.is_empty():
+		return String(entry.get("name", ""))
+	var detailed: Dictionary = Player5eTools.detailed_entry(category, entry)
+	var info: String = Player5eTools.info_text(
+		detailed, Player5eTools.description_text(category, detailed)
+	)
+	# A tooltip is a preview; the compendium shows the entire text.
+	if info.length() > 1500:
+		info = info.substr(0, 1500) + "…"
+	return info
+
+
+func _update_reference_tooltip(option: OptionButton) -> void:
+	if option == null or option.selected < 0:
+		return
+	var category: String = String(option.get_meta("catalog_category", ""))
+	if category.is_empty():
+		return
+	option.tooltip_text = _reference_preview(option, _reference_entry(option))
+
+
+func _populate_reference_popup(option: OptionButton) -> void:
+	if bool(option.get_meta("reference_popups_ready", false)):
+		return
+	var category: String = String(option.get_meta("catalog_category", ""))
+	if category.is_empty():
+		return
+	var popup: PopupMenu = option.get_popup()
+	for i: int in range(1, option.item_count):
+		var value: Variant = option.get_item_metadata(i)
+		if value is Dictionary:
+			popup.set_item_tooltip(i, _reference_preview(option, value))
+	option.set_meta("reference_popups_ready", true)
 
 
 func _selected_rules_version() -> String:
@@ -2057,10 +2101,10 @@ func _add_multiclass_row(
 		return
 	var row := HBoxContainer.new()
 	_multiclass_rows.add_child(row)
-	var selector := _reference_option(row, Player5eTools.class_choices(_selected_rules_version()), false, false)
+	var selector := _reference_option(row, Player5eTools.class_choices(_selected_rules_version()), false, false, "classes")
 	_select_reference(selector, class_value, source, reference_id)
 	selector.item_selected.connect(func(_i: int) -> void: _on_secondary_class_changed(row))
-	var subclass := _reference_option(row, _subclass_choices(_reference_entry(selector)), false)
+	var subclass := _reference_option(row, _subclass_choices(_reference_entry(selector)), false, true, "subclasses")
 	subclass.item_selected.connect(func(_i: int) -> void: _save())
 	var level := SpinBox.new()
 	level.min_value = 1
@@ -2108,21 +2152,25 @@ func _clear_multiclass() -> void:
 func _select_reference(option: OptionButton, name: String, source: String = "", stable_id: String = "") -> void:
 	option.select(0)
 	if name.is_empty() and stable_id.is_empty():
+		_update_reference_tooltip(option)
 		return
 	var fallback := -1
 	for i: int in range(1, option.item_count):
 		var row: Dictionary = option.get_item_metadata(i)
 		if not stable_id.is_empty() and String(row.get("id", "")) == stable_id:
 			option.select(i)
+			_update_reference_tooltip(option)
 			return
 		if String(row.get("name", "")).nocasecmp_to(name) == 0:
 			if source.is_empty() or String(row.get("source", "")) == source:
 				option.select(i)
+				_update_reference_tooltip(option)
 				return
 			if fallback < 0:
 				fallback = i
 	if fallback >= 0:
 		option.select(fallback)
+	_update_reference_tooltip(option)
 
 
 func _reference_entry(option: OptionButton) -> Dictionary:

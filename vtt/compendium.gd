@@ -203,11 +203,29 @@ func _show_selected(index: int) -> void:
 		_client.call("request_creature", String(entry.get("name", "")), String(entry.get("source", "")), _active_request)
 	else:
 		if _current_category() not in ["spells", "conditions", "diseases", "effects"]:
-			_details.text = FiveToolsText.blocks(PlayerCatalog.info_text(
-				entry, ContentCatalog.description(entry)
-			))
+			_render_catalog_entry(_current_category(), entry)
 		else:
 			_render(entry)
+
+func _render_catalog_entry(category: String, entry: Dictionary) -> void:
+	var detailed: Dictionary = PlayerCatalog.detailed_entry(category, entry)
+	# Structured facts stay visible even when the source contains no prose.
+	var lines: PackedStringArray = [
+		FiveToolsText.blocks(PlayerCatalog.info_text(detailed))
+	]
+	var raw: Variant = detailed.get("entries", detailed.get("description", detailed.get("text", "")))
+	var description: String = FiveToolsText.blocks(raw).strip_edges()
+	if not description.is_empty():
+		lines.append(FiveToolsText.section("Descrizione"))
+		lines.append(description)
+	var fluff: String = FiveToolsText.blocks(detailed.get("fluff", [])).strip_edges()
+	if not fluff.is_empty():
+		lines.append(FiveToolsText.section("Approfondimento"))
+		lines.append(fluff)
+	if description.is_empty() and fluff.is_empty():
+		lines.append(FiveToolsText.meta("Descrizione estesa non presente nei dati disponibili."))
+	_details.text = "\n\n".join(lines)
+
 
 func _on_creature_ready(request_key: String, stat: Dictionary) -> void:
 	if request_key != _active_request or _current_category() != "monsters":
