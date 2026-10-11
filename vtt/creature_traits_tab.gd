@@ -290,8 +290,46 @@ static func _collect_features(record: Dictionary) -> Array[Dictionary]:
 	else:
 		_collect_species(record, result)
 
-	# Explicitly selected feats are traits in their own right. Their catalog
-	# metadata is shown without extracting any mechanics from prose.
+	# A selected background contributes readable traits too (not just
+	# structured proficiencies). Preserve each named feature as a separate card.
+	var background_name: String = String(record.get("background", "")).strip_edges()
+	var background_book: String = String(record.get("background_source", ""))
+	var background_id: String = String(record.get("background_id", ""))
+	if not background_name.is_empty():
+		for candidate: Dictionary in PlayerCatalog.entries("backgrounds"):
+			if not background_id.is_empty() and String(candidate.get("id", "")) == background_id:
+				pass
+			elif (String(candidate.get("name", "")).nocasecmp_to(background_name) != 0
+				or (not background_book.is_empty() and String(candidate.get("source", "")) != background_book)):
+				continue
+			var background: Dictionary = PlayerCatalog.detailed_entry("backgrounds", candidate)
+			var origin: String = "Background · " + background_name
+			var origin_key: String = "background|" + String(background.get("source", "")).to_lower() + "|" + background_name.to_lower()
+			var raw_entries: Variant = background.get("entries", background.get("description", []))
+			var found_named := false
+			if raw_entries is Array:
+				for section: Variant in raw_entries:
+					if not section is Dictionary:
+						continue
+					var section_data: Dictionary = section
+					if String(section_data.get("name", "")).strip_edges().is_empty():
+						continue
+					if not section_data.has("entries") and not section_data.has("entry"):
+						continue
+					var feature: Dictionary = section_data.duplicate(true)
+					feature["source"] = String(background.get("source", ""))
+					_append(result, feature, 1, origin, origin_key, "", "", 2)
+					found_named = true
+			if not found_named:
+				_append(result, {
+					"name": "Tratti del background · " + background_name,
+					"source": String(background.get("source", "")),
+					"entries": raw_entries
+				}, 1, origin, origin_key, "", "", 2)
+			break
+
+	# Explicitly selected feats are traits in their own right. Their full
+	# descriptions are loaded on demand; no mechanics are inferred from prose.
 	var raw_feats: Variant = record.get("feats_catalog", [])
 	if raw_feats is Array:
 		var all_feats: Array[Dictionary] = PlayerCatalog.entries("feats")
@@ -308,17 +346,17 @@ static func _collect_features(record: Dictionary) -> Array[Dictionary]:
 			if feat_name.is_empty():
 				continue
 			var feat_source: String = String(owned.get("source", ""))
-			var feat_entry: Dictionary = owned
+			var feat_entry: Dictionary = PlayerCatalog.detailed_entry("feats", owned)
 			for candidate: Dictionary in all_feats:
 				if String(candidate.get("name", "")) == feat_name and String(candidate.get("source", "")) == feat_source:
-					feat_entry = candidate
+					feat_entry = PlayerCatalog.detailed_entry("feats", candidate)
 					break
 			var feat_id: String = String(owned.get("id", ""))
 			if feat_id.is_empty():
 				feat_id = feat_name.to_lower() + "|" + feat_source.to_lower()
 			_append(result, {
 				"id": feat_id, "name": feat_name, "source": feat_source,
-				"entries": PlayerCatalog.info_text(feat_entry)
+				"entries": PlayerCatalog.info_text(feat_entry, PlayerCatalog.description_text("feats", feat_entry))
 			}, 1, "Talento · " + feat_name, "feat|" + feat_id, "", "", 3)
 
 	var raw_classes: Variant = record.get("classes", [])
