@@ -7,6 +7,8 @@ const FeatsTab = preload("res://vtt/creature_feats_tab.gd")
 const TrackerTab = preload("res://vtt/creature_trackers_tab.gd")
 const Trackers = preload("res://vtt/structured_resource_trackers.gd")
 const BonusRules = preload("res://vtt/creature_bonus_rules.gd")
+const Characters = preload("res://vtt/player_character_store.gd")
+const Monsters = preload("res://vtt/master_creature_store.gd")
 
 
 func _initialize() -> void:
@@ -108,6 +110,14 @@ func run() -> void:
 	var saved: Dictionary = trackers._effective_record()
 	assert(Trackers.for_creature(saved).size() == 2,
 		"Manual trackers must survive save/load and coexist with automatic ones.")
+	var stored_character: Dictionary = Characters.new().normalize_character(saved)
+	assert(Trackers.for_creature(stored_character).size() == 2,
+		"Character archive normalization must retain manual trackers.")
+	var stored_monster: Dictionary = Monsters.new().normalize_creature({
+		"kind": "monster", "stat_block": {}, "resource_trackers": trackers._manual.duplicate(true)
+	})
+	assert(stored_monster.get("resource_trackers", []).size() == 2,
+		"Monster archive normalization must retain manual trackers.")
 	trackers._set_enabled(false, String(granted.get("id", "")))
 	assert(bool(trackers._manual.back().get("disabled", false)),
 		"Individual manual tracker switches must be retained.")
