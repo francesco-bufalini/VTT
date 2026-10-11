@@ -1075,7 +1075,8 @@ static func origin_enabled_map(record: Dictionary) -> Dictionary:
 	# the stable race identity in the proficiency editor.
 	var species_name: String = String(record.get("species", ""))
 	if not species_name.is_empty():
-		var species_key: String = "species|" + String(record.get("species_id", "")) + "|" + String(record.get("species_source", ""))
+		var species_id: String = String(record.get("species_id", ""))
+		var species_key: String = "species|" + (species_id if not species_id.is_empty() else species_name.to_lower()) + "|" + String(record.get("species_source", "")).to_lower()
 		var race_id: String = "race|" + String(record.get("species_source", "")).to_lower() + "|" + species_name.to_lower()
 		if own.has(species_key) and own.has(race_id):
 			feature_parents[species_key] = race_id
