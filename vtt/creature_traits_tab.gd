@@ -7,6 +7,7 @@ const RaceRules = preload("res://vtt/creature_race_rules.gd")
 const ContentCatalog = preload("res://vtt/content_catalog.gd")
 const TraitText = preload("res://vtt/five_tools_rich_text.gd")
 const Proficiencies = preload("res://vtt/creature_proficiency_rules.gd")
+const Items = preload("res://vtt/creature_item_rules.gd")
 
 var _origin_choice: OptionButton
 var _search: LineEdit
@@ -136,7 +137,7 @@ func _rebuild() -> void:
 		child.queue_free()
 	_cards.clear()
 	var visible: Array[Dictionary] = _visible_features()
-	_counter.text = "%d privilegi · per livello" % visible.size()
+	_counter.text = "%d tratti e descrizioni" % visible.size()
 	if visible.is_empty():
 		var hint := Label.new()
 		hint.text = "Nessun privilegio da mostrare."
@@ -144,15 +145,34 @@ func _rebuild() -> void:
 		_cards_container.add_child(hint)
 		return
 
+	var last_group := ""
 	var last_level := -1
 	for feature: Dictionary in visible:
+		var group: String = String(feature.get("category", "altro"))
 		var level: int = int(feature["level"])
-		if level != last_level:
-			var section := Label.new()
-			section.text = "BESTIARIO" if level == 0 else "LIVELLO %d" % level
-			section.add_theme_color_override("font_color", Color(0.87, 0.71, 0.49))
-			section.add_theme_font_size_override("font_size", 15)
+		if group != last_group:
+			var section := PanelContainer.new()
+			var band := StyleBoxFlat.new()
+			band.bg_color = Color(0.16, 0.22, 0.26, 0.96)
+			band.set_content_margin_all(10)
+			band.set_corner_radius_all(5)
+			section.add_theme_stylebox_override("panel", band)
+			var heading := Label.new()
+			heading.text = {"razza": "RAZZA E SOTTORAZZA", "background": "BACKGROUND",
+				"classi": "CLASSI E SOTTOCLASSI", "talenti": "TALENTI",
+				"oggetti": "OGGETTI E DOCUMENTI", "mostro": "TRATTI DEL MOSTRO"}.get(group, "ALTRI TRATTI")
+			heading.add_theme_font_size_override("font_size", 17)
+			heading.add_theme_color_override("font_color", Color(0.82, 0.90, 0.94))
+			section.add_child(heading)
 			_cards_container.add_child(section)
+			last_group = group
+			last_level = -1
+		if group == "classi" and level != last_level:
+			var level_label := Label.new()
+			level_label.text = "LIVELLO %d" % level
+			level_label.add_theme_font_size_override("font_size", 13)
+			level_label.add_theme_color_override("font_color", Color(0.87, 0.71, 0.49))
+			_cards_container.add_child(level_label)
 			last_level = level
 
 		var key: String = String(feature["key"])
@@ -164,6 +184,9 @@ func _rebuild() -> void:
 		background.set_border_width_all(1)
 		background.set_corner_radius_all(6)
 		background.set_content_margin_all(9)
+		if bool(feature.get("inactive", false)):
+			background.border_color = Color(0.45, 0.40, 0.40, 0.45)
+			card.modulate.a = 0.64
 		card.add_theme_stylebox_override("panel", background)
 		_cards_container.add_child(card)
 		_cards[key] = card
@@ -173,7 +196,7 @@ func _rebuild() -> void:
 		var opened: bool = bool(_expanded.get(key, false))
 		var heading := Button.new()
 		heading.text = ("%s  %s" % ["▾" if opened else "▸", String(feature["name"])])
-		heading.tooltip_text = "Mostra o nascondi il testo di questo privilegio"
+		heading.tooltip_text = "Mostra o nascondi la descrizione di questo tratto"
 		heading.alignment = HORIZONTAL_ALIGNMENT_LEFT
 		heading.clip_text = true
 		heading.size_flags_horizontal = Control.SIZE_EXPAND_FILL
@@ -306,6 +329,11 @@ static func _collect_features(record: Dictionary) -> Array[Dictionary]:
 			var origin: String = "Background · " + background_name
 			var origin_key: String = "background|" + String(background.get("source", "")).to_lower() + "|" + background_name.to_lower()
 			var raw_entries: Variant = background.get("entries", background.get("description", []))
+			_append(result, {"id": "overview", "name": "Descrizione · " + background_name,
+				"source": String(background.get("source", "")),
+				"entries": PlayerCatalog.description_text("backgrounds", background),
+				"feats": background.get("feats", [])},
+				1, origin, origin_key, "", "", 0)
 			var found_named := false
 			if raw_entries is Array:
 				for section: Variant in raw_entries:
@@ -357,8 +385,46 @@ static func _collect_features(record: Dictionary) -> Array[Dictionary]:
 				feat_id = feat_name.to_lower() + "|" + feat_source.to_lower()
 			_append(result, {
 				"id": feat_id, "name": feat_name, "source": feat_source,
+				"feats": feat_entry.get("feats", []),
 				"entries": PlayerCatalog.info_text(feat_entry, PlayerCatalog.description_text("feats", feat_entry))
 			}, 1, "Talento · " + feat_name, "feat|" + feat_id, "", "", 3)
+
+	# Inventory entries remain visible as traits while owned. Equipment
+	# controls only their effective origins, not whether the item exists.
+	var inventory: Variant = record.get("inventory", [])
+	if inventory is Array:
+		for raw_owned: Variant in inventory:
+			if not raw_owned is Dictionary:
+				continue
+			var owned: Dictionary = raw_owned
+			if int(owned.get("quantity", 1)) <= 0:
+				continue
+			var item_id: String = String(owned.get("id", ""))
+			if item_id.is_empty():
+				continue
+			var definition: Dictionary = Items.entry_for(owned)
+			var detailed: Dictionary = PlayerCatalog.detailed_entry("items", definition)
+			var kind_item: String = Items.kind(definition)
+			var slots: Array = Items.slots(owned)
+			var needs_equipment: bool = kind_item in ["armor", "shield", "weapon"]
+			var equipped: bool = (
+				(kind_item == "armor" and "body" in slots)
+				or (kind_item == "shield" and "off" in slots)
+				or (kind_item == "weapon" and ("main" in slots or "off" in slots))
+			)
+			var inactive: bool = not bool(owned.get("active", true))
+			if Items.requires_attunement(definition) and not bool(owned.get("attuned", false)):
+				inactive = true
+			if needs_equipment and not equipped:
+				inactive = true
+			var description: String = PlayerCatalog.description_text("items", detailed)
+			if description.is_empty():
+				description = String(owned.get("description", definition.get("description", "")))
+			var item_label: String = String(owned.get("name", definition.get("name", item_id)))
+			_append(result, {"id": "overview", "name": "Descrizione · " + item_label,
+				"source": String(definition.get("source", "")), "entries": description,
+				"inactive": inactive, "feats": definition.get("feats", [])},
+				0, "Oggetto · " + item_label, "item:" + item_id, "", "", 4)
 
 	var raw_classes: Variant = record.get("classes", [])
 	var classes: Array = raw_classes as Array if raw_classes is Array else []
@@ -382,7 +448,16 @@ static func _collect_features(record: Dictionary) -> Array[Dictionary]:
 		var class_book: String = String(definition.get("source", record.get("class_source", "")))
 		var class_level: int = clampi(int(definition.get("level", 1)), 1, 20)
 		var class_origin: String = "Classe · " + class_label
-		var class_key: String = "class|" + class_label.to_lower() + "|" + class_book.to_lower()
+		var class_key: String = "class|" + class_book.to_lower() + "|" + class_label.to_lower()
+		for class_entry: Dictionary in PlayerCatalog.entries("classes"):
+			if String(class_entry.get("name", "")).nocasecmp_to(class_label) != 0 or String(class_entry.get("source", "")) != class_book:
+				continue
+			var overview: Dictionary = PlayerCatalog.detailed_entry("classes", class_entry)
+			_append(result, {"id": "overview", "name": "Descrizione · " + class_label,
+				"source": class_book, "entries": PlayerCatalog.description_text("classes", overview),
+				"feats": class_entry.get("feats", [])},
+				1, class_origin, class_key, class_label, class_book, 0)
+			break
 		# Level-one synthetic feature: a structured 5etools class overview.
 		# The source ID used by the proficiency editor remains the same.
 		for source: Dictionary in Proficiencies.candidate_sources(record):
@@ -412,6 +487,16 @@ static func _collect_features(record: Dictionary) -> Array[Dictionary]:
 		var subclass_book: String = String(definition.get("subclass_source", ""))
 		var subclass_origin: String = "Sottoclasse · %s / %s" % [class_label, subclass_name]
 		var subclass_key: String = class_key + "|subclass|" + subclass_name.to_lower() + "|" + subclass_book.to_lower()
+		for subclass_entry: Dictionary in PlayerCatalog.entries("subclasses"):
+			if String(subclass_entry.get("name", subclass_entry.get("short_name", ""))).nocasecmp_to(subclass_name) != 0:
+				continue
+			if String(subclass_entry.get("source", "")) != subclass_book:
+				continue
+			_append(result, {"id": "overview", "name": "Descrizione · " + subclass_name,
+				"source": subclass_book, "entries": PlayerCatalog.description_text("subclasses", subclass_entry),
+				"feats": subclass_entry.get("feats", [])},
+				1, subclass_origin, subclass_key, class_label, class_book, 0)
+			break
 		for feature: Dictionary in subclass_features:
 			if String(feature.get("class_name", feature.get("className", ""))).nocasecmp_to(class_label) != 0:
 				continue
@@ -429,6 +514,11 @@ static func _collect_features(record: Dictionary) -> Array[Dictionary]:
 				continue
 			_append(result, feature, level, subclass_origin, subclass_key, class_label, class_book)
 	result.sort_custom(func(a: Dictionary, b: Dictionary) -> bool:
+		var categories: Array[String] = ["razza", "background", "classi", "talenti", "oggetti", "mostro", "altro"]
+		var group_a: int = categories.find(String(a.get("category", "altro")))
+		var group_b: int = categories.find(String(b.get("category", "altro")))
+		if group_a != group_b:
+			return group_a < group_b
 		if int(a["level"]) != int(b["level"]):
 			return int(a["level"]) < int(b["level"])
 		if int(a["rank"]) != int(b["rank"]):
@@ -457,8 +547,23 @@ static func _append(
 	var description: Variant = feature.get("entries", feature.get("description", ""))
 	if description is String and String(description).strip_edges().is_empty():
 		description = ContentCatalog.description(feature)
+	var category: String = "altro"
+	if origin_key.begins_with("species|") or origin_key.begins_with("race|") or origin_key.begins_with("subrace|"):
+		category = "razza"
+	elif origin_key.begins_with("background|"):
+		category = "background"
+	elif origin_key.begins_with("class|"):
+		category = "classi"
+	elif origin_key.begins_with("feat|"):
+		category = "talenti"
+	elif origin_key.begins_with("item:"):
+		category = "oggetti"
+	elif origin_key.begins_with("monster|"):
+		category = "mostro"
 	output.append({
-		"key": key, "name": name, "level": level, "rank": rank,
+		"key": key, "name": name, "level": level, "rank": rank, "category": category,
+		"inactive": bool(feature.get("inactive", false)),
+		"feats": feature.get("feats", []),
 		"origin": origin, "origin_key": origin_key,
 		"book": String(feature.get("source", "")),
 		"class_name": class_label, "class_source": class_book,
@@ -486,6 +591,10 @@ static func _collect_species(record: Dictionary, output: Array[Dictionary]) -> v
 				and String(race.get("source", "")) == wanted_source)
 		):
 			continue
+		_append(output, {"id": "overview", "name": "Descrizione · " + species,
+			"source": wanted_source, "entries": PlayerCatalog.description_text("races", race),
+			"feats": race.get("feats", [])},
+			1, "Specie · " + species, "species|" + species_id + "|" + species_book, "", "", 0)
 		var raw: Variant = race.get("entries", race.get("description", []))
 		if raw is Array:
 			for index: int in range((raw as Array).size()):
@@ -515,7 +624,6 @@ static func _collect_monster(record: Dictionary, output: Array[Dictionary]) -> v
 	var stat: Dictionary = raw as Dictionary
 	var categories: Array[Dictionary] = [
 		{"key": "trait", "label": "Tratti"},
-		{"key": "spellcasting", "label": "Incantesimi"},
 		{"key": "action", "label": "Azioni"},
 		{"key": "bonus", "label": "Azioni bonus"},
 		{"key": "reaction", "label": "Reazioni"},
