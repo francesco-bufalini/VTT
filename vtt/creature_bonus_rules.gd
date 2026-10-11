@@ -199,6 +199,81 @@ static func symbol_target(symbol: String) -> String:
 	return ""
 
 
+
+# Follow both explicit formula references and implicit derived-stat dependencies.
+# The stack check in _resolve prevents infinite recursion, but on its own two
+# mutually dependent grants could evaluate differently depending on query order.
+# Reject every grant belonging to a dependency cycle before evaluating it.
+static func _expression_dependencies(expression: String) -> Array[String]:
+	var result: Array[String] = []
+	var identifiers: RegEx = RegEx.create_from_string("[a-z_][a-z0-9_]*")
+	for found: RegExMatch in identifiers.search_all(expression.to_lower()):
+		var dependency: String = symbol_target(found.get_string())
+		if not dependency.is_empty() and dependency not in result:
+			result.append(dependency)
+	return result
+
+
+static func _native_dependencies(record: Dictionary, target: String) -> Array[String]:
+	var result: Array[String] = []
+	if target.begins_with("ability_mod:"):
+		var ability: String = target.substr(12)
+		if ability in ABILITIES:
+			result.append("ability:" + ability)
+	elif target == "initiative":
+		result.append("ability_mod:dex")
+	elif target == "ac":
+		if not Items.equipped_armor(record.get("inventory", [])).is_empty():
+			result.append("ability_mod:dex")
+	elif target.begins_with("save:"):
+		var ability: String = target.substr(5)
+		if ability in ABILITIES:
+			result.append("ability_mod:" + ability)
+			result.append("proficiency")
+	elif target.begins_with("skill:"):
+		for skill: Dictionary in Skills.SKILLS:
+			if String(skill.get("id", "")) == target.substr(6):
+				result.append("ability_mod:" + String(skill.get("ability", "wis")))
+				result.append("proficiency")
+				break
+	elif target == "passive_perception":
+		result.append("skill:perception")
+	return result
+
+
+static func _dependency_reaches(
+	record: Dictionary, current: String, wanted: String,
+	rows: Array[Dictionary], enabled: Dictionary, visited: Dictionary
+) -> bool:
+	if current == wanted:
+		return true
+	if visited.has(current):
+		return false
+	visited[current] = true
+	for dependency: String in _native_dependencies(record, current):
+		if _dependency_reaches(record, dependency, wanted, rows, enabled, visited):
+			return true
+	for row: Dictionary in rows:
+		if (String(row.get("target", "")) != current
+			or bool(row.get("disabled", false))
+			or not _origin_active(String(row.get("origin_id", "")), enabled)):
+			continue
+		for dependency: String in _expression_dependencies(String(row.get("expression", ""))):
+			if _dependency_reaches(record, dependency, wanted, rows, enabled, visited):
+				return true
+	return false
+
+
+static func _would_cycle(
+	record: Dictionary, target: String, expression: String,
+	rows: Array[Dictionary], enabled: Dictionary
+) -> bool:
+	for dependency: String in _expression_dependencies(expression):
+		if _dependency_reaches(record, dependency, target, rows, enabled, {}):
+			return true
+	return false
+
+
 static func _evaluate_expression(record: Dictionary, expression: String, stack: Dictionary) -> Dictionary:
 	var expr: String = expression.strip_edges().to_lower()
 	if expr.is_empty() or expr.contains("d20") or expr.contains("d6"):
@@ -331,7 +406,8 @@ static func _sum(record: Dictionary, target: String, stack: Dictionary) -> Dicti
 	var details: PackedStringArray = []
 	var errors: PackedStringArray = []
 	var target_grants: Array[Dictionary] = []
-	for row: Dictionary in grants(record):
+	var all_grants: Array[Dictionary] = grants(record)
+	for row: Dictionary in all_grants:
 		if String(row.get("target", "")) == target and not bool(row.get("disabled", false)):
 			target_grants.append(row)
 	if target_grants.is_empty():
@@ -343,8 +419,13 @@ static func _sum(record: Dictionary, target: String, stack: Dictionary) -> Dicti
 		var sid: String = String(row.get("origin_id", ""))
 		if not _origin_active(sid, enabled):
 			continue
-		var evaluated: Dictionary = _evaluate_expression(record, String(row.get("expression", "0")), stack)
 		var origin: String = String(row.get("origin_name", "Manuale"))
+		# Reject cyclic grants consistently, not only whichever one happens to
+		# hit _resolve's recursion guard first. Other additive grants survive.
+		if _would_cycle(record, target, String(row.get("expression", "0")), all_grants, enabled):
+			errors.append("%s: Dipendenza circolare (%s)" % [origin, target])
+			continue
+		var evaluated: Dictionary = _evaluate_expression(record, String(row.get("expression", "0")), stack)
 		if not bool(evaluated.get("ok", false)):
 			errors.append("%s: %s" % [origin, String(evaluated.get("error", "Formula non valida"))])
 			continue

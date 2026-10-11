@@ -418,8 +418,17 @@ func _popup_dialog_safe(dialog: Window, preferred_size: Vector2i) -> void:
 
 func _creature_names_from_archive() -> Dictionary:
 	var names: Dictionary = {}
+	if board_root == null:
+		return names
 	var area: Node = board_root.get_node_or_null("CreatureArea")
-	if area == null or not area.has_method("get_owned_creatures_for_placement"):
+	if area == null:
+		return names
+	# The hot path (auto-sync every 150 ms) must not reload/normalize all sheets.
+	# The live archive remains available to the creature placement picker.
+	if area.has_method("get_owned_creature_name_index"):
+		var cached: Variant = area.call("get_owned_creature_name_index")
+		return cached as Dictionary if cached is Dictionary else names
+	if not area.has_method("get_owned_creatures_for_placement"):
 		return names
 	var records: Variant = area.call("get_owned_creatures_for_placement")
 	if not records is Array:
@@ -919,10 +928,18 @@ func _entry_display_name(entry: Dictionary) -> String:
 
 
 func _synchronize_linked_entry_names() -> void:
-	var names: Dictionary = (
-		_creature_names_from_archive() if board_root != null else {}
-	)
+	if entries.is_empty():
+		return
 	var local_owner: String = CreatureOwner.local_id()
+	var names: Dictionary = {}
+	# Skip even the lightweight lookup when every participant is remote or
+	# when the saved initiative only contains legacy token identities.
+	if board_root != null:
+		for entry: Dictionary in entries:
+			if (not String(entry.get("creature_id", "")).is_empty()
+				and String(entry.get("creature_owner_id", "")) == local_owner):
+				names = _creature_names_from_archive()
+				break
 	for entry: Dictionary in entries:
 		var creature_id := String(entry.get("creature_id", ""))
 		if not creature_id.is_empty():

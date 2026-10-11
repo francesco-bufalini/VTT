@@ -42,6 +42,46 @@ func run() -> void:
 	assert(Bonuses.value(record, "ability:str") == 17,
 		"Circular grants must be ignored rather than recursing indefinitely")
 	assert("Dipendenza circolare" in Bonuses.description(record, "ability:str"))
+
+	# A dependency chain must use the *effective* (bonused) source score.
+	var cascade: Dictionary = record.duplicate(true)
+	cascade["formula_bonuses"] = [
+		{"id": "strength", "target": "ability:str", "expression": "2"},
+		{"id": "dexterity", "target": "ability:dex", "expression": "str_mod"},
+		{"id": "initiative", "target": "initiative", "expression": "str_mod"}
+	]
+	assert(Bonuses.value(cascade, "ability:str") == 16)
+	assert(Bonuses.value(cascade, "ability:dex") == 15,
+		"Dependent ability must use the effective STR modifier")
+	assert(Bonuses.value(cascade, "initiative") == 5,
+		"Initiative must use the new DEX modifier and the STR-based grant")
+
+	# Reject both directions of a mutual cycle, regardless of query order,
+	# without suppressing an unrelated additive bonus on the same target.
+	var mutual: Dictionary = record.duplicate(true)
+	mutual["formula_bonuses"] = [
+		{"id": "fixed", "target": "ability:str", "expression": "2"},
+		{"id": "str-from-dex", "target": "ability:str", "expression": "dex_mod"},
+		{"id": "dex-from-str", "target": "ability:dex", "expression": "str_mod"}
+	]
+	assert(Bonuses.value(mutual, "ability:dex") == 12)
+	assert(Bonuses.value(mutual, "ability:str") == 16)
+	assert(Bonuses.value(mutual, "ability:dex") == 12,
+		"Cyclic scores must be independent of evaluation order")
+	assert("Dipendenza circolare" in Bonuses.description(mutual, "ability:str"))
+	assert("Dipendenza circolare" in Bonuses.description(mutual, "ability:dex"))
+
+	var self_reference: Dictionary = record.duplicate(true)
+	self_reference["formula_bonuses"] = [
+		{"id": "self", "target": "ability:str", "expression": "str_score + 1"},
+		{"id": "save-cycle", "target": "ability:wis", "expression": "skill_perception"}
+	]
+	assert(Bonuses.value(self_reference, "ability:str") == 14)
+	assert(Bonuses.value(self_reference, "ability:wis") == 10,
+		"Implicit skill-to-ability feedback must also be rejected")
+	(self_reference["formula_bonuses"] as Array)[1]["disabled"] = true
+	assert(Bonuses.value(self_reference, "ability:wis") == 10)
+
 	(record["formula_bonuses"] as Array).append({
 		"id": "dice", "target": "speed", "expression": "1d8"
 	})

@@ -32,6 +32,8 @@ var board_root: Node3D
 var _archive
 var _client: Node
 var _records: Array[Dictionary] = []
+# Lightweight name index used by initiative snapshots. Rebuilt only when sheets change.
+var _owned_name_index: Dictionary = {}
 var _selected_id := ""
 var _selected_kind := ""
 var _catalog: Array[Dictionary] = []
@@ -258,6 +260,11 @@ func sync_linked_token_editor(token: CharacterBody3D) -> void:
 
 func is_panel_open() -> bool:
 	return _panel != null and _panel.visible
+
+
+# Initiative serialization needs names only; never normalize full sheets on a poll.
+func get_owned_creature_name_index() -> Dictionary:
+	return _owned_name_index.duplicate()
 
 
 # The board context menu must read the CURRENT owned archive, not the
@@ -2129,6 +2136,11 @@ func _reference_entry(option: OptionButton) -> Dictionary:
 
 func _reload() -> void:
 	_records = _archive.list_owned()
+	_owned_name_index.clear()
+	for record: Dictionary in _records:
+		var creature_id: String = String(record.get("id", "")).strip_edges()
+		if not creature_id.is_empty():
+			_owned_name_index[creature_id] = String(record.get("name", "")).strip_edges()
 	for child: Node in _creature_list.get_children():
 		if child == _creature_context_menu:
 			continue
@@ -3338,6 +3350,9 @@ func _replace_current_record(record: Dictionary) -> void:
 			and String(_records[i].get("kind", "")) == _selected_kind
 		):
 			_records[i] = record
+			var creature_id: String = String(record.get("id", "")).strip_edges()
+			if not creature_id.is_empty():
+				_owned_name_index[creature_id] = String(record.get("name", "")).strip_edges()
 			var icon := "◇" if String(record.get("kind", "")) == "monster" else "♙"
 			_creature_row_buttons[i].text = "%s %s" % [icon, record.get("name", "")]
 			_creature_row_buttons[i].tooltip_text = String(record.get("name", ""))
