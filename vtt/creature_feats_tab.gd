@@ -29,6 +29,24 @@ var _remove_dialog: ConfirmationDialog
 var _remove_picker: OptionButton
 var _remove_sid := ""
 var _descriptions: Dictionary = {}
+var _source_candidates: Array[Dictionary] = []
+var _feature_entries: Array[Dictionary] = []
+var _catalog_cache: Dictionary = {}
+
+
+func _refresh_description_sources() -> void:
+	_descriptions.clear()
+	_catalog_cache.clear()
+	var record: Dictionary = _effective_record()
+	_source_candidates = Rules.candidate_sources(record)
+	_feature_entries = Traits.collect_features(record)
+
+
+func _catalog_entries(category: String) -> Array[Dictionary]:
+	if not _catalog_cache.has(category):
+		_catalog_cache[category] = Catalog.entries(category)
+	return _catalog_cache[category]
+
 
 
 func setup(on_change: Callable) -> void:
@@ -158,7 +176,7 @@ func load_record(record: Dictionary) -> void:
 		if not sid.is_empty() and not known.has(sid):
 			known[sid] = true
 			_origins.append(origin.duplicate(true))
-	_descriptions.clear()
+	_refresh_description_sources()
 	if _selected_id != "~none~" and not _has_origin(_selected_id):
 		_selected_id = "~none~"
 	if _remove_dialog != null:
@@ -204,7 +222,7 @@ func _description(sid: String) -> String:
 	if sid.is_empty():
 		return "Talento aggiunto senza un'origine specificata."
 	var description := _label(sid)
-	for source: Dictionary in Rules.candidate_sources(_effective_record()):
+	for source: Dictionary in _source_candidates:
 		if String(source.get("id", "")) != sid:
 			continue
 		if String(source.get("group", "")) == "class":
@@ -214,13 +232,13 @@ func _description(sid: String) -> String:
 				"subrace": "races", "feat": "feats"}.get(String(source.get("group", "")), "")
 			description = Catalog.info_text(source.get("data", {}))
 			if not category.is_empty():
-				for entry: Dictionary in Catalog.entries(category):
+				for entry: Dictionary in _catalog_entries(category):
 					if String(entry.get("name", "")).nocasecmp_to(String(source.get("data", {}).get("name", ""))) == 0 and String(entry.get("source", "")) == String(source.get("data", {}).get("source", "")):
 						description = Catalog.info_text(entry)
 						break
 		break
 	if sid.begins_with("feature:"):
-		for feature: Dictionary in Traits.collect_features(_effective_record()):
+		for feature: Dictionary in _feature_entries:
 			if sid == "feature:" + String(feature.get("key", "")):
 				description = Catalog.info_text(feature, String(feature.get("entries", "")))
 				break
@@ -234,7 +252,7 @@ func _description(sid: String) -> String:
 
 
 func _feat_description(feat: Dictionary) -> String:
-	for entry: Dictionary in Catalog.entries("feats"):
+	for entry: Dictionary in _catalog_entries("feats"):
 		if String(entry.get("name", "")).nocasecmp_to(String(feat.get("name", ""))) == 0 and String(entry.get("source", "")) == String(feat.get("source", "")):
 			return Catalog.info_text(entry)
 	return Catalog.info_text(feat)
@@ -393,7 +411,7 @@ func _refresh_feat_picker() -> void:
 	_feat_picker.clear()
 	var needle: String = _feat_filter.text.strip_edges().to_lower()
 	var edition: String = String(_record.get("rules_version", "2014"))
-	for feat: Dictionary in Catalog.entries("feats"):
+	for feat: Dictionary in _catalog_entries("feats"):
 		var source: String = String(feat.get("source", ""))
 		if edition == "2014" and (source in ["XPHB", "XDMG", "EFA"] or String(feat.get("edition", "")) == "one"):
 			continue
@@ -515,7 +533,7 @@ func _publish() -> void:
 		if not sid.is_empty() and not other.has(sid):
 			_origins.append(source.duplicate(true))
 			other[sid] = true
-	_descriptions.clear()
+	_refresh_description_sources()
 	_refresh()
 	if _loading or not _changed.is_valid():
 		return
