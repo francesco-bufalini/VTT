@@ -53,6 +53,23 @@ func run() -> void:
 	assert(bonuses._origin_cards.get_child_count() == 2,
 		"An origin appears only after a bonus is granted.")
 	assert(String(bonuses._rows.back().get("origin_id", "")) == "custom|unused")
+	# An owned item is a valid origin without a pre-existing saved source.
+	var item_record: Dictionary = bonus_record.duplicate(true)
+	item_record["inventory"] = [{"id": "test_potion", "name": "Test potion", "quantity": 1}]
+	bonuses.load_record(item_record)
+	var was_saved := false
+	for source: Dictionary in bonuses._origins:
+		if String(source.get("id", "")) == "item:test_potion":
+			was_saved = true
+	assert(not was_saved, "An item need not exist in proficiency_origins before a grant.")
+	_select_source(bonuses._origin_picker, "item:test_potion")
+	bonuses._add_bonus()
+	assert(String(bonuses._rows.back().get("origin_id", "")) == "item:test_potion")
+	var was_created := false
+	for source: Dictionary in bonuses._origins:
+		if String(source.get("id", "")) == "item:test_potion":
+			was_created = true
+	assert(was_created, "The benefit action must auto-register a newly referenced origin.")
 
 	var prof_record: Dictionary = record.duplicate(true)
 	prof_record["proficiency_choices"] = [
