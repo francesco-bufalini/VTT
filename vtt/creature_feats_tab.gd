@@ -21,7 +21,6 @@ var _origin_cards: VBoxContainer
 var _feat_cards: VBoxContainer
 var _origin_editor: VBoxContainer
 var _origin_picker: OptionButton
-var _origin_name: LineEdit
 var _feat_editor: VBoxContainer
 var _feat_filter: LineEdit
 var _feat_picker: OptionButton
@@ -78,7 +77,7 @@ func setup(on_change: Callable) -> void:
 	origin_scroll.add_child(_origin_cards)
 
 	var add_origin := Button.new()
-	add_origin.text = "+ Origine"
+	add_origin.text = "Seleziona origine"
 	add_origin.pressed.connect(func() -> void:
 		_origin_editor.visible = not _origin_editor.visible
 	)
@@ -88,11 +87,8 @@ func setup(on_change: Callable) -> void:
 	left.add_child(_origin_editor)
 	_origin_picker = OptionButton.new()
 	_origin_editor.add_child(_origin_picker)
-	_origin_name = LineEdit.new()
-	_origin_name.placeholder_text = "Nome origine personalizzata"
-	_origin_editor.add_child(_origin_name)
 	var confirm_origin := Button.new()
-	confirm_origin.text = "Seleziona / aggiungi origine"
+	confirm_origin.text = "Seleziona origine esistente"
 	confirm_origin.pressed.connect(_add_origin)
 	_origin_editor.add_child(confirm_origin)
 
@@ -196,7 +192,7 @@ func _rebuild_sources() -> void:
 		if sid.is_empty():
 			continue
 		var group: String = String(source.get("group", ""))
-		var associated := group == "custom"
+		var associated := false
 		for feat: Dictionary in _feats:
 			if String(feat.get("origin_id", "")) == sid:
 				associated = true
@@ -464,15 +460,14 @@ func _refresh_feats() -> void:
 
 func _refresh_origin_picker() -> void:
 	_origin_picker.clear()
-	_origin_picker.add_item("Origine personalizzata…")
-	_origin_picker.set_item_metadata(0, "")
 	for source: Dictionary in _origins:
 		var sid: String = String(source.get("id", ""))
 		if sid.is_empty():
 			continue
 		_origin_picker.add_item(String(source.get("name", sid)))
 		_origin_picker.set_item_metadata(_origin_picker.item_count - 1, sid)
-	_origin_picker.select(0)
+	if _origin_picker.item_count > 0:
+		_origin_picker.select(0)
 
 
 func _refresh_feat_picker() -> void:
@@ -512,19 +507,17 @@ func _toggle_origin(on: bool, sid: String) -> void:
 
 
 func _add_origin() -> void:
+	if _origin_picker.selected < 0:
+		return
 	var sid: String = String(_origin_picker.get_item_metadata(_origin_picker.selected))
-	var name: String = _origin_name.text.strip_edges()
-	if sid.is_empty():
-		if name.is_empty():
-			return
-		sid = "custom|" + name.to_lower().uri_encode()
-		if not _has_origin(sid):
-			_origins.append({"id": sid, "name": name, "group": "custom",
-				"disabled": false, "automatic": false})
+	# A new origin must be justified by an actual trait. This picker is
+	# restricted to existing structured feat granters and linked sources.
+	if sid.is_empty() or not _has_origin(sid):
+		return
 	_selected_id = sid
 	_origin_editor.hide()
-	_origin_name.clear()
-	_publish()
+	_refresh_origins()
+	_refresh_feats()
 
 
 func _add_feat() -> void:
