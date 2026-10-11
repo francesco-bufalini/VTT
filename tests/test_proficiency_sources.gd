@@ -756,8 +756,14 @@ func run() -> void:
 	assert(not feat_changes.is_empty() and String(feat_changes.back().feats[0].get("origin_id", "")) == "class|phb|fighter",
 		"Adding a feat to an origin persists the source")
 	var feat_source_sid: String = Proficiencies.feat_source_id(owned_feat)
-	assert(feats_editor._has_origin(feat_source_sid),
-		"Even homebrew feats without structured proficiency grants become origins")
+	assert(not feats_editor._has_origin(feat_source_sid),
+		"Talenti should not list traits without structured feat grants as automatic sources")
+	var origin_exists := false
+	for source: Dictionary in Proficiencies.origins(feats_editor._effective_record()):
+		if String(source.get("id", "")) == feat_source_sid:
+			origin_exists = true
+	assert(origin_exists,
+		"Homebrew feats remain valid origins for other effects even without a feat-grant field")
 	var found_feat_card := false
 	for card: Node in feats_editor._feat_cards.get_children():
 		if not card is PanelContainer:
