@@ -169,6 +169,7 @@ func load_record(record: Dictionary) -> void:
 		for feat: Variant in raw:
 			if feat is Dictionary:
 				_feats.append((feat as Dictionary).duplicate(true))
+	_origins = Rules.origins(record)
 	_rebuild_sources()
 	_refresh_description_sources()
 	if _selected_id != "~none~" and not _has_origin(_selected_id):
@@ -202,11 +203,12 @@ func _rebuild_sources() -> void:
 				break
 		if associated and not by_id.has(sid):
 			by_id[sid] = source.duplicate(true)
+	var existing_origins: Array[Dictionary] = Bonuses.available_origins(effective)
 	for feat: Dictionary in _feats:
 		var sid: String = String(feat.get("origin_id", ""))
 		if sid.is_empty() or by_id.has(sid):
 			continue
-		for source: Dictionary in Bonuses.available_origins(effective):
+		for source: Dictionary in existing_origins:
 			if String(source.get("id", "")) == sid:
 				by_id[sid] = source.duplicate(true)
 				break
