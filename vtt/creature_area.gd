@@ -1876,6 +1876,7 @@ func _on_bonuses_updated(rows: Array, origins: Array) -> void:
 		return
 	record["formula_bonuses"] = rows.duplicate(true)
 	record["proficiency_origins"] = origins.duplicate(true)
+	ProficiencyRules.reconcile_origin_dependents(record)
 	# Recalculate every dependent field from its base and active grants.
 	_recalculate_bonus_mirrors(record)
 	if _archive.save(record) != OK:
@@ -3231,7 +3232,16 @@ func _on_feats_updated(feats: Array, origins: Array) -> void:
 		return
 	# Preserve the same proficiency/bonus/trait synchronization as the
 	# competence editor; feat changes modify all downstream grant chains.
-	_on_proficiencies_updated(record.get("proficiency_choices", []), feats, origins)
+	# Feats displays a filtered origin list. Never overwrite unrelated
+	# proficiency/bonus origin switches when the feat editor saves.
+	var merged: Dictionary = {}
+	for source: Variant in record.get("proficiency_origins", []):
+		if source is Dictionary:
+			merged[String(source.get("id", ""))] = (source as Dictionary).duplicate(true)
+	for source: Variant in origins:
+		if source is Dictionary:
+			merged[String(source.get("id", ""))] = (source as Dictionary).duplicate(true)
+	_on_proficiencies_updated(record.get("proficiency_choices", []), feats, merged.values())
 	# The competence list can contain grants from newly added feats.
 	_proficiencies_stale = true
 	if _proficiencies_ui != null and _proficiencies_ui.visible:
@@ -3254,6 +3264,7 @@ func _on_proficiencies_updated(rows: Array, feats: Array, origins: Array) -> voi
 	record["proficiency_origins"] = origins.duplicate(true)
 	record["feats_catalog"] = feats.duplicate(true)
 	record["proficiency_choices"] = typed_rows.duplicate(true)
+	ProficiencyRules.reconcile_origin_dependents(record)
 	# Reconcile the saved editor state with the current traits and the
 	# unremovable grants before persisting it.
 	ProficiencyRules.sync_legacy_fields(record, ProficiencyRules.choices(record))
@@ -3336,7 +3347,9 @@ func _on_inventory_updated(inventory: Array) -> void:
 		if all_migrated:
 			record.erase("documents")
 	record["armor_class"] = maxi(0, BonusRules.value(record, "ac"))
-	# Removing an item also revokes proficiencies assigned to that item.
+	# Removing an item recursively removes only grants whose origins have
+	# genuinely disappeared; unequipping merely deactivates their benefits.
+	ProficiencyRules.reconcile_origin_dependents(record)
 	ProficiencyRules.sync_legacy_fields(record, ProficiencyRules.choices(record))
 	_recalculate_bonus_mirrors(record)
 	if String(record.get("kind", "")) == "monster":
@@ -3403,6 +3416,14 @@ func _save() -> void:
 	var record := _current()
 	if record.is_empty():
 		return
+	# Ordinary statistic edits must not rebuild the entire feat/trait graph.
+	var previous_identity: Dictionary = {}
+	for field: String in ["species", "species_source", "species_id",
+		"subrace", "subrace_source", "subrace_id",
+		"class", "class_source", "class_id", "subclass",
+		"subclass_source", "subclass_id", "classes",
+		"background", "background_source", "background_id", "rules_version"]:
+		previous_identity[field] = record.get(field)
 	record["name"] = _name.text.strip_edges()
 	record["current_hp"] = int(_hp.value)
 	record["max_hp_base"] = int(_max_hp.value)
@@ -3517,8 +3538,15 @@ func _save() -> void:
 	record["classes"] = classes
 	_refresh_xp_minimum()
 	record["xp"] = maxi(int(_xp.value), Rules.experience_for_level(_class_xp_level()))
-	# Refresh the normalized grants only after species, background and classes
-	# have all been updated. This removes superseded racial origins immediately.
+	# Refresh grants only if actual identity/source selections changed,
+	# not for HP, counters, weapon range or individual stat edits.
+	var identity_changed := false
+	for field: String in previous_identity.keys():
+		if previous_identity[field] != record.get(field):
+			identity_changed = true
+			break
+	if identity_changed:
+		ProficiencyRules.reconcile_origin_dependents(record)
 	var current_grants: Array[Dictionary] = ProficiencyRules.choices(record)
 	ProficiencyRules.sync_legacy_fields(record, current_grants)
 	var saved_origins: Array[Dictionary] = []

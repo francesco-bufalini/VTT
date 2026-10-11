@@ -804,6 +804,180 @@ static func origins(record: Dictionary) -> Array[Dictionary]:
 	return result
 
 
+# Traits are the canonical live origin identities. No description text is
+# interpreted as a grant: the explicit 5etools "feats" field is authoritative.
+static func trait_origins(record: Dictionary, only_feat_granters: bool = false) -> Array[Dictionary]:
+	var result: Array[Dictionary] = []
+	var traits: Script = load("res://vtt/creature_traits_tab.gd") as Script
+	if traits == null:
+		return result
+	var saved: Dictionary = {}
+	for origin: Variant in record.get("proficiency_origins", []):
+		if origin is Dictionary:
+			saved[String(origin.get("id", ""))] = bool(origin.get("disabled", false))
+	for feature: Dictionary in traits.call("collect_features", record):
+		var feats: Variant = feature.get("feats", [])
+		var grants_feats: bool = (
+			(feats is Array and not (feats as Array).is_empty())
+			or (feats is Dictionary and not (feats as Dictionary).is_empty())
+			or (feats is String and not String(feats).strip_edges().is_empty())
+		)
+		if only_feat_granters and not grants_feats:
+			continue
+		var sid: String = "feature:" + String(feature.get("key", ""))
+		result.append({"id": sid, "name": "Tratto · " + String(feature.get("name", "")),
+			"group": "feature", "feats": feats,
+			"disabled": bool(saved.get(sid, false)), "automatic": true,
+			"origin_key": String(feature.get("origin_key", ""))})
+	return result
+
+
+# Physical removal withdraws saved dependent grants. Temporary switches
+# (disabled/equipped/attuned) instead keep the graph intact and only mute it.
+static func _live_origin_ids(record: Dictionary) -> Dictionary:
+	var live: Dictionary = {"": true}
+	for source: Dictionary in candidate_sources(record):
+		live[String(source.get("id", ""))] = true
+	for feature: Dictionary in trait_origins(record):
+		live[String(feature.get("id", ""))] = true
+		live[String(feature.get("origin_key", ""))] = true
+	for identity: Dictionary in [
+		{"group": "race", "name": record.get("species", ""), "source": record.get("species_source", "")},
+		{"group": "subrace", "name": record.get("subrace", ""), "source": record.get("subrace_source", "")},
+		{"group": "background", "name": record.get("background", ""), "source": record.get("background_source", "")}
+	]:
+		if not String(identity.name).is_empty():
+			live[String(identity.group) + "|" + String(identity.source).to_lower() + "|" + String(identity.name).to_lower()] = true
+	var classes: Variant = record.get("classes", [])
+	if classes is Array:
+		for member: Variant in classes:
+			if member is Dictionary and not String(member.get("name", "")).is_empty():
+				live["class|" + String(member.get("source", "")).to_lower() + "|" + String(member.get("name", "")).to_lower()] = true
+	for value: Variant in record.get("inventory", []):
+		if value is Dictionary and int(value.get("quantity", 1)) > 0:
+			live["item:" + String(value.get("id", ""))] = true
+	for feat: Variant in record.get("feats_catalog", []):
+		if feat is Dictionary:
+			live[feat_source_id(feat)] = true
+	for origin: Variant in record.get("proficiency_origins", []):
+		if origin is Dictionary and String(origin.get("group", "")) == "custom":
+			live[String(origin.get("id", ""))] = true
+	return live
+
+
+# 5etools uses the structured "feats" field for fixed grants as well as
+# choose/any options. Only fixed references are created automatically;
+# selectable variants remain choices for the user, not guessed feats.
+static func _fixed_feat_refs(value: Variant) -> Array[Dictionary]:
+	var result: Array[Dictionary] = []
+	if value is String:
+		var token: String = String(value).strip_edges()
+		if token.is_empty():
+			return result
+		var parts: PackedStringArray = token.split("|")
+		result.append({"name": parts[0], "source": parts[1] if parts.size() > 1 else ""})
+	elif value is Array:
+		for part: Variant in value:
+			result.append_array(_fixed_feat_refs(part))
+	elif value is Dictionary:
+		var data: Dictionary = value
+		if data.has("name"):
+			result.append({"name": String(data.get("name", "")), "source": String(data.get("source", ""))})
+		else:
+			for key: String in data.keys():
+				if key in ["choose", "any", "count", "from", "weighted"]:
+					continue
+				if data[key] is bool and not bool(data[key]):
+					continue
+				if data[key] is Dictionary or data[key] is Array:
+					continue
+				result.append_array(_fixed_feat_refs(key))
+	return result
+
+
+static func _grant_fixed_feats(record: Dictionary) -> void:
+	var feats: Array = record.get("feats_catalog", []).duplicate(true)
+	# An inherited feat can itself carry a structured grant. Iterate until
+	# no new grant appears, with identity+parent deduplication for cycles.
+	for _pass: int in range(20):
+		record["feats_catalog"] = feats
+		var sources: Array[Dictionary] = trait_origins(record, true)
+		var additions := 0
+		var feat_catalog: Array[Dictionary] = []
+		for source: Dictionary in sources:
+			var sid: String = String(source.get("id", ""))
+			for ref: Dictionary in _fixed_feat_refs(source.get("feats", [])):
+				var feat_name: String = String(ref.get("name", ""))
+				var feat_book: String = String(ref.get("source", ""))
+				if feat_name.is_empty():
+					continue
+				if feat_catalog.is_empty():
+					feat_catalog = Catalog.entries("feats")
+				for candidate: Dictionary in feat_catalog:
+					if String(candidate.get("name", "")).nocasecmp_to(feat_name) != 0:
+						continue
+					if not feat_book.is_empty() and String(candidate.get("source", "")).nocasecmp_to(feat_book) != 0:
+						continue
+					var duplicate := false
+					for owned: Variant in feats:
+						if owned is Dictionary and feat_source_id(owned) == feat_source_id(candidate) and String(owned.get("origin_id", "")) == sid:
+							duplicate = true
+							break
+					if not duplicate:
+						feats.append({"id": candidate.get("id", ""),
+							"name": candidate.get("name", ""), "source": candidate.get("source", ""),
+							"origin_id": sid, "origin_name": source.get("name", ""),
+							"automatic": true, "disabled": false})
+						additions += 1
+					break
+		if additions == 0:
+			break
+	record["feats_catalog"] = feats
+
+
+static func reconcile_origin_dependents(record: Dictionary) -> void:
+	_grant_fixed_feats(record)
+	# Iterative fixed point: a deleted item may have granted a feat which
+	# granted another feat, a competence, and a formula bonus.
+	var feats: Array = record.get("feats_catalog", []).duplicate(true)
+	for _pass: int in range(feats.size() + 2):
+		record["feats_catalog"] = feats
+		var live: Dictionary = _live_origin_ids(record)
+		var remaining: Array = []
+		for raw: Variant in feats:
+			if not raw is Dictionary:
+				continue
+			var parent: String = String(raw.get("origin_id", ""))
+			if parent.is_empty() or live.has(parent):
+				remaining.append(raw)
+		if remaining.size() == feats.size():
+			break
+		feats = remaining
+	record["feats_catalog"] = feats
+	var live: Dictionary = _live_origin_ids(record)
+	for field: String in ["proficiency_choices", "formula_bonuses"]:
+		var current: Variant = record.get(field, [])
+		if not current is Array:
+			continue
+		var kept: Array = []
+		for raw: Variant in current:
+			if raw is Dictionary:
+				var parent: String = String(raw.get("origin_id", ""))
+				if parent.is_empty() or live.has(parent):
+					kept.append(raw)
+		record[field] = kept
+	var origins_saved: Variant = record.get("proficiency_origins", [])
+	if origins_saved is Array:
+		var kept_origins: Array = []
+		for origin: Variant in origins_saved:
+			if not origin is Dictionary:
+				continue
+			var sid: String = String(origin.get("id", ""))
+			if live.has(sid) or String(origin.get("group", "")) == "custom":
+				kept_origins.append(origin)
+		record["proficiency_origins"] = kept_origins
+
+
 static func _resolved_source_active(
 	sid: String, own: Dictionary, feat_grants: Dictionary, feature_parents: Dictionary,
 	visiting: Dictionary, cached: Dictionary
@@ -839,6 +1013,45 @@ static func origin_enabled_map(record: Dictionary) -> Dictionary:
 	for item: Dictionary in origins(record):
 		own[String(item.get("id", ""))] = not bool(item.get("disabled", false))
 	own[""] = true
+	# All live traits are potential origins, even when they grant no
+	# proficiency. Do not expose all of them in each editor's source list.
+	for identity: Dictionary in [
+		{"group": "race", "name": record.get("species", ""), "source": record.get("species_source", "")},
+		{"group": "subrace", "name": record.get("subrace", ""), "source": record.get("subrace_source", "")},
+		{"group": "background", "name": record.get("background", ""), "source": record.get("background_source", "")}
+	]:
+		if not String(identity.name).is_empty():
+			var identity_id: String = String(identity.group) + "|" + String(identity.source).to_lower() + "|" + String(identity.name).to_lower()
+			if not own.has(identity_id):
+				own[identity_id] = true
+	var selected_classes: Variant = record.get("classes", [])
+	if selected_classes is Array:
+		for member: Variant in selected_classes:
+			if member is Dictionary and not String(member.get("name", "")).is_empty():
+				var identity_id: String = "class|" + String(member.get("source", "")).to_lower() + "|" + String(member.get("name", "")).to_lower()
+				if not own.has(identity_id):
+					own[identity_id] = true
+	for feature: Dictionary in trait_origins(record):
+		var sid: String = String(feature.get("id", ""))
+		if not own.has(sid):
+			own[sid] = true
+		var group_sid: String = String(feature.get("origin_key", ""))
+		if not group_sid.is_empty() and not own.has(group_sid):
+			own[group_sid] = true
+	var item_rules: Script = load("res://vtt/creature_item_rules.gd") as Script
+	if item_rules != null:
+		var item_sources: Dictionary = {}
+		for raw_item: Variant in record.get("inventory", []):
+			if not raw_item is Dictionary:
+				continue
+			var item_id: String = "item:" + String(raw_item.get("id", ""))
+			if item_id == "item:" or int(raw_item.get("quantity", 1)) <= 0:
+				continue
+			# Several physical copies can share the same catalog ID. Only
+			# one of them needs to be equipped to keep that origin active.
+			item_sources[item_id] = bool(item_sources.get(item_id, false)) or bool(item_rules.call("origin_active", raw_item))
+		for item_id: String in item_sources.keys():
+			own[item_id] = bool(own.get(item_id, true)) and bool(item_sources[item_id])
 	var feat_grants: Dictionary = {}
 	var feat_feature_prefixes: Dictionary = {}
 	var raw_feats: Variant = record.get("feats_catalog", [])
@@ -858,6 +1071,33 @@ static func origin_enabled_map(record: Dictionary) -> Dictionary:
 				feat_id = normalized_key(String(feat.get("name", ""))) + "|" + normalized_key(String(feat.get("source", "")))
 			feat_feature_prefixes["feature:feat|" + feat_id + "|"] = sid
 	var feature_parents: Dictionary = {}
+	# The effective species card is a trait group, but its source switch is
+	# the stable race identity in the proficiency editor.
+	var species_name: String = String(record.get("species", ""))
+	if not species_name.is_empty():
+		var species_id: String = String(record.get("species_id", ""))
+		var species_key: String = "species|" + (species_id if not species_id.is_empty() else species_name.to_lower()) + "|" + String(record.get("species_source", "")).to_lower()
+		var race_id: String = "race|" + String(record.get("species_source", "")).to_lower() + "|" + species_name.to_lower()
+		if own.has(species_key) and own.has(race_id):
+			feature_parents[species_key] = race_id
+	for feature: Dictionary in trait_origins(record):
+		var sid: String = String(feature.get("id", ""))
+		var group_sid: String = String(feature.get("origin_key", ""))
+		if group_sid.begins_with("item:"):
+			feature_parents[sid] = group_sid
+		elif group_sid.begins_with("feat|"):
+			# The feat ID stored by Traits can be a catalog or homebrew ID.
+			for raw_feat: Variant in record.get("feats_catalog", []):
+				if not raw_feat is Dictionary:
+					continue
+				var feat_id: String = String(raw_feat.get("id", ""))
+				if feat_id.is_empty():
+					feat_id = normalized_key(String(raw_feat.get("name", ""))) + "|" + normalized_key(String(raw_feat.get("source", "")))
+				if group_sid == "feat|" + feat_id:
+					feature_parents[sid] = feat_source_id(raw_feat)
+					break
+		elif not group_sid.is_empty() and group_sid != sid and own.has(group_sid):
+			feature_parents[sid] = group_sid
 	for raw_id: Variant in own.keys():
 		var origin_id: String = String(raw_id)
 		for prefix: String in feat_feature_prefixes.keys():

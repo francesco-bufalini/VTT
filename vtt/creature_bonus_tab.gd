@@ -23,7 +23,6 @@ var _bonus_cards: VBoxContainer
 var _status: Label
 var _origin_editor: VBoxContainer
 var _origin_picker: OptionButton
-var _origin_name: LineEdit
 var _target_filter: OptionButton
 var _new_target: OptionButton
 var _loading := false
@@ -55,7 +54,7 @@ func setup(on_change: Callable) -> void:
 	_origin_cards.add_theme_constant_override("separation", 5)
 	origin_scroll.add_child(_origin_cards)
 	var add_origin := Button.new()
-	add_origin.text = "+ Origine"
+	add_origin.text = "Seleziona origine"
 	add_origin.pressed.connect(func() -> void:
 		_origin_editor.visible = not _origin_editor.visible
 	)
@@ -65,11 +64,8 @@ func setup(on_change: Callable) -> void:
 	left.add_child(_origin_editor)
 	_origin_picker = OptionButton.new()
 	_origin_editor.add_child(_origin_picker)
-	_origin_name = LineEdit.new()
-	_origin_name.placeholder_text = "Nome origine personalizzata"
-	_origin_editor.add_child(_origin_name)
 	var confirm_origin := Button.new()
-	confirm_origin.text = "Seleziona / aggiungi origine"
+	confirm_origin.text = "Seleziona origine esistente"
 	confirm_origin.pressed.connect(_add_origin)
 	_origin_editor.add_child(confirm_origin)
 
@@ -219,8 +215,6 @@ func _refresh_options() -> void:
 	_origin_picker.clear()
 	_origin_picker.add_item("Senza origine")
 	_origin_picker.set_item_metadata(0, "")
-	_origin_picker.add_item("Personalizzata…")
-	_origin_picker.set_item_metadata(1, "~new~")
 	for origin: Dictionary in _origins:
 		var sid: String = String(origin.get("id", ""))
 		if sid.is_empty():
@@ -466,24 +460,22 @@ func _refresh_bonuses() -> void:
 
 
 func _add_origin() -> void:
+	if _origin_picker.selected < 0:
+		return
 	var sid: String = String(_origin_picker.get_item_metadata(_origin_picker.selected))
-	if sid == "~new~":
-		var label: String = _origin_name.text.strip_edges()
-		if label.is_empty():
-			_status.text = "Inserisci un nome per l'origine personalizzata."
-			return
-		sid = "custom|" + label.to_lower().uri_encode()
-		var exists := false
+	# All selectable origins must exist already as creature traits or
+	# structured identities. No new free-text identity is created here.
+	if not sid.is_empty():
+		var known := false
 		for source: Dictionary in _origins:
 			if String(source.get("id", "")) == sid:
-				exists = true
+				known = true
 				break
-		if not exists:
-			_origins.append({"id": sid, "name": label, "group": "custom", "disabled": false, "automatic": false})
+		if not known:
+			return
 	_selected_origin = sid
 	_origin_editor.hide()
-	_origin_name.clear()
-	_publish()
+	_refresh()
 
 
 func _add_bonus() -> void:
