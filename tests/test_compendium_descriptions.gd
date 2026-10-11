@@ -31,6 +31,8 @@ func run() -> void:
 		"Feats must have detailed offline 5etools descriptions.")
 	assert(Player.description_text("magic_items", holding).length() > 80,
 		"Magic items must have detailed offline 5etools descriptions.")
+	assert(Player.description_text("items", holding).length() > 80,
+		"Unified inventory origins must resolve the original magic item description.")
 	var original: Dictionary = acolyte.duplicate(true)
 	var enriched: Dictionary = Player.detailed_entry("backgrounds", acolyte)
 	assert(enriched.has("entries") and acolyte == original,

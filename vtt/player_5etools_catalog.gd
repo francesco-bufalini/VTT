@@ -50,8 +50,21 @@ static func detailed_entry(category: String, entry: Dictionary) -> Dictionary:
 	# Homebrew overrides have priority over imported 5etools descriptions.
 	if String(entry.get("origin", "")) == "homebrew":
 		return output
-	var indexed: Dictionary = _description_index(category)
-	var raw: Variant = indexed.get(_description_key(category, entry), {})
+	var lookup_category: String = category
+	if category == "items":
+		# Inventory origins reference the unified item list, while the offline
+		# prose indexes retain their original equipment categories.
+		var item_id: String = String(entry.get("id", "")).to_lower()
+		for candidate: String in ["magic_items", "mundane_items", "weapons", "armor", "tools"]:
+			var prefix: String = {
+				"magic_items": "magic_item:", "mundane_items": "mundane_item:",
+				"weapons": "weapon:", "armor": "armor:", "tools": "tool:"
+			}[candidate]
+			if item_id.begins_with(prefix):
+				lookup_category = candidate
+				break
+	var indexed: Dictionary = _description_index(lookup_category)
+	var raw: Variant = indexed.get(_description_key(lookup_category, entry), {})
 	if raw is Dictionary:
 		var detail: Dictionary = raw
 		for field: String in ["entries", "fluff"]:
@@ -63,7 +76,7 @@ static func detailed_entry(category: String, entry: Dictionary) -> Dictionary:
 static func description_text(category: String, entry: Dictionary) -> String:
 	var detail: Dictionary = detailed_entry(category, entry)
 	var sections: PackedStringArray = []
-	for field: String in ["entries", "description", "text", "fluff"]:
+	for field: String in ["entries", "description", "text", "additionalEntries", "fluff"]:
 		if not detail.has(field):
 			continue
 		var parts: PackedStringArray = []

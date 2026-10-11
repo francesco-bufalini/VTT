@@ -248,7 +248,7 @@ func _description(sid: String) -> String:
 	if sid.begins_with("item:"):
 		for raw: Variant in _record.get("inventory", []):
 			if raw is Dictionary and sid == "item:" + String(raw.get("id", "")):
-				description = Catalog.info_text(raw, Catalog.description_text_from_raw_item(raw))
+				description = Catalog.info_text(raw, Catalog.description_text("items", raw))
 				break
 	_descriptions[sid] = description
 	return description
