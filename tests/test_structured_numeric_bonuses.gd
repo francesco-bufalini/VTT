@@ -34,8 +34,7 @@ func run() -> void:
 		"kind": "character", "level": 3, "abilities": {
 			"str": 14, "dex": 18, "con": 10, "int": 10, "wis": 10, "cha": 10
 		},
-		"armor_class_base": 12, "armor_class_bonus": 0,
-		"initiative_bonus": 0, "formula_bonuses": [],
+		"armor_class_base": 12, "formula_bonuses": [],
 		"proficiency_choices": [], "proficiency_origins": [],
 		"inventory": [armor, shield, weapon, ring]
 	}
