@@ -349,6 +349,9 @@ func run() -> void:
 	tab.setup(func(profs: Array, feats: Array, origin_rows: Array) -> void:
 		changed.append({"profs": profs, "feats": feats, "origins": origin_rows}))
 	tab.load_record(record)
+	for i: int in range(tab._origin_picker.item_count):
+		assert("personalizzata" not in tab._origin_picker.get_item_text(i).to_lower(),
+			"Proficiency origins must be selected from existing traits only")
 	assert(tab._origins.size() > 0, "Source list is populated by eligible structured origins")
 	tab._select_origin("class|phb|fighter")
 	assert(tab._selected_id == "class|phb|fighter", "Clicking an origin selects/highlights its proficiencies")
