@@ -14,7 +14,8 @@ const GROUPS := [
 	{"kind": "skill", "label": "Abilità"},
 	{"kind": "save", "label": "Tiri salvezza"},
 	{"kind": "tool", "label": "Strumenti"},
-	{"kind": "language", "label": "Lingue"}
+	{"kind": "language", "label": "Lingue"},
+	{"kind": "feat", "label": "Talenti"}
 ]
 
 var _changed: Callable
@@ -37,6 +38,7 @@ var _origin_name: LineEdit
 var _kind_picker: OptionButton
 var _proficiency_picker: OptionButton
 var _proficiency_name: LineEdit
+var _feat_origin_picker: OptionButton
 var _feat_filter: LineEdit
 var _feat_list: ItemList
 var _feat_owned: ItemList
@@ -122,6 +124,9 @@ func setup(on_change: Callable) -> void:
 	_feat_filter.clear_button_enabled = true
 	_feat_filter.text_changed.connect(func(_value: String) -> void: _refresh_feat_lists())
 	_feat_editor.add_child(_feat_filter)
+	_feat_origin_picker = OptionButton.new()
+	_feat_origin_picker.tooltip_text = "Origine che concede il talento. I talenti senza origine restano consentiti."
+	_feat_editor.add_child(_feat_origin_picker)
 	_feat_list = ItemList.new()
 	_feat_list.custom_minimum_size.y = 90
 	_feat_list.item_activated.connect(func(_i: int) -> void: _add_feat())
@@ -133,6 +138,10 @@ func setup(on_change: Callable) -> void:
 	_feat_owned = ItemList.new()
 	_feat_owned.custom_minimum_size.y = 65
 	_feat_editor.add_child(_feat_owned)
+	var toggle_feat := Button.new()
+	toggle_feat.text = "Attiva / disattiva talento selezionato"
+	toggle_feat.pressed.connect(_toggle_selected_feat)
+	_feat_editor.add_child(toggle_feat)
 	var remove_feat := Button.new()
 	remove_feat.text = "Rimuovi talento selezionato"
 	remove_feat.pressed.connect(_remove_feat)
@@ -271,10 +280,7 @@ func _effective_record() -> Dictionary:
 
 
 func _enabled_map() -> Dictionary:
-	var enabled: Dictionary = {}
-	for item: Dictionary in _origins:
-		enabled[String(item.get("id", ""))] = not bool(item.get("disabled", false))
-	return enabled
+	return Rules.origin_enabled_map(_effective_record())
 
 
 func _refresh() -> void:
@@ -283,6 +289,7 @@ func _refresh() -> void:
 	_refresh_origins()
 	_refresh_competences()
 	_refresh_origin_picker()
+	_refresh_feat_origin_picker()
 	_refresh_feat_lists()
 	_status.text = "Seleziona un'origine per evidenziare le competenze collegate; cliccala di nuovo per deselezionarla."
 	_status.tooltip_text = "✓ competenza attiva · ◇ scelte da completare · ⏻ disattivazione senza eliminare i dati"
@@ -308,6 +315,9 @@ func _refresh_origins() -> void:
 		var matching := 0
 		for proficiency: Dictionary in _rows:
 			if String(proficiency.get("origin_id", "")) == sid:
+				matching += 1
+		for feat: Dictionary in _feats:
+			if String(feat.get("origin_id", "")) == sid:
 				matching += 1
 		var missing: Array[String] = Rules.requirement_missing(item, _rows, enabled)
 		var card := PanelContainer.new()
@@ -340,7 +350,9 @@ func _refresh_origins() -> void:
 			var active := CheckButton.new()
 			active.text = "⏻"
 			active.tooltip_text = "Disattiva temporaneamente tutti i benefici di questa origine, anche quelli obbligatori. Non elimina le concessioni."
-			active.button_pressed = not bool(item.get("disabled", false))
+			active.button_pressed = bool(enabled.get(sid, false))
+			# A child origin cannot be enabled while its granting feat is muted.
+			active.disabled = not bool(enabled.get(sid, false)) and not bool(item.get("disabled", false))
 			active.toggled.connect(_toggle_origin.bind(sid))
 			line.add_child(active)
 		if selected:
@@ -350,7 +362,7 @@ func _refresh_origins() -> void:
 			highlight.set_border_width_all(2)
 			highlight.set_corner_radius_all(5)
 			card.add_theme_stylebox_override("panel", highlight)
-		elif bool(item.get("disabled", false)):
+		elif not bool(enabled.get(sid, false)):
 			card.modulate.a = 0.58
 
 
@@ -442,11 +454,10 @@ func _refresh_competences() -> void:
 				by_section[section] = []
 			by_section[section].append(identity)
 		grouped[identity].append(index)
-	if grouped.is_empty():
+	if grouped.is_empty() and _feats.is_empty():
 		var empty := Label.new()
-		empty.text = "Nessuna competenza disponibile."
+		empty.text = "Nessuna competenza o talento disponibile."
 		_proficiency_cards.add_child(empty)
-		return
 	var headings: Dictionary = {
 		"skill": "Abilità",
 		"save": "Tiri salvezza",
@@ -550,7 +561,88 @@ func _refresh_competences() -> void:
 				var delete_spacer := Control.new()
 				delete_spacer.custom_minimum_size = Vector2(34, 34)
 				box.add_child(delete_spacer)
+	_refresh_feat_cards(enabled)
 
+
+func _refresh_feat_cards(enabled: Dictionary) -> void:
+	if _feats.is_empty():
+		return
+	var heading := Label.new()
+	heading.text = "Talenti"
+	heading.add_theme_font_size_override("font_size", 15)
+	_proficiency_cards.add_child(heading)
+	var grouped: Dictionary = {}
+	for i: int in range(_feats.size()):
+		var sid: String = Rules.feat_source_id(_feats[i])
+		if not grouped.has(sid):
+			grouped[sid] = []
+		grouped[sid].append(i)
+	var names: Array[String] = []
+	for sid: String in grouped.keys():
+		names.append(sid)
+	names.sort()
+	for sid: String in names:
+		var indices: Array = grouped[sid]
+		var feat: Dictionary = _feats[int(indices[0])]
+		var active := false
+		var selected := false
+		var selected_active := false
+		var sources: Array[String] = []
+		for index: Variant in indices:
+			var owned: Dictionary = _feats[int(index)]
+			var parent: String = String(owned.get("origin_id", ""))
+			var grant_active: bool = not bool(owned.get("disabled", false)) and (parent.is_empty() or bool(enabled.get(parent, false)))
+			active = active or grant_active
+			if parent == _selected_id or sid == _selected_id:
+				selected = true
+				selected_active = selected_active or grant_active
+			sources.append(("✓ " if grant_active else "○ ") + (_origin_display(parent) if not parent.is_empty() else "Senza origine"))
+		active = active and bool(enabled.get(sid, true))
+		var panel := PanelContainer.new()
+		_proficiency_cards.add_child(panel)
+		var style := StyleBoxFlat.new()
+		style.bg_color = Color(0.13, 0.12, 0.12, 0.88)
+		style.border_color = Color(0.79, 0.66, 0.43, 0.78) if selected_active else Color(0.36, 0.31, 0.27, 0.75)
+		style.set_border_width_all(1)
+		style.set_corner_radius_all(5)
+		style.set_content_margin_all(7)
+		panel.add_theme_stylebox_override("panel", style)
+		var line := HBoxContainer.new()
+		panel.add_child(line)
+		var label := Label.new()
+		label.size_flags_horizontal = Control.SIZE_EXPAND_FILL
+		label.clip_text = true
+		label.text = ("✓ " if active else "○ ") + String(feat.get("name", "")) + " · " + String(feat.get("source", ""))
+		label.tooltip_text = "Origini:\n" + "\n".join(sources)
+		if selected_active:
+			label.add_theme_color_override("font_color", Color(0.96, 0.87, 0.66))
+		line.add_child(label)
+		var toggle := CheckButton.new()
+		toggle.text = "⏻"
+		toggle.button_pressed = active
+		toggle.tooltip_text = "Disattiva il talento e tutte le origini e concessioni che ne dipendono."
+		toggle.toggled.connect(_toggle_feat_grants.bind(indices.duplicate()))
+		line.add_child(toggle)
+		var remove := Button.new()
+		remove.text = "✕"
+		remove.flat = true
+		remove.tooltip_text = "Rimuovi il talento e le relative concessioni."
+		remove.pressed.connect(_remove_feat_indices.bind(indices.duplicate()))
+		line.add_child(remove)
+
+
+func _toggle_feat_grants(on: bool, indices: Array) -> void:
+	for index: Variant in indices:
+		_feats[int(index)]["disabled"] = not on
+	_publish()
+
+
+func _remove_feat_indices(indices: Array) -> void:
+	indices.sort()
+	indices.reverse()
+	for index: Variant in indices:
+		_feats.remove_at(int(index))
+	_refresh_from_current_state()
 
 
 func _rebuild_mandatory_grants() -> void:
@@ -740,6 +832,7 @@ func _select_origin(sid: String) -> void:
 	_refresh_origins()
 	_refresh_competences()
 	_refresh_proficiency_picker()
+	_refresh_feat_origin_picker()
 
 
 func _toggle_origin(on: bool, sid: String) -> void:
@@ -779,6 +872,30 @@ func _origin_display(sid: String) -> String:
 		if String(item.get("id", "")) == sid:
 			return String(item.get("name", ""))
 	return ""
+
+
+func _refresh_feat_origin_picker() -> void:
+	if _feat_origin_picker == null:
+		return
+	var previous: String = ""
+	if _feat_origin_picker.selected >= 0:
+		previous = String(_feat_origin_picker.get_item_metadata(_feat_origin_picker.selected))
+	if _selected_id not in ["", "~none~"]:
+		previous = _selected_id
+	_feat_origin_picker.clear()
+	_feat_origin_picker.add_item("Senza origine")
+	_feat_origin_picker.set_item_metadata(0, "")
+	var select_index := 0
+	for origin: Dictionary in _origins:
+		var sid: String = String(origin.get("id", ""))
+		if sid.is_empty():
+			continue
+		_feat_origin_picker.add_item(String(origin.get("name", "")))
+		var index: int = _feat_origin_picker.item_count - 1
+		_feat_origin_picker.set_item_metadata(index, sid)
+		if sid == previous:
+			select_index = index
+	_feat_origin_picker.select(select_index)
 
 
 func _refresh_origin_picker() -> void:
@@ -851,10 +968,19 @@ func _catalog_entries_for_kind(kind: String) -> Array[Dictionary]:
 		for item: Dictionary in Catalog.entries("weapons"):
 			if _valid_edition(item):
 				items.append({"key": String(item.get("name", "")).to_lower(), "label": String(item.get("name", ""))})
-	elif kind in ["tool", "language"]:
-		for item: Dictionary in Catalog.entries("tools" if kind == "tool" else "languages"):
+	elif kind == "language":
+		for item: Dictionary in Rules.language_options():
+			if _valid_edition(item):
+				items.append({"key": String(item.get("key", "")), "label": String(item.get("label", ""))})
+	elif kind == "tool":
+		for item: Dictionary in Catalog.entries("tools"):
 			if _valid_edition(item):
 				items.append({"key": String(item.get("name", "")).to_lower(), "label": String(item.get("name", ""))})
+	elif kind == "feat":
+		for item: Dictionary in Catalog.entries("feats"):
+			if _valid_edition(item):
+				var key: String = String(item.get("source", "")).to_lower() + "|" + String(item.get("name", "")).to_lower()
+				items.append({"key": key, "label": String(item.get("name", "")) + " · " + String(item.get("source", ""))})
 		if kind == "tool":
 			for type_code: String in Rules.TOOL_TYPE_FALLBACK.keys():
 				for tool_name: String in Rules.TOOL_TYPE_FALLBACK[type_code]:
@@ -1112,6 +1238,18 @@ func _add_competence() -> void:
 		key = String(_proficiency_picker.get_item_metadata(_proficiency_picker.selected))
 	if key.is_empty():
 		return
+	if kind == "feat":
+		for item: Dictionary in Catalog.entries("feats"):
+			if not _valid_edition(item):
+				continue
+			var identity: String = String(item.get("source", "")).to_lower() + "|" + String(item.get("name", "")).to_lower()
+			if identity == key or String(item.get("name", "")).nocasecmp_to(key) == 0:
+				_attach_feat(item, _selected_id)
+				_proficiency_name.clear()
+				_competence_editor.visible = false
+				_refresh_from_current_state()
+				return
+		return
 	if not _valid_structured_choice(kind, key):
 		_proficiency_name.tooltip_text = "Scelta non prevista dai dati strutturati o limite dell'origine raggiunto."
 		return
@@ -1135,6 +1273,25 @@ func _valid_edition(item: Dictionary) -> bool:
 	return source not in ["XDMG", "EFA"]
 
 
+func _attach_feat(feat: Dictionary, origin_id: String) -> void:
+	var sid: String = Rules.feat_source_id(feat)
+	for owned: Dictionary in _feats:
+		if Rules.feat_source_id(owned) == sid and String(owned.get("origin_id", "")) == origin_id:
+			owned["disabled"] = false
+			return
+	_feats.append({"id": feat.get("id", ""), "name": feat.get("name", ""), "source": feat.get("source", ""),
+		"origin_id": origin_id, "origin_name": _origin_display(origin_id), "disabled": false})
+
+
+func _toggle_selected_feat() -> void:
+	var indexes: PackedInt32Array = _feat_owned.get_selected_items()
+	if indexes.is_empty() or indexes[0] >= _feats.size():
+		return
+	var feat: Dictionary = _feats[indexes[0]]
+	feat["disabled"] = not bool(feat.get("disabled", false))
+	_publish()
+
+
 func _refresh_feat_lists() -> void:
 	if _feat_list == null:
 		return
@@ -1151,8 +1308,14 @@ func _refresh_feat_lists() -> void:
 		if _feat_available.size() >= 160:
 			break
 	_feat_owned.clear()
+	var enabled: Dictionary = _enabled_map()
 	for item: Dictionary in _feats:
-		_feat_owned.add_item("%s · %s" % [item.get("name", ""), item.get("source", "")])
+		var parent: String = String(item.get("origin_id", ""))
+		var sid: String = Rules.feat_source_id(item)
+		var active: bool = not bool(item.get("disabled", false)) and bool(enabled.get(sid, true))
+		var origin_label: String = _origin_display(parent) if not parent.is_empty() else "Senza origine"
+		_feat_owned.add_item("%s %s · %s  ← %s" % ["✓" if active else "○",
+			item.get("name", ""), item.get("source", ""), origin_label])
 
 
 func _add_feat() -> void:
@@ -1160,10 +1323,10 @@ func _add_feat() -> void:
 	if indexes.is_empty() or indexes[0] >= _feat_available.size():
 		return
 	var feat: Dictionary = _feat_available[indexes[0]]
-	for owned: Dictionary in _feats:
-		if String(owned.get("id", "")) == String(feat.get("id", "")):
-			return
-	_feats.append({"id": feat.get("id", ""), "name": feat.get("name", ""), "source": feat.get("source", "")})
+	var origin_id: String = ""
+	if _feat_origin_picker.selected >= 0:
+		origin_id = String(_feat_origin_picker.get_item_metadata(_feat_origin_picker.selected))
+	_attach_feat(feat, origin_id)
 	_refresh_from_current_state()
 
 
