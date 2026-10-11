@@ -916,6 +916,10 @@ func get_conditions() -> Array[String]:
 
 func get_active_condition_display_parts() -> PackedStringArray:
 	var parts := PackedStringArray()
+	# Called on every tactical refresh. Most tokens have no conditions;
+	# do not rebuild the entire 5etools conditions catalog for them.
+	if _conditions.is_empty():
+		return parts
 	for definition: Dictionary in get_condition_definitions():
 		var condition_id := String(definition.get("id", ""))
 		if condition_id in _conditions:
@@ -969,6 +973,8 @@ func _is_valid_condition(condition_id: String) -> bool:
 
 func get_condition_presentations() -> Array[Dictionary]:
 	var rows: Array[Dictionary] = []
+	if _conditions.is_empty():
+		return rows
 	for definition: Dictionary in get_condition_definitions():
 		if String(definition.id) in _conditions:
 			rows.append({"id": String(definition.id), "name": String(definition.get("name", definition.id)).left(120), "icon": String(definition.get("icon", "•")).left(16)})

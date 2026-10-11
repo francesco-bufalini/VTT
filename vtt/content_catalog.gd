@@ -38,6 +38,9 @@ static var _home: Dictionary = {}
 static var _loaded := false
 static var diagnostics: Array[String] = []
 static var _effects: Array[Dictionary] = []
+# Expanded definitions are immutable between enrichment/homebrew reloads.
+# Tactical token badges used to rebuild this whole table multiple times a frame.
+static var _condition_definition_cache: Dictionary = {}
 
 # The stable core catalog is deliberately independent from the two
 # optional adapters. Their scripts are loaded only when invoked; a problem
@@ -50,6 +53,7 @@ static func _optional_script(path: String) -> Script:
 
 
 static func reload_enrichment() -> void:
+	_condition_definition_cache.clear()
 	var extension := _optional_script(ENRICHMENT_SCRIPT_PATH)
 	if extension != null:
 		extension.call("reload")
@@ -103,6 +107,7 @@ static func _load_native_package(package: Dictionary, path: String) -> void:
 
 
 static func reload_homebrew(paths: Array[String] = ["res://homebrew", HOME_DIR]) -> void:
+	_condition_definition_cache.clear()
 	reload_enrichment()
 	_home.clear()
 	diagnostics.clear()
@@ -251,8 +256,12 @@ static func _load_effects() -> void:
 				_effects.append(row)
 
 static func condition_definitions(edition: String = "2014") -> Array[Dictionary]:
-	_load_effects()
 	var rules_edition := "2024" if edition == "2024" else "2014"
+	if _condition_definition_cache.has(rules_edition):
+		# Never expose the cached dictionaries to UI consumers that may edit
+		# an entry while selecting condition metadata.
+		return (_condition_definition_cache[rules_edition] as Array).duplicate(true)
+	_load_effects()
 	var result: Array[Dictionary] = []
 	var seen: Dictionary = {}
 	for legacy: Dictionary in LEGACY_CONDITIONS:
@@ -306,6 +315,7 @@ static func condition_definitions(edition: String = "2014") -> Array[Dictionary]
 	result.sort_custom(func(a: Dictionary, b: Dictionary) -> bool:
 		return String(a.get("name", "")).nocasecmp_to(String(b.get("name", ""))) < 0
 	)
+	_condition_definition_cache[rules_edition] = result.duplicate(true)
 	return result
 
 static func _append_home_effects(base: Array[Dictionary], category: String) -> Array[Dictionary]:

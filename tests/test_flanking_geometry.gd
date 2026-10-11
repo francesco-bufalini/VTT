@@ -2,6 +2,7 @@ extends SceneTree
 
 const FlankingSystem = preload("res://vtt/flanking_system.gd")
 const TokenScene = preload("res://token.tscn")
+const ContentCatalog = preload("res://vtt/content_catalog.gd")
 const AttackData = preload("res://vtt/creature_attack_data.gd")
 
 
@@ -10,6 +11,17 @@ func _initialize() -> void:
 
 
 func run() -> void:
+	# Frequent condition badge polls must be trivial for clean tokens.
+	var clean_token: CharacterBody3D = TokenScene.instantiate()
+	assert(clean_token.get_active_condition_display_parts().is_empty())
+	assert(clean_token.get_condition_presentations().is_empty())
+	clean_token.free()
+	# Public condition definitions must not let one caller mutate the cache.
+	var condition_rows: Array[Dictionary] = ContentCatalog.condition_definitions("2014")
+	if not condition_rows.is_empty():
+		var first_name: String = String(condition_rows[0].get("name", ""))
+		condition_rows[0]["name"] = "TEST MUTATION"
+		assert(String(ContentCatalog.condition_definitions("2014")[0].get("name", "")) == first_name)
 	var half := Vector3(0.5, 1.0, 0.5)
 
 	# Touching hitboxes have zero gap; one empty cell between them is 1 world unit.

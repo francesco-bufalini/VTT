@@ -100,6 +100,8 @@ var _speed_bonus: SpinBox
 var _speed_effective: Label
 var _ability_total_labels: Dictionary = {}
 var _formula_values: Dictionary = {}
+# A single statistics refresh must reuse its already-built live record.
+var _formula_snapshot_override: Dictionary = {}
 var _temp_hp: SpinBox
 var _hp_delta_dialog: ConfirmationDialog
 var _hp_delta_sign := -1
@@ -1831,7 +1833,11 @@ func _install_formula(key: String, label: Label, inputs: Array, captions: Array)
 
 func _set_formula(key: String, text_value: String, explanation: String) -> void:
 	if _formula_values.has(key):
-		var detail: String = BonusRules.description(_live_stats_record(), key)
+		var source: Dictionary = (
+			_formula_snapshot_override if not _formula_snapshot_override.is_empty()
+			else _live_stats_record()
+		)
+		var detail: String = BonusRules.description(source, key)
 		_formula_values[key].set_formula(text_value, explanation + ("\n" + detail if not detail.is_empty() else ""))
 
 
@@ -1905,7 +1911,8 @@ func _on_bonuses_updated(rows: Array, origins: Array) -> void:
 
 
 func _live_stats_record() -> Dictionary:
-	var record: Dictionary = _current().duplicate(true)
+	# _current() already returns an independent deep copy.
+	var record: Dictionary = _current()
 	if record.is_empty() or _ability_spins.is_empty():
 		return record
 	var abilities: Dictionary = record.get("abilities", {}).duplicate(true)
@@ -2636,6 +2643,7 @@ func _refresh_skill_values(record: Dictionary) -> void:
 	# The sheet may have unsaved characteristic edits when signals fire.
 	if String(record.get("id", "")) == _selected_id:
 		live = _live_stats_record()
+	_formula_snapshot_override = live
 	var proficiency: int = BonusRules.value(live, "proficiency")
 	_set_formula("proficiency", "%+d" % proficiency,
 		"Competenza: base %+d %+d bonus da origini = %+d" % [
@@ -2699,6 +2707,7 @@ func _refresh_skill_values(record: Dictionary) -> void:
 		"Percezione passiva: 10 + Percezione %+d + bonus propri %+d = %d" % [
 			BonusRules.value(live, "skill:perception"),
 			BonusRules.bonus(live, "passive_perception"), passive])
+	_formula_snapshot_override = {}
 
 
 func _refresh_weapon_picker(record: Dictionary) -> void:
@@ -3359,7 +3368,9 @@ func _update_ability_modifier(ability: String) -> void:
 			int((_ability_bonus_spins[ability] as SpinBox).value),
 			BonusRules.bonus(live, "ability:" + ability), score])
 	if ability == "dex" and _initiative != null and not _loading:
-		_initiative.value = value
+		# Initiative is derived; changing the readout must not trigger a
+		# second full archive save while updating the Dexterity field.
+		_initiative.set_value_no_signal(value)
 		_update_defense_display()
 	if not _loading:
 		_refresh_skill_values(live)

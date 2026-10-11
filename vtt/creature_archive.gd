@@ -55,18 +55,35 @@ func save(record: Dictionary) -> Error:
 	var id := String(record.get("id", "")).strip_edges()
 	if id.is_empty():
 		return ERR_INVALID_PARAMETER
-	var persisted := _stored(kind, id)
-	if not CreatureOwner.can_edit(record, persisted):
-		return ERR_UNAUTHORIZED
+	# One read/normalization pass per edit. Previously _stored() normalized
+	# the entire archive, then list_*() normalized it all over again.
+	# Preserve transferred records in the backing store and enforce the same
+	# owner/revision checks against the latest persisted sheet.
 	if kind == "monster":
-		var monsters: Array[Dictionary] = _monsters.list_creatures()
-		var normalized: Dictionary = _monsters.normalize_creature(record)
-		_upsert(monsters, normalized)
+		var all_monsters: Array[Dictionary] = _monsters.list_creatures(true)
+		var persisted: Dictionary = {}
+		var monsters: Array[Dictionary] = []
+		for entry: Dictionary in all_monsters:
+			if String(entry.get("id", "")) == id:
+				persisted = entry
+			if CreatureOwner.is_owner(entry):
+				monsters.append(entry)
+		if not CreatureOwner.can_edit(record, persisted):
+			return ERR_UNAUTHORIZED
+		_upsert(monsters, _monsters.normalize_creature(record))
 		return _monsters.save_creatures(monsters)
 	if kind == "character":
-		var characters: Array[Dictionary] = _characters.list_characters()
-		var normalized: Dictionary = _characters.normalize_character(record)
-		_upsert(characters, normalized)
+		var all_characters: Array[Dictionary] = _characters.list_characters(true)
+		var persisted: Dictionary = {}
+		var characters: Array[Dictionary] = []
+		for entry: Dictionary in all_characters:
+			if String(entry.get("id", "")) == id:
+				persisted = entry
+			if CreatureOwner.is_owner(entry):
+				characters.append(entry)
+		if not CreatureOwner.can_edit(record, persisted):
+			return ERR_UNAUTHORIZED
+		_upsert(characters, _characters.normalize_character(record))
 		return _characters.save_characters(characters)
 	return ERR_INVALID_PARAMETER
 
