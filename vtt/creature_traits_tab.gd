@@ -81,6 +81,10 @@ func load_record(record: Dictionary) -> void:
 		_search.clear()
 	_record_id = record_id
 	_features = collect_features(record)
+	var enabled: Dictionary = Proficiencies.origin_enabled_map(record)
+	for feature: Dictionary in _features:
+		var sid: String = "feature:" + String(feature.get("key", ""))
+		feature["inactive"] = bool(feature.get("inactive", false)) or not bool(enabled.get(sid, true))
 	var previous_origin: String = _active_origin
 	_origin_choice.clear()
 	_origin_choice.add_item("Tutte le origini")
@@ -413,6 +417,26 @@ static func _collect_features(record: Dictionary) -> Array[Dictionary]:
 				"source": String(definition.get("source", "")), "entries": description,
 				"inactive": inactive, "feats": definition.get("feats", [])},
 				0, "Oggetto · " + item_label, "item:" + item_id, "", "", 4)
+
+	# User-defined origins also have a visible trait, rather than existing
+	# only as provenance labels in the bonus/proficiency editors.
+	var manual: Variant = record.get("proficiency_origins", [])
+	if manual is Array:
+		for raw_origin: Variant in manual:
+			if not raw_origin is Dictionary:
+				continue
+			var origin: Dictionary = raw_origin
+			if String(origin.get("group", "")) != "custom":
+				continue
+			var sid: String = String(origin.get("id", ""))
+			if sid.is_empty():
+				continue
+			var origin_name: String = String(origin.get("name", sid))
+			_append(result, {"id": "overview",
+				"name": "Origine · " + origin_name,
+				"entries": origin.get("description", "Origine personalizzata."),
+				"inactive": bool(origin.get("disabled", false))},
+				0, origin_name, sid, "", "", 5)
 
 	var raw_classes: Variant = record.get("classes", [])
 	var classes: Array = raw_classes as Array if raw_classes is Array else []
