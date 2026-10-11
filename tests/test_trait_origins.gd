@@ -46,6 +46,32 @@ func _run() -> void:
 	assert(item_trait and class_overview,
 		"Inventory and class overview descriptions are independent trait cards")
 
+	var archived_document: Dictionary = {
+		"id": "doc:test:secret", "name": "Note segrete",
+		"category": "documents", "quantity": 1,
+		"description": "Testo del documento"
+	}
+	record["inventory"] = [item, archived_document]
+	record["proficiency_origins"] = [{
+		"id": "custom|legacy", "name": "Origine di vecchio salvataggio",
+		"group": "custom", "disabled": false
+	}]
+	var filtered_traits: Array[Dictionary] = Traits.collect_features(record)
+	var document_trait_found := false
+	var manual_origin_trait_found := false
+	var physical_item_remains := false
+	for trait: Dictionary in filtered_traits:
+		if "Note segrete" in String(trait.get("name", "")):
+			document_trait_found = true
+		if "Origine di vecchio salvataggio" in String(trait.get("name", "")):
+			manual_origin_trait_found = true
+		if "Test Blade" in String(trait.get("name", "")):
+			physical_item_remains = true
+	assert(not document_trait_found and not manual_origin_trait_found and physical_item_remains,
+		"Documents and legacy custom origins are not traits; regular items remain visible")
+	record["inventory"] = [item]
+	record["proficiency_origins"] = []
+
 	var eligible: Array[Dictionary] = Origins.trait_origins(record, true)
 	var structured_source := ""
 	for source: Dictionary in eligible:
