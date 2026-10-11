@@ -284,6 +284,10 @@ func _refresh_origins() -> void:
 	var current: Dictionary = _record.duplicate(true)
 	current["proficiency_origins"] = _origins.duplicate(true)
 	var enabled: Dictionary = Proficiencies.origin_enabled_map(current)
+	for entry: Dictionary in Bonuses.available_origins(current):
+		var eid: String = String(entry.get("id", ""))
+		if not enabled.has(eid):
+			enabled[eid] = not bool(entry.get("inactive", entry.get("disabled", false)))
 	var visited: Dictionary = {}
 	for origin: Dictionary in origins:
 		var sid: String = String(origin.get("id", ""))
@@ -363,7 +367,7 @@ func _refresh_bonuses() -> void:
 	for item: Dictionary in Bonuses.available_origins(live):
 		var sid: String = String(item.get("id", ""))
 		if not enabled.has(sid):
-			enabled[sid] = not bool(item.get("disabled", false))
+			enabled[sid] = not bool(item.get("inactive", item.get("disabled", false)))
 	for target: Variant in ordered:
 		var header := Label.new()
 		header.text = String(names.get(target, target)) + " · %+d" % Bonuses.bonus(live, String(target))
