@@ -72,7 +72,7 @@ static func available_origins(record: Dictionary) -> Array[Dictionary]:
 		if sid == "feature:" or seen.has(sid):
 			continue
 		seen[sid] = true
-		var inactive: bool = bool(inactive_live.get(sid, false))
+		var inactive: bool = not bool(effective.get(sid, false))
 		# Feat feature traits are children of the feat, not independent
 		# sources that can keep granting bonuses after the feat is muted.
 		var origin_key: String = String(feature.get("origin_key", ""))
@@ -98,7 +98,7 @@ static func available_origins(record: Dictionary) -> Array[Dictionary]:
 			seen[sid] = true
 			results.append({"id": sid, "name": "Oggetto · " + String((owned as Dictionary).get("name", "")),
 				"disabled": bool(disabled_live.get(sid, false)),
-				"inactive": bool(inactive_live.get(sid, false))})
+				"inactive": not bool(effective.get(sid, false))})
 	for row: Dictionary in Structured.derive(record):
 		var sid: String = String(row.get("origin_id", ""))
 		if sid.is_empty() or seen.has(sid):
