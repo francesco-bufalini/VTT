@@ -28,6 +28,7 @@ var _target_filter: OptionButton
 var _new_target: OptionButton
 var _loading := false
 var _description_cache: Dictionary = {}
+var _grants_tooltip_cache: Dictionary = {}
 
 
 func setup(on_change: Callable) -> void:
@@ -121,6 +122,7 @@ func load_record(record: Dictionary) -> void:
 	_loading = true
 	_record = record.duplicate(true)
 	_description_cache.clear()
+	_grants_tooltip_cache.clear()
 	_rows = Bonuses.grants(_record)
 	_origins = Proficiencies.origins(_record)
 	# Sources without proficiencies are also available to the bonus editor.
@@ -249,7 +251,9 @@ func _origin_label(sid: String) -> String:
 func _origin_description(sid: String) -> String:
 	if not _description_cache.has(sid):
 		_description_cache[sid] = _resolve_origin_description(sid)
-	return String(_description_cache[sid]) + _origin_grants_tooltip(sid)
+	if not _grants_tooltip_cache.has(sid):
+		_grants_tooltip_cache[sid] = _origin_grants_tooltip(sid)
+	return String(_description_cache[sid]) + String(_grants_tooltip_cache[sid])
 
 
 func _origin_grants_tooltip(sid: String) -> String:
@@ -303,6 +307,7 @@ func _resolve_origin_description(sid: String) -> String:
 
 
 func _refresh() -> void:
+	_grants_tooltip_cache.clear()
 	_refresh_origins()
 	_refresh_bonuses()
 	_status.text = "Seleziona un'origine a sinistra per evidenziarne i bonus. Ogni bonus è indipendente e cumulabile; il pulsante di attivazione non elimina la concessione."
