@@ -359,7 +359,10 @@ func _refresh_feats() -> void:
 		var toggle := CheckButton.new()
 		toggle.text = "⏻"
 		toggle.custom_minimum_size.y = 34
-		toggle.button_pressed = own_active
+		toggle.button_pressed = active
+		# A feat inherited from an inactive source must not appear enabled or
+		# be manually re-enabled until its granting origin is restored.
+		toggle.disabled = not active and own_active
 		toggle.tooltip_text = "Attiva o disattiva il talento e le origini che dipendono da esso."
 		toggle.toggled.connect(_toggle_grants.bind(indices.duplicate()))
 		line.add_child(toggle)
