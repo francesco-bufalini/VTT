@@ -425,7 +425,7 @@ static func _collect_features(record: Dictionary) -> Array[Dictionary]:
 			var count: int = int(group.get("quantity", 1))
 			_append(result, {"id": "overview", "name": "Descrizione · " + item_label + (" ×%d" % count if count > 1 else ""),
 				"source": String(definition.get("source", "")), "entries": description,
-				"inactive": inactive, "feats": definition.get("feats", [])},
+				"inactive": inactive, "feats": detailed.get("feats", definition.get("feats", []))},
 				0, "Oggetto · " + item_label, "item:" + item_id, "", "", 4)
 
 	# User-defined origins also have a visible trait, rather than existing
@@ -477,7 +477,7 @@ static func _collect_features(record: Dictionary) -> Array[Dictionary]:
 			var overview: Dictionary = PlayerCatalog.detailed_entry("classes", class_entry)
 			_append(result, {"id": "overview", "name": "Descrizione · " + class_label,
 				"source": class_book, "entries": PlayerCatalog.description_text("classes", overview),
-				"feats": class_entry.get("feats", [])},
+				"feats": overview.get("feats", class_entry.get("feats", []))},
 				1, class_origin, class_key, class_label, class_book, 0)
 			break
 		# Level-one synthetic feature: a structured 5etools class overview.
@@ -615,7 +615,7 @@ static func _collect_species(record: Dictionary, output: Array[Dictionary]) -> v
 			continue
 		_append(output, {"id": "overview", "name": "Descrizione · " + species,
 			"source": wanted_source, "entries": PlayerCatalog.description_text("races", race),
-			"feats": race.get("feats", [])},
+			"feats": PlayerCatalog.detailed_entry("races", race).get("feats", race.get("feats", []))},
 			1, "Specie · " + species, "species|" + species_id + "|" + species_book, "", "", 0)
 		var raw: Variant = race.get("entries", race.get("description", []))
 		if raw is Array:
