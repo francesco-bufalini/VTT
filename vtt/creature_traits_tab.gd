@@ -164,7 +164,7 @@ func _rebuild() -> void:
 			var category_heading := Label.new()
 			category_heading.text = {"razza": "RAZZA E SOTTORAZZA", "background": "BACKGROUND",
 				"classi": "CLASSI E SOTTOCLASSI", "talenti": "TALENTI",
-				"oggetti": "OGGETTI E DOCUMENTI", "mostro": "TRATTI DEL MOSTRO"}.get(group, "ALTRI TRATTI")
+				"oggetti": "OGGETTI", "mostro": "TRATTI DEL MOSTRO"}.get(group, "ALTRI TRATTI")
 			category_heading.add_theme_font_size_override("font_size", 17)
 			category_heading.add_theme_color_override("font_color", Color(0.82, 0.90, 0.94))
 			section.add_child(category_heading)
@@ -418,6 +418,9 @@ static func _collect_features(record: Dictionary) -> Array[Dictionary]:
 			var group: Dictionary = owned_groups[item_id]
 			var owned: Dictionary = group["owned"]
 			var definition: Dictionary = Items.entry_for(owned)
+			# Documents are inventory content, not game-mechanical traits.
+			if Items.kind(definition) == "document":
+				continue
 			var detailed: Dictionary = PlayerCatalog.detailed_entry("items", definition)
 			var inactive: bool = not bool(group.get("active", false))
 			var description: String = PlayerCatalog.description_text("items", detailed)
@@ -432,26 +435,6 @@ static func _collect_features(record: Dictionary) -> Array[Dictionary]:
 			_append_named_entries(result, detailed.get("entries", []),
 				"Oggetto · " + item_label, "item:" + item_id,
 				String(definition.get("source", "")), 4)
-
-	# User-defined origins also have a visible trait, rather than existing
-	# only as provenance labels in the bonus/proficiency editors.
-	var manual: Variant = record.get("proficiency_origins", [])
-	if manual is Array:
-		for raw_origin: Variant in manual:
-			if not raw_origin is Dictionary:
-				continue
-			var origin: Dictionary = raw_origin
-			if String(origin.get("group", "")) != "custom":
-				continue
-			var sid: String = String(origin.get("id", ""))
-			if sid.is_empty():
-				continue
-			var origin_name: String = String(origin.get("name", sid))
-			_append(result, {"id": "overview",
-				"name": "Origine · " + origin_name,
-				"entries": origin.get("description", "Origine personalizzata."),
-				"inactive": bool(origin.get("disabled", false))},
-				0, origin_name, sid, "", "", 5)
 
 	var raw_classes: Variant = record.get("classes", [])
 	var classes: Array = raw_classes as Array if raw_classes is Array else []
