@@ -127,7 +127,6 @@ func create_creature(stat_block: Dictionary, side: String) -> Dictionary:
 		"side": "ally" if side == "ally" else "enemy",
 		"max_hp": hp,
 		"max_hp_base": hp,
-		"max_hp_bonus": 0,
 		"current_hp": hp,
 		"inventory": [],
 		"documents": [],
@@ -144,25 +143,19 @@ func create_creature(stat_block: Dictionary, side: String) -> Dictionary:
 		"skill_ranks_custom": false,
 		"armor_class": CreatureRules.monster_armor_class(stat_block),
 		"armor_class_base": CreatureRules.monster_armor_class(stat_block),
-		"armor_class_bonus": 0,
 		"speed": CreatureRules.walking_speed(stat_block.get("speed", 30)),
 		"speed_is_custom": false,
 		"initiative": CreatureRules.ability_modifier(int(stat_block.get("dex", 10))),
 		"initiative_base": CreatureRules.ability_modifier(int(stat_block.get("dex", 10))),
-		"initiative_bonus": 0,
 		"abilities": CreatureRules.monster_abilities(stat_block),
-		"ability_bonuses": {"str": 0, "dex": 0, "con": 0, "int": 0, "wis": 0, "cha": 0},
 		"resource_tracker_spent": {},
-		"resource_tracker_bonuses": {},
 		"xp": 0,
 		"spells": [],
 		"prepared_spells": [],
 		"spellbook_spells": [],
 		"spell_slots_total": [0, 0, 0, 0, 0, 0, 0, 0, 0, 0],
-		"spell_slots_bonus": [0, 0, 0, 0, 0, 0, 0, 0, 0, 0],
 		"spell_slots_spent": [0, 0, 0, 0, 0, 0, 0, 0, 0, 0],
 		"pact_slots_total": 0,
-		"pact_slots_bonus": 0,
 		"pact_slots_spent": 0,
 		"pact_slot_level": 1,
 		"spell_slots_visible": true,
@@ -181,7 +174,6 @@ func create_creature(stat_block: Dictionary, side: String) -> Dictionary:
 		"temporary_hp": 0,
 		"second_form_hp": 0,
 		"second_form_max_hp": 0,
-		"speed_bonus": 0,
 		"speed_base": CreatureRules.walking_speed(stat_block.get("speed", 30)),
 		"background_personality": "",
 		"stat_block": stat_block.duplicate(true),
@@ -235,8 +227,7 @@ func normalize_creature(value: Dictionary) -> Dictionary:
 			else "enemy"
 		),
 		"max_hp": maxi(0, int(value.get("max_hp", fallback_hp))),
-		"max_hp_bonus": clampi(int(value.get("max_hp_bonus", 0)), -9999, 99999),
-		"max_hp_base": maxi(0, int(value.get("max_hp_base", int(value.get("max_hp", fallback_hp)) - int(value.get("max_hp_bonus", 0))))),
+		"max_hp_base": maxi(0, int(value.get("max_hp_base", value.get("max_hp", fallback_hp)))),
 		"inventory": value.get("inventory", []).duplicate(true) if value.get("inventory", []) is Array else [],
 		"documents": value.get("documents", []).duplicate(true) if value.get("documents", []) is Array else [],
 		"attacks": String(value.get("attacks", "")),
@@ -275,36 +266,23 @@ func normalize_creature(value: Dictionary) -> Dictionary:
 		"temporary_hp": maxi(0, int(value.get("temporary_hp", 0))),
 		"second_form_hp": maxi(0, int(value.get("second_form_hp", 0))),
 		"second_form_max_hp": maxi(0, int(value.get("second_form_max_hp", value.get("second_form_hp", 0)))),
-		"speed_base": maxi(0, int(value.get("speed_base", int(value.get("speed", CreatureRules.walking_speed(stat_block.get("speed", 30)))) - int(value.get("speed_bonus", 0))))),
-		"speed_bonus": clampi(int(value.get("speed_bonus", 0)), -999, 999),
+		"speed_base": maxi(0, int(value.get("speed_base", value.get("speed", CreatureRules.walking_speed(stat_block.get("speed", 30)))))),
 		"background_personality": String(value.get("background_personality", "")),
 		"armor_class": maxi(0, int(value.get("armor_class", CreatureRules.monster_armor_class(stat_block)))),
-		"armor_class_bonus": clampi(int(value.get("armor_class_bonus", 0)), -99, 99),
-		"armor_class_base": maxi(0, int(value.get(
-			"armor_class_base", int(value.get("armor_class", CreatureRules.monster_armor_class(stat_block)))
-			- int(value.get("armor_class_bonus", 0))
-		))),
+		"armor_class_base": maxi(0, int(value.get("armor_class_base", value.get("armor_class", CreatureRules.monster_armor_class(stat_block))))),
 		"speed": maxi(0, int(value.get("speed", CreatureRules.walking_speed(stat_block.get("speed", 30))))),
 		"speed_is_custom": bool(value.get("speed_is_custom", false)),
 		"initiative": int(value.get("initiative", CreatureRules.ability_modifier(int(stat_block.get("dex", 10))))),
-		"initiative_bonus": clampi(int(value.get("initiative_bonus", 0)), -99, 99),
-		"initiative_base": int(value.get(
-			"initiative_base", int(value.get("initiative", CreatureRules.ability_modifier(int(stat_block.get("dex", 10)))))
-			- int(value.get("initiative_bonus", 0))
-		)),
+		"initiative_base": CreatureRules.ability_modifier(int(stat_block.get("dex", 10))),
 		"abilities": _normalize_abilities(value.get("abilities", {}), stat_block),
-		"ability_bonuses": _normalize_ability_bonuses(value.get("ability_bonuses", {})),
 		"resource_tracker_spent": value.get("resource_tracker_spent", {}).duplicate(true) if value.get("resource_tracker_spent", {}) is Dictionary else {},
-		"resource_tracker_bonuses": value.get("resource_tracker_bonuses", {}).duplicate(true) if value.get("resource_tracker_bonuses", {}) is Dictionary else {},
 		"xp": maxi(0, int(value.get("xp", 0))),
 		"spells": value.get("spells", []).duplicate(true) if value.get("spells", []) is Array else [],
 		"prepared_spells": value.get("prepared_spells", []).duplicate(true) if value.get("prepared_spells", []) is Array else [],
 		"spellbook_spells": value.get("spellbook_spells", []).duplicate(true) if value.get("spellbook_spells", []) is Array else [],
 		"spell_slots_total": _normalize_spell_slots(value.get("spell_slots_total", [])),
-		"spell_slots_bonus": _normalize_spell_slot_bonuses(value.get("spell_slots_bonus", [])),
 		"spell_slots_spent": _normalize_spell_slots(value.get("spell_slots_spent", [])),
 		"pact_slots_total": maxi(0, int(value.get("pact_slots_total", 0))),
-		"pact_slots_bonus": clampi(int(value.get("pact_slots_bonus", 0)), -8, 20),
 		"pact_slots_spent": maxi(0, int(value.get("pact_slots_spent", 0))),
 		"pact_slot_level": clampi(int(value.get("pact_slot_level", 1)), 1, 5),
 		"spell_slots_visible": bool(value.get("spell_slots_visible", true)),
@@ -316,12 +294,12 @@ func normalize_creature(value: Dictionary) -> Dictionary:
 		),
 		"linked_token_name": String(value.get("linked_token_name", ""))
 	}
-	result["max_hp"] = maxi(0, int(result["max_hp_base"]) + int(result["max_hp_bonus"]))
-	result["armor_class"] = maxi(0, int(result["armor_class_base"]) + int(result["armor_class_bonus"]) + ItemRules.shield_bonus(result.get("inventory", [])))
-	result["initiative"] = int(result["initiative_base"]) + int(result["initiative_bonus"])
+	result["max_hp"] = int(result["max_hp_base"])
+	result["armor_class"] = maxi(0, int(result["armor_class_base"]) + ItemRules.shield_bonus(result.get("inventory", [])))
+	result["initiative"] = int(result["initiative_base"])
 	if not bool(result["speed_is_custom"]):
 		result["speed_base"] = CreatureRules.walking_speed(stat_block.get("speed", 30))
-	result["speed"] = maxi(0, int(result["speed_base"]) + int(result["speed_bonus"]))
+	result["speed"] = maxi(0, int(result["speed_base"]))
 	result["second_form_hp"] = mini(int(result["second_form_hp"]), int(result["second_form_max_hp"]))
 	# Migrate previous saves whose first class was synthetic "Mostro".
 	# The bestiary CR is preserved only in stat_block.cr; never in levels.
@@ -355,16 +333,11 @@ func normalize_creature(value: Dictionary) -> Dictionary:
 		result["subclass_source"] = String(first.get("subclass_source", ""))
 		result["subclass_id"] = String(first.get("subclass_id", ""))
 	result["xp"] = maxi(int(result["xp"]), CreatureRules.experience_for_level(int(result["level"])))
-	var normalized_bonuses: Dictionary = {}
-	for tracker_id: Variant in (result["resource_tracker_bonuses"] as Dictionary).keys():
-		normalized_bonuses[String(tracker_id)] = clampi(int(result["resource_tracker_bonuses"][tracker_id]), -999, 9999)
-	result["resource_tracker_bonuses"] = normalized_bonuses
 	if String(result["id"]).is_empty():
 		var now := int(Time.get_unix_time_from_system())
 		var unique := int(Time.get_ticks_usec())
 		result["id"] = "master_creature_%d_%d" % [now, unique]
 	Proficiencies.sync_legacy_fields(result, Proficiencies.choices(result))
-	Bonuses.migrate_legacy(result, value.has("initiative") and (Bonuses.grants(value).is_empty() or not value.has("initiative_base")))
 	result["max_hp"] = maxi(0, Bonuses.value(result, "hp"))
 	result["armor_class"] = maxi(0, Bonuses.value(result, "ac"))
 	result["initiative_base"] = Bonuses.value(result, "ability_mod:dex")
@@ -373,25 +346,6 @@ func normalize_creature(value: Dictionary) -> Dictionary:
 	result["speed"] = maxi(0, Bonuses.value(result, "speed"))
 	return result
 
-
-static func _normalize_ability_bonuses(value: Variant) -> Dictionary:
-	var bonuses: Dictionary = {}
-	for ability: String in ["str", "dex", "con", "int", "wis", "cha"]:
-		bonuses[ability] = clampi(
-			int((value as Dictionary).get(ability, 0))
-			if value is Dictionary else 0, -30, 30
-		)
-	return bonuses
-
-
-static func _normalize_spell_slot_bonuses(value: Variant) -> Array:
-	var result: Array = []
-	for index: int in range(10):
-		var bonus: int = 0
-		if value is Array and index < (value as Array).size():
-			bonus = clampi(int((value as Array)[index]), -99, 99)
-		result.append(bonus)
-	return result
 
 
 static func _normalize_spell_slots(value: Variant) -> Array:
