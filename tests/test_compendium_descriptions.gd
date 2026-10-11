@@ -4,6 +4,7 @@ const Player = preload("res://vtt/player_5etools_catalog.gd")
 const Traits = preload("res://vtt/creature_traits_tab.gd")
 const ProficiencyTab = preload("res://vtt/creature_proficiencies_tab.gd")
 const BonusTab = preload("res://vtt/creature_bonus_tab.gd")
+const FeatsTab = preload("res://vtt/creature_feats_tab.gd")
 const Compendium = preload("res://vtt/compendium.gd")
 const CreatureArea = preload("res://vtt/creature_area.gd")
 
@@ -68,6 +69,17 @@ func run() -> void:
 	assert("Insight" in preview and "ac = 2" in preview,
 		"Bonus origin hover must show existing selections and bonuses.")
 	bonuses.free()
+
+	var feats_tab := FeatsTab.new()
+	feats_tab._feats = [{"name": "Alert", "source": "PHB", "origin_id": "background|phb|acolyte"}]
+	feats_tab._proficiency_choices = [{"origin_id": "background|phb|acolyte",
+		"kind": "skill", "key": "insight", "disabled": false}]
+	assert("Alert" in feats_tab._origin_grants_tooltip("background|phb|acolyte")
+		and "Insight" in feats_tab._origin_grants_tooltip("background|phb|acolyte"),
+		"Feat origin editor must show previously selected benefits.")
+	assert("Always on the lookout" in feats_tab._feat_description(alert),
+		"Owned feats should have complete descriptions in the feat editor.")
+	feats_tab.free()
 
 	var area := CreatureArea.new()
 	var info_choice := OptionButton.new()
