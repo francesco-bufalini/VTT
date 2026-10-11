@@ -841,6 +841,18 @@ static func _live_origin_ids(record: Dictionary) -> Dictionary:
 	for feature: Dictionary in trait_origins(record):
 		live[String(feature.get("id", ""))] = true
 		live[String(feature.get("origin_key", ""))] = true
+	for identity: Dictionary in [
+		{"group": "race", "name": record.get("species", ""), "source": record.get("species_source", "")},
+		{"group": "subrace", "name": record.get("subrace", ""), "source": record.get("subrace_source", "")},
+		{"group": "background", "name": record.get("background", ""), "source": record.get("background_source", "")}
+	]:
+		if not String(identity.name).is_empty():
+			live[String(identity.group) + "|" + String(identity.source).to_lower() + "|" + String(identity.name).to_lower()] = true
+	var classes: Variant = record.get("classes", [])
+	if classes is Array:
+		for member: Variant in classes:
+			if member is Dictionary and not String(member.get("name", "")).is_empty():
+				live["class|" + String(member.get("source", "")).to_lower() + "|" + String(member.get("name", "")).to_lower()] = true
 	for value: Variant in record.get("inventory", []):
 		if value is Dictionary and int(value.get("quantity", 1)) > 0:
 			live["item:" + String(value.get("id", ""))] = true
@@ -1003,6 +1015,22 @@ static func origin_enabled_map(record: Dictionary) -> Dictionary:
 	own[""] = true
 	# All live traits are potential origins, even when they grant no
 	# proficiency. Do not expose all of them in each editor's source list.
+	for identity: Dictionary in [
+		{"group": "race", "name": record.get("species", ""), "source": record.get("species_source", "")},
+		{"group": "subrace", "name": record.get("subrace", ""), "source": record.get("subrace_source", "")},
+		{"group": "background", "name": record.get("background", ""), "source": record.get("background_source", "")}
+	]:
+		if not String(identity.name).is_empty():
+			var identity_id: String = String(identity.group) + "|" + String(identity.source).to_lower() + "|" + String(identity.name).to_lower()
+			if not own.has(identity_id):
+				own[identity_id] = true
+	var selected_classes: Variant = record.get("classes", [])
+	if selected_classes is Array:
+		for member: Variant in selected_classes:
+			if member is Dictionary and not String(member.get("name", "")).is_empty():
+				var identity_id: String = "class|" + String(member.get("source", "")).to_lower() + "|" + String(member.get("name", "")).to_lower()
+				if not own.has(identity_id):
+					own[identity_id] = true
 	for feature: Dictionary in trait_origins(record):
 		var sid: String = String(feature.get("id", ""))
 		if not own.has(sid):
