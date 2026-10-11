@@ -317,6 +317,7 @@ static func _collect_features(record: Dictionary) -> Array[Dictionary]:
 					if not section_data.has("entries") and not section_data.has("entry"):
 						continue
 					var feature: Dictionary = section_data.duplicate(true)
+					feature["entries"] = section_data.get("entries", section_data.get("entry", ""))
 					feature["source"] = String(background.get("source", ""))
 					_append(result, feature, 1, origin, origin_key, "", "", 2)
 					found_named = true
