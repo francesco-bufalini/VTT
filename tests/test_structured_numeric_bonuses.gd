@@ -110,5 +110,52 @@ func run() -> void:
 	(character.inventory[0] as Dictionary)["reqAttune"] = true
 	assert(Bonuses.value(character, "save:wis") == 0,
 		"A boolean true requirement must still require attunement")
-	print("PASS: structured item bonuses, equipped armor AC, attunement, provenance and stacking")
+	test_subrace_bonuses()
+	print("PASS: structured item and selected subrace bonuses, attunement, provenance and stacking")
 	quit()
+
+
+func test_subrace_bonuses() -> void:
+	var record := {
+		"kind": "character", "level": 1, "classes": [], "inventory": [],
+		"abilities": {"str": 10, "dex": 10, "con": 10, "int": 10, "wis": 10, "cha": 10},
+		"species": "Elf", "species_source": "PHB", "subrace": "High", "subrace_source": "PHB",
+		"formula_bonuses": [], "proficiency_origins": [], "proficiency_choices": []
+	}
+	assert(Bonuses.value(record, "ability:dex") == 12)
+	assert(Bonuses.value(record, "ability:int") == 11, "Selected High Elf must contribute its own structured ability bonus")
+	record.subrace = "Wood"
+	assert(Bonuses.value(record, "ability:int") == 10, "Changing only subrace must invalidate the automatic bonus cache")
+	assert(Bonuses.value(record, "ability:wis") == 11)
+	assert(Bonuses.value(record, "ability:dex") == 12, "Parent bonuses must not be duplicated or removed")
+	record.subrace = ""
+	assert(Bonuses.value(record, "ability:wis") == 10, "Removing the child withdraws only its grants")
+	record.species = "Elf (High)"
+	assert(Bonuses.value(record, "ability:int") == 11 and Bonuses.value(record, "ability:dex") == 12,
+		"Legacy flattened species still resolve both parent and child")
+	record.species = "Halfling"
+	record.subrace = "Ghostwise"
+	record.subrace_source = "SCAG"
+	assert(Bonuses.value(record, "ability:wis") == 11)
+	var found := false
+	for grant: Dictionary in Bonuses.grants(record):
+		if String(grant.get("target", "")) == "ability:wis":
+			assert(grant.origin_id == "subrace|scag|ghostwise", "Child identity must use its own source book")
+			found = true
+	assert(found)
+	record.proficiency_origins = [{"id": "subrace|scag|ghostwise", "name": "Ghostwise", "group": "subrace", "disabled": true}]
+	assert(Bonuses.value(record, "ability:wis") == 10, "Disabling the child origin must withdraw its numeric bonus")
+	var restored: Dictionary = load("res://vtt/player_character_store.gd").new().normalize_character(record)
+	assert(Bonuses.value(restored, "ability:wis") == 10, "Numeric-only origin state must survive save normalization")
+	assert(restored.proficiency_origins.size() > 0)
+	var saved_child := false
+	for origin: Dictionary in restored.proficiency_origins:
+		if origin.id == "subrace|scag|ghostwise":
+			assert(origin.disabled and not String(origin.name).begins_with("⚠"))
+			origin.disabled = false
+			saved_child = true
+	assert(saved_child)
+	assert(Bonuses.value(restored, "ability:wis") == 11, "Re-enabling a live numeric-only source restores its grant")
+	restored.subrace = "Lotusden"
+	restored.subrace_source = "EGW"
+	assert(Bonuses.value(restored, "ability:wis") == 11, "Replacing a child must not inherit the previous origin state")

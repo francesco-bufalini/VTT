@@ -130,6 +130,12 @@ static func equipped_armor(inventory: Variant) -> Dictionary:
 	return {}
 
 
+# Heavy armor ignores Dexterity, including negative modifiers. An explicit
+# nonzero cap can opt a custom heavy armor into the usual DEX calculation.
+static func armor_uses_dexterity(entry: Dictionary) -> bool:
+	var type_code := String(entry.get("type", "")).split("|")[0].to_upper()
+	return type_code != "HA" or int(entry.get("dexterity_max", 0)) != 0
+
 # An armor replaces the AC base, it does not add an armor bonus to another
 # base. Light/medium/heavy armor differ in permitted Dexterity modifiers.
 static func armor_base(record: Dictionary) -> Dictionary:
@@ -146,7 +152,7 @@ static func armor_base(record: Dictionary) -> Dictionary:
 		limit = 0
 	if entry.has("dexterity_max"):
 		limit = int(entry["dexterity_max"])
-	var allowed: int = mini(dex, limit)
+	var allowed: int = mini(dex, limit) if armor_uses_dexterity(entry) else 0
 	var base: int = int(entry.get("ac", 10))
 	return {"equipped": true, "value": base + allowed,
 		"description": "%s: %d %+d DES" % [String(entry.get("name", owned.get("name", "Armatura"))), base, allowed]}
@@ -185,4 +191,4 @@ static func attack_ability(record: Dictionary, entry: Dictionary, thrown: bool =
 
 static func valid_slot(entry: Dictionary, slot: String) -> bool:
 	var item_kind := kind(entry)
-	return (item_kind == "weapon" and (slot == "main" or not is_two_handed(entry))) or (slot == "off" and item_kind == "shield") or (slot == "body" and item_kind == "armor")
+	return (item_kind == "weapon" and slot in ["main", "off"] and (slot == "main" or not is_two_handed(entry))) or (slot == "off" and item_kind == "shield") or (slot == "body" and item_kind == "armor")

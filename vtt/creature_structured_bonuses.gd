@@ -163,11 +163,18 @@ static func _catalog_origins(result: Array[Dictionary], record: Dictionary) -> v
 	if not species.is_empty():
 		for row: Dictionary in _ability_index.get("subrace", []):
 			var label: String = String(row.get("raceName", "")) + " (" + String(row.get("name", "")) + ")"
-			if species.nocasecmp_to(label) != 0 or String(row.get("source", "")) != species_book:
+			var flattened_match := species.nocasecmp_to(label) == 0 and String(row.get("source", "")) == species_book
+			var selected_match := (
+				String(row.get("raceName", "")).nocasecmp_to(species) == 0
+				and String(row.get("raceSource", "")) == species_book
+				and String(row.get("name", "")).nocasecmp_to(String(record.get("subrace", ""))) == 0
+				and String(row.get("source", "")) == String(record.get("subrace_source", ""))
+			)
+			if not flattened_match and not selected_match:
 				continue
 			parent_name = String(row.get("raceName", ""))
 			parent_book = String(row.get("raceSource", ""))
-			var sid: String = "subrace|" + species_book.to_lower() + "|" + String(row.get("name", "")).to_lower()
+			var sid: String = "subrace|" + String(row.get("source", "")).to_lower() + "|" + String(row.get("name", "")).to_lower()
 			_ability_grants(result, sid, "Sottorazza · " + String(row.get("name", "")), row)
 			break
 		for row: Dictionary in _ability_index.get("race", []):
@@ -198,6 +205,10 @@ static func derive(record: Dictionary) -> Array[Dictionary]:
 	# Avoid repeating catalog scans for every formula, saving throw or attack.
 	var signature: String = JSON.stringify({
 		"species": record.get("species", ""), "species_source": record.get("species_source", ""),
+		"species_id": record.get("species_id", ""), "subrace": record.get("subrace", ""),
+		"subrace_source": record.get("subrace_source", ""), "subrace_id": record.get("subrace_id", ""),
+		"class": record.get("class", ""), "class_source": record.get("class_source", ""),
+		"subclass": record.get("subclass", ""), "subclass_source": record.get("subclass_source", ""),
 		"background": record.get("background", ""), "background_source": record.get("background_source", ""),
 		"feats_catalog": record.get("feats_catalog", []), "classes": record.get("classes", []),
 		"level": record.get("level", 1), "kind": record.get("kind", ""),

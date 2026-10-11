@@ -43,7 +43,7 @@ func run() -> void:
 	record["subrace_source"] = "PHB"
 	record["subrace_id"] = String(high.get("id", ""))
 	assert(Proficiencies.has_proficiency(record, "skill", "perception")
-		and Proficiencies.has_proficiency(record, "weapon", "longsword|phb"),
+		and Proficiencies.has_proficiency(record, "weapon", "longsword"),
 		"Parent and selected child each contribute structured proficiencies")
 	record["subrace"] = "Wood"
 	var has_high := false

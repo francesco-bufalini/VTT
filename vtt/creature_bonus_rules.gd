@@ -223,7 +223,8 @@ static func _native_dependencies(record: Dictionary, target: String) -> Array[St
 	elif target == "initiative":
 		result.append("ability_mod:dex")
 	elif target == "ac":
-		if not Items.equipped_armor(record.get("inventory", [])).is_empty():
+		var armor := Items.equipped_armor(record.get("inventory", []))
+		if not armor.is_empty() and Items.armor_uses_dexterity(Items.entry_for(armor)):
 			result.append("ability_mod:dex")
 	elif target.begins_with("save:"):
 		var ability: String = target.substr(5)
@@ -335,7 +336,8 @@ static func _base(record: Dictionary, target: String, stack: Dictionary) -> Dict
 		return {"ok": true, "value": int(dex["value"]) + int(record.get("initiative_bonus", 0))}
 	if target == "ac":
 		var armor_record: Dictionary = record
-		if not Items.equipped_armor(record.get("inventory", [])).is_empty():
+		var armor := Items.equipped_armor(record.get("inventory", []))
+		if not armor.is_empty() and Items.armor_uses_dexterity(Items.entry_for(armor)):
 			var dex: Dictionary = _resolve(record, "ability_mod:dex", stack)
 			if not bool(dex.get("ok", false)):
 				return dex

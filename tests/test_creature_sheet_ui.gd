@@ -388,7 +388,7 @@ func run() -> void:
 	var wisdom_saving: Label = area._saving_throw_labels["wis"]
 	var wisdom_formula: Node = area._formula_values["ability:wis"]
 	assert(area._abilities_grid.columns == 4
-		and wisdom_saving.get_parent().get_parent() == area._abilities_grid
+		and area._formula_values["save:wis"].get_parent().get_parent() == area._abilities_grid
 		and wisdom_formula.get_parent().get_parent() == area._abilities_grid,
 		"Saving throws, scores and modifiers must share four aligned table columns")
 	assert((area._abilities_grid.get_child(3) as Label).text == "TS",

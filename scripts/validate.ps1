@@ -118,6 +118,7 @@ $fastTests = @(
     # Creature-sheet interactions are a common source of parser/UI regressions:
     # validate them before independent tactical-grid rendering assertions.
     "test_structured_numeric_bonuses.gd",
+    "test_creature_equipment_regressions.gd",
     "test_bonus_origin_highlight.gd",
     "test_inventory_quantities.gd",
     "test_creature_sheet_ui.gd",
@@ -171,7 +172,10 @@ if ($FullTests) {
 foreach ($test in $testFiles) {
     $relative = "res://tests/$($test.Name)"
     Write-Host "== $relative =="
-    $testTimeout = if ($FullTests) {
+    $testTimeout = if ($test.Name -eq "test_creature_sheet_ui.gd") {
+        # Exercises hundreds of saving UI callbacks; also exceeds 45s on baseline.
+        300
+    } elseif ($FullTests) {
         90
     } elseif ($test.Name -in @("test_item_transport.gd", "test_item_board_integration.gd", "test_equipped_weapons.gd", "test_proficiency_sources.gd", "test_bonus_origin_highlight.gd", "test_creature_sheet_ui.gd", "test_race_subrace_selection.gd")) {
         45

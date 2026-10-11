@@ -212,7 +212,7 @@ func run() -> void:
 	high_elf["subrace_source"] = "PHB"
 	assert(Proficiencies.has_proficiency(high_elf, "skill", "perception"),
 		"High Elf inherits the parent Elf's Perception proficiency")
-	assert(Proficiencies.has_proficiency(high_elf, "weapon", "longsword|phb"),
+	assert(Proficiencies.has_proficiency(high_elf, "weapon", "longsword"),
 		"High Elf receives structured subrace weapon proficiency")
 	var race_found := false
 	var subrace_found := false

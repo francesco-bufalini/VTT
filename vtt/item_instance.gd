@@ -2,7 +2,18 @@ extends RefCounted
 
 # An owned object references a catalog definition; mutable data lives in the
 # creature save. Legacy saved snapshots remain usable when catalog is absent.
-const SNAPSHOT_FIELDS := ["type", "weapon_category", "damage", "versatile_damage", "damage_type", "range", "properties", "ac", "bonus_ac", "bonus_weapon"]
+# Keep the structured mechanics required by the offline/homebrew fallback,
+# including both generated snake_case and raw 5etools camelCase metadata.
+const SNAPSHOT_FIELDS := [
+	"type", "weapon_category", "damage", "versatile_damage", "damage_type", "range", "properties", "ac", "dexterity_max",
+	"bonus_ac", "bonusAc", "bonus_weapon", "bonusWeapon",
+	"bonus_weapon_attack", "bonusWeaponAttack", "bonus_weapon_damage", "bonusWeaponDamage",
+	"bonus_saving_throw", "bonusSavingThrow", "bonus_ability_check", "bonusAbilityCheck",
+	"bonus_spell_attack", "bonusSpellAttack", "bonus_spell_save_dc", "bonusSpellSaveDc",
+	"bonus_spell_damage", "bonusSpellDamage", "bonus_proficiency_bonus", "bonusProficiencyBonus",
+	"bonus_saving_throw_concentration", "bonusSavingThrowConcentration",
+	"bonus_ability", "bonusAbility", "req_attune", "reqAttune"
+]
 const INSTANCE_FIELD_OVERRIDES := ["damage", "versatile_damage", "damage_type", "range", "properties", "ac", "bonus_ac", "bonus_weapon", "weight", "weapon_size"]
 
 
@@ -24,7 +35,7 @@ static func from_catalog(definition: Dictionary) -> Dictionary:
 		item["instance_id"] = "owned_doc_%d_%d" % [int(Time.get_unix_time_from_system()), Time.get_ticks_usec()]
 	for field: String in SNAPSHOT_FIELDS:
 		if definition.has(field):
-			item[field] = definition[field]
+			item[field] = definition[field].duplicate(true) if definition[field] is Array or definition[field] is Dictionary else definition[field]
 	return item
 
 
@@ -41,10 +52,10 @@ static func from_saved(saved: Dictionary) -> Dictionary:
 	}
 	for field: String in ["category", "added_at", "display_style", "instance_id"]:
 		if saved.has(field):
-			result[field] = saved[field]
+			result[field] = saved[field].duplicate(true) if saved[field] is Array or saved[field] is Dictionary else saved[field]
 	for field: String in SNAPSHOT_FIELDS:
 		if saved.has(field):
-			result[field] = saved[field]
+			result[field] = saved[field].duplicate(true) if saved[field] is Array or saved[field] is Dictionary else saved[field]
 	var extra: Variant = saved.get("instance_overrides", {})
 	if extra is Dictionary:
 		result["instance_overrides"] = (extra as Dictionary).duplicate(true)

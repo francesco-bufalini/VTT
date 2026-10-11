@@ -485,15 +485,29 @@ static func _active_identity_sources(record: Dictionary) -> Dictionary:
 	# Trait origins depend on the creature's current species/classes/feats.
 	# Delay loading the traits script: it already preloads these rules.
 	var needs_features := false
+	var needs_numeric_sources := false
 	for field: String in ["proficiency_origins", "proficiency_choices"]:
 		var existing: Variant = record.get(field, [])
 		if existing is Array:
 			for row: Variant in existing:
-				if row is Dictionary and String((row as Dictionary).get("id", (row as Dictionary).get("origin_id", ""))).begins_with("feature:"):
+				if not row is Dictionary:
+					continue
+				var sid := String((row as Dictionary).get("id", (row as Dictionary).get("origin_id", "")))
+				if sid.begins_with("feature:"):
 					needs_features = true
-					break
-		if needs_features:
-			break
+				if not active.has(sid) and (sid.begins_with("race|") or sid.begins_with("subrace|") or sid.begins_with("background|") or sid.begins_with("feat|")):
+					needs_numeric_sources = true
+	# Numeric-only identities may be absent from the proficiency index.
+	# Load their structured grants only when a saved origin needs checking;
+	# deriving them uses candidate_sources(), never this origins() path.
+	if needs_numeric_sources:
+		var numeric: Script = load("res://vtt/creature_structured_bonuses.gd") as Script
+		if numeric != null:
+			var grants: Variant = numeric.call("derive", record)
+			if grants is Array:
+				for grant: Variant in grants:
+					if grant is Dictionary:
+						active[String((grant as Dictionary).get("origin_id", ""))] = true
 	if needs_features:
 		var traits: Script = load("res://vtt/creature_traits_tab.gd") as Script
 		if traits != null:
@@ -631,7 +645,7 @@ static func origins(record: Dictionary) -> Array[Dictionary]:
 				found = true
 				break
 		if not found:
-			var withdrawn: bool = bool(item.get("automatic", false))
+			var withdrawn: bool = bool(item.get("automatic", false)) and not live.has(sid)
 			result.append({"id": sid,
 				"name": ("⚠ Origine non più disponibile · " if withdrawn else "") + String(item.get("name", "Origine")),
 				"group": String(item.get("group", "custom")),
