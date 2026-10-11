@@ -392,6 +392,8 @@ static func _collect_features(record: Dictionary) -> Array[Dictionary]:
 				"feats": feat_entry.get("feats", []),
 				"entries": PlayerCatalog.info_text(feat_entry, PlayerCatalog.description_text("feats", feat_entry))
 			}, 1, "Talento · " + feat_name, "feat|" + feat_id, "", "", 3)
+			_append_named_entries(result, feat_entry.get("entries", []),
+				"Talento · " + feat_name, "feat|" + feat_id, feat_source, 3)
 
 	# Inventory entries remain visible as traits while owned. Equipment
 	# controls only their effective origins, not whether the item exists.
@@ -427,6 +429,9 @@ static func _collect_features(record: Dictionary) -> Array[Dictionary]:
 				"source": String(definition.get("source", "")), "entries": description,
 				"inactive": inactive, "feats": detailed.get("feats", definition.get("feats", []))},
 				0, "Oggetto · " + item_label, "item:" + item_id, "", "", 4)
+			_append_named_entries(result, detailed.get("entries", []),
+				"Oggetto · " + item_label, "item:" + item_id,
+				String(definition.get("source", "")), 4)
 
 	# User-defined origins also have a visible trait, rather than existing
 	# only as provenance labels in the bonus/proficiency editors.
@@ -479,6 +484,7 @@ static func _collect_features(record: Dictionary) -> Array[Dictionary]:
 				"source": class_book, "entries": PlayerCatalog.description_text("classes", overview),
 				"feats": overview.get("feats", class_entry.get("feats", []))},
 				1, class_origin, class_key, class_label, class_book, 0)
+			_append_named_entries(result, overview.get("entries", []), class_origin, class_key, class_book, 0)
 			break
 		# Level-one synthetic feature: a structured 5etools class overview.
 		# The source ID used by the proficiency editor remains the same.
@@ -551,6 +557,32 @@ static func _collect_features(record: Dictionary) -> Array[Dictionary]:
 		return String(a["name"]).naturalnocasecmp_to(String(b["name"])) < 0
 	)
 	return result
+
+
+# Nested named 5etools entries are also real traits. Preserve their
+# structured bonus/feat fields independently from the parent description.
+static func _append_named_entries(
+	output: Array[Dictionary], value: Variant, origin: String, origin_key: String,
+	book: String, rank: int = 2
+) -> void:
+	if not value is Array:
+		return
+	var index := 0
+	for raw: Variant in value:
+		if not raw is Dictionary:
+			index += 1
+			continue
+		var data: Dictionary = raw
+		var name: String = String(data.get("name", "")).strip_edges()
+		if name.is_empty() or (not data.has("entries") and not data.has("entry")):
+			index += 1
+			continue
+		var trait: Dictionary = data.duplicate(true)
+		trait["id"] = String(data.get("id", "section-%d" % index))
+		trait["entries"] = data.get("entries", data.get("entry", ""))
+		trait["source"] = book
+		_append(output, trait, 1, origin, origin_key, "", "", rank)
+		index += 1
 
 
 static func _append(
