@@ -3,6 +3,7 @@ extends RefCounted
 # Resource counters backed by numeric 5etools JSON fields or formal 5etools
 # {@recharge ...} markup. This module never interprets feature prose.
 const PROGRESSIONS_PATH := "res://vtt/data/structured_resource_progressions_5etools.json"
+const Traits = preload("res://vtt/creature_traits_tab.gd")
 
 static var _cached_progressions: Array[Dictionary] = []
 
@@ -12,7 +13,64 @@ static func for_creature(record: Dictionary) -> Array[Dictionary]:
 	if String(record.get("kind", "")) == "monster":
 		_append_monster_trackers(record, result)
 	_append_class_trackers(record, result)
+	_assign_automatic_origins(record, result)
+	_append_saved_trackers(record, result)
 	return result
+
+
+# Keep machine-derived counters, but allow additional user-defined resources.
+# Their current uses remain in resource_tracker_spent, keyed by stable ID.
+static func _append_saved_trackers(record: Dictionary, output: Array[Dictionary]) -> void:
+	var seen: Dictionary = {}
+	for existing: Dictionary in output:
+		seen[String(existing.get("id", ""))] = true
+	var saved: Variant = record.get("resource_trackers", [])
+	if not saved is Array:
+		return
+	for raw: Variant in saved:
+		if not raw is Dictionary:
+			continue
+		var data: Dictionary = raw
+		var tracker_id: String = String(data.get("id", ""))
+		var title: String = String(data.get("name", "")).strip_edges()
+		if tracker_id.is_empty() or title.is_empty() or seen.has(tracker_id):
+			continue
+		seen[tracker_id] = true
+		output.append({
+			"id": tracker_id, "name": title,
+			"max": maxi(0, int(data.get("max", 0))),
+			"origin": String(data.get("origin_name", "Senza origine")),
+			"origin_id": String(data.get("origin_id", "")),
+			"origin_name": String(data.get("origin_name", "Senza origine")),
+			"recharge": String(data.get("recharge", "manual")),
+			"disabled": bool(data.get("disabled", false)),
+			"automatic": false
+		})
+
+
+# Connect automatic counters to a real trait whenever possible. Only
+# otherwise use a stable internal counter identity, not an invented feat.
+static func _assign_automatic_origins(record: Dictionary, output: Array[Dictionary]) -> void:
+	if output.is_empty():
+		return
+	var features: Array[Dictionary] = Traits.collect_features(record)
+	for row: Dictionary in output:
+		row["automatic"] = true
+		row["disabled"] = false
+		var label: String = String(row.get("origin", row.get("name", "")))
+		var origin_id := ""
+		var wanted: String = label.strip_edges().to_lower()
+		for feature: Dictionary in features:
+			var feature_name: String = String(feature.get("name", "")).strip_edges().to_lower()
+			if wanted != feature_name and not feature_name.begins_with(wanted + " {") and not feature_name.begins_with(wanted + " ("):
+				continue
+			origin_id = "feature:" + String(feature.get("key", ""))
+			label = "Tratto · " + String(feature.get("name", ""))
+			break
+		if origin_id.is_empty():
+			origin_id = "tracker:auto:" + String(row.get("id", ""))
+		row["origin_id"] = origin_id
+		row["origin_name"] = label
 
 
 static func _append_monster_trackers(record: Dictionary, output: Array[Dictionary]) -> void:
