@@ -6,6 +6,8 @@ const CATALOG_PATH := "res://vtt/data/player_5etools_catalog.json"
 static var _catalog: Dictionary = {}
 static var _references: Dictionary = {}
 static var _subclass_catalogs: Dictionary = {}
+static var _merged_catalogs: Dictionary = {}
+static var _merged_revision := -1
 
 
 static func _ensure_loaded() -> void:
@@ -28,6 +30,12 @@ static func _ensure_loaded() -> void:
 
 static func entries(category: String) -> Array[Dictionary]:
 	_ensure_loaded()
+	var revision: int = ContentCatalog.revision()
+	if revision != _merged_revision:
+		_merged_catalogs.clear()
+		_merged_revision = revision
+	if _merged_catalogs.has(category):
+		return (_merged_catalogs[category] as Array[Dictionary]).duplicate(true)
 	var result: Array[Dictionary] = []
 	var categories: Array[String] = [category]
 	if category == "items":
@@ -120,6 +128,9 @@ static func entries(category: String) -> Array[Dictionary]:
 					) < 0
 				return first.naturalnocasecmp_to(second) < 0
 		)
+	# Preserve the public editable-copy contract; callers must never mutate
+	# the shared catalog used by other sheets.
+	_merged_catalogs[category] = merged.duplicate(true)
 	return merged
 
 

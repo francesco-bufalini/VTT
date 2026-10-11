@@ -36,6 +36,8 @@ const LEGACY_CONDITIONS := [
 
 static var _home: Dictionary = {}
 static var _loaded := false
+static var _revision := 0
+static var _revision_extension: Script
 static var diagnostics: Array[String] = []
 static var _effects: Array[Dictionary] = []
 # Expanded definitions are immutable between enrichment/homebrew reloads.
@@ -53,6 +55,7 @@ static func _optional_script(path: String) -> Script:
 
 
 static func reload_enrichment() -> void:
+	_revision += 1
 	_condition_definition_cache.clear()
 	var extension := _optional_script(ENRICHMENT_SCRIPT_PATH)
 	if extension != null:
@@ -191,6 +194,15 @@ static func _load_package(path: String) -> void:
 			if data.icon.length() > 16:
 				data["icon"] = ""
 		_home[id] = data
+
+# Consumers may reuse merged catalogs until either content layer is reloaded.
+static func revision() -> int:
+	if not _loaded:
+		reload_homebrew()
+	if _revision_extension == null:
+		_revision_extension = _optional_script(ENRICHMENT_SCRIPT_PATH)
+	return _revision + (int(_revision_extension.call("revision")) if _revision_extension != null else 0)
+
 
 static func home_entries(category: String) -> Array[Dictionary]:
 	if not _loaded:

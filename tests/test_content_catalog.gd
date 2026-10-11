@@ -14,6 +14,10 @@ func write_package(path: String, entries: Array) -> void:
 	file.close()
 
 func run() -> void:
+	var base_races := Player.entries("races")
+	var original_first := base_races[0].duplicate(true)
+	base_races[0]["name"] = "Mutated caller copy"
+	assert(Player.entries("races")[0] == original_first, "Catalog callers cannot mutate cached rows")
 	var folder := "user://test_homebrew_" + str(Time.get_ticks_usec())
 	DirAccess.make_dir_recursive_absolute(ProjectSettings.globalize_path(folder))
 	var entries := [
@@ -57,7 +61,7 @@ func run() -> void:
 	assert("Homebrew poisoned effect" in Catalog.description(custom), "Nested 5eTools markup must be readable")
 	assert(Catalog.valid_effect_id(custom.id))
 	assert(not Catalog.valid_effect_id("unknown") and not Catalog.valid_effect_id("homebrew:../bad:conditions:x"))
-	assert(Player.entries("races").size() > 100)
+	assert(Player.entries("races").any(func(row: Dictionary) -> bool: return row.get("name") == "Star"), "Homebrew reload invalidates a previously cached catalog")
 	assert(Player.entries("classes").size() > 20)
 	assert(Spells.catalog_spell("homebrew:regression:spells:spark").name == "Spark")
 	var home_classes: Array[Dictionary] = Catalog.home_entries("classes")
@@ -77,6 +81,7 @@ func run() -> void:
 	assert(token.get_conditions().size() == 3)
 	var presentation: Array = token.get_condition_presentations()
 	Catalog.reload_homebrew([]) # Receiver without the sender's package.
+	assert(not Player.entries("races").any(func(row: Dictionary) -> bool: return row.get("id") == "homebrew:regression:races:star"), "Removing homebrew invalidates cached rows")
 	token.set_condition_presentations(presentation)
 	token.set_conditions(token.get_conditions())
 	assert(token.get_conditions().size() == 3, "Missing homebrew must never clear saved conditions")

@@ -785,7 +785,15 @@ func _on_spell_list_selected(origin: String) -> void:
 func update_character_context(record: Dictionary) -> void:
 	var current_class: Variant = record.get("classes", [])
 	var current_primary: String = String(record.get("class", ""))
-	_record["classes"] = current_class
+	# Every ordinary sheet edit reaches this method. Rebuilding both lists and
+	# the full spell catalog is only necessary when their inputs change.
+	if (current_class == _record.get("classes", [])
+		and current_primary == String(_record.get("class", ""))
+		and record.get("level", 1) == _record.get("level", 1)
+		and String(record.get("rules_version", "2014")) == String(_record.get("rules_version", "2014"))):
+		return
+	# Own the snapshot so later in-place level/class edits are detectable.
+	_record["classes"] = current_class.duplicate(true) if current_class is Array else current_class
 	_record["class"] = current_primary
 	_record["level"] = record.get("level", 1)
 	_record["rules_version"] = String(record.get("rules_version", "2014"))

@@ -258,7 +258,29 @@ func focus_feature(name: String, source_label: String = "") -> void:
 	call_deferred("_ensure_visible", String(target["key"]))
 
 
+# Formula/proficiency evaluation requests the same traits many times per edit.
+# Compare complete snapshots so every field (including nested homebrew data)
+# invalidates safely. Keep a small bound rather than retaining whole archives.
+static var _feature_cache: Array[Dictionary] = []
+static var _feature_revision := -1
+
+
 static func collect_features(record: Dictionary) -> Array[Dictionary]:
+	var revision: int = ContentCatalog.revision()
+	if revision != _feature_revision:
+		_feature_cache.clear()
+		_feature_revision = revision
+	for cached: Dictionary in _feature_cache:
+		if cached["record"] == record:
+			return (cached["features"] as Array[Dictionary]).duplicate(true)
+	var features: Array[Dictionary] = _collect_features(record)
+	if _feature_cache.size() >= 8:
+		_feature_cache.pop_front()
+	_feature_cache.append({"record": record.duplicate(true), "features": features.duplicate(true)})
+	return features
+
+
+static func _collect_features(record: Dictionary) -> Array[Dictionary]:
 	var result: Array[Dictionary] = []
 	if record.is_empty():
 		return result

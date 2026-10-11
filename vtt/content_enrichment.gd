@@ -9,16 +9,24 @@ const CATEGORIES := ["spells", "monsters", "items", "documents", "races", "class
 const PROTECTED_FIELDS := ["id", "name", "source", "category", "origin", "asset_dir", "overrides", "quantity", "equipped_slots", "inventory", "hp_current", "current_hp", "owner_id", "instance_overrides"]
 
 static var _loaded := false
+static var _revision := 0
 static var _overlays: Dictionary = {}
 static var diagnostics: Array[String] = []
 
 
 static func reload(paths: Array[String] = [BUNDLED_DIR, USER_DIR]) -> void:
+	_revision += 1
 	_overlays.clear()
 	diagnostics.clear()
 	_loaded = true
 	for path: String in paths:
 		_load_directory(path, 0)
+
+
+static func revision() -> int:
+	if not _loaded:
+		reload()
+	return _revision
 
 
 static func _load_directory(path: String, depth: int) -> void:

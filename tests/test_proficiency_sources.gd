@@ -37,6 +37,7 @@ func _record() -> Dictionary:
 
 
 func run() -> void:
+	_check_index_parity()
 	var record := _record()
 	var skilled: Array[Dictionary] = Proficiencies.suggest_origins(record, "skill", "athletics")
 	assert(not skilled.is_empty() and int(skilled[0]["certainty"]) == 1,
@@ -725,3 +726,40 @@ func run() -> void:
 	await process_frame
 	print("PASS: automatically granted structured proficiencies, choose warnings, toggles, source highlights and migration")
 	quit()
+
+
+func _check_index_parity() -> void:
+	Proficiencies._load_sources()
+	# Check every catalog identity, duplicate class names and ambiguous legacy
+	# backgrounds against the original full scan and source/parent predicate.
+	for group: String in ["class", "race", "subrace", "background", "feat"]:
+		var rows: Array = Proficiencies._sources.get(group, [])
+		for raw: Variant in rows:
+			if not raw is Dictionary:
+				continue
+			var record: Dictionary = {}
+			var name: String = String(raw.get("name", "")).to_upper()
+			var source: String = String(raw.get("source", ""))
+			match group:
+				"class":
+					record = {"class": name, "class_source": source, "classes": [{"name": name, "source": source}]}
+				"feat":
+					record = {"feats_catalog": [{"name": name, "source": source}]}
+				"race":
+					record = {"species": name, "species_source": source}
+				"subrace":
+					record = {"subrace": name, "subrace_source": source,
+						"species": raw.get("raceName", ""), "species_source": raw.get("raceSource", "")}
+				"background":
+					record = {"background": name} # Older saves have no source book.
+			var expected: Array[int] = []
+			for index: int in range(rows.size()):
+				var row: Dictionary = rows[index]
+				if Proficiencies._selected_source(record, group, String(row.get("name", "")), String(row.get("source", "")), row):
+					expected.append(index)
+			var actual: Array[int] = []
+			for index: int in Proficiencies._candidate_indices(record, group):
+				var row: Dictionary = rows[index]
+				if Proficiencies._selected_source(record, group, String(row.get("name", "")), String(row.get("source", "")), row):
+					actual.append(index)
+			assert(actual == expected, "Indexed candidates must preserve full-scan matching and order")

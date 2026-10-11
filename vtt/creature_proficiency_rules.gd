@@ -13,6 +13,7 @@ const ABILITIES := ["str", "dex", "con", "int", "wis", "cha"]
 const ARMORS := ["light", "medium", "heavy", "shield"]
 
 static var _sources: Dictionary = {}
+static var _source_names: Dictionary = {}
 
 
 static func _load_sources() -> void:
@@ -25,6 +26,19 @@ static func _load_sources() -> void:
 	file.close()
 	if raw is Dictionary:
 		_sources = raw
+		_source_names.clear()
+		for group: String in ["class", "race", "subrace", "background", "feat"]:
+			var by_name: Dictionary = {}
+			var rows: Variant = _sources.get(group, [])
+			if rows is Array:
+				for index: int in range(rows.size()):
+					if not rows[index] is Dictionary:
+						continue
+					var key := String(rows[index].get("name", "")).to_lower()
+					if not by_name.has(key):
+						by_name[key] = []
+					by_name[key].append(index)
+			_source_names[group] = by_name
 
 
 static func normalized_key(value: String) -> String:
@@ -166,6 +180,33 @@ static func sync_legacy_fields(record: Dictionary, rows: Array[Dictionary]) -> v
 		record[String(pair.field)] = entries
 
 
+# Narrow the catalog by name, then retain the existing source/parent checks.
+# Sorting original indices preserves catalog order, including ambiguous legacy
+# backgrounds and duplicate names from different books.
+static func _candidate_indices(record: Dictionary, group: String) -> Array[int]:
+	var names: Array[String] = []
+	match group:
+		"class", "feat":
+			var rows: Variant = record.get("classes" if group == "class" else "feats_catalog", [])
+			if rows is Array:
+				for row: Variant in rows:
+					if row is Dictionary:
+						names.append(String(row.get("name", "")).to_lower())
+			if group == "class":
+				names.append(String(record.get("class", "")).to_lower())
+		"race":
+			names.append(String(record.get("species", "")).to_lower())
+		_:
+			names.append(String(record.get(group, "")).to_lower())
+	var indices: Array[int] = []
+	var by_name: Dictionary = _source_names.get(group, {})
+	for name: String in names:
+		for index: int in by_name.get(name, []):
+			if index not in indices:
+				indices.append(index)
+	indices.sort()
+	return indices
+
 static func candidate_sources(record: Dictionary) -> Array[Dictionary]:
 	_load_sources()
 	var candidates: Array[Dictionary] = []
@@ -174,10 +215,8 @@ static func candidate_sources(record: Dictionary) -> Array[Dictionary]:
 		var rows: Variant = _sources.get(group, [])
 		if not rows is Array:
 			continue
-		for raw: Variant in rows:
-			if not raw is Dictionary:
-				continue
-			var row: Dictionary = raw
+		for index: int in _candidate_indices(record, group):
+			var row: Dictionary = rows[index]
 			var name := String(row.get("name", ""))
 			var source := String(row.get("source", ""))
 			if not _selected_source(record, group, name, source, row):
