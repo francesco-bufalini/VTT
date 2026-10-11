@@ -333,7 +333,7 @@ func _refresh_origins() -> void:
 		select.clip_text = true
 		select.text = String(item.get("name", "")) + " (%d)" % matching
 		var description: String = _origin_description(item)
-		select.tooltip_text = description + ("\n\n⚠ Da scegliere: " + ", ".join(missing) if not missing.is_empty() else "")
+		select.tooltip_text = description + _origin_grants_tooltip(sid) + ("\n\n⚠ Da scegliere: " + ", ".join(missing) if not missing.is_empty() else "")
 		select.pressed.connect(_select_origin.bind(sid))
 		line.add_child(select)
 		# The warning has its own button: long source names must not clip it.
@@ -366,6 +366,32 @@ func _refresh_origins() -> void:
 			card.modulate.a = 0.58
 
 
+func _origin_grants_tooltip(sid: String) -> String:
+	# Show the actual selections made on this sheet, not just the options
+	# offered by the 5etools source. Disabled grants remain visible.
+	var chosen: PackedStringArray = []
+	var automatic: PackedStringArray = []
+	for row: Dictionary in _rows:
+		if String(row.get("origin_id", "")) != sid:
+			continue
+		var kind: String = String(row.get("kind", ""))
+		var label: String = _choice_kind_name(kind) + ": " + String(row.get("key", "")).capitalize()
+		var state: String = "○ " if bool(row.get("disabled", false)) else "✓ "
+		if bool(row.get("automatic", false)):
+			automatic.append(state + label)
+		else:
+			chosen.append(state + label)
+	for feat: Dictionary in _feats:
+		if String(feat.get("origin_id", "")) == sid:
+			chosen.append(("○ " if bool(feat.get("disabled", false)) else "✓ ") + "Talento: " + String(feat.get("name", "")))
+	var lines: PackedStringArray = []
+	if not chosen.is_empty():
+		lines.append("Scelte già effettuate:\n" + "\n".join(chosen))
+	if not automatic.is_empty():
+		lines.append("Concessioni automatiche:\n" + "\n".join(automatic))
+	return "\n\n" + "\n\n".join(lines) if not lines.is_empty() else ""
+
+
 func _origin_description(origin: Dictionary) -> String:
 	var sid: String = String(origin.get("id", ""))
 	for candidate: Dictionary in _description_candidates:
@@ -382,8 +408,8 @@ func _origin_description(origin: Dictionary) -> String:
 				_description_catalogs[catalogue] = Catalog.entries(catalogue)
 			for entry: Dictionary in _description_catalogs[catalogue]:
 				if String(entry.get("name", "")).nocasecmp_to(String(data.get("name", ""))) == 0 and String(entry.get("source", "")) == String(data.get("source", "")):
-					return Catalog.info_text(entry, _source_description_text(entry))
-		return Catalog.info_text(data, _source_description_text(data)) + "\nCompetenze strutturate: " + JSON.stringify(data)
+					return Catalog.info_text(entry, Catalog.description_text(catalogue, entry))
+		return Catalog.info_text(data, Catalog.description_text(catalogue, data))
 	if sid.begins_with("feature:"):
 		for feature_entry: Dictionary in Traits.collect_features(_description_record):
 			if sid == "feature:" + String(feature_entry.get("key", "")):
