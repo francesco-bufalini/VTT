@@ -800,6 +800,15 @@ func _check_feat_origin_chains() -> void:
 	assert(Bonuses.bonus(record, "initiative") == 0,
 		"Individual feat disabling also cascades into bonuses")
 	(record["feats_catalog"] as Array)[0]["disabled"] = false
+	# Duplicate feat grants obey OR semantics: muting one source must not
+	# suppress the feat while another independent origin still grants it.
+	(record["feats_catalog"] as Array).append({
+		"id": "feat:a", "name": "A", "source": "HB", "origin_id": "", "disabled": false})
+	(record["feats_catalog"] as Array)[0]["disabled"] = true
+	assert(bool(Proficiencies.origin_enabled_map(record).get("feat|hb|a", false)),
+		"A second independent feat grant keeps the shared feat origin active")
+	(record["feats_catalog"] as Array).pop_back()
+	(record["feats_catalog"] as Array)[0]["disabled"] = false
 	assert(Bonuses.bonus(record, "initiative") == 3,
 		"Unmuting the feat restores dependent bonuses without rewriting them")
 	(record["feats_catalog"] as Array).remove_at(0)
