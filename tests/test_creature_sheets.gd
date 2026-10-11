@@ -83,29 +83,20 @@ func run() -> void:
 	layered = Rules.apply_damage_layers(layered, 2)
 	assert(layered.current_hp == 16 and layered.second_form_hp == 0,
 		"Damage beyond a spent second-form pool must reduce the original HP")
-	var manual_speed: Dictionary = creature.duplicate(true)
-	manual_speed["speed_bonus"] = 10
-	manual_speed = monster.normalize_creature(manual_speed)
-	assert(manual_speed.speed == 50 and manual_speed.speed_base == 40
-		and Bonuses.bonus(manual_speed, "speed") == 10 and manual_speed.speed_bonus == 0,
-		"Monster speed bonus must migrate into an origin grant without changing the effective value")
-	var defense_bonus: Dictionary = creature.duplicate(true)
-	defense_bonus["armor_class_bonus"] = 3
-	defense_bonus["initiative_bonus"] = 2
-	defense_bonus = monster.normalize_creature(defense_bonus)
-	assert(defense_bonus.armor_class == 21 and defense_bonus.armor_class_base == 18,
-		"Monster armor class bonus must be applied without losing its base")
-	assert(defense_bonus.initiative == 2 and defense_bonus.initiative_base == 0,
-		"Monster initiative bonus must be applied without losing the dexterity base")
-	var legacy_defense: Dictionary = creature.duplicate(true)
-	legacy_defense.erase("armor_class_base")
-	legacy_defense.erase("initiative_base")
-	legacy_defense["armor_class"] = 23
-	legacy_defense["initiative"] = 4
-	legacy_defense = monster.normalize_creature(legacy_defense)
-	assert(legacy_defense.armor_class_base == 23 and legacy_defense.initiative_base == 0
-		and legacy_defense.initiative == 4 and Bonuses.bonus(legacy_defense, "initiative") == 4,
-		"Legacy monster static initiative is now an origin grant with a DEX-derived base")
+	var with_bonuses: Dictionary = creature.duplicate(true)
+	with_bonuses["formula_bonuses"] = [
+		{"id": "speed", "target": "speed", "expression": "10", "origin_id": ""},
+		{"id": "ac", "target": "ac", "expression": "3", "origin_id": ""},
+		{"id": "init", "target": "initiative", "expression": "2", "origin_id": ""}
+	]
+	with_bonuses = monster.normalize_creature(with_bonuses)
+	assert(with_bonuses.speed == 50 and with_bonuses.speed_base == 40
+		and Bonuses.bonus(with_bonuses, "speed") == 10,
+		"Monster speed uses its base and additive originless grant")
+	assert(with_bonuses.armor_class == 21 and with_bonuses.armor_class_base == 18,
+		"Monster armor class keeps the base while adding a grant")
+	assert(with_bonuses.initiative == 2 and with_bonuses.initiative_base == 0,
+		"Monster initiative derives from DEX and additive grants")
 	assert(creature.reach_feet == 10.0,
 		"Monster melee reach must be derived from 5etools, not a fixed 5 ft")
 	var attack_data: Script = load("res://vtt/creature_attack_data.gd")
@@ -113,7 +104,6 @@ func run() -> void:
 	var character_attack: Dictionary = {
 		"kind": "character", "attack_ability": "str",
 		"abilities": {"str": 16, "dex": 12},
-		"ability_bonuses": {"str": 0, "dex": 0},
 		"attack_overrides": {}, "inventory": []
 	}
 	var unarmed: Dictionary = attack_data.definitions(character_attack)[0]
@@ -126,13 +116,16 @@ func run() -> void:
 	assert(attack_data.attack_bonus(character_attack, unarmed, 2) == 5
 		and attack_data.damage_label(character_attack, unarmed) == "4 contundenti",
 		"2014 unarmed strikes remain STR without a specific class feature")
-	character_attack["attack_overrides"] = {"unarmed": {"bonus": 2, "range_feet": 15}}
+	character_attack["attack_overrides"] = {"unarmed": {"range_feet": 15}}
+	character_attack["formula_bonuses"] = [
+		{"id": "hit", "target": "attack_hit:unarmed", "expression": "2", "origin_id": ""},
+		{"id": "damage", "target": "attack_damage:unarmed", "expression": "2", "origin_id": ""}
+	]
 	var normalized_character: Dictionary = PlayerStore.new().normalize_character(character_attack)
 	assert(normalized_character.attack_ability == "dex"
-		and normalized_character.attack_overrides.unarmed.bonus == 0
 		and Bonuses.bonus(normalized_character, "attack_hit:unarmed") == 2
 		and Bonuses.bonus(normalized_character, "attack_damage:unarmed") == 2,
-		"Character attack bonus migrates into separate cumulative hit and damage grants")
+		"Character attacks use independent cumulative hit and damage grants")
 	assert(attack_data.range_for(normalized_character, unarmed) == 15
 		and attack_data.attack_bonus(normalized_character, unarmed, 2) == 7,
 		"Range and enhancement bonus belong to the attack, not to the creature")
@@ -144,13 +137,16 @@ func run() -> void:
 		]
 	}
 	monster_attack["attack_ability"] = "str"
-	monster_attack["attack_overrides"] = {"monster:action:0": {"bonus": 2, "range_feet": 15}}
+	monster_attack["attack_overrides"] = {"monster:action:0": {"range_feet": 15}}
+	monster_attack["formula_bonuses"] = [
+		{"id": "claw-hit", "target": "attack_hit:monster:action:0", "expression": "2", "origin_id": ""}
+	]
 	var monster_attacks: Array[Dictionary] = attack_data.definitions(monster_attack)
 	assert(monster_attacks.size() == 2
 		and monster_attacks[0].range_feet == 10 and monster_attacks[1].range_feet == 80,
 		"Every 5etools attack must retain its own melee or ranged distance")
 	assert(attack_data.attack_bonus(monster_attack, monster_attacks[0], 3) == 7,
-		"Monster hit already contains proficiency: apply only manual bonus")
+		"Monster hit already contains proficiency: apply only additional grants")
 	assert(attack_data.max_melee_range(monster_attack) == 15.0,
 		"Legacy token engagement distance must use the longest melee attack")
 	monster_attack["attack_ability"] = "dex"
@@ -204,9 +200,11 @@ func run() -> void:
 	var character: Dictionary = player.normalize_character(player.create_character())
 	assert(character.owner_id == Owner.local_id())
 	character["armor_class_base"] = 12
-	character["armor_class_bonus"] = 4
-	character["initiative_base"] = 2
-	character["initiative_bonus"] = 3
+	character["abilities"]["dex"] = 14
+	character["formula_bonuses"] = [
+		{"id": "armor", "target": "ac", "expression": "4", "origin_id": ""},
+		{"id": "initiative", "target": "initiative", "expression": "3", "origin_id": ""}
+	]
 	character = player.normalize_character(character)
 	assert(character.armor_class == 16 and character.initiative == 5,
 		"Character bonuses must contribute to effective AC and initiative")
