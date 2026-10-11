@@ -1040,13 +1040,18 @@ static func origin_enabled_map(record: Dictionary) -> Dictionary:
 			own[group_sid] = true
 	var item_rules: Script = load("res://vtt/creature_item_rules.gd") as Script
 	if item_rules != null:
+		var item_sources: Dictionary = {}
 		for raw_item: Variant in record.get("inventory", []):
 			if not raw_item is Dictionary:
 				continue
 			var item_id: String = "item:" + String(raw_item.get("id", ""))
 			if item_id == "item:" or int(raw_item.get("quantity", 1)) <= 0:
 				continue
-			own[item_id] = bool(own.get(item_id, true)) and bool(item_rules.call("origin_active", raw_item))
+			# Several physical copies can share the same catalog ID. Only
+			# one of them needs to be equipped to keep that origin active.
+			item_sources[item_id] = bool(item_sources.get(item_id, false)) or bool(item_rules.call("origin_active", raw_item))
+		for item_id: String in item_sources.keys():
+			own[item_id] = bool(own.get(item_id, true)) and bool(item_sources[item_id])
 	var feat_grants: Dictionary = {}
 	var feat_feature_prefixes: Dictionary = {}
 	var raw_feats: Variant = record.get("feats_catalog", [])
