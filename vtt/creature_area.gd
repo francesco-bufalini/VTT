@@ -864,7 +864,6 @@ func _build_ui() -> void:
 		_saving_throw_labels[ability] = saving_throw
 		_install_formula("save:" + ability, saving_throw, [], [])
 		spin.value_changed.connect(_on_ability_value_changed.bind(ability))
-		bonus.value_changed.connect(_on_ability_value_changed.bind(ability))
 
 	# Compact quick-statistics panel immediately below characteristics.
 	var quick_box := _info_panel(skills_column, "RIEPILOGO")
