@@ -767,6 +767,7 @@ func _check_feat_origin_chains() -> void:
 	var feat_independent: Dictionary = {"id": "feat:c", "name": "Independent", "source": "HB",
 		"origin_id": "", "disabled": false}
 	record["feats_catalog"] = [feat_a, feat_b, feat_independent]
+	var owned_feats: Array = record["feats_catalog"]
 	record["proficiency_choices"] = [
 		{"kind": "skill", "key": "arcana", "origin_id": "feat|hb|b", "disabled": false},
 		{"kind": "skill", "key": "arcana", "origin_id": "", "disabled": false},
@@ -794,24 +795,24 @@ func _check_feat_origin_chains() -> void:
 	record["proficiency_origins"] = []
 	assert(Bonuses.bonus(record, "initiative") == 3,
 		"Re-enabling the ancestor restores the full chain automatically")
-	(record["feats_catalog"] as Array)[0]["disabled"] = true
+	owned_feats[0]["disabled"] = true
 	assert(not bool(Proficiencies.origin_enabled_map(record).get("feat|hb|b", true)),
 		"Muting a feat also mutes a feat granted by that feat")
 	assert(Bonuses.bonus(record, "initiative") == 0,
 		"Individual feat disabling also cascades into bonuses")
-	(record["feats_catalog"] as Array)[0]["disabled"] = false
+	owned_feats[0]["disabled"] = false
 	# Duplicate feat grants obey OR semantics: muting one source must not
 	# suppress the feat while another independent origin still grants it.
-	(record["feats_catalog"] as Array).append({
+	owned_feats.append({
 		"id": "feat:a", "name": "A", "source": "HB", "origin_id": "", "disabled": false})
-	(record["feats_catalog"] as Array)[0]["disabled"] = true
+	owned_feats[0]["disabled"] = true
 	assert(bool(Proficiencies.origin_enabled_map(record).get("feat|hb|a", false)),
 		"A second independent feat grant keeps the shared feat origin active")
-	(record["feats_catalog"] as Array).pop_back()
-	(record["feats_catalog"] as Array)[0]["disabled"] = false
+	owned_feats.pop_back()
+	owned_feats[0]["disabled"] = false
 	assert(Bonuses.bonus(record, "initiative") == 3,
 		"Unmuting the feat restores dependent bonuses without rewriting them")
-	(record["feats_catalog"] as Array).remove_at(0)
+	owned_feats.remove_at(0)
 	var removed: Dictionary = Proficiencies.origin_enabled_map(record)
 	assert(not bool(removed.get("feat|hb|b", true))
 		and not Proficiencies.has_proficiency(record, "tool", "disguise kit"),
