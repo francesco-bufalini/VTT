@@ -529,7 +529,10 @@ func run() -> void:
 		"Class and available spell boxes must have the same height")
 	assert(spells._search_toggle.get_parent().get_index() > spells._known_list.get_parent().get_parent().get_index(),
 		"Spell search button must be underneath both spell lists")
-	assert(spells._description.get_parent() == spells._prepare.get_parent().get_parent() and spells._description.scroll_active,
+	assert(spells._description.get_parent().get_parent() == spells
+		and spells._prepare.get_parent().get_parent() == spells
+		and spells._description.get_parent().get_index() > spells._prepare.get_parent().get_index()
+		and spells._description.scroll_active,
 		"Spell details must occupy a scrollable row below the compact action button")
 	assert(not spells._search_row.visible and spells._known_list.item_count > 0,
 		"Class spell list must be automatic and search optional")
@@ -559,7 +562,13 @@ func run() -> void:
 	spells._search.text = "Magic Missile"
 	spells._search.text_changed.emit("Magic Missile")
 	assert(not spells._visible.is_empty(), "5etools spell catalog must be searchable")
-	spells._available.select(0)
+	var missile_index: int = -1
+	for index: int in range(spells._visible.size()):
+		if String(spells._visible[index].get("name", "")) == "Magic Missile":
+			missile_index = index
+			break
+	assert(missile_index >= 0, "Search must include the exact requested spell alongside description matches")
+	spells._available.select(missile_index)
 	spells._on_spell_list_selected("catalog")
 	assert(spells._description.visible and "Magic Missile" in spells._description.text,
 		"Selecting a search result must display its detailed spell text")
@@ -583,7 +592,8 @@ func run() -> void:
 	}], area._current().get("proficiency_origins", []))
 	assert(area._current().spell_slots_bonus[1] == 0
 		and Bonuses.bonus(area._current(), "slot:1") == 2
-		and spells._remaining_labels[1].text == "6 / 6",
+		and spells._remaining_labels[1].text == "6 /"
+		and spells._slot_formula_values[1].value_label.text == "6",
 		"Spell slot bonuses stack on the maximum and persist independently of the base")
 	area._on_bonuses_updated([], area._current().get("proficiency_origins", []))
 	spells._change_slot(1, 1)

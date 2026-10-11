@@ -36,6 +36,33 @@ func run() -> void:
 	assert(tab._slot_formula_values[1].value_label.text == "0",
 		"Missing arrays must not cause out-of-bounds access in slot formula")
 
+	# Exercise the same compact readouts with real creature data and a bonus.
+	tab.load_record({"kind": "character", "level": 6, "rules_version": "2014",
+		"classes": [{"name": "Wizard", "source": "PHB", "level": 6}],
+		"spell_slots_total": [0, 4, 3, 3, 0, 0, 0, 0, 0, 0],
+		"formula_bonuses": [{"id": "slot-ui", "target": "slot:1", "expression": "2"}]})
+	assert(tab._remaining_labels[1].text == "6 /"
+		and tab._slot_formula_values[1].value_label.text == "6",
+		"Origin bonuses must update both remaining and the separate maximum readout")
+	assert(tab._description.get_parent().get_parent() == tab
+		and tab._description.get_parent().get_index() > tab._prepare.get_parent().get_index()
+		and tab._description.scroll_active,
+		"Spell description must scroll beneath the compact action bar")
+	tab._set_search_visible(true)
+	tab._search.text = "Magic Missile"
+	tab._filter_spells()
+	var missile_index := -1
+	for index: int in range(tab._visible.size()):
+		if String(tab._visible[index].get("name", "")) == "Magic Missile":
+			missile_index = index
+			break
+	assert(missile_index >= 0)
+	tab._available.select(missile_index)
+	tab._on_spell_list_selected("catalog")
+	assert(tab._description.visible and "Magic Missile" in tab._description.text)
+	tab._toggle_selected_prepared()
+	assert(tab._description.visible and "Magic Missile" in tab._description.text,
+		"Preparing a spell must retain the selected detailed description")
 	tab.queue_free()
 	await process_frame
 	print("PASS: spellcasting setup renders slot resources without a loaded creature")

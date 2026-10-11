@@ -527,8 +527,8 @@ func run() -> void:
 	for candidate: Dictionary in tab._choice_groups:
 		if String(candidate.get("kind", "")) == "skill":
 			skill_group = candidate
-	assert(not skill_group.is_empty() and (skill_group.get("boxes") as Array).size() == 6,
-		"Fighter's warning opens the six structured skill options")
+	assert(not skill_group.is_empty() and (skill_group.get("boxes") as Array).size() == 8,
+		"Fighter's warning opens the eight structured skill options")
 	for entry: Dictionary in skill_group.get("boxes", []):
 		if String(entry.get("key", "")) in ["athletics", "perception"]:
 			(entry.get("check") as CheckBox).set_pressed_no_signal(true)
