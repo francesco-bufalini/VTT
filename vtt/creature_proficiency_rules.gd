@@ -55,7 +55,7 @@ static func language_options() -> Array[Dictionary]:
 				elif raw is Dictionary:
 					var data: Dictionary = raw
 					for raw_key: Variant in data.keys():
-						if bool(data[raw_key]) if data[raw_key] is bool else false:
+						if data[raw_key] is bool and bool(data[raw_key]):
 							candidates.append(raw_key)
 					var choose: Variant = data.get("choose", {})
 					if choose is Dictionary:
