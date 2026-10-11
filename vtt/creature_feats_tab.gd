@@ -8,6 +8,7 @@ const Bonuses = preload("res://vtt/creature_bonus_rules.gd")
 const Catalog = preload("res://vtt/player_5etools_catalog.gd")
 const Traits = preload("res://vtt/creature_traits_tab.gd")
 const OriginButton = preload("res://vtt/bounded_tooltip_button.gd")
+const DialogLayout = preload("res://vtt/dialog_layout.gd")
 
 var _changed: Callable
 var _record: Dictionary = {}
@@ -230,22 +231,22 @@ func _description(sid: String) -> String:
 		else:
 			var category: String = {"background": "backgrounds", "race": "races",
 				"subrace": "races", "feat": "feats"}.get(String(source.get("group", "")), "")
-			description = Catalog.info_text(source.get("data", {}))
+			description = Catalog.info_text(source.get("data", {}), Catalog.description_text_from_raw_item(source.get("data", {})))
 			if not category.is_empty():
 				for entry: Dictionary in _catalog_entries(category):
 					if String(entry.get("name", "")).nocasecmp_to(String(source.get("data", {}).get("name", ""))) == 0 and String(entry.get("source", "")) == String(source.get("data", {}).get("source", "")):
-						description = Catalog.info_text(entry)
+						description = Catalog.info_text(entry, Catalog.description_text_from_raw_item(entry))
 						break
 		break
 	if sid.begins_with("feature:"):
 		for feature: Dictionary in _feature_entries:
 			if sid == "feature:" + String(feature.get("key", "")):
-				description = Catalog.info_text(feature, String(feature.get("entries", "")))
+				description = Catalog.info_text(feature, Catalog.description_text_from_raw_item(feature))
 				break
 	if sid.begins_with("item:"):
 		for raw: Variant in _record.get("inventory", []):
 			if raw is Dictionary and sid == "item:" + String(raw.get("id", "")):
-				description = Catalog.info_text(raw)
+				description = Catalog.info_text(raw, Catalog.description_text_from_raw_item(raw))
 				break
 	_descriptions[sid] = description
 	return description
@@ -254,8 +255,8 @@ func _description(sid: String) -> String:
 func _feat_description(feat: Dictionary) -> String:
 	for entry: Dictionary in _catalog_entries("feats"):
 		if String(entry.get("name", "")).nocasecmp_to(String(feat.get("name", ""))) == 0 and String(entry.get("source", "")) == String(feat.get("source", "")):
-			return Catalog.info_text(entry)
-	return Catalog.info_text(feat)
+			return Catalog.info_text(entry, Catalog.description_text_from_raw_item(entry))
+	return Catalog.info_text(feat, Catalog.description_text_from_raw_item(feat))
 
 
 func _refresh() -> void:
@@ -508,7 +509,7 @@ func _request_remove(sid: String) -> void:
 		if String(_remove_picker.get_item_metadata(i)) == _selected_id:
 			_remove_picker.select(i)
 			break
-	_remove_dialog.popup_centered(Vector2i(420, 145))
+	DialogLayout.popup(_remove_dialog, Vector2i(420, 190), 0.85)
 
 
 func _remove_selected_origin_grant() -> void:
