@@ -1071,6 +1071,14 @@ static func origin_enabled_map(record: Dictionary) -> Dictionary:
 				feat_id = normalized_key(String(feat.get("name", ""))) + "|" + normalized_key(String(feat.get("source", "")))
 			feat_feature_prefixes["feature:feat|" + feat_id + "|"] = sid
 	var feature_parents: Dictionary = {}
+	# The effective species card is a trait group, but its source switch is
+	# the stable race identity in the proficiency editor.
+	var species_name: String = String(record.get("species", ""))
+	if not species_name.is_empty():
+		var species_key: String = "species|" + String(record.get("species_id", "")) + "|" + String(record.get("species_source", ""))
+		var race_id: String = "race|" + String(record.get("species_source", "")).to_lower() + "|" + species_name.to_lower()
+		if own.has(species_key) and own.has(race_id):
+			feature_parents[species_key] = race_id
 	for feature: Dictionary in trait_origins(record):
 		var sid: String = String(feature.get("id", ""))
 		var group_sid: String = String(feature.get("origin_key", ""))
