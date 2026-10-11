@@ -8,6 +8,7 @@ const OriginChoices = preload("res://vtt/creature_origin_choices.gd")
 const OriginButton = preload("res://vtt/bounded_tooltip_button.gd")
 const Catalog = preload("res://vtt/player_5etools_catalog.gd")
 const Traits = preload("res://vtt/creature_traits_tab.gd")
+const Items = preload("res://vtt/creature_item_rules.gd")
 
 var _changed: Callable
 var _record: Dictionary = {}
@@ -150,6 +151,23 @@ func _source_tooltip(sid: String) -> String:
 				if "feature:" + String(feature.get("key", "")) == sid:
 					info = Catalog.info_text(feature, Catalog.description_text("", feature))
 					break
+		elif sid.begins_with("item:"):
+			for owned: Variant in _record.get("inventory", []):
+				if owned is Dictionary and sid == "item:" + String(owned.get("id", "")):
+					var item: Dictionary = Items.entry_for(owned)
+					info = Catalog.info_text(item, Catalog.description_text("items", item))
+					break
+		else:
+			for candidate: Dictionary in Rules.candidate_sources(_record):
+				if String(candidate.get("id", "")) != sid:
+					continue
+				var category: String = {
+					"race": "races", "subrace": "races", "background": "backgrounds",
+					"feat": "feats", "class": "classes"
+				}.get(String(candidate.get("group", "")), "")
+				var data: Dictionary = candidate.get("data", {})
+				info = Catalog.info_text(data, Catalog.description_text(category, data))
+				break
 		_description_cache[sid] = info
 	var lines: PackedStringArray = []
 	for row: Dictionary in _rows:
