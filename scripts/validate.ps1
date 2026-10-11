@@ -140,6 +140,7 @@ $fastTests = @(
     "test_creature_reference_completion.gd",
     "test_initiative_creature_selection.gd",
     "test_content_catalog.gd",
+    "test_compendium_descriptions.gd",
     "test_creature_sync.gd",
     "test_item_transport.gd",
     "test_item_board_integration.gd",
