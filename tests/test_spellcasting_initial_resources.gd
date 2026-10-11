@@ -13,8 +13,7 @@ func run() -> void:
 	var tab := SpellcastingTab.new()
 	root.add_child(tab)
 	tab.setup(Callable(), Callable())
-	assert(tab._totals.size() == 10 and tab._slot_bonuses.size() == 10
-		and tab._spent.size() == 10,
+	assert(tab._totals.size() == 10 and tab._spent.size() == 10,
 		"setup must initialize all spell-slot arrays before rendering formulas")
 	for lvl: int in range(1, 10):
 		assert(tab._remaining_labels[lvl].text == "0 /",
@@ -30,7 +29,6 @@ func run() -> void:
 
 	# Defensive rendering also works if a caller resets the buffers early.
 	tab._totals.clear()
-	tab._slot_bonuses.clear()
 	tab._spent.clear()
 	tab._update_resource_labels()
 	assert(tab._slot_formula_values[1].value_label.text == "0",
