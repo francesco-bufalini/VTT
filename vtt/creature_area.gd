@@ -13,7 +13,6 @@ const RaceRules = preload("res://vtt/creature_race_rules.gd")
 const SpellcastingTab = preload("res://vtt/creature_spellcasting_tab.gd")
 const FiveToolsText = preload("res://vtt/five_tools_rich_text.gd")
 const StructuredTrackers = preload("res://vtt/structured_resource_trackers.gd")
-const ManualBonus = preload("res://vtt/manual_bonus_style.gd")
 const FormulaValue = preload("res://vtt/formula_value.gd")
 const BonusRules = preload("res://vtt/creature_bonus_rules.gd")
 const BonusTab = preload("res://vtt/creature_bonus_tab.gd")
@@ -81,7 +80,6 @@ var _catalog_filter: LineEdit
 var _name: LineEdit
 var _hp: SpinBox
 var _max_hp: SpinBox
-var _max_hp_bonus: SpinBox
 var _max_hp_effective: Label
 var _second_form_hp: SpinBox
 var _second_form_max_hp: SpinBox
@@ -89,14 +87,10 @@ var _biography: TextEdit
 var _subclass_caption: Label
 var _level_caption: Label
 var _xp: SpinBox
-var _initiative: SpinBox
-var _initiative_bonus: SpinBox
 var _initiative_effective: Label
-var _ac_bonus: SpinBox
 var _ac_effective: Label
 var _speed_custom := false
 var _speed: SpinBox
-var _speed_bonus: SpinBox
 var _speed_effective: Label
 var _ability_total_labels: Dictionary = {}
 var _formula_values: Dictionary = {}
@@ -126,7 +120,6 @@ var _spellcasting_ui: Node
 var _inventory_ui: Node
 var _ac: SpinBox
 var _ability_spins: Dictionary = {}
-var _ability_bonus_spins: Dictionary = {}
 var _ability_modifier_labels: Dictionary = {}
 var _saving_throw_labels: Dictionary = {}
 var _saving_throw_icons: Dictionary = {}
@@ -704,12 +697,7 @@ func _build_ui() -> void:
 	_max_hp = _spin(health, 0, 99999)
 	_max_hp.custom_minimum_size = Vector2(68, 36)
 	_max_hp.size_flags_horizontal = Control.SIZE_SHRINK_BEGIN
-	_max_hp.tooltip_text = "PF massimi base, senza bonus manuali"
-	_max_hp_bonus = _spin(health, -9999, 99999)
-	_max_hp_bonus.custom_minimum_size = Vector2(60, 36)
-	_max_hp_bonus.tooltip_text = "Bonus manuale ai PF massimi"
-	ManualBonus.decorate(_max_hp_bonus)
-	_max_hp_bonus.hide() # Legacy value is migrated to an origin bonus.
+	_max_hp.tooltip_text = "PF massimi base, prima dei bonus"
 	_install_formula("hp", _max_hp_effective, [_max_hp], ["Base"])
 	# Current HP actions lead the row; the TEMP caption follows its input.
 	var health_actions := HBoxContainer.new()
@@ -719,7 +707,6 @@ func _build_ui() -> void:
 	_temp_hp.custom_minimum_size.x = 68
 	_add_label(health, "TEMP")
 	_max_hp.value_changed.connect(func(_v: float) -> void: _update_max_hp_display())
-	_max_hp_bonus.value_changed.connect(func(_v: float) -> void: _update_max_hp_display())
 	var heal := Button.new()
 	heal.text = "+"
 	heal.tooltip_text = "Aggiungi PF: inserisci un valore o tira un dado"
@@ -775,12 +762,7 @@ func _build_ui() -> void:
 	temp_health.add_child(_ac_effective)
 	_ac = _spin(temp_health, 0, 99)
 	_ac.custom_minimum_size = Vector2(62, 36)
-	_ac.tooltip_text = "Classe Armatura base, senza bonus manuali"
-	_ac_bonus = _spin(temp_health, -99, 99)
-	_ac_bonus.custom_minimum_size = Vector2(60, 36)
-	_ac_bonus.tooltip_text = "Bonus manuale alla Classe Armatura"
-	ManualBonus.decorate(_ac_bonus)
-	_ac_bonus.hide() # Legacy value is migrated to an origin bonus.
+	_ac.tooltip_text = "Classe Armatura base, prima dei bonus"
 	_install_formula("ac", _ac_effective, [_ac], ["Base"])
 	_ac.size_flags_horizontal = Control.SIZE_SHRINK_BEGIN
 	var movement_row := HBoxContainer.new()
@@ -790,15 +772,6 @@ func _build_ui() -> void:
 	_initiative_effective = Label.new()
 	_initiative_effective.custom_minimum_size.x = 32
 	movement_row.add_child(_initiative_effective)
-	_initiative = _spin(movement_row, -99, 99)
-	_initiative.custom_minimum_size = Vector2(62, 36)
-	_initiative.tooltip_text = "Iniziativa base, calcolata dal modificatore di Destrezza"
-	_initiative_bonus = _spin(movement_row, -99, 99)
-	_initiative_bonus.custom_minimum_size = Vector2(60, 36)
-	_initiative_bonus.tooltip_text = "Bonus manuale all'iniziativa"
-	ManualBonus.decorate(_initiative_bonus)
-	_initiative_bonus.hide() # Legacy value is migrated to an origin bonus.
-	_initiative.hide() # The DEX-derived part must never become editable.
 	_install_formula("initiative", _initiative_effective, [], [])
 	var speed_row := HBoxContainer.new()
 	speed_row.add_theme_constant_override("separation", 4)
@@ -815,19 +788,9 @@ func _build_ui() -> void:
 	_speed.value_changed.connect(_on_speed_changed)
 	speed_row.add_child(_speed)
 	_speed.tooltip_text = "Velocità dalla specie o dal bestiario, modificabile"
-	_speed_bonus = _spin(speed_row, -999, 999)
-	_speed_bonus.custom_minimum_size = Vector2(65, 36)
-	_speed_bonus.tooltip_text = "Bonus manuale alla velocità"
-	ManualBonus.decorate(_speed_bonus)
-	_speed_bonus.hide() # Legacy value is migrated to an origin bonus.
 	_install_formula("speed", _speed_effective, [_speed], ["Base"])
 	_speed.value_changed.connect(func(_value: float) -> void: _update_speed_display())
-	_speed_bonus.value_changed.connect(func(_value: float) -> void: _update_speed_display())
 	_ac.value_changed.connect(func(_value: float) -> void: _update_defense_display())
-	_ac_bonus.value_changed.connect(func(_value: float) -> void: _update_defense_display())
-	_initiative.value_changed.connect(func(_value: float) -> void: _update_defense_display())
-	_initiative_bonus.value_changed.connect(func(_value: float) -> void: _update_defense_display())
-	_initiative.editable = false
 
 	var abilities_panel := PanelContainer.new()
 	var abilities_style := health_style.duplicate() as StyleBoxFlat
@@ -871,12 +834,6 @@ func _build_ui() -> void:
 		spin.custom_minimum_size.x = 54
 		spin.tooltip_text = "Punteggio base"
 		_ability_spins[ability] = spin
-		var bonus := _spin(scores_row, -30, 30)
-		bonus.custom_minimum_size.x = 54
-		bonus.tooltip_text = "Bonus manuale al punteggio: compensa effetti non ancora gestiti automaticamente"
-		ManualBonus.decorate(bonus)
-		bonus.hide() # Use origin grants instead of an inline compensation box.
-		_ability_bonus_spins[ability] = bonus
 		var total_score := Label.new()
 		total_score.custom_minimum_size.x = 28
 		scores_row.add_child(total_score)
@@ -1801,7 +1758,13 @@ func _build_transfer_dialog() -> void:
 
 
 func _add_formula_label(parent: Node, value: String) -> void:
-	ManualBonus.add_formula_label(parent, value)
+	var label := Label.new()
+	label.text = value
+	label.custom_minimum_size.y = 36.0
+	label.vertical_alignment = VERTICAL_ALIGNMENT_CENTER
+	label.size_flags_vertical = Control.SIZE_SHRINK_CENTER
+	label.add_theme_font_size_override("font_size", 30 if value in ["(", ")"] else 18)
+	parent.add_child(label)
 
 
 func _style_statistics_heading(label: Label) -> void:
