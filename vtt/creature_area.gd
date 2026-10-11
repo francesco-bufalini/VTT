@@ -3362,6 +3362,10 @@ func _on_proficiencies_updated(rows: Array, feats: Array, origins: Array) -> voi
 	if _feats_ui != null and _feats_ui.visible:
 		_feats_ui.call("load_record", record)
 		_feats_stale = false
+	_trackers_stale = true
+	if _trackers_ui != null and _trackers_ui.visible:
+		_trackers_ui.call("load_record", record)
+		_trackers_stale = false
 
 
 func _on_inventory_updated(inventory: Array) -> void:
