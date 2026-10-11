@@ -8,7 +8,6 @@ on:
       - feature/campaign-hub
       - feature/structured-creature-sheets
       - feature/tokens-lazy-load
-      - fix/feat-origins-languages-20261011
     paths:
       - "**/*.gd"
       - "**/*.tscn"
