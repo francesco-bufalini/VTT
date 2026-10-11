@@ -2,6 +2,75 @@ extends RefCounted
 
 const ContentCatalog = preload("res://vtt/content_catalog.gd")
 const CATALOG_PATH := "res://vtt/data/player_5etools_catalog.json"
+# Keep the searchable/structured catalog compact. Load detailed 5etools prose
+# only for the selected entry, never for every item in an OptionButton.
+const DESCRIPTION_PATHS := {
+	"backgrounds": "res://vtt/data/compendium_backgrounds_5etools.json",
+	"feats": "res://vtt/data/compendium_features_5etools.json",
+	"optional_features": "res://vtt/data/compendium_features_5etools.json",
+	"races": "res://vtt/data/compendium_features_5etools.json",
+	"languages": "res://vtt/data/compendium_features_5etools.json",
+	"species_traits": "res://vtt/data/compendium_features_5etools.json",
+	"weapons": "res://vtt/data/compendium_items_5etools.json",
+	"armor": "res://vtt/data/compendium_items_5etools.json",
+	"tools": "res://vtt/data/compendium_items_5etools.json",
+	"mundane_items": "res://vtt/data/compendium_items_5etools.json",
+	"magic_items": "res://vtt/data/compendium_items_5etools.json"
+}
+static var _description_files: Dictionary = {}
+
+
+static func _description_index(category: String) -> Dictionary:
+	var path: String = String(DESCRIPTION_PATHS.get(category, ""))
+	if path.is_empty():
+		return {}
+	if not _description_files.has(path):
+		var parsed: Dictionary = {}
+		var file: FileAccess = FileAccess.open(path, FileAccess.READ)
+		if file != null:
+			var content: Variant = JSON.parse_string(file.get_as_text())
+			file.close()
+			if content is Dictionary:
+				parsed = content
+		_description_files[path] = parsed
+	return (_description_files[path] as Dictionary).get(category, {})
+
+
+static func _description_key(category: String, entry: Dictionary) -> String:
+	var key: String = String(entry.get("name", "")).strip_edges().to_lower() + "|" + String(entry.get("source", "")).strip_edges().to_lower()
+	if category == "species_traits":
+		key += "|" + String(entry.get("species", "")).strip_edges().to_lower()
+	return key
+
+
+static func detailed_entry(category: String, entry: Dictionary) -> Dictionary:
+	var output: Dictionary = entry.duplicate(true)
+	# Homebrew overrides have priority over imported 5etools descriptions.
+	if String(entry.get("origin", "")) == "homebrew":
+		return output
+	var indexed: Dictionary = _description_index(category)
+	var raw: Variant = indexed.get(_description_key(category, entry), {})
+	if raw is Dictionary:
+		var detail: Dictionary = raw
+		for field: String in ["entries", "fluff"]:
+			if (not output.has(field) or output.get(field) in [null, "", []]) and detail.has(field):
+				output[field] = detail[field]
+	return output
+
+
+static func description_text(category: String, entry: Dictionary) -> String:
+	var detail: Dictionary = detailed_entry(category, entry)
+	var sections: PackedStringArray = []
+	for field: String in ["entries", "description", "text", "fluff"]:
+		if not detail.has(field):
+			continue
+		var parts: PackedStringArray = []
+		_flatten_description_value(detail[field], parts, 0)
+		var content: String = "\n\n".join(parts).strip_edges()
+		if not content.is_empty() and content not in sections:
+			sections.append(("Approfondimento:\n" if field == "fluff" else "") + content)
+	return "\n\n".join(sections)
+
 
 static var _catalog: Dictionary = {}
 static var _references: Dictionary = {}
@@ -92,6 +161,17 @@ static func entries(category: String) -> Array[Dictionary]:
 	# bundled structured proficiency index contains their full identifiers.
 	# Include those options while keeping catalog/homebrew entries authoritative.
 	if category == "backgrounds":
+		# 2024 backgrounds and older supplements can lack proficiency grants,
+		# but they still belong in the compendium and identity selector.
+		var complete: Dictionary = _description_index("backgrounds")
+		var known: Dictionary = {}
+		for row: Dictionary in result:
+			known[_description_key("backgrounds", row)] = true
+		for raw_key: Variant in complete.keys():
+			var detail: Dictionary = complete[raw_key]
+			if not known.has(String(raw_key)):
+				known[String(raw_key)] = true
+				result.append({"id": "background:" + String(raw_key), "name": String(detail.get("name", "")), "source": String(detail.get("source", ""))})
 		var existing: Dictionary = {}
 		for entry: Dictionary in result:
 			existing[String(entry.get("name", "")).to_lower() + "|" + String(entry.get("source", "")).to_lower()] = true
@@ -465,7 +545,7 @@ static func _flatten_description_value(
 				parts.append(" | ".join(row_parts))
 		return
 
-	for child_key: String in ["entries", "items"]:
+	for child_key: String in ["entry", "entries", "additionalEntries", "items"]:
 		if data.has(child_key):
 			_flatten_description_value(
 				data.get(child_key),
