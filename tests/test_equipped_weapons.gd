@@ -24,7 +24,6 @@ func _record(inventory: Array) -> Dictionary:
 	return {
 		"kind": "character", "attack_ability": "dex",
 		"abilities": {"str": 12, "dex": 18},
-		"ability_bonuses": {"str": 0, "dex": 0},
 		"attack_overrides": {},
 		"inventory": inventory
 	}
@@ -93,11 +92,12 @@ func run() -> void:
 	record["attack_ability"] = "str"
 	assert(AttackData.attack_bonus(record, weapon, 2) == 1, "Finesse respects the preferred STR/DEX ability")
 	record["attack_ability"] = "dex"
-	record["attack_overrides"] = {"item:test:rapier": {"bonus": 1}}
+	record["formula_bonuses"] = [{"id": "hit-bonus", "target": "attack_hit:item:test:rapier", "expression": "1", "origin_id": ""}]
 	record["proficiency_choices"] = [{"kind": "weapon", "key": "martial", "origin_id": "class|phb|fighter"}]
-	assert(AttackData.attack_bonus(record, weapon, 2) == 7, "Shared martial proficiency and manual bonus apply only once")
+	assert(AttackData.attack_bonus(record, weapon, 2) == 7, "Shared martial proficiency and an originless bonus apply only once")
 	var normalized: Dictionary = PlayerStore.new().normalize_character({
-		"inventory": [rapier, shield], "armor_class_base": 12, "armor_class_bonus": 1
+		"inventory": [rapier, shield], "armor_class_base": 12,
+		"formula_bonuses": [{"id": "ac-bonus", "target": "ac", "expression": "1", "origin_id": ""}]
 	})
 	assert(normalized.armor_class == 15 and normalized.armor_class_base == 12, "Equipped shield adds AC without altering manual base")
 
