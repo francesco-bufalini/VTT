@@ -5,6 +5,8 @@ const CATALOG_PATH := "res://vtt/data/player_5etools_catalog.json"
 # Keep the searchable/structured catalog compact. Load detailed 5etools prose
 # only for the selected entry, never for every item in an OptionButton.
 const DESCRIPTION_PATHS := {
+	"classes": "res://vtt/data/compendium_class_fluff_5etools.json",
+	"subclasses": "res://vtt/data/compendium_subclass_features_5etools.json",
 	"backgrounds": "res://vtt/data/compendium_backgrounds_5etools.json",
 	"feats": "res://vtt/data/compendium_features_5etools.json",
 	"optional_features": "res://vtt/data/compendium_features_5etools.json",
