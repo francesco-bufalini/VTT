@@ -215,7 +215,7 @@ func _refresh_options() -> void:
 			_new_target.select(i)
 			break
 	_origin_picker.clear()
-	_origin_picker.add_item("Manuale (senza origine)")
+	_origin_picker.add_item("Senza origine")
 	_origin_picker.set_item_metadata(0, "")
 	_origin_picker.add_item("Personalizzata…")
 	_origin_picker.set_item_metadata(1, "~new~")
@@ -239,7 +239,7 @@ func _on_filter_changed(index: int) -> void:
 
 func _origin_label(sid: String) -> String:
 	if sid.is_empty():
-		return "Manuale"
+		return "Senza origine"
 	for origin: Dictionary in _origins:
 		if String(origin.get("id", "")) == sid:
 			return String(origin.get("name", sid))
@@ -279,7 +279,7 @@ func _refresh_origins() -> void:
 	for child: Node in _origin_cards.get_children():
 		_origin_cards.remove_child(child)
 		child.queue_free()
-	var origins: Array[Dictionary] = [{"id": "", "name": "Manuale", "disabled": false}]
+	var origins: Array[Dictionary] = [{"id": "", "name": "Senza origine", "disabled": false}]
 	origins.append_array(_origins)
 	var visited: Dictionary = {}
 	for origin: Dictionary in origins:
@@ -406,7 +406,7 @@ func _refresh_bonuses() -> void:
 				var remove := Button.new()
 				remove.text = "✕"
 				remove.flat = true
-				remove.tooltip_text = "Elimina questo bonus manuale, senza toccare gli altri."
+				remove.tooltip_text = "Elimina questo bonus, senza toccare gli altri."
 				remove.pressed.connect(_remove.bind(index))
 				line.add_child(remove)
 			else:
