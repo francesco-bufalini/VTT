@@ -103,6 +103,25 @@ static func slots(saved: Dictionary) -> Array:
 	return []
 
 
+# Item ownership is distinct from activation. Equipment-dependent traits
+# remain visible in the sheet but grant nothing until actually equipped.
+static func origin_active(saved: Dictionary) -> bool:
+	if int(saved.get("quantity", 1)) <= 0 or not bool(saved.get("active", true)):
+		return false
+	var entry: Dictionary = entry_for(saved)
+	if requires_attunement(entry) and not bool(saved.get("attuned", false)):
+		return false
+	var category: String = kind(entry)
+	var equipped: Array = slots(saved)
+	if category == "armor":
+		return "body" in equipped
+	if category == "shield":
+		return "off" in equipped
+	if category == "weapon":
+		return "main" in equipped or "off" in equipped
+	return true
+
+
 static func occupying(inventory: Variant, slot: String) -> Dictionary:
 	if inventory is Array:
 		for value: Variant in inventory:
