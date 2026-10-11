@@ -169,16 +169,7 @@ func load_record(record: Dictionary) -> void:
 		for feat: Variant in raw:
 			if feat is Dictionary:
 				_feats.append((feat as Dictionary).duplicate(true))
-	_origins = Rules.origins(record)
-	# Sources with no proficiencies can still grant feats.
-	var known: Dictionary = {}
-	for origin: Dictionary in _origins:
-		known[String(origin.get("id", ""))] = true
-	for origin: Dictionary in Bonuses.available_origins(record):
-		var sid: String = String(origin.get("id", ""))
-		if not sid.is_empty() and not known.has(sid):
-			known[sid] = true
-			_origins.append(origin.duplicate(true))
+	_rebuild_sources()
 	_refresh_description_sources()
 	if _selected_id != "~none~" and not _has_origin(_selected_id):
 		_selected_id = "~none~"
@@ -186,6 +177,48 @@ func load_record(record: Dictionary) -> void:
 		_remove_dialog.hide()
 	_refresh()
 	_loading = false
+
+
+# Only origins with a structured 5etools feat grant or an already
+# recorded feat relationship belong in the Talenti source list. All other
+# traits remain available on the Tratti page, not as phantom feat granters.
+func _rebuild_sources() -> void:
+	var effective: Dictionary = _effective_record()
+	var enabled: Dictionary = Rules.origin_enabled_map(effective)
+	var discovered: Array[Dictionary] = Rules.trait_origins(effective, true)
+	var by_id: Dictionary = {}
+	for source: Dictionary in discovered:
+		var sid: String = String(source.get("id", ""))
+		by_id[sid] = source
+	for source: Dictionary in Rules.origins(effective):
+		var sid: String = String(source.get("id", ""))
+		if sid.is_empty():
+			continue
+		var group: String = String(source.get("group", ""))
+		var associated := group == "custom"
+		for feat: Dictionary in _feats:
+			if String(feat.get("origin_id", "")) == sid:
+				associated = true
+				break
+		if associated and not by_id.has(sid):
+			by_id[sid] = source.duplicate(true)
+	for feat: Dictionary in _feats:
+		var sid: String = String(feat.get("origin_id", ""))
+		if sid.is_empty() or by_id.has(sid):
+			continue
+		for source: Dictionary in Bonuses.available_origins(effective):
+			if String(source.get("id", "")) == sid:
+				by_id[sid] = source.duplicate(true)
+				break
+	var result: Array[Dictionary] = []
+	for sid: String in by_id.keys():
+		var source: Dictionary = by_id[sid]
+		source["inactive"] = not bool(enabled.get(sid, false))
+		result.append(source)
+	result.sort_custom(func(a: Dictionary, b: Dictionary) -> bool:
+		return String(a.get("name", "")).naturalnocasecmp_to(String(b.get("name", ""))) < 0
+	)
+	_origins = result
 
 
 func _feats_reset() -> void:
@@ -550,15 +583,7 @@ func _publish() -> void:
 	# Recover catalog-backed origins after inserting/removing a feat and
 	# preserve any temporarily disabled origin switches.
 	var state: Dictionary = _effective_record()
-	_origins = Rules.origins(state)
-	var other: Dictionary = {}
-	for source: Dictionary in _origins:
-		other[String(source.get("id", ""))] = true
-	for source: Dictionary in Bonuses.available_origins(state):
-		var sid: String = String(source.get("id", ""))
-		if not sid.is_empty() and not other.has(sid):
-			_origins.append(source.duplicate(true))
-			other[sid] = true
+	_rebuild_sources()
 	_refresh_description_sources()
 	_refresh()
 	if _loading or not _changed.is_valid():
