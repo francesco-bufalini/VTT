@@ -13,11 +13,10 @@ func run() -> void:
 	var record: Dictionary = {
 		"kind": "character", "level": 3, "classes": [],
 		"abilities": {"str": 14, "dex": 12, "con": 10, "int": 10, "wis": 10, "cha": 10},
-		"ability_bonuses": {},
-		"armor_class_base": 12, "armor_class_bonus": 0,
-		"speed_base": 30, "speed_bonus": 0,
-		"max_hp_base": 18, "max_hp_bonus": 0,
-		"initiative_bonus": 0, "proficiency_choices": [],
+		"armor_class_base": 12,
+		"speed_base": 30,
+		"max_hp_base": 18,
+		"proficiency_choices": [],
 		"proficiency_origins": [], "formula_bonuses": []
 	}
 	assert(Bonuses.value(record, "ability:str") == 14)
