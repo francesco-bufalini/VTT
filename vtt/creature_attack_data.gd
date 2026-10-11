@@ -163,14 +163,7 @@ static func _attack_ability_modifier(record: Dictionary, attack: Dictionary) -> 
 	return ability_modifier(record)
 
 
-static func _weapon_magic_bonus(_attack: Dictionary) -> int:
-	# Structured enhancements are now grants in creature_bonus_rules.gd.
-	# Do not add them again outside the origin system.
-	return 0
-
-
 static func attack_bonus(record: Dictionary, attack: Dictionary, proficiency: int) -> int:
-	var settings: Dictionary = override_for(record, String(attack.get("id", "")))
 	if String(record.get("kind", "")) == "monster" and String(attack.get("source", "")) != "item":
 		# Published monster hit modifiers already include proficiency.
 		return Bonuses.add(record, "attack_hit:" + String(attack.get("id", "")), int(attack.get("base_hit", 0)) + _ability_delta_for_monster(record, attack))
@@ -183,13 +176,12 @@ static func attack_bonus(record: Dictionary, attack: Dictionary, proficiency: in
 			trained = Proficiencies.weapon_proficient(record, item_value)
 	else:
 		trained = bool(attack.get("proficient", false))
-	return Bonuses.add(record, "attack_hit:" + String(attack.get("id", "")), _attack_ability_modifier(record, attack) + (proficiency if trained else 0) + _weapon_magic_bonus(attack))
+	return Bonuses.add(record, "attack_hit:" + String(attack.get("id", "")), _attack_ability_modifier(record, attack) + (proficiency if trained else 0))
 
 
 # The tooltip uses exactly the same components as attack_bonus, including
 # published monster totals and the optional weapon enhancement.
 static func attack_bonus_formula(record: Dictionary, attack: Dictionary, proficiency: int) -> String:
-	var settings: Dictionary = override_for(record, String(attack.get("id", "")))
 	var total: int = attack_bonus(record, attack, proficiency)
 	if String(record.get("kind", "")) == "monster" and String(attack.get("source", "")) != "item":
 		return "Bestiario %+d + bonus cumulabili %+d = %+d (competenza già inclusa)" % [
@@ -231,8 +223,6 @@ static func damage_label(record: Dictionary, attack: Dictionary) -> String:
 		if String(record.get("kind", "")) == "monster" and source != "item"
 		else _attack_ability_modifier(record, attack)
 	)
-	var settings: Dictionary = override_for(record, String(attack.get("id", "")))
-	modifier += _weapon_magic_bonus(attack)
 	modifier += Bonuses.bonus(record, "attack_damage:" + String(attack.get("id", "")))
 	if String(attack.get("id", "")) == "unarmed":
 		return str(maxi(1, 1 + modifier)) + " contundenti"
@@ -272,7 +262,7 @@ static func max_melee_range(record: Dictionary) -> float:
 			if attack.has("melee_reach_feet") and "ranged" in JSON.stringify(attack.get("raw", {})).to_lower():
 				var settings: Dictionary = override_for(record, String(attack.get("id", "")))
 				if not settings.has("range_feet"):
-					value = float(clampi(int(attack.get("melee_reach_feet", 5)), 5, 1000))
+					value = float(clampi(Bonuses.add(record, "attack_range:" + String(attack.get("id", "")), int(attack.get("melee_reach_feet", 5))), 5, 1000))
 			maximum = maxf(maximum, value)
 	return maximum
 
@@ -375,6 +365,6 @@ static func first_melee_range(record: Dictionary) -> float:
 		if attack.has("melee_reach_feet") and "ranged" in JSON.stringify(
 			attack.get("raw", {})
 		).to_lower():
-			return float(clampi(int(attack.get("melee_reach_feet", 5)), 5, 1000))
+			return float(clampi(Bonuses.add(record, "attack_range:" + String(attack.get("id", "")), int(attack.get("melee_reach_feet", 5))), 5, 1000))
 		return float(range_for(record, attack))
 	return 5.0
