@@ -181,7 +181,7 @@ foreach ($test in $testFiles) {
         300
     } elseif ($FullTests) {
         90
-    } elseif ($test.Name -in @("test_item_transport.gd", "test_item_board_integration.gd", "test_equipped_weapons.gd", "test_proficiency_sources.gd", "test_trait_origins.gd", "test_bonus_origin_highlight.gd", "test_race_subrace_selection.gd", "test_compendium_descriptions.gd")) {
+    } elseif ($test.Name -in @("test_item_transport.gd", "test_item_board_integration.gd", "test_equipped_weapons.gd", "test_proficiency_sources.gd", "test_trait_origins.gd", "test_bonus_origin_highlight.gd", "test_benefit_first_origins_trackers.gd", "test_race_subrace_selection.gd", "test_compendium_descriptions.gd")) {
         45
     } else {
         12
