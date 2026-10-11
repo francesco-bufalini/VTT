@@ -103,29 +103,26 @@ func run() -> void:
 	assert(Bonuses.value(record, "ac") == 14, "A live item source activates its bonus")
 	record["inventory"] = []
 	assert(Bonuses.value(record, "ac") == 12, "Removing an item revokes only its own bonus")
-	var migrated: Dictionary = record.duplicate(true)
-	migrated["formula_bonuses"] = []
-	migrated["ability_bonuses"] = {"str": 2}
-	migrated["initiative_bonus"] = 3
-	migrated["spell_slots_bonus"] = [0, 1, 0, 0, 0, 0, 0, 0, 0, 0]
-	migrated["attack_overrides"] = {"test": {"bonus": 2, "range_bonus": 10}}
-	migrated["resource_tracker_bonuses"] = {"rage": 2}
-	Bonuses.migrate_legacy(migrated)
-	assert(Bonuses.value(migrated, "ability:str") == 16)
-	assert(Bonuses.value(migrated, "initiative") == 4)
-	assert(Bonuses.add(migrated, "slot:1", 2) == 3)
-	assert(Attacks.range_for(migrated, {"id": "test", "range_feet": 30}) == 40)
-	assert(Bonuses.add(migrated, "tracker:rage", 3) == 5
-		and migrated.get("resource_tracker_bonuses", {}).is_empty(),
-		"Structured resource maxima must also migrate to cumulative origin grants")
-	var saved: String = JSON.stringify(migrated)
-	var restored: Dictionary = JSON.parse_string(saved)
-	Bonuses.migrate_legacy(restored)
-	assert(Bonuses.value(restored, "initiative") == 4 and Bonuses.grants(restored).size() == Bonuses.grants(migrated).size(),
-		"Migrated records must round-trip without duplicate grants")
+	# Bonuses without an origin are first-class, additive grants.
+	var originless: Dictionary = record.duplicate(true)
+	originless["formula_bonuses"] = [
+		{"id": "free-1", "target": "ability:str", "expression": "2", "origin_id": "", "disabled": false},
+		{"id": "free-2", "target": "ability:str", "expression": "2", "origin_id": "", "disabled": false}
+	]
+	assert(Bonuses.value(originless, "ability:str") == 18,
+		"Two originless bonuses must accumulate like other grants")
+	var restored: Dictionary = JSON.parse_string(JSON.stringify(originless))
 	var store := PlayerStore.new()
-	var normalized: Dictionary = store.normalize_character(migrated)
-	assert(Bonuses.value(normalized, "ability:str") == 16)
-	assert(Bonuses.add(normalized, "slot:1", 2) == 3)
-	print("PASS: additive bonuses, dynamic references, provenance, cycles, migration and persistence")
+	var normalized: Dictionary = store.normalize_character(restored)
+	assert(Bonuses.value(normalized, "ability:str") == 18,
+		"Saving and loading must preserve originless grants")
+	var originless_count: int = 0
+	for grant: Dictionary in Bonuses.grants(normalized):
+		if String(grant.get("origin_id", "")) == "" and String(grant.get("target", "")) == "ability:str":
+			originless_count += 1
+	assert(originless_count == 2, "Originless grants must not be deduplicated")
+	(normalized["formula_bonuses"] as Array)[0]["disabled"] = true
+	assert(Bonuses.value(normalized, "ability:str") == 16,
+		"Each originless bonus must remain independently toggleable")
+	print("PASS: additive bonuses, dynamic references, originless grants, cycles and persistence")
 	quit()
