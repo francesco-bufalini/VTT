@@ -5,6 +5,7 @@ const Traits = preload("res://vtt/creature_traits_tab.gd")
 const ProficiencyTab = preload("res://vtt/creature_proficiencies_tab.gd")
 const BonusTab = preload("res://vtt/creature_bonus_tab.gd")
 const Compendium = preload("res://vtt/compendium.gd")
+const CreatureArea = preload("res://vtt/creature_area.gd")
 
 func _initialize() -> void:
 	call_deferred("run")
@@ -67,6 +68,15 @@ func run() -> void:
 	assert("Insight" in preview and "ac = 2" in preview,
 		"Bonus origin hover must show existing selections and bonuses.")
 	bonuses.free()
+
+	var area := CreatureArea.new()
+	var info_choice := OptionButton.new()
+	info_choice.set_meta("catalog_category", "backgrounds")
+	var info_preview: String = area._reference_preview(info_choice, acolyte)
+	assert("Acolyte" in info_preview and "Shelter of the Faithful" in info_preview,
+		"Info choices must expose their descriptions on hover.")
+	info_choice.free()
+	area.free()
 
 	var compendium := Compendium.new()
 	compendium._details = RichTextLabel.new()
