@@ -316,10 +316,7 @@ func normalize_character(value: Dictionary) -> Dictionary:
 	defaults["pact_slots_visible"] = bool(defaults.get("pact_slots_visible", true))
 	# A character can track Pact Magic separately from shared spell slots.
 	defaults["pact_slots_total"] = maxi(0, int(defaults.get("pact_slots_total", 0)))
-	defaults["pact_slots_spent"] = clampi(
-		int(defaults.get("pact_slots_spent", 0)),
-		0, maxi(0, int(defaults["pact_slots_total"]))
-	)
+	defaults["pact_slots_spent"] = maxi(0, int(defaults.get("pact_slots_spent", 0)))
 	defaults["pact_slot_level"] = clampi(int(defaults.get("pact_slot_level", 1)), 1, 5)
 	for slots_key: String in ["spell_slots_total", "spell_slots_spent"]:
 		var slots_value: Variant = defaults.get(slots_key, [])
@@ -374,6 +371,10 @@ func normalize_character(value: Dictionary) -> Dictionary:
 	defaults["proficiency_origins"] = Proficiencies.origins(value)
 	defaults["proficiency_choices"] = Proficiencies.choices(value)
 	defaults["formula_bonuses"] = Bonuses.grants(value)
+	defaults["pact_slots_spent"] = mini(
+		int(defaults["pact_slots_spent"]),
+		maxi(0, Bonuses.add(defaults, "pact_slot", int(defaults["pact_slots_total"])))
+	)
 	Proficiencies.sync_legacy_fields(defaults, Proficiencies.choices(defaults))
 	defaults["reach_feet"] = maxf(5.0, float(defaults.get("reach_feet", 5.0)))
 	defaults["visual_front_quarter_turns"] = clampi(int(defaults.get("visual_front_quarter_turns", 0)), 0, 3)
