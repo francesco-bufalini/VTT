@@ -42,9 +42,12 @@ static func grants(record: Dictionary) -> Array[Dictionary]:
 			disabled_auto[String(row.get("id", ""))] = bool(row.get("disabled", false))
 		else:
 			result.append(row)
-	for automatic: Dictionary in Structured.derive(record):
-		automatic["disabled"] = bool(disabled_auto.get(String(automatic.get("id", "")), false))
-		result.append(automatic)
+	# Diagnostic branch only. Compare repeated formula evaluation with and
+	# without 5etools automatic grants; NEVER use this flag for game sessions.
+	if OS.get_environment("VTT_PERF_SKIP_STRUCTURED_BONUSES") != "1":
+		for automatic: Dictionary in Structured.derive(record):
+			automatic["disabled"] = bool(disabled_auto.get(String(automatic.get("id", "")), false))
+			result.append(automatic)
 	return result
 
 
