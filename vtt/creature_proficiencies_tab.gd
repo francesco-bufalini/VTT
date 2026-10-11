@@ -8,6 +8,7 @@ const Traits = preload("res://vtt/creature_traits_tab.gd")
 const Items = preload("res://vtt/creature_item_rules.gd")
 const DialogLayout = preload("res://vtt/dialog_layout.gd")
 const OriginButton = preload("res://vtt/bounded_tooltip_button.gd")
+const OriginChoices = preload("res://vtt/creature_origin_choices.gd")
 
 const GROUPS := [
 	{"kind": "weapon", "label": "Armi"},
@@ -28,7 +29,6 @@ var _selected_id := "~none~"
 var _origin_cards: VBoxContainer
 var _proficiency_cards: VBoxContainer
 var _status: Label
-var _origin_editor: VBoxContainer
 var _competence_editor: VBoxContainer
 var _origin_picker: OptionButton
 var _kind_picker: OptionButton
@@ -76,20 +76,6 @@ func setup(on_change: Callable) -> void:
 	_origin_cards.size_flags_horizontal = Control.SIZE_EXPAND_FILL
 	_origin_cards.add_theme_constant_override("separation", 5)
 	origin_scroller.add_child(_origin_cards)
-	var add_origin := Button.new()
-	add_origin.text = "+ Tratto esistente"
-	add_origin.pressed.connect(func() -> void: _origin_editor.visible = not _origin_editor.visible)
-	left.add_child(add_origin)
-	_origin_editor = VBoxContainer.new()
-	_origin_editor.visible = false
-	left.add_child(_origin_editor)
-	_origin_picker = OptionButton.new()
-	_origin_editor.add_child(_origin_picker)
-	var origin_confirm := Button.new()
-	origin_confirm.text = "Collega tratto come origine"
-	origin_confirm.pressed.connect(_add_origin)
-	_origin_editor.add_child(origin_confirm)
-
 	var competence_scroller := ScrollContainer.new()
 	competence_scroller.custom_minimum_size.y = 245
 	competence_scroller.size_flags_vertical = Control.SIZE_EXPAND_FILL
@@ -100,11 +86,9 @@ func setup(on_change: Callable) -> void:
 	_proficiency_cards.add_theme_constant_override("separation", 4)
 	competence_scroller.add_child(_proficiency_cards)
 	_add_competence_button = Button.new()
-	_add_competence_button.text = "+ Competenza all'origine selezionata"
-	_add_competence_button.disabled = true
+	_add_competence_button.text = "+ Competenza"
 	_add_competence_button.pressed.connect(func() -> void:
-		if _selected_id not in ["~none~", ""]:
-			_competence_editor.visible = not _competence_editor.visible
+		_competence_editor.visible = not _competence_editor.visible
 	)
 	right.add_child(_add_competence_button)
 	_competence_editor = VBoxContainer.new()
@@ -120,6 +104,10 @@ func setup(on_change: Callable) -> void:
 	_proficiency_name = LineEdit.new()
 	_proficiency_name.placeholder_text = "Oppure scrivi una competenza"
 	_competence_editor.add_child(_proficiency_name)
+	_origin_picker = OptionButton.new()
+	_origin_picker.fit_to_longest_item = false
+	_origin_picker.tooltip_text = "Scegli chi concede questa competenza (o senza origine)"
+	_competence_editor.add_child(_origin_picker)
 	var competence_confirm := Button.new()
 	competence_confirm.text = "Aggiungi competenza"
 	competence_confirm.pressed.connect(_add_competence)
@@ -220,13 +208,12 @@ func _enabled_map() -> Dictionary:
 
 
 func _refresh() -> void:
-	_add_competence_button.disabled = _selected_id in ["~none~", ""]
 	_rebuild_mandatory_grants()
 	_refresh_origins()
 	_refresh_competences()
 	_refresh_origin_picker()
 
-	_status.text = "Seleziona un'origine per evidenziare le competenze collegate; cliccala di nuovo per deselezionarla."
+	_status.text = "Aggiungi una competenza e assegnale un'origine. Seleziona un'origine a sinistra per evidenziarne le concessioni."
 	_status.tooltip_text = "✓ competenza attiva · ◇ scelte da completare · ⏻ disattivazione senza eliminare i dati"
 
 
@@ -251,6 +238,8 @@ func _refresh_origins() -> void:
 		for proficiency: Dictionary in _rows:
 			if String(proficiency.get("origin_id", "")) == sid:
 				matching += 1
+		if matching == 0:
+			continue
 		var missing: Array[String] = Rules.requirement_missing(item, _rows, enabled)
 		var card := PanelContainer.new()
 		_origin_cards.add_child(card)
@@ -750,53 +739,7 @@ func _origin_display(sid: String) -> String:
 
 
 func _refresh_origin_picker() -> void:
-	_origin_picker.clear()
-	var known: Dictionary = {}
-	for feature_entry: Dictionary in Traits.collect_features(_effective_record()):
-		var sid: String = "feature:" + String(feature_entry.get("key", ""))
-		if sid == "feature:" or known.has(sid):
-			continue
-		known[sid] = true
-		_origin_picker.add_item("Tratto · " + String(feature_entry.get("name", "")))
-		_origin_picker.set_item_metadata(_origin_picker.item_count - 1, {
-			"id": sid, "name": "Tratto · " + String(feature_entry.get("name", ""))
-		})
-	var inventory: Variant = _record.get("inventory", [])
-	if inventory is Array:
-		for raw: Variant in inventory:
-			if not raw is Dictionary:
-				continue
-			var owned: Dictionary = raw
-			if int(owned.get("quantity", 1)) <= 0 or Items.kind(Items.entry_for(owned)) == "document":
-				continue
-			var sid: String = "item:" + String(owned.get("id", ""))
-			if sid == "item:" or known.has(sid):
-				continue
-			known[sid] = true
-			_origin_picker.add_item("Oggetto · " + String(owned.get("name", "")))
-			_origin_picker.set_item_metadata(_origin_picker.item_count - 1, {
-				"id": sid, "name": "Oggetto · " + String(owned.get("name", ""))
-			})
-
-
-func _add_origin() -> void:
-	# Only an existing trait or owned non-document item can be an origin.
-	# Homebrew definitions will supply additional traits in the future.
-	if _origin_picker.selected < 0:
-		return
-	var data: Dictionary = _origin_picker.get_item_metadata(_origin_picker.selected)
-	var sid: String = String(data.get("id", ""))
-	var name: String = String(data.get("name", "")).strip_edges()
-	if sid.is_empty() or name.is_empty():
-		return
-	if not _origin_exists(sid):
-		_origins.append({"id": sid, "name": name,
-			"group": "feature" if sid.begins_with("feature:") else "item",
-			"disabled": false, "automatic": true, "requirements": []})
-	_selected_id = sid
-	_origin_editor.visible = false
-	_publish()
-
+	OriginChoices.populate(_origin_picker, _effective_record(), _selected_id if _selected_id != "~none~" else "")
 
 func _selected_source_record() -> Dictionary:
 	for item: Dictionary in _origins:
@@ -1053,15 +996,14 @@ func _refresh_proficiency_picker() -> void:
 
 # Free-form sources allow any manual link. Structured skill choice lists
 # and counts, when provided, constrain both Add and Attach actions.
-func _valid_structured_choice(kind: String, key: String) -> bool:
+func _valid_structured_choice(kind: String, key: String, sid: String, source: Dictionary) -> bool:
 	if kind != "skill":
 		return true
-	var source: Dictionary = _selected_source_record()
 	var allowed: Array[String] = Rules.restricted_choices(source, kind)
 	if not allowed.is_empty() and key not in allowed:
 		return false
 	for entry: Dictionary in _rows:
-		if String(entry.get("kind", "")) == kind and String(entry.get("key", "")) == key and String(entry.get("origin_id", "")) == _selected_id:
+		if String(entry.get("kind", "")) == kind and String(entry.get("key", "")) == key and String(entry.get("origin_id", "")) == sid:
 			return true
 	var max_choices := 0
 	for requirement: Dictionary in source.get("requirements", []):
@@ -1071,7 +1013,7 @@ func _valid_structured_choice(kind: String, key: String) -> bool:
 		return true
 	var assigned := 0
 	for entry: Dictionary in _rows:
-		if String(entry.get("origin_id", "")) != _selected_id or String(entry.get("kind", "")) != kind or bool(entry.get("disabled", false)):
+		if String(entry.get("origin_id", "")) != sid or String(entry.get("kind", "")) != kind or bool(entry.get("disabled", false)):
 			continue
 		if allowed.is_empty() or String(entry.get("key", "")) in allowed:
 			assigned += 1
@@ -1079,7 +1021,7 @@ func _valid_structured_choice(kind: String, key: String) -> bool:
 
 
 func _add_competence() -> void:
-	if _selected_id in ["~none~", ""]:
+	if _kind_picker.selected < 0:
 		return
 	var kind: String = String(GROUPS[_kind_picker.selected].get("kind", "skill"))
 	var key: String = _proficiency_name.text.strip_edges().to_lower()
@@ -1087,20 +1029,24 @@ func _add_competence() -> void:
 		key = String(_proficiency_picker.get_item_metadata(_proficiency_picker.selected))
 	if key.is_empty():
 		return
-	if not _valid_structured_choice(kind, key):
+	var source: Dictionary = OriginChoices.selected(_origin_picker)
+	var sid: String = String(source.get("id", ""))
+	if not _valid_structured_choice(kind, key, sid, source):
 		_proficiency_name.tooltip_text = "Scelta non prevista dai dati strutturati o limite dell'origine raggiunto."
 		return
+	OriginChoices.ensure(_origins, source)
 	for row: Dictionary in _rows:
-		if String(row.get("origin_id", "")) == _selected_id and String(row.get("kind", "")) == kind and String(row.get("key", "")) == key:
+		if String(row.get("origin_id", "")) == sid and String(row.get("kind", "")) == kind and String(row.get("key", "")) == key:
 			row["disabled"] = false
+			_selected_id = sid
 			_publish()
 			return
-	_rows.append({"kind": kind, "key": key, "origin_id": _selected_id,
-		"origin_name": _origin_display(_selected_id), "disabled": false})
+	_rows.append({"kind": kind, "key": key, "origin_id": sid,
+		"origin_name": String(source.get("name", "Senza origine")), "disabled": false})
+	_selected_id = sid
 	_proficiency_name.clear()
 	_competence_editor.visible = false
 	_publish()
-
 
 func _valid_edition(item: Dictionary) -> bool:
 	var source: String = String(item.get("source", ""))
