@@ -5,6 +5,7 @@ extends VBoxContainer
 const Rules = preload("res://vtt/creature_proficiency_rules.gd")
 const Catalog = preload("res://vtt/player_5etools_catalog.gd")
 const Traits = preload("res://vtt/creature_traits_tab.gd")
+const Items = preload("res://vtt/creature_item_rules.gd")
 const DialogLayout = preload("res://vtt/dialog_layout.gd")
 const OriginButton = preload("res://vtt/bounded_tooltip_button.gd")
 
@@ -30,7 +31,6 @@ var _status: Label
 var _origin_editor: VBoxContainer
 var _competence_editor: VBoxContainer
 var _origin_picker: OptionButton
-var _origin_name: LineEdit
 var _kind_picker: OptionButton
 var _proficiency_picker: OptionButton
 var _proficiency_name: LineEdit
@@ -77,20 +77,16 @@ func setup(on_change: Callable) -> void:
 	_origin_cards.add_theme_constant_override("separation", 5)
 	origin_scroller.add_child(_origin_cards)
 	var add_origin := Button.new()
-	add_origin.text = "+ Origine"
+	add_origin.text = "+ Tratto esistente"
 	add_origin.pressed.connect(func() -> void: _origin_editor.visible = not _origin_editor.visible)
 	left.add_child(add_origin)
 	_origin_editor = VBoxContainer.new()
 	_origin_editor.visible = false
 	left.add_child(_origin_editor)
 	_origin_picker = OptionButton.new()
-	_origin_picker.item_selected.connect(_on_origin_option)
 	_origin_editor.add_child(_origin_picker)
-	_origin_name = LineEdit.new()
-	_origin_name.placeholder_text = "Nome origine personalizzata"
-	_origin_editor.add_child(_origin_name)
 	var origin_confirm := Button.new()
-	origin_confirm.text = "Aggiungi origine"
+	origin_confirm.text = "Collega tratto come origine"
 	origin_confirm.pressed.connect(_add_origin)
 	_origin_editor.add_child(origin_confirm)
 
@@ -755,47 +751,50 @@ func _origin_display(sid: String) -> String:
 
 func _refresh_origin_picker() -> void:
 	_origin_picker.clear()
-	_origin_picker.add_item("Origine personalizzata")
-	_origin_picker.set_item_metadata(0, {"name": "", "id": ""})
+	var known: Dictionary = {}
 	for feature_entry: Dictionary in Traits.collect_features(_effective_record()):
+		var sid: String = "feature:" + String(feature_entry.get("key", ""))
+		if sid == "feature:" or known.has(sid):
+			continue
+		known[sid] = true
 		_origin_picker.add_item("Tratto · " + String(feature_entry.get("name", "")))
 		_origin_picker.set_item_metadata(_origin_picker.item_count - 1, {
-			"id": "feature:" + String(feature_entry.get("key", "")),
-			"name": "Tratto · " + String(feature_entry.get("name", ""))
+			"id": sid, "name": "Tratto · " + String(feature_entry.get("name", ""))
 		})
-	var inv: Variant = _record.get("inventory", [])
-	if inv is Array:
-		for item: Variant in inv:
-			if not item is Dictionary:
+	var inventory: Variant = _record.get("inventory", [])
+	if inventory is Array:
+		for raw: Variant in inventory:
+			if not raw is Dictionary:
 				continue
-			_origin_picker.add_item("Oggetto · " + String(item.get("name", "")))
+			var owned: Dictionary = raw
+			if int(owned.get("quantity", 1)) <= 0 or Items.kind(Items.entry_for(owned)) == "document":
+				continue
+			var sid: String = "item:" + String(owned.get("id", ""))
+			if sid == "item:" or known.has(sid):
+				continue
+			known[sid] = true
+			_origin_picker.add_item("Oggetto · " + String(owned.get("name", "")))
 			_origin_picker.set_item_metadata(_origin_picker.item_count - 1, {
-				"id": "item:" + String(item.get("id", "")),
-				"name": "Oggetto · " + String(item.get("name", ""))
+				"id": sid, "name": "Oggetto · " + String(owned.get("name", ""))
 			})
 
 
-func _on_origin_option(index: int) -> void:
-	var meta: Dictionary = _origin_picker.get_item_metadata(index)
-	_origin_name.text = String(meta.get("name", ""))
-
-
 func _add_origin() -> void:
-	var name: String = _origin_name.text.strip_edges()
-	var metadata: Dictionary = _origin_picker.get_item_metadata(_origin_picker.selected)
-	var sid: String = String(metadata.get("id", ""))
-	if name.is_empty():
-		name = String(metadata.get("name", "")).strip_edges()
-	if name.is_empty():
+	# Only an existing trait or owned non-document item can be an origin.
+	# Homebrew definitions will supply additional traits in the future.
+	if _origin_picker.selected < 0:
 		return
-	if sid.is_empty():
-		sid = "custom|" + name.to_lower().uri_encode()
+	var data: Dictionary = _origin_picker.get_item_metadata(_origin_picker.selected)
+	var sid: String = String(data.get("id", ""))
+	var name: String = String(data.get("name", "")).strip_edges()
+	if sid.is_empty() or name.is_empty():
+		return
 	if not _origin_exists(sid):
-		_origins.append({"id": sid, "name": name, "group": "custom",
-			"disabled": false, "automatic": false, "requirements": []})
+		_origins.append({"id": sid, "name": name,
+			"group": "feature" if sid.begins_with("feature:") else "item",
+			"disabled": false, "automatic": true, "requirements": []})
 	_selected_id = sid
 	_origin_editor.visible = false
-	_origin_name.clear()
 	_publish()
 
 
