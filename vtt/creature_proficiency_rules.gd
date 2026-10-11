@@ -11,6 +11,64 @@ const SKILLS := ["acrobatics", "animal handling", "arcana", "athletics", "decept
 	"stealth", "survival"]
 const ABILITIES := ["str", "dex", "con", "int", "wis", "cha"]
 const ARMORS := ["light", "medium", "heavy", "shield"]
+# Some secret and exotic languages are omitted by the compact player catalog.
+# Use canonical 5e names, and supplement them with names from structured grants.
+const LANGUAGE_FALLBACK := {
+	"standard": ["Common", "Dwarvish", "Elvish", "Giant", "Gnomish", "Goblin", "Halfling", "Orc"],
+	"exotic": ["Abyssal", "Celestial", "Deep Speech", "Draconic", "Infernal", "Primordial", "Sylvan", "Undercommon"],
+	"secret": ["Druidic", "Thieves' Cant"],
+	"other": ["Aquan", "Auran", "Ignan", "Terran"]
+}
+
+
+static func feat_source_id(feat: Dictionary) -> String:
+	var name: String = normalized_key(String(feat.get("name", "")))
+	var source: String = normalized_key(String(feat.get("source", "")))
+	return "feat|" + source + "|" + name if not name.is_empty() else ""
+
+
+static func language_options() -> Array[Dictionary]:
+	var result: Array[Dictionary] = []
+	var seen: Dictionary = {}
+	for item: Dictionary in Catalog.entries("languages"):
+		var name: String = String(item.get("name", "")).strip_edges()
+		var key: String = normalized_key(name)
+		if not key.is_empty() and not seen.has(key):
+			seen[key] = true
+			result.append({"key": key, "label": name, "source": String(item.get("source", "")), "edition": String(item.get("edition", ""))})
+	for group: String in LANGUAGE_FALLBACK.keys():
+		for name: String in LANGUAGE_FALLBACK[group]:
+			var key: String = normalized_key(name)
+			if not seen.has(key):
+				seen[key] = true
+				result.append({"key": key, "label": name, "source": "PHB"})
+	_load_sources()
+	for group: String in ["race", "subrace", "background", "feat"]:
+		for row: Dictionary in _sources.get(group, []):
+			var grants: Variant = row.get("languageProficiencies", [])
+			if not grants is Array:
+				continue
+			for raw: Variant in grants:
+				var candidates: Array = []
+				if raw is String:
+					candidates.append(raw)
+				elif raw is Dictionary:
+					var data: Dictionary = raw
+					for raw_key: Variant in data.keys():
+						if bool(data[raw_key]) if data[raw_key] is bool else false:
+							candidates.append(raw_key)
+					var choose: Variant = data.get("choose", {})
+					if choose is Dictionary:
+						var offered: Variant = (choose as Dictionary).get("from", [])
+						if offered is Array:
+							candidates.append_array(offered)
+				for candidate: Variant in candidates:
+					var key: String = normalized_key(String(candidate).split("|")[0])
+					if key.is_empty() or key.begins_with("any") or key.begins_with("{@") or seen.has(key):
+						continue
+					seen[key] = true
+					result.append({"key": key, "label": key.capitalize(), "source": String(row.get("source", ""))})
+	return result
 
 static var _sources: Dictionary = {}
 static var _source_names: Dictionary = {}
@@ -420,6 +478,11 @@ static func _language_group(key: String) -> String:
 			return type_name
 		if fallback.is_empty() and type_name in ["standard", "exotic"]:
 			fallback = type_name
+	if fallback.is_empty():
+		for group: String in LANGUAGE_FALLBACK.keys():
+			for name: String in LANGUAGE_FALLBACK[group]:
+				if normalized_key(name) == key:
+					return group
 	return fallback
 
 
@@ -521,6 +584,12 @@ static func _active_identity_sources(record: Dictionary) -> Dictionary:
 		for item: Variant in inventory:
 			if item is Dictionary:
 				active["item:" + String((item as Dictionary).get("id", ""))] = true
+	# A feat is an origin even if it has no indexed proficiency grant.
+	for feat: Variant in record.get("feats_catalog", []):
+		if feat is Dictionary:
+			var feat_sid: String = feat_source_id(feat)
+			if not feat_sid.is_empty():
+				active[feat_sid] = true
 	# Trait origins depend on the creature's current species/classes/feats.
 	# Delay loading the traits script: it already preloads these rules.
 	var needs_features := false
@@ -666,7 +735,7 @@ static func origins(record: Dictionary) -> Array[Dictionary]:
 					continue
 				saved[sid] = item
 	for source: Dictionary in candidate_sources(record):
-		if not source_has_grants(source):
+		if not source_has_grants(source) and String(source.get("group", "")) != "feat":
 			continue
 		var sid: String = String(source.get("id", ""))
 		var previous: Dictionary = saved.get(sid, {})
@@ -676,6 +745,24 @@ static func origins(record: Dictionary) -> Array[Dictionary]:
 			"group": String(source.get("group", "")),
 			"disabled": bool(previous.get("disabled", false)),
 			"automatic": true, "requirements": choice_requirements(source)})
+	# Homebrew or otherwise unindexed feats must also be selectable as origins.
+	for raw_feat: Variant in record.get("feats_catalog", []):
+		if not raw_feat is Dictionary:
+			continue
+		var feat: Dictionary = raw_feat
+		var sid: String = feat_source_id(feat)
+		if sid.is_empty():
+			continue
+		var present := false
+		for existing: Dictionary in result:
+			if String(existing.get("id", "")) == sid:
+				present = true
+				break
+		if not present:
+			var previous: Dictionary = saved.get(sid, {})
+			result.append({"id": sid, "name": "Talento · " + String(feat.get("name", "")),
+				"group": "feat", "disabled": bool(previous.get("disabled", false)),
+				"automatic": true, "requirements": []})
 	for sid: String in saved.keys():
 		var item: Dictionary = saved[sid]
 		var found := false
@@ -717,10 +804,70 @@ static func origins(record: Dictionary) -> Array[Dictionary]:
 	return result
 
 
+static func _resolved_source_active(
+	sid: String, own: Dictionary, feat_grants: Dictionary, feature_parents: Dictionary,
+	visiting: Dictionary, cached: Dictionary
+) -> bool:
+	if sid.is_empty():
+		return true
+	if cached.has(sid):
+		return bool(cached[sid])
+	if visiting.has(sid):
+		return false
+	if not bool(own.get(sid, false)):
+		cached[sid] = false
+		return false
+	visiting[sid] = true
+	var active := true
+	if feat_grants.has(sid):
+		active = false
+		for entry: Dictionary in feat_grants[sid]:
+			if not bool(entry.get("disabled", false)) and _resolved_source_active(
+				String(entry.get("origin_id", "")), own, feat_grants, feature_parents, visiting, cached
+			):
+				active = true
+				break
+	if active and feature_parents.has(sid):
+		active = _resolved_source_active(String(feature_parents[sid]), own, feat_grants, feature_parents, visiting, cached)
+	visiting.erase(sid)
+	cached[sid] = active
+	return active
+
+
 static func origin_enabled_map(record: Dictionary) -> Dictionary:
-	var result: Dictionary = {}
+	var own: Dictionary = {}
 	for item: Dictionary in origins(record):
-		result[String(item.get("id", ""))] = not bool(item.get("disabled", false))
+		own[String(item.get("id", ""))] = not bool(item.get("disabled", false))
+	own[""] = true
+	var feat_grants: Dictionary = {}
+	var feat_feature_prefixes: Dictionary = {}
+	var raw_feats: Variant = record.get("feats_catalog", [])
+	if raw_feats is Array:
+		for raw: Variant in raw_feats:
+			if not raw is Dictionary:
+				continue
+			var feat: Dictionary = raw
+			var sid: String = feat_source_id(feat)
+			if sid.is_empty():
+				continue
+			if not feat_grants.has(sid):
+				feat_grants[sid] = []
+			feat_grants[sid].append(feat)
+			var feat_id: String = String(feat.get("id", ""))
+			if feat_id.is_empty():
+				feat_id = normalized_key(String(feat.get("name", ""))) + "|" + normalized_key(String(feat.get("source", "")))
+			feat_feature_prefixes["feature:feat|" + feat_id + "|"] = sid
+	var feature_parents: Dictionary = {}
+	for raw_id: Variant in own.keys():
+		var origin_id: String = String(raw_id)
+		for prefix: String in feat_feature_prefixes.keys():
+			if origin_id.begins_with(prefix):
+				feature_parents[origin_id] = feat_feature_prefixes[prefix]
+				break
+	var result: Dictionary = {}
+	var visiting: Dictionary = {}
+	for sid: String in own.keys():
+		_resolved_source_active(sid, own, feat_grants, feature_parents, visiting, result)
 	return result
 
 
