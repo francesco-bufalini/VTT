@@ -3840,8 +3840,6 @@ func _refresh_trackers(record: Dictionary) -> void:
 		return
 	var spent_value: Variant = record.get("resource_tracker_spent", {})
 	var spent: Dictionary = spent_value as Dictionary if spent_value is Dictionary else {}
-	var bonus_value: Variant = record.get("resource_tracker_bonuses", {})
-	var bonuses: Dictionary = bonus_value as Dictionary if bonus_value is Dictionary else {}
 	for tracker: Dictionary in trackers:
 		var row := HFlowContainer.new()
 		row.add_theme_constant_override("h_separation", 5)
@@ -3865,7 +3863,7 @@ func _refresh_trackers(record: Dictionary) -> void:
 		var id: String = String(tracker["id"])
 		var base_maximum: int = int(tracker["max"])
 		var maximum: int = maxi(0, BonusRules.add(record, "tracker:" + id,
-			base_maximum + int(bonuses.get(id, 0))))
+			base_maximum))
 		var used: int = clampi(int(spent.get(id, 0)), 0, maximum)
 		var counter_group := HBoxContainer.new()
 		counter_group.add_theme_constant_override("separation", 4)
@@ -3884,19 +3882,6 @@ func _refresh_trackers(record: Dictionary) -> void:
 		counter_group.add_child(remaining)
 		var maximum_label := Label.new()
 		counter_group.add_child(maximum_label)
-		var manual_bonus := SpinBox.new()
-		manual_bonus.min_value = -999
-		manual_bonus.max_value = 9999
-		manual_bonus.step = 1
-		manual_bonus.rounded = true
-		manual_bonus.update_on_text_changed = false
-		manual_bonus.custom_minimum_size = Vector2(63, 36)
-		manual_bonus.tooltip_text = "Di cui bonus al massimo (%d utilizzi base)" % base_maximum
-		manual_bonus.set_value_no_signal(int(bonuses.get(id, 0)))
-		ManualBonus.decorate(manual_bonus)
-		manual_bonus.hide()
-		manual_bonus.value_changed.connect(_change_tracker_bonus.bind(id))
-		row.add_child(manual_bonus)
 		var max_index: int = maximum_label.get_index()
 		counter_group.remove_child(maximum_label)
 		var formula := FormulaValue.new()
@@ -3906,8 +3891,8 @@ func _refresh_trackers(record: Dictionary) -> void:
 		formula.target_key = "tracker:" + id
 		formula.bonus_requested.connect(_on_formula_bonus_requested)
 		formula.set_formula(str(maximum),
-			"%s: base %d %+d manuale %+d origini = %d" % [
-				title, base_maximum, int(bonuses.get(id, 0)),
+			"%s: base %d + bonus cumulabili %+d = %d" % [
+				title, base_maximum,
 				BonusRules.bonus(record, "tracker:" + id), maximum
 			] + ("\n" + BonusRules.description(record, "tracker:" + id)))
 		var restore := Button.new()
@@ -3948,28 +3933,6 @@ func _roll_tracker_recharge(
 		label, roll, "riuscita" if roll >= threshold else "fallita", threshold
 	])
 
-
-func _change_tracker_bonus(value: float, id: String) -> void:
-	var record: Dictionary = _current()
-	if record.is_empty():
-		return
-	var bonuses: Dictionary = record.get("resource_tracker_bonuses", {}).duplicate(true)
-	bonuses[id] = clampi(int(value), -999, 9999)
-	record["resource_tracker_bonuses"] = bonuses
-	var maximum: int = 0
-	for tracker: Dictionary in _structured_trackers(record):
-		if String(tracker.get("id", "")) == id:
-			maximum = maxi(0, int(tracker.get("max", 0)) + int(bonuses[id]))
-			break
-	var spent: Dictionary = record.get("resource_tracker_spent", {}).duplicate(true)
-	spent[id] = clampi(int(spent.get(id, 0)), 0, maximum)
-	record["resource_tracker_spent"] = spent
-	var error: Error = _archive.save(record)
-	if error != OK:
-		_set_status("Bonus tracker non salvato: " + error_string(error))
-		return
-	_replace_current_record(record)
-	_refresh_trackers(record)
 
 
 func _change_tracker(id: String, delta: int, maximum: int) -> void:
