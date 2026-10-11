@@ -123,5 +123,15 @@ func run() -> void:
 	(normalized["formula_bonuses"] as Array)[0]["disabled"] = true
 	assert(Bonuses.value(normalized, "ability:str") == 16,
 		"Each originless bonus must remain independently toggleable")
+	# Spent pact slots must be capped by the effective (grant-adjusted) maximum.
+	var pact: Dictionary = store.create_character()
+	pact["pact_slots_total"] = 1
+	pact["pact_slots_spent"] = 3
+	pact["formula_bonuses"] = [
+		{"id": "pact-extra", "target": "pact_slot", "expression": "2", "origin_id": ""}
+	]
+	pact = store.normalize_character(pact)
+	assert(pact["pact_slots_spent"] == 3 and Bonuses.add(pact, "pact_slot", 1) == 3,
+		"Normalization must preserve spent pact slots supported by grants")
 	print("PASS: additive bonuses, dynamic references, originless grants, cycles and persistence")
 	quit()
