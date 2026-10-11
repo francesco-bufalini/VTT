@@ -230,6 +230,7 @@ static func damage_label(record: Dictionary, attack: Dictionary) -> String:
 		return "1d4" + (" %+d" % modifier if modifier != 0 else "") + " contundenti"
 	if source == "item":
 		var entry: Dictionary = attack.get("item_entry", {})
+		var settings: Dictionary = override_for(record, String(attack.get("id", "")))
 		if base.is_empty():
 			return "Nessun danno automatico (effetto speciale)"
 		var inventory: Variant = record.get("inventory", [])
