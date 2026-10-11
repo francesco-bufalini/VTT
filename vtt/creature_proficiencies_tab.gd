@@ -73,8 +73,8 @@ func setup(on_change: Callable) -> void:
 	columns.add_theme_constant_override("separation", 9)
 	columns.size_flags_horizontal = Control.SIZE_EXPAND_FILL
 	add_child(columns)
-	var left := _create_column(columns, "Origini delle competenze", 190)
-	var right := _create_column(columns, "Singole competenze", 225)
+	var left := _create_column(columns, "Origini di competenze e talenti", 190)
+	var right := _create_column(columns, "Competenze e talenti", 225)
 
 	var origin_scroller := ScrollContainer.new()
 	origin_scroller.custom_minimum_size.y = 245
@@ -157,7 +157,7 @@ func setup(on_change: Callable) -> void:
 	_proficiency_cards.add_theme_constant_override("separation", 4)
 	competence_scroller.add_child(_proficiency_cards)
 	_add_competence_button = Button.new()
-	_add_competence_button.text = "+ Competenza all'origine selezionata"
+	_add_competence_button.text = "+ Competenza / talento all'origine selezionata"
 	_add_competence_button.disabled = true
 	_add_competence_button.pressed.connect(func() -> void:
 		if _selected_id not in ["~none~", ""]:
@@ -178,7 +178,7 @@ func setup(on_change: Callable) -> void:
 	_proficiency_name.placeholder_text = "Oppure scrivi una competenza"
 	_competence_editor.add_child(_proficiency_name)
 	var competence_confirm := Button.new()
-	competence_confirm.text = "Aggiungi competenza"
+	competence_confirm.text = "Aggiungi competenza o talento"
 	competence_confirm.pressed.connect(_add_competence)
 	_competence_editor.add_child(competence_confirm)
 	_choice_dialog = ConfirmationDialog.new()
@@ -291,7 +291,7 @@ func _refresh() -> void:
 	_refresh_origin_picker()
 	_refresh_feat_origin_picker()
 	_refresh_feat_lists()
-	_status.text = "Seleziona un'origine per evidenziare le competenze collegate; cliccala di nuovo per deselezionarla."
+	_status.text = "Seleziona un'origine per evidenziare competenze e talenti collegati; cliccala di nuovo per deselezionarla."
 	_status.tooltip_text = "✓ competenza attiva · ◇ scelte da completare · ⏻ disattivazione senza eliminare i dati"
 
 
@@ -585,7 +585,6 @@ func _refresh_feat_cards(enabled: Dictionary) -> void:
 		var indices: Array = grouped[sid]
 		var feat: Dictionary = _feats[int(indices[0])]
 		var active := false
-		var selected := false
 		var selected_active := false
 		var sources: Array[String] = []
 		for index: Variant in indices:
@@ -594,7 +593,6 @@ func _refresh_feat_cards(enabled: Dictionary) -> void:
 			var grant_active: bool = not bool(owned.get("disabled", false)) and (parent.is_empty() or bool(enabled.get(parent, false)))
 			active = active or grant_active
 			if parent == _selected_id or sid == _selected_id:
-				selected = true
 				selected_active = selected_active or grant_active
 			sources.append(("✓ " if grant_active else "○ ") + (_origin_display(parent) if not parent.is_empty() else "Senza origine"))
 		active = active and bool(enabled.get(sid, true))
