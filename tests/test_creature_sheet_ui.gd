@@ -378,11 +378,18 @@ func run() -> void:
 	assert(sheet.id == original_id and sheet.classes[0].level == 6)
 	assert(area._statistics_columns.get_child_count() == 2,
 		"Statistics must have dedicated skill and combat columns")
-	var feat_section: VBoxContainer = area._proficiencies_ui.get("_feat_section") as VBoxContainer
-	var feat_editor: VBoxContainer = area._proficiencies_ui.get("_feat_editor") as VBoxContainer
-	assert(feat_section != null and feat_section.get_parent() != area._biography.get_parent()
-		and feat_editor != null,
-		"Info must no longer contain the feat editor")
+	assert(area._feats_ui != null and area._feats_toggle_button != null
+		and not area._feats_ui.visible,
+		"Talenti is a separately collapsible Statistics section (hidden initially)")
+	area._feats_toggle_button.emit_signal("pressed")
+	assert(area._feats_ui.visible
+		and area._feats_toggle_button.text == "▾ Nascondi talenti"
+		and area._feats_ui.get_child(1) is HBoxContainer,
+		"Talenti opens two matching origins/grants columns without moving the statistics columns")
+	area._feats_toggle_button.emit_signal("pressed")
+	assert(not area._feats_ui.visible
+		and area._feats_toggle_button.text == "▸ Visualizza talenti",
+		"Talenti can be collapsed like Competenze and Bonus")
 	assert(area._skill_buttons.size() == 18,
 		"All canonical 5etools/D&D 5e skills must be present")
 	assert(int(area._passive_perception.text) >= 10,
