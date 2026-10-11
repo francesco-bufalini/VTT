@@ -397,6 +397,7 @@ static func _collect_features(record: Dictionary) -> Array[Dictionary]:
 	# controls only their effective origins, not whether the item exists.
 	var inventory: Variant = record.get("inventory", [])
 	if inventory is Array:
+		var owned_groups: Dictionary = {}
 		for raw_owned: Variant in inventory:
 			if not raw_owned is Dictionary:
 				continue
@@ -406,14 +407,23 @@ static func _collect_features(record: Dictionary) -> Array[Dictionary]:
 			var item_id: String = String(owned.get("id", ""))
 			if item_id.is_empty():
 				continue
+			if not owned_groups.has(item_id):
+				owned_groups[item_id] = {"owned": owned, "active": false, "quantity": 0}
+			var group: Dictionary = owned_groups[item_id]
+			group["active"] = bool(group.get("active", false)) or Items.origin_active(owned)
+			group["quantity"] = int(group.get("quantity", 0)) + int(owned.get("quantity", 1))
+		for item_id: String in owned_groups.keys():
+			var group: Dictionary = owned_groups[item_id]
+			var owned: Dictionary = group["owned"]
 			var definition: Dictionary = Items.entry_for(owned)
 			var detailed: Dictionary = PlayerCatalog.detailed_entry("items", definition)
-			var inactive: bool = not Items.origin_active(owned)
+			var inactive: bool = not bool(group.get("active", false))
 			var description: String = PlayerCatalog.description_text("items", detailed)
 			if description.is_empty():
 				description = String(owned.get("description", definition.get("description", "")))
 			var item_label: String = String(owned.get("name", definition.get("name", item_id)))
-			_append(result, {"id": "overview", "name": "Descrizione · " + item_label,
+			var count: int = int(group.get("quantity", 1))
+			_append(result, {"id": "overview", "name": "Descrizione · " + item_label + (" ×%d" % count if count > 1 else ""),
 				"source": String(definition.get("source", "")), "entries": description,
 				"inactive": inactive, "feats": definition.get("feats", [])},
 				0, "Oggetto · " + item_label, "item:" + item_id, "", "", 4)
