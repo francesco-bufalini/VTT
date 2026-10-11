@@ -1477,7 +1477,7 @@ func _refresh_automatic_preview() -> void:
 		if not String(slot_result.get("warnings", "")).is_empty():
 			lines.append(String(slot_result["warnings"]))
 	if _automatic_trackers.button_pressed:
-		lines.append("Massimi derivati dai dati strutturati: %d tracker; i bonus manuali restano invariati." % _structured_trackers(record).size())
+		lines.append("Massimi derivati dai dati strutturati: %d tracker; i bonus cumulabili restano invariati." % _structured_trackers(record).size())
 	if lines.is_empty():
 		lines.append("Seleziona almeno un valore per vedere l'anteprima.")
 	_automatic_preview.text = "\n".join(lines)
@@ -1520,15 +1520,13 @@ func _apply_automatic_calculation() -> void:
 		if derived_slots is Array and derived_slots.size() >= 10:
 			record["spell_slots_total"] = derived_slots.duplicate()
 			var spent: Array = record.get("spell_slots_spent", []).duplicate()
-			var bonuses: Array = record.get("spell_slots_bonus", []).duplicate()
 			for index: int in range(1, mini(10, spent.size())):
-				var bonus: int = int(bonuses[index]) if index < bonuses.size() else 0
-				spent[index] = clampi(int(spent[index]), 0, maxi(0, int(derived_slots[index]) + bonus))
+				spent[index] = clampi(int(spent[index]), 0, maxi(0, BonusRules.add(record, "slot:" + str(index), int(derived_slots[index]))))
 			record["spell_slots_spent"] = spent
 		record["pact_slots_total"] = int(progression.get("pact_total", 0))
 		record["pact_slot_level"] = int(progression.get("pact_level", 1))
 		record["pact_slots_spent"] = mini(int(record.get("pact_slots_spent", 0)),
-			maxi(0, int(record["pact_slots_total"]) + int(record.get("pact_slots_bonus", 0))))
+			maxi(0, BonusRules.add(record, "pact_slot", int(record["pact_slots_total"]))))
 	if _automatic_derived.button_pressed:
 		record["hit_dice"] = Rules.automatic_hit_dice(record)
 		record["xp"] = maxi(int(record.get("xp", 0)), Rules.experience_for_level(int(record.get("level", 1))))
@@ -1554,11 +1552,10 @@ func _apply_automatic_calculation() -> void:
 		ProficiencyRules.sync_legacy_fields(record, ProficiencyRules.choices(record))
 	if _automatic_trackers.button_pressed:
 		var spent_values: Dictionary = record.get("resource_tracker_spent", {}).duplicate(true)
-		var bonus_values: Dictionary = record.get("resource_tracker_bonuses", {})
 		for tracker: Dictionary in _structured_trackers(record):
 			var tracker_id: String = String(tracker.get("id", ""))
 			var cap: int = maxi(0, BonusRules.add(record, "tracker:" + tracker_id,
-				int(tracker.get("max", 0)) + int(bonus_values.get(tracker_id, 0))))
+				int(tracker.get("max", 0))))
 			spent_values[tracker_id] = clampi(int(spent_values.get(tracker_id, 0)), 0, cap)
 		record["resource_tracker_spent"] = spent_values
 	# Normalize all mirrors even when recalculating a subset of base inputs.
@@ -2558,8 +2555,8 @@ func _on_spellcasting_updated(values: Dictionary) -> void:
 		return
 	for key: String in [
 		"spells", "prepared_spells", "spellbook_spells",
-		"spell_slots_total", "spell_slots_bonus", "spell_slots_spent",
-		"pact_slots_total", "pact_slots_bonus", "pact_slots_spent", "pact_slot_level",
+		"spell_slots_total", "spell_slots_spent",
+		"pact_slots_total", "pact_slots_spent", "pact_slot_level",
 		"spell_slots_visible", "pact_slots_visible"
 	]:
 		if values.has(key):
@@ -2963,18 +2960,6 @@ func _refresh_attacks(record: Dictionary) -> void:
 				versatile.disabled = not ItemRules.occupying(record.get("inventory", []), "off").is_empty()
 				versatile.toggled.connect(_on_attack_two_handed_changed.bind(attack_id))
 				settings.add_child(versatile)
-		var extra := SpinBox.new()
-		extra.min_value = -99
-		extra.max_value = 99
-		extra.rounded = true
-		extra.custom_minimum_size.x = 75
-		extra.tooltip_text = "Bonus manuale di questo attacco, oltre a competenza e caratteristica"
-		ManualBonus.decorate(extra)
-		var overrides: Dictionary = AttackData.override_for(record, attack_id)
-		extra.set_value_no_signal(int(overrides.get("bonus", 0)))
-		extra.value_changed.connect(_on_attack_bonus_changed.bind(attack_id))
-		settings.add_child(extra)
-		extra.hide() # Legacy shared hit/damage bonus is migrated into two grants.
 		if String(record.get("kind", "")) == "monster" and String(attack.get("source", "")) != "item":
 			var fixed := Label.new()
 			fixed.text = "Competenza inclusa (bestiario)"
@@ -3038,13 +3023,12 @@ func _refresh_attack_values(record: Dictionary) -> void:
 				AttackData.attack_bonus_formula(record, attack, _creature_proficiency(record)))
 		var damage: String = AttackData.damage_label(record, attack)
 		_set_formula("attack_damage:" + attack_id, damage,
-			"Danni: %s. Include bonus di caratteristica e arma quando applicabili, oltre al bonus manuale dell'attacco." % damage)
+			"Danni: %s. Include bonus di caratteristica, arma e concessioni attive quando applicabili." % damage)
 		if _attack_range_labels.has(attack_id):
 			var settings: Dictionary = AttackData.override_for(record, attack_id)
 			var base: int = int(settings.get("range_feet", attack.get("range_feet", 5)))
-			var bonus: int = int(settings.get("range_bonus", 0))
 			_set_formula("attack_range:" + attack_id, "%d ft" % AttackData.range_for(record, attack),
-				"Gittata: base %d ft %+d ft manuale %+d ft origini = %d ft" % [base, bonus,
+				"Gittata: base %d ft + bonus cumulabili %+d ft = %d ft" % [base,
 					BonusRules.bonus(record, "attack_range:" + attack_id), AttackData.range_for(record, attack)])
 
 
@@ -3057,13 +3041,6 @@ func _on_attack_ability_changed(_index: int) -> void:
 func _on_attack_range_changed(value: float, attack_id: String) -> void:
 	_save_attack_setting(attack_id, "range_feet", int(value))
 
-
-func _on_attack_range_bonus_changed(value: float, attack_id: String) -> void:
-	_save_attack_setting(attack_id, "range_bonus", int(value))
-
-
-func _on_attack_bonus_changed(value: float, attack_id: String) -> void:
-	_save_attack_setting(attack_id, "bonus", int(value))
 
 
 func _on_attack_two_handed_changed(enabled: bool, attack_id: String) -> void:
