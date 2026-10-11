@@ -23,6 +23,7 @@ const Skills5e = preload("res://vtt/creature_skills_5etools.gd")
 const AttackData = preload("res://vtt/creature_attack_data.gd")
 const ProficiencyRules = preload("res://vtt/creature_proficiency_rules.gd")
 const ProficiencyTab = preload("res://vtt/creature_proficiencies_tab.gd")
+const FeatsTab = preload("res://vtt/creature_feats_tab.gd")
 const ItemRules = preload("res://vtt/creature_item_rules.gd")
 const DocumentInbox = preload("res://vtt/document_inbox.gd")
 const DocumentStore = preload("res://vtt/document_homebrew.gd")
@@ -38,6 +39,7 @@ var _selected_kind := ""
 # Hidden editors are rebuilt only when opened, not during every sheet switch.
 var _traits_stale := true
 var _proficiencies_stale := true
+var _feats_stale := true
 var _bonuses_stale := true
 var _catalog: Array[Dictionary] = []
 var _filtered_catalog: Array[Dictionary] = []
@@ -160,6 +162,8 @@ var _bonuses_ui: Node
 var _bonuses_toggle_button: Button
 var _proficiencies_ui: Node
 var _proficiencies_toggle_button: Button
+var _feats_ui: Node
+var _feats_toggle_button: Button
 var _traits_ui: Node
 var _condition_rows: VBoxContainer
 var _effect_dialog: AcceptDialog
@@ -560,6 +564,22 @@ func _build_ui() -> void:
 			_proficiencies_stale = false
 		_proficiencies_ui.visible = not _proficiencies_ui.visible
 		_proficiencies_toggle_button.text = "▾ Nascondi competenze" if _proficiencies_ui.visible else "▸ Visualizza competenze"
+		call_deferred("_update_stats_column_heights")
+	)
+	_feats_toggle_button = Button.new()
+	_feats_toggle_button.text = "▸ Visualizza talenti"
+	_feats_toggle_button.tooltip_text = "Mostra o nasconde le origini dei talenti e i talenti posseduti"
+	statistics_tab.add_child(_feats_toggle_button)
+	_feats_ui = FeatsTab.new()
+	_feats_ui.hide()
+	statistics_tab.add_child(_feats_ui)
+	_feats_ui.call("setup", Callable(self, "_on_feats_updated"))
+	_feats_toggle_button.pressed.connect(func() -> void:
+		if not _feats_ui.visible and _feats_stale:
+			_feats_ui.call("load_record", _current())
+			_feats_stale = false
+		_feats_ui.visible = not _feats_ui.visible
+		_feats_toggle_button.text = "▾ Nascondi talenti" if _feats_ui.visible else "▸ Visualizza talenti"
 		call_deferred("_update_stats_column_heights")
 	)
 	_bonuses_toggle_button = Button.new()
@@ -2417,6 +2437,10 @@ func _load_form(record: Dictionary) -> void:
 	_refresh_reference(record)
 	_spellcasting_ui.call("load_record", record)
 	_inventory_ui.call("load_record", record)
+	_feats_stale = true
+	if _feats_ui != null and _feats_ui.visible:
+		_feats_ui.call("load_record", record)
+		_feats_stale = false
 	_bonuses_stale = true
 	if _bonuses_ui.visible:
 		_bonuses_ui.call("load_record", record)
@@ -3149,6 +3173,22 @@ func _on_documents_updated(documents: Array) -> void:
 		_replace_current_record(record)
 	else:
 		_set_status("Impossibile salvare i documenti: " + error_string(err))
+
+
+func _on_feats_updated(feats: Array, origins: Array) -> void:
+	if _loading:
+		return
+	var record: Dictionary = _current()
+	if record.is_empty():
+		return
+	# Preserve the same proficiency/bonus/trait synchronization as the
+	# competence editor; feat changes modify all downstream grant chains.
+	_on_proficiencies_updated(record.get("proficiency_choices", []), feats, origins)
+	# The competence list can contain grants from newly added feats.
+	_proficiencies_stale = true
+	if _proficiencies_ui != null and _proficiencies_ui.visible:
+		_proficiencies_ui.call("load_record", _current())
+		_proficiencies_stale = false
 
 
 func _on_proficiencies_updated(rows: Array, feats: Array, origins: Array) -> void:
@@ -3973,12 +4013,16 @@ func _on_creature_tab_changed(index: int) -> void:
 func _refresh_reference(record: Dictionary) -> void:
 	_traits_stale = true
 	_proficiencies_stale = true
+	_feats_stale = true
 	if _traits_ui != null and _tabs != null and _tabs.get_tab_title(_tabs.current_tab) == "Tratti":
 		_traits_ui.call("load_record", record)
 		_traits_stale = false
 	if _proficiencies_ui != null and _proficiencies_ui.visible:
 		_proficiencies_ui.call("load_record", record)
 		_proficiencies_stale = false
+	if _feats_ui != null and _feats_ui.visible:
+		_feats_ui.call("load_record", record)
+		_feats_stale = false
 
 
 func _filter_catalog(query: String) -> void:
