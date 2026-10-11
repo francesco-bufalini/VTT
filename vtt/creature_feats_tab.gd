@@ -33,6 +33,7 @@ var _descriptions: Dictionary = {}
 var _source_candidates: Array[Dictionary] = []
 var _feature_entries: Array[Dictionary] = []
 var _catalog_cache: Dictionary = {}
+var _proficiency_choices: Array[Dictionary] = []
 
 
 func _refresh_description_sources() -> void:
@@ -41,6 +42,7 @@ func _refresh_description_sources() -> void:
 	var record: Dictionary = _effective_record()
 	_source_candidates = Rules.candidate_sources(record)
 	_feature_entries = Traits.collect_features(record)
+	_proficiency_choices = Rules.choices(record)
 
 
 func _catalog_entries(category: String) -> Array[Dictionary]:
@@ -231,11 +233,11 @@ func _description(sid: String) -> String:
 		else:
 			var category: String = {"background": "backgrounds", "race": "races",
 				"subrace": "races", "feat": "feats"}.get(String(source.get("group", "")), "")
-			description = Catalog.info_text(source.get("data", {}), Catalog.description_text_from_raw_item(source.get("data", {})))
+			description = Catalog.info_text(source.get("data", {}), Catalog.description_text(category, source.get("data", {})))
 			if not category.is_empty():
 				for entry: Dictionary in _catalog_entries(category):
 					if String(entry.get("name", "")).nocasecmp_to(String(source.get("data", {}).get("name", ""))) == 0 and String(entry.get("source", "")) == String(source.get("data", {}).get("source", "")):
-						description = Catalog.info_text(entry, Catalog.description_text_from_raw_item(entry))
+						description = Catalog.info_text(entry, Catalog.description_text(category, entry))
 						break
 		break
 	if sid.begins_with("feature:"):
@@ -252,11 +254,34 @@ func _description(sid: String) -> String:
 	return description
 
 
+func _origin_grants_tooltip(sid: String) -> String:
+	var chosen: PackedStringArray = []
+	var fixed: PackedStringArray = []
+	for choice: Dictionary in _proficiency_choices:
+		if String(choice.get("origin_id", "")) != sid:
+			continue
+		var line: String = ("○ " if bool(choice.get("disabled", false)) else "✓ ")
+		line += String(choice.get("kind", "")).capitalize() + ": " + String(choice.get("key", "")).capitalize()
+		if bool(choice.get("automatic", false)):
+			fixed.append(line)
+		else:
+			chosen.append(line)
+	for feat: Dictionary in _feats:
+		if String(feat.get("origin_id", "")) == sid:
+			chosen.append(("○ " if bool(feat.get("disabled", false)) else "✓ ") + "Talento: " + String(feat.get("name", "")))
+	var sections: PackedStringArray = []
+	if not chosen.is_empty():
+		sections.append("Scelte già effettuate:\n" + "\n".join(chosen))
+	if not fixed.is_empty():
+		sections.append("Concessioni automatiche:\n" + "\n".join(fixed))
+	return "\n\n" + "\n\n".join(sections) if not sections.is_empty() else ""
+
+
 func _feat_description(feat: Dictionary) -> String:
 	for entry: Dictionary in _catalog_entries("feats"):
 		if String(entry.get("name", "")).nocasecmp_to(String(feat.get("name", ""))) == 0 and String(entry.get("source", "")) == String(feat.get("source", "")):
-			return Catalog.info_text(entry, Catalog.description_text_from_raw_item(entry))
-	return Catalog.info_text(feat, Catalog.description_text_from_raw_item(feat))
+			return Catalog.info_text(entry, Catalog.description_text("feats", entry))
+	return Catalog.info_text(feat, Catalog.description_text("feats", feat))
 
 
 func _refresh() -> void:
@@ -295,7 +320,7 @@ func _refresh_origins() -> void:
 		select.button_pressed = _selected_id == sid
 		select.clip_text = true
 		select.text = _label(sid) + " (%d)" % count
-		select.tooltip_text = _description(sid)
+		select.tooltip_text = _description(sid) + _origin_grants_tooltip(sid)
 		select.pressed.connect(_select_origin.bind(sid))
 		line.add_child(select)
 		if not sid.is_empty():
