@@ -1843,8 +1843,6 @@ func _refresh_formula_dependents(record: Dictionary) -> void:
 	for ability: String in _ability_spins.keys():
 		_update_ability_modifier(ability)
 	_loading = previous_loading
-	if _initiative != null:
-		_initiative.set_value_no_signal(BonusRules.value(record, "ability_mod:dex"))
 	_refresh_skill_values(record)
 	_update_max_hp_display()
 	_update_second_max_formula()
@@ -1879,25 +1877,17 @@ func _live_stats_record() -> Dictionary:
 	if record.is_empty() or _ability_spins.is_empty():
 		return record
 	var abilities: Dictionary = record.get("abilities", {}).duplicate(true)
-	var manual: Dictionary = record.get("ability_bonuses", {}).duplicate(true)
 	for ability: String in _ability_spins.keys():
 		abilities[ability] = int((_ability_spins[ability] as SpinBox).value)
-		manual[ability] = int((_ability_bonus_spins[ability] as SpinBox).value)
 	record["abilities"] = abilities
-	record["ability_bonuses"] = manual
 	if _ac != null:
 		record["armor_class_base"] = int(_ac.value)
-		record["armor_class_bonus"] = int(_ac_bonus.value)
-	if _initiative_bonus != null:
-		record["initiative_bonus"] = int(_initiative_bonus.value)
 	if _max_hp != null:
 		record["max_hp_base"] = int(_max_hp.value)
-		record["max_hp_bonus"] = int(_max_hp_bonus.value)
 	if _second_form_max_hp != null:
 		record["second_form_max_hp"] = int(_second_form_max_hp.value)
 	if _speed != null:
 		record["speed_base"] = int(_speed.value)
-		record["speed_bonus"] = int(_speed_bonus.value)
 	return record
 
 
@@ -2290,9 +2280,7 @@ func _load_form(record: Dictionary) -> void:
 	_loading = true
 	_name.text = String(record.get("name", ""))
 	_hp.value = int(record.get("current_hp", 1))
-	var hp_bonus: int = int(record.get("max_hp_bonus", 0))
-	_max_hp_bonus.value = hp_bonus
-	_max_hp.value = maxi(0, int(record.get("max_hp_base", int(record.get("max_hp", 1)) - hp_bonus)))
+	_max_hp.value = maxi(0, int(record.get("max_hp_base", record.get("max_hp", 1))))
 	_update_max_hp_display()
 	_temp_hp.value = int(record.get("temporary_hp", 0))
 	_second_form_max_hp.value = int(record.get("second_form_max_hp", record.get("second_form_hp", 0)))
@@ -2307,14 +2295,7 @@ func _load_form(record: Dictionary) -> void:
 				legacy_parts.append(field.capitalize().replace("_", " ") + ": " + value)
 		biography = "\n\n".join(legacy_parts)
 	_biography.text = biography
-	_ac_bonus.value = int(record.get("armor_class_bonus", 0))
-	_ac.value = maxi(0, int(record.get(
-		"armor_class_base", int(record.get("armor_class", 10)) - int(_ac_bonus.value)
-	)))
-	_initiative_bonus.value = int(record.get("initiative_bonus", 0))
-	_initiative.value = int(record.get(
-		"initiative_base", int(record.get("initiative", 0)) - int(_initiative_bonus.value)
-	))
+	_ac.value = maxi(0, int(record.get("armor_class_base", record.get("armor_class", 10))))
 	_update_defense_display()
 	_skill_ranks.clear()
 	_skill_ranks_custom = bool(record.get("skill_ranks_custom", false))
@@ -2335,11 +2316,8 @@ func _load_form(record: Dictionary) -> void:
 	var abilities: Dictionary = (
 		abilities_value as Dictionary if abilities_value is Dictionary else {}
 	)
-	var bonus_value: Variant = record.get("ability_bonuses", {})
-	var bonuses: Dictionary = bonus_value if bonus_value is Dictionary else {}
 	for ability: String in _ability_spins.keys():
 		(_ability_spins[ability] as SpinBox).value = int(abilities.get(ability, 10))
-		(_ability_bonus_spins[ability] as SpinBox).value = int(bonuses.get(ability, 0))
 	for ability: String in _ability_spins.keys():
 		_update_ability_modifier(ability)
 	if String(record.get("kind", "")) == "monster" and not bool(record.get("skill_ranks_custom", false)):
@@ -2374,8 +2352,7 @@ func _load_form(record: Dictionary) -> void:
 	_speed_custom = bool(record.get("speed_is_custom", false))
 	var source_speed: int = (Rules.walking_speed(_effective_species().get("speed", 30))
 		if is_character else Rules.walking_speed(record.get("stat_block", {}).get("speed", 30)))
-	_speed.value = maxi(0, int(record.get("speed_base", int(record.get("speed", source_speed)) - int(record.get("speed_bonus", 0)))) if _speed_custom else source_speed)
-	_speed_bonus.value = int(record.get("speed_bonus", 0))
+	_speed.value = maxi(0, int(record.get("speed_base", record.get("speed", source_speed))) if _speed_custom else source_speed)
 	_update_speed_display()
 	var class_source := String(record.get("class_source", ""))
 	var edition := String(record.get("rules_version", ""))
@@ -2537,14 +2514,13 @@ func _on_speed_changed(_value: float) -> void:
 
 
 func _update_speed_display() -> void:
-	if _speed_effective != null and _speed != null and _speed_bonus != null:
+	if _speed_effective != null and _speed != null:
 		var live: Dictionary = _live_stats_record()
 		var base: int = int(_speed.value)
-		var manual: int = int(_speed_bonus.value)
 		var total: int = maxi(0, BonusRules.value(live, "speed"))
 		_set_formula("speed", str(total),
-			"Velocità: base %d %+d manuale %+d bonus da origini = %d ft" % [
-				base, manual, BonusRules.bonus(live, "speed"), total])
+			"Velocità: base %d + bonus cumulabili %+d = %d ft" % [
+				base, BonusRules.bonus(live, "speed"), total])
 
 
 # The creature sheet casts from class, available and searched spells alike.
