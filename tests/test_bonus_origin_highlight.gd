@@ -28,6 +28,9 @@ func run() -> void:
 	tab._selected_origin = "custom|alpha"
 	tab._refresh_options()
 	tab._refresh()
+	for i: int in range(tab._origin_picker.item_count):
+		assert("Personalizzata" not in tab._origin_picker.get_item_text(i),
+			"Bonus origins cannot be created through a free-form option")
 	var cards: Array[PanelContainer] = []
 	for node: Node in tab._bonus_cards.get_children():
 		if node is PanelContainer:
