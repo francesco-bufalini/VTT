@@ -404,19 +404,7 @@ static func _collect_features(record: Dictionary) -> Array[Dictionary]:
 				continue
 			var definition: Dictionary = Items.entry_for(owned)
 			var detailed: Dictionary = PlayerCatalog.detailed_entry("items", definition)
-			var kind_item: String = Items.kind(definition)
-			var slots: Array = Items.slots(owned)
-			var needs_equipment: bool = kind_item in ["armor", "shield", "weapon"]
-			var equipped: bool = (
-				(kind_item == "armor" and "body" in slots)
-				or (kind_item == "shield" and "off" in slots)
-				or (kind_item == "weapon" and ("main" in slots or "off" in slots))
-			)
-			var inactive: bool = not bool(owned.get("active", true))
-			if Items.requires_attunement(definition) and not bool(owned.get("attuned", false)):
-				inactive = true
-			if needs_equipment and not equipped:
-				inactive = true
+			var inactive: bool = not Items.origin_active(owned)
 			var description: String = PlayerCatalog.description_text("items", detailed)
 			if description.is_empty():
 				description = String(owned.get("description", definition.get("description", "")))
