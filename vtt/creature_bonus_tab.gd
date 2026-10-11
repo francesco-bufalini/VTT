@@ -249,7 +249,36 @@ func _origin_label(sid: String) -> String:
 func _origin_description(sid: String) -> String:
 	if not _description_cache.has(sid):
 		_description_cache[sid] = _resolve_origin_description(sid)
-	return String(_description_cache[sid])
+	return String(_description_cache[sid]) + _origin_grants_tooltip(sid)
+
+
+func _origin_grants_tooltip(sid: String) -> String:
+	var selections: PackedStringArray = []
+	var automatic: PackedStringArray = []
+	for grant: Dictionary in Proficiencies.choices(_record):
+		if String(grant.get("origin_id", "")) != sid:
+			continue
+		var prefix: String = "○ " if bool(grant.get("disabled", false)) else "✓ "
+		var text_value: String = String(grant.get("kind", "")).capitalize() + ": " + String(grant.get("key", "")).capitalize()
+		if bool(grant.get("automatic", false)):
+			automatic.append(prefix + text_value)
+		else:
+			selections.append(prefix + text_value)
+	for feat: Variant in _record.get("feats_catalog", []):
+		if feat is Dictionary and String(feat.get("origin_id", "")) == sid:
+			selections.append(("○ " if bool(feat.get("disabled", false)) else "✓ ") + "Talento: " + String(feat.get("name", "")))
+	var bonuses: PackedStringArray = []
+	for row: Dictionary in _rows:
+		if String(row.get("origin_id", "")) == sid:
+			bonuses.append(("○ " if bool(row.get("disabled", false)) else "✓ ") + String(row.get("target", "")) + " = " + String(row.get("expression", "")))
+	var parts: PackedStringArray = []
+	if not selections.is_empty():
+		parts.append("Scelte già effettuate:\n" + "\n".join(selections))
+	if not automatic.is_empty():
+		parts.append("Concessioni automatiche:\n" + "\n".join(automatic))
+	if not bonuses.is_empty():
+		parts.append("Bonus assegnati:\n" + "\n".join(bonuses))
+	return "\n\n" + "\n\n".join(parts) if not parts.is_empty() else ""
 
 
 func _resolve_origin_description(sid: String) -> String:
@@ -257,15 +286,19 @@ func _resolve_origin_description(sid: String) -> String:
 		return "Bonus senza origine specifica."
 	for feature: Dictionary in Traits.collect_features(_record):
 		if sid == "feature:" + String(feature.get("key", "")):
-			return String(feature.get("name", "")) + "\n" + String(feature.get("entries", ""))
+			return Catalog.info_text(feature, Catalog.description_text("", feature))
 	if sid.begins_with("item:"):
 		for owned: Variant in _record.get("inventory", []):
 			if owned is Dictionary and sid == "item:" + String(owned.get("id", "")):
 				var definition: Dictionary = Items.entry_for(owned)
-				return Catalog.info_text(definition)
+				return Catalog.info_text(definition, Catalog.description_text("items", definition))
 	for source: Dictionary in Proficiencies.candidate_sources(_record):
 		if sid == String(source.get("id", "")):
-			return Catalog.info_text(source.get("data", {}))
+			var group: String = String(source.get("group", ""))
+			var category: String = {"background": "backgrounds", "feat": "feats",
+				"race": "races", "subrace": "races", "class": "classes"}.get(group, "")
+			var data: Dictionary = source.get("data", {})
+			return Catalog.info_text(data, Catalog.description_text(category, data))
 	return _origin_label(sid)
 
 
