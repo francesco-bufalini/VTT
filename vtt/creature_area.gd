@@ -36,6 +36,10 @@ var _records: Array[Dictionary] = []
 var _owned_name_index: Dictionary = {}
 var _selected_id := ""
 var _selected_kind := ""
+# Hidden editors are rebuilt only when opened, not during every sheet switch.
+var _traits_stale := true
+var _proficiencies_stale := true
+var _bonuses_stale := true
 var _catalog: Array[Dictionary] = []
 var _filtered_catalog: Array[Dictionary] = []
 var _loading := false
@@ -350,6 +354,10 @@ func toggle_panel() -> void:
 
 
 func show_panel() -> void:
+	# The menu may be clicked while this sheet is already open. Re-reading and
+	# re-normalizing every character here used to freeze the rendering thread.
+	if _panel.visible:
+		return
 	for area_name: String in ["Compendio"]:
 		var area := board_root.get_node_or_null(area_name)
 		if area != null and area.has_method("hide_panel"):
@@ -551,6 +559,10 @@ func _build_ui() -> void:
 	statistics_tab.add_child(_proficiencies_ui)
 	_proficiencies_ui.call("setup", Callable(self, "_on_proficiencies_updated"))
 	_proficiencies_toggle_button.pressed.connect(func() -> void:
+		if not _proficiencies_ui.visible and _proficiencies_stale:
+			var record: Dictionary = _current()
+			_proficiencies_ui.call("load_record", record)
+			_proficiencies_stale = false
 		_proficiencies_ui.visible = not _proficiencies_ui.visible
 		_proficiencies_toggle_button.text = "▾ Nascondi competenze" if _proficiencies_ui.visible else "▸ Visualizza competenze"
 		call_deferred("_update_stats_column_heights")
@@ -564,6 +576,9 @@ func _build_ui() -> void:
 	statistics_tab.add_child(_bonuses_ui)
 	_bonuses_ui.call("setup", Callable(self, "_on_bonuses_updated"))
 	_bonuses_toggle_button.pressed.connect(func() -> void:
+		if not _bonuses_ui.visible and _bonuses_stale:
+			_bonuses_ui.call("load_record", _current())
+			_bonuses_stale = false
 		_bonuses_ui.visible = not _bonuses_ui.visible
 		_bonuses_toggle_button.text = "▾ Nascondi bonus" if _bonuses_ui.visible else "▸ Visualizza bonus"
 		call_deferred("_update_stats_column_heights")
@@ -1209,6 +1224,7 @@ func _build_ui() -> void:
 	combat_column.minimum_size_changed.connect(_update_stats_column_heights)
 	call_deferred("_update_stats_column_heights")
 	_tabs.item_rect_changed.connect(_update_sheet_layout)
+	_tabs.tab_changed.connect(_on_creature_tab_changed)
 	_panel.resized.connect(_update_sheet_layout)
 	call_deferred("_update_sheet_layout")
 
@@ -1280,10 +1296,11 @@ func _select_creature_row(index: int) -> void:
 	if index < 0 or index >= _records.size():
 		return
 	if (
-		_selected_id != String(_records[index].get("id", ""))
-		or _selected_kind != String(_records[index].get("kind", ""))
+		_selected_id == String(_records[index].get("id", ""))
+		and _selected_kind == String(_records[index].get("kind", ""))
 	):
-		_save()
+		return # Selecting the current row must not rebuild the sheet.
+	_save()
 	_on_selected(index)
 
 
@@ -1832,6 +1849,9 @@ func _on_formula_bonus_requested(key: String) -> void:
 	if _bonuses_ui == null or key.is_empty():
 		return
 	_tabs.current_tab = 1
+	if _bonuses_stale:
+		_bonuses_ui.call("load_record", _current())
+		_bonuses_stale = false
 	_bonuses_ui.show()
 	_bonuses_toggle_button.text = "▾ Nascondi bonus"
 	_bonuses_ui.call("select_target", key)
@@ -2454,8 +2474,10 @@ func _load_form(record: Dictionary) -> void:
 	_refresh_reference(record)
 	_spellcasting_ui.call("load_record", record)
 	_inventory_ui.call("load_record", record)
-	_proficiencies_ui.call("load_record", record)
-	_bonuses_ui.call("load_record", record)
+	_bonuses_stale = true
+	if _bonuses_ui.visible:
+		_bonuses_ui.call("load_record", record)
+		_bonuses_stale = false
 	_loading = false
 
 
@@ -4067,11 +4089,23 @@ func _focus_tracker_trait(origin: String, source_label: String = "") -> void:
 		_traits_ui.call("focus_feature", origin, source_label)
 
 
+func _on_creature_tab_changed(index: int) -> void:
+	if _traits_ui == null or index < 0 or index >= _tabs.get_tab_count():
+		return
+	if _tabs.get_tab_title(index) == "Tratti" and _traits_stale:
+		_traits_ui.call("load_record", _current())
+		_traits_stale = false
+
+
 func _refresh_reference(record: Dictionary) -> void:
-	if _traits_ui != null:
+	_traits_stale = true
+	_proficiencies_stale = true
+	if _traits_ui != null and _tabs != null and _tabs.get_tab_title(_tabs.current_tab) == "Tratti":
 		_traits_ui.call("load_record", record)
-	if _proficiencies_ui != null:
+		_traits_stale = false
+	if _proficiencies_ui != null and _proficiencies_ui.visible:
 		_proficiencies_ui.call("load_record", record)
+		_proficiencies_stale = false
 
 
 func _filter_catalog(query: String) -> void:

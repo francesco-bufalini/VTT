@@ -24,6 +24,13 @@ func run() -> void:
 	assert(not elf.is_empty(), "PHB Elf must remain a selectable base race")
 	assert(_find(races, "Elf (High)", "PHB").is_empty(),
 		"Flattened High Elf must not appear in the base race menu")
+	# Callers still receive independent copies, while internal scans reuse data.
+	var changed_index: Array[Dictionary] = RaceRules.indexed_subraces()
+	if not changed_index.is_empty():
+		var original_name: String = String(changed_index[0].get("name", ""))
+		changed_index[0]["name"] = "MUTATED TEST NAME"
+		assert(String(RaceRules.indexed_subraces()[0].get("name", "")) == original_name,
+			"Indexed subrace API must return an independent copy")
 	var children := RaceRules.subraces_for(elf)
 	var high := _find(children, "High", "PHB")
 	var wood := _find(children, "Wood", "PHB")

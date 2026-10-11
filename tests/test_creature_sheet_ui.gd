@@ -208,6 +208,13 @@ func run() -> void:
 	assert(board.requested_creature_id == original_id)
 	assert(not area.is_panel_open())
 	area.show_panel()
+	var current_row: Button = area._creature_row_buttons[0]
+	area.show_panel()
+	assert(area._creature_row_buttons[0] == current_row,
+		"Opening the already-visible Creature panel must not reload the archive")
+	area._select_creature_row(0)
+	assert(area._creature_row_buttons[0] == current_row,
+		"Selecting the current creature must not recreate its form")
 	assert(area._add_class_button.disabled, "Cannot multiclass before selecting a base class")
 	area._add_multiclass_row("Fighter", 2, "PHB")
 	assert(area._multiclass_controls.is_empty(),

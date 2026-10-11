@@ -7,9 +7,15 @@ const INDEX_PATH := "res://vtt/data/proficiency_grants_5etools.json"
 static var _indexed_subraces: Array[Dictionary] = []
 
 
+# Internal scanning must reuse the index without repeatedly deep-copying it.
+# Keep the public defensive-copy contract for callers that edit returned rows.
 static func indexed_subraces() -> Array[Dictionary]:
+	return _indexed_subraces_ref().duplicate(true)
+
+
+static func _indexed_subraces_ref() -> Array[Dictionary]:
 	if not _indexed_subraces.is_empty():
-		return _indexed_subraces.duplicate(true)
+		return _indexed_subraces
 	var file := FileAccess.open(INDEX_PATH, FileAccess.READ)
 	if file == null:
 		return []
@@ -21,7 +27,7 @@ static func indexed_subraces() -> Array[Dictionary]:
 			for raw: Variant in rows:
 				if raw is Dictionary:
 					_indexed_subraces.append((raw as Dictionary).duplicate(true))
-	return _indexed_subraces.duplicate(true)
+	return _indexed_subraces
 
 
 static func _has_parent_name(name: String, source: String, all_races: Array[Dictionary]) -> bool:
@@ -38,12 +44,12 @@ static func _parent_of_flattened(entry: Dictionary, all_races: Array[Dictionary]
 		return {}
 	# A name which is itself the parent of indexed subraces (e.g. Elf
 	# (Zendikar)) must remain a selectable race, not be flattened away.
-	for candidate: Dictionary in indexed_subraces():
+	for candidate: Dictionary in _indexed_subraces_ref():
 		if String(candidate.get("raceName", "")).nocasecmp_to(full_name) == 0:
 			return {}
 	var parent_name := full_name.substr(0, cut)
 	var child_name := full_name.substr(cut + 2, full_name.length() - cut - 3)
-	for index: Dictionary in indexed_subraces():
+	for index: Dictionary in _indexed_subraces_ref():
 		if (String(index.get("name", "")).nocasecmp_to(child_name) == 0
 			and String(index.get("raceName", "")).nocasecmp_to(parent_name) == 0):
 			var indexed_book: String = String(index.get("raceSource", ""))
@@ -72,7 +78,7 @@ static func subraces_for(race: Dictionary) -> Array[Dictionary]:
 		return []
 	var result: Array[Dictionary] = []
 	var seen: Dictionary = {}
-	for child: Dictionary in indexed_subraces():
+	for child: Dictionary in _indexed_subraces_ref():
 		if (String(child.get("raceName", "")).nocasecmp_to(race_name) != 0
 			or String(child.get("raceSource", "")) != race_source):
 			continue

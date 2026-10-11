@@ -53,6 +53,11 @@ var _delete_picker: OptionButton
 var _delete_kind := ""
 var _delete_key := ""
 var _mandatory_grants: Dictionary = {}
+# An origins refresh can display many cards: reuse resolved sources and
+# catalog entries rather than deep-cloning full 5etools catalogs per tooltip.
+var _description_record: Dictionary = {}
+var _description_candidates: Array[Dictionary] = []
+var _description_catalogs: Dictionary = {}
 
 
 func setup(on_change: Callable) -> void:
@@ -284,6 +289,9 @@ func _refresh() -> void:
 
 
 func _refresh_origins() -> void:
+	_description_record = _effective_record()
+	_description_candidates = Rules.candidate_sources(_description_record)
+	_description_catalogs.clear()
 	for node: Node in _origin_cards.get_children():
 		node.queue_free()
 		_origin_cards.remove_child(node)
@@ -348,8 +356,7 @@ func _refresh_origins() -> void:
 
 func _origin_description(origin: Dictionary) -> String:
 	var sid: String = String(origin.get("id", ""))
-	var source_record: Dictionary = _effective_record()
-	for candidate: Dictionary in Rules.candidate_sources(source_record):
+	for candidate: Dictionary in _description_candidates:
 		if String(candidate.get("id", "")) != sid:
 			continue
 		if String(candidate.get("group", "")) == "class":
@@ -359,23 +366,27 @@ func _origin_description(origin: Dictionary) -> String:
 		var catalogue: String = {"race": "races", "subrace": "races",
 			"background": "backgrounds", "feat": "feats"}.get(group, "")
 		if not catalogue.is_empty():
-			for entry: Dictionary in Catalog.entries(catalogue):
+			if not _description_catalogs.has(catalogue):
+				_description_catalogs[catalogue] = Catalog.entries(catalogue)
+			for entry: Dictionary in _description_catalogs[catalogue]:
 				if String(entry.get("name", "")).nocasecmp_to(String(data.get("name", ""))) == 0 and String(entry.get("source", "")) == String(data.get("source", "")):
 					return Catalog.info_text(entry, _source_description_text(entry))
 		return Catalog.info_text(data, _source_description_text(data)) + "\nCompetenze strutturate: " + JSON.stringify(data)
 	if sid.begins_with("feature:"):
-		for feature_entry: Dictionary in Traits.collect_features(source_record):
+		for feature_entry: Dictionary in Traits.collect_features(_description_record):
 			if sid == "feature:" + String(feature_entry.get("key", "")):
 				return Catalog.info_text(feature_entry, _source_description_text(feature_entry))
 	if sid.begins_with("item:"):
-		var raw: Variant = source_record.get("inventory", [])
+		var raw: Variant = _description_record.get("inventory", [])
 		if raw is Array:
 			for owned: Variant in raw:
 				if owned is Dictionary and sid == "item:" + String(owned.get("id", "")):
 					var definition: Dictionary = owned
 					# Live inventory entries often omit the item's description.
 					# Resolve the original catalogue or homebrew definition.
-					for catalog_item: Dictionary in Catalog.entries("items"):
+					if not _description_catalogs.has("items"):
+						_description_catalogs["items"] = Catalog.entries("items")
+					for catalog_item: Dictionary in _description_catalogs["items"]:
 						if String(catalog_item.get("id", "")) == String(owned.get("id", "")):
 							definition = catalog_item
 							break
