@@ -11,6 +11,7 @@ const Skills = preload("res://vtt/creature_skills_5etools.gd")
 const Attacks = preload("res://vtt/creature_attack_data.gd")
 const Trackers = preload("res://vtt/structured_resource_trackers.gd")
 const OriginButton = preload("res://vtt/bounded_tooltip_button.gd")
+const OriginChoices = preload("res://vtt/creature_origin_choices.gd")
 
 var _changed: Callable
 var _record: Dictionary = {}
@@ -21,7 +22,6 @@ var _selected_target := ""
 var _origin_cards: VBoxContainer
 var _bonus_cards: VBoxContainer
 var _status: Label
-var _origin_editor: VBoxContainer
 var _origin_picker: OptionButton
 var _target_filter: OptionButton
 var _new_target: OptionButton
@@ -53,21 +53,6 @@ func setup(on_change: Callable) -> void:
 	_origin_cards.size_flags_horizontal = Control.SIZE_EXPAND_FILL
 	_origin_cards.add_theme_constant_override("separation", 5)
 	origin_scroll.add_child(_origin_cards)
-	var add_origin := Button.new()
-	add_origin.text = "Seleziona origine"
-	add_origin.pressed.connect(func() -> void:
-		_origin_editor.visible = not _origin_editor.visible
-	)
-	left.add_child(add_origin)
-	_origin_editor = VBoxContainer.new()
-	_origin_editor.hide()
-	left.add_child(_origin_editor)
-	_origin_picker = OptionButton.new()
-	_origin_editor.add_child(_origin_picker)
-	var confirm_origin := Button.new()
-	confirm_origin.text = "Seleziona origine esistente"
-	confirm_origin.pressed.connect(_add_origin)
-	_origin_editor.add_child(confirm_origin)
 
 	_target_filter = OptionButton.new()
 	_target_filter.fit_to_longest_item = false
@@ -91,9 +76,15 @@ func setup(on_change: Callable) -> void:
 	_new_target.size_flags_horizontal = Control.SIZE_EXPAND_FILL
 	_new_target.custom_minimum_size.x = 115
 	new_row.add_child(_new_target)
+	_origin_picker = OptionButton.new()
+	_origin_picker.fit_to_longest_item = false
+	_origin_picker.custom_minimum_size.x = 155
+	_origin_picker.size_flags_horizontal = Control.SIZE_EXPAND_FILL
+	_origin_picker.tooltip_text = "Origine che concede il nuovo bonus, oppure senza origine"
+	new_row.add_child(_origin_picker)
 	var add_bonus := Button.new()
 	add_bonus.text = "+ Bonus"
-	add_bonus.tooltip_text = "Aggiungi un bonus all'origine selezionata. I bonus uguali di origini diverse non vengono unificati."
+	add_bonus.tooltip_text = "Crea un bonus e collegalo all'origine scelta qui accanto."
 	add_bonus.pressed.connect(_add_bonus)
 	new_row.add_child(add_bonus)
 	load_record({})
@@ -212,15 +203,9 @@ func _refresh_options() -> void:
 		if String(_new_target.get_item_metadata(i)) == (_selected_target if not _selected_target.is_empty() else "initiative"):
 			_new_target.select(i)
 			break
-	_origin_picker.clear()
-	_origin_picker.add_item("Senza origine")
-	_origin_picker.set_item_metadata(0, "")
-	for origin: Dictionary in _origins:
-		var sid: String = String(origin.get("id", ""))
-		if sid.is_empty():
-			continue
-		_origin_picker.add_item(String(origin.get("name", sid)))
-		_origin_picker.set_item_metadata(_origin_picker.item_count - 1, sid)
+	var current: Dictionary = _record.duplicate(false)
+	current["proficiency_origins"] = _origins.duplicate(true)
+	OriginChoices.populate(_origin_picker, current, _selected_origin)
 
 
 func _on_filter_changed(index: int) -> void:
@@ -313,6 +298,16 @@ func _refresh_origins() -> void:
 		child.queue_free()
 	var origins: Array[Dictionary] = [{"id": "", "name": "Senza origine", "disabled": false}]
 	origins.append_array(_origins)
+	# Include the source of a real grant even if it was not previously saved.
+	for grant: Dictionary in _rows:
+		var gid: String = String(grant.get("origin_id", ""))
+		var known := gid.is_empty()
+		for source: Dictionary in origins:
+			if String(source.get("id", "")) == gid:
+				known = true
+				break
+		if not known:
+			origins.append({"id": gid, "name": String(grant.get("origin_name", gid)), "disabled": false})
 	var current: Dictionary = _record.duplicate(true)
 	current["proficiency_origins"] = _origins.duplicate(true)
 	var enabled: Dictionary = Proficiencies.origin_enabled_map(current)
@@ -330,7 +325,7 @@ func _refresh_origins() -> void:
 		for grant: Dictionary in _rows:
 			if String(grant.get("origin_id", "")) == sid:
 				count += 1
-		if count == 0 and not sid.is_empty():
+		if count == 0:
 			continue
 		var cell := PanelContainer.new()
 		_origin_cards.add_child(cell)
@@ -459,34 +454,19 @@ func _refresh_bonuses() -> void:
 				card.modulate.a = 0.55
 
 
-func _add_origin() -> void:
-	if _origin_picker.selected < 0:
-		return
-	var sid: String = String(_origin_picker.get_item_metadata(_origin_picker.selected))
-	# All selectable origins must exist already as creature traits or
-	# structured identities. No new free-text identity is created here.
-	if not sid.is_empty():
-		var known := false
-		for source: Dictionary in _origins:
-			if String(source.get("id", "")) == sid:
-				known = true
-				break
-		if not known:
-			return
-	_selected_origin = sid
-	_origin_editor.hide()
-	_refresh()
-
-
 func _add_bonus() -> void:
 	if _new_target.selected < 0:
 		return
 	var key: String = String(_new_target.get_item_metadata(_new_target.selected))
 	if key.is_empty():
 		return
+	var source: Dictionary = OriginChoices.selected(_origin_picker)
+	var sid: String = String(source.get("id", ""))
+	OriginChoices.ensure(_origins, source)
 	_rows.append({"id": "bonus_%d" % Time.get_ticks_usec(),
-		"target": key, "expression": "0", "origin_id": _selected_origin,
-		"origin_name": _origin_label(_selected_origin), "disabled": false, "automatic": false})
+		"target": key, "expression": "0", "origin_id": sid,
+		"origin_name": String(source.get("name", "Senza origine")), "disabled": false, "automatic": false})
+	_selected_origin = sid
 	_selected_target = key
 	_publish()
 

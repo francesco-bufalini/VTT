@@ -575,9 +575,11 @@ static func source_has_grants(source: Dictionary) -> bool:
 
 static func _active_identity_sources(record: Dictionary) -> Dictionary:
 	var active: Dictionary = {}
+	# Any selected catalog identity can be referenced by a manually granted
+	# bonus, feat, proficiency or tracker, even when 5etools lists no
+	# built-in proficiency for it. Do not discard such live references.
 	for source: Dictionary in candidate_sources(record):
-		if source_has_grants(source):
-			active[String(source.get("id", ""))] = true
+		active[String(source.get("id", ""))] = true
 	# Explicit item-based origins only exist while the owned item exists.
 	var inventory: Variant = record.get("inventory", [])
 	if inventory is Array:
@@ -955,7 +957,7 @@ static func reconcile_origin_dependents(record: Dictionary) -> void:
 		feats = remaining
 	record["feats_catalog"] = feats
 	var live: Dictionary = _live_origin_ids(record)
-	for field: String in ["proficiency_choices", "formula_bonuses"]:
+	for field: String in ["proficiency_choices", "formula_bonuses", "resource_trackers"]:
 		var current: Variant = record.get(field, [])
 		if not current is Array:
 			continue

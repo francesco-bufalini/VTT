@@ -9,6 +9,7 @@ const Catalog = preload("res://vtt/player_5etools_catalog.gd")
 const Traits = preload("res://vtt/creature_traits_tab.gd")
 const OriginButton = preload("res://vtt/bounded_tooltip_button.gd")
 const DialogLayout = preload("res://vtt/dialog_layout.gd")
+const OriginChoices = preload("res://vtt/creature_origin_choices.gd")
 
 var _changed: Callable
 var _record: Dictionary = {}
@@ -19,7 +20,6 @@ var _loading := false
 var _status: Label
 var _origin_cards: VBoxContainer
 var _feat_cards: VBoxContainer
-var _origin_editor: VBoxContainer
 var _origin_picker: OptionButton
 var _feat_editor: VBoxContainer
 var _feat_filter: LineEdit
@@ -76,22 +76,6 @@ func setup(on_change: Callable) -> void:
 	_origin_cards.add_theme_constant_override("separation", 5)
 	origin_scroll.add_child(_origin_cards)
 
-	var add_origin := Button.new()
-	add_origin.text = "Seleziona origine"
-	add_origin.pressed.connect(func() -> void:
-		_origin_editor.visible = not _origin_editor.visible
-	)
-	left.add_child(add_origin)
-	_origin_editor = VBoxContainer.new()
-	_origin_editor.hide()
-	left.add_child(_origin_editor)
-	_origin_picker = OptionButton.new()
-	_origin_editor.add_child(_origin_picker)
-	var confirm_origin := Button.new()
-	confirm_origin.text = "Seleziona origine esistente"
-	confirm_origin.pressed.connect(_add_origin)
-	_origin_editor.add_child(confirm_origin)
-
 	var feat_scroll := ScrollContainer.new()
 	feat_scroll.custom_minimum_size.y = 245
 	feat_scroll.size_flags_vertical = Control.SIZE_EXPAND_FILL
@@ -103,7 +87,7 @@ func setup(on_change: Callable) -> void:
 	feat_scroll.add_child(_feat_cards)
 
 	var add_feat := Button.new()
-	add_feat.text = "+ Talento all'origine selezionata"
+	add_feat.text = "+ Talento"
 	add_feat.pressed.connect(func() -> void:
 		_feat_editor.visible = not _feat_editor.visible
 	)
@@ -119,6 +103,10 @@ func setup(on_change: Callable) -> void:
 	_feat_picker = OptionButton.new()
 	_feat_picker.fit_to_longest_item = false
 	_feat_editor.add_child(_feat_picker)
+	_origin_picker = OptionButton.new()
+	_origin_picker.fit_to_longest_item = false
+	_origin_picker.tooltip_text = "Scegli l'origine che concede il talento (o senza origine)"
+	_feat_editor.add_child(_origin_picker)
 	var confirm_feat := Button.new()
 	confirm_feat.text = "Aggiungi talento"
 	confirm_feat.pressed.connect(_add_feat)
@@ -182,42 +170,27 @@ func load_record(record: Dictionary) -> void:
 func _rebuild_sources() -> void:
 	var effective: Dictionary = _effective_record()
 	var enabled: Dictionary = Rules.origin_enabled_map(effective)
-	var discovered: Array[Dictionary] = Rules.trait_origins(effective, true)
-	var by_id: Dictionary = {}
-	for source: Dictionary in discovered:
+	var candidates: Dictionary = {}
+	for source: Dictionary in OriginChoices.available(effective):
 		var sid: String = String(source.get("id", ""))
-		by_id[sid] = source
-	for source: Dictionary in Rules.origins(effective):
-		var sid: String = String(source.get("id", ""))
-		if sid.is_empty():
-			continue
-		var group: String = String(source.get("group", ""))
-		var associated := false
-		for feat: Dictionary in _feats:
-			if String(feat.get("origin_id", "")) == sid:
-				associated = true
-				break
-		if associated and not by_id.has(sid):
-			by_id[sid] = source.duplicate(true)
-	var existing_origins: Array[Dictionary] = Bonuses.available_origins(effective)
-	for feat: Dictionary in _feats:
-		var sid: String = String(feat.get("origin_id", ""))
-		if sid.is_empty() or by_id.has(sid):
-			continue
-		for source: Dictionary in existing_origins:
-			if String(source.get("id", "")) == sid:
-				by_id[sid] = source.duplicate(true)
-				break
+		if not sid.is_empty():
+			candidates[sid] = source
 	var result: Array[Dictionary] = []
-	for sid: String in by_id.keys():
-		var source: Dictionary = by_id[sid]
-		source["inactive"] = not bool(enabled.get(sid, false))
+	var found: Dictionary = {}
+	for granted: Dictionary in _feats:
+		var sid: String = String(granted.get("origin_id", ""))
+		if sid.is_empty() or found.has(sid):
+			continue
+		found[sid] = true
+		var source: Dictionary = candidates.get(sid, {"id": sid,
+			"name": String(granted.get("origin_name", sid)), "group": "custom"})
+		source = source.duplicate(true)
+		source["inactive"] = not bool(enabled.get(sid, true))
 		result.append(source)
 	result.sort_custom(func(a: Dictionary, b: Dictionary) -> bool:
 		return String(a.get("name", "")).naturalnocasecmp_to(String(b.get("name", ""))) < 0
 	)
 	_origins = result
-
 
 func _feats_reset() -> void:
 	_feats.clear()
@@ -324,7 +297,7 @@ func _feat_description(feat: Dictionary) -> String:
 
 
 func _refresh() -> void:
-	_status.text = "Seleziona un'origine a sinistra per evidenziare i talenti concessi. Ogni talento può diventare origine di altri effetti."
+	_status.text = "Aggiungi un talento e poi attribuiscigli un'origine. La lista sinistra mostra solo chi concede talenti."
 	_refresh_origins()
 	_refresh_feats()
 	_refresh_origin_picker()
@@ -336,8 +309,11 @@ func _refresh_origins() -> void:
 		_origin_cards.remove_child(node)
 		node.queue_free()
 	var enabled: Dictionary = _enabled()
-	var sources: Array[Dictionary] = [{"id": "", "name": "Senza origine", "disabled": false}]
-	sources.append_array(_origins)
+	var sources: Array[Dictionary] = _origins.duplicate(true)
+	for granted: Dictionary in _feats:
+		if String(granted.get("origin_id", "")).is_empty():
+			sources.push_front({"id": "", "name": "Senza origine", "disabled": false})
+			break
 	var seen: Dictionary = {}
 	for origin: Dictionary in sources:
 		var sid: String = String(origin.get("id", ""))
@@ -348,6 +324,8 @@ func _refresh_origins() -> void:
 		for feat: Dictionary in _feats:
 			if String(feat.get("origin_id", "")) == sid:
 				count += 1
+		if count == 0:
+			continue
 		var panel := PanelContainer.new()
 		_origin_cards.add_child(panel)
 		var line := HBoxContainer.new()
@@ -459,16 +437,7 @@ func _refresh_feats() -> void:
 
 
 func _refresh_origin_picker() -> void:
-	_origin_picker.clear()
-	for source: Dictionary in _origins:
-		var sid: String = String(source.get("id", ""))
-		if sid.is_empty():
-			continue
-		_origin_picker.add_item(String(source.get("name", sid)))
-		_origin_picker.set_item_metadata(_origin_picker.item_count - 1, sid)
-	if _origin_picker.item_count > 0:
-		_origin_picker.select(0)
-
+	OriginChoices.populate(_origin_picker, _effective_record(), _selected_id if _selected_id != "~none~" else "")
 
 func _refresh_feat_picker() -> void:
 	_catalog_matches.clear()
@@ -506,18 +475,6 @@ func _toggle_origin(on: bool, sid: String) -> void:
 	_publish()
 
 
-func _add_origin() -> void:
-	if _origin_picker.selected < 0:
-		return
-	var sid: String = String(_origin_picker.get_item_metadata(_origin_picker.selected))
-	# A new origin must be justified by an actual trait. This picker is
-	# restricted to existing structured feat granters and linked sources.
-	if sid.is_empty() or not _has_origin(sid):
-		return
-	_selected_id = sid
-	_origin_editor.hide()
-	_refresh_origins()
-	_refresh_feats()
 
 
 func _add_feat() -> void:
@@ -526,12 +483,14 @@ func _add_feat() -> void:
 		return
 	var feat: Dictionary = _catalog_matches[index]
 	var sid: String = Rules.feat_source_id(feat)
-	var origin_id: String = "" if _selected_id == "~none~" else _selected_id
+	var source: Dictionary = OriginChoices.selected(_origin_picker)
+	var origin_id: String = String(source.get("id", ""))
 	# Re-adding a previously muted grant reactivates it; different source
 	# grants of the same feat stay independent.
 	if sid == origin_id:
 		_status.text = "Un talento non può essere origine di se stesso."
 		return
+	OriginChoices.ensure(_origins, source)
 	for granted: Dictionary in _feats:
 		if Rules.feat_source_id(granted) == sid and String(granted.get("origin_id", "")) == origin_id:
 			granted["disabled"] = false
@@ -540,7 +499,8 @@ func _add_feat() -> void:
 			return
 	_feats.append({"id": feat.get("id", ""), "name": feat.get("name", ""),
 		"source": feat.get("source", ""), "origin_id": origin_id,
-		"origin_name": _label(origin_id), "disabled": false})
+		"origin_name": String(source.get("name", "Senza origine")), "disabled": false})
+	_selected_id = origin_id
 	_feat_editor.hide()
 	_publish()
 

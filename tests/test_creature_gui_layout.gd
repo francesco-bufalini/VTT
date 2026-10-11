@@ -44,6 +44,14 @@ func run() -> void:
 		record["default_miniature_id"] = "hero_test"
 		assert(area._archive.save(record) == OK)
 	area._reload()
+	# Loading a new sheet must resolve DEX before computing the first initiative readout.
+	var init_record: Dictionary = area._current()
+	init_record["abilities"]["dex"] = 18
+	assert(area._archive.save(init_record) == OK)
+	area._replace_current_record(init_record)
+	area._load_form(init_record)
+	assert(area._initiative_effective.text == "+4",
+		"Initial initiative must use the loaded DEX score, not +0 or the prior creature.")
 	var original_id: String = area._current().id
 	area._creature_filter.text = " DELTA "
 	area._creature_filter.text_changed.emit(area._creature_filter.text)

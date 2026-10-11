@@ -13,6 +13,7 @@ const RaceRules = preload("res://vtt/creature_race_rules.gd")
 const SpellcastingTab = preload("res://vtt/creature_spellcasting_tab.gd")
 const FiveToolsText = preload("res://vtt/five_tools_rich_text.gd")
 const StructuredTrackers = preload("res://vtt/structured_resource_trackers.gd")
+const TrackerTab = preload("res://vtt/creature_trackers_tab.gd")
 const FormulaValue = preload("res://vtt/formula_value.gd")
 const BonusRules = preload("res://vtt/creature_bonus_rules.gd")
 const BonusTab = preload("res://vtt/creature_bonus_tab.gd")
@@ -41,6 +42,7 @@ var _traits_stale := true
 var _proficiencies_stale := true
 var _feats_stale := true
 var _bonuses_stale := true
+var _trackers_stale := true
 var _catalog: Array[Dictionary] = []
 var _filtered_catalog: Array[Dictionary] = []
 var _loading := false
@@ -158,6 +160,8 @@ var _pending_new_creature := false
 var _picker_current := false
 var _chosen_miniature_id := ""
 var _tracker_rows: VBoxContainer
+var _trackers_ui: Node
+var _trackers_toggle_button: Button
 var _bonuses_ui: Node
 var _bonuses_toggle_button: Button
 var _proficiencies_ui: Node
@@ -596,6 +600,22 @@ func _build_ui() -> void:
 			_bonuses_stale = false
 		_bonuses_ui.visible = not _bonuses_ui.visible
 		_bonuses_toggle_button.text = "▾ Nascondi bonus" if _bonuses_ui.visible else "▸ Visualizza bonus"
+		call_deferred("_update_stats_column_heights")
+	)
+	_trackers_toggle_button = Button.new()
+	_trackers_toggle_button.text = "▸ Visualizza tracker"
+	_trackers_toggle_button.tooltip_text = "Mostra le risorse, i loro massimi e le origini che le concedono"
+	statistics_tab.add_child(_trackers_toggle_button)
+	_trackers_ui = TrackerTab.new()
+	_trackers_ui.hide()
+	statistics_tab.add_child(_trackers_ui)
+	_trackers_ui.call("setup", Callable(self, "_on_trackers_updated"))
+	_trackers_toggle_button.pressed.connect(func() -> void:
+		if not _trackers_ui.visible and _trackers_stale:
+			_trackers_ui.call("load_record", _current())
+			_trackers_stale = false
+		_trackers_ui.visible = not _trackers_ui.visible
+		_trackers_toggle_button.text = "▾ Nascondi tracker" if _trackers_ui.visible else "▸ Visualizza tracker"
 		call_deferred("_update_stats_column_heights")
 	)
 	# Always keep skills and combat side by side (45% / 55%).  Scroll
@@ -1868,6 +1888,46 @@ func _refresh_formula_dependents(record: Dictionary) -> void:
 	_refresh_trackers(record)
 
 
+
+func _on_trackers_updated(trackers: Array, origins: Array) -> void:
+	if _loading:
+		return
+	var record: Dictionary = _current()
+	if record.is_empty():
+		return
+	# The tracker editor shows only granting origins; retain unrelated
+	# origin switches from proficiency, bonus and feat editors.
+	var merged: Dictionary = {}
+	for source: Variant in record.get("proficiency_origins", []):
+		if source is Dictionary:
+			merged[String(source.get("id", ""))] = (source as Dictionary).duplicate(true)
+	for source: Variant in origins:
+		if source is Dictionary:
+			merged[String(source.get("id", ""))] = (source as Dictionary).duplicate(true)
+	record["proficiency_origins"] = merged.values()
+	record["resource_trackers"] = trackers.duplicate(true)
+	ProficiencyRules.reconcile_origin_dependents(record)
+	var spent: Dictionary = record.get("resource_tracker_spent", {}).duplicate(true)
+	var valid: Dictionary = {}
+	for tracker: Dictionary in _structured_trackers(record):
+		var tracker_id: String = String(tracker.get("id", ""))
+		valid[tracker_id] = true
+		var cap: int = maxi(0, BonusRules.add(record, "tracker:" + tracker_id, int(tracker.get("max", 0))))
+		if spent.has(tracker_id):
+			spent[tracker_id] = clampi(int(spent[tracker_id]), 0, cap)
+	for id: String in spent.keys():
+		if not valid.has(id):
+			spent.erase(id)
+	record["resource_tracker_spent"] = spent
+	if _archive.save(record) != OK:
+		_set_status("Impossibile salvare tracker e origini.")
+		return
+	_replace_current_record(record)
+	_load_form(record)
+	_apply_sheet_properties(record)
+	_sync_token_health(record)
+
+
 func _on_bonuses_updated(rows: Array, origins: Array) -> void:
 	if _loading:
 		return
@@ -2250,6 +2310,7 @@ func _reload() -> void:
 		_loading = true
 		_traits_ui.call("load_record", {})
 		_bonuses_ui.call("load_record", {})
+		_trackers_ui.call("load_record", {})
 		_loading = false
 
 
@@ -2361,7 +2422,7 @@ func _load_form(record: Dictionary) -> void:
 		biography = "\n\n".join(legacy_parts)
 	_biography.text = biography
 	_ac.value = maxi(0, int(record.get("armor_class_base", record.get("armor_class", 10))))
-	_update_defense_display()
+	# Initiative depends on DEX: compute only after ability controls load.
 	_skill_ranks.clear()
 	_skill_ranks_custom = bool(record.get("skill_ranks_custom", false))
 	var sheet_skills: Dictionary = record.duplicate(true)
@@ -2385,6 +2446,7 @@ func _load_form(record: Dictionary) -> void:
 		(_ability_spins[ability] as SpinBox).value = int(abilities.get(ability, 10))
 	for ability: String in _ability_spins.keys():
 		_update_ability_modifier(ability)
+	_update_defense_display()
 	if String(record.get("kind", "")) == "monster" and not bool(record.get("skill_ranks_custom", false)):
 		var inferred: Dictionary = Skills5e.ranks_from_bestiary(record, _creature_proficiency(record), abilities)
 		for skill_id: String in inferred.keys():
@@ -2494,6 +2556,10 @@ func _load_form(record: Dictionary) -> void:
 	if _bonuses_ui.visible:
 		_bonuses_ui.call("load_record", record)
 		_bonuses_stale = false
+	_trackers_stale = true
+	if _trackers_ui != null and _trackers_ui.visible:
+		_trackers_ui.call("load_record", record)
+		_trackers_stale = false
 	_loading = false
 
 
@@ -3296,6 +3362,10 @@ func _on_proficiencies_updated(rows: Array, feats: Array, origins: Array) -> voi
 	if _feats_ui != null and _feats_ui.visible:
 		_feats_ui.call("load_record", record)
 		_feats_stale = false
+	_trackers_stale = true
+	if _trackers_ui != null and _trackers_ui.visible:
+		_trackers_ui.call("load_record", record)
+		_trackers_stale = false
 
 
 func _on_inventory_updated(inventory: Array) -> void:
@@ -3959,6 +4029,7 @@ func _refresh_trackers(record: Dictionary) -> void:
 		return
 	var spent_value: Variant = record.get("resource_tracker_spent", {})
 	var spent: Dictionary = spent_value as Dictionary if spent_value is Dictionary else {}
+	var origin_enabled: Dictionary = ProficiencyRules.origin_enabled_map(record)
 	for tracker: Dictionary in trackers:
 		var row := HFlowContainer.new()
 		row.add_theme_constant_override("h_separation", 5)
@@ -3967,6 +4038,10 @@ func _refresh_trackers(record: Dictionary) -> void:
 		var source_button := Button.new()
 		var title: String = String(tracker.get("name", "Risorsa"))
 		var source_label: String = String(tracker.get("source_label", ""))
+		var tracker_source: String = String(tracker.get("origin_id", ""))
+		var available: bool = not bool(tracker.get("disabled", false)) and bool(origin_enabled.get(tracker_source, true))
+		if not available:
+			row.modulate.a = 0.57
 		source_button.text = (title.substr(0, 23) + "…" if title.length() > 24 else title) + " ↗"
 		source_button.tooltip_text = (
 			"Vai al privilegio: " + String(tracker.get("origin", title))
@@ -3975,9 +4050,12 @@ func _refresh_trackers(record: Dictionary) -> void:
 		source_button.size_flags_horizontal = Control.SIZE_EXPAND_FILL
 		source_button.clip_text = true
 		source_button.alignment = HORIZONTAL_ALIGNMENT_LEFT
-		source_button.pressed.connect(
-			_open_tracker_trait.bind(String(tracker.get("origin", title)), source_label)
-		)
+		if bool(tracker.get("automatic", false)) and tracker_source.begins_with("feature:"):
+			source_button.pressed.connect(
+				_open_tracker_trait.bind(String(tracker.get("origin", title)), source_label)
+			)
+		else:
+			source_button.disabled = true
 		row.add_child(source_button)
 		var id: String = String(tracker["id"])
 		var base_maximum: int = int(tracker["max"])
@@ -3991,7 +4069,7 @@ func _refresh_trackers(record: Dictionary) -> void:
 		var consume := Button.new()
 		consume.text = "−"
 		consume.tooltip_text = "Consuma un utilizzo"
-		consume.disabled = used >= maximum
+		consume.disabled = not available or used >= maximum
 		consume.pressed.connect(_change_tracker.bind(id, 1, maximum))
 		counter_group.add_child(consume)
 		var remaining := Label.new()
@@ -4017,7 +4095,7 @@ func _refresh_trackers(record: Dictionary) -> void:
 		var restore := Button.new()
 		restore.text = "+"
 		restore.tooltip_text = "Recupera un utilizzo"
-		restore.disabled = used <= 0
+		restore.disabled = not available or used <= 0
 		restore.pressed.connect(_change_tracker.bind(id, -1, maximum))
 		counter_group.add_child(restore)
 		counter_group.move_child(restore, consume.get_index() + 1)
@@ -4028,7 +4106,7 @@ func _refresh_trackers(record: Dictionary) -> void:
 			var roll := Button.new()
 			roll.text = "d6"
 			roll.tooltip_text = "Tira d6: ricarica con %d–6" % threshold
-			roll.disabled = used == 0
+			roll.disabled = not available or used == 0
 			roll.pressed.connect(_roll_tracker_recharge.bind(id, threshold, title, maximum))
 			row.add_child(roll)
 		var reset := Button.new()
@@ -4037,7 +4115,7 @@ func _refresh_trackers(record: Dictionary) -> void:
 			"Ripristina le azioni all'inizio del turno"
 			if recharge == "turn" else "Ripristina tutti gli utilizzi (manuale)"
 		)
-		reset.disabled = used == 0
+		reset.disabled = not available or used == 0
 		reset.pressed.connect(_change_tracker.bind(id, -maximum, maximum))
 		row.add_child(reset)
 
@@ -4094,6 +4172,10 @@ func _refresh_reference(record: Dictionary) -> void:
 	_traits_stale = true
 	_proficiencies_stale = true
 	_feats_stale = true
+	_trackers_stale = true
+	if _trackers_ui != null and _trackers_ui.visible:
+		_trackers_ui.call("load_record", record)
+		_trackers_stale = false
 	if _traits_ui != null and _tabs != null and _tabs.get_tab_title(_tabs.current_tab) == "Tratti":
 		_traits_ui.call("load_record", record)
 		_traits_stale = false
