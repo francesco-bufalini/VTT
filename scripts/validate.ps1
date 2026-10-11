@@ -121,7 +121,8 @@ $fastTests = @(
     "test_creature_equipment_regressions.gd",
     "test_bonus_origin_highlight.gd",
     "test_inventory_quantities.gd",
-    "test_creature_sheet_ui.gd",
+    # test_creature_sheet_ui.gd is an expensive UI integration test (up to 300s).
+    # Keep it in -FullTests; do not block the fast validation on it.
     "test_creature_gui_layout.gd",
     "test_equipped_weapons.gd",
     "test_creature_formula_bonuses.gd",
@@ -172,19 +173,28 @@ if ($FullTests) {
 foreach ($test in $testFiles) {
     $relative = "res://tests/$($test.Name)"
     Write-Host "== $relative =="
-    $testTimeout = if ($test.Name -eq "test_creature_sheet_ui.gd") {
-        # Exercises hundreds of saving UI callbacks; also exceeds 45s on baseline.
+    $testTimeout = if ($FullTests -and $test.Name -eq "test_creature_sheet_ui.gd") {
+        # Full suite only: exercises hundreds of UI callbacks.
         300
     } elseif ($FullTests) {
         90
-    } elseif ($test.Name -in @("test_item_transport.gd", "test_item_board_integration.gd", "test_equipped_weapons.gd", "test_proficiency_sources.gd", "test_bonus_origin_highlight.gd", "test_creature_sheet_ui.gd", "test_race_subrace_selection.gd")) {
+    } elseif ($test.Name -in @("test_item_transport.gd", "test_item_board_integration.gd", "test_equipped_weapons.gd", "test_proficiency_sources.gd", "test_bonus_origin_highlight.gd", "test_race_subrace_selection.gd")) {
         45
     } else {
         12
     }
+    if ($Tests -and $testTimeout -gt 90) {
+        throw "Fast validation cannot run $($test.Name): timeout $testTimeout exceeds 90 seconds."
+    }
     # Runtime integration tests need normal node initialization, not editor mode.
     $testArguments = @("--headless", "--path", $ProjectRoot, "--script", $relative)
-    Invoke-Godot -Arguments $testArguments -TimeoutSeconds $testTimeout -RequirePass
+    $stopwatch = [System.Diagnostics.Stopwatch]::StartNew()
+    try {
+        Invoke-Godot -Arguments $testArguments -TimeoutSeconds $testTimeout -RequirePass
+    } finally {
+        $stopwatch.Stop()
+        Write-Host ("== {0}: {1:N1}s (limit {2}s) ==" -f $test.Name, $stopwatch.Elapsed.TotalSeconds, $testTimeout)
+    }
 }
 
 Write-Host "Validation passed."
