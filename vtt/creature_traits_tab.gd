@@ -161,13 +161,13 @@ func _rebuild() -> void:
 			band.set_content_margin_all(10)
 			band.set_corner_radius_all(5)
 			section.add_theme_stylebox_override("panel", band)
-			var heading := Label.new()
-			heading.text = {"razza": "RAZZA E SOTTORAZZA", "background": "BACKGROUND",
+			var category_heading := Label.new()
+			category_heading.text = {"razza": "RAZZA E SOTTORAZZA", "background": "BACKGROUND",
 				"classi": "CLASSI E SOTTOCLASSI", "talenti": "TALENTI",
 				"oggetti": "OGGETTI E DOCUMENTI", "mostro": "TRATTI DEL MOSTRO"}.get(group, "ALTRI TRATTI")
-			heading.add_theme_font_size_override("font_size", 17)
-			heading.add_theme_color_override("font_color", Color(0.82, 0.90, 0.94))
-			section.add_child(heading)
+			category_heading.add_theme_font_size_override("font_size", 17)
+			category_heading.add_theme_color_override("font_color", Color(0.82, 0.90, 0.94))
+			section.add_child(category_heading)
 			_cards_container.add_child(section)
 			last_group = group
 			last_level = -1
