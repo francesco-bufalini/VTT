@@ -235,8 +235,7 @@ static func automatic_hit_points(character: Dictionary) -> Dictionary:
 	if classes.is_empty():
 		return {"available": false, "reason": "Seleziona almeno una classe."}
 	var abilities: Dictionary = character.get("abilities", {})
-	var bonuses: Dictionary = character.get("ability_bonuses", {})
-	var con_modifier: int = int(character.get("effective_con_modifier", ability_modifier(int(abilities.get("con", 10)) + int(bonuses.get("con", 0)))))
+	var con_modifier: int = int(character.get("effective_con_modifier", ability_modifier(int(abilities.get("con", 10)))))
 	var total: int = 0
 	var parts: PackedStringArray = []
 	var first_level: bool = true
@@ -279,7 +278,6 @@ static func proficiency_bonus(character: Dictionary) -> int:
 static func spellcasting_limits(character: Dictionary) -> Dictionary:
 	var classes: Array[Dictionary] = level_classes(character)
 	var abilities: Dictionary = character.get("abilities", {})
-	var bonuses: Dictionary = character.get("ability_bonuses", {})
 	var edition: String = String(character.get("rules_version", "2014"))
 	var lines: PackedStringArray = []
 	var maximum_known: Dictionary = {}
@@ -297,7 +295,7 @@ static func spellcasting_limits(character: Dictionary) -> Dictionary:
 			var stat: String = "int" if name in ["wizard", "artificer"] else "wis" if name in ["cleric", "druid"] else "cha"
 			var supplied: Dictionary = character.get("effective_ability_modifiers", {})
 			var modifier: int = int(supplied.get(stat, ability_modifier(
-				int(abilities.get(stat, 10)) + int(bonuses.get(stat, 0))
+				int(abilities.get(stat, 10))
 			)))
 			var effective: int = lvl if name in ["cleric", "druid"] else ceili(float(lvl) / 2.0)
 			var capacity: int = maxi(1, effective + modifier)
