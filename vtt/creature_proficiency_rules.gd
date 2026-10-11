@@ -955,7 +955,7 @@ static func reconcile_origin_dependents(record: Dictionary) -> void:
 		feats = remaining
 	record["feats_catalog"] = feats
 	var live: Dictionary = _live_origin_ids(record)
-	for field: String in ["proficiency_choices", "formula_bonuses"]:
+	for field: String in ["proficiency_choices", "formula_bonuses", "resource_trackers"]:
 		var current: Variant = record.get(field, [])
 		if not current is Array:
 			continue
