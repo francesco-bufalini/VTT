@@ -237,7 +237,15 @@ func _has_origin(sid: String) -> bool:
 func _effective_record() -> Dictionary:
 	var record: Dictionary = _record.duplicate(true)
 	record["feats_catalog"] = _feats.duplicate(true)
-	record["proficiency_origins"] = _origins.duplicate(true)
+	# This editor displays only feat-granting sources. Preserve disabled
+	# state for all the other origins while resolving cascading activation.
+	var merged: Dictionary = {}
+	for source: Variant in record.get("proficiency_origins", []):
+		if source is Dictionary:
+			merged[String(source.get("id", ""))] = (source as Dictionary).duplicate(true)
+	for source: Dictionary in _origins:
+		merged[String(source.get("id", ""))] = source.duplicate(true)
+	record["proficiency_origins"] = merged.values()
 	return record
 
 
