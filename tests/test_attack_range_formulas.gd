@@ -13,16 +13,18 @@ func run() -> void:
 	assert(AttackData.range_for(record, attack) == 30)
 
 	# Bonus is additive; changing the base does not change the bonus.
-	record["attack_overrides"] = {"test-range": {"range_bonus": 10}}
+	record["formula_bonuses"] = [{"id": "reach", "target": "attack_range:test-range", "expression": "10", "origin_id": ""}]
 	assert(AttackData.range_for(record, attack) == 40)
-	record["attack_overrides"] = {"test-range": {"range_feet": 50, "range_bonus": 10}}
+	record["attack_overrides"] = {"test-range": {"range_feet": 50}}
 	assert(AttackData.range_for(record, attack) == 60)
 
 	# Tactical reach stays within legal limits even with negative modifiers.
-	record["attack_overrides"] = {"test-range": {"range_bonus": -100}}
+	record["attack_overrides"] = {}
+	(record["formula_bonuses"] as Array)[0]["expression"] = "-100"
 	assert(AttackData.range_for(record, attack) == 5)
-	record["attack_overrides"] = {"test-range": {"range_feet": 1000, "range_bonus": 250}}
+	record["attack_overrides"] = {"test-range": {"range_feet": 1000}}
+	(record["formula_bonuses"] as Array)[0]["expression"] = "250"
 	assert(AttackData.range_for(record, attack) == 1000)
 
-	print("PASS: attack range formula preserves base, bonus and clamps")
+	print("PASS: attack range formula preserves base, originless grants and clamps")
 	quit()
