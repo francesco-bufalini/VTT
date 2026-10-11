@@ -52,6 +52,8 @@ static func available_origins(record: Dictionary) -> Array[Dictionary]:
 	var results: Array[Dictionary] = []
 	var seen: Dictionary = {}
 	var disabled_live: Dictionary = {}
+	var inactive_live: Dictionary = {}
+	var effective: Dictionary = Proficiencies.origin_enabled_map(record)
 	for source: Dictionary in Proficiencies.origins(record):
 		var sid: String = String(source.get("id", ""))
 		if sid.is_empty() or seen.has(sid):
@@ -59,15 +61,32 @@ static func available_origins(record: Dictionary) -> Array[Dictionary]:
 		if sid.begins_with("item:") or sid.begins_with("feature:"):
 			# These identities are live only while the item/feature really exists.
 			disabled_live[sid] = bool(source.get("disabled", false))
+			inactive_live[sid] = not bool(effective.get(sid, false))
 			continue
 		seen[sid] = true
-		results.append({"id": sid, "name": String(source.get("name", "")), "disabled": bool(source.get("disabled", false))})
+		results.append({"id": sid, "name": String(source.get("name", "")),
+			"disabled": bool(source.get("disabled", false)),
+			"inactive": not bool(effective.get(sid, false))})
 	for feature: Dictionary in Traits.collect_features(record):
 		var sid: String = "feature:" + String(feature.get("key", ""))
 		if sid == "feature:" or seen.has(sid):
 			continue
 		seen[sid] = true
-		results.append({"id": sid, "name": "Tratto · " + String(feature.get("name", "")), "disabled": bool(disabled_live.get(sid, false))})
+		var inactive: bool = bool(inactive_live.get(sid, false))
+		# Feat feature traits are children of the feat, not independent
+		# sources that can keep granting bonuses after the feat is muted.
+		var origin_key: String = String(feature.get("origin_key", ""))
+		if origin_key.begins_with("feat|"):
+			for feat: Variant in record.get("feats_catalog", []):
+				if feat is Dictionary:
+					var feat_id: String = String(feat.get("id", ""))
+					if feat_id.is_empty():
+						feat_id = String(feat.get("name", "")).to_lower() + "|" + String(feat.get("source", "")).to_lower()
+					if origin_key == "feat|" + feat_id:
+						inactive = inactive or not bool(effective.get(Proficiencies.feat_source_id(feat), false))
+						break
+		results.append({"id": sid, "name": "Tratto · " + String(feature.get("name", "")),
+			"disabled": bool(disabled_live.get(sid, false)), "inactive": inactive})
 	var inv: Variant = record.get("inventory", [])
 	if inv is Array:
 		for owned: Variant in inv:
@@ -77,13 +96,17 @@ static func available_origins(record: Dictionary) -> Array[Dictionary]:
 			if sid == "item:" or seen.has(sid):
 				continue
 			seen[sid] = true
-			results.append({"id": sid, "name": "Oggetto · " + String((owned as Dictionary).get("name", "")), "disabled": bool(disabled_live.get(sid, false))})
+			results.append({"id": sid, "name": "Oggetto · " + String((owned as Dictionary).get("name", "")),
+				"disabled": bool(disabled_live.get(sid, false)),
+				"inactive": bool(inactive_live.get(sid, false))})
 	for row: Dictionary in Structured.derive(record):
 		var sid: String = String(row.get("origin_id", ""))
 		if sid.is_empty() or seen.has(sid):
 			continue
 		seen[sid] = true
-		results.append({"id": sid, "name": String(row.get("origin_name", sid)), "disabled": bool(disabled_live.get(sid, false))})
+		results.append({"id": sid, "name": String(row.get("origin_name", sid)),
+			"disabled": bool(disabled_live.get(sid, false)),
+			"inactive": bool(inactive_live.get(sid, false))})
 	return results
 
 
@@ -94,7 +117,7 @@ static func _origin_active(sid: String, enabled: Dictionary) -> bool:
 static func _source_map(record: Dictionary) -> Dictionary:
 	var enabled: Dictionary = {}
 	for source: Dictionary in available_origins(record):
-		enabled[String(source.get("id", ""))] = not bool(source.get("disabled", false))
+		enabled[String(source.get("id", ""))] = not bool(source.get("inactive", source.get("disabled", false)))
 	return enabled
 
 

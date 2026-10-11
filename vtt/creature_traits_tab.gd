@@ -295,10 +295,15 @@ static func _collect_features(record: Dictionary) -> Array[Dictionary]:
 	var raw_feats: Variant = record.get("feats_catalog", [])
 	if raw_feats is Array:
 		var all_feats: Array[Dictionary] = PlayerCatalog.entries("feats")
+		var seen_feats: Dictionary = {}
 		for raw_feat: Variant in raw_feats:
 			if not raw_feat is Dictionary:
 				continue
 			var owned: Dictionary = raw_feat
+			var source_id: String = Proficiencies.feat_source_id(owned)
+			if seen_feats.has(source_id):
+				continue
+			seen_feats[source_id] = true
 			var feat_name: String = String(owned.get("name", ""))
 			if feat_name.is_empty():
 				continue

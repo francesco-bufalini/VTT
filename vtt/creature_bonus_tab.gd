@@ -281,6 +281,13 @@ func _refresh_origins() -> void:
 		child.queue_free()
 	var origins: Array[Dictionary] = [{"id": "", "name": "Senza origine", "disabled": false}]
 	origins.append_array(_origins)
+	var current: Dictionary = _record.duplicate(true)
+	current["proficiency_origins"] = _origins.duplicate(true)
+	var enabled: Dictionary = Proficiencies.origin_enabled_map(current)
+	for entry: Dictionary in Bonuses.available_origins(current):
+		var eid: String = String(entry.get("id", ""))
+		if not enabled.has(eid):
+			enabled[eid] = not bool(entry.get("inactive", entry.get("disabled", false)))
 	var visited: Dictionary = {}
 	for origin: Dictionary in origins:
 		var sid: String = String(origin.get("id", ""))
@@ -313,7 +320,8 @@ func _refresh_origins() -> void:
 		if not sid.is_empty():
 			var enable := CheckButton.new()
 			enable.text = "⏻"
-			enable.button_pressed = not bool(origin.get("disabled", false))
+			enable.button_pressed = bool(enabled.get(sid, not bool(origin.get("disabled", false))))
+			enable.disabled = not enable.button_pressed and not bool(origin.get("disabled", false))
 			enable.tooltip_text = "Attiva o disattiva l'intera origine senza perdere i bonus."
 			enable.toggled.connect(_toggle_origin.bind(sid))
 			line.add_child(enable)
@@ -324,7 +332,7 @@ func _refresh_origins() -> void:
 			border.set_border_width_all(2)
 			border.set_corner_radius_all(5)
 			cell.add_theme_stylebox_override("panel", border)
-		elif bool(origin.get("disabled", false)):
+		elif not bool(enabled.get(sid, not bool(origin.get("disabled", false)))):
 			cell.modulate.a = 0.58
 
 
@@ -355,9 +363,11 @@ func _refresh_bonuses() -> void:
 	var live: Dictionary = _record.duplicate(true)
 	live["proficiency_origins"] = _origins.duplicate(true)
 	live["formula_bonuses"] = _rows.duplicate(true)
-	var enabled: Dictionary = {}
-	for item: Dictionary in _origins:
-		enabled[String(item.get("id", ""))] = not bool(item.get("disabled", false))
+	var enabled: Dictionary = Proficiencies.origin_enabled_map(live)
+	for item: Dictionary in Bonuses.available_origins(live):
+		var sid: String = String(item.get("id", ""))
+		if not enabled.has(sid):
+			enabled[sid] = not bool(item.get("inactive", item.get("disabled", false)))
 	for target: Variant in ordered:
 		var header := Label.new()
 		header.text = String(names.get(target, target)) + " · %+d" % Bonuses.bonus(live, String(target))
