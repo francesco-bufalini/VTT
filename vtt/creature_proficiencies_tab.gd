@@ -364,7 +364,7 @@ func _origin_description(origin: Dictionary) -> String:
 						if String(catalog_item.get("id", "")) == String(owned.get("id", "")):
 							definition = catalog_item
 							break
-					return Catalog.info_text(definition, _source_description_text(definition))
+					return Catalog.info_text(definition, Catalog.description_text("items", definition))
 	return String(origin.get("name", "Origine personalizzata"))
 
 
