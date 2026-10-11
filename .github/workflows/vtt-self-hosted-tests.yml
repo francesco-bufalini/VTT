@@ -5,6 +5,7 @@ on:
   push:
     branches:
       - main
+      - feat/benefit-first-origins-and-trackers
       - feature/campaign-hub
       - feature/structured-creature-sheets
       - feature/tokens-lazy-load
@@ -85,6 +86,26 @@ jobs:
           $godot = "C:\Program Files\Godot\Godot_v4.7.2-stable_win64_console.exe"
           & $godot --headless --path . --editor --import --quit
           if ($LASTEXITCODE -ne 0) { exit $LASTEXITCODE }
+
+      - name: Validate new origin and tracker editors
+        shell: powershell
+        run: |
+          $godot = "C:\Program Files\Godot\Godot_v4.7.2-stable_win64_console.exe"
+          & $godot --headless --path . --check-only --script res://tests/test_benefit_first_origins_trackers.gd
+          if ($LASTEXITCODE -ne 0) { throw "New editor scripts failed to parse" }
+          $out = Join-Path $env:TEMP "vtt-benefit-editor.out"
+          $err = Join-Path $env:TEMP "vtt-benefit-editor.err"
+          $p = Start-Process -FilePath $godot -ArgumentList @("--headless","--path",".","--script","res://tests/test_benefit_first_origins_trackers.gd") -PassThru -RedirectStandardOutput $out -RedirectStandardError $err
+          if (-not $p.WaitForExit(60000)) {
+            & taskkill.exe /PID $p.Id /T /F 2>$null | Out-Null
+            Get-Content $out,$err
+            throw "New benefit editor test timed out"
+          }
+          $log = (Get-Content $out,$err -Raw) -join "\n"
+          Write-Host $log
+          if ($log -notmatch "PASS: grant-first" -or $log -match "SCRIPT ERROR:|ERROR:") {
+            throw "New benefit editor test failed"
+          }
 
       - name: Run fast Godot tests
         shell: powershell
