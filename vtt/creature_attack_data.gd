@@ -308,7 +308,7 @@ static func active_range(record: Dictionary) -> float:
 	if bool(attack.get("melee", false)) and attack.has("melee_reach_feet"):
 		var setting: Dictionary = override_for(record, String(attack.get("id", "")))
 		if not setting.has("range_feet"):
-			return float(clampi(int(attack.get("melee_reach_feet", 5)) + int(setting.get("range_bonus", 0)), 5, 1000))
+			return float(clampi(Bonuses.add(record, "attack_range:" + String(attack.get("id", "")), int(attack.get("melee_reach_feet", 5))), 5, 1000))
 	return float(range_for(record, attack))
 
 
