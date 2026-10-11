@@ -133,6 +133,7 @@ func create_character() -> Dictionary:
 		"party_id": "",
 		"classes": [],
 		"resource_tracker_spent": {},
+		"resource_trackers": [],
 		"conditions": [],
 		"transfer_revision": 0,
 		"species_id": "",
@@ -307,7 +308,8 @@ func normalize_character(value: Dictionary) -> Dictionary:
 		"optional_features_catalog",
 		"inventory_mundane",
 		"inventory_magic",
-		"inventory"
+		"inventory",
+		"resource_trackers"
 	]:
 		if not defaults.get(array_key, []) is Array:
 			defaults[array_key] = []
