@@ -811,13 +811,23 @@ static func trait_origins(record: Dictionary, only_feat_granters: bool = false) 
 	var traits: Script = load("res://vtt/creature_traits_tab.gd") as Script
 	if traits == null:
 		return result
+	var saved: Dictionary = {}
+	for origin: Variant in record.get("proficiency_origins", []):
+		if origin is Dictionary:
+			saved[String(origin.get("id", ""))] = bool(origin.get("disabled", false))
 	for feature: Dictionary in traits.call("collect_features", record):
 		var feats: Variant = feature.get("feats", [])
-		if only_feat_granters and (not feats is Array or (feats as Array).is_empty()):
+		var grants_feats: bool = (
+			(feats is Array and not (feats as Array).is_empty())
+			or (feats is Dictionary and not (feats as Dictionary).is_empty())
+			or (feats is String and not String(feats).strip_edges().is_empty())
+		)
+		if only_feat_granters and not grants_feats:
 			continue
 		var sid: String = "feature:" + String(feature.get("key", ""))
 		result.append({"id": sid, "name": "Tratto · " + String(feature.get("name", "")),
-			"group": "feature", "feats": feats, "disabled": false, "automatic": true,
+			"group": "feature", "feats": feats,
+			"disabled": bool(saved.get(sid, false)), "automatic": true,
 			"origin_key": String(feature.get("origin_key", ""))})
 	return result
 
