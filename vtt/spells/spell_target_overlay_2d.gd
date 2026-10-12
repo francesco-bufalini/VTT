@@ -59,7 +59,7 @@ func _circle_polygon(center: Vector3, radius: float) -> PackedVector2Array:
 	return result
 
 
-func _shape_polygon(start: Vector3, end: Vector3, shape: String, line_width: float = -1.0) -> PackedVector2Array:
+func _shape_polygon(start: Vector3, end: Vector3, shape: String, line_width: float = -1.0, style: String = "") -> PackedVector2Array:
 	var radius: float = maxf(Vector2(end.x - start.x, end.z - start.z).length(), 0.01)
 	if shape in ["sphere", "cylinder"]:
 		return _circle_polygon(start, radius)
@@ -75,16 +75,14 @@ func _shape_polygon(start: Vector3, end: Vector3, shape: String, line_width: flo
 	if axis.length_squared() < 0.00001:
 		return _circle_polygon(start, maxf(line_width, 0.15))
 	var perpendicular: Vector2 = Vector2(-axis.y, axis.x).normalized()
-	var half_width: float = maxf(line_width, 0.2) * 0.5
+	var half_width: float = line_width * 0.5 if line_width > 0.0 else float(measure.call("_aoe_line_radius", style))
 	if shape == "cone":
+		# D&D cone: the far edge is as wide as the cone's length.
 		half_width = axis.length() * 0.5
 		var wedge := PackedVector2Array()
 		wedge.append(_world_point(start))
-		for i: int in range(17):
-			var step: float = float(i) / 16.0
-			var lateral: float = (step * 2.0 - 1.0) * half_width
-			var forward: float = axis.length() * sqrt(maxf(0.0, 1.0 - pow(lateral / (half_width * 2.0), 2.0)))
-			var p: Vector2 = Vector2(start.x, start.z) + axis.normalized() * forward + perpendicular * lateral
+		for lateral: float in [-half_width, half_width]:
+			var p: Vector2 = Vector2(end.x, end.z) + perpendicular * lateral
 			wedge.append(_world_point(Vector3(p.x, end.y, p.y)))
 		return wedge
 	var rectangle := PackedVector2Array()
@@ -167,7 +165,8 @@ func remove_area_at_screen(point: Vector2) -> bool:
 			area.get("start", Vector3.ZERO),
 			area.get("end", Vector3.ZERO),
 			String(area.get("shape", "sphere")),
-			float(area.get("width", -1.0))
+			float(area.get("width", -1.0)),
+			String(area.get("style", ""))
 		)
 		if Geometry2D.is_point_in_polygon(point, polygon):
 			return bool(measure.call("_remove_post_cast_spell_root", area.get("root")))
@@ -229,7 +228,8 @@ func _draw() -> void:
 	for data: Dictionary in _areas:
 		var points: PackedVector2Array = _shape_polygon(
 			data.get("start", Vector3.ZERO), data.get("end", Vector3.ZERO),
-			String(data.get("shape", "sphere")), float(data.get("width", -1.0))
+			String(data.get("shape", "sphere")), float(data.get("width", -1.0)),
+			String(data.get("style", ""))
 		)
 		_draw_area(points, Color(1.0, 0.54, 0.18, 0.94))
 		hover_area = data
@@ -252,7 +252,7 @@ func _draw() -> void:
 		var end: Vector3 = measure.get("_spell_preview_end")
 		var shape: String = String(measure.get("_spell_preview_shape"))
 		var width: float = float(measure.get("_spell_preview_line_width"))
-		_draw_area(_shape_polygon(start, end, shape, width), Color(1.0, 0.72, 0.20, 1.0))
+		_draw_area(_shape_polygon(start, end, shape, width, String(measure.get("_spell_preview_style"))), Color(1.0, 0.72, 0.20, 1.0))
 		if shape != "line":
 			_draw_target_list(
 				_target_names(start, end, shape, width, String(measure.get("_spell_preview_style"))),
