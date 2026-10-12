@@ -606,7 +606,12 @@ static func _append(
 		"origin": origin, "origin_key": origin_key,
 		"book": String(feature.get("source", "")),
 		"class_name": class_label, "class_source": class_book,
-		"entries": description, "bonuses": feature.get("bonuses", [])
+		"entries": description, "bonuses": feature.get("bonuses", []),
+		# Preserve only explicit structured 5etools defensive grants. Descriptive
+		# text and conditional resistances are not interpreted as universal.
+		"resist": feature.get("resist", []),
+		"immune": feature.get("immune", []),
+		"conditionImmune": feature.get("conditionImmune", [])
 	})
 
 
