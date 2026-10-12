@@ -504,6 +504,10 @@ func dismiss_post_cast_visual_at_screen(
 	if not removed:
 		return false
 
+	# The red preview belongs to the last selected geometry. Clear it even
+	# when other held areas remain; their own grid highlighting is independent.
+	_set_spell_affected_targets([], false)
+
 	var has_remaining: bool = false
 	if measurement_tool.has_method("has_post_cast_spell_visuals"):
 		has_remaining = bool(
