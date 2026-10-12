@@ -1,11 +1,9 @@
 extends RefCounted
 
-# Resource counters backed by numeric 5etools JSON fields or formal 5etools
-# {@recharge ...} markup. This module never interprets feature prose.
-const PROGRESSIONS_PATH := "res://vtt/data/structured_resource_progressions_5etools.json"
+# Resource counters backed by structured 5etools class table columns and
+# monster recharge markup. Never derive mechanical values from feature prose.
 const Traits = preload("res://vtt/creature_traits_tab.gd")
-
-static var _cached_progressions: Array[Dictionary] = []
+const ClassMechanics = preload("res://vtt/structured_class_mechanics.gd")
 
 
 static func for_creature(record: Dictionary) -> Array[Dictionary]:
@@ -132,70 +130,48 @@ static func _recharge_markup(title: String) -> Dictionary:
 static func _append_class_trackers(record: Dictionary, output: Array[Dictionary]) -> void:
 	var raw_classes: Variant = record.get("classes", [])
 	var classes: Array = raw_classes as Array if raw_classes is Array else []
-	# Old character files can have the primary class only in legacy fields.
 	if classes.is_empty() and not String(record.get("class", "")).is_empty():
 		classes = [{
 			"name": record.get("class", ""),
 			"source": record.get("class_source", ""),
 			"level": record.get("level", 0)
 		}]
-	var definitions: Array[Dictionary] = _progressions()
 	var seen: Dictionary = {}
 	for raw_class: Variant in classes:
 		if not raw_class is Dictionary:
 			continue
-		var class_data: Dictionary = raw_class as Dictionary
-		var selected_class_name: String = String(class_data.get("name", "")).to_lower()
-		var class_source: String = String(class_data.get("source", "")).to_upper()
-		var class_level: int = int(class_data.get("level", 0))
-		if class_level < 1 or class_level > 20:
+		var class_data: Dictionary = raw_class
+		var class_name: String = String(class_data.get("name", ""))
+		var source: String = String(class_data.get("source", ""))
+		var level: int = int(class_data.get("level", 0))
+		if level < 1 or level > 20:
 			continue
-		for definition: Dictionary in definitions:
-			if String(definition.get("class_name", "")).to_lower() != selected_class_name:
+		var definition: Dictionary = ClassMechanics.class_definition(class_name, source)
+		for column: Dictionary in ClassMechanics.resource_columns(definition):
+			var levels: Array = column.get("levels", [])
+			if level > levels.size():
 				continue
-			if String(definition.get("class_source", "")).to_upper() != class_source:
+			var raw_max: Variant = levels[level - 1]
+			# An unlimited resource has no finite spent counter; keep the same
+			# semantics as the previous tracker UI until unlimited is supported.
+			if not (raw_max is int or raw_max is float or raw_max is String):
 				continue
-			var levels_value: Variant = definition.get("levels", [])
-			if not levels_value is Array:
+			var max_text: String = String(raw_max)
+			if not max_text.is_valid_int() or int(max_text) <= 0:
 				continue
-			var levels: Array = levels_value as Array
-			if class_level > levels.size():
-				continue
-			var maximum: Variant = levels[class_level - 1]
-			if not (maximum is int or maximum is float) or int(maximum) <= 0:
-				continue
-			var column: String = String(definition.get("column", ""))
+			var column_name: String = String(column.get("name", ""))
 			var id: String = "class:%s:%s:%s" % [
-				selected_class_name, class_source.to_lower(), column.to_lower().replace(" ", "_")
+				class_name.to_lower(), String(definition.get("source", source)).to_lower(),
+				column_name.to_lower().replace(" ", "_")
 			]
 			if seen.has(id):
 				continue
 			seen[id] = true
 			output.append({
 				"id": id,
-				"name": String(definition.get("name", column)),
-				"max": int(maximum),
-				"origin": String(definition.get("origin_feature", column)),
+				"name": column_name,
+				"max": int(max_text),
+				"origin": String(column.get("origin_feature", column_name)),
 				"recharge": "manual",
-				"source_label": "%s · %s" % [
-					String(class_data.get("name", "")), class_source
-				]
+				"source_label": "%s · %s" % [class_name, String(definition.get("source", source))]
 			})
-
-
-static func _progressions() -> Array[Dictionary]:
-	if not _cached_progressions.is_empty():
-		return _cached_progressions
-	var file := FileAccess.open(PROGRESSIONS_PATH, FileAccess.READ)
-	if file == null:
-		return []
-	var decoded: Variant = JSON.parse_string(file.get_as_text())
-	file.close()
-	if not decoded is Dictionary:
-		return []
-	var values: Variant = (decoded as Dictionary).get("resources", [])
-	if values is Array:
-		for value: Variant in values:
-			if value is Dictionary:
-				_cached_progressions.append(value as Dictionary)
-	return _cached_progressions
