@@ -211,8 +211,9 @@ func _refresh_all_reach_spheres(force: bool) -> void:
 		if token.has_method("get_reach_feet"):
 			reach_feet = maxf(float(token.call("get_reach_feet")), 5.0)
 		var footprint_world := _token_footprint_world(token, cell_size)
+		var long_range: float = float(token.get_meta("active_weapon_long_range_feet", 0.0))
 		parts.append(
-			"%d:%s:%.3f:%.3f:%.3f:%.2f:%.2f"
+			"%d:%s:%.3f:%.3f:%.3f:%.2f:%.2f:%.2f"
 			% [
 				token.get_instance_id(),
 				str(token.global_position.x),
@@ -220,6 +221,7 @@ func _refresh_all_reach_spheres(force: bool) -> void:
 				token.global_position.z,
 				footprint_world,
 				reach_feet,
+				long_range,
 				cell_size
 			]
 		)
@@ -239,30 +241,40 @@ func _add_reach_sphere(
 	token: CharacterBody3D,
 	cell_size: float
 ) -> void:
-	var reach_feet := 5.0
+	var reach_feet: float = 5.0
 	if token.has_method("get_reach_feet"):
 		reach_feet = maxf(float(token.call("get_reach_feet")), 5.0)
-	var footprint_world := _token_footprint_world(token, cell_size)
-	var radius := (
-		reach_feet / 5.0 * cell_size
-		+ footprint_world * 0.5
-	)
+	var long_range: float = float(token.get_meta("active_weapon_long_range_feet", 0.0))
+	var half_footprint: float = _token_footprint_world(token, cell_size) * 0.5
+	if long_range > reach_feet:
+		# Ranged selected weapon: show both actual footprint-based limits.
+		for entry: Dictionary in [
+			{"distance": long_range, "name": "Long", "color": LONG_RANGE_COLOR},
+			{"distance": reach_feet, "name": "Normal", "color": NORMAL_RANGE_COLOR}
+		]:
+			var distance: float = float(entry.get("distance", 0.0))
+			var tint: Color = entry.get("color", NORMAL_RANGE_COLOR)
+			var reach_world: float = distance / 5.0 * cell_size
+			var outline := MeshInstance3D.new()
+			outline.name = "Reach%s_%d" % [String(entry.get("name", "")), token.get_instance_id()]
+			outline.mesh = _build_range_outline_mesh(half_footprint, reach_world, cell_size)
+			outline.material_override = _range_material(tint, 0.92)
+			outline.cast_shadow = GeometryInstance3D.SHADOW_CASTING_SETTING_OFF
+			_all_reach_root.add_child(outline)
+			outline.global_position = token.global_position
+		return
 
+	# Retain the traditional melee-reach sphere for tokens without a
+	# selected weapon's normal/long ranged pair.
+	var footprint_world: float = half_footprint * 2.0
+	var radius: float = reach_feet / 5.0 * cell_size + footprint_world * 0.5
 	var sphere := SphereMesh.new()
 	sphere.radius = maxf(radius, cell_size * 0.5)
 	sphere.height = sphere.radius * 2.0
 	sphere.radial_segments = 32
 	sphere.rings = 16
-
-	var material := StandardMaterial3D.new()
-	material.transparency = BaseMaterial3D.TRANSPARENCY_ALPHA
-	material.shading_mode = BaseMaterial3D.SHADING_MODE_UNSHADED
-	material.cull_mode = BaseMaterial3D.CULL_DISABLED
-	material.albedo_color = Color(0.18, 0.58, 1.0, 0.045)
-	material.emission_enabled = true
-	material.emission = Color(0.08, 0.28, 0.72, 1.0)
+	var material: StandardMaterial3D = _range_material(NORMAL_RANGE_COLOR, 0.045)
 	material.emission_energy_multiplier = 0.10
-
 	var preview := MeshInstance3D.new()
 	preview.name = "Reach_%d" % token.get_instance_id()
 	preview.mesh = sphere
