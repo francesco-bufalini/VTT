@@ -125,7 +125,14 @@ static func display_labels(sources: Array[Dictionary], record: Dictionary = {}) 
 		if not book.is_empty() and (not context.is_empty() or sid.begins_with("feature:")):
 			context += (" · " if not context.is_empty() else "") + book
 		if not context.is_empty():
-			labels[sid] = String(labels[sid]) + " · " + context
+			var plain_label: String = String(labels[sid])
+			# Prefix context before the repeated name: long OptionButton popups
+			# can clip the right edge, so an ASI level must remain immediately
+			# visible rather than being hidden past the end of the menu.
+			if sid.begins_with("feature:") and plain_label.begins_with("Tratto · "):
+				labels[sid] = "Tratto · " + context + " — " + plain_label.trim_prefix("Tratto · ")
+			else:
+				labels[sid] = plain_label + " · " + context
 	# Some homebrew/legacy features have neither structured class nor level.
 	# Give those stable sequence numbers, never an exposed internal node ID.
 	var collisions: Dictionary = {}
