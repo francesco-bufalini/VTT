@@ -166,6 +166,12 @@ static func base_rank(record: Dictionary, damage_type: String) -> int:
 
 
 static func rank(record: Dictionary, damage_type: String) -> int:
+	# A legacy explicit zero overrides even an innate defense. Preserve this
+	# semantics for records that have not adopted origin-backed entries yet.
+	var saved_entries: Variant = record.get("damage_defense_entries", null)
+	var old_overrides: Variant = record.get("damage_defense_overrides", {})
+	if not saved_entries is Array and old_overrides is Dictionary and (old_overrides as Dictionary).has(damage_type):
+		return clampi(int((old_overrides as Dictionary)[damage_type]), -1, 2)
 	# Saved entries can be empty or predate a change of species/equipment.
 	# Reconcile automatic grants with the *current* structured sources before
 	# applying disabled-state overrides or manual entries.
@@ -203,6 +209,10 @@ static func base_condition_immune(record: Dictionary, condition: String) -> bool
 
 
 static func condition_immune(record: Dictionary, condition: String) -> bool:
+	var saved_entries: Variant = record.get("damage_defense_entries", null)
+	var old_overrides: Variant = record.get("condition_immunity_overrides", {})
+	if not saved_entries is Array and old_overrides is Dictionary and (old_overrides as Dictionary).has(condition):
+		return bool((old_overrides as Dictionary)[condition])
 	var sources: Array[Dictionary] = _sources(record)
 	var entries: Array[Dictionary] = _entries_from_record(record, sources)
 	var active_origins: Dictionary = Rules.origin_enabled_map(record)
