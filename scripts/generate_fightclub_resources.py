@@ -59,8 +59,8 @@ def to_vtt_formula(raw: str) -> str:
             raise ValueError(f"Unsupported Fight Club counter token: {match.group()}")
         return FIGHTCLUB_MODIFIERS[index]
 
-    converted = re.sub(r"%(\\d+)", convert_placeholder, raw).lower()
-    if not re.fullmatch(r"[0-9a-z_ .+*/()\\-]+", converted):
+    converted = re.sub(r"%(\d+)", convert_placeholder, raw).lower()
+    if not re.fullmatch(r"[0-9a-z_ .+*/()\-]+", converted):
         raise ValueError(f"Invalid or unconverted counter formula: {raw!r}")
     unknown = set(re.findall(r"[a-z_][a-z0-9_]*", converted)) - VTT_FORMULA_SYMBOLS
     if unknown:
