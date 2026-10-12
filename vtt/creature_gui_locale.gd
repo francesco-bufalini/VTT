@@ -57,6 +57,12 @@ const EN: Dictionary = {
 	"Tratti": "Traits",
 	"Stati": "Conditions",
 	"Incantesimi": "Spells",
+	"Caratteristica degli incantesimi": "Spellcasting ability",
+	"Automatica": "Automatic",
+	"Interrompi concentrazione": "End concentration",
+	"Termina la concentrazione su un incantesimo attivo.": "End concentration on the current spell.",
+	"FOR": "STR", "DES": "DEX", "COS": "CON", "SAG": "WIS", "CAR": "CHA",
+	"Caratteristica: %s  ·  Tiro per colpire: %s  ·  CD: %s\nConcentrazione: %s": "Ability: %s  ·  Spell attack: %s  ·  DC: %s\nConcentration: %s",
 	"Inventario": "Inventory",
 	"Documenti": "Documents",
 	"IDENTITÀ": "IDENTITY",
@@ -796,12 +802,8 @@ const EN: Dictionary = {
 	"Con rincorsa di almeno 10 ft: max(0, 3 + modificatore FOR %+d) = %d ft. Senza rincorsa la distanza è dimezzata (%s ft). Puoi raggiungere con le braccia altri 1,5 × la tua altezza. Il salto consuma il movimento disponibile.": "With a run-up of at least 10 ft: max(0, 3 + STR modifier %+d) = %d ft. From a standstill the distance is halved (%s ft). You can reach another 1.5 times your height with your arms. Jumping uses movement.",
 }
 const IT: Dictionary = {
-	"Rages": "Ira",
-	"Channel Divinity": "Incanalare Divinità",
-	"Wild Shape": "Forma Selvatica",
-	"Ki Points": "Punti Ki",
-	"Focus Points": "Punti Focus",
-	"Sorcery Points": "Punti Stregoneria",
+	# Only the creature GUI is localized. 5etools feature, trait and tracker
+	# names (Rages, Wild Shape, etc.) stay in their original catalog language.
 	"STR": "FOR",
 	"DEX": "DES",
 	"CON": "COS",
@@ -848,6 +850,7 @@ static func text_for(source: String, language: String) -> String:
 		# Formatted GUI labels keep their variable values (creature names, counts,
 		# spell names, IDs) untouched. Only recognized UI templates are translated.
 		for template: String in [
+			"Caratteristica: %s  ·  Tiro per colpire: %s  ·  CD: %s\nConcentrazione: %s",
 			"Come creatura (%s)", "Senza origine (%d)",
 			"Livello %d", "%d voci del bestiario ricercabili",
 			"%d risultati", "%d° livello · %d rimasti",
