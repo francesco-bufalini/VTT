@@ -70,10 +70,61 @@ def convert(kind: str, records: list[dict]) -> list[dict]:
     return output
 
 
+def generate_language_catalog(root: Path, release: str) -> tuple[Path, int]:
+    """Build the compact typed-language list from the same 5etools release."""
+    source = root / "data/languages.json"
+    if not source.is_file():
+        raise FileNotFoundError(f"Latest 5etools language list is missing: {source}")
+    data = read_json(source)
+    by_name: dict[str, list[dict]] = {}
+    for language in data.get("language", []):
+        name = str(language.get("name", "")).strip()
+        if name:
+            by_name.setdefault(name.lower(), []).append(language)
+    languages = []
+    for key, candidates in by_name.items():
+        types = sorted({row.get("type", "other") for row in candidates})
+        chosen = next(
+            (row for row in candidates if row.get("source") == "PHB" and row.get("type")),
+            None,
+        ) or next(
+            (row for row in candidates if row.get("source") == "XPHB" and row.get("type")),
+            None,
+        ) or next(
+            (row for row in candidates if row.get("type")),
+            None,
+        ) or next(
+            (row for row in candidates if row.get("source") == "PHB"), None
+        ) or candidates[0]
+        is_secret = "secret" in types or key in {"druidic", "thieves' cant"}
+        languages.append({
+            "key": key,
+            "label": chosen["name"],
+            "source": chosen["source"],
+            "group": "secret" if is_secret else chosen.get("type", "other"),
+            "types": types,
+        })
+    languages.sort(key=lambda entry: entry["label"].casefold())
+    dest = Path(__file__).resolve().parent.parent / "vtt/data/languages_5etools.json"
+    document = {
+        "meta": {
+            "source": "https://github.com/5etools-mirror-3/5etools-src",
+            "release": release,
+            "sourceFile": "data/languages.json",
+        },
+        "languages": languages,
+    }
+    dest.write_text(json.dumps(document, ensure_ascii=False, separators=(",", ":")),
+                    encoding="utf-8")
+    return dest, len(languages)
+
+
 def main() -> None:
     if len(sys.argv) != 2:
         raise SystemExit("Usage: generate_proficiency_grants.py /path/to/5etools-src")
     root = Path(sys.argv[1])
+    package = read_json(root / "package.json")
+    release = "v" + str(package.get("version", "unknown")).lstrip("v")
     index = read_json(root / "data/class/index.json")
     sources = {
         "class": [],
@@ -92,8 +143,8 @@ def main() -> None:
     out = {
         "meta": {
             "source": "5etools-mirror-3/5etools-src",
-            "snapshot": "2026-10-10",
-            "note": "Only structured proficiency fields; no natural-language extraction",
+            "snapshot": release,
+            "note": "Structured proficiencies; MPMM Common + one language fallback where omitted by mirror",
         }
     }
     for category, entries in sources.items():
@@ -101,6 +152,8 @@ def main() -> None:
     destination = Path(__file__).resolve().parent.parent / "vtt/data/proficiency_grants_5etools.json"
     destination.write_text(json.dumps(out, ensure_ascii=False, separators=(",", ":")), encoding="utf-8")
     print(f"Wrote {destination}: " + ", ".join(f"{k}: {len(out[k])}" for k in sources))
+    languages_path, languages_count = generate_language_catalog(root, release)
+    print(f"Wrote {languages_path}: {languages_count} typed languages from {release}")
 
 
 if __name__ == "__main__":
