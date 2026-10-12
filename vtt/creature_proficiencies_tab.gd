@@ -779,6 +779,10 @@ func _catalog_entries_for_kind(kind: String) -> Array[Dictionary]:
 	elif kind == "weapon":
 		for key: String in ["simple", "martial"]:
 			items.append({"key": key, "label": key.capitalize()})
+		# Special attack forms are separate from simple/martial weapons.
+		# They can be granted explicitly by an origin like any other weapon.
+		items.append({"key": "unarmed", "label": "Colpo senz'armi"})
+		items.append({"key": "improvised", "label": "Armi improvvisate"})
 		for item: Dictionary in Catalog.entries("weapons"):
 			if _valid_edition(item):
 				items.append({"key": String(item.get("name", "")).to_lower(), "label": String(item.get("name", ""))})

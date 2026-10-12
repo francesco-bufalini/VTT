@@ -4,6 +4,7 @@ const AttackSystem = preload("res://vtt/attack_system.gd")
 const RangeGeometry = preload("res://vtt/attack_range_geometry.gd")
 const RangeOverlay2D = preload("res://vtt/attack_range_overlay_2d.gd")
 const AttackData = preload("res://vtt/creature_attack_data.gd")
+const BonusTab = preload("res://vtt/creature_bonus_tab.gd")
 
 
 class Board:
@@ -238,6 +239,30 @@ func _run() -> void:
 	if int(definitions[0].get("range_feet", 0)) != 80 or int(definitions[0].get("long_range_feet", 0)) != 320:
 		_fail("bestiary ranged attack lost its 80/320 ft values")
 		return
+
+	var action_id: String = String(definitions[0].get("id", ""))
+	monster["formula_bonuses"] = [{
+		"id": "long-range-grant", "target": "attack_long_range:" + action_id,
+		"expression": "40", "origin_id": ""
+	}]
+	var effective: Dictionary = definitions[0].duplicate(true)
+	effective["range_feet"] = AttackData.range_for(monster, effective)
+	effective["long_range_feet"] = AttackData.long_range_for(monster, effective)
+	if AttackSystem.ranged_limits(effective) != Vector2(80.0, 360.0):
+		_fail("bonus-modified long range was not passed to tactical geometry")
+		return
+	var bonus_editor := BonusTab.new()
+	board.add_child(bonus_editor)
+	bonus_editor.setup(Callable())
+	bonus_editor.load_record(monster)
+	var target_found := false
+	for target: Dictionary in bonus_editor._all_targets():
+		if String(target.get("key", "")) == "attack_long_range:" + action_id:
+			target_found = true
+	if not target_found:
+		_fail("weapon long range is missing from bonus targets")
+		return
+
 
 	board.queue_free()
 	await process_frame

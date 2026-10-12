@@ -358,6 +358,29 @@ func run() -> void:
 	tab.setup(func(profs: Array, feats: Array, origin_rows: Array) -> void:
 		changed.append({"profs": profs, "feats": feats, "origins": origin_rows}))
 	tab.load_record(record)
+	var special_choices: Dictionary = {}
+	for entry: Dictionary in tab._catalog_entries_for_kind("weapon"):
+		special_choices[String(entry.get("key", ""))] = String(entry.get("label", ""))
+	assert(special_choices.get("unarmed", "") == "Colpo senz'armi"
+		and special_choices.get("improvised", "") == "Armi improvvisate",
+		"Both special attacks must be offered as weapon proficiency choices")
+	# Unarmed strikes remain inherently proficient under 5e rules. Improvised
+	# weapons require an explicit grant (e.g. Tavern Brawler).
+	var improvised_attack: Dictionary = {"id": "improvised", "source": "improvised",
+		"melee": true, "proficient": false}
+	var improvised_sheet: Dictionary = _record()
+	var untrained: int = Attacks.attack_bonus(improvised_sheet, improvised_attack, 2)
+	improvised_sheet["proficiency_choices"].append({
+		"kind": "weapon", "key": "improvised", "origin_id": "", "disabled": false
+	})
+	assert(Attacks.attack_bonus(improvised_sheet, improvised_attack, 2) == untrained + 2,
+		"Improvised weapon proficiency must add the proficiency bonus")
+	assert("competenza +2" in Attacks.attack_bonus_formula(
+		improvised_sheet, improvised_attack, 2))
+	var improvised_grant: Dictionary = (improvised_sheet["proficiency_choices"] as Array).back()
+	improvised_grant["disabled"] = true
+	assert(Attacks.attack_bonus(improvised_sheet, improvised_attack, 2) == untrained,
+		"Disabling the improvised weapon proficiency must remove its bonus")
 	for i: int in range(tab._origin_picker.item_count):
 		assert("personalizzata" not in tab._origin_picker.get_item_text(i).to_lower(),
 			"Proficiency origins must be selected from existing traits only")

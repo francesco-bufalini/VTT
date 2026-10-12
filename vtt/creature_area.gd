@@ -97,6 +97,7 @@ var _max_hp_effective: Label
 var _second_form_hp: SpinBox
 var _second_form_max_hp: SpinBox
 var _biography: TextEdit
+var _info_feats_list: VBoxContainer
 var _subclass_caption: Label
 var _level_caption: Label
 var _xp: SpinBox
@@ -136,6 +137,7 @@ var _attack_rows: VBoxContainer
 var _attack_hit_labels: Dictionary = {}
 var _attack_damage_labels: Dictionary = {}
 var _attack_range_labels: Dictionary = {}
+var _attack_long_range_labels: Dictionary = {}
 var _front: OptionButton
 var _party: LineEdit
 var _tabs: TabContainer
@@ -1325,6 +1327,11 @@ func _build_ui() -> void:
 	# Resources precede AC and initiative, directly below the HP panel.
 	combat_column.move_child(tracker_caption, defense_panel.get_index())
 	combat_column.move_child(_tracker_rows, defense_panel.get_index())
+	var feats_info_box := _info_panel(form, "TALENTI")
+	_info_feats_list = VBoxContainer.new()
+	_info_feats_list.add_theme_constant_override("separation", 5)
+	feats_info_box.add_child(_info_feats_list)
+
 	var biography_box := _info_panel(form, "STORIA E PERSONALITÀ")
 	var biography_label := Label.new()
 	biography_label.text = "Note"
@@ -2834,6 +2841,7 @@ func _load_form(record: Dictionary) -> void:
 				legacy_parts.append(field.capitalize().replace("_", " ") + ": " + value)
 		biography = "\n\n".join(legacy_parts)
 	_biography.text = biography
+	_refresh_info_feats(record)
 	_ac.value = maxi(0, int(record.get("armor_class_base", record.get("armor_class", 10))))
 	if _natural_ac_formula != null:
 		var default_ac_formula: String = str(record.get("armor_class_base", 10))
@@ -2982,6 +2990,93 @@ func _load_form(record: Dictionary) -> void:
 		_trackers_stale = false
 	_refresh_choice_warnings(record)
 	_loading = false
+
+
+func _on_info_feat_input(event: InputEvent, origin_id: String) -> void:
+	var click: InputEventMouseButton = event as InputEventMouseButton
+	if click == null or not click.pressed or click.button_index != MOUSE_BUTTON_RIGHT:
+		return
+	get_viewport().set_input_as_handled()
+	_tabs.current_tab = 1
+	_select_details_editor(2)
+	_feats_ui.call("focus_origin", origin_id)
+	call_deferred("_scroll_statistics_to_top")
+
+
+# Info is only a read-only index of feat grants. Editing, removing and muting
+# all stay in Statistics → View and edit → Feats.
+func _refresh_info_feats(record: Dictionary) -> void:
+	if _info_feats_list == null:
+		return
+	for child: Node in _info_feats_list.get_children():
+		_info_feats_list.remove_child(child)
+		child.queue_free()
+	var raw_feats: Variant = record.get("feats_catalog", [])
+	if not raw_feats is Array or (raw_feats as Array).is_empty():
+		var empty := Label.new()
+		empty.text = "Nessun talento."
+		_info_feats_list.add_child(empty)
+		return
+	var origin_names: Dictionary = {}
+	for source: Dictionary in ProficiencyRules.origins(record):
+		origin_names[String(source.get("id", ""))] = String(source.get("name", ""))
+	var enabled: Dictionary = ProficiencyRules.origin_enabled_map(record)
+	var grouped: Dictionary = {}
+	var ordered: Array[String] = []
+	for raw: Variant in raw_feats:
+		if not raw is Dictionary:
+			continue
+		var feat: Dictionary = raw
+		var feat_id: String = ProficiencyRules.feat_source_id(feat)
+		if feat_id.is_empty():
+			continue
+		if not grouped.has(feat_id):
+			grouped[feat_id] = {"feat": feat, "active": false,
+				"origin_id": String(feat.get("origin_id", "")), "sources": []}
+			ordered.append(feat_id)
+		var row: Dictionary = grouped[feat_id]
+		var parent_id: String = String(feat.get("origin_id", ""))
+		var origin_label: String = String(origin_names.get(parent_id, feat.get(
+			"origin_name", parent_id)))
+		if parent_id.is_empty():
+			origin_label = "Senza origine"
+		elif origin_label.is_empty():
+			origin_label = parent_id
+		var is_active: bool = (not bool(feat.get("disabled", false))
+			and bool(enabled.get(parent_id, true))
+			and bool(enabled.get(feat_id, true)))
+		var sources: Array = row["sources"]
+		var source_line: String = ("✓ " if is_active else "○ ") + origin_label
+		if source_line not in sources:
+			sources.append(source_line)
+		if is_active:
+			row["active"] = true
+			row["origin_id"] = parent_id
+	if ordered.is_empty():
+		var empty := Label.new()
+		empty.text = "Nessun talento."
+		_info_feats_list.add_child(empty)
+		return
+	for feat_id: String in ordered:
+		var item: Dictionary = grouped[feat_id]
+		var feat: Dictionary = item["feat"]
+		var panel := PanelContainer.new()
+		_info_feats_list.add_child(panel)
+		var label := Label.new()
+		label.text = ("• " if bool(item["active"]) else "○ ") + String(feat.get("name", "Talento"))
+		var source_book: String = String(feat.get("source", ""))
+		if not source_book.is_empty():
+			label.text += " · " + source_book
+		if not bool(item["active"]):
+			label.modulate.a = 0.65
+		label.mouse_filter = Control.MOUSE_FILTER_STOP
+		label.mouse_default_cursor_shape = Control.CURSOR_POINTING_HAND
+		label.tooltip_text = String(_feats_ui.call("_feat_description", feat)) + (
+			"\n\nOrigini:\n" + "\n".join(PackedStringArray(item["sources"]))
+			+ "\n\nClic destro per vedere le origini nella sezione Talenti."
+		)
+		label.gui_input.connect(_on_info_feat_input.bind(String(item["origin_id"])))
+		panel.add_child(label)
 
 
 func _on_level_changed(_value: float) -> void:
@@ -3582,8 +3677,9 @@ func _refresh_attacks(record: Dictionary) -> void:
 	_attack_hit_labels.clear()
 	_attack_damage_labels.clear()
 	_attack_range_labels.clear()
+	_attack_long_range_labels.clear()
 	for key: Variant in _formula_values.keys():
-		if String(key).begins_with("attack_range:") or String(key).begins_with("attack_hit:") or String(key).begins_with("attack_damage:"):
+		if String(key).begins_with("attack_range:") or String(key).begins_with("attack_long_range:") or String(key).begins_with("attack_hit:") or String(key).begins_with("attack_damage:"):
 			_formula_values.erase(key)
 	for child: Node in _attack_rows.get_children():
 		_attack_rows.remove_child(child)
@@ -3696,11 +3792,28 @@ func _refresh_attacks(record: Dictionary) -> void:
 		settings.add_child(range_label)
 		_attack_range_labels[attack_id] = range_label
 		_install_formula("attack_range:" + attack_id, range_label, [distance], ["Base (ft)"])
-		if int(attack.get("long_range_feet", 0)) > int(attack.get("range_feet", 5)):
-			var long_range := Label.new()
-			long_range.text = "Lunga: %d ft" % int(attack.get("long_range_feet", 0))
-			long_range.tooltip_text = "Oltre la gittata normale si applica svantaggio (regole 2014)"
-			settings.add_child(long_range)
+		var long_base: int = int(AttackData.override_for(record, attack_id).get(
+			"long_range_feet", attack.get("long_range_feet", 0)))
+		if not bool(attack.get("melee", false)) and long_base > 0:
+			var long_caption := Label.new()
+			long_caption.text = "Lunga"
+			long_caption.add_theme_font_size_override("font_size", 11)
+			settings.add_child(long_caption)
+			var long_distance := SpinBox.new()
+			long_distance.min_value = 5
+			long_distance.max_value = 5000
+			long_distance.step = 5
+			long_distance.rounded = true
+			long_distance.custom_minimum_size.x = 60
+			long_distance.tooltip_text = "Gittata lunga base (ft) di questo attacco"
+			long_distance.set_value_no_signal(long_base)
+			long_distance.value_changed.connect(_on_attack_long_range_changed.bind(attack_id))
+			settings.add_child(long_distance)
+			var long_label := Label.new()
+			settings.add_child(long_label)
+			_attack_long_range_labels[attack_id] = long_label
+			_install_formula("attack_long_range:" + attack_id, long_label,
+				[long_distance], ["Base lunga (ft)"])
 		if String(attack.get("source", "")) == "item":
 			var item_data: Dictionary = attack.get("item_entry", {})
 			var properties: PackedStringArray = []
@@ -3813,6 +3926,13 @@ func _refresh_attack_values(record: Dictionary) -> void:
 			_set_formula("attack_range:" + attack_id, "%d ft" % AttackData.range_for(record, attack),
 				"Gittata: base %d ft + bonus cumulabili %+d ft = %d ft" % [base,
 					BonusRules.bonus(record, "attack_range:" + attack_id), AttackData.range_for(record, attack)])
+		if _attack_long_range_labels.has(attack_id):
+			var settings: Dictionary = AttackData.override_for(record, attack_id)
+			var long_base: int = int(settings.get("long_range_feet", attack.get("long_range_feet", 0)))
+			var long_total: int = AttackData.long_range_for(record, attack)
+			_set_formula("attack_long_range:" + attack_id, "%d ft" % long_total,
+				"Gittata lunga: base %d ft + bonus cumulabili %+d ft = %d ft" % [
+					long_base, BonusRules.bonus(record, "attack_long_range:" + attack_id), long_total])
 
 
 func _on_attack_ability_changed(_index: int) -> void:
@@ -3824,6 +3944,10 @@ func _on_attack_ability_changed(_index: int) -> void:
 func _on_attack_range_changed(value: float, attack_id: String) -> void:
 	_save_attack_setting(attack_id, "range_feet", int(value))
 
+
+
+func _on_attack_long_range_changed(value: float, attack_id: String) -> void:
+	_save_attack_setting(attack_id, "long_range_feet", int(value))
 
 
 func _on_attack_two_handed_changed(enabled: bool, attack_id: String) -> void:
@@ -4048,6 +4172,7 @@ func _on_proficiencies_updated(rows: Array, feats: Array, origins: Array) -> voi
 		_set_status("Impossibile salvare competenze: " + error_string(error))
 		return
 	_replace_current_record(record)
+	_refresh_info_feats(record)
 	_refresh_formula_dependents(record)
 	_sync_token_health(record)
 	_apply_sheet_properties(record)
@@ -4309,6 +4434,10 @@ func _save() -> void:
 			break
 	if identity_changed:
 		ProficiencyRules.reconcile_origin_dependents(record)
+		# Identity changes also replace their structured, origin-backed
+		# resistances/immunities immediately, preserving per-grant overrides.
+		record["damage_defense_entries"] = DamageDefensesTab._entries_from_record(
+			record, DamageDefensesTab._sources(record))
 	var current_grants: Array[Dictionary] = ProficiencyRules.choices(record)
 	ProficiencyRules.sync_legacy_fields(record, current_grants)
 	var saved_origins: Array[Dictionary] = []
@@ -4324,17 +4453,18 @@ func _save() -> void:
 		_set_status("Salvataggio non riuscito: %s" % error_string(error))
 		return
 	_replace_current_record(record)
-	_refresh_skill_values(record)
-	_refresh_attack_values(record)
+	if identity_changed:
+		# Rebuild the visible grants, skill proficiency ranks, formula readouts,
+		# defensive summary and open origin editors from the new identity.
+		# Ordinary field edits deliberately retain their cheap incremental path.
+		_load_form(record)
+	else:
+		_refresh_skill_values(record)
+		_refresh_attack_values(record)
+		_refresh_reference(record)
+		_refresh_trackers(record)
 	_sync_token_health(record)
 	_apply_sheet_properties(record)
-	# A visible sheet follows current level and race/class immediately.
-	_refresh_reference(record)
-	_refresh_trackers(record)
-	# HP/counter edits never change source-choice requirements: avoid a full
-	# feat/proficiency graph scan on every such quick statistic edit.
-	if identity_changed:
-		_refresh_choice_warnings(record)
 	if _spellcasting_ui != null:
 		_spellcasting_ui.call("update_character_context", record)
 
@@ -5615,7 +5745,7 @@ func _sync_token_health(record: Dictionary) -> void:
 	# Restore the selected weapon's long range after loading a saved sheet.
 	var active_attack: Dictionary = AttackData.active_attack(record)
 	var normal_range: float = AttackData.active_range(record)
-	var long_range: float = float(active_attack.get("long_range_feet", 0.0))
+	var long_range: float = float(AttackData.long_range_for(record, active_attack))
 	if bool(active_attack.get("melee", true)) or long_range <= normal_range:
 		long_range = 0.0
 	token.set_meta("active_weapon_long_range_feet", long_range)
