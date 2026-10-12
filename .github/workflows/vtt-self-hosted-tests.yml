@@ -87,6 +87,13 @@ jobs:
           & $godot --headless --path . --editor --import --quit
           if ($LASTEXITCODE -ne 0) { exit $LASTEXITCODE }
 
+      - name: Parse structured resource module in isolation
+        shell: powershell
+        run: |
+          $godot = "C:\\Program Files\\Godot\\Godot_v4.7.2-stable_win64_console.exe"
+          & $godot --headless --path . --check-only --script res://vtt/structured_resource_trackers.gd
+          if ($LASTEXITCODE -ne 0) { exit $LASTEXITCODE }
+
       - name: Run fast Godot tests
         shell: powershell
         run: .\scripts\validate.ps1 -Godot "C:\Program Files\Godot\Godot_v4.7.2-stable_win64_console.exe" -Tests
