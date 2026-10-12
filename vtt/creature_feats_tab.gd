@@ -558,5 +558,6 @@ func _publish() -> void:
 	for source: Dictionary in _origins:
 		stored.append({"id": source.get("id", ""), "name": source.get("name", ""),
 			"group": source.get("group", ""), "automatic": bool(source.get("automatic", false)),
-			"disabled": bool(source.get("disabled", false))})
+			"disabled": bool(source.get("disabled", false)),
+			"applied": bool(source.get("applied", false))})
 	_changed.call(_feats.duplicate(true), stored)
