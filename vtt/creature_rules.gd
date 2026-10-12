@@ -81,6 +81,43 @@ static func walking_speed(raw: Variant, fallback: int = 30) -> int:
 	return fallback
 
 
+# Only Burrow, Climb, Fly and Swim are separate movement speeds in 5e.
+# Crawling and jumping consume movement; they are not independent speeds.
+const SPECIAL_SPEEDS := ["climb", "swim", "fly", "burrow"]
+
+
+static func _movement_feet(raw: Variant) -> int:
+	if raw is int or raw is float:
+		return maxi(0, int(raw))
+	if raw is String:
+		var words: String = String(raw).strip_edges().split(" ")[0]
+		if words.is_valid_int():
+			return maxi(0, int(words))
+	if raw is Dictionary:
+		var definition: Dictionary = raw
+		return _movement_feet(definition.get("number", definition.get("value", 0)))
+	return 0
+
+
+static func special_speed_base(record: Dictionary, movement: String) -> int:
+	if movement not in SPECIAL_SPEEDS:
+		return 0
+	var source: Variant = {}
+	if String(record.get("kind", "character")) == "monster":
+		var stat: Variant = record.get("stat_block", {})
+		if stat is Dictionary:
+			source = (stat as Dictionary).get("speed", {})
+	else:
+		# Caller-supplied current race/subrace speed, not persisted in saves.
+		source = record.get("species_speed", {})
+	var speed_data: Dictionary = source if source is Dictionary else {}
+	# Explicit overrides can add a mode (or set it to zero).
+	var explicit: Variant = record.get("movement_speeds", {})
+	if explicit is Dictionary:
+		speed_data = speed_data.merged(explicit, true)
+	return _movement_feet(speed_data.get(movement, 0))
+
+
 # Damage is resolved in layers: temporary HP, transformed-form HP, then base HP.
 # Both UI actions and combat attacks call this helper to remain consistent.
 static func apply_damage_layers(record: Dictionary, amount: int) -> Dictionary:
