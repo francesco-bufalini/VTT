@@ -151,6 +151,7 @@ func _build_ui() -> void:
 	layout.add_child(separator)
 
 	var scroll := ScrollContainer.new()
+	scroll.mouse_force_pass_scroll_events = false
 	scroll.size_flags_vertical = Control.SIZE_EXPAND_FILL
 	scroll.horizontal_scroll_mode = ScrollContainer.SCROLL_MODE_DISABLED
 	layout.add_child(scroll)
