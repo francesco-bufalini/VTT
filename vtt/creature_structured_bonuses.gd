@@ -89,9 +89,11 @@ static func _item_grants(result: Array[Dictionary], record: Dictionary) -> void:
 			active = false
 		if not active:
 			continue
+		if kind not in ["armor", "shield", "weapon"] and not bool(owned.get("equipped", false)):
+			continue
 		var equipped: bool = (
 			(kind == "armor" and "body" in slots)
-			or (kind == "shield" and "off" in slots)
+			or (kind == "shield" and ("main" in slots or "off" in slots))
 			or (kind == "weapon" and ("main" in slots or "off" in slots))
 		)
 		# Each physical source is considered once, even if its stack occupies

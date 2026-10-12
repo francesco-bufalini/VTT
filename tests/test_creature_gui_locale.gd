@@ -53,6 +53,17 @@ func run() -> void:
 	var catalog := ItemList.new()
 	catalog.add_item("Storia")
 	sheet.add_child(catalog)
+	var natural_ac := Label.new()
+	natural_ac.text = "CA naturale · formula"
+	sheet.add_child(natural_ac)
+	var hand := OptionButton.new()
+	hand.add_item("Niente", 0)
+	hand.add_item("Longsword · due mani", 1)
+	hand.select(1)
+	sheet.add_child(hand)
+	var equipment_hint := Label.new()
+	equipment_hint.text = "Mano secondaria"
+	sheet.add_child(equipment_hint)
 	var owned_name := Button.new()
 	owned_name.text = "Storia"
 	owned_name.set_meta("creature_gui_data", true)
@@ -75,6 +86,15 @@ func run() -> void:
 	assert(preview.text == "LONG JUMP\nWith a run-up (at least 10 ft): 12 ft")
 	assert(owned_name.text == "Storia", "Player-created creature names must not be translated")
 	assert(unrelated.text == "Chiudi", "Localization must not touch unrelated VTT controls")
+	assert(natural_ac.text == "Natural AC · formula"
+		and hand.get_item_text(0) == "None"
+		and hand.get_item_text(1) == "Longsword · two-handed"
+		and hand.selected == 1
+		and equipment_hint.text == "Off hand",
+		"Equipment UI must use creature-only locale without translating item names")
+	assert(Locale.text_for("Equipaggiato", "en") == "Equipped"
+		and Locale.text_for("Indossata", "en") == "Worn",
+		"Owned item status labels must be translated")
 
 	# Dynamic UI updates and repeated passes must preserve the original source.
 	status.text = "Iniziativa"
@@ -90,6 +110,9 @@ func run() -> void:
 	assert(tooltip.text == "Chiudi")
 	assert(tabs.get_tab_title(0) == "Statistiche")
 	assert(choices.get_item_text(0) == "Forza" and choices.selected == 0)
+	assert(hand.get_item_text(0) == "Niente"
+		and hand.get_item_text(1) == "Longsword · due mani"
+		and natural_ac.text == "CA naturale · formula")
 	Locale.apply(sheet, "en")
 	assert(ability.text == "STR" and skill.text == "Acrobatics · DEX")
 	assert(tabs.get_tab_title(0) == "Statistics")

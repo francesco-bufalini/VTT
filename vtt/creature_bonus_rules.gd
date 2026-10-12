@@ -284,6 +284,17 @@ static func _base(record: Dictionary, target: String, stack: Dictionary) -> Dict
 			return dex
 		return {"ok": true, "value": int(dex["value"])}
 	if target == "ac":
+		if Items.equipped_armor(record.get("inventory", [])).is_empty():
+			var default_formula: String = str(record.get("armor_class_base", 10))
+			if String(record.get("kind", "")) == "monster":
+				default_formula = str(Rules.monster_armor_class(record.get("stat_block", {})))
+			elif int(record.get("armor_class_base", 10)) == 10:
+				default_formula = "10 + dex_mod"
+			var natural_formula: String = String(record.get("armor_natural_formula", default_formula)).strip_edges()
+			var natural: Dictionary = _evaluate_expression(record, natural_formula, stack)
+			# Malformed formulas do not crash the sheet or grant arbitrary AC.
+			var natural_value: int = int(natural.get("value", record.get("armor_class_base", 10)))
+			return {"ok": true, "value": natural_value + Items.shield_bonus(record.get("inventory", []))}
 		var armor_record: Dictionary = record
 		var armor := Items.equipped_armor(record.get("inventory", []))
 		if not armor.is_empty() and Items.armor_uses_dexterity(Items.entry_for(armor)):

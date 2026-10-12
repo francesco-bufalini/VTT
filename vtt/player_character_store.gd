@@ -172,6 +172,7 @@ func create_character() -> Dictionary:
 		"skill_expertise": [],
 		"armor_class": 10,
 		"armor_class_base": 10,
+		"armor_natural_formula": "",
 		"temporary_ac": 0,
 		"initiative": 0,
 		"initiative_base": 0,
@@ -195,6 +196,11 @@ func create_character() -> Dictionary:
 		"attack_overrides": {},
 		"equipped_attack_id": "",
 		"equipped_inventory_index": -1,
+		"hand_main_special": "none",
+		"hand_off_special": "none",
+		"hand_grip_two_handed": false,
+		"two_weapon_fighting": false,
+		"fighting_styles": [],
 		"proficiency_choices": [],
 		"formula_bonuses": [],
 		"documents": [],
@@ -271,6 +277,14 @@ func normalize_character(value: Dictionary) -> Dictionary:
 			defaults[key] = value[key]
 
 	defaults["armor_class_base"] = maxi(0, int(value.get("armor_class_base", value.get("armor_class", 10))))
+	var natural_default: String = str(defaults["armor_class_base"])
+	if String(defaults.get("kind", "")) == "monster":
+		natural_default = str(CreatureRules.monster_armor_class(defaults.get("stat_block", {})))
+	elif int(defaults["armor_class_base"]) == 10:
+		natural_default = "10 + dex_mod"
+	defaults["armor_natural_formula"] = String(value.get("armor_natural_formula", natural_default)).strip_edges()
+	if String(defaults["armor_natural_formula"]).is_empty():
+		defaults["armor_natural_formula"] = natural_default
 	defaults["initiative_base"] = 0
 
 	# Persistent usage counters survive reloads and level changes.
@@ -370,6 +384,11 @@ func normalize_character(value: Dictionary) -> Dictionary:
 	defaults["attack_overrides"] = value.get("attack_overrides", {}).duplicate(true) if value.get("attack_overrides", {}) is Dictionary else {}
 	defaults["equipped_attack_id"] = String(value.get("equipped_attack_id", "")).strip_edges()
 	defaults["equipped_inventory_index"] = maxi(-1, int(value.get("equipped_inventory_index", -1)))
+	defaults["hand_main_special"] = String(value.get("hand_main_special", "none"))
+	defaults["hand_off_special"] = String(value.get("hand_off_special", "none"))
+	defaults["hand_grip_two_handed"] = bool(value.get("hand_grip_two_handed", false))
+	defaults["two_weapon_fighting"] = bool(value.get("two_weapon_fighting", false))
+	defaults["fighting_styles"] = value.get("fighting_styles", []).duplicate(true) if value.get("fighting_styles", []) is Array else []
 	defaults["proficiency_origins"] = Proficiencies.origins(value)
 	defaults["proficiency_choices"] = Proficiencies.choices(value)
 	defaults["formula_bonuses"] = Bonuses.grants(value)
