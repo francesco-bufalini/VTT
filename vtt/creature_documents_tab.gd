@@ -52,6 +52,7 @@ func setup(on_change: Callable, on_status: Callable) -> void:
 	toolbar.add_child(_remove_button)
 
 	_list = ItemList.new()
+	_list.mouse_force_pass_scroll_events = false
 	_list.custom_minimum_size.y = 210
 	_list.size_flags_horizontal = Control.SIZE_EXPAND_FILL
 	_list.size_flags_vertical = Control.SIZE_EXPAND_FILL
@@ -131,6 +132,7 @@ func setup(on_change: Callable, on_status: Callable) -> void:
 	content_label.text = "Testo"
 	_editor_panel.add_child(content_label)
 	_body_edit = TextEdit.new()
+	_body_edit.mouse_force_pass_scroll_events = false
 	_body_edit.custom_minimum_size = Vector2(320, 550)
 	_body_edit.size_flags_horizontal = Control.SIZE_EXPAND_FILL
 	_body_edit.size_flags_vertical = Control.SIZE_EXPAND_FILL
