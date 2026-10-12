@@ -98,6 +98,7 @@ var _level_caption: Label
 var _xp: SpinBox
 var _initiative_effective: Label
 var _ac_effective: Label
+var _defense_summary: Label
 var _ac_proficiency_warning: Label
 var _special_speed_labels: Dictionary = {}
 var _long_jump: Label
@@ -619,7 +620,7 @@ func _build_ui() -> void:
 	# Always keep skills and combat side by side (45% / 55%).  Scroll
 	# their oversized contents locally instead of expanding the whole sheet.
 	_statistics_columns = HBoxContainer.new()
-	_statistics_columns.add_theme_constant_override("separation", 10)
+	_statistics_columns.add_theme_constant_override("separation", 5)
 	_statistics_columns.size_flags_horizontal = Control.SIZE_EXPAND_FILL
 	statistics_tab.add_child(_statistics_columns)
 	var skills_view := ScrollContainer.new()
@@ -811,6 +812,10 @@ func _build_ui() -> void:
 	var defense_flow := HBoxContainer.new()
 	defense_flow.add_theme_constant_override("separation", 9)
 	defense_content.add_child(defense_flow)
+	_defense_summary = Label.new()
+	_defense_summary.autowrap_mode = TextServer.AUTOWRAP_WORD_SMART
+	_defense_summary.add_theme_font_size_override("font_size", 12)
+	defense_content.add_child(_defense_summary)
 	var temp_health := HBoxContainer.new()
 	temp_health.add_theme_constant_override("separation", 6)
 	defense_flow.add_child(temp_health)
@@ -823,12 +828,12 @@ func _build_ui() -> void:
 	_ac.tooltip_text = "Base precedente (compatibilità)"
 	_ac.hide()
 	_armor_picker = OptionButton.new()
-	_armor_picker.custom_minimum_size.x = 118
+	_armor_picker.custom_minimum_size.x = 102
 	_armor_picker.tooltip_text = "Armatura indossata; scegli Naturale per utilizzare la formula senza armatura."
 	_armor_picker.item_selected.connect(_on_armor_selected)
 	temp_health.add_child(_armor_picker)
 	_natural_ac_formula = LineEdit.new()
-	_natural_ac_formula.custom_minimum_size.x = 145
+	_natural_ac_formula.custom_minimum_size.x = 125
 	_natural_ac_formula.placeholder_text = "10 + dex_mod"
 	_natural_ac_formula.tooltip_text = "Formula per la CA senza armatura: per esempio 10 + dex_mod, 13 + dex_mod o 16. Le variabili seguono le formule dei bonus."
 	_natural_ac_formula.text_submitted.connect(func(_value: String) -> void: _save())
@@ -1090,7 +1095,7 @@ func _build_ui() -> void:
 	combat_column.move_child(hand_bar, attack_header.get_index())
 	_add_label(hand_bar, "Mano principale")
 	_hand_main_picker = OptionButton.new()
-	_hand_main_picker.custom_minimum_size.x = 170
+	_hand_main_picker.custom_minimum_size.x = 145
 	_hand_main_picker.clip_text = true
 	_hand_main_picker.item_selected.connect(_on_hand_selected.bind("main"))
 	hand_bar.add_child(_hand_main_picker)
@@ -1099,7 +1104,7 @@ func _build_ui() -> void:
 	offhand_row.add_theme_constant_override("separation", 8)
 	hand_bar.add_child(offhand_row)
 	_hand_off_picker = OptionButton.new()
-	_hand_off_picker.custom_minimum_size.x = 170
+	_hand_off_picker.custom_minimum_size.x = 145
 	_hand_off_picker.clip_text = true
 	_hand_off_picker.item_selected.connect(_on_hand_selected.bind("off"))
 	offhand_row.add_child(_hand_off_picker)
@@ -2039,6 +2044,7 @@ func _on_damage_defenses_updated(damage_overrides: Dictionary, condition_overrid
 		return
 	_replace_current_record(record)
 	_damage_defenses_stale = false
+	_update_defense_display()
 
 
 func _on_formula_bonus_requested(key: String) -> void:
@@ -3535,6 +3541,28 @@ func _save_attack_setting(attack_id: String, setting: String, value: Variant) ->
 
 func _update_defense_display() -> void:
 	var live: Dictionary = _live_stats_record()
+	if _defense_summary != null:
+		var vulnerable: Array[String] = []
+		var resistant: Array[String] = []
+		var immune: Array[String] = []
+		var conditions: Array[String] = []
+		for kind: Dictionary in DamageDefensesTab.DAMAGE_TYPES:
+			var key: String = String(kind["key"])
+			var label: String = String(kind["label"])
+			match DamageDefensesTab.rank(live, key):
+				-1: vulnerable.append(label)
+				1: resistant.append(label)
+				2: immune.append(label)
+		for condition: String in DamageDefensesTab.CONDITIONS:
+			if DamageDefensesTab.condition_immune(live, condition):
+				conditions.append(condition.capitalize())
+		var lines: Array[String] = []
+		if not vulnerable.is_empty(): lines.append("Vulnerabilità: " + ", ".join(vulnerable))
+		if not resistant.is_empty(): lines.append("Resistenze: " + ", ".join(resistant))
+		if not immune.is_empty(): lines.append("Immunità ai danni: " + ", ".join(immune))
+		if not conditions.is_empty(): lines.append("Immunità alle condizioni: " + ", ".join(conditions))
+		_defense_summary.text = "\n".join(lines)
+		_defense_summary.visible = not lines.is_empty()
 	if _ac != null and _ac_effective != null:
 		var equipped: bool = not ItemRules.equipped_armor(live.get("inventory", [])).is_empty()
 		_ac.editable = not equipped
