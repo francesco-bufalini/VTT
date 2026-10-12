@@ -116,7 +116,7 @@ static func origin_active(saved: Dictionary) -> bool:
 	if category == "armor":
 		return "body" in equipped
 	if category == "shield":
-		return "off" in equipped
+		return "main" in equipped or "off" in equipped
 	if category == "weapon":
 		return "main" in equipped or "off" in equipped
 	return bool(saved.get("equipped", false))
@@ -178,14 +178,17 @@ static func armor_base(record: Dictionary) -> Dictionary:
 
 
 static func shield_bonus(inventory: Variant) -> int:
-	var shield: Dictionary = occupying(inventory, "off")
-	if shield.is_empty():
-		return 0
-	var entry: Dictionary = entry_for(shield)
-	if kind(entry) != "shield":
-		return 0
-	# The base value and a magic +AC bonus are separate structured fields.
-	return maxi(0, int(entry.get("ac", 2)))
+	# Shields may be held in either hand. D&D 5e allows only one
+	# shield's base AC benefit, even if two are held.
+	var best: int = 0
+	for hand: String in ["main", "off"]:
+		var shield: Dictionary = occupying(inventory, hand)
+		if shield.is_empty():
+			continue
+		var entry: Dictionary = entry_for(shield)
+		if kind(entry) == "shield":
+			best = maxi(best, maxi(0, int(entry.get("ac", 2))))
+	return best
 
 
 static func item_range(entry: Dictionary, long_range: bool = false) -> int:
@@ -210,4 +213,4 @@ static func attack_ability(record: Dictionary, entry: Dictionary, thrown: bool =
 
 static func valid_slot(entry: Dictionary, slot: String) -> bool:
 	var item_kind := kind(entry)
-	return (item_kind == "weapon" and slot in ["main", "off"] and (slot == "main" or not is_two_handed(entry))) or (slot == "off" and item_kind == "shield") or (slot == "body" and item_kind == "armor")
+	return (item_kind == "weapon" and slot in ["main", "off"] and (slot == "main" or not is_two_handed(entry))) or (slot in ["main", "off"] and item_kind == "shield") or (slot == "body" and item_kind == "armor")
