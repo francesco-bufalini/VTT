@@ -896,7 +896,14 @@ func _refresh_casting_summary() -> void:
 			and not ("concentrating" in _record.get("conditions", []))
 		)
 	var ability: String = _spellcasting_ability(_record)
-	var stat_label: String = ability.to_upper() if not ability.is_empty() else "non definita"
+	var italian_abbreviations := {"str": "FOR", "dex": "DES", "con": "COS",
+		"int": "INT", "wis": "SAG", "cha": "CAR"}
+	var stat_label: String = (
+		ability.to_upper() if _gui_language == "en"
+		else String(italian_abbreviations.get(ability, ""))
+	)
+	if ability.is_empty():
+		stat_label = "non definita"
 	var hit_label := "—"
 	var dc_label := "—"
 	var explanation := "Seleziona una classe da incantatore o imposta la caratteristica degli incantesimi."
@@ -1276,4 +1283,5 @@ func set_gui_language(language: String) -> void:
 	if language not in ["it", "en"] or _gui_language == language:
 		return
 	_gui_language = language
+	_refresh_casting_summary()
 	_update_spell_controls()
