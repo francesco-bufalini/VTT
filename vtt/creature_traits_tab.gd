@@ -390,6 +390,7 @@ static func _collect_features(record: Dictionary) -> Array[Dictionary]:
 			"source": String(spell_data.get("source", "")),
 			"inactive": bool(source.get("disabled", false)),
 			"entries": spell_data.get("entries", spell_data.get("description", "")),
+			"vulnerable": spell_data.get("vulnerable", []),
 			"resist": spell_data.get("resist", []),
 			"immune": spell_data.get("immune", []),
 			"conditionImmune": spell_data.get("conditionImmune", []),
@@ -655,6 +656,7 @@ static func _append(
 		"entries": description, "bonuses": feature.get("bonuses", []),
 		# Preserve only explicit structured 5etools defensive grants. Descriptive
 		# text and conditional resistances are not interpreted as universal.
+		"vulnerable": feature.get("vulnerable", []),
 		"resist": feature.get("resist", []),
 		"immune": feature.get("immune", []),
 		"conditionImmune": feature.get("conditionImmune", [])
