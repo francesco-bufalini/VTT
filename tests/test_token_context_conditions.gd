@@ -36,7 +36,7 @@ func run() -> void:
 	var dialog := ConfirmationDialog.new()
 	root.add_child(dialog)
 	dialog.popup_centered(Vector2i(300, 200))
-	board.set("_token_effect_dialog", dialog)
+	board.set("_context_effect_dialog", dialog)
 	board.set("_ui_owns_mouse", false)
 	board.call("_finish_context_menu_close")
 	assert(bool(board.get("_ui_owns_mouse")),
