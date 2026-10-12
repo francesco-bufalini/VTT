@@ -25,6 +25,7 @@ const AttackData = preload("res://vtt/creature_attack_data.gd")
 const ProficiencyRules = preload("res://vtt/creature_proficiency_rules.gd")
 const ProficiencyTab = preload("res://vtt/creature_proficiencies_tab.gd")
 const FeatsTab = preload("res://vtt/creature_feats_tab.gd")
+const DamageDefensesTab = preload("res://vtt/creature_damage_defenses_tab.gd")
 const ItemRules = preload("res://vtt/creature_item_rules.gd")
 const DocumentInbox = preload("res://vtt/document_inbox.gd")
 const DocumentStore = preload("res://vtt/document_homebrew.gd")
@@ -44,6 +45,7 @@ var _proficiencies_stale := true
 var _feats_stale := true
 var _bonuses_stale := true
 var _trackers_stale := true
+var _damage_defenses_stale := true
 var _catalog: Array[Dictionary] = []
 var _filtered_catalog: Array[Dictionary] = []
 var _loading := false
@@ -176,6 +178,7 @@ var _trackers_ui: Node
 var _bonuses_ui: Node
 var _proficiencies_ui: Node
 var _feats_ui: Node
+var _damage_defenses_ui: Node
 var _editor_section_picker: OptionButton
 var _traits_ui: Node
 var _condition_rows: VBoxContainer
@@ -586,7 +589,7 @@ func _build_ui() -> void:
 	_editor_section_picker.custom_minimum_size = Vector2(185, 30)
 	_editor_section_picker.size_flags_horizontal = Control.SIZE_SHRINK_BEGIN
 	_editor_section_picker.tooltip_text = "Scegli una sezione da visualizzare o modificare"
-	for section_name: String in ["Niente", "Competenze", "Talenti", "Bonus", "Tracker"]:
+	for section_name: String in ["Niente", "Competenze", "Talenti", "Bonus", "Tracker", "Resistenze e immunità"]:
 		_editor_section_picker.add_item(section_name)
 	_editor_section_picker.select(0)
 	_editor_section_picker.item_selected.connect(_select_details_editor)
@@ -607,6 +610,10 @@ func _build_ui() -> void:
 	_trackers_ui.hide()
 	statistics_tab.add_child(_trackers_ui)
 	_trackers_ui.call("setup", Callable(self, "_on_trackers_updated"))
+	_damage_defenses_ui = DamageDefensesTab.new()
+	_damage_defenses_ui.hide()
+	statistics_tab.add_child(_damage_defenses_ui)
+	_damage_defenses_ui.call("setup", Callable(self, "_on_damage_defenses_updated"))
 	# Always keep skills and combat side by side (45% / 55%).  Scroll
 	# their oversized contents locally instead of expanding the whole sheet.
 	_statistics_columns = HBoxContainer.new()
@@ -1961,12 +1968,13 @@ func _with_effective_modifiers(record: Dictionary) -> Dictionary:
 func _select_details_editor(index: int) -> void:
 	if _editor_section_picker == null:
 		return
-	var choice: int = clampi(index, 0, 4)
+	var choice: int = clampi(index, 0, 5)
 	_editor_section_picker.select(choice)
 	_proficiencies_ui.visible = choice == 1
 	_feats_ui.visible = choice == 2
 	_bonuses_ui.visible = choice == 3
 	_trackers_ui.visible = choice == 4
+	_damage_defenses_ui.visible = choice == 5
 	if choice > 0:
 		var record: Dictionary = _current()
 		if not record.is_empty():
@@ -1987,7 +1995,27 @@ func _select_details_editor(index: int) -> void:
 					if _trackers_stale:
 						_trackers_ui.call("load_record", record)
 						_trackers_stale = false
+				5:
+					if _damage_defenses_stale:
+						_damage_defenses_ui.call("load_record", record)
+						_damage_defenses_stale = false
 	call_deferred("_update_stats_column_heights")
+
+
+func _on_damage_defenses_updated(damage_overrides: Dictionary, condition_overrides: Dictionary) -> void:
+	if _loading:
+		return
+	var record: Dictionary = _current()
+	if record.is_empty():
+		return
+	record["damage_defense_overrides"] = damage_overrides.duplicate(true)
+	record["condition_immunity_overrides"] = condition_overrides.duplicate(true)
+	var error: Error = _archive.save(record)
+	if error != OK:
+		_set_status("Impossibile salvare resistenze/immunità: " + error_string(error))
+		return
+	_replace_current_record(record)
+	_damage_defenses_stale = false
 
 
 func _on_formula_bonus_requested(key: String) -> void:
@@ -2692,6 +2720,10 @@ func _load_form(record: Dictionary) -> void:
 		_bonuses_ui.call("load_record", record)
 		_bonuses_stale = false
 	_trackers_stale = true
+	_damage_defenses_stale = true
+	if _damage_defenses_ui != null and _damage_defenses_ui.visible:
+		_damage_defenses_ui.call("load_record", record)
+		_damage_defenses_stale = false
 	if _trackers_ui != null and _trackers_ui.visible:
 		_trackers_ui.call("load_record", record)
 		_trackers_stale = false
