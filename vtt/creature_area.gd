@@ -1126,6 +1126,7 @@ func _build_ui() -> void:
 	_attack_rows.add_theme_constant_override("separation", 7)
 	combat_column.add_child(_attack_rows)
 	_attacks_description = RichTextLabel.new()
+	_attacks_description.set_meta("creature_gui_text", true)
 	_attacks_description.custom_minimum_size.y = 55
 	_attacks_description.fit_content = false
 	_attacks_description.scroll_active = false
@@ -1563,6 +1564,7 @@ func _build_automatic_dialog() -> void:
 	explanation.autowrap_mode = TextServer.AUTOWRAP_WORD_SMART
 	content.add_child(explanation)
 	_automatic_preview = RichTextLabel.new()
+	_automatic_preview.set_meta("creature_gui_text", true)
 	_automatic_preview.custom_minimum_size = Vector2(0, 135)
 	_automatic_preview.size_flags_horizontal = Control.SIZE_EXPAND_FILL
 	_automatic_preview.size_flags_vertical = Control.SIZE_EXPAND_FILL
