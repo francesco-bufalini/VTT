@@ -561,6 +561,12 @@ const EN: Dictionary = {
 	"L'oggetto selezionato non richiede sintonia.": "The selected item does not require attunement.",
 }
 const IT: Dictionary = {
+	"Rages": "Ira",
+	"Channel Divinity": "Incanalare Divinità",
+	"Wild Shape": "Forma Selvatica",
+	"Ki Points": "Punti Ki",
+	"Focus Points": "Punti Focus",
+	"Sorcery Points": "Punti Stregoneria",
 	"STR": "FOR",
 	"DEX": "DES",
 	"CON": "COS",
