@@ -96,13 +96,11 @@ static func _item_grants(result: Array[Dictionary], record: Dictionary) -> void:
 			or (kind == "shield" and ("main" in slots or "off" in slots))
 			or (kind == "weapon" and ("main" in slots or "off" in slots))
 		)
-		# Each physical source is considered once, even if its stack occupies
-		# both hands. Attack IDs identify the individual hand/use.
-		if seen.has(sid):
+		# A spare copy must not consume the equipped copy's source ID.
+		if kind in ["armor", "shield", "weapon"] and not equipped:
 			continue
-		seen[sid] = true
 		var label: String = "Oggetto · " + String(owned.get("name", entry.get("name", item_id)))
-		if kind in ["armor", "shield"] and equipped:
+		if kind in ["armor", "shield"] and equipped and not seen.has(sid):
 			_add(result, sid, label, "bonus_ac", "ac", _field(entry, "bonus_ac", "bonusAc"))
 		if kind == "weapon" and equipped:
 			var weapon: String = _number(_field(entry, "bonus_weapon", "bonusWeapon"))
@@ -113,17 +111,19 @@ static func _item_grants(result: Array[Dictionary], record: Dictionary) -> void:
 				"item:throw:main:" + item_id, "item:throw:off:" + item_id
 			]:
 				var valid: bool = ("off:" in attack_id and "off" in slots) or (not "off:" in attack_id and "main" in slots)
-				if not valid:
+				if not valid or seen.has(sid + "|" + attack_id):
 					continue
+				seen[sid + "|" + attack_id] = true
 				if not weapon.is_empty():
 					_add(result, sid, label, "bonus_weapon", "attack_hit:" + attack_id, weapon)
 					_add(result, sid, label, "bonus_weapon", "attack_damage:" + attack_id, weapon)
 				_add(result, sid, label, "bonus_weapon_attack", "attack_hit:" + attack_id, attack_only)
 				_add(result, sid, label, "bonus_weapon_damage", "attack_damage:" + attack_id, damage_only)
-		# Magic items with passive effects need to be owned (and attuned when
-		# required). Armor, shields and weapons additionally need to be worn.
-		if kind in ["armor", "shield", "weapon"] and not equipped:
+		# Passive grants remain unique per source, while each equipped hand
+		# retains its own attack grants across separate rows of the same item.
+		if seen.has(sid):
 			continue
+		seen[sid] = true
 		for stat: String in ABILITIES:
 			_add(result, sid, label, "bonus_saving_throw", "save:" + stat, _field(entry, "bonus_saving_throw", "bonusSavingThrow"))
 		for skill: Dictionary in Skills.SKILLS:

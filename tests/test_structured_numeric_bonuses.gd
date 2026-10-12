@@ -28,7 +28,7 @@ func run() -> void:
 		"damage": "1d8", "weapon_category": "martial", "bonus_weapon": 2
 	})
 	var ring: Dictionary = _owned("test:ring", "Anello test", "RG", "", {
-		"bonus_saving_throw": 1, "req_attune": true
+		"bonus_saving_throw": 1, "req_attune": true, "equipped": true
 	})
 	var character: Dictionary = {
 		"kind": "character", "level": 3, "abilities": {
@@ -91,7 +91,7 @@ func run() -> void:
 	# 5etools reqAttune is bool OR a qualifying String (e.g. "by a
 	# spellcaster"). Comparing the two variant types must never throw.
 	var conditional_ring := _owned("test:string-attunement", "Anello riservato", "RG", "", {
-		"bonus_saving_throw": 2, "reqAttune": "by a spellcaster"
+		"bonus_saving_throw": 2, "reqAttune": "by a spellcaster", "equipped": true
 	})
 	character.inventory = [conditional_ring]
 	assert(Bonuses.value(character, "save:wis") == 0,

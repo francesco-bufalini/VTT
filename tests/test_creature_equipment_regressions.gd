@@ -44,6 +44,7 @@ func run() -> void:
 		"bonusSavingThrow": 2, "bonusSpellSaveDc": 1, "bonusAbility": {"int": 1}, "reqAttune": "by a spellcaster"}
 	var owned := Instances.from_catalog(definition)
 	owned.attuned = true
+	owned.equipped = true
 	owned.bonusAbility.int = 2
 	assert(definition.bonusAbility.int == 1, "Owned snapshots must not mutate catalog dictionaries")
 	var restored := Instances.from_saved(JSON.parse_string(JSON.stringify(owned)))
