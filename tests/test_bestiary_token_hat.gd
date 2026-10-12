@@ -13,6 +13,22 @@ func _run() -> void:
 	assert(manager.get_bestiary_reference("valandir", "2024").is_empty())
 	assert(manager.get_bestiary_reference("lioness", "2024").name == "Lion")
 	assert(manager.get_bestiary_reference("swarm_of_beetles", "2024").name == "Swarm of Insects")
+	# New GitHub Release PCKs share the correct 5etools portraits by monster
+	# identity, regardless of pose, update suffix, or 2024 renaming.
+	assert(manager.get_bestiary_reference("adult_brass_dragon_flying_updated", "2024").name == "Adult Brass Dragon")
+	assert(manager.get_bestiary_reference("adult_brass_dragon_updated", "2014").name == "Adult Brass Dragon")
+	assert(manager.get_bestiary_token_url("adult_brass_dragon_flying_updated").contains("Adult%20Brass%20Dragon.webp"))
+	assert(manager.get_bestiary_reference("duodrone_updated", "2024").name == "Modron Duodrone")
+	assert(manager.get_bestiary_reference("hobgoblin_updated", "2024").name == "Hobgoblin Warrior")
+	assert(manager.get_bestiary_reference("red_half_dragon", "2024").name == "Half-Dragon")
+	assert(manager.get_bestiary_reference("red_half_dragon", "2014").is_empty())
+	assert(manager.get_bestiary_reference("mindflayer_infiltrator_2", "2024").name == "Mind Flayer")
+	assert(manager.get_bestiary_reference("hell_hound_puppy", "2014").name == "Hell Hound")
+	assert(manager.get_bestiary_reference("tiamat_updated", "2014").source == "RoT")
+	assert(manager.get_bestiary_reference("bahamut_updated", "2014").source == "FTD")
+	assert(manager.get_bestiary_reference("old_black_dragon", "2024").is_empty())
+	assert(manager.get_bestiary_reference("tiamat_necklace", "2024").is_empty())
+	assert(manager.get_bestiary_token_url("tiamat_necklace").is_empty())
 
 	var image := Image.create(64, 64, false, Image.FORMAT_RGBA8)
 	image.fill(Color.WHITE)
