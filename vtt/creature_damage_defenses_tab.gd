@@ -4,6 +4,8 @@ extends VBoxContainer
 # none (0) -> resistance (1) -> immunity (2). Never stack the two.
 # A saved override is independent of the bestiary/species baseline.
 const Catalog = preload("res://vtt/player_5etools_catalog.gd")
+const Traits = preload("res://vtt/creature_traits_tab.gd")
+const Items = preload("res://vtt/creature_item_rules.gd")
 
 const DAMAGE_TYPES := [
 	{"key": "acid", "label": "Acido"}, {"key": "bludgeoning", "label": "Contundente"},
@@ -47,31 +49,82 @@ static func _direct_type_list(raw: Variant) -> Array[String]:
 	return result
 
 
+static func _add_source(
+	output: Array[Dictionary], seen: Dictionary, data: Dictionary,
+	sid: String, name: String, active: bool = true
+) -> void:
+	var has_fields: bool = false
+	for field: String in ["resist", "immune", "conditionImmune"]:
+		var raw: Variant = data.get(field, [])
+		if (raw is Array and not (raw as Array).is_empty()
+			or raw is String and not String(raw).is_empty()):
+			has_fields = true
+	if not has_fields or seen.has(sid):
+		return
+	seen[sid] = true
+	output.append({
+		"id": sid, "name": name, "active": active,
+		"resist": data.get("resist", []), "immune": data.get("immune", []),
+		"conditionImmune": data.get("conditionImmune", [])
+	})
+
+
+# Derive from structured 5etools keys only. Traits.collect_features already
+# filters class/subclass features by attained level, equipped inventory and
+# the selected species/feats. Preserve their source IDs for highlighting.
 static func _sources(record: Dictionary) -> Array[Dictionary]:
 	var sources: Array[Dictionary] = []
+	var seen: Dictionary = {}
+	var disabled: Dictionary = {}
+	for entry: Variant in record.get("proficiency_origins", []):
+		if entry is Dictionary:
+			disabled[String((entry as Dictionary).get("id", ""))] = bool((entry as Dictionary).get("disabled", false))
 	var stat: Variant = record.get("stat_block", {})
 	if stat is Dictionary:
-		sources.append(stat)
-	var species: String = String(record.get("species", ""))
-	var book: String = String(record.get("species_source", ""))
-	if String(record.get("kind", "character")) == "character" and not species.is_empty():
-		for race: Dictionary in Catalog.entries("races"):
-			if String(race.get("name", "")).nocasecmp_to(species) == 0 and String(race.get("source", "")) == book:
-				sources.append(race)
-				break
+		_add_source(sources, seen, stat as Dictionary, "monster|stat_block",
+			"Bestiario · " + String((stat as Dictionary).get("name", "Creatura")))
+	if String(record.get("kind", "character")) == "character":
+		var species: String = String(record.get("species", ""))
+		var book: String = String(record.get("species_source", ""))
 		var subrace: String = String(record.get("subrace", ""))
-		if not subrace.is_empty():
-			for race: Dictionary in Catalog.entries("races"):
-				if (String(race.get("name", "")).nocasecmp_to(species + " (" + subrace + ")") == 0
-					and String(race.get("source", "")) == String(record.get("subrace_source", book))):
-					sources.append(race)
-					break
+		for race: Dictionary in Catalog.entries("races"):
+			var name: String = String(race.get("name", ""))
+			var source_book: String = String(race.get("source", ""))
+			var is_species: bool = name.nocasecmp_to(species) == 0 and source_book == book
+			var is_subrace: bool = not subrace.is_empty() and name.nocasecmp_to(species + " (" + subrace + ")") == 0 and source_book == String(record.get("subrace_source", book))
+			if not is_species and not is_subrace:
+				continue
+			var sid: String = ("subrace|" + source_book.to_lower() + "|" + name.to_lower()
+				if is_subrace else "race|" + source_book.to_lower() + "|" + name.to_lower())
+			_add_source(sources, seen, race, sid, "Specie · " + name,
+				not bool(disabled.get(sid, false)))
+	# The feature array contains current class, subclass, feat and species
+	# traits. Structured resistance keys survive the feature extraction.
+	for feature: Dictionary in Traits.collect_features(record):
+		var sid: String = "feature:" + String(feature.get("key", ""))
+		_add_source(sources, seen, feature, sid,
+			String(feature.get("origin", "Tratto")) + " · " + String(feature.get("name", "")),
+			not bool(feature.get("inactive", false))
+				and not bool(disabled.get(sid, false))
+				and not bool(disabled.get(String(feature.get("origin_key", "")), false)))
+	# Equipment may have structured resistances at the item's top level,
+	# even if no individually named trait was generated from it.
+	for raw_owned: Variant in record.get("inventory", []):
+		if raw_owned is Dictionary:
+			var owned: Dictionary = raw_owned
+			var id: String = String(owned.get("id", ""))
+			if id.is_empty():
+				continue
+			_add_source(sources, seen, Items.entry_for(owned), "item:" + id,
+				"Oggetto · " + String(owned.get("name", id)),
+				Items.origin_active(owned) and not bool(disabled.get("item:" + id, false)))
 	return sources
-
 
 static func _base_rank_from_sources(sources: Array[Dictionary], damage_type: String) -> int:
 	var rank := 0
 	for source: Dictionary in sources:
+		if not bool(source.get("active", true)):
+			continue
 		if damage_type in _direct_type_list(source.get("resist", [])):
 			rank = maxi(rank, 1)
 		if damage_type in _direct_type_list(source.get("immune", [])):
@@ -92,6 +145,8 @@ static func rank(record: Dictionary, damage_type: String) -> int:
 
 static func _base_condition_from_sources(sources: Array[Dictionary], condition: String) -> bool:
 	for source: Dictionary in sources:
+		if not bool(source.get("active", true)):
+			continue
 		if condition in _direct_type_list(source.get("conditionImmune", [])):
 			return true
 	return false
