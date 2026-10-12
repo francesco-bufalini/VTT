@@ -28,6 +28,7 @@ const FeatsTab = preload("res://vtt/creature_feats_tab.gd")
 const ItemRules = preload("res://vtt/creature_item_rules.gd")
 const DocumentInbox = preload("res://vtt/document_inbox.gd")
 const DocumentStore = preload("res://vtt/document_homebrew.gd")
+const CreatureLocale = preload("res://vtt/creature_gui_locale.gd")
 
 var board_root: Node3D
 var _archive
@@ -66,6 +67,8 @@ var _creature_list_scroll: ScrollContainer
 var _creature_row_buttons: Array[Button] = []
 var _creature_eye_buttons: Array[Button] = []
 var _creature_presence_elapsed := 0.0
+var _creature_language := "it"
+var _creature_language_picker: OptionButton
 var _creature_context_menu: PopupMenu
 var _automatic_dialog: ConfirmationDialog
 var _automatic_hp: CheckBox
@@ -202,6 +205,7 @@ var _form_depleted_dialog: ConfirmationDialog
 
 func setup(root: Node3D) -> void:
 	board_root = root
+	_creature_language = CreatureLocale.read_locale()
 	_archive = Archive.new()
 	_archive.setup(get_node_or_null("/root/CampaignManager"))
 	_client = Bestiary.new()
@@ -218,6 +222,7 @@ func setup(root: Node3D) -> void:
 	_build_transfer_request_dialog()
 	_build_export_dialog()
 	_reload()
+	_refresh_creature_language()
 	if DisplayServer.get_name() != "headless":
 		_client.call("load_catalog")
 	_on_catalog_ready(ContentCatalog.home_entries("monsters"))
@@ -378,6 +383,7 @@ func show_panel() -> void:
 				area.call("hide_panel")
 	_reload()
 	_panel.show()
+	_refresh_creature_language()
 	# Transparent UI themes must not leak tactical portraits through the sheet.
 	var tactical_overlay: Control = board_root.get_node_or_null(
 		"UI/TopDownElevationOverlay"
@@ -473,6 +479,16 @@ func _build_ui() -> void:
 	popup.add_item("Elimina creatura selezionata…", 7)
 	popup.id_pressed.connect(_on_options_selected)
 	header.add_child(_options_menu)
+	var language_label := Label.new()
+	language_label.text = "Lingua scheda"
+	header.add_child(language_label)
+	_creature_language_picker = OptionButton.new()
+	_creature_language_picker.tooltip_text = "Cambia solo la lingua della GUI delle schede creatura"
+	_creature_language_picker.add_item("Italiano", 0)
+	_creature_language_picker.add_item("English", 1)
+	_creature_language_picker.select(1 if _creature_language == "en" else 0)
+	_creature_language_picker.item_selected.connect(_on_creature_language_selected)
+	header.add_child(_creature_language_picker)
 	var close := Button.new()
 	close.text = "Chiudi"
 	close.pressed.connect(hide_panel)
@@ -1458,6 +1474,30 @@ func _process(delta: float) -> void:
 	if _creature_presence_elapsed >= 0.4:
 		_creature_presence_elapsed = 0.0
 		_refresh_creature_eye_buttons()
+		_refresh_creature_language()
+
+
+
+# This preference is private to the creature archive. It must not change the
+# engine-wide locale, other VTT panels, imported 5etools text or saved sheets.
+func _on_creature_language_selected(index: int) -> void:
+	_creature_language = "en" if index == 1 else "it"
+	CreatureLocale.write_locale(_creature_language)
+	_refresh_creature_language()
+
+
+func _refresh_creature_language() -> void:
+	if _panel == null:
+		return
+	CreatureLocale.apply(_panel, _creature_language)
+	# Dialogs are not all descendants of the archive panel.
+	for dialog: Node in [
+		_automatic_dialog, _delete_dialog, _miniature_dialog, _transfer_dialog,
+		_export_dialog, _import_dialog, _hp_delta_dialog, _form_hp_dialog,
+		_restore_form_dialog, _form_depleted_dialog, _effect_dialog
+	]:
+		if dialog != null and is_instance_valid(dialog):
+			CreatureLocale.apply(dialog, _creature_language)
 
 
 func _on_creature_context_action(action: int) -> void:
@@ -4420,7 +4460,7 @@ func _focus_tracker_trait(origin: String, source_label: String = "") -> void:
 func _on_creature_tab_changed(index: int) -> void:
 	if _traits_ui == null or index < 0 or index >= _tabs.get_tab_count():
 		return
-	if _tabs.get_tab_title(index) == "Tratti" and _traits_stale:
+	if _tabs.get_tab_control(index).name == "Tratti" and _traits_stale:
 		_traits_ui.call("load_record", _current())
 		_traits_stale = false
 
@@ -4433,7 +4473,7 @@ func _refresh_reference(record: Dictionary) -> void:
 	if _trackers_ui != null and _trackers_ui.visible:
 		_trackers_ui.call("load_record", record)
 		_trackers_stale = false
-	if _traits_ui != null and _tabs != null and _tabs.get_tab_title(_tabs.current_tab) == "Tratti":
+	if _traits_ui != null and _tabs != null and _tabs.get_tab_control(_tabs.current_tab).name == "Tratti":
 		_traits_ui.call("load_record", record)
 		_traits_stale = false
 	if _proficiencies_ui != null and _proficiencies_ui.visible:
