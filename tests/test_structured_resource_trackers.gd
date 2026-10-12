@@ -1,6 +1,9 @@
 extends SceneTree
 # Offline-only regression: no local server and no HTTP.
 const Trackers = preload("res://vtt/structured_resource_trackers.gd")
+const ClassMechanics = preload("res://vtt/class_mechanics_5etools.gd")
+const Rules = preload("res://vtt/creature_rules.gd")
+const Locale = preload("res://vtt/creature_gui_locale.gd")
 
 
 func _initialize() -> void:
@@ -19,8 +22,33 @@ func run() -> void:
 		"kind": "character",
 		"classes": [{"name": "Barbarian", "source": "PHB", "level": 3}]
 	})
-	assert(int(_find_resource(barbarian, "Ira").get("max", 0)) == 3)
-	assert(String(_find_resource(barbarian, "Ira").get("origin", "")) == "Rage")
+	var rage: Dictionary = _find_resource(barbarian, "Rages")
+	assert(int(rage.get("max", 0)) == 3 and String(rage.get("origin", "")) == "Rage")
+	assert(String(rage.get("id", "")) == "class:barbarian:phb:rages",
+		"Stored resource use keys must survive table regeneration")
+	assert(Locale.text_for("Rages", "it") == "Ira"
+		and Locale.text_for("Rages", "en") == "Rages",
+		"Translation must be in GUI locale, never in mechanics data")
+	assert(ClassMechanics.column_value("Barbarian", "PHB", "Rage Damage", 9) == 3
+		and ClassMechanics.column("Barbarian", "PHB", "Rage Damage").get("kind") == "bonus",
+		"Typed bonus column is available but must never become a spent resource")
+	assert(ClassMechanics.column_value("Barbarian", "PHB", "Rages", 20) == "unlimited",
+		"Non-numeric cap must remain identifiable without inventing a finite value")
+	assert(ClassMechanics.hit_die("Barbarian", "PHB") == 12
+		and ClassMechanics.hit_die("Wizard", "XPHB") == 6
+		and ClassMechanics.hit_die("Fighter", "") == 10
+		and ClassMechanics.hit_die("unknown", "") == 0,
+		"Hit dice must come from 5etools hd.faces and retain legacy source fallback")
+	assert(ClassMechanics.resource_columns("Ranger", "XPHB").is_empty(),
+		"Favored Enemy and Weapon Mastery capacities are not spent-resource trackers")
+	var hit_die_record := {
+		"kind": "character", "classes": [{"name": "Barbarian", "source": "PHB", "level": 3}],
+		"abilities": {"con": 10}
+	}
+	assert(Rules.automatic_hit_dice(hit_die_record) == "3d12 (Barbarian)",
+		"Hit dice display must remain compatible with the previous formula")
+	assert(int(Rules.automatic_hit_points(hit_die_record).get("value", 0)) == 26,
+		"HP formula must retain max first level and 7 average on following d12s")
 	assert(Trackers.for_creature({
 		"kind": "character",
 		"classes": [{"name": "Barbarian", "source": "PHB", "level": 20}]
@@ -35,7 +63,7 @@ func run() -> void:
 		"kind": "character",
 		"classes": [{"name": "Druid", "source": "XPHB", "level": 2}]
 	})
-	assert(int(_find_resource(druid_second, "Forma Selvatica").get("max", 0)) == 2)
+	assert(int(_find_resource(druid_second, "Wild Shape").get("max", 0)) == 2)
 	assert(Trackers.for_creature({
 		"kind": "character",
 		"classes": [{"name": "Druid", "source": "PHB", "level": 2}]
@@ -48,9 +76,21 @@ func run() -> void:
 			{"name": "Sorcerer", "source": "XPHB", "level": 7}
 		]
 	})
-	assert(int(_find_resource(mixed, "Punti Ki").get("max", 0)) == 5)
-	assert(int(_find_resource(mixed, "Punti Stregoneria").get("max", 0)) == 7)
+	assert(int(_find_resource(mixed, "Ki Points").get("max", 0)) == 5)
+	assert(int(_find_resource(mixed, "Sorcery Points").get("max", 0)) == 7)
 	assert(mixed.size() == 2, "Each resource is tied to its class level")
+	assert(String(_find_resource(mixed, "Sorcery Points").get("origin", "")) == "Font of Magic",
+		"Structured class feature association for sorcery points must be preserved")
+	var druid_locale := Locale.text_for("Wild Shape", "it")
+	assert(druid_locale == "Forma Selvatica")
+	var cleric: Array[Dictionary] = Trackers.for_creature({
+		"kind": "character", "classes": [{"name": "Cleric", "source": "XPHB", "level": 2}]
+	})
+	assert(int(_find_resource(cleric, "Channel Divinity").get("max", 0)) == 2)
+	var fighter: Array[Dictionary] = Trackers.for_creature({
+		"kind": "character", "classes": [{"name": "Fighter", "source": "XPHB", "level": 4}]
+	})
+	assert(int(_find_resource(fighter, "Second Wind").get("max", 0)) == 3)
 
 	var monster: Array[Dictionary] = Trackers.for_creature({
 		"kind": "monster",

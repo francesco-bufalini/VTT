@@ -2,10 +2,8 @@ extends RefCounted
 
 # Resource counters backed by numeric 5etools JSON fields or formal 5etools
 # {@recharge ...} markup. This module never interprets feature prose.
-const PROGRESSIONS_PATH := "res://vtt/data/structured_resource_progressions_5etools.json"
+const ClassMechanics = preload("res://vtt/class_mechanics_5etools.gd")
 const Traits = preload("res://vtt/creature_traits_tab.gd")
-
-static var _cached_progressions: Array[Dictionary] = []
 
 
 static func for_creature(record: Dictionary) -> Array[Dictionary]:
@@ -139,7 +137,6 @@ static func _append_class_trackers(record: Dictionary, output: Array[Dictionary]
 			"source": record.get("class_source", ""),
 			"level": record.get("level", 0)
 		}]
-	var definitions: Array[Dictionary] = _progressions()
 	var seen: Dictionary = {}
 	for raw_class: Variant in classes:
 		if not raw_class is Dictionary:
@@ -150,21 +147,19 @@ static func _append_class_trackers(record: Dictionary, output: Array[Dictionary]
 		var class_level: int = int(class_data.get("level", 0))
 		if class_level < 1 or class_level > 20:
 			continue
-		for definition: Dictionary in definitions:
-			if String(definition.get("class_name", "")).to_lower() != selected_class_name:
-				continue
-			if String(definition.get("class_source", "")).to_upper() != class_source:
-				continue
+		for definition: Dictionary in ClassMechanics.resource_columns(selected_class_name, class_source):
 			var levels_value: Variant = definition.get("levels", [])
 			if not levels_value is Array:
 				continue
-			var levels: Array = levels_value as Array
+			var levels: Array = levels_value
 			if class_level > levels.size():
 				continue
 			var maximum: Variant = levels[class_level - 1]
+			# Preserve the existing finite counter behavior. 'unlimited' is
+			# retained in the generated source data, not cast to an arbitrary max.
 			if not (maximum is int or maximum is float) or int(maximum) <= 0:
 				continue
-			var column: String = String(definition.get("column", ""))
+			var column: String = String(definition.get("name", ""))
 			var id: String = "class:%s:%s:%s" % [
 				selected_class_name, class_source.to_lower(), column.to_lower().replace(" ", "_")
 			]
@@ -173,7 +168,7 @@ static func _append_class_trackers(record: Dictionary, output: Array[Dictionary]
 			seen[id] = true
 			output.append({
 				"id": id,
-				"name": String(definition.get("name", column)),
+				"name": column,
 				"max": int(maximum),
 				"origin": String(definition.get("origin_feature", column)),
 				"recharge": "manual",
@@ -181,21 +176,3 @@ static func _append_class_trackers(record: Dictionary, output: Array[Dictionary]
 					String(class_data.get("name", "")), class_source
 				]
 			})
-
-
-static func _progressions() -> Array[Dictionary]:
-	if not _cached_progressions.is_empty():
-		return _cached_progressions
-	var file := FileAccess.open(PROGRESSIONS_PATH, FileAccess.READ)
-	if file == null:
-		return []
-	var decoded: Variant = JSON.parse_string(file.get_as_text())
-	file.close()
-	if not decoded is Dictionary:
-		return []
-	var values: Variant = (decoded as Dictionary).get("resources", [])
-	if values is Array:
-		for value: Variant in values:
-			if value is Dictionary:
-				_cached_progressions.append(value as Dictionary)
-	return _cached_progressions

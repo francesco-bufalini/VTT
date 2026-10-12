@@ -644,7 +644,7 @@ func _class_spell_level_limits() -> Dictionary:
 		if (
 			spell_class_key.is_empty()
 			or spell_class_key == "mostro"
-			or spell_class_key not in Rules.HIT_DICE
+			or Rules.class_hit_die(spell_class_key, String(cls.get("source", ""))) <= 0
 		):
 			continue
 		var single: Dictionary = {
