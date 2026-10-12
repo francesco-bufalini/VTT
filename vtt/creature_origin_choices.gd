@@ -48,6 +48,72 @@ static func available(record: Dictionary) -> Array[Dictionary]:
 	return result
 
 
+# Only presentation changes: repeated feature names retain independent IDs,
+# switches, grants and saved state.
+static func display_labels(sources: Array[Dictionary], record: Dictionary = {}) -> Dictionary:
+	var labels: Dictionary = {}
+	var by_name: Dictionary = {}
+	for source: Dictionary in sources:
+		var sid: String = String(source.get("id", ""))
+		var name: String = String(source.get("name", sid))
+		labels[sid] = name
+		var normalized: String = name.strip_edges().to_lower()
+		if not by_name.has(normalized):
+			by_name[normalized] = []
+		var ids: Array = by_name[normalized]
+		if sid not in ids:
+			ids.append(sid)
+	var duplicates: Dictionary = {}
+	var need_features := false
+	for normalized: String in by_name.keys():
+		var ids: Array = by_name[normalized]
+		if ids.size() <= 1:
+			continue
+		for raw_id: Variant in ids:
+			var sid: String = String(raw_id)
+			duplicates[sid] = true
+			need_features = need_features or sid.begins_with("feature:")
+	if duplicates.is_empty():
+		return labels
+	var feature_details: Dictionary = {}
+	if need_features and not record.is_empty():
+		var traits: Script = load("res://vtt/creature_traits_tab.gd") as Script
+		if traits != null:
+			for feature: Dictionary in traits.call("collect_features", record):
+				feature_details["feature:" + String(feature.get("key", ""))] = feature
+	for source: Dictionary in sources:
+		var sid: String = String(source.get("id", ""))
+		if not duplicates.has(sid):
+			continue
+		var detail: Dictionary = feature_details.get(sid, source)
+		var class_name: String = String(detail.get("class_name", "")).strip_edges()
+		var context: String = class_name
+		if context.is_empty():
+			context = String(detail.get("origin", "")).strip_edges()
+		var level: int = int(detail.get("level", 0))
+		if level > 0 and (not class_name.is_empty() or String(detail.get("category", "")) == "classi"):
+			context += (" · " if not context.is_empty() else "") + "livello %d" % level
+		if context.is_empty():
+			context = String(source.get("source", "")).strip_edges()
+		if not context.is_empty():
+			labels[sid] = String(labels[sid]) + " · " + context
+	# Identical contexts still get stable numbering, rather than raw source IDs.
+	var collisions: Dictionary = {}
+	for sid: String in duplicates.keys():
+		var key: String = String(labels[sid]).to_lower()
+		if not collisions.has(key):
+			collisions[key] = []
+		(collisions[key] as Array).append(sid)
+	for group: Array in collisions.values():
+		if group.size() <= 1:
+			continue
+		group.sort()
+		for index: int in range(group.size()):
+			var sid: String = String(group[index])
+			labels[sid] = String(labels[sid]) + " · #%d" % (index + 1)
+	return labels
+
+
 static func populate(picker: OptionButton, record: Dictionary, preferred: String = "") -> void:
 	var previous: String = preferred
 	if picker.selected >= 0:
@@ -75,8 +141,9 @@ static func populate(picker: OptionButton, record: Dictionary, preferred: String
 				break
 		if not present:
 			available_sources.append(temporary)
+	var labels: Dictionary = display_labels(available_sources, record)
 	for source: Dictionary in available_sources:
-		picker.add_item(String(source.get("name", source.get("id", ""))))
+		picker.add_item(String(labels.get(String(source.get("id", "")), source.get("name", ""))))
 		picker.set_item_metadata(picker.item_count - 1, source)
 	# Incantesimo is the first action, not the default assigned origin.
 	var select_index := 1 if picker.item_count > 1 else 0

@@ -387,6 +387,7 @@ func _refresh_origins() -> void:
 		var eid: String = String(entry.get("id", ""))
 		if not enabled.has(eid):
 			enabled[eid] = not bool(entry.get("inactive", entry.get("disabled", false)))
+	var display_names: Dictionary = OriginChoices.display_labels(origins, current)
 	var visited: Dictionary = {}
 	for origin: Dictionary in origins:
 		var sid: String = String(origin.get("id", ""))
@@ -410,7 +411,7 @@ func _refresh_origins() -> void:
 		select.button_pressed = _selected_origin == sid
 		select.clip_text = true
 		var origin_title: String = String(origin.get("name", _origin_label(sid)))
-		select.text = origin_title + (" (%d)" % count if count > 0 else " · da completare")
+		select.text = String(display_names.get(sid, origin_title)) + (" (%d)" % count if count > 0 else " · da completare")
 		select.tooltip_text = _origin_description(sid)
 		if pending.has(sid):
 			select.tooltip_text += "\n\n⚠ Scegli la caratteristica da aumentare"

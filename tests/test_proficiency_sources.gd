@@ -2,6 +2,7 @@ extends SceneTree
 
 const Proficiencies = preload("res://vtt/creature_proficiency_rules.gd")
 const ProficiencyTab = preload("res://vtt/creature_proficiencies_tab.gd")
+const OriginChoices = preload("res://vtt/creature_origin_choices.gd")
 const FeatsTab = preload("res://vtt/creature_feats_tab.gd")
 const Attacks = preload("res://vtt/creature_attack_data.gd")
 const Bonuses = preload("res://vtt/creature_bonus_rules.gd")
@@ -39,6 +40,25 @@ func _record() -> Dictionary:
 
 
 func run() -> void:
+	var repeated_origins: Array[Dictionary] = [
+		{"id": "feature:fighter|phb|4|asi", "name": "Tratto · Ability Score Improvement",
+			"class_name": "Fighter", "level": 4},
+		{"id": "feature:fighter|phb|6|asi", "name": "Tratto · Ability Score Improvement",
+			"class_name": "Fighter", "level": 6},
+		{"id": "feature:fighter|phb|1|secondwind", "name": "Tratto · Second Wind"}
+	]
+	var disambiguated: Dictionary = OriginChoices.display_labels(repeated_origins)
+	assert("Fighter · livello 4" in disambiguated["feature:fighter|phb|4|asi"]
+		and "Fighter · livello 6" in disambiguated["feature:fighter|phb|6|asi"]
+		and disambiguated["feature:fighter|phb|1|secondwind"] == "Tratto · Second Wind",
+		"Repeated feature names must show class and level, keeping IDs unchanged")
+	var identical_fallback: Array[Dictionary] = [
+		{"id": "feature:z", "name": "Tratto · Duplicato"},
+		{"id": "feature:a", "name": "Tratto · Duplicato"}]
+	var fallback_labels: Dictionary = OriginChoices.display_labels(identical_fallback)
+	assert(fallback_labels["feature:a"].ends_with("#1")
+		and fallback_labels["feature:z"].ends_with("#2"),
+		"Indistinguishable origins must have deterministic, stable numbering")
 	var languages: Array[Dictionary] = Proficiencies.language_options()
 	var available: Dictionary = {}
 	for entry: Dictionary in languages:
