@@ -119,7 +119,7 @@ static func origin_active(saved: Dictionary) -> bool:
 		return "off" in equipped
 	if category == "weapon":
 		return "main" in equipped or "off" in equipped
-	return true
+	return bool(saved.get("equipped", false))
 
 
 static func occupying(inventory: Variant, slot: String) -> Dictionary:
