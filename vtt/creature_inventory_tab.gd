@@ -729,9 +729,11 @@ func _on_inventory_selected(index: int) -> void:
 		if String(catalog_item.get("id", "")) == item_id:
 			_show_details(catalog_item)
 			return
-	_details.text = "%s\nFonte: %s\nVoce non installata nel catalogo locale." % [
+	_details.text = "%s\n%s%s\n%s" % [
 		String(_inventory[index].get("name", "")),
-		String(_inventory[index].get("source", ""))
+		CreatureLocale.text_for("Fonte: ", _gui_language),
+		String(_inventory[index].get("source", "")),
+		CreatureLocale.text_for("Voce non installata nel catalogo locale.", _gui_language)
 	]
 	_details.show()
 
@@ -762,7 +764,8 @@ func update_creature_size(size_name: String) -> void:
 	if size_name not in ItemRules.WEAPON_SIZES or _creature_size_name == size_name:
 		return
 	_creature_size_name = size_name
-	_weapon_size_choice.set_item_text(0, "Come creatura (%s)" % size_name)
+	_weapon_size_choice.set_item_text(0,
+		CreatureLocale.text_for("Come creatura (%s)", _gui_language) % CreatureLocale.text_for(size_name, _gui_language))
 
 
 func _set_weapon_size_choice(item: Dictionary) -> void:
@@ -909,7 +912,7 @@ func _inventory_label(item: Dictionary) -> String:
 	var equipment := (" [" + ", ".join(tags) + "]") if not tags.is_empty() else ""
 	var extra: Variant = item.get("instance_overrides", {})
 	var size_name: String = String((extra as Dictionary).get("weapon_size", "")) if extra is Dictionary else ""
-	var size_label := " · " + CreatureLocale.text_for("taglia", _gui_language) + " " + size_name if size_name in ItemRules.WEAPON_SIZES else ""
+	var size_label := " · " + CreatureLocale.text_for("taglia", _gui_language) + " " + CreatureLocale.text_for(size_name, _gui_language) if size_name in ItemRules.WEAPON_SIZES else ""
 	var item_name: String = String(item.get("name", ""))
 	if DocumentStore.is_document(item):
 		item_name = String(_catalog_entry(item).get("name", item_name))
@@ -918,7 +921,7 @@ func _inventory_label(item: Dictionary) -> String:
 
 func _show_details(item: Dictionary) -> void:
 	var description: String = Player5eTools.description_text_from_raw_item(item)
-	_details.text = ItemRules.category_name(item) + "\n" + Player5eTools.info_text(item, description)
+	_details.text = CreatureLocale.text_for(ItemRules.category_name(item), _gui_language) + "\n" + Player5eTools.info_text(item, description)
 	_details.show()
 
 
