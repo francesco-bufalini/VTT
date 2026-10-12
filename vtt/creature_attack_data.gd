@@ -262,16 +262,19 @@ static func offhand_bonus_attack_allowed(record: Dictionary) -> bool:
 	var off_entry: Dictionary = Items.entry_for(off)
 	if Items.kind(main_entry) != "weapon" or Items.kind(off_entry) != "weapon":
 		return false
-	if String(main_entry.get("type", "")).split("|")[0].to_upper() == "R":
-		return false
-	if String(off_entry.get("type", "")).split("|")[0].to_upper() == "R":
-		return false
+	var main_melee: bool = String(main_entry.get("type", "")).split("|")[0].to_upper() != "R"
+	var off_melee: bool = String(off_entry.get("type", "")).split("|")[0].to_upper() != "R"
 	var main_light: bool = Items.has_property(main_entry, "L")
 	var off_light: bool = Items.has_property(off_entry, "L")
 	if String(record.get("rules_version", "2014")) == "2024":
-		# The 2024 Dual Wielder feat requires a Light-weapon trigger.
-		return main_light and (off_light or has_dual_wielder(record))
-	return (main_light and off_light) or has_dual_wielder(record)
+		# The Light property also applies to ranged weapons in 2024.
+		# Dual Wielder extends the second weapon to one-handed melee weapons,
+		# but still requires a Light attack as its trigger.
+		return main_light and (off_light or (has_dual_wielder(record) and off_melee))
+	# 2014 Two-Weapon Fighting requires two one-handed melee weapons.
+	# The Dual Wielder feat removes their Light requirement, not the
+	# melee requirement. Thrown attacks retain the same offhand rule.
+	return main_melee and off_melee and ((main_light and off_light) or has_dual_wielder(record))
 
 
 static func damage_label(record: Dictionary, attack: Dictionary) -> String:
