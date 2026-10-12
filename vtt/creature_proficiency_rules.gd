@@ -1056,7 +1056,19 @@ static func reconcile_origin_dependents(record: Dictionary) -> void:
 			var sid: String = String(origin.get("id", ""))
 			if live.has(sid) or String(origin.get("group", "")) in ["custom", "spell"]:
 				kept_origins.append(origin)
-		record["proficiency_origins"] = kept_origins
+		# An applied spell exists only while it grants at least one benefit.
+		# Otherwise an abandoned spell would remain listed as an active effect.
+		var used_origins: Dictionary = {}
+		for field: String in ["proficiency_choices", "formula_bonuses", "resource_trackers", "damage_defense_entries", "feats_catalog"]:
+			for raw: Variant in record.get(field, []):
+				if raw is Dictionary:
+					used_origins[String((raw as Dictionary).get("origin_id", ""))] = true
+		var active_origins: Array = []
+		for origin: Dictionary in kept_origins:
+			if String(origin.get("group", "")) == "spell" and not used_origins.has(String(origin.get("id", ""))):
+				continue
+			active_origins.append(origin)
+		record["proficiency_origins"] = active_origins
 
 
 static func _resolved_source_active(
