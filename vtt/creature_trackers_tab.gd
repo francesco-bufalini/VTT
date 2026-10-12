@@ -200,6 +200,7 @@ func _refresh_origins() -> void:
 		var sid: String = String(row.get("origin_id", ""))
 		counts[sid] = int(counts.get(sid, 0)) + 1
 	var enabled: Dictionary = Rules.origin_enabled_map(_effective_record())
+	var display_names: Dictionary = OriginChoices.display_labels(_origins, _effective_record())
 	for sid: String in counts.keys():
 		var panel := PanelContainer.new()
 		_origin_cards.add_child(panel)
@@ -211,7 +212,7 @@ func _refresh_origins() -> void:
 		select.clip_text = true
 		select.toggle_mode = true
 		select.button_pressed = _selected_origin == sid
-		select.text = _source_name(sid) + " (%d)" % int(counts[sid])
+		select.text = String(display_names.get(sid, _source_name(sid))) + " (%d)" % int(counts[sid])
 		select.tooltip_text = _source_tooltip(sid)
 		select.pressed.connect(_select_origin.bind(sid))
 		line.add_child(select)

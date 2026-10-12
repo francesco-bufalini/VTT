@@ -241,6 +241,7 @@ func _refresh_origins() -> void:
 			has_unassigned = true
 	if has_unassigned:
 		all.append({"id": "", "name": "⚠ Senza origine", "disabled": false, "requirements": []})
+	var display_names: Dictionary = OriginChoices.display_labels(all, _description_record)
 	for item: Dictionary in all:
 		var sid: String = String(item.get("id", ""))
 		var matching := 0
@@ -263,7 +264,7 @@ func _refresh_origins() -> void:
 		select.toggle_mode = true
 		select.button_pressed = selected
 		select.clip_text = true
-		select.text = String(item.get("name", "")) + " (%d)" % matching
+		select.text = String(display_names.get(sid, item.get("name", ""))) + " (%d)" % matching
 		var description: String = _origin_description(item)
 		select.tooltip_text = description + _origin_grants_tooltip(sid) + ("\n\n⚠ Da scegliere: " + ", ".join(missing) if not missing.is_empty() else "")
 		select.pressed.connect(_select_origin.bind(sid))

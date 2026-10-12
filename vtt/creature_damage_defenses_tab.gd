@@ -383,6 +383,7 @@ func _refresh() -> void:
 		var sid: String = String(source.get("id", ""))
 		if not known.has(sid):
 			candidates.append(source)
+	var display_names: Dictionary = OriginChoices.display_labels(candidates, _record)
 	var effective_origins: Dictionary = Rules.origin_enabled_map(_record)
 	for source: Dictionary in candidates:
 		var sid: String = String(source.get("id", ""))
@@ -392,7 +393,7 @@ func _refresh() -> void:
 		button.toggle_mode = true
 		button.clip_text = true
 		button.alignment = HORIZONTAL_ALIGNMENT_LEFT
-		button.text = "%s (%d)" % [String(source.get("name", sid)), int(counts[sid])]
+		button.text = "%s (%d)" % [String(display_names.get(sid, source.get("name", sid))), int(counts[sid])]
 		button.modulate.a = 1.0 if bool(source.get("active", true)) and bool(effective_origins.get(sid, true)) else 0.5
 		button.pressed.connect(_select_origin.bind(sid))
 		_origin_cards.add_child(button)

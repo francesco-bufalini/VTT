@@ -318,6 +318,7 @@ func _refresh_origins() -> void:
 		if String(granted.get("origin_id", "")).is_empty():
 			sources.push_front({"id": "", "name": "Senza origine", "disabled": false})
 			break
+	var display_names: Dictionary = OriginChoices.display_labels(sources, _effective_record())
 	var seen: Dictionary = {}
 	for origin: Dictionary in sources:
 		var sid: String = String(origin.get("id", ""))
@@ -340,7 +341,7 @@ func _refresh_origins() -> void:
 		select.toggle_mode = true
 		select.button_pressed = _selected_id == sid
 		select.clip_text = true
-		select.text = _label(sid) + " (%d)" % count
+		select.text = String(display_names.get(sid, _label(sid))) + " (%d)" % count
 		select.tooltip_text = _description(sid) + _origin_grants_tooltip(sid)
 		select.pressed.connect(_select_origin.bind(sid))
 		line.add_child(select)
