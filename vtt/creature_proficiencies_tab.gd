@@ -1,5 +1,7 @@
 extends VBoxContainer
 
+const ScrollBoundaryGuard = preload("res://vtt/nested_scroll_boundary_guard.gd")
+
 # Expandable Statistics editor: structured origins on the left, individual
 # proficiencies on the right. Nothing is inferred from natural-language text.
 const Rules = preload("res://vtt/creature_proficiency_rules.gd")
@@ -69,6 +71,7 @@ func setup(on_change: Callable) -> void:
 
 	var origin_scroller := ScrollContainer.new()
 	origin_scroller.mouse_force_pass_scroll_events = false
+	ScrollBoundaryGuard.install(origin_scroller)
 	origin_scroller.custom_minimum_size.y = 245
 	origin_scroller.size_flags_vertical = Control.SIZE_EXPAND_FILL
 	origin_scroller.horizontal_scroll_mode = ScrollContainer.SCROLL_MODE_DISABLED
@@ -79,6 +82,7 @@ func setup(on_change: Callable) -> void:
 	origin_scroller.add_child(_origin_cards)
 	var competence_scroller := ScrollContainer.new()
 	competence_scroller.mouse_force_pass_scroll_events = false
+	ScrollBoundaryGuard.install(competence_scroller)
 	competence_scroller.custom_minimum_size.y = 245
 	competence_scroller.size_flags_vertical = Control.SIZE_EXPAND_FILL
 	competence_scroller.horizontal_scroll_mode = ScrollContainer.SCROLL_MODE_DISABLED
@@ -122,6 +126,7 @@ func setup(on_change: Callable) -> void:
 	add_child(_choice_dialog)
 	var choice_scroll := ScrollContainer.new()
 	choice_scroll.mouse_force_pass_scroll_events = false
+	ScrollBoundaryGuard.install(choice_scroll)
 	choice_scroll.custom_minimum_size = Vector2(460, 370)
 	choice_scroll.size_flags_horizontal = Control.SIZE_EXPAND_FILL
 	choice_scroll.size_flags_vertical = Control.SIZE_EXPAND_FILL

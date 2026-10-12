@@ -1,5 +1,7 @@
 extends VBoxContainer
 
+const ScrollBoundaryGuard = preload("res://vtt/nested_scroll_boundary_guard.gd")
+
 # Resource editor using the same origin/grant layout as proficiencies,
 # feats and numeric bonuses. A source is only listed if it grants a tracker.
 const Trackers = preload("res://vtt/structured_resource_trackers.gd")
@@ -42,6 +44,7 @@ func setup(on_change: Callable) -> void:
 	var right := _column(columns, "Risorse e utilizzi", 260)
 	var origin_scroll := ScrollContainer.new()
 	origin_scroll.mouse_force_pass_scroll_events = false
+	ScrollBoundaryGuard.install(origin_scroll)
 	origin_scroll.custom_minimum_size.y = 245
 	origin_scroll.horizontal_scroll_mode = ScrollContainer.SCROLL_MODE_DISABLED
 	left.add_child(origin_scroll)
@@ -51,6 +54,7 @@ func setup(on_change: Callable) -> void:
 	origin_scroll.add_child(_origin_cards)
 	var tracker_scroll := ScrollContainer.new()
 	tracker_scroll.mouse_force_pass_scroll_events = false
+	ScrollBoundaryGuard.install(tracker_scroll)
 	tracker_scroll.custom_minimum_size.y = 245
 	tracker_scroll.horizontal_scroll_mode = ScrollContainer.SCROLL_MODE_DISABLED
 	right.add_child(tracker_scroll)

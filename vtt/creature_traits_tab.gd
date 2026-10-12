@@ -1,5 +1,7 @@
 extends VBoxContainer
 
+const ScrollBoundaryGuard = preload("res://vtt/nested_scroll_boundary_guard.gd")
+
 # The traits sheet is a unified, level-ordered list. The data retains its
 # catalog identifiers and source books; the UI exposes only useful origins.
 const PlayerCatalog = preload("res://vtt/player_5etools_catalog.gd")
@@ -61,6 +63,7 @@ func setup() -> void:
 
 	_scroll = ScrollContainer.new()
 	_scroll.mouse_force_pass_scroll_events = false
+	ScrollBoundaryGuard.install(_scroll)
 	_scroll.size_flags_horizontal = Control.SIZE_EXPAND_FILL
 	_scroll.size_flags_vertical = Control.SIZE_EXPAND_FILL
 	_scroll.horizontal_scroll_mode = ScrollContainer.SCROLL_MODE_DISABLED

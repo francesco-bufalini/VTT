@@ -26,6 +26,7 @@ const ProficiencyRules = preload("res://vtt/creature_proficiency_rules.gd")
 const ProficiencyTab = preload("res://vtt/creature_proficiencies_tab.gd")
 const FeatsTab = preload("res://vtt/creature_feats_tab.gd")
 const DamageDefensesTab = preload("res://vtt/creature_damage_defenses_tab.gd")
+const ScrollBoundaryGuard = preload("res://vtt/nested_scroll_boundary_guard.gd")
 const ItemRules = preload("res://vtt/creature_item_rules.gd")
 const DocumentInbox = preload("res://vtt/document_inbox.gd")
 const DocumentStore = preload("res://vtt/document_homebrew.gd")
@@ -534,6 +535,7 @@ func _build_ui() -> void:
 	left.add_child(_creature_empty)
 	_creature_list_scroll = ScrollContainer.new()
 	_creature_list_scroll.mouse_force_pass_scroll_events = false
+	ScrollBoundaryGuard.install(_creature_list_scroll)
 	_creature_list_scroll.custom_minimum_size.y = 40
 	_creature_list_scroll.size_flags_horizontal = Control.SIZE_EXPAND_FILL
 	_creature_list_scroll.size_flags_vertical = Control.SIZE_SHRINK_BEGIN
@@ -647,6 +649,7 @@ func _build_ui() -> void:
 	combat_view.follow_focus = true
 	_statistics_columns.add_child(combat_view)
 	var combat_column := VBoxContainer.new()
+	combat_column.add_theme_constant_override("separation", 5)
 	combat_column.size_flags_horizontal = Control.SIZE_EXPAND_FILL
 	combat_view.add_child(combat_column)
 	var appearance_tab := _add_sheet_tab(_tabs, "Aspetto")
@@ -708,7 +711,7 @@ func _build_ui() -> void:
 	health_style.border_color = Color(0.76, 0.50, 0.30, 0.90)
 	health_style.set_border_width_all(1)
 	health_style.set_corner_radius_all(7)
-	health_style.set_content_margin_all(5)
+	health_style.set_content_margin_all(4)
 	health_panel.add_theme_stylebox_override("panel", health_style)
 	health_panel.tooltip_text = "Danni: prima temporanei, poi PF della seconda forma, infine PF normali."
 	combat_column.add_child(health_panel)
@@ -721,8 +724,8 @@ func _build_ui() -> void:
 	_style_statistics_heading(health_title)
 	health_content.add_child(health_title)
 	var health := HFlowContainer.new()
-	health.add_theme_constant_override("h_separation", 5)
-	health.add_theme_constant_override("v_separation", 5)
+	health.add_theme_constant_override("h_separation", 3)
+	health.add_theme_constant_override("v_separation", 3)
 	health_content.add_child(health)
 	var damage := Button.new()
 	damage.text = "−"
@@ -731,14 +734,14 @@ func _build_ui() -> void:
 	damage.pressed.connect(_open_hp_delta.bind(-1))
 	_hp = _spin(health, -999, 99999)
 	_hp.tooltip_text = "Punti ferita attuali"
-	_hp.custom_minimum_size = Vector2(68, 36)
+	_hp.custom_minimum_size = Vector2(59, 34)
 	_hp.size_flags_horizontal = Control.SIZE_SHRINK_BEGIN
 	_add_label(health, "/")
 	_max_hp_effective = Label.new()
 	_max_hp_effective.tooltip_text = "PF massimi effettivi"
 	health.add_child(_max_hp_effective)
 	_max_hp = _spin(health, 0, 99999)
-	_max_hp.custom_minimum_size = Vector2(68, 36)
+	_max_hp.custom_minimum_size = Vector2(59, 34)
 	_max_hp.size_flags_horizontal = Control.SIZE_SHRINK_BEGIN
 	_max_hp.tooltip_text = "PF massimi base, prima dei bonus"
 	_install_formula("hp", _max_hp_effective, [_max_hp], ["Base"])
@@ -751,7 +754,7 @@ func _build_ui() -> void:
 	_add_label(temp_row, "TEMP")
 	_temp_hp = _spin(temp_row, 0, 99999)
 	_temp_hp.tooltip_text = "Punti ferita temporanei: assorbono i danni prima delle altre forme."
-	_temp_hp.custom_minimum_size.x = 68
+	_temp_hp.custom_minimum_size.x = 60
 	_max_hp.value_changed.connect(func(_v: float) -> void: _update_max_hp_display())
 	var heal := Button.new()
 	heal.text = "+"
@@ -779,12 +782,12 @@ func _build_ui() -> void:
 	_second_form_hp.max_value = 99999
 	_second_form_hp.step = 1
 	_second_form_hp.rounded = true
-	_second_form_hp.custom_minimum_size = Vector2(68, 30)
+	_second_form_hp.custom_minimum_size = Vector2(60, 30)
 	_second_form_hp.value_changed.connect(_on_form_hp_changed)
 	form_hp_row.add_child(_second_form_hp)
 	_add_label(form_hp_row, "/")
 	_second_form_max_hp = _spin(form_hp_row, 0, 99999)
-	_second_form_max_hp.custom_minimum_size.x = 68
+	_second_form_max_hp.custom_minimum_size.x = 60
 	var second_max_label := Label.new()
 	form_hp_row.add_child(second_max_label)
 	_install_formula("second_max", second_max_label, [_second_form_max_hp], ["Massimo"])
@@ -812,14 +815,14 @@ func _build_ui() -> void:
 	defense_content.add_child(defense_heading)
 	# A single non-wrapping row keeps initiative inside the AC panel.
 	var defense_flow := HBoxContainer.new()
-	defense_flow.add_theme_constant_override("separation", 9)
+	defense_flow.add_theme_constant_override("separation", 5)
 	defense_content.add_child(defense_flow)
 	_defense_summary = Label.new()
 	_defense_summary.autowrap_mode = TextServer.AUTOWRAP_WORD_SMART
 	_defense_summary.add_theme_font_size_override("font_size", 12)
 	defense_content.add_child(_defense_summary)
 	var temp_health := HBoxContainer.new()
-	temp_health.add_theme_constant_override("separation", 6)
+	temp_health.add_theme_constant_override("separation", 3)
 	defense_flow.add_child(temp_health)
 	_add_label(temp_health, "CA")
 	_ac_effective = Label.new()
@@ -830,18 +833,18 @@ func _build_ui() -> void:
 	_ac.tooltip_text = "Base precedente (compatibilità)"
 	_ac.hide()
 	_armor_picker = OptionButton.new()
-	_armor_picker.custom_minimum_size.x = 92
+	_armor_picker.custom_minimum_size.x = 82
 	_armor_picker.tooltip_text = "Armatura indossata; scegli Naturale per utilizzare la formula senza armatura."
 	_armor_picker.item_selected.connect(_on_armor_selected)
 	temp_health.add_child(_armor_picker)
 	_natural_ac_formula = LineEdit.new()
-	_natural_ac_formula.custom_minimum_size.x = 115
+	_natural_ac_formula.custom_minimum_size.x = 100
 	_natural_ac_formula.placeholder_text = "10 + dex_mod"
 	_natural_ac_formula.tooltip_text = "Formula per la CA senza armatura: per esempio 10 + dex_mod, 13 + dex_mod o 16. Le variabili seguono le formule dei bonus."
 	_natural_ac_formula.text_submitted.connect(func(_value: String) -> void: _save())
 	_natural_ac_formula.focus_exited.connect(func() -> void: _save())
 	var natural_row := HBoxContainer.new()
-	natural_row.add_theme_constant_override("separation", 8)
+	natural_row.add_theme_constant_override("separation", 4)
 	defense_content.add_child(natural_row)
 	_add_label(natural_row, "CA naturale · formula")
 	natural_row.add_child(_natural_ac_formula)
@@ -854,7 +857,7 @@ func _build_ui() -> void:
 	temp_health.add_child(_ac_proficiency_warning)
 	defense_flow.add_child(VSeparator.new())
 	var initiative_row := HBoxContainer.new()
-	initiative_row.add_theme_constant_override("separation", 5)
+	initiative_row.add_theme_constant_override("separation", 3)
 	defense_flow.add_child(initiative_row)
 	_add_label(initiative_row, "Bonus iniziativa")
 	_initiative_effective = Label.new()
@@ -881,24 +884,29 @@ func _build_ui() -> void:
 	# which modes a creature actually possesses.
 	var speed_grid := GridContainer.new()
 	speed_grid.columns = 5
-	speed_grid.add_theme_constant_override("h_separation", 8)
+	speed_grid.add_theme_constant_override("h_separation", 4)
 	speed_grid.add_theme_constant_override("v_separation", 4)
 	movement_box.add_child(speed_grid)
 	_special_speed_labels.clear()
 	for mode: String in ["walk", "climb", "swim", "fly", "burrow"]:
 		var speed_cell := VBoxContainer.new()
-		speed_cell.custom_minimum_size.x = 91
+		speed_cell.custom_minimum_size.x = 75
 		speed_cell.size_flags_horizontal = Control.SIZE_EXPAND_FILL
-		speed_cell.add_theme_constant_override("separation", 4)
+		speed_cell.add_theme_constant_override("separation", 3)
 		speed_grid.add_child(speed_cell)
 		var speed_name: String = {"walk": "Camminata", "climb": "Scalata",
 			"swim": "Nuoto", "fly": "Volo", "burrow": "Scavo"}[mode]
-		_add_label(speed_cell, speed_name + " (ft)")
+		var speed_caption := Label.new()
+		speed_caption.text = speed_name + " (ft)"
+		speed_caption.tooltip_text = speed_caption.text
+		speed_caption.clip_text = true
+		speed_caption.add_theme_font_size_override("font_size", 12)
+		speed_cell.add_child(speed_caption)
 		var speed_value_row := HBoxContainer.new()
 		speed_value_row.custom_minimum_size.y = 32
 		speed_cell.add_child(speed_value_row)
 		var speed_label := Label.new()
-		speed_label.custom_minimum_size.x = 48
+		speed_label.custom_minimum_size.x = 40
 		speed_value_row.add_child(speed_label)
 		if mode == "walk":
 			_speed_effective = speed_label
@@ -907,7 +915,7 @@ func _build_ui() -> void:
 			_speed.max_value = 999
 			_speed.step = 1
 			_speed.update_on_text_changed = true
-			_speed.custom_minimum_size = Vector2(78, 32)
+			_speed.custom_minimum_size = Vector2(66, 32)
 			_speed.value_changed.connect(_on_speed_changed)
 			speed_cell.add_child(_speed)
 			_speed.tooltip_text = "Velocità base dalla specie o dal bestiario, modificabile"
@@ -1078,7 +1086,7 @@ func _build_ui() -> void:
 	attack_header.add_theme_font_size_override("font_size", 16)
 	combat_column.add_child(attack_header)
 	var preference_row := HBoxContainer.new()
-	preference_row.add_theme_constant_override("separation", 8)
+	preference_row.add_theme_constant_override("separation", 4)
 	combat_column.add_child(preference_row)
 	_add_label(preference_row, "Caratteristica attacchi")
 	_attack_ability = OptionButton.new()
@@ -1091,22 +1099,22 @@ func _build_ui() -> void:
 	# inline with the offhand selector, not on a separate row.
 	var hand_bar := GridContainer.new()
 	hand_bar.columns = 2
-	hand_bar.add_theme_constant_override("h_separation", 9)
+	hand_bar.add_theme_constant_override("h_separation", 4)
 	hand_bar.add_theme_constant_override("v_separation", 5)
 	combat_column.add_child(hand_bar)
 	combat_column.move_child(hand_bar, attack_header.get_index())
 	_add_label(hand_bar, "Mano principale")
 	_hand_main_picker = OptionButton.new()
-	_hand_main_picker.custom_minimum_size.x = 125
+	_hand_main_picker.custom_minimum_size.x = 112
 	_hand_main_picker.clip_text = true
 	_hand_main_picker.item_selected.connect(_on_hand_selected.bind("main"))
 	hand_bar.add_child(_hand_main_picker)
 	_add_label(hand_bar, "Mano secondaria")
 	var offhand_row := HBoxContainer.new()
-	offhand_row.add_theme_constant_override("separation", 8)
+	offhand_row.add_theme_constant_override("separation", 4)
 	hand_bar.add_child(offhand_row)
 	_hand_off_picker = OptionButton.new()
-	_hand_off_picker.custom_minimum_size.x = 125
+	_hand_off_picker.custom_minimum_size.x = 112
 	_hand_off_picker.clip_text = true
 	_hand_off_picker.item_selected.connect(_on_hand_selected.bind("off"))
 	offhand_row.add_child(_hand_off_picker)
@@ -1119,7 +1127,7 @@ func _build_ui() -> void:
 	)
 	offhand_row.add_child(_show_offhand_all)
 	_attack_rows = VBoxContainer.new()
-	_attack_rows.add_theme_constant_override("separation", 7)
+	_attack_rows.add_theme_constant_override("separation", 5)
 	combat_column.add_child(_attack_rows)
 	_attacks_description = RichTextLabel.new()
 	_attacks_description.set_meta("creature_gui_text", true)
@@ -1346,6 +1354,7 @@ func _build_ui() -> void:
 func _add_sheet_tab(tabs: TabContainer, title: String) -> VBoxContainer:
 	var scroll := ScrollContainer.new()
 	scroll.mouse_force_pass_scroll_events = false
+	ScrollBoundaryGuard.install(scroll)
 	scroll.name = title
 	scroll.size_flags_horizontal = Control.SIZE_EXPAND_FILL
 	scroll.size_flags_vertical = Control.SIZE_EXPAND_FILL
@@ -3292,7 +3301,7 @@ func _refresh_attacks(record: Dictionary) -> void:
 		card_style.border_color = Color(0.54, 0.75, 0.82) if active else Color(0.30, 0.41, 0.49, 0.72)
 		card_style.set_border_width_all(2 if active else 1)
 		card_style.set_corner_radius_all(8)
-		card_style.set_content_margin_all(10)
+		card_style.set_content_margin_all(7)
 		card.add_theme_stylebox_override("panel", card_style)
 		_attack_rows.add_child(card)
 		var box := VBoxContainer.new()
@@ -3326,7 +3335,7 @@ func _refresh_attacks(record: Dictionary) -> void:
 		# Hit and damage each have their own self-contained line. HFlow
 		# wraps the dice button if the pane is narrow, without clipping it.
 		var hit_row := HFlowContainer.new()
-		hit_row.add_theme_constant_override("h_separation", 8)
+		hit_row.add_theme_constant_override("h_separation", 5)
 		hit_row.add_theme_constant_override("v_separation", 4)
 		box.add_child(hit_row)
 		var hit_caption := Label.new()
@@ -3343,7 +3352,7 @@ func _refresh_attacks(record: Dictionary) -> void:
 		roll_hit.pressed.connect(_roll_attack_from_sheet.bind(attack_id, false))
 		hit_row.add_child(roll_hit)
 		var damage_row := HFlowContainer.new()
-		damage_row.add_theme_constant_override("h_separation", 8)
+		damage_row.add_theme_constant_override("h_separation", 5)
 		damage_row.add_theme_constant_override("v_separation", 4)
 		box.add_child(damage_row)
 		var damage_caption := Label.new()
@@ -3362,7 +3371,7 @@ func _refresh_attacks(record: Dictionary) -> void:
 		damage_row.add_child(roll_damage)
 		box.add_child(HSeparator.new())
 		var settings := HFlowContainer.new()
-		settings.add_theme_constant_override("h_separation", 6)
+		settings.add_theme_constant_override("h_separation", 4)
 		settings.add_theme_constant_override("v_separation", 3)
 		box.add_child(settings)
 		var distance_caption := Label.new()
@@ -3375,7 +3384,7 @@ func _refresh_attacks(record: Dictionary) -> void:
 		distance.max_value = 1000
 		distance.step = 5
 		distance.rounded = true
-		distance.custom_minimum_size.x = 68
+		distance.custom_minimum_size.x = 60
 		distance.tooltip_text = "Portata o gittata di questo attacco, indipendente dalle altre armi"
 		distance.set_value_no_signal(int(AttackData.override_for(record, attack_id).get("range_feet", attack.get("range_feet", 5))))
 		distance.value_changed.connect(_on_attack_range_changed.bind(attack_id))

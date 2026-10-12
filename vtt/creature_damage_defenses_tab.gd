@@ -1,5 +1,7 @@
 extends VBoxContainer
 
+const ScrollBoundaryGuard = preload("res://vtt/nested_scroll_boundary_guard.gd")
+
 # Damage resistances and immunities are ranked like proficiency/expertise:
 # none (0) -> resistance (1) -> immunity (2). Never stack the two.
 # A saved override is independent of the bestiary/species baseline.
@@ -223,6 +225,7 @@ func setup(on_change: Callable) -> void:
 	var ls := ScrollContainer.new()
 	ls.custom_minimum_size.y = 245
 	ls.mouse_force_pass_scroll_events = false
+	ScrollBoundaryGuard.install(ls)
 	ls.horizontal_scroll_mode = ScrollContainer.SCROLL_MODE_DISABLED
 	left.add_child(ls)
 	_origin_cards = VBoxContainer.new()
@@ -231,6 +234,7 @@ func setup(on_change: Callable) -> void:
 	var rs := ScrollContainer.new()
 	rs.custom_minimum_size.y = 245
 	rs.mouse_force_pass_scroll_events = false
+	ScrollBoundaryGuard.install(rs)
 	rs.horizontal_scroll_mode = ScrollContainer.SCROLL_MODE_DISABLED
 	right.add_child(rs)
 	_damage_rows = VBoxContainer.new()

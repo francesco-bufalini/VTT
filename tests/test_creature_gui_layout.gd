@@ -1,5 +1,7 @@
 extends SceneTree
 
+const ScrollBoundaryGuard = preload("res://vtt/nested_scroll_boundary_guard.gd")
+
 class TestCampaign extends Node:
 	var selected_campaign_group_id := "creature_gui_layout"
 	var active_campaign_id := ""
@@ -72,10 +74,33 @@ func run() -> void:
 		and area._show_offhand_all.text == "Only if finesse"
 		and area._show_offhand_all.get_parent() == area._hand_off_picker.get_parent(),
 		"Finesse-only offhand filter must be active by default and share the secondary hand row")
+	# Only inner lists may stop scroll chaining; the two full-size columns
+	# must continue to allow the surrounding sheet to scroll vertically.
+	assert(not area._statistics_columns.get_child(0).has_meta("nested_scroll_boundary_guard")
+		and not area._statistics_columns.get_child(1).has_meta("nested_scroll_boundary_guard"),
+		"Full-size statistics columns must not intercept parent scrolling")
+	var bar := VScrollBar.new()
+	bar.max_value = 300.0
+	bar.page = 100.0
+	bar.value = 0.0
+	assert(ScrollBoundaryGuard._at_boundary(bar, -1.0)
+		and not ScrollBoundaryGuard._at_boundary(bar, 1.0),
+		"Inner list consumes upward scroll only at its upper boundary")
+	bar.value = 200.0
+	assert(ScrollBoundaryGuard._at_boundary(bar, 1.0)
+		and not ScrollBoundaryGuard._at_boundary(bar, -1.0),
+		"Inner list consumes downward scroll only at its lower boundary")
+	bar.max_value = 100.0
+	assert(not ScrollBoundaryGuard._at_boundary(bar, 1.0),
+		"An inner list that fits must pass scrolling to the sheet")
+	bar.free()
 	var movement_grid: GridContainer = area._speed.get_parent().get_parent() as GridContainer
 	assert(movement_grid != null and movement_grid.columns == 5
 		and movement_grid.get_child_count() == 5,
 		"All five movement speeds must have equal aligned cells")
+	for speed_cell: Control in movement_grid.get_children():
+		assert(speed_cell.custom_minimum_size.x <= 75.0,
+			"Movement cells must be compact to fit the combat column")
 	var combat_column: Node = area._tracker_rows.get_parent()
 	var ac_panel: Node = area._ac_effective
 	while ac_panel.get_parent() != null and ac_panel.get_parent() != combat_column:
@@ -111,8 +136,8 @@ func run() -> void:
 	area._editor_section_picker.item_selected.emit(5)
 	assert(area._damage_defenses_ui.visible,
 		"The defense editor must be available through Visualizza e modifica")
-	assert(area._damage_defenses_ui._damage_buttons.size() == 13,
-		"All 13 standard 5e damage types must be editable")
+	assert(area._damage_defenses_ui._entry_cards.size() == 0,
+		"An empty character has no defense rows until granted or manually added")
 	area._editor_section_picker.item_selected.emit(0)
 	assert(area._initiative_effective.text == "+4",
 		"Initial initiative must use the loaded DEX score, not +0 or the prior creature.")
