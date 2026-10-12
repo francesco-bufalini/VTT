@@ -132,6 +132,9 @@ func run() -> void:
 	# Newly introduced creature editors and statuses must not silently fall
 	# back to Italian. Interpolated names and values remain unchanged.
 	assert(Locale.text_for("PF massimi: base 20 + bonus cumulabili +2 = 22", "en") == "Maximum HP: base 20 + stacking bonuses +2 = 22")
+	assert(Locale.text_for("Scalata: base 0 + bonus specifici +5", "en") == "Climbing: base 0 + specific bonuses +5")
+	assert(Locale.text_for("FOR: floor((18 - 10) / 2) +0 bonus sul modificatore = +4", "en") == "STR: floor((18 - 10) / 2) +0 modifier bonuses = +4")
+	assert(Locale.text_for("Concentrazione", "en") == "Concentration")
 	assert(Locale.text_for("Attacco aggiuntivo a due armi: bonus al colpire normale; il modificatore di caratteristica ai danni si applica solo con lo stile Two-Weapon Fighting o se negativo.", "en") == "Two-weapon bonus attack: normal attack bonus; the ability modifier applies to damage only with the Two-Weapon Fighting style or when negative.")
 	assert(Locale.text_for("Incantesimi attivi", "en") == "Active spells")
 	assert(Locale.text_for("Talenti posseduti", "en") == "Owned feats")
