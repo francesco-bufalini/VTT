@@ -494,6 +494,11 @@ const EN: Dictionary = {
 	"Valore": "Value",
 	"Origini:": "Origins:",
 	"Doppio clic": "Double-click",
+	"Gli incantesimi effettivamente scelti non vengono cambiati. I PF attuali sono conservati (limitati al nuovo massimo).": "Selected spells are not changed. Current HP are preserved (capped at the new maximum).",
+	"CA ": "AC ",
+	"(scudo compreso)": "(including shield)",
+	"Camminata: ": "Walking: ",
+	"Nessuna velocità speciale": "No special speed",
 }
 const IT: Dictionary = {
 	"STR": "FOR",
@@ -552,6 +557,7 @@ static func text_for(source: String, language: String) -> String:
 	# Common generated GUI messages: translate fixed labels, keep their numbers
 	# and original creature/spell/item names intact.
 	for prefix in ["Strumenti: ", "Linguaggi: ", "Completa le scelte: ",
+		"CA ", "Camminata: ",
 		"Con rincorsa (almeno 10 ft): ", "Da fermo (senza rincorsa): ",
 		"PF massimi → ", "Competenza → ", "PF non calcolabili: ",
 		"Vai al privilegio: ", "Slot dal livello: ",
@@ -575,6 +581,9 @@ static func apply(root: Node, language: String) -> void:
 	if root == null or not is_instance_valid(root):
 		return
 	if root is Label or root is Button:
+		_translate_property(root, "text", language)
+	# Opt in only for our computed summaries, never 5etools descriptions.
+	if root is RichTextLabel and bool(root.get_meta("creature_gui_text", false)):
 		_translate_property(root, "text", language)
 	if root is LineEdit or root is TextEdit:
 		_translate_property(root, "placeholder_text", language)
