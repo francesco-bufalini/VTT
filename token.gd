@@ -10,6 +10,7 @@ const MAX_IMPORTED_EXTENT_PER_FOOTPRINT := 3.0
 # Condizioni standard D&D 5e / SRD. Gli ID rimangono in inglese per essere
 # stabili nei salvataggi; etichette e pittogrammi sono solo presentazione.
 const ContentCatalog = preload("res://vtt/content_catalog.gd")
+const SpellCatalog = preload("res://vtt/spells/spell_catalog.gd")
 const CONDITION_DEFINITIONS = ContentCatalog.LEGACY_CONDITIONS
 var _remote_condition_presentations: Dictionary = {}
 
@@ -56,6 +57,7 @@ var _default_animation: String = ""
 var _uses_manifest_default: bool = false
 var _conditions: Array[String] = []
 var _active_spell_ids: Array[String] = []
+var _active_spell_display_parts: PackedStringArray = PackedStringArray()
 var _concentrating_spell_id: String = ""
 var _condition_visuals_visible: bool = true
 var _reach_feet: float = 5.0
@@ -920,17 +922,19 @@ func get_active_condition_display_parts() -> PackedStringArray:
 	var parts := PackedStringArray()
 	# Called on every tactical refresh. Most tokens have no conditions;
 	# do not rebuild the entire 5etools conditions catalog for them.
-	if _conditions.is_empty():
+	if _conditions.is_empty() and _active_spell_display_parts.is_empty():
 		return parts
-	for definition: Dictionary in get_condition_definitions():
-		var condition_id := String(definition.get("id", ""))
-		if condition_id in _conditions:
-			parts.append(
-				"%s %s" % [
-					String(definition.get("icon", "•")),
-					String(definition.get("name", condition_id))
-				]
-			)
+	if not _conditions.is_empty():
+		for definition: Dictionary in get_condition_definitions():
+			var condition_id := String(definition.get("id", ""))
+			if condition_id in _conditions:
+				parts.append(
+					"%s %s" % [
+						String(definition.get("icon", "•")),
+						String(definition.get("name", condition_id))
+					]
+				)
+	parts.append_array(_active_spell_display_parts)
 	return parts
 
 
@@ -948,16 +952,28 @@ func set_active_spell_ids(value: Variant) -> void:
 			var spell_id: String = String(entry).strip_edges()
 			if not spell_id.is_empty() and not (spell_id in result):
 				result.append(spell_id)
+	if _active_spell_ids == result:
+		return
 	_active_spell_ids = result
+	# Resolve catalog names only when the applied spells change; tactical
+	# badges are polled frequently on both 2D and 3D views.
+	_active_spell_display_parts.clear()
+	for spell_id: String in _active_spell_ids:
+		var spell: Dictionary = SpellCatalog.catalog_spell(spell_id)
+		_active_spell_display_parts.append("✨ " + String(spell.get("name", spell_id)))
 
 
 func add_active_spell_id(spell_id: String) -> void:
 	if not spell_id.is_empty() and not (spell_id in _active_spell_ids):
-		_active_spell_ids.append(spell_id)
+		var updated: Array[String] = _active_spell_ids.duplicate()
+		updated.append(spell_id)
+		set_active_spell_ids(updated)
 
 
 func remove_active_spell_id(spell_id: String) -> void:
-	_active_spell_ids.erase(spell_id)
+	var updated: Array[String] = _active_spell_ids.duplicate()
+	updated.erase(spell_id)
+	set_active_spell_ids(updated)
 	if _concentrating_spell_id == spell_id:
 		set_concentrating_spell_id("")
 
