@@ -393,7 +393,8 @@ func _refresh_origins() -> void:
 		select.toggle_mode = true
 		select.button_pressed = _selected_origin == sid
 		select.clip_text = true
-		select.text = _origin_label(sid) + (" (%d)" % count if count > 0 else " · da completare")
+		var origin_title: String = String(origin.get("name", _origin_label(sid)))
+		select.text = origin_title + (" (%d)" % count if count > 0 else " · da completare")
 		select.tooltip_text = _origin_description(sid)
 		if pending.has(sid):
 			select.tooltip_text += "\n\n⚠ Scegli la caratteristica da aumentare"
