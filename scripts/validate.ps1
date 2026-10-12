@@ -111,15 +111,53 @@ if ($version -notmatch "^4\.7\.2\.stable") {
 $fastTests = @(
     "test_initiative_tracker.gd",
     "test_spell_catalog_smoke.gd",
+    "test_spellcasting_initial_resources.gd",
+    "test_spell_catalog_edition_geometry.gd",
     "test_spell_targeting_lifecycle.gd",
     "test_board_smoke.gd",
+    # Creature-sheet interactions are a common source of parser/UI regressions:
+    # validate them before independent tactical-grid rendering assertions.
+    "test_structured_resource_trackers.gd",
+    "test_structured_numeric_bonuses.gd",
+    "test_split_item_bonuses.gd",
+    "test_movement_speeds.gd",
+    "test_creature_equipment_regressions.gd",
+    "test_bonus_origin_highlight.gd",
+    "test_benefit_first_origins_trackers.gd",
+    "test_spell_origins.gd",
+    "test_inventory_quantities.gd",
+    "test_item_catalog_search.gd",
+    # test_creature_sheet_ui.gd is an expensive UI integration test (up to 300s).
+    # Keep it in -FullTests; do not block the fast validation on it.
+    "test_creature_gui_layout.gd",
+    "test_creature_gui_locale.gd",
+    "test_equipped_weapons.gd",
+    "test_damage_defenses.gd",
+    "test_creature_formula_bonuses.gd",
+    "test_proficiency_sources.gd",
+    "test_trait_origins.gd",
+    "test_race_subrace_selection.gd",
+    "test_dialog_layout.gd",
+    "test_tactical_overlay.gd",
+    "test_creature_presence.gd",
+    "test_camera_2d_height.gd",
+    "test_measurement_token_elevation.gd",
+    "test_grid_2d_elevation_colors.gd",
     "test_encounter_sync_scripts.gd",
+    "test_creature_sheets.gd",
+    "test_creature_archive_revisions.gd",
+    "test_creature_reference_completion.gd",
+    "test_initiative_creature_selection.gd",
+    "test_content_catalog.gd",
+    "test_compendium_descriptions.gd",
+    "test_creature_sync.gd",
     "test_item_transport.gd",
     "test_item_board_integration.gd",
     "test_dice_chat_sync.gd",
     "test_flanking_geometry.gd",
     "test_token_unique_names.gd",
-    "test_token_spawn_targeting.gd"
+    "test_token_spawn_targeting.gd",
+    "test_bestiary_token_hat.gd"
 )
 
 if ($FullTests) {
@@ -145,16 +183,28 @@ if ($FullTests) {
 foreach ($test in $testFiles) {
     $relative = "res://tests/$($test.Name)"
     Write-Host "== $relative =="
-    $testTimeout = if ($FullTests) {
+    $testTimeout = if ($FullTests -and $test.Name -eq "test_creature_sheet_ui.gd") {
+        # Full suite only: exercises hundreds of UI callbacks.
+        300
+    } elseif ($FullTests) {
         90
-    } elseif ($test.Name -in @("test_item_transport.gd", "test_item_board_integration.gd")) {
-        30
+    } elseif ($test.Name -in @("test_item_catalog_search.gd", "test_item_transport.gd", "test_item_board_integration.gd", "test_equipped_weapons.gd", "test_proficiency_sources.gd", "test_trait_origins.gd", "test_bonus_origin_highlight.gd", "test_benefit_first_origins_trackers.gd", "test_race_subrace_selection.gd", "test_compendium_descriptions.gd")) {
+        45
     } else {
         12
     }
+    if ($Tests -and $testTimeout -gt 90) {
+        throw "Fast validation cannot run $($test.Name): timeout $testTimeout exceeds 90 seconds."
+    }
     # Runtime integration tests need normal node initialization, not editor mode.
     $testArguments = @("--headless", "--path", $ProjectRoot, "--script", $relative)
-    Invoke-Godot -Arguments $testArguments -TimeoutSeconds $testTimeout -RequirePass
+    $stopwatch = [System.Diagnostics.Stopwatch]::StartNew()
+    try {
+        Invoke-Godot -Arguments $testArguments -TimeoutSeconds $testTimeout -RequirePass
+    } finally {
+        $stopwatch.Stop()
+        Write-Host ("== {0}: {1:N1}s (limit {2}s) ==" -f $test.Name, $stopwatch.Elapsed.TotalSeconds, $testTimeout)
+    }
 }
 
 Write-Host "Validation passed."

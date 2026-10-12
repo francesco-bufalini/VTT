@@ -1,0 +1,88 @@
+{
+  "_meta": {
+    "sources": [
+      {
+        "json": "HBX",
+        "full": "Homebrew Example",
+        "abbreviation": "HBX"
+      }
+    ]
+  },
+  "monster": [
+    {
+      "name": "Crystal Owl",
+      "source": "HBX",
+      "size": [
+        "S"
+      ],
+      "type": "construct",
+      "ac": [
+        13
+      ],
+      "hp": {
+        "average": 11,
+        "formula": "2d6 + 4"
+      },
+      "cr": "1/4",
+      "str": 6,
+      "dex": 14,
+      "con": 14,
+      "int": 3,
+      "wis": 10,
+      "cha": 6,
+      "trait": [
+        {
+          "name": "Glittering Eyes",
+          "entries": [
+            "The owl emits dim light in a 5-foot radius."
+          ]
+        }
+      ]
+    }
+  ],
+  "spell": [
+    {
+      "name": "Prism Pulse",
+      "source": "HBX",
+      "level": 1,
+      "school": "V",
+      "time": [
+        {
+          "number": 1,
+          "unit": "action"
+        }
+      ],
+      "range": {
+        "type": "point",
+        "distance": {
+          "type": "feet",
+          "amount": 60
+        }
+      },
+      "duration": [
+        {
+          "type": "instant"
+        }
+      ],
+      "entries": [
+        "A flash of light fills a {@dice 10} foot sphere."
+      ]
+    }
+  ],
+  "item": [
+    {
+      "name": "Prismatic Sword",
+      "source": "HBX",
+      "type": "M",
+      "rarity": "rare",
+      "entries": [
+        "This sword glimmers with shifting colors."
+      ],
+      "dmg1": "1d8",
+      "dmgType": "S",
+      "property": [
+        "V"
+      ]
+    }
+  ]
+}

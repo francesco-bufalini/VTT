@@ -85,6 +85,7 @@ func _build_panel() -> void:
 	column.add_child(help)
 
 	var scroll := ScrollContainer.new()
+	scroll.mouse_force_pass_scroll_events = false
 	scroll.size_flags_vertical = Control.SIZE_EXPAND_FILL
 	scroll.horizontal_scroll_mode = ScrollContainer.SCROLL_MODE_DISABLED
 	column.add_child(scroll)

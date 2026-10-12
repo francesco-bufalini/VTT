@@ -5,6 +5,7 @@ signal catalog_failed(message: String)
 signal creature_ready(request_key: String, creature: Dictionary)
 signal creature_failed(request_key: String, message: String)
 
+const ContentCatalog = preload("res://vtt/content_catalog.gd")
 const CACHE_DIR := "user://vtt_5etools_bestiary"
 const SEARCH_CACHE := CACHE_DIR + "/search_index.json"
 const SOURCE_CACHE := CACHE_DIR + "/source_index.json"
@@ -37,7 +38,7 @@ func load_catalog(force_refresh: bool = false) -> void:
 	if _http == null:
 		setup()
 	if not force_refresh and _load_catalog_from_cache():
-		catalog_ready.emit(_catalog.duplicate(true))
+		catalog_ready.emit(ContentCatalog.merge("monsters", _catalog))
 		return
 
 	_catalog_requested = true
@@ -58,7 +59,7 @@ func load_catalog(force_refresh: bool = false) -> void:
 
 
 func catalog() -> Array[Dictionary]:
-	return _catalog.duplicate(true)
+	return ContentCatalog.merge("monsters", _catalog)
 
 
 func request_creature(
@@ -66,6 +67,10 @@ func request_creature(
 	source: String,
 	request_key: String
 ) -> void:
+	for row: Dictionary in ContentCatalog.merge("monsters", _catalog):
+		if row.get("origin") == "homebrew" and String(row.get("name", "")).nocasecmp_to(creature_name) == 0 and String(row.get("source", "")).nocasecmp_to(source) == 0:
+			creature_ready.emit(request_key, row.duplicate(true))
+			return
 	if _http == null:
 		setup()
 
@@ -99,7 +104,7 @@ func _request_creature_now(
 	if filename.is_empty():
 		creature_failed.emit(
 			request_key,
-			"Nessun file 5eTools trovato per la fonte %s." % source
+			"Nessun file del bestiario trovato per la fonte %s." % source
 		)
 		return
 
@@ -245,7 +250,7 @@ func _on_request_completed(
 				if creature.is_empty():
 					creature_failed.emit(
 						request_key,
-						"Creatura non trovata nel file 5eTools."
+						"Creatura non trovata nel bestiario."
 					)
 				else:
 					_deliver_or_resolve_copy(
@@ -304,12 +309,12 @@ func _retry_or_fail(message: String) -> void:
 	elif kind in ["source_index", "search_index"]:
 		if _load_catalog_from_cache():
 			_catalog_requested = false
-			catalog_ready.emit(_catalog.duplicate(true))
+			catalog_ready.emit(ContentCatalog.merge("monsters", _catalog))
 			_queue.clear()
 		else:
 			_catalog_requested = false
 			catalog_failed.emit(
-				"Impossibile caricare il bestiario 5eTools: " + message
+				"Impossibile caricare il bestiario: " + message
 			)
 			_queue.clear()
 
@@ -491,7 +496,7 @@ func _finish_catalog_if_ready() -> void:
 	if _source_files.is_empty() or _catalog.is_empty():
 		return
 	_catalog_requested = false
-	catalog_ready.emit(_catalog.duplicate(true))
+	catalog_ready.emit(ContentCatalog.merge("monsters", _catalog))
 
 
 func _find_creature(

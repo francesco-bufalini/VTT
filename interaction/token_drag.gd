@@ -50,8 +50,19 @@ func handle_event(event: InputEvent) -> bool:
 		return false
 	if board._ui_owns_mouse or board.color_dialog.visible or board.measurement_tool.is_measurement_mode():
 		return false
-	var point: Vector2 = board._screen_center() if Input.mouse_mode == Input.MOUSE_MODE_CAPTURED else event.position
-	var hit: Dictionary = board._raycast_from_screen(point, 0xFFFFFFFF, true)
+	var point: Vector2 = (
+		board._screen_center()
+		if Input.mouse_mode == Input.MOUSE_MODE_CAPTURED
+		else event.position
+	)
+	# Il drag deve partire dal token, non dal primo collider 3D incontrato.
+	# È essenziale sulle mappe multiquota (es. Siren's Light), dove una vista
+	# zenitale può attraversare ponti e sovrastrutture prima della miniatura.
+	var hit: Dictionary = {}
+	if bool(board.call("is_2d_view_enabled")):
+		hit = board._raycast_token_from_screen(point, true)
+	else:
+		hit = board._raycast_from_screen(point, 0xFFFFFFFF, true)
 	if hit.is_empty():
 		return false
 	var target: Node = board._find_interaction_target(hit.collider)
@@ -99,6 +110,24 @@ func begin(tokens: Array[CharacterBody3D], anchor_token: CharacterBody3D) -> voi
 func update_preview(screen_point: Vector2) -> void:
 	var origin: Vector3 = board.camera.project_ray_origin(screen_point)
 	var direction: Vector3 = board.camera.project_ray_normal(screen_point)
+	if (
+		bool(board.call("is_2d_view_enabled"))
+		and board.camera.has_method("get_top_down_level")
+	):
+		# The 2D icon is projected onto the selected slice, even when the
+		# real token lies above or below it. Drag on that slice while keeping
+		# the creature's actual elevation unchanged.
+		var slice_y: float = float(board.camera.call("get_top_down_level"))
+		var surface_point: Variant = Plane(Vector3.UP, slice_y).intersects_ray(
+			origin,
+			direction
+		)
+		if surface_point is Vector3:
+			var map_point: Vector3 = surface_point as Vector3
+			preview_at(Vector3(map_point.x, _anchor.y, map_point.z), _support)
+		else:
+			_valid = false
+		return
 	var hit: Dictionary = board._raycast_from_screen(screen_point, 1 | 4, false)
 	if not hit.is_empty():
 		for token in _tokens:
@@ -198,6 +227,10 @@ func finish(commit: bool) -> void:
 		if not is_instance_valid(token):
 			continue
 		if committed_move:
+			# Dragging a rider explicitly is a dismount action, not an
+			# attempt to move the mount underneath the rider.
+			if board.get("mount_controller") != null and board.mount_controller.is_mounted(token):
+				board.mount_controller.dismount(token)
 			token.global_position = _targets[index]
 			if token.has_method("snap_horizontal_to_grid"):
 				token.call("snap_horizontal_to_grid")

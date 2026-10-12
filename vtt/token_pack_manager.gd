@@ -1,5 +1,7 @@
 extends Node
 
+signal bestiary_texture_ready(url: String, texture: Texture2D)
+
 signal catalog_updated(entries: Array[Dictionary])
 signal catalog_refresh_failed(message: String)
 signal token_downloaded(token_id: String, cache_path: String)
@@ -774,3 +776,111 @@ func _sort_entries(a: Dictionary, b: Dictionary) -> bool:
 			String(b.get("name", b.get("id", "")))
 		) < 0
 	)
+
+
+# References are keyed by miniature identity, never by the displayed token name.
+var _bestiary_entries: Dictionary = {}
+var _bestiary_loaded: bool = false
+var _bestiary_textures: Dictionary = {}
+var _bestiary_pending: Array[String] = []
+var _bestiary_attempted: Dictionary = {}
+var _bestiary_image_request: HTTPRequest
+var _bestiary_active_url: String = ""
+
+
+func miniature_identity(pack_id: String, visual_path: String) -> String:
+	# A transformed token's visual path takes precedence over its old pack id.
+	var stem := visual_path.get_file().get_basename().trim_suffix("_visual")
+	if not visual_path.is_empty():
+		return stem.to_lower()
+	return pack_id.strip_edges().get_file().trim_suffix(".pck").to_lower()
+
+
+func get_bestiary_reference(identity: String, edition: String) -> Dictionary:
+	if not _bestiary_loaded:
+		_bestiary_loaded = true
+		var file := FileAccess.open("res://vtt/data/miniature_bestiary.json", FileAccess.READ)
+		if file != null:
+			var parsed: Variant = JSON.parse_string(file.get_as_text())
+			if parsed is Dictionary:
+				_bestiary_entries = parsed.get("entries", {})
+	var entry: Dictionary = _bestiary_entries.get(identity, {})
+	var editions: Dictionary = entry.get("editions", {})
+	var reference: Dictionary = editions.get(edition, {})
+	return reference.duplicate(true)
+
+
+func get_bestiary_token_url(identity: String) -> String:
+	for edition in ["2024", "2014"]:
+		var reference := get_bestiary_reference(identity, edition)
+		var url := String(reference.get("token_url", ""))
+		if not url.is_empty():
+			return url
+	return ""
+
+
+func get_bestiary_texture(url: String) -> Texture2D:
+	return _bestiary_textures.get(url) as Texture2D
+
+
+func request_bestiary_texture(url: String) -> void:
+	if url.is_empty() or _bestiary_attempted.has(url):
+		return
+	_bestiary_attempted[url] = true
+	var cached_path := CACHE_DIR.path_join("bestiary/" + url.sha256_text() + ".img")
+	if FileAccess.file_exists(cached_path):
+		var texture := _decode_bestiary_image(FileAccess.get_file_as_bytes(cached_path))
+		if texture != null:
+			_bestiary_textures[url] = texture
+			bestiary_texture_ready.emit(url, texture)
+			return
+	# No network traffic during headless regression tests.
+	if DisplayServer.get_name() == "headless":
+		return
+	_bestiary_pending.append(url)
+	_start_next_bestiary_image()
+
+
+func _start_next_bestiary_image() -> void:
+	if not _bestiary_active_url.is_empty() or _bestiary_pending.is_empty():
+		return
+	if _bestiary_image_request == null:
+		_bestiary_image_request = HTTPRequest.new()
+		_bestiary_image_request.timeout = 15.0
+		_bestiary_image_request.body_size_limit = 8 * 1024 * 1024
+		add_child(_bestiary_image_request)
+		_bestiary_image_request.request_completed.connect(_on_bestiary_image_completed)
+	_bestiary_active_url = _bestiary_pending.pop_front()
+	if _bestiary_image_request.request(_bestiary_active_url) != OK:
+		_bestiary_active_url = ""
+		call_deferred("_start_next_bestiary_image")
+
+
+func _decode_bestiary_image(body: PackedByteArray) -> Texture2D:
+	var image := Image.new()
+	var error := image.load_webp_from_buffer(body)
+	if error != OK:
+		error = image.load_png_from_buffer(body)
+	if error != OK:
+		error = image.load_jpg_from_buffer(body)
+	if error != OK or image.is_empty():
+		return null
+	return ImageTexture.create_from_image(image)
+
+
+func _on_bestiary_image_completed(
+	result: int, response_code: int, _headers: PackedStringArray, body: PackedByteArray
+) -> void:
+	var url := _bestiary_active_url
+	_bestiary_active_url = ""
+	if result == HTTPRequest.RESULT_SUCCESS and response_code == 200:
+		var texture := _decode_bestiary_image(body)
+		if texture != null:
+			_bestiary_textures[url] = texture
+			var directory := CACHE_DIR.path_join("bestiary")
+			DirAccess.make_dir_recursive_absolute(ProjectSettings.globalize_path(directory))
+			var file := FileAccess.open(directory.path_join(url.sha256_text() + ".img"), FileAccess.WRITE)
+			if file != null:
+				file.store_buffer(body)
+			bestiary_texture_ready.emit(url, texture)
+	call_deferred("_start_next_bestiary_image")

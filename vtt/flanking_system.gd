@@ -18,6 +18,10 @@ var _mutual_material: StandardMaterial3D
 var _mutual_outline_material: StandardMaterial3D
 var _elapsed := 0.0
 var _flanked_ids: Dictionary = {}
+var _last_flanking_state: Array[Dictionary] = []
+var _screen_reach_arrows: Array[Vector3] = []
+var _screen_mutual_markers: Array[Vector3] = []
+var _screen_reach_links: Array[Dictionary] = []
 
 
 func setup(root: Node3D) -> void:
@@ -52,92 +56,51 @@ func refresh_now() -> void:
 		):
 			tokens.append(node as CharacterBody3D)
 
-	_flanked_ids.clear()
-	var visible_badge_targets: Dictionary = {}
+	var current_state: Array[Dictionary] = []
+	var safe_cell := maxf(float(board_root.get("cell_size")), 0.001)
 	for token: CharacterBody3D in tokens:
-		token.set_meta("flanked", false)
-
-	var arrow_points: Array[Vector3] = []
-	var mutual_marker_points: Array[Vector3] = []
-	for target: CharacterBody3D in tokens:
-		for first_index: int in range(tokens.size()):
-			var first: CharacterBody3D = tokens[first_index]
-			if first == target:
-				continue
-
-			var target_party := _party_key(target)
-			var first_party := _party_key(first)
-			if not party_keys_are_enemies(first_party, target_party):
-				continue
-			if not _token_reaches_target(first, target):
-				continue
-
-			for second_index: int in range(first_index + 1, tokens.size()):
-				var second: CharacterBody3D = tokens[second_index]
-				if second == target or second == first:
-					continue
-				var second_party := _party_key(second)
-				if not flankers_are_hostile_to_target(
-					first_party,
-					second_party,
-					target_party
-				):
-					continue
-				if not _token_reaches_target(second, target):
-					continue
-
-				var first_half := _token_half_extents(first)
-				var second_half := _token_half_extents(second)
-				var target_half := _token_half_extents(target)
-				var first_center := first.global_position
-				var second_center := second.global_position
-				var target_center := target.global_position
-				var cell_size := maxf(
-					float(board_root.get("cell_size")),
-					0.001
-				)
-				var display_centers := project_centers_to_shared_base(
-					first_center,
-					first_half,
-					second_center,
-					second_half,
-					target_center,
-					target_half,
-					cell_size * 0.49,
-					cell_size * 0.035
-				)
-				var segment := flanking_segment(
-					display_centers[0],
-					first_half,
-					display_centers[1],
-					second_half,
-					display_centers[2],
-					target_half
-				)
-				if segment.size() != 2:
-					continue
-
-				_flanked_ids[target.get_instance_id()] = true
-				target.set_meta("flanked", true)
-
-	# Reach arrows are a tactical hostility layer: every token points only
-	# toward enemy-party tokens currently inside its own reach. Selection and
-	# flanking state do not affect this visualization.
-	var reach_visuals := _build_reach_visuals(tokens)
-	var arrow_value: Variant = reach_visuals.get("arrows", [])
-	if arrow_value is Array:
-		for point: Variant in arrow_value as Array:
-			if point is Vector3:
-				arrow_points.append(point)
-	var mutual_value: Variant = reach_visuals.get("mutual_markers", [])
-	if mutual_value is Array:
-		for point: Variant in mutual_value as Array:
-			if point is Vector3:
-				mutual_marker_points.append(point)
-
+		current_state.append({
+			"id": token.get_instance_id(),
+			"position": token.global_position,
+			"half": _token_half_extents(token),
+			"party": _party_key(token),
+			"reach": maxf(float(token.call("get_reach_feet")), 0.0) if token.has_method("get_reach_feet") else 5.0,
+			"cell": safe_cell
+		})
+	if current_state != _last_flanking_state:
+		_last_flanking_state = current_state
+		_flanked_ids.clear()
+		for target: Dictionary in current_state:
+			var eligible: Array[Dictionary] = []
+			for attacker: Dictionary in current_state:
+				if party_keys_are_enemies(attacker.party, target.party) and tactical_reach_distance_feet(
+					attacker.position, attacker.half, target.position, target.half, safe_cell
+				) <= attacker.reach + EPSILON:
+					eligible.append(attacker)
+			for first_index: int in range(eligible.size() - 1):
+				var first := eligible[first_index]
+				for second_index: int in range(first_index + 1, eligible.size()):
+					var second := eligible[second_index]
+					if flanking_segment(first.position, first.half, second.position,
+						second.half, target.position, target.half).size() == 2:
+						_flanked_ids[target.id] = true
+						break
+				if _flanked_ids.has(target.id):
+					break
+		var reach_visuals := _build_reach_visuals(tokens, current_state)
+		_screen_reach_arrows = reach_visuals.arrows
+		_screen_mutual_markers = reach_visuals.mutual_markers
+		_screen_reach_links = reach_visuals.links
+		_render_arrows(_screen_reach_arrows, _screen_mutual_markers)
+	# Visibility can change without any change to the tactical geometry.
+	_arrow_instance.visible = not (
+		board_root.has_method("is_2d_view_enabled") and bool(board_root.call("is_2d_view_enabled"))
+	)
+	var visible_badge_targets: Dictionary = {}
 	# Affiancato is always shown. Condition text participates only when the
 	# View toggle for condition visuals is enabled.
 	for token: CharacterBody3D in tokens:
+		token.set_meta("flanked", _flanked_ids.has(token.get_instance_id()))
 		var condition_parts := PackedStringArray()
 		if _condition_visuals_visible:
 			condition_parts = _token_condition_display_parts(token)
@@ -152,40 +115,53 @@ func refresh_now() -> void:
 			"text": badge_text,
 		}
 
-	_render_arrows(arrow_points, mutual_marker_points)
 	_refresh_flanking_badges(visible_badge_targets)
 
 
+func get_screen_reach_visuals() -> Dictionary:
+	return {
+		"arrows": _screen_reach_arrows,
+		"mutual_markers": _screen_mutual_markers,
+		"links": _screen_reach_links
+	}
+
+
 func _build_reach_visuals(
-	tokens: Array[CharacterBody3D]
+	tokens: Array[CharacterBody3D], states: Array[Dictionary]
 ) -> Dictionary:
 	var arrows: Array[Vector3] = []
 	var mutual_markers: Array[Vector3] = []
+	var links: Array[Dictionary] = []
 	var safe_cell := maxf(float(board_root.get("cell_size")), 0.001)
 
 	# Work on unordered pairs so reciprocal adjacent reach can be represented
 	# once instead of drawing two arrows on top of each other.
 	for first_index: int in range(tokens.size()):
 		var first := tokens[first_index]
-		if first == null or not is_instance_valid(first):
-			continue
-		var first_half := _token_half_extents(first)
+		var first_state := states[first_index]
+		var first_half: Vector3 = first_state.half
 
 		for second_index: int in range(first_index + 1, tokens.size()):
 			var second := tokens[second_index]
-			if second == null or not is_instance_valid(second):
-				continue
-			if not party_keys_are_enemies(
-				_party_key(first),
-				_party_key(second)
-			):
+			var second_state := states[second_index]
+			if not party_keys_are_enemies(first_state.party, second_state.party):
 				continue
 
-			var second_half := _token_half_extents(second)
-			var first_reaches := _token_reaches_target(first, second)
-			var second_reaches := _token_reaches_target(second, first)
+			var second_half: Vector3 = second_state.half
+			var tactical_distance := tactical_reach_distance_feet(
+				first.global_position, first_half, second.global_position, second_half, safe_cell
+			)
+			var first_reaches: bool = tactical_distance <= first_state.reach + EPSILON
+			var second_reaches: bool = tactical_distance <= second_state.reach + EPSILON
 			if not first_reaches and not second_reaches:
 				continue
+			# The 2D painter uses actual portrait bounds, not 3D mesh segments.
+			# Combine reciprocal links at any reach into one legible marker.
+			links.append({
+				"from": first if first_reaches else second,
+				"to": second if first_reaches else first,
+				"mutual": first_reaches and second_reaches
+			})
 
 			var first_base := first.global_position
 			var second_base := second.global_position
@@ -201,13 +177,6 @@ func _build_reach_visuals(
 				first_base.y = shared_y
 				second_base.y = shared_y
 
-			var tactical_distance := tactical_reach_distance_feet(
-				first.global_position,
-				first_half,
-				second.global_position,
-				second_half,
-				safe_cell
-			)
 			if should_use_mutual_adjacent_marker(
 				first_reaches,
 				second_reaches,
@@ -220,38 +189,18 @@ func _build_reach_visuals(
 					second_half,
 					safe_cell
 				)
-				if marker.size() == 2:
-					mutual_markers.append(marker[0])
-					mutual_markers.append(marker[1])
+				mutual_markers.append_array(marker)
 				continue
 
 			if first_reaches:
-				var first_arrow := reach_arrow_segment(
-					first_base,
-					first_half,
-					second_base,
-					second_half,
-					safe_cell
-				)
-				if first_arrow.size() == 2:
-					arrows.append(first_arrow[0])
-					arrows.append(first_arrow[1])
-
+				arrows.append_array(reach_arrow_segment(first_base, first_half, second_base, second_half, safe_cell))
 			if second_reaches:
-				var second_arrow := reach_arrow_segment(
-					second_base,
-					second_half,
-					first_base,
-					first_half,
-					safe_cell
-				)
-				if second_arrow.size() == 2:
-					arrows.append(second_arrow[0])
-					arrows.append(second_arrow[1])
+				arrows.append_array(reach_arrow_segment(second_base, second_half, first_base, first_half, safe_cell))
 
 	return {
 		"arrows": arrows,
 		"mutual_markers": mutual_markers,
+		"links": links
 	}
 
 
@@ -265,31 +214,43 @@ func are_condition_visuals_visible() -> bool:
 
 
 func _refresh_flanking_badges(targets: Dictionary) -> void:
+	# A creature sheet must never have condition text drawn on top of it,
+	# even while the 3D camera is active. The badges are recreated as soon
+	# as the sheet closes (the tactical system refreshes continuously).
+	var creature_area: Node = (
+		board_root.get_node_or_null("CreatureArea")
+		if board_root != null else null
+	)
+	if (
+		creature_area != null
+		and creature_area.has_method("is_panel_open")
+		and bool(creature_area.call("is_panel_open"))
+	):
+		_clear_flanking_badges()
+		return
+	# The 2D elevation overlay owns its compact status strip; avoid projecting
+	# the 3D badge a second time, which also drifts across sliced floors.
+	if (
+		board_root != null and board_root.has_method("is_2d_view_enabled")
+		and bool(board_root.call("is_2d_view_enabled"))
+	):
+		_clear_flanking_badges()
+		return
 	if ui_root == null or camera == null or not is_instance_valid(camera):
 		_clear_flanking_badges()
 		return
 
-	var stale: Array[int] = []
-	for key: Variant in _flanking_badges.keys():
-		var token_id := int(key)
+	for token_id: int in _flanking_badges.keys():
 		if not targets.has(token_id):
-			stale.append(token_id)
-	for token_id: int in stale:
-		var stale_panel: Variant = _flanking_badges.get(token_id)
-		if stale_panel is Control and is_instance_valid(stale_panel):
-			(stale_panel as Control).queue_free()
-		_flanking_badges.erase(token_id)
+			var stale_panel: Control = _flanking_badges[token_id]
+			if is_instance_valid(stale_panel):
+				stale_panel.queue_free()
+			_flanking_badges.erase(token_id)
 
-	for key: Variant in targets.keys():
-		var token_id := int(key)
-		var item_value: Variant = targets[key]
-		if not item_value is Dictionary:
-			continue
-		var item := item_value as Dictionary
-		var target_value: Variant = item.get("token")
-		if not target_value is CharacterBody3D:
-			continue
-		var target := target_value as CharacterBody3D
+	# Targets are constructed synchronously by refresh_now, never deserialized.
+	for token_id: int in targets:
+		var item: Dictionary = targets[token_id]
+		var target: CharacterBody3D = item.token
 		if not is_instance_valid(target):
 			continue
 
@@ -298,11 +259,10 @@ func _refresh_flanking_badges(targets: Dictionary) -> void:
 			panel = _create_flanking_badge()
 			_flanking_badges[token_id] = panel
 
-		var label := panel.get_node_or_null("Label") as Label
-		if label != null:
-			label.text = String(item.get("text", ""))
-		panel.reset_size()
-		panel.size = panel.get_combined_minimum_size()
+		var label := panel.get_node("Label") as Label
+		if label.text != item.text:
+			label.text = item.text
+			panel.reset_size()
 
 		var world_anchor := target.global_position
 		var height_cells_value: Variant = target.get("token_height_cells")
@@ -343,7 +303,8 @@ func _create_flanking_badge() -> PanelContainer:
 	var panel := PanelContainer.new()
 	panel.name = "FlankingNotice"
 	panel.mouse_filter = Control.MOUSE_FILTER_IGNORE
-	panel.z_index = 95
+	# Below the creature-sheet interface (z=30).
+	panel.z_index = 10
 
 	# Deliberately identical to the opportunity-attack popup style.
 	var style := StyleBoxFlat.new()
@@ -473,26 +434,6 @@ func _party_key(token: Node) -> String:
 	return normalized_party_key(value)
 
 
-func _token_reaches_target(
-	attacker: CharacterBody3D,
-	target: CharacterBody3D
-) -> bool:
-	var cell_size := maxf(float(board_root.get("cell_size")), 0.001)
-	var reach_feet := 5.0
-	if attacker.has_method("get_reach_feet"):
-		reach_feet = maxf(float(attacker.call("get_reach_feet")), 0.0)
-	return (
-		tactical_reach_distance_feet(
-			attacker.global_position,
-			_token_half_extents(attacker),
-			target.global_position,
-			_token_half_extents(target),
-			cell_size
-		)
-		<= reach_feet + EPSILON
-	)
-
-
 func _token_half_extents(token: CharacterBody3D) -> Vector3:
 	return token_half_extents_world(
 		token,
@@ -509,12 +450,12 @@ static func token_half_extents_world(
 	if token != null and token.has_method("get_footprint_cells"):
 		footprint_cells = maxf(
 			float(token.call("get_footprint_cells")),
-			0.5
+			1.0 # Tiny still occupies one tactical square.
 		)
 	elif token != null:
 		var footprint_value: Variant = token.get("_footprint_cells")
 		if footprint_value is float or footprint_value is int:
-			footprint_cells = maxf(float(footprint_value), 0.5)
+			footprint_cells = maxf(float(footprint_value), 1.0)
 
 	var height_cells := 2.0
 	if token != null:
@@ -547,16 +488,16 @@ static func tactical_reach_distance_feet(
 			second_half,
 			safe_cell
 		)
-	return (
-		aabb_gap_distance_world(
-			first_center,
-			first_half,
-			second_center,
-			second_half
-		)
-		/ safe_cell
-		* 5.0
-	)
+	# Never switch to continuous hitbox-edge distance just because the
+	# spawn heights differ. That used to turn a one-square gap (10 ft on
+	# the tactical grid) into a 5 ft edge gap until a token was moved.
+	# In 3D, count the intervening grid cells on all three axes using
+	# the same diagonal/Chebyshev convention as the flat tactical grid.
+	var delta: Vector3 = (second_center - first_center).abs()
+	var gap_x: float = maxf(delta.x - first_half.x - second_half.x, 0.0)
+	var gap_y: float = maxf(delta.y - first_half.y - second_half.y, 0.0)
+	var gap_z: float = maxf(delta.z - first_half.z - second_half.z, 0.0)
+	return _tactical_gap_feet(maxf(gap_x, maxf(gap_y, gap_z)), safe_cell)
 
 
 static func bases_share_tactical_plane(
@@ -572,6 +513,17 @@ static func bases_share_tactical_plane(
 	return absf(first_base_y - second_base_y) < safe_cell * 0.5
 
 
+static func _tactical_gap_feet(empty_span: float, cell_size: float) -> float:
+	var safe_cell := maxf(cell_size, EPSILON)
+	# The first occupied square always counts as the first 5 ft. Every
+	# complete or partial intervening square adds another tactical step.
+	# Bias integer boundaries only to suppress floating-point jitter.
+	var empty_cells: int = maxi(0, ceili(
+		(empty_span - EPSILON * safe_cell) / safe_cell
+	))
+	return float(empty_cells + 1) * 5.0
+
+
 static func grid_reach_distance_feet(
 	first_center: Vector3,
 	first_half: Vector3,
@@ -579,24 +531,10 @@ static func grid_reach_distance_feet(
 	second_half: Vector3,
 	cell_size: float
 ) -> float:
-	var safe_cell := maxf(cell_size, EPSILON)
-	var delta := (second_center - first_center).abs()
-	var gap_x := maxf(delta.x - first_half.x - second_half.x, 0.0)
-	var gap_z := maxf(delta.z - first_half.z - second_half.z, 0.0)
-	var empty_span := maxf(gap_x, gap_z)
-
-	# Adjacent bases have an empty span of zero and are one grid step apart.
-	# An exact one-cell empty span means there is one whole square between
-	# the creatures, hence two grid steps.
-	var empty_cells := int(floor((empty_span + EPSILON) / safe_cell))
-	if empty_span > EPSILON and is_equal_approx(
-		empty_span,
-		float(empty_cells) * safe_cell
-	):
-		empty_cells = maxi(empty_cells, 1)
-	elif empty_span > float(empty_cells) * safe_cell + EPSILON:
-		empty_cells += 1
-	return float(empty_cells + 1) * 5.0
+	var delta: Vector3 = (second_center - first_center).abs()
+	var gap_x: float = maxf(delta.x - first_half.x - second_half.x, 0.0)
+	var gap_z: float = maxf(delta.z - first_half.z - second_half.z, 0.0)
+	return _tactical_gap_feet(maxf(gap_x, gap_z), cell_size)
 
 
 static func project_centers_to_shared_base(
@@ -650,30 +588,290 @@ static func flanking_segment(
 	target_center: Vector3,
 	target_half: Vector3
 ) -> PackedVector3Array:
-	# D&D 5e DMG square-grid rule: the line between the centers of the
-	# flankers' spaces must cross opposite sides or opposite corners of the
-	# target's space. Adjacent side/corner "L" arrangements do not qualify.
-	if not centers_cross_opposite_borders(
-		first_center,
-		second_center,
-		target_center,
-		target_half
-	):
-		return PackedVector3Array()
+	# Exact AABB transversal feasibility (up to floating-point tolerance).
+	# Let t and s be the fractions of the line between two box points at
+	# its entry and exit through a chosen pair of opposite target faces.
+	# Both the longitudinal box bounds and the transverse box/face bounds
+	# reduce to LINEAR inequalities in (t, s). Clip a 2D convex polygon
+	# instead of sampling endpoints, corners, voxels or world-space rays.
+	for axis: int in range(3):
+		var result := _flanking_on_axis(
+			first_center, first_half, second_center, second_half,
+			target_center, target_half, axis
+		)
+		if result.size() == 2:
+			return result
+		result = _flanking_on_axis(
+			second_center, second_half, first_center, first_half,
+			target_center, target_half, axis
+		)
+		if result.size() == 2:
+			return PackedVector3Array([result[1], result[0]])
+	return PackedVector3Array()
 
-	var delta := second_center - first_center
-	if delta.length_squared() <= EPSILON * EPSILON:
-		return PackedVector3Array()
 
-	var direction := delta.normalized()
-	var first_boundary := _box_boundary_distance(first_half, direction)
-	var second_boundary := _box_boundary_distance(second_half, -direction)
-	var start := first_center + direction * first_boundary
-	var end := second_center - direction * second_boundary
-	if start.distance_squared_to(end) <= EPSILON * EPSILON:
+static func _flanking_on_axis(
+	first_center: Vector3,
+	first_half: Vector3,
+	second_center: Vector3,
+	second_half: Vector3,
+	target_center: Vector3,
+	target_half: Vector3,
+	axis: int
+) -> PackedVector3Array:
+	var target_min := target_center[axis] - target_half[axis]
+	var target_max := target_center[axis] + target_half[axis]
+	var first_min := first_center[axis] - first_half[axis]
+	var first_max := first_center[axis] + first_half[axis]
+	var second_min := second_center[axis] - second_half[axis]
+	var second_max := second_center[axis] + second_half[axis]
+	var margin := maxf(0.000001, minf(
+		target_half.x, minf(target_half.y, target_half.z)
+	) * 0.0001)
+	if first_min >= target_min - margin or second_max <= target_max + margin:
 		return PackedVector3Array()
+	var width := target_max - target_min
 
-	return PackedVector3Array([start, end])
+	# 0 < t < s < 1: the segment spans both opposing faces rather
+	# than merely touching the outside of the target.
+	var e := 0.000001
+	var base_polygon := PackedVector2Array([
+		Vector2(e, e * 2.0),
+		Vector2(e, 1.0 - e),
+		Vector2(1.0 - e * 2.0, 1.0 - e)
+	])
+	var constraints: Array[Vector3] = [
+		# p_axis >= first_min, p_axis <= first_max
+		Vector3(0.0, target_max - first_min, first_min - target_min),
+		Vector3(0.0, first_max - target_max, target_min - first_max),
+		# q_axis >= second_min, q_axis <= second_max
+		Vector3(-width, target_max - second_min, second_min - target_min),
+		Vector3(width, second_max - target_max, target_min - second_max),
+		# p_axis <= target_min - margin, q_axis >= target_max + margin
+		Vector3(0.0, -(width + margin), margin),
+		Vector3(-width, -margin, width + margin)
+	]
+	for constraint: Vector3 in constraints:
+		base_polygon = _clip_flanking_parameters(base_polygon, constraint)
+		if base_polygon.is_empty():
+			return PackedVector3Array()
+
+	var transverse: Array[int] = []
+	for coordinate: int in range(3):
+		if coordinate != axis:
+			transverse.append(coordinate)
+	# Increasing and decreasing transverse directions are each one convex
+	# system. There are only four sign combinations for the two other axes.
+	for first_sign: int in range(2):
+		var a_index := transverse[0]
+		var a_positive := first_sign == 0
+		var first_polygon := _clip_flanking_transverse(
+			base_polygon,
+			first_center[a_index] - first_half[a_index],
+			first_center[a_index] + first_half[a_index],
+			second_center[a_index] - second_half[a_index],
+			second_center[a_index] + second_half[a_index],
+			target_center[a_index] - target_half[a_index] + margin,
+			target_center[a_index] + target_half[a_index] - margin,
+			a_positive
+		)
+		if first_polygon.is_empty():
+			continue
+		for second_sign: int in range(2):
+			var b_index := transverse[1]
+			var b_positive := second_sign == 0
+			var possible := _clip_flanking_transverse(
+				first_polygon,
+				first_center[b_index] - first_half[b_index],
+				first_center[b_index] + first_half[b_index],
+				second_center[b_index] - second_half[b_index],
+				second_center[b_index] + second_half[b_index],
+				target_center[b_index] - target_half[b_index] + margin,
+				target_center[b_index] + target_half[b_index] - margin,
+				b_positive
+			)
+			if possible.is_empty():
+				continue
+
+			# The centroid of feasible fractions also satisfies every linear
+			# constraint. Recover points inside the two occupied volumes.
+			var fractions := Vector2.ZERO
+			for candidate: Vector2 in possible:
+				fractions += candidate
+			fractions /= float(possible.size())
+			var t := fractions.x
+			var u := fractions.y
+			var start := first_center
+			var end := second_center
+			start[axis] = (u * target_min - t * target_max) / (u - t)
+			end[axis] = ((1.0 - t) * target_max - (1.0 - u) * target_min) / (u - t)
+			var signs := [a_positive, b_positive]
+			var valid := true
+			for index: int in range(2):
+				var j := transverse[index]
+				var endpoints := _flanking_transverse_witness(
+					t, u,
+					first_center[j] - first_half[j],
+					first_center[j] + first_half[j],
+					second_center[j] - second_half[j],
+					second_center[j] + second_half[j],
+					target_center[j] - target_half[j] + margin,
+					target_center[j] + target_half[j] - margin,
+					bool(signs[index])
+				)
+				if not is_finite(endpoints.x) or not is_finite(endpoints.y):
+					valid = false
+					break
+				start[j] = endpoints.x
+				end[j] = endpoints.y
+			if valid:
+				return PackedVector3Array([start, end])
+	return PackedVector3Array()
+
+
+static func _clip_flanking_transverse(
+	polygon: PackedVector2Array,
+	first_min: float,
+	first_max: float,
+	second_min: float,
+	second_max: float,
+	target_min: float,
+	target_max: float,
+	increasing: bool
+) -> PackedVector2Array:
+	# Write transverse endpoints as p and q=p+w (increasing), or q=p-w
+	# (decreasing), with w>=0. Eliminating p and w gives 16 constraints
+	# lower_w <= upper_w. Each denominator is one of
+	# 1, t, u, 1-t, 1-u, u-t (all strictly positive).
+	var one := Vector3(1.0, 0.0, 0.0)
+	var t := Vector3(0.0, 1.0, 0.0)
+	var u := Vector3(0.0, 0.0, 1.0)
+	var one_minus_t := Vector3(1.0, -1.0, 0.0)
+	var one_minus_u := Vector3(1.0, 0.0, -1.0)
+	var delta := Vector3(0.0, -1.0, 1.0)
+	var lower_numbers := PackedFloat32Array()
+	var upper_numbers := PackedFloat32Array()
+	var lower_denominators: Array[Vector3] = []
+	var upper_denominators: Array[Vector3] = []
+	if increasing:
+		lower_numbers = PackedFloat32Array([
+			0.0, second_min - first_max,
+			second_min - target_max, target_min - first_max
+		])
+		lower_denominators = [one, one, one_minus_u, t]
+		upper_numbers = PackedFloat32Array([
+			second_max - first_min, target_max - first_min,
+			second_max - target_min, target_max - target_min
+		])
+		upper_denominators = [one, u, one_minus_t, delta]
+	else:
+		lower_numbers = PackedFloat32Array([
+			0.0, first_min - second_max,
+			first_min - target_max, target_min - second_max
+		])
+		lower_denominators = [one, one, t, one_minus_u]
+		upper_numbers = PackedFloat32Array([
+			first_max - second_min, target_max - second_min,
+			first_max - target_min, target_max - target_min
+		])
+		upper_denominators = [one, one_minus_t, u, delta]
+
+	for lo: int in range(4):
+		for hi: int in range(4):
+			# lower_num / lower_den <= upper_num / upper_den.
+			# Both denominators are positive, so cross multiplication
+			# produces a linear half-plane in (t,u).
+			var plane: Vector3 = (
+				upper_denominators[hi] * lower_numbers[lo]
+				- lower_denominators[lo] * upper_numbers[hi]
+			)
+			polygon = _clip_flanking_parameters(polygon, plane)
+			if polygon.is_empty():
+				return polygon
+	return polygon
+
+
+static func _clip_flanking_parameters(
+	polygon: PackedVector2Array,
+	plane: Vector3
+) -> PackedVector2Array:
+	if polygon.is_empty():
+		return polygon
+	var clipped := PackedVector2Array()
+	var previous: Vector2 = polygon[polygon.size() - 1]
+	var previous_delta := plane.x + plane.y * previous.x + plane.z * previous.y
+	var previous_inside := previous_delta <= 0.0
+	for current: Vector2 in polygon:
+		var current_delta := plane.x + plane.y * current.x + plane.z * current.y
+		var current_inside := current_delta <= 0.0
+		if previous_inside != current_inside:
+			var crossing := previous_delta / (previous_delta - current_delta)
+			clipped.append(previous.lerp(current, clampf(crossing, 0.0, 1.0)))
+		if current_inside:
+			clipped.append(current)
+		previous = current
+		previous_delta = current_delta
+		previous_inside = current_inside
+	return clipped
+
+
+static func _flanking_transverse_witness(
+	t: float,
+	u: float,
+	first_min: float,
+	first_max: float,
+	second_min: float,
+	second_max: float,
+	target_min: float,
+	target_max: float,
+	increasing: bool
+) -> Vector2:
+	var lower: Array[float] = []
+	var upper: Array[float] = []
+	if increasing:
+		lower = [
+			0.0, second_min - first_max,
+			(second_min - target_max) / (1.0 - u),
+			(target_min - first_max) / t
+		]
+		upper = [
+			second_max - first_min,
+			(target_max - first_min) / u,
+			(second_max - target_min) / (1.0 - t),
+			(target_max - target_min) / (u - t)
+		]
+	else:
+		lower = [
+			0.0, first_min - second_max,
+			(first_min - target_max) / t,
+			(target_min - second_max) / (1.0 - u)
+		]
+		upper = [
+			first_max - second_min,
+			(target_max - second_min) / (1.0 - t),
+			(first_max - target_min) / u,
+			(target_max - target_min) / (u - t)
+		]
+	var minimum_slope: float = float(lower.max())
+	var maximum_slope: float = float(upper.min())
+	if minimum_slope > maximum_slope + EPSILON:
+		return Vector2(INF, INF)
+	var w: float = (minimum_slope + maximum_slope) * 0.5
+	var low: float
+	var high: float
+	if increasing:
+		low = maxf(first_min, maxf(second_min - w, target_min - t * w))
+		high = minf(first_max, minf(second_max - w, target_max - u * w))
+	else:
+		low = maxf(first_min, maxf(second_min + w, target_min + u * w))
+		high = minf(first_max, minf(second_max + w, target_max + t * w))
+	if low > high + EPSILON:
+		return Vector2(INF, INF)
+	var first_coordinate := (low + high) * 0.5
+	return Vector2(
+		first_coordinate,
+		first_coordinate + w if increasing else first_coordinate - w
+	)
 
 
 static func centers_form_flanking_pair(
@@ -1087,82 +1285,28 @@ func _render_arrows(
 		return
 
 	_arrow_mesh.clear_surfaces()
-	if points.is_empty() and mutual_points.is_empty():
-		return
-
 	var safe_cell := maxf(float(board_root.get("cell_size")), 0.001)
-	var body_half_width := safe_cell * 0.028
-	var head_half_width := safe_cell * 0.095
-
-	if not points.is_empty():
-		# One-way / longer-range arrows.
-		_arrow_mesh.surface_begin(
-			Mesh.PRIMITIVE_TRIANGLES,
-			_line_outline_material
-		)
-		for index: int in range(0, points.size() - 1, 2):
-			_append_flat_arrow_vertices(
-				_arrow_mesh,
-				points[index],
-				points[index + 1],
-				body_half_width * 1.55,
-				head_half_width * 1.28,
-				safe_cell,
-				0.0
-			)
-		_arrow_mesh.surface_end()
-
-		_arrow_mesh.surface_begin(
-			Mesh.PRIMITIVE_TRIANGLES,
-			_line_material
-		)
-		for index: int in range(0, points.size() - 1, 2):
-			_append_flat_arrow_vertices(
-				_arrow_mesh,
-				points[index],
-				points[index + 1],
-				body_half_width,
-				head_half_width,
-				safe_cell,
-				safe_cell * 0.002
-			)
-		_arrow_mesh.surface_end()
-
-	if not mutual_points.is_empty():
-		var mutual_body_half_width := safe_cell * 0.024
-		var mutual_head_half_width := safe_cell * 0.080
-
-		_arrow_mesh.surface_begin(
-			Mesh.PRIMITIVE_TRIANGLES,
-			_mutual_outline_material
-		)
-		for index: int in range(0, mutual_points.size() - 1, 2):
-			_append_double_arrow_vertices(
-				_arrow_mesh,
-				mutual_points[index],
-				mutual_points[index + 1],
-				mutual_body_half_width * 1.55,
-				mutual_head_half_width * 1.30,
-				safe_cell,
-				0.0
-			)
-		_arrow_mesh.surface_end()
-
-		_arrow_mesh.surface_begin(
-			Mesh.PRIMITIVE_TRIANGLES,
-			_mutual_material
-		)
-		for index: int in range(0, mutual_points.size() - 1, 2):
-			_append_double_arrow_vertices(
-				_arrow_mesh,
-				mutual_points[index],
-				mutual_points[index + 1],
-				mutual_body_half_width,
-				mutual_head_half_width,
-				safe_cell,
-				safe_cell * 0.002
-			)
-		_arrow_mesh.surface_end()
+	# Share the surface lifecycle while retaining each arrow's original geometry.
+	for mutual: bool in [false, true]:
+		var segments := mutual_points if mutual else points
+		if segments.is_empty():
+			continue
+		var append_vertices: Callable = _append_double_arrow_vertices if mutual else _append_flat_arrow_vertices
+		var body_half_width := safe_cell * (0.024 if mutual else 0.028)
+		var head_half_width := safe_cell * (0.080 if mutual else 0.095)
+		for outline: bool in [true, false]:
+			var material := _mutual_material if mutual else _line_material
+			if outline:
+				material = _mutual_outline_material if mutual else _line_outline_material
+			_arrow_mesh.surface_begin(Mesh.PRIMITIVE_TRIANGLES, material)
+			for index: int in range(0, segments.size() - 1, 2):
+				append_vertices.call(
+					_arrow_mesh, segments[index], segments[index + 1],
+					body_half_width * (1.55 if outline else 1.0),
+					head_half_width * ((1.30 if mutual else 1.28) if outline else 1.0),
+					safe_cell, 0.0 if outline else safe_cell * 0.002
+				)
+			_arrow_mesh.surface_end()
 
 
 static func _append_flat_arrow_vertices(
@@ -1267,4 +1411,3 @@ static func _append_double_arrow_vertices(
 	])
 	for vertex: Vector3 in vertices:
 		mesh.surface_add_vertex(vertex)
-

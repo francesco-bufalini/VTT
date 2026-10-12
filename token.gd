@@ -9,31 +9,9 @@ const MAX_IMPORTED_EXTENT_PER_FOOTPRINT := 3.0
 
 # Condizioni standard D&D 5e / SRD. Gli ID rimangono in inglese per essere
 # stabili nei salvataggi; etichette e pittogrammi sono solo presentazione.
-const CONDITION_DEFINITIONS := [
-	# Le 15 condizioni ufficiali D&D 5e / SRD.
-	{"id": "blinded", "name": "Accecato", "icon": "🙈", "official": true},
-	{"id": "charmed", "name": "Affascinato", "icon": "💘", "official": true},
-	{"id": "deafened", "name": "Assordato", "icon": "🔇", "official": true},
-	{"id": "exhaustion", "name": "Sfinimento", "icon": "🥱", "official": true},
-	{"id": "frightened", "name": "Spaventato", "icon": "😨", "official": true},
-	{"id": "grappled", "name": "Afferrato", "icon": "🪢", "official": true},
-	{"id": "incapacitated", "name": "Incapacitato", "icon": "⛔", "official": true},
-	{"id": "invisible", "name": "Invisibile", "icon": "👻", "official": true},
-	{"id": "paralyzed", "name": "Paralizzato", "icon": "🧊", "official": true},
-	{"id": "petrified", "name": "Pietrificato", "icon": "🗿", "official": true},
-	{"id": "poisoned", "name": "Avvelenato", "icon": "☠️", "official": true},
-	{"id": "prone", "name": "Prono", "icon": "⬇️", "official": true},
-	{"id": "restrained", "name": "Trattenuto", "icon": "⛓️", "official": true},
-	{"id": "stunned", "name": "Stordito", "icon": "💫", "official": true},
-	{"id": "unconscious", "name": "Privo di sensi", "icon": "😴", "official": true},
-
-	# Marker tattici utili nel VTT. Non sono condizioni ufficiali SRD.
-	{"id": "concentrating", "name": "Concentrazione", "icon": "🧠", "official": false},
-	{"id": "surprised", "name": "Sorpreso", "icon": "❗", "official": false},
-	{"id": "hidden", "name": "Nascosto", "icon": "🥷", "official": false},
-	{"id": "dead", "name": "Morto", "icon": "💀", "official": false},
-
-]
+const ContentCatalog = preload("res://vtt/content_catalog.gd")
+const CONDITION_DEFINITIONS = ContentCatalog.LEGACY_CONDITIONS
+var _remote_condition_presentations: Dictionary = {}
 
 @export var cell_size: float = 1.0
 @export var gravity_multiplier: float = 1.0
@@ -43,7 +21,6 @@ const CONDITION_DEFINITIONS := [
 @export var visual_asset_path: String = ""
 @export var visual_native_footprint_cells: float = 0.0
 @export_range(0, 3, 1) var visual_front_quarter_turns: int = 0
-@export_range(-3, 3, 1) var visual_pitch_steps: int = 0
 @export var token_display_name: String = ""
 @export var token_id: String = ""
 @export var token_pack_id: String = ""
@@ -60,6 +37,11 @@ const CONDITION_DEFINITIONS := [
 @onready var selection_marker: MeshInstance3D = $SelectionMarker
 @onready var facing_marker: Node3D = $FacingMarker
 @onready var vision_cone: Node3D = $VisionCone
+
+var _top_down_token_enabled: bool = false
+var _top_down_elevation_overlay_enabled: bool = false
+var _top_down_token_url: String = ""
+var _top_down_token_sprite: Sprite3D
 
 var _selected: bool = false
 var _gravity: float = 9.8
@@ -80,12 +62,6 @@ var _condition_rings_root: Node3D
 var _overlay_root: Node3D
 var _name_label: Label3D
 var _status_label: Label3D
-var _flanking_badge_root: Node3D
-var _flanking_badge_border: MeshInstance3D
-var _flanking_badge_background: MeshInstance3D
-var _flanking_badge_label: Label3D
-var _flanking_badge_border_material: StandardMaterial3D
-var _flanking_badge_background_material: StandardMaterial3D
 var _hp_bar_root: Node3D
 var _hp_bar_mesh: MeshInstance3D
 var _hp_bar_material: StandardMaterial3D
@@ -104,6 +80,8 @@ const MAX_TRANSFORMATION_HISTORY := 16
 
 
 func _ready() -> void:
+	_token_pack_manager().bestiary_texture_ready.connect(_on_bestiary_texture_ready)
+	call_deferred("_sync_top_down_token_with_board")
 	add_to_group("dnd_token")
 	platform_floor_layers = 1
 	platform_on_leave = CharacterBody3D.PLATFORM_ON_LEAVE_DO_NOTHING
@@ -115,7 +93,6 @@ func _ready() -> void:
 	_footprint_cells = maxf(default_footprint_cells, 0.5)
 	_reach_feet = _default_reach_feet()
 	_load_configured_visual()
-	_apply_visual_pitch()
 	_ensure_token_overlay()
 	set_token_size(_footprint_cells)
 	# I token partono sempre sospesi. La gravità viene attivata solo
@@ -436,6 +413,7 @@ func set_visual_asset(
 
 	visual_asset_path = requested_path
 	_loaded_visual_asset_path = requested_path
+	call_deferred("_refresh_top_down_token")
 	_apply_imported_visual_front()
 	_position_imported_visual()
 	return true
@@ -676,6 +654,7 @@ func _clear_imported_visual() -> void:
 	visuals.remove_child(current)
 	current.queue_free()
 	_loaded_visual_asset_path = ""
+	call_deferred("_refresh_top_down_token")
 	_imported_visual_base_basis = Basis.IDENTITY
 	_visual_native_footprint_cells = 1.0
 	_rig_type = "static"
@@ -857,6 +836,7 @@ func set_token_size(footprint_cells: float) -> void:
 	_position_imported_visual()
 	_update_overlay_position()
 	_update_condition_rings()
+	_refresh_top_down_token_geometry()
 
 
 func _ensure_token_id() -> void:
@@ -882,6 +862,8 @@ func get_token_id() -> String:
 
 func set_token_pack_id(value: String) -> void:
 	token_pack_id = value.strip_edges().left(96)
+	if is_node_ready():
+		call_deferred("_refresh_top_down_token")
 
 
 func get_token_pack_id() -> String:
@@ -893,7 +875,10 @@ func set_display_name(value: String) -> void:
 	_ensure_token_overlay()
 	if is_instance_valid(_name_label):
 		_name_label.text = token_display_name
-		_name_label.visible = not token_display_name.is_empty()
+		_name_label.visible = (
+			not token_display_name.is_empty()
+			and not _top_down_elevation_overlay_enabled
+		)
 
 
 func get_display_name() -> String:
@@ -914,7 +899,14 @@ func get_effective_party_id() -> String:
 
 
 func get_condition_definitions() -> Array:
-	return CONDITION_DEFINITIONS.duplicate(true)
+	var rows := ContentCatalog.condition_definitions(String(get_meta("rules_version", "2014")))
+	var known: Dictionary = {}
+	for row: Dictionary in rows:
+		known[String(row.id)] = true
+	for id: String in _conditions:
+		if not known.has(id):
+			rows.append(_remote_condition_presentations.get(id, {"id": id, "name": id, "icon": "•"}).duplicate(true))
+	return rows
 
 
 func get_conditions() -> Array[String]:
@@ -924,7 +916,11 @@ func get_conditions() -> Array[String]:
 
 func get_active_condition_display_parts() -> PackedStringArray:
 	var parts := PackedStringArray()
-	for definition: Dictionary in CONDITION_DEFINITIONS:
+	# Called on every tactical refresh. Most tokens have no conditions;
+	# do not rebuild the entire 5etools conditions catalog for them.
+	if _conditions.is_empty():
+		return parts
+	for definition: Dictionary in get_condition_definitions():
 		var condition_id := String(definition.get("id", ""))
 		if condition_id in _conditions:
 			parts.append(
@@ -972,10 +968,24 @@ func set_conditions(value: Variant) -> void:
 
 
 func _is_valid_condition(condition_id: String) -> bool:
-	for definition: Dictionary in CONDITION_DEFINITIONS:
-		if String(definition.get("id", "")) == condition_id:
-			return true
-	return false
+	return ContentCatalog.valid_effect_id(condition_id)
+
+
+func get_condition_presentations() -> Array[Dictionary]:
+	var rows: Array[Dictionary] = []
+	if _conditions.is_empty():
+		return rows
+	for definition: Dictionary in get_condition_definitions():
+		if String(definition.id) in _conditions:
+			rows.append({"id": String(definition.id), "name": String(definition.get("name", definition.id)).left(120), "icon": String(definition.get("icon", "•")).left(16)})
+	return rows
+
+
+func set_condition_presentations(rows: Array) -> void:
+	_remote_condition_presentations.clear()
+	for raw: Variant in rows:
+		if raw is Dictionary and ContentCatalog.valid_effect_id(String(raw.get("id", ""))):
+			_remote_condition_presentations[String(raw.id)] = {"id": String(raw.id), "name": String(raw.get("name", raw.id)).left(120), "icon": String(raw.get("icon", "•")).left(16)}
 
 
 func _condition_ring_color(condition_id: String) -> Color:
@@ -1114,7 +1124,7 @@ func _update_condition_rings() -> void:
 	var waist_y := token_height_cells * cell_size * 0.05
 
 	var ring_index := 0
-	for definition: Dictionary in CONDITION_DEFINITIONS:
+	for definition: Dictionary in get_condition_definitions():
 		var condition_id := String(definition.get("id", ""))
 		if (
 			not (condition_id in _conditions)
@@ -1194,147 +1204,16 @@ func _ensure_token_overlay() -> void:
 	_update_overlay_position()
 
 
-func _ensure_flanking_badge() -> void:
-	if _overlay_root == null or not is_instance_valid(_overlay_root):
-		return
-	if (
-		is_instance_valid(_flanking_badge_root)
-		and is_instance_valid(_flanking_badge_border)
-		and is_instance_valid(_flanking_badge_background)
-		and is_instance_valid(_flanking_badge_label)
-	):
-		return
-
-	_flanking_badge_root = (
-		_overlay_root.get_node_or_null("FlankingBadge") as Node3D
-	)
-	if _flanking_badge_root == null:
-		_flanking_badge_root = Node3D.new()
-		_flanking_badge_root.name = "FlankingBadge"
-		_overlay_root.add_child(_flanking_badge_root)
-
-	for legacy_name: String in ["Border", "Background", "Label"]:
-		var legacy := _flanking_badge_root.get_node_or_null(legacy_name)
-		if legacy != null:
-			_flanking_badge_root.remove_child(legacy)
-			legacy.queue_free()
-
-	_flanking_badge_border = MeshInstance3D.new()
-	_flanking_badge_border.name = "Border"
-	_flanking_badge_border.cast_shadow = (
-		GeometryInstance3D.SHADOW_CASTING_SETTING_OFF
-	)
-	_flanking_badge_root.add_child(_flanking_badge_border)
-
-	var border_quad := QuadMesh.new()
-	border_quad.size = Vector2(2.22 * cell_size, 0.46 * cell_size)
-	_flanking_badge_border.mesh = border_quad
-
-	_flanking_badge_border_material = StandardMaterial3D.new()
-	_flanking_badge_border_material.transparency = (
-		BaseMaterial3D.TRANSPARENCY_ALPHA
-	)
-	_flanking_badge_border_material.shading_mode = (
-		BaseMaterial3D.SHADING_MODE_UNSHADED
-	)
-	_flanking_badge_border_material.cull_mode = BaseMaterial3D.CULL_DISABLED
-	_flanking_badge_border_material.no_depth_test = true
-	_flanking_badge_border_material.albedo_color = Color(
-		0.72, 0.48, 0.20, 0.82
-	)
-	_flanking_badge_border_material.render_priority = 1
-	_flanking_badge_border.material_override = (
-		_flanking_badge_border_material
-	)
-
-	_flanking_badge_background = MeshInstance3D.new()
-	_flanking_badge_background.name = "Background"
-	_flanking_badge_background.cast_shadow = (
-		GeometryInstance3D.SHADOW_CASTING_SETTING_OFF
-	)
-	_flanking_badge_root.add_child(_flanking_badge_background)
-
-	var background_quad := QuadMesh.new()
-	background_quad.size = Vector2(2.12 * cell_size, 0.38 * cell_size)
-	_flanking_badge_background.mesh = background_quad
-
-	_flanking_badge_background_material = StandardMaterial3D.new()
-	_flanking_badge_background_material.transparency = (
-		BaseMaterial3D.TRANSPARENCY_ALPHA
-	)
-	_flanking_badge_background_material.shading_mode = (
-		BaseMaterial3D.SHADING_MODE_UNSHADED
-	)
-	_flanking_badge_background_material.cull_mode = (
-		BaseMaterial3D.CULL_DISABLED
-	)
-	_flanking_badge_background_material.no_depth_test = true
-	_flanking_badge_background_material.albedo_color = Color(
-		0.035, 0.04, 0.05, 0.90
-	)
-	_flanking_badge_background_material.render_priority = 2
-	_flanking_badge_background.material_override = (
-		_flanking_badge_background_material
-	)
-
-	_flanking_badge_label = Label3D.new()
-	_flanking_badge_label.name = "Label"
-	_flanking_badge_label.billboard = BaseMaterial3D.BILLBOARD_DISABLED
-	_flanking_badge_label.fixed_size = false
-	_flanking_badge_label.no_depth_test = true
-	_flanking_badge_label.font_size = 22
-	_flanking_badge_label.outline_size = 4
-	_flanking_badge_label.modulate = Color(1.0, 0.94, 0.82, 1.0)
-	_flanking_badge_label.outline_modulate = Color(0.03, 0.035, 0.045, 1.0)
-	_flanking_badge_label.text = "🗡️  Affiancato"
-	_flanking_badge_label.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
-	_flanking_badge_label.vertical_alignment = VERTICAL_ALIGNMENT_CENTER
-	_flanking_badge_root.add_child(_flanking_badge_label)
-
-	_flanking_badge_border.position.z = 0.0
-	_flanking_badge_background.position.z = 0.004 * cell_size
-	_flanking_badge_label.position.z = 0.008 * cell_size
-	_flanking_badge_root.visible = false
-
-
-func set_flanking_indicator_visible(value: bool) -> void:
-	if not is_instance_valid(_flanking_badge_root):
-		_ensure_token_overlay()
-	if is_instance_valid(_flanking_badge_root):
-		_flanking_badge_root.visible = value
-
-
-func is_flanking_indicator_visible() -> bool:
-	return (
-		is_instance_valid(_flanking_badge_root)
-		and _flanking_badge_root.visible
-	)
-
-
-func _update_flanking_badge_facing() -> void:
-	if (
-		not is_instance_valid(_flanking_badge_root)
-		or not _flanking_badge_root.visible
-	):
-		return
-	var camera := get_viewport().get_camera_3d()
-	if camera == null or not is_instance_valid(camera):
-		return
-	var target := camera.global_position
-	if _flanking_badge_root.global_position.distance_squared_to(target) <= 0.000001:
-		return
-	# Rotate the entire badge as one object. Border, background and text
-	# therefore never acquire different front/back orientations.
-	_flanking_badge_root.look_at(target, Vector3.UP, true)
-
-
 func _update_overlay_position() -> void:
 	if not is_instance_valid(_overlay_root):
 		return
 	var top_y := token_height_cells * cell_size * 0.5
 	# Keep the token name slightly higher so the compact tactical badge can sit
 	# directly underneath it while remaining fully above the miniature.
-	_overlay_root.position = Vector3(0.0, top_y + 0.38 * cell_size, 0.0)
+	var label_offset_z: float = 0.0
+	if _top_down_token_sprite != null and _top_down_token_sprite.visible:
+		label_offset_z = -(_footprint_cells * 0.5 + 0.25) * cell_size
+	_overlay_root.position = Vector3(0.0, top_y + 0.38 * cell_size, label_offset_z)
 	if is_instance_valid(_name_label):
 		# Label3D con fixed_size=false: la sua dimensione e' in unita' del
 		# mondo, quindi si comporta come il token e si rimpicciolisce con la
@@ -1344,34 +1223,6 @@ func _update_overlay_position() -> void:
 	if is_instance_valid(_status_label):
 		_status_label.pixel_size = 0.010 * cell_size
 		_status_label.position = Vector3(0.0, -0.22 * cell_size, 0.0)
-	if is_instance_valid(_flanking_badge_root):
-		_flanking_badge_root.position = Vector3(
-			0.0,
-			0.66 * cell_size,
-			0.0
-		)
-	if is_instance_valid(_flanking_badge_border):
-		var border_quad := _flanking_badge_border.mesh as QuadMesh
-		if border_quad != null:
-			border_quad.size = Vector2(
-				2.22 * cell_size,
-				0.46 * cell_size
-			)
-	if is_instance_valid(_flanking_badge_background):
-		var background_quad := _flanking_badge_background.mesh as QuadMesh
-		if background_quad != null:
-			background_quad.size = Vector2(
-				2.12 * cell_size,
-				0.38 * cell_size
-			)
-		_flanking_badge_background.position.z = 0.004 * cell_size
-	if is_instance_valid(_flanking_badge_label):
-		_flanking_badge_label.pixel_size = 0.0082 * cell_size
-		_flanking_badge_label.position = Vector3(
-			0.0,
-			0.0,
-			0.008 * cell_size
-		)
 	if is_instance_valid(_hp_bar_root):
 		_hp_bar_root.position = Vector3(0.0, 0.34 * cell_size, 0.0)
 		_update_health_bar_visual()
@@ -1641,7 +1492,9 @@ func set_selected(value: bool) -> void:
 	_selected = value
 
 	if is_instance_valid(selection_marker):
-		selection_marker.visible = value
+		# In 2D the floor slicing plane can clip the 3D selection mesh.
+		# The transparent screen overlay draws a ring in its place.
+		selection_marker.visible = value and not _top_down_elevation_overlay_enabled
 
 
 func is_selected() -> bool:
@@ -1658,8 +1511,9 @@ func is_vision_cone_visible() -> bool:
 
 
 func _default_reach_feet() -> float:
-	# 5 ft per Medium o inferiore, poi +5 ft per ogni cella di footprint.
-	return maxf(5.0, _footprint_cells * 5.0)
+	# Size determines occupied squares, not melee reach. A Large/Huge
+	# creature has 5 ft reach unless its bestiary entry/traits override it.
+	return 5.0
 
 
 func set_reach_feet(value: float, overridden: bool = true) -> void:
@@ -1717,10 +1571,10 @@ func get_appearance_state() -> Dictionary:
 		"visual_asset": get_visual_asset_path(),
 		"visual_native_footprint": _visual_native_footprint_cells,
 		"visual_front_quarter_turns": get_visual_front_quarter_turns(),
-		"visual_pitch_steps": get_visual_pitch_steps(),
 		"display_name": get_display_name(),
 		"party_id": get_party_id(),
 		"conditions": get_conditions(),
+		"condition_presentations": get_condition_presentations(),
 		"size_name": _size_name,
 		"footprint": _footprint_cells,
 		"height_cells": token_height_cells,
@@ -1766,9 +1620,6 @@ func apply_appearance_state(state: Dictionary) -> bool:
 	set_visual_front_quarter_turns(
 		int(state.get("visual_front_quarter_turns", 0))
 	)
-	set_visual_pitch_steps(
-		int(state.get("visual_pitch_steps", visual_pitch_steps))
-	)
 	token_height_cells = maxf(
 		float(state.get("height_cells", token_height_cells)),
 		0.1
@@ -1780,13 +1631,16 @@ func apply_appearance_state(state: Dictionary) -> bool:
 	)
 	set_token_size(_footprint_cells)
 
-	_reach_feet = maxf(
-		float(state.get("reach_feet", _default_reach_feet())),
-		5.0
-	)
 	_reach_overridden = bool(state.get("reach_overridden", false))
+	# Legacy saves may contain size-derived 10/15/20 ft defaults. Only
+	# restore stored reach when it was actually customized.
+	_reach_feet = (
+		maxf(float(state.get("reach_feet", 5.0)), 5.0)
+		if _reach_overridden else _default_reach_feet()
+	)
 	set_display_name(String(state.get("display_name", token_display_name)))
 	set_party_id(String(state.get("party_id", party_id)))
+	set_condition_presentations(state.get("condition_presentations", []))
 	set_conditions(state.get("conditions", _conditions))
 	global_position.y = (
 		base_y
@@ -1909,25 +1763,6 @@ func rotate_grid(rotation_steps: int) -> void:
 	rotation.y = snappedf(rotation.y, PI / 4.0)
 
 
-func rotate_vertical(rotation_steps: int) -> void:
-	set_visual_pitch_steps(visual_pitch_steps + rotation_steps)
-
-
-func set_visual_pitch_steps(steps: int) -> void:
-	visual_pitch_steps = clampi(steps, -3, 3)
-	_apply_visual_pitch()
-
-
-func get_visual_pitch_steps() -> int:
-	return visual_pitch_steps
-
-
-func _apply_visual_pitch() -> void:
-	if visuals == null or not is_instance_valid(visuals):
-		return
-	visuals.rotation.x = deg_to_rad(30.0 * float(visual_pitch_steps))
-
-
 func snap_horizontal_to_grid() -> void:
 	_snap_horizontal_to_grid()
 
@@ -1979,3 +1814,99 @@ func _is_supported_token_visual_path(path: String) -> bool:
 			and clean.ends_with("_visual.res")
 		)
 	return false
+
+
+func get_miniature_identity() -> String:
+	return _token_pack_manager().miniature_identity(token_pack_id, get_visual_asset_path())
+
+
+func _sync_top_down_token_with_board() -> void:
+	var ancestor := get_parent()
+	while ancestor != null:
+		if ancestor.has_method("is_2d_view_enabled"):
+			set_top_down_token_enabled(bool(ancestor.call("is_2d_view_enabled")))
+			return
+		ancestor = ancestor.get_parent()
+
+
+func set_top_down_token_enabled(enabled: bool) -> void:
+	_top_down_token_enabled = enabled
+	_refresh_top_down_token()
+
+
+func set_2d_elevation_overlay_enabled(enabled: bool) -> void:
+	_top_down_elevation_overlay_enabled = enabled
+	if _top_down_token_sprite != null:
+		_top_down_token_sprite.visible = (
+			_top_down_token_enabled and not enabled
+			and _top_down_token_sprite.texture != null
+		)
+	if is_instance_valid(_name_label):
+		_name_label.visible = not enabled and not token_display_name.is_empty()
+	if is_instance_valid(selection_marker):
+		selection_marker.visible = _selected and not enabled
+
+
+func get_top_down_icon_texture() -> Texture2D:
+	# A changed creature/appearance must not reuse the previous bestiary
+	# portrait while an image is missing or still downloading.
+	if (
+		_top_down_token_enabled
+		and not _top_down_token_url.is_empty()
+		and _top_down_token_sprite != null
+	):
+		return _top_down_token_sprite.texture
+	return null
+
+
+func _refresh_top_down_token() -> void:
+	if not is_node_ready():
+		return
+	var previous_url: String = _top_down_token_url
+	_top_down_token_url = _token_pack_manager().get_bestiary_token_url(get_miniature_identity())
+	if _top_down_token_sprite != null:
+		_top_down_token_sprite.visible = false
+		if _top_down_token_url != previous_url or not _top_down_token_enabled:
+			_top_down_token_sprite.texture = null
+	_update_overlay_position()
+	if not _top_down_token_enabled or _top_down_token_url.is_empty():
+		return
+	var texture: Texture2D = _token_pack_manager().get_bestiary_texture(_top_down_token_url)
+	if texture != null:
+		_show_top_down_token(texture)
+	else:
+		_token_pack_manager().request_bestiary_texture(_top_down_token_url)
+
+
+func _on_bestiary_texture_ready(url: String, texture: Texture2D) -> void:
+	# A late request must not attach the previous appearance to a transformed token.
+	if _top_down_token_enabled and url == _top_down_token_url:
+		_show_top_down_token(texture)
+
+
+func _show_top_down_token(texture: Texture2D) -> void:
+	if _top_down_token_sprite == null:
+		_top_down_token_sprite = Sprite3D.new()
+		_top_down_token_sprite.name = "TopDownTokenHat"
+		_top_down_token_sprite.rotation.x = -PI * 0.5
+		_top_down_token_sprite.shaded = false
+		_top_down_token_sprite.double_sided = true
+		_top_down_token_sprite.cast_shadow = GeometryInstance3D.SHADOW_CASTING_SETTING_OFF
+		add_child(_top_down_token_sprite)
+	_top_down_token_sprite.texture = texture
+	_top_down_token_sprite.visible = not _top_down_elevation_overlay_enabled
+	_refresh_top_down_token_geometry()
+	_update_overlay_position()
+
+
+func _refresh_top_down_token_geometry() -> void:
+	if _top_down_token_sprite == null or _top_down_token_sprite.texture == null:
+		return
+	var pixels: float = maxf(_top_down_token_sprite.texture.get_width(), _top_down_token_sprite.texture.get_height())
+	_top_down_token_sprite.pixel_size = maxf(_footprint_cells, 1.0) * cell_size / maxf(pixels, 1.0)
+	# Keep the miniature and its physics intact; the image sits above its top.
+	_top_down_token_sprite.position.y = token_height_cells * cell_size * 0.5 + cell_size * 0.08
+
+
+func _token_pack_manager() -> Node:
+	return get_node("/root/TokenPackManager")

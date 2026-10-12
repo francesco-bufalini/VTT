@@ -1,5 +1,7 @@
 extends Node
 
+const DialogLayout = preload("res://vtt/dialog_layout.gd")
+
 const SAVE_VERSION := 1
 
 const PRESET_SMALL := 100
@@ -9,6 +11,7 @@ const PRESET_WHITE := 110
 const PRESET_EMPTY_ELEMENTS := 120
 const PRESET_FOREST_MOUNTAINS := 121
 const PRESET_PIRATE_SHIP := 122
+const PRESET_CREATE_GRID := 123
 
 const FOREST_MOUNTAINS_PRESET_PATH := (
 	"res://assets/presets/forest_mountains/forest_mountains_preset.glb"
@@ -63,6 +66,22 @@ const MEASURE_CLEAR := 405
 
 const VIEW_GRID := 500
 const VIEW_VISION := 502
+const VIEW_2D_TOGGLE := 510
+const VIEW_2D_IMAGE_LOAD := 511
+const VIEW_2D_IMAGE_RESIZE := 512
+const VIEW_2D_IMAGE_REMOVE := 513
+const VIEW_2D_LAYER_MAP := 514
+const VIEW_2D_LAYER_GAME := 515
+const VIEW_2D_OPACITY_UP := 516
+const VIEW_2D_OPACITY_DOWN := 517
+const VIEW_2D_LAYER_FOG := 518
+const VIEW_2D_FOG_TOGGLE := 519
+const VIEW_2D_FOG_RESET := 520
+
+const FOG_PIXELS_PER_CELL := 16.0
+const FOG_MAX_TEXTURE_SIDE := 2048
+const FOG_MIN_TEXTURE_SIDE := 64
+const FOG_DEFAULT_BRUSH_RADIUS_CELLS := 1.25
 
 const SHARE_OPEN := 600
 
@@ -83,6 +102,37 @@ var _pirate_water_time: float = 0.0
 var resize_dialog: ConfirmationDialog
 var resize_width: SpinBox
 var resize_depth: SpinBox
+var _resize_from_preset: bool = false
+
+var map_image_file_dialog: FileDialog
+var map_image_size_dialog: ConfirmationDialog
+var map_image_width: SpinBox
+var map_image_depth: SpinBox
+var map_image_node: MeshInstance3D
+var map_image_asset_path: String = ""
+var map_image_width_cells: float = 0.0
+var map_image_depth_cells: float = 0.0
+var map_image_opacity: float = 1.0
+var map_edit_layer_active: bool = false
+var map_transform_panel: Panel
+var map_transform_handles: Array[Button] = []
+var _map_drag_mode: String = ""
+var _map_drag_start_mouse_world: Vector3 = Vector3.ZERO
+var _map_drag_start_center: Vector3 = Vector3.ZERO
+var _map_drag_start_width_cells: float = 0.0
+var _map_drag_start_depth_cells: float = 0.0
+var _map_resize_sign := Vector2.ZERO
+var _map_resize_opposite_world := Vector3.ZERO
+
+var fog_enabled: bool = false
+var fog_edit_layer_active: bool = false
+var fog_overlay_node: MeshInstance3D = null
+var fog_mask_image: Image = null
+var fog_mask_texture: ImageTexture = null
+var fog_mask_asset_path: String = ""
+var fog_brush_radius_cells: float = FOG_DEFAULT_BRUSH_RADIUS_CELLS
+var _fog_painting: bool = false
+var _fog_last_world: Vector3 = Vector3.ZERO
 
 var add_grid_dialog: ConfirmationDialog
 var add_x: SpinBox
@@ -92,6 +142,41 @@ var add_width: SpinBox
 var add_depth: SpinBox
 
 var leave_dialog: ConfirmationDialog
+
+
+func _input(event: InputEvent) -> void:
+	if not fog_edit_layer_active or not fog_enabled:
+		return
+	if not bool(board_root.call("is_2d_view_enabled")):
+		return
+
+	var hovered: Control = get_viewport().gui_get_hovered_control()
+	if hovered != null:
+		return
+
+	if (
+		event is InputEventMouseButton
+		and event.button_index == MOUSE_BUTTON_LEFT
+	):
+		if event.pressed:
+			var world: Vector3 = _screen_to_map_plane(event.position)
+			if not world.is_finite() or not _world_inside_primary_grid(world):
+				return
+			_fog_painting = true
+			_fog_last_world = world
+			_paint_fog_at_world(world)
+		else:
+			_fog_painting = false
+		get_viewport().set_input_as_handled()
+		return
+
+	if event is InputEventMouseMotion and _fog_painting:
+		var current: Vector3 = _screen_to_map_plane(event.position)
+		if not current.is_finite():
+			return
+		_paint_fog_path(_fog_last_world, current)
+		_fog_last_world = current
+		get_viewport().set_input_as_handled()
 
 
 func _ready() -> void:
@@ -107,6 +192,9 @@ func _ready() -> void:
 
 
 func _process(delta: float) -> void:
+	_sync_edit_layers_with_2d_view()
+	_update_map_transform_overlay()
+
 	if active_element_preset != PIRATE_SHIP_PRESET_ID:
 		return
 	if _pirate_water_root == null or not is_instance_valid(_pirate_water_root):
@@ -148,6 +236,8 @@ func _initialize_editor() -> void:
 	board_root.call("set_grid_visible", true)
 	_build_toolbar()
 	_build_grid_dialogs()
+	_build_2d_image_dialogs()
+	_build_map_transform_overlay()
 	_build_leave_dialog()
 
 	# L'editor deve essere utilizzabile subito con il mouse. ESC continua a
@@ -172,13 +262,9 @@ func _build_toolbar() -> void:
 	panel.add_child(row)
 
 	row.add_child(_make_menu_button("Preset", [
-		["Griglia piccola · 15 × 15", PRESET_SMALL],
-		["Griglia standard · 30 × 30", PRESET_STANDARD],
-		["Griglia grande · 50 × 50", PRESET_LARGE],
-		["Scenario · Vuoto bianco", PRESET_WHITE],
-		["Elementi · Nessuno", PRESET_EMPTY_ELEMENTS],
-		["Elementi · Foresta e montagne", PRESET_FOREST_MOUNTAINS],
-		["Elementi · The Siren's Light", PRESET_PIRATE_SHIP]
+		["Scenario · Foresta e montagne", PRESET_FOREST_MOUNTAINS],
+		["Scenario · The Siren's Light", PRESET_PIRATE_SHIP],
+		["Crea griglia…", PRESET_CREATE_GRID]
 	], _on_preset_selected))
 
 	row.add_child(_make_menu_button("Griglia", [
@@ -235,6 +321,20 @@ func _build_toolbar() -> void:
 		["Mostra / nascondi coni visivi", VIEW_VISION]
 	], _on_view_selected))
 
+	row.add_child(_make_menu_button("Vista 2D", [
+		["Attiva / disattiva vista 2D", VIEW_2D_TOGGLE],
+		["Livello · Mappa", VIEW_2D_LAYER_MAP],
+		["Livello · Gioco", VIEW_2D_LAYER_GAME],
+		["Livello · Ombra di guerra", VIEW_2D_LAYER_FOG],
+		["Attiva / disattiva ombra di guerra", VIEW_2D_FOG_TOGGLE],
+		["Ripristina ombra completa", VIEW_2D_FOG_RESET],
+		["Inserisci immagine sulla griglia…", VIEW_2D_IMAGE_LOAD],
+		["Ridimensiona immagine con valori…", VIEW_2D_IMAGE_RESIZE],
+		["Aumenta opacità immagine", VIEW_2D_OPACITY_UP],
+		["Diminuisci opacità immagine", VIEW_2D_OPACITY_DOWN],
+		["Rimuovi immagine", VIEW_2D_IMAGE_REMOVE]
+	], _on_2d_view_selected))
+
 	row.add_child(_make_menu_button("Rete", [
 		["Condividi mappa / Tailscale…", SHARE_OPEN]
 	], _on_share_selected))
@@ -261,8 +361,7 @@ func _build_toolbar() -> void:
 	menu_button.add_theme_font_size_override("font_size", 13)
 	menu_button.pressed.connect(
 		func() -> void:
-			leave_dialog.reset_size()
-			leave_dialog.popup_centered_clamped(Vector2i(470, 190), 0.92)
+			DialogLayout.popup(leave_dialog, Vector2i(470, 190), 0.92)
 	)
 	row.add_child(menu_button)
 
@@ -304,20 +403,22 @@ func _on_preset_selected(id: int) -> void:
 		PRESET_WHITE:
 			_clear_element_presets()
 			active_element_preset = ""
-			_set_orientation_marker_enabled(true)
+			_set_orientation_marker_enabled(false)
 			_set_base_platform_enabled(true)
 			_set_white_environment()
 			_set_status("Scenario: vuoto bianco")
 		PRESET_EMPTY_ELEMENTS:
 			_clear_element_presets()
 			active_element_preset = ""
-			_set_orientation_marker_enabled(true)
+			_set_orientation_marker_enabled(false)
 			_set_base_platform_enabled(true)
 			_set_status("Preset elementi: nessun elemento")
 		PRESET_FOREST_MOUNTAINS:
 			_apply_forest_mountains_preset(true)
 		PRESET_PIRATE_SHIP:
 			_apply_pirate_ship_preset(true)
+		PRESET_CREATE_GRID:
+			_open_primary_grid_resize_dialog(true)
 
 
 func _apply_forest_mountains_preset(resize_grid: bool = true) -> void:
@@ -598,13 +699,9 @@ func _clear_element_presets() -> void:
 func _on_grid_selected(id: int) -> void:
 	match id:
 		GRID_RESIZE:
-			resize_width.value = primary_width_cells
-			resize_depth.value = primary_depth_cells
-			resize_dialog.reset_size()
-			resize_dialog.popup_centered_clamped(Vector2i(460, 250), 0.92)
+			_open_primary_grid_resize_dialog(false)
 		GRID_ADD:
-			add_grid_dialog.reset_size()
-			add_grid_dialog.popup_centered_clamped(Vector2i(500, 430), 0.92)
+			DialogLayout.popup(add_grid_dialog, Vector2i(500, 430), 0.92)
 		GRID_REMOVE_LAST:
 			_remove_last_extra_grid()
 
@@ -675,6 +772,68 @@ func _on_view_selected(id: int) -> void:
 			board_root.call("toggle_vision_cones")
 
 
+func _on_2d_view_selected(id: int) -> void:
+	match id:
+		VIEW_2D_TOGGLE:
+			board_root.call("toggle_2d_view")
+			# Il cambio 3D/2D è un cambio di vista, non di strumento:
+			# si rientra sempre sul livello Gioco. Mappa e Fog vanno scelti
+			# esplicitamente per evitare che continuino a intercettare i token.
+			_set_map_edit_layer(false)
+			_set_fog_edit_layer(false)
+			_set_status(
+				"Vista 2D attiva"
+				if bool(board_root.call("is_2d_view_enabled"))
+				else "Vista 3D attiva"
+			)
+		VIEW_2D_LAYER_MAP:
+			board_root.call("set_2d_view_enabled", true)
+			_set_map_edit_layer(true)
+			_set_status("Livello Mappa · trascina immagine o maniglie")
+		VIEW_2D_LAYER_GAME:
+			board_root.call("set_2d_view_enabled", true)
+			_set_map_edit_layer(false)
+			_set_fog_edit_layer(false)
+			_set_status("Livello Gioco")
+		VIEW_2D_LAYER_FOG:
+			board_root.call("set_2d_view_enabled", true)
+			if not fog_enabled:
+				_set_fog_enabled(true)
+			_set_fog_edit_layer(true)
+			_set_status("Livello Ombra di guerra · tieni premuto per rivelare")
+		VIEW_2D_FOG_TOGGLE:
+			_set_fog_enabled(not fog_enabled)
+			_set_status(
+				"Ombra di guerra attiva"
+				if fog_enabled
+				else "Ombra di guerra disattivata"
+			)
+		VIEW_2D_FOG_RESET:
+			_reset_fog_mask()
+			_set_status("Ombra di guerra ripristinata")
+		VIEW_2D_IMAGE_LOAD:
+			board_root.call("set_2d_view_enabled", true)
+			_set_map_edit_layer(true)
+			if map_image_file_dialog != null:
+				map_image_file_dialog.reset_size()
+				map_image_file_dialog.popup_centered_clamped(
+					Vector2i(900, 640),
+					0.96
+				)
+		VIEW_2D_IMAGE_RESIZE:
+			if map_image_node == null or not is_instance_valid(map_image_node):
+				_set_status("Nessuna immagine 2D da ridimensionare")
+				return
+			_open_map_image_size_dialog()
+		VIEW_2D_OPACITY_UP:
+			_adjust_map_image_opacity(0.1)
+		VIEW_2D_OPACITY_DOWN:
+			_adjust_map_image_opacity(-0.1)
+		VIEW_2D_IMAGE_REMOVE:
+			_clear_map_image()
+			_set_status("Immagine 2D rimossa")
+
+
 func _on_share_selected(id: int) -> void:
 	if id == SHARE_OPEN:
 		# ID 25 e' gia' l'azione pubblicata dal context menu di dnd_base.
@@ -697,6 +856,13 @@ func _build_grid_dialogs() -> void:
 	)
 	resize_dialog.confirmed.connect(
 		func() -> void:
+			if _resize_from_preset:
+				_clear_element_presets()
+				active_element_preset = ""
+				_set_orientation_marker_enabled(false)
+				_set_base_platform_enabled(true)
+				_set_white_environment()
+			_resize_from_preset = false
 			_resize_primary_grid(
 				int(resize_width.value),
 				int(resize_depth.value)
@@ -705,6 +871,10 @@ func _build_grid_dialogs() -> void:
 				"Griglia principale: %d × %d"
 				% [primary_width_cells, primary_depth_cells]
 			)
+	)
+	resize_dialog.canceled.connect(
+		func() -> void:
+			_resize_from_preset = false
 	)
 
 	add_grid_dialog = ConfirmationDialog.new()
@@ -745,6 +915,881 @@ func _build_grid_dialogs() -> void:
 				% [int(data.width), int(data.depth), float(data.y)]
 			)
 	)
+
+
+func _open_primary_grid_resize_dialog(as_preset: bool) -> void:
+	_resize_from_preset = as_preset
+	resize_dialog.title = (
+		"Crea griglia"
+		if as_preset
+		else "Dimensioni griglia principale"
+	)
+	resize_width.value = primary_width_cells
+	resize_depth.value = primary_depth_cells
+	DialogLayout.popup(resize_dialog, Vector2i(460, 250), 0.92)
+
+
+func _build_2d_image_dialogs() -> void:
+	map_image_file_dialog = FileDialog.new()
+	map_image_file_dialog.title = "Inserisci immagine nella griglia"
+	map_image_file_dialog.file_mode = FileDialog.FILE_MODE_OPEN_FILE
+	map_image_file_dialog.access = FileDialog.ACCESS_FILESYSTEM
+	map_image_file_dialog.filters = PackedStringArray([
+		"*.png,*.jpg,*.jpeg,*.webp ; Immagini",
+		"*.png ; PNG",
+		"*.jpg,*.jpeg ; JPEG",
+		"*.webp ; WebP"
+	])
+	var pictures_dir := OS.get_system_dir(OS.SYSTEM_DIR_PICTURES)
+	if not pictures_dir.is_empty():
+		map_image_file_dialog.current_dir = pictures_dir
+	ui_root.add_child(map_image_file_dialog)
+	map_image_file_dialog.file_selected.connect(_on_map_image_file_selected)
+
+	map_image_size_dialog = ConfirmationDialog.new()
+	map_image_size_dialog.title = "Dimensioni immagine 2D"
+	map_image_size_dialog.ok_button_text = "Applica"
+	map_image_size_dialog.min_size = Vector2i(470, 280)
+	ui_root.add_child(map_image_size_dialog)
+
+	var body := _dialog_body(map_image_size_dialog)
+	var hint := Label.new()
+	hint.text = (
+		"Le dimensioni sono espresse in quadretti. "
+		+ "L'immagine resta centrata e non può superare i bordi della griglia."
+	)
+	hint.autowrap_mode = TextServer.AUTOWRAP_WORD_SMART
+	body.add_child(hint)
+	map_image_width = _spin_row(
+		body, "Larghezza X", 0.25, primary_width_cells, 0.25, 1.0
+	)
+	map_image_depth = _spin_row(
+		body, "Profondità Z", 0.25, primary_depth_cells, 0.25, 1.0
+	)
+	map_image_size_dialog.confirmed.connect(
+		func() -> void:
+			map_image_width_cells = clampf(
+				float(map_image_width.value), 0.25, float(primary_width_cells)
+			)
+			map_image_depth_cells = clampf(
+				float(map_image_depth.value), 0.25, float(primary_depth_cells)
+			)
+			_apply_map_image_geometry()
+			_set_status(
+				"Immagine 2D: %.2f × %.2f quadretti"
+				% [map_image_width_cells, map_image_depth_cells]
+			)
+	)
+
+
+func _open_map_image_size_dialog() -> void:
+	if map_image_size_dialog == null:
+		return
+	map_image_width.max_value = float(primary_width_cells)
+	map_image_depth.max_value = float(primary_depth_cells)
+	map_image_width.value = clampf(
+		map_image_width_cells, 0.25, float(primary_width_cells)
+	)
+	map_image_depth.value = clampf(
+		map_image_depth_cells, 0.25, float(primary_depth_cells)
+	)
+	DialogLayout.popup(map_image_size_dialog, Vector2i(470, 280), 0.92)
+
+
+func _on_map_image_file_selected(path: String) -> void:
+	var image := Image.new()
+	var error := image.load(path)
+	if error != OK or image.is_empty():
+		_set_status("Impossibile caricare l'immagine selezionata")
+		return
+
+	var manager := _campaign_manager()
+	if manager == null or not manager.has_method(
+		"get_active_campaign_asset_directory"
+	):
+		_set_status("Cartella asset dello scenario non disponibile")
+		return
+	var asset_directory := String(
+		manager.call("get_active_campaign_asset_directory")
+	)
+	if asset_directory.is_empty():
+		_set_status("Salvataggio immagine disponibile solo negli scenari utente")
+		return
+
+	var target_path := asset_directory.path_join("map_background.png")
+	var save_error := image.save_png(target_path)
+	if save_error != OK:
+		_set_status("Impossibile salvare l'immagine nello scenario")
+		return
+
+	map_image_asset_path = target_path
+	_create_map_image_node(image)
+	_fit_map_image_to_grid(image)
+	map_image_opacity = 1.0
+	_apply_map_image_geometry()
+	_apply_map_image_opacity()
+	board_root.call("set_2d_view_enabled", true)
+	_set_map_edit_layer(true)
+	_set_status("Immagine caricata · trascina per spostare, usa le maniglie per ridimensionare")
+
+
+func _create_map_image_node(image: Image) -> void:
+	_clear_map_image_node_only()
+	var map_geometry := board_root.get_node_or_null(
+		"Board/MapGeometry"
+	) as Node3D
+	if map_geometry == null:
+		return
+
+	map_image_node = MeshInstance3D.new()
+	map_image_node.name = "CampaignMapImage"
+	map_image_node.cast_shadow = GeometryInstance3D.SHADOW_CASTING_SETTING_OFF
+	map_image_node.position = Vector3(
+		0.0, maxf(0.001, _cell_size() * 0.002), 0.0
+	)
+	map_geometry.add_child(map_image_node)
+
+	var material := StandardMaterial3D.new()
+	material.shading_mode = BaseMaterial3D.SHADING_MODE_UNSHADED
+	material.transparency = BaseMaterial3D.TRANSPARENCY_ALPHA
+	material.cull_mode = BaseMaterial3D.CULL_DISABLED
+	# La mappa è lo strato trasparente più basso della Vista 2D.
+	material.render_priority = -20
+	material.albedo_texture = ImageTexture.create_from_image(image)
+
+	var plane := PlaneMesh.new()
+	plane.material = material
+	map_image_node.mesh = plane
+
+
+func _fit_map_image_to_grid(image: Image) -> void:
+	var pixel_width := maxf(float(image.get_width()), 1.0)
+	var pixel_height := maxf(float(image.get_height()), 1.0)
+	var aspect := pixel_width / pixel_height
+	var width_cells := float(primary_width_cells)
+	var depth_cells := width_cells / aspect
+	if depth_cells > float(primary_depth_cells):
+		depth_cells = float(primary_depth_cells)
+		width_cells = depth_cells * aspect
+	map_image_width_cells = clampf(
+		width_cells, 0.25, float(primary_width_cells)
+	)
+	map_image_depth_cells = clampf(
+		depth_cells, 0.25, float(primary_depth_cells)
+	)
+
+
+func _apply_map_image_geometry() -> void:
+	if map_image_node == null or not is_instance_valid(map_image_node):
+		return
+	map_image_width_cells = clampf(
+		map_image_width_cells, 0.25, float(primary_width_cells)
+	)
+	map_image_depth_cells = clampf(
+		map_image_depth_cells, 0.25, float(primary_depth_cells)
+	)
+	var plane := map_image_node.mesh as PlaneMesh
+	if plane == null:
+		return
+	plane.size = Vector2(
+		map_image_width_cells * _cell_size(),
+		map_image_depth_cells * _cell_size()
+	)
+	map_image_node.position.y = maxf(0.001, _cell_size() * 0.002)
+	_clamp_map_image_center_to_grid()
+
+
+func _map_image_material() -> StandardMaterial3D:
+	if map_image_node == null or not is_instance_valid(map_image_node):
+		return null
+	var plane := map_image_node.mesh as PlaneMesh
+	if plane == null:
+		return null
+	return plane.material as StandardMaterial3D
+
+
+func _apply_map_image_opacity() -> void:
+	map_image_opacity = clampf(map_image_opacity, 0.1, 1.0)
+	var material := _map_image_material()
+	if material != null:
+		material.albedo_color = Color(1.0, 1.0, 1.0, map_image_opacity)
+
+
+func _adjust_map_image_opacity(delta: float) -> void:
+	if map_image_node == null or not is_instance_valid(map_image_node):
+		_set_status("Nessuna immagine 2D caricata")
+		return
+	map_image_opacity = clampf(map_image_opacity + delta, 0.1, 1.0)
+	_apply_map_image_opacity()
+	_set_status("Opacità immagine: %d%%" % int(round(map_image_opacity * 100.0)))
+
+
+func _sync_edit_layers_with_2d_view() -> void:
+	if board_root == null or not is_instance_valid(board_root):
+		return
+	if bool(board_root.call("is_2d_view_enabled")):
+		return
+	if not map_edit_layer_active and not fog_edit_layer_active:
+		return
+	map_edit_layer_active = false
+	fog_edit_layer_active = false
+	_fog_painting = false
+	_map_drag_mode = ""
+	_sync_editor_input_layer()
+
+
+func _set_map_edit_layer(enabled: bool) -> void:
+	map_edit_layer_active = enabled
+	if enabled:
+		fog_edit_layer_active = false
+	_fog_painting = false
+	_sync_editor_input_layer()
+	_update_map_transform_overlay()
+
+
+func _set_fog_edit_layer(enabled: bool) -> void:
+	fog_edit_layer_active = enabled
+	if enabled:
+		map_edit_layer_active = false
+	_fog_painting = false
+	_sync_editor_input_layer()
+	_update_map_transform_overlay()
+
+
+func _sync_editor_input_layer() -> void:
+	if board_root != null and board_root.has_method("set_map_edit_layer_active"):
+		board_root.call(
+			"set_map_edit_layer_active",
+			map_edit_layer_active or fog_edit_layer_active
+		)
+
+
+func _build_map_transform_overlay() -> void:
+	map_transform_panel = Panel.new()
+	map_transform_panel.name = "MapImageTransformOverlay"
+	map_transform_panel.visible = false
+	map_transform_panel.mouse_filter = Control.MOUSE_FILTER_STOP
+	map_transform_panel.z_index = 100
+	map_transform_panel.focus_mode = Control.FOCUS_NONE
+
+	var style := StyleBoxFlat.new()
+	style.bg_color = Color(0.05, 0.45, 0.95, 0.04)
+	style.border_color = Color(0.12, 0.58, 1.0, 0.95)
+	style.set_border_width_all(2)
+	map_transform_panel.add_theme_stylebox_override("panel", style)
+	map_transform_panel.gui_input.connect(_on_map_transform_panel_input)
+	ui_root.add_child(map_transform_panel)
+
+	for signs: Vector2 in [
+		Vector2(-1.0, -1.0),
+		Vector2(1.0, -1.0),
+		Vector2(-1.0, 1.0),
+		Vector2(1.0, 1.0)
+	]:
+		var handle := Button.new()
+		handle.custom_minimum_size = Vector2(14, 14)
+		handle.size = Vector2(14, 14)
+		handle.focus_mode = Control.FOCUS_NONE
+		handle.mouse_filter = Control.MOUSE_FILTER_STOP
+		handle.tooltip_text = "Trascina per ridimensionare"
+		handle.set_meta("resize_sign", signs)
+		handle.gui_input.connect(
+			_on_map_resize_handle_input.bind(signs)
+		)
+		map_transform_panel.add_child(handle)
+		map_transform_handles.append(handle)
+
+
+func _update_map_transform_overlay() -> void:
+	if map_transform_panel == null:
+		return
+	var should_show := (
+		map_edit_layer_active
+		and bool(board_root.call("is_2d_view_enabled"))
+		and map_image_node != null
+		and is_instance_valid(map_image_node)
+	)
+	map_transform_panel.visible = should_show
+	if not should_show:
+		return
+
+	var camera := board_root.get_node_or_null("Camera3D") as Camera3D
+	if camera == null:
+		map_transform_panel.visible = false
+		return
+
+	var half_x := map_image_width_cells * _cell_size() * 0.5
+	var half_z := map_image_depth_cells * _cell_size() * 0.5
+	var center := map_image_node.global_position
+	var screen_points: Array[Vector2] = [
+		camera.unproject_position(center + Vector3(-half_x, 0.0, -half_z)),
+		camera.unproject_position(center + Vector3(half_x, 0.0, -half_z)),
+		camera.unproject_position(center + Vector3(-half_x, 0.0, half_z)),
+		camera.unproject_position(center + Vector3(half_x, 0.0, half_z))
+	]
+	var min_point := screen_points[0]
+	var max_point := screen_points[0]
+	for point: Vector2 in screen_points:
+		min_point = min_point.min(point)
+		max_point = max_point.max(point)
+
+	map_transform_panel.position = min_point
+	map_transform_panel.size = (max_point - min_point).max(Vector2(24, 24))
+	var panel_size := map_transform_panel.size
+	for handle: Button in map_transform_handles:
+		var signs: Vector2 = handle.get_meta(
+			"resize_sign",
+			Vector2.ONE
+		)
+		handle.position = Vector2(
+			-7.0 if signs.x < 0.0 else panel_size.x - 7.0,
+			-7.0 if signs.y < 0.0 else panel_size.y - 7.0
+		)
+
+
+func _on_map_transform_panel_input(event: InputEvent) -> void:
+	if not map_edit_layer_active:
+		return
+	if (
+		event is InputEventMouseButton
+		and event.button_index == MOUSE_BUTTON_LEFT
+	):
+		if event.pressed:
+			var world: Vector3 = _screen_to_map_plane(
+				get_viewport().get_mouse_position()
+			)
+			if not world.is_finite():
+				return
+			_map_drag_mode = "move"
+			_map_drag_start_mouse_world = world
+			_map_drag_start_center = map_image_node.position
+		else:
+			_map_drag_mode = ""
+		_set_status("Posizione immagine aggiornata")
+		get_viewport().set_input_as_handled()
+		return
+
+	if (
+		event is InputEventMouseMotion
+		and _map_drag_mode == "move"
+	):
+		var current: Vector3 = _screen_to_map_plane(
+			get_viewport().get_mouse_position()
+		)
+		if not current.is_finite():
+			return
+		var delta_world: Vector3 = current - _map_drag_start_mouse_world
+		map_image_node.position.x = _map_drag_start_center.x + delta_world.x
+		map_image_node.position.z = _map_drag_start_center.z + delta_world.z
+		_clamp_map_image_center_to_grid()
+		get_viewport().set_input_as_handled()
+
+
+func _on_map_resize_handle_input(
+	event: InputEvent,
+	signs: Vector2
+) -> void:
+	if not map_edit_layer_active:
+		return
+	if (
+		event is InputEventMouseButton
+		and event.button_index == MOUSE_BUTTON_LEFT
+	):
+		if event.pressed:
+			var world: Vector3 = _screen_to_map_plane(
+				get_viewport().get_mouse_position()
+			)
+			if not world.is_finite():
+				return
+			_map_drag_mode = "resize"
+			_map_resize_sign = signs
+			_map_drag_start_center = map_image_node.position
+			_map_drag_start_width_cells = map_image_width_cells
+			_map_drag_start_depth_cells = map_image_depth_cells
+			var half_x := map_image_width_cells * _cell_size() * 0.5
+			var half_z := map_image_depth_cells * _cell_size() * 0.5
+			_map_resize_opposite_world = Vector3(
+				map_image_node.position.x - signs.x * half_x,
+				0.0,
+				map_image_node.position.z - signs.y * half_z
+			)
+		else:
+			_map_drag_mode = ""
+			_set_status(
+				"Dimensioni immagine: %.2f × %.2f quadretti"
+				% [map_image_width_cells, map_image_depth_cells]
+			)
+		get_viewport().set_input_as_handled()
+		return
+
+	if (
+		event is InputEventMouseMotion
+		and _map_drag_mode == "resize"
+		and signs == _map_resize_sign
+	):
+		var current: Vector3 = _screen_to_map_plane(
+			get_viewport().get_mouse_position()
+		)
+		if not current.is_finite():
+			return
+		_resize_map_image_to_world_corner(current, signs)
+		get_viewport().set_input_as_handled()
+
+
+func _screen_to_map_plane(screen_position: Vector2) -> Vector3:
+	var invalid_point := Vector3(INF, INF, INF)
+	var camera := board_root.get_node_or_null("Camera3D") as Camera3D
+	if camera == null:
+		return invalid_point
+	var origin: Vector3 = camera.project_ray_origin(screen_position)
+	var direction: Vector3 = camera.project_ray_normal(screen_position)
+	if absf(direction.y) < 0.000001:
+		return invalid_point
+	var t: float = -origin.y / direction.y
+	if t < 0.0:
+		return invalid_point
+	return origin + direction * t
+
+
+func _resize_map_image_to_world_corner(
+	current_world: Vector3,
+	signs: Vector2
+) -> void:
+	var cell := _cell_size()
+	var half_grid_x := primary_width_cells * cell * 0.5
+	var half_grid_z := primary_depth_cells * cell * 0.5
+	var min_world_size := 0.25 * cell
+
+	var corner_x := clampf(current_world.x, -half_grid_x, half_grid_x)
+	var corner_z := clampf(current_world.z, -half_grid_z, half_grid_z)
+	var opposite_x := _map_resize_opposite_world.x
+	var opposite_z := _map_resize_opposite_world.z
+
+	if signs.x > 0.0:
+		corner_x = maxf(corner_x, opposite_x + min_world_size)
+	else:
+		corner_x = minf(corner_x, opposite_x - min_world_size)
+	if signs.y > 0.0:
+		corner_z = maxf(corner_z, opposite_z + min_world_size)
+	else:
+		corner_z = minf(corner_z, opposite_z - min_world_size)
+
+	map_image_width_cells = clampf(
+		absf(corner_x - opposite_x) / cell,
+		0.25,
+		float(primary_width_cells)
+	)
+	map_image_depth_cells = clampf(
+		absf(corner_z - opposite_z) / cell,
+		0.25,
+		float(primary_depth_cells)
+	)
+	map_image_node.position.x = (corner_x + opposite_x) * 0.5
+	map_image_node.position.z = (corner_z + opposite_z) * 0.5
+	_apply_map_image_geometry()
+
+
+func _clamp_map_image_center_to_grid() -> void:
+	if map_image_node == null or not is_instance_valid(map_image_node):
+		return
+	var cell := _cell_size()
+	var half_grid_x := primary_width_cells * cell * 0.5
+	var half_grid_z := primary_depth_cells * cell * 0.5
+	var half_image_x := map_image_width_cells * cell * 0.5
+	var half_image_z := map_image_depth_cells * cell * 0.5
+	map_image_node.position.x = clampf(
+		map_image_node.position.x,
+		-half_grid_x + half_image_x,
+		half_grid_x - half_image_x
+	)
+	map_image_node.position.z = clampf(
+		map_image_node.position.z,
+		-half_grid_z + half_image_z,
+		half_grid_z - half_image_z
+	)
+
+
+
+
+func _set_fog_enabled(enabled: bool) -> void:
+	fog_enabled = enabled
+	if fog_enabled:
+		_ensure_fog_mask()
+		_ensure_fog_overlay()
+	elif fog_edit_layer_active:
+		_set_fog_edit_layer(false)
+	if fog_overlay_node != null and is_instance_valid(fog_overlay_node):
+		fog_overlay_node.visible = fog_enabled
+
+
+func _fog_texture_size() -> Vector2i:
+	var longest_cells: float = maxf(
+		float(primary_width_cells),
+		float(primary_depth_cells)
+	)
+	var pixels_per_cell: float = minf(
+		FOG_PIXELS_PER_CELL,
+		float(FOG_MAX_TEXTURE_SIDE) / maxf(longest_cells, 1.0)
+	)
+	var width: int = maxi(
+		FOG_MIN_TEXTURE_SIDE,
+		int(round(float(primary_width_cells) * pixels_per_cell))
+	)
+	var height: int = maxi(
+		FOG_MIN_TEXTURE_SIDE,
+		int(round(float(primary_depth_cells) * pixels_per_cell))
+	)
+	return Vector2i(
+		mini(width, FOG_MAX_TEXTURE_SIDE),
+		mini(height, FOG_MAX_TEXTURE_SIDE)
+	)
+
+
+func _ensure_fog_mask() -> void:
+	var target_size: Vector2i = _fog_texture_size()
+	if fog_mask_image == null or fog_mask_image.is_empty():
+		fog_mask_image = Image.create(
+			target_size.x,
+			target_size.y,
+			false,
+			Image.FORMAT_RGBA8
+		)
+		fog_mask_image.fill(Color(0.0, 0.0, 0.0, 1.0))
+	elif (
+		fog_mask_image.get_width() != target_size.x
+		or fog_mask_image.get_height() != target_size.y
+	):
+		fog_mask_image.resize(
+			target_size.x,
+			target_size.y,
+			Image.INTERPOLATE_BILINEAR
+		)
+
+	if (
+		fog_mask_texture == null
+		or fog_mask_texture.get_width() != fog_mask_image.get_width()
+		or fog_mask_texture.get_height() != fog_mask_image.get_height()
+	):
+		fog_mask_texture = ImageTexture.create_from_image(fog_mask_image)
+	else:
+		fog_mask_texture.update(fog_mask_image)
+
+
+func _ensure_fog_overlay() -> void:
+	_ensure_fog_mask()
+	var map_geometry := board_root.get_node_or_null(
+		"Board/MapGeometry"
+	) as Node3D
+	if map_geometry == null:
+		return
+
+	if fog_overlay_node == null or not is_instance_valid(fog_overlay_node):
+		fog_overlay_node = MeshInstance3D.new()
+		fog_overlay_node.name = "CampaignFogOfWar"
+		fog_overlay_node.cast_shadow = (
+			GeometryInstance3D.SHADOW_CASTING_SETTING_OFF
+		)
+		map_geometry.add_child(fog_overlay_node)
+
+		var material := StandardMaterial3D.new()
+		material.shading_mode = BaseMaterial3D.SHADING_MODE_UNSHADED
+		material.transparency = BaseMaterial3D.TRANSPARENCY_ALPHA
+		material.cull_mode = BaseMaterial3D.CULL_DISABLED
+		# Il fog sta sopra la mappa, ma sotto la griglia-overlay.
+		material.render_priority = -10
+		material.albedo_color = Color.BLACK
+		material.albedo_texture = fog_mask_texture
+
+		var plane := PlaneMesh.new()
+		plane.material = material
+		fog_overlay_node.mesh = plane
+	else:
+		var material := _fog_material()
+		if material != null:
+			material.albedo_texture = fog_mask_texture
+
+	_apply_fog_overlay_geometry()
+	fog_overlay_node.visible = fog_enabled
+
+
+func _fog_material() -> StandardMaterial3D:
+	if fog_overlay_node == null or not is_instance_valid(fog_overlay_node):
+		return null
+	var plane := fog_overlay_node.mesh as PlaneMesh
+	if plane == null:
+		return null
+	return plane.material as StandardMaterial3D
+
+
+func _apply_fog_overlay_geometry() -> void:
+	if fog_overlay_node == null or not is_instance_valid(fog_overlay_node):
+		return
+	var plane := fog_overlay_node.mesh as PlaneMesh
+	if plane == null:
+		return
+	plane.size = Vector2(
+		float(primary_width_cells) * _cell_size(),
+		float(primary_depth_cells) * _cell_size()
+	)
+	# Immagine mappa: 0.002 celle. Fog: 0.008 celle. La griglia 2D
+	# riceve un bias di 0.025 celle, quindi resta sempre sopra il velo.
+	fog_overlay_node.position = Vector3(
+		0.0,
+		maxf(0.002, _cell_size() * 0.008),
+		0.0
+	)
+
+
+func _reset_fog_mask() -> void:
+	_ensure_fog_mask()
+	if fog_mask_image == null:
+		return
+	fog_mask_image.fill(Color(0.0, 0.0, 0.0, 1.0))
+	_update_fog_texture()
+	if fog_enabled:
+		_ensure_fog_overlay()
+
+
+func _update_fog_texture() -> void:
+	if fog_mask_image == null or fog_mask_image.is_empty():
+		return
+	if (
+		fog_mask_texture == null
+		or fog_mask_texture.get_width() != fog_mask_image.get_width()
+		or fog_mask_texture.get_height() != fog_mask_image.get_height()
+	):
+		fog_mask_texture = ImageTexture.create_from_image(fog_mask_image)
+	else:
+		fog_mask_texture.update(fog_mask_image)
+	var material := _fog_material()
+	if material != null:
+		material.albedo_texture = fog_mask_texture
+
+
+func _world_inside_primary_grid(world: Vector3) -> bool:
+	var half_x: float = float(primary_width_cells) * _cell_size() * 0.5
+	var half_z: float = float(primary_depth_cells) * _cell_size() * 0.5
+	return (
+		world.x >= -half_x
+		and world.x <= half_x
+		and world.z >= -half_z
+		and world.z <= half_z
+	)
+
+
+func _paint_fog_path(from_world: Vector3, to_world: Vector3) -> void:
+	var distance: float = from_world.distance_to(to_world)
+	var spacing: float = maxf(
+		_cell_size() * fog_brush_radius_cells * 0.35,
+		_cell_size() * 0.12
+	)
+	var steps: int = maxi(1, int(ceil(distance / spacing)))
+	for index: int in range(1, steps + 1):
+		var t: float = float(index) / float(steps)
+		var point: Vector3 = from_world.lerp(to_world, t)
+		if _world_inside_primary_grid(point):
+			_paint_fog_at_world(point, false)
+	_update_fog_texture()
+
+
+func _paint_fog_at_world(
+	world: Vector3,
+	update_texture: bool = true
+) -> void:
+	_ensure_fog_mask()
+	if fog_mask_image == null or fog_mask_image.is_empty():
+		return
+
+	var world_width: float = float(primary_width_cells) * _cell_size()
+	var world_depth: float = float(primary_depth_cells) * _cell_size()
+	var u: float = clampf(world.x / world_width + 0.5, 0.0, 1.0)
+	var v: float = clampf(world.z / world_depth + 0.5, 0.0, 1.0)
+	var center_x: int = int(round(u * float(fog_mask_image.get_width() - 1)))
+	var center_y: int = int(round(v * float(fog_mask_image.get_height() - 1)))
+
+	var radius_x: int = maxi(
+		1,
+		int(round(
+			fog_brush_radius_cells
+			* float(fog_mask_image.get_width())
+			/ float(primary_width_cells)
+		))
+	)
+	var radius_y: int = maxi(
+		1,
+		int(round(
+			fog_brush_radius_cells
+			* float(fog_mask_image.get_height())
+			/ float(primary_depth_cells)
+		))
+	)
+
+	var min_x: int = maxi(0, center_x - radius_x)
+	var max_x: int = mini(fog_mask_image.get_width() - 1, center_x + radius_x)
+	var min_y: int = maxi(0, center_y - radius_y)
+	var max_y: int = mini(fog_mask_image.get_height() - 1, center_y + radius_y)
+
+	for py: int in range(min_y, max_y + 1):
+		for px: int in range(min_x, max_x + 1):
+			var dx: float = float(px - center_x) / float(radius_x)
+			var dy: float = float(py - center_y) / float(radius_y)
+			if dx * dx + dy * dy <= 1.0:
+				fog_mask_image.set_pixel(
+					px,
+					py,
+					Color(0.0, 0.0, 0.0, 0.0)
+				)
+
+	if update_texture:
+		_update_fog_texture()
+
+
+func _save_fog_mask_asset() -> void:
+	if fog_mask_image == null or fog_mask_image.is_empty():
+		return
+	var manager := _campaign_manager()
+	if manager == null or not manager.has_method(
+		"get_active_campaign_asset_directory"
+	):
+		return
+	var asset_directory: String = String(
+		manager.call("get_active_campaign_asset_directory")
+	)
+	if asset_directory.is_empty():
+		return
+	fog_mask_asset_path = asset_directory.path_join("fog_of_war.png")
+	fog_mask_image.save_png(fog_mask_asset_path)
+
+
+func _serialize_fog() -> Dictionary:
+	return {
+		"enabled": fog_enabled,
+		"file": fog_mask_asset_path.get_file(),
+		"brush_radius_cells": fog_brush_radius_cells
+	}
+
+
+func _apply_fog_state(value: Variant) -> void:
+	fog_enabled = false
+	fog_edit_layer_active = false
+	_fog_painting = false
+	if fog_overlay_node != null and is_instance_valid(fog_overlay_node):
+		fog_overlay_node.free()
+	fog_overlay_node = null
+	fog_mask_texture = null
+	fog_mask_image = null
+	fog_mask_asset_path = ""
+
+	if not value is Dictionary:
+		return
+	var data: Dictionary = value as Dictionary
+	fog_enabled = bool(data.get("enabled", false))
+	fog_brush_radius_cells = clampf(
+		float(data.get(
+			"brush_radius_cells",
+			FOG_DEFAULT_BRUSH_RADIUS_CELLS
+		)),
+		0.25,
+		10.0
+	)
+
+	var file_name: String = String(data.get("file", "")).get_file()
+	if not file_name.is_empty():
+		var manager := _campaign_manager()
+		if manager != null and manager.has_method(
+			"get_active_campaign_asset_directory"
+		):
+			var asset_directory: String = String(
+				manager.call("get_active_campaign_asset_directory")
+			)
+			var image_path: String = asset_directory.path_join(file_name)
+			if FileAccess.file_exists(image_path):
+				var loaded: Image = Image.new()
+				if loaded.load(image_path) == OK and not loaded.is_empty():
+					fog_mask_image = loaded
+					fog_mask_asset_path = image_path
+
+	if fog_enabled:
+		_ensure_fog_mask()
+		_ensure_fog_overlay()
+
+
+func _clear_map_image_node_only() -> void:
+	if map_image_node != null and is_instance_valid(map_image_node):
+		map_image_node.free()
+	map_image_node = null
+
+
+func _clear_map_image() -> void:
+	_clear_map_image_node_only()
+	map_image_asset_path = ""
+	map_image_width_cells = 0.0
+	map_image_depth_cells = 0.0
+	map_image_opacity = 1.0
+	_map_drag_mode = ""
+
+
+func _serialize_map_image() -> Dictionary:
+	if (
+		map_image_node == null
+		or not is_instance_valid(map_image_node)
+		or map_image_asset_path.is_empty()
+	):
+		return {}
+	return {
+		"file": map_image_asset_path.get_file(),
+		"width_cells": map_image_width_cells,
+		"depth_cells": map_image_depth_cells,
+		"center_x": map_image_node.position.x,
+		"center_z": map_image_node.position.z,
+		"opacity": map_image_opacity
+	}
+
+
+func _apply_map_image_state(value: Variant) -> void:
+	_clear_map_image()
+	if not value is Dictionary:
+		return
+	var data := value as Dictionary
+	var file_name := String(data.get("file", "")).get_file()
+	if file_name.is_empty():
+		return
+
+	var manager := _campaign_manager()
+	if manager == null or not manager.has_method(
+		"get_active_campaign_asset_directory"
+	):
+		return
+	var asset_directory := String(
+		manager.call("get_active_campaign_asset_directory")
+	)
+	if asset_directory.is_empty():
+		return
+
+	var image_path := asset_directory.path_join(file_name)
+	if not FileAccess.file_exists(image_path):
+		return
+	var image := Image.new()
+	if image.load(image_path) != OK or image.is_empty():
+		return
+
+	map_image_asset_path = image_path
+	_create_map_image_node(image)
+	map_image_width_cells = clampf(
+		float(data.get("width_cells", primary_width_cells)),
+		0.25,
+		float(primary_width_cells)
+	)
+	map_image_depth_cells = clampf(
+		float(data.get("depth_cells", primary_depth_cells)),
+		0.25,
+		float(primary_depth_cells)
+	)
+	map_image_node.position.x = float(data.get("center_x", 0.0))
+	map_image_node.position.z = float(data.get("center_z", 0.0))
+	map_image_opacity = clampf(float(data.get("opacity", 1.0)), 0.1, 1.0)
+	_apply_map_image_geometry()
+	_apply_map_image_opacity()
 
 
 func _dialog_body(dialog: ConfirmationDialog) -> VBoxContainer:
@@ -832,6 +1877,20 @@ func _resize_primary_grid(width_cells: int, depth_cells: int) -> void:
 	mesh.size = world_size
 	mesh.material = _platform_material()
 	visual.mesh = mesh
+
+	if map_image_node != null and is_instance_valid(map_image_node):
+		map_image_width_cells = minf(
+			map_image_width_cells, float(primary_width_cells)
+		)
+		map_image_depth_cells = minf(
+			map_image_depth_cells, float(primary_depth_cells)
+		)
+		_apply_map_image_geometry()
+
+	if fog_mask_image != null and not fog_mask_image.is_empty():
+		_ensure_fog_mask()
+	if fog_overlay_node != null and is_instance_valid(fog_overlay_node):
+		_apply_fog_overlay_geometry()
 
 	_refresh_volumetric_grid()
 
@@ -940,6 +1999,8 @@ func _save_campaign() -> void:
 		_set_status("Questa scena non e' una campagna utente salvabile")
 		return
 
+	_save_fog_mask_asset()
+
 	var state := {
 		"version": SAVE_VERSION,
 		"primary_grid": {
@@ -948,6 +2009,8 @@ func _save_campaign() -> void:
 		},
 		"extra_grids": _serialize_extra_grids(),
 		"element_preset": active_element_preset,
+		"map_image": _serialize_map_image(),
+		"fog_of_war": _serialize_fog(),
 		"view": _serialize_view_state(),
 		"board_snapshot": _create_board_snapshot()
 	}
@@ -977,7 +2040,7 @@ func _load_active_campaign() -> void:
 			_apply_pirate_ship_preset(true)
 		else:
 			active_element_preset = ""
-			_set_orientation_marker_enabled(true)
+			_set_orientation_marker_enabled(false)
 			_set_base_platform_enabled(true)
 			_set_status("%s · nuovo salvataggio" % _campaign_name())
 		return
@@ -1011,9 +2074,11 @@ func _load_active_campaign() -> void:
 	elif active_element_preset == PIRATE_SHIP_PRESET_ID:
 		_apply_pirate_ship_preset(false)
 	else:
-		_set_orientation_marker_enabled(true)
+		_set_orientation_marker_enabled(false)
 		_set_base_platform_enabled(true)
 
+	_apply_map_image_state(state.get("map_image", {}))
+	_apply_fog_state(state.get("fog_of_war", {}))
 	_apply_view_state(state.get("view", {}))
 	await get_tree().process_frame
 
@@ -1047,6 +2112,9 @@ func _serialize_view_state() -> Dictionary:
 	var grid_visible := volumetric != null and volumetric.visible
 	return {
 		"grid": grid_visible,
+		"top_down_2d": bool(board_root.call("is_2d_view_enabled")),
+		"map_edit_layer": map_edit_layer_active,
+		"fog_edit_layer": fog_edit_layer_active,
 		# Legacy keys are kept so existing campaign saves stay readable by
 		# older builds; both now represent the same unified grid.
 		"grid_2d": grid_visible,
@@ -1070,6 +2138,22 @@ func _apply_view_state(value: Variant) -> void:
 		"set_vision_cones_visible",
 		bool(data.get("vision_cones", false))
 	)
+	board_root.call(
+		"set_2d_view_enabled",
+		bool(data.get("top_down_2d", false))
+	)
+	var top_down_2d: bool = bool(data.get("top_down_2d", false))
+	var restore_fog_layer: bool = (
+		bool(data.get("fog_edit_layer", false))
+		and top_down_2d
+	)
+	if restore_fog_layer:
+		_set_fog_edit_layer(true)
+	else:
+		_set_map_edit_layer(
+			bool(data.get("map_edit_layer", false))
+			and top_down_2d
+		)
 
 
 func _set_white_environment() -> void:

@@ -3,8 +3,8 @@
 [ext_resource type="Script" uid="uid://dahxl1eqls71n" path="res://dnd_base.gd" id="1_dnd_base"]
 [ext_resource type="PackedScene" path="res://token.tscn" id="2_token"]
 [ext_resource type="Script" uid="uid://de2p0j1305tgf" path="res://camera_controller.gd" id="3_camera"]
-[ext_resource type="Script" uid="uid://cwakp2jrm7thd" path="res://measurement_tool.gd" id="4_measurement"]
-[ext_resource type="Script" uid="uid://bg4ibrd2inldl" path="res://volumetric_grid.gd" id="5_grid3d"]
+[ext_resource type="Script" path="res://measurement_tool.gd" id="4_measurement"]
+[ext_resource type="Script" path="res://volumetric_grid.gd" id="5_grid3d"]
 
 [sub_resource type="Environment" id="Environment_base"]
 background_mode = 1
@@ -160,6 +160,7 @@ min_size = Vector2i(360, 420)
 ok_button_text = "Crea"
 
 [node name="Content" type="ScrollContainer" parent="UI/TokenColorDialog" unique_id=1590725337]
+mouse_force_pass_scroll_events = false
 anchors_preset = 15
 anchor_right = 1.0
 anchor_bottom = 1.0

@@ -1,6 +1,7 @@
 extends Node
 
 signal status_changed(message: String)
+const ContentCatalog = preload("res://vtt/content_catalog.gd")
 const PORT := 45454
 const SNAPSHOT_VERSION := 6
 const MAGIC := "DND_MAP_SYNC_V6"
@@ -33,7 +34,6 @@ const SYNC_APPEARANCE_KEYS := [
 	"visual_asset",
 	"visual_native_footprint",
 	"visual_front_quarter_turns",
-	"visual_pitch_steps",
 	"transformation_history"
 ]
 var board_root: Node
@@ -41,6 +41,7 @@ var token_scene: PackedScene
 var tokens_root: Node
 var measurement_tool: Node
 var server := TCPServer.new()
+var port: int = PORT
 var connections: Array = []
 var receiving := false
 var session_key := ""
@@ -308,9 +309,9 @@ func listen(enabled: bool, key: String) -> Error:
 	if session_key.is_empty():
 		status_changed.emit("Inserisci un codice sessione condiviso")
 		return ERR_INVALID_PARAMETER
-	var error := server.listen(PORT)
+	var error := server.listen(port)
 	receiving = error == OK
-	status_changed.emit("In ascolto sulla porta TCP %d" % PORT if receiving else error_string(error))
+	status_changed.emit("In ascolto sulla porta TCP %d" % port if receiving else error_string(error))
 	return error
 
 func send_snapshot(host: String, key: String) -> Error:
@@ -327,7 +328,7 @@ func send_snapshot(host: String, key: String) -> Error:
 		false
 	)
 	if error == OK:
-		status_changed.emit("Connessione e invio in corso…")
+		status_changed.emit("Connessione e invio in corsoâ€¦")
 	else:
 		status_changed.emit(error_string(error))
 	return error
@@ -380,13 +381,13 @@ func send_snapshot_to_tailnet(
 
 	if _bulk_pending == 0:
 		status_changed.emit(
-			"Trovati %d nodi Tailscale, ma nessuna connessione è partita"
+			"Trovati %d nodi Tailscale, ma nessuna connessione Ã¨ partita"
 			% _bulk_total
 		)
 		return ERR_CANT_CONNECT
 
 	status_changed.emit(
-		"Trovati %d nodi Tailscale · invio in corso…" % _bulk_total
+		"Trovati %d nodi Tailscale Â· invio in corsoâ€¦" % _bulk_total
 	)
 	return OK
 
@@ -422,7 +423,7 @@ func _queue_snapshot_payload(
 	bulk_id: int = -1
 ) -> Error:
 	var peer := StreamPeerTCP.new()
-	var error: Error = peer.connect_to_host(host, PORT)
+	var error: Error = peer.connect_to_host(host, port)
 	if error != OK:
 		return error
 
@@ -618,7 +619,7 @@ func _finish_bulk_attempt(item: Dictionary, accepted: bool, rejected: bool) -> v
 		):
 			_mark_current_state_dirty_for_retry()
 		status_changed.emit(
-			"Sincronizzazione conclusa · ricevute %d/%d · rifiutate %d · non raggiungibili %d"
+			"Sincronizzazione conclusa Â· ricevute %d/%d Â· rifiutate %d Â· non raggiungibili %d"
 			% [
 				_bulk_accepted,
 				_bulk_total,
@@ -862,6 +863,27 @@ func valid_snapshot(snapshot: Variant) -> bool:
 				return false
 			if item.has("support_id") and not item.get("support_id") is String:
 				return false
+			if item.has("mount_target_id"):
+				if (
+					not item.get("mount_target_id") is String
+					or String(item.get("mount_target_id")).is_empty()
+					or String(item.get("mount_target_id")).length() > 96
+					or String(item.get("mount_target_kind", "")) not in ["token", "item"]
+				):
+					return false
+				var mount_local: Variant = item.get("mount_local_position")
+				if not mount_local is Dictionary:
+					return false
+				for axis: String in ["x", "y", "z"]:
+					var coordinate: Variant = mount_local.get(axis)
+					if (
+						not (coordinate is float or coordinate is int)
+						or not is_finite(float(coordinate))
+						or absf(float(coordinate)) > 100000
+					):
+						return false
+			elif item.has("mount_target_kind") or item.has("mount_local_position"):
+				return false
 			# V4 makes logical token state mandatory. This prevents an older
 			# client from silently accepting a snapshot without names/conditions
 			# and then broadcasting blank state back to the table.
@@ -877,16 +899,32 @@ func valid_snapshot(snapshot: Variant) -> bool:
 			if not item.get("conditions") is Array:
 				return false
 			var condition_values: Array = item.get("conditions", [])
-			if condition_values.size() > TOKEN_CONDITIONS.size():
+			if condition_values.size() > 128:
 				return false
 			var seen_conditions: Dictionary = {}
 			for condition_value: Variant in condition_values:
 				if not condition_value is String:
 					return false
 				var condition_id := String(condition_value)
-				if not (condition_id in TOKEN_CONDITIONS) or seen_conditions.has(condition_id):
+				if not ContentCatalog.valid_effect_id(condition_id) or seen_conditions.has(condition_id):
 					return false
 				seen_conditions[condition_id] = true
+			if item.has("condition_presentations"):
+				var presentations: Variant = item.get("condition_presentations")
+				if not presentations is Array or presentations.size() > 128:
+					return false
+				var presentation_ids: Dictionary = {}
+				for presentation: Variant in presentations:
+					if not presentation is Dictionary:
+						return false
+					if presentation.size() != 3 or not presentation.has("id") or not presentation.has("name") or not presentation.has("icon"):
+						return false
+					var presentation_id: Variant = presentation.get("id")
+					if not presentation_id is String or presentation_id not in condition_values or presentation_ids.has(presentation_id):
+						return false
+					presentation_ids[presentation_id] = true
+					if not presentation.get("name") is String or String(presentation.name).length() > 120 or not presentation.get("icon") is String or String(presentation.icon).length() > 16:
+						return false
 			if item.has("height_cells"):
 				var height_value: Variant = item.get("height_cells")
 				if not (height_value is float or height_value is int):
@@ -937,18 +975,6 @@ func valid_snapshot(snapshot: Variant) -> bool:
 				or int(front_number) > 3
 			):
 				return false
-			if item.has("visual_pitch_steps"):
-				var pitch_value: Variant = item.get("visual_pitch_steps")
-				if not (pitch_value is int or pitch_value is float):
-					return false
-				var pitch_number: float = float(pitch_value)
-				if (
-					not is_finite(pitch_number)
-					or pitch_number != floor(pitch_number)
-					or int(pitch_number) < -3
-					or int(pitch_number) > 3
-				):
-					return false
 			if item.has("transformation_history"):
 				var history_value: Variant = item.get(
 					"transformation_history",
@@ -1037,24 +1063,6 @@ func valid_snapshot(snapshot: Variant) -> bool:
 						or int(previous_front_number) > 3
 					):
 						return false
-					if appearance.has("visual_pitch_steps"):
-						var previous_pitch: Variant = appearance.get(
-							"visual_pitch_steps"
-						)
-						if not (
-							previous_pitch is int
-							or previous_pitch is float
-						):
-							return false
-						var previous_pitch_number := float(previous_pitch)
-						if (
-							not is_finite(previous_pitch_number)
-							or previous_pitch_number
-							!= floor(previous_pitch_number)
-							or int(previous_pitch_number) < -3
-							or int(previous_pitch_number) > 3
-						):
-							return false
 					if not appearance.get("reach_overridden", false) is bool:
 						return false
 		if not item.get("name") is String or not item.get("visible") is bool:
@@ -1093,8 +1101,48 @@ func valid_snapshot(snapshot: Variant) -> bool:
 				return false
 
 	if board_root.get("item_controller") != null:
-		return board_root.item_controller.valid_items(snapshot.get("items", []), item_token_ids)
-	return not snapshot.has("items") or snapshot.items == []
+		if not board_root.item_controller.valid_items(snapshot.get("items", []), item_token_ids):
+			return false
+	elif snapshot.has("items") and snapshot.items != []:
+		return false
+	return _valid_mount_links(snapshot, item_token_ids)
+
+
+func _valid_mount_links(snapshot: Dictionary, token_ids: Dictionary) -> bool:
+	var item_ids: Dictionary = {}
+	var item_drivers: Dictionary = {}
+	for value: Variant in snapshot.get("items", []):
+		if value is Dictionary:
+			var item_id := String(value.get("id", ""))
+			item_ids[item_id] = true
+			item_drivers[item_id] = String(value.get("linked_token_id", ""))
+	var parents: Dictionary = {}
+	for value: Variant in snapshot.get("objects", []):
+		if not value is Dictionary or not value.has("mount_target_id"):
+			continue
+		if String(value.get("kind", "")) != "token":
+			return false
+		var token_id := String(value.get("id", ""))
+		var target_id := String(value.get("mount_target_id", ""))
+		var target_kind := String(value.get("mount_target_kind", ""))
+		if target_kind == "token":
+			if not token_ids.has(target_id) or token_id == target_id:
+				return false
+			parents[token_id] = target_id
+		elif not item_ids.has(target_id):
+			return false
+		elif String(item_drivers.get(target_id, "")) == token_id:
+			# An item must not be simultaneously pulled by its own rider.
+			return false
+	for rider_id: Variant in parents.keys():
+		var checked: Dictionary = {}
+		var current_id := String(rider_id)
+		while parents.has(current_id):
+			if checked.has(current_id):
+				return false
+			checked[current_id] = true
+			current_id = String(parents[current_id])
+	return true
 
 func _effective_party_id(value: String) -> String:
 	var clean := value.strip_edges().left(80)
@@ -1197,7 +1245,7 @@ func _apply_party_manifest(value: Variant) -> void:
 func _owned_health_bar_entries() -> Array[Dictionary]:
 	var by_token: Dictionary = {}
 	var current_nodes := _current_nodes_by_id()
-	for area_name: String in ["PlayerArea", "MasterArea"]:
+	for area_name: String in ["CreatureArea", "PlayerArea", "MasterArea"]:
 		var area := board_root.get_node_or_null(area_name)
 		if (
 			area == null
@@ -1286,6 +1334,8 @@ func _apply_partial_health_bars(value: Variant) -> void:
 func create_snapshot() -> Dictionary:
 	if board_root.get("item_controller") != null:
 		board_root.item_controller.flush_motion()
+	if board_root.get("mount_controller") != null:
+		board_root.mount_controller.refresh_all()
 	var objects: Array = []
 	var seen := {}
 	for group_name in GROUPS:
@@ -1455,6 +1505,8 @@ func apply_snapshot(snapshot: Dictionary) -> bool:
 	if board_root.get("item_controller") != null:
 		board_root.item_controller.apply_items(snapshot.get("items", []))
 	_restore_token_supports(wanted)
+	if board_root.get("mount_controller") != null:
+		board_root.mount_controller.refresh_all()
 	if is_instance_valid(measurement_tool) and measurement_tool.has_method("apply_persistent_aoes"): measurement_tool.call("apply_persistent_aoes", snapshot.get("aoes",[]))
 	var initiative_tracker: Node = _initiative_tracker()
 	if initiative_tracker == null:
@@ -1477,6 +1529,11 @@ func apply_snapshot(snapshot: Dictionary) -> bool:
 		if flanking_node.has_method("refresh_now"):
 			flanking_node.call_deferred("refresh_now")
 	_queue_snapshot_token_packs(snapshot)
+	# Ownership changes are public token metadata. The receiving installation
+	# creates/reattaches its private sheet without an acceptance dialog.
+	var creature_area := board_root.get_node_or_null("CreatureArea")
+	if creature_area != null and creature_area.has_method("refresh_owned_sheets"):
+		creature_area.call_deferred("refresh_owned_sheets")
 	return true
 
 func _restore_token_supports(wanted: Dictionary) -> void:
@@ -1558,6 +1615,12 @@ func _serialize_node(node: Node3D, group_name: String) -> Dictionary:
 			and board_root.is_ancestor_of(support_value as Node3D)
 		):
 			data["support_id"] = _sync_id(support_value as Node3D)
+		var mount_id := String(node.get_meta("mount_target_id", ""))
+		var mount_local: Variant = node.get_meta("mount_local_position", Vector3.ZERO)
+		if not mount_id.is_empty() and mount_local is Vector3:
+			data["mount_target_kind"] = String(node.get_meta("mount_target_kind", ""))
+			data["mount_target_id"] = mount_id
+			data["mount_local_position"] = _v3(mount_local as Vector3)
 		data["height_cells"] = float(node.get("token_height_cells"))
 		data["display_name"] = (
 			String(node.call("get_display_name"))
@@ -1569,6 +1632,12 @@ func _serialize_node(node: Node3D, group_name: String) -> Dictionary:
 			if node.has_method("get_party_id")
 			else String(node.get_meta("party_id", ""))
 		)
+		for field: String in [
+			"creature_id", "creature_owner_id", "default_miniature_id",
+			"master_creature_id", "master_creature_name", "master_creature_side"
+		]:
+			if node.has_meta(field):
+				data[field] = String(node.get_meta(field))
 		if node.has_meta("player_character_id"):
 			data["player_character_id"] = String(
 				node.get_meta("player_character_id")
@@ -1576,6 +1645,7 @@ func _serialize_node(node: Node3D, group_name: String) -> Dictionary:
 			data["player_character_name"] = String(
 				node.get_meta("player_character_name", "")
 			)
+		data["condition_presentations"] = node.call("get_condition_presentations") if node.has_method("get_condition_presentations") else []
 		data["conditions"] = (
 			node.call("get_conditions")
 			if node.has_method("get_conditions")
@@ -1595,11 +1665,6 @@ func _serialize_node(node: Node3D, group_name: String) -> Dictionary:
 		data["visual_front_quarter_turns"] = (
 			int(node.call("get_visual_front_quarter_turns"))
 			if node.has_method("get_visual_front_quarter_turns")
-			else 0
-		)
-		data["visual_pitch_steps"] = (
-			int(node.call("get_visual_pitch_steps"))
-			if node.has_method("get_visual_pitch_steps")
 			else 0
 		)
 		if node.has_method("get_transformation_history"):
@@ -1702,15 +1767,6 @@ func _apply_node_data(node: Node3D, data: Dictionary) -> void:
 				"set_visual_front_quarter_turns",
 				int(data.get("visual_front_quarter_turns", 0))
 			)
-		if (
-			apply_shared_appearance
-			and data.has("visual_pitch_steps")
-			and node.has_method("set_visual_pitch_steps")
-		):
-			node.call(
-				"set_visual_pitch_steps",
-				int(data.get("visual_pitch_steps", 0))
-			)
 		if apply_shared_appearance and data.has("height_cells"):
 			node.set(
 				"token_height_cells",
@@ -1742,6 +1798,13 @@ func _apply_node_data(node: Node3D, data: Dictionary) -> void:
 			node.call("apply_gravity")
 		elif node.has_method("set_flying"):
 			node.call("set_flying", true)
+		for key: String in ["mount_target_kind", "mount_target_id", "mount_local_position"]:
+			if node.has_meta(key):
+				node.remove_meta(key)
+		if data.has("mount_target_id"):
+			node.set_meta("mount_target_kind", String(data.get("mount_target_kind", "")))
+			node.set_meta("mount_target_id", String(data.get("mount_target_id", "")))
+			node.set_meta("mount_local_position", _dv3(data.get("mount_local_position", {})))
 		if node.has_method("set_display_name"):
 			node.call("set_display_name", String(data.get("display_name", "")))
 		if node.has_method("set_party_id"):
@@ -1764,6 +1827,17 @@ func _apply_node_data(node: Node3D, data: Dictionary) -> void:
 				"player_character_name",
 				String(data.get("player_character_name", ""))
 			)
+		for field: String in [
+			"creature_id", "creature_owner_id", "default_miniature_id",
+			"master_creature_id", "master_creature_name", "master_creature_side"
+		]:
+			var value := String(data.get(field, "")).strip_edges()
+			if not value.is_empty():
+				node.set_meta(field, value)
+			elif node.has_meta(field):
+				node.remove_meta(field)
+		if node.has_method("set_condition_presentations"):
+			node.call("set_condition_presentations", data.get("condition_presentations", []))
 		if node.has_method("set_conditions"):
 			node.call("set_conditions", data.get("conditions", []))
 		if apply_shared_appearance and node.has_method(

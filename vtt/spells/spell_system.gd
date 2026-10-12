@@ -2,6 +2,7 @@ extends Node
 
 const SpellCatalog = preload("res://vtt/spells/spell_catalog.gd")
 const WallGeometry = preload("res://vtt/spells/wall_geometry.gd")
+const DialogLayout = preload("res://vtt/dialog_layout.gd")
 const ALL_COLLISION_LAYERS := 0xFFFFFFFF
 const AOE_PICK_LAYER := 1 << 20
 const TOKEN_PICK_COLLISION_MASK := ALL_COLLISION_LAYERS & ~AOE_PICK_LAYER
@@ -80,8 +81,10 @@ func setup(root: Node3D) -> void:
 
 
 func _process(_delta: float) -> void:
+	# Previews are cleared synchronously by _reset_cast_state(). Repeating
+	# that cleanup every rendered frame while idle does redundant scene-tree
+	# work (notably on geometry-heavy encounter maps).
 	if _pending_spell_id.is_empty():
-		_hide_all_spell_previews()
 		return
 	_update_spell_preview()
 
@@ -291,11 +294,20 @@ func has_post_cast_cleanup() -> bool:
 	return _post_cast_cleanup_pending
 
 
+func has_runtime_spell_effect(
+	spell_id: String,
+	spell_name: String = "",
+	source: String = ""
+) -> bool:
+	return not _runtime_spell_reference(spell_id, spell_name, source).is_empty()
+
+
 func activate_spell_from_caster(
 	spell_id: String,
 	caster: Node3D,
 	spell_name: String = "",
-	source: String = ""
+	source: String = "",
+	cast_slot_level: int = -1
 ) -> bool:
 	if spell_id.is_empty() or caster == null or not is_instance_valid(caster):
 		return false
@@ -317,6 +329,12 @@ func activate_spell_from_caster(
 	)
 	_selected_spell_id = resolved_spell_id
 	_selected_spell_data = spell_data.duplicate(true)
+	_configure_slot_selector(spell_data)
+	var base_level: int = int(spell_data.get("level", 0))
+	if cast_slot_level >= 0:
+		_selected_slot_level = (
+			clampi(cast_slot_level, base_level, 9) if base_level > 0 else 0
+		)
 	_activate_selected_spell()
 
 	if (
@@ -3700,7 +3718,9 @@ func _build_panel() -> void:
 	panel.anchor_right = 0.48
 	panel.anchor_bottom = 1.0
 	panel.offset_left = 8.0
-	panel.offset_top = 8.0
+	# The runtime toolbar occupies the top strip (10–55 px). Leave its
+	# buttons, including "Chiudi", fully visible and clickable.
+	panel.offset_top = 66.0
 	panel.offset_right = -4.0
 	panel.offset_bottom = -8.0
 	panel.mouse_filter = Control.MOUSE_FILTER_STOP
@@ -5294,8 +5314,7 @@ func _show_current_saving_throw_prompt(
 			target_name
 		]
 	)
-	saving_throw_dialog.reset_size()
-	saving_throw_dialog.popup_centered_clamped(Vector2i(500, 220), 0.92)
+	DialogLayout.popup(saving_throw_dialog, Vector2i(500, 220), 0.92)
 
 
 func _resolve_current_saving_throw(succeeded: bool) -> void:

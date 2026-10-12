@@ -1,8 +1,8 @@
 extends Node
 
 const DiceChatSync = preload("res://network/dice_chat_sync.gd")
+const CreatureOwner = preload("res://vtt/creature_owner.gd")
 const HISTORY_DIR := "user://dice_chat"
-const PROFILE_PATH := "user://dice_chat/profile.cfg"
 const MAX_HISTORY := 300
 
 var board_root: Node3D
@@ -12,13 +12,7 @@ var session_key := "1"
 var history: Array[Dictionary] = []
 var seen_ids: Dictionary = {}
 var rng := RandomNumberGenerator.new()
-var _selected_identity_token_id := ""
-var _scene_identity_configured := false
-var _identity_change_mode := false
-var _identity_placement_pending := false
-var _identity_profile_choices: Array[Dictionary] = []
 var _selected_die := "d20"
-var _pending_identity_callback := Callable()
 
 var toggle_button: Button
 var panel: PanelContainer
@@ -29,11 +23,6 @@ var dice_count_input: SpinBox
 var dice_modifier_input: SpinBox
 var roll_mode_input: OptionButton
 var roll_button: Button
-var scene_identity_dialog: ConfirmationDialog
-var scene_identity_selector: OptionButton
-var scene_identity_miniature_section: VBoxContainer
-var scene_identity_miniature_search: LineEdit
-var scene_identity_miniature_list: ItemList
 var quick_result_panel: PanelContainer
 var quick_result_label: Label
 var _quick_result_generation := 0
@@ -56,7 +45,6 @@ func setup(
 	DirAccess.make_dir_recursive_absolute(
 		ProjectSettings.globalize_path(HISTORY_DIR)
 	)
-	_load_scene_identity()
 
 	sync = DiceChatSync.new()
 	sync.name = "DiceChatSync"
@@ -66,9 +54,7 @@ func setup(
 	sync.status_changed.connect(_on_sync_status)
 
 	_build_ui()
-	_build_scene_identity_dialog()
 	set_session_key(initial_session_key)
-	call_deferred("_prompt_initial_identity_after_scene_ready")
 
 
 func set_session_key(value: String) -> void:
@@ -140,8 +126,8 @@ func _input(event: InputEvent) -> void:
 func _build_ui() -> void:
 	toggle_button = Button.new()
 	toggle_button.name = "DiceChatToggle"
-	toggle_button.text = "d20"
-	toggle_button.tooltip_text = "Dice roller e chat"
+	toggle_button.text = "D20"
+	toggle_button.tooltip_text = "Apri dadi e chat"
 	toggle_button.anchor_left = 1.0
 	toggle_button.anchor_top = 1.0
 	toggle_button.anchor_right = 1.0
@@ -151,6 +137,8 @@ func _build_ui() -> void:
 	toggle_button.offset_right = -12.0
 	toggle_button.offset_bottom = -12.0
 	toggle_button.mouse_filter = Control.MOUSE_FILTER_STOP
+	toggle_button.add_theme_font_size_override("font_size", 20)
+	toggle_button.add_theme_color_override("font_color", Color(1.0, 0.88, 0.63, 1.0))
 	toggle_button.pressed.connect(toggle_panel)
 	ui_root.add_child(toggle_button)
 
@@ -170,10 +158,10 @@ func _build_ui() -> void:
 	ui_root.add_child(panel)
 
 	var panel_style := StyleBoxFlat.new()
-	panel_style.bg_color = Color(0.025, 0.028, 0.036, 0.98)
-	panel_style.border_color = Color(0.48, 0.38, 0.24, 0.9)
+	panel_style.bg_color = Color(0.12, 0.105, 0.105, 0.98)
+	panel_style.border_color = Color(0.77, 0.57, 0.30, 0.96)
 	panel_style.set_border_width_all(1)
-	panel_style.set_corner_radius_all(8)
+	panel_style.set_corner_radius_all(10)
 	panel_style.content_margin_left = 10
 	panel_style.content_margin_right = 10
 	panel_style.content_margin_top = 9
@@ -189,8 +177,9 @@ func _build_ui() -> void:
 	outer.add_child(header)
 
 	var title := Label.new()
-	title.text = "Dice Roller · Chat"
-	title.add_theme_font_size_override("font_size", 17)
+	title.text = "Dadi e chat"
+	title.add_theme_font_size_override("font_size", 20)
+	title.add_theme_color_override("font_color", Color(0.99, 0.85, 0.58, 1.0))
 	title.size_flags_horizontal = Control.SIZE_EXPAND_FILL
 	header.add_child(title)
 
@@ -203,7 +192,7 @@ func _build_ui() -> void:
 
 	status_label = Label.new()
 	status_label.text = "Partita %s · sincronizzazione automatica" % session_key
-	status_label.modulate = Color(0.70, 0.74, 0.80, 1.0)
+	status_label.modulate = Color(0.78, 0.71, 0.62, 1.0)
 	status_label.autowrap_mode = TextServer.AUTOWRAP_WORD_SMART
 	status_label.add_theme_font_size_override("font_size", 12)
 	outer.add_child(status_label)
@@ -263,7 +252,7 @@ func _build_ui() -> void:
 
 	var settings_hint := Label.new()
 	settings_hint.text = "es. 3d20 + 5"
-	settings_hint.modulate = Color(0.55, 0.59, 0.66, 1.0)
+	settings_hint.modulate = Color(0.72, 0.67, 0.60, 1.0)
 	settings_hint.size_flags_horizontal = Control.SIZE_EXPAND_FILL
 	roll_settings.add_child(settings_hint)
 
@@ -291,7 +280,7 @@ func _build_ui() -> void:
 
 	var mode_hint := Label.new()
 	mode_hint.text = "Disponibile quando Dadi = 1, per qualsiasi dado."
-	mode_hint.modulate = Color(0.55, 0.59, 0.66, 1.0)
+	mode_hint.modulate = Color(0.72, 0.67, 0.60, 1.0)
 	mode_hint.size_flags_horizontal = Control.SIZE_EXPAND_FILL
 	mode_row.add_child(mode_hint)
 
@@ -322,7 +311,7 @@ func _build_ui() -> void:
 		dice_grid.add_child(button)
 
 	roll_button = Button.new()
-	roll_button.text = "ROLL %s" % _selected_die
+	roll_button.text = "Lancia %s" % _selected_die
 	roll_button.custom_minimum_size = Vector2(0, 36)
 	roll_button.size_flags_horizontal = Control.SIZE_EXPAND_FILL
 	roll_button.tooltip_text = "Esegui il tiro con il dado selezionato"
@@ -358,17 +347,17 @@ func _build_quick_result_popup() -> void:
 	quick_result_panel.name = "DiceQuickResult"
 	quick_result_panel.anchor_left = 0.5
 	quick_result_panel.anchor_right = 0.5
-	quick_result_panel.offset_left = -175.0
-	quick_result_panel.offset_top = 72.0
-	quick_result_panel.offset_right = 175.0
-	quick_result_panel.offset_bottom = 132.0
+	quick_result_panel.offset_left = -245.0
+	quick_result_panel.offset_top = 66.0
+	quick_result_panel.offset_right = 245.0
+	quick_result_panel.offset_bottom = 178.0
 	quick_result_panel.mouse_filter = Control.MOUSE_FILTER_IGNORE
 	quick_result_panel.z_index = 100
 	quick_result_panel.hide()
 
 	var style := StyleBoxFlat.new()
-	style.bg_color = Color(0.025, 0.028, 0.036, 0.94)
-	style.border_color = Color(0.82, 0.62, 0.24, 0.95)
+	style.bg_color = Color(0.20, 0.13, 0.13, 0.97)
+	style.border_color = Color(0.94, 0.73, 0.37, 0.98)
 	style.set_border_width_all(1)
 	style.set_corner_radius_all(8)
 	style.content_margin_left = 12
@@ -525,14 +514,14 @@ func roll_expression_from_sheet(
 	label: String,
 	expression: String,
 	actor: Node3D = null
-) -> void:
+) -> int:
 	var parsed := parse_dice_expression(expression)
 	if parsed.is_empty():
-		return
+		return -1
 
 	var terms_value: Variant = parsed.get("terms", [])
 	if not terms_value is Array:
-		return
+		return -1
 	var terms: Array = terms_value as Array
 	var fixed_modifier := int(parsed.get("modifier", 0))
 	var rolled_terms: Array[Dictionary] = []
@@ -546,7 +535,7 @@ func roll_expression_from_sheet(
 				100
 			)
 	if total_dice <= 0 or total_dice > 100:
-		return
+		return -1
 
 	var roll_mode := _selected_roll_mode(total_dice)
 	var candidate_rolls: Array = []
@@ -580,7 +569,7 @@ func roll_expression_from_sheet(
 		})
 
 	if rolled_terms.is_empty():
-		return
+		return -1
 
 	var event := _new_event("roll")
 	var resolved_actor: Node3D = actor
@@ -610,6 +599,7 @@ func roll_expression_from_sheet(
 	if not label.strip_edges().is_empty():
 		event["label"] = label.strip_edges().left(160)
 	_append_event(event, true)
+	return total
 
 
 static func parse_dice_expression(expression: String) -> Dictionary:
@@ -859,401 +849,9 @@ static func percentile_total(tens_face: int, ones_face: int) -> int:
 	return 100 if total == 0 else total
 
 
-func _prompt_initial_identity_after_scene_ready() -> void:
-	# Il salvataggio della campagna viene applicato in deferred: attendere due
-	# frame fa sì che il primo popup veda davvero tutti i token caricati.
-	await get_tree().process_frame
-	await get_tree().process_frame
-	# L’identità salvata serve solo come preselezione: a ogni avvio chiediamo
-	# comunque quale token appartiene all’utente, perché la composizione della
-	# scena può essere cambiata dall’ultima sessione.
-	if not _identity_placement_pending:
-		_identity_change_mode = false
-		_show_scene_identity_dialog()
-
-
-func _build_scene_identity_dialog() -> void:
-	scene_identity_dialog = ConfirmationDialog.new()
-	scene_identity_dialog.name = "SceneChatIdentityDialog"
-	scene_identity_dialog.title = "Identità in questa scena"
-	scene_identity_dialog.ok_button_text = "Conferma"
-	scene_identity_dialog.cancel_button_text = "Annulla"
-	scene_identity_dialog.dialog_hide_on_ok = false
-	scene_identity_dialog.min_size = Vector2i(600, 560)
-	scene_identity_dialog.add_theme_constant_override("buttons_min_width", 110)
-	scene_identity_dialog.add_theme_constant_override("buttons_min_height", 36)
-	ui_root.add_child(scene_identity_dialog)
-	# Su alcuni scaling il footer nativo del ConfirmationDialog finisce fuori
-	# dal rettangolo visibile. Le azioni reali vivono quindi nel contenuto.
-	scene_identity_dialog.get_ok_button().hide()
-	var native_cancel := scene_identity_dialog.get_cancel_button()
-	if native_cancel != null:
-		native_cancel.hide()
-
-	var body := VBoxContainer.new()
-	body.custom_minimum_size = Vector2(540, 430)
-	body.add_theme_constant_override("separation", 10)
-	scene_identity_dialog.add_child(body)
-
-	var info := Label.new()
-	info.text = (
-		"Seleziona un token già in gioco, Nessuno, oppure scegli una "
-		+ "miniatura da generare. Se scegli Nessuno apparirai in chat come "
-		+ "master (nome dispositivo)."
-	)
-	info.autowrap_mode = TextServer.AUTOWRAP_WORD_SMART
-	body.add_child(info)
-
-	var identity_label := Label.new()
-	identity_label.text = "Token associato all'utente"
-	body.add_child(identity_label)
-
-	scene_identity_selector = OptionButton.new()
-	scene_identity_selector.size_flags_horizontal = Control.SIZE_EXPAND_FILL
-	scene_identity_selector.item_selected.connect(
-		_on_scene_identity_mode_selected
-	)
-	body.add_child(scene_identity_selector)
-
-	# Footer esplicito immediatamente sotto la scelta: resta visibile anche
-	# quando il popup viene clamped/scalato e non dipende dal footer nativo.
-	var actions := HBoxContainer.new()
-	actions.name = "SceneIdentityActions"
-	actions.alignment = BoxContainer.ALIGNMENT_END
-	actions.add_theme_constant_override("separation", 10)
-	body.add_child(actions)
-
-	var cancel_button := Button.new()
-	cancel_button.name = "SceneIdentityCancel"
-	cancel_button.text = "Annulla"
-	cancel_button.custom_minimum_size = Vector2(120, 40)
-	cancel_button.pressed.connect(
-		func() -> void:
-			scene_identity_dialog.hide()
-			_cancel_scene_identity_dialog()
-	)
-	actions.add_child(cancel_button)
-
-	var confirm_button := Button.new()
-	confirm_button.name = "SceneIdentityConfirm"
-	confirm_button.text = "Conferma"
-	confirm_button.custom_minimum_size = Vector2(140, 40)
-	confirm_button.pressed.connect(_confirm_scene_identity)
-	actions.add_child(confirm_button)
-
-	scene_identity_miniature_section = VBoxContainer.new()
-	scene_identity_miniature_section.add_theme_constant_override(
-		"separation",
-		6
-	)
-	body.add_child(scene_identity_miniature_section)
-
-	var miniature_label := Label.new()
-	miniature_label.text = "Miniatura da generare"
-	scene_identity_miniature_section.add_child(miniature_label)
-
-	scene_identity_miniature_search = LineEdit.new()
-	scene_identity_miniature_search.placeholder_text = "Cerca miniatura…"
-	scene_identity_miniature_search.clear_button_enabled = true
-	scene_identity_miniature_search.text_changed.connect(
-		_refresh_scene_identity_miniature_list
-	)
-	scene_identity_miniature_section.add_child(
-		scene_identity_miniature_search
-	)
-
-	scene_identity_miniature_list = ItemList.new()
-	scene_identity_miniature_list.custom_minimum_size = Vector2(520, 250)
-	scene_identity_miniature_list.size_flags_horizontal = (
-		Control.SIZE_EXPAND_FILL
-	)
-	scene_identity_miniature_section.add_child(
-		scene_identity_miniature_list
-	)
-
-	var miniature_hint := Label.new()
-	miniature_hint.text = (
-		"Le miniature remote vengono scaricate solo dopo Conferma. "
-		+ "Se ne scegli una, il passo successivo obbligatorio è piazzarla "
-		+ "sulla mappa."
-	)
-	miniature_hint.autowrap_mode = TextServer.AUTOWRAP_WORD_SMART
-	scene_identity_miniature_section.add_child(miniature_hint)
-
-	scene_identity_dialog.confirmed.connect(_confirm_scene_identity)
-	scene_identity_dialog.canceled.connect(_cancel_scene_identity_dialog)
-	scene_identity_dialog.close_requested.connect(
-		_cancel_scene_identity_dialog
-	)
-
-
-func ensure_scene_identity(on_ready: Callable = Callable()) -> bool:
-	if _scene_identity_configured:
-		return true
-	if _identity_placement_pending:
-		return false
-	if on_ready.is_valid():
-		_pending_identity_callback = on_ready
-	_show_scene_identity_dialog()
-	return false
-
-
-func request_change_scene_identity() -> void:
-	if _identity_placement_pending:
-		return
-	_identity_change_mode = true
-	_show_scene_identity_dialog()
-
-
-func _show_scene_identity_dialog() -> void:
-	if scene_identity_dialog == null:
-		return
-	_refresh_scene_identity_options()
-	if board_root.has_method("release_camera_control"):
-		board_root.call("release_camera_control")
-	elif board_root.has_method("_release_mouse"):
-		board_root.call("_release_mouse")
-	scene_identity_dialog.reset_size()
-	scene_identity_dialog.popup_centered_clamped(
-		Vector2i(620, 620),
-		0.92
-	)
-	if scene_identity_selector != null:
-		scene_identity_selector.call_deferred("grab_focus")
-
-
-func _refresh_scene_identity_options() -> void:
-	if scene_identity_selector == null:
-		return
-	scene_identity_selector.clear()
-	scene_identity_selector.add_item(
-		"Nessuno — %s" % _master_author_name()
-	)
-	scene_identity_selector.set_item_metadata(
-		0,
-		{"kind": "master", "id": ""}
-	)
-
-	var selected_index := 0
-	for token: Node3D in _scene_identity_tokens():
-		var display_name := _actor_display_name(token)
-		if display_name.is_empty():
-			display_name = String(token.name)
-		var item_index := scene_identity_selector.item_count
-		var token_id := _token_stable_id(token)
-		scene_identity_selector.add_item(display_name)
-		scene_identity_selector.set_item_metadata(
-			item_index,
-			{"kind": "token", "id": token_id}
-		)
-		if (
-			not _selected_identity_token_id.is_empty()
-			and token_id == _selected_identity_token_id
-		):
-			selected_index = item_index
-
-	scene_identity_selector.add_separator()
-	var generate_index := scene_identity_selector.item_count
-	scene_identity_selector.add_item("Genera una nuova miniatura…")
-	scene_identity_selector.set_item_metadata(
-		generate_index,
-		{"kind": "generate", "id": ""}
-	)
-	scene_identity_selector.select(selected_index)
-
-	_identity_profile_choices.clear()
-	if (
-		board_root != null
-		and is_instance_valid(board_root)
-		and board_root.has_method("get_token_identity_profiles")
-	):
-		var profiles_value: Variant = board_root.call(
-			"get_token_identity_profiles"
-		)
-		if profiles_value is Array:
-			for value: Variant in profiles_value as Array:
-				if value is Dictionary:
-					_identity_profile_choices.append(
-						(value as Dictionary).duplicate(true)
-					)
-
-	_refresh_scene_identity_miniature_list(
-		scene_identity_miniature_search.text
-		if scene_identity_miniature_search != null
-		else ""
-	)
-	_on_scene_identity_mode_selected(selected_index)
-
-
-func refresh_scene_identity_profiles() -> void:
-	if scene_identity_dialog == null or not scene_identity_dialog.visible:
-		return
-	var selected_metadata: Variant = (
-		scene_identity_selector.get_item_metadata(
-			scene_identity_selector.selected
-		)
-		if scene_identity_selector.selected >= 0
-		else {}
-	)
-	var keep_generate := (
-		selected_metadata is Dictionary
-		and String((selected_metadata as Dictionary).get("kind", ""))
-		== "generate"
-	)
-	_refresh_scene_identity_options()
-	if keep_generate:
-		for index: int in range(scene_identity_selector.item_count):
-			var metadata: Variant = (
-				scene_identity_selector.get_item_metadata(index)
-			)
-			if (
-				metadata is Dictionary
-				and String((metadata as Dictionary).get("kind", ""))
-				== "generate"
-			):
-				scene_identity_selector.select(index)
-				_on_scene_identity_mode_selected(index)
-				break
-
-
-func _on_scene_identity_mode_selected(index: int) -> void:
-	if scene_identity_miniature_section == null:
-		return
-	var metadata: Variant = scene_identity_selector.get_item_metadata(index)
-	var kind := (
-		String((metadata as Dictionary).get("kind", ""))
-		if metadata is Dictionary
-		else ""
-	)
-	scene_identity_miniature_section.visible = kind == "generate"
-
-
-func _refresh_scene_identity_miniature_list(query: String) -> void:
-	if scene_identity_miniature_list == null:
-		return
-	var previous_id := ""
-	var selected := scene_identity_miniature_list.get_selected_items()
-	if not selected.is_empty():
-		previous_id = String(
-			scene_identity_miniature_list.get_item_metadata(
-				int(selected[0])
-			)
-		)
-	scene_identity_miniature_list.clear()
-	var normalized := query.strip_edges().to_lower()
-	var target_index := -1
-	for profile: Dictionary in _identity_profile_choices:
-		var profile_id := String(profile.get("id", "")).strip_edges()
-		var name := String(profile.get("name", profile_id))
-		var size_name := String(profile.get("size_name", "Medium"))
-		var status := String(profile.get("status", ""))
-		var searchable := (
-			name + " " + profile_id + " " + size_name + " " + status
-		).to_lower()
-		if not normalized.is_empty() and not searchable.contains(normalized):
-			continue
-		var index := scene_identity_miniature_list.item_count
-		scene_identity_miniature_list.add_item(
-			"%s · %s · %s" % [name, size_name, status]
-		)
-		scene_identity_miniature_list.set_item_metadata(index, profile_id)
-		if profile_id == previous_id:
-			target_index = index
-	if target_index < 0 and scene_identity_miniature_list.item_count > 0:
-		target_index = 0
-	if target_index >= 0:
-		scene_identity_miniature_list.select(target_index)
-
-
-func _confirm_scene_identity() -> void:
-	if (
-		scene_identity_selector == null
-		or scene_identity_selector.selected < 0
-	):
-		return
-	var metadata: Variant = scene_identity_selector.get_item_metadata(
-		scene_identity_selector.selected
-	)
-	if not metadata is Dictionary:
-		return
-	var choice := metadata as Dictionary
-	var kind := String(choice.get("kind", ""))
-
-	if kind == "generate":
-		if scene_identity_miniature_list == null:
-			return
-		var selected := scene_identity_miniature_list.get_selected_items()
-		if selected.is_empty():
-			return
-		var profile_id := String(
-			scene_identity_miniature_list.get_item_metadata(
-				int(selected[0])
-			)
-		).strip_edges()
-		if profile_id.is_empty():
-			return
-		if (
-			board_root == null
-			or not is_instance_valid(board_root)
-			or not board_root.has_method(
-				"begin_identity_token_placement"
-			)
-		):
-			return
-		_identity_placement_pending = true
-		_identity_change_mode = false
-		scene_identity_dialog.hide()
-		var started := bool(
-			board_root.call(
-				"begin_identity_token_placement",
-				profile_id,
-				Callable(self, "_on_identity_token_placed"),
-				Callable(
-					self,
-					"_on_identity_token_placement_failed"
-				)
-			)
-		)
-		if not started:
-			_identity_placement_pending = false
-			_show_scene_identity_dialog()
-		return
-
-	_selected_identity_token_id = (
-		String(choice.get("id", "")).strip_edges()
-		if kind == "token"
-		else ""
-	)
-	_scene_identity_configured = true
-	_identity_change_mode = false
-	_save_scene_identity()
-	scene_identity_dialog.hide()
-	_resume_after_identity_choice()
-
-
-func _on_identity_token_placed(token: CharacterBody3D) -> void:
-	_identity_placement_pending = false
-	if token == null or not is_instance_valid(token):
-		_show_scene_identity_dialog()
-		return
-	_selected_identity_token_id = _token_stable_id(token)
-	_scene_identity_configured = true
-	_save_scene_identity()
-	_resume_after_identity_choice()
-
-
-func _on_identity_token_placement_failed() -> void:
-	_identity_placement_pending = false
-	_show_scene_identity_dialog()
-
-
-func _cancel_scene_identity_dialog() -> void:
-	_identity_change_mode = false
-	_pending_identity_callback = Callable()
-	if board_root.has_method("capture_camera_control"):
-		board_root.call("capture_camera_control")
-	elif board_root.has_method("_capture_mouse"):
-		board_root.call("_capture_mouse")
+func ensure_scene_identity(_on_ready: Callable = Callable()) -> bool:
+	# Callers (combat, dice, sheet rolls) no longer require a confirmation.
+	return true
 
 
 func _scene_identity_tokens() -> Array[Node3D]:
@@ -1266,6 +864,7 @@ func _scene_identity_tokens() -> Array[Node3D]:
 			and is_instance_valid(node)
 			and board_root.is_ancestor_of(node)
 			and not node.is_queued_for_deletion()
+			and String(node.get_meta("creature_owner_id", "")) == CreatureOwner.local_id()
 		):
 			result.append(node as Node3D)
 	result.sort_custom(
@@ -1277,93 +876,17 @@ func _scene_identity_tokens() -> Array[Node3D]:
 	return result
 
 
-func _resume_after_identity_choice() -> void:
-	var callback := _pending_identity_callback
-	_pending_identity_callback = Callable()
-	if callback.is_valid():
-		callback.call_deferred()
-	elif board_root.has_method("capture_camera_control"):
-		board_root.call("capture_camera_control")
-
-
-func _scene_identity_section() -> String:
-	var scene_path := ""
-	if board_root != null and is_instance_valid(board_root):
-		scene_path = String(board_root.scene_file_path).strip_edges()
-		if scene_path.is_empty():
-			scene_path = String(board_root.name)
-	if scene_path.is_empty():
-		scene_path = "unknown_scene"
-	return "scene_%s" % scene_path.md5_text()
-
-
-func _load_scene_identity() -> void:
-	_selected_identity_token_id = ""
-	_scene_identity_configured = false
-	var config := ConfigFile.new()
-	if config.load(PROFILE_PATH) != OK:
-		return
-	var section := _scene_identity_section()
-	_scene_identity_configured = bool(
-		config.get_value(section, "configured", false)
-	)
-	_selected_identity_token_id = String(
-		config.get_value(section, "token_id", "")
-	).strip_edges()
-
-
-func _save_scene_identity() -> void:
-	var config := ConfigFile.new()
-	config.load(PROFILE_PATH)
-	var section := _scene_identity_section()
-	config.set_value(section, "configured", true)
-	config.set_value(
-		section,
-		"token_id",
-		_selected_identity_token_id
-	)
-	if board_root != null and is_instance_valid(board_root):
-		config.set_value(
-			section,
-			"scene_path",
-			String(board_root.scene_file_path)
-		)
-	config.save(PROFILE_PATH)
-
-
-func _token_stable_id(token: Node3D) -> String:
-	if token == null or not is_instance_valid(token):
-		return ""
-	if token.has_method("get_token_id"):
-		var token_id := String(token.call("get_token_id")).strip_edges()
-		if not token_id.is_empty():
-			return token_id
-	if token.has_meta("sync_id"):
-		var sync_id := String(token.get_meta("sync_id")).strip_edges()
-		if not sync_id.is_empty():
-			return sync_id
-	if board_root != null and is_instance_valid(board_root):
-		var sync_value: Variant = board_root.get("board_sync")
-		if sync_value is Node:
-			var board_sync := sync_value as Node
-			if (
-				board_sync != null
-				and is_instance_valid(board_sync)
-				and board_sync.has_method("get_sync_id_for_node")
-			):
-				return String(
-					board_sync.call("get_sync_id_for_node", token)
-				).strip_edges()
-		return "path:" + String(board_root.get_path_to(token))
-	return ""
-
-
 func _identity_token() -> Node3D:
-	if _selected_identity_token_id.is_empty():
-		return null
-	for token: Node3D in _scene_identity_tokens():
-		if _token_stable_id(token) == _selected_identity_token_id:
-			return token
+	# Chat identity follows the token currently selected by its rightful owner.
+	# No persistent user-to-token association or identity picker is needed.
+	var owned_tokens := _scene_identity_tokens()
+	var selected_value: Variant = board_root.get("_selected_tokens") if board_root != null else []
+	if selected_value is Array and (selected_value as Array).size() == 1:
+		var selected: Variant = (selected_value as Array)[0]
+		if selected is Node3D and owned_tokens.has(selected as Node3D):
+			return selected as Node3D
+	if owned_tokens.size() == 1:
+		return owned_tokens[0]
 	return null
 
 
@@ -1529,16 +1052,19 @@ func _show_quick_roll_result(event: Dictionary) -> void:
 	var generation := _quick_result_generation
 	var total := int(event.get("total", 0))
 	var label := String(event.get("label", "")).strip_edges()
-	var mode := normalize_roll_mode(String(event.get("roll_mode", "normal")))
-	var mode_text := ""
-	if mode == "advantage":
-		mode_text = "VANTAGGIO · "
-	elif mode == "disadvantage":
-		mode_text = "SVANTAGGIO · "
-
+	var notation := String(event.get("notation", ""))
+	if notation.is_empty():
+		notation = _roll_notation(
+			String(event.get("die", "d20")),
+			maxi(1, int(event.get("count", 1))),
+			int(event.get("modifier", 0)),
+			String(event.get("roll_mode", "normal"))
+		)
+	var detail := String(event.get("detail", "")).strip_edges()
 	quick_result_label.text = (
 		("%s\n" % label if not label.is_empty() else "")
-		+ "%s%d" % [mode_text, total]
+		+ "%s = %d" % [notation, total]
+		+ ("\n%s" % detail if not detail.is_empty() else "")
 	)
 	quick_result_panel.show()
 

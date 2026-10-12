@@ -1,0 +1,65 @@
+{
+  "schema_version": 1,
+  "category": "spells",
+  "entries": [
+    {
+      "id": "cloudkill",
+      "fields": {
+        "movable_aoe_feet": 10,
+        "movable_aoe_mode": "away_from_caster"
+      }
+    },
+    {
+      "id": "doomtide",
+      "fields": {
+        "movable_aoe_feet": 10,
+        "movable_aoe_mode": "away_from_caster"
+      }
+    },
+    {
+      "id": "incendiary_cloud",
+      "fields": {
+        "movable_aoe_feet": 10,
+        "movable_aoe_mode": "free_exact"
+      }
+    },
+    {
+      "id": "whirlwind",
+      "fields": {
+        "movable_aoe_feet": 30,
+        "movable_aoe_mode": "free"
+      }
+    },
+    {
+      "id": "conjure_celestial",
+      "fields": {
+        "movable_aoe_feet": 30,
+        "movable_aoe_mode": "free"
+      }
+    },
+    {
+      "id": "meteor_swarm",
+      "fields": {
+        "target_mode": "token_then_multi_point",
+        "range_feet": 5280,
+        "base_target_clicks": 4,
+        "aoe_shape": "sphere",
+        "aoe_radius_feet": 40,
+        "visual_style": "fire",
+        "projectile_style": "fire",
+        "projectile_travel_seconds": 0.8,
+        "meteor_drop_height_feet": 60,
+        "requires_ground": true,
+        "transient_seconds": 5
+      }
+    },
+    {
+      "id": "thunderwave",
+      "fields": {
+        "forced_movement_feet": 15,
+        "forced_movement_mode": "away_from_caster",
+        "forced_movement_on_failed_save": true
+      }
+    }
+  ]
+}

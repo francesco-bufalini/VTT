@@ -1,9 +1,9 @@
 extends Node3D
 
+const DialogLayout = preload("res://vtt/dialog_layout.gd")
+
 const CONTEXT_CREATE_TOKEN := 1
 const CONTEXT_DELETE_SELECTED := 2
-const CONTEXT_ROTATE_LEFT := 3
-const CONTEXT_ROTATE_RIGHT := 4
 const CONTEXT_TOGGLE_GRID := 5
 const CONTEXT_TOGGLE_VISION_CONES := 6
 const CONTEXT_TOGGLE_REACH_SPHERES := 7
@@ -15,8 +15,7 @@ const CONTEXT_CAMERA_SETTINGS := 12
 const CONTEXT_INITIATIVE := 13
 const CONTEXT_TOKEN_DETAILS := 14
 const CONTEXT_RESTORE_TRANSFORMATION := 15
-const CONTEXT_PLAYER_AREA := 16
-const CONTEXT_MASTER_AREA := 17
+const CONTEXT_COMPENDIUM := 17
 const CONTEXT_TOKEN_LIST := 18
 const CONTEXT_MEASURE_RULER := 19
 const CONTEXT_AOE_SPHERE := 20
@@ -30,24 +29,28 @@ const CONTEXT_LOAD_MAP_LOCAL := 27
 const CONTEXT_SAVE_CAMPAIGN_STATE := 28
 const CONTEXT_COMBAT_START := 29
 const CONTEXT_COMBAT_END := 30
-const CONTEXT_PLAYER_ADD_CHARACTER := 31
-const CONTEXT_PLAYER_LINK_TOKEN := 32
-const CONTEXT_PLAYER_LINK_CHARACTER := 33
-const CONTEXT_MASTER_LINK_TOKEN := 34
-const CONTEXT_MASTER_LINK_CREATURE := 35
 const CONTEXT_UNDO := 36
 const CONTEXT_REDO := 37
 const CONTEXT_TOGGLE_CONDITION_VISUALS := 38
-const CONTEXT_USER_IDENTITY := 39
 const CONTEXT_AUTO_SYNC := 40
+const CONTEXT_REPOSITION_SELECTED := 43
+const CONTEXT_CHOOSE_MOUNT := 44
+const CONTEXT_DISMOUNT := 45
+const CONTEXT_CREATURE_AREA := 100
+const CONTEXT_ITEM_CREATE := 80
+const CONTEXT_ITEM_MANAGE := 81
 const CAMPAIGN_EDITOR_SCENE_PATH := "res://vtt/editor/campaign_editor.tscn"
 const LOCAL_TOKEN_CATALOG := "res://dist/token_packs/token_catalog.json"
 const LOCAL_TOKEN_PACK_ROOT := "res://dist/token_packs"
 const CHARACTER_TOKEN_ROOT := "res://assets/tokens/Characters"
 const DEFAULT_TOKEN_PROFILE_ID := "death_knight"
 const GridHighlightRenderer = preload("res://vtt/grid_highlight_renderer.gd")
-const TokenScript = preload("res://token.gd")
+const TopDownElevationLevels = preload("res://vtt/top_down_elevation_levels.gd")
+const TopDownTokenOverlay = preload("res://vtt/top_down_elevation_overlay.gd")
+const CreatureOwner = preload("res://vtt/creature_owner.gd")
+const ContentCatalog = preload("res://vtt/content_catalog.gd")
 const FlankingGeometry = preload("res://vtt/flanking_system.gd")
+const CreatureAttackData = preload("res://vtt/creature_attack_data.gd")
 
 const CAMERA_SPEED_DEFAULT := 5.0
 const CAMERA_SENSITIVITY_DEFAULT := 0.002
@@ -56,6 +59,10 @@ const ALL_COLLISION_LAYERS := 0xFFFFFFFF
 # identify them. Token picking must see through this layer.
 const AOE_PICK_LAYER := 1 << 20
 const TOKEN_PICK_COLLISION_MASK := ALL_COLLISION_LAYERS & ~AOE_PICK_LAYER
+# I CharacterBody3D dei token usano collision_layer = 2 in token.tscn.
+# In 2D questo layer viene interrogato prima del terreno, così ponti, alberi
+# e sovrastrutture non possono rendere un token non selezionabile dall'alto.
+const TOKEN_BODY_COLLISION_LAYER := 2
 const UNDO_LIMIT := 50
 
 const TOKEN_SIZES := [
@@ -68,7 +75,6 @@ const TOKEN_SIZES := [
 ]
 
 @export var grid_visible_on_start: bool = true
-@export var grid_3d_visible_on_start: bool = false
 @export var vision_cones_visible_on_start: bool = false
 @export var cell_size: float = 1.0
 @export var token_spawn_height: float = 4.0
@@ -87,22 +93,28 @@ var _pending_spawn_position: Vector3 = Vector3.ZERO
 var _has_pending_spawn_position: bool = false
 var _pending_spawn_support: Node3D = null
 var _pending_spawn_on_grid_surface: bool = false
+var _context_reposition_position := Vector3.ZERO
+var _context_reposition_valid := false
+var _context_reposition_air := false
+var _context_reposition_support: Node3D
+var _sheet_spawn_picking: bool = false
+var _sheet_spawn_record: Dictionary = {}
+var _creature_spawn_sheet_id: String = ""
 var _token_generation_confirmed_callback: Callable = Callable()
 var _token_generation_canceled_callback: Callable = Callable()
 var _token_generation_exact_position: bool = false
 var _token_generation_place_on_surface: bool = false
 var _token_generation_transform_target: CharacterBody3D
-var _forced_identity_placement_active: bool = false
-var _forced_identity_profile_ready: bool = false
-var _forced_identity_profile_id: String = ""
+var _sheet_spawn_pending_record: Dictionary = {}
+var _sheet_visual_waiting: Dictionary = {}
 var identity_placement_panel: PanelContainer
 var identity_placement_label: Label
 var token_resize_menu: PopupMenu
 var context_token_menu: PopupMenu
+var context_place_creature_menu: PopupMenu
 var context_game_menu: PopupMenu
 var context_measure_menu: PopupMenu
 var context_view_menu: PopupMenu
-var context_session_menu: PopupMenu
 var _token_resize_target: CharacterBody3D
 var _token_resize_confirmed_callback: Callable = Callable()
 var _token_resize_canceled_callback: Callable = Callable()
@@ -111,6 +123,10 @@ var _context_token: CharacterBody3D = null
 var _selected_tokens: Array[CharacterBody3D] = []
 var _ui_owns_mouse: bool = false
 var _vision_cones_visible: bool = false
+var _view_2d_enabled: bool = false
+var _top_down_levels: Node3D
+var _top_down_overlay: Control
+var _map_edit_layer_active: bool = false
 var _condition_visuals_visible: bool = true
 var board_sync: Node
 var share_dialog: AcceptDialog
@@ -152,17 +168,21 @@ var token_party_input: LineEdit
 var token_identity_label: Label
 var token_state_grid: GridContainer
 var token_state_checks: Dictionary = {}
+var _token_effect_dialog: AcceptDialog
+var _token_effect_text: RichTextLabel
 var _editing_token: CharacterBody3D
 var token_drag: Node
 var item_controller: Node
+var mount_controller: Node
+var _mount_pick_rider: CharacterBody3D
 var spell_system: Node
 var attack_system: Node
 var flanking_system: Node
 var initiative_tracker: Node
 var token_list: Node
-var player_area: Node
-var master_area: Node
+var compendium: Node
 var dice_roller_chat: Node
+var creature_presence: Node
 var _undo_stack: Array[Dictionary] = []
 var _redo_stack: Array[Dictionary] = []
 var _pending_history_actions: Array[int] = []
@@ -172,9 +192,7 @@ var _undo_restoring: bool = false
 
 func _ready() -> void:
 	# Unica griglia tattica: la VolumetricGrid collision-aware.
-	# grid_3d_visible_on_start resta come alias di compatibilita per scene
-	# create prima della rimozione della SurfaceGrid.
-	set_grid_visible(grid_visible_on_start or grid_3d_visible_on_start)
+	set_grid_visible(grid_visible_on_start)
 	set_vision_cones_visible(vision_cones_visible_on_start)
 
 	context_menu.id_pressed.connect(_on_context_menu_id_pressed)
@@ -193,6 +211,18 @@ func _ready() -> void:
 	size_selector.tooltip_text = "Taglia determinata dalla miniatura selezionata."
 
 	volumetric_grid.call("set_camera", camera)
+	_top_down_levels = preload("res://vtt/top_down_elevation_levels.gd").new()
+	_top_down_levels.name = "TopDownElevationLevels"
+	add_child(_top_down_levels)
+	_top_down_levels.call("setup", self)
+	camera.call(
+		"set_top_down_floor_levels_provider",
+		Callable(_top_down_levels, "get_solid_levels")
+	)
+	_top_down_overlay = preload("res://vtt/top_down_elevation_overlay.gd").new()
+	_top_down_overlay.name = "TopDownElevationOverlay"
+	$UI.add_child(_top_down_overlay)
+	_top_down_overlay.call("setup", self, _top_down_levels)
 
 	if not tokens_root.child_entered_tree.is_connected(
 		_configure_token_volumetric_grid
@@ -214,6 +244,10 @@ func _ready() -> void:
 	item_controller.name = "ItemController"
 	add_child(item_controller)
 	item_controller.setup(self)
+	mount_controller = preload("res://vtt/mount_controller.gd").new()
+	mount_controller.name = "MountController"
+	add_child(mount_controller)
+	mount_controller.setup(self)
 	board_sync = preload("res://network/board_sync.gd").new()
 	add_child(board_sync)
 	board_sync.setup(self, token_scene, tokens_root, measurement_tool)
@@ -252,15 +286,20 @@ func _ready() -> void:
 	add_child(token_list)
 	token_list.call("setup", self)
 
-	player_area = preload("res://vtt/player_area.gd").new()
-	player_area.name = "PlayerArea"
-	add_child(player_area)
-	player_area.call("setup", self)
+	# The read-only Compendium is the only reference browser.
+	compendium = preload("res://vtt/compendium.gd").new()
+	compendium.name = "Compendio"
+	add_child(compendium)
+	compendium.call("setup", self)
 
-	master_area = preload("res://vtt/master_area.gd").new()
-	master_area.name = "MasterArea"
-	add_child(master_area)
-	master_area.call("setup", self)
+	var creature_script: Script = load("res://vtt/creature_area.gd")
+	if creature_script == null:
+		push_error("CreatureArea: script non disponibile")
+	else:
+		var creature_area: Node = creature_script.new()
+		creature_area.name = "CreatureArea"
+		add_child(creature_area)
+		creature_area.call("setup", self)
 
 	dice_roller_chat = preload("res://vtt/dice_roller_chat.gd").new()
 	dice_roller_chat.name = "DiceRollerChat"
@@ -271,6 +310,23 @@ func _ready() -> void:
 		_share_session_key(),
 		Callable(board_sync, "get_cached_tailscale_peer_ipv4s")
 	)
+	creature_presence = preload("res://network/creature_presence.gd").new()
+	creature_presence.name = "CreaturePresence"
+	add_child(creature_presence)
+	creature_presence.call(
+		"setup",
+		_share_session_key(),
+		Callable(board_sync, "get_cached_tailscale_peer_ipv4s")
+	)
+	var creature_sheet: Node = get_node_or_null("CreatureArea")
+	if creature_sheet != null:
+		creature_presence.document_received.connect(
+			Callable(creature_sheet, "receive_shared_document")
+		)
+		creature_presence.document_delivered.connect(
+			func(_delivery_id: String) -> void:
+				creature_sheet.call("_set_status", "Documento consegnato al destinatario.")
+		)
 
 	var runtime_toolbar: Node = (
 		preload("res://vtt/runtime_toolbar.gd").new() as Node
@@ -294,6 +350,8 @@ func _configure_token_volumetric_grid(node: Node) -> void:
 			"set_condition_visuals_visible",
 			_condition_visuals_visible
 		)
+	if node.has_method("set_2d_elevation_overlay_enabled"):
+		node.call("set_2d_elevation_overlay_enabled", _view_2d_enabled)
 
 
 func _read_local_token_catalog() -> Dictionary:
@@ -483,6 +541,7 @@ func _build_token_generation_controls() -> void:
 	)
 	if token_miniature_list == null:
 		token_miniature_list = ItemList.new()
+		token_miniature_list.mouse_force_pass_scroll_events = false
 		token_miniature_list.name = "MiniatureList"
 		token_miniature_list.custom_minimum_size = Vector2(500, 270)
 		token_miniature_list.size_flags_horizontal = Control.SIZE_EXPAND_FILL
@@ -539,6 +598,10 @@ func _build_token_generation_controls() -> void:
 		token_reach_input.allow_greater = true
 		token_reach_input.tooltip_text = reach_label.tooltip_text
 		content_box.add_child(token_reach_input)
+	# Gittata e portata sono ora definite dai singoli attacchi della scheda.
+	# Il valore nascosto rimane per compatibilità con il volume tattico del token.
+	reach_label.hide()
+	token_reach_input.hide()
 
 	var front_label := content_box.get_node_or_null("FrontLabel") as Label
 	if front_label == null:
@@ -657,16 +720,6 @@ func _connect_token_pack_manager() -> void:
 func _on_remote_token_catalog_updated(_entries: Array[Dictionary]) -> void:
 	if token_miniature_list != null:
 		_reload_token_miniature_list()
-	_notify_identity_profile_catalog_changed()
-
-
-func _notify_identity_profile_catalog_changed() -> void:
-	if (
-		dice_roller_chat != null
-		and is_instance_valid(dice_roller_chat)
-		and dice_roller_chat.has_method("refresh_scene_identity_profiles")
-	):
-		dice_roller_chat.call_deferred("refresh_scene_identity_profiles")
 
 
 func _remote_visual_path(token_id: String) -> String:
@@ -681,20 +734,13 @@ func _on_remote_token_downloaded(
 		var ok_button := color_dialog.get_ok_button()
 		if ok_button != null:
 			ok_button.disabled = false
-	if _forced_identity_placement_active and _forced_identity_profile_id == token_id:
-		var mount_error := TokenPackManager.mount_token(token_id)
-		if mount_error == OK:
-			_selected_token_profile["visual_asset"] = _remote_visual_path(token_id)
-			_forced_identity_profile_ready = true
-			_set_identity_placement_hint(
-				"Miniatura pronta · muoviti con i controlli normali della camera e clicca per piazzarla. Esc è disabilitato finché non la piazzi."
-			)
-		else:
-			_fail_forced_identity_placement(
-				"Mount non riuscito: %s" % error_string(mount_error)
-			)
+	if not _sheet_spawn_pending_record.is_empty() and String(_sheet_spawn_pending_record.get(
+		"current_miniature_id", _sheet_spawn_pending_record.get("default_miniature_id", "")
+	)) == token_id:
+		call_deferred("_finish_sheet_spawn_without_dialog")
+	if _sheet_visual_waiting.values().has(token_id):
+		call_deferred("_apply_waiting_sheet_appearance", token_id)
 	call_deferred("_reload_token_miniature_list", token_id)
-	_notify_identity_profile_catalog_changed()
 
 
 func _on_remote_token_mounted(
@@ -709,20 +755,19 @@ func _on_remote_token_mounted(
 		var ok_button := color_dialog.get_ok_button()
 		if ok_button != null:
 			ok_button.disabled = false
-	if _forced_identity_placement_active and _forced_identity_profile_id == token_id:
-		_selected_token_profile["visual_asset"] = _remote_visual_path(token_id)
-		_forced_identity_profile_ready = true
-		_set_identity_placement_hint(
-			"Miniatura pronta · muoviti con i controlli normali della camera e clicca per piazzarla. Esc è disabilitato finché non la piazzi."
-		)
 	call_deferred("_reload_token_miniature_list", token_id)
-	_notify_identity_profile_catalog_changed()
 
 
 func _on_remote_token_download_failed(
 	token_id: String,
 	message: String
 ) -> void:
+	if not _sheet_spawn_pending_record.is_empty() and String(_sheet_spawn_pending_record.get(
+		"current_miniature_id", _sheet_spawn_pending_record.get("default_miniature_id", "")
+	)) == token_id:
+		_sheet_spawn_pending_record.clear()
+		_set_identity_placement_hint("Download fallito: " + message)
+
 	if String(_selected_token_profile.get("id", "")) == token_id:
 		var ok_button := color_dialog.get_ok_button()
 		if ok_button != null:
@@ -731,8 +776,6 @@ func _on_remote_token_download_failed(
 			token_download_button.visible = true
 			token_download_button.disabled = false
 			token_download_button.text = "Scarica"
-	if _forced_identity_placement_active and _forced_identity_profile_id == token_id:
-		_fail_forced_identity_placement(message)
 	push_warning("DnDBase: download token remoto fallito: %s" % message)
 
 
@@ -744,8 +787,6 @@ func _on_remote_token_mount_failed(
 		var ok_button := color_dialog.get_ok_button()
 		if ok_button != null:
 			ok_button.disabled = true
-	if _forced_identity_placement_active and _forced_identity_profile_id == token_id:
-		_fail_forced_identity_placement(message)
 	push_warning("DnDBase: mount token remoto fallito: %s" % message)
 
 
@@ -1052,6 +1093,17 @@ func _current_token_display_names(
 		)
 		if not display_name.is_empty():
 			names.append(display_name)
+	var sheets: Node = get_node_or_null("CreatureArea")
+	if sheets != null and sheets.has_method("get_owned_creature_names"):
+		var except_sheet_id: String = _creature_spawn_sheet_id
+		if excluded_token != null and is_instance_valid(excluded_token):
+			except_sheet_id = String(excluded_token.get_meta("creature_id", ""))
+		var owned_names: Variant = sheets.call(
+			"get_owned_creature_names", except_sheet_id
+		)
+		if owned_names is Array:
+			for owned_name: Variant in owned_names:
+				names.append(String(owned_name))
 	return names
 
 
@@ -1395,11 +1447,28 @@ func _process(_delta: float) -> void:
 
 
 func _input(event: InputEvent) -> void:
-	if (
-		_forced_identity_placement_active
-		and _handle_forced_identity_placement_input(event)
-	):
+	# _input runs BEFORE Godot dispatches events to focused Controls.
+	# Do not move tokens, undo actions or operate shortcuts while a GUI
+	# widget owns the keyboard.
+	if event is InputEventKey and get_viewport().gui_get_focus_owner() != null:
+		return
+	if _mount_pick_rider != null and _handle_mount_pick_input(event):
 		get_viewport().set_input_as_handled()
+		return
+	if _sheet_spawn_picking and _handle_sheet_spawn_placement_input(event):
+		get_viewport().set_input_as_handled()
+		return
+
+	if (
+		_map_edit_layer_active
+		and (
+			event is InputEventMouseButton
+			or event is InputEventMouseMotion
+		)
+	):
+		# Il livello Mappa lascia gli eventi al Control di trasformazione.
+		# Se il puntatore è fuori dall'immagine verranno assorbiti in
+		# _unhandled_input(), impedendo interazioni accidentali con token/AoE.
 		return
 
 	if (
@@ -1535,52 +1604,309 @@ func _input(event: InputEvent) -> void:
 			get_viewport().set_input_as_handled()
 
 
-func _handle_forced_identity_placement_input(event: InputEvent) -> bool:
+func begin_creature_token_placement(record: Dictionary) -> bool:
 	if (
-		event is InputEventKey
-		and event.pressed
-		and not event.echo
-		and event.keycode == KEY_ESCAPE
+		record.is_empty()
+		or _sheet_spawn_picking
+		or not _sheet_spawn_pending_record.is_empty()
+		or color_dialog.visible
 	):
+		return false
+	_sheet_spawn_record = record.duplicate(true)
+	_sheet_spawn_picking = true
+	_ui_owns_mouse = false
+	_set_identity_placement_hint(
+		"Clicca sulla mappa per piazzare la creatura. "
+		+ "Se possiede già un token, sarà spostato senza duplicarlo. "
+		+ "Tasto destro per annullare."
+	)
+	return true
+
+
+func _handle_sheet_spawn_placement_input(event: InputEvent) -> bool:
+	if event is InputEventKey and event.pressed and event.keycode == KEY_ESCAPE:
+		_sheet_spawn_picking = false
+		_sheet_spawn_record.clear()
+		_hide_identity_placement_hint()
+		return true
+	if not event is InputEventMouseButton:
+		return false
+	var button_event: InputEventMouseButton = event as InputEventMouseButton
+	if not button_event.pressed:
+		return false
+	if button_event.button_index == MOUSE_BUTTON_RIGHT:
+		_sheet_spawn_picking = false
+		_sheet_spawn_record.clear()
+		_hide_identity_placement_hint()
+		return true
+	if button_event.button_index != MOUSE_BUTTON_LEFT:
+		return false
+	var point: Vector2 = (
+		_screen_center()
+		if Input.mouse_mode == Input.MOUSE_MODE_CAPTURED
+		else button_event.position
+	)
+	if not _set_pending_spawn_from_screen(point):
 		_set_identity_placement_hint(
-			"Devi piazzare il token scelto prima di continuare. Clicca su una superficie valida."
+			"Punta una superficie valida e clicca per piazzare la creatura."
 		)
 		return true
+	var record: Dictionary = _sheet_spawn_record.duplicate(true)
+	_sheet_spawn_picking = false
+	_sheet_spawn_record.clear()
+	_hide_identity_placement_hint()
+	_place_creature_at_pending_position(record)
+	return true
 
-	if event is InputEventMouseButton and event.pressed:
-		if event.button_index == MOUSE_BUTTON_LEFT:
-			if not _forced_identity_profile_ready:
-				_set_identity_placement_hint(
-					"Preparazione della miniatura in corso… puoi muovere la camera mentre attendi."
-				)
-				return true
-			var placement_screen_position: Vector2 = (
-				_screen_center()
-				if Input.mouse_mode == Input.MOUSE_MODE_CAPTURED
-				else event.position
-			)
-			if not _set_pending_spawn_from_screen(placement_screen_position):
-				_set_identity_placement_hint(
-					"Punta una superficie calpestabile valida e clicca per piazzare il token."
-				)
-				return true
-			_token_generation_exact_position = (
-				_pending_spawn_on_grid_surface
-				or (
-					_pending_spawn_support != null
-					and is_instance_valid(_pending_spawn_support)
-				)
-			)
-			_token_generation_place_on_surface = _token_generation_exact_position
-			_forced_identity_placement_active = false
-			_hide_identity_placement_hint()
-			_on_token_dialog_confirmed()
-			_clear_forced_identity_placement_runtime()
-			return true
-		if event.button_index == MOUSE_BUTTON_RIGHT:
-			return true
 
-	return false
+# Both the creature sheet and the right-click placement menu use this
+# path. The context menu has ALREADY picked a valid world position, so it
+# must not require another click or open the token generator.
+func _place_creature_at_pending_position(record: Dictionary) -> bool:
+	if (
+		record.is_empty()
+		or not _has_pending_spawn_position
+		or not _sheet_spawn_pending_record.is_empty()
+		or color_dialog.visible
+	):
+		return false
+	var area: Node = get_node_or_null("CreatureArea")
+	var token: CharacterBody3D
+	if area != null and area.has_method("find_linked_token_for_creature"):
+		token = area.call(
+			"find_linked_token_for_creature", String(record.get("id", ""))
+		) as CharacterBody3D
+	if token != null and is_instance_valid(token):
+		push_undo_state()
+		# Restore saved appearance/size BEFORE computing ground clearance.
+		# Otherwise switching back from a polymorphed/taller miniature
+		# would place its base too high or partially through the floor.
+		apply_creature_sheet_appearance(token, record)
+		apply_creature_sheet_properties(token, record)
+		var token_height: float = float(token.get("token_height_cells"))
+		var token_cell: float = float(token.get("cell_size"))
+		token.global_position = Vector3(
+			_pending_spawn_position.x,
+			_pending_spawn_position.y + token_height * token_cell * 0.5,
+			_pending_spawn_position.z
+		)
+		if token.has_method("snap_horizontal_to_grid"):
+			token.call("snap_horizontal_to_grid")
+		var support_y: float = _pending_spawn_position.y
+		if volumetric_grid.has_method("get_clear_spawn_floor_for_footprint"):
+			support_y = float(volumetric_grid.call(
+				"get_clear_spawn_floor_for_footprint",
+				token.global_position,
+				float(token.call("get_footprint_cells")),
+				token_height,
+				support_y
+			))
+		token.global_position.y = support_y + token_height * token_cell * 0.5
+		token.set("grid_support", _pending_spawn_support)
+		if _pending_spawn_support != null and is_instance_valid(_pending_spawn_support):
+			token.set("_support_transform", _pending_spawn_support.global_transform)
+		_replace_selection(token)
+		_has_pending_spawn_position = false
+		# Reposition using the restored geometry, without duplicating a
+		# creature already on the board.
+		call_deferred("_sync_explicit_token_change", token)
+		return true
+
+	if area == null or not area.has_method("link_spawned_token"):
+		return false
+	# Appearance and combat parameters live on the creature sheet. Never
+	# reopen the token generator when a sheet already specifies them.
+	_begin_sheet_spawn_without_dialog(record)
+	return true
+
+
+
+# An appearance may refer to a downloadable PCK. Keep the clicked position
+# while it downloads and finish the spawn without an additional popup.
+func _begin_sheet_spawn_without_dialog(record: Dictionary) -> void:
+	var miniature_id := String(record.get(
+		"current_miniature_id", record.get("default_miniature_id", "")
+	)).strip_edges()
+	if miniature_id.is_empty():
+		miniature_id = String(record.get("default_miniature_id", "")).strip_edges()
+	var profile := _identity_profile_by_id(miniature_id)
+	if profile.is_empty():
+		_set_identity_placement_hint(
+			"Miniatura non disponibile nel catalogo: %s. Apri la scheda e scegli un altro aspetto." % miniature_id
+		)
+		return
+	_sheet_spawn_pending_record = record.duplicate(true)
+	var origin := String(profile.get("_pack_origin", ""))
+	if origin == "remote" and not TokenPackManager.is_downloaded(miniature_id) and not TokenPackManager.is_mounted(miniature_id):
+		_set_identity_placement_hint("Download dell'aspetto attuale in corso: %s" % miniature_id)
+		var error: Error = TokenPackManager.download_token(miniature_id)
+		if error != OK:
+			_sheet_spawn_pending_record.clear()
+			_set_identity_placement_hint("Download della miniatura non riuscito: %s" % error_string(error))
+		return
+	_finish_sheet_spawn_without_dialog()
+
+
+func _finish_sheet_spawn_without_dialog() -> void:
+	if _sheet_spawn_pending_record.is_empty():
+		return
+	var record: Dictionary = _sheet_spawn_pending_record.duplicate(true)
+	var miniature_id := String(record.get(
+		"current_miniature_id", record.get("default_miniature_id", "")
+	)).strip_edges()
+	if miniature_id.is_empty():
+		miniature_id = String(record.get("default_miniature_id", "")).strip_edges()
+	var profile := _identity_profile_by_id(miniature_id)
+	if profile.is_empty():
+		_sheet_spawn_pending_record.clear()
+		_set_identity_placement_hint("La miniatura non è più disponibile: %s" % miniature_id)
+		return
+	var origin := String(profile.get("_pack_origin", ""))
+	if origin == "remote" and not TokenPackManager.is_mounted(miniature_id):
+		if TokenPackManager.mount_token(miniature_id) != OK:
+			_sheet_spawn_pending_record.clear()
+			_set_identity_placement_hint("Impossibile montare la miniatura: %s" % miniature_id)
+			return
+	if origin == "local_pack" and not TokenPackManager.is_mounted(miniature_id):
+		var err: Error = TokenPackManager.mount_local_token(
+			miniature_id, profile, String(profile.get("_local_pck_path", ""))
+		)
+		if err != OK:
+			_sheet_spawn_pending_record.clear()
+			_set_identity_placement_hint("Impossibile montare la miniatura: %s" % miniature_id)
+			return
+	var area := get_node_or_null("CreatureArea")
+	if area == null:
+		_sheet_spawn_pending_record.clear()
+		return
+	_creature_spawn_sheet_id = String(record.get("id", ""))
+	_token_generation_confirmed_callback = Callable(
+		area, "link_spawned_token"
+	).bind(_creature_spawn_sheet_id)
+	_token_generation_canceled_callback = Callable()
+	_token_generation_transform_target = null
+	_token_generation_exact_position = true
+	_token_generation_place_on_surface = true
+	_token_name_is_auto = false
+	_refresh_token_miniature_filter("", miniature_id)
+	if String(_selected_token_profile.get("id", "")) != miniature_id:
+		_sheet_spawn_pending_record.clear()
+		_reset_token_generation_state()
+		_set_identity_placement_hint("Selezione miniatura non riuscita: %s" % miniature_id)
+		return
+	_prepare_shared_token_editor()
+	_set_token_name_input(
+		_unique_token_display_name(String(record.get("name", "Creatura"))), false
+	)
+	if token_party_input != null:
+		token_party_input.text = String(record.get("party_id", ""))
+	var chosen_size := String(record.get("size_name", "Medium"))
+	for i: int in range(TOKEN_SIZES.size()):
+		if String(TOKEN_SIZES[i].get("name", "")) == chosen_size:
+			size_selector.select(i)
+			break
+	if token_reach_input != null:
+		token_reach_input.value = float(record.get("reach_feet", 5.0))
+	if token_front_selector != null:
+		token_front_selector.select(clampi(
+			int(record.get("visual_front_quarter_turns", 0)), 0, 3
+		))
+	_refresh_shared_condition_choices(
+		ContentCatalog.condition_definitions(
+			String(record.get("rules_version", "2014"))
+		)
+	)
+	_set_shared_token_editor_conditions(record.get("conditions", []))
+	_sheet_spawn_pending_record.clear()
+	_hide_identity_placement_hint()
+	_on_token_dialog_confirmed()
+
+
+# Change scene parameters without going through the token generator.
+func apply_creature_sheet_properties(token: CharacterBody3D, record: Dictionary) -> void:
+	if token == null or not is_instance_valid(token):
+		return
+	var size_name := String(record.get("size_name", "Medium"))
+	var footprint := maxf(0.5, float(record.get("footprint", 1.0)))
+	if token.has_method("get_size_name") and (
+		String(token.call("get_size_name")) != size_name or
+		absf(float(token.call("get_footprint_cells")) - footprint) > 0.01
+	):
+		token.call("set_size_category", size_name, footprint, false)
+	# All tactical range overlays and flanking use the first melee attack.
+	# Derive it from the record rather than an obsolete aggregate reach field.
+	var melee_reach: float = CreatureAttackData.active_range(record)
+	if token.has_method("get_reach_feet") and (
+		absf(float(token.call("get_reach_feet")) - melee_reach) > 0.01
+	):
+		token.call("set_reach_feet", melee_reach, true)
+	if token.has_method("get_visual_front_quarter_turns") and (
+		int(token.call("get_visual_front_quarter_turns")) != int(record.get("visual_front_quarter_turns", 0))
+	):
+		token.call("set_visual_front_quarter_turns", int(record.get("visual_front_quarter_turns", 0)))
+	if token.has_method("get_party_id") and String(token.call("get_party_id")) != String(record.get("party_id", "")):
+		token.call("set_party_id", String(record.get("party_id", "")))
+	call_deferred("_sync_explicit_token_change", token)
+
+
+# Apply an explicitly chosen miniature immediately when it is available.
+# Undownloaded PCKs are fetched; the selection is already safe in the sheet.
+func apply_creature_sheet_appearance(token: CharacterBody3D, record: Dictionary) -> bool:
+	if token == null or not is_instance_valid(token):
+		return false
+	var miniature_id := String(record.get(
+		"current_miniature_id", record.get("default_miniature_id", "")
+	)).strip_edges()
+	var profile := _identity_profile_by_id(miniature_id)
+	if profile.is_empty():
+		return false
+	var origin := String(profile.get("_pack_origin", ""))
+	if origin == "remote" and not TokenPackManager.is_mounted(miniature_id):
+		if not TokenPackManager.is_downloaded(miniature_id):
+			_sheet_visual_waiting[String(record.get("id", ""))] = miniature_id
+			TokenPackManager.download_token(miniature_id)
+			return false
+		if TokenPackManager.mount_token(miniature_id) != OK:
+			return false
+	if origin == "local_pack" and not TokenPackManager.is_mounted(miniature_id):
+		if TokenPackManager.mount_local_token(
+			miniature_id, profile, String(profile.get("_local_pck_path", ""))
+		) != OK:
+			return false
+	var visual := _token_profile_visual_asset(profile)
+	var footprint := maxf(0.5, float(profile.get("footprint", 1.0)))
+	if not visual.is_empty() and token.has_method("set_visual_asset"):
+		if not bool(token.call("set_visual_asset", visual, footprint)):
+			return false
+	if token.has_method("set_token_pack_id"):
+		token.call("set_token_pack_id", String(
+			profile.get("token_pack_id", miniature_id)
+			if origin == "current" else miniature_id
+		))
+	apply_creature_sheet_properties(token, record)
+	_refresh_token_views_after_appearance_change()
+	return true
+
+
+func _apply_waiting_sheet_appearance(miniature_id: String) -> void:
+	var sheet_area := get_node_or_null("CreatureArea")
+	if sheet_area == null:
+		return
+	for creature_id: String in _sheet_visual_waiting.keys():
+		if String(_sheet_visual_waiting.get(creature_id, "")) != miniature_id:
+			continue
+		_sheet_visual_waiting.erase(creature_id)
+		if not sheet_area.has_method("find_linked_token_for_creature"):
+			continue
+		var token: CharacterBody3D = sheet_area.call(
+			"find_linked_token_for_creature", creature_id
+		) as CharacterBody3D
+		if token == null:
+			continue
+		for record: Dictionary in sheet_area.get("_archive").list_owned():
+			if String(record.get("id", "")) == creature_id and String(record.get("current_miniature_id", "")) == miniature_id:
+				apply_creature_sheet_appearance(token, record)
+				break
 
 
 func _set_pending_spawn_from_screen(screen_position: Vector2) -> bool:
@@ -1588,46 +1914,63 @@ func _set_pending_spawn_from_screen(screen_position: Vector2) -> bool:
 	_pending_spawn_on_grid_surface = false
 	_has_pending_spawn_position = false
 
-	var hit: Dictionary = _raycast_from_screen(screen_position, 1 | 4, false)
+	# Include the grid's dedicated collision layers (e.g. Kaos's stone
+	# sculpture proxies on layer 8), not just regular terrain on 1 | 4.
+	var terrain_mask: int = 1 | 4
+	if volumetric_grid != null:
+		terrain_mask |= int(volumetric_grid.get("collision_mask"))
+	var hit: Dictionary = _raycast_from_screen(
+		screen_position, terrain_mask, false
+	)
+	# Prefer the FIRST visible top face of the tactical voxel grid. In
+	# Scontro contro Kaos the stone sculpture has sloped collision surfaces
+	# and auxiliary voxel layers, so a physics ray alone may hit its SIDE,
+	# or the underlying geometry well inside the rendered grid.
+	if (
+		volumetric_grid != null
+		and volumetric_grid.visible
+		and volumetric_grid.has_method("pick_visible_top_cell_from_ray")
+	):
+		var ray_origin: Vector3 = camera.project_ray_origin(screen_position)
+		var ray_direction: Vector3 = camera.project_ray_normal(screen_position)
+		var max_distance: float = camera.far
+		if not hit.is_empty():
+			max_distance = minf(
+				max_distance,
+				ray_origin.distance_to(Vector3(hit.get("position", Vector3.ZERO)))
+				+ cell_size * 1.5
+			)
+		var grid_pick: Variant = volumetric_grid.call(
+			"pick_visible_top_cell_from_ray",
+			ray_origin,
+			ray_direction,
+			max_distance
+		)
+		if grid_pick is Dictionary:
+			var pick_data: Dictionary = grid_pick as Dictionary
+			if bool(pick_data.get("valid", false)):
+				var top_value: Variant = pick_data.get("top_center")
+				if top_value is Vector3:
+					var top_center: Vector3 = top_value
+					_pending_spawn_position = top_center
+					_has_pending_spawn_position = true
+					_pending_spawn_on_grid_surface = true
+					var grid_hit_collider: Node3D = hit.get("collider") as Node3D
+					if (
+						grid_hit_collider != null
+						and grid_hit_collider.is_in_group("tactical_platform")
+					):
+						_pending_spawn_support = grid_hit_collider
+					return true
+
 	if hit.is_empty():
 		return false
 	var hit_normal: Vector3 = hit.get("normal", Vector3.UP)
 	if hit_normal.dot(Vector3.UP) < 0.35:
 		return false
-
-	var hit_position: Vector3 = hit.get("position", Vector3.ZERO)
-	var spawn_position := hit_position
-	if (
-		volumetric_grid.visible
-		and volumetric_grid.has_method("pick_visible_top_cell_from_ray")
-	):
-		var ray_origin := camera.project_ray_origin(screen_position)
-		var ray_direction := camera.project_ray_normal(screen_position)
-		var max_grid_pick_distance := (
-			ray_origin.distance_to(hit_position)
-			+ cell_size * 1.5
-		)
-		var grid_pick: Variant = volumetric_grid.call(
-			"pick_visible_top_cell_from_ray",
-			ray_origin,
-			ray_direction,
-			max_grid_pick_distance
-		)
-		if grid_pick is Dictionary:
-			var grid_pick_data := grid_pick as Dictionary
-			if bool(grid_pick_data.get("valid", false)):
-				var top_center_value: Variant = grid_pick_data.get(
-					"top_center",
-					spawn_position
-				)
-				if top_center_value is Vector3:
-					var top_center: Vector3 = top_center_value
-					spawn_position = top_center
-					_pending_spawn_on_grid_surface = true
-
-	_pending_spawn_position = spawn_position
+	_pending_spawn_position = hit.get("position", Vector3.ZERO)
 	_has_pending_spawn_position = true
-	var hit_collider := hit.get("collider") as Node3D
+	var hit_collider: Node3D = hit.get("collider") as Node3D
 	if (
 		hit_collider != null
 		and hit_collider.is_in_group("tactical_platform")
@@ -1636,7 +1979,122 @@ func _set_pending_spawn_from_screen(screen_position: Vector2) -> bool:
 	return true
 
 
+func _prepare_context_reposition(screen_position: Vector2) -> void:
+	_context_reposition_valid = false
+	_context_reposition_air = false
+	_context_reposition_support = null
+	_clean_selection()
+	if _selected_tokens.size() != 1:
+		return
+	var token: CharacterBody3D = _selected_tokens[0]
+	if token == null or not is_instance_valid(token):
+		return
+	if _has_pending_spawn_position:
+		_context_reposition_position = _pending_spawn_position
+		_context_reposition_support = _pending_spawn_support
+		_context_reposition_valid = true
+		return
+	# Empty space: 2D targets the selected floor plane; 3D targets the
+	# actual ray depth of the selected token, preserving free-flight support.
+	var ray_origin: Vector3 = camera.project_ray_origin(screen_position)
+	var direction: Vector3 = camera.project_ray_normal(screen_position)
+	var token_cell: float = maxf(float(token.get("cell_size")), 0.001)
+	var half_height: float = maxf(
+		float(token.get("token_height_cells")), 0.1
+	) * token_cell * 0.5
+	var point: Vector3 = token.global_position
+	if _view_2d_enabled and absf(direction.y) > 0.0001:
+		var target_y: float = token.global_position.y - half_height
+		if camera.has_method("get_top_down_level"):
+			target_y = float(camera.call("get_top_down_level"))
+		var distance: float = (target_y - ray_origin.y) / direction.y
+		if distance <= 0.0 or distance > camera.far:
+			return
+		point = ray_origin + direction * distance
+	else:
+		var distance: float = maxf(
+			0.1, (token.global_position - ray_origin).dot(direction)
+		)
+		if distance > camera.far:
+			return
+		point = ray_origin + direction * distance
+		point.y = snappedf(point.y - half_height, cell_size)
+	_context_reposition_position = point
+	_context_reposition_valid = true
+	_context_reposition_air = true
+
+
+func _reposition_selected_at_context() -> void:
+	_clean_selection()
+	if not _context_reposition_valid or _selected_tokens.size() != 1:
+		return
+	var token: CharacterBody3D = _selected_tokens[0]
+	if token == null or not is_instance_valid(token):
+		return
+	var token_cell: float = maxf(float(token.get("cell_size")), 0.001)
+	var height: float = maxf(float(token.get("token_height_cells")), 0.1)
+	var target: Vector3 = _context_reposition_position
+	push_undo_state()
+	if mount_controller != null and mount_controller.is_mounted(token):
+		mount_controller.dismount(token)
+	token.global_position = Vector3(
+		target.x, target.y + height * token_cell * 0.5, target.z
+	)
+	if token.has_method("snap_horizontal_to_grid"):
+		token.call("snap_horizontal_to_grid")
+	if (
+		volumetric_grid != null
+		and volumetric_grid.has_method("get_clear_spawn_floor_for_footprint")
+	):
+		var floor_y: float = float(volumetric_grid.call(
+			"get_clear_spawn_floor_for_footprint",
+			token.global_position,
+			float(token.call("get_footprint_cells")),
+			height, target.y
+		))
+		token.global_position.y = floor_y + height * token_cell * 0.5
+	if _context_reposition_air:
+		if token.has_method("set_flying"):
+			token.call("set_flying", true)
+		token.set("grid_support", null)
+	else:
+		token.set("grid_support", _context_reposition_support)
+		if (
+			_context_reposition_support != null
+			and is_instance_valid(_context_reposition_support)
+		):
+			token.set(
+				"_support_transform",
+				_context_reposition_support.global_transform
+			)
+	_replace_selection(token)
+	_context_reposition_valid = false
+	call_deferred("_sync_explicit_token_change", token)
+
+
 func _unhandled_input(event: InputEvent) -> void:
+	# A world click (including token selection) must dismiss the previously
+	# focused menu, otherwise Space can activate its last action.
+	if (
+		event is InputEventMouseButton
+		and event.pressed
+		and event.button_index in [MOUSE_BUTTON_LEFT, MOUSE_BUTTON_RIGHT]
+	):
+		var focused_control: Control = get_viewport().gui_get_focus_owner()
+		if focused_control != null:
+			focused_control.release_focus()
+	if event is InputEventKey and get_viewport().gui_get_focus_owner() != null:
+		return
+	if (
+		_map_edit_layer_active
+		and (
+			event is InputEventMouseButton
+			or event is InputEventMouseMotion
+		)
+	):
+		get_viewport().set_input_as_handled()
+		return
+
 	if item_controller != null and item_controller.handle_event(event):
 		get_viewport().set_input_as_handled()
 		return
@@ -1745,6 +2203,18 @@ func _unhandled_input(event: InputEvent) -> void:
 				measurement_tool.end_measurement()
 			get_viewport().set_input_as_handled()
 			return
+	# World navigation only runs after token/AoE/measurement interaction
+	# and GUI handlers have had their opportunity to consume the event.
+	if (
+		_view_2d_enabled
+		and not _map_edit_layer_active
+		and (token_drag == null or not token_drag.active)
+		and not bool(measurement_tool.call("is_movable_aoe_dragging"))
+		and camera.has_method("handle_top_down_navigation_input")
+		and bool(camera.call("handle_top_down_navigation_input", event))
+	):
+		get_viewport().set_input_as_handled()
+		return
 	if token_drag != null and token_drag.handle_event(event):
 		get_viewport().set_input_as_handled()
 		return
@@ -1779,19 +2249,6 @@ func _unhandled_input(event: InputEvent) -> void:
 
 		_clean_selection()
 		if not _selected_tokens.is_empty() or _has_selected_item():
-			# Ctrl+Shift+Su/Giu inclina di 30 gradi. Shift+Su/Giu resta
-			# disponibile per il movimento verticale gia' esistente.
-			if (
-				event.ctrl_pressed
-				and event.shift_pressed
-				and event.keycode in [KEY_UP, KEY_DOWN]
-			):
-				_rotate_selected_vertical(
-					1 if event.keycode == KEY_UP else -1
-				)
-				get_viewport().set_input_as_handled()
-				return
-
 			if event.shift_pressed:
 				if event.keycode == KEY_UP or event.keycode == KEY_DOWN:
 					_move_selected_vertical(
@@ -1957,6 +2414,10 @@ func begin_token_move_transaction(tokens: Array) -> Dictionary:
 		return {}
 	if item_controller != null and not item_controller.items.is_empty():
 		return _capture_history_state()
+	if mount_controller != null:
+		for value: Variant in tokens:
+			if value is CharacterBody3D and mount_controller.is_mounted(value):
+				return _capture_history_state()
 	return _capture_token_move_state(tokens)
 
 
@@ -2184,49 +2645,31 @@ func _redo_last_action_now() -> bool:
 	_append_history_state(_undo_stack, current_state)
 	return true
 
-func toggle_player_area() -> void:
-	if player_area != null and is_instance_valid(player_area):
-		player_area.call("toggle_panel")
+func toggle_compendium() -> void:
+	if compendium != null and is_instance_valid(compendium):
+		compendium.call("toggle_panel")
 
 
-func add_player_character() -> void:
-	if player_area != null and is_instance_valid(player_area):
-		player_area.call("add_character")
-
-
-func link_player_character_to_selected_token() -> void:
-	if player_area != null and is_instance_valid(player_area):
-		player_area.call("request_link_character_to_selected_token")
-
-
-func link_selected_player_character_to_named_token() -> void:
-	if player_area != null and is_instance_valid(player_area):
-		player_area.call("request_link_selected_character_to_named_token")
-
-
-func get_selected_tokens_for_player_area() -> Array[CharacterBody3D]:
+func get_selected_tokens_for_creatures() -> Array[CharacterBody3D]:
 	_clean_selection()
 	return _selected_tokens.duplicate()
 
 
-func toggle_master_area() -> void:
-	if master_area != null and is_instance_valid(master_area):
-		master_area.call("toggle_panel")
+func list_available_miniatures() -> Array[Dictionary]:
+	# Same catalog as the existing Generate Token dialog: local packs,
+	# character miniatures, and downloadable packs from the releases.
+	# Do not expose raw filesystem paths as the persistent creature ID.
+	var available: Array[Dictionary] = []
+	for profile: Dictionary in _token_profiles:
+		if not String(profile.get("id", "")).strip_edges().is_empty():
+			available.append(profile.duplicate(true))
+	return available
 
 
-func link_master_creature_to_selected_token() -> void:
-	if master_area != null and is_instance_valid(master_area):
-		master_area.call("request_link_creature_to_selected_token")
-
-
-func link_selected_master_creature_to_named_token() -> void:
-	if master_area != null and is_instance_valid(master_area):
-		master_area.call("request_link_selected_creature_to_named_token")
-
-
-func get_selected_tokens_for_master_area() -> Array[CharacterBody3D]:
-	_clean_selection()
-	return _selected_tokens.duplicate()
+func toggle_creature_area() -> void:
+	var area := get_node_or_null("CreatureArea")
+	if area != null:
+		area.call("toggle_panel")
 
 
 func toggle_spell_menu() -> void:
@@ -2299,15 +2742,105 @@ func set_grid_visible(enabled: bool) -> void:
 	volumetric_grid.visible = enabled
 
 
+func is_2d_view_enabled() -> bool:
+	return _view_2d_enabled
+
+
+func set_map_edit_layer_active(enabled: bool) -> void:
+	_map_edit_layer_active = enabled and _view_2d_enabled
+
+
+func is_map_edit_layer_active() -> bool:
+	return _map_edit_layer_active
+
+
+func toggle_2d_view() -> void:
+	set_2d_view_enabled(not _view_2d_enabled)
+
+
+func set_2d_view_enabled(enabled: bool) -> void:
+	_view_2d_enabled = enabled
+	for token in get_tree().get_nodes_in_group("dnd_token"):
+		if not is_ancestor_of(token):
+			continue
+		if token.has_method("set_top_down_token_enabled"):
+			token.call("set_top_down_token_enabled", enabled)
+		if token.has_method("set_2d_elevation_overlay_enabled"):
+			token.call("set_2d_elevation_overlay_enabled", enabled)
+	if not enabled:
+		_map_edit_layer_active = false
+
+	if volumetric_grid.has_method("set_surface_overlay_bias_cells"):
+		volumetric_grid.call(
+			"set_surface_overlay_bias_cells",
+			0.025 if enabled else 0.0
+		)
+
+	if enabled:
+		if camera.has_method("is_first_person") \
+		and bool(camera.call("is_first_person")):
+			camera.call("exit_first_person")
+		if camera.has_method("enter_top_down_2d"):
+			var remembered_2d: bool = (
+				camera.has_method("has_remembered_top_down_view")
+				and bool(camera.call("has_remembered_top_down_view"))
+			)
+			camera.call(
+				"enter_top_down_2d",
+				Vector3.ZERO,
+				_primary_board_fit_size_2d(),
+				_top_down_tilt_degrees_2d()
+			)
+			# Start at the real solid floor closest to the map origin.
+			if _top_down_levels != null and not remembered_2d:
+				var raw_levels: Variant = _top_down_levels.call("get_solid_levels")
+				if raw_levels is Array:
+					var solid_levels: Array = raw_levels as Array
+					var nearest_level: float = 0.0
+					var smallest_distance: float = INF
+					for value: Variant in solid_levels:
+						var candidate: float = float(value)
+						if absf(candidate) < smallest_distance:
+							nearest_level = candidate
+							smallest_distance = absf(candidate)
+					if smallest_distance < INF:
+						camera.call("set_top_down_level", nearest_level)
+	else:
+		if camera.has_method("exit_top_down_2d"):
+			camera.call("exit_top_down_2d")
+	if _top_down_overlay != null:
+		_top_down_overlay.call("set_2d_active", enabled)
+
+	var crosshair := get_node_or_null("UI/Crosshair") as Control
+	if crosshair != null:
+		crosshair.visible = not enabled
+
+	if _ui_owns_mouse:
+		_release_mouse()
+	else:
+		_capture_mouse()
+
+
+func _top_down_tilt_degrees_2d() -> float:
+	# Il preset Forest & Mountains contiene 1.167 alberi come billboard
+	# verticali. Una vista perfettamente zenitale li rende edge-on; 12°
+	# mantengono l'aspetto top-down ma rendono di nuovo leggibile la chioma.
+	if find_child("CampaignPreset_ForestMountains", true, false) != null:
+		return 12.0
+	return 0.0
+
+
+func _primary_board_fit_size_2d() -> float:
+	var collision := get_node_or_null(
+		"Board/FloorCollision/CollisionShape3D"
+	) as CollisionShape3D
+	if collision != null and collision.shape is BoxShape3D:
+		var box := collision.shape as BoxShape3D
+		return maxf(8.0, maxf(box.size.x, box.size.z) * 1.08)
+	return 30.0
+
+
 # Alias di compatibilita: ora esiste una sola griglia volumetrica.
-func toggle_grid_3d() -> void:
-	toggle_grid()
-
-
-func set_grid_3d_visible(enabled: bool) -> void:
-	set_grid_visible(enabled)
-
-
 func toggle_vision_cones() -> void:
 	push_undo_state()
 	set_vision_cones_visible(not _vision_cones_visible)
@@ -2378,9 +2911,13 @@ func _toggle_measurement_mode() -> void:
 func _build_context_submenus() -> void:
 	context_token_menu = _create_context_submenu("ContextTokenMenu")
 	context_game_menu = _create_context_submenu("ContextGameMenu")
+	_create_context_submenu("ContextMasterMenu")
+	context_place_creature_menu = PopupMenu.new()
+	context_place_creature_menu.name = "ContextPlaceCreatureMenu"
+	context_place_creature_menu.id_pressed.connect(_on_place_creature_id_pressed)
+	context_token_menu.add_child(context_place_creature_menu)
 	context_measure_menu = _create_context_submenu("ContextMeasureMenu")
 	context_view_menu = _create_context_submenu("ContextViewMenu")
-	context_session_menu = _create_context_submenu("ContextSessionMenu")
 
 
 func _create_context_submenu(menu_name: String) -> PopupMenu:
@@ -2392,17 +2929,91 @@ func _create_context_submenu(menu_name: String) -> PopupMenu:
 
 
 func _prepare_context_submenus() -> void:
-	context_token_menu.clear()
-	context_game_menu.clear()
-	context_measure_menu.clear()
-	context_view_menu.clear()
-	context_session_menu.clear()
+	context_place_creature_menu.clear()
 	_limit_popup_menu(context_menu)
-	_limit_popup_menu(context_token_menu)
-	_limit_popup_menu(context_game_menu)
-	_limit_popup_menu(context_measure_menu)
-	_limit_popup_menu(context_view_menu)
-	_limit_popup_menu(context_session_menu)
+	_limit_popup_menu(context_place_creature_menu)
+	for child: Node in context_menu.get_children():
+		if child is PopupMenu:
+			child.clear()
+			_limit_popup_menu(child)
+
+
+# Rebuild on each right-click so the chooser includes both present and
+# absent creatures, including any just imported or transferred to us.
+func _populate_place_creature_menu() -> void:
+	context_place_creature_menu.clear()
+	var area: Node = get_node_or_null("CreatureArea")
+	if area == null or not area.has_method("get_owned_creatures_for_placement"):
+		context_place_creature_menu.add_item("Archivio creature non disponibile")
+		context_place_creature_menu.set_item_disabled(0, true)
+		return
+	var available_value: Variant = area.call("get_owned_creatures_for_placement")
+	if not available_value is Array:
+		return
+	var present_ids: Dictionary = {}
+	for node: Node in get_tree().get_nodes_in_group("dnd_token"):
+		if not node is CharacterBody3D or not is_ancestor_of(node):
+			continue
+		if node.is_queued_for_deletion():
+			continue
+		if String(node.get_meta("creature_owner_id", "")) != CreatureOwner.local_id():
+			continue
+		present_ids[String(node.get_meta("creature_id", ""))] = true
+	for value: Variant in available_value as Array:
+		if not value is Dictionary:
+			continue
+		var record: Dictionary = value as Dictionary
+		if not CreatureOwner.is_owner(record):
+			continue
+		var creature_id: String = String(record.get("id", "")).strip_edges()
+		var creature_kind: String = String(record.get("kind", ""))
+		if creature_id.is_empty() or creature_kind not in ["character", "monster"]:
+			continue
+		var display_name: String = String(record.get("name", "Creatura")).strip_edges()
+		if display_name.is_empty():
+			display_name = "Creatura"
+		var icon: String = "♙" if creature_kind == "character" else "◇"
+		var status: String = "in mappa" if present_ids.has(creature_id) else "non in mappa"
+		var index: int = context_place_creature_menu.item_count
+		context_place_creature_menu.add_item(
+			"%s %s · %s" % [icon, display_name, status], index + 1
+		)
+		context_place_creature_menu.set_item_metadata(
+			index, {"id": creature_id, "kind": creature_kind}
+		)
+	if context_place_creature_menu.item_count == 0:
+		context_place_creature_menu.add_item("Nessuna creatura posseduta")
+		context_place_creature_menu.set_item_disabled(0, true)
+
+
+func _on_place_creature_id_pressed(item_id: int) -> void:
+	var index: int = context_place_creature_menu.get_item_index(item_id)
+	if index < 0 or not _has_pending_spawn_position:
+		_close_context_menu_to_game()
+		return
+	var metadata_value: Variant = context_place_creature_menu.get_item_metadata(index)
+	if not metadata_value is Dictionary:
+		_close_context_menu_to_game()
+		return
+	var metadata: Dictionary = metadata_value as Dictionary
+	var area: Node = get_node_or_null("CreatureArea")
+	if area != null and area.has_method("get_owned_creatures_for_placement"):
+		# Validate from disk again: an owner transfer or edit may have occurred
+		# after the submenu opened. Never move a foreign-owned token.
+		var owned_value: Variant = area.call("get_owned_creatures_for_placement")
+		if owned_value is Array:
+			for value: Variant in owned_value as Array:
+				if not value is Dictionary:
+					continue
+				var record: Dictionary = value as Dictionary
+				if (
+					String(record.get("id", "")) == String(metadata.get("id", ""))
+					and String(record.get("kind", "")) == String(metadata.get("kind", ""))
+					and CreatureOwner.is_owner(record)
+				):
+					_place_creature_at_pending_position(record)
+					break
+	_close_context_menu_to_game()
 
 
 func _limit_popup_menu(menu: PopupMenu) -> void:
@@ -2448,16 +3059,7 @@ func _popup_dialog_safe(
 	preferred_size: Vector2i,
 	fallback_ratio: float = 0.92
 ) -> void:
-	if dialog == null or not is_instance_valid(dialog):
-		return
-	var viewport_size := get_viewport().get_visible_rect().size
-	var safe_size := Vector2i(
-		mini(preferred_size.x, maxi(340, int(viewport_size.x) - 48)),
-		mini(preferred_size.y, maxi(260, int(viewport_size.y) - 48))
-	)
-	dialog.reset_size()
-	dialog.popup_centered_clamped(safe_size, fallback_ratio)
-
+	DialogLayout.popup(dialog, preferred_size, fallback_ratio)
 
 func _show_context_menu(screen_position: Vector2) -> void:
 	_clean_selection()
@@ -2478,11 +3080,15 @@ func _show_context_menu(screen_position: Vector2) -> void:
 
 	_context_token = null
 	_pending_spawn_support = null
-	var token_hit: Dictionary = _raycast_from_screen(
-		screen_position,
-		TOKEN_PICK_COLLISION_MASK,
-		true
-	)
+	var token_hit: Dictionary = {}
+	if _view_2d_enabled:
+		token_hit = _raycast_token_from_screen(screen_position, true)
+	if token_hit.is_empty():
+		token_hit = _raycast_from_screen(
+			screen_position,
+			TOKEN_PICK_COLLISION_MASK,
+			true
+		)
 	if not token_hit.is_empty():
 		var token_collider: Node = token_hit.get("collider") as Node
 		if token_collider != null:
@@ -2494,62 +3100,45 @@ func _show_context_menu(screen_position: Vector2) -> void:
 			):
 				_context_token = token_target as CharacterBody3D
 
-	var hit: Dictionary = _raycast_from_screen(screen_position, 1 | 4, false)
-	if not hit.is_empty():
-		var hit_normal: Vector3 = hit.get("normal", Vector3.UP)
-		if hit_normal.dot(Vector3.UP) >= 0.35:
-			var hit_position: Vector3 = hit.get("position", Vector3.ZERO)
-			var spawn_position := hit_position
-
-			# The volumetric grid is visual-only. At shallow camera angles its
-			# visible top face can be one or more cells in front of the actual
-			# collision point underneath. Pick the top grid cell crossed by the
-			# same mouse ray so the token appears on the square being pointed at.
-			if (
-				volumetric_grid.visible
-				and volumetric_grid.has_method(
-					"pick_visible_top_cell_from_ray"
-				)
-			):
-				var ray_origin := camera.project_ray_origin(screen_position)
-				var ray_direction := camera.project_ray_normal(screen_position)
-				var max_grid_pick_distance := (
-					ray_origin.distance_to(hit_position)
-					+ cell_size * 1.5
-				)
-				var grid_pick: Variant = volumetric_grid.call(
-					"pick_visible_top_cell_from_ray",
-					ray_origin,
-					ray_direction,
-					max_grid_pick_distance
-				)
-				if grid_pick is Dictionary:
-					var grid_pick_data := grid_pick as Dictionary
-					if bool(grid_pick_data.get("valid", false)):
-						var top_center_value: Variant = grid_pick_data.get(
-							"top_center",
-							spawn_position
-						)
-						if top_center_value is Vector3:
-							var top_center: Vector3 = top_center_value
-							# Use the visible voxel's TOP face as the support
-							# plane. Keeping hit_position.y here embedded the
-							# token's lowest cell inside the grid until its
-							# first move/gravity update repaired the height.
-							spawn_position = top_center
-							_pending_spawn_on_grid_surface = true
-
-			_pending_spawn_position = spawn_position
-			_has_pending_spawn_position = true
-			var hit_collider := hit.get("collider") as Node3D
-			if (
-				hit_collider != null
-				and hit_collider.is_in_group("tactical_platform")
-			):
-				_pending_spawn_support = hit_collider
+	_set_pending_spawn_from_screen(screen_position)
+	_prepare_context_reposition(screen_position)
 
 	context_menu.clear()
 	_prepare_context_submenus()
+
+	# Token is always the first category. Actions concerning the selected
+	# token(s) appear before token generation and the general token list.
+	if not _selected_tokens.is_empty():
+		if _selected_tokens.size() == 1:
+			context_token_menu.add_item("Modifica token…", CONTEXT_TOKEN_DETAILS)
+			context_token_menu.add_item("Scegli cavalcatura", CONTEXT_CHOOSE_MOUNT)
+			if mount_controller != null and mount_controller.is_mounted(_selected_tokens[0]):
+				context_token_menu.add_item("Scendi dalla cavalcatura", CONTEXT_DISMOUNT)
+			if _context_reposition_valid:
+				context_token_menu.add_item("Riposiziona creatura qui", CONTEXT_REPOSITION_SELECTED)
+			var selected_token: CharacterBody3D = _selected_tokens[0]
+			if (
+				selected_token != null
+				and is_instance_valid(selected_token)
+				and selected_token.has_method("has_previous_transformation")
+				and bool(selected_token.call("has_previous_transformation"))
+			):
+				context_token_menu.add_item("Ripristina aspetto precedente", CONTEXT_RESTORE_TRANSFORMATION)
+		var selection_count: int = _selected_tokens.size()
+		var selection_suffix: String = (
+			"" if selection_count == 1 else " (%d)" % selection_count
+		)
+		context_token_menu.add_item("Elimina token selezionati" + selection_suffix, CONTEXT_DELETE_SELECTED)
+		context_token_menu.add_item("Applica gravità" + selection_suffix, CONTEXT_FLYING)
+		context_token_menu.add_separator()
+	if _has_pending_spawn_position:
+		_populate_place_creature_menu()
+		context_token_menu.add_submenu_node_item(
+			"Piazza creatura", context_place_creature_menu
+		)
+		context_token_menu.add_item("Genera token", CONTEXT_CREATE_TOKEN)
+	context_token_menu.add_item("Lista token", CONTEXT_TOKEN_LIST)
+	context_menu.add_submenu_node_item("Token", context_token_menu)
 
 	context_measure_menu.add_item("Righello", CONTEXT_MEASURE_RULER)
 	context_measure_menu.add_separator()
@@ -2561,87 +3150,19 @@ func _show_context_menu(screen_position: Vector2) -> void:
 	context_measure_menu.add_item("Cancella tutte le AoE", CONTEXT_CLEAR_AOES)
 	context_menu.add_submenu_node_item("Misura", context_measure_menu)
 
-	if _has_pending_spawn_position:
-		context_token_menu.add_item("Genera token", CONTEXT_CREATE_TOKEN)
-
-	if context_token_menu.item_count > 0:
-		context_token_menu.add_separator()
-	context_token_menu.add_item("Lista token", CONTEXT_TOKEN_LIST)
-
-	if not _selected_tokens.is_empty():
-		if context_token_menu.item_count > 0:
-			context_token_menu.add_separator()
-
-		if _selected_tokens.size() == 1:
-			context_token_menu.add_item("Modifica token…", CONTEXT_TOKEN_DETAILS)
-			var selected_token: CharacterBody3D = _selected_tokens[0]
-			if (
-				selected_token != null
-				and is_instance_valid(selected_token)
-				and selected_token.has_method("has_previous_transformation")
-				and bool(selected_token.call("has_previous_transformation"))
-			):
-				context_token_menu.add_item(
-					"Ripristina aspetto precedente",
-					CONTEXT_RESTORE_TRANSFORMATION
-				)
-
-		var count: int = _selected_tokens.size()
-		var suffix: String = "" if count == 1 else " (%d)" % count
-		context_token_menu.add_separator()
-		context_token_menu.add_item(
-			"Applica gravità" + suffix,
-			CONTEXT_FLYING
-		)
-		context_token_menu.add_separator()
-		context_token_menu.add_item(
-			"Elimina token selezionati" + suffix,
-			CONTEXT_DELETE_SELECTED
-		)
-
-	if context_token_menu.item_count > 0:
-		context_menu.add_submenu_node_item("Token", context_token_menu)
 
 	context_game_menu.add_item("Incantesimi", CONTEXT_SPELLS)
 	context_game_menu.add_separator()
-	context_game_menu.add_item("Area Player", CONTEXT_PLAYER_AREA)
-	context_game_menu.add_item(
-		"Aggiungi personaggio",
-		CONTEXT_PLAYER_ADD_CHARACTER
-	)
-	context_game_menu.add_item(
-		"Token selezionato → personaggio",
-		CONTEXT_PLAYER_LINK_TOKEN
-	)
-	context_game_menu.set_item_disabled(
-		context_game_menu.get_item_index(CONTEXT_PLAYER_LINK_TOKEN),
-		_selected_tokens.size() != 1
-	)
-	context_game_menu.add_item(
-		"Personaggio → token per nome",
-		CONTEXT_PLAYER_LINK_CHARACTER
-	)
-	context_game_menu.add_separator()
-	context_game_menu.add_item("Area Master", CONTEXT_MASTER_AREA)
-	context_game_menu.add_item(
-		"Token selezionato → creatura",
-		CONTEXT_MASTER_LINK_TOKEN
-	)
-	context_game_menu.set_item_disabled(
-		context_game_menu.get_item_index(CONTEXT_MASTER_LINK_TOKEN),
-		_selected_tokens.size() != 1
-	)
-	context_game_menu.add_item(
-		"Creatura → token per nome",
-		CONTEXT_MASTER_LINK_CREATURE
-	)
-	context_game_menu.add_separator()
-	context_game_menu.add_item(
-		"Cambia token associato all'utente…",
-		CONTEXT_USER_IDENTITY
-	)
+	context_game_menu.add_item("Creature · schede", CONTEXT_CREATURE_AREA)
+	context_game_menu.add_item("Compendio", CONTEXT_COMPENDIUM)
+	var master_menu: PopupMenu = context_menu.get_node("ContextMasterMenu")
+	master_menu.add_item("Inizia combattimento", CONTEXT_COMBAT_START)
+	master_menu.add_item("Termina combattimento", CONTEXT_COMBAT_END)
+	master_menu.add_separator("Oggetti sulla mappa")
+	master_menu.add_item("Posiziona carro romano (2×2)", CONTEXT_ITEM_CREATE)
+	master_menu.add_item("Gestisci item / associa token…", CONTEXT_ITEM_MANAGE)
+	context_menu.add_submenu_node_item("Master", master_menu)
 	context_game_menu.add_separator("Combattimento")
-	context_game_menu.add_item("Inizia combattimento", CONTEXT_COMBAT_START)
 	var initiative_visible: bool = (
 		initiative_tracker != null
 		and is_instance_valid(initiative_tracker)
@@ -2651,9 +3172,6 @@ func _show_context_menu(screen_position: Vector2) -> void:
 		"Nascondi iniziativa" if initiative_visible else "Mostra iniziativa",
 		CONTEXT_INITIATIVE
 	)
-	context_game_menu.add_item("Termina combattimento", CONTEXT_COMBAT_END)
-	context_menu.add_submenu_node_item("Gioco", context_game_menu)
-
 	if volumetric_grid.visible:
 		context_view_menu.add_item("Nascondi griglia", CONTEXT_TOGGLE_GRID)
 	else:
@@ -2690,50 +3208,50 @@ func _show_context_menu(screen_position: Vector2) -> void:
 	context_view_menu.add_item("Velocità camera…", CONTEXT_CAMERA_SETTINGS)
 	context_menu.add_submenu_node_item("Vista", context_view_menu)
 
-	context_session_menu.add_item("Annulla ultima azione", CONTEXT_UNDO)
-	context_session_menu.set_item_disabled(
-		context_session_menu.get_item_index(CONTEXT_UNDO),
+	context_game_menu.add_item("Annulla ultima azione", CONTEXT_UNDO)
+	context_game_menu.set_item_disabled(
+		context_game_menu.get_item_index(CONTEXT_UNDO),
 		_undo_stack.is_empty()
 	)
-	context_session_menu.add_item("Ripeti ultima azione", CONTEXT_REDO)
-	context_session_menu.set_item_disabled(
-		context_session_menu.get_item_index(CONTEXT_REDO),
+	context_game_menu.add_item("Ripeti ultima azione", CONTEXT_REDO)
+	context_game_menu.set_item_disabled(
+		context_game_menu.get_item_index(CONTEXT_REDO),
 		_redo_stack.is_empty()
 	)
-	context_session_menu.add_separator("Salvataggi")
+	context_game_menu.add_separator("Salvataggi")
 	if scene_file_path != CAMPAIGN_EDITOR_SCENE_PATH:
-		context_session_menu.add_item(
+		context_game_menu.add_item(
 			"Salva stato campagna",
 			CONTEXT_SAVE_CAMPAIGN_STATE
 		)
-	context_session_menu.add_item(
+	context_game_menu.add_item(
 		"Salva mappa in locale…",
 		CONTEXT_SAVE_MAP_LOCAL
 	)
-	context_session_menu.add_item(
+	context_game_menu.add_item(
 		"Carica mappa locale…",
 		CONTEXT_LOAD_MAP_LOCAL
 	)
-	context_session_menu.add_separator()
-	context_session_menu.add_check_item(
+	context_game_menu.add_separator()
+	context_game_menu.add_check_item(
 		"Sincronizzazione automatica",
 		CONTEXT_AUTO_SYNC
 	)
-	context_session_menu.set_item_checked(
-		context_session_menu.get_item_index(CONTEXT_AUTO_SYNC),
+	context_game_menu.set_item_checked(
+		context_game_menu.get_item_index(CONTEXT_AUTO_SYNC),
 		bool(board_sync.call("is_auto_sync_enabled"))
 	)
-	context_session_menu.add_item(
+	context_game_menu.add_item(
 		"Sincronizza mappa / Tailscale",
 		CONTEXT_SHARE_MAP
 	)
 	if scene_file_path != CAMPAIGN_EDITOR_SCENE_PATH:
-		context_session_menu.add_separator()
-		context_session_menu.add_item(
+		context_game_menu.add_separator()
+		context_game_menu.add_item(
 			"Torna al menu VTT",
 			CONTEXT_MAIN_MENU
 		)
-	context_menu.add_submenu_node_item("Sessione", context_session_menu)
+	context_menu.add_submenu_node_item("Gioco", context_game_menu)
 
 	_ui_owns_mouse = true
 	_release_mouse()
@@ -2753,20 +3271,46 @@ func _on_context_menu_id_pressed(id: int) -> void:
 		context_menu.hide()
 		return
 
-	if id == CONTEXT_PLAYER_AREA:
+	if id == CONTEXT_CREATURE_AREA:
 		context_menu.hide()
-		if player_area != null and is_instance_valid(player_area):
-			player_area.call_deferred("show_panel")
+		call_deferred("toggle_creature_area")
 		return
 
-	if id == CONTEXT_MASTER_AREA:
+	if id == CONTEXT_ITEM_CREATE or id == CONTEXT_ITEM_MANAGE:
 		context_menu.hide()
-		if master_area != null and is_instance_valid(master_area):
-			master_area.call_deferred("show_panel")
+		if item_controller != null:
+			item_controller.call_deferred(
+				"begin_placement" if id == CONTEXT_ITEM_CREATE else "open_menu"
+			)
+		return
+
+	if id == CONTEXT_COMPENDIUM:
+		context_menu.hide()
+		if compendium != null and is_instance_valid(compendium):
+			compendium.call_deferred("show_panel")
+		return
+
+	if id == CONTEXT_REPOSITION_SELECTED:
+		_reposition_selected_at_context()
+		_close_context_menu_to_game()
 		return
 
 	if id == CONTEXT_TOKEN_DETAILS:
 		open_selected_token_state_editor()
+		return
+
+	if id == CONTEXT_CHOOSE_MOUNT:
+		_begin_choose_mount()
+		return
+
+	if id == CONTEXT_DISMOUNT:
+		if mount_controller != null and _selected_tokens.size() == 1:
+			var mounted_token: CharacterBody3D = _selected_tokens[0]
+			if mount_controller.is_mounted(mounted_token):
+				push_undo_state()
+				mount_controller.dismount(mounted_token)
+				call_deferred("_sync_explicit_token_change", mounted_token)
+		_close_context_menu_to_game()
 		return
 
 	if id == CONTEXT_TOKEN_LIST:
@@ -2775,52 +3319,12 @@ func _on_context_menu_id_pressed(id: int) -> void:
 			token_list.call_deferred("toggle_panel")
 		return
 
-	if id == CONTEXT_PLAYER_ADD_CHARACTER:
-		context_menu.hide()
-		if player_area != null and is_instance_valid(player_area):
-			player_area.call_deferred("add_character")
-		return
-
-	if id == CONTEXT_PLAYER_LINK_TOKEN:
-		context_menu.hide()
-		if player_area != null and is_instance_valid(player_area):
-			player_area.call_deferred(
-				"request_link_character_to_selected_token"
-			)
-		return
-
-	if id == CONTEXT_PLAYER_LINK_CHARACTER:
-		context_menu.hide()
-		if player_area != null and is_instance_valid(player_area):
-			player_area.call_deferred(
-				"request_link_selected_character_to_named_token"
-			)
-		return
-
-	if id == CONTEXT_MASTER_LINK_TOKEN:
-		context_menu.hide()
-		if master_area != null and is_instance_valid(master_area):
-			master_area.call_deferred(
-				"request_link_creature_to_selected_token"
-			)
-		return
-
-	if id == CONTEXT_MASTER_LINK_CREATURE:
-		context_menu.hide()
-		if master_area != null and is_instance_valid(master_area):
-			master_area.call_deferred(
-				"request_link_selected_creature_to_named_token"
-			)
-		return
-
-	if id == CONTEXT_USER_IDENTITY:
-		context_menu.hide()
-		request_change_user_identity()
-		return
 
 	if id == CONTEXT_COMBAT_START:
+		context_menu.hide()
+		# Starting combat opens a creature picker: do not recapture the
+		# pointer above that dialog as the old context-menu handler did.
 		start_combat_mode()
-		_close_context_menu_to_game()
 		return
 
 	if id == CONTEXT_COMBAT_END:
@@ -2957,14 +3461,6 @@ func _on_context_menu_id_pressed(id: int) -> void:
 
 		CONTEXT_DELETE_SELECTED:
 			_delete_selected()
-			_close_context_menu_to_game()
-
-		CONTEXT_ROTATE_LEFT:
-			_rotate_selected(-1)
-			_close_context_menu_to_game()
-
-		CONTEXT_ROTATE_RIGHT:
-			_rotate_selected(1)
 			_close_context_menu_to_game()
 
 
@@ -3337,40 +3833,76 @@ func _build_token_state_dialog() -> void:
 	token_state_grid.add_theme_constant_override("v_separation", 4)
 	content_box.add_child(token_state_grid)
 
-	token_state_checks.clear()
-	for value: Variant in TokenScript.CONDITION_DEFINITIONS:
-		if not value is Dictionary:
-			continue
-		var definition := value as Dictionary
-		var condition_id := String(definition.get("id", ""))
-		if condition_id.is_empty():
-			continue
-		var check := CheckButton.new()
-		var label_text := "%s  %s" % [
-			String(definition.get("icon", "[--]")),
-			String(definition.get("name", condition_id))
-		]
-		if bool(definition.get("automatic", false)):
-			label_text += "  (automatico)"
-			check.disabled = true
-			check.tooltip_text = (
-				"Questa condizione è calcolata automaticamente dalla mappa."
-			)
-		elif not bool(definition.get("official", true)):
-			label_text += "  (marker)"
-		check.text = label_text
-		token_state_grid.add_child(check)
-		token_state_checks[condition_id] = check
+	_refresh_shared_condition_choices(ContentCatalog.condition_definitions())
+	_token_effect_dialog = AcceptDialog.new()
+	_token_effect_dialog.title = "5etools · Effect details"
+	_token_effect_dialog.min_size = Vector2i(540, 400)
+	add_child(_token_effect_dialog)
+	_token_effect_text = RichTextLabel.new()
+	_token_effect_text.mouse_force_pass_scroll_events = false
+	_token_effect_text.custom_minimum_size = Vector2(520.0, 315.0)
+	_token_effect_text.selection_enabled = true
+	_token_effect_text.scroll_active = true
+	_token_effect_dialog.add_child(_token_effect_text)
 
 	var help := Label.new()
 	help.name = "StatesHelp"
 	help.text = (
-		"I primi 15 elementi sono le condizioni ufficiali 5e/SRD; "
-		+ "gli altri sono marker tattici."
+		"Condizioni, malattie ed effetti di 5e.tools e homebrew. "
+		+ "Passa il mouse per leggere gli effetti e le versioni."
 	)
 	help.autowrap_mode = TextServer.AUTOWRAP_WORD_SMART
 	help.add_theme_font_size_override("font_size", 11)
 	content_box.add_child(help)
+
+
+func _refresh_shared_condition_choices(definitions: Array) -> void:
+	for child: Node in token_state_grid.get_children():
+		token_state_grid.remove_child(child)
+		child.queue_free()
+	token_state_checks.clear()
+	for category: String in ["conditions", "effects", "diseases"]:
+		var category_rows: Array[Dictionary] = []
+		for value: Variant in definitions:
+			if value is Dictionary and String(value.get("category", "conditions")) == category:
+				category_rows.append(value as Dictionary)
+		if category_rows.is_empty():
+			continue
+		var heading := Label.new()
+		heading.text = {
+			"conditions": "Conditions · 5etools",
+			"diseases": "Diseases / magical diseases",
+			"effects": "Other effects · 5etools / homebrew"
+		}[category]
+		heading.add_theme_font_size_override("font_size", 15)
+		token_state_grid.add_child(heading)
+		var spacer := Control.new()
+		token_state_grid.add_child(spacer)
+		for definition: Dictionary in category_rows:
+			var condition_id := String(definition.get("id", ""))
+			if condition_id.is_empty() or token_state_checks.has(condition_id):
+				continue
+			var check := CheckButton.new()
+			check.text = "%s %s" % [
+				String(definition.get("icon", "•")),
+				String(definition.get("name", condition_id))
+			]
+			check.tooltip_text = ContentCatalog.description(definition)
+			token_state_grid.add_child(check)
+			token_state_checks[condition_id] = check
+			var info := Button.new()
+			info.text = "Leggi effetti"
+			info.tooltip_text = "Read the full 5etools rules text"
+			info.pressed.connect(_show_shared_effect_description.bind(definition.duplicate(true)))
+			token_state_grid.add_child(info)
+
+
+func _show_shared_effect_description(definition: Dictionary) -> void:
+	if _token_effect_dialog == null or _token_effect_text == null:
+		return
+	_token_effect_dialog.title = String(definition.get("name", "Effect"))
+	_token_effect_text.text = ContentCatalog.description(definition)
+	DialogLayout.popup(_token_effect_dialog, Vector2i(560, 440))
 
 
 func _set_shared_token_editor_conditions(value: Variant) -> void:
@@ -3396,6 +3928,71 @@ func _shared_token_editor_conditions() -> Array[String]:
 	return active
 
 
+func _begin_choose_mount() -> void:
+	_clean_selection()
+	if mount_controller == null or _selected_tokens.size() != 1:
+		_close_context_menu_to_game()
+		return
+	_mount_pick_rider = _selected_tokens[0]
+	context_menu.hide()
+	var focused: Control = get_viewport().gui_get_focus_owner()
+	if focused != null:
+		focused.release_focus()
+	_ui_owns_mouse = false
+	_release_mouse()
+	_set_identity_placement_hint(
+		"Clicca direttamente il token o l'oggetto da cavalcare. "
+		+ "Tasto destro o Esc per annullare."
+	)
+
+
+func _finish_choose_mount() -> void:
+	_mount_pick_rider = null
+	_hide_identity_placement_hint()
+	_capture_mouse()
+
+
+func _handle_mount_pick_input(event: InputEvent) -> bool:
+	if _mount_pick_rider == null or not is_instance_valid(_mount_pick_rider):
+		_finish_choose_mount()
+		return true
+	if event is InputEventKey:
+		if event.pressed and event.keycode == KEY_ESCAPE:
+			_finish_choose_mount()
+			return true
+		return event.keycode in [KEY_UP, KEY_DOWN, KEY_LEFT, KEY_RIGHT]
+	if not event is InputEventMouseButton or not event.pressed:
+		return false
+	if event.button_index == MOUSE_BUTTON_RIGHT:
+		_finish_choose_mount()
+		return true
+	if event.button_index != MOUSE_BUTTON_LEFT:
+		return false
+	var screen_position: Vector2 = (
+		_screen_center() if Input.mouse_mode == Input.MOUSE_MODE_CAPTURED else event.position
+	)
+	var hit: Dictionary = {}
+	if _view_2d_enabled:
+		hit = _raycast_token_from_screen(screen_position, true)
+	if hit.is_empty():
+		hit = _raycast_from_screen(screen_position, TOKEN_PICK_COLLISION_MASK, true)
+		hit = _prefer_passenger_token_hit(screen_position, hit)
+	var collider: Node = hit.get("collider") as Node
+	var target: Node = _find_interaction_target(collider) if collider != null else null
+	if not target is Node3D or not mount_controller.can_mount(_mount_pick_rider, target):
+		_set_identity_placement_hint(
+			"Seleziona un altro token-creatura oppure un oggetto della scena. "
+			+ "Non sono consentite associazioni circolari."
+		)
+		return true
+	var before: Dictionary = begin_undo_transaction()
+	if mount_controller.mount(_mount_pick_rider, target as Node3D):
+		commit_undo_transaction(before)
+		call_deferred("_sync_explicit_token_change", _mount_pick_rider)
+		_finish_choose_mount()
+	return true
+
+
 func open_selected_token_state_editor() -> void:
 	_clean_selection()
 	if _selected_tokens.size() != 1:
@@ -3403,21 +4000,16 @@ func open_selected_token_state_editor() -> void:
 		return
 	if context_menu.visible:
 		context_menu.hide()
-	open_token_transformation(_selected_tokens[0])
-
-
-func _open_token_state_editor(token: CharacterBody3D) -> void:
-	# Compatibilità per eventuali chiamanti esistenti.
+	var token: CharacterBody3D = _selected_tokens[0]
+	var sheets: Node = get_node_or_null("CreatureArea")
+	if (
+		sheets != null
+		and sheets.has_method("open_for_token")
+		and bool(sheets.call("open_for_token", token))
+	):
+		return
+	# Unlinked or remotely owned tokens can still edit their appearance.
 	open_token_transformation(token)
-
-
-func _apply_token_state_editor() -> void:
-	# L'editor stato è ora lo stesso ConfirmationDialog dell'editor token.
-	_on_token_dialog_confirmed()
-
-
-func _close_token_state_editor() -> void:
-	_reset_token_generation_state()
 
 
 func _close_context_menu_to_game() -> void:
@@ -3426,22 +4018,22 @@ func _close_context_menu_to_game() -> void:
 
 
 func _on_context_menu_hidden() -> void:
-	if (
-		color_dialog.visible
-		or (is_instance_valid(share_dialog) and share_dialog.visible)
-		or (is_instance_valid(map_save_dialog) and map_save_dialog.visible)
-		or (is_instance_valid(map_load_dialog) and map_load_dialog.visible)
-		or (is_instance_valid(token_state_dialog) and token_state_dialog.visible)
-		or (
-			is_instance_valid(camera_settings_dialog)
-			and camera_settings_dialog.visible
-		)
-	):
-		return
+	# Evaluate modal ownership once, after the selected action opens its UI.
 	call_deferred("_finish_context_menu_close")
 
 
 func _finish_context_menu_close() -> void:
+	if _mount_pick_rider != null:
+		return
+	if item_controller != null and (item_controller.placing or item_controller.panel.visible):
+		return
+	if (
+		initiative_tracker != null
+		and is_instance_valid(initiative_tracker)
+		and initiative_tracker.get("add_dialog") is Window
+		and bool(initiative_tracker.get("add_dialog").visible)
+	):
+		return
 	if (
 		color_dialog.visible
 		or (is_instance_valid(share_dialog) and share_dialog.visible)
@@ -3459,19 +4051,19 @@ func _finish_context_menu_close() -> void:
 		and is_instance_valid(spell_system)
 		and bool(spell_system.call("is_panel_open"))
 	)
-	var player_panel_open: bool = (
-		player_area != null
-		and is_instance_valid(player_area)
-		and player_area.has_method("is_panel_open")
-		and bool(player_area.call("is_panel_open"))
+	var compendium_panel_open: bool = (
+		compendium != null
+		and is_instance_valid(compendium)
+		and compendium.has_method("is_panel_open")
+		and bool(compendium.call("is_panel_open"))
 	)
-	var master_panel_open: bool = (
-		master_area != null
-		and is_instance_valid(master_area)
-		and master_area.has_method("is_panel_open")
-		and bool(master_area.call("is_panel_open"))
+	var creature_sheet: Node = get_node_or_null("CreatureArea")
+	var creature_panel_open: bool = (
+		creature_sheet != null
+		and creature_sheet.has_method("is_panel_open")
+		and bool(creature_sheet.call("is_panel_open"))
 	)
-	if spell_panel_open or player_panel_open or master_panel_open:
+	if spell_panel_open or compendium_panel_open or creature_panel_open:
 		_pending_aoe_index = -1
 		_context_token = null
 		_ui_owns_mouse = true
@@ -3612,28 +4204,11 @@ func _load_shared_token_editor_from_target(token: CharacterBody3D) -> void:
 		var manual_value: Variant = token.call("get_conditions")
 		if manual_value is Array:
 			conditions.append_array(manual_value as Array)
+	var catalog_edition := String(token.get_meta("rules_version", "2014"))
+	_refresh_shared_condition_choices(
+		ContentCatalog.condition_definitions(catalog_edition)
+	)
 	_set_shared_token_editor_conditions(conditions)
-
-
-func get_token_identity_profiles() -> Array[Dictionary]:
-	var result: Array[Dictionary] = []
-	for profile: Dictionary in _token_profiles:
-		var origin := String(profile.get("_pack_origin", ""))
-		if origin == "current":
-			continue
-		var token_id := String(profile.get("id", "")).strip_edges()
-		if token_id.is_empty():
-			continue
-		result.append({
-			"id": token_id,
-			"name": String(
-				profile.get("name", profile.get("id", "Token"))
-			),
-			"size_name": String(profile.get("size_name", "Medium")),
-			"status": _token_profile_status(profile),
-			"origin": origin
-		})
-	return result
 
 
 func _identity_profile_by_id(profile_id: String) -> Dictionary:
@@ -3642,122 +4217,6 @@ func _identity_profile_by_id(profile_id: String) -> Dictionary:
 		if String(profile.get("id", "")).strip_edges() == wanted:
 			return profile.duplicate(true)
 	return {}
-
-
-func begin_identity_token_placement(
-	profile_id: String,
-	confirmed_callback: Callable,
-	failed_callback: Callable = Callable()
-) -> bool:
-	if (
-		_forced_identity_placement_active
-		or color_dialog.visible
-		or profile_id.strip_edges().is_empty()
-	):
-		return false
-
-	var profile := _identity_profile_by_id(profile_id)
-	if profile.is_empty():
-		return false
-
-	_forced_identity_placement_active = true
-	_forced_identity_profile_ready = false
-	_forced_identity_profile_id = profile_id.strip_edges()
-	_token_generation_transform_target = null
-	_token_generation_confirmed_callback = confirmed_callback
-	_token_generation_canceled_callback = failed_callback
-	_token_generation_exact_position = false
-	_token_generation_place_on_surface = false
-	_token_name_is_auto = true
-	_selected_token_profile = profile
-
-	# Riusa lo stesso setup del generatore normale senza aprire il suo popup.
-	_refresh_token_miniature_filter("", _forced_identity_profile_id)
-	_prepare_shared_token_editor()
-
-	# Il controller della camera si muove solo con il mouse catturato. La
-	# modalità di piazzamento deve impedire l'annullamento, non bloccare la
-	# navigazione: riattiva quindi subito gli stessi controlli camera normali.
-	_ui_owns_mouse = false
-	_capture_mouse()
-
-	var origin := String(_selected_token_profile.get("_pack_origin", ""))
-	if origin == "remote":
-		if TokenPackManager.is_mounted(_forced_identity_profile_id):
-			_selected_token_profile["visual_asset"] = _remote_visual_path(
-				_forced_identity_profile_id
-			)
-			_forced_identity_profile_ready = true
-		elif TokenPackManager.is_downloaded(_forced_identity_profile_id):
-			var mount_error := TokenPackManager.mount_token(
-				_forced_identity_profile_id
-			)
-			if mount_error != OK:
-				_fail_forced_identity_placement(
-					"Mount non riuscito: %s" % error_string(mount_error)
-				)
-				return true
-			_selected_token_profile["visual_asset"] = _remote_visual_path(
-				_forced_identity_profile_id
-			)
-			_forced_identity_profile_ready = true
-		else:
-			_set_identity_placement_hint(
-				"Download della miniatura in corso… appena pronta dovrai cliccare sulla mappa per piazzarla."
-			)
-			var download_error := TokenPackManager.download_token(
-				_forced_identity_profile_id
-			)
-			if download_error != OK:
-				_fail_forced_identity_placement(
-					"Download non avviato: %s" % error_string(download_error)
-				)
-			return true
-	elif origin == "local_pack":
-		if not TokenPackManager.is_mounted(_forced_identity_profile_id):
-			var local_mount_error := TokenPackManager.mount_local_token(
-				_forced_identity_profile_id,
-				_selected_token_profile,
-				String(
-					_selected_token_profile.get("_local_pck_path", "")
-				)
-			)
-			if local_mount_error != OK:
-				_fail_forced_identity_placement(
-					"Mount non riuscito: %s" % error_string(local_mount_error)
-				)
-				return true
-		_selected_token_profile["visual_asset"] = _remote_visual_path(
-			_forced_identity_profile_id
-		)
-		_forced_identity_profile_ready = true
-	else:
-		_forced_identity_profile_ready = true
-
-	if _forced_identity_profile_ready:
-		_set_identity_placement_hint(
-			"Miniatura pronta · muoviti con i controlli normali della camera e clicca per piazzarla. Esc è disabilitato finché non la piazzi."
-		)
-	return true
-
-
-func _fail_forced_identity_placement(message: String) -> void:
-	if not _forced_identity_placement_active:
-		return
-	push_warning("DnDBase: piazzamento token identità fallito: %s" % message)
-	var failed_callback := _token_generation_canceled_callback
-	_forced_identity_placement_active = false
-	_hide_identity_placement_hint()
-	_clear_forced_identity_placement_runtime()
-	_reset_token_generation_state()
-	if failed_callback.is_valid():
-		failed_callback.call_deferred()
-
-
-func _clear_forced_identity_placement_runtime() -> void:
-	_forced_identity_profile_ready = false
-	_forced_identity_profile_id = ""
-	_hide_identity_placement_hint()
 
 
 func _prepare_shared_token_editor() -> void:
@@ -3842,6 +4301,7 @@ func _reset_token_generation_state() -> void:
 	_has_pending_spawn_position = false
 	_pending_spawn_support = null
 	_pending_spawn_on_grid_surface = false
+	_creature_spawn_sheet_id = ""
 	_token_name_is_auto = true
 	_updating_token_name_input = false
 	_ui_owns_mouse = false
@@ -4022,6 +4482,10 @@ func _on_token_dialog_confirmed() -> void:
 		if initiative_tracker != null and is_instance_valid(initiative_tracker):
 			initiative_tracker.call("refresh")
 		if editing_existing:
+			# Do not let a saved creature sheet overwrite a token edit later.
+			var linked_sheets: Node = get_node_or_null("CreatureArea")
+			if linked_sheets != null and linked_sheets.has_method("sync_linked_token_editor"):
+				linked_sheets.call("sync_linked_token_editor", created_token)
 			# Party, condizioni, taglia, reach, nome e miniatura sono già stati
 			# applicati al nodo: forza uno snapshot adesso, invece di lasciare
 			# che il primo poll possa assorbirli come nuova baseline.
@@ -4145,10 +4609,22 @@ func _spawn_token(
 
 	if _token_generation_exact_position and _token_generation_place_on_surface:
 		var token_height: float = float(token.get("token_height_cells"))
-		token.global_position.y = (
-			_pending_spawn_position.y
-			+ token_height * cell_size * 0.5
-		)
+		var support_y: float = _pending_spawn_position.y
+		# configure() has already snapped X/Z to the creature footprint.
+		# Recheck the ENTIRE new hitbox against the occupied grid here: the
+		# pointed voxel may be lower than adjacent voxels of the stone statue.
+		if (
+			volumetric_grid != null
+			and volumetric_grid.has_method("get_clear_spawn_floor_for_footprint")
+		):
+			support_y = float(volumetric_grid.call(
+				"get_clear_spawn_floor_for_footprint",
+				token.global_position,
+				float(token.call("get_footprint_cells")),
+				token_height,
+				support_y
+			))
+		token.global_position.y = support_y + token_height * cell_size * 0.5
 		if (
 			_pending_spawn_support != null
 			and is_instance_valid(_pending_spawn_support)
@@ -4159,11 +4635,11 @@ func _spawn_token(
 				_pending_spawn_support.global_transform
 			)
 
-	if token.has_method("set_reach_feet"):
-		var resolved_reach: float = reach_feet
-		if resolved_reach <= 0.0:
-			resolved_reach = maxf(5.0, footprint_cells * 5.0)
-		token.call("set_reach_feet", resolved_reach, true)
+	if reach_feet > 0.0 and token.has_method("set_reach_feet"):
+		# Only an explicit creature/spell reach can override the 5 ft base.
+		token.call("set_reach_feet", reach_feet, true)
+	elif token.has_method("reset_reach_to_default"):
+		token.call("reset_reach_to_default")
 
 	if token.has_method("set_display_name"):
 		token.call("set_display_name", display_name)
@@ -4172,7 +4648,19 @@ func _spawn_token(
 		token.call("set_vision_cone_visible", _vision_cones_visible)
 
 	_replace_selection(token)
+	# The miniature profile is finalized after _spawn_token returns, so defer
+	# creation of the independent sheet until its pack ID is available.
+	if _creature_spawn_sheet_id.is_empty():
+		call_deferred("_ensure_new_token_sheet", token)
 	return token
+
+
+func _ensure_new_token_sheet(token: CharacterBody3D) -> void:
+	if token == null or not is_instance_valid(token):
+		return
+	var area := get_node_or_null("CreatureArea")
+	if area != null and area.has_method("ensure_sheet_for_token"):
+		area.call("ensure_sheet_for_token", token, true)
 
 
 func _interact_or_select_under_mouse(
@@ -4180,11 +4668,15 @@ func _interact_or_select_under_mouse(
 	additive_selection: bool,
 	first_person_request: bool
 ) -> void:
-	var hit: Dictionary = _raycast_from_screen(
-		screen_position,
-		TOKEN_PICK_COLLISION_MASK,
-		true
-	)
+	var hit: Dictionary = {}
+	if _view_2d_enabled:
+		hit = _raycast_token_from_screen(screen_position, true)
+	if hit.is_empty():
+		hit = _raycast_from_screen(
+			screen_position,
+			TOKEN_PICK_COLLISION_MASK,
+			true
+		)
 	hit = _prefer_passenger_token_hit(screen_position, hit)
 
 	if hit.is_empty():
@@ -4240,11 +4732,15 @@ func _interact_or_select_under_mouse(
 func get_attack_token_at_screen(
 	screen_position: Vector2
 ) -> CharacterBody3D:
-	var hit: Dictionary = _raycast_from_screen(
-		screen_position,
-		TOKEN_PICK_COLLISION_MASK,
-		true
-	)
+	var hit: Dictionary = {}
+	if _view_2d_enabled:
+		hit = _raycast_token_from_screen(screen_position, true)
+	else:
+		hit = _raycast_from_screen(
+			screen_position,
+			TOKEN_PICK_COLLISION_MASK,
+			true
+		)
 	if hit.is_empty():
 		return null
 
@@ -4260,6 +4756,77 @@ func get_attack_token_at_screen(
 	):
 		return target as CharacterBody3D
 	return null
+
+
+func _raycast_token_from_screen(
+	screen_position: Vector2,
+	collide_with_areas: bool = true
+) -> Dictionary:
+	if _view_2d_enabled and camera.has_method("get_top_down_level"):
+		# Pick the screen-space token proxies, not their off-floor 3D
+		# hitboxes: a roof or near clipping must never block a 2D token.
+		var reference_y: float = float(camera.call("get_top_down_level"))
+		var nearest: CharacterBody3D = null
+		var best_score: float = INF
+		for node: Node in tokens_root.get_children():
+			if not node is CharacterBody3D or not node.is_in_group("dnd_token"):
+				continue
+			var token: CharacterBody3D = node as CharacterBody3D
+			var projected: Vector3 = Vector3(
+				token.global_position.x,
+				reference_y,
+				token.global_position.z
+			)
+			if camera.is_position_behind(projected):
+				continue
+			var token_screen: Vector2 = camera.unproject_position(projected)
+			var footprint: float = (
+				float(token.call("get_footprint_cells"))
+				if token.has_method("get_footprint_cells")
+				else 1.0
+			)
+			var icon_extent: Vector2 = TopDownTokenOverlay.token_icon_extent_pixels(
+				camera, projected, maxf(footprint, 1.0) * cell_size
+			)
+			var offset: Vector2 = screen_position - token_screen
+			if absf(offset.x) > icon_extent.x * 0.5 or absf(offset.y) > icon_extent.y * 0.5:
+				continue
+			var support_y: float = TopDownElevationLevels.token_support_air_level(
+				token, cell_size
+			)
+			var score: float = (
+				pow(offset.x / icon_extent.x, 2.0) + pow(offset.y / icon_extent.y, 2.0)
+				+ absf(support_y - reference_y) * 0.01
+			)
+			if score < best_score:
+				nearest = token
+				best_score = score
+		if nearest != null:
+			return {
+				"collider": nearest,
+				"position": nearest.global_position,
+				"normal": Vector3.UP
+			}
+		return {}
+
+	var hit: Dictionary = _raycast_from_screen(
+		screen_position,
+		TOKEN_BODY_COLLISION_LAYER,
+		collide_with_areas
+	)
+	if hit.is_empty():
+		return {}
+	var collider: Node = hit.get("collider") as Node
+	if collider == null:
+		return {}
+	var target: Node = _find_interaction_target(collider)
+	if (
+		target != null
+		and target is CharacterBody3D
+		and target.is_in_group("dnd_token")
+	):
+		return hit
+	return {}
 
 
 func _find_interaction_target(start_node: Node) -> Node:
@@ -4296,18 +4863,6 @@ func focus_camera_on_token(token: CharacterBody3D) -> void:
 func toggle_token_list() -> void:
 	if token_list != null and is_instance_valid(token_list):
 		token_list.call("toggle_panel")
-
-
-func request_change_user_identity() -> void:
-	if (
-		dice_roller_chat == null
-		or not is_instance_valid(dice_roller_chat)
-		or not dice_roller_chat.has_method("request_change_scene_identity")
-	):
-		return
-	_ui_owns_mouse = true
-	_release_mouse()
-	dice_roller_chat.call_deferred("request_change_scene_identity")
 
 
 func _replace_selection(token: CharacterBody3D) -> void:
@@ -4378,6 +4933,12 @@ func _move_selected(
 		return
 
 	var before: Dictionary = begin_token_move_transaction(_selected_tokens)
+	var dismounted := false
+	if mount_controller != null:
+		for moving_token: CharacterBody3D in _selected_tokens:
+			if mount_controller.is_mounted(moving_token):
+				mount_controller.dismount(moving_token)
+				dismounted = true
 	var origins: Array[Vector3] = []
 	for token: CharacterBody3D in _selected_tokens:
 		origins.append(token.global_position)
@@ -4402,8 +4963,9 @@ func _move_selected(
 			):
 				token.call("apply_gravity")
 
-	if moved:
+	if moved or dismounted:
 		commit_undo_transaction(before)
+	if moved:
 		check_opportunity_attacks_after_movement(
 			_selected_tokens.duplicate(),
 			origins
@@ -4418,6 +4980,12 @@ func _move_selected_vertical(steps: int) -> void:
 		return
 
 	var before: Dictionary = begin_token_move_transaction(_selected_tokens)
+	var dismounted := false
+	if mount_controller != null:
+		for moving_token: CharacterBody3D in _selected_tokens:
+			if mount_controller.is_mounted(moving_token):
+				mount_controller.dismount(moving_token)
+				dismounted = true
 	var origins: Array[Vector3] = []
 	for token: CharacterBody3D in _selected_tokens:
 		origins.append(token.global_position)
@@ -4430,8 +4998,9 @@ func _move_selected_vertical(steps: int) -> void:
 		item_controller.flush_motion(_selected_tokens)
 
 	var moved: bool = _selected_tokens_moved_from(origins)
-	if moved:
+	if moved or dismounted:
 		commit_undo_transaction(before)
+	if moved:
 		check_opportunity_attacks_after_movement(
 			_selected_tokens.duplicate(),
 			origins
@@ -4460,22 +5029,44 @@ func _rotate_selected(quarter_turns: int) -> void:
 		return
 
 	push_undo_state()
+	# A top-down camera reverses the apparent clockwise direction of +Y yaw.
+	# Preserve the existing 3D controls and invert only the 2D visual action.
+	var applied_turns: int = -quarter_turns if _view_2d_enabled else quarter_turns
 	for token: CharacterBody3D in _selected_tokens:
 		if token.has_method("rotate_grid"):
-			token.call("rotate_grid", quarter_turns)
+			token.call("rotate_grid", applied_turns)
 
 
-func _rotate_selected_vertical(steps: int) -> void:
-	_clean_selection()
-	if _selected_tokens.is_empty():
-		if _has_selected_item():
-			item_controller.call("rotate_selected_vertical", steps)
+func remove_owned_creature_tokens(tokens: Array[CharacterBody3D]) -> void:
+	# Deleting a persistent creature also removes its actual map instances.
+	# Detach them immediately so sync cannot accidentally broadcast ghosts.
+	var valid_tokens: Array[CharacterBody3D] = []
+	for token: CharacterBody3D in tokens:
+		if (
+			token != null
+			and is_instance_valid(token)
+			and is_ancestor_of(token)
+			and not token.is_queued_for_deletion()
+		):
+			valid_tokens.append(token)
+	if valid_tokens.is_empty():
 		return
-
 	push_undo_state()
-	for token: CharacterBody3D in _selected_tokens:
-		if token.has_method("rotate_vertical"):
-			token.call("rotate_vertical", steps)
+	if camera.has_method("get_first_person_target"):
+		var focused: Variant = camera.call("get_first_person_target")
+		if focused in valid_tokens and camera.has_method("exit_first_person"):
+			camera.call("exit_first_person")
+	for token: CharacterBody3D in valid_tokens:
+		_selected_tokens.erase(token)
+		if token.get_parent() != null:
+			token.get_parent().remove_child(token)
+		token.queue_free()
+	_refresh_selection_grid_highlight()
+	if token_list != null and is_instance_valid(token_list):
+		token_list.call("refresh")
+	if initiative_tracker != null and is_instance_valid(initiative_tracker):
+		initiative_tracker.call("refresh")
+	_sync_explicit_token_change()
 
 
 func _delete_selected() -> void:
@@ -4500,6 +5091,8 @@ func _prefer_passenger_token_hit(
 	screen_position: Vector2,
 	first_hit: Dictionary
 ) -> Dictionary:
+	if _view_2d_enabled:
+		return first_hit
 	if first_hit.is_empty():
 		return first_hit
 
@@ -4531,9 +5124,14 @@ func _prefer_passenger_token_hit(
 				if value is RID and not (value in exclusions):
 					exclusions.append(value)
 
+	var passenger_mask: int = (
+		TOKEN_BODY_COLLISION_LAYER
+		if _view_2d_enabled
+		else TOKEN_PICK_COLLISION_MASK
+	)
 	var passenger_hit := _raycast_from_screen_excluding(
 		screen_position,
-		TOKEN_PICK_COLLISION_MASK,
+		passenger_mask,
 		exclusions,
 		true
 	)
@@ -4615,11 +5213,30 @@ func capture_camera_control() -> void:
 
 
 func _capture_mouse() -> void:
-	if not _ui_owns_mouse:
-		Input.mouse_mode = Input.MOUSE_MODE_CAPTURED
+	if _ui_owns_mouse:
+		return
+	# Context menus and deferred callbacks may request capture one frame
+	# after "Modifica token" opened the creature sheet. Keep the cursor
+	# visible for as long as that sheet is actually on screen.
+	var creature_sheet: Node = get_node_or_null("CreatureArea")
+	if (
+		creature_sheet != null
+		and creature_sheet.has_method("is_panel_open")
+		and bool(creature_sheet.call("is_panel_open"))
+	):
+		_ui_owns_mouse = true
+		_release_mouse()
+		return
+	if _view_2d_enabled:
+		Input.set_default_cursor_shape(Input.CURSOR_CROSS)
+		Input.mouse_mode = Input.MOUSE_MODE_VISIBLE
+		return
+	Input.set_default_cursor_shape(Input.CURSOR_ARROW)
+	Input.mouse_mode = Input.MOUSE_MODE_CAPTURED
 
 
 func _release_mouse() -> void:
+	Input.set_default_cursor_shape(Input.CURSOR_ARROW)
 	Input.mouse_mode = Input.MOUSE_MODE_VISIBLE
 
 
@@ -4688,6 +5305,8 @@ func _on_share_session_changed(_value: float) -> void:
 	board_sync.listen(true, key)
 	if dice_roller_chat != null and is_instance_valid(dice_roller_chat):
 		dice_roller_chat.call("set_session_key", key)
+	if creature_presence != null and is_instance_valid(creature_presence):
+		creature_presence.call("set_session_key", key)
 
 
 func _build_share_dialog() -> void:

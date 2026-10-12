@@ -1,0 +1,76 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "title": "VTT enrichment overlay v1",
+  "type": "object",
+  "required": [
+    "schema_version",
+    "category",
+    "entries"
+  ],
+  "properties": {
+    "schema_version": {
+      "const": 1
+    },
+    "category": {
+      "enum": [
+        "spells",
+        "monsters",
+        "items",
+        "documents",
+        "races",
+        "classes",
+        "subclasses",
+        "subclass_features",
+        "class_features",
+        "species_traits",
+        "feats",
+        "backgrounds",
+        "optional_features",
+        "conditions",
+        "diseases",
+        "effects"
+      ]
+    },
+    "entries": {
+      "type": "array",
+      "items": {
+        "type": "object",
+        "required": [
+          "id",
+          "fields"
+        ],
+        "properties": {
+          "id": {
+            "type": "string",
+            "minLength": 1
+          },
+          "fields": {
+            "type": "object",
+            "propertyNames": {
+              "not": {
+                "enum": [
+                  "id",
+                  "name",
+                  "source",
+                  "category",
+                  "origin",
+                  "asset_dir",
+                  "overrides",
+                  "quantity",
+                  "equipped_slots",
+                  "inventory",
+                  "hp_current",
+                  "current_hp",
+                  "owner_id",
+                  "instance_overrides"
+                ]
+              }
+            }
+          }
+        },
+        "additionalProperties": false
+      }
+    }
+  },
+  "additionalProperties": false
+}

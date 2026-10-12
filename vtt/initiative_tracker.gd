@@ -1,9 +1,45 @@
 extends Node
 
+const CreatureOwner = preload("res://vtt/creature_owner.gd")
+const DialogLayout = preload("res://vtt/dialog_layout.gd")
+
 signal turn_changed(entry_id: String, round_number: int, turn_count: int)
 signal combat_state_changed(active: bool)
 
-const MAX_ENTRIES := 256
+# Preserve all 256 legacy participants when adding the environment turn.
+const MAX_ENTRIES := 257
+const ENVIRONMENT_ENTRY_ID := "initiative_environment"
+const ENVIRONMENT_INITIATIVE := 20
+
+
+func _environment_entry() -> Dictionary:
+	return {
+		"id": ENVIRONMENT_ENTRY_ID,
+		"name": "Turno ambientale",
+		"token_id": "",
+		"initiative": ENVIRONMENT_INITIATIVE
+	}
+
+
+func _ensure_environment_entry() -> void:
+	if not combat_active:
+		return
+	var active_id: String = _active_entry_id()
+	var found: bool = false
+	for index: int in range(entries.size() - 1, -1, -1):
+		if String(entries[index].get("id", "")) != ENVIRONMENT_ENTRY_ID:
+			continue
+		if found:
+			entries.remove_at(index)
+		else:
+			entries[index] = _environment_entry()
+			found = true
+	if not found:
+		entries.insert(0, _environment_entry())
+	if not active_id.is_empty():
+		active_index = maxi(0, _entry_index(active_id))
+	else:
+		active_index = 0
 
 var board_root: Node3D
 var ui_root: CanvasLayer
@@ -24,12 +60,11 @@ var previous_button: Button
 var next_button: Button
 
 var add_dialog: ConfirmationDialog
-var participant_name: LineEdit
-var participant_token: OptionButton
-var token_popup: PopupMenu
-var _linking_entry_id: String = ""
+var participant_creatures: ItemList
+var participant_hint: Label
+var participant_add_button: Button
+var _available_creatures: Array[Dictionary] = []
 var _restore_mouse_mode: Input.MouseMode = Input.MOUSE_MODE_CAPTURED
-var _auto_filled_name: String = ""
 
 var combat_active: bool = false
 var entries: Array[Dictionary] = []
@@ -61,7 +96,6 @@ func _initialize() -> void:
 
 	_build_panel()
 	_build_add_dialog()
-	_build_token_popup()
 	_render()
 
 
@@ -146,8 +180,8 @@ func _build_panel() -> void:
 
 	var inactive_help: Label = Label.new()
 	inactive_help.text = (
-		"Avvia il combattimento e inserisci i partecipanti "
-		+ "nell'ordine di iniziativa."
+		"Avvia il combattimento e scegli le creature "
+		+ "con una miniatura già presente nella scena."
 	)
 	inactive_help.autowrap_mode = TextServer.AUTOWRAP_WORD_SMART
 	inactive_controls.add_child(inactive_help)
@@ -175,6 +209,7 @@ func _build_panel() -> void:
 	combat_controls.add_child(next_button)
 
 	list_scroll = ScrollContainer.new()
+	list_scroll.mouse_force_pass_scroll_events = false
 	list_scroll.size_flags_vertical = Control.SIZE_EXPAND_FILL
 	list_scroll.horizontal_scroll_mode = ScrollContainer.SCROLL_MODE_DISABLED
 	column.add_child(list_scroll)
@@ -204,57 +239,40 @@ func _build_panel() -> void:
 func _build_add_dialog() -> void:
 	add_dialog = ConfirmationDialog.new()
 	add_dialog.name = "InitiativeAddDialog"
-	add_dialog.title = "Aggiungi partecipante"
-	add_dialog.ok_button_text = "Aggiungi"
-	add_dialog.min_size = Vector2i(460, 300)
+	add_dialog.title = "Creature nel combattimento"
+	add_dialog.min_size = Vector2i(470, 385)
 	add_dialog.add_theme_constant_override("buttons_min_width", 100)
 	add_dialog.add_theme_constant_override("buttons_min_height", 34)
 	ui_root.add_child(add_dialog)
-	# Non dipendere dal footer nativo: con alcuni scaling può essere fuori
-	# dalla finestra al primo popup.
 	add_dialog.get_ok_button().hide()
-	var native_cancel := add_dialog.get_cancel_button()
+	var native_cancel: Button = add_dialog.get_cancel_button()
 	if native_cancel != null:
-		native_cancel.text = "Annulla"
 		native_cancel.hide()
 
-	# I figli di Accept/ConfirmationDialog partecipano già al layout interno.
-	# Ancorarli a PRESET_FULL_RECT può coprire la barra OK/Annulla al primo
-	# popup, specialmente con scaling UI elevato.
-	var body: VBoxContainer = VBoxContainer.new()
-	body.custom_minimum_size = Vector2(420, 175)
-	body.add_theme_constant_override("separation", 8)
+	var body := VBoxContainer.new()
+	body.custom_minimum_size = Vector2(420, 310)
+	body.add_theme_constant_override("separation", 9)
 	add_dialog.add_child(body)
 
-	var name_label: Label = Label.new()
-	name_label.text = "Nome nell'ordine di iniziativa"
-	body.add_child(name_label)
+	var label := Label.new()
+	label.text = "Seleziona le creature presenti nella scena"
+	body.add_child(label)
 
-	participant_name = LineEdit.new()
-	participant_name.placeholder_text = "Es. Kaos, Goblin 1, Sariel..."
-	participant_name.text_submitted.connect(
-		func(_value: String) -> void:
-			if not participant_name.text.strip_edges().is_empty():
-				add_dialog.get_ok_button().emit_signal("pressed")
+	participant_creatures = ItemList.new()
+	participant_creatures.mouse_force_pass_scroll_events = false
+	participant_creatures.select_mode = ItemList.SELECT_MULTI
+	participant_creatures.custom_minimum_size = Vector2(420, 224)
+	participant_creatures.size_flags_vertical = Control.SIZE_EXPAND_FILL
+	participant_creatures.multi_selected.connect(
+		func(_index: int, _selected: bool) -> void:
+			_update_participant_add_button()
 	)
-	body.add_child(participant_name)
+	body.add_child(participant_creatures)
 
-	var token_label: Label = Label.new()
-	token_label.text = "Token collegato (opzionale)"
-	body.add_child(token_label)
-
-	participant_token = OptionButton.new()
-	participant_token.item_selected.connect(_on_participant_token_selected)
-	body.add_child(participant_token)
-
-	var info: Label = Label.new()
-	info.text = (
-		"Il collegamento al token viene salvato con il turno, "
-		+ "ma per ora non modifica il token."
-	)
-	info.autowrap_mode = TextServer.AUTOWRAP_WORD_SMART
-	info.add_theme_font_size_override("font_size", 11)
-	body.add_child(info)
+	participant_hint = Label.new()
+	participant_hint.autowrap_mode = TextServer.AUTOWRAP_WORD_SMART
+	participant_hint.add_theme_font_size_override("font_size", 11)
+	body.add_child(participant_hint)
 
 	var actions := HBoxContainer.new()
 	actions.name = "InitiativeAddActions"
@@ -272,28 +290,19 @@ func _build_add_dialog() -> void:
 	)
 	actions.add_child(cancel_button)
 
-	var add_button := Button.new()
-	add_button.text = "Aggiungi"
-	add_button.custom_minimum_size = Vector2(110, 36)
-	add_button.pressed.connect(
+	participant_add_button = Button.new()
+	participant_add_button.text = "Aggiungi selezionate"
+	participant_add_button.custom_minimum_size = Vector2(155, 36)
+	participant_add_button.pressed.connect(
 		func() -> void:
 			_on_add_confirmed()
 			add_dialog.hide()
 	)
-	actions.add_child(add_button)
+	actions.add_child(participant_add_button)
 
 	add_dialog.confirmed.connect(_on_add_confirmed)
 	add_dialog.canceled.connect(_release_dialog_mouse)
 	add_dialog.close_requested.connect(_release_dialog_mouse)
-
-
-func _build_token_popup() -> void:
-	token_popup = PopupMenu.new()
-	token_popup.name = "InitiativeTokenPopup"
-	token_popup.id_pressed.connect(_on_token_popup_selected)
-	token_popup.popup_hide.connect(_on_token_popup_hidden)
-	ui_root.add_child(token_popup)
-
 
 func toggle_panel() -> void:
 	if panel == null:
@@ -373,6 +382,7 @@ func start_combat() -> void:
 	round_number = 1
 	turn_count = 0
 	_next_entry_id = 1
+	_ensure_environment_entry()
 	show_panel()
 	_render()
 	combat_state_changed.emit(true)
@@ -399,108 +409,164 @@ func end_combat() -> void:
 func open_add_dialog() -> void:
 	if not combat_active or add_dialog == null:
 		return
-	participant_name.clear()
-	_auto_filled_name = ""
-	var preferred_token_id := _selected_board_token_id()
-	_refresh_token_selector(preferred_token_id)
-	_sync_name_field_to_token(_selected_token_id_from_option())
+	_refresh_creature_selector()
 	_take_dialog_mouse()
-	_popup_dialog_safe(add_dialog, Vector2i(460, 300))
-	call_deferred("_focus_participant_name")
+	_popup_dialog_safe(add_dialog, Vector2i(510, 410))
 
 
 func _popup_dialog_safe(dialog: Window, preferred_size: Vector2i) -> void:
-	if dialog == null or not is_instance_valid(dialog):
-		return
-	var viewport_size := board_root.get_viewport().get_visible_rect().size
-	var safe_size := Vector2i(
-		mini(preferred_size.x, maxi(320, int(viewport_size.x) - 48)),
-		mini(preferred_size.y, maxi(200, int(viewport_size.y) - 48))
+	# This picker intentionally keeps its own footer buttons.
+	DialogLayout.popup(dialog, preferred_size, 0.92)
+
+func _creature_names_from_archive() -> Dictionary:
+	var names: Dictionary = {}
+	if board_root == null:
+		return names
+	var area: Node = board_root.get_node_or_null("CreatureArea")
+	if area == null:
+		return names
+	# The hot path (auto-sync every 150 ms) must not reload/normalize all sheets.
+	# The live archive remains available to the creature placement picker.
+	if area.has_method("get_owned_creature_name_index"):
+		var cached: Variant = area.call("get_owned_creature_name_index")
+		return cached as Dictionary if cached is Dictionary else names
+	if not area.has_method("get_owned_creatures_for_placement"):
+		return names
+	var records: Variant = area.call("get_owned_creatures_for_placement")
+	if not records is Array:
+		return names
+	for value: Variant in records:
+		if not value is Dictionary:
+			continue
+		var record: Dictionary = value as Dictionary
+		var id := String(record.get("id", "")).strip_edges()
+		if not id.is_empty():
+			names[id] = String(record.get("name", "")).strip_edges()
+	return names
+
+
+func _creature_candidates() -> Array[Dictionary]:
+	# Only creatures with a living scene token can join a new encounter.
+	# The user selects creatures, never arbitrary tokens or optional links.
+	var candidates: Array[Dictionary] = []
+	var seen: Dictionary = {}
+	var local_owner: String = CreatureOwner.local_id()
+	var local_names := _creature_names_from_archive()
+	for token: Node3D in _tokens():
+		var creature_id := String(token.get_meta("creature_id", "")).strip_edges()
+		if creature_id.is_empty():
+			continue
+		var owner_id := String(token.get_meta("creature_owner_id", "")).strip_edges()
+		var identity := owner_id + "|" + creature_id
+		if seen.has(identity):
+			continue
+		seen[identity] = true
+		var token_id := _token_id(token)
+		var already_present := false
+		for entry: Dictionary in entries:
+			if String(entry.get("token_id", "")) == token_id:
+				already_present = true
+				break
+			if (
+				not owner_id.is_empty()
+				and String(entry.get("creature_id", "")) == creature_id
+				and String(entry.get("creature_owner_id", "")) == owner_id
+			):
+				already_present = true
+				break
+		if already_present:
+			continue
+		var creature_name := ""
+		if owner_id == local_owner:
+			creature_name = String(local_names.get(creature_id, ""))
+		if creature_name.is_empty():
+			creature_name = _token_display_name(token)
+		if creature_name.is_empty():
+			creature_name = "Creatura senza nome"
+		candidates.append({
+			"creature_id": creature_id,
+			"creature_owner_id": owner_id,
+			"token_id": token_id,
+			"name": creature_name
+		})
+	candidates.sort_custom(
+		func(a: Dictionary, b: Dictionary) -> bool:
+			return String(a.get("name", "")).naturalnocasecmp_to(
+				String(b.get("name", ""))
+			) < 0
 	)
-	dialog.reset_size()
-	dialog.popup_centered_clamped(safe_size, 0.92)
+	return candidates
 
 
-func _focus_participant_name() -> void:
-	if (
-		add_dialog != null
-		and add_dialog.visible
-		and participant_name != null
-	):
-		participant_name.grab_focus()
+func _refresh_creature_selector() -> void:
+	participant_creatures.clear()
+	_available_creatures = _creature_candidates()
+	var preferred_token := _selected_board_token_id()
+	for candidate: Dictionary in _available_creatures:
+		var index := participant_creatures.item_count
+		participant_creatures.add_item(String(candidate.get("name", "")))
+		participant_creatures.set_item_metadata(index, candidate.duplicate(true))
+		if String(candidate.get("token_id", "")) == preferred_token:
+			participant_creatures.select(index, false)
+	participant_hint.text = (
+		"Nessun'altra creatura con un token presente in mappa. "
+		+ "Crea o posiziona una creatura per aggiungerla al combattimento."
+		if _available_creatures.is_empty()
+		else "Puoi selezionare più creature contemporaneamente."
+	)
+	_update_participant_add_button()
+
+
+func _update_participant_add_button() -> void:
+	if participant_add_button != null:
+		participant_add_button.disabled = (
+			participant_creatures.get_selected_items().is_empty()
+			or entries.size() >= MAX_ENTRIES
+		)
 
 
 func _on_add_confirmed() -> void:
 	if not combat_active or entries.size() >= MAX_ENTRIES:
 		_release_dialog_mouse()
 		return
-
-	var token_id: String = _selected_token_id_from_option()
-	var name_value: String = participant_name.text.strip_edges()
-	if not token_id.is_empty():
-		name_value = _token_display_name_by_id(token_id)
-		if name_value.is_empty():
-			name_value = "Token senza nome"
-	elif name_value.is_empty():
-		name_value = "Partecipante %d" % (_next_entry_id)
-
+	var selections: PackedInt32Array = participant_creatures.get_selected_items()
+	if selections.is_empty():
+		_release_dialog_mouse()
+		return
 	_record_undo_state()
-	entries.append({
-		"id": "initiative_%d" % _next_entry_id,
-		"name": name_value,
-		"token_id": token_id
-	})
-	_next_entry_id += 1
-	_log_combat_action(
-		"%s entra nel combattimento" % name_value,
-		round_number
-	)
-	if entries.size() == 1:
-		active_index = 0
-		_emit_turn_changed()
+	for selected_index: int in selections:
+		if entries.size() >= MAX_ENTRIES:
+			break
+		if selected_index < 0 or selected_index >= _available_creatures.size():
+			continue
+		var candidate: Dictionary = _available_creatures[selected_index]
+		var token_id := String(candidate.get("token_id", ""))
+		var token: Node3D = _token_by_id(token_id)
+		if token == null or (
+			String(token.get_meta("creature_id", ""))
+			!= String(candidate.get("creature_id", ""))
+		) or (
+			String(token.get_meta("creature_owner_id", ""))
+			!= String(candidate.get("creature_owner_id", ""))
+		):
+			continue
+		var name_value := String(candidate.get("name", "Creatura"))
+		while _entry_index("initiative_%d" % _next_entry_id) >= 0:
+			_next_entry_id += 1
+		entries.append({
+			"id": "initiative_%d" % _next_entry_id,
+			"name": name_value,
+			"token_id": token_id,
+			"creature_id": String(candidate.get("creature_id", "")),
+			"creature_owner_id": String(candidate.get("creature_owner_id", ""))
+		})
+		_next_entry_id += 1
+		_log_combat_action(
+			"%s entra nel combattimento" % name_value,
+			round_number
+		)
 	_render()
 	_release_dialog_mouse()
-
-
-func _refresh_token_selector(preferred_token_id: String = "") -> void:
-	participant_token.clear()
-	participant_token.add_item("Nessun token")
-	participant_token.set_item_metadata(0, "")
-	var selected_index := 0
-	var unnamed_index := 1
-	for token: Node3D in _tokens():
-		var index: int = participant_token.item_count
-		var visible_name := _token_display_name(token)
-		var label := visible_name
-		if label.is_empty():
-			label = "Token senza nome %d" % unnamed_index
-			unnamed_index += 1
-		participant_token.add_item(label)
-		var token_id := _token_id(token)
-		participant_token.set_item_metadata(index, token_id)
-		if not preferred_token_id.is_empty() and token_id == preferred_token_id:
-			selected_index = index
-	participant_token.select(selected_index)
-
-
-func _on_participant_token_selected(_index: int) -> void:
-	_sync_name_field_to_token(_selected_token_id_from_option())
-
-
-func _sync_name_field_to_token(token_id: String) -> void:
-	if token_id.is_empty():
-		participant_name.editable = true
-		if participant_name.text == _auto_filled_name:
-			participant_name.clear()
-		_auto_filled_name = ""
-		return
-
-	var suggested := _token_display_name_by_id(token_id)
-	if suggested.is_empty():
-		suggested = "Token senza nome"
-	participant_name.text = suggested
-	participant_name.editable = false
-	_auto_filled_name = suggested
 
 
 func _selected_board_token_id() -> String:
@@ -516,15 +582,6 @@ func _selected_board_token_id() -> String:
 	if not is_instance_valid(token) or not token.is_in_group("dnd_token"):
 		return ""
 	return _token_id(token)
-
-
-func _selected_token_id_from_option() -> String:
-	if participant_token == null or participant_token.item_count == 0:
-		return ""
-	var index: int = participant_token.selected
-	if index < 0:
-		return ""
-	return String(participant_token.get_item_metadata(index))
 
 
 func _record_undo_state() -> void:
@@ -645,16 +702,16 @@ func _add_entry_row(
 	row_panel.size_flags_horizontal = Control.SIZE_EXPAND_FILL
 	if is_active:
 		var active_style: StyleBoxFlat = StyleBoxFlat.new()
-		active_style.bg_color = Color(0.22, 0.31, 0.46, 0.92)
-		active_style.border_color = Color(0.82, 0.72, 0.30, 1.0)
+		active_style.bg_color = Color(0.39, 0.18, 0.21, 0.95)
+		active_style.border_color = Color(0.93, 0.72, 0.37, 1.0)
 		active_style.border_width_left = 1
 		active_style.border_width_top = 1
 		active_style.border_width_right = 1
 		active_style.border_width_bottom = 1
-		active_style.corner_radius_top_left = 4
-		active_style.corner_radius_top_right = 4
-		active_style.corner_radius_bottom_left = 4
-		active_style.corner_radius_bottom_right = 4
+		active_style.corner_radius_top_left = 7
+		active_style.corner_radius_top_right = 7
+		active_style.corner_radius_bottom_left = 7
+		active_style.corner_radius_bottom_right = 7
 		row_panel.add_theme_stylebox_override("panel", active_style)
 	list_box.add_child(row_panel)
 
@@ -682,32 +739,23 @@ func _add_entry_row(
 	)
 	text_column.add_child(name_label)
 
-	var token_id: String = String(entry.get("token_id", ""))
-	var token_label: Label = Label.new()
-	token_label.text = (
-		"Token: %s" % _token_name_by_id(token_id)
-		if not token_id.is_empty()
-		else "Token: —"
-	)
-	token_label.modulate = Color(0.78, 0.8, 0.84, 1.0)
-	token_label.add_theme_font_size_override("font_size", 10)
-	text_column.add_child(token_label)
+	var source_label := Label.new()
+	if entry_id_is_environment(entry):
+		source_label.text = "Iniziativa: 20"
+	elif not String(entry.get("creature_id", "")).is_empty():
+		source_label.text = "Creatura nella scena"
+	else:
+		source_label.text = "Partecipante salvato"
+	source_label.modulate = Color(0.78, 0.8, 0.84, 1.0)
+	source_label.add_theme_font_size_override("font_size", 10)
+	text_column.add_child(source_label)
 
-	var link_button: Button = Button.new()
-	link_button.text = "Token"
-	link_button.tooltip_text = "Collega o scollega un token"
-	link_button.custom_minimum_size = Vector2(48, 30)
 	var entry_id: String = String(entry.get("id", ""))
-	link_button.pressed.connect(
-		func() -> void:
-			_open_token_popup(entry_id, link_button)
-	)
-	row.add_child(link_button)
 
 	var up_button: Button = Button.new()
 	up_button.text = "↑"
 	up_button.tooltip_text = "Sposta prima nell'ordine"
-	up_button.disabled = real_index == 0
+	up_button.disabled = real_index == 0 or entry_id_is_environment(entry)
 	up_button.custom_minimum_size = Vector2(28, 30)
 	up_button.pressed.connect(
 		func() -> void:
@@ -718,7 +766,7 @@ func _add_entry_row(
 	var down_button: Button = Button.new()
 	down_button.text = "↓"
 	down_button.tooltip_text = "Sposta dopo nell'ordine"
-	down_button.disabled = real_index >= entries.size() - 1
+	down_button.disabled = real_index >= entries.size() - 1 or entry_id_is_environment(entry)
 	down_button.custom_minimum_size = Vector2(28, 30)
 	down_button.pressed.connect(
 		func() -> void:
@@ -728,6 +776,7 @@ func _add_entry_row(
 
 	var remove_button: Button = Button.new()
 	remove_button.text = "×"
+	remove_button.disabled = entry_id_is_environment(entry)
 	remove_button.tooltip_text = "Rimuovi dall'iniziativa"
 	remove_button.custom_minimum_size = Vector2(28, 30)
 	remove_button.pressed.connect(
@@ -743,6 +792,8 @@ func _scroll_active_to_top() -> void:
 
 
 func _move_entry(entry_id: String, delta: int) -> void:
+	if entry_id == ENVIRONMENT_ENTRY_ID:
+		return
 	var index: int = _entry_index(entry_id)
 	if index < 0:
 		return
@@ -760,6 +811,8 @@ func _move_entry(entry_id: String, delta: int) -> void:
 
 
 func _remove_entry(entry_id: String) -> void:
+	if entry_id == ENVIRONMENT_ENTRY_ID:
+		return
 	var index: int = _entry_index(entry_id)
 	if index < 0:
 		return
@@ -779,68 +832,6 @@ func _remove_entry(entry_id: String) -> void:
 		_emit_turn_changed()
 
 
-func _open_token_popup(entry_id: String, button: Control) -> void:
-	if token_popup == null:
-		return
-	_linking_entry_id = entry_id
-	token_popup.clear()
-	token_popup.add_item("Nessun token", 0)
-	token_popup.set_item_metadata(0, "")
-
-	var item_id: int = 1
-	var unnamed_index := 1
-	for token: Node3D in _tokens():
-		var token_label := _token_display_name(token)
-		if token_label.is_empty():
-			token_label = "Token senza nome %d" % unnamed_index
-			unnamed_index += 1
-		token_popup.add_item(token_label, item_id)
-		var item_index: int = token_popup.get_item_index(item_id)
-		token_popup.set_item_metadata(item_index, _token_id(token))
-		item_id += 1
-
-	_take_dialog_mouse()
-	var viewport_size: Vector2 = board_root.get_viewport().get_visible_rect().size
-	token_popup.max_size = Vector2i(
-		maxi(180, int(viewport_size.x) - 24),
-		maxi(160, int(viewport_size.y) - 24)
-	)
-	token_popup.position = Vector2i(
-		clampi(
-			int(button.global_position.x),
-			8,
-			maxi(8, int(viewport_size.x) - 8)
-		),
-		clampi(
-			int(button.global_position.y + button.size.y),
-			8,
-			maxi(8, int(viewport_size.y) - 8)
-		)
-	)
-	token_popup.popup()
-
-
-func _on_token_popup_selected(id: int) -> void:
-	var index: int = token_popup.get_item_index(id)
-	if index < 0:
-		return
-	var token_id: String = String(token_popup.get_item_metadata(index))
-	var entry_index: int = _entry_index(_linking_entry_id)
-	if entry_index >= 0:
-		var current_token_id := String(entries[entry_index].get("token_id", ""))
-		if current_token_id != token_id:
-			_record_undo_state()
-			entries[entry_index]["token_id"] = token_id
-			if not token_id.is_empty():
-				var linked_name := _token_display_name_by_id(token_id)
-				if not linked_name.is_empty():
-					entries[entry_index]["name"] = linked_name
-	_render()
-
-
-func _on_token_popup_hidden() -> void:
-	_linking_entry_id = ""
-	_release_dialog_mouse()
 
 
 func _take_dialog_mouse() -> void:
@@ -930,25 +921,41 @@ func _token_name_by_id(token_id: String) -> String:
 	return "mancante"
 
 
+func entry_id_is_environment(entry: Dictionary) -> bool:
+	return String(entry.get("id", "")) == ENVIRONMENT_ENTRY_ID
+
+
 func _entry_display_name(entry: Dictionary) -> String:
-	var token_id := String(entry.get("token_id", ""))
-	if not token_id.is_empty():
-		var token_name := _token_display_name_by_id(token_id)
-		if not token_name.is_empty():
-			return token_name
-		if _token_name_by_id(token_id) != "mancante":
-			return "Token senza nome"
 	return String(entry.get("name", "Partecipante"))
 
 
 func _synchronize_linked_entry_names() -> void:
+	if entries.is_empty():
+		return
+	var local_owner: String = CreatureOwner.local_id()
+	var names: Dictionary = {}
+	# Skip even the lightweight lookup when every participant is remote or
+	# when the saved initiative only contains legacy token identities.
+	if board_root != null:
+		for entry: Dictionary in entries:
+			if (not String(entry.get("creature_id", "")).is_empty()
+				and String(entry.get("creature_owner_id", "")) == local_owner):
+				names = _creature_names_from_archive()
+				break
 	for entry: Dictionary in entries:
-		var token_id := String(entry.get("token_id", ""))
-		if token_id.is_empty():
+		var creature_id := String(entry.get("creature_id", ""))
+		if not creature_id.is_empty():
+			if String(entry.get("creature_owner_id", "")) == local_owner:
+				var sheet_name := String(names.get(creature_id, ""))
+				if not sheet_name.is_empty():
+					entry["name"] = sheet_name
 			continue
-		var token_name := _token_display_name_by_id(token_id)
-		if not token_name.is_empty():
-			entry["name"] = token_name
+		# Older saved combats had only a token link. Keep those names intact.
+		var token_id := String(entry.get("token_id", ""))
+		if not token_id.is_empty():
+			var token_name := _token_display_name_by_id(token_id)
+			if not token_name.is_empty():
+				entry["name"] = token_name
 
 
 func _entry_index(entry_id: String) -> int:
@@ -964,9 +971,10 @@ func _active_entry_id() -> String:
 	return String(entries[active_index].get("id", ""))
 
 
-func _emit_turn_changed() -> void:
+func _emit_turn_changed(focus_camera: bool = true) -> void:
 	var entry_id: String = _active_entry_id()
-	_focus_camera_on_active_token()
+	if focus_camera:
+		_focus_camera_on_active_token()
 	turn_changed.emit(entry_id, round_number, turn_count)
 
 
@@ -1043,6 +1051,7 @@ func valid_state(value: Variant) -> bool:
 		return false
 
 	var seen_ids: Dictionary = {}
+	var seen_creatures: Dictionary = {}
 	for item: Variant in state_entries:
 		if not item is Dictionary:
 			return false
@@ -1055,10 +1064,34 @@ func valid_state(value: Variant) -> bool:
 		if seen_ids.has(String(entry_id)):
 			return false
 		seen_ids[String(entry_id)] = true
+		if String(entry_id) == ENVIRONMENT_ENTRY_ID:
+			if String(entry_name) != "Turno ambientale" or String(token_id) != "":
+				return false
 		if not entry_name is String or String(entry_name).strip_edges().is_empty():
 			return false
 		if not token_id is String:
 			return false
+		if entry.has("creature_id"):
+			if (
+				not entry.get("creature_id") is String
+				or String(entry.get("creature_id", "")).is_empty()
+				or not entry.get("creature_owner_id", "") is String
+				or String(token_id).is_empty()
+			):
+				return false
+			var creature_key := (
+				String(entry.get("creature_owner_id", ""))
+				+ "|"
+				+ String(entry.get("creature_id", ""))
+			)
+			if seen_creatures.has(creature_key):
+				return false
+			seen_creatures[creature_key] = true
+
+	# Migration adds an environment turn. Reject an over-capacity legacy
+	# state before loading it, so get_save_state() always remains valid.
+	if bool(state.get("active", false)) and not seen_ids.has(ENVIRONMENT_ENTRY_ID) and state_entries.size() >= MAX_ENTRIES:
+		return false
 
 	var index_value: Variant = state.get("active_index", 0)
 	var round_value: Variant = state.get("round", 1)
@@ -1099,6 +1132,7 @@ func load_state(value: Variant) -> bool:
 	round_number = int(state.get("round", 1))
 	turn_count = int(state.get("turn_count", 0))
 	_next_entry_id = int(state.get("next_entry_id", 1))
+	_ensure_environment_entry()
 	if not combat_active:
 		entries.clear()
 		active_index = 0
@@ -1107,7 +1141,9 @@ func load_state(value: Variant) -> bool:
 	_render()
 	combat_state_changed.emit(combat_active)
 	if combat_active and not entries.is_empty():
-		_emit_turn_changed()
+		# Restoring shared/saved state must preserve the local view. Only
+		# explicit local turn actions should focus the active token.
+		_emit_turn_changed(false)
 	return true
 
 

@@ -1,6 +1,9 @@
 extends SceneTree
 
 const FlankingSystem = preload("res://vtt/flanking_system.gd")
+const TokenScene = preload("res://token.tscn")
+const ContentCatalog = preload("res://vtt/content_catalog.gd")
+const AttackData = preload("res://vtt/creature_attack_data.gd")
 
 
 func _initialize() -> void:
@@ -8,6 +11,17 @@ func _initialize() -> void:
 
 
 func run() -> void:
+	# Frequent condition badge polls must be trivial for clean tokens.
+	var clean_token: CharacterBody3D = TokenScene.instantiate()
+	assert(clean_token.get_active_condition_display_parts().is_empty())
+	assert(clean_token.get_condition_presentations().is_empty())
+	clean_token.free()
+	# Public condition definitions must not let one caller mutate the cache.
+	var condition_rows: Array[Dictionary] = ContentCatalog.condition_definitions("2014")
+	if not condition_rows.is_empty():
+		var first_name: String = String(condition_rows[0].get("name", ""))
+		condition_rows[0]["name"] = "TEST MUTATION"
+		assert(String(ContentCatalog.condition_definitions("2014")[0].get("name", "")) == first_name)
 	var half := Vector3(0.5, 1.0, 0.5)
 
 	# Touching hitboxes have zero gap; one empty cell between them is 1 world unit.
@@ -111,6 +125,78 @@ func run() -> void:
 		),
 		5.0
 	))
+
+	# Regression: immediately after spawning, token bases can be on
+	# different elevations (before placement/physics stabilizes). A full
+	# empty square between two Medium tokens must still be 10 ft, not the
+	# 5 ft physical gap between their hitbox edges.
+	assert(is_equal_approx(
+		FlankingSystem.tactical_reach_distance_feet(
+			Vector3(0.5, 1.0, 0.5),
+			half,
+			Vector3(2.5, 2.0, 0.5),
+			half,
+			1.0
+		),
+		10.0
+	))
+	# Adjacent squares remain in 5 ft reach at different elevations.
+	assert(is_equal_approx(
+		FlankingSystem.tactical_reach_distance_feet(
+			Vector3(0.5, 1.0, 0.5),
+			half,
+			Vector3(1.5, 2.0, 0.5),
+			half,
+			1.0
+		),
+		5.0
+	))
+	# An entirely empty vertical cell between two hitboxes is also 10 ft.
+	assert(is_equal_approx(
+		FlankingSystem.tactical_reach_distance_feet(
+			Vector3(0.5, 1.0, 0.5),
+			half,
+			Vector3(0.5, 4.0, 0.5),
+			half,
+			1.0
+		),
+		10.0
+	))
+
+
+	# Tiny still occupies a full square; adjacent Tiny creatures have 5 ft
+	# reach just like Medium ones. Larger footprints are measured edge-to-edge.
+	var tiny := TokenScene.instantiate()
+	root.add_child(tiny)
+	tiny.call("set_token_size", 0.5)
+	var tiny_half: Vector3 = FlankingSystem.token_half_extents_world(tiny, 1.0)
+	assert(is_equal_approx(tiny_half.x, 0.5))
+	assert(is_equal_approx(FlankingSystem.grid_reach_distance_feet(
+		Vector3.ZERO, tiny_half, Vector3(1.0, 0.0, 0.0), tiny_half, 1.0
+	), 5.0))
+	var huge := TokenScene.instantiate()
+	root.add_child(huge)
+	huge.call("set_size_category", "Huge", 3.0, true)
+	assert(is_equal_approx(float(huge.call("get_reach_feet")), 5.0),
+		"Footprint alone must not increase melee reach")
+	var legacy_state: Dictionary = huge.call("get_appearance_state")
+	legacy_state["reach_feet"] = 15.0
+	legacy_state["reach_overridden"] = false
+	assert(bool(huge.call("apply_appearance_state", legacy_state)))
+	assert(is_equal_approx(float(huge.call("get_reach_feet")), 5.0),
+		"Legacy size-derived reach must not persist after reload")
+	var huge_half: Vector3 = FlankingSystem.token_half_extents_world(huge, 1.0)
+	assert(is_equal_approx(huge_half.x, 1.5))
+	assert(is_equal_approx(FlankingSystem.grid_reach_distance_feet(
+		Vector3.ZERO, huge_half, Vector3(2.0, 0.0, 0.0), half, 1.0
+	), 5.0))
+	assert(FlankingSystem.flanking_segment(
+		Vector3(-2.0, 0.0, 0.0), half,
+		Vector3(2.0, 0.0, 0.0), half,
+		Vector3.ZERO, huge_half
+	).size() == 2)
+	tiny.queue_free()
+	huge.queue_free()
 
 	# Same-plane line geometry is projected down to the miniature bases.
 	var projected := FlankingSystem.project_centers_to_shared_base(
@@ -306,5 +392,59 @@ func run() -> void:
 	)
 	assert(miss.is_empty())
 
-	print("PASS: flanking follows opposite-side and opposite-corner grid geometry")
+
+	# A line through the flankers' centres would miss; the occupied volumes
+	# contain points connected across both opposite X faces.
+	assert(FlankingSystem.flanking_segment(
+		Vector3(-2.0, 0.0, 1.1), Vector3(0.5, 1.0, 1.0),
+		Vector3(2.0, 0.0, 1.1), Vector3(0.5, 1.0, 1.0),
+		Vector3.ZERO, half
+	).size() == 2, "Flanking must use any points within both occupied volumes")
+
+	# Facing one another above the target is not flanking in 3D.
+	assert(FlankingSystem.flanking_segment(
+		Vector3(-2.0, 3.0, 0.0), half,
+		Vector3(2.0, 3.0, 0.0), half,
+		Vector3.ZERO, half
+	).is_empty(), "A horizontal projection must not ignore elevation")
+
+	# The top and bottom count as opposing faces, including a tall target.
+	assert(FlankingSystem.flanking_segment(
+		Vector3(0.0, -3.0, 0.0), half,
+		Vector3(0.0, 3.0, 0.0), half,
+		Vector3.ZERO, Vector3(1.5, 2.0, 1.5)
+	).size() == 2, "Vertical flanking must cross both height faces")
+
+	# The new volume-to-volume rule can flank even in an L formation:
+	# offset points inside both footprints cross the target on opposite faces.
+	assert(FlankingSystem.flanking_segment(
+		Vector3(1.0, 0.0, 1.0), half,
+		Vector3(0.0, 0.0, -1.0), half,
+		Vector3.ZERO, half
+	).size() == 2, "Do not restrict flanking to miniature centres")
+
+	# A pair confined to one side cannot create an opposing-face crossing.
+	assert(FlankingSystem.flanking_segment(
+		Vector3(2.0, 0.0, 0.0), half,
+		Vector3(3.0, 0.0, 0.0), half,
+		Vector3.ZERO, half
+	).is_empty())
+
+	# The first melee attack wins even when later ones have longer reach;
+	# explicit per-attack range overrides apply immediately.
+	var monster := {
+		"kind": "monster",
+		"stat_block": {
+			"action": [
+				{"name": "Tiro", "entries": ["{@atk rw} {@hit 4} range 100 ft."]},
+				{"name": "Spada", "entries": ["{@atk mw} {@hit 4} reach 10 ft."]},
+				{"name": "Tentacolo", "entries": ["{@atk mw} {@hit 4} reach 15 ft."]}
+			]
+		}
+	}
+	assert(is_equal_approx(AttackData.first_melee_range(monster), 10.0))
+	monster["attack_overrides"] = {"monster:action:1": {"range_feet": 20}}
+	assert(is_equal_approx(AttackData.first_melee_range(monster), 20.0))
+	assert(is_equal_approx(AttackData.first_melee_range({"kind": "character"}), 5.0))
+	print("PASS: volume-based 3D flanking and first melee reach")
 	quit()

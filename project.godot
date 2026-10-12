@@ -31,6 +31,10 @@ window/stretch/aspect="expand"
 
 enabled=PackedStringArray("res://addons/godot_mcp/plugin.cfg")
 
+[gui]
+
+theme/custom="res://vtt/ui/dnd5e_theme.tres"
+
 [input]
 
 test_rotate_ring={

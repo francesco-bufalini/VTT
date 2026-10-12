@@ -1,8 +1,10 @@
 extends RefCounted
 
+const ContentCatalog = preload("res://vtt/content_catalog.gd")
 const GeneratedCatalog = preload(
 	"res://vtt/spells/spell_catalog_5etools.gd"
 )
+const PHB2014 = preload("res://vtt/spells/spell_catalog_phb_2014.gd")
 const SpellAreaCatalog = preload(
 	"res://vtt/spells/spell_area_catalog.gd"
 )
@@ -38,48 +40,7 @@ const LEVEL_NAMES: Array[String] = [
 	"5° livello", "6° livello", "7° livello", "8° livello", "9° livello"
 ]
 
-# Runtime-only mechanics layered on top of the generated 5eTools catalog.
-# Keeping these here avoids modifying the generated file by hand.
-const RUNTIME_OVERRIDES: Dictionary = {
-	"cloudkill": {
-		"movable_aoe_feet": 10.0,
-		"movable_aoe_mode": "away_from_caster"
-	},
-	"doomtide": {
-		"movable_aoe_feet": 10.0,
-		"movable_aoe_mode": "away_from_caster"
-	},
-	"incendiary_cloud": {
-		"movable_aoe_feet": 10.0,
-		"movable_aoe_mode": "free_exact"
-	},
-	"whirlwind": {
-		"movable_aoe_feet": 30.0,
-		"movable_aoe_mode": "free"
-	},
-	"conjure_celestial": {
-		"movable_aoe_feet": 30.0,
-		"movable_aoe_mode": "free"
-	},
-	"meteor_swarm": {
-		"target_mode": "token_then_multi_point",
-		"range_feet": 5280.0,
-		"base_target_clicks": 4,
-		"aoe_shape": "sphere",
-		"aoe_radius_feet": 40.0,
-		"visual_style": "fire",
-		"projectile_style": "fire",
-		"projectile_travel_seconds": 0.8,
-		"meteor_drop_height_feet": 60.0,
-		"requires_ground": true,
-		"transient_seconds": 5.0
-	},
-	"thunderwave": {
-		"forced_movement_feet": 15.0,
-		"forced_movement_mode": "away_from_caster",
-		"forced_movement_on_failed_save": true
-	}
-}
+# Source-independent extensions are provided by ContentCatalog.enrich().
 
 # Runtime fields used by the VTT:
 # target_mode:
@@ -1108,22 +1069,19 @@ const SPELLS: Dictionary = {
 
 
 static func _apply_runtime_overrides(data: Dictionary) -> Dictionary:
-	var result: Dictionary = data.duplicate(true)
-	var spell_id: String = String(result.get("id", ""))
-	var override_value: Variant = RUNTIME_OVERRIDES.get(spell_id, {})
-	if override_value is Dictionary:
-		for key: Variant in (override_value as Dictionary).keys():
-			result[key] = (override_value as Dictionary).get(key)
+	# Preserve hand-authored legacy runtime fields, then apply VTT-only
+	# extensions. Never write the resolved result back into compendium JSON.
+	var result: Dictionary = ContentCatalog.enrich("spells", data)
+	if String(result.get("origin", "")) != "homebrew":
+		# Official geometries are inferred from the separately generated map
+		# catalog. Never infer a homebrew spell's geometry by coincident name.
+		result = SpellAreaCatalog.apply_to_spell(result)
+	result = ContentCatalog.enrich("spells", result)
 
-	# Geometry, range, targeting and generic VFX come from the generated
-	# runtime map catalogue. Hand-authored entries still carry descriptive
-	# metadata and special mechanics, but no longer need to be the authority
-	# for ordinary AoE dimensions.
-	result = SpellAreaCatalog.apply_to_spell(result)
+	if String(result.get("description", "")).is_empty() and result.has("entries"):
+		result["description"] = ContentCatalog.description(result)
 
-	# Condition-only spells such as Hold Person have no map geometry, so the
-	# area catalogue has nothing from which to infer targeting. The runtime
-	# condition flow still needs a token target.
+	# Condition-only spells still need a target even without map geometry.
 	if String(result.get("target_mode", "")).is_empty():
 		var conditions_value: Variant = result.get("condition_inflict", [])
 		if conditions_value is Array and not (conditions_value as Array).is_empty():
@@ -1243,35 +1201,54 @@ static func is_runtime_usable(spell_data: Dictionary) -> bool:
 	return _is_runtime_usable(spell_data)
 
 
+static func _manual_spell(spell_id: String) -> Dictionary:
+	var result: Dictionary = (SPELLS[spell_id] as Dictionary).duplicate(true)
+	var generated_value: Variant = GeneratedCatalog.SPELLS.get(spell_id, {})
+	if generated_value is Dictionary:
+		var generated: Dictionary = generated_value as Dictionary
+		# Visual/mechanical overrides can omit their source. Retain it so
+		# edition filtering and modern geometry lookup still identify them.
+		result["source"] = String(generated.get("source", result.get("source", "")))
+		for field: String in ["classes", "condition_inflict", "saving_throw", "misc_tags"]:
+			var metadata: Variant = generated.get(field, [])
+			if metadata is Array:
+				result[field] = (metadata as Array).duplicate(true)
+	return result
+
+
 static func catalog_spell(spell_id: String) -> Dictionary:
+	if PHB2014.SPELLS.has(spell_id):
+		# Rules stay authoritative from PHB 2014, including the textual range
+		# and spell lists. Map geometry and targeting are inherited from the
+		# already-normalized 2024 spell, wherever a counterpart exists.
+		# Re-applying SpellAreaCatalog *after* changing the source to PHB would
+		# instead replace 2024 geometry with the less structured 2014 spec.
+		var legacy: Dictionary = (PHB2014.SPELLS[spell_id] as Dictionary).duplicate(true)
+		var base_id := String(legacy.get(
+			"geometry_reference_id", legacy.get("original_id", "")
+		))
+		var base: Dictionary = (
+			catalog_spell(base_id) if not base_id.is_empty() else {}
+		)
+		var has_2024_geometry := (
+			String(base.get("source", "")).to_upper() == "XPHB"
+			and base.has("map_effect_spec")
+		)
+		for field: Variant in legacy.keys():
+			base[field] = legacy[field]
+		# In 2014 the casting range may differ. Preserve its gameplay value
+		# even when using the modern shape/visualization model.
+		if has_2024_geometry:
+			base["map_geometry_source"] = "2024-counterpart"
+		return ContentCatalog.enrich("spells", base)
+	for row: Dictionary in ContentCatalog.home_entries("spells"):
+		if String(row.id) == spell_id or String(row.get("overrides", "")) == spell_id:
+			var custom := row.duplicate(true)
+			custom["id"] = spell_id
+			return _apply_runtime_overrides(custom)
 	var value: Variant = SPELLS.get(spell_id, {})
 	if value is Dictionary and not (value as Dictionary).is_empty():
-		var manual_result: Dictionary = (value as Dictionary).duplicate(true)
-		var generated_value: Variant = GeneratedCatalog.SPELLS.get(
-			spell_id,
-			{}
-		)
-		if generated_value is Dictionary:
-			var generated_classes: Variant = (
-				generated_value as Dictionary
-			).get("classes", [])
-			if generated_classes is Array:
-				manual_result["classes"] = (
-					generated_classes as Array
-				).duplicate(true)
-			for metadata_field: String in [
-				"condition_inflict",
-				"saving_throw",
-				"misc_tags"
-			]:
-				var generated_metadata: Variant = (
-					generated_value as Dictionary
-				).get(metadata_field, [])
-				if generated_metadata is Array:
-					manual_result[metadata_field] = (
-						generated_metadata as Array
-					).duplicate(true)
-		return _apply_runtime_overrides(manual_result)
+		return _apply_runtime_overrides(_manual_spell(spell_id))
 
 	value = GeneratedCatalog.SPELLS.get(spell_id, {})
 	if value is Dictionary:
@@ -1301,23 +1278,16 @@ static func all_spells() -> Array[Dictionary]:
 	for spell_id: Variant in SPELLS.keys():
 		var value: Variant = SPELLS.get(spell_id, {})
 		if value is Dictionary:
-			var manual_copy: Dictionary = (
-				value as Dictionary
-			).duplicate(true)
-			var generated_value: Variant = GeneratedCatalog.SPELLS.get(
-				spell_id,
-				{}
-			)
-			if generated_value is Dictionary:
-				var generated_classes: Variant = (
-					generated_value as Dictionary
-				).get("classes", [])
-				if generated_classes is Array:
-					manual_copy["classes"] = (
-						generated_classes as Array
-					).duplicate(true)
-			merged[String(spell_id)] = manual_copy
+			merged[String(spell_id)] = _manual_spell(String(spell_id))
 
+	for custom: Dictionary in ContentCatalog.home_entries("spells"):
+		var target := String(custom.get("overrides", ""))
+		if not target.is_empty() and not merged.has(target):
+			continue
+		var id := target if not target.is_empty() else String(custom.id)
+		var copy := custom.duplicate(true)
+		copy["id"] = id
+		merged[id] = copy
 	var result: Array[Dictionary] = []
 	for value: Variant in merged.values():
 		if value is Dictionary:
@@ -1325,6 +1295,34 @@ static func all_spells() -> Array[Dictionary]:
 				_apply_runtime_overrides(value as Dictionary)
 			)
 
+	result.sort_custom(
+		func(a: Dictionary, b: Dictionary) -> bool:
+			return String(a.get("name", "")).naturalnocasecmp_to(
+				String(b.get("name", ""))
+			) < 0
+	)
+	return result
+
+
+# The 2024 edition keeps the ordinary generated XPHB spell catalogue.
+# For 2014, restore PHB versions of core spells rather than simply hiding
+# XPHB and losing hundreds of otherwise missing spells. Supplemental
+# publications (XGE, TCE, etc.) remain available in either ruleset.
+static func all_spells_for_rules(edition: String = "2024") -> Array[Dictionary]:
+	var merged: Array[Dictionary] = all_spells()
+	if edition != "2014":
+		return merged
+	var result: Array[Dictionary] = []
+	for entry: Dictionary in merged:
+		var source := String(entry.get("source", "")).to_upper()
+		if source in ["XPHB", "EFA", "PHB"]:
+			continue
+		result.append(entry)
+	for value: Variant in PHB2014.SPELLS.values():
+		if not value is Dictionary:
+			continue
+		var legacy: Dictionary = value as Dictionary
+		result.append(catalog_spell(String(legacy.get("id", ""))))
 	result.sort_custom(
 		func(a: Dictionary, b: Dictionary) -> bool:
 			return String(a.get("name", "")).naturalnocasecmp_to(

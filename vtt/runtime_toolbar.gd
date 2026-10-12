@@ -2,36 +2,17 @@ extends Node
 
 const GRID := 10
 const GAME_SPELLS := 11
-const GAME_USER_IDENTITY := 12
 
-const PLAYER_AREA_OPEN := 60
-const PLAYER_ADD_CHARACTER := 61
-const PLAYER_LINK_TOKEN := 62
-const PLAYER_LINK_CHARACTER := 63
-
-const MASTER_AREA_OPEN := 64
-const MASTER_LINK_TOKEN := 65
-const MASTER_LINK_CREATURE := 66
+const COMPENDIUM_OPEN := 64
 
 const COMBAT_START := 70
 const COMBAT_INITIATIVE := 71
 const COMBAT_END := 72
 
-const TOKEN_CREATE := 20
-const TOKEN_FLYING := 21
-const TOKEN_ROTATE_LEFT := 22
-const TOKEN_ROTATE_RIGHT := 23
-const TOKEN_DELETE := 24
-const TOKEN_DETAILS := 25
-const TOKEN_LIST := 26
-const TOKEN_TILT_UP := 27
-const TOKEN_TILT_DOWN := 28
+
+
 const ITEM_CREATE := 80
 const ITEM_MANAGE := 81
-const ITEM_ROTATE_LEFT := 82
-const ITEM_ROTATE_RIGHT := 83
-const ITEM_TILT_UP := 84
-const ITEM_TILT_DOWN := 85
 
 const MEASURE_RULER := 30
 const MEASURE_SPHERE := 31
@@ -44,9 +25,11 @@ const VIEW_VISION := 40
 const VIEW_CAMERA_SETTINGS := 41
 const VIEW_REACHES := 42
 const VIEW_CONDITIONS := 43
+const VIEW_2D := 44
 const SHARE_OPEN := 50
 const SESSION_SAVE := 51
 const SESSION_MAIN_MENU := 52
+const SHARE_CONTEXT_ID := 25
 const CAMPAIGN_EDITOR_SCENE_PATH := "res://vtt/editor/campaign_editor.tscn"
 
 var board_root: Node3D
@@ -85,59 +68,66 @@ func _initialize_toolbar() -> void:
 func _build_toolbar() -> void:
 	var panel: PanelContainer = PanelContainer.new()
 	panel.name = "RuntimeToolbar"
-	panel.position = Vector2(8, 8)
-	panel.custom_minimum_size = Vector2(0, 36)
+	# A single flexible command ribbon replaces the long overflowing menu strip.
+	panel.anchor_left = 0.0
+	panel.anchor_right = 1.0
+	panel.offset_left = 12.0
+	panel.offset_right = -12.0
+	panel.offset_top = 10.0
+	panel.custom_minimum_size = Vector2(0, 44)
 	panel.mouse_filter = Control.MOUSE_FILTER_STOP
+	var ribbon_style := StyleBoxFlat.new()
+	ribbon_style.bg_color = Color(0.11, 0.095, 0.10, 0.93)
+	ribbon_style.border_color = Color(0.68, 0.50, 0.29, 0.85)
+	ribbon_style.set_border_width_all(1)
+	ribbon_style.set_corner_radius_all(9)
+	ribbon_style.content_margin_left = 8.0
+	ribbon_style.content_margin_right = 8.0
+	ribbon_style.content_margin_top = 7.0
+	ribbon_style.content_margin_bottom = 7.0
+	panel.add_theme_stylebox_override("panel", ribbon_style)
 	ui_root.add_child(panel)
 
-	var row: HBoxContainer = HBoxContainer.new()
-	row.add_theme_constant_override("separation", 2)
+	var row: HFlowContainer = HFlowContainer.new()
+	row.add_theme_constant_override("h_separation", 6)
+	row.add_theme_constant_override("v_separation", 5)
 	panel.add_child(row)
 
-	row.add_child(_menu("Token", [
-		["Crea token", TOKEN_CREATE],
-		["Applica gravità", TOKEN_FLYING],
-		["Ruota sx", TOKEN_ROTATE_LEFT],
-		["Ruota dx", TOKEN_ROTATE_RIGHT],
-		["Inclina su · 30°", TOKEN_TILT_UP],
-		["Inclina giu · 30°", TOKEN_TILT_DOWN],
-		["Nome e stati…", TOKEN_DETAILS],
-		["Lista token", TOKEN_LIST],
-		["Elimina", TOKEN_DELETE]
-	], _on_token))
 
-	row.add_child(_menu("Item", [
-		["Carro romano · posiziona (2×2)", ITEM_CREATE],
-		["Lista item / associa token…", ITEM_MANAGE],
-		["Ruota sx · 45°", ITEM_ROTATE_LEFT],
-		["Ruota dx · 45°", ITEM_ROTATE_RIGHT],
-		["Inclina su · 30°", ITEM_TILT_UP],
-		["Inclina giu · 30°", ITEM_TILT_DOWN]
-	], _on_item))
 
 	row.add_child(_menu("Gioco", [
 		["Incantesimi", GAME_SPELLS],
-		["Cambia token associato all'utente…", GAME_USER_IDENTITY]
-	], _on_game))
-
-	row.add_child(_menu("Combattimento", [
-		["Inizia combattimento", COMBAT_START],
 		["Mostra / nascondi iniziativa", COMBAT_INITIATIVE],
-		["Termina combattimento", COMBAT_END]
-	], _on_combat))
-
-	row.add_child(_menu("Area Player", [
-		["Apri Area Player", PLAYER_AREA_OPEN],
-		["Aggiungi Personaggio", PLAYER_ADD_CHARACTER],
-		["Token selezionato → personaggio", PLAYER_LINK_TOKEN],
-		["Personaggio → token per nome", PLAYER_LINK_CHARACTER]
-	], _on_player))
-
-	row.add_child(_menu("Area Master", [
-		["Apri Area Master", MASTER_AREA_OPEN],
-		["Token selezionato → creatura", MASTER_LINK_TOKEN],
-		["Creatura → token per nome", MASTER_LINK_CREATURE]
+		["Sessione"],
+		["Salva", SESSION_SAVE],
+		["Condividi / Tailscale", SHARE_OPEN],
+		["Torna al menu VTT", SESSION_MAIN_MENU]
+	], _on_game))
+	row.add_child(_menu("Master", [
+		["Inizia combattimento", COMBAT_START],
+		["Finisci combattimento", COMBAT_END],
+		["Oggetti sulla mappa"],
+		["Posiziona carro romano (2×2)", ITEM_CREATE],
+		["Gestisci item / associa token…", ITEM_MANAGE]
 	], _on_master))
+
+	# Direct action: one click opens the creature archive, no submenu.
+	var creatures_button := Button.new()
+	creatures_button.text = "Creature"
+	creatures_button.focus_mode = Control.FOCUS_NONE
+	creatures_button.custom_minimum_size = Vector2(88, 34)
+	creatures_button.tooltip_text = "Apri direttamente la scheda delle creature"
+	creatures_button.pressed.connect(
+		func() -> void:
+			var area: Node = board_root.get_node_or_null("CreatureArea")
+			if area != null:
+				area.call("show_panel")
+	)
+	row.add_child(creatures_button)
+
+	row.add_child(_menu("Compendio", [
+		["Apri Compendio", COMPENDIUM_OPEN]
+	], _on_compendium))
 
 	row.add_child(_menu("Misura", [
 		["Righello", MEASURE_RULER],
@@ -153,21 +143,17 @@ func _build_toolbar() -> void:
 		["Coni visivi", VIEW_VISION],
 		["Gittate di tutte le creature", VIEW_REACHES],
 		["Mostra / nascondi targhette e anelli", VIEW_CONDITIONS],
+		["Vista 2D / 3D", VIEW_2D],
 		["Velocità camera…", VIEW_CAMERA_SETTINGS]
 	], _on_view))
 
-	row.add_child(_menu("Sessione", [
-		["Salva", SESSION_SAVE],
-		["Condividi / Tailscale", SHARE_OPEN],
-		["Torna al menu VTT", SESSION_MAIN_MENU]
-	], _on_session))
-
 	status_label = Label.new()
 	status_label.text = ""
-	status_label.custom_minimum_size = Vector2(90, 0)
+	status_label.custom_minimum_size = Vector2(130, 28)
 	status_label.horizontal_alignment = HORIZONTAL_ALIGNMENT_RIGHT
 	status_label.vertical_alignment = VERTICAL_ALIGNMENT_CENTER
-	status_label.add_theme_font_size_override("font_size", 11)
+	status_label.add_theme_font_size_override("font_size", 12)
+	status_label.add_theme_color_override("font_color", Color(0.91, 0.78, 0.56, 1.0))
 	status_label.clip_text = true
 	row.add_child(status_label)
 
@@ -176,10 +162,12 @@ func _menu(label_text: String, items: Array, callback: Callable) -> MenuButton:
 	var button: MenuButton = MenuButton.new()
 	button.text = label_text
 	button.custom_minimum_size = Vector2(
-		maxf(72.0, float(label_text.length() * 8 + 22)),
-		30
+		maxf(78.0, float(label_text.length() * 8 + 24)),
+		34
 	)
 	button.add_theme_font_size_override("font_size", 13)
+	button.focus_mode = Control.FOCUS_NONE
+	button.tooltip_text = "Apri le azioni: " + label_text
 
 	var popup: PopupMenu = button.get_popup()
 	var viewport_size: Vector2 = get_viewport().get_visible_rect().size
@@ -188,7 +176,10 @@ func _menu(label_text: String, items: Array, callback: Callable) -> MenuButton:
 		maxi(160, int(viewport_size.y) - 24)
 	)
 	for item: Array in items:
-		popup.add_item(String(item[0]), int(item[1]))
+		if item.size() == 1:
+			popup.add_separator(String(item[0]))
+		else:
+			popup.add_item(String(item[0]), int(item[1]))
 	popup.id_pressed.connect(callback)
 	return button
 
@@ -197,82 +188,35 @@ func _on_game(id: int) -> void:
 	match id:
 		GAME_SPELLS:
 			board_root.call("toggle_spell_menu")
-		GAME_USER_IDENTITY:
-			board_root.call("request_change_user_identity")
-
-
-func _on_item(id: int) -> void:
-	var controller: Node = board_root.get("item_controller") as Node
-	if controller == null:
-		return
-	match id:
-		ITEM_CREATE:
-			controller.call("begin_placement")
-		ITEM_MANAGE:
-			controller.call("open_menu")
-		ITEM_ROTATE_LEFT:
-			controller.call("rotate_selected_yaw", -1)
-		ITEM_ROTATE_RIGHT:
-			controller.call("rotate_selected_yaw", 1)
-		ITEM_TILT_UP:
-			controller.call("rotate_selected_vertical", 1)
-		ITEM_TILT_DOWN:
-			controller.call("rotate_selected_vertical", -1)
-
-
-func _on_combat(id: int) -> void:
-	match id:
-		COMBAT_START:
-			board_root.call("start_combat_mode")
 		COMBAT_INITIATIVE:
 			board_root.call("toggle_initiative_panel")
-		COMBAT_END:
-			board_root.call("end_combat_mode")
-
-
-func _on_player(id: int) -> void:
-	match id:
-		PLAYER_AREA_OPEN:
-			board_root.call("toggle_player_area")
-		PLAYER_ADD_CHARACTER:
-			board_root.call("add_player_character")
-		PLAYER_LINK_TOKEN:
-			board_root.call("link_player_character_to_selected_token")
-		PLAYER_LINK_CHARACTER:
-			board_root.call("link_selected_player_character_to_named_token")
+		SESSION_SAVE:
+			_save_current_state()
+		SHARE_OPEN:
+			board_root.call("_on_context_menu_id_pressed", SHARE_CONTEXT_ID)
+		SESSION_MAIN_MENU:
+			var campaign_manager: Node = _campaign_manager()
+			if campaign_manager != null:
+				campaign_manager.call("return_to_main_menu")
 
 
 func _on_master(id: int) -> void:
 	match id:
-		MASTER_AREA_OPEN:
-			board_root.call("toggle_master_area")
-		MASTER_LINK_TOKEN:
-			board_root.call("link_master_creature_to_selected_token")
-		MASTER_LINK_CREATURE:
-			board_root.call("link_selected_master_creature_to_named_token")
+		COMBAT_START:
+			board_root.call("start_combat_mode")
+		COMBAT_END:
+			board_root.call("end_combat_mode")
+		ITEM_CREATE, ITEM_MANAGE:
+			board_root.call("_on_context_menu_id_pressed", id)
 
 
-func _on_token(id: int) -> void:
-	match id:
-		TOKEN_CREATE:
-			var center: Vector2 = get_viewport().get_visible_rect().size * 0.5
-			board_root.call("_show_context_menu", center)
-		TOKEN_FLYING:
-			board_root.call("_on_context_menu_id_pressed", 8)
-		TOKEN_ROTATE_LEFT:
-			board_root.call("_on_context_menu_id_pressed", 3)
-		TOKEN_ROTATE_RIGHT:
-			board_root.call("_on_context_menu_id_pressed", 4)
-		TOKEN_TILT_UP:
-			board_root.call("_rotate_selected_vertical", 1)
-		TOKEN_TILT_DOWN:
-			board_root.call("_rotate_selected_vertical", -1)
-		TOKEN_DELETE:
-			board_root.call("_on_context_menu_id_pressed", 2)
-		TOKEN_DETAILS:
-			board_root.call("open_selected_token_state_editor")
-		TOKEN_LIST:
-			board_root.call("toggle_token_list")
+
+
+func _on_compendium(id: int) -> void:
+	if id == COMPENDIUM_OPEN:
+		board_root.call("toggle_compendium")
+
+
 
 
 func _on_measure(id: int) -> void:
@@ -323,20 +267,12 @@ func _on_view(id: int) -> void:
 			board_root.call("toggle_all_reach_spheres")
 		VIEW_CONDITIONS:
 			board_root.call("toggle_condition_visuals")
+		VIEW_2D:
+			board_root.call("toggle_2d_view")
 		VIEW_CAMERA_SETTINGS:
 			board_root.call("open_camera_settings")
 
 
-func _on_session(id: int) -> void:
-	match id:
-		SESSION_SAVE:
-			_save_current_state()
-		SHARE_OPEN:
-			board_root.call("_on_context_menu_id_pressed", 25)
-		SESSION_MAIN_MENU:
-			var campaign_manager: Node = _campaign_manager()
-			if campaign_manager != null:
-				campaign_manager.call("return_to_main_menu")
 
 
 func _save_current_state() -> void:
