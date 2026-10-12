@@ -45,6 +45,8 @@ func run() -> void:
 	tab.call("_on_spellcasting_ability_selected", 5)
 	assert(sink.last_change.get("spellcasting_ability", "") == "wis")
 	assert("SAG" in picker.get_item_text(5))
+	tab.call("_on_spellcasting_ability_selected", 0)
+	assert(sink.last_change.get("spellcasting_ability", "missing") == "")
 	var player: Dictionary = PlayerStore.new().normalize_character({
 		"spellcasting_ability": "wis", "concentrating_spell_id": "bless",
 		"conditions": ["concentrating"]
