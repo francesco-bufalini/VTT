@@ -1414,8 +1414,7 @@ func _process(delta: float) -> void:
 	if _creature_presence_elapsed >= 0.4:
 		_creature_presence_elapsed = 0.0
 		_refresh_creature_eye_buttons()
-		if _creature_language == "en":
-			_refresh_creature_language()
+		_refresh_creature_language()
 
 
 
