@@ -852,7 +852,7 @@ static func origins(record: Dictionary) -> Array[Dictionary]:
 				found = true
 				break
 		if not found:
-			var withdrawn: bool = bool(item.get("automatic", false)) and not live.has(sid)
+			var withdrawn: bool = bool(item.get("automatic", false)) and not live.has(sid) and String(item.get("group", "")) != "spell"
 			result.append({"id": sid,
 				"name": ("⚠ Origine non più disponibile · " if withdrawn else "") + String(item.get("name", "Origine")),
 				"group": String(item.get("group", "custom")),
@@ -941,7 +941,7 @@ static func _live_origin_ids(record: Dictionary) -> Dictionary:
 		if feat is Dictionary:
 			live[feat_source_id(feat)] = true
 	for origin: Variant in record.get("proficiency_origins", []):
-		if origin is Dictionary and String(origin.get("group", "")) == "custom":
+		if origin is Dictionary and String(origin.get("group", "")) in ["custom", "spell"]:
 			live[String(origin.get("id", ""))] = true
 	return live
 
@@ -1054,7 +1054,7 @@ static func reconcile_origin_dependents(record: Dictionary) -> void:
 			if not origin is Dictionary:
 				continue
 			var sid: String = String(origin.get("id", ""))
-			if live.has(sid) or String(origin.get("group", "")) == "custom":
+			if live.has(sid) or String(origin.get("group", "")) in ["custom", "spell"]:
 				kept_origins.append(origin)
 		record["proficiency_origins"] = kept_origins
 
