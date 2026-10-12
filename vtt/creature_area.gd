@@ -2809,8 +2809,7 @@ func _refresh_weapon_picker(record: Dictionary) -> void:
 	for attack: Dictionary in AttackData.definitions(record):
 		if String(attack.get("source", "")) == "item":
 			continue
-		if ItemRules.has_equipped_weapon(inventory) and String(attack.get("id", "")) in ["unarmed", "improvised"]:
-			continue
+		# Player fallback attacks stay selectable even when a weapon is equipped.
 		_weapon_picker.add_item(String(attack.get("name", "Attacco")))
 		_weapon_options.append({"kind": "attack", "id": String(attack.get("id", ""))})
 	if _weapon_options.is_empty():
@@ -2953,7 +2952,7 @@ func _refresh_attacks(record: Dictionary) -> void:
 			attacks.append(candidate)
 	for attack: Dictionary in attacks:
 		var attack_id: String = String(attack.get("id", ""))
-		if attack_id.is_empty() or (has_equipped_weapon and attack_id in ["unarmed", "improvised"]):
+		if attack_id.is_empty():
 			continue
 		var card := PanelContainer.new()
 		card.size_flags_horizontal = Control.SIZE_EXPAND_FILL
