@@ -13,7 +13,9 @@ func run() -> void:
 	var stat: Dictionary = {
 		"name": "Defense Test", "source": "MM", "str": 10, "dex": 10,
 		"resist": ["cold", {"resist": ["slashing"], "note": "only from nonmagical attacks"}],
-		"immune": ["poison"], "conditionImmune": ["charmed"]
+		"immune": ["poison"], "conditionImmune": ["charmed"],
+		"trait": [{"name": "Elemental Shell", "entries": ["The shell provides protection."],
+			"resist": ["fire"], "conditionImmune": ["frightened"]}]
 	}
 	var monster: Dictionary = {
 		"kind": "monster", "stat_block": stat, "damage_defense_overrides": {},
@@ -23,6 +25,20 @@ func run() -> void:
 		and Defenses.rank(monster, "poison") == 2
 		and Defenses.rank(monster, "slashing") == 0,
 		"Unconditional bestiary resistance and immunity must resolve without promoting conditional damage rules")
+	assert(Defenses.rank(monster, "fire") == 1
+		and Defenses.condition_immune(monster, "frightened"),
+		"Explicit resist and conditionImmune on monster traits must be derived automatically")
+	var trait_source := ""
+	for grant_source: Dictionary in Defenses._sources(monster):
+		if "Elemental Shell" in String(grant_source.get("name", "")):
+			trait_source = String(grant_source.get("id", ""))
+	assert(trait_source.begins_with("feature:"),
+		"Trait-based damage defenses must retain a selectable origin ID")
+	var suppressed: Dictionary = monster.duplicate(true)
+	suppressed["proficiency_origins"] = [{"id": trait_source, "disabled": true}]
+	assert(Defenses.rank(suppressed, "fire") == 0
+		and not Defenses.condition_immune(suppressed, "frightened"),
+		"Disabling the origin must deactivate only its structured defense grants")
 	assert(Defenses.condition_immune(monster, "charmed")
 		and not Defenses.condition_immune(monster, "stunned"),
 		"Bestiary condition immunities must be displayed")
@@ -35,6 +51,13 @@ func run() -> void:
 	editor.load_record(monster)
 	assert(editor._damage_buttons.size() == 13
 		and editor._condition_buttons.size() == Defenses.CONDITIONS.size())
+	assert(editor._origin_buttons.has(trait_source),
+		"Auto-granting traits must appear in the left-hand origin list")
+	editor._select_origin(trait_source)
+	var fire_card: PanelContainer = editor._damage_cards["fire"]
+	assert(fire_card.get_theme_stylebox("panel").border_width_left == 2,
+		"Selecting a trait must highlight the damage defense it grants")
+	editor._select_origin("__manual__")
 	var cold: Dictionary = editor._damage_buttons["cold"]
 	(cold["immunity"] as CheckButton).button_pressed = true
 	assert(events.size() == 1 and int(events[0].damage["cold"]) == 2
@@ -61,6 +84,18 @@ func run() -> void:
 	assert(Defenses.rank(normal, "cold") == 0
 		and not Defenses.condition_immune(normal, "charmed"),
 		"Damage and condition defense overrides must persist through character normalization")
+
+	var feat_holder: Dictionary = {
+		"kind": "character", "feats_catalog": [
+			{"name": "Elemental Gift", "source": "HB", "resist": ["acid"],
+				"conditionImmune": ["poisoned"]}]
+	}
+	assert(Defenses.rank(feat_holder, "acid") == 1
+		and Defenses.condition_immune(feat_holder, "poisoned"),
+		"Structured defenses on an owned feat must be derived, without searching its prose")
+	feat_holder["feats_catalog"] = []
+	assert(Defenses.rank(feat_holder, "acid") == 0,
+		"Removing a feat must withdraw its automatic damage resistance")
 	var monster_record: Dictionary = Monsters.new().create_creature(stat, "ally")
 	monster_record["damage_defense_overrides"] = {"cold": 2}
 	monster_record["condition_immunity_overrides"] = {"charmed": false}
