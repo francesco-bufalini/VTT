@@ -46,7 +46,9 @@ func _process(_delta: float) -> void:
 
 
 func _world_point(point: Vector3) -> Vector2:
-	return camera.unproject_position(point)
+	# Render on the same projected floor as the 2D token icons.
+	var floor_y: float = float(camera.call("get_top_down_level")) if camera.has_method("get_top_down_level") else point.y
+	return camera.unproject_position(Vector3(point.x, floor_y, point.z))
 
 
 func _circle_polygon(center: Vector3, radius: float) -> PackedVector2Array:
@@ -58,7 +60,7 @@ func _circle_polygon(center: Vector3, radius: float) -> PackedVector2Array:
 
 
 func _shape_polygon(start: Vector3, end: Vector3, shape: String, line_width: float = -1.0) -> PackedVector2Array:
-	var radius: float = maxf(start.distance_to(end), 0.01)
+	var radius: float = maxf(Vector2(end.x - start.x, end.z - start.z).length(), 0.01)
 	if shape in ["sphere", "cylinder"]:
 		return _circle_polygon(start, radius)
 	if shape in ["cube", "flat_square"]:
@@ -150,7 +152,8 @@ func _collect_post_cast_areas() -> void:
 			"start": _array_vector3(data.get("start")),
 			"end": _array_vector3(data.get("end")),
 			"shape": String(data.get("shape", "sphere")),
-			"width": float(data.get("line_width_world", -1.0))
+			"width": float(data.get("line_width_world", -1.0)),
+			"style": String(data.get("style", ""))
 		})
 
 
@@ -171,26 +174,26 @@ func remove_area_at_screen(point: Vector2) -> bool:
 	return false
 
 
-func _target_names(start: Vector3, end: Vector3, shape: String, width: float) -> Array[String]:
+func _target_names(start: Vector3, end: Vector3, shape: String, width: float, style: String = "") -> Array[String]:
 	if spell == null or not is_instance_valid(spell):
 		return []
-	var signature: String = "%s|%s|%s|%s" % [str(start), str(end), shape, str(width)]
+	var signature: String = "%s|%s|%s|%s|%s" % [str(start), str(end), shape, str(width), style]
 	if _cached_signature == signature:
 		return _cached_targets
 	_cached_signature = signature
 	_cached_targets.clear()
-	var target_data: Dictionary = {
-		"aoe_shape": shape,
-		"aoe_radius_feet": start.distance_to(end) * 5.0 / maxf(float(board.get("cell_size")), 0.001),
-		"aoe_line_width_feet": width * 5.0 / maxf(float(board.get("cell_size")), 0.001)
-	}
-	var values: Variant = spell.call("_spell_targets_in_geometry", start, end, target_data, null)
+	# Query the same measurement geometry used by the actual red token
+	# highlights; do not approximate the game's geometry from the drawing.
+	var values: Variant = measure.call(
+		"spell_geometry_affected_tokens", start, end, shape, style, width
+	)
 	if values is Array:
 		for item: Variant in values:
 			if item is Node3D and is_instance_valid(item):
 				var token: Node3D = item as Node3D
-				if not token.name in _cached_targets:
-					_cached_targets.append(String(token.name))
+				var display_name: String = String(token.name)
+				if not _cached_targets.has(display_name):
+					_cached_targets.append(display_name)
 	return _cached_targets
 
 
@@ -199,7 +202,7 @@ func _draw_target_list(names: Array[String], area_label: String) -> void:
 	var font_size: int = 15
 	var max_lines: int = mini(names.size(), 11)
 	var panel_width: float = 252.0
-	var panel_height: float = float(max_lines + 2) * 23.0 + 14.0
+	var panel_height: float = float(max_lines + 2 + (1 if names.size() > max_lines else 0)) * 23.0 + 14.0
 	var origin: Vector2 = Vector2(maxf(size.x - panel_width - 18.0, 8.0), 132.0)
 	draw_rect(Rect2(origin, Vector2(panel_width, panel_height)), Color(0.025, 0.04, 0.07, 0.86), true)
 	draw_rect(Rect2(origin, Vector2(panel_width, panel_height)), Color(0.38, 0.68, 1.0, 0.9), false, 1.5)
@@ -238,19 +241,35 @@ func _draw() -> void:
 		var width: float = float(measure.get("_spell_preview_line_width"))
 		_draw_area(_shape_polygon(start, end, shape, width), Color(1.0, 0.72, 0.20, 1.0))
 		if shape != "line":
-			_draw_target_list(_target_names(start, end, shape, width), "Nell'area")
+			_draw_target_list(
+				_target_names(start, end, shape, width, String(measure.get("_spell_preview_style"))),
+				"Nell'area"
+			)
 		else:
 			var names: Array[String] = []
 			var position: Vector2 = get_viewport().get_mouse_position()
-			var token_value: Variant = spell.call("_token_at_screen", position)
-			if token_value is Node3D:
-				var token: Node3D = token_value as Node3D
-				if is_instance_valid(token):
+			var mode: String = String(spell.get("_targeting_phase"))
+			var pending_spell: Dictionary = spell.call("_pending_spell")
+			var target_data: Dictionary = {}
+			if mode in ["target_token", "multi_target_tokens"]:
+				target_data = spell.call("_target_or_point_data", position, pending_spell)
+			elif mode in ["transform_target", "transform_multi_targets", "resize_target"]:
+				target_data = spell.call("_transformation_target_data", position, pending_spell)
+			elif mode in ["chain_primary", "chain_secondary"]:
+				target_data = spell.call("_target_token_data", position, pending_spell)
+			if bool(target_data.get("valid", false)):
+				var token: Node3D = target_data.get("target") as Node3D
+				if token != null and is_instance_valid(token):
 					names.append(String(token.name))
+			if mode == "multi_target_tokens":
+				for entry: Node3D in spell.get("_pending_targets"):
+					if entry != null and is_instance_valid(entry) and not names.has(String(entry.name)):
+						names.append(String(entry.name))
 			_draw_target_list(names, "Bersagli")
 	elif not hover_area.is_empty():
 		_draw_target_list(
 			_target_names(hover_area.get("start", Vector3.ZERO), hover_area.get("end", Vector3.ZERO),
-				String(hover_area.get("shape", "sphere")), float(hover_area.get("width", -1.0))),
+				String(hover_area.get("shape", "sphere")), float(hover_area.get("width", -1.0)),
+				String(hover_area.get("style", ""))),
 			"Nell'area"
 		)
