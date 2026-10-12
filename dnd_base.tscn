@@ -160,6 +160,7 @@ min_size = Vector2i(360, 420)
 ok_button_text = "Crea"
 
 [node name="Content" type="ScrollContainer" parent="UI/TokenColorDialog" unique_id=1590725337]
+mouse_force_pass_scroll_events = false
 anchors_preset = 15
 anchor_right = 1.0
 anchor_bottom = 1.0
