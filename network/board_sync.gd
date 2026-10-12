@@ -1872,14 +1872,14 @@ func _apply_node_data(node: Node3D, data: Dictionary) -> void:
 				node.remove_meta(field)
 		if node.has_method("set_condition_presentations"):
 			node.call("set_condition_presentations", data.get("condition_presentations", []))
-		if node.has_method("set_conditions"):
-			node.call("set_conditions", data.get("conditions", []))
 		if node.has_method("set_active_spell_ids"):
 			node.call("set_active_spell_ids", data.get("active_spell_ids", []))
 		if node.has_method("set_concentrating_spell_id"):
-			var concentration_id: String = String(data.get("concentrating_spell_id", ""))
-			if not concentration_id.is_empty():
-				node.call("set_concentrating_spell_id", concentration_id)
+			node.call("set_concentrating_spell_id", String(data.get("concentrating_spell_id", "")))
+		# Apply the incoming conditions last so manual concentration markers
+		# remain valid even without a named spell, and removal clears stale ids.
+		if node.has_method("set_conditions"):
+			node.call("set_conditions", data.get("conditions", []))
 		if apply_shared_appearance and node.has_method(
 			"set_transformation_history"
 		):
