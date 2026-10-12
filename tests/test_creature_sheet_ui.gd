@@ -454,10 +454,15 @@ func run() -> void:
 	assert(area._tracker_rows.get_parent() == combat_stats
 		and area._tracker_rows.get_index() < area._attacks_description.get_index(),
 		"Trackers should appear above the list of available attacks")
-	assert(area._weapon_picker != null and area._weapon_picker.item_count > 0,
-		"Weapon/attack carousel must be available above the attack cards")
-	assert(area._weapon_picker.get_parent().get_index() < area._attack_rows.get_index(),
-		"Active weapon carousel should precede available attacks")
+	assert(area._hand_main_picker != null and area._hand_off_picker != null
+		and area._hand_main_picker.item_count >= 3 and area._hand_off_picker.item_count >= 3,
+		"Both hands must default to None and offer unarmed/improvised strikes")
+	assert(area._hand_main_picker.get_item_text(0) == "Niente"
+		and area._hand_off_picker.get_item_text(0) == "Niente",
+		"Empty is the default hand choice, never automatic unarmed or an inventory weapon")
+	assert(area._hand_main_picker.get_parent().get_index() < area._attack_rows.get_index()
+		and area._armor_picker != null,
+		"Hand selectors precede attack cards; armor selector is beside AC")
 	assert(area._formula_values["hp"].value_label == area._max_hp_effective
 		and area._formula_values["hp"]._editor.visible == false,
 		"HP maximum should be a compact readout, not a permanently visible formula")
@@ -701,6 +706,7 @@ func run() -> void:
 	inventory._remove_selected()
 	assert(area._current().inventory.is_empty())
 	area._ac.value = 15
+	area._natural_ac_formula.text = "15"
 	area._save()
 	var combat_bonus_rows: Array = area._current().get("formula_bonuses", []).duplicate(true)
 	combat_bonus_rows.append({"id": "ui-ac", "target": "ac", "expression": "2", "origin_id": ""})

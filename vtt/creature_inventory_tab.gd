@@ -9,6 +9,7 @@ const DocumentsTab = preload("res://vtt/creature_documents_tab.gd")
 const DocumentStore = preload("res://vtt/document_homebrew.gd")
 const DocumentInbox = preload("res://vtt/document_inbox.gd")
 const ItemImagePreview = preload("res://vtt/item_image_preview.gd")
+const CreatureLocale = preload("res://vtt/creature_gui_locale.gd")
 
 var _on_change: Callable
 var _on_status: Callable
@@ -17,6 +18,7 @@ var _filtered: Array[Dictionary] = []
 var _inventory: Array[Dictionary] = []
 var _loading: bool = false
 var _rules_version := "2014"
+var _gui_language := "it"
 var _loaded_creature_id := ""
 
 var _category_filter: OptionButton
@@ -138,6 +140,7 @@ func setup(on_change: Callable, on_status: Callable, on_document_change: Callabl
 	_inventory_list.size_flags_horizontal = Control.SIZE_EXPAND_FILL
 	_inventory_list.item_selected.connect(_on_inventory_selected)
 	_inventory_list.gui_input.connect(_on_image_click.bind(false))
+	_inventory_list.gui_input.connect(_on_inventory_checkbox_input)
 	add_child(_inventory_list)
 	var equipment_row := HFlowContainer.new()
 	equipment_row.add_theme_constant_override("h_separation", 6)
@@ -160,16 +163,26 @@ func setup(on_change: Callable, on_status: Callable, on_document_change: Callabl
 	_unequip.text = "Rimuovi equipaggiamento"
 	_unequip.pressed.connect(_unequip_selected)
 	equipment_row.add_child(_unequip)
+	# Hand and armor slots are now selected only on the Statistics sheet.
+	# Keep these internal controls for legacy save tests, not in the inventory UI.
+	equipment_row.visible = false
+	var item_switches := HFlowContainer.new()
+	item_switches.add_theme_constant_override("h_separation", 8)
+	add_child(item_switches)
+	var equip_hint := Label.new()
+	equip_hint.text = "Spunta la casella di un oggetto nell’elenco per equipaggiarlo. Armi, scudi e armature: Statistiche."
+	equip_hint.autowrap_mode = TextServer.AUTOWRAP_WORD_SMART
+	item_switches.add_child(equip_hint)
 	_attuned = CheckButton.new()
 	_attuned.text = "Sintonia"
 	_attuned.tooltip_text = "Gli oggetti che richiedono sintonia conferiscono bonus solo quando sintonizzati."
 	_attuned.toggled.connect(_set_attunement)
-	equipment_row.add_child(_attuned)
+	item_switches.add_child(_attuned)
 	_active_item = CheckButton.new()
 	_active_item.text = "Attivo"
 	_active_item.tooltip_text = "Disattiva gli effetti di un oggetto senza rimuoverlo dall'inventario."
 	_active_item.toggled.connect(_set_active_item)
-	equipment_row.add_child(_active_item)
+	item_switches.add_child(_active_item)
 
 	var actions := HBoxContainer.new()
 	actions.add_theme_constant_override("separation", 6)
@@ -783,6 +796,12 @@ func _refresh_inventory(selected_index: int = -1) -> void:
 	_inventory_list.clear()
 	for item: Dictionary in _inventory:
 		_inventory_list.add_item(_image_label(_catalog_entry(item), _inventory_label(item)))
+		var item_index: int = _inventory_list.item_count - 1
+		var category: String = ItemRules.kind(_catalog_entry(item))
+		if category not in ["weapon", "armor", "shield"]:
+			_inventory_list.set_item_icon(item_index, get_theme_icon("checked" if bool(item.get("equipped", false)) else "unchecked", "CheckBox"))
+			_inventory_list.set_item_icon_modulate(item_index, Color(0.79, 0.92, 0.97))
+			_inventory_list.set_item_tooltip(item_index, "Clicca sulla casella a sinistra per equipaggiare o riporre l’oggetto.")
 	if selected_index >= 0 and selected_index < _inventory.size():
 		_inventory_list.select(selected_index)
 		_quantity.value = int(_inventory[selected_index].get("quantity", 1))
@@ -796,19 +815,49 @@ func _refresh_inventory(selected_index: int = -1) -> void:
 	_loading = old_loading
 
 
+# ItemList has no cell checkbox mode. Its checkbox theme icons form clickable
+# controls at the start of each generic-item row; the selection remains intact.
+func _on_inventory_checkbox_input(event: InputEvent) -> void:
+	var click: InputEventMouseButton = event as InputEventMouseButton
+	if click == null or not click.pressed or click.button_index != MOUSE_BUTTON_LEFT:
+		return
+	if click.position.x > 43.0:
+		return
+	var index: int = _inventory_list.get_item_at_position(click.position, true)
+	if index < 0 or index >= _inventory.size():
+		return
+	var kind: String = ItemRules.kind(_catalog_entry(_inventory[index]))
+	if kind in ["weapon", "armor", "shield"]:
+		return
+	_inventory[index]["equipped"] = not bool(_inventory[index].get("equipped", false))
+	_refresh_inventory(index)
+	_publish()
+	get_viewport().set_input_as_handled()
+
+
+func set_gui_language(language: String) -> void:
+	if language not in ["it", "en"] or _gui_language == language:
+		return
+	_gui_language = language
+	var selected_index: int = _selected_inventory_index()
+	_refresh_inventory(selected_index)
+
+
 func _inventory_label(item: Dictionary) -> String:
 	var tags: PackedStringArray = []
 	var slots: Array = ItemRules.slots(item)
+	if bool(item.get("equipped", false)) and ItemRules.kind(_catalog_entry(item)) not in ["weapon", "armor", "shield"]:
+		tags.append(CreatureLocale.text_for("Equipaggiato", _gui_language))
 	if "main" in slots:
-		tags.append("⚔ Principale")
+		tags.append("⚔ " + CreatureLocale.text_for("Principale", _gui_language))
 	if "body" in slots:
-		tags.append("Indossata")
+		tags.append(CreatureLocale.text_for("Indossata", _gui_language))
 	if "off" in slots:
-		tags.append("🛡 Secondaria")
+		tags.append("🛡 " + CreatureLocale.text_for("Secondaria", _gui_language))
 	var equipment := (" [" + ", ".join(tags) + "]") if not tags.is_empty() else ""
 	var extra: Variant = item.get("instance_overrides", {})
 	var size_name: String = String((extra as Dictionary).get("weapon_size", "")) if extra is Dictionary else ""
-	var size_label := " · taglia " + size_name if size_name in ItemRules.WEAPON_SIZES else ""
+	var size_label := " · " + CreatureLocale.text_for("taglia", _gui_language) + " " + size_name if size_name in ItemRules.WEAPON_SIZES else ""
 	var item_name: String = String(item.get("name", ""))
 	if DocumentStore.is_document(item):
 		item_name = String(_catalog_entry(item).get("name", item_name))

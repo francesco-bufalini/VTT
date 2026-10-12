@@ -25,6 +25,7 @@ static func from_catalog(definition: Dictionary) -> Dictionary:
 		"source": String(definition.get("source", "")),
 		"quantity": 1,
 		"equipped_slots": [],
+		"equipped": false,
 		"attuned": false,
 		"active": true,
 		"instance_overrides": {}
@@ -47,6 +48,7 @@ static func from_saved(saved: Dictionary) -> Dictionary:
 		"source": String(saved.get("source", "")),
 		"quantity": clampi(int(saved.get("quantity", 1)), 1, 99999),
 		"equipped_slots": saved.get("equipped_slots", []).duplicate(true) if saved.get("equipped_slots", []) is Array else [],
+		"equipped": bool(saved.get("equipped", false)),
 		"attuned": bool(saved.get("attuned", false)),
 		"active": bool(saved.get("active", true)),
 		"instance_overrides": {}

@@ -103,14 +103,17 @@ static func definitions(record: Dictionary) -> Array[Dictionary]:
 					"weapon_size": Items.weapon_size(record, owned),
 					"base_hit": 0
 				})
-	if kind != "monster":
+	# Bestiary creatures use their own defined attacks by default. If a
+	# player explicitly assigns an improvised/unarmed hand choice, expose it.
+	var special_hands: Array = [String(record.get("hand_main_special", "none")),
+		String(record.get("hand_off_special", "none"))]
+	if kind != "monster" or "unarmed" in special_hands:
 		result.append({
 			"id": "unarmed", "name": "Colpo senz'armi",
 			"source": "unarmed", "melee": true, "range_feet": 5,
 			"proficient": true, "damage": "", "base_hit": 0
 		})
-		# Keep both fallback attacks in the underlying definitions. The sheet
-		# hides them while a weapon (but not a shield) is equipped.
+	if kind != "monster" or "improvised" in special_hands:
 		result.append({
 			"id": "improvised", "name": "Arma improvvisata",
 			"source": "improvised", "melee": true, "range_feet": 5,
@@ -164,7 +167,7 @@ static func _attack_ability_modifier(record: Dictionary, attack: Dictionary) -> 
 
 
 static func attack_bonus(record: Dictionary, attack: Dictionary, proficiency: int) -> int:
-	if String(record.get("kind", "")) == "monster" and String(attack.get("source", "")) != "item":
+	if String(record.get("kind", "")) == "monster" and String(attack.get("source", "")) not in ["item", "unarmed", "improvised"]:
 		# Published monster hit modifiers already include proficiency.
 		return Bonuses.add(record, "attack_hit:" + String(attack.get("id", "")), int(attack.get("base_hit", 0)) + _ability_delta_for_monster(record, attack))
 	var trained: bool = false
@@ -183,7 +186,7 @@ static func attack_bonus(record: Dictionary, attack: Dictionary, proficiency: in
 # published monster totals and the optional weapon enhancement.
 static func attack_bonus_formula(record: Dictionary, attack: Dictionary, proficiency: int) -> String:
 	var total: int = attack_bonus(record, attack, proficiency)
-	if String(record.get("kind", "")) == "monster" and String(attack.get("source", "")) != "item":
+	if String(record.get("kind", "")) == "monster" and String(attack.get("source", "")) not in ["item", "unarmed", "improvised"]:
 		return "Bestiario %+d + bonus cumulabili %+d = %+d (competenza già inclusa)" % [
 			int(attack.get("base_hit", 0)), Bonuses.bonus(record, "attack_hit:" + String(attack.get("id", ""))), total
 		]
@@ -215,14 +218,76 @@ static func weapon_size_dice(base: String, size_name: String) -> String:
 	return base.substr(0, found.get_end()) + " + " + extra + base.substr(found.get_end())
 
 
+# 5etools stores selected features/feats as structured character choices.
+# Do not infer a Fighting Style from merely having Fighter/Ranger levels.
+static func has_two_weapon_style(record: Dictionary) -> bool:
+	if bool(record.get("two_weapon_fighting", false)):
+		return true
+	for field: String in ["fighting_styles", "proficiency_choices", "proficiency_origins", "selected_features", "feats_catalog", "trait_choices"]:
+		var raw: Variant = record.get(field, [])
+		if not raw is Array:
+			continue
+		for value: Variant in raw:
+			var label: String = ""
+			if value is Dictionary:
+				var row: Dictionary = value
+				if bool(row.get("disabled", false)):
+					continue
+				label = String(row.get("name", row.get("label", row.get("key", ""))))
+				for field_name: String in ["fighting_style", "fightingStyle", "selected_style", "selected", "choice"]:
+					if row.has(field_name) and not row[field_name] is bool:
+						label += " " + String(row[field_name])
+			else:
+				label = String(value)
+			if label.to_lower().contains("two-weapon fighting"):
+				return true
+	return false
+
+
+static func has_dual_wielder(record: Dictionary) -> bool:
+	for raw: Variant in record.get("feats_catalog", []):
+		if raw is Dictionary and not bool((raw as Dictionary).get("disabled", false)):
+			if String((raw as Dictionary).get("name", "")).to_lower() == "dual wielder":
+				return true
+	return false
+
+
+static func offhand_bonus_attack_allowed(record: Dictionary) -> bool:
+	var inventory: Variant = record.get("inventory", [])
+	var main: Dictionary = Items.occupying(inventory, "main")
+	var off: Dictionary = Items.occupying(inventory, "off")
+	if main.is_empty() or off.is_empty():
+		return false
+	var main_entry: Dictionary = Items.entry_for(main)
+	var off_entry: Dictionary = Items.entry_for(off)
+	if Items.kind(main_entry) != "weapon" or Items.kind(off_entry) != "weapon":
+		return false
+	if String(main_entry.get("type", "")).split("|")[0].to_upper() == "R":
+		return false
+	if String(off_entry.get("type", "")).split("|")[0].to_upper() == "R":
+		return false
+	var main_light: bool = Items.has_property(main_entry, "L")
+	var off_light: bool = Items.has_property(off_entry, "L")
+	if String(record.get("rules_version", "2014")) == "2024":
+		# The 2024 Dual Wielder feat requires a Light-weapon trigger.
+		return main_light and (off_light or has_dual_wielder(record))
+	return (main_light and off_light) or has_dual_wielder(record)
+
+
 static func damage_label(record: Dictionary, attack: Dictionary) -> String:
 	var source: String = String(attack.get("source", ""))
 	var base: String = String(attack.get("damage", "")).strip_edges()
 	var modifier: int = (
 		_ability_delta_for_monster(record, attack)
-		if String(record.get("kind", "")) == "monster" and source != "item"
+		if String(record.get("kind", "")) == "monster" and source not in ["item", "unarmed", "improvised"]
 		else _attack_ability_modifier(record, attack)
 	)
+	# The off-hand bonus-action strike keeps its normal attack roll. In 5e
+	# the ability modifier is omitted from DAMAGE, unless negative or the
+	# character has selected the Two-Weapon Fighting style.
+	if source == "item" and String(attack.get("slot", "")) == "off" and not bool(attack.get("thrown", false)):
+		if offhand_bonus_attack_allowed(record) and not has_two_weapon_style(record):
+			modifier = mini(0, modifier)
 	modifier += Bonuses.bonus(record, "attack_damage:" + String(attack.get("id", "")))
 	if String(attack.get("id", "")) == "unarmed":
 		return str(maxi(1, 1 + modifier)) + " contundenti"
@@ -239,7 +304,7 @@ static func damage_label(record: Dictionary, attack: Dictionary) -> String:
 			and String(attack.get("slot", "")) == "main"
 			and Items.has_property(entry, "V")
 			and Items.occupying(inventory, "off").is_empty()
-			and bool(settings.get("two_handed", false))
+			and bool(record.get("hand_grip_two_handed", settings.get("two_handed", false)))
 			and not String(entry.get("versatile_damage", "")).is_empty()
 		):
 			base = String(entry.get("versatile_damage", ""))
@@ -299,8 +364,8 @@ static func active_range(record: Dictionary) -> float:
 	return float(range_for(record, attack))
 
 
-# The active weapon selection is also the equipment setting. No shields are
-# touched, and monsters without an inventory use their natural attacks.
+# Legacy migration helper, no longer called by the sheet. A newly owned
+# weapon is never automatically placed in an empty hand.
 static func equip_first_inventory_weapon(record: Dictionary) -> bool:
 	var raw: Variant = record.get("inventory", [])
 	if not raw is Array or Items.has_equipped_weapon(raw):

@@ -173,7 +173,65 @@ func run() -> void:
 	tab._equip_selected("main")
 	assert("main" in ItemRules.slots(events.back()[2]))
 	assert(ItemRules.occupying(events.back(), "off").is_empty(), "Two-handed main weapon clears secondary hand")
+	# The inventory checkbox is independent of hand/body slots.
+	var trinket := {"id": "test:trinket", "name": "Trinket", "quantity": 1, "type": "G",
+		"equipped": false, "equipped_slots": []}
+	assert(not ItemRules.origin_active(trinket), "An owned generic item is not equipped by default")
+	trinket["equipped"] = true
+	assert(ItemRules.origin_active(trinket), "Generic equipment has no slot limit")
+
+	# Natural AC is an expression; empty hands still use ordinary DEX.
+	var store := PlayerStore.new()
+	var natural := store.normalize_character({
+		"id": "test:natural", "kind": "character",
+		"abilities": {"str": 10, "dex": 18, "con": 10, "int": 10, "wis": 10, "cha": 10},
+		"inventory": []
+	})
+	assert(natural.get("armor_natural_formula", "") == "10 + dex_mod"
+		and natural.armor_class == 14, "The default unarmored formula is 10 + DEX")
+	natural["armor_natural_formula"] = "13 + dex_mod"
+	assert(store.normalize_character(natural).armor_class == 17,
+		"Custom unarmored formulas must be persisted and evaluated")
+	var main_shield := shield.duplicate(true)
+	main_shield["equipped_slots"] = ["main"]
+	assert(ItemRules.valid_slot(main_shield, "main")
+		and ItemRules.shield_bonus([main_shield]) == 2,
+		"A shield may be chosen in either hand")
+	assert(ItemRules.shield_bonus([main_shield, shield]) == 2,
+		"Two shields cannot stack their base AC benefits")
+
+	# Finesse is only a display filter; the 2014 offhand rule requires Light.
+	var first_dagger := _item("test:first_dagger", "First dagger", "M", "1d4", ["L", "F"])
+	first_dagger["equipped_slots"] = ["main"]
+	var second_dagger := _item("test:second_dagger", "Second dagger", "M", "1d4", ["L", "F"])
+	second_dagger["equipped_slots"] = ["off"]
+	var dual := _record([first_dagger, second_dagger])
+	var second_attack := _attack(AttackData.definitions(dual), "item:off:test:second_dagger")
+	assert(AttackData.offhand_bonus_attack_allowed(dual))
+	assert(AttackData.attack_bonus(dual, second_attack, 2) == 4,
+		"Offhand attack rolls retain the full ability modifier")
+	assert(not "+4" in AttackData.damage_label(dual, second_attack),
+		"Offhand bonus action damage omits positive DEX without the fighting style")
+	dual["fighting_styles"] = ["Two-Weapon Fighting"]
+	assert("+4" in AttackData.damage_label(dual, second_attack),
+		"Selected structured Two-Weapon Fighting style restores offhand ability damage")
+	dual["fighting_styles"] = []
+	first_dagger["properties"] = ["F"]
+	second_dagger["properties"] = ["F"]
+	dual["inventory"] = [first_dagger, second_dagger]
+	assert(not AttackData.offhand_bonus_attack_allowed(dual),
+		"Finesse without Light does not grant the bonus-action attack")
+	dual["feats_catalog"] = [{"name": "Dual Wielder", "source": "PHB"}]
+	assert(AttackData.offhand_bonus_attack_allowed(dual),
+		"Dual Wielder overrides the 2014 Light requirement")
+	# Explicit grip selection takes precedence over a legacy per-attack toggle.
+	var versatile_record := _record([sword])
+	versatile_record["hand_grip_two_handed"] = true
+	assert("1d10" in AttackData.damage_label(versatile_record,
+		_attack(AttackData.definitions(versatile_record), "item:test:longsword")),
+		"Two-hand versatile grip uses its dedicated damage dice")
+
 	tab.queue_free()
 	await process_frame
-	print("PASS: 2014 structured item properties, equipped hands, shield AC, attack ability, reach, ranged and versatile damage")
+	print("PASS: equipment, natural AC, both shields, dual wield damage, light/style/feat and versatile grip")
 	quit()

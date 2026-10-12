@@ -118,8 +118,13 @@ var _hp_quick_dice_row: HBoxContainer
 var _hp_formula_status: Label
 var _size_choice: OptionButton
 var _attack_ability: OptionButton
-var _weapon_picker: OptionButton
-var _weapon_options: Array[Dictionary] = []
+var _hand_main_picker: OptionButton
+var _hand_off_picker: OptionButton
+var _hand_options: Dictionary = {}
+var _show_offhand_all: CheckButton
+var _armor_picker: OptionButton
+var _armor_options: Array[Dictionary] = []
+var _natural_ac_formula: LineEdit
 var _attack_rows: VBoxContainer
 var _attack_hit_labels: Dictionary = {}
 var _attack_damage_labels: Dictionary = {}
@@ -168,10 +173,13 @@ var _picker_current := false
 var _chosen_miniature_id := ""
 var _tracker_rows: VBoxContainer
 var _trackers_ui: Node
+var _trackers_toggle_button: Button
 var _bonuses_ui: Node
+var _bonuses_toggle_button: Button
 var _proficiencies_ui: Node
+var _proficiencies_toggle_button: Button
 var _feats_ui: Node
-var _editor_section_picker: OptionButton
+var _feats_toggle_button: Button
 var _traits_ui: Node
 var _condition_rows: VBoxContainer
 var _effect_dialog: AcceptDialog
@@ -570,38 +578,71 @@ func _build_ui() -> void:
 	columns.add_child(_tabs)
 	var form := _add_sheet_tab(_tabs, "Info")
 	var statistics_tab := _add_sheet_tab(_tabs, "Statistiche")
-	# A single selector replaces the four independent expandable editors.
-	# "Niente" is the default; selecting an editor opens only its section.
-	var editor_select_row := HBoxContainer.new()
-	editor_select_row.add_theme_constant_override("separation", 8)
-	statistics_tab.add_child(editor_select_row)
-	_add_label(editor_select_row, "Visualizza e modifica")
-	_editor_section_picker = OptionButton.new()
-	_editor_section_picker.fit_to_longest_item = false
-	_editor_section_picker.custom_minimum_size = Vector2(185, 30)
-	_editor_section_picker.size_flags_horizontal = Control.SIZE_SHRINK_BEGIN
-	_editor_section_picker.tooltip_text = "Scegli una sezione da visualizzare o modificare"
-	for section_name: String in ["Niente", "Competenze", "Talenti", "Bonus", "Tracker"]:
-		_editor_section_picker.add_item(section_name)
-	_editor_section_picker.select(0)
-	_editor_section_picker.item_selected.connect(_select_details_editor)
-	editor_select_row.add_child(_editor_section_picker)
+	_proficiencies_toggle_button = Button.new()
+	_proficiencies_toggle_button.text = "▸ Visualizza competenze"
+	_proficiencies_toggle_button.tooltip_text = "Mostra o nasconde le origini e le competenze della creatura"
+	statistics_tab.add_child(_proficiencies_toggle_button)
 	_proficiencies_ui = ProficiencyTab.new()
-	_proficiencies_ui.hide()
+	_proficiencies_ui.visible = false
 	statistics_tab.add_child(_proficiencies_ui)
 	_proficiencies_ui.call("setup", Callable(self, "_on_proficiencies_updated"))
+	_proficiencies_toggle_button.pressed.connect(func() -> void:
+		if not _proficiencies_ui.visible and _proficiencies_stale:
+			var record: Dictionary = _current()
+			_proficiencies_ui.call("load_record", record)
+			_proficiencies_stale = false
+		_proficiencies_ui.visible = not _proficiencies_ui.visible
+		_proficiencies_toggle_button.text = "▾ Nascondi competenze" if _proficiencies_ui.visible else "▸ Visualizza competenze"
+		call_deferred("_update_stats_column_heights")
+	)
+	_feats_toggle_button = Button.new()
+	_feats_toggle_button.text = "▸ Visualizza talenti"
+	_feats_toggle_button.tooltip_text = "Mostra o nasconde le origini dei talenti e i talenti posseduti"
+	statistics_tab.add_child(_feats_toggle_button)
 	_feats_ui = FeatsTab.new()
 	_feats_ui.hide()
 	statistics_tab.add_child(_feats_ui)
 	_feats_ui.call("setup", Callable(self, "_on_feats_updated"))
+	_feats_toggle_button.pressed.connect(func() -> void:
+		if not _feats_ui.visible and _feats_stale:
+			_feats_ui.call("load_record", _current())
+			_feats_stale = false
+		_feats_ui.visible = not _feats_ui.visible
+		_feats_toggle_button.text = "▾ Nascondi talenti" if _feats_ui.visible else "▸ Visualizza talenti"
+		call_deferred("_update_stats_column_heights")
+	)
+	_bonuses_toggle_button = Button.new()
+	_bonuses_toggle_button.text = "▸ Visualizza bonus"
+	_bonuses_toggle_button.tooltip_text = "Visualizza i bonus cumulabili di ogni valore con cornice blu"
+	statistics_tab.add_child(_bonuses_toggle_button)
 	_bonuses_ui = BonusTab.new()
 	_bonuses_ui.hide()
 	statistics_tab.add_child(_bonuses_ui)
 	_bonuses_ui.call("setup", Callable(self, "_on_bonuses_updated"))
+	_bonuses_toggle_button.pressed.connect(func() -> void:
+		if not _bonuses_ui.visible and _bonuses_stale:
+			_bonuses_ui.call("load_record", _current())
+			_bonuses_stale = false
+		_bonuses_ui.visible = not _bonuses_ui.visible
+		_bonuses_toggle_button.text = "▾ Nascondi bonus" if _bonuses_ui.visible else "▸ Visualizza bonus"
+		call_deferred("_update_stats_column_heights")
+	)
+	_trackers_toggle_button = Button.new()
+	_trackers_toggle_button.text = "▸ Visualizza tracker"
+	_trackers_toggle_button.tooltip_text = "Mostra le risorse, i loro massimi e le origini che le concedono"
+	statistics_tab.add_child(_trackers_toggle_button)
 	_trackers_ui = TrackerTab.new()
 	_trackers_ui.hide()
 	statistics_tab.add_child(_trackers_ui)
 	_trackers_ui.call("setup", Callable(self, "_on_trackers_updated"))
+	_trackers_toggle_button.pressed.connect(func() -> void:
+		if not _trackers_ui.visible and _trackers_stale:
+			_trackers_ui.call("load_record", _current())
+			_trackers_stale = false
+		_trackers_ui.visible = not _trackers_ui.visible
+		_trackers_toggle_button.text = "▾ Nascondi tracker" if _trackers_ui.visible else "▸ Visualizza tracker"
+		call_deferred("_update_stats_column_heights")
+	)
 	# Always keep skills and combat side by side (45% / 55%).  Scroll
 	# their oversized contents locally instead of expanding the whole sheet.
 	_statistics_columns = HBoxContainer.new()
@@ -804,7 +845,24 @@ func _build_ui() -> void:
 	temp_health.add_child(_ac_effective)
 	_ac = _spin(temp_health, 0, 99)
 	_ac.custom_minimum_size = Vector2(62, 36)
-	_ac.tooltip_text = "Classe Armatura base, prima dei bonus"
+	_ac.tooltip_text = "Base precedente (compatibilità)"
+	_ac.hide()
+	_armor_picker = OptionButton.new()
+	_armor_picker.custom_minimum_size.x = 118
+	_armor_picker.tooltip_text = "Armatura indossata; scegli Naturale per utilizzare la formula senza armatura."
+	_armor_picker.item_selected.connect(_on_armor_selected)
+	temp_health.add_child(_armor_picker)
+	_natural_ac_formula = LineEdit.new()
+	_natural_ac_formula.custom_minimum_size.x = 145
+	_natural_ac_formula.placeholder_text = "10 + dex_mod"
+	_natural_ac_formula.tooltip_text = "Formula per la CA senza armatura: per esempio 10 + dex_mod, 13 + dex_mod o 16. Le variabili seguono le formule dei bonus."
+	_natural_ac_formula.text_submitted.connect(func(_value: String) -> void: _save())
+	_natural_ac_formula.focus_exited.connect(func() -> void: _save())
+	var natural_row := HBoxContainer.new()
+	natural_row.add_theme_constant_override("separation", 8)
+	defense_content.add_child(natural_row)
+	_add_label(natural_row, "CA naturale · formula")
+	natural_row.add_child(_natural_ac_formula)
 	_install_formula("ac", _ac_effective, [_ac], ["Base"])
 	_ac.size_flags_horizontal = Control.SIZE_SHRINK_BEGIN
 	_ac_proficiency_warning = Label.new()
@@ -1039,29 +1097,31 @@ func _build_ui() -> void:
 	_attack_ability.tooltip_text = "Preferenza per armi Finesse: le armi da mischia normali usano Forza, quelle a distanza Destrezza. I valori del bestiario includono la competenza."
 	_attack_ability.item_selected.connect(_on_attack_ability_changed)
 	preference_row.add_child(_attack_ability)
-	var weapon_bar := HBoxContainer.new()
-	weapon_bar.add_theme_constant_override("separation", 5)
-	combat_column.add_child(weapon_bar)
-	combat_column.move_child(weapon_bar, attack_header.get_index())
-	var weapon_caption := Label.new()
-	weapon_caption.text = "Arma attiva"
-	weapon_bar.add_child(weapon_caption)
-	var previous_weapon := Button.new()
-	previous_weapon.text = "‹"
-	previous_weapon.tooltip_text = "Arma / attacco precedente"
-	previous_weapon.pressed.connect(_step_active_weapon.bind(-1))
-	weapon_bar.add_child(previous_weapon)
-	_weapon_picker = OptionButton.new()
-	_weapon_picker.size_flags_horizontal = Control.SIZE_EXPAND_FILL
-	_weapon_picker.clip_text = true
-	_weapon_picker.tooltip_text = "Scegli un'arma dall'inventario o un attacco naturale; la portata visibile sulla mappa seguirà questa scelta."
-	_weapon_picker.item_selected.connect(_on_active_weapon_selected)
-	weapon_bar.add_child(_weapon_picker)
-	var next_weapon := Button.new()
-	next_weapon.text = "›"
-	next_weapon.tooltip_text = "Arma / attacco successivo"
-	next_weapon.pressed.connect(_step_active_weapon.bind(1))
-	weapon_bar.add_child(next_weapon)
+	var hand_bar := HFlowContainer.new()
+	hand_bar.add_theme_constant_override("h_separation", 9)
+	hand_bar.add_theme_constant_override("v_separation", 5)
+	combat_column.add_child(hand_bar)
+	combat_column.move_child(hand_bar, attack_header.get_index())
+	_add_label(hand_bar, "Mano principale")
+	_hand_main_picker = OptionButton.new()
+	_hand_main_picker.custom_minimum_size.x = 170
+	_hand_main_picker.clip_text = true
+	_hand_main_picker.item_selected.connect(_on_hand_selected.bind("main"))
+	hand_bar.add_child(_hand_main_picker)
+	_add_label(hand_bar, "Mano secondaria")
+	_hand_off_picker = OptionButton.new()
+	_hand_off_picker.custom_minimum_size.x = 170
+	_hand_off_picker.clip_text = true
+	_hand_off_picker.item_selected.connect(_on_hand_selected.bind("off"))
+	hand_bar.add_child(_hand_off_picker)
+	_show_offhand_all = CheckButton.new()
+	_show_offhand_all.text = "Tutte le armi"
+	_show_offhand_all.tooltip_text = "Mostra anche armi senza Finesse nella mano secondaria. Finesse non è un requisito per combattere con due armi: normalmente serve la proprietà Leggera."
+	_show_offhand_all.button_pressed = false
+	_show_offhand_all.toggled.connect(func(_enabled: bool) -> void:
+		_refresh_equipment_pickers(_current())
+	)
+	hand_bar.add_child(_show_offhand_all)
 	_attack_rows = VBoxContainer.new()
 	_attack_rows.add_theme_constant_override("separation", 7)
 	combat_column.add_child(_attack_rows)
@@ -1430,6 +1490,8 @@ func _on_creature_language_selected(index: int) -> void:
 func _refresh_creature_language() -> void:
 	if _panel == null:
 		return
+	if _inventory_ui != null and _inventory_ui.has_method("set_gui_language"):
+		_inventory_ui.call("set_gui_language", _creature_language)
 	CreatureLocale.apply(_panel, _creature_language)
 	# Dialogs are not all descendants of the archive panel.
 	for dialog: Node in [
@@ -1932,46 +1994,17 @@ func _with_effective_modifiers(record: Dictionary) -> Dictionary:
 	return context
 
 
-# Shared expansion state for the four editors. The other panels stay
-# instantiated, but only the selected one is visible, preserving their data.
-func _select_details_editor(index: int) -> void:
-	if _editor_section_picker == null:
-		return
-	var choice: int = clampi(index, 0, 4)
-	_editor_section_picker.select(choice)
-	_proficiencies_ui.visible = choice == 1
-	_feats_ui.visible = choice == 2
-	_bonuses_ui.visible = choice == 3
-	_trackers_ui.visible = choice == 4
-	if choice > 0:
-		var record: Dictionary = _current()
-		if not record.is_empty():
-			match choice:
-				1:
-					if _proficiencies_stale:
-						_proficiencies_ui.call("load_record", record)
-						_proficiencies_stale = false
-				2:
-					if _feats_stale:
-						_feats_ui.call("load_record", record)
-						_feats_stale = false
-				3:
-					if _bonuses_stale:
-						_bonuses_ui.call("load_record", record)
-						_bonuses_stale = false
-				4:
-					if _trackers_stale:
-						_trackers_ui.call("load_record", record)
-						_trackers_stale = false
-	call_deferred("_update_stats_column_heights")
-
-
 func _on_formula_bonus_requested(key: String) -> void:
 	if _bonuses_ui == null or key.is_empty():
 		return
 	_tabs.current_tab = 1
-	_select_details_editor(3)
+	if _bonuses_stale:
+		_bonuses_ui.call("load_record", _current())
+		_bonuses_stale = false
+	_bonuses_ui.show()
+	_bonuses_toggle_button.text = "▾ Nascondi bonus"
 	_bonuses_ui.call("select_target", key)
+	call_deferred("_update_stats_column_heights")
 
 
 func _recalculate_bonus_mirrors(record: Dictionary) -> void:
@@ -2070,6 +2103,8 @@ func _live_stats_record() -> Dictionary:
 	record["abilities"] = abilities
 	if _ac != null:
 		record["armor_class_base"] = int(_ac.value)
+	if _natural_ac_formula != null:
+		record["armor_natural_formula"] = _natural_ac_formula.text.strip_edges()
 	if _max_hp != null:
 		record["max_hp_base"] = int(_max_hp.value)
 	if _second_form_max_hp != null:
@@ -2504,16 +2539,7 @@ func _on_selected(index: int) -> void:
 
 
 func _load_form(record: Dictionary) -> void:
-	# Initialize once for old sheets. Afterwards intentional sheathing and
-	# natural-attack selections must never be undone on a later load.
-	if String(record.get("equipped_attack_id", "")).is_empty():
-		AttackData.equip_first_inventory_weapon(record)
-		record["equipped_attack_id"] = String(AttackData.active_attack(record).get("id", ""))
-		record["reach_feet"] = AttackData.active_range(record)
-		if String(record.get("kind", "")) == "monster":
-			record["reach_is_custom"] = true
-		if _archive.save(record) == OK:
-			_replace_current_record(record)
+	# Empty hands are intentional. Loading a sheet never auto-equips weapons.
 	_refresh_trackers(record)
 	_loading = true
 	_name.text = String(record.get("name", ""))
@@ -2534,6 +2560,13 @@ func _load_form(record: Dictionary) -> void:
 		biography = "\n\n".join(legacy_parts)
 	_biography.text = biography
 	_ac.value = maxi(0, int(record.get("armor_class_base", record.get("armor_class", 10))))
+	if _natural_ac_formula != null:
+		var default_ac_formula: String = str(record.get("armor_class_base", 10))
+		if String(record.get("kind", "")) == "monster":
+			default_ac_formula = str(Rules.monster_armor_class(record.get("stat_block", {})))
+		elif int(record.get("armor_class_base", 10)) == 10:
+			default_ac_formula = "10 + dex_mod"
+		_natural_ac_formula.text = String(record.get("armor_natural_formula", default_ac_formula))
 	# Initiative depends on DEX: compute only after ability controls load.
 	_skill_ranks.clear()
 	_skill_ranks_custom = bool(record.get("skill_ranks_custom", false))
@@ -2890,7 +2923,7 @@ func _refresh_skill_values(record: Dictionary) -> void:
 		var value: int = BonusRules.value(live, "skill:" + key)
 		var marker: String = "" if rank == 0 else " 🎓" if rank == 1 else " 🎓🎓"
 		(_skill_buttons[key] as Label).text = String(skill["label"]) + " · " + ability.to_upper() + marker
-		(_skill_buttons[key] as Label).tooltip_text = ["Nessuna competenza", "Competenza", "Maestria"][clampi(rank, 0, 2)] + " · Modifica da Visualizza e modifica → Competenze"
+		(_skill_buttons[key] as Label).tooltip_text = ["Nessuna competenza", "Competenza", "Maestria"][clampi(rank, 0, 2)] + " · Modifica da Visualizza competenze"
 		var ability_modifier: int = BonusRules.value(live, "ability_mod:" + ability)
 		var extra: int = BonusRules.bonus(live, "skill:" + key)
 		_set_formula("skill:" + key, "%+d" % value,
@@ -2944,107 +2977,194 @@ func _refresh_skill_values(record: Dictionary) -> void:
 	_formula_snapshot_override = {}
 
 
+# A hand is a separate choice of none, special strike, shield or owned item.
+# Physical equipment remains stored in equipped_slots on the inventory row.
+func _offhand_locked(record: Dictionary) -> bool:
+	var main: Dictionary = ItemRules.occupying(record.get("inventory", []), "main")
+	if main.is_empty():
+		return false
+	var entry: Dictionary = ItemRules.entry_for(main)
+	return ItemRules.kind(entry) == "weapon" and (ItemRules.is_two_handed(entry) or bool(record.get("hand_grip_two_handed", false)))
+
+
 func _refresh_weapon_picker(record: Dictionary) -> void:
-	if _weapon_picker == null:
+	_refresh_equipment_pickers(record)
+
+
+func _refresh_equipment_pickers(record: Dictionary) -> void:
+	if _hand_main_picker == null or _hand_off_picker == null or _armor_picker == null:
 		return
-	_weapon_picker.clear()
-	_weapon_options.clear()
-	var inventory: Variant = record.get("inventory", [])
-	# Inventory weapons appear even when sheathed. Selecting one equips it.
-	if inventory is Array:
-		for index: int in range((inventory as Array).size()):
-			var value: Variant = (inventory as Array)[index]
-			if not value is Dictionary:
+	var raw: Variant = record.get("inventory", [])
+	var inventory: Array = raw if raw is Array else []
+	_armor_picker.clear()
+	_armor_options.clear()
+	_armor_picker.add_item("Naturale")
+	_armor_options.append({"kind": "none"})
+	var selected_armor: int = 0
+	for index: int in range(inventory.size()):
+		if not inventory[index] is Dictionary:
+			continue
+		var owned: Dictionary = inventory[index]
+		if int(owned.get("quantity", 0)) <= 0:
+			continue
+		var entry: Dictionary = ItemRules.entry_for(owned)
+		if ItemRules.kind(entry) != "armor":
+			continue
+		_armor_picker.add_item(String(entry.get("name", owned.get("name", "Armatura"))))
+		_armor_options.append({"kind": "item", "index": index})
+		if "body" in ItemRules.slots(owned):
+			selected_armor = _armor_options.size() - 1
+	_armor_picker.select(selected_armor)
+	for hand: String in ["main", "off"]:
+		var picker: OptionButton = _hand_main_picker if hand == "main" else _hand_off_picker
+		picker.clear()
+		var choices: Array[Dictionary] = []
+		if hand == "off" and _offhand_locked(record):
+			picker.add_item("Occupata · due mani")
+			picker.disabled = true
+			_hand_options[hand] = choices
+			continue
+		picker.disabled = false
+		for special: String in ["none", "unarmed", "improvised"]:
+			var labels: Dictionary = {"none": "Niente", "unarmed": "Colpo senz'armi", "improvised": "Arma improvvisata"}
+			var label: String = String(labels.get(special, special))
+			picker.add_item(label)
+			choices.append({"kind": "special", "value": special})
+		var occupied_index: int = -1
+		for index: int in range(inventory.size()):
+			if not inventory[index] is Dictionary:
 				continue
-			var owned: Dictionary = value
+			var owned: Dictionary = inventory[index]
 			if int(owned.get("quantity", 0)) <= 0:
 				continue
 			var entry: Dictionary = ItemRules.entry_for(owned)
-			if ItemRules.kind(entry) != "weapon":
+			var item_kind: String = ItemRules.kind(entry)
+			if item_kind not in ["weapon", "shield"] or not ItemRules.valid_slot(entry, hand):
 				continue
-			_weapon_picker.add_item(String(entry.get("name", owned.get("name", "Arma"))))
-			_weapon_options.append({"kind": "item", "index": index, "id": "item:" + String(owned.get("id", ""))})
-	# All bestiary attacks remain selectable for monsters, including natural
-	# weapons that have no corresponding entry in the inventory.
-	for attack: Dictionary in AttackData.definitions(record):
-		if String(attack.get("source", "")) == "item":
+			var is_selected: bool = hand in ItemRules.slots(owned)
+			if hand == "off" and item_kind == "weapon" and not _show_offhand_all.button_pressed and not ItemRules.has_property(entry, "F") and not is_selected:
+				continue
+			var item_name: String = String(entry.get("name", owned.get("name", "Oggetto")))
+			var grips: Array = [false]
+			if item_kind == "weapon" and hand == "main" and ItemRules.has_property(entry, "V"):
+				grips = [false, true]
+			elif item_kind == "weapon" and ItemRules.is_two_handed(entry):
+				grips = [true]
+			for grip: Variant in grips:
+				var two_hands: bool = bool(grip)
+				picker.add_item(item_name + (" · due mani" if two_hands else " · una mano") if item_kind == "weapon" else item_name)
+				choices.append({"kind": "item", "index": index, "two_handed": two_hands})
+				if is_selected and (item_kind != "weapon" or (two_hands == (bool(record.get("hand_grip_two_handed", false)) or ItemRules.is_two_handed(entry)))):
+					occupied_index = choices.size() - 1
+		var special_value: String = String(record.get("hand_" + hand + "_special", "none"))
+		var selected: int = 0
+		if occupied_index >= 0:
+			selected = occupied_index
+		elif special_value == "unarmed":
+			selected = 1
+		elif special_value == "improvised":
+			selected = 2
+		picker.select(selected)
+		_hand_options[hand] = choices
+
+
+func _on_hand_selected(index: int, hand: String) -> void:
+	if _loading:
+		return
+	var options: Array = _hand_options.get(hand, [])
+	if index < 0 or index >= options.size():
+		return
+	var record: Dictionary = _current()
+	if record.is_empty() or (hand == "off" and _offhand_locked(record)):
+		return
+	var option: Dictionary = options[index]
+	var rows: Array = record.get("inventory", []).duplicate(true)
+	var chosen_index: int = int(option.get("index", -1)) if String(option.get("kind", "")) == "item" else -1
+	var grip: bool = bool(option.get("two_handed", false))
+	var target_kind: String = ""
+	if chosen_index >= 0 and chosen_index < rows.size():
+		target_kind = ItemRules.kind(ItemRules.entry_for(rows[chosen_index]))
+	for i: int in range(rows.size()):
+		if not rows[i] is Dictionary:
 			continue
-		# Player fallback attacks stay selectable even when a weapon is equipped.
-		_weapon_picker.add_item(String(attack.get("name", "Attacco")))
-		_weapon_options.append({"kind": "attack", "id": String(attack.get("id", ""))})
-	if _weapon_options.is_empty():
-		_weapon_picker.add_item("Nessuna arma")
-		_weapon_picker.disabled = true
-		return
-	_weapon_picker.disabled = false
-	var active: String = String(AttackData.active_attack(record).get("id", ""))
-	var selected_inventory_index: int = int(record.get("equipped_inventory_index", -1))
-	for i: int in range(_weapon_options.size()):
-		var option: Dictionary = _weapon_options[i]
-		if String(option.get("id", "")) == active and (
-			String(option.get("kind", "")) != "item"
-			or selected_inventory_index < 0
-			or int(option.get("index", -1)) == selected_inventory_index
-		):
-			_weapon_picker.select(i)
-			return
-	_weapon_picker.select(0)
+		var owned: Dictionary = rows[i]
+		var slots: Array = ItemRules.slots(owned)
+		slots.erase(hand)
+		if hand == "main" and grip:
+			slots.erase("off")
+		if i == chosen_index:
+			# One physical item cannot be held in both hands as two copies.
+			if int(owned.get("quantity", 1)) < 2:
+				slots.erase("off" if hand == "main" else "main")
+			if not hand in slots:
+				slots.append(hand)
+		owned["equipped_slots"] = slots
+		rows[i] = owned
+	record["inventory"] = rows
+	record["hand_" + hand + "_special"] = String(option.get("value", "none")) if chosen_index < 0 else "none"
+	if hand == "main":
+		record["hand_grip_two_handed"] = grip
+		if grip:
+			record["hand_off_special"] = "none"
+	var active_id: String = ""
+	if chosen_index >= 0 and target_kind == "weapon":
+		active_id = "item:" + ("off:" if hand == "off" else "") + String(rows[chosen_index].get("id", ""))
+	elif String(option.get("value", "")) in ["unarmed", "improvised"]:
+		active_id = String(option.get("value", ""))
+	elif String(record.get("kind", "")) == "monster":
+		active_id = String(record.get("equipped_attack_id", ""))
+	record["equipped_attack_id"] = active_id
+	_save_equipment_record(record)
 
 
-func _step_active_weapon(direction: int) -> void:
-	if _weapon_options.is_empty() or _weapon_picker == null:
-		return
-	var next: int = posmod(_weapon_picker.selected + direction, _weapon_options.size())
-	_weapon_picker.select(next)
-	_on_active_weapon_selected(next)
-
-
-func _on_active_weapon_selected(index: int) -> void:
-	if _loading or index < 0 or index >= _weapon_options.size():
+func _on_armor_selected(index: int) -> void:
+	if _loading or index < 0 or index >= _armor_options.size():
 		return
 	var record: Dictionary = _current()
 	if record.is_empty():
 		return
-	var choice: Dictionary = _weapon_options[index]
-	if String(choice.get("kind", "")) == "item":
-		var inventory: Array = record.get("inventory", []).duplicate(true)
-		var selected: int = int(choice.get("index", -1))
-		if selected < 0 or selected >= inventory.size():
-			return
-		var chosen: Dictionary = inventory[selected]
-		var two_handed: bool = ItemRules.is_two_handed(ItemRules.entry_for(chosen))
-		# Exactly one main-hand weapon; keep an unrelated shield or offhand
-		# weapon unless the new weapon requires both hands.
-		for i: int in range(inventory.size()):
-			var owned: Dictionary = inventory[i]
-			var slots: Array = ItemRules.slots(owned)
-			slots.erase("main")
-			if two_handed or (i == selected and int(owned.get("quantity", 1)) == 1):
-				slots.erase("off")
-			if i == selected:
-				slots.append("main")
-			owned["equipped_slots"] = slots
-			inventory[i] = owned
-		record["inventory"] = inventory
-		record["equipped_inventory_index"] = selected
-	else:
-		# Bestiary natural attacks can be selected without deleting gear.
-		record.erase("equipped_inventory_index")
-	record["equipped_attack_id"] = String(choice.get("id", ""))
-	record["reach_feet"] = AttackData.active_range(record)
+	var rows: Array = record.get("inventory", []).duplicate(true)
+	var chosen: int = int(_armor_options[index].get("index", -1))
+	for i: int in range(rows.size()):
+		if not rows[i] is Dictionary:
+			continue
+		var owned: Dictionary = rows[i]
+		var slots: Array = ItemRules.slots(owned)
+		slots.erase("body")
+		if i == chosen:
+			slots.append("body")
+		owned["equipped_slots"] = slots
+		rows[i] = owned
+	record["inventory"] = rows
+	_save_equipment_record(record)
+
+
+func _save_equipment_record(record: Dictionary) -> void:
+	_recalculate_bonus_mirrors(record)
 	if String(record.get("kind", "")) == "monster":
 		record["reach_is_custom"] = true
 	var error: Error = _archive.save(record)
 	if error != OK:
-		_set_status("Arma attiva non salvata: " + error_string(error))
+		_set_status("Equipaggiamento non salvato: " + error_string(error))
 		return
 	_replace_current_record(record)
 	if _inventory_ui != null:
 		_inventory_ui.call("load_record", record)
-	_refresh_attacks(record)
-	_refresh_attack_values(record)
-	_apply_sheet_properties(record)
+	_refresh_formula_dependents(record)
 	_sync_token_health(record)
+	_apply_sheet_properties(record)
+	if _bonuses_ui != null:
+		_bonuses_ui.call("load_record", record)
+
+
+func _activate_attack(attack_id: String) -> void:
+	if _loading:
+		return
+	var record: Dictionary = _current()
+	if record.is_empty():
+		return
+	record["equipped_attack_id"] = attack_id
+	_save_equipment_record(record)
 
 
 func _roll_attack_from_sheet(attack_id: String, damage: bool) -> void:
@@ -3066,7 +3186,7 @@ func _roll_attack_from_sheet(attack_id: String, damage: bool) -> void:
 		expression = AttackData.damage_expression(record, attack)
 		label += " · Danni"
 	else:
-		if String(record.get("kind", "")) == "monster" and String(attack.get("source", "")) != "item" and not bool(attack.get("hit_known", false)):
+		if String(record.get("kind", "")) == "monster" and String(attack.get("source", "")) not in ["item", "unarmed", "improvised"] and not bool(attack.get("hit_known", false)):
 			_set_status("Tiro per colpire non specificato nel bestiario.")
 			return
 		var bonus: int = AttackData.attack_bonus(record, attack, _creature_proficiency(record))
@@ -3143,10 +3263,16 @@ func _refresh_attacks(record: Dictionary) -> void:
 		header.add_child(name_label)
 		if active:
 			var active_label := Label.new()
-			active_label.text = "IN USO"
+			active_label.text = "PORTATA ATTIVA"
 			active_label.add_theme_font_size_override("font_size", 11)
 			active_label.add_theme_color_override("font_color", Color(0.76, 0.84, 0.68))
 			header.add_child(active_label)
+		else:
+			var select_reach := Button.new()
+			select_reach.text = "Usa portata"
+			select_reach.tooltip_text = "Attiva questo attacco per la portata tattica, senza cambiare l'equipaggiamento."
+			select_reach.pressed.connect(_activate_attack.bind(attack_id))
+			header.add_child(select_reach)
 		# Hit and damage each have their own self-contained line. HFlow
 		# wraps the dice button if the pane is narrow, without clipping it.
 		var hit_row := HFlowContainer.new()
@@ -3250,15 +3376,7 @@ func _refresh_attacks(record: Dictionary) -> void:
 			size_chip.modulate.a = 0.78
 			size_chip.tooltip_text = "Modificabile nell'inventario; in assenza di scelta segue la taglia della creatura."
 			chips.add_child(size_chip)
-			if ItemRules.has_property(item_data, "V") and String(attack.get("slot", "")) == "main":
-				var versatile := CheckBox.new()
-				versatile.text = "Due mani (versatile)"
-				versatile.tooltip_text = "Usa il dado versatile solo quando la mano secondaria è libera"
-				versatile.button_pressed = bool(AttackData.override_for(record, attack_id).get("two_handed", false))
-				versatile.disabled = not ItemRules.occupying(record.get("inventory", []), "off").is_empty()
-				versatile.toggled.connect(_on_attack_two_handed_changed.bind(attack_id))
-				settings.add_child(versatile)
-		if String(record.get("kind", "")) == "monster" and String(attack.get("source", "")) != "item":
+		if String(record.get("kind", "")) == "monster" and String(attack.get("source", "")) not in ["item", "unarmed", "improvised"]:
 			var fixed := Label.new()
 			fixed.text = "Competenza inclusa (bestiario)"
 			fixed.tooltip_text = "Il bonus al tiro per colpire pubblicato da 5etools include già la competenza"
@@ -3314,14 +3432,19 @@ func _refresh_attack_values(record: Dictionary) -> void:
 		if not _attack_hit_labels.has(attack_id):
 			continue
 		var hit: int = AttackData.attack_bonus(record, attack, _creature_proficiency(record))
-		if String(record.get("kind", "")) == "monster" and String(attack.get("source", "")) != "item" and not bool(attack.get("hit_known", false)):
+		if String(record.get("kind", "")) == "monster" and String(attack.get("source", "")) not in ["item", "unarmed", "improvised"] and not bool(attack.get("hit_known", false)):
 			_set_formula("attack_hit:" + attack_id, "n.d.", "Bonus per colpire non presente nei dati del bestiario")
 		else:
 			_set_formula("attack_hit:" + attack_id, "%+d" % hit,
 				AttackData.attack_bonus_formula(record, attack, _creature_proficiency(record)))
 		var damage: String = AttackData.damage_label(record, attack)
-		_set_formula("attack_damage:" + attack_id, damage,
-			"Danni: %s. Include bonus di caratteristica, arma e concessioni attive quando applicabili." % damage)
+		var damage_detail: String = "Danni: %s. Include i bonus di caratteristica, arma e concessioni applicabili." % damage
+		if String(attack.get("slot", "")) == "off":
+			if AttackData.offhand_bonus_attack_allowed(record):
+				damage_detail += " Attacco aggiuntivo a due armi: bonus al colpire normale; il modificatore di caratteristica ai danni si applica solo con lo stile Two-Weapon Fighting o se negativo."
+			else:
+				damage_detail += " Non soddisfa i requisiti dell'attacco aggiuntivo a due armi (normalmente due armi leggere da mischia o talento Dual Wielder). Resta possibile usarla con l'azione Attaccare."
+		_set_formula("attack_damage:" + attack_id, damage, damage_detail)
 		if _attack_range_labels.has(attack_id):
 			var settings: Dictionary = AttackData.override_for(record, attack_id)
 			var base: int = int(settings.get("range_feet", attack.get("range_feet", 5)))
@@ -3373,10 +3496,15 @@ func _update_defense_display() -> void:
 	if _ac != null and _ac_effective != null:
 		var equipped: bool = not ItemRules.equipped_armor(live.get("inventory", [])).is_empty()
 		_ac.editable = not equipped
-		_ac.tooltip_text = "La CA base viene dall'armatura indossata nell'inventario" if equipped else "Classe Armatura base manuale"
+		if _natural_ac_formula != null:
+			_natural_ac_formula.visible = not equipped
+			_natural_ac_formula.tooltip_text = "Formula di CA naturale (senza armatura), modificabile premendo Invio."
+		_ac.tooltip_text = "L'armatura sostituisce la formula naturale" if equipped else "Base precedente"
 		var armor_record: Dictionary = live.duplicate(false)
 		armor_record["effective_armor_dex"] = BonusRules.value(live, "ability_mod:dex") if equipped else 0
 		var base: Dictionary = ItemRules.armor_base(armor_record)
+		if not equipped:
+			base["description"] = "Naturale (%s)" % String(live.get("armor_natural_formula", "10 + dex_mod"))
 		var ac: int = maxi(0, BonusRules.value(live, "ac"))
 		_set_formula("ac", str(ac), "CA: %s + scudo %+d + bonus cumulabili %+d = %d" % [
 			String(base.get("description", "Base manuale")),
@@ -3394,10 +3522,11 @@ func _update_defense_display() -> void:
 				var category: String = {"LA": "light", "MA": "medium", "HA": "heavy"}.get(type_code, "")
 				if not category.is_empty() and not ProficiencyRules.has_proficiency(live, "armor", category):
 					missing.append(String(armor_owned.get("name", armor.get("name", "Armatura"))) + " (armatura " + category + ")")
-			var shield: Dictionary = ItemRules.occupying(live.get("inventory", []), "off")
-			if not shield.is_empty() and ItemRules.kind(ItemRules.entry_for(shield)) == "shield":
-				if not ProficiencyRules.has_proficiency(live, "armor", "shield"):
-					missing.append(String(shield.get("name", "Scudo")) + " (scudo)")
+			for hand: String in ["main", "off"]:
+				var shield: Dictionary = ItemRules.occupying(live.get("inventory", []), hand)
+				if not shield.is_empty() and ItemRules.kind(ItemRules.entry_for(shield)) == "shield":
+					if not ProficiencyRules.has_proficiency(live, "armor", "shield"):
+						missing.append(String(shield.get("name", "Scudo")) + " (scudo)")
 		_ac_proficiency_warning.visible = not missing.is_empty()
 		if not missing.is_empty():
 			_ac_proficiency_warning.tooltip_text = ("Senza competenza: " + ", ".join(missing)
@@ -3555,29 +3684,17 @@ func _on_inventory_updated(inventory: Array) -> void:
 	var record: Dictionary = _current()
 	if record.is_empty():
 		return
-	var prior_main: Dictionary = ItemRules.occupying(record.get("inventory", []), "main")
 	record["inventory"] = inventory.duplicate(true)
-	# Equipment changes made on the inventory page also select the weapon
-	# displayed above attacks. Unrelated quantity/armor changes do not.
-	var new_main: Dictionary = ItemRules.occupying(record.get("inventory", []), "main")
-	# Ignore quantity changes: they do not mean the user switched weapons.
-	var previous_signature: String = String(prior_main.get("id", "")) + "|" + String(prior_main.get("instance_id", "")) + "|" + JSON.stringify(prior_main.get("instance_overrides", {}))
-	var current_signature: String = String(new_main.get("id", "")) + "|" + String(new_main.get("instance_id", "")) + "|" + JSON.stringify(new_main.get("instance_overrides", {}))
-	if previous_signature != current_signature:
-		if not new_main.is_empty() and ItemRules.kind(ItemRules.entry_for(new_main)) == "weapon":
-			record["equipped_attack_id"] = "item:" + String(new_main.get("id", ""))
-			var rows: Array = record.get("inventory", [])
-			for i: int in range(rows.size()):
-				if rows[i] is Dictionary and "main" in ItemRules.slots(rows[i]):
-					record["equipped_inventory_index"] = i
-					break
-		else:
-			record.erase("equipped_inventory_index")
-			if String(record.get("equipped_attack_id", "")).begins_with("item:"):
-				record.erase("equipped_attack_id")
-	var active: Dictionary = AttackData.active_attack(record)
-	if not active.is_empty():
-		record["equipped_attack_id"] = String(active.get("id", ""))
+	# Inventory mutations never equip an item or choose a replacement attack.
+	# A weapon removed from the inventory invalidates only its own attack ID.
+	var known_attacks: Dictionary = {}
+	for candidate: Dictionary in AttackData.definitions(record):
+		known_attacks[String(candidate.get("id", ""))] = true
+	var selected_attack: String = String(record.get("equipped_attack_id", ""))
+	if not selected_attack.is_empty() and not known_attacks.has(selected_attack):
+		record["equipped_attack_id"] = ""
+	if ItemRules.occupying(record["inventory"], "main").is_empty():
+		record["hand_grip_two_handed"] = false
 	# Delete the legacy documents array only after each entry is in inventory
 	# and its definition has been written to the homebrew directory.
 	var legacy: Variant = record.get("documents", [])
@@ -3696,6 +3813,8 @@ func _save() -> void:
 	record["visual_front_quarter_turns"] = _front.selected
 	record["party_id"] = _party.text.strip_edges()
 	record["armor_class_base"] = int(_ac.value)
+	if _natural_ac_formula != null:
+		record["armor_natural_formula"] = _natural_ac_formula.text.strip_edges()
 	record["speed_base"] = int(_speed.value)
 	record["speed_is_custom"] = _speed_custom
 	var abilities: Dictionary = {}
