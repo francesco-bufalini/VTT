@@ -5,7 +5,7 @@
     "repository": "https://github.com/vidalvanbergen/fightclub5exml",
     "source_path": "Sources/DND_5e/WizardsOfTheCoast/01_Core/01_Players_Handbook/class-*-phb.xml",
     "build_only": true,
-    "note": "Curated consumable class counters (2014 PHB). Spellcasting, learned capacities and ambiguous counters excluded. Fight Club is never queried at runtime. Corrections: Indomitable reset is long_rest. Corrections: Natural Recovery/Wholeness of Body gated by subclass; Arcane Recovery treated as once per long rest; Mystic Arcanum excluded because spellcasting is managed separately."
+    "note": "Curated consumable class counters (2014 PHB). Spellcasting, learned capacities and ambiguous counters excluded. Fight Club is never queried at runtime. Corrections: Indomitable reset is long_rest. Corrections: Natural Recovery/Wholeness of Body gated by subclass; Arcane Recovery treated as once per long rest; Mystic Arcanum excluded because spellcasting is managed separately. A 2024 Bard definition is curated from 5etools classFeature data (not from Fight Club 2024 counters)."
   },
   "classes": [
     {
@@ -878,6 +878,30 @@
           ],
           "source": "PHB",
           "subclass": "School of Divination"
+        }
+      ]
+    },
+    {
+      "class": "Bard",
+      "source": "XPHB",
+      "resources": [
+        {
+          "name": "Bardic Inspiration",
+          "minimum": 1,
+          "source": "XPHB",
+          "derived_from": "5etools classFeature Bardic Inspiration + Font of Inspiration (2024)",
+          "steps": [
+            {
+              "level": 1,
+              "value": "%6",
+              "reset": "long_rest"
+            },
+            {
+              "level": 5,
+              "value": "%6",
+              "reset": "short_rest"
+            }
+          ]
         }
       ]
     }
