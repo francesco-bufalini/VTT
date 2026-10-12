@@ -27,34 +27,92 @@ static func feat_source_id(feat: Dictionary) -> String:
 	return "feat|" + source + "|" + name if not name.is_empty() else ""
 
 
+# Normalized 5etools language types, refreshed from the latest tagged
+# upstream data/languages.json. Cache only the static metadata; homebrew
+# entries remain dynamic through Catalog.entries("languages").
+const LANGUAGE_INDEX_PATH := "res://vtt/data/languages_5etools.json"
+const LANGUAGE_TYPE_LABELS := {
+	"standard": "Standard", "exotic": "Esotico",
+	"rare": "Raro", "secret": "Segreto", "other": "Altro"
+}
+static var _language_metadata: Dictionary = {}
+
+
+static func _load_language_metadata() -> void:
+	if not _language_metadata.is_empty():
+		return
+	var file: FileAccess = FileAccess.open(LANGUAGE_INDEX_PATH, FileAccess.READ)
+	if file == null:
+		return
+	var parsed: Variant = JSON.parse_string(file.get_as_text())
+	file.close()
+	if not parsed is Dictionary:
+		return
+	for item: Variant in (parsed as Dictionary).get("languages", []):
+		if item is Dictionary:
+			var key: String = normalized_key(String((item as Dictionary).get("key", "")))
+			if not key.is_empty():
+				_language_metadata[key] = item
+
+
+static func language_type(key: String) -> String:
+	var normalized: String = normalized_key(key)
+	# These two remain class-exclusive secret tongues even if a modern
+	# source reclassifies them as "rare" for its own language glossary.
+	if normalized in ["druidic", "thieves' cant"]:
+		return "secret"
+	_load_language_metadata()
+	if _language_metadata.has(normalized):
+		return String((_language_metadata[normalized] as Dictionary).get("group", "other"))
+	for group: String in LANGUAGE_FALLBACK.keys():
+		for name: String in LANGUAGE_FALLBACK[group]:
+			if normalized_key(name) == normalized:
+				return group
+	for item: Dictionary in Catalog.entries("languages"):
+		if normalized_key(String(item.get("name", ""))) == normalized:
+			return String(item.get("type", "other")).to_lower()
+	return "other"
+
+
 static func language_options() -> Array[Dictionary]:
 	var result: Array[Dictionary] = []
 	var seen: Dictionary = {}
+	_load_language_metadata()
+	for raw_key: Variant in _language_metadata.keys():
+		var entry: Dictionary = _language_metadata[raw_key]
+		var key: String = String(raw_key)
+		var category: String = language_type(key)
+		var name: String = String(entry.get("label", key.capitalize()))
+		seen[key] = true
+		result.append({"key": key,
+			"label": "%s · %s" % [name, LANGUAGE_TYPE_LABELS.get(category, "Altro")],
+			"source": String(entry.get("source", "PHB")),
+			"group": category, "edition": ""})
+	# Add names not covered by the snapshot (homebrew or compact catalog).
 	for item: Dictionary in Catalog.entries("languages"):
 		var name: String = String(item.get("name", "")).strip_edges()
 		var key: String = normalized_key(name)
-		if not key.is_empty() and not seen.has(key):
-			seen[key] = true
-			result.append({"key": key, "label": name, "source": String(item.get("source", "")), "edition": String(item.get("edition", ""))})
-	# Canonical PHB languages must never disappear because of a compact
-	# catalogue entry with 2024-only metadata under the same key.
+		if key.is_empty() or seen.has(key):
+			continue
+		var category: String = language_type(key)
+		seen[key] = true
+		result.append({"key": key,
+			"label": "%s · %s" % [name, LANGUAGE_TYPE_LABELS.get(category, "Altro")],
+			"source": String(item.get("source", "")), "group": category,
+			"edition": String(item.get("edition", ""))})
+	# Canonical secret/standard/exotic names remain available even if the
+	# mirror or player subset omits them.
 	for group: String in LANGUAGE_FALLBACK.keys():
 		for name: String in LANGUAGE_FALLBACK[group]:
 			var key: String = normalized_key(name)
-			if not seen.has(key):
-				seen[key] = true
-				result.append({"key": key, "label": name, "source": "PHB", "group": group})
-			else:
-				for index: int in range(result.size()):
-					if String(result[index].get("key", "")) == key:
-						result[index]["source"] = "PHB"
-						result[index]["label"] = name
-						result[index]["edition"] = "2014"
-						result[index]["group"] = group
-						break
+			if seen.has(key):
+				continue
+			var category: String = language_type(key)
+			seen[key] = true
+			result.append({"key": key, "label": "%s · %s" % [
+				name, LANGUAGE_TYPE_LABELS.get(category, "Altro")],
+				"source": "PHB", "group": category})
 	_load_sources()
-	# Classes can also grant named languages (including class-specific
-	# secrets). Read the full structured source index, not only ancestries.
 	for group: String in ["class", "race", "subrace", "background", "feat"]:
 		for row: Dictionary in _sources.get(group, []):
 			var grants: Variant = row.get("languageProficiencies", [])
@@ -78,12 +136,16 @@ static func language_options() -> Array[Dictionary]:
 					var key: String = normalized_key(String(candidate).split("|")[0])
 					if key.is_empty() or key.begins_with("any") or key.begins_with("{@") or seen.has(key):
 						continue
+					var category: String = language_type(key)
 					seen[key] = true
-					result.append({"key": key, "label": key.capitalize(), "source": String(row.get("source", ""))})
+					result.append({"key": key,
+						"label": "%s · %s" % [key.capitalize(),
+							LANGUAGE_TYPE_LABELS.get(category, "Altro")],
+						"source": String(row.get("source", "")), "group": category})
 	result.sort_custom(func(a: Dictionary, b: Dictionary) -> bool:
-		return String(a.get("label", "")).naturalnocasecmp_to(String(b.get("label", ""))) < 0
-	)
+		return String(a.get("label", "")).naturalnocasecmp_to(String(b.get("label", ""))) < 0)
 	return result
+
 
 static var _sources: Dictionary = {}
 static var _source_names: Dictionary = {}
@@ -440,10 +502,11 @@ static func grant_matches(grants: Variant, kind: String, key: String) -> int:
 		if kind == "tool" and value.has("anyGamingSet") and _tool_type(wanted) == "GS":
 			best = maxi(best, 1)
 		# A bare 'any' in 5etools is a structured choice, not a fixed grant.
-		# Standard/exotic languages must not be conflated.
-		if kind == "language" and value.has("anyStandard") and _language_group(wanted) == "standard":
+		# "anyStandard" means a free language choice here: allow standard,
+		# exotic, rare and other languages, but never class-exclusive secrets.
+		if kind == "language" and value.has("anyStandard") and language_type(wanted) != "secret":
 			best = maxi(best, 1)
-		if kind == "language" and value.has("anyExotic") and _language_group(wanted) == "exotic":
+		if kind == "language" and value.has("anyExotic") and language_type(wanted) in ["exotic", "rare"]:
 			best = maxi(best, 1)
 	return best
 
@@ -484,21 +547,7 @@ static func _tool_type(key: String) -> String:
 
 
 static func _language_group(key: String) -> String:
-	var fallback := ""
-	for item: Dictionary in Catalog.entries("languages"):
-		if normalized_key(String(item.get("name", ""))) != key:
-			continue
-		var type_name := String(item.get("type", "")).to_lower()
-		if String(item.get("source", "")) == "PHB":
-			return type_name
-		if fallback.is_empty() and type_name in ["standard", "exotic"]:
-			fallback = type_name
-	if fallback.is_empty():
-		for group: String in LANGUAGE_FALLBACK.keys():
-			for name: String in LANGUAGE_FALLBACK[group]:
-				if normalized_key(name) == key:
-					return group
-	return fallback
+	return language_type(key)
 
 
 static func _weapon_group(key: String) -> String:
