@@ -110,6 +110,13 @@ func _run() -> void:
 	if not tail.get_collision_exceptions().has(leader):
 		_fail("nested follower must not collide with its ancestor leader")
 		return
+	var sibling := _spawn(board, "sibling", Vector3(-4.0, 2.0, -1.0), 0.0)
+	if not bool(links.call("mount", sibling, leader)):
+		_fail("second follower must be able to join the same formation")
+		return
+	if not sibling.get_collision_exceptions().has(follower):
+		_fail("siblings must not obstruct each other while moving together")
+		return
 	var tail_local: Vector3 = follower.to_local(tail.global_position)
 	var tail_yaw: float = wrapf(
 		tail.global_rotation.y - follower.global_rotation.y, -PI, PI
