@@ -117,6 +117,7 @@ $fastTests = @(
     "test_board_smoke.gd",
     # Creature-sheet interactions are a common source of parser/UI regressions:
     # validate them before independent tactical-grid rendering assertions.
+    "test_structured_resource_trackers.gd",
     "test_structured_numeric_bonuses.gd",
     "test_split_item_bonuses.gd",
     "test_movement_speeds.gd",
@@ -186,7 +187,7 @@ foreach ($test in $testFiles) {
         300
     } elseif ($FullTests) {
         90
-    } elseif ($test.Name -in @("test_item_catalog_search.gd", "test_item_transport.gd", "test_item_board_integration.gd", "test_equipped_weapons.gd", "test_proficiency_sources.gd", "test_trait_origins.gd", "test_bonus_origin_highlight.gd", "test_benefit_first_origins_trackers.gd", "test_race_subrace_selection.gd", "test_compendium_descriptions.gd")) {
+    } elseif ($test.Name -in @("test_structured_resource_trackers.gd", "test_item_catalog_search.gd", "test_item_transport.gd", "test_item_board_integration.gd", "test_equipped_weapons.gd", "test_proficiency_sources.gd", "test_trait_origins.gd", "test_bonus_origin_highlight.gd", "test_benefit_first_origins_trackers.gd", "test_race_subrace_selection.gd", "test_compendium_descriptions.gd")) {
         45
     } else {
         12
