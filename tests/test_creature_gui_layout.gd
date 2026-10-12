@@ -47,11 +47,33 @@ func run() -> void:
 	# Loading a new sheet must resolve DEX before computing the first initiative readout.
 	var init_record: Dictionary = area._current()
 	init_record["abilities"]["dex"] = 18
+	init_record["abilities"]["str"] = 15
 	assert(area._archive.save(init_record) == OK)
 	area._replace_current_record(init_record)
 	area._load_form(init_record)
 	assert(area._initiative_effective.text == "+4",
 		"Initial initiative must use the loaded DEX score, not +0 or the prior creature.")
+	assert(area._long_jump.text == "Lungo: 15 ft" and area._high_jump.text == "Alto: 5 ft",
+		"Running jumps use Strength 15 and the +2 modifier from the current character")
+	assert(area._temp_hp.get_parent().get_child(0) is Label
+		and (area._temp_hp.get_parent().get_child(0) as Label).text == "TEMP",
+		"Temporary HP input must appear after its caption on a separate row")
+	assert(not area._ac_proficiency_warning.visible,
+		"Unarmored character should not receive missing armor proficiency warnings")
+	var warning_record: Dictionary = init_record.duplicate(true)
+	warning_record["inventory"] = [{
+		"id": "test:untrained:armor", "name": "Test Leather", "type": "LA",
+		"quantity": 1, "ac": 11, "equipped_slots": ["body"]
+	}]
+	warning_record["proficiency_choices"] = []
+	warning_record["proficiency_origins"] = []
+	area._replace_current_record(warning_record)
+	area._update_defense_display()
+	assert(area._ac_proficiency_warning.visible
+		and "incantesimi" in area._ac_proficiency_warning.tooltip_text,
+		"Equipped nonproficient armor must show the warning and its spellcasting penalty")
+	area._replace_current_record(init_record)
+	area._update_defense_display()
 	var original_id: String = area._current().id
 	area._creature_filter.text = " DELTA "
 	area._creature_filter.text_changed.emit(area._creature_filter.text)
