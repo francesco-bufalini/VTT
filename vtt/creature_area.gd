@@ -11,6 +11,7 @@ const PlayerReference = preload("res://vtt/player_reference_catalog.gd")
 const Player5eTools = preload("res://vtt/player_5etools_catalog.gd")
 const RaceRules = preload("res://vtt/creature_race_rules.gd")
 const SpellcastingTab = preload("res://vtt/creature_spellcasting_tab.gd")
+const SpellCatalog = preload("res://vtt/spells/spell_catalog.gd")
 const FiveToolsText = preload("res://vtt/five_tools_rich_text.gd")
 const StructuredTrackers = preload("res://vtt/structured_resource_trackers.gd")
 const TrackerTab = preload("res://vtt/creature_trackers_tab.gd")
@@ -2041,7 +2042,7 @@ func _select_details_editor(index: int) -> void:
 	call_deferred("_update_stats_column_heights")
 
 
-func _on_damage_defenses_updated(damage_overrides: Dictionary, condition_overrides: Dictionary, defense_entries: Array = []) -> void:
+func _on_damage_defenses_updated(damage_overrides: Dictionary, condition_overrides: Dictionary, defense_entries: Array = [], origins: Array = []) -> void:
 	if _loading:
 		return
 	var record: Dictionary = _current()
@@ -2050,6 +2051,10 @@ func _on_damage_defenses_updated(damage_overrides: Dictionary, condition_overrid
 	record["damage_defense_overrides"] = damage_overrides.duplicate(true)
 	record["condition_immunity_overrides"] = condition_overrides.duplicate(true)
 	record["damage_defense_entries"] = defense_entries.duplicate(true)
+	if not origins.is_empty():
+		record["proficiency_origins"] = origins.duplicate(true)
+	ProficiencyRules.reconcile_origin_dependents(record)
+	_recalculate_bonus_mirrors(record)
 	var error: Error = _archive.save(record)
 	if error != OK:
 		_set_status("Impossibile salvare resistenze/immunità: " + error_string(error))
@@ -2057,6 +2062,7 @@ func _on_damage_defenses_updated(damage_overrides: Dictionary, condition_overrid
 	_replace_current_record(record)
 	_damage_defenses_stale = false
 	_update_defense_display()
+	_refresh_conditions(record)
 
 
 func _on_formula_bonus_requested(key: String) -> void:
@@ -2129,6 +2135,7 @@ func _on_trackers_updated(trackers: Array, origins: Array) -> void:
 	_load_form(record)
 	_apply_sheet_properties(record)
 	_sync_token_health(record)
+	_refresh_conditions(record)
 
 
 func _on_bonuses_updated(rows: Array, origins: Array) -> void:
@@ -2149,6 +2156,7 @@ func _on_bonuses_updated(rows: Array, origins: Array) -> void:
 	_load_form(record)
 	_apply_sheet_properties(record)
 	_sync_token_health(record)
+	_refresh_conditions(record)
 
 
 func _live_stats_record() -> Dictionary:
@@ -3746,6 +3754,7 @@ func _on_proficiencies_updated(rows: Array, feats: Array, origins: Array) -> voi
 	_refresh_formula_dependents(record)
 	_sync_token_health(record)
 	_apply_sheet_properties(record)
+	_refresh_conditions(record)
 	if _bonuses_ui != null:
 		_bonuses_ui.call("load_record", record)
 	if _traits_ui != null:
@@ -5445,6 +5454,41 @@ func _refresh_conditions(record: Dictionary) -> void:
 			info.text = "Leggi effetti"
 			info.pressed.connect(_show_effect_description.bind(definition.duplicate(true)))
 			row.add_child(info)
+
+	# Spell-granted effects share one icon and their lifecycle with the
+	# benefit origins, instead of being duplicated in the condition toggles.
+	var spell_effects: Array[Dictionary] = []
+	var enabled: Dictionary = ProficiencyRules.origin_enabled_map(record)
+	var seen_spells: Dictionary = {}
+	for raw_origin: Variant in record.get("proficiency_origins", []):
+		if not raw_origin is Dictionary:
+			continue
+		var source: Dictionary = raw_origin
+		var sid: String = String(source.get("id", ""))
+		if String(source.get("group", "")) != "spell" or not sid.begins_with("spell:"):
+			continue
+		if seen_spells.has(sid) or not bool(enabled.get(sid, false)):
+			continue
+		seen_spells[sid] = true
+		var definition: Dictionary = SpellCatalog.catalog_spell(sid.substr(6))
+		if not definition.is_empty():
+			spell_effects.append(definition)
+	if not spell_effects.is_empty():
+		var heading := Label.new()
+		heading.text = "Incantesimi attivi"
+		heading.add_theme_font_size_override("font_size", 15)
+		_condition_rows.add_child(heading)
+		for spell: Dictionary in spell_effects:
+			var row := HBoxContainer.new()
+			_condition_rows.add_child(row)
+			var name_label := Label.new()
+			name_label.text = "✨ " + String(spell.get("name", "Incantesimo"))
+			name_label.size_flags_horizontal = Control.SIZE_EXPAND_FILL
+			row.add_child(name_label)
+			var detail := Button.new()
+			detail.text = "Leggi effetti"
+			detail.pressed.connect(_show_effect_description.bind(spell.duplicate(true)))
+			row.add_child(detail)
 
 
 func _show_effect_description(definition: Dictionary) -> void:
