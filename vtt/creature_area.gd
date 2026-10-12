@@ -2727,10 +2727,6 @@ func _load_form(record: Dictionary) -> void:
 		_bonuses_ui.call("load_record", record)
 		_bonuses_stale = false
 	_trackers_stale = true
-	_damage_defenses_stale = true
-	if _damage_defenses_ui != null and _damage_defenses_ui.visible:
-		_damage_defenses_ui.call("load_record", record)
-		_damage_defenses_stale = false
 	if _trackers_ui != null and _trackers_ui.visible:
 		_trackers_ui.call("load_record", record)
 		_trackers_stale = false
@@ -4506,6 +4502,10 @@ func _refresh_reference(record: Dictionary) -> void:
 	_proficiencies_stale = true
 	_feats_stale = true
 	_trackers_stale = true
+	_damage_defenses_stale = true
+	if _damage_defenses_ui != null and _damage_defenses_ui.visible:
+		_damage_defenses_ui.call("load_record", record)
+		_damage_defenses_stale = false
 	if _trackers_ui != null and _trackers_ui.visible:
 		_trackers_ui.call("load_record", record)
 		_trackers_stale = false
