@@ -5242,6 +5242,8 @@ func _complete_spell_cast(
 	if not _spell_needs_saving_throw_resolution(spell_data):
 		_finish_cast()
 		return
+	# Only targets that fail the saving throw receive persistent effects.
+	_committed_targets.clear()
 
 	var unique_targets: Array[Node3D] = []
 	for target: Node3D in targets:
@@ -5353,6 +5355,8 @@ func _resolve_current_saving_throw(succeeded: bool) -> void:
 						"_refresh_token_views_after_appearance_change"
 					)
 			elif not succeeded:
+				if not (target in _committed_targets):
+					_committed_targets.append(target)
 				if not _saving_throw_undo_recorded:
 					if board_root.has_method("push_undo_state"):
 						board_root.call("push_undo_state")
@@ -5502,9 +5506,10 @@ func _finish_cast() -> void:
 	# behind if the user presses Esc. Commit exactly once at successful finish.
 	if board_root != null and is_instance_valid(board_root) and board_root.has_method("apply_cast_spell_effects"):
 		var resolved_targets: Array = _committed_targets.duplicate()
-		for target: Node3D in _pending_targets:
-			if target != null and is_instance_valid(target) and not (target in resolved_targets):
-				resolved_targets.append(target)
+		if not _spell_needs_saving_throw_resolution(_pending_spell()):
+			for target: Node3D in _pending_targets:
+				if target != null and is_instance_valid(target) and not (target in resolved_targets):
+					resolved_targets.append(target)
 		if (
 			resolved_targets.is_empty()
 			and _pending_caster != null
