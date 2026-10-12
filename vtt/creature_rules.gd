@@ -1,5 +1,7 @@
 extends RefCounted
 
+const ClassMechanics = preload("res://vtt/structured_class_mechanics.gd")
+
 # Static, public creature-rule helpers. Mutable resources/trackers have been
 # retired from the creature sheet and are no longer generated here.
 
@@ -210,13 +212,9 @@ static func serialize_public_identity(creature: Dictionary) -> Dictionary:
 	}
 
 
-# Automatic calculations never select spells on behalf of a player.
 # Only capacities and deterministic values are derived from class levels.
-const HIT_DICE := {
-	"barbarian": 12, "fighter": 10, "paladin": 10, "ranger": 10,
-	"bard": 8, "cleric": 8, "druid": 8, "monk": 8, "rogue": 8,
-	"warlock": 8, "artificer": 8, "sorcerer": 6, "wizard": 6
-}
+# Hit dice come from the 5etools class hd.faces field (all editions).
+# Do not maintain a second class-to-die table here.
 const SPELLS_KNOWN_2014 := {
 	"bard": [0, 4, 5, 6, 7, 8, 9, 10, 11, 12, 14, 15, 15, 16, 18, 19, 19, 20, 22, 22, 22],
 	"sorcerer": [0, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 12, 13, 13, 14, 14, 15, 15, 15, 15],
@@ -278,7 +276,7 @@ static func automatic_hit_points(character: Dictionary) -> Dictionary:
 	var first_level: bool = true
 	for cls: Dictionary in classes:
 		var name: String = String(cls.get("name", "")).to_lower()
-		var die: int = int(HIT_DICE.get(name, 0))
+		var die: int = ClassMechanics.hit_die(name, String(cls.get("source", "")))
 		if die <= 0:
 			return {"available": false, "reason": "Dado vita non noto per " + String(cls.get("name", ""))}
 		var count: int = clampi(int(cls.get("level", 1)), 1, 20)
@@ -298,7 +296,7 @@ static func automatic_hit_dice(character: Dictionary) -> String:
 	var parts: PackedStringArray = []
 	for cls: Dictionary in level_classes(character):
 		var name: String = String(cls.get("name", "")).to_lower()
-		var sides: int = int(HIT_DICE.get(name, 0))
+		var sides: int = ClassMechanics.hit_die(name, String(cls.get("source", "")))
 		if sides > 0:
 			parts.append("%dd%d (%s)" % [maxi(0, int(cls.get("level", 0))),
 				sides, String(cls.get("name", ""))])
@@ -395,7 +393,7 @@ static func spell_slot_progression(character: Dictionary) -> Dictionary:
 		elif name == "mostro":
 			# CR is not a caster level; real class additions determine slots.
 			pass
-		elif not name.is_empty() and not HIT_DICE.has(name):
+		elif not name.is_empty() and ClassMechanics.hit_die(name, String(cls.get("source", ""))) <= 0:
 			warnings.append("Classe homebrew non calcolabile: " + String(cls.get("name", "")))
 	var caster_level := 0
 	var playable_classes: int = 0
