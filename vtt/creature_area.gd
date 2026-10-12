@@ -3315,6 +3315,27 @@ func _update_defense_display() -> void:
 			String(base.get("description", "Base manuale")),
 			ItemRules.shield_bonus(live.get("inventory", [])),
 			BonusRules.bonus(live, "ac"), ac])
+	if _ac_proficiency_warning != null:
+		var missing: PackedStringArray = []
+		# Monster stat blocks do not explicitly enumerate armor training.
+		# Player proficiency grants instead come from active origin choices.
+		if String(live.get("kind", "character")) != "monster":
+			var armor_owned: Dictionary = ItemRules.equipped_armor(live.get("inventory", []))
+			if not armor_owned.is_empty():
+				var armor: Dictionary = ItemRules.entry_for(armor_owned)
+				var type_code: String = String(armor.get("type", "")).split("|")[0].to_upper()
+				var category: String = {"LA": "light", "MA": "medium", "HA": "heavy"}.get(type_code, "")
+				if not category.is_empty() and not ProficiencyRules.has_proficiency(live, "armor", category):
+					missing.append(String(armor_owned.get("name", armor.get("name", "Armatura"))) + " (armatura " + category + ")")
+			var shield: Dictionary = ItemRules.occupying(live.get("inventory", []), "off")
+			if not shield.is_empty() and ItemRules.kind(ItemRules.entry_for(shield)) == "shield":
+				if not ProficiencyRules.has_proficiency(live, "armor", "shield"):
+					missing.append(String(shield.get("name", "Scudo")) + " (scudo)")
+		_ac_proficiency_warning.visible = not missing.is_empty()
+		if not missing.is_empty():
+			_ac_proficiency_warning.tooltip_text = ("Senza competenza: " + ", ".join(missing)
+				+ "\nPenalità D&D 5e: svantaggio alle prove di caratteristica, ai tiri salvezza e ai tiri per colpire che coinvolgono Forza o Destrezza."
+				+ "\nInoltre non puoi lanciare incantesimi mentre indossi questa armatura o impugni questo scudo.")
 	if _initiative_effective != null:
 		var init: int = BonusRules.value(live, "initiative")
 		_set_formula("initiative", "%+d" % init,
