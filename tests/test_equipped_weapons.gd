@@ -262,6 +262,17 @@ func run() -> void:
 
 	assert(not "+4" in AttackData.damage_label(dual, second_attack),
 		"Offhand bonus action damage omits positive DEX without the fighting style")
+	var enchanted_main: Dictionary = first_dagger.duplicate(true)
+	var enchanted_off: Dictionary = second_dagger.duplicate(true)
+	enchanted_off["bonus_weapon_attack"] = 1
+	enchanted_off["bonus_weapon_damage"] = 3
+	var enchanted: Dictionary = _record([enchanted_main, enchanted_off])
+	var enchanted_attack: Dictionary = _attack(AttackData.definitions(enchanted),
+		"item:off:test:second_dagger")
+	assert(AttackData.attack_bonus(enchanted, enchanted_attack, 2) == 5,
+		"Magic item hit bonuses must apply to the correct offhand attack")
+	assert("1d4 +3" in AttackData.damage_label(enchanted, enchanted_attack),
+		"Magic item damage bonuses remain separate from omitted offhand ability damage")
 	dual["fighting_styles"] = ["Two-Weapon Fighting"]
 	assert("+4" in AttackData.damage_label(dual, second_attack),
 		"Selected structured Two-Weapon Fighting style restores offhand ability damage")
