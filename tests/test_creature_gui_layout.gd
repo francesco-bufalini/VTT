@@ -53,8 +53,18 @@ func run() -> void:
 	area._load_form(init_record)
 	assert(area._initiative_effective.text == "+4",
 		"Initial initiative must use the loaded DEX score, not +0 or the prior creature.")
-	assert(area._long_jump.text == "Lungo: 15 ft" and area._high_jump.text == "Alto: 5 ft",
-		"Running jumps use Strength 15 and the +2 modifier from the current character")
+	assert("Con rincorsa (almeno 10 ft): 15 ft" in area._long_jump.text
+		and "Da fermo (senza rincorsa): 7,5 ft" in area._long_jump.text
+		and "Con rincorsa (almeno 10 ft): 5 ft" in area._high_jump.text
+		and "Da fermo (senza rincorsa): 2,5 ft" in area._high_jump.text,
+		"Jump UI must explicitly distinguish running and standing distances")
+	for mode: String in ["climb", "swim", "fly", "burrow"]:
+		assert(area._special_speed_labels.has(mode)
+			and area._special_speed_labels[mode].text == "0",
+			"Undeclared movement speed must be displayed as zero: " + mode)
+	assert(area._formula_values["initiative"].get_parent().get_parent()
+		== area._formula_values["ac"].get_parent().get_parent(),
+		"Initiative bonus must share a single nonwrapping defense row with AC")
 	assert(area._temp_hp.get_parent().get_child(0) is Label
 		and (area._temp_hp.get_parent().get_child(0) as Label).text == "TEMP",
 		"Temporary HP input must appear after its caption on a separate row")
