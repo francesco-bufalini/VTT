@@ -53,7 +53,9 @@ static func language_options() -> Array[Dictionary]:
 						result[index]["group"] = group
 						break
 	_load_sources()
-	for group: String in ["race", "subrace", "background", "feat"]:
+	# Classes can also grant named languages (including class-specific
+	# secrets). Read the full structured source index, not only ancestries.
+	for group: String in ["class", "race", "subrace", "background", "feat"]:
 		for row: Dictionary in _sources.get(group, []):
 			var grants: Variant = row.get("languageProficiencies", [])
 			if not grants is Array:
