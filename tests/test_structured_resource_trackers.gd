@@ -2,6 +2,7 @@ extends SceneTree
 # Offline-only regression: no local server and no HTTP.
 const Trackers = preload("res://vtt/structured_resource_trackers.gd")
 const ClassMechanics = preload("res://vtt/class_mechanics_5etools.gd")
+const ResourceOverrides = preload("res://vtt/class_resource_overrides.gd")
 const Rules = preload("res://vtt/creature_rules.gd")
 const Locale = preload("res://vtt/creature_gui_locale.gd")
 
@@ -125,6 +126,28 @@ func run() -> void:
 		"kind": "character", "classes": [{"name": "Fighter", "source": "XPHB", "level": 4}]
 	})
 	assert(int(_find_resource(fighter, "Second Wind").get("max", 0)) == 3)
+
+	# The runtime accepts only the existing VTT formula symbols, never the
+	# Fight Club placeholders consumed by the offline asset generator.
+	var sample: Dictionary = {"kind": "character", "level": 3, "abilities": {"cha": 18}}
+	assert(ResourceOverrides.evaluate_max("%6", sample, 3).is_empty(),
+		"External Fight Club placeholders must not be accepted by the game")
+	assert(ResourceOverrides.evaluate_max("1 + %6", sample, 3).is_empty(),
+		"Mixed source-native counter expressions must not be interpreted")
+	assert(int(ResourceOverrides.evaluate_max("cha_mod", sample, 3).get("max", 0)) == 4,
+		"Use the same cha_mod symbol as creature numeric bonuses")
+	assert(int(ResourceOverrides.evaluate_max("1 + cha_mod", sample, 3).get("max", 0)) == 5,
+		"Native arithmetic formulas should use the ordinary bonus evaluator")
+	var integrated: FileAccess = FileAccess.open(
+		"res://vtt/data/class_resource_overrides.json", FileAccess.READ)
+	assert(integrated != null, "Compiled resource supplement should be bundled locally")
+	var supplement: Dictionary = JSON.parse_string(integrated.get_as_text())
+	integrated.close()
+	for group: Dictionary in supplement.get("classes", []):
+		for resource: Dictionary in group.get("resources", []):
+			for step: Dictionary in resource.get("steps", []):
+				assert(not String(step.get("value", "")).contains("%"),
+					"Bundled counter values must not contain Fight Club placeholders")
 
 	# Complementary Fight Club metadata: formulas, recovery progression and
 	# subclass gating. No runtime downloads or natural-language parsing.
