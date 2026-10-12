@@ -514,7 +514,7 @@
         {
           "name": "Sorcery Points",
           "kind": "resource",
-          "origin_feature": "Sorcery Points",
+          "origin_feature": "Font of Magic",
           "levels": [
             0,
             2,
@@ -548,7 +548,7 @@
         {
           "name": "Sorcery Points",
           "kind": "resource",
-          "origin_feature": "Innate Sorcery",
+          "origin_feature": "Font of Magic",
           "levels": [
             0,
             2,
