@@ -165,13 +165,10 @@ var _picker_current := false
 var _chosen_miniature_id := ""
 var _tracker_rows: VBoxContainer
 var _trackers_ui: Node
-var _trackers_toggle_button: Button
 var _bonuses_ui: Node
-var _bonuses_toggle_button: Button
 var _proficiencies_ui: Node
-var _proficiencies_toggle_button: Button
 var _feats_ui: Node
-var _feats_toggle_button: Button
+var _editor_section_picker: OptionButton
 var _traits_ui: Node
 var _condition_rows: VBoxContainer
 var _effect_dialog: AcceptDialog
@@ -557,71 +554,38 @@ func _build_ui() -> void:
 	columns.add_child(_tabs)
 	var form := _add_sheet_tab(_tabs, "Info")
 	var statistics_tab := _add_sheet_tab(_tabs, "Statistiche")
-	_proficiencies_toggle_button = Button.new()
-	_proficiencies_toggle_button.text = "▸ Visualizza competenze"
-	_proficiencies_toggle_button.tooltip_text = "Mostra o nasconde le origini e le competenze della creatura"
-	statistics_tab.add_child(_proficiencies_toggle_button)
+	# A single selector replaces the four independent expandable editors.
+	# "Niente" is the default; selecting an editor opens only its section.
+	var editor_select_row := HBoxContainer.new()
+	editor_select_row.add_theme_constant_override("separation", 8)
+	statistics_tab.add_child(editor_select_row)
+	_add_label(editor_select_row, "Visualizza e modifica")
+	_editor_section_picker = OptionButton.new()
+	_editor_section_picker.fit_to_longest_item = false
+	_editor_section_picker.custom_minimum_size = Vector2(185, 30)
+	_editor_section_picker.size_flags_horizontal = Control.SIZE_SHRINK_BEGIN
+	_editor_section_picker.tooltip_text = "Scegli una sezione da visualizzare o modificare"
+	for section_name: String in ["Niente", "Competenze", "Talenti", "Bonus", "Tracker"]:
+		_editor_section_picker.add_item(section_name)
+	_editor_section_picker.select(0)
+	_editor_section_picker.item_selected.connect(_select_details_editor)
+	editor_select_row.add_child(_editor_section_picker)
 	_proficiencies_ui = ProficiencyTab.new()
-	_proficiencies_ui.visible = false
+	_proficiencies_ui.hide()
 	statistics_tab.add_child(_proficiencies_ui)
 	_proficiencies_ui.call("setup", Callable(self, "_on_proficiencies_updated"))
-	_proficiencies_toggle_button.pressed.connect(func() -> void:
-		if not _proficiencies_ui.visible and _proficiencies_stale:
-			var record: Dictionary = _current()
-			_proficiencies_ui.call("load_record", record)
-			_proficiencies_stale = false
-		_proficiencies_ui.visible = not _proficiencies_ui.visible
-		_proficiencies_toggle_button.text = "▾ Nascondi competenze" if _proficiencies_ui.visible else "▸ Visualizza competenze"
-		call_deferred("_update_stats_column_heights")
-	)
-	_feats_toggle_button = Button.new()
-	_feats_toggle_button.text = "▸ Visualizza talenti"
-	_feats_toggle_button.tooltip_text = "Mostra o nasconde le origini dei talenti e i talenti posseduti"
-	statistics_tab.add_child(_feats_toggle_button)
 	_feats_ui = FeatsTab.new()
 	_feats_ui.hide()
 	statistics_tab.add_child(_feats_ui)
 	_feats_ui.call("setup", Callable(self, "_on_feats_updated"))
-	_feats_toggle_button.pressed.connect(func() -> void:
-		if not _feats_ui.visible and _feats_stale:
-			_feats_ui.call("load_record", _current())
-			_feats_stale = false
-		_feats_ui.visible = not _feats_ui.visible
-		_feats_toggle_button.text = "▾ Nascondi talenti" if _feats_ui.visible else "▸ Visualizza talenti"
-		call_deferred("_update_stats_column_heights")
-	)
-	_bonuses_toggle_button = Button.new()
-	_bonuses_toggle_button.text = "▸ Visualizza bonus"
-	_bonuses_toggle_button.tooltip_text = "Visualizza i bonus cumulabili di ogni valore con cornice blu"
-	statistics_tab.add_child(_bonuses_toggle_button)
 	_bonuses_ui = BonusTab.new()
 	_bonuses_ui.hide()
 	statistics_tab.add_child(_bonuses_ui)
 	_bonuses_ui.call("setup", Callable(self, "_on_bonuses_updated"))
-	_bonuses_toggle_button.pressed.connect(func() -> void:
-		if not _bonuses_ui.visible and _bonuses_stale:
-			_bonuses_ui.call("load_record", _current())
-			_bonuses_stale = false
-		_bonuses_ui.visible = not _bonuses_ui.visible
-		_bonuses_toggle_button.text = "▾ Nascondi bonus" if _bonuses_ui.visible else "▸ Visualizza bonus"
-		call_deferred("_update_stats_column_heights")
-	)
-	_trackers_toggle_button = Button.new()
-	_trackers_toggle_button.text = "▸ Visualizza tracker"
-	_trackers_toggle_button.tooltip_text = "Mostra le risorse, i loro massimi e le origini che le concedono"
-	statistics_tab.add_child(_trackers_toggle_button)
 	_trackers_ui = TrackerTab.new()
 	_trackers_ui.hide()
 	statistics_tab.add_child(_trackers_ui)
 	_trackers_ui.call("setup", Callable(self, "_on_trackers_updated"))
-	_trackers_toggle_button.pressed.connect(func() -> void:
-		if not _trackers_ui.visible and _trackers_stale:
-			_trackers_ui.call("load_record", _current())
-			_trackers_stale = false
-		_trackers_ui.visible = not _trackers_ui.visible
-		_trackers_toggle_button.text = "▾ Nascondi tracker" if _trackers_ui.visible else "▸ Visualizza tracker"
-		call_deferred("_update_stats_column_heights")
-	)
 	# Always keep skills and combat side by side (45% / 55%).  Scroll
 	# their oversized contents locally instead of expanding the whole sheet.
 	_statistics_columns = HBoxContainer.new()
@@ -1926,17 +1890,46 @@ func _with_effective_modifiers(record: Dictionary) -> Dictionary:
 	return context
 
 
+# Shared expansion state for the four editors. The other panels stay
+# instantiated, but only the selected one is visible, preserving their data.
+func _select_details_editor(index: int) -> void:
+	if _editor_section_picker == null:
+		return
+	var choice: int = clampi(index, 0, 4)
+	_editor_section_picker.select(choice)
+	_proficiencies_ui.visible = choice == 1
+	_feats_ui.visible = choice == 2
+	_bonuses_ui.visible = choice == 3
+	_trackers_ui.visible = choice == 4
+	if choice > 0:
+		var record: Dictionary = _current()
+		if not record.is_empty():
+			match choice:
+				1:
+					if _proficiencies_stale:
+						_proficiencies_ui.call("load_record", record)
+						_proficiencies_stale = false
+				2:
+					if _feats_stale:
+						_feats_ui.call("load_record", record)
+						_feats_stale = false
+				3:
+					if _bonuses_stale:
+						_bonuses_ui.call("load_record", record)
+						_bonuses_stale = false
+				4:
+					if _trackers_stale:
+						_trackers_ui.call("load_record", record)
+						_trackers_stale = false
+	call_deferred("_update_stats_column_heights")
+
+
 func _on_formula_bonus_requested(key: String) -> void:
 	if _bonuses_ui == null or key.is_empty():
 		return
 	_tabs.current_tab = 1
-	if _bonuses_stale:
-		_bonuses_ui.call("load_record", _current())
-		_bonuses_stale = false
-	_bonuses_ui.show()
-	_bonuses_toggle_button.text = "▾ Nascondi bonus"
+	_select_details_editor(3)
 	_bonuses_ui.call("select_target", key)
-	call_deferred("_update_stats_column_heights")
 
 
 func _recalculate_bonus_mirrors(record: Dictionary) -> void:
@@ -2854,7 +2847,7 @@ func _refresh_skill_values(record: Dictionary) -> void:
 		var value: int = BonusRules.value(live, "skill:" + key)
 		var marker: String = "" if rank == 0 else " 🎓" if rank == 1 else " 🎓🎓"
 		(_skill_buttons[key] as Label).text = String(skill["label"]) + " · " + ability.to_upper() + marker
-		(_skill_buttons[key] as Label).tooltip_text = ["Nessuna competenza", "Competenza", "Maestria"][clampi(rank, 0, 2)] + " · Modifica da Visualizza competenze"
+		(_skill_buttons[key] as Label).tooltip_text = ["Nessuna competenza", "Competenza", "Maestria"][clampi(rank, 0, 2)] + " · Modifica da Visualizza e modifica → Competenze"
 		var ability_modifier: int = BonusRules.value(live, "ability_mod:" + ability)
 		var extra: int = BonusRules.bonus(live, "skill:" + key)
 		_set_formula("skill:" + key, "%+d" % value,
