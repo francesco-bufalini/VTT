@@ -686,9 +686,10 @@ static func _collect_species(record: Dictionary, output: Array[Dictionary]) -> v
 			continue
 		_append(output, {"id": "overview", "name": "Descrizione · " + species,
 			"source": wanted_source, "entries": PlayerCatalog.description_text("races", race),
-			"feats": PlayerCatalog.detailed_entry("races", race).get("feats", race.get("feats", [])),
-			"resist": race.get("resist", []), "immune": race.get("immune", []),
-			"conditionImmune": race.get("conditionImmune", [])},
+			"feats": PlayerCatalog.detailed_entry("races", race).get("feats", race.get("feats", []))},
+			# The overview is a readable trait, not a second grant of the
+			# race's top-level structured defenses. Those are assigned to
+			# the selectable race/subrace origin by the defenses editor.
 			1, "Specie · " + species, species_origin_id, "", "", 0)
 		var raw: Variant = race.get("entries", race.get("description", []))
 		if raw is Array:

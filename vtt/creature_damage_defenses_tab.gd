@@ -110,10 +110,16 @@ static func _sources(record: Dictionary) -> Array[Dictionary]:
 			var is_subrace: bool = not subrace.is_empty() and name.nocasecmp_to(species + " (" + subrace + ")") == 0 and source_book == String(record.get("subrace_source", book))
 			if not is_species and not is_subrace:
 				continue
-			var sid: String = ("subrace|" + source_book.to_lower() + "|" + name.to_lower()
+			# Match the canonical subrace origin identity used by all other
+			# creature benefits, not the flattened display name "Dwarf (Hill)".
+			var sid: String = ("subrace|" + source_book.to_lower() + "|" + subrace.to_lower()
 				if is_subrace else "race|" + source_book.to_lower() + "|" + name.to_lower())
+			# A child species cannot keep inherited racial defenses alive
+			# when the selected base species origin is disabled.
+			var parent_sid: String = "race|" + book.to_lower() + "|" + species.to_lower()
 			_add_source(sources, seen, race, sid, "Specie · " + name,
-				not bool(disabled.get(sid, false)))
+				not bool(disabled.get(sid, false))
+				and (not is_subrace or not bool(disabled.get(parent_sid, false))))
 	# Traits remain independently identifiable, but disabling a parent
 	# race/class/feat origin must also mute every child trait it grants.
 	var race_parent_id: String = "race|" + String(record.get("species_source", "")).to_lower() + "|" + String(record.get("species", "")).to_lower()
@@ -160,27 +166,34 @@ static func base_rank(record: Dictionary, damage_type: String) -> int:
 
 
 static func rank(record: Dictionary, damage_type: String) -> int:
-	var entries: Variant = record.get("damage_defense_entries", null)
-	if entries is Array:
-		var best: int = 0
-		var active_origins: Dictionary = Rules.origin_enabled_map(record)
-		for source: Dictionary in _sources(record):
-			var sid: String = String(source.get("id", ""))
-			active_origins[sid] = bool(source.get("active", true)) and bool(active_origins.get(sid, true))
-		for entry: Variant in entries:
-			if entry is Dictionary and String(entry.get("key", "")) == damage_type and not bool(entry.get("disabled", false)):
-				var origin: String = String(entry.get("origin_id", ""))
-				if not origin.is_empty():
-					if not bool(active_origins.get(origin, false)): continue
-				var value: int = clampi(int(entry.get("rank", 0)), -1, 2)
-				if value == 2: return 2
-				if value > best or best == 0: best = value
-		return best
-	var overrides: Variant = record.get("damage_defense_overrides", {})
-	if overrides is Dictionary and (overrides as Dictionary).has(damage_type):
-		return clampi(int((overrides as Dictionary)[damage_type]), -1, 2)
-	return base_rank(record, damage_type)
-
+	# A legacy explicit zero overrides even an innate defense. Preserve this
+	# semantics for records that have not adopted origin-backed entries yet.
+	var saved_entries: Variant = record.get("damage_defense_entries", null)
+	var old_overrides: Variant = record.get("damage_defense_overrides", {})
+	if not saved_entries is Array and old_overrides is Dictionary and (old_overrides as Dictionary).has(damage_type):
+		return clampi(int((old_overrides as Dictionary)[damage_type]), -1, 2)
+	# Saved entries can be empty or predate a change of species/equipment.
+	# Reconcile automatic grants with the *current* structured sources before
+	# applying disabled-state overrides or manual entries.
+	var sources: Array[Dictionary] = _sources(record)
+	var entries: Array[Dictionary] = _entries_from_record(record, sources)
+	var active_origins: Dictionary = Rules.origin_enabled_map(record)
+	for source: Dictionary in sources:
+		var sid: String = String(source.get("id", ""))
+		active_origins[sid] = bool(source.get("active", true)) and bool(active_origins.get(sid, true))
+	var best: int = 0
+	for entry: Dictionary in entries:
+		if String(entry.get("key", "")) != damage_type or bool(entry.get("disabled", false)):
+			continue
+		var origin: String = String(entry.get("origin_id", ""))
+		if not origin.is_empty() and not bool(active_origins.get(origin, false)):
+			continue
+		var value: int = clampi(int(entry.get("rank", 0)), -1, 2)
+		if value == 2:
+			return 2
+		if value > best or best == 0:
+			best = value
+	return best
 
 static func _base_condition_from_sources(sources: Array[Dictionary], condition: String) -> bool:
 	for source: Dictionary in sources:
@@ -196,23 +209,25 @@ static func base_condition_immune(record: Dictionary, condition: String) -> bool
 
 
 static func condition_immune(record: Dictionary, condition: String) -> bool:
-	var entries: Variant = record.get("damage_defense_entries", null)
-	if entries is Array:
-		var active_origins: Dictionary = Rules.origin_enabled_map(record)
-		for source: Dictionary in _sources(record):
-			var sid: String = String(source.get("id", ""))
-			active_origins[sid] = bool(source.get("active", true)) and bool(active_origins.get(sid, true))
-		for entry: Variant in entries:
-			if entry is Dictionary and String(entry.get("key", "")) == condition and int(entry.get("rank", 0)) == 3 and not bool(entry.get("disabled", false)):
-				var origin: String = String(entry.get("origin_id", ""))
-				if origin.is_empty(): return true
-				if bool(active_origins.get(origin, false)): return true
-		return false
-	var overrides: Variant = record.get("condition_immunity_overrides", {})
-	if overrides is Dictionary and (overrides as Dictionary).has(condition):
-		return bool((overrides as Dictionary)[condition])
-	return base_condition_immune(record, condition)
-
+	var saved_entries: Variant = record.get("damage_defense_entries", null)
+	var old_overrides: Variant = record.get("condition_immunity_overrides", {})
+	if not saved_entries is Array and old_overrides is Dictionary and (old_overrides as Dictionary).has(condition):
+		return bool((old_overrides as Dictionary)[condition])
+	var sources: Array[Dictionary] = _sources(record)
+	var entries: Array[Dictionary] = _entries_from_record(record, sources)
+	var active_origins: Dictionary = Rules.origin_enabled_map(record)
+	for source: Dictionary in sources:
+		var sid: String = String(source.get("id", ""))
+		active_origins[sid] = bool(source.get("active", true)) and bool(active_origins.get(sid, true))
+	for entry: Dictionary in entries:
+		if (String(entry.get("key", "")) != condition
+			or int(entry.get("rank", 0)) != 3
+			or bool(entry.get("disabled", false))):
+			continue
+		var origin: String = String(entry.get("origin_id", ""))
+		if origin.is_empty() or bool(active_origins.get(origin, false)):
+			return true
+	return false
 
 func setup(on_change: Callable) -> void:
 	_changed = on_change

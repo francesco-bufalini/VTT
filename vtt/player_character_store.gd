@@ -385,6 +385,11 @@ func normalize_character(value: Dictionary) -> Dictionary:
 	defaults["attack_ability"] = "dex" if String(value.get("attack_ability", "str")) == "dex" else "str"
 	defaults["attack_overrides"] = value.get("attack_overrides", {}).duplicate(true) if value.get("attack_overrides", {}) is Dictionary else {}
 	defaults["damage_defense_overrides"] = value.get("damage_defense_overrides", {}).duplicate(true) if value.get("damage_defense_overrides", {}) is Dictionary else {}
+	# Keep the origin-backed defense editor state when normalizing/saving.
+	# It is intentionally optional: legacy characters without this array
+	# still read their damage_defense_overrides during migration.
+	if value.get("damage_defense_entries", null) is Array:
+		defaults["damage_defense_entries"] = (value["damage_defense_entries"] as Array).duplicate(true)
 	defaults["condition_immunity_overrides"] = value.get("condition_immunity_overrides", {}).duplicate(true) if value.get("condition_immunity_overrides", {}) is Dictionary else {}
 	defaults["equipped_attack_id"] = String(value.get("equipped_attack_id", "")).strip_edges()
 	defaults["equipped_inventory_index"] = maxi(-1, int(value.get("equipped_inventory_index", -1)))

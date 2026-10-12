@@ -103,6 +103,64 @@ func run() -> void:
 	assert(Defenses.rank(normalized, "acid") == 0,
 		"Disabled manual defense origin must survive monster normalization")
 
+	# The source 5etools races.json contains a typed resist:["poison"] for
+	# both Dwarf editions. This should not depend on Dwarven Resilience prose.
+	var dwarf: Dictionary = {
+		"kind": "character", "species": "Dwarf", "species_source": "PHB",
+		"proficiency_origins": [], "damage_defense_entries": []
+	}
+	assert(Defenses.rank(dwarf, "poison") == 1,
+		"2014 Dwarf gains poison resistance from the structured race field")
+	var dwarf_sources: Array[Dictionary] = Defenses._sources(dwarf)
+	var dwarf_entries: Array[Dictionary] = Defenses._entries_from_record(dwarf, dwarf_sources)
+	var racial_grants := 0
+	for defense: Dictionary in dwarf_entries:
+		if String(defense.get("key", "")) == "poison" and int(defense.get("rank", 0)) == 1:
+			assert(String(defense.get("origin_id", "")) == "race|phb|dwarf"
+				and bool(defense.get("automatic", false)))
+			racial_grants += 1
+	assert(racial_grants == 1, "Innate poison resistance belongs to one racial origin")
+	var hill: Dictionary = dwarf.duplicate(true)
+	hill["subrace"] = "Hill"
+	hill["subrace_source"] = "PHB"
+	assert(Defenses.rank(hill, "poison") == 1,
+		"Subraces inherit structured defenses of the selected base race")
+	var hill_entries: Array[Dictionary] = Defenses._entries_from_record(hill, Defenses._sources(hill))
+	var inherited_count := 0
+	for defense: Dictionary in hill_entries:
+		if String(defense.get("key", "")) == "poison" and int(defense.get("rank", 0)) == 1:
+			inherited_count += 1
+	assert(inherited_count == 1, "Base + flattened subrace must not duplicate resistance")
+	var legacy_dwarf: Dictionary = dwarf.duplicate(true)
+	legacy_dwarf.erase("damage_defense_entries")
+	legacy_dwarf["damage_defense_overrides"] = {"poison": 0}
+	assert(Defenses.rank(legacy_dwarf, "poison") == 0,
+		"Legacy explicit zero still overrides an innate resistance")
+	var dwarf_2024: Dictionary = dwarf.duplicate(true)
+	dwarf_2024["species_source"] = "XPHB"
+	assert(Defenses.rank(dwarf_2024, "poison") == 1,
+		"2024 Dwarf also has structured poison resistance")
+	var disabled_dwarf: Dictionary = hill.duplicate(true)
+	disabled_dwarf["proficiency_origins"] = [{"id": "race|phb|dwarf", "disabled": true}]
+	assert(Defenses.rank(disabled_dwarf, "poison") == 0,
+		"Disabled racial origin withdraws inherited poison resistance")
+	var overridden_dwarf: Dictionary = dwarf.duplicate(true)
+	overridden_dwarf["damage_defense_entries"] = [{
+		"key": "poison", "rank": 1, "base_rank": 1,
+		"origin_id": "race|phb|dwarf", "automatic": true, "disabled": true
+	}]
+	assert(Defenses.rank(overridden_dwarf, "poison") == 0,
+		"Disabling one derived resistance must persist across recalculation")
+	overridden_dwarf["species"] = "Tiefling"
+	assert(Defenses.rank(overridden_dwarf, "poison") == 0
+		and Defenses.rank(overridden_dwarf, "fire") == 1,
+		"Changing species withdraws old grants and derives new structured ones")
+	var dragonborn: Dictionary = dwarf.duplicate(true)
+	dragonborn["species"] = "Dragonborn"
+	assert(Defenses.rank(dragonborn, "poison") == 0
+		and Defenses.rank(dragonborn, "fire") == 0,
+		"Choice-based damage resistance must not be auto-selected")
+
 	var feat_holder: Dictionary = {
 		"kind": "character", "feats_catalog": [
 			{"name": "Elemental Gift", "source": "HB", "resist": ["acid"],
