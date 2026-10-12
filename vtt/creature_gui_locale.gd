@@ -672,7 +672,7 @@ const EN: Dictionary = {
 	"Seleziona una creatura.": "Select a creature.",
 	"Impossibile salvare la miniatura della creatura.": "Could not save the creature's miniature.",
 	"Aspetto attuale aggiornato.": "Current appearance updated.",
-	"Eliminare definitivamente '%s' dal tuo archivio?\\nVerranno eliminati anche i suoi token presenti nella scena.": "Permanently delete '%s' from your archive?\\nAll of its tokens in the scene will also be deleted.",
+	"Eliminare definitivamente '%s' dal tuo archivio?\nVerranno eliminati anche i suoi token presenti nella scena.": "Permanently delete '%s' from your archive?\nAll of its tokens in the scene will also be deleted.",
 	"Eliminazione non riuscita: %s": "Deletion failed: %s",
 	"Creatura e relativi token eliminati.": "Creature and associated tokens deleted.",
 	"Seleziona un solo token nella scena.": "Select exactly one token in the scene.",
@@ -780,7 +780,32 @@ static func text_for(source: String, language: String) -> String:
 			return " · ".join(fragments)
 	if language == "it":
 		return source
-	# Common generated GUI messages: translate fixed labels, keep their numbers
+	# Formatted GUI labels keep their variable values (creature names, counts,
+	# spell names, IDs) untouched. Only recognized UI templates are translated.
+	for template: String in [
+		"Come creatura (%s)", "Senza origine (%d)",
+		"Livello %d", "%d voci del bestiario ricercabili",
+		"%d risultati", "%d° livello · %d rimasti",
+		"%s · %d/%d scelte",
+		"Lancia %s (livello %d). Scegli quale slot consumare.",
+		"%s lanciato · effetto VTT non attivabile senza un token collegato.",
+		"%s lanciato · nessun effetto VTT associato.",
+		"Impossibile attivare l'effetto VTT di %s.",
+		"Salvataggio non riuscito: %s", "Eliminazione non riuscita: %s",
+		"Lettera ricevuta da giocatore %s: %s",
+		"I PF della seconda forma di %s sono a 0. Ripristinare l'aspetto di base?",
+		"%s · Ricarica d6: %d (%s, occorre %d–6).",
+		"Con rincorsa di almeno 10 ft: max(0, 3 + modificatore FOR %+d) = %d ft. ",
+		"Eliminare definitivamente '%s' dal tuo archivio?\\nVerranno eliminati anche i suoi token presenti nella scena.",
+	]:
+		var translated_template: String = _translate_template(source, template)
+		if not translated_template.is_empty():
+			return translated_template
+	# Composite suffixes contain UI instructions attached to data labels.
+	for suffix: String in [" · Modifica da Visualizza e modifica → Competenze"]:
+		if source.ends_with(suffix):
+			return text_for(source.substr(0, source.length() - suffix.length()), language) + String(EN[suffix])
+		# Common generated GUI messages: translate fixed labels, keep their numbers
 	# and original creature/spell/item names intact.
 	for prefix in ["Strumenti: ", "Linguaggi: ", "Completa le scelte: ",
 		"CA ", "Camminata: ",
@@ -789,6 +814,16 @@ static func text_for(source: String, language: String) -> String:
 		"Vai al privilegio: ", "Slot dal livello: ",
 		"Dadi vita: ", "XP minimi: ", "Iniziativa: ", "Portata ",
 		"Massimi derivati dai dati strutturati: ",
+		"Esportazione non riuscita: ", "Impossibile salvare resistenze/immunità: ",
+		"Salvataggio incantesimi non riuscito: ", "Equipaggiamento non salvato: ",
+		"Impossibile salvare attacco: ", "Impossibile salvare i documenti: ",
+		"Impossibile salvare competenze: ", "Impossibile salvare inventario: ",
+		"Tracker non salvato: ", "PF della forma non disponibili: ",
+		"Impossibile salvare gli incantesimi attivi: ",
+		"Vulnerabilità: ", "Resistenze: ", "Immunità ai danni: ",
+		"Immunità alle condizioni: ", "Senza competenza: ",
+		"Cataloghi e integrazioni ricaricati. ", "Fonte: ",
+		"Descrizione · ", "Oggetto · ", "Classe · ",
 		"Taglia · ", "Slot livello ", "Livello ",
 		"Competenza: ", "Elimina · ", "Completa · ", "Aggiunto: ",
 		"Documento · ", "ID catalogo: ", "Origini:\n"]:
@@ -802,6 +837,54 @@ static func text_for(source: String, language: String) -> String:
 			if middle.is_valid_int():
 				return String(EN[fmt]) % int(middle)
 	return source
+
+# Match a small, explicit set of UI format strings after their values have been
+# interpolated. No blanket translation is applied to compendium/free-form data.
+static func _translate_template(source: String, template: String) -> String:
+	if not EN.has(template):
+		return ""
+	var literals: Array[String] = []
+	var kinds: Array[String] = []
+	var cursor := 0
+	while cursor < template.length():
+		var marker := template.find("%", cursor)
+		if marker < 0:
+			break
+		var kind := template.substr(marker + 1, 1)
+		var width := 2
+		if kind == "+":
+			kind = template.substr(marker + 2, 1)
+			width = 3
+		if kind not in ["d", "s"]:
+			return ""
+		literals.append(template.substr(cursor, marker - cursor))
+		kinds.append(kind)
+		cursor = marker + width
+	if kinds.is_empty():
+		return ""
+	literals.append(template.substr(cursor))
+	var source_cursor := 0
+	var values: Array = []
+	for i in range(kinds.size()):
+		var fixed: String = literals[i]
+		if not source.substr(source_cursor).begins_with(fixed):
+			return ""
+		source_cursor += fixed.length()
+		var ending: String = literals[i + 1]
+		var next: int = source.find(ending, source_cursor) if not ending.is_empty() else source.length()
+		if next < source_cursor:
+			return ""
+		var value: String = source.substr(source_cursor, next - source_cursor)
+		if kinds[i] == "d":
+			if not value.is_valid_int():
+				return ""
+			values.append(int(value))
+		else:
+			values.append(value)
+		source_cursor = next
+	if source.substr(source_cursor) != literals[literals.size() - 1]:
+		return ""
+	return String(EN[template]) % values
 
 static func apply(root: Node, language: String) -> void:
 	if root == null or not is_instance_valid(root):
