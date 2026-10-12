@@ -141,12 +141,12 @@ static func _append_class_trackers(record: Dictionary, output: Array[Dictionary]
 		if not raw_class is Dictionary:
 			continue
 		var class_data: Dictionary = raw_class
-		var class_name: String = String(class_data.get("name", ""))
+		var class_label: String = String(class_data.get("name", ""))
 		var source: String = String(class_data.get("source", ""))
 		var level: int = int(class_data.get("level", 0))
 		if level < 1 or level > 20:
 			continue
-		var definition: Dictionary = ClassMechanics.class_definition(class_name, source)
+		var definition: Dictionary = ClassMechanics.class_definition(class_label, source)
 		for column: Dictionary in ClassMechanics.resource_columns(definition):
 			var levels: Array = column.get("levels", [])
 			if level > levels.size():
@@ -161,7 +161,7 @@ static func _append_class_trackers(record: Dictionary, output: Array[Dictionary]
 				continue
 			var column_name: String = String(column.get("name", ""))
 			var id: String = "class:%s:%s:%s" % [
-				class_name.to_lower(), String(definition.get("source", source)).to_lower(),
+				class_label.to_lower(), String(definition.get("source", source)).to_lower(),
 				column_name.to_lower().replace(" ", "_")
 			]
 			if seen.has(id):
@@ -173,5 +173,5 @@ static func _append_class_trackers(record: Dictionary, output: Array[Dictionary]
 				"max": int(max_text),
 				"origin": String(column.get("origin_feature", column_name)),
 				"recharge": "manual",
-				"source_label": "%s · %s" % [class_name, String(definition.get("source", source))]
+				"source_label": "%s · %s" % [class_label, String(definition.get("source", source))]
 			})
