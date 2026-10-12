@@ -222,63 +222,84 @@ func apply_explicit_token_motion(
 	refresh_all()
 
 
+# Collision exceptions are required between *all* members of a rigid
+# formation, including siblings, not only a follower and its ancestors.
+# Otherwise moving a side token into the footprint of another member can
+# be blocked even though both belong to the same moving group.
+func _queue_collision_pair(
+	wanted: Dictionary, first: PhysicsBody3D, second: PhysicsBody3D
+) -> void:
+	if first == second or not is_instance_valid(first) or not is_instance_valid(second):
+		return
+	var first_id: int = first.get_instance_id()
+	var second_id: int = second.get_instance_id()
+	var pair_id: String = "%d:%d" % [
+		mini(first_id, second_id), maxi(first_id, second_id)
+	]
+	var previous: Array = _collision_links.get(pair_id, [])
+	if (
+		previous.size() == 2
+		and previous[0].get_ref() == first
+		and previous[1].get_ref() == second
+	):
+		wanted[pair_id] = previous
+	else:
+		wanted[pair_id] = [weakref(first), weakref(second)]
+
+
 func _reconcile_collision_links() -> void:
 	if board == null or not is_instance_valid(board):
 		return
 	var wanted: Dictionary = {}
+	var groups: Dictionary = {}
 	for value: Node in get_tree().get_nodes_in_group("dnd_token"):
 		if not value is CharacterBody3D or not board.is_ancestor_of(value):
 			continue
 		var rider: CharacterBody3D = value as CharacterBody3D
-		if not is_mounted(rider):
-			continue
-		# A grandchild must also be able to pass through its ancestors
-		# while the whole formation moves.
-		var target: Node3D = get_target(rider)
-		var ancestors: Dictionary = {}
-		while target is PhysicsBody3D and not ancestors.has(target):
-			ancestors[target] = true
-			var link_id: String = "%d:%d" % [
-				rider.get_instance_id(), target.get_instance_id()
-			]
-			var cached_pair: Array = _collision_links.get(link_id, [])
-			if (
-				cached_pair.size() == 2
-				and cached_pair[0].get_ref() == rider
-				and cached_pair[1].get_ref() == target
-			):
-				wanted[link_id] = cached_pair
-			else:
-				wanted[link_id] = [weakref(rider), weakref(target)]
-			if target is CharacterBody3D:
-				target = get_target(target as CharacterBody3D)
-			else:
-				break
+		var root: CharacterBody3D = get_token_group_root(rider)
+		if root != null:
+			var root_id: int = root.get_instance_id()
+			if not groups.has(root_id):
+				groups[root_id] = []
+			(groups[root_id] as Array).append(rider)
+		elif is_mounted(rider):
+			# Retain collision handling for old item-based mount snapshots.
+			var target: Node3D = get_target(rider)
+			var visited: Dictionary = {}
+			while target is PhysicsBody3D and not visited.has(target):
+				visited[target] = true
+				_queue_collision_pair(
+					wanted, rider, target as PhysicsBody3D
+				)
+				if target is CharacterBody3D:
+					target = get_target(target as CharacterBody3D)
+				else:
+					break
 
-	for rider_id: Variant in _collision_links.keys():
-		var previous: Array = _collision_links[rider_id]
-		var old_rider: PhysicsBody3D = previous[0].get_ref() as PhysicsBody3D
-		var old_target: PhysicsBody3D = previous[1].get_ref() as PhysicsBody3D
-		var new_pair: Array = wanted.get(rider_id, [])
-		var unchanged: bool = (
-			new_pair.size() == 2
-			and new_pair[0].get_ref() == old_rider
-			and new_pair[1].get_ref() == old_target
-		)
-		if not unchanged and is_instance_valid(old_rider) and is_instance_valid(old_target):
-			old_rider.remove_collision_exception_with(old_target)
-			old_target.remove_collision_exception_with(old_rider)
+	for group_value: Variant in groups.values():
+		var members: Array = group_value as Array
+		for index: int in range(members.size()):
+			for other: int in range(index + 1, members.size()):
+				_queue_collision_pair(
+					wanted,
+					members[index] as PhysicsBody3D,
+					members[other] as PhysicsBody3D
+				)
 
-	for rider_id: Variant in wanted.keys():
-		var pair: Array = wanted[rider_id]
-		var current_rider: PhysicsBody3D = pair[0].get_ref() as PhysicsBody3D
-		var current_target: PhysicsBody3D = pair[1].get_ref() as PhysicsBody3D
-		var existing_pair: Array = _collision_links.get(rider_id, [])
-		if (
-			existing_pair.size() != 2
-			or existing_pair[0].get_ref() != current_rider
-			or existing_pair[1].get_ref() != current_target
-		):
-			current_rider.add_collision_exception_with(current_target)
-			current_target.add_collision_exception_with(current_rider)
+	for pair_id: Variant in _collision_links.keys():
+		var old_pair: Array = _collision_links[pair_id]
+		var old_first: PhysicsBody3D = old_pair[0].get_ref() as PhysicsBody3D
+		var old_second: PhysicsBody3D = old_pair[1].get_ref() as PhysicsBody3D
+		if not wanted.has(pair_id):
+			if is_instance_valid(old_first) and is_instance_valid(old_second):
+				old_first.remove_collision_exception_with(old_second)
+				old_second.remove_collision_exception_with(old_first)
+
+	for pair_id: Variant in wanted.keys():
+		var pair: Array = wanted[pair_id]
+		var first: PhysicsBody3D = pair[0].get_ref() as PhysicsBody3D
+		var second: PhysicsBody3D = pair[1].get_ref() as PhysicsBody3D
+		if not _collision_links.has(pair_id):
+			first.add_collision_exception_with(second)
+			second.add_collision_exception_with(first)
 	_collision_links = wanted
