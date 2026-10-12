@@ -3,11 +3,6 @@ extends RefCounted
 # Complements vtt/data/class_mechanics_5etools.json; never replaces 5etools.
 const PATH := "res://vtt/data/class_resource_overrides.json"
 const Bonuses = preload("res://vtt/creature_bonus_rules.gd")
-const VARIABLES := {
-	"1": "str_mod", "2": "dex_mod", "3": "con_mod",
-	"4": "int_mod", "5": "wis_mod", "6": "cha_mod",
-	"7": "level", "8": "proficiency"
-}
 static var _loaded := false
 static var _classes: Array = []
 
@@ -37,8 +32,9 @@ static func _subclass_key(value: String) -> String:
 	return name
 
 
-# Parse only supported arithmetic and symbolic placeholders, not XML prose.
-# The VTT's existing bonus evaluator includes effective ability modifiers.
+# Runtime resource formulas use ONLY the same VTT notation as numeric bonuses
+# (e.g. cha_mod, proficiency, 1 + cha_mod). External source placeholders
+# are converted by the offline build tool and are intentionally rejected here.
 static func evaluate_max(raw: Variant, record: Dictionary, class_level: int, minimum: int = 0) -> Dictionary:
 	if raw is int or raw is float:
 		return {"max": maxi(minimum, int(raw)), "max_formula": ""}
@@ -47,26 +43,17 @@ static func evaluate_max(raw: Variant, record: Dictionary, class_level: int, min
 		return {}
 	if formula.is_valid_int():
 		return {"max": maxi(minimum, int(formula)), "max_formula": ""}
-	var expr: String = formula
-	var placeholders := RegEx.create_from_string("%[0-9]+")
-	if placeholders == null:
-		return {}
-	for item: RegExMatch in placeholders.search_all(formula):
-		var symbol: String = item.get_string()
-		var index: String = symbol.substr(1)
-		if not VARIABLES.has(index):
-			return {}
-		expr = expr.replace(symbol, String(VARIABLES[index]))
-	# Reject any remaining percent sign or unknown characters before evaluation.
+	# Keep external placeholders and arbitrary functions out of runtime formula
+	# evaluation. Bonuses._evaluate_expression validates symbols and arithmetic.
 	var allowed := RegEx.create_from_string("^[0-9a-z_ .+*/()\\-]+$")
-	if allowed == null or allowed.search(expr.to_lower()) == null:
+	if allowed == null or allowed.search(formula.to_lower()) == null:
 		return {}
 	var effective: Dictionary = record.duplicate(false)
-	effective["level"] = class_level
-	var result: Dictionary = Bonuses._evaluate_expression(effective, expr, {})
+	effective["level"] = int(record.get("level", class_level))
+	var result: Dictionary = Bonuses._evaluate_expression(effective, formula, {})
 	if not bool(result.get("ok", false)):
 		return {}
-	return {"max": maxi(minimum, int(result.get("value", 0))), "max_formula": expr}
+	return {"max": maxi(minimum, int(result.get("value", 0))), "max_formula": formula}
 
 
 static func for_class(
