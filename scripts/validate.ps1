@@ -129,6 +129,7 @@ $fastTests = @(
     "test_creature_gui_layout.gd",
     "test_creature_gui_locale.gd",
     "test_equipped_weapons.gd",
+    "test_damage_defenses.gd",
     "test_creature_formula_bonuses.gd",
     "test_proficiency_sources.gd",
     "test_trait_origins.gd",
