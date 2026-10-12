@@ -299,10 +299,9 @@ func _range_target_names() -> Array[String]:
 
 func _draw_spell_range(center: Vector3, radius: float) -> void:
 	var scale: float = maxf(0.001, float(board.get("cell_size")))
-	var half_footprint: float = scale * 0.5
-	var caster: Node3D = spell.get("_pending_caster") as Node3D
-	if caster != null and is_instance_valid(caster) and caster.has_method("get_footprint_cells"):
-		half_footprint *= maxf(0.5, float(caster.call("get_footprint_cells")))
+	var half_footprint: float = float(measure.get("_spell_range_footprint"))
+	if half_footprint < 0.0:
+		half_footprint = scale * 0.5
 	var vertices: PackedVector2Array = RangeGeometry.rounded_footprint_perimeter(half_footprint, radius)
 	var projected := PackedVector2Array()
 	for vertex: Vector2 in vertices:
@@ -335,7 +334,6 @@ func _draw_target_list(names: Array[String], area_label: String, top: float = 13
 func _draw() -> void:
 	if not _is_active():
 		return
-	var range_mesh: MeshInstance3D = measure.get("_spell_range_preview") as MeshInstance3D
 	var active_range: bool = bool(measure.get("_spell_range_active")) and bool(spell.call("is_targeting"))
 	if _is_2d_view() and active_range:
 		var range_center: Vector3 = measure.get("_spell_range_center")
