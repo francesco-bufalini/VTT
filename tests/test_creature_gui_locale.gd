@@ -44,7 +44,7 @@ func run() -> void:
 	input.placeholder_text = "Cerca tra le mie creature…"
 	sheet.add_child(input)
 	var preview := RichTextLabel.new()
-	preview.text = "SALTO IN LUNGO\\nCon rincorsa (almeno 10 ft): 12 ft"
+	preview.text = "SALTO IN LUNGO\nCon rincorsa (almeno 10 ft): 12 ft"
 	preview.set_meta("creature_gui_text", true)
 	sheet.add_child(preview)
 	var compendium := RichTextLabel.new()
@@ -68,7 +68,7 @@ func run() -> void:
 	assert(tabs.get_tab_title(0) == "Statistics" and statistics.name == "Statistiche")
 	assert(input.text == "Storia" and input.placeholder_text == "Search my creatures…")
 	assert(compendium.text == "Storia" and catalog.get_item_text(0) == "Storia")
-	assert(preview.text == "LONG JUMP\\nWith a run-up (at least 10 ft): 12 ft")
+	assert(preview.text == "LONG JUMP\nWith a run-up (at least 10 ft): 12 ft")
 	assert(unrelated.text == "Chiudi", "Localization must not touch unrelated VTT controls")
 
 	# Dynamic UI updates and repeated passes must preserve the original source.
