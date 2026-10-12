@@ -857,7 +857,7 @@ static func origins(record: Dictionary) -> Array[Dictionary]:
 				"name": ("⚠ Origine non più disponibile · " if withdrawn else "") + String(item.get("name", "Origine")),
 				"group": String(item.get("group", "custom")),
 				"disabled": withdrawn or bool(item.get("disabled", false)),
-				"automatic": withdrawn, "requirements": []})
+				"automatic": withdrawn, "applied": bool(item.get("applied", false)), "requirements": []})
 	var stored_choices: Variant = record.get("proficiency_choices", [])
 	if not stored_choices is Array:
 		stored_choices = []
@@ -1068,7 +1068,7 @@ static func reconcile_origin_dependents(record: Dictionary) -> void:
 				used_origins[String(feature.get("origin_key", ""))] = true
 		var active_origins: Array = []
 		for origin: Dictionary in kept_origins:
-			if String(origin.get("group", "")) == "spell" and not used_origins.has(String(origin.get("id", ""))):
+			if String(origin.get("group", "")) == "spell" and not bool(origin.get("applied", false)) and not used_origins.has(String(origin.get("id", ""))):
 				continue
 			active_origins.append(origin)
 		record["proficiency_origins"] = active_origins
