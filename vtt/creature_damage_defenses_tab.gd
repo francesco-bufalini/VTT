@@ -251,6 +251,71 @@ func _make_defense_row(parent: VBoxContainer, text_value: String) -> HBoxContain
 	return row
 
 
+func _select_origin(id: String) -> void:
+	_selected_origin = id
+	_refresh_highlights()
+
+
+func _refresh_origin_buttons() -> void:
+	for child: Node in _origin_cards.get_children():
+		_origin_cards.remove_child(child)
+		child.queue_free()
+	_origin_buttons.clear()
+	var manual := Button.new()
+	manual.text = "Senza origine (manuali)"
+	manual.toggle_mode = true
+	manual.alignment = HORIZONTAL_ALIGNMENT_LEFT
+	manual.pressed.connect(_select_origin.bind("__manual__"))
+	_origin_cards.add_child(manual)
+	_origin_buttons["__manual__"] = manual
+	for source: Dictionary in _cached_sources:
+		var sid: String = String(source.get("id", ""))
+		var direct_count: int = (_direct_type_list(source.get("resist", [])).size()
+			+ _direct_type_list(source.get("immune", [])).size()
+			+ _direct_type_list(source.get("conditionImmune", [])).size())
+		var button := Button.new()
+		button.toggle_mode = true
+		button.alignment = HORIZONTAL_ALIGNMENT_LEFT
+		button.clip_text = true
+		button.text = String(source.get("name", sid)) + " (%d)" % direct_count
+		button.tooltip_text = ("Origine inattiva" if not bool(source.get("active", true))
+			else "Seleziona per evidenziare le difese concesse dai dati strutturati di questa origine.")
+		button.disabled = not bool(source.get("active", true))
+		button.pressed.connect(_select_origin.bind(sid))
+		_origin_cards.add_child(button)
+		_origin_buttons[sid] = button
+
+
+func _refresh_highlights() -> void:
+	for sid: String in _origin_buttons:
+		(_origin_buttons[sid] as Button).set_pressed_no_signal(sid == _selected_origin)
+	var selected_damage: Array[String] = []
+	var selected_conditions: Array[String] = []
+	if _selected_origin == "__manual__":
+		for raw_key: Variant in _record.get("damage_defense_overrides", {}).keys():
+			selected_damage.append(String(raw_key))
+		for raw_key: Variant in _record.get("condition_immunity_overrides", {}).keys():
+			selected_conditions.append(String(raw_key))
+	else:
+		for source: Dictionary in _cached_sources:
+			if String(source.get("id", "")) != _selected_origin:
+				continue
+			selected_damage.append_array(_direct_type_list(source.get("resist", [])))
+			selected_damage.append_array(_direct_type_list(source.get("immune", [])))
+			selected_conditions.append_array(_direct_type_list(source.get("conditionImmune", [])))
+	for cards: Dictionary in [_damage_cards, _condition_cards]:
+		var selected: Array[String] = selected_damage if cards == _damage_cards else selected_conditions
+		for key: String in cards:
+			var card: PanelContainer = cards[key]
+			var style := StyleBoxFlat.new()
+			style.draw_center = false
+			style.border_color = Color(0.34, 0.66, 0.93) if key in selected else Color(0.36, 0.41, 0.46, 0.5)
+			style.set_border_width_all(2 if key in selected else 1)
+			style.set_corner_radius_all(5)
+			style.set_content_margin_all(4)
+			card.add_theme_stylebox_override("panel", style)
+
+
 func load_record(record: Dictionary) -> void:
 	_record = record.duplicate(true)
 	_cached_sources = _sources(_record)
@@ -303,6 +368,15 @@ func load_record(record: Dictionary) -> void:
 		immune.toggled.connect(_on_condition_changed.bind(condition))
 		condition_row.add_child(immune)
 		_condition_buttons[condition] = immune
+	if _selected_origin != "__manual__":
+		var is_current := false
+		for source: Dictionary in _cached_sources:
+			if String(source.get("id", "")) == _selected_origin:
+				is_current = true
+		if not is_current:
+			_selected_origin = "__manual__"
+	_refresh_origin_buttons()
+	_refresh_highlights()
 
 
 func _on_resistance_changed(enabled: bool, key: String) -> void:
@@ -320,6 +394,7 @@ func _change_rank(key: String, level: int) -> void:
 	var pair: Dictionary = _damage_buttons.get(key, {})
 	(pair.get("resistance") as CheckButton).set_pressed_no_signal(level >= 1)
 	(pair.get("immunity") as CheckButton).set_pressed_no_signal(level == 2)
+	_refresh_highlights()
 	_publish()
 
 
@@ -327,6 +402,7 @@ func _on_condition_changed(enabled: bool, key: String) -> void:
 	var overrides: Dictionary = _record.get("condition_immunity_overrides", {}).duplicate(true)
 	overrides[key] = enabled
 	_record["condition_immunity_overrides"] = overrides
+	_refresh_highlights()
 	_publish()
 
 
