@@ -156,6 +156,47 @@ static func _load_ability_index() -> void:
 		_ability_index = raw
 
 
+# The catalog retains 5etools' structured options (not prose).
+# Only unambiguous one-score, one-pick choices are modeled here; for
+# example Telepathic allows INT, WIS or CHA +1. Multi-score ASI remains
+# deliberately excluded until its multiple picks can be represented.
+static func feat_ability_choice(feat: Dictionary) -> Dictionary:
+	_load_ability_index()
+	var name: String = String(feat.get("name", "")).strip_edges()
+	var source: String = String(feat.get("source", "")).strip_edges()
+	for row: Dictionary in _ability_index.get("feat", []):
+		if (
+			String(row.get("name", "")).nocasecmp_to(name) != 0
+			or String(row.get("source", "")) != source
+		):
+			continue
+		var raw: Variant = row.get("ability_choices", [])
+		var variants: Array = raw if raw is Array else [raw]
+		if variants.size() != 1 or not variants[0] is Dictionary:
+			return {}
+		var chosen: Variant = (variants[0] as Dictionary).get("choose", {})
+		if not chosen is Dictionary:
+			return {}
+		var pick: Dictionary = chosen as Dictionary
+		if int(pick.get("count", 1)) != 1:
+			return {}
+		var from: Variant = pick.get("from", [])
+		if not from is Array or (from as Array).is_empty():
+			return {}
+		var offered: Array[String] = []
+		for value: Variant in from:
+			var stat: String = String(value).strip_edges().to_lower()
+			if stat in ABILITIES and stat not in offered:
+				offered.append(stat)
+		if offered.is_empty():
+			return {}
+		var amount: int = int(pick.get("amount", 1))
+		if amount <= 0:
+			return {}
+		return {"from": offered, "amount": amount}
+	return {}
+
+
 static func _catalog_origins(result: Array[Dictionary], record: Dictionary) -> void:
 	_load_ability_index()
 	var species: String = String(record.get("species", ""))
@@ -199,7 +240,15 @@ static func _catalog_origins(result: Array[Dictionary], record: Dictionary) -> v
 			for feat: Variant in selected:
 				if feat is Dictionary and String(row.get("name", "")).nocasecmp_to(String(feat.get("name", ""))) == 0 and String(row.get("source", "")) == String(feat.get("source", "")):
 					var sid: String = "feat|" + String(row.get("source", "")).to_lower() + "|" + String(row.get("name", "")).to_lower()
-					_ability_grants(result, sid, "Talento · " + String(row.get("name", "")), row)
+					var feat_label: String = "Talento · " + String(row.get("name", ""))
+					_ability_grants(result, sid, feat_label, row)
+					# This grant only appears after the player chooses one of the
+					# structurally permitted ability scores in the feat editor.
+					var choice: Dictionary = feat_ability_choice(feat)
+					var picked: String = String(feat.get("ability_choice", "")).to_lower()
+					if not choice.is_empty() and picked in choice.get("from", []):
+						_add(result, sid, feat_label, "ability_choice",
+							"ability:" + picked, int(choice.get("amount", 1)))
 					break
 
 
