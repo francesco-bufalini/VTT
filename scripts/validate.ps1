@@ -122,6 +122,7 @@ $fastTests = @(
     "test_bonus_origin_highlight.gd",
     "test_benefit_first_origins_trackers.gd",
     "test_inventory_quantities.gd",
+    "test_item_catalog_search.gd",
     # test_creature_sheet_ui.gd is an expensive UI integration test (up to 300s).
     # Keep it in -FullTests; do not block the fast validation on it.
     "test_creature_gui_layout.gd",
@@ -181,7 +182,7 @@ foreach ($test in $testFiles) {
         300
     } elseif ($FullTests) {
         90
-    } elseif ($test.Name -in @("test_item_transport.gd", "test_item_board_integration.gd", "test_equipped_weapons.gd", "test_proficiency_sources.gd", "test_trait_origins.gd", "test_bonus_origin_highlight.gd", "test_benefit_first_origins_trackers.gd", "test_race_subrace_selection.gd", "test_compendium_descriptions.gd")) {
+    } elseif ($test.Name -in @("test_item_catalog_search.gd", "test_item_transport.gd", "test_item_board_integration.gd", "test_equipped_weapons.gd", "test_proficiency_sources.gd", "test_trait_origins.gd", "test_bonus_origin_highlight.gd", "test_benefit_first_origins_trackers.gd", "test_race_subrace_selection.gd", "test_compendium_descriptions.gd")) {
         45
     } else {
         12
