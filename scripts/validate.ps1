@@ -122,6 +122,7 @@ $fastTests = @(
     "test_structured_numeric_bonuses.gd",
     "test_split_item_bonuses.gd",
     "test_movement_speeds.gd",
+    "test_linked_token_motion.gd",
     "test_creature_equipment_regressions.gd",
     "test_bonus_origin_highlight.gd",
     "test_benefit_first_origins_trackers.gd",
