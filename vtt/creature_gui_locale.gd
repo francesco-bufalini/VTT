@@ -608,7 +608,7 @@ static func text_for(source: String, language: String) -> String:
 static func apply(root: Node, language: String) -> void:
 	if root == null or not is_instance_valid(root):
 		return
-	if (root is Label or root is Button) and not bool(root.get_meta("creature_gui_data", false)):
+	if (root is Label or root is Button) and not bool(root.get_meta("creature_gui_data", false)) and not (root is OptionButton and root.has_meta("catalog_category")):
 		_translate_property(root, "text", language)
 	# Opt in only for our computed summaries, never 5etools descriptions.
 	if root is RichTextLabel and bool(root.get_meta("creature_gui_text", false)):
