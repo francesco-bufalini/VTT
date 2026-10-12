@@ -412,6 +412,7 @@ func _refresh_feats() -> void:
 		label.size_flags_horizontal = Control.SIZE_EXPAND_FILL
 		label.clip_text = true
 		label.vertical_alignment = VERTICAL_ALIGNMENT_CENTER
+		label.set_meta("creature_gui_data", true)
 		label.text = ("✓ " if active else "○ ") + String(feat.get("name", "")) + " · " + String(feat.get("source", ""))
 		label.tooltip_text = _feat_description(feat) + "\n\nOrigini:\n" + "\n".join(source_lines)
 		if selected_active:
