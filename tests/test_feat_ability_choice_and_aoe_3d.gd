@@ -16,6 +16,10 @@ class Board3D:
 class FakeSpell:
 	extends Node
 
+	var _targeting_phase: String = "point"
+	var _pending_targets: Array[Node3D] = []
+	var _pending_target_points: Array[Vector3] = []
+
 	func is_targeting() -> bool:
 		return true
 
@@ -24,6 +28,11 @@ class FakeMeasure:
 	extends Node3D
 
 	var affected: Array[Node3D] = []
+	var _held_spell_aoes: Array[Node3D] = []
+	var persistent_aoes: Array = []
+	var _aoe_nodes: Array[Node3D] = []
+	var _spell_preview: MeshInstance3D
+	var _spell_range_preview: MeshInstance3D
 
 	func spell_geometry_affected_tokens(
 		_start: Vector3, _end: Vector3, _shape: String,
