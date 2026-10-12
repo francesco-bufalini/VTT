@@ -4331,7 +4331,10 @@ func _save() -> void:
 	# A visible sheet follows current level and race/class immediately.
 	_refresh_reference(record)
 	_refresh_trackers(record)
-	_refresh_choice_warnings(record)
+	# HP/counter edits never change source-choice requirements: avoid a full
+	# feat/proficiency graph scan on every such quick statistic edit.
+	if identity_changed:
+		_refresh_choice_warnings(record)
 	if _spellcasting_ui != null:
 		_spellcasting_ui.call("update_character_context", record)
 
