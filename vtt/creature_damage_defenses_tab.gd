@@ -356,12 +356,12 @@ func load_record(record: Dictionary) -> void:
 	_base_hint.tooltip_text = "\n".join(warnings)
 	var counts := {"v": 0, "r": 0, "i": 0, "c": 0}
 	for kind: Dictionary in DAMAGE_TYPES:
-		match rank(_record, String(kind["key"])):
+		match int(_record.get("damage_defense_overrides", {}).get(String(kind["key"]), _base_rank_from_sources(_cached_sources, String(kind["key"])))):
 			-1: counts["v"] += 1
 			1: counts["r"] += 1
 			2: counts["i"] += 1
 	for condition_key: String in CONDITIONS:
-		if condition_immune(_record, condition_key):
+		if bool(_record.get("condition_immunity_overrides", {}).get(condition_key, _base_condition_from_sources(_cached_sources, condition_key))):
 			counts["c"] += 1
 	_active_counts.text = "Vulnerabilità: %d  ·  Resistenze: %d  ·  Immunità: %d  ·  Condizioni: %d" % [counts["v"], counts["r"], counts["i"], counts["c"]]
 	for item: Dictionary in DAMAGE_TYPES:
@@ -452,12 +452,12 @@ func _publish() -> void:
 	if _active_counts != null:
 		var counts := [0, 0, 0, 0]
 		for kind: Dictionary in DAMAGE_TYPES:
-			match rank(_record, String(kind["key"])):
+			match int(_record.get("damage_defense_overrides", {}).get(String(kind["key"]), _base_rank_from_sources(_cached_sources, String(kind["key"])))):
 				-1: counts[0] += 1
 				1: counts[1] += 1
 				2: counts[2] += 1
 		for condition_key: String in CONDITIONS:
-			if condition_immune(_record, condition_key): counts[3] += 1
+			if bool(_record.get("condition_immunity_overrides", {}).get(condition_key, _base_condition_from_sources(_cached_sources, condition_key))): counts[3] += 1
 		_active_counts.text = "Vulnerabilità: %d  ·  Resistenze: %d  ·  Immunità: %d  ·  Condizioni: %d" % counts
 	if _changed.is_valid():
 		_changed.call(
