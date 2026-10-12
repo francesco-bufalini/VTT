@@ -115,8 +115,13 @@ var _hp_quick_dice_row: HBoxContainer
 var _hp_formula_status: Label
 var _size_choice: OptionButton
 var _attack_ability: OptionButton
-var _weapon_picker: OptionButton
-var _weapon_options: Array[Dictionary] = []
+var _hand_main_picker: OptionButton
+var _hand_off_picker: OptionButton
+var _hand_options: Dictionary = {}
+var _show_offhand_all: CheckButton
+var _armor_picker: OptionButton
+var _armor_options: Array[Dictionary] = []
+var _natural_ac_formula: LineEdit
 var _attack_rows: VBoxContainer
 var _attack_hit_labels: Dictionary = {}
 var _attack_damage_labels: Dictionary = {}
@@ -824,7 +829,20 @@ func _build_ui() -> void:
 	temp_health.add_child(_ac_effective)
 	_ac = _spin(temp_health, 0, 99)
 	_ac.custom_minimum_size = Vector2(62, 36)
-	_ac.tooltip_text = "Classe Armatura base, prima dei bonus"
+	_ac.tooltip_text = "Base precedente (compatibilità)"
+	_ac.hide()
+	_armor_picker = OptionButton.new()
+	_armor_picker.custom_minimum_size.x = 118
+	_armor_picker.tooltip_text = "Armatura indossata; scegli Naturale per utilizzare la formula senza armatura."
+	_armor_picker.item_selected.connect(_on_armor_selected)
+	temp_health.add_child(_armor_picker)
+	_natural_ac_formula = LineEdit.new()
+	_natural_ac_formula.custom_minimum_size.x = 125
+	_natural_ac_formula.placeholder_text = "10 + dex_mod"
+	_natural_ac_formula.tooltip_text = "Formula per la CA senza armatura: per esempio 10 + dex_mod, 13 + dex_mod o 16. Le variabili seguono le formule dei bonus."
+	_natural_ac_formula.text_submitted.connect(func(_value: String) -> void: _save())
+	_natural_ac_formula.focus_exited.connect(func() -> void: _save())
+	temp_health.add_child(_natural_ac_formula)
 	_install_formula("ac", _ac_effective, [_ac], ["Base"])
 	_ac.size_flags_horizontal = Control.SIZE_SHRINK_BEGIN
 	_ac_proficiency_warning = Label.new()
@@ -1059,29 +1077,31 @@ func _build_ui() -> void:
 	_attack_ability.tooltip_text = "Preferenza per armi Finesse: le armi da mischia normali usano Forza, quelle a distanza Destrezza. I valori del bestiario includono la competenza."
 	_attack_ability.item_selected.connect(_on_attack_ability_changed)
 	preference_row.add_child(_attack_ability)
-	var weapon_bar := HBoxContainer.new()
-	weapon_bar.add_theme_constant_override("separation", 5)
-	combat_column.add_child(weapon_bar)
-	combat_column.move_child(weapon_bar, attack_header.get_index())
-	var weapon_caption := Label.new()
-	weapon_caption.text = "Arma attiva"
-	weapon_bar.add_child(weapon_caption)
-	var previous_weapon := Button.new()
-	previous_weapon.text = "‹"
-	previous_weapon.tooltip_text = "Arma / attacco precedente"
-	previous_weapon.pressed.connect(_step_active_weapon.bind(-1))
-	weapon_bar.add_child(previous_weapon)
-	_weapon_picker = OptionButton.new()
-	_weapon_picker.size_flags_horizontal = Control.SIZE_EXPAND_FILL
-	_weapon_picker.clip_text = true
-	_weapon_picker.tooltip_text = "Scegli un'arma dall'inventario o un attacco naturale; la portata visibile sulla mappa seguirà questa scelta."
-	_weapon_picker.item_selected.connect(_on_active_weapon_selected)
-	weapon_bar.add_child(_weapon_picker)
-	var next_weapon := Button.new()
-	next_weapon.text = "›"
-	next_weapon.tooltip_text = "Arma / attacco successivo"
-	next_weapon.pressed.connect(_step_active_weapon.bind(1))
-	weapon_bar.add_child(next_weapon)
+	var hand_bar := HFlowContainer.new()
+	hand_bar.add_theme_constant_override("h_separation", 9)
+	hand_bar.add_theme_constant_override("v_separation", 5)
+	combat_column.add_child(hand_bar)
+	combat_column.move_child(hand_bar, attack_header.get_index())
+	_add_label(hand_bar, "Mano principale")
+	_hand_main_picker = OptionButton.new()
+	_hand_main_picker.custom_minimum_size.x = 170
+	_hand_main_picker.clip_text = true
+	_hand_main_picker.item_selected.connect(_on_hand_selected.bind("main"))
+	hand_bar.add_child(_hand_main_picker)
+	_add_label(hand_bar, "Mano secondaria")
+	_hand_off_picker = OptionButton.new()
+	_hand_off_picker.custom_minimum_size.x = 170
+	_hand_off_picker.clip_text = true
+	_hand_off_picker.item_selected.connect(_on_hand_selected.bind("off"))
+	hand_bar.add_child(_hand_off_picker)
+	_show_offhand_all = CheckButton.new()
+	_show_offhand_all.text = "Tutte le armi"
+	_show_offhand_all.tooltip_text = "Mostra anche armi senza Finesse nella mano secondaria. Finesse non è un requisito per combattere con due armi: normalmente serve la proprietà Leggera."
+	_show_offhand_all.button_pressed = false
+	_show_offhand_all.toggled.connect(func(_enabled: bool) -> void:
+		_refresh_equipment_pickers(_current())
+	)
+	hand_bar.add_child(_show_offhand_all)
 	_attack_rows = VBoxContainer.new()
 	_attack_rows.add_theme_constant_override("separation", 7)
 	combat_column.add_child(_attack_rows)
@@ -2035,6 +2055,8 @@ func _live_stats_record() -> Dictionary:
 	record["abilities"] = abilities
 	if _ac != null:
 		record["armor_class_base"] = int(_ac.value)
+	if _natural_ac_formula != null:
+		record["armor_natural_formula"] = _natural_ac_formula.text.strip_edges()
 	if _max_hp != null:
 		record["max_hp_base"] = int(_max_hp.value)
 	if _second_form_max_hp != null:
@@ -2468,16 +2490,7 @@ func _on_selected(index: int) -> void:
 
 
 func _load_form(record: Dictionary) -> void:
-	# Initialize once for old sheets. Afterwards intentional sheathing and
-	# natural-attack selections must never be undone on a later load.
-	if String(record.get("equipped_attack_id", "")).is_empty():
-		AttackData.equip_first_inventory_weapon(record)
-		record["equipped_attack_id"] = String(AttackData.active_attack(record).get("id", ""))
-		record["reach_feet"] = AttackData.active_range(record)
-		if String(record.get("kind", "")) == "monster":
-			record["reach_is_custom"] = true
-		if _archive.save(record) == OK:
-			_replace_current_record(record)
+	# Empty hands are intentional. Loading a sheet never auto-equips weapons.
 	_refresh_trackers(record)
 	_loading = true
 	_name.text = String(record.get("name", ""))
@@ -2498,6 +2511,13 @@ func _load_form(record: Dictionary) -> void:
 		biography = "\n\n".join(legacy_parts)
 	_biography.text = biography
 	_ac.value = maxi(0, int(record.get("armor_class_base", record.get("armor_class", 10))))
+	if _natural_ac_formula != null:
+		var default_ac_formula: String = str(record.get("armor_class_base", 10))
+		if String(record.get("kind", "")) == "monster":
+			default_ac_formula = str(Rules.monster_armor_class(record.get("stat_block", {})))
+		elif int(record.get("armor_class_base", 10)) == 10:
+			default_ac_formula = "10 + dex_mod"
+		_natural_ac_formula.text = String(record.get("armor_natural_formula", default_ac_formula))
 	# Initiative depends on DEX: compute only after ability controls load.
 	_skill_ranks.clear()
 	_skill_ranks_custom = bool(record.get("skill_ranks_custom", false))
@@ -3336,10 +3356,15 @@ func _update_defense_display() -> void:
 	if _ac != null and _ac_effective != null:
 		var equipped: bool = not ItemRules.equipped_armor(live.get("inventory", [])).is_empty()
 		_ac.editable = not equipped
-		_ac.tooltip_text = "La CA base viene dall'armatura indossata nell'inventario" if equipped else "Classe Armatura base manuale"
+		if _natural_ac_formula != null:
+			_natural_ac_formula.visible = not equipped
+			_natural_ac_formula.tooltip_text = "Formula di CA naturale (senza armatura), modificabile premendo Invio."
+		_ac.tooltip_text = "L'armatura sostituisce la formula naturale" if equipped else "Base precedente"
 		var armor_record: Dictionary = live.duplicate(false)
 		armor_record["effective_armor_dex"] = BonusRules.value(live, "ability_mod:dex") if equipped else 0
 		var base: Dictionary = ItemRules.armor_base(armor_record)
+		if not equipped:
+			base["description"] = "Naturale (%s)" % String(live.get("armor_natural_formula", "10 + dex_mod"))
 		var ac: int = maxi(0, BonusRules.value(live, "ac"))
 		_set_formula("ac", str(ac), "CA: %s + scudo %+d + bonus cumulabili %+d = %d" % [
 			String(base.get("description", "Base manuale")),
@@ -3357,10 +3382,11 @@ func _update_defense_display() -> void:
 				var category: String = {"LA": "light", "MA": "medium", "HA": "heavy"}.get(type_code, "")
 				if not category.is_empty() and not ProficiencyRules.has_proficiency(live, "armor", category):
 					missing.append(String(armor_owned.get("name", armor.get("name", "Armatura"))) + " (armatura " + category + ")")
-			var shield: Dictionary = ItemRules.occupying(live.get("inventory", []), "off")
-			if not shield.is_empty() and ItemRules.kind(ItemRules.entry_for(shield)) == "shield":
-				if not ProficiencyRules.has_proficiency(live, "armor", "shield"):
-					missing.append(String(shield.get("name", "Scudo")) + " (scudo)")
+			for hand: String in ["main", "off"]:
+				var shield: Dictionary = ItemRules.occupying(live.get("inventory", []), hand)
+				if not shield.is_empty() and ItemRules.kind(ItemRules.entry_for(shield)) == "shield":
+					if not ProficiencyRules.has_proficiency(live, "armor", "shield"):
+						missing.append(String(shield.get("name", "Scudo")) + " (scudo)")
 		_ac_proficiency_warning.visible = not missing.is_empty()
 		if not missing.is_empty():
 			_ac_proficiency_warning.tooltip_text = ("Senza competenza: " + ", ".join(missing)
@@ -3659,6 +3685,8 @@ func _save() -> void:
 	record["visual_front_quarter_turns"] = _front.selected
 	record["party_id"] = _party.text.strip_edges()
 	record["armor_class_base"] = int(_ac.value)
+	if _natural_ac_formula != null:
+		record["armor_natural_formula"] = _natural_ac_formula.text.strip_edges()
 	record["speed_base"] = int(_speed.value)
 	record["speed_is_custom"] = _speed_custom
 	var abilities: Dictionary = {}
