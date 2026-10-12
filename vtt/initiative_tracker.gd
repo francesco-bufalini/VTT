@@ -209,6 +209,7 @@ func _build_panel() -> void:
 	combat_controls.add_child(next_button)
 
 	list_scroll = ScrollContainer.new()
+	list_scroll.mouse_force_pass_scroll_events = false
 	list_scroll.size_flags_vertical = Control.SIZE_EXPAND_FILL
 	list_scroll.horizontal_scroll_mode = ScrollContainer.SCROLL_MODE_DISABLED
 	column.add_child(list_scroll)
@@ -258,6 +259,7 @@ func _build_add_dialog() -> void:
 	body.add_child(label)
 
 	participant_creatures = ItemList.new()
+	participant_creatures.mouse_force_pass_scroll_events = false
 	participant_creatures.select_mode = ItemList.SELECT_MULTI
 	participant_creatures.custom_minimum_size = Vector2(420, 224)
 	participant_creatures.size_flags_vertical = Control.SIZE_EXPAND_FILL
