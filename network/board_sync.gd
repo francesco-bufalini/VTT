@@ -882,7 +882,19 @@ func valid_snapshot(snapshot: Variant) -> bool:
 						or absf(float(coordinate)) > 100000
 					):
 						return false
-			elif item.has("mount_target_kind") or item.has("mount_local_position"):
+				if item.has("mount_local_yaw"):
+					var local_yaw: Variant = item.get("mount_local_yaw")
+					if (
+						not (local_yaw is float or local_yaw is int)
+						or not is_finite(float(local_yaw))
+						or absf(float(local_yaw)) > TAU
+					):
+						return false
+			elif (
+				item.has("mount_target_kind")
+				or item.has("mount_local_position")
+				or item.has("mount_local_yaw")
+			):
 				return false
 			# V4 makes logical token state mandatory. This prevents an older
 			# client from silently accepting a snapshot without names/conditions
@@ -1637,6 +1649,8 @@ func _serialize_node(node: Node3D, group_name: String) -> Dictionary:
 			data["mount_target_kind"] = String(node.get_meta("mount_target_kind", ""))
 			data["mount_target_id"] = mount_id
 			data["mount_local_position"] = _v3(mount_local as Vector3)
+			if node.has_meta("mount_local_yaw"):
+				data["mount_local_yaw"] = float(node.get_meta("mount_local_yaw"))
 		data["height_cells"] = float(node.get("token_height_cells"))
 		data["display_name"] = (
 			String(node.call("get_display_name"))
@@ -1832,13 +1846,18 @@ func _apply_node_data(node: Node3D, data: Dictionary) -> void:
 			node.call("apply_gravity")
 		elif node.has_method("set_flying"):
 			node.call("set_flying", true)
-		for key: String in ["mount_target_kind", "mount_target_id", "mount_local_position"]:
+		for key: String in [
+			"mount_target_kind", "mount_target_id",
+			"mount_local_position", "mount_local_yaw"
+		]:
 			if node.has_meta(key):
 				node.remove_meta(key)
 		if data.has("mount_target_id"):
 			node.set_meta("mount_target_kind", String(data.get("mount_target_kind", "")))
 			node.set_meta("mount_target_id", String(data.get("mount_target_id", "")))
 			node.set_meta("mount_local_position", _dv3(data.get("mount_local_position", {})))
+			if data.has("mount_local_yaw"):
+				node.set_meta("mount_local_yaw", float(data.get("mount_local_yaw", 0.0)))
 		if node.has_method("set_display_name"):
 			node.call("set_display_name", String(data.get("display_name", "")))
 		if node.has_method("set_party_id"):

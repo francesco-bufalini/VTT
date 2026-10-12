@@ -1,14 +1,19 @@
 extends Node
 
-# A mount is any other creature token or an item with a stable item_id.
-# Mounted riders remain regular tokens with their own sheets and initiative.
+# A linked token retains its position and facing relative to another token.
+# Keep the existing mount metadata so old maps and network snapshots still load.
+# Legacy item targets remain supported for saved scenes.
 const KIND_TOKEN := "token"
 const KIND_ITEM := "item"
 const META_KIND := "mount_target_kind"
 const META_ID := "mount_target_id"
 const META_LOCAL := "mount_local_position"
+const META_LOCAL_YAW := "mount_local_yaw"
 
 var board: Node3D
+# Temporary collision exceptions prevent members of a linked pair from
+# blocking each other's movement. WeakRefs avoid retaining deleted tokens.
+var _collision_links: Dictionary = {}
 
 
 func setup(owner_board: Node3D) -> void:
@@ -90,38 +95,32 @@ func mount(rider: CharacterBody3D, target: Node3D) -> bool:
 	)
 	if identity.is_empty():
 		return false
-	var rider_half_height := _half_height(rider)
-	var world_position := target.global_position
-	if kind == KIND_TOKEN:
-		var deck: Node3D = target.get_node_or_null("ChariotDeck") as Node3D
-		if deck != null and is_instance_valid(deck):
-			world_position = deck.to_global(
-				Vector3.UP * (rider_half_height + 0.01 * board.cell_size)
-			)
-		else:
-			world_position.y += _half_height(target as CharacterBody3D) + rider_half_height
-	else:
-		world_position = target.to_global(
-			Vector3.UP * (rider_half_height + 0.01 * board.cell_size)
-		)
+	# Capture the current transform instead of lifting or centering the
+	# follower on its leader. These local offsets rotate with the leader.
+	var local_position: Vector3 = target.to_local(rider.global_position)
+	var local_yaw: float = wrapf(
+		rider.global_rotation.y - target.global_rotation.y, -PI, PI
+	)
 	rider.set_meta(META_KIND, kind)
 	rider.set_meta(META_ID, identity)
-	rider.set_meta(META_LOCAL, target.to_local(world_position))
-	# Prevent gravity and incidental floor-support detection from fighting the mount.
+	rider.set_meta(META_LOCAL, local_position)
+	rider.set_meta(META_LOCAL_YAW, local_yaw)
+	# Linked tokens must not fall independently while the leader moves.
 	if rider.has_method("set_flying"):
 		rider.call("set_flying", true)
 	rider.set("grid_support", null)
-	rider.global_position = world_position
 	rider.velocity = Vector3.ZERO
+	_reconcile_collision_links()
 	return true
 
 
 func dismount(rider: CharacterBody3D) -> void:
 	if rider == null or not is_instance_valid(rider):
 		return
-	for key: String in [META_KIND, META_ID, META_LOCAL]:
+	for key: String in [META_KIND, META_ID, META_LOCAL, META_LOCAL_YAW]:
 		if rider.has_meta(key):
 			rider.remove_meta(key)
+	_reconcile_collision_links()
 	# Leave the token suspended at its current height. Gravity is an explicit
 	# VTT action and should not automatically trigger when dismounting.
 
@@ -133,6 +132,7 @@ func refresh_all() -> void:
 	for value: Node in get_tree().get_nodes_in_group("dnd_token"):
 		if value is CharacterBody3D and board.is_ancestor_of(value):
 			_follow(value as CharacterBody3D, visited, {})
+	_reconcile_collision_links()
 
 
 func _follow(rider: CharacterBody3D, visited: Dictionary, ancestors: Dictionary) -> void:
@@ -157,13 +157,81 @@ func _follow(rider: CharacterBody3D, visited: Dictionary, ancestors: Dictionary)
 		return
 	var local_value: Variant = rider.get_meta(META_LOCAL, Vector3.ZERO)
 	var local: Vector3 = local_value if local_value is Vector3 else Vector3.ZERO
+	var yaw_value: Variant = rider.get_meta(META_LOCAL_YAW, null)
+	var local_yaw: float = 0.0
+	if yaw_value is float or yaw_value is int:
+		local_yaw = float(yaw_value)
+	else:
+		# Older snapshots only stored the relative position. Preserve the
+		# follower's current facing when upgrading one of those links.
+		local_yaw = wrapf(
+			rider.global_rotation.y - target.global_rotation.y, -PI, PI
+		)
+		rider.set_meta(META_LOCAL_YAW, local_yaw)
 	rider.global_position = target.to_global(local)
+	rider.global_rotation.y = target.global_rotation.y + local_yaw
 	rider.velocity = Vector3.ZERO
 	rider.set("grid_support", null)
 	visited[rider] = true
 
 
-func _half_height(token: CharacterBody3D) -> float:
-	return maxf(float(token.get("token_height_cells")), 0.1) * maxf(
-		float(token.get("cell_size")), 0.001
-	) * 0.5
+func _reconcile_collision_links() -> void:
+	if board == null or not is_instance_valid(board):
+		return
+	var wanted: Dictionary = {}
+	for value: Node in get_tree().get_nodes_in_group("dnd_token"):
+		if not value is CharacterBody3D or not board.is_ancestor_of(value):
+			continue
+		var rider: CharacterBody3D = value as CharacterBody3D
+		if not is_mounted(rider):
+			continue
+		# A grandchild must also be able to pass through its ancestors
+		# while the whole formation moves.
+		var target: Node3D = get_target(rider)
+		var ancestors: Dictionary = {}
+		while target is PhysicsBody3D and not ancestors.has(target):
+			ancestors[target] = true
+			var link_id: String = "%d:%d" % [
+				rider.get_instance_id(), target.get_instance_id()
+			]
+			var cached_pair: Array = _collision_links.get(link_id, [])
+			if (
+				cached_pair.size() == 2
+				and cached_pair[0].get_ref() == rider
+				and cached_pair[1].get_ref() == target
+			):
+				wanted[link_id] = cached_pair
+			else:
+				wanted[link_id] = [weakref(rider), weakref(target)]
+			if target is CharacterBody3D:
+				target = get_target(target as CharacterBody3D)
+			else:
+				break
+
+	for rider_id: Variant in _collision_links.keys():
+		var previous: Array = _collision_links[rider_id]
+		var old_rider: PhysicsBody3D = previous[0].get_ref() as PhysicsBody3D
+		var old_target: PhysicsBody3D = previous[1].get_ref() as PhysicsBody3D
+		var new_pair: Array = wanted.get(rider_id, [])
+		var unchanged: bool = (
+			new_pair.size() == 2
+			and new_pair[0].get_ref() == old_rider
+			and new_pair[1].get_ref() == old_target
+		)
+		if not unchanged and is_instance_valid(old_rider) and is_instance_valid(old_target):
+			old_rider.remove_collision_exception_with(old_target)
+			old_target.remove_collision_exception_with(old_rider)
+
+	for rider_id: Variant in wanted.keys():
+		var pair: Array = wanted[rider_id]
+		var current_rider: PhysicsBody3D = pair[0].get_ref() as PhysicsBody3D
+		var current_target: PhysicsBody3D = pair[1].get_ref() as PhysicsBody3D
+		var existing_pair: Array = _collision_links.get(rider_id, [])
+		if (
+			existing_pair.size() != 2
+			or existing_pair[0].get_ref() != current_rider
+			or existing_pair[1].get_ref() != current_target
+		):
+			current_rider.add_collision_exception_with(current_target)
+			current_target.add_collision_exception_with(current_rider)
+	_collision_links = wanted

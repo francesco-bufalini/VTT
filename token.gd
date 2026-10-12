@@ -1768,7 +1768,13 @@ func get_footprint_extent() -> Vector2:
 	return Vector2.ONE*_footprint_cells*cell_size
 
 func get_movement_exclusions() -> Array[RID]:
-	return [get_rid()]
+	var excluded: Array[RID] = [get_rid()]
+	# Shape queries used by drag previews do not automatically honor physics
+	# collision exceptions. Ignore linked partners here as well.
+	for body: PhysicsBody3D in get_collision_exceptions():
+		if is_instance_valid(body):
+			excluded.append(body.get_rid())
+	return excluded
 
 
 func get_spell_origin_position() -> Vector3:
