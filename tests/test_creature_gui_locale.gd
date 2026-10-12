@@ -53,6 +53,10 @@ func run() -> void:
 	var catalog := ItemList.new()
 	catalog.add_item("Storia")
 	sheet.add_child(catalog)
+	var owned_name := Button.new()
+	owned_name.text = "Storia"
+	owned_name.set_meta("creature_gui_data", true)
+	sheet.add_child(owned_name)
 	var unrelated := Label.new()
 	unrelated.text = "Chiudi"
 	root.add_child(unrelated)
@@ -69,6 +73,7 @@ func run() -> void:
 	assert(input.text == "Storia" and input.placeholder_text == "Search my creatures…")
 	assert(compendium.text == "Storia" and catalog.get_item_text(0) == "Storia")
 	assert(preview.text == "LONG JUMP\nWith a run-up (at least 10 ft): 12 ft")
+	assert(owned_name.text == "Storia", "Player-created creature names must not be translated")
 	assert(unrelated.text == "Chiudi", "Localization must not touch unrelated VTT controls")
 
 	# Dynamic UI updates and repeated passes must preserve the original source.
