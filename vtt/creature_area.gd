@@ -3047,7 +3047,7 @@ func _update_speed_display() -> void:
 		var inherited: int = (walk_bonus
 			if base > 0 and String(live.get("rules_version", "2014")) == "2024" else 0)
 		var total: int = maxi(0, BonusRules.value(live, "speed:" + mode))
-		var explanation := "%s: base %d + bonus specifici %+d" % [CreatureLocale.text_for(label, _creature_language), base, specific]
+		var explanation := "%s: base %d + bonus specifici %+d" % [label, base, specific]
 		if inherited != 0:
 			explanation += " + modifica alla velocità (regole 2024) %+d" % inherited
 		explanation += " = %d ft" % total
