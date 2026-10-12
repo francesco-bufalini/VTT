@@ -135,6 +135,7 @@ func create_character() -> Dictionary:
 		"resource_tracker_spent": {},
 		"resource_trackers": [],
 		"conditions": [],
+		"concentrating_spell_id": "",
 		"damage_defense_overrides": {},
 		"condition_immunity_overrides": {},
 		"transfer_revision": 0,
@@ -330,6 +331,7 @@ func normalize_character(value: Dictionary) -> Dictionary:
 		if not defaults.get(array_key, []) is Array:
 			defaults[array_key] = []
 
+	defaults["concentrating_spell_id"] = String(defaults.get("concentrating_spell_id", "")).strip_edges()
 	defaults["spell_slots_visible"] = bool(defaults.get("spell_slots_visible", true))
 	defaults["pact_slots_visible"] = bool(defaults.get("pact_slots_visible", true))
 	# A character can track Pact Magic separately from shared spell slots.

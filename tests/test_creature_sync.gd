@@ -53,6 +53,9 @@ func run() -> void:
 	# lifecycle as conditions, including on tokens we do not own.
 	token.set_active_spell_ids(["bless", "shield_of_faith"])
 	token.set_concentrating_spell_id("bless")
+	var visible_effects: String = " ".join(token.get_active_condition_display_parts())
+	assert(visible_effects.contains("✨") and visible_effects.contains("bless") == false,
+		"The tactical strip must show icons and spell names, not raw IDs")
 	var spell_snapshot: Dictionary = JSON.parse_string(JSON.stringify(sync.create_snapshot()))
 	assert(sync.valid_snapshot(spell_snapshot))
 	var spell_row: Dictionary = spell_snapshot.objects[0]

@@ -268,6 +268,8 @@ func normalize_creature(value: Dictionary) -> Dictionary:
 		"subclass": "", "subclass_source": "", "subclass_id": "",
 		"classes": [],
 		"conditions": value.get("conditions", []).duplicate() if value.get("conditions", []) is Array else [],
+		"concentrating_spell_id": String(value.get("concentrating_spell_id", "")).strip_edges(),
+		"spellcasting_ability": String(value.get("spellcasting_ability", "")).strip_edges(),
 		"transfer_revision": maxi(0, int(value.get("transfer_revision", 0))),
 		"owner_id": String(value.get("owner_id", CreatureOwner.local_id())),
 		"default_miniature_id": String(value.get("default_miniature_id", _default_miniature_id(stat_block))),

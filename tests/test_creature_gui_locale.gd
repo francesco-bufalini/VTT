@@ -120,6 +120,14 @@ func run() -> void:
 	# Newly introduced creature editors and statuses must not silently fall
 	# back to Italian. Interpolated names and values remain unchanged.
 	assert(Locale.text_for("Incantesimi attivi", "en") == "Active spells")
+	assert(Locale.text_for("Rages", "it") == "Rages" and Locale.text_for("Wild Shape", "it") == "Wild Shape",
+		"5etools feature and resource names must never be manually translated")
+	assert(Locale.text_for("Caratteristica degli incantesimi", "en") == "Spellcasting ability")
+	assert(Locale.text_for("Interrompi concentrazione", "en") == "End concentration")
+	assert(Locale.text_for("Automatica", "en") == "Automatic")
+	assert(Locale.text_for("Caratteristica: SAG  ·  Tiro per colpire: +5  ·  CD: 14\nConcentrazione: Bless", "en")
+		== "Ability: WIS  ·  Spell attack: +5  ·  DC: 14\nConcentration: Bless",
+		"Spellcasting summaries translate their GUI labels without changing the spell name")
 	assert(Locale.text_for("Talenti posseduti", "en") == "Owned feats")
 	assert(Locale.text_for("Only if finesse", "it") == "Solo se accurata")
 	assert(Locale.text_for("Diseases / magical diseases", "it") == "Malattie / malattie magiche")
