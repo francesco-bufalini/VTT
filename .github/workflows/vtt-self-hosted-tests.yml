@@ -73,6 +73,16 @@ jobs:
           Write-Host "Workspace: $env:GITHUB_WORKSPACE"
           & "C:\Program Files\Godot\Godot_v4.7.2-stable_win64_console.exe" --version
 
+      - name: Check structured rule scripts
+        shell: powershell
+        run: |
+          $godot = "C:\\Program Files\\Godot\\Godot_v4.7.2-stable_win64_console.exe"
+          foreach ($path in @("res://vtt/class_mechanics_5etools.gd", "res://vtt/creature_rules.gd", "res://vtt/structured_resource_trackers.gd")) {
+            Write-Host "Check parser: $path"
+            & $godot --headless --path . --check-only --script $path
+            if ($LASTEXITCODE -ne 0) { exit $LASTEXITCODE }
+          }
+
       - name: Check tracked item dependency
         shell: powershell
         run: |
