@@ -49,22 +49,48 @@ def origin_for(column, class_row, features):
     for name in names:
         if name.casefold() in (simple, singular, base):
             return name
-    for name in names:
-        if base and base in name.casefold() and len(base) >= 3:
-            return name
-    # This is a link to a feature, not an inference of a numeric mechanic.
-    # Only accept a unique feature in the same class/source whose text refers
-    # to the column's exact term; do not guess from unrelated prose.
-    matches = []
+    # Match first at the level the table column becomes available.
+    # A feature that REFERENCES the column is stronger evidence than a
+    # vaguely similar title (e.g. Innate Sorcery vs Font of Magic).
+    positive = None
+    for group in class_row.get("classTableGroups", []):
+        for index, label in enumerate(group.get("colLabels", [])):
+            if label != column:
+                continue
+            for level, row in enumerate(group.get("rows", []), 1):
+                if isinstance(row, list) and index < len(row):
+                    value = scalar(row[index])
+                    if isinstance(value, (int, float)) and value > 0:
+                        positive = level
+                        break
+            if positive is not None:
+                break
+    ranked = []
     for feat in features:
         if feat.get("className") != class_row.get("name") or feat.get("classSource") != class_row.get("source"):
             continue
+        name = feat.get("name", "")
+        if name not in names or (positive is not None and feat.get("level") != positive):
+            continue
         body = json.dumps(feat.get("entries", [])).casefold()
-        if simple in body:
-            name = feat.get("name", "")
-            if name in names and name not in matches:
-                matches.append(name)
-    return matches[0] if len(matches) == 1 else column
+        score = 0
+        if f"refclassfeature\\\": \\\"{simple}" in body:
+            score = 4
+        elif f"{simple} column" in body or f"column of" in body and simple in body:
+            score = 3
+        elif f"represented by {simple}" in body:
+            score = 2
+        elif simple in body:
+            score = 1
+        if score:
+            ranked.append((score, name))
+    ranked.sort(reverse=True)
+    if ranked and (len(ranked) == 1 or ranked[0][0] > ranked[1][0]):
+        return ranked[0][1]
+    for name in names:
+        if base and base in name.casefold() and len(base) >= 3:
+            return name
+    return column
 
 
 def build(root):
