@@ -17,9 +17,10 @@ class InstantCachedBestiary extends Node:
 		# Simulates 5etools returning a warm search/index.json cache before
 		# load_catalog() returns. Duergar is intentionally not in the miniature
 		# fallback catalogue.
-		catalog_ready.emit([
+		var cached_rows: Array[Dictionary] = [
 			{"name": "Duergar", "source": "MM", "page": 50}
-		])
+		]
+		catalog_ready.emit(cached_rows)
 
 
 var failed := false
