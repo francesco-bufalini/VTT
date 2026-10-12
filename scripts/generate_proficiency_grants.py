@@ -40,6 +40,12 @@ def convert(kind: str, records: list[dict]) -> list[dict]:
         for field in FIELDS:
             if field in record:
                 row[field] = record[field]
+        # Some 5etools-src mirrors omit the MPMM Languages trait entirely,
+        # although the structured full race data grants Common + one language
+        # agreed with the DM. Retain this rule across index regenerations.
+        # Never replace the structured field when the upstream supplies it.
+        if kind == "race" and record["source"] == "MPMM" and "languageProficiencies" not in row:
+            row["languageProficiencies"] = [{"common": True, "anyStandard": 1}]
         if kind == "class":
             if "proficiency" in record:
                 row["savingThrows"] = record["proficiency"]
