@@ -228,9 +228,12 @@ func setup(root: Node3D) -> void:
 	_build_export_dialog()
 	_reload()
 	_refresh_creature_language()
+	# Initialize local entries BEFORE loading the 5etools cache. A warm
+	# cache emits catalog_ready synchronously: doing the homebrew/bundled
+	# initialization afterward discarded the complete downloaded index.
+	_on_catalog_ready(ContentCatalog.home_entries("monsters"))
 	if DisplayServer.get_name() != "headless":
 		_client.call("load_catalog")
-	_on_catalog_ready(ContentCatalog.home_entries("monsters"))
 	call_deferred("refresh_owned_sheets")
 
 
