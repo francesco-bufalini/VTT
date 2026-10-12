@@ -125,6 +125,7 @@ func setup(on_change: Callable, on_status: Callable, on_document_change: Callabl
 	_add_button.pressed.connect(_add_selected)
 	results_row.add_child(_add_button)
 	_catalog_list = ItemList.new()
+	_catalog_list.mouse_force_pass_scroll_events = false
 	_catalog_list.custom_minimum_size.y = 190
 	_catalog_list.size_flags_horizontal = Control.SIZE_EXPAND_FILL
 	_catalog_list.item_selected.connect(_on_catalog_selected)
@@ -132,6 +133,7 @@ func setup(on_change: Callable, on_status: Callable, on_document_change: Callabl
 	_catalog_list.item_activated.connect(func(_index: int) -> void: _add_selected())
 	_search_panel.add_child(_catalog_list)
 	_catalog_details = RichTextLabel.new()
+	_catalog_details.mouse_force_pass_scroll_events = false
 	_catalog_details.custom_minimum_size.y = 125
 	_catalog_details.size_flags_horizontal = Control.SIZE_EXPAND_FILL
 	_catalog_details.scroll_active = true
@@ -144,6 +146,7 @@ func setup(on_change: Callable, on_status: Callable, on_document_change: Callabl
 	inventory_title.add_theme_font_size_override("font_size", 15)
 	add_child(inventory_title)
 	_inventory_list = ItemList.new()
+	_inventory_list.mouse_force_pass_scroll_events = false
 	_inventory_list.custom_minimum_size.y = 145
 	_inventory_list.size_flags_horizontal = Control.SIZE_EXPAND_FILL
 	_inventory_list.item_selected.connect(_on_inventory_selected)
@@ -236,6 +239,7 @@ func setup(on_change: Callable, on_status: Callable, on_document_change: Callabl
 	actions.add_child(_remove_button)
 
 	_details = RichTextLabel.new()
+	_details.mouse_force_pass_scroll_events = false
 	_details.custom_minimum_size.y = 160
 	_details.size_flags_horizontal = Control.SIZE_EXPAND_FILL
 	_details.scroll_active = true
