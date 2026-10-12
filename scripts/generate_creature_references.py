@@ -23,7 +23,15 @@ def build(offline=False, refresh=False):
         return json.loads(payload)
     from urllib.parse import quote
     def entry(category, raw):
-        return {"id": f"5etools:{category}:{raw['source'].lower()}:{quote(raw['name'].lower(),safe='')}", "name": raw['name'], "source": raw['source'], "entries": raw.get('entries', []), "origin": "5etools"}
+        row = {"id": f"5etools:{category}:{raw['source'].lower()}:{quote(raw['name'].lower(),safe='')}", "name": raw['name'], "source": raw['source'], "entries": raw.get('entries', []), "origin": "5etools"}
+        if category == 'races':
+            # Keep machine-readable 5etools defenses. Do not infer new
+            # damage types from trait prose or flatten "choose" objects:
+            # the caller only grants unconditional string entries.
+            for field in ('resist', 'immune', 'vulnerable', 'conditionImmune'):
+                if field in raw:
+                    row[field] = raw[field]
+        return row
     classes, features = [], []
     index = read('class/index.json')
     for key, filename in sorted(index.items()):
@@ -60,6 +68,14 @@ def build(offline=False, refresh=False):
         merged['name'] = raw.get('_baseName', base['name'] + ' (' + raw.get('name','') + ')')
         merged['entries'] = base.get('entries',[]) + raw.get('entries',[])
         row = entry('races', merged)
+        # The selected base race is imported separately. Flattened subrace
+        # entries carry only their *own* structured defenses, preventing
+        # duplicate grants of the parent's resistances.
+        for field in ('resist', 'immune', 'vulnerable', 'conditionImmune'):
+            if field in raw:
+                row[field] = raw[field]
+            else:
+                row.pop(field, None)
         row['speed'] = merged.get('speed', 30)
         race_rows.append(row)
     output = {"meta":{"source_url":BASE,"sha256":hashes},"classes":classes,"races":race_rows,"class_features":features}
