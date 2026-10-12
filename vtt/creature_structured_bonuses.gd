@@ -89,6 +89,8 @@ static func _item_grants(result: Array[Dictionary], record: Dictionary) -> void:
 			active = false
 		if not active:
 			continue
+		if kind not in ["armor", "shield", "weapon"] and not bool(owned.get("equipped", false)):
+			continue
 		var equipped: bool = (
 			(kind == "armor" and "body" in slots)
 			or (kind == "shield" and "off" in slots)
