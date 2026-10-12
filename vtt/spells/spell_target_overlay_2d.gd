@@ -1,4 +1,5 @@
 extends Control
+const RangeGeometry = preload("res://vtt/attack_range_geometry.gd")
 # Screen-space spell targeting HUD for Godot's top-down view.
 # Draw in the board UI layer above the 2D token portraits but below
 # creature sheets, dialogs, and menus; never intercept mouse events.
@@ -265,13 +266,59 @@ func _target_names(start: Vector3, end: Vector3, shape: String, width: float, st
 				_cached_targets.append(_target_display_name(item as Node3D))
 	return _cached_targets
 
-func _draw_target_list(names: Array[String], area_label: String) -> void:
+# Read the same tactical token distance as the cast eligibility checks,
+# not the planar contour (which would include wrong elevations).
+func _range_target_names() -> Array[String]:
+	var names: Array[String] = []
+	if spell == null or not is_instance_valid(spell) or not bool(spell.call("is_targeting")):
+		return names
+	var caster: Node3D = spell.get("_pending_caster") as Node3D
+	if caster == null or not is_instance_valid(caster):
+		return names
+	var spell_data: Dictionary = spell.call("_pending_spell")
+	var range_feet: float = float(spell.call("_effective_spell_range_feet", spell_data, caster))
+	var origin: Node3D = caster
+	if String(spell.get("_targeting_phase")) == "chain_secondary":
+		var primary: Node3D = spell.get("_pending_chain_primary") as Node3D
+		if primary != null and is_instance_valid(primary):
+			origin = primary
+			range_feet = float(spell_data.get("secondary_range_feet", 30.0))
+	elif String(spell.get("_targeting_phase")) in ["teleport_destination", "teleport_passengers"]:
+		range_feet = float(spell_data.get("teleport_distance_feet", range_feet))
+	var self_target: bool = String(spell_data.get("range", "")).strip_edges().to_lower().begins_with("self")
+	for raw: Node in get_tree().get_nodes_in_group("dnd_token"):
+		if not raw is Node3D or not is_instance_valid(raw):
+			continue
+		var token: Node3D = raw as Node3D
+		if not board.is_ancestor_of(token) or (token == origin and not self_target):
+			continue
+		if float(spell.call("_token_target_distance_feet", origin, token)) <= range_feet + 0.001:
+			names.append(_target_display_name(token))
+	return names
+
+
+func _draw_spell_range(center: Vector3, radius: float) -> void:
+	var scale: float = maxf(0.001, float(board.get("cell_size")))
+	var half_footprint: float = scale * 0.5
+	var caster: Node3D = spell.get("_pending_caster") as Node3D
+	if caster != null and is_instance_valid(caster) and caster.has_method("get_footprint_cells"):
+		half_footprint *= maxf(0.5, float(caster.call("get_footprint_cells")))
+	var vertices: PackedVector2Array = RangeGeometry.rounded_footprint_perimeter(half_footprint, radius)
+	var projected := PackedVector2Array()
+	for vertex: Vector2 in vertices:
+		projected.append(_world_point(Vector3(center.x + vertex.x, center.y, center.z + vertex.y)))
+	if projected.size() > 2:
+		projected.append(projected[0])
+		draw_polyline(projected, Color(0.22, 0.68, 1.0, 0.96), 2.8, true)
+
+
+func _draw_target_list(names: Array[String], area_label: String, top: float = 132.0) -> float:
 	var font: Font = ThemeDB.fallback_font
 	var font_size: int = 15
 	var max_lines: int = mini(names.size(), 11)
 	var panel_width: float = 252.0
 	var panel_height: float = float(max_lines + 2 + (1 if names.size() > max_lines else 0)) * 23.0 + 14.0
-	var origin: Vector2 = Vector2(maxf(size.x - panel_width - 18.0, 8.0), 132.0)
+	var origin: Vector2 = Vector2(maxf(size.x - panel_width - 18.0, 8.0), top)
 	draw_rect(Rect2(origin, Vector2(panel_width, panel_height)), Color(0.025, 0.04, 0.07, 0.86), true)
 	draw_rect(Rect2(origin, Vector2(panel_width, panel_height)), Color(0.38, 0.68, 1.0, 0.9), false, 1.5)
 	draw_string(font, origin + Vector2(12, 25), area_label + " (" + str(names.size()) + ")", HORIZONTAL_ALIGNMENT_LEFT, panel_width - 20, font_size, Color(0.73, 0.88, 1.0))
@@ -282,17 +329,19 @@ func _draw_target_list(names: Array[String], area_label: String) -> void:
 			draw_string(font, origin + Vector2(12, 51 + index * 23), "• " + names[index], HORIZONTAL_ALIGNMENT_LEFT, panel_width - 20, font_size, Color.WHITE)
 		if names.size() > max_lines:
 			draw_string(font, origin + Vector2(12, 51 + max_lines * 23), "…", HORIZONTAL_ALIGNMENT_LEFT, panel_width - 20, font_size, Color.WHITE)
+	return top + panel_height + 8.0
 
 
 func _draw() -> void:
 	if not _is_active():
 		return
 	var range_mesh: MeshInstance3D = measure.get("_spell_range_preview") as MeshInstance3D
-	if _is_2d_view() and range_mesh != null and is_instance_valid(range_mesh) and range_mesh.visible and bool(spell.call("is_targeting")):
+	var active_range: bool = bool(measure.get("_spell_range_active")) and bool(spell.call("is_targeting"))
+	if _is_2d_view() and active_range:
 		var range_center: Vector3 = measure.get("_spell_range_center")
 		var radius: float = float(measure.get("_spell_range_radius"))
 		if radius > 0.0:
-			_draw_area(_circle_polygon(range_center, radius), Color(0.23, 0.64, 1.0, 0.83))
+			_draw_spell_range(range_center, radius)
 	var hover_area: Dictionary = {}
 	for data: Dictionary in _areas:
 		var points: PackedVector2Array = _shape_polygon(
@@ -318,6 +367,7 @@ func _draw() -> void:
 					draw_line(center, _world_point(value), Color(0.32, 0.96, 1.0, 0.95), 3.0, true)
 	var preview: MeshInstance3D = measure.get("_spell_preview") as MeshInstance3D
 	var casting: bool = spell != null and is_instance_valid(spell) and bool(spell.call("is_targeting"))
+	var range_list: Array[String] = _range_target_names() if active_range else []
 	if preview != null and is_instance_valid(preview) and preview.visible and casting:
 		var start: Vector3 = measure.get("_spell_preview_start")
 		var end: Vector3 = measure.get("_spell_preview_end")
@@ -327,7 +377,9 @@ func _draw() -> void:
 		if _is_2d_view():
 			_draw_area(_shape_polygon(start, end, shape, width, style), Color(1.0, 0.72, 0.20, 1.0))
 		if shape != "line":
-			_draw_target_list(_target_names(start, end, shape, width, style), "Nell'area")
+			var next_y: float = _draw_target_list(_target_names(start, end, shape, width, style), "Nell'area")
+			if active_range:
+				_draw_target_list(range_list, "A gittata", next_y)
 			return
 	# Token-targeting spells don't always create an AoE preview mesh.
 	# Keep their affected-token HUD available in both camera modes.
@@ -361,12 +413,17 @@ func _draw() -> void:
 				for entry: Node3D in spell.get("_pending_targets"):
 					if entry != null and is_instance_valid(entry) and entry != hovered_token:
 						names.append(_target_display_name(entry))
-			_draw_target_list(names, "Bersagli")
+			var next_y: float = _draw_target_list(names, "Bersagli")
+			if active_range:
+				_draw_target_list(range_list, "A gittata", next_y)
 			return
+	var next_y: float = 132.0
 	if not hover_area.is_empty():
-		_draw_target_list(
+		next_y = _draw_target_list(
 			_target_names(hover_area.get("start", Vector3.ZERO), hover_area.get("end", Vector3.ZERO),
 				String(hover_area.get("shape", "sphere")), float(hover_area.get("width", -1.0)),
 				String(hover_area.get("style", ""))),
 			"Nell'area"
 		)
+	if active_range:
+		_draw_target_list(range_list, "A gittata", next_y)
