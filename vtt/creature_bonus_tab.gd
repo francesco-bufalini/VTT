@@ -331,6 +331,8 @@ func _refresh() -> void:
 	_refresh_origins()
 	_refresh_bonuses()
 	_status.text = "Seleziona un'origine a sinistra per evidenziarne i bonus. Ogni bonus è indipendente e cumulabile; il pulsante di attivazione non elimina la concessione."
+	if not PendingChoices.missing_feat_abilities(_record).is_empty():
+		_status.text += " ⚠ Alcuni talenti richiedono di scegliere la caratteristica: premi l'avviso accanto all'origine."
 
 
 func _refresh_origins() -> void:
@@ -451,7 +453,9 @@ func _refresh_bonuses() -> void:
 		groups[key].append(index)
 	if groups.is_empty():
 		var empty := Label.new()
-		empty.text = "Nessun bonus per questo target."
+		empty.text = ("Scelta ancora da completare: clicca ⚠ accanto al talento nelle origini."
+			if not PendingChoices.missing_feat_abilities(_record).is_empty()
+			else "Nessun bonus per questo target.")
 		_bonus_cards.add_child(empty)
 		return
 	var ordered: Array = groups.keys()
