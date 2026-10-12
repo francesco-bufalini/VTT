@@ -3212,10 +3212,16 @@ func _refresh_attacks(record: Dictionary) -> void:
 		header.add_child(name_label)
 		if active:
 			var active_label := Label.new()
-			active_label.text = "IN USO"
+			active_label.text = "PORTATA ATTIVA"
 			active_label.add_theme_font_size_override("font_size", 11)
 			active_label.add_theme_color_override("font_color", Color(0.76, 0.84, 0.68))
 			header.add_child(active_label)
+		else:
+			var select_reach := Button.new()
+			select_reach.text = "Usa portata"
+			select_reach.tooltip_text = "Attiva questo attacco per la portata tattica, senza cambiare l'equipaggiamento."
+			select_reach.pressed.connect(_activate_attack.bind(attack_id))
+			header.add_child(select_reach)
 		# Hit and damage each have their own self-contained line. HFlow
 		# wraps the dice button if the pane is narrow, without clipping it.
 		var hit_row := HFlowContainer.new()
@@ -3319,14 +3325,6 @@ func _refresh_attacks(record: Dictionary) -> void:
 			size_chip.modulate.a = 0.78
 			size_chip.tooltip_text = "Modificabile nell'inventario; in assenza di scelta segue la taglia della creatura."
 			chips.add_child(size_chip)
-			if ItemRules.has_property(item_data, "V") and String(attack.get("slot", "")) == "main":
-				var versatile := CheckBox.new()
-				versatile.text = "Due mani (versatile)"
-				versatile.tooltip_text = "Usa il dado versatile solo quando la mano secondaria è libera"
-				versatile.button_pressed = bool(AttackData.override_for(record, attack_id).get("two_handed", false))
-				versatile.disabled = not ItemRules.occupying(record.get("inventory", []), "off").is_empty()
-				versatile.toggled.connect(_on_attack_two_handed_changed.bind(attack_id))
-				settings.add_child(versatile)
 		if String(record.get("kind", "")) == "monster" and String(attack.get("source", "")) != "item":
 			var fixed := Label.new()
 			fixed.text = "Competenza inclusa (bestiario)"
@@ -3389,8 +3387,13 @@ func _refresh_attack_values(record: Dictionary) -> void:
 			_set_formula("attack_hit:" + attack_id, "%+d" % hit,
 				AttackData.attack_bonus_formula(record, attack, _creature_proficiency(record)))
 		var damage: String = AttackData.damage_label(record, attack)
-		_set_formula("attack_damage:" + attack_id, damage,
-			"Danni: %s. Include bonus di caratteristica, arma e concessioni attive quando applicabili." % damage)
+		var damage_detail: String = "Danni: %s. Include i bonus di caratteristica, arma e concessioni applicabili." % damage
+		if String(attack.get("slot", "")) == "off":
+			if AttackData.offhand_bonus_attack_allowed(record):
+				damage_detail += " Attacco aggiuntivo a due armi: bonus al colpire normale; il modificatore di caratteristica ai danni si applica solo con lo stile Two-Weapon Fighting o se negativo."
+			else:
+				damage_detail += " Non soddisfa i requisiti dell'attacco aggiuntivo a due armi (normalmente due armi leggere da mischia o talento Dual Wielder). Resta possibile usarla con l'azione Attaccare."
+		_set_formula("attack_damage:" + attack_id, damage, damage_detail)
 		if _attack_range_labels.has(attack_id):
 			var settings: Dictionary = AttackData.override_for(record, attack_id)
 			var base: int = int(settings.get("range_feet", attack.get("range_feet", 5)))
@@ -3630,29 +3633,17 @@ func _on_inventory_updated(inventory: Array) -> void:
 	var record: Dictionary = _current()
 	if record.is_empty():
 		return
-	var prior_main: Dictionary = ItemRules.occupying(record.get("inventory", []), "main")
 	record["inventory"] = inventory.duplicate(true)
-	# Equipment changes made on the inventory page also select the weapon
-	# displayed above attacks. Unrelated quantity/armor changes do not.
-	var new_main: Dictionary = ItemRules.occupying(record.get("inventory", []), "main")
-	# Ignore quantity changes: they do not mean the user switched weapons.
-	var previous_signature: String = String(prior_main.get("id", "")) + "|" + String(prior_main.get("instance_id", "")) + "|" + JSON.stringify(prior_main.get("instance_overrides", {}))
-	var current_signature: String = String(new_main.get("id", "")) + "|" + String(new_main.get("instance_id", "")) + "|" + JSON.stringify(new_main.get("instance_overrides", {}))
-	if previous_signature != current_signature:
-		if not new_main.is_empty() and ItemRules.kind(ItemRules.entry_for(new_main)) == "weapon":
-			record["equipped_attack_id"] = "item:" + String(new_main.get("id", ""))
-			var rows: Array = record.get("inventory", [])
-			for i: int in range(rows.size()):
-				if rows[i] is Dictionary and "main" in ItemRules.slots(rows[i]):
-					record["equipped_inventory_index"] = i
-					break
-		else:
-			record.erase("equipped_inventory_index")
-			if String(record.get("equipped_attack_id", "")).begins_with("item:"):
-				record.erase("equipped_attack_id")
-	var active: Dictionary = AttackData.active_attack(record)
-	if not active.is_empty():
-		record["equipped_attack_id"] = String(active.get("id", ""))
+	# Inventory mutations never equip an item or choose a replacement attack.
+	# A weapon removed from the inventory invalidates only its own attack ID.
+	var known_attacks: Dictionary = {}
+	for candidate: Dictionary in AttackData.definitions(record):
+		known_attacks[String(candidate.get("id", ""))] = true
+	var selected_attack: String = String(record.get("equipped_attack_id", ""))
+	if not selected_attack.is_empty() and not known_attacks.has(selected_attack):
+		record["equipped_attack_id"] = ""
+	if ItemRules.occupying(record["inventory"], "main").is_empty():
+		record["hand_grip_two_handed"] = false
 	# Delete the legacy documents array only after each entry is in inventory
 	# and its definition has been written to the homebrew directory.
 	var legacy: Variant = record.get("documents", [])
