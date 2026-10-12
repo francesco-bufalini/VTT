@@ -750,6 +750,66 @@ func run() -> void:
 		"Deep Speech is a selectable exotic language")
 	assert(Proficiencies.grant_matches([{"anyExotic": 1}], "language", "druidic") == 0,
 		"Secret Druidic must not be offered as an arbitrary exotic language")
+
+	# Latest v2.37.0 language classification also includes Rare; anyStandard
+	# is a free non-secret language choice, not a Standard-only restriction.
+	var typed_languages: Dictionary = {}
+	for option: Dictionary in Proficiencies.language_options():
+		typed_languages[String(option.get("key", ""))] = option
+	for pair: Array in [
+		["common", "Standard"], ["deep speech", "Esotico"],
+		["ogre", "Raro"], ["druidic", "Segreto"]
+	]:
+		var language: Dictionary = typed_languages.get(String(pair[0]), {})
+		assert(not language.is_empty() and String(pair[1]) in String(language.get("label", "")),
+			"Language picker must label 5etools type: " + String(pair[0]))
+	for name: String in ["common", "deep speech", "ogre", "auran"]:
+		assert(Proficiencies.grant_matches([{"anyStandard": 1}], "language", name) == 1,
+			"AnyStandard must allow every known nonsecret language: " + name)
+	for name: String in ["druidic", "thieves' cant", "invented language"]:
+		assert(Proficiencies.grant_matches([{"anyStandard": 1}], "language", name) == 0,
+			"AnyStandard must not permit secrets or invented languages: " + name)
+	var changeling: Dictionary = _record()
+	changeling["species"] = "Changeling"
+	changeling["species_source"] = "MPMM"
+	changeling["proficiency_choices"] = []
+	changeling["proficiency_origins"] = []
+	assert(Proficiencies.has_proficiency(changeling, "language", "common"),
+		"MPMM Changeling should get Common without selecting it manually")
+	var changeling_origin: Dictionary = {}
+	for source: Dictionary in Proficiencies.origins(changeling):
+		if String(source.get("id", "")) == "race|mpmm|changeling":
+			changeling_origin = source
+	assert(not changeling_origin.is_empty(), "Changeling must appear as an origin")
+	var missing_languages: Array[String] = Proficiencies.requirement_missing(
+		changeling_origin, Proficiencies.choices(changeling), {"race|mpmm|changeling": true})
+	assert(missing_languages.any(func(description: String) -> bool:
+		return description.begins_with("language ")),
+		"MPMM Changeling should require one extra language")
+	tab.load_record(changeling)
+	tab._open_missing_choices("race|mpmm|changeling")
+	var changeling_language_group: Dictionary = {}
+	for group: Dictionary in tab._choice_groups:
+		if String(group.get("kind", "")) == "language":
+			changeling_language_group = group
+	assert(not changeling_language_group.is_empty()
+		and int(changeling_language_group.get("count", 0)) == 1,
+		"Changeling language selection must appear in the chooser")
+	var offered_languages: Dictionary = {}
+	for offered: Dictionary in changeling_language_group.get("boxes", []):
+		offered_languages[String(offered.get("key", ""))] = offered
+	assert(offered_languages.has("deep speech") and offered_languages.has("ogre")
+		and not offered_languages.has("druidic") and not offered_languages.has("thieves' cant"),
+		"Changeling chooser should offer Exotic/Rare but never secret languages")
+	(offered_languages["deep speech"].get("check") as CheckBox).set_pressed_no_signal(true)
+	tab._refresh_choice_limit(changeling_language_group)
+	tab._apply_choice_dialog()
+	tab._choice_dialog.hide()
+	assert(Proficiencies.has_proficiency(tab._effective_record(), "language", "common")
+		and Proficiencies.has_proficiency(tab._effective_record(), "language", "deep speech"),
+		"Fixed Common and selected Exotic language must both remain available")
+	tab.load_record(_record())
+
 	# Feats have a separate full-width section with the same columns/cards.
 	var feats_editor := FeatsTab.new()
 	root.add_child(feats_editor)
