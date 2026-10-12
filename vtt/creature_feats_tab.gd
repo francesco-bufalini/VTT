@@ -5,11 +5,7 @@ extends VBoxContainer
 # matching the two-column proficiency/bonus editors.
 const Rules = preload("res://vtt/creature_proficiency_rules.gd")
 const Bonuses = preload("res://vtt/creature_bonus_rules.gd")
-const Structured = preload("res://vtt/creature_structured_bonuses.gd")
-const ABILITY_LABELS := {
-	"str": "Forza", "dex": "Destrezza", "con": "Costituzione",
-	"int": "Intelligenza", "wis": "Saggezza", "cha": "Carisma"
-}
+
 const Catalog = preload("res://vtt/player_5etools_catalog.gd")
 const Traits = preload("res://vtt/creature_traits_tab.gd")
 const OriginButton = preload("res://vtt/bounded_tooltip_button.gd")
@@ -29,7 +25,6 @@ var _origin_picker: OptionButton
 var _feat_editor: VBoxContainer
 var _feat_filter: LineEdit
 var _feat_picker: OptionButton
-var _ability_picker: OptionButton
 var _catalog_matches: Array[Dictionary] = []
 var _remove_dialog: ConfirmationDialog
 var _remove_picker: OptionButton
@@ -112,12 +107,6 @@ func setup(on_change: Callable) -> void:
 	_feat_picker = OptionButton.new()
 	_feat_picker.fit_to_longest_item = false
 	_feat_editor.add_child(_feat_picker)
-	_feat_picker.item_selected.connect(func(_i: int) -> void: _refresh_ability_picker())
-	_ability_picker = OptionButton.new()
-	_ability_picker.fit_to_longest_item = false
-	_ability_picker.tooltip_text = "Il bonus alla caratteristica deriva dalla scelta strutturata del talento."
-	_ability_picker.hide()
-	_feat_editor.add_child(_ability_picker)
 	_origin_picker = OptionButton.new()
 	_origin_picker.fit_to_longest_item = false
 	_origin_picker.tooltip_text = "Scegli l'origine che concede il talento (o senza origine)"
@@ -312,7 +301,7 @@ func _feat_description(feat: Dictionary) -> String:
 
 
 func _refresh() -> void:
-	_status.text = "Aggiungi un talento e poi attribuiscigli un'origine. La lista sinistra mostra solo chi concede talenti."
+	_status.text = "Aggiungi un talento e attribuiscigli un'origine. Le scelte dei bonus alle caratteristiche si completano nella sezione Bonus."
 	_refresh_origins()
 	_refresh_feats()
 	_refresh_origin_picker()
@@ -453,32 +442,8 @@ func _refresh_feats() -> void:
 		remove.tooltip_text = "Elimina la concessione da una specifica origine."
 		remove.pressed.connect(_request_remove.bind(sid))
 		line.add_child(remove)
-		# 5etools feats such as Telepathic give +1 to exactly one
-		# selectable ability. The pick is a property of the feat itself;
-		# all grants from different origins share that single choice.
-		var structured_choice: Dictionary = Structured.feat_ability_choice(feat)
-		if not structured_choice.is_empty():
-			var ability_row := HBoxContainer.new()
-			ability_row.add_theme_constant_override("separation", 5)
-			contents.add_child(ability_row)
-			var caption := Label.new()
-			caption.text = "Caratteristica +%d" % int(structured_choice.get("amount", 1))
-			caption.add_theme_font_size_override("font_size", 12)
-			ability_row.add_child(caption)
-			var selector := OptionButton.new()
-			selector.size_flags_horizontal = Control.SIZE_EXPAND_FILL
-			selector.add_item("Scegli caratteristica…")
-			selector.set_item_metadata(0, "")
-			var chosen_stat: String = String(feat.get("ability_choice", "")).to_lower()
-			for value: Variant in structured_choice.get("from", []):
-				var stat: String = String(value)
-				selector.add_item(String(ABILITY_LABELS.get(stat, stat.to_upper())))
-				selector.set_item_metadata(selector.item_count - 1, stat)
-				if stat == chosen_stat:
-					selector.select(selector.item_count - 1)
-			selector.item_selected.connect(_on_owned_feat_ability_selected.bind(sid))
-			selector.tooltip_text = "Seleziona una delle caratteristiche ammesse dal talento. Il bonus viene creato automaticamente."
-			ability_row.add_child(selector)
+		# Feat ability-score choices are completed in the Bonus editor,
+		# just like proficiency choices in the Competence editor.
 
 
 func _refresh_origin_picker() -> void:
@@ -503,48 +468,6 @@ func _refresh_feat_picker() -> void:
 			break
 	if _feat_picker.item_count > 0:
 		_feat_picker.select(0)
-	_refresh_ability_picker()
-
-
-func _refresh_ability_picker() -> void:
-	if _ability_picker == null:
-		return
-	_ability_picker.clear()
-	var index: int = _feat_picker.selected
-	if index < 0 or index >= _catalog_matches.size():
-		_ability_picker.hide()
-		return
-	var choice: Dictionary = Structured.feat_ability_choice(_catalog_matches[index])
-	_ability_picker.visible = not choice.is_empty()
-	if choice.is_empty():
-		return
-	_ability_picker.add_item("Scegli caratteristica (+%d)…" % int(choice.get("amount", 1)))
-	_ability_picker.set_item_metadata(0, "")
-	for value: Variant in choice.get("from", []):
-		var stat: String = String(value)
-		_ability_picker.add_item(String(ABILITY_LABELS.get(stat, stat.to_upper())))
-		_ability_picker.set_item_metadata(_ability_picker.item_count - 1, stat)
-
-
-func _on_owned_feat_ability_selected(index: int, sid: String) -> void:
-	var selected: String = ""
-	# This signal is emitted by the selector belonging to the feat with sid.
-	# Indexes follow the same structured order displayed on the card.
-	for feat: Dictionary in _feats:
-		if Rules.feat_source_id(feat) != sid:
-			continue
-		var choice: Dictionary = Structured.feat_ability_choice(feat)
-		var offered: Array = choice.get("from", [])
-		if index > 0 and index <= offered.size():
-			selected = String(offered[index - 1])
-		break
-	for feat: Dictionary in _feats:
-		if Rules.feat_source_id(feat) == sid:
-			if selected.is_empty():
-				feat.erase("ability_choice")
-			else:
-				feat["ability_choice"] = selected
-	_publish()
 
 
 func _select_origin(sid: String) -> void:
@@ -569,13 +492,6 @@ func _add_feat() -> void:
 	if index < 0 or index >= _catalog_matches.size():
 		return
 	var feat: Dictionary = _catalog_matches[index]
-	var structured_choice: Dictionary = Structured.feat_ability_choice(feat)
-	var chosen_stat: String = ""
-	if not structured_choice.is_empty():
-		if _ability_picker.selected <= 0:
-			_status.text = "Scegli la caratteristica che riceve il bonus del talento."
-			return
-		chosen_stat = String(_ability_picker.get_item_metadata(_ability_picker.selected))
 	var sid: String = Rules.feat_source_id(feat)
 	var source: Dictionary = OriginChoices.selected(_origin_picker)
 	var origin_id: String = String(source.get("id", ""))
@@ -588,21 +504,19 @@ func _add_feat() -> void:
 	for granted: Dictionary in _feats:
 		if Rules.feat_source_id(granted) == sid and String(granted.get("origin_id", "")) == origin_id:
 			granted["disabled"] = false
-			if not chosen_stat.is_empty():
-				for existing: Dictionary in _feats:
-					if Rules.feat_source_id(existing) == sid:
-						existing["ability_choice"] = chosen_stat
 			_feat_editor.hide()
 			_publish()
 			return
 	var feat_record: Dictionary = {"id": feat.get("id", ""), "name": feat.get("name", ""),
 		"source": feat.get("source", ""), "origin_id": origin_id,
 		"origin_name": String(source.get("name", "Senza origine")), "disabled": false}
-	if not chosen_stat.is_empty():
-		feat_record["ability_choice"] = chosen_stat
-		for existing: Dictionary in _feats:
-			if Rules.feat_source_id(existing) == sid:
-				existing["ability_choice"] = chosen_stat
+	# Re-granting an existing feat keeps its already resolved choice.
+	for existing: Dictionary in _feats:
+		if Rules.feat_source_id(existing) == sid:
+			var previous: String = String(existing.get("ability_choice", ""))
+			if not previous.is_empty():
+				feat_record["ability_choice"] = previous
+				break
 	_feats.append(feat_record)
 	_selected_id = origin_id
 	_feat_editor.hide()

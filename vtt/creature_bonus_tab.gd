@@ -14,6 +14,13 @@ const Attacks = preload("res://vtt/creature_attack_data.gd")
 const Trackers = preload("res://vtt/structured_resource_trackers.gd")
 const OriginButton = preload("res://vtt/bounded_tooltip_button.gd")
 const OriginChoices = preload("res://vtt/creature_origin_choices.gd")
+const PendingChoices = preload("res://vtt/creature_pending_choices.gd")
+const Structured = preload("res://vtt/creature_structured_bonuses.gd")
+const DialogLayout = preload("res://vtt/dialog_layout.gd")
+const ABILITY_LABELS := {
+	"str": "Forza", "dex": "Destrezza", "con": "Costituzione",
+	"int": "Intelligenza", "wis": "Saggezza", "cha": "Carisma"
+}
 
 var _changed: Callable
 var _record: Dictionary = {}
@@ -30,6 +37,9 @@ var _new_target: OptionButton
 var _loading := false
 var _description_cache: Dictionary = {}
 var _grants_tooltip_cache: Dictionary = {}
+var _choice_dialog: ConfirmationDialog
+var _choice_selector: OptionButton
+var _choice_origin: String = ""
 
 
 func setup(on_change: Callable) -> void:
@@ -94,6 +104,24 @@ func setup(on_change: Callable) -> void:
 	add_bonus.tooltip_text = "Crea un bonus e collegalo all'origine scelta qui accanto."
 	add_bonus.pressed.connect(_add_bonus)
 	new_row.add_child(add_bonus)
+	_choice_dialog = ConfirmationDialog.new()
+	_choice_dialog.title = "Completa il bonus del talento"
+	_choice_dialog.ok_button_text = "Applica"
+	_choice_dialog.cancel_button_text = "Annulla"
+	_choice_dialog.confirmed.connect(_apply_feat_ability_choice)
+	add_child(_choice_dialog)
+	var choice_box := VBoxContainer.new()
+	choice_box.add_theme_constant_override("separation", 8)
+	_choice_dialog.add_child(choice_box)
+	var help := Label.new()
+	help.text = "Scegli la caratteristica che riceve il bonus."
+	choice_box.add_child(help)
+	_choice_selector = OptionButton.new()
+	_choice_selector.custom_minimum_size = Vector2(325, 36)
+	_choice_selector.item_selected.connect(func(index: int) -> void:
+		_choice_dialog.get_ok_button().disabled = index <= 0
+	)
+	choice_box.add_child(_choice_selector)
 	load_record({})
 
 
@@ -114,6 +142,9 @@ func _make_column(parent: HBoxContainer, title: String, width: float) -> VBoxCon
 
 func load_record(record: Dictionary) -> void:
 	_loading = true
+	if _choice_dialog != null:
+		_choice_dialog.hide()
+	_choice_origin = ""
 	_record = record.duplicate(true)
 	_description_cache.clear()
 	_grants_tooltip_cache.clear()
@@ -301,6 +332,10 @@ func _refresh() -> void:
 	_refresh_origins()
 	_refresh_bonuses()
 	_status.text = "Seleziona un'origine a sinistra per evidenziarne i bonus. Ogni bonus è indipendente e cumulabile; il pulsante di attivazione non elimina la concessione."
+	var source_record: Dictionary = _record.duplicate(true)
+	source_record["proficiency_origins"] = _origins.duplicate(true)
+	if not PendingChoices.missing_feat_abilities(source_record).is_empty():
+		_status.text += " ⚠ Alcuni talenti richiedono di scegliere la caratteristica: premi l'avviso accanto all'origine."
 
 
 func _refresh_origins() -> void:
@@ -309,6 +344,30 @@ func _refresh_origins() -> void:
 		child.queue_free()
 	var origins: Array[Dictionary] = [{"id": "", "name": "Senza origine", "disabled": false}]
 	origins.append_array(_origins)
+	var pending: Dictionary = {}
+	var editable_choices: Dictionary = {}
+	for owned_value: Variant in _record.get("feats_catalog", []):
+		if not owned_value is Dictionary:
+			continue
+		var owned: Dictionary = owned_value
+		var feat_sid: String = Proficiencies.feat_source_id(owned)
+		var choice_options: Dictionary = Structured.feat_ability_choice(owned)
+		if not feat_sid.is_empty() and not choice_options.is_empty():
+			editable_choices[feat_sid] = choice_options
+	var effective_record: Dictionary = _record.duplicate(true)
+	effective_record["proficiency_origins"] = _origins.duplicate(true)
+	for entry: Dictionary in PendingChoices.missing_feat_abilities(effective_record):
+		var pending_sid: String = String(entry.get("origin_id", ""))
+		pending[pending_sid] = entry
+		var already_present: bool = false
+		for known: Dictionary in origins:
+			if String(known.get("id", "")) == pending_sid:
+				already_present = true
+				break
+		if not already_present:
+			origins.append({"id": pending_sid,
+				"name": "Talento · " + String(entry.get("name", "")),
+				"disabled": false})
 	# Include the source of a real grant even if it was not previously saved.
 	for grant: Dictionary in _rows:
 		var gid: String = String(grant.get("origin_id", ""))
@@ -336,7 +395,7 @@ func _refresh_origins() -> void:
 		for grant: Dictionary in _rows:
 			if String(grant.get("origin_id", "")) == sid:
 				count += 1
-		if count == 0:
+		if count == 0 and not pending.has(sid):
 			continue
 		var cell := PanelContainer.new()
 		_origin_cards.add_child(cell)
@@ -348,13 +407,36 @@ func _refresh_origins() -> void:
 		select.toggle_mode = true
 		select.button_pressed = _selected_origin == sid
 		select.clip_text = true
-		select.text = _origin_label(sid) + " (%d)" % count
+		var origin_title: String = String(origin.get("name", _origin_label(sid)))
+		select.text = origin_title + (" (%d)" % count if count > 0 else " · da completare")
 		select.tooltip_text = _origin_description(sid)
+		if pending.has(sid):
+			select.tooltip_text += "\n\n⚠ Scegli la caratteristica da aumentare"
 		select.pressed.connect(func() -> void:
 			_selected_origin = sid
 			_refresh()
 		)
 		line.add_child(select)
+		if pending.has(sid):
+			var warning := Button.new()
+			warning.text = "⚠"
+			warning.flat = true
+			warning.custom_minimum_size.x = 32
+			warning.add_theme_color_override("font_color", Color(1.0, 0.80, 0.33))
+			warning.tooltip_text = "Scegli la caratteristica per il bonus +%d di %s" % [
+				int((pending[sid] as Dictionary).get("amount", 1)),
+				String((pending[sid] as Dictionary).get("name", "Talento"))
+			]
+			warning.pressed.connect(_open_feat_ability_choice.bind(sid))
+			line.add_child(warning)
+		elif editable_choices.has(sid):
+			var change_choice := Button.new()
+			change_choice.text = "✎"
+			change_choice.flat = true
+			change_choice.custom_minimum_size.x = 30
+			change_choice.tooltip_text = "Modifica la caratteristica che riceve il bonus del talento."
+			change_choice.pressed.connect(_open_feat_ability_choice.bind(sid))
+			line.add_child(change_choice)
 		if not sid.is_empty():
 			var enable := CheckButton.new()
 			enable.text = "⏻"
@@ -391,7 +473,11 @@ func _refresh_bonuses() -> void:
 		groups[key].append(index)
 	if groups.is_empty():
 		var empty := Label.new()
-		empty.text = "Nessun bonus per questo target."
+		var source_record: Dictionary = _record.duplicate(true)
+		source_record["proficiency_origins"] = _origins.duplicate(true)
+		empty.text = ("Scelta ancora da completare: clicca ⚠ accanto al talento nelle origini."
+			if not PendingChoices.missing_feat_abilities(source_record).is_empty()
+			else "Nessun bonus per questo target.")
 		_bonus_cards.add_child(empty)
 		return
 	var ordered: Array = groups.keys()
@@ -465,6 +551,71 @@ func _refresh_bonuses() -> void:
 				card.modulate.a = 0.55
 
 
+func _open_feat_ability_choice(sid: String) -> void:
+	var selected: String = ""
+	var chosen_feat: Dictionary = {}
+	var choice_options: Dictionary = {}
+	for feat_value: Variant in _record.get("feats_catalog", []):
+		if not feat_value is Dictionary:
+			continue
+		var feat: Dictionary = feat_value
+		if Proficiencies.feat_source_id(feat) != sid:
+			continue
+		choice_options = Structured.feat_ability_choice(feat)
+		if choice_options.is_empty():
+			continue
+		chosen_feat = feat
+		var proposed: String = String(feat.get("ability_choice", "")).to_lower()
+		if proposed in choice_options.get("from", []):
+			selected = proposed
+			break
+	if chosen_feat.is_empty():
+		return
+	_choice_origin = sid
+	_selected_origin = sid
+	_choice_dialog.title = "Completa · " + String(chosen_feat.get("name", "Talento"))
+	_choice_selector.clear()
+	_choice_selector.add_item("Scegli una caratteristica…")
+	_choice_selector.set_item_metadata(0, "")
+	var selected_index: int = 0
+	for value: Variant in choice_options.get("from", []):
+		var stat: String = String(value)
+		_choice_selector.add_item("%s (+%d)" % [
+			String(ABILITY_LABELS.get(stat, stat.to_upper())),
+			int(choice_options.get("amount", 1))
+		])
+		_choice_selector.set_item_metadata(_choice_selector.item_count - 1, stat)
+		if stat == selected:
+			selected_index = _choice_selector.item_count - 1
+	_choice_selector.select(selected_index)
+	_choice_dialog.get_ok_button().disabled = selected_index <= 0
+	DialogLayout.popup(_choice_dialog, Vector2i(435, 220), 0.88)
+
+
+func _apply_feat_ability_choice() -> void:
+	if _choice_origin.is_empty() or _choice_selector.selected <= 0:
+		return
+	var picked: String = String(_choice_selector.get_item_metadata(_choice_selector.selected))
+	var feats: Array = _record.get("feats_catalog", []).duplicate(true)
+	var changed: bool = false
+	for feat_value: Variant in feats:
+		if not feat_value is Dictionary:
+			continue
+		var feat: Dictionary = feat_value
+		if Proficiencies.feat_source_id(feat) != _choice_origin:
+			continue
+		feat["ability_choice"] = picked
+		changed = true
+	if not changed:
+		return
+	_record["feats_catalog"] = feats
+	_record["formula_bonuses"] = _rows.duplicate(true)
+	_rows = Bonuses.grants(_record)
+	_choice_origin = ""
+	_selected_target = ""
+	_publish(true)
+
+
 func _add_bonus() -> void:
 	if _new_target.selected < 0:
 		return
@@ -514,10 +665,14 @@ func _remove(index: int) -> void:
 	_publish()
 
 
-func _publish() -> void:
+func _publish(feat_choice_changed: bool = false) -> void:
 	_record["formula_bonuses"] = _rows.duplicate(true)
 	_record["proficiency_origins"] = _origins.duplicate(true)
 	_refresh_options()
 	_refresh()
 	if not _loading and _changed.is_valid():
-		_changed.call(_rows.duplicate(true), _origins.duplicate(true))
+		if feat_choice_changed:
+			_changed.call(_rows.duplicate(true), _origins.duplicate(true),
+				_record.get("feats_catalog", []).duplicate(true))
+		else:
+			_changed.call(_rows.duplicate(true), _origins.duplicate(true))

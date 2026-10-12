@@ -237,19 +237,30 @@ static func _catalog_origins(result: Array[Dictionary], record: Dictionary) -> v
 	var selected: Variant = record.get("feats_catalog", [])
 	if selected is Array and not (selected as Array).is_empty():
 		for row: Dictionary in _ability_index.get("feat", []):
-			for feat: Variant in selected:
-				if feat is Dictionary and String(row.get("name", "")).nocasecmp_to(String(feat.get("name", ""))) == 0 and String(row.get("source", "")) == String(feat.get("source", "")):
-					var sid: String = "feat|" + String(row.get("source", "")).to_lower() + "|" + String(row.get("name", "")).to_lower()
-					var feat_label: String = "Talento · " + String(row.get("name", ""))
-					_ability_grants(result, sid, feat_label, row)
-					# This grant only appears after the player chooses one of the
-					# structurally permitted ability scores in the feat editor.
-					var choice: Dictionary = feat_ability_choice(feat)
-					var picked: String = String(feat.get("ability_choice", "")).to_lower()
-					if not choice.is_empty() and picked in choice.get("from", []):
-						_add(result, sid, feat_label, "ability_choice",
-							"ability:" + picked, int(choice.get("amount", 1)))
-					break
+			var representative: Dictionary = {}
+			var options: Dictionary = {}
+			var picked: String = ""
+			for value: Variant in selected:
+				if not value is Dictionary:
+					continue
+				var feat: Dictionary = value
+				if String(row.get("name", "")).nocasecmp_to(String(feat.get("name", ""))) != 0 or String(row.get("source", "")) != String(feat.get("source", "")):
+					continue
+				if representative.is_empty():
+					representative = feat
+					options = feat_ability_choice(feat)
+				var candidate: String = String(feat.get("ability_choice", "")).to_lower()
+				if picked.is_empty() and not options.is_empty() and candidate in options.get("from", []):
+					picked = candidate
+			if representative.is_empty():
+				continue
+			var sid: String = "feat|" + String(row.get("source", "")).to_lower() + "|" + String(row.get("name", "")).to_lower()
+			var feat_label: String = "Talento · " + String(row.get("name", ""))
+			# Multiple granting origins do not stack one feat with itself.
+			_ability_grants(result, sid, feat_label, row)
+			if not picked.is_empty():
+				_add(result, sid, feat_label, "ability_choice",
+					"ability:" + picked, int(options.get("amount", 1)))
 
 
 static func derive(record: Dictionary) -> Array[Dictionary]:

@@ -19,6 +19,7 @@ const TrackerTab = preload("res://vtt/creature_trackers_tab.gd")
 const FormulaValue = preload("res://vtt/formula_value.gd")
 const BonusRules = preload("res://vtt/creature_bonus_rules.gd")
 const BonusTab = preload("res://vtt/creature_bonus_tab.gd")
+const PendingChoices = preload("res://vtt/creature_pending_choices.gd")
 const InventoryTab = preload("res://vtt/creature_inventory_tab.gd")
 const TraitsTab = preload("res://vtt/creature_traits_tab.gd")
 const DialogLayout = preload("res://vtt/dialog_layout.gd")
@@ -184,6 +185,7 @@ var _proficiencies_ui: Node
 var _feats_ui: Node
 var _damage_defenses_ui: Node
 var _editor_section_picker: OptionButton
+var _editor_choice_warning: Label
 var _statistics_scroll: ScrollContainer
 var _traits_ui: Node
 var _condition_rows: VBoxContainer
@@ -655,6 +657,14 @@ func _build_ui() -> void:
 	editor_select_row.add_theme_constant_override("separation", 8)
 	statistics_tab.add_child(editor_select_row)
 	_add_label(editor_select_row, "Visualizza e modifica")
+	_editor_choice_warning = Label.new()
+	_editor_choice_warning.text = "⚠"
+	_editor_choice_warning.visible = false
+	_editor_choice_warning.mouse_filter = Control.MOUSE_FILTER_STOP
+	_editor_choice_warning.mouse_default_cursor_shape = Control.CURSOR_HELP
+	_editor_choice_warning.add_theme_color_override("font_color", Color(1.0, 0.78, 0.30))
+	_editor_choice_warning.tooltip_text = "Sono presenti scelte da completare."
+	editor_select_row.add_child(_editor_choice_warning)
 	_editor_section_picker = OptionButton.new()
 	_editor_section_picker.fit_to_longest_item = false
 	_editor_section_picker.custom_minimum_size = Vector2(285, 30)
@@ -2089,6 +2099,33 @@ func _with_effective_modifiers(record: Dictionary) -> Dictionary:
 	return context
 
 
+# Warn before opening a hidden editor; read from the saved/current sheet
+# rather than the currently rendered tab, which may still be lazy-loaded.
+func _refresh_choice_warnings(record: Dictionary) -> void:
+	if _editor_section_picker == null:
+		return
+	var pending: Dictionary = PendingChoices.section_warnings(record)
+	var lines: Array[String] = []
+	for i: int in range(_editor_section_picker.item_count):
+		var existing: String = _editor_section_picker.get_item_text(i)
+		var section: String = existing.trim_prefix("⚠ ")
+		var missing: Array = pending.get(i, [])
+		_editor_section_picker.set_item_text(i,
+			"⚠ " + section if not missing.is_empty() else section)
+		if not missing.is_empty():
+			lines.append(section + ":\n" + "\n".join(PackedStringArray(missing)))
+	if _editor_choice_warning != null:
+		_editor_choice_warning.visible = not lines.is_empty()
+		_editor_choice_warning.tooltip_text = (
+			"Scelte ancora da completare:\n\n" + "\n\n".join(lines)
+			if not lines.is_empty() else ""
+		)
+	_editor_section_picker.tooltip_text = (
+		"Scelte da completare:\n\n" + "\n\n".join(lines)
+		if not lines.is_empty() else "Scegli una sezione da visualizzare o modificare"
+	)
+
+
 func _select_details_editor(index: int) -> void:
 	if _editor_section_picker == null:
 		return
@@ -2267,7 +2304,7 @@ func _on_trackers_updated(trackers: Array, origins: Array) -> void:
 	_refresh_conditions(record)
 
 
-func _on_bonuses_updated(rows: Array, origins: Array) -> void:
+func _on_bonuses_updated(rows: Array, origins: Array, feats: Array = []) -> void:
 	if _loading:
 		return
 	var record: Dictionary = _current()
@@ -2275,6 +2312,10 @@ func _on_bonuses_updated(rows: Array, origins: Array) -> void:
 		return
 	record["formula_bonuses"] = rows.duplicate(true)
 	record["proficiency_origins"] = origins.duplicate(true)
+	if not feats.is_empty():
+		# Bonus choice dialogs update the feat's structured selection, while
+		# ordinary numeric bonus edits leave all feat records untouched.
+		record["feats_catalog"] = feats.duplicate(true)
 	ProficiencyRules.reconcile_origin_dependents(record)
 	# Recalculate every dependent field from its base and active grants.
 	_recalculate_bonus_mirrors(record)
@@ -2939,6 +2980,7 @@ func _load_form(record: Dictionary) -> void:
 	if _trackers_ui != null and _trackers_ui.visible:
 		_trackers_ui.call("load_record", record)
 		_trackers_stale = false
+	_refresh_choice_warnings(record)
 	_loading = false
 
 
@@ -4022,6 +4064,7 @@ func _on_proficiencies_updated(rows: Array, feats: Array, origins: Array) -> voi
 	if _trackers_ui != null and _trackers_ui.visible:
 		_trackers_ui.call("load_record", record)
 		_trackers_stale = false
+	_refresh_choice_warnings(record)
 
 
 func _on_inventory_updated(inventory: Array) -> void:
@@ -4288,6 +4331,10 @@ func _save() -> void:
 	# A visible sheet follows current level and race/class immediately.
 	_refresh_reference(record)
 	_refresh_trackers(record)
+	# HP/counter edits never change source-choice requirements: avoid a full
+	# feat/proficiency graph scan on every such quick statistic edit.
+	if identity_changed:
+		_refresh_choice_warnings(record)
 	if _spellcasting_ui != null:
 		_spellcasting_ui.call("update_character_context", record)
 

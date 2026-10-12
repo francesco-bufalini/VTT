@@ -247,9 +247,11 @@ func _refresh_origins() -> void:
 		for proficiency: Dictionary in _rows:
 			if String(proficiency.get("origin_id", "")) == sid:
 				matching += 1
-		if matching == 0:
-			continue
 		var missing: Array[String] = Rules.requirement_missing(item, _rows, enabled)
+		# Even a source with no manually picked proficiency must be visible
+		# when its structured choices have not yet been completed.
+		if matching == 0 and missing.is_empty():
+			continue
 		var card := PanelContainer.new()
 		_origin_cards.add_child(card)
 		var line := HBoxContainer.new()
