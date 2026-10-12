@@ -222,23 +222,45 @@ func finish(commit: bool) -> void:
 	var committed_move: bool = commit and _valid and _moved
 	var moved_tokens: Array[CharacterBody3D] = _tokens.duplicate()
 	var movement_origins: Array[Vector3] = _origins.duplicate()
+	# Prefer the dragged token as the pivot if several members of the
+	# same formation are selected. Apply one rigid delta per formation.
+	var ordered_indices: Array[int] = []
 	for index in range(_tokens.size()):
-		var token := _tokens[index]
+		if _tokens[index] == _anchor_token:
+			ordered_indices.append(index)
+	for index in range(_tokens.size()):
+		if _tokens[index] != _anchor_token:
+			ordered_indices.append(index)
+	var handled_groups: Dictionary = {}
+	for index: int in ordered_indices:
+		var token: CharacterBody3D = _tokens[index]
 		if not is_instance_valid(token):
 			continue
 		if committed_move:
-			# Dragging a rider explicitly is a dismount action, not an
-			# attempt to move the mount underneath the rider.
-			if board.get("mount_controller") != null and board.mount_controller.is_mounted(token):
-				board.mount_controller.dismount(token)
-			token.global_position = _targets[index]
-			if token.has_method("snap_horizontal_to_grid"):
-				token.call("snap_horizontal_to_grid")
-			# Il supporto del carro/piattaforma e' indipendente dalla gravita.
-			token.grid_support = _support
-			if is_instance_valid(token.grid_support):
-				token._support_transform = token.grid_support.global_transform
-			token.velocity = Vector3.ZERO
+			var links: Node = board.get("mount_controller") as Node
+			var root: CharacterBody3D = (
+				links.get_token_group_root(token) if links != null else null
+			)
+			var group_id: int = (
+				root.get_instance_id() if root != null else token.get_instance_id()
+			)
+			if not handled_groups.has(group_id):
+				handled_groups[group_id] = true
+				var previous_transform: Transform3D = token.global_transform
+				if links != null and root == null and links.is_mounted(token):
+					# Preserve old item-passenger behavior.
+					links.dismount(token)
+				token.global_position = _targets[index]
+				if token.has_method("snap_horizontal_to_grid"):
+					token.call("snap_horizontal_to_grid")
+				# Supports belong to independent tokens, not to the group.
+				if root == null:
+					token.grid_support = _support
+					if is_instance_valid(token.grid_support):
+						token._support_transform = token.grid_support.global_transform
+				token.velocity = Vector3.ZERO
+				if links != null and root != null:
+					links.apply_explicit_token_motion(token, previous_transform)
 		token.set_physics_process(true)
 	_tokens.clear()
 	if committed_move and board.item_controller != null:
