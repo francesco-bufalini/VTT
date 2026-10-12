@@ -1842,6 +1842,13 @@ func apply_creature_sheet_properties(token: CharacterBody3D, record: Dictionary)
 	# All tactical range overlays and flanking use the first melee attack.
 	# Derive it from the record rather than an obsolete aggregate reach field.
 	var melee_reach: float = CreatureAttackData.active_range(record)
+	# The selected weapon also publishes its structured long range for
+	# the global tactical range overlay in either camera mode.
+	var active_attack: Dictionary = CreatureAttackData.active_attack(record)
+	var long_range: float = float(active_attack.get("long_range_feet", 0.0))
+	if bool(active_attack.get("melee", true)) or long_range <= melee_reach:
+		long_range = 0.0
+	token.set_meta("active_weapon_long_range_feet", long_range)
 	if token.has_method("get_reach_feet") and (
 		absf(float(token.call("get_reach_feet")) - melee_reach) > 0.01
 	):

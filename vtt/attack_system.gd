@@ -1,5 +1,10 @@
 extends Node
 
+const RangeGeometry = preload("res://vtt/attack_range_geometry.gd")
+const RangeOverlay2D = preload("res://vtt/attack_range_overlay_2d.gd")
+const NORMAL_RANGE_COLOR := Color(0.22, 0.68, 1.0, 0.96)
+const LONG_RANGE_COLOR := Color(1.0, 0.61, 0.22, 0.98)
+
 var board_root: Node3D
 var ui_root: CanvasLayer
 var measurement_tool: Node3D
@@ -11,6 +16,13 @@ var _instruction_panel: PanelContainer
 var _instruction_label: Label
 var _result_generation: int = 0
 var _range_preview: MeshInstance3D
+var _long_range_preview: MeshInstance3D
+var _range_outline: MeshInstance3D
+var _long_range_outline: MeshInstance3D
+var _range_overlay_2d: Control
+var _range_normal_feet: float = 0.0
+var _range_long_feet: float = 0.0
+var _range_preview_long_radius: float = -1.0
 var _range_preview_center: Vector3 = Vector3.INF
 var _range_preview_half_footprint: float = -1.0
 var _range_preview_radius: float = -1.0
@@ -25,6 +37,10 @@ func setup(root: Node3D) -> void:
 	ui_root = board_root.get_node_or_null("UI") as CanvasLayer
 	measurement_tool = board_root.get_node_or_null("MeasurementTool") as Node3D
 	_build_instruction_ui()
+	if ui_root != null:
+		_range_overlay_2d = RangeOverlay2D.new()
+		ui_root.add_child(_range_overlay_2d)
+		_range_overlay_2d.call("setup", board_root, self)
 	_all_reach_root = Node3D.new()
 	_all_reach_root.name = "AllCreatureReachSpheres"
 	add_child(_all_reach_root)
@@ -52,18 +68,28 @@ func start_attack(
 	_targeting = true
 	_result_generation += 1
 
-	var range_feet := maxf(
-		5.0,
-		float(_attack_data.get("range_feet", 5.0))
-	)
-	_show_range(range_feet)
-	_set_instruction(
-		"%s · gittata %d ft — scegli un token bersaglio"
-		% [
-			String(_attack_data.get("name", "Attacco")),
-			int(round(range_feet)),
-		]
-	)
+	var limits: Vector2 = ranged_limits(_attack_data)
+	_range_normal_feet = limits.x
+	_range_long_feet = limits.y
+	_show_range(_range_normal_feet, _range_long_feet)
+	if _range_long_feet > _range_normal_feet:
+		_set_instruction(
+			"%s · gittata %d/%d ft (oltre %d ft: svantaggio) — scegli un token"
+			% [
+				String(_attack_data.get("name", "Attacco")),
+				int(round(_range_normal_feet)),
+				int(round(_range_long_feet)),
+				int(round(_range_normal_feet))
+			]
+		)
+	else:
+		_set_instruction(
+			"%s · gittata %d ft — scegli un token bersaglio"
+			% [
+				String(_attack_data.get("name", "Attacco")),
+				int(round(_range_normal_feet))
+			]
+		)
 	if board_root.has_method("capture_camera_control"):
 		board_root.call("capture_camera_control")
 	return true
@@ -74,6 +100,8 @@ func cancel_attack(show_message: bool = true) -> void:
 	_targeting = false
 	_attacker = null
 	_attack_data.clear()
+	_range_normal_feet = 0.0
+	_range_long_feet = 0.0
 	_clear_target_highlight()
 	_hide_range()
 	if show_message and was_targeting:
@@ -112,6 +140,11 @@ func handle_input(event: InputEvent) -> bool:
 
 
 func _process(delta: float) -> void:
+	if _all_reach_root != null and board_root != null:
+		_all_reach_root.visible = not (
+			board_root.has_method("is_2d_view_enabled")
+			and bool(board_root.call("is_2d_view_enabled"))
+		)
 	if _all_reaches_visible:
 		_all_reach_elapsed += delta
 		if _all_reach_elapsed >= 0.12:
@@ -124,7 +157,13 @@ func _process(delta: float) -> void:
 		cancel_attack(false)
 		return
 
-	var screen_position := board_root.get_viewport().get_visible_rect().size * 0.5
+	# 2D attacks point at the mouse, exactly like 2D spell targeting.
+	_show_range(_range_normal_feet, _range_long_feet)
+	var screen_position: Vector2 = (
+		board_root.get_viewport().get_mouse_position()
+		if Input.mouse_mode != Input.MOUSE_MODE_CAPTURED
+		else board_root.get_viewport().get_visible_rect().size * 0.5
+	)
 	var target := _token_at_screen(screen_position)
 	if (
 		target != null
@@ -177,8 +216,9 @@ func _refresh_all_reach_spheres(force: bool) -> void:
 		if token.has_method("get_reach_feet"):
 			reach_feet = maxf(float(token.call("get_reach_feet")), 5.0)
 		var footprint_world := _token_footprint_world(token, cell_size)
+		var long_range: float = float(token.get_meta("active_weapon_long_range_feet", 0.0))
 		parts.append(
-			"%d:%s:%.3f:%.3f:%.3f:%.2f:%.2f"
+			"%d:%s:%.3f:%.3f:%.3f:%.2f:%.2f:%.2f"
 			% [
 				token.get_instance_id(),
 				str(token.global_position.x),
@@ -186,6 +226,7 @@ func _refresh_all_reach_spheres(force: bool) -> void:
 				token.global_position.z,
 				footprint_world,
 				reach_feet,
+				long_range,
 				cell_size
 			]
 		)
@@ -205,30 +246,40 @@ func _add_reach_sphere(
 	token: CharacterBody3D,
 	cell_size: float
 ) -> void:
-	var reach_feet := 5.0
+	var reach_feet: float = 5.0
 	if token.has_method("get_reach_feet"):
 		reach_feet = maxf(float(token.call("get_reach_feet")), 5.0)
-	var footprint_world := _token_footprint_world(token, cell_size)
-	var radius := (
-		reach_feet / 5.0 * cell_size
-		+ footprint_world * 0.5
-	)
+	var long_range: float = float(token.get_meta("active_weapon_long_range_feet", 0.0))
+	var half_footprint: float = _token_footprint_world(token, cell_size) * 0.5
+	if long_range > reach_feet:
+		# Ranged selected weapon: show both actual footprint-based limits.
+		for entry: Dictionary in [
+			{"distance": long_range, "name": "Long", "color": LONG_RANGE_COLOR},
+			{"distance": reach_feet, "name": "Normal", "color": NORMAL_RANGE_COLOR}
+		]:
+			var distance: float = float(entry.get("distance", 0.0))
+			var tint: Color = entry.get("color", NORMAL_RANGE_COLOR)
+			var reach_world: float = distance / 5.0 * cell_size
+			var outline := MeshInstance3D.new()
+			outline.name = "Reach%s_%d" % [String(entry.get("name", "")), token.get_instance_id()]
+			outline.mesh = _build_range_outline_mesh(half_footprint, reach_world, cell_size)
+			outline.material_override = _range_material(tint, 0.92)
+			outline.cast_shadow = GeometryInstance3D.SHADOW_CASTING_SETTING_OFF
+			_all_reach_root.add_child(outline)
+			outline.global_position = token.global_position
+		return
 
+	# Retain the traditional melee-reach sphere for tokens without a
+	# selected weapon's normal/long ranged pair.
+	var footprint_world: float = half_footprint * 2.0
+	var radius: float = reach_feet / 5.0 * cell_size + footprint_world * 0.5
 	var sphere := SphereMesh.new()
 	sphere.radius = maxf(radius, cell_size * 0.5)
 	sphere.height = sphere.radius * 2.0
 	sphere.radial_segments = 32
 	sphere.rings = 16
-
-	var material := StandardMaterial3D.new()
-	material.transparency = BaseMaterial3D.TRANSPARENCY_ALPHA
-	material.shading_mode = BaseMaterial3D.SHADING_MODE_UNSHADED
-	material.cull_mode = BaseMaterial3D.CULL_DISABLED
-	material.albedo_color = Color(0.18, 0.58, 1.0, 0.045)
-	material.emission_enabled = true
-	material.emission = Color(0.08, 0.28, 0.72, 1.0)
+	var material: StandardMaterial3D = _range_material(NORMAL_RANGE_COLOR, 0.045)
 	material.emission_energy_multiplier = 0.10
-
 	var preview := MeshInstance3D.new()
 	preview.name = "Reach_%d" % token.get_instance_id()
 	preview.mesh = sphere
@@ -236,6 +287,18 @@ func _add_reach_sphere(
 	preview.cast_shadow = GeometryInstance3D.SHADOW_CASTING_SETTING_OFF
 	_all_reach_root.add_child(preview)
 	preview.global_position = token.global_position
+
+
+static func ranged_limits(data: Dictionary) -> Vector2:
+	var normal: float = maxf(5.0, float(data.get("range_feet", 5.0)))
+	var long_range: float = float(data.get("long_range_feet", 0.0))
+	if bool(data.get("melee", false)) or long_range <= normal:
+		long_range = 0.0
+	return Vector2(normal, long_range)
+
+
+func _max_attack_range_feet() -> float:
+	return maxf(_range_normal_feet, _range_long_feet)
 
 
 func _try_attack_target(screen_position: Vector2) -> void:
@@ -251,7 +314,7 @@ func _try_attack_target(screen_position: Vector2) -> void:
 		_set_instruction("L'attaccante non può essere il proprio bersaglio.")
 		return
 
-	var range_feet := float(_attack_data.get("range_feet", 5.0))
+	var range_feet: float = _max_attack_range_feet()
 	var distance_feet := _distance_feet(_attacker, target)
 	if distance_feet > range_feet + 0.001:
 		_set_instruction(
@@ -292,6 +355,8 @@ func _try_attack_target(screen_position: Vector2) -> void:
 		target_name,
 		damage,
 	]
+	if _range_long_feet > _range_normal_feet and distance_feet > _range_normal_feet + 0.001:
+		message += " · gittata lunga: svantaggio al tiro per colpire"
 	if applied:
 		if int(hp_result.get("second_form_hp", 0)) > 0:
 			message += " · Forma %d/%d PF" % [
@@ -366,63 +431,124 @@ func _target_in_range(target: CharacterBody3D) -> bool:
 		return false
 	return (
 		_distance_feet(_attacker, target)
-		<= float(_attack_data.get("range_feet", 5.0)) + 0.001
+		<= _max_attack_range_feet() + 0.001
 	)
 
 
-func _show_range(range_feet: float) -> void:
+func _show_range(normal_feet: float, long_feet: float = 0.0) -> void:
 	if _attacker == null or not is_instance_valid(_attacker):
 		return
 
-	var cell_size := maxf(
-		0.001,
-		float(board_root.get("cell_size"))
+	var cell_size: float = maxf(0.001, float(board_root.get("cell_size")))
+	var half_footprint: float = _token_footprint_world(_attacker, cell_size) * 0.5
+	var normal_radius: float = maxf(normal_feet / 5.0 * cell_size, cell_size * 0.05)
+	var long_radius: float = long_feet / 5.0 * cell_size if long_feet > normal_feet else 0.0
+	var center: Vector3 = _attacker.global_position
+	var show_3d: bool = not (
+		board_root.has_method("is_2d_view_enabled")
+		and bool(board_root.call("is_2d_view_enabled"))
 	)
-	var footprint_world := _token_footprint_world(_attacker, cell_size)
-	var half_footprint := footprint_world * 0.5
-	var radius_world := maxf(
-		range_feet / 5.0 * cell_size,
-		cell_size * 0.05
-	)
-	var center := _attacker.global_position
-
-	if (
+	var unchanged: bool = (
 		is_instance_valid(_range_preview)
+		and is_instance_valid(_range_outline)
 		and _range_preview_center.is_equal_approx(center)
-		and is_equal_approx(
-			_range_preview_half_footprint,
-			half_footprint
-		)
-		and is_equal_approx(_range_preview_radius, radius_world)
-	):
-		_range_preview.show()
+		and is_equal_approx(_range_preview_half_footprint, half_footprint)
+		and is_equal_approx(_range_preview_radius, normal_radius)
+		and is_equal_approx(_range_preview_long_radius, long_radius)
+	)
+	if unchanged:
+		_range_preview.visible = show_3d
+		_range_outline.visible = show_3d
+		if long_radius > 0.0:
+			if is_instance_valid(_long_range_preview):
+				_long_range_preview.visible = show_3d
+			if is_instance_valid(_long_range_outline):
+				_long_range_outline.visible = show_3d
 		return
 
 	if not is_instance_valid(_range_preview):
 		_range_preview = MeshInstance3D.new()
-		_range_preview.name = "AttackRangePreview"
+		_range_preview.name = "AttackNormalRange"
 		add_child(_range_preview)
-
-	_range_preview.mesh = _build_rounded_footprint_range_mesh(
-		half_footprint,
-		radius_world
-	)
+	if not is_instance_valid(_range_outline):
+		_range_outline = MeshInstance3D.new()
+		_range_outline.name = "AttackNormalRangeBorder"
+		add_child(_range_outline)
+	_range_preview.mesh = _build_rounded_footprint_range_mesh(half_footprint, normal_radius)
+	_range_preview.material_override = _range_material(NORMAL_RANGE_COLOR, 0.032)
+	_range_preview.cast_shadow = GeometryInstance3D.SHADOW_CASTING_SETTING_OFF
 	_range_preview.global_position = center
+	_range_preview.visible = show_3d
+	_range_outline.mesh = _build_range_outline_mesh(half_footprint, normal_radius, cell_size)
+	_range_outline.material_override = _range_material(NORMAL_RANGE_COLOR, 0.94)
+	_range_outline.cast_shadow = GeometryInstance3D.SHADOW_CASTING_SETTING_OFF
+	_range_outline.global_position = center
+	_range_outline.visible = show_3d
 
+	if long_radius > 0.0:
+		if not is_instance_valid(_long_range_preview):
+			_long_range_preview = MeshInstance3D.new()
+			_long_range_preview.name = "AttackLongRange"
+			add_child(_long_range_preview)
+		if not is_instance_valid(_long_range_outline):
+			_long_range_outline = MeshInstance3D.new()
+			_long_range_outline.name = "AttackLongRangeBorder"
+			add_child(_long_range_outline)
+		_long_range_preview.mesh = _build_rounded_footprint_range_mesh(half_footprint, long_radius)
+		_long_range_preview.material_override = _range_material(LONG_RANGE_COLOR, 0.020)
+		_long_range_preview.cast_shadow = GeometryInstance3D.SHADOW_CASTING_SETTING_OFF
+		_long_range_preview.global_position = center
+		_long_range_preview.visible = show_3d
+		_long_range_outline.mesh = _build_range_outline_mesh(half_footprint, long_radius, cell_size)
+		_long_range_outline.material_override = _range_material(LONG_RANGE_COLOR, 0.90)
+		_long_range_outline.cast_shadow = GeometryInstance3D.SHADOW_CASTING_SETTING_OFF
+		_long_range_outline.global_position = center
+		_long_range_outline.visible = show_3d
+	else:
+		if is_instance_valid(_long_range_preview):
+			_long_range_preview.hide()
+		if is_instance_valid(_long_range_outline):
+			_long_range_outline.hide()
+
+	_range_preview_center = center
+	_range_preview_half_footprint = half_footprint
+	_range_preview_radius = normal_radius
+	_range_preview_long_radius = long_radius
+
+
+func _range_material(color: Color, opacity: float) -> StandardMaterial3D:
 	var material := StandardMaterial3D.new()
 	material.transparency = BaseMaterial3D.TRANSPARENCY_ALPHA
 	material.shading_mode = BaseMaterial3D.SHADING_MODE_UNSHADED
 	material.cull_mode = BaseMaterial3D.CULL_DISABLED
-	material.albedo_color = Color(0.18, 0.58, 1.0, 0.055)
+	material.no_depth_test = true
+	material.albedo_color = Color(color.r, color.g, color.b, opacity)
 	material.emission_enabled = true
-	material.emission = Color(0.08, 0.28, 0.72, 1.0)
-	material.emission_energy_multiplier = 0.14
-	_range_preview.material_override = material
+	material.emission = Color(color.r, color.g, color.b, 1.0)
+	material.emission_energy_multiplier = 0.18
+	return material
 
-	_range_preview_center = center
-	_range_preview_half_footprint = half_footprint
-	_range_preview_radius = radius_world
-	_range_preview.show()
+
+func _build_range_outline_mesh(half_footprint: float, radius: float, cell_size: float) -> ArrayMesh:
+	var thickness: float = maxf(cell_size * 0.075, 0.014)
+	var outer: PackedVector2Array = RangeGeometry.rounded_footprint_perimeter(
+		half_footprint, radius + thickness * 0.5
+	)
+	var inner: PackedVector2Array = RangeGeometry.rounded_footprint_perimeter(
+		half_footprint, maxf(radius - thickness * 0.5, 0.001)
+	)
+	var surface := SurfaceTool.new()
+	surface.begin(Mesh.PRIMITIVE_TRIANGLES)
+	for index: int in range(outer.size()):
+		var next: int = (index + 1) % outer.size()
+		_add_range_quad(
+			surface,
+			Vector3(inner[index].x, 0.0, inner[index].y),
+			Vector3(inner[next].x, 0.0, inner[next].y),
+			Vector3(outer[next].x, 0.0, outer[next].y),
+			Vector3(outer[index].x, 0.0, outer[index].y)
+		)
+	return surface.commit()
 
 
 func _build_rounded_footprint_range_mesh(
@@ -696,6 +822,12 @@ func _add_range_quad(
 func _hide_range() -> void:
 	if is_instance_valid(_range_preview):
 		_range_preview.hide()
+	if is_instance_valid(_range_outline):
+		_range_outline.hide()
+	if is_instance_valid(_long_range_preview):
+		_long_range_preview.hide()
+	if is_instance_valid(_long_range_outline):
+		_long_range_outline.hide()
 	# Compatibility cleanup in case an older attack preview was already
 	# visible when scripts were hot-reloaded.
 	if (

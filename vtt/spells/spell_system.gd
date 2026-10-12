@@ -2,6 +2,7 @@ extends Node
 
 const SpellCatalog = preload("res://vtt/spells/spell_catalog.gd")
 const WallGeometry = preload("res://vtt/spells/wall_geometry.gd")
+const SpellTargetOverlay2D = preload("res://vtt/spells/spell_target_overlay_2d.gd")
 const DialogLayout = preload("res://vtt/dialog_layout.gd")
 const ReachGeometry = preload("res://vtt/flanking_system.gd")
 const ALL_COLLISION_LAYERS := 0xFFFFFFFF
@@ -38,6 +39,7 @@ var slot_row: HBoxContainer
 var slot_selector: OptionButton
 var activate_button: Button
 var instruction_label: Label
+var _overlay_2d: Control
 var wall_mode_menu: PopupMenu
 var wall_orientation_menu: PopupMenu
 var summon_count_menu: PopupMenu
@@ -102,6 +104,12 @@ func _initialize() -> void:
 
 	_build_panel()
 	_build_instruction_label()
+	_overlay_2d = SpellTargetOverlay2D.new()
+	ui_root.add_child(_overlay_2d)
+	_overlay_2d.call(
+		"setup", board_root, self, _measurement_tool(),
+		board_root.get_node_or_null("Camera3D")
+	)
 	_build_saving_throw_dialog()
 	_build_summon_count_menu()
 	_build_wall_mode_menu()
@@ -483,14 +491,22 @@ func dismiss_post_cast_visual_at_screen(
 	):
 		return false
 
-	var removed: bool = bool(
-		measurement_tool.call(
-			"remove_post_cast_spell_visual_at_screen",
-			screen_position
+	var removed: bool = false
+	if _is_2d_view() and _overlay_2d != null:
+		removed = bool(_overlay_2d.call("remove_area_at_screen", screen_position))
+	if not removed:
+		removed = bool(
+			measurement_tool.call(
+				"remove_post_cast_spell_visual_at_screen",
+				screen_position
+			)
 		)
-	)
 	if not removed:
 		return false
+
+	# The red preview belongs to the last selected geometry. Clear it even
+	# when other held areas remain; their own grid highlighting is independent.
+	_set_spell_affected_targets([], false)
 
 	var has_remaining: bool = false
 	if measurement_tool.has_method("has_post_cast_spell_visuals"):
@@ -1243,36 +1259,12 @@ func _on_resize_token_canceled() -> void:
 
 
 func _try_select_caster(screen_position: Vector2) -> void:
-	var hit_value: Variant = board_root.call(
-		"_raycast_from_screen",
-		screen_position,
-		TOKEN_PICK_COLLISION_MASK,
-		true
-	)
-	if not hit_value is Dictionary:
+	# Use the same 2D icon picking as token selection, including elevated
+	# tokens and tokens whose 3D bodies are occluded by scenery.
+	var caster: Node3D = _token_at_screen(screen_position)
+	if caster == null:
 		_set_instruction("Seleziona un token come origine dell'incantesimo.")
 		return
-
-	var hit: Dictionary = hit_value as Dictionary
-	var collider: Node = hit.get("collider") as Node
-	if collider == null:
-		_set_instruction("Seleziona un token come origine dell'incantesimo.")
-		return
-
-	var target_value: Variant = board_root.call(
-		"_find_interaction_target",
-		collider
-	)
-	if not target_value is Node:
-		_set_instruction("Seleziona un token come origine dell'incantesimo.")
-		return
-
-	var target: Node = target_value as Node
-	if not target.is_in_group("dnd_token") or not target is Node3D:
-		_set_instruction("Seleziona un token come origine dell'incantesimo.")
-		return
-
-	var caster: Node3D = target as Node3D
 	var spell_data: Dictionary = _pending_spell()
 	if spell_data.is_empty():
 		_cancel_pending_cast()
@@ -2487,9 +2479,10 @@ func _wall_point_data(
 	if measurement_tool == null:
 		return {"valid": false}
 
-	var point_value: Variant = measurement_tool.call(
-		"get_spell_target_point",
-		screen_position
+	var point_value: Variant = (
+		_screen_2d_point_data(screen_position)
+		if _is_2d_view()
+		else measurement_tool.call("get_spell_target_point", screen_position)
 	)
 	if not point_value is Dictionary:
 		return {"valid": false}
@@ -2793,7 +2786,9 @@ func _update_spell_preview() -> void:
 		return
 
 	var screen_position: Vector2 = (
-		get_viewport().get_visible_rect().size * 0.5
+		get_viewport().get_mouse_position()
+		if _is_2d_view()
+		else get_viewport().get_visible_rect().size * 0.5
 	)
 
 	_update_spell_range_preview(spell_data)
@@ -3147,12 +3142,16 @@ func _update_spell_preview() -> void:
 
 
 func _token_at_screen(screen_position: Vector2) -> Node3D:
-	var hit_value: Variant = board_root.call(
-		"_raycast_from_screen",
-		screen_position,
-		TOKEN_PICK_COLLISION_MASK,
-		true
-	)
+	var hit_value: Variant
+	if _is_2d_view() and board_root.has_method("_raycast_token_from_screen"):
+		hit_value = board_root.call("_raycast_token_from_screen", screen_position, true)
+	else:
+		hit_value = board_root.call(
+			"_raycast_from_screen",
+			screen_position,
+			TOKEN_PICK_COLLISION_MASK,
+			true
+		)
 	if not hit_value is Dictionary:
 		return null
 
@@ -3402,6 +3401,37 @@ func _target_or_point_data(
 	return point_data
 
 
+func _is_2d_view() -> bool:
+	return (
+		board_root != null
+		and is_instance_valid(board_root)
+		and board_root.has_method("is_2d_view_enabled")
+		and bool(board_root.call("is_2d_view_enabled"))
+	)
+
+
+func _screen_2d_point_data(screen_position: Vector2) -> Dictionary:
+	# Use the currently visible 2D floor plane instead of a physics ray:
+	# token/building colliders must not block moving a point AoE with the mouse.
+	var view_camera: Camera3D = board_root.get_node_or_null("Camera3D") as Camera3D
+	if view_camera == null or not view_camera.has_method("get_top_down_level"):
+		return {"valid": false}
+	var plane_y: float = float(view_camera.call("get_top_down_level"))
+	var origin: Vector3 = view_camera.project_ray_origin(screen_position)
+	var direction: Vector3 = view_camera.project_ray_normal(screen_position)
+	if absf(direction.y) < 0.00001:
+		return {"valid": false}
+	var distance: float = (plane_y - origin.y) / direction.y
+	if distance < 0.0:
+		return {"valid": false}
+	return {
+		"valid": true,
+		"point": origin + direction * distance,
+		"in_air": false,
+		"normal": Vector3.UP
+	}
+
+
 func _point_target_already_selected(point: Vector3) -> bool:
 	var tolerance: float = _cell_size() * 0.05
 	for selected_point: Vector3 in _pending_target_points:
@@ -3428,11 +3458,15 @@ func _point_target_data(
 			spell_data
 		)
 
-	var point_value: Variant = measurement_tool.call(
-		"get_spell_target_point",
-		screen_position,
-		preferred_air_distance_world,
-		force_grid_target
+	var point_value: Variant = (
+		_screen_2d_point_data(screen_position)
+		if _is_2d_view()
+		else measurement_tool.call(
+			"get_spell_target_point",
+			screen_position,
+			preferred_air_distance_world,
+			force_grid_target
+		)
 	)
 	if not point_value is Dictionary:
 		return {"valid": false}
@@ -4119,7 +4153,9 @@ func _activate_selected_spell() -> void:
 
 	panel.hide()
 	board_root.set("_ui_owns_mouse", false)
-	Input.mouse_mode = Input.MOUSE_MODE_CAPTURED
+	Input.mouse_mode = (
+		Input.MOUSE_MODE_VISIBLE if _is_2d_view() else Input.MOUSE_MODE_CAPTURED
+	)
 
 	if bool(spell_data.get("allow_pitch", false)):
 		_update_directional_instruction(spell_data)

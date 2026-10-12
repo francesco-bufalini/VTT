@@ -5565,6 +5565,13 @@ func _sync_token_health(record: Dictionary) -> void:
 		else "set_master_hit_points"
 	)
 	token.set_meta("rules_version", String(record.get("rules_version", "2014")))
+	# Restore the selected weapon's long range after loading a saved sheet.
+	var active_attack: Dictionary = AttackData.active_attack(record)
+	var normal_range: float = AttackData.active_range(record)
+	var long_range: float = float(active_attack.get("long_range_feet", 0.0))
+	if bool(active_attack.get("melee", true)) or long_range <= normal_range:
+		long_range = 0.0
+	token.set_meta("active_weapon_long_range_feet", long_range)
 	# Restore tactical reach from the saved attacks as well as on live edits.
 	# This repairs tokens loaded from older maps with an aggregate reach.
 	if token.has_method("get_reach_feet") and token.has_method("set_reach_feet"):
