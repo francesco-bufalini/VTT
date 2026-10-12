@@ -8,6 +8,8 @@ const ScrollBoundaryGuard = preload("res://vtt/nested_scroll_boundary_guard.gd")
 const Catalog = preload("res://vtt/player_5etools_catalog.gd")
 const Traits = preload("res://vtt/creature_traits_tab.gd")
 const Items = preload("res://vtt/creature_item_rules.gd")
+const OriginChoices = preload("res://vtt/creature_origin_choices.gd")
+const Rules = preload("res://vtt/creature_proficiency_rules.gd")
 
 const DAMAGE_TYPES := [
 	{"key": "acid", "label": "Acido"}, {"key": "bludgeoning", "label": "Contundente"},
@@ -161,9 +163,10 @@ static func rank(record: Dictionary, damage_type: String) -> int:
 	var entries: Variant = record.get("damage_defense_entries", null)
 	if entries is Array:
 		var best: int = 0
-		var active_origins: Dictionary = {}
+		var active_origins: Dictionary = Rules.origin_enabled_map(record)
 		for source: Dictionary in _sources(record):
-			active_origins[String(source.get("id", ""))] = bool(source.get("active", true))
+			var sid: String = String(source.get("id", ""))
+			active_origins[sid] = bool(source.get("active", true)) and bool(active_origins.get(sid, true))
 		for entry: Variant in entries:
 			if entry is Dictionary and String(entry.get("key", "")) == damage_type and not bool(entry.get("disabled", false)):
 				var origin: String = String(entry.get("origin_id", ""))
@@ -195,9 +198,10 @@ static func base_condition_immune(record: Dictionary, condition: String) -> bool
 static func condition_immune(record: Dictionary, condition: String) -> bool:
 	var entries: Variant = record.get("damage_defense_entries", null)
 	if entries is Array:
-		var active_origins: Dictionary = {}
+		var active_origins: Dictionary = Rules.origin_enabled_map(record)
 		for source: Dictionary in _sources(record):
-			active_origins[String(source.get("id", ""))] = bool(source.get("active", true))
+			var sid: String = String(source.get("id", ""))
+			active_origins[sid] = bool(source.get("active", true)) and bool(active_origins.get(sid, true))
 		for entry: Variant in entries:
 			if entry is Dictionary and String(entry.get("key", "")) == condition and int(entry.get("rank", 0)) == 3 and not bool(entry.get("disabled", false)):
 				var origin: String = String(entry.get("origin_id", ""))
@@ -353,26 +357,29 @@ func _refresh() -> void:
 	manual.pressed.connect(_select_origin.bind("__manual__"))
 	_origin_cards.add_child(manual)
 	_origin_buttons["__manual__"] = manual
-	_source_picker.clear()
-	_source_picker.add_item("Senza origine")
-	_source_picker.set_item_metadata(0, "")
+	OriginChoices.populate(_source_picker, _record)
+	var candidates: Array[Dictionary] = OriginChoices.available(_record)
+	var known: Dictionary = {}
+	for source: Dictionary in candidates:
+		known[String(source.get("id", ""))] = true
 	for source: Dictionary in _cached_sources:
 		var sid: String = String(source.get("id", ""))
-		if not counts.has(sid): continue
+		if not known.has(sid):
+			candidates.append(source)
+	var effective_origins: Dictionary = Rules.origin_enabled_map(_record)
+	for source: Dictionary in candidates:
+		var sid: String = String(source.get("id", ""))
+		if sid.is_empty() or sid == OriginChoices.SPELL_PICKER_ID or not counts.has(sid):
+			continue
 		var button := Button.new()
 		button.toggle_mode = true
 		button.clip_text = true
 		button.alignment = HORIZONTAL_ALIGNMENT_LEFT
 		button.text = "%s (%d)" % [String(source.get("name", sid)), int(counts[sid])]
-		button.modulate.a = 1.0 if bool(source.get("active", true)) else 0.5
+		button.modulate.a = 1.0 if bool(source.get("active", true)) and bool(effective_origins.get(sid, true)) else 0.5
 		button.pressed.connect(_select_origin.bind(sid))
 		_origin_cards.add_child(button)
 		_origin_buttons[sid] = button
-	# Other available origins can be assigned to manually inserted defenses.
-	for source: Dictionary in _cached_sources:
-		var idx: int = _source_picker.item_count
-		_source_picker.add_item(String(source.get("name", "")))
-		_source_picker.set_item_metadata(idx, String(source.get("id", "")))
 	var entries: Array = _record.get("damage_defense_entries", [])
 	for i: int in range(entries.size()):
 		var entry: Dictionary = entries[i]
@@ -444,7 +451,14 @@ func _add_defense() -> void:
 	if index < 0: return
 	var key: String = String(DAMAGE_TYPES[index]["key"]) if index < DAMAGE_TYPES.size() else CONDITIONS[index - DAMAGE_TYPES.size()]
 	var level: int = 3 if index >= DAMAGE_TYPES.size() else [-1, 1, 2][maxi(0, _rank_picker.selected)]
-	var sid: String = String(_source_picker.get_selected_metadata())
+	var source: Dictionary = OriginChoices.selected(_source_picker)
+	var sid: String = String(source.get("id", ""))
+	var origins: Array[Dictionary] = []
+	for raw: Variant in _record.get("proficiency_origins", []):
+		if raw is Dictionary:
+			origins.append((raw as Dictionary).duplicate(true))
+	OriginChoices.ensure(origins, source)
+	_record["proficiency_origins"] = origins
 	var entries: Array = _record.get("damage_defense_entries", [])
 	entries.append({"key": key, "rank": level, "origin_id": sid, "automatic": false})
 	_record["damage_defense_entries"] = entries
@@ -477,4 +491,5 @@ func _publish() -> void:
 	if _changed.is_valid():
 		_changed.call(_record.get("damage_defense_overrides", {}).duplicate(true),
 			_record.get("condition_immunity_overrides", {}).duplicate(true),
-			_record.get("damage_defense_entries", []).duplicate(true))
+			_record.get("damage_defense_entries", []).duplicate(true),
+			_record.get("proficiency_origins", []).duplicate(true))
