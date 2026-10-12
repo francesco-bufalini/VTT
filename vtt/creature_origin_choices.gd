@@ -86,12 +86,12 @@ static func display_labels(sources: Array[Dictionary], record: Dictionary = {}) 
 		if not duplicates.has(sid):
 			continue
 		var detail: Dictionary = feature_details.get(sid, source)
-		var class_name: String = String(detail.get("class_name", "")).strip_edges()
-		var context: String = class_name
+		var class_label: String = String(detail.get("class_name", "")).strip_edges()
+		var context: String = class_label
 		if context.is_empty():
 			context = String(detail.get("origin", "")).strip_edges()
 		var level: int = int(detail.get("level", 0))
-		if level > 0 and (not class_name.is_empty() or String(detail.get("category", "")) == "classi"):
+		if level > 0 and (not class_label.is_empty() or String(detail.get("category", "")) == "classi"):
 			context += (" · " if not context.is_empty() else "") + "livello %d" % level
 		if context.is_empty():
 			context = String(source.get("source", "")).strip_edges()
