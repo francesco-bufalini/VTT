@@ -59,7 +59,7 @@ static func _add_source(
 	sid: String, name: String, active: bool = true
 ) -> void:
 	var has_fields: bool = false
-	for field: String in ["resist", "immune", "conditionImmune"]:
+	for field: String in ["vulnerable", "resist", "immune", "conditionImmune"]:
 		var raw: Variant = data.get(field, [])
 		if (raw is Array and not (raw as Array).is_empty()
 			or raw is String and not String(raw).is_empty()):
@@ -69,6 +69,7 @@ static func _add_source(
 	seen[sid] = true
 	output.append({
 		"id": sid, "name": name, "active": active,
+		"vulnerable": data.get("vulnerable", []),
 		"resist": data.get("resist", []), "immune": data.get("immune", []),
 		"conditionImmune": data.get("conditionImmune", [])
 	})
@@ -135,6 +136,8 @@ static func _base_rank_from_sources(sources: Array[Dictionary], damage_type: Str
 	for source: Dictionary in sources:
 		if not bool(source.get("active", true)):
 			continue
+		if damage_type in _direct_type_list(source.get("vulnerable", [])) and rank == 0:
+			rank = -1
 		if damage_type in _direct_type_list(source.get("resist", [])):
 			rank = maxi(rank, 1)
 		if damage_type in _direct_type_list(source.get("immune", [])):
@@ -149,7 +152,7 @@ static func base_rank(record: Dictionary, damage_type: String) -> int:
 static func rank(record: Dictionary, damage_type: String) -> int:
 	var overrides: Variant = record.get("damage_defense_overrides", {})
 	if overrides is Dictionary and (overrides as Dictionary).has(damage_type):
-		return clampi(int((overrides as Dictionary)[damage_type]), 0, 2)
+		return clampi(int((overrides as Dictionary)[damage_type]), -1, 2)
 	return base_rank(record, damage_type)
 
 
@@ -178,7 +181,7 @@ func setup(on_change: Callable) -> void:
 	size_flags_horizontal = Control.SIZE_EXPAND_FILL
 	add_theme_constant_override("separation", 8)
 	var description := Label.new()
-	description.text = "Resistenza dimezza i danni del tipo indicato; immunità li annulla. Attiva Immunità come la Maestria: include il grado inferiore."
+	description.text = "Vulnerabilità: danni doppi · Resistenza: danni dimezzati · Immunità: danni annullati. Ogni tipo ha un solo stato attivo."
 	description.autowrap_mode = TextServer.AUTOWRAP_WORD_SMART
 	add_child(description)
 	_base_hint = Label.new()
@@ -206,7 +209,7 @@ func setup(on_change: Callable) -> void:
 	_origin_cards.size_flags_horizontal = Control.SIZE_EXPAND_FILL
 	origin_scroll.add_child(_origin_cards)
 	var benefits_column := VBoxContainer.new()
-	benefits_column.custom_minimum_size.x = 330
+	benefits_column.custom_minimum_size.x = 405
 	benefits_column.size_flags_horizontal = Control.SIZE_EXPAND_FILL
 	columns.add_child(benefits_column)
 	var benefits_heading := Label.new()
@@ -224,7 +227,7 @@ func setup(on_change: Callable) -> void:
 	body.add_theme_constant_override("separation", 10)
 	scroll.add_child(body)
 	var title := Label.new()
-	title.text = "RESISTENZE E IMMUNITÀ AI DANNI"
+	title.text = "VULNERABILITÀ, RESISTENZE E IMMUNITÀ"
 	title.add_theme_font_size_override("font_size", 16)
 	body.add_child(title)
 	_damage_rows = VBoxContainer.new()
@@ -246,11 +249,11 @@ func _make_defense_row(parent: VBoxContainer, text_value: String) -> HBoxContain
 	card.size_flags_horizontal = Control.SIZE_EXPAND_FILL
 	parent.add_child(card)
 	var row := HBoxContainer.new()
-	row.add_theme_constant_override("separation", 8)
+	row.add_theme_constant_override("separation", 4)
 	card.add_child(row)
 	var caption := Label.new()
 	caption.text = text_value
-	caption.custom_minimum_size.x = 125
+	caption.custom_minimum_size.x = 102
 	caption.size_flags_horizontal = Control.SIZE_EXPAND_FILL
 	row.add_child(caption)
 	return row
@@ -277,6 +280,7 @@ func _refresh_origin_buttons() -> void:
 		var sid: String = String(source.get("id", ""))
 		var direct_count: int = (_direct_type_list(source.get("resist", [])).size()
 			+ _direct_type_list(source.get("immune", [])).size()
+			+ _direct_type_list(source.get("vulnerable", [])).size()
 			+ _direct_type_list(source.get("conditionImmune", [])).size())
 		var button := Button.new()
 		button.toggle_mode = true
@@ -307,6 +311,7 @@ func _refresh_highlights() -> void:
 		for source: Dictionary in _cached_sources:
 			if String(source.get("id", "")) != _selected_origin:
 				continue
+			selected_damage.append_array(_direct_type_list(source.get("vulnerable", [])))
 			selected_damage.append_array(_direct_type_list(source.get("resist", [])))
 			selected_damage.append_array(_direct_type_list(source.get("immune", [])))
 			selected_conditions.append_array(_direct_type_list(source.get("conditionImmune", [])))
@@ -338,7 +343,7 @@ func load_record(record: Dictionary) -> void:
 			node.queue_free()
 	var warnings: Array[String] = []
 	for source: Dictionary in _cached_sources:
-		for key: String in ["resist", "immune", "conditionImmune"]:
+		for key: String in ["vulnerable", "resist", "immune", "conditionImmune"]:
 			for item: Variant in source.get(key, []):
 				if item is Dictionary:
 					warnings.append(JSON.stringify(item))
@@ -349,9 +354,15 @@ func load_record(record: Dictionary) -> void:
 		var key: String = String(item["key"])
 		var baseline: int = _base_rank_from_sources(_cached_sources, key)
 		var overrides: Dictionary = _record.get("damage_defense_overrides", {})
-		var level: int = clampi(int(overrides.get(key, baseline)), 0, 2)
+		var level: int = clampi(int(overrides.get(key, baseline)), -1, 2)
 		var damage_row: HBoxContainer = _make_defense_row(_damage_rows, String(item["label"]))
 		_damage_cards[key] = damage_row.get_parent()
+		var vulnerable := CheckButton.new()
+		vulnerable.text = "Vulnerabilità"
+		vulnerable.set_pressed_no_signal(level == -1)
+		vulnerable.tooltip_text = "Subisce il doppio dei danni di questo tipo"
+		vulnerable.toggled.connect(_on_vulnerability_changed.bind(key))
+		damage_row.add_child(vulnerable)
 		var resistant := CheckButton.new()
 		resistant.text = "Resistenza"
 		resistant.set_pressed_no_signal(level >= 1)
@@ -364,7 +375,7 @@ func load_record(record: Dictionary) -> void:
 		immune.tooltip_text = "Secondo grado: annulla i danni di questo tipo"
 		immune.toggled.connect(_on_immunity_changed.bind(key))
 		damage_row.add_child(immune)
-		_damage_buttons[key] = {"resistance": resistant, "immunity": immune}
+		_damage_buttons[key] = {"vulnerability": vulnerable, "resistance": resistant, "immunity": immune}
 	for condition: String in CONDITIONS:
 		var condition_row: HBoxContainer = _make_defense_row(_condition_rows, condition.capitalize())
 		_condition_cards[condition] = condition_row.get_parent()
@@ -387,6 +398,10 @@ func load_record(record: Dictionary) -> void:
 	_refresh_highlights()
 
 
+func _on_vulnerability_changed(enabled: bool, key: String) -> void:
+	_change_rank(key, -1 if enabled else 0)
+
+
 func _on_resistance_changed(enabled: bool, key: String) -> void:
 	_change_rank(key, 1 if enabled else 0)
 
@@ -400,6 +415,7 @@ func _change_rank(key: String, level: int) -> void:
 	overrides[key] = level
 	_record["damage_defense_overrides"] = overrides
 	var pair: Dictionary = _damage_buttons.get(key, {})
+	(pair.get("vulnerability") as CheckButton).set_pressed_no_signal(level == -1)
 	(pair.get("resistance") as CheckButton).set_pressed_no_signal(level >= 1)
 	(pair.get("immunity") as CheckButton).set_pressed_no_signal(level == 2)
 	_refresh_highlights()
