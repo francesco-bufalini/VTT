@@ -43,6 +43,10 @@ func run() -> void:
 	input.text = "Storia" # User data must never be translated.
 	input.placeholder_text = "Cerca tra le mie creature…"
 	sheet.add_child(input)
+	var preview := RichTextLabel.new()
+	preview.text = "SALTO IN LUNGO\nCon rincorsa (almeno 10 ft): 12 ft"
+	preview.set_meta("creature_gui_text", true)
+	sheet.add_child(preview)
 	var compendium := RichTextLabel.new()
 	compendium.text = "Storia" # Bestiary and feature descriptions stay verbatim.
 	sheet.add_child(compendium)
@@ -75,16 +79,17 @@ func run() -> void:
 	assert(tabs.get_tab_title(0) == "Statistics" and statistics.name == "Statistiche")
 	assert(input.text == "Storia" and input.placeholder_text == "Search my creatures…")
 	assert(compendium.text == "Storia" and catalog.get_item_text(0) == "Storia")
+	assert(preview.text == "LONG JUMP\nWith a run-up (at least 10 ft): 12 ft")
 	assert(unrelated.text == "Chiudi", "Localization must not touch unrelated VTT controls")
 	assert(natural_ac.text == "Natural AC · formula"
 		and hand.get_item_text(0) == "None"
 		and hand.get_item_text(1) == "Longsword · two-handed"
 		and hand.selected == 1
 		and equipment_hint.text == "Off hand",
-		"Hand and natural armor controls must use creature-only locale without changing item names")
+		"Equipment UI must use creature-only locale without translating item names")
 	assert(Locale.text_for("Equipaggiato", "en") == "Equipped"
 		and Locale.text_for("Indossata", "en") == "Worn",
-		"Owned inventory item status badges must be translated, not the item names")
+		"Owned item status labels must be translated")
 
 	# Dynamic UI updates and repeated passes must preserve the original source.
 	status.text = "Iniziativa"
@@ -96,6 +101,7 @@ func run() -> void:
 	assert(ability.text == "FOR", "Italian strength abbreviation must be FOR")
 	assert(skill.text == "Acrobazia · DES", "Italian dexterity abbreviation must be DES")
 	assert(status.text == "Iniziativa")
+	assert(preview.text.begins_with("SALTO IN LUNGO"))
 	assert(tooltip.text == "Chiudi")
 	assert(tabs.get_tab_title(0) == "Statistiche")
 	assert(choices.get_item_text(0) == "Forza" and choices.selected == 0)
