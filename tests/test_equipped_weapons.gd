@@ -223,6 +223,43 @@ func run() -> void:
 		"Offhand attack rolls retain the full ability modifier")
 	assert(AttackData.attack_bonus_formula(dual, second_attack, 2).contains("competenza +0"),
 		"Offhand rolls must report the correct per-weapon proficiency; these test daggers are not trained")
+
+	dual["proficiency_choices"] = [{"kind": "weapon", "key": "martial",
+		"origin_id": "", "disabled": false}]
+	assert(AttackData.attack_bonus(dual, second_attack, 2) == 6
+		and AttackData.attack_bonus_formula(dual, second_attack, 2).contains("competenza +2"),
+		"Trained offhand weapon retains the proficiency bonus on the attack roll")
+	assert(not "+4" in AttackData.damage_label(dual, second_attack),
+		"Offhand proficiency never restores positive ability damage by itself")
+	dual["proficiency_choices"] = []
+	var negative_offhand: Dictionary = dual.duplicate(true)
+	negative_offhand["abilities"]["dex"] = 8
+	assert("-1" in AttackData.damage_label(negative_offhand, second_attack),
+		"Negative ability damage modifier remains on the offhand bonus attack")
+	var thrown_main := first_dagger.duplicate(true)
+	thrown_main["properties"] = ["L", "F", "T"]
+	thrown_main["range"] = "20/60"
+	var thrown_off := second_dagger.duplicate(true)
+	thrown_off["properties"] = ["L", "F", "T"]
+	thrown_off["range"] = "20/60"
+	var thrown_dual: Dictionary = _record([thrown_main, thrown_off])
+	var thrown_second: Dictionary = _attack(AttackData.definitions(thrown_dual),
+		"item:throw:off:test:second_dagger")
+	assert(AttackData.attack_bonus(thrown_dual, thrown_second, 2) == 4
+		and not "+4" in AttackData.damage_label(thrown_dual, thrown_second),
+		"Thrown offhand bonus attacks keep normal hit but omit positive ability damage")
+	var ranged_main := _item("test:hand_xbow_one", "Hand crossbow one", "R", "1d6", ["L"])
+	ranged_main["equipped_slots"] = ["main"]
+	var ranged_off := _item("test:hand_xbow_two", "Hand crossbow two", "R", "1d6", ["L"])
+	ranged_off["equipped_slots"] = ["off"]
+	var edition_2024: Dictionary = _record([ranged_main, ranged_off])
+	edition_2024["rules_version"] = "2024"
+	assert(AttackData.offhand_bonus_attack_allowed(edition_2024),
+		"The 2024 Light property also supports ranged two-weapon attacks")
+	edition_2024["rules_version"] = "2014"
+	assert(not AttackData.offhand_bonus_attack_allowed(edition_2024),
+		"The 2014 two-weapon bonus attack requires melee weapons")
+
 	assert(not "+4" in AttackData.damage_label(dual, second_attack),
 		"Offhand bonus action damage omits positive DEX without the fighting style")
 	dual["fighting_styles"] = ["Two-Weapon Fighting"]
