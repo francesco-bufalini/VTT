@@ -120,6 +120,7 @@ func setup(on_change: Callable) -> void:
 	_base_hint.autowrap_mode = TextServer.AUTOWRAP_WORD_SMART
 	add_child(_base_hint)
 	var scroll := ScrollContainer.new()
+	scroll.mouse_force_pass_scroll_events = false
 	scroll.custom_minimum_size.y = 280
 	scroll.size_flags_horizontal = Control.SIZE_EXPAND_FILL
 	scroll.horizontal_scroll_mode = ScrollContainer.SCROLL_MODE_DISABLED
