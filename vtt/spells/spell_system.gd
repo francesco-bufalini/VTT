@@ -1011,9 +1011,7 @@ func _transformation_target_data(
 		spell_data,
 		_pending_caster
 	)
-	var actual_distance_feet: float = ReachGeometry.token_tactical_distance_feet(
-		_pending_caster, target, cell_size
-	)
+	var actual_distance_feet: float = _token_target_distance_feet(_pending_caster, target)
 	if actual_distance_feet > range_feet + 0.001:
 		return {
 			"valid": false,
@@ -1833,9 +1831,7 @@ func _try_select_teleport_passenger(screen_position: Vector2) -> void:
 		spell_data.get("teleport_passenger_range_feet", 5.0)
 	)
 	if (
-		ReachGeometry.token_tactical_distance_feet(
-			_pending_caster, target, _cell_size()
-		) > passenger_range_feet + 0.001
+		_token_target_distance_feet(_pending_caster, target) > passenger_range_feet + 0.001
 	):
 		_set_instruction(
 			"Il token deve trovarsi entro %d ft dal caster."
@@ -3343,9 +3339,7 @@ func _chain_secondary_target_data(
 	var range_feet: float = float(
 		spell_data.get("secondary_range_feet", 30.0)
 	)
-	var actual_distance_feet: float = ReachGeometry.token_tactical_distance_feet(
-		_pending_chain_primary, target, cell_size
-	)
+	var actual_distance_feet: float = _token_target_distance_feet(_pending_chain_primary, target)
 	if actual_distance_feet > range_feet + 0.001:
 		return {
 			"valid": false,
@@ -3372,9 +3366,7 @@ func _target_token_data(
 		spell_data,
 		_pending_caster
 	)
-	var actual_distance_feet: float = ReachGeometry.token_tactical_distance_feet(
-		_pending_caster, target, cell_size
-	)
+	var actual_distance_feet: float = _token_target_distance_feet(_pending_caster, target)
 	if actual_distance_feet > range_feet + 0.001:
 		return {
 			"valid": false,
@@ -5687,6 +5679,14 @@ func _measurement_tool() -> Node:
 
 func _cell_size() -> float:
 	return maxf(float(board_root.get("cell_size")), 0.001)
+
+
+func _token_target_distance_feet(source: Node3D, target: Node3D) -> float:
+	# Match precisely the metric used by the on-board reach arrows, including
+	# corner adjacency, vertical offsets and both tokens' occupied cells.
+	return ReachGeometry.token_tactical_distance_feet(
+		source, target, _cell_size()
+	)
 
 
 func _effective_spell_range_feet(
