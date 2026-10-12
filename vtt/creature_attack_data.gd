@@ -39,6 +39,7 @@ static func definitions(record: Dictionary) -> Array[Dictionary]:
 				continue
 			var reach: String = _capture(text_value.to_lower(), "reach\\s*(\\d+)\\s*(?:ft|feet)")
 			var ranged_distance_text: String = _capture(text_value.to_lower(), "range\\s*(\\d+)\\s*(?:/|ft|feet)")
+			var ranged_long_text: String = _capture(text_value.to_lower(), "range\\s*\\d+\\s*/\\s*(\\d+)")
 			var ranged: bool = (
 				"ranged" in text_value.to_lower()
 				or "{@atk rw}" in text_value
@@ -57,6 +58,7 @@ static func definitions(record: Dictionary) -> Array[Dictionary]:
 				"id": "monster:%s:%d" % [section, index],
 				"name": title, "source": section, "melee": melee,
 				"range_feet": maxi(5, distance_feet),
+				"long_range_feet": maxi(0, int(ranged_long_text)) if ranged and not ranged_long_text.is_empty() else 0,
 				"melee_reach_feet": maxi(5, int(reach)) if not reach.is_empty() else 5,
 				"proficient": true, "damage": dice,
 				"base_hit": int(hit_tag) if not hit_tag.is_empty() else 0,
