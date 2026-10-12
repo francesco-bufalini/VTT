@@ -135,6 +135,8 @@ func create_character() -> Dictionary:
 		"resource_tracker_spent": {},
 		"resource_trackers": [],
 		"conditions": [],
+		"damage_defense_overrides": {},
+		"condition_immunity_overrides": {},
 		"transfer_revision": 0,
 		"species_id": "",
 		"class_id": "",
@@ -382,6 +384,8 @@ func normalize_character(value: Dictionary) -> Dictionary:
 	defaults["footprint"] = maxf(0.5, float(defaults.get("footprint", 1.0)))
 	defaults["attack_ability"] = "dex" if String(value.get("attack_ability", "str")) == "dex" else "str"
 	defaults["attack_overrides"] = value.get("attack_overrides", {}).duplicate(true) if value.get("attack_overrides", {}) is Dictionary else {}
+	defaults["damage_defense_overrides"] = value.get("damage_defense_overrides", {}).duplicate(true) if value.get("damage_defense_overrides", {}) is Dictionary else {}
+	defaults["condition_immunity_overrides"] = value.get("condition_immunity_overrides", {}).duplicate(true) if value.get("condition_immunity_overrides", {}) is Dictionary else {}
 	defaults["equipped_attack_id"] = String(value.get("equipped_attack_id", "")).strip_edges()
 	defaults["equipped_inventory_index"] = maxi(-1, int(value.get("equipped_inventory_index", -1)))
 	defaults["hand_main_special"] = String(value.get("hand_main_special", "none"))

@@ -32,6 +32,7 @@ var _catalog_details: RichTextLabel
 var _equip_main: Button
 var _equip_off: Button
 var _equip_armor: Button
+var _generic_equip: CheckButton
 var _attuned: CheckButton
 var _active_item: CheckButton
 var _unequip: Button
@@ -85,8 +86,15 @@ func setup(on_change: Callable, on_status: Callable, on_document_change: Callabl
 	filter_row.add_theme_constant_override("v_separation", 5)
 	_search_panel.add_child(filter_row)
 	_category_filter = OptionButton.new()
-	for category_name: String in ["Tutti", "Armi", "Scudi", "Armature", "Strumenti", "Oggetti magici", "Documenti", "Altri oggetti"]:
-		_category_filter.add_item(category_name)
+	# Identifiers are independent of the translated visible labels.
+	var categories: Array = [
+		["Tutti", "all"], ["Armi", "weapon"], ["Scudi", "shield"],
+		["Armature", "armor"], ["Strumenti", "tool"],
+		["Oggetti magici", "magic"], ["Documenti", "document"],
+		["Altri oggetti", "other"]
+	]
+	for pair: Array in categories:
+		_add_option(_category_filter, String(pair[0]), String(pair[1]))
 	_category_filter.item_selected.connect(func(_index: int) -> void: _filter_catalog())
 	_add_catalog_filter(filter_row, "Categoria", _category_filter, 145)
 	_rarity_filter = OptionButton.new()
@@ -170,9 +178,15 @@ func setup(on_change: Callable, on_status: Callable, on_document_change: Callabl
 	item_switches.add_theme_constant_override("h_separation", 8)
 	add_child(item_switches)
 	var equip_hint := Label.new()
-	equip_hint.text = "Spunta la casella di un oggetto nell’elenco per equipaggiarlo. Armi, scudi e armature: Statistiche."
+	equip_hint.text = "Seleziona un oggetto e usa Equipaggiato o Sintonia. Armi, scudi e armature si equipaggiano in Statistiche."
 	equip_hint.autowrap_mode = TextServer.AUTOWRAP_WORD_SMART
-	item_switches.add_child(equip_hint)
+	add_child(equip_hint)
+	move_child(equip_hint, item_switches.get_index())
+	_generic_equip = CheckButton.new()
+	_generic_equip.text = "Equipaggiato"
+	_generic_equip.tooltip_text = "Equipaggia o riponi l'oggetto selezionato senza occupare slot. Per armi, scudi e armature usa Statistiche."
+	_generic_equip.toggled.connect(_set_generic_equipment)
+	item_switches.add_child(_generic_equip)
 	_attuned = CheckButton.new()
 	_attuned.text = "Sintonia"
 	_attuned.tooltip_text = "Gli oggetti che richiedono sintonia conferiscono bonus solo quando sintonizzati."
@@ -550,11 +564,11 @@ func _populate_catalog_options() -> void:
 func _catalog_matches(item: Dictionary, words: PackedStringArray) -> bool:
 	if not _edition_allows_item(item):
 		return false
-	var category := _category_filter.get_item_text(_category_filter.selected)
-	if category == "Oggetti magici":
+	var category: String = _option_value(_category_filter)
+	if category == "magic":
 		if not String(item.get("id", "")).begins_with("magic_item:") and not bool(item.get("magic", false)):
 			return false
-	elif category != "Tutti" and ItemRules.category_name(item) != category:
+	elif category != "all" and category != "" and ItemRules.kind(item) != category:
 		return false
 	var rarity := _option_value(_rarity_filter)
 	if not rarity.is_empty() and _item_rarity(item) != rarity:
@@ -829,9 +843,9 @@ func _on_inventory_checkbox_input(event: InputEvent) -> void:
 	var kind: String = ItemRules.kind(_catalog_entry(_inventory[index]))
 	if kind in ["weapon", "armor", "shield"]:
 		return
-	_inventory[index]["equipped"] = not bool(_inventory[index].get("equipped", false))
-	_refresh_inventory(index)
-	_publish()
+	_inventory_list.select(index)
+	_on_inventory_selected(index)
+	_set_generic_equipment(not bool(_inventory[index].get("equipped", false)))
 	get_viewport().set_input_as_handled()
 
 
@@ -908,9 +922,22 @@ func _update_equip_buttons() -> void:
 	_equip_main.disabled = not present or not ItemRules.valid_slot(entry, "main")
 	_equip_off.disabled = not present or not ItemRules.valid_slot(entry, "off")
 	_equip_armor.disabled = not present or not ItemRules.valid_slot(entry, "body")
-	_attuned.disabled = not present or not ItemRules.requires_attunement(entry)
+	var kind: String = ItemRules.kind(entry) if present else ""
+	_generic_equip.disabled = not present or kind in ["weapon", "armor", "shield", "document"]
+	_generic_equip.set_pressed_no_signal(present and bool(_inventory[index].get("equipped", false)))
+	_generic_equip.tooltip_text = (
+		"Armi, scudi e armature si equipaggiano in Statistiche."
+		if present and kind in ["weapon", "armor", "shield"] else
+		"Equipaggia o riponi l'oggetto selezionato senza occupare slot."
+	)
+	var needs_attunement: bool = present and ItemRules.requires_attunement(entry)
+	_attuned.disabled = not needs_attunement
 	_attuned.set_pressed_no_signal(present and bool(_inventory[index].get("attuned", false)))
-	_active_item.disabled = not present or ItemRules.kind(entry) == "document"
+	_attuned.tooltip_text = (
+		"Attiva la sintonia con l'oggetto selezionato; è necessaria per i suoi benefici magici."
+		if needs_attunement else "L'oggetto selezionato non richiede sintonia."
+	)
+	_active_item.disabled = not present or kind == "document"
 	_active_item.set_pressed_no_signal(present and bool(_inventory[index].get("active", true)))
 	_unequip.disabled = not present or ItemRules.slots(_inventory[index]).is_empty()
 
@@ -945,13 +972,34 @@ func _equip_selected(slot: String) -> void:
 	_publish()
 
 
+func _set_generic_equipment(value: bool) -> void:
+	if _loading:
+		return
+	var index: int = _selected_inventory_index()
+	if index < 0 or index >= _inventory.size():
+		return
+	var kind: String = ItemRules.kind(_catalog_entry(_inventory[index]))
+	if kind in ["weapon", "armor", "shield", "document"]:
+		_generic_equip.set_pressed_no_signal(bool(_inventory[index].get("equipped", false)))
+		return
+	if bool(_inventory[index].get("equipped", false)) == value:
+		return
+	_inventory[index]["equipped"] = value
+	_refresh_inventory(index)
+	_publish()
+
+
 func _set_attunement(value: bool) -> void:
 	if _loading:
 		return
 	var index: int = _selected_inventory_index()
 	if index < 0 or index >= _inventory.size():
 		return
+	if not ItemRules.requires_attunement(_catalog_entry(_inventory[index])):
+		_attuned.set_pressed_no_signal(false)
+		return
 	_inventory[index]["attuned"] = value
+	_refresh_inventory(index)
 	_publish()
 
 

@@ -103,17 +103,17 @@ static func definitions(record: Dictionary) -> Array[Dictionary]:
 					"weapon_size": Items.weapon_size(record, owned),
 					"base_hit": 0
 				})
-	# Bestiary creatures use their own defined attacks by default. If a
-	# player explicitly assigns an improvised/unarmed hand choice, expose it.
+	# These are fictional hand weapons, not permanent character attacks:
+	# a strike is available only while explicitly selected in either hand.
 	var special_hands: Array = [String(record.get("hand_main_special", "none")),
 		String(record.get("hand_off_special", "none"))]
-	if kind != "monster" or "unarmed" in special_hands:
+	if "unarmed" in special_hands:
 		result.append({
 			"id": "unarmed", "name": "Colpo senz'armi",
 			"source": "unarmed", "melee": true, "range_feet": 5,
 			"proficient": true, "damage": "", "base_hit": 0
 		})
-	if kind != "monster" or "improvised" in special_hands:
+	if "improvised" in special_hands:
 		result.append({
 			"id": "improvised", "name": "Arma improvvisata",
 			"source": "improvised", "melee": true, "range_feet": 5,
@@ -262,16 +262,19 @@ static func offhand_bonus_attack_allowed(record: Dictionary) -> bool:
 	var off_entry: Dictionary = Items.entry_for(off)
 	if Items.kind(main_entry) != "weapon" or Items.kind(off_entry) != "weapon":
 		return false
-	if String(main_entry.get("type", "")).split("|")[0].to_upper() == "R":
-		return false
-	if String(off_entry.get("type", "")).split("|")[0].to_upper() == "R":
-		return false
+	var main_melee: bool = String(main_entry.get("type", "")).split("|")[0].to_upper() != "R"
+	var off_melee: bool = String(off_entry.get("type", "")).split("|")[0].to_upper() != "R"
 	var main_light: bool = Items.has_property(main_entry, "L")
 	var off_light: bool = Items.has_property(off_entry, "L")
 	if String(record.get("rules_version", "2014")) == "2024":
-		# The 2024 Dual Wielder feat requires a Light-weapon trigger.
-		return main_light and (off_light or has_dual_wielder(record))
-	return (main_light and off_light) or has_dual_wielder(record)
+		# The Light property also applies to ranged weapons in 2024.
+		# Dual Wielder extends the second weapon to one-handed melee weapons,
+		# but still requires a Light attack as its trigger.
+		return main_light and (off_light or (has_dual_wielder(record) and off_melee))
+	# 2014 Two-Weapon Fighting requires two one-handed melee weapons.
+	# The Dual Wielder feat removes their Light requirement, not the
+	# melee requirement. Thrown attacks retain the same offhand rule.
+	return main_melee and off_melee and ((main_light and off_light) or has_dual_wielder(record))
 
 
 static func damage_label(record: Dictionary, attack: Dictionary) -> String:
@@ -285,7 +288,7 @@ static func damage_label(record: Dictionary, attack: Dictionary) -> String:
 	# The off-hand bonus-action strike keeps its normal attack roll. In 5e
 	# the ability modifier is omitted from DAMAGE, unless negative or the
 	# character has selected the Two-Weapon Fighting style.
-	if source == "item" and String(attack.get("slot", "")) == "off" and not bool(attack.get("thrown", false)):
+	if source == "item" and String(attack.get("slot", "")) == "off":
 		if offhand_bonus_attack_allowed(record) and not has_two_weapon_style(record):
 			modifier = mini(0, modifier)
 	modifier += Bonuses.bonus(record, "attack_damage:" + String(attack.get("id", "")))

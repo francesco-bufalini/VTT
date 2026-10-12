@@ -41,10 +41,15 @@ func run() -> void:
 	var shield := {"id": "test:shield", "name": "Shield", "source": "PHB", "quantity": 1, "type": "S", "ac": 2, "equipped_slots": ["off"]}
 	rapier["equipped_slots"] = ["main"]
 	var fallback_record := _record([])
+	assert(AttackData.definitions(fallback_record).is_empty(),
+		"Fictional unarmed/improvised attacks must not appear unless equipped")
+	fallback_record["hand_main_special"] = "unarmed"
+	fallback_record["hand_off_special"] = "improvised"
 	var fallback_attacks: Array[Dictionary] = AttackData.definitions(fallback_record)
 	var unarmed := _attack(fallback_attacks, "unarmed")
 	var improvised := _attack(fallback_attacks, "improvised")
-	assert(not unarmed.is_empty() and not improvised.is_empty(), "Both fallback attacks exist for characters")
+	assert(not unarmed.is_empty() and not improvised.is_empty(),
+		"Equipping both fictional hand weapons exposes both strikes")
 	assert(unarmed.proficient and not improvised.proficient, "Only unarmed strikes are automatically proficient")
 	assert(AttackData.attack_bonus(fallback_record, improvised, 2) == 1
 		and AttackData.damage_label(fallback_record, improvised) == "1d4 +1 contundenti",
@@ -65,9 +70,15 @@ func run() -> void:
 	assert(AttackData.active_attack(fallback_with_weapon).get("id", "") == "improvised",
 		"Improvised weapons remain selectable even while a weapon is equipped")
 	fallback_with_weapon["kind"] = "monster"
-	assert(AttackData.definitions(fallback_with_weapon).all(func(attack: Dictionary) -> bool:
-		return String(attack.get("id", "")) not in ["unarmed", "improvised"]),
-		"Bestiary creatures must not receive the player-only fallback attacks")
+	assert(not _attack(AttackData.definitions(fallback_with_weapon), "unarmed").is_empty()
+		and not _attack(AttackData.definitions(fallback_with_weapon), "improvised").is_empty(),
+		"Monsters can also use a fictional attack if it is explicitly equipped")
+	var no_fake: Dictionary = fallback_with_weapon.duplicate(true)
+	no_fake["hand_main_special"] = "none"
+	no_fake["hand_off_special"] = "none"
+	assert(_attack(AttackData.definitions(no_fake), "unarmed").is_empty()
+		and _attack(AttackData.definitions(no_fake), "improvised").is_empty(),
+		"Unselected fictional weapons must not leak into Available Attacks")
 	var offhand_rapier := rapier.duplicate(true)
 	offhand_rapier["equipped_slots"] = ["off"]
 	assert(ItemRules.has_equipped_weapon([offhand_rapier]), "An offhand weapon counts too")
@@ -210,8 +221,58 @@ func run() -> void:
 	assert(AttackData.offhand_bonus_attack_allowed(dual))
 	assert(AttackData.attack_bonus(dual, second_attack, 2) == 4,
 		"Offhand attack rolls retain the full ability modifier")
+	assert(AttackData.attack_bonus_formula(dual, second_attack, 2).contains("competenza +0"),
+		"Offhand rolls must report the correct per-weapon proficiency; these test daggers are not trained")
+
+	dual["proficiency_choices"] = [{"kind": "weapon", "key": "martial",
+		"origin_id": "", "disabled": false}]
+	assert(AttackData.attack_bonus(dual, second_attack, 2) == 6
+		and AttackData.attack_bonus_formula(dual, second_attack, 2).contains("competenza +2"),
+		"Trained offhand weapon retains the proficiency bonus on the attack roll")
+	assert(not "+4" in AttackData.damage_label(dual, second_attack),
+		"Offhand proficiency never restores positive ability damage by itself")
+	dual["proficiency_choices"] = []
+	var negative_offhand: Dictionary = dual.duplicate(true)
+	negative_offhand["abilities"]["dex"] = 8
+	assert("-1" in AttackData.damage_label(negative_offhand, second_attack),
+		"Negative ability damage modifier remains on the offhand bonus attack")
+	var thrown_main := first_dagger.duplicate(true)
+	thrown_main["properties"] = ["L", "F", "T"]
+	thrown_main["range"] = "20/60"
+	var thrown_off := second_dagger.duplicate(true)
+	thrown_off["properties"] = ["L", "F", "T"]
+	thrown_off["range"] = "20/60"
+	var thrown_dual: Dictionary = _record([thrown_main, thrown_off])
+	var thrown_second: Dictionary = _attack(AttackData.definitions(thrown_dual),
+		"item:throw:off:test:second_dagger")
+	assert(AttackData.attack_bonus(thrown_dual, thrown_second, 2) == 4
+		and not "+4" in AttackData.damage_label(thrown_dual, thrown_second),
+		"Thrown offhand bonus attacks keep normal hit but omit positive ability damage")
+	var ranged_main := _item("test:hand_xbow_one", "Hand crossbow one", "R", "1d6", ["L"])
+	ranged_main["equipped_slots"] = ["main"]
+	var ranged_off := _item("test:hand_xbow_two", "Hand crossbow two", "R", "1d6", ["L"])
+	ranged_off["equipped_slots"] = ["off"]
+	var edition_2024: Dictionary = _record([ranged_main, ranged_off])
+	edition_2024["rules_version"] = "2024"
+	assert(AttackData.offhand_bonus_attack_allowed(edition_2024),
+		"The 2024 Light property also supports ranged two-weapon attacks")
+	edition_2024["rules_version"] = "2014"
+	assert(not AttackData.offhand_bonus_attack_allowed(edition_2024),
+		"The 2014 two-weapon bonus attack requires melee weapons")
+
 	assert(not "+4" in AttackData.damage_label(dual, second_attack),
 		"Offhand bonus action damage omits positive DEX without the fighting style")
+	var enchanted_main: Dictionary = first_dagger.duplicate(true)
+	var enchanted_off: Dictionary = second_dagger.duplicate(true)
+	enchanted_off["bonus_weapon_attack"] = 1
+	enchanted_off["bonus_weapon_damage"] = 3
+	var enchanted: Dictionary = _record([enchanted_main, enchanted_off])
+	var enchanted_attack: Dictionary = _attack(AttackData.definitions(enchanted),
+		"item:off:test:second_dagger")
+	assert(AttackData.attack_bonus(enchanted, enchanted_attack, 2) == 5,
+		"Magic item hit bonuses must apply to the correct offhand attack")
+	assert("1d4 +3" in AttackData.damage_label(enchanted, enchanted_attack),
+		"Magic item damage bonuses remain separate from omitted offhand ability damage")
 	dual["fighting_styles"] = ["Two-Weapon Fighting"]
 	assert("+4" in AttackData.damage_label(dual, second_attack),
 		"Selected structured Two-Weapon Fighting style restores offhand ability damage")

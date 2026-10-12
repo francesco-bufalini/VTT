@@ -25,6 +25,7 @@ const AttackData = preload("res://vtt/creature_attack_data.gd")
 const ProficiencyRules = preload("res://vtt/creature_proficiency_rules.gd")
 const ProficiencyTab = preload("res://vtt/creature_proficiencies_tab.gd")
 const FeatsTab = preload("res://vtt/creature_feats_tab.gd")
+const DamageDefensesTab = preload("res://vtt/creature_damage_defenses_tab.gd")
 const ItemRules = preload("res://vtt/creature_item_rules.gd")
 const DocumentInbox = preload("res://vtt/document_inbox.gd")
 const DocumentStore = preload("res://vtt/document_homebrew.gd")
@@ -44,6 +45,7 @@ var _proficiencies_stale := true
 var _feats_stale := true
 var _bonuses_stale := true
 var _trackers_stale := true
+var _damage_defenses_stale := true
 var _catalog: Array[Dictionary] = []
 var _filtered_catalog: Array[Dictionary] = []
 var _loading := false
@@ -176,6 +178,7 @@ var _trackers_ui: Node
 var _bonuses_ui: Node
 var _proficiencies_ui: Node
 var _feats_ui: Node
+var _damage_defenses_ui: Node
 var _editor_section_picker: OptionButton
 var _traits_ui: Node
 var _condition_rows: VBoxContainer
@@ -586,7 +589,7 @@ func _build_ui() -> void:
 	_editor_section_picker.custom_minimum_size = Vector2(185, 30)
 	_editor_section_picker.size_flags_horizontal = Control.SIZE_SHRINK_BEGIN
 	_editor_section_picker.tooltip_text = "Scegli una sezione da visualizzare o modificare"
-	for section_name: String in ["Niente", "Competenze", "Talenti", "Bonus", "Tracker"]:
+	for section_name: String in ["Niente", "Competenze", "Talenti", "Bonus", "Tracker", "Resistenze e immunità"]:
 		_editor_section_picker.add_item(section_name)
 	_editor_section_picker.select(0)
 	_editor_section_picker.item_selected.connect(_select_details_editor)
@@ -607,6 +610,10 @@ func _build_ui() -> void:
 	_trackers_ui.hide()
 	statistics_tab.add_child(_trackers_ui)
 	_trackers_ui.call("setup", Callable(self, "_on_trackers_updated"))
+	_damage_defenses_ui = DamageDefensesTab.new()
+	_damage_defenses_ui.hide()
+	statistics_tab.add_child(_damage_defenses_ui)
+	_damage_defenses_ui.call("setup", Callable(self, "_on_damage_defenses_updated"))
 	# Always keep skills and combat side by side (45% / 55%).  Scroll
 	# their oversized contents locally instead of expanding the whole sheet.
 	_statistics_columns = HBoxContainer.new()
@@ -859,12 +866,18 @@ func _build_ui() -> void:
 	movement_heading.add_theme_font_size_override("font_size", 15)
 	movement_heading.add_theme_color_override("font_color", Color(0.74, 0.90, 0.77))
 	movement_box.add_child(movement_heading)
-	var speed_row := HBoxContainer.new()
-	speed_row.add_theme_constant_override("separation", 5)
-	movement_box.add_child(speed_row)
-	_add_label(speed_row, "Camminata (ft)")
+	# Every speed uses the same three-column grid, including walking.
+	# Reserve the third column for the editable walking base so the
+	# four additional values align vertically with walking's total.
+	var speed_grid := GridContainer.new()
+	speed_grid.columns = 3
+	speed_grid.add_theme_constant_override("h_separation", 12)
+	speed_grid.add_theme_constant_override("v_separation", 4)
+	movement_box.add_child(speed_grid)
+	_add_label(speed_grid, "Camminata (ft)")
 	_speed_effective = Label.new()
-	speed_row.add_child(_speed_effective)
+	_speed_effective.custom_minimum_size.x = 48
+	speed_grid.add_child(_speed_effective)
 	_speed = SpinBox.new()
 	_speed.min_value = 0
 	_speed.max_value = 999
@@ -872,27 +885,23 @@ func _build_ui() -> void:
 	_speed.update_on_text_changed = true
 	_speed.custom_minimum_size = Vector2(69, 36)
 	_speed.value_changed.connect(_on_speed_changed)
-	speed_row.add_child(_speed)
+	speed_grid.add_child(_speed)
 	_speed.tooltip_text = "Velocità base dalla specie o dal bestiario, modificabile"
 	_install_formula("speed", _speed_effective, [_speed], ["Base"])
 	_speed.value_changed.connect(func(_value: float) -> void: _update_speed_display())
-	# Every creature shows all four 5e special speeds, including zero.
-	# Formula widgets expose the corresponding bonus targets directly.
-	var special_grid := GridContainer.new()
-	special_grid.columns = 2
-	special_grid.add_theme_constant_override("h_separation", 12)
-	special_grid.add_theme_constant_override("v_separation", 3)
-	movement_box.add_child(special_grid)
 	_special_speed_labels.clear()
 	for mode: String in Rules.SPECIAL_SPEEDS:
 		var name: String = {"climb": "Scalata", "swim": "Nuoto",
 			"fly": "Volo", "burrow": "Scavo"}[mode]
-		_add_label(special_grid, name + " (ft)")
+		_add_label(speed_grid, name + " (ft)")
 		var value_label := Label.new()
-		value_label.custom_minimum_size.x = 38
-		special_grid.add_child(value_label)
+		value_label.custom_minimum_size.x = 48
+		speed_grid.add_child(value_label)
 		_special_speed_labels[mode] = value_label
 		_install_formula("speed:" + mode, value_label, [], [])
+		var spacer := Control.new()
+		spacer.custom_minimum_size.x = 69
+		speed_grid.add_child(spacer)
 	var jumps_heading := Label.new()
 	jumps_heading.text = "SALTI · DISTANZE MASSIME"
 	jumps_heading.add_theme_font_size_override("font_size", 14)
@@ -1061,7 +1070,10 @@ func _build_ui() -> void:
 	_attack_ability.tooltip_text = "Preferenza per armi Finesse: le armi da mischia normali usano Forza, quelle a distanza Destrezza. I valori del bestiario includono la competenza."
 	_attack_ability.item_selected.connect(_on_attack_ability_changed)
 	preference_row.add_child(_attack_ability)
-	var hand_bar := HFlowContainer.new()
+	# Three compact rows avoid wrapping a hand label separately from
+	# its selector on narrow combat columns.
+	var hand_bar := GridContainer.new()
+	hand_bar.columns = 2
 	hand_bar.add_theme_constant_override("h_separation", 9)
 	hand_bar.add_theme_constant_override("v_separation", 5)
 	combat_column.add_child(hand_bar)
@@ -1078,9 +1090,11 @@ func _build_ui() -> void:
 	_hand_off_picker.clip_text = true
 	_hand_off_picker.item_selected.connect(_on_hand_selected.bind("off"))
 	hand_bar.add_child(_hand_off_picker)
+	var show_all_caption := Control.new()
+	hand_bar.add_child(show_all_caption)
 	_show_offhand_all = CheckButton.new()
 	_show_offhand_all.text = "Tutte le armi"
-	_show_offhand_all.tooltip_text = "Mostra anche armi senza Finesse nella mano secondaria. Finesse non è un requisito per combattere con due armi: normalmente serve la proprietà Leggera."
+	_show_offhand_all.tooltip_text = "Mostra anche armi senza Finesse nella mano secondaria. Il combattimento con due armi normalmente richiede armi Leggere."
 	_show_offhand_all.button_pressed = false
 	_show_offhand_all.toggled.connect(func(_enabled: bool) -> void:
 		_refresh_equipment_pickers(_current())
@@ -1961,12 +1975,13 @@ func _with_effective_modifiers(record: Dictionary) -> Dictionary:
 func _select_details_editor(index: int) -> void:
 	if _editor_section_picker == null:
 		return
-	var choice: int = clampi(index, 0, 4)
+	var choice: int = clampi(index, 0, 5)
 	_editor_section_picker.select(choice)
 	_proficiencies_ui.visible = choice == 1
 	_feats_ui.visible = choice == 2
 	_bonuses_ui.visible = choice == 3
 	_trackers_ui.visible = choice == 4
+	_damage_defenses_ui.visible = choice == 5
 	if choice > 0:
 		var record: Dictionary = _current()
 		if not record.is_empty():
@@ -1987,7 +2002,27 @@ func _select_details_editor(index: int) -> void:
 					if _trackers_stale:
 						_trackers_ui.call("load_record", record)
 						_trackers_stale = false
+				5:
+					if _damage_defenses_stale:
+						_damage_defenses_ui.call("load_record", record)
+						_damage_defenses_stale = false
 	call_deferred("_update_stats_column_heights")
+
+
+func _on_damage_defenses_updated(damage_overrides: Dictionary, condition_overrides: Dictionary) -> void:
+	if _loading:
+		return
+	var record: Dictionary = _current()
+	if record.is_empty():
+		return
+	record["damage_defense_overrides"] = damage_overrides.duplicate(true)
+	record["condition_immunity_overrides"] = condition_overrides.duplicate(true)
+	var error: Error = _archive.save(record)
+	if error != OK:
+		_set_status("Impossibile salvare resistenze/immunità: " + error_string(error))
+		return
+	_replace_current_record(record)
+	_damage_defenses_stale = false
 
 
 func _on_formula_bonus_requested(key: String) -> void:
@@ -4467,6 +4502,10 @@ func _refresh_reference(record: Dictionary) -> void:
 	_proficiencies_stale = true
 	_feats_stale = true
 	_trackers_stale = true
+	_damage_defenses_stale = true
+	if _damage_defenses_ui != null and _damage_defenses_ui.visible:
+		_damage_defenses_ui.call("load_record", record)
+		_damage_defenses_stale = false
 	if _trackers_ui != null and _trackers_ui.visible:
 		_trackers_ui.call("load_record", record)
 		_trackers_stale = false
