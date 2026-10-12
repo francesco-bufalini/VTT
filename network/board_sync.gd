@@ -1891,14 +1891,14 @@ func _apply_node_data(node: Node3D, data: Dictionary) -> void:
 			_remember_received_token_appearance(node, data)
 		# Only propagate changed tactical effects to an owned private sheet.
 		# Do not persist on every incoming map snapshot or polling update.
-		if (
-			board_root != null
-			and (
-				(old_conditions != node.call("get_conditions") if node.has_method("get_conditions") else false)
-				or (old_active_spells != node.call("get_active_spell_ids") if node.has_method("get_active_spell_ids") else false)
-				or (old_concentration != String(node.call("get_concentrating_spell_id")) if node.has_method("get_concentrating_spell_id") else false)
-			)
-		):
+		var effects_changed := false
+		if node.has_method("get_conditions"):
+			effects_changed = old_conditions != node.call("get_conditions")
+		if node.has_method("get_active_spell_ids"):
+			effects_changed = effects_changed or old_active_spells != node.call("get_active_spell_ids")
+		if node.has_method("get_concentrating_spell_id"):
+			effects_changed = effects_changed or old_concentration != String(node.call("get_concentrating_spell_id"))
+		if board_root != null and effects_changed:
 			var creature_area: Node = board_root.get_node_or_null("CreatureArea")
 			if creature_area != null and creature_area.has_method("sync_linked_token_status"):
 				creature_area.call_deferred("sync_linked_token_status", node)
