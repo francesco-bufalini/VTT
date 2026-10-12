@@ -5,7 +5,7 @@
     "repository": "https://github.com/vidalvanbergen/fightclub5exml",
     "source_path": "Sources/DND_5e/WizardsOfTheCoast/01_Core/01_Players_Handbook/class-*-phb.xml",
     "build_only": true,
-    "note": "Curated consumable class counters (2014 PHB). Spellcasting, learned capacities and ambiguous counters excluded. Fight Club is never queried at runtime. Corrections: Indomitable reset is long_rest."
+    "note": "Curated consumable class counters (2014 PHB). Spellcasting, learned capacities and ambiguous counters excluded. Fight Club is never queried at runtime. Corrections: Indomitable reset is long_rest. Corrections: Natural Recovery/Wholeness of Body gated by subclass; Arcane Recovery treated as once per long rest; Mystic Arcanum excluded because spellcasting is managed separately."
   },
   "classes": [
     {
@@ -148,7 +148,8 @@
               "reset": "long_rest"
             }
           ],
-          "source": "PHB"
+          "source": "PHB",
+          "subclass": "Circle of the Land"
         },
         {
           "name": "Wild Shape",
@@ -345,17 +346,6 @@
           ],
           "source": "PHB",
           "column": "Ki Points"
-        },
-        {
-          "name": "Wholeness of Body",
-          "steps": [
-            {
-              "level": 6,
-              "value": "1",
-              "reset": "long_rest"
-            }
-          ],
-          "source": "PHB"
         },
         {
           "name": "Wholeness of Body",
@@ -805,50 +795,6 @@
           ],
           "source": "PHB",
           "subclass": "The Archfey"
-        },
-        {
-          "name": "Mystic Arcanum (6th level)",
-          "steps": [
-            {
-              "level": 11,
-              "value": "1",
-              "reset": "long_rest"
-            }
-          ],
-          "source": "PHB"
-        },
-        {
-          "name": "Mystic Arcanum (7th level)",
-          "steps": [
-            {
-              "level": 13,
-              "value": "1",
-              "reset": "long_rest"
-            }
-          ],
-          "source": "PHB"
-        },
-        {
-          "name": "Mystic Arcanum (8th level)",
-          "steps": [
-            {
-              "level": 15,
-              "value": "1",
-              "reset": "long_rest"
-            }
-          ],
-          "source": "PHB"
-        },
-        {
-          "name": "Mystic Arcanum (9th level)",
-          "steps": [
-            {
-              "level": 17,
-              "value": "1",
-              "reset": "long_rest"
-            }
-          ],
-          "source": "PHB"
         }
       ]
     },
@@ -862,7 +808,7 @@
             {
               "level": 1,
               "value": "1",
-              "reset": "short_rest"
+              "reset": "long_rest"
             }
           ],
           "source": "PHB"
