@@ -3469,6 +3469,7 @@ func _show_context_menu(screen_position: Vector2) -> void:
 
 func _on_context_menu_id_pressed(id: int) -> void:
 	if id == CONTEXT_CLEAR_SPELL_HIGHLIGHT:
+		context_menu.hide()
 		if spell_system != null and is_instance_valid(spell_system):
 			spell_system.call("dismiss_post_cast_visuals")
 		if measurement_tool.has_method("set_spell_affected_token_highlight"):
