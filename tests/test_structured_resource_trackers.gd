@@ -2,6 +2,7 @@ extends SceneTree
 # Offline-only regression: no local server and no HTTP.
 const Trackers = preload("res://vtt/structured_resource_trackers.gd")
 const ClassMechanics = preload("res://vtt/class_mechanics_5etools.gd")
+const Rules = preload("res://vtt/creature_rules.gd")
 const Locale = preload("res://vtt/creature_gui_locale.gd")
 
 
@@ -40,6 +41,14 @@ func run() -> void:
 		"Hit dice must come from 5etools hd.faces and retain legacy source fallback")
 	assert(ClassMechanics.resource_columns("Ranger", "XPHB").is_empty(),
 		"Favored Enemy and Weapon Mastery capacities are not spent-resource trackers")
+	var hit_die_record := {
+		"kind": "character", "classes": [{"name": "Barbarian", "source": "PHB", "level": 3}],
+		"abilities": {"con": 10}
+	}
+	assert(Rules.automatic_hit_dice(hit_die_record) == "3d12 (Barbarian)",
+		"Hit dice display must remain compatible with the previous formula")
+	assert(int(Rules.automatic_hit_points(hit_die_record).get("value", 0)) == 26,
+		"HP formula must retain max first level and 7 average on following d12s")
 	assert(Trackers.for_creature({
 		"kind": "character",
 		"classes": [{"name": "Barbarian", "source": "PHB", "level": 20}]
