@@ -376,7 +376,7 @@ func _draw() -> void:
 		var style: String = String(measure.get("_spell_preview_style"))
 		if _is_2d_view():
 			_draw_area(_shape_polygon(start, end, shape, width, style), Color(1.0, 0.72, 0.20, 1.0))
-		if shape != "line":
+		if shape != "line" or String(spell.call("_pending_spell").get("aoe_shape", "")) == "line":
 			var next_y: float = _draw_target_list(_target_names(start, end, shape, width, style), "Nell'area")
 			if active_range:
 				_draw_target_list(range_list, "A gittata", next_y)
