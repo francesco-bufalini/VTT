@@ -527,6 +527,12 @@ const EN: Dictionary = {
 	"Attacco aggiuntivo con due armi": "Two-weapon bonus attack",
 	"Lancia l'arma della mano secondaria": "Throw the offhand weapon",
 	"Guerriero a due armi": "Two-weapon fighter",
+	"Seleziona un oggetto e usa Equipaggiato o Sintonia. Armi, scudi e armature si equipaggiano in Statistiche.": "Select an item and use Equipped or Attunement. Weapons, shields and armor are equipped in Statistics.",
+	"Equipaggia o riponi l'oggetto selezionato senza occupare slot. Per armi, scudi e armature usa Statistiche.": "Equip or stow the selected item without occupying a slot. For weapons, shields and armor use Statistics.",
+	"Armi, scudi e armature si equipaggiano in Statistiche.": "Weapons, shields and armor are equipped in Statistics.",
+	"Equipaggia o riponi l'oggetto selezionato senza occupare slot.": "Equip or stow the selected item without occupying a slot.",
+	"Attiva la sintonia con l'oggetto selezionato; è necessaria per i suoi benefici magici.": "Attune to the selected item; attunement is required for its magical benefits.",
+	"L'oggetto selezionato non richiede sintonia.": "The selected item does not require attunement.",
 }
 const IT: Dictionary = {
 	"STR": "FOR",
