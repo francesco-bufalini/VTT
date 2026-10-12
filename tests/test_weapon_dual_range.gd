@@ -12,6 +12,10 @@ class Board:
 
 	var cell_size: float = 1.0
 	var use_2d: bool = false
+	var chosen_target: CharacterBody3D
+
+	func get_attack_token_at_screen(_position: Vector2) -> CharacterBody3D:
+		return chosen_target
 
 	func is_2d_view_enabled() -> bool:
 		return use_2d
@@ -124,6 +128,48 @@ func _run() -> void:
 	if not is_equal_approx(float(attack.call("_max_attack_range_feet")), 320.0):
 		_fail("long range was not accepted as outer limit")
 		return
+
+	# Preview button uses the same tactical wire spheres but must never
+	# apply an attack or damage to targets.
+	var enemy := CharacterBody3D.new()
+	enemy.name = "TrainingTarget"
+	enemy.position = Vector3(2.0, 0.0, 0.0)
+	enemy.add_to_group("dnd_token")
+	board.add_child(enemy)
+	board.chosen_target = enemy
+	var instruction := Label.new()
+	board.add_child(instruction)
+	attack.set("instruction_label", instruction)
+	if not bool(attack.call("preview_attack_range", attacker, {
+		"id": "bow", "name": "Bow", "range_feet": 80, "long_range_feet": 320,
+		"melee": false
+	})):
+		_fail("Read-only attack range preview failed to start")
+		return
+	if not bool(attack.get("_preview_only")) or not enemy in attack.call("preview_targets_in_range"):
+		_fail("Attack preview must enumerate reachable creatures")
+		return
+	var click := InputEventMouseButton.new()
+	click.button_index = MOUSE_BUTTON_LEFT
+	click.position = Vector2.ZERO
+	click.pressed = true
+	attack.call("handle_input", click)
+	if enemy not in attack.call("preview_selected_targets") or not bool(attack.call("is_targeting")):
+		_fail("Preview target click should select without ending the inspection")
+		return
+	if enemy.has_meta("last_attack_damage"):
+		_fail("Read-only range preview accidentally dealt damage")
+		return
+	var cancel := InputEventKey.new()
+	cancel.keycode = KEY_ESCAPE
+	cancel.pressed = true
+	attack.call("handle_input", cancel)
+	if bool(attack.call("is_targeting")):
+		_fail("Esc did not dismiss attack range preview")
+		return
+	board.chosen_target = null
+	enemy.queue_free()
+	await process_frame
 
 	# The all-creatures toggle must use the same two spherical shells.
 	attacker.add_to_group("dnd_token")

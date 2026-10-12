@@ -97,6 +97,10 @@ func run() -> void:
 		and area._attack_long_range_labels.has(String(ranged_definitions[0]["id"]))
 		and area._formula_values[long_key].has_signal("bonus_requested"),
 		"Long range must display the same actionable formula as normal range")
+	var attack_preview_button: Button = area._attack_rows.find_child("PreviewRange_*", true, false) as Button
+	assert(attack_preview_button != null and attack_preview_button.pressed.is_connected(
+		Callable(area, "_preview_attack_from_sheet").bind(String(ranged_definitions[0]["id"]))),
+		"Each available attack must have a button for its read-only range preview")
 	area._refresh_attacks({})
 	for ability: String in ["str", "dex", "con", "int", "wis", "cha"]:
 		var icon: Label = area._saving_throw_icons[ability]

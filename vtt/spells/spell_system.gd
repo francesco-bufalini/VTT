@@ -3238,10 +3238,17 @@ func _update_spell_range_preview(spell_data: Dictionary) -> void:
 			spell_data.get("secondary_range_feet", 30.0)
 		)
 
+	var range_source: Node3D = _pending_caster
+	if _targeting_phase == "chain_secondary" and _pending_chain_primary != null and is_instance_valid(_pending_chain_primary):
+		range_source = _pending_chain_primary
+	var footprint: float = _cell_size() * 0.5
+	if range_source != null and range_source.has_method("get_footprint_cells"):
+		footprint *= maxf(0.5, float(range_source.call("get_footprint_cells")))
 	measurement_tool.call(
 		"show_spell_range_preview",
 		range_center,
-		range_feet / 5.0 * _cell_size()
+		range_feet / 5.0 * _cell_size(),
+		footprint
 	)
 
 

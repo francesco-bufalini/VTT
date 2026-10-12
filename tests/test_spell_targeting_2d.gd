@@ -16,10 +16,11 @@ class TwoDimensionalBoard:
 	extends Node3D
 
 	var cell_size: float = 1.0
+	var use_2d: bool = true
 	var chosen_token: Node3D
 
 	func is_2d_view_enabled() -> bool:
-		return true
+		return use_2d
 
 	func _raycast_token_from_screen(_position: Vector2, _areas: bool = true) -> Dictionary:
 		if chosen_token != null:
@@ -106,6 +107,55 @@ func _run() -> void:
 	if bool(measure.call("has_post_cast_spell_visuals")):
 		_fail("2D dismissed area remained in the measurement tool")
 		return
+
+	# Spell casting reach shares the unfilled tactical outline and its
+	# HUD list includes all reachable creatures, independently of the AoE.
+	var enemy := Node3D.new()
+	enemy.name = "Near target"
+	enemy.position = Vector3(2.0, 0.0, 0.0)
+	enemy.add_to_group("dnd_token")
+	board.add_child(enemy)
+	var far := Node3D.new()
+	far.name = "Far target"
+	far.position = Vector3(15.0, 0.0, 0.0)
+	far.add_to_group("dnd_token")
+	board.add_child(far)
+	spell.set("_pending_spell_id", "range-test")
+	spell.set("_pending_spell_data", {"id": "range-test", "range": "30 feet", "range_feet": 30.0})
+	spell.set("_pending_caster", token)
+	spell.set("_targeting_phase", "target_token")
+	measure.call("show_spell_range_preview", token.global_position, 6.0)
+	if not bool(measure.get("_spell_range_active")):
+		_fail("Spell casting reach should be active while targeting")
+		return
+	var wire: MeshInstance3D = measure.get("_spell_range_preview") as MeshInstance3D
+	var equator: MeshInstance3D = measure.get("_spell_range_equator") as MeshInstance3D
+	if wire == null or equator == null or not (wire.mesh is ArrayMesh):
+		_fail("Spell casting reach must be a hollow wire sphere with an equator")
+		return
+	if (wire.mesh as ArrayMesh).surface_get_primitive_type(0) != Mesh.PRIMITIVE_LINES:
+		_fail("Spell reach must not render a filled sphere")
+		return
+	if wire.visible:
+		_fail("3D spell reach must not overlap the screen-space 2D outline")
+		return
+	board.use_2d = false
+	measure.call("show_spell_range_preview", token.global_position, 6.0)
+	if not wire.visible or not equator.visible:
+		_fail("Spell range must expose its hollow sphere and equator in 3D")
+		return
+	board.use_2d = true
+	measure.call("show_spell_range_preview", token.global_position, 6.0)
+	var reachable: Array[String] = overlay.call("_range_target_names")
+	if "Near target" not in reachable or "Far target" in reachable:
+		_fail("Spell range list does not respect the tactical target metric")
+		return
+	measure.call("hide_spell_range_preview")
+	if bool(measure.get("_spell_range_active")):
+		_fail("Dismissing spell range must also hide its in-range HUD")
+		return
+	spell.set("_pending_spell_id", "")
+	spell.set("_pending_caster", null)
 
 	board.queue_free()
 	await process_frame
