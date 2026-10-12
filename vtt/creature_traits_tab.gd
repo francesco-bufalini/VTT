@@ -60,6 +60,7 @@ func setup() -> void:
 	actions.add_child(collapse)
 
 	_scroll = ScrollContainer.new()
+	_scroll.mouse_force_pass_scroll_events = false
 	_scroll.size_flags_horizontal = Control.SIZE_EXPAND_FILL
 	_scroll.size_flags_vertical = Control.SIZE_EXPAND_FILL
 	_scroll.horizontal_scroll_mode = ScrollContainer.SCROLL_MODE_DISABLED
