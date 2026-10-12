@@ -199,6 +199,7 @@ func _rebuild() -> void:
 		card.add_child(body)
 		var opened: bool = bool(_expanded.get(key, false))
 		var heading := Button.new()
+		heading.set_meta("creature_gui_data", true)
 		heading.text = ("%s  %s" % ["▾" if opened else "▸", String(feature["name"])])
 		heading.tooltip_text = "Mostra o nascondi la descrizione di questo tratto"
 		heading.alignment = HORIZONTAL_ALIGNMENT_LEFT
