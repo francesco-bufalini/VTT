@@ -125,7 +125,7 @@ var _token_resize_confirmed_callback: Callable = Callable()
 var _token_resize_canceled_callback: Callable = Callable()
 var _pending_aoe_index: int = -1
 var _context_token: CharacterBody3D = null
-var _token_effect_dialog: ConfirmationDialog
+var _context_effect_dialog: ConfirmationDialog
 var _selected_tokens: Array[CharacterBody3D] = []
 var _ui_owns_mouse: bool = false
 var _vision_cones_visible: bool = false
@@ -3138,7 +3138,7 @@ func apply_cast_spell_effects(caster: Node3D, spell: Dictionary, targets: Array)
 # native token-effect dialog is open, otherwise the popup_hide callback
 # captures the mouse and CheckButtons become impossible to click.
 func _popup_token_effect_dialog(dialog: ConfirmationDialog, size: Vector2i) -> void:
-	_token_effect_dialog = dialog
+	_context_effect_dialog = dialog
 	dialog.visibility_changed.connect(
 		_on_token_effect_dialog_visibility_changed.bind(dialog)
 	)
@@ -3151,8 +3151,8 @@ func _popup_token_effect_dialog(dialog: ConfirmationDialog, size: Vector2i) -> v
 func _on_token_effect_dialog_visibility_changed(dialog: ConfirmationDialog) -> void:
 	if dialog.visible:
 		return
-	if _token_effect_dialog == dialog:
-		_token_effect_dialog = null
+	if _context_effect_dialog == dialog:
+		_context_effect_dialog = null
 	dialog.queue_free()
 	call_deferred("_finish_context_menu_close")
 
@@ -4252,9 +4252,9 @@ func _on_context_menu_hidden() -> void:
 
 func _finish_context_menu_close() -> void:
 	if (
-		_token_effect_dialog != null
-		and is_instance_valid(_token_effect_dialog)
-		and _token_effect_dialog.visible
+		_context_effect_dialog != null
+		and is_instance_valid(_context_effect_dialog)
+		and _context_effect_dialog.visible
 	):
 		_ui_owns_mouse = true
 		_release_mouse()
