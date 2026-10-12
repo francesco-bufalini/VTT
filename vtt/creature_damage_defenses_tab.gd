@@ -156,8 +156,8 @@ static func base_rank(record: Dictionary, damage_type: String) -> int:
 
 
 static func rank(record: Dictionary, damage_type: String) -> int:
-	var entries: Variant = record.get("damage_defense_entries", [])
-	if entries is Array and not entries.is_empty():
+	var entries: Variant = record.get("damage_defense_entries", null)
+	if entries is Array:
 		var best: int = 0
 		for entry: Variant in entries:
 			if entry is Dictionary and String(entry.get("key", "")) == damage_type and not bool(entry.get("disabled", false)):
@@ -192,8 +192,8 @@ static func base_condition_immune(record: Dictionary, condition: String) -> bool
 
 
 static func condition_immune(record: Dictionary, condition: String) -> bool:
-	var entries: Variant = record.get("damage_defense_entries", [])
-	if entries is Array and not entries.is_empty():
+	var entries: Variant = record.get("damage_defense_entries", null)
+	if entries is Array:
 		for entry: Variant in entries:
 			if entry is Dictionary and String(entry.get("key", "")) == condition and int(entry.get("rank", 0)) == 3 and not bool(entry.get("disabled", false)):
 				var origin: String = String(entry.get("origin_id", ""))
@@ -285,9 +285,27 @@ static func _entries_from_record(record: Dictionary, sources: Array[Dictionary])
 	var result: Array[Dictionary] = []
 	var saved: Variant = record.get("damage_defense_entries", null)
 	if saved is Array:
+		# Synchronize structured grants with the currently present origins;
+		# preserve only per-grant disabled state or promoted resistance.
+		var existing: Dictionary = {}
 		for entry: Variant in saved:
-			if entry is Dictionary:
-				result.append((entry as Dictionary).duplicate(true))
+			if not entry is Dictionary: continue
+			var row: Dictionary = entry
+			if bool(row.get("automatic", false)):
+				existing[String(row.get("origin_id", "")) + "|" + String(row.get("key", "")) + "|" + str(int(row.get("base_rank", row.get("rank", 0))))] = row
+			else:
+				result.append(row.duplicate(true))
+		for source: Dictionary in sources:
+			var sid: String = String(source.get("id", ""))
+			for field: String in ["vulnerable", "resist", "immune", "conditionImmune"]:
+				var base_level: int = int({"vulnerable": -1, "resist": 1, "immune": 2, "conditionImmune": 3}[field])
+				for key: String in _direct_type_list(source.get(field, [])):
+					var identifier: String = sid + "|" + key + "|" + str(base_level)
+					var row: Dictionary = {"key": key, "rank": base_level, "base_rank": base_level, "origin_id": sid, "automatic": true}
+					if existing.has(identifier):
+						row["disabled"] = bool(existing[identifier].get("disabled", false))
+						if base_level == 1 and int(existing[identifier].get("rank", 1)) == 2: row["rank"] = 2
+					result.append(row)
 		return result
 	# Old data: convert only explicitly saved overrides to independent rows.
 	# Automatically granted defenses always come from current structured origins.
@@ -295,7 +313,7 @@ static func _entries_from_record(record: Dictionary, sources: Array[Dictionary])
 		var sid: String = String(source.get("id", ""))
 		for field: String in ["vulnerable", "resist", "immune", "conditionImmune"]:
 			for key: String in _direct_type_list(source.get(field, [])):
-				result.append({"key": key, "rank": {"vulnerable": -1, "resist": 1, "immune": 2, "conditionImmune": 3}[field], "origin_id": sid, "automatic": true})
+				result.append({"key": key, "rank": {"vulnerable": -1, "resist": 1, "immune": 2, "conditionImmune": 3}[field], "base_rank": {"vulnerable": -1, "resist": 1, "immune": 2, "conditionImmune": 3}[field], "origin_id": sid, "automatic": true})
 	for key: String in record.get("damage_defense_overrides", {}):
 		var level: int = int(record["damage_defense_overrides"][key])
 		if level != 0: result.append({"key": key, "rank": level, "origin_id": "", "automatic": false})
@@ -420,7 +438,7 @@ func _add_defense() -> void:
 	var index: int = _type_picker.selected
 	if index < 0: return
 	var key: String = String(DAMAGE_TYPES[index]["key"]) if index < DAMAGE_TYPES.size() else CONDITIONS[index - DAMAGE_TYPES.size()]
-	var level: int = 3 if index >= DAMAGE_TYPES.size() else [-1, 1, 2][_rank_picker.selected]
+	var level: int = 3 if index >= DAMAGE_TYPES.size() else [-1, 1, 2][maxi(0, _rank_picker.selected)]
 	var sid: String = String(_source_picker.get_selected_metadata())
 	var entries: Array = _record.get("damage_defense_entries", [])
 	entries.append({"key": key, "rank": level, "origin_id": sid, "automatic": false})
@@ -432,12 +450,14 @@ func _add_defense() -> void:
 func _promote(enabled: bool, index: int) -> void:
 	var entries: Array = _record.get("damage_defense_entries", [])
 	entries[index]["rank"] = 2 if enabled else 1
+	_refresh()
 	_publish()
 
 
 func _toggle(enabled: bool, index: int) -> void:
 	var entries: Array = _record.get("damage_defense_entries", [])
 	entries[index]["disabled"] = not enabled
+	_refresh()
 	_publish()
 
 
