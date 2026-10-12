@@ -1036,7 +1036,7 @@ static func reconcile_origin_dependents(record: Dictionary) -> void:
 		feats = remaining
 	record["feats_catalog"] = feats
 	var live: Dictionary = _live_origin_ids(record)
-	for field: String in ["proficiency_choices", "formula_bonuses", "resource_trackers"]:
+	for field: String in ["proficiency_choices", "formula_bonuses", "resource_trackers", "damage_defense_entries"]:
 		var current: Variant = record.get(field, [])
 		if not current is Array:
 			continue
@@ -1044,7 +1044,7 @@ static func reconcile_origin_dependents(record: Dictionary) -> void:
 		for raw: Variant in current:
 			if raw is Dictionary:
 				var parent: String = String(raw.get("origin_id", ""))
-				if parent.is_empty() or live.has(parent):
+				if parent.is_empty() or live.has(parent) or (field == "damage_defense_entries" and bool((raw as Dictionary).get("automatic", false))):
 					kept.append(raw)
 		record[field] = kept
 	var origins_saved: Variant = record.get("proficiency_origins", [])
