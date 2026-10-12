@@ -90,5 +90,5 @@ func run() -> void:
 	Locale.write_locale("it")
 	assert(Locale.read_locale() == "it")
 	Locale.write_locale(previous)
-	print("creature_gui_locale: PASS")
+	print("PASS: creature GUI localization")
 	quit()
