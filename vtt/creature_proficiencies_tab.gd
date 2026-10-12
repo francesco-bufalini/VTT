@@ -472,8 +472,9 @@ func _refresh_competences() -> void:
 			var mastered: bool = kind == "skill" and _effective_expertise(key, enabled)
 			var displayed_name: String = key
 			if kind == "language":
+				var edition: String = String(_record.get("rules_version", "2014"))
 				displayed_name += " · " + String(Rules.LANGUAGE_TYPE_LABELS.get(
-					Rules.language_type(key), "Altro"))
+					Rules.language_type_for_edition(key, edition), "Altro"))
 			label.set_meta("creature_gui_data", true)
 			label.text = ("✓ " if active else "○ ") + displayed_name + (" 🎓🎓" if mastered else "")
 			label.tooltip_text = "Origini:\n" + "\n".join(linked)
@@ -771,11 +772,15 @@ func _catalog_entries_for_kind(kind: String) -> Array[Dictionary]:
 			if _valid_edition(item):
 				items.append({"key": String(item.get("name", "")).to_lower(), "label": String(item.get("name", ""))})
 	elif kind == "language":
-		# Show the 5etools type (Standard, Esotico, Raro, Segreto, etc.)
-		# and do not hide rare languages just because their first official
-		# record comes from a 2024 source.
+		# Show the 5etools type for the selected 2014/2024 rule version;
+		# don't hide Rare languages because the edition differs.
+		var edition: String = String(_record.get("rules_version", "2014"))
 		for item: Dictionary in Rules.language_options():
-			items.append({"key": String(item.get("key", "")), "label": String(item.get("label", ""))})
+			var key: String = String(item.get("key", ""))
+			var name: String = String(item.get("label", key.capitalize())).split(" · ")[0]
+			var type_label: String = String(Rules.LANGUAGE_TYPE_LABELS.get(
+				Rules.language_type_for_edition(key, edition), "Altro"))
+			items.append({"key": key, "label": name + " · " + type_label})
 	elif kind == "tool":
 		for item: Dictionary in Catalog.entries("tools"):
 			if _valid_edition(item):
