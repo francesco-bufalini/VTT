@@ -107,6 +107,48 @@ func _run() -> void:
 		_fail("2D dismissed area remained in the measurement tool")
 		return
 
+	# Spell casting reach shares the unfilled tactical outline and its
+	# HUD list includes all reachable creatures, independently of the AoE.
+	var enemy := Node3D.new()
+	enemy.name = "Near target"
+	enemy.position = Vector3(2.0, 0.0, 0.0)
+	enemy.add_to_group("dnd_token")
+	board.add_child(enemy)
+	var far := Node3D.new()
+	far.name = "Far target"
+	far.position = Vector3(15.0, 0.0, 0.0)
+	far.add_to_group("dnd_token")
+	board.add_child(far)
+	spell.set("_pending_spell_id", "range-test")
+	spell.set("_pending_spell_data", {"id": "range-test", "range": "30 feet", "range_feet": 30.0})
+	spell.set("_pending_caster", token)
+	spell.set("_targeting_phase", "target_token")
+	measure.call("show_spell_range_preview", token.global_position, 6.0)
+	if not bool(measure.get("_spell_range_active")):
+		_fail("Spell casting reach should be active while targeting")
+		return
+	var wire: MeshInstance3D = measure.get("_spell_range_preview") as MeshInstance3D
+	var equator: MeshInstance3D = measure.get("_spell_range_equator") as MeshInstance3D
+	if wire == null or equator == null or not (wire.mesh is ArrayMesh):
+		_fail("Spell casting reach must be a hollow wire sphere with an equator")
+		return
+	if (wire.mesh as ArrayMesh).surface_get_primitive_type(0) != Mesh.PRIMITIVE_LINES:
+		_fail("Spell reach must not render a filled sphere")
+		return
+	if wire.visible:
+		_fail("3D spell reach must not overlap the screen-space 2D outline")
+		return
+	var reachable: Array[String] = overlay.call("_range_target_names")
+	if "Near target" not in reachable or "Far target" in reachable:
+		_fail("Spell range list does not respect the tactical target metric")
+		return
+	measure.call("hide_spell_range_preview")
+	if bool(measure.get("_spell_range_active")):
+		_fail("Dismissing spell range must also hide its in-range HUD")
+		return
+	spell.set("_pending_spell_id", "")
+	spell.set("_pending_caster", null)
+
 	board.queue_free()
 	await process_frame
 	print("PASS: 2D spell targeting and overlay")
