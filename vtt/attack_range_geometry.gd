@@ -24,3 +24,54 @@ static func rounded_footprint_perimeter(
 			var angle: float = first_angle + PI * 0.5 * float(step) / float(segments)
 			result.append(corners[quadrant] + Vector2(cos(angle), sin(angle)) * reach)
 	return result
+
+
+# Sparse latitude/meridian lines describe the *surface* of a true 3D sphere.
+# No triangles, solid fill or interior tint: tokens and terrain stay readable.
+# The equator is a separate mesh to give each range a clearer silhouette.
+static func sphere_wire_mesh(radius: float, segments: int = 64) -> ArrayMesh:
+	var steps: int = maxi(24, segments)
+	var distance: float = maxf(radius, 0.001)
+	var surface := SurfaceTool.new()
+	surface.begin(Mesh.PRIMITIVE_LINES)
+	for degrees: float in [-60.0, -30.0, 30.0, 60.0]:
+		var elevation: float = deg_to_rad(degrees)
+		var plane_radius: float = cos(elevation) * distance
+		var height: float = sin(elevation) * distance
+		for index: int in range(steps):
+			var a0: float = TAU * float(index) / float(steps)
+			var a1: float = TAU * float(index + 1) / float(steps)
+			surface.add_vertex(Vector3(cos(a0) * plane_radius, height, sin(a0) * plane_radius))
+			surface.add_vertex(Vector3(cos(a1) * plane_radius, height, sin(a1) * plane_radius))
+	# Full vertical great circles make the upper/lower hemispheres visible
+	# from the side, rather than reducing the preview to a flat ground ring.
+	for meridian: int in range(8):
+		var azimuth: float = PI * float(meridian) / 8.0
+		var direction := Vector2(cos(azimuth), sin(azimuth))
+		for index: int in range(steps):
+			var a0: float = TAU * float(index) / float(steps)
+			var a1: float = TAU * float(index + 1) / float(steps)
+			surface.add_vertex(Vector3(
+				cos(a0) * direction.x * distance,
+				sin(a0) * distance,
+				cos(a0) * direction.y * distance
+			))
+			surface.add_vertex(Vector3(
+				cos(a1) * direction.x * distance,
+				sin(a1) * distance,
+				cos(a1) * direction.y * distance
+			))
+	return surface.commit()
+
+
+static func sphere_equator_mesh(radius: float, segments: int = 96) -> ArrayMesh:
+	var steps: int = maxi(24, segments)
+	var distance: float = maxf(radius, 0.001)
+	var surface := SurfaceTool.new()
+	surface.begin(Mesh.PRIMITIVE_LINES)
+	for index: int in range(steps):
+		var a0: float = TAU * float(index) / float(steps)
+		var a1: float = TAU * float(index + 1) / float(steps)
+		surface.add_vertex(Vector3(cos(a0) * distance, 0.0, sin(a0) * distance))
+		surface.add_vertex(Vector3(cos(a1) * distance, 0.0, sin(a1) * distance))
+	return surface.commit()
