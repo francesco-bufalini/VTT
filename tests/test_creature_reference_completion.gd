@@ -9,6 +9,19 @@ class TestCampaign extends Node:
 class TestBoard extends Node3D:
 	var board_sync: Node
 
+
+class InstantCachedBestiary extends Node:
+	signal catalog_ready(entries: Array[Dictionary])
+
+	func load_catalog(_force_refresh: bool = false) -> void:
+		# Simulates 5etools returning a warm search/index.json cache before
+		# load_catalog() returns. Duergar is intentionally not in the miniature
+		# fallback catalogue.
+		catalog_ready.emit([
+			{"name": "Duergar", "source": "MM", "page": 50}
+		])
+
+
 var failed := false
 
 func _initialize() -> void:
@@ -32,6 +45,23 @@ func run() -> void:
 	board.add_child(area)
 	area.setup(board)
 	area._archive.setup(campaign)
+
+	var cached_client := InstantCachedBestiary.new()
+	board.add_child(cached_client)
+	cached_client.catalog_ready.connect(area._on_catalog_ready)
+	var original_client: Node = area._client
+	area._client = cached_client
+	area._load_bestiary_catalog(true)
+	area._filter_catalog("duergar")
+	var found_duergar: bool = false
+	for entry: Dictionary in area._filtered_catalog:
+		if String(entry.get("name", "")) == "Duergar" and String(entry.get("source", "")) == "MM":
+			found_duergar = true
+	check(found_duergar,
+		"Warm bestiary cache was replaced with bundled miniature entries: Duergar not searchable")
+	area._client = original_client
+	cached_client.queue_free()
+
 	var full_stat := {"name": "Ape", "source": "MM", "hp": {"average": 19}, "ac": [12]}
 	for bonus: int in [0, 5]:
 		var pending: Dictionary = area._archive.create_monster({"name": "Ape", "reference_pending": true})
