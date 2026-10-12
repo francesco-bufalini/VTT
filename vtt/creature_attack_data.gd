@@ -230,9 +230,10 @@ static func has_two_weapon_style(record: Dictionary) -> bool:
 				var row: Dictionary = value
 				if bool(row.get("disabled", false)):
 					continue
-				label = String(row.get("fighting_style", row.get("fightingStyle",
-					row.get("selected_style", row.get("selected", row.get("choice",
-					row.get("name", row.get("label", row.get("key", ""))))))))
+				label = String(row.get("name", row.get("label", row.get("key", ""))))
+				for field_name: String in ["fighting_style", "fightingStyle", "selected_style", "selected", "choice"]:
+					if row.has(field_name) and not row[field_name] is bool:
+						label += " " + String(row[field_name])
 			else:
 				label = String(value)
 			if label.to_lower().contains("two-weapon fighting"):
