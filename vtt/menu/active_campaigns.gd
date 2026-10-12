@@ -84,6 +84,7 @@ func _build_ui() -> void:
 	layout.add_child(separator)
 
 	var scroll := ScrollContainer.new()
+	scroll.mouse_force_pass_scroll_events = false
 	scroll.size_flags_vertical = Control.SIZE_EXPAND_FILL
 	scroll.horizontal_scroll_mode = ScrollContainer.SCROLL_MODE_DISABLED
 	scroll.add_theme_constant_override("scrollbar_margin_left", 12)
@@ -231,6 +232,7 @@ func _build_edit_dialog() -> void:
 	body.add_child(description_label)
 
 	_edit_description_input = TextEdit.new()
+	_edit_description_input.mouse_force_pass_scroll_events = false
 	_edit_description_input.custom_minimum_size = Vector2(0, 145)
 	_edit_description_input.placeholder_text = "Descrizione della campagna"
 	_edit_description_input.wrap_mode = TextEdit.LINE_WRAPPING_BOUNDARY
