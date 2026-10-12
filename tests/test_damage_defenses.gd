@@ -131,6 +131,11 @@ func run() -> void:
 		if String(defense.get("key", "")) == "poison" and int(defense.get("rank", 0)) == 1:
 			inherited_count += 1
 	assert(inherited_count == 1, "Base + flattened subrace must not duplicate resistance")
+	var legacy_dwarf: Dictionary = dwarf.duplicate(true)
+	legacy_dwarf.erase("damage_defense_entries")
+	legacy_dwarf["damage_defense_overrides"] = {"poison": 0}
+	assert(Defenses.rank(legacy_dwarf, "poison") == 0,
+		"Legacy explicit zero still overrides an innate resistance")
 	var dwarf_2024: Dictionary = dwarf.duplicate(true)
 	dwarf_2024["species_source"] = "XPHB"
 	assert(Defenses.rank(dwarf_2024, "poison") == 1,
