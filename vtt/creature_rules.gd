@@ -233,8 +233,8 @@ static func level_classes(character: Dictionary) -> Array[Dictionary]:
 	return result
 
 
-static func class_hit_die(class_name: String, source: String = "") -> int:
-	return ClassMechanics.hit_die(class_name, source)
+static func class_hit_die(klass_name: String, source: String = "") -> int:
+	return ClassMechanics.hit_die(klass_name, source)
 
 
 static func average_die(die: int) -> int:
