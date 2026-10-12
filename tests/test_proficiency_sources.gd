@@ -39,6 +39,15 @@ func _record() -> Dictionary:
 
 
 func run() -> void:
+	var languages: Array[Dictionary] = Proficiencies.language_options()
+	var available: Dictionary = {}
+	for entry: Dictionary in languages:
+		available[String(entry.get("key", ""))] = entry
+	for language_name: String in ["deep speech", "druidic", "thieves' cant", "undercommon", "sylvan"]:
+		assert(available.has(language_name),
+			"Missing canonical 5etools language in chooser: " + language_name)
+		assert(String(available[language_name].get("source", "")) == "PHB",
+			"Secret and exotic 2014 languages must not inherit 2024-only filters")
 	_check_index_parity()
 	_check_feat_origin_chains()
 	var record := _record()
