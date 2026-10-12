@@ -1,6 +1,7 @@
 extends SceneTree
 
 const Locale = preload("res://vtt/creature_gui_locale.gd")
+const FormulaValue = preload("res://vtt/formula_value.gd")
 
 
 func _initialize() -> void:
@@ -72,8 +73,17 @@ func run() -> void:
 	unrelated.text = "Chiudi"
 	root.add_child(unrelated)
 
+	var formula_widget := FormulaValue.new()
+	formula_widget.setup(Label.new(), [], [])
+	formula_widget.set_formula("22", "PF massimi: base 20 + bonus cumulabili +2 = 22\n\nBONUS DALLE ORIGINI\n+2: oggetto")
+	sheet.add_child(formula_widget)
+
 	Locale.apply(sheet, "en")
 	assert(heading.text == "CREATURE ARCHIVE")
+	assert(formula_widget._readout.tooltip_text.contains("CALCULATION")
+		and formula_widget._readout.tooltip_text.contains("ORIGIN BONUSES")
+		and formula_widget._readout.tooltip_text.contains("ACTIONS"), "Formula headings should be localized")
+	assert(formula_widget._readout.tooltip_text.contains("Maximum HP: base 20 + stacking bonuses +2 = 22"), "Numeric formula explanations should be localized")
 	assert(ability.text == "STR")
 	assert(skill.text == "Acrobatics · DEX")
 	assert(status.text == "No matching creatures.")
@@ -108,6 +118,8 @@ func run() -> void:
 	assert(status.text == "Iniziativa")
 	assert(preview.text.begins_with("SALTO IN LUNGO"))
 	assert(tooltip.text == "Chiudi")
+	assert(formula_widget._readout.tooltip_text.contains("CALCOLO")
+		and formula_widget._readout.tooltip_text.contains("AZIONI"), "Formula headings should return to Italian")
 	assert(tabs.get_tab_title(0) == "Statistiche")
 	assert(choices.get_item_text(0) == "Forza" and choices.selected == 0)
 	assert(hand.get_item_text(0) == "Niente"
@@ -119,6 +131,8 @@ func run() -> void:
 
 	# Newly introduced creature editors and statuses must not silently fall
 	# back to Italian. Interpolated names and values remain unchanged.
+	assert(Locale.text_for("PF massimi: base 20 + bonus cumulabili +2 = 22", "en") == "Maximum HP: base 20 + stacking bonuses +2 = 22")
+	assert(Locale.text_for("Attacco aggiuntivo a due armi: bonus al colpire normale; il modificatore di caratteristica ai danni si applica solo con lo stile Two-Weapon Fighting o se negativo.", "en") == "Two-weapon bonus attack: normal attack bonus; the ability modifier applies to damage only with the Two-Weapon Fighting style or when negative.")
 	assert(Locale.text_for("Incantesimi attivi", "en") == "Active spells")
 	assert(Locale.text_for("Talenti posseduti", "en") == "Owned feats")
 	assert(Locale.text_for("Only if finesse", "it") == "Solo se accurata")
