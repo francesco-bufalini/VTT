@@ -102,7 +102,7 @@ func _draw_area(points: PackedVector2Array, color: Color) -> void:
 	if points.size() < 3:
 		return
 	var fill: Color = color
-	fill.a = 0.16
+	fill.a = color.a * 0.14
 	draw_colored_polygon(points, fill)
 	var border := PackedVector2Array(points)
 	border.append(points[0])
@@ -233,6 +233,19 @@ func _draw() -> void:
 		)
 		_draw_area(points, Color(1.0, 0.54, 0.18, 0.94))
 		hover_area = data
+	# Keep confirmed Magic Missile rays visible between successive picks.
+	# The hovered ray is drawn from the 3D spell preview below.
+	if bool(spell.call("is_targeting")) and String(spell.get("_targeting_phase")) == "multi_target_tokens":
+		var caster: Node3D = spell.get("_pending_caster") as Node3D
+		if caster != null and is_instance_valid(caster):
+			var center: Vector2 = _world_point(caster.global_position)
+			for value: Variant in spell.get("_pending_targets"):
+				if value is Node3D and is_instance_valid(value):
+					var target: Node3D = value as Node3D
+					draw_line(center, _world_point(target.global_position), Color(0.32, 0.96, 1.0, 0.95), 3.0, true)
+			for value: Variant in spell.get("_pending_target_points"):
+				if value is Vector3:
+					draw_line(center, _world_point(value), Color(0.32, 0.96, 1.0, 0.95), 3.0, true)
 	var preview: MeshInstance3D = measure.get("_spell_preview") as MeshInstance3D
 	if preview != null and is_instance_valid(preview) and preview.visible and bool(spell.call("is_targeting")):
 		var start: Vector3 = measure.get("_spell_preview_start")
