@@ -853,6 +853,9 @@ func _build_ui() -> void:
 	_ac.size_flags_horizontal = Control.SIZE_SHRINK_BEGIN
 	_ac_proficiency_warning = Label.new()
 	_ac_proficiency_warning.text = "⚠"
+	_ac_proficiency_warning.mouse_filter = Control.MOUSE_FILTER_STOP
+	_ac_proficiency_warning.mouse_default_cursor_shape = Control.CURSOR_HELP
+	_ac_proficiency_warning.tooltip_text = "Equipaggiamento senza competenza: passa qui per vedere le penalità."
 	_ac_proficiency_warning.visible = false
 	_ac_proficiency_warning.add_theme_color_override("font_color", Color(1.0, 0.76, 0.28))
 	temp_health.add_child(_ac_proficiency_warning)
@@ -885,13 +888,13 @@ func _build_ui() -> void:
 	# which modes a creature actually possesses.
 	var speed_grid := GridContainer.new()
 	speed_grid.columns = 5
-	speed_grid.add_theme_constant_override("h_separation", 4)
+	speed_grid.add_theme_constant_override("h_separation", 3)
 	speed_grid.add_theme_constant_override("v_separation", 4)
 	movement_box.add_child(speed_grid)
 	_special_speed_labels.clear()
 	for mode: String in ["walk", "climb", "swim", "fly", "burrow"]:
 		var speed_cell := VBoxContainer.new()
-		speed_cell.custom_minimum_size.x = 75
+		speed_cell.custom_minimum_size.x = 73
 		speed_cell.size_flags_horizontal = Control.SIZE_EXPAND_FILL
 		speed_cell.add_theme_constant_override("separation", 3)
 		speed_grid.add_child(speed_cell)
@@ -3618,10 +3621,13 @@ func _update_defense_display() -> void:
 					if not ProficiencyRules.has_proficiency(live, "armor", "shield"):
 						missing.append(String(shield.get("name", "Scudo")) + " (scudo)")
 		_ac_proficiency_warning.visible = not missing.is_empty()
+		_ac_proficiency_warning.mouse_filter = Control.MOUSE_FILTER_STOP
 		if not missing.is_empty():
 			_ac_proficiency_warning.tooltip_text = ("Senza competenza: " + ", ".join(missing)
-				+ "\nPenalità D&D 5e: svantaggio alle prove di caratteristica, ai tiri salvezza e ai tiri per colpire che coinvolgono Forza o Destrezza."
-				+ "\nInoltre non puoi lanciare incantesimi mentre indossi questa armatura o impugni questo scudo.")
+				+ "\nEffetti: svantaggio alle prove di caratteristica, ai tiri salvezza e ai tiri per colpire che usano Forza o Destrezza."
+				+ "\nNon puoi lanciare incantesimi mentre indossi l’armatura o impugni lo scudo senza competenza.")
+		else:
+			_ac_proficiency_warning.tooltip_text = ""
 	if _initiative_effective != null:
 		var init: int = BonusRules.value(live, "initiative")
 		_set_formula("initiative", "%+d" % init,
