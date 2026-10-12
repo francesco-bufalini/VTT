@@ -12,6 +12,7 @@ Other Fight Club structured fields can be added to this pipeline later.
 from __future__ import annotations
 
 import json
+import re
 import sys
 import xml.etree.ElementTree as ET
 from pathlib import Path
@@ -21,6 +22,51 @@ OUTPUT = ROOT / "vtt/data/class_resource_overrides.json"
 SOURCE = Path(
     "Sources/DND_5e/WizardsOfTheCoast/01_Core/01_Players_Handbook"
 )
+
+# Fight Club notation must never be persisted into the VTT's JSON files.
+# Convert external counters once, during asset preparation, to the native
+# arithmetic formula syntax already used by creature_bonus_rules.gd.
+FIGHTCLUB_MODIFIERS = {
+    "1": "str_mod",
+    "2": "dex_mod",
+    "3": "con_mod",
+    "4": "int_mod",
+    "5": "wis_mod",
+    "6": "cha_mod",
+    "7": "level",
+    "8": "proficiency",
+}
+VTT_FORMULA_SYMBOLS = {
+    *(f"{ability}_{kind}" for ability in ("str", "dex", "con", "int", "wis", "cha")
+      for kind in ("mod", "score")),
+    "proficiency", "prof", "level", "initiative", "ac", "speed",
+    "climb_speed", "swim_speed", "fly_speed", "burrow_speed",
+    "max_hp", "passive_perception",
+}
+
+
+def to_vtt_formula(raw: str) -> str:
+    """Convert selected Fight Club counter maxima to VTT-native expressions.
+
+    Fail closed for unknown placeholders, dice, function calls or unsupported
+    identifiers. These counters represent quantities, not roll formulas.
+    """
+    raw = str(raw).strip()
+
+    def convert_placeholder(match: re.Match[str]) -> str:
+        index = match.group(1)
+        if index not in FIGHTCLUB_MODIFIERS:
+            raise ValueError(f"Unsupported Fight Club counter token: {match.group()}")
+        return FIGHTCLUB_MODIFIERS[index]
+
+    converted = re.sub(r"%(\\d+)", convert_placeholder, raw).lower()
+    if not re.fullmatch(r"[0-9a-z_ .+*/()\\-]+", converted):
+        raise ValueError(f"Invalid or unconverted counter formula: {raw!r}")
+    unknown = set(re.findall(r"[a-z_][a-z0-9_]*", converted)) - VTT_FORMULA_SYMBOLS
+    if unknown:
+        raise ValueError(f"Unsupported native formula symbol(s) {sorted(unknown)}: {raw!r}")
+    return converted
+
 
 
 def read_counters(xml_file: Path) -> dict[tuple[str, str], list[dict]]:
@@ -70,7 +116,12 @@ def main(checkout: Path) -> None:
                         or class_name == "wizard" and key[0] == "Arcane Recovery"):
                     step["reset"] = "long_rest"
             unique = {row["level"]: row for row in source_steps}
-            definition["steps"] = [unique[level] for level in sorted(unique)]
+            # Source XML is only interpreted here; the game loads VTT-native
+            # values with no Fight Club placeholder translation at runtime.
+            definition["steps"] = [
+                {**unique[level], "value": to_vtt_formula(unique[level]["value"])}
+                for level in sorted(unique)
+            ]
             changed += 1
     OUTPUT.write_text(
         json.dumps(existing, ensure_ascii=False, indent=2) + "\n",
