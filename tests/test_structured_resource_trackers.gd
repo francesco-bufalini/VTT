@@ -143,6 +143,30 @@ func run() -> void:
 	assert(int(high_cha.get("max", 0)) == 4
 		and String(high_cha.get("recharge", "")) == "short_rest",
 		"Font of Inspiration updates existing counter without duplicating it")
+	var bard_2024: Dictionary = _find_resource(Trackers.for_creature({
+		"kind": "character", "abilities": {"cha": 16},
+		"classes": [{"name": "Bard", "source": "XPHB", "level": 5}]
+	}), "Bardic Inspiration")
+	assert(int(bard_2024.get("max", 0)) == 3
+		and String(bard_2024.get("recharge", "")) == "short_rest",
+		"2024 Bardic Inspiration keeps its own edition-specific resource")
+	var used_record: Dictionary = {
+		"kind": "character", "abilities": {"cha": 16},
+		"classes": [{"name": "Bard", "source": "PHB", "level": 1}],
+		"resource_trackers": [{"id": "manual_one", "name": "Manual", "max": 2, "recharge": "manual"}],
+		"resource_tracker_spent": {"class:bard:phb:bardic_inspiration": 1, "manual_one": 1}
+	}
+	assert(int(Trackers.spent_after_recovery(used_record, "short_rest").get(
+		"class:bard:phb:bardic_inspiration", 0)) == 1,
+		"Before Font of Inspiration, a short rest must not replenish uses")
+	var after_long: Dictionary = Trackers.spent_after_recovery(used_record, "long_rest")
+	assert(not after_long.has("class:bard:phb:bardic_inspiration")
+		and int(after_long.get("manual_one", 0)) == 1,
+		"Rest recovery must leave manual trackers untouched")
+	used_record["classes"] = [{"name": "Bard", "source": "PHB", "level": 5}]
+	assert(not Trackers.spent_after_recovery(used_record, "short_rest").has(
+		"class:bard:phb:bardic_inspiration"),
+		"Short rest replenishes Bardic Inspiration after Font of Inspiration")
 	var paladin_2014: Array[Dictionary] = Trackers.for_creature({
 		"kind": "character", "abilities": {"cha": 14},
 		"classes": [{"name": "Paladin", "source": "PHB", "level": 3}]
