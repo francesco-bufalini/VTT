@@ -159,15 +159,14 @@ static func rank(record: Dictionary, damage_type: String) -> int:
 	var entries: Variant = record.get("damage_defense_entries", null)
 	if entries is Array:
 		var best: int = 0
+		var active_origins: Dictionary = {}
+		for source: Dictionary in _sources(record):
+			active_origins[String(source.get("id", ""))] = bool(source.get("active", true))
 		for entry: Variant in entries:
 			if entry is Dictionary and String(entry.get("key", "")) == damage_type and not bool(entry.get("disabled", false)):
 				var origin: String = String(entry.get("origin_id", ""))
 				if not origin.is_empty():
-					var active := false
-					for source: Dictionary in _sources(record):
-						if String(source.get("id", "")) == origin and bool(source.get("active", true)):
-							active = true
-					if not active: continue
+					if not bool(active_origins.get(origin, false)): continue
 				var value: int = clampi(int(entry.get("rank", 0)), -1, 2)
 				if value == 2: return 2
 				if value > best or best == 0: best = value
@@ -194,12 +193,14 @@ static func base_condition_immune(record: Dictionary, condition: String) -> bool
 static func condition_immune(record: Dictionary, condition: String) -> bool:
 	var entries: Variant = record.get("damage_defense_entries", null)
 	if entries is Array:
+		var active_origins: Dictionary = {}
+		for source: Dictionary in _sources(record):
+			active_origins[String(source.get("id", ""))] = bool(source.get("active", true))
 		for entry: Variant in entries:
 			if entry is Dictionary and String(entry.get("key", "")) == condition and int(entry.get("rank", 0)) == 3 and not bool(entry.get("disabled", false)):
 				var origin: String = String(entry.get("origin_id", ""))
 				if origin.is_empty(): return true
-				for source: Dictionary in _sources(record):
-					if String(source.get("id", "")) == origin and bool(source.get("active", true)): return true
+				if bool(active_origins.get(origin, false)): return true
 		return false
 	var overrides: Variant = record.get("condition_immunity_overrides", {})
 	if overrides is Dictionary and (overrides as Dictionary).has(condition):
