@@ -167,6 +167,9 @@ func _run() -> void:
 	if bool(attack.call("is_targeting")):
 		_fail("Esc did not dismiss attack range preview")
 		return
+	board.chosen_target = null
+	enemy.queue_free()
+	await process_frame
 
 	# The all-creatures toggle must use the same two spherical shells.
 	attacker.add_to_group("dnd_token")
