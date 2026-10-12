@@ -43,7 +43,7 @@ static func missing_proficiencies(record: Dictionary) -> Array[String]:
 	var result: Array[String] = []
 	var enabled: Dictionary = Proficiencies.origin_enabled_map(record)
 	var rows: Array[Dictionary] = Proficiencies.choices(record)
-	for origin: Dictionary in Proficiencies.candidate_sources(record):
+	for origin: Dictionary in Proficiencies.origins(record):
 		var sid: String = String(origin.get("id", ""))
 		if sid.is_empty() or not bool(enabled.get(sid, false)):
 			continue
