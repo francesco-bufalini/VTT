@@ -51,6 +51,7 @@ var _pending_caster: Node3D = null
 var _directional_pitch_degrees: int = 0
 var _selected_slot_level: int = 0
 var _pending_targets: Array[Node3D] = []
+var _committed_targets: Array[Node3D] = []
 var _pending_target_points: Array[Vector3] = []
 var _pending_target_history: Array[Dictionary] = []
 var _pending_chain_primary: Node3D = null
@@ -1755,6 +1756,7 @@ func _try_select_multi_point(screen_position: Vector2) -> void:
 				if not (target in affected_targets):
 					affected_targets.append(target)
 		_set_spell_affected_targets(affected_targets, true)
+		_committed_targets = affected_targets.duplicate()
 		_finish_cast()
 		return
 
@@ -4114,6 +4116,7 @@ func _activate_selected_spell() -> void:
 	_pending_targets.clear()
 	_pending_target_points.clear()
 	_pending_target_history.clear()
+	_committed_targets.clear()
 	_pending_chain_primary = null
 	_directional_pitch_degrees = 0
 
@@ -5234,10 +5237,13 @@ func _complete_spell_cast(
 	targets: Array[Node3D],
 	caster: Node3D = null
 ) -> void:
+	_committed_targets = targets.duplicate()
 	_set_spell_affected_targets(targets, true)
 	if not _spell_needs_saving_throw_resolution(spell_data):
 		_finish_cast()
 		return
+	# Only targets that fail the saving throw receive persistent effects.
+	_committed_targets.clear()
 
 	var unique_targets: Array[Node3D] = []
 	for target: Node3D in targets:
@@ -5349,6 +5355,8 @@ func _resolve_current_saving_throw(succeeded: bool) -> void:
 						"_refresh_token_views_after_appearance_change"
 					)
 			elif not succeeded:
+				if not (target in _committed_targets):
+					_committed_targets.append(target)
 				if not _saving_throw_undo_recorded:
 					if board_root.has_method("push_undo_state"):
 						board_root.call("push_undo_state")
@@ -5431,6 +5439,7 @@ func _reset_cast_state(
 	_targeting_phase = ""
 	_pending_caster = null
 	_pending_targets.clear()
+	_committed_targets.clear()
 	_pending_target_points.clear()
 	_pending_target_history.clear()
 	_pending_chain_primary = null
@@ -5493,6 +5502,23 @@ func _log_spell_use() -> void:
 
 
 func _finish_cast() -> void:
+	# Applying spell origins during targeting previews would leave effects
+	# behind if the user presses Esc. Commit exactly once at successful finish.
+	if board_root != null and is_instance_valid(board_root) and board_root.has_method("apply_cast_spell_effects"):
+		var resolved_targets: Array = _committed_targets.duplicate()
+		if not _spell_needs_saving_throw_resolution(_pending_spell()):
+			for target: Node3D in _pending_targets:
+				if target != null and is_instance_valid(target) and not (target in resolved_targets):
+					resolved_targets.append(target)
+		if (
+			resolved_targets.is_empty()
+			and _pending_caster != null
+			and String(_pending_spell().get("target_mode", "")) in [
+				"self_token", "self_emanation", "transform_self", "teleport_self"
+			]
+		):
+			resolved_targets.append(_pending_caster)
+		board_root.call("apply_cast_spell_effects", _pending_caster, _pending_spell(), resolved_targets)
 	_log_spell_use()
 	_post_cast_cleanup_pending = true
 	_reset_cast_state(false, true)

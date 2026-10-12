@@ -55,6 +55,8 @@ var _animation_set: String = ""
 var _default_animation: String = ""
 var _uses_manifest_default: bool = false
 var _conditions: Array[String] = []
+var _active_spell_ids: Array[String] = []
+var _concentrating_spell_id: String = ""
 var _condition_visuals_visible: bool = true
 var _reach_feet: float = 5.0
 var _reach_overridden: bool = false
@@ -932,6 +934,43 @@ func get_active_condition_display_parts() -> PackedStringArray:
 	return parts
 
 
+
+# Shared appearance state carries active spell origins even when the token's
+# creature sheet is owned by a different peer.
+func get_active_spell_ids() -> Array[String]:
+	return _active_spell_ids.duplicate()
+
+
+func set_active_spell_ids(value: Variant) -> void:
+	var result: Array[String] = []
+	if value is Array:
+		for entry: Variant in value:
+			var spell_id: String = String(entry).strip_edges()
+			if not spell_id.is_empty() and not (spell_id in result):
+				result.append(spell_id)
+	_active_spell_ids = result
+
+
+func add_active_spell_id(spell_id: String) -> void:
+	if not spell_id.is_empty() and not (spell_id in _active_spell_ids):
+		_active_spell_ids.append(spell_id)
+
+
+func remove_active_spell_id(spell_id: String) -> void:
+	_active_spell_ids.erase(spell_id)
+	if _concentrating_spell_id == spell_id:
+		set_concentrating_spell_id("")
+
+
+func get_concentrating_spell_id() -> String:
+	return _concentrating_spell_id
+
+
+func set_concentrating_spell_id(spell_id: String) -> void:
+	_concentrating_spell_id = spell_id.strip_edges()
+	set_condition("concentrating", not _concentrating_spell_id.is_empty())
+
+
 func has_condition(condition_id: String) -> bool:
 	var normalized := condition_id.strip_edges().to_lower()
 	return normalized in _conditions
@@ -946,6 +985,8 @@ func set_condition(condition_id: String, enabled: bool) -> void:
 			_conditions.append(normalized)
 	else:
 		_conditions.erase(normalized)
+		if normalized == "concentrating":
+			_concentrating_spell_id = ""
 	_update_status_overlay()
 	_update_condition_rings()
 
@@ -963,6 +1004,8 @@ func set_conditions(value: Variant) -> void:
 			):
 				resolved.append(normalized)
 	_conditions = resolved
+	if not ("concentrating" in resolved):
+		_concentrating_spell_id = ""
 	_update_status_overlay()
 	_update_condition_rings()
 
@@ -1574,6 +1617,8 @@ func get_appearance_state() -> Dictionary:
 		"display_name": get_display_name(),
 		"party_id": get_party_id(),
 		"conditions": get_conditions(),
+		"active_spell_ids": get_active_spell_ids(),
+		"concentrating_spell_id": get_concentrating_spell_id(),
 		"condition_presentations": get_condition_presentations(),
 		"size_name": _size_name,
 		"footprint": _footprint_cells,
@@ -1642,6 +1687,12 @@ func apply_appearance_state(state: Dictionary) -> bool:
 	set_party_id(String(state.get("party_id", party_id)))
 	set_condition_presentations(state.get("condition_presentations", []))
 	set_conditions(state.get("conditions", _conditions))
+	set_active_spell_ids(state.get("active_spell_ids", _active_spell_ids))
+	var concentrating_id: String = String(state.get("concentrating_spell_id", ""))
+	if concentrating_id.is_empty():
+		_concentrating_spell_id = ""
+	else:
+		set_concentrating_spell_id(concentrating_id)
 	global_position.y = (
 		base_y
 		+ token_height_cells * cell_size * 0.5
