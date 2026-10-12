@@ -103,17 +103,17 @@ static func definitions(record: Dictionary) -> Array[Dictionary]:
 					"weapon_size": Items.weapon_size(record, owned),
 					"base_hit": 0
 				})
-	# Bestiary creatures use their own defined attacks by default. If a
-	# player explicitly assigns an improvised/unarmed hand choice, expose it.
+	# These are fictional hand weapons, not permanent character attacks:
+	# a strike is available only while explicitly selected in either hand.
 	var special_hands: Array = [String(record.get("hand_main_special", "none")),
 		String(record.get("hand_off_special", "none"))]
-	if kind != "monster" or "unarmed" in special_hands:
+	if "unarmed" in special_hands:
 		result.append({
 			"id": "unarmed", "name": "Colpo senz'armi",
 			"source": "unarmed", "melee": true, "range_feet": 5,
 			"proficient": true, "damage": "", "base_hit": 0
 		})
-	if kind != "monster" or "improvised" in special_hands:
+	if "improvised" in special_hands:
 		result.append({
 			"id": "improvised", "name": "Arma improvvisata",
 			"source": "improvised", "melee": true, "range_feet": 5,
@@ -285,7 +285,7 @@ static func damage_label(record: Dictionary, attack: Dictionary) -> String:
 	# The off-hand bonus-action strike keeps its normal attack roll. In 5e
 	# the ability modifier is omitted from DAMAGE, unless negative or the
 	# character has selected the Two-Weapon Fighting style.
-	if source == "item" and String(attack.get("slot", "")) == "off" and not bool(attack.get("thrown", false)):
+	if source == "item" and String(attack.get("slot", "")) == "off":
 		if offhand_bonus_attack_allowed(record) and not has_two_weapon_style(record):
 			modifier = mini(0, modifier)
 	modifier += Bonuses.bonus(record, "attack_damage:" + String(attack.get("id", "")))
