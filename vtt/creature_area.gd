@@ -2070,7 +2070,7 @@ func _set_formula(key: String, text_value: String, explanation: String) -> void:
 			else _live_stats_record()
 		)
 		var detail: String = BonusRules.description(source, key)
-		_formula_values[key].set_formula(text_value, explanation + ("\n" + detail if not detail.is_empty() else ""))
+		_formula_values[key].set_formula(text_value, explanation + ("\n\nBONUS DALLE ORIGINI\n" + detail if not detail.is_empty() else ""))
 
 
 func _with_effective_modifiers(record: Dictionary) -> Dictionary:
@@ -3047,7 +3047,7 @@ func _update_speed_display() -> void:
 		var inherited: int = (walk_bonus
 			if base > 0 and String(live.get("rules_version", "2014")) == "2024" else 0)
 		var total: int = maxi(0, BonusRules.value(live, "speed:" + mode))
-		var explanation := "%s: base %d + bonus specifici %+d" % [label, base, specific]
+		var explanation := "%s: base %d + bonus specifici %+d" % [CreatureLocale.text_for(label, _creature_language), base, specific]
 		if inherited != 0:
 			explanation += " + modifica alla velocità (regole 2024) %+d" % inherited
 		explanation += " = %d ft" % total
@@ -3709,13 +3709,20 @@ func _refresh_attacks(record: Dictionary) -> void:
 			box.add_child(details_toggle)
 			var details := RichTextLabel.new()
 			details.mouse_force_pass_scroll_events = false
-			details.custom_minimum_size.y = 100
+			details.custom_minimum_size.y = 124
 			details.custom_minimum_size.x = 0
 			details.size_flags_horizontal = Control.SIZE_EXPAND_FILL
 			details.fit_content = false
 			details.scroll_active = true
 			details.visible = false
 			FiveToolsText.style(details)
+			var description_style := StyleBoxFlat.new()
+			description_style.bg_color = Color(0.13, 0.14, 0.16, 0.75)
+			description_style.border_color = Color(0.40, 0.35, 0.29, 0.65)
+			description_style.set_border_width_all(1)
+			description_style.set_corner_radius_all(5)
+			description_style.set_content_margin_all(9)
+			details.add_theme_stylebox_override("normal", description_style)
 			details.text = FiveToolsText.blocks(attack.get("raw", {}))
 			box.add_child(details)
 			details_toggle.pressed.connect(func() -> void:
@@ -3724,6 +3731,7 @@ func _refresh_attacks(record: Dictionary) -> void:
 				call_deferred("_update_stats_column_heights")
 			)
 		summary.append(String(attack.get("name", "Attacco")))
+	_attacks_description.set_meta("creature_gui_text", summary.is_empty())
 	_attacks_description.text = "\n".join(summary) if not summary.is_empty() else "Nessun attacco disponibile."
 	# Show an empty state instead of a blank panel when there are no attacks.
 	_attacks_description.visible = summary.is_empty()
@@ -3746,9 +3754,9 @@ func _refresh_attack_values(record: Dictionary) -> void:
 		var damage_detail: String = "Danni: %s. Include i bonus di caratteristica, arma e concessioni applicabili." % damage
 		if String(attack.get("slot", "")) == "off":
 			if AttackData.offhand_bonus_attack_allowed(record):
-				damage_detail += " Attacco aggiuntivo a due armi: bonus al colpire normale; il modificatore di caratteristica ai danni si applica solo con lo stile Two-Weapon Fighting o se negativo."
+				damage_detail += "\nAttacco aggiuntivo a due armi: bonus al colpire normale; il modificatore di caratteristica ai danni si applica solo con lo stile Two-Weapon Fighting o se negativo."
 			else:
-				damage_detail += " Non soddisfa i requisiti dell'attacco aggiuntivo a due armi (normalmente due armi leggere da mischia o talento Dual Wielder). Resta possibile usarla con l'azione Attaccare."
+				damage_detail += "\nNon soddisfa i requisiti dell'attacco aggiuntivo a due armi (normalmente due armi leggere da mischia o talento Dual Wielder). Resta possibile usarla con l'azione Attaccare."
 		_set_formula("attack_damage:" + attack_id, damage, damage_detail)
 		if _attack_range_labels.has(attack_id):
 			var settings: Dictionary = AttackData.override_for(record, attack_id)
