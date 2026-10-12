@@ -367,7 +367,7 @@ func _add_tracker() -> void:
 	_manual.append({"id": "manual_%d" % Time.get_ticks_usec(),
 		"name": title, "max": int(_maximum_input.value), "max_formula": formula,
 		"origin_id": sid, "origin_name": String(source.get("name", "Senza origine")),
-		"recharge": ["manual", "turn", "short_rest", "long_rest"][_recharge_input.selected],
+		"recharge": ["manual", "turn", "short_rest", "long_rest"][clampi(_recharge_input.selected, 0, 3)],
 		"disabled": false})
 	_selected_origin = sid
 	_name_input.clear()
