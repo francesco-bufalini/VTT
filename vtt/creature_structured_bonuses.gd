@@ -180,11 +180,11 @@ static func feat_ability_choice(feat: Dictionary) -> Dictionary:
 		var pick: Dictionary = chosen as Dictionary
 		if int(pick.get("count", 1)) != 1:
 			return {}
-		var from: Variant = pick.get("from", [])
-		if not from is Array or (from as Array).is_empty():
+		var options_raw: Variant = pick.get("from", [])
+		if not options_raw is Array or (options_raw as Array).is_empty():
 			return {}
 		var offered: Array[String] = []
-		for value: Variant in from:
+		for value: Variant in options_raw:
 			var stat: String = String(value).strip_edges().to_lower()
 			if stat in ABILITIES and stat not in offered:
 				offered.append(stat)
