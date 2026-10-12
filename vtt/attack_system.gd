@@ -140,6 +140,11 @@ func handle_input(event: InputEvent) -> bool:
 
 
 func _process(delta: float) -> void:
+	if _all_reach_root != null and board_root != null:
+		_all_reach_root.visible = not (
+			board_root.has_method("is_2d_view_enabled")
+			and bool(board_root.call("is_2d_view_enabled"))
+		)
 	if _all_reaches_visible:
 		_all_reach_elapsed += delta
 		if _all_reach_elapsed >= 0.12:
@@ -439,6 +444,10 @@ func _show_range(normal_feet: float, long_feet: float = 0.0) -> void:
 	var normal_radius: float = maxf(normal_feet / 5.0 * cell_size, cell_size * 0.05)
 	var long_radius: float = long_feet / 5.0 * cell_size if long_feet > normal_feet else 0.0
 	var center: Vector3 = _attacker.global_position
+	var show_3d: bool = not (
+		board_root.has_method("is_2d_view_enabled")
+		and bool(board_root.call("is_2d_view_enabled"))
+	)
 	var unchanged: bool = (
 		is_instance_valid(_range_preview)
 		and is_instance_valid(_range_outline)
@@ -448,13 +457,13 @@ func _show_range(normal_feet: float, long_feet: float = 0.0) -> void:
 		and is_equal_approx(_range_preview_long_radius, long_radius)
 	)
 	if unchanged:
-		_range_preview.show()
-		_range_outline.show()
+		_range_preview.visible = show_3d
+		_range_outline.visible = show_3d
 		if long_radius > 0.0:
 			if is_instance_valid(_long_range_preview):
-				_long_range_preview.show()
+				_long_range_preview.visible = show_3d
 			if is_instance_valid(_long_range_outline):
-				_long_range_outline.show()
+				_long_range_outline.visible = show_3d
 		return
 
 	if not is_instance_valid(_range_preview):
@@ -469,12 +478,12 @@ func _show_range(normal_feet: float, long_feet: float = 0.0) -> void:
 	_range_preview.material_override = _range_material(NORMAL_RANGE_COLOR, 0.032)
 	_range_preview.cast_shadow = GeometryInstance3D.SHADOW_CASTING_SETTING_OFF
 	_range_preview.global_position = center
-	_range_preview.show()
+	_range_preview.visible = show_3d
 	_range_outline.mesh = _build_range_outline_mesh(half_footprint, normal_radius, cell_size)
 	_range_outline.material_override = _range_material(NORMAL_RANGE_COLOR, 0.94)
 	_range_outline.cast_shadow = GeometryInstance3D.SHADOW_CASTING_SETTING_OFF
 	_range_outline.global_position = center
-	_range_outline.show()
+	_range_outline.visible = show_3d
 
 	if long_radius > 0.0:
 		if not is_instance_valid(_long_range_preview):
@@ -489,12 +498,12 @@ func _show_range(normal_feet: float, long_feet: float = 0.0) -> void:
 		_long_range_preview.material_override = _range_material(LONG_RANGE_COLOR, 0.020)
 		_long_range_preview.cast_shadow = GeometryInstance3D.SHADOW_CASTING_SETTING_OFF
 		_long_range_preview.global_position = center
-		_long_range_preview.show()
+		_long_range_preview.visible = show_3d
 		_long_range_outline.mesh = _build_range_outline_mesh(half_footprint, long_radius, cell_size)
 		_long_range_outline.material_override = _range_material(LONG_RANGE_COLOR, 0.90)
 		_long_range_outline.cast_shadow = GeometryInstance3D.SHADOW_CASTING_SETTING_OFF
 		_long_range_outline.global_position = center
-		_long_range_outline.show()
+		_long_range_outline.visible = show_3d
 	else:
 		if is_instance_valid(_long_range_preview):
 			_long_range_preview.hide()
