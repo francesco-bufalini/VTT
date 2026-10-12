@@ -156,6 +156,26 @@ func _run() -> void:
 	if all_spheres != 2:
 		_fail("global reach did not create concentric normal and long 3D wire spheres")
 		return
+	# Without a long-range weapon, a creature still gets one hollow 3D
+	# reach sphere, not the old tinted solid SphereMesh.
+	attacker.set_meta("active_weapon_long_range_feet", 0.0)
+	attack.call("_refresh_all_reach_spheres", true)
+	var single_reach_spheres: int = 0
+	for child: Node in all_reach_root.get_children():
+		# Previous shells are queued for deletion when rebuilding; only new
+		# nodes are not pending deletion.
+		if child.is_queued_for_deletion():
+			continue
+		var reach_mesh: ArrayMesh = (child as MeshInstance3D).mesh as ArrayMesh
+		if reach_mesh == null or reach_mesh.surface_get_primitive_type(0) != Mesh.PRIMITIVE_LINES:
+			_fail("single-range creature reach must also be a hollow sphere")
+			return
+		single_reach_spheres += 1
+	if single_reach_spheres != 2:
+		_fail("single-range creature must have one sphere with an equator")
+		return
+	attacker.set_meta("active_weapon_long_range_feet", 320.0)
+	attack.call("_refresh_all_reach_spheres", true)
 	attack.call("_hide_range")
 	if normal_mesh.visible or long_mesh.visible or normal_ring.visible or long_ring.visible:
 		_fail("cancelling targeting left range visuals on the map")
