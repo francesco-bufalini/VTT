@@ -55,7 +55,19 @@ func run() -> void:
 	stowed_rapier["equipped_slots"] = []
 	assert(not ItemRules.has_equipped_weapon([stowed_rapier, shield]),
 		"Owning a weapon without equipping it does not hide fallback attacks")
-	assert(ItemRules.has_equipped_weapon([rapier, shield]), "An equipped melee weapon hides fallback attacks")
+	assert(ItemRules.has_equipped_weapon([rapier, shield]), "An equipped melee weapon is detected even when fallback attacks stay selectable")
+	var fallback_with_weapon: Dictionary = fallback_record.duplicate(true)
+	fallback_with_weapon["inventory"] = [rapier, shield]
+	fallback_with_weapon["equipped_attack_id"] = "unarmed"
+	assert(AttackData.active_attack(fallback_with_weapon).get("id", "") == "unarmed",
+		"Selecting an unarmed attack must work even while holding a weapon")
+	fallback_with_weapon["equipped_attack_id"] = "improvised"
+	assert(AttackData.active_attack(fallback_with_weapon).get("id", "") == "improvised",
+		"Improvised weapons remain selectable even while a weapon is equipped")
+	fallback_with_weapon["kind"] = "monster"
+	assert(AttackData.definitions(fallback_with_weapon).all(func(attack: Dictionary) -> bool:
+		return String(attack.get("id", "")) not in ["unarmed", "improvised"]),
+		"Bestiary creatures must not receive the player-only fallback attacks")
 	var offhand_rapier := rapier.duplicate(true)
 	offhand_rapier["equipped_slots"] = ["off"]
 	assert(ItemRules.has_equipped_weapon([offhand_rapier]), "An offhand weapon counts too")
