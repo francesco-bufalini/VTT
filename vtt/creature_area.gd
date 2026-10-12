@@ -899,9 +899,9 @@ func _build_ui() -> void:
 		speed_grid.add_child(value_label)
 		_special_speed_labels[mode] = value_label
 		_install_formula("speed:" + mode, value_label, [], [])
-		var spacer := Control.new()
-		spacer.custom_minimum_size.x = 69
-		speed_grid.add_child(spacer)
+		var speed_spacer := Control.new()
+		speed_spacer.custom_minimum_size.x = 69
+		speed_grid.add_child(speed_spacer)
 	var jumps_heading := Label.new()
 	jumps_heading.text = "SALTI · DISTANZE MASSIME"
 	jumps_heading.add_theme_font_size_override("font_size", 14)
