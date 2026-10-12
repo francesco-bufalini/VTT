@@ -17,6 +17,21 @@ static func for_creature(record: Dictionary) -> Array[Dictionary]:
 	return result
 
 
+# Return a new spent-use map for a recovery event. A long rest also recovers
+# resources which recharge on a short rest. Manual and d6 trackers stay intact.
+# Callers choose when a rest occurs; merely opening a sheet never resets uses.
+static func spent_after_recovery(record: Dictionary, event: String) -> Dictionary:
+	var saved: Variant = record.get("resource_tracker_spent", {})
+	var spent: Dictionary = (saved as Dictionary).duplicate(true) if saved is Dictionary else {}
+	if event not in ["short_rest", "long_rest", "turn"]:
+		return spent
+	for tracker: Dictionary in for_creature(record):
+		var mode: String = String(tracker.get("recharge", "manual"))
+		if mode == event or (event == "long_rest" and mode == "short_rest"):
+			spent.erase(String(tracker.get("id", "")))
+	return spent
+
+
 # Keep machine-derived counters, but allow additional user-defined resources.
 # Their current uses remain in resource_tracker_spent, keyed by stable ID.
 static func _append_saved_trackers(record: Dictionary, output: Array[Dictionary]) -> void:
