@@ -15,17 +15,32 @@ const SPELL_PICKER_ID := "__choose_spell__"
 static func available(record: Dictionary) -> Array[Dictionary]:
 	var result: Array[Dictionary] = [{"id": "", "name": "Senza origine", "group": ""}]
 	var seen: Dictionary = {"": true}
+	# Saved origins and bonus sources are ordered before live traits. Preserve
+	# their state, but hydrate their presentation data from the actual feature:
+	# otherwise several ASI levels all appear as "Tratto · Ability Score Improvement".
+	var trait_sources: Array[Dictionary] = Rules.trait_origins(record)
+	var trait_by_id: Dictionary = {}
+	for trait_source: Dictionary in trait_sources:
+		trait_by_id[String(trait_source.get("id", ""))] = trait_source
 	var candidates: Array[Dictionary] = []
 	candidates.append_array(Rules.origins(record))
 	candidates.append_array(Rules.candidate_sources(record))
 	candidates.append_array(Bonuses.available_origins(record))
-	candidates.append_array(Rules.trait_origins(record))
+	candidates.append_array(trait_sources)
 	for source: Dictionary in candidates:
 		var sid: String = String(source.get("id", ""))
 		if sid.is_empty() or seen.has(sid):
 			continue
 		seen[sid] = true
-		result.append(source.duplicate(true))
+		var option: Dictionary = source.duplicate(true)
+		if trait_by_id.has(sid):
+			var real_feature: Dictionary = trait_by_id[sid]
+			for field: String in [
+				"origin", "origin_key", "class_name", "class_source",
+				"level", "book", "category"
+			]:
+				option[field] = real_feature.get(field)
+		result.append(option)
 	for owned: Variant in record.get("inventory", []):
 		if not owned is Dictionary:
 			continue
@@ -48,8 +63,9 @@ static func available(record: Dictionary) -> Array[Dictionary]:
 	return result
 
 
-# Only presentation changes: repeated feature names retain independent IDs,
-# switches, grants and saved state.
+# Display-only identifiers: preserve the original origin IDs and grant state.
+# Real feature context must take priority over saved labels, which often contain
+# nothing beyond the repeated trait name.
 static func display_labels(sources: Array[Dictionary], record: Dictionary = {}) -> Dictionary:
 	var labels: Dictionary = {}
 	var by_name: Dictionary = {}
@@ -64,7 +80,7 @@ static func display_labels(sources: Array[Dictionary], record: Dictionary = {}) 
 		if sid not in ids:
 			ids.append(sid)
 	var duplicates: Dictionary = {}
-	var need_features := false
+	var need_feature_fallback: bool = false
 	for normalized: String in by_name.keys():
 		var ids: Array = by_name[normalized]
 		if ids.size() <= 1:
@@ -72,32 +88,53 @@ static func display_labels(sources: Array[Dictionary], record: Dictionary = {}) 
 		for raw_id: Variant in ids:
 			var sid: String = String(raw_id)
 			duplicates[sid] = true
-			need_features = need_features or sid.begins_with("feature:")
-	if duplicates.is_empty():
-		return labels
+	# Repeated ASI features should *always* show the class and acquisition
+	# level, even if just one of their occurrences was loaded by this picker.
+	for source: Dictionary in sources:
+		var sid: String = String(source.get("id", ""))
+		if sid.begins_with("feature:") and "ability score improvement" in String(source.get("name", "")).to_lower():
+			duplicates[sid] = true
+	for source: Dictionary in sources:
+		var sid: String = String(source.get("id", ""))
+		if not duplicates.has(sid) or not sid.begins_with("feature:"):
+			continue
+		if String(source.get("class_name", "")).is_empty() and String(source.get("origin", "")).is_empty():
+			need_feature_fallback = true
+			break
 	var feature_details: Dictionary = {}
-	if need_features and not record.is_empty():
-		var traits: Script = load("res://vtt/creature_traits_tab.gd") as Script
-		if traits != null:
-			for feature: Dictionary in traits.call("collect_features", record):
-				feature_details["feature:" + String(feature.get("key", ""))] = feature
+	if need_feature_fallback and not record.is_empty():
+		for feature: Dictionary in Traits.collect_features(record):
+			feature_details["feature:" + String(feature.get("key", ""))] = feature
 	for source: Dictionary in sources:
 		var sid: String = String(source.get("id", ""))
 		if not duplicates.has(sid):
 			continue
 		var detail: Dictionary = feature_details.get(sid, source)
-		var class_label: String = String(detail.get("class_name", "")).strip_edges()
-		var context: String = class_label
+		var class_name: String = String(detail.get("class_name", "")).strip_edges()
+		var level: int = int(detail.get("level", 0))
+		var context: String = class_name
 		if context.is_empty():
 			context = String(detail.get("origin", "")).strip_edges()
-		var level: int = int(detail.get("level", 0))
-		if level > 0 and (not class_label.is_empty() or String(detail.get("category", "")) == "classi"):
+		if level > 0 and (not class_name.is_empty() or String(detail.get("category", "")) == "classi"):
 			context += (" · " if not context.is_empty() else "") + "livello %d" % level
-		if context.is_empty():
-			context = String(source.get("source", "")).strip_edges()
+		var book: String = String(detail.get("class_source", "")).strip_edges()
+		if book.is_empty():
+			book = String(detail.get("book", "")).strip_edges()
+		if book.is_empty():
+			book = String(detail.get("source", "")).strip_edges()
+		if not book.is_empty() and (not context.is_empty() or sid.begins_with("feature:")):
+			context += (" · " if not context.is_empty() else "") + book
 		if not context.is_empty():
-			labels[sid] = String(labels[sid]) + " · " + context
-	# Identical contexts still get stable numbering, rather than raw source IDs.
+			var plain_label: String = String(labels[sid])
+			# Prefix context before the repeated name: long OptionButton popups
+			# can clip the right edge, so an ASI level must remain immediately
+			# visible rather than being hidden past the end of the menu.
+			if sid.begins_with("feature:") and plain_label.begins_with("Tratto · "):
+				labels[sid] = "Tratto · " + context + " — " + plain_label.trim_prefix("Tratto · ")
+			else:
+				labels[sid] = plain_label + " · " + context
+	# Some homebrew/legacy features have neither structured class nor level.
+	# Give those stable sequence numbers, never an exposed internal node ID.
 	var collisions: Dictionary = {}
 	for sid: String in duplicates.keys():
 		var key: String = String(labels[sid]).to_lower()
@@ -143,8 +180,11 @@ static func populate(picker: OptionButton, record: Dictionary, preferred: String
 			available_sources.append(temporary)
 	var labels: Dictionary = display_labels(available_sources, record)
 	for source: Dictionary in available_sources:
-		picker.add_item(String(labels.get(String(source.get("id", "")), source.get("name", ""))))
+		var sid: String = String(source.get("id", ""))
+		var label: String = String(labels.get(sid, source.get("name", "")))
+		picker.add_item(label)
 		picker.set_item_metadata(picker.item_count - 1, source)
+		picker.set_item_tooltip(picker.item_count - 1, label)
 	# Incantesimo is the first action, not the default assigned origin.
 	var select_index := 1 if picker.item_count > 1 else 0
 	for i: int in range(picker.item_count):

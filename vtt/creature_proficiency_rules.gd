@@ -909,7 +909,16 @@ static func trait_origins(record: Dictionary, only_feat_granters: bool = false) 
 		result.append({"id": sid, "name": "Tratto · " + String(feature.get("name", "")),
 			"group": "feature", "feats": feats,
 			"disabled": bool(saved.get(sid, false)), "automatic": true,
-			"origin_key": String(feature.get("origin_key", ""))})
+			"origin_key": String(feature.get("origin_key", "")),
+			# The selected class and *feature level* identify each occurrence
+			# of repeatable traits like Ability Score Improvement (4/8/12...).
+			# These fields are UI metadata; the stable ID and grants stay intact.
+			"origin": String(feature.get("origin", "")),
+			"class_name": String(feature.get("class_name", "")),
+			"class_source": String(feature.get("class_source", "")),
+			"level": int(feature.get("level", 0)),
+			"book": String(feature.get("book", "")),
+			"category": String(feature.get("category", ""))})
 	return result
 
 
