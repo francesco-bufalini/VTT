@@ -41,6 +41,7 @@ func setup(on_change: Callable) -> void:
 	var left := _column(columns, "Origini dei tracker", 190)
 	var right := _column(columns, "Risorse e utilizzi", 260)
 	var origin_scroll := ScrollContainer.new()
+	origin_scroll.mouse_force_pass_scroll_events = false
 	origin_scroll.custom_minimum_size.y = 245
 	origin_scroll.horizontal_scroll_mode = ScrollContainer.SCROLL_MODE_DISABLED
 	left.add_child(origin_scroll)
@@ -49,6 +50,7 @@ func setup(on_change: Callable) -> void:
 	_origin_cards.add_theme_constant_override("separation", 5)
 	origin_scroll.add_child(_origin_cards)
 	var tracker_scroll := ScrollContainer.new()
+	tracker_scroll.mouse_force_pass_scroll_events = false
 	tracker_scroll.custom_minimum_size.y = 245
 	tracker_scroll.horizontal_scroll_mode = ScrollContainer.SCROLL_MODE_DISABLED
 	right.add_child(tracker_scroll)
