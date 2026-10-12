@@ -105,11 +105,13 @@ func _build_ui() -> void:
 	_filter.text_changed.connect(func(_query: String) -> void: _refresh())
 	left.add_child(_filter)
 	_list = ItemList.new()
+	_list.mouse_force_pass_scroll_events = false
 	_list.size_flags_vertical = Control.SIZE_EXPAND_FILL
 	_list.item_selected.connect(_show_selected)
 	_list.item_activated.connect(_show_selected)
 	left.add_child(_list)
 	_details = RichTextLabel.new()
+	_details.mouse_force_pass_scroll_events = false
 	FiveToolsText.style(_details)
 	_details.size_flags_horizontal = Control.SIZE_EXPAND_FILL
 	_details.size_flags_vertical = Control.SIZE_EXPAND_FILL
