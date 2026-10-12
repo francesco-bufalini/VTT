@@ -1513,6 +1513,8 @@ func _refresh_creature_language() -> void:
 		return
 	if _inventory_ui != null and _inventory_ui.has_method("set_gui_language"):
 		_inventory_ui.call("set_gui_language", _creature_language)
+	if _spellcasting_ui != null and _spellcasting_ui.has_method("set_gui_language"):
+		_spellcasting_ui.call("set_gui_language", _creature_language)
 	CreatureLocale.apply(_panel, _creature_language)
 	# Dialogs are not all descendants of the archive panel.
 	for dialog: Node in [
@@ -1522,6 +1524,10 @@ func _refresh_creature_language() -> void:
 	]:
 		if dialog != null and is_instance_valid(dialog):
 			CreatureLocale.apply(dialog, _creature_language)
+	# Also localize transient creature dialogs created after the panel initialized.
+	for node: Node in get_children():
+		if node is Window and bool(node.get_meta("creature_gui_dialog", false)):
+			CreatureLocale.apply(node, _creature_language)
 
 
 func _on_creature_context_action(action: int) -> void:
@@ -5506,6 +5512,7 @@ func _import() -> void:
 func _set_status(message: String) -> void:
 	if _status != null:
 		_status.text = message
+		CreatureLocale.apply(_status, _creature_language)
 
 
 func _refresh_conditions(record: Dictionary) -> void:
@@ -5601,6 +5608,7 @@ func _open_add_active_spell() -> void:
 	if record.is_empty():
 		return
 	var dialog := ConfirmationDialog.new()
+	dialog.set_meta("creature_gui_dialog", true)
 	dialog.title = "Aggiungi un incantesimo attivo"
 	dialog.ok_button_text = "Applica"
 	add_child(dialog)
@@ -5610,6 +5618,8 @@ func _open_add_active_spell() -> void:
 	search.placeholder_text = "Cerca un incantesimo per nome…"
 	content.add_child(search)
 	var picker := OptionButton.new()
+	# Entries are catalog spell names, never translate their stored names.
+	picker.set_meta("catalog_category", "spells")
 	picker.custom_minimum_size.x = 430
 	picker.fit_to_longest_item = false
 	content.add_child(picker)
@@ -5633,9 +5643,11 @@ func _open_add_active_spell() -> void:
 				picker.set_item_metadata(picker.item_count - 1, spell_id)
 		if picker.item_count > 0:
 			picker.select(0)
-		count_hint.text = "%d risultati%s" % [matches, " (mostrati i primi 120; affina la ricerca)" if matches > 120 else ""]
+		count_hint.text = (CreatureLocale.text_for("%d risultati", _creature_language) % matches
+			+ (CreatureLocale.text_for(" (mostrati i primi 120; affina la ricerca)", _creature_language) if matches > 120 else ""))
 		dialog.get_ok_button().disabled = picker.item_count == 0
 	fill.call("")
+	CreatureLocale.apply(dialog, _creature_language)
 	search.text_changed.connect(func(value: String) -> void: fill.call(value))
 	dialog.confirmed.connect(func() -> void:
 		if picker.selected >= 0:
