@@ -1687,6 +1687,12 @@ func show_held_spell_aoe(
 	var root: Node3D = Node3D.new()
 	root.name = "HeldSpellAoE"
 	add_child(root)
+	# Store world geometry for the top-down CanvasLayer. Screen-space picking
+	# can dismiss this area even when a creature or scenery occludes its 3D body.
+	root.set_meta("spell_overlay_2d", {
+		"start": start, "end": end, "shape": shape,
+		"style": style, "width": line_width_world
+	})
 
 	var mesh: MeshInstance3D = MeshInstance3D.new()
 	mesh.name = "Visual"
