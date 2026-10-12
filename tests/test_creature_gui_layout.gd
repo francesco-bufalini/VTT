@@ -49,8 +49,10 @@ func run() -> void:
 	var area: Node = load("res://vtt/creature_area.gd").new()
 	board.add_child(area)
 	area.setup(board)
-	assert(_assert_scroll_isolated(area) >= 10,
+	# The creature panel is placed under the board UI CanvasLayer, not under area.
+	assert(_assert_scroll_isolated(area._panel) >= 10,
 		"Creature GUI should isolate its lists, scroll panels and multiline editors")
+	_assert_scroll_isolated(area)
 	area._archive.setup(campaign)
 	for label: String in ["Alpha", "Beta", "Gamma"]:
 		var record: Dictionary = area._archive.create_character()
