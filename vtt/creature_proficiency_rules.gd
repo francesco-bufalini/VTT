@@ -70,7 +70,8 @@ static func language_type(key: String) -> String:
 				return group
 	for item: Dictionary in Catalog.entries("languages"):
 		if normalized_key(String(item.get("name", ""))) == normalized:
-			return String(item.get("type", "other")).to_lower()
+			var kind: String = String(item.get("type", "")).to_lower()
+			return kind if not kind.is_empty() else "other"
 	return ""
 
 
