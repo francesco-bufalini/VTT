@@ -21,6 +21,7 @@ const CONDITIONS := [
 ]
 
 var _record: Dictionary = {}
+var _cached_sources: Array[Dictionary] = []
 var _changed: Callable
 var _damage_buttons: Dictionary = {}
 var _condition_buttons: Dictionary = {}
@@ -68,14 +69,18 @@ static func _sources(record: Dictionary) -> Array[Dictionary]:
 	return sources
 
 
-static func base_rank(record: Dictionary, damage_type: String) -> int:
+static func _base_rank_from_sources(sources: Array[Dictionary], damage_type: String) -> int:
 	var rank := 0
-	for source: Dictionary in _sources(record):
+	for source: Dictionary in sources:
 		if damage_type in _direct_type_list(source.get("resist", [])):
 			rank = maxi(rank, 1)
 		if damage_type in _direct_type_list(source.get("immune", [])):
 			rank = 2
 	return rank
+
+
+static func base_rank(record: Dictionary, damage_type: String) -> int:
+	return _base_rank_from_sources(_sources(record), damage_type)
 
 
 static func rank(record: Dictionary, damage_type: String) -> int:
@@ -85,11 +90,15 @@ static func rank(record: Dictionary, damage_type: String) -> int:
 	return base_rank(record, damage_type)
 
 
-static func base_condition_immune(record: Dictionary, condition: String) -> bool:
-	for source: Dictionary in _sources(record):
+static func _base_condition_from_sources(sources: Array[Dictionary], condition: String) -> bool:
+	for source: Dictionary in sources:
 		if condition in _direct_type_list(source.get("conditionImmune", [])):
 			return true
 	return false
+
+
+static func base_condition_immune(record: Dictionary, condition: String) -> bool:
+	return _base_condition_from_sources(_sources(record), condition)
 
 
 static func condition_immune(record: Dictionary, condition: String) -> bool:
@@ -139,6 +148,7 @@ func setup(on_change: Callable) -> void:
 
 func load_record(record: Dictionary) -> void:
 	_record = record.duplicate(true)
+	_cached_sources = _sources(_record)
 	_damage_buttons.clear()
 	_condition_buttons.clear()
 	if _damage_rows == null:
@@ -148,7 +158,7 @@ func load_record(record: Dictionary) -> void:
 			root.remove_child(node)
 			node.queue_free()
 	var warnings: Array[String] = []
-	for source: Dictionary in _sources(_record):
+	for source: Dictionary in _cached_sources:
 		for key: String in ["resist", "immune", "conditionImmune"]:
 			for item: Variant in source.get(key, []):
 				if item is Dictionary:
@@ -157,7 +167,9 @@ func load_record(record: Dictionary) -> void:
 		+ "; ".join(warnings)) if not warnings.is_empty() else "Valori iniziali derivati da specie o bestiario; le modifiche sono salvate nella creatura."
 	for item: Dictionary in DAMAGE_TYPES:
 		var key: String = String(item["key"])
-		var level: int = rank(_record, key)
+		var baseline: int = _base_rank_from_sources(_cached_sources, key)
+		var overrides: Dictionary = _record.get("damage_defense_overrides", {})
+		var level: int = clampi(int(overrides.get(key, baseline)), 0, 2)
 		var name := Label.new()
 		name.text = String(item["label"])
 		name.custom_minimum_size.x = 110
@@ -181,7 +193,9 @@ func load_record(record: Dictionary) -> void:
 		_condition_rows.add_child(name)
 		var immune := CheckButton.new()
 		immune.text = "Immune"
-		immune.set_pressed_no_signal(condition_immune(_record, condition))
+		var condition_overrides: Dictionary = _record.get("condition_immunity_overrides", {})
+		immune.set_pressed_no_signal(bool(condition_overrides.get(condition,
+			_base_condition_from_sources(_cached_sources, condition))))
 		immune.toggled.connect(_on_condition_changed.bind(condition))
 		_condition_rows.add_child(immune)
 		_condition_buttons[condition] = immune
