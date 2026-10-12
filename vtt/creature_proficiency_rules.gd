@@ -1063,6 +1063,9 @@ static func reconcile_origin_dependents(record: Dictionary) -> void:
 			for raw: Variant in record.get(field, []):
 				if raw is Dictionary:
 					used_origins[String((raw as Dictionary).get("origin_id", ""))] = true
+		for feature: Dictionary in trait_origins(record):
+			if used_origins.has(String(feature.get("id", ""))):
+				used_origins[String(feature.get("origin_key", ""))] = true
 		var active_origins: Array = []
 		for origin: Dictionary in kept_origins:
 			if String(origin.get("group", "")) == "spell" and not used_origins.has(String(origin.get("id", ""))):
