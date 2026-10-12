@@ -26,11 +26,11 @@ func _active() -> bool:
 		board != null and is_instance_valid(board)
 		and attack != null and is_instance_valid(attack)
 		and camera != null and is_instance_valid(camera)
-		and board.has_method("is_2d_view_enabled")
-		and bool(board.call("is_2d_view_enabled"))
 		and (
 			bool(attack.call("is_targeting"))
-			or bool(attack.call("are_all_reaches_visible"))
+			or (board.has_method("is_2d_view_enabled")
+				and bool(board.call("is_2d_view_enabled"))
+				and bool(attack.call("are_all_reaches_visible")))
 		)
 	)
 
@@ -87,11 +87,64 @@ func _draw_legend(normal_feet: float, long_feet: float) -> void:
 		draw_string(font, pos + Vector2(25.0, 51.0), outer_text, HORIZONTAL_ALIGNMENT_LEFT, -1.0, 15, Color.WHITE)
 
 
+func _target_label(token: Node3D) -> String:
+	# Reuse the spell HUD's canonical name resolution for remote/shared tokens.
+	var other: Node = board.get_node_or_null("UI/SpellTargetOverlay2D")
+	if other != null and other.has_method("_target_display_name"):
+		return String(other.call("_target_display_name", token))
+	if token.has_method("get_display_name"):
+		var display: String = String(token.call("get_display_name")).strip_edges()
+		if not display.is_empty() and display.to_lower() != "token":
+			return display
+	return String(token.get_meta("master_creature_name", token.get_meta("player_character_name", token.name)))
+
+
+func _draw_target_panel() -> void:
+	var available: Array[CharacterBody3D] = attack.call("preview_targets_in_range")
+	var selected: Array[CharacterBody3D] = attack.call("preview_selected_targets")
+	var font: Font = ThemeDB.fallback_font
+	var width: float = 270.0
+	var y: float = 156.0
+	var x: float = maxf(8.0, size.x - width - 18.0)
+	for section: Dictionary in [
+		{"heading": "Selezionati (anteprima)", "tokens": selected},
+		{"heading": "A gittata", "tokens": available}
+	]:
+		var tokens: Array = section["tokens"]
+		var visible_lines: int = mini(tokens.size(), 10)
+		var height: float = 59.0 + visible_lines * 22.0 + (22.0 if tokens.size() > visible_lines else 0.0)
+		draw_rect(Rect2(x, y, width, height), Color(0.025, 0.04, 0.07, 0.88), true)
+		draw_rect(Rect2(x, y, width, height), Color(0.38, 0.68, 1.0, 0.85), false, 1.4)
+		draw_string(font, Vector2(x + 10, y + 23), "%s (%d)" % [section["heading"], tokens.size()], HORIZONTAL_ALIGNMENT_LEFT, width - 15, 15, Color(0.73, 0.88, 1.0))
+		if tokens.is_empty():
+			draw_string(font, Vector2(x + 10, y + 47), "Nessuna creatura", HORIZONTAL_ALIGNMENT_LEFT, width - 18, 14, Color.WHITE)
+		for i: int in range(visible_lines):
+			var token: Node3D = tokens[i]
+			if token == null or not is_instance_valid(token):
+				continue
+			var label: String = _target_label(token)
+			var note: String = ""
+			if section["heading"] == "A gittata":
+				var normal: float = float(attack.get("_range_normal_feet"))
+				var long_limit: float = float(attack.get("_range_long_feet"))
+				if long_limit > normal and float(attack.call("_distance_feet", attack.get("_attacker"), token)) > normal + 0.001:
+					note = " · lunga"
+			draw_string(font, Vector2(x + 10, y + 48 + i * 22), "• " + label + note, HORIZONTAL_ALIGNMENT_LEFT, width - 18, 14, Color.WHITE)
+		if tokens.size() > visible_lines:
+			draw_string(font, Vector2(x + 10, y + 48 + visible_lines * 22), "…", HORIZONTAL_ALIGNMENT_LEFT, width - 18, 14, Color.WHITE)
+		y += height + 8.0
+
+
 func _draw() -> void:
 	if not _active():
 		return
 	if not bool(attack.call("is_targeting")):
 		_draw_all_reaches()
+		return
+	var show_2d: bool = board.has_method("is_2d_view_enabled") and bool(board.call("is_2d_view_enabled"))
+	if bool(attack.get("_preview_only")):
+		_draw_target_panel()
+	if not show_2d:
 		return
 	var caster: CharacterBody3D = attack.get("_attacker") as CharacterBody3D
 	if caster == null or not is_instance_valid(caster):
