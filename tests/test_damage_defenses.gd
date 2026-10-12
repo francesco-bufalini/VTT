@@ -55,7 +55,8 @@ func run() -> void:
 		"Auto-granting traits must appear in the left-hand origin list")
 	editor._select_origin(trait_source)
 	var fire_card: PanelContainer = editor._damage_cards["fire"]
-	assert(fire_card.get_theme_stylebox("panel").border_width_left == 2,
+	var fire_style: StyleBoxFlat = fire_card.get_theme_stylebox("panel") as StyleBoxFlat
+	assert(fire_style != null and fire_style.border_width_left == 2,
 		"Selecting a trait must highlight the damage defense it grants")
 	editor._select_origin("__manual__")
 	var cold: Dictionary = editor._damage_buttons["cold"]
