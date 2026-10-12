@@ -54,6 +54,7 @@ var _spell_range_equator: MeshInstance3D
 var _spell_range_active: bool = false
 var _spell_range_center: Vector3 = Vector3.INF
 var _spell_range_radius: float = -1.0
+var _spell_range_footprint: float = -1.0
 var _suppress_undo_record: bool = false
 var _wall_preview_root: Node3D
 var _wall_preview_points: Array[Vector3] = []
@@ -1632,9 +1633,11 @@ func clear_spell_fixed_previews() -> void:
 
 func show_spell_range_preview(
 	center: Vector3,
-	radius_world: float
+	radius_world: float,
+	half_footprint_world: float = -1.0
 ) -> void:
 	var safe_radius: float = maxf(radius_world, cell_size * 0.5)
+	var footprint: float = half_footprint_world if half_footprint_world >= 0.0 else cell_size * 0.5
 	_spell_range_active = true
 	var show_3d := true
 	var board: Node = get_parent()
@@ -1645,6 +1648,7 @@ func show_spell_range_preview(
 		and is_instance_valid(_spell_range_equator)
 		and _spell_range_center.is_equal_approx(center)
 		and is_equal_approx(_spell_range_radius, safe_radius)
+		and is_equal_approx(_spell_range_footprint, footprint)
 	):
 		_spell_range_preview.visible = show_3d
 		_spell_range_equator.visible = show_3d
@@ -1661,7 +1665,6 @@ func show_spell_range_preview(
 
 	# Same hollow 3D wire sphere and equator used by creature reach;
 	# the radius is the spell reach, not the AoE shape or diameter.
-	var footprint: float = cell_size * 0.5
 	_spell_range_preview.mesh = RangeGeometry.sphere_wire_mesh(safe_radius + footprint)
 	_spell_range_equator.mesh = RangeGeometry.sphere_equator_mesh(safe_radius + footprint)
 	var material := StandardMaterial3D.new()
@@ -1681,6 +1684,7 @@ func show_spell_range_preview(
 	_spell_range_equator.global_position = center
 	_spell_range_center = center
 	_spell_range_radius = safe_radius
+	_spell_range_footprint = footprint
 	_spell_range_preview.visible = show_3d
 	_spell_range_equator.visible = show_3d
 
