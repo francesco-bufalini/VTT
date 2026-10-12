@@ -1,6 +1,7 @@
 extends SceneTree
 
 const InventoryTab = preload("res://vtt/creature_inventory_tab.gd")
+const Locale = preload("res://vtt/creature_gui_locale.gd")
 
 
 func _initialize() -> void:
@@ -46,6 +47,19 @@ func _run() -> void:
 	# Test fixture replaces the catalog after setup; rebuild its visible results.
 	tab._filter_catalog()
 	assert(tab._filtered.size() == 3 and tab._catalog_count.text == "Risultati: 3")
+	# Reproduction of the regression: localized labels used to make the
+	# Italian-only category comparison reject every item.
+	Locale.apply(tab, "en")
+	assert(tab._category_filter.get_item_text(0) == "All")
+	tab._filter_catalog()
+	assert(tab._filtered.size() == 3 and tab._catalog_count.text == "Risultati: 3",
+		"Localized All filter must still include the entire 2014 catalog")
+	tab._category_filter.select(1)
+	tab._filter_catalog()
+	assert(tab._filtered.size() == 3, "Localized Weapons category must keep matching by stable ID")
+	Locale.apply(tab, "it")
+	tab._category_filter.select(0)
+	tab._filter_catalog()
 	# Broad substring search previously tried to instantiate hundreds of
 	# rich tooltip descriptions and could crash on weapon property variants.
 	tab._search.text = "la"
@@ -87,7 +101,48 @@ func _run() -> void:
 	tab.load_record({"rules_version": "2024", "inventory": events.back()})
 	assert(tab._filtered.size() == 4 and _choice_index(tab._source_filter, "XPHB") >= 0,
 		"2024 entries remain available for 2024 characters")
+	# The selected generic item's real checkbox and attunement control
+	# must persist independently. A visible checkbox is provided instead
+	# of relying solely on hitting a tiny ItemList icon.
+	var amulet := {
+		"id": "magic_item:attunement_test", "name": "Amulet of Tests", "source": "DMG",
+		"quantity": 1, "type": "G", "reqAttune": "by a spellcaster"
+	}
+	tab._catalog.append(amulet)
+	tab._inventory.append({
+		"id": amulet.id, "name": amulet.name, "source": amulet.source,
+		"quantity": 1, "type": "G", "reqAttune": "by a spellcaster",
+		"equipped": false, "attuned": false, "active": true, "equipped_slots": []
+	})
+	var amulet_index: int = tab._inventory.size() - 1
+	tab._refresh_inventory(amulet_index)
+	assert(tab._generic_equip.visible and not tab._generic_equip.disabled
+		and not tab._generic_equip.button_pressed,
+		"Selected generic items need a usable equip checkbox")
+	assert(not tab._attuned.disabled and not tab._attuned.button_pressed,
+		"Items with structured reqAttune must allow attunement")
+	tab._set_generic_equipment(true)
+	assert(bool(events.back()[amulet_index].get("equipped", false))
+		and tab._generic_equip.button_pressed,
+		"Equipment checkbox must save and immediately reflect its new value")
+	tab._set_attunement(true)
+	assert(bool(events.back()[amulet_index].get("attuned", false))
+		and tab._attuned.button_pressed,
+		"Attunement checkbox must save and stay checked")
+	tab.load_record({"rules_version": "2024", "inventory": events.back()})
+	tab._inventory_list.select(amulet_index)
+	tab._on_inventory_selected(amulet_index)
+	assert(tab._generic_equip.button_pressed and tab._attuned.button_pressed,
+		"Equipment and attunement must survive reloading a creature")
+	tab._set_generic_equipment(false)
+	assert(not bool(events.back()[amulet_index].get("equipped", true))
+		and bool(events.back()[amulet_index].get("attuned", false)),
+		"Stowing an item must not silently remove its attunement")
+	tab._inventory_list.select(0)
+	tab._on_inventory_selected(0)
+	assert(tab._attuned.disabled and not tab._generic_equip.disabled,
+		"Ordinary items can be equipped but do not request attunement")
 	tab.queue_free()
 	await process_frame
-	print("PASS: inventory catalog search toggle, rarity/source/weapon filters, preview and editions")
+	print("PASS: locale-safe catalog search, selectable item equip, attunement and persistence")
 	quit()
