@@ -870,42 +870,48 @@ func _build_ui() -> void:
 	movement_heading.add_theme_font_size_override("font_size", 15)
 	movement_heading.add_theme_color_override("font_color", Color(0.74, 0.90, 0.77))
 	movement_box.add_child(movement_heading)
-	# Every speed uses the same three-column grid, including walking.
-	# Reserve the third column for the editable walking base so the
-	# four additional values align vertically with walking's total.
+	# Equal-width columns keep all five speed values aligned, regardless of
+	# which modes a creature actually possesses.
 	var speed_grid := GridContainer.new()
-	speed_grid.columns = 3
-	speed_grid.add_theme_constant_override("h_separation", 12)
+	speed_grid.columns = 5
+	speed_grid.add_theme_constant_override("h_separation", 8)
 	speed_grid.add_theme_constant_override("v_separation", 4)
 	movement_box.add_child(speed_grid)
-	_add_label(speed_grid, "Camminata (ft)")
-	_speed_effective = Label.new()
-	_speed_effective.custom_minimum_size.x = 48
-	speed_grid.add_child(_speed_effective)
-	_speed = SpinBox.new()
-	_speed.min_value = 0
-	_speed.max_value = 999
-	_speed.step = 1
-	_speed.update_on_text_changed = true
-	_speed.custom_minimum_size = Vector2(69, 36)
-	_speed.value_changed.connect(_on_speed_changed)
-	speed_grid.add_child(_speed)
-	_speed.tooltip_text = "Velocità base dalla specie o dal bestiario, modificabile"
-	_install_formula("speed", _speed_effective, [_speed], ["Base"])
-	_speed.value_changed.connect(func(_value: float) -> void: _update_speed_display())
 	_special_speed_labels.clear()
-	for mode: String in Rules.SPECIAL_SPEEDS:
-		var name: String = {"climb": "Scalata", "swim": "Nuoto",
-			"fly": "Volo", "burrow": "Scavo"}[mode]
-		_add_label(speed_grid, name + " (ft)")
-		var value_label := Label.new()
-		value_label.custom_minimum_size.x = 48
-		speed_grid.add_child(value_label)
-		_special_speed_labels[mode] = value_label
-		_install_formula("speed:" + mode, value_label, [], [])
-		var speed_spacer := Control.new()
-		speed_spacer.custom_minimum_size.x = 69
-		speed_grid.add_child(speed_spacer)
+	for mode: String in ["walk", "climb", "swim", "fly", "burrow"]:
+		var speed_cell := VBoxContainer.new()
+		speed_cell.custom_minimum_size.x = 91
+		speed_cell.size_flags_horizontal = Control.SIZE_EXPAND_FILL
+		speed_cell.add_theme_constant_override("separation", 4)
+		speed_grid.add_child(speed_cell)
+		var speed_name: String = {"walk": "Camminata", "climb": "Scalata",
+			"swim": "Nuoto", "fly": "Volo", "burrow": "Scavo"}[mode]
+		_add_label(speed_cell, speed_name + " (ft)")
+		var speed_value_row := HBoxContainer.new()
+		speed_value_row.custom_minimum_size.y = 32
+		speed_cell.add_child(speed_value_row)
+		var speed_label := Label.new()
+		speed_label.custom_minimum_size.x = 48
+		speed_value_row.add_child(speed_label)
+		if mode == "walk":
+			_speed_effective = speed_label
+			_speed = SpinBox.new()
+			_speed.min_value = 0
+			_speed.max_value = 999
+			_speed.step = 1
+			_speed.update_on_text_changed = true
+			_speed.custom_minimum_size = Vector2(78, 32)
+			_speed.value_changed.connect(_on_speed_changed)
+			speed_cell.add_child(_speed)
+			_speed.tooltip_text = "Velocità base dalla specie o dal bestiario, modificabile"
+			_install_formula("speed", _speed_effective, [_speed], ["Base"])
+			_speed.value_changed.connect(func(_value: float) -> void: _update_speed_display())
+		else:
+			_special_speed_labels[mode] = speed_label
+			_install_formula("speed:" + mode, speed_label, [], [])
+			var speed_bottom_space := Control.new()
+			speed_bottom_space.custom_minimum_size.y = 32
+			speed_cell.add_child(speed_bottom_space)
 	var jumps_heading := Label.new()
 	jumps_heading.text = "SALTI · DISTANZE MASSIME"
 	jumps_heading.add_theme_font_size_override("font_size", 14)
@@ -1074,8 +1080,8 @@ func _build_ui() -> void:
 	_attack_ability.tooltip_text = "Preferenza per armi Finesse: le armi da mischia normali usano Forza, quelle a distanza Destrezza. I valori del bestiario includono la competenza."
 	_attack_ability.item_selected.connect(_on_attack_ability_changed)
 	preference_row.add_child(_attack_ability)
-	# Three compact rows avoid wrapping a hand label separately from
-	# its selector on narrow combat columns.
+	# Both weapon selectors have one fixed row. The finesse filter is
+	# inline with the offhand selector, not on a separate row.
 	var hand_bar := GridContainer.new()
 	hand_bar.columns = 2
 	hand_bar.add_theme_constant_override("h_separation", 9)
@@ -1089,21 +1095,22 @@ func _build_ui() -> void:
 	_hand_main_picker.item_selected.connect(_on_hand_selected.bind("main"))
 	hand_bar.add_child(_hand_main_picker)
 	_add_label(hand_bar, "Mano secondaria")
+	var offhand_row := HBoxContainer.new()
+	offhand_row.add_theme_constant_override("separation", 8)
+	hand_bar.add_child(offhand_row)
 	_hand_off_picker = OptionButton.new()
 	_hand_off_picker.custom_minimum_size.x = 170
 	_hand_off_picker.clip_text = true
 	_hand_off_picker.item_selected.connect(_on_hand_selected.bind("off"))
-	hand_bar.add_child(_hand_off_picker)
-	var show_all_caption := Control.new()
-	hand_bar.add_child(show_all_caption)
+	offhand_row.add_child(_hand_off_picker)
 	_show_offhand_all = CheckButton.new()
-	_show_offhand_all.text = "Tutte le armi"
-	_show_offhand_all.tooltip_text = "Mostra anche armi senza Finesse nella mano secondaria. Il combattimento con due armi normalmente richiede armi Leggere."
-	_show_offhand_all.button_pressed = false
+	_show_offhand_all.text = "Only if finesse"
+	_show_offhand_all.tooltip_text = "Filtra la lista della mano secondaria alle armi con proprietà Accurata (Finesse). Non è una regola per l'attacco con azione bonus."
+	_show_offhand_all.button_pressed = true
 	_show_offhand_all.toggled.connect(func(_enabled: bool) -> void:
 		_refresh_equipment_pickers(_current())
 	)
-	hand_bar.add_child(_show_offhand_all)
+	offhand_row.add_child(_show_offhand_all)
 	_attack_rows = VBoxContainer.new()
 	_attack_rows.add_theme_constant_override("separation", 7)
 	combat_column.add_child(_attack_rows)
@@ -1215,9 +1222,9 @@ func _build_ui() -> void:
 	combat_column.add_child(tracker_caption)
 	_tracker_rows = VBoxContainer.new()
 	combat_column.add_child(_tracker_rows)
-	# Keep consumable resources above the attack list in combat statistics.
-	combat_column.move_child(tracker_caption, attack_header.get_index())
-	combat_column.move_child(_tracker_rows, attack_header.get_index())
+	# Resources precede AC and initiative, directly below the HP panel.
+	combat_column.move_child(tracker_caption, defense_panel.get_index())
+	combat_column.move_child(_tracker_rows, defense_panel.get_index())
 	var biography_box := _info_panel(form, "STORIA E PERSONALITÀ")
 	var biography_label := Label.new()
 	biography_label.text = "Note"
@@ -3076,7 +3083,7 @@ func _refresh_equipment_pickers(record: Dictionary) -> void:
 			if item_kind not in ["weapon", "shield"] or not ItemRules.valid_slot(entry, hand):
 				continue
 			var is_selected: bool = hand in ItemRules.slots(owned)
-			if hand == "off" and item_kind == "weapon" and not _show_offhand_all.button_pressed and not ItemRules.has_property(entry, "F") and not is_selected:
+			if hand == "off" and item_kind == "weapon" and _show_offhand_all.button_pressed and not ItemRules.has_property(entry, "F") and not is_selected:
 				continue
 			var item_name: String = String(entry.get("name", owned.get("name", "Oggetto")))
 			var grips: Array = [false]
