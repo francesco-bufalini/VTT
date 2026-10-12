@@ -8,6 +8,7 @@ const Rules = preload("res://vtt/creature_rules.gd")
 const FormulaValue = preload("res://vtt/formula_value.gd")
 const Bonuses = preload("res://vtt/creature_bonus_rules.gd")
 const DialogLayout = preload("res://vtt/dialog_layout.gd")
+const CreatureLocale = preload("res://vtt/creature_gui_locale.gd")
 
 const BOOK_VIEW_CLASS := 10
 const BOOK_VIEW_BOOK := 11
@@ -23,6 +24,7 @@ var _cast_slot_choice: OptionButton
 var _pending_cast_spell: Dictionary = {}
 var _record: Dictionary = {}
 var _loading := false
+var _gui_language := "it"
 var _catalog: Array[Dictionary] = []
 var _visible: Array[Dictionary] = []
 var _known: Array = []
@@ -870,11 +872,13 @@ func _update_spell_controls() -> void:
 	if not higher_levels.is_empty():
 		body += "\n\n" + higher_levels
 	_description.show()
-	_description.text = "%s · livello %d · %s\nGittata: %s · Componenti: %s\nDurata: %s\n\n%s" % [
-		String(spell.get("name", id)), int(spell.get("level", 0)),
-		String(spell.get("source", "")), String(spell.get("range", "—")),
-		String(spell.get("components", "—")),
-		String(spell.get("duration", "—")), body
+	# Localize only our metadata labels; 5etools spell text is unchanged.
+	_description.text = "%s · %s %d · %s\n%s%s · %s%s\n%s%s\n\n%s" % [
+		String(spell.get("name", id)), CreatureLocale.text_for("Livello", _gui_language),
+		int(spell.get("level", 0)), String(spell.get("source", "")),
+		CreatureLocale.text_for("Gittata: ", _gui_language), String(spell.get("range", "—")),
+		CreatureLocale.text_for("Componenti: ", _gui_language), String(spell.get("components", "—")),
+		CreatureLocale.text_for("Durata: ", _gui_language), String(spell.get("duration", "—")), body
 	]
 
 
@@ -1126,3 +1130,10 @@ func _publish() -> void:
 		"spell_slots_visible": _slots_visible,
 		"pact_slots_visible": _pact_visible
 	})
+
+
+func set_gui_language(language: String) -> void:
+	if language not in ["it", "en"] or _gui_language == language:
+		return
+	_gui_language = language
+	_update_spell_controls()
