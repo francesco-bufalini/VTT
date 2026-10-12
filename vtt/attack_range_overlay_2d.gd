@@ -17,7 +17,8 @@ func setup(root: Node3D, attack_system: Node) -> void:
 	name = "AttackRangeOverlay2D"
 	mouse_filter = Control.MOUSE_FILTER_IGNORE
 	set_anchors_and_offsets_preset(Control.PRESET_FULL_RECT)
-	z_index = 70
+	# Behind all standard UI panels, but still above top-down token portraits.
+	z_index = -35
 
 
 func _active() -> bool:
