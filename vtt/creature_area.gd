@@ -532,6 +532,7 @@ func _build_ui() -> void:
 	_creature_empty.hide()
 	left.add_child(_creature_empty)
 	_creature_list_scroll = ScrollContainer.new()
+	_creature_list_scroll.mouse_force_pass_scroll_events = false
 	_creature_list_scroll.custom_minimum_size.y = 40
 	_creature_list_scroll.size_flags_horizontal = Control.SIZE_EXPAND_FILL
 	_creature_list_scroll.size_flags_vertical = Control.SIZE_SHRINK_BEGIN
@@ -561,6 +562,7 @@ func _build_ui() -> void:
 	_catalog_filter.text_changed.connect(_filter_catalog)
 	left.add_child(_catalog_filter)
 	_catalog_list = ItemList.new()
+	_catalog_list.mouse_force_pass_scroll_events = false
 	_catalog_list.custom_minimum_size.y = 75
 	_catalog_list.size_flags_vertical = Control.SIZE_EXPAND_FILL
 	_catalog_list.item_activated.connect(_request_monster)
@@ -621,6 +623,7 @@ func _build_ui() -> void:
 	_statistics_columns.size_flags_horizontal = Control.SIZE_EXPAND_FILL
 	statistics_tab.add_child(_statistics_columns)
 	var skills_view := ScrollContainer.new()
+	skills_view.mouse_force_pass_scroll_events = false
 	skills_view.name = "SkillsColumnView"
 	skills_view.size_flags_horizontal = Control.SIZE_EXPAND_FILL
 	skills_view.size_flags_stretch_ratio = 0.9
@@ -632,6 +635,7 @@ func _build_ui() -> void:
 	skills_column.size_flags_horizontal = Control.SIZE_EXPAND_FILL
 	skills_view.add_child(skills_column)
 	var combat_view := ScrollContainer.new()
+	combat_view.mouse_force_pass_scroll_events = false
 	combat_view.name = "CombatColumnView"
 	combat_view.size_flags_horizontal = Control.SIZE_EXPAND_FILL
 	combat_view.size_flags_stretch_ratio = 1.1
@@ -1221,6 +1225,7 @@ func _build_ui() -> void:
 	biography_label.add_theme_font_size_override("font_size", 17)
 	biography_box.add_child(biography_label)
 	_biography = TextEdit.new()
+	_biography.mouse_force_pass_scroll_events = false
 	_biography.custom_minimum_size.y = 150
 	_biography.size_flags_horizontal = Control.SIZE_EXPAND_FILL
 	_biography.scroll_fit_content_height = false
@@ -1300,6 +1305,7 @@ func _build_ui() -> void:
 	_effect_dialog.min_size = Vector2i(560, 420)
 	add_child(_effect_dialog)
 	_effect_text = RichTextLabel.new()
+	_effect_text.mouse_force_pass_scroll_events = false
 	_effect_text.custom_minimum_size = Vector2(530, 320)
 	FiveToolsText.style(_effect_text)
 	_effect_dialog.add_child(_effect_text)
@@ -1325,6 +1331,7 @@ func _build_ui() -> void:
 
 func _add_sheet_tab(tabs: TabContainer, title: String) -> VBoxContainer:
 	var scroll := ScrollContainer.new()
+	scroll.mouse_force_pass_scroll_events = false
 	scroll.name = title
 	scroll.size_flags_horizontal = Control.SIZE_EXPAND_FILL
 	scroll.size_flags_vertical = Control.SIZE_EXPAND_FILL
@@ -1542,6 +1549,7 @@ func _build_automatic_dialog() -> void:
 	explanation.autowrap_mode = TextServer.AUTOWRAP_WORD_SMART
 	content.add_child(explanation)
 	_automatic_preview = RichTextLabel.new()
+	_automatic_preview.mouse_force_pass_scroll_events = false
 	_automatic_preview.set_meta("creature_gui_text", true)
 	_automatic_preview.custom_minimum_size = Vector2(0, 135)
 	_automatic_preview.size_flags_horizontal = Control.SIZE_EXPAND_FILL
@@ -1910,6 +1918,7 @@ func _build_transfer_dialog() -> void:
 	_import_dialog.confirmed.connect(_import)
 	add_child(_import_dialog)
 	_import_text = TextEdit.new()
+	_import_text.mouse_force_pass_scroll_events = false
 	_import_text.custom_minimum_size = Vector2(620, 220)
 	_import_text.placeholder_text = "Incolla qui il codice JSON ricevuto dal precedente controllore."
 	_import_dialog.add_child(_import_text)
@@ -3429,6 +3438,7 @@ func _refresh_attacks(record: Dictionary) -> void:
 			details_toggle.tooltip_text = "Mostra il testo originale di 5etools"
 			box.add_child(details_toggle)
 			var details := RichTextLabel.new()
+			details.mouse_force_pass_scroll_events = false
 			details.custom_minimum_size.y = 100
 			details.custom_minimum_size.x = 0
 			details.size_flags_horizontal = Control.SIZE_EXPAND_FILL
@@ -4874,6 +4884,7 @@ func _build_miniature_dialog() -> void:
 	_miniature_filter.text_changed.connect(_filter_miniatures)
 	body.add_child(_miniature_filter)
 	_miniature_list = ItemList.new()
+	_miniature_list.mouse_force_pass_scroll_events = false
 	_miniature_list.custom_minimum_size = Vector2(0, 168)
 	_miniature_list.size_flags_horizontal = Control.SIZE_EXPAND_FILL
 	_miniature_list.size_flags_vertical = Control.SIZE_SHRINK_BEGIN
