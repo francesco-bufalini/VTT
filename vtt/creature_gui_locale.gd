@@ -563,6 +563,263 @@ const EN: Dictionary = {
 	"Equipaggia o riponi l'oggetto selezionato senza occupare slot.": "Equip or stow the selected item without occupying a slot.",
 	"Attiva la sintonia con l'oggetto selezionato; è necessaria per i suoi benefici magici.": "Attune to the selected item; attunement is required for its magical benefits.",
 	"L'oggetto selezionato non richiede sintonia.": "The selected item does not require attunement.",
+	"Seleziona un'origine a sinistra per evidenziarne i bonus. Ogni bonus è indipendente e cumulabile; il pulsante di attivazione non elimina la concessione.": "Select an origin on the left to highlight its bonuses. Each bonus is independent and stacks; toggling it does not remove the grant.",
+	"Espressione senza dadi, es. 2 * wis_mod": "Expression without dice, e.g. 2 * wis_mod",
+	"Passa da resistenza a immunità": "Switch from resistance to immunity",
+	"Senza origine (%d)": "Without origin (%d)",
+	"Attiva": "Enable",
+	"Vuln.": "Vuln.",
+	"Imm.": "Imm.",
+	"Pergamena": "Scroll",
+	"Lettera": "Letter",
+	"Impossibile creare il file homebrew del documento.": "Could not create the document homebrew file.",
+	"Senza titolo": "Untitled",
+	"Impossibile salvare la definizione homebrew del documento.": "Could not save the document homebrew definition.",
+	"Talenti posseduti": "Owned feats",
+	"Come creatura (Medium)": "Same as creature (Medium)",
+	"Come creatura (%s)": "Same as creature (%s)",
+	"Come creatura": "Same as creature",
+	"Senza rarità": "No rarity",
+	"Voce non installata nel catalogo locale.": "Entry not installed in the local catalog.",
+	"Aggiungi una competenza e assegnale un'origine. Seleziona un'origine a sinistra per evidenziarne le concessioni.": "Add a proficiency and assign it an origin. Select an origin on the left to highlight its grants.",
+	"Da scegliere: ": "Choices required: ",
+	"Disattiva temporaneamente tutti i benefici di questa origine, anche quelli obbligatori. Non elimina le concessioni.": "Temporarily disable all benefits from this origin, including mandatory grants. This does not remove them.",
+	"Da tutte le origini (tranne concessioni obbligatorie)": "From all origins (except mandatory grants)",
+	"Scegli il tipo di competenza qui sotto. Le scelte rimangono selezionate mentre passi fra lingue, strumenti e abilità.": "Choose a proficiency type below. Your choices remain selected as you switch between languages, tools and skills.",
+	"%s · %d/%d scelte": "%s · %d/%d choices",
+	"Tutti i livelli": "All levels",
+	"Trucchetti": "Cantrips",
+	"Livello %d": "Level %d",
+	"Nessuno slot (non consumare)": "No slot (do not spend)",
+	"%d° livello · %d rimasti": "Level %d · %d remaining",
+	"Lancia %s (livello %d). Scegli quale slot consumare.": "Cast %s (level %d). Choose which slot to spend.",
+	"%s · livello %d [%s]": "%s · level %d [%s]",
+	"Descrizione non disponibile nel catalogo.": "Description not available in the catalog.",
+	"Seleziona un'origine per evidenziarne i tracker. Aggiungi nuove risorse a destra e assegna l'origine nello stesso passaggio.": "Select an origin to highlight its trackers. Add resources on the right and assign their origin in the same step.",
+	"Tracker assegnati:": "Assigned trackers:",
+	"RAZZA E SOTTORAZZA": "RACE AND SUBRACE",
+	"Descrizione · ": "Description · ",
+	"Oggetto · ": "Item · ",
+	"Classe · ": "Class · ",
+	"Sottoclasse · %s / %s": "Subclass · %s / %s",
+	"Impossibile aggiornare il nome della creatura.": "Could not update the creature's name.",
+	"Piazzamento token non disponibile.": "Token placement unavailable.",
+	"Italiano": "Italiano",
+	"Equipaggiamento senza competenza: passa qui per vedere le penalità.": "Non-proficient equipment: hover here to see the penalties.",
+	"Preferenza per armi Finesse: le armi da mischia normali usano Forza, quelle a distanza Destrezza. I valori del bestiario includono la competenza.": "Finesse weapon preference: ordinary melee weapons use Strength, ranged weapons use Dexterity. Bestiary values already include proficiency.",
+	"Filtra la lista della mano secondaria alle armi con proprietà Accurata (Finesse). Non è una regola per l'attacco con azione bonus.": "Filter offhand weapons to those with the Finesse property. This does not determine eligibility for a bonus-action attack.",
+	"ID controllore copiato.": "Controller ID copied.",
+	"Calcolo riuscito ma salvataggio non completato.": "Calculation succeeded, but the result was not saved.",
+	"Calcoli selezionati applicati alla creatura.": "Selected calculations applied to the creature.",
+	"Seleziona una creatura da cedere.": "Select a creature to transfer.",
+	"Seleziona una creatura da scaricare.": "Select a creature to export.",
+	"Esportazione non riuscita: ": "Export failed: ",
+	"Impossibile salvare resistenze/immunità: ": "Could not save resistances/immunities: ",
+	"Il roller della chat non è disponibile.": "The chat dice roller is unavailable.",
+	"Impossibile salvare tracker e origini.": "Could not save trackers and origins.",
+	"Impossibile salvare i bonus.": "Could not save bonuses.",
+	"Non definito": "Undefined",
+	"Con almeno 10 ft di movimento a piedi immediatamente prima del salto, ": "With at least 10 ft of movement on foot immediately before jumping, ",
+	"Con rincorsa di almeno 10 ft: max(0, 3 + modificatore FOR %+d) = %d ft. ": "With a run-up of at least 10 ft: max(0, 3 + STR modifier %+d) = %d ft. ",
+	"%s lanciato · effetto VTT non attivabile senza un token collegato.": "%s cast · VTT effect unavailable without a linked token.",
+	"%s lanciato · nessun effetto VTT associato.": "%s cast · no associated VTT effect.",
+	"Impossibile attivare l'effetto VTT di %s.": "Could not activate the VTT effect of %s.",
+	"Salvataggio incantesimi non riuscito: ": "Could not save spells: ",
+	" · Modifica da Visualizza e modifica → Competenze": " · Edit under View and edit → Proficiencies",
+	"Occupata · due mani": "Occupied · two hands",
+	"Tiro per colpire non specificato nel bestiario.": "Attack roll not specified in the bestiary.",
+	"Nessuna formula di danno per questo attacco.": "No damage formula for this attack.",
+	"Base (ft)": "Base (ft)",
+	"○ Non competente": "○ Not proficient",
+	"Nessun attacco disponibile.": "No attacks available.",
+	"Equipaggiamento non salvato: ": "Equipment not saved: ",
+	"Impossibile salvare attacco: ": "Could not save attack: ",
+	"Vulnerabilità: ": "Vulnerabilities: ",
+	"Resistenze: ": "Resistances: ",
+	"Immunità ai danni: ": "Damage immunities: ",
+	"Immunità alle condizioni: ": "Condition immunities: ",
+	"Senza competenza: ": "Not proficient with: ",
+	"Documento ricevuto ma non salvato: controlla i permessi dei file.": "Document received but not saved: check file permissions.",
+	"Lettera ricevuta da giocatore %s: %s": "Letter received from player %s: %s",
+	"Impossibile salvare i documenti: ": "Could not save documents: ",
+	"Impossibile salvare competenze: ": "Could not save proficiencies: ",
+	"Impossibile salvare inventario: ": "Could not save inventory: ",
+	"GS non valido: inserisci un numero o una frazione come 1/4.": "Invalid CR: enter a number or a fraction such as 1/4.",
+	"Seleziona la classe base prima di aggiungere altre classi.": "Select a primary class before adding other classes.",
+	"La somma dei livelli delle classi non può superare 20.": "Total class levels cannot exceed 20.",
+	"Salvataggio non riuscito: %s": "Save failed: %s",
+	"Formula di dadi non valida; nessun PF modificato.": "Invalid dice formula; HP unchanged.",
+	"Aspetto salvato. Se la miniatura è remota, sarà applicata quando sarà disponibile.": "Appearance saved. If the miniature is remote, it will be applied once available.",
+	"Rimuovere anche i PF della seconda forma?": "Remove second-form HP as well?",
+	"I PF della seconda forma sono a 0. Ripristinare l'aspetto di base?": "Second-form HP are at 0. Restore the default appearance?",
+	"La miniatura non ha una voce del bestiario associata: scegli PF manuali.": "The miniature has no associated bestiary entry: enter HP manually.",
+	"Caricamento PF della forma dal bestiario…": "Loading form HP from the bestiary…",
+	"Impossibile salvare i PF della seconda forma.": "Could not save second-form HP.",
+	"Impossibile ripristinare l'aspetto.": "Could not restore the appearance.",
+	"I PF della seconda forma di %s sono a 0. Ripristinare l'aspetto di base?": "%s has 0 second-form HP. Restore the default appearance?",
+	"Questa creatura non ha ancora una miniatura di base.": "This creature does not yet have a default miniature.",
+	"Impossibile salvare l'aspetto attuale.": "Could not save the current appearance.",
+	"Punti ferita ripristinati al massimo.": "Hit points restored to maximum.",
+	"%s · Ricarica d6: %d (%s, occorre %d–6).": "%s · d6 recharge: %d (%s, requires %d–6).",
+	"Tracker non salvato: ": "Tracker not saved: ",
+	"%d voci del bestiario ricercabili": "%d searchable bestiary entries",
+	"Caricamento creatura dal bestiario…": "Loading creature from the bestiary…",
+	"Bestiario senza PF medi strutturati: inserisci PF manualmente.": "No structured average HP in the bestiary: enter HP manually.",
+	"PF della seconda forma caricati dal bestiario.": "Second-form HP loaded from the bestiary.",
+	"Seleziona la miniatura predefinita per completare l’importazione.": "Select the default miniature to complete the import.",
+	"PF della forma non disponibili: ": "Form HP unavailable: ",
+	" · Inserisci PF manualmente.": " · Enter HP manually.",
+	"Seleziona una creatura.": "Select a creature.",
+	"Impossibile salvare la miniatura della creatura.": "Could not save the creature's miniature.",
+	"Aspetto attuale aggiornato.": "Current appearance updated.",
+	"Eliminare definitivamente '%s' dal tuo archivio?\nVerranno eliminati anche i suoi token presenti nella scena.": "Permanently delete '%s' from your archive?\nAll of its tokens in the scene will also be deleted.",
+			"Con almeno 10 ft di movimento a piedi immediatamente prima del salto, puoi saltare fino al punteggio di Forza (%d ft). Da fermo il massimo è la metà (%s ft). Ogni ft saltato consuma 1 ft del movimento disponibile.",
+			"Con rincorsa di almeno 10 ft: max(0, 3 + modificatore FOR %+d) = %d ft. Senza rincorsa la distanza è dimezzata (%s ft). Puoi raggiungere con le braccia altri 1,5 × la tua altezza. Il salto consuma il movimento disponibile.",
+			"Camminata: base %d + bonus cumulabili %+d = %d ft",
+			"%s: base %d + bonus specifici %+d",
+			" + modifica alla velocità (regole 2024) %+d",
+			"Competenza: base %+d %+d bonus da origini = %+d",
+			"%s: mod. %s %+d + competenza %d × %+d + bonus origini %+d = %+d",
+			"%s: mod. %+d + competenza o bestiario %+d + origini %+d = %+d",
+			"Percezione passiva: 10 + Percezione %+d + bonus propri %+d = %d",
+			"Danni: %s. Include i bonus di caratteristica, arma e concessioni applicabili.",
+			"Gittata: base %d ft + bonus cumulabili %+d ft = %d ft",
+			"Naturale (%s)",
+			"CA: %s + scudo %+d + bonus cumulabili %+d = %d",
+			"Iniziativa: modificatore DES %+d + bonus cumulabili %+d = %+d",
+			"PF massimi: base %d + bonus cumulabili %+d = %d",
+			"PF seconda forma: base %d %+d origini = %d",
+			"%s: floor((%d - 10) / 2) %+d bonus sul modificatore = %+d",
+			"%s: base %d + bonus cumulabili %+d = %d",
+			"Miniatura di base selezionata: %s",
+			"Incantesimi del libro (%d)",
+			"Libro: %d incantesimi · Apri per cambiare vista o modificare",
+			"Slot livello %d: base %d + bonus cumulabili %+d = %d",
+			"Magia del Patto: base %d + bonus cumulabili %+d = %d",
+			"Risultati: %d",
+			"Risultati: 250 di %d · Affina i filtri per vedere gli altri",
+			"Altri tratti · %d",
+	"Eliminazione non riuscita: %s": "Deletion failed: %s",
+	"Creatura e relativi token eliminati.": "Creature and associated tokens deleted.",
+	"Seleziona un solo token nella scena.": "Select exactly one token in the scene.",
+	"Il token è associato a una creatura di un altro controllore.": "This token is linked to a creature controlled by someone else.",
+	"Creatura associata alla miniatura senza modificarne l'aspetto.": "Creature linked to the miniature without changing its appearance.",
+	"Destinatario non più online: aggiorna l'elenco.": "Recipient is no longer online: refresh the list.",
+	"ID non valido o cessione non salvata.": "Invalid ID or transfer not saved.",
+	"Codice di trasferimento non valido.": "Invalid transfer code.",
+	"Ora sei il controllore di questa creatura.": "You now control this creature.",
+	"Incantesimi attivi": "Active spells",
+	"+ Incantesimo": "+ Spell",
+	"Applica un incantesimo dal catalogo. Sarà visibile anche nei Tratti e utilizzabile come origine.": "Apply a catalog spell. It will appear in Traits and can also be used as an origin.",
+	"Nessun incantesimo attivo.": "No active spells.",
+	"Rimuovi l'incantesimo e i benefici che concede a questa creatura.": "Remove the spell and its granted benefits from this creature.",
+	"Aggiungi un incantesimo attivo": "Add an active spell",
+	"Cerca un incantesimo per nome…": "Search spells by name…",
+	"%d risultati": "%d results",
+	" (mostrati i primi 120; affina la ricerca)": " (showing the first 120; refine the search)",
+	"Impossibile salvare gli incantesimi attivi: ": "Could not save active spells: ",
+	"Cataloghi e integrazioni ricaricati. ": "Catalogs and integrations reloaded. ",
+	"Mostra slot": "Show slots",
+	"Mostra patto": "Show pact",
+	"I mostri senza livelli di classe gestiscono gli slot manualmente.": "Monsters without class levels manage their slots manually.",
+	"Scelte già effettuate:": "Choices already made:",
+	"Concessioni automatiche:": "Automatic grants:",
+	"Bonus assegnati:": "Assigned bonuses:",
+	"Bonus senza origine specifica.": "Bonus without a specified origin.",
+	"Lettera inviata": "Letter sent",
+	"Fonte: ": "Source: ",
+	"Durata: ": "Duration: ",
+	"Componenti: ": "Components: ",
+	"Gittata: ": "Range: ",
+	"livello ": "level ",
+	"Competenza": "Proficiency",
+	"Maestria": "Expertise",
+	"Creatura": "Creature",
+	"Incantesimo": "Spell",
+	"Patto · %d° livello · %d rimasti": "Pact · level %d · %d remaining",
+	"Da scegliere": "Choices required",
+	"⚠ Da scegliere: ": "⚠ Choices required: ",
+	"Centra la visuale sul token": "Center camera on token",
+	"Nessun VTT della stessa partita ha risposto. Verifica Tailscale e riprova con Aggiorna dopo qualche secondo.": "No VTT in the same game responded. Check Tailscale and try Refresh again in a few seconds.",
+	"Scegli un destinatario online. Il codice privato di recupero sarà copiato negli appunti, senza inviare la scheda attraverso la mappa.": "Choose an online recipient. A private recovery code will be copied to the clipboard without sending the character sheet through the map.",
+	"Scheda creatura JSON": "Creature sheet JSON",
+	"Creatura esportata: ": "Creature exported: ",
+	"Esportazione non completata: ": "Export incomplete: ",
+	"Tiro salvezza ": "Saving throw ",
+	"Nessuna voce selezionata.": "No entry selected.",
+	"Scegli una miniatura con il pulsante Cerca…": "Choose a miniature with the Search button…",
+	"Camminata: base %d + bonus cumulabili %+d = %d ft": "Walking: base %d + stacking bonuses %+d = %d ft",
+	"%s: base %d + bonus specifici %+d": "%s: base %d + specific bonuses %+d",
+	" + modifica alla velocità (regole 2024) %+d": " + speed adjustment (2024 rules) %+d",
+	"Ogni ft saltato consuma 1 ft del movimento disponibile.": "Each foot jumped costs 1 ft of available movement.",
+	"Il salto consuma il movimento disponibile.": "Jumping uses your available movement.",
+	"Competenza: base %+d %+d bonus da origini = %+d": "Proficiency: base %+d %+d origin bonuses = %+d",
+	"%s: mod. %s %+d + competenza %d × %+d + bonus origini %+d = %+d": "%s: mod. %s %+d + proficiency %d × %+d + origin bonuses %+d = %+d",
+	"%s: mod. %+d + competenza o bestiario %+d + origini %+d = %+d": "%s: mod. %+d + proficiency or bestiary %+d + origins %+d = %+d",
+	"Percezione passiva: 10 + Percezione %+d + bonus propri %+d = %d": "Passive Perception: 10 + Perception %+d + specific bonuses %+d = %d",
+	"Bonus per colpire non presente nei dati del bestiario": "Attack bonus not present in the bestiary data",
+	"Danni: %s. Include i bonus di caratteristica, arma e concessioni applicabili.": "Damage: %s. Includes applicable ability, weapon and granted bonuses.",
+	" Attacco aggiuntivo a due armi: bonus al colpire normale; il modificatore di caratteristica ai danni si applica solo con lo stile Two-Weapon Fighting o se negativo.": " Two-weapon bonus attack: normal attack bonus; the ability modifier applies to damage only with the Two-Weapon Fighting style or when negative.",
+	" Non soddisfa i requisiti dell'attacco aggiuntivo a due armi (normalmente due armi leggere da mischia o talento Dual Wielder). Resta possibile usarla con l'azione Attaccare.": " Does not meet the requirements for a two-weapon bonus attack (normally two light melee weapons or the Dual Wielder feat). It can still be used with the Attack action.",
+	"Gittata: base %d ft + bonus cumulabili %+d ft = %d ft": "Range: base %d ft + stacking bonuses %+d ft = %d ft",
+	"Naturale (%s)": "Natural (%s)",
+	"CA: %s + scudo %+d + bonus cumulabili %+d = %d": "AC: %s + shield %+d + stacking bonuses %+d = %d",
+	"Base manuale": "Manual base",
+	"Effetti: svantaggio alle prove di caratteristica, ai tiri salvezza e ai tiri per colpire che usano Forza o Destrezza.": "Effects: disadvantage on ability checks, saving throws and attack rolls using Strength or Dexterity.",
+	"Non puoi lanciare incantesimi mentre indossi l’armatura o impugni lo scudo senza competenza.": "You cannot cast spells while wearing armor or wielding a shield without proficiency.",
+	"Iniziativa: modificatore DES %+d + bonus cumulabili %+d = %+d": "Initiative: DEX modifier %+d + stacking bonuses %+d = %+d",
+	"PF massimi: base %d + bonus cumulabili %+d = %d": "Maximum HP: base %d + stacking bonuses %+d = %d",
+	"PF seconda forma: base %d %+d origini = %d": "Second-form HP: base %d %+d origins = %d",
+	"%s: floor((%d - 10) / 2) %+d bonus sul modificatore = %+d": "%s: floor((%d - 10) / 2) %+d modifier bonuses = %+d",
+	"%s: base %d + bonus cumulabili %+d = %d": "%s: base %d + stacking bonuses %+d = %d",
+	"Sottrai punti ferita": "Subtract hit points",
+	"Aggiungi punti ferita": "Add hit points",
+	"Tira e applica": "Roll and apply",
+	"Il risultato sarà registrato nel roller della chat.": "The result will be recorded in the chat dice roller.",
+	"Inserisci una formula valida (es. 2d6+3).": "Enter a valid formula (e.g. 2d6+3).",
+	"Scegli aspetto attuale": "Choose current appearance",
+	"★ Le miniature associate alla voce del bestiario sono mostrate per prime.": "★ Miniatures linked to the bestiary entry are shown first.",
+	"Cerca nel catalogo e seleziona una miniatura.": "Search the catalog and select a miniature.",
+	"Miniatura di base selezionata: %s": "Default miniature selected: %s",
+	"Nessuna miniatura selezionata": "No miniature selected",
+	"Controllo trasferito automaticamente al destinatario tramite la mappa. Il codice privato copiato è facoltativo per recuperare i dettagli completi della scheda.": "Control was automatically transferred through the map. The copied private code can optionally recover the full sheet details.",
+	"Importazione non riuscita: ID di destinazione errato o codice non valido.": "Import failed: incorrect destination ID or invalid code.",
+	"Mostra incantesimi di classe": "Show class spells",
+	"Mostra incantesimi del libro": "Show spellbook spells",
+	"Seleziona incantesimi nel libro": "Select spells in the spellbook",
+	"Rimuovi dai disponibili": "Remove from available",
+	"Incantesimi del libro (%d)": "Spellbook spells (%d)",
+	"Libro: %d incantesimi · Apri per cambiare vista o modificare": "Spellbook: %d spells · Open to change view or edit",
+	"Slot livello %d: base %d + bonus cumulabili %+d = %d": "Level %d slots: base %d + stacking bonuses %+d = %d",
+	"Magia del Patto: base %d + bonus cumulabili %+d = %d": "Pact Magic: base %d + stacking bonuses %+d = %d",
+	"Oggetti magici": "Magic items",
+	"Altri oggetti": "Other items",
+	"Accurata (Finesse)": "Finesse",
+	"Proprietà arma": "Weapon property",
+	"Risultati: %d": "Results: %d",
+	"Risultati: 250 di %d · Affina i filtri per vedere gli altri": "Results: 250 of %d · Refine filters to see more",
+	"⚠ Senza origine": "⚠ Without origin",
+	"Origine personalizzata": "Custom origin",
+	"Categorie di armi": "Weapon categories",
+	"Singole armi": "Individual weapons",
+	"Armature e scudi": "Armor and shields",
+	"CLASSI E SOTTOCLASSI": "CLASSES AND SUBCLASSES",
+	"INCANTESIMI ATTIVI": "ACTIVE SPELLS",
+	"TRATTI DEL MOSTRO": "MONSTER TRAITS",
+	"ALTRI TRATTI": "OTHER TRAITS",
+	"Tratti del background · ": "Background traits · ",
+	"Altri tratti · %d": "Other traits · %d",
+	"Tratti della specie": "Species traits",
+	"Azioni bonus": "Bonus actions",
+	"Azioni mitiche": "Mythic actions",
+	"Azioni della tana": "Lair actions",
+	"Talento aggiunto senza un'origine specificata.": "Feat added without a specified origin.",
+	"Risorse e utilizzi": "Resources and uses",
+	"Ricarica manuale": "Manual recharge",
+	"Inizio turno": "Start of turn",
+	"Non disponibile": "Unavailable",
+	"Con almeno 10 ft di movimento a piedi immediatamente prima del salto, puoi saltare fino al punteggio di Forza (%d ft). Da fermo il massimo è la metà (%s ft). Ogni ft saltato consuma 1 ft del movimento disponibile.": "After moving at least 10 ft on foot immediately before the jump, you can jump up to your Strength score (%d ft). From a standstill the maximum is half (%s ft). Each foot jumped costs 1 ft of movement.",
+	"Con rincorsa di almeno 10 ft: max(0, 3 + modificatore FOR %+d) = %d ft. Senza rincorsa la distanza è dimezzata (%s ft). Puoi raggiungere con le braccia altri 1,5 × la tua altezza. Il salto consuma il movimento disponibile.": "With a run-up of at least 10 ft: max(0, 3 + STR modifier %+d) = %d ft. From a standstill the distance is halved (%s ft). You can reach another 1.5 times your height with your arms. Jumping uses movement.",
 }
 const IT: Dictionary = {
 	"Rages": "Ira",
@@ -579,6 +836,19 @@ const IT: Dictionary = {
 	"CHA": "CAR",
 	"Car.": "Car.",
 	"Save": "TS",
+	"Only if finesse": "Solo se accurata",
+	"Diseases / magical diseases": "Malattie / malattie magiche",
+	"Conditions": "Condizioni",
+	"Effect": "Effetto",
+	"Starting ": "Iniziale ",
+	"Multiclass ": "Multiclasse ",
+	"Medium": "Media",
+	"Small": "Piccola",
+	"Large": "Grande",
+	"Tiny": "Minuscola",
+	"Huge": "Enorme",
+	"Gargantuan": "Mastodontica",
+	"English": "English",
 }
 
 static func read_locale() -> String:
@@ -600,6 +870,35 @@ static func text_for(source: String, language: String) -> String:
 	var dictionary: Dictionary = EN if language == "en" else IT
 	if dictionary.has(source):
 		return String(dictionary[source])
+	if language == "en":
+		# Formatted GUI labels keep their variable values (creature names, counts,
+		# spell names, IDs) untouched. Only recognized UI templates are translated.
+		for template: String in [
+			"Come creatura (%s)", "Senza origine (%d)",
+			"Livello %d", "%d voci del bestiario ricercabili",
+			"%d risultati", "%d° livello · %d rimasti",
+			"Patto · %d° livello · %d rimasti",
+			"Sottoclasse · %s / %s",
+			"%s · %d/%d scelte",
+			"Lancia %s (livello %d). Scegli quale slot consumare.",
+			"%s lanciato · effetto VTT non attivabile senza un token collegato.",
+			"%s lanciato · nessun effetto VTT associato.",
+			"Impossibile attivare l'effetto VTT di %s.",
+			"Salvataggio non riuscito: %s", "Eliminazione non riuscita: %s",
+			"Lettera ricevuta da giocatore %s: %s",
+			"I PF della seconda forma di %s sono a 0. Ripristinare l'aspetto di base?",
+			"%s · Ricarica d6: %d (%s, occorre %d–6).",
+			"Con rincorsa di almeno 10 ft: max(0, 3 + modificatore FOR %+d) = %d ft. ",
+			"Eliminare definitivamente '%s' dal tuo archivio?\\nVerranno eliminati anche i suoi token presenti nella scena.",
+		]:
+			var translated_template: String = _translate_template(source, template)
+			if not translated_template.is_empty():
+				return translated_template
+		# Composite suffixes contain UI instructions attached to data labels.
+		for suffix: String in [" · Modifica da Visualizza e modifica → Competenze",
+			" (mostrati i primi 120; affina la ricerca)", " · Inserisci PF manualmente."]:
+			if source.ends_with(suffix):
+				return text_for(source.substr(0, source.length() - suffix.length()), language) + String(EN[suffix])
 	if source.contains("\n"):
 		var lines := source.split("\n")
 		var changed := false
@@ -623,9 +922,11 @@ static func text_for(source: String, language: String) -> String:
 		if changed:
 			return " · ".join(fragments)
 	if language == "it":
+		for prefix: String in ["Starting ", "Multiclass "]:
+			if source.begins_with(prefix):
+				return String(IT[prefix]) + source.substr(prefix.length())
 		return source
-	# Common generated GUI messages: translate fixed labels, keep their numbers
-	# and original creature/spell/item names intact.
+	# Common generated GUI messages: translate fixed labels and leave catalog values intact.
 	for prefix in ["Strumenti: ", "Linguaggi: ", "Completa le scelte: ",
 		"CA ", "Camminata: ",
 		"Con rincorsa (almeno 10 ft): ", "Da fermo (senza rincorsa): ",
@@ -633,6 +934,18 @@ static func text_for(source: String, language: String) -> String:
 		"Vai al privilegio: ", "Slot dal livello: ",
 		"Dadi vita: ", "XP minimi: ", "Iniziativa: ", "Portata ",
 		"Massimi derivati dai dati strutturati: ",
+		"Esportazione non riuscita: ", "Impossibile salvare resistenze/immunità: ",
+		"Salvataggio incantesimi non riuscito: ", "Equipaggiamento non salvato: ",
+		"Impossibile salvare attacco: ", "Impossibile salvare i documenti: ",
+		"Impossibile salvare competenze: ", "Impossibile salvare inventario: ",
+		"Tracker non salvato: ", "PF della forma non disponibili: ",
+		"Impossibile salvare gli incantesimi attivi: ",
+		"Vulnerabilità: ", "Resistenze: ", "Immunità ai danni: ",
+		"Immunità alle condizioni: ", "Senza competenza: ",
+		"Cataloghi e integrazioni ricaricati. ", "Fonte: ",
+		"⚠ Da scegliere: ",
+		"Descrizione · ", "Oggetto · ", "Classe · ", "Tratti del background · ",
+		"Creatura esportata: ", "Esportazione non completata: ", "Tiro salvezza ",
 		"Taglia · ", "Slot livello ", "Livello ",
 		"Competenza: ", "Elimina · ", "Completa · ", "Aggiunto: ",
 		"Documento · ", "ID catalogo: ", "Origini:\n"]:
@@ -646,6 +959,54 @@ static func text_for(source: String, language: String) -> String:
 			if middle.is_valid_int():
 				return String(EN[fmt]) % int(middle)
 	return source
+
+# Match a small, explicit set of UI format strings after their values have been
+# interpolated. No blanket translation is applied to compendium/free-form data.
+static func _translate_template(source: String, template: String) -> String:
+	if not EN.has(template):
+		return ""
+	var literals: Array[String] = []
+	var kinds: Array[String] = []
+	var cursor := 0
+	while cursor < template.length():
+		var marker := template.find("%", cursor)
+		if marker < 0:
+			break
+		var kind := template.substr(marker + 1, 1)
+		var width := 2
+		if kind == "+":
+			kind = template.substr(marker + 2, 1)
+			width = 3
+		if kind not in ["d", "s"]:
+			return ""
+		literals.append(template.substr(cursor, marker - cursor))
+		kinds.append(kind)
+		cursor = marker + width
+	if kinds.is_empty():
+		return ""
+	literals.append(template.substr(cursor))
+	var source_cursor := 0
+	var values: Array = []
+	for i in range(kinds.size()):
+		var fixed: String = literals[i]
+		if not source.substr(source_cursor).begins_with(fixed):
+			return ""
+		source_cursor += fixed.length()
+		var ending: String = literals[i + 1]
+		var next: int = source.find(ending, source_cursor) if not ending.is_empty() else source.length()
+		if next < source_cursor:
+			return ""
+		var value: String = source.substr(source_cursor, next - source_cursor)
+		if kinds[i] == "d":
+			if not value.is_valid_int():
+				return ""
+			values.append(int(value))
+		else:
+			values.append(value)
+		source_cursor = next
+	if source.substr(source_cursor) != literals[literals.size() - 1]:
+		return ""
+	return String(EN[template]) % values
 
 static func apply(root: Node, language: String) -> void:
 	if root == null or not is_instance_valid(root):
