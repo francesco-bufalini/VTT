@@ -22,6 +22,19 @@ func visible_rows(area: Node) -> Array[Button]:
 			result.append(button)
 	return result
 
+# A scrollable child must consume wheel/touchpad scrolling at both limits;
+# otherwise an outer ScrollContainer starts moving when the inner one ends.
+func _assert_scroll_isolated(node: Node) -> int:
+	var count := 0
+	if node is ScrollContainer or node is ItemList or node is TextEdit or (node is RichTextLabel and (node as RichTextLabel).scroll_active):
+		assert(not (node as Control).mouse_force_pass_scroll_events,
+			"Wheel scroll must stop at nested scrollable control: " + str(node.get_path()))
+		count += 1
+	for child: Node in node.get_children():
+		count += _assert_scroll_isolated(child)
+	return count
+
+
 func run() -> void:
 	root.gui_embed_subwindows = true
 	root.content_scale_mode = Window.CONTENT_SCALE_MODE_DISABLED
@@ -36,6 +49,8 @@ func run() -> void:
 	var area: Node = load("res://vtt/creature_area.gd").new()
 	board.add_child(area)
 	area.setup(board)
+	assert(_assert_scroll_isolated(area) >= 10,
+		"Creature GUI should isolate its lists, scroll panels and multiline editors")
 	area._archive.setup(campaign)
 	for label: String in ["Alpha", "Beta", "Gamma"]:
 		var record: Dictionary = area._archive.create_character()
