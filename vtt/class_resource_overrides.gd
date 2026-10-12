@@ -28,7 +28,7 @@ static func _load() -> void:
 
 static func _subclass_key(value: String) -> String:
 	var name: String = value.strip_edges().to_lower()
-	for prefix: String in ["school of ", "circle of ", "oath of ", "college of ", "domain of "]:
+	for prefix: String in ["school of ", "circle of ", "oath of ", "college of ", "domain of ", "way of the ", "way of ", "the "]:
 		if name.begins_with(prefix):
 			name = name.substr(prefix.length())
 	for suffix: String in [" domain", " school"]:
