@@ -252,6 +252,62 @@ func open_for_token(token: CharacterBody3D) -> bool:
 	return false
 
 
+# Synchronize shared tactical spell state into the owning user's private
+# creature sheet. Foreign users can affect a token without gaining access
+# to, or mutating, somebody else's private archive.
+func sync_linked_token_status(token: Node3D) -> void:
+	if token == null or not is_instance_valid(token):
+		return
+	if String(token.get_meta("creature_owner_id", "")) != Owner.local_id():
+		return
+	var creature_id: String = String(token.get_meta("creature_id", ""))
+	if creature_id.is_empty():
+		return
+	for owned: Dictionary in _archive.list_owned():
+		if String(owned.get("id", "")) != creature_id:
+			continue
+		var record: Dictionary = owned.duplicate(true)
+		_copy_token_spell_status(record, token)
+		if record == owned:
+			return
+		_recalculate_bonus_mirrors(record)
+		if _archive.save(record) == OK:
+			_update_external_record(record)
+		return
+
+
+func _copy_token_spell_status(record: Dictionary, token: Node3D) -> void:
+	if token.has_method("get_conditions"):
+		record["conditions"] = token.call("get_conditions")
+	if token.has_method("get_concentrating_spell_id"):
+		record["concentrating_spell_id"] = String(token.call("get_concentrating_spell_id"))
+	if not token.has_method("get_active_spell_ids"):
+		return
+	var spell_ids: Array = token.call("get_active_spell_ids")
+	# Preserve benefit-only origins; remove only spells explicitly applied
+	# as ongoing effects and subsequently dispelled from the shared token.
+	var previous: Array = record.get("proficiency_origins", [])
+	var removed_ids: Array[String] = []
+	for raw: Variant in previous:
+		if not raw is Dictionary:
+			continue
+		var origin: Dictionary = raw
+		var source_id: String = String(origin.get("id", ""))
+		if (
+			String(origin.get("group", "")) == "spell"
+			and bool(origin.get("applied", false))
+			and source_id.begins_with("spell:")
+			and not (source_id.trim_prefix("spell:") in spell_ids)
+		):
+			removed_ids.append(source_id)
+	for source_id: String in removed_ids:
+		ActiveSpells.remove(record, source_id)
+	for value: Variant in spell_ids:
+		var spell_id: String = String(value)
+		if not spell_id.is_empty():
+			ActiveSpells.apply(record, spell_id)
+
+
 func sync_linked_token_editor(token: CharacterBody3D) -> void:
 	if token == null or not is_instance_valid(token):
 		return
