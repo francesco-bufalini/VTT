@@ -103,14 +103,17 @@ static func definitions(record: Dictionary) -> Array[Dictionary]:
 					"weapon_size": Items.weapon_size(record, owned),
 					"base_hit": 0
 				})
-	if kind != "monster":
+	# Bestiary creatures use their own defined attacks by default. If a
+	# player explicitly assigns an improvised/unarmed hand choice, expose it.
+	var special_hands: Array = [String(record.get("hand_main_special", "none")),
+		String(record.get("hand_off_special", "none"))]
+	if kind != "monster" or "unarmed" in special_hands:
 		result.append({
 			"id": "unarmed", "name": "Colpo senz'armi",
 			"source": "unarmed", "melee": true, "range_feet": 5,
 			"proficient": true, "damage": "", "base_hit": 0
 		})
-		# Unarmed and improvised attacks remain explicitly available whether or
-		# not either hand currently holds a weapon or shield.
+	if kind != "monster" or "improvised" in special_hands:
 		result.append({
 			"id": "improvised", "name": "Arma improvvisata",
 			"source": "improvised", "melee": true, "range_feet": 5,
@@ -164,7 +167,7 @@ static func _attack_ability_modifier(record: Dictionary, attack: Dictionary) -> 
 
 
 static func attack_bonus(record: Dictionary, attack: Dictionary, proficiency: int) -> int:
-	if String(record.get("kind", "")) == "monster" and String(attack.get("source", "")) != "item":
+	if String(record.get("kind", "")) == "monster" and String(attack.get("source", "")) not in ["item", "unarmed", "improvised"]:
 		# Published monster hit modifiers already include proficiency.
 		return Bonuses.add(record, "attack_hit:" + String(attack.get("id", "")), int(attack.get("base_hit", 0)) + _ability_delta_for_monster(record, attack))
 	var trained: bool = false
@@ -183,7 +186,7 @@ static func attack_bonus(record: Dictionary, attack: Dictionary, proficiency: in
 # published monster totals and the optional weapon enhancement.
 static func attack_bonus_formula(record: Dictionary, attack: Dictionary, proficiency: int) -> String:
 	var total: int = attack_bonus(record, attack, proficiency)
-	if String(record.get("kind", "")) == "monster" and String(attack.get("source", "")) != "item":
+	if String(record.get("kind", "")) == "monster" and String(attack.get("source", "")) not in ["item", "unarmed", "improvised"]:
 		return "Bestiario %+d + bonus cumulabili %+d = %+d (competenza già inclusa)" % [
 			int(attack.get("base_hit", 0)), Bonuses.bonus(record, "attack_hit:" + String(attack.get("id", ""))), total
 		]
@@ -276,7 +279,7 @@ static func damage_label(record: Dictionary, attack: Dictionary) -> String:
 	var base: String = String(attack.get("damage", "")).strip_edges()
 	var modifier: int = (
 		_ability_delta_for_monster(record, attack)
-		if String(record.get("kind", "")) == "monster" and source != "item"
+		if String(record.get("kind", "")) == "monster" and source not in ["item", "unarmed", "improvised"]
 		else _attack_ability_modifier(record, attack)
 	)
 	# The off-hand bonus-action strike keeps its normal attack roll. In 5e
