@@ -62,6 +62,8 @@ const EN: Dictionary = {
 	"Interrompi concentrazione": "End concentration",
 	"Termina la concentrazione su un incantesimo attivo.": "End concentration on the current spell.",
 	"FOR": "STR", "DES": "DEX", "COS": "CON", "SAG": "WIS", "CAR": "CHA",
+	"non definita": "not set", "nessuna": "none",
+	"attiva (incantesimo non specificato)": "active (spell unspecified)",
 	"Caratteristica: %s  ·  Tiro per colpire: %s  ·  CD: %s\nConcentrazione: %s": "Ability: %s  ·  Spell attack: %s  ·  DC: %s\nConcentration: %s",
 	"Inventario": "Inventory",
 	"Documenti": "Documents",
@@ -983,6 +985,11 @@ static func _translate_template(source: String, template: String) -> String:
 		source_cursor = next
 	if source.substr(source_cursor) != literals[literals.size() - 1]:
 		return ""
+	# The abbreviations and concentration fallback are UI state, not spell
+	# names. Keep actual spell names verbatim from the catalog.
+	if template.begins_with("Caratteristica: ") and values.size() == 4:
+		values[0] = EN.get(String(values[0]), values[0])
+		values[3] = EN.get(String(values[3]), values[3])
 	return String(EN[template]) % values
 
 static func apply(root: Node, language: String) -> void:
