@@ -90,7 +90,7 @@ jobs:
       - name: Parse structured resource module in isolation
         shell: powershell
         run: |
-          $godot = "C:\\Program Files\\Godot\\Godot_v4.7.2-stable_win64_console.exe"
+          $godot = "C:\Program Files\Godot\Godot_v4.7.2-stable_win64_console.exe"
           & $godot --headless --path . --check-only --script res://vtt/structured_resource_trackers.gd
           if ($LASTEXITCODE -ne 0) { exit $LASTEXITCODE }
 
