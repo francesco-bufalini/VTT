@@ -74,6 +74,20 @@ static func language_type(key: String) -> String:
 	return ""
 
 
+static func language_type_for_edition(key: String, edition: String) -> String:
+	var category: String = language_type(key)
+	if category == "secret":
+		return category
+	_load_language_metadata()
+	var known: Dictionary = _language_metadata.get(normalized_key(key), {})
+	var types: Variant = known.get("types", [])
+	if edition == "2024" and types is Array and "rare" in types:
+		return "rare"
+	if edition == "2014" and types is Array and "exotic" in types:
+		return "exotic"
+	return category
+
+
 static func language_options() -> Array[Dictionary]:
 	var result: Array[Dictionary] = []
 	var seen: Dictionary = {}
