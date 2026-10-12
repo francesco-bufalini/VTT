@@ -46,6 +46,14 @@ func _run() -> void:
 	# Test fixture replaces the catalog after setup; rebuild its visible results.
 	tab._filter_catalog()
 	assert(tab._filtered.size() == 3 and tab._catalog_count.text == "Risultati: 3")
+	# Broad substring search previously tried to instantiate hundreds of
+	# rich tooltip descriptions and could crash on weapon property variants.
+	tab._search.text = "la"
+	tab._filter_catalog()
+	assert(not tab._filtered.is_empty() and tab._catalog_list.item_count == tab._filtered.size(),
+		"Typing la must populate item results without formatting every item description")
+	tab._search.clear()
+	tab._filter_catalog()
 	tab._set_search_visible(true)
 	assert(tab._search_panel.visible and tab._search_toggle.button_pressed)
 	tab._category_filter.select(1)
