@@ -477,6 +477,15 @@ func _select_origin(sid: String) -> void:
 	_refresh_feats()
 
 
+# Read-only feat references on Info navigate to their source without toggling
+# its active state, even if that same source was already selected.
+func focus_origin(sid: String) -> void:
+	_selected_id = sid
+	_feat_editor.hide()
+	_refresh_origins()
+	_refresh_feats()
+
+
 func _toggle_origin(on: bool, sid: String) -> void:
 	for source: Dictionary in _origins:
 		if String(source.get("id", "")) == sid:

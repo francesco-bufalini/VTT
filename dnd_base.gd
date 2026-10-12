@@ -1845,7 +1845,7 @@ func apply_creature_sheet_properties(token: CharacterBody3D, record: Dictionary)
 	# The selected weapon also publishes its structured long range for
 	# the global tactical range overlay in either camera mode.
 	var active_attack: Dictionary = CreatureAttackData.active_attack(record)
-	var long_range: float = float(active_attack.get("long_range_feet", 0.0))
+	var long_range: float = float(CreatureAttackData.long_range_for(record, active_attack))
 	if bool(active_attack.get("melee", true)) or long_range <= melee_reach:
 		long_range = 0.0
 	token.set_meta("active_weapon_long_range_feet", long_range)
@@ -3283,27 +3283,11 @@ func _show_context_menu(screen_position: Vector2) -> void:
 		call_deferred("_release_mouse")
 		return
 
-	_context_token = null
+	_context_token = get_attack_token_at_screen(screen_position)
 	_pending_spawn_support = null
-	var token_hit: Dictionary = {}
-	if _view_2d_enabled:
-		token_hit = _raycast_token_from_screen(screen_position, true)
-	if token_hit.is_empty():
-		token_hit = _raycast_from_screen(
-			screen_position,
-			TOKEN_PICK_COLLISION_MASK,
-			true
-		)
-	if not token_hit.is_empty():
-		var token_collider: Node = token_hit.get("collider") as Node
-		if token_collider != null:
-			var token_target: Node = _find_interaction_target(token_collider)
-			if (
-				token_target != null
-				and token_target.is_in_group("dnd_token")
-				and token_target is CharacterBody3D
-			):
-				_context_token = token_target as CharacterBody3D
+	# Right-click targets the token under the cursor (or camera reticle).
+	# Preserve a multi-selection when the clicked token already belongs to it.
+	_select_context_token(_context_token)
 
 	_set_pending_spawn_from_screen(screen_position)
 	_prepare_context_reposition(screen_position)
@@ -5106,6 +5090,12 @@ func focus_camera_on_token(token: CharacterBody3D) -> void:
 func toggle_token_list() -> void:
 	if token_list != null and is_instance_valid(token_list):
 		token_list.call("toggle_panel")
+
+
+func _select_context_token(token: CharacterBody3D) -> void:
+	if token == null or not is_instance_valid(token) or token in _selected_tokens:
+		return
+	_replace_selection(token)
 
 
 func _replace_selection(token: CharacterBody3D) -> void:

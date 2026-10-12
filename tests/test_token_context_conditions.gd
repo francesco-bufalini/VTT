@@ -14,6 +14,21 @@ func run() -> void:
 	var board: Node3D = BoardScript.new()
 	var target: CharacterBody3D = TokenScene.instantiate()
 	root.add_child(target)
+	var other: CharacterBody3D = TokenScene.instantiate()
+	root.add_child(other)
+	var newcomer: CharacterBody3D = TokenScene.instantiate()
+	root.add_child(newcomer)
+	board.call("_add_to_selection", target)
+	board.call("_add_to_selection", other)
+	board.call("_select_context_token", target)
+	assert((board.get("_selected_tokens") as Array).size() == 2,
+		"Right-clicking an already selected token must preserve other selections")
+	board.call("_select_context_token", newcomer)
+	var selected: Array = board.get("_selected_tokens")
+	assert(selected.size() == 1 and selected[0] == newcomer,
+		"Right-clicking a new token must select it exclusively")
+	assert(newcomer.is_selected() and not target.is_selected() and not other.is_selected())
+
 	var blinded := CheckButton.new()
 	var poisoned := CheckButton.new()
 	blinded.toggled.connect(
@@ -47,6 +62,8 @@ func run() -> void:
 	blinded.free()
 	poisoned.free()
 	target.queue_free()
+	other.queue_free()
+	newcomer.queue_free()
 	board.free()
 	await process_frame
 	print("PASS: context condition buttons and modal mouse ownership")

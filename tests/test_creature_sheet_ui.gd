@@ -80,6 +80,24 @@ func run() -> void:
 	var area: Node = load("res://vtt/creature_area.gd").new()
 	board.add_child(area)
 	area.setup(board)
+	# The published long weapon range must be a real formula widget, not
+	# an ordinary Label that cannot open the origin bonus editor.
+	var ranged_fixture: Dictionary = {
+		"kind": "monster", "stat_block": {"action": [{
+			"name": "Longbow", "entries": [
+				"{@atk rw} Ranged Weapon Attack: {@hit +5} to hit, range 80/320 ft., one target. {@damage 1d8+3} piercing damage."
+			]
+		}]}
+	}
+	var ranged_definitions: Array[Dictionary] = AttackData.definitions(ranged_fixture)
+	assert(not ranged_definitions.is_empty(), "Fixture must contain a ranged attack")
+	area._refresh_attacks(ranged_fixture)
+	var long_key: String = "attack_long_range:" + String(ranged_definitions[0]["id"])
+	assert(area._formula_values.has(long_key)
+		and area._attack_long_range_labels.has(String(ranged_definitions[0]["id"]))
+		and area._formula_values[long_key].has_signal("bonus_requested"),
+		"Long range must display the same actionable formula as normal range")
+	area._refresh_attacks({})
 	for ability: String in ["str", "dex", "con", "int", "wis", "cha"]:
 		var icon: Label = area._saving_throw_icons[ability]
 		var numeric: Label = area._saving_throw_labels[ability]
@@ -123,6 +141,32 @@ func run() -> void:
 	area._miniature_dialog.hide()
 	assert(area._current().default_miniature_id == "hero_test", "Default miniature must be saved with the creature")
 	assert(area._current().current_miniature_id == "hero_test", "First appearance inherits the base miniature")
+	assert(area._info_feats_list.get_parent().get_index() < area._biography.get_parent().get_index(),
+		"Read-only feats must appear above personality text on the Info tab")
+	assert((area._info_feats_list.get_child(0) as Label).text == "Nessun talento.",
+		"A new sheet has no feats in its read-only Info summary")
+	# Update via the editable Feats editor, then verify Info has no mutable
+	# buttons and right-click focuses the matching granting origin.
+	area._on_feats_updated([{
+		"name": "Info Test Feat", "source": "HB", "origin_id": ""
+	}], [])
+	var summary_row: PanelContainer = area._info_feats_list.get_child(0) as PanelContainer
+	assert(summary_row != null and summary_row.get_child_count() == 1)
+	var feat_summary: Label = summary_row.get_child(0) as Label
+	assert("Info Test Feat" in feat_summary.text and "Origini:" in feat_summary.tooltip_text,
+		"Info displays feat name, description and origins without edit/toggle controls")
+	var context_event := InputEventMouseButton.new()
+	context_event.button_index = MOUSE_BUTTON_RIGHT
+	context_event.pressed = true
+	feat_summary.gui_input.emit(context_event)
+	assert(area._tabs.current_tab == 1 and area._editor_section_picker.selected == 2
+		and String(area._feats_ui.get("_selected_id")) == "",
+		"Right-clicking an Info feat must navigate to its source in Feats editor")
+	assert(area._current().feats_catalog.size() == 1,
+		"Navigating from Info must not mutate or disable the feat")
+	area._on_feats_updated([], [])
+	area._tabs.current_tab = 0
+	area._select_details_editor(0)
 	assert(area._creature_list_scroll.custom_minimum_size.y < 100.0,
 		"One creature must occupy only one short list row")
 	assert(area._creature_eye_buttons[0].visible
@@ -252,6 +296,34 @@ func run() -> void:
 	var sheet: Dictionary = area._current()
 	assert(sheet.classes[0].source == "PHB" and sheet.rules_version == "2014")
 	assert(sheet.classes[0].level == 5 and sheet.level == 5)
+	assert(int(sheet.get("proficiency_bonus", 0)) == 3
+		and Bonuses.value(sheet, "proficiency") == 3
+		and area._proficiency_display.text == "+3",
+		"Changing class level must immediately refresh the proficiency formula")
+	# Selecting a race/subrace/background in the live sheet must materialize
+	# origin-backed benefits without opening or applying Automatic Calculate.
+	var Defenses = load("res://vtt/creature_damage_defenses_tab.gd")
+	area._select_reference(area._species, "Dwarf", "PHB")
+	area._on_species_changed()
+	var dwarf_live: Dictionary = area._current()
+	assert(Defenses.rank(dwarf_live, "poison") == 1)
+	var found_dwarf_origin := false
+	for row: Dictionary in dwarf_live.get("damage_defense_entries", []):
+		if String(row.get("origin_id", "")) == "race|phb|dwarf" and String(row.get("key", "")) == "poison":
+			found_dwarf_origin = true
+	assert(found_dwarf_origin, "Selecting Dwarf must save its poison resistance origin")
+	area._select_reference(area._subrace_choice, "Hill", "PHB")
+	area._on_subrace_changed()
+	assert(Defenses.rank(area._current(), "poison") == 1,
+		"Selecting a dwarf subrace must retain parent race grants immediately")
+	area._select_reference(area._species, "Elf", "PHB")
+	area._on_species_changed()
+	assert(Defenses.rank(area._current(), "poison") == 0,
+		"Replacing a race must withdraw its structured defense origins")
+	area._select_reference(area._background, "Acolyte", "PHB")
+	area._save()
+	assert(ProficiencyRules.has_proficiency(area._current(), "skill", "insight"),
+		"Selecting a background must immediately grant structured proficiencies")
 	# Traits from species, class and subclass must interleave by level;
 	# filters must use the actual class/subclass rather than data provider.
 	var Traits = load("res://vtt/creature_traits_tab.gd")

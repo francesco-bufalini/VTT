@@ -203,6 +203,8 @@ func _all_targets() -> Array[Dictionary]:
 			{"key": "attack_range:", "name": "Gittata"}
 		]:
 			result.append({"key": String(category["key"]) + aid, "name": String(category["name"]) + " · " + name})
+		if not bool(attack.get("melee", false)) and int(attack.get("long_range_feet", 0)) > 0:
+			result.append({"key": "attack_long_range:" + aid, "name": "Gittata lunga · " + name})
 	for level: int in range(1, 10):
 		result.append({"key": "slot:" + str(level), "name": "Slot livello " + str(level)})
 	result.append({"key": "pact_slot", "name": "Slot del Patto"})

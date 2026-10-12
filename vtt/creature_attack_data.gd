@@ -147,6 +147,17 @@ static func range_for(record: Dictionary, attack: Dictionary) -> int:
 	return clampi(Bonuses.add(record, "attack_range:" + String(attack.get("id", "")), base), 5, 1000)
 
 
+static func long_range_for(record: Dictionary, attack: Dictionary) -> int:
+	# The extended distance is a separate, origin-modifiable formula.
+	# A melee attack must never acquire a long range from a stray bonus.
+	var original: int = int(attack.get("long_range_feet", 0))
+	if bool(attack.get("melee", false)) or original <= 0:
+		return 0
+	var settings: Dictionary = override_for(record, String(attack.get("id", "")))
+	var base: int = int(settings.get("long_range_feet", original))
+	return clampi(Bonuses.add(record, "attack_long_range:" + String(attack.get("id", "")), base), 5, 5000)
+
+
 static func ability_modifier(record: Dictionary) -> int:
 	var ability: String = "dex" if String(record.get("attack_ability", "str")) == "dex" else "str"
 	return Bonuses.value(record, "ability_mod:" + ability)
@@ -174,7 +185,10 @@ static func attack_bonus(record: Dictionary, attack: Dictionary, proficiency: in
 		return Bonuses.add(record, "attack_hit:" + String(attack.get("id", "")), int(attack.get("base_hit", 0)) + _ability_delta_for_monster(record, attack))
 	var trained: bool = false
 	if String(attack.get("id", "")) == "unarmed":
+		# All creatures are proficient with unarmed strikes under 5e rules.
 		trained = true
+	elif String(attack.get("id", "")) == "improvised":
+		trained = Proficiencies.has_proficiency(record, "weapon", "improvised")
 	elif String(attack.get("source", "")) == "item":
 		var item_value: Variant = attack.get("item_entry", {})
 		if item_value is Dictionary:
@@ -193,7 +207,9 @@ static func attack_bonus_formula(record: Dictionary, attack: Dictionary, profici
 			int(attack.get("base_hit", 0)), Bonuses.bonus(record, "attack_hit:" + String(attack.get("id", ""))), total
 		]
 	var trained: bool = String(attack.get("id", "")) == "unarmed"
-	if String(attack.get("source", "")) == "item":
+	if String(attack.get("id", "")) == "improvised":
+		trained = Proficiencies.has_proficiency(record, "weapon", "improvised")
+	elif String(attack.get("source", "")) == "item":
 		var entry: Variant = attack.get("item_entry", {})
 		if entry is Dictionary:
 			trained = Proficiencies.weapon_proficient(record, entry as Dictionary)
