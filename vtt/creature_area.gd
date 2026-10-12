@@ -3633,6 +3633,31 @@ func _activate_attack(attack_id: String) -> void:
 	_save_equipment_record(record)
 
 
+func _preview_attack_from_sheet(attack_id: String) -> void:
+	var record: Dictionary = _current()
+	var token: CharacterBody3D = find_linked_token_for_creature(_selected_id)
+	if token == null:
+		_set_status("Per visualizzare la gittata occorre una miniatura collegata alla creatura.")
+		return
+	var attack_data: Dictionary = {}
+	for entry: Dictionary in AttackData.definitions(record):
+		if String(entry.get("id", "")) == attack_id:
+			attack_data = entry.duplicate(true)
+			break
+	if attack_data.is_empty():
+		return
+	attack_data["range_feet"] = AttackData.range_for(record, attack_data)
+	attack_data["long_range_feet"] = AttackData.long_range_for(record, attack_data)
+	var runtime: Node = board_root.get_node_or_null("AttackSystem")
+	if runtime == null or not runtime.has_method("preview_attack_range"):
+		_set_status("Visualizzazione tattica della gittata non disponibile.")
+		return
+	hide_panel()
+	if not bool(runtime.call("preview_attack_range", token, attack_data)):
+		show_panel()
+		_set_status("Impossibile visualizzare la gittata.")
+
+
 func _roll_attack_from_sheet(attack_id: String, damage: bool) -> void:
 	var record: Dictionary = _current()
 	var attack: Dictionary = {}
@@ -3754,6 +3779,12 @@ func _refresh_attacks(record: Dictionary) -> void:
 		hit_row.add_child(hit_label)
 		_attack_hit_labels[attack_id] = hit_label
 		_install_formula("attack_hit:" + attack_id, hit_label, [], [])
+		var inspect_range := Button.new()
+		inspect_range.name = "PreviewRange_" + attack_id.validate_node_name()
+		inspect_range.text = "◎ Gittata"
+		inspect_range.tooltip_text = "Chiude la scheda e mostra le creature raggiungibili da questo attacco. Clic per selezionare, Esc per chiudere, nessun danno automatico."
+		inspect_range.pressed.connect(_preview_attack_from_sheet.bind(attack_id))
+		hit_row.add_child(inspect_range)
 		var damage_row := HFlowContainer.new()
 		damage_row.add_theme_constant_override("h_separation", 5)
 		damage_row.add_theme_constant_override("v_separation", 4)
