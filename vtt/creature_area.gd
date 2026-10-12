@@ -617,7 +617,6 @@ func _build_ui() -> void:
 	_damage_defenses_ui.hide()
 	statistics_tab.add_child(_damage_defenses_ui)
 	_damage_defenses_ui.call("setup", Callable(self, "_on_damage_defenses_updated"))
-	call_deferred("_guard_nested_scrolls", statistics_tab)
 	# Always keep skills and combat side by side (45% / 55%).  Scroll
 	# their oversized contents locally instead of expanding the whole sheet.
 	_statistics_columns = HBoxContainer.new()
@@ -1996,28 +1995,6 @@ func _with_effective_modifiers(record: Dictionary) -> Dictionary:
 	return context
 
 
-# Scroll events must be consumed by the innermost scroller even at its
-# boundary; otherwise the parent window jumps when a list is exhausted.
-# Re-run after lazy editor population so newly created scrollers are covered.
-func _guard_nested_scrolls(root: Node) -> void:
-	if root is ScrollContainer:
-		var scroll: ScrollContainer = root
-		scroll.mouse_filter = Control.MOUSE_FILTER_STOP
-		scroll.mouse_force_pass_scroll_events = false
-		if not scroll.has_meta("scroll_boundary_guard"):
-			scroll.set_meta("scroll_boundary_guard", true)
-			scroll.gui_input.connect(func(event: InputEvent) -> void:
-				if event is InputEventMouseButton:
-					var mouse_event: InputEventMouseButton = event
-					if mouse_event.pressed and mouse_event.button_index in [MOUSE_BUTTON_WHEEL_UP, MOUSE_BUTTON_WHEEL_DOWN, MOUSE_BUTTON_WHEEL_LEFT, MOUSE_BUTTON_WHEEL_RIGHT]:
-						scroll.accept_event()
-				elif event is InputEventPanGesture:
-					scroll.accept_event()
-			)
-	for child: Node in root.get_children():
-		_guard_nested_scrolls(child)
-
-
 func _select_details_editor(index: int) -> void:
 	if _editor_section_picker == null:
 		return
@@ -2053,7 +2030,6 @@ func _select_details_editor(index: int) -> void:
 						_damage_defenses_ui.call("load_record", record)
 						_damage_defenses_stale = false
 	call_deferred("_update_stats_column_heights")
-	call_deferred("_guard_nested_scrolls", _tabs)
 
 
 func _on_damage_defenses_updated(damage_overrides: Dictionary, condition_overrides: Dictionary, defense_entries: Array = []) -> void:
