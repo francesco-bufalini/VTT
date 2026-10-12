@@ -27,9 +27,10 @@ func _active() -> bool:
 		and camera != null and is_instance_valid(camera)
 		and board.has_method("is_2d_view_enabled")
 		and bool(board.call("is_2d_view_enabled"))
-		and bool(attack.call("is_targeting"))
-		and attack.get("_attacker") != null
-		and is_instance_valid(attack.get("_attacker"))
+		and (
+			bool(attack.call("is_targeting"))
+			or bool(attack.call("are_all_reaches_visible"))
+		)
 	)
 
 
@@ -88,7 +89,12 @@ func _draw_legend(normal_feet: float, long_feet: float) -> void:
 func _draw() -> void:
 	if not _active():
 		return
+	if not bool(attack.call("is_targeting")):
+		_draw_all_reaches()
+		return
 	var caster: CharacterBody3D = attack.get("_attacker") as CharacterBody3D
+	if caster == null or not is_instance_valid(caster):
+		return
 	var normal_feet: float = float(attack.get("_range_normal_feet"))
 	var long_feet: float = float(attack.get("_range_long_feet"))
 	var cell_size: float = maxf(0.001, float(board.get("cell_size")))
@@ -107,3 +113,33 @@ func _draw() -> void:
 		NORMAL_COLOR, 0.055
 	)
 	_draw_legend(normal_feet, long_feet)
+
+
+
+func _draw_all_reaches() -> void:
+	# The global reach toggle displays the current weapon of each token.
+	# Show both outlines for ranged weapons; do not draw many translucent
+	# overlapping discs when several creatures occupy the same battlefield.
+	var cell_size: float = maxf(0.001, float(board.get("cell_size")))
+	for value: Variant in attack.call("_reach_tokens"):
+		if not value is CharacterBody3D:
+			continue
+		var token: CharacterBody3D = value as CharacterBody3D
+		if token == null or not is_instance_valid(token):
+			continue
+		var normal_feet: float = 5.0
+		if token.has_method("get_reach_feet"):
+			normal_feet = maxf(5.0, float(token.call("get_reach_feet")))
+		var long_feet: float = float(token.get_meta("active_weapon_long_range_feet", 0.0))
+		var half_footprint: float = cell_size * 0.5
+		if token.has_method("get_footprint_cells"):
+			half_footprint *= maxf(0.5, float(token.call("get_footprint_cells")))
+		if long_feet > normal_feet:
+			_paint_range(
+				_screen_polygon(token.global_position, half_footprint, long_feet / 5.0 * cell_size),
+				LONG_COLOR, 0.0
+			)
+		_paint_range(
+			_screen_polygon(token.global_position, half_footprint, normal_feet / 5.0 * cell_size),
+			NORMAL_COLOR, 0.0
+		)
