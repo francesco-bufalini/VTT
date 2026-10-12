@@ -61,7 +61,12 @@ func run() -> void:
 	for source: Dictionary in bonuses._origins:
 		if String(source.get("id", "")) == "item:test_potion":
 			was_saved = true
-	assert(not was_saved, "An item need not exist in proficiency_origins before a grant.")
+	assert(was_saved, "Live inventory items may be listed as selectable origins without a saved grant.")
+	var item_stored := false
+	for saved_origin: Dictionary in item_record["proficiency_origins"]:
+		if String(saved_origin.get("id", "")) == "item:test_potion":
+			item_stored = true
+	assert(not item_stored, "Discovering an inventory source must not silently persist an origin.")
 	_select_source(bonuses._origin_picker, "item:test_potion")
 	bonuses._add_bonus()
 	assert(String(bonuses._rows.back().get("origin_id", "")) == "item:test_potion")
@@ -89,6 +94,7 @@ func run() -> void:
 	assert(String(prof._rows.back().get("origin_id", "")) == "custom|unused")
 
 	var feat_record: Dictionary = record.duplicate(true)
+	feat_record["inventory"] = [{"id": "test_potion", "name": "Test potion", "quantity": 1}]
 	feat_record["feats_catalog"] = [
 		{"id": "alert|phb", "name": "Alert", "source": "PHB", "origin_id": "custom|used"}
 	]
@@ -98,12 +104,12 @@ func run() -> void:
 	feats.load_record(feat_record)
 	assert(feats._origin_cards.get_child_count() == 1,
 		"Only feat-granting origins should be listed.")
-	_select_source(feats._origin_picker, "custom|unused")
+	_select_source(feats._origin_picker, "item:test_potion")
 	assert(not feats._catalog_matches.is_empty())
 	feats._add_feat()
 	assert(feats._origin_cards.get_child_count() == 2,
 		"The origin of a new feat should appear after assignment.")
-	assert(String(feats._feats.back().get("origin_id", "")) == "custom|unused")
+	assert(String(feats._feats.back().get("origin_id", "")) == "item:test_potion")
 
 	var tracker_record: Dictionary = record.duplicate(true)
 	tracker_record["resource_trackers"] = [
