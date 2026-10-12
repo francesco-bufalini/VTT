@@ -135,6 +135,10 @@ static func symbol_target(symbol: String) -> String:
 		"initiative": return "initiative"
 		"ac": return "ac"
 		"speed": return "speed"
+		"climb_speed": return "speed:climb"
+		"swim_speed": return "speed:swim"
+		"fly_speed": return "speed:fly"
+		"burrow_speed": return "speed:burrow"
 		"max_hp": return "hp"
 		"passive_perception": return "passive_perception"
 		"level": return "level"
@@ -164,6 +168,10 @@ static func _native_dependencies(record: Dictionary, target: String) -> Array[St
 			result.append("ability:" + ability)
 	elif target == "initiative":
 		result.append("ability_mod:dex")
+	elif target.begins_with("speed:"):
+		var movement: String = target.substr(6)
+		if movement in Rules.SPECIAL_SPEEDS and String(record.get("rules_version", "2014")) == "2024" and Rules.special_speed_base(record, movement) > 0:
+			result.append("speed")
 	elif target == "ac":
 		var armor := Items.equipped_armor(record.get("inventory", []))
 		if not armor.is_empty() and Items.armor_uses_dexterity(Items.entry_for(armor)):
@@ -287,6 +295,15 @@ static func _base(record: Dictionary, target: String, stack: Dictionary) -> Dict
 		return {"ok": true, "value": int(Items.armor_base(armor_record).get("value", 10)) + Items.shield_bonus(record.get("inventory", []))}
 	if target == "speed":
 		return {"ok": true, "value": int(record.get("speed_base", record.get("speed", 30)))}
+	if target.begins_with("speed:"):
+		var movement: String = target.substr(6)
+		if movement in Rules.SPECIAL_SPEEDS:
+			var base: int = Rules.special_speed_base(record, movement)
+			# In the 2024 rules, increases/decreases to Speed also change any
+			# existing special speeds. They never grant a missing movement mode.
+			if base > 0 and String(record.get("rules_version", "2014")) == "2024":
+				base += int(_sum(record, "speed", stack).get("value", 0))
+			return {"ok": true, "value": base}
 	if target == "hp":
 		return {"ok": true, "value": int(record.get("max_hp_base", record.get("max_hp", 1)))}
 	if target == "second_max":
