@@ -215,6 +215,9 @@ static func serialize_public_identity(creature: Dictionary) -> Dictionary:
 # Only capacities and deterministic values are derived from class levels.
 # Hit dice come from the 5etools class hd.faces field (all editions).
 # Do not maintain a second class-to-die table here.
+
+static func class_hit_die(name: String, source: String = "") -> int:
+	return ClassMechanics.hit_die(name, source)
 const SPELLS_KNOWN_2014 := {
 	"bard": [0, 4, 5, 6, 7, 8, 9, 10, 11, 12, 14, 15, 15, 16, 18, 19, 19, 20, 22, 22, 22],
 	"sorcerer": [0, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 12, 13, 13, 14, 14, 15, 15, 15, 15],
