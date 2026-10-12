@@ -27,8 +27,13 @@ var _cached_sources: Array[Dictionary] = []
 var _changed: Callable
 var _damage_buttons: Dictionary = {}
 var _condition_buttons: Dictionary = {}
-var _damage_rows: GridContainer
-var _condition_rows: GridContainer
+var _damage_rows: VBoxContainer
+var _condition_rows: VBoxContainer
+var _origin_cards: VBoxContainer
+var _damage_cards: Dictionary = {}
+var _condition_cards: Dictionary = {}
+var _origin_buttons: Dictionary = {}
+var _selected_origin := "__manual__"
 var _base_hint: Label
 
 
@@ -174,12 +179,41 @@ func setup(on_change: Callable) -> void:
 	_base_hint = Label.new()
 	_base_hint.autowrap_mode = TextServer.AUTOWRAP_WORD_SMART
 	add_child(_base_hint)
+	var columns := HBoxContainer.new()
+	columns.size_flags_horizontal = Control.SIZE_EXPAND_FILL
+	columns.add_theme_constant_override("separation", 9)
+	add_child(columns)
+	var origins_column := VBoxContainer.new()
+	origins_column.custom_minimum_size.x = 190
+	origins_column.size_flags_horizontal = Control.SIZE_EXPAND_FILL
+	columns.add_child(origins_column)
+	var origin_heading := Label.new()
+	origin_heading.text = "Origini delle difese"
+	origin_heading.add_theme_font_size_override("font_size", 15)
+	origins_column.add_child(origin_heading)
+	var origin_scroll := ScrollContainer.new()
+	origin_scroll.mouse_force_pass_scroll_events = false
+	origin_scroll.custom_minimum_size.y = 280
+	origin_scroll.horizontal_scroll_mode = ScrollContainer.SCROLL_MODE_DISABLED
+	origins_column.add_child(origin_scroll)
+	_origin_cards = VBoxContainer.new()
+	_origin_cards.add_theme_constant_override("separation", 4)
+	_origin_cards.size_flags_horizontal = Control.SIZE_EXPAND_FILL
+	origin_scroll.add_child(_origin_cards)
+	var benefits_column := VBoxContainer.new()
+	benefits_column.custom_minimum_size.x = 330
+	benefits_column.size_flags_horizontal = Control.SIZE_EXPAND_FILL
+	columns.add_child(benefits_column)
+	var benefits_heading := Label.new()
+	benefits_heading.text = "Singole resistenze e immunità"
+	benefits_heading.add_theme_font_size_override("font_size", 15)
+	benefits_column.add_child(benefits_heading)
 	var scroll := ScrollContainer.new()
 	scroll.mouse_force_pass_scroll_events = false
 	scroll.custom_minimum_size.y = 280
 	scroll.size_flags_horizontal = Control.SIZE_EXPAND_FILL
 	scroll.horizontal_scroll_mode = ScrollContainer.SCROLL_MODE_DISABLED
-	add_child(scroll)
+	benefits_column.add_child(scroll)
 	var body := VBoxContainer.new()
 	body.size_flags_horizontal = Control.SIZE_EXPAND_FILL
 	body.add_theme_constant_override("separation", 10)
@@ -188,16 +222,16 @@ func setup(on_change: Callable) -> void:
 	title.text = "RESISTENZE E IMMUNITÀ AI DANNI"
 	title.add_theme_font_size_override("font_size", 16)
 	body.add_child(title)
-	_damage_rows = GridContainer.new()
-	_damage_rows.columns = 3
+	_damage_rows = VBoxContainer.new()
+	_damage_rows.add_theme_constant_override("separation", 4)
 	_damage_rows.add_theme_constant_override("h_separation", 12)
 	body.add_child(_damage_rows)
 	var condition_title := Label.new()
 	condition_title.text = "IMMUNITÀ ALLE CONDIZIONI"
 	condition_title.add_theme_font_size_override("font_size", 16)
 	body.add_child(condition_title)
-	_condition_rows = GridContainer.new()
-	_condition_rows.columns = 2
+	_condition_rows = VBoxContainer.new()
+	_condition_rows.add_theme_constant_override("separation", 4)
 	_condition_rows.add_theme_constant_override("h_separation", 12)
 	body.add_child(_condition_rows)
 
