@@ -21,6 +21,20 @@ func _run() -> void:
 	var events: Array = []
 	tab.setup(func(items: Array) -> void: events.append(items.duplicate(true)), Callable())
 	assert(not tab._search_panel.visible and not tab._search_toggle.button_pressed)
+	assert(tab._search_toggle.get_parent().get_child(0) is Label
+		and tab._search_panel.get_index() == tab._search_toggle.get_parent().get_index() + 1,
+		"Search Items must appear next to Inventory title and expand directly underneath")
+	var shields: Array[Dictionary] = [
+		{"id": "armor:shield|phb|s", "name": "Shield", "source": "PHB", "type": "S", "ac": 2},
+		{"id": "mundane_item:shield|phb|s", "name": "Shield", "source": "PHB", "type": "S", "ac": 2},
+		{"id": "armor:shield|xphb|s|xphb", "name": "Shield", "source": "XPHB", "type": "S|XPHB", "ac": 2},
+		{"id": "mundane_item:shield|xphb|s|xphb", "name": "Shield", "source": "XPHB", "type": "S|XPHB", "ac": 2}
+	]
+	var unique_shields: Array[Dictionary] = InventoryTab._unique_catalog_items(shields)
+	assert(unique_shields.size() == 2
+		and unique_shields[0].id == "armor:shield|phb|s"
+		and unique_shields[1].id == "armor:shield|xphb|s|xphb",
+		"Shield from PHB and XPHB must appear only once per edition")
 	assert(tab._inventory_list.visible, "Search must not hide the owned inventory")
 	var longsword := {
 		"id": "sword|phb", "name": "Longsword", "type": "M",
@@ -89,13 +103,18 @@ func _run() -> void:
 	tab._reset_catalog_filters()
 	tab._catalog_list.select(1)
 	tab._catalog_list.item_selected.emit(1)
-	assert(tab._catalog_details.visible and not tab._add_button.disabled)
+	assert(tab._details.visible and tab._details_from_catalog
+		and tab._details.get_parent() == tab._inventory_list.get_parent()
+		and tab._details.text.contains("Rapier")
+		and not tab._add_button.disabled,
+		"Selecting a search result must display its description in the owned-item details panel")
 	tab._add_selected()
 	assert(events.size() == 1 and events.back().size() == 2,
 		"Adding catalog items must keep already saved items")
 	tab._set_search_visible(false)
 	assert(not tab._search_panel.visible and tab._add_button.disabled
-		and tab._inventory_list.visible and tab._inventory_list.item_count == 2)
+		and tab._inventory_list.visible and tab._inventory_list.item_count == 2
+		and not tab._details_from_catalog)
 	tab._set_search_visible(true)
 	assert(tab._filtered.size() == 3 and tab._catalog_list.item_count == 3)
 	tab.load_record({"rules_version": "2024", "inventory": events.back()})
