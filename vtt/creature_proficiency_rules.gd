@@ -36,12 +36,22 @@ static func language_options() -> Array[Dictionary]:
 		if not key.is_empty() and not seen.has(key):
 			seen[key] = true
 			result.append({"key": key, "label": name, "source": String(item.get("source", "")), "edition": String(item.get("edition", ""))})
+	# Canonical PHB languages must never disappear because of a compact
+	# catalogue entry with 2024-only metadata under the same key.
 	for group: String in LANGUAGE_FALLBACK.keys():
 		for name: String in LANGUAGE_FALLBACK[group]:
 			var key: String = normalized_key(name)
 			if not seen.has(key):
 				seen[key] = true
-				result.append({"key": key, "label": name, "source": "PHB"})
+				result.append({"key": key, "label": name, "source": "PHB", "group": group})
+			else:
+				for index: int in range(result.size()):
+					if String(result[index].get("key", "")) == key:
+						result[index]["source"] = "PHB"
+						result[index]["label"] = name
+						result[index]["edition"] = "2014"
+						result[index]["group"] = group
+						break
 	_load_sources()
 	for group: String in ["race", "subrace", "background", "feat"]:
 		for row: Dictionary in _sources.get(group, []):
@@ -68,6 +78,9 @@ static func language_options() -> Array[Dictionary]:
 						continue
 					seen[key] = true
 					result.append({"key": key, "label": key.capitalize(), "source": String(row.get("source", ""))})
+	result.sort_custom(func(a: Dictionary, b: Dictionary) -> bool:
+		return String(a.get("label", "")).naturalnocasecmp_to(String(b.get("label", ""))) < 0
+	)
 	return result
 
 static var _sources: Dictionary = {}
