@@ -32,9 +32,9 @@ static func _ensure_loaded() -> void:
 		editions[String(row.get("source", "")).to_upper()] = row
 
 
-static func class_row(class_name: String, source: String = "") -> Dictionary:
+static func class_row(klass_name: String, source: String = "") -> Dictionary:
 	_ensure_loaded()
-	var sources: Dictionary = _rows.get(class_name.strip_edges().to_lower(), {})
+	var sources: Dictionary = _rows.get(klass_name.strip_edges().to_lower(), {})
 	var edition: String = source.to_upper()
 	if sources.has(edition):
 		return sources[edition]
@@ -48,28 +48,28 @@ static func class_row(class_name: String, source: String = "") -> Dictionary:
 	return {}
 
 
-static func hit_die(class_name: String, source: String = "") -> int:
-	return maxi(0, int(class_row(class_name, source).get("hit_die", 0)))
+static func hit_die(klass_name: String, source: String = "") -> int:
+	return maxi(0, int(class_row(klass_name, source).get("hit_die", 0)))
 
 
-static func column(class_name: String, source: String, label: String) -> Dictionary:
-	for raw: Variant in class_row(class_name, source).get("columns", []):
+static func column(klass_name: String, source: String, label: String) -> Dictionary:
+	for raw: Variant in class_row(klass_name, source).get("columns", []):
 		if raw is Dictionary and String((raw as Dictionary).get("name", "")) == label:
 			return raw
 	return {}
 
 
-static func column_value(class_name: String, source: String, label: String, level: int) -> Variant:
-	var data: Dictionary = column(class_name, source, label)
+static func column_value(klass_name: String, source: String, label: String, level: int) -> Variant:
+	var data: Dictionary = column(klass_name, source, label)
 	var values: Variant = data.get("levels", [])
 	if not values is Array or level < 1 or level > (values as Array).size():
 		return null
 	return (values as Array)[level - 1]
 
 
-static func resource_columns(class_name: String, source: String) -> Array[Dictionary]:
+static func resource_columns(klass_name: String, source: String) -> Array[Dictionary]:
 	var result: Array[Dictionary] = []
-	for value: Variant in class_row(class_name, source).get("columns", []):
+	for value: Variant in class_row(klass_name, source).get("columns", []):
 		if value is Dictionary and String((value as Dictionary).get("kind", "")) == "resource":
 			result.append(value)
 	return result
