@@ -9,6 +9,7 @@ const FormulaValue = preload("res://vtt/formula_value.gd")
 const Bonuses = preload("res://vtt/creature_bonus_rules.gd")
 const DialogLayout = preload("res://vtt/dialog_layout.gd")
 const CreatureLocale = preload("res://vtt/creature_gui_locale.gd")
+const FiveToolsText = preload("res://vtt/five_tools_rich_text.gd")
 
 const BOOK_VIEW_CLASS := 10
 const BOOK_VIEW_BOOK := 11
@@ -256,6 +257,14 @@ func setup(
 	_description.size_flags_horizontal = Control.SIZE_EXPAND_FILL
 	_description.scroll_active = true
 	_description.selection_enabled = true
+	FiveToolsText.style(_description)
+	var details_style := StyleBoxFlat.new()
+	details_style.bg_color = Color(0.13, 0.14, 0.16, 0.75)
+	details_style.border_color = Color(0.40, 0.35, 0.29, 0.65)
+	details_style.set_border_width_all(1)
+	details_style.set_corner_radius_all(5)
+	details_style.set_content_margin_all(9)
+	_description.add_theme_stylebox_override("normal", details_style)
 	_description.hide()
 	actions.add_child(_description)
 
@@ -840,35 +849,43 @@ func _refresh_casting_summary() -> void:
 	if _spell_summary == null:
 		return
 	var ability: String = _spellcasting_ability(_record)
-	var stat_label: String = ability.to_upper() if not ability.is_empty() else "non definita"
+	var language := _gui_language
+	var stat_label: String = CreatureLocale.text_for(ability.to_upper(), language) if not ability.is_empty() else CreatureLocale.text_for("non definita", language)
 	var hit_label := "—"
 	var dc_label := "—"
-	var explanation := "Seleziona una classe da incantatore o imposta la caratteristica degli incantesimi."
+	var explanation := CreatureLocale.text_for("Seleziona una classe da incantatore o imposta la caratteristica degli incantesimi.", language)
 	if not ability.is_empty():
 		var prof: int = Bonuses.value(_record, "proficiency")
 		var ability_mod: int = Bonuses.value(_record, "ability_mod:" + ability)
-		var attack: int = prof + ability_mod + Bonuses.bonus(_record, "spell_attack")
-		var dc: int = 8 + prof + ability_mod + Bonuses.bonus(_record, "spell_dc")
+		var attack_bonus: int = Bonuses.bonus(_record, "spell_attack")
+		var dc_bonus: int = Bonuses.bonus(_record, "spell_dc")
+		var attack: int = prof + ability_mod + attack_bonus
+		var dc: int = 8 + prof + ability_mod + dc_bonus
 		hit_label = "%+d" % attack
 		dc_label = str(dc)
-		explanation = ("Modificatore %s %+d + competenza %+d; "
-			+ "bonus tiro %+d, bonus CD %+d") % [
-				ability.to_upper(), ability_mod, prof,
-				Bonuses.bonus(_record, "spell_attack"),
-				Bonuses.bonus(_record, "spell_dc")
-			]
-	var concentration_name := "nessuna"
+		var stat_name := CreatureLocale.text_for("Modificatore caratteristica", language)
+		var prof_name := CreatureLocale.text_for("Bonus competenza", language)
+		var origin_name := CreatureLocale.text_for("Bonus dalle origini", language)
+		explanation = "%s: %+d (%s) + %+d (%s) + %+d (%s) = %+d\n%s: 8 + %+d (%s) + %+d (%s) + %+d (%s) = %d" % [
+			CreatureLocale.text_for("Tiro per colpire", language),
+			ability_mod, stat_name, prof, prof_name, attack_bonus, origin_name, attack,
+			CreatureLocale.text_for("CD incantesimi", language),
+			ability_mod, stat_name, prof, prof_name, dc_bonus, origin_name, dc
+		]
+	var concentration_name := CreatureLocale.text_for("nessuna", language)
 	var concentration_id: String = String(_record.get("concentrating_spell_id", ""))
 	if not concentration_id.is_empty():
 		var definition: Dictionary = SpellCatalog.catalog_spell(concentration_id)
 		concentration_name = String(definition.get("name", concentration_id))
 	elif "concentrating" in _record.get("conditions", []):
-		concentration_name = "attiva (incantesimo non specificato)"
-	_spell_summary.text = "Caratteristica: %s  ·  Tiro per colpire: %s  ·  CD: %s\nConcentrazione: %s" % [
-		stat_label, hit_label, dc_label, concentration_name
+		concentration_name = CreatureLocale.text_for("attiva (incantesimo non specificato)", language)
+	_spell_summary.text = "%s: %s  ·  %s: %s  ·  %s: %s\n%s: %s" % [
+		CreatureLocale.text_for("Caratteristica", language), stat_label,
+		CreatureLocale.text_for("Tiro per colpire", language), hit_label,
+		CreatureLocale.text_for("CD", language), dc_label,
+		CreatureLocale.text_for("Concentrazione", language), concentration_name
 	]
 	_spell_summary.tooltip_text = explanation
-
 
 func update_character_context(record: Dictionary) -> void:
 	_refresh_casting_summary()
@@ -956,14 +973,17 @@ func _update_spell_controls() -> void:
 	if not higher_levels.is_empty():
 		body += "\n\n" + higher_levels
 	_description.show()
-	# Localize only our metadata labels; 5etools spell text is unchanged.
-	_description.text = "%s · %s %d · %s\n%s%s · %s%s\n%s%s\n\n%s" % [
-		String(spell.get("name", id)), CreatureLocale.text_for("Livello", _gui_language),
+	# Localize metadata only, never spell names or imported/homebrew text.
+	var spell_metadata := "%s %d · %s\n%s%s   ·   %s%s\n%s%s" % [
+		CreatureLocale.text_for("Livello", _gui_language),
 		int(spell.get("level", 0)), String(spell.get("source", "")),
 		CreatureLocale.text_for("Gittata: ", _gui_language), String(spell.get("range", "—")),
 		CreatureLocale.text_for("Componenti: ", _gui_language), String(spell.get("components", "—")),
-		CreatureLocale.text_for("Durata: ", _gui_language), String(spell.get("duration", "—")), body
+		CreatureLocale.text_for("Durata: ", _gui_language), String(spell.get("duration", "—"))
 	]
+	_description.text = (FiveToolsText.title(String(spell.get("name", id)))
+		+ "\n" + FiveToolsText.meta(spell_metadata) + "\n\n"
+		+ FiveToolsText.blocks(body))
 
 
 func _toggle_selected_prepared() -> void:
@@ -1220,4 +1240,5 @@ func set_gui_language(language: String) -> void:
 	if language not in ["it", "en"] or _gui_language == language:
 		return
 	_gui_language = language
+	_refresh_casting_summary()
 	_update_spell_controls()
