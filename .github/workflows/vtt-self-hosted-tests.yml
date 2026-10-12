@@ -5,7 +5,6 @@ on:
   push:
     branches:
       - main
-      - fix/structured-racial-defenses-20261012
       - feature/campaign-hub
       - feature/structured-creature-sheets
       - feature/tokens-lazy-load
@@ -86,16 +85,6 @@ jobs:
           $godot = "C:\Program Files\Godot\Godot_v4.7.2-stable_win64_console.exe"
           & $godot --headless --path . --editor --import --quit
           if ($LASTEXITCODE -ne 0) { exit $LASTEXITCODE }
-
-      - name: Verify structured dwarf resistance (temporary branch check)
-        shell: powershell
-        run: |
-          $godot = "C:\\Program Files\\Godot\\Godot_v4.7.2-stable_win64_console.exe"
-          $output = & $godot --headless --path . --script res://tests/test_damage_defenses.gd 2>&1
-          $output | Out-Host
-          if ($LASTEXITCODE -ne 0 -or ($output -join "`n") -notmatch "PASS: defense sources") {
-            throw "Structured defenses Godot regression failed."
-          }
 
       - name: Run fast Godot tests
         shell: powershell
