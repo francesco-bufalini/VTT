@@ -712,6 +712,7 @@ const EN: Dictionary = {
 	"Incantesimo": "Spell",
 	"Patto · %d° livello · %d rimasti": "Pact · level %d · %d remaining",
 	"Da scegliere": "Choices required",
+	"⚠ Da scegliere: ": "⚠ Choices required: ",
 }
 const IT: Dictionary = {
 	"Rages": "Ira",
@@ -769,7 +770,7 @@ static func text_for(source: String, language: String) -> String:
 			"Come creatura (%s)", "Senza origine (%d)",
 			"Livello %d", "%d voci del bestiario ricercabili",
 			"%d risultati", "%d° livello · %d rimasti",
-		"Patto · %d° livello · %d rimasti",
+			"Patto · %d° livello · %d rimasti",
 			"%s · %d/%d scelte",
 			"Lancia %s (livello %d). Scegli quale slot consumare.",
 			"%s lanciato · effetto VTT non attivabile senza un token collegato.",
@@ -786,7 +787,8 @@ static func text_for(source: String, language: String) -> String:
 			if not translated_template.is_empty():
 				return translated_template
 		# Composite suffixes contain UI instructions attached to data labels.
-		for suffix: String in [" · Modifica da Visualizza e modifica → Competenze"]:
+		for suffix: String in [" · Modifica da Visualizza e modifica → Competenze",
+			" (mostrati i primi 120; affina la ricerca)", " · Inserisci PF manualmente."]:
 			if source.ends_with(suffix):
 				return text_for(source.substr(0, source.length() - suffix.length()), language) + String(EN[suffix])
 	if source.contains("\n"):
@@ -830,6 +832,7 @@ static func text_for(source: String, language: String) -> String:
 		"Vulnerabilità: ", "Resistenze: ", "Immunità ai danni: ",
 		"Immunità alle condizioni: ", "Senza competenza: ",
 		"Cataloghi e integrazioni ricaricati. ", "Fonte: ",
+		"⚠ Da scegliere: ",
 		"Descrizione · ", "Oggetto · ", "Classe · ",
 		"Taglia · ", "Slot livello ", "Livello ",
 		"Competenza: ", "Elimina · ", "Completa · ", "Aggiunto: ",
