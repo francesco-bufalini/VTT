@@ -35,6 +35,7 @@ static func _keep_body_within_viewport(dialog: AcceptDialog, ratio: float) -> vo
 	# grow later (wrapped text, downloaded data); it must grow inside a
 	# scrollable body rather than pushing Confirm beyond the viewport.
 	var scroll := ScrollContainer.new()
+	scroll.mouse_force_pass_scroll_events = false
 	scroll.name = "DialogScrollBody"
 	scroll.follow_focus = true
 	dialog.remove_child(body)
