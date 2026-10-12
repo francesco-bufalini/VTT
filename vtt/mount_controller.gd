@@ -11,6 +11,9 @@ const META_LOCAL := "mount_local_position"
 const META_LOCAL_YAW := "mount_local_yaw"
 
 var board: Node3D
+# Temporary collision exceptions prevent members of a linked pair from
+# blocking each other's movement. WeakRefs avoid retaining deleted tokens.
+var _collision_links: Dictionary = {}
 
 
 func setup(owner_board: Node3D) -> void:
@@ -107,6 +110,7 @@ func mount(rider: CharacterBody3D, target: Node3D) -> bool:
 		rider.call("set_flying", true)
 	rider.set("grid_support", null)
 	rider.velocity = Vector3.ZERO
+	_reconcile_collision_links()
 	return true
 
 
@@ -116,6 +120,7 @@ func dismount(rider: CharacterBody3D) -> void:
 	for key: String in [META_KIND, META_ID, META_LOCAL, META_LOCAL_YAW]:
 		if rider.has_meta(key):
 			rider.remove_meta(key)
+	_reconcile_collision_links()
 	# Leave the token suspended at its current height. Gravity is an explicit
 	# VTT action and should not automatically trigger when dismounting.
 
@@ -127,6 +132,7 @@ func refresh_all() -> void:
 	for value: Node in get_tree().get_nodes_in_group("dnd_token"):
 		if value is CharacterBody3D and board.is_ancestor_of(value):
 			_follow(value as CharacterBody3D, visited, {})
+	_reconcile_collision_links()
 
 
 func _follow(rider: CharacterBody3D, visited: Dictionary, ancestors: Dictionary) -> void:
@@ -167,3 +173,46 @@ func _follow(rider: CharacterBody3D, visited: Dictionary, ancestors: Dictionary)
 	rider.velocity = Vector3.ZERO
 	rider.set("grid_support", null)
 	visited[rider] = true
+
+
+func _reconcile_collision_links() -> void:
+	if board == null or not is_instance_valid(board):
+		return
+	var wanted: Dictionary = {}
+	for value: Node in get_tree().get_nodes_in_group("dnd_token"):
+		if not value is CharacterBody3D or not board.is_ancestor_of(value):
+			continue
+		var rider: CharacterBody3D = value as CharacterBody3D
+		if not is_mounted(rider):
+			continue
+		var target: Node3D = get_target(rider)
+		if target is PhysicsBody3D:
+			wanted[rider.get_instance_id()] = [weakref(rider), weakref(target)]
+
+	for rider_id: Variant in _collision_links.keys():
+		var previous: Array = _collision_links[rider_id]
+		var old_rider: PhysicsBody3D = previous[0].get_ref() as PhysicsBody3D
+		var old_target: PhysicsBody3D = previous[1].get_ref() as PhysicsBody3D
+		var new_pair: Array = wanted.get(rider_id, [])
+		var unchanged: bool = (
+			new_pair.size() == 2
+			and new_pair[0].get_ref() == old_rider
+			and new_pair[1].get_ref() == old_target
+		)
+		if not unchanged and is_instance_valid(old_rider) and is_instance_valid(old_target):
+			old_rider.remove_collision_exception_with(old_target)
+			old_target.remove_collision_exception_with(old_rider)
+
+	for rider_id: Variant in wanted.keys():
+		var pair: Array = wanted[rider_id]
+		var rider: PhysicsBody3D = pair[0].get_ref() as PhysicsBody3D
+		var target: PhysicsBody3D = pair[1].get_ref() as PhysicsBody3D
+		var previous: Array = _collision_links.get(rider_id, [])
+		if (
+			previous.size() != 2
+			or previous[0].get_ref() != rider
+			or previous[1].get_ref() != target
+		):
+			rider.add_collision_exception_with(target)
+			target.add_collision_exception_with(rider)
+	_collision_links = wanted
