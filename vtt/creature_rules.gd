@@ -214,6 +214,12 @@ static func serialize_public_identity(creature: Dictionary) -> Dictionary:
 
 # Automatic calculations never select spells on behalf of a player.
 # Only capacities and deterministic values are derived from class levels.
+const SPELLS_KNOWN_2014 := {
+	"bard": [0, 4, 5, 6, 7, 8, 9, 10, 11, 12, 14, 15, 15, 16, 18, 19, 19, 20, 22, 22, 22],
+	"sorcerer": [0, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 12, 13, 13, 14, 14, 15, 15, 15, 15],
+	"warlock": [0, 2, 3, 4, 5, 6, 7, 8, 9, 10, 10, 11, 11, 12, 12, 13, 13, 14, 14, 15, 15],
+	"ranger": [0, 0, 2, 3, 3, 4, 4, 5, 5, 6, 6, 7, 7, 8, 8, 9, 9, 10, 10, 11, 11]
+}
 
 
 
