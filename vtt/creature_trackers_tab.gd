@@ -267,8 +267,12 @@ func _refresh_trackers() -> void:
 		style.set_content_margin_all(7)
 		panel.add_theme_stylebox_override("panel", style)
 		panel.tooltip_text = _source_tooltip(sid)
+		var body := VBoxContainer.new()
+		panel.add_child(body)
 		var line := HBoxContainer.new()
-		panel.add_child(line)
+		body.add_child(line)
+		var details := HBoxContainer.new()
+		body.add_child(details)
 		var name_label := Label.new()
 		name_label.text = String(entry.get("name", "Tracker"))
 		name_label.size_flags_horizontal = Control.SIZE_EXPAND_FILL
@@ -296,7 +300,8 @@ func _refresh_trackers() -> void:
 			formula_editor.custom_minimum_size.x = 90
 			formula_editor.tooltip_text = "Formula massimo; conferma con Invio. Lascia vuoto per usare il valore fisso."
 			formula_editor.text_submitted.connect(_set_formula.bind(tracker_id))
-			line.add_child(formula_editor)
+			formula_editor.size_flags_horizontal = Control.SIZE_EXPAND_FILL
+			details.add_child(formula_editor)
 			var toggle := CheckButton.new()
 			toggle.text = "⏻"
 			toggle.button_pressed = not bool(entry.get("disabled", false))
@@ -308,14 +313,24 @@ func _refresh_trackers() -> void:
 			remove.tooltip_text = "Rimuovi solo questo tracker"
 			remove.pressed.connect(_remove.bind(tracker_id))
 			line.add_child(remove)
-		var recovery := Label.new()
 		var recovery_key: String = String(entry.get("recharge", "manual"))
-		recovery.text = {
-			"short_rest": "Riposo breve", "long_rest": "Riposo lungo",
-			"turn": "Inizio turno", "d6": "D6", "manual": "Manuale"
-		}.get(recovery_key, recovery_key)
-		recovery.tooltip_text = "Recupero del tracker"
-		line.add_child(recovery)
+		if automatic:
+			var recovery := Label.new()
+			recovery.text = {
+				"short_rest": "Riposo breve", "long_rest": "Riposo lungo",
+				"turn": "Inizio turno", "d6": "D6", "manual": "Manuale"
+			}.get(recovery_key, recovery_key)
+			recovery.tooltip_text = "Recupero del tracker"
+			details.add_child(recovery)
+		else:
+			var recovery_edit := OptionButton.new()
+			var modes: Array[String] = ["manual", "turn", "short_rest", "long_rest"]
+			for label: String in ["Ricarica manuale", "Inizio turno", "Riposo breve", "Riposo lungo"]:
+				recovery_edit.add_item(label)
+			recovery_edit.select(maxi(0, modes.find(recovery_key)))
+			recovery_edit.size_flags_horizontal = Control.SIZE_EXPAND_FILL
+			recovery_edit.item_selected.connect(_set_recharge.bind(tracker_id))
+			details.add_child(recovery_edit)
 		if not active and sid != _selected_origin:
 			panel.modulate.a = 0.58
 
@@ -364,6 +379,17 @@ func _set_maximum(value: float, tracker_id: String) -> void:
 	for entry: Dictionary in _manual:
 		if String(entry.get("id", "")) == tracker_id:
 			entry["max"] = int(value)
+			break
+	_publish()
+
+
+func _set_recharge(index: int, tracker_id: String) -> void:
+	var choices: Array[String] = ["manual", "turn", "short_rest", "long_rest"]
+	if index < 0 or index >= choices.size():
+		return
+	for entry: Dictionary in _manual:
+		if String(entry.get("id", "")) == tracker_id:
+			entry["recharge"] = choices[index]
 			break
 	_publish()
 
