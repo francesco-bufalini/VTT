@@ -618,7 +618,11 @@ func _filter_catalog() -> void:
 			selected_index = _filtered.size()
 		_filtered.append(item)
 		_catalog_list.add_item(_image_label(item, _catalog_row_label(item)))
-		_catalog_list.set_item_tooltip(_catalog_list.item_count - 1, Player5eTools.info_text(item))
+		# Search can render hundreds of results in one keystroke. Never
+		# expand rich item descriptions or heterogeneous 5etools properties
+		# into tooltips for every result; read them only on explicit selection.
+		_catalog_list.set_item_tooltip(_catalog_list.item_count - 1,
+			str(item.get("name", "")) + " · " + str(item.get("source", "")))
 	_catalog_count.text = (
 		"Risultati: %d" % matches if matches <= 250
 		else "Risultati: 250 di %d · Affina i filtri per vedere gli altri" % matches
