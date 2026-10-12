@@ -35,6 +35,7 @@ var _condition_cards: Dictionary = {}
 var _origin_buttons: Dictionary = {}
 var _selected_origin := "__manual__"
 var _base_hint: Label
+var _active_counts: Label
 
 
 static func _direct_type_list(raw: Variant) -> Array[String]:
@@ -187,6 +188,9 @@ func setup(on_change: Callable) -> void:
 	_base_hint = Label.new()
 	_base_hint.autowrap_mode = TextServer.AUTOWRAP_WORD_SMART
 	add_child(_base_hint)
+	_active_counts = Label.new()
+	_active_counts.add_theme_font_size_override("font_size", 13)
+	add_child(_active_counts)
 	var columns := HBoxContainer.new()
 	columns.size_flags_horizontal = Control.SIZE_EXPAND_FILL
 	columns.add_theme_constant_override("separation", 9)
@@ -201,7 +205,7 @@ func setup(on_change: Callable) -> void:
 	origins_column.add_child(origin_heading)
 	var origin_scroll := ScrollContainer.new()
 	origin_scroll.mouse_force_pass_scroll_events = false
-	origin_scroll.custom_minimum_size.y = 280
+	origin_scroll.custom_minimum_size.y = 245
 	origin_scroll.horizontal_scroll_mode = ScrollContainer.SCROLL_MODE_DISABLED
 	origins_column.add_child(origin_scroll)
 	_origin_cards = VBoxContainer.new()
@@ -209,7 +213,7 @@ func setup(on_change: Callable) -> void:
 	_origin_cards.size_flags_horizontal = Control.SIZE_EXPAND_FILL
 	origin_scroll.add_child(_origin_cards)
 	var benefits_column := VBoxContainer.new()
-	benefits_column.custom_minimum_size.x = 405
+	benefits_column.custom_minimum_size.x = 330
 	benefits_column.size_flags_horizontal = Control.SIZE_EXPAND_FILL
 	columns.add_child(benefits_column)
 	var benefits_heading := Label.new()
@@ -218,7 +222,7 @@ func setup(on_change: Callable) -> void:
 	benefits_column.add_child(benefits_heading)
 	var scroll := ScrollContainer.new()
 	scroll.mouse_force_pass_scroll_events = false
-	scroll.custom_minimum_size.y = 280
+	scroll.custom_minimum_size.y = 245
 	scroll.size_flags_horizontal = Control.SIZE_EXPAND_FILL
 	scroll.horizontal_scroll_mode = ScrollContainer.SCROLL_MODE_DISABLED
 	benefits_column.add_child(scroll)
@@ -253,7 +257,7 @@ func _make_defense_row(parent: VBoxContainer, text_value: String) -> HBoxContain
 	card.add_child(row)
 	var caption := Label.new()
 	caption.text = text_value
-	caption.custom_minimum_size.x = 102
+	caption.custom_minimum_size.x = 105
 	caption.size_flags_horizontal = Control.SIZE_EXPAND_FILL
 	row.add_child(caption)
 	return row
@@ -350,6 +354,16 @@ func load_record(record: Dictionary) -> void:
 	_base_hint.text = ("Rilevate %d difese condizionali: consultale nell'origine, non vengono applicate come generali." % warnings.size()
 		if not warnings.is_empty() else "Benefici automatici dalle origini attive, modifiche manuali salvate sulla creatura.")
 	_base_hint.tooltip_text = "\n".join(warnings)
+	var counts := {"v": 0, "r": 0, "i": 0, "c": 0}
+	for kind: Dictionary in DAMAGE_TYPES:
+		match rank(_record, String(kind["key"])):
+			-1: counts["v"] += 1
+			1: counts["r"] += 1
+			2: counts["i"] += 1
+	for condition_key: String in CONDITIONS:
+		if condition_immune(_record, condition_key):
+			counts["c"] += 1
+	_active_counts.text = "Vulnerabilità: %d  ·  Resistenze: %d  ·  Immunità: %d  ·  Condizioni: %d" % [counts["v"], counts["r"], counts["i"], counts["c"]]
 	for item: Dictionary in DAMAGE_TYPES:
 		var key: String = String(item["key"])
 		var baseline: int = _base_rank_from_sources(_cached_sources, key)
@@ -357,20 +371,23 @@ func load_record(record: Dictionary) -> void:
 		var level: int = clampi(int(overrides.get(key, baseline)), -1, 2)
 		var damage_row: HBoxContainer = _make_defense_row(_damage_rows, String(item["label"]))
 		_damage_cards[key] = damage_row.get_parent()
-		var vulnerable := CheckButton.new()
-		vulnerable.text = "Vulnerabilità"
+		var vulnerable := Button.new()
+		vulnerable.toggle_mode = true
+		vulnerable.text = "Vuln."
 		vulnerable.set_pressed_no_signal(level == -1)
 		vulnerable.tooltip_text = "Subisce il doppio dei danni di questo tipo"
 		vulnerable.toggled.connect(_on_vulnerability_changed.bind(key))
 		damage_row.add_child(vulnerable)
-		var resistant := CheckButton.new()
-		resistant.text = "Resistenza"
+		var resistant := Button.new()
+		resistant.toggle_mode = true
+		resistant.text = "Res."
 		resistant.set_pressed_no_signal(level >= 1)
 		resistant.tooltip_text = "Primo grado: dimezza i danni di questo tipo"
 		resistant.toggled.connect(_on_resistance_changed.bind(key))
 		damage_row.add_child(resistant)
-		var immune := CheckButton.new()
-		immune.text = "Immunità"
+		var immune := Button.new()
+		immune.toggle_mode = true
+		immune.text = "Imm."
 		immune.set_pressed_no_signal(level >= 2)
 		immune.tooltip_text = "Secondo grado: annulla i danni di questo tipo"
 		immune.toggled.connect(_on_immunity_changed.bind(key))
@@ -379,7 +396,8 @@ func load_record(record: Dictionary) -> void:
 	for condition: String in CONDITIONS:
 		var condition_row: HBoxContainer = _make_defense_row(_condition_rows, condition.capitalize())
 		_condition_cards[condition] = condition_row.get_parent()
-		var immune := CheckButton.new()
+		var immune := Button.new()
+		immune.toggle_mode = true
 		immune.text = "Immune"
 		var condition_overrides: Dictionary = _record.get("condition_immunity_overrides", {})
 		immune.set_pressed_no_signal(bool(condition_overrides.get(condition,
@@ -415,9 +433,9 @@ func _change_rank(key: String, level: int) -> void:
 	overrides[key] = level
 	_record["damage_defense_overrides"] = overrides
 	var pair: Dictionary = _damage_buttons.get(key, {})
-	(pair.get("vulnerability") as CheckButton).set_pressed_no_signal(level == -1)
-	(pair.get("resistance") as CheckButton).set_pressed_no_signal(level >= 1)
-	(pair.get("immunity") as CheckButton).set_pressed_no_signal(level == 2)
+	(pair.get("vulnerability") as Button).set_pressed_no_signal(level == -1)
+	(pair.get("resistance") as Button).set_pressed_no_signal(level >= 1)
+	(pair.get("immunity") as Button).set_pressed_no_signal(level == 2)
 	_refresh_highlights()
 	_publish()
 
@@ -431,6 +449,16 @@ func _on_condition_changed(enabled: bool, key: String) -> void:
 
 
 func _publish() -> void:
+	if _active_counts != null:
+		var counts := [0, 0, 0, 0]
+		for kind: Dictionary in DAMAGE_TYPES:
+			match rank(_record, String(kind["key"])):
+				-1: counts[0] += 1
+				1: counts[1] += 1
+				2: counts[2] += 1
+		for condition_key: String in CONDITIONS:
+			if condition_immune(_record, condition_key): counts[3] += 1
+		_active_counts.text = "Vulnerabilità: %d  ·  Resistenze: %d  ·  Immunità: %d  ·  Condizioni: %d" % counts
 	if _changed.is_valid():
 		_changed.call(
 			_record.get("damage_defense_overrides", {}).duplicate(true),
