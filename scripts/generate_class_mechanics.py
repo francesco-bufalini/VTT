@@ -41,6 +41,18 @@ def feature_name(raw):
     return str(ref).split("|")[0].strip()
 
 
+def references_column(value, column):
+    # Genuine 5etools refClassFeature object; this is not prose parsing.
+    if isinstance(value, dict):
+        if value.get("type") == "refClassFeature" and str(
+            value.get("classFeature", "")).split("|")[0].casefold() == column.casefold():
+            return True
+        return any(references_column(v, column) for v in value.values())
+    if isinstance(value, list):
+        return any(references_column(v, column) for v in value)
+    return False
+
+
 def origin_for(column, class_row, features):
     names = [feature_name(x) for x in class_row.get("classFeatures", [])]
     simple = column.casefold()
@@ -74,7 +86,7 @@ def origin_for(column, class_row, features):
             continue
         body = json.dumps(feat.get("entries", [])).casefold()
         score = 0
-        if f"refclassfeature\\\": \\\"{simple}" in body:
+        if references_column(feat.get("entries", []), column):
             score = 4
         elif f"{simple} column" in body or f"column of" in body and simple in body:
             score = 3
