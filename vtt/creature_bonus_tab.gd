@@ -1,5 +1,7 @@
 extends VBoxContainer
 
+const ScrollBoundaryGuard = preload("res://vtt/nested_scroll_boundary_guard.gd")
+
 # The same two-column origin/benefit editor used by proficiencies. Unlike
 # proficiencies, each individual bonus is kept, even when targets/amounts match.
 const Bonuses = preload("res://vtt/creature_bonus_rules.gd")
@@ -46,6 +48,7 @@ func setup(on_change: Callable) -> void:
 
 	var origin_scroll := ScrollContainer.new()
 	origin_scroll.mouse_force_pass_scroll_events = false
+	ScrollBoundaryGuard.install(origin_scroll)
 	origin_scroll.custom_minimum_size.y = 245
 	origin_scroll.size_flags_vertical = Control.SIZE_EXPAND_FILL
 	origin_scroll.horizontal_scroll_mode = ScrollContainer.SCROLL_MODE_DISABLED
@@ -63,6 +66,7 @@ func setup(on_change: Callable) -> void:
 	right.add_child(_target_filter)
 	var bonuses_scroll := ScrollContainer.new()
 	bonuses_scroll.mouse_force_pass_scroll_events = false
+	ScrollBoundaryGuard.install(bonuses_scroll)
 	bonuses_scroll.custom_minimum_size.y = 245
 	bonuses_scroll.size_flags_vertical = Control.SIZE_EXPAND_FILL
 	bonuses_scroll.horizontal_scroll_mode = ScrollContainer.SCROLL_MODE_DISABLED
