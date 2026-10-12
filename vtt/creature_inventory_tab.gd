@@ -10,6 +10,7 @@ const DocumentStore = preload("res://vtt/document_homebrew.gd")
 const DocumentInbox = preload("res://vtt/document_inbox.gd")
 const ItemImagePreview = preload("res://vtt/item_image_preview.gd")
 const CreatureLocale = preload("res://vtt/creature_gui_locale.gd")
+const FiveToolsText = preload("res://vtt/five_tools_rich_text.gd")
 
 var _on_change: Callable
 var _on_status: Callable
@@ -246,6 +247,14 @@ func setup(on_change: Callable, on_status: Callable, on_document_change: Callabl
 	_details.size_flags_horizontal = Control.SIZE_EXPAND_FILL
 	_details.scroll_active = true
 	_details.selection_enabled = true
+	FiveToolsText.style(_details)
+	var details_style := StyleBoxFlat.new()
+	details_style.bg_color = Color(0.13, 0.14, 0.16, 0.75)
+	details_style.border_color = Color(0.40, 0.35, 0.29, 0.65)
+	details_style.set_border_width_all(1)
+	details_style.set_corner_radius_all(5)
+	details_style.set_content_margin_all(9)
+	_details.add_theme_stylebox_override("normal", details_style)
 	_details.hide()
 	add_child(_details)
 	var inner_tabs := TabContainer.new()
@@ -729,12 +738,13 @@ func _on_inventory_selected(index: int) -> void:
 		if String(catalog_item.get("id", "")) == item_id:
 			_show_details(catalog_item)
 			return
-	_details.text = "%s\n%s%s\n%s" % [
-		String(_inventory[index].get("name", "")),
-		CreatureLocale.text_for("Fonte: ", _gui_language),
-		String(_inventory[index].get("source", "")),
-		CreatureLocale.text_for("Voce non installata nel catalogo locale.", _gui_language)
-	]
+	_details.text = (FiveToolsText.title(String(_inventory[index].get("name", "")))
+		+ "\n" + FiveToolsText.meta(
+			CreatureLocale.text_for("Fonte: ", _gui_language)
+			+ String(_inventory[index].get("source", ""))
+		) + "\n\n" + FiveToolsText.blocks(
+			CreatureLocale.text_for("Voce non installata nel catalogo locale.", _gui_language)
+		))
 	_details.show()
 
 
@@ -921,7 +931,8 @@ func _inventory_label(item: Dictionary) -> String:
 
 func _show_details(item: Dictionary) -> void:
 	var description: String = Player5eTools.description_text_from_raw_item(item)
-	_details.text = CreatureLocale.text_for(ItemRules.category_name(item), _gui_language) + "\n" + Player5eTools.info_text(item, description)
+	_details.text = (FiveToolsText.subtitle(CreatureLocale.text_for(ItemRules.category_name(item), _gui_language))
+		+ "\n\n" + FiveToolsText.blocks(Player5eTools.info_text(item, description)))
 	_details.show()
 
 
