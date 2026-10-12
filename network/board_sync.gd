@@ -1713,6 +1713,16 @@ func _instantiate_from_data(data: Dictionary) -> Node3D:
 	return node
 
 func _apply_node_data(node: Node3D, data: Dictionary) -> void:
+	var old_conditions: Array = (
+		node.call("get_conditions") if node.has_method("get_conditions") else []
+	)
+	var old_active_spells: Array = (
+		node.call("get_active_spell_ids") if node.has_method("get_active_spell_ids") else []
+	)
+	var old_concentration: String = (
+		String(node.call("get_concentrating_spell_id"))
+		if node.has_method("get_concentrating_spell_id") else ""
+	)
 	node.visible=bool(data.get("visible",true))
 	if data.get("kind","") == "token" and node.has_method("set_token_id"):
 		var restored_token_id := String(data.get("token_id", "")).strip_edges()
@@ -1879,6 +1889,19 @@ func _apply_node_data(node: Node3D, data: Dictionary) -> void:
 			)
 		if apply_shared_appearance:
 			_remember_received_token_appearance(node, data)
+		# Only propagate changed tactical effects to an owned private sheet.
+		# Do not persist on every incoming map snapshot or polling update.
+		if (
+			board_root != null
+			and (
+				(old_conditions != node.call("get_conditions") if node.has_method("get_conditions") else false)
+				or (old_active_spells != node.call("get_active_spell_ids") if node.has_method("get_active_spell_ids") else false)
+				or (old_concentration != String(node.call("get_concentrating_spell_id")) if node.has_method("get_concentrating_spell_id") else false)
+			)
+		):
+			var creature_area: Node = board_root.get_node_or_null("CreatureArea")
+			if creature_area != null and creature_area.has_method("sync_linked_token_status"):
+				creature_area.call_deferred("sync_linked_token_status", node)
 	# configure() snaps tokens; restore the exact shared transform afterwards.
 	node.global_transform = _dict_transform(data.get("transform", {}))
 
