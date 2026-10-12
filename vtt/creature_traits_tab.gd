@@ -393,13 +393,15 @@ static func _collect_features(record: Dictionary) -> Array[Dictionary]:
 				feat_id = feat_name.to_lower() + "|" + feat_source.to_lower()
 			_append(result, {
 				"id": feat_id, "name": feat_name, "source": feat_source,
+				"inactive": bool(owned.get("disabled", false)),
 				"feats": feat_entry.get("feats", []),
 				"resist": feat_entry.get("resist", []), "immune": feat_entry.get("immune", []),
 				"conditionImmune": feat_entry.get("conditionImmune", []),
 				"entries": PlayerCatalog.info_text(feat_entry, PlayerCatalog.description_text("feats", feat_entry))
 			}, 1, "Talento · " + feat_name, "feat|" + feat_id, "", "", 3)
 			_append_named_entries(result, feat_entry.get("entries", []),
-				"Talento · " + feat_name, "feat|" + feat_id, feat_source, 3)
+				"Talento · " + feat_name, "feat|" + feat_id, feat_source, 3,
+				bool(owned.get("disabled", false)))
 
 	# Inventory entries remain visible as traits while owned. Equipment
 	# controls only their effective origins, not whether the item exists.
@@ -558,7 +560,7 @@ static func _collect_features(record: Dictionary) -> Array[Dictionary]:
 # structured bonus/feat fields independently from the parent description.
 static func _append_named_entries(
 	output: Array[Dictionary], value: Variant, origin: String, origin_key: String,
-	book: String, rank: int = 2
+	book: String, rank: int = 2, inactive: bool = false
 ) -> void:
 	if not value is Array:
 		return
@@ -576,6 +578,7 @@ static func _append_named_entries(
 		feature_data["id"] = String(data.get("id", "section-%d" % index))
 		feature_data["entries"] = data.get("entries", data.get("entry", ""))
 		feature_data["source"] = book
+		feature_data["inactive"] = inactive or bool(data.get("inactive", false))
 		_append(output, feature_data, 1, origin, origin_key, "", "", rank)
 		index += 1
 
