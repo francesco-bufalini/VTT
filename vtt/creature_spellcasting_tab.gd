@@ -116,6 +116,7 @@ func setup(
 	_catalog_title.text = "Catalogo · doppio clic per lanciare"
 	add_child(_catalog_title)
 	_available = ItemList.new()
+	_available.mouse_force_pass_scroll_events = false
 	_available.custom_minimum_size = Vector2(0, 160)
 	_available.size_flags_horizontal = Control.SIZE_EXPAND_FILL
 	_available.item_selected.connect(func(_index: int) -> void: _on_spell_list_selected("catalog"))
@@ -162,6 +163,7 @@ func setup(
 	_book_hint.hide()
 	known_col.add_child(_book_hint)
 	_known_list = ItemList.new()
+	_known_list.mouse_force_pass_scroll_events = false
 	_known_list.custom_minimum_size = Vector2(0, 170)
 	_known_list.size_flags_horizontal = Control.SIZE_EXPAND_FILL
 	_known_list.size_flags_vertical = Control.SIZE_EXPAND_FILL
@@ -189,6 +191,7 @@ func setup(
 	header_spacer.custom_minimum_size = Vector2(40, 30)
 	prepared_header.add_child(header_spacer)
 	_prepared_list = ItemList.new()
+	_prepared_list.mouse_force_pass_scroll_events = false
 	_prepared_list.custom_minimum_size = Vector2(0, 170)
 	_prepared_list.size_flags_horizontal = Control.SIZE_EXPAND_FILL
 	_prepared_list.size_flags_vertical = Control.SIZE_EXPAND_FILL
@@ -240,6 +243,7 @@ func setup(
 	search_toggle_row.add_child(_cast_button)
 
 	_description = RichTextLabel.new()
+	_description.mouse_force_pass_scroll_events = false
 	_description.custom_minimum_size.y = 150
 	_description.size_flags_horizontal = Control.SIZE_EXPAND_FILL
 	_description.scroll_active = true
@@ -263,6 +267,7 @@ func setup(
 	_slots_eye.pressed.connect(_toggle_slots_visibility)
 	slot_title.add_child(_slots_eye)
 	var slot_scroll := ScrollContainer.new()
+	slot_scroll.mouse_force_pass_scroll_events = false
 	slot_scroll.name = "SlotHorizontalScroll"
 	slot_scroll.size_flags_horizontal = Control.SIZE_EXPAND_FILL
 	slot_scroll.horizontal_scroll_mode = ScrollContainer.SCROLL_MODE_AUTO
@@ -342,6 +347,7 @@ func setup(
 	_pact_eye.pressed.connect(_toggle_pact_visibility)
 	pact_header.add_child(_pact_eye)
 	var pact_scroll := ScrollContainer.new()
+	pact_scroll.mouse_force_pass_scroll_events = false
 	pact_scroll.name = "PactHorizontalScroll"
 	pact_scroll.size_flags_horizontal = Control.SIZE_EXPAND_FILL
 	pact_scroll.horizontal_scroll_mode = ScrollContainer.SCROLL_MODE_AUTO
