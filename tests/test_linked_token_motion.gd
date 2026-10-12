@@ -72,6 +72,22 @@ func _run() -> void:
 		_fail("linked tokens must not block each other's movement")
 		return
 
+	# The follower can initiate a move without losing the association.
+	var follower_before: Transform3D = follower.global_transform
+	var leader_before: Vector3 = leader.global_position
+	var step := Vector3(1.0, 2.0, -3.0)
+	follower.global_position += step
+	links.call("apply_explicit_token_motion", follower, follower_before)
+	if not _near(leader.global_position, leader_before + step):
+		_fail("moving a follower must move its leader too")
+		return
+	if not _near(follower.global_position, leader.to_global(local_position)):
+		_fail("moving a follower must keep the link and formation")
+		return
+	if not bool(links.call("is_mounted", follower)):
+		_fail("moving a follower unexpectedly detached it")
+		return
+
 	leader.global_position += Vector3(3.0, -2.0, 1.0)
 	links.call("refresh_all")
 	if not _near(follower.global_position, leader.to_global(local_position)):
@@ -94,6 +110,13 @@ func _run() -> void:
 	if not tail.get_collision_exceptions().has(leader):
 		_fail("nested follower must not collide with its ancestor leader")
 		return
+	var sibling := _spawn(board, "sibling", Vector3(-4.0, 2.0, -1.0), 0.0)
+	if not bool(links.call("mount", sibling, leader)):
+		_fail("second follower must be able to join the same formation")
+		return
+	if not sibling.get_collision_exceptions().has(follower):
+		_fail("siblings must not obstruct each other while moving together")
+		return
 	var tail_local: Vector3 = follower.to_local(tail.global_position)
 	var tail_yaw: float = wrapf(
 		tail.global_rotation.y - follower.global_rotation.y, -PI, PI
@@ -113,6 +136,25 @@ func _run() -> void:
 		or not _same_yaw(tail.global_rotation.y, follower.global_rotation.y + tail_yaw)
 	):
 		_fail("nested followers did not keep their local transform")
+		return
+
+	# A nested follower is also a valid rotation pivot. The leader rotates
+	# around the moved follower, carrying every member of the chain.
+	var leader_offset: Vector3 = follower.to_local(leader.global_position)
+	var leader_relative_yaw: float = wrapf(
+		leader.global_rotation.y - follower.global_rotation.y, -PI, PI
+	)
+	var follower_facing_before: Transform3D = follower.global_transform
+	follower.global_rotation.y += PI / 2.0
+	links.call("apply_explicit_token_motion", follower, follower_facing_before)
+	if (
+		not _near(leader.global_position, follower.to_global(leader_offset))
+		or not _same_yaw(
+			leader.global_rotation.y, follower.global_rotation.y + leader_relative_yaw
+		)
+		or not _near(tail.global_position, follower.to_global(tail_local))
+	):
+		_fail("rotating a follower must rotate the entire formation around it")
 		return
 
 	links.call("dismount", follower)
