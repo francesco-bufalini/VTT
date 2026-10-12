@@ -1,0 +1,1317 @@
+{
+  "schema_version": 1,
+  "generated_on": "2026-10-13",
+  "note": "Release identifiers and exact 5etools monster identities; variant associations are conservative and not a substitute for monster stat blocks. The six ambiguous/accessory models intentionally have no portrait.",
+  "groups": [
+    {
+      "release_tag": "MM-Dragons",
+      "match_method": "name_and_variant",
+      "editions": {
+        "2014": {
+          "name": "Adult Brass Dragon",
+          "source": "MM"
+        },
+        "2024": {
+          "name": "Adult Brass Dragon",
+          "source": "XMM"
+        }
+      },
+      "assets": [
+        "adult_brass_dragon_flying_updated.pck",
+        "adult_brass_dragon_updated.pck"
+      ]
+    },
+    {
+      "release_tag": "MM-Dragons",
+      "match_method": "name_and_variant",
+      "editions": {
+        "2014": {
+          "name": "Adult Bronze Dragon",
+          "source": "MM"
+        },
+        "2024": {
+          "name": "Adult Bronze Dragon",
+          "source": "XMM"
+        }
+      },
+      "assets": [
+        "adult_bronze_dragon_flying_updated.pck",
+        "adult_bronze_dragon_updated.pck"
+      ]
+    },
+    {
+      "release_tag": "MM-Dragons",
+      "match_method": "name_and_variant",
+      "editions": {
+        "2014": {
+          "name": "Adult Copper Dragon",
+          "source": "MM"
+        },
+        "2024": {
+          "name": "Adult Copper Dragon",
+          "source": "XMM"
+        }
+      },
+      "assets": [
+        "adult_copper_dragon_flying_updated.pck",
+        "adult_copper_dragon_updated.pck"
+      ]
+    },
+    {
+      "release_tag": "MM-Dragons",
+      "match_method": "name_and_variant",
+      "editions": {
+        "2014": {
+          "name": "Adult Gold Dragon",
+          "source": "MM"
+        },
+        "2024": {
+          "name": "Adult Gold Dragon",
+          "source": "XMM"
+        }
+      },
+      "assets": [
+        "adult_gold_dragon_flying_updated.pck",
+        "adult_gold_dragon_updated.pck"
+      ]
+    },
+    {
+      "release_tag": "MM-Dragons",
+      "match_method": "name_and_variant",
+      "editions": {
+        "2014": {
+          "name": "Adult Silver Dragon",
+          "source": "MM"
+        },
+        "2024": {
+          "name": "Adult Silver Dragon",
+          "source": "XMM"
+        }
+      },
+      "assets": [
+        "adult_silver_dragon_updated_flying.pck"
+      ]
+    },
+    {
+      "release_tag": "MM-Dragons",
+      "match_method": "name_and_variant",
+      "editions": {
+        "2014": {
+          "name": "Ancient Brass Dragon",
+          "source": "MM"
+        },
+        "2024": {
+          "name": "Ancient Brass Dragon",
+          "source": "XMM"
+        }
+      },
+      "assets": [
+        "ancient_brass_dragon_flying_updated.pck",
+        "ancient_brass_dragon_updated.pck"
+      ]
+    },
+    {
+      "release_tag": "MM-Dragons",
+      "match_method": "name_and_variant",
+      "editions": {
+        "2014": {
+          "name": "Ancient Bronze Dragon",
+          "source": "MM"
+        },
+        "2024": {
+          "name": "Ancient Bronze Dragon",
+          "source": "XMM"
+        }
+      },
+      "assets": [
+        "ancient_bronze_dragon_flying_updated.pck",
+        "ancient_bronze_dragon_updated.pck"
+      ]
+    },
+    {
+      "release_tag": "MM-Dragons",
+      "match_method": "name_and_variant",
+      "editions": {
+        "2014": {
+          "name": "Ancient Copper Dragon",
+          "source": "MM"
+        },
+        "2024": {
+          "name": "Ancient Copper Dragon",
+          "source": "XMM"
+        }
+      },
+      "assets": [
+        "ancient_copper_dragon_flying_updated.pck",
+        "ancient_copper_dragon_updated.pck"
+      ]
+    },
+    {
+      "release_tag": "MM-Dragons",
+      "match_method": "name_and_variant",
+      "editions": {
+        "2014": {
+          "name": "Ancient Gold Dragon",
+          "source": "MM"
+        },
+        "2024": {
+          "name": "Ancient Gold Dragon",
+          "source": "XMM"
+        }
+      },
+      "assets": [
+        "ancient_gold_dragon_flying_updated.pck",
+        "ancient_gold_dragon_updated.pck"
+      ]
+    },
+    {
+      "release_tag": "MM-Dragons",
+      "match_method": "curated_variant",
+      "editions": {
+        "2014": {
+          "name": "Aspect of Bahamut",
+          "source": "FTD",
+          "page": 165,
+          "url": "https://5e.tools/bestiary.html#aspect%20of%20bahamut_ftd",
+          "token_url": "https://5e.tools/img/bestiary/tokens/FTD/Aspect%20of%20Bahamut.webp"
+        }
+      },
+      "assets": [
+        "bahamut_updated.pck"
+      ]
+    },
+    {
+      "release_tag": "MM-Dragons",
+      "match_method": "name_and_variant",
+      "editions": {
+        "2014": {
+          "name": "Adult Black Dragon",
+          "source": "MM"
+        },
+        "2024": {
+          "name": "Adult Black Dragon",
+          "source": "XMM"
+        }
+      },
+      "assets": [
+        "black_dragon_adult_updated_flying.pck",
+        "black_dragon_adult_wings_closed.pck"
+      ]
+    },
+    {
+      "release_tag": "MM-Dragons",
+      "match_method": "name_and_variant",
+      "editions": {
+        "2014": {
+          "name": "Young Black Dragon",
+          "source": "MM"
+        },
+        "2024": {
+          "name": "Young Black Dragon",
+          "source": "XMM"
+        }
+      },
+      "assets": [
+        "black_dragon_young_updated_flying.pck"
+      ]
+    },
+    {
+      "release_tag": "MM-Dragons",
+      "match_method": "name_and_variant",
+      "editions": {
+        "2014": {
+          "name": "Adult Blue Dragon",
+          "source": "MM"
+        },
+        "2024": {
+          "name": "Adult Blue Dragon",
+          "source": "XMM"
+        }
+      },
+      "assets": [
+        "blue_dragon_adult_updated_flying.pck"
+      ]
+    },
+    {
+      "release_tag": "MM-Dragons",
+      "match_method": "name_and_variant",
+      "editions": {
+        "2014": {
+          "name": "Ancient Blue Dragon",
+          "source": "MM"
+        },
+        "2024": {
+          "name": "Ancient Blue Dragon",
+          "source": "XMM"
+        }
+      },
+      "assets": [
+        "blue_dragon_ancient_updated_flying.pck"
+      ]
+    },
+    {
+      "release_tag": "MM-Dragons",
+      "match_method": "curated_variant",
+      "editions": {
+        "2014": {
+          "name": "Adult Blue Dragon",
+          "source": "MM"
+        },
+        "2024": {
+          "name": "Adult Blue Dragon",
+          "source": "XMM"
+        }
+      },
+      "assets": [
+        "blue_dragon_playing_d_d.pck"
+      ]
+    },
+    {
+      "release_tag": "MM-Dragons",
+      "match_method": "name_and_variant",
+      "editions": {
+        "2014": {
+          "name": "Blue Dragon Wyrmling",
+          "source": "MM"
+        },
+        "2024": {
+          "name": "Blue Dragon Wyrmling",
+          "source": "XMM"
+        }
+      },
+      "assets": [
+        "blue_dragon_wyrmling_updated.pck"
+      ]
+    },
+    {
+      "release_tag": "MM-Dragons",
+      "match_method": "name_and_variant",
+      "editions": {
+        "2014": {
+          "name": "Brass Dragon Wyrmling",
+          "source": "MM"
+        },
+        "2024": {
+          "name": "Brass Dragon Wyrmling",
+          "source": "XMM"
+        }
+      },
+      "assets": [
+        "brass_dragon_wyrmling.pck",
+        "brass_dragon_wyrmling_flying_updated.pck"
+      ]
+    },
+    {
+      "release_tag": "MM-Dragons",
+      "match_method": "name_and_variant",
+      "editions": {
+        "2014": {
+          "name": "Bronze Dragon Wyrmling",
+          "source": "MM"
+        },
+        "2024": {
+          "name": "Bronze Dragon Wyrmling",
+          "source": "XMM"
+        }
+      },
+      "assets": [
+        "bronze_dragon_wyrmling_flying_updated.pck",
+        "bronze_dragon_wyrmling_updated.pck"
+      ]
+    },
+    {
+      "release_tag": "MM-Dragons",
+      "match_method": "name_and_variant",
+      "editions": {
+        "2014": {
+          "name": "Copper Dragon Wyrmling",
+          "source": "MM"
+        },
+        "2024": {
+          "name": "Copper Dragon Wyrmling",
+          "source": "XMM"
+        }
+      },
+      "assets": [
+        "copper_dragon_wyrmling_flying_updated.pck",
+        "copper_dragon_wyrmling_updated.pck"
+      ]
+    },
+    {
+      "release_tag": "MM-Dragons",
+      "match_method": "name_and_variant",
+      "editions": {
+        "2014": {
+          "name": "Gold Dragon Wyrmling",
+          "source": "MM"
+        },
+        "2024": {
+          "name": "Gold Dragon Wyrmling",
+          "source": "XMM"
+        }
+      },
+      "assets": [
+        "gold_dragon_wyrmling_flying_updated.pck",
+        "gold_dragon_wyrmling_sitting.pck",
+        "gold_dragon_wyrmling_sleeping.pck"
+      ]
+    },
+    {
+      "release_tag": "MM-Dragons",
+      "match_method": "name_and_variant",
+      "editions": {
+        "2014": {
+          "name": "Adult Green Dragon",
+          "source": "MM"
+        },
+        "2024": {
+          "name": "Adult Green Dragon",
+          "source": "XMM"
+        }
+      },
+      "assets": [
+        "green_dragon_adult_flying_updated.pck"
+      ]
+    },
+    {
+      "release_tag": "MM-Dragons",
+      "match_method": "name_and_variant",
+      "editions": {
+        "2014": {
+          "name": "Green Dragon Wyrmling",
+          "source": "MM"
+        },
+        "2024": {
+          "name": "Green Dragon Wyrmling",
+          "source": "XMM"
+        }
+      },
+      "assets": [
+        "green_dragon_wyrmling_updated.pck"
+      ]
+    },
+    {
+      "release_tag": "MM-Dragons",
+      "match_method": "name_and_variant",
+      "editions": {
+        "2014": {
+          "name": "Young Green Dragon",
+          "source": "MM"
+        },
+        "2024": {
+          "name": "Young Green Dragon",
+          "source": "XMM"
+        }
+      },
+      "assets": [
+        "green_dragon_young_flying_updated.pck"
+      ]
+    },
+    {
+      "release_tag": "MM-Dragons",
+      "match_method": "curated_variant",
+      "editions": {
+        "2014": {
+          "name": "Ancient Black Dragon",
+          "source": "MM"
+        },
+        "2024": {
+          "name": "Ancient Black Dragon",
+          "source": "XMM"
+        }
+      },
+      "assets": [
+        "old_flying_black_dragon.pck"
+      ]
+    },
+    {
+      "release_tag": "MM-Dragons",
+      "match_method": "name_and_variant",
+      "editions": {
+        "2014": {
+          "name": "Adult Red Dragon",
+          "source": "MM"
+        },
+        "2024": {
+          "name": "Adult Red Dragon",
+          "source": "XMM"
+        }
+      },
+      "assets": [
+        "red_dragon_adult_flying_updated.pck",
+        "red_dragon_adult_updated.pck"
+      ]
+    },
+    {
+      "release_tag": "MM-Dragons",
+      "match_method": "name_and_variant",
+      "editions": {
+        "2014": {
+          "name": "Ancient Red Dragon",
+          "source": "MM"
+        },
+        "2024": {
+          "name": "Ancient Red Dragon",
+          "source": "XMM"
+        }
+      },
+      "assets": [
+        "red_dragon_ancient_flying_updated.pck",
+        "red_dragon_ancient_updated.pck"
+      ]
+    },
+    {
+      "release_tag": "MM-Dragons",
+      "match_method": "curated_variant",
+      "editions": {
+        "2014": {
+          "name": "Young Red Dragon",
+          "source": "MM"
+        },
+        "2024": {
+          "name": "Young Red Dragon",
+          "source": "XMM"
+        }
+      },
+      "assets": [
+        "red_dragon_reading_a_book.pck"
+      ]
+    },
+    {
+      "release_tag": "MM-Dragons",
+      "match_method": "name_and_variant",
+      "editions": {
+        "2014": {
+          "name": "Red Dragon Wyrmling",
+          "source": "MM"
+        },
+        "2024": {
+          "name": "Red Dragon Wyrmling",
+          "source": "XMM"
+        }
+      },
+      "assets": [
+        "red_dragon_wyrmling_flying_updated.pck",
+        "red_dragon_wyrmling_updated.pck"
+      ]
+    },
+    {
+      "release_tag": "MM-Dragons",
+      "match_method": "name_and_variant",
+      "editions": {
+        "2014": {
+          "name": "Young Red Dragon",
+          "source": "MM"
+        },
+        "2024": {
+          "name": "Young Red Dragon",
+          "source": "XMM"
+        }
+      },
+      "assets": [
+        "red_dragon_young_flying_updated.pck",
+        "red_dragon_young_updated.pck"
+      ]
+    },
+    {
+      "release_tag": "MM-Dragons",
+      "match_method": "name_and_variant",
+      "editions": {
+        "2014": {
+          "name": "Silver Dragon Wyrmling",
+          "source": "MM"
+        },
+        "2024": {
+          "name": "Silver Dragon Wyrmling",
+          "source": "XMM"
+        }
+      },
+      "assets": [
+        "silver_dragon_wyrmling_updated.pck"
+      ]
+    },
+    {
+      "release_tag": "MM-Dragons",
+      "match_method": "curated_variant",
+      "editions": {
+        "2014": {
+          "name": "Tiamat",
+          "source": "RoT",
+          "page": 92,
+          "url": "https://5e.tools/bestiary.html#tiamat_rot",
+          "token_url": "https://5e.tools/img/bestiary/tokens/RoT/Tiamat.webp"
+        }
+      },
+      "assets": [
+        "tiamat_goddess_form.pck",
+        "tiamat_goddess_form_no_crown.pck",
+        "tiamat_updated.pck"
+      ]
+    },
+    {
+      "release_tag": "MM-Dragons",
+      "match_method": "name_and_variant",
+      "editions": {
+        "2014": {
+          "name": "Adult White Dragon",
+          "source": "MM"
+        },
+        "2024": {
+          "name": "Adult White Dragon",
+          "source": "XMM"
+        }
+      },
+      "assets": [
+        "white_dragon_adult_updated_flying.pck"
+      ]
+    },
+    {
+      "release_tag": "MM-Dragons",
+      "match_method": "name_and_variant",
+      "editions": {
+        "2014": {
+          "name": "White Dragon Wyrmling",
+          "source": "MM"
+        },
+        "2024": {
+          "name": "White Dragon Wyrmling",
+          "source": "XMM"
+        }
+      },
+      "assets": [
+        "white_dragon_wyrmling_updated.pck"
+      ]
+    },
+    {
+      "release_tag": "MM-Dragons",
+      "match_method": "name_and_variant",
+      "editions": {
+        "2014": {
+          "name": "Young White Dragon",
+          "source": "MM"
+        },
+        "2024": {
+          "name": "Young White Dragon",
+          "source": "XMM"
+        }
+      },
+      "assets": [
+        "white_dragon_young_updated_flying.pck"
+      ]
+    },
+    {
+      "release_tag": "MM-Dragons",
+      "match_method": "name_and_variant",
+      "editions": {
+        "2014": {
+          "name": "Young Brass Dragon",
+          "source": "MM"
+        },
+        "2024": {
+          "name": "Young Brass Dragon",
+          "source": "XMM"
+        }
+      },
+      "assets": [
+        "young_brass_dragon_flying_updated.pck",
+        "young_brass_dragon_updated.pck"
+      ]
+    },
+    {
+      "release_tag": "MM-Dragons",
+      "match_method": "name_and_variant",
+      "editions": {
+        "2014": {
+          "name": "Young Bronze Dragon",
+          "source": "MM"
+        },
+        "2024": {
+          "name": "Young Bronze Dragon",
+          "source": "XMM"
+        }
+      },
+      "assets": [
+        "young_bronze_dragon_flying_updated.pck",
+        "young_bronze_dragon_updated.pck"
+      ]
+    },
+    {
+      "release_tag": "MM-Dragons",
+      "match_method": "name_and_variant",
+      "editions": {
+        "2014": {
+          "name": "Young Copper Dragon",
+          "source": "MM"
+        },
+        "2024": {
+          "name": "Young Copper Dragon",
+          "source": "XMM"
+        }
+      },
+      "assets": [
+        "young_copper_dragon_flying_updated.pck",
+        "young_copper_dragon_updated.pck"
+      ]
+    },
+    {
+      "release_tag": "MM-Dragons",
+      "match_method": "name_and_variant",
+      "editions": {
+        "2014": {
+          "name": "Young Gold Dragon",
+          "source": "MM"
+        },
+        "2024": {
+          "name": "Young Gold Dragon",
+          "source": "XMM"
+        }
+      },
+      "assets": [
+        "young_gold_dragon_flying_updated.pck",
+        "young_gold_dragon_updated.pck"
+      ]
+    },
+    {
+      "release_tag": "MM-Dragons",
+      "match_method": "name_and_variant",
+      "editions": {
+        "2014": {
+          "name": "Young Silver Dragon",
+          "source": "MM"
+        },
+        "2024": {
+          "name": "Young Silver Dragon",
+          "source": "XMM"
+        }
+      },
+      "assets": [
+        "young_silver_dragon_updated_flying.pck"
+      ]
+    },
+    {
+      "release_tag": "MM-H",
+      "match_method": "generic_half_dragon_2024",
+      "editions": {
+        "2024": {
+          "name": "Half-Dragon",
+          "source": "XMM"
+        }
+      },
+      "assets": [
+        "black_half_dragon.pck",
+        "blue_half_dragon.pck",
+        "brass_half_dragon.pck",
+        "bronze_half_dragon.pck",
+        "copper_half_dragon.pck",
+        "gold_half_dragon.pck",
+        "green_half_dragon.pck",
+        "half_dragon_lord.pck",
+        "red_half_dragon.pck",
+        "silver_half_dragon.pck",
+        "white_half_dragon.pck"
+      ]
+    },
+    {
+      "release_tag": "MM-H",
+      "match_method": "name_and_variant",
+      "editions": {
+        "2014": {
+          "name": "Green Hag",
+          "source": "MM"
+        },
+        "2024": {
+          "name": "Green Hag",
+          "source": "XMM"
+        }
+      },
+      "assets": [
+        "green_hag.pck"
+      ]
+    },
+    {
+      "release_tag": "MM-H",
+      "match_method": "name_and_variant",
+      "editions": {
+        "2014": {
+          "name": "Harpy",
+          "source": "MM"
+        },
+        "2024": {
+          "name": "Harpy",
+          "source": "XMM"
+        }
+      },
+      "assets": [
+        "harpy_2.pck",
+        "harpy_updated.pck"
+      ]
+    },
+    {
+      "release_tag": "MM-H",
+      "match_method": "curated_variant",
+      "editions": {
+        "2014": {
+          "name": "Hell Hound",
+          "source": "MM"
+        },
+        "2024": {
+          "name": "Hell Hound",
+          "source": "XMM"
+        }
+      },
+      "assets": [
+        "hell_hound_puppy.pck"
+      ]
+    },
+    {
+      "release_tag": "MM-H",
+      "match_method": "name_and_variant",
+      "editions": {
+        "2014": {
+          "name": "Hell Hound",
+          "source": "MM"
+        },
+        "2024": {
+          "name": "Hell Hound",
+          "source": "XMM"
+        }
+      },
+      "assets": [
+        "hell_hound_updated.pck"
+      ]
+    },
+    {
+      "release_tag": "MM-H",
+      "match_method": "name_and_variant",
+      "editions": {
+        "2014": {
+          "name": "Helmed Horror",
+          "source": "MM"
+        },
+        "2024": {
+          "name": "Helmed Horror",
+          "source": "XMM"
+        }
+      },
+      "assets": [
+        "helmed_horror_updated.pck"
+      ]
+    },
+    {
+      "release_tag": "MM-H",
+      "match_method": "name_and_variant",
+      "editions": {
+        "2014": {
+          "name": "Hobgoblin Captain",
+          "source": "MM"
+        },
+        "2024": {
+          "name": "Hobgoblin Captain",
+          "source": "XMM"
+        }
+      },
+      "assets": [
+        "hobgoblin_captain.pck"
+      ]
+    },
+    {
+      "release_tag": "MM-H",
+      "match_method": "name_and_variant",
+      "editions": {
+        "2014": {
+          "name": "Hobgoblin Warlord",
+          "source": "MM"
+        },
+        "2024": {
+          "name": "Hobgoblin Warlord",
+          "source": "XMM"
+        }
+      },
+      "assets": [
+        "hobgoblin_warlord.pck"
+      ]
+    },
+    {
+      "release_tag": "MM-H",
+      "match_method": "curated_variant",
+      "editions": {
+        "2014": {
+          "name": "Hobgoblin",
+          "source": "MM"
+        },
+        "2024": {
+          "name": "Hobgoblin Warrior",
+          "source": "XMM"
+        }
+      },
+      "assets": [
+        "hobgoblin.pck",
+        "hobgoblin_updated.pck"
+      ]
+    },
+    {
+      "release_tag": "MM-H",
+      "match_method": "name_and_variant",
+      "editions": {
+        "2014": {
+          "name": "Homunculus",
+          "source": "MM"
+        },
+        "2024": {
+          "name": "Homunculus",
+          "source": "XMM"
+        }
+      },
+      "assets": [
+        "homunculus_updated.pck"
+      ]
+    },
+    {
+      "release_tag": "MM-H",
+      "match_method": "name_and_variant",
+      "editions": {
+        "2014": {
+          "name": "Hook Horror",
+          "source": "MM"
+        },
+        "2024": {
+          "name": "Hook Horror",
+          "source": "XMM"
+        }
+      },
+      "assets": [
+        "hook_horror_updated.pck"
+      ]
+    },
+    {
+      "release_tag": "MM-H",
+      "match_method": "name_and_variant",
+      "editions": {
+        "2014": {
+          "name": "Hydra",
+          "source": "MM"
+        },
+        "2024": {
+          "name": "Hydra",
+          "source": "XMM"
+        }
+      },
+      "assets": [
+        "hydra_updated.pck"
+      ]
+    },
+    {
+      "release_tag": "MM-H",
+      "match_method": "name_and_variant",
+      "editions": {
+        "2014": {
+          "name": "Night Hag",
+          "source": "MM"
+        },
+        "2024": {
+          "name": "Night Hag",
+          "source": "XMM"
+        }
+      },
+      "assets": [
+        "night_hag.pck"
+      ]
+    },
+    {
+      "release_tag": "MM-H",
+      "match_method": "name_and_variant",
+      "editions": {
+        "2014": {
+          "name": "Sea Hag",
+          "source": "MM"
+        },
+        "2024": {
+          "name": "Sea Hag",
+          "source": "XMM"
+        }
+      },
+      "assets": [
+        "sea_hag.pck"
+      ]
+    },
+    {
+      "release_tag": "MM-M",
+      "match_method": "curated_variant",
+      "editions": {
+        "2014": {
+          "name": "Duodrone",
+          "source": "MM"
+        },
+        "2024": {
+          "name": "Modron Duodrone",
+          "source": "XMM"
+        }
+      },
+      "assets": [
+        "duodrone_updated.pck"
+      ]
+    },
+    {
+      "release_tag": "MM-M",
+      "match_method": "name_and_variant",
+      "editions": {
+        "2014": {
+          "name": "Minotaur",
+          "source": "MM"
+        }
+      },
+      "assets": [
+        "female_minotaur.pck",
+        "minotaur.pck",
+        "minotaur_drinking.pck",
+        "old_minotaur.pck"
+      ]
+    },
+    {
+      "release_tag": "MM-M",
+      "match_method": "curated_variant",
+      "editions": {
+        "2014": {
+          "name": "Mind Flayer",
+          "source": "MM"
+        },
+        "2024": {
+          "name": "Mind Flayer",
+          "source": "XMM"
+        }
+      },
+      "assets": [
+        "mindflayer_infiltrator.pck",
+        "mindflayer_infiltrator_2.pck",
+        "party_flayer.pck"
+      ]
+    },
+    {
+      "release_tag": "MM-M",
+      "match_method": "name_and_variant",
+      "editions": {
+        "2014": {
+          "name": "Mind Flayer",
+          "source": "MM"
+        },
+        "2024": {
+          "name": "Mind Flayer",
+          "source": "XMM"
+        }
+      },
+      "assets": [
+        "mindflayer.pck",
+        "mindflayer_updated.pck"
+      ]
+    },
+    {
+      "release_tag": "MM-M",
+      "match_method": "curated_variant",
+      "editions": {
+        "2014": {
+          "name": "Mind Flayer Arcanist",
+          "source": "MM"
+        },
+        "2024": {
+          "name": "Mind Flayer Arcanist",
+          "source": "XMM"
+        }
+      },
+      "assets": [
+        "mindlayer_overmind.pck"
+      ]
+    },
+    {
+      "release_tag": "MM-M",
+      "match_method": "curated_variant",
+      "editions": {
+        "2014": {
+          "name": "Monodrone",
+          "source": "MM"
+        },
+        "2024": {
+          "name": "Modron Monodrone",
+          "source": "XMM"
+        }
+      },
+      "assets": [
+        "monodrone_updated.pck"
+      ]
+    },
+    {
+      "release_tag": "MM-M",
+      "match_method": "name_and_variant",
+      "editions": {
+        "2014": {
+          "name": "Mummy Lord",
+          "source": "MM"
+        },
+        "2024": {
+          "name": "Mummy Lord",
+          "source": "XMM"
+        }
+      },
+      "assets": [
+        "mummy_lord_updated.pck"
+      ]
+    },
+    {
+      "release_tag": "MM-M",
+      "match_method": "name_and_variant",
+      "editions": {
+        "2014": {
+          "name": "Mummy",
+          "source": "MM"
+        },
+        "2024": {
+          "name": "Mummy",
+          "source": "XMM"
+        }
+      },
+      "assets": [
+        "mummy_old.pck",
+        "mummy_updated.pck",
+        "mummy_updated_2.pck",
+        "mummy_updated_3.pck"
+      ]
+    },
+    {
+      "release_tag": "MM-M",
+      "match_method": "name_and_variant",
+      "editions": {
+        "2014": {
+          "name": "Myconid Adult",
+          "source": "MM"
+        },
+        "2024": {
+          "name": "Myconid Adult",
+          "source": "XMM"
+        }
+      },
+      "assets": [
+        "myconid_adult.pck"
+      ]
+    },
+    {
+      "release_tag": "MM-M",
+      "match_method": "curated_variant",
+      "editions": {
+        "2014": {
+          "name": "Myconid Adult",
+          "source": "MM"
+        },
+        "2024": {
+          "name": "Myconid Adult",
+          "source": "XMM"
+        }
+      },
+      "assets": [
+        "myconid_commoner.pck"
+      ]
+    },
+    {
+      "release_tag": "MM-M",
+      "match_method": "name_and_variant",
+      "editions": {
+        "2014": {
+          "name": "Myconid Sovereign",
+          "source": "MM"
+        },
+        "2024": {
+          "name": "Myconid Sovereign",
+          "source": "XMM"
+        }
+      },
+      "assets": [
+        "myconid_sovereign.pck"
+      ]
+    },
+    {
+      "release_tag": "MM-M",
+      "match_method": "name_and_variant",
+      "editions": {
+        "2014": {
+          "name": "Myconid Sprout",
+          "source": "MM"
+        },
+        "2024": {
+          "name": "Myconid Sprout",
+          "source": "XMM"
+        }
+      },
+      "assets": [
+        "myconid_sprout.pck"
+      ]
+    },
+    {
+      "release_tag": "MM-M",
+      "match_method": "curated_variant",
+      "editions": {
+        "2014": {
+          "name": "Pentadrone",
+          "source": "MM"
+        },
+        "2024": {
+          "name": "Modron Pentadrone",
+          "source": "XMM"
+        }
+      },
+      "assets": [
+        "pentadrone_updated.pck"
+      ]
+    },
+    {
+      "release_tag": "MM-M",
+      "match_method": "curated_variant",
+      "editions": {
+        "2014": {
+          "name": "Quadrone",
+          "source": "MM"
+        },
+        "2024": {
+          "name": "Modron Quadrone",
+          "source": "XMM"
+        }
+      },
+      "assets": [
+        "quadrone_updated.pck"
+      ]
+    },
+    {
+      "release_tag": "MM-M",
+      "match_method": "curated_variant",
+      "editions": {
+        "2014": {
+          "name": "Tridrone",
+          "source": "MM"
+        },
+        "2024": {
+          "name": "Modron Tridrone",
+          "source": "XMM"
+        }
+      },
+      "assets": [
+        "tridrone_updated.pck"
+      ]
+    },
+    {
+      "release_tag": "MM-W",
+      "match_method": "name_and_variant",
+      "editions": {
+        "2014": {
+          "name": "Water Weird",
+          "source": "MM"
+        },
+        "2024": {
+          "name": "Water Weird",
+          "source": "XMM"
+        }
+      },
+      "assets": [
+        "water_weird.pck"
+      ]
+    },
+    {
+      "release_tag": "MM-W",
+      "match_method": "name_and_variant",
+      "editions": {
+        "2014": {
+          "name": "Wight",
+          "source": "MM"
+        },
+        "2024": {
+          "name": "Wight",
+          "source": "XMM"
+        }
+      },
+      "assets": [
+        "wight_old.pck",
+        "wight_updated.pck"
+      ]
+    },
+    {
+      "release_tag": "MM-W",
+      "match_method": "name_and_variant",
+      "editions": {
+        "2014": {
+          "name": "Will-o'-Wisp",
+          "source": "MM"
+        },
+        "2024": {
+          "name": "Will-o'-Wisp",
+          "source": "XMM"
+        }
+      },
+      "assets": [
+        "will_o_wisp.pck"
+      ]
+    },
+    {
+      "release_tag": "MM-W",
+      "match_method": "name_and_variant",
+      "editions": {
+        "2014": {
+          "name": "Wraith",
+          "source": "MM"
+        },
+        "2024": {
+          "name": "Wraith",
+          "source": "XMM"
+        }
+      },
+      "assets": [
+        "wraith_2.pck",
+        "wraith_updated.pck"
+      ]
+    },
+    {
+      "release_tag": "MM-W",
+      "match_method": "name_and_variant",
+      "editions": {
+        "2014": {
+          "name": "Wyvern",
+          "source": "MM"
+        },
+        "2024": {
+          "name": "Wyvern",
+          "source": "XMM"
+        }
+      },
+      "assets": [
+        "wyvern_updated.pck"
+      ]
+    }
+  ],
+  "unassociated": [
+    {
+      "release_tag": "MM-Dragons",
+      "asset_name": "old_black_dragon.pck",
+      "reason": "Model without a reliable age/size classification"
+    },
+    {
+      "release_tag": "MM-Dragons",
+      "asset_name": "old_man_with_the_canaries.pck",
+      "reason": "Humanoid disguise of Bahamut; no matching 5etools portrait"
+    },
+    {
+      "release_tag": "MM-Dragons",
+      "asset_name": "tiamat_necklace.pck",
+      "reason": "Accessory, not a creature"
+    },
+    {
+      "release_tag": "MM-Dragons",
+      "asset_name": "young_man_with_the_canaries.pck",
+      "reason": "Humanoid disguise of Bahamut; no matching 5etools portrait"
+    },
+    {
+      "release_tag": "MM-H",
+      "asset_name": "sea_hag_creeping_hut.pck",
+      "reason": "Hut/accessory, not the Sea Hag creature"
+    },
+    {
+      "release_tag": "MM-M",
+      "asset_name": "myconid_behemoth.pck",
+      "reason": "No corresponding MM/XMM creature identity"
+    }
+  ]
+}

@@ -2616,6 +2616,2177 @@
     "wyrda": {
       "miniature_key": "characters/wyrda.pck",
       "editions": {}
+    },
+    "adult_brass_dragon_flying_updated": {
+      "miniature_key": "MM-Dragons/adult_brass_dragon_flying_updated.pck",
+      "editions": {
+        "2014": {
+          "name": "Adult Brass Dragon",
+          "source": "MM",
+          "page": 105,
+          "url": "https://5e.tools/bestiary.html#adult%20brass%20dragon_mm",
+          "token_url": "https://5e.tools/img/bestiary/tokens/MM/Adult%20Brass%20Dragon.webp"
+        },
+        "2024": {
+          "name": "Adult Brass Dragon",
+          "source": "XMM",
+          "page": 55,
+          "url": "https://5e.tools/bestiary.html#adult%20brass%20dragon_xmm",
+          "token_url": "https://5e.tools/img/bestiary/tokens/XMM/Adult%20Brass%20Dragon.webp"
+        }
+      }
+    },
+    "adult_brass_dragon_updated": {
+      "miniature_key": "MM-Dragons/adult_brass_dragon_updated.pck",
+      "editions": {
+        "2014": {
+          "name": "Adult Brass Dragon",
+          "source": "MM",
+          "page": 105,
+          "url": "https://5e.tools/bestiary.html#adult%20brass%20dragon_mm",
+          "token_url": "https://5e.tools/img/bestiary/tokens/MM/Adult%20Brass%20Dragon.webp"
+        },
+        "2024": {
+          "name": "Adult Brass Dragon",
+          "source": "XMM",
+          "page": 55,
+          "url": "https://5e.tools/bestiary.html#adult%20brass%20dragon_xmm",
+          "token_url": "https://5e.tools/img/bestiary/tokens/XMM/Adult%20Brass%20Dragon.webp"
+        }
+      }
+    },
+    "adult_bronze_dragon_flying_updated": {
+      "miniature_key": "MM-Dragons/adult_bronze_dragon_flying_updated.pck",
+      "editions": {
+        "2014": {
+          "name": "Adult Bronze Dragon",
+          "source": "MM",
+          "page": 108,
+          "url": "https://5e.tools/bestiary.html#adult%20bronze%20dragon_mm",
+          "token_url": "https://5e.tools/img/bestiary/tokens/MM/Adult%20Bronze%20Dragon.webp"
+        },
+        "2024": {
+          "name": "Adult Bronze Dragon",
+          "source": "XMM",
+          "page": 59,
+          "url": "https://5e.tools/bestiary.html#adult%20bronze%20dragon_xmm",
+          "token_url": "https://5e.tools/img/bestiary/tokens/XMM/Adult%20Bronze%20Dragon.webp"
+        }
+      }
+    },
+    "adult_bronze_dragon_updated": {
+      "miniature_key": "MM-Dragons/adult_bronze_dragon_updated.pck",
+      "editions": {
+        "2014": {
+          "name": "Adult Bronze Dragon",
+          "source": "MM",
+          "page": 108,
+          "url": "https://5e.tools/bestiary.html#adult%20bronze%20dragon_mm",
+          "token_url": "https://5e.tools/img/bestiary/tokens/MM/Adult%20Bronze%20Dragon.webp"
+        },
+        "2024": {
+          "name": "Adult Bronze Dragon",
+          "source": "XMM",
+          "page": 59,
+          "url": "https://5e.tools/bestiary.html#adult%20bronze%20dragon_xmm",
+          "token_url": "https://5e.tools/img/bestiary/tokens/XMM/Adult%20Bronze%20Dragon.webp"
+        }
+      }
+    },
+    "adult_copper_dragon_flying_updated": {
+      "miniature_key": "MM-Dragons/adult_copper_dragon_flying_updated.pck",
+      "editions": {
+        "2014": {
+          "name": "Adult Copper Dragon",
+          "source": "MM",
+          "page": 112,
+          "url": "https://5e.tools/bestiary.html#adult%20copper%20dragon_mm",
+          "token_url": "https://5e.tools/img/bestiary/tokens/MM/Adult%20Copper%20Dragon.webp"
+        },
+        "2024": {
+          "name": "Adult Copper Dragon",
+          "source": "XMM",
+          "page": 79,
+          "url": "https://5e.tools/bestiary.html#adult%20copper%20dragon_xmm",
+          "token_url": "https://5e.tools/img/bestiary/tokens/XMM/Adult%20Copper%20Dragon.webp"
+        }
+      }
+    },
+    "adult_copper_dragon_updated": {
+      "miniature_key": "MM-Dragons/adult_copper_dragon_updated.pck",
+      "editions": {
+        "2014": {
+          "name": "Adult Copper Dragon",
+          "source": "MM",
+          "page": 112,
+          "url": "https://5e.tools/bestiary.html#adult%20copper%20dragon_mm",
+          "token_url": "https://5e.tools/img/bestiary/tokens/MM/Adult%20Copper%20Dragon.webp"
+        },
+        "2024": {
+          "name": "Adult Copper Dragon",
+          "source": "XMM",
+          "page": 79,
+          "url": "https://5e.tools/bestiary.html#adult%20copper%20dragon_xmm",
+          "token_url": "https://5e.tools/img/bestiary/tokens/XMM/Adult%20Copper%20Dragon.webp"
+        }
+      }
+    },
+    "adult_gold_dragon_flying_updated": {
+      "miniature_key": "MM-Dragons/adult_gold_dragon_flying_updated.pck",
+      "editions": {
+        "2014": {
+          "name": "Adult Gold Dragon",
+          "source": "MM",
+          "page": 114,
+          "url": "https://5e.tools/bestiary.html#adult%20gold%20dragon_mm",
+          "token_url": "https://5e.tools/img/bestiary/tokens/MM/Adult%20Gold%20Dragon.webp"
+        },
+        "2024": {
+          "name": "Adult Gold Dragon",
+          "source": "XMM",
+          "page": 145,
+          "url": "https://5e.tools/bestiary.html#adult%20gold%20dragon_xmm",
+          "token_url": "https://5e.tools/img/bestiary/tokens/XMM/Adult%20Gold%20Dragon.webp"
+        }
+      }
+    },
+    "adult_gold_dragon_updated": {
+      "miniature_key": "MM-Dragons/adult_gold_dragon_updated.pck",
+      "editions": {
+        "2014": {
+          "name": "Adult Gold Dragon",
+          "source": "MM",
+          "page": 114,
+          "url": "https://5e.tools/bestiary.html#adult%20gold%20dragon_mm",
+          "token_url": "https://5e.tools/img/bestiary/tokens/MM/Adult%20Gold%20Dragon.webp"
+        },
+        "2024": {
+          "name": "Adult Gold Dragon",
+          "source": "XMM",
+          "page": 145,
+          "url": "https://5e.tools/bestiary.html#adult%20gold%20dragon_xmm",
+          "token_url": "https://5e.tools/img/bestiary/tokens/XMM/Adult%20Gold%20Dragon.webp"
+        }
+      }
+    },
+    "adult_silver_dragon_updated_flying": {
+      "miniature_key": "MM-Dragons/adult_silver_dragon_updated_flying.pck",
+      "editions": {
+        "2014": {
+          "name": "Adult Silver Dragon",
+          "source": "MM",
+          "page": 117,
+          "url": "https://5e.tools/bestiary.html#adult%20silver%20dragon_mm",
+          "token_url": "https://5e.tools/img/bestiary/tokens/MM/Adult%20Silver%20Dragon.webp"
+        },
+        "2024": {
+          "name": "Adult Silver Dragon",
+          "source": "XMM",
+          "page": 279,
+          "url": "https://5e.tools/bestiary.html#adult%20silver%20dragon_xmm",
+          "token_url": "https://5e.tools/img/bestiary/tokens/XMM/Adult%20Silver%20Dragon.webp"
+        }
+      }
+    },
+    "ancient_brass_dragon_flying_updated": {
+      "miniature_key": "MM-Dragons/ancient_brass_dragon_flying_updated.pck",
+      "editions": {
+        "2014": {
+          "name": "Ancient Brass Dragon",
+          "source": "MM",
+          "page": 104,
+          "url": "https://5e.tools/bestiary.html#ancient%20brass%20dragon_mm",
+          "token_url": "https://5e.tools/img/bestiary/tokens/MM/Ancient%20Brass%20Dragon.webp"
+        },
+        "2024": {
+          "name": "Ancient Brass Dragon",
+          "source": "XMM",
+          "page": 56,
+          "url": "https://5e.tools/bestiary.html#ancient%20brass%20dragon_xmm",
+          "token_url": "https://5e.tools/img/bestiary/tokens/XMM/Ancient%20Brass%20Dragon.webp"
+        }
+      }
+    },
+    "ancient_brass_dragon_updated": {
+      "miniature_key": "MM-Dragons/ancient_brass_dragon_updated.pck",
+      "editions": {
+        "2014": {
+          "name": "Ancient Brass Dragon",
+          "source": "MM",
+          "page": 104,
+          "url": "https://5e.tools/bestiary.html#ancient%20brass%20dragon_mm",
+          "token_url": "https://5e.tools/img/bestiary/tokens/MM/Ancient%20Brass%20Dragon.webp"
+        },
+        "2024": {
+          "name": "Ancient Brass Dragon",
+          "source": "XMM",
+          "page": 56,
+          "url": "https://5e.tools/bestiary.html#ancient%20brass%20dragon_xmm",
+          "token_url": "https://5e.tools/img/bestiary/tokens/XMM/Ancient%20Brass%20Dragon.webp"
+        }
+      }
+    },
+    "ancient_bronze_dragon_flying_updated": {
+      "miniature_key": "MM-Dragons/ancient_bronze_dragon_flying_updated.pck",
+      "editions": {
+        "2014": {
+          "name": "Ancient Bronze Dragon",
+          "source": "MM",
+          "page": 107,
+          "url": "https://5e.tools/bestiary.html#ancient%20bronze%20dragon_mm",
+          "token_url": "https://5e.tools/img/bestiary/tokens/MM/Ancient%20Bronze%20Dragon.webp"
+        },
+        "2024": {
+          "name": "Ancient Bronze Dragon",
+          "source": "XMM",
+          "page": 60,
+          "url": "https://5e.tools/bestiary.html#ancient%20bronze%20dragon_xmm",
+          "token_url": "https://5e.tools/img/bestiary/tokens/XMM/Ancient%20Bronze%20Dragon.webp"
+        }
+      }
+    },
+    "ancient_bronze_dragon_updated": {
+      "miniature_key": "MM-Dragons/ancient_bronze_dragon_updated.pck",
+      "editions": {
+        "2014": {
+          "name": "Ancient Bronze Dragon",
+          "source": "MM",
+          "page": 107,
+          "url": "https://5e.tools/bestiary.html#ancient%20bronze%20dragon_mm",
+          "token_url": "https://5e.tools/img/bestiary/tokens/MM/Ancient%20Bronze%20Dragon.webp"
+        },
+        "2024": {
+          "name": "Ancient Bronze Dragon",
+          "source": "XMM",
+          "page": 60,
+          "url": "https://5e.tools/bestiary.html#ancient%20bronze%20dragon_xmm",
+          "token_url": "https://5e.tools/img/bestiary/tokens/XMM/Ancient%20Bronze%20Dragon.webp"
+        }
+      }
+    },
+    "ancient_copper_dragon_flying_updated": {
+      "miniature_key": "MM-Dragons/ancient_copper_dragon_flying_updated.pck",
+      "editions": {
+        "2014": {
+          "name": "Ancient Copper Dragon",
+          "source": "MM",
+          "page": 110,
+          "url": "https://5e.tools/bestiary.html#ancient%20copper%20dragon_mm",
+          "token_url": "https://5e.tools/img/bestiary/tokens/MM/Ancient%20Copper%20Dragon.webp"
+        },
+        "2024": {
+          "name": "Ancient Copper Dragon",
+          "source": "XMM",
+          "page": 80,
+          "url": "https://5e.tools/bestiary.html#ancient%20copper%20dragon_xmm",
+          "token_url": "https://5e.tools/img/bestiary/tokens/XMM/Ancient%20Copper%20Dragon.webp"
+        }
+      }
+    },
+    "ancient_copper_dragon_updated": {
+      "miniature_key": "MM-Dragons/ancient_copper_dragon_updated.pck",
+      "editions": {
+        "2014": {
+          "name": "Ancient Copper Dragon",
+          "source": "MM",
+          "page": 110,
+          "url": "https://5e.tools/bestiary.html#ancient%20copper%20dragon_mm",
+          "token_url": "https://5e.tools/img/bestiary/tokens/MM/Ancient%20Copper%20Dragon.webp"
+        },
+        "2024": {
+          "name": "Ancient Copper Dragon",
+          "source": "XMM",
+          "page": 80,
+          "url": "https://5e.tools/bestiary.html#ancient%20copper%20dragon_xmm",
+          "token_url": "https://5e.tools/img/bestiary/tokens/XMM/Ancient%20Copper%20Dragon.webp"
+        }
+      }
+    },
+    "ancient_gold_dragon_flying_updated": {
+      "miniature_key": "MM-Dragons/ancient_gold_dragon_flying_updated.pck",
+      "editions": {
+        "2014": {
+          "name": "Ancient Gold Dragon",
+          "source": "MM",
+          "page": 113,
+          "url": "https://5e.tools/bestiary.html#ancient%20gold%20dragon_mm",
+          "token_url": "https://5e.tools/img/bestiary/tokens/MM/Ancient%20Gold%20Dragon.webp"
+        },
+        "2024": {
+          "name": "Ancient Gold Dragon",
+          "source": "XMM",
+          "page": 146,
+          "url": "https://5e.tools/bestiary.html#ancient%20gold%20dragon_xmm",
+          "token_url": "https://5e.tools/img/bestiary/tokens/XMM/Ancient%20Gold%20Dragon.webp"
+        }
+      }
+    },
+    "ancient_gold_dragon_updated": {
+      "miniature_key": "MM-Dragons/ancient_gold_dragon_updated.pck",
+      "editions": {
+        "2014": {
+          "name": "Ancient Gold Dragon",
+          "source": "MM",
+          "page": 113,
+          "url": "https://5e.tools/bestiary.html#ancient%20gold%20dragon_mm",
+          "token_url": "https://5e.tools/img/bestiary/tokens/MM/Ancient%20Gold%20Dragon.webp"
+        },
+        "2024": {
+          "name": "Ancient Gold Dragon",
+          "source": "XMM",
+          "page": 146,
+          "url": "https://5e.tools/bestiary.html#ancient%20gold%20dragon_xmm",
+          "token_url": "https://5e.tools/img/bestiary/tokens/XMM/Ancient%20Gold%20Dragon.webp"
+        }
+      }
+    },
+    "bahamut_updated": {
+      "miniature_key": "MM-Dragons/bahamut_updated.pck",
+      "editions": {
+        "2014": {
+          "name": "Aspect of Bahamut",
+          "source": "FTD",
+          "page": 165,
+          "url": "https://5e.tools/bestiary.html#aspect%20of%20bahamut_ftd",
+          "token_url": "https://5e.tools/img/bestiary/tokens/FTD/Aspect%20of%20Bahamut.webp"
+        }
+      }
+    },
+    "black_dragon_adult_updated_flying": {
+      "miniature_key": "MM-Dragons/black_dragon_adult_updated_flying.pck",
+      "editions": {
+        "2014": {
+          "name": "Adult Black Dragon",
+          "source": "MM",
+          "page": 88,
+          "url": "https://5e.tools/bestiary.html#adult%20black%20dragon_mm",
+          "token_url": "https://5e.tools/img/bestiary/tokens/MM/Adult%20Black%20Dragon.webp"
+        },
+        "2024": {
+          "name": "Adult Black Dragon",
+          "source": "XMM",
+          "page": 39,
+          "url": "https://5e.tools/bestiary.html#adult%20black%20dragon_xmm",
+          "token_url": "https://5e.tools/img/bestiary/tokens/XMM/Adult%20Black%20Dragon.webp"
+        }
+      }
+    },
+    "black_dragon_adult_wings_closed": {
+      "miniature_key": "MM-Dragons/black_dragon_adult_wings_closed.pck",
+      "editions": {
+        "2014": {
+          "name": "Adult Black Dragon",
+          "source": "MM",
+          "page": 88,
+          "url": "https://5e.tools/bestiary.html#adult%20black%20dragon_mm",
+          "token_url": "https://5e.tools/img/bestiary/tokens/MM/Adult%20Black%20Dragon.webp"
+        },
+        "2024": {
+          "name": "Adult Black Dragon",
+          "source": "XMM",
+          "page": 39,
+          "url": "https://5e.tools/bestiary.html#adult%20black%20dragon_xmm",
+          "token_url": "https://5e.tools/img/bestiary/tokens/XMM/Adult%20Black%20Dragon.webp"
+        }
+      }
+    },
+    "black_dragon_young_updated_flying": {
+      "miniature_key": "MM-Dragons/black_dragon_young_updated_flying.pck",
+      "editions": {
+        "2014": {
+          "name": "Young Black Dragon",
+          "source": "MM",
+          "page": 88,
+          "url": "https://5e.tools/bestiary.html#young%20black%20dragon_mm",
+          "token_url": "https://5e.tools/img/bestiary/tokens/MM/Young%20Black%20Dragon.webp"
+        },
+        "2024": {
+          "name": "Young Black Dragon",
+          "source": "XMM",
+          "page": 38,
+          "url": "https://5e.tools/bestiary.html#young%20black%20dragon_xmm",
+          "token_url": "https://5e.tools/img/bestiary/tokens/XMM/Young%20Black%20Dragon.webp"
+        }
+      }
+    },
+    "blue_dragon_adult_updated_flying": {
+      "miniature_key": "MM-Dragons/blue_dragon_adult_updated_flying.pck",
+      "editions": {
+        "2014": {
+          "name": "Adult Blue Dragon",
+          "source": "MM",
+          "page": 91,
+          "url": "https://5e.tools/bestiary.html#adult%20blue%20dragon_mm",
+          "token_url": "https://5e.tools/img/bestiary/tokens/MM/Adult%20Blue%20Dragon.webp"
+        },
+        "2024": {
+          "name": "Adult Blue Dragon",
+          "source": "XMM",
+          "page": 49,
+          "url": "https://5e.tools/bestiary.html#adult%20blue%20dragon_xmm",
+          "token_url": "https://5e.tools/img/bestiary/tokens/XMM/Adult%20Blue%20Dragon.webp"
+        }
+      }
+    },
+    "blue_dragon_ancient_updated_flying": {
+      "miniature_key": "MM-Dragons/blue_dragon_ancient_updated_flying.pck",
+      "editions": {
+        "2014": {
+          "name": "Ancient Blue Dragon",
+          "source": "MM",
+          "page": 90,
+          "url": "https://5e.tools/bestiary.html#ancient%20blue%20dragon_mm",
+          "token_url": "https://5e.tools/img/bestiary/tokens/MM/Ancient%20Blue%20Dragon.webp"
+        },
+        "2024": {
+          "name": "Ancient Blue Dragon",
+          "source": "XMM",
+          "page": 50,
+          "url": "https://5e.tools/bestiary.html#ancient%20blue%20dragon_xmm",
+          "token_url": "https://5e.tools/img/bestiary/tokens/XMM/Ancient%20Blue%20Dragon.webp"
+        }
+      }
+    },
+    "blue_dragon_playing_d_d": {
+      "miniature_key": "MM-Dragons/blue_dragon_playing_d_d.pck",
+      "editions": {
+        "2014": {
+          "name": "Adult Blue Dragon",
+          "source": "MM",
+          "page": 91,
+          "url": "https://5e.tools/bestiary.html#adult%20blue%20dragon_mm",
+          "token_url": "https://5e.tools/img/bestiary/tokens/MM/Adult%20Blue%20Dragon.webp"
+        },
+        "2024": {
+          "name": "Adult Blue Dragon",
+          "source": "XMM",
+          "page": 49,
+          "url": "https://5e.tools/bestiary.html#adult%20blue%20dragon_xmm",
+          "token_url": "https://5e.tools/img/bestiary/tokens/XMM/Adult%20Blue%20Dragon.webp"
+        }
+      }
+    },
+    "blue_dragon_wyrmling_updated": {
+      "miniature_key": "MM-Dragons/blue_dragon_wyrmling_updated.pck",
+      "editions": {
+        "2014": {
+          "name": "Blue Dragon Wyrmling",
+          "source": "MM",
+          "page": 91,
+          "url": "https://5e.tools/bestiary.html#blue%20dragon%20wyrmling_mm",
+          "token_url": "https://5e.tools/img/bestiary/tokens/MM/Blue%20Dragon%20Wyrmling.webp"
+        },
+        "2024": {
+          "name": "Blue Dragon Wyrmling",
+          "source": "XMM",
+          "page": 48,
+          "url": "https://5e.tools/bestiary.html#blue%20dragon%20wyrmling_xmm",
+          "token_url": "https://5e.tools/img/bestiary/tokens/XMM/Blue%20Dragon%20Wyrmling.webp"
+        }
+      }
+    },
+    "brass_dragon_wyrmling": {
+      "miniature_key": "MM-Dragons/brass_dragon_wyrmling.pck",
+      "editions": {
+        "2014": {
+          "name": "Brass Dragon Wyrmling",
+          "source": "MM",
+          "page": 106,
+          "url": "https://5e.tools/bestiary.html#brass%20dragon%20wyrmling_mm",
+          "token_url": "https://5e.tools/img/bestiary/tokens/MM/Brass%20Dragon%20Wyrmling.webp"
+        },
+        "2024": {
+          "name": "Brass Dragon Wyrmling",
+          "source": "XMM",
+          "page": 54,
+          "url": "https://5e.tools/bestiary.html#brass%20dragon%20wyrmling_xmm",
+          "token_url": "https://5e.tools/img/bestiary/tokens/XMM/Brass%20Dragon%20Wyrmling.webp"
+        }
+      }
+    },
+    "brass_dragon_wyrmling_flying_updated": {
+      "miniature_key": "MM-Dragons/brass_dragon_wyrmling_flying_updated.pck",
+      "editions": {
+        "2014": {
+          "name": "Brass Dragon Wyrmling",
+          "source": "MM",
+          "page": 106,
+          "url": "https://5e.tools/bestiary.html#brass%20dragon%20wyrmling_mm",
+          "token_url": "https://5e.tools/img/bestiary/tokens/MM/Brass%20Dragon%20Wyrmling.webp"
+        },
+        "2024": {
+          "name": "Brass Dragon Wyrmling",
+          "source": "XMM",
+          "page": 54,
+          "url": "https://5e.tools/bestiary.html#brass%20dragon%20wyrmling_xmm",
+          "token_url": "https://5e.tools/img/bestiary/tokens/XMM/Brass%20Dragon%20Wyrmling.webp"
+        }
+      }
+    },
+    "bronze_dragon_wyrmling_flying_updated": {
+      "miniature_key": "MM-Dragons/bronze_dragon_wyrmling_flying_updated.pck",
+      "editions": {
+        "2014": {
+          "name": "Bronze Dragon Wyrmling",
+          "source": "MM",
+          "page": 109,
+          "url": "https://5e.tools/bestiary.html#bronze%20dragon%20wyrmling_mm",
+          "token_url": "https://5e.tools/img/bestiary/tokens/MM/Bronze%20Dragon%20Wyrmling.webp"
+        },
+        "2024": {
+          "name": "Bronze Dragon Wyrmling",
+          "source": "XMM",
+          "page": 58,
+          "url": "https://5e.tools/bestiary.html#bronze%20dragon%20wyrmling_xmm",
+          "token_url": "https://5e.tools/img/bestiary/tokens/XMM/Bronze%20Dragon%20Wyrmling.webp"
+        }
+      }
+    },
+    "bronze_dragon_wyrmling_updated": {
+      "miniature_key": "MM-Dragons/bronze_dragon_wyrmling_updated.pck",
+      "editions": {
+        "2014": {
+          "name": "Bronze Dragon Wyrmling",
+          "source": "MM",
+          "page": 109,
+          "url": "https://5e.tools/bestiary.html#bronze%20dragon%20wyrmling_mm",
+          "token_url": "https://5e.tools/img/bestiary/tokens/MM/Bronze%20Dragon%20Wyrmling.webp"
+        },
+        "2024": {
+          "name": "Bronze Dragon Wyrmling",
+          "source": "XMM",
+          "page": 58,
+          "url": "https://5e.tools/bestiary.html#bronze%20dragon%20wyrmling_xmm",
+          "token_url": "https://5e.tools/img/bestiary/tokens/XMM/Bronze%20Dragon%20Wyrmling.webp"
+        }
+      }
+    },
+    "copper_dragon_wyrmling_flying_updated": {
+      "miniature_key": "MM-Dragons/copper_dragon_wyrmling_flying_updated.pck",
+      "editions": {
+        "2014": {
+          "name": "Copper Dragon Wyrmling",
+          "source": "MM",
+          "page": 111,
+          "url": "https://5e.tools/bestiary.html#copper%20dragon%20wyrmling_mm",
+          "token_url": "https://5e.tools/img/bestiary/tokens/MM/Copper%20Dragon%20Wyrmling.webp"
+        },
+        "2024": {
+          "name": "Copper Dragon Wyrmling",
+          "source": "XMM",
+          "page": 78,
+          "url": "https://5e.tools/bestiary.html#copper%20dragon%20wyrmling_xmm",
+          "token_url": "https://5e.tools/img/bestiary/tokens/XMM/Copper%20Dragon%20Wyrmling.webp"
+        }
+      }
+    },
+    "copper_dragon_wyrmling_updated": {
+      "miniature_key": "MM-Dragons/copper_dragon_wyrmling_updated.pck",
+      "editions": {
+        "2014": {
+          "name": "Copper Dragon Wyrmling",
+          "source": "MM",
+          "page": 111,
+          "url": "https://5e.tools/bestiary.html#copper%20dragon%20wyrmling_mm",
+          "token_url": "https://5e.tools/img/bestiary/tokens/MM/Copper%20Dragon%20Wyrmling.webp"
+        },
+        "2024": {
+          "name": "Copper Dragon Wyrmling",
+          "source": "XMM",
+          "page": 78,
+          "url": "https://5e.tools/bestiary.html#copper%20dragon%20wyrmling_xmm",
+          "token_url": "https://5e.tools/img/bestiary/tokens/XMM/Copper%20Dragon%20Wyrmling.webp"
+        }
+      }
+    },
+    "gold_dragon_wyrmling_flying_updated": {
+      "miniature_key": "MM-Dragons/gold_dragon_wyrmling_flying_updated.pck",
+      "editions": {
+        "2014": {
+          "name": "Gold Dragon Wyrmling",
+          "source": "MM",
+          "page": 115,
+          "url": "https://5e.tools/bestiary.html#gold%20dragon%20wyrmling_mm",
+          "token_url": "https://5e.tools/img/bestiary/tokens/MM/Gold%20Dragon%20Wyrmling.webp"
+        },
+        "2024": {
+          "name": "Gold Dragon Wyrmling",
+          "source": "XMM",
+          "page": 144,
+          "url": "https://5e.tools/bestiary.html#gold%20dragon%20wyrmling_xmm",
+          "token_url": "https://5e.tools/img/bestiary/tokens/XMM/Gold%20Dragon%20Wyrmling.webp"
+        }
+      }
+    },
+    "gold_dragon_wyrmling_sitting": {
+      "miniature_key": "MM-Dragons/gold_dragon_wyrmling_sitting.pck",
+      "editions": {
+        "2014": {
+          "name": "Gold Dragon Wyrmling",
+          "source": "MM",
+          "page": 115,
+          "url": "https://5e.tools/bestiary.html#gold%20dragon%20wyrmling_mm",
+          "token_url": "https://5e.tools/img/bestiary/tokens/MM/Gold%20Dragon%20Wyrmling.webp"
+        },
+        "2024": {
+          "name": "Gold Dragon Wyrmling",
+          "source": "XMM",
+          "page": 144,
+          "url": "https://5e.tools/bestiary.html#gold%20dragon%20wyrmling_xmm",
+          "token_url": "https://5e.tools/img/bestiary/tokens/XMM/Gold%20Dragon%20Wyrmling.webp"
+        }
+      }
+    },
+    "gold_dragon_wyrmling_sleeping": {
+      "miniature_key": "MM-Dragons/gold_dragon_wyrmling_sleeping.pck",
+      "editions": {
+        "2014": {
+          "name": "Gold Dragon Wyrmling",
+          "source": "MM",
+          "page": 115,
+          "url": "https://5e.tools/bestiary.html#gold%20dragon%20wyrmling_mm",
+          "token_url": "https://5e.tools/img/bestiary/tokens/MM/Gold%20Dragon%20Wyrmling.webp"
+        },
+        "2024": {
+          "name": "Gold Dragon Wyrmling",
+          "source": "XMM",
+          "page": 144,
+          "url": "https://5e.tools/bestiary.html#gold%20dragon%20wyrmling_xmm",
+          "token_url": "https://5e.tools/img/bestiary/tokens/XMM/Gold%20Dragon%20Wyrmling.webp"
+        }
+      }
+    },
+    "green_dragon_adult_flying_updated": {
+      "miniature_key": "MM-Dragons/green_dragon_adult_flying_updated.pck",
+      "editions": {
+        "2014": {
+          "name": "Adult Green Dragon",
+          "source": "MM",
+          "page": 94,
+          "url": "https://5e.tools/bestiary.html#adult%20green%20dragon_mm",
+          "token_url": "https://5e.tools/img/bestiary/tokens/MM/Adult%20Green%20Dragon.webp"
+        },
+        "2024": {
+          "name": "Adult Green Dragon",
+          "source": "XMM",
+          "page": 153,
+          "url": "https://5e.tools/bestiary.html#adult%20green%20dragon_xmm",
+          "token_url": "https://5e.tools/img/bestiary/tokens/XMM/Adult%20Green%20Dragon.webp"
+        }
+      }
+    },
+    "green_dragon_wyrmling_updated": {
+      "miniature_key": "MM-Dragons/green_dragon_wyrmling_updated.pck",
+      "editions": {
+        "2014": {
+          "name": "Green Dragon Wyrmling",
+          "source": "MM",
+          "page": 95,
+          "url": "https://5e.tools/bestiary.html#green%20dragon%20wyrmling_mm",
+          "token_url": "https://5e.tools/img/bestiary/tokens/MM/Green%20Dragon%20Wyrmling.webp"
+        },
+        "2024": {
+          "name": "Green Dragon Wyrmling",
+          "source": "XMM",
+          "page": 152,
+          "url": "https://5e.tools/bestiary.html#green%20dragon%20wyrmling_xmm",
+          "token_url": "https://5e.tools/img/bestiary/tokens/XMM/Green%20Dragon%20Wyrmling.webp"
+        }
+      }
+    },
+    "green_dragon_young_flying_updated": {
+      "miniature_key": "MM-Dragons/green_dragon_young_flying_updated.pck",
+      "editions": {
+        "2014": {
+          "name": "Young Green Dragon",
+          "source": "MM",
+          "page": 94,
+          "url": "https://5e.tools/bestiary.html#young%20green%20dragon_mm",
+          "token_url": "https://5e.tools/img/bestiary/tokens/MM/Young%20Green%20Dragon.webp"
+        },
+        "2024": {
+          "name": "Young Green Dragon",
+          "source": "XMM",
+          "page": 152,
+          "url": "https://5e.tools/bestiary.html#young%20green%20dragon_xmm",
+          "token_url": "https://5e.tools/img/bestiary/tokens/XMM/Young%20Green%20Dragon.webp"
+        }
+      }
+    },
+    "old_flying_black_dragon": {
+      "miniature_key": "MM-Dragons/old_flying_black_dragon.pck",
+      "editions": {
+        "2014": {
+          "name": "Ancient Black Dragon",
+          "source": "MM",
+          "page": 87,
+          "url": "https://5e.tools/bestiary.html#ancient%20black%20dragon_mm",
+          "token_url": "https://5e.tools/img/bestiary/tokens/MM/Ancient%20Black%20Dragon.webp"
+        },
+        "2024": {
+          "name": "Ancient Black Dragon",
+          "source": "XMM",
+          "page": 40,
+          "url": "https://5e.tools/bestiary.html#ancient%20black%20dragon_xmm",
+          "token_url": "https://5e.tools/img/bestiary/tokens/XMM/Ancient%20Black%20Dragon.webp"
+        }
+      }
+    },
+    "red_dragon_adult_flying_updated": {
+      "miniature_key": "MM-Dragons/red_dragon_adult_flying_updated.pck",
+      "editions": {
+        "2014": {
+          "name": "Adult Red Dragon",
+          "source": "MM",
+          "page": 98,
+          "url": "https://5e.tools/bestiary.html#adult%20red%20dragon_mm",
+          "token_url": "https://5e.tools/img/bestiary/tokens/MM/Adult%20Red%20Dragon.webp"
+        },
+        "2024": {
+          "name": "Adult Red Dragon",
+          "source": "XMM",
+          "page": 255,
+          "url": "https://5e.tools/bestiary.html#adult%20red%20dragon_xmm",
+          "token_url": "https://5e.tools/img/bestiary/tokens/XMM/Adult%20Red%20Dragon.webp"
+        }
+      }
+    },
+    "red_dragon_adult_updated": {
+      "miniature_key": "MM-Dragons/red_dragon_adult_updated.pck",
+      "editions": {
+        "2014": {
+          "name": "Adult Red Dragon",
+          "source": "MM",
+          "page": 98,
+          "url": "https://5e.tools/bestiary.html#adult%20red%20dragon_mm",
+          "token_url": "https://5e.tools/img/bestiary/tokens/MM/Adult%20Red%20Dragon.webp"
+        },
+        "2024": {
+          "name": "Adult Red Dragon",
+          "source": "XMM",
+          "page": 255,
+          "url": "https://5e.tools/bestiary.html#adult%20red%20dragon_xmm",
+          "token_url": "https://5e.tools/img/bestiary/tokens/XMM/Adult%20Red%20Dragon.webp"
+        }
+      }
+    },
+    "red_dragon_ancient_flying_updated": {
+      "miniature_key": "MM-Dragons/red_dragon_ancient_flying_updated.pck",
+      "editions": {
+        "2014": {
+          "name": "Ancient Red Dragon",
+          "source": "MM",
+          "page": 97,
+          "url": "https://5e.tools/bestiary.html#ancient%20red%20dragon_mm",
+          "token_url": "https://5e.tools/img/bestiary/tokens/MM/Ancient%20Red%20Dragon.webp"
+        },
+        "2024": {
+          "name": "Ancient Red Dragon",
+          "source": "XMM",
+          "page": 256,
+          "url": "https://5e.tools/bestiary.html#ancient%20red%20dragon_xmm",
+          "token_url": "https://5e.tools/img/bestiary/tokens/XMM/Ancient%20Red%20Dragon.webp"
+        }
+      }
+    },
+    "red_dragon_ancient_updated": {
+      "miniature_key": "MM-Dragons/red_dragon_ancient_updated.pck",
+      "editions": {
+        "2014": {
+          "name": "Ancient Red Dragon",
+          "source": "MM",
+          "page": 97,
+          "url": "https://5e.tools/bestiary.html#ancient%20red%20dragon_mm",
+          "token_url": "https://5e.tools/img/bestiary/tokens/MM/Ancient%20Red%20Dragon.webp"
+        },
+        "2024": {
+          "name": "Ancient Red Dragon",
+          "source": "XMM",
+          "page": 256,
+          "url": "https://5e.tools/bestiary.html#ancient%20red%20dragon_xmm",
+          "token_url": "https://5e.tools/img/bestiary/tokens/XMM/Ancient%20Red%20Dragon.webp"
+        }
+      }
+    },
+    "red_dragon_reading_a_book": {
+      "miniature_key": "MM-Dragons/red_dragon_reading_a_book.pck",
+      "editions": {
+        "2014": {
+          "name": "Young Red Dragon",
+          "source": "MM",
+          "page": 98,
+          "url": "https://5e.tools/bestiary.html#young%20red%20dragon_mm",
+          "token_url": "https://5e.tools/img/bestiary/tokens/MM/Young%20Red%20Dragon.webp"
+        },
+        "2024": {
+          "name": "Young Red Dragon",
+          "source": "XMM",
+          "page": 254,
+          "url": "https://5e.tools/bestiary.html#young%20red%20dragon_xmm",
+          "token_url": "https://5e.tools/img/bestiary/tokens/XMM/Young%20Red%20Dragon.webp"
+        }
+      }
+    },
+    "red_dragon_wyrmling_flying_updated": {
+      "miniature_key": "MM-Dragons/red_dragon_wyrmling_flying_updated.pck",
+      "editions": {
+        "2014": {
+          "name": "Red Dragon Wyrmling",
+          "source": "MM",
+          "page": 98,
+          "url": "https://5e.tools/bestiary.html#red%20dragon%20wyrmling_mm",
+          "token_url": "https://5e.tools/img/bestiary/tokens/MM/Red%20Dragon%20Wyrmling.webp"
+        },
+        "2024": {
+          "name": "Red Dragon Wyrmling",
+          "source": "XMM",
+          "page": 254,
+          "url": "https://5e.tools/bestiary.html#red%20dragon%20wyrmling_xmm",
+          "token_url": "https://5e.tools/img/bestiary/tokens/XMM/Red%20Dragon%20Wyrmling.webp"
+        }
+      }
+    },
+    "red_dragon_wyrmling_updated": {
+      "miniature_key": "MM-Dragons/red_dragon_wyrmling_updated.pck",
+      "editions": {
+        "2014": {
+          "name": "Red Dragon Wyrmling",
+          "source": "MM",
+          "page": 98,
+          "url": "https://5e.tools/bestiary.html#red%20dragon%20wyrmling_mm",
+          "token_url": "https://5e.tools/img/bestiary/tokens/MM/Red%20Dragon%20Wyrmling.webp"
+        },
+        "2024": {
+          "name": "Red Dragon Wyrmling",
+          "source": "XMM",
+          "page": 254,
+          "url": "https://5e.tools/bestiary.html#red%20dragon%20wyrmling_xmm",
+          "token_url": "https://5e.tools/img/bestiary/tokens/XMM/Red%20Dragon%20Wyrmling.webp"
+        }
+      }
+    },
+    "red_dragon_young_flying_updated": {
+      "miniature_key": "MM-Dragons/red_dragon_young_flying_updated.pck",
+      "editions": {
+        "2014": {
+          "name": "Young Red Dragon",
+          "source": "MM",
+          "page": 98,
+          "url": "https://5e.tools/bestiary.html#young%20red%20dragon_mm",
+          "token_url": "https://5e.tools/img/bestiary/tokens/MM/Young%20Red%20Dragon.webp"
+        },
+        "2024": {
+          "name": "Young Red Dragon",
+          "source": "XMM",
+          "page": 254,
+          "url": "https://5e.tools/bestiary.html#young%20red%20dragon_xmm",
+          "token_url": "https://5e.tools/img/bestiary/tokens/XMM/Young%20Red%20Dragon.webp"
+        }
+      }
+    },
+    "red_dragon_young_updated": {
+      "miniature_key": "MM-Dragons/red_dragon_young_updated.pck",
+      "editions": {
+        "2014": {
+          "name": "Young Red Dragon",
+          "source": "MM",
+          "page": 98,
+          "url": "https://5e.tools/bestiary.html#young%20red%20dragon_mm",
+          "token_url": "https://5e.tools/img/bestiary/tokens/MM/Young%20Red%20Dragon.webp"
+        },
+        "2024": {
+          "name": "Young Red Dragon",
+          "source": "XMM",
+          "page": 254,
+          "url": "https://5e.tools/bestiary.html#young%20red%20dragon_xmm",
+          "token_url": "https://5e.tools/img/bestiary/tokens/XMM/Young%20Red%20Dragon.webp"
+        }
+      }
+    },
+    "silver_dragon_wyrmling_updated": {
+      "miniature_key": "MM-Dragons/silver_dragon_wyrmling_updated.pck",
+      "editions": {
+        "2014": {
+          "name": "Silver Dragon Wyrmling",
+          "source": "MM",
+          "page": 118,
+          "url": "https://5e.tools/bestiary.html#silver%20dragon%20wyrmling_mm",
+          "token_url": "https://5e.tools/img/bestiary/tokens/MM/Silver%20Dragon%20Wyrmling.webp"
+        },
+        "2024": {
+          "name": "Silver Dragon Wyrmling",
+          "source": "XMM",
+          "page": 278,
+          "url": "https://5e.tools/bestiary.html#silver%20dragon%20wyrmling_xmm",
+          "token_url": "https://5e.tools/img/bestiary/tokens/XMM/Silver%20Dragon%20Wyrmling.webp"
+        }
+      }
+    },
+    "tiamat_goddess_form": {
+      "miniature_key": "MM-Dragons/tiamat_goddess_form.pck",
+      "editions": {
+        "2014": {
+          "name": "Tiamat",
+          "source": "RoT",
+          "page": 92,
+          "url": "https://5e.tools/bestiary.html#tiamat_rot",
+          "token_url": "https://5e.tools/img/bestiary/tokens/RoT/Tiamat.webp"
+        }
+      }
+    },
+    "tiamat_goddess_form_no_crown": {
+      "miniature_key": "MM-Dragons/tiamat_goddess_form_no_crown.pck",
+      "editions": {
+        "2014": {
+          "name": "Tiamat",
+          "source": "RoT",
+          "page": 92,
+          "url": "https://5e.tools/bestiary.html#tiamat_rot",
+          "token_url": "https://5e.tools/img/bestiary/tokens/RoT/Tiamat.webp"
+        }
+      }
+    },
+    "tiamat_updated": {
+      "miniature_key": "MM-Dragons/tiamat_updated.pck",
+      "editions": {
+        "2014": {
+          "name": "Tiamat",
+          "source": "RoT",
+          "page": 92,
+          "url": "https://5e.tools/bestiary.html#tiamat_rot",
+          "token_url": "https://5e.tools/img/bestiary/tokens/RoT/Tiamat.webp"
+        }
+      }
+    },
+    "white_dragon_adult_updated_flying": {
+      "miniature_key": "MM-Dragons/white_dragon_adult_updated_flying.pck",
+      "editions": {
+        "2014": {
+          "name": "Adult White Dragon",
+          "source": "MM",
+          "page": 101,
+          "url": "https://5e.tools/bestiary.html#adult%20white%20dragon_mm",
+          "token_url": "https://5e.tools/img/bestiary/tokens/MM/Adult%20White%20Dragon.webp"
+        },
+        "2024": {
+          "name": "Adult White Dragon",
+          "source": "XMM",
+          "page": 329,
+          "url": "https://5e.tools/bestiary.html#adult%20white%20dragon_xmm",
+          "token_url": "https://5e.tools/img/bestiary/tokens/XMM/Adult%20White%20Dragon.webp"
+        }
+      }
+    },
+    "white_dragon_wyrmling_updated": {
+      "miniature_key": "MM-Dragons/white_dragon_wyrmling_updated.pck",
+      "editions": {
+        "2014": {
+          "name": "White Dragon Wyrmling",
+          "source": "MM",
+          "page": 102,
+          "url": "https://5e.tools/bestiary.html#white%20dragon%20wyrmling_mm",
+          "token_url": "https://5e.tools/img/bestiary/tokens/MM/White%20Dragon%20Wyrmling.webp"
+        },
+        "2024": {
+          "name": "White Dragon Wyrmling",
+          "source": "XMM",
+          "page": 328,
+          "url": "https://5e.tools/bestiary.html#white%20dragon%20wyrmling_xmm",
+          "token_url": "https://5e.tools/img/bestiary/tokens/XMM/White%20Dragon%20Wyrmling.webp"
+        }
+      }
+    },
+    "white_dragon_young_updated_flying": {
+      "miniature_key": "MM-Dragons/white_dragon_young_updated_flying.pck",
+      "editions": {
+        "2014": {
+          "name": "Young White Dragon",
+          "source": "MM",
+          "page": 101,
+          "url": "https://5e.tools/bestiary.html#young%20white%20dragon_mm",
+          "token_url": "https://5e.tools/img/bestiary/tokens/MM/Young%20White%20Dragon.webp"
+        },
+        "2024": {
+          "name": "Young White Dragon",
+          "source": "XMM",
+          "page": 328,
+          "url": "https://5e.tools/bestiary.html#young%20white%20dragon_xmm",
+          "token_url": "https://5e.tools/img/bestiary/tokens/XMM/Young%20White%20Dragon.webp"
+        }
+      }
+    },
+    "young_brass_dragon_flying_updated": {
+      "miniature_key": "MM-Dragons/young_brass_dragon_flying_updated.pck",
+      "editions": {
+        "2014": {
+          "name": "Young Brass Dragon",
+          "source": "MM",
+          "page": 105,
+          "url": "https://5e.tools/bestiary.html#young%20brass%20dragon_mm",
+          "token_url": "https://5e.tools/img/bestiary/tokens/MM/Young%20Brass%20Dragon.webp"
+        },
+        "2024": {
+          "name": "Young Brass Dragon",
+          "source": "XMM",
+          "page": 54,
+          "url": "https://5e.tools/bestiary.html#young%20brass%20dragon_xmm",
+          "token_url": "https://5e.tools/img/bestiary/tokens/XMM/Young%20Brass%20Dragon.webp"
+        }
+      }
+    },
+    "young_brass_dragon_updated": {
+      "miniature_key": "MM-Dragons/young_brass_dragon_updated.pck",
+      "editions": {
+        "2014": {
+          "name": "Young Brass Dragon",
+          "source": "MM",
+          "page": 105,
+          "url": "https://5e.tools/bestiary.html#young%20brass%20dragon_mm",
+          "token_url": "https://5e.tools/img/bestiary/tokens/MM/Young%20Brass%20Dragon.webp"
+        },
+        "2024": {
+          "name": "Young Brass Dragon",
+          "source": "XMM",
+          "page": 54,
+          "url": "https://5e.tools/bestiary.html#young%20brass%20dragon_xmm",
+          "token_url": "https://5e.tools/img/bestiary/tokens/XMM/Young%20Brass%20Dragon.webp"
+        }
+      }
+    },
+    "young_bronze_dragon_flying_updated": {
+      "miniature_key": "MM-Dragons/young_bronze_dragon_flying_updated.pck",
+      "editions": {
+        "2014": {
+          "name": "Young Bronze Dragon",
+          "source": "MM",
+          "page": 108,
+          "url": "https://5e.tools/bestiary.html#young%20bronze%20dragon_mm",
+          "token_url": "https://5e.tools/img/bestiary/tokens/MM/Young%20Bronze%20Dragon.webp"
+        },
+        "2024": {
+          "name": "Young Bronze Dragon",
+          "source": "XMM",
+          "page": 58,
+          "url": "https://5e.tools/bestiary.html#young%20bronze%20dragon_xmm",
+          "token_url": "https://5e.tools/img/bestiary/tokens/XMM/Young%20Bronze%20Dragon.webp"
+        }
+      }
+    },
+    "young_bronze_dragon_updated": {
+      "miniature_key": "MM-Dragons/young_bronze_dragon_updated.pck",
+      "editions": {
+        "2014": {
+          "name": "Young Bronze Dragon",
+          "source": "MM",
+          "page": 108,
+          "url": "https://5e.tools/bestiary.html#young%20bronze%20dragon_mm",
+          "token_url": "https://5e.tools/img/bestiary/tokens/MM/Young%20Bronze%20Dragon.webp"
+        },
+        "2024": {
+          "name": "Young Bronze Dragon",
+          "source": "XMM",
+          "page": 58,
+          "url": "https://5e.tools/bestiary.html#young%20bronze%20dragon_xmm",
+          "token_url": "https://5e.tools/img/bestiary/tokens/XMM/Young%20Bronze%20Dragon.webp"
+        }
+      }
+    },
+    "young_copper_dragon_flying_updated": {
+      "miniature_key": "MM-Dragons/young_copper_dragon_flying_updated.pck",
+      "editions": {
+        "2014": {
+          "name": "Young Copper Dragon",
+          "source": "MM",
+          "page": 112,
+          "url": "https://5e.tools/bestiary.html#young%20copper%20dragon_mm",
+          "token_url": "https://5e.tools/img/bestiary/tokens/MM/Young%20Copper%20Dragon.webp"
+        },
+        "2024": {
+          "name": "Young Copper Dragon",
+          "source": "XMM",
+          "page": 78,
+          "url": "https://5e.tools/bestiary.html#young%20copper%20dragon_xmm",
+          "token_url": "https://5e.tools/img/bestiary/tokens/XMM/Young%20Copper%20Dragon.webp"
+        }
+      }
+    },
+    "young_copper_dragon_updated": {
+      "miniature_key": "MM-Dragons/young_copper_dragon_updated.pck",
+      "editions": {
+        "2014": {
+          "name": "Young Copper Dragon",
+          "source": "MM",
+          "page": 112,
+          "url": "https://5e.tools/bestiary.html#young%20copper%20dragon_mm",
+          "token_url": "https://5e.tools/img/bestiary/tokens/MM/Young%20Copper%20Dragon.webp"
+        },
+        "2024": {
+          "name": "Young Copper Dragon",
+          "source": "XMM",
+          "page": 78,
+          "url": "https://5e.tools/bestiary.html#young%20copper%20dragon_xmm",
+          "token_url": "https://5e.tools/img/bestiary/tokens/XMM/Young%20Copper%20Dragon.webp"
+        }
+      }
+    },
+    "young_gold_dragon_flying_updated": {
+      "miniature_key": "MM-Dragons/young_gold_dragon_flying_updated.pck",
+      "editions": {
+        "2014": {
+          "name": "Young Gold Dragon",
+          "source": "MM",
+          "page": 115,
+          "url": "https://5e.tools/bestiary.html#young%20gold%20dragon_mm",
+          "token_url": "https://5e.tools/img/bestiary/tokens/MM/Young%20Gold%20Dragon.webp"
+        },
+        "2024": {
+          "name": "Young Gold Dragon",
+          "source": "XMM",
+          "page": 144,
+          "url": "https://5e.tools/bestiary.html#young%20gold%20dragon_xmm",
+          "token_url": "https://5e.tools/img/bestiary/tokens/XMM/Young%20Gold%20Dragon.webp"
+        }
+      }
+    },
+    "young_gold_dragon_updated": {
+      "miniature_key": "MM-Dragons/young_gold_dragon_updated.pck",
+      "editions": {
+        "2014": {
+          "name": "Young Gold Dragon",
+          "source": "MM",
+          "page": 115,
+          "url": "https://5e.tools/bestiary.html#young%20gold%20dragon_mm",
+          "token_url": "https://5e.tools/img/bestiary/tokens/MM/Young%20Gold%20Dragon.webp"
+        },
+        "2024": {
+          "name": "Young Gold Dragon",
+          "source": "XMM",
+          "page": 144,
+          "url": "https://5e.tools/bestiary.html#young%20gold%20dragon_xmm",
+          "token_url": "https://5e.tools/img/bestiary/tokens/XMM/Young%20Gold%20Dragon.webp"
+        }
+      }
+    },
+    "young_silver_dragon_updated_flying": {
+      "miniature_key": "MM-Dragons/young_silver_dragon_updated_flying.pck",
+      "editions": {
+        "2014": {
+          "name": "Young Silver Dragon",
+          "source": "MM",
+          "page": 118,
+          "url": "https://5e.tools/bestiary.html#young%20silver%20dragon_mm",
+          "token_url": "https://5e.tools/img/bestiary/tokens/MM/Young%20Silver%20Dragon.webp"
+        },
+        "2024": {
+          "name": "Young Silver Dragon",
+          "source": "XMM",
+          "page": 278,
+          "url": "https://5e.tools/bestiary.html#young%20silver%20dragon_xmm",
+          "token_url": "https://5e.tools/img/bestiary/tokens/XMM/Young%20Silver%20Dragon.webp"
+        }
+      }
+    },
+    "black_half_dragon": {
+      "miniature_key": "MM-H/black_half_dragon.pck",
+      "editions": {
+        "2024": {
+          "name": "Half-Dragon",
+          "source": "XMM",
+          "page": 163,
+          "url": "https://5e.tools/bestiary.html#half-dragon_xmm",
+          "token_url": "https://5e.tools/img/bestiary/tokens/XMM/Half-Dragon.webp"
+        }
+      }
+    },
+    "blue_half_dragon": {
+      "miniature_key": "MM-H/blue_half_dragon.pck",
+      "editions": {
+        "2024": {
+          "name": "Half-Dragon",
+          "source": "XMM",
+          "page": 163,
+          "url": "https://5e.tools/bestiary.html#half-dragon_xmm",
+          "token_url": "https://5e.tools/img/bestiary/tokens/XMM/Half-Dragon.webp"
+        }
+      }
+    },
+    "brass_half_dragon": {
+      "miniature_key": "MM-H/brass_half_dragon.pck",
+      "editions": {
+        "2024": {
+          "name": "Half-Dragon",
+          "source": "XMM",
+          "page": 163,
+          "url": "https://5e.tools/bestiary.html#half-dragon_xmm",
+          "token_url": "https://5e.tools/img/bestiary/tokens/XMM/Half-Dragon.webp"
+        }
+      }
+    },
+    "bronze_half_dragon": {
+      "miniature_key": "MM-H/bronze_half_dragon.pck",
+      "editions": {
+        "2024": {
+          "name": "Half-Dragon",
+          "source": "XMM",
+          "page": 163,
+          "url": "https://5e.tools/bestiary.html#half-dragon_xmm",
+          "token_url": "https://5e.tools/img/bestiary/tokens/XMM/Half-Dragon.webp"
+        }
+      }
+    },
+    "copper_half_dragon": {
+      "miniature_key": "MM-H/copper_half_dragon.pck",
+      "editions": {
+        "2024": {
+          "name": "Half-Dragon",
+          "source": "XMM",
+          "page": 163,
+          "url": "https://5e.tools/bestiary.html#half-dragon_xmm",
+          "token_url": "https://5e.tools/img/bestiary/tokens/XMM/Half-Dragon.webp"
+        }
+      }
+    },
+    "gold_half_dragon": {
+      "miniature_key": "MM-H/gold_half_dragon.pck",
+      "editions": {
+        "2024": {
+          "name": "Half-Dragon",
+          "source": "XMM",
+          "page": 163,
+          "url": "https://5e.tools/bestiary.html#half-dragon_xmm",
+          "token_url": "https://5e.tools/img/bestiary/tokens/XMM/Half-Dragon.webp"
+        }
+      }
+    },
+    "green_half_dragon": {
+      "miniature_key": "MM-H/green_half_dragon.pck",
+      "editions": {
+        "2024": {
+          "name": "Half-Dragon",
+          "source": "XMM",
+          "page": 163,
+          "url": "https://5e.tools/bestiary.html#half-dragon_xmm",
+          "token_url": "https://5e.tools/img/bestiary/tokens/XMM/Half-Dragon.webp"
+        }
+      }
+    },
+    "half_dragon_lord": {
+      "miniature_key": "MM-H/half_dragon_lord.pck",
+      "editions": {
+        "2024": {
+          "name": "Half-Dragon",
+          "source": "XMM",
+          "page": 163,
+          "url": "https://5e.tools/bestiary.html#half-dragon_xmm",
+          "token_url": "https://5e.tools/img/bestiary/tokens/XMM/Half-Dragon.webp"
+        }
+      }
+    },
+    "red_half_dragon": {
+      "miniature_key": "MM-H/red_half_dragon.pck",
+      "editions": {
+        "2024": {
+          "name": "Half-Dragon",
+          "source": "XMM",
+          "page": 163,
+          "url": "https://5e.tools/bestiary.html#half-dragon_xmm",
+          "token_url": "https://5e.tools/img/bestiary/tokens/XMM/Half-Dragon.webp"
+        }
+      }
+    },
+    "silver_half_dragon": {
+      "miniature_key": "MM-H/silver_half_dragon.pck",
+      "editions": {
+        "2024": {
+          "name": "Half-Dragon",
+          "source": "XMM",
+          "page": 163,
+          "url": "https://5e.tools/bestiary.html#half-dragon_xmm",
+          "token_url": "https://5e.tools/img/bestiary/tokens/XMM/Half-Dragon.webp"
+        }
+      }
+    },
+    "white_half_dragon": {
+      "miniature_key": "MM-H/white_half_dragon.pck",
+      "editions": {
+        "2024": {
+          "name": "Half-Dragon",
+          "source": "XMM",
+          "page": 163,
+          "url": "https://5e.tools/bestiary.html#half-dragon_xmm",
+          "token_url": "https://5e.tools/img/bestiary/tokens/XMM/Half-Dragon.webp"
+        }
+      }
+    },
+    "green_hag": {
+      "miniature_key": "MM-H/green_hag.pck",
+      "editions": {
+        "2014": {
+          "name": "Green Hag",
+          "source": "MM",
+          "page": 177,
+          "url": "https://5e.tools/bestiary.html#green%20hag_mm",
+          "token_url": "https://5e.tools/img/bestiary/tokens/MM/Green%20Hag.webp"
+        },
+        "2024": {
+          "name": "Green Hag",
+          "source": "XMM",
+          "page": 156,
+          "url": "https://5e.tools/bestiary.html#green%20hag_xmm",
+          "token_url": "https://5e.tools/img/bestiary/tokens/XMM/Green%20Hag.webp"
+        }
+      }
+    },
+    "harpy_2": {
+      "miniature_key": "MM-H/harpy_2.pck",
+      "editions": {
+        "2014": {
+          "name": "Harpy",
+          "source": "MM",
+          "page": 181,
+          "url": "https://5e.tools/bestiary.html#harpy_mm",
+          "token_url": "https://5e.tools/img/bestiary/tokens/MM/Harpy.webp"
+        },
+        "2024": {
+          "name": "Harpy",
+          "source": "XMM",
+          "page": 164,
+          "url": "https://5e.tools/bestiary.html#harpy_xmm",
+          "token_url": "https://5e.tools/img/bestiary/tokens/XMM/Harpy.webp"
+        }
+      }
+    },
+    "harpy_updated": {
+      "miniature_key": "MM-H/harpy_updated.pck",
+      "editions": {
+        "2014": {
+          "name": "Harpy",
+          "source": "MM",
+          "page": 181,
+          "url": "https://5e.tools/bestiary.html#harpy_mm",
+          "token_url": "https://5e.tools/img/bestiary/tokens/MM/Harpy.webp"
+        },
+        "2024": {
+          "name": "Harpy",
+          "source": "XMM",
+          "page": 164,
+          "url": "https://5e.tools/bestiary.html#harpy_xmm",
+          "token_url": "https://5e.tools/img/bestiary/tokens/XMM/Harpy.webp"
+        }
+      }
+    },
+    "hell_hound_puppy": {
+      "miniature_key": "MM-H/hell_hound_puppy.pck",
+      "editions": {
+        "2014": {
+          "name": "Hell Hound",
+          "source": "MM",
+          "page": 182,
+          "url": "https://5e.tools/bestiary.html#hell%20hound_mm",
+          "token_url": "https://5e.tools/img/bestiary/tokens/MM/Hell%20Hound.webp"
+        },
+        "2024": {
+          "name": "Hell Hound",
+          "source": "XMM",
+          "page": 165,
+          "url": "https://5e.tools/bestiary.html#hell%20hound_xmm",
+          "token_url": "https://5e.tools/img/bestiary/tokens/XMM/Hell%20Hound.webp"
+        }
+      }
+    },
+    "hell_hound_updated": {
+      "miniature_key": "MM-H/hell_hound_updated.pck",
+      "editions": {
+        "2014": {
+          "name": "Hell Hound",
+          "source": "MM",
+          "page": 182,
+          "url": "https://5e.tools/bestiary.html#hell%20hound_mm",
+          "token_url": "https://5e.tools/img/bestiary/tokens/MM/Hell%20Hound.webp"
+        },
+        "2024": {
+          "name": "Hell Hound",
+          "source": "XMM",
+          "page": 165,
+          "url": "https://5e.tools/bestiary.html#hell%20hound_xmm",
+          "token_url": "https://5e.tools/img/bestiary/tokens/XMM/Hell%20Hound.webp"
+        }
+      }
+    },
+    "helmed_horror_updated": {
+      "miniature_key": "MM-H/helmed_horror_updated.pck",
+      "editions": {
+        "2014": {
+          "name": "Helmed Horror",
+          "source": "MM",
+          "page": 183,
+          "url": "https://5e.tools/bestiary.html#helmed%20horror_mm",
+          "token_url": "https://5e.tools/img/bestiary/tokens/MM/Helmed%20Horror.webp"
+        },
+        "2024": {
+          "name": "Helmed Horror",
+          "source": "XMM",
+          "page": 166,
+          "url": "https://5e.tools/bestiary.html#helmed%20horror_xmm",
+          "token_url": "https://5e.tools/img/bestiary/tokens/XMM/Helmed%20Horror.webp"
+        }
+      }
+    },
+    "hobgoblin_captain": {
+      "miniature_key": "MM-H/hobgoblin_captain.pck",
+      "editions": {
+        "2014": {
+          "name": "Hobgoblin Captain",
+          "source": "MM",
+          "page": 186,
+          "url": "https://5e.tools/bestiary.html#hobgoblin%20captain_mm",
+          "token_url": "https://5e.tools/img/bestiary/tokens/MM/Hobgoblin%20Captain.webp"
+        },
+        "2024": {
+          "name": "Hobgoblin Captain",
+          "source": "XMM",
+          "page": 171,
+          "url": "https://5e.tools/bestiary.html#hobgoblin%20captain_xmm",
+          "token_url": "https://5e.tools/img/bestiary/tokens/XMM/Hobgoblin%20Captain.webp"
+        }
+      }
+    },
+    "hobgoblin_warlord": {
+      "miniature_key": "MM-H/hobgoblin_warlord.pck",
+      "editions": {
+        "2014": {
+          "name": "Hobgoblin Warlord",
+          "source": "MM",
+          "page": 187,
+          "url": "https://5e.tools/bestiary.html#hobgoblin%20warlord_mm",
+          "token_url": "https://5e.tools/img/bestiary/tokens/MM/Hobgoblin%20Warlord.webp"
+        },
+        "2024": {
+          "name": "Hobgoblin Warlord",
+          "source": "XMM",
+          "page": 171,
+          "url": "https://5e.tools/bestiary.html#hobgoblin%20warlord_xmm",
+          "token_url": "https://5e.tools/img/bestiary/tokens/XMM/Hobgoblin%20Warlord.webp"
+        }
+      }
+    },
+    "hobgoblin": {
+      "miniature_key": "MM-H/hobgoblin.pck",
+      "editions": {
+        "2014": {
+          "name": "Hobgoblin",
+          "source": "MM",
+          "page": 186,
+          "url": "https://5e.tools/bestiary.html#hobgoblin_mm",
+          "token_url": "https://5e.tools/img/bestiary/tokens/MM/Hobgoblin.webp"
+        },
+        "2024": {
+          "name": "Hobgoblin Warrior",
+          "source": "XMM",
+          "page": 170,
+          "url": "https://5e.tools/bestiary.html#hobgoblin%20warrior_xmm",
+          "token_url": "https://5e.tools/img/bestiary/tokens/XMM/Hobgoblin%20Warrior.webp"
+        }
+      }
+    },
+    "hobgoblin_updated": {
+      "miniature_key": "MM-H/hobgoblin_updated.pck",
+      "editions": {
+        "2014": {
+          "name": "Hobgoblin",
+          "source": "MM",
+          "page": 186,
+          "url": "https://5e.tools/bestiary.html#hobgoblin_mm",
+          "token_url": "https://5e.tools/img/bestiary/tokens/MM/Hobgoblin.webp"
+        },
+        "2024": {
+          "name": "Hobgoblin Warrior",
+          "source": "XMM",
+          "page": 170,
+          "url": "https://5e.tools/bestiary.html#hobgoblin%20warrior_xmm",
+          "token_url": "https://5e.tools/img/bestiary/tokens/XMM/Hobgoblin%20Warrior.webp"
+        }
+      }
+    },
+    "homunculus_updated": {
+      "miniature_key": "MM-H/homunculus_updated.pck",
+      "editions": {
+        "2014": {
+          "name": "Homunculus",
+          "source": "MM",
+          "page": 188,
+          "url": "https://5e.tools/bestiary.html#homunculus_mm",
+          "token_url": "https://5e.tools/img/bestiary/tokens/MM/Homunculus.webp"
+        },
+        "2024": {
+          "name": "Homunculus",
+          "source": "XMM",
+          "page": 172,
+          "url": "https://5e.tools/bestiary.html#homunculus_xmm",
+          "token_url": "https://5e.tools/img/bestiary/tokens/XMM/Homunculus.webp"
+        }
+      }
+    },
+    "hook_horror_updated": {
+      "miniature_key": "MM-H/hook_horror_updated.pck",
+      "editions": {
+        "2014": {
+          "name": "Hook Horror",
+          "source": "MM",
+          "page": 189,
+          "url": "https://5e.tools/bestiary.html#hook%20horror_mm",
+          "token_url": "https://5e.tools/img/bestiary/tokens/MM/Hook%20Horror.webp"
+        },
+        "2024": {
+          "name": "Hook Horror",
+          "source": "XMM",
+          "page": 173,
+          "url": "https://5e.tools/bestiary.html#hook%20horror_xmm",
+          "token_url": "https://5e.tools/img/bestiary/tokens/XMM/Hook%20Horror.webp"
+        }
+      }
+    },
+    "hydra_updated": {
+      "miniature_key": "MM-H/hydra_updated.pck",
+      "editions": {
+        "2014": {
+          "name": "Hydra",
+          "source": "MM",
+          "page": 190,
+          "url": "https://5e.tools/bestiary.html#hydra_mm",
+          "token_url": "https://5e.tools/img/bestiary/tokens/MM/Hydra.webp"
+        },
+        "2024": {
+          "name": "Hydra",
+          "source": "XMM",
+          "page": 175,
+          "url": "https://5e.tools/bestiary.html#hydra_xmm",
+          "token_url": "https://5e.tools/img/bestiary/tokens/XMM/Hydra.webp"
+        }
+      }
+    },
+    "night_hag": {
+      "miniature_key": "MM-H/night_hag.pck",
+      "editions": {
+        "2014": {
+          "name": "Night Hag",
+          "source": "MM",
+          "page": 178,
+          "url": "https://5e.tools/bestiary.html#night%20hag_mm",
+          "token_url": "https://5e.tools/img/bestiary/tokens/MM/Night%20Hag.webp"
+        },
+        "2024": {
+          "name": "Night Hag",
+          "source": "XMM",
+          "page": 225,
+          "url": "https://5e.tools/bestiary.html#night%20hag_xmm",
+          "token_url": "https://5e.tools/img/bestiary/tokens/XMM/Night%20Hag.webp"
+        }
+      }
+    },
+    "sea_hag": {
+      "miniature_key": "MM-H/sea_hag.pck",
+      "editions": {
+        "2014": {
+          "name": "Sea Hag",
+          "source": "MM",
+          "page": 179,
+          "url": "https://5e.tools/bestiary.html#sea%20hag_mm",
+          "token_url": "https://5e.tools/img/bestiary/tokens/MM/Sea%20Hag.webp"
+        },
+        "2024": {
+          "name": "Sea Hag",
+          "source": "XMM",
+          "page": 271,
+          "url": "https://5e.tools/bestiary.html#sea%20hag_xmm",
+          "token_url": "https://5e.tools/img/bestiary/tokens/XMM/Sea%20Hag.webp"
+        }
+      }
+    },
+    "duodrone_updated": {
+      "miniature_key": "MM-M/duodrone_updated.pck",
+      "editions": {
+        "2014": {
+          "name": "Duodrone",
+          "source": "MM",
+          "page": 225,
+          "url": "https://5e.tools/bestiary.html#duodrone_mm",
+          "token_url": "https://5e.tools/img/bestiary/tokens/MM/Duodrone.webp"
+        },
+        "2024": {
+          "name": "Modron Duodrone",
+          "source": "XMM",
+          "page": 217,
+          "url": "https://5e.tools/bestiary.html#modron%20duodrone_xmm",
+          "token_url": "https://5e.tools/img/bestiary/tokens/XMM/Modron%20Duodrone.webp"
+        }
+      }
+    },
+    "female_minotaur": {
+      "miniature_key": "MM-M/female_minotaur.pck",
+      "editions": {
+        "2014": {
+          "name": "Minotaur",
+          "source": "MM",
+          "page": 223,
+          "url": "https://5e.tools/bestiary.html#minotaur_mm",
+          "token_url": "https://5e.tools/img/bestiary/tokens/MM/Minotaur.webp"
+        }
+      }
+    },
+    "minotaur": {
+      "miniature_key": "MM-M/minotaur.pck",
+      "editions": {
+        "2014": {
+          "name": "Minotaur",
+          "source": "MM",
+          "page": 223,
+          "url": "https://5e.tools/bestiary.html#minotaur_mm",
+          "token_url": "https://5e.tools/img/bestiary/tokens/MM/Minotaur.webp"
+        }
+      }
+    },
+    "minotaur_drinking": {
+      "miniature_key": "MM-M/minotaur_drinking.pck",
+      "editions": {
+        "2014": {
+          "name": "Minotaur",
+          "source": "MM",
+          "page": 223,
+          "url": "https://5e.tools/bestiary.html#minotaur_mm",
+          "token_url": "https://5e.tools/img/bestiary/tokens/MM/Minotaur.webp"
+        }
+      }
+    },
+    "old_minotaur": {
+      "miniature_key": "MM-M/old_minotaur.pck",
+      "editions": {
+        "2014": {
+          "name": "Minotaur",
+          "source": "MM",
+          "page": 223,
+          "url": "https://5e.tools/bestiary.html#minotaur_mm",
+          "token_url": "https://5e.tools/img/bestiary/tokens/MM/Minotaur.webp"
+        }
+      }
+    },
+    "mindflayer_infiltrator": {
+      "miniature_key": "MM-M/mindflayer_infiltrator.pck",
+      "editions": {
+        "2014": {
+          "name": "Mind Flayer",
+          "source": "MM",
+          "page": 222,
+          "url": "https://5e.tools/bestiary.html#mind%20flayer_mm",
+          "token_url": "https://5e.tools/img/bestiary/tokens/MM/Mind%20Flayer.webp"
+        },
+        "2024": {
+          "name": "Mind Flayer",
+          "source": "XMM",
+          "page": 214,
+          "url": "https://5e.tools/bestiary.html#mind%20flayer_xmm",
+          "token_url": "https://5e.tools/img/bestiary/tokens/XMM/Mind%20Flayer.webp"
+        }
+      }
+    },
+    "mindflayer_infiltrator_2": {
+      "miniature_key": "MM-M/mindflayer_infiltrator_2.pck",
+      "editions": {
+        "2014": {
+          "name": "Mind Flayer",
+          "source": "MM",
+          "page": 222,
+          "url": "https://5e.tools/bestiary.html#mind%20flayer_mm",
+          "token_url": "https://5e.tools/img/bestiary/tokens/MM/Mind%20Flayer.webp"
+        },
+        "2024": {
+          "name": "Mind Flayer",
+          "source": "XMM",
+          "page": 214,
+          "url": "https://5e.tools/bestiary.html#mind%20flayer_xmm",
+          "token_url": "https://5e.tools/img/bestiary/tokens/XMM/Mind%20Flayer.webp"
+        }
+      }
+    },
+    "party_flayer": {
+      "miniature_key": "MM-M/party_flayer.pck",
+      "editions": {
+        "2014": {
+          "name": "Mind Flayer",
+          "source": "MM",
+          "page": 222,
+          "url": "https://5e.tools/bestiary.html#mind%20flayer_mm",
+          "token_url": "https://5e.tools/img/bestiary/tokens/MM/Mind%20Flayer.webp"
+        },
+        "2024": {
+          "name": "Mind Flayer",
+          "source": "XMM",
+          "page": 214,
+          "url": "https://5e.tools/bestiary.html#mind%20flayer_xmm",
+          "token_url": "https://5e.tools/img/bestiary/tokens/XMM/Mind%20Flayer.webp"
+        }
+      }
+    },
+    "mindflayer": {
+      "miniature_key": "MM-M/mindflayer.pck",
+      "editions": {
+        "2014": {
+          "name": "Mind Flayer",
+          "source": "MM",
+          "page": 222,
+          "url": "https://5e.tools/bestiary.html#mind%20flayer_mm",
+          "token_url": "https://5e.tools/img/bestiary/tokens/MM/Mind%20Flayer.webp"
+        },
+        "2024": {
+          "name": "Mind Flayer",
+          "source": "XMM",
+          "page": 214,
+          "url": "https://5e.tools/bestiary.html#mind%20flayer_xmm",
+          "token_url": "https://5e.tools/img/bestiary/tokens/XMM/Mind%20Flayer.webp"
+        }
+      }
+    },
+    "mindflayer_updated": {
+      "miniature_key": "MM-M/mindflayer_updated.pck",
+      "editions": {
+        "2014": {
+          "name": "Mind Flayer",
+          "source": "MM",
+          "page": 222,
+          "url": "https://5e.tools/bestiary.html#mind%20flayer_mm",
+          "token_url": "https://5e.tools/img/bestiary/tokens/MM/Mind%20Flayer.webp"
+        },
+        "2024": {
+          "name": "Mind Flayer",
+          "source": "XMM",
+          "page": 214,
+          "url": "https://5e.tools/bestiary.html#mind%20flayer_xmm",
+          "token_url": "https://5e.tools/img/bestiary/tokens/XMM/Mind%20Flayer.webp"
+        }
+      }
+    },
+    "mindlayer_overmind": {
+      "miniature_key": "MM-M/mindlayer_overmind.pck",
+      "editions": {
+        "2014": {
+          "name": "Mind Flayer Arcanist",
+          "source": "MM",
+          "page": 222,
+          "url": "https://5e.tools/bestiary.html#mind%20flayer%20arcanist_mm",
+          "token_url": "https://5e.tools/img/bestiary/tokens/MM/Mind%20Flayer%20Arcanist.webp"
+        },
+        "2024": {
+          "name": "Mind Flayer Arcanist",
+          "source": "XMM",
+          "page": 214,
+          "url": "https://5e.tools/bestiary.html#mind%20flayer%20arcanist_xmm",
+          "token_url": "https://5e.tools/img/bestiary/tokens/XMM/Mind%20Flayer%20Arcanist.webp"
+        }
+      }
+    },
+    "monodrone_updated": {
+      "miniature_key": "MM-M/monodrone_updated.pck",
+      "editions": {
+        "2014": {
+          "name": "Monodrone",
+          "source": "MM",
+          "page": 224,
+          "url": "https://5e.tools/bestiary.html#monodrone_mm",
+          "token_url": "https://5e.tools/img/bestiary/tokens/MM/Monodrone.webp"
+        },
+        "2024": {
+          "name": "Modron Monodrone",
+          "source": "XMM",
+          "page": 216,
+          "url": "https://5e.tools/bestiary.html#modron%20monodrone_xmm",
+          "token_url": "https://5e.tools/img/bestiary/tokens/XMM/Modron%20Monodrone.webp"
+        }
+      }
+    },
+    "mummy_lord_updated": {
+      "miniature_key": "MM-M/mummy_lord_updated.pck",
+      "editions": {
+        "2014": {
+          "name": "Mummy Lord",
+          "source": "MM",
+          "page": 229,
+          "url": "https://5e.tools/bestiary.html#mummy%20lord_mm",
+          "token_url": "https://5e.tools/img/bestiary/tokens/MM/Mummy%20Lord.webp"
+        },
+        "2024": {
+          "name": "Mummy Lord",
+          "source": "XMM",
+          "page": 221,
+          "url": "https://5e.tools/bestiary.html#mummy%20lord_xmm",
+          "token_url": "https://5e.tools/img/bestiary/tokens/XMM/Mummy%20Lord.webp"
+        }
+      }
+    },
+    "mummy_old": {
+      "miniature_key": "MM-M/mummy_old.pck",
+      "editions": {
+        "2014": {
+          "name": "Mummy",
+          "source": "MM",
+          "page": 228,
+          "url": "https://5e.tools/bestiary.html#mummy_mm",
+          "token_url": "https://5e.tools/img/bestiary/tokens/MM/Mummy.webp"
+        },
+        "2024": {
+          "name": "Mummy",
+          "source": "XMM",
+          "page": 219,
+          "url": "https://5e.tools/bestiary.html#mummy_xmm",
+          "token_url": "https://5e.tools/img/bestiary/tokens/XMM/Mummy.webp"
+        }
+      }
+    },
+    "mummy_updated": {
+      "miniature_key": "MM-M/mummy_updated.pck",
+      "editions": {
+        "2014": {
+          "name": "Mummy",
+          "source": "MM",
+          "page": 228,
+          "url": "https://5e.tools/bestiary.html#mummy_mm",
+          "token_url": "https://5e.tools/img/bestiary/tokens/MM/Mummy.webp"
+        },
+        "2024": {
+          "name": "Mummy",
+          "source": "XMM",
+          "page": 219,
+          "url": "https://5e.tools/bestiary.html#mummy_xmm",
+          "token_url": "https://5e.tools/img/bestiary/tokens/XMM/Mummy.webp"
+        }
+      }
+    },
+    "mummy_updated_2": {
+      "miniature_key": "MM-M/mummy_updated_2.pck",
+      "editions": {
+        "2014": {
+          "name": "Mummy",
+          "source": "MM",
+          "page": 228,
+          "url": "https://5e.tools/bestiary.html#mummy_mm",
+          "token_url": "https://5e.tools/img/bestiary/tokens/MM/Mummy.webp"
+        },
+        "2024": {
+          "name": "Mummy",
+          "source": "XMM",
+          "page": 219,
+          "url": "https://5e.tools/bestiary.html#mummy_xmm",
+          "token_url": "https://5e.tools/img/bestiary/tokens/XMM/Mummy.webp"
+        }
+      }
+    },
+    "mummy_updated_3": {
+      "miniature_key": "MM-M/mummy_updated_3.pck",
+      "editions": {
+        "2014": {
+          "name": "Mummy",
+          "source": "MM",
+          "page": 228,
+          "url": "https://5e.tools/bestiary.html#mummy_mm",
+          "token_url": "https://5e.tools/img/bestiary/tokens/MM/Mummy.webp"
+        },
+        "2024": {
+          "name": "Mummy",
+          "source": "XMM",
+          "page": 219,
+          "url": "https://5e.tools/bestiary.html#mummy_xmm",
+          "token_url": "https://5e.tools/img/bestiary/tokens/XMM/Mummy.webp"
+        }
+      }
+    },
+    "myconid_adult": {
+      "miniature_key": "MM-M/myconid_adult.pck",
+      "editions": {
+        "2014": {
+          "name": "Myconid Adult",
+          "source": "MM",
+          "page": 232,
+          "url": "https://5e.tools/bestiary.html#myconid%20adult_mm",
+          "token_url": "https://5e.tools/img/bestiary/tokens/MM/Myconid%20Adult.webp"
+        },
+        "2024": {
+          "name": "Myconid Adult",
+          "source": "XMM",
+          "page": 223,
+          "url": "https://5e.tools/bestiary.html#myconid%20adult_xmm",
+          "token_url": "https://5e.tools/img/bestiary/tokens/XMM/Myconid%20Adult.webp"
+        }
+      }
+    },
+    "myconid_commoner": {
+      "miniature_key": "MM-M/myconid_commoner.pck",
+      "editions": {
+        "2014": {
+          "name": "Myconid Adult",
+          "source": "MM",
+          "page": 232,
+          "url": "https://5e.tools/bestiary.html#myconid%20adult_mm",
+          "token_url": "https://5e.tools/img/bestiary/tokens/MM/Myconid%20Adult.webp"
+        },
+        "2024": {
+          "name": "Myconid Adult",
+          "source": "XMM",
+          "page": 223,
+          "url": "https://5e.tools/bestiary.html#myconid%20adult_xmm",
+          "token_url": "https://5e.tools/img/bestiary/tokens/XMM/Myconid%20Adult.webp"
+        }
+      }
+    },
+    "myconid_sovereign": {
+      "miniature_key": "MM-M/myconid_sovereign.pck",
+      "editions": {
+        "2014": {
+          "name": "Myconid Sovereign",
+          "source": "MM",
+          "page": 232,
+          "url": "https://5e.tools/bestiary.html#myconid%20sovereign_mm",
+          "token_url": "https://5e.tools/img/bestiary/tokens/MM/Myconid%20Sovereign.webp"
+        },
+        "2024": {
+          "name": "Myconid Sovereign",
+          "source": "XMM",
+          "page": 223,
+          "url": "https://5e.tools/bestiary.html#myconid%20sovereign_xmm",
+          "token_url": "https://5e.tools/img/bestiary/tokens/XMM/Myconid%20Sovereign.webp"
+        }
+      }
+    },
+    "myconid_sprout": {
+      "miniature_key": "MM-M/myconid_sprout.pck",
+      "editions": {
+        "2014": {
+          "name": "Myconid Sprout",
+          "source": "MM",
+          "page": 230,
+          "url": "https://5e.tools/bestiary.html#myconid%20sprout_mm",
+          "token_url": "https://5e.tools/img/bestiary/tokens/MM/Myconid%20Sprout.webp"
+        },
+        "2024": {
+          "name": "Myconid Sprout",
+          "source": "XMM",
+          "page": 222,
+          "url": "https://5e.tools/bestiary.html#myconid%20sprout_xmm",
+          "token_url": "https://5e.tools/img/bestiary/tokens/XMM/Myconid%20Sprout.webp"
+        }
+      }
+    },
+    "pentadrone_updated": {
+      "miniature_key": "MM-M/pentadrone_updated.pck",
+      "editions": {
+        "2014": {
+          "name": "Pentadrone",
+          "source": "MM",
+          "page": 226,
+          "url": "https://5e.tools/bestiary.html#pentadrone_mm",
+          "token_url": "https://5e.tools/img/bestiary/tokens/MM/Pentadrone.webp"
+        },
+        "2024": {
+          "name": "Modron Pentadrone",
+          "source": "XMM",
+          "page": 218,
+          "url": "https://5e.tools/bestiary.html#modron%20pentadrone_xmm",
+          "token_url": "https://5e.tools/img/bestiary/tokens/XMM/Modron%20Pentadrone.webp"
+        }
+      }
+    },
+    "quadrone_updated": {
+      "miniature_key": "MM-M/quadrone_updated.pck",
+      "editions": {
+        "2014": {
+          "name": "Quadrone",
+          "source": "MM",
+          "page": 226,
+          "url": "https://5e.tools/bestiary.html#quadrone_mm",
+          "token_url": "https://5e.tools/img/bestiary/tokens/MM/Quadrone.webp"
+        },
+        "2024": {
+          "name": "Modron Quadrone",
+          "source": "XMM",
+          "page": 218,
+          "url": "https://5e.tools/bestiary.html#modron%20quadrone_xmm",
+          "token_url": "https://5e.tools/img/bestiary/tokens/XMM/Modron%20Quadrone.webp"
+        }
+      }
+    },
+    "tridrone_updated": {
+      "miniature_key": "MM-M/tridrone_updated.pck",
+      "editions": {
+        "2014": {
+          "name": "Tridrone",
+          "source": "MM",
+          "page": 225,
+          "url": "https://5e.tools/bestiary.html#tridrone_mm",
+          "token_url": "https://5e.tools/img/bestiary/tokens/MM/Tridrone.webp"
+        },
+        "2024": {
+          "name": "Modron Tridrone",
+          "source": "XMM",
+          "page": 217,
+          "url": "https://5e.tools/bestiary.html#modron%20tridrone_xmm",
+          "token_url": "https://5e.tools/img/bestiary/tokens/XMM/Modron%20Tridrone.webp"
+        }
+      }
+    },
+    "water_weird": {
+      "miniature_key": "MM-W/water_weird.pck",
+      "editions": {
+        "2014": {
+          "name": "Water Weird",
+          "source": "MM",
+          "page": 299,
+          "url": "https://5e.tools/bestiary.html#water%20weird_mm",
+          "token_url": "https://5e.tools/img/bestiary/tokens/MM/Water%20Weird.webp"
+        },
+        "2024": {
+          "name": "Water Weird",
+          "source": "XMM",
+          "page": 323,
+          "url": "https://5e.tools/bestiary.html#water%20weird_xmm",
+          "token_url": "https://5e.tools/img/bestiary/tokens/XMM/Water%20Weird.webp"
+        }
+      }
+    },
+    "wight_old": {
+      "miniature_key": "MM-W/wight_old.pck",
+      "editions": {
+        "2014": {
+          "name": "Wight",
+          "source": "MM",
+          "page": 300,
+          "url": "https://5e.tools/bestiary.html#wight_mm",
+          "token_url": "https://5e.tools/img/bestiary/tokens/MM/Wight.webp"
+        },
+        "2024": {
+          "name": "Wight",
+          "source": "XMM",
+          "page": 332,
+          "url": "https://5e.tools/bestiary.html#wight_xmm",
+          "token_url": "https://5e.tools/img/bestiary/tokens/XMM/Wight.webp"
+        }
+      }
+    },
+    "wight_updated": {
+      "miniature_key": "MM-W/wight_updated.pck",
+      "editions": {
+        "2014": {
+          "name": "Wight",
+          "source": "MM",
+          "page": 300,
+          "url": "https://5e.tools/bestiary.html#wight_mm",
+          "token_url": "https://5e.tools/img/bestiary/tokens/MM/Wight.webp"
+        },
+        "2024": {
+          "name": "Wight",
+          "source": "XMM",
+          "page": 332,
+          "url": "https://5e.tools/bestiary.html#wight_xmm",
+          "token_url": "https://5e.tools/img/bestiary/tokens/XMM/Wight.webp"
+        }
+      }
+    },
+    "will_o_wisp": {
+      "miniature_key": "MM-W/will_o_wisp.pck",
+      "editions": {
+        "2014": {
+          "name": "Will-o'-Wisp",
+          "source": "MM",
+          "page": 301,
+          "url": "https://5e.tools/bestiary.html#will-o%27-wisp_mm",
+          "token_url": "https://5e.tools/img/bestiary/tokens/MM/Will-o%27-Wisp.webp"
+        },
+        "2024": {
+          "name": "Will-o'-Wisp",
+          "source": "XMM",
+          "page": 333,
+          "url": "https://5e.tools/bestiary.html#will-o%27-wisp_xmm",
+          "token_url": "https://5e.tools/img/bestiary/tokens/XMM/Will-o%27-Wisp.webp"
+        }
+      }
+    },
+    "wraith_2": {
+      "miniature_key": "MM-W/wraith_2.pck",
+      "editions": {
+        "2014": {
+          "name": "Wraith",
+          "source": "MM",
+          "page": 302,
+          "url": "https://5e.tools/bestiary.html#wraith_mm",
+          "token_url": "https://5e.tools/img/bestiary/tokens/MM/Wraith.webp"
+        },
+        "2024": {
+          "name": "Wraith",
+          "source": "XMM",
+          "page": 336,
+          "url": "https://5e.tools/bestiary.html#wraith_xmm",
+          "token_url": "https://5e.tools/img/bestiary/tokens/XMM/Wraith.webp"
+        }
+      }
+    },
+    "wraith_updated": {
+      "miniature_key": "MM-W/wraith_updated.pck",
+      "editions": {
+        "2014": {
+          "name": "Wraith",
+          "source": "MM",
+          "page": 302,
+          "url": "https://5e.tools/bestiary.html#wraith_mm",
+          "token_url": "https://5e.tools/img/bestiary/tokens/MM/Wraith.webp"
+        },
+        "2024": {
+          "name": "Wraith",
+          "source": "XMM",
+          "page": 336,
+          "url": "https://5e.tools/bestiary.html#wraith_xmm",
+          "token_url": "https://5e.tools/img/bestiary/tokens/XMM/Wraith.webp"
+        }
+      }
+    },
+    "wyvern_updated": {
+      "miniature_key": "MM-W/wyvern_updated.pck",
+      "editions": {
+        "2014": {
+          "name": "Wyvern",
+          "source": "MM",
+          "page": 303,
+          "url": "https://5e.tools/bestiary.html#wyvern_mm",
+          "token_url": "https://5e.tools/img/bestiary/tokens/MM/Wyvern.webp"
+        },
+        "2024": {
+          "name": "Wyvern",
+          "source": "XMM",
+          "page": 337,
+          "url": "https://5e.tools/bestiary.html#wyvern_xmm",
+          "token_url": "https://5e.tools/img/bestiary/tokens/XMM/Wyvern.webp"
+        }
+      }
+    },
+    "old_black_dragon": {
+      "miniature_key": "MM-Dragons/old_black_dragon.pck",
+      "editions": {}
+    },
+    "old_man_with_the_canaries": {
+      "miniature_key": "MM-Dragons/old_man_with_the_canaries.pck",
+      "editions": {}
+    },
+    "tiamat_necklace": {
+      "miniature_key": "MM-Dragons/tiamat_necklace.pck",
+      "editions": {}
+    },
+    "young_man_with_the_canaries": {
+      "miniature_key": "MM-Dragons/young_man_with_the_canaries.pck",
+      "editions": {}
+    },
+    "sea_hag_creeping_hut": {
+      "miniature_key": "MM-H/sea_hag_creeping_hut.pck",
+      "editions": {}
+    },
+    "myconid_behemoth": {
+      "miniature_key": "MM-M/myconid_behemoth.pck",
+      "editions": {}
     }
   }
 }
