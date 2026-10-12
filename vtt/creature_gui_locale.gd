@@ -596,9 +596,9 @@ static func text_for(source: String, language: String) -> String:
 		"Documento · ", "ID catalogo: ", "Origini:\n"]:
 		if source.begins_with(prefix):
 			return String(EN[prefix]) + source.substr(prefix.length())
-	for fmt in ["LIVELLO %d", "%d tratti e descrizioni", "Lunga: %d ft", "Max %d", "Tira d6: ricarica con %d–6", "Consuma uno slot di livello %d",
+	for fmt: String in ["LIVELLO %d", "%d tratti e descrizioni", "Lunga: %d ft", "Max %d", "Tira d6: ricarica con %d–6", "Consuma uno slot di livello %d",
 		"Ricarica uno slot di livello %d"]:
-		var parts := fmt.split("%d")
+		var parts: PackedStringArray = fmt.split("%d")
 		if parts.size() == 2 and source.begins_with(parts[0]) and source.ends_with(parts[1]):
 			var middle := source.substr(parts[0].length(), source.length() - parts[0].length() - parts[1].length())
 			if middle.is_valid_int():
