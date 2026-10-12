@@ -154,6 +154,22 @@ def main() -> None:
     print(f"Wrote {destination}: " + ", ".join(f"{k}: {len(out[k])}" for k in sources))
     languages_path, languages_count = generate_language_catalog(root, release)
     print(f"Wrote {languages_path}: {languages_count} typed languages from {release}")
+    # Keep all nonspell structured mechanics in sync with the same upstream
+    # snapshot, rather than separately maintaining resource and ability maps.
+    from generate_ability_grants import build as build_abilities, OUT as ability_path
+    from generate_class_mechanics import build as build_classes, OUT as class_path
+    abilities = build_abilities(root)
+    ability_path.write_text(
+        json.dumps(abilities, ensure_ascii=False, separators=(",", ":")) + "\n",
+        encoding="utf-8",
+    )
+    class_data = build_classes(root)
+    class_path.write_text(
+        json.dumps(class_data, ensure_ascii=False, separators=(",", ":")) + "\n",
+        encoding="utf-8",
+    )
+    print(f"Wrote {ability_path}: {sum(len(v) for v in abilities.values() if isinstance(v, list))} fixed grants")
+    print(f"Wrote {class_path}: {len(class_data['classes'])} structured class records")
 
 
 if __name__ == "__main__":
