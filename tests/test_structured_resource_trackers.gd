@@ -64,10 +64,13 @@ func run() -> void:
 		"classes": [{"name": "Druid", "source": "XPHB", "level": 2}]
 	})
 	assert(int(_find_resource(druid_second, "Wild Shape").get("max", 0)) == 2)
-	assert(Trackers.for_creature({
+	var druid_2014: Dictionary = _find_resource(Trackers.for_creature({
 		"kind": "character",
 		"classes": [{"name": "Druid", "source": "PHB", "level": 2}]
-	}).is_empty(), "2014 Wild Shape count is prose, not a numeric table column")
+	}), "Wild Shape")
+	assert(int(druid_2014.get("max", 0)) == 2
+		and String(druid_2014.get("recharge", "")) == "short_rest",
+		"2014 Wild Shape must come from the checked-in Fight Club supplement")
 
 	var mixed: Array[Dictionary] = Trackers.for_creature({
 		"kind": "character", "level": 12,
@@ -122,6 +125,55 @@ func run() -> void:
 		"kind": "character", "classes": [{"name": "Fighter", "source": "XPHB", "level": 4}]
 	})
 	assert(int(_find_resource(fighter, "Second Wind").get("max", 0)) == 3)
+
+	# Complementary Fight Club metadata: formulas, recovery progression and
+	# subclass gating. No runtime downloads or natural-language parsing.
+	var low_cha: Dictionary = _find_resource(Trackers.for_creature({
+		"kind": "character", "abilities": {"cha": 8},
+		"classes": [{"name": "Bard", "source": "PHB", "level": 1}]
+	}), "Bardic Inspiration")
+	assert(int(low_cha.get("max", 0)) == 1
+		and String(low_cha.get("max_formula", "")) == "cha_mod"
+		and String(low_cha.get("recharge", "")) == "long_rest",
+		"Ability-modifier counter must respect its minimum and first recharge")
+	var high_cha: Dictionary = _find_resource(Trackers.for_creature({
+		"kind": "character", "abilities": {"cha": 18},
+		"classes": [{"name": "Bard", "source": "PHB", "level": 5}]
+	}), "Bardic Inspiration")
+	assert(int(high_cha.get("max", 0)) == 4
+		and String(high_cha.get("recharge", "")) == "short_rest",
+		"Font of Inspiration updates existing counter without duplicating it")
+	var paladin_2014: Array[Dictionary] = Trackers.for_creature({
+		"kind": "character", "abilities": {"cha": 14},
+		"classes": [{"name": "Paladin", "source": "PHB", "level": 3}]
+	})
+	assert(int(_find_resource(paladin_2014, "Divine Sense").get("max", 0)) == 3)
+	assert(int(_find_resource(paladin_2014, "Lay on Hands").get("max", 0)) == 15)
+	assert(int(_find_resource(paladin_2014, "Channel Divinity").get("max", 0)) == 1)
+	assert(_find_resource(Trackers.for_creature({
+		"kind": "character", "classes": [{"name": "Wizard", "source": "PHB", "level": 3}]
+	}), "Portents").is_empty(), "Subclass counters must not leak into other subclasses")
+	var diviner: Dictionary = _find_resource(Trackers.for_creature({
+		"kind": "character",
+		"classes": [{"name": "Wizard", "source": "PHB", "level": 14,
+			"subclass": "Divination"}]
+	}), "Portents")
+	assert(int(diviner.get("max", 0)) == 3 and diviner.get("recharge", "") == "long_rest")
+	assert(_find_resource(Trackers.for_creature({
+		"kind": "character", "classes": [{"name": "Warlock", "source": "PHB", "level": 18}]
+	}), "Eldritch Invocations Known").is_empty(),
+		"Selection capacity must never become a consumable tracker")
+	assert(_find_resource(Trackers.for_creature({
+		"kind": "character", "classes": [{"name": "Druid", "source": "PHB", "level": 2}]
+	}), "Natural Recovery").is_empty(), "No unselected Circle of the Land resource")
+	var manual_formula: Dictionary = _find_resource(Trackers.for_creature({
+		"kind": "character", "level": 3, "abilities": {"cha": 16},
+		"resource_trackers": [{"id": "special", "name": "Custom", "max": 1,
+			"max_formula": "1 + cha_mod", "recharge": "long_rest"}]
+	}), "Custom")
+	assert(int(manual_formula.get("max", 0)) == 4
+		and manual_formula.get("recharge", "") == "long_rest",
+		"Saved custom formulas and rest types must survive normalization")
 
 	var monster: Array[Dictionary] = Trackers.for_creature({
 		"kind": "monster",
