@@ -237,6 +237,23 @@ func run() -> void:
 		_fail("red affected cells remained after post-cast cleanup")
 		return
 
+	# Single-target spells have no AoE to click. Their temporary red hitbox
+	# must disappear on successful cast, while the applied spell remains
+	# tracked separately on the creature/token.
+	spell.set("_pending_spell_id", "bless")
+	spell.set("_pending_spell_data", {"id": "bless", "duration": "Concentration, up to 1 minute"})
+	spell.call("_set_spell_affected_targets", [token], true)
+	if board.affected_tokens.size() != 1:
+		_fail("single target did not receive a red preview")
+		return
+	spell.call("_finish_cast")
+	if not board.affected_tokens.is_empty():
+		_fail("single-target red hitbox survived the completed spell")
+		return
+	if bool(spell.call("has_post_cast_cleanup")):
+		_fail("single-target spell without any visual area armed unnecessary cleanup")
+		return
+
 	board.queue_free()
 	await process_frame
 	print("PASS: spell targeting visual lifecycle")
