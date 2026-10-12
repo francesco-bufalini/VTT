@@ -8,7 +8,6 @@ on:
       - feature/campaign-hub
       - feature/structured-creature-sheets
       - feature/tokens-lazy-load
-      - feature/equipment-hands-armor-2026
     paths:
       - "**/*.gd"
       - "**/*.tscn"
