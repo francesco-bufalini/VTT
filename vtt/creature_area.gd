@@ -3141,7 +3141,7 @@ func _roll_attack_from_sheet(attack_id: String, damage: bool) -> void:
 		expression = AttackData.damage_expression(record, attack)
 		label += " · Danni"
 	else:
-		if String(record.get("kind", "")) == "monster" and String(attack.get("source", "")) != "item" and not bool(attack.get("hit_known", false)):
+		if String(record.get("kind", "")) == "monster" and String(attack.get("source", "")) not in ["item", "unarmed", "improvised"] and not bool(attack.get("hit_known", false)):
 			_set_status("Tiro per colpire non specificato nel bestiario.")
 			return
 		var bonus: int = AttackData.attack_bonus(record, attack, _creature_proficiency(record))
@@ -3330,7 +3330,7 @@ func _refresh_attacks(record: Dictionary) -> void:
 			size_chip.modulate.a = 0.78
 			size_chip.tooltip_text = "Modificabile nell'inventario; in assenza di scelta segue la taglia della creatura."
 			chips.add_child(size_chip)
-		if String(record.get("kind", "")) == "monster" and String(attack.get("source", "")) != "item":
+		if String(record.get("kind", "")) == "monster" and String(attack.get("source", "")) not in ["item", "unarmed", "improvised"]:
 			var fixed := Label.new()
 			fixed.text = "Competenza inclusa (bestiario)"
 			fixed.tooltip_text = "Il bonus al tiro per colpire pubblicato da 5etools include già la competenza"
@@ -3386,7 +3386,7 @@ func _refresh_attack_values(record: Dictionary) -> void:
 		if not _attack_hit_labels.has(attack_id):
 			continue
 		var hit: int = AttackData.attack_bonus(record, attack, _creature_proficiency(record))
-		if String(record.get("kind", "")) == "monster" and String(attack.get("source", "")) != "item" and not bool(attack.get("hit_known", false)):
+		if String(record.get("kind", "")) == "monster" and String(attack.get("source", "")) not in ["item", "unarmed", "improvised"] and not bool(attack.get("hit_known", false)):
 			_set_formula("attack_hit:" + attack_id, "n.d.", "Bonus per colpire non presente nei dati del bestiario")
 		else:
 			_set_formula("attack_hit:" + attack_id, "%+d" % hit,
