@@ -470,7 +470,11 @@ func _refresh_competences() -> void:
 			label.clip_text = true
 			label.vertical_alignment = VERTICAL_ALIGNMENT_CENTER
 			var mastered: bool = kind == "skill" and _effective_expertise(key, enabled)
-			label.text = ("✓ " if active else "○ ") + key + (" 🎓🎓" if mastered else "")
+			var displayed_name: String = key
+			if kind == "language":
+				displayed_name += " · " + String(Rules.LANGUAGE_TYPE_LABELS.get(
+					Rules.language_type(key), "Altro"))
+			label.text = ("✓ " if active else "○ ") + displayed_name + (" 🎓🎓" if mastered else "")
 			label.tooltip_text = "Origini:\n" + "\n".join(linked)
 			if selected_active:
 				label.add_theme_color_override("font_color", Color(0.96, 0.87, 0.66))
@@ -766,9 +770,11 @@ func _catalog_entries_for_kind(kind: String) -> Array[Dictionary]:
 			if _valid_edition(item):
 				items.append({"key": String(item.get("name", "")).to_lower(), "label": String(item.get("name", ""))})
 	elif kind == "language":
+		# Show the 5etools type (Standard, Esotico, Raro, Segreto, etc.)
+		# and do not hide rare languages just because their first official
+		# record comes from a 2024 source.
 		for item: Dictionary in Rules.language_options():
-			if _valid_edition(item):
-				items.append({"key": String(item.get("key", "")), "label": String(item.get("label", ""))})
+			items.append({"key": String(item.get("key", "")), "label": String(item.get("label", ""))})
 	elif kind == "tool":
 		for item: Dictionary in Catalog.entries("tools"):
 			if _valid_edition(item):
