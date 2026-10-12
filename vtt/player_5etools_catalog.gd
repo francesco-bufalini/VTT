@@ -389,13 +389,12 @@ static func info_text(
 		return "Nessuna informazione disponibile."
 
 	var lines: PackedStringArray = []
-	lines.append(String(entry.get("name", "Voce catalogo")))
-	var source := String(entry.get("source", "")).strip_edges()
+	lines.append(str(entry.get("name", "Voce catalogo")))
+	var source := str(entry.get("source", "")).strip_edges()
 	if not source.is_empty():
 		lines.append("Fonte: %s" % source)
 
-	var class_name_value := String(
-		entry.get("class_name", "")
+	var class_name_value := str(entry.get("class_name", "")
 	).strip_edges()
 	if not class_name_value.is_empty():
 		var class_line := "Classe: %s" % class_name_value
@@ -404,39 +403,37 @@ static func info_text(
 			class_line += " · Livello %d" % level
 		lines.append(class_line)
 
-	var species := String(entry.get("species", "")).strip_edges()
+	var species := str(entry.get("species", "")).strip_edges()
 	if not species.is_empty():
 		lines.append("Specie/Razza: %s" % species)
 
-	var category := String(entry.get("category", "")).strip_edges()
+	var category := str(entry.get("category", "")).strip_edges()
 	if not category.is_empty():
 		lines.append("Categoria: %s" % category)
 
-	var type_code := String(entry.get("type", "")).split("|")[0]
+	var type_code := str(entry.get("type", "")).split("|")[0]
 	if not type_code.is_empty():
 		lines.append("Tipo: %s" % _item_type_name(type_code))
 
-	var rarity := String(entry.get("rarity", "")).strip_edges()
+	var rarity := str(entry.get("rarity", "")).strip_edges()
 	if not rarity.is_empty() and rarity.to_lower() != "none":
 		lines.append("Rarità: %s" % rarity)
 
-	var damage := String(entry.get("damage", "")).strip_edges()
+	var damage := str(entry.get("damage", "")).strip_edges()
 	if not damage.is_empty():
 		var damage_line := "Danno: %s" % damage
-		var damage_type := String(
-			entry.get("damage_type", "")
+		var damage_type := str(entry.get("damage_type", "")
 		).strip_edges()
 		if not damage_type.is_empty():
 			damage_line += " %s" % _damage_type_name(damage_type)
 		lines.append(damage_line)
 
-	var versatile := String(
-		entry.get("versatile_damage", "")
+	var versatile := str(entry.get("versatile_damage", "")
 	).strip_edges()
 	if not versatile.is_empty():
 		lines.append("Danno versatile: %s" % versatile)
 
-	var range_text := String(entry.get("range", "")).strip_edges()
+	var range_text := str(entry.get("range", "")).strip_edges()
 	if not range_text.is_empty():
 		lines.append("Gittata: %s ft" % range_text)
 
@@ -449,7 +446,7 @@ static func info_text(
 		var mastery_names: PackedStringArray = []
 		for raw_mastery: Variant in mastery_value:
 			mastery_names.append(
-				String(raw_mastery).split("|")[0]
+				str(raw_mastery).split("|")[0]
 			)
 		lines.append("Maestria: %s" % ", ".join(mastery_names))
 
@@ -640,7 +637,7 @@ static func _properties_text(entry: Dictionary) -> String:
 		return ""
 	var names: PackedStringArray = []
 	for raw_property: Variant in value:
-		var code := String(raw_property).split("|")[0].to_upper()
+		var code := str(raw_property).split("|")[0].to_upper()
 		names.append(_property_name(code))
 	return ", ".join(names)
 
