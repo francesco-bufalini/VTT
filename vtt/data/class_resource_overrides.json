@@ -5,7 +5,7 @@
     "repository": "https://github.com/vidalvanbergen/fightclub5exml",
     "source_path": "Sources/DND_5e/WizardsOfTheCoast/01_Core/01_Players_Handbook/class-*-phb.xml",
     "build_only": true,
-    "note": "Curated consumable class counters (2014 PHB). Spellcasting, learned capacities and ambiguous counters excluded. Fight Club is never queried at runtime. Corrections: Indomitable reset is long_rest. Corrections: Natural Recovery/Wholeness of Body gated by subclass; Arcane Recovery treated as once per long rest; Mystic Arcanum excluded because spellcasting is managed separately. A 2024 Bard definition is curated from 5etools classFeature data (not from Fight Club 2024 counters)."
+    "note": "Curated consumable class counters (2014 PHB). Spellcasting, learned capacities and ambiguous counters excluded. Fight Club is never queried at runtime. Corrections: Indomitable reset is long_rest. Corrections: Natural Recovery/Wholeness of Body gated by subclass; Arcane Recovery treated as once per long rest; Mystic Arcanum excluded because spellcasting is managed separately. A 2024 Bard definition is curated from 5etools classFeature data (not from Fight Club 2024 counters). Formula values are stored exclusively in native VTT syntax; external placeholders are translated by the offline generator."
   },
   "classes": [
     {
@@ -55,12 +55,12 @@
           "steps": [
             {
               "level": 1,
-              "value": "%6",
+              "value": "cha_mod",
               "reset": "long_rest"
             },
             {
               "level": 5,
-              "value": "%6",
+              "value": "cha_mod",
               "reset": "short_rest"
             }
           ],
@@ -99,7 +99,7 @@
           "steps": [
             {
               "level": 1,
-              "value": "%5",
+              "value": "wis_mod",
               "reset": "long_rest"
             }
           ],
@@ -112,7 +112,7 @@
           "steps": [
             {
               "level": 1,
-              "value": "%5",
+              "value": "wis_mod",
               "reset": "long_rest"
             }
           ],
@@ -125,7 +125,7 @@
           "steps": [
             {
               "level": 1,
-              "value": "%5",
+              "value": "wis_mod",
               "reset": "long_rest"
             }
           ],
@@ -393,7 +393,7 @@
           "steps": [
             {
               "level": 14,
-              "value": "%6",
+              "value": "cha_mod",
               "reset": "long_rest"
             }
           ],
@@ -405,7 +405,7 @@
           "steps": [
             {
               "level": 1,
-              "value": "1+%6",
+              "value": "1+cha_mod",
               "reset": "long_rest"
             }
           ],
@@ -893,12 +893,12 @@
           "steps": [
             {
               "level": 1,
-              "value": "%6",
+              "value": "cha_mod",
               "reset": "long_rest"
             },
             {
               "level": 5,
-              "value": "%6",
+              "value": "cha_mod",
               "reset": "short_rest"
             }
           ]
