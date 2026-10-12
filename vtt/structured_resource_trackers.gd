@@ -197,6 +197,15 @@ static func _append_class_trackers(record: Dictionary, output: Array[Dictionary]
 			selected_class_name, resolved_source, class_level, subclass_name, record
 		):
 			var supplement_column: String = String(supplement.get("column", supplement.get("name", "")))
+			# An unlimited (or unavailable) 5etools table value must never
+			# become a finite fallback counter from the supplementary source.
+			var native_column: Dictionary = ClassMechanics.column(
+				selected_class_name, resolved_source, supplement_column)
+			if not native_column.is_empty():
+				var native_value: Variant = ClassMechanics.column_value(
+					selected_class_name, resolved_source, supplement_column, class_level)
+				if not (native_value is int or native_value is float) or int(native_value) <= 0:
+					continue
 			var resource_id: String = "class:%s:%s:%s" % [
 				selected_class_name, resolved_source.to_lower(), supplement_column.to_lower().replace(" ", "_")
 			]
