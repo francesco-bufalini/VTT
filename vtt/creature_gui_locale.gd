@@ -569,6 +569,14 @@ const IT: Dictionary = {
 	"CHA": "CAR",
 	"Car.": "Car.",
 	"Save": "TS",
+	# 5etools classTableGroups column names are stored in their original English.
+	# Localization is a display-only concern, never baked into resource data.
+	"Rages": "Ira",
+	"Channel Divinity": "Incanalare Divinità",
+	"Wild Shape": "Forma Selvatica",
+	"Ki Points": "Punti Ki",
+	"Focus Points": "Punti Focus",
+	"Sorcery Points": "Punti Stregoneria",
 }
 
 static func read_locale() -> String:
