@@ -617,10 +617,11 @@ func _build_ui() -> void:
 	_damage_defenses_ui.hide()
 	statistics_tab.add_child(_damage_defenses_ui)
 	_damage_defenses_ui.call("setup", Callable(self, "_on_damage_defenses_updated"))
+	call_deferred("_guard_nested_scrolls", statistics_tab)
 	# Always keep skills and combat side by side (45% / 55%).  Scroll
 	# their oversized contents locally instead of expanding the whole sheet.
 	_statistics_columns = HBoxContainer.new()
-	_statistics_columns.add_theme_constant_override("separation", 5)
+	_statistics_columns.add_theme_constant_override("separation", 3)
 	_statistics_columns.size_flags_horizontal = Control.SIZE_EXPAND_FILL
 	statistics_tab.add_child(_statistics_columns)
 	var skills_view := ScrollContainer.new()
@@ -628,6 +629,7 @@ func _build_ui() -> void:
 	skills_view.name = "SkillsColumnView"
 	skills_view.size_flags_horizontal = Control.SIZE_EXPAND_FILL
 	skills_view.size_flags_stretch_ratio = 0.9
+	skills_view.custom_minimum_size.x = 0
 	skills_view.horizontal_scroll_mode = ScrollContainer.SCROLL_MODE_AUTO
 	skills_view.vertical_scroll_mode = ScrollContainer.SCROLL_MODE_DISABLED
 	skills_view.follow_focus = true
@@ -640,6 +642,7 @@ func _build_ui() -> void:
 	combat_view.name = "CombatColumnView"
 	combat_view.size_flags_horizontal = Control.SIZE_EXPAND_FILL
 	combat_view.size_flags_stretch_ratio = 1.1
+	combat_view.custom_minimum_size.x = 0
 	combat_view.horizontal_scroll_mode = ScrollContainer.SCROLL_MODE_AUTO
 	combat_view.vertical_scroll_mode = ScrollContainer.SCROLL_MODE_DISABLED
 	combat_view.follow_focus = true
@@ -828,12 +831,12 @@ func _build_ui() -> void:
 	_ac.tooltip_text = "Base precedente (compatibilità)"
 	_ac.hide()
 	_armor_picker = OptionButton.new()
-	_armor_picker.custom_minimum_size.x = 102
+	_armor_picker.custom_minimum_size.x = 92
 	_armor_picker.tooltip_text = "Armatura indossata; scegli Naturale per utilizzare la formula senza armatura."
 	_armor_picker.item_selected.connect(_on_armor_selected)
 	temp_health.add_child(_armor_picker)
 	_natural_ac_formula = LineEdit.new()
-	_natural_ac_formula.custom_minimum_size.x = 125
+	_natural_ac_formula.custom_minimum_size.x = 115
 	_natural_ac_formula.placeholder_text = "10 + dex_mod"
 	_natural_ac_formula.tooltip_text = "Formula per la CA senza armatura: per esempio 10 + dex_mod, 13 + dex_mod o 16. Le variabili seguono le formule dei bonus."
 	_natural_ac_formula.text_submitted.connect(func(_value: String) -> void: _save())
@@ -974,7 +977,7 @@ func _build_ui() -> void:
 		scores_row.add_theme_constant_override("separation", 4)
 		abilities_row.add_child(scores_row)
 		var spin := _spin(scores_row, 1, 30)
-		spin.custom_minimum_size.x = 54
+		spin.custom_minimum_size.x = 48
 		spin.tooltip_text = "Punteggio base"
 		_ability_spins[ability] = spin
 		var total_score := Label.new()
@@ -1000,7 +1003,7 @@ func _build_ui() -> void:
 		save_icon.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
 		_saving_throw_icons[ability] = save_icon
 		saving_throw.add_theme_font_size_override("font_size", 17)
-		saving_throw.custom_minimum_size.x = 50
+		saving_throw.custom_minimum_size.x = 44
 		saving_throw.horizontal_alignment = HORIZONTAL_ALIGNMENT_RIGHT
 		save_cell.add_child(saving_throw)
 		save_cell.add_child(save_icon)
@@ -1095,7 +1098,7 @@ func _build_ui() -> void:
 	combat_column.move_child(hand_bar, attack_header.get_index())
 	_add_label(hand_bar, "Mano principale")
 	_hand_main_picker = OptionButton.new()
-	_hand_main_picker.custom_minimum_size.x = 145
+	_hand_main_picker.custom_minimum_size.x = 125
 	_hand_main_picker.clip_text = true
 	_hand_main_picker.item_selected.connect(_on_hand_selected.bind("main"))
 	hand_bar.add_child(_hand_main_picker)
@@ -1104,7 +1107,7 @@ func _build_ui() -> void:
 	offhand_row.add_theme_constant_override("separation", 8)
 	hand_bar.add_child(offhand_row)
 	_hand_off_picker = OptionButton.new()
-	_hand_off_picker.custom_minimum_size.x = 145
+	_hand_off_picker.custom_minimum_size.x = 125
 	_hand_off_picker.clip_text = true
 	_hand_off_picker.item_selected.connect(_on_hand_selected.bind("off"))
 	offhand_row.add_child(_hand_off_picker)
@@ -1993,6 +1996,28 @@ func _with_effective_modifiers(record: Dictionary) -> Dictionary:
 	return context
 
 
+# Scroll events must be consumed by the innermost scroller even at its
+# boundary; otherwise the parent window jumps when a list is exhausted.
+# Re-run after lazy editor population so newly created scrollers are covered.
+func _guard_nested_scrolls(root: Node) -> void:
+	if root is ScrollContainer:
+		var scroll: ScrollContainer = root
+		scroll.mouse_filter = Control.MOUSE_FILTER_STOP
+		scroll.mouse_force_pass_scroll_events = false
+		if not scroll.has_meta("scroll_boundary_guard"):
+			scroll.set_meta("scroll_boundary_guard", true)
+			scroll.gui_input.connect(func(event: InputEvent) -> void:
+				if event is InputEventMouseButton:
+					var mouse_event: InputEventMouseButton = event
+					if mouse_event.pressed and mouse_event.button_index in [MOUSE_BUTTON_WHEEL_UP, MOUSE_BUTTON_WHEEL_DOWN, MOUSE_BUTTON_WHEEL_LEFT, MOUSE_BUTTON_WHEEL_RIGHT]:
+						scroll.accept_event()
+				elif event is InputEventPanGesture:
+					scroll.accept_event()
+			)
+	for child: Node in root.get_children():
+		_guard_nested_scrolls(child)
+
+
 func _select_details_editor(index: int) -> void:
 	if _editor_section_picker == null:
 		return
@@ -2028,6 +2053,7 @@ func _select_details_editor(index: int) -> void:
 						_damage_defenses_ui.call("load_record", record)
 						_damage_defenses_stale = false
 	call_deferred("_update_stats_column_heights")
+	call_deferred("_guard_nested_scrolls", _tabs)
 
 
 func _on_damage_defenses_updated(damage_overrides: Dictionary, condition_overrides: Dictionary) -> void:
