@@ -185,6 +185,9 @@ func _is_internal_token_name(candidate: String) -> bool:
 		return true
 	if normalized.begins_with("@"):
 		return true
+	# Godot also automatically renames duplicate nodes Token2, Token3, etc.
+	if normalized.begins_with("token") and normalized.substr(5).is_valid_int():
+		return true
 	for prefix: String in ["token_", "token@", "token-", "characterbody3d", "dnd_token_"]:
 		if normalized.begins_with(prefix):
 			return true
