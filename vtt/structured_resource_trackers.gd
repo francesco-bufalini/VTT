@@ -147,7 +147,13 @@ static func _append_class_trackers(record: Dictionary, output: Array[Dictionary]
 		var class_level: int = int(class_data.get("level", 0))
 		if class_level < 1 or class_level > 20:
 			continue
-		for definition: Dictionary in ClassMechanics.resource_columns(selected_class_name, class_source):
+		# Use the resolved 5etools source for the tracker identity as well as
+		# for its progression. Legacy sheets may omit the class source: using
+		# an empty source in the ID would split the same PHB resource into
+		# separate spent-use keys.
+		var class_row: Dictionary = ClassMechanics.class_row(selected_class_name, class_source)
+		var resolved_source: String = String(class_row.get("source", class_source)).to_upper()
+		for definition: Dictionary in ClassMechanics.resource_columns(selected_class_name, resolved_source):
 			var levels_value: Variant = definition.get("levels", [])
 			if not levels_value is Array:
 				continue
@@ -161,7 +167,7 @@ static func _append_class_trackers(record: Dictionary, output: Array[Dictionary]
 				continue
 			var column: String = String(definition.get("name", ""))
 			var id: String = "class:%s:%s:%s" % [
-				selected_class_name, class_source.to_lower(), column.to_lower().replace(" ", "_")
+				selected_class_name, resolved_source.to_lower(), column.to_lower().replace(" ", "_")
 			]
 			if seen.has(id):
 				continue
@@ -173,6 +179,6 @@ static func _append_class_trackers(record: Dictionary, output: Array[Dictionary]
 				"origin": String(definition.get("origin_feature", column)),
 				"recharge": "manual",
 				"source_label": "%s · %s" % [
-					String(class_data.get("name", "")), class_source
+					String(class_data.get("name", "")), resolved_source
 				]
 			})
