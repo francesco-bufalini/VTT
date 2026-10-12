@@ -468,6 +468,30 @@ func run() -> void:
 		"HP maximum should be a compact readout, not a permanently visible formula")
 	assert(area._formula_values["initiative"]._fields.is_empty(),
 		"Initiative is derived from DEX and has no editable base")
+	# Readouts that represent rolls must use their displayed effective bonuses.
+	var left_click := InputEventMouseButton.new()
+	left_click.button_index = MOUSE_BUTTON_LEFT
+	left_click.pressed = true
+	for roll_key: String in ["initiative", "ability_mod:str", "skill:perception", "save:wis"]:
+		var roll_widget: Node = area._formula_values[roll_key]
+		assert(roll_widget.roll_on_click, "Expected click-to-roll for " + roll_key)
+		hp_roller.last_expression = ""
+		roll_widget._on_readout_input(left_click)
+		assert(hp_roller.last_expression == "1d20%+d" % Bonuses.value(area._live_stats_record(), roll_key),
+			"Click-to-roll must evaluate current bonuses for " + roll_key)
+	assert(not area._formula_values["ability:str"].roll_on_click,
+		"Editable characteristic scores should not be rolled instead of modified")
+	assert(area._formula_values["attack_hit:unarmed"].roll_on_click
+		and area._formula_values["attack_damage:unarmed"].roll_on_click,
+		"Attacks and damage should roll by clicking their formula readouts")
+	area._formula_values["attack_hit:unarmed"]._on_readout_input(left_click)
+	assert(hp_roller.last_expression.begins_with("1d20"),
+		"Clicking hit values must reuse the attack roll logic")
+	var first_card: PanelContainer = area._attack_rows.get_child(0)
+	var attack_box: VBoxContainer = first_card.get_child(0)
+	for row_index: int in [1, 2]:
+		for child: Node in attack_box.get_child(row_index).get_children():
+			assert(not (child is Button), "No dedicated roll buttons should remain in attack rows")
 	area._on_formula_bonus_requested("initiative")
 	assert(area._bonuses_ui.visible and String(area._bonuses_ui.get("_selected_target")) == "initiative",
 		"Framed values must navigate to the selected cumulative bonus editor")

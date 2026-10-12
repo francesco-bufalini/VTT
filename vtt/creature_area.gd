@@ -183,6 +183,7 @@ var _proficiencies_ui: Node
 var _feats_ui: Node
 var _damage_defenses_ui: Node
 var _editor_section_picker: OptionButton
+var _statistics_scroll: ScrollContainer
 var _traits_ui: Node
 var _condition_rows: VBoxContainer
 var _effect_dialog: AcceptDialog
@@ -584,6 +585,7 @@ func _build_ui() -> void:
 	columns.add_child(_tabs)
 	var form := _add_sheet_tab(_tabs, "Info")
 	var statistics_tab := _add_sheet_tab(_tabs, "Statistiche")
+	_statistics_scroll = statistics_tab.get_parent().get_parent() as ScrollContainer
 	# Keep the detailed editors exclusive without recreating them on each switch.
 	# This preserves their existing interactions and deferred loading behavior.
 	var editor_select_row := HBoxContainer.new()
@@ -1984,7 +1986,11 @@ func _install_formula(key: String, label: Label, inputs: Array, captions: Array)
 	parent.move_child(widget, index)
 	widget.setup(label, inputs, captions)
 	widget.target_key = key
+	widget.set_rollable(key == "initiative" or key.begins_with("ability_mod:")
+		or key.begins_with("skill:") or key.begins_with("save:")
+		or key.begins_with("attack_hit:") or key.begins_with("attack_damage:"))
 	widget.bonus_requested.connect(_on_formula_bonus_requested)
+	widget.roll_requested.connect(_on_formula_roll_requested)
 	_formula_values[key] = widget
 
 
@@ -2074,6 +2080,51 @@ func _on_formula_bonus_requested(key: String) -> void:
 	_tabs.current_tab = 1
 	_select_details_editor(3)
 	_bonuses_ui.call("select_target", key)
+	# The selected editor is above the statistics columns; a prior scroll
+	# position must not leave the newly opened section off-screen.
+	call_deferred("_scroll_statistics_to_top")
+
+
+func _scroll_statistics_to_top() -> void:
+	if _statistics_scroll != null and is_instance_valid(_statistics_scroll):
+		_statistics_scroll.scroll_vertical = 0
+
+
+func _on_formula_roll_requested(key: String) -> void:
+	if key.begins_with("attack_hit:"):
+		_roll_attack_from_sheet(key.trim_prefix("attack_hit:"), false)
+		return
+	if key.begins_with("attack_damage:"):
+		_roll_attack_from_sheet(key.trim_prefix("attack_damage:"), true)
+		return
+	if key != "initiative" and not key.begins_with("ability_mod:") \
+		and not key.begins_with("skill:") and not key.begins_with("save:"):
+		return
+	var record: Dictionary = _live_stats_record()
+	if record.is_empty():
+		return
+	var label: String = String(record.get("name", "Creatura")) + " · "
+	if key == "initiative":
+		label += "Iniziativa"
+	elif key.begins_with("ability_mod:"):
+		label += "Caratteristica " + key.trim_prefix("ability_mod:").to_upper()
+	elif key.begins_with("save:"):
+		label += "Tiro salvezza " + key.trim_prefix("save:").to_upper()
+	else:
+		var skill_id: String = key.trim_prefix("skill:")
+		label += skill_id.capitalize()
+		for skill: Dictionary in Skills5e.SKILLS:
+			if String(skill.get("id", "")) == skill_id:
+				label = String(record.get("name", "Creatura")) + " · " + String(skill.get("label", skill_id))
+				break
+	var roller: Node = board_root.get_node_or_null("DiceRollerChat")
+	if roller == null or not roller.has_method("roll_expression_from_sheet"):
+		_set_status("Il roller della chat non è disponibile.")
+		return
+	var modifier: int = BonusRules.value(record, key)
+	roller.call("roll_expression_from_sheet", label, "1d20%+d" % modifier,
+		find_linked_token_for_creature(_selected_id))
+
 
 func _recalculate_bonus_mirrors(record: Dictionary) -> void:
 	record["max_hp"] = maxi(0, BonusRules.value(record, "hp"))
@@ -3318,8 +3369,8 @@ func _refresh_attacks(record: Dictionary) -> void:
 		var box := VBoxContainer.new()
 		box.add_theme_constant_override("separation", 4)
 		card.add_child(box)
-		# A dedicated name row prevents long bestiary action names from
-		# pushing the dice buttons out of the combat column.
+		# A dedicated name row keeps long bestiary action names from
+		# stretching the combat column.
 		var header := HBoxContainer.new()
 		header.add_theme_constant_override("separation", 7)
 		box.add_child(header)
@@ -3343,8 +3394,8 @@ func _refresh_attacks(record: Dictionary) -> void:
 			select_reach.tooltip_text = "Attiva questo attacco per la portata tattica, senza cambiare l'equipaggiamento."
 			select_reach.pressed.connect(_activate_attack.bind(attack_id))
 			header.add_child(select_reach)
-		# Hit and damage each have their own self-contained line. HFlow
-		# wraps the dice button if the pane is narrow, without clipping it.
+		# Hit and damage each have their own self-contained line. Click
+		# the framed formula directly to roll without redundant buttons.
 		var hit_row := HFlowContainer.new()
 		hit_row.add_theme_constant_override("h_separation", 5)
 		hit_row.add_theme_constant_override("v_separation", 4)
@@ -3357,11 +3408,6 @@ func _refresh_attacks(record: Dictionary) -> void:
 		hit_row.add_child(hit_label)
 		_attack_hit_labels[attack_id] = hit_label
 		_install_formula("attack_hit:" + attack_id, hit_label, [], [])
-		var roll_hit := Button.new()
-		roll_hit.text = "Tira per colpire"
-		roll_hit.tooltip_text = "Tira 1d20 e il bonus per colpire nel roller"
-		roll_hit.pressed.connect(_roll_attack_from_sheet.bind(attack_id, false))
-		hit_row.add_child(roll_hit)
 		var damage_row := HFlowContainer.new()
 		damage_row.add_theme_constant_override("h_separation", 5)
 		damage_row.add_theme_constant_override("v_separation", 4)
@@ -3375,11 +3421,6 @@ func _refresh_attacks(record: Dictionary) -> void:
 		damage_row.add_child(damage_label)
 		_attack_damage_labels[attack_id] = damage_label
 		_install_formula("attack_damage:" + attack_id, damage_label, [], [])
-		var roll_damage := Button.new()
-		roll_damage.text = "Tira danni"
-		roll_damage.tooltip_text = "Tira i danni dell'attacco nel roller"
-		roll_damage.pressed.connect(_roll_attack_from_sheet.bind(attack_id, true))
-		damage_row.add_child(roll_damage)
 		box.add_child(HSeparator.new())
 		var settings := HFlowContainer.new()
 		settings.add_theme_constant_override("h_separation", 4)

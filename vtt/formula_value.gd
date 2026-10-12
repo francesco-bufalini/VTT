@@ -1,7 +1,9 @@
 extends HBoxContainer
 
 signal bonus_requested(target: String)
+signal roll_requested(target: String)
 var target_key := ""
+var roll_on_click := false
 
 # A compact number and formula hint. All editing uses the existing SpinBoxes
 # and their original save callbacks, with no additional persisted state.
@@ -54,10 +56,20 @@ func setup(label: Label, inputs: Array, captions: Array) -> void:
 	_editor.hide()
 
 
+func set_rollable(enabled: bool) -> void:
+	roll_on_click = enabled
+	if _readout != null:
+		_readout.mouse_default_cursor_shape = Control.CURSOR_POINTING_HAND if enabled else Control.CURSOR_ARROW
+	if value_label != null:
+		value_label.mouse_default_cursor_shape = Control.CURSOR_POINTING_HAND if enabled else Control.CURSOR_ARROW
+
+
 func set_formula(result: String, explanation: String) -> void:
 	value_label.text = result
 	_readout.tooltip_text = explanation + ("\nDoppio clic per modificare i valori consentiti." if not _fields.is_empty() else "")
 	_readout.tooltip_text += "\nClic destro per gestire i bonus e le loro origini."
+	if roll_on_click:
+		_readout.tooltip_text += "\nClic sinistro per tirare nel roller."
 	value_label.tooltip_text = _readout.tooltip_text
 
 
@@ -68,12 +80,16 @@ func _on_readout_input(event: InputEvent) -> void:
 	if mouse.button_index == MOUSE_BUTTON_RIGHT:
 		bonus_requested.emit(target_key)
 		accept_event()
-	elif mouse.button_index == MOUSE_BUTTON_LEFT and mouse.double_click:
-		if _fields.is_empty():
-			bonus_requested.emit(target_key)
-		else:
-			open_editor()
-		accept_event()
+	elif mouse.button_index == MOUSE_BUTTON_LEFT:
+		if mouse.double_click:
+			if _fields.is_empty():
+				bonus_requested.emit(target_key)
+			else:
+				open_editor()
+			accept_event()
+		elif roll_on_click:
+			roll_requested.emit(target_key)
+			accept_event()
 
 
 func open_editor() -> void:
