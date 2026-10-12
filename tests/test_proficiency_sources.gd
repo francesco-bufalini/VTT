@@ -766,6 +766,12 @@ func run() -> void:
 	for name: String in ["common", "deep speech", "ogre", "auran"]:
 		assert(Proficiencies.grant_matches([{"anyStandard": 1}], "language", name) == 1,
 			"AnyStandard must allow every known nonsecret language: " + name)
+	assert(Proficiencies.language_type_for_edition("deep speech", "2014") == "exotic"
+		and Proficiencies.language_type_for_edition("deep speech", "2024") == "rare",
+		"Languages with multiple edition types must display the chosen rules edition")
+	assert(Proficiencies.language_type_for_edition("druidic", "2024") == "secret",
+		"Secret languages remain secret even if 2024 sources classify them as Rare")
+
 	for name: String in ["druidic", "thieves' cant", "invented language"]:
 		assert(Proficiencies.grant_matches([{"anyStandard": 1}], "language", name) == 0,
 			"AnyStandard must not permit secrets or invented languages: " + name)
