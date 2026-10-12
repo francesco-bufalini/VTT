@@ -60,8 +60,22 @@ static func populate(picker: OptionButton, record: Dictionary, preferred: String
 	if not bool(picker.get_meta("_origin_spell_wired", false)):
 		picker.item_selected.connect(_on_origin_selected.bind(picker))
 		picker.set_meta("_origin_spell_wired", true)
+	var temporary: Dictionary = {}
+	if picker.selected >= 0:
+		var current: Dictionary = selected(picker)
+		if String(current.get("id", "")).begins_with("spell:"):
+			temporary = current
 	picker.clear()
-	for source: Dictionary in available(record):
+	var available_sources: Array[Dictionary] = available(record)
+	if not temporary.is_empty():
+		var present := false
+		for existing: Dictionary in available_sources:
+			if existing.get("id", "") == temporary.get("id", ""):
+				present = true
+				break
+		if not present:
+			available_sources.append(temporary)
+	for source: Dictionary in available_sources:
 		picker.add_item(String(source.get("name", source.get("id", ""))))
 		picker.set_item_metadata(picker.item_count - 1, source)
 	var select_index := 0
@@ -151,8 +165,12 @@ static func _open_spell_picker(picker: OptionButton) -> void:
 			picker.set_meta("_origin_last_id", sid)
 		else:
 			_restore_selection(picker)
+		dialog.queue_free()
 	)
-	dialog.canceled.connect(func() -> void: _restore_selection(picker))
+	dialog.canceled.connect(func() -> void:
+		_restore_selection(picker)
+		dialog.queue_free()
+	)
 	dialog.popup_centered(Vector2i(530, 180))
 
 
