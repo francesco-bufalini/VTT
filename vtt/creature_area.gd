@@ -5496,6 +5496,8 @@ func _sync_token_health(record: Dictionary) -> void:
 			token.call("set_reach_feet", first_melee, true)
 	if token.has_method("set_display_name"):
 		token.call("set_display_name", String(record.get("name", "")))
+	if token.has_method("set_concentrating_spell_id"):
+		token.call("set_concentrating_spell_id", String(record.get("concentrating_spell_id", "")))
 	if token.has_method("set_conditions"):
 		token.call("set_conditions", record.get("conditions", []))
 	if token.has_method("set_active_spell_ids"):
@@ -5503,10 +5505,6 @@ func _sync_token_health(record: Dictionary) -> void:
 		for source: Dictionary in ActiveSpells.active_origins(record):
 			ids.append(String(source.get("id", "")).trim_prefix("spell:"))
 		token.call("set_active_spell_ids", ids)
-	if token.has_method("set_concentrating_spell_id"):
-		var concentrating_id: String = String(record.get("concentrating_spell_id", ""))
-		if not concentrating_id.is_empty():
-			token.call("set_concentrating_spell_id", concentrating_id)
 	if token.has_method(method):
 		var transformed: bool = int(record.get("second_form_hp", 0)) > 0
 		token.call(method,
