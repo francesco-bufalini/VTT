@@ -1,7 +1,7 @@
 extends Control
 # Screen-space spell targeting HUD for Godot's top-down view.
-# Drawing in the UI CanvasLayer keeps all outlines above token sprites,
-# buildings and the 3D picking volumes, without intercepting mouse events.
+# Draw in the board UI layer above the 2D token portraits but below
+# creature sheets, dialogs, and menus; never intercept mouse events.
 
 var board: Node3D
 var spell: Node
@@ -21,7 +21,9 @@ func setup(root: Node3D, spell_system: Node, measurement: Node3D, view_camera: C
 	name = "SpellTargetOverlay2D"
 	mouse_filter = Control.MOUSE_FILTER_IGNORE
 	set_anchors_and_offsets_preset(Control.PRESET_FULL_RECT)
-	z_index = 80
+	# TopDownTokenOverlay draws at -50. Gameplay HUD must stay behind
+	# regular UI controls (z=0) and the creature sheet (z=30).
+	z_index = -30
 
 
 func _is_active() -> bool:
@@ -177,15 +179,69 @@ func remove_area_at_screen(point: Vector2) -> bool:
 	return false
 
 
+func _is_internal_token_name(candidate: String) -> bool:
+	var normalized: String = candidate.strip_edges().to_lower()
+	if normalized.is_empty() or normalized in ["token", "creature", "characterbody3d"]:
+		return true
+	if normalized.begins_with("@"):
+		return true
+	for prefix: String in ["token_", "token@", "token-", "characterbody3d", "dnd_token_"]:
+		if normalized.begins_with(prefix):
+			return true
+	return false
+
+
+func _target_display_name(token: Node3D) -> String:
+	if token == null or not is_instance_valid(token):
+		return "Creatura senza nome"
+
+	# The token's actual displayed name is the first choice. Node.name
+	# commonly contains the Godot node identifier or the literal "Token".
+	var visible_name: String = ""
+	if token.has_method("get_display_name"):
+		visible_name = String(token.call("get_display_name")).strip_edges()
+	if not _is_internal_token_name(visible_name):
+		return visible_name
+
+	# A linked sheet can be renamed independently from the node's identifier.
+	# Its lightweight name index avoids loading/normalizing full records.
+	var creature_id: String = String(token.get_meta("creature_id", "")).strip_edges()
+	if not creature_id.is_empty() and board != null and is_instance_valid(board):
+		var sheets: Node = board.get_node_or_null("CreatureArea")
+		if sheets != null and sheets.has_method("get_owned_creature_name_index"):
+			var index_value: Variant = sheets.call("get_owned_creature_name_index")
+			if index_value is Dictionary:
+				var sheet_name: String = String((index_value as Dictionary).get(creature_id, "")).strip_edges()
+				if not _is_internal_token_name(sheet_name):
+					return sheet_name
+
+	# Remote-owned creatures can lack a local sheet but retain synchronized
+	# character/monster names as metadata.
+	for key: String in ["player_character_name", "master_creature_name"]:
+		var metadata_name: String = String(token.get_meta(key, "")).strip_edges()
+		if not _is_internal_token_name(metadata_name):
+			return metadata_name
+
+	var node_name: String = String(token.name).strip_edges()
+	if not _is_internal_token_name(node_name):
+		return node_name
+	return "Creatura senza nome"
+
+
 func _target_names(start: Vector3, end: Vector3, shape: String, width: float, style: String = "") -> Array[String]:
 	if spell == null or not is_instance_valid(spell):
 		return []
 	var signature: String = "%s|%s|%s|%s|%s" % [str(start), str(end), shape, str(width), style]
-	# Refresh names if a token enters or leaves a confirmed area later.
+	# Include display names as well as positions in the cache key: renaming a
+	# token must immediately refresh the affected list without moving it.
 	for node: Node in get_tree().get_nodes_in_group("dnd_token"):
 		if node is Node3D and is_instance_valid(node):
 			var token: Node3D = node as Node3D
-			signature += "|%d:%s" % [token.get_instance_id(), str(token.global_position)]
+			signature += "|%d:%s:%s" % [
+				token.get_instance_id(),
+				str(token.global_position),
+				_target_display_name(token)
+			]
 	if _cached_signature == signature:
 		return _cached_targets
 	_cached_signature = signature
@@ -198,12 +254,9 @@ func _target_names(start: Vector3, end: Vector3, shape: String, width: float, st
 	if values is Array:
 		for item: Variant in values:
 			if item is Node3D and is_instance_valid(item):
-				var token: Node3D = item as Node3D
-				var display_name: String = String(token.name)
-				if not _cached_targets.has(display_name):
-					_cached_targets.append(display_name)
+				# Do not deduplicate by name: two goblins are still two targets.
+				_cached_targets.append(_target_display_name(item as Node3D))
 	return _cached_targets
-
 
 func _draw_target_list(names: Array[String], area_label: String) -> void:
 	var font: Font = ThemeDB.fallback_font
@@ -279,14 +332,15 @@ func _draw() -> void:
 				target_data = spell.call("_transformation_target_data", position, pending_spell)
 			elif mode in ["chain_primary", "chain_secondary"]:
 				target_data = spell.call("_target_token_data", position, pending_spell)
+			var hovered_token: Node3D = null
 			if bool(target_data.get("valid", false)):
-				var token: Node3D = target_data.get("target") as Node3D
-				if token != null and is_instance_valid(token):
-					names.append(String(token.name))
+				hovered_token = target_data.get("target") as Node3D
+				if hovered_token != null and is_instance_valid(hovered_token):
+					names.append(_target_display_name(hovered_token))
 			if mode == "multi_target_tokens":
 				for entry: Node3D in spell.get("_pending_targets"):
-					if entry != null and is_instance_valid(entry) and not names.has(String(entry.name)):
-						names.append(String(entry.name))
+					if entry != null and is_instance_valid(entry) and entry != hovered_token:
+						names.append(_target_display_name(entry))
 			_draw_target_list(names, "Bersagli")
 	elif not hover_area.is_empty():
 		_draw_target_list(
