@@ -16,10 +16,11 @@ class TwoDimensionalBoard:
 	extends Node3D
 
 	var cell_size: float = 1.0
+	var use_2d: bool = true
 	var chosen_token: Node3D
 
 	func is_2d_view_enabled() -> bool:
-		return true
+		return use_2d
 
 	func _raycast_token_from_screen(_position: Vector2, _areas: bool = true) -> Dictionary:
 		if chosen_token != null:
@@ -138,6 +139,13 @@ func _run() -> void:
 	if wire.visible:
 		_fail("3D spell reach must not overlap the screen-space 2D outline")
 		return
+	board.use_2d = false
+	measure.call("show_spell_range_preview", token.global_position, 6.0)
+	if not wire.visible or not equator.visible:
+		_fail("Spell range must expose its hollow sphere and equator in 3D")
+		return
+	board.use_2d = true
+	measure.call("show_spell_range_preview", token.global_position, 6.0)
 	var reachable: Array[String] = overlay.call("_range_target_names")
 	if "Near target" not in reachable or "Far target" in reachable:
 		_fail("Spell range list does not respect the tactical target metric")
