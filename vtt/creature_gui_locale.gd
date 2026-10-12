@@ -706,6 +706,12 @@ const EN: Dictionary = {
 	"Componenti: ": "Components: ",
 	"Gittata: ": "Range: ",
 	"livello ": "level ",
+	"Competenza": "Proficiency",
+	"Maestria": "Expertise",
+	"Creatura": "Creature",
+	"Incantesimo": "Spell",
+	"Patto · %d° livello · %d rimasti": "Pact · level %d · %d remaining",
+	"Da scegliere": "Choices required",
 }
 const IT: Dictionary = {
 	"Rages": "Ira",
@@ -756,6 +762,33 @@ static func text_for(source: String, language: String) -> String:
 	var dictionary: Dictionary = EN if language == "en" else IT
 	if dictionary.has(source):
 		return String(dictionary[source])
+	if language == "en":
+		# Formatted GUI labels keep their variable values (creature names, counts,
+		# spell names, IDs) untouched. Only recognized UI templates are translated.
+		for template: String in [
+			"Come creatura (%s)", "Senza origine (%d)",
+			"Livello %d", "%d voci del bestiario ricercabili",
+			"%d risultati", "%d° livello · %d rimasti",
+		"Patto · %d° livello · %d rimasti",
+			"%s · %d/%d scelte",
+			"Lancia %s (livello %d). Scegli quale slot consumare.",
+			"%s lanciato · effetto VTT non attivabile senza un token collegato.",
+			"%s lanciato · nessun effetto VTT associato.",
+			"Impossibile attivare l'effetto VTT di %s.",
+			"Salvataggio non riuscito: %s", "Eliminazione non riuscita: %s",
+			"Lettera ricevuta da giocatore %s: %s",
+			"I PF della seconda forma di %s sono a 0. Ripristinare l'aspetto di base?",
+			"%s · Ricarica d6: %d (%s, occorre %d–6).",
+			"Con rincorsa di almeno 10 ft: max(0, 3 + modificatore FOR %+d) = %d ft. ",
+			"Eliminare definitivamente '%s' dal tuo archivio?\\nVerranno eliminati anche i suoi token presenti nella scena.",
+		]:
+			var translated_template: String = _translate_template(source, template)
+			if not translated_template.is_empty():
+				return translated_template
+		# Composite suffixes contain UI instructions attached to data labels.
+		for suffix: String in [" · Modifica da Visualizza e modifica → Competenze"]:
+			if source.ends_with(suffix):
+				return text_for(source.substr(0, source.length() - suffix.length()), language) + String(EN[suffix])
 	if source.contains("\n"):
 		var lines := source.split("\n")
 		var changed := false
@@ -780,33 +813,7 @@ static func text_for(source: String, language: String) -> String:
 			return " · ".join(fragments)
 	if language == "it":
 		return source
-	# Formatted GUI labels keep their variable values (creature names, counts,
-	# spell names, IDs) untouched. Only recognized UI templates are translated.
-	for template: String in [
-		"Come creatura (%s)", "Senza origine (%d)",
-		"Livello %d", "%d voci del bestiario ricercabili",
-		"%d risultati", "%d° livello · %d rimasti",
-		"%s · %d/%d scelte",
-		"Lancia %s (livello %d). Scegli quale slot consumare.",
-		"%s lanciato · effetto VTT non attivabile senza un token collegato.",
-		"%s lanciato · nessun effetto VTT associato.",
-		"Impossibile attivare l'effetto VTT di %s.",
-		"Salvataggio non riuscito: %s", "Eliminazione non riuscita: %s",
-		"Lettera ricevuta da giocatore %s: %s",
-		"I PF della seconda forma di %s sono a 0. Ripristinare l'aspetto di base?",
-		"%s · Ricarica d6: %d (%s, occorre %d–6).",
-		"Con rincorsa di almeno 10 ft: max(0, 3 + modificatore FOR %+d) = %d ft. ",
-		"Eliminare definitivamente '%s' dal tuo archivio?\\nVerranno eliminati anche i suoi token presenti nella scena.",
-	]:
-		var translated_template: String = _translate_template(source, template)
-		if not translated_template.is_empty():
-			return translated_template
-	# Composite suffixes contain UI instructions attached to data labels.
-	for suffix: String in [" · Modifica da Visualizza e modifica → Competenze"]:
-		if source.ends_with(suffix):
-			return text_for(source.substr(0, source.length() - suffix.length()), language) + String(EN[suffix])
-		# Common generated GUI messages: translate fixed labels, keep their numbers
-	# and original creature/spell/item names intact.
+	# Common generated GUI messages: translate fixed labels and leave catalog values intact.
 	for prefix in ["Strumenti: ", "Linguaggi: ", "Completa le scelte: ",
 		"CA ", "Camminata: ",
 		"Con rincorsa (almeno 10 ft): ", "Da fermo (senza rincorsa): ",
