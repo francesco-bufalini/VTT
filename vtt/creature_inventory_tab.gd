@@ -28,7 +28,7 @@ var _property_filter: OptionButton
 var _search_toggle: Button
 var _search_panel: VBoxContainer
 var _catalog_count: Label
-var _catalog_details: RichTextLabel
+var _details_from_catalog := false
 var _equip_main: Button
 var _equip_off: Button
 var _equip_armor: Button
@@ -59,12 +59,23 @@ func setup(on_change: Callable, on_status: Callable, on_document_change: Callabl
 	_send_document = send_document
 	_peer_provider = peer_provider
 	add_theme_constant_override("separation", 7)
+	var heading_row := HBoxContainer.new()
+	heading_row.add_theme_constant_override("separation", 7)
+	add_child(heading_row)
 	var heading := Label.new()
 	heading.text = "Inventario · Catalogo e oggetti personalizzati"
 	heading.add_theme_font_size_override("font_size", 17)
-	add_child(heading)
+	heading.size_flags_horizontal = Control.SIZE_EXPAND_FILL
+	heading_row.add_child(heading)
+	_search_toggle = Button.new()
+	_search_toggle.text = "🔍 Cerca oggetti"
+	_search_toggle.toggle_mode = true
+	_search_toggle.tooltip_text = "Mostra ricerca oggetti"
+	_search_toggle.toggled.connect(_set_search_visible)
+	heading_row.add_child(_search_toggle)
 
-	# Keep the owned inventory visible while catalog search can be collapsed.
+	# The search results expand immediately below the heading; the inventory
+	# and its shared item description remain in their original positions.
 	_search_panel = VBoxContainer.new()
 	_search_panel.add_theme_constant_override("separation", 6)
 	add_child(_search_panel)
@@ -132,15 +143,6 @@ func setup(on_change: Callable, on_status: Callable, on_document_change: Callabl
 	_catalog_list.gui_input.connect(_on_image_click.bind(true))
 	_catalog_list.item_activated.connect(func(_index: int) -> void: _add_selected())
 	_search_panel.add_child(_catalog_list)
-	_catalog_details = RichTextLabel.new()
-	_catalog_details.mouse_force_pass_scroll_events = false
-	_catalog_details.custom_minimum_size.y = 125
-	_catalog_details.size_flags_horizontal = Control.SIZE_EXPAND_FILL
-	_catalog_details.scroll_active = true
-	_catalog_details.selection_enabled = true
-	_catalog_details.hide()
-	_search_panel.add_child(_catalog_details)
-
 	var inventory_title := Label.new()
 	inventory_title.text = "Oggetti posseduti"
 	inventory_title.add_theme_font_size_override("font_size", 15)
@@ -246,18 +248,6 @@ func setup(on_change: Callable, on_status: Callable, on_document_change: Callabl
 	_details.selection_enabled = true
 	_details.hide()
 	add_child(_details)
-	# Identical interaction to the spell search: a magnifier opens the catalog
-	# below the permanently visible owned items.
-	var search_toggle_row := HBoxContainer.new()
-	search_toggle_row.alignment = BoxContainer.ALIGNMENT_END
-	add_child(search_toggle_row)
-	_search_toggle = Button.new()
-	_search_toggle.text = "🔍 Cerca oggetti"
-	_search_toggle.toggle_mode = true
-	_search_toggle.tooltip_text = "Mostra ricerca oggetti"
-	_search_toggle.toggled.connect(_set_search_visible)
-	search_toggle_row.add_child(_search_toggle)
-	move_child(_search_panel, search_toggle_row.get_index() + 1)
 	var inner_tabs := TabContainer.new()
 	inner_tabs.size_flags_horizontal = Control.SIZE_EXPAND_FILL
 	inner_tabs.size_flags_vertical = Control.SIZE_EXPAND_FILL
@@ -299,8 +289,14 @@ func _set_search_visible(show: bool) -> void:
 	_search_toggle.tooltip_text = "Nascondi ricerca oggetti" if show else "Mostra ricerca oggetti"
 	if not show:
 		_catalog_list.deselect_all()
-		_catalog_details.hide()
 		_add_button.disabled = true
+		if _details_from_catalog:
+			_details_from_catalog = false
+			var owned_index: int = _selected_inventory_index()
+			if owned_index >= 0:
+				_on_inventory_selected(owned_index)
+			else:
+				_details.hide()
 	elif is_inside_tree():
 		_search.grab_focus()
 
@@ -356,9 +352,34 @@ func receive_document() -> void:
 		_publish()
 
 
+# 5etools indexes weapons and armor as both specialized and mundane items.
+# Keep the richer specialized record in search without changing saved IDs.
+static func _catalog_identity(item: Dictionary) -> String:
+	var name: String = String(item.get("name", "")).strip_edges().to_lower()
+	var source: String = String(item.get("source", "")).strip_edges().to_upper()
+	var type_code: String = String(item.get("type", "")).strip_edges().to_upper()
+	return name + "|" + source + "|" + type_code if not name.is_empty() and not source.is_empty() and not type_code.is_empty() else ""
+
+
+static func _unique_catalog_items(items: Array[Dictionary]) -> Array[Dictionary]:
+	var specialized: Dictionary = {}
+	for item: Dictionary in items:
+		if not String(item.get("id", "")).begins_with("mundane_item:"):
+			var key: String = _catalog_identity(item)
+			if not key.is_empty():
+				specialized[key] = true
+	var result: Array[Dictionary] = []
+	for item: Dictionary in items:
+		if (String(item.get("id", "")).begins_with("mundane_item:")
+			and specialized.has(_catalog_identity(item))):
+			continue
+		result.append(item)
+	return result
+
+
 func reload_catalog() -> void:
 	ItemRules.reset_catalog()
-	_catalog = Player5eTools.entries("items")
+	_catalog = _unique_catalog_items(Player5eTools.entries("items"))
 	_populate_catalog_options()
 	if _catalog_list != null:
 		_filter_catalog()
@@ -443,6 +464,14 @@ func _catalog_entry(item: Dictionary) -> Dictionary:
 	for row: Dictionary in _catalog:
 		if String(row.get("id", "")) == String(item.get("id", "")):
 			return ItemInstance.resolve(row, item)
+	# Previously owned duplicate mundane rows still resolve to the same
+	# specialized item's mechanics after cleaning up the search results.
+	if String(item.get("id", "")).begins_with("mundane_item:"):
+		var identity: String = _catalog_identity(item)
+		if not identity.is_empty():
+			for row: Dictionary in _catalog:
+				if _catalog_identity(row) == identity:
+					return ItemInstance.resolve(row, item)
 	return ItemInstance.resolve(item, item)
 
 
@@ -659,7 +688,9 @@ func _filter_catalog() -> void:
 		else "Risultati: 250 di %d · Affina i filtri per vedere gli altri" % matches
 	)
 	_add_button.disabled = true
-	_catalog_details.hide()
+	if _details_from_catalog:
+		_details.hide()
+		_details_from_catalog = false
 	if selected_index >= 0:
 		_catalog_list.select(selected_index)
 		_on_catalog_selected(selected_index)
@@ -669,12 +700,12 @@ func _on_catalog_selected(index: int) -> void:
 	_add_button.disabled = index < 0 or index >= _filtered.size()
 	if index >= 0 and index < _filtered.size():
 		var item: Dictionary = _filtered[index]
-		_catalog_details.text = ItemRules.category_name(item) + "\n" + Player5eTools.info_text(
-			item, Player5eTools.description_text_from_raw_item(item)
-		)
-		_catalog_details.show()
+		_details_from_catalog = true
+		_show_details(item)
 	else:
-		_catalog_details.hide()
+		if _details_from_catalog:
+			_details.hide()
+			_details_from_catalog = false
 
 
 func _selected_inventory_index() -> int:
@@ -687,6 +718,7 @@ func _selected_inventory_index() -> int:
 func _on_inventory_selected(index: int) -> void:
 	if index < 0 or index >= _inventory.size():
 		return
+	_details_from_catalog = false
 	_quantity.set_value_no_signal(int(_inventory[index].get("quantity", 1)))
 	_set_weapon_size_choice(_inventory[index])
 	_quantity.editable = not DocumentStore.is_document(_inventory[index])
@@ -821,10 +853,12 @@ func _refresh_inventory(selected_index: int = -1) -> void:
 			_inventory_list.set_item_icon_modulate(item_index, Color(0.79, 0.92, 0.97))
 			_inventory_list.set_item_tooltip(item_index, "Clicca sulla casella a sinistra per equipaggiare o riporre l’oggetto.")
 	if selected_index >= 0 and selected_index < _inventory.size():
+		_details_from_catalog = false
 		_inventory_list.select(selected_index)
 		_quantity.value = int(_inventory[selected_index].get("quantity", 1))
 		_show_details(_catalog_entry(_inventory[selected_index]))
 	else:
+		_details_from_catalog = false
 		_details.hide()
 	_set_weapon_size_choice(_inventory[selected_index] if selected_index >= 0 and selected_index < _inventory.size() else {})
 	_remove_button.disabled = selected_index < 0
