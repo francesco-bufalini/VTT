@@ -99,7 +99,7 @@ func run() -> void:
 		and movement_grid.get_child_count() == 5,
 		"All five movement speeds must have equal aligned cells")
 	for speed_cell: Control in movement_grid.get_children():
-		assert(speed_cell.custom_minimum_size.x <= 75.0,
+		assert(speed_cell.custom_minimum_size.x <= 73.0,
 			"Movement cells must be compact to fit the combat column")
 	var combat_column: Node = area._tracker_rows.get_parent()
 	var ac_panel: Node = area._ac_effective
@@ -168,6 +168,8 @@ func run() -> void:
 	area._replace_current_record(warning_record)
 	area._update_defense_display()
 	assert(area._ac_proficiency_warning.visible
+		and area._ac_proficiency_warning.mouse_filter == Control.MOUSE_FILTER_STOP
+		and "svantaggio" in area._ac_proficiency_warning.tooltip_text
 		and "incantesimi" in area._ac_proficiency_warning.tooltip_text,
 		"Equipped nonproficient armor must show the warning and its spellcasting penalty")
 	area._replace_current_record(init_record)
