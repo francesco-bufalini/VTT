@@ -277,10 +277,10 @@ func _refresh_origin_buttons() -> void:
 		button.toggle_mode = true
 		button.alignment = HORIZONTAL_ALIGNMENT_LEFT
 		button.clip_text = true
-		button.text = String(source.get("name", sid)) + " (%d)" % direct_count
-		button.tooltip_text = ("Origine inattiva" if not bool(source.get("active", true))
-			else "Seleziona per evidenziare le difese concesse dai dati strutturati di questa origine.")
-		button.disabled = not bool(source.get("active", true))
+		button.text = String(source.get("name", sid)) + (" (%d)" % direct_count if direct_count > 0 else " (condizionale)")
+		button.tooltip_text = ("Origine inattiva: benefici non applicati. " if not bool(source.get("active", true)) else "")
+			+ "Seleziona per evidenziare le difese concesse dai campi strutturati."
+		button.modulate.a = 0.6 if not bool(source.get("active", true)) else 1.0
 		button.pressed.connect(_select_origin.bind(sid))
 		_origin_cards.add_child(button)
 		_origin_buttons[sid] = button
@@ -335,8 +335,9 @@ func load_record(record: Dictionary) -> void:
 			for item: Variant in source.get(key, []):
 				if item is Dictionary:
 					warnings.append(JSON.stringify(item))
-	_base_hint.text = ("Le difese condizionali del bestiario restano descritte nei tratti e non diventano immunità generali: "
-		+ "; ".join(warnings)) if not warnings.is_empty() else "Valori iniziali derivati da specie o bestiario; le modifiche sono salvate nella creatura."
+	_base_hint.text = ("Rilevate %d difese condizionali: consultale nell'origine, non vengono applicate come generali." % warnings.size()
+		if not warnings.is_empty() else "Benefici automatici dalle origini attive, modifiche manuali salvate sulla creatura.")
+	_base_hint.tooltip_text = "\n".join(warnings)
 	for item: Dictionary in DAMAGE_TYPES:
 		var key: String = String(item["key"])
 		var baseline: int = _base_rank_from_sources(_cached_sources, key)
