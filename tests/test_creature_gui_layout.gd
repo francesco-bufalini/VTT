@@ -68,6 +68,21 @@ func run() -> void:
 	assert(area._archive.save(init_record) == OK)
 	area._replace_current_record(init_record)
 	area._load_form(init_record)
+	assert(area._show_offhand_all.button_pressed
+		and area._show_offhand_all.text == "Only if finesse"
+		and area._show_offhand_all.get_parent() == area._hand_off_picker.get_parent(),
+		"Finesse-only offhand filter must be active by default and share the secondary hand row")
+	var movement_grid: GridContainer = area._speed.get_parent().get_parent() as GridContainer
+	assert(movement_grid != null and movement_grid.columns == 5
+		and movement_grid.get_child_count() == 5,
+		"All five movement speeds must have equal aligned cells")
+	var combat_column: Node = area._tracker_rows.get_parent()
+	var ac_panel: Node = area._ac_effective
+	while ac_panel.get_parent() != null and ac_panel.get_parent() != combat_column:
+		ac_panel = ac_panel.get_parent()
+	assert(ac_panel.get_parent() == combat_column
+		and area._tracker_rows.get_index() < ac_panel.get_index(),
+		"Resources must be positioned before AC and initiative")
 	# The statistics editors are mutually exclusive and default to no section.
 	assert(area._editor_section_picker.item_count == 6
 		and area._editor_section_picker.selected == 0
