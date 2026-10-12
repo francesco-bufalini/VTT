@@ -10,6 +10,7 @@ const ContentCatalog = preload("res://vtt/content_catalog.gd")
 const TraitText = preload("res://vtt/five_tools_rich_text.gd")
 const Proficiencies = preload("res://vtt/creature_proficiency_rules.gd")
 const Items = preload("res://vtt/creature_item_rules.gd")
+const SpellCatalog = preload("res://vtt/spells/spell_catalog.gd")
 
 var _origin_choice: OptionButton
 var _search: LineEdit
@@ -168,7 +169,7 @@ func _rebuild() -> void:
 			var category_heading := Label.new()
 			category_heading.text = {"razza": "RAZZA E SOTTORAZZA", "background": "BACKGROUND",
 				"classi": "CLASSI E SOTTOCLASSI", "talenti": "TALENTI",
-				"oggetti": "OGGETTI", "mostro": "TRATTI DEL MOSTRO"}.get(group, "ALTRI TRATTI")
+				"oggetti": "OGGETTI", "incantesimi": "INCANTESIMI ATTIVI", "mostro": "TRATTI DEL MOSTRO"}.get(group, "ALTRI TRATTI")
 			category_heading.add_theme_font_size_override("font_size", 17)
 			category_heading.add_theme_color_override("font_color", Color(0.82, 0.90, 0.94))
 			section.add_child(category_heading)
@@ -368,6 +369,34 @@ static func _collect_features(record: Dictionary) -> Array[Dictionary]:
 				}, 1, origin, origin_key, "", "", 2)
 			break
 
+	# A spell chosen as the source of a benefit is a live trait, like a feat
+	# or an item. The spell ID is stable across editors and saved records.
+	var seen_spells: Dictionary = {}
+	for raw_origin: Variant in record.get("proficiency_origins", []):
+		if not raw_origin is Dictionary:
+			continue
+		var source: Dictionary = raw_origin
+		var sid: String = String(source.get("id", ""))
+		if String(source.get("group", "")) != "spell" or not sid.begins_with("spell:") or seen_spells.has(sid):
+			continue
+		seen_spells[sid] = true
+		var spell_id: String = sid.substr(6)
+		var spell_data: Dictionary = SpellCatalog.catalog_spell(spell_id)
+		if spell_data.is_empty():
+			continue
+		var spell_name: String = String(spell_data.get("name", spell_id))
+		_append(result, {
+			"id": spell_id, "name": spell_name,
+			"source": String(spell_data.get("source", "")),
+			"inactive": bool(source.get("disabled", false)),
+			"entries": spell_data.get("entries", spell_data.get("description", "")),
+			"vulnerable": spell_data.get("vulnerable", []),
+			"resist": spell_data.get("resist", []),
+			"immune": spell_data.get("immune", []),
+			"conditionImmune": spell_data.get("conditionImmune", []),
+			"bonuses": spell_data.get("bonuses", [])
+		}, 1, "Incantesimo · " + spell_name, sid, "", "", 2)
+
 	# Explicitly selected feats are traits in their own right. Their full
 	# descriptions are loaded on demand; no mechanics are inferred from prose.
 	var raw_feats: Variant = record.get("feats_catalog", [])
@@ -542,7 +571,7 @@ static func _collect_features(record: Dictionary) -> Array[Dictionary]:
 				continue
 			_append(result, feature, level, subclass_origin, subclass_key, class_label, class_book)
 	result.sort_custom(func(a: Dictionary, b: Dictionary) -> bool:
-		var categories: Array[String] = ["razza", "background", "classi", "talenti", "oggetti", "mostro", "altro"]
+		var categories: Array[String] = ["razza", "background", "classi", "talenti", "incantesimi", "oggetti", "mostro", "altro"]
 		var group_a: int = categories.find(String(a.get("category", "altro")))
 		var group_b: int = categories.find(String(b.get("category", "altro")))
 		if group_a != group_b:
@@ -613,6 +642,8 @@ static func _append(
 		category = "talenti"
 	elif origin_key.begins_with("item:"):
 		category = "oggetti"
+	elif origin_key.begins_with("spell:"):
+		category = "incantesimi"
 	elif origin_key.begins_with("monster|"):
 		category = "mostro"
 	output.append({
@@ -625,6 +656,7 @@ static func _append(
 		"entries": description, "bonuses": feature.get("bonuses", []),
 		# Preserve only explicit structured 5etools defensive grants. Descriptive
 		# text and conditional resistances are not interpreted as universal.
+		"vulnerable": feature.get("vulnerable", []),
 		"resist": feature.get("resist", []),
 		"immune": feature.get("immune", []),
 		"conditionImmune": feature.get("conditionImmune", [])

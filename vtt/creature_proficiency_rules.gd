@@ -852,7 +852,7 @@ static func origins(record: Dictionary) -> Array[Dictionary]:
 				found = true
 				break
 		if not found:
-			var withdrawn: bool = bool(item.get("automatic", false)) and not live.has(sid)
+			var withdrawn: bool = bool(item.get("automatic", false)) and not live.has(sid) and String(item.get("group", "")) != "spell"
 			result.append({"id": sid,
 				"name": ("⚠ Origine non più disponibile · " if withdrawn else "") + String(item.get("name", "Origine")),
 				"group": String(item.get("group", "custom")),
@@ -941,7 +941,7 @@ static func _live_origin_ids(record: Dictionary) -> Dictionary:
 		if feat is Dictionary:
 			live[feat_source_id(feat)] = true
 	for origin: Variant in record.get("proficiency_origins", []):
-		if origin is Dictionary and String(origin.get("group", "")) == "custom":
+		if origin is Dictionary and String(origin.get("group", "")) in ["custom", "spell"]:
 			live[String(origin.get("id", ""))] = true
 	return live
 
@@ -1054,9 +1054,24 @@ static func reconcile_origin_dependents(record: Dictionary) -> void:
 			if not origin is Dictionary:
 				continue
 			var sid: String = String(origin.get("id", ""))
-			if live.has(sid) or String(origin.get("group", "")) == "custom":
+			if live.has(sid) or String(origin.get("group", "")) in ["custom", "spell"]:
 				kept_origins.append(origin)
-		record["proficiency_origins"] = kept_origins
+		# An applied spell exists only while it grants at least one benefit.
+		# Otherwise an abandoned spell would remain listed as an active effect.
+		var used_origins: Dictionary = {}
+		for field: String in ["proficiency_choices", "formula_bonuses", "resource_trackers", "damage_defense_entries", "feats_catalog"]:
+			for raw: Variant in record.get(field, []):
+				if raw is Dictionary:
+					used_origins[String((raw as Dictionary).get("origin_id", ""))] = true
+		for feature: Dictionary in trait_origins(record):
+			if used_origins.has(String(feature.get("id", ""))):
+				used_origins[String(feature.get("origin_key", ""))] = true
+		var active_origins: Array = []
+		for origin: Dictionary in kept_origins:
+			if String(origin.get("group", "")) == "spell" and not used_origins.has(String(origin.get("id", ""))):
+				continue
+			active_origins.append(origin)
+		record["proficiency_origins"] = active_origins
 
 
 static func _resolved_source_active(
