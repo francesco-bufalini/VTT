@@ -87,7 +87,7 @@ func setup(on_change: Callable, on_status: Callable, on_document_change: Callabl
 	_search_panel.add_child(filter_row)
 	_category_filter = OptionButton.new()
 	# Identifiers are independent of the translated visible labels.
-	var categories: Array[Array] = [
+	var categories: Array = [
 		["Tutti", "all"], ["Armi", "weapon"], ["Scudi", "shield"],
 		["Armature", "armor"], ["Strumenti", "tool"],
 		["Oggetti magici", "magic"], ["Documenti", "document"],
@@ -181,6 +181,7 @@ func setup(on_change: Callable, on_status: Callable, on_document_change: Callabl
 	equip_hint.text = "Seleziona un oggetto e usa Equipaggiato o Sintonia. Armi, scudi e armature si equipaggiano in Statistiche."
 	equip_hint.autowrap_mode = TextServer.AUTOWRAP_WORD_SMART
 	add_child(equip_hint)
+	move_child(equip_hint, item_switches.get_index())
 	_generic_equip = CheckButton.new()
 	_generic_equip.text = "Equipaggiato"
 	_generic_equip.tooltip_text = "Equipaggia o riponi l'oggetto selezionato senza occupare slot. Per armi, scudi e armature usa Statistiche."
