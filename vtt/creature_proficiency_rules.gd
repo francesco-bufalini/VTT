@@ -71,7 +71,7 @@ static func language_type(key: String) -> String:
 	for item: Dictionary in Catalog.entries("languages"):
 		if normalized_key(String(item.get("name", ""))) == normalized:
 			return String(item.get("type", "other")).to_lower()
-	return "other"
+	return ""
 
 
 static func language_options() -> Array[Dictionary]:
@@ -504,7 +504,7 @@ static func grant_matches(grants: Variant, kind: String, key: String) -> int:
 		# A bare 'any' in 5etools is a structured choice, not a fixed grant.
 		# "anyStandard" means a free language choice here: allow standard,
 		# exotic, rare and other languages, but never class-exclusive secrets.
-		if kind == "language" and value.has("anyStandard") and language_type(wanted) != "secret":
+		if kind == "language" and value.has("anyStandard") and language_type(wanted) not in ["", "secret"]:
 			best = maxi(best, 1)
 		if kind == "language" and value.has("anyExotic") and language_type(wanted) in ["exotic", "rare"]:
 			best = maxi(best, 1)
