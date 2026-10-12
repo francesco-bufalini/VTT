@@ -28,7 +28,8 @@ static func _ensure_loaded() -> void:
 			continue
 		if not _rows.has(key):
 			_rows[key] = {}
-		(_rows[key] as Dictionary)[String(row.get("source", "")).to_upper()] = row
+		var editions: Dictionary = _rows[key]
+		editions[String(row.get("source", "")).to_upper()] = row
 
 
 static func class_row(class_name: String, source: String = "") -> Dictionary:
