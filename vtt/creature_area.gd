@@ -2928,107 +2928,193 @@ func _refresh_skill_values(record: Dictionary) -> void:
 	_formula_snapshot_override = {}
 
 
+# A hand is a separate choice of none, special strike, shield or owned item.
+# Physical equipment remains stored in equipped_slots on the inventory row.
+func _offhand_locked(record: Dictionary) -> bool:
+	var main: Dictionary = ItemRules.occupying(record.get("inventory", []), "main")
+	if main.is_empty():
+		return false
+	var entry: Dictionary = ItemRules.entry_for(main)
+	return ItemRules.kind(entry) == "weapon" and (ItemRules.is_two_handed(entry) or bool(record.get("hand_grip_two_handed", false)))
+
+
 func _refresh_weapon_picker(record: Dictionary) -> void:
-	if _weapon_picker == null:
+	_refresh_equipment_pickers(record)
+
+
+func _refresh_equipment_pickers(record: Dictionary) -> void:
+	if _hand_main_picker == null or _hand_off_picker == null or _armor_picker == null:
 		return
-	_weapon_picker.clear()
-	_weapon_options.clear()
-	var inventory: Variant = record.get("inventory", [])
-	# Inventory weapons appear even when sheathed. Selecting one equips it.
-	if inventory is Array:
-		for index: int in range((inventory as Array).size()):
-			var value: Variant = (inventory as Array)[index]
-			if not value is Dictionary:
+	var raw: Variant = record.get("inventory", [])
+	var inventory: Array = raw if raw is Array else []
+	_armor_picker.clear()
+	_armor_options.clear()
+	_armor_picker.add_item("Naturale")
+	_armor_options.append({"kind": "none"})
+	var selected_armor: int = 0
+	for index: int in range(inventory.size()):
+		if not inventory[index] is Dictionary:
+			continue
+		var owned: Dictionary = inventory[index]
+		if int(owned.get("quantity", 0)) <= 0:
+			continue
+		var entry: Dictionary = ItemRules.entry_for(owned)
+		if ItemRules.kind(entry) != "armor":
+			continue
+		_armor_picker.add_item(String(entry.get("name", owned.get("name", "Armatura"))))
+		_armor_options.append({"kind": "item", "index": index})
+		if "body" in ItemRules.slots(owned):
+			selected_armor = _armor_options.size() - 1
+	_armor_picker.select(selected_armor)
+	for hand: String in ["main", "off"]:
+		var picker: OptionButton = _hand_main_picker if hand == "main" else _hand_off_picker
+		picker.clear()
+		var choices: Array[Dictionary] = []
+		if hand == "off" and _offhand_locked(record):
+			picker.add_item("Occupata · due mani")
+			picker.disabled = true
+			_hand_options[hand] = choices
+			continue
+		picker.disabled = false
+		for special: String in ["none", "unarmed", "improvised"]:
+			var label: String = {"none": "Niente", "unarmed": "Colpo senz'armi", "improvised": "Arma improvvisata"}[special]
+			picker.add_item(label)
+			choices.append({"kind": "special", "value": special})
+		var occupied_index: int = -1
+		for index: int in range(inventory.size()):
+			if not inventory[index] is Dictionary:
 				continue
-			var owned: Dictionary = value
+			var owned: Dictionary = inventory[index]
 			if int(owned.get("quantity", 0)) <= 0:
 				continue
 			var entry: Dictionary = ItemRules.entry_for(owned)
-			if ItemRules.kind(entry) != "weapon":
+			var item_kind: String = ItemRules.kind(entry)
+			if item_kind not in ["weapon", "shield"] or not ItemRules.valid_slot(entry, hand):
 				continue
-			_weapon_picker.add_item(String(entry.get("name", owned.get("name", "Arma"))))
-			_weapon_options.append({"kind": "item", "index": index, "id": "item:" + String(owned.get("id", ""))})
-	# All bestiary attacks remain selectable for monsters, including natural
-	# weapons that have no corresponding entry in the inventory.
-	for attack: Dictionary in AttackData.definitions(record):
-		if String(attack.get("source", "")) == "item":
+			var is_selected: bool = hand in ItemRules.slots(owned)
+			if hand == "off" and item_kind == "weapon" and not _show_offhand_all.button_pressed and not ItemRules.has_property(entry, "F") and not is_selected:
+				continue
+			var item_name: String = String(entry.get("name", owned.get("name", "Oggetto")))
+			var grips: Array = [false]
+			if item_kind == "weapon" and hand == "main" and ItemRules.has_property(entry, "V"):
+				grips = [false, true]
+			elif item_kind == "weapon" and ItemRules.is_two_handed(entry):
+				grips = [true]
+			for grip: Variant in grips:
+				var two_hands: bool = bool(grip)
+				picker.add_item(item_name + (" · due mani" if two_hands else " · una mano") if item_kind == "weapon" else item_name)
+				choices.append({"kind": "item", "index": index, "two_handed": two_hands})
+				if is_selected and (item_kind != "weapon" or (two_hands == (bool(record.get("hand_grip_two_handed", false)) or ItemRules.is_two_handed(entry)))):
+					occupied_index = choices.size() - 1
+		var special_value: String = String(record.get("hand_" + hand + "_special", "none"))
+		var selected: int = 0
+		if occupied_index >= 0:
+			selected = occupied_index
+		elif special_value == "unarmed":
+			selected = 1
+		elif special_value == "improvised":
+			selected = 2
+		picker.select(selected)
+		_hand_options[hand] = choices
+
+
+func _on_hand_selected(index: int, hand: String) -> void:
+	if _loading:
+		return
+	var options: Array = _hand_options.get(hand, [])
+	if index < 0 or index >= options.size():
+		return
+	var record: Dictionary = _current()
+	if record.is_empty() or (hand == "off" and _offhand_locked(record)):
+		return
+	var option: Dictionary = options[index]
+	var rows: Array = record.get("inventory", []).duplicate(true)
+	var chosen_index: int = int(option.get("index", -1)) if String(option.get("kind", "")) == "item" else -1
+	var grip: bool = bool(option.get("two_handed", false))
+	var target_kind: String = ""
+	if chosen_index >= 0 and chosen_index < rows.size():
+		target_kind = ItemRules.kind(ItemRules.entry_for(rows[chosen_index]))
+	for i: int in range(rows.size()):
+		if not rows[i] is Dictionary:
 			continue
-		# Player fallback attacks stay selectable even when a weapon is equipped.
-		_weapon_picker.add_item(String(attack.get("name", "Attacco")))
-		_weapon_options.append({"kind": "attack", "id": String(attack.get("id", ""))})
-	if _weapon_options.is_empty():
-		_weapon_picker.add_item("Nessuna arma")
-		_weapon_picker.disabled = true
-		return
-	_weapon_picker.disabled = false
-	var active: String = String(AttackData.active_attack(record).get("id", ""))
-	var selected_inventory_index: int = int(record.get("equipped_inventory_index", -1))
-	for i: int in range(_weapon_options.size()):
-		var option: Dictionary = _weapon_options[i]
-		if String(option.get("id", "")) == active and (
-			String(option.get("kind", "")) != "item"
-			or selected_inventory_index < 0
-			or int(option.get("index", -1)) == selected_inventory_index
-		):
-			_weapon_picker.select(i)
-			return
-	_weapon_picker.select(0)
+		var owned: Dictionary = rows[i]
+		var slots: Array = ItemRules.slots(owned)
+		slots.erase(hand)
+		if hand == "main" and grip:
+			slots.erase("off")
+		if i == chosen_index:
+			# One physical item cannot be held in both hands as two copies.
+			if int(owned.get("quantity", 1)) < 2:
+				slots.erase("off" if hand == "main" else "main")
+			if not hand in slots:
+				slots.append(hand)
+		owned["equipped_slots"] = slots
+		rows[i] = owned
+	record["inventory"] = rows
+	record["hand_" + hand + "_special"] = String(option.get("value", "none")) if chosen_index < 0 else "none"
+	if hand == "main":
+		record["hand_grip_two_handed"] = grip
+		if grip:
+			record["hand_off_special"] = "none"
+	var active_id: String = ""
+	if chosen_index >= 0 and target_kind == "weapon":
+		active_id = "item:" + ("off:" if hand == "off" else "") + String(rows[chosen_index].get("id", ""))
+	elif String(option.get("value", "")) in ["unarmed", "improvised"]:
+		active_id = String(option.get("value", ""))
+	elif String(record.get("kind", "")) == "monster":
+		active_id = String(record.get("equipped_attack_id", ""))
+	record["equipped_attack_id"] = active_id
+	_save_equipment_record(record)
 
 
-func _step_active_weapon(direction: int) -> void:
-	if _weapon_options.is_empty() or _weapon_picker == null:
-		return
-	var next: int = posmod(_weapon_picker.selected + direction, _weapon_options.size())
-	_weapon_picker.select(next)
-	_on_active_weapon_selected(next)
-
-
-func _on_active_weapon_selected(index: int) -> void:
-	if _loading or index < 0 or index >= _weapon_options.size():
+func _on_armor_selected(index: int) -> void:
+	if _loading or index < 0 or index >= _armor_options.size():
 		return
 	var record: Dictionary = _current()
 	if record.is_empty():
 		return
-	var choice: Dictionary = _weapon_options[index]
-	if String(choice.get("kind", "")) == "item":
-		var inventory: Array = record.get("inventory", []).duplicate(true)
-		var selected: int = int(choice.get("index", -1))
-		if selected < 0 or selected >= inventory.size():
-			return
-		var chosen: Dictionary = inventory[selected]
-		var two_handed: bool = ItemRules.is_two_handed(ItemRules.entry_for(chosen))
-		# Exactly one main-hand weapon; keep an unrelated shield or offhand
-		# weapon unless the new weapon requires both hands.
-		for i: int in range(inventory.size()):
-			var owned: Dictionary = inventory[i]
-			var slots: Array = ItemRules.slots(owned)
-			slots.erase("main")
-			if two_handed or (i == selected and int(owned.get("quantity", 1)) == 1):
-				slots.erase("off")
-			if i == selected:
-				slots.append("main")
-			owned["equipped_slots"] = slots
-			inventory[i] = owned
-		record["inventory"] = inventory
-		record["equipped_inventory_index"] = selected
-	else:
-		# Bestiary natural attacks can be selected without deleting gear.
-		record.erase("equipped_inventory_index")
-	record["equipped_attack_id"] = String(choice.get("id", ""))
-	record["reach_feet"] = AttackData.active_range(record)
+	var rows: Array = record.get("inventory", []).duplicate(true)
+	var chosen: int = int(_armor_options[index].get("index", -1))
+	for i: int in range(rows.size()):
+		if not rows[i] is Dictionary:
+			continue
+		var owned: Dictionary = rows[i]
+		var slots: Array = ItemRules.slots(owned)
+		slots.erase("body")
+		if i == chosen:
+			slots.append("body")
+		owned["equipped_slots"] = slots
+		rows[i] = owned
+	record["inventory"] = rows
+	_save_equipment_record(record)
+
+
+func _save_equipment_record(record: Dictionary) -> void:
+	_recalculate_bonus_mirrors(record)
 	if String(record.get("kind", "")) == "monster":
 		record["reach_is_custom"] = true
 	var error: Error = _archive.save(record)
 	if error != OK:
-		_set_status("Arma attiva non salvata: " + error_string(error))
+		_set_status("Equipaggiamento non salvato: " + error_string(error))
 		return
 	_replace_current_record(record)
 	if _inventory_ui != null:
 		_inventory_ui.call("load_record", record)
-	_refresh_attacks(record)
-	_refresh_attack_values(record)
-	_apply_sheet_properties(record)
+	_refresh_formula_dependents(record)
 	_sync_token_health(record)
+	_apply_sheet_properties(record)
+	if _bonuses_ui != null:
+		_bonuses_ui.call("load_record", record)
+
+
+func _activate_attack(attack_id: String) -> void:
+	if _loading:
+		return
+	var record: Dictionary = _current()
+	if record.is_empty():
+		return
+	record["equipped_attack_id"] = attack_id
+	_save_equipment_record(record)
 
 
 func _roll_attack_from_sheet(attack_id: String, damage: bool) -> void:
