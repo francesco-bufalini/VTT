@@ -12,6 +12,8 @@ var measurement_tool: Node3D
 var _attacker: CharacterBody3D
 var _attack_data: Dictionary = {}
 var _targeting: bool = false
+var _preview_only: bool = false
+var _preview_selected_targets: Array[CharacterBody3D] = []
 var _instruction_panel: PanelContainer
 var _instruction_label: Label
 var _result_generation: int = 0
@@ -66,6 +68,8 @@ func start_attack(
 	_attacker = attacker
 	_attack_data = attack_data.duplicate(true)
 	_targeting = true
+	_preview_only = false
+	_preview_selected_targets.clear()
 	_result_generation += 1
 
 	var limits: Vector2 = ranged_limits(_attack_data)
@@ -95,9 +99,34 @@ func start_attack(
 	return true
 
 
+# Read-only preview: selecting targets never rolls or applies damage.
+func preview_attack_range(attacker: CharacterBody3D, attack_data: Dictionary) -> bool:
+	if not start_attack(attacker, attack_data):
+		return false
+	_preview_only = true
+	_set_instruction("%s · anteprima gittata: clic per selezionare bersagli, Esc per chiudere" % String(attack_data.get("name", "Attacco")))
+	return true
+
+
+func preview_selected_targets() -> Array[CharacterBody3D]:
+	return _preview_selected_targets.duplicate()
+
+
+func preview_targets_in_range() -> Array[CharacterBody3D]:
+	var targets: Array[CharacterBody3D] = []
+	if not _targeting or _attacker == null or not is_instance_valid(_attacker):
+		return targets
+	for token: CharacterBody3D in _reach_tokens():
+		if token != _attacker and _target_in_range(token):
+			targets.append(token)
+	return targets
+
+
 func cancel_attack(show_message: bool = true) -> void:
 	var was_targeting := _targeting
 	_targeting = false
+	_preview_only = false
+	_preview_selected_targets.clear()
 	_attacker = null
 	_attack_data.clear()
 	_range_normal_feet = 0.0
@@ -114,6 +143,9 @@ func handle_input(event: InputEvent) -> bool:
 	if not _targeting:
 		return false
 
+	if _preview_only and event is InputEventMouseButton and event.pressed and event.button_index == MOUSE_BUTTON_RIGHT:
+		cancel_attack(false)
+		return true
 	if (
 		event is InputEventKey
 		and event.pressed
@@ -133,7 +165,15 @@ func handle_input(event: InputEvent) -> bool:
 			if Input.mouse_mode == Input.MOUSE_MODE_CAPTURED
 			else event.position
 		)
-		_try_attack_target(screen_position)
+		if _preview_only:
+			var target: CharacterBody3D = _token_at_screen(screen_position)
+			if target != null and target != _attacker and _target_in_range(target):
+				if target in _preview_selected_targets:
+					_preview_selected_targets.erase(target)
+				else:
+					_preview_selected_targets.append(target)
+		else:
+			_try_attack_target(screen_position)
 		return true
 
 	return false
@@ -164,6 +204,9 @@ func _process(delta: float) -> void:
 		if Input.mouse_mode != Input.MOUSE_MODE_CAPTURED
 		else board_root.get_viewport().get_visible_rect().size * 0.5
 	)
+	if _preview_only:
+		_clear_target_highlight()
+		return
 	var target := _token_at_screen(screen_position)
 	if (
 		target != null
