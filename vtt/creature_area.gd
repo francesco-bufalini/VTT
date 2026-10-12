@@ -837,12 +837,16 @@ func _build_ui() -> void:
 	_armor_picker.item_selected.connect(_on_armor_selected)
 	temp_health.add_child(_armor_picker)
 	_natural_ac_formula = LineEdit.new()
-	_natural_ac_formula.custom_minimum_size.x = 125
+	_natural_ac_formula.custom_minimum_size.x = 145
 	_natural_ac_formula.placeholder_text = "10 + dex_mod"
 	_natural_ac_formula.tooltip_text = "Formula per la CA senza armatura: per esempio 10 + dex_mod, 13 + dex_mod o 16. Le variabili seguono le formule dei bonus."
 	_natural_ac_formula.text_submitted.connect(func(_value: String) -> void: _save())
 	_natural_ac_formula.focus_exited.connect(func() -> void: _save())
-	temp_health.add_child(_natural_ac_formula)
+	var natural_row := HBoxContainer.new()
+	natural_row.add_theme_constant_override("separation", 8)
+	defense_content.add_child(natural_row)
+	_add_label(natural_row, "CA naturale · formula")
+	natural_row.add_child(_natural_ac_formula)
 	_install_formula("ac", _ac_effective, [_ac], ["Base"])
 	_ac.size_flags_horizontal = Control.SIZE_SHRINK_BEGIN
 	_ac_proficiency_warning = Label.new()
@@ -2977,7 +2981,8 @@ func _refresh_equipment_pickers(record: Dictionary) -> void:
 			continue
 		picker.disabled = false
 		for special: String in ["none", "unarmed", "improvised"]:
-			var label: String = {"none": "Niente", "unarmed": "Colpo senz'armi", "improvised": "Arma improvvisata"}[special]
+			var labels: Dictionary = {"none": "Niente", "unarmed": "Colpo senz'armi", "improvised": "Arma improvvisata"}
+			var label: String = String(labels.get(special, special))
 			picker.add_item(label)
 			choices.append({"kind": "special", "value": special})
 		var occupied_index: int = -1
