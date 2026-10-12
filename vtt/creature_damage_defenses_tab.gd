@@ -36,6 +36,11 @@ var _origin_buttons: Dictionary = {}
 var _selected_origin := "__manual__"
 var _base_hint: Label
 var _active_counts: Label
+var _add_panel: VBoxContainer
+var _type_picker: OptionButton
+var _rank_picker: OptionButton
+var _source_picker: OptionButton
+var _entry_cards: Dictionary = {}
 
 
 static func _direct_type_list(raw: Variant) -> Array[String]:
@@ -151,6 +156,21 @@ static func base_rank(record: Dictionary, damage_type: String) -> int:
 
 
 static func rank(record: Dictionary, damage_type: String) -> int:
+	var entries: Variant = record.get("damage_defense_entries", null)
+	if entries is Array:
+		var best: int = 0
+		var active_origins: Dictionary = {}
+		for source: Dictionary in _sources(record):
+			active_origins[String(source.get("id", ""))] = bool(source.get("active", true))
+		for entry: Variant in entries:
+			if entry is Dictionary and String(entry.get("key", "")) == damage_type and not bool(entry.get("disabled", false)):
+				var origin: String = String(entry.get("origin_id", ""))
+				if not origin.is_empty():
+					if not bool(active_origins.get(origin, false)): continue
+				var value: int = clampi(int(entry.get("rank", 0)), -1, 2)
+				if value == 2: return 2
+				if value > best or best == 0: best = value
+		return best
 	var overrides: Variant = record.get("damage_defense_overrides", {})
 	if overrides is Dictionary and (overrides as Dictionary).has(damage_type):
 		return clampi(int((overrides as Dictionary)[damage_type]), -1, 2)
@@ -171,6 +191,17 @@ static func base_condition_immune(record: Dictionary, condition: String) -> bool
 
 
 static func condition_immune(record: Dictionary, condition: String) -> bool:
+	var entries: Variant = record.get("damage_defense_entries", null)
+	if entries is Array:
+		var active_origins: Dictionary = {}
+		for source: Dictionary in _sources(record):
+			active_origins[String(source.get("id", ""))] = bool(source.get("active", true))
+		for entry: Variant in entries:
+			if entry is Dictionary and String(entry.get("key", "")) == condition and int(entry.get("rank", 0)) == 3 and not bool(entry.get("disabled", false)):
+				var origin: String = String(entry.get("origin_id", ""))
+				if origin.is_empty(): return true
+				if bool(active_origins.get(origin, false)): return true
+		return false
 	var overrides: Variant = record.get("condition_immunity_overrides", {})
 	if overrides is Dictionary and (overrides as Dictionary).has(condition):
 		return bool((overrides as Dictionary)[condition])
@@ -180,287 +211,266 @@ static func condition_immune(record: Dictionary, condition: String) -> bool:
 func setup(on_change: Callable) -> void:
 	_changed = on_change
 	size_flags_horizontal = Control.SIZE_EXPAND_FILL
-	add_theme_constant_override("separation", 8)
-	var description := Label.new()
-	description.text = "Vulnerabilità: danni doppi · Resistenza: danni dimezzati · Immunità: danni annullati. Ogni tipo ha un solo stato attivo."
-	description.autowrap_mode = TextServer.AUTOWRAP_WORD_SMART
-	add_child(description)
+	add_theme_constant_override("separation", 7)
 	_base_hint = Label.new()
 	_base_hint.autowrap_mode = TextServer.AUTOWRAP_WORD_SMART
 	add_child(_base_hint)
-	_active_counts = Label.new()
-	_active_counts.add_theme_font_size_override("font_size", 13)
-	add_child(_active_counts)
 	var columns := HBoxContainer.new()
-	columns.size_flags_horizontal = Control.SIZE_EXPAND_FILL
 	columns.add_theme_constant_override("separation", 9)
 	add_child(columns)
-	var origins_column := VBoxContainer.new()
-	origins_column.custom_minimum_size.x = 190
-	origins_column.size_flags_horizontal = Control.SIZE_EXPAND_FILL
-	columns.add_child(origins_column)
-	var origin_heading := Label.new()
-	origin_heading.text = "Origini delle difese"
-	origin_heading.add_theme_font_size_override("font_size", 15)
-	origins_column.add_child(origin_heading)
-	var origin_scroll := ScrollContainer.new()
-	origin_scroll.mouse_force_pass_scroll_events = false
-	origin_scroll.custom_minimum_size.y = 245
-	origin_scroll.horizontal_scroll_mode = ScrollContainer.SCROLL_MODE_DISABLED
-	origins_column.add_child(origin_scroll)
+	var left := _make_column(columns, "Origini delle difese", 190)
+	var right := _make_column(columns, "Singole difese", 255)
+	var ls := ScrollContainer.new()
+	ls.custom_minimum_size.y = 245
+	ls.mouse_force_pass_scroll_events = false
+	ls.horizontal_scroll_mode = ScrollContainer.SCROLL_MODE_DISABLED
+	left.add_child(ls)
 	_origin_cards = VBoxContainer.new()
-	_origin_cards.add_theme_constant_override("separation", 4)
 	_origin_cards.size_flags_horizontal = Control.SIZE_EXPAND_FILL
-	origin_scroll.add_child(_origin_cards)
-	var benefits_column := VBoxContainer.new()
-	benefits_column.custom_minimum_size.x = 330
-	benefits_column.size_flags_horizontal = Control.SIZE_EXPAND_FILL
-	columns.add_child(benefits_column)
-	var benefits_heading := Label.new()
-	benefits_heading.text = "Singole resistenze e immunità"
-	benefits_heading.add_theme_font_size_override("font_size", 15)
-	benefits_column.add_child(benefits_heading)
-	var scroll := ScrollContainer.new()
-	scroll.mouse_force_pass_scroll_events = false
-	scroll.custom_minimum_size.y = 245
-	scroll.size_flags_horizontal = Control.SIZE_EXPAND_FILL
-	scroll.horizontal_scroll_mode = ScrollContainer.SCROLL_MODE_DISABLED
-	benefits_column.add_child(scroll)
-	var body := VBoxContainer.new()
-	body.size_flags_horizontal = Control.SIZE_EXPAND_FILL
-	body.add_theme_constant_override("separation", 10)
-	scroll.add_child(body)
-	var title := Label.new()
-	title.text = "VULNERABILITÀ, RESISTENZE E IMMUNITÀ"
-	title.add_theme_font_size_override("font_size", 16)
-	body.add_child(title)
+	ls.add_child(_origin_cards)
+	var rs := ScrollContainer.new()
+	rs.custom_minimum_size.y = 245
+	rs.mouse_force_pass_scroll_events = false
+	rs.horizontal_scroll_mode = ScrollContainer.SCROLL_MODE_DISABLED
+	right.add_child(rs)
 	_damage_rows = VBoxContainer.new()
-	_damage_rows.add_theme_constant_override("separation", 4)
-	_damage_rows.add_theme_constant_override("h_separation", 12)
-	body.add_child(_damage_rows)
-	var condition_title := Label.new()
-	condition_title.text = "IMMUNITÀ ALLE CONDIZIONI"
-	condition_title.add_theme_font_size_override("font_size", 16)
-	body.add_child(condition_title)
-	_condition_rows = VBoxContainer.new()
-	_condition_rows.add_theme_constant_override("separation", 4)
-	_condition_rows.add_theme_constant_override("h_separation", 12)
-	body.add_child(_condition_rows)
+	_damage_rows.size_flags_horizontal = Control.SIZE_EXPAND_FILL
+	_damage_rows.add_theme_constant_override("separation", 5)
+	rs.add_child(_damage_rows)
+	var add_button := Button.new()
+	add_button.text = "+ Difesa"
+	right.add_child(add_button)
+	_add_panel = VBoxContainer.new()
+	_add_panel.hide()
+	right.add_child(_add_panel)
+	add_button.pressed.connect(func() -> void: _add_panel.visible = not _add_panel.visible)
+	_type_picker = OptionButton.new()
+	for item: Dictionary in DAMAGE_TYPES:
+		_type_picker.add_item(String(item["label"]))
+	for condition: String in CONDITIONS:
+		_type_picker.add_item(condition.capitalize())
+	_add_panel.add_child(_type_picker)
+	_rank_picker = OptionButton.new()
+	for title: String in ["Vulnerabilità", "Resistenza", "Immunità"]:
+		_rank_picker.add_item(title)
+	_add_panel.add_child(_rank_picker)
+	_source_picker = OptionButton.new()
+	_source_picker.fit_to_longest_item = false
+	_add_panel.add_child(_source_picker)
+	var confirm := Button.new()
+	confirm.text = "Aggiungi difesa"
+	confirm.pressed.connect(_add_defense)
+	_add_panel.add_child(confirm)
+	_type_picker.item_selected.connect(func(_index: int) -> void:
+		var is_condition: bool = _type_picker.selected >= DAMAGE_TYPES.size()
+		_rank_picker.disabled = is_condition
+		if is_condition: _rank_picker.select(2)
+	)
 
 
-func _make_defense_row(parent: VBoxContainer, text_value: String) -> HBoxContainer:
-	var card := PanelContainer.new()
-	card.size_flags_horizontal = Control.SIZE_EXPAND_FILL
-	parent.add_child(card)
-	var row := HBoxContainer.new()
-	row.add_theme_constant_override("separation", 4)
-	card.add_child(row)
-	var caption := Label.new()
-	caption.text = text_value
-	caption.custom_minimum_size.x = 105
-	caption.size_flags_horizontal = Control.SIZE_EXPAND_FILL
-	row.add_child(caption)
-	return row
+func _make_column(parent: HBoxContainer, heading: String, width: float) -> VBoxContainer:
+	var panel := PanelContainer.new()
+	panel.custom_minimum_size.x = width
+	panel.size_flags_horizontal = Control.SIZE_EXPAND_FILL
+	parent.add_child(panel)
+	var content := VBoxContainer.new()
+	panel.add_child(content)
+	var title := Label.new()
+	title.text = heading
+	title.add_theme_font_size_override("font_size", 15)
+	content.add_child(title)
+	return content
 
 
-func _select_origin(id: String) -> void:
-	_selected_origin = id
-	_refresh_highlights()
-
-
-func _refresh_origin_buttons() -> void:
-	for child: Node in _origin_cards.get_children():
-		_origin_cards.remove_child(child)
-		child.queue_free()
-	_origin_buttons.clear()
-	var manual := Button.new()
-	manual.text = "Senza origine (manuali)"
-	manual.toggle_mode = true
-	manual.alignment = HORIZONTAL_ALIGNMENT_LEFT
-	manual.pressed.connect(_select_origin.bind("__manual__"))
-	_origin_cards.add_child(manual)
-	_origin_buttons["__manual__"] = manual
-	for source: Dictionary in _cached_sources:
+static func _entries_from_record(record: Dictionary, sources: Array[Dictionary]) -> Array[Dictionary]:
+	var result: Array[Dictionary] = []
+	var saved: Variant = record.get("damage_defense_entries", null)
+	if saved is Array:
+		# Synchronize structured grants with the currently present origins;
+		# preserve only per-grant disabled state or promoted resistance.
+		var existing: Dictionary = {}
+		for entry: Variant in saved:
+			if not entry is Dictionary: continue
+			var row: Dictionary = entry
+			if bool(row.get("automatic", false)):
+				existing[String(row.get("origin_id", "")) + "|" + String(row.get("key", "")) + "|" + str(int(row.get("base_rank", row.get("rank", 0))))] = row
+			else:
+				result.append(row.duplicate(true))
+		for source: Dictionary in sources:
+			var sid: String = String(source.get("id", ""))
+			for field: String in ["vulnerable", "resist", "immune", "conditionImmune"]:
+				var base_level: int = int({"vulnerable": -1, "resist": 1, "immune": 2, "conditionImmune": 3}[field])
+				for key: String in _direct_type_list(source.get(field, [])):
+					var identifier: String = sid + "|" + key + "|" + str(base_level)
+					var row: Dictionary = {"key": key, "rank": base_level, "base_rank": base_level, "origin_id": sid, "automatic": true}
+					if existing.has(identifier):
+						row["disabled"] = bool(existing[identifier].get("disabled", false))
+						if base_level == 1 and int(existing[identifier].get("rank", 1)) == 2: row["rank"] = 2
+					result.append(row)
+		return result
+	# Old data: convert only explicitly saved overrides to independent rows.
+	# Automatically granted defenses always come from current structured origins.
+	for source: Dictionary in sources:
 		var sid: String = String(source.get("id", ""))
-		var direct_count: int = (_direct_type_list(source.get("resist", [])).size()
-			+ _direct_type_list(source.get("immune", [])).size()
-			+ _direct_type_list(source.get("vulnerable", [])).size()
-			+ _direct_type_list(source.get("conditionImmune", [])).size())
-		var button := Button.new()
-		button.toggle_mode = true
-		button.alignment = HORIZONTAL_ALIGNMENT_LEFT
-		button.clip_text = true
-		button.text = String(source.get("name", sid)) + (" (%d)" % direct_count if direct_count > 0 else " (condizionale)")
-		button.tooltip_text = (
-			("Origine inattiva: benefici non applicati. " if not bool(source.get("active", true)) else "")
-			+ "Seleziona per evidenziare le difese concesse dai campi strutturati."
-		)
-		button.modulate.a = 0.6 if not bool(source.get("active", true)) else 1.0
-		button.pressed.connect(_select_origin.bind(sid))
-		_origin_cards.add_child(button)
-		_origin_buttons[sid] = button
-
-
-func _refresh_highlights() -> void:
-	for sid: String in _origin_buttons:
-		(_origin_buttons[sid] as Button).set_pressed_no_signal(sid == _selected_origin)
-	var selected_damage: Array[String] = []
-	var selected_conditions: Array[String] = []
-	if _selected_origin == "__manual__":
-		for raw_key: Variant in _record.get("damage_defense_overrides", {}).keys():
-			selected_damage.append(String(raw_key))
-		for raw_key: Variant in _record.get("condition_immunity_overrides", {}).keys():
-			selected_conditions.append(String(raw_key))
-	else:
-		for source: Dictionary in _cached_sources:
-			if String(source.get("id", "")) != _selected_origin:
-				continue
-			selected_damage.append_array(_direct_type_list(source.get("vulnerable", [])))
-			selected_damage.append_array(_direct_type_list(source.get("resist", [])))
-			selected_damage.append_array(_direct_type_list(source.get("immune", [])))
-			selected_conditions.append_array(_direct_type_list(source.get("conditionImmune", [])))
-	for cards: Dictionary in [_damage_cards, _condition_cards]:
-		var selected: Array[String] = selected_damage if cards == _damage_cards else selected_conditions
-		for key: String in cards:
-			var card: PanelContainer = cards[key]
-			var style := StyleBoxFlat.new()
-			style.draw_center = false
-			style.border_color = Color(0.34, 0.66, 0.93) if key in selected else Color(0.36, 0.41, 0.46, 0.5)
-			style.set_border_width_all(2 if key in selected else 1)
-			style.set_corner_radius_all(5)
-			style.set_content_margin_all(4)
-			card.add_theme_stylebox_override("panel", style)
+		for field: String in ["vulnerable", "resist", "immune", "conditionImmune"]:
+			for key: String in _direct_type_list(source.get(field, [])):
+				result.append({"key": key, "rank": {"vulnerable": -1, "resist": 1, "immune": 2, "conditionImmune": 3}[field], "base_rank": {"vulnerable": -1, "resist": 1, "immune": 2, "conditionImmune": 3}[field], "origin_id": sid, "automatic": true})
+	for key: String in record.get("damage_defense_overrides", {}):
+		var level: int = int(record["damage_defense_overrides"][key])
+		if level != 0: result.append({"key": key, "rank": level, "origin_id": "", "automatic": false})
+	for key: String in record.get("condition_immunity_overrides", {}):
+		if bool(record["condition_immunity_overrides"][key]):
+			result.append({"key": key, "rank": 3, "origin_id": "", "automatic": false})
+	return result
 
 
 func load_record(record: Dictionary) -> void:
 	_record = record.duplicate(true)
 	_cached_sources = _sources(_record)
-	_damage_buttons.clear()
-	_condition_buttons.clear()
-	_damage_cards.clear()
-	_condition_cards.clear()
-	if _damage_rows == null:
-		return
-	for root: VBoxContainer in [_damage_rows, _condition_rows]:
-		for node: Node in root.get_children():
-			root.remove_child(node)
-			node.queue_free()
-	var warnings: Array[String] = []
+	_record["damage_defense_entries"] = _entries_from_record(_record, _cached_sources)
+	_refresh()
+
+
+func _refresh() -> void:
+	if _damage_rows == null: return
+	for parent: VBoxContainer in [_damage_rows, _origin_cards]:
+		for child: Node in parent.get_children():
+			parent.remove_child(child)
+			child.queue_free()
+	_entry_cards.clear()
+	_origin_buttons.clear()
+	var counts: Dictionary = {}
+	for entry: Dictionary in _record.get("damage_defense_entries", []):
+		var sid: String = String(entry.get("origin_id", ""))
+		counts[sid] = int(counts.get(sid, 0)) + 1
+	var manual := Button.new()
+	manual.text = "Senza origine (%d)" % int(counts.get("", 0))
+	manual.toggle_mode = true
+	manual.pressed.connect(_select_origin.bind("__manual__"))
+	_origin_cards.add_child(manual)
+	_origin_buttons["__manual__"] = manual
+	_source_picker.clear()
+	_source_picker.add_item("Senza origine")
+	_source_picker.set_item_metadata(0, "")
 	for source: Dictionary in _cached_sources:
-		for key: String in ["vulnerable", "resist", "immune", "conditionImmune"]:
-			for item: Variant in source.get(key, []):
-				if item is Dictionary:
-					warnings.append(JSON.stringify(item))
-	_base_hint.text = ("Rilevate %d difese condizionali: consultale nell'origine, non vengono applicate come generali." % warnings.size()
-		if not warnings.is_empty() else "Benefici automatici dalle origini attive, modifiche manuali salvate sulla creatura.")
-	_base_hint.tooltip_text = "\n".join(warnings)
-	var counts := {"v": 0, "r": 0, "i": 0, "c": 0}
-	for kind: Dictionary in DAMAGE_TYPES:
-		match int(_record.get("damage_defense_overrides", {}).get(String(kind["key"]), _base_rank_from_sources(_cached_sources, String(kind["key"])))):
-			-1: counts["v"] += 1
-			1: counts["r"] += 1
-			2: counts["i"] += 1
-	for condition_key: String in CONDITIONS:
-		if bool(_record.get("condition_immunity_overrides", {}).get(condition_key, _base_condition_from_sources(_cached_sources, condition_key))):
-			counts["c"] += 1
-	_active_counts.text = "Vulnerabilità: %d  ·  Resistenze: %d  ·  Immunità: %d  ·  Condizioni: %d" % [counts["v"], counts["r"], counts["i"], counts["c"]]
-	for item: Dictionary in DAMAGE_TYPES:
-		var key: String = String(item["key"])
-		var baseline: int = _base_rank_from_sources(_cached_sources, key)
-		var overrides: Dictionary = _record.get("damage_defense_overrides", {})
-		var level: int = clampi(int(overrides.get(key, baseline)), -1, 2)
-		var damage_row: HBoxContainer = _make_defense_row(_damage_rows, String(item["label"]))
-		_damage_cards[key] = damage_row.get_parent()
-		var vulnerable := Button.new()
-		vulnerable.toggle_mode = true
-		vulnerable.text = "Vuln."
-		vulnerable.set_pressed_no_signal(level == -1)
-		vulnerable.tooltip_text = "Subisce il doppio dei danni di questo tipo"
-		vulnerable.toggled.connect(_on_vulnerability_changed.bind(key))
-		damage_row.add_child(vulnerable)
-		var resistant := Button.new()
-		resistant.toggle_mode = true
-		resistant.text = "Res."
-		resistant.set_pressed_no_signal(level >= 1)
-		resistant.tooltip_text = "Primo grado: dimezza i danni di questo tipo"
-		resistant.toggled.connect(_on_resistance_changed.bind(key))
-		damage_row.add_child(resistant)
-		var immune := Button.new()
-		immune.toggle_mode = true
-		immune.text = "Imm."
-		immune.set_pressed_no_signal(level >= 2)
-		immune.tooltip_text = "Secondo grado: annulla i danni di questo tipo"
-		immune.toggled.connect(_on_immunity_changed.bind(key))
-		damage_row.add_child(immune)
-		_damage_buttons[key] = {"vulnerability": vulnerable, "resistance": resistant, "immunity": immune}
-	for condition: String in CONDITIONS:
-		var condition_row: HBoxContainer = _make_defense_row(_condition_rows, condition.capitalize())
-		_condition_cards[condition] = condition_row.get_parent()
-		var immune := Button.new()
-		immune.toggle_mode = true
-		immune.text = "Immune"
-		var condition_overrides: Dictionary = _record.get("condition_immunity_overrides", {})
-		immune.set_pressed_no_signal(bool(condition_overrides.get(condition,
-			_base_condition_from_sources(_cached_sources, condition))))
-		immune.toggled.connect(_on_condition_changed.bind(condition))
-		condition_row.add_child(immune)
-		_condition_buttons[condition] = immune
-	if _selected_origin != "__manual__":
-		var is_current := false
-		for source: Dictionary in _cached_sources:
-			if String(source.get("id", "")) == _selected_origin:
-				is_current = true
-		if not is_current:
-			_selected_origin = "__manual__"
-	_refresh_origin_buttons()
+		var sid: String = String(source.get("id", ""))
+		if not counts.has(sid): continue
+		var button := Button.new()
+		button.toggle_mode = true
+		button.clip_text = true
+		button.alignment = HORIZONTAL_ALIGNMENT_LEFT
+		button.text = "%s (%d)" % [String(source.get("name", sid)), int(counts[sid])]
+		button.modulate.a = 1.0 if bool(source.get("active", true)) else 0.5
+		button.pressed.connect(_select_origin.bind(sid))
+		_origin_cards.add_child(button)
+		_origin_buttons[sid] = button
+	# Other available origins can be assigned to manually inserted defenses.
+	for source: Dictionary in _cached_sources:
+		var idx: int = _source_picker.item_count
+		_source_picker.add_item(String(source.get("name", "")))
+		_source_picker.set_item_metadata(idx, String(source.get("id", "")))
+	var entries: Array = _record.get("damage_defense_entries", [])
+	for i: int in range(entries.size()):
+		var entry: Dictionary = entries[i]
+		var rank_value: int = int(entry.get("rank", 0))
+		if rank_value == 0: continue
+		var key: String = String(entry.get("key", ""))
+		var label := key.capitalize()
+		for item: Dictionary in DAMAGE_TYPES:
+			if String(item["key"]) == key: label = String(item["label"])
+		var row := HBoxContainer.new()
+		var panel := PanelContainer.new()
+		_damage_rows.add_child(panel)
+		panel.add_child(row)
+		_entry_cards[i] = panel
+		var name_label := Label.new()
+		name_label.text = label
+		name_label.size_flags_horizontal = Control.SIZE_EXPAND_FILL
+		row.add_child(name_label)
+		if rank_value >= 1 and rank_value <= 2:
+			var promote := CheckButton.new()
+			promote.text = "Imm."
+			promote.tooltip_text = "Passa da resistenza a immunità"
+			promote.set_pressed_no_signal(rank_value == 2)
+			promote.toggled.connect(_promote.bind(i))
+			row.add_child(promote)
+		else:
+			var status := Label.new()
+			status.text = "Vuln." if rank_value == -1 else "Imm."
+			row.add_child(status)
+		var enabled := CheckButton.new()
+		enabled.text = "Attiva"
+		enabled.set_pressed_no_signal(not bool(entry.get("disabled", false)))
+		enabled.toggled.connect(_toggle.bind(i))
+		row.add_child(enabled)
+		if not bool(entry.get("automatic", false)):
+			var remove := Button.new()
+			remove.text = "×"
+			remove.tooltip_text = "Rimuovi questa difesa"
+			remove.pressed.connect(_remove.bind(i))
+			row.add_child(remove)
+	_refresh_highlights()
+	_base_hint.text = "Le difese automatiche provengono dai campi strutturati delle origini; seleziona un'origine per evidenziarle."
+
+
+func _select_origin(sid: String) -> void:
+	_selected_origin = sid
 	_refresh_highlights()
 
 
-func _on_vulnerability_changed(enabled: bool, key: String) -> void:
-	_change_rank(key, -1 if enabled else 0)
+func _refresh_highlights() -> void:
+	for sid: String in _origin_buttons:
+		(_origin_buttons[sid] as Button).set_pressed_no_signal(sid == _selected_origin)
+	var entries: Array = _record.get("damage_defense_entries", [])
+	for index: int in _entry_cards:
+		var source_id: String = String(entries[index].get("origin_id", ""))
+		var highlighted: bool = source_id == ("" if _selected_origin == "__manual__" else _selected_origin)
+		var card: PanelContainer = _entry_cards[index]
+		var style := StyleBoxFlat.new()
+		style.draw_center = false
+		style.border_color = Color(0.34, 0.66, 0.93) if highlighted else Color(0.36, 0.41, 0.46, 0.5)
+		style.set_border_width_all(2 if highlighted else 1)
+		style.set_corner_radius_all(5)
+		style.set_content_margin_all(4)
+		card.add_theme_stylebox_override("panel", style)
 
 
-func _on_resistance_changed(enabled: bool, key: String) -> void:
-	_change_rank(key, 1 if enabled else 0)
-
-
-func _on_immunity_changed(enabled: bool, key: String) -> void:
-	_change_rank(key, 2 if enabled else 1)
-
-
-func _change_rank(key: String, level: int) -> void:
-	var overrides: Dictionary = _record.get("damage_defense_overrides", {}).duplicate(true)
-	overrides[key] = level
-	_record["damage_defense_overrides"] = overrides
-	var pair: Dictionary = _damage_buttons.get(key, {})
-	(pair.get("vulnerability") as Button).set_pressed_no_signal(level == -1)
-	(pair.get("resistance") as Button).set_pressed_no_signal(level >= 1)
-	(pair.get("immunity") as Button).set_pressed_no_signal(level == 2)
-	_refresh_highlights()
+func _add_defense() -> void:
+	var index: int = _type_picker.selected
+	if index < 0: return
+	var key: String = String(DAMAGE_TYPES[index]["key"]) if index < DAMAGE_TYPES.size() else CONDITIONS[index - DAMAGE_TYPES.size()]
+	var level: int = 3 if index >= DAMAGE_TYPES.size() else [-1, 1, 2][maxi(0, _rank_picker.selected)]
+	var sid: String = String(_source_picker.get_selected_metadata())
+	var entries: Array = _record.get("damage_defense_entries", [])
+	entries.append({"key": key, "rank": level, "origin_id": sid, "automatic": false})
+	_record["damage_defense_entries"] = entries
+	_refresh()
 	_publish()
 
 
-func _on_condition_changed(enabled: bool, key: String) -> void:
-	var overrides: Dictionary = _record.get("condition_immunity_overrides", {}).duplicate(true)
-	overrides[key] = enabled
-	_record["condition_immunity_overrides"] = overrides
-	_refresh_highlights()
+func _promote(enabled: bool, index: int) -> void:
+	var entries: Array = _record.get("damage_defense_entries", [])
+	entries[index]["rank"] = 2 if enabled else 1
+	_refresh()
+	_publish()
+
+
+func _toggle(enabled: bool, index: int) -> void:
+	var entries: Array = _record.get("damage_defense_entries", [])
+	entries[index]["disabled"] = not enabled
+	_refresh()
+	_publish()
+
+
+func _remove(index: int) -> void:
+	var entries: Array = _record.get("damage_defense_entries", [])
+	entries.remove_at(index)
+	_refresh()
 	_publish()
 
 
 func _publish() -> void:
-	if _active_counts != null:
-		var counts := [0, 0, 0, 0]
-		for kind: Dictionary in DAMAGE_TYPES:
-			match int(_record.get("damage_defense_overrides", {}).get(String(kind["key"]), _base_rank_from_sources(_cached_sources, String(kind["key"])))):
-				-1: counts[0] += 1
-				1: counts[1] += 1
-				2: counts[2] += 1
-		for condition_key: String in CONDITIONS:
-			if bool(_record.get("condition_immunity_overrides", {}).get(condition_key, _base_condition_from_sources(_cached_sources, condition_key))): counts[3] += 1
-		_active_counts.text = "Vulnerabilità: %d  ·  Resistenze: %d  ·  Immunità: %d  ·  Condizioni: %d" % counts
 	if _changed.is_valid():
-		_changed.call(
-			_record.get("damage_defense_overrides", {}).duplicate(true),
-			_record.get("condition_immunity_overrides", {}).duplicate(true)
-	)
+		_changed.call(_record.get("damage_defense_overrides", {}).duplicate(true),
+			_record.get("condition_immunity_overrides", {}).duplicate(true),
+			_record.get("damage_defense_entries", []).duplicate(true))
