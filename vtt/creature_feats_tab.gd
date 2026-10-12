@@ -67,6 +67,7 @@ func setup(on_change: Callable) -> void:
 	var right := _make_column(columns, "Talenti posseduti", 225)
 
 	var origin_scroll := ScrollContainer.new()
+	origin_scroll.mouse_force_pass_scroll_events = false
 	origin_scroll.custom_minimum_size.y = 245
 	origin_scroll.size_flags_vertical = Control.SIZE_EXPAND_FILL
 	origin_scroll.horizontal_scroll_mode = ScrollContainer.SCROLL_MODE_DISABLED
@@ -77,6 +78,7 @@ func setup(on_change: Callable) -> void:
 	origin_scroll.add_child(_origin_cards)
 
 	var feat_scroll := ScrollContainer.new()
+	feat_scroll.mouse_force_pass_scroll_events = false
 	feat_scroll.custom_minimum_size.y = 245
 	feat_scroll.size_flags_vertical = Control.SIZE_EXPAND_FILL
 	feat_scroll.horizontal_scroll_mode = ScrollContainer.SCROLL_MODE_DISABLED
