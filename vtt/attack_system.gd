@@ -251,42 +251,32 @@ func _add_reach_sphere(
 		reach_feet = maxf(float(token.call("get_reach_feet")), 5.0)
 	var long_range: float = float(token.get_meta("active_weapon_long_range_feet", 0.0))
 	var half_footprint: float = _token_footprint_world(token, cell_size) * 0.5
+	var ranges: Array[Dictionary] = [
+		{"distance": reach_feet, "name": "Normal", "color": NORMAL_RANGE_COLOR}
+	]
 	if long_range > reach_feet:
-		# Ranged selected weapon: show both actual footprint-based limits.
-		for entry: Dictionary in [
-			{"distance": long_range, "name": "Long", "color": LONG_RANGE_COLOR},
-			{"distance": reach_feet, "name": "Normal", "color": NORMAL_RANGE_COLOR}
-		]:
-			var distance: float = float(entry.get("distance", 0.0))
-			var tint: Color = entry.get("color", NORMAL_RANGE_COLOR)
-			var reach_world: float = distance / 5.0 * cell_size
-			var outline := MeshInstance3D.new()
-			outline.name = "Reach%s_%d" % [String(entry.get("name", "")), token.get_instance_id()]
-			outline.mesh = _build_range_outline_mesh(half_footprint, reach_world, cell_size)
-			outline.material_override = _range_material(tint, 0.92)
-			outline.cast_shadow = GeometryInstance3D.SHADOW_CASTING_SETTING_OFF
-			_all_reach_root.add_child(outline)
-			outline.global_position = token.global_position
-		return
-
-	# Retain the traditional melee-reach sphere for tokens without a
-	# selected weapon's normal/long ranged pair.
-	var footprint_world: float = half_footprint * 2.0
-	var radius: float = reach_feet / 5.0 * cell_size + footprint_world * 0.5
-	var sphere := SphereMesh.new()
-	sphere.radius = maxf(radius, cell_size * 0.5)
-	sphere.height = sphere.radius * 2.0
-	sphere.radial_segments = 32
-	sphere.rings = 16
-	var material: StandardMaterial3D = _range_material(NORMAL_RANGE_COLOR, 0.045)
-	material.emission_energy_multiplier = 0.10
-	var preview := MeshInstance3D.new()
-	preview.name = "Reach_%d" % token.get_instance_id()
-	preview.mesh = sphere
-	preview.material_override = material
-	preview.cast_shadow = GeometryInstance3D.SHADOW_CASTING_SETTING_OFF
-	_all_reach_root.add_child(preview)
-	preview.global_position = token.global_position
+		ranges.append({"distance": long_range, "name": "Long", "color": LONG_RANGE_COLOR})
+	# Every creature has one hollow 3D sphere per range. Never use a
+	# horizontal disc or fill the inside of the selected weapon's reach.
+	for entry: Dictionary in ranges:
+		var tint: Color = entry.get("color", NORMAL_RANGE_COLOR)
+		var reach_world: float = float(entry.get("distance", 0.0)) / 5.0 * cell_size
+		var sphere_radius: float = reach_world + half_footprint
+		var label: String = String(entry.get("name", "Normal"))
+		var wire := MeshInstance3D.new()
+		wire.name = "Reach%s_%d" % [label, token.get_instance_id()]
+		wire.mesh = RangeGeometry.sphere_wire_mesh(sphere_radius)
+		wire.material_override = _range_material(tint, 0.80)
+		wire.cast_shadow = GeometryInstance3D.SHADOW_CASTING_SETTING_OFF
+		_all_reach_root.add_child(wire)
+		wire.global_position = token.global_position
+		var equator := MeshInstance3D.new()
+		equator.name = "Reach%sEquator_%d" % [label, token.get_instance_id()]
+		equator.mesh = RangeGeometry.sphere_equator_mesh(sphere_radius)
+		equator.material_override = _range_material(tint, 0.96)
+		equator.cast_shadow = GeometryInstance3D.SHADOW_CASTING_SETTING_OFF
+		_all_reach_root.add_child(equator)
+		equator.global_position = token.global_position
 
 
 static func ranged_limits(data: Dictionary) -> Vector2:
@@ -474,13 +464,13 @@ func _show_range(normal_feet: float, long_feet: float = 0.0) -> void:
 		_range_outline = MeshInstance3D.new()
 		_range_outline.name = "AttackNormalRangeBorder"
 		add_child(_range_outline)
-	_range_preview.mesh = _build_rounded_footprint_range_mesh(half_footprint, normal_radius)
-	_range_preview.material_override = _range_material(NORMAL_RANGE_COLOR, 0.032)
+	_range_preview.mesh = RangeGeometry.sphere_wire_mesh(normal_radius + half_footprint)
+	_range_preview.material_override = _range_material(NORMAL_RANGE_COLOR, 0.80)
 	_range_preview.cast_shadow = GeometryInstance3D.SHADOW_CASTING_SETTING_OFF
 	_range_preview.global_position = center
 	_range_preview.visible = show_3d
-	_range_outline.mesh = _build_range_outline_mesh(half_footprint, normal_radius, cell_size)
-	_range_outline.material_override = _range_material(NORMAL_RANGE_COLOR, 0.94)
+	_range_outline.mesh = RangeGeometry.sphere_equator_mesh(normal_radius + half_footprint)
+	_range_outline.material_override = _range_material(NORMAL_RANGE_COLOR, 0.96)
 	_range_outline.cast_shadow = GeometryInstance3D.SHADOW_CASTING_SETTING_OFF
 	_range_outline.global_position = center
 	_range_outline.visible = show_3d
@@ -494,13 +484,13 @@ func _show_range(normal_feet: float, long_feet: float = 0.0) -> void:
 			_long_range_outline = MeshInstance3D.new()
 			_long_range_outline.name = "AttackLongRangeBorder"
 			add_child(_long_range_outline)
-		_long_range_preview.mesh = _build_rounded_footprint_range_mesh(half_footprint, long_radius)
-		_long_range_preview.material_override = _range_material(LONG_RANGE_COLOR, 0.020)
+		_long_range_preview.mesh = RangeGeometry.sphere_wire_mesh(long_radius + half_footprint)
+		_long_range_preview.material_override = _range_material(LONG_RANGE_COLOR, 0.80)
 		_long_range_preview.cast_shadow = GeometryInstance3D.SHADOW_CASTING_SETTING_OFF
 		_long_range_preview.global_position = center
 		_long_range_preview.visible = show_3d
-		_long_range_outline.mesh = _build_range_outline_mesh(half_footprint, long_radius, cell_size)
-		_long_range_outline.material_override = _range_material(LONG_RANGE_COLOR, 0.90)
+		_long_range_outline.mesh = RangeGeometry.sphere_equator_mesh(long_radius + half_footprint)
+		_long_range_outline.material_override = _range_material(LONG_RANGE_COLOR, 0.96)
 		_long_range_outline.cast_shadow = GeometryInstance3D.SHADOW_CASTING_SETTING_OFF
 		_long_range_outline.global_position = center
 		_long_range_outline.visible = show_3d
@@ -521,302 +511,14 @@ func _range_material(color: Color, opacity: float) -> StandardMaterial3D:
 	material.transparency = BaseMaterial3D.TRANSPARENCY_ALPHA
 	material.shading_mode = BaseMaterial3D.SHADING_MODE_UNSHADED
 	material.cull_mode = BaseMaterial3D.CULL_DISABLED
-	material.no_depth_test = true
+	# Let nearby geometry occlude the rear of a shell in 3D. No solid
+	# triangles are drawn, so nothing inside the sphere receives a tint.
+	material.no_depth_test = false
 	material.albedo_color = Color(color.r, color.g, color.b, opacity)
 	material.emission_enabled = true
 	material.emission = Color(color.r, color.g, color.b, 1.0)
 	material.emission_energy_multiplier = 0.18
 	return material
-
-
-func _build_range_outline_mesh(half_footprint: float, radius: float, cell_size: float) -> ArrayMesh:
-	var thickness: float = maxf(cell_size * 0.075, 0.014)
-	var outer: PackedVector2Array = RangeGeometry.rounded_footprint_perimeter(
-		half_footprint, radius + thickness * 0.5
-	)
-	var inner: PackedVector2Array = RangeGeometry.rounded_footprint_perimeter(
-		half_footprint, maxf(radius - thickness * 0.5, 0.001)
-	)
-	var surface := SurfaceTool.new()
-	surface.begin(Mesh.PRIMITIVE_TRIANGLES)
-	for index: int in range(outer.size()):
-		var next: int = (index + 1) % outer.size()
-		_add_range_quad(
-			surface,
-			Vector3(inner[index].x, 0.0, inner[index].y),
-			Vector3(inner[next].x, 0.0, inner[next].y),
-			Vector3(outer[next].x, 0.0, outer[next].y),
-			Vector3(outer[index].x, 0.0, outer[index].y)
-		)
-	return surface.commit()
-
-
-func _build_rounded_footprint_range_mesh(
-	half_footprint: float,
-	radius: float
-) -> ArrayMesh:
-	# Exact rounded offset of the attacker's horizontal square. This is the
-	# Minkowski sum of the occupied square and a sphere of weapon range, so
-	# the visible range genuinely starts at every side and every corner.
-	var half_extents := Vector3(
-		maxf(half_footprint, 0.0),
-		0.0,
-		maxf(half_footprint, 0.0)
-	)
-	var safe_radius := maxf(radius, 0.001)
-	var surface := SurfaceTool.new()
-	surface.begin(Mesh.PRIMITIVE_TRIANGLES)
-
-	_add_range_box_faces(surface, half_extents, safe_radius)
-	_add_range_edge_patches(surface, half_extents, safe_radius, 10)
-	_add_range_corner_patches(surface, half_extents, safe_radius, 8)
-
-	return surface.commit()
-
-
-func _add_range_box_faces(
-	surface: SurfaceTool,
-	half_extents: Vector3,
-	radius: float
-) -> void:
-	var hx := half_extents.x
-	var hy := half_extents.y
-	var hz := half_extents.z
-
-	# Top and bottom are the only non-degenerate face patches for the flat
-	# footprint used by weapon range. Keeping the generic six-face form makes
-	# the geometry helper safe if vertical extents are added later.
-	_add_range_quad(
-		surface,
-		Vector3(-hx, hy + radius, -hz),
-		Vector3(hx, hy + radius, -hz),
-		Vector3(hx, hy + radius, hz),
-		Vector3(-hx, hy + radius, hz)
-	)
-	_add_range_quad(
-		surface,
-		Vector3(-hx, -hy - radius, hz),
-		Vector3(hx, -hy - radius, hz),
-		Vector3(hx, -hy - radius, -hz),
-		Vector3(-hx, -hy - radius, -hz)
-	)
-
-	if hy > 0.000001:
-		_add_range_quad(
-			surface,
-			Vector3(hx + radius, -hy, -hz),
-			Vector3(hx + radius, hy, -hz),
-			Vector3(hx + radius, hy, hz),
-			Vector3(hx + radius, -hy, hz)
-		)
-		_add_range_quad(
-			surface,
-			Vector3(-hx - radius, -hy, hz),
-			Vector3(-hx - radius, hy, hz),
-			Vector3(-hx - radius, hy, -hz),
-			Vector3(-hx - radius, -hy, -hz)
-		)
-		_add_range_quad(
-			surface,
-			Vector3(-hx, -hy, hz + radius),
-			Vector3(hx, -hy, hz + radius),
-			Vector3(hx, hy, hz + radius),
-			Vector3(-hx, hy, hz + radius)
-		)
-		_add_range_quad(
-			surface,
-			Vector3(-hx, hy, -hz - radius),
-			Vector3(hx, hy, -hz - radius),
-			Vector3(hx, -hy, -hz - radius),
-			Vector3(-hx, -hy, -hz - radius)
-		)
-
-
-func _add_range_edge_patches(
-	surface: SurfaceTool,
-	half_extents: Vector3,
-	radius: float,
-	segments: int
-) -> void:
-	var hx := half_extents.x
-	var hy := half_extents.y
-	var hz := half_extents.z
-	var safe_segments := maxi(2, segments)
-
-	# Edges parallel to X. With a flat footprint, the ±Y variants combine
-	# into the rounded front/back half-cylinders.
-	for sy: float in [-1.0, 1.0]:
-		for sz: float in [-1.0, 1.0]:
-			var base_a := Vector3(-hx, sy * hy, sz * hz)
-			var base_b := Vector3(hx, sy * hy, sz * hz)
-			for index: int in range(safe_segments):
-				var a0 := (
-					PI * 0.5 * float(index) / float(safe_segments)
-				)
-				var a1 := (
-					PI * 0.5 * float(index + 1)
-					/ float(safe_segments)
-				)
-				var offset0 := Vector3(
-					0.0,
-					sy * cos(a0) * radius,
-					sz * sin(a0) * radius
-				)
-				var offset1 := Vector3(
-					0.0,
-					sy * cos(a1) * radius,
-					sz * sin(a1) * radius
-				)
-				_add_range_quad(
-					surface,
-					base_a + offset0,
-					base_b + offset0,
-					base_b + offset1,
-					base_a + offset1
-				)
-
-	# Edges parallel to Z. The ±Y variants form the left/right
-	# half-cylinders.
-	for sx: float in [-1.0, 1.0]:
-		for sy: float in [-1.0, 1.0]:
-			var base_a := Vector3(sx * hx, sy * hy, -hz)
-			var base_b := Vector3(sx * hx, sy * hy, hz)
-			for index: int in range(safe_segments):
-				var a0 := (
-					PI * 0.5 * float(index) / float(safe_segments)
-				)
-				var a1 := (
-					PI * 0.5 * float(index + 1)
-					/ float(safe_segments)
-				)
-				var offset0 := Vector3(
-					sx * cos(a0) * radius,
-					sy * sin(a0) * radius,
-					0.0
-				)
-				var offset1 := Vector3(
-					sx * cos(a1) * radius,
-					sy * sin(a1) * radius,
-					0.0
-				)
-				_add_range_quad(
-					surface,
-					base_a + offset0,
-					base_b + offset0,
-					base_b + offset1,
-					base_a + offset1
-				)
-
-	# Parallel-Y edges only exist for a footprint with vertical thickness.
-	if hy <= 0.000001:
-		return
-	for sx: float in [-1.0, 1.0]:
-		for sz: float in [-1.0, 1.0]:
-			var base_a := Vector3(sx * hx, -hy, sz * hz)
-			var base_b := Vector3(sx * hx, hy, sz * hz)
-			for index: int in range(safe_segments):
-				var a0 := (
-					PI * 0.5 * float(index) / float(safe_segments)
-				)
-				var a1 := (
-					PI * 0.5 * float(index + 1)
-					/ float(safe_segments)
-				)
-				var offset0 := Vector3(
-					sx * cos(a0) * radius,
-					0.0,
-					sz * sin(a0) * radius
-				)
-				var offset1 := Vector3(
-					sx * cos(a1) * radius,
-					0.0,
-					sz * sin(a1) * radius
-				)
-				_add_range_quad(
-					surface,
-					base_a + offset0,
-					base_b + offset0,
-					base_b + offset1,
-					base_a + offset1
-				)
-
-
-func _add_range_corner_patches(
-	surface: SurfaceTool,
-	half_extents: Vector3,
-	radius: float,
-	segments: int
-) -> void:
-	var safe_segments := maxi(2, segments)
-	for sx: float in [-1.0, 1.0]:
-		for sy: float in [-1.0, 1.0]:
-			for sz: float in [-1.0, 1.0]:
-				var base := Vector3(
-					sx * half_extents.x,
-					sy * half_extents.y,
-					sz * half_extents.z
-				)
-				for phi_index: int in range(safe_segments):
-					var phi0 := (
-						PI * 0.5 * float(phi_index)
-						/ float(safe_segments)
-					)
-					var phi1 := (
-						PI * 0.5 * float(phi_index + 1)
-						/ float(safe_segments)
-					)
-					for theta_index: int in range(safe_segments):
-						var theta0 := (
-							PI * 0.5 * float(theta_index)
-							/ float(safe_segments)
-						)
-						var theta1 := (
-							PI * 0.5 * float(theta_index + 1)
-							/ float(safe_segments)
-						)
-						var p00 := base + _range_octant_vector(
-							sx, sy, sz, phi0, theta0
-						) * radius
-						var p10 := base + _range_octant_vector(
-							sx, sy, sz, phi1, theta0
-						) * radius
-						var p11 := base + _range_octant_vector(
-							sx, sy, sz, phi1, theta1
-						) * radius
-						var p01 := base + _range_octant_vector(
-							sx, sy, sz, phi0, theta1
-						) * radius
-						_add_range_quad(surface, p00, p10, p11, p01)
-
-
-func _range_octant_vector(
-	sx: float,
-	sy: float,
-	sz: float,
-	phi: float,
-	theta: float
-) -> Vector3:
-	var sin_phi := sin(phi)
-	return Vector3(
-		sx * sin_phi * cos(theta),
-		sy * cos(phi),
-		sz * sin_phi * sin(theta)
-	)
-
-
-func _add_range_quad(
-	surface: SurfaceTool,
-	a: Vector3,
-	b: Vector3,
-	c: Vector3,
-	d: Vector3
-) -> void:
-	surface.add_vertex(a)
-	surface.add_vertex(b)
-	surface.add_vertex(c)
-	surface.add_vertex(a)
-	surface.add_vertex(c)
-	surface.add_vertex(d)
 
 
 func _hide_range() -> void:
