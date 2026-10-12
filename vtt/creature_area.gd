@@ -94,7 +94,7 @@ var _xp: SpinBox
 var _initiative_effective: Label
 var _ac_effective: Label
 var _ac_proficiency_warning: Label
-var _other_movements: Label
+var _special_speed_labels: Dictionary = {}
 var _long_jump: Label
 var _high_jump: Label
 var _speed_custom := false
@@ -803,10 +803,18 @@ func _build_ui() -> void:
 	defense_style.border_color = Color(0.48, 0.68, 0.75, 0.85)
 	defense_panel.add_theme_stylebox_override("panel", defense_style)
 	combat_column.add_child(defense_panel)
-	var defense_flow := HFlowContainer.new()
-	defense_flow.add_theme_constant_override("h_separation", 12)
-	defense_flow.add_theme_constant_override("v_separation", 6)
-	defense_panel.add_child(defense_flow)
+	var defense_content := VBoxContainer.new()
+	defense_content.add_theme_constant_override("separation", 6)
+	defense_panel.add_child(defense_content)
+	var defense_heading := Label.new()
+	defense_heading.text = "CA E INIZIATIVA"
+	defense_heading.add_theme_font_size_override("font_size", 15)
+	defense_heading.add_theme_color_override("font_color", Color(0.75, 0.89, 0.98))
+	defense_content.add_child(defense_heading)
+	# A single non-wrapping row keeps initiative inside the AC panel.
+	var defense_flow := HBoxContainer.new()
+	defense_flow.add_theme_constant_override("separation", 9)
+	defense_content.add_child(defense_flow)
 	var temp_health := HBoxContainer.new()
 	temp_health.add_theme_constant_override("separation", 6)
 	defense_flow.add_child(temp_health)
@@ -824,13 +832,14 @@ func _build_ui() -> void:
 	_ac_proficiency_warning.visible = false
 	_ac_proficiency_warning.add_theme_color_override("font_color", Color(1.0, 0.76, 0.28))
 	temp_health.add_child(_ac_proficiency_warning)
-	var movement_row := HBoxContainer.new()
-	movement_row.add_theme_constant_override("separation", 6)
-	defense_flow.add_child(movement_row)
-	_add_label(movement_row, "Iniziativa")
+	defense_flow.add_child(VSeparator.new())
+	var initiative_row := HBoxContainer.new()
+	initiative_row.add_theme_constant_override("separation", 5)
+	defense_flow.add_child(initiative_row)
+	_add_label(initiative_row, "Bonus iniziativa")
 	_initiative_effective = Label.new()
 	_initiative_effective.custom_minimum_size.x = 32
-	movement_row.add_child(_initiative_effective)
+	initiative_row.add_child(_initiative_effective)
 	_install_formula("initiative", _initiative_effective, [], [])
 	# Movement has its own row beneath defense, including other speeds and
 	# the two PHB jumping distances (running / standing).
@@ -865,18 +874,37 @@ func _build_ui() -> void:
 	_speed.tooltip_text = "Velocità base dalla specie o dal bestiario, modificabile"
 	_install_formula("speed", _speed_effective, [_speed], ["Base"])
 	_speed.value_changed.connect(func(_value: float) -> void: _update_speed_display())
-	_other_movements = Label.new()
-	_other_movements.autowrap_mode = TextServer.AUTOWRAP_WORD_SMART
-	_other_movements.add_theme_font_size_override("font_size", 13)
-	movement_box.add_child(_other_movements)
-	var jumps := HFlowContainer.new()
-	jumps.add_theme_constant_override("h_separation", 15)
-	jumps.add_theme_constant_override("v_separation", 3)
+	# Every creature shows all four 5e special speeds, including zero.
+	# Formula widgets expose the corresponding bonus targets directly.
+	var special_grid := GridContainer.new()
+	special_grid.columns = 2
+	special_grid.add_theme_constant_override("h_separation", 12)
+	special_grid.add_theme_constant_override("v_separation", 3)
+	movement_box.add_child(special_grid)
+	_special_speed_labels.clear()
+	for mode: String in Rules.SPECIAL_SPEEDS:
+		var name: String = {"climb": "Scalata", "swim": "Nuoto",
+			"fly": "Volo", "burrow": "Scavo"}[mode]
+		_add_label(special_grid, name + " (ft)")
+		var value_label := Label.new()
+		value_label.custom_minimum_size.x = 38
+		special_grid.add_child(value_label)
+		_special_speed_labels[mode] = value_label
+		_install_formula("speed:" + mode, value_label, [], [])
+	var jumps_heading := Label.new()
+	jumps_heading.text = "SALTI · DISTANZE MASSIME"
+	jumps_heading.add_theme_font_size_override("font_size", 14)
+	jumps_heading.add_theme_color_override("font_color", Color(0.77, 0.86, 0.94))
+	movement_box.add_child(jumps_heading)
+	var jumps := VBoxContainer.new()
+	jumps.add_theme_constant_override("separation", 5)
 	movement_box.add_child(jumps)
 	_long_jump = Label.new()
+	_long_jump.autowrap_mode = TextServer.AUTOWRAP_WORD_SMART
 	_long_jump.add_theme_font_size_override("font_size", 13)
 	jumps.add_child(_long_jump)
 	_high_jump = Label.new()
+	_high_jump.autowrap_mode = TextServer.AUTOWRAP_WORD_SMART
 	_high_jump.add_theme_font_size_override("font_size", 13)
 	jumps.add_child(_high_jump)
 	_ac.value_changed.connect(func(_value: float) -> void: _update_defense_display())
