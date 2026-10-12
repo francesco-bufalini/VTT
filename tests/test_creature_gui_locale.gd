@@ -117,6 +117,50 @@ func run() -> void:
 	assert(ability.text == "STR" and skill.text == "Acrobatics · DEX")
 	assert(tabs.get_tab_title(0) == "Statistics")
 
+	# Newly introduced creature editors and statuses must not silently fall
+	# back to Italian. Interpolated names and values remain unchanged.
+	assert(Locale.text_for("Incantesimi attivi", "en") == "Active spells")
+	assert(Locale.text_for("Talenti posseduti", "en") == "Owned feats")
+	assert(Locale.text_for("Only if finesse", "it") == "Solo se accurata")
+	assert(Locale.text_for("Diseases / magical diseases", "it") == "Malattie / malattie magiche")
+	assert(Locale.text_for("Livello 4", "en") == "Level 4")
+	assert(Locale.text_for("Senza origine (2)", "en") == "Without origin (2)")
+	assert(Locale.text_for("12 risultati", "en") == "12 results")
+	assert(Locale.text_for("143 risultati (mostrati i primi 120; affina la ricerca)", "en")
+		== "143 results (showing the first 120; refine the search)")
+	assert(Locale.text_for("Dardo Incantato lanciato · nessun effetto VTT associato.", "en")
+		== "Dardo Incantato cast · no associated VTT effect.")
+	assert(Locale.text_for("Lancia Magic Missile (livello 3). Scegli quale slot consumare.", "en")
+		== "Cast Magic Missile (level 3). Choose which slot to spend.")
+	assert(Locale.text_for("3° livello · 2 rimasti", "en") == "Level 3 · 2 remaining")
+	assert(Locale.text_for("Fonte: PHB", "en") == "Source: PHB")
+	assert(Locale.text_for("Impossibile salvare inventario: permessi", "en")
+		== "Could not save inventory: permessi")
+	assert(Locale.text_for("⚠ Da scegliere: Acrobazia", "en")
+		== "⚠ Choices required: Acrobazia")
+	assert(Locale.text_for("PF della forma non disponibili: errore · Inserisci PF manualmente.", "en")
+		== "Form HP unavailable: errore · Enter HP manually.")
+	var deletion: String = "Eliminare definitivamente 'Aria' dal tuo archivio?\\nVerranno eliminati anche i suoi token presenti nella scena."
+	assert(Locale.text_for(deletion, "en")
+		== "Permanently delete 'Aria' from your archive?\\nAll of its tokens in the scene will also be deleted.")
+	assert(Locale.text_for("Una descrizione personalizzata di un incantesimo.", "en")
+		== "Una descrizione personalizzata di un incantesimo.")
+
+	var transient_dialog := ConfirmationDialog.new()
+	transient_dialog.title = "Aggiungi un incantesimo attivo"
+	transient_dialog.ok_button_text = "Applica"
+	var transient_hint := Label.new()
+	transient_hint.text = "Nessun incantesimo attivo."
+	transient_dialog.add_child(transient_hint)
+	sheet.add_child(transient_dialog)
+	Locale.apply(transient_dialog, "en")
+	assert(transient_dialog.title == "Add an active spell"
+		and transient_dialog.ok_button_text == "Apply"
+		and transient_hint.text == "No active spells")
+	Locale.apply(transient_dialog, "it")
+	assert(transient_dialog.title == "Aggiungi un incantesimo attivo"
+		and transient_hint.text == "Nessun incantesimo attivo.")
+
 	# Persistence remains a local GUI preference, not a creature-data field.
 	var previous := Locale.read_locale()
 	Locale.write_locale("en")
