@@ -2048,7 +2048,12 @@ func _reposition_selected_at_context() -> void:
 	var height: float = maxf(float(token.get("token_height_cells")), 0.1)
 	var target: Vector3 = _context_reposition_position
 	push_undo_state()
-	if mount_controller != null and mount_controller.is_mounted(token):
+	var previous_transform: Transform3D = token.global_transform
+	if (
+		mount_controller != null
+		and mount_controller.is_mounted(token)
+		and mount_controller.get_token_group_root(token) == null
+	):
 		mount_controller.dismount(token)
 	token.global_position = Vector3(
 		target.x, target.y + height * token_cell * 0.5, target.z
@@ -2080,6 +2085,8 @@ func _reposition_selected_at_context() -> void:
 				"_support_transform",
 				_context_reposition_support.global_transform
 			)
+	if mount_controller != null:
+		mount_controller.apply_explicit_token_motion(token, previous_transform)
 	_replace_selection(token)
 	_context_reposition_valid = false
 	call_deferred("_sync_explicit_token_change", token)
@@ -2429,7 +2436,11 @@ func begin_token_move_transaction(tokens: Array) -> Dictionary:
 		return _capture_history_state()
 	if mount_controller != null:
 		for value: Variant in tokens:
-			if value is CharacterBody3D and mount_controller.is_mounted(value):
+			if value is CharacterBody3D and (
+				mount_controller.is_mounted(value)
+				or mount_controller.is_in_token_group(value)
+			):
+				# Moving the group leader also modifies unselected followers.
 				return _capture_history_state()
 	return _capture_token_move_state(tokens)
 
@@ -5155,6 +5166,26 @@ func _clean_selection() -> void:
 	_selected_tokens = cleaned
 
 
+func _distinct_linked_motion_pivots(tokens: Array[CharacterBody3D]) -> Array[CharacterBody3D]:
+	var pivots: Array[CharacterBody3D] = []
+	var handled_roots: Dictionary = {}
+	for token: CharacterBody3D in tokens:
+		if token == null or not is_instance_valid(token):
+			continue
+		var root: CharacterBody3D = (
+			mount_controller.get_token_group_root(token)
+			if mount_controller != null else null
+		)
+		var group_key: int = (
+			root.get_instance_id() if root != null else token.get_instance_id()
+		)
+		if handled_roots.has(group_key):
+			continue
+		handled_roots[group_key] = true
+		pivots.append(token)
+	return pivots
+
+
 func _move_selected(
 	direction: Vector2i,
 	apply_gravity_after: bool = false
@@ -5166,35 +5197,42 @@ func _move_selected(
 		return
 
 	var before: Dictionary = begin_token_move_transaction(_selected_tokens)
+	var pivots: Array[CharacterBody3D] = _distinct_linked_motion_pivots(_selected_tokens)
 	var dismounted := false
 	if mount_controller != null:
-		for moving_token: CharacterBody3D in _selected_tokens:
-			if mount_controller.is_mounted(moving_token):
+		for moving_token: CharacterBody3D in pivots:
+			if (
+				mount_controller.is_mounted(moving_token)
+				and mount_controller.get_token_group_root(moving_token) == null
+			):
+				# Legacy item mounts still detach on manual motion.
 				mount_controller.dismount(moving_token)
 				dismounted = true
 	var origins: Array[Vector3] = []
 	for token: CharacterBody3D in _selected_tokens:
 		origins.append(token.global_position)
 
-	for token: CharacterBody3D in _selected_tokens:
+	for token: CharacterBody3D in pivots:
+		var previous_transform: Transform3D = token.global_transform
 		if token.has_method("nudge_grid"):
 			token.call("nudge_grid", direction)
+		if mount_controller != null:
+			mount_controller.apply_explicit_token_motion(token, previous_transform)
 
 	if item_controller != null:
 		item_controller.flush_motion(_selected_tokens)
 
 	var moved: bool = _selected_tokens_moved_from(origins)
 	if moved and apply_gravity_after:
-		for index: int in range(_selected_tokens.size()):
-			var token: CharacterBody3D = _selected_tokens[index]
-			if (
-				token != null
-				and is_instance_valid(token)
-				and index < origins.size()
-				and not token.global_position.is_equal_approx(origins[index])
-				and token.has_method("apply_gravity")
-			):
-				token.call("apply_gravity")
+		for token: CharacterBody3D in pivots:
+			var gravity_target: CharacterBody3D = (
+				mount_controller.get_token_group_root(token)
+				if mount_controller != null else null
+			)
+			if gravity_target == null:
+				gravity_target = token
+			if gravity_target.has_method("apply_gravity"):
+				gravity_target.call("apply_gravity")
 
 	if moved or dismounted:
 		commit_undo_transaction(before)
@@ -5213,19 +5251,26 @@ func _move_selected_vertical(steps: int) -> void:
 		return
 
 	var before: Dictionary = begin_token_move_transaction(_selected_tokens)
+	var pivots: Array[CharacterBody3D] = _distinct_linked_motion_pivots(_selected_tokens)
 	var dismounted := false
 	if mount_controller != null:
-		for moving_token: CharacterBody3D in _selected_tokens:
-			if mount_controller.is_mounted(moving_token):
+		for moving_token: CharacterBody3D in pivots:
+			if (
+				mount_controller.is_mounted(moving_token)
+				and mount_controller.get_token_group_root(moving_token) == null
+			):
 				mount_controller.dismount(moving_token)
 				dismounted = true
 	var origins: Array[Vector3] = []
 	for token: CharacterBody3D in _selected_tokens:
 		origins.append(token.global_position)
 
-	for token: CharacterBody3D in _selected_tokens:
+	for token: CharacterBody3D in pivots:
+		var previous_transform: Transform3D = token.global_transform
 		if token.has_method("nudge_vertical"):
 			token.call("nudge_vertical", steps)
+		if mount_controller != null:
+			mount_controller.apply_explicit_token_motion(token, previous_transform)
 
 	if item_controller != null:
 		item_controller.flush_motion(_selected_tokens)
@@ -5265,12 +5310,12 @@ func _rotate_selected(quarter_turns: int) -> void:
 	# A top-down camera reverses the apparent clockwise direction of +Y yaw.
 	# Preserve the existing 3D controls and invert only the 2D visual action.
 	var applied_turns: int = -quarter_turns if _view_2d_enabled else quarter_turns
-	for token: CharacterBody3D in _selected_tokens:
+	for token: CharacterBody3D in _distinct_linked_motion_pivots(_selected_tokens):
+		var previous_transform: Transform3D = token.global_transform
 		if token.has_method("rotate_grid"):
 			token.call("rotate_grid", applied_turns)
-	# Include linked followers in the same rotation, including top-down view.
-	if mount_controller != null:
-		mount_controller.refresh_all()
+		if mount_controller != null:
+			mount_controller.apply_explicit_token_motion(token, previous_transform)
 
 
 func remove_owned_creature_tokens(tokens: Array[CharacterBody3D]) -> void:
