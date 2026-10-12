@@ -3,6 +3,7 @@ extends SceneTree
 const GridHighlightRenderer = preload("res://vtt/grid_highlight_renderer.gd")
 const MeasurementTool = preload("res://measurement_tool.gd")
 const SpellSystem = preload("res://vtt/spells/spell_system.gd")
+const ReachGeometry = preload("res://vtt/flanking_system.gd")
 
 
 class FakeBoard:
@@ -252,6 +253,34 @@ func run() -> void:
 		return
 	if bool(spell.call("has_post_cast_cleanup")):
 		_fail("single-target spell without any visual area armed unnecessary cleanup")
+		return
+
+	# Spell selection must use the exact same 5-ft hitbox/diagonal/elevation
+	# convention as the reach arrows, not Euclidean distance between centres.
+	var other := FakeToken.new()
+	other.name = "ElevatedDiagonalTarget"
+	board.add_child(other)
+	token.global_position = Vector3(0.5, 1.0, 0.5)
+	other.global_position = Vector3(1.5, 2.0, 1.5)
+	var arrow_distance: float = ReachGeometry.token_tactical_distance_feet(
+		token, other, 1.0
+	)
+	var spell_distance: float = float(
+		spell.call("_token_target_distance_feet", token, other)
+	)
+	if not is_equal_approx(arrow_distance, 5.0) or not is_equal_approx(spell_distance, arrow_distance):
+		_fail("5-ft diagonal/elevated target is within arrow reach but not spell reach")
+		return
+	other.global_position = Vector3(2.5, 2.0, 0.5)
+	if not is_equal_approx(float(spell.call("_token_target_distance_feet", token, other)), 10.0):
+		_fail("one intervening grid square should be 10 ft, outside a 5-ft spell")
+		return
+	other.global_position = Vector3(0.5, 4.0, 0.5)
+	if not is_equal_approx(float(spell.call("_token_target_distance_feet", token, other)), 10.0):
+		_fail("one vertical intervening grid square must be outside 5-ft reach")
+		return
+	if not is_zero_approx(float(spell.call("_token_target_distance_feet", token, token))):
+		_fail("self-targeted spell must have zero distance to its caster")
 		return
 
 	board.queue_free()

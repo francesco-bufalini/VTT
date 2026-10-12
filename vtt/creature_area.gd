@@ -228,10 +228,16 @@ func setup(root: Node3D) -> void:
 	_build_export_dialog()
 	_reload()
 	_refresh_creature_language()
-	if DisplayServer.get_name() != "headless":
-		_client.call("load_catalog")
-	_on_catalog_ready(ContentCatalog.home_entries("monsters"))
+	_load_bestiary_catalog(DisplayServer.get_name() != "headless")
 	call_deferred("refresh_owned_sheets")
+
+
+func _load_bestiary_catalog(fetch_remote: bool) -> void:
+	# A warm 5etools cache emits catalog_ready synchronously. Load the local
+	# fallback first so the downloaded catalogue is never overwritten.
+	_on_catalog_ready(ContentCatalog.home_entries("monsters"))
+	if fetch_remote and _client != null:
+		_client.call("load_catalog")
 
 
 # Token context menu and the archive open the very same persistent sheet.
