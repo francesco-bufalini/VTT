@@ -968,7 +968,7 @@ func _update_spell_controls() -> void:
 		return
 	var body: String = String(spell.get("description", "")).strip_edges()
 	if body.is_empty():
-		body = "Descrizione non disponibile nel catalogo."
+		body = CreatureLocale.text_for("Descrizione non disponibile nel catalogo.", _gui_language)
 	var higher_levels: String = String(spell.get("higher_levels", "")).strip_edges()
 	if not higher_levels.is_empty():
 		body += "\n\n" + higher_levels
