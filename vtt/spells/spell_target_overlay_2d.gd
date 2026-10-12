@@ -40,9 +40,13 @@ func _process(_delta: float) -> void:
 			_was_visible = false
 			queue_redraw()
 		return
-	_was_visible = true
 	_collect_post_cast_areas()
-	queue_redraw()
+	var visible_now: bool = not _areas.is_empty() or (
+		spell != null and is_instance_valid(spell) and bool(spell.call("is_targeting"))
+	)
+	if visible_now or _was_visible:
+		queue_redraw()
+	_was_visible = visible_now
 
 
 func _world_point(point: Vector3) -> Vector2:
@@ -177,6 +181,11 @@ func _target_names(start: Vector3, end: Vector3, shape: String, width: float, st
 	if spell == null or not is_instance_valid(spell):
 		return []
 	var signature: String = "%s|%s|%s|%s|%s" % [str(start), str(end), shape, str(width), style]
+	# Refresh names if a token enters or leaves a confirmed area later.
+	for node: Node in get_tree().get_nodes_in_group("dnd_token"):
+		if node is Node3D and is_instance_valid(node):
+			var token: Node3D = node as Node3D
+			signature += "|%d:%s" % [token.get_instance_id(), str(token.global_position)]
 	if _cached_signature == signature:
 		return _cached_targets
 	_cached_signature = signature
