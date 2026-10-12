@@ -9,6 +9,7 @@ const DocumentsTab = preload("res://vtt/creature_documents_tab.gd")
 const DocumentStore = preload("res://vtt/document_homebrew.gd")
 const DocumentInbox = preload("res://vtt/document_inbox.gd")
 const ItemImagePreview = preload("res://vtt/item_image_preview.gd")
+const CreatureLocale = preload("res://vtt/creature_gui_locale.gd")
 
 var _on_change: Callable
 var _on_status: Callable
@@ -17,6 +18,7 @@ var _filtered: Array[Dictionary] = []
 var _inventory: Array[Dictionary] = []
 var _loading: bool = false
 var _rules_version := "2014"
+var _gui_language := "it"
 var _loaded_creature_id := ""
 
 var _category_filter: OptionButton
@@ -833,21 +835,29 @@ func _on_inventory_checkbox_input(event: InputEvent) -> void:
 	get_viewport().set_input_as_handled()
 
 
+func set_gui_language(language: String) -> void:
+	if language not in ["it", "en"] or _gui_language == language:
+		return
+	_gui_language = language
+	var selected_index: int = _selected_inventory_index()
+	_refresh_inventory(selected_index)
+
+
 func _inventory_label(item: Dictionary) -> String:
 	var tags: PackedStringArray = []
 	var slots: Array = ItemRules.slots(item)
 	if bool(item.get("equipped", false)) and ItemRules.kind(_catalog_entry(item)) not in ["weapon", "armor", "shield"]:
-		tags.append("Equipaggiato")
+		tags.append(CreatureLocale.text_for("Equipaggiato", _gui_language))
 	if "main" in slots:
-		tags.append("⚔ Principale")
+		tags.append("⚔ " + CreatureLocale.text_for("Principale", _gui_language))
 	if "body" in slots:
-		tags.append("Indossata")
+		tags.append(CreatureLocale.text_for("Indossata", _gui_language))
 	if "off" in slots:
-		tags.append("🛡 Secondaria")
+		tags.append("🛡 " + CreatureLocale.text_for("Secondaria", _gui_language))
 	var equipment := (" [" + ", ".join(tags) + "]") if not tags.is_empty() else ""
 	var extra: Variant = item.get("instance_overrides", {})
 	var size_name: String = String((extra as Dictionary).get("weapon_size", "")) if extra is Dictionary else ""
-	var size_label := " · taglia " + size_name if size_name in ItemRules.WEAPON_SIZES else ""
+	var size_label := " · " + CreatureLocale.text_for("taglia", _gui_language) + " " + size_name if size_name in ItemRules.WEAPON_SIZES else ""
 	var item_name: String = String(item.get("name", ""))
 	if DocumentStore.is_document(item):
 		item_name = String(_catalog_entry(item).get("name", item_name))
