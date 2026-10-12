@@ -236,14 +236,31 @@ func setup(on_change: Callable) -> void:
 	body.add_child(_condition_rows)
 
 
+func _make_defense_row(parent: VBoxContainer, text_value: String) -> HBoxContainer:
+	var card := PanelContainer.new()
+	card.size_flags_horizontal = Control.SIZE_EXPAND_FILL
+	parent.add_child(card)
+	var row := HBoxContainer.new()
+	row.add_theme_constant_override("separation", 8)
+	card.add_child(row)
+	var caption := Label.new()
+	caption.text = text_value
+	caption.custom_minimum_size.x = 125
+	caption.size_flags_horizontal = Control.SIZE_EXPAND_FILL
+	row.add_child(caption)
+	return row
+
+
 func load_record(record: Dictionary) -> void:
 	_record = record.duplicate(true)
 	_cached_sources = _sources(_record)
 	_damage_buttons.clear()
 	_condition_buttons.clear()
+	_damage_cards.clear()
+	_condition_cards.clear()
 	if _damage_rows == null:
 		return
-	for root: GridContainer in [_damage_rows, _condition_rows]:
+	for root: VBoxContainer in [_damage_rows, _condition_rows]:
 		for node: Node in root.get_children():
 			root.remove_child(node)
 			node.queue_free()
@@ -260,34 +277,31 @@ func load_record(record: Dictionary) -> void:
 		var baseline: int = _base_rank_from_sources(_cached_sources, key)
 		var overrides: Dictionary = _record.get("damage_defense_overrides", {})
 		var level: int = clampi(int(overrides.get(key, baseline)), 0, 2)
-		var name := Label.new()
-		name.text = String(item["label"])
-		name.custom_minimum_size.x = 110
-		_damage_rows.add_child(name)
+		var damage_row: HBoxContainer = _make_defense_row(_damage_rows, String(item["label"]))
+		_damage_cards[key] = damage_row.get_parent()
 		var resistant := CheckButton.new()
 		resistant.text = "Resistenza"
 		resistant.set_pressed_no_signal(level >= 1)
 		resistant.tooltip_text = "Primo grado: dimezza i danni di questo tipo"
 		resistant.toggled.connect(_on_resistance_changed.bind(key))
-		_damage_rows.add_child(resistant)
+		damage_row.add_child(resistant)
 		var immune := CheckButton.new()
 		immune.text = "Immunità"
 		immune.set_pressed_no_signal(level >= 2)
 		immune.tooltip_text = "Secondo grado: annulla i danni di questo tipo"
 		immune.toggled.connect(_on_immunity_changed.bind(key))
-		_damage_rows.add_child(immune)
+		damage_row.add_child(immune)
 		_damage_buttons[key] = {"resistance": resistant, "immunity": immune}
 	for condition: String in CONDITIONS:
-		var name := Label.new()
-		name.text = condition.capitalize()
-		_condition_rows.add_child(name)
+		var condition_row: HBoxContainer = _make_defense_row(_condition_rows, condition.capitalize())
+		_condition_cards[condition] = condition_row.get_parent()
 		var immune := CheckButton.new()
 		immune.text = "Immune"
 		var condition_overrides: Dictionary = _record.get("condition_immunity_overrides", {})
 		immune.set_pressed_no_signal(bool(condition_overrides.get(condition,
 			_base_condition_from_sources(_cached_sources, condition))))
 		immune.toggled.connect(_on_condition_changed.bind(condition))
-		_condition_rows.add_child(immune)
+		condition_row.add_child(immune)
 		_condition_buttons[condition] = immune
 
 
