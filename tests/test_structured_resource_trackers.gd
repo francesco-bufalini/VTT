@@ -81,6 +81,37 @@ func run() -> void:
 	assert(mixed.size() == 2, "Each resource is tied to its class level")
 	assert(String(_find_resource(mixed, "Sorcery Points").get("origin", "")) == "Font of Magic",
 		"Structured class feature association for sorcery points must be preserved")
+	# Legacy sheets lacking an explicit edition must use the resolved
+	# class edition in resource IDs and labels, not an empty source.
+	var legacy_barbarian: Dictionary = _find_resource(Trackers.for_creature({
+		"kind": "character",
+		"classes": [{"name": "Barbarian", "level": 3}]
+	}), "Rages")
+	assert(String(legacy_barbarian.get("id", "")) == "class:barbarian:phb:rages")
+	assert(String(legacy_barbarian.get("source_label", "")) == "Barbarian · PHB")
+
+	# Parity with all ten former hand-maintained class progressions. A raw
+	# table import must not change their numerical limits or feature origins.
+	for reference: Array in [
+		["Barbarian", "PHB", "Rages", "Rage", 9, 4],
+		["Barbarian", "XPHB", "Rages", "Rage", 20, 6],
+		["Cleric", "XPHB", "Channel Divinity", "Channel Divinity", 18, 4],
+		["Druid", "XPHB", "Wild Shape", "Wild Shape", 18, 4],
+		["Fighter", "XPHB", "Second Wind", "Second Wind", 10, 4],
+		["Monk", "PHB", "Ki Points", "Ki", 10, 10],
+		["Monk", "XPHB", "Focus Points", "Monk's Focus", 10, 10],
+		["Paladin", "XPHB", "Channel Divinity", "Channel Divinity", 11, 3],
+		["Sorcerer", "PHB", "Sorcery Points", "Font of Magic", 10, 10],
+		["Sorcerer", "XPHB", "Sorcery Points", "Font of Magic", 10, 10]
+	]:
+		var derived: Dictionary = _find_resource(Trackers.for_creature({
+			"kind": "character",
+			"classes": [{"name": reference[0], "source": reference[1], "level": reference[4]}]
+		}), String(reference[2]))
+		assert(int(derived.get("max", 0)) == int(reference[5])
+			and String(derived.get("origin", "")) == String(reference[3]),
+			"Structured class resource regression: " + str(reference))
+
 	var druid_locale := Locale.text_for("Wild Shape", "it")
 	assert(druid_locale == "Forma Selvatica")
 	var cleric: Array[Dictionary] = Trackers.for_creature({
