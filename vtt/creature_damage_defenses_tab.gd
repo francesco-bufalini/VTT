@@ -88,7 +88,7 @@ static func _sources(record: Dictionary) -> Array[Dictionary]:
 	if stat is Dictionary:
 		_add_source(sources, seen, stat as Dictionary, "monster|stat_block",
 			"Bestiario · " + String((stat as Dictionary).get("name", "Creatura")))
-	if String(record.get("kind", "character")) == "character":
+	if String(record.get("kind", "character")) == "character" and not String(record.get("species", "")).is_empty():
 		var species: String = String(record.get("species", ""))
 		var book: String = String(record.get("species_source", ""))
 		var subrace: String = String(record.get("subrace", ""))
