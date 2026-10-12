@@ -127,6 +127,7 @@ $fastTests = @(
     # test_creature_sheet_ui.gd is an expensive UI integration test (up to 300s).
     # Keep it in -FullTests; do not block the fast validation on it.
     "test_creature_gui_layout.gd",
+    "test_creature_gui_locale.gd",
     "test_equipped_weapons.gd",
     "test_creature_formula_bonuses.gd",
     "test_proficiency_sources.gd",
