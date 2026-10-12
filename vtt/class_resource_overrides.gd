@@ -45,6 +45,8 @@ static func evaluate_max(raw: Variant, record: Dictionary, class_level: int, min
 	var formula: String = String(raw).strip_edges()
 	if formula.is_empty():
 		return {}
+	if formula.is_valid_int():
+		return {"max": maxi(minimum, int(formula)), "max_formula": ""}
 	var expr: String = formula
 	var placeholders := RegEx.create_from_string("%[0-9]+")
 	if placeholders == null:
