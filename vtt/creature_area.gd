@@ -5643,12 +5643,14 @@ func _open_add_active_spell() -> void:
 				picker.set_item_metadata(picker.item_count - 1, spell_id)
 		if picker.item_count > 0:
 			picker.select(0)
-		count_hint.text = (CreatureLocale.text_for("%d risultati", _creature_language) % matches
-			+ (CreatureLocale.text_for(" (mostrati i primi 120; affina la ricerca)", _creature_language) if matches > 120 else ""))
+		count_hint.text = "%d risultati" % matches + (" (mostrati i primi 120; affina la ricerca)" if matches > 120 else "")
 		dialog.get_ok_button().disabled = picker.item_count == 0
 	fill.call("")
 	CreatureLocale.apply(dialog, _creature_language)
-	search.text_changed.connect(func(value: String) -> void: fill.call(value))
+	search.text_changed.connect(func(value: String) -> void:
+		fill.call(value)
+		CreatureLocale.apply(dialog, _creature_language)
+	)
 	dialog.confirmed.connect(func() -> void:
 		if picker.selected >= 0:
 			_apply_active_spell(String(picker.get_selected_metadata()))
