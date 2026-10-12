@@ -789,8 +789,10 @@ func run() -> void:
 	assert(not changeling_origin.is_empty(), "Changeling must appear as an origin")
 	var missing_languages: Array[String] = Proficiencies.requirement_missing(
 		changeling_origin, Proficiencies.choices(changeling), {"race|mpmm|changeling": true})
-	assert(missing_languages.any(func(description: String) -> bool:
-		return description.begins_with("language ")),
+	var changeling_needs_language := false
+	for description: String in missing_languages:
+		changeling_needs_language = changeling_needs_language or description.begins_with("language ")
+	assert(changeling_needs_language,
 		"MPMM Changeling should require one extra language")
 	tab.load_record(changeling)
 	tab._open_missing_choices("race|mpmm|changeling")
