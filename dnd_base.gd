@@ -37,6 +37,8 @@ const CONTEXT_REPOSITION_SELECTED := 43
 const CONTEXT_CHOOSE_MOUNT := 44
 const CONTEXT_DISMOUNT := 45
 const CONTEXT_CREATURE_AREA := 100
+const CONTEXT_TOKEN_CONDITIONS := 101
+const CONTEXT_TOKEN_ACTIVE_SPELL := 102
 const CONTEXT_ITEM_CREATE := 80
 const CONTEXT_ITEM_MANAGE := 81
 const CAMPAIGN_EDITOR_SCENE_PATH := "res://vtt/editor/campaign_editor.tscn"
@@ -49,6 +51,8 @@ const TopDownElevationLevels = preload("res://vtt/top_down_elevation_levels.gd")
 const TopDownTokenOverlay = preload("res://vtt/top_down_elevation_overlay.gd")
 const CreatureOwner = preload("res://vtt/creature_owner.gd")
 const ContentCatalog = preload("res://vtt/content_catalog.gd")
+const ActiveSpells = preload("res://vtt/creature_active_spells.gd")
+const SpellCatalog = preload("res://vtt/spells/spell_catalog.gd")
 const FlankingGeometry = preload("res://vtt/flanking_system.gd")
 const CreatureAttackData = preload("res://vtt/creature_attack_data.gd")
 
@@ -3061,6 +3065,172 @@ func _popup_dialog_safe(
 ) -> void:
 	DialogLayout.popup(dialog, preferred_size, fallback_ratio)
 
+# All token effects use the same write path whether they come from a cast,
+# the context menu, or the owning creature sheet.
+func _effect_sheet() -> Node:
+	return get_node_or_null("CreatureArea")
+
+
+func _set_token_status(target: Node3D, condition_id: String, enabled: bool) -> void:
+	if target == null or not is_instance_valid(target) or not target.has_method("set_condition"):
+		return
+	target.call("set_condition", condition_id, enabled)
+	var sheet: Node = _effect_sheet()
+	if sheet != null:
+		if condition_id == "concentrating" and not enabled and sheet.has_method("update_token_concentration"):
+			sheet.call("update_token_concentration", target, "")
+		elif sheet.has_method("sync_linked_token_editor"):
+			sheet.call("sync_linked_token_editor", target)
+	call_deferred("_sync_explicit_token_change", target)
+
+
+func _set_token_active_spell(target: Node3D, spell_id: String, enabled: bool) -> void:
+	if target == null or not is_instance_valid(target):
+		return
+	var spell: Dictionary = SpellCatalog.catalog_spell(spell_id)
+	if enabled and (spell.is_empty() or not ActiveSpells.has_duration(spell)):
+		return
+	if enabled and target.has_method("add_active_spell_id"):
+		target.call("add_active_spell_id", spell_id)
+	elif not enabled and target.has_method("remove_active_spell_id"):
+		target.call("remove_active_spell_id", spell_id)
+	var sheet: Node = _effect_sheet()
+	if sheet != null and sheet.has_method("update_token_spell_effect"):
+		sheet.call("update_token_spell_effect", target, spell_id, enabled)
+	if not enabled and sheet != null and sheet.has_method("update_token_concentration"):
+		sheet.call("update_token_concentration", target,
+			String(target.call("get_concentrating_spell_id")) if target.has_method("get_concentrating_spell_id") else "")
+	call_deferred("_sync_explicit_token_change", target)
+
+
+func apply_cast_spell_effects(caster: Node3D, spell: Dictionary, targets: Array) -> void:
+	if caster == null or not is_instance_valid(caster):
+		return
+	var spell_id: String = String(spell.get("id", ""))
+	if spell_id.is_empty():
+		return
+	var sheet: Node = _effect_sheet()
+	if ActiveSpells.requires_concentration(spell):
+		if caster.has_method("set_concentrating_spell_id"):
+			caster.call("set_concentrating_spell_id", spell_id)
+		if sheet != null and sheet.has_method("update_token_concentration"):
+			sheet.call("update_token_concentration", caster, spell_id)
+		call_deferred("_sync_explicit_token_change", caster)
+	if not ActiveSpells.has_duration(spell):
+		return
+	var visited: Dictionary = {}
+	for entry: Variant in targets:
+		if not entry is Node3D:
+			continue
+		var target: Node3D = entry as Node3D
+		if not is_instance_valid(target) or not target.is_in_group("dnd_token"):
+			continue
+		var id: int = target.get_instance_id()
+		if visited.has(id):
+			continue
+		visited[id] = true
+		_set_token_active_spell(target, spell_id, true)
+
+
+func _open_token_conditions_dialog(target: Node3D) -> void:
+	var dialog := ConfirmationDialog.new()
+	dialog.title = "Condizioni · " + String(target.name)
+	dialog.ok_button_text = "Chiudi"
+	dialog.cancel_button_text = "Annulla"
+	$UI.add_child(dialog)
+	var scroll := ScrollContainer.new()
+	scroll.custom_minimum_size = Vector2(400, 440)
+	dialog.add_child(scroll)
+	var rows := VBoxContainer.new()
+	rows.size_flags_horizontal = Control.SIZE_EXPAND_FILL
+	scroll.add_child(rows)
+	var definitions: Array[Dictionary] = ContentCatalog.condition_definitions(
+		String(target.get_meta("rules_version", "2014"))
+	)
+	var selected: Array = target.call("get_conditions") if target.has_method("get_conditions") else []
+	for definition: Dictionary in definitions:
+		var condition_id: String = String(definition.get("id", ""))
+		if condition_id.is_empty():
+			continue
+		var check := CheckButton.new()
+		check.text = "%s %s" % [
+			String(definition.get("icon", "•")),
+			String(definition.get("name", condition_id))
+		]
+		check.tooltip_text = ContentCatalog.description(definition)
+		check.button_pressed = condition_id in selected
+		check.toggled.connect(func(enabled: bool) -> void:
+			_set_token_status(target, condition_id, enabled)
+		)
+		rows.add_child(check)
+	dialog.confirmed.connect(func() -> void: dialog.queue_free())
+	dialog.canceled.connect(func() -> void: dialog.queue_free())
+	DialogLayout.popup(dialog, Vector2i(480, 560))
+
+
+func _open_token_active_spells_dialog(target: Node3D) -> void:
+	var dialog := ConfirmationDialog.new()
+	dialog.title = "Incantesimi attivi · " + String(target.name)
+	dialog.ok_button_text = "Applica"
+	dialog.cancel_button_text = "Chiudi"
+	$UI.add_child(dialog)
+	var content := VBoxContainer.new()
+	dialog.add_child(content)
+	var existing_title := Label.new()
+	existing_title.text = "Incantesimi attualmente attivi (× per rimuovere)"
+	content.add_child(existing_title)
+	var active_ids: Array = target.call("get_active_spell_ids") if target.has_method("get_active_spell_ids") else []
+	for raw_id: Variant in active_ids:
+		var spell_id: String = String(raw_id)
+		var definition: Dictionary = SpellCatalog.catalog_spell(spell_id)
+		var remove := Button.new()
+		remove.text = "×  " + String(definition.get("name", spell_id))
+		remove.pressed.connect(func() -> void:
+			_set_token_active_spell(target, spell_id, false)
+			remove.queue_free()
+		)
+		content.add_child(remove)
+	var search := LineEdit.new()
+	search.placeholder_text = "Cerca incantesimi con durata non istantanea…"
+	content.add_child(search)
+	var picker := OptionButton.new()
+	picker.custom_minimum_size.x = 420
+	picker.fit_to_longest_item = false
+	content.add_child(picker)
+	var options: Array[Dictionary] = SpellCatalog.all_spells_for_rules(
+		String(target.get_meta("rules_version", "2014"))
+	)
+	var fill := func(query: String) -> void:
+		picker.clear()
+		var count := 0
+		for definition: Dictionary in options:
+			if not ActiveSpells.has_duration(definition):
+				continue
+			var spell_name: String = String(definition.get("name", ""))
+			var id: String = String(definition.get("id", ""))
+			if spell_name.is_empty() or id.is_empty() or (
+				not query.is_empty() and not query.to_lower() in spell_name.to_lower()
+			):
+				continue
+			count += 1
+			if count > 120:
+				break
+			picker.add_item(spell_name)
+			picker.set_item_metadata(picker.item_count - 1, id)
+		if picker.item_count > 0:
+			picker.select(0)
+		dialog.get_ok_button().disabled = picker.item_count == 0
+	fill.call("")
+	search.text_changed.connect(func(query: String) -> void: fill.call(query))
+	dialog.confirmed.connect(func() -> void:
+		if picker.selected >= 0:
+			_set_token_active_spell(target, String(picker.get_selected_metadata()), true)
+		dialog.queue_free()
+	)
+	dialog.canceled.connect(func() -> void: dialog.queue_free())
+	DialogLayout.popup(dialog, Vector2i(490, 440))
+
+
 func _show_context_menu(screen_position: Vector2) -> void:
 	_clean_selection()
 	_has_pending_spawn_position = false
@@ -3108,6 +3278,12 @@ func _show_context_menu(screen_position: Vector2) -> void:
 
 	# Token is always the first category. Actions concerning the selected
 	# token(s) appear before token generation and the general token list.
+	# Right-clicking an unowned token is allowed: the status lives on the
+	# shared token appearance, not in another player's local archive.
+	if _context_token != null and is_instance_valid(_context_token):
+		context_token_menu.add_item("Condizioni del token…", CONTEXT_TOKEN_CONDITIONS)
+		context_token_menu.add_item("Incantesimi attivi sul token…", CONTEXT_TOKEN_ACTIVE_SPELL)
+		context_token_menu.add_separator()
 	if not _selected_tokens.is_empty():
 		if _selected_tokens.size() == 1:
 			context_token_menu.add_item("Modifica token…", CONTEXT_TOKEN_DETAILS)
@@ -3260,6 +3436,16 @@ func _show_context_menu(screen_position: Vector2) -> void:
 
 
 func _on_context_menu_id_pressed(id: int) -> void:
+	if id == CONTEXT_TOKEN_CONDITIONS or id == CONTEXT_TOKEN_ACTIVE_SPELL:
+		var target: CharacterBody3D = _context_token
+		context_menu.hide()
+		if target == null or not is_instance_valid(target):
+			return
+		if id == CONTEXT_TOKEN_CONDITIONS:
+			_open_token_conditions_dialog(target)
+		else:
+			_open_token_active_spells_dialog(target)
+		return
 	if id == CONTEXT_INITIATIVE:
 		toggle_initiative_panel()
 		_close_context_menu_to_game()

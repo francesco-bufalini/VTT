@@ -49,6 +49,30 @@ func run() -> void:
 	assert(token.restore_previous_transformation())
 	assert(token.get_meta("creature_id") == "private-creature")
 	assert(token.get_conditions() == ["poisoned", id])
+	# Spell effects must survive exactly the same public board snapshot
+	# lifecycle as conditions, including on tokens we do not own.
+	token.set_active_spell_ids(["bless", "shield_of_faith"])
+	token.set_concentrating_spell_id("bless")
+	var spell_snapshot: Dictionary = JSON.parse_string(JSON.stringify(sync.create_snapshot()))
+	assert(sync.valid_snapshot(spell_snapshot))
+	var spell_row: Dictionary = spell_snapshot.objects[0]
+	assert(spell_row.active_spell_ids == ["bless", "shield_of_faith"])
+	assert(spell_row.concentrating_spell_id == "bless")
+	assert("concentrating" in spell_row.conditions)
+	var invalid_spells: Dictionary = spell_snapshot.duplicate(true)
+	invalid_spells.objects[0].active_spell_ids = ["bless", "bless"]
+	assert(not sync.valid_snapshot(invalid_spells), "Duplicated network spell ids are invalid")
+	invalid_spells = spell_snapshot.duplicate(true)
+	invalid_spells.objects[0].concentrating_spell_id = 123
+	assert(not sync.valid_snapshot(invalid_spells), "Concentration id must be a string")
+	token.set_active_spell_ids([])
+	token.set_concentrating_spell_id("")
+	assert(sync.apply_snapshot(spell_snapshot))
+	assert(token.get_active_spell_ids() == ["bless", "shield_of_faith"])
+	assert(token.get_concentrating_spell_id() == "bless")
+	assert(token.has_condition("concentrating"))
+	token.set_condition("concentrating", false)
+	assert(token.get_concentrating_spell_id().is_empty())
 	arena.queue_free()
 	await process_frame
 	print("PASS: private sheet boundary, public condition icons, snapshot round-trip and polymorph identity")

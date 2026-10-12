@@ -23,6 +23,7 @@ var _cast_dialog: ConfirmationDialog
 var _cast_slot_choice: OptionButton
 var _pending_cast_spell: Dictionary = {}
 var _record: Dictionary = {}
+var _spell_summary: Label
 var _loading := false
 var _gui_language := "it"
 var _catalog: Array[Dictionary] = []
@@ -89,6 +90,11 @@ func setup(
 	_totals = _normal_slots(_totals)
 	_spent = _normal_slots(_spent)
 	add_theme_constant_override("separation", 7)
+	_spell_summary = Label.new()
+	_spell_summary.name = "SpellcastingStatistics"
+	_spell_summary.autowrap_mode = TextServer.AUTOWRAP_WORD_SMART
+	_spell_summary.text = "Caratteristica: — · Tiro per colpire: — · CD: —\nConcentrazione: nessuna"
+	add_child(_spell_summary)
 	_search_row = HBoxContainer.new()
 	add_child(_search_row)
 	_search = LineEdit.new()
@@ -524,6 +530,7 @@ func _set_search_visible(show: bool) -> void:
 func load_record(record: Dictionary) -> void:
 	_loading = true
 	_record = record.duplicate(true)
+	_refresh_casting_summary()
 	# Older records separate known and prepared. Preserve BOTH collections
 	# in the new single available-spell selection on first load.
 	_known.clear()
@@ -790,7 +797,81 @@ func _on_spell_list_selected(origin: String) -> void:
 	_update_spell_controls()
 
 
+func refresh_spell_state(record: Dictionary) -> void:
+	# This changes the small header without rebuilding the expensive spell
+	# catalog or discarding the current search and spell selection.
+	_record = record.duplicate(true)
+	_refresh_casting_summary()
+
+
+func _spellcasting_ability(record: Dictionary) -> String:
+	var ability: String = String(record.get("spellcasting_ability", "")).to_lower().strip_edges()
+	var stat: Dictionary = record.get("stat_block", {})
+	if ability.is_empty():
+		ability = String(stat.get("spellcasting_ability", "")).to_lower().strip_edges()
+	if ability.is_empty():
+		var spellcasting_value: Variant = stat.get("spellcasting", [])
+		if spellcasting_value is Array and not (spellcasting_value as Array).is_empty():
+			var first: Variant = (spellcasting_value as Array)[0]
+			if first is Dictionary:
+				ability = String((first as Dictionary).get("ability", "")).to_lower()
+	if ability.is_empty():
+		var name: String = String(record.get("class", "")).to_lower().strip_edges()
+		if name.is_empty() and record.get("classes", []) is Array and not (record.get("classes", []) as Array).is_empty():
+			var first_class: Variant = (record.get("classes", []) as Array)[0]
+			if first_class is Dictionary:
+				name = String((first_class as Dictionary).get("name", "")).to_lower()
+		var class_abilities := {
+			"wizard": "int", "artificer": "int", "cleric": "wis",
+			"druid": "wis", "ranger": "wis", "bard": "cha",
+			"paladin": "cha", "sorcerer": "cha", "warlock": "cha"
+		}
+		ability = String(class_abilities.get(name, ""))
+	if ability in ["strength", "forza"]: ability = "str"
+	if ability in ["dexterity", "destrezza"]: ability = "dex"
+	if ability in ["constitution", "costituzione"]: ability = "con"
+	if ability in ["intelligence", "intelligenza"]: ability = "int"
+	if ability in ["wisdom", "saggezza"]: ability = "wis"
+	if ability in ["charisma", "carisma"]: ability = "cha"
+	return ability if ability in ["str", "dex", "con", "int", "wis", "cha"] else ""
+
+
+func _refresh_casting_summary() -> void:
+	if _spell_summary == null:
+		return
+	var ability: String = _spellcasting_ability(_record)
+	var stat_label: String = ability.to_upper() if not ability.is_empty() else "non definita"
+	var hit_label := "—"
+	var dc_label := "—"
+	var explanation := "Seleziona una classe da incantatore o imposta la caratteristica degli incantesimi."
+	if not ability.is_empty():
+		var prof: int = Bonuses.value(_record, "proficiency")
+		var ability_mod: int = Bonuses.value(_record, "ability_mod:" + ability)
+		var attack: int = prof + ability_mod + Bonuses.bonus(_record, "spell_attack")
+		var dc: int = 8 + prof + ability_mod + Bonuses.bonus(_record, "spell_dc")
+		hit_label = "%+d" % attack
+		dc_label = str(dc)
+		explanation = ("Modificatore %s %+d + competenza %+d; "
+			+ "bonus tiro %+d, bonus CD %+d") % [
+				ability.to_upper(), ability_mod, prof,
+				Bonuses.bonus(_record, "spell_attack"),
+				Bonuses.bonus(_record, "spell_dc")
+			]
+	var concentration_name := "nessuna"
+	var concentration_id: String = String(_record.get("concentrating_spell_id", ""))
+	if not concentration_id.is_empty():
+		var definition: Dictionary = SpellCatalog.catalog_spell(concentration_id)
+		concentration_name = String(definition.get("name", concentration_id))
+	elif "concentrating" in _record.get("conditions", []):
+		concentration_name = "attiva (incantesimo non specificato)"
+	_spell_summary.text = "Caratteristica: %s  ·  Tiro per colpire: %s  ·  CD: %s\nConcentrazione: %s" % [
+		stat_label, hit_label, dc_label, concentration_name
+	]
+	_spell_summary.tooltip_text = explanation
+
+
 func update_character_context(record: Dictionary) -> void:
+	_refresh_casting_summary()
 	var current_class: Variant = record.get("classes", [])
 	var current_primary: String = String(record.get("class", ""))
 	# Every ordinary sheet edit reaches this method. Rebuilding both lists and
@@ -799,12 +880,15 @@ func update_character_context(record: Dictionary) -> void:
 		and current_primary == String(_record.get("class", ""))
 		and record.get("level", 1) == _record.get("level", 1)
 		and String(record.get("rules_version", "2014")) == String(_record.get("rules_version", "2014"))):
+		_record = record.duplicate(true)
+		_refresh_casting_summary()
 		return
 	# Own the snapshot so later in-place level/class edits are detectable.
 	_record["classes"] = current_class.duplicate(true) if current_class is Array else current_class
 	_record["class"] = current_primary
 	_record["level"] = record.get("level", 1)
 	_record["rules_version"] = String(record.get("rules_version", "2014"))
+	_refresh_casting_summary()
 	_catalog = SpellCatalog.all_spells_for_rules(
 		String(_record.get("rules_version", "2014"))
 	)

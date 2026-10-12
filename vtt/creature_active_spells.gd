@@ -7,6 +7,44 @@ const SpellCatalog = preload("res://vtt/spells/spell_catalog.gd")
 const Proficiencies = preload("res://vtt/creature_proficiency_rules.gd")
 
 
+
+# A spell can remain on a creature only when the catalog describes a
+# non-instantaneous duration. 5etools has used both textual and structured
+# duration formats across editions.
+static func duration_text(spell: Dictionary) -> String:
+	var raw: Variant = spell.get("duration", "")
+	if raw is String:
+		return String(raw).strip_edges().to_lower()
+	if raw is Dictionary:
+		var data: Dictionary = raw
+		return (String(data.get("type", "")) + " "
+			+ String(data.get("duration", "")) + " "
+			+ String(data.get("amount", "")) + " "
+			+ ("concentration" if bool(data.get("concentration", false)) else "")).to_lower()
+	if raw is Array:
+		var parts: PackedStringArray = []
+		for entry: Variant in raw:
+			if entry is Dictionary:
+				parts.append(duration_text({"duration": entry}))
+			else:
+				parts.append(String(entry).to_lower())
+		return " ".join(parts)
+	return ""
+
+
+static func has_duration(spell: Dictionary) -> bool:
+	var duration: String = duration_text(spell)
+	return not duration.is_empty() and not (
+		"instant" in duration or "istantan" in duration
+	)
+
+
+static func requires_concentration(spell: Dictionary) -> bool:
+	if bool(spell.get("concentration", false)):
+		return true
+	return "concentration" in duration_text(spell) or "concentrazion" in duration_text(spell)
+
+
 static func active_origins(record: Dictionary) -> Array[Dictionary]:
 	var result: Array[Dictionary] = []
 	var enabled: Dictionary = Proficiencies.origin_enabled_map(record)

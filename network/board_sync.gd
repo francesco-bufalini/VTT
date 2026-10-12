@@ -909,6 +909,22 @@ func valid_snapshot(snapshot: Variant) -> bool:
 				if not ContentCatalog.valid_effect_id(condition_id) or seen_conditions.has(condition_id):
 					return false
 				seen_conditions[condition_id] = true
+			# Token effects are persisted in map snapshots and across peers.
+			# They remain independent of the owner's private creature archive.
+			var active_spell_value: Variant = item.get("active_spell_ids", [])
+			if not active_spell_value is Array or active_spell_value.size() > 128:
+				return false
+			var seen_spells: Dictionary = {}
+			for spell_value: Variant in active_spell_value:
+				if not spell_value is String:
+					return false
+				var spell_id: String = String(spell_value).strip_edges()
+				if spell_id.is_empty() or spell_id.length() > 192 or seen_spells.has(spell_id):
+					return false
+				seen_spells[spell_id] = true
+			var concentrating_value: Variant = item.get("concentrating_spell_id", "")
+			if not concentrating_value is String or String(concentrating_value).length() > 192:
+				return false
 			if item.has("condition_presentations"):
 				var presentations: Variant = item.get("condition_presentations")
 				if not presentations is Array or presentations.size() > 128:
@@ -1651,6 +1667,14 @@ func _serialize_node(node: Node3D, group_name: String) -> Dictionary:
 			if node.has_method("get_conditions")
 			else []
 		)
+		data["active_spell_ids"] = (
+			node.call("get_active_spell_ids")
+			if node.has_method("get_active_spell_ids") else []
+		)
+		data["concentrating_spell_id"] = (
+			String(node.call("get_concentrating_spell_id"))
+			if node.has_method("get_concentrating_spell_id") else ""
+		)
 		data["reach_feet"] = (
 			float(node.call("get_reach_feet"))
 			if node.has_method("get_reach_feet")
@@ -1689,6 +1713,16 @@ func _instantiate_from_data(data: Dictionary) -> Node3D:
 	return node
 
 func _apply_node_data(node: Node3D, data: Dictionary) -> void:
+	var old_conditions: Array = (
+		node.call("get_conditions") if node.has_method("get_conditions") else []
+	)
+	var old_active_spells: Array = (
+		node.call("get_active_spell_ids") if node.has_method("get_active_spell_ids") else []
+	)
+	var old_concentration: String = (
+		String(node.call("get_concentrating_spell_id"))
+		if node.has_method("get_concentrating_spell_id") else ""
+	)
 	node.visible=bool(data.get("visible",true))
 	if data.get("kind","") == "token" and node.has_method("set_token_id"):
 		var restored_token_id := String(data.get("token_id", "")).strip_edges()
@@ -1838,6 +1872,12 @@ func _apply_node_data(node: Node3D, data: Dictionary) -> void:
 				node.remove_meta(field)
 		if node.has_method("set_condition_presentations"):
 			node.call("set_condition_presentations", data.get("condition_presentations", []))
+		if node.has_method("set_active_spell_ids"):
+			node.call("set_active_spell_ids", data.get("active_spell_ids", []))
+		if node.has_method("set_concentrating_spell_id"):
+			node.call("set_concentrating_spell_id", String(data.get("concentrating_spell_id", "")))
+		# Apply the incoming conditions last so manual concentration markers
+		# remain valid even without a named spell, and removal clears stale ids.
 		if node.has_method("set_conditions"):
 			node.call("set_conditions", data.get("conditions", []))
 		if apply_shared_appearance and node.has_method(
@@ -1849,6 +1889,19 @@ func _apply_node_data(node: Node3D, data: Dictionary) -> void:
 			)
 		if apply_shared_appearance:
 			_remember_received_token_appearance(node, data)
+		# Only propagate changed tactical effects to an owned private sheet.
+		# Do not persist on every incoming map snapshot or polling update.
+		var effects_changed := false
+		if node.has_method("get_conditions"):
+			effects_changed = old_conditions != node.call("get_conditions")
+		if node.has_method("get_active_spell_ids"):
+			effects_changed = effects_changed or old_active_spells != node.call("get_active_spell_ids")
+		if node.has_method("get_concentrating_spell_id"):
+			effects_changed = effects_changed or old_concentration != String(node.call("get_concentrating_spell_id"))
+		if board_root != null and effects_changed:
+			var creature_area: Node = board_root.get_node_or_null("CreatureArea")
+			if creature_area != null and creature_area.has_method("sync_linked_token_status"):
+				creature_area.call_deferred("sync_linked_token_status", node)
 	# configure() snaps tokens; restore the exact shared transform afterwards.
 	node.global_transform = _dict_transform(data.get("transform", {}))
 

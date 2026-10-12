@@ -252,6 +252,62 @@ func open_for_token(token: CharacterBody3D) -> bool:
 	return false
 
 
+# Synchronize shared tactical spell state into the owning user's private
+# creature sheet. Foreign users can affect a token without gaining access
+# to, or mutating, somebody else's private archive.
+func sync_linked_token_status(token: Node3D) -> void:
+	if token == null or not is_instance_valid(token):
+		return
+	if String(token.get_meta("creature_owner_id", "")) != Owner.local_id():
+		return
+	var creature_id: String = String(token.get_meta("creature_id", ""))
+	if creature_id.is_empty():
+		return
+	for owned: Dictionary in _archive.list_owned():
+		if String(owned.get("id", "")) != creature_id:
+			continue
+		var record: Dictionary = owned.duplicate(true)
+		_copy_token_spell_status(record, token)
+		if record == owned:
+			return
+		_recalculate_bonus_mirrors(record)
+		if _archive.save(record) == OK:
+			_update_external_record(record)
+		return
+
+
+func _copy_token_spell_status(record: Dictionary, token: Node3D) -> void:
+	if token.has_method("get_conditions"):
+		record["conditions"] = token.call("get_conditions")
+	if token.has_method("get_concentrating_spell_id"):
+		record["concentrating_spell_id"] = String(token.call("get_concentrating_spell_id"))
+	if not token.has_method("get_active_spell_ids"):
+		return
+	var spell_ids: Array = token.call("get_active_spell_ids")
+	# Preserve benefit-only origins; remove only spells explicitly applied
+	# as ongoing effects and subsequently dispelled from the shared token.
+	var previous: Array = record.get("proficiency_origins", [])
+	var removed_ids: Array[String] = []
+	for raw: Variant in previous:
+		if not raw is Dictionary:
+			continue
+		var origin: Dictionary = raw
+		var source_id: String = String(origin.get("id", ""))
+		if (
+			String(origin.get("group", "")) == "spell"
+			and bool(origin.get("applied", false))
+			and source_id.begins_with("spell:")
+			and not (source_id.trim_prefix("spell:") in spell_ids)
+		):
+			removed_ids.append(source_id)
+	for source_id: String in removed_ids:
+		ActiveSpells.remove(record, source_id)
+	for value: Variant in spell_ids:
+		var spell_id: String = String(value)
+		if not spell_id.is_empty():
+			ActiveSpells.apply(record, spell_id)
+
+
 func sync_linked_token_editor(token: CharacterBody3D) -> void:
 	if token == null or not is_instance_valid(token):
 		return
@@ -3034,9 +3090,11 @@ func _on_spellcasting_cast_requested(spell: Dictionary, slot_level: int) -> bool
 	var caster: CharacterBody3D = find_linked_token_for_creature(_selected_id)
 	var runtime: Node = board_root.get_node_or_null("SpellSystem")
 	if caster == null or runtime == null or not runtime.has_method("has_runtime_spell_effect"):
+		_start_sheet_concentration(spell)
 		_set_status("%s lanciato · effetto VTT non attivabile senza un token collegato." % spell_name)
 		return true
 	if not bool(runtime.call("has_runtime_spell_effect", spell_id, spell_name, source)):
+		_start_sheet_concentration(spell)
 		_set_status("%s lanciato · nessun effetto VTT associato." % spell_name)
 		return true
 	# Return to the board before entering the existing target-selection mode.
@@ -3048,6 +3106,90 @@ func _on_spellcasting_cast_requested(spell: Dictionary, slot_level: int) -> bool
 		show_panel()
 		_set_status("Impossibile attivare l'effetto VTT di %s." % spell_name)
 	return activated
+
+
+# A non-visual cast (or an unlinked caster) still starts concentration.
+# Targeted VTT casts are committed by SpellSystem only after resolution.
+func _start_sheet_concentration(spell: Dictionary) -> void:
+	if not ActiveSpells.requires_concentration(spell):
+		return
+	var record: Dictionary = _current()
+	if record.is_empty():
+		return
+	var spell_id: String = String(spell.get("id", ""))
+	if spell_id.is_empty():
+		return
+	record["concentrating_spell_id"] = spell_id
+	var active: Array = record.get("conditions", []).duplicate()
+	if not ("concentrating" in active):
+		active.append("concentrating")
+	record["conditions"] = active
+	if _archive.save(record) == OK:
+		_replace_current_record(record)
+		_refresh_conditions(record)
+		_spellcasting_ui.call("refresh_spell_state", record)
+		_sync_token_health(record)
+
+
+# The board invokes these methods for any cast/context change. Only locally
+# owned sheets may be changed; foreign token appearances still synchronize.
+func update_token_spell_effect(token: Node3D, spell_id: String, enabled: bool) -> bool:
+	if token == null or not is_instance_valid(token):
+		return false
+	if String(token.get_meta("creature_owner_id", "")) != Owner.local_id():
+		return false
+	var creature_id: String = String(token.get_meta("creature_id", ""))
+	for record: Dictionary in _archive.list_owned():
+		if String(record.get("id", "")) != creature_id:
+			continue
+		var changed: bool = (
+			ActiveSpells.apply(record, spell_id) if enabled
+			else ActiveSpells.remove(record, "spell:" + spell_id)
+		)
+		if not changed:
+			return false
+		_recalculate_bonus_mirrors(record)
+		if _archive.save(record) != OK:
+			return false
+		_update_external_record(record)
+		_sync_token_health(record)
+		return true
+	return false
+
+
+func update_token_concentration(token: Node3D, spell_id: String) -> bool:
+	if token == null or not is_instance_valid(token):
+		return false
+	if String(token.get_meta("creature_owner_id", "")) != Owner.local_id():
+		return false
+	var creature_id: String = String(token.get_meta("creature_id", ""))
+	for record: Dictionary in _archive.list_owned():
+		if String(record.get("id", "")) != creature_id:
+			continue
+		record["concentrating_spell_id"] = spell_id
+		var conditions: Array = record.get("conditions", []).duplicate()
+		conditions.erase("concentrating")
+		if not spell_id.is_empty():
+			conditions.append("concentrating")
+		record["conditions"] = conditions
+		if _archive.save(record) != OK:
+			return false
+		_update_external_record(record)
+		_sync_token_health(record)
+		return true
+	return false
+
+
+func _update_external_record(record: Dictionary) -> void:
+	var creature_id: String = String(record.get("id", ""))
+	for index: int in range(_records.size()):
+		if String(_records[index].get("id", "")) == creature_id:
+			_records[index] = record.duplicate(true)
+			break
+	if creature_id == _selected_id:
+		_refresh_conditions(record)
+		if _spellcasting_ui != null:
+			_spellcasting_ui.call("refresh_spell_state", record)
 
 
 func _on_spellcasting_updated(values: Dictionary) -> void:
@@ -4115,7 +4257,7 @@ func _save() -> void:
 	for origin: Dictionary in ProficiencyRules.origins(record):
 		saved_origins.append({"id": origin.get("id", ""), "name": origin.get("name", ""),
 			"group": origin.get("group", ""), "automatic": bool(origin.get("automatic", false)),
-			"disabled": bool(origin.get("disabled", false))})
+			"disabled": bool(origin.get("disabled", false)), "applied": bool(origin.get("applied", false))})
 	record["proficiency_origins"] = saved_origins
 	# Mirrors used by tokens/combat always include every active formula bonus.
 	_recalculate_bonus_mirrors(record)
@@ -5416,8 +5558,15 @@ func _sync_token_health(record: Dictionary) -> void:
 			token.call("set_reach_feet", first_melee, true)
 	if token.has_method("set_display_name"):
 		token.call("set_display_name", String(record.get("name", "")))
+	if token.has_method("set_concentrating_spell_id"):
+		token.call("set_concentrating_spell_id", String(record.get("concentrating_spell_id", "")))
 	if token.has_method("set_conditions"):
 		token.call("set_conditions", record.get("conditions", []))
+	if token.has_method("set_active_spell_ids"):
+		var ids: Array[String] = []
+		for source: Dictionary in ActiveSpells.active_origins(record):
+			ids.append(String(source.get("id", "")).trim_prefix("spell:"))
+		token.call("set_active_spell_ids", ids)
 	if token.has_method(method):
 		var transformed: bool = int(record.get("second_form_hp", 0)) > 0
 		token.call(method,
@@ -5633,6 +5782,8 @@ func _open_add_active_spell() -> void:
 		var query: String = value.strip_edges().to_lower()
 		var matches := 0
 		for spell: Dictionary in options:
+			if not ActiveSpells.has_duration(spell):
+				continue
 			var name: String = String(spell.get("name", ""))
 			var spell_id: String = String(spell.get("id", ""))
 			if name.is_empty() or spell_id.is_empty() or (not query.is_empty() and query not in name.to_lower()):
@@ -5705,10 +5856,14 @@ func _set_sheet_condition(enabled: bool, id: String) -> void:
 		active.append(id)
 	elif not enabled:
 		active.erase(id)
+	if id == "concentrating" and not enabled:
+		record["concentrating_spell_id"] = ""
 	record["conditions"] = active
 	if _archive.save(record) == OK:
 		_replace_current_record(record)
 		_sync_token_health(record)
+		if id == "concentrating" and _spellcasting_ui != null:
+			_spellcasting_ui.call("refresh_spell_state", record)
 
 
 func _reload_homebrew() -> void:
