@@ -569,6 +569,11 @@ static func _translate_property(node: Object, property_name: String, language: S
 static func _localized(node: Object, key: String, current: String, language: String) -> String:
 	var initial_key := "creature_locale_original_" + key
 	var last_key := "creature_locale_last_" + key
+	var locale_key := "creature_locale_language_" + key
+	# No redundant translations or layout invalidation during periodic refresh.
+	if (node.has_meta(last_key) and current == String(node.get_meta(last_key))
+		and String(node.get_meta(locale_key, "")) == language):
+		return current
 	var original: String = String(node.get_meta(initial_key, current))
 	if current != String(node.get_meta(last_key, original)):
 		original = current
@@ -577,4 +582,5 @@ static func _localized(node: Object, key: String, current: String, language: Str
 		node.set_meta(initial_key, original)
 	var localized := text_for(original, language)
 	node.set_meta(last_key, localized)
+	node.set_meta(locale_key, language)
 	return localized
