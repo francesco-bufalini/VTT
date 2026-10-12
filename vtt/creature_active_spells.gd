@@ -68,7 +68,7 @@ static func active_origins(record: Dictionary) -> Array[Dictionary]:
 
 static func apply(record: Dictionary, spell_id: String) -> bool:
 	var definition: Dictionary = SpellCatalog.catalog_spell(spell_id)
-	if definition.is_empty() or not has_duration(definition):
+	if definition.is_empty():
 		return false
 	var sid: String = "spell:" + spell_id
 	var origins: Array = record.get("proficiency_origins", []).duplicate(true)
