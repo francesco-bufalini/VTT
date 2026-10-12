@@ -1006,7 +1006,6 @@ func _transformation_target_data(
 	if target == null:
 		return {"valid": false}
 
-	var cell_size: float = _cell_size()
 	var range_feet: float = _effective_spell_range_feet(
 		spell_data,
 		_pending_caster
@@ -3335,7 +3334,6 @@ func _chain_secondary_target_data(
 	):
 		return {"valid": false}
 
-	var cell_size: float = _cell_size()
 	var range_feet: float = float(
 		spell_data.get("secondary_range_feet", 30.0)
 	)
@@ -3361,7 +3359,6 @@ func _target_token_data(
 	if target == null or target == _pending_caster:
 		return {"valid": false}
 
-	var cell_size: float = _cell_size()
 	var range_feet: float = _effective_spell_range_feet(
 		spell_data,
 		_pending_caster
