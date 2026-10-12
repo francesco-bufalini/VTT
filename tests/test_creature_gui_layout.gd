@@ -52,27 +52,35 @@ func run() -> void:
 	area._replace_current_record(init_record)
 	area._load_form(init_record)
 	# The statistics editors are mutually exclusive and default to no section.
-	assert(area._editor_section_picker.item_count == 5
+	assert(area._editor_section_picker.item_count == 6
 		and area._editor_section_picker.selected == 0
 		and not area._proficiencies_ui.visible and not area._feats_ui.visible
-		and not area._bonuses_ui.visible and not area._trackers_ui.visible,
+		and not area._bonuses_ui.visible and not area._trackers_ui.visible
+		and not area._damage_defenses_ui.visible,
 		"Statistics must start with Visualizza e modifica -> Niente")
-	for selection: int in range(1, 5):
+	for selection: int in range(1, 6):
 		area._editor_section_picker.item_selected.emit(selection)
 		assert(area._editor_section_picker.selected == selection,
 			"The common section menu must reflect the selected editor")
 		assert(int(area._proficiencies_ui.visible) + int(area._feats_ui.visible)
-			+ int(area._bonuses_ui.visible) + int(area._trackers_ui.visible) == 1,
+			+ int(area._bonuses_ui.visible) + int(area._trackers_ui.visible)
+			+ int(area._damage_defenses_ui.visible) == 1,
 			"Exactly one statistics editor must be open at a time")
 	area._editor_section_picker.item_selected.emit(0)
 	assert(not area._proficiencies_ui.visible and not area._feats_ui.visible
-		and not area._bonuses_ui.visible and not area._trackers_ui.visible,
+		and not area._bonuses_ui.visible and not area._trackers_ui.visible
+		and not area._damage_defenses_ui.visible,
 		"Choosing Niente closes all editors")
 	area._on_formula_bonus_requested("initiative")
 	assert(area._editor_section_picker.selected == 3 and area._bonuses_ui.visible
 		and not area._proficiencies_ui.visible and not area._feats_ui.visible
-		and not area._trackers_ui.visible,
+		and not area._trackers_ui.visible and not area._damage_defenses_ui.visible,
 		"Clicking a formula must select Bonus in the common menu")
+	area._editor_section_picker.item_selected.emit(5)
+	assert(area._damage_defenses_ui.visible,
+		"The defense editor must be available through Visualizza e modifica")
+	assert(area._damage_defenses_ui._damage_buttons.size() == 13,
+		"All 13 standard 5e damage types must be editable")
 	area._editor_section_picker.item_selected.emit(0)
 	assert(area._initiative_effective.text == "+4",
 		"Initial initiative must use the loaded DEX score, not +0 or the prior creature.")
