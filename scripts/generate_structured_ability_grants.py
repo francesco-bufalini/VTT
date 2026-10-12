@@ -2,7 +2,7 @@
 """Regenerate numeric ability grants from explicit 5etools 'ability' fields.
 
 Usage: python scripts/generate_structured_ability_grants.py /path/to/5etools-src
-Only modifiers present identically in every structured choice are automatic.
+Fixed modifiers are automatic; feat choices retain structured options for the UI.
 Never parse prose or manufacture a choice on behalf of the user.
 """
 import json
@@ -42,7 +42,7 @@ def build(root):
     }
     output = {"meta": {
         "source": "5etools-mirror-3/5etools-src",
-        "purpose": "fixed structured ability-score increments; mutually exclusive ability choices excluded",
+        "purpose": "fixed numeric increments and structured feat ability-score choices",
         "generated_from": ["data/races.json", "data/feats.json", "data/backgrounds.json"],
     }}
     for category, rows in sources.items():
@@ -50,10 +50,18 @@ def build(root):
         for raw in rows:
             if not raw.get("name") or not raw.get("source"):
                 continue
-            fixed = fixed_ability(raw.get("ability"))
-            if not fixed:
+            ability = raw.get("ability")
+            fixed = fixed_ability(ability)
+            variants = ability if isinstance(ability, list) else [ability]
+            choices = (any(isinstance(option, dict) and isinstance(option.get("choose"), dict)
+                           for option in variants) if category == "feat" else False)
+            if not fixed and not choices:
                 continue
-            entry = {"name": raw["name"], "source": raw["source"], "ability": fixed}
+            entry = {"name": raw["name"], "source": raw["source"]}
+            if fixed:
+                entry["ability"] = fixed
+            if choices:
+                entry["ability_choices"] = ability
             if category == "subrace":
                 entry["raceName"] = raw.get("raceName", "")
                 entry["raceSource"] = raw.get("raceSource", "")
