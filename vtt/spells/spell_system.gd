@@ -3,6 +3,7 @@ extends Node
 const SpellCatalog = preload("res://vtt/spells/spell_catalog.gd")
 const WallGeometry = preload("res://vtt/spells/wall_geometry.gd")
 const DialogLayout = preload("res://vtt/dialog_layout.gd")
+const ReachGeometry = preload("res://vtt/flanking_system.gd")
 const ALL_COLLISION_LAYERS := 0xFFFFFFFF
 const AOE_PICK_LAYER := 1 << 20
 const TOKEN_PICK_COLLISION_MASK := ALL_COLLISION_LAYERS & ~AOE_PICK_LAYER
@@ -1010,18 +1011,15 @@ func _transformation_target_data(
 		spell_data,
 		_pending_caster
 	)
-	var max_world_distance: float = range_feet / 5.0 * cell_size
-	var actual_world_distance: float = (
-		_pending_caster.global_position.distance_to(target.global_position)
+	var actual_distance_feet: float = ReachGeometry.token_tactical_distance_feet(
+		_pending_caster, target, cell_size
 	)
-	if actual_world_distance > max_world_distance + cell_size * 0.01:
+	if actual_distance_feet > range_feet + 0.001:
 		return {
 			"valid": false,
 			"out_of_range": true,
 			"target": target,
-			"distance_feet": int(
-				round(actual_world_distance / cell_size * 5.0)
-			)
+			"distance_feet": int(round(actual_distance_feet))
 		}
 
 	return {"valid": true, "target": target}
@@ -1834,12 +1832,10 @@ func _try_select_teleport_passenger(screen_position: Vector2) -> void:
 	var passenger_range_feet: float = float(
 		spell_data.get("teleport_passenger_range_feet", 5.0)
 	)
-	var max_world_distance: float = (
-		passenger_range_feet / 5.0 * _cell_size()
-	)
 	if (
-		_pending_caster.global_position.distance_to(target.global_position)
-		> max_world_distance + _cell_size() * 0.01
+		ReachGeometry.token_tactical_distance_feet(
+			_pending_caster, target, _cell_size()
+		) > passenger_range_feet + 0.001
 	):
 		_set_instruction(
 			"Il token deve trovarsi entro %d ft dal caster."
@@ -3347,13 +3343,10 @@ func _chain_secondary_target_data(
 	var range_feet: float = float(
 		spell_data.get("secondary_range_feet", 30.0)
 	)
-	var max_world_distance: float = range_feet / 5.0 * cell_size
-	var actual_world_distance: float = (
-		_pending_chain_primary.global_position.distance_to(
-			target.global_position
-		)
+	var actual_distance_feet: float = ReachGeometry.token_tactical_distance_feet(
+		_pending_chain_primary, target, cell_size
 	)
-	if actual_world_distance > max_world_distance + cell_size * 0.01:
+	if actual_distance_feet > range_feet + 0.001:
 		return {
 			"valid": false,
 			"out_of_range": true,
@@ -3379,18 +3372,15 @@ func _target_token_data(
 		spell_data,
 		_pending_caster
 	)
-	var max_world_distance: float = range_feet / 5.0 * cell_size
-	var actual_world_distance: float = (
-		_pending_caster.global_position.distance_to(target.global_position)
+	var actual_distance_feet: float = ReachGeometry.token_tactical_distance_feet(
+		_pending_caster, target, cell_size
 	)
-	if actual_world_distance > max_world_distance + cell_size * 0.01:
+	if actual_distance_feet > range_feet + 0.001:
 		return {
 			"valid": false,
 			"out_of_range": true,
 			"target": target,
-			"distance_feet": int(
-				round(actual_world_distance / cell_size * 5.0)
-			)
+			"distance_feet": int(round(actual_distance_feet))
 		}
 
 	return {
