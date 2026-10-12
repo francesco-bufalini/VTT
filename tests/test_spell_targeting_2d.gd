@@ -91,6 +91,12 @@ func _run() -> void:
 	var overlay: Control = SpellTargetOverlay2D.new()
 	ui.add_child(overlay)
 	overlay.call("setup", board, spell, measure, camera)
+	# Inactive casting range must return Array[String], not an untyped []:
+	# a former conditional assignment crashed during overlay redraw.
+	var empty_reach: Array[String] = overlay.call("_range_names_for_hud", false)
+	if not empty_reach.is_empty():
+		_fail("Inactive spell range HUD should return an empty typed string list")
+		return
 	var circle: PackedVector2Array = overlay.call(
 		"_shape_polygon", Vector3.ZERO, Vector3.RIGHT * 2.0, "sphere", -1.0
 	)
