@@ -984,7 +984,6 @@ func _build_ui() -> void:
 
 	# Compact quick-statistics panel immediately below characteristics.
 	var quick_box := _info_panel(skills_column, "RIEPILOGO")
-	movement_row.reparent(quick_box)
 	var proficiency_row := HBoxContainer.new()
 	quick_box.add_child(proficiency_row)
 	_add_label(proficiency_row, "Bonus competenza")
