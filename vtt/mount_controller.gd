@@ -187,7 +187,16 @@ func _reconcile_collision_links() -> void:
 			continue
 		var target: Node3D = get_target(rider)
 		if target is PhysicsBody3D:
-			wanted[rider.get_instance_id()] = [weakref(rider), weakref(target)]
+			var link_id: int = rider.get_instance_id()
+			var cached_pair: Array = _collision_links.get(link_id, [])
+			if (
+				cached_pair.size() == 2
+				and cached_pair[0].get_ref() == rider
+				and cached_pair[1].get_ref() == target
+			):
+				wanted[link_id] = cached_pair
+			else:
+				wanted[link_id] = [weakref(rider), weakref(target)]
 
 	for rider_id: Variant in _collision_links.keys():
 		var previous: Array = _collision_links[rider_id]
@@ -205,14 +214,14 @@ func _reconcile_collision_links() -> void:
 
 	for rider_id: Variant in wanted.keys():
 		var pair: Array = wanted[rider_id]
-		var rider: PhysicsBody3D = pair[0].get_ref() as PhysicsBody3D
-		var target: PhysicsBody3D = pair[1].get_ref() as PhysicsBody3D
-		var previous: Array = _collision_links.get(rider_id, [])
+		var current_rider: PhysicsBody3D = pair[0].get_ref() as PhysicsBody3D
+		var current_target: PhysicsBody3D = pair[1].get_ref() as PhysicsBody3D
+		var existing_pair: Array = _collision_links.get(rider_id, [])
 		if (
-			previous.size() != 2
-			or previous[0].get_ref() != rider
-			or previous[1].get_ref() != target
+			existing_pair.size() != 2
+			or existing_pair[0].get_ref() != current_rider
+			or existing_pair[1].get_ref() != current_target
 		):
-			rider.add_collision_exception_with(target)
-			target.add_collision_exception_with(rider)
+			current_rider.add_collision_exception_with(current_target)
+			current_target.add_collision_exception_with(current_rider)
 	_collision_links = wanted
