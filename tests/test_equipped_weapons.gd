@@ -181,7 +181,8 @@ func run() -> void:
 	assert(ItemRules.origin_active(trinket), "Generic equipment has no slot limit")
 
 	# Natural AC is an expression; empty hands still use ordinary DEX.
-	var natural := PlayerStore.normalize_character({
+	var store := PlayerStore.new()
+	var natural := store.normalize_character({
 		"id": "test:natural", "kind": "character",
 		"abilities": {"str": 10, "dex": 18, "con": 10, "int": 10, "wis": 10, "cha": 10},
 		"inventory": []
@@ -189,7 +190,7 @@ func run() -> void:
 	assert(natural.get("armor_natural_formula", "") == "10 + dex_mod"
 		and natural.armor_class == 14, "The default unarmored formula is 10 + DEX")
 	natural["armor_natural_formula"] = "13 + dex_mod"
-	assert(PlayerStore.normalize_character(natural).armor_class == 17,
+	assert(store.normalize_character(natural).armor_class == 17,
 		"Custom unarmored formulas must be persisted and evaluated")
 	var main_shield := shield.duplicate(true)
 	main_shield["equipped_slots"] = ["main"]
