@@ -2377,6 +2377,7 @@ func _reload() -> void:
 		row.add_theme_constant_override("separation", 3)
 		_creature_list.add_child(row)
 		var select_button := Button.new()
+		select_button.set_meta("creature_gui_data", true)
 		select_button.text = "%s %s" % [icon, String(item.get("name", ""))]
 		select_button.alignment = HORIZONTAL_ALIGNMENT_LEFT
 		select_button.clip_text = true
@@ -3133,6 +3134,7 @@ func _refresh_attacks(record: Dictionary) -> void:
 		header.add_theme_constant_override("separation", 7)
 		box.add_child(header)
 		var name_label := Label.new()
+		name_label.set_meta("creature_gui_data", true)
 		name_label.text = String(attack.get("name", "Attacco"))
 		name_label.add_theme_font_size_override("font_size", 16)
 		name_label.add_theme_color_override("font_color", Color(0.93, 0.95, 0.98))
@@ -4224,6 +4226,7 @@ func _refresh_trackers(record: Dictionary) -> void:
 		var available: bool = not bool(tracker.get("disabled", false)) and bool(origin_enabled.get(tracker_source, true))
 		if not available:
 			row.modulate.a = 0.57
+		source_button.set_meta("creature_gui_data", true)
 		source_button.text = (title.substr(0, 23) + "…" if title.length() > 24 else title) + " ↗"
 		source_button.tooltip_text = (
 			"Vai al privilegio: " + String(tracker.get("origin", title))
