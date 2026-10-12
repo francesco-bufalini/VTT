@@ -673,6 +673,8 @@ const EN: Dictionary = {
 	"Impossibile salvare la miniatura della creatura.": "Could not save the creature's miniature.",
 	"Aspetto attuale aggiornato.": "Current appearance updated.",
 	"Eliminare definitivamente '%s' dal tuo archivio?\nVerranno eliminati anche i suoi token presenti nella scena.": "Permanently delete '%s' from your archive?\nAll of its tokens in the scene will also be deleted.",
+			"Con almeno 10 ft di movimento a piedi immediatamente prima del salto, puoi saltare fino al punteggio di Forza (%d ft). Da fermo il massimo è la metà (%s ft). Ogni ft saltato consuma 1 ft del movimento disponibile.",
+			"Con rincorsa di almeno 10 ft: max(0, 3 + modificatore FOR %+d) = %d ft. Senza rincorsa la distanza è dimezzata (%s ft). Puoi raggiungere con le braccia altri 1,5 × la tua altezza. Il salto consuma il movimento disponibile.",
 			"Camminata: base %d + bonus cumulabili %+d = %d ft",
 			"%s: base %d + bonus specifici %+d",
 			" + modifica alla velocità (regole 2024) %+d",
@@ -816,6 +818,8 @@ const EN: Dictionary = {
 	"Ricarica manuale": "Manual recharge",
 	"Inizio turno": "Start of turn",
 	"Non disponibile": "Unavailable",
+	"Con almeno 10 ft di movimento a piedi immediatamente prima del salto, puoi saltare fino al punteggio di Forza (%d ft). Da fermo il massimo è la metà (%s ft). Ogni ft saltato consuma 1 ft del movimento disponibile.": "After moving at least 10 ft on foot immediately before the jump, you can jump up to your Strength score (%d ft). From a standstill the maximum is half (%s ft). Each foot jumped costs 1 ft of movement.",
+	"Con rincorsa di almeno 10 ft: max(0, 3 + modificatore FOR %+d) = %d ft. Senza rincorsa la distanza è dimezzata (%s ft). Puoi raggiungere con le braccia altri 1,5 × la tua altezza. Il salto consuma il movimento disponibile.": "With a run-up of at least 10 ft: max(0, 3 + STR modifier %+d) = %d ft. From a standstill the distance is halved (%s ft). You can reach another 1.5 times your height with your arms. Jumping uses movement.",
 }
 const IT: Dictionary = {
 	"Rages": "Ira",
@@ -874,6 +878,7 @@ static func text_for(source: String, language: String) -> String:
 			"Livello %d", "%d voci del bestiario ricercabili",
 			"%d risultati", "%d° livello · %d rimasti",
 			"Patto · %d° livello · %d rimasti",
+			"Sottoclasse · %s / %s",
 			"%s · %d/%d scelte",
 			"Lancia %s (livello %d). Scegli quale slot consumare.",
 			"%s lanciato · effetto VTT non attivabile senza un token collegato.",
@@ -917,6 +922,9 @@ static func text_for(source: String, language: String) -> String:
 		if changed:
 			return " · ".join(fragments)
 	if language == "it":
+		for prefix: String in ["Starting ", "Multiclass "]:
+			if source.begins_with(prefix):
+				return String(IT[prefix]) + source.substr(prefix.length())
 		return source
 	# Common generated GUI messages: translate fixed labels and leave catalog values intact.
 	for prefix in ["Strumenti: ", "Linguaggi: ", "Completa le scelte: ",
@@ -936,7 +944,8 @@ static func text_for(source: String, language: String) -> String:
 		"Immunità alle condizioni: ", "Senza competenza: ",
 		"Cataloghi e integrazioni ricaricati. ", "Fonte: ",
 		"⚠ Da scegliere: ",
-		"Descrizione · ", "Oggetto · ", "Classe · ",
+		"Descrizione · ", "Oggetto · ", "Classe · ", "Tratti del background · ",
+		"Creatura esportata: ", "Esportazione non completata: ", "Tiro salvezza ",
 		"Taglia · ", "Slot livello ", "Livello ",
 		"Competenza: ", "Elimina · ", "Completa · ", "Aggiunto: ",
 		"Documento · ", "ID catalogo: ", "Origini:\n"]:
