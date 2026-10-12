@@ -93,6 +93,10 @@ var _level_caption: Label
 var _xp: SpinBox
 var _initiative_effective: Label
 var _ac_effective: Label
+var _ac_proficiency_warning: Label
+var _other_movements: Label
+var _long_jump: Label
+var _high_jump: Label
 var _speed_custom := false
 var _speed: SpinBox
 var _speed_effective: Label
@@ -739,13 +743,16 @@ func _build_ui() -> void:
 	_max_hp.size_flags_horizontal = Control.SIZE_SHRINK_BEGIN
 	_max_hp.tooltip_text = "PF massimi base, prima dei bonus"
 	_install_formula("hp", _max_hp_effective, [_max_hp], ["Base"])
-	# Current HP actions lead the row; the TEMP caption follows its input.
+	# Temporary HP are a separate row, with the caption before the field.
 	var health_actions := HBoxContainer.new()
 	health.add_child(health_actions)
-	_add_label(health, "+")
-	_temp_hp = _spin(health, 0, 99999)
+	var temp_row := HBoxContainer.new()
+	temp_row.add_theme_constant_override("separation", 7)
+	health_content.add_child(temp_row)
+	_add_label(temp_row, "TEMP")
+	_temp_hp = _spin(temp_row, 0, 99999)
+	_temp_hp.tooltip_text = "Punti ferita temporanei: assorbono i danni prima delle altre forme."
 	_temp_hp.custom_minimum_size.x = 68
-	_add_label(health, "TEMP")
 	_max_hp.value_changed.connect(func(_v: float) -> void: _update_max_hp_display())
 	var heal := Button.new()
 	heal.text = "+"
@@ -789,10 +796,17 @@ func _build_ui() -> void:
 	_second_form_hp.tooltip_text = "PF attuali della seconda forma; si consumano dopo quelli temporanei."
 	_second_form_max_hp.value_changed.connect(func(_v: float) -> void: _update_second_max_formula())
 	_second_form_max_hp.tooltip_text = "PF massimi della seconda forma (polimorfia o forma selvatica)"
+	# CA and initiative share a dedicated defense panel.
+	var defense_panel := PanelContainer.new()
+	var defense_style := health_style.duplicate() as StyleBoxFlat
+	defense_style.draw_center = false
+	defense_style.border_color = Color(0.48, 0.68, 0.75, 0.85)
+	defense_panel.add_theme_stylebox_override("panel", defense_style)
+	combat_column.add_child(defense_panel)
 	var defense_flow := HFlowContainer.new()
-	defense_flow.add_theme_constant_override("h_separation", 8)
-	defense_flow.add_theme_constant_override("v_separation", 5)
-	combat_column.add_child(defense_flow)
+	defense_flow.add_theme_constant_override("h_separation", 12)
+	defense_flow.add_theme_constant_override("v_separation", 6)
+	defense_panel.add_child(defense_flow)
 	var temp_health := HBoxContainer.new()
 	temp_health.add_theme_constant_override("separation", 6)
 	defense_flow.add_child(temp_health)
@@ -805,6 +819,11 @@ func _build_ui() -> void:
 	_ac.tooltip_text = "Classe Armatura base, prima dei bonus"
 	_install_formula("ac", _ac_effective, [_ac], ["Base"])
 	_ac.size_flags_horizontal = Control.SIZE_SHRINK_BEGIN
+	_ac_proficiency_warning = Label.new()
+	_ac_proficiency_warning.text = "⚠"
+	_ac_proficiency_warning.visible = false
+	_ac_proficiency_warning.add_theme_color_override("font_color", Color(1.0, 0.76, 0.28))
+	temp_health.add_child(_ac_proficiency_warning)
 	var movement_row := HBoxContainer.new()
 	movement_row.add_theme_constant_override("separation", 6)
 	defense_flow.add_child(movement_row)
@@ -813,10 +832,26 @@ func _build_ui() -> void:
 	_initiative_effective.custom_minimum_size.x = 32
 	movement_row.add_child(_initiative_effective)
 	_install_formula("initiative", _initiative_effective, [], [])
+	# Movement has its own row beneath defense, including other speeds and
+	# the two PHB jumping distances (running / standing).
+	var movement_panel := PanelContainer.new()
+	var movement_style := health_style.duplicate() as StyleBoxFlat
+	movement_style.draw_center = false
+	movement_style.border_color = Color(0.47, 0.66, 0.58, 0.85)
+	movement_panel.add_theme_stylebox_override("panel", movement_style)
+	combat_column.add_child(movement_panel)
+	var movement_box := VBoxContainer.new()
+	movement_box.add_theme_constant_override("separation", 5)
+	movement_panel.add_child(movement_box)
+	var movement_heading := Label.new()
+	movement_heading.text = "MOVIMENTO"
+	movement_heading.add_theme_font_size_override("font_size", 15)
+	movement_heading.add_theme_color_override("font_color", Color(0.74, 0.90, 0.77))
+	movement_box.add_child(movement_heading)
 	var speed_row := HBoxContainer.new()
-	speed_row.add_theme_constant_override("separation", 4)
-	defense_flow.add_child(speed_row)
-	_add_label(speed_row, "Velocità (ft)")
+	speed_row.add_theme_constant_override("separation", 5)
+	movement_box.add_child(speed_row)
+	_add_label(speed_row, "Camminata (ft)")
 	_speed_effective = Label.new()
 	speed_row.add_child(_speed_effective)
 	_speed = SpinBox.new()
@@ -827,9 +862,23 @@ func _build_ui() -> void:
 	_speed.custom_minimum_size = Vector2(69, 36)
 	_speed.value_changed.connect(_on_speed_changed)
 	speed_row.add_child(_speed)
-	_speed.tooltip_text = "Velocità dalla specie o dal bestiario, modificabile"
+	_speed.tooltip_text = "Velocità base dalla specie o dal bestiario, modificabile"
 	_install_formula("speed", _speed_effective, [_speed], ["Base"])
 	_speed.value_changed.connect(func(_value: float) -> void: _update_speed_display())
+	_other_movements = Label.new()
+	_other_movements.autowrap_mode = TextServer.AUTOWRAP_WORD_SMART
+	_other_movements.add_theme_font_size_override("font_size", 13)
+	movement_box.add_child(_other_movements)
+	var jumps := HFlowContainer.new()
+	jumps.add_theme_constant_override("h_separation", 15)
+	jumps.add_theme_constant_override("v_separation", 3)
+	movement_box.add_child(jumps)
+	_long_jump = Label.new()
+	_long_jump.add_theme_font_size_override("font_size", 13)
+	jumps.add_child(_long_jump)
+	_high_jump = Label.new()
+	_high_jump.add_theme_font_size_override("font_size", 13)
+	jumps.add_child(_high_jump)
 	_ac.value_changed.connect(func(_value: float) -> void: _update_defense_display())
 
 	var abilities_panel := PanelContainer.new()
