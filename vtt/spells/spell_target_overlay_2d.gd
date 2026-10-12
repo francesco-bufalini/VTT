@@ -331,6 +331,15 @@ func _draw_target_list(names: Array[String], area_label: String, top: float = 13
 	return top + panel_height + 8.0
 
 
+# Always return a typed array. A conditional expression with an untyped
+# [] branch loses Array[String] at runtime when the preview is inactive.
+func _range_names_for_hud(active_range: bool) -> Array[String]:
+	var names: Array[String] = []
+	if active_range:
+		names = _range_target_names()
+	return names
+
+
 func _draw() -> void:
 	if not _is_active():
 		return
@@ -365,7 +374,7 @@ func _draw() -> void:
 					draw_line(center, _world_point(value), Color(0.32, 0.96, 1.0, 0.95), 3.0, true)
 	var preview: MeshInstance3D = measure.get("_spell_preview") as MeshInstance3D
 	var casting: bool = spell != null and is_instance_valid(spell) and bool(spell.call("is_targeting"))
-	var range_list: Array[String] = _range_target_names() if active_range else []
+	var range_list: Array[String] = _range_names_for_hud(active_range)
 	if preview != null and is_instance_valid(preview) and preview.visible and casting:
 		var start: Vector3 = measure.get("_spell_preview_start")
 		var end: Vector3 = measure.get("_spell_preview_end")
