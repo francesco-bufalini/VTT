@@ -12,6 +12,7 @@ const Player5eTools = preload("res://vtt/player_5etools_catalog.gd")
 const RaceRules = preload("res://vtt/creature_race_rules.gd")
 const SpellcastingTab = preload("res://vtt/creature_spellcasting_tab.gd")
 const SpellCatalog = preload("res://vtt/spells/spell_catalog.gd")
+const ActiveSpells = preload("res://vtt/creature_active_spells.gd")
 const FiveToolsText = preload("res://vtt/five_tools_rich_text.gd")
 const StructuredTrackers = preload("res://vtt/structured_resource_trackers.gd")
 const TrackerTab = preload("res://vtt/creature_trackers_tab.gd")
@@ -5464,14 +5465,62 @@ func _set_status(message: String) -> void:
 
 
 func _refresh_conditions(record: Dictionary) -> void:
+	if _condition_rows == null:
+		return
 	for child: Node in _condition_rows.get_children():
 		_condition_rows.remove_child(child)
 		child.queue_free()
+
+	# The applied spells are true trait origins. Show them first, including
+	# spells that were explicitly applied without adding a numeric benefit.
+	var spell_heading := HBoxContainer.new()
+	_condition_rows.add_child(spell_heading)
+	var title := Label.new()
+	title.text = "Incantesimi attivi"
+	title.add_theme_font_size_override("font_size", 15)
+	title.size_flags_horizontal = Control.SIZE_EXPAND_FILL
+	spell_heading.add_child(title)
+	var add_spell := Button.new()
+	add_spell.text = "+ Incantesimo"
+	add_spell.tooltip_text = "Applica un incantesimo dal catalogo. Sarà visibile anche nei Tratti e utilizzabile come origine."
+	add_spell.pressed.connect(_open_add_active_spell)
+	spell_heading.add_child(add_spell)
+	var applied: Array[Dictionary] = ActiveSpells.active_origins(record)
+	applied.sort_custom(func(a: Dictionary, b: Dictionary) -> bool:
+		return String((a.get("definition", {}) as Dictionary).get("name", "")).naturalnocasecmp_to(
+			String((b.get("definition", {}) as Dictionary).get("name", ""))) < 0
+	)
+	if applied.is_empty():
+		var empty := Label.new()
+		empty.text = "Nessun incantesimo attivo."
+		empty.modulate.a = 0.65
+		_condition_rows.add_child(empty)
+	for source: Dictionary in applied:
+		var spell: Dictionary = source.get("definition", {})
+		var sid: String = String(source.get("id", ""))
+		var row := HBoxContainer.new()
+		_condition_rows.add_child(row)
+		var name_label := Label.new()
+		name_label.text = "✨ " + String(spell.get("name", "Incantesimo"))
+		name_label.size_flags_horizontal = Control.SIZE_EXPAND_FILL
+		row.add_child(name_label)
+		var detail := Button.new()
+		detail.text = "Leggi effetti"
+		detail.pressed.connect(_show_effect_description.bind(spell.duplicate(true)))
+		row.add_child(detail)
+		var remove := Button.new()
+		remove.text = "×"
+		remove.tooltip_text = "Rimuovi l'incantesimo e i benefici che concede a questa creatura."
+		remove.pressed.connect(_remove_active_spell.bind(sid))
+		row.add_child(remove)
+
+	# Other Effects immediately follow the spell section; then Conditions and
+	# diseases retain their ordinary checkbox-based management.
 	var active: Array = record.get("conditions", [])
 	var definitions := ContentCatalog.condition_definitions(
 		String(record.get("rules_version", "2014"))
 	)
-	for category: String in ["conditions", "effects", "diseases"]:
+	for category: String in ["effects", "conditions", "diseases"]:
 		var has_section := false
 		for definition: Dictionary in definitions:
 			if String(definition.get("category", "conditions")) != category:
@@ -5502,40 +5551,81 @@ func _refresh_conditions(record: Dictionary) -> void:
 			info.pressed.connect(_show_effect_description.bind(definition.duplicate(true)))
 			row.add_child(info)
 
-	# Spell-granted effects share one icon and their lifecycle with the
-	# benefit origins, instead of being duplicated in the condition toggles.
-	var spell_effects: Array[Dictionary] = []
-	var enabled: Dictionary = ProficiencyRules.origin_enabled_map(record)
-	var seen_spells: Dictionary = {}
-	for raw_origin: Variant in record.get("proficiency_origins", []):
-		if not raw_origin is Dictionary:
-			continue
-		var source: Dictionary = raw_origin
-		var sid: String = String(source.get("id", ""))
-		if String(source.get("group", "")) != "spell" or not sid.begins_with("spell:"):
-			continue
-		if seen_spells.has(sid) or not bool(enabled.get(sid, false)):
-			continue
-		seen_spells[sid] = true
-		var definition: Dictionary = SpellCatalog.catalog_spell(sid.substr(6))
-		if not definition.is_empty():
-			spell_effects.append(definition)
-	if not spell_effects.is_empty():
-		var heading := Label.new()
-		heading.text = "Incantesimi attivi"
-		heading.add_theme_font_size_override("font_size", 15)
-		_condition_rows.add_child(heading)
-		for spell: Dictionary in spell_effects:
-			var row := HBoxContainer.new()
-			_condition_rows.add_child(row)
-			var name_label := Label.new()
-			name_label.text = "✨ " + String(spell.get("name", "Incantesimo"))
-			name_label.size_flags_horizontal = Control.SIZE_EXPAND_FILL
-			row.add_child(name_label)
-			var detail := Button.new()
-			detail.text = "Leggi effetti"
-			detail.pressed.connect(_show_effect_description.bind(spell.duplicate(true)))
-			row.add_child(detail)
+
+func _open_add_active_spell() -> void:
+	var record: Dictionary = _current()
+	if record.is_empty():
+		return
+	var dialog := ConfirmationDialog.new()
+	dialog.title = "Aggiungi un incantesimo attivo"
+	dialog.ok_button_text = "Applica"
+	add_child(dialog)
+	var content := VBoxContainer.new()
+	dialog.add_child(content)
+	var search := LineEdit.new()
+	search.placeholder_text = "Cerca un incantesimo per nome…"
+	content.add_child(search)
+	var picker := OptionButton.new()
+	picker.custom_minimum_size.x = 430
+	picker.fit_to_longest_item = false
+	content.add_child(picker)
+	var count_hint := Label.new()
+	content.add_child(count_hint)
+	var options: Array[Dictionary] = SpellCatalog.all_spells_for_rules(
+		String(record.get("rules_version", "2014"))
+	)
+	var fill := func(value: String) -> void:
+		picker.clear()
+		var query: String = value.strip_edges().to_lower()
+		var matches := 0
+		for spell: Dictionary in options:
+			var name: String = String(spell.get("name", ""))
+			var spell_id: String = String(spell.get("id", ""))
+			if name.is_empty() or spell_id.is_empty() or (not query.is_empty() and query not in name.to_lower()):
+				continue
+			matches += 1
+			if picker.item_count < 120:
+				picker.add_item("%s · %s" % [name, String(spell.get("source", ""))])
+				picker.set_item_metadata(picker.item_count - 1, spell_id)
+		if picker.item_count > 0:
+			picker.select(0)
+		count_hint.text = "%d risultati%s" % [matches, " (mostrati i primi 120; affina la ricerca)" if matches > 120 else ""]
+		dialog.get_ok_button().disabled = picker.item_count == 0
+	fill.call("")
+	search.text_changed.connect(func(value: String) -> void: fill.call(value))
+	dialog.confirmed.connect(func() -> void:
+		if picker.selected >= 0:
+			_apply_active_spell(String(picker.get_selected_metadata()))
+		dialog.queue_free()
+	)
+	dialog.canceled.connect(func() -> void: dialog.queue_free())
+	DialogLayout.popup(dialog, Vector2i(530, 205))
+
+
+func _apply_active_spell(spell_id: String) -> void:
+	var record: Dictionary = _current()
+	if record.is_empty() or not ActiveSpells.apply(record, spell_id):
+		return
+	_save_active_spell_change(record)
+
+
+func _remove_active_spell(origin_id: String) -> void:
+	var record: Dictionary = _current()
+	if record.is_empty() or not ActiveSpells.remove(record, origin_id):
+		return
+	_save_active_spell_change(record)
+
+
+func _save_active_spell_change(record: Dictionary) -> void:
+	_recalculate_bonus_mirrors(record)
+	var error: Error = _archive.save(record)
+	if error != OK:
+		_set_status("Impossibile salvare gli incantesimi attivi: " + error_string(error))
+		return
+	_replace_current_record(record)
+	_load_form(record)
+	_apply_sheet_properties(record)
+	_sync_token_health(record)
 
 
 func _show_effect_description(definition: Dictionary) -> void:
