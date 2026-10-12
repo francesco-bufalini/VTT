@@ -866,12 +866,18 @@ func _build_ui() -> void:
 	movement_heading.add_theme_font_size_override("font_size", 15)
 	movement_heading.add_theme_color_override("font_color", Color(0.74, 0.90, 0.77))
 	movement_box.add_child(movement_heading)
-	var speed_row := HBoxContainer.new()
-	speed_row.add_theme_constant_override("separation", 5)
-	movement_box.add_child(speed_row)
-	_add_label(speed_row, "Camminata (ft)")
+	# Every speed uses the same three-column grid, including walking.
+	# Reserve the third column for the editable walking base so the
+	# four additional values align vertically with walking's total.
+	var speed_grid := GridContainer.new()
+	speed_grid.columns = 3
+	speed_grid.add_theme_constant_override("h_separation", 12)
+	speed_grid.add_theme_constant_override("v_separation", 4)
+	movement_box.add_child(speed_grid)
+	_add_label(speed_grid, "Camminata (ft)")
 	_speed_effective = Label.new()
-	speed_row.add_child(_speed_effective)
+	_speed_effective.custom_minimum_size.x = 48
+	speed_grid.add_child(_speed_effective)
 	_speed = SpinBox.new()
 	_speed.min_value = 0
 	_speed.max_value = 999
@@ -879,27 +885,23 @@ func _build_ui() -> void:
 	_speed.update_on_text_changed = true
 	_speed.custom_minimum_size = Vector2(69, 36)
 	_speed.value_changed.connect(_on_speed_changed)
-	speed_row.add_child(_speed)
+	speed_grid.add_child(_speed)
 	_speed.tooltip_text = "Velocità base dalla specie o dal bestiario, modificabile"
 	_install_formula("speed", _speed_effective, [_speed], ["Base"])
 	_speed.value_changed.connect(func(_value: float) -> void: _update_speed_display())
-	# Every creature shows all four 5e special speeds, including zero.
-	# Formula widgets expose the corresponding bonus targets directly.
-	var special_grid := GridContainer.new()
-	special_grid.columns = 2
-	special_grid.add_theme_constant_override("h_separation", 12)
-	special_grid.add_theme_constant_override("v_separation", 3)
-	movement_box.add_child(special_grid)
 	_special_speed_labels.clear()
 	for mode: String in Rules.SPECIAL_SPEEDS:
 		var name: String = {"climb": "Scalata", "swim": "Nuoto",
 			"fly": "Volo", "burrow": "Scavo"}[mode]
-		_add_label(special_grid, name + " (ft)")
+		_add_label(speed_grid, name + " (ft)")
 		var value_label := Label.new()
-		value_label.custom_minimum_size.x = 38
-		special_grid.add_child(value_label)
+		value_label.custom_minimum_size.x = 48
+		speed_grid.add_child(value_label)
 		_special_speed_labels[mode] = value_label
 		_install_formula("speed:" + mode, value_label, [], [])
+		var spacer := Control.new()
+		spacer.custom_minimum_size.x = 69
+		speed_grid.add_child(spacer)
 	var jumps_heading := Label.new()
 	jumps_heading.text = "SALTI · DISTANZE MASSIME"
 	jumps_heading.add_theme_font_size_override("font_size", 14)
@@ -1068,7 +1070,10 @@ func _build_ui() -> void:
 	_attack_ability.tooltip_text = "Preferenza per armi Finesse: le armi da mischia normali usano Forza, quelle a distanza Destrezza. I valori del bestiario includono la competenza."
 	_attack_ability.item_selected.connect(_on_attack_ability_changed)
 	preference_row.add_child(_attack_ability)
-	var hand_bar := HFlowContainer.new()
+	# Three compact rows avoid wrapping a hand label separately from
+	# its selector on narrow combat columns.
+	var hand_bar := GridContainer.new()
+	hand_bar.columns = 2
 	hand_bar.add_theme_constant_override("h_separation", 9)
 	hand_bar.add_theme_constant_override("v_separation", 5)
 	combat_column.add_child(hand_bar)
@@ -1085,9 +1090,11 @@ func _build_ui() -> void:
 	_hand_off_picker.clip_text = true
 	_hand_off_picker.item_selected.connect(_on_hand_selected.bind("off"))
 	hand_bar.add_child(_hand_off_picker)
+	var show_all_caption := Control.new()
+	hand_bar.add_child(show_all_caption)
 	_show_offhand_all = CheckButton.new()
 	_show_offhand_all.text = "Tutte le armi"
-	_show_offhand_all.tooltip_text = "Mostra anche armi senza Finesse nella mano secondaria. Finesse non è un requisito per combattere con due armi: normalmente serve la proprietà Leggera."
+	_show_offhand_all.tooltip_text = "Mostra anche armi senza Finesse nella mano secondaria. Il combattimento con due armi normalmente richiede armi Leggere."
 	_show_offhand_all.button_pressed = false
 	_show_offhand_all.toggled.connect(func(_enabled: bool) -> void:
 		_refresh_equipment_pickers(_current())
