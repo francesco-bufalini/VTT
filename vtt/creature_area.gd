@@ -3198,11 +3198,15 @@ func _on_spellcasting_updated(values: Dictionary) -> void:
 	var record: Dictionary = _current()
 	if record.is_empty():
 		return
+	var concentration_changed: bool = (
+		values.has("concentrating_spell_id") or values.has("conditions")
+	)
 	for key: String in [
 		"spells", "prepared_spells", "spellbook_spells",
 		"spell_slots_total", "spell_slots_spent",
 		"pact_slots_total", "pact_slots_spent", "pact_slot_level",
-		"spell_slots_visible", "pact_slots_visible"
+		"spell_slots_visible", "pact_slots_visible",
+		"spellcasting_ability", "concentrating_spell_id", "conditions"
 	]:
 		if values.has(key):
 			record[key] = values[key]
@@ -3211,6 +3215,11 @@ func _on_spellcasting_updated(values: Dictionary) -> void:
 		_set_status("Salvataggio incantesimi non riuscito: " + error_string(error))
 		return
 	_replace_current_record(record)
+	if _spellcasting_ui != null:
+		_spellcasting_ui.call("refresh_spell_state", record)
+	if concentration_changed:
+		_refresh_conditions(record)
+		_sync_token_health(record)
 
 
 func _creature_proficiency(record: Dictionary) -> int:
