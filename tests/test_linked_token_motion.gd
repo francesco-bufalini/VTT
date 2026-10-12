@@ -68,6 +68,9 @@ func _run() -> void:
 	):
 		_fail("association must not teleport or rotate the follower")
 		return
+	if not follower.get_collision_exceptions().has(leader):
+		_fail("linked tokens must not block each other's movement")
+		return
 
 	leader.global_position += Vector3(3.0, -2.0, 1.0)
 	links.call("refresh_all")
@@ -110,6 +113,9 @@ func _run() -> void:
 		return
 
 	links.call("dismount", follower)
+	if follower.get_collision_exceptions().has(leader):
+		_fail("detaching must restore collision between formerly linked tokens")
+		return
 	var detached: Vector3 = follower.global_position
 	var detached_yaw: float = follower.global_rotation.y
 	leader.global_position += Vector3(7.0, 0.0, 0.0)
