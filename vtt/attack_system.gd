@@ -196,6 +196,11 @@ func _process(delta: float) -> void:
 	if _attacker == null or not is_instance_valid(_attacker):
 		cancel_attack(false)
 		return
+	if _preview_only:
+		# A previously selected creature can move outside the preview reach.
+		for selected: CharacterBody3D in _preview_selected_targets.duplicate():
+			if not is_instance_valid(selected) or not _target_in_range(selected):
+				_preview_selected_targets.erase(selected)
 
 	# 2D attacks point at the mouse, exactly like 2D spell targeting.
 	_show_range(_range_normal_feet, _range_long_feet)
