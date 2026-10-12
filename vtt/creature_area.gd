@@ -1489,6 +1489,8 @@ func _on_creature_language_selected(index: int) -> void:
 func _refresh_creature_language() -> void:
 	if _panel == null:
 		return
+	if _inventory_ui != null and _inventory_ui.has_method("set_gui_language"):
+		_inventory_ui.call("set_gui_language", _creature_language)
 	CreatureLocale.apply(_panel, _creature_language)
 	# Dialogs are not all descendants of the archive panel.
 	for dialog: Node in [
