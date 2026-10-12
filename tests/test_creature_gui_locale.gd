@@ -126,7 +126,7 @@ func run() -> void:
 	assert(Locale.text_for("Interrompi concentrazione", "en") == "End concentration")
 	assert(Locale.text_for("Automatica", "en") == "Automatic")
 	assert(Locale.text_for("Caratteristica: SAG  ·  Tiro per colpire: +5  ·  CD: 14\nConcentrazione: Bless", "en")
-		== "Ability: SAG  ·  Spell attack: +5  ·  DC: 14\nConcentration: Bless",
+		== "Ability: WIS  ·  Spell attack: +5  ·  DC: 14\nConcentration: Bless",
 		"Spellcasting summaries translate their GUI labels without changing the spell name")
 	assert(Locale.text_for("Talenti posseduti", "en") == "Owned feats")
 	assert(Locale.text_for("Only if finesse", "it") == "Solo se accurata")
