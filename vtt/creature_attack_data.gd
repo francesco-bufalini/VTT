@@ -220,7 +220,7 @@ static func weapon_size_dice(base: String, size_name: String) -> String:
 static func has_two_weapon_style(record: Dictionary) -> bool:
 	if bool(record.get("two_weapon_fighting", false)):
 		return true
-	for field: String in ["fighting_styles", "proficiency_choices", "proficiency_origins", "selected_features"]:
+	for field: String in ["fighting_styles", "proficiency_choices", "proficiency_origins", "selected_features", "feats_catalog", "trait_choices"]:
 		var raw: Variant = record.get(field, [])
 		if not raw is Array:
 			continue
@@ -230,7 +230,9 @@ static func has_two_weapon_style(record: Dictionary) -> bool:
 				var row: Dictionary = value
 				if bool(row.get("disabled", false)):
 					continue
-				label = String(row.get("name", row.get("label", row.get("key", ""))))
+				label = String(row.get("fighting_style", row.get("fightingStyle",
+					row.get("selected_style", row.get("selected", row.get("choice",
+					row.get("name", row.get("label", row.get("key", ""))))))))
 			else:
 				label = String(value)
 			if label.to_lower().contains("two-weapon fighting"):
@@ -260,8 +262,12 @@ static func offhand_bonus_attack_allowed(record: Dictionary) -> bool:
 		return false
 	if String(off_entry.get("type", "")).split("|")[0].to_upper() == "R":
 		return false
-	return ((Items.has_property(main_entry, "L") and Items.has_property(off_entry, "L"))
-		or has_dual_wielder(record))
+	var main_light: bool = Items.has_property(main_entry, "L")
+	var off_light: bool = Items.has_property(off_entry, "L")
+	if String(record.get("rules_version", "2014")) == "2024":
+		# The 2024 Dual Wielder feat requires a Light-weapon trigger.
+		return main_light and (off_light or has_dual_wielder(record))
+	return (main_light and off_light) or has_dual_wielder(record)
 
 
 static func damage_label(record: Dictionary, attack: Dictionary) -> String:
