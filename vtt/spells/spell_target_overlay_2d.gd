@@ -27,13 +27,17 @@ func setup(root: Node3D, spell_system: Node, measurement: Node3D, view_camera: C
 
 
 func _is_active() -> bool:
+	# The HUD target list belongs to both camera modes; only the projected
+	# contour drawing below is restricted to the top-down 2D view.
 	return (
 		board != null and is_instance_valid(board)
-		and board.has_method("is_2d_view_enabled")
-		and bool(board.call("is_2d_view_enabled"))
 		and camera != null and is_instance_valid(camera)
 		and measure != null and is_instance_valid(measure)
 	)
+
+
+func _is_2d_view() -> bool:
+	return board.has_method("is_2d_view_enabled") and bool(board.call("is_2d_view_enabled"))
 
 
 func _process(_delta: float) -> void:
@@ -284,7 +288,7 @@ func _draw() -> void:
 	if not _is_active():
 		return
 	var range_mesh: MeshInstance3D = measure.get("_spell_range_preview") as MeshInstance3D
-	if range_mesh != null and is_instance_valid(range_mesh) and range_mesh.visible and bool(spell.call("is_targeting")):
+	if _is_2d_view() and range_mesh != null and is_instance_valid(range_mesh) and range_mesh.visible and bool(spell.call("is_targeting")):
 		var range_center: Vector3 = measure.get("_spell_range_center")
 		var radius: float = float(measure.get("_spell_range_radius"))
 		if radius > 0.0:
@@ -296,11 +300,12 @@ func _draw() -> void:
 			String(data.get("shape", "sphere")), float(data.get("width", -1.0)),
 			String(data.get("style", ""))
 		)
-		_draw_area(points, Color(1.0, 0.54, 0.18, 0.94))
+		if _is_2d_view():
+			_draw_area(points, Color(1.0, 0.54, 0.18, 0.94))
 		hover_area = data
 	# Keep confirmed Magic Missile rays visible between successive picks.
 	# The hovered ray is drawn from the 3D spell preview below.
-	if bool(spell.call("is_targeting")) and String(spell.get("_targeting_phase")) == "multi_target_tokens":
+	if _is_2d_view() and bool(spell.call("is_targeting")) and String(spell.get("_targeting_phase")) == "multi_target_tokens":
 		var caster: Node3D = spell.get("_pending_caster") as Node3D
 		if caster != null and is_instance_valid(caster):
 			var center: Vector2 = _world_point(caster.global_position)
@@ -317,7 +322,8 @@ func _draw() -> void:
 		var end: Vector3 = measure.get("_spell_preview_end")
 		var shape: String = String(measure.get("_spell_preview_shape"))
 		var width: float = float(measure.get("_spell_preview_line_width"))
-		_draw_area(_shape_polygon(start, end, shape, width, String(measure.get("_spell_preview_style"))), Color(1.0, 0.72, 0.20, 1.0))
+		if _is_2d_view():
+			_draw_area(_shape_polygon(start, end, shape, width, String(measure.get("_spell_preview_style"))), Color(1.0, 0.72, 0.20, 1.0))
 		if shape != "line":
 			_draw_target_list(
 				_target_names(start, end, shape, width, String(measure.get("_spell_preview_style"))),
@@ -325,7 +331,11 @@ func _draw() -> void:
 			)
 		else:
 			var names: Array[String] = []
-			var position: Vector2 = get_viewport().get_mouse_position()
+			var position: Vector2 = (
+				get_viewport().get_visible_rect().size * 0.5
+				if Input.mouse_mode == Input.MOUSE_MODE_CAPTURED
+				else get_viewport().get_mouse_position()
+			)
 			var mode: String = String(spell.get("_targeting_phase"))
 			var pending_spell: Dictionary = spell.call("_pending_spell")
 			var target_data: Dictionary = {}
