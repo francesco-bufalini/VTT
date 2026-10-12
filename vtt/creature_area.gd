@@ -2056,7 +2056,7 @@ func _select_details_editor(index: int) -> void:
 	call_deferred("_guard_nested_scrolls", _tabs)
 
 
-func _on_damage_defenses_updated(damage_overrides: Dictionary, condition_overrides: Dictionary) -> void:
+func _on_damage_defenses_updated(damage_overrides: Dictionary, condition_overrides: Dictionary, defense_entries: Array = []) -> void:
 	if _loading:
 		return
 	var record: Dictionary = _current()
@@ -2064,6 +2064,7 @@ func _on_damage_defenses_updated(damage_overrides: Dictionary, condition_overrid
 		return
 	record["damage_defense_overrides"] = damage_overrides.duplicate(true)
 	record["condition_immunity_overrides"] = condition_overrides.duplicate(true)
+	record["damage_defense_entries"] = defense_entries.duplicate(true)
 	var error: Error = _archive.save(record)
 	if error != OK:
 		_set_status("Impossibile salvare resistenze/immunità: " + error_string(error))
