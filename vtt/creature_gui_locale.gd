@@ -455,6 +455,45 @@ const EN: Dictionary = {
 	"Armatura": "Armor",
 	"Equipaggia": "Equip",
 	"Disequipaggia": "Unequip",
+	"SALTO IN LUNGO": "LONG JUMP",
+	"SALTO IN ALTO": "HIGH JUMP",
+	"Con rincorsa (almeno 10 ft): ": "With a run-up (at least 10 ft): ",
+	"Da fermo (senza rincorsa): ": "Standing (without a run-up): ",
+	"Doppio clic per modificare i valori consentiti.": "Double-click to edit permitted values.",
+	"Clic destro per gestire i bonus e le loro origini.": "Right-click to manage bonuses and their origins.",
+	"Nessuna competenza": "No proficiency",
+	"nessuna competenza": "no proficiency",
+	"nessuno": "none",
+	"Modifica da Visualizza e modifica → Competenze": "Edit under View and edit → Proficiencies",
+	"Competenza:": "Proficiency:",
+	"Percezione passiva:": "Passive Perception:",
+	"Vai al privilegio: ": "Go to feature: ",
+	"Ripristina le azioni all'inizio del turno": "Reset actions at the start of the turn",
+	"Ripristina tutti gli utilizzi (manuale)": "Restore all uses (manual)",
+	"Nessuna velocità speciale concessa; scalare o nuotare è comunque possibile con il normale costo aggiuntivo di movimento.": "No special speed granted; climbing or swimming is still possible at the usual extra movement cost.",
+	"Seleziona almeno un valore per vedere l'anteprima.": "Select at least one value to preview.",
+	"Competenze e abilità: risincronizzate dalle origini; TS, abilità e modificatori si aggiornano dalle formule.": "Proficiencies and skills: synced from origins; saves, skills and modifiers update from formulas.",
+	"Nessuna classe magica.": "No spellcasting class.",
+	"non disponibili": "unavailable",
+	"PF non calcolabili: ": "HP cannot be calculated: ",
+	"PF massimi → ": "Maximum HP → ",
+	"Competenza → ": "Proficiency → ",
+	"Dadi vita: ": "Hit dice: ",
+	"XP minimi: ": "Minimum XP: ",
+	"Iniziativa: ": "Initiative: ",
+	"Iniziativa ": "Initiative ",
+	"Portata ": "Reach ",
+	"Slot dal livello: ": "Slots from level: ",
+	"Patto ": "Pact ",
+	"Massimi derivati dai dati strutturati: ": "Maxima derived from structured data: ",
+	"Nessuna arma": "No weapon",
+	"nessun effetto VTT associato.": "no associated VTT effect.",
+	"effetto VTT non attivabile senza un token collegato.": "VTT effect unavailable without a linked token.",
+	"Tutte le origini": "All origins",
+	"Tutte le competenze": "All proficiencies",
+	"Valore": "Value",
+	"Origini:": "Origins:",
+	"Doppio clic": "Double-click",
 }
 const IT: Dictionary = {
 	"STR": "FOR",
@@ -486,6 +525,16 @@ static func text_for(source: String, language: String) -> String:
 	var dictionary: Dictionary = EN if language == "en" else IT
 	if dictionary.has(source):
 		return String(dictionary[source])
+	if source.contains("\n"):
+		var lines := source.split("\n")
+		var changed := false
+		for index in range(lines.size()):
+			var translated := text_for(lines[index], language)
+			if translated != lines[index]:
+				lines[index] = translated
+				changed = true
+		if changed:
+			return "\n".join(lines)
 	# Compose only UI portions (for example skill name · DEX). Catalog names
 	# and free-form input are never passed through a broad text replacement.
 	if source.contains(" · "):
@@ -503,6 +552,11 @@ static func text_for(source: String, language: String) -> String:
 	# Common generated GUI messages: translate fixed labels, keep their numbers
 	# and original creature/spell/item names intact.
 	for prefix in ["Strumenti: ", "Linguaggi: ", "Completa le scelte: ",
+		"Con rincorsa (almeno 10 ft): ", "Da fermo (senza rincorsa): ",
+		"PF massimi → ", "Competenza → ", "PF non calcolabili: ",
+		"Vai al privilegio: ", "Slot dal livello: ",
+		"Dadi vita: ", "XP minimi: ", "Iniziativa: ", "Portata ",
+		"Massimi derivati dai dati strutturati: ",
 		"Taglia · ", "Slot livello ", "Livello ",
 		"Competenza: ", "Elimina · ", "Completa · ", "Aggiunto: ",
 		"Documento · ", "ID catalogo: ", "Origini:\n"]:
