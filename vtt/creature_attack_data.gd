@@ -274,12 +274,8 @@ static func max_melee_range(record: Dictionary) -> float:
 static func active_attack(record: Dictionary) -> Dictionary:
 	var attacks: Array[Dictionary] = definitions(record)
 	var selected: String = String(record.get("equipped_attack_id", ""))
-	var weapon_equipped: bool = Items.has_equipped_weapon(record.get("inventory", []))
-	# A previously selected fallback attack is no longer usable when an
-	# actual weapon is equipped. Never leave the carousel pointing at a
-	# hidden unarmed/improvised card.
-	if weapon_equipped and selected in ["unarmed", "improvised"]:
-		selected = ""
+	# A character can explicitly choose an unarmed or improvised strike
+	# without removing equipment. Neither fallback is generated for monsters.
 	if not selected.is_empty():
 		for attack: Dictionary in attacks:
 			if String(attack.get("id", "")) == selected:
