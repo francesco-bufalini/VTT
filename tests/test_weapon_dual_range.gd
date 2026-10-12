@@ -16,6 +16,13 @@ class Board:
 		return use_2d
 
 
+class RangedAttacker:
+	extends CharacterBody3D
+
+	func get_reach_feet() -> float:
+		return 80.0
+
+
 func _fail(reason: String) -> void:
 	push_error("Dual weapon ranges: " + reason)
 	quit(1)
@@ -54,7 +61,7 @@ func _run() -> void:
 
 	var board := Board.new()
 	root.add_child(board)
-	var attacker := CharacterBody3D.new()
+	var attacker := RangedAttacker.new()
 	attacker.name = "Archer"
 	board.add_child(attacker)
 
@@ -185,6 +192,7 @@ func _run() -> void:
 		_fail("long 2D circle is not centered on token")
 		return
 	attack.call("_show_range", 80.0, 320.0)
+	attack.set("_targeting", false)
 	attack.call("_process", 0.0)
 	if normal_mesh.visible or long_mesh.visible or normal_ring.visible or long_ring.visible:
 		_fail("3D shells obstruct the top-down 2D overlay")
