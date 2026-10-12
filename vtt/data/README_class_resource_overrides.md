@@ -9,10 +9,11 @@ The game never fetches Fight Club or other websites.
 - `classes[].resources[].steps`: when a counter becomes available or changes
   its maximum/recharge. A later step **updates** the same resource, not a new
   tracker. Each optional `subclass` restricts it to that subclass.
-- `value`: integer, arithmetic formula, or Fight Club placeholders such as
-  `%6` for the CHA modifier; formulas are resolved against the character's
-  effective ability modifiers using the existing numeric-bonus engine.
+- `value`: integer or **native VTT** arithmetic expression, for example
+  `cha_mod`, `wis_mod` or `1 + cha_mod`. Maximum formulas are resolved
+  through the same numeric-bonus engine already used elsewhere in the app.
   `minimum` can enforce rules such as Bardic Inspiration's one-use minimum.
+  Fight Club placeholders are **not accepted at runtime**.
 - `reset`: `manual`, `turn`, `short_rest`, or `long_rest`. The recovery
   helper restores resources at short/long rest and ignores manual ones; partial
   short-rest recovery (some 2024 features) needs richer metadata in the future.
@@ -37,6 +38,10 @@ python scripts/generate_fightclub_resources.py /path/to/fightclub5exml
 
 The checked-in JSON is the allowlist. Inspect the output before committing.
 The script does not fetch content or infer a resource from descriptive prose.
+Fight Club values (e.g. its `%6` token for CHA modifier) are translated to
+VTT-native formulas (e.g. `cha_mod`) **by this Python script only**. An unknown
+source placeholder causes an error instead of being stored. No source-specific
+expression syntax is ever persisted in the app's supplemental data.
 Spell slots, spells known, invocation capacities and Mystic Arcanum are excluded
 because the VTT handles spellcasting and selections elsewhere. Questionable
 entries are excluded or corrected (e.g. Indomitable's 2014 long-rest reset).
