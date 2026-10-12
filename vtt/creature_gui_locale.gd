@@ -608,14 +608,14 @@ static func text_for(source: String, language: String) -> String:
 static func apply(root: Node, language: String) -> void:
 	if root == null or not is_instance_valid(root):
 		return
-	if root is Label or root is Button:
+	if (root is Label or root is Button) and not bool(root.get_meta("creature_gui_data", false)):
 		_translate_property(root, "text", language)
 	# Opt in only for our computed summaries, never 5etools descriptions.
 	if root is RichTextLabel and bool(root.get_meta("creature_gui_text", false)):
 		_translate_property(root, "text", language)
 	if root is LineEdit or root is TextEdit:
 		_translate_property(root, "placeholder_text", language)
-	if root is Control:
+	if root is Control and not bool(root.get_meta("creature_gui_data", false)):
 		_translate_property(root, "tooltip_text", language)
 	if root is Window:
 		_translate_property(root, "title", language)
@@ -632,14 +632,14 @@ static func apply(root: Node, language: String) -> void:
 			var result := _localized(tab, "tab_title", value, language)
 			if result != value:
 				tabs.set_tab_title(i, result)
-	if root is OptionButton:
+	if root is OptionButton and not root.has_meta("catalog_category"):
 		var options := root as OptionButton
 		for i in range(options.item_count):
 			var value := options.get_item_text(i)
 			var result := _localized(options, "option_" + str(i), value, language)
 			if result != value:
 				options.set_item_text(i, result)
-	elif root is PopupMenu:
+	elif root is PopupMenu and not (root.get_parent() is OptionButton and root.get_parent().has_meta("catalog_category")):
 		var menu := root as PopupMenu
 		for i in range(menu.item_count):
 			if menu.is_item_separator(i):
