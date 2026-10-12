@@ -7,6 +7,7 @@ on:
       - main
       - feature/campaign-hub
       - feature/structured-creature-sheets
+      - refactor/structured-class-mechanics-20261012
       - feature/tokens-lazy-load
     paths:
       - "**/*.gd"
