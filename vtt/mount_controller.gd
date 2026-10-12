@@ -185,9 +185,15 @@ func _reconcile_collision_links() -> void:
 		var rider: CharacterBody3D = value as CharacterBody3D
 		if not is_mounted(rider):
 			continue
+		# A grandchild must also be able to pass through its ancestors
+		# while the whole formation moves.
 		var target: Node3D = get_target(rider)
-		if target is PhysicsBody3D:
-			var link_id: int = rider.get_instance_id()
+		var ancestors: Dictionary = {}
+		while target is PhysicsBody3D and not ancestors.has(target):
+			ancestors[target] = true
+			var link_id: String = "%d:%d" % [
+				rider.get_instance_id(), target.get_instance_id()
+			]
 			var cached_pair: Array = _collision_links.get(link_id, [])
 			if (
 				cached_pair.size() == 2
@@ -197,6 +203,10 @@ func _reconcile_collision_links() -> void:
 				wanted[link_id] = cached_pair
 			else:
 				wanted[link_id] = [weakref(rider), weakref(target)]
+			if target is CharacterBody3D:
+				target = get_target(target as CharacterBody3D)
+			else:
+				break
 
 	for rider_id: Variant in _collision_links.keys():
 		var previous: Array = _collision_links[rider_id]
