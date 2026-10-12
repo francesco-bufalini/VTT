@@ -317,26 +317,33 @@ func _draw() -> void:
 				if value is Vector3:
 					draw_line(center, _world_point(value), Color(0.32, 0.96, 1.0, 0.95), 3.0, true)
 	var preview: MeshInstance3D = measure.get("_spell_preview") as MeshInstance3D
-	if preview != null and is_instance_valid(preview) and preview.visible and bool(spell.call("is_targeting")):
+	var casting: bool = spell != null and is_instance_valid(spell) and bool(spell.call("is_targeting"))
+	if preview != null and is_instance_valid(preview) and preview.visible and casting:
 		var start: Vector3 = measure.get("_spell_preview_start")
 		var end: Vector3 = measure.get("_spell_preview_end")
 		var shape: String = String(measure.get("_spell_preview_shape"))
 		var width: float = float(measure.get("_spell_preview_line_width"))
+		var style: String = String(measure.get("_spell_preview_style"))
 		if _is_2d_view():
-			_draw_area(_shape_polygon(start, end, shape, width, String(measure.get("_spell_preview_style"))), Color(1.0, 0.72, 0.20, 1.0))
+			_draw_area(_shape_polygon(start, end, shape, width, style), Color(1.0, 0.72, 0.20, 1.0))
 		if shape != "line":
-			_draw_target_list(
-				_target_names(start, end, shape, width, String(measure.get("_spell_preview_style"))),
-				"Nell'area"
-			)
-		else:
+			_draw_target_list(_target_names(start, end, shape, width, style), "Nell'area")
+			return
+	# Token-targeting spells don't always create an AoE preview mesh.
+	# Keep their affected-token HUD available in both camera modes.
+	if casting:
+		var mode: String = String(spell.get("_targeting_phase"))
+		if mode in [
+			"target_token", "multi_target_tokens", "transform_target",
+			"transform_multi_targets", "resize_target",
+			"chain_primary", "chain_secondary"
+		]:
 			var names: Array[String] = []
 			var position: Vector2 = (
 				get_viewport().get_visible_rect().size * 0.5
 				if Input.mouse_mode == Input.MOUSE_MODE_CAPTURED
 				else get_viewport().get_mouse_position()
 			)
-			var mode: String = String(spell.get("_targeting_phase"))
 			var pending_spell: Dictionary = spell.call("_pending_spell")
 			var target_data: Dictionary = {}
 			if mode in ["target_token", "multi_target_tokens"]:
@@ -355,7 +362,8 @@ func _draw() -> void:
 					if entry != null and is_instance_valid(entry) and entry != hovered_token:
 						names.append(_target_display_name(entry))
 			_draw_target_list(names, "Bersagli")
-	elif not hover_area.is_empty():
+			return
+	if not hover_area.is_empty():
 		_draw_target_list(
 			_target_names(hover_area.get("start", Vector3.ZERO), hover_area.get("end", Vector3.ZERO),
 				String(hover_area.get("shape", "sphere")), float(hover_area.get("width", -1.0)),
