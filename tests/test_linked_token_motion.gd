@@ -91,6 +91,9 @@ func _run() -> void:
 	if not bool(links.call("mount", tail, follower)):
 		_fail("nested association was rejected")
 		return
+	if not tail.get_collision_exceptions().has(leader):
+		_fail("nested follower must not collide with its ancestor leader")
+		return
 	var tail_local: Vector3 = follower.to_local(tail.global_position)
 	var tail_yaw: float = wrapf(
 		tail.global_rotation.y - follower.global_rotation.y, -PI, PI
