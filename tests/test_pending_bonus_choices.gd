@@ -6,6 +6,7 @@ const Proficiencies = preload("res://vtt/creature_proficiency_rules.gd")
 const Bonuses = preload("res://vtt/creature_bonus_rules.gd")
 const BonusTab = preload("res://vtt/creature_bonus_tab.gd")
 const FeatsTab = preload("res://vtt/creature_feats_tab.gd")
+const CreatureArea = preload("res://vtt/creature_area.gd")
 
 
 func _initialize() -> void:
@@ -32,6 +33,21 @@ func _run() -> void:
 	var warnings: Dictionary = Pending.section_warnings(record)
 	assert(warnings.has(3), "Bonus menu needs its warning")
 	assert(not warnings.has(2), "Feat section must not ask for a choice handled in Bonus")
+
+	# The top-level View and edit warning and the matching dropdown entry
+	# must be visible without opening the Bonus editor first.
+	var creature_area := CreatureArea.new()
+	var section_picker := OptionButton.new()
+	for title: String in ["Niente", "Competenze", "Talenti", "Bonus", "Tracker", "Resistenze"]:
+		section_picker.add_item(title)
+	var global_warning := Label.new()
+	creature_area.set("_editor_section_picker", section_picker)
+	creature_area.set("_editor_choice_warning", global_warning)
+	creature_area.call("_refresh_choice_warnings", record)
+	assert(global_warning.visible)
+	assert(section_picker.get_item_text(3).begins_with("⚠ "), "Bonus menu item should be marked")
+	assert(not section_picker.get_item_text(2).begins_with("⚠ "), "Talenti is not the choice editor")
+	assert("Telepathic" in global_warning.tooltip_text)
 
 	# A muted feat no longer asks for a choice, until reactivated.
 	record.proficiency_origins = [{"id": sid, "name": "Telepathic", "group": "feat", "disabled": true}]
@@ -72,6 +88,9 @@ func _run() -> void:
 	assert(Bonuses.value(record, "ability:int") == 11)
 	assert(Pending.missing_feat_abilities(record).is_empty())
 	assert(not Pending.section_warnings(record).has(3), "Warning disappears after selection")
+	creature_area.call("_refresh_choice_warnings", record)
+	assert(not global_warning.visible, "Completing the last choice clears top-level warning")
+	assert(not section_picker.get_item_text(3).begins_with("⚠ "), "Dropdown item clears its warning")
 	record.feats_catalog = [
 		{"name": "Telepathic", "source": "TCE", "ability_choice": "wis", "origin_id": ""},
 		{"name": "Telepathic", "source": "TCE", "ability_choice": "wis", "origin_id": "custom|2"}
