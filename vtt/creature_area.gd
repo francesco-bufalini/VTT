@@ -595,10 +595,10 @@ func _build_ui() -> void:
 	_add_label(editor_select_row, "Visualizza e modifica")
 	_editor_section_picker = OptionButton.new()
 	_editor_section_picker.fit_to_longest_item = false
-	_editor_section_picker.custom_minimum_size = Vector2(185, 30)
-	_editor_section_picker.size_flags_horizontal = Control.SIZE_SHRINK_BEGIN
+	_editor_section_picker.custom_minimum_size = Vector2(285, 30)
+	_editor_section_picker.size_flags_horizontal = Control.SIZE_EXPAND_FILL
 	_editor_section_picker.tooltip_text = "Scegli una sezione da visualizzare o modificare"
-	for section_name: String in ["Niente", "Competenze", "Talenti", "Bonus", "Tracker", "Resistenze e immunità"]:
+	for section_name: String in ["Niente", "Competenze", "Talenti", "Bonus", "Tracker", "Resistenze, immunità e vulnerabilità"]:
 		_editor_section_picker.add_item(section_name)
 	_editor_section_picker.select(0)
 	_editor_section_picker.item_selected.connect(_select_details_editor)
@@ -623,17 +623,18 @@ func _build_ui() -> void:
 	_damage_defenses_ui.hide()
 	statistics_tab.add_child(_damage_defenses_ui)
 	_damage_defenses_ui.call("setup", Callable(self, "_on_damage_defenses_updated"))
-	# Always keep skills and combat side by side (45% / 55%).  Scroll
-	# their oversized contents locally instead of expanding the whole sheet.
+	# Share the editor divider and give combat the width its contents need.
+	# Local scrolling remains a fallback when neither column can fit.
 	_statistics_columns = HBoxContainer.new()
-	_statistics_columns.add_theme_constant_override("separation", 3)
+	_statistics_columns.add_theme_constant_override("separation", 9)
+	_statistics_columns.resized.connect(_update_statistics_widths)
+	statistics_tab.get_parent().get_parent().resized.connect(func() -> void: call_deferred("_update_statistics_widths"))
 	_statistics_columns.size_flags_horizontal = Control.SIZE_EXPAND_FILL
 	statistics_tab.add_child(_statistics_columns)
 	var skills_view := ScrollContainer.new()
 	skills_view.mouse_force_pass_scroll_events = false
 	skills_view.name = "SkillsColumnView"
-	skills_view.size_flags_horizontal = Control.SIZE_EXPAND_FILL
-	skills_view.size_flags_stretch_ratio = 0.9
+	skills_view.size_flags_horizontal = Control.SIZE_FILL
 	skills_view.custom_minimum_size.x = 0
 	skills_view.horizontal_scroll_mode = ScrollContainer.SCROLL_MODE_AUTO
 	skills_view.vertical_scroll_mode = ScrollContainer.SCROLL_MODE_DISABLED
@@ -646,7 +647,6 @@ func _build_ui() -> void:
 	combat_view.mouse_force_pass_scroll_events = false
 	combat_view.name = "CombatColumnView"
 	combat_view.size_flags_horizontal = Control.SIZE_EXPAND_FILL
-	combat_view.size_flags_stretch_ratio = 1.1
 	combat_view.custom_minimum_size.x = 0
 	combat_view.horizontal_scroll_mode = ScrollContainer.SCROLL_MODE_AUTO
 	combat_view.vertical_scroll_mode = ScrollContainer.SCROLL_MODE_DISABLED
@@ -960,9 +960,9 @@ func _build_ui() -> void:
 	abilities_panel.add_theme_stylebox_override("panel", abilities_style)
 	_abilities_grid = GridContainer.new()
 	var abilities_row := _abilities_grid
-	# One four-column table keeps characteristic, score, modifier and
-	# saving throw aligned without repeating the TS label on every row.
-	abilities_row.columns = 4
+	# Use separate cells for values and proficiency icons so headers and
+	# numeric readouts stay aligned even when an inline editor opens.
+	abilities_row.columns = 5
 	abilities_row.add_theme_constant_override("h_separation", 8)
 	abilities_row.add_theme_constant_override("v_separation", 7)
 	var ability_title := Label.new()
@@ -976,9 +976,10 @@ func _build_ui() -> void:
 	abilities_panel.add_child(abilities_content)
 	abilities_content.add_child(ability_title)
 	abilities_content.add_child(abilities_row)
-	for ability_column_title: String in ["Car.", "Punteggio", "Mod.", "TS"]:
+	for ability_column_title: String in ["Car.", "Punteggio", "Mod.", "TS", ""]:
 		var column_heading := Label.new()
 		column_heading.text = ability_column_title
+		column_heading.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER if ability_column_title != "Car." else HORIZONTAL_ALIGNMENT_LEFT
 		column_heading.add_theme_font_size_override("font_size", 12)
 		column_heading.add_theme_color_override("font_color", Color(0.80, 0.88, 0.95))
 		abilities_row.add_child(column_heading)
@@ -989,28 +990,33 @@ func _build_ui() -> void:
 		abilities_row.add_child(ability_label)
 		var scores_row := HBoxContainer.new()
 		scores_row.add_theme_constant_override("separation", 4)
+		scores_row.alignment = BoxContainer.ALIGNMENT_CENTER
 		abilities_row.add_child(scores_row)
 		var spin := _spin(scores_row, 1, 30)
 		spin.custom_minimum_size.x = 48
 		spin.tooltip_text = "Punteggio base"
 		_ability_spins[ability] = spin
 		var total_score := Label.new()
-		total_score.custom_minimum_size.x = 28
+		total_score.custom_minimum_size.x = 44
+		total_score.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
 		scores_row.add_child(total_score)
 		_ability_total_labels[ability] = total_score
 		_install_formula("ability:" + ability, total_score, [spin], ["Base"])
 		var modifier := Label.new()
-		modifier.custom_minimum_size.x = 42
+		modifier.custom_minimum_size.x = 44
+		modifier.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
 		modifier.tooltip_text = "Modificatore calcolato dal punteggio e dal bonus"
 		abilities_row.add_child(modifier)
 		_ability_modifier_labels[ability] = modifier
 		_install_formula("ability_mod:" + ability, modifier, [], [])
+		_formula_values["ability_mod:" + ability].alignment = BoxContainer.ALIGNMENT_CENTER
 		var saving_throw := Label.new()
 		saving_throw.text = "+0"
 		saving_throw.tooltip_text = "Tiro salvezza: modificatore caratteristica + competenza, se posseduta"
 		# Keep proficiency icon and numeric formula in independent, aligned cells.
 		var save_cell := HBoxContainer.new()
 		save_cell.add_theme_constant_override("separation", 3)
+		save_cell.alignment = BoxContainer.ALIGNMENT_CENTER
 		abilities_row.add_child(save_cell)
 		var save_icon := Label.new()
 		save_icon.custom_minimum_size.x = 28
@@ -1018,9 +1024,9 @@ func _build_ui() -> void:
 		_saving_throw_icons[ability] = save_icon
 		saving_throw.add_theme_font_size_override("font_size", 17)
 		saving_throw.custom_minimum_size.x = 44
-		saving_throw.horizontal_alignment = HORIZONTAL_ALIGNMENT_RIGHT
+		saving_throw.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
 		save_cell.add_child(saving_throw)
-		save_cell.add_child(save_icon)
+		abilities_row.add_child(save_icon)
 		_saving_throw_labels[ability] = saving_throw
 		_install_formula("save:" + ability, saving_throw, [], [])
 		spin.value_changed.connect(_on_ability_value_changed.bind(ability))
@@ -2608,7 +2614,45 @@ func _filter_owned_creatures(query: String) -> void:
 	_update_sheet_layout()
 
 
+func _update_statistics_widths() -> void:
+	if _statistics_columns == null or _statistics_columns.get_child_count() != 2:
+		return
+	var left_view := _statistics_columns.get_child(0) as Control
+	var right_view := _statistics_columns.get_child(1) as Control
+	var margin := _statistics_columns.get_parent().get_parent() as MarginContainer
+	var scroll := margin.get_parent() as ScrollContainer
+	var viewport_width := scroll.size.x - margin.get_theme_constant("margin_left") - margin.get_theme_constant("margin_right")
+	if scroll.get_v_scroll_bar().visible:
+		viewport_width -= scroll.get_v_scroll_bar().size.x
+	var available := maxf(0.0, viewport_width - 9.0)
+	var left_needed := (left_view.get_child(0) as Control).get_combined_minimum_size().x
+	var right_needed := (right_view.get_child(0) as Control).get_combined_minimum_size().x
+	var editor_columns: Array[HBoxContainer] = []
+	for editor: Control in [_proficiencies_ui, _feats_ui, _bonuses_ui, _trackers_ui, _damage_defenses_ui]:
+		if not editor.visible:
+			continue
+		var columns := editor.get_node("EditorColumns") as HBoxContainer
+		editor_columns.append(columns)
+		# Ignore the width assigned on the previous layout pass.
+		left_needed = maxf(left_needed, (columns.get_child(0) as Control).get_minimum_size().x)
+		right_needed = maxf(right_needed, (columns.get_child(1) as Control).get_combined_minimum_size().x)
+	var left_width := floorf(clampf(available * 0.45, minf(left_needed, available * 0.45), maxf(left_needed, available - right_needed)))
+	# If both contents fit, reserve all the width needed on the right before
+	# leaving spare space on the left. Very small windows retain local scrolling.
+	if left_needed + right_needed <= available:
+		left_width = floorf(clampf(available * 0.45, left_needed, available - right_needed))
+	if not is_equal_approx(left_view.custom_minimum_size.x, left_width):
+		left_view.custom_minimum_size.x = left_width
+	for columns: HBoxContainer in editor_columns:
+		var panel := columns.get_child(0) as Control
+		if panel.size_flags_horizontal != Control.SIZE_FILL:
+			panel.size_flags_horizontal = Control.SIZE_FILL
+		if not is_equal_approx(panel.custom_minimum_size.x, left_width):
+			panel.custom_minimum_size.x = left_width
+
+
 func _update_stats_column_heights() -> void:
+	_update_statistics_widths()
 	if _statistics_columns == null or _statistics_columns.get_child_count() != 2:
 		return
 	var left_view := _statistics_columns.get_child(0) as ScrollContainer
@@ -2645,8 +2689,8 @@ func _update_sheet_layout() -> void:
 	_creature_list_scroll.custom_minimum_size.y = minf(float(mini(maxi(visible_rows, 1), 7) * 37 + 6), row_budget)
 	if _abilities_grid == null or _abilities_grid.get_child_count() == 0:
 		return
-	# Keep the ability grid as a four-column table in every window size.
-	_abilities_grid.columns = 4
+	# Keep the ability grid in the same columns in every window size.
+	_abilities_grid.columns = 5
 
 
 func _on_selected(index: int) -> void:

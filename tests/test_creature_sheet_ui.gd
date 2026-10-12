@@ -401,7 +401,7 @@ func run() -> void:
 		"Proficient Wisdom saving throw must separate its marker from the numeric formula")
 	var wisdom_saving: Label = area._saving_throw_labels["wis"]
 	var wisdom_formula: Node = area._formula_values["ability:wis"]
-	assert(area._abilities_grid.columns == 4
+	assert(area._abilities_grid.columns == 5
 		and area._formula_values["save:wis"].get_parent().get_parent() == area._abilities_grid
 		and wisdom_formula.get_parent().get_parent() == area._abilities_grid,
 		"Saving throws, scores and modifiers must share four aligned table columns")
@@ -444,7 +444,7 @@ func run() -> void:
 		"Combat should get moderately more width, rather than a vertically stacked layout")
 	assert(skills_view.horizontal_scroll_mode == ScrollContainer.SCROLL_MODE_AUTO
 		and combat_view.horizontal_scroll_mode == ScrollContainer.SCROLL_MODE_AUTO
-		and area._abilities_grid.columns == 4,
+		and area._abilities_grid.columns == 5,
 		"Oversized details should scroll inside their own columns while ability values remain tabular")
 	area._update_stats_column_heights()
 	assert(skills_view.custom_minimum_size.y > 0

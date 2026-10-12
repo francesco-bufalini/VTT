@@ -60,6 +60,7 @@ func setup(on_change: Callable) -> void:
 	add_child(_status)
 
 	var columns := HBoxContainer.new()
+	columns.name = "EditorColumns"
 	columns.add_theme_constant_override("separation", 9)
 	columns.size_flags_horizontal = Control.SIZE_EXPAND_FILL
 	add_child(columns)

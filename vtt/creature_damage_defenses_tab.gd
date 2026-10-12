@@ -222,10 +222,11 @@ func setup(on_change: Callable) -> void:
 	_base_hint.autowrap_mode = TextServer.AUTOWRAP_WORD_SMART
 	add_child(_base_hint)
 	var columns := HBoxContainer.new()
+	columns.name = "EditorColumns"
 	columns.add_theme_constant_override("separation", 9)
 	add_child(columns)
-	var left := _make_column(columns, "Origini delle difese", 190)
-	var right := _make_column(columns, "Singole difese", 255)
+	var left := _make_column(columns, "Origini", 190)
+	var right := _make_column(columns, "Resistenze, immunità e vulnerabilità", 255)
 	var ls := ScrollContainer.new()
 	ls.custom_minimum_size.y = 245
 	ls.mouse_force_pass_scroll_events = false
@@ -246,7 +247,7 @@ func setup(on_change: Callable) -> void:
 	_damage_rows.add_theme_constant_override("separation", 5)
 	rs.add_child(_damage_rows)
 	var add_button := Button.new()
-	add_button.text = "+ Difesa"
+	add_button.text = "+ Aggiungi voce"
 	right.add_child(add_button)
 	_add_panel = VBoxContainer.new()
 	_add_panel.hide()
@@ -266,7 +267,7 @@ func setup(on_change: Callable) -> void:
 	_source_picker.fit_to_longest_item = false
 	_add_panel.add_child(_source_picker)
 	var confirm := Button.new()
-	confirm.text = "Aggiungi difesa"
+	confirm.text = "Aggiungi voce"
 	confirm.pressed.connect(_add_defense)
 	_add_panel.add_child(confirm)
 	_type_picker.item_selected.connect(func(_index: int) -> void:
@@ -285,6 +286,7 @@ func _make_column(parent: HBoxContainer, heading: String, width: float) -> VBoxC
 	panel.add_child(content)
 	var title := Label.new()
 	title.text = heading
+	title.autowrap_mode = TextServer.AUTOWRAP_WORD_SMART
 	title.add_theme_font_size_override("font_size", 15)
 	content.add_child(title)
 	return content
@@ -417,11 +419,11 @@ func _refresh() -> void:
 		if not bool(entry.get("automatic", false)):
 			var remove := Button.new()
 			remove.text = "×"
-			remove.tooltip_text = "Rimuovi questa difesa"
+			remove.tooltip_text = "Rimuovi questa voce"
 			remove.pressed.connect(_remove.bind(i))
 			row.add_child(remove)
 	_refresh_highlights()
-	_base_hint.text = "Le difese automatiche provengono dai campi strutturati delle origini; seleziona un'origine per evidenziarle."
+	_base_hint.text = "Resistenze, immunità e vulnerabilità automatiche provengono dalle origini; seleziona un'origine per evidenziarle."
 
 
 func _select_origin(sid: String) -> void:
