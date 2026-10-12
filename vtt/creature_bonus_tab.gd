@@ -45,6 +45,7 @@ func setup(on_change: Callable) -> void:
 	var right := _make_column(columns, "Bonus per statistica", 260)
 
 	var origin_scroll := ScrollContainer.new()
+	origin_scroll.mouse_force_pass_scroll_events = false
 	origin_scroll.custom_minimum_size.y = 245
 	origin_scroll.size_flags_vertical = Control.SIZE_EXPAND_FILL
 	origin_scroll.horizontal_scroll_mode = ScrollContainer.SCROLL_MODE_DISABLED
@@ -61,6 +62,7 @@ func setup(on_change: Callable) -> void:
 	_target_filter.item_selected.connect(_on_filter_changed)
 	right.add_child(_target_filter)
 	var bonuses_scroll := ScrollContainer.new()
+	bonuses_scroll.mouse_force_pass_scroll_events = false
 	bonuses_scroll.custom_minimum_size.y = 245
 	bonuses_scroll.size_flags_vertical = Control.SIZE_EXPAND_FILL
 	bonuses_scroll.horizontal_scroll_mode = ScrollContainer.SCROLL_MODE_DISABLED
