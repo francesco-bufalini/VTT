@@ -278,8 +278,10 @@ func _refresh_origin_buttons() -> void:
 		button.alignment = HORIZONTAL_ALIGNMENT_LEFT
 		button.clip_text = true
 		button.text = String(source.get("name", sid)) + (" (%d)" % direct_count if direct_count > 0 else " (condizionale)")
-		button.tooltip_text = ("Origine inattiva: benefici non applicati. " if not bool(source.get("active", true)) else "")
+		button.tooltip_text = (
+			("Origine inattiva: benefici non applicati. " if not bool(source.get("active", true)) else "")
 			+ "Seleziona per evidenziare le difese concesse dai campi strutturati."
+		)
 		button.modulate.a = 0.6 if not bool(source.get("active", true)) else 1.0
 		button.pressed.connect(_select_origin.bind(sid))
 		_origin_cards.add_child(button)
