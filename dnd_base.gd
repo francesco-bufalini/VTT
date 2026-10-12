@@ -39,6 +39,7 @@ const CONTEXT_DISMOUNT := 45
 const CONTEXT_CREATURE_AREA := 100
 const CONTEXT_TOKEN_CONDITIONS := 101
 const CONTEXT_TOKEN_ACTIVE_SPELL := 102
+const CONTEXT_CLEAR_SPELL_HIGHLIGHT := 103
 const CONTEXT_ITEM_CREATE := 80
 const CONTEXT_ITEM_MANAGE := 81
 const CAMPAIGN_EDITOR_SCENE_PATH := "res://vtt/editor/campaign_editor.tscn"
@@ -124,6 +125,7 @@ var _token_resize_confirmed_callback: Callable = Callable()
 var _token_resize_canceled_callback: Callable = Callable()
 var _pending_aoe_index: int = -1
 var _context_token: CharacterBody3D = null
+var _token_effect_dialog: ConfirmationDialog
 var _selected_tokens: Array[CharacterBody3D] = []
 var _ui_owns_mouse: bool = false
 var _vision_cones_visible: bool = false
@@ -3132,6 +3134,39 @@ func apply_cast_spell_effects(caster: Node3D, spell: Dictionary, targets: Array)
 		_set_token_active_spell(target, spell_id, true)
 
 
+# The main context menu closes asynchronously. Keep GUI ownership while a
+# native token-effect dialog is open, otherwise the popup_hide callback
+# captures the mouse and CheckButtons become impossible to click.
+func _popup_token_effect_dialog(dialog: ConfirmationDialog, size: Vector2i) -> void:
+	_token_effect_dialog = dialog
+	dialog.visibility_changed.connect(
+		_on_token_effect_dialog_visibility_changed.bind(dialog)
+	)
+	_ui_owns_mouse = true
+	_release_mouse()
+	DialogLayout.popup(dialog, size)
+	call_deferred("_release_mouse")
+
+
+func _on_token_effect_dialog_visibility_changed(dialog: ConfirmationDialog) -> void:
+	if dialog.visible:
+		return
+	if _token_effect_dialog == dialog:
+		_token_effect_dialog = null
+	dialog.queue_free()
+	call_deferred("_finish_context_menu_close")
+
+
+func _on_token_condition_toggled(enabled: bool, target: Node3D, condition_id: String) -> void:
+	_set_token_status(target, condition_id, enabled)
+
+
+func _on_token_active_spell_removed(target: Node3D, spell_id: String, button: Button) -> void:
+	_set_token_active_spell(target, spell_id, false)
+	if is_instance_valid(button):
+		button.queue_free()
+
+
 func _open_token_conditions_dialog(target: Node3D) -> void:
 	var dialog := ConfirmationDialog.new()
 	dialog.title = "Condizioni · " + String(target.name)
@@ -3159,13 +3194,11 @@ func _open_token_conditions_dialog(target: Node3D) -> void:
 		]
 		check.tooltip_text = ContentCatalog.description(definition)
 		check.button_pressed = condition_id in selected
-		check.toggled.connect(func(enabled: bool) -> void:
-			_set_token_status(target, condition_id, enabled)
-		)
+		# Bind each ID explicitly: loop-local closures can otherwise point to
+		# the final dictionary entry when the user toggles a different row.
+		check.toggled.connect(_on_token_condition_toggled.bind(target, condition_id))
 		rows.add_child(check)
-	dialog.confirmed.connect(func() -> void: dialog.queue_free())
-	dialog.canceled.connect(func() -> void: dialog.queue_free())
-	DialogLayout.popup(dialog, Vector2i(480, 560))
+	_popup_token_effect_dialog(dialog, Vector2i(480, 560))
 
 
 func _open_token_active_spells_dialog(target: Node3D) -> void:
@@ -3185,10 +3218,7 @@ func _open_token_active_spells_dialog(target: Node3D) -> void:
 		var definition: Dictionary = SpellCatalog.catalog_spell(spell_id)
 		var remove := Button.new()
 		remove.text = "×  " + String(definition.get("name", spell_id))
-		remove.pressed.connect(func() -> void:
-			_set_token_active_spell(target, spell_id, false)
-			remove.queue_free()
-		)
+		remove.pressed.connect(_on_token_active_spell_removed.bind(target, spell_id, remove))
 		content.add_child(remove)
 	var search := LineEdit.new()
 	search.placeholder_text = "Cerca incantesimi con durata non istantanea…"
@@ -3225,10 +3255,8 @@ func _open_token_active_spells_dialog(target: Node3D) -> void:
 	dialog.confirmed.connect(func() -> void:
 		if picker.selected >= 0:
 			_set_token_active_spell(target, String(picker.get_selected_metadata()), true)
-		dialog.queue_free()
 	)
-	dialog.canceled.connect(func() -> void: dialog.queue_free())
-	DialogLayout.popup(dialog, Vector2i(490, 440))
+	_popup_token_effect_dialog(dialog, Vector2i(490, 440))
 
 
 func _show_context_menu(screen_position: Vector2) -> void:
@@ -3283,6 +3311,10 @@ func _show_context_menu(screen_position: Vector2) -> void:
 	if _context_token != null and is_instance_valid(_context_token):
 		context_token_menu.add_item("Condizioni del token…", CONTEXT_TOKEN_CONDITIONS)
 		context_token_menu.add_item("Incantesimi attivi sul token…", CONTEXT_TOKEN_ACTIVE_SPELL)
+		context_token_menu.add_separator()	# Recover an older retained red spell highlight without deleting any
+	# active spell, condition or persistent map AoE.
+	if not _affected_tokens.is_empty():
+		context_token_menu.add_item("Rimuovi evidenziazione rossa", CONTEXT_CLEAR_SPELL_HIGHLIGHT)
 		context_token_menu.add_separator()
 	if not _selected_tokens.is_empty():
 		if _selected_tokens.size() == 1:
@@ -3436,8 +3468,18 @@ func _show_context_menu(screen_position: Vector2) -> void:
 
 
 func _on_context_menu_id_pressed(id: int) -> void:
+	if id == CONTEXT_CLEAR_SPELL_HIGHLIGHT:
+		context_menu.hide()
+		if spell_system != null and is_instance_valid(spell_system):
+			spell_system.call("dismiss_post_cast_visuals")
+		if measurement_tool.has_method("set_spell_affected_token_highlight"):
+			measurement_tool.call("set_spell_affected_token_highlight", [], false)
+		set_affected_token_highlight([])
+		_close_context_menu_to_game()
+		return
 	if id == CONTEXT_TOKEN_CONDITIONS or id == CONTEXT_TOKEN_ACTIVE_SPELL:
 		var target: CharacterBody3D = _context_token
+		_ui_owns_mouse = true
 		context_menu.hide()
 		if target == null or not is_instance_valid(target):
 			return
@@ -4209,6 +4251,14 @@ func _on_context_menu_hidden() -> void:
 
 
 func _finish_context_menu_close() -> void:
+	if (
+		_token_effect_dialog != null
+		and is_instance_valid(_token_effect_dialog)
+		and _token_effect_dialog.visible
+	):
+		_ui_owns_mouse = true
+		_release_mouse()
+		return
 	if _mount_pick_rider != null:
 		return
 	if item_controller != null and (item_controller.placing or item_controller.panel.visible):

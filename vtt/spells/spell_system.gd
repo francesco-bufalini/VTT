@@ -5520,8 +5520,17 @@ func _finish_cast() -> void:
 			resolved_targets.append(_pending_caster)
 		board_root.call("apply_cast_spell_effects", _pending_caster, _pending_spell(), resolved_targets)
 	_log_spell_use()
-	_post_cast_cleanup_pending = true
-	_reset_cast_state(false, true)
+	# The red hitbox is a *targeting preview*, never a persistent condition.
+	# Clear it as soon as the cast finishes. Confirmed point AoEs explicitly
+	# reapply their area geometry in _commit_point_spell_cast(), so the click-
+	# to-dismiss area workflow remains unchanged.
+	var measurement: Node = _measurement_tool()
+	_post_cast_cleanup_pending = (
+		measurement != null
+		and measurement.has_method("has_post_cast_spell_visuals")
+		and bool(measurement.call("has_post_cast_spell_visuals"))
+	)
+	_reset_cast_state(false, false)
 	_return_control_to_camera()
 
 
