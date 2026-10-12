@@ -474,6 +474,7 @@ func _refresh_competences() -> void:
 			if kind == "language":
 				displayed_name += " · " + String(Rules.LANGUAGE_TYPE_LABELS.get(
 					Rules.language_type(key), "Altro"))
+			label.set_meta("creature_gui_data", true)
 			label.text = ("✓ " if active else "○ ") + displayed_name + (" 🎓🎓" if mastered else "")
 			label.tooltip_text = "Origini:\n" + "\n".join(linked)
 			if selected_active:
