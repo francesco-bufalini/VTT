@@ -37,7 +37,7 @@ static func class_definition(name: String, source: String = "") -> Dictionary:
 		if fallback.is_empty() or (String(row.get("source", "")) == "PHB"
 			and String(fallback.get("source", "")) != "PHB"):
 			fallback = row
-	return fallback if source.is_empty() else {}
+	# Preserve old class-name fallback for custom/legacy source labels.\n\treturn fallback
 
 
 static func hit_die(name: String, source: String = "") -> int:
