@@ -541,6 +541,7 @@ func _build_token_generation_controls() -> void:
 	)
 	if token_miniature_list == null:
 		token_miniature_list = ItemList.new()
+		token_miniature_list.mouse_force_pass_scroll_events = false
 		token_miniature_list.name = "MiniatureList"
 		token_miniature_list.custom_minimum_size = Vector2(500, 270)
 		token_miniature_list.size_flags_horizontal = Control.SIZE_EXPAND_FILL
@@ -3838,6 +3839,7 @@ func _build_token_state_dialog() -> void:
 	_token_effect_dialog.min_size = Vector2i(540, 400)
 	add_child(_token_effect_dialog)
 	_token_effect_text = RichTextLabel.new()
+	_token_effect_text.mouse_force_pass_scroll_events = false
 	_token_effect_text.custom_minimum_size = Vector2(520.0, 315.0)
 	_token_effect_text.selection_enabled = true
 	_token_effect_text.scroll_active = true
