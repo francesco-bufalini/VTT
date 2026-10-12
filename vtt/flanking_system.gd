@@ -148,8 +148,8 @@ func _build_reach_visuals(
 				continue
 
 			var second_half: Vector3 = second_state.half
-			var tactical_distance := tactical_reach_distance_feet(
-				first.global_position, first_half, second.global_position, second_half, safe_cell
+			var tactical_distance := token_tactical_distance_feet(
+				first, second, safe_cell
 			)
 			var first_reaches: bool = tactical_distance <= first_state.reach + EPSILON
 			var second_reaches: bool = tactical_distance <= second_state.reach + EPSILON
@@ -467,6 +467,27 @@ static func token_half_extents_world(
 		footprint_cells * safe_cell * 0.5,
 		height_cells * safe_cell * 0.5,
 		footprint_cells * safe_cell * 0.5
+	)
+
+
+# Single source of truth for token-to-token reach (arrows, flanking and
+# spell targeting). Includes both tokens' occupied volumes and the tactical
+# 5-ft diagonal/vertical grid convention instead of center-to-center meters.
+static func token_tactical_distance_feet(
+	first: Node3D,
+	second: Node3D,
+	cell_size: float
+) -> float:
+	if first == null or second == null:
+		return INF
+	if first == second:
+		return 0.0
+	return tactical_reach_distance_feet(
+		first.global_position,
+		token_half_extents_world(first, cell_size),
+		second.global_position,
+		token_half_extents_world(second, cell_size),
+		cell_size
 	)
 
 
