@@ -3573,6 +3573,9 @@ func _update_ability_modifier(ability: String) -> void:
 		# Initiative is derived; changing the readout must not trigger a
 		# second full archive save while updating the Dexterity field.
 		_update_defense_display()
+	if ability == "str" and _speed_effective != null and not _loading:
+		# Both jump distances are derived from the current Strength score.
+		_update_speed_display()
 	if not _loading:
 		_refresh_skill_values(live)
 
