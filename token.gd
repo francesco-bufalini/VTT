@@ -1689,7 +1689,9 @@ func apply_appearance_state(state: Dictionary) -> bool:
 	set_conditions(state.get("conditions", _conditions))
 	set_active_spell_ids(state.get("active_spell_ids", _active_spell_ids))
 	var concentrating_id: String = String(state.get("concentrating_spell_id", ""))
-	if not concentrating_id.is_empty():
+	if concentrating_id.is_empty():
+		_concentrating_spell_id = ""
+	else:
 		set_concentrating_spell_id(concentrating_id)
 	global_position.y = (
 		base_y
