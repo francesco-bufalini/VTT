@@ -78,7 +78,8 @@ static func populate(picker: OptionButton, record: Dictionary, preferred: String
 	for source: Dictionary in available_sources:
 		picker.add_item(String(source.get("name", source.get("id", ""))))
 		picker.set_item_metadata(picker.item_count - 1, source)
-	var select_index := 0
+	# Incantesimo is the first action, not the default assigned origin.
+	var select_index := 1 if picker.item_count > 1 else 0
 	for i: int in range(picker.item_count):
 		if String((picker.get_item_metadata(i) as Dictionary).get("id", "")) == previous:
 			select_index = i
