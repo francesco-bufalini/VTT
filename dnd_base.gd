@@ -3159,7 +3159,9 @@ func _open_token_conditions_dialog(target: Node3D) -> void:
 		]
 		check.tooltip_text = ContentCatalog.description(definition)
 		check.button_pressed = condition_id in selected
-		check.toggled.connect(_set_token_status.bind(target, condition_id))
+		check.toggled.connect(func(enabled: bool) -> void:
+			_set_token_status(target, condition_id, enabled)
+		)
 		rows.add_child(check)
 	dialog.confirmed.connect(func() -> void: dialog.queue_free())
 	dialog.canceled.connect(func() -> void: dialog.queue_free())
