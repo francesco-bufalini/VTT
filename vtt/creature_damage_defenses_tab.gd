@@ -110,7 +110,9 @@ static func _sources(record: Dictionary) -> Array[Dictionary]:
 			var is_subrace: bool = not subrace.is_empty() and name.nocasecmp_to(species + " (" + subrace + ")") == 0 and source_book == String(record.get("subrace_source", book))
 			if not is_species and not is_subrace:
 				continue
-			var sid: String = ("subrace|" + source_book.to_lower() + "|" + name.to_lower()
+			# Match the canonical subrace origin identity used by all other
+			# creature benefits, not the flattened display name "Dwarf (Hill)".
+			var sid: String = ("subrace|" + source_book.to_lower() + "|" + subrace.to_lower()
 				if is_subrace else "race|" + source_book.to_lower() + "|" + name.to_lower())
 			# A child species cannot keep inherited racial defenses alive
 			# when the selected base species origin is disabled.
