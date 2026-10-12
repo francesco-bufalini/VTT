@@ -1,0 +1,602 @@
+{
+  "meta": {
+    "source": "5etools-src/data/class/class-*.json",
+    "note": "Raw classTableGroups values. Generic classification; no hand-copied progressions or translated names."
+  },
+  "classes": [
+    {
+      "name": "Artificer",
+      "source": "TCE",
+      "hit_die": 8,
+      "columns": [
+        {
+          "name": "Infused Items",
+          "kind": "capacity",
+          "origin_feature": "Infuse Item",
+          "levels": [
+            0,
+            2,
+            2,
+            2,
+            2,
+            3,
+            3,
+            3,
+            3,
+            4,
+            4,
+            4,
+            4,
+            5,
+            5,
+            5,
+            5,
+            6,
+            6,
+            6
+          ]
+        }
+      ]
+    },
+    {
+      "name": "Barbarian",
+      "source": "PHB",
+      "hit_die": 12,
+      "columns": [
+        {
+          "name": "Rages",
+          "kind": "resource",
+          "origin_feature": "Rage",
+          "levels": [
+            2,
+            2,
+            3,
+            3,
+            3,
+            4,
+            4,
+            4,
+            4,
+            4,
+            4,
+            5,
+            5,
+            5,
+            5,
+            5,
+            6,
+            6,
+            6,
+            "unlimited"
+          ]
+        },
+        {
+          "name": "Rage Damage",
+          "kind": "bonus",
+          "origin_feature": "Rage Damage",
+          "levels": [
+            2,
+            2,
+            2,
+            2,
+            2,
+            2,
+            2,
+            2,
+            3,
+            3,
+            3,
+            3,
+            3,
+            3,
+            3,
+            4,
+            4,
+            4,
+            4,
+            4
+          ]
+        }
+      ]
+    },
+    {
+      "name": "Barbarian",
+      "source": "XPHB",
+      "hit_die": 12,
+      "columns": [
+        {
+          "name": "Rages",
+          "kind": "resource",
+          "origin_feature": "Rage",
+          "levels": [
+            2,
+            2,
+            3,
+            3,
+            3,
+            4,
+            4,
+            4,
+            4,
+            4,
+            4,
+            5,
+            5,
+            5,
+            5,
+            5,
+            6,
+            6,
+            6,
+            6
+          ]
+        },
+        {
+          "name": "Rage Damage",
+          "kind": "bonus",
+          "origin_feature": "Rage",
+          "levels": [
+            2,
+            2,
+            2,
+            2,
+            2,
+            2,
+            2,
+            2,
+            3,
+            3,
+            3,
+            3,
+            3,
+            3,
+            3,
+            4,
+            4,
+            4,
+            4,
+            4
+          ]
+        },
+        {
+          "name": "Weapon Mastery",
+          "kind": "capacity",
+          "origin_feature": "Weapon Mastery",
+          "levels": [
+            2,
+            2,
+            2,
+            3,
+            3,
+            3,
+            3,
+            3,
+            3,
+            4,
+            4,
+            4,
+            4,
+            4,
+            4,
+            4,
+            4,
+            4,
+            4,
+            4
+          ]
+        }
+      ]
+    },
+    {
+      "name": "Bard",
+      "source": "PHB",
+      "hit_die": 8,
+      "columns": []
+    },
+    {
+      "name": "Bard",
+      "source": "XPHB",
+      "hit_die": 8,
+      "columns": []
+    },
+    {
+      "name": "Cleric",
+      "source": "PHB",
+      "hit_die": 8,
+      "columns": []
+    },
+    {
+      "name": "Cleric",
+      "source": "XPHB",
+      "hit_die": 8,
+      "columns": [
+        {
+          "name": "Channel Divinity",
+          "kind": "resource",
+          "origin_feature": "Channel Divinity",
+          "levels": [
+            0,
+            2,
+            2,
+            2,
+            2,
+            3,
+            3,
+            3,
+            3,
+            3,
+            3,
+            3,
+            3,
+            3,
+            3,
+            3,
+            3,
+            4,
+            4,
+            4
+          ]
+        }
+      ]
+    },
+    {
+      "name": "Druid",
+      "source": "PHB",
+      "hit_die": 8,
+      "columns": []
+    },
+    {
+      "name": "Druid",
+      "source": "XPHB",
+      "hit_die": 8,
+      "columns": [
+        {
+          "name": "Wild Shape",
+          "kind": "resource",
+          "origin_feature": "Wild Shape",
+          "levels": [
+            0,
+            2,
+            2,
+            2,
+            2,
+            3,
+            3,
+            3,
+            3,
+            3,
+            3,
+            3,
+            3,
+            3,
+            3,
+            3,
+            4,
+            4,
+            4,
+            4
+          ]
+        }
+      ]
+    },
+    {
+      "name": "Fighter",
+      "source": "PHB",
+      "hit_die": 10,
+      "columns": []
+    },
+    {
+      "name": "Fighter",
+      "source": "XPHB",
+      "hit_die": 10,
+      "columns": [
+        {
+          "name": "Second Wind",
+          "kind": "resource",
+          "origin_feature": "Second Wind",
+          "levels": [
+            2,
+            2,
+            2,
+            3,
+            3,
+            3,
+            3,
+            3,
+            3,
+            4,
+            4,
+            4,
+            4,
+            4,
+            4,
+            4,
+            4,
+            4,
+            4,
+            4
+          ]
+        },
+        {
+          "name": "Weapon Mastery",
+          "kind": "capacity",
+          "origin_feature": "Weapon Mastery",
+          "levels": [
+            3,
+            3,
+            3,
+            4,
+            4,
+            4,
+            4,
+            4,
+            4,
+            5,
+            5,
+            5,
+            5,
+            5,
+            5,
+            6,
+            6,
+            6,
+            6,
+            6
+          ]
+        }
+      ]
+    },
+    {
+      "name": "Monk",
+      "source": "PHB",
+      "hit_die": 8,
+      "columns": [
+        {
+          "name": "Ki Points",
+          "kind": "resource",
+          "origin_feature": "Ki",
+          "levels": [
+            0,
+            2,
+            3,
+            4,
+            5,
+            6,
+            7,
+            8,
+            9,
+            10,
+            11,
+            12,
+            13,
+            14,
+            15,
+            16,
+            17,
+            18,
+            19,
+            20
+          ]
+        }
+      ]
+    },
+    {
+      "name": "Monk",
+      "source": "XPHB",
+      "hit_die": 8,
+      "columns": [
+        {
+          "name": "Focus Points",
+          "kind": "resource",
+          "origin_feature": "Monk's Focus",
+          "levels": [
+            0,
+            2,
+            3,
+            4,
+            5,
+            6,
+            7,
+            8,
+            9,
+            10,
+            11,
+            12,
+            13,
+            14,
+            15,
+            16,
+            17,
+            18,
+            19,
+            20
+          ]
+        }
+      ]
+    },
+    {
+      "name": "Paladin",
+      "source": "PHB",
+      "hit_die": 10,
+      "columns": []
+    },
+    {
+      "name": "Paladin",
+      "source": "XPHB",
+      "hit_die": 10,
+      "columns": [
+        {
+          "name": "Channel Divinity",
+          "kind": "resource",
+          "origin_feature": "Channel Divinity",
+          "levels": [
+            0,
+            0,
+            2,
+            2,
+            2,
+            2,
+            2,
+            2,
+            2,
+            2,
+            3,
+            3,
+            3,
+            3,
+            3,
+            3,
+            3,
+            3,
+            3,
+            3
+          ]
+        }
+      ]
+    },
+    {
+      "name": "Ranger",
+      "source": "PHB",
+      "hit_die": 10,
+      "columns": []
+    },
+    {
+      "name": "Ranger",
+      "source": "XPHB",
+      "hit_die": 10,
+      "columns": [
+        {
+          "name": "Favored Enemy",
+          "kind": "capacity",
+          "origin_feature": "Favored Enemy",
+          "levels": [
+            2,
+            2,
+            2,
+            2,
+            3,
+            3,
+            3,
+            3,
+            4,
+            4,
+            4,
+            4,
+            5,
+            5,
+            5,
+            5,
+            6,
+            6,
+            6,
+            6
+          ]
+        }
+      ]
+    },
+    {
+      "name": "Rogue",
+      "source": "PHB",
+      "hit_die": 8,
+      "columns": []
+    },
+    {
+      "name": "Rogue",
+      "source": "XPHB",
+      "hit_die": 8,
+      "columns": []
+    },
+    {
+      "name": "Sorcerer",
+      "source": "PHB",
+      "hit_die": 6,
+      "columns": [
+        {
+          "name": "Sorcery Points",
+          "kind": "resource",
+          "origin_feature": "Sorcery Points",
+          "levels": [
+            0,
+            2,
+            3,
+            4,
+            5,
+            6,
+            7,
+            8,
+            9,
+            10,
+            11,
+            12,
+            13,
+            14,
+            15,
+            16,
+            17,
+            18,
+            19,
+            20
+          ]
+        }
+      ]
+    },
+    {
+      "name": "Sorcerer",
+      "source": "XPHB",
+      "hit_die": 6,
+      "columns": [
+        {
+          "name": "Sorcery Points",
+          "kind": "resource",
+          "origin_feature": "Innate Sorcery",
+          "levels": [
+            0,
+            2,
+            3,
+            4,
+            5,
+            6,
+            7,
+            8,
+            9,
+            10,
+            11,
+            12,
+            13,
+            14,
+            15,
+            16,
+            17,
+            18,
+            19,
+            20
+          ]
+        }
+      ]
+    },
+    {
+      "name": "Warlock",
+      "source": "PHB",
+      "hit_die": 8,
+      "columns": []
+    },
+    {
+      "name": "Warlock",
+      "source": "XPHB",
+      "hit_die": 8,
+      "columns": []
+    },
+    {
+      "name": "Wizard",
+      "source": "PHB",
+      "hit_die": 6,
+      "columns": []
+    },
+    {
+      "name": "Wizard",
+      "source": "XPHB",
+      "hit_die": 6,
+      "columns": []
+    }
+  ]
+}
