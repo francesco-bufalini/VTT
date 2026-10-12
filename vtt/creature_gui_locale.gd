@@ -1007,6 +1007,22 @@ static func _translate_template(source: String, template: String) -> String:
 				return ""
 			values.append(int(value))
 		else:
+			# Numeric UI formulas use known skill/ability/speed names; translate
+			# only these labels, never arbitrary %s names from catalog content.
+			if (i == 0 and template in [
+				"%s: base %d + bonus specifici %+d",
+				"%s: base %d + bonus cumulabili %+d = %d",
+				"%s: mod. %s %+d + competenza %d × %+d + bonus origini %+d = %+d",
+				"%s: mod. %+d + competenza o bestiario %+d + origini %+d = %+d",
+				"%s: floor((%d - 10) / 2) %+d bonus sul modificatore = %+d"
+			]):
+				if EN.has(value):
+					value = String(EN[value])
+				elif template.contains("floor("):
+					for ability_code: String in ["STR", "DEX", "CON", "INT", "WIS", "CHA"]:
+						if String(IT.get(ability_code, ability_code)) == value:
+							value = ability_code
+							break
 			values.append(value)
 		source_cursor = next
 	if source.substr(source_cursor) != literals[literals.size() - 1]:
