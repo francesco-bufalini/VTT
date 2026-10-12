@@ -103,15 +103,20 @@ static func _sources(record: Dictionary) -> Array[Dictionary]:
 				if is_subrace else "race|" + source_book.to_lower() + "|" + name.to_lower())
 			_add_source(sources, seen, race, sid, "Specie · " + name,
 				not bool(disabled.get(sid, false)))
-	# The feature array contains current class, subclass, feat and species
-	# traits. Structured resistance keys survive the feature extraction.
+	# Traits remain independently identifiable, but disabling a parent
+	# race/class/feat origin must also mute every child trait it grants.
+	var race_parent_id: String = "race|" + String(record.get("species_source", "")).to_lower() + "|" + String(record.get("species", "")).to_lower()
 	for feature: Dictionary in Traits.collect_features(record):
 		var sid: String = "feature:" + String(feature.get("key", ""))
+		var parent_id: String = String(feature.get("origin_key", ""))
+		var active: bool = (not bool(feature.get("inactive", false))
+			and not bool(disabled.get(sid, false))
+			and not bool(disabled.get(parent_id, false)))
+		if parent_id.begins_with("species|") and bool(disabled.get(race_parent_id, false)):
+			active = false
 		_add_source(sources, seen, feature, sid,
 			String(feature.get("origin", "Tratto")) + " · " + String(feature.get("name", "")),
-			not bool(feature.get("inactive", false))
-				and not bool(disabled.get(sid, false))
-				and not bool(disabled.get(String(feature.get("origin_key", "")), false)))
+			active)
 	# Equipment may have structured resistances at the item's top level,
 	# even if no individually named trait was generated from it.
 	for raw_owned: Variant in record.get("inventory", []):
