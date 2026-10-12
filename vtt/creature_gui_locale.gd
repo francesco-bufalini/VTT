@@ -24,8 +24,6 @@ const EN: Dictionary = {
 	"Resistenze e immunità": "Resistances and immunities",
 	"RESISTENZE E IMMUNITÀ AI DANNI": "DAMAGE RESISTANCES AND IMMUNITIES",
 	"IMMUNITÀ ALLE CONDIZIONI": "CONDITION IMMUNITIES",
-	"Resistenza": "Resistance",
-	"Immunità": "Immunity",
 	"Immune": "Immune",
 	"Acido": "Acid",
 	"Contundente": "Bludgeoning",
