@@ -175,6 +175,53 @@ func _follow(rider: CharacterBody3D, visited: Dictionary, ancestors: Dictionary)
 	visited[rider] = true
 
 
+# A token-led formation can be moved from *any* of its members.
+# Legacy item mounts deliberately return null: an item is not a token
+# and cannot be repositioned by moving its passenger.
+func get_token_group_root(token: CharacterBody3D) -> CharacterBody3D:
+	if token == null or not is_instance_valid(token):
+		return null
+	var current: CharacterBody3D = token
+	var seen: Dictionary = {}
+	while is_mounted(current):
+		if seen.has(current):
+			return null
+		seen[current] = true
+		var target: Node3D = get_target(current)
+		if not target is CharacterBody3D:
+			return null
+		current = target as CharacterBody3D
+	return current
+
+
+func is_in_token_group(token: CharacterBody3D) -> bool:
+	var root: CharacterBody3D = get_token_group_root(token)
+	if root == null:
+		return false
+	if root != token:
+		return true
+	for value: Node in get_tree().get_nodes_in_group("dnd_token"):
+		if value is CharacterBody3D and value != token:
+			if board.is_ancestor_of(value) and get_token_group_root(value as CharacterBody3D) == root:
+				return true
+	return false
+
+
+# Apply a rigid world-space delta to the common leader. A delta calculated
+# from the moved follower also rotates the formation *around that follower*,
+# rather than snapping it back to its old parent-relative position.
+func apply_explicit_token_motion(
+	pivot: CharacterBody3D, previous_transform: Transform3D
+) -> void:
+	var root: CharacterBody3D = get_token_group_root(pivot)
+	if root == null:
+		return
+	if root != pivot:
+		var delta: Transform3D = pivot.global_transform * previous_transform.affine_inverse()
+		root.global_transform = delta * root.global_transform
+	refresh_all()
+
+
 func _reconcile_collision_links() -> void:
 	if board == null or not is_instance_valid(board):
 		return
