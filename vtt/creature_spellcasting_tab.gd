@@ -10,6 +10,8 @@ const Bonuses = preload("res://vtt/creature_bonus_rules.gd")
 const DialogLayout = preload("res://vtt/dialog_layout.gd")
 const CreatureLocale = preload("res://vtt/creature_gui_locale.gd")
 
+const CASTING_ABILITIES: Array[String] = ["", "str", "dex", "con", "int", "wis", "cha"]
+
 const BOOK_VIEW_CLASS := 10
 const BOOK_VIEW_BOOK := 11
 const BOOK_EDIT := 12
@@ -24,6 +26,8 @@ var _cast_slot_choice: OptionButton
 var _pending_cast_spell: Dictionary = {}
 var _record: Dictionary = {}
 var _spell_summary: Label
+var _spell_ability_choice: OptionButton
+var _drop_concentration_button: Button
 var _loading := false
 var _gui_language := "it"
 var _catalog: Array[Dictionary] = []
@@ -95,6 +99,25 @@ func setup(
 	_spell_summary.autowrap_mode = TextServer.AUTOWRAP_WORD_SMART
 	_spell_summary.text = "Caratteristica: — · Tiro per colpire: — · CD: —\nConcentrazione: nessuna"
 	add_child(_spell_summary)
+	var casting_controls := HBoxContainer.new()
+	casting_controls.add_theme_constant_override("separation", 8)
+	add_child(casting_controls)
+	var ability_title := Label.new()
+	ability_title.text = "Caratteristica degli incantesimi"
+	casting_controls.add_child(ability_title)
+	_spell_ability_choice = OptionButton.new()
+	_spell_ability_choice.name = "SpellcastingAbilitySelector"
+	_spell_ability_choice.custom_minimum_size.x = 145
+	for option_text: String in ["Automatica", "FOR", "DES", "COS", "INT", "SAG", "CAR"]:
+		_spell_ability_choice.add_item(option_text)
+	_spell_ability_choice.item_selected.connect(_on_spellcasting_ability_selected)
+	casting_controls.add_child(_spell_ability_choice)
+	_drop_concentration_button = Button.new()
+	_drop_concentration_button.name = "StopConcentrationButton"
+	_drop_concentration_button.text = "Interrompi concentrazione"
+	_drop_concentration_button.tooltip_text = "Termina la concentrazione su un incantesimo attivo."
+	_drop_concentration_button.pressed.connect(_drop_concentration)
+	casting_controls.add_child(_drop_concentration_button)
 	_search_row = HBoxContainer.new()
 	add_child(_search_row)
 	_search = LineEdit.new()
@@ -804,6 +827,28 @@ func refresh_spell_state(record: Dictionary) -> void:
 	_refresh_casting_summary()
 
 
+func _on_spellcasting_ability_selected(index: int) -> void:
+	if _loading or index < 0 or index >= CASTING_ABILITIES.size():
+		return
+	var ability: String = CASTING_ABILITIES[index]
+	_record["spellcasting_ability"] = ability
+	_refresh_casting_summary()
+	if _on_change.is_valid():
+		_on_change.call({"spellcasting_ability": ability})
+
+
+func _drop_concentration() -> void:
+	if _loading:
+		return
+	var conditions: Array = _record.get("conditions", []).duplicate()
+	conditions.erase("concentrating")
+	_record["conditions"] = conditions
+	_record["concentrating_spell_id"] = ""
+	_refresh_casting_summary()
+	if _on_change.is_valid():
+		_on_change.call({"conditions": conditions, "concentrating_spell_id": ""})
+
+
 func _spellcasting_ability(record: Dictionary) -> String:
 	var ability: String = String(record.get("spellcasting_ability", "")).to_lower().strip_edges()
 	var stat: Dictionary = record.get("stat_block", {})
@@ -822,9 +867,11 @@ func _spellcasting_ability(record: Dictionary) -> String:
 			if first_class is Dictionary:
 				name = String((first_class as Dictionary).get("name", "")).to_lower()
 		var class_abilities := {
-			"wizard": "int", "artificer": "int", "cleric": "wis",
-			"druid": "wis", "ranger": "wis", "bard": "cha",
-			"paladin": "cha", "sorcerer": "cha", "warlock": "cha"
+			"wizard": "int", "mago": "int", "artificer": "int", "artefice": "int",
+			"cleric": "wis", "chierico": "wis", "druid": "wis", "druido": "wis",
+			"ranger": "wis", "bard": "cha", "bardo": "cha",
+			"paladin": "cha", "paladino": "cha",
+			"sorcerer": "cha", "stregone": "cha", "warlock": "cha"
 		}
 		ability = String(class_abilities.get(name, ""))
 	if ability in ["strength", "forza"]: ability = "str"
@@ -839,6 +886,15 @@ func _spellcasting_ability(record: Dictionary) -> String:
 func _refresh_casting_summary() -> void:
 	if _spell_summary == null:
 		return
+	if _spell_ability_choice != null:
+		var manual_ability: String = String(_record.get("spellcasting_ability", "")).to_lower().strip_edges()
+		var selection_index: int = CASTING_ABILITIES.find(manual_ability)
+		_spell_ability_choice.select(maxi(0, selection_index))
+	if _drop_concentration_button != null:
+		_drop_concentration_button.disabled = (
+			String(_record.get("concentrating_spell_id", "")).is_empty()
+			and not ("concentrating" in _record.get("conditions", []))
+		)
 	var ability: String = _spellcasting_ability(_record)
 	var stat_label: String = ability.to_upper() if not ability.is_empty() else "non definita"
 	var hit_label := "—"
