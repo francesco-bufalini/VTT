@@ -6,6 +6,10 @@ extends VBoxContainer
 const Rules = preload("res://vtt/creature_proficiency_rules.gd")
 const Bonuses = preload("res://vtt/creature_bonus_rules.gd")
 const Structured = preload("res://vtt/creature_structured_bonuses.gd")
+const ABILITY_LABELS := {
+	"str": "Forza", "dex": "Destrezza", "con": "Costituzione",
+	"int": "Intelligenza", "wis": "Saggezza", "cha": "Carisma"
+}
 const Catalog = preload("res://vtt/player_5etools_catalog.gd")
 const Traits = preload("res://vtt/creature_traits_tab.gd")
 const OriginButton = preload("res://vtt/bounded_tooltip_button.gd")
@@ -468,7 +472,7 @@ func _refresh_feats() -> void:
 			var chosen_stat: String = String(feat.get("ability_choice", "")).to_lower()
 			for value: Variant in structured_choice.get("from", []):
 				var stat: String = String(value)
-				selector.add_item(stat.to_upper())
+				selector.add_item(String(ABILITY_LABELS.get(stat, stat.to_upper())))
 				selector.set_item_metadata(selector.item_count - 1, stat)
 				if stat == chosen_stat:
 					selector.select(selector.item_count - 1)
@@ -518,7 +522,7 @@ func _refresh_ability_picker() -> void:
 	_ability_picker.set_item_metadata(0, "")
 	for value: Variant in choice.get("from", []):
 		var stat: String = String(value)
-		_ability_picker.add_item(stat.to_upper())
+		_ability_picker.add_item(String(ABILITY_LABELS.get(stat, stat.to_upper())))
 		_ability_picker.set_item_metadata(_ability_picker.item_count - 1, stat)
 
 
