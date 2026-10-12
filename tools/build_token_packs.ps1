@@ -514,11 +514,41 @@ if ($Force) {
     Write-Host "Force: i PCK esistenti verranno ricostruiti."
 }
 
+$requiresGodotImport = $false
+$importRequiredBy = @()
+
 if (-not $SkipImport) {
+    foreach ($candidateId in $tokenIds) {
+        if (-not $profilesById.ContainsKey($candidateId)) {
+            continue
+        }
+
+        $candidateProfile = $profilesById[$candidateId]
+        $candidateVisual = Get-ProfileVisualPath -Profile $candidateProfile -Id $candidateId
+        if ([string]::IsNullOrWhiteSpace($candidateVisual)) {
+            continue
+        }
+
+        $candidateExtension = [IO.Path]::GetExtension($candidateVisual).TrimStart(".").ToLowerInvariant()
+        if ($candidateExtension -notin @("obj", "glb", "gltf")) {
+            $requiresGodotImport = $true
+            $importRequiredBy += "$candidateId ($candidateExtension)"
+        }
+    }
+}
+
+if ($SkipImport) {
     Write-Host ""
-    Write-Host "Aggiorno la cache di import Godot una sola volta..."
+    Write-Host "Import Godot globale saltato: -SkipImport richiesto."
+} elseif ($requiresGodotImport) {
+    Write-Host ""
+    Write-Host "Aggiorno la cache di import Godot: alcuni asset non usano il loader diretto."
+    Write-Host ("Richiesto da: " + ($importRequiredBy -join ", "))
     $importArgs = @("--headless", "--path", $ProjectRoot, "--import")
-    Invoke-Godot -Arguments $importArgs -Phase "Import Godot per token packs" -TimeoutSeconds 180
+    Invoke-Godot -Arguments $importArgs -Phase "Import Godot per token packs" -TimeoutSeconds 600
+} else {
+    Write-Host ""
+    Write-Host "Import Godot globale non necessario: OBJ/GLB/GLTF vengono letti direttamente dal builder."
 }
 
 $built = 0
