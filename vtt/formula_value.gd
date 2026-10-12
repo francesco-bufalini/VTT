@@ -66,10 +66,22 @@ func set_rollable(enabled: bool) -> void:
 
 func set_formula(result: String, explanation: String) -> void:
 	value_label.text = result
-	_readout.tooltip_text = explanation + ("\nDoppio clic per modificare i valori consentiti." if not _fields.is_empty() else "")
-	_readout.tooltip_text += "\nClic destro per gestire i bonus e le loro origini."
+	# Keep lengthy computed captions legible. Only these fixed GUI headings and
+	# hints are localized; formulas and source-granted values stay untouched.
+	var segments := explanation.strip_edges().split("\n\nBONUS DALLE ORIGINI\n", true, 1)
+	var lines: PackedStringArray = ["CALCOLO", segments[0].strip_edges()]
+	if segments.size() > 1 and not segments[1].strip_edges().is_empty():
+		lines.append("")
+		lines.append("BONUS DALLE ORIGINI")
+		lines.append(segments[1].strip_edges())
+	lines.append("")
+	lines.append("AZIONI")
 	if roll_on_click:
-		_readout.tooltip_text += "\nClic sinistro per tirare nel roller."
+		lines.append("• Clic sinistro per tirare nel roller.")
+	if not _fields.is_empty():
+		lines.append("• Doppio clic per modificare i valori consentiti.")
+	lines.append("• Clic destro per gestire i bonus e le loro origini.")
+	_readout.tooltip_text = "\n".join(lines)
 	value_label.tooltip_text = _readout.tooltip_text
 
 
