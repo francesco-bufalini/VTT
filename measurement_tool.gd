@@ -18,6 +18,7 @@ const AOE_COLORS: Array[Color] = [
 const DamageAreaParticles = preload("res://vtt/spells/damage_area_particles.gd")
 const SpellVFX = preload("res://vtt/spells/spell_vfx.gd")
 const WallGeometry = preload("res://vtt/spells/wall_geometry.gd")
+const RangeGeometry = preload("res://vtt/attack_range_geometry.gd")
 
 @export var cell_size: float = 1.0
 # Existing template convention: one square = five feet.
@@ -49,6 +50,8 @@ var _spell_affected_override_active: bool = false
 var _spell_affected_override: Array[Node3D] = []
 var _spell_affected_geometry_override: Dictionary = {}
 var _spell_range_preview: MeshInstance3D
+var _spell_range_equator: MeshInstance3D
+var _spell_range_active: bool = false
 var _spell_range_center: Vector3 = Vector3.INF
 var _spell_range_radius: float = -1.0
 var _suppress_undo_record: bool = false
@@ -1632,45 +1635,62 @@ func show_spell_range_preview(
 	radius_world: float
 ) -> void:
 	var safe_radius: float = maxf(radius_world, cell_size * 0.5)
+	_spell_range_active = true
+	var show_3d := true
+	var board: Node = get_parent()
+	if board != null and board.has_method("is_2d_view_enabled"):
+		show_3d = not bool(board.call("is_2d_view_enabled"))
 	if (
 		is_instance_valid(_spell_range_preview)
+		and is_instance_valid(_spell_range_equator)
 		and _spell_range_center.is_equal_approx(center)
 		and is_equal_approx(_spell_range_radius, safe_radius)
 	):
-		_spell_range_preview.show()
+		_spell_range_preview.visible = show_3d
+		_spell_range_equator.visible = show_3d
 		return
 
 	if not is_instance_valid(_spell_range_preview):
 		_spell_range_preview = MeshInstance3D.new()
 		_spell_range_preview.name = "SpellRangePreview"
 		add_child(_spell_range_preview)
+	if not is_instance_valid(_spell_range_equator):
+		_spell_range_equator = MeshInstance3D.new()
+		_spell_range_equator.name = "SpellRangeEquator"
+		add_child(_spell_range_equator)
 
-	var sphere: SphereMesh = SphereMesh.new()
-	sphere.radius = safe_radius
-	sphere.height = safe_radius * 2.0
-	sphere.radial_segments = 48
-	sphere.rings = 24
-	_spell_range_preview.mesh = sphere
-	_spell_range_preview.global_position = center
-
-	var material: StandardMaterial3D = StandardMaterial3D.new()
+	# Same hollow 3D wire sphere and equator used by creature reach;
+	# the radius is the spell reach, not the AoE shape or diameter.
+	var footprint: float = cell_size * 0.5
+	_spell_range_preview.mesh = RangeGeometry.sphere_wire_mesh(safe_radius + footprint)
+	_spell_range_equator.mesh = RangeGeometry.sphere_equator_mesh(safe_radius + footprint)
+	var material := StandardMaterial3D.new()
 	material.transparency = BaseMaterial3D.TRANSPARENCY_ALPHA
 	material.shading_mode = BaseMaterial3D.SHADING_MODE_UNSHADED
 	material.cull_mode = BaseMaterial3D.CULL_DISABLED
-	material.albedo_color = Color(0.18, 0.58, 1.0, 0.055)
+	material.no_depth_test = false
+	material.albedo_color = Color(0.22, 0.68, 1.0, 0.80)
 	material.emission_enabled = true
-	material.emission = Color(0.08, 0.28, 0.72, 1.0)
-	material.emission_energy_multiplier = 0.14
+	material.emission = Color(0.22, 0.68, 1.0, 1.0)
+	material.emission_energy_multiplier = 0.18
 	_spell_range_preview.material_override = material
-
+	_spell_range_equator.material_override = material
+	_spell_range_preview.cast_shadow = GeometryInstance3D.SHADOW_CASTING_SETTING_OFF
+	_spell_range_equator.cast_shadow = GeometryInstance3D.SHADOW_CASTING_SETTING_OFF
+	_spell_range_preview.global_position = center
+	_spell_range_equator.global_position = center
 	_spell_range_center = center
 	_spell_range_radius = safe_radius
-	_spell_range_preview.show()
+	_spell_range_preview.visible = show_3d
+	_spell_range_equator.visible = show_3d
 
 
 func hide_spell_range_preview() -> void:
+	_spell_range_active = false
 	if is_instance_valid(_spell_range_preview):
 		_spell_range_preview.hide()
+	if is_instance_valid(_spell_range_equator):
+		_spell_range_equator.hide()
 
 
 
