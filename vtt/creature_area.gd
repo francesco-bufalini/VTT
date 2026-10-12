@@ -2698,14 +2698,59 @@ func _on_speed_changed(_value: float) -> void:
 
 
 func _update_speed_display() -> void:
-	if _speed_effective != null and _speed != null:
-		var live: Dictionary = _live_stats_record()
-		var base: int = int(_speed.value)
-		var total: int = maxi(0, BonusRules.value(live, "speed"))
-		_set_formula("speed", str(total),
-			"Velocità: base %d + bonus cumulabili %+d = %d ft" % [
-				base, BonusRules.bonus(live, "speed"), total])
-
+	if _speed_effective == null or _speed == null:
+		return
+	var live: Dictionary = _live_stats_record()
+	var base: int = int(_speed.value)
+	var total: int = maxi(0, BonusRules.value(live, "speed"))
+	_set_formula("speed", str(total),
+		"Camminata: base %d + bonus cumulabili %+d = %d ft" % [
+			base, BonusRules.bonus(live, "speed"), total])
+	if _other_movements != null:
+		var speed_data: Variant = {}
+		if String(live.get("kind", "")) == "monster":
+			speed_data = (live.get("stat_block", {}) as Dictionary).get("speed", {})
+		else:
+			speed_data = _effective_species().get("speed", {})
+		var extra: PackedStringArray = []
+		var movements: Dictionary = speed_data if speed_data is Dictionary else {}
+		var supplemental: Variant = live.get("movement_speeds", {})
+		if supplemental is Dictionary:
+			movements = movements.merged(supplemental, true)
+		for type_name: String in ["climb", "swim", "fly", "burrow"]:
+			if not movements.has(type_name):
+				continue
+			var raw: Variant = movements[type_name]
+			var distance := 0
+			var note := ""
+			if raw is int or raw is float:
+				distance = int(raw)
+			elif raw is String and String(raw).is_valid_int():
+				distance = int(raw)
+			elif raw is Dictionary:
+				distance = int(raw.get("number", raw.get("value", 0)))
+				note = String(raw.get("condition", "")).strip_edges()
+			if distance <= 0:
+				continue
+			var label: String = {"climb": "Scalare", "swim": "Nuotare",
+				"fly": "Volare", "burrow": "Scavare"}.get(type_name, type_name)
+			extra.append("%s %d ft%s" % [label, distance,
+				" (" + note + ")" if not note.is_empty() else ""])
+		_other_movements.text = "Altri movimenti: " + (", ".join(extra) if not extra.is_empty() else "—")
+		_other_movements.tooltip_text = "Velocità aggiuntive dalla specie o dal blocco statistiche 5etools."
+	if _long_jump == null or _high_jump == null:
+		return
+	var strength: int = maxi(0, BonusRules.value(live, "ability:str"))
+	var modifier: int = BonusRules.value(live, "ability_mod:str")
+	var high: int = maxi(0, 3 + modifier)
+	var running_long: float = float(strength)
+	var running_high: float = float(high)
+	_long_jump.text = "Lungo: %d ft" % strength
+	_long_jump.tooltip_text = "Salto in lungo (rincorsa di almeno 10 ft): FOR %d = %d ft. Da fermo: %s ft. Ogni piede saltato consuma movimento." % [
+		strength, strength, str(running_long / 2.0)]
+	_high_jump.text = "Alto: %d ft" % high
+	_high_jump.tooltip_text = "Salto in alto (rincorsa di almeno 10 ft): max(0, 3 + modificatore FOR %+d) = %d ft. Da fermo: %s ft. Estensione con le braccia: 1,5 volte l'altezza del corpo oltre il salto." % [
+		modifier, high, str(running_high / 2.0)]
 
 # The creature sheet casts from class, available and searched spells alike.
 # When no linked token or VTT effect exists, casting still records slot use.
