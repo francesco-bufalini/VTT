@@ -103,6 +103,8 @@ func run() -> void:
 	assert(attack_data != null, "Attack calculation helper must load")
 	var character_attack: Dictionary = {
 		"kind": "character", "attack_ability": "str",
+		# Unarmed strikes are exposed as selectable hand attacks.
+		"hand_main_special": "unarmed",
 		"abilities": {"str": 16, "dex": 12},
 		"attack_overrides": {}, "inventory": []
 	}

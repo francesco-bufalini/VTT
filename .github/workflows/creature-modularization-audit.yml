@@ -76,7 +76,8 @@ jobs:
             }
             $out = (Get-Content $stdout -Raw -ErrorAction SilentlyContinue) + (Get-Content $stderr -Raw -ErrorAction SilentlyContinue)
             Write-Host $out
-            if (-not $finished -or $process.ExitCode -ne 0 -or $out -notmatch "PASS:" -or $out -match "SCRIPT ERROR:") {
+            Write-Host ("Process status: exited={0}, exitCode={1}, passMarker={2}" -f $process.HasExited, $process.ExitCode, ($out -match "\\bPASS\\b"))
+            if (-not $finished -or -not $process.HasExited -or $process.ExitCode -ne 0 -or $out -notmatch "\\bPASS\\b" -or $out -match "SCRIPT ERROR:") {
               $failures += $test
               Write-Warning "Regression failed: $test"
             }
