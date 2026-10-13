@@ -1697,11 +1697,15 @@ func _build_view() -> void:
 		"casting_stats": Callable(self, "_section_casting_stats"), "class_ability": Callable(self, "_ability_for_class"),
 		"default_ability": Callable(self, "_current_default_ability"),
 		"section_ability": Callable(self, "_section_ability"), "set_section_ability": Callable(self, "_change_section_ability"),
-		"slot_max_edit": Callable(self, "_slot_max_edit"), "slot_max_bonus": Callable(self, "_slot_max_bonus")})
+		"slot_max_edit": Callable(self, "_slot_max_edit"), "slot_max_bonus": Callable(self, "_slot_max_bonus"),
+		"gui_language": Callable(self, "_current_gui_language")})
 	_selection_dialog = SelectionDialog.new()
 	add_child(_selection_dialog)
 	preload("res://vtt/scrollable_caption.gd").install(self)
 	_refresh_view()
+
+func _current_gui_language() -> String:
+	return _gui_language
 
 func _current_default_ability() -> String:
 	return _spellcasting_ability(_record)
