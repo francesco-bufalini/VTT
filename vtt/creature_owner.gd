@@ -45,3 +45,29 @@ static func public_identity(record: Dictionary) -> Dictionary:
 			record.get("default_miniature_id", "")
 		)
 	}
+
+# Preserve records transferred away from this installation. A conflicting
+# stale local record must not overwrite the persisted owner or revision.
+static func merge_transferred_records(merged: Array[Dictionary], saved_value: Variant, allow_transfer: bool) -> Error:
+	if not saved_value is Array:
+		return OK
+	for raw: Variant in saved_value as Array:
+		if not raw is Dictionary:
+			continue
+		var stored: Dictionary = raw as Dictionary
+		for candidate: Dictionary in merged:
+			if String(candidate.get("id", "")) != String(stored.get("id", "")):
+				continue
+			if not allow_transfer and (not can_edit(candidate, stored) or String(candidate.get("owner_id", "")) != String(stored.get("owner_id", local_id()))):
+				return ERR_UNAUTHORIZED
+		if is_owner(stored):
+			continue
+		var exists := false
+		for visible: Dictionary in merged:
+			if String(visible.get("id", "")) == String(stored.get("id", "")):
+				exists = true
+				break
+		if not exists:
+			merged.append(stored.duplicate(true))
+	return OK
+
