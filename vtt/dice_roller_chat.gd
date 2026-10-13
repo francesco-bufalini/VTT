@@ -544,7 +544,7 @@ func roll_expression_from_sheet(
 		if term_value is Dictionary and int(term_value.get("sides", 0)) == 20 and int(term_value.get("count", 0)) == 1:
 			has_single_d20 = true
 			break
-	var roll_mode := _selected_roll_mode(1 if has_single_d20 else total_dice)
+	var roll_mode := _selected_roll_mode(1) if has_single_d20 else "normal"
 	var candidate_rolls: Array = []
 	for term_value: Variant in terms:
 		if not term_value is Dictionary:
