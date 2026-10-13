@@ -61,7 +61,9 @@ func run() -> void:
 	assert(not external.is_empty(), "An origin can grant a standard catalog spell")
 	assert(Granted.remaining(custom, external) > 0,
 		"An origin can spend a tracker awarded by another origin")
-	assert(Dice.valid_dice("2d8") and not Dice.valid_dice("cha_mod") and not Dice.valid_dice("d20"))
+	assert(Dice.valid_dice("2d8") and Dice.valid_dice("1d8+2")
+		and not Dice.valid_dice("cha_mod") and not Dice.valid_dice("d20")
+		and not Dice.valid_dice("101d6"))
 	custom["dice_bonuses"] = [{
 		"id": "dice1", "target": "saving_throw", "dice": "1d4",
 		"origin_id": "custom:test", "origin_name": "Gift"
@@ -69,5 +71,9 @@ func run() -> void:
 	assert(Dice.applicable(custom, "save:wis").size() == 1)
 	assert(Dice.applicable(custom, "initiative").is_empty(),
 		"Die grants must be limited to the matching roll category")
+	custom["dice_bonuses"][0]["target"] = "damage_roll"
+	assert(Dice.applicable(custom, "attack_damage:longsword").size() == 1
+		and Dice.applicable(custom, "attack_hit:longsword").is_empty(),
+		"Damage dice can target damage rolls without changing attack-hit rolls")
 	print("PASS origin-granted spells, resource charges and caster-scaled dice")
 	quit()
