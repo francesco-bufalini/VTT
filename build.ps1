@@ -1,6 +1,6 @@
 param(
     [string]$Godot = 'godot',
-    [ValidateSet('all','windows','macos')][string]$Target = 'all',
+    [ValidateSet('all','windows','macos','android')][string]$Target = 'all',
     [string]$OutputRoot = (Join-Path $PSScriptRoot 'build')
 )
 $ErrorActionPreference = 'Stop'
@@ -18,12 +18,20 @@ function Invoke-BuildStep([string[]]$Arguments) {
     }
 }
 Invoke-BuildStep @('--headless', '--path', $projectRoot, '--editor', '--import', '--quit')
-foreach ($platform in @('windows','macos')) {
+foreach ($platform in @('android','windows','macos')) {
     if ($Target -ne 'all' -and $Target -ne $platform) { continue }
+    if ($platform -eq 'android' -and -not $env:GODOT_ANDROID_KEYSTORE_RELEASE_PATH) {
+        $signingRoot = Join-Path $env:APPDATA 'VTT/signing'
+        if ((Test-Path (Join-Path $signingRoot 'release.keystore')) -and (Test-Path (Join-Path $signingRoot 'release-password.txt'))) {
+            $env:GODOT_ANDROID_KEYSTORE_RELEASE_PATH = Join-Path $signingRoot 'release.keystore'
+            $env:GODOT_ANDROID_KEYSTORE_RELEASE_USER = 'vtt'
+            $env:GODOT_ANDROID_KEYSTORE_RELEASE_PASSWORD = Get-Content (Join-Path $signingRoot 'release-password.txt') -Raw
+        }
+    }
     $folder = Join-Path $OutputRoot $platform
     New-Item -ItemType Directory -Force $folder | Out-Null
-    $preset = if ($platform -eq 'windows') { 'Windows Desktop' } else { 'macOS' }
-    $filename = if ($platform -eq 'windows') { 'VTT.exe' } else { 'VTT-macOS.zip' }
+    $preset = switch ($platform) { windows { 'Windows Desktop' } macos { 'macOS' } android { 'Android' } }
+    $filename = switch ($platform) { windows { 'VTT.exe' } macos { 'VTT-macOS.zip' } android { 'VTT-Android.apk' } }
     $outputFile = Join-Path $folder $filename
     Invoke-BuildStep @('--headless', '--path', $projectRoot, '--export-release', $preset, $outputFile)
     if (-not (Test-Path -LiteralPath $outputFile)) {

@@ -25,6 +25,8 @@ TokenPackManager="*res://vtt/token_pack_manager.gd"
 
 [display]
 
+window/handheld/orientation.mobile=6
+
 window/stretch/mode="canvas_items"
 window/stretch/aspect="expand"
 
@@ -133,6 +135,8 @@ interact={
 3d/physics_engine="Jolt Physics"
 
 [rendering]
+
+renderer/rendering_method.mobile="gl_compatibility"
 
 rendering_device/driver.windows="d3d12"
 textures/vram_compression/import_etc2_astc=true

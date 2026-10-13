@@ -23,7 +23,7 @@ The controller polls every 1.5 seconds. Responses must match peer IP/port, sessi
 
 Payloads contain visible token sync IDs, display names, condition IDs, concentration spell IDs, and combat active state/round/current entry with name and initiative. Hidden tokens and their linked initiative rows are omitted; the active index is remapped after filtering. Exact HP, private creature records, inventory, assets, coordinates and encounter secrets are not exported. The UI uses plain text for peer-provided names.
 
-This increment reads context only: remote commands, sheet-to-board mutations, private-sheet transfer, mobile chat/dice networking and a redesigned touch sheet form are future work. It is not an Android/iOS package or a device-level networking verification.
+This increment reads context only: remote commands, sheet-to-board mutations, private-sheet transfer, mobile chat/dice networking and a redesigned touch sheet form are future work. The Android APK export and installation workflow is documented in `docs/exporting.md`. This controller test does not prove networking between physical devices.
 
 ## Validation
 
