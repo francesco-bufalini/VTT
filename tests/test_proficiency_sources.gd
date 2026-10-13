@@ -429,6 +429,12 @@ func run() -> void:
 	tab._select_origin("class|phb|fighter")
 	tab._kind_picker.select(2)
 	tab._refresh_proficiency_picker()
+	for index: int in range(tab._origin_picker.item_count):
+		var source: Dictionary = tab._origin_picker.get_item_metadata(index)
+		if String(source.get("id", "")) == "class|phb|fighter":
+			tab._origin_picker.select(index)
+			break
+	assert(String(OriginChoices.selected(tab._origin_picker).get("id", "")) == "class|phb|fighter")
 	var restricted: Array[String] = Proficiencies.restricted_choices(tab._selected_source_record(), "skill")
 	assert("athletics" in restricted and "arcana" not in restricted,
 		"Fighter choices are limited to the structured skill list")
@@ -648,6 +654,9 @@ func run() -> void:
 		and heading_names.count("Categorie di armi") == 1
 		and heading_names.count("Singole armi") == 1,
 		"Skill and weapon headings must never repeat with interleaved grants")
+	for control: Node in tab._proficiency_cards.find_children("*", "CheckButton", true, false):
+		if (control as CheckButton).text == "Mestria":
+			has_mastery_word = true
 	assert(not has_link_button and has_mastery_word,
 		"Manual linking action is removed and stars are replaced by Mestria")
 	# Fixed and manually removable rows must have the same layout, even
@@ -894,7 +903,7 @@ func run() -> void:
 		var line: Node = card.get_child(0)
 		var has_toggle := false
 		var has_remove := false
-		for child: Node in line.get_children():
+		for child: Node in card.find_children("*", "Button", true, false):
 			if child is CheckButton:
 				has_toggle = true
 			elif child is Button and (child as Button).text == "✕":
