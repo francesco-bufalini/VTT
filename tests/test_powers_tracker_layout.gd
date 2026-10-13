@@ -50,7 +50,7 @@ func run() -> void:
 	view._spell_button(list, {"name": "Inflict Wounds", "level": 1, "description": "Effect"}, {}, other)
 	for i: int in range(2):
 		var entry: HBoxContainer = list.get_child(i)
-		assert(entry.name == "PowerRow" and entry.get_child_count() == 2,
+		assert(entry.name.begins_with("PowerRow") and entry.get_child_count() == 2,
 			"Tracker-paid powers separate the action from the cost")
 		assert(entry.get_child(0) is Button and entry.get_child(1) is Label,
 			"The power name stays inside the button with cost to its right")
