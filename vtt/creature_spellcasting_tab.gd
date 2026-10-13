@@ -1646,8 +1646,9 @@ func _build_view() -> void:
 	add_child(resources)
 	for control: Control in [_slots_eye.get_parent(), _slot_grid.get_parent(), _pact_eye.get_parent(), _pact_row.get_parent()]:
 		control.reparent(resources)
+	var resource_index: int = resources.get_index()
 	_resource_settings = preload("res://vtt/origin_editor_ui.gd").popup_form(self, resources, "⚙ Massimi e bonus degli slot")
-	get_child(get_child_count() - 1).hide()
+	get_child(resource_index).hide()
 	_view = SpellView.new()
 	_view.name = "SpellcastingColumns"
 	add_child(_view)
