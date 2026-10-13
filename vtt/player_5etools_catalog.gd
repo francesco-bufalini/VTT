@@ -439,6 +439,11 @@ static func info_text(
 	var category := str(entry.get("category", "")).strip_edges()
 	if not category.is_empty():
 		lines.append("Categoria: %s" % category)
+	var feature_type: String = String(entry.get("feature_type", "")).strip_edges()
+	if not feature_type.is_empty():
+		lines.append("Tipo di opzione: %s" % feature_type)
+	if entry.get("prerequisite", []) is Array and not entry.get("prerequisite", []).is_empty():
+		lines.append("Prerequisiti (dati sorgente): " + JSON.stringify(entry.get("prerequisite", [])))
 
 	var type_code := str(entry.get("type", "")).split("|")[0]
 	if not type_code.is_empty():
