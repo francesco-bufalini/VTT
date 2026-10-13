@@ -9,6 +9,12 @@ func ignore(_a: Variant = null, _b: Variant = null, _c: Variant = null) -> void:
 	pass
 func current() -> Dictionary:
 	return record
+func casting_stats(ability: String) -> String:
+	return "Caratteristica: " + ability + " · Tiro per colpire: +5 · CD: 13"
+func class_ability(_class_name: String) -> String:
+	return "int"
+func default_ability() -> String:
+	return "int"
 func run() -> void:
 	root.gui_embed_subwindows = true
 	root.content_scale_mode = Window.CONTENT_SCALE_MODE_CANVAS_ITEMS
@@ -34,11 +40,15 @@ func run() -> void:
 	record = {"kind":"character", "prepared_spells":selected,
 		"spell_slots_total":[0,4,3,3,2,0,0,0,0,0], "spell_slots_spent":[],
 		"pact_slots_total":0, "pact_slot_level":1}
-	var actions := {"record":current}
+	var actions := {"record":current, "casting_stats":casting_stats,
+		"class_ability":class_ability, "default_ability":default_ability}
 	for action: String in ["manual","resource_settings","edit_class","cast_class","cast_origin","slot","pact","tracker","restore","edit_origin","choose_origin"]:
 		actions[action] = ignore
 	view.setup(actions)
 	view.refresh()
+	var summaries: Array[Node] = view.find_children("CastingStatistics", "Label", true, false)
+	assert(not summaries.is_empty() and "int" in (summaries[0] as Label).text,
+		"Manual spell section displays its own spellcasting statistics")
 	for i: int in range(6):
 		await process_frame
 	var pair: HBoxContainer = view._rows[0]

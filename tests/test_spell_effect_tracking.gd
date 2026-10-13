@@ -60,10 +60,14 @@ func run() -> void:
 	assert(monster.get("spellcasting_ability") == "cha")
 	assert(monster.get("concentrating_spell_id") == "bless")
 	var summary: Label = tab.get("_spell_summary")
-	assert(summary != null)
-	assert("INT" in summary.text and "+6" in summary.text and "CD: 14" in summary.text,
-		"The spellcasting stats must always be visible and use the caster's ability.")
-	assert("nessuna" in summary.text)
+	assert(summary != null and "nessuna" in summary.text)
+	var stats: Array[Node] = tab._view.find_children("CastingStatistics", "Label", true, false)
+	assert(not stats.is_empty(), "Each spellcasting class has a visible casting statistics label")
+	assert(stats.any(func(node: Node) -> bool:
+		return "INT" in (node as Label).text and "+6" in (node as Label).text and "CD: 14" in (node as Label).text),
+		"Class-specific spellcasting stats use the caster's own ability.")
+	assert(summary.get_parent() == tab._drop_concentration_button.get_parent(),
+		"End concentration belongs beside the active spell name")
 
 	record["concentrating_spell_id"] = "test_spell"
 	record["conditions"] = ["concentrating"]

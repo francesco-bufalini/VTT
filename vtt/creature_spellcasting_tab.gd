@@ -35,7 +35,6 @@ var _on_bonus_request: Callable
 var _on_origin_editor: Callable
 var _slot_manual := false
 var _pending_granted_cast: Dictionary = {}
-var _cast_button: Button
 var _cast_dialog: ConfirmationDialog
 var _cast_slot_choice: OptionButton
 var _cast_description: RichTextLabel
@@ -52,6 +51,7 @@ var _grant_spell_choices: Array[Dictionary] = []
 var _structured_choice: Dictionary = {}
 var _record: Dictionary = {}
 var _spell_summary: Label
+var _concentration_row: HBoxContainer
 var _spell_ability_choice: OptionButton
 var _casting_class_picker: OptionButton
 var _drop_concentration_button: Button
@@ -123,11 +123,15 @@ func setup(
 	_totals = _normal_slots(_totals)
 	_spent = _normal_slots(_spent)
 	add_theme_constant_override("separation", 7)
+	_concentration_row = HBoxContainer.new()
+	_concentration_row.name = "ConcentrationRow"
+	_concentration_row.add_theme_constant_override("separation", 8)
+	add_child(_concentration_row)
 	_spell_summary = Label.new()
-	_spell_summary.name = "SpellcastingStatistics"
-	_spell_summary.autowrap_mode = TextServer.AUTOWRAP_WORD_SMART
-	_spell_summary.text = "Caratteristica: — · Tiro per colpire: — · CD: —\nConcentrazione: nessuna"
-	add_child(_spell_summary)
+	_spell_summary.name = "ConcentrationStatus"
+	_spell_summary.size_flags_horizontal = Control.SIZE_SHRINK_BEGIN
+	_spell_summary.text = "Concentrazione: nessuna"
+	_concentration_row.add_child(_spell_summary)
 	var casting_controls := HBoxContainer.new()
 	casting_controls.add_theme_constant_override("separation", 8)
 	add_child(casting_controls)
@@ -151,7 +155,7 @@ func setup(
 	_drop_concentration_button.text = "Interrompi concentrazione"
 	_drop_concentration_button.tooltip_text = "Termina la concentrazione su un incantesimo attivo."
 	_drop_concentration_button.pressed.connect(_drop_concentration)
-	casting_controls.add_child(_drop_concentration_button)
+	_concentration_row.add_child(_drop_concentration_button)
 	_search_row = HBoxContainer.new()
 	add_child(_search_row)
 	_search = LineEdit.new()
@@ -319,13 +323,6 @@ func setup(
 	_prepare.tooltip_text = "Aggiungi o rimuovi l’incantesimo selezionato dai disponibili"
 	_prepare.pressed.connect(_toggle_selected_prepared)
 	search_toggle_row.add_child(_prepare)
-	_cast_button = Button.new()
-	_cast_button.text = "✨ Lancia"
-	_cast_button.custom_minimum_size = Vector2(100, 34)
-	_cast_button.disabled = true
-	_cast_button.tooltip_text = "Lancia l'incantesimo selezionato da una qualsiasi delle tre liste"
-	_cast_button.pressed.connect(_request_cast_spell)
-	casting_controls.add_child(_cast_button)
 
 	_description = RichTextLabel.new()
 	_description.mouse_force_pass_scroll_events = false
@@ -1075,56 +1072,38 @@ func _spellcasting_ability(record: Dictionary) -> String:
 func _refresh_casting_summary() -> void:
 	if _spell_summary == null:
 		return
-	if _spell_ability_choice != null:
-		var manual_ability: String = String(_record.get("spellcasting_ability", "")).to_lower().strip_edges()
-		var selection_index: int = CASTING_ABILITIES.find(manual_ability)
-		_spell_ability_choice.select(maxi(0, selection_index))
-	if _drop_concentration_button != null:
-		_drop_concentration_button.disabled = (
-			String(_record.get("concentrating_spell_id", "")).is_empty()
-			and not ("concentrating" in _record.get("conditions", []))
-		)
-	var ability: String = _spellcasting_ability(_record)
-	if _known_list != null:
-		var selected: Dictionary = _selected_spell()
-		if not selected.is_empty():
-			ability = _cast_ability_for_spell(selected)
-	var italian_abbreviations := {"str": "FOR", "dex": "DES", "con": "COS",
-		"int": "INT", "wis": "SAG", "cha": "CAR"}
-	var stat_label: String = (
-		ability.to_upper() if _gui_language == "en"
-		else String(italian_abbreviations.get(ability, ""))
-	)
-	if ability.is_empty():
-		stat_label = "non definita"
-	var hit_label := "—"
-	var dc_label := "—"
-	var explanation := "Seleziona una classe da incantatore o imposta la caratteristica degli incantesimi."
-	if not ability.is_empty():
-		var prof: int = Bonuses.value(_record, "proficiency")
-		var ability_mod: int = Bonuses.value(_record, "ability_mod:" + ability)
-		var attack: int = prof + ability_mod + Bonuses.bonus(_record, "spell_attack")
-		var dc: int = 8 + prof + ability_mod + Bonuses.bonus(_record, "spell_dc")
-		hit_label = "%+d" % attack
-		dc_label = str(dc)
-		explanation = ("Modificatore %s %+d + competenza %+d; "
-			+ "bonus tiro %+d, bonus CD %+d") % [
-				ability.to_upper(), ability_mod, prof,
-				Bonuses.bonus(_record, "spell_attack"),
-				Bonuses.bonus(_record, "spell_dc")
-			]
-	var concentration_name := "nessuna"
 	var concentration_id: String = String(_record.get("concentrating_spell_id", ""))
+	var active: bool = not concentration_id.is_empty() or "concentrating" in _record.get("conditions", [])
+	var concentration_name := "nessuna"
 	if not concentration_id.is_empty():
 		var definition: Dictionary = SpellCatalog.catalog_spell(concentration_id)
 		concentration_name = String(definition.get("name", concentration_id))
-	elif "concentrating" in _record.get("conditions", []):
+	elif active:
 		concentration_name = "attiva (incantesimo non specificato)"
-	_spell_summary.text = "Caratteristica: %s  ·  Tiro per colpire: %s  ·  CD: %s\nConcentrazione: %s" % [
-		stat_label, hit_label, dc_label, concentration_name
-	]
-	_spell_summary.tooltip_text = explanation
+	if _gui_language == "en":
+		if concentration_name == "nessuna":
+			concentration_name = "none"
+		elif concentration_name == "attiva (incantesimo non specificato)":
+			concentration_name = "active (spell unspecified)"
+	_spell_summary.text = ("Concentration: " if _gui_language == "en" else "Concentrazione: ") + concentration_name
+	if _drop_concentration_button != null:
+		_drop_concentration_button.visible = active
+		_drop_concentration_button.disabled = not active
 
+
+func _section_casting_stats(ability: String) -> String:
+	var normalized: String = ability.to_lower().strip_edges()
+	if normalized not in CASTING_ABILITIES:
+		return "Ability: — · Spell attack: — · DC: —" if _gui_language == "en" else "Caratteristica: — · Tiro per colpire: — · CD: —"
+	var names := {"str": "FOR", "dex": "DES", "con": "COS",
+		"int": "INT", "wis": "SAG", "cha": "CAR"}
+	var label: String = normalized.to_upper() if _gui_language == "en" else String(names.get(normalized, normalized))
+	var proficiency: int = Bonuses.value(_record, "proficiency")
+	var modifier: int = Bonuses.value(_record, "ability_mod:" + normalized)
+	var attack: int = proficiency + modifier + Bonuses.bonus(_record, "spell_attack")
+	var dc: int = 8 + proficiency + modifier + Bonuses.bonus(_record, "spell_dc")
+	var template: String = "Ability: %s · Spell attack: %+d · DC: %d" if _gui_language == "en" else "Caratteristica: %s · Tiro per colpire: %+d · CD: %d"
+	return template % [label, attack, dc]
 
 func update_character_context(record: Dictionary) -> void:
 	_refresh_casting_summary()
@@ -1202,7 +1181,6 @@ func _update_spell_controls() -> void:
 	var spell: Dictionary = _selected_spell()
 	var id: String = String(spell.get("id", ""))
 	_prepare.disabled = id.is_empty()
-	_cast_button.disabled = id.is_empty() or not _on_cast_spell.is_valid()
 	_prepare.text = (
 		"Rimuovi dai disponibili"
 		if _has_spell(_prepared, id)
@@ -1623,6 +1601,7 @@ func _cast_granted_spell(grant: Dictionary) -> void:
 	var spell: Dictionary = SpellCatalog.catalog_spell(String(grant.get("spell_id", "")))
 	if spell.is_empty():
 		return
+	spell["caster_spellcasting_ability"] = String(grant.get("spellcasting_ability", ""))
 	if String(grant.get("payment_mode", "")) == "slot" and int(spell.get("level", 0)) > 0:
 		_request_cast_spell_for_grant(spell, grant)
 	elif String(grant.get("payment_mode", "")) == "tracker":
@@ -1645,6 +1624,7 @@ func set_gui_language(language: String) -> void:
 		return
 	_gui_language = language
 	_refresh_casting_summary()
+	_refresh_view()
 	_update_spell_controls()
 
 
@@ -1653,13 +1633,10 @@ func _build_view() -> void:
 	legacy.name = "LegacySpellControls"
 	add_child(legacy)
 	for child: Node in get_children():
-		if child == legacy or child is Window or child == _spell_summary:
+		if child == legacy or child is Window or child == _concentration_row:
 			continue
 		child.reparent(legacy)
 	legacy.hide()
-	var settings: Control = _spell_ability_choice.get_parent()
-	settings.reparent(self)
-	preload("res://vtt/origin_editor_ui.gd").popup_form(self, settings, "⚙ Impostazioni di lancio")
 	var resources := VBoxContainer.new()
 	add_child(resources)
 	for control: Control in [_slots_eye.get_parent(), _slot_grid.get_parent(), _pact_eye.get_parent(), _pact_row.get_parent()]:
@@ -1675,11 +1652,16 @@ func _build_view() -> void:
 		"pact": Callable(self, "_view_pact"), "restore": Callable(self, "_restore_all"),
 		"tracker": Callable(self, "_view_tracker"), "edit_class": Callable(self, "_view_edit_class"),
 		"edit_origin": Callable(self, "_view_edit_origin"), "choose_origin": Callable(self, "_view_choose_origin"),
-		"resource_settings": Callable(self, "_open_resource_settings"), "manual": Callable(self, "_view_edit_manual")})
+		"resource_settings": Callable(self, "_open_resource_settings"), "manual": Callable(self, "_view_edit_manual"),
+		"casting_stats": Callable(self, "_section_casting_stats"), "class_ability": Callable(self, "_ability_for_class"),
+		"default_ability": Callable(self, "_current_default_ability")})
 	_selection_dialog = SelectionDialog.new()
 	add_child(_selection_dialog)
 	preload("res://vtt/scrollable_caption.gd").install(self)
 	_refresh_view()
+
+func _current_default_ability() -> String:
+	return _spellcasting_ability(_record)
 
 func _view_record() -> Dictionary:
 	var record: Dictionary = _record.duplicate(true)
