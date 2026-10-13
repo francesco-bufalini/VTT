@@ -51,13 +51,13 @@ jobs:
             "test_origin_spell_editor.gd"
           )) {
             Write-Host "== $test =="
-            $stdout = [IO.Path]::GetTempFileName()
-            $stderr = $stdout + ".err"
-            $process = Start-Process -FilePath $exe -ArgumentList @("--headless", "--path", ".", "--script", "res://tests/$test") -PassThru -RedirectStandardOutput $stdout -RedirectStandardError $stderr
-            if (-not $process.WaitForExit(60000)) {
-              Stop-Process -Id $process.Id -Force -ErrorAction SilentlyContinue
-              throw "Timeout: $test"
-            }
+            $lines = @(& $exe --headless --path . --script "res://tests/$test" 2>&1)
+            $code = $LASTEXITCODE
+            $output = $lines | Out-String
+            Write-Host $output
+            Write-Host "Godot exit code: $code"
+            if ($code -ne 0 -or $output -notmatch "PASS" -or $output -match "SCRIPT ERROR:") { throw "Failed: $test" }
+          }
             $output = (Get-Content $stdout -Raw -ErrorAction SilentlyContinue) + (Get-Content $stderr -Raw -ErrorAction SilentlyContinue)
             Write-Host $output
             if ($process.ExitCode -ne 0 -or $output -notmatch "PASS" -or $output -match "SCRIPT ERROR:") { throw "Failed: $test" }
