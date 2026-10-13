@@ -124,10 +124,12 @@ static func all_grants(record: Dictionary) -> Array[Dictionary]:
 			continue
 		var resolved: Dictionary = grant.duplicate(true)
 		var grant_id: String = String(resolved.get("id", ""))
-		if configs.get(grant_id, {}) is Dictionary:
+		var configuration: Variant = configs.get(grant_id, {})
+		if configuration is Dictionary:
+			var settings: Dictionary = configuration
 			for field: String in ["payment_mode", "tracker_id", "spellcasting_ability"]:
-				if (configs[grant_id] as Dictionary).has(field):
-					resolved[field] = configs[grant_id][field]
+				if settings.has(field):
+					resolved[field] = settings[field]
 		var mode: String = String(resolved.get("payment_mode", ""))
 		if mode not in ["tracker", "slot", "free"]:
 			mode = "tracker" if not String(resolved.get("tracker_id", "")).is_empty() else "free"
