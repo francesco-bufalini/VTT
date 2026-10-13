@@ -43,6 +43,7 @@ var _structured_choice: Dictionary = {}
 var _record: Dictionary = {}
 var _spell_summary: Label
 var _spell_ability_choice: OptionButton
+var _casting_class_picker: OptionButton
 var _drop_concentration_button: Button
 var _loading := false
 var _gui_language := "it"
@@ -130,6 +131,11 @@ func setup(
 		_spell_ability_choice.add_item(option_text)
 	_spell_ability_choice.item_selected.connect(_on_spellcasting_ability_selected)
 	casting_controls.add_child(_spell_ability_choice)
+	_casting_class_picker = OptionButton.new()
+	_casting_class_picker.custom_minimum_size.x = 130
+	_casting_class_picker.tooltip_text = "Classe lanciante per l'incantesimo selezionato; ogni classe può avere una caratteristica diversa."
+	_casting_class_picker.item_selected.connect(func(_i: int) -> void: _refresh_casting_summary())
+	casting_controls.add_child(_casting_class_picker)
 	_drop_concentration_button = Button.new()
 	_drop_concentration_button.name = "StopConcentrationButton"
 	_drop_concentration_button.text = "Interrompi concentrazione"
@@ -510,9 +516,10 @@ func _build_cast_dialog() -> void:
 
 func _request_cast_spell() -> void:
 	_pending_granted_cast.clear()
-	var spell: Dictionary = _selected_spell()
+	var spell: Dictionary = _selected_spell().duplicate(true)
 	if String(spell.get("id", "")).is_empty() or not _on_cast_spell.is_valid():
 		return
+	spell["caster_spellcasting_ability"] = _cast_ability_for_spell(spell)
 	var base_level: int = int(spell.get("level", 0))
 	if base_level <= 0:
 		_dispatch_cast(spell, 0)
@@ -642,6 +649,7 @@ func load_record(record: Dictionary) -> void:
 	)
 	_manual_origin_spells = _copy_spell_array(record.get("origin_spell_grants", []))
 	_rebuild_class_spells()
+	_refresh_cast_class_options()
 	_slot_manual = bool(record.get("spell_slots_manual", false))
 	_totals = _normal_slots(record.get("spell_slots_total", []))
 	_spent = _normal_slots(record.get("spell_slots_spent", []))
@@ -927,6 +935,63 @@ func _drop_concentration() -> void:
 		_on_change.call({"conditions": conditions, "concentrating_spell_id": ""})
 
 
+
+func _refresh_cast_class_options() -> void:
+	if _casting_class_picker == null:
+		return
+	var old: String = ""
+	if _casting_class_picker.selected >= 0:
+		old = String(_casting_class_picker.get_item_metadata(_casting_class_picker.selected))
+	_casting_class_picker.clear()
+	_casting_class_picker.add_item("Classe lanciante")
+	_casting_class_picker.set_item_metadata(0, "")
+	var source: Variant = _record.get("classes", [])
+	var members: Array = source as Array if source is Array else []
+	if members.is_empty() and not String(_record.get("class", "")).is_empty():
+		members = [{"name": _record.get("class", ""), "source": _record.get("class_source", "")}]
+	for raw: Variant in members:
+		if not raw is Dictionary:
+			continue
+		var name: String = String(raw.get("name", ""))
+		var ability: String = _ability_for_class(name)
+		if ability.is_empty():
+			continue
+		var id: String = name.to_lower()
+		_casting_class_picker.add_item(name + " (" + ability.to_upper() + ")")
+		_casting_class_picker.set_item_metadata(_casting_class_picker.item_count - 1, id)
+		if old == id:
+			_casting_class_picker.select(_casting_class_picker.item_count - 1)
+	_casting_class_picker.visible = _casting_class_picker.item_count > 2
+
+
+static func _ability_for_class(name: String) -> String:
+	return String({
+		"wizard": "int", "artificer": "int", "cleric": "wis", "druid": "wis",
+		"ranger": "wis", "paladin": "cha", "bard": "cha",
+		"sorcerer": "cha", "warlock": "cha"
+	}.get(name.to_lower(), ""))
+
+
+func _cast_ability_for_spell(spell: Dictionary) -> String:
+	var spell_classes: Array = spell.get("classes", [])
+	if _casting_class_picker != null and _casting_class_picker.selected > 0:
+		var selected: String = String(_casting_class_picker.get_item_metadata(_casting_class_picker.selected))
+		for raw: Variant in spell_classes:
+			if SpellCatalog.canonical_class_name(String(raw)).to_lower() == selected:
+				return _ability_for_class(selected)
+	# If the spell is shared by multiple classes, prefer the selected
+	# character's first matching class; never use another creature's level.
+	var members: Variant = _record.get("classes", [])
+	if members is Array:
+		for raw: Variant in members:
+			if raw is Dictionary:
+				var candidate: String = String(raw.get("name", "")).to_lower()
+				for klass: Variant in spell_classes:
+					if SpellCatalog.canonical_class_name(String(klass)).to_lower() == candidate:
+						return _ability_for_class(candidate)
+	return _spellcasting_ability(_record)
+
+
 func _spellcasting_ability(record: Dictionary) -> String:
 	var ability: String = String(record.get("spellcasting_ability", "")).to_lower().strip_edges()
 	var stat: Dictionary = record.get("stat_block", {})
@@ -1037,6 +1102,7 @@ func update_character_context(record: Dictionary) -> void:
 		String(_record.get("rules_version", "2014"))
 	)
 	_rebuild_class_spells()
+	_refresh_cast_class_options()
 	_refresh_saved_spell_lists()
 	_refresh_granted_spell_boxes()
 	_class_only.disabled = _class_keys().is_empty()
