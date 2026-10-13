@@ -13,6 +13,8 @@ const RaceRules = preload("res://vtt/creature_race_rules.gd")
 const SpellcastingTab = preload("res://vtt/creature_spellcasting_tab.gd")
 const SpellCatalog = preload("res://vtt/spells/spell_catalog.gd")
 const ActiveSpells = preload("res://vtt/creature_active_spells.gd")
+const OriginSpells = preload("res://vtt/origin_spell_grants.gd")
+const DiceBonuses = preload("res://vtt/creature_dice_bonuses.gd")
 const FiveToolsText = preload("res://vtt/five_tools_rich_text.gd")
 const StructuredTrackers = preload("res://vtt/structured_resource_trackers.gd")
 const TrackerTab = preload("res://vtt/creature_trackers_tab.gd")
@@ -48,6 +50,7 @@ var _traits_stale := true
 var _proficiencies_stale := true
 var _feats_stale := true
 var _bonuses_stale := true
+var _pending_origin_spell_cast: Dictionary = {}
 var _trackers_stale := true
 var _damage_defenses_stale := true
 var _catalog: Array[Dictionary] = []
@@ -3224,20 +3227,44 @@ func _update_speed_display() -> void:
 
 # The creature sheet casts from class, available and searched spells alike.
 # When no linked token or VTT effect exists, casting still records slot use.
-func _on_spellcasting_cast_requested(spell: Dictionary, slot_level: int) -> bool:
+func _on_spellcasting_cast_requested(spell: Dictionary, slot_level: int, grant: Dictionary = {}) -> bool:
 	if _current().is_empty():
 		return false
 	var spell_name: String = String(spell.get("name", "Incantesimo"))
 	var spell_id: String = String(spell.get("id", ""))
 	var source: String = String(spell.get("source", ""))
+	if not grant.is_empty():
+		# Only cast the entitlement from the currently active origin; never
+		# trust a stale UI card after an item/feature has been removed.
+		var current_record: Dictionary = _current()
+		var valid := false
+		for available: Dictionary in OriginSpells.all_grants(current_record):
+			if String(available.get("id", "")) == String(grant.get("id", "")) and String(available.get("spell_id", "")) == spell_id:
+				grant = available
+				valid = true
+				break
+		if not valid or OriginSpells.remaining(current_record, grant) == 0:
+			_set_status("Origine o utilizzi dell'incantesimo non disponibili.")
+			return false
+		_pending_origin_spell_cast = {
+			"creature_id": String(current_record.get("id", "")),
+			"spell_id": spell_id, "grant": grant.duplicate(true),
+			"context": OriginSpells.cast_context(current_record, spell_id)
+		}
+	else:
+		_pending_origin_spell_cast.clear()
 	var caster: CharacterBody3D = find_linked_token_for_creature(_selected_id)
 	var runtime: Node = board_root.get_node_or_null("SpellSystem")
 	if caster == null or runtime == null or not runtime.has_method("has_runtime_spell_effect"):
 		_start_sheet_concentration(spell)
+		if not grant.is_empty():
+			_complete_origin_spell_cast(null, spell)
 		_set_status("%s lanciato · effetto VTT non attivabile senza un token collegato." % spell_name)
 		return true
 	if not bool(runtime.call("has_runtime_spell_effect", spell_id, spell_name, source)):
 		_start_sheet_concentration(spell)
+		if not grant.is_empty():
+			_complete_origin_spell_cast(caster, spell)
 		_set_status("%s lanciato · nessun effetto VTT associato." % spell_name)
 		return true
 	# Return to the board before entering the existing target-selection mode.
@@ -3246,9 +3273,54 @@ func _on_spellcasting_cast_requested(spell: Dictionary, slot_level: int) -> bool
 		"activate_spell_from_caster", spell_id, caster, spell_name, source, slot_level
 	))
 	if not activated:
+		_pending_origin_spell_cast.clear()
 		show_panel()
 		_set_status("Impossibile attivare l'effetto VTT di %s." % spell_name)
 	return activated
+
+
+
+# SpellSystem calls the board only when target selection commits. Esc never
+# reaches this method, so no tracker use is spent on a cancelled cast.
+func _pending_cast_matches(caster: Node3D, spell: Dictionary) -> bool:
+	if _pending_origin_spell_cast.is_empty():
+		return false
+	if String(_pending_origin_spell_cast.get("spell_id", "")) != String(spell.get("id", "")):
+		return false
+	if caster == null:
+		return true
+	return String(caster.get_meta("creature_id", "")) == String(_pending_origin_spell_cast.get("creature_id", ""))
+
+
+func origin_spell_cast_context(caster: Node3D, spell: Dictionary) -> Dictionary:
+	if _pending_cast_matches(caster, spell):
+		return (_pending_origin_spell_cast.get("context", {}) as Dictionary).duplicate(true)
+	return {}
+
+
+func complete_origin_spell_cast(caster: Node3D, spell: Dictionary) -> void:
+	_complete_origin_spell_cast(caster, spell)
+
+
+func _complete_origin_spell_cast(caster: Node3D, spell: Dictionary) -> void:
+	if not _pending_cast_matches(caster, spell):
+		return
+	var pending: Dictionary = _pending_origin_spell_cast.duplicate(true)
+	_pending_origin_spell_cast.clear()
+	for record: Dictionary in _archive.list_owned():
+		if String(record.get("id", "")) != String(pending.get("creature_id", "")):
+			continue
+		var entitlement: Dictionary = pending.get("grant", {})
+		if not OriginSpells.spend(record, entitlement):
+			_set_status("Tracker esaurito: incantesimo concesso senza consumo.")
+			return
+		if _archive.save(record) != OK:
+			_set_status("Impossibile salvare il consumo del tracker.")
+			return
+		_update_external_record(record)
+		if String(record.get("id", "")) == _selected_id and _spellcasting_ui != null:
+			_spellcasting_ui.call("load_record", record)
+		return
 
 
 # A non-visual cast (or an unlinked caster) still starts concentration.
@@ -3276,7 +3348,7 @@ func _start_sheet_concentration(spell: Dictionary) -> void:
 
 # The board invokes these methods for any cast/context change. Only locally
 # owned sheets may be changed; foreign token appearances still synchronize.
-func update_token_spell_effect(token: Node3D, spell_id: String, enabled: bool) -> bool:
+func update_token_spell_effect(token: Node3D, spell_id: String, enabled: bool, context: Dictionary = {}) -> bool:
 	if token == null or not is_instance_valid(token):
 		return false
 	if String(token.get_meta("creature_owner_id", "")) != Owner.local_id():
@@ -3286,7 +3358,7 @@ func update_token_spell_effect(token: Node3D, spell_id: String, enabled: bool) -
 		if String(record.get("id", "")) != creature_id:
 			continue
 		var changed: bool = (
-			ActiveSpells.apply(record, spell_id) if enabled
+			ActiveSpells.apply(record, spell_id, context) if enabled
 			else ActiveSpells.remove(record, "spell:" + spell_id)
 		)
 		if not changed:
@@ -3349,7 +3421,7 @@ func _on_spellcasting_updated(values: Dictionary) -> void:
 		"spell_slots_total", "spell_slots_spent",
 		"pact_slots_total", "pact_slots_spent", "pact_slot_level",
 		"spell_slots_visible", "pact_slots_visible",
-		"spellcasting_ability", "concentrating_spell_id", "conditions"
+		"spellcasting_ability", "concentrating_spell_id", "conditions", "origin_spell_grants"
 	]:
 		if values.has(key):
 			record[key] = values[key]
