@@ -146,13 +146,17 @@ static func spend(record: Dictionary, grant: Dictionary) -> bool:
 
 
 static func cast_context(record: Dictionary, spell_id: String) -> Dictionary:
-	var source_level := 0
+	# Snapshot the granting caster's level at cast time. The recipient's
+	# statistics must never influence the size of a granted spell's die.
+	var definition: Dictionary = Catalog.catalog_spell(spell_id)
+	var source_class: String = String(definition.get("source_class", ""))
+	var source_level: int = _class_level(record, source_class) if not source_class.is_empty() else int(record.get("level", 0))
 	var dice := ""
-	if spell_id == BARDIC:
-		source_level = _class_level(record, "Bard")
-		dice = "1d12" if source_level >= 15 else "1d10" if source_level >= 10 else "1d8" if source_level >= 5 else "1d6"
-	elif spell_id == WILD_SHAPE:
-		source_level = _class_level(record, "Druid")
+	var progression: Variant = definition.get("dice_progression", [])
+	if progression is Array:
+		for value: Variant in progression:
+			if value is Dictionary and int(value.get("level", 0)) <= source_level:
+				dice = String(value.get("dice", ""))
 	return {
 		"source_level": source_level, "bonus_dice": dice,
 		"caster_name": String(record.get("name", ""))
