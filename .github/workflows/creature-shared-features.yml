@@ -1,0 +1,62 @@
+name: Creature Shared Features (Godot)
+
+on:
+  push:
+    branches:
+      - refactor/standalone-feature-catalog-offline
+  workflow_dispatch:
+
+jobs:
+  standalone:
+    runs-on: [self-hosted, windows, x64, vtt-godot]
+    timeout-minutes: 15
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+        with:
+          clean: false
+          sparse-checkout-cone-mode: false
+          sparse-checkout: |
+            /project.godot
+            /*.gd
+            /*.tscn
+            /vtt/
+            /network/
+            /homebrew/
+            /tests/
+            /assets/items/
+            /assets/spell_area_geometry.json
+            /assets/tokens/test/test_token_visual.tscn
+      - name: Clean
+        shell: powershell
+        run: |
+          git reset --hard HEAD
+          git clean -ffdx -e .godot/
+      - name: Import
+        shell: powershell
+        run: |
+          $exe = "C:\Program Files\Godot\Godot_v4.7.2-stable_win64_console.exe"
+          & $exe --headless --path . --editor --import --quit
+          if ($LASTEXITCODE -ne 0) { exit $LASTEXITCODE }
+      - name: Verify shared features and standalone
+        shell: powershell
+        run: |
+          $exe = "C:\Program Files\Godot\Godot_v4.7.2-stable_win64_console.exe"
+          foreach ($test in @(
+            "test_creature_features_standalone.gd",
+            "test_standalone_creatures.gd",
+            "test_creature_sheet_controller.gd",
+            "test_trait_origins.gd",
+            "test_benefit_first_origins_trackers.gd",
+            "test_origin_spell_editor.gd"
+          )) {
+            Write-Host "== $test =="
+            $lines = @(& $exe --headless --path . --script "res://tests/$test" 2>&1)
+            $code = $LASTEXITCODE
+            $output = $lines | Out-String
+            Write-Host $output
+            Write-Host "Godot exit code: $code"
+            if ($code -ne 0 -or $output -notmatch "PASS" -or $output -match "SCRIPT ERROR:") {
+              throw "Failed: $test"
+            }
+          }

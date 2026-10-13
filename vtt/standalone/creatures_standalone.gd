@@ -22,12 +22,12 @@ func _ready() -> void:
 	compendium = Compendium.new()
 	compendium.name = "Compendio"
 	add_child(compendium)
-	compendium.call("setup", self, ui_root)
+	compendium.call("setup", self, ui_root, false)
 
 	creature_area = CreatureSheet.new()
 	creature_area.name = "CreatureArea"
 	add_child(creature_area)
-	creature_area.call("setup", self, ui_root, false)
+	creature_area.call("setup", self, ui_root, false, false)
 
 	_build_navigation()
 	creature_area.call("show_panel")

@@ -4,7 +4,7 @@ extends RefCounted
 # {@recharge ...} markup. This module never interprets feature prose.
 const ClassMechanics = preload("res://vtt/class_mechanics_5etools.gd")
 const ResourceOverrides = preload("res://vtt/class_resource_overrides.gd")
-const Traits = preload("res://vtt/creature_traits_tab.gd")
+const Features = preload("res://vtt/creature_features.gd")
 const OriginSpells5e = preload("res://vtt/structured_origin_spells_5etools.gd")
 
 
@@ -87,7 +87,7 @@ static func _append_saved_trackers(record: Dictionary, output: Array[Dictionary]
 static func _assign_automatic_origins(record: Dictionary, output: Array[Dictionary]) -> void:
 	if output.is_empty():
 		return
-	var features: Array[Dictionary] = Traits.collect_features(record)
+	var features: Array[Dictionary] = Features.collect_features(record)
 	for row: Dictionary in output:
 		row["automatic"] = true
 		row["disabled"] = false
