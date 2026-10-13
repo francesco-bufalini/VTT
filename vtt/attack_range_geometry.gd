@@ -61,7 +61,41 @@ static func sphere_wire_mesh(radius: float, segments: int = 64) -> ArrayMesh:
 				sin(a1) * distance,
 				cos(a1) * direction.y * distance
 			))
+	# Three true radii remain visible along the world axes, with the
+	# same line primitive and material as the sphere surface.
+	for axis: Vector3 in [Vector3.RIGHT, Vector3.UP, Vector3.BACK]:
+		surface.add_vertex(Vector3.ZERO)
+		surface.add_vertex(axis * distance)
 	return surface.commit()
+
+
+static func dimension_radii_mesh(geometry: Dictionary) -> ArrayMesh:
+	var surface := SurfaceTool.new()
+	surface.begin(Mesh.PRIMITIVE_LINES)
+	for point: Vector3 in dimension_radii_points(geometry):
+		surface.add_vertex(point)
+	return surface.commit()
+
+
+static func dimension_radii_points(geometry: Dictionary) -> PackedVector3Array:
+	var shape: String = String(geometry.get("shape", "sphere"))
+	var extents := Vector3.ONE * float(geometry.get("radius", 0.5))
+	if shape in ["cube", "flat_square"]:
+		extents = (geometry.get("size", Vector3.ONE) as Vector3) * 0.5
+	elif shape in ["cone", "cylinder", "line"]:
+		extents.y = float(geometry.get("height", 1.0)) * 0.5
+		if shape == "cone":
+			extents.x *= 0.5
+			extents.z *= 0.5
+	var result := PackedVector3Array()
+	for index: int in range(3):
+		if shape == "flat_square" and index == 1:
+			continue
+		var endpoint := Vector3.ZERO
+		endpoint[index] = extents[index]
+		result.append(Vector3.ZERO)
+		result.append(endpoint)
+	return result
 
 
 static func sphere_equator_mesh(radius: float, segments: int = 96) -> ArrayMesh:

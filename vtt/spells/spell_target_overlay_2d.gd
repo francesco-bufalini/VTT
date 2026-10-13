@@ -12,6 +12,10 @@ var _areas: Array[Dictionary] = []
 var _was_visible: bool = false
 var _cached_signature: String = ""
 var _cached_targets: Array[String] = []
+var _area_sidebar: PanelContainer
+var _area_rows: VBoxContainer
+var _sidebar_signature := ""
+var _sidebar_elapsed := 0.0
 
 
 func setup(root: Node3D, spell_system: Node, measurement: Node3D, view_camera: Camera3D) -> void:
@@ -25,6 +29,7 @@ func setup(root: Node3D, spell_system: Node, measurement: Node3D, view_camera: C
 	# TopDownTokenOverlay draws at -50. Gameplay HUD must stay behind
 	# regular UI controls (z=0) and the creature sheet (z=30).
 	z_index = -30
+	_build_area_sidebar()
 
 
 func _is_active() -> bool:
@@ -48,6 +53,10 @@ func _process(_delta: float) -> void:
 			queue_redraw()
 		return
 	_collect_post_cast_areas()
+	_sidebar_elapsed += _delta
+	if _sidebar_elapsed >= 0.15:
+		_sidebar_elapsed = 0.0
+		_refresh_area_sidebar()
 	var visible_now: bool = not _areas.is_empty() or (
 		spell != null and is_instance_valid(spell) and bool(spell.call("is_targeting"))
 	)
@@ -151,7 +160,7 @@ func _collect_post_cast_areas() -> void:
 		if not entries[index] is Dictionary or not roots[index] is Node3D:
 			continue
 		var data: Dictionary = entries[index] as Dictionary
-		if not bool(data.get("spell_click_to_remove", false)):
+		if String(data.get("shape", "")) not in ["sphere", "cube", "cone", "line", "cylinder", "flat_square"]:
 			continue
 		var root: Node3D = roots[index] as Node3D
 		if not is_instance_valid(root):
@@ -162,7 +171,9 @@ func _collect_post_cast_areas() -> void:
 			"end": _array_vector3(data.get("end")),
 			"shape": String(data.get("shape", "sphere")),
 			"width": float(data.get("line_width_world", -1.0)),
-			"style": String(data.get("style", ""))
+			"style": String(data.get("style", "")),
+			"color": measure.call("_deserialize_aoe_color", data.get("color", {})),
+			"removable_spell": bool(data.get("spell_click_to_remove", false))
 		})
 
 
@@ -172,6 +183,8 @@ func remove_area_at_screen(point: Vector2) -> bool:
 	_collect_post_cast_areas()
 	for index: int in range(_areas.size() - 1, -1, -1):
 		var area: Dictionary = _areas[index]
+		if not bool(area.get("removable_spell", area.get("root").has_meta("spell_overlay_2d"))):
+			continue
 		var polygon: PackedVector2Array = _shape_polygon(
 			area.get("start", Vector3.ZERO),
 			area.get("end", Vector3.ZERO),
@@ -237,8 +250,6 @@ func _target_display_name(token: Node3D) -> String:
 
 
 func _target_names(start: Vector3, end: Vector3, shape: String, width: float, style: String = "") -> Array[String]:
-	if spell == null or not is_instance_valid(spell):
-		return []
 	var signature: String = "%s|%s|%s|%s|%s" % [str(start), str(end), shape, str(width), style]
 	# Include display names as well as positions in the cache key: renaming a
 	# token must immediately refresh the affected list without moving it.
@@ -250,6 +261,9 @@ func _target_names(start: Vector3, end: Vector3, shape: String, width: float, st
 				str(token.global_position),
 				_target_display_name(token)
 			]
+			signature += str(token.get("token_height_cells"))
+			if token.has_method("get_footprint_cells"):
+				signature += str(token.call("get_footprint_cells"))
 	if _cached_signature == signature:
 		return _cached_targets
 	_cached_signature = signature
@@ -312,6 +326,9 @@ func _draw_spell_range(center: Vector3, radius: float) -> void:
 
 
 func _draw_target_list(names: Array[String], area_label: String, top: float = 132.0) -> float:
+	if area_label == "A gittata":
+		var radius: float = float(measure.get("_spell_range_radius"))
+		area_label += " · %.1f ft" % (maxf(radius, 0.0) * 5.0 / maxf(float(board.get("cell_size")), 0.001))
 	var font: Font = ThemeDB.fallback_font
 	var font_size: int = 15
 	var max_lines: int = mini(names.size(), 11)
@@ -343,7 +360,7 @@ func _range_names_for_hud(active_range: bool) -> Array[String]:
 func _draw() -> void:
 	if not _is_active():
 		return
-	var active_range: bool = bool(measure.get("_spell_range_active")) and bool(spell.call("is_targeting"))
+	var active_range: bool = (measure.get("_spell_range_active") == true) and bool(spell.call("is_targeting"))
 	if _is_2d_view() and active_range:
 		var range_center: Vector3 = measure.get("_spell_range_center")
 		var radius: float = float(measure.get("_spell_range_radius"))
@@ -351,13 +368,16 @@ func _draw() -> void:
 			_draw_spell_range(range_center, radius)
 	var hover_area: Dictionary = {}
 	for data: Dictionary in _areas:
-		var points: PackedVector2Array = _shape_polygon(
-			data.get("start", Vector3.ZERO), data.get("end", Vector3.ZERO),
-			String(data.get("shape", "sphere")), float(data.get("width", -1.0)),
-			String(data.get("style", ""))
-		)
 		if _is_2d_view():
-			_draw_area(points, Color(1.0, 0.54, 0.18, 0.94))
+			var points: PackedVector2Array = _shape_polygon(
+				data.get("start", Vector3.ZERO), data.get("end", Vector3.ZERO),
+				String(data.get("shape", "sphere")), float(data.get("width", -1.0)),
+				String(data.get("style", ""))
+			)
+			_draw_area(points, _area_color(data))
+			_draw_dimension_radii(data.get("start", Vector3.ZERO), data.get("end", Vector3.ZERO),
+				String(data.get("shape", "sphere")), _area_color(data),
+				float(data.get("width", -1.0)), String(data.get("style", "")))
 		hover_area = data
 	# Keep confirmed Magic Missile rays visible between successive picks.
 	# The hovered ray is drawn from the 3D spell preview below.
@@ -372,6 +392,14 @@ func _draw() -> void:
 			for value: Variant in spell.get("_pending_target_points"):
 				if value is Vector3:
 					draw_line(center, _world_point(value), Color(0.32, 0.96, 1.0, 0.95), 3.0, true)
+	var manual: MeshInstance3D = measure.get("_aoe_preview") as MeshInstance3D
+	if manual != null and manual.visible:
+		var start: Vector3 = measure.get("_start_center")
+		var end: Vector3 = measure.get("_end_center")
+		var shape: String = String(measure.get("aoe_shape"))
+		if _is_2d_view():
+			_draw_area(_shape_polygon(start, end, shape), manual.material_override.albedo_color)
+			_draw_dimension_radii(start, end, shape, manual.material_override.albedo_color)
 	var preview: MeshInstance3D = measure.get("_spell_preview") as MeshInstance3D
 	var casting: bool = spell != null and is_instance_valid(spell) and bool(spell.call("is_targeting"))
 	var range_list: Array[String] = _range_names_for_hud(active_range)
@@ -382,7 +410,10 @@ func _draw() -> void:
 		var width: float = float(measure.get("_spell_preview_line_width"))
 		var style: String = String(measure.get("_spell_preview_style"))
 		if _is_2d_view():
-			_draw_area(_shape_polygon(start, end, shape, width, style), Color(1.0, 0.72, 0.20, 1.0))
+			var preview_color: Color = (preview.material_override as StandardMaterial3D).albedo_color
+			preview_color.a = 1.0
+			_draw_area(_shape_polygon(start, end, shape, width, style), preview_color)
+			_draw_dimension_radii(start, end, shape, preview_color, width, style)
 		if shape != "line" or String(spell.call("_pending_spell").get("aoe_shape", "")) == "line":
 			var next_y: float = _draw_target_list(_target_names(start, end, shape, width, style), "Nell'area")
 			if active_range:
@@ -425,7 +456,7 @@ func _draw() -> void:
 				_draw_target_list(range_list, "A gittata", next_y)
 			return
 	var next_y: float = 132.0
-	if not hover_area.is_empty():
+	if not hover_area.is_empty() and _area_sidebar == null:
 		next_y = _draw_target_list(
 			_target_names(hover_area.get("start", Vector3.ZERO), hover_area.get("end", Vector3.ZERO),
 				String(hover_area.get("shape", "sphere")), float(hover_area.get("width", -1.0)),
@@ -434,3 +465,158 @@ func _draw() -> void:
 		)
 	if active_range:
 		_draw_target_list(range_list, "A gittata", next_y)
+
+
+func _build_area_sidebar() -> void:
+	_area_sidebar = PanelContainer.new()
+	_area_sidebar.name = "AreaDimensionsSidebar"
+	_area_sidebar.set_anchors_and_offsets_preset(Control.PRESET_TOP_LEFT)
+	_area_sidebar.position = Vector2(12, 112)
+	_area_sidebar.custom_minimum_size = Vector2(275, 0)
+	_area_sidebar.mouse_filter = Control.MOUSE_FILTER_STOP
+	var background := StyleBoxFlat.new()
+	background.bg_color = Color(0.025, 0.04, 0.07, 0.9)
+	background.set_content_margin_all(10)
+	background.set_corner_radius_all(6)
+	_area_sidebar.add_theme_stylebox_override("panel", background)
+	add_child(_area_sidebar)
+	var body := VBoxContainer.new()
+	_area_sidebar.add_child(body)
+	var header := HBoxContainer.new()
+	body.add_child(header)
+	var heading := Label.new()
+	heading.size_flags_horizontal = Control.SIZE_EXPAND_FILL
+	heading.text = "AREE · DIMENSIONI E CREATURE"
+	heading.add_theme_font_size_override("font_size", 14)
+	header.add_child(heading)
+	var scroll := ScrollContainer.new()
+	scroll.name = "AreasScroll"
+	scroll.horizontal_scroll_mode = ScrollContainer.SCROLL_MODE_DISABLED
+	scroll.mouse_force_pass_scroll_events = false
+	body.add_child(scroll)
+	var collapse := Button.new()
+	collapse.text = "-"
+	collapse.tooltip_text = "Mostra o nascondi l'elenco delle aree"
+	header.add_child(collapse)
+	collapse.pressed.connect(func() -> void:
+		scroll.visible = not scroll.visible
+		collapse.text = "-" if scroll.visible else "+"
+		_sidebar_signature = ""
+		_area_sidebar.reset_size()
+	)
+	_area_rows = VBoxContainer.new()
+	_area_rows.size_flags_horizontal = Control.SIZE_EXPAND_FILL
+	_area_rows.add_theme_constant_override("separation", 10)
+	scroll.add_child(_area_rows)
+	_area_sidebar.hide()
+
+
+func _area_color(data: Dictionary) -> Color:
+	var tint: Color = data.get("color", Color(0, 0, 0, -1))
+	if tint.a < 0.0:
+		tint = measure.call("_spell_style_color", String(data.get("style", "")))
+	tint.a = 0.94
+	return tint
+
+
+func _sidebar_entries() -> Array[Dictionary]:
+	var result: Array[Dictionary] = _areas.duplicate()
+	var fixed: Variant = measure.get("_spell_fixed_previews")
+	if fixed is Array:
+		for preview: Variant in fixed:
+			if preview is MeshInstance3D and is_instance_valid(preview) and preview.has_meta("area_dimensions"):
+				result.append((preview.get_meta("area_dimensions") as Dictionary).duplicate())
+	for spec: Dictionary in [
+		{"node": "_aoe_preview", "start": "_start_center", "end": "_end_center", "shape": "aoe_shape", "manual": true},
+		{"node": "_spell_preview", "start": "_spell_preview_start", "end": "_spell_preview_end", "shape": "_spell_preview_shape", "manual": false}
+	]:
+		var visual: MeshInstance3D = measure.get(spec["node"]) as MeshInstance3D
+		if visual == null or not is_instance_valid(visual) or not visual.visible:
+			continue
+		var data := {"start": measure.get(spec["start"]), "end": measure.get(spec["end"]),
+			"shape": String(measure.get(spec["shape"])), "preview": true,
+			"color": (visual.material_override as StandardMaterial3D).albedo_color,
+			"spell_preview": not bool(spec["manual"])}
+		if not bool(spec["manual"]):
+			data["style"] = String(measure.get("_spell_preview_style"))
+			data["width"] = float(measure.get("_spell_preview_line_width"))
+		result.push_front(data)
+	return result
+
+
+func _area_target_names(data: Dictionary) -> Array[String]:
+	if bool(data.get("spell_preview", false)):
+		return _target_names(data["start"], data["end"], String(data["shape"]),
+			float(data.get("width", -1.0)), String(data.get("style", "")))
+	var result: Array[String] = []
+	var tokens: Array = measure.call("area_affected_tokens", data["start"], data["end"],
+		String(data["shape"]), String(data.get("style", "")), float(data.get("width", -1.0)))
+	for token: Node3D in tokens:
+		result.append(_target_display_name(token))
+	return result
+
+
+func _refresh_area_sidebar() -> void:
+	if _area_sidebar == null:
+		return
+	var entries: Array[Dictionary] = _sidebar_entries()
+	_area_sidebar.visible = not entries.is_empty()
+	var scroll := _area_rows.get_parent() as ScrollContainer
+	if not scroll.visible:
+		return
+	scroll.custom_minimum_size = Vector2(minf(275.0, maxf(140.0, size.x - 44.0)),
+		minf(440.0, maxf(60.0, size.y - 190.0)))
+	var signature: String = str(size) + JSON.stringify(entries)
+	for token: Node in get_tree().get_nodes_in_group("dnd_token"):
+		if token is Node3D and board.is_ancestor_of(token):
+			signature += str(token.get_instance_id()) + str(token.global_position) + _target_display_name(token)
+			signature += str(token.get("token_height_cells"))
+			if token.has_method("get_footprint_cells"):
+				signature += str(token.call("get_footprint_cells"))
+	if signature == _sidebar_signature:
+		return
+	_sidebar_signature = signature
+	var previous_scroll: int = scroll.scroll_vertical
+	for child: Node in _area_rows.get_children():
+		_area_rows.remove_child(child)
+		child.queue_free()
+	var counts: Dictionary = {}
+	for data: Dictionary in entries:
+		var shape: String = String(data["shape"])
+		counts[shape] = int(counts.get(shape, 0)) + 1
+		var title := Label.new()
+		var shape_name: String = {"sphere": "Sfera", "cube": "Cubo", "cone": "Cono",
+			"line": "Linea", "cylinder": "Cilindro", "flat_square": "Quadrato"}.get(shape, shape)
+		title.text = "● %s %d%s" % [shape_name, counts[shape], " · anteprima" if bool(data.get("preview", false)) else ""]
+		title.add_theme_color_override("font_color", _area_color(data))
+		_area_rows.add_child(title)
+		var dimensions := Label.new()
+		dimensions.autowrap_mode = TextServer.AUTOWRAP_WORD_SMART
+		dimensions.text = measure.call("aoe_dimensions_description", data["start"], data["end"],
+			shape, String(data.get("style", "")), float(data.get("width", -1.0)))
+		_area_rows.add_child(dimensions)
+		var names: Array[String] = _area_target_names(data)
+		var targets := Label.new()
+		targets.autowrap_mode = TextServer.AUTOWRAP_WORD_SMART
+		targets.text = ("%s (%d)" % ["Attraversate" if shape == "line" else "Nell'area", names.size()])
+		for target: String in names:
+			targets.text += "\n• " + target
+		if names.is_empty():
+			targets.text += "\nNessuna creatura"
+		_area_rows.add_child(targets)
+	scroll.set_deferred("scroll_vertical", previous_scroll)
+
+
+func _draw_dimension_radii(start: Vector3, end: Vector3, shape: String, tint: Color, width: float = -1.0, style: String = "") -> void:
+	if not measure.has_method("_aoe_geometry"):
+		return
+	var geometry: Dictionary = measure.call("_aoe_geometry", start, end, shape, style, width)
+	var points: PackedVector3Array = RangeGeometry.dimension_radii_points(geometry)
+	var transform := Transform3D(geometry.get("basis", Basis.IDENTITY), geometry.get("position", start))
+	var color: Color = tint
+	color.a = 0.94
+	for index: int in range(0, points.size(), 2):
+		var first: Vector2 = _world_point(transform * points[index])
+		var last: Vector2 = _world_point(transform * points[index + 1])
+		if first.distance_squared_to(last) > 0.1:
+			draw_line(first, last, color, 2.6, true)

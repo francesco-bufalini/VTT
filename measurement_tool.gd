@@ -277,6 +277,17 @@ func _persistent_aoe_hits_token(
 	return false
 
 
+func area_affected_tokens(start: Vector3, end: Vector3, shape: String, style: String = "", width: float = -1.0) -> Array[Node3D]:
+	var result: Array[Node3D] = []
+	var data := {"start": [start.x, start.y, start.z], "end": [end.x, end.y, end.z],
+		"shape": shape, "style": style, "line_width_world": width}
+	for node: Node in get_tree().get_nodes_in_group("dnd_token"):
+		if node is Node3D and is_instance_valid(node) and get_parent().is_ancestor_of(node):
+			if _persistent_aoe_hits_token(data, node as Node3D):
+				result.append(node as Node3D)
+	return result
+
+
 func _spell_affected_override_signature() -> String:
 	var parts: PackedStringArray = PackedStringArray()
 	for token: Node3D in _spell_affected_override:
@@ -723,6 +734,58 @@ func adjust_aoe_color(step: int) -> void:
 		AOE_COLORS.size()
 	)
 	_update_visuals()
+
+
+func _next_aoe_color(shape: String, preferred: Color) -> Color:
+	var used: Array[Color] = []
+	for value: Variant in persistent_aoes:
+		if value is Dictionary and String(value.get("shape", "")) == shape:
+			used.append(_deserialize_aoe_color(value.get("color", {})) if value.has("color")
+				else _spell_style_color(String(value.get("style", ""))))
+	for root: Node3D in _held_spell_aoes:
+		if is_instance_valid(root):
+			var data: Dictionary = root.get_meta("spell_overlay_2d", {})
+			if String(data.get("shape", "")) == shape:
+				used.append(data.get("color", _spell_style_color(String(data.get("style", "")))))
+	for preview: MeshInstance3D in _spell_fixed_previews:
+		if is_instance_valid(preview):
+			var data: Dictionary = preview.get_meta("area_dimensions", {})
+			if String(data.get("shape", "")) == shape:
+				used.append(data.get("color", preferred))
+	var candidates: Array[Color] = [preferred]
+	candidates.append_array(AOE_COLORS)
+	# Prefer visibly separated hues; after the palette is crowded, still
+	# guarantee a distinct stored RGB colour for every area.
+	for minimum_distance: float in [0.04, 0.0]:
+		for index: int in range(candidates.size() + 256):
+			var candidate: Color = candidates[index] if index < candidates.size() else Color.from_hsv(
+				fposmod(float(index - candidates.size()) * 0.61803398875, 1.0), 0.78, 1.0)
+			var available := true
+			for existing: Color in used:
+				var delta := Vector3(candidate.r - existing.r, candidate.g - existing.g, candidate.b - existing.b)
+				if candidate.is_equal_approx(existing) or delta.length_squared() <= minimum_distance:
+					available = false
+					break
+			if available:
+				return candidate
+	return preferred
+
+
+func aoe_dimensions_description(start: Vector3, end: Vector3, shape: String, style: String = "", width: float = -1.0) -> String:
+	var geometry: Dictionary = _aoe_geometry(start, end, shape, style, width)
+	var unit: float = 5.0 / maxf(cell_size, 0.001)
+	if shape in ["sphere", "cylinder"]:
+		var label: String = "Raggio %.1f ft" % (float(geometry.get("radius", 0.5)) * unit)
+		if shape == "cylinder":
+			label += " · altezza %.1f ft" % (float(geometry.get("height", 1.0)) * unit)
+		return label
+	if shape in ["cube", "flat_square"]:
+		var side: Vector3 = geometry.get("size", Vector3.ONE)
+		return "Lato %.1f ft · semilato %.1f ft" % [side.x * unit, side.x * unit * 0.5]
+	return "Lunghezza %.1f ft · %s %.1f ft" % [
+		float(geometry.get("height", 1.0)) * unit,
+		"raggio base" if shape == "cone" else "larghezza",
+		float(geometry.get("radius", 0.5)) * unit * (1.0 if shape == "cone" else 2.0)]
 
 
 func _current_aoe_color() -> Color:
@@ -1327,7 +1390,7 @@ func _update_visuals() -> void:
 			_end_center,
 			aoe_shape,
 			"",
-			_current_aoe_color()
+			_next_aoe_color(aoe_shape, _current_aoe_color())
 		)
 		_aoe_preview.show()
 	_start_cube.visible = true
@@ -1396,8 +1459,8 @@ func _dnd_grid_distance_cells(delta: Vector3) -> int:
 	# Regola 5-10-5:
 	# una diagonale costa 1 quadretto, la successiva 2, poi 1, poi 2...
 	#
-	# In 3D ogni passo che cambia almeno due assi è un passo diagonale.
-	# Il numero di passi diagonali è il secondo valore più grande tra
+	# In 3D ogni passo che cambia almeno due assi Ã¨ un passo diagonale.
+	# Il numero di passi diagonali Ã¨ il secondo valore piÃ¹ grande tra
 	# |dx|, |dy| e |dz|.
 	var dx: int = int(
 		round(absf(delta.x) / maxf(cell_size, 0.0001))
@@ -1568,7 +1631,7 @@ func show_spell_preview(
 	preview_material.cull_mode = BaseMaterial3D.CULL_DISABLED
 	preview_material.emission_enabled = true
 
-	var preview_color: Color = _spell_style_color(style)
+	var preview_color: Color = _next_aoe_color(shape, _spell_style_color(style))
 	preview_color.a = 0.20 if style != "darkness" else 0.24
 	preview_material.albedo_color = preview_color
 	preview_material.emission = Color(
@@ -1582,6 +1645,7 @@ func show_spell_preview(
 	)
 
 	_spell_preview.material_override = preview_material
+	_set_dimension_material(_spell_preview, preview_material)
 	_spell_preview_start = start
 	_spell_preview_end = end
 	_spell_preview_shape = shape
@@ -1612,13 +1676,19 @@ func show_spell_fixed_previews(
 		var preview: MeshInstance3D = MeshInstance3D.new()
 		preview.name = "SpellFixedPreview%d" % index
 		add_child(preview)
+		var instance_color: Color = _next_aoe_color(shape, _spell_style_color(style))
+		preview.set_meta("area_dimensions", {
+			"start": starts[index], "end": ends[index], "shape": shape,
+			"style": style, "width": line_width_world, "color": instance_color,
+			"preview": true, "spell_preview": true
+		})
 		_draw_aoe(
 			preview,
 			starts[index],
 			ends[index],
 			shape,
 			style,
-			Color(0.0, 0.0, 0.0, -1.0),
+			instance_color,
 			line_width_world
 		)
 		_spell_fixed_previews.append(preview)
@@ -1713,9 +1783,10 @@ func show_held_spell_aoe(
 	add_child(root)
 	# Store world geometry for the top-down CanvasLayer. Screen-space picking
 	# can dismiss this area even when a creature or scenery occludes its 3D body.
+	var instance_color: Color = _next_aoe_color(shape, _spell_style_color(style))
 	root.set_meta("spell_overlay_2d", {
 		"start": start, "end": end, "shape": shape,
-		"style": style, "width": line_width_world
+		"style": style, "width": line_width_world, "color": instance_color
 	})
 
 	var mesh: MeshInstance3D = MeshInstance3D.new()
@@ -1727,7 +1798,7 @@ func show_held_spell_aoe(
 		end,
 		shape,
 		style,
-		Color(0.0, 0.0, 0.0, -1.0),
+		instance_color,
 		line_width_world
 	)
 	DamageAreaParticles.attach_area(
@@ -2546,7 +2617,11 @@ func add_aoe(
 
 	_record_undo_state()
 	var selected_color: Color = color
-	if style.is_empty() and selected_color.a < 0.0:
+	if not _suppress_undo_record:
+		if selected_color.a < 0.0:
+			selected_color = _spell_style_color(style) if not style.is_empty() else _current_aoe_color()
+		selected_color = _next_aoe_color(shape, selected_color)
+	elif style.is_empty() and selected_color.a < 0.0:
 		selected_color = _current_aoe_color()
 
 	var data: Dictionary = {
@@ -2556,7 +2631,7 @@ func add_aoe(
 	}
 	if not style.is_empty():
 		data["style"] = style
-	elif selected_color.a >= 0.0:
+	if selected_color.a >= 0.0:
 		data["color"] = _serialize_aoe_color(selected_color)
 	if line_width_world > 0.0:
 		data["line_width_world"] = line_width_world
@@ -2792,7 +2867,7 @@ func _draw_aoe(
 	material.transparency = BaseMaterial3D.TRANSPARENCY_ALPHA
 
 	if not style.is_empty():
-		var style_color: Color = _spell_style_color(style)
+		var style_color: Color = color if color.a >= 0.0 else _spell_style_color(style)
 		style_color.a = 0.72 if style == "darkness" else 0.24
 		material.albedo_color = style_color
 		material.emission_enabled = true
@@ -2860,6 +2935,24 @@ func _draw_aoe(
 			node.mesh = sphere_mesh
 
 	node.material_override = material
+	var radii: MeshInstance3D = node.get_node_or_null("DimensionRadii") as MeshInstance3D
+	if radii == null:
+		radii = MeshInstance3D.new()
+		radii.name = "DimensionRadii"
+		radii.cast_shadow = GeometryInstance3D.SHADOW_CASTING_SETTING_OFF
+		node.add_child(radii)
+	radii.mesh = RangeGeometry.dimension_radii_mesh(geometry)
+	_set_dimension_material(node, material)
+
+
+func _set_dimension_material(node: MeshInstance3D, material: StandardMaterial3D) -> void:
+	var radii: MeshInstance3D = node.get_node_or_null("DimensionRadii") as MeshInstance3D
+	if radii == null:
+		return
+	var line_material := material.duplicate() as StandardMaterial3D
+	line_material.albedo_color.a = 0.94
+	line_material.no_depth_test = false
+	radii.material_override = line_material
 
 
 func get_aoe_index_at_screen(screen_position: Vector2) -> int:

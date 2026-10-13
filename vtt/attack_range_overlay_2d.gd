@@ -144,6 +144,7 @@ func _draw() -> void:
 	var show_2d: bool = board.has_method("is_2d_view_enabled") and bool(board.call("is_2d_view_enabled"))
 	if bool(attack.get("_preview_only")):
 		_draw_target_panel()
+	_draw_legend(float(attack.get("_range_normal_feet")), float(attack.get("_range_long_feet")))
 	if not show_2d:
 		return
 	var caster: CharacterBody3D = attack.get("_attacker") as CharacterBody3D
@@ -166,7 +167,6 @@ func _draw() -> void:
 		_screen_polygon(caster.global_position, half_footprint, normal_feet / 5.0 * cell_size),
 		NORMAL_COLOR, 0.055
 	)
-	_draw_legend(normal_feet, long_feet)
 
 
 
