@@ -197,7 +197,8 @@ func _list(parent: Node, count: int) -> VBoxContainer:
 	scroll.custom_minimum_size.y = 48.0
 	scroll.set_meta("spell_list", true)
 	scroll.horizontal_scroll_mode = ScrollContainer.SCROLL_MODE_DISABLED
-	scroll.mouse_force_pass_scroll_events = true
+	scroll.vertical_scroll_mode = ScrollContainer.SCROLL_MODE_AUTO
+	scroll.mouse_force_pass_scroll_events = false
 	parent.add_child(scroll)
 	var list := VBoxContainer.new()
 	list.size_flags_horizontal = Control.SIZE_EXPAND_FILL
