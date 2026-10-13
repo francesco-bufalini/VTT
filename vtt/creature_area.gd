@@ -777,7 +777,6 @@ func _build_ui() -> void:
 	combat_column.add_theme_constant_override("separation", 5)
 	combat_column.size_flags_horizontal = Control.SIZE_EXPAND_FILL
 	combat_view.add_child(combat_column)
-	var appearance_tab := _add_sheet_tab(_tabs, "Aspetto")
 	var traits_tab := _add_sheet_tab(_tabs, "Tratti")
 	var conditions_tab := _add_sheet_tab(_tabs, "Stati")
 	var spellcasting_tab := _add_sheet_tab(_tabs, "Incantesimi")
@@ -835,6 +834,7 @@ func _build_ui() -> void:
 	_party.placeholder_text = "Default"
 	_party.text_changed.connect(func(_text: String) -> void: _save())
 	name_row.add_child(_party)
+	var physics_box := _info_panel(form, "FISICO")
 
 	var health_panel := PanelContainer.new()
 	var health_style := StyleBoxFlat.new()
@@ -1005,7 +1005,7 @@ func _build_ui() -> void:
 	movement_style.draw_center = false
 	movement_style.border_color = Color(0.47, 0.66, 0.58, 0.85)
 	movement_panel.add_theme_stylebox_override("panel", movement_style)
-	combat_column.add_child(movement_panel)
+	physics_box.add_child(movement_panel)
 	var movement_box := VBoxContainer.new()
 	movement_box.add_theme_constant_override("separation", 5)
 	movement_panel.add_child(movement_box)
@@ -1281,7 +1281,7 @@ func _build_ui() -> void:
 
 	var species_row := HFlowContainer.new()
 	species_row.add_theme_constant_override("h_separation", 6)
-	identity_box.add_child(species_row)
+	physics_box.add_child(species_row)
 	_add_label(species_row, "Razza / Specie")
 	_species = _reference_option(species_row, RaceRules.base_races(), true, false, "races")
 	_species.custom_minimum_size.x = 150
@@ -1305,7 +1305,7 @@ func _build_ui() -> void:
 	species_row.add_child(_challenge_rating)
 	var type_row := HBoxContainer.new()
 	type_row.add_theme_constant_override("separation", 7)
-	identity_box.add_child(type_row)
+	physics_box.add_child(type_row)
 	_add_label(type_row, "Tipo")
 	_creature_type_display = Label.new()
 	_creature_type_display.custom_minimum_size.x = 110
@@ -1403,7 +1403,7 @@ func _build_ui() -> void:
 	biography_box.add_child(_biography)
 
 	var miniature_row := HBoxContainer.new()
-	appearance_tab.add_child(miniature_row)
+	physics_box.add_child(miniature_row)
 	_add_label(miniature_row, "Miniatura base")
 	_default_miniature = LineEdit.new()
 	_default_miniature.size_flags_horizontal = Control.SIZE_EXPAND_FILL
@@ -1416,7 +1416,7 @@ func _build_ui() -> void:
 	miniature_row.add_child(choose_miniature)
 	_current_miniature_row = HBoxContainer.new()
 	_current_miniature_row.add_theme_constant_override("separation", 6)
-	appearance_tab.add_child(_current_miniature_row)
+	physics_box.add_child(_current_miniature_row)
 	_add_label(_current_miniature_row, "Forma attuale")
 	_current_miniature_name = LineEdit.new()
 	_current_miniature_name.editable = false
@@ -1426,7 +1426,7 @@ func _build_ui() -> void:
 	var appearance_actions := HFlowContainer.new()
 	appearance_actions.add_theme_constant_override("h_separation", 8)
 	appearance_actions.add_theme_constant_override("v_separation", 5)
-	appearance_tab.add_child(appearance_actions)
+	physics_box.add_child(appearance_actions)
 	var edit_appearance := Button.new()
 	edit_appearance.text = "Scegli aspetto attuale…"
 	edit_appearance.tooltip_text = "Cerca la miniatura attuale; funziona anche senza token in scena."
@@ -1442,7 +1442,7 @@ func _build_ui() -> void:
 	geometry.columns = 2
 	geometry.add_theme_constant_override("h_separation", 7)
 	geometry.add_theme_constant_override("v_separation", 10)
-	appearance_tab.add_child(geometry)
+	physics_box.add_child(geometry)
 	_add_label(geometry, "Taglia")
 	_size_choice = OptionButton.new()
 	for size_name: String in ["Tiny", "Small", "Medium", "Large", "Huge", "Gargantuan"]:
@@ -1455,6 +1455,8 @@ func _build_ui() -> void:
 		_front.add_item(direction)
 	_front.item_selected.connect(func(_i: int) -> void: _save())
 	geometry.add_child(_front)
+	# Speeds and jumps remain editable in Info, after species and appearance.
+	physics_box.move_child(movement_panel, physics_box.get_child_count() - 1)
 	# Fazione is edited beside the creature name on the Statistics tab.
 
 
