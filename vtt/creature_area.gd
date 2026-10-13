@@ -3062,8 +3062,8 @@ func _load_form(record: Dictionary) -> void:
 	_refresh_subrace_choices()
 	_select_reference(_subrace_choice, String(record.get("subrace", "")),
 		String(record.get("subrace_source", "")), String(record.get("subrace_id", "")))
-	_subrace_choice.get_parent().visible = is_character
-	_challenge_rating.get_parent().visible = not is_character
+	(_subrace_choice.get_parent() as Control).visible = is_character
+	(_challenge_rating.get_parent() as Control).visible = not is_character
 	var challenge: Variant = record.get("stat_block", {}).get("cr", "0")
 	_challenge_rating.text = String(challenge.get("cr", "0") if challenge is Dictionary else challenge)
 	_refresh_creature_type(record)
