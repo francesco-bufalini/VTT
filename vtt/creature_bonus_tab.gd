@@ -303,7 +303,7 @@ func _refresh_options() -> void:
 			_dice_target.set_item_metadata(_dice_target.item_count - 1, String(target.get("key", "")))
 		for target: Dictionary in _all_targets():
 			var key: String = String(target.get("key", ""))
-			if key.begins_with("skill:") or key.begins_with("save:") or key.begins_with("attack_hit:") or key.begins_with("ability_mod:"):
+			if key.begins_with("skill:") or key.begins_with("save:") or key.begins_with("attack_hit:") or key.begins_with("attack_damage:") or key.begins_with("ability_mod:"):
 				_dice_target.add_item(String(target.get("name", key)))
 				_dice_target.set_item_metadata(_dice_target.item_count - 1, key)
 		for i: int in range(_dice_target.item_count):
