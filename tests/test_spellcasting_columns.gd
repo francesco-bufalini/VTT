@@ -141,6 +141,30 @@ func run() -> void:
 		if label.is_visible_in_tree() and not label.text.is_empty():
 			assert(label.size.x > 10, "Every caption and counter has a usable width")
 	assert(tab._view._rows[0].size.y < 650, "Slot headings must not wrap into a tall column of letters")
+	var conflict: Dictionary = tab._view_record()
+	conflict["proficiency_origins"] = [{"id": "custom:example", "name": "Example", "group": "custom"}]
+	conflict["origin_spell_grants"] = [
+		{"id": "one", "origin_id": "custom:example", "origin_name": "Example",
+			"spell_id": "bless", "payment_mode": "free", "spellcasting_ability": "wis"},
+		{"id": "two", "origin_id": "custom:example", "origin_name": "Example",
+			"spell_id": "cure_wounds", "payment_mode": "free", "spellcasting_ability": ""}
+	]
+	tab.refresh_spell_state(conflict)
+	var matching_origin: int = 0
+	for section_row: HBoxContainer in tab._view._rows:
+		var left_section: VBoxContainer = section_row.get_child(0).get_child(0)
+		if left_section.get_child_count() == 0 or not left_section.get_child(0) is HBoxContainer:
+			continue
+		var header: HBoxContainer = left_section.get_child(0)
+		if header.get_child_count() == 0 or not header.get_child(0) is Label:
+			continue
+		if "Origine · Example" not in (header.get_child(0) as Label).text:
+			continue
+		matching_origin += 1
+		assert(left_section.find_children("CastingAbility", "OptionButton", true, false).size() == 1
+			and left_section.find_children("CastingStatistics", "Label", true, false).size() == 1,
+			"Conflicting granted spells still produce exactly one ability selector/statistics line")
+	assert(matching_origin == 1, "Two powers from one origin share one editable section")
 	if DisplayServer.get_name() != "headless":
 		await RenderingServer.frame_post_draw
 		root.get_texture().get_image().save_png("user://spellcasting_columns_review.png")
