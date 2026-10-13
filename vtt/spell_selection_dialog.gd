@@ -1,4 +1,5 @@
 extends ConfirmationDialog
+const DialogLayout = preload("res://vtt/dialog_layout.gd")
 const Caption = preload("res://vtt/scrollable_caption.gd")
 var _catalog: Array[Dictionary] = []
 var _selected: Dictionary = {}
@@ -30,7 +31,7 @@ func _ready() -> void:
 	layout.add_child(heading)
 	_count = Label.new()
 	_count.size.x = 460
-	_count.custom_minimum_size.x = 420
+	_count.custom_minimum_size.x = 140
 	_count.size_flags_horizontal = Control.SIZE_EXPAND_FILL
 	_count.autowrap_mode = TextServer.AUTOWRAP_WORD_SMART
 	heading.add_child(_count)
@@ -40,7 +41,7 @@ func _ready() -> void:
 	heading.add_child(info)
 	_details = Label.new()
 	_details.size.x = 460
-	_details.custom_minimum_size.x = 420
+	_details.custom_minimum_size.x = 140
 	_details.autowrap_mode = TextServer.AUTOWRAP_WORD_SMART
 	_details.hide()
 	layout.add_child(_details)
@@ -62,13 +63,13 @@ func _ready() -> void:
 	filters.add_child(_level)
 	var guide := Label.new()
 	guide.size.x = 460
-	guide.custom_minimum_size.x = 420
+	guide.custom_minimum_size.x = 140
 	guide.text = "Spunta i disponibili. Passa sul nome per la descrizione; le modifiche si applicano con Salva."
 	guide.autowrap_mode = TextServer.AUTOWRAP_WORD_SMART
 	layout.add_child(guide)
 	var scroll := ScrollContainer.new()
 	scroll.mouse_force_pass_scroll_events = false
-	scroll.custom_minimum_size = Vector2(460, 300)
+	scroll.custom_minimum_size = Vector2(140, 160)
 	scroll.size_flags_vertical = Control.SIZE_EXPAND_FILL
 	scroll.horizontal_scroll_mode = ScrollContainer.SCROLL_MODE_DISABLED
 	layout.add_child(scroll)
@@ -76,6 +77,8 @@ func _ready() -> void:
 	_rows.size_flags_horizontal = Control.SIZE_EXPAND_FILL
 	scroll.add_child(_rows)
 	confirmed.connect(_save)
+	canceled.connect(hide)
+	close_requested.connect(hide)
 	Caption.install(self)
 
 func choose(options: Array[Dictionary], config: Dictionary, callback: Callable) -> void:
@@ -100,10 +103,8 @@ func choose(options: Array[Dictionary], config: Dictionary, callback: Callable) 
 	_search.clear()
 	_level.select(0)
 	_rebuild()
-	var screen: Vector2 = get_tree().root.get_visible_rect().size
-	var desired := Vector2i(mini(760, int(screen.x - 40)), mini(620, int(screen.y - 40)))
-	popup_centered(desired)
-	_settle_size.call_deferred(desired)
+	DialogLayout.popup(self, Vector2i(760, 620))
+	_fit_dialog.call_deferred()
 
 func _rebuild() -> void:
 	_checks.clear()
@@ -209,6 +210,23 @@ func _save() -> void:
 		_change.call({"selected": _selected.keys(), "book": _book.keys()})
 
 
-func _settle_size(desired: Vector2i) -> void:
-	size = desired
-	position = (get_tree().root.size - size) / 2
+
+func _fit_dialog() -> void:
+	await get_tree().process_frame
+	if not visible:
+		return
+	# Embedded windows use the parent viewport's coordinates, which can be
+	# different from the root window's physical pixels under UI stretching.
+	var area: Rect2 = get_parent().get_viewport().get_visible_rect()
+	var available := Vector2i(area.size * 0.92)
+	wrap_controls = false
+	min_size = Vector2i.ZERO
+	max_size = available
+	size = Vector2i(760, 620).min(available)
+	position = Vector2i(area.position) + (Vector2i(area.size) - size) / 2
+
+
+func _input(event: InputEvent) -> void:
+	if visible and event is InputEventKey and event.pressed and event.keycode == KEY_ESCAPE:
+		hide()
+		set_input_as_handled()

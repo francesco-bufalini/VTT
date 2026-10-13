@@ -121,6 +121,7 @@ func refresh() -> void:
 		if seen.is_empty():
 			_label(pair[1], "Senza tracker · usa gli slot sopra quando previsto")
 	_fit()
+	_balance_lists.call_deferred()
 
 func _pair() -> Array[VBoxContainer]:
 	var row := HBoxContainer.new()
@@ -130,7 +131,7 @@ func _pair() -> Array[VBoxContainer]:
 	var result: Array[VBoxContainer] = []
 	for i: int in range(2):
 		var panel := PanelContainer.new()
-		panel.size_flags_vertical = Control.SIZE_SHRINK_BEGIN
+		panel.size_flags_vertical = Control.SIZE_FILL
 		var style: StyleBoxFlat = get_theme_stylebox("panel", "PanelContainer").duplicate() as StyleBoxFlat
 		style.border_color = Color(0.43, 0.36, 0.28)
 		style.set_border_width_all(1)
@@ -166,7 +167,8 @@ func _heading(parent: Node, text: String) -> void:
 
 func _list(parent: Node, count: int) -> VBoxContainer:
 	var scroll := ScrollContainer.new()
-	scroll.custom_minimum_size.y = clampf(float(count) * 35.0, 48.0, 180.0)
+	scroll.custom_minimum_size.y = 48.0
+	scroll.set_meta("spell_list", true)
 	scroll.horizontal_scroll_mode = ScrollContainer.SCROLL_MODE_DISABLED
 	scroll.mouse_force_pass_scroll_events = true
 	parent.add_child(scroll)
@@ -229,20 +231,20 @@ func _spell_button(parent: Node, spell: Dictionary, member: Dictionary, grant: D
 	parent.add_child(button)
 
 func _slots(parent: Node, record: Dictionary) -> void:
-	var headings := HBoxContainer.new()
-	parent.add_child(headings)
-	headings.add_theme_constant_override("separation", 5)
+	var grid := GridContainer.new()
+	grid.name = "SlotGrid"
+	grid.columns = 3
+	grid.add_theme_constant_override("h_separation", 5)
+	grid.add_theme_constant_override("v_separation", 5)
+	parent.add_child(grid)
 	for index: int in range(3):
-		var caption: Label = _label(headings, ["Liv.", "Classi", "Patto"][index])
+		var caption: Label = _label(grid, ["Liv.", "Classi", "Patto"][index])
 		caption.custom_minimum_size.x = 24 if index == 0 else 104
-		caption.size_flags_horizontal = Control.SIZE_SHRINK_BEGIN
+		caption.size_flags_horizontal = Control.SIZE_FILL
 		caption.autowrap_mode = TextServer.AUTOWRAP_OFF
 		caption.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
 	for level: int in range(1, 10):
-		var row := HBoxContainer.new()
-		row.add_theme_constant_override("separation", 5)
-		parent.add_child(row)
-		var title: Label = _label(row, "%d°" % level)
+		var title: Label = _label(grid, "%d°" % level)
 		title.custom_minimum_size.x = 24
 		title.size_flags_horizontal = Control.SIZE_SHRINK_BEGIN
 		title.autowrap_mode = TextServer.AUTOWRAP_OFF
@@ -250,16 +252,12 @@ func _slots(parent: Node, record: Dictionary) -> void:
 		var spent: Array = record.get("spell_slots_spent", [])
 		var maximum: int = maxi(0, Bonuses.add(record, "slot:" + str(level), int(totals[level]) if totals.size() > level else 0))
 		var used: int = int(spent[level]) if spent.size() > level else 0
-		_counter(row, maxi(0, maximum - used), maximum, _actions.slot.bind(level))
+		_counter(grid, maxi(0, maximum - used), maximum, _actions.slot.bind(level))
 		var pact_max: int = maxi(0, Bonuses.add(record, "pact_slot", int(record.get("pact_slots_total", 0))))
 		if level == int(record.get("pact_slot_level", 1)):
-			_counter(row, maxi(0, pact_max - int(record.get("pact_slots_spent", 0))), pact_max, _actions.pact)
+			_counter(grid, maxi(0, pact_max - int(record.get("pact_slots_spent", 0))), pact_max, _actions.pact)
 		else:
-			var empty: Label = _label(row, "0/0")
-			empty.custom_minimum_size.x = 104
-			empty.autowrap_mode = TextServer.AUTOWRAP_OFF
-			empty.size_flags_horizontal = Control.SIZE_SHRINK_BEGIN
-			empty.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
+			_counter(grid, 0, 0, _actions.pact)
 	var restore := Button.new()
 	restore.text = "Ripristina slot"
 	restore.pressed.connect(_actions.restore)
@@ -270,6 +268,11 @@ func _counter(parent: Node, remaining: int, maximum: int, change: Callable) -> v
 	counter.custom_minimum_size.x = 104
 	counter.add_theme_constant_override("separation", 3)
 	parent.add_child(counter)
+	if maximum == 0:
+		var empty: Label = _label(counter, "0/0")
+		empty.autowrap_mode = TextServer.AUTOWRAP_OFF
+		empty.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
+		return
 	var count: Label = _label(counter, str(remaining))
 	count.custom_minimum_size.x = 18
 	count.size_flags_horizontal = Control.SIZE_SHRINK_BEGIN
@@ -318,3 +321,25 @@ func _tracker(parent: Node, record: Dictionary, tracker: Dictionary) -> void:
 func _definition(entry: Dictionary) -> Dictionary:
 	var definition: Dictionary = Catalog.catalog_spell(String(entry.get("id", "")))
 	return entry.duplicate(true) if definition.is_empty() else definition
+
+
+func _balance_lists() -> void:
+	# Measure the actual themed rows, not a guessed fixed pixel height.
+	await get_tree().process_frame
+	for row: HBoxContainer in _rows:
+		var left := row.get_child(0).get_child(0) as VBoxContainer
+		var right := row.get_child(1).get_child(0) as VBoxContainer
+		var lists: Array[ScrollContainer] = []
+		for node: Node in left.find_children("*", "ScrollContainer", true, false):
+			if node.has_meta("spell_list"):
+				var scroll := node as ScrollContainer
+				scroll.custom_minimum_size.y = clampf(scroll.get_child(0).get_combined_minimum_size().y, 48.0, 180.0)
+				lists.append(scroll)
+		var extra := maxf(0.0, right.get_combined_minimum_size().y - left.get_combined_minimum_size().y)
+		# Grow only lists with hidden content, until the neighbouring resources
+		# no longer leave unused vertical space. Empty sections stay compact.
+		for scroll: ScrollContainer in lists:
+			var missing := maxf(0.0, scroll.get_child(0).get_combined_minimum_size().y - scroll.custom_minimum_size.y)
+			var growth := minf(missing, extra)
+			scroll.custom_minimum_size.y += growth
+			extra -= growth

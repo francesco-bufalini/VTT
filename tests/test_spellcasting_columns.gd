@@ -33,6 +33,9 @@ func run() -> void:
 	var wizard: Dictionary = Choices.classes(record)[0]
 	tab._view_edit_class(wizard)
 	assert(tab._selection_dialog.visible and not tab._selection_dialog._details.visible)
+	await process_frame
+	await process_frame
+	await process_frame
 	if DisplayServer.get_name() != "headless":
 		await process_frame
 		await process_frame
