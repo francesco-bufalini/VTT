@@ -1,6 +1,6 @@
 extends SceneTree
 
-const BoardScript = preload("res://dnd_base.gd")
+
 const TokenScene = preload("res://token.tscn")
 
 
@@ -11,7 +11,8 @@ func _initialize() -> void:
 func run() -> void:
 	# Test the actual signal binding used by individual context-menu rows.
 	# No full map has to load to verify that each button edits its own ID.
-	var board: Node3D = BoardScript.new()
+	var board_script: Script = load("res://dnd_base.gd")
+	var board: Node3D = board_script.new()
 	var target: CharacterBody3D = TokenScene.instantiate()
 	root.add_child(target)
 	var other: CharacterBody3D = TokenScene.instantiate()

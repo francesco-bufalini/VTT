@@ -52,7 +52,9 @@ func _run() -> void:
 	assert(Attacks.damage_expression(record, Attacks.active_attack(record)) == "1d8+3")
 	equipped[1]["equipped_slots"] = []
 	record["inventory"] = equipped
-	assert(Attacks.active_attack(record).get("id") == "unarmed", "Sheathing weapon falls back without auto-re-equipping")
+	assert(Attacks.active_attack(record).is_empty(), "Sheathing must not auto-equip a fictional attack")
+	record["hand_main_special"] = "unarmed"
+	assert(Attacks.active_attack(record).get("id") == "unarmed", "Explicitly selected unarmed attacks remain available")
 
 	var monster: Dictionary = {
 		"kind": "monster", "inventory": [],
@@ -71,7 +73,7 @@ func _run() -> void:
 		"Monster store must preserve selected natural attack")
 	var tail: Dictionary = Attacks.active_attack(monster)
 	assert(Attacks.damage_expression(monster, tail) == "2d6+4")
-	monster["attack_overrides"] = {"monster:action:1": {"bonus": 2}}
+	monster["formula_bonuses"] = [{"id": "tail-damage", "target": "attack_damage:monster:action:1", "expression": "2", "origin_id": ""}]
 	assert(Attacks.damage_expression(monster, tail) == "2d6+4+2", "Manual damage bonus must reach roller")
 	print("PASS: first equip, sheathing, weapon selection, monster attack reach and dice expressions")
 	quit()
