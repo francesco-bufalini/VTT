@@ -79,25 +79,9 @@ func save_characters(characters: Array[Dictionary], allow_transfer: bool = false
 		previous.close()
 		if root_value is Dictionary:
 			var saved_value: Variant = (root_value as Dictionary).get("characters", [])
-			if saved_value is Array:
-				for raw: Variant in saved_value as Array:
-					if not raw is Dictionary:
-						continue
-					var stored: Dictionary = raw as Dictionary
-					for candidate: Dictionary in merged:
-						if String(candidate.get("id", "")) != String(stored.get("id", "")):
-							continue
-						if not allow_transfer and (not CreatureOwner.can_edit(candidate, stored) or String(candidate.get("owner_id", "")) != String(stored.get("owner_id", CreatureOwner.local_id()))):
-							return ERR_UNAUTHORIZED
-					if CreatureOwner.is_owner(stored):
-						continue
-					var exists := false
-					for visible: Dictionary in merged:
-						if String(visible.get("id", "")) == String(stored.get("id", "")):
-							exists = true
-							break
-					if not exists:
-						merged.append(stored.duplicate(true))
+			var merge_error: Error = CreatureOwner.merge_transferred_records(merged, saved_value, allow_transfer)
+			if merge_error != OK:
+				return merge_error
 	var payload: Dictionary = {
 		"version": FILE_VERSION,
 		"scope": scope_id(),
