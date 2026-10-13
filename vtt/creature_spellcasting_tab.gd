@@ -1434,6 +1434,56 @@ func _refresh_granted_spell_boxes() -> void:
 				remove.pressed.connect(_remove_origin_spell.bind(String(grant.get("id", ""))))
 				row.add_child(remove)
 
+	# Fight Club counters and 5etools class resource tables also identify
+	# active feature resources whose effects have no formal target/effect
+	# structure. Surface them for linking instead of falsely inventing spells.
+	var already_linked: Dictionary = {}
+	for group: Array in groups.values():
+		for raw: Variant in group:
+			if raw is Dictionary:
+				var tid: String = String((raw as Dictionary).get("tracker_id", ""))
+				if not tid.is_empty():
+					already_linked[tid] = true
+	var unlinked: Array[Dictionary] = []
+	for tracker: Dictionary in Trackers.for_creature(record):
+		var tid: String = String(tracker.get("id", ""))
+		if not tid.is_empty() and not already_linked.has(tid) and bool(tracker.get("automatic", false)) and String(tracker.get("origin_id", "")).begins_with("feature:"):
+			unlinked.append(tracker)
+	if not unlinked.is_empty():
+		var missing := PanelContainer.new()
+		_granted_spell_boxes.add_child(missing)
+		var missing_box := VBoxContainer.new()
+		missing.add_child(missing_box)
+		var note := Label.new()
+		note.text = "Privilegi con risorsa strutturata, ma senza effetto formalizzato"
+		note.tooltip_text = "Fight Club/5etools definiscono il contatore, non sempre la magia, il bersaglio o gli effetti. Nessun effetto viene inventato."
+		note.autowrap_mode = TextServer.AUTOWRAP_WORD_SMART
+		missing_box.add_child(note)
+		for tracker: Dictionary in unlinked:
+			var link := Button.new()
+			link.text = "+ Collega capacità · " + String(tracker.get("name", "Risorsa"))
+			link.pressed.connect(_configure_tracker_spell.bind(tracker.duplicate(true)))
+			missing_box.add_child(link)
+
+
+func _configure_tracker_spell(tracker: Dictionary) -> void:
+	_open_grant_dialog()
+	var sid: String = String(tracker.get("origin_id", ""))
+	var found := false
+	for i: int in range(_grant_origin.item_count):
+		if String(_grant_origin.get_item_metadata(i)) == sid:
+			_grant_origin.select(i)
+			found = true
+			break
+	if not found and not sid.is_empty():
+		_grant_origin.add_item(String(tracker.get("origin_name", sid)))
+		_grant_origin.set_item_metadata(_grant_origin.item_count - 1, sid)
+		_grant_origin.select(_grant_origin.item_count - 1)
+	for i: int in range(_grant_tracker.item_count):
+		if String(_grant_tracker.get_item_metadata(i)) == String(tracker.get("id", "")):
+			_grant_tracker.select(i)
+			break
+
 
 func _cast_granted_spell(grant: Dictionary) -> void:
 	var record: Dictionary = _grant_record()
