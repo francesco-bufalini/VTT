@@ -4827,15 +4827,19 @@ func _change_hit_points(delta: int) -> void:
 		return
 	var old_form: int = int(_second_form_hp.value)
 	var record: Dictionary = _current()
-	record["current_hp"] = int(_hp.value)
-	record["temporary_hp"] = int(_temp_hp.value)
-	record["second_form_hp"] = old_form
+	# The pre-refactor damage flow resolved layers from the persisted sheet.
+	# Only healing used the displayed current HP as its starting value.
+	# Keep this distinction when the GUI momentarily lags behind a token edit.
+	if delta >= 0:
+		record["current_hp"] = int(_hp.value)
 	SheetController.change_hit_points(record, delta)
-	var form_hp: int = int(record.get("second_form_hp", 0))
+	var hp: int = int(record.get("current_hp", 0))
+	var temp: int = int(record.get("temporary_hp", 0)) if delta < 0 else int(_temp_hp.value)
+	var form_hp: int = int(record.get("second_form_hp", 0)) if delta < 0 else old_form
 	_loading = true
-	_temp_hp.value = int(record.get("temporary_hp", 0))
+	_temp_hp.value = temp
 	_second_form_hp.value = form_hp
-	_hp.value = int(record.get("current_hp", 0))
+	_hp.value = hp
 	_loading = false
 	_save()
 	if old_form > 0 and form_hp == 0:

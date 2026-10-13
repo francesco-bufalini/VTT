@@ -132,5 +132,38 @@ func run() -> void:
 			return
 		checks += 1
 
+	# Reproduce the UI-to-model bridge with deliberately stale display values.
+	# Pre-PR #88 damage always used the saved record's layers, whereas healing
+	# started from the SpinBox's displayed base HP.
+	var stored: Dictionary = {"kind": "character", "current_hp": 20,
+		"temporary_hp": 5, "second_form_hp": 8, "second_form_max_hp": 8,
+		"max_hp": 30, "max_hp_base": 30}
+	for delta: int in [-22, -8, -2, 0, 2, 18]:
+		var ui_hp: int = 3
+		var ui_temp: int = 1
+		var ui_form: int = 6
+		var before_ui: Dictionary = stored.duplicate(true)
+		var after_ui: Dictionary = stored.duplicate(true)
+		if delta < 0:
+			var resolved: Dictionary = Rules.apply_damage_layers(before_ui, -delta)
+			before_ui["current_hp"] = resolved["current_hp"]
+			before_ui["temporary_hp"] = resolved["temporary_hp"]
+			before_ui["second_form_hp"] = resolved["second_form_hp"]
+		else:
+			before_ui["current_hp"] = mini(maxi(0, Bonuses.value(before_ui, "hp")), ui_hp + delta)
+			before_ui["temporary_hp"] = ui_temp
+			before_ui["second_form_hp"] = ui_form
+		if delta >= 0:
+			after_ui["current_hp"] = ui_hp
+		Controller.change_hit_points(after_ui, delta)
+		if delta >= 0:
+			after_ui["temporary_hp"] = ui_temp
+			after_ui["second_form_hp"] = ui_form
+		for key: String in ["current_hp", "temporary_hp", "second_form_hp"]:
+			if not _check(before_ui[key] == after_ui[key],
+					"Desktop HP bridge is not backward compatible: " + str([delta, key])):
+				return
+		checks += 1
+
 	print("PASS: creature domain differential audit (%d comparisons)" % checks)
 	quit()
