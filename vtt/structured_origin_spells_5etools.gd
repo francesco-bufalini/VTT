@@ -163,14 +163,17 @@ static func _add_group(output: Dictionary, origin: Dictionary, spec: Variant, mo
 				"automatic": true, "disabled": false
 			})
 		if raw is Dictionary:
-			_add_choice(output, origin, raw, specific_tracker, mode, stage)
+			if mode == "innate" or category != "will":
+				_add_choice(output, origin, raw, specific_tracker, mode, stage)
+			elif mode == "known" and "level=0" in String((raw as Dictionary).get("choose", "")):
+				_add_choice(output, origin, raw, specific_tracker, mode, stage)
 		elif raw is String:
-			# Known cantrips are at-will; other known/prepared leveled spells
-			# require a real usage mode, not an invented free cast.
-			if mode == "known" and category == "will":
-				var token: String = String(raw)
-				if "#c" not in token:
-					continue
+			# Prepared spells without a usage field still require ordinary
+			# spell slots. Known cantrips are the only at-will known spells.
+			if category == "will" and mode == "prepared":
+				continue
+			if mode == "known" and category == "will" and "#c" not in String(raw):
+				continue
 			_add_spell(output, origin, String(raw), specific_tracker, mode, stage)
 
 
