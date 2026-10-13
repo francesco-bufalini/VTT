@@ -60,6 +60,7 @@ func refresh() -> void:
 			unassigned.append(item)
 	if not unassigned.is_empty():
 		_heading(pair[0], "Altri incantesimi disponibili")
+		_casting_statistics(pair[0], String(_actions.default_ability.call()))
 		var manual_list: VBoxContainer = _list(pair[0], unassigned.size())
 		for spell: Dictionary in unassigned:
 			_spell_button(manual_list, _definition(spell), {}, {})
@@ -97,6 +98,19 @@ func refresh() -> void:
 		edit.tooltip_text = "Scegli o modifica gli incantesimi di questa origine"
 		edit.pressed.connect(_actions.edit_origin.bind(sid))
 		heading.add_child(edit)
+		var abilities: Array[String] = []
+		for grant: Dictionary in group.grants:
+			var grant_ability: String = String(grant.get("spellcasting_ability", ""))
+			if grant_ability not in abilities:
+				abilities.append(grant_ability)
+		for choice: Dictionary in group.choices:
+			var choice_ability: String = String(choice.get("spellcasting_ability", ""))
+			if choice_ability not in abilities:
+				abilities.append(choice_ability)
+		if abilities.is_empty():
+			abilities.append("")
+		for ability: String in abilities:
+			_casting_statistics(pair[0], ability)
 		var list: VBoxContainer = _list(pair[0], group.grants.size())
 		var seen: Dictionary = {}
 		for grant: Dictionary in group.grants:
@@ -165,6 +179,15 @@ func _heading(parent: Node, text: String) -> void:
 	var label: Label = _label(parent, text)
 	label.add_theme_font_size_override("font_size", 17)
 
+func _casting_statistics(parent: Node, ability: String) -> void:
+	var label: Label = _label(parent, String(_actions.casting_stats.call(ability)))
+	label.name = "CastingStatistics"
+	label.add_theme_font_size_override("font_size", 13)
+	label.add_theme_color_override("font_color", Color(0.75, 0.85, 0.91))
+	if ability.is_empty():
+		label.tooltip_text = "Questa origine non specifica una caratteristica da incantatore."
+
+
 func _list(parent: Node, count: int) -> VBoxContainer:
 	var scroll := ScrollContainer.new()
 	scroll.custom_minimum_size.y = 48.0
@@ -206,6 +229,7 @@ func _class_section(parent: Node, record: Dictionary, member: Dictionary, prepar
 	choose.text = "Scegli"
 	choose.pressed.connect(_actions.edit_class.bind(member))
 	header.add_child(choose)
+	_casting_statistics(section, String(_actions.class_ability.call(String(member.name))))
 	var list: VBoxContainer = _list(section, selected.size())
 	if selected.is_empty():
 		_label(list, "Nessun incantesimo selezionato")
