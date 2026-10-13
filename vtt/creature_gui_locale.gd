@@ -81,6 +81,7 @@ const EN: Dictionary = {
 	"Tratti": "Traits",
 	"Stati": "Conditions",
 	"Incantesimi": "Spells",
+	"Poteri": "Powers",
 	"Caratteristica degli incantesimi": "Spellcasting ability",
 	"Automatica": "Automatic",
 	"Interrompi concentrazione": "End concentration",
