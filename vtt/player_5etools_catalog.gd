@@ -92,6 +92,24 @@ static var _references: Dictionary = {}
 static var _subclass_catalogs: Dictionary = {}
 static var _merged_catalogs: Dictionary = {}
 static var _merged_revision := -1
+static var _charoptions: Array[Dictionary] = []
+static var _charoptions_loaded := false
+
+
+static func _load_charoptions() -> void:
+	if _charoptions_loaded:
+		return
+	_charoptions_loaded = true
+	var file := FileAccess.open("res://vtt/data/charcreation_options_5etools.json", FileAccess.READ)
+	if file == null:
+		return
+	var parsed: Variant = JSON.parse_string(file.get_as_text())
+	file.close()
+	if not parsed is Dictionary:
+		return
+	for raw: Variant in (parsed as Dictionary).get("feats", []):
+		if raw is Dictionary:
+			_charoptions.append((raw as Dictionary).duplicate(true))
 
 
 static func _ensure_loaded() -> void:
@@ -130,6 +148,17 @@ static func entries(category: String) -> Array[Dictionary]:
 			for item: Variant in value:
 				if item is Dictionary:
 					result.append((item as Dictionary).duplicate(true))
+	if category == "feats":
+		_load_charoptions()
+		var known: Dictionary = {}
+		for feat: Dictionary in result:
+			known[_description_key("feats", feat)] = true
+		for option: Dictionary in _charoptions:
+			var key: String = _description_key("feats", option)
+			if known.has(key):
+				continue
+			known[key] = true
+			result.append(option.duplicate(true))
 	if category in ["subclasses", "subclass_features"]:
 		if not _subclass_catalogs.has(category):
 			var path: String = (
