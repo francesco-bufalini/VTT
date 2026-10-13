@@ -251,6 +251,10 @@ func _spell_button(parent: Node, spell: Dictionary, member: Dictionary, grant: D
 	button.clip_text = true
 	button.size_flags_horizontal = Control.SIZE_EXPAND_FILL
 	button.tooltip_text = String(spell.get("description", ""))
+	if not grant.is_empty() and String(grant.get("payment_mode", "")) == "tracker":
+		var cost: int = Grants.tracker_cost(grant)
+		button.text += " · %d utilizzi" % cost
+		button.tooltip_text += "\n\nConsumo: %d utilizzi del tracker (per lancio)" % cost
 	if grant.is_empty():
 		button.pressed.connect(_actions.cast_class.bind(spell, member))
 	else:
@@ -371,7 +375,7 @@ func _tracker(parent: Node, record: Dictionary, tracker: Dictionary) -> void:
 		for button: Node in row.find_children("*", "Button", true, false):
 			button.disabled = true
 		_label(parent, "Tracker disattivato dall'origine")
-	_label(parent, "Consumo: 1 utilizzo per lancio")
+	_label(parent, "Utilizzi disponibili; il costo per lancio è mostrato su ciascun potere")
 
 
 func _definition(entry: Dictionary) -> Dictionary:
