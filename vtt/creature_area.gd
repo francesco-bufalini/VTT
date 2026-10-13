@@ -779,7 +779,7 @@ func _build_ui() -> void:
 	combat_view.add_child(combat_column)
 	var traits_tab := _add_sheet_tab(_tabs, "Tratti")
 	var conditions_tab := _add_sheet_tab(_tabs, "Stati")
-	var spellcasting_tab := _add_sheet_tab(_tabs, "Incantesimi")
+	var spellcasting_tab := _add_sheet_tab(_tabs, "Poteri")
 	_spellcasting_ui = SpellcastingTab.new()
 	spellcasting_tab.add_child(_spellcasting_ui)
 	_spellcasting_ui.call(
@@ -835,6 +835,11 @@ func _build_ui() -> void:
 	_party.text_changed.connect(func(_text: String) -> void: _save())
 	name_row.add_child(_party)
 	var physics_box := _info_panel(form, "FISICO")
+	physics_box.add_theme_constant_override("separation", 3)
+	var physics_fields := HFlowContainer.new()
+	physics_fields.add_theme_constant_override("h_separation", 12)
+	physics_fields.add_theme_constant_override("v_separation", 3)
+	physics_box.add_child(physics_fields)
 
 	var health_panel := PanelContainer.new()
 	var health_style := StyleBoxFlat.new()
@@ -1003,15 +1008,16 @@ func _build_ui() -> void:
 	var movement_panel := PanelContainer.new()
 	var movement_style := health_style.duplicate() as StyleBoxFlat
 	movement_style.draw_center = false
-	movement_style.border_color = Color(0.47, 0.66, 0.58, 0.85)
+	movement_style.set_border_width_all(0)
+	movement_style.set_content_margin_all(0)
 	movement_panel.add_theme_stylebox_override("panel", movement_style)
 	physics_box.add_child(movement_panel)
 	var movement_box := VBoxContainer.new()
-	movement_box.add_theme_constant_override("separation", 5)
+	movement_box.add_theme_constant_override("separation", 2)
 	movement_panel.add_child(movement_box)
 	var movement_heading := Label.new()
 	movement_heading.text = "MOVIMENTO"
-	movement_heading.add_theme_font_size_override("font_size", 15)
+	movement_heading.add_theme_font_size_override("font_size", 13)
 	movement_heading.add_theme_color_override("font_color", Color(0.74, 0.90, 0.77))
 	movement_box.add_child(movement_heading)
 	# Equal-width columns keep all five speed values aligned, regardless of
@@ -1019,14 +1025,14 @@ func _build_ui() -> void:
 	var speed_grid := GridContainer.new()
 	speed_grid.columns = 5
 	speed_grid.add_theme_constant_override("h_separation", 3)
-	speed_grid.add_theme_constant_override("v_separation", 4)
+	speed_grid.add_theme_constant_override("v_separation", 1)
 	movement_box.add_child(speed_grid)
 	_special_speed_labels.clear()
 	for mode: String in ["walk", "climb", "swim", "fly", "burrow"]:
 		var speed_cell := VBoxContainer.new()
 		speed_cell.custom_minimum_size.x = 73
 		speed_cell.size_flags_horizontal = Control.SIZE_EXPAND_FILL
-		speed_cell.add_theme_constant_override("separation", 3)
+		speed_cell.add_theme_constant_override("separation", 1)
 		speed_grid.add_child(speed_cell)
 		var speed_name: String = {"walk": "Camminata", "climb": "Scalata",
 			"swim": "Nuoto", "fly": "Volo", "burrow": "Scavo"}[mode]
@@ -1058,23 +1064,25 @@ func _build_ui() -> void:
 		else:
 			_special_speed_labels[mode] = speed_label
 			_install_formula("speed:" + mode, speed_label, [], [])
-			var speed_bottom_space := Control.new()
-			speed_bottom_space.custom_minimum_size.y = 32
-			speed_cell.add_child(speed_bottom_space)
 	var jumps_heading := Label.new()
 	jumps_heading.text = "SALTI · DISTANZE MASSIME"
 	jumps_heading.add_theme_font_size_override("font_size", 14)
 	jumps_heading.add_theme_color_override("font_color", Color(0.77, 0.86, 0.94))
 	movement_box.add_child(jumps_heading)
-	var jumps := VBoxContainer.new()
-	jumps.add_theme_constant_override("separation", 5)
+	var jumps := HFlowContainer.new()
+	jumps.add_theme_constant_override("h_separation", 12)
+	jumps.add_theme_constant_override("v_separation", 3)
 	movement_box.add_child(jumps)
 	_long_jump = Label.new()
 	_long_jump.autowrap_mode = TextServer.AUTOWRAP_WORD_SMART
+	_long_jump.custom_minimum_size.x = 180
+	_long_jump.size_flags_horizontal = Control.SIZE_EXPAND_FILL
 	_long_jump.add_theme_font_size_override("font_size", 13)
 	jumps.add_child(_long_jump)
 	_high_jump = Label.new()
 	_high_jump.autowrap_mode = TextServer.AUTOWRAP_WORD_SMART
+	_high_jump.custom_minimum_size.x = 180
+	_high_jump.size_flags_horizontal = Control.SIZE_EXPAND_FILL
 	_high_jump.add_theme_font_size_override("font_size", 13)
 	jumps.add_child(_high_jump)
 	_ac.value_changed.connect(func(_value: float) -> void: _update_defense_display())
@@ -1281,7 +1289,7 @@ func _build_ui() -> void:
 
 	var species_row := HFlowContainer.new()
 	species_row.add_theme_constant_override("h_separation", 6)
-	physics_box.add_child(species_row)
+	physics_fields.add_child(species_row)
 	_add_label(species_row, "Razza / Specie")
 	_species = _reference_option(species_row, RaceRules.base_races(), true, false, "races")
 	_species.custom_minimum_size.x = 150
@@ -1305,7 +1313,7 @@ func _build_ui() -> void:
 	species_row.add_child(_challenge_rating)
 	var type_row := HBoxContainer.new()
 	type_row.add_theme_constant_override("separation", 7)
-	physics_box.add_child(type_row)
+	physics_fields.add_child(type_row)
 	_add_label(type_row, "Tipo")
 	_creature_type_display = Label.new()
 	_creature_type_display.custom_minimum_size.x = 110
@@ -1439,10 +1447,10 @@ func _build_ui() -> void:
 	appearance_actions.add_child(reset_appearance)
 
 	var geometry := GridContainer.new()
-	geometry.columns = 2
+	geometry.columns = 4
 	geometry.add_theme_constant_override("h_separation", 7)
 	geometry.add_theme_constant_override("v_separation", 10)
-	physics_box.add_child(geometry)
+	physics_fields.add_child(geometry)
 	_add_label(geometry, "Taglia")
 	_size_choice = OptionButton.new()
 	for size_name: String in ["Tiny", "Small", "Medium", "Large", "Huge", "Gargantuan"]:
@@ -1455,7 +1463,7 @@ func _build_ui() -> void:
 		_front.add_item(direction)
 	_front.item_selected.connect(func(_i: int) -> void: _save())
 	geometry.add_child(_front)
-	# Speeds and jumps remain editable in Info, after species and appearance.
+	# Keep identity, miniatures and movement compact inside the single Physics panel.
 	physics_box.move_child(movement_panel, physics_box.get_child_count() - 1)
 	# Fazione is edited beside the creature name on the Statistics tab.
 
@@ -3576,7 +3584,7 @@ func _on_spellcasting_updated(values: Dictionary) -> void:
 		"spell_slots_total", "spell_slots_spent", "spell_slots_manual", "spell_slots_automatic",
 		"pact_slots_total", "pact_slots_spent", "pact_slot_level",
 		"spell_slots_visible", "pact_slots_visible",
-		"spellcasting_ability", "concentrating_spell_id", "conditions", "origin_spell_grants", "origin_spell_configs"
+		"spellcasting_ability", "spellcasting_section_abilities", "concentrating_spell_id", "conditions", "origin_spell_grants", "origin_spell_configs"
 	]:
 		if values.has(key):
 			record[key] = values[key]
