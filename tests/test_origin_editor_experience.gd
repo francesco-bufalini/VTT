@@ -19,6 +19,9 @@ func _initialize() -> void:
 	call_deferred("run")
 
 func run() -> void:
+	root.gui_embed_subwindows = true
+	root.content_scale_mode = Window.CONTENT_SCALE_MODE_DISABLED
+	root.size = Vector2i(1400, 900)
 	var record: Dictionary = {"kind": "character", "name": "Bardo di prova", "rules_version": "2014",
 		"class": "Bard", "class_source": "PHB", "level": 3,
 		"classes": [{"name": "Bard", "source": "PHB", "level": 3}],
@@ -34,10 +37,17 @@ func run() -> void:
 	area.ui_root = ui
 	area.fixture = record
 	area._build_ui()
-	assert(area._tabs.get_tab_title(2) == "Origini")
+	assert(area._tabs.get_tab_title(area._tabs.get_tab_count() - 1) == "Origini", "Origins must be last")
 	assert(area._proficiencies_ui.get_parent().get_parent().get_parent().name == "Origini")
 	area._panel.show()
-	area._tabs.current_tab = 2
+	area._show_sheet_tab("Origini")
+	await process_frame
+	# Check the first visible layout, before changing editor sections.
+	for row: Node in area._origins_overview.get_children():
+		if row is HBoxContainer:
+			assert(row.get_child(0).size.x >= 180, "Origins are legible on first opening")
+	if DisplayServer.get_name() != "headless":
+		await capture("origin_first_open_review")
 	area._select_details_editor(6)
 	var editor = area._origin_spells_ui
 	var choices: Array = Structured.for_creature(record).get("choices", [])
@@ -69,12 +79,58 @@ func run() -> void:
 		if String(grant.get("spell_id", "")) == Grants.BARDIC:
 			granted = grant
 	assert(not granted.is_empty())
-	area._open_origin_trait(String(granted.get("origin_id", "")), "Bardic Inspiration")
+	area._show_sheet_tab("Origini")
+	area._select_details_editor(6)
+	await process_frame
+	await process_frame
+	var actual_link: Button = null
+	for link: Node in area._origin_spells_ui.find_children("OriginTraitLink", "Button", true, false):
+		if String(link.get_meta("origin_id", "")) == String(granted.get("origin_id", "")):
+			actual_link = link
+	assert(actual_link != null)
+	await click(actual_link)
 	await process_frame
 	var feature_key: String = String(granted.get("origin_id", "")).trim_prefix("feature:")
+	assert(area._tabs.get_tab_title(area._tabs.current_tab) == "Tratti", "The real origin link changes tabs")
 	assert(bool(area._traits_ui._expanded.get(feature_key, false)), "Origin link opens its exact trait")
+	# Repeat from the overview, whose controls live outside the CreatureArea node.
+	area._show_sheet_tab("Origini")
+	area._select_details_editor(0)
+	await process_frame
+	await process_frame
+	var overview_link: Button = null
+	for link: Node in area._origins_overview.find_children("OriginTraitLink", "Button", true, false):
+		if String(link.get_meta("origin_id", "")) == String(granted.get("origin_id", "")):
+			overview_link = link
+	assert(overview_link != null)
+	var origin_label: Control = overview_link.get_parent().get_child(0)
+	var hover := InputEventMouseMotion.new()
+	hover.position = origin_label.get_global_rect().get_center()
+	hover.global_position = hover.position
+	root.push_input(hover, true)
+	await process_frame
+	assert("Concessioni" in origin_label.tooltip_text, "Overview labels display the live benefit preview")
+	for index: int in range(area._tabs.get_tab_count()):
+		if area._tabs.get_tab_control(index).name == "Origini":
+			area._tabs.set_tab_title(index, "Origins")
+		elif area._tabs.get_tab_control(index).name == "Tratti":
+			area._tabs.set_tab_title(index, "Traits")
+	await click(overview_link)
+	assert(area._tabs.get_tab_control(area._tabs.current_tab).name == "Tratti", "Navigation works with translated tab titles")
+	for index: int in range(area._tabs.get_tab_count()):
+		area._tabs.set_tab_title(index, area._tabs.get_tab_control(index).name)
 	var tracker_id: String = String(granted.get("tracker_id", ""))
 	record["resource_tracker_spent"] = {tracker_id: 3}
+	area._refresh_trackers(record)
+	var active_adjustments := 0
+	for button: Node in area._tracker_rows.find_children("*", "Button", true, false):
+		if button.text in ["−", "+", "↺"]:
+			assert(not button.disabled, "Exhausted active trackers retain usable buttons")
+			active_adjustments += 1
+	assert(active_adjustments >= 3)
+	area._show_sheet_tab("Statistiche")
+	if DisplayServer.get_name() != "headless":
+		await capture("exhausted_tracker_review")
 	assert(Grants.remaining(record, granted) == 0)
 	var free: Dictionary = granted.duplicate(true)
 	free["skip_payment"] = true
@@ -97,9 +153,40 @@ func run() -> void:
 	for i: int in range(area._tabs.get_tab_count()):
 		if area._tabs.get_tab_title(i) == "Incantesimi":
 			area._tabs.current_tab = i
+	await process_frame
+	await process_frame
+	var sheet_scroll: ScrollContainer = area._tabs.get_tab_control(area._tabs.current_tab)
+	assert(spells._known_list.size.y < 400, "Class spell lists remain bounded so granted spells can be reached")
+	assert(spells._granted_spell_boxes.find_children("GrantedSpellName", "Label", true, false).size() > 0,
+		"Granted spell names are distinct labels from their origin")
+	# Use a narrow viewport and wheel events over real content, not just a scrollbar assignment.
+	root.size = Vector2i(1000, 650)
+	await process_frame
+	await process_frame
+	var before: int = sheet_scroll.scroll_vertical
+	var wheel := InputEventMouseButton.new()
+	wheel.button_index = MOUSE_BUTTON_WHEEL_DOWN
+	wheel.pressed = true
+	wheel.position = sheet_scroll.get_global_rect().position + Vector2(20, 45)
+	wheel.global_position = wheel.position
+	for i: int in range(8):
+		root.push_input(wheel, true)
+		await process_frame
+	assert(sheet_scroll.scroll_vertical > before, "Spell sheet responds to the mouse wheel")
+	sheet_scroll.scroll_vertical = 0
+	spells._known_list.get_v_scroll_bar().value = spells._known_list.get_v_scroll_bar().max_value
+	await process_frame
+	before = sheet_scroll.scroll_vertical
+	wheel.position = spells._known_list.get_global_rect().get_center()
+	wheel.global_position = wheel.position
+	root.push_input(wheel, true)
+	await process_frame
+	assert(sheet_scroll.scroll_vertical > before, "At the end of the class list the wheel reaches origin spells")
+	root.size = Vector2i(1400, 900)
+	await process_frame
 	if DisplayServer.get_name() != "headless":
 		await capture("spellcasting_review")
-	area._tabs.current_tab = 2
+	area._show_sheet_tab("Origini")
 	area._select_details_editor(6)
 	if DisplayServer.get_name() != "headless":
 		root.size = Vector2i(1400, 900)
@@ -121,3 +208,17 @@ func capture(filename: String) -> void:
 	await RenderingServer.frame_post_draw
 	root.get_texture().get_image().save_png("user://" + filename + ".png")
 	print("REVIEW_IMAGE ", ProjectSettings.globalize_path("user://" + filename + ".png"))
+
+
+func click(button: Button) -> void:
+	assert(button.is_visible_in_tree())
+	var mouse := InputEventMouseButton.new()
+	mouse.button_index = MOUSE_BUTTON_LEFT
+	mouse.position = button.get_global_rect().get_center()
+	mouse.global_position = mouse.position
+	mouse.pressed = true
+	root.push_input(mouse, true)
+	mouse = mouse.duplicate()
+	mouse.pressed = false
+	root.push_input(mouse, true)
+	await process_frame

@@ -40,11 +40,13 @@ func setup(on_change: Callable) -> void:
 	var intro := Label.new()
 	intro.text = "Incantesimi concessi dalle origini (talenti, razze, privilegi, oggetti)"
 	intro.add_theme_font_size_override("font_size", 15)
+	intro.autowrap_mode = TextServer.AUTOWRAP_WORD_SMART
 	add_child(intro)
 	_warning = Label.new()
 	_warning.autowrap_mode = TextServer.AUTOWRAP_WORD_SMART
 	add_child(_warning)
 	var columns := HBoxContainer.new()
+	columns.size_flags_horizontal = Control.SIZE_EXPAND_FILL
 	columns.add_theme_constant_override("separation", 10)
 	add_child(columns)
 	var left := _column(columns, "Origini che concedono incantesimi", 195)

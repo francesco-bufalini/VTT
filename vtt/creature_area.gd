@@ -698,6 +698,8 @@ func _build_ui() -> void:
 	origins_tab.add_child(editor_select_row)
 	_origins_overview = VBoxContainer.new()
 	origins_tab.add_child(_origins_overview)
+	_origins_overview.size_flags_horizontal = Control.SIZE_EXPAND_FILL
+	_origins_overview.custom_minimum_size.x = 420
 	_add_label(editor_select_row, "Visualizza e modifica")
 	_editor_choice_warning = Label.new()
 	_editor_choice_warning.text = "⚠"
@@ -796,6 +798,11 @@ func _build_ui() -> void:
 		Callable(self, "_on_documents_updated"),
 		Callable(self, "_send_document_to_peer"), Callable(self, "_get_document_peers")
 	)
+	# Origins are the final tab; navigation resolves titles instead of indices.
+	_tabs.move_child(_origins_scroll, _tabs.get_child_count() - 1)
+	for editor: Node in [_origins_overview, _proficiencies_ui, _feats_ui, _bonuses_ui, _trackers_ui, _damage_defenses_ui, _origin_spells_ui]:
+		editor.set_meta("origin_navigate", Callable(self, "_open_origin_trait"))
+		editor.set_meta("origin_preview", Callable(self, "_origin_summary"))
 	_tabs.current_tab = 0
 
 	var identity_box := _info_panel(form, "IDENTITÀ")
@@ -2181,7 +2188,7 @@ func _refresh_choice_warnings(record: Dictionary) -> void:
 
 
 func _open_trait_section(section: int) -> void:
-	_tabs.current_tab = 2
+	_show_sheet_tab("Origini")
 	_select_details_editor(section)
 	call_deferred("_scroll_origins_to_top")
 
@@ -2232,7 +2239,7 @@ func _select_details_editor(index: int) -> void:
 
 
 func _open_origin_spell_editor() -> void:
-	_tabs.current_tab = 2
+	_show_sheet_tab("Origini")
 	_select_details_editor(6)
 	call_deferred("_scroll_origins_to_top")
 
@@ -2279,7 +2286,7 @@ func _on_damage_defenses_updated(damage_overrides: Dictionary, condition_overrid
 func _on_formula_bonus_requested(key: String) -> void:
 	if _bonuses_ui == null or key.is_empty():
 		return
-	_tabs.current_tab = 2
+	_show_sheet_tab("Origini")
 	_select_details_editor(3)
 	_bonuses_ui.call("select_target", key)
 	# Keep the requested origin section visible after navigation.
@@ -3118,7 +3125,7 @@ func _on_info_feat_input(event: InputEvent, origin_id: String) -> void:
 	if click == null or not click.pressed or click.button_index != MOUSE_BUTTON_RIGHT:
 		return
 	get_viewport().set_input_as_handled()
-	_tabs.current_tab = 2
+	_show_sheet_tab("Origini")
 	_select_details_editor(2)
 	_feats_ui.call("focus_origin", origin_id)
 	call_deferred("_scroll_origins_to_top")
@@ -5135,12 +5142,12 @@ func _refresh_trackers(record: Dictionary) -> void:
 		source_button.size_flags_horizontal = Control.SIZE_EXPAND_FILL
 		source_button.clip_text = true
 		source_button.alignment = HORIZONTAL_ALIGNMENT_LEFT
-		if bool(tracker.get("automatic", false)) and tracker_source.begins_with("feature:"):
+		if not tracker_source.is_empty():
 			source_button.pressed.connect(
-				_open_tracker_trait.bind(String(tracker.get("origin", title)), source_label)
+				_open_origin_trait.bind(tracker_source, String(tracker.get("origin", title)))
 			)
 		else:
-			source_button.disabled = true
+			source_button.pressed.connect(_open_trait_section.bind(4))
 		row.add_child(source_button)
 		var id: String = String(tracker["id"])
 		var base_maximum: int = int(tracker["max"])
@@ -5154,7 +5161,7 @@ func _refresh_trackers(record: Dictionary) -> void:
 		var consume := Button.new()
 		consume.text = "−"
 		consume.tooltip_text = "Consuma un utilizzo"
-		consume.disabled = not available or used >= maximum
+		consume.disabled = not available
 		consume.pressed.connect(_change_tracker.bind(id, 1, maximum))
 		counter_group.add_child(consume)
 		var remaining := Label.new()
@@ -5180,7 +5187,7 @@ func _refresh_trackers(record: Dictionary) -> void:
 		var restore := Button.new()
 		restore.text = "+"
 		restore.tooltip_text = "Recupera un utilizzo"
-		restore.disabled = not available or used <= 0
+		restore.disabled = not available
 		restore.pressed.connect(_change_tracker.bind(id, -1, maximum))
 		counter_group.add_child(restore)
 		counter_group.move_child(restore, consume.get_index() + 1)
@@ -5191,7 +5198,7 @@ func _refresh_trackers(record: Dictionary) -> void:
 			var roll := Button.new()
 			roll.text = "d6"
 			roll.tooltip_text = "Tira d6: ricarica con %d–6" % threshold
-			roll.disabled = not available or used == 0
+			roll.disabled = not available
 			roll.pressed.connect(_roll_tracker_recharge.bind(id, threshold, title, maximum))
 			row.add_child(roll)
 		var reset := Button.new()
@@ -5200,7 +5207,7 @@ func _refresh_trackers(record: Dictionary) -> void:
 			"Ripristina le azioni all'inizio del turno"
 			if recharge == "turn" else "Ripristina tutti gli utilizzi (manuale)"
 		)
-		reset.disabled = not available or used == 0
+		reset.disabled = not available
 		reset.pressed.connect(_change_tracker.bind(id, -maximum, maximum))
 		row.add_child(reset)
 
@@ -5232,7 +5239,7 @@ func _change_tracker(id: String, delta: int, maximum: int) -> void:
 
 func _open_tracker_trait(origin: String, source_label: String = "") -> void:
 	for i: int in range(_tabs.get_tab_count()):
-		if _tabs.get_tab_title(i) == "Tratti":
+		if _tabs.get_tab_control(i).name == "Tratti":
 			_tabs.current_tab = i
 			call_deferred("_focus_tracker_trait", origin, source_label)
 			return
@@ -5244,7 +5251,7 @@ func _focus_tracker_trait(origin: String, source_label: String = "") -> void:
 
 
 func _on_creature_tab_changed(index: int) -> void:
-	if _tabs.get_tab_title(index) == "Origini" and _editor_section_picker.selected == 0:
+	if index >= 0 and _tabs.get_tab_control(index).name == "Origini" and _editor_section_picker.selected == 0:
 		_refresh_origins_overview()
 	if _traits_ui == null or index < 0 or index >= _tabs.get_tab_count():
 		return
@@ -6409,9 +6416,16 @@ func _refresh_origins_overview() -> void:
 			continue
 		var row := HBoxContainer.new()
 		_origins_overview.add_child(row)
-		var label := Button.new()
+		var label := Label.new()
 		label.text = String(source.get("name", sid))
-		label.alignment = HORIZONTAL_ALIGNMENT_LEFT
+		label.autowrap_mode = TextServer.AUTOWRAP_WORD_SMART
 		label.size_flags_horizontal = Control.SIZE_EXPAND_FILL
 		row.add_child(label)
 		preload("res://vtt/origin_editor_ui.gd").origin_link(label, row, sid, label.text)
+
+
+func _show_sheet_tab(title: String) -> void:
+	for index: int in range(_tabs.get_tab_count()):
+		if _tabs.get_tab_control(index).name == title:
+			_tabs.current_tab = index
+			return

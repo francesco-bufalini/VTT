@@ -68,29 +68,39 @@ static func edit_fields(owner: Control, parent: Control, fields: Array[Control],
 static func origin_link(owner: Control, row: Control, sid: String, title: String) -> void:
 	if sid.is_empty():
 		return
-	var select: Button = row.get_child(0) as Button if row.get_child_count() > 0 else null
+	var select: Control = row.get_child(0) as Control if row.get_child_count() > 0 else null
 	if select != null:
+		if select is Label:
+			select.mouse_filter = Control.MOUSE_FILTER_PASS
+		select.size_flags_horizontal = Control.SIZE_EXPAND_FILL
+		select.custom_minimum_size.x = 180
 		var base_tooltip: String = select.tooltip_text
 		select.mouse_entered.connect(func() -> void:
-			var node: Node = owner
-			while node != null:
-				if node.has_method("_origin_summary"):
-					select.tooltip_text = base_tooltip + "\n\n" + String(node.call("_origin_summary", sid))
-					return
-				node = node.get_parent()
+			var preview: Callable = _callback(owner, "origin_preview")
+			if preview.is_valid():
+				select.tooltip_text = base_tooltip + "\n\n" + String(preview.call(sid))
 		)
 	var link := Button.new()
+	link.name = "OriginTraitLink"
 	link.text = "↗"
+	link.custom_minimum_size = Vector2(32, 32)
 	link.tooltip_text = "Vai al tratto · " + title
+	link.set_meta("origin_id", sid)
 	row.add_child(link)
 	link.pressed.connect(func() -> void:
-		var node: Node = owner
-		while node != null:
-			if node.has_method("_open_origin_trait"):
-				node.call("_open_origin_trait", sid, title)
-				return
-			node = node.get_parent()
+		var navigate: Callable = _callback(owner, "origin_navigate")
+		if navigate.is_valid():
+			navigate.call(sid, title)
 	)
+
+
+static func _callback(owner: Node, key: String) -> Callable:
+	var node: Node = owner
+	while node != null:
+		if node.has_meta(key):
+			return node.get_meta(key) as Callable
+		node = node.get_parent()
+	return Callable()
 
 
 static func _capture_fields(node: Control, values: Array[Dictionary]) -> void:

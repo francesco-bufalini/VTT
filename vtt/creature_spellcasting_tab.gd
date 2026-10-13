@@ -171,7 +171,7 @@ func setup(
 	_catalog_title.text = "Catalogo · doppio clic per lanciare"
 	add_child(_catalog_title)
 	_available = ItemList.new()
-	_available.mouse_force_pass_scroll_events = false
+	_available.mouse_force_pass_scroll_events = true
 	_available.custom_minimum_size = Vector2(0, 160)
 	_available.size_flags_horizontal = Control.SIZE_EXPAND_FILL
 	_available.item_selected.connect(func(_index: int) -> void: _on_spell_list_selected("catalog"))
@@ -181,6 +181,7 @@ func setup(
 	# Keep the library and chosen spells together; there is only one action
 	# for adding/removing the current selection.
 	var columns := HBoxContainer.new()
+	columns.name = "ClassSpellsAndSlots"
 	columns.add_theme_constant_override("separation", 7)
 	columns.size_flags_horizontal = Control.SIZE_EXPAND_FILL
 	add_child(columns)
@@ -218,10 +219,10 @@ func setup(
 	_book_hint.hide()
 	known_col.add_child(_book_hint)
 	_known_list = ItemList.new()
-	_known_list.mouse_force_pass_scroll_events = false
-	_known_list.custom_minimum_size = Vector2(0, 170)
+	_known_list.mouse_force_pass_scroll_events = true
+	_known_list.custom_minimum_size = Vector2(0, 245)
 	_known_list.size_flags_horizontal = Control.SIZE_EXPAND_FILL
-	_known_list.size_flags_vertical = Control.SIZE_EXPAND_FILL
+	_known_list.size_flags_vertical = Control.SIZE_FILL
 	_known_list.item_selected.connect(_on_known_spell_selected)
 	_known_list.gui_input.connect(_on_spell_list_gui_input.bind("known"))
 	_known_list.item_activated.connect(func(index: int) -> void: _on_spell_activated("known", index))
@@ -246,10 +247,10 @@ func setup(
 	header_spacer.custom_minimum_size = Vector2(40, 30)
 	prepared_header.add_child(header_spacer)
 	_prepared_list = ItemList.new()
-	_prepared_list.mouse_force_pass_scroll_events = false
-	_prepared_list.custom_minimum_size = Vector2(0, 170)
+	_prepared_list.mouse_force_pass_scroll_events = true
+	_prepared_list.custom_minimum_size = Vector2(0, 245)
 	_prepared_list.size_flags_horizontal = Control.SIZE_EXPAND_FILL
-	_prepared_list.size_flags_vertical = Control.SIZE_EXPAND_FILL
+	_prepared_list.size_flags_vertical = Control.SIZE_FILL
 	_prepared_list.item_selected.connect(func(_index: int) -> void: _on_spell_list_selected("prepared"))
 	_prepared_list.gui_input.connect(_on_spell_list_gui_input.bind("prepared"))
 	prepared_col.add_child(_prepared_list)
@@ -344,7 +345,7 @@ func setup(
 	_slots_eye.pressed.connect(_toggle_slots_visibility)
 	slot_title.add_child(_slots_eye)
 	var slot_scroll := ScrollContainer.new()
-	slot_scroll.mouse_force_pass_scroll_events = false
+	slot_scroll.mouse_force_pass_scroll_events = true
 	slot_scroll.name = "SlotHorizontalScroll"
 	slot_scroll.size_flags_horizontal = Control.SIZE_EXPAND_FILL
 	slot_scroll.horizontal_scroll_mode = ScrollContainer.SCROLL_MODE_AUTO
@@ -425,7 +426,7 @@ func setup(
 	_pact_eye.pressed.connect(_toggle_pact_visibility)
 	pact_header.add_child(_pact_eye)
 	var pact_scroll := ScrollContainer.new()
-	pact_scroll.mouse_force_pass_scroll_events = false
+	pact_scroll.mouse_force_pass_scroll_events = true
 	pact_scroll.name = "PactHorizontalScroll"
 	pact_scroll.size_flags_horizontal = Control.SIZE_EXPAND_FILL
 	pact_scroll.horizontal_scroll_mode = ScrollContainer.SCROLL_MODE_AUTO
@@ -1518,15 +1519,17 @@ func _refresh_granted_spell_boxes() -> void:
 		panel.add_child(body)
 		var title := Label.new()
 		var entries: Array = groups[origin_id]
-		title.text = String((entries[0] as Dictionary).get("origin_name", origin_id))
+		title.text = "Origine: " + String((entries[0] as Dictionary).get("origin_name", origin_id))
+		title.autowrap_mode = TextServer.AUTOWRAP_WORD_SMART
+		title.add_theme_color_override("font_color", Color(0.72, 0.78, 0.82))
 		title.add_theme_font_size_override("font_size", 14)
 		body.add_child(title)
 		for raw: Variant in entries:
 			var grant: Dictionary = raw
 			if bool(grant.get("pending_selection", false)):
 				var choose := Button.new()
-				choose.text = "⚠ Scegli incantesimo · " + String(grant.get("filter", ""))
-				choose.tooltip_text = "Scelta definita nei campi strutturati di 5etools."
+				choose.text = "⚠ Completa la scelta degli incantesimi"
+				choose.tooltip_text = preload("res://vtt/creature_origin_spells_tab.gd")._choice_formula(grant)
 				choose.pressed.connect(func() -> void:
 					if _on_origin_editor.is_valid():
 						_on_origin_editor.call()
@@ -1543,11 +1546,25 @@ func _refresh_granted_spell_boxes() -> void:
 			var cost_label: String = (
 				"1 slot disponibile" if String(grant.get("payment_mode", "")) == "slot"
 				else "senza limite" if remaining < 0
-				else "Consuma 1 · %s · %d rimasti" % [String(tracker.get("name", "tracker non disponibile")), remaining]
+				else "1 utilizzo · %s · %d rimasti" % [String(tracker.get("name", "tracker non disponibile")), remaining]
 			)
 			var cast := Button.new()
-			cast.text = String(spell.get("name", "")) + " · " + cost_label
-			cast.size_flags_horizontal = Control.SIZE_EXPAND_FILL
+			var details := VBoxContainer.new()
+			details.size_flags_horizontal = Control.SIZE_EXPAND_FILL
+			row.add_child(details)
+			var spell_title := Label.new()
+			spell_title.name = "GrantedSpellName"
+			spell_title.text = String(spell.get("name", ""))
+			spell_title.add_theme_font_size_override("font_size", 17)
+			spell_title.autowrap_mode = TextServer.AUTOWRAP_WORD_SMART
+			details.add_child(spell_title)
+			var consumption := Label.new()
+			consumption.text = "Consumo: " + cost_label
+			consumption.autowrap_mode = TextServer.AUTOWRAP_WORD_SMART
+			consumption.add_theme_font_size_override("font_size", 12)
+			details.add_child(consumption)
+			cast.text = "Lancia"
+			cast.size_flags_vertical = Control.SIZE_SHRINK_CENTER
 			cast.alignment = HORIZONTAL_ALIGNMENT_LEFT
 			cast.disabled = not _on_cast_spell.is_valid()
 			cast.tooltip_text = String(spell.get("description", ""))
