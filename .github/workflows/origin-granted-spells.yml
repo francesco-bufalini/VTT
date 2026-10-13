@@ -25,6 +25,9 @@ jobs:
           sparse-checkout: |
             /vtt/
             /tests/test_origin_granted_spells.gd
+            /tests/test_creature_spellcasting_cast.gd
+            /tests/test_spell_effect_tracking.gd
+            /tests/test_bonus_origin_highlight.gd
             /.github/workflows/origin-granted-spells.yml
 
       - name: Install matching Godot 4.7.2
@@ -44,9 +47,21 @@ jobs:
           mkdir -p /tmp/vtt-origin-test/tests
           cp -R vtt /tmp/vtt-origin-test/
           cp tests/test_origin_granted_spells.gd /tmp/vtt-origin-test/tests/
+          cp tests/test_creature_spellcasting_cast.gd /tmp/vtt-origin-test/tests/
+          cp tests/test_spell_effect_tracking.gd /tmp/vtt-origin-test/tests/
+          cp tests/test_bonus_origin_highlight.gd /tmp/vtt-origin-test/tests/
           printf 'config_version=5\n' > /tmp/vtt-origin-test/project.godot
           /tmp/Godot_v4.7.2-stable_linux.x86_64 --headless \
             --path /tmp/vtt-origin-test --editor --import --quit
+          for test in \
+            test_origin_granted_spells \
+            test_creature_spellcasting_cast \
+            test_spell_effect_tracking \
+            test_bonus_origin_highlight
+          do
+            /tmp/Godot_v4.7.2-stable_linux.x86_64 --headless \
+              --path /tmp/vtt-origin-test \
+              --script "res://tests/${test}.gd"
+          done
           /tmp/Godot_v4.7.2-stable_linux.x86_64 --headless \
-            --path /tmp/vtt-origin-test \
-            --script res://tests/test_origin_granted_spells.gd
+            --path /tmp/vtt-origin-test --check-only --script res://vtt/creature_area.gd
