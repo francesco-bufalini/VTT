@@ -34,6 +34,7 @@ var _filter_label: Label
 var _bypass: CheckButton
 var _shared_picker: ConfirmationDialog
 var _choose_spell_button: Button
+var _picked_ids: Array[String] = []
 
 
 func setup(on_change: Callable) -> void:
@@ -162,6 +163,7 @@ func _scroll_column(parent: VBoxContainer) -> VBoxContainer:
 
 
 func load_record(record: Dictionary) -> void:
+	_picked_ids.clear()
 	_record = record.duplicate(true)
 	_manual = (record.get("origin_spell_grants", []) as Array).duplicate(true) if record.get("origin_spell_grants", []) is Array else []
 	_configs = (record.get("origin_spell_configs", {}) as Dictionary).duplicate(true) if record.get("origin_spell_configs", {}) is Dictionary else {}
@@ -361,7 +363,7 @@ func _refresh_spell_picker(value: String) -> void:
 	for spell: Dictionary in _catalog:
 		if bool(spell.get("internal_grant", false)):
 			continue
-		if not _choice.is_empty() and not _bypass.button_pressed and not _matches_choice(spell):
+		if not _choice.is_empty() and not _matches_choice(spell, _bypass.button_pressed):
 			continue
 		if not query.is_empty() and query not in String(spell.get("name", "")).to_lower():
 			continue
@@ -372,10 +374,15 @@ func _refresh_spell_picker(value: String) -> void:
 	_update_payment_fields()
 
 
-func _matches_choice(spell: Dictionary) -> bool:
+func _matches_choice(spell: Dictionary, other_lists: bool = false) -> bool:
 	var allowed: Variant = _choice.get("spell_options", [])
 	if allowed is Array and not (allowed as Array).is_empty():
-		return String(spell.get("id", "")) in allowed
+		if not other_lists:
+			return String(spell.get("id", "")) in allowed
+		var levels: Array[int] = []
+		for id: Variant in allowed:
+			levels.append(int(Catalog.catalog_spell(String(id)).get("level", -1)))
+		return int(spell.get("level", -1)) in levels
 	var filters: Array = _choice.get("filters", [])
 	if filters.is_empty():
 		filters = [String(_choice.get("filter", ""))]
@@ -391,6 +398,8 @@ func _matches_choice(spell: Dictionary) -> bool:
 					if str(int(spell.get("level", -1))) not in vals:
 						valid = false
 				"class":
+					if other_lists:
+						continue
 					var matched := false
 					for classname: Variant in spell.get("classes", []):
 						if String(classname).to_lower() in vals:
@@ -407,6 +416,7 @@ func _matches_choice(spell: Dictionary) -> bool:
 
 
 func _choose(choice: Dictionary) -> void:
+	_picked_ids.clear()
 	_choice = choice.duplicate(true)
 	_bypass.set_pressed_no_signal(false)
 	_bypass.show()
@@ -431,7 +441,7 @@ func _choose(choice: Dictionary) -> void:
 	_add_dialog.popup_centered(Vector2i(640, 480))
 
 
-func _add() -> void:
+func _add_single(publish_now: bool = true) -> void:
 	if _origin_picker.selected < 0 or _spell_picker.selected < 0 or _spell_picker.selected >= _shown.size():
 		return
 	var spell: Dictionary = _shown[_spell_picker.selected]
@@ -464,9 +474,10 @@ func _add() -> void:
 		"spellcasting_ability": ABILITIES[_ability_picker.selected],
 		"source_choice_id": choice_id
 	})
-	_choice.clear()
-	_add_dialog.hide()
-	_publish()
+	if publish_now:
+		_choice.clear()
+		_add_dialog.hide()
+		_publish()
 
 
 func _set_option(index: int, id: String, field: String, values: Array) -> void:
@@ -550,17 +561,47 @@ func open_for_origin(origin_id: String, choice: Dictionary = {}) -> void:
 func _open_shared_picker() -> void:
 	var options: Array[Dictionary] = _shown.duplicate()
 	_add_dialog.hide()
-	_shared_picker.choose(options, {"title": "Scegli incantesimo", "single": true,
+	var maximum := 1
+	if not _choice.is_empty():
+		maximum = int(_choice.get("count", 1))
+		for entry: Variant in _manual:
+			if entry is Dictionary and String(entry.get("source_choice_id", "")) == String(_choice.get("id", "")):
+				maximum -= 1
+	maximum = maxi(1, maximum)
+	_shared_picker.choose(options, {"title": "Scegli incantesimi", "single": maximum == 1, "max_selections": maximum,
 		"details": "Origine: " + (_origin_picker.get_item_text(_origin_picker.selected) if _origin_picker.selected >= 0 else "—")
 			+ "\nLista: " + _choice_formula(_choice)},
 		func(result: Dictionary) -> void:
 			if result.selected.is_empty():
 				return
+			_picked_ids.assign(result.selected)
 			for index: int in range(_shown.size()):
 				if String(_shown[index].get("id", "")) == String(result.selected[0]):
 					_spell_picker.select(index)
 					_choose_spell_button.text = String(_shown[index].get("name", "")) + " · Cambia"
 					break
+			if _picked_ids.size() > 1:
+				_choose_spell_button.text = "%d incantesimi selezionati · Cambia" % _picked_ids.size()
 			_update_payment_fields()
 			_add_dialog.popup_centered(Vector2i(640, 480))
 	)
+
+
+func _add() -> void:
+	if _picked_ids.is_empty():
+		_add_single()
+		return
+	var choice: Dictionary = _choice.duplicate(true)
+	var before: int = _manual.size()
+	for id: String in _picked_ids:
+		for index: int in range(_shown.size()):
+			if String(_shown[index].get("id", "")) == id:
+				_spell_picker.select(index)
+				_choice = choice.duplicate(true)
+				_add_single(false)
+				break
+	if _manual.size() > before:
+		_picked_ids.clear()
+		_choice.clear()
+		_add_dialog.hide()
+		_publish()

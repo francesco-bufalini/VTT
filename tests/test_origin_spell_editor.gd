@@ -68,6 +68,27 @@ func run() -> void:
 	tab.load_record(initiate)
 	assert(tab.get("_spells") != null, "Origin spell editor must appear independently of class spellbook")
 	assert(tab.get("_origin_picker").item_count > 0)
+	for choice: Dictionary in choices:
+		if "level=0" in String(choice.get("filter", "")):
+			tab._choose(choice)
+			tab._bypass.button_pressed = true
+			for candidate: Dictionary in tab._shown:
+				assert(int(candidate.get("level", -1)) == 0, "Other class lists must preserve the cantrip level constraint")
+			tab.open_for_origin(String(choice.origin_id), choice)
+			assert(tab._shared_picker._max_selections == 2)
+			var ids: Array[String] = []
+			for spell: Dictionary in tab._shared_picker._catalog:
+				ids.append(String(spell.id))
+				if ids.size() == 2:
+					break
+			for id: String in ids:
+				tab._shared_picker._checks[id].button_pressed = true
+			tab._shared_picker._save()
+			tab._shared_picker.hide()
+			tab._add()
+			assert(tab._manual.size() == 2, "Both granted cantrips can be selected and saved together")
+			assert(String(tab._manual[0].tracker_id).is_empty() and String(tab._manual[1].tracker_id).is_empty())
+			break
 	tab.queue_free()
 	listener.queue_free()
 	print("PASS origin spells editor and unified Magic Initiate choice capacity")

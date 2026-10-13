@@ -87,14 +87,14 @@ func _show_caption() -> void:
 	if not is_instance_valid(_target) or _text.is_empty():
 		return
 	var available: Vector2 = get_viewport().get_visible_rect().size
-	var width: float = minf(480.0, available.x - 24.0)
+	var width: float = minf(clampf(float(_text.length()) * 8.0 + 24.0, 180.0, 480.0), available.x - 24.0)
 	var estimated: float = 36.0 + 20.0 * (ceili(float(_text.length()) / maxf(1.0, width / 8.0)) + _text.count("\n"))
 	var height: float = minf(clampf(estimated, 80.0, 320.0), available.y - 24.0)
 	_panel.custom_minimum_size = Vector2(width, height)
 	_panel.size = Vector2(width, height)
 	_body.text = _text
 	_body.scroll_to_line(0)
-	var point: Vector2 = _target.get_global_rect().end + Vector2(6, 6)
+	var point: Vector2 = get_viewport().get_mouse_position() + Vector2(16, 20)
 	point.x = clampf(point.x, 12.0, available.x - width - 12.0)
 	point.y = clampf(point.y, 12.0, available.y - height - 12.0)
 	_panel.position = point

@@ -5,6 +5,7 @@ var _selected: Dictionary = {}
 var _book: Dictionary = {}
 var _wizard := false
 var _single := false
+var _max_selections := 0
 var _change: Callable
 var _limit := -1
 var _cantrips := -1
@@ -84,6 +85,7 @@ func choose(options: Array[Dictionary], config: Dictionary, callback: Callable) 
 	_change = callback
 	_wizard = bool(config.get("book_mode", false))
 	_single = bool(config.get("single", false))
+	_max_selections = int(config.get("max_selections", 1 if _single else 0))
 	_limit = int(config.get("limit", -1))
 	_cantrips = int(config.get("cantrips", -1))
 	_selected.clear()
@@ -195,12 +197,14 @@ func _update_count() -> void:
 	var warning: bool = (_limit >= 0 and leveled != _limit) or (_cantrips >= 0 and cantrips != _cantrips)
 	_count.text = ("⚠ " if warning else "") + "Disponibili: %d / %s · Trucchetti: %d / %s" % [leveled,
 		str(_limit) if _limit >= 0 else "—", cantrips, str(_cantrips) if _cantrips >= 0 else "—"]
-	if _single:
-		_count.text = "Scegli un incantesimo · %d selezionato" % _selected.size()
+	if _max_selections > 0:
+		_count.text = "Scegli fino a %d incantesimo/i · %d selezionati" % [_max_selections, _selected.size()]
+	get_ok_button().disabled = _max_selections > 0 and (_selected.is_empty() or _selected.size() > _max_selections)
 	if _wizard:
 		_count.text += " · Nel libro: %d" % _book.size()
 
 func _save() -> void:
+	hide()
 	if _change.is_valid():
 		_change.call({"selected": _selected.keys(), "book": _book.keys()})
 

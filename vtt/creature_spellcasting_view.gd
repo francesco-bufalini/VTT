@@ -5,6 +5,7 @@ const Grants = preload("res://vtt/origin_spell_grants.gd")
 const Structured = preload("res://vtt/structured_origin_spells_5etools.gd")
 const Trackers = preload("res://vtt/structured_resource_trackers.gd")
 const Bonuses = preload("res://vtt/creature_bonus_rules.gd")
+const Proficiencies = preload("res://vtt/creature_proficiency_rules.gd")
 var _actions: Dictionary
 var _table: VBoxContainer
 var _rows: Array[HBoxContainer] = []
@@ -297,12 +298,17 @@ func _tracker(parent: Node, record: Dictionary, tracker: Dictionary) -> void:
 		_label(parent, "⚠ Tracker non disponibile")
 		return
 	var id: String = String(tracker.get("id", ""))
-	_heading(parent, String(tracker.get("name", "Tracker")))
+	_heading(parent, "Tracker · " + String(tracker.get("name", "Tracker")))
 	var maximum: int = maxi(0, Bonuses.add(record, "tracker:" + id, int(tracker.get("max", 0))))
 	var spent: int = int(record.get("resource_tracker_spent", {}).get(id, 0))
 	var row := HBoxContainer.new()
 	parent.add_child(row)
 	_counter(row, maxi(0, maximum - spent), maximum, _actions.tracker.bind(id, maximum))
+	var enabled: Dictionary = Proficiencies.origin_enabled_map(record)
+	if bool(tracker.get("disabled", false)) or not bool(enabled.get(String(tracker.get("origin_id", "")), true)):
+		for button: Node in row.find_children("*", "Button", true, false):
+			button.disabled = true
+		_label(parent, "Tracker disattivato dall'origine")
 	_label(parent, "Consumo: 1 utilizzo per lancio")
 
 
