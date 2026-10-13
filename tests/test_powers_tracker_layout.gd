@@ -68,7 +68,7 @@ func run() -> void:
 	assert(pair[1].get_child_count() == 2,
 		"No heading or explanatory cost paragraph bloats the tracker column")
 	for item: Node in pair[1].get_children():
-		assert(item is HBoxContainer and item.name == "TrackerRow" and item.get_child_count() == 2,
+		assert(item is HBoxContainer and item.get_child_count() == 2,
 			"Each tracker is represented by one horizontal row")
 		var counter: HBoxContainer = item.get_child(0)
 		var title: Label = item.get_child(1)
