@@ -15,6 +15,7 @@ on:
       - "tests/test_spellcasting_scaled_layout.gd"
       - "tests/test_global_hover_captions.gd"
       - "tests/test_physics_layout.gd"
+      - "tests/test_powers_tracker_layout.gd"
       - ".github/workflows/origin-granted-spells.yml"
   pull_request:
     paths:
@@ -27,6 +28,7 @@ on:
       - "tests/test_spellcasting_scaled_layout.gd"
       - "tests/test_global_hover_captions.gd"
       - "tests/test_physics_layout.gd"
+      - "tests/test_powers_tracker_layout.gd"
       - ".github/workflows/origin-granted-spells.yml"
 
 jobs:
@@ -49,6 +51,7 @@ jobs:
             /tests/test_spellcasting_scaled_layout.gd
             /tests/test_global_hover_captions.gd
             /tests/test_physics_layout.gd
+            /tests/test_powers_tracker_layout.gd
             /tests/test_bonus_origin_highlight.gd
             /.github/workflows/origin-granted-spells.yml
 
@@ -78,11 +81,13 @@ jobs:
           cp tests/test_spellcasting_scaled_layout.gd /tmp/vtt-origin-test/tests/
           cp tests/test_global_hover_captions.gd /tmp/vtt-origin-test/tests/
           cp tests/test_physics_layout.gd /tmp/vtt-origin-test/tests/
+          cp tests/test_powers_tracker_layout.gd /tmp/vtt-origin-test/tests/
           cp tests/test_bonus_origin_highlight.gd /tmp/vtt-origin-test/tests/
           printf 'config_version=5\n' > /tmp/vtt-origin-test/project.godot
           /tmp/Godot_v4.7.2-stable_linux.x86_64 --headless \
             --path /tmp/vtt-origin-test --editor --import --quit
           for test in \
+            test_powers_tracker_layout \
             test_origin_granted_spells \
             test_charoptions_as_feats \
             test_origin_spell_editor \
