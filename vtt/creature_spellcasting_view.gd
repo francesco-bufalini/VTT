@@ -176,12 +176,13 @@ func _casting_statistics(parent: Node, section_id: String, suggested: Array[Stri
 	picker.name = "CastingAbility"
 	picker.fit_to_longest_item = false
 	picker.custom_minimum_size.x = 70
+	var english: bool = String(_actions.gui_language.call()) == "en"
 	for key: String in ["str", "dex", "con", "int", "wis", "cha"]:
-		picker.add_item({"str": "FOR", "dex": "DES", "con": "COS", "int": "INT", "wis": "SAG", "cha": "CAR"}[key])
+		picker.add_item(({"str": "STR", "dex": "DEX", "con": "CON", "int": "INT", "wis": "WIS", "cha": "CHA"} if english else {"str": "FOR", "dex": "DES", "con": "COS", "int": "INT", "wis": "SAG", "cha": "CAR"})[key])
 		picker.set_item_metadata(picker.item_count - 1, key)
 		if key == ability:
 			picker.select(picker.item_count - 1)
-	picker.tooltip_text = "Caratteristica da incantatore di questa sezione"
+	picker.tooltip_text = "This section's spellcasting ability" if english else "Caratteristica da incantatore di questa sezione"
 	picker.item_selected.connect(func(index: int) -> void:
 		_actions.set_section_ability.call(section_id, String(picker.get_item_metadata(index)))
 	)
