@@ -74,8 +74,11 @@ func run() -> void:
 	tab._open_resource_settings()
 	await process_frame
 	await process_frame
-	assert(tab._resource_settings.visible and tab._slot_totals[1].is_visible_in_tree(),
-		"Manual slot maximum editing remains reachable")
+	assert(tab._resource_settings.visible and tab._slot_formula_values[1].value_label.is_visible_in_tree(),
+		"Slot maxima remain visible in their editing popup")
+	tab._slot_formula_values[1].open_editor()
+	assert(tab._slot_totals[1].is_visible_in_tree(), "Explicitly editing a maximum reveals the original input")
+	tab._slot_formula_values[1].close_editor()
 	tab._resource_settings.hide()
 	tab._view_edit_manual()
 	var manual_pick := ""

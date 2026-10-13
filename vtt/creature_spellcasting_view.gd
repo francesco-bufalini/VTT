@@ -52,8 +52,9 @@ func refresh() -> void:
 			unassigned.append(item)
 	if not unassigned.is_empty():
 		_heading(pair[0], "Altri incantesimi disponibili")
+		var manual_list: VBoxContainer = _list(pair[0], unassigned.size())
 		for spell: Dictionary in unassigned:
-			_spell_button(pair[0], _definition(spell), {}, {})
+			_spell_button(manual_list, _definition(spell), {}, {})
 	if members.is_empty() and unassigned.is_empty():
 		_label(pair[0], "Nessuna classe con incantesimi. Le concessioni dei privilegi sono qui sotto.")
 	_slots(pair[1], record)
