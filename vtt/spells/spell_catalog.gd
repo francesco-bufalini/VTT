@@ -63,6 +63,13 @@ const SPELLS: Dictionary = {
 		"range_feet": 60, "target": "One other creature",
 		"target_mode": "token_then_token", "persistent_link": true,
 		"duration": "10 minutes", "components": "—",
+		"source_class": "Bard",
+		"dice_progression": [
+			{"level": 1, "dice": "1d6"}, {"level": 5, "dice": "1d8"},
+			{"level": 10, "dice": "1d10"}, {"level": 15, "dice": "1d12"}
+		],
+		"roll_bonus_targets": ["ability_check", "saving_throw", "attack_roll"],
+		"consume_effect_on_roll": true,
 		"description": "Grant an inspiration die to a creature. It may add the die to one ability check, attack roll or saving throw. The die size is fixed at the granting bard's class level. Once used, the effect ends."
 	},
 	"vtt_wild_shape": {
@@ -71,7 +78,7 @@ const SPELLS: Dictionary = {
 		"level": 0, "school": "Transmutation", "classes": [],
 		"casting_time": "Action", "range": "Self", "range_feet": 0,
 		"target": "Self", "target_mode": "transform_self",
-		"duration": "Until ended", "components": "—",
+		"duration": "Until ended", "components": "—", "source_class": "Druid",
 		"description": "Assume an available beast form. Uses the standard VTT transformation chooser; form restrictions and duration remain subject to the chosen ruleset."
 	},
 	"acid_splash": {
