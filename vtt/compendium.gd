@@ -27,7 +27,8 @@ const SECTIONS := {
 	"Effetti": "effects",
 	"Malattie": "diseases"
 }
-var board_root: Node3D
+var board_root: Node
+var ui_root: CanvasLayer
 var _panel: PanelContainer
 var _category: OptionButton
 var _filter: LineEdit
@@ -39,8 +40,14 @@ var _monsters: Array[Dictionary] = []
 var _shown: Array[Dictionary] = []
 var _active_request := ""
 
-func setup(root: Node3D) -> void:
+func setup(root: Node, host_ui: CanvasLayer = null) -> void:
 	board_root = root
+	ui_root = host_ui
+	if ui_root == null and board_root != null:
+		ui_root = board_root.get_node_or_null("UI") as CanvasLayer
+	if ui_root == null:
+		push_error("Compendium: UI CanvasLayer non trovato")
+		return
 	_client = BestiaryClient.new()
 	_client.name = "CompendiumBestiaryClient"
 	add_child(_client)
@@ -66,7 +73,7 @@ func _build_ui() -> void:
 	_panel.mouse_filter = Control.MOUSE_FILTER_STOP
 	_panel.z_index = 30
 	_panel.hide()
-	(board_root.get_node("UI") as CanvasLayer).add_child(_panel)
+	ui_root.add_child(_panel)
 	var outer := VBoxContainer.new()
 	_panel.add_child(outer)
 	var header := HBoxContainer.new()

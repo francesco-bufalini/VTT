@@ -9,6 +9,7 @@ on:
       - feature/structured-creature-sheets
       - feature/tokens-lazy-load
       - feature/origin-spells-dice-bonuses
+      - refactor/standalone-creatures-from-pr85
     paths:
       - "**/*.gd"
       - "**/*.tscn"

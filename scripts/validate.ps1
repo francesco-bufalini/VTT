@@ -147,6 +147,7 @@ $fastTests = @(
     "test_grid_2d_elevation_colors.gd",
     "test_encounter_sync_scripts.gd",
     "test_creature_sheets.gd",
+    "test_standalone_creatures.gd",
     "test_creature_archive_revisions.gd",
     "test_creature_reference_completion.gd",
     "test_initiative_creature_selection.gd",

@@ -36,8 +36,11 @@ const ItemRules = preload("res://vtt/creature_item_rules.gd")
 const DocumentInbox = preload("res://vtt/document_inbox.gd")
 const DocumentStore = preload("res://vtt/document_homebrew.gd")
 const CreatureLocale = preload("res://vtt/creature_gui_locale.gd")
+const CreaturePublicStatus = preload("res://vtt/creature_public_status.gd")
 
-var board_root: Node3D
+var board_root: Node
+var ui_root: CanvasLayer
+var _require_miniatures: bool = true
 var _archive
 var _client: Node
 var _records: Array[Dictionary] = []
@@ -215,8 +218,15 @@ var _restore_form_dialog: ConfirmationDialog
 var _form_depleted_dialog: ConfirmationDialog
 
 
-func setup(root: Node3D) -> void:
+func setup(root: Node, host_ui: CanvasLayer = null, require_miniatures: bool = true) -> void:
 	board_root = root
+	ui_root = host_ui
+	if ui_root == null and board_root != null:
+		ui_root = board_root.get_node_or_null("UI") as CanvasLayer
+	if ui_root == null:
+		push_error("CreatureArea: UI CanvasLayer non trovato")
+		return
+	_require_miniatures = require_miniatures
 	_creature_language = CreatureLocale.read_locale()
 	_archive = Archive.new()
 	_archive.setup(get_node_or_null("/root/CampaignManager"))
@@ -515,7 +525,7 @@ func _build_ui() -> void:
 	# Ensure UI sheets outrank any remaining tactical screen-space badges.
 	_panel.z_index = 30
 	_panel.hide()
-	(board_root.get_node("UI") as CanvasLayer).add_child(_panel)
+	ui_root.add_child(_panel)
 
 	var outer := VBoxContainer.new()
 	_panel.add_child(outer)
@@ -1563,7 +1573,7 @@ func _refresh_creature_eye_buttons() -> void:
 	for i: int in range(mini(_records.size(), _creature_eye_buttons.size())):
 		var has_token: bool = present.has(String(_records[i].get("id", "")))
 		var action_button: Button = _creature_eye_buttons[i]
-		action_button.visible = true
+		action_button.visible = board_root.has_method("begin_creature_token_placement")
 		action_button.text = "👁" if has_token else "+"
 		action_button.tooltip_text = (
 			"Centra la visuale sul token" if has_token
@@ -1629,7 +1639,7 @@ func _build_automatic_dialog() -> void:
 	_automatic_dialog.get_cancel_button().text = "Annulla"
 	_automatic_dialog.dialog_text = ""
 	_automatic_dialog.min_size = Vector2i(560, 360)
-	(board_root.get_node("UI") as CanvasLayer).add_child(_automatic_dialog)
+	ui_root.add_child(_automatic_dialog)
 	var content := VBoxContainer.new()
 	content.add_theme_constant_override("separation", 10)
 	content.size_flags_horizontal = Control.SIZE_EXPAND_FILL
@@ -1873,7 +1883,7 @@ func _build_transfer_request_dialog() -> void:
 	_transfer_dialog.title = "Cedi controllo della creatura"
 	_transfer_dialog.dialog_text = ""
 	_transfer_dialog.min_size = Vector2i(480, 220)
-	(board_root.get_node("UI") as CanvasLayer).add_child(_transfer_dialog)
+	ui_root.add_child(_transfer_dialog)
 	var body := VBoxContainer.new()
 	body.add_theme_constant_override("separation", 9)
 	_transfer_dialog.add_child(body)
@@ -1954,7 +1964,7 @@ func _build_export_dialog() -> void:
 	_export_dialog.file_mode = FileDialog.FILE_MODE_SAVE_FILE
 	_export_dialog.add_filter("*.json", "Scheda creatura JSON")
 	_export_dialog.file_selected.connect(_save_exported_creature)
-	(board_root.get_node("UI") as CanvasLayer).add_child(_export_dialog)
+	ui_root.add_child(_export_dialog)
 
 
 func _export_current_creature() -> void:
@@ -4679,7 +4689,7 @@ func _build_hp_delta_dialog() -> void:
 	_hp_delta_dialog.get_cancel_button().text = "Annulla"
 	_hp_delta_dialog.dialog_text = ""
 	_hp_delta_dialog.min_size = Vector2i(390, 235)
-	(board_root.get_node("UI") as CanvasLayer).add_child(_hp_delta_dialog)
+	ui_root.add_child(_hp_delta_dialog)
 	var body := VBoxContainer.new()
 	body.add_theme_constant_override("separation", 10)
 	_hp_delta_dialog.add_child(body)
@@ -4844,7 +4854,7 @@ func _build_second_form_dialogs() -> void:
 	_form_hp_dialog.min_size = Vector2i(500, 265)
 	_form_hp_dialog.get_ok_button().text = "Applica"
 	_form_hp_dialog.get_cancel_button().text = "Annulla"
-	(board_root.get_node("UI") as CanvasLayer).add_child(_form_hp_dialog)
+	ui_root.add_child(_form_hp_dialog)
 	var content := VBoxContainer.new()
 	content.add_theme_constant_override("separation", 9)
 	_form_hp_dialog.add_child(content)
@@ -4874,7 +4884,7 @@ func _build_second_form_dialogs() -> void:
 	_restore_form_dialog.get_cancel_button().text = "No, conserva"
 	_restore_form_dialog.confirmed.connect(func() -> void: _restore_base_form(true))
 	_restore_form_dialog.canceled.connect(func() -> void: _restore_base_form(false))
-	(board_root.get_node("UI") as CanvasLayer).add_child(_restore_form_dialog)
+	ui_root.add_child(_restore_form_dialog)
 	_form_depleted_dialog = ConfirmationDialog.new()
 	_form_depleted_dialog.title = "Seconda forma esaurita"
 	_form_depleted_dialog.dialog_text = "I PF della seconda forma sono a 0. Ripristinare l'aspetto di base?"
@@ -4883,7 +4893,7 @@ func _build_second_form_dialogs() -> void:
 	_form_depleted_dialog.confirmed.connect(func() -> void:
 		_restore_base_form(true, _form_depleted_target_id)
 	)
-	(board_root.get_node("UI") as CanvasLayer).add_child(_form_depleted_dialog)
+	ui_root.add_child(_form_depleted_dialog)
 
 
 func _prompt_second_form_hp(record: Dictionary) -> void:
@@ -5546,7 +5556,7 @@ func _build_miniature_dialog() -> void:
 	_miniature_dialog.get_cancel_button().custom_minimum_size = Vector2(112, 38)
 	_miniature_dialog.dialog_text = ""
 	_miniature_dialog.min_size = Vector2i(540, 340)
-	(board_root.get_node("UI") as CanvasLayer).add_child(_miniature_dialog)
+	ui_root.add_child(_miniature_dialog)
 	var body := VBoxContainer.new()
 	body.add_theme_constant_override("separation", 9)
 	body.size_flags_horizontal = Control.SIZE_EXPAND_FILL
@@ -5578,6 +5588,19 @@ func _choose_miniature(record: Dictionary, is_new: bool, choose_current: bool = 
 	if record.is_empty():
 		_set_status("Seleziona una creatura.")
 		return
+	# Standalone character management does not require a published 3D miniature.
+	if not _require_miniatures:
+		if not is_new:
+			_set_status("Scelta miniature disponibile nell'app desktop.")
+			return
+		if _archive.save(record) != OK:
+			_set_status("Impossibile creare la creatura nell'archivio.")
+			return
+		_selected_id = String(record.get("id", ""))
+		_selected_kind = String(record.get("kind", ""))
+		_reload()
+		_set_status("Creatura creata: puoi associarle una miniatura in seguito.")
+		return
 	_pending_miniature_record = record.duplicate(true)
 	_pending_new_creature = is_new
 	_miniature_dialog.title = (
@@ -5585,7 +5608,9 @@ func _choose_miniature(record: Dictionary, is_new: bool, choose_current: bool = 
 	)
 	_miniature_choices.clear()
 	_suggested_miniature_ids.clear()
-	var raw: Variant = board_root.call("list_available_miniatures")
+	var raw: Variant = []
+	if board_root.has_method("list_available_miniatures"):
+		raw = board_root.call("list_available_miniatures")
 	if raw is Array:
 		for candidate: Variant in raw:
 
@@ -5766,6 +5791,9 @@ func _remove_deleted_creature_tokens(record: Dictionary) -> void:
 
 
 func _link_selected_token() -> void:
+	if not board_root.has_method("get_selected_tokens_for_creatures"):
+		_set_status("Collegamento ai token disponibile soltanto nella partita desktop.")
+		return
 	var selected_value: Variant = board_root.call(
 		"get_selected_tokens_for_creatures"
 	)
@@ -5968,18 +5996,22 @@ func _sync_token_health(record: Dictionary) -> void:
 func get_owned_health_bar_sync_entries() -> Array[Dictionary]:
 	var rows: Array[Dictionary] = []
 	for record: Dictionary in _records:
-		var id := String(record.get("linked_token_sync_id", ""))
-		var transformed: bool = int(record.get("second_form_hp", 0)) > 0
-		var maximum: int = int(record.get("second_form_max_hp", 0)) if transformed else int(record.get("max_hp", 0))
-		if id.is_empty() or maximum <= 0 or _find_linked_token(record) == null:
+		var public_entry: Dictionary = CreaturePublicStatus.health_bar_entry(record)
+		# Existing desktop behavior: only publish bars for live, locally-owned tokens.
+		if public_entry.is_empty() or _find_linked_token(record) == null:
 			continue
-		rows.append({
-			"token_id": id,
-			"percent": clampf(
-				float(record.get("second_form_hp", 0) if transformed else record.get("current_hp", 0)) / float(maximum) * 100.0,
-				0.0, 100.0
-			)
-		})
+		rows.append(public_entry)
+	return rows
+
+
+# Future mobile/remote transport uses this without requiring a local 3D token.
+# This function never exposes exact HP or the private creature sheet.
+func get_public_status_entries() -> Array[Dictionary]:
+	var rows: Array[Dictionary] = []
+	for record: Dictionary in _archive.list_owned():
+		var status: Dictionary = CreaturePublicStatus.from_record(record)
+		if not status.is_empty():
+			rows.append(status)
 	return rows
 
 
