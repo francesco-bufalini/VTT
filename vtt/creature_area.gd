@@ -11,6 +11,7 @@ const PlayerReference = preload("res://vtt/player_reference_catalog.gd")
 const Player5eTools = preload("res://vtt/player_5etools_catalog.gd")
 const RaceRules = preload("res://vtt/creature_race_rules.gd")
 const SpellcastingTab = preload("res://vtt/creature_spellcasting_tab.gd")
+const OriginSpellsTab = preload("res://vtt/creature_origin_spells_tab.gd")
 const SpellCatalog = preload("res://vtt/spells/spell_catalog.gd")
 const ActiveSpells = preload("res://vtt/creature_active_spells.gd")
 const OriginSpells = preload("res://vtt/origin_spell_grants.gd")
@@ -54,6 +55,8 @@ var _proficiencies_stale := true
 var _feats_stale := true
 var _bonuses_stale := true
 var _pending_origin_spell_cast: Dictionary = {}
+var _origin_spells_stale := true
+var _origin_spells_ui: Node
 var _trackers_stale := true
 var _damage_defenses_stale := true
 var _catalog: Array[Dictionary] = []
@@ -685,7 +688,7 @@ func _build_ui() -> void:
 	_editor_section_picker.custom_minimum_size = Vector2(285, 30)
 	_editor_section_picker.size_flags_horizontal = Control.SIZE_EXPAND_FILL
 	_editor_section_picker.tooltip_text = "Scegli una sezione da visualizzare o modificare"
-	for section_name: String in ["Niente", "Competenze", "Talenti", "Bonus", "Tracker", "Resistenze, immunità e vulnerabilità"]:
+	for section_name: String in ["Niente", "Competenze", "Talenti", "Bonus", "Tracker", "Resistenze, immunità e vulnerabilità", "Incantesimi da origini"]:
 		_editor_section_picker.add_item(section_name)
 	_editor_section_picker.select(0)
 	_editor_section_picker.item_selected.connect(_select_details_editor)
@@ -710,6 +713,10 @@ func _build_ui() -> void:
 	_damage_defenses_ui.hide()
 	statistics_tab.add_child(_damage_defenses_ui)
 	_damage_defenses_ui.call("setup", Callable(self, "_on_damage_defenses_updated"))
+	_origin_spells_ui = OriginSpellsTab.new()
+	_origin_spells_ui.hide()
+	statistics_tab.add_child(_origin_spells_ui)
+	_origin_spells_ui.call("setup", Callable(self, "_on_origin_spells_updated"))
 	# Share the editor divider and give combat the width its contents need.
 	# Local scrolling remains a fallback when neither column can fit.
 	_statistics_columns = HBoxContainer.new()
@@ -2149,13 +2156,14 @@ func _refresh_choice_warnings(record: Dictionary) -> void:
 func _select_details_editor(index: int) -> void:
 	if _editor_section_picker == null:
 		return
-	var choice: int = clampi(index, 0, 5)
+	var choice: int = clampi(index, 0, 6)
 	_editor_section_picker.select(choice)
 	_proficiencies_ui.visible = choice == 1
 	_feats_ui.visible = choice == 2
 	_bonuses_ui.visible = choice == 3
 	_trackers_ui.visible = choice == 4
 	_damage_defenses_ui.visible = choice == 5
+	_origin_spells_ui.visible = choice == 6
 	if choice > 0:
 		var record: Dictionary = _current()
 		if not record.is_empty():
@@ -2180,7 +2188,29 @@ func _select_details_editor(index: int) -> void:
 					if _damage_defenses_stale:
 						_damage_defenses_ui.call("load_record", record)
 						_damage_defenses_stale = false
+				6:
+					if _origin_spells_stale:
+						_origin_spells_ui.call("load_record", record)
+						_origin_spells_stale = false
 	call_deferred("_update_stats_column_heights")
+
+
+func _on_origin_spells_updated(grants: Array, configs: Dictionary) -> void:
+	if _loading:
+		return
+	var record: Dictionary = _current()
+	if record.is_empty():
+		return
+	record["origin_spell_grants"] = grants.duplicate(true)
+	record["origin_spell_configs"] = configs.duplicate(true)
+	ProficiencyRules.reconcile_origin_dependents(record)
+	if _archive.save(record) != OK:
+		_set_status("Impossibile salvare gli incantesimi da origini.")
+		return
+	_replace_current_record(record)
+	_origin_spells_stale = false
+	_spellcasting_ui.call("load_record", record)
+	_refresh_choice_warnings(record)
 
 
 func _on_damage_defenses_updated(damage_overrides: Dictionary, condition_overrides: Dictionary, defense_entries: Array = [], origins: Array = []) -> void:
@@ -3060,6 +3090,10 @@ func _load_form(record: Dictionary) -> void:
 	_refresh_conditions(record)
 	_refresh_reference(record)
 	_spellcasting_ui.call("load_record", record)
+	_origin_spells_stale = true
+	if _origin_spells_ui != null and _origin_spells_ui.visible:
+		_origin_spells_ui.call("load_record", record)
+		_origin_spells_stale = false
 	_inventory_ui.call("load_record", record)
 	_feats_stale = true
 	if _feats_ui != null and _feats_ui.visible:
@@ -3331,7 +3365,7 @@ func _on_spellcasting_cast_requested(spell: Dictionary, slot_level: int, grant: 
 		_pending_origin_spell_cast = {
 			"creature_id": String(current_record.get("id", "")),
 			"spell_id": spell_id, "grant": grant.duplicate(true),
-			"context": OriginSpells.cast_context(current_record, spell_id)
+			"context": OriginSpells.cast_context(current_record, spell_id, grant)
 		}
 	else:
 		_pending_origin_spell_cast.clear()
@@ -3516,7 +3550,7 @@ func _on_spellcasting_updated(values: Dictionary) -> void:
 		"spell_slots_total", "spell_slots_spent",
 		"pact_slots_total", "pact_slots_spent", "pact_slot_level",
 		"spell_slots_visible", "pact_slots_visible",
-		"spellcasting_ability", "concentrating_spell_id", "conditions", "origin_spell_grants"
+		"spellcasting_ability", "concentrating_spell_id", "conditions", "origin_spell_grants", "origin_spell_configs"
 	]:
 		if values.has(key):
 			record[key] = values[key]
