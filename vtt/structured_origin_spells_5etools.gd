@@ -262,7 +262,7 @@ static func for_creature(record: Dictionary) -> Dictionary:
 				var block_abilities: Dictionary = {}
 				for value: Variant in blocks:
 					if value is Dictionary:
-						block_abilities[String((value as Dictionary).get("ability", ""))] = true
+						block_abilities[JSON.stringify((value as Dictionary).get("ability", ""))] = true
 				for i: int in range(blocks.size()):
 					var temp: Dictionary = {"grants": [], "trackers": [], "choices": []}
 					_append_block(temp, origin, blocks[i], i, record)
