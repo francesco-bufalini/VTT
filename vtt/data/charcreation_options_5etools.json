@@ -29,11 +29,12 @@
 				"I'm a scion of the Alagondar bloodline and the only known heir to the crown of Neverwinter. If Dagult Neverember, the city's lord-regent, learns that I'm alive, he'll send assassins to kill me."
 			],
 			"id": "charoption:idrotf:alagondar_scion",
-			"category": "Character Creation Option",
+			"category": "feats",
 			"feature_type": "Character Secret",
 			"feature_sections": [],
 			"edition": "2014",
-			"origin": "5etools"
+			"origin": "5etools",
+			"option_group": "Character Creation Option"
 		},
 		{
 			"name": "Anvilwrought",
@@ -113,7 +114,7 @@
 				}
 			],
 			"id": "charoption:mot:anvilwrought",
-			"category": "Character Creation Option",
+			"category": "feats",
 			"feature_type": "Supernatural Gift",
 			"feature_sections": [
 				{
@@ -183,7 +184,8 @@
 				}
 			],
 			"edition": "2014",
-			"origin": "5etools"
+			"origin": "5etools",
+			"option_group": "Character Creation Option"
 		},
 		{
 			"name": "Cult of the Dragon Infiltrator",
@@ -202,11 +204,12 @@
 				"You have infiltrated the ranks of the Cult of the Dragon. Having spied on the organization for quite some time, you are familiar with its inner workings and customs. You have a second identity as an initiate of the cult, enough of a facade to blend in as a simple grunt or servant."
 			],
 			"id": "charoption:hotdq:cult_of_the_dragon_infiltrator",
-			"category": "Character Creation Option",
+			"category": "feats",
 			"feature_type": "Background Feature",
 			"feature_sections": [],
 			"edition": "2014",
-			"origin": "5etools"
+			"origin": "5etools",
+			"option_group": "Character Creation Option"
 		},
 		{
 			"name": "Deep Delver",
@@ -219,11 +222,12 @@
 				"You have a knack for making your way in the deep places of the world. You can recall the twists and turns of passageways and tunnels such that you can always retrace your steps underground. You're also well acquainted with foraging and survival in the Underdark, and can determine when sources of food and water are safe to consume. You can always find sufficient food and water for yourself and up to five other people in the Underdark, as long as sustenance is available in the area."
 			],
 			"id": "charoption:oota:deep_delver",
-			"category": "Character Creation Option",
+			"category": "feats",
 			"feature_type": "Background Feature",
 			"feature_sections": [],
 			"edition": "2014",
-			"origin": "5etools"
+			"origin": "5etools",
+			"option_group": "Character Creation Option"
 		},
 		{
 			"name": "Doppelganger",
@@ -237,11 +241,12 @@
 				"I can innately cast {@spell detect thoughts}, requiring no components. My spellcasting ability is Intelligence. The spell's Wisdom save DC is 8 + my proficiency bonus + my Intelligence modifier. I can polymorph into any humanoid I have seen or back into my true form. My statistics, other than my size, don't change. Any equipment I'm wearing or carrying isn't transformed. I revert to my true form when I die."
 			],
 			"id": "charoption:idrotf:doppelganger",
-			"category": "Character Creation Option",
+			"category": "feats",
 			"feature_type": "Character Secret",
 			"feature_sections": [],
 			"edition": "2014",
-			"origin": "5etools"
+			"origin": "5etools",
+			"option_group": "Character Creation Option"
 		},
 		{
 			"name": "Dragon Scholar",
@@ -260,11 +265,12 @@
 				"You have studied dragons and their lore for many years. You can automatically identify locations built or used by dragons and can identify dragon eggs and scales by sight. If you fail an Intelligence check to recall lore relating to dragons, you know someone or some book you can consult for the answer unless the DM rules that the lore is unknown."
 			],
 			"id": "charoption:hotdq:dragon_scholar",
-			"category": "Character Creation Option",
+			"category": "feats",
 			"feature_type": "Background Feature",
 			"feature_sections": [],
 			"edition": "2014",
-			"origin": "5etools"
+			"origin": "5etools",
+			"option_group": "Character Creation Option"
 		},
 		{
 			"name": "Drizzt Fan",
@@ -277,11 +283,12 @@
 				"I once met the famous drow ranger Drizzt Do'Urden! In fact, I have a tattered piece of his famous green cloak and would never think to part with it."
 			],
 			"id": "charoption:idrotf:drizzt_fan",
-			"category": "Character Creation Option",
+			"category": "feats",
 			"feature_type": "Character Secret",
 			"feature_sections": [],
 			"edition": "2014",
-			"origin": "5etools"
+			"origin": "5etools",
+			"option_group": "Character Creation Option"
 		},
 		{
 			"name": "Echoing Soul",
@@ -397,7 +404,7 @@
 				}
 			],
 			"id": "charoption:vrgr:echoing_soul",
-			"category": "Character Creation Option",
+			"category": "feats",
 			"feature_type": "Dark Gift",
 			"feature_sections": [
 				{
@@ -467,7 +474,8 @@
 				}
 			],
 			"edition": "2014",
-			"origin": "5etools"
+			"origin": "5etools",
+			"option_group": "Character Creation Option"
 		},
 		{
 			"name": "Elusive Paramour",
@@ -480,11 +488,12 @@
 				"A wealthy pasha in Calimshan has placed a bounty on my head for seducing his favorite concubine. Bounty hunters are scouring the Sword Coast in search of me, but I hope they'll never think to look in Icewind Dale."
 			],
 			"id": "charoption:idrotf:elusive_paramour",
-			"category": "Character Creation Option",
+			"category": "feats",
 			"feature_type": "Character Secret",
 			"feature_sections": [],
 			"edition": "2014",
-			"origin": "5etools"
+			"origin": "5etools",
+			"option_group": "Character Creation Option"
 		},
 		{
 			"name": "Escaped Prisoner",
@@ -497,11 +506,12 @@
 				"I was brought here from another world by spacefaring mind flayers. The ship in which I was imprisoned crashed in the mountains south of Ten-Towns. After surviving the crash, I nearly froze to death crossing the tundra to reach Ten-Towns. If some friendly trappers hadn't found me, I would have perished. I fear some of my captors also survived the crash and might come looking for me."
 			],
 			"id": "charoption:idrotf:escaped_prisoner",
-			"category": "Character Creation Option",
+			"category": "feats",
 			"feature_type": "Character Secret",
 			"feature_sections": [],
 			"edition": "2014",
-			"origin": "5etools"
+			"origin": "5etools",
+			"option_group": "Character Creation Option"
 		},
 		{
 			"name": "Gathered Whispers",
@@ -609,7 +619,7 @@
 				}
 			],
 			"id": "charoption:vrgr:gathered_whispers",
-			"category": "Character Creation Option",
+			"category": "feats",
 			"feature_type": "Dark Gift",
 			"feature_sections": [
 				{
@@ -671,7 +681,8 @@
 				}
 			],
 			"edition": "2014",
-			"origin": "5etools"
+			"origin": "5etools",
+			"option_group": "Character Creation Option"
 		},
 		{
 			"name": "Heroic Destiny",
@@ -742,7 +753,7 @@
 			],
 			"hasFluffImages": true,
 			"id": "charoption:mot:heroic_destiny",
-			"category": "Character Creation Option",
+			"category": "feats",
 			"feature_type": "Supernatural Gift",
 			"feature_sections": [
 				{
@@ -765,7 +776,8 @@
 				}
 			],
 			"edition": "2014",
-			"origin": "5etools"
+			"origin": "5etools",
+			"option_group": "Character Creation Option"
 		},
 		{
 			"name": "Hollow One",
@@ -812,7 +824,7 @@
 			],
 			"hasFluffImages": true,
 			"id": "charoption:egw:hollow_one",
-			"category": "Character Creation Option",
+			"category": "feats",
 			"feature_type": "Supernatural Gift",
 			"feature_sections": [
 				{
@@ -853,7 +865,8 @@
 				}
 			],
 			"edition": "2014",
-			"origin": "5etools"
+			"origin": "5etools",
+			"option_group": "Character Creation Option"
 		},
 		{
 			"name": "Iconoclast",
@@ -954,7 +967,7 @@
 				}
 			],
 			"id": "charoption:mot:iconoclast",
-			"category": "Character Creation Option",
+			"category": "feats",
 			"feature_type": "Supernatural Gift",
 			"feature_sections": [
 				{
@@ -1047,7 +1060,8 @@
 				}
 			],
 			"edition": "2014",
-			"origin": "5etools"
+			"origin": "5etools",
+			"option_group": "Character Creation Option"
 		},
 		{
 			"name": "Inheritor",
@@ -1061,11 +1075,12 @@
 				"Additionally, any time you reveal your legacy, you swiftly learn the local opinion of your predecessor. If locals have never heard of your predecessor, nothing changes. If they have, rumors of your connection spread swiftly, and many locals consider you either a hero or a threat. Heroes are welcomed and might easily gain an audience with local leaders. Threats are encouraged to leave before they invite danger."
 			],
 			"id": "charoption:vrgr:inheritor",
-			"category": "Character Creation Option",
+			"category": "feats",
 			"feature_type": "Background Feature",
 			"feature_sections": [],
 			"edition": "2014",
-			"origin": "5etools"
+			"origin": "5etools",
+			"option_group": "Character Creation Option"
 		},
 		{
 			"name": "Inscrutable",
@@ -1136,7 +1151,7 @@
 				}
 			],
 			"id": "charoption:mot:inscrutable",
-			"category": "Character Creation Option",
+			"category": "feats",
 			"feature_type": "Supernatural Gift",
 			"feature_sections": [
 				{
@@ -1197,7 +1212,8 @@
 				}
 			],
 			"edition": "2014",
-			"origin": "5etools"
+			"origin": "5etools",
+			"option_group": "Character Creation Option"
 		},
 		{
 			"name": "Lifelong Companion",
@@ -1269,7 +1285,7 @@
 			],
 			"hasFluffImages": true,
 			"id": "charoption:mot:lifelong_companion",
-			"category": "Character Creation Option",
+			"category": "feats",
 			"feature_type": "Supernatural Gift",
 			"feature_sections": [
 				{
@@ -1292,7 +1308,8 @@
 				}
 			],
 			"edition": "2014",
-			"origin": "5etools"
+			"origin": "5etools",
+			"option_group": "Character Creation Option"
 		},
 		{
 			"name": "Littlest Yeti",
@@ -1305,11 +1322,12 @@
 				"I was raised by yeti. Although I relied on my ferocious guardians for food and warmth and never quite adapted to the cold, I speak Yeti and have advantage on Charisma checks made to influence yeti or improve their attitudes."
 			],
 			"id": "charoption:idrotf:littlest_yeti",
-			"category": "Character Creation Option",
+			"category": "feats",
 			"feature_type": "Character Secret",
 			"feature_sections": [],
 			"edition": "2014",
-			"origin": "5etools"
+			"origin": "5etools",
+			"option_group": "Character Creation Option"
 		},
 		{
 			"name": "Living Shadow",
@@ -1387,7 +1405,7 @@
 				}
 			],
 			"id": "charoption:vrgr:living_shadow",
-			"category": "Character Creation Option",
+			"category": "feats",
 			"feature_type": "Dark Gift",
 			"feature_sections": [
 				{
@@ -1419,7 +1437,8 @@
 				}
 			],
 			"edition": "2014",
-			"origin": "5etools"
+			"origin": "5etools",
+			"option_group": "Character Creation Option"
 		},
 		{
 			"name": "Midwinter Child",
@@ -1432,11 +1451,12 @@
 				"Auril the Frostmaiden has blessed me, for I was born on the Midwinter holiday. I have resistance to cold damage."
 			],
 			"id": "charoption:idrotf:midwinter_child",
-			"category": "Character Creation Option",
+			"category": "feats",
 			"feature_type": "Character Secret",
 			"feature_sections": [],
 			"edition": "2014",
-			"origin": "5etools"
+			"origin": "5etools",
+			"option_group": "Character Creation Option"
 		},
 		{
 			"name": "Mist Walker",
@@ -1506,7 +1526,7 @@
 				}
 			],
 			"id": "charoption:vrgr:mist_walker",
-			"category": "Character Creation Option",
+			"category": "feats",
 			"feature_type": "Dark Gift",
 			"feature_sections": [
 				{
@@ -1538,7 +1558,8 @@
 				}
 			],
 			"edition": "2014",
-			"origin": "5etools"
+			"origin": "5etools",
+			"option_group": "Character Creation Option"
 		},
 		{
 			"name": "Mist Wanderer",
@@ -1557,11 +1578,12 @@
 				"The Mists whisper to you and guide you through their mysterious eddies. You immediately know if an object you're touching is a Mist talisman (detailed in {@book chapter 3|VRGR|3|Mist Talismans}). You recognize where the talisman originates from if you have been to its domain of origin."
 			],
 			"id": "charoption:vrgr:mist_wanderer",
-			"category": "Character Creation Option",
+			"category": "feats",
 			"feature_type": "Background Feature",
 			"feature_sections": [],
 			"edition": "2014",
-			"origin": "5etools"
+			"origin": "5etools",
+			"option_group": "Character Creation Option"
 		},
 		{
 			"name": "Nyxborn",
@@ -1672,7 +1694,7 @@
 				}
 			],
 			"id": "charoption:mot:nyxborn",
-			"category": "Character Creation Option",
+			"category": "feats",
 			"feature_type": "Supernatural Gift",
 			"feature_sections": [
 				{
@@ -1695,7 +1717,8 @@
 				}
 			],
 			"edition": "2014",
-			"origin": "5etools"
+			"origin": "5etools",
+			"option_group": "Character Creation Option"
 		},
 		{
 			"name": "Old Flame",
@@ -1708,11 +1731,12 @@
 				"I have a lover in Ten-Towns whom I haven't seen in years. At any time outside of combat, I can decide who the lover is by choosing an NPC in Ten-Towns that I can see. Once I make this choice, I can't change it. This old flame is friendly and helpful toward me, even if our past is checkered."
 			],
 			"id": "charoption:idrotf:old_flame",
-			"category": "Character Creation Option",
+			"category": "feats",
 			"feature_type": "Character Secret",
 			"feature_sections": [],
 			"edition": "2014",
-			"origin": "5etools"
+			"origin": "5etools",
+			"option_group": "Character Creation Option"
 		},
 		{
 			"name": "Oracle",
@@ -1839,7 +1863,7 @@
 			],
 			"hasFluffImages": true,
 			"id": "charoption:mot:oracle",
-			"category": "Character Creation Option",
+			"category": "feats",
 			"feature_type": "Supernatural Gift",
 			"feature_sections": [
 				{
@@ -1959,7 +1983,8 @@
 				}
 			],
 			"edition": "2014",
-			"origin": "5etools"
+			"origin": "5etools",
+			"option_group": "Character Creation Option"
 		},
 		{
 			"name": "Orc Stone",
@@ -1974,11 +1999,12 @@
 				"After the stone is used three times, it turns to dust."
 			],
 			"id": "charoption:idrotf:orc_stone",
-			"category": "Character Creation Option",
+			"category": "feats",
 			"feature_type": "Character Secret",
 			"feature_sections": [],
 			"edition": "2014",
-			"origin": "5etools"
+			"origin": "5etools",
+			"option_group": "Character Creation Option"
 		},
 		{
 			"name": "Owlbear Whisperer",
@@ -1992,11 +2018,12 @@
 				"If I am within 10 feet of an owlbear, I can use an action to make a {@dc 10} Charisma ({@skill Animal Handling}) check. On a success, I change the owlbear's attitude toward me from hostile to indifferent or from indifferent to friendly."
 			],
 			"id": "charoption:idrotf:owlbear_whisperer",
-			"category": "Character Creation Option",
+			"category": "feats",
 			"feature_type": "Character Secret",
 			"feature_sections": [],
 			"edition": "2014",
-			"origin": "5etools"
+			"origin": "5etools",
+			"option_group": "Character Creation Option"
 		},
 		{
 			"name": "Pious",
@@ -2074,7 +2101,7 @@
 				}
 			],
 			"id": "charoption:mot:pious",
-			"category": "Character Creation Option",
+			"category": "feats",
 			"feature_type": "Supernatural Gift",
 			"feature_sections": [
 				{
@@ -2144,7 +2171,8 @@
 				}
 			],
 			"edition": "2014",
-			"origin": "5etools"
+			"origin": "5etools",
+			"option_group": "Character Creation Option"
 		},
 		{
 			"name": "Pirate Cannibal",
@@ -2157,11 +2185,12 @@
 				"I served aboard Dark Duchess, a pirate ship from the city of Luskan. After the vessel got stuck in the ice, everyone but the captain abandoned the vessel and fled to Ten-Towns. We got lost in a blizzard along the way. I was the only one who made it, and only by eating my mates. The ship and its treasure are still out there."
 			],
 			"id": "charoption:idrotf:pirate_cannibal",
-			"category": "Character Creation Option",
+			"category": "feats",
 			"feature_type": "Character Secret",
 			"feature_sections": [],
 			"edition": "2014",
-			"origin": "5etools"
+			"origin": "5etools",
+			"option_group": "Character Creation Option"
 		},
 		{
 			"name": "Reghed Heir",
@@ -2190,11 +2219,12 @@
 				"I am the offspring of Queen Bjornhild Solvigsdottir, leader of the Tiger Tribe. My mother cast me into the Sea of Moving Ice when I was a young child as a sacrifice to Auril the Frostmaiden. A polar bear pulled me from the water and spared me a freezing death. This bear then transformed into a goliath who bore me safely to Ten-Towns. I remember the goliath's name—Oyaminartok—but haven't seen her since. I owe her my life, just as I owe my mother a merciless death."
 			],
 			"id": "charoption:idrotf:reghed_heir",
-			"category": "Character Creation Option",
+			"category": "feats",
 			"feature_type": "Character Secret",
 			"feature_sections": [],
 			"edition": "2014",
-			"origin": "5etools"
+			"origin": "5etools",
+			"option_group": "Character Creation Option"
 		},
 		{
 			"name": "Reincarnation",
@@ -2207,11 +2237,12 @@
 				"I died and was brought back to life by a friendly human druid using the {@spell reincarnate} spell. I have no idea what became of the druid, whose name I don't know. I retain the memories of my previous life, some or all of which was spent in Icewind Dale. (Roll on the table in the spell's description to determine your character's previous race, or choose a race from the table that you like, then flesh out the story of your previous life.)"
 			],
 			"id": "charoption:idrotf:reincarnation",
-			"category": "Character Creation Option",
+			"category": "feats",
 			"feature_type": "Character Secret",
 			"feature_sections": [],
 			"edition": "2014",
-			"origin": "5etools"
+			"origin": "5etools",
+			"option_group": "Character Creation Option"
 		},
 		{
 			"name": "Ring Hunter",
@@ -2224,11 +2255,12 @@
 				"I am looking for the knucklehead trout that bit off my father's finger, which had a signet ring on it. To preserve my inheritance, I must retrieve the lost ring."
 			],
 			"id": "charoption:idrotf:ring_hunter",
-			"category": "Character Creation Option",
+			"category": "feats",
 			"feature_type": "Character Secret",
 			"feature_sections": [],
 			"edition": "2014",
-			"origin": "5etools"
+			"origin": "5etools",
+			"option_group": "Character Creation Option"
 		},
 		{
 			"name": "Runaway Author",
@@ -2241,11 +2273,12 @@
 				"I penned a notorious exposé called \"The Hellbent Highborn,\" which accused several prominent patriars in Baldur's Gate and nobles in Waterdeep of being devil worshipers. Although my accusations were well founded, I made a lot of enemies and was forced to seek refuge in Icewind Dale."
 			],
 			"id": "charoption:idrotf:runaway_author",
-			"category": "Character Creation Option",
+			"category": "feats",
 			"feature_type": "Character Secret",
 			"feature_sections": [],
 			"edition": "2014",
-			"origin": "5etools"
+			"origin": "5etools",
+			"option_group": "Character Creation Option"
 		},
 		{
 			"name": "Second Skin",
@@ -2356,7 +2389,7 @@
 				}
 			],
 			"id": "charoption:vrgr:second_skin",
-			"category": "Character Creation Option",
+			"category": "feats",
 			"feature_type": "Dark Gift",
 			"feature_sections": [
 				{
@@ -2419,7 +2452,8 @@
 				}
 			],
 			"edition": "2014",
-			"origin": "5etools"
+			"origin": "5etools",
+			"option_group": "Character Creation Option"
 		},
 		{
 			"name": "Slaad Host",
@@ -2432,11 +2466,12 @@
 				"A red slaad implanted a pellet-sized egg in me shortly before I started my adventuring career. If I can't get rid of it in the next two months, the egg will gestate inside me, and a slaad tadpole will burst from my chest, killing me. It will then quickly grow into an adult slaad and kill even more people."
 			],
 			"id": "charoption:idrotf:slaad_host",
-			"category": "Character Creation Option",
+			"category": "feats",
 			"feature_type": "Character Secret",
 			"feature_sections": [],
 			"edition": "2014",
-			"origin": "5etools"
+			"origin": "5etools",
+			"option_group": "Character Creation Option"
 		},
 		{
 			"name": "Spirit Medium",
@@ -2455,11 +2490,12 @@
 				"After a fateful experience, you believe you're aligned with spirits and can serve as a conduit for their insights and goals. You have advantage on any {@skill Arcana} or {@skill Religion} check you make to remember or research information about spirits and the afterlife. Additionally, you begin your adventuring career with a custom-made device for communing with otherworldly forces, perhaps a spirit board, a {@deck tarokka deck|CoS}, an automatic writing planchette, dowsing rods, a cup for tea leaves, or a device of your own design. Add your proficiency bonus to any ability check you make using this type of divining tool."
 			],
 			"id": "charoption:vrgr:spirit_medium",
-			"category": "Character Creation Option",
+			"category": "feats",
 			"feature_type": "Background Feature",
 			"feature_sections": [],
 			"edition": "2014",
-			"origin": "5etools"
+			"origin": "5etools",
+			"option_group": "Character Creation Option"
 		},
 		{
 			"name": "Spy",
@@ -2473,11 +2509,12 @@
 				"My only Harper contact in Ten-Towns is a human named {@creature Beldora|SKT}, who poses as a homeless woman and spends her days gathering information in Bryn Shander."
 			],
 			"id": "charoption:idrotf:spy",
-			"category": "Character Creation Option",
+			"category": "feats",
 			"feature_type": "Character Secret",
 			"feature_sections": [],
 			"edition": "2014",
-			"origin": "5etools"
+			"origin": "5etools",
+			"option_group": "Character Creation Option"
 		},
 		{
 			"name": "Symbiotic Being",
@@ -2597,7 +2634,7 @@
 				}
 			],
 			"id": "charoption:vrgr:symbiotic_being",
-			"category": "Character Creation Option",
+			"category": "feats",
 			"feature_type": "Dark Gift",
 			"feature_sections": [
 				{
@@ -2671,7 +2708,8 @@
 				}
 			],
 			"edition": "2014",
-			"origin": "5etools"
+			"origin": "5etools",
+			"option_group": "Character Creation Option"
 		},
 		{
 			"name": "Touch of Death",
@@ -2749,7 +2787,7 @@
 				}
 			],
 			"id": "charoption:vrgr:touch_of_death",
-			"category": "Character Creation Option",
+			"category": "feats",
 			"feature_type": "Dark Gift",
 			"feature_sections": [
 				{
@@ -2781,7 +2819,8 @@
 				}
 			],
 			"edition": "2014",
-			"origin": "5etools"
+			"origin": "5etools",
+			"option_group": "Character Creation Option"
 		},
 		{
 			"name": "Trauma Survivor",
@@ -2794,11 +2833,12 @@
 				"You survived. Whatever it was, you made it through, and you can help others do the same. People view you as an expert on the traumatic situation you faced—be it a specific sort of violence, illness, or otherwise. You are aware of nonmagical recovery techniques, common resources, and misinformation. You know how to speak to sympathetic doctors, clergy, and local leaders and can convince them to shelter one person (other than yourself) at a modest lifestyle for up to one month."
 			],
 			"id": "charoption:vrgr:trauma_survivor",
-			"category": "Character Creation Option",
+			"category": "feats",
 			"feature_type": "Background Feature",
 			"feature_sections": [],
 			"edition": "2014",
-			"origin": "5etools"
+			"origin": "5etools",
+			"option_group": "Character Creation Option"
 		},
 		{
 			"name": "Traveler",
@@ -2811,11 +2851,12 @@
 				"You come from somewhere else, a place others couldn't begin to understand. Perhaps your home is a unique corner of the Land of the Mists or another world entirely. In any case, you and other travelers have shared experiences. You can find a place to hide, rest, or recuperate among sympathetic trading caravans, itinerant families, or displaced groups, so long as you don't present yourself as a danger. Such groups will hide you from the law or anyone searching for you, though they won't risk their lives for you. Additionally, you can tell whether an object you can see and touch is from your homeland with near perfect accuracy."
 			],
 			"id": "charoption:vrgr:traveler",
-			"category": "Character Creation Option",
+			"category": "feats",
 			"feature_type": "Background Feature",
 			"feature_sections": [],
 			"edition": "2014",
-			"origin": "5etools"
+			"origin": "5etools",
+			"option_group": "Character Creation Option"
 		},
 		{
 			"name": "Underdark Experience",
@@ -2828,11 +2869,12 @@
 				"You are no casual visitor to the Underdark, but instead have spent considerable time there learning its ways. You are familiar with the various races, civilizations, and settlements of the Underdark, as well as its major routes for travel. If you fail an Intelligence check to recall some piece of Underdark lore, you know a source you can consult for the answer unless the DM rules that the lore is unknown."
 			],
 			"id": "charoption:oota:underdark_experience",
-			"category": "Character Creation Option",
+			"category": "feats",
 			"feature_type": "Background Feature",
 			"feature_sections": [],
 			"edition": "2014",
-			"origin": "5etools"
+			"origin": "5etools",
+			"option_group": "Character Creation Option"
 		},
 		{
 			"name": "Unscarred",
@@ -2895,7 +2937,7 @@
 				}
 			],
 			"id": "charoption:mot:unscarred",
-			"category": "Character Creation Option",
+			"category": "feats",
 			"feature_type": "Supernatural Gift",
 			"feature_sections": [
 				{
@@ -2909,7 +2951,8 @@
 				}
 			],
 			"edition": "2014",
-			"origin": "5etools"
+			"origin": "5etools",
+			"option_group": "Character Creation Option"
 		},
 		{
 			"name": "Watchers",
@@ -2990,7 +3033,7 @@
 			],
 			"hasFluffImages": true,
 			"id": "charoption:vrgr:watchers",
-			"category": "Character Creation Option",
+			"category": "feats",
 			"feature_type": "Dark Gift",
 			"feature_sections": [
 				{
@@ -3014,7 +3057,8 @@
 				}
 			],
 			"edition": "2014",
-			"origin": "5etools"
+			"origin": "5etools",
+			"option_group": "Character Creation Option"
 		}
 	]
 }
