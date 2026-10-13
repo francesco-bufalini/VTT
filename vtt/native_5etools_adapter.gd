@@ -73,7 +73,10 @@ static func normalize(document: Dictionary, path: String) -> Dictionary:
 			var identifier := String(data.get("id", name)) if category == "documents" else name
 			if native_category == "charoption":
 				identifier = "charoption_" + identifier
-				data["feature_type"] = ", ".join(data.get("optionType", []))
+				var option_types: PackedStringArray = []
+				for raw_type: Variant in data.get("optionType", []):
+					option_types.append(String(raw_type))
+				data["feature_type"] = ", ".join(option_types)
 				data["charoption"] = true
 			var local_id: String = _slug(identifier, 64)
 			if source_namespace.is_empty() or local_id.is_empty():
