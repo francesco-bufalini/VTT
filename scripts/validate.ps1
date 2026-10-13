@@ -113,6 +113,7 @@ $fastTests = @(
     "test_mobile_main_menu.gd",
     "test_initiative_tracker.gd",
     "test_spell_catalog_smoke.gd",
+    "test_spell_selection_and_multiclass.gd",
     "test_spellcasting_initial_resources.gd",
     "test_spell_catalog_edition_geometry.gd",
     "test_spell_targeting_lifecycle.gd",

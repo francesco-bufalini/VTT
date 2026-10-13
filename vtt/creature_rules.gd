@@ -400,11 +400,9 @@ static func spell_slot_progression(character: Dictionary) -> Dictionary:
 		elif not name.is_empty() and ClassMechanics.hit_die(name, String(cls.get("source", ""))) <= 0:
 			warnings.append("Classe homebrew non calcolabile: " + String(cls.get("name", "")))
 	var caster_level := 0
-	var playable_classes: int = 0
-	for cls: Dictionary in classes:
-		if String(cls.get("name", "")).to_lower() != "mostro":
-			playable_classes += 1
-	var multiclass: bool = playable_classes > 1
+	# Combined progression applies only to multiple Spellcasting classes.
+	# Pact Magic and noncasting classes do not change single-class rounding.
+	var multiclass: bool = contributions.size() > 1
 	for contribution: Dictionary in contributions:
 		var level: int = int(contribution.get("level", 0))
 		match String(contribution.get("kind", "")):

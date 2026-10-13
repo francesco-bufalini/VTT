@@ -50,7 +50,7 @@ func run() -> void:
 			{"name": "Paladin", "level": 3}, {"name": "Fighter", "level": 2}
 		], "rules_version": "2014"
 	})
-	assert(multiclass.slots[1] == 2, "2014 multiclass half casters round down")
+	assert(multiclass.slots[1] == 3, "One Spellcasting class retains its own progression")
 	var warlock: Dictionary = Rules.spell_slot_progression({
 		"classes": [
 			{"name": "Wizard", "level": 1}, {"name": "Warlock", "level": 5}

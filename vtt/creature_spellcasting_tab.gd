@@ -38,6 +38,8 @@ var _pending_granted_cast: Dictionary = {}
 var _cast_button: Button
 var _cast_dialog: ConfirmationDialog
 var _cast_slot_choice: OptionButton
+var _cast_description: RichTextLabel
+var _cast_prompt: Label
 var _pending_cast_spell: Dictionary = {}
 var _manual_origin_spells: Array = []
 var _granted_spell_boxes: VBoxContainer
@@ -517,13 +519,29 @@ func _build_cast_dialog() -> void:
 	add_child(_cast_dialog)
 	var slot_row: HBoxContainer = HBoxContainer.new()
 	slot_row.add_theme_constant_override("separation", 10)
-	_cast_dialog.add_child(slot_row)
+	var body := VBoxContainer.new()
+	body.custom_minimum_size.x = 240
+	body.size_flags_vertical = Control.SIZE_EXPAND_FILL
+	body.add_theme_constant_override("separation", 12)
+	_cast_dialog.add_child(body)
+	_cast_prompt = Label.new()
+	_cast_prompt.size.x = 560
+	_cast_prompt.custom_minimum_size.x = 240
+	_cast_prompt.autowrap_mode = TextServer.AUTOWRAP_WORD_SMART
+	body.add_child(_cast_prompt)
+	_cast_description = RichTextLabel.new()
+	_cast_description.custom_minimum_size = Vector2(0, 160)
+	_cast_description.size_flags_vertical = Control.SIZE_EXPAND_FILL
+	_cast_description.selection_enabled = true
+	_cast_description.mouse_force_pass_scroll_events = false
+	body.add_child(_cast_description)
+	body.add_child(slot_row)
 	var caption: Label = Label.new()
 	caption.text = "Slot:"
 	slot_row.add_child(caption)
 	_cast_slot_choice = OptionButton.new()
 	_cast_slot_choice.size_flags_horizontal = Control.SIZE_EXPAND_FILL
-	_cast_slot_choice.custom_minimum_size.x = 270
+	_cast_slot_choice.custom_minimum_size.x = 180
 	slot_row.add_child(_cast_slot_choice)
 	_cast_dialog.confirmed.connect(_confirm_cast_spell)
 
@@ -562,7 +580,7 @@ func _request_cast_spell() -> void:
 	_cast_dialog.dialog_text = "Lancia %s (livello %d). Scegli quale slot consumare." % [
 		String(spell.get("name", "Incantesimo")), base_level
 	]
-	DialogLayout.popup(_cast_dialog, Vector2i(430, 190))
+	_show_cast_description(spell)
 
 
 func _confirm_cast_spell() -> void:
@@ -631,7 +649,7 @@ func _request_cast_spell_for_grant(spell: Dictionary, grant: Dictionary) -> void
 	if _cast_slot_choice.item_count > 1:
 		_cast_slot_choice.select(1)
 	_cast_dialog.dialog_text = "Lancia %s. Gli slot disponibili possono provenire da qualsiasi classe." % String(spell.get("name", ""))
-	DialogLayout.popup(_cast_dialog, Vector2i(430, 190))
+	_show_cast_description(spell)
 
 
 func _set_search_visible(show: bool) -> void:
@@ -1617,7 +1635,7 @@ func _cast_granted_spell(grant: Dictionary) -> void:
 			_cast_slot_choice.add_item("Consuma 1 · " + String(tracker.get("name", "tracker")), -1)
 			_cast_slot_choice.select(1)
 		_cast_dialog.dialog_text = "Lancia " + String(spell.get("name", "")) + ". Scegli il consumo."
-		DialogLayout.popup(_cast_dialog, Vector2i(480, 190))
+		_show_cast_description(spell)
 	else:
 		_dispatch_cast(spell, -1, grant)
 
@@ -1698,8 +1716,11 @@ func _view_tracker(delta: int, id: String, maximum: int) -> void:
 
 func _view_edit_class(member: Dictionary) -> void:
 	var options: Array[Dictionary] = []
+	var class_ids: Array[String] = []
 	for spell: Dictionary in _catalog:
 		if ClassSelections.eligible(spell, member):
+			class_ids.append(String(spell.id))
+		if not bool(spell.get("internal_grant", false)) and int(spell.get("level", 0)) <= int(member.max_level):
 			options.append(spell)
 	var selected: Array[String] = ClassSelections.selected(_record, _prepared, member.id)
 	var book: Array[String] = []
@@ -1707,7 +1728,7 @@ func _view_edit_class(member: Dictionary) -> void:
 		if ClassSelections.eligible(SpellCatalog.catalog_spell(_entry_id(entry)), member):
 			book.append(_entry_id(entry))
 	_selection_dialog.choose(options, {"title": "Scegli · " + String(member.name),
-		"selected": selected, "book": book, "book_mode": member.book, "limit": member.limit, "cantrips": member.cantrips,
+		"selected": selected, "class_spell_ids": class_ids, "book": book, "book_mode": member.book, "limit": member.limit, "cantrips": member.cantrips,
 		"details": "Origine: " + String(member.name) + " [" + String(member.source) + "] · lista di classe fino al %d° livello" % int(member.max_level)},
 		func(result: Dictionary) -> void:
 			_prepared = ClassSelections.apply(_record, _prepared, member, result.selected)
@@ -1751,11 +1772,17 @@ func _view_edit_manual() -> void:
 			var origins: Array = ClassSelections.sources(entry, _record)
 			if origins.is_empty() or "manual" in origins:
 				selected.append(_entry_id(entry))
+	var class_ids: Array[String] = []
+	var members := ClassSelections.classes(_record)
 	var options: Array[Dictionary] = []
 	for spell: Dictionary in _catalog:
 		if not bool(spell.get("internal_grant", false)):
 			options.append(spell)
-	_selection_dialog.choose(options, {"title": "Altri incantesimi disponibili", "selected": selected,
+			for member: Dictionary in members:
+				if ClassSelections.eligible(spell, member):
+					class_ids.append(String(spell.id))
+					break
+	_selection_dialog.choose(options, {"title": "Altri incantesimi disponibili", "selected": selected, "class_spell_ids": class_ids, "class_only_default": false,
 		"details": "Selezione manuale: incantesimi senza attribuzione a una classe. Nessun limite automatico."},
 		func(result: Dictionary) -> void:
 			for entry: Variant in _prepared:
@@ -1764,3 +1791,19 @@ func _view_edit_manual() -> void:
 			_prepared = ClassSelections.apply(_record, _prepared, {"id": "manual"}, result.selected)
 			_publish()
 	)
+
+func _show_cast_description(spell: Dictionary) -> void:
+	# Keep the prompt in the same container as description and slot choice.
+	# AcceptDialog's internal label otherwise overlaps the custom body.
+	_cast_prompt.text = _cast_dialog.dialog_text
+	_cast_dialog.dialog_text = ""
+	_cast_dialog.get_label().hide()
+	var description := String(spell.get("description", "")).strip_edges()
+	if description.is_empty():
+		description = String(SpellCatalog.catalog_spell(String(spell.get("id", ""))).get("description", "")).strip_edges()
+	_cast_description.text = description if not description.is_empty() else "Descrizione non disponibile."
+	_cast_description.scroll_to_line(0)
+	_cast_dialog.wrap_controls = true
+	_cast_dialog.child_controls_changed()
+	_cast_dialog.reset_size()
+	_cast_dialog.popup_centered_clamped(Vector2i(620, 420), 0.92)

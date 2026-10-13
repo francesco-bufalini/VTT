@@ -12,6 +12,9 @@ var _limit := -1
 var _cantrips := -1
 var _search: LineEdit
 var _level: OptionButton
+var _sort: OptionButton
+var _class_only: CheckBox
+var _class_spell_ids: Dictionary = {}
 var _rows: VBoxContainer
 var _count: Label
 var _details: Label
@@ -62,6 +65,18 @@ func _ready() -> void:
 		_level.add_item("%d° livello" % i, i)
 	_level.item_selected.connect(func(_index: int) -> void: _rebuild())
 	filters.add_child(_level)
+	var sorting := HFlowContainer.new()
+	layout.add_child(sorting)
+	_class_only = CheckBox.new()
+	_class_only.text = "Incantesimi di classe"
+	_class_only.toggled.connect(func(_on: bool) -> void: _display_limit = 120; _rebuild())
+	sorting.add_child(_class_only)
+	_sort = OptionButton.new()
+	_sort.add_item("Nome A–Z", 0)
+	_sort.add_item("Livello, poi nome", 1)
+	_sort.add_item("Livello decrescente, poi nome", 2)
+	_sort.item_selected.connect(func(_index: int) -> void: _rebuild())
+	sorting.add_child(_sort)
 	var guide := Label.new()
 	guide.size.x = 460
 	guide.custom_minimum_size.x = 140
@@ -84,7 +99,12 @@ func _ready() -> void:
 
 func choose(options: Array[Dictionary], config: Dictionary, callback: Callable) -> void:
 	_display_limit = 120
-	_catalog = options
+	_catalog = options.duplicate()
+	_class_spell_ids.clear()
+	for id: Variant in config.get("class_spell_ids", []):
+		_class_spell_ids[String(id)] = true
+	_class_only.visible = config.has("class_spell_ids")
+	_class_only.set_pressed_no_signal(config.has("class_spell_ids") and bool(config.get("class_only_default", true)))
 	_context = config.duplicate(true)
 	_change = callback
 	_wizard = bool(config.get("book_mode", false))
@@ -113,10 +133,20 @@ func _rebuild() -> void:
 	for child: Node in _rows.get_children():
 		_rows.remove_child(child)
 		child.queue_free()
+	_catalog.sort_custom(func(a: Dictionary, b: Dictionary) -> bool:
+		var left := int(a.get("level", 0))
+		var right := int(b.get("level", 0))
+		if _sort.get_selected_id() != 0 and left != right:
+			return left < right if _sort.get_selected_id() == 1 else left > right
+		var names := String(a.get("name", "")).naturalnocasecmp_to(String(b.get("name", "")))
+		return names < 0 if names != 0 else String(a.get("id", "")) < String(b.get("id", ""))
+	)
 	var displayed := 0
 	var matches := 0
 	for spell: Dictionary in _catalog:
 		var id: String = String(spell.get("id", ""))
+		if _class_only.visible and _class_only.button_pressed and not _class_spell_ids.has(id):
+			continue
 		var level: int = int(spell.get("level", 0))
 		if _level.get_selected_id() != 100 and level != _level.get_selected_id():
 			continue
