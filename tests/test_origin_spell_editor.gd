@@ -3,6 +3,8 @@ extends SceneTree
 const Editor = preload("res://vtt/creature_origin_spells_tab.gd")
 const Structured = preload("res://vtt/structured_origin_spells_5etools.gd")
 const Grants = preload("res://vtt/origin_spell_grants.gd")
+const PlayerStore = preload("res://vtt/player_character_store.gd")
+const MasterStore = preload("res://vtt/master_creature_store.gd")
 
 class Listener extends Node:
 	var updates: Array = []
@@ -40,6 +42,21 @@ func run() -> void:
 		and int((scion_choices[0] as Dictionary).get("count", 0)) == 1
 		and (scion_choices[0] as Dictionary).get("spell_options", []).size() == 5,
 		"Scion must select ONE cantrip from five fixed alternatives")
+	var source: Dictionary = {
+		"kind": "character", "class": "Wizard", "level": 2,
+		"origin_spell_configs": {"origin:spell": {
+			"payment_mode": "slot", "spellcasting_ability": "wis"}},
+		"spell_slots_manual": true,
+		"spell_slots_automatic": false
+	}
+	var normalized: Dictionary = PlayerStore.new().normalize_character(source)
+	assert(normalized.get("origin_spell_configs", {}).has("origin:spell")
+		and bool(normalized.get("spell_slots_manual", false)),
+		"Character reload must preserve per-origin casting ability and slot policy")
+	var master: Dictionary = MasterStore.new().normalize_creature(source)
+	assert(master.get("origin_spell_configs", {}).has("origin:spell")
+		and bool(master.get("spell_slots_manual", false)),
+		"Monster reload must preserve per-origin casting config too")
 	var listener := Listener.new()
 	root.add_child(listener)
 	var tab := Editor.new()
