@@ -761,7 +761,8 @@ func _build_ui() -> void:
 		Callable(self, "_on_spellcasting_updated"),
 		Callable(self, "_set_status"),
 		Callable(self, "_on_spellcasting_cast_requested"),
-		Callable(self, "_on_formula_bonus_requested")
+		Callable(self, "_on_formula_bonus_requested"),
+		Callable(self, "_open_origin_spell_editor")
 	)
 	var inventory_tab := _add_sheet_tab(_tabs, "Inventario")
 	_inventory_ui = InventoryTab.new()
@@ -2195,6 +2196,12 @@ func _select_details_editor(index: int) -> void:
 	call_deferred("_update_stats_column_heights")
 
 
+func _open_origin_spell_editor() -> void:
+	_tabs.current_tab = 1
+	_select_details_editor(6)
+	call_deferred("_scroll_statistics_to_top")
+
+
 func _on_origin_spells_updated(grants: Array, configs: Dictionary) -> void:
 	if _loading:
 		return
@@ -3547,7 +3554,7 @@ func _on_spellcasting_updated(values: Dictionary) -> void:
 	)
 	for key: String in [
 		"spells", "prepared_spells", "spellbook_spells",
-		"spell_slots_total", "spell_slots_spent",
+		"spell_slots_total", "spell_slots_spent", "spell_slots_manual", "spell_slots_automatic",
 		"pact_slots_total", "pact_slots_spent", "pact_slot_level",
 		"spell_slots_visible", "pact_slots_visible",
 		"spellcasting_ability", "concentrating_spell_id", "conditions", "origin_spell_grants", "origin_spell_configs"
@@ -3561,6 +3568,8 @@ func _on_spellcasting_updated(values: Dictionary) -> void:
 	_replace_current_record(record)
 	if _spellcasting_ui != null:
 		_spellcasting_ui.call("refresh_spell_state", record)
+	if values.has("origin_spell_grants") or values.has("origin_spell_configs"):
+		_origin_spells_stale = true
 	if concentration_changed:
 		_refresh_conditions(record)
 		_sync_token_health(record)
