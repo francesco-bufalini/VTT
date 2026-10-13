@@ -60,12 +60,12 @@ func _run() -> void:
 	var document_trait_found := false
 	var manual_origin_trait_found := false
 	var physical_item_remains := false
-	for trait: Dictionary in filtered_traits:
-		if "Note segrete" in String(trait.get("name", "")):
+	for feature: Dictionary in filtered_traits:
+		if "Note segrete" in String(feature.get("name", "")):
 			document_trait_found = true
-		if "Origine di vecchio salvataggio" in String(trait.get("name", "")):
+		if "Origine di vecchio salvataggio" in String(feature.get("name", "")):
 			manual_origin_trait_found = true
-		if "Test Blade" in String(trait.get("name", "")):
+		if "Test Blade" in String(feature.get("name", "")):
 			physical_item_remains = true
 	assert(not document_trait_found and not manual_origin_trait_found and physical_item_remains,
 		"Documents and legacy custom origins are not traits; regular items remain visible")
