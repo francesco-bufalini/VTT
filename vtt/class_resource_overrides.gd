@@ -57,7 +57,7 @@ static func evaluate_max(raw: Variant, record: Dictionary, class_level: int, min
 
 
 static func for_class(
-	class_name: String, class_source: String, class_level: int,
+	klass_name: String, class_source: String, class_level: int,
 	subclass_name: String, record: Dictionary
 ) -> Array[Dictionary]:
 	_load()
@@ -68,7 +68,7 @@ static func for_class(
 		if not raw_class is Dictionary:
 			continue
 		var group: Dictionary = raw_class as Dictionary
-		if String(group.get("class", "")).nocasecmp_to(class_name) != 0:
+		if String(group.get("class", "")).nocasecmp_to(klass_name) != 0:
 			continue
 		if String(group.get("source", "")).nocasecmp_to(class_source) != 0:
 			continue
