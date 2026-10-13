@@ -2249,21 +2249,28 @@ func _on_formula_roll_requested(key: String) -> void:
 
 
 func _roll_with_optional_dice(label: String, expression: String, key: String, record: Dictionary) -> void:
+	var roller: Node = board_root.get_node_or_null("DiceRollerChat")
+	if roller == null or not roller.has_method("roll_expression_from_sheet"):
+		_set_status("Il roller della chat non è disponibile.")
+		return
 	var applicable: Array[Dictionary] = DiceBonuses.applicable(record, key)
+	# Bardic Inspiration is offered *after* the d20 has been rolled, as in
+	# the rules. The base result remains visible in the shared roller chat.
+	var base_result: int = int(roller.call(
+		"roll_expression_from_sheet", label, expression,
+		find_linked_token_for_creature(_selected_id)
+	))
 	if applicable.is_empty():
-		var roller: Node = board_root.get_node_or_null("DiceRollerChat")
-		if roller != null and roller.has_method("roll_expression_from_sheet"):
-			roller.call("roll_expression_from_sheet", label, expression, find_linked_token_for_creature(_selected_id))
 		return
 	var dialog := ConfirmationDialog.new()
-	dialog.title = "Bonus con dadi · " + label
-	dialog.ok_button_text = "Lancia"
-	dialog.cancel_button_text = "Annulla"
+	dialog.title = "Bonus al risultato · " + label
+	dialog.ok_button_text = "Applica bonus"
+	dialog.cancel_button_text = "Conserva il risultato"
 	add_child(dialog)
 	var panel := VBoxContainer.new()
 	dialog.add_child(panel)
 	var heading := Label.new()
-	heading.text = "Seleziona quali dadi aggiungere al tiro. Gli effetti monouso saranno consumati."
+	heading.text = "Risultato del tiro: %d. Scegli i dadi da aggiungere adesso; quelli monouso saranno consumati." % base_result
 	heading.autowrap_mode = TextServer.AUTOWRAP_WORD_SMART
 	panel.add_child(heading)
 	var choices: Array[Dictionary] = []
@@ -2273,32 +2280,40 @@ func _roll_with_optional_dice(label: String, expression: String, key: String, re
 			String(entry.get("origin_name", "Bonus")), String(entry.get("dice", ""))]
 		panel.add_child(checkbox)
 		choices.append({"check": checkbox, "entry": entry.duplicate(true)})
-	dialog.confirmed.connect(_confirm_roll_with_dice.bind(label, expression, choices, dialog))
+	dialog.confirmed.connect(_confirm_roll_with_dice.bind(label, base_result, key, choices, dialog))
 	dialog.canceled.connect(func() -> void: dialog.queue_free())
-	dialog.popup_centered(Vector2i(480, maxi(160, 90 + choices.size() * 38)))
+	dialog.popup_centered(Vector2i(480, maxi(175, 110 + choices.size() * 38)))
 
 
-func _confirm_roll_with_dice(label: String, expression: String, choices: Array[Dictionary], dialog: ConfirmationDialog) -> void:
+func _confirm_roll_with_dice(label: String, base_result: int, key: String, choices: Array[Dictionary], dialog: ConfirmationDialog) -> void:
 	var suffix := ""
 	var consumed: Dictionary = {}
+	var available: Dictionary = {}
+	for current: Dictionary in DiceBonuses.applicable(_current(), key):
+		available[String(current.get("id", ""))] = true
 	for option: Dictionary in choices:
 		var check: CheckBox = option.get("check")
 		if check == null or not check.button_pressed:
 			continue
 		var entry: Dictionary = option.get("entry", {})
+		var id: String = String(entry.get("id", ""))
 		var dice: String = String(entry.get("dice", ""))
-		if not DiceBonuses.valid_dice(dice):
+		if not available.has(id) or not DiceBonuses.valid_dice(dice):
 			continue
 		suffix += "+" + dice
 		var spell_id: String = String(entry.get("consumes_spell", ""))
 		if not spell_id.is_empty():
 			consumed[spell_id] = true
 	var roller: Node = board_root.get_node_or_null("DiceRollerChat")
-	if roller == null or not roller.has_method("roll_expression_from_sheet"):
-		_set_status("Il roller non è disponibile: nessun dado bonus consumato.")
+	if roller == null or not roller.has_method("roll_expression_from_sheet") or suffix.is_empty():
 		dialog.queue_free()
 		return
-	roller.call("roll_expression_from_sheet", label, expression + suffix, find_linked_token_for_creature(_selected_id))
+	# A second roller event displays the *combined* result and its extra
+	# dice explicitly; the original d20 roll remains inspectable.
+	var total_expression: String = str(base_result) + suffix
+	roller.call("roll_expression_from_sheet",
+		label + " · risultato con bonus", total_expression,
+		find_linked_token_for_creature(_selected_id))
 	for spell_id: String in consumed.keys():
 		_remove_active_spell("spell:" + spell_id)
 	dialog.queue_free()
