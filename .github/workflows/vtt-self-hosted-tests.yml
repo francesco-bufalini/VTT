@@ -8,6 +8,7 @@ on:
       - feature/campaign-hub
       - feature/structured-creature-sheets
       - feature/tokens-lazy-load
+      - feature/origin-spells-dice-bonuses
     paths:
       - "**/*.gd"
       - "**/*.tscn"
