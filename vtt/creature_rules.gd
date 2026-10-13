@@ -336,7 +336,7 @@ static func spellcasting_limits(character: Dictionary) -> Dictionary:
 			var modifier: int = int(supplied.get(stat, ability_modifier(
 				int(abilities.get(stat, 10))
 			)))
-			var effective: int = lvl if name in ["cleric", "druid"] else ceili(float(lvl) / 2.0)
+			var effective: int = lvl if name in ["cleric", "druid", "wizard"] else ceili(float(lvl) / 2.0)
 			var capacity: int = maxi(1, effective + modifier)
 			if name == "paladin" and lvl < 2:
 				capacity = 0

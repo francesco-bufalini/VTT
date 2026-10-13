@@ -36,7 +36,32 @@
             6
           ]
         }
-      ]
+      ],
+      "spellcasting": {
+        "cantripProgression": [
+          2,
+          2,
+          2,
+          2,
+          2,
+          2,
+          2,
+          2,
+          2,
+          3,
+          3,
+          3,
+          3,
+          4,
+          4,
+          4,
+          4,
+          4,
+          4,
+          4
+        ],
+        "preparedSpells": "<$level$> / 2 + <$int_mod$>"
+      }
     },
     {
       "name": "Barbarian",
@@ -97,7 +122,8 @@
             4
           ]
         }
-      ]
+      ],
+      "spellcasting": {}
     },
     {
       "name": "Barbarian",
@@ -185,25 +211,143 @@
             4
           ]
         }
-      ]
+      ],
+      "spellcasting": {}
     },
     {
       "name": "Bard",
       "source": "PHB",
       "hit_die": 8,
-      "columns": []
+      "columns": [],
+      "spellcasting": {
+        "cantripProgression": [
+          2,
+          2,
+          2,
+          3,
+          3,
+          3,
+          3,
+          3,
+          3,
+          4,
+          4,
+          4,
+          4,
+          4,
+          4,
+          4,
+          4,
+          4,
+          4,
+          4
+        ],
+        "spellsKnownProgression": [
+          4,
+          5,
+          6,
+          7,
+          8,
+          9,
+          10,
+          11,
+          12,
+          14,
+          15,
+          15,
+          16,
+          18,
+          19,
+          19,
+          20,
+          22,
+          22,
+          22
+        ]
+      }
     },
     {
       "name": "Bard",
       "source": "XPHB",
       "hit_die": 8,
-      "columns": []
+      "columns": [],
+      "spellcasting": {
+        "cantripProgression": [
+          2,
+          2,
+          2,
+          3,
+          3,
+          3,
+          3,
+          3,
+          3,
+          4,
+          4,
+          4,
+          4,
+          4,
+          4,
+          4,
+          4,
+          4,
+          4,
+          4
+        ],
+        "preparedSpellsProgression": [
+          4,
+          5,
+          6,
+          7,
+          9,
+          10,
+          11,
+          12,
+          14,
+          15,
+          16,
+          16,
+          17,
+          17,
+          18,
+          18,
+          19,
+          20,
+          21,
+          22
+        ]
+      }
     },
     {
       "name": "Cleric",
       "source": "PHB",
       "hit_die": 8,
-      "columns": []
+      "columns": [],
+      "spellcasting": {
+        "cantripProgression": [
+          3,
+          3,
+          3,
+          4,
+          4,
+          4,
+          4,
+          4,
+          4,
+          5,
+          5,
+          5,
+          5,
+          5,
+          5,
+          5,
+          5,
+          5,
+          5,
+          5
+        ],
+        "preparedSpells": "<$level$> + <$wis_mod$>"
+      }
     },
     {
       "name": "Cleric",
@@ -237,13 +381,84 @@
             4
           ]
         }
-      ]
+      ],
+      "spellcasting": {
+        "cantripProgression": [
+          3,
+          3,
+          3,
+          4,
+          4,
+          4,
+          4,
+          4,
+          4,
+          5,
+          5,
+          5,
+          5,
+          5,
+          5,
+          5,
+          5,
+          5,
+          5,
+          5
+        ],
+        "preparedSpellsProgression": [
+          4,
+          5,
+          6,
+          7,
+          9,
+          10,
+          11,
+          12,
+          14,
+          15,
+          16,
+          16,
+          17,
+          17,
+          18,
+          18,
+          19,
+          20,
+          21,
+          22
+        ]
+      }
     },
     {
       "name": "Druid",
       "source": "PHB",
       "hit_die": 8,
-      "columns": []
+      "columns": [],
+      "spellcasting": {
+        "cantripProgression": [
+          2,
+          2,
+          2,
+          3,
+          3,
+          3,
+          3,
+          3,
+          3,
+          4,
+          4,
+          4,
+          4,
+          4,
+          4,
+          4,
+          4,
+          4,
+          4,
+          4
+        ],
+        "preparedSpells": "<$level$> + <$wis_mod$>"
+      }
     },
     {
       "name": "Druid",
@@ -277,13 +492,60 @@
             4
           ]
         }
-      ]
+      ],
+      "spellcasting": {
+        "cantripProgression": [
+          2,
+          2,
+          2,
+          3,
+          3,
+          3,
+          3,
+          3,
+          3,
+          4,
+          4,
+          4,
+          4,
+          4,
+          4,
+          4,
+          4,
+          4,
+          4,
+          4
+        ],
+        "preparedSpellsProgression": [
+          4,
+          5,
+          6,
+          7,
+          9,
+          10,
+          11,
+          12,
+          14,
+          15,
+          16,
+          16,
+          17,
+          17,
+          18,
+          18,
+          19,
+          20,
+          21,
+          22
+        ]
+      }
     },
     {
       "name": "Fighter",
       "source": "PHB",
       "hit_die": 10,
-      "columns": []
+      "columns": [],
+      "spellcasting": {}
     },
     {
       "name": "Fighter",
@@ -344,7 +606,8 @@
             6
           ]
         }
-      ]
+      ],
+      "spellcasting": {}
     },
     {
       "name": "Monk",
@@ -378,7 +641,8 @@
             20
           ]
         }
-      ]
+      ],
+      "spellcasting": {}
     },
     {
       "name": "Monk",
@@ -412,13 +676,17 @@
             20
           ]
         }
-      ]
+      ],
+      "spellcasting": {}
     },
     {
       "name": "Paladin",
       "source": "PHB",
       "hit_die": 10,
-      "columns": []
+      "columns": [],
+      "spellcasting": {
+        "preparedSpells": "<$level$> / 2 + <$cha_mod$>"
+      }
     },
     {
       "name": "Paladin",
@@ -452,13 +720,61 @@
             3
           ]
         }
-      ]
+      ],
+      "spellcasting": {
+        "preparedSpellsProgression": [
+          2,
+          3,
+          4,
+          5,
+          6,
+          6,
+          7,
+          7,
+          9,
+          9,
+          10,
+          10,
+          11,
+          11,
+          12,
+          12,
+          14,
+          14,
+          15,
+          15
+        ]
+      }
     },
     {
       "name": "Ranger",
       "source": "PHB",
       "hit_die": 10,
-      "columns": []
+      "columns": [],
+      "spellcasting": {
+        "spellsKnownProgression": [
+          0,
+          2,
+          3,
+          3,
+          4,
+          4,
+          5,
+          5,
+          6,
+          6,
+          7,
+          7,
+          8,
+          8,
+          9,
+          9,
+          10,
+          10,
+          11,
+          11
+        ]
+      }
     },
     {
       "name": "Ranger",
@@ -492,19 +808,45 @@
             6
           ]
         }
-      ]
+      ],
+      "spellcasting": {
+        "preparedSpellsProgression": [
+          2,
+          3,
+          4,
+          5,
+          6,
+          6,
+          7,
+          7,
+          9,
+          9,
+          10,
+          10,
+          11,
+          11,
+          12,
+          12,
+          14,
+          14,
+          15,
+          15
+        ]
+      }
     },
     {
       "name": "Rogue",
       "source": "PHB",
       "hit_die": 8,
-      "columns": []
+      "columns": [],
+      "spellcasting": {}
     },
     {
       "name": "Rogue",
       "source": "XPHB",
       "hit_die": 8,
-      "columns": []
+      "columns": [],
+      "spellcasting": {}
     },
     {
       "name": "Sorcerer",
@@ -538,7 +880,53 @@
             20
           ]
         }
-      ]
+      ],
+      "spellcasting": {
+        "cantripProgression": [
+          4,
+          4,
+          4,
+          5,
+          5,
+          5,
+          5,
+          5,
+          5,
+          6,
+          6,
+          6,
+          6,
+          6,
+          6,
+          6,
+          6,
+          6,
+          6,
+          6
+        ],
+        "spellsKnownProgression": [
+          2,
+          3,
+          4,
+          5,
+          6,
+          7,
+          8,
+          9,
+          10,
+          11,
+          12,
+          12,
+          13,
+          13,
+          14,
+          14,
+          15,
+          15,
+          15,
+          15
+        ]
+      }
     },
     {
       "name": "Sorcerer",
@@ -572,31 +960,284 @@
             20
           ]
         }
-      ]
+      ],
+      "spellcasting": {
+        "cantripProgression": [
+          4,
+          4,
+          4,
+          5,
+          5,
+          5,
+          5,
+          5,
+          5,
+          6,
+          6,
+          6,
+          6,
+          6,
+          6,
+          6,
+          6,
+          6,
+          6,
+          6
+        ],
+        "preparedSpellsProgression": [
+          2,
+          4,
+          6,
+          7,
+          9,
+          10,
+          11,
+          12,
+          14,
+          15,
+          16,
+          16,
+          17,
+          17,
+          18,
+          18,
+          19,
+          20,
+          21,
+          22
+        ]
+      }
     },
     {
       "name": "Warlock",
       "source": "PHB",
       "hit_die": 8,
-      "columns": []
+      "columns": [],
+      "spellcasting": {
+        "cantripProgression": [
+          2,
+          2,
+          2,
+          3,
+          3,
+          3,
+          3,
+          3,
+          3,
+          4,
+          4,
+          4,
+          4,
+          4,
+          4,
+          4,
+          4,
+          4,
+          4,
+          4
+        ],
+        "spellsKnownProgression": [
+          2,
+          3,
+          4,
+          5,
+          6,
+          7,
+          8,
+          9,
+          10,
+          10,
+          11,
+          11,
+          12,
+          12,
+          13,
+          13,
+          14,
+          14,
+          15,
+          15
+        ]
+      }
     },
     {
       "name": "Warlock",
       "source": "XPHB",
       "hit_die": 8,
-      "columns": []
+      "columns": [],
+      "spellcasting": {
+        "cantripProgression": [
+          2,
+          2,
+          2,
+          3,
+          3,
+          3,
+          3,
+          3,
+          3,
+          4,
+          4,
+          4,
+          4,
+          4,
+          4,
+          4,
+          4,
+          4,
+          4,
+          4
+        ],
+        "preparedSpellsProgression": [
+          2,
+          3,
+          4,
+          5,
+          6,
+          7,
+          8,
+          9,
+          10,
+          10,
+          11,
+          11,
+          12,
+          12,
+          13,
+          13,
+          14,
+          14,
+          15,
+          15
+        ]
+      }
     },
     {
       "name": "Wizard",
       "source": "PHB",
       "hit_die": 6,
-      "columns": []
+      "columns": [],
+      "spellcasting": {
+        "cantripProgression": [
+          3,
+          3,
+          3,
+          4,
+          4,
+          4,
+          4,
+          4,
+          4,
+          5,
+          5,
+          5,
+          5,
+          5,
+          5,
+          5,
+          5,
+          5,
+          5,
+          5
+        ],
+        "preparedSpells": "<$level$> + <$int_mod$>",
+        "spellsKnownProgressionFixed": [
+          6,
+          2,
+          2,
+          2,
+          2,
+          2,
+          2,
+          2,
+          2,
+          2,
+          2,
+          2,
+          2,
+          2,
+          2,
+          2,
+          2,
+          2,
+          2,
+          2
+        ]
+      }
     },
     {
       "name": "Wizard",
       "source": "XPHB",
       "hit_die": 6,
-      "columns": []
+      "columns": [],
+      "spellcasting": {
+        "cantripProgression": [
+          3,
+          3,
+          3,
+          4,
+          4,
+          4,
+          4,
+          4,
+          4,
+          5,
+          5,
+          5,
+          5,
+          5,
+          5,
+          5,
+          5,
+          5,
+          5,
+          5
+        ],
+        "preparedSpellsProgression": [
+          4,
+          5,
+          6,
+          7,
+          9,
+          10,
+          11,
+          12,
+          14,
+          15,
+          16,
+          16,
+          17,
+          18,
+          19,
+          21,
+          22,
+          23,
+          24,
+          25
+        ],
+        "spellsKnownProgressionFixed": [
+          6,
+          2,
+          2,
+          2,
+          2,
+          2,
+          2,
+          2,
+          2,
+          2,
+          2,
+          2,
+          2,
+          2,
+          2,
+          2,
+          2,
+          2,
+          2,
+          2
+        ]
+      }
     }
   ]
 }

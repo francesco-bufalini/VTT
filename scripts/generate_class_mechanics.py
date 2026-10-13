@@ -140,6 +140,9 @@ def build(root):
             rows.append({
                 "name": cls["name"], "source": cls["source"], "hit_die": hd,
                 "columns": columns,
+                "spellcasting": {key: cls[key] for key in (
+                    "cantripProgression", "spellsKnownProgression", "preparedSpells",
+                    "preparedSpellsProgression", "spellsKnownProgressionFixed") if key in cls},
             })
     return {"meta": {
         "source": "5etools-src/data/class/class-*.json",
@@ -148,10 +151,16 @@ def build(root):
 
 
 def main():
-    if len(sys.argv) != 2:
+    if len(sys.argv) not in (2, 3):
         raise SystemExit("Usage: generate_class_mechanics.py /path/to/5etools-src")
     result = build(Path(sys.argv[1]))
     output = ROOT / "vtt/data/class_mechanics_5etools.json"
+    if len(sys.argv) == 3 and sys.argv[2] == "--spellcasting-only":
+        previous = json.loads(output.read_text(encoding="utf-8"))
+        spellcasting = {(row["name"], row["source"]): row.get("spellcasting", {}) for row in result["classes"]}
+        for row in previous["classes"]:
+            row["spellcasting"] = spellcasting.get((row["name"], row["source"]), {})
+        result = previous
     output.write_text(json.dumps(result, ensure_ascii=False, indent=2) + "\n", encoding="utf-8")
     print(f"Wrote {output}: {len(result['classes'])} classes")
 
