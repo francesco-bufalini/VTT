@@ -21,21 +21,7 @@ func setup(campaign_manager: Node) -> void:
 
 
 func scope_id() -> String:
-	if _campaign_manager != null and is_instance_valid(_campaign_manager):
-		var campaign_group_id: String = String(
-			_campaign_manager.get("selected_campaign_group_id")
-		).strip_edges()
-		if not campaign_group_id.is_empty():
-			return "campaign_" + _safe_id(campaign_group_id)
-
-		var active_campaign_id: String = String(
-			_campaign_manager.get("active_campaign_id")
-		).strip_edges()
-		if not active_campaign_id.is_empty():
-			return "scenario_" + _safe_id(active_campaign_id)
-
-	return "default"
-
+	return CreatureOwner.storage_scope_id(_campaign_manager)
 
 func list_characters(include_unowned: bool = false) -> Array[Dictionary]:
 	var path: String = _file_path()
@@ -412,15 +398,3 @@ func normalize_character(value: Dictionary) -> Dictionary:
 
 func _file_path() -> String:
 	return ROOT_DIR.path_join(scope_id() + ".json")
-
-
-func _safe_id(value: String) -> String:
-	var result := ""
-	for character: String in value.to_lower():
-		if character.is_valid_identifier() or character.is_valid_int():
-			result += character
-		elif character in ["-", "_"]:
-			result += character
-		else:
-			result += "_"
-	return result
