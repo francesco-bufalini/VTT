@@ -136,6 +136,7 @@ func create_character() -> Dictionary:
 		"resource_trackers": [],
 		"origin_spell_grants": [],
 		"origin_spell_configs": {},
+		"spellcasting_section_abilities": {},
 		"dice_bonuses": [],
 		"active_spell_context": {},
 		"conditions": [],

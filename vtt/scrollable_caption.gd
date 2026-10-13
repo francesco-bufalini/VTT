@@ -131,5 +131,5 @@ func _exit_tree() -> void:
 
 
 func _install_later(window: Node) -> void:
-	if is_instance_valid(window):
+	if is_instance_valid(window) and window.is_inside_tree() and window.get_viewport() != null:
 		install(window)

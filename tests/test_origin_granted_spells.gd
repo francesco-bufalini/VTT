@@ -63,6 +63,23 @@ func run() -> void:
 	assert(not external.is_empty(), "An origin can grant a standard catalog spell")
 	assert(Granted.remaining(custom, external) > 0,
 		"An origin can spend a tracker awarded by another origin")
+	custom["origin_spell_configs"] = {"test-grant": {"payment_mode": "tracker", "tracker_cost": 2}}
+	custom["origin_spell_grants"].append({
+		"id": "second-grant", "origin_id": "custom:test", "origin_name": "Gift",
+		"spell_id": "bless", "tracker_id": String(inspiration.get("tracker_id", "")),
+		"payment_mode": "tracker", "tracker_cost": 1
+	})
+	var costly: Dictionary = _find(Granted.all_grants(custom), "cure_wounds")
+	var cheap: Dictionary = _find(Granted.all_grants(custom), "bless")
+	assert(Granted.tracker_cost(costly) == 2 and Granted.tracker_cost(cheap) == 1,
+		"Spells of the same origin and tracker keep independent consumption costs")
+	var tracker_id: String = String(costly.get("tracker_id", ""))
+	var original_spent: int = int(custom.get("resource_tracker_spent", {}).get(tracker_id, 0))
+	assert(Granted.remaining(custom, costly) == 1)
+	assert(Granted.spend(custom, costly))
+	assert(int(custom.get("resource_tracker_spent", {}).get(tracker_id, 0)) == original_spent + 2
+		and Granted.remaining(custom, costly) == 0,
+		"Casting a two-charge spell spends two units atomically")
 	assert(Dice.valid_dice("2d8") and Dice.valid_dice("1d8+2")
 		and not Dice.valid_dice("cha_mod") and not Dice.valid_dice("d20")
 		and not Dice.valid_dice("101d6"))

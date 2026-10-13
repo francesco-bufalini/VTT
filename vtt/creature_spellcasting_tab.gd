@@ -1015,7 +1015,10 @@ static func _ability_for_class(name: String) -> String:
 
 func _cast_ability_for_spell(spell: Dictionary) -> String:
 	if not _view_selected_class.is_empty():
-		return _ability_for_class(String(_view_selected_class.get("name", "")))
+		return _section_ability(String(_view_selected_class.get("id", "")), [_ability_for_class(String(_view_selected_class.get("name", "")))])
+	var explicit: String = String(spell.get("caster_spellcasting_ability", ""))
+	if explicit in CASTING_ABILITIES and not explicit.is_empty():
+		return explicit
 	var spell_classes: Array = spell.get("classes", [])
 	if _casting_class_picker != null and _casting_class_picker.selected > 0:
 		var selected: String = String(_casting_class_picker.get_item_metadata(_casting_class_picker.selected))
@@ -1093,17 +1096,53 @@ func _refresh_casting_summary() -> void:
 
 func _section_casting_stats(ability: String) -> String:
 	var normalized: String = ability.to_lower().strip_edges()
-	if normalized not in CASTING_ABILITIES:
-		return "Ability: — · Spell attack: — · DC: —" if _gui_language == "en" else "Caratteristica: — · Tiro per colpire: — · CD: —"
-	var names := {"str": "FOR", "dex": "DES", "con": "COS",
-		"int": "INT", "wis": "SAG", "cha": "CAR"}
-	var label: String = normalized.to_upper() if _gui_language == "en" else String(names.get(normalized, normalized))
+	if normalized not in CASTING_ABILITIES or normalized.is_empty():
+		return "Modifier: — · DC: —" if _gui_language == "en" else "Modificatore: — · CD: —"
 	var proficiency: int = Bonuses.value(_record, "proficiency")
-	var modifier: int = Bonuses.value(_record, "ability_mod:" + normalized)
-	var attack: int = proficiency + modifier + Bonuses.bonus(_record, "spell_attack")
-	var dc: int = 8 + proficiency + modifier + Bonuses.bonus(_record, "spell_dc")
-	var template: String = "Ability: %s · Spell attack: %+d · DC: %d" if _gui_language == "en" else "Caratteristica: %s · Tiro per colpire: %+d · CD: %d"
-	return template % [label, attack, dc]
+	var modifier: int = proficiency + Bonuses.value(_record, "ability_mod:" + normalized)
+	var dc: int = 8 + modifier + Bonuses.bonus(_record, "spell_dc")
+	return ("Modifier: %+d · DC: %d" if _gui_language == "en" else "Modificatore: %+d · CD: %d") % [modifier, dc]
+
+
+func _section_ability(section_id: String, suggested: Array[String] = []) -> String:
+	var persisted: Dictionary = _record.get("spellcasting_section_abilities", {})
+	var saved: String = String(persisted.get(section_id, "")).to_lower()
+	if saved in CASTING_ABILITIES and not saved.is_empty():
+		return saved
+	for ability: String in suggested:
+		if ability.to_lower() in CASTING_ABILITIES and not ability.is_empty():
+			return ability.to_lower()
+	var fallback: String = _spellcasting_ability(_record)
+	if fallback in CASTING_ABILITIES and not fallback.is_empty():
+		return fallback
+	var best: String = "int"
+	for ability: String in ["str", "dex", "con", "int", "wis", "cha"]:
+		if Bonuses.value(_record, "ability_mod:" + ability) > Bonuses.value(_record, "ability_mod:" + best):
+			best = ability
+	return best
+
+
+func _change_section_ability(section_id: String, ability: String) -> void:
+	if _loading or ability not in CASTING_ABILITIES or ability.is_empty():
+		return
+	var sections: Dictionary = _record.get("spellcasting_section_abilities", {}).duplicate(true)
+	sections[section_id] = ability
+	_record["spellcasting_section_abilities"] = sections
+	_refresh_view()
+	if _on_change.is_valid():
+		_on_change.call({"spellcasting_section_abilities": sections.duplicate(true)})
+
+
+func _slot_max_edit(level: int) -> void:
+	_open_resource_settings()
+	var formula: Control = _pact_formula_value if level == 0 else _slot_formula_values.get(level)
+	if formula != null:
+		formula.call_deferred("open_editor")
+
+
+func _slot_max_bonus(level: int) -> void:
+	_request_formula_bonus("pact_slot" if level == 0 else "slot:" + str(level))
+
 
 func update_character_context(record: Dictionary) -> void:
 	_refresh_casting_summary()
@@ -1567,7 +1606,7 @@ func _refresh_granted_spell_boxes() -> void:
 			var cost_label: String = (
 				"1 slot disponibile" if String(grant.get("payment_mode", "")) == "slot"
 				else "senza limite" if remaining < 0
-				else "1 utilizzo · %s · %d rimasti" % [String(tracker.get("name", "tracker non disponibile")), remaining]
+				else "%d utilizzi · %s · %d lanci rimasti" % [OriginSpells.tracker_cost(grant), String(tracker.get("name", "tracker non disponibile")), remaining]
 			)
 			var cast := Button.new()
 			var details := VBoxContainer.new()
@@ -1601,7 +1640,9 @@ func _cast_granted_spell(grant: Dictionary) -> void:
 	var spell: Dictionary = SpellCatalog.catalog_spell(String(grant.get("spell_id", "")))
 	if spell.is_empty():
 		return
-	spell["caster_spellcasting_ability"] = String(grant.get("spellcasting_ability", ""))
+	grant = grant.duplicate(true)
+	grant["spellcasting_ability"] = _section_ability("origin:" + String(grant.get("origin_id", "")), [String(grant.get("spellcasting_ability", ""))])
+	spell["caster_spellcasting_ability"] = String(grant["spellcasting_ability"])
 	if String(grant.get("payment_mode", "")) == "slot" and int(spell.get("level", 0)) > 0:
 		_request_cast_spell_for_grant(spell, grant)
 	elif String(grant.get("payment_mode", "")) == "tracker":
@@ -1611,7 +1652,7 @@ func _cast_granted_spell(grant: Dictionary) -> void:
 		_cast_slot_choice.add_item("Nessun consumo (eccezione manuale)", 0)
 		if OriginSpells.remaining(record, grant) > 0:
 			var tracker: Dictionary = OriginSpells.tracker_for(record, grant)
-			_cast_slot_choice.add_item("Consuma 1 · " + String(tracker.get("name", "tracker")), -1)
+			_cast_slot_choice.add_item("Consuma %d · %s" % [OriginSpells.tracker_cost(grant), String(tracker.get("name", "tracker"))], -1)
 			_cast_slot_choice.select(1)
 		_cast_dialog.dialog_text = "Lancia " + String(spell.get("name", "")) + ". Scegli il consumo."
 		_show_cast_description(spell)
@@ -1654,11 +1695,17 @@ func _build_view() -> void:
 		"edit_origin": Callable(self, "_view_edit_origin"), "choose_origin": Callable(self, "_view_choose_origin"),
 		"resource_settings": Callable(self, "_open_resource_settings"), "manual": Callable(self, "_view_edit_manual"),
 		"casting_stats": Callable(self, "_section_casting_stats"), "class_ability": Callable(self, "_ability_for_class"),
-		"default_ability": Callable(self, "_current_default_ability")})
+		"default_ability": Callable(self, "_current_default_ability"),
+		"section_ability": Callable(self, "_section_ability"), "set_section_ability": Callable(self, "_change_section_ability"),
+		"slot_max_edit": Callable(self, "_slot_max_edit"), "slot_max_bonus": Callable(self, "_slot_max_bonus"),
+		"gui_language": Callable(self, "_current_gui_language")})
 	_selection_dialog = SelectionDialog.new()
 	add_child(_selection_dialog)
 	preload("res://vtt/scrollable_caption.gd").install(self)
 	_refresh_view()
+
+func _current_gui_language() -> String:
+	return _gui_language
 
 func _current_default_ability() -> String:
 	return _spellcasting_ability(_record)
@@ -1681,6 +1728,8 @@ func _refresh_view() -> void:
 func _view_cast_class(spell: Dictionary, member: Dictionary) -> void:
 	_view_selected_spell = spell.duplicate(true)
 	_view_selected_class = member.duplicate(true) if String(member.get("id", "")) != "manual" else {}
+	var section_id: String = String(member.get("id", "manual"))
+	_view_selected_spell["caster_spellcasting_ability"] = _section_ability(section_id, [_ability_for_class(String(member.get("name", "")))])
 	_refresh_casting_summary()
 	_request_cast_spell()
 

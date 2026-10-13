@@ -22,6 +22,7 @@ var _origin_picker: OptionButton
 var _spell_picker: OptionButton
 var _spell_search: LineEdit
 var _tracker_picker: OptionButton
+var _tracker_cost_picker: SpinBox
 var _payment_picker: OptionButton
 var _ability_picker: OptionButton
 var _catalog: Array[Dictionary] = []
@@ -111,6 +112,12 @@ func setup(on_change: Callable) -> void:
 	_tracker_picker = OptionButton.new()
 	_tracker_picker.size_flags_horizontal = Control.SIZE_EXPAND_FILL
 	form.add_child(_tracker_picker)
+	_tracker_cost_picker = SpinBox.new()
+	_tracker_cost_picker.min_value = 1
+	_tracker_cost_picker.max_value = 99
+	_tracker_cost_picker.value = 1
+	_tracker_cost_picker.tooltip_text = "Utilizzi consumati da questo singolo incantesimo"
+	form.add_child(_tracker_cost_picker)
 	var add := Button.new()
 	add.text = "+ Concedi incantesimo"
 	add.pressed.connect(_add)
@@ -288,6 +295,12 @@ func _draw_grant(grant: Dictionary, record: Dictionary) -> void:
 	ability.select(maxi(0, ABILITIES.find(String(grant.get("spellcasting_ability", "")))))
 
 	settings.add_child(ability)
+	var cost := SpinBox.new()
+	cost.min_value = 1
+	cost.max_value = 99
+	cost.value = OriginSpells.tracker_cost(grant)
+	cost.tooltip_text = "Utilizzi del tracker consumati da questo incantesimo"
+	settings.add_child(cost)
 	var trackers := OptionButton.new()
 	trackers.add_item("Senza tracker")
 	trackers.set_item_metadata(0, "")
@@ -303,16 +316,21 @@ func _draw_grant(grant: Dictionary, record: Dictionary) -> void:
 	panel.add_child(trackers)
 	pay.disabled = int(spell.get("level", 0)) == 0 and not bool(spell.get("internal_grant", false))
 	var summary := Label.new()
-	summary.text = "Consumo: " + String({"free": "nessuno", "slot": "1 slot disponibile", "tracker": "1 utilizzo"}.get(String(grant.get("payment_mode", "free")), "nessuno")) + (" · " + trackers.get_item_text(select) if String(grant.get("payment_mode", "")) == "tracker" else "")
+	summary.text = "Consumo: " + String({"free": "nessuno", "slot": "1 slot disponibile", "tracker": "%d utilizzi" % OriginSpells.tracker_cost(grant)}.get(String(grant.get("payment_mode", "free")), "nessuno")) + (" · " + trackers.get_item_text(select) if String(grant.get("payment_mode", "")) == "tracker" else "")
 	panel.add_child(summary)
 	EditorUI.edit_fields(panel, panel, [settings, trackers], String(spell.get("name", "incantesimo")), func() -> void:
 		_configs[id] = {"payment_mode": ["free", "slot", "tracker"][pay.selected],
 			"spellcasting_ability": ABILITIES[ability.selected],
+			"tracker_cost": int(cost.value),
 			"tracker_id": String(trackers.get_item_metadata(trackers.selected)) if pay.selected == 2 else ""}
 		_publish()
 	)
-	pay.item_selected.connect(func(index: int) -> void: trackers.visible = index == 2)
+	pay.item_selected.connect(func(index: int) -> void:
+		trackers.visible = index == 2
+		cost.visible = index == 2
+	)
 	trackers.visible = String(grant.get("payment_mode", "")) == "tracker"
+	cost.visible = trackers.visible
 	var separator := HSeparator.new()
 	panel.add_child(separator)
 
@@ -433,6 +451,7 @@ func _choose(choice: Dictionary) -> void:
 	var declared_ability: String = String(choice.get("spellcasting_ability", ""))
 	_ability_picker.select(maxi(0, ABILITIES.find(declared_ability)))
 	_payment_picker.select(2 if not String(choice.get("tracker_id", "")).is_empty() else 0)
+	_tracker_cost_picker.value = maxi(1, int(choice.get("tracker_cost", 1)))
 	for i: int in range(_tracker_picker.item_count):
 		if String(_tracker_picker.get_item_metadata(i)) == String(choice.get("tracker_id", "")):
 			_tracker_picker.select(i)
@@ -473,6 +492,7 @@ func _add_single(publish_now: bool = true) -> void:
 		"tracker_id": String(_tracker_picker.get_item_metadata(_tracker_picker.selected)) if _payment_picker.selected == 2 and int(spell.get("level", 0)) > 0 else "",
 		"payment_mode": ["free", "slot", "tracker"][_payment_picker.selected] if int(spell.get("level", 0)) > 0 else "free",
 		"spellcasting_ability": ABILITIES[_ability_picker.selected],
+		"tracker_cost": int(_tracker_cost_picker.value),
 		"source_choice_id": choice_id
 	})
 	if publish_now:
@@ -519,6 +539,7 @@ func _update_payment_fields() -> void:
 	var cantrip: bool = _spell_picker.selected >= 0 and _spell_picker.selected < _shown.size() and int(_shown[_spell_picker.selected].get("level", 0)) == 0
 	_payment_picker.disabled = cantrip
 	_payment_picker.get_parent().visible = not cantrip
+	_tracker_cost_picker.visible = not cantrip and _payment_picker.selected == 2
 	if cantrip:
 		_payment_picker.select(0)
 	_tracker_picker.visible = not cantrip and _payment_picker.selected == 2

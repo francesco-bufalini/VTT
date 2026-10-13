@@ -15,6 +15,10 @@ func class_ability(_class_name: String) -> String:
 	return "int"
 func default_ability() -> String:
 	return "int"
+func gui_language() -> String:
+	return "it"
+func section_ability(_section: String, _suggested: Array[String]) -> String:
+	return "int"
 func run() -> void:
 	root.gui_embed_subwindows = true
 	root.content_scale_mode = Window.CONTENT_SCALE_MODE_CANVAS_ITEMS
@@ -41,8 +45,9 @@ func run() -> void:
 		"spell_slots_total":[0,4,3,3,2,0,0,0,0,0], "spell_slots_spent":[],
 		"pact_slots_total":0, "pact_slot_level":1}
 	var actions := {"record":current, "casting_stats":casting_stats,
-		"class_ability":class_ability, "default_ability":default_ability}
-	for action: String in ["manual","resource_settings","edit_class","cast_class","cast_origin","slot","pact","tracker","restore","edit_origin","choose_origin"]:
+		"class_ability":class_ability, "default_ability":default_ability,
+		"section_ability":section_ability, "gui_language":gui_language}
+	for action: String in ["set_section_ability","slot_max_edit","slot_max_bonus","manual","resource_settings","edit_class","cast_class","cast_origin","slot","pact","tracker","restore","edit_origin","choose_origin"]:
 		actions[action] = ignore
 	view.setup(actions)
 	view.refresh()
@@ -54,8 +59,15 @@ func run() -> void:
 	var pair: HBoxContainer = view._rows[0]
 	var left: VBoxContainer = pair.get_child(0).get_child(0)
 	var right: VBoxContainer = pair.get_child(1).get_child(0)
-	var spell_list: ScrollContainer = left.find_children("*", "ScrollContainer", true, false)[0]
-	assert(spell_list.custom_minimum_size.y > 180, "Hidden spells use the spare height beside slots")
+	var spell_list: ScrollContainer
+	for candidate: Node in left.find_children("*", "ScrollContainer", true, false):
+		if candidate.has_meta("spell_list"):
+			spell_list = candidate as ScrollContainer
+			break
+	assert(spell_list != null, "The prepared powers list has its own ScrollContainer")
+	assert(spell_list.vertical_scroll_mode == ScrollContainer.SCROLL_MODE_AUTO
+		and spell_list.get_child(0) is VBoxContainer,
+		"Prepared spell list remains vertically scrollable after resizing")
 	assert(absf(pair.get_child(0).size.y - pair.get_child(1).size.y) < 1, "Paired panels fill the same row")
 	assert(left.get_combined_minimum_size().y >= right.get_combined_minimum_size().y - 2,
 		"No unused row height while spells still need scrolling")

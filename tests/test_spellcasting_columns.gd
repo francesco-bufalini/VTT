@@ -30,12 +30,11 @@ func run() -> void:
 	tab.load_record(record)
 	assert(tab._view._rows.size() >= 2)
 	assert(tab._view.find_children("Class_*", "VBoxContainer", true, false).size() == 3)
-	var class_stats: Array[String] = []
-	for stat: Node in tab._view.find_children("CastingStatistics", "Label", true, false):
-		class_stats.append((stat as Label).text)
-	assert(class_stats.any(func(value: String) -> bool: return "INT" in value)
-		and class_stats.any(func(value: String) -> bool: return "CAR" in value),
-		"Multiclass spell sections show independent caster characteristics")
+	var class_abilities: Array[String] = []
+	for picker: Node in tab._view.find_children("CastingAbility", "OptionButton", true, false):
+		class_abilities.append(String((picker as OptionButton).get_selected_metadata()))
+	assert("int" in class_abilities and "cha" in class_abilities,
+		"Multiclass sections have independent selectable casting abilities")
 	assert(tab._spell_summary.get_parent() == tab._drop_concentration_button.get_parent()
 		and tab._spell_summary.get_index() + 1 == tab._drop_concentration_button.get_index(),
 		"Stop concentration is directly beside the current spell")
@@ -43,6 +42,17 @@ func run() -> void:
 		tab._spell_ability_choice.get_parent().get_parent().name == "LegacySpellControls",
 		"Global casting settings no longer appear in the sheet")
 	var wizard: Dictionary = Choices.classes(record)[0]
+	assert(tab._section_ability(wizard.id, ["int"]) == "int")
+	tab._change_section_ability(wizard.id, "cha")
+	assert(tab._section_ability(wizard.id, ["int"]) == "cha"
+		and sink.values.get("spellcasting_section_abilities", {}).get(wizard.id) == "cha",
+		"Each class has one editable, persisted casting ability")
+	assert(tab._section_ability("origin:shadow", ["wis", "", "int"]) == "wis",
+		"An origin with conflicting grants has exactly one inferred ability")
+	tab._change_section_ability("origin:shadow", "cha")
+	assert(tab._section_ability("origin:shadow", ["wis", "int"]) == "cha",
+		"A single origin selection supersedes conflicting per-spell suggestions")
+	assert("Modifier:" in tab._section_casting_stats("int") or "Modificatore:" in tab._section_casting_stats("int"))
 	tab._view_edit_class(wizard)
 	assert(tab._selection_dialog.visible and not tab._selection_dialog._details.visible)
 	await process_frame
@@ -131,6 +141,30 @@ func run() -> void:
 		if label.is_visible_in_tree() and not label.text.is_empty():
 			assert(label.size.x > 10, "Every caption and counter has a usable width")
 	assert(tab._view._rows[0].size.y < 650, "Slot headings must not wrap into a tall column of letters")
+	var conflict: Dictionary = tab._view_record()
+	conflict["proficiency_origins"] = [{"id": "custom:example", "name": "Example", "group": "custom"}]
+	conflict["origin_spell_grants"] = [
+		{"id": "one", "origin_id": "custom:example", "origin_name": "Example",
+			"spell_id": "bless", "payment_mode": "free", "spellcasting_ability": "wis"},
+		{"id": "two", "origin_id": "custom:example", "origin_name": "Example",
+			"spell_id": "cure_wounds", "payment_mode": "free", "spellcasting_ability": ""}
+	]
+	tab.refresh_spell_state(conflict)
+	var matching_origin: int = 0
+	for section_row: HBoxContainer in tab._view._rows:
+		var left_section: VBoxContainer = section_row.get_child(0).get_child(0)
+		if left_section.get_child_count() == 0 or not left_section.get_child(0) is HBoxContainer:
+			continue
+		var header: HBoxContainer = left_section.get_child(0)
+		if header.get_child_count() == 0 or not header.get_child(0) is Label:
+			continue
+		if "Origine · Example" not in (header.get_child(0) as Label).text:
+			continue
+		matching_origin += 1
+		assert(left_section.find_children("CastingAbility", "OptionButton", true, false).size() == 1
+			and left_section.find_children("CastingStatistics", "Label", true, false).size() == 1,
+			"Conflicting granted spells still produce exactly one ability selector/statistics line")
+	assert(matching_origin == 1, "Two powers from one origin share one editable section")
 	if DisplayServer.get_name() != "headless":
 		await RenderingServer.frame_post_draw
 		root.get_texture().get_image().save_png("user://spellcasting_columns_review.png")

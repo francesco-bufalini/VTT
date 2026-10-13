@@ -38,11 +38,6 @@ func refresh() -> void:
 	var slot_header := HBoxContainer.new()
 	pair[1].add_child(slot_header)
 	_heading(slot_header, "Slot · Classi / Patto")
-	var settings := Button.new()
-	settings.text = "⚙"
-	settings.tooltip_text = "Modifica i massimi base e i bonus degli slot"
-	settings.pressed.connect(_actions.resource_settings)
-	slot_header.add_child(settings)
 	var members: Array[Dictionary] = Choices.classes(record)
 	var prepared: Array = record.get("prepared_spells", [])
 	for member: Dictionary in members:
@@ -60,7 +55,7 @@ func refresh() -> void:
 			unassigned.append(item)
 	if not unassigned.is_empty():
 		_heading(pair[0], "Altri incantesimi disponibili")
-		_casting_statistics(pair[0], String(_actions.default_ability.call()))
+		_casting_statistics(pair[0], "manual", [String(_actions.default_ability.call())])
 		var manual_list: VBoxContainer = _list(pair[0], unassigned.size())
 		for spell: Dictionary in unassigned:
 			_spell_button(manual_list, _definition(spell), {}, {})
@@ -98,19 +93,12 @@ func refresh() -> void:
 		edit.tooltip_text = "Scegli o modifica gli incantesimi di questa origine"
 		edit.pressed.connect(_actions.edit_origin.bind(sid))
 		heading.add_child(edit)
-		var abilities: Array[String] = []
+		var suggested: Array[String] = []
 		for grant: Dictionary in group.grants:
-			var grant_ability: String = String(grant.get("spellcasting_ability", ""))
-			if grant_ability not in abilities:
-				abilities.append(grant_ability)
+			suggested.append(String(grant.get("spellcasting_ability", "")))
 		for choice: Dictionary in group.choices:
-			var choice_ability: String = String(choice.get("spellcasting_ability", ""))
-			if choice_ability not in abilities:
-				abilities.append(choice_ability)
-		if abilities.is_empty():
-			abilities.append("")
-		for ability: String in abilities:
-			_casting_statistics(pair[0], ability)
+			suggested.append(String(choice.get("spellcasting_ability", "")))
+		_casting_statistics(pair[0], "origin:" + sid, suggested)
 		var list: VBoxContainer = _list(pair[0], group.grants.size())
 		var seen: Dictionary = {}
 		for grant: Dictionary in group.grants:
@@ -179,21 +167,38 @@ func _heading(parent: Node, text: String) -> void:
 	var label: Label = _label(parent, text)
 	label.add_theme_font_size_override("font_size", 17)
 
-func _casting_statistics(parent: Node, ability: String) -> void:
-	var label: Label = _label(parent, String(_actions.casting_stats.call(ability)))
+func _casting_statistics(parent: Node, section_id: String, suggested: Array[String]) -> void:
+	var ability: String = String(_actions.section_ability.call(section_id, suggested))
+	var row := HBoxContainer.new()
+	row.add_theme_constant_override("separation", 5)
+	parent.add_child(row)
+	var picker := OptionButton.new()
+	picker.name = "CastingAbility"
+	picker.fit_to_longest_item = false
+	picker.custom_minimum_size.x = 70
+	var english: bool = String(_actions.gui_language.call()) == "en"
+	for key: String in ["str", "dex", "con", "int", "wis", "cha"]:
+		picker.add_item(({"str": "STR", "dex": "DEX", "con": "CON", "int": "INT", "wis": "WIS", "cha": "CHA"} if english else {"str": "FOR", "dex": "DES", "con": "COS", "int": "INT", "wis": "SAG", "cha": "CAR"})[key])
+		picker.set_item_metadata(picker.item_count - 1, key)
+		if key == ability:
+			picker.select(picker.item_count - 1)
+	picker.tooltip_text = "This section's spellcasting ability" if english else "Caratteristica da incantatore di questa sezione"
+	picker.item_selected.connect(func(index: int) -> void:
+		_actions.set_section_ability.call(section_id, String(picker.get_item_metadata(index)))
+	)
+	row.add_child(picker)
+	var label: Label = _label(row, String(_actions.casting_stats.call(ability)))
 	label.name = "CastingStatistics"
 	label.add_theme_font_size_override("font_size", 13)
 	label.add_theme_color_override("font_color", Color(0.75, 0.85, 0.91))
-	if ability.is_empty():
-		label.tooltip_text = "Questa origine non specifica una caratteristica da incantatore."
-
 
 func _list(parent: Node, count: int) -> VBoxContainer:
 	var scroll := ScrollContainer.new()
 	scroll.custom_minimum_size.y = 48.0
 	scroll.set_meta("spell_list", true)
 	scroll.horizontal_scroll_mode = ScrollContainer.SCROLL_MODE_DISABLED
-	scroll.mouse_force_pass_scroll_events = true
+	scroll.vertical_scroll_mode = ScrollContainer.SCROLL_MODE_AUTO
+	scroll.mouse_force_pass_scroll_events = false
 	parent.add_child(scroll)
 	var list := VBoxContainer.new()
 	list.size_flags_horizontal = Control.SIZE_EXPAND_FILL
@@ -229,7 +234,7 @@ func _class_section(parent: Node, record: Dictionary, member: Dictionary, prepar
 	choose.text = "Scegli"
 	choose.pressed.connect(_actions.edit_class.bind(member))
 	header.add_child(choose)
-	_casting_statistics(section, String(_actions.class_ability.call(String(member.name))))
+	_casting_statistics(section, String(member.id), [String(_actions.class_ability.call(String(member.name)))])
 	var list: VBoxContainer = _list(section, selected.size())
 	if selected.is_empty():
 		_label(list, "Nessun incantesimo selezionato")
@@ -248,6 +253,11 @@ func _spell_button(parent: Node, spell: Dictionary, member: Dictionary, grant: D
 	button.clip_text = true
 	button.size_flags_horizontal = Control.SIZE_EXPAND_FILL
 	button.tooltip_text = String(spell.get("description", ""))
+	if not grant.is_empty() and String(grant.get("payment_mode", "")) == "tracker":
+		var cost: int = Grants.tracker_cost(grant)
+		var english: bool = String(_actions.gui_language.call()) == "en"
+		button.text += " · %d %s" % [cost, "uses" if english else "utilizzi"]
+		button.tooltip_text += ("\n\nTracker cost: %d uses per cast" if english else "\n\nConsumo: %d utilizzi del tracker per lancio") % cost
 	if grant.is_empty():
 		button.pressed.connect(_actions.cast_class.bind(spell, member))
 	else:
@@ -276,29 +286,30 @@ func _slots(parent: Node, record: Dictionary) -> void:
 		var spent: Array = record.get("spell_slots_spent", [])
 		var maximum: int = maxi(0, Bonuses.add(record, "slot:" + str(level), int(totals[level]) if totals.size() > level else 0))
 		var used: int = int(spent[level]) if spent.size() > level else 0
-		_counter(grid, maxi(0, maximum - used), maximum, _actions.slot.bind(level))
+		_counter(grid, maxi(0, maximum - used), maximum, _actions.slot.bind(level), level, record)
 		var pact_max: int = maxi(0, Bonuses.add(record, "pact_slot", int(record.get("pact_slots_total", 0))))
 		if level == int(record.get("pact_slot_level", 1)):
-			_counter(grid, maxi(0, pact_max - int(record.get("pact_slots_spent", 0))), pact_max, _actions.pact)
+			_counter(grid, maxi(0, pact_max - int(record.get("pact_slots_spent", 0))), pact_max, _actions.pact, 0, record)
 		else:
-			_counter(grid, 0, 0, _actions.pact)
+			_counter(grid, 0, 0, _actions.pact, 0, record)
 	var restore := Button.new()
 	restore.text = "Ripristina slot"
 	restore.pressed.connect(_actions.restore)
 	parent.add_child(restore)
 
-func _counter(parent: Node, remaining: int, maximum: int, change: Callable) -> void:
+func _counter(parent: Node, remaining: int, maximum: int, change: Callable, slot_level: int = -1, record: Dictionary = {}) -> void:
 	var counter := HBoxContainer.new()
 	counter.custom_minimum_size.x = 104
 	counter.add_theme_constant_override("separation", 3)
 	parent.add_child(counter)
-	if maximum == 0:
+	if maximum == 0 and slot_level == -1:
 		var empty: Label = _label(counter, "0/0")
 		empty.autowrap_mode = TextServer.AUTOWRAP_OFF
 		empty.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
 		return
-	_compact_button(counter, "−", change.bind(1))
-	_compact_button(counter, "+", change.bind(-1))
+	if maximum > 0:
+		_compact_button(counter, "−", change.bind(1))
+		_compact_button(counter, "+", change.bind(-1))
 	var count: Label = _label(counter, str(remaining))
 	count.custom_minimum_size.x = 18
 	count.size_flags_horizontal = Control.SIZE_SHRINK_BEGIN
@@ -308,6 +319,34 @@ func _counter(parent: Node, remaining: int, maximum: int, change: Callable) -> v
 	total.custom_minimum_size.x = 24
 	total.size_flags_horizontal = Control.SIZE_SHRINK_BEGIN
 	total.autowrap_mode = TextServer.AUTOWRAP_OFF
+	if slot_level >= 0:
+		var key: String = "pact_slot" if slot_level == 0 else "slot:" + str(slot_level)
+		var base: int = int(record.get("pact_slots_total", 0)) if slot_level == 0 else (int(record.get("spell_slots_total", [])[slot_level]) if (record.get("spell_slots_total", []) as Array).size() > slot_level else 0)
+		var bonus: int = Bonuses.bonus(record, key)
+		var formula: String = "Base %d + bonus %+d = %d" % [base, bonus, maximum]
+		var detail: String = Bonuses.description(record, key)
+		total.tooltip_text = formula + ("\n" + detail if not detail.is_empty() else "") + "\nDoppio clic: modifica massimo. Clic destro: bonus e origini."
+		var outline := StyleBoxFlat.new()
+		outline.draw_center = false
+		outline.border_color = Color(0.55, 0.72, 0.81, 0.82)
+		outline.set_border_width_all(1)
+		outline.set_corner_radius_all(5)
+		outline.set_content_margin_all(4)
+		total.add_theme_stylebox_override("normal", outline)
+		total.mouse_filter = Control.MOUSE_FILTER_STOP
+		total.mouse_default_cursor_shape = Control.CURSOR_POINTING_HAND
+		total.gui_input.connect(_slot_max_input.bind(slot_level))
+
+
+func _slot_max_input(event: InputEvent, level: int) -> void:
+	var mouse: InputEventMouseButton = event as InputEventMouseButton
+	if mouse == null or not mouse.pressed:
+		return
+	if mouse.button_index == MOUSE_BUTTON_RIGHT:
+		_actions.slot_max_bonus.call(level)
+	elif mouse.button_index == MOUSE_BUTTON_LEFT and mouse.double_click:
+		_actions.slot_max_edit.call(level)
+
 
 func _compact_button(parent: Node, text: String, action: Callable) -> void:
 	var button := Button.new()
@@ -339,7 +378,7 @@ func _tracker(parent: Node, record: Dictionary, tracker: Dictionary) -> void:
 		for button: Node in row.find_children("*", "Button", true, false):
 			button.disabled = true
 		_label(parent, "Tracker disattivato dall'origine")
-	_label(parent, "Consumo: 1 utilizzo per lancio")
+	_label(parent, "Utilizzi disponibili; il costo per lancio è mostrato su ciascun potere")
 
 
 func _definition(entry: Dictionary) -> Dictionary:

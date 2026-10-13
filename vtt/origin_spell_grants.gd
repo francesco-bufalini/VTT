@@ -127,7 +127,7 @@ static func all_grants(record: Dictionary) -> Array[Dictionary]:
 		var configuration: Variant = configs.get(grant_id, {})
 		if configuration is Dictionary:
 			var settings: Dictionary = configuration
-			for field: String in ["payment_mode", "tracker_id", "spellcasting_ability"]:
+			for field: String in ["payment_mode", "tracker_id", "spellcasting_ability", "tracker_cost"]:
 				if settings.has(field):
 					resolved[field] = settings[field]
 		var mode: String = String(resolved.get("payment_mode", ""))
@@ -170,6 +170,10 @@ static func tracker_for(record: Dictionary, grant: Dictionary) -> Dictionary:
 	return {}
 
 
+static func tracker_cost(grant: Dictionary) -> int:
+	return clampi(int(grant.get("tracker_cost", 1)), 1, 999)
+
+
 static func remaining(record: Dictionary, grant: Dictionary) -> int:
 	var mode: String = String(grant.get("payment_mode", ""))
 	if mode in ["slot", "free"]:
@@ -185,7 +189,7 @@ static func remaining(record: Dictionary, grant: Dictionary) -> int:
 		return 0
 	var cap: int = maxi(0, Bonuses.add(record, "tracker:" + id, int(tracker.get("max", 0))))
 	var used: int = int(record.get("resource_tracker_spent", {}).get(id, 0))
-	return maxi(0, cap - used)
+	return floori(float(maxi(0, cap - used)) / float(tracker_cost(grant)))
 
 
 static func spend(record: Dictionary, grant: Dictionary) -> bool:
@@ -199,7 +203,7 @@ static func spend(record: Dictionary, grant: Dictionary) -> bool:
 	if id.is_empty():
 		return false
 	var spent: Dictionary = record.get("resource_tracker_spent", {}).duplicate(true)
-	spent[id] = int(spent.get(id, 0)) + 1
+	spent[id] = int(spent.get(id, 0)) + tracker_cost(grant)
 	record["resource_tracker_spent"] = spent
 	return true
 
