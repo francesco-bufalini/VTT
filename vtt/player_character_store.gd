@@ -135,6 +135,7 @@ func create_character() -> Dictionary:
 		"resource_tracker_spent": {},
 		"resource_trackers": [],
 		"origin_spell_grants": [],
+		"origin_spell_configs": {},
 		"dice_bonuses": [],
 		"active_spell_context": {},
 		"conditions": [],
@@ -265,6 +266,8 @@ func create_character() -> Dictionary:
 		"pact_slots_spent": 0,
 		"pact_slot_level": 1,
 		"spell_slots_visible": true,
+		"spell_slots_manual": false,
+		"spell_slots_automatic": false,
 		"pact_slots_visible": true,
 		"linked_token_sync_id": "",
 		"linked_token_name": ""
