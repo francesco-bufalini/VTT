@@ -1110,6 +1110,10 @@ func _build_ui() -> void:
 	_high_jump.custom_minimum_size.x = 260
 	_high_jump.add_theme_font_size_override("font_size", 12)
 	jumps.add_child(_high_jump)
+	# Explicit group widths keep nested HFlowContainers from collapsing into
+	# single columns; recompute on resize so both groups can wrap responsively.
+	physics_box.resized.connect(_layout_physics_movement.bind(physics_box, speeds_group, jumps_group))
+	call_deferred("_layout_physics_movement", physics_box, speeds_group, jumps_group)
 	_ac.value_changed.connect(func(_value: float) -> void: _update_defense_display())
 
 	var abilities_panel := PanelContainer.new()
@@ -2521,6 +2525,21 @@ func _spin(parent: Node, minimum: int, maximum: int) -> SpinBox:
 	spin.value_changed.connect(func(_v: float) -> void: _save())
 	parent.add_child(spin)
 	return spin
+
+
+func _layout_physics_movement(physics: Control, speeds: Control, jumps: Control) -> void:
+	if not is_instance_valid(physics) or not is_instance_valid(speeds) or not is_instance_valid(jumps):
+		return
+	var available: float = physics.size.x
+	if available < 1.0:
+		return
+	var speeds_width: float = (590.0 if available >= 1200.0
+		else (350.0 if available >= 650.0 else maxf(110.0, available - 22.0)))
+	var jumps_width: float = 550.0 if available >= 650.0 else maxf(260.0, available - 22.0)
+	if absf(speeds.custom_minimum_size.x - speeds_width) >= 1.0:
+		speeds.custom_minimum_size.x = speeds_width
+	if absf(jumps.custom_minimum_size.x - jumps_width) >= 1.0:
+		jumps.custom_minimum_size.x = jumps_width
 
 
 func _physics_field(parent: Node, caption: String, width: float) -> VBoxContainer:
