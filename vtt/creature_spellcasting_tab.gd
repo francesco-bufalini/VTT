@@ -1080,7 +1080,12 @@ func _refresh_casting_summary() -> void:
 		concentration_name = String(definition.get("name", concentration_id))
 	elif active:
 		concentration_name = "attiva (incantesimo non specificato)"
-	_spell_summary.text = "Concentrazione: " + concentration_name
+	if _gui_language == "en":
+		if concentration_name == "nessuna":
+			concentration_name = "none"
+		elif concentration_name == "attiva (incantesimo non specificato)":
+			concentration_name = "active (spell unspecified)"
+	_spell_summary.text = ("Concentration: " if _gui_language == "en" else "Concentrazione: ") + concentration_name
 	if _drop_concentration_button != null:
 		_drop_concentration_button.visible = active
 		_drop_concentration_button.disabled = not active
@@ -1089,7 +1094,7 @@ func _refresh_casting_summary() -> void:
 func _section_casting_stats(ability: String) -> String:
 	var normalized: String = ability.to_lower().strip_edges()
 	if normalized not in CASTING_ABILITIES:
-		return "Caratteristica: — · Tiro per colpire: — · CD: —"
+		return "Ability: — · Spell attack: — · DC: —" if _gui_language == "en" else "Caratteristica: — · Tiro per colpire: — · CD: —"
 	var names := {"str": "FOR", "dex": "DES", "con": "COS",
 		"int": "INT", "wis": "SAG", "cha": "CAR"}
 	var label: String = normalized.to_upper() if _gui_language == "en" else String(names.get(normalized, normalized))
@@ -1097,7 +1102,8 @@ func _section_casting_stats(ability: String) -> String:
 	var modifier: int = Bonuses.value(_record, "ability_mod:" + normalized)
 	var attack: int = proficiency + modifier + Bonuses.bonus(_record, "spell_attack")
 	var dc: int = 8 + proficiency + modifier + Bonuses.bonus(_record, "spell_dc")
-	return "Caratteristica: %s · Tiro per colpire: %+d · CD: %d" % [label, attack, dc]
+	var template: String = "Ability: %s · Spell attack: %+d · DC: %d" if _gui_language == "en" else "Caratteristica: %s · Tiro per colpire: %+d · CD: %d"
+	return template % [label, attack, dc]
 
 func update_character_context(record: Dictionary) -> void:
 	_refresh_casting_summary()
