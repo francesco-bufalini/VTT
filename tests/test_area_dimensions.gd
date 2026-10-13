@@ -68,6 +68,11 @@ func _run() -> void:
 	var wire_points: PackedVector3Array = wire.surface_get_arrays(0)[Mesh.ARRAY_VERTEX]
 	assert(wire_points.slice(wire_points.size() - 6) == PackedVector3Array([
 		Vector3.ZERO, Vector3(3, 0, 0), Vector3.ZERO, Vector3(0, 3, 0), Vector3.ZERO, Vector3(0, 0, 3)]))
+	var diagonal_end := Vector3(4, 0, 4)
+	var diagonal_geometry: Dictionary = measure._aoe_geometry(Vector3.ZERO, diagonal_end, "sphere")
+	var diagonal_polygon: PackedVector2Array = overlay._shape_polygon(Vector3.ZERO, diagonal_end, "sphere")
+	assert(diagonal_polygon[0].is_equal_approx(overlay._world_point(Vector3.RIGHT * float(diagonal_geometry.radius))),
+		"2D contour and radii must use the same snapped D&D dimensions as the 3D figure")
 	for index: int in range(13):
 		measure.add_aoe(Vector3(index * 2, 1, 0), Vector3(index * 2 + 2, 1, 0), "sphere")
 	var colors: Dictionary = {}

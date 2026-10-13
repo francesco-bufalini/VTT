@@ -81,8 +81,15 @@ func _circle_polygon(center: Vector3, radius: float) -> PackedVector2Array:
 
 func _shape_polygon(start: Vector3, end: Vector3, shape: String, line_width: float = -1.0, style: String = "") -> PackedVector2Array:
 	var radius: float = maxf(Vector2(end.x - start.x, end.z - start.z).length(), 0.01)
+	var geometry: Dictionary = {}
+	if measure.has_method("_aoe_geometry"):
+		geometry = measure.call("_aoe_geometry", start, end, shape, style, line_width)
+		radius = float(geometry.get("radius", geometry.get("reach", radius)))
+		if shape in ["cube", "flat_square"]:
+			var extent: Vector3 = geometry.get("size", Vector3.ONE)
+			radius = extent.x * 0.5
 	if shape in ["sphere", "cylinder"]:
-		return _circle_polygon(start, radius)
+		return _circle_polygon(geometry.get("position", start), radius)
 	if shape in ["cube", "flat_square"]:
 		var square := PackedVector2Array()
 		for offset: Vector3 in [
@@ -91,14 +98,22 @@ func _shape_polygon(start: Vector3, end: Vector3, shape: String, line_width: flo
 		]:
 			square.append(_world_point(start + offset))
 		return square
+	if not geometry.is_empty() and shape in ["cone", "line"]:
+		var basis: Basis = geometry.get("basis", Basis.IDENTITY)
+		var center: Vector3 = geometry.get("position", start)
+		var half_axis: Vector3 = basis * Vector3.UP * float(geometry.get("height", 1.0)) * 0.5
+		start = center - half_axis
+		end = center + half_axis
 	var axis := Vector2(end.x - start.x, end.z - start.z)
 	if axis.length_squared() < 0.00001:
-		return _circle_polygon(start, maxf(line_width, 0.15))
+		return _circle_polygon(start, radius if not geometry.is_empty() else maxf(line_width, 0.15))
 	var perpendicular: Vector2 = Vector2(-axis.y, axis.x).normalized()
 	var half_width: float = line_width * 0.5 if line_width > 0.0 else float(measure.call("_aoe_line_radius", style))
+	if not geometry.is_empty():
+		half_width = float(geometry.get("radius", half_width))
 	if shape == "cone":
 		# D&D cone: the far edge is as wide as the cone's length.
-		half_width = axis.length() * 0.5
+		half_width = float(geometry.get("radius", axis.length() * 0.5))
 		var wedge := PackedVector2Array()
 		wedge.append(_world_point(start))
 		for lateral: float in [-half_width, half_width]:
