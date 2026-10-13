@@ -3361,17 +3361,31 @@ func _show_context_menu(screen_position: Vector2) -> void:
 		)
 		context_token_menu.add_item("Genera token", CONTEXT_CREATE_TOKEN)
 	context_token_menu.add_item("Lista token", CONTEXT_TOKEN_LIST)
+	var token_help: Dictionary = {
+		CONTEXT_DELETE_SELECTED: "Rimuove i token selezionati dalla mappa. Le schede nell'archivio restano disponibili.",
+		CONTEXT_FLYING: "Applica una caduta temporanea ai token selezionati.",
+		CONTEXT_CREATE_TOKEN: "Crea un nuovo token nella posizione del clic.",
+		CONTEXT_REPOSITION_SELECTED: "Sposta la creatura selezionata nella posizione del clic.",
+		CONTEXT_TOKEN_DETAILS: "Modifica l'aspetto e le proprietà del token selezionato."
+	}
+	for item_id: int in token_help:
+		var item_index: int = context_token_menu.get_item_index(item_id)
+		if item_index >= 0:
+			context_token_menu.set_item_tooltip(item_index, String(token_help[item_id]))
 	context_menu.add_submenu_node_item("Token", context_token_menu)
 
+	context_measure_menu.add_separator("Distanze")
 	context_measure_menu.add_item("Righello", CONTEXT_MEASURE_RULER)
-	context_measure_menu.add_separator()
+	context_measure_menu.add_separator("Aree di effetto")
 	context_measure_menu.add_item("AoE: sfera", CONTEXT_AOE_SPHERE)
 	context_measure_menu.add_item("AoE: cubo", CONTEXT_AOE_CUBE)
 	context_measure_menu.add_item("AoE: cono", CONTEXT_AOE_CONE)
 	context_measure_menu.add_item("AoE: linea", CONTEXT_AOE_LINE)
 	context_measure_menu.add_separator()
 	context_measure_menu.add_item("Cancella tutte le AoE", CONTEXT_CLEAR_AOES)
-	context_menu.add_submenu_node_item("Misura", context_measure_menu)
+	context_measure_menu.set_item_tooltip(context_measure_menu.get_item_index(CONTEXT_MEASURE_RULER), "Misura le distanze sulla mappa; premi R per uscire.")
+	context_measure_menu.set_item_tooltip(context_measure_menu.get_item_index(CONTEXT_CLEAR_AOES), "Rimuove tutte le aree di effetto dalla mappa.")
+	context_menu.add_submenu_node_item("Misura e aree", context_measure_menu)
 
 
 	context_game_menu.add_item("Incantesimi", CONTEXT_SPELLS)
@@ -3741,7 +3755,7 @@ func open_camera_settings() -> void:
 	if context_menu.visible:
 		context_menu.hide()
 	_release_mouse()
-	_popup_dialog_safe(camera_settings_dialog, Vector2i(460, 240))
+	_popup_dialog_safe(camera_settings_dialog, Vector2i(500, 330))
 	call_deferred("_release_mouse")
 
 
@@ -3771,7 +3785,8 @@ func _close_camera_settings_to_game() -> void:
 
 func _build_camera_settings_dialog() -> void:
 	camera_settings_dialog = AcceptDialog.new()
-	camera_settings_dialog.title = "Velocità camera"
+	camera_settings_dialog.title = "Movimento e sensibilità camera"
+	camera_settings_dialog.ok_button_text = "Chiudi"
 	$UI.add_child(camera_settings_dialog)
 	camera_settings_dialog.confirmed.connect(_close_camera_settings_to_game)
 	camera_settings_dialog.canceled.connect(_close_camera_settings_to_game)
@@ -3782,6 +3797,10 @@ func _build_camera_settings_dialog() -> void:
 
 	camera_speed_value_label = Label.new()
 	layout.add_child(camera_speed_value_label)
+	var movement_help := Label.new()
+	movement_help.text = "Regola la velocità con cui la camera si sposta sulla mappa."
+	movement_help.autowrap_mode = TextServer.AUTOWRAP_WORD_SMART
+	layout.add_child(movement_help)
 	camera_speed_slider = HSlider.new()
 	camera_speed_slider.min_value = 1.0
 	camera_speed_slider.max_value = 100.0
@@ -3792,6 +3811,10 @@ func _build_camera_settings_dialog() -> void:
 
 	camera_sensitivity_value_label = Label.new()
 	layout.add_child(camera_sensitivity_value_label)
+	var sensitivity_help := Label.new()
+	sensitivity_help.text = "Regola quanto ruota la vista quando muovi il mouse."
+	sensitivity_help.autowrap_mode = TextServer.AUTOWRAP_WORD_SMART
+	layout.add_child(sensitivity_help)
 	camera_sensitivity_slider = HSlider.new()
 	camera_sensitivity_slider.min_value = 0.0002
 	camera_sensitivity_slider.max_value = 0.01

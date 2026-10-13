@@ -22,6 +22,8 @@ var _mute_button: Button
 var _controls_anchor: MarginContainer
 var _title_margin: MarginContainer
 var _title_label: Label
+var _controls_scroll: ScrollContainer
+var _title_eyebrow: Label
 
 var _background_layers: Array[TextureRect] = []
 var _background_paths: Array[String] = []
@@ -199,6 +201,8 @@ func _build_title() -> void:
 	_title_margin.add_child(copy)
 
 	var eyebrow := Label.new()
+	_title_eyebrow = eyebrow
+	eyebrow.autowrap_mode = TextServer.AUTOWRAP_WORD_SMART
 	eyebrow.text = "VIRTUAL TABLETOP  /  CHRONICLES & ADVENTURES"
 	eyebrow.add_theme_font_override("font", MenuStyle.menu_font())
 	eyebrow.add_theme_font_size_override("font_size", 12)
@@ -206,6 +210,7 @@ func _build_title() -> void:
 	copy.add_child(eyebrow)
 
 	_title_label = Label.new()
+	_title_label.autowrap_mode = TextServer.AUTOWRAP_WORD_SMART
 	_title_label.name = "GameTitle"
 	_title_label.text = "Kruphix's Chessboard"
 	_title_label.horizontal_alignment = HORIZONTAL_ALIGNMENT_LEFT
@@ -240,7 +245,13 @@ func _build_bottom_controls() -> void:
 	margin.add_theme_constant_override("margin_right", 22)
 	margin.add_theme_constant_override("margin_top", 14)
 	margin.add_theme_constant_override("margin_bottom", 14)
-	panel.add_child(margin)
+	_controls_scroll = ScrollContainer.new()
+	_controls_scroll.name = "MenuActionsScroll"
+	_controls_scroll.horizontal_scroll_mode = ScrollContainer.SCROLL_MODE_DISABLED
+	_controls_scroll.follow_focus = true
+	panel.add_child(_controls_scroll)
+	_controls_scroll.add_child(margin)
+	margin.size_flags_horizontal = Control.SIZE_EXPAND_FILL
 
 	var layout := VBoxContainer.new()
 	layout.add_theme_constant_override("separation", 7)
@@ -254,6 +265,7 @@ func _build_bottom_controls() -> void:
 	layout.add_child(heading)
 
 	var subtitle := Label.new()
+	subtitle.autowrap_mode = TextServer.AUTOWRAP_WORD_SMART
 	subtitle.text = "Scegli come iniziare la tua avventura"
 	subtitle.add_theme_font_override("font", MenuStyle.menu_font())
 	subtitle.add_theme_font_size_override("font_size", 13)
@@ -264,28 +276,28 @@ func _build_bottom_controls() -> void:
 	separator.modulate = MenuStyle.GOLD
 	layout.add_child(separator)
 
-	var active_button: Button = MenuStyle.menu_button("Campagne attive", Vector2(0, 40))
+	var active_button: Button = MenuStyle.menu_button("Campagne attive", Vector2(0, 48))
 	active_button.size_flags_horizontal = Control.SIZE_EXPAND_FILL
 	active_button.pressed.connect(_open_active_campaigns)
 	layout.add_child(active_button)
 
-	var new_button: Button = MenuStyle.menu_button("Nuova campagna", Vector2(0, 40))
+	var new_button: Button = MenuStyle.menu_button("Nuova campagna", Vector2(0, 48))
 	new_button.size_flags_horizontal = Control.SIZE_EXPAND_FILL
 	new_button.pressed.connect(_request_new_campaign)
 	layout.add_child(new_button)
 
-	var options_button: Button = MenuStyle.menu_button("Opzioni", Vector2(0, 40))
+	var options_button: Button = MenuStyle.menu_button("Opzioni", Vector2(0, 48))
 	options_button.size_flags_horizontal = Control.SIZE_EXPAND_FILL
 	options_button.pressed.connect(_show_options_placeholder)
 	layout.add_child(options_button)
 
-	_mute_button = MenuStyle.menu_button("Muta musica", Vector2(0, 40))
+	_mute_button = MenuStyle.menu_button("Muta musica", Vector2(0, 48))
 	_mute_button.size_flags_horizontal = Control.SIZE_EXPAND_FILL
 	_mute_button.pressed.connect(_toggle_soundtrack_muted)
 	layout.add_child(_mute_button)
 	_refresh_mute_button()
 
-	var exit_button: Button = MenuStyle.menu_button("Esci", Vector2(0, 40))
+	var exit_button: Button = MenuStyle.menu_button("Esci", Vector2(0, 48))
 	exit_button.size_flags_horizontal = Control.SIZE_EXPAND_FILL
 	exit_button.pressed.connect(func() -> void: get_tree().quit())
 	layout.add_child(exit_button)
@@ -306,13 +318,14 @@ func _refresh_responsive_layout() -> void:
 	_title_margin.anchor_bottom = 0.0
 	_title_margin.offset_left = 24.0 if compact else 40.0
 	_title_margin.offset_top = 16.0 if compact else 28.0
-	_title_margin.offset_right = maxf(320.0, minf(size.x - 18.0, 960.0))
+	_title_margin.offset_right = minf(size.x - 18.0, 960.0)
 	_title_margin.offset_bottom = 135.0 if compact else 176.0
-	_title_label.add_theme_font_size_override("font_size", 43 if compact else 60)
+	_title_label.add_theme_font_size_override("font_size", 30 if size.x < 600.0 else (43 if compact else 60))
+	_title_eyebrow.visible = size.y >= 480.0
 
 	_controls_anchor.offset_left = 20.0 if compact else 36.0
 	_controls_anchor.offset_right = minf(size.x - 20.0, 372.0 if compact else 408.0)
-	_controls_anchor.offset_top = -minf(367.0, size.y - 142.0)
+	_controls_anchor.offset_top = -maxf(48.0, minf(420.0, size.y - (150.0 if size.x < 600.0 else 142.0)))
 	_controls_anchor.offset_bottom = -16.0 if compact else -28.0
 
 
@@ -370,9 +383,13 @@ func _build_options_dialog() -> void:
 	_options_dialog.add_child(body)
 
 	var audio_title := Label.new()
-	audio_title.text = "Colonna sonora"
+	audio_title.text = "Audio del menu"
 	audio_title.add_theme_font_size_override("font_size", 21)
 	body.add_child(audio_title)
+	var settings_help := Label.new()
+	settings_help.text = "Le modifiche vengono salvate subito su questo dispositivo."
+	settings_help.autowrap_mode = TextServer.AUTOWRAP_WORD_SMART
+	body.add_child(settings_help)
 
 	_soundtrack_toggle = CheckButton.new()
 	_soundtrack_toggle.text = "Riproduci la colonna sonora nel menu"

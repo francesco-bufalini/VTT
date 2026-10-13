@@ -556,17 +556,31 @@ func _build_ui() -> void:
 	_options_menu = MenuButton.new()
 	_options_menu.text = "Opzioni ▾"
 	var popup := _options_menu.get_popup()
+	popup.add_separator("Contenuti e cataloghi")
 	popup.add_item("Copia il mio ID", 1)
 	popup.add_item("Cartella homebrew", 2)
 	popup.add_item("Cartella integrazioni VTT", 9)
 	popup.add_item("Ricarica homebrew", 3)
-	popup.add_separator()
+	popup.add_separator("Creatura e condivisione")
 	popup.add_item("Associa a token selezionato", 4)
 	popup.add_item("Cedi controllo…", 5)
 	popup.add_item("Ricevi creatura…", 6)
 	popup.add_item("Scarica creatura…", 8)
-	popup.add_separator()
+	popup.add_separator("Eliminazione")
 	popup.add_item("Elimina creatura selezionata…", 7)
+	var option_help: Dictionary = {
+		1: "Copia il tuo identificativo per ricevere il controllo di una creatura.",
+		2: "Apri la cartella dei contenuti personalizzati.",
+		9: "Apri la cartella delle integrazioni che arricchiscono i cataloghi.",
+		3: "Ricarica i cataloghi e le integrazioni locali.",
+		4: "Collega questa scheda al token selezionato sulla mappa.",
+		5: "Trasferisci il controllo e i dati privati della creatura al destinatario scelto.",
+		6: "Importa una creatura da un file di trasferimento.",
+		8: "Esporta la creatura selezionata in un file.",
+		7: "Elimina la scheda selezionata dopo conferma."
+	}
+	for item_id: int in option_help:
+		popup.set_item_tooltip(popup.get_item_index(item_id), String(option_help[item_id]))
 	popup.id_pressed.connect(_on_options_selected)
 	header.add_child(_options_menu)
 	var language_label := Label.new()
@@ -636,10 +650,14 @@ func _build_ui() -> void:
 	_creature_list.tooltip_text = "Le mie creature · clic destro per le azioni"
 	_creature_list_scroll.add_child(_creature_list)
 	_creature_context_menu = PopupMenu.new()
+	_creature_context_menu.add_separator("Scheda e controllo")
 	_creature_context_menu.add_item("Calcola automaticamente…", 2)
+	_creature_context_menu.set_item_tooltip(_creature_context_menu.get_item_index(2), "Mostra un riepilogo prima di ricalcolare i valori derivati dalle origini.")
 	_creature_context_menu.add_item("Cedi controllo…", 4)
-	_creature_context_menu.add_separator()
+	_creature_context_menu.set_item_tooltip(_creature_context_menu.get_item_index(4), "Trasferisci questa scheda e i suoi dati privati al destinatario scelto.")
+	_creature_context_menu.add_separator("Eliminazione")
 	_creature_context_menu.add_item("Elimina creatura…", 3)
+	_creature_context_menu.set_item_tooltip(_creature_context_menu.get_item_index(3), "Elimina la scheda dopo conferma.")
 	_creature_context_menu.id_pressed.connect(_on_creature_context_action)
 	_creature_list.add_child(_creature_context_menu)
 
@@ -1250,6 +1268,7 @@ func _build_ui() -> void:
 	_attacks_description.scroll_active = false
 	_attacks_description.selection_enabled = true
 	FiveToolsText.style(_attacks_description)
+	_attacks_description.scroll_active = false
 	combat_column.add_child(_attacks_description)
 
 	var species_row := HFlowContainer.new()
@@ -1441,6 +1460,7 @@ func _build_ui() -> void:
 	_traits_ui = TraitsTab.new()
 	traits_tab.add_child(_traits_ui)
 	_traits_ui.call("setup")
+	_traits_ui.section_requested.connect(_open_trait_section)
 	_effect_dialog = AcceptDialog.new()
 	_effect_dialog.title = "Dettagli effetto"
 	_effect_dialog.min_size = Vector2i(560, 420)
@@ -2158,6 +2178,12 @@ func _refresh_choice_warnings(record: Dictionary) -> void:
 		"Scelte da completare:\n\n" + "\n\n".join(lines)
 		if not lines.is_empty() else "Scegli una sezione da visualizzare o modificare"
 	)
+
+
+func _open_trait_section(section: int) -> void:
+	_tabs.current_tab = 2
+	_select_details_editor(section)
+	call_deferred("_scroll_origins_to_top")
 
 
 func _select_details_editor(index: int) -> void:

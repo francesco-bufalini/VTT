@@ -154,9 +154,9 @@ func run() -> void:
 		== "⚠ Choices required: Acrobazia")
 	assert(Locale.text_for("PF della forma non disponibili: errore · Inserisci PF manualmente.", "en")
 		== "Form HP unavailable: errore · Enter HP manually.")
-	var deletion: String = "Eliminare definitivamente 'Aria' dal tuo archivio?\\nVerranno eliminati anche i suoi token presenti nella scena."
+	var deletion: String = "Eliminare definitivamente 'Aria' dal tuo archivio?\nVerranno eliminati anche i suoi token presenti nella scena."
 	assert(Locale.text_for(deletion, "en")
-		== "Permanently delete 'Aria' from your archive?\\nAll of its tokens in the scene will also be deleted.")
+		== "Permanently delete 'Aria' from your archive?\nAll of its tokens in the scene will also be deleted.")
 	assert(Locale.text_for("Una descrizione personalizzata di un incantesimo.", "en")
 		== "Una descrizione personalizzata di un incantesimo.")
 
@@ -170,7 +170,7 @@ func run() -> void:
 	Locale.apply(transient_dialog, "en")
 	assert(transient_dialog.title == "Add an active spell"
 		and transient_dialog.ok_button_text == "Apply"
-		and transient_hint.text == "No active spells")
+		and transient_hint.text == "No active spells.")
 	Locale.apply(transient_dialog, "it")
 	assert(transient_dialog.title == "Aggiungi un incantesimo attivo"
 		and transient_hint.text == "Nessun incantesimo attivo.")

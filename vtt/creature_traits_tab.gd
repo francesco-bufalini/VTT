@@ -13,6 +13,8 @@ const Proficiencies = preload("res://vtt/creature_proficiency_rules.gd")
 const Items = preload("res://vtt/creature_item_rules.gd")
 const SpellCatalog = preload("res://vtt/spells/spell_catalog.gd")
 
+signal section_requested(section: int)
+
 var _origin_choice: OptionButton
 var _search: LineEdit
 var _counter: Label
@@ -30,6 +32,10 @@ func setup() -> void:
 	size_flags_vertical = Control.SIZE_EXPAND_FILL
 	add_theme_constant_override("separation", 8)
 
+	var explanation := Label.new()
+	explanation.text = "Leggi i tratti per origine. Nelle descrizioni aperte trovi i collegamenti alle sezioni che gestiscono i benefici."
+	explanation.autowrap_mode = TextServer.AUTOWRAP_WORD_SMART
+	add_child(explanation)
 	var toolbar := HBoxContainer.new()
 	toolbar.add_theme_constant_override("separation", 7)
 	add_child(toolbar)
@@ -233,6 +239,25 @@ func _rebuild() -> void:
 				"Descrizione non disponibile nel catalogo."
 			)
 			body.add_child(details)
+			var links := HFlowContainer.new()
+			links.add_theme_constant_override("h_separation", 8)
+			body.add_child(links)
+			for destination: Dictionary in [
+				{"section": 0, "label": "Origini e benefici", "help": "Esamina le origini attive e i benefici della creatura."},
+				{"section": 1, "label": "Competenze", "help": "Gestisci abilità, tiri salvezza, strumenti e linguaggi concessi dalle origini."},
+				{"section": 3, "label": "Bonus", "help": "Controlla le formule e i bonus concessi dalle origini."},
+				{"section": 4, "label": "Utilizzi e tracker", "help": "Gestisci utilizzi, risorse e recuperi dei privilegi."},
+				{"section": 6, "label": "Incantesimi da origini", "help": "Controlla gli incantesimi e le scelte concessi dai tratti."}
+			]:
+				var link := Button.new()
+				link.text = String(destination["label"])
+				link.tooltip_text = String(destination["help"])
+				link.pressed.connect(_request_section.bind(int(destination["section"])))
+				links.add_child(link)
+
+
+func _request_section(section: int) -> void:
+	section_requested.emit(section)
 
 
 func _toggle(key: String) -> void:

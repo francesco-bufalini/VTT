@@ -98,7 +98,7 @@ func run() -> void:
 		"origin_id": "item:magic_shield", "origin_name": "Magic shield"
 	})
 	assert(Bonuses.value(record, "ac") == 12, "Withdrawn items must not grant bonuses")
-	record["inventory"] = [{"id": "magic_shield", "name": "Magic shield"}]
+	record["inventory"] = [{"id": "magic_shield", "name": "Magic shield", "quantity": 1, "equipped": true}]
 	assert(Bonuses.value(record, "ac") == 14, "A live item source activates its bonus")
 	record["inventory"] = []
 	assert(Bonuses.value(record, "ac") == 12, "Removing an item revokes only its own bonus")

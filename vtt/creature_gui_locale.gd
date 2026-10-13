@@ -3,6 +3,30 @@ extends RefCounted
 # Creature-sheet-only display translations. Never mutate persisted records or the global locale.
 const CONFIG_PATH := "user://creature_gui_locale.cfg"
 const EN: Dictionary = {
+	"Contenuti e cataloghi": "Content and catalogues",
+	"Creatura e condivisione": "Creature and sharing",
+	"Eliminazione": "Deletion",
+	"Scheda e controllo": "Sheet and ownership",
+	"Origini e benefici": "Origins and benefits",
+	"Utilizzi e tracker": "Uses and trackers",
+	"Leggi i tratti per origine. Nelle descrizioni aperte trovi i collegamenti alle sezioni che gestiscono i benefici.": "Read traits by origin. Expanded descriptions link to the sections that manage their benefits.",
+	"Esamina le origini attive e i benefici della creatura.": "Inspect the creature's active origins and benefits.",
+	"Gestisci abilità, tiri salvezza, strumenti e linguaggi concessi dalle origini.": "Manage skills, saving throws, tools and languages granted by origins.",
+	"Controlla le formule e i bonus concessi dalle origini.": "Inspect formulas and bonuses granted by origins.",
+	"Gestisci utilizzi, risorse e recuperi dei privilegi.": "Manage feature uses, resources and recovery.",
+	"Controlla gli incantesimi e le scelte concessi dai tratti.": "Inspect spells and choices granted by traits.",
+	"Copia il tuo identificativo per ricevere il controllo di una creatura.": "Copy your identifier to receive ownership of a creature.",
+	"Apri la cartella dei contenuti personalizzati.": "Open the custom content folder.",
+	"Apri la cartella delle integrazioni che arricchiscono i cataloghi.": "Open the folder of integrations that enrich the catalogues.",
+	"Ricarica i cataloghi e le integrazioni locali.": "Reload local catalogues and integrations.",
+	"Collega questa scheda al token selezionato sulla mappa.": "Link this sheet to the selected map token.",
+	"Trasferisci il controllo e i dati privati della creatura al destinatario scelto.": "Transfer ownership and private creature data to the chosen recipient.",
+	"Importa una creatura da un file di trasferimento.": "Import a creature from a transfer file.",
+	"Esporta la creatura selezionata in un file.": "Export the selected creature to a file.",
+	"Elimina la scheda selezionata dopo conferma.": "Delete the selected sheet after confirmation.",
+	"Mostra un riepilogo prima di ricalcolare i valori derivati dalle origini.": "Show a summary before recalculating values derived from origins.",
+	"Trasferisci questa scheda e i suoi dati privati al destinatario scelto.": "Transfer this sheet and its private data to the chosen recipient.",
+	"Elimina la scheda dopo conferma.": "Delete the sheet after confirmation.",
 	"ARCHIVIO DELLE CREATURE": "CREATURE ARCHIVE",
 	"Opzioni ▾": "Options ▾",
 	"Chiudi": "Close",
@@ -863,6 +887,8 @@ static func text_for(source: String, language: String) -> String:
 		for template: String in [
 			"Caratteristica: %s  ·  Tiro per colpire: %s  ·  CD: %s\nConcentrazione: %s",
 			"Come creatura (%s)", "Senza origine (%d)",
+			"Camminata: base %d + bonus cumulabili %+d = %d ft",
+			"Risultati: 250 di %d · Affina i filtri per vedere gli altri",
 			"Livello %d", "%d voci del bestiario ricercabili",
 			"%d risultati", "%d° livello · %d rimasti",
 			"Patto · %d° livello · %d rimasti",
@@ -877,7 +903,7 @@ static func text_for(source: String, language: String) -> String:
 			"I PF della seconda forma di %s sono a 0. Ripristinare l'aspetto di base?",
 			"%s · Ricarica d6: %d (%s, occorre %d–6).",
 			"Con rincorsa di almeno 10 ft: max(0, 3 + modificatore FOR %+d) = %d ft. ",
-			"Eliminare definitivamente '%s' dal tuo archivio?\\nVerranno eliminati anche i suoi token presenti nella scena.",
+			"Eliminare definitivamente '%s' dal tuo archivio?\nVerranno eliminati anche i suoi token presenti nella scena.",
 		]:
 			var translated_template: String = _translate_template(source, template)
 			if not translated_template.is_empty():
@@ -1038,8 +1064,8 @@ static func apply(root: Node, language: String) -> void:
 	elif root is PopupMenu and not (root.get_parent() is OptionButton and root.get_parent().has_meta("catalog_category")):
 		var menu := root as PopupMenu
 		for i in range(menu.item_count):
-			if menu.is_item_separator(i):
-				continue
+			var help := menu.get_item_tooltip(i)
+			menu.set_item_tooltip(i, _localized(menu, "item_help_" + str(i), help, language))
 			var value := menu.get_item_text(i)
 			var result := _localized(menu, "item_" + str(i), value, language)
 			if result != value:

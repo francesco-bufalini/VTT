@@ -94,7 +94,10 @@ func run() -> void:
 	assert(not ScrollBoundaryGuard._at_boundary(bar, 1.0),
 		"An inner list that fits must pass scrolling to the sheet")
 	bar.free()
-	var movement_grid: GridContainer = area._speed.get_parent().get_parent() as GridContainer
+	var movement_parent: Node = area._speed
+	while movement_parent != null and not movement_parent is GridContainer:
+		movement_parent = movement_parent.get_parent()
+	var movement_grid := movement_parent as GridContainer
 	assert(movement_grid != null and movement_grid.columns == 5
 		and movement_grid.get_child_count() == 5,
 		"All five movement speeds must have equal aligned cells")
@@ -109,25 +112,25 @@ func run() -> void:
 		and area._tracker_rows.get_index() < ac_panel.get_index(),
 		"Resources must be positioned before AC and initiative")
 	# The statistics editors are mutually exclusive and default to no section.
-	assert(area._editor_section_picker.item_count == 6
+	assert(area._editor_section_picker.item_count == 7
 		and area._editor_section_picker.selected == 0
 		and not area._proficiencies_ui.visible and not area._feats_ui.visible
 		and not area._bonuses_ui.visible and not area._trackers_ui.visible
 		and not area._damage_defenses_ui.visible,
-		"Statistics must start with Visualizza e modifica -> Niente")
-	for selection: int in range(1, 6):
+		"Origins must start with the overview and all editors closed")
+	for selection: int in range(1, 7):
 		area._editor_section_picker.item_selected.emit(selection)
 		assert(area._editor_section_picker.selected == selection,
 			"The common section menu must reflect the selected editor")
 		assert(int(area._proficiencies_ui.visible) + int(area._feats_ui.visible)
 			+ int(area._bonuses_ui.visible) + int(area._trackers_ui.visible)
-			+ int(area._damage_defenses_ui.visible) == 1,
+			+ int(area._damage_defenses_ui.visible) + int(area._origin_spells_ui.visible) == 1,
 			"Exactly one statistics editor must be open at a time")
 	area._editor_section_picker.item_selected.emit(0)
 	assert(not area._proficiencies_ui.visible and not area._feats_ui.visible
 		and not area._bonuses_ui.visible and not area._trackers_ui.visible
 		and not area._damage_defenses_ui.visible,
-		"Choosing Niente closes all editors")
+		"Choosing the overview closes all editors")
 	area._on_formula_bonus_requested("initiative")
 	assert(area._editor_section_picker.selected == 3 and area._bonuses_ui.visible
 		and not area._proficiencies_ui.visible and not area._feats_ui.visible
