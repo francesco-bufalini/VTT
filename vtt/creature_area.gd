@@ -4924,10 +4924,15 @@ func _apply_second_form_choice() -> void:
 			_set_second_form_hp(maxi(0, int(_form_hp_manual.value)))
 		1:
 			var miniature_id: String = String(record.get("current_miniature_id", ""))
-			var identity: String = TokenPackManager.miniature_identity(miniature_id, "")
-			var reference: Dictionary = TokenPackManager.get_bestiary_reference(identity, "2014")
+			var packs: Node = get_node_or_null("/root/TokenPackManager")
+			if packs == null:
+				_set_status("Catalogo miniature non disponibile: scegli PF manuali.")
+				_prompt_second_form_hp(record)
+				return
+			var identity: String = String(packs.call("miniature_identity", miniature_id, ""))
+			var reference: Dictionary = packs.call("get_bestiary_reference", identity, "2014")
 			if reference.is_empty():
-				reference = TokenPackManager.get_bestiary_reference(identity, "2024")
+				reference = packs.call("get_bestiary_reference", identity, "2024")
 			if reference.is_empty():
 				_set_status("La miniatura non ha una voce del bestiario associata: scegli PF manuali.")
 				_prompt_second_form_hp(record)
@@ -5423,10 +5428,11 @@ func ensure_sheet_for_token(token: Node3D, locally_created: bool = false) -> voi
 	var pack_id := String(token.call("get_token_pack_id")) if token.has_method("get_token_pack_id") else ""
 	var identity := String(token.call("get_miniature_identity")) if token.has_method("get_miniature_identity") else pack_id
 	var reference: Dictionary = {}
-	if TokenPackManager != null:
-		reference = TokenPackManager.get_bestiary_reference(identity, "2014")
+	var packs: Node = get_node_or_null("/root/TokenPackManager")
+	if packs != null:
+		reference = packs.call("get_bestiary_reference", identity, "2014")
 		if reference.is_empty():
-			reference = TokenPackManager.get_bestiary_reference(identity, "2024")
+			reference = packs.call("get_bestiary_reference", identity, "2024")
 	var is_character := String(token.get_meta("player_character_id", "")).strip_edges() != ""
 	if record.is_empty():
 		if is_character:
