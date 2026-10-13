@@ -314,6 +314,9 @@ func _refresh_spell_picker(value: String) -> void:
 
 
 func _matches_choice(spell: Dictionary) -> bool:
+	var allowed: Variant = _choice.get("spell_options", [])
+	if allowed is Array and not (allowed as Array).is_empty():
+		return String(spell.get("id", "")) in allowed
 	var filters: Array = _choice.get("filters", [])
 	if filters.is_empty():
 		filters = [String(_choice.get("filter", ""))]
