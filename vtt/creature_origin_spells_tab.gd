@@ -214,6 +214,7 @@ func _refresh() -> void:
 			groups[sid] = []
 		var pending: Dictionary = choice.duplicate(true)
 		pending["pending_selection"] = true
+		pending["remaining"] = int(choice.get("count", 1)) - selected
 		groups[sid].append(pending)
 		warnings.append(String(choice.get("origin_name", sid)) + ": " + str(int(choice.get("count", 1)) - selected) + " scelta/e")
 	_warning.text = "⚠ " + "; ".join(warnings) if not warnings.is_empty() else ""
@@ -242,7 +243,7 @@ func _refresh() -> void:
 			var grant: Dictionary = raw
 			if bool(grant.get("pending_selection", false)):
 				var choose := Button.new()
-				choose.text = "⚠ Scegli %d incantesimo/i" % int(grant.get("count", 1))
+				choose.text = "⚠ Scegli %d incantesimo/i" % int(grant.get("remaining", grant.get("count", 1)))
 				choose.tooltip_text = _choice_formula(grant)
 				choose.pressed.connect(_choose.bind(grant.duplicate(true)))
 				_spells.add_child(choose)

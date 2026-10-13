@@ -82,7 +82,9 @@ func refresh() -> void:
 		var sid: String = String(choice.get("origin_id", ""))
 		if not groups.has(sid):
 			groups[sid] = {"grants": [], "choices": [], "name": choice.get("origin_name", sid)}
-		groups[sid].choices.append(choice)
+		var pending: Dictionary = choice.duplicate(true)
+		pending["remaining"] = int(choice.get("count", 1)) - selected
+		groups[sid].choices.append(pending)
 	for sid: String in groups:
 		var group: Dictionary = groups[sid]
 		pair = _pair()
@@ -113,7 +115,7 @@ func refresh() -> void:
 						_tracker(pair[1], record, tracker)
 						break
 			var choose := Button.new()
-			choose.text = "⚠ Scegli %d incantesimo/i" % int(choice.get("count", 1))
+			choose.text = "⚠ Scegli %d incantesimo/i" % int(choice.get("remaining", choice.get("count", 1)))
 			choose.pressed.connect(_actions.choose_origin.bind(choice))
 			pair[0].add_child(choose)
 		if seen.is_empty():
