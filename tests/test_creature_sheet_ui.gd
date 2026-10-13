@@ -187,7 +187,7 @@ func run() -> void:
 	var tab_titles: Array[String] = []
 	for tab_index: int in range(area._tabs.get_tab_count()):
 		tab_titles.append(area._tabs.get_tab_title(tab_index))
-	assert("Inventario" in tab_titles and "Incantesimi" in tab_titles and "Aspetto" not in tab_titles and "Competenze" not in tab_titles
+	assert("Inventario" in tab_titles and "Poteri" in tab_titles and "Aspetto" not in tab_titles and "Competenze" not in tab_titles
 		and tab_titles[0] == "Info" and tab_titles[1] == "Statistiche")
 	var info_root: Node = area._name.get_parent().get_parent().get_parent().get_parent()
 	var physics_found := false
