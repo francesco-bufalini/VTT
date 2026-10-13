@@ -24,6 +24,9 @@ func run() -> void:
 			iconoclast = row
 	assert(not iconoclast.is_empty(), "MOT Iconoclast must be included")
 	assert(iconoclast.get("feature_type", "") == "Supernatural Gift")
+	assert(Player.search("feats", "Supernatural Gift", {}, 500).any(
+		func(row: Dictionary) -> bool: return String(row.get("id", "")) == String(iconoclast.id)),
+		"Compendium search must index character-option subtype")
 	var desc: String = Player.description_text("feats", iconoclast)
 	assert("Enlightened Protection" in desc and "Iconoclast Paragon" in desc)
 	var saved_feat: Dictionary = {"id": iconoclast.id, "name": "Iconoclast", "source": "MOT", "origin_id": "", "disabled": false}
