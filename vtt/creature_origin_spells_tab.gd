@@ -354,6 +354,8 @@ func _choose(choice: Dictionary) -> void:
 			break
 	_spell_search.clear()
 	_refresh_spell_picker("")
+	var declared_ability: String = String(choice.get("spellcasting_ability", ""))
+	_ability_picker.select(maxi(0, ABILITIES.find(declared_ability)))
 	_payment_picker.select(2 if not String(choice.get("tracker_id", "")).is_empty() else 0)
 	for i: int in range(_tracker_picker.item_count):
 		if String(_tracker_picker.get_item_metadata(i)) == String(choice.get("tracker_id", "")):
