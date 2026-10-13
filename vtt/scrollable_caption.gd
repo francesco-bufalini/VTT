@@ -171,14 +171,20 @@ func _suppress() -> void:
 		return
 	match _kind:
 		"item":
-			if _item_index < _target.item_count:
-				_target.set_item_tooltip(_item_index, "")
+			var list: ItemList = _target as ItemList
+			if list != null and _item_index >= 0 and _item_index < list.item_count:
+				list.set_item_tooltip(_item_index, "")
 		"tree":
 			if is_instance_valid(_tree_item):
 				_tree_item.set_tooltip_text(_tree_column, "")
-		"tab", "tabs":
-			if _item_index < _target.get_tab_count():
-				_target.set_tab_tooltip(_item_index, " ")
+		"tab":
+			var bar: TabBar = _target as TabBar
+			if bar != null and _item_index >= 0 and _item_index < bar.tab_count:
+				bar.set_tab_tooltip(_item_index, " ")
+		"tabs":
+			var container: TabContainer = _target as TabContainer
+			if container != null and _item_index >= 0 and _item_index < container.get_tab_count():
+				container.set_tab_tooltip(_item_index, " ")
 		_:
 			_target.tooltip_text = ""
 
@@ -186,14 +192,20 @@ func _restore_target() -> void:
 	if is_instance_valid(_target):
 		match _kind:
 			"item":
-				if _item_index >= 0 and _item_index < _target.item_count and _target.get_item_text(_item_index) == _item_label and _target.get_item_tooltip(_item_index).is_empty():
-					_target.set_item_tooltip(_item_index, _text)
+				var list: ItemList = _target as ItemList
+				if list != null and _item_index >= 0 and _item_index < list.item_count and list.get_item_text(_item_index) == _item_label and list.get_item_tooltip(_item_index).is_empty():
+					list.set_item_tooltip(_item_index, _text)
 			"tree":
 				if is_instance_valid(_tree_item) and _tree_column >= 0 and _tree_item.get_tooltip_text(_tree_column).is_empty():
 					_tree_item.set_tooltip_text(_tree_column, _text)
-			"tab", "tabs":
-				if _item_index >= 0 and _item_index < _target.get_tab_count() and _target.get_tab_tooltip(_item_index) == " ":
-					_target.set_tab_tooltip(_item_index, _text)
+			"tab":
+				var bar: TabBar = _target as TabBar
+				if bar != null and _item_index >= 0 and _item_index < bar.tab_count and bar.get_tab_tooltip(_item_index) == " ":
+					bar.set_tab_tooltip(_item_index, _text)
+			"tabs":
+				var container: TabContainer = _target as TabContainer
+				if container != null and _item_index >= 0 and _item_index < container.get_tab_count() and container.get_tab_tooltip(_item_index) == " ":
+					container.set_tab_tooltip(_item_index, _text)
 			_:
 				if _target.tooltip_text.is_empty():
 					_target.tooltip_text = _text
