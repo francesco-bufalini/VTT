@@ -51,12 +51,12 @@ func setup(on_change: Callable) -> void:
 	right.add_child(form)
 	_origin_picker = OptionButton.new()
 	_origin_picker.size_flags_horizontal = Control.SIZE_EXPAND_FILL
-	form.add_child(_label("Origine da associare", form))
+	_label("Origine da associare", form)
 	form.add_child(_origin_picker)
 	_spell_search = LineEdit.new()
 	_spell_search.placeholder_text = "Cerca incantesimo..."
 	_spell_search.text_changed.connect(_refresh_spell_picker)
-	form.add_child(_label("Incantesimo", form))
+	_label("Incantesimo", form)
 	form.add_child(_spell_search)
 	_spell_picker = OptionButton.new()
 	_spell_picker.size_flags_horizontal = Control.SIZE_EXPAND_FILL
@@ -148,6 +148,7 @@ func _clear(container: VBoxContainer) -> void:
 func _refresh() -> void:
 	if _origins == null:
 		return
+	var chosen_origin: String = _selected_origin
 	var record: Dictionary = _current_record()
 	var grants: Array[Dictionary] = OriginSpells.all_grants(record)
 	var structured: Dictionary = Structured.for_creature(record)
@@ -265,7 +266,18 @@ func _fill_origin_picker(record: Dictionary) -> void:
 	if _origin_picker.selected >= 0:
 		current = String(_origin_picker.get_item_metadata(_origin_picker.selected))
 	_origin_picker.clear()
-	for source: Dictionary in OriginChoices.available(record):
+	var options: Array[Dictionary] = OriginChoices.available(record)
+	var seen: Dictionary = {}
+	for source: Dictionary in options:
+		seen[String(source.get("id", ""))] = true
+	for raw: Variant in Structured.for_creature(record).get("choices", []):
+		if raw is Dictionary:
+			var choice: Dictionary = raw
+			var sid: String = String(choice.get("origin_id", ""))
+			if not sid.is_empty() and not seen.has(sid):
+				seen[sid] = true
+				options.append({"id": sid, "name": String(choice.get("origin_name", sid))})
+	for source: Dictionary in options:
 		var sid: String = String(source.get("id", ""))
 		if sid.is_empty() or sid == OriginChoices.SPELL_PICKER_ID:
 			continue
@@ -289,7 +301,7 @@ func _refresh_spell_picker(value: String) -> void:
 	_shown.clear()
 	var query: String = value.strip_edges().to_lower()
 	for spell: Dictionary in _catalog:
-		if bool(spell.get("internal_grant", false)) and _choice.is_empty():
+		if bool(spell.get("internal_grant", false)):
 			continue
 		if not _choice.is_empty() and not _matches_choice(spell):
 			continue
