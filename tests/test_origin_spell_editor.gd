@@ -30,6 +30,16 @@ func run() -> void:
 			elif "level=1" in String(group.get("filter", "")):
 				totals[1] = int(group.get("count", 0))
 	assert(totals == [2, 1], "Magic Initiate grants only two cantrips and one 1st-level spell")
+	var scion: Dictionary = {"kind": "character", "level": 1,
+		"feats_catalog": [{"name": "Scion of the Outer Planes", "source": "SatO"}]}
+	var scion_data: Dictionary = Structured.for_creature(scion)
+	assert((scion_data.get("grants", []) as Array).is_empty(),
+		"Alternative fixed cantrips cannot all be granted at once")
+	var scion_choices: Array = scion_data.get("choices", [])
+	assert(scion_choices.size() == 1
+		and int((scion_choices[0] as Dictionary).get("count", 0)) == 1
+		and (scion_choices[0] as Dictionary).get("spell_options", []).size() == 5,
+		"Scion must select ONE cantrip from five fixed alternatives")
 	var listener := Listener.new()
 	root.add_child(listener)
 	var tab := Editor.new()
