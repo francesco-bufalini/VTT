@@ -38,6 +38,20 @@ func run() -> void:
 	assert(standalone.get_node_or_null("CreatureArea") != null)
 	assert(standalone.get_node("DiceRollerChat").get("sync") == null, "Offline dice roller must not open a network listener")
 	assert(standalone.get_node("CreatureArea").call("get_public_status_entries") is Array)
+	# A linked creature must remain editable when its token only exists on a
+	# remote desktop board, with no missing board_sync property access.
+	var sheet: Node = standalone.get_node("CreatureArea")
+	assert(sheet.call("_find_linked_token", {
+		"id": "offline-creature", "linked_token_sync_id": "remote-token-123"
+	}) == null)
+	var dice: Node = standalone.get_node("DiceRollerChat")
+	assert(dice.call("_selected_action_actor") == null)
+	assert(dice.call("_identity_token") == null)
+	var roll: int = int(dice.call("roll_expression_from_sheet",
+		"Offline test", "1d6+2"))
+	assert(roll >= 3 and roll <= 8,
+		"Offline dice must roll without a selected 3D actor")
+	assert(dice.get("sync") == null)
 	var scene_nodes: Array = root.find_children("*", "Node3D", true, false)
 	assert(scene_nodes.is_empty(), "Standalone creature scene instantiated a 3D world")
 	standalone.queue_free()

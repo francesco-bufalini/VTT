@@ -5919,7 +5919,9 @@ func _miniature_display_name(miniature_id: String) -> String:
 
 func _find_linked_token(record: Dictionary) -> Node3D:
 	var token_id := String(record.get("linked_token_sync_id", ""))
-	if token_id.is_empty():
+	if token_id.is_empty() or not board_root is Node3D:
+		# A mobile/standalone host has no 3D board synchronization object.
+		# The stored token ID remains linked even when no local token exists.
 		return null
 	var sync: Node = board_root.get("board_sync") as Node
 	if sync == null:

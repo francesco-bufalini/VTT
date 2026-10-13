@@ -895,7 +895,7 @@ func _identity_token() -> Node3D:
 	# Chat identity follows the token currently selected by its rightful owner.
 	# No persistent user-to-token association or identity picker is needed.
 	var owned_tokens := _scene_identity_tokens()
-	var selected_value: Variant = board_root.get("_selected_tokens") if board_root != null else []
+	var selected_value: Variant = board_root.get("_selected_tokens") if board_root is Node3D else []
 	if selected_value is Array and (selected_value as Array).size() == 1:
 		var selected: Variant = (selected_value as Array)[0]
 		if selected is Node3D and owned_tokens.has(selected as Node3D):
@@ -948,7 +948,8 @@ func log_action(
 
 
 func _selected_action_actor() -> Node3D:
-	if board_root == null or not is_instance_valid(board_root):
+	if not board_root is Node3D or not is_instance_valid(board_root):
+		# Offline roller has no selection, but can still roll for a sheet.
 		return null
 	var selected_value: Variant = board_root.get("_selected_tokens")
 	if not selected_value is Array:
