@@ -121,6 +121,7 @@ static func _add_spell(output: Dictionary, origin: Dictionary, token: String, tr
 		"origin_id": origin_id,
 		"origin_name": String(origin.get("name", origin_id)),
 		"spell_id": id, "tracker_id": tracker_id,
+		"mode": mode, "stage": stage,
 		"spellcasting_ability": String(origin.get("casting_ability", "")),
 		"automatic": true, "mechanic_source": "5etools.additionalSpells"
 	})
@@ -258,6 +259,7 @@ static func for_creature(record: Dictionary) -> Dictionary:
 			# allowed filters, while keeping one single usage allowance.
 			if blocks.size() > 1 and String(entry.get("kind", "")) == "feat":
 				var alternatives: Dictionary = {}
+				var fixed_alternatives: Dictionary = {}
 				var block_abilities: Dictionary = {}
 				for value: Variant in blocks:
 					if value is Dictionary:
@@ -266,6 +268,29 @@ static func for_creature(record: Dictionary) -> Dictionary:
 					var temp: Dictionary = {"grants": [], "trackers": [], "choices": []}
 					_append_block(temp, origin, blocks[i], i, record)
 					var block_choices: Array = temp.get("choices", [])
+					var fixed_count: Dictionary = {}
+					for fixed_raw: Variant in temp.get("grants", []):
+						if not fixed_raw is Dictionary:
+							continue
+						var granted: Dictionary = fixed_raw
+						var fixed_key: String = String(granted.get("mode", "")) + "|" + String(granted.get("stage", "")) + "|" + ("limited" if not String(granted.get("tracker_id", "")).is_empty() else "at_will")
+						if not fixed_alternatives.has(fixed_key):
+							fixed_alternatives[fixed_key] = {"id": "alternatives:" + String(origin.get("id", "")) + ":fixed:" + fixed_key,
+								"origin_id": String(origin.get("id", "")),
+								"origin_name": String(origin.get("name", "")),
+								"spell_options": [], "filter": "", "count": 0,
+								"tracker_id": String(granted.get("tracker_id", ""))}
+						var collected: Dictionary = fixed_alternatives[fixed_key]
+						var options: Array = collected["spell_options"]
+						if String(granted.get("spell_id", "")) not in options:
+							options.append(String(granted.get("spell_id", "")))
+						collected["spell_options"] = options
+						fixed_count[fixed_key] = int(fixed_count.get(fixed_key, 0)) + 1
+						fixed_alternatives[fixed_key] = collected
+					for key: String in fixed_count.keys():
+						var collected: Dictionary = fixed_alternatives[key]
+						collected["count"] = maxi(int(collected.get("count", 0)), int(fixed_count[key]))
+						fixed_alternatives[key] = collected
 					for choice_raw: Variant in block_choices:
 						if not choice_raw is Dictionary:
 							continue
@@ -285,7 +310,7 @@ static func for_creature(record: Dictionary) -> Dictionary:
 							filters.append(filter)
 						group["count"] = maxi(int(group.get("count", 1)), int(option.get("count", 1)))
 						alternatives[key] = group
-				if not alternatives.is_empty():
+				if not alternatives.is_empty() or not fixed_alternatives.is_empty():
 					var first: Dictionary = {"grants": [], "trackers": [], "choices": []}
 					_append_block(first, origin, blocks[0], 0, record)
 					# One set of counters and one set of choices, never one per
@@ -299,6 +324,17 @@ static func for_creature(record: Dictionary) -> Dictionary:
 						if block_abilities.size() > 1:
 							choice["spellcasting_ability"] = ""
 						choice["tracker_id"] = _matching_tracker(first, choice)
+						(output["choices"] as Array).append(choice)
+					for group: Variant in fixed_alternatives.values():
+						var choice: Dictionary = group
+						# A named alternative with a fixed spell cannot grant
+						# every variant's spell at once. Ask for explicit pick.
+						if not String(choice.get("tracker_id", "")).is_empty():
+							var first_trackers: Array = first.get("trackers", [])
+							for tr: Variant in first_trackers:
+								if tr is Dictionary:
+									choice["tracker_id"] = String(tr.get("id", ""))
+									break
 						(output["choices"] as Array).append(choice)
 					continue
 			# Race variants such as 2024 Elf and Tiefling must not grant ALL
