@@ -255,8 +255,9 @@ func _spell_button(parent: Node, spell: Dictionary, member: Dictionary, grant: D
 	button.tooltip_text = String(spell.get("description", ""))
 	if not grant.is_empty() and String(grant.get("payment_mode", "")) == "tracker":
 		var cost: int = Grants.tracker_cost(grant)
-		button.text += " · %d utilizzi" % cost
-		button.tooltip_text += "\n\nConsumo: %d utilizzi del tracker (per lancio)" % cost
+		var english: bool = String(_actions.gui_language.call()) == "en"
+		button.text += " · %d %s" % [cost, "uses" if english else "utilizzi"]
+		button.tooltip_text += ("\n\nTracker cost: %d uses per cast" if english else "\n\nConsumo: %d utilizzi del tracker per lancio") % cost
 	if grant.is_empty():
 		button.pressed.connect(_actions.cast_class.bind(spell, member))
 	else:
