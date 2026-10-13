@@ -3850,7 +3850,7 @@ func _roll_attack_from_sheet(attack_id: String, damage: bool) -> void:
 			_set_status("Nessuna formula di danno per questo attacco.")
 		return
 	if damage:
-		roller.call("roll_expression_from_sheet", label, expression, find_linked_token_for_creature(_selected_id))
+		_roll_with_optional_dice(label, expression, "attack_damage:" + attack_id, record)
 	else:
 		_roll_with_optional_dice(label, expression, "attack_hit:" + attack_id, record)
 
