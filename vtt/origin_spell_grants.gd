@@ -26,43 +26,48 @@ static func _builtins(record: Dictionary) -> Array[Dictionary]:
 	var result: Array[Dictionary] = []
 	if String(record.get("kind", "")) == "monster":
 		return result
-	var bard_level: int = _class_level(record, "Bard")
-	var druid_level: int = _class_level(record, "Druid")
-	if bard_level < 1 and druid_level < 2:
-		return result
+	# Built-in effect templates declare their own required feature and
+	# consumable resource. The tracker itself is derived from 5etools tables
+	# or structured Fight Club counters, never a number from feature prose.
 	var trackers: Array[Dictionary] = Trackers.for_creature(record)
-	for feature: Dictionary in Traits.collect_features(record):
-		var name: String = String(feature.get("name", ""))
-		var spell_id := ""
-		var class_label := ""
-		var resource_name := ""
-		if name == "Bardic Inspiration" and bard_level >= 1:
-			spell_id = BARDIC
-			class_label = "Bard"
-			resource_name = "Bardic Inspiration"
-		elif name == "Wild Shape" and druid_level >= 2:
-			spell_id = WILD_SHAPE
-			class_label = "Druid"
-			resource_name = "Wild Shape"
-		if spell_id.is_empty():
+	var features: Array[Dictionary] = Traits.collect_features(record)
+	for raw: Variant in Catalog.SPELLS.values():
+		if not raw is Dictionary or not bool(raw.get("internal_grant", false)):
 			continue
-		var tracker_id := ""
-		for tracker: Dictionary in trackers:
-			if String(tracker.get("name", "")).nocasecmp_to(resource_name) == 0 and (
-				class_label.to_lower() in String(tracker.get("id", "")).to_lower()
-			):
+		var spell: Dictionary = raw
+		var class_label: String = String(spell.get("source_class", ""))
+		var feature_name: String = String(spell.get("grant_feature", ""))
+		var tracker_name: String = String(spell.get("grant_tracker", ""))
+		var spell_id: String = String(spell.get("id", ""))
+		var needed_level: int = int(spell.get("grant_level", 1))
+		if class_label.is_empty() or feature_name.is_empty() or tracker_name.is_empty() or spell_id.is_empty():
+			continue
+		if _class_level(record, class_label) < needed_level:
+			continue
+		for feature: Dictionary in features:
+			if String(feature.get("name", "")).nocasecmp_to(feature_name) != 0:
+				continue
+			if String(feature.get("class_name", "")).nocasecmp_to(class_label) != 0:
+				continue
+			var tracker_id := ""
+			for tracker: Dictionary in trackers:
+				if String(tracker.get("name", "")).nocasecmp_to(tracker_name) != 0:
+					continue
+				# Avoid binding an identically named resource from another
+				# class, feat or item on a multiclass character.
+				if class_label.to_lower() not in String(tracker.get("id", "")).to_lower():
+					continue
 				tracker_id = String(tracker.get("id", ""))
 				break
-		if tracker_id.is_empty():
-			continue
-		result.append({
-			"id": "auto:" + String(feature.get("key", "")) + ":" + spell_id,
-			"origin_id": "feature:" + String(feature.get("key", "")),
-			"origin_name": String(feature.get("name", name)),
-			"spell_id": spell_id,
-			"tracker_id": tracker_id,
-			"automatic": true
-		})
+			if tracker_id.is_empty():
+				continue
+			result.append({
+				"id": "auto:" + String(feature.get("key", "")) + ":" + spell_id,
+				"origin_id": "feature:" + String(feature.get("key", "")),
+				"origin_name": String(feature.get("name", feature_name)),
+				"spell_id": spell_id, "tracker_id": tracker_id,
+				"automatic": true
+			})
 	return result
 
 
