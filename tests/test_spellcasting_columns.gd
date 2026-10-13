@@ -140,7 +140,13 @@ func run() -> void:
 	for label: Node in tab._view.find_children("*", "Label", true, false):
 		if label.is_visible_in_tree() and not label.text.is_empty():
 			assert(label.size.x > 10, "Every caption and counter has a usable width")
-	assert(tab._view._rows[0].size.y < 650, "Slot headings must not wrap into a tall column of letters")
+	# The panel may be taller now to show a complete first power; check the
+	# actual slot headings instead of imposing a fixed height on both columns.
+	var slot_headers: GridContainer = tab._view._rows[0].get_child(1).get_child(0).get_node("SlotGrid")
+	for column: int in range(3):
+		var heading: Label = slot_headers.get_child(column) as Label
+		assert(heading != null and heading.size.x >= 20 and heading.size.y < 70,
+			"Slot headings stay readable and do not wrap into vertical letters")
 	var conflict: Dictionary = tab._view_record()
 	conflict["proficiency_origins"] = [{"id": "custom:example", "name": "Example", "group": "custom"}]
 	conflict["origin_spell_grants"] = [
