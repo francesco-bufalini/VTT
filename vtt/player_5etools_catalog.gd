@@ -365,6 +365,7 @@ static func _search_text(entry: Dictionary) -> String:
 		"weapon_category",
 		"class_name",
 		"class_source",
+		"feature_type",
 		"species",
 		"base_species",
 		"category",
