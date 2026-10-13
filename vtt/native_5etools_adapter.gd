@@ -2,6 +2,8 @@ extends RefCounted
 
 # Converts an upstream 5etools homebrew document to normalized catalog
 # entries without modifying the document on disk. No creature state lives here.
+const CHAROPTION_TYPE_NAMES := {"SG": "Supernatural Gift", "DG": "Dark Gift",
+	"CS": "Character Secret", "RF:B": "Background Feature"}
 const CATEGORIES := {
 	"monster": "monsters",
 	"spell": "spells",
@@ -75,7 +77,8 @@ static func normalize(document: Dictionary, path: String) -> Dictionary:
 				identifier = "charoption_" + identifier
 				var option_types: PackedStringArray = []
 				for raw_type: Variant in data.get("optionType", []):
-					option_types.append(String(raw_type))
+					var type_code: String = String(raw_type)
+					option_types.append(String(CHAROPTION_TYPE_NAMES.get(type_code, type_code)))
 				data["feature_type"] = ", ".join(option_types)
 				data["charoption"] = true
 			var local_id: String = _slug(identifier, 64)
