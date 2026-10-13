@@ -36,6 +36,8 @@ const SYNC_APPEARANCE_KEYS := [
 	"visual_front_quarter_turns",
 	"transformation_history"
 ]
+const MapDataController = preload("res://vtt/map_data_controller.gd")
+var map_data_controller: MapDataController
 var board_root: Node
 var token_scene: PackedScene
 var tokens_root: Node
@@ -72,6 +74,10 @@ func setup(root: Node, scene: PackedScene, tokens: Node, measure: Node) -> void:
 	token_scene = scene
 	tokens_root = tokens
 	measurement_tool = measure
+	map_data_controller = MapDataController.new()
+	map_data_controller.name = "MapDataController"
+	add_child(map_data_controller)
+	map_data_controller.use_board(get_tactical_map_data)
 	_connect_token_pack_manager()
 	_request_tailscale_peer_refresh()
 
@@ -303,6 +309,8 @@ func listen(enabled: bool, key: String) -> Error:
 		item.peer.disconnect_from_host()
 	connections.clear()
 	session_key = key.strip_edges()
+	if map_data_controller != null:
+		map_data_controller.serve(false, session_key)
 	if not enabled:
 		status_changed.emit("Ricezione disattivata")
 		return OK
@@ -311,7 +319,12 @@ func listen(enabled: bool, key: String) -> Error:
 		return ERR_INVALID_PARAMETER
 	var error := server.listen(port)
 	receiving = error == OK
-	status_changed.emit("In ascolto sulla porta TCP %d" % port if receiving else error_string(error))
+	var tactical_message := ""
+	if map_data_controller != null and receiving:
+		var tactical_error := map_data_controller.serve(true, session_key)
+		if tactical_error != OK:
+			tactical_message = " · Schede mobile: " + error_string(tactical_error)
+	status_changed.emit(("In ascolto sulla porta TCP %d" % port if receiving else error_string(error)) + tactical_message)
 	return error
 
 func send_snapshot(host: String, key: String) -> Error:
@@ -2249,3 +2262,41 @@ func _color(c:Color)->Dictionary: return {"r":c.r,"g":c.g,"b":c.b,"a":c.a}
 func _dict_color(v:Variant)->Color:
 	if v is Dictionary: return Color(float(v.get("r",1)),float(v.get("g",1)),float(v.get("b",1)),float(v.get("a",1)))
 	return Color.WHITE
+
+# Allowlisted projection for mobile sheets. Never serialize map assets,
+# private creature records, exact HP, encounter secrets or scene paths.
+func get_tactical_map_data() -> Dictionary:
+	var tokens: Array[Dictionary] = []
+	for node: Node in get_tree().get_nodes_in_group("dnd_token"):
+		if not node is Node3D or not board_root.is_ancestor_of(node) or node.is_queued_for_deletion() or not node.is_visible_in_tree():
+			continue
+		tokens.append({
+			"id": get_sync_id_for_node(node),
+			"name": String(node.call("get_display_name")) if node.has_method("get_display_name") else String(node.name),
+			"conditions": node.call("get_conditions") if node.has_method("get_conditions") else [],
+			"concentrating_spell_id": String(node.call("get_concentrating_spell_id")) if node.has_method("get_concentrating_spell_id") else ""
+		})
+	var combat: Dictionary = {"active": false, "round": 1, "active_index": -1, "entries": []}
+	var tracker := _initiative_tracker()
+	if tracker != null:
+		var state: Dictionary = tracker.call("get_save_state")
+		for key: String in ["active", "round", "active_index"]:
+			combat[key] = state.get(key, combat[key])
+		var visible_ids: Dictionary = {}
+		for token: Dictionary in tokens:
+			visible_ids[token.id] = true
+		var entries: Array = []
+		var projected_active_index := -1
+		var all_entries: Array = state.get("entries", [])
+		var active_index := int(state.get("active_index", -1))
+		for index in range(all_entries.size()):
+			var row: Dictionary = all_entries[index]
+			var token_id := String(row.get("token_id", ""))
+			if not token_id.is_empty() and not visible_ids.has(token_id):
+				continue
+			entries.append({"token_id": token_id, "name": String(row.get("name", "")), "initiative": int(row.get("initiative", 0))})
+			if index == active_index:
+				projected_active_index = entries.size() - 1
+		combat["entries"] = entries
+		combat["active_index"] = projected_active_index
+	return {"version": 1, "tokens": tokens, "combat": combat}

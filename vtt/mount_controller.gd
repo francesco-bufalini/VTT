@@ -157,7 +157,9 @@ func _follow(rider: CharacterBody3D, visited: Dictionary, ancestors: Dictionary)
 		return
 	var local_value: Variant = rider.get_meta(META_LOCAL, Vector3.ZERO)
 	var local: Vector3 = local_value if local_value is Vector3 else Vector3.ZERO
-	var yaw_value: Variant = rider.get_meta(META_LOCAL_YAW, null)
+	var yaw_value: Variant = null
+	if rider.has_meta(META_LOCAL_YAW):
+		yaw_value = rider.get_meta(META_LOCAL_YAW)
 	var local_yaw: float = 0.0
 	if yaw_value is float or yaw_value is int:
 		local_yaw = float(yaw_value)

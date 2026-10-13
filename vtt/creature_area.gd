@@ -6429,3 +6429,23 @@ func _show_sheet_tab(title: String) -> void:
 		if _tabs.get_tab_control(index).name == title:
 			_tabs.current_tab = index
 			return
+
+# Presentation-neutral map context. Mobile and desktop inject the same reader;
+# callers receive data keyed by stable sync ID, never a remote token Node.
+const MapDataReader = preload("res://vtt/map_data_controller.gd")
+var _map_data_controller: MapDataReader
+
+func set_map_data_controller(controller: MapDataReader) -> void:
+	_map_data_controller = controller
+
+func get_linked_map_status(record: Dictionary) -> Dictionary:
+	if not is_instance_valid(_map_data_controller):
+		return {}
+	var token_id := String(record.get("linked_token_sync_id", ""))
+	if token_id.is_empty():
+		return {}
+	var data: Dictionary = _map_data_controller.get_map_data()
+	for token: Dictionary in data.get("tokens", []):
+		if String(token.get("id", "")) == token_id:
+			return token.duplicate(true)
+	return {}

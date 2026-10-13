@@ -306,6 +306,7 @@ func _ready() -> void:
 		creature_area.name = "CreatureArea"
 		add_child(creature_area)
 		creature_area.call("setup", self)
+		creature_area.set_map_data_controller(board_sync.map_data_controller)
 
 	dice_roller_chat = preload("res://vtt/dice_roller_chat.gd").new()
 	dice_roller_chat.name = "DiceRollerChat"

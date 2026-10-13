@@ -36,6 +36,9 @@ var _background_rng := RandomNumberGenerator.new()
 
 
 func _ready() -> void:
+	if OS.has_feature("mobile") or OS.has_feature("vtt_mobile"):
+		get_tree().call_deferred("change_scene_to_file", "res://vtt/mobile/creatures_mobile.tscn")
+		return
 	_build_ui()
 	_refresh_responsive_layout()
 

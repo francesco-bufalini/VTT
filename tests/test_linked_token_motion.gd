@@ -72,6 +72,19 @@ func _run() -> void:
 		_fail("linked tokens must not block each other's movement")
 		return
 
+	# Legacy snapshots omit relative yaw: upgrade without changing facing.
+	follower.remove_meta("mount_local_yaw")
+	links.call("refresh_all")
+	if not follower.has_meta("mount_local_yaw") or not _same_yaw(
+		follower.global_rotation.y, initial_yaw
+	):
+		_fail("legacy link must initialize relative yaw and preserve facing")
+		return
+	links.call("refresh_all")
+	if not _same_yaw(follower.global_rotation.y, initial_yaw):
+		_fail("upgraded legacy link must preserve facing on subsequent refresh")
+		return
+
 	# The follower can initiate a move without losing the association.
 	var follower_before: Transform3D = follower.global_transform
 	var leader_before: Vector3 = leader.global_position
