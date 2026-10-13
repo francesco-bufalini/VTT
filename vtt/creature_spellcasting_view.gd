@@ -131,8 +131,7 @@ func _pair() -> Array[VBoxContainer]:
 	for i: int in range(2):
 		var panel := PanelContainer.new()
 		panel.size_flags_vertical = Control.SIZE_SHRINK_BEGIN
-		var style := StyleBoxFlat.new()
-		style.bg_color = Color(0.12, 0.12, 0.13, 0.9)
+		var style: StyleBoxFlat = get_theme_stylebox("panel", "PanelContainer").duplicate() as StyleBoxFlat
 		style.border_color = Color(0.43, 0.36, 0.28)
 		style.set_border_width_all(1)
 		style.set_corner_radius_all(6)
@@ -239,7 +238,7 @@ func _slots(parent: Node, record: Dictionary) -> void:
 		caption.size_flags_horizontal = Control.SIZE_SHRINK_BEGIN
 		caption.autowrap_mode = TextServer.AUTOWRAP_OFF
 		caption.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
-	for level: int in range(10):
+	for level: int in range(1, 10):
 		var row := HBoxContainer.new()
 		row.add_theme_constant_override("separation", 5)
 		parent.add_child(row)
@@ -247,9 +246,6 @@ func _slots(parent: Node, record: Dictionary) -> void:
 		title.custom_minimum_size.x = 24
 		title.size_flags_horizontal = Control.SIZE_SHRINK_BEGIN
 		title.autowrap_mode = TextServer.AUTOWRAP_OFF
-		if level == 0:
-			_label(row, "Trucchetti · senza slot")
-			continue
 		var totals: Array = record.get("spell_slots_total", [])
 		var spent: Array = record.get("spell_slots_spent", [])
 		var maximum: int = maxi(0, Bonuses.add(record, "slot:" + str(level), int(totals[level]) if totals.size() > level else 0))
@@ -274,12 +270,17 @@ func _counter(parent: Node, remaining: int, maximum: int, change: Callable) -> v
 	counter.custom_minimum_size.x = 104
 	counter.add_theme_constant_override("separation", 3)
 	parent.add_child(counter)
-	_compact_button(counter, "−", change.bind(1))
-	var count: Label = _label(counter, "%d/%d" % [remaining, maximum])
-	count.custom_minimum_size.x = 38
+	var count: Label = _label(counter, str(remaining))
+	count.custom_minimum_size.x = 18
+	count.size_flags_horizontal = Control.SIZE_SHRINK_BEGIN
 	count.autowrap_mode = TextServer.AUTOWRAP_OFF
 	count.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
+	_compact_button(counter, "−", change.bind(1))
 	_compact_button(counter, "+", change.bind(-1))
+	var total: Label = _label(counter, "/%d" % maximum)
+	total.custom_minimum_size.x = 24
+	total.size_flags_horizontal = Control.SIZE_SHRINK_BEGIN
+	total.autowrap_mode = TextServer.AUTOWRAP_OFF
 
 func _compact_button(parent: Node, text: String, action: Callable) -> void:
 	var button := Button.new()
