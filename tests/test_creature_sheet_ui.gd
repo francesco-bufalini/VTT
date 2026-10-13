@@ -183,12 +183,27 @@ func run() -> void:
 		and placeable[0].id == area._current().id
 		and placeable[0].current_miniature_id == "hero_test",
 		"Context placement must include unspawned owned creatures and their saved appearance")
-	assert(area._tabs.get_tab_count() == 7, "Creature proficiencies are embedded in Statistics, not a separate tab")
+	assert(area._tabs.get_tab_count() == 6, "Appearance is consolidated into Info instead of a separate tab")
 	var tab_titles: Array[String] = []
 	for tab_index: int in range(area._tabs.get_tab_count()):
 		tab_titles.append(area._tabs.get_tab_title(tab_index))
-	assert("Inventario" in tab_titles and "Incantesimi" in tab_titles and "Competenze" not in tab_titles
+	assert("Inventario" in tab_titles and "Incantesimi" in tab_titles and "Aspetto" not in tab_titles and "Competenze" not in tab_titles
 		and tab_titles[0] == "Info" and tab_titles[1] == "Statistiche")
+	var info_frame: VBoxContainer = area._name.get_parent().get_parent().get_parent() as VBoxContainer
+	var info_root: Node = info_frame.get_parent().get_parent()
+	var physics_found := false
+	for frame: Node in info_root.get_children():
+		if frame is PanelContainer and frame.get_child_count() > 0:
+			var body: Node = frame.get_child(0)
+			if body is VBoxContainer and body.get_child_count() > 0:
+				var title: Node = body.get_child(0)
+				if title is Label and (title as Label).text == "FISICO":
+					physics_found = true
+					assert(frame.get_index() == 1, "Physics immediately follows Identity in Info")
+					assert(body.is_ancestor_of(area._species) and body.is_ancestor_of(area._size_choice)
+						and body.is_ancestor_of(area._speed) and body.is_ancestor_of(area._front),
+						"Species, appearance and movement remain editable together in Physics")
+	assert(physics_found, "Info contains a Physics section")
 	assert(not area._proficiencies_ui.visible, "Competence editor starts collapsed")
 	area._proficiencies_toggle_button.pressed.emit()
 	assert(area._proficiencies_ui.visible, "Statistics button expands competence boxes")
