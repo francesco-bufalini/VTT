@@ -98,6 +98,7 @@ static func _add_choice(output: Dictionary, origin: Dictionary, spec: Dictionary
 		"id": String(origin.get("id", "")) + "|" + stage + "|" + mode + "|" + filter + "|" + tracker_id,
 		"origin_id": String(origin.get("id", "")),
 		"origin_name": String(origin.get("name", "")),
+		"spellcasting_ability": String(origin.get("casting_ability", "")),
 		"filter": filter,
 		"count": maxi(1, int(spec.get("count", 1))),
 		"mode": mode, "stage": stage,
@@ -120,6 +121,7 @@ static func _add_spell(output: Dictionary, origin: Dictionary, token: String, tr
 		"origin_id": origin_id,
 		"origin_name": String(origin.get("name", origin_id)),
 		"spell_id": id, "tracker_id": tracker_id,
+		"spellcasting_ability": String(origin.get("casting_ability", "")),
 		"automatic": true, "mechanic_source": "5etools.additionalSpells"
 	})
 
@@ -217,6 +219,10 @@ static func _append_block(output: Dictionary, origin: Dictionary, raw: Variant, 
 	if not raw is Dictionary:
 		return
 	var block: Dictionary = raw
+	var source: Dictionary = origin.duplicate(true)
+	var declared: Variant = block.get("ability", "")
+	if declared is String and String(declared) in ["str", "dex", "con", "int", "wis", "cha"]:
+		source["casting_ability"] = String(declared)
 	for mode: String in ["innate", "known", "prepared"]:
 		var progression: Variant = block.get(mode, null)
 		if not progression is Dictionary:
@@ -227,7 +233,7 @@ static func _append_block(output: Dictionary, origin: Dictionary, raw: Variant, 
 				continue
 			if int(origin.get("level", 0)) < threshold:
 				continue
-			_walk_usage(output, origin, (progression as Dictionary)[stage], mode, stage, block_index,
+			_walk_usage(output, source, (progression as Dictionary)[stage], mode, stage, block_index,
 				String(record.get("rules_version", "2014")))
 
 
@@ -252,6 +258,10 @@ static func for_creature(record: Dictionary) -> Dictionary:
 			# allowed filters, while keeping one single usage allowance.
 			if blocks.size() > 1 and String(entry.get("kind", "")) == "feat":
 				var alternatives: Dictionary = {}
+				var block_abilities: Dictionary = {}
+				for value: Variant in blocks:
+					if value is Dictionary:
+						block_abilities[String((value as Dictionary).get("ability", ""))] = true
 				for i: int in range(blocks.size()):
 					var temp: Dictionary = {"grants": [], "trackers": [], "choices": []}
 					_append_block(temp, origin, blocks[i], i, record)
@@ -286,6 +296,8 @@ static func for_creature(record: Dictionary) -> Dictionary:
 							(output["trackers"] as Array).append(tracker)
 					for group: Variant in alternatives.values():
 						var choice: Dictionary = group
+						if block_abilities.size() > 1:
+							choice["spellcasting_ability"] = ""
 						choice["tracker_id"] = _matching_tracker(first, choice)
 						(output["choices"] as Array).append(choice)
 					continue
