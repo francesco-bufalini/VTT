@@ -57,6 +57,6 @@ func run() -> void:
 	assert(converted.get("diagnostics", []).is_empty())
 	var entries: Array = converted.get("entries", [])
 	assert(entries.size() == 1 and entries[0].get("category", "") == "feats")
-	assert(entries[0].get("feature_type", "") == "SG")
+	assert(entries[0].get("feature_type", "") == "Supernatural Gift")
 	print("PASS: 44 character options, subtype, sources, homebrew mapping and level-gated feat traits")
 	quit()
