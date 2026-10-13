@@ -19,6 +19,7 @@ def main():
         "generate_proficiency_grants.py",
         "generate_structured_ability_grants.py",
         "generate_class_mechanics.py",
+        "generate_charcreation_options.py",
     ):
         subprocess.run([sys.executable, str(ROOT / script), str(source)], check=True)
 
