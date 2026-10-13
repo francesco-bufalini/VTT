@@ -8,6 +8,7 @@ on:
     paths:
       - "vtt/**"
       - "tests/test_origin_granted_spells.gd"
+      - "tests/test_charoptions_as_feats.gd"
       - "tests/test_origin_spell_editor.gd"
       - "tests/test_creature_spellcasting_cast.gd"
       - ".github/workflows/origin-granted-spells.yml"
@@ -15,6 +16,7 @@ on:
     paths:
       - "vtt/**"
       - "tests/test_origin_granted_spells.gd"
+      - "tests/test_charoptions_as_feats.gd"
       - "tests/test_origin_spell_editor.gd"
       - "tests/test_creature_spellcasting_cast.gd"
       - ".github/workflows/origin-granted-spells.yml"
@@ -30,6 +32,7 @@ jobs:
           sparse-checkout: |
             /vtt/
             /tests/test_origin_granted_spells.gd
+            /tests/test_charoptions_as_feats.gd
             /tests/test_origin_spell_editor.gd
             /tests/test_creature_spellcasting_cast.gd
             /tests/test_spell_effect_tracking.gd
@@ -53,6 +56,7 @@ jobs:
           mkdir -p /tmp/vtt-origin-test/tests
           cp -R vtt /tmp/vtt-origin-test/
           cp tests/test_origin_granted_spells.gd /tmp/vtt-origin-test/tests/
+          cp tests/test_charoptions_as_feats.gd /tmp/vtt-origin-test/tests/
           cp tests/test_origin_spell_editor.gd /tmp/vtt-origin-test/tests/
           cp tests/test_creature_spellcasting_cast.gd /tmp/vtt-origin-test/tests/
           cp tests/test_spell_effect_tracking.gd /tmp/vtt-origin-test/tests/
@@ -62,6 +66,7 @@ jobs:
             --path /tmp/vtt-origin-test --editor --import --quit
           for test in \
             test_origin_granted_spells \
+            test_charoptions_as_feats \
             test_origin_spell_editor \
             test_creature_spellcasting_cast \
             test_spell_effect_tracking \
