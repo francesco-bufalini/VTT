@@ -9,14 +9,17 @@ const TARGETS := [
 	{"key": "ability_check", "name": "Tutte le prove di caratteristica"},
 	{"key": "saving_throw", "name": "Tutti i tiri salvezza"},
 	{"key": "attack_roll", "name": "Tutti i tiri per colpire"},
+	{"key": "damage_roll", "name": "Tutti i tiri di danno"},
 	{"key": "initiative", "name": "Iniziativa"},
 	{"key": "any_d20", "name": "Qualunque tiro d20"}
 ]
 
 
 static func valid_dice(value: String) -> bool:
-	var check := RegEx.create_from_string("^[1-9][0-9]*d(4|6|8|10|12|20|100)$")
-	return check != null and check.search(value.strip_edges().to_lower()) != null
+	var cleaned: String = value.strip_edges().to_lower().replace(" ", "")
+	var check := RegEx.create_from_string("^([1-9][0-9]*)d(4|6|8|10|12|20|100)([+-][0-9]+)?$")
+	var found: RegExMatch = check.search(cleaned) if check != null else null
+	return found != null and int(found.get_string(1)) <= 100
 
 
 static func _scope_for(key: String) -> String:
@@ -26,6 +29,8 @@ static func _scope_for(key: String) -> String:
 		return "saving_throw"
 	if key.begins_with("attack_hit:") or key == "spell_attack":
 		return "attack_roll"
+	if key.begins_with("attack_damage:") or key == "spell_damage":
+		return "damage_roll"
 	return ""
 
 
