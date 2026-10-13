@@ -8,6 +8,7 @@ on:
       - feature/campaign-hub
       - feature/structured-creature-sheets
       - feature/tokens-lazy-load
+      - refactor/compact-creature-core-20261013
     paths:
       - "**/*.gd"
       - "**/*.tscn"
