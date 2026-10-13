@@ -5,7 +5,7 @@ const CreatureOwner = preload("res://vtt/creature_owner.gd")
 const HISTORY_DIR := "user://dice_chat"
 const MAX_HISTORY := 300
 
-var board_root: Node3D
+var board_root: Node
 var ui_root: CanvasLayer
 var sync: Node
 var session_key := "1"
@@ -30,12 +30,16 @@ var close_button: Button
 
 
 func setup(
-	root: Node3D,
+	root: Node,
 	initial_session_key: String,
-	tailscale_peer_provider: Callable
+	tailscale_peer_provider: Callable,
+	host_ui: CanvasLayer = null,
+	enable_network: bool = true
 ) -> void:
 	board_root = root
-	ui_root = board_root.get_node_or_null("UI") as CanvasLayer
+	ui_root = host_ui
+	if ui_root == null and board_root != null:
+		ui_root = board_root.get_node_or_null("UI") as CanvasLayer
 	if ui_root == null:
 		push_error("DiceRollerChat: UI CanvasLayer non trovato")
 		queue_free()
@@ -46,15 +50,19 @@ func setup(
 		ProjectSettings.globalize_path(HISTORY_DIR)
 	)
 
-	sync = DiceChatSync.new()
-	sync.name = "DiceChatSync"
-	add_child(sync)
-	sync.call("setup", tailscale_peer_provider)
-	sync.event_received.connect(_on_remote_event)
-	sync.status_changed.connect(_on_sync_status)
+	# A local roller must not bind sockets or discover peers.
+	if enable_network:
+		sync = DiceChatSync.new()
+		sync.name = "DiceChatSync"
+		add_child(sync)
+		sync.call("setup", tailscale_peer_provider)
+		sync.event_received.connect(_on_remote_event)
+		sync.status_changed.connect(_on_sync_status)
 
 	_build_ui()
 	set_session_key(initial_session_key)
+	if not enable_network and status_label != null:
+		status_label.text = "Dadi e chat locali · offline"
 
 
 func set_session_key(value: String) -> void:
@@ -92,9 +100,9 @@ func show_panel() -> void:
 	if roll_mode_input != null:
 		roll_mode_input.select(0)
 	panel.show()
-	if board_root.has_method("release_camera_control"):
+	if board_root != null and board_root.has_method("release_camera_control"):
 		board_root.call("release_camera_control")
-	elif board_root.has_method("_release_mouse"):
+	elif board_root != null and board_root.has_method("_release_mouse"):
 		board_root.call("_release_mouse")
 	if chat_input != null:
 		chat_input.call_deferred("grab_focus")
@@ -104,9 +112,9 @@ func hide_panel() -> void:
 	if panel == null:
 		return
 	panel.hide()
-	if board_root.has_method("capture_camera_control"):
+	if board_root != null and board_root.has_method("capture_camera_control"):
 		board_root.call("capture_camera_control")
-	elif board_root.has_method("_capture_mouse"):
+	elif board_root != null and board_root.has_method("_capture_mouse"):
 		board_root.call("_capture_mouse")
 
 
