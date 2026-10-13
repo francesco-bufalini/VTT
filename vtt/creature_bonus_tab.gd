@@ -393,6 +393,7 @@ func _refresh() -> void:
 	_grants_tooltip_cache.clear()
 	_refresh_origins()
 	_refresh_bonuses()
+	_refresh_dice_cards()
 	_status.text = "Seleziona un'origine a sinistra per evidenziarne i bonus. Ogni bonus è indipendente e cumulabile; il pulsante di attivazione non elimina la concessione."
 	var source_record: Dictionary = _record.duplicate(true)
 	source_record["proficiency_origins"] = _origins.duplicate(true)
@@ -728,14 +729,96 @@ func _remove(index: int) -> void:
 	_publish()
 
 
+
+func _refresh_dice_cards() -> void:
+	if _dice_cards == null:
+		return
+	for child: Node in _dice_cards.get_children():
+		_dice_cards.remove_child(child)
+		child.queue_free()
+	var active: Dictionary = Proficiencies.origin_enabled_map(_record)
+	for index: int in range(_dice_rows.size()):
+		var entry: Dictionary = _dice_rows[index]
+		var line := HBoxContainer.new()
+		_dice_cards.add_child(line)
+		var scope: String = String(entry.get("target", ""))
+		var info := Label.new()
+		info.text = String(entry.get("origin_name", "Senza origine")) + " · " + scope
+		info.size_flags_horizontal = Control.SIZE_EXPAND_FILL
+		info.clip_text = true
+		line.add_child(info)
+		var dice := LineEdit.new()
+		dice.text = String(entry.get("dice", "1d4"))
+		dice.custom_minimum_size.x = 75
+		dice.text_submitted.connect(_set_dice_formula.bind(index))
+		dice.focus_exited.connect(func() -> void: _set_dice_formula(dice.text, index))
+		line.add_child(dice)
+		var enabled := CheckButton.new()
+		enabled.text = "⏻"
+		enabled.button_pressed = not bool(entry.get("disabled", false))
+		enabled.toggled.connect(_set_dice_enabled.bind(index))
+		line.add_child(enabled)
+		var remove := Button.new()
+		remove.text = "×"
+		remove.pressed.connect(_remove_dice_bonus.bind(index))
+		line.add_child(remove)
+		if not bool(active.get(String(entry.get("origin_id", "")), true)):
+			line.modulate.a = 0.6
+
+
+func _add_dice_bonus() -> void:
+	if _dice_target.selected < 0 or not DiceBonuses.valid_dice(_dice_value.text):
+		_status.text = "Il dado deve essere nel formato 1d4, 1d6, 2d8, ecc."
+		return
+	var origin: Dictionary = OriginChoices.selected(_dice_origin)
+	OriginChoices.ensure(_origins, origin)
+	_dice_rows.append({
+		"id": "dice_bonus_%d" % Time.get_ticks_usec(),
+		"target": String(_dice_target.get_item_metadata(_dice_target.selected)),
+		"dice": _dice_value.text.strip_edges().to_lower(),
+		"origin_id": String(origin.get("id", "")),
+		"origin_name": String(origin.get("name", "Senza origine")),
+		"disabled": false
+	})
+	_publish()
+
+
+func _set_dice_formula(value: String, index: int) -> void:
+	if index < 0 or index >= _dice_rows.size():
+		return
+	var cleaned: String = value.strip_edges().to_lower()
+	if cleaned == String(_dice_rows[index].get("dice", "")):
+		return
+	if not DiceBonuses.valid_dice(cleaned):
+		_status.text = "Formula dado non valida."
+		return
+	_dice_rows[index]["dice"] = cleaned
+	_publish()
+
+
+func _set_dice_enabled(active: bool, index: int) -> void:
+	if index < 0 or index >= _dice_rows.size():
+		return
+	_dice_rows[index]["disabled"] = not active
+	_publish()
+
+
+func _remove_dice_bonus(index: int) -> void:
+	if index < 0 or index >= _dice_rows.size():
+		return
+	_dice_rows.remove_at(index)
+	_publish()
+
+
 func _publish(feat_choice_changed: bool = false) -> void:
 	_record["formula_bonuses"] = _rows.duplicate(true)
+	_record["dice_bonuses"] = _dice_rows.duplicate(true)
 	_record["proficiency_origins"] = _origins.duplicate(true)
 	_refresh_options()
 	_refresh()
 	if not _loading and _changed.is_valid():
 		if feat_choice_changed:
 			_changed.call(_rows.duplicate(true), _origins.duplicate(true),
-				_record.get("feats_catalog", []).duplicate(true))
+				_record.get("feats_catalog", []).duplicate(true), _dice_rows.duplicate(true))
 		else:
-			_changed.call(_rows.duplicate(true), _origins.duplicate(true))
+			_changed.call(_rows.duplicate(true), _origins.duplicate(true), [], _dice_rows.duplicate(true))
