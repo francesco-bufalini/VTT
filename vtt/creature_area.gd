@@ -11,6 +11,7 @@ const PlayerReference = preload("res://vtt/player_reference_catalog.gd")
 const Player5eTools = preload("res://vtt/player_5etools_catalog.gd")
 const RaceRules = preload("res://vtt/creature_race_rules.gd")
 const SpellcastingTab = preload("res://vtt/creature_spellcasting_tab.gd")
+const OriginSpellsTab = preload("res://vtt/creature_origin_spells_tab.gd")
 const SpellCatalog = preload("res://vtt/spells/spell_catalog.gd")
 const ActiveSpells = preload("res://vtt/creature_active_spells.gd")
 const OriginSpells = preload("res://vtt/origin_spell_grants.gd")
@@ -37,6 +38,7 @@ const DocumentInbox = preload("res://vtt/document_inbox.gd")
 const DocumentStore = preload("res://vtt/document_homebrew.gd")
 const CreatureLocale = preload("res://vtt/creature_gui_locale.gd")
 const CreaturePublicStatus = preload("res://vtt/creature_public_status.gd")
+const SheetController = preload("res://vtt/creature_sheet_controller.gd")
 
 var board_root: Node
 var ui_root: CanvasLayer
@@ -54,6 +56,8 @@ var _proficiencies_stale := true
 var _feats_stale := true
 var _bonuses_stale := true
 var _pending_origin_spell_cast: Dictionary = {}
+var _origin_spells_stale := true
+var _origin_spells_ui: Node
 var _trackers_stale := true
 var _damage_defenses_stale := true
 var _catalog: Array[Dictionary] = []
@@ -685,7 +689,7 @@ func _build_ui() -> void:
 	_editor_section_picker.custom_minimum_size = Vector2(285, 30)
 	_editor_section_picker.size_flags_horizontal = Control.SIZE_EXPAND_FILL
 	_editor_section_picker.tooltip_text = "Scegli una sezione da visualizzare o modificare"
-	for section_name: String in ["Niente", "Competenze", "Talenti", "Bonus", "Tracker", "Resistenze, immunità e vulnerabilità"]:
+	for section_name: String in ["Niente", "Competenze", "Talenti", "Bonus", "Tracker", "Resistenze, immunità e vulnerabilità", "Incantesimi da origini"]:
 		_editor_section_picker.add_item(section_name)
 	_editor_section_picker.select(0)
 	_editor_section_picker.item_selected.connect(_select_details_editor)
@@ -710,6 +714,10 @@ func _build_ui() -> void:
 	_damage_defenses_ui.hide()
 	statistics_tab.add_child(_damage_defenses_ui)
 	_damage_defenses_ui.call("setup", Callable(self, "_on_damage_defenses_updated"))
+	_origin_spells_ui = OriginSpellsTab.new()
+	_origin_spells_ui.hide()
+	statistics_tab.add_child(_origin_spells_ui)
+	_origin_spells_ui.call("setup", Callable(self, "_on_origin_spells_updated"))
 	# Share the editor divider and give combat the width its contents need.
 	# Local scrolling remains a fallback when neither column can fit.
 	_statistics_columns = HBoxContainer.new()
@@ -754,7 +762,8 @@ func _build_ui() -> void:
 		Callable(self, "_on_spellcasting_updated"),
 		Callable(self, "_set_status"),
 		Callable(self, "_on_spellcasting_cast_requested"),
-		Callable(self, "_on_formula_bonus_requested")
+		Callable(self, "_on_formula_bonus_requested"),
+		Callable(self, "_open_origin_spell_editor")
 	)
 	var inventory_tab := _add_sheet_tab(_tabs, "Inventario")
 	_inventory_ui = InventoryTab.new()
@@ -2149,13 +2158,14 @@ func _refresh_choice_warnings(record: Dictionary) -> void:
 func _select_details_editor(index: int) -> void:
 	if _editor_section_picker == null:
 		return
-	var choice: int = clampi(index, 0, 5)
+	var choice: int = clampi(index, 0, 6)
 	_editor_section_picker.select(choice)
 	_proficiencies_ui.visible = choice == 1
 	_feats_ui.visible = choice == 2
 	_bonuses_ui.visible = choice == 3
 	_trackers_ui.visible = choice == 4
 	_damage_defenses_ui.visible = choice == 5
+	_origin_spells_ui.visible = choice == 6
 	if choice > 0:
 		var record: Dictionary = _current()
 		if not record.is_empty():
@@ -2180,7 +2190,33 @@ func _select_details_editor(index: int) -> void:
 					if _damage_defenses_stale:
 						_damage_defenses_ui.call("load_record", record)
 						_damage_defenses_stale = false
+				6:
+					if _origin_spells_stale:
+						_origin_spells_ui.call("load_record", record)
+						_origin_spells_stale = false
 	call_deferred("_update_stats_column_heights")
+
+
+func _open_origin_spell_editor() -> void:
+	_tabs.current_tab = 1
+	_select_details_editor(6)
+	call_deferred("_scroll_statistics_to_top")
+
+
+func _on_origin_spells_updated(grants: Array, configs: Dictionary) -> void:
+	if _loading:
+		return
+	var record: Dictionary = _current()
+	if record.is_empty():
+		return
+	SheetController.update_origin_spells(record, grants, configs)
+	if _archive.save(record) != OK:
+		_set_status("Impossibile salvare gli incantesimi da origini.")
+		return
+	_replace_current_record(record)
+	_origin_spells_stale = false
+	_spellcasting_ui.call("load_record", record)
+	_refresh_choice_warnings(record)
 
 
 func _on_damage_defenses_updated(damage_overrides: Dictionary, condition_overrides: Dictionary, defense_entries: Array = [], origins: Array = []) -> void:
@@ -2330,13 +2366,7 @@ func _confirm_roll_with_dice(label: String, base_result: int, key: String, choic
 
 
 func _recalculate_bonus_mirrors(record: Dictionary) -> void:
-	record["max_hp"] = maxi(0, BonusRules.value(record, "hp"))
-	record["armor_class"] = maxi(0, BonusRules.value(record, "ac"))
-	record["initiative_base"] = BonusRules.value(record, "ability_mod:dex")
-	record["initiative"] = BonusRules.value(record, "initiative")
-	record["proficiency_bonus"] = BonusRules.value(record, "proficiency")
-	record["speed"] = maxi(0, BonusRules.value(record, "speed"))
-	record["reach_feet"] = AttackData.active_range(record)
+	SheetController.recalculate_bonus_mirrors(record)
 
 
 func _refresh_formula_dependents(record: Dictionary) -> void:
@@ -2361,30 +2391,7 @@ func _on_trackers_updated(trackers: Array, origins: Array) -> void:
 	var record: Dictionary = _current()
 	if record.is_empty():
 		return
-	# The tracker editor shows only granting origins; retain unrelated
-	# origin switches from proficiency, bonus and feat editors.
-	var merged: Dictionary = {}
-	for source: Variant in record.get("proficiency_origins", []):
-		if source is Dictionary:
-			merged[String(source.get("id", ""))] = (source as Dictionary).duplicate(true)
-	for source: Variant in origins:
-		if source is Dictionary:
-			merged[String(source.get("id", ""))] = (source as Dictionary).duplicate(true)
-	record["proficiency_origins"] = merged.values()
-	record["resource_trackers"] = trackers.duplicate(true)
-	ProficiencyRules.reconcile_origin_dependents(record)
-	var spent: Dictionary = record.get("resource_tracker_spent", {}).duplicate(true)
-	var valid: Dictionary = {}
-	for tracker: Dictionary in _structured_trackers(record):
-		var tracker_id: String = String(tracker.get("id", ""))
-		valid[tracker_id] = true
-		var cap: int = maxi(0, BonusRules.add(record, "tracker:" + tracker_id, int(tracker.get("max", 0))))
-		if spent.has(tracker_id):
-			spent[tracker_id] = clampi(int(spent[tracker_id]), 0, cap)
-	for id: String in spent.keys():
-		if not valid.has(id):
-			spent.erase(id)
-	record["resource_tracker_spent"] = spent
+	SheetController.update_trackers(record, trackers, origins)
 	if _archive.save(record) != OK:
 		_set_status("Impossibile salvare tracker e origini.")
 		return
@@ -2401,16 +2408,7 @@ func _on_bonuses_updated(rows: Array, origins: Array, feats: Array = [], dice_ro
 	var record: Dictionary = _current()
 	if record.is_empty():
 		return
-	record["formula_bonuses"] = rows.duplicate(true)
-	record["dice_bonuses"] = dice_rows.duplicate(true)
-	record["proficiency_origins"] = origins.duplicate(true)
-	if not feats.is_empty():
-		# Bonus choice dialogs update the feat's structured selection, while
-		# ordinary numeric bonus edits leave all feat records untouched.
-		record["feats_catalog"] = feats.duplicate(true)
-	ProficiencyRules.reconcile_origin_dependents(record)
-	# Recalculate every dependent field from its base and active grants.
-	_recalculate_bonus_mirrors(record)
+	SheetController.update_bonuses(record, rows, origins, feats, dice_rows)
 	if _archive.save(record) != OK:
 		_set_status("Impossibile salvare i bonus.")
 		return
@@ -3060,6 +3058,10 @@ func _load_form(record: Dictionary) -> void:
 	_refresh_conditions(record)
 	_refresh_reference(record)
 	_spellcasting_ui.call("load_record", record)
+	_origin_spells_stale = true
+	if _origin_spells_ui != null and _origin_spells_ui.visible:
+		_origin_spells_ui.call("load_record", record)
+		_origin_spells_stale = false
 	_inventory_ui.call("load_record", record)
 	_feats_stale = true
 	if _feats_ui != null and _feats_ui.visible:
@@ -3331,7 +3333,7 @@ func _on_spellcasting_cast_requested(spell: Dictionary, slot_level: int, grant: 
 		_pending_origin_spell_cast = {
 			"creature_id": String(current_record.get("id", "")),
 			"spell_id": spell_id, "grant": grant.duplicate(true),
-			"context": OriginSpells.cast_context(current_record, spell_id)
+			"context": OriginSpells.cast_context(current_record, spell_id, grant)
 		}
 	else:
 		_pending_origin_spell_cast.clear()
@@ -3357,8 +3359,20 @@ func _on_spellcasting_cast_requested(spell: Dictionary, slot_level: int, grant: 
 		return true
 	# Return to the board before entering the existing target-selection mode.
 	hide_panel()
+	var casting_context: Dictionary = {}
+	if not grant.is_empty():
+		casting_context = OriginSpells.cast_context(_current(), spell_id, grant)
+	else:
+		var ability: String = String(spell.get("caster_spellcasting_ability", ""))
+		if ability in ["str", "dex", "con", "int", "wis", "cha"]:
+			var stats: Dictionary = _current()
+			casting_context = {
+				"spellcasting_ability": ability,
+				"spell_attack_bonus": BonusRules.value(stats, "proficiency") + BonusRules.value(stats, "ability_mod:" + ability) + BonusRules.bonus(stats, "spell_attack"),
+				"spell_save_dc": 8 + BonusRules.value(stats, "proficiency") + BonusRules.value(stats, "ability_mod:" + ability) + BonusRules.bonus(stats, "spell_dc")
+			}
 	var activated: bool = bool(runtime.call(
-		"activate_spell_from_caster", spell_id, caster, spell_name, source, slot_level
+		"activate_spell_from_caster", spell_id, caster, spell_name, source, slot_level, casting_context
 	))
 	if not activated:
 		_pending_origin_spell_cast.clear()
@@ -3513,10 +3527,10 @@ func _on_spellcasting_updated(values: Dictionary) -> void:
 	)
 	for key: String in [
 		"spells", "prepared_spells", "spellbook_spells",
-		"spell_slots_total", "spell_slots_spent",
+		"spell_slots_total", "spell_slots_spent", "spell_slots_manual", "spell_slots_automatic",
 		"pact_slots_total", "pact_slots_spent", "pact_slot_level",
 		"spell_slots_visible", "pact_slots_visible",
-		"spellcasting_ability", "concentrating_spell_id", "conditions", "origin_spell_grants"
+		"spellcasting_ability", "concentrating_spell_id", "conditions", "origin_spell_grants", "origin_spell_configs"
 	]:
 		if values.has(key):
 			record[key] = values[key]
@@ -3527,6 +3541,8 @@ func _on_spellcasting_updated(values: Dictionary) -> void:
 	_replace_current_record(record)
 	if _spellcasting_ui != null:
 		_spellcasting_ui.call("refresh_spell_state", record)
+	if values.has("origin_spell_grants") or values.has("origin_spell_configs"):
+		_origin_spells_stale = true
 	if concentration_changed:
 		_refresh_conditions(record)
 		_sync_token_health(record)
@@ -4811,20 +4827,15 @@ func _change_hit_points(delta: int) -> void:
 		return
 	var old_form: int = int(_second_form_hp.value)
 	var record: Dictionary = _current()
-	var hp: int = int(_hp.value)
-	var temp: int = int(_temp_hp.value)
-	var form_hp: int = old_form
-	if delta < 0:
-		var damage_result: Dictionary = Rules.apply_damage_layers(record, -delta)
-		temp = int(damage_result.get("temporary_hp", temp))
-		form_hp = int(damage_result.get("second_form_hp", form_hp))
-		hp = int(damage_result.get("current_hp", hp))
-	else:
-		hp = mini(maxi(0, BonusRules.value(record, "hp")), hp + delta)
+	record["current_hp"] = int(_hp.value)
+	record["temporary_hp"] = int(_temp_hp.value)
+	record["second_form_hp"] = old_form
+	SheetController.change_hit_points(record, delta)
+	var form_hp: int = int(record.get("second_form_hp", 0))
 	_loading = true
-	_temp_hp.value = temp
+	_temp_hp.value = int(record.get("temporary_hp", 0))
 	_second_form_hp.value = form_hp
-	_hp.value = hp
+	_hp.value = int(record.get("current_hp", 0))
 	_loading = false
 	_save()
 	if old_form > 0 and form_hp == 0:
@@ -5164,9 +5175,7 @@ func _change_tracker(id: String, delta: int, maximum: int) -> void:
 	var record: Dictionary = _current()
 	if record.is_empty():
 		return
-	var spent: Dictionary = record.get("resource_tracker_spent", {}).duplicate(true)
-	spent[id] = clampi(int(spent.get(id, 0)) + delta, 0, maximum)
-	record["resource_tracker_spent"] = spent
+	SheetController.change_tracker(record, id, delta, maximum)
 	var error: Error = _archive.save(record)
 	if error != OK:
 		_set_status("Tracker non salvato: " + error_string(error))
@@ -5926,12 +5935,8 @@ func apply_attack_damage_to_token(target: Node3D, damage: int) -> Dictionary:
 		var hp_max := maxi(0, int(owned.get("max_hp", 0)))
 		if hp_max <= 0 and int(owned.get("second_form_hp", 0)) <= 0:
 			return {"applied": false}
-		var hp_now := clampi(int(owned.get("current_hp", hp_max)), 0, hp_max)
 		var prior_form: int = maxi(0, int(owned.get("second_form_hp", 0)))
-		var resolved: Dictionary = Rules.apply_damage_layers(owned, damage)
-		owned["current_hp"] = int(resolved.get("current_hp", hp_now))
-		owned["temporary_hp"] = int(resolved.get("temporary_hp", 0))
-		owned["second_form_hp"] = int(resolved.get("second_form_hp", 0))
+		SheetController.change_hit_points(owned, -damage)
 		if _archive.save(owned) != OK:
 			return {"applied": false}
 		_replace_current_record(owned)
@@ -6273,14 +6278,7 @@ func _set_sheet_condition(enabled: bool, id: String) -> void:
 	var record := _current()
 	if record.is_empty():
 		return
-	var active: Array = record.get("conditions", []).duplicate()
-	if enabled and id not in active:
-		active.append(id)
-	elif not enabled:
-		active.erase(id)
-	if id == "concentrating" and not enabled:
-		record["concentrating_spell_id"] = ""
-	record["conditions"] = active
+	SheetController.set_condition(record, id, enabled)
 	if _archive.save(record) == OK:
 		_replace_current_record(record)
 		_sync_token_health(record)

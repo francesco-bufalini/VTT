@@ -94,9 +94,15 @@ func run() -> void:
 		"Double-clicking an available spell must cast instead of removing it")
 	assert((tab.get("_prepared") as Array).size() == 1,
 		"Double-clicking must leave the prepared list unchanged")
-	assert(cast_button.get_parent() == tab.get("_search_toggle").get_parent()
-		and (tab.get("_prepare") as Button).get_parent() == cast_button.get_parent(),
-		"Add/remove and cast buttons must stay in the same row as search")
+	assert(cast_button.visible and cast_button.get_parent() != null
+		and cast_button.get_parent().get_index() < (tab.get("_search_toggle") as Button).get_parent().get_index(),
+		"Cast must stay prominent above the class spell lists, not beneath origin cards")
+	var new_bard := {"kind": "character", "class": "Bard", "class_source": "PHB",
+		"level": 3, "classes": [{"name": "Bard", "source": "PHB", "level": 3}],
+		"spell_slots_total": [0,0,0,0,0,0,0,0,0,0]}
+	tab.call("load_record", new_bard)
+	assert(int((tab.get("_totals") as Array)[1]) == 4 and int((tab.get("_totals") as Array)[2]) == 2,
+		"A fresh Bard 3 must receive class spell slots without origin assignment")
 	tab.queue_free()
 	sink.queue_free()
 	print("PASS: selected spell casting, ordinary/pact/no-slot use and cantrips")

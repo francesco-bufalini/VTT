@@ -317,7 +317,8 @@ func activate_spell_from_caster(
 	caster: Node3D,
 	spell_name: String = "",
 	source: String = "",
-	cast_slot_level: int = -1
+	cast_slot_level: int = -1,
+	caster_context: Dictionary = {}
 ) -> bool:
 	if spell_id.is_empty() or caster == null or not is_instance_valid(caster):
 		return false
@@ -333,6 +334,11 @@ func activate_spell_from_caster(
 	)
 	if spell_data.is_empty():
 		return false
+	# Preserve the class/origin-specific ability and save DC for the whole
+	# targeting lifecycle instead of falling back to the primary class.
+	for field: String in ["spellcasting_ability", "spell_attack_bonus", "spell_save_dc", "source_class"]:
+		if caster_context.has(field):
+			spell_data["caster_" + field] = caster_context[field]
 
 	var resolved_spell_id: String = String(
 		spell_data.get("id", spell_id)

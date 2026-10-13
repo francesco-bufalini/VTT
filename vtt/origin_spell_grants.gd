@@ -89,14 +89,11 @@ static func all_grants(record: Dictionary) -> Array[Dictionary]:
 		if dedupe.has(key):
 			continue
 		dedupe[key] = true
-		grants.append({
-			"id": String(item.get("id", key)),
-			"origin_id": sid,
-			"origin_name": String(item.get("origin_name", sid)),
-			"spell_id": spell_id,
-			"tracker_id": String(item.get("tracker_id", "")),
-			"automatic": false
-		})
+		var grant: Dictionary = item.duplicate(true)
+		grant["id"] = String(item.get("id", key))
+		grant["origin_name"] = String(item.get("origin_name", sid))
+		grant["automatic"] = false
+		grants.append(grant)
 	for value: Variant in additional.get("grants", []):
 		if not value is Dictionary:
 			continue
@@ -120,12 +117,47 @@ static func all_grants(record: Dictionary) -> Array[Dictionary]:
 		for value: Variant in additional.get(key, []):
 			if value is Dictionary:
 				active_origins[String((value as Dictionary).get("origin_id", ""))] = true
+	var configs: Dictionary = record.get("origin_spell_configs", {})
 	for grant: Dictionary in grants:
 		var origin_id: String = String(grant.get("origin_id", ""))
 		if not active_origins.has(origin_id) or not bool(enabled.get(origin_id, true)):
 			continue
-		output.append(grant)
+		var resolved: Dictionary = grant.duplicate(true)
+		var grant_id: String = String(resolved.get("id", ""))
+		var configuration: Variant = configs.get(grant_id, {})
+		if configuration is Dictionary:
+			var settings: Dictionary = configuration
+			for field: String in ["payment_mode", "tracker_id", "spellcasting_ability"]:
+				if settings.has(field):
+					resolved[field] = settings[field]
+		var mode: String = String(resolved.get("payment_mode", ""))
+		if mode not in ["tracker", "slot", "free"]:
+			mode = "tracker" if not String(resolved.get("tracker_id", "")).is_empty() else "free"
+		resolved["payment_mode"] = mode
+		if String(resolved.get("spellcasting_ability", "")).is_empty():
+			resolved["spellcasting_ability"] = _origin_ability(record, origin_id)
+		output.append(resolved)
 	return output
+
+
+static func _origin_ability(record: Dictionary, origin_id: String) -> String:
+	# Character class spellcasting characteristics are independent; no global
+	# ability override is inherited from an unrelated multiclass class.
+	for raw: Variant in record.get("classes", []):
+		if not raw is Dictionary:
+			continue
+		var member: Dictionary = raw
+		var klass: String = String(member.get("name", "")).to_lower()
+		if ("class|" + String(member.get("source", "")).to_lower() + "|" + klass) in origin_id.to_lower():
+			return String({"wizard": "int", "artificer": "int", "cleric": "wis", "druid": "wis",
+				"ranger": "wis", "paladin": "cha", "bard": "cha", "sorcerer": "cha",
+				"warlock": "cha"}.get(klass, ""))
+	for entry: Variant in Structured5e.for_creature(record).get("grants", []):
+		if entry is Dictionary and String(entry.get("origin_id", "")) == origin_id:
+			var ability: String = String(entry.get("spellcasting_ability", ""))
+			if ability in ["str", "dex", "con", "int", "wis", "cha"]:
+				return ability
+	return ""
 
 
 static func tracker_for(record: Dictionary, grant: Dictionary) -> Dictionary:
@@ -139,9 +171,12 @@ static func tracker_for(record: Dictionary, grant: Dictionary) -> Dictionary:
 
 
 static func remaining(record: Dictionary, grant: Dictionary) -> int:
+	var mode: String = String(grant.get("payment_mode", ""))
+	if mode in ["slot", "free"]:
+		return -1
 	var id: String = String(grant.get("tracker_id", ""))
 	if id.is_empty():
-		return -1  # Explicit unlimited casting, no slot.
+		return 0  # Tracker payment requires an actual tracker.
 	var tracker: Dictionary = tracker_for(record, grant)
 	if tracker.is_empty() or bool(tracker.get("disabled", false)):
 		return 0
@@ -156,16 +191,18 @@ static func remaining(record: Dictionary, grant: Dictionary) -> int:
 static func spend(record: Dictionary, grant: Dictionary) -> bool:
 	if remaining(record, grant) == 0:
 		return false
+	if String(grant.get("payment_mode", "")) in ["free", "slot"]:
+		return true
 	var id: String = String(grant.get("tracker_id", ""))
 	if id.is_empty():
-		return true
+		return false
 	var spent: Dictionary = record.get("resource_tracker_spent", {}).duplicate(true)
 	spent[id] = int(spent.get(id, 0)) + 1
 	record["resource_tracker_spent"] = spent
 	return true
 
 
-static func cast_context(record: Dictionary, spell_id: String) -> Dictionary:
+static func cast_context(record: Dictionary, spell_id: String, grant: Dictionary = {}) -> Dictionary:
 	# Snapshot the granting caster's level at cast time. The recipient's
 	# statistics must never influence the size of a granted spell's die.
 	var definition: Dictionary = Catalog.catalog_spell(spell_id)
@@ -177,7 +214,15 @@ static func cast_context(record: Dictionary, spell_id: String) -> Dictionary:
 		for value: Variant in progression:
 			if value is Dictionary and int(value.get("level", 0)) <= source_level:
 				dice = String(value.get("dice", ""))
+	var ability: String = String(grant.get("spellcasting_ability", ""))
+	if ability not in ["str", "dex", "con", "int", "wis", "cha"]:
+		ability = _origin_ability(record, String(grant.get("origin_id", "")))
+	var proficiency: int = Bonuses.value(record, "proficiency")
+	var modifier: int = Bonuses.value(record, "ability_mod:" + ability) if not ability.is_empty() else 0
 	return {
 		"source_level": source_level, "bonus_dice": dice,
-		"caster_name": String(record.get("name", ""))
+		"caster_name": String(record.get("name", "")),
+		"spellcasting_ability": ability,
+		"spell_attack_bonus": proficiency + modifier + Bonuses.bonus(record, "spell_attack"),
+		"spell_save_dc": 8 + proficiency + modifier + Bonuses.bonus(record, "spell_dc")
 	}
