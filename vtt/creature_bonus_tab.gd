@@ -17,6 +17,7 @@ const OriginChoices = preload("res://vtt/creature_origin_choices.gd")
 const PendingChoices = preload("res://vtt/creature_pending_choices.gd")
 const Structured = preload("res://vtt/creature_structured_bonuses.gd")
 const DialogLayout = preload("res://vtt/dialog_layout.gd")
+const DiceBonuses = preload("res://vtt/creature_dice_bonuses.gd")
 const ABILITY_LABELS := {
 	"str": "Forza", "dex": "Destrezza", "con": "Costituzione",
 	"int": "Intelligenza", "wis": "Saggezza", "cha": "Carisma"
@@ -30,6 +31,11 @@ var _selected_origin := ""
 var _selected_target := ""
 var _origin_cards: VBoxContainer
 var _bonus_cards: VBoxContainer
+var _dice_cards: VBoxContainer
+var _dice_rows: Array[Dictionary] = []
+var _dice_target: OptionButton
+var _dice_origin: OptionButton
+var _dice_value: LineEdit
 var _status: Label
 var _origin_picker: OptionButton
 var _target_filter: OptionButton
@@ -104,6 +110,37 @@ func setup(on_change: Callable) -> void:
 	add_bonus.tooltip_text = "Crea un bonus e collegalo all'origine scelta qui accanto."
 	add_bonus.pressed.connect(_add_bonus)
 	new_row.add_child(add_bonus)
+	# Dice modifiers do not alter the static numeric value of a stat.
+	var dice_panel := PanelContainer.new()
+	add_child(dice_panel)
+	var dice_body := VBoxContainer.new()
+	dice_body.add_theme_constant_override("separation", 5)
+	dice_panel.add_child(dice_body)
+	var dice_heading := Label.new()
+	dice_heading.text = "Bonus ai tiri con dadi · assegnati alle origini"
+	dice_heading.add_theme_font_size_override("font_size", 15)
+	dice_body.add_child(dice_heading)
+	_dice_cards = VBoxContainer.new()
+	dice_body.add_child(_dice_cards)
+	var dice_inputs := HBoxContainer.new()
+	dice_body.add_child(dice_inputs)
+	_dice_target = OptionButton.new()
+	_dice_target.fit_to_longest_item = false
+	_dice_target.size_flags_horizontal = Control.SIZE_EXPAND_FILL
+	dice_inputs.add_child(_dice_target)
+	_dice_value = LineEdit.new()
+	_dice_value.text = "1d4"
+	_dice_value.placeholder_text = "1d6"
+	_dice_value.custom_minimum_size.x = 75
+	dice_inputs.add_child(_dice_value)
+	_dice_origin = OptionButton.new()
+	_dice_origin.size_flags_horizontal = Control.SIZE_EXPAND_FILL
+	_dice_origin.fit_to_longest_item = false
+	dice_inputs.add_child(_dice_origin)
+	var dice_add := Button.new()
+	dice_add.text = "+ Dado"
+	dice_add.pressed.connect(_add_dice_bonus)
+	dice_inputs.add_child(dice_add)
 	_choice_dialog = ConfirmationDialog.new()
 	_choice_dialog.title = "Completa il bonus del talento"
 	_choice_dialog.ok_button_text = "Applica"
@@ -149,6 +186,10 @@ func load_record(record: Dictionary) -> void:
 	_description_cache.clear()
 	_grants_tooltip_cache.clear()
 	_rows = Bonuses.grants(_record)
+	_dice_rows.clear()
+	for raw: Variant in record.get("dice_bonuses", []):
+		if raw is Dictionary:
+			_dice_rows.append((raw as Dictionary).duplicate(true))
 	_origins = Proficiencies.origins(_record)
 	# Sources without proficiencies are also available to the bonus editor.
 	for entry: Dictionary in Bonuses.available_origins(_record):
@@ -250,6 +291,25 @@ func _refresh_options() -> void:
 	var current: Dictionary = _record.duplicate(false)
 	current["proficiency_origins"] = _origins.duplicate(true)
 	OriginChoices.populate(_origin_picker, current, _selected_origin)
+	if _dice_origin != null:
+		OriginChoices.populate(_dice_origin, current)
+	if _dice_target != null:
+		var previous: String = ""
+		if _dice_target.selected >= 0:
+			previous = String(_dice_target.get_item_metadata(_dice_target.selected))
+		_dice_target.clear()
+		for target: Dictionary in DiceBonuses.TARGETS:
+			_dice_target.add_item(String(target.get("name", "")))
+			_dice_target.set_item_metadata(_dice_target.item_count - 1, String(target.get("key", "")))
+		for target: Dictionary in _all_targets():
+			var key: String = String(target.get("key", ""))
+			if key.begins_with("skill:") or key.begins_with("save:") or key.begins_with("attack_hit:") or key.begins_with("ability_mod:"):
+				_dice_target.add_item(String(target.get("name", key)))
+				_dice_target.set_item_metadata(_dice_target.item_count - 1, key)
+		for i: int in range(_dice_target.item_count):
+			if String(_dice_target.get_item_metadata(i)) == previous:
+				_dice_target.select(i)
+				break
 
 
 func _on_filter_changed(index: int) -> void:
