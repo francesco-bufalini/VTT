@@ -3,6 +3,8 @@ const Granted = preload("res://vtt/origin_spell_grants.gd")
 const Dice = preload("res://vtt/creature_dice_bonuses.gd")
 const Spells = preload("res://vtt/spells/spell_catalog.gd")
 const Applied = preload("res://vtt/creature_active_spells.gd")
+const Structured = preload("res://vtt/structured_origin_spells_5etools.gd")
+const Trackers = preload("res://vtt/structured_resource_trackers.gd")
 
 
 func _initialize() -> void:
@@ -75,5 +77,58 @@ func run() -> void:
 	assert(Dice.applicable(custom, "attack_damage:longsword").size() == 1
 		and Dice.applicable(custom, "attack_hit:longsword").is_empty(),
 		"Damage dice can target damage rolls without changing attack-hit rolls")
+	# 5etools additionalSpells is machine-readable across more origins,
+	# not only the two hand-authored action templates.
+	var drow: Dictionary = {
+		"kind": "character", "level": 5, "class": "Wizard",
+		"class_source": "PHB", "classes": [{"name": "Wizard", "source": "PHB", "level": 5}],
+		"species": "Elf", "species_source": "PHB",
+		"subrace": "Drow", "subrace_source": "PHB", "rules_version": "2014"
+	}
+	var drow_spells: Dictionary = Structured.for_creature(drow)
+	var drow_grants: Array = drow_spells.get("grants", [])
+	assert(drow_grants.size() >= 2, "5etools Drow spell grants must be decoded from additionalSpells")
+	var has_limited := false
+	var has_cantrip := false
+	for raw: Variant in drow_grants:
+		if not raw is Dictionary:
+			continue
+		var granted: Dictionary = raw
+		if String(granted.get("tracker_id", "")).is_empty():
+			has_cantrip = true
+		else:
+			has_limited = true
+	assert(has_limited and has_cantrip,
+		"Drow cantrip is at will, while higher-level spells use their own tracker")
+	assert(not (drow_spells.get("trackers", []) as Array).is_empty())
+	var all_drow: Array[Dictionary] = Granted.all_grants(drow)
+	assert(all_drow.size() >= 2, "Structured spells must appear as usable origin-granted spells")
+	var limited: Dictionary = {}
+	for grant: Dictionary in all_drow:
+		if not String(grant.get("tracker_id", "")).is_empty():
+			limited = grant
+			break
+	assert(not limited.is_empty() and Granted.remaining(drow, limited) == 1,
+		"Limited racial spell has one cast per long rest")
+	assert(Granted.spend(drow, limited))
+	assert(Granted.remaining(drow, limited) == 0)
+	var restored: Dictionary = Trackers.spent_after_recovery(drow, "long_rest")
+	drow["resource_tracker_spent"] = restored
+	assert(Granted.remaining(drow, limited) == 1, "Long rest recovers structured racial spell charge")
+	# Spell lists which merely expand class preparation do not create
+	# unlimited no-slot spell entitlements.
+	var azorius: Dictionary = {
+		"kind": "character", "background": "Azorius Functionary",
+		"background_source": "GGR", "level": 5
+	}
+	assert((Structured.for_creature(azorius).get("grants", []) as Array).is_empty(),
+		"Expanded spell lists are not slot-free grants")
+	# True structured choices stay pending until selected.
+	var high_elf: Dictionary = {
+		"kind": "character", "species": "Elf", "species_source": "PHB",
+		"subrace": "High", "subrace_source": "PHB", "level": 1
+	}
+	assert(not (Structured.for_creature(high_elf).get("choices", []) as Array).is_empty(),
+		"Structured spell choose must be exposed instead of guessed")
 	print("PASS origin-granted spells, resource charges and caster-scaled dice")
 	quit()
