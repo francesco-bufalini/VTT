@@ -64,8 +64,12 @@ func run() -> void:
 	var stats: Array[Node] = tab._view.find_children("CastingStatistics", "Label", true, false)
 	assert(not stats.is_empty(), "Each spellcasting class has a visible casting statistics label")
 	assert(stats.any(func(node: Node) -> bool:
-		return "INT" in (node as Label).text and "+6" in (node as Label).text and "CD: 14" in (node as Label).text),
-		"Class-specific spellcasting stats use the caster's own ability.")
+		return "Modificatore: +6" in (node as Label).text and "CD: 14" in (node as Label).text),
+		"Class-specific Modifier and DC use the caster's own ability.")
+	var abilities: Array[Node] = tab._view.find_children("CastingAbility", "OptionButton", true, false)
+	assert(abilities.any(func(node: Node) -> bool:
+		return String((node as OptionButton).get_selected_metadata()) == "int"),
+		"Ability is represented once, in the section selector")
 	assert(summary.get_parent() == tab._drop_concentration_button.get_parent(),
 		"End concentration belongs beside the active spell name")
 
