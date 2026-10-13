@@ -253,7 +253,6 @@ static func for_creature(record: Dictionary) -> Dictionary:
 			continue
 		for origin: Dictionary in origins:
 			var blocks: Array = entry.get("blocks", [])
-			var options: Array = []
 			# Multi-block feats usually represent *alternative* spell lists,
 			# not several grants. Match their usage signatures and union the
 			# allowed filters, while keeping one single usage allowance.
