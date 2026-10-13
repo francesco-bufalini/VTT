@@ -2244,8 +2244,61 @@ func _on_formula_roll_requested(key: String) -> void:
 		_set_status("Il roller della chat non è disponibile.")
 		return
 	var modifier: int = BonusRules.value(record, key)
-	roller.call("roll_expression_from_sheet", label, "1d20%+d" % modifier,
-		find_linked_token_for_creature(_selected_id))
+	_roll_with_optional_dice(label, "1d20%+d" % modifier, key, record)
+
+
+
+func _roll_with_optional_dice(label: String, expression: String, key: String, record: Dictionary) -> void:
+	var applicable: Array[Dictionary] = DiceBonuses.applicable(record, key)
+	if applicable.is_empty():
+		var roller: Node = board_root.get_node_or_null("DiceRollerChat")
+		if roller != null and roller.has_method("roll_expression_from_sheet"):
+			roller.call("roll_expression_from_sheet", label, expression, find_linked_token_for_creature(_selected_id))
+		return
+	var dialog := ConfirmationDialog.new()
+	dialog.title = "Bonus con dadi · " + label
+	dialog.ok_button_text = "Lancia"
+	dialog.cancel_button_text = "Annulla"
+	add_child(dialog)
+	var panel := VBoxContainer.new()
+	dialog.add_child(panel)
+	var heading := Label.new()
+	heading.text = "Seleziona quali dadi aggiungere al tiro. Gli effetti monouso saranno consumati."
+	heading.autowrap_mode = TextServer.AUTOWRAP_WORD_SMART
+	panel.add_child(heading)
+	var choices: Array[Dictionary] = []
+	for entry: Dictionary in applicable:
+		var checkbox := CheckBox.new()
+		checkbox.text = "%s · %s" % [
+			String(entry.get("origin_name", "Bonus")), String(entry.get("dice", ""))]
+		panel.add_child(checkbox)
+		choices.append({"check": checkbox, "entry": entry.duplicate(true)})
+	dialog.confirmed.connect(_confirm_roll_with_dice.bind(label, expression, choices, dialog))
+	dialog.canceled.connect(func() -> void: dialog.queue_free())
+	dialog.popup_centered(Vector2i(480, maxi(160, 90 + choices.size() * 38)))
+
+
+func _confirm_roll_with_dice(label: String, expression: String, choices: Array[Dictionary], dialog: ConfirmationDialog) -> void:
+	var suffix := ""
+	var consumed: Dictionary = {}
+	for option: Dictionary in choices:
+		var check: CheckBox = option.get("check")
+		if check == null or not check.button_pressed:
+			continue
+		var entry: Dictionary = option.get("entry", {})
+		var dice: String = String(entry.get("dice", ""))
+		if not DiceBonuses.valid_dice(dice):
+			continue
+		suffix += "+" + dice
+		var spell_id: String = String(entry.get("consumes_spell", ""))
+		if not spell_id.is_empty():
+			consumed[spell_id] = true
+	var roller: Node = board_root.get_node_or_null("DiceRollerChat")
+	if roller != null and roller.has_method("roll_expression_from_sheet"):
+		roller.call("roll_expression_from_sheet", label, expression + suffix, find_linked_token_for_creature(_selected_id))
+	for spell_id: String in consumed.keys():
+		_remove_active_spell("spell:" + spell_id)
+	dialog.queue_free()
 
 
 func _recalculate_bonus_mirrors(record: Dictionary) -> void:
@@ -2314,13 +2367,14 @@ func _on_trackers_updated(trackers: Array, origins: Array) -> void:
 	_refresh_conditions(record)
 
 
-func _on_bonuses_updated(rows: Array, origins: Array, feats: Array = []) -> void:
+func _on_bonuses_updated(rows: Array, origins: Array, feats: Array = [], dice_rows: Array = []) -> void:
 	if _loading:
 		return
 	var record: Dictionary = _current()
 	if record.is_empty():
 		return
 	record["formula_bonuses"] = rows.duplicate(true)
+	record["dice_bonuses"] = dice_rows.duplicate(true)
 	record["proficiency_origins"] = origins.duplicate(true)
 	if not feats.is_empty():
 		# Bonus choice dialogs update the feat's structured selection, while
@@ -3764,7 +3818,10 @@ func _roll_attack_from_sheet(attack_id: String, damage: bool) -> void:
 		else:
 			_set_status("Nessuna formula di danno per questo attacco.")
 		return
-	roller.call("roll_expression_from_sheet", label, expression, find_linked_token_for_creature(_selected_id))
+	if damage:
+		roller.call("roll_expression_from_sheet", label, expression, find_linked_token_for_creature(_selected_id))
+	else:
+		_roll_with_optional_dice(label, expression, "attack_hit:" + attack_id, record)
 
 
 func _refresh_attacks(record: Dictionary) -> void:
