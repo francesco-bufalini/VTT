@@ -7,6 +7,7 @@ const Traits = preload("res://vtt/creature_traits_tab.gd")
 const Trackers = preload("res://vtt/structured_resource_trackers.gd")
 const Profs = preload("res://vtt/creature_proficiency_rules.gd")
 const Bonuses = preload("res://vtt/creature_bonus_rules.gd")
+const Structured5e = preload("res://vtt/structured_origin_spells_5etools.gd")
 
 const BARDIC := "vtt_bardic_inspiration"
 const WILD_SHAPE := "vtt_wild_shape"
@@ -67,6 +68,7 @@ static func _builtins(record: Dictionary) -> Array[Dictionary]:
 
 static func all_grants(record: Dictionary) -> Array[Dictionary]:
 	var grants: Array[Dictionary] = _builtins(record)
+	var additional: Dictionary = Structured5e.for_creature(record)
 	var dedupe: Dictionary = {}
 	for grant: Dictionary in grants:
 		dedupe[String(grant.get("origin_id", "")) + "|" + String(grant.get("spell_id", ""))] = true
@@ -90,6 +92,15 @@ static func all_grants(record: Dictionary) -> Array[Dictionary]:
 			"tracker_id": String(item.get("tracker_id", "")),
 			"automatic": false
 		})
+	for value: Variant in additional.get("grants", []):
+		if not value is Dictionary:
+			continue
+		var grant: Dictionary = value
+		var key: String = String(grant.get("origin_id", "")) + "|" + String(grant.get("spell_id", ""))
+		if dedupe.has(key):
+			continue
+		dedupe[key] = true
+		grants.append(grant)
 	var enabled: Dictionary = Profs.origin_enabled_map(record)
 	var output: Array[Dictionary] = []
 	var active_origins: Dictionary = {}
@@ -100,6 +111,9 @@ static func all_grants(record: Dictionary) -> Array[Dictionary]:
 	for raw: Variant in record.get("inventory", []):
 		if raw is Dictionary and int(raw.get("quantity", 1)) > 0:
 			active_origins["item:" + String(raw.get("id", ""))] = true
+	for value: Variant in additional.get("grants", []):
+		if value is Dictionary:
+			active_origins[String((value as Dictionary).get("origin_id", ""))] = true
 	for grant: Dictionary in grants:
 		var origin_id: String = String(grant.get("origin_id", ""))
 		if not active_origins.has(origin_id) or not bool(enabled.get(origin_id, true)):
