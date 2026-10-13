@@ -273,13 +273,13 @@ func _counter(parent: Node, remaining: int, maximum: int, change: Callable) -> v
 		empty.autowrap_mode = TextServer.AUTOWRAP_OFF
 		empty.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
 		return
+	_compact_button(counter, "−", change.bind(1))
+	_compact_button(counter, "+", change.bind(-1))
 	var count: Label = _label(counter, str(remaining))
 	count.custom_minimum_size.x = 18
 	count.size_flags_horizontal = Control.SIZE_SHRINK_BEGIN
 	count.autowrap_mode = TextServer.AUTOWRAP_OFF
 	count.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
-	_compact_button(counter, "−", change.bind(1))
-	_compact_button(counter, "+", change.bind(-1))
 	var total: Label = _label(counter, "/%d" % maximum)
 	total.custom_minimum_size.x = 24
 	total.size_flags_horizontal = Control.SIZE_SHRINK_BEGIN
