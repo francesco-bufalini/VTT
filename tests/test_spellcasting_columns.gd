@@ -165,6 +165,21 @@ func run() -> void:
 	assert(caption._body.text == "Caption dell'elemento della lista", "List item captions use the same scrollable presenter")
 	caption._restore_target()
 	assert(item_list.get_item_tooltip(0) == "Caption dell'elemento della lista")
+	var origin_button := preload("res://vtt/bounded_tooltip_button.gd").new() as Button
+	origin_button.tooltip_text = "Descrizione di un'origine.\n".repeat(60)
+	root.add_child(origin_button)
+	caption._target = origin_button
+	caption._text = origin_button.tooltip_text
+	caption._show_caption()
+	await process_frame
+	assert(caption._body.text == origin_button.tooltip_text,
+		"Origin buttons use the same hover presenter as spell descriptions")
+	assert(caption._body.get_v_scroll_bar().max_value > caption._body.get_v_scroll_bar().page,
+		"Long origin descriptions also scroll")
+	caption._panel.hide()
+	caption._restore_target()
+	assert(origin_button.tooltip_text.begins_with("Descrizione di un'origine."))
+	origin_button.free()
 	item_list.free()
 	target.free()
 	scroll.free()
