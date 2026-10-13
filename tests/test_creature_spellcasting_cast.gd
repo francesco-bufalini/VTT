@@ -67,14 +67,14 @@ func run() -> void:
 	tab.call("_dispatch_cast", {"id": "test_cantrip", "level": 0}, 0)
 	assert(sink.calls.back().slot_level == 0)
 	assert(int((tab.get("_spent") as Array)[2]) == 1)
-	# Selecting any source enables the same cast button.
+	# Spell activation stays available without a redundant global Cast button.
 	var available: ItemList = tab.get("_available") as ItemList
 	available.add_item("Test Cantrip")
 	available.select(0)
 	tab.set("_visible", [{"id": "test_cantrip", "name": "Test Cantrip", "level": 0}])
 	tab.call("_update_spell_controls")
-	var cast_button: Button = tab.get("_cast_button") as Button
-	assert(not cast_button.disabled)
+	assert(tab.find_children("*", "Button", true, false).all(func(button: Node) -> bool: return (button as Button).text != "✨ Lancia"),
+		"The redundant global Cast button is no longer present")
 	var before_available: int = (tab.get("_prepared") as Array).size()
 	tab.call("_on_spell_activated", "catalog", 0)
 	assert(sink.calls.back().id == "test_cantrip" and sink.calls.back().slot_level == 0)
@@ -94,9 +94,6 @@ func run() -> void:
 		"Double-clicking an available spell must cast instead of removing it")
 	assert((tab.get("_prepared") as Array).size() == 1,
 		"Double-clicking must leave the prepared list unchanged")
-	assert(cast_button.visible and cast_button.get_parent() != null
-		and cast_button.get_parent().get_index() < (tab.get("_search_toggle") as Button).get_parent().get_index(),
-		"Cast must stay prominent above the class spell lists, not beneath origin cards")
 	var new_bard := {"kind": "character", "class": "Bard", "class_source": "PHB",
 		"level": 3, "classes": [{"name": "Bard", "source": "PHB", "level": 3}],
 		"spell_slots_total": [0,0,0,0,0,0,0,0,0,0]}
