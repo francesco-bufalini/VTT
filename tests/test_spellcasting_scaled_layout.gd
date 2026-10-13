@@ -72,18 +72,23 @@ func run() -> void:
 		root.get_texture().get_image().save_png("user://spellcasting_scaled_review.png")
 	var selector := Selector.new()
 	host.add_child(selector)
-	for physical_size: Vector2i in [Vector2i(1024,720),Vector2i(800,600)]:
+	for physical_size: Vector2i in [Vector2i(1024,720),Vector2i(800,600),Vector2i(640,480)]:
 		root.size = physical_size
+		if physical_size.x == 640:
+			root.content_scale_size = physical_size
 		selector.choose(options, {"book_mode":true, "details":"Origine e formula della lista. ".repeat(80)}, ignore)
 		for i: int in range(6):
 			await process_frame
 		var area := host.get_viewport().get_visible_rect()
 		assert(selector.size.x <= area.size.x and selector.size.y <= area.size.y)
 		assert(selector.position.x >= 0 and selector.position.y >= 0)
+		assert(selector.position.y >= selector.get_theme_constant("title_height", "Window") + 8, "The title bar also stays on screen")
 		assert(selector.position.y + selector.size.y <= area.size.y)
 		if DisplayServer.get_name() != "headless":
 			await RenderingServer.frame_post_draw
 			root.get_texture().get_image().save_png("user://spellcasting_scaled_selector_%d.png" % physical_size.x)
+		var results: ScrollContainer = selector._rows.get_parent()
+		assert(results.size.y > selector.size.y * 0.3, "The results use the available popup height")
 		selector._details.show()
 		for i: int in range(4):
 			await process_frame

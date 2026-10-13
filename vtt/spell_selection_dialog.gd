@@ -25,6 +25,7 @@ func _ready() -> void:
 	ok_button_text = "Salva selezione"
 	cancel_button_text = "Annulla"
 	var layout := VBoxContainer.new()
+	layout.size_flags_vertical = Control.SIZE_EXPAND_FILL
 	layout.add_theme_constant_override("separation", 8)
 	add_child(layout)
 	var heading := HBoxContainer.new()
@@ -218,12 +219,15 @@ func _fit_dialog() -> void:
 	# Embedded windows use the parent viewport's coordinates, which can be
 	# different from the root window's physical pixels under UI stretching.
 	var area: Rect2 = get_parent().get_viewport().get_visible_rect()
+	var title_height := maxi(get_theme_constant("title_height", "Window"), get_theme_font_size("title_font_size", "Window") + 12)
+	add_theme_constant_override("title_height", title_height)
 	var available := Vector2i(area.size * 0.92)
+	available.y = mini(available.y, int(area.size.y) - title_height - 24)
 	wrap_controls = false
 	min_size = Vector2i.ZERO
 	max_size = available
 	size = Vector2i(760, 620).min(available)
-	position = Vector2i(area.position) + (Vector2i(area.size) - size) / 2
+	position = Vector2i(area.position) + (Vector2i(area.size) - size + Vector2i(0, title_height)) / 2
 
 
 func _input(event: InputEvent) -> void:
