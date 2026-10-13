@@ -748,3 +748,18 @@ static func _collect_monster(record: Dictionary, output: Array[Dictionary]) -> v
 					"name": "%s · %d" % [category["label"], index + 1],
 					"entries": raw_entry, "source": String(stat.get("source", ""))
 				}, 0, "Mostro · " + String(category["label"]), "monster|" + section, "", "", 0)
+
+
+func focus_origin(sid: String, fallback_name: String = "") -> void:
+	for feature: Dictionary in _features:
+		if sid == "feature:" + String(feature.get("key", "")) or sid == String(feature.get("origin_key", "")):
+			_active_origin = String(feature.get("origin_key", ""))
+			for i: int in range(_origin_choice.item_count):
+				if String(_origin_choice.get_item_metadata(i)) == _active_origin:
+					_origin_choice.select(i)
+			_search.clear()
+			_expanded[String(feature["key"])] = true
+			_rebuild()
+			call_deferred("_ensure_visible", String(feature["key"]))
+			return
+	focus_feature(fallback_name)

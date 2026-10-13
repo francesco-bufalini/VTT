@@ -1,4 +1,5 @@
 extends VBoxContainer
+const EditorUI = preload("res://vtt/origin_editor_ui.gd")
 
 # Independent, expandable Statistics editor for feat grants.
 # The left column is an origin list; the right one is the feat list,
@@ -92,9 +93,7 @@ func setup(on_change: Callable) -> void:
 
 	var add_feat := Button.new()
 	add_feat.text = "+ Talento"
-	add_feat.pressed.connect(func() -> void:
-		_feat_editor.visible = not _feat_editor.visible
-	)
+
 	right.add_child(add_feat)
 	_feat_editor = VBoxContainer.new()
 	_feat_editor.hide()
@@ -115,6 +114,10 @@ func setup(on_change: Callable) -> void:
 	confirm_feat.text = "Aggiungi talento"
 	confirm_feat.pressed.connect(_add_feat)
 	_feat_editor.add_child(confirm_feat)
+	_feat_editor.show()
+	var feat_dialog: AcceptDialog = EditorUI.popup_form(self, _feat_editor, "+ Talento", confirm_feat)
+	add_feat.hide()
+	add_feat.pressed.connect(func() -> void: feat_dialog.popup_centered(Vector2i(640, 300)))
 
 	_remove_dialog = ConfirmationDialog.new()
 	_remove_dialog.title = "Rimuovi talento"
@@ -345,6 +348,7 @@ func _refresh_origins() -> void:
 		select.tooltip_text = _description(sid) + _origin_grants_tooltip(sid)
 		select.pressed.connect(_select_origin.bind(sid))
 		line.add_child(select)
+		EditorUI.origin_link(self, line, sid, _label(sid))
 		if not sid.is_empty():
 			var on := CheckButton.new()
 			on.text = "⏻"
@@ -404,7 +408,7 @@ func _refresh_feats() -> void:
 		_feat_cards.add_child(panel)
 		var style := StyleBoxFlat.new()
 		style.bg_color = Color(0.13, 0.12, 0.12, 0.88)
-		style.border_color = Color(0.79, 0.66, 0.43, 0.78) if selected_active else Color(0.36, 0.31, 0.27, 0.75)
+		style.border_color = Color(0.40, 0.72, 0.91) if selected_active else Color(0.36, 0.31, 0.27, 0.75)
 		style.set_border_width_all(1)
 		style.set_corner_radius_all(5)
 		style.set_content_margin_all(7)

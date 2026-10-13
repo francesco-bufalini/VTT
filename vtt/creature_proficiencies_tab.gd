@@ -1,4 +1,5 @@
 extends VBoxContainer
+const EditorUI = preload("res://vtt/origin_editor_ui.gd")
 
 const ScrollBoundaryGuard = preload("res://vtt/nested_scroll_boundary_guard.gd")
 
@@ -94,9 +95,7 @@ func setup(on_change: Callable) -> void:
 	competence_scroller.add_child(_proficiency_cards)
 	_add_competence_button = Button.new()
 	_add_competence_button.text = "+ Competenza"
-	_add_competence_button.pressed.connect(func() -> void:
-		_competence_editor.visible = not _competence_editor.visible
-	)
+
 	right.add_child(_add_competence_button)
 	_competence_editor = VBoxContainer.new()
 	_competence_editor.visible = false
@@ -119,6 +118,10 @@ func setup(on_change: Callable) -> void:
 	competence_confirm.text = "Aggiungi competenza"
 	competence_confirm.pressed.connect(_add_competence)
 	_competence_editor.add_child(competence_confirm)
+	_competence_editor.show()
+	var competence_dialog: AcceptDialog = EditorUI.popup_form(self, _competence_editor, "+ Competenza", competence_confirm)
+	_add_competence_button.hide()
+	_add_competence_button.pressed.connect(func() -> void: competence_dialog.popup_centered(Vector2i(640, 300)))
 	_choice_dialog = ConfirmationDialog.new()
 	_choice_dialog.title = "Completa le competenze"
 	_choice_dialog.ok_button_text = "Applica"
@@ -269,6 +272,7 @@ func _refresh_origins() -> void:
 		select.tooltip_text = description + _origin_grants_tooltip(sid) + ("\n\n⚠ Da scegliere: " + ", ".join(missing) if not missing.is_empty() else "")
 		select.pressed.connect(_select_origin.bind(sid))
 		line.add_child(select)
+		EditorUI.origin_link(self, line, sid, String(item.get("name", "")))
 		# The warning has its own button: long source names must not clip it.
 		if not missing.is_empty() and not sid.is_empty():
 			var warning := Button.new()
@@ -467,9 +471,9 @@ func _refresh_competences() -> void:
 			# Give EVERY card identical background, borders and padding.
 			var row_style := StyleBoxFlat.new()
 			row_style.bg_color = Color(0.13, 0.12, 0.12, 0.88)
-			row_style.border_color = (Color(0.79, 0.66, 0.43, 0.78)
-				if selected_active else Color(0.36, 0.31, 0.27, 0.75))
-			row_style.set_border_width_all(1)
+			row_style.border_color = (Color(0.40, 0.72, 0.91)
+				if selected else Color(0.36, 0.31, 0.27, 0.75))
+			row_style.set_border_width_all(2 if selected else 1)
 			row_style.set_corner_radius_all(5)
 			row_style.set_content_margin_all(7)
 			cell.add_theme_stylebox_override("panel", row_style)
@@ -490,8 +494,8 @@ func _refresh_competences() -> void:
 			label.set_meta("creature_gui_data", true)
 			label.text = ("✓ " if active else "○ ") + displayed_name + (" 🎓🎓" if mastered else "")
 			label.tooltip_text = "Origini:\n" + "\n".join(linked)
-			if selected_active:
-				label.add_theme_color_override("font_color", Color(0.96, 0.87, 0.66))
+			if selected:
+				label.add_theme_color_override("font_color", Color(0.40, 0.72, 0.91))
 			box.add_child(label)
 			if kind == "skill":
 				var expert := CheckButton.new()
@@ -501,6 +505,7 @@ func _refresh_competences() -> void:
 				expert.custom_minimum_size.y = 34
 				expert.toggled.connect(_toggle_group_expertise.bind(key, indices.duplicate()))
 				box.add_child(expert)
+				EditorUI.edit_fields(cell, box, [expert], "maestria")
 			# Activation and deletion are separate concepts. All displayed
 			# proficiencies can be temporarily muted, including fixed grants
 			# and those linked only to a different highlighted source.

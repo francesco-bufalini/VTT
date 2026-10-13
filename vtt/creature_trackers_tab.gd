@@ -1,4 +1,5 @@
 extends VBoxContainer
+const EditorUI = preload("res://vtt/origin_editor_ui.gd")
 
 const ScrollBoundaryGuard = preload("res://vtt/nested_scroll_boundary_guard.gd")
 
@@ -105,6 +106,7 @@ func setup(on_change: Callable) -> void:
 	add.text = "+ Tracker"
 	add.pressed.connect(_add_tracker)
 	second.add_child(add)
+	EditorUI.popup_form(self, editor, "+ Tracker", add)
 	load_record({})
 
 
@@ -224,6 +226,7 @@ func _refresh_origins() -> void:
 		select.tooltip_text = _source_tooltip(sid)
 		select.pressed.connect(_select_origin.bind(sid))
 		line.add_child(select)
+		EditorUI.origin_link(self, line, sid, _source_name(sid))
 		if not sid.is_empty():
 			var toggle := CheckButton.new()
 			toggle.text = "⏻"
@@ -280,7 +283,7 @@ func _refresh_trackers() -> void:
 		line.add_child(name_label)
 		if automatic:
 			var maximum := Label.new()
-			maximum.text = "Max %d" % int(entry.get("max", 0))
+			maximum.text = "Max: " + (String(entry.get("max_formula", "")) if not String(entry.get("max_formula", "")).is_empty() else str(int(entry.get("max", 0))))
 			var formula: String = String(entry.get("max_formula", ""))
 			maximum.tooltip_text = ("Formula: " + formula if not formula.is_empty()
 				else "Massimo derivato dai dati strutturati")
@@ -292,16 +295,20 @@ func _refresh_trackers() -> void:
 			input.value = int(entry.get("max", 0))
 			input.custom_minimum_size.x = 86
 			input.tooltip_text = "Massimo utilizzi"
-			input.value_changed.connect(_set_maximum.bind(tracker_id))
+
 			line.add_child(input)
 			var formula_editor := LineEdit.new()
 			formula_editor.text = String(entry.get("max_formula", ""))
 			formula_editor.placeholder_text = "formula"
 			formula_editor.custom_minimum_size.x = 90
 			formula_editor.tooltip_text = "Formula massimo; conferma con Invio. Lascia vuoto per usare il valore fisso."
-			formula_editor.text_submitted.connect(_set_formula.bind(tracker_id))
+
 			formula_editor.size_flags_horizontal = Control.SIZE_EXPAND_FILL
 			details.add_child(formula_editor)
+			var maximum_label := Label.new()
+			maximum_label.text = "Max: " + (formula_editor.text if not formula_editor.text.is_empty() else str(int(input.value)))
+			line.add_child(maximum_label)
+			EditorUI.edit_fields(panel, details, [input, formula_editor], "massimo", func() -> void: _save_maximum(tracker_id, int(input.value), formula_editor.text))
 			var toggle := CheckButton.new()
 			toggle.text = "⏻"
 			toggle.button_pressed = not bool(entry.get("disabled", false))
@@ -329,8 +336,9 @@ func _refresh_trackers() -> void:
 				recovery_edit.add_item(label)
 			recovery_edit.select(maxi(0, modes.find(recovery_key)))
 			recovery_edit.size_flags_horizontal = Control.SIZE_EXPAND_FILL
-			recovery_edit.item_selected.connect(_set_recharge.bind(tracker_id))
+
 			details.add_child(recovery_edit)
+			EditorUI.edit_fields(panel, details, [recovery_edit], "recupero", func() -> void: _set_recharge(recovery_edit.selected, tracker_id))
 		if not active and sid != _selected_origin:
 			panel.modulate.a = 0.58
 
@@ -431,3 +439,16 @@ func _publish() -> void:
 	_refresh()
 	if not _loading and _changed.is_valid():
 		_changed.call(_manual.duplicate(true), _origins.duplicate(true))
+
+
+func _save_maximum(tracker_id: String, maximum: int, formula: String) -> void:
+	var cleaned: String = formula.strip_edges()
+	if not cleaned.is_empty() and ResourceOverrides.evaluate_max(cleaned, _record, int(_record.get("level", 1))).is_empty():
+		_status.text = "Formula massimo non valida."
+		return
+	for entry: Dictionary in _manual:
+		if String(entry.get("id", "")) == tracker_id:
+			entry["max"] = maximum
+			entry["max_formula"] = cleaned
+			break
+	_publish()

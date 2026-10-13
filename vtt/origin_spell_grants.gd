@@ -189,6 +189,8 @@ static func remaining(record: Dictionary, grant: Dictionary) -> int:
 
 
 static func spend(record: Dictionary, grant: Dictionary) -> bool:
+	if bool(grant.get("skip_payment", false)):
+		return true
 	if remaining(record, grant) == 0:
 		return false
 	if String(grant.get("payment_mode", "")) in ["free", "slot"]:

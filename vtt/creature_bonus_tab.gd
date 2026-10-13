@@ -1,4 +1,5 @@
 extends VBoxContainer
+const EditorUI = preload("res://vtt/origin_editor_ui.gd")
 
 const ScrollBoundaryGuard = preload("res://vtt/nested_scroll_boundary_guard.gd")
 
@@ -110,6 +111,7 @@ func setup(on_change: Callable) -> void:
 	add_bonus.tooltip_text = "Crea un bonus e collegalo all'origine scelta qui accanto."
 	add_bonus.pressed.connect(_add_bonus)
 	new_row.add_child(add_bonus)
+	EditorUI.popup_form(self, new_row, "+ Bonus", add_bonus)
 	# Dice modifiers do not alter the static numeric value of a stat.
 	var dice_panel := PanelContainer.new()
 	add_child(dice_panel)
@@ -141,6 +143,7 @@ func setup(on_change: Callable) -> void:
 	dice_add.text = "+ Dado"
 	dice_add.pressed.connect(_add_dice_bonus)
 	dice_inputs.add_child(dice_add)
+	EditorUI.popup_form(self, dice_inputs, "+ Bonus ai tiri", dice_add)
 	_choice_dialog = ConfirmationDialog.new()
 	_choice_dialog.title = "Completa il bonus del talento"
 	_choice_dialog.ok_button_text = "Applica"
@@ -481,6 +484,7 @@ func _refresh_origins() -> void:
 			_refresh()
 		)
 		line.add_child(select)
+		EditorUI.origin_link(self, line, sid, origin_title)
 		if pending.has(sid):
 			var warning := Button.new()
 			warning.text = "⚠"
@@ -590,10 +594,14 @@ func _refresh_bonuses() -> void:
 			expression.placeholder_text = "Formula"
 			expression.editable = not bool(grant.get("automatic", false))
 			expression.tooltip_text = "Bonus strutturato: valore calcolato dalla fonte 5etools" if not expression.editable else "Espressione senza dadi, es. 2 * wis_mod"
-			if expression.editable:
-				expression.text_submitted.connect(_set_expression.bind(index))
-				expression.focus_exited.connect(func() -> void: _set_expression(expression.text, index))
+
 			line.add_child(expression)
+			if expression.editable:
+				var formula_label := Label.new()
+				formula_label.text = expression.text
+				formula_label.size_flags_horizontal = Control.SIZE_EXPAND_FILL
+				line.add_child(formula_label)
+				EditorUI.edit_fields(card, line, [expression], "formula", func() -> void: _set_expression(expression.text, index))
 			var toggle := CheckButton.new()
 			toggle.text = "⏻"
 			toggle.button_pressed = not bool(grant.get("disabled", false))
@@ -750,9 +758,12 @@ func _refresh_dice_cards() -> void:
 		var dice := LineEdit.new()
 		dice.text = String(entry.get("dice", "1d4"))
 		dice.custom_minimum_size.x = 75
-		dice.text_submitted.connect(_set_dice_formula.bind(index))
-		dice.focus_exited.connect(func() -> void: _set_dice_formula(dice.text, index))
+
 		line.add_child(dice)
+		var dice_label := Label.new()
+		dice_label.text = dice.text
+		line.add_child(dice_label)
+		EditorUI.edit_fields(line, line, [dice], "dadi", func() -> void: _set_dice_formula(dice.text, index))
 		var enabled := CheckButton.new()
 		enabled.text = "⏻"
 		enabled.button_pressed = not bool(entry.get("disabled", false))

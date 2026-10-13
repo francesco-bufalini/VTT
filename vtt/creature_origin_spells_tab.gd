@@ -1,4 +1,5 @@
 extends VBoxContainer
+const EditorUI = preload("res://vtt/origin_editor_ui.gd")
 # Spell entitlements are edited with the same origin -> benefits pattern as
 # proficiencies/trackers. Class spell preparation is NOT edited here.
 const OriginChoices = preload("res://vtt/creature_origin_choices.gd")
@@ -27,6 +28,10 @@ var _catalog: Array[Dictionary] = []
 var _shown: Array[Dictionary] = []
 var _choice: Dictionary = {}
 var _warning: Label
+var _add_dialog: AcceptDialog
+var _tracker_label: Label
+var _filter_label: Label
+var _bypass: CheckButton
 
 
 func setup(on_change: Callable) -> void:
@@ -68,7 +73,7 @@ func setup(on_change: Callable) -> void:
 	settings.add_child(pay)
 	_label("Consumo", pay)
 	_payment_picker = OptionButton.new()
-	for name: String in ["Senza costo", "Slot di classe", "Tracker"]:
+	for name: String in ["Senza costo", "Slot disponibili", "Tracker"]:
 		_payment_picker.add_item(name)
 	pay.add_child(_payment_picker)
 	var ability := VBoxContainer.new()
@@ -79,7 +84,7 @@ func setup(on_change: Callable) -> void:
 	for name: String in ABILITY_NAMES:
 		_ability_picker.add_item(name)
 	ability.add_child(_ability_picker)
-	_label("Tracker (anche di un'altra origine)", form)
+	_tracker_label = _label("Tracker (anche di un'altra origine)", form)
 	_tracker_picker = OptionButton.new()
 	_tracker_picker.size_flags_horizontal = Control.SIZE_EXPAND_FILL
 	form.add_child(_tracker_picker)
@@ -87,6 +92,17 @@ func setup(on_change: Callable) -> void:
 	add.text = "+ Concedi incantesimo"
 	add.pressed.connect(_add)
 	form.add_child(add)
+	_filter_label = _label("Lista: tutti gli incantesimi", form)
+	_filter_label.autowrap_mode = TextServer.AUTOWRAP_WORD_SMART
+	_bypass = CheckButton.new()
+	_bypass.text = "Scegli anche da altre liste (eccezione manuale)"
+	_bypass.toggled.connect(func(_on: bool) -> void: _refresh_spell_picker(_spell_search.text))
+	form.add_child(_bypass)
+	form.move_child(_filter_label, 0)
+	form.move_child(_bypass, 1)
+	_add_dialog = EditorUI.popup_form(self, form, "+ Concedi incantesimo")
+	_payment_picker.item_selected.connect(func(_index: int) -> void: _update_payment_fields())
+	_spell_picker.item_selected.connect(func(_index: int) -> void: _update_payment_fields())
 	load_record({})
 
 
@@ -188,8 +204,13 @@ func _refresh() -> void:
 		select.text = String(first.get("origin_name", sid)) + " (%d)" % source_entries.size()
 		select.toggle_mode = true
 		select.button_pressed = _selected_origin == sid
+		select.tooltip_text = "\n".join(PackedStringArray(source_entries.map(func(entry: Dictionary) -> String: return String(entry.get("spell_id", entry.get("filter", "Scelta da completare"))))))
 		select.pressed.connect(_select_origin.bind(sid))
-		_origins.add_child(select)
+		var origin_row := HBoxContainer.new()
+		_origins.add_child(origin_row)
+		select.size_flags_horizontal = Control.SIZE_EXPAND_FILL
+		origin_row.add_child(select)
+		EditorUI.origin_link(self, origin_row, sid, String(first.get("origin_name", sid)))
 	if _selected_origin.is_empty():
 		_label("Nessuna concessione. Usa il menu a destra per aggiungerne una.", _spells)
 	else:
@@ -197,7 +218,8 @@ func _refresh() -> void:
 			var grant: Dictionary = raw
 			if bool(grant.get("pending_selection", false)):
 				var choose := Button.new()
-				choose.text = "⚠ Scegli %d incantesimo/i · %s" % [int(grant.get("count", 1)), String(grant.get("filter", ""))]
+				choose.text = "⚠ Scegli %d incantesimo/i" % int(grant.get("count", 1))
+				choose.tooltip_text = _choice_formula(grant)
 				choose.pressed.connect(_choose.bind(grant.duplicate(true)))
 				_spells.add_child(choose)
 				continue
@@ -210,8 +232,11 @@ func _refresh() -> void:
 func _draw_grant(grant: Dictionary, record: Dictionary) -> void:
 	var id: String = String(grant.get("id", ""))
 	var spell: Dictionary = Catalog.catalog_spell(String(grant.get("spell_id", "")))
+	var card := PanelContainer.new()
+	_spells.add_child(card)
+	EditorUI.highlight(card, String(grant.get("origin_id", "")) == _selected_origin)
 	var panel := VBoxContainer.new()
-	_spells.add_child(panel)
+	card.add_child(panel)
 	var heading := HBoxContainer.new()
 	panel.add_child(heading)
 	var title := Label.new()
@@ -227,16 +252,16 @@ func _draw_grant(grant: Dictionary, record: Dictionary) -> void:
 	var settings := HBoxContainer.new()
 	panel.add_child(settings)
 	var pay := OptionButton.new()
-	for name: String in ["Senza costo", "Slot di classe", "Tracker"]:
+	for name: String in ["Senza costo", "Slot disponibili", "Tracker"]:
 		pay.add_item(name)
 	pay.select(["free", "slot", "tracker"].find(String(grant.get("payment_mode", "free"))))
-	pay.item_selected.connect(_set_option.bind(id, "payment_mode", ["free", "slot", "tracker"]))
+
 	settings.add_child(pay)
 	var ability := OptionButton.new()
 	for name: String in ABILITY_NAMES:
 		ability.add_item(name)
 	ability.select(maxi(0, ABILITIES.find(String(grant.get("spellcasting_ability", "")))))
-	ability.item_selected.connect(_set_option.bind(id, "spellcasting_ability", ABILITIES))
+
 	settings.add_child(ability)
 	var trackers := OptionButton.new()
 	trackers.add_item("Senza tracker")
@@ -249,8 +274,19 @@ func _draw_grant(grant: Dictionary, record: Dictionary) -> void:
 		if tid == String(grant.get("tracker_id", "")):
 			select = trackers.item_count - 1
 	trackers.select(select)
-	trackers.item_selected.connect(_set_tracker.bind(id, trackers))
+
 	panel.add_child(trackers)
+	pay.disabled = int(spell.get("level", 0)) == 0 and not bool(spell.get("internal_grant", false))
+	var summary := Label.new()
+	summary.text = "Consumo: " + String({"free": "nessuno", "slot": "1 slot disponibile", "tracker": "1 utilizzo"}.get(String(grant.get("payment_mode", "free")), "nessuno")) + (" · " + trackers.get_item_text(select) if String(grant.get("payment_mode", "")) == "tracker" else "")
+	panel.add_child(summary)
+	EditorUI.edit_fields(panel, panel, [settings, trackers], String(spell.get("name", "incantesimo")), func() -> void:
+		_configs[id] = {"payment_mode": ["free", "slot", "tracker"][pay.selected],
+			"spellcasting_ability": ABILITIES[ability.selected],
+			"tracker_id": String(trackers.get_item_metadata(trackers.selected)) if pay.selected == 2 else ""}
+		_publish()
+	)
+	pay.item_selected.connect(func(index: int) -> void: trackers.visible = index == 2)
 	trackers.visible = String(grant.get("payment_mode", "")) == "tracker"
 	var separator := HSeparator.new()
 	panel.add_child(separator)
@@ -303,7 +339,7 @@ func _refresh_spell_picker(value: String) -> void:
 	for spell: Dictionary in _catalog:
 		if bool(spell.get("internal_grant", false)):
 			continue
-		if not _choice.is_empty() and not _matches_choice(spell):
+		if not _choice.is_empty() and not _bypass.button_pressed and not _matches_choice(spell):
 			continue
 		if not query.is_empty() and query not in String(spell.get("name", "")).to_lower():
 			continue
@@ -311,6 +347,8 @@ func _refresh_spell_picker(value: String) -> void:
 		_spell_picker.add_item(String(spell.get("name", "")) + " [" + String(spell.get("source", "")) + "]")
 		if _shown.size() >= 300:
 			break
+
+	_update_payment_fields()
 
 
 func _matches_choice(spell: Dictionary) -> bool:
@@ -349,6 +387,9 @@ func _matches_choice(spell: Dictionary) -> bool:
 
 func _choose(choice: Dictionary) -> void:
 	_choice = choice.duplicate(true)
+	_bypass.set_pressed_no_signal(false)
+	_bypass.show()
+	_filter_label.text = "Lista: " + _choice_formula(choice)
 	_selected_origin = String(choice.get("origin_id", ""))
 	_fill_origin_picker(_current_record())
 	for i: int in range(_origin_picker.item_count):
@@ -364,13 +405,18 @@ func _choose(choice: Dictionary) -> void:
 		if String(_tracker_picker.get_item_metadata(i)) == String(choice.get("tracker_id", "")):
 			_tracker_picker.select(i)
 			break
-	_warning.text = "Scelta per " + String(choice.get("origin_name", "")) + ": " + String(choice.get("filter", ""))
+	_update_payment_fields()
+	_add_dialog.title = "Scegli · " + String(choice.get("origin_name", ""))
+	_add_dialog.popup_centered(Vector2i(640, 480))
 
 
 func _add() -> void:
 	if _origin_picker.selected < 0 or _spell_picker.selected < 0 or _spell_picker.selected >= _shown.size():
 		return
 	var spell: Dictionary = _shown[_spell_picker.selected]
+	if _payment_picker.selected == 2 and int(spell.get("level", 0)) > 0 and (_tracker_picker.selected <= 0):
+		_warning.text = "Scegli un tracker oppure cambia il consumo in Senza costo o Slot disponibili."
+		return
 	var sid: String = String(_origin_picker.get_item_metadata(_origin_picker.selected))
 	var spell_id: String = String(spell.get("id", ""))
 	if sid.is_empty() or spell_id.is_empty():
@@ -392,12 +438,13 @@ func _add() -> void:
 		"id": "origin_spell_%d" % Time.get_ticks_usec(),
 		"origin_id": sid, "origin_name": _origin_picker.get_item_text(_origin_picker.selected),
 		"spell_id": spell_id,
-		"tracker_id": String(_tracker_picker.get_item_metadata(_tracker_picker.selected)),
-		"payment_mode": ["free", "slot", "tracker"][_payment_picker.selected],
+		"tracker_id": String(_tracker_picker.get_item_metadata(_tracker_picker.selected)) if _payment_picker.selected == 2 and int(spell.get("level", 0)) > 0 else "",
+		"payment_mode": ["free", "slot", "tracker"][_payment_picker.selected] if int(spell.get("level", 0)) > 0 else "free",
 		"spellcasting_ability": ABILITIES[_ability_picker.selected],
 		"source_choice_id": choice_id
 	})
 	_choice.clear()
+	_add_dialog.hide()
 	_publish()
 
 
@@ -433,3 +480,32 @@ func _publish() -> void:
 	if _changed.is_valid():
 		_changed.call(_manual.duplicate(true), _configs.duplicate(true))
 	_refresh()
+
+
+func _update_payment_fields() -> void:
+	var cantrip: bool = _spell_picker.selected >= 0 and _spell_picker.selected < _shown.size() and int(_shown[_spell_picker.selected].get("level", 0)) == 0
+	_payment_picker.disabled = cantrip
+	_payment_picker.get_parent().visible = not cantrip
+	if cantrip:
+		_payment_picker.select(0)
+	_tracker_picker.visible = not cantrip and _payment_picker.selected == 2
+	_tracker_label.visible = _tracker_picker.visible
+	_bypass.visible = not _choice.is_empty()
+	if _choice.is_empty():
+		_filter_label.text = "Lista: tutti gli incantesimi"
+
+
+static func _choice_formula(choice: Dictionary) -> String:
+	var filters: Array = choice.get("filters", [])
+	if filters.is_empty():
+		filters = [String(choice.get("filter", ""))]
+	var parts: PackedStringArray = []
+	for value: Variant in filters:
+		if not String(value).is_empty():
+			parts.append("(" + String(value).replace("|", " e ") + ")")
+	if not parts.is_empty():
+		return " oppure ".join(parts)
+	var options: PackedStringArray = []
+	for id: Variant in choice.get("spell_options", []):
+		options.append(String(Catalog.catalog_spell(String(id)).get("name", id)))
+	return " oppure ".join(options) if not options.is_empty() else "tutti gli incantesimi"

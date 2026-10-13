@@ -1,4 +1,5 @@
 extends VBoxContainer
+const EditorUI = preload("res://vtt/origin_editor_ui.gd")
 
 const ScrollBoundaryGuard = preload("res://vtt/nested_scroll_boundary_guard.gd")
 
@@ -267,7 +268,7 @@ func setup(on_change: Callable) -> void:
 	_add_panel = VBoxContainer.new()
 	_add_panel.hide()
 	right.add_child(_add_panel)
-	add_button.pressed.connect(func() -> void: _add_panel.visible = not _add_panel.visible)
+
 	_type_picker = OptionButton.new()
 	for item: Dictionary in DAMAGE_TYPES:
 		_type_picker.add_item(String(item["label"]))
@@ -285,6 +286,10 @@ func setup(on_change: Callable) -> void:
 	confirm.text = "Aggiungi voce"
 	confirm.pressed.connect(_add_defense)
 	_add_panel.add_child(confirm)
+	_add_panel.show()
+	var defense_dialog: AcceptDialog = EditorUI.popup_form(self, _add_panel, "+ Resistenza o immunità", confirm)
+	add_button.hide()
+	add_button.pressed.connect(func() -> void: defense_dialog.popup_centered(Vector2i(640, 300)))
 	_type_picker.item_selected.connect(func(_index: int) -> void:
 		var is_condition: bool = _type_picker.selected >= DAMAGE_TYPES.size()
 		_rank_picker.disabled = is_condition
@@ -396,7 +401,11 @@ func _refresh() -> void:
 		button.text = "%s (%d)" % [String(display_names.get(sid, source.get("name", sid))), int(counts[sid])]
 		button.modulate.a = 1.0 if bool(source.get("active", true)) and bool(effective_origins.get(sid, true)) else 0.5
 		button.pressed.connect(_select_origin.bind(sid))
-		_origin_cards.add_child(button)
+		var origin_row := HBoxContainer.new()
+		_origin_cards.add_child(origin_row)
+		button.size_flags_horizontal = Control.SIZE_EXPAND_FILL
+		origin_row.add_child(button)
+		EditorUI.origin_link(self, origin_row, sid, String(source.get("name", sid)))
 		_origin_buttons[sid] = button
 	var entries: Array = _record.get("damage_defense_entries", [])
 	for i: int in range(entries.size()):
@@ -456,11 +465,11 @@ func _refresh_highlights() -> void:
 		var highlighted: bool = source_id == ("" if _selected_origin == "__manual__" else _selected_origin)
 		var card: PanelContainer = _entry_cards[index]
 		var style := StyleBoxFlat.new()
-		style.draw_center = false
-		style.border_color = Color(0.34, 0.66, 0.93) if highlighted else Color(0.36, 0.41, 0.46, 0.5)
+		style.bg_color = Color(0.13, 0.12, 0.12, 0.88)
+		style.border_color = Color(0.40, 0.72, 0.91) if highlighted else Color(0.36, 0.31, 0.27, 0.75)
 		style.set_border_width_all(2 if highlighted else 1)
 		style.set_corner_radius_all(5)
-		style.set_content_margin_all(4)
+		style.set_content_margin_all(7)
 		card.add_theme_stylebox_override("panel", style)
 
 

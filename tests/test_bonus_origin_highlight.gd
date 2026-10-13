@@ -38,8 +38,8 @@ func run() -> void:
 	assert(cards.size() == 2, "Two additive +2 AC sources must remain separate")
 	for card: PanelContainer in cards:
 		var row: HBoxContainer = card.get_child(0) as HBoxContainer
-		assert(row != null and row.get_child(0) is LineEdit,
-			"Bonus rows must start with their numeric expression, not a repeated origin name")
+		assert(row != null and row.get_child(0) is Label,
+			"Bonus rows must start with their read-only formula before the explicit edit button")
 	var selected_style: StyleBoxFlat = cards[0].get_theme_stylebox("panel") as StyleBoxFlat
 	var other_style: StyleBoxFlat = cards[1].get_theme_stylebox("panel") as StyleBoxFlat
 	assert(selected_style != null and other_style != null)

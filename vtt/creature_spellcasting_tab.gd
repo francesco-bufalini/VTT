@@ -326,7 +326,10 @@ func setup(
 	actions.add_child(_description)
 
 	var slot_title := HBoxContainer.new()
-	add_child(slot_title)
+	var resource_column := VBoxContainer.new()
+	resource_column.size_flags_horizontal = Control.SIZE_EXPAND_FILL
+	columns.add_child(resource_column)
+	resource_column.add_child(slot_title)
 	var heading := Label.new()
 	heading.text = "Slot incantesimo"
 	heading.size_flags_horizontal = Control.SIZE_EXPAND_FILL
@@ -345,16 +348,17 @@ func setup(
 	slot_scroll.name = "SlotHorizontalScroll"
 	slot_scroll.size_flags_horizontal = Control.SIZE_EXPAND_FILL
 	slot_scroll.horizontal_scroll_mode = ScrollContainer.SCROLL_MODE_AUTO
-	slot_scroll.vertical_scroll_mode = ScrollContainer.SCROLL_MODE_DISABLED
-	slot_scroll.custom_minimum_size.y = 425
-	add_child(slot_scroll)
+	slot_scroll.vertical_scroll_mode = ScrollContainer.SCROLL_MODE_AUTO
+	slot_scroll.custom_minimum_size.y = 245
+	resource_column.add_child(slot_scroll)
 	_slot_grid = GridContainer.new()
 	_slot_grid.columns = 1
 	_slot_grid.size_flags_horizontal = Control.SIZE_SHRINK_BEGIN
 	_slot_grid.add_theme_constant_override("v_separation", 5)
 	slot_scroll.add_child(_slot_grid)
 	var hint := Label.new()
-	hint.text = "Liv.   −  +  Rimasti / max     (doppio clic sul massimo)"
+	hint.text = "Liv.   −  +  Rimasti / max"
+	hint.tooltip_text = "Doppio clic sul massimo per modificarlo"
 	hint.add_theme_font_size_override("font_size", 12)
 	_slot_grid.add_child(hint)
 	for lvl: int in range(1, 10):
@@ -410,7 +414,7 @@ func setup(
 		_slot_recharge[lvl] = recharge
 
 	var pact_header := HBoxContainer.new()
-	add_child(pact_header)
+	resource_column.add_child(pact_header)
 	var pact_label := Label.new()
 	pact_label.text = "Patto"
 	pact_label.tooltip_text = "Slot di Magia del Patto"
@@ -427,7 +431,7 @@ func setup(
 	pact_scroll.horizontal_scroll_mode = ScrollContainer.SCROLL_MODE_AUTO
 	pact_scroll.vertical_scroll_mode = ScrollContainer.SCROLL_MODE_DISABLED
 	pact_scroll.custom_minimum_size.y = 47
-	add_child(pact_scroll)
+	resource_column.add_child(pact_scroll)
 	_pact_row = HBoxContainer.new()
 	_pact_row.add_theme_constant_override("separation", 5)
 	_pact_row.size_flags_horizontal = Control.SIZE_SHRINK_BEGIN
@@ -562,6 +566,9 @@ func _confirm_cast_spell() -> void:
 
 
 func _dispatch_cast(spell: Dictionary, slot_choice: int, grant: Dictionary = {}) -> void:
+	if not grant.is_empty():
+		grant = grant.duplicate(true)
+		grant["skip_payment"] = slot_choice == 0
 	if not _on_cast_spell.is_valid():
 		return
 	var base_level: int = int(spell.get("level", 0))
@@ -597,6 +604,7 @@ func _request_cast_spell_for_grant(spell: Dictionary, grant: Dictionary) -> void
 	_pending_cast_spell = spell.duplicate(true)
 	_pending_granted_cast = grant.duplicate(true)
 	_cast_slot_choice.clear()
+	_cast_slot_choice.add_item("Nessuno slot (non consumare)", 0)
 	var base: int = int(spell.get("level", 0))
 	for level: int in range(maxi(1, base), 10):
 		var remaining: int = _effective_slot_total(level) - int(_spent[level])
@@ -610,7 +618,9 @@ func _request_cast_spell_for_grant(spell: Dictionary, grant: Dictionary) -> void
 		if _on_status.is_valid():
 			_on_status.call("Non ci sono slot disponibili per questa concessione.")
 		return
-	_cast_dialog.dialog_text = "Lancia %s usando uno slot della classe." % String(spell.get("name", ""))
+	if _cast_slot_choice.item_count > 1:
+		_cast_slot_choice.select(1)
+	_cast_dialog.dialog_text = "Lancia %s. Gli slot disponibili possono provenire da qualsiasi classe." % String(spell.get("name", ""))
 	DialogLayout.popup(_cast_dialog, Vector2i(430, 190))
 
 
@@ -1407,7 +1417,8 @@ func _toggle_pact_visibility() -> void:
 func _apply_resource_visibility() -> void:
 	_slot_grid.get_parent().visible = _slots_visible
 	_restore_all_button.visible = _slots_visible
-	_pact_row.get_parent().visible = _pact_visible
+	_pact_row.get_parent().visible = _pact_visible and (_effective_pact_total() > 0 or _slot_manual)
+	_pact_eye.get_parent().visible = _effective_pact_total() > 0 or _slot_manual
 	_slots_eye.text = "👁" if _slots_visible else "👁̸"
 	_slots_eye.tooltip_text = "Nascondi slot" if _slots_visible else "Mostra slot"
 	_pact_eye.text = "👁" if _pact_visible else "👁̸"
@@ -1427,6 +1438,7 @@ func _update_resource_labels() -> void:
 				"Slot livello %d: base %d + bonus cumulabili %+d = %d" % [
 					lvl, base, Bonuses.bonus(_record, "slot:" + str(lvl)), total
 				] + ("\n" + Bonuses.description(_record, "slot:" + str(lvl))))
+		(_slot_use[lvl] as Button).get_parent().visible = total > 0 or _slot_manual
 		(_slot_use[lvl] as Button).disabled = spent >= total
 		(_slot_recharge[lvl] as Button).disabled = spent <= 0
 	var pact_max: int = _effective_pact_total()
@@ -1529,15 +1541,15 @@ func _refresh_granted_spell_boxes() -> void:
 			var tracker: Dictionary = OriginSpells.tracker_for(record, grant)
 			var remaining: int = OriginSpells.remaining(record, grant)
 			var cost_label: String = (
-				"slot di classe" if String(grant.get("payment_mode", "")) == "slot"
+				"1 slot disponibile" if String(grant.get("payment_mode", "")) == "slot"
 				else "senza limite" if remaining < 0
-				else "%d rimasti · %s" % [remaining, String(tracker.get("name", "tracker non disponibile"))]
+				else "Consuma 1 · %s · %d rimasti" % [String(tracker.get("name", "tracker non disponibile")), remaining]
 			)
 			var cast := Button.new()
 			cast.text = String(spell.get("name", "")) + " · " + cost_label
 			cast.size_flags_horizontal = Control.SIZE_EXPAND_FILL
 			cast.alignment = HORIZONTAL_ALIGNMENT_LEFT
-			cast.disabled = remaining == 0 or not _on_cast_spell.is_valid()
+			cast.disabled = not _on_cast_spell.is_valid()
 			cast.tooltip_text = String(spell.get("description", ""))
 			cast.pressed.connect(_cast_granted_spell.bind(grant.duplicate(true)))
 			row.add_child(cast)
@@ -1547,13 +1559,23 @@ func _refresh_granted_spell_boxes() -> void:
 
 func _cast_granted_spell(grant: Dictionary) -> void:
 	var record: Dictionary = _grant_record()
-	if OriginSpells.remaining(record, grant) == 0:
-		return
+
 	var spell: Dictionary = SpellCatalog.catalog_spell(String(grant.get("spell_id", "")))
 	if spell.is_empty():
 		return
 	if String(grant.get("payment_mode", "")) == "slot" and int(spell.get("level", 0)) > 0:
 		_request_cast_spell_for_grant(spell, grant)
+	elif String(grant.get("payment_mode", "")) == "tracker":
+		_pending_cast_spell = spell.duplicate(true)
+		_pending_granted_cast = grant.duplicate(true)
+		_cast_slot_choice.clear()
+		_cast_slot_choice.add_item("Nessun consumo (eccezione manuale)", 0)
+		if OriginSpells.remaining(record, grant) > 0:
+			var tracker: Dictionary = OriginSpells.tracker_for(record, grant)
+			_cast_slot_choice.add_item("Consuma 1 · " + String(tracker.get("name", "tracker")), -1)
+			_cast_slot_choice.select(1)
+		_cast_dialog.dialog_text = "Lancia " + String(spell.get("name", "")) + ". Scegli il consumo."
+		DialogLayout.popup(_cast_dialog, Vector2i(480, 190))
 	else:
 		_dispatch_cast(spell, -1, grant)
 

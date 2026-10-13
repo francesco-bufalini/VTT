@@ -198,7 +198,9 @@ var _feats_ui: Node
 var _damage_defenses_ui: Node
 var _editor_section_picker: OptionButton
 var _editor_choice_warning: Label
-var _statistics_scroll: ScrollContainer
+var _origins_overview: VBoxContainer
+var _origin_preview_cache: Dictionary = {}
+var _origins_scroll: ScrollContainer
 var _traits_ui: Node
 var _condition_rows: VBoxContainer
 var _effect_dialog: AcceptDialog
@@ -669,12 +671,15 @@ func _build_ui() -> void:
 	columns.add_child(_tabs)
 	var form := _add_sheet_tab(_tabs, "Info")
 	var statistics_tab := _add_sheet_tab(_tabs, "Statistiche")
-	_statistics_scroll = statistics_tab.get_parent().get_parent() as ScrollContainer
+	var origins_tab := _add_sheet_tab(_tabs, "Origini")
+	_origins_scroll = origins_tab.get_parent().get_parent() as ScrollContainer
 	# Keep the detailed editors exclusive without recreating them on each switch.
 	# This preserves their existing interactions and deferred loading behavior.
 	var editor_select_row := HBoxContainer.new()
 	editor_select_row.add_theme_constant_override("separation", 8)
-	statistics_tab.add_child(editor_select_row)
+	origins_tab.add_child(editor_select_row)
+	_origins_overview = VBoxContainer.new()
+	origins_tab.add_child(_origins_overview)
 	_add_label(editor_select_row, "Visualizza e modifica")
 	_editor_choice_warning = Label.new()
 	_editor_choice_warning.text = "⚠"
@@ -689,34 +694,34 @@ func _build_ui() -> void:
 	_editor_section_picker.custom_minimum_size = Vector2(285, 30)
 	_editor_section_picker.size_flags_horizontal = Control.SIZE_EXPAND_FILL
 	_editor_section_picker.tooltip_text = "Scegli una sezione da visualizzare o modificare"
-	for section_name: String in ["Niente", "Competenze", "Talenti", "Bonus", "Tracker", "Resistenze, immunità e vulnerabilità", "Incantesimi da origini"]:
+	for section_name: String in ["Panoramica", "Competenze", "Talenti", "Bonus", "Tracker", "Resistenze, immunità e vulnerabilità", "Incantesimi da origini"]:
 		_editor_section_picker.add_item(section_name)
 	_editor_section_picker.select(0)
 	_editor_section_picker.item_selected.connect(_select_details_editor)
 	editor_select_row.add_child(_editor_section_picker)
 	_proficiencies_ui = ProficiencyTab.new()
 	_proficiencies_ui.hide()
-	statistics_tab.add_child(_proficiencies_ui)
+	origins_tab.add_child(_proficiencies_ui)
 	_proficiencies_ui.call("setup", Callable(self, "_on_proficiencies_updated"))
 	_feats_ui = FeatsTab.new()
 	_feats_ui.hide()
-	statistics_tab.add_child(_feats_ui)
+	origins_tab.add_child(_feats_ui)
 	_feats_ui.call("setup", Callable(self, "_on_feats_updated"))
 	_bonuses_ui = BonusTab.new()
 	_bonuses_ui.hide()
-	statistics_tab.add_child(_bonuses_ui)
+	origins_tab.add_child(_bonuses_ui)
 	_bonuses_ui.call("setup", Callable(self, "_on_bonuses_updated"))
 	_trackers_ui = TrackerTab.new()
 	_trackers_ui.hide()
-	statistics_tab.add_child(_trackers_ui)
+	origins_tab.add_child(_trackers_ui)
 	_trackers_ui.call("setup", Callable(self, "_on_trackers_updated"))
 	_damage_defenses_ui = DamageDefensesTab.new()
 	_damage_defenses_ui.hide()
-	statistics_tab.add_child(_damage_defenses_ui)
+	origins_tab.add_child(_damage_defenses_ui)
 	_damage_defenses_ui.call("setup", Callable(self, "_on_damage_defenses_updated"))
 	_origin_spells_ui = OriginSpellsTab.new()
 	_origin_spells_ui.hide()
-	statistics_tab.add_child(_origin_spells_ui)
+	origins_tab.add_child(_origin_spells_ui)
 	_origin_spells_ui.call("setup", Callable(self, "_on_origin_spells_updated"))
 	# Share the editor divider and give combat the width its contents need.
 	# Local scrolling remains a fallback when neither column can fit.
@@ -2160,6 +2165,9 @@ func _select_details_editor(index: int) -> void:
 		return
 	var choice: int = clampi(index, 0, 6)
 	_editor_section_picker.select(choice)
+	_origins_overview.visible = choice == 0
+	if choice == 0:
+		_refresh_origins_overview()
 	_proficiencies_ui.visible = choice == 1
 	_feats_ui.visible = choice == 2
 	_bonuses_ui.visible = choice == 3
@@ -2198,9 +2206,9 @@ func _select_details_editor(index: int) -> void:
 
 
 func _open_origin_spell_editor() -> void:
-	_tabs.current_tab = 1
+	_tabs.current_tab = 2
 	_select_details_editor(6)
-	call_deferred("_scroll_statistics_to_top")
+	call_deferred("_scroll_origins_to_top")
 
 
 func _on_origin_spells_updated(grants: Array, configs: Dictionary) -> void:
@@ -2245,17 +2253,16 @@ func _on_damage_defenses_updated(damage_overrides: Dictionary, condition_overrid
 func _on_formula_bonus_requested(key: String) -> void:
 	if _bonuses_ui == null or key.is_empty():
 		return
-	_tabs.current_tab = 1
+	_tabs.current_tab = 2
 	_select_details_editor(3)
 	_bonuses_ui.call("select_target", key)
-	# The selected editor is above the statistics columns; a prior scroll
-	# position must not leave the newly opened section off-screen.
-	call_deferred("_scroll_statistics_to_top")
+	# Keep the requested origin section visible after navigation.
+	call_deferred("_scroll_origins_to_top")
 
 
-func _scroll_statistics_to_top() -> void:
-	if _statistics_scroll != null and is_instance_valid(_statistics_scroll):
-		_statistics_scroll.scroll_vertical = 0
+func _scroll_origins_to_top() -> void:
+	if _origins_scroll != null and is_instance_valid(_origins_scroll):
+		_origins_scroll.scroll_vertical = 0
 
 
 func _on_formula_roll_requested(key: String) -> void:
@@ -2904,6 +2911,7 @@ func _on_selected(index: int) -> void:
 
 
 func _load_form(record: Dictionary) -> void:
+	_origin_preview_cache.clear()
 	# Empty hands are intentional. Loading a sheet never auto-equips weapons.
 	_refresh_trackers(record)
 	_loading = true
@@ -3084,10 +3092,10 @@ func _on_info_feat_input(event: InputEvent, origin_id: String) -> void:
 	if click == null or not click.pressed or click.button_index != MOUSE_BUTTON_RIGHT:
 		return
 	get_viewport().set_input_as_handled()
-	_tabs.current_tab = 1
+	_tabs.current_tab = 2
 	_select_details_editor(2)
 	_feats_ui.call("focus_origin", origin_id)
-	call_deferred("_scroll_statistics_to_top")
+	call_deferred("_scroll_origins_to_top")
 
 
 # Info is only a read-only index of feat grants. Editing, removing and muting
@@ -3321,13 +3329,15 @@ func _on_spellcasting_cast_requested(spell: Dictionary, slot_level: int, grant: 
 		# Only cast the entitlement from the currently active origin; never
 		# trust a stale UI card after an item/feature has been removed.
 		var current_record: Dictionary = _current()
+		var skip_payment: bool = bool(grant.get("skip_payment", false))
 		var valid := false
 		for available: Dictionary in OriginSpells.all_grants(current_record):
 			if String(available.get("id", "")) == String(grant.get("id", "")) and String(available.get("spell_id", "")) == spell_id:
 				grant = available
 				valid = true
 				break
-		if not valid or OriginSpells.remaining(current_record, grant) == 0:
+		grant["skip_payment"] = skip_payment
+		if not valid or (not skip_payment and OriginSpells.remaining(current_record, grant) == 0):
 			_set_status("Origine o utilizzi dell'incantesimo non disponibili.")
 			return false
 		_pending_origin_spell_cast = {
@@ -4496,6 +4506,7 @@ func _update_ability_modifier(ability: String) -> void:
 
 
 func _replace_current_record(record: Dictionary) -> void:
+	_origin_preview_cache.clear()
 	for i: int in range(_records.size()):
 		if (
 			String(_records[i].get("id", "")) == _selected_id
@@ -5207,6 +5218,8 @@ func _focus_tracker_trait(origin: String, source_label: String = "") -> void:
 
 
 func _on_creature_tab_changed(index: int) -> void:
+	if _tabs.get_tab_title(index) == "Origini" and _editor_section_picker.selected == 0:
+		_refresh_origins_overview()
 	if _traits_ui == null or index < 0 or index >= _tabs.get_tab_count():
 		return
 	if _tabs.get_tab_control(index).name == "Tratti" and _traits_stale:
@@ -6308,3 +6321,71 @@ func _reload_homebrew() -> void:
 	_reload()
 	_on_catalog_ready(_client.call("catalog"))
 	_set_status("Cataloghi e integrazioni ricaricati. " + "\n".join(ContentCatalog.diagnostics + ContentCatalog.enrichment_diagnostics()))
+
+
+func _open_origin_trait(sid: String, title: String) -> void:
+	_open_tracker_trait(title)
+	call_deferred("_focus_origin_trait", sid, title)
+
+
+func _focus_origin_trait(sid: String, title: String) -> void:
+	if _traits_ui != null:
+		_traits_ui.call("focus_origin", sid, title)
+
+
+func _origin_summary(sid: String) -> String:
+	if _origin_preview_cache.has(sid):
+		return String(_origin_preview_cache[sid])
+	var record: Dictionary = _current()
+	var lines: PackedStringArray = []
+	for row: Dictionary in ProficiencyRules.choices(record):
+		if String(row.get("origin_id", "")) == sid:
+			lines.append("Competenza: " + String(row.get("key", "")) + (" · maestria" if bool(row.get("expertise", false)) else ""))
+	for row: Dictionary in BonusRules.grants(record):
+		if String(row.get("origin_id", "")) == sid:
+			lines.append("Bonus " + String(row.get("target", "")) + ": " + String(row.get("expression", "0")))
+	for row: Dictionary in StructuredTrackers.for_creature(record):
+		if String(row.get("origin_id", "")) == sid:
+			var formula: String = String(row.get("max_formula", ""))
+			lines.append("Tracker " + String(row.get("name", "")) + " · max " + (formula if not formula.is_empty() else str(row.get("max", 0))))
+	for row: Dictionary in OriginSpells.all_grants(record):
+		if String(row.get("origin_id", "")) == sid:
+			lines.append("Incantesimo: " + String(SpellCatalog.catalog_spell(String(row.get("spell_id", ""))).get("name", "")))
+	for row: Dictionary in preload("res://vtt/structured_origin_spells_5etools.gd").for_creature(record).get("choices", []):
+		if String(row.get("origin_id", "")) == sid:
+			lines.append("Scegli %d incantesimi: " % int(row.get("count", 1)) + OriginSpellsTab._choice_formula(row))
+	for field: String in ["feats_catalog", "damage_defense_entries", "dice_bonuses"]:
+		for raw: Variant in record.get(field, []):
+			if raw is Dictionary and String(raw.get("origin_id", "")) == sid:
+				lines.append(String(raw.get("name", raw.get("key", raw.get("target", "")))) + " " + String(raw.get("dice", "")))
+	for source: Dictionary in ProficiencyRules.origins(record):
+		if String(source.get("id", "")) == sid:
+			for requirement: Variant in source.get("requirements", []):
+				lines.append("Scelta: " + JSON.stringify(requirement))
+	var result: String = "Concessioni dell'origine:\n" + "\n".join(lines)
+	_origin_preview_cache[sid] = result
+	return result
+
+
+func _refresh_origins_overview() -> void:
+	if _origins_overview == null:
+		return
+	for child: Node in _origins_overview.get_children():
+		_origins_overview.remove_child(child)
+		child.queue_free()
+	var intro := Label.new()
+	intro.text = "Seleziona una sezione per gestire le concessioni. Passa sulle origini per vedere i benefici; ↗ apre il tratto."
+	intro.autowrap_mode = TextServer.AUTOWRAP_WORD_SMART
+	_origins_overview.add_child(intro)
+	for source: Dictionary in preload("res://vtt/creature_origin_choices.gd").available(_current()):
+		var sid: String = String(source.get("id", ""))
+		if sid.is_empty() or sid == preload("res://vtt/creature_origin_choices.gd").SPELL_PICKER_ID:
+			continue
+		var row := HBoxContainer.new()
+		_origins_overview.add_child(row)
+		var label := Button.new()
+		label.text = String(source.get("name", sid))
+		label.alignment = HORIZONTAL_ALIGNMENT_LEFT
+		label.size_flags_horizontal = Control.SIZE_EXPAND_FILL
+		row.add_child(label)
+		preload("res://vtt/origin_editor_ui.gd").origin_link(label, row, sid, label.text)
