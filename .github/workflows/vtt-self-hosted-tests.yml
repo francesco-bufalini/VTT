@@ -8,6 +8,7 @@ on:
       - feature/campaign-hub
       - feature/structured-creature-sheets
       - feature/tokens-lazy-load
+      - feature/origin-spells-dice-bonuses
     paths:
       - "**/*.gd"
       - "**/*.tscn"
@@ -84,6 +85,13 @@ jobs:
         run: |
           $godot = "C:\Program Files\Godot\Godot_v4.7.2-stable_win64_console.exe"
           & $godot --headless --path . --editor --import --quit
+          if ($LASTEXITCODE -ne 0) { exit $LASTEXITCODE }
+
+      - name: Validate origin-granted spells independently
+        shell: powershell
+        run: |
+          $godot = "C:\Program Files\Godot\Godot_v4.7.2-stable_win64_console.exe"
+          & $godot --headless --path . --script res://tests/test_origin_granted_spells.gd
           if ($LASTEXITCODE -ne 0) { exit $LASTEXITCODE }
 
       - name: Run fast Godot tests

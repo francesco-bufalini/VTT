@@ -9,6 +9,10 @@ const FormulaValue = preload("res://vtt/formula_value.gd")
 const Bonuses = preload("res://vtt/creature_bonus_rules.gd")
 const DialogLayout = preload("res://vtt/dialog_layout.gd")
 const CreatureLocale = preload("res://vtt/creature_gui_locale.gd")
+const OriginSpells = preload("res://vtt/origin_spell_grants.gd")
+const Structured5e = preload("res://vtt/structured_origin_spells_5etools.gd")
+const OriginChoices = preload("res://vtt/creature_origin_choices.gd")
+const Trackers = preload("res://vtt/structured_resource_trackers.gd")
 
 const CASTING_ABILITIES: Array[String] = ["", "str", "dex", "con", "int", "wis", "cha"]
 
@@ -24,6 +28,15 @@ var _cast_button: Button
 var _cast_dialog: ConfirmationDialog
 var _cast_slot_choice: OptionButton
 var _pending_cast_spell: Dictionary = {}
+var _manual_origin_spells: Array = []
+var _granted_spell_boxes: VBoxContainer
+var _grant_dialog: ConfirmationDialog
+var _grant_origin: OptionButton
+var _grant_spell: OptionButton
+var _grant_tracker: OptionButton
+var _grant_search: LineEdit
+var _grant_spell_choices: Array[Dictionary] = []
+var _structured_choice: Dictionary = {}
 var _record: Dictionary = {}
 var _spell_summary: Label
 var _spell_ability_choice: OptionButton
@@ -230,6 +243,52 @@ func setup(
 	_prepared_list.gui_input.connect(_on_spell_list_gui_input.bind("prepared"))
 	prepared_col.add_child(_prepared_list)
 	_prepared_list.item_activated.connect(func(index: int) -> void: _on_spell_activated("prepared", index))
+
+	# Feature and item-granted spells live in their own origin-labelled cards;
+	# they are separate from prepared spells and never spend spell slots.
+	var granted_heading := HBoxContainer.new()
+	add_child(granted_heading)
+	var granted_title := Label.new()
+	granted_title.text = "Incantesimi concessi dalle origini"
+	granted_title.add_theme_font_size_override("font_size", 16)
+	granted_title.size_flags_horizontal = Control.SIZE_EXPAND_FILL
+	granted_heading.add_child(granted_title)
+	var add_grant := Button.new()
+	add_grant.text = "+ Concedi incantesimo"
+	add_grant.tooltip_text = "Scegli l'origine, l'incantesimo e l'eventuale tracker da consumare."
+	add_grant.pressed.connect(_open_grant_dialog)
+	granted_heading.add_child(add_grant)
+	_granted_spell_boxes = VBoxContainer.new()
+	_granted_spell_boxes.add_theme_constant_override("separation", 5)
+	add_child(_granted_spell_boxes)
+	_grant_dialog = ConfirmationDialog.new()
+	_grant_dialog.title = "Incantesimo concesso da un'origine"
+	_grant_dialog.ok_button_text = "Aggiungi"
+	_grant_dialog.confirmed.connect(_add_origin_spell)
+	add_child(_grant_dialog)
+	var grant_fields := VBoxContainer.new()
+	grant_fields.add_theme_constant_override("separation", 5)
+	_grant_dialog.add_child(grant_fields)
+	for caption_text: String in ["Origine", "Cerca incantesimo", "Incantesimo", "Tracker consumato (anche di altra origine)"]:
+		var label := Label.new()
+		label.text = caption_text
+		grant_fields.add_child(label)
+		match caption_text:
+			"Origine":
+				_grant_origin = OptionButton.new()
+				_grant_origin.custom_minimum_size.x = 400
+				grant_fields.add_child(_grant_origin)
+			"Cerca incantesimo":
+				_grant_search = LineEdit.new()
+				_grant_search.placeholder_text = "Nome incantesimo"
+				_grant_search.text_changed.connect(_refresh_grant_spell_picker)
+				grant_fields.add_child(_grant_search)
+			"Incantesimo":
+				_grant_spell = OptionButton.new()
+				grant_fields.add_child(_grant_spell)
+			_:
+				_grant_tracker = OptionButton.new()
+				grant_fields.add_child(_grant_tracker)
 
 	# Search is the only optional panel and opens beneath the paired spell lists.
 	var search_toggle_row := HBoxContainer.new()
@@ -510,7 +569,7 @@ func _confirm_cast_spell() -> void:
 	_dispatch_cast(spell, _cast_slot_choice.get_selected_id())
 
 
-func _dispatch_cast(spell: Dictionary, slot_choice: int) -> void:
+func _dispatch_cast(spell: Dictionary, slot_choice: int, grant: Dictionary = {}) -> void:
 	if not _on_cast_spell.is_valid():
 		return
 	var base_level: int = int(spell.get("level", 0))
@@ -527,7 +586,14 @@ func _dispatch_cast(spell: Dictionary, slot_choice: int) -> void:
 			return
 	# The sheet's owner invokes the existing VTT system if the spell has an
 	# effect and a linked caster. A spell with no VTT effect is still cast.
-	if not bool(_on_cast_spell.call(spell, level)):
+	# Ordinary spells retain the two-argument callback contract. An origin
+	# grant passes extra charge metadata only to the sheet owner.
+	var accepted: bool = (
+		bool(_on_cast_spell.call(spell, level))
+		if grant.is_empty()
+		else bool(_on_cast_spell.call(spell, level, grant))
+	)
+	if not accepted:
 		return
 	if slot_choice >= 100:
 		_change_pact(1)
@@ -568,6 +634,7 @@ func load_record(record: Dictionary) -> void:
 	_catalog = SpellCatalog.all_spells_for_rules(
 		String(_record.get("rules_version", "2014"))
 	)
+	_manual_origin_spells = _copy_spell_array(record.get("origin_spell_grants", []))
 	_rebuild_class_spells()
 	_totals = _normal_slots(record.get("spell_slots_total", []))
 	_spent = _normal_slots(record.get("spell_slots_spent", []))
@@ -586,6 +653,7 @@ func load_record(record: Dictionary) -> void:
 	_class_only.disabled = _class_keys().is_empty()
 	_search.text = ""
 	_refresh_saved_spell_lists()
+	_refresh_granted_spell_boxes()
 	_update_resource_labels()
 	_loading = false
 	_filter_spells()
@@ -704,6 +772,8 @@ func _rebuild_class_spells() -> void:
 		)
 	var limits: Dictionary = _class_spell_level_limits()
 	for entry: Dictionary in _catalog:
+		if bool(entry.get("internal_grant", false)):
+			continue
 		var level: int = int(entry.get("level", 0))
 		var classes_value: Variant = entry.get("classes", [])
 		if not classes_value is Array:
@@ -945,6 +1015,7 @@ func update_character_context(record: Dictionary) -> void:
 		and String(record.get("rules_version", "2014")) == String(_record.get("rules_version", "2014"))):
 		_record = record.duplicate(true)
 		_refresh_casting_summary()
+		_refresh_granted_spell_boxes()
 		return
 	# Own the snapshot so later in-place level/class edits are detectable.
 	_record["classes"] = current_class.duplicate(true) if current_class is Array else current_class
@@ -957,6 +1028,7 @@ func update_character_context(record: Dictionary) -> void:
 	)
 	_rebuild_class_spells()
 	_refresh_saved_spell_lists()
+	_refresh_granted_spell_boxes()
 	_class_only.disabled = _class_keys().is_empty()
 	_filter_spells()
 
@@ -1269,6 +1341,7 @@ func _publish() -> void:
 		"spells": _prepared.duplicate(true),
 		"prepared_spells": _prepared.duplicate(true),
 		"spellbook_spells": _spellbook.duplicate(true),
+		"origin_spell_grants": _manual_origin_spells.duplicate(true),
 		"spell_slots_total": _totals.duplicate(true),
 		"spell_slots_spent": _spent.duplicate(true),
 		"pact_slots_total": _pact_total,
@@ -1277,6 +1350,274 @@ func _publish() -> void:
 		"spell_slots_visible": _slots_visible,
 		"pact_slots_visible": _pact_visible
 	})
+
+
+
+# Editing is restricted to explicit user grants; class features are derived
+# from the character each refresh and keep stable origin and tracker IDs.
+func _grant_record() -> Dictionary:
+	var data: Dictionary = _record.duplicate(true)
+	data["origin_spell_grants"] = _manual_origin_spells.duplicate(true)
+	return data
+
+
+func _refresh_granted_spell_boxes() -> void:
+	if _granted_spell_boxes == null:
+		return
+	for child: Node in _granted_spell_boxes.get_children():
+		child.queue_free()
+		_granted_spell_boxes.remove_child(child)
+	var record: Dictionary = _grant_record()
+	var groups: Dictionary = {}
+	for grant: Dictionary in OriginSpells.all_grants(record):
+		var origin_id: String = String(grant.get("origin_id", ""))
+		if not groups.has(origin_id):
+			groups[origin_id] = []
+		groups[origin_id].append(grant)
+	# Unresolved 5etools choose-entries are shown instead of guessing spells.
+	for raw: Variant in Structured5e.for_creature(record).get("choices", []):
+		if not raw is Dictionary:
+			continue
+		var choice: Dictionary = raw
+		var chosen := 0
+		for entry: Variant in _manual_origin_spells:
+			if entry is Dictionary and String(entry.get("source_choice_id", "")) == String(choice.get("id", "")):
+				chosen += 1
+		if chosen >= int(choice.get("count", 1)):
+			continue
+		var sid: String = String(choice.get("origin_id", ""))
+		if not groups.has(sid):
+			groups[sid] = []
+		var pending: Dictionary = choice.duplicate(true)
+		pending["pending_selection"] = true
+		groups[sid].append(pending)
+	for origin_id: String in groups.keys():
+		var panel := PanelContainer.new()
+		_granted_spell_boxes.add_child(panel)
+		var body := VBoxContainer.new()
+		panel.add_child(body)
+		var title := Label.new()
+		var entries: Array = groups[origin_id]
+		title.text = String((entries[0] as Dictionary).get("origin_name", origin_id))
+		title.add_theme_font_size_override("font_size", 14)
+		body.add_child(title)
+		for raw: Variant in entries:
+			var grant: Dictionary = raw
+			if bool(grant.get("pending_selection", false)):
+				var choose := Button.new()
+				choose.text = "⚠ Scegli incantesimo · " + String(grant.get("filter", ""))
+				choose.tooltip_text = "Scelta definita nei campi strutturati di 5etools."
+				choose.pressed.connect(_choose_structured_spell.bind(grant.duplicate(true)))
+				body.add_child(choose)
+				continue
+			var spell: Dictionary = SpellCatalog.catalog_spell(String(grant.get("spell_id", "")))
+			if spell.is_empty():
+				continue
+			var row := HBoxContainer.new()
+			body.add_child(row)
+			var tracker: Dictionary = OriginSpells.tracker_for(record, grant)
+			var remaining: int = OriginSpells.remaining(record, grant)
+			var cost_label: String = "senza limite" if remaining < 0 else (
+				"%d rimasti · %s" % [remaining, String(tracker.get("name", "tracker non disponibile"))])
+			var cast := Button.new()
+			cast.text = String(spell.get("name", "")) + " · " + cost_label
+			cast.size_flags_horizontal = Control.SIZE_EXPAND_FILL
+			cast.alignment = HORIZONTAL_ALIGNMENT_LEFT
+			cast.disabled = remaining == 0 or not _on_cast_spell.is_valid()
+			cast.tooltip_text = String(spell.get("description", ""))
+			cast.pressed.connect(_cast_granted_spell.bind(grant.duplicate(true)))
+			row.add_child(cast)
+			if not bool(grant.get("automatic", false)):
+				var remove := Button.new()
+				remove.text = "×"
+				remove.tooltip_text = "Rimuovi questa concessione, non il tracker né l'origine."
+				remove.pressed.connect(_remove_origin_spell.bind(String(grant.get("id", ""))))
+				row.add_child(remove)
+
+	# Fight Club counters and 5etools class resource tables also identify
+	# active feature resources whose effects have no formal target/effect
+	# structure. Surface them for linking instead of falsely inventing spells.
+	var already_linked: Dictionary = {}
+	for group: Array in groups.values():
+		for raw: Variant in group:
+			if raw is Dictionary:
+				var tid: String = String((raw as Dictionary).get("tracker_id", ""))
+				if not tid.is_empty():
+					already_linked[tid] = true
+	var unlinked: Array[Dictionary] = []
+	for tracker: Dictionary in Trackers.for_creature(record):
+		var tid: String = String(tracker.get("id", ""))
+		if not tid.is_empty() and not already_linked.has(tid) and bool(tracker.get("automatic", false)) and String(tracker.get("origin_id", "")).begins_with("feature:"):
+			unlinked.append(tracker)
+	if not unlinked.is_empty():
+		var missing := PanelContainer.new()
+		_granted_spell_boxes.add_child(missing)
+		var missing_box := VBoxContainer.new()
+		missing.add_child(missing_box)
+		var note := Label.new()
+		note.text = "Privilegi con risorsa strutturata, ma senza effetto formalizzato"
+		note.tooltip_text = "Fight Club/5etools definiscono il contatore, non sempre la magia, il bersaglio o gli effetti. Nessun effetto viene inventato."
+		note.autowrap_mode = TextServer.AUTOWRAP_WORD_SMART
+		missing_box.add_child(note)
+		for tracker: Dictionary in unlinked:
+			var link := Button.new()
+			link.text = "+ Collega capacità · " + String(tracker.get("name", "Risorsa"))
+			link.pressed.connect(_configure_tracker_spell.bind(tracker.duplicate(true)))
+			missing_box.add_child(link)
+
+
+func _configure_tracker_spell(tracker: Dictionary) -> void:
+	_open_grant_dialog()
+	var sid: String = String(tracker.get("origin_id", ""))
+	var found := false
+	for i: int in range(_grant_origin.item_count):
+		if String(_grant_origin.get_item_metadata(i)) == sid:
+			_grant_origin.select(i)
+			found = true
+			break
+	if not found and not sid.is_empty():
+		_grant_origin.add_item(String(tracker.get("origin_name", sid)))
+		_grant_origin.set_item_metadata(_grant_origin.item_count - 1, sid)
+		_grant_origin.select(_grant_origin.item_count - 1)
+	for i: int in range(_grant_tracker.item_count):
+		if String(_grant_tracker.get_item_metadata(i)) == String(tracker.get("id", "")):
+			_grant_tracker.select(i)
+			break
+
+
+func _cast_granted_spell(grant: Dictionary) -> void:
+	var record: Dictionary = _grant_record()
+	if OriginSpells.remaining(record, grant) == 0:
+		return
+	var spell: Dictionary = SpellCatalog.catalog_spell(String(grant.get("spell_id", "")))
+	if spell.is_empty():
+		return
+	_dispatch_cast(spell, -1, grant)
+
+
+func _open_grant_dialog() -> void:
+	_structured_choice.clear()
+	_grant_origin.clear()
+	_grant_origin.disabled = false
+	_grant_tracker.disabled = false
+	for origin: Dictionary in OriginChoices.available(_record):
+		var sid: String = String(origin.get("id", ""))
+		if sid.is_empty() or sid == OriginChoices.SPELL_PICKER_ID:
+			continue
+		_grant_origin.add_item(String(origin.get("name", sid)))
+		_grant_origin.set_item_metadata(_grant_origin.item_count - 1, sid)
+	_grant_tracker.clear()
+	_grant_tracker.add_item("Nessun tracker (usi illimitati)")
+	_grant_tracker.set_item_metadata(0, "")
+	for tracker: Dictionary in Trackers.for_creature(_record):
+		_grant_tracker.add_item(String(tracker.get("name", "")) + " · " + String(tracker.get("source_label", "")))
+		_grant_tracker.set_item_metadata(_grant_tracker.item_count - 1, String(tracker.get("id", "")))
+	_grant_search.clear()
+	_refresh_grant_spell_picker("")
+	_grant_dialog.get_ok_button().disabled = _grant_origin.item_count == 0
+	_grant_dialog.popup_centered(Vector2i(540, 360))
+
+
+func _refresh_grant_spell_picker(query: String) -> void:
+	if _grant_spell == null:
+		return
+	_grant_spell.clear()
+	_grant_spell_choices.clear()
+	var needle: String = query.strip_edges().to_lower()
+	for spell: Dictionary in _catalog:
+		if not _structured_choice.is_empty() and not _structured_choice_matches(spell):
+			continue
+		if not needle.is_empty() and needle not in String(spell.get("name", "")).to_lower():
+			continue
+		_grant_spell_choices.append(spell)
+		_grant_spell.add_item("%s [%s]" % [String(spell.get("name", "")), String(spell.get("source", ""))])
+		if _grant_spell_choices.size() >= 250:
+			break
+
+
+func _structured_choice_matches(spell: Dictionary) -> bool:
+	for clause: String in String(_structured_choice.get("filter", "")).to_lower().split("|"):
+		var parts: PackedStringArray = clause.split("=", true, 1)
+		if parts.size() != 2:
+			return false
+		var values: PackedStringArray = parts[1].split(";")
+		match parts[0]:
+			"level":
+				if str(int(spell.get("level", -1))) not in values:
+					return false
+			"class":
+				var found := false
+				for value: Variant in spell.get("classes", []):
+					if String(value).to_lower() in values:
+						found = true
+				if not found:
+					return false
+			"school":
+				var actual: String = String(spell.get("school", "")).to_lower()
+				var codes := {
+					"abjuration": "a", "conjuration": "c", "divination": "d",
+					"enchantment": "e", "evocation": "v", "illusion": "i",
+					"necromancy": "n", "transmutation": "t"
+				}
+				if actual not in values and String(codes.get(actual, "")) not in values:
+					return false
+			_:
+				return false
+	return true
+
+
+func _choose_structured_spell(choice: Dictionary) -> void:
+	_open_grant_dialog()
+	_structured_choice = choice.duplicate(true)
+	var sid: String = String(choice.get("origin_id", ""))
+	var found := false
+	for i: int in range(_grant_origin.item_count):
+		if String(_grant_origin.get_item_metadata(i)) == sid:
+			_grant_origin.select(i)
+			found = true
+			break
+	if not found:
+		_grant_origin.add_item(String(choice.get("origin_name", sid)))
+		_grant_origin.set_item_metadata(_grant_origin.item_count - 1, sid)
+		_grant_origin.select(_grant_origin.item_count - 1)
+	for i: int in range(_grant_tracker.item_count):
+		if String(_grant_tracker.get_item_metadata(i)) == String(choice.get("tracker_id", "")):
+			_grant_tracker.select(i)
+			break
+	_grant_origin.disabled = true
+	_grant_tracker.disabled = true
+	_refresh_grant_spell_picker("")
+	_grant_dialog.get_ok_button().disabled = _grant_spell.item_count == 0
+
+
+func _add_origin_spell() -> void:
+	if _grant_origin.selected < 0 or _grant_spell.selected < 0 or _grant_spell.selected >= _grant_spell_choices.size():
+		return
+	var origin_id: String = String(_grant_origin.get_item_metadata(_grant_origin.selected))
+	var spell_id: String = String(_grant_spell_choices[_grant_spell.selected].get("id", ""))
+	if origin_id.is_empty() or spell_id.is_empty():
+		return
+	for row: Variant in _manual_origin_spells:
+		if row is Dictionary and String(row.get("origin_id", "")) == origin_id and String(row.get("spell_id", "")) == spell_id:
+			return
+	_manual_origin_spells.append({
+		"source_choice_id": String(_structured_choice.get("id", "")),
+		"id": "origin_spell_%d" % Time.get_ticks_usec(),
+		"origin_id": origin_id,
+		"origin_name": _grant_origin.get_item_text(_grant_origin.selected),
+		"spell_id": spell_id,
+		"tracker_id": String(_grant_tracker.get_item_metadata(_grant_tracker.selected))
+	})
+	_publish()
+	_refresh_granted_spell_boxes()
+
+
+func _remove_origin_spell(id: String) -> void:
+	for i: int in range(_manual_origin_spells.size() - 1, -1, -1):
+		if String((_manual_origin_spells[i] as Dictionary).get("id", "")) == id:
+			_manual_origin_spells.remove_at(i)
+	_publish()
+	_refresh_granted_spell_boxes()
 
 
 func set_gui_language(language: String) -> void:

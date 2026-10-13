@@ -53,6 +53,36 @@ const LEVEL_NAMES: Array[String] = [
 #
 # All cantrips imported here are interpreted as cast by a level-17 character.
 const SPELLS: Dictionary = {
+	# Built-in VTT abilities intentionally share the ordinary spell targeting,
+	# active-origin and effect pipeline; they are not learned class spells.
+	"vtt_bardic_inspiration": {
+		"id": "vtt_bardic_inspiration", "name": "Bardic Inspiration",
+		"origin": "homebrew", "source": "VTT", "internal_grant": true,
+		"level": 0, "school": "Enchantment", "classes": [],
+		"casting_time": "Bonus Action", "range": "60 feet",
+		"range_feet": 60, "target": "One other creature",
+		"target_mode": "token_then_token", "persistent_link": true,
+		"duration": "10 minutes", "components": "—",
+		"source_class": "Bard", "grant_feature": "Bardic Inspiration",
+		"grant_tracker": "Bardic Inspiration", "grant_level": 1,
+		"dice_progression": [
+			{"level": 1, "dice": "1d6"}, {"level": 5, "dice": "1d8"},
+			{"level": 10, "dice": "1d10"}, {"level": 15, "dice": "1d12"}
+		],
+		"roll_bonus_targets": ["ability_check", "saving_throw", "attack_roll"],
+		"consume_effect_on_roll": true,
+		"description": "Grant an inspiration die to a creature. It may add the die to one ability check, attack roll or saving throw. The die size is fixed at the granting bard's class level. Once used, the effect ends."
+	},
+	"vtt_wild_shape": {
+		"id": "vtt_wild_shape", "name": "Wild Shape",
+		"origin": "homebrew", "source": "VTT", "internal_grant": true,
+		"level": 0, "school": "Transmutation", "classes": [],
+		"casting_time": "Action", "range": "Self", "range_feet": 0,
+		"target": "Self", "target_mode": "transform_self",
+		"duration": "Until ended", "components": "—", "source_class": "Druid", "grant_feature": "Wild Shape",
+		"grant_tracker": "Wild Shape", "grant_level": 2,
+		"description": "Assume an available beast form. Uses the standard VTT transformation chooser; form restrictions and duration remain subject to the chosen ruleset."
+	},
 	"acid_splash": {
 		"id": "acid_splash",
 		"name": "Acid Splash",

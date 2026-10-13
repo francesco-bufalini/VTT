@@ -3104,7 +3104,7 @@ func _set_token_status(target: Node3D, condition_id: String, enabled: bool) -> v
 	call_deferred("_sync_explicit_token_change", target)
 
 
-func _set_token_active_spell(target: Node3D, spell_id: String, enabled: bool) -> void:
+func _set_token_active_spell(target: Node3D, spell_id: String, enabled: bool, context: Dictionary = {}) -> void:
 	if target == null or not is_instance_valid(target):
 		return
 	var spell: Dictionary = SpellCatalog.catalog_spell(spell_id)
@@ -3116,11 +3116,17 @@ func _set_token_active_spell(target: Node3D, spell_id: String, enabled: bool) ->
 		target.call("remove_active_spell_id", spell_id)
 	var sheet: Node = _effect_sheet()
 	if sheet != null and sheet.has_method("update_token_spell_effect"):
-		sheet.call("update_token_spell_effect", target, spell_id, enabled)
+		sheet.call("update_token_spell_effect", target, spell_id, enabled, context)
 	if not enabled and sheet != null and sheet.has_method("update_token_concentration"):
 		sheet.call("update_token_concentration", target,
 			String(target.call("get_concentrating_spell_id")) if target.has_method("get_concentrating_spell_id") else "")
 	call_deferred("_sync_explicit_token_change", target)
+
+
+func cancel_origin_spell_cast(caster: Node3D, spell: Dictionary) -> void:
+	var sheet: Node = _effect_sheet()
+	if sheet != null and sheet.has_method("cancel_origin_spell_cast"):
+		sheet.call("cancel_origin_spell_cast", caster, spell)
 
 
 func apply_cast_spell_effects(caster: Node3D, spell: Dictionary, targets: Array) -> void:
@@ -3130,6 +3136,9 @@ func apply_cast_spell_effects(caster: Node3D, spell: Dictionary, targets: Array)
 	if spell_id.is_empty():
 		return
 	var sheet: Node = _effect_sheet()
+	var context: Dictionary = {}
+	if sheet != null and sheet.has_method("origin_spell_cast_context"):
+		context = sheet.call("origin_spell_cast_context", caster, spell)
 	if ActiveSpells.requires_concentration(spell):
 		if caster.has_method("set_concentrating_spell_id"):
 			caster.call("set_concentrating_spell_id", spell_id)
@@ -3137,6 +3146,8 @@ func apply_cast_spell_effects(caster: Node3D, spell: Dictionary, targets: Array)
 			sheet.call("update_token_concentration", caster, spell_id)
 		call_deferred("_sync_explicit_token_change", caster)
 	if not ActiveSpells.has_duration(spell):
+		if sheet != null and sheet.has_method("complete_origin_spell_cast"):
+			sheet.call("complete_origin_spell_cast", caster, spell)
 		return
 	var visited: Dictionary = {}
 	for entry: Variant in targets:
@@ -3149,7 +3160,9 @@ func apply_cast_spell_effects(caster: Node3D, spell: Dictionary, targets: Array)
 		if visited.has(id):
 			continue
 		visited[id] = true
-		_set_token_active_spell(target, spell_id, true)
+		_set_token_active_spell(target, spell_id, true, context)
+	if sheet != null and sheet.has_method("complete_origin_spell_cast"):
+		sheet.call("complete_origin_spell_cast", caster, spell)
 
 
 # The main context menu closes asynchronously. Keep GUI ownership while a

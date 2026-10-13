@@ -66,11 +66,15 @@ static func active_origins(record: Dictionary) -> Array[Dictionary]:
 	return result
 
 
-static func apply(record: Dictionary, spell_id: String) -> bool:
+static func apply(record: Dictionary, spell_id: String, source_context: Dictionary = {}) -> bool:
 	var definition: Dictionary = SpellCatalog.catalog_spell(spell_id)
 	if definition.is_empty():
 		return false
 	var sid: String = "spell:" + spell_id
+	if not source_context.is_empty():
+		var contexts: Dictionary = record.get("active_spell_context", {}).duplicate(true)
+		contexts[spell_id] = source_context.duplicate(true)
+		record["active_spell_context"] = contexts
 	var origins: Array = record.get("proficiency_origins", []).duplicate(true)
 	for raw: Variant in origins:
 		if raw is Dictionary and String(raw.get("id", "")) == sid:
@@ -103,6 +107,9 @@ static func remove(record: Dictionary, origin_id: String) -> bool:
 	if not found:
 		return false
 	record["proficiency_origins"] = origins
+	var contexts: Dictionary = record.get("active_spell_context", {}).duplicate(true)
+	contexts.erase(origin_id.substr(6))
+	record["active_spell_context"] = contexts
 	# Removing the applied spell also withdraws bonuses, proficiencies,
 	# trackers, defenses and granted feats tied to it or its nested traits.
 	Proficiencies.reconcile_origin_dependents(record)
