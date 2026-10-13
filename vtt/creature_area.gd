@@ -3312,6 +3312,12 @@ func _on_spellcasting_cast_requested(spell: Dictionary, slot_level: int, grant: 
 		_pending_origin_spell_cast.clear()
 	var caster: CharacterBody3D = find_linked_token_for_creature(_selected_id)
 	var runtime: Node = board_root.get_node_or_null("SpellSystem")
+	# A targeted grant without a token cannot apply its effect: do not spend
+	# its limited use pretending that the targeted ability was resolved.
+	if not grant.is_empty() and (caster == null or runtime == null):
+		_pending_origin_spell_cast.clear()
+		_set_status("Collega la creatura a un token per applicare questo privilegio.")
+		return false
 	if caster == null or runtime == null or not runtime.has_method("has_runtime_spell_effect"):
 		_start_sheet_concentration(spell)
 		if not grant.is_empty():
