@@ -53,6 +53,27 @@ const LEVEL_NAMES: Array[String] = [
 #
 # All cantrips imported here are interpreted as cast by a level-17 character.
 const SPELLS: Dictionary = {
+	# Built-in VTT abilities intentionally share the ordinary spell targeting,
+	# active-origin and effect pipeline; they are not learned class spells.
+	"vtt_bardic_inspiration": {
+		"id": "vtt_bardic_inspiration", "name": "Bardic Inspiration",
+		"origin": "homebrew", "source": "VTT", "internal_grant": true,
+		"level": 0, "school": "Enchantment", "classes": [],
+		"casting_time": "Bonus Action", "range": "60 feet",
+		"range_feet": 60, "target": "One other creature",
+		"target_mode": "token_then_token", "persistent_link": true,
+		"duration": "10 minutes", "components": "—",
+		"description": "Grant an inspiration die to a creature. It may add the die to one ability check, attack roll or saving throw. The die size is fixed at the granting bard's class level. Once used, the effect ends."
+	},
+	"vtt_wild_shape": {
+		"id": "vtt_wild_shape", "name": "Wild Shape",
+		"origin": "homebrew", "source": "VTT", "internal_grant": true,
+		"level": 0, "school": "Transmutation", "classes": [],
+		"casting_time": "Action", "range": "Self", "range_feet": 0,
+		"target": "Self", "target_mode": "transform_self",
+		"duration": "Until ended", "components": "—",
+		"description": "Assume an available beast form. Uses the standard VTT transformation chooser; form restrictions and duration remain subject to the chosen ruleset."
+	},
 	"acid_splash": {
 		"id": "acid_splash",
 		"name": "Acid Splash",
