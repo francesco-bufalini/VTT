@@ -100,6 +100,8 @@ static func _add_choice(output: Dictionary, origin: Dictionary, spec: Dictionary
 		"origin_name": String(origin.get("name", "")),
 		"filter": filter,
 		"count": maxi(1, int(spec.get("count", 1))),
+		"mode": mode, "stage": stage,
+		"usage": "limited" if not tracker_id.is_empty() else "at_will",
 		"tracker_id": tracker_id
 	})
 
@@ -193,6 +195,42 @@ static func _walk_usage(output: Dictionary, origin: Dictionary, values: Variant,
 				_add_group(output, origin, scoped[uses], mode, stage, category, uses, block_index, edition)
 
 
+
+static func _choice_signature(option: Dictionary) -> String:
+	var filter: String = String(option.get("filter", ""))
+	var level := ""
+	for clause: String in filter.split("|"):
+		if clause.begins_with("level="):
+			level = clause.trim_prefix("level=")
+	# A level-0 cantrip and a level-1 spell always count as distinct picks.
+	return String(option.get("mode", "")) + ":" + String(option.get("stage", "")) + ":" + level + ":" + String(option.get("usage", ""))
+
+
+static func _matching_tracker(first: Dictionary, choice: Dictionary) -> String:
+	for raw: Variant in first.get("choices", []):
+		if raw is Dictionary and _choice_signature(raw) == _choice_signature(choice):
+			return String(raw.get("tracker_id", ""))
+	return ""
+
+
+static func _append_block(output: Dictionary, origin: Dictionary, raw: Variant, block_index: int, record: Dictionary) -> void:
+	if not raw is Dictionary:
+		return
+	var block: Dictionary = raw
+	for mode: String in ["innate", "known", "prepared"]:
+		var progression: Variant = block.get(mode, null)
+		if not progression is Dictionary:
+			continue
+		for stage: String in (progression as Dictionary).keys():
+			var threshold: int = _stage_level(stage)
+			if stage.begins_with("s") or (stage != "_" and not stage.is_valid_int()):
+				continue
+			if int(origin.get("level", 0)) < threshold:
+				continue
+			_walk_usage(output, origin, (progression as Dictionary)[stage], mode, stage, block_index,
+				String(record.get("rules_version", "2014")))
+
+
 static func for_creature(record: Dictionary) -> Dictionary:
 	_ensure_loaded()
 	var output: Dictionary = {"grants": [], "trackers": [], "choices": []}
@@ -207,20 +245,62 @@ static func for_creature(record: Dictionary) -> Dictionary:
 		if origins.is_empty():
 			continue
 		for origin: Dictionary in origins:
-			for block_index: int in range((entry.get("blocks", []) as Array).size()):
-				var block: Variant = (entry.get("blocks", []) as Array)[block_index]
-				if not block is Dictionary:
+			var blocks: Array = entry.get("blocks", [])
+			var options: Array = []
+			# Multi-block feats usually represent *alternative* spell lists,
+			# not several grants. Match their usage signatures and union the
+			# allowed filters, while keeping one single usage allowance.
+			if blocks.size() > 1 and String(entry.get("kind", "")) == "feat":
+				var alternatives: Dictionary = {}
+				for i: int in range(blocks.size()):
+					var temp: Dictionary = {"grants": [], "trackers": [], "choices": []}
+					_append_block(temp, origin, blocks[i], i, record)
+					var block_choices: Array = temp.get("choices", [])
+					for choice_raw: Variant in block_choices:
+						if not choice_raw is Dictionary:
+							continue
+						var option: Dictionary = choice_raw
+						var filter: String = String(option.get("filter", ""))
+						# Mode and stage are part of the stable index. Class
+						# alternatives with the same spell level share one pick.
+						var key: String = _choice_signature(option)
+						if not alternatives.has(key):
+							var shared: Dictionary = option.duplicate(true)
+							shared["filters"] = []
+							shared["id"] = "alternatives:" + String(origin.get("id", "")) + ":" + key
+							alternatives[key] = shared
+						var group: Dictionary = alternatives[key]
+						var filters: Array = group["filters"]
+						if not filter.is_empty() and filter not in filters:
+							filters.append(filter)
+						group["count"] = maxi(int(group.get("count", 1)), int(option.get("count", 1)))
+						alternatives[key] = group
+				if not alternatives.is_empty():
+					var first: Dictionary = {"grants": [], "trackers": [], "choices": []}
+					_append_block(first, origin, blocks[0], 0, record)
+					# One set of counters and one set of choices, never one per
+					# alternative list. Fixed alternative spells are deliberately
+					# not auto-granted as if all variants were selected.
+					for tracker: Variant in first.get("trackers", []):
+						if tracker is Dictionary:
+							(output["trackers"] as Array).append(tracker)
+					for group: Variant in alternatives.values():
+						var choice: Dictionary = group
+						choice["tracker_id"] = _matching_tracker(first, choice)
+						(output["choices"] as Array).append(choice)
 					continue
-				for mode: String in ["innate", "known", "prepared"]:
-					var progression: Variant = (block as Dictionary).get(mode, null)
-					if not progression is Dictionary:
-						continue
-					for stage: String in (progression as Dictionary).keys():
-						var threshold: int = _stage_level(stage)
-						if stage.begins_with("s") or (stage != "_" and not stage.is_valid_int()):
-							continue
-						if int(origin.get("level", 0)) < threshold:
-							continue
-						var value: Variant = (progression as Dictionary)[stage]
-						_walk_usage(output, origin, value, mode, stage, block_index, String(record.get("rules_version", "2014")))
+			# Race variants such as 2024 Elf and Tiefling must not grant ALL
+			# lineages. Only a selected matching subtype can be derived.
+			if blocks.size() > 1 and String(entry.get("kind", "")) == "race":
+				var chosen: Dictionary = {}
+				for value: Variant in blocks:
+					if value is Dictionary and String(value.get("name", "")).nocasecmp_to(String(record.get("subrace", ""))) == 0:
+						chosen = value
+						break
+				if chosen.is_empty():
+					continue
+				_append_block(output, origin, chosen, 0, record)
+				continue
+			for block_index: int in range(blocks.size()):
+				_append_block(output, origin, blocks[block_index], block_index, record)
 	return output
