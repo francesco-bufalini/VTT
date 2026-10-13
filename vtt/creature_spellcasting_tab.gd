@@ -1528,8 +1528,11 @@ func _refresh_granted_spell_boxes() -> void:
 			body.add_child(row)
 			var tracker: Dictionary = OriginSpells.tracker_for(record, grant)
 			var remaining: int = OriginSpells.remaining(record, grant)
-			var cost_label: String = "senza limite" if remaining < 0 else (
-				"%d rimasti · %s" % [remaining, String(tracker.get("name", "tracker non disponibile"))])
+			var cost_label: String = (
+				"slot di classe" if String(grant.get("payment_mode", "")) == "slot"
+				else "senza limite" if remaining < 0
+				else "%d rimasti · %s" % [remaining, String(tracker.get("name", "tracker non disponibile"))]
+			)
 			var cast := Button.new()
 			cast.text = String(spell.get("name", "")) + " · " + cost_label
 			cast.size_flags_horizontal = Control.SIZE_EXPAND_FILL
