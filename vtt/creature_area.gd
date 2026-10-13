@@ -835,11 +835,27 @@ func _build_ui() -> void:
 	_party.text_changed.connect(func(_text: String) -> void: _save())
 	name_row.add_child(_party)
 	var physics_box := _info_panel(form, "FISICO")
-	physics_box.add_theme_constant_override("separation", 3)
+	physics_box.add_theme_constant_override("separation", 7)
+	# A field is always a label + control; never wrap those independently.
 	var physics_fields := HFlowContainer.new()
-	physics_fields.add_theme_constant_override("h_separation", 12)
-	physics_fields.add_theme_constant_override("v_separation", 3)
+	physics_fields.name = "PhysicsFields"
+	physics_fields.add_theme_constant_override("h_separation", 14)
+	physics_fields.add_theme_constant_override("v_separation", 8)
 	physics_box.add_child(physics_fields)
+	var miniature_group := VBoxContainer.new()
+	miniature_group.name = "PhysicsMiniatures"
+	miniature_group.add_theme_constant_override("separation", 4)
+	physics_box.add_child(miniature_group)
+	var miniature_heading := Label.new()
+	miniature_heading.text = "MINIATURE"
+	miniature_heading.add_theme_font_size_override("font_size", 13)
+	miniature_heading.add_theme_color_override("font_color", Color(0.74, 0.86, 0.94))
+	miniature_group.add_child(miniature_heading)
+	var miniature_flow := HFlowContainer.new()
+	miniature_flow.name = "PhysicsMiniatureFlow"
+	miniature_flow.add_theme_constant_override("h_separation", 14)
+	miniature_flow.add_theme_constant_override("v_separation", 5)
+	miniature_group.add_child(miniature_flow)
 
 	var health_panel := PanelContainer.new()
 	var health_style := StyleBoxFlat.new()
@@ -1003,9 +1019,10 @@ func _build_ui() -> void:
 	_initiative_effective.custom_minimum_size.x = 32
 	initiative_row.add_child(_initiative_effective)
 	_install_formula("initiative", _initiative_effective, [], [])
-	# Movement has its own row beneath defense, including other speeds and
-	# the two PHB jumping distances (running / standing).
+	# Keep speeds and jumping distances beside one another on wide sheets;
+	# both wrap into separate rows when the Info panel becomes narrow.
 	var movement_panel := PanelContainer.new()
+	movement_panel.name = "PhysicsMovement"
 	var movement_style := health_style.duplicate() as StyleBoxFlat
 	movement_style.draw_center = false
 	movement_style.set_border_width_all(0)
@@ -1013,26 +1030,32 @@ func _build_ui() -> void:
 	movement_panel.add_theme_stylebox_override("panel", movement_style)
 	physics_box.add_child(movement_panel)
 	var movement_box := VBoxContainer.new()
-	movement_box.add_theme_constant_override("separation", 2)
+	movement_box.add_theme_constant_override("separation", 5)
 	movement_panel.add_child(movement_box)
 	var movement_heading := Label.new()
 	movement_heading.text = "MOVIMENTO"
 	movement_heading.add_theme_font_size_override("font_size", 13)
 	movement_heading.add_theme_color_override("font_color", Color(0.74, 0.90, 0.77))
 	movement_box.add_child(movement_heading)
-	# Equal-width columns keep all five speed values aligned, regardless of
-	# which modes a creature actually possesses.
-	var speed_grid := GridContainer.new()
-	speed_grid.columns = 5
-	speed_grid.add_theme_constant_override("h_separation", 3)
-	speed_grid.add_theme_constant_override("v_separation", 1)
-	movement_box.add_child(speed_grid)
+	var movement_flow := HFlowContainer.new()
+	movement_flow.name = "PhysicsMovementFlow"
+	movement_flow.add_theme_constant_override("h_separation", 26)
+	movement_flow.add_theme_constant_override("v_separation", 9)
+	movement_box.add_child(movement_flow)
+	var speeds_group := VBoxContainer.new()
+	speeds_group.name = "PhysicsSpeeds"
+	speeds_group.add_theme_constant_override("separation", 3)
+	movement_flow.add_child(speeds_group)
+	var speed_grid := HFlowContainer.new()
+	speed_grid.add_theme_constant_override("h_separation", 10)
+	speed_grid.add_theme_constant_override("v_separation", 5)
+	speeds_group.add_child(speed_grid)
 	_special_speed_labels.clear()
 	for mode: String in ["walk", "climb", "swim", "fly", "burrow"]:
 		var speed_cell := VBoxContainer.new()
-		speed_cell.custom_minimum_size.x = 73
-		speed_cell.size_flags_horizontal = Control.SIZE_EXPAND_FILL
-		speed_cell.add_theme_constant_override("separation", 1)
+		speed_cell.custom_minimum_size.x = 110
+		speed_cell.size_flags_horizontal = Control.SIZE_SHRINK_BEGIN
+		speed_cell.add_theme_constant_override("separation", 2)
 		speed_grid.add_child(speed_cell)
 		var speed_name: String = {"walk": "Camminata", "climb": "Scalata",
 			"swim": "Nuoto", "fly": "Volo", "burrow": "Scavo"}[mode]
@@ -1043,7 +1066,7 @@ func _build_ui() -> void:
 		speed_caption.add_theme_font_size_override("font_size", 12)
 		speed_cell.add_child(speed_caption)
 		var speed_value_row := HBoxContainer.new()
-		speed_value_row.custom_minimum_size.y = 32
+		speed_value_row.custom_minimum_size.y = 29
 		speed_cell.add_child(speed_value_row)
 		var speed_label := Label.new()
 		speed_label.custom_minimum_size.x = 40
@@ -1055,7 +1078,7 @@ func _build_ui() -> void:
 			_speed.max_value = 999
 			_speed.step = 1
 			_speed.update_on_text_changed = true
-			_speed.custom_minimum_size = Vector2(66, 32)
+			_speed.custom_minimum_size = Vector2(66, 30)
 			_speed.value_changed.connect(_on_speed_changed)
 			speed_cell.add_child(_speed)
 			_speed.tooltip_text = "Velocità base dalla specie o dal bestiario, modificabile"
@@ -1064,27 +1087,33 @@ func _build_ui() -> void:
 		else:
 			_special_speed_labels[mode] = speed_label
 			_install_formula("speed:" + mode, speed_label, [], [])
+	var jumps_group := VBoxContainer.new()
+	jumps_group.name = "PhysicsJumps"
+	jumps_group.add_theme_constant_override("separation", 4)
+	movement_flow.add_child(jumps_group)
 	var jumps_heading := Label.new()
 	jumps_heading.text = "SALTI · DISTANZE MASSIME"
-	jumps_heading.add_theme_font_size_override("font_size", 14)
+	jumps_heading.add_theme_font_size_override("font_size", 13)
 	jumps_heading.add_theme_color_override("font_color", Color(0.77, 0.86, 0.94))
-	movement_box.add_child(jumps_heading)
+	jumps_group.add_child(jumps_heading)
 	var jumps := HFlowContainer.new()
-	jumps.add_theme_constant_override("h_separation", 12)
+	jumps.add_theme_constant_override("h_separation", 20)
 	jumps.add_theme_constant_override("v_separation", 3)
-	movement_box.add_child(jumps)
+	jumps_group.add_child(jumps)
 	_long_jump = Label.new()
 	_long_jump.autowrap_mode = TextServer.AUTOWRAP_WORD_SMART
-	_long_jump.custom_minimum_size.x = 180
-	_long_jump.size_flags_horizontal = Control.SIZE_EXPAND_FILL
-	_long_jump.add_theme_font_size_override("font_size", 13)
+	_long_jump.custom_minimum_size.x = 260
+	_long_jump.add_theme_font_size_override("font_size", 12)
 	jumps.add_child(_long_jump)
 	_high_jump = Label.new()
 	_high_jump.autowrap_mode = TextServer.AUTOWRAP_WORD_SMART
-	_high_jump.custom_minimum_size.x = 180
-	_high_jump.size_flags_horizontal = Control.SIZE_EXPAND_FILL
-	_high_jump.add_theme_font_size_override("font_size", 13)
+	_high_jump.custom_minimum_size.x = 260
+	_high_jump.add_theme_font_size_override("font_size", 12)
 	jumps.add_child(_high_jump)
+	# Explicit group widths keep nested HFlowContainers from collapsing into
+	# single columns; recompute on resize so both groups can wrap responsively.
+	physics_box.resized.connect(_layout_physics_movement.bind(physics_box, speeds_group, jumps_group))
+	call_deferred("_layout_physics_movement", physics_box, speeds_group, jumps_group)
 	_ac.value_changed.connect(func(_value: float) -> void: _update_defense_display())
 
 	var abilities_panel := PanelContainer.new()
@@ -1287,37 +1316,32 @@ func _build_ui() -> void:
 	_attacks_description.scroll_active = false
 	combat_column.add_child(_attacks_description)
 
-	var species_row := HFlowContainer.new()
-	species_row.add_theme_constant_override("h_separation", 6)
-	physics_fields.add_child(species_row)
-	_add_label(species_row, "Razza / Specie")
-	_species = _reference_option(species_row, RaceRules.base_races(), true, false, "races")
-	_species.custom_minimum_size.x = 150
+	var species_field := _physics_field(physics_fields, "Razza / Specie", 216)
+	_species = _reference_option(species_field, RaceRules.base_races(), true, false, "races")
+	_species.custom_minimum_size.x = 216
+	_species.size_flags_horizontal = Control.SIZE_EXPAND_FILL
 	_species.item_selected.connect(func(_index: int) -> void: _on_species_changed())
-	_subrace_caption = Label.new()
-	_subrace_caption.text = "Sottorazza"
-	species_row.add_child(_subrace_caption)
-	_subrace_choice = _reference_option(species_row, [], true, false, "races")
-	_subrace_choice.custom_minimum_size.x = 135
+	var subrace_field := _physics_field(physics_fields, "Sottorazza", 180)
+	_subrace_caption = subrace_field.get_child(0) as Label
+	_subrace_choice = _reference_option(subrace_field, [], true, false, "races")
+	_subrace_choice.custom_minimum_size.x = 180
+	_subrace_choice.size_flags_horizontal = Control.SIZE_EXPAND_FILL
 	_subrace_choice.tooltip_text = "Solo le sottorazze della razza selezionata, in base a raceName e raceSource."
 	_subrace_choice.item_selected.connect(func(_index: int) -> void: _on_subrace_changed())
-	_challenge_caption = Label.new()
-	_challenge_caption.text = "GS"
-	species_row.add_child(_challenge_caption)
+	var challenge_field := _physics_field(physics_fields, "GS", 76)
+	_challenge_caption = challenge_field.get_child(0) as Label
 	_challenge_rating = LineEdit.new()
-	_challenge_rating.custom_minimum_size.x = 63
-	_challenge_rating.size_flags_horizontal = Control.SIZE_SHRINK_BEGIN
+	_challenge_rating.custom_minimum_size.x = 76
 	_challenge_rating.tooltip_text = "Grado sfida del bestiario, anche frazionario (es. 1/4). Non è un livello di classe."
 	_challenge_rating.text_submitted.connect(func(_text: String) -> void: _save())
 	_challenge_rating.focus_exited.connect(_save)
-	species_row.add_child(_challenge_rating)
-	var type_row := HBoxContainer.new()
-	type_row.add_theme_constant_override("separation", 7)
-	physics_fields.add_child(type_row)
-	_add_label(type_row, "Tipo")
+	challenge_field.add_child(_challenge_rating)
+	var type_field := _physics_field(physics_fields, "Tipo", 126)
 	_creature_type_display = Label.new()
-	_creature_type_display.custom_minimum_size.x = 110
-	type_row.add_child(_creature_type_display)
+	_creature_type_display.custom_minimum_size = Vector2(126, 36)
+	_creature_type_display.vertical_alignment = VERTICAL_ALIGNMENT_CENTER
+	_creature_type_display.add_theme_color_override("font_color", Color(0.81, 0.89, 0.94))
+	type_field.add_child(_creature_type_display)
 	var background_row := HBoxContainer.new()
 	identity_box.add_child(background_row)
 	_add_label(background_row, "Background")
@@ -1411,10 +1435,12 @@ func _build_ui() -> void:
 	biography_box.add_child(_biography)
 
 	var miniature_row := HBoxContainer.new()
-	physics_box.add_child(miniature_row)
+	miniature_row.add_theme_constant_override("separation", 6)
+	miniature_flow.add_child(miniature_row)
 	_add_label(miniature_row, "Miniatura base")
 	_default_miniature = LineEdit.new()
-	_default_miniature.size_flags_horizontal = Control.SIZE_EXPAND_FILL
+	_default_miniature.custom_minimum_size.x = 190
+	_default_miniature.size_flags_horizontal = Control.SIZE_SHRINK_BEGIN
 	_default_miniature.placeholder_text = "Scegli una miniatura dal catalogo"
 	_default_miniature.editable = false
 	miniature_row.add_child(_default_miniature)
@@ -1422,19 +1448,9 @@ func _build_ui() -> void:
 	choose_miniature.text = "Cerca e scegli…"
 	choose_miniature.pressed.connect(func() -> void: _choose_miniature(_current(), false))
 	miniature_row.add_child(choose_miniature)
-	_current_miniature_row = HBoxContainer.new()
-	_current_miniature_row.add_theme_constant_override("separation", 6)
-	physics_box.add_child(_current_miniature_row)
-	_add_label(_current_miniature_row, "Forma attuale")
-	_current_miniature_name = LineEdit.new()
-	_current_miniature_name.editable = false
-	_current_miniature_name.size_flags_horizontal = Control.SIZE_EXPAND_FILL
-	_current_miniature_row.add_child(_current_miniature_name)
-	_current_miniature_row.hide()
-	var appearance_actions := HFlowContainer.new()
-	appearance_actions.add_theme_constant_override("h_separation", 8)
-	appearance_actions.add_theme_constant_override("v_separation", 5)
-	physics_box.add_child(appearance_actions)
+	var appearance_actions := HBoxContainer.new()
+	appearance_actions.add_theme_constant_override("separation", 6)
+	miniature_flow.add_child(appearance_actions)
 	var edit_appearance := Button.new()
 	edit_appearance.text = "Scegli aspetto attuale…"
 	edit_appearance.tooltip_text = "Cerca la miniatura attuale; funziona anche senza token in scena."
@@ -1445,25 +1461,32 @@ func _build_ui() -> void:
 	reset_appearance.tooltip_text = "Reimposta l'aspetto attuale alla miniatura di base."
 	reset_appearance.pressed.connect(_restore_default_appearance)
 	appearance_actions.add_child(reset_appearance)
+	_current_miniature_row = HBoxContainer.new()
+	_current_miniature_row.add_theme_constant_override("separation", 6)
+	miniature_group.add_child(_current_miniature_row)
+	_add_label(_current_miniature_row, "Forma attuale")
+	_current_miniature_name = LineEdit.new()
+	_current_miniature_name.editable = false
+	_current_miniature_name.custom_minimum_size.x = 240
+	_current_miniature_name.size_flags_horizontal = Control.SIZE_SHRINK_BEGIN
+	_current_miniature_row.add_child(_current_miniature_name)
+	_current_miniature_row.hide()
 
-	var geometry := GridContainer.new()
-	geometry.columns = 4
-	geometry.add_theme_constant_override("h_separation", 7)
-	geometry.add_theme_constant_override("v_separation", 10)
-	physics_fields.add_child(geometry)
-	_add_label(geometry, "Taglia")
+	var size_field := _physics_field(physics_fields, "Taglia", 124)
 	_size_choice = OptionButton.new()
+	_size_choice.custom_minimum_size.x = 124
 	for size_name: String in ["Tiny", "Small", "Medium", "Large", "Huge", "Gargantuan"]:
 		_size_choice.add_item(size_name)
 	_size_choice.item_selected.connect(func(_i: int) -> void: _save())
-	geometry.add_child(_size_choice)
-	_add_label(geometry, "Fronte della miniatura")
+	size_field.add_child(_size_choice)
+	var facing_field := _physics_field(physics_fields, "Fronte della miniatura", 200)
 	_front = OptionButton.new()
+	_front.custom_minimum_size.x = 200
 	for direction: String in ["−Z · 0°", "+X · 90°", "+Z · 180°", "−X · 270°"]:
 		_front.add_item(direction)
 	_front.item_selected.connect(func(_i: int) -> void: _save())
-	geometry.add_child(_front)
-	# Keep identity, miniatures and movement compact inside the single Physics panel.
+	facing_field.add_child(_front)
+	# Keep the three logical groups in reading order as controls are built later.
 	physics_box.move_child(movement_panel, physics_box.get_child_count() - 1)
 	# Fazione is edited beside the creature name on the Statistics tab.
 
@@ -2504,6 +2527,34 @@ func _spin(parent: Node, minimum: int, maximum: int) -> SpinBox:
 	return spin
 
 
+func _layout_physics_movement(physics: Control, speeds: Control, jumps: Control) -> void:
+	if not is_instance_valid(physics) or not is_instance_valid(speeds) or not is_instance_valid(jumps):
+		return
+	var available: float = physics.size.x
+	if available < 1.0:
+		return
+	var speeds_width: float = (590.0 if available >= 1200.0
+		else (350.0 if available >= 650.0 else maxf(110.0, available - 22.0)))
+	var jumps_width: float = 550.0 if available >= 650.0 else maxf(260.0, available - 22.0)
+	if absf(speeds.custom_minimum_size.x - speeds_width) >= 1.0:
+		speeds.custom_minimum_size.x = speeds_width
+	if absf(jumps.custom_minimum_size.x - jumps_width) >= 1.0:
+		jumps.custom_minimum_size.x = jumps_width
+
+
+func _physics_field(parent: Node, caption: String, width: float) -> VBoxContainer:
+	var field := VBoxContainer.new()
+	field.custom_minimum_size.x = width
+	field.add_theme_constant_override("separation", 3)
+	parent.add_child(field)
+	var heading := Label.new()
+	heading.text = caption
+	heading.add_theme_font_size_override("font_size", 13)
+	heading.add_theme_color_override("font_color", Color(0.80, 0.84, 0.88))
+	field.add_child(heading)
+	return field
+
+
 func _info_panel(parent: VBoxContainer, section: String) -> VBoxContainer:
 	var frame := PanelContainer.new()
 	var frame_style := StyleBoxFlat.new()
@@ -3030,10 +3081,8 @@ func _load_form(record: Dictionary) -> void:
 	_refresh_subrace_choices()
 	_select_reference(_subrace_choice, String(record.get("subrace", "")),
 		String(record.get("subrace_source", "")), String(record.get("subrace_id", "")))
-	_subrace_caption.visible = is_character
-	_subrace_choice.visible = is_character
-	_challenge_caption.visible = not is_character
-	_challenge_rating.visible = not is_character
+	(_subrace_choice.get_parent() as Control).visible = is_character
+	(_challenge_rating.get_parent() as Control).visible = not is_character
 	var challenge: Variant = record.get("stat_block", {}).get("cr", "0")
 	_challenge_rating.text = String(challenge.get("cr", "0") if challenge is Dictionary else challenge)
 	_refresh_creature_type(record)

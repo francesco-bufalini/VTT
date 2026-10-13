@@ -202,6 +202,32 @@ func run() -> void:
 					assert(body.is_ancestor_of(area._species) and body.is_ancestor_of(area._size_choice)
 						and body.is_ancestor_of(area._speed) and body.is_ancestor_of(area._front),
 						"Species, appearance and movement remain editable together in Physics")
+					var fields: HFlowContainer = body.find_child("PhysicsFields", true, false) as HFlowContainer
+					var miniatures: VBoxContainer = body.find_child("PhysicsMiniatures", true, false) as VBoxContainer
+					var movement: PanelContainer = body.find_child("PhysicsMovement", true, false) as PanelContainer
+					assert(fields != null and miniatures != null and movement != null
+						and fields.get_index() + 1 == miniatures.get_index()
+						and miniatures.get_index() + 1 == movement.get_index(),
+						"Physics groups stay in reading order: fields, miniatures, movement")
+					for widget: Control in [area._species, area._subrace_choice, area._creature_type_display, area._size_choice, area._front]:
+						var field: VBoxContainer = widget.get_parent() as VBoxContainer
+						assert(field != null and field.get_parent() == fields
+							and field.get_child(0) is Label and field.get_child(1) == widget,
+							"Each physical value stays attached to its caption when fields wrap")
+					assert((area._subrace_choice.get_parent() as Control).visible
+						and not (area._challenge_rating.get_parent() as Control).visible,
+						"Characters show the whole subrace field and hide the monster CR field")
+					assert(miniatures.is_ancestor_of(area._default_miniature)
+						and miniatures.is_ancestor_of(area._current_miniature_row)
+						and miniatures.find_child("PhysicsMiniatureFlow", true, false) is HFlowContainer,
+						"Base and current miniature actions share a compact wrapping group")
+					var speed_group: Node = movement.find_child("PhysicsSpeeds", true, false)
+					var jumps_group: Node = movement.find_child("PhysicsJumps", true, false)
+					assert(speed_group != null and jumps_group != null
+						and speed_group.get_parent() == jumps_group.get_parent()
+						and jumps_group.is_ancestor_of(area._long_jump)
+						and jumps_group.is_ancestor_of(area._high_jump),
+						"Speeds and jump distances sit side-by-side on wide sheets, wrapping on narrow ones")
 	assert(physics_found, "Info contains a Physics section")
 	assert(not area._proficiencies_ui.visible, "Competence editor starts collapsed")
 	area._proficiencies_toggle_button.pressed.emit()
