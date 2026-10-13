@@ -30,12 +30,11 @@ func run() -> void:
 	tab.load_record(record)
 	assert(tab._view._rows.size() >= 2)
 	assert(tab._view.find_children("Class_*", "VBoxContainer", true, false).size() == 3)
-	var class_stats: Array[String] = []
-	for stat: Node in tab._view.find_children("CastingStatistics", "Label", true, false):
-		class_stats.append((stat as Label).text)
-	assert(class_stats.any(func(value: String) -> bool: return "INT" in value)
-		and class_stats.any(func(value: String) -> bool: return "CAR" in value),
-		"Multiclass spell sections show independent caster characteristics")
+	var class_abilities: Array[String] = []
+	for picker: Node in tab._view.find_children("CastingAbility", "OptionButton", true, false):
+		class_abilities.append(String((picker as OptionButton).get_selected_metadata()))
+	assert("int" in class_abilities and "cha" in class_abilities,
+		"Multiclass sections have independent selectable casting abilities")
 	assert(tab._spell_summary.get_parent() == tab._drop_concentration_button.get_parent()
 		and tab._spell_summary.get_index() + 1 == tab._drop_concentration_button.get_index(),
 		"Stop concentration is directly beside the current spell")
