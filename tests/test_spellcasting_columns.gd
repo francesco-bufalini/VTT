@@ -43,6 +43,17 @@ func run() -> void:
 		tab._spell_ability_choice.get_parent().get_parent().name == "LegacySpellControls",
 		"Global casting settings no longer appear in the sheet")
 	var wizard: Dictionary = Choices.classes(record)[0]
+	assert(tab._section_ability(wizard.id, ["int"]) == "int")
+	tab._change_section_ability(wizard.id, "cha")
+	assert(tab._section_ability(wizard.id, ["int"]) == "cha"
+		and sink.values.get("spellcasting_section_abilities", {}).get(wizard.id) == "cha",
+		"Each class has one editable, persisted casting ability")
+	assert(tab._section_ability("origin:shadow", ["wis", "", "int"]) == "wis",
+		"An origin with conflicting grants has exactly one inferred ability")
+	tab._change_section_ability("origin:shadow", "cha")
+	assert(tab._section_ability("origin:shadow", ["wis", "int"]) == "cha",
+		"A single origin selection supersedes conflicting per-spell suggestions")
+	assert("Modifier:" in tab._section_casting_stats("int") or "Modificatore:" in tab._section_casting_stats("int"))
 	tab._view_edit_class(wizard)
 	assert(tab._selection_dialog.visible and not tab._selection_dialog._details.visible)
 	await process_frame
