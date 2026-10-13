@@ -222,7 +222,7 @@ var _restore_form_dialog: ConfirmationDialog
 var _form_depleted_dialog: ConfirmationDialog
 
 
-func setup(root: Node, host_ui: CanvasLayer = null, require_miniatures: bool = true) -> void:
+func setup(root: Node, host_ui: CanvasLayer = null, require_miniatures: bool = true, allow_remote_catalog: bool = true) -> void:
 	board_root = root
 	ui_root = host_ui
 	if ui_root == null and board_root != null:
@@ -249,7 +249,7 @@ func setup(root: Node, host_ui: CanvasLayer = null, require_miniatures: bool = t
 	_build_export_dialog()
 	_reload()
 	_refresh_creature_language()
-	_load_bestiary_catalog(DisplayServer.get_name() != "headless")
+	_load_bestiary_catalog(allow_remote_catalog and DisplayServer.get_name() != "headless")
 	call_deferred("refresh_owned_sheets")
 
 

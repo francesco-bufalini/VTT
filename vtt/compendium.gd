@@ -39,8 +39,10 @@ var _client: Node
 var _monsters: Array[Dictionary] = []
 var _shown: Array[Dictionary] = []
 var _active_request := ""
+var _allow_remote_catalog: bool = true
 
-func setup(root: Node, host_ui: CanvasLayer = null) -> void:
+func setup(root: Node, host_ui: CanvasLayer = null, allow_remote_catalog: bool = true) -> void:
+	_allow_remote_catalog = allow_remote_catalog
 	board_root = root
 	ui_root = host_ui
 	if ui_root == null and board_root != null:
@@ -59,7 +61,7 @@ func setup(root: Node, host_ui: CanvasLayer = null) -> void:
 	_build_ui()
 	_monsters = ContentCatalog.home_entries("monsters")
 	_refresh()
-	if DisplayServer.get_name() != "headless":
+	if _allow_remote_catalog and DisplayServer.get_name() != "headless":
 		_client.call("load_catalog")
 
 func _build_ui() -> void:
@@ -154,7 +156,7 @@ func _unhandled_input(event: InputEvent) -> void:
 func _reload() -> void:
 	ContentCatalog.reload_homebrew()
 	_refresh()
-	if DisplayServer.get_name() != "headless":
+	if _allow_remote_catalog and DisplayServer.get_name() != "headless":
 		_client.call("load_catalog", true)
 
 func _on_bestiary_ready(entries: Array[Dictionary]) -> void:
