@@ -1610,7 +1610,7 @@ func _refresh_granted_spell_boxes() -> void:
 			var cost_label: String = (
 				"1 slot disponibile" if String(grant.get("payment_mode", "")) == "slot"
 				else "senza limite" if remaining < 0
-				else "1 utilizzo · %s · %d rimasti" % [String(tracker.get("name", "tracker non disponibile")), remaining]
+				else "%d utilizzi · %s · %d lanci rimasti" % [OriginSpells.tracker_cost(grant), String(tracker.get("name", "tracker non disponibile")), remaining]
 			)
 			var cast := Button.new()
 			var details := VBoxContainer.new()
