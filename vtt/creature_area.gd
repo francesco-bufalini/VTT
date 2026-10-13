@@ -3365,6 +3365,11 @@ func complete_origin_spell_cast(caster: Node3D, spell: Dictionary) -> void:
 	_complete_origin_spell_cast(caster, spell)
 
 
+func cancel_origin_spell_cast(caster: Node3D, spell: Dictionary) -> void:
+	if _pending_cast_matches(caster, spell):
+		_pending_origin_spell_cast.clear()
+
+
 func _complete_origin_spell_cast(caster: Node3D, spell: Dictionary) -> void:
 	if not _pending_cast_matches(caster, spell):
 		return
