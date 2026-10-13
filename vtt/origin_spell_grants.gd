@@ -111,9 +111,10 @@ static func all_grants(record: Dictionary) -> Array[Dictionary]:
 	for raw: Variant in record.get("inventory", []):
 		if raw is Dictionary and int(raw.get("quantity", 1)) > 0:
 			active_origins["item:" + String(raw.get("id", ""))] = true
-	for value: Variant in additional.get("grants", []):
-		if value is Dictionary:
-			active_origins[String((value as Dictionary).get("origin_id", ""))] = true
+	for key: String in ["grants", "choices"]:
+		for value: Variant in additional.get(key, []):
+			if value is Dictionary:
+				active_origins[String((value as Dictionary).get("origin_id", ""))] = true
 	for grant: Dictionary in grants:
 		var origin_id: String = String(grant.get("origin_id", ""))
 		if not active_origins.has(origin_id) or not bool(enabled.get(origin_id, true)):
