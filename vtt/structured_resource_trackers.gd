@@ -5,6 +5,7 @@ extends RefCounted
 const ClassMechanics = preload("res://vtt/class_mechanics_5etools.gd")
 const ResourceOverrides = preload("res://vtt/class_resource_overrides.gd")
 const Traits = preload("res://vtt/creature_traits_tab.gd")
+const OriginSpells5e = preload("res://vtt/structured_origin_spells_5etools.gd")
 
 
 static func for_creature(record: Dictionary) -> Array[Dictionary]:
@@ -14,6 +15,18 @@ static func for_creature(record: Dictionary) -> Array[Dictionary]:
 	_append_class_trackers(record, result)
 	_assign_automatic_origins(record, result)
 	_append_saved_trackers(record, result)
+	var seen: Dictionary = {}
+	for tracker: Dictionary in result:
+		seen[String(tracker.get("id", ""))] = true
+	var additional: Dictionary = OriginSpells5e.for_creature(record)
+	for value: Variant in additional.get("trackers", []):
+		if not value is Dictionary:
+			continue
+		var tracker: Dictionary = value
+		var id: String = String(tracker.get("id", ""))
+		if not id.is_empty() and not seen.has(id):
+			seen[id] = true
+			result.append(tracker)
 	return result
 
 
