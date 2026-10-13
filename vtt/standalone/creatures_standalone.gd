@@ -43,7 +43,7 @@ func _build_navigation() -> void:
 
 	var creatures_button := Button.new()
 	creatures_button.text = "Creature"
-	creatures_button.pressed.connect(Callable(creature_area, "show_panel"))
+	creatures_button.pressed.connect(Callable(creature_area, "toggle_panel"))
 	bar.add_child(creatures_button)
 
 	var compendium_button := Button.new()

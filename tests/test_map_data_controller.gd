@@ -41,6 +41,16 @@ func run() -> void:
 	assert(mobile.map_data_controller.source_name() == "offline")
 	assert(root.find_children("*", "Node3D", true, false).is_empty())
 	var sheet: Node = mobile.get_node("CreatureArea")
+	var creature_button := mobile.ui_root.get_node("StandaloneNavigation").get_child(0) as Button
+	assert(sheet.is_panel_open())
+	creature_button.pressed.emit()
+	assert(not sheet.is_panel_open(), "Creature button must collapse the section")
+	creature_button.pressed.emit()
+	assert(sheet.is_panel_open(), "Creature button must reopen the section")
+	var selector := mobile.ui_root.get_node("LocalCreatureArchive") as OptionButton
+	assert(selector.item_count > 1)
+	assert((mobile.ui_root.get_node("CreatureSheet") as Control).offset_top >= selector.offset_bottom)
+	assert(selector.z_index > (mobile.ui_root.get_node("CreatureSheet") as Control).z_index)
 	sheet.set_map_data_controller(desktop)
 	assert(sheet.get_linked_map_status({"linked_token_sync_id": "stable-id"}).name == "Hero")
 	assert(sheet.get_linked_map_status({"linked_token_sync_id": "absent"}).is_empty())

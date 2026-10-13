@@ -7,6 +7,7 @@ var _host_input: LineEdit
 var _session_input: LineEdit
 var _connection_status: Label
 var _map_summary: RichTextLabel
+var _archive_selector: OptionButton
 
 func _ready() -> void:
 	map_data_controller = MapController.new()
@@ -15,12 +16,15 @@ func _ready() -> void:
 	super._ready()
 	creature_area.call("set_map_data_controller", map_data_controller)
 	_build_session_panel()
+	_build_archive_selector()
+	(ui_root.get_node("CreatureSheet") as Control).offset_top = 104
 	map_data_controller.status_changed.connect(func(message: String) -> void: _connection_status.text = message)
 	map_data_controller.data_changed.connect(_show_map_data)
 
 func _build_navigation() -> void:
 	super._build_navigation()
 	var navigation := ui_root.get_node("StandaloneNavigation") as HBoxContainer
+	navigation.z_index = 40
 	for child: Node in navigation.get_children():
 		(child as Control).custom_minimum_size.y = 48
 		(child as Control).size_flags_horizontal = Control.SIZE_EXPAND_FILL
@@ -28,14 +32,15 @@ func _build_navigation() -> void:
 	button.text = "Partita"
 	button.custom_minimum_size.y = 48
 	button.size_flags_horizontal = Control.SIZE_EXPAND_FILL
-	button.pressed.connect(func() -> void: _session_panel.show())
+	button.pressed.connect(func() -> void: _session_panel.visible = not _session_panel.visible)
 	navigation.add_child(button)
 
 func _build_session_panel() -> void:
 	_session_panel = PanelContainer.new()
 	_session_panel.name = "MobileSession"
 	_session_panel.set_anchors_and_offsets_preset(Control.PRESET_FULL_RECT)
-	_session_panel.offset_top = 52
+	_session_panel.offset_top = 104
+	_session_panel.z_index = 40
 	ui_root.add_child(_session_panel)
 	var margin := MarginContainer.new()
 	for side: String in ["left", "right", "top", "bottom"]:
@@ -100,3 +105,40 @@ func _show_map_data(data: Dictionary) -> void:
 	_map_summary.add_text("\nToken sulla mappa\n")
 	for token: Dictionary in data.get("tokens", []):
 		_map_summary.add_text("%s: %s\n" % [token.name, ", ".join(token.conditions)])
+# Select the same local storage scope used by desktop, without opening a board.
+func _build_archive_selector() -> void:
+	_archive_selector = OptionButton.new()
+	_archive_selector.name = "LocalCreatureArchive"
+	_archive_selector.z_index = 31
+	_archive_selector.set_anchors_and_offsets_preset(Control.PRESET_TOP_WIDE)
+	_archive_selector.offset_top = 50
+	_archive_selector.offset_bottom = 98
+	_archive_selector.text_overrun_behavior = TextServer.OVERRUN_TRIM_ELLIPSIS
+	ui_root.add_child(_archive_selector)
+	_archive_selector.add_item("Creature locali · Generale")
+	_archive_selector.set_item_metadata(0, {"campaign": "", "scenario": ""})
+	var manager := get_node("/root/CampaignManager")
+	for group: Dictionary in manager.list_campaign_groups():
+		_archive_selector.add_item("Campagna · " + String(group.get("name", "")))
+		_archive_selector.set_item_metadata(_archive_selector.item_count - 1, {"campaign": String(group.id), "scenario": ""})
+	for scenario: Dictionary in manager.list_campaigns():
+		_archive_selector.add_item("Scenario · " + String(scenario.get("name", "")))
+		_archive_selector.set_item_metadata(_archive_selector.item_count - 1, {"campaign": "", "scenario": String(scenario.id)})
+	for index in range(_archive_selector.item_count):
+		var scope: Dictionary = _archive_selector.get_item_metadata(index)
+		if scope.campaign == manager.selected_campaign_group_id and (not scope.campaign.is_empty() or scope.scenario == manager.active_campaign_id):
+			_archive_selector.select(index)
+			break
+	_archive_selector.item_selected.connect(_select_local_archive)
+
+func _select_local_archive(index: int) -> void:
+	var was_open: bool = creature_area.is_panel_open()
+	# Save under the old scope before changing it; do not copy or migrate files.
+	if was_open:
+		creature_area.hide_panel()
+	var scope: Dictionary = _archive_selector.get_item_metadata(index)
+	var manager := get_node("/root/CampaignManager")
+	manager.selected_campaign_group_id = String(scope.campaign)
+	manager.active_campaign_id = String(scope.scenario)
+	if was_open:
+		creature_area.show_panel()
