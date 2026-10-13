@@ -67,7 +67,8 @@ jobs:
             test_spell_effect_tracking \
             test_bonus_origin_highlight
           do
-            /tmp/Godot_v4.7.2-stable_linux.x86_64 --headless \
+            echo "RUN Godot regression: ${test}"
+            timeout 45s /tmp/Godot_v4.7.2-stable_linux.x86_64 --headless \
               --path /tmp/vtt-origin-test \
               --script "res://tests/${test}.gd"
           done
