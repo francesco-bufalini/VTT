@@ -27,7 +27,10 @@ static func _keep_body_within_viewport(dialog: AcceptDialog, ratio: float) -> vo
 	dialog.min_size = dialog.min_size.min(available)
 	# AcceptDialog lays out the native buttons outside its custom body. A tall
 	# body must scroll; growing the entire window pushes Confirm off-screen.
-	var children := dialog.get_children()
+	var children: Array[Control] = []
+	for child: Node in dialog.get_children():
+		if child is Control:
+			children.append(child)
 	if children.size() != 1 or not children[0] is Control or children[0] is ScrollContainer:
 		return
 	var body := children[0] as Control

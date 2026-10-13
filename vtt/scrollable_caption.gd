@@ -17,6 +17,7 @@ static func install(owner: Node) -> void:
 	viewport.add_child(caption)
 
 func _ready() -> void:
+	process_mode = Node.PROCESS_MODE_ALWAYS
 	if get_viewport() == get_tree().root:
 		get_tree().node_added.connect(func(node: Node) -> void:
 			if node is Window:
@@ -37,6 +38,7 @@ func _ready() -> void:
 	_body = RichTextLabel.new()
 	_body.bbcode_enabled = false
 	_body.scroll_active = true
+	_body.mouse_force_pass_scroll_events = false
 	_body.selection_enabled = true
 	_body.fit_content = false
 	_body.mouse_filter = Control.MOUSE_FILTER_STOP

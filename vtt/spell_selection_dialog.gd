@@ -28,6 +28,8 @@ func _ready() -> void:
 	var heading := HBoxContainer.new()
 	layout.add_child(heading)
 	_count = Label.new()
+	_count.size.x = 460
+	_count.custom_minimum_size.x = 420
 	_count.size_flags_horizontal = Control.SIZE_EXPAND_FILL
 	_count.autowrap_mode = TextServer.AUTOWRAP_WORD_SMART
 	heading.add_child(_count)
@@ -36,6 +38,8 @@ func _ready() -> void:
 	info.tooltip_text = "Mostra i dettagli dell'origine e della lista"
 	heading.add_child(info)
 	_details = Label.new()
+	_details.size.x = 460
+	_details.custom_minimum_size.x = 420
 	_details.autowrap_mode = TextServer.AUTOWRAP_WORD_SMART
 	_details.hide()
 	layout.add_child(_details)
@@ -56,10 +60,13 @@ func _ready() -> void:
 	_level.item_selected.connect(func(_index: int) -> void: _rebuild())
 	filters.add_child(_level)
 	var guide := Label.new()
+	guide.size.x = 460
+	guide.custom_minimum_size.x = 420
 	guide.text = "Spunta i disponibili. Passa sul nome per la descrizione; le modifiche si applicano con Salva."
 	guide.autowrap_mode = TextServer.AUTOWRAP_WORD_SMART
 	layout.add_child(guide)
 	var scroll := ScrollContainer.new()
+	scroll.mouse_force_pass_scroll_events = false
 	scroll.custom_minimum_size = Vector2(460, 300)
 	scroll.size_flags_vertical = Control.SIZE_EXPAND_FILL
 	scroll.horizontal_scroll_mode = ScrollContainer.SCROLL_MODE_DISABLED
@@ -92,7 +99,9 @@ func choose(options: Array[Dictionary], config: Dictionary, callback: Callable) 
 	_level.select(0)
 	_rebuild()
 	var screen: Vector2 = get_tree().root.get_visible_rect().size
-	popup_centered(Vector2i(mini(760, int(screen.x - 40)), mini(620, int(screen.y - 40))))
+	var desired := Vector2i(mini(760, int(screen.x - 40)), mini(620, int(screen.y - 40)))
+	popup_centered(desired)
+	_settle_size.call_deferred(desired)
 
 func _rebuild() -> void:
 	_checks.clear()
@@ -136,6 +145,7 @@ func _rebuild() -> void:
 			_update_count()
 		)
 		var name_label := Label.new()
+		name_label.size.x = 280
 		name_label.text = String(spell.get("name", id)) + (" · trucchetto" if level == 0 else " · %d°" % level)
 		name_label.set_meta("creature_gui_data", true)
 		name_label.mouse_filter = Control.MOUSE_FILTER_PASS
@@ -193,3 +203,8 @@ func _update_count() -> void:
 func _save() -> void:
 	if _change.is_valid():
 		_change.call({"selected": _selected.keys(), "book": _book.keys()})
+
+
+func _settle_size(desired: Vector2i) -> void:
+	size = desired
+	position = (get_tree().root.size - size) / 2

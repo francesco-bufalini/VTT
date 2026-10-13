@@ -26,18 +26,32 @@ func refresh() -> void:
 	_rows.clear()
 	var record: Dictionary = _actions.record.call()
 	var pair: Array[VBoxContainer] = _pair()
-	_heading(pair[0], "Incantesimi disponibili")
-	_heading(pair[1], "Slot · Classi / Patto")
+	var class_header := HBoxContainer.new()
+	pair[0].add_child(class_header)
+	_heading(class_header, "Incantesimi disponibili")
+	var manual := Button.new()
+	manual.text = "⋯"
+	manual.tooltip_text = "Scegli altri incantesimi disponibili o assegna le selezioni precedenti"
+	manual.pressed.connect(_actions.manual)
+	class_header.add_child(manual)
+	var slot_header := HBoxContainer.new()
+	pair[1].add_child(slot_header)
+	_heading(slot_header, "Slot · Classi / Patto")
+	var settings := Button.new()
+	settings.text = "⚙"
+	settings.tooltip_text = "Modifica i massimi base e i bonus degli slot"
+	settings.pressed.connect(_actions.resource_settings)
+	slot_header.add_child(settings)
 	var members: Array[Dictionary] = Choices.classes(record)
 	var prepared: Array = record.get("prepared_spells", [])
 	for member: Dictionary in members:
 		_class_section(pair[0], record, member, prepared)
 	var unassigned: Array[Dictionary] = []
 	for item: Variant in prepared:
-		if item is Dictionary and Choices.sources(item, record).is_empty():
+		if item is Dictionary and (Choices.sources(item, record).is_empty() or "manual" in Choices.sources(item, record)):
 			unassigned.append(item)
 	if not unassigned.is_empty():
-		_heading(pair[0], "⚠ Disponibili da assegnare a una classe")
+		_heading(pair[0], "Altri incantesimi disponibili")
 		for spell: Dictionary in unassigned:
 			_spell_button(pair[0], _definition(spell), {}, {})
 	if members.is_empty() and unassigned.is_empty():

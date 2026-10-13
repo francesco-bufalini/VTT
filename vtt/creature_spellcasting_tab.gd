@@ -24,6 +24,7 @@ const BOOK_VIEW_BOOK := 11
 const BOOK_EDIT := 12
 
 var _view: VBoxContainer
+var _resource_settings: AcceptDialog
 var _selection_dialog: ConfirmationDialog
 var _view_selected_spell: Dictionary = {}
 var _view_selected_class: Dictionary = {}
@@ -1641,6 +1642,12 @@ func _build_view() -> void:
 	var settings: Control = _spell_ability_choice.get_parent()
 	settings.reparent(self)
 	preload("res://vtt/origin_editor_ui.gd").popup_form(self, settings, "⚙ Impostazioni di lancio")
+	var resources := VBoxContainer.new()
+	add_child(resources)
+	for control: Control in [_slots_eye.get_parent(), _slot_grid.get_parent(), _pact_eye.get_parent(), _pact_row.get_parent()]:
+		control.reparent(resources)
+	_resource_settings = preload("res://vtt/origin_editor_ui.gd").popup_form(self, resources, "⚙ Massimi e bonus degli slot")
+	get_child(get_child_count() - 1).hide()
 	_view = SpellView.new()
 	_view.name = "SpellcastingColumns"
 	add_child(_view)
@@ -1648,7 +1655,8 @@ func _build_view() -> void:
 		"cast_origin": Callable(self, "_cast_granted_spell"), "slot": Callable(self, "_view_slot"),
 		"pact": Callable(self, "_view_pact"), "restore": Callable(self, "_restore_all"),
 		"tracker": Callable(self, "_view_tracker"), "edit_class": Callable(self, "_view_edit_class"),
-		"edit_origin": Callable(self, "_view_edit_origin"), "choose_origin": Callable(self, "_view_choose_origin")})
+		"edit_origin": Callable(self, "_view_edit_origin"), "choose_origin": Callable(self, "_view_choose_origin"),
+		"resource_settings": Callable(self, "_open_resource_settings"), "manual": Callable(self, "_view_edit_manual")})
 	_selection_dialog = SelectionDialog.new()
 	add_child(_selection_dialog)
 	preload("res://vtt/scrollable_caption.gd").install(self)
@@ -1671,7 +1679,7 @@ func _refresh_view() -> void:
 
 func _view_cast_class(spell: Dictionary, member: Dictionary) -> void:
 	_view_selected_spell = spell.duplicate(true)
-	_view_selected_class = member.duplicate(true)
+	_view_selected_class = member.duplicate(true) if String(member.get("id", "")) != "manual" else {}
 	_refresh_casting_summary()
 	_request_cast_spell()
 
@@ -1730,3 +1738,28 @@ func _normalise_selection_entries(entries: Array) -> Array:
 		else:
 			result.append(raw)
 	return result
+
+
+func _open_resource_settings() -> void:
+	preload("res://vtt/dialog_layout.gd").popup(_resource_settings, Vector2i(620, 480))
+
+func _view_edit_manual() -> void:
+	var selected: Array[String] = []
+	for entry: Variant in _prepared:
+		if entry is Dictionary:
+			var origins: Array = ClassSelections.sources(entry, _record)
+			if origins.is_empty() or "manual" in origins:
+				selected.append(_entry_id(entry))
+	var options: Array[Dictionary] = []
+	for spell: Dictionary in _catalog:
+		if not bool(spell.get("internal_grant", false)):
+			options.append(spell)
+	_selection_dialog.choose(options, {"title": "Altri incantesimi disponibili", "selected": selected,
+		"details": "Selezione manuale: incantesimi senza attribuzione a una classe. Nessun limite automatico."},
+		func(result: Dictionary) -> void:
+			for entry: Variant in _prepared:
+				if entry is Dictionary and ClassSelections.sources(entry, _record).is_empty():
+					entry["casting_classes"] = ["manual"]
+			_prepared = ClassSelections.apply(_record, _prepared, {"id": "manual"}, result.selected)
+			_publish()
+	)

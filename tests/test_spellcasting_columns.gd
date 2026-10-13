@@ -37,6 +37,8 @@ func run() -> void:
 		await process_frame
 		await process_frame
 		await RenderingServer.frame_post_draw
+		assert(tab._selection_dialog.size.y <= root.size.y - 30, "Selection popup stays inside the viewport")
+		assert(tab._selection_dialog._rows.get_parent().size.y <= 440, "The results list has a bounded scrolling viewport")
 		root.get_texture().get_image().save_png("user://spellcasting_selector_review.png")
 	var pick := ""
 	for spell: Dictionary in tab._selection_dialog._catalog:
@@ -46,6 +48,19 @@ func run() -> void:
 	assert(not pick.is_empty())
 	assert(tab._selection_dialog._checks.has(pick))
 	var real_checkbox: CheckBox = tab._selection_dialog._checks[pick]
+	await process_frame
+	var result_scroll: ScrollContainer = tab._selection_dialog._rows.get_parent()
+	var selector_wheel := InputEventMouseButton.new()
+	selector_wheel.button_index = MOUSE_BUTTON_WHEEL_DOWN
+	selector_wheel.pressed = true
+	selector_wheel.position = result_scroll.get_global_rect().get_center()
+	selector_wheel.global_position = selector_wheel.position
+	tab._selection_dialog.push_input(selector_wheel, true)
+	await process_frame
+	assert(result_scroll.scroll_vertical > 0, "The actual selection popup scrolls its result list")
+	result_scroll.scroll_vertical = 0
+	await process_frame
+	await process_frame
 	real_checkbox.button_pressed = true
 	assert(tab._selection_dialog._selected.has(pick) and tab._selection_dialog._book.has(pick),
 		"Preparing from the wizard popup also records the spell in the book")
@@ -56,6 +71,26 @@ func run() -> void:
 	assert(wizard.id in tab._prepared[0].casting_classes)
 	assert(sink.values.prepared_spells.size() == 1)
 	assert(tab._view._rows[0].get_child_count() == 2)
+	tab._open_resource_settings()
+	await process_frame
+	await process_frame
+	assert(tab._resource_settings.visible and tab._slot_totals[1].is_visible_in_tree(),
+		"Manual slot maximum editing remains reachable")
+	tab._resource_settings.hide()
+	tab._view_edit_manual()
+	var manual_pick := ""
+	for spell: Dictionary in tab._selection_dialog._catalog:
+		if String(spell.id) != pick:
+			manual_pick = String(spell.id)
+			break
+	tab._selection_dialog._selected[manual_pick] = true
+	tab._selection_dialog._save()
+	tab._selection_dialog.hide()
+	var manual_found := false
+	for entry: Dictionary in tab._prepared:
+		if String(entry.id) == manual_pick:
+			manual_found = "manual" in entry.casting_classes
+	assert(manual_found, "Manual/monster selections remain usable alongside class selections")
 	tab._view_slot(1, 1)
 	assert(int(tab._spent[1]) == 1)
 	tab._view_pact(1)
