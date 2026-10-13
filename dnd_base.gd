@@ -3123,6 +3123,12 @@ func _set_token_active_spell(target: Node3D, spell_id: String, enabled: bool, co
 	call_deferred("_sync_explicit_token_change", target)
 
 
+func cancel_origin_spell_cast(caster: Node3D, spell: Dictionary) -> void:
+	var sheet: Node = _effect_sheet()
+	if sheet != null and sheet.has_method("cancel_origin_spell_cast"):
+		sheet.call("cancel_origin_spell_cast", caster, spell)
+
+
 func apply_cast_spell_effects(caster: Node3D, spell: Dictionary, targets: Array) -> void:
 	if caster == null or not is_instance_valid(caster):
 		return
