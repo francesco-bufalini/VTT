@@ -87,7 +87,7 @@ func _run() -> void:
 	tab._category_filter.select(1)
 	tab._property_filter.select(_choice_index(tab._property_filter, "F"))
 	tab._filter_catalog()
-	assert(tab._filtered.size() == 1 and tab._filtered[0].id == "rapier",
+	assert(tab._filtered.size() == 1 and tab._filtered[0].id == rapier.id,
 		"Weapon type and structured property filters must combine")
 	tab._reset_catalog_filters()
 	tab._search.text = "moon legendary"

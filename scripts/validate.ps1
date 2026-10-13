@@ -127,6 +127,7 @@ $fastTests = @(
     "test_bonus_origin_highlight.gd",
     "test_benefit_first_origins_trackers.gd",
     "test_spell_origins.gd",
+    "test_dice_bonus_scopes.gd",
     "test_inventory_quantities.gd",
     "test_item_catalog_search.gd",
     # test_creature_sheet_ui.gd is an expensive UI integration test (up to 300s).

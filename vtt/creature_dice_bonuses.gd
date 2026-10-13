@@ -45,7 +45,7 @@ static func applicable(record: Dictionary, key: String) -> Array[Dictionary]:
 			continue
 		var row: Dictionary = raw
 		var target: String = String(row.get("target", ""))
-		if target not in [key, scope, "any_d20"]:
+		if target not in [key, scope] and not (target == "any_d20" and scope != "damage_roll"):
 			continue
 		var dice: String = String(row.get("dice", "")).to_lower()
 		if not valid_dice(dice) or bool(row.get("disabled", false)):
@@ -62,7 +62,7 @@ static func applicable(record: Dictionary, key: String) -> Array[Dictionary]:
 		var declared: Variant = spell.get("roll_bonus_targets", [])
 		if spell_id.is_empty() or not declared is Array:
 			continue
-		if not (key in declared or scope in declared or "any_d20" in declared):
+		if not (key in declared or scope in declared or ("any_d20" in declared and scope != "damage_roll")):
 			continue
 		var context: Dictionary = record.get("active_spell_context", {}).get(spell_id, {})
 		var dice: String = String(context.get("bonus_dice", "")).to_lower()

@@ -116,7 +116,7 @@ func run() -> void:
 	assert(AttackData.attack_bonus(record, weapon, 2) == 1, "Finesse respects the preferred STR/DEX ability")
 	record["attack_ability"] = "dex"
 	record["formula_bonuses"] = [{"id": "hit-bonus", "target": "attack_hit:item:test:rapier", "expression": "1", "origin_id": ""}]
-	record["proficiency_choices"] = [{"kind": "weapon", "key": "martial", "origin_id": "class|phb|fighter"}]
+	record["proficiency_choices"] = [{"kind": "weapon", "key": "martial", "origin_id": "custom|test-martial"}]
 	assert(AttackData.attack_bonus(record, weapon, 2) == 7, "Shared martial proficiency and an originless bonus apply only once")
 	var normalized: Dictionary = PlayerStore.new().normalize_character({
 		"inventory": [rapier, shield], "armor_class_base": 12,
