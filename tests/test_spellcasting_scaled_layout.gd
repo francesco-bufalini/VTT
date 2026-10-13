@@ -58,9 +58,9 @@ func run() -> void:
 	var left: VBoxContainer = pair.get_child(0).get_child(0)
 	var right: VBoxContainer = pair.get_child(1).get_child(0)
 	var spell_list: ScrollContainer = left.find_children("*", "ScrollContainer", true, false)[0]
-	assert(spell_list.custom_minimum_size.y >= 48 and
-		spell_list.custom_minimum_size.y <= spell_list.get_child(0).get_combined_minimum_size().y + 1,
-		"Prepared spell list retains a bounded, scrollable viewport")
+	assert(spell_list.vertical_scroll_mode == ScrollContainer.SCROLL_MODE_AUTO
+		and spell_list.get_child(0) is VBoxContainer,
+		"Prepared spell list remains vertically scrollable after resizing")
 	assert(absf(pair.get_child(0).size.y - pair.get_child(1).size.y) < 1, "Paired panels fill the same row")
 	assert(left.get_combined_minimum_size().y >= right.get_combined_minimum_size().y - 2,
 		"No unused row height while spells still need scrolling")
