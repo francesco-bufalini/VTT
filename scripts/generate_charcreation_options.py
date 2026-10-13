@@ -67,7 +67,8 @@ def generate(src_root: Path) -> dict:
         if row["id"] in ids:
             raise ValueError(f"Duplicate character option: {row['id']}")
         ids.add(row["id"])
-        row["category"] = "Character Creation Option"
+        row["category"] = "feats"
+        row["option_group"] = "Character Creation Option"
         row["feature_type"] = ", ".join(TYPE_NAMES.get(t, t) for t in row["optionType"])
         row["feature_sections"] = feature_sections(row["entries"])
         row["edition"] = "2014"
