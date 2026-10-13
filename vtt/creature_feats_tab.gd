@@ -465,10 +465,11 @@ func _refresh_feat_picker() -> void:
 			continue
 		if edition != "2014" and source in ["XDMG", "EFA"]:
 			continue
-		if not needle.is_empty() and needle not in (String(feat.get("name", "")) + " " + source).to_lower():
+		var subtype: String = String(feat.get("feature_type", ""))
+		if not needle.is_empty() and needle not in (String(feat.get("name", "")) + " " + source + " " + subtype).to_lower():
 			continue
 		_catalog_matches.append(feat)
-		_feat_picker.add_item("%s · %s" % [feat.get("name", ""), source])
+		_feat_picker.add_item("%s · %s%s" % [feat.get("name", ""), source, (" · " + subtype if not subtype.is_empty() else "")])
 		if _catalog_matches.size() >= 160:
 			break
 	if _feat_picker.item_count > 0:
