@@ -1863,10 +1863,7 @@ func _apply_automatic_calculation() -> void:
 	if _archive.save(record) != OK:
 		_set_status("Calcolo riuscito ma salvataggio non completato.")
 		return
-	_replace_current_record(record)
-	_load_form(record)
-	_apply_sheet_properties(record)
-	_sync_token_health(record)
+	_refresh_saved_sheet(record)
 	_set_status("Calcoli selezionati applicati alla creatura.")
 
 
@@ -2258,6 +2255,14 @@ func _recalculate_bonus_mirrors(record: Dictionary) -> void:
 	record["reach_feet"] = AttackData.active_range(record)
 
 
+# Repaint the dependent sheet views after an archive save succeeds.
+func _refresh_saved_sheet(record: Dictionary) -> void:
+	_replace_current_record(record)
+	_load_form(record)
+	_apply_sheet_properties(record)
+	_sync_token_health(record)
+
+
 func _refresh_formula_dependents(record: Dictionary) -> void:
 	var previous_loading: bool = _loading
 	_loading = true
@@ -2309,10 +2314,7 @@ func _on_trackers_updated(trackers: Array, origins: Array) -> void:
 	if _archive.save(record) != OK:
 		_set_status("Impossibile salvare tracker e origini.")
 		return
-	_replace_current_record(record)
-	_load_form(record)
-	_apply_sheet_properties(record)
-	_sync_token_health(record)
+	_refresh_saved_sheet(record)
 	_refresh_conditions(record)
 
 
@@ -2332,10 +2334,7 @@ func _on_bonuses_updated(rows: Array, origins: Array, feats: Array = []) -> void
 	if _archive.save(record) != OK:
 		_set_status("Impossibile salvare i bonus.")
 		return
-	_replace_current_record(record)
-	_load_form(record)
-	_apply_sheet_properties(record)
-	_sync_token_health(record)
+	_refresh_saved_sheet(record)
 	_refresh_conditions(record)
 
 
@@ -6039,10 +6038,7 @@ func _save_active_spell_change(record: Dictionary) -> void:
 	if error != OK:
 		_set_status("Impossibile salvare gli incantesimi attivi: " + error_string(error))
 		return
-	_replace_current_record(record)
-	_load_form(record)
-	_apply_sheet_properties(record)
-	_sync_token_health(record)
+	_refresh_saved_sheet(record)
 
 
 func _show_effect_description(definition: Dictionary) -> void:
