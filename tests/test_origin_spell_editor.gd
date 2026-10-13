@@ -5,6 +5,7 @@ const Structured = preload("res://vtt/structured_origin_spells_5etools.gd")
 const Grants = preload("res://vtt/origin_spell_grants.gd")
 const PlayerStore = preload("res://vtt/player_character_store.gd")
 const MasterStore = preload("res://vtt/master_creature_store.gd")
+const PendingChoices = preload("res://vtt/creature_pending_choices.gd")
 
 class Listener extends Node:
 	var updates: Array = []
@@ -32,6 +33,8 @@ func run() -> void:
 			elif "level=1" in String(group.get("filter", "")):
 				totals[1] = int(group.get("count", 0))
 	assert(totals == [2, 1], "Magic Initiate grants only two cantrips and one 1st-level spell")
+	assert(PendingChoices.section_warnings(initiate).has(6),
+		"Unresolved spell choices must warn beside View and edit -> Origin spells")
 	var scion: Dictionary = {"kind": "character", "level": 1,
 		"feats_catalog": [{"name": "Scion of the Outer Planes", "source": "SatO"}]}
 	var scion_data: Dictionary = Structured.for_creature(scion)
