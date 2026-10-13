@@ -194,7 +194,7 @@ func _casting_statistics(parent: Node, section_id: String, suggested: Array[Stri
 
 func _list(parent: Node, count: int) -> VBoxContainer:
 	var scroll := ScrollContainer.new()
-	scroll.custom_minimum_size.y = 48.0
+	scroll.custom_minimum_size.y = 68.0
 	scroll.set_meta("spell_list", true)
 	scroll.horizontal_scroll_mode = ScrollContainer.SCROLL_MODE_DISABLED
 	scroll.vertical_scroll_mode = ScrollContainer.SCROLL_MODE_AUTO
@@ -246,6 +246,10 @@ func _class_section(parent: Node, record: Dictionary, member: Dictionary, prepar
 func _spell_button(parent: Node, spell: Dictionary, member: Dictionary, grant: Dictionary) -> void:
 	if spell.is_empty():
 		return
+	var row := HBoxContainer.new()
+	row.name = "PowerRow"
+	row.add_theme_constant_override("separation", 14)
+	parent.add_child(row)
 	var button := Button.new()
 	button.set_meta("creature_gui_data", true)
 	button.text = String(spell.get("name", "")) + (" · 0°" if int(spell.get("level", 0)) == 0 else " · %d°" % int(spell.get("level", 0)))
@@ -253,16 +257,22 @@ func _spell_button(parent: Node, spell: Dictionary, member: Dictionary, grant: D
 	button.clip_text = true
 	button.size_flags_horizontal = Control.SIZE_EXPAND_FILL
 	button.tooltip_text = String(spell.get("description", ""))
+	row.add_child(button)
 	if not grant.is_empty() and String(grant.get("payment_mode", "")) == "tracker":
 		var cost: int = Grants.tracker_cost(grant)
 		var english: bool = String(_actions.gui_language.call()) == "en"
-		button.text += " · %d %s" % [cost, "uses" if english else "utilizzi"]
-		button.tooltip_text += ("\n\nTracker cost: %d uses per cast" if english else "\n\nConsumo: %d utilizzi del tracker per lancio") % cost
+		var cost_label := _label(row, ("Cost: %d" if english else "Costo: %d") % cost)
+		cost_label.name = "PowerCost"
+		cost_label.size_flags_horizontal = Control.SIZE_SHRINK_END
+		cost_label.vertical_alignment = VERTICAL_ALIGNMENT_CENTER
+		cost_label.autowrap_mode = TextServer.AUTOWRAP_OFF
+		cost_label.add_theme_font_size_override("font_size", 13)
+		cost_label.add_theme_color_override("font_color", Color(0.79, 0.86, 0.91))
+		cost_label.tooltip_text = ("Tracker cost per cast: %d" if english else "Utilizzi del tracker consumati per lancio: %d") % cost
 	if grant.is_empty():
 		button.pressed.connect(_actions.cast_class.bind(spell, member))
 	else:
 		button.pressed.connect(_actions.cast_origin.bind(grant))
-	parent.add_child(button)
 
 func _slots(parent: Node, record: Dictionary) -> void:
 	var grid := GridContainer.new()
@@ -367,19 +377,23 @@ func _tracker(parent: Node, record: Dictionary, tracker: Dictionary) -> void:
 		_label(parent, "⚠ Tracker non disponibile")
 		return
 	var id: String = String(tracker.get("id", ""))
-	_heading(parent, "Tracker · " + String(tracker.get("name", "Tracker")))
 	var maximum: int = maxi(0, Bonuses.add(record, "tracker:" + id, int(tracker.get("max", 0))))
 	var spent: int = int(record.get("resource_tracker_spent", {}).get(id, 0))
 	var row := HBoxContainer.new()
+	row.name = "TrackerRow"
+	row.add_theme_constant_override("separation", 10)
 	parent.add_child(row)
+	# Counters come first and the resource name shares the same line.
 	_counter(row, maxi(0, maximum - spent), maximum, _actions.tracker.bind(id, maximum))
+	var name: Label = _label(row, String(tracker.get("name", "Risorsa")))
+	name.name = "TrackerName"
+	name.vertical_alignment = VERTICAL_ALIGNMENT_CENTER
+	name.add_theme_font_size_override("font_size", 15)
 	var enabled: Dictionary = Proficiencies.origin_enabled_map(record)
 	if bool(tracker.get("disabled", false)) or not bool(enabled.get(String(tracker.get("origin_id", "")), true)):
 		for button: Node in row.find_children("*", "Button", true, false):
 			button.disabled = true
-		_label(parent, "Tracker disattivato dall'origine")
-	_label(parent, "Utilizzi disponibili; il costo per lancio è mostrato su ciascun potere")
-
+		name.tooltip_text = "Tracker disattivato dall'origine"
 
 func _definition(entry: Dictionary) -> Dictionary:
 	var definition: Dictionary = Catalog.catalog_spell(String(entry.get("id", "")))
@@ -396,7 +410,15 @@ func _balance_lists() -> void:
 		for node: Node in left.find_children("*", "ScrollContainer", true, false):
 			if node.has_meta("spell_list"):
 				var scroll := node as ScrollContainer
-				scroll.custom_minimum_size.y = clampf(scroll.get_child(0).get_combined_minimum_size().y, 48.0, 180.0)
+				var content: VBoxContainer = scroll.get_child(0) as VBoxContainer
+				var first_height := 0.0
+				if content != null and content.get_child_count() > 0 and content.get_child(0) is Control:
+					first_height = (content.get_child(0) as Control).get_combined_minimum_size().y
+				# A section must show its casting ability and at least one full
+				# spell/button, even if the neighbouring tracker column is tiny.
+				var minimum_visible: float = maxf(68.0, first_height + 8.0)
+				scroll.custom_minimum_size.y = maxf(minimum_visible,
+					minf(content.get_combined_minimum_size().y, 180.0))
 				lists.append(scroll)
 		var extra := maxf(0.0, right.get_combined_minimum_size().y - left.get_combined_minimum_size().y)
 		# Grow only lists with hidden content, until the neighbouring resources
