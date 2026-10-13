@@ -442,8 +442,24 @@ static func info_text(
 	var feature_type: String = String(entry.get("feature_type", "")).strip_edges()
 	if not feature_type.is_empty():
 		lines.append("Tipo di opzione: %s" % feature_type)
-	if entry.get("prerequisite", []) is Array and not entry.get("prerequisite", []).is_empty():
-		lines.append("Prerequisiti (dati sorgente): " + JSON.stringify(entry.get("prerequisite", [])))
+	var prerequisite_value: Variant = entry.get("prerequisite", [])
+	if prerequisite_value is Array:
+		for raw_requirement: Variant in prerequisite_value:
+			if not raw_requirement is Dictionary:
+				continue
+			var requirement: Dictionary = raw_requirement
+			var races: PackedStringArray = []
+			for race_value: Variant in requirement.get("race", []):
+				if race_value is Dictionary:
+					races.append(String((race_value as Dictionary).get("name", "")))
+			var requirement_text := ""
+			if not races.is_empty():
+				requirement_text = "Specie: " + ", ".join(races)
+			var note: String = String(requirement.get("note", "")).strip_edges()
+			if not note.is_empty():
+				requirement_text += (" · " if not requirement_text.is_empty() else "") + note
+			if not requirement_text.is_empty():
+				lines.append("Prerequisiti: " + requirement_text)
 
 	var type_code := str(entry.get("type", "")).split("|")[0]
 	if not type_code.is_empty():
