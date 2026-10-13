@@ -904,6 +904,7 @@ func _on_spell_list_selected(origin: String) -> void:
 	if origin != "prepared":
 		_prepared_list.deselect_all()
 	_update_spell_controls()
+	_refresh_casting_summary()
 
 
 func refresh_spell_state(record: Dictionary) -> void:
@@ -1039,6 +1040,10 @@ func _refresh_casting_summary() -> void:
 			and not ("concentrating" in _record.get("conditions", []))
 		)
 	var ability: String = _spellcasting_ability(_record)
+	if _known_list != null:
+		var selected: Dictionary = _selected_spell()
+		if not selected.is_empty():
+			ability = _cast_ability_for_spell(selected)
 	var italian_abbreviations := {"str": "FOR", "dex": "DES", "con": "COS",
 		"int": "INT", "wis": "SAG", "cha": "CAR"}
 	var stat_label: String = (
