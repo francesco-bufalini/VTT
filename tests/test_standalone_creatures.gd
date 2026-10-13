@@ -36,6 +36,7 @@ func run() -> void:
 	assert(standalone.get_node_or_null("DiceRollerChat") != null)
 	assert(standalone.get_node_or_null("Compendio") != null)
 	assert(standalone.get_node_or_null("CreatureArea") != null)
+	assert(standalone.get_node("Compendio").get("_allow_remote_catalog") == false, "Standalone compendium must not fetch remote catalogs")
 	assert(standalone.get_node("DiceRollerChat").get("sync") == null, "Offline dice roller must not open a network listener")
 	assert(standalone.get_node("CreatureArea").call("get_public_status_entries") is Array)
 	# A linked creature must remain editable when its token only exists on a
