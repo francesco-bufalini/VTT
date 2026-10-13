@@ -5557,6 +5557,8 @@ func _finish_cast() -> void:
 
 
 func _cancel_pending_cast(restore_mouse: bool = true) -> void:
+	if board_root != null and is_instance_valid(board_root) and board_root.has_method("cancel_origin_spell_cast"):
+		board_root.call("cancel_origin_spell_cast", _pending_caster, _pending_spell())
 	_post_cast_cleanup_pending = false
 	_reset_cast_state(false, false)
 	if restore_mouse:
