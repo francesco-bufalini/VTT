@@ -10,6 +10,7 @@ const Bonuses = preload("res://vtt/creature_bonus_rules.gd")
 const DialogLayout = preload("res://vtt/dialog_layout.gd")
 const CreatureLocale = preload("res://vtt/creature_gui_locale.gd")
 const OriginSpells = preload("res://vtt/origin_spell_grants.gd")
+const Structured5e = preload("res://vtt/structured_origin_spells_5etools.gd")
 const OriginChoices = preload("res://vtt/creature_origin_choices.gd")
 const Trackers = preload("res://vtt/structured_resource_trackers.gd")
 
@@ -35,6 +36,7 @@ var _grant_spell: OptionButton
 var _grant_tracker: OptionButton
 var _grant_search: LineEdit
 var _grant_spell_choices: Array[Dictionary] = []
+var _structured_choice: Dictionary = {}
 var _record: Dictionary = {}
 var _spell_summary: Label
 var _spell_ability_choice: OptionButton
@@ -1372,6 +1374,23 @@ func _refresh_granted_spell_boxes() -> void:
 		if not groups.has(origin_id):
 			groups[origin_id] = []
 		groups[origin_id].append(grant)
+	# Unresolved 5etools choose-entries are shown instead of guessing spells.
+	for raw: Variant in Structured5e.for_creature(record).get("choices", []):
+		if not raw is Dictionary:
+			continue
+		var choice: Dictionary = raw
+		var chosen := 0
+		for entry: Variant in _manual_origin_spells:
+			if entry is Dictionary and String(entry.get("source_choice_id", "")) == String(choice.get("id", "")):
+				chosen += 1
+		if chosen >= int(choice.get("count", 1)):
+			continue
+		var sid: String = String(choice.get("origin_id", ""))
+		if not groups.has(sid):
+			groups[sid] = []
+		var pending: Dictionary = choice.duplicate(true)
+		pending["pending_selection"] = true
+		groups[sid].append(pending)
 	for origin_id: String in groups.keys():
 		var panel := PanelContainer.new()
 		_granted_spell_boxes.add_child(panel)
@@ -1384,6 +1403,13 @@ func _refresh_granted_spell_boxes() -> void:
 		body.add_child(title)
 		for raw: Variant in entries:
 			var grant: Dictionary = raw
+			if bool(grant.get("pending_selection", false)):
+				var choose := Button.new()
+				choose.text = "⚠ Scegli incantesimo · " + String(grant.get("filter", ""))
+				choose.tooltip_text = "Scelta definita nei campi strutturati di 5etools."
+				choose.pressed.connect(_choose_structured_spell.bind(grant.duplicate(true)))
+				body.add_child(choose)
+				continue
 			var spell: Dictionary = SpellCatalog.catalog_spell(String(grant.get("spell_id", "")))
 			if spell.is_empty():
 				continue
@@ -1420,7 +1446,10 @@ func _cast_granted_spell(grant: Dictionary) -> void:
 
 
 func _open_grant_dialog() -> void:
+	_structured_choice.clear()
 	_grant_origin.clear()
+	_grant_origin.disabled = false
+	_grant_tracker.disabled = false
 	for origin: Dictionary in OriginChoices.available(_record):
 		var sid: String = String(origin.get("id", ""))
 		if sid.is_empty() or sid == OriginChoices.SPELL_PICKER_ID:
@@ -1446,12 +1475,69 @@ func _refresh_grant_spell_picker(query: String) -> void:
 	_grant_spell_choices.clear()
 	var needle: String = query.strip_edges().to_lower()
 	for spell: Dictionary in _catalog:
+		if not _structured_choice.is_empty() and not _structured_choice_matches(spell):
+			continue
 		if not needle.is_empty() and needle not in String(spell.get("name", "")).to_lower():
 			continue
 		_grant_spell_choices.append(spell)
 		_grant_spell.add_item("%s [%s]" % [String(spell.get("name", "")), String(spell.get("source", ""))])
 		if _grant_spell_choices.size() >= 250:
 			break
+
+
+func _structured_choice_matches(spell: Dictionary) -> bool:
+	for clause: String in String(_structured_choice.get("filter", "")).to_lower().split("|"):
+		var parts: PackedStringArray = clause.split("=", true, 1)
+		if parts.size() != 2:
+			return false
+		var values: PackedStringArray = parts[1].split(";")
+		match parts[0]:
+			"level":
+				if str(int(spell.get("level", -1))) not in values:
+					return false
+			"class":
+				var found := false
+				for value: Variant in spell.get("classes", []):
+					if String(value).to_lower() in values:
+						found = true
+				if not found:
+					return false
+			"school":
+				var actual: String = String(spell.get("school", "")).to_lower()
+				var codes := {
+					"abjuration": "a", "conjuration": "c", "divination": "d",
+					"enchantment": "e", "evocation": "v", "illusion": "i",
+					"necromancy": "n", "transmutation": "t"
+				}
+				if actual not in values and String(codes.get(actual, "")) not in values:
+					return false
+			_:
+				return false
+	return true
+
+
+func _choose_structured_spell(choice: Dictionary) -> void:
+	_open_grant_dialog()
+	_structured_choice = choice.duplicate(true)
+	var sid: String = String(choice.get("origin_id", ""))
+	var found := false
+	for i: int in range(_grant_origin.item_count):
+		if String(_grant_origin.get_item_metadata(i)) == sid:
+			_grant_origin.select(i)
+			found = true
+			break
+	if not found:
+		_grant_origin.add_item(String(choice.get("origin_name", sid)))
+		_grant_origin.set_item_metadata(_grant_origin.item_count - 1, sid)
+		_grant_origin.select(_grant_origin.item_count - 1)
+	for i: int in range(_grant_tracker.item_count):
+		if String(_grant_tracker.get_item_metadata(i)) == String(choice.get("tracker_id", "")):
+			_grant_tracker.select(i)
+			break
+	_grant_origin.disabled = true
+	_grant_tracker.disabled = true
+	_refresh_grant_spell_picker("")
+	_grant_dialog.get_ok_button().disabled = _grant_spell.item_count == 0
 
 
 func _add_origin_spell() -> void:
@@ -1465,6 +1551,7 @@ func _add_origin_spell() -> void:
 		if row is Dictionary and String(row.get("origin_id", "")) == origin_id and String(row.get("spell_id", "")) == spell_id:
 			return
 	_manual_origin_spells.append({
+		"source_choice_id": String(_structured_choice.get("id", "")),
 		"id": "origin_spell_%d" % Time.get_ticks_usec(),
 		"origin_id": origin_id,
 		"origin_name": _grant_origin.get_item_text(_grant_origin.selected),
