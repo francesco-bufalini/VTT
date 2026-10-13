@@ -95,7 +95,7 @@ static func _add_choice(output: Dictionary, origin: Dictionary, spec: Dictionary
 		return
 	var pending: Array = output["choices"]
 	pending.append({
-		"id": String(origin.get("id", "")) + "|" + stage + "|" + mode + "|" + filter,
+		"id": String(origin.get("id", "")) + "|" + stage + "|" + mode + "|" + filter + "|" + tracker_id,
 		"origin_id": String(origin.get("id", "")),
 		"origin_name": String(origin.get("name", "")),
 		"filter": filter,
