@@ -584,7 +584,14 @@ func _dispatch_cast(spell: Dictionary, slot_choice: int, grant: Dictionary = {})
 			return
 	# The sheet's owner invokes the existing VTT system if the spell has an
 	# effect and a linked caster. A spell with no VTT effect is still cast.
-	if not bool(_on_cast_spell.call(spell, level, grant)):
+	# Ordinary spells retain the two-argument callback contract. An origin
+	# grant passes extra charge metadata only to the sheet owner.
+	var accepted: bool = (
+		bool(_on_cast_spell.call(spell, level))
+		if grant.is_empty()
+		else bool(_on_cast_spell.call(spell, level, grant))
+	)
+	if not accepted:
 		return
 	if slot_choice >= 100:
 		_change_pact(1)
