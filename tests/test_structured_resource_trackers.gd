@@ -2,6 +2,7 @@ extends SceneTree
 # Offline-only regression: no local server and no HTTP.
 const Trackers = preload("res://vtt/structured_resource_trackers.gd")
 const ClassMechanics = preload("res://vtt/class_mechanics_5etools.gd")
+const ResourceOverrides = preload("res://vtt/class_resource_overrides.gd")
 const Rules = preload("res://vtt/creature_rules.gd")
 const Locale = preload("res://vtt/creature_gui_locale.gd")
 
@@ -64,10 +65,13 @@ func run() -> void:
 		"classes": [{"name": "Druid", "source": "XPHB", "level": 2}]
 	})
 	assert(int(_find_resource(druid_second, "Wild Shape").get("max", 0)) == 2)
-	assert(Trackers.for_creature({
+	var druid_2014: Dictionary = _find_resource(Trackers.for_creature({
 		"kind": "character",
 		"classes": [{"name": "Druid", "source": "PHB", "level": 2}]
-	}).is_empty(), "2014 Wild Shape count is prose, not a numeric table column")
+	}), "Wild Shape")
+	assert(int(druid_2014.get("max", 0)) == 2
+		and String(druid_2014.get("recharge", "")) == "short_rest",
+		"2014 Wild Shape must come from the checked-in Fight Club supplement")
 
 	var mixed: Array[Dictionary] = Trackers.for_creature({
 		"kind": "character", "level": 12,
@@ -122,6 +126,101 @@ func run() -> void:
 		"kind": "character", "classes": [{"name": "Fighter", "source": "XPHB", "level": 4}]
 	})
 	assert(int(_find_resource(fighter, "Second Wind").get("max", 0)) == 3)
+
+	# The runtime accepts only the existing VTT formula symbols, never the
+	# Fight Club placeholders consumed by the offline asset generator.
+	var sample: Dictionary = {"kind": "character", "level": 3, "abilities": {"cha": 18}}
+	assert(ResourceOverrides.evaluate_max("%6", sample, 3).is_empty(),
+		"External Fight Club placeholders must not be accepted by the game")
+	assert(ResourceOverrides.evaluate_max("1 + %6", sample, 3).is_empty(),
+		"Mixed source-native counter expressions must not be interpreted")
+	assert(int(ResourceOverrides.evaluate_max("cha_mod", sample, 3).get("max", 0)) == 4,
+		"Use the same cha_mod symbol as creature numeric bonuses")
+	assert(int(ResourceOverrides.evaluate_max("1 + cha_mod", sample, 3).get("max", 0)) == 5,
+		"Native arithmetic formulas should use the ordinary bonus evaluator")
+	var integrated: FileAccess = FileAccess.open(
+		"res://vtt/data/class_resource_overrides.json", FileAccess.READ)
+	assert(integrated != null, "Compiled resource supplement should be bundled locally")
+	var supplement: Dictionary = JSON.parse_string(integrated.get_as_text())
+	integrated.close()
+	for group: Dictionary in supplement.get("classes", []):
+		for resource: Dictionary in group.get("resources", []):
+			for step: Dictionary in resource.get("steps", []):
+				assert(not String(step.get("value", "")).contains("%"),
+					"Bundled counter values must not contain Fight Club placeholders")
+
+	# Complementary Fight Club metadata: formulas, recovery progression and
+	# subclass gating. No runtime downloads or natural-language parsing.
+	var low_cha: Dictionary = _find_resource(Trackers.for_creature({
+		"kind": "character", "abilities": {"cha": 8},
+		"classes": [{"name": "Bard", "source": "PHB", "level": 1}]
+	}), "Bardic Inspiration")
+	assert(int(low_cha.get("max", 0)) == 1
+		and String(low_cha.get("max_formula", "")) == "cha_mod"
+		and String(low_cha.get("recharge", "")) == "long_rest",
+		"Ability-modifier counter must respect its minimum and first recharge")
+	var high_cha: Dictionary = _find_resource(Trackers.for_creature({
+		"kind": "character", "abilities": {"cha": 18},
+		"classes": [{"name": "Bard", "source": "PHB", "level": 5}]
+	}), "Bardic Inspiration")
+	assert(int(high_cha.get("max", 0)) == 4
+		and String(high_cha.get("recharge", "")) == "short_rest",
+		"Font of Inspiration updates existing counter without duplicating it")
+	var bard_2024: Dictionary = _find_resource(Trackers.for_creature({
+		"kind": "character", "abilities": {"cha": 16},
+		"classes": [{"name": "Bard", "source": "XPHB", "level": 5}]
+	}), "Bardic Inspiration")
+	assert(int(bard_2024.get("max", 0)) == 3
+		and String(bard_2024.get("recharge", "")) == "short_rest",
+		"2024 Bardic Inspiration keeps its own edition-specific resource")
+	var used_record: Dictionary = {
+		"kind": "character", "abilities": {"cha": 16},
+		"classes": [{"name": "Bard", "source": "PHB", "level": 1}],
+		"resource_trackers": [{"id": "manual_one", "name": "Manual", "max": 2, "recharge": "manual"}],
+		"resource_tracker_spent": {"class:bard:phb:bardic_inspiration": 1, "manual_one": 1}
+	}
+	assert(int(Trackers.spent_after_recovery(used_record, "short_rest").get(
+		"class:bard:phb:bardic_inspiration", 0)) == 1,
+		"Before Font of Inspiration, a short rest must not replenish uses")
+	var after_long: Dictionary = Trackers.spent_after_recovery(used_record, "long_rest")
+	assert(not after_long.has("class:bard:phb:bardic_inspiration")
+		and int(after_long.get("manual_one", 0)) == 1,
+		"Rest recovery must leave manual trackers untouched")
+	used_record["classes"] = [{"name": "Bard", "source": "PHB", "level": 5}]
+	assert(not Trackers.spent_after_recovery(used_record, "short_rest").has(
+		"class:bard:phb:bardic_inspiration"),
+		"Short rest replenishes Bardic Inspiration after Font of Inspiration")
+	var paladin_2014: Array[Dictionary] = Trackers.for_creature({
+		"kind": "character", "abilities": {"cha": 14},
+		"classes": [{"name": "Paladin", "source": "PHB", "level": 3}]
+	})
+	assert(int(_find_resource(paladin_2014, "Divine Sense").get("max", 0)) == 3)
+	assert(int(_find_resource(paladin_2014, "Lay on Hands").get("max", 0)) == 15)
+	assert(int(_find_resource(paladin_2014, "Channel Divinity").get("max", 0)) == 1)
+	assert(_find_resource(Trackers.for_creature({
+		"kind": "character", "classes": [{"name": "Wizard", "source": "PHB", "level": 3}]
+	}), "Portents").is_empty(), "Subclass counters must not leak into other subclasses")
+	var diviner: Dictionary = _find_resource(Trackers.for_creature({
+		"kind": "character",
+		"classes": [{"name": "Wizard", "source": "PHB", "level": 14,
+			"subclass": "Divination"}]
+	}), "Portents")
+	assert(int(diviner.get("max", 0)) == 3 and diviner.get("recharge", "") == "long_rest")
+	assert(_find_resource(Trackers.for_creature({
+		"kind": "character", "classes": [{"name": "Warlock", "source": "PHB", "level": 18}]
+	}), "Eldritch Invocations Known").is_empty(),
+		"Selection capacity must never become a consumable tracker")
+	assert(_find_resource(Trackers.for_creature({
+		"kind": "character", "classes": [{"name": "Druid", "source": "PHB", "level": 2}]
+	}), "Natural Recovery").is_empty(), "No unselected Circle of the Land resource")
+	var manual_formula: Dictionary = _find_resource(Trackers.for_creature({
+		"kind": "character", "level": 3, "abilities": {"cha": 16},
+		"resource_trackers": [{"id": "special", "name": "Custom", "max": 1,
+			"max_formula": "1 + cha_mod", "recharge": "long_rest"}]
+	}), "Custom")
+	assert(int(manual_formula.get("max", 0)) == 4
+		and manual_formula.get("recharge", "") == "long_rest",
+		"Saved custom formulas and rest types must survive normalization")
 
 	var monster: Array[Dictionary] = Trackers.for_creature({
 		"kind": "monster",

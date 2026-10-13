@@ -3,6 +3,7 @@ extends RefCounted
 # Resource counters backed by numeric 5etools JSON fields or formal 5etools
 # {@recharge ...} markup. This module never interprets feature prose.
 const ClassMechanics = preload("res://vtt/class_mechanics_5etools.gd")
+const ResourceOverrides = preload("res://vtt/class_resource_overrides.gd")
 const Traits = preload("res://vtt/creature_traits_tab.gd")
 
 
@@ -14,6 +15,21 @@ static func for_creature(record: Dictionary) -> Array[Dictionary]:
 	_assign_automatic_origins(record, result)
 	_append_saved_trackers(record, result)
 	return result
+
+
+# Return a new spent-use map for a recovery event. A long rest also recovers
+# resources which recharge on a short rest. Manual and d6 trackers stay intact.
+# Callers choose when a rest occurs; merely opening a sheet never resets uses.
+static func spent_after_recovery(record: Dictionary, event: String) -> Dictionary:
+	var saved: Variant = record.get("resource_tracker_spent", {})
+	var spent: Dictionary = (saved as Dictionary).duplicate(true) if saved is Dictionary else {}
+	if event not in ["short_rest", "long_rest", "turn"]:
+		return spent
+	for tracker: Dictionary in for_creature(record):
+		var mode: String = String(tracker.get("recharge", "manual"))
+		if mode == event or (event == "long_rest" and mode == "short_rest"):
+			spent.erase(String(tracker.get("id", "")))
+	return spent
 
 
 # Keep machine-derived counters, but allow additional user-defined resources.
@@ -34,9 +50,16 @@ static func _append_saved_trackers(record: Dictionary, output: Array[Dictionary]
 		if tracker_id.is_empty() or title.is_empty() or seen.has(tracker_id):
 			continue
 		seen[tracker_id] = true
+		var formula: String = String(data.get("max_formula", "")).strip_edges()
+		var maximum: int = maxi(0, int(data.get("max", 0)))
+		if not formula.is_empty():
+			var computed: Dictionary = ResourceOverrides.evaluate_max(formula, record, int(record.get("level", 1)))
+			if not computed.is_empty():
+				maximum = int(computed.get("max", maximum))
 		output.append({
 			"id": tracker_id, "name": title,
-			"max": maxi(0, int(data.get("max", 0))),
+			"max": maximum,
+			"max_formula": formula,
 			"origin": String(data.get("origin_name", "Senza origine")),
 			"origin_id": String(data.get("origin_id", "")),
 			"origin_name": String(data.get("origin_name", "Senza origine")),
@@ -181,4 +204,38 @@ static func _append_class_trackers(record: Dictionary, output: Array[Dictionary]
 				"source_label": "%s · %s" % [
 					String(class_data.get("name", "")), resolved_source
 				]
+			})
+		# Local build-time supplement supplies missing resources and recoveries.
+		# 5etools remains authoritative for numeric class-table progressions.
+		var subclass_name: String = String(class_data.get("subclass", record.get("subclass", "")))
+		for supplement: Dictionary in ResourceOverrides.for_class(
+			selected_class_name, resolved_source, class_level, subclass_name, record
+		):
+			var supplement_column: String = String(supplement.get("column", supplement.get("name", "")))
+			# An unlimited (or unavailable) 5etools table value must never
+			# become a finite fallback counter from the supplementary source.
+			var native_column: Dictionary = ClassMechanics.column(
+				selected_class_name, resolved_source, supplement_column)
+			if not native_column.is_empty():
+				var native_value: Variant = ClassMechanics.column_value(
+					selected_class_name, resolved_source, supplement_column, class_level)
+				if not (native_value is int or native_value is float) or int(native_value) <= 0:
+					continue
+			var resource_id: String = "class:%s:%s:%s" % [
+				selected_class_name, resolved_source.to_lower(), supplement_column.to_lower().replace(" ", "_")
+			]
+			if seen.has(resource_id):
+				for existing: Dictionary in output:
+					if String(existing.get("id", "")) == resource_id:
+						existing["recharge"] = String(supplement.get("recharge", "manual"))
+						break
+				continue
+			seen[resource_id] = true
+			output.append({
+				"id": resource_id, "name": String(supplement.get("name", supplement_column)),
+				"max": int(supplement.get("max", 0)),
+				"max_formula": String(supplement.get("max_formula", "")),
+				"origin": String(supplement.get("origin", supplement_column)),
+				"recharge": String(supplement.get("recharge", "manual")),
+				"source_label": "%s · %s" % [String(class_data.get("name", "")), resolved_source]
 			})

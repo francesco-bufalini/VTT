@@ -1,0 +1,909 @@
+{
+  "meta": {
+    "format": 1,
+    "source": "FightClub5eXML",
+    "repository": "https://github.com/vidalvanbergen/fightclub5exml",
+    "source_path": "Sources/DND_5e/WizardsOfTheCoast/01_Core/01_Players_Handbook/class-*-phb.xml",
+    "build_only": true,
+    "note": "Curated consumable class counters (2014 PHB). Spellcasting, learned capacities and ambiguous counters excluded. Fight Club is never queried at runtime. Corrections: Indomitable reset is long_rest. Corrections: Natural Recovery/Wholeness of Body gated by subclass; Arcane Recovery treated as once per long rest; Mystic Arcanum excluded because spellcasting is managed separately. A 2024 Bard definition is curated from 5etools classFeature data (not from Fight Club 2024 counters). Formula values are stored exclusively in native VTT syntax; external placeholders are translated by the offline generator."
+  },
+  "classes": [
+    {
+      "class": "Barbarian",
+      "source": "PHB",
+      "resources": [
+        {
+          "name": "Rage",
+          "steps": [
+            {
+              "level": 1,
+              "value": "2",
+              "reset": "long_rest"
+            },
+            {
+              "level": 3,
+              "value": "3",
+              "reset": "long_rest"
+            },
+            {
+              "level": 6,
+              "value": "4",
+              "reset": "long_rest"
+            },
+            {
+              "level": 12,
+              "value": "5",
+              "reset": "long_rest"
+            },
+            {
+              "level": 17,
+              "value": "6",
+              "reset": "long_rest"
+            }
+          ],
+          "source": "PHB",
+          "column": "Rages"
+        }
+      ]
+    },
+    {
+      "class": "Bard",
+      "source": "PHB",
+      "resources": [
+        {
+          "name": "Bardic Inspiration",
+          "steps": [
+            {
+              "level": 1,
+              "value": "cha_mod",
+              "reset": "long_rest"
+            },
+            {
+              "level": 5,
+              "value": "cha_mod",
+              "reset": "short_rest"
+            }
+          ],
+          "source": "PHB",
+          "minimum": 1
+        }
+      ]
+    },
+    {
+      "class": "Cleric",
+      "source": "PHB",
+      "resources": [
+        {
+          "name": "Channel Divinity",
+          "steps": [
+            {
+              "level": 2,
+              "value": "1",
+              "reset": "short_rest"
+            },
+            {
+              "level": 6,
+              "value": "2",
+              "reset": "short_rest"
+            },
+            {
+              "level": 18,
+              "value": "3",
+              "reset": "short_rest"
+            }
+          ],
+          "source": "PHB"
+        },
+        {
+          "name": "War Priest",
+          "steps": [
+            {
+              "level": 1,
+              "value": "wis_mod",
+              "reset": "long_rest"
+            }
+          ],
+          "source": "PHB",
+          "subclass": "War Domain",
+          "minimum": 1
+        },
+        {
+          "name": "Warding Flare",
+          "steps": [
+            {
+              "level": 1,
+              "value": "wis_mod",
+              "reset": "long_rest"
+            }
+          ],
+          "source": "PHB",
+          "subclass": "Light Domain",
+          "minimum": 1
+        },
+        {
+          "name": "Wrath of the Storm",
+          "steps": [
+            {
+              "level": 1,
+              "value": "wis_mod",
+              "reset": "long_rest"
+            }
+          ],
+          "source": "PHB",
+          "subclass": "Tempest Domain",
+          "minimum": 1
+        }
+      ]
+    },
+    {
+      "class": "Druid",
+      "source": "PHB",
+      "resources": [
+        {
+          "name": "Natural Recovery",
+          "steps": [
+            {
+              "level": 2,
+              "value": "1",
+              "reset": "long_rest"
+            }
+          ],
+          "source": "PHB",
+          "subclass": "Circle of the Land"
+        },
+        {
+          "name": "Wild Shape",
+          "steps": [
+            {
+              "level": 2,
+              "value": "2",
+              "reset": "short_rest"
+            }
+          ],
+          "source": "PHB"
+        }
+      ]
+    },
+    {
+      "class": "Fighter",
+      "source": "PHB",
+      "resources": [
+        {
+          "name": "Action Surge",
+          "steps": [
+            {
+              "level": 2,
+              "value": "1",
+              "reset": "short_rest"
+            },
+            {
+              "level": 17,
+              "value": "2",
+              "reset": "short_rest"
+            }
+          ],
+          "source": "PHB"
+        },
+        {
+          "name": "Indomitable",
+          "steps": [
+            {
+              "level": 9,
+              "value": "1",
+              "reset": "long_rest"
+            },
+            {
+              "level": 13,
+              "value": "2",
+              "reset": "long_rest"
+            },
+            {
+              "level": 17,
+              "value": "3",
+              "reset": "long_rest"
+            }
+          ],
+          "source": "PHB"
+        },
+        {
+          "name": "Second Wind",
+          "steps": [
+            {
+              "level": 1,
+              "value": "1",
+              "reset": "short_rest"
+            }
+          ],
+          "source": "PHB"
+        },
+        {
+          "name": "Superiority Die",
+          "steps": [
+            {
+              "level": 3,
+              "value": "4",
+              "reset": "short_rest"
+            },
+            {
+              "level": 7,
+              "value": "5",
+              "reset": "short_rest"
+            },
+            {
+              "level": 15,
+              "value": "6",
+              "reset": "short_rest"
+            }
+          ],
+          "source": "PHB",
+          "subclass": "Battle Master",
+          "origin_feature": "Combat Superiority"
+        }
+      ]
+    },
+    {
+      "class": "Monk",
+      "source": "PHB",
+      "resources": [
+        {
+          "name": "Ki",
+          "steps": [
+            {
+              "level": 2,
+              "value": "2",
+              "reset": "short_rest"
+            },
+            {
+              "level": 3,
+              "value": "3",
+              "reset": "short_rest"
+            },
+            {
+              "level": 4,
+              "value": "4",
+              "reset": "short_rest"
+            },
+            {
+              "level": 5,
+              "value": "5",
+              "reset": "short_rest"
+            },
+            {
+              "level": 6,
+              "value": "6",
+              "reset": "short_rest"
+            },
+            {
+              "level": 7,
+              "value": "7",
+              "reset": "short_rest"
+            },
+            {
+              "level": 8,
+              "value": "8",
+              "reset": "short_rest"
+            },
+            {
+              "level": 9,
+              "value": "9",
+              "reset": "short_rest"
+            },
+            {
+              "level": 10,
+              "value": "10",
+              "reset": "short_rest"
+            },
+            {
+              "level": 11,
+              "value": "11",
+              "reset": "short_rest"
+            },
+            {
+              "level": 12,
+              "value": "12",
+              "reset": "short_rest"
+            },
+            {
+              "level": 13,
+              "value": "13",
+              "reset": "short_rest"
+            },
+            {
+              "level": 14,
+              "value": "14",
+              "reset": "short_rest"
+            },
+            {
+              "level": 15,
+              "value": "15",
+              "reset": "short_rest"
+            },
+            {
+              "level": 16,
+              "value": "16",
+              "reset": "short_rest"
+            },
+            {
+              "level": 17,
+              "value": "17",
+              "reset": "short_rest"
+            },
+            {
+              "level": 18,
+              "value": "18",
+              "reset": "short_rest"
+            },
+            {
+              "level": 19,
+              "value": "19",
+              "reset": "short_rest"
+            },
+            {
+              "level": 20,
+              "value": "20",
+              "reset": "short_rest"
+            }
+          ],
+          "source": "PHB",
+          "column": "Ki Points"
+        },
+        {
+          "name": "Wholeness of Body",
+          "steps": [
+            {
+              "level": 6,
+              "value": "1",
+              "reset": "long_rest"
+            }
+          ],
+          "source": "PHB",
+          "subclass": "Way of the Open Hand"
+        }
+      ]
+    },
+    {
+      "class": "Paladin",
+      "source": "PHB",
+      "resources": [
+        {
+          "name": "Avenging Angel",
+          "steps": [
+            {
+              "level": 20,
+              "value": "1",
+              "reset": "long_rest"
+            }
+          ],
+          "source": "PHB",
+          "subclass": "Oath of Vengeance"
+        },
+        {
+          "name": "Channel Divinity",
+          "steps": [
+            {
+              "level": 3,
+              "value": "1",
+              "reset": "short_rest"
+            }
+          ],
+          "source": "PHB"
+        },
+        {
+          "name": "Cleansing Touch",
+          "steps": [
+            {
+              "level": 14,
+              "value": "cha_mod",
+              "reset": "long_rest"
+            }
+          ],
+          "source": "PHB",
+          "minimum": 1
+        },
+        {
+          "name": "Divine Sense",
+          "steps": [
+            {
+              "level": 1,
+              "value": "1+cha_mod",
+              "reset": "long_rest"
+            }
+          ],
+          "source": "PHB",
+          "minimum": 1
+        },
+        {
+          "name": "Elder Champion",
+          "steps": [
+            {
+              "level": 20,
+              "value": "1",
+              "reset": "long_rest"
+            }
+          ],
+          "source": "PHB",
+          "subclass": "Oath of the Ancients"
+        },
+        {
+          "name": "Holy Nimbus",
+          "steps": [
+            {
+              "level": 20,
+              "value": "1",
+              "reset": "long_rest"
+            }
+          ],
+          "source": "PHB",
+          "subclass": "Oath of Devotion"
+        },
+        {
+          "name": "Lay on Hands",
+          "steps": [
+            {
+              "level": 1,
+              "value": "5",
+              "reset": "long_rest"
+            },
+            {
+              "level": 2,
+              "value": "10",
+              "reset": "long_rest"
+            },
+            {
+              "level": 3,
+              "value": "15",
+              "reset": "long_rest"
+            },
+            {
+              "level": 4,
+              "value": "20",
+              "reset": "long_rest"
+            },
+            {
+              "level": 5,
+              "value": "25",
+              "reset": "long_rest"
+            },
+            {
+              "level": 6,
+              "value": "30",
+              "reset": "long_rest"
+            },
+            {
+              "level": 7,
+              "value": "35",
+              "reset": "long_rest"
+            },
+            {
+              "level": 8,
+              "value": "40",
+              "reset": "long_rest"
+            },
+            {
+              "level": 9,
+              "value": "45",
+              "reset": "long_rest"
+            },
+            {
+              "level": 10,
+              "value": "50",
+              "reset": "long_rest"
+            },
+            {
+              "level": 11,
+              "value": "55",
+              "reset": "long_rest"
+            },
+            {
+              "level": 12,
+              "value": "60",
+              "reset": "long_rest"
+            },
+            {
+              "level": 13,
+              "value": "65",
+              "reset": "long_rest"
+            },
+            {
+              "level": 14,
+              "value": "70",
+              "reset": "long_rest"
+            },
+            {
+              "level": 15,
+              "value": "75",
+              "reset": "long_rest"
+            },
+            {
+              "level": 16,
+              "value": "80",
+              "reset": "long_rest"
+            },
+            {
+              "level": 17,
+              "value": "85",
+              "reset": "long_rest"
+            },
+            {
+              "level": 18,
+              "value": "90",
+              "reset": "long_rest"
+            },
+            {
+              "level": 19,
+              "value": "95",
+              "reset": "long_rest"
+            },
+            {
+              "level": 20,
+              "value": "100",
+              "reset": "long_rest"
+            }
+          ],
+          "source": "PHB"
+        },
+        {
+          "name": "Undying Sentinel",
+          "steps": [
+            {
+              "level": 15,
+              "value": "1",
+              "reset": "long_rest"
+            }
+          ],
+          "source": "PHB",
+          "subclass": "Oath of the Ancients"
+        }
+      ]
+    },
+    {
+      "class": "Ranger",
+      "source": "PHB",
+      "resources": []
+    },
+    {
+      "class": "Rogue",
+      "source": "PHB",
+      "resources": [
+        {
+          "name": "Spell Thief",
+          "steps": [
+            {
+              "level": 17,
+              "value": "1",
+              "reset": "long_rest"
+            }
+          ],
+          "source": "PHB",
+          "subclass": "Arcane Trickster"
+        },
+        {
+          "name": "Stroke of Luck",
+          "steps": [
+            {
+              "level": 20,
+              "value": "1",
+              "reset": "short_rest"
+            }
+          ],
+          "source": "PHB"
+        }
+      ]
+    },
+    {
+      "class": "Sorcerer",
+      "source": "PHB",
+      "resources": [
+        {
+          "name": "Sorcery Points",
+          "steps": [
+            {
+              "level": 2,
+              "value": "2",
+              "reset": "long_rest"
+            },
+            {
+              "level": 3,
+              "value": "3",
+              "reset": "long_rest"
+            },
+            {
+              "level": 4,
+              "value": "4",
+              "reset": "long_rest"
+            },
+            {
+              "level": 5,
+              "value": "5",
+              "reset": "long_rest"
+            },
+            {
+              "level": 6,
+              "value": "6",
+              "reset": "long_rest"
+            },
+            {
+              "level": 7,
+              "value": "7",
+              "reset": "long_rest"
+            },
+            {
+              "level": 8,
+              "value": "8",
+              "reset": "long_rest"
+            },
+            {
+              "level": 9,
+              "value": "9",
+              "reset": "long_rest"
+            },
+            {
+              "level": 10,
+              "value": "10",
+              "reset": "long_rest"
+            },
+            {
+              "level": 11,
+              "value": "11",
+              "reset": "long_rest"
+            },
+            {
+              "level": 12,
+              "value": "12",
+              "reset": "long_rest"
+            },
+            {
+              "level": 13,
+              "value": "13",
+              "reset": "long_rest"
+            },
+            {
+              "level": 14,
+              "value": "14",
+              "reset": "long_rest"
+            },
+            {
+              "level": 15,
+              "value": "15",
+              "reset": "long_rest"
+            },
+            {
+              "level": 16,
+              "value": "16",
+              "reset": "long_rest"
+            },
+            {
+              "level": 17,
+              "value": "17",
+              "reset": "long_rest"
+            },
+            {
+              "level": 18,
+              "value": "18",
+              "reset": "long_rest"
+            },
+            {
+              "level": 19,
+              "value": "19",
+              "reset": "long_rest"
+            },
+            {
+              "level": 20,
+              "value": "20",
+              "reset": "long_rest"
+            }
+          ],
+          "source": "PHB"
+        },
+        {
+          "name": "Tides of Chaos",
+          "steps": [
+            {
+              "level": 1,
+              "value": "1",
+              "reset": "long_rest"
+            }
+          ],
+          "source": "PHB",
+          "subclass": "Wild Magic"
+        }
+      ]
+    },
+    {
+      "class": "Warlock",
+      "source": "PHB",
+      "resources": [
+        {
+          "name": "Dark Delirium",
+          "steps": [
+            {
+              "level": 14,
+              "value": "1",
+              "reset": "short_rest"
+            }
+          ],
+          "source": "PHB",
+          "subclass": "The Archfey"
+        },
+        {
+          "name": "Dark One's Luck",
+          "steps": [
+            {
+              "level": 6,
+              "value": "1",
+              "reset": "short_rest"
+            }
+          ],
+          "source": "PHB",
+          "subclass": "The Fiend"
+        },
+        {
+          "name": "Eldritch Master",
+          "steps": [
+            {
+              "level": 20,
+              "value": "1",
+              "reset": "long_rest"
+            }
+          ],
+          "source": "PHB"
+        },
+        {
+          "name": "Entropic Ward",
+          "steps": [
+            {
+              "level": 6,
+              "value": "1",
+              "reset": "short_rest"
+            }
+          ],
+          "source": "PHB",
+          "subclass": "The Great Old One"
+        },
+        {
+          "name": "Fey Presence",
+          "steps": [
+            {
+              "level": 1,
+              "value": "1",
+              "reset": "short_rest"
+            }
+          ],
+          "source": "PHB",
+          "subclass": "The Archfey"
+        },
+        {
+          "name": "Hurl Through Hell",
+          "steps": [
+            {
+              "level": 14,
+              "value": "1",
+              "reset": "long_rest"
+            }
+          ],
+          "source": "PHB",
+          "subclass": "The Fiend"
+        },
+        {
+          "name": "Misty Escape",
+          "steps": [
+            {
+              "level": 6,
+              "value": "1",
+              "reset": "short_rest"
+            }
+          ],
+          "source": "PHB",
+          "subclass": "The Archfey"
+        }
+      ]
+    },
+    {
+      "class": "Wizard",
+      "source": "PHB",
+      "resources": [
+        {
+          "name": "Arcane Recovery",
+          "steps": [
+            {
+              "level": 1,
+              "value": "1",
+              "reset": "long_rest"
+            }
+          ],
+          "source": "PHB"
+        },
+        {
+          "name": "Benign Transposition",
+          "steps": [
+            {
+              "level": 6,
+              "value": "1",
+              "reset": "long_rest"
+            }
+          ],
+          "source": "PHB",
+          "subclass": "School of Conjuration"
+        },
+        {
+          "name": "Illusory Step",
+          "steps": [
+            {
+              "level": 10,
+              "value": "1",
+              "reset": "short_rest"
+            }
+          ],
+          "source": "PHB",
+          "subclass": "School of Illusion"
+        },
+        {
+          "name": "Portents",
+          "steps": [
+            {
+              "level": 2,
+              "value": "2",
+              "reset": "long_rest"
+            },
+            {
+              "level": 14,
+              "value": "3",
+              "reset": "long_rest"
+            }
+          ],
+          "source": "PHB",
+          "subclass": "School of Divination",
+          "origin_feature": "Portent"
+        },
+        {
+          "name": "Shapechanger",
+          "steps": [
+            {
+              "level": 10,
+              "value": "1",
+              "reset": "short_rest"
+            }
+          ],
+          "source": "PHB",
+          "subclass": "School of Transmutation"
+        },
+        {
+          "name": "Third Eye",
+          "steps": [
+            {
+              "level": 10,
+              "value": "1",
+              "reset": "short_rest"
+            }
+          ],
+          "source": "PHB",
+          "subclass": "School of Divination"
+        }
+      ]
+    },
+    {
+      "class": "Bard",
+      "source": "XPHB",
+      "resources": [
+        {
+          "name": "Bardic Inspiration",
+          "minimum": 1,
+          "source": "XPHB",
+          "derived_from": "5etools classFeature Bardic Inspiration + Font of Inspiration (2024)",
+          "steps": [
+            {
+              "level": 1,
+              "value": "cha_mod",
+              "reset": "long_rest"
+            },
+            {
+              "level": 5,
+              "value": "cha_mod",
+              "reset": "short_rest"
+            }
+          ]
+        }
+      ]
+    }
+  ]
+}
