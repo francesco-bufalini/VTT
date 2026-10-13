@@ -58,7 +58,7 @@ static func _matching_origins(record: Dictionary, row: Dictionary, features: Arr
 
 # Stable spell catalog IDs, retaining the PHB 2014 variant when appropriate.
 # Full catalog lookup is a fallback for irregular official spell names.
-static func _spell_id(value: String) -> String:
+static func _spell_id(value: String, edition: String) -> String:
 	var raw: String = value.split("#", true, 1)[0].to_lower()
 	var parts: PackedStringArray = raw.split("|")
 	var name: String = parts[0].strip_edges()
@@ -70,7 +70,7 @@ static func _spell_id(value: String) -> String:
 	slug = parsed.sub(slug, "", true)
 	while "__" in slug:
 		slug = slug.replace("__", "_")
-	if source == "phb" and not Catalog.catalog_spell("phb2014_" + slug).is_empty():
+	if (source == "phb" or (source.is_empty() and edition == "2014")) and not Catalog.catalog_spell("phb2014_" + slug).is_empty():
 		return "phb2014_" + slug
 	if not Catalog.catalog_spell(slug).is_empty():
 		return slug
@@ -104,8 +104,8 @@ static func _add_choice(output: Dictionary, origin: Dictionary, spec: Dictionary
 	})
 
 
-static func _add_spell(output: Dictionary, origin: Dictionary, token: String, tracker_id: String, mode: String, stage: String) -> void:
-	var id: String = _spell_id(token)
+static func _add_spell(output: Dictionary, origin: Dictionary, token: String, tracker_id: String, mode: String, stage: String, edition: String) -> void:
+	var id: String = _spell_id(token, edition)
 	if id.is_empty():
 		return
 	var grants: Array = output["grants"]
@@ -122,7 +122,7 @@ static func _add_spell(output: Dictionary, origin: Dictionary, token: String, tr
 	})
 
 
-static func _add_group(output: Dictionary, origin: Dictionary, spec: Variant, mode: String, stage: String, category: String, count_key: String, block_index: int) -> void:
+static func _add_group(output: Dictionary, origin: Dictionary, spec: Variant, mode: String, stage: String, category: String, count_key: String, block_index: int, edition: String) -> void:
 	if not spec is Array:
 		return
 	var tracker_id := ""
@@ -174,12 +174,12 @@ static func _add_group(output: Dictionary, origin: Dictionary, spec: Variant, mo
 				continue
 			if mode == "known" and category == "will" and "#c" not in String(raw):
 				continue
-			_add_spell(output, origin, String(raw), specific_tracker, mode, stage)
+			_add_spell(output, origin, String(raw), specific_tracker, mode, stage, edition)
 
 
-static func _walk_usage(output: Dictionary, origin: Dictionary, values: Variant, mode: String, stage: String, block_index: int) -> void:
+static func _walk_usage(output: Dictionary, origin: Dictionary, values: Variant, mode: String, stage: String, block_index: int, edition: String) -> void:
 	if values is Array:
-		_add_group(output, origin, values, mode, stage, "will", "", block_index)
+		_add_group(output, origin, values, mode, stage, "will", "", block_index, edition)
 		return
 	if not values is Dictionary:
 		return
@@ -187,10 +187,10 @@ static func _walk_usage(output: Dictionary, origin: Dictionary, values: Variant,
 		var scoped: Variant = (values as Dictionary).get(category, null)
 		if category == "will" or category == "_":
 			if scoped is Array:
-				_add_group(output, origin, scoped, mode, stage, "will", "", block_index)
+				_add_group(output, origin, scoped, mode, stage, "will", "", block_index, edition)
 		elif scoped is Dictionary:
 			for uses: String in scoped.keys():
-				_add_group(output, origin, scoped[uses], mode, stage, category, uses, block_index)
+				_add_group(output, origin, scoped[uses], mode, stage, category, uses, block_index, edition)
 
 
 static func for_creature(record: Dictionary) -> Dictionary:
@@ -222,5 +222,5 @@ static func for_creature(record: Dictionary) -> Dictionary:
 						if int(origin.get("level", 0)) < threshold:
 							continue
 						var value: Variant = (progression as Dictionary)[stage]
-						_walk_usage(output, origin, value, mode, stage, block_index)
+						_walk_usage(output, origin, value, mode, stage, block_index, String(record.get("rules_version", "2014")))
 	return output
