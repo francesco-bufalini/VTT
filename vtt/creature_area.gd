@@ -3398,8 +3398,20 @@ func _on_spellcasting_cast_requested(spell: Dictionary, slot_level: int, grant: 
 		return true
 	# Return to the board before entering the existing target-selection mode.
 	hide_panel()
+	var casting_context: Dictionary = {}
+	if not grant.is_empty():
+		casting_context = OriginSpells.cast_context(_current(), spell_id, grant)
+	else:
+		var ability: String = String(spell.get("caster_spellcasting_ability", ""))
+		if ability in ["str", "dex", "con", "int", "wis", "cha"]:
+			var stats: Dictionary = _current()
+			casting_context = {
+				"spellcasting_ability": ability,
+				"spell_attack_bonus": BonusRules.value(stats, "proficiency") + BonusRules.value(stats, "ability_mod:" + ability) + BonusRules.bonus(stats, "spell_attack"),
+				"spell_save_dc": 8 + BonusRules.value(stats, "proficiency") + BonusRules.value(stats, "ability_mod:" + ability) + BonusRules.bonus(stats, "spell_dc")
+			}
 	var activated: bool = bool(runtime.call(
-		"activate_spell_from_caster", spell_id, caster, spell_name, source, slot_level
+		"activate_spell_from_caster", spell_id, caster, spell_name, source, slot_level, casting_context
 	))
 	if not activated:
 		_pending_origin_spell_cast.clear()
