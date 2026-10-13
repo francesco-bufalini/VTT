@@ -48,7 +48,14 @@ func refresh() -> void:
 		_class_section(pair[0], record, member, prepared)
 	var unassigned: Array[Dictionary] = []
 	for item: Variant in prepared:
-		if item is Dictionary and (Choices.sources(item, record).is_empty() or "manual" in Choices.sources(item, record)):
+		if not item is Dictionary:
+			continue
+		var origins: Array = Choices.sources(item, record)
+		var assigned_to_active_class := false
+		for member: Dictionary in members:
+			if member.id in origins:
+				assigned_to_active_class = true
+		if not assigned_to_active_class or "manual" in origins:
 			unassigned.append(item)
 	if not unassigned.is_empty():
 		_heading(pair[0], "Altri incantesimi disponibili")
