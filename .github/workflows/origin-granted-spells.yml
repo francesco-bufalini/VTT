@@ -10,6 +10,8 @@ on:
       - "tests/test_origin_granted_spells.gd"
       - "tests/test_origin_spell_editor.gd"
       - "tests/test_creature_spellcasting_cast.gd"
+      - "tests/test_spellcasting_columns.gd"
+      - "tests/test_spellcasting_scaled_layout.gd"
       - ".github/workflows/origin-granted-spells.yml"
   pull_request:
     paths:
@@ -17,6 +19,8 @@ on:
       - "tests/test_origin_granted_spells.gd"
       - "tests/test_origin_spell_editor.gd"
       - "tests/test_creature_spellcasting_cast.gd"
+      - "tests/test_spellcasting_columns.gd"
+      - "tests/test_spellcasting_scaled_layout.gd"
       - ".github/workflows/origin-granted-spells.yml"
 
 jobs:
@@ -33,6 +37,8 @@ jobs:
             /tests/test_origin_spell_editor.gd
             /tests/test_creature_spellcasting_cast.gd
             /tests/test_spell_effect_tracking.gd
+            /tests/test_spellcasting_columns.gd
+            /tests/test_spellcasting_scaled_layout.gd
             /tests/test_bonus_origin_highlight.gd
             /.github/workflows/origin-granted-spells.yml
 
@@ -56,6 +62,8 @@ jobs:
           cp tests/test_origin_spell_editor.gd /tmp/vtt-origin-test/tests/
           cp tests/test_creature_spellcasting_cast.gd /tmp/vtt-origin-test/tests/
           cp tests/test_spell_effect_tracking.gd /tmp/vtt-origin-test/tests/
+          cp tests/test_spellcasting_columns.gd /tmp/vtt-origin-test/tests/
+          cp tests/test_spellcasting_scaled_layout.gd /tmp/vtt-origin-test/tests/
           cp tests/test_bonus_origin_highlight.gd /tmp/vtt-origin-test/tests/
           printf 'config_version=5\n' > /tmp/vtt-origin-test/project.godot
           /tmp/Godot_v4.7.2-stable_linux.x86_64 --headless \
@@ -65,6 +73,8 @@ jobs:
             test_origin_spell_editor \
             test_creature_spellcasting_cast \
             test_spell_effect_tracking \
+            test_spellcasting_columns \
+            test_spellcasting_scaled_layout \
             test_bonus_origin_highlight
           do
             echo "RUN Godot regression: ${test}"
