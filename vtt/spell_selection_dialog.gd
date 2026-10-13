@@ -15,6 +15,8 @@ var _count: Label
 var _details: Label
 var _context: Dictionary = {}
 var _display_limit := 120
+var _checks: Dictionary = {}
+var _book_checks: Dictionary = {}
 
 func _ready() -> void:
 	title = "Scegli incantesimi"
@@ -47,7 +49,7 @@ func _ready() -> void:
 	_search.text_changed.connect(func(_value: String) -> void: _display_limit = 120; _rebuild())
 	filters.add_child(_search)
 	_level = OptionButton.new()
-	_level.add_item("Tutti i livelli", -1)
+	_level.add_item("Tutti i livelli", 100)
 	_level.add_item("Trucchetti", 0)
 	for i: int in range(1, 10):
 		_level.add_item("%d° livello" % i, i)
@@ -93,6 +95,8 @@ func choose(options: Array[Dictionary], config: Dictionary, callback: Callable) 
 	popup_centered(Vector2i(mini(760, int(screen.x - 40)), mini(620, int(screen.y - 40))))
 
 func _rebuild() -> void:
+	_checks.clear()
+	_book_checks.clear()
 	for child: Node in _rows.get_children():
 		_rows.remove_child(child)
 		child.queue_free()
@@ -101,7 +105,7 @@ func _rebuild() -> void:
 	for spell: Dictionary in _catalog:
 		var id: String = String(spell.get("id", ""))
 		var level: int = int(spell.get("level", 0))
-		if _level.get_selected_id() >= 0 and level != _level.get_selected_id():
+		if _level.get_selected_id() != 100 and level != _level.get_selected_id():
 			continue
 		if not _search.text.is_empty() and _search.text.to_lower() not in String(spell.get("name", "")).to_lower():
 			continue
@@ -111,8 +115,9 @@ func _rebuild() -> void:
 		var row := HBoxContainer.new()
 		_rows.add_child(row)
 		var selected := CheckBox.new()
-		selected.text = "Disponibile"
+		selected.text = "Preparato" if _wizard and level > 0 else "Disponibile"
 		selected.button_pressed = _selected.has(id)
+		_checks[id] = selected
 		row.add_child(selected)
 		selected.toggled.connect(func(on: bool) -> void:
 			if _single:
@@ -123,10 +128,12 @@ func _rebuild() -> void:
 					_book[id] = true
 			else:
 				_selected.erase(id)
-			if _single or _wizard:
-				_rebuild()
-			else:
-				_update_count()
+			if _single:
+				for key: String in _checks:
+					(_checks[key] as CheckBox).set_pressed_no_signal(_selected.has(key))
+			if _wizard and _book_checks.has(id):
+				(_book_checks[id] as CheckBox).set_pressed_no_signal(_book.has(id))
+			_update_count()
 		)
 		var name_label := Label.new()
 		name_label.text = String(spell.get("name", id)) + (" · trucchetto" if level == 0 else " · %d°" % level)
@@ -140,13 +147,16 @@ func _rebuild() -> void:
 			var book := CheckBox.new()
 			book.text = "Nel libro"
 			book.button_pressed = _book.has(id)
+			_book_checks[id] = book
 			book.toggled.connect(func(on: bool) -> void:
 				if on:
 					_book[id] = true
 				else:
 					_book.erase(id)
 					_selected.erase(id)
-				_rebuild()
+				if _checks.has(id):
+					(_checks[id] as CheckBox).set_pressed_no_signal(_selected.has(id))
+				_update_count()
 			)
 			row.add_child(book)
 		displayed += 1
@@ -175,6 +185,8 @@ func _update_count() -> void:
 	var warning: bool = (_limit >= 0 and leveled != _limit) or (_cantrips >= 0 and cantrips != _cantrips)
 	_count.text = ("⚠ " if warning else "") + "Disponibili: %d / %s · Trucchetti: %d / %s" % [leveled,
 		str(_limit) if _limit >= 0 else "—", cantrips, str(_cantrips) if _cantrips >= 0 else "—"]
+	if _single:
+		_count.text = "Scegli un incantesimo · %d selezionato" % _selected.size()
 	if _wizard:
 		_count.text += " · Nel libro: %d" % _book.size()
 

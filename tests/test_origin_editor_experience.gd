@@ -181,6 +181,11 @@ func run() -> void:
 	root.push_input(wheel, true)
 	await process_frame
 	assert(sheet_scroll.scroll_vertical > before, "At the end of the class list the wheel reaches origin spells")
+	var pending: Dictionary = Structured.for_creature(record).get("choices", [])[0]
+	area._edit_origin_spell_popup(String(pending.get("origin_id", "")), pending)
+	assert(editor._shared_picker.visible, "Origin selection opens the same popup from the spellcasting page")
+	assert(area._tabs.get_tab_control(area._tabs.current_tab).name == "Incantesimi", "Choosing an origin spell keeps the spellcasting page open")
+	editor._shared_picker.hide()
 	root.size = Vector2i(1400, 900)
 	await process_frame
 	if DisplayServer.get_name() != "headless":

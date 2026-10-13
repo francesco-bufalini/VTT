@@ -33,14 +33,23 @@ func run() -> void:
 	var wizard: Dictionary = Choices.classes(record)[0]
 	tab._view_edit_class(wizard)
 	assert(tab._selection_dialog.visible and not tab._selection_dialog._details.visible)
+	if DisplayServer.get_name() != "headless":
+		await process_frame
+		await process_frame
+		await RenderingServer.frame_post_draw
+		root.get_texture().get_image().save_png("user://spellcasting_selector_review.png")
 	var pick := ""
 	for spell: Dictionary in tab._selection_dialog._catalog:
 		if int(spell.get("level",0)) == 1:
 			pick = String(spell.id)
 			break
 	assert(not pick.is_empty())
-	tab._selection_dialog._selected[pick] = true
-	tab._selection_dialog._book[pick] = true
+	assert(tab._selection_dialog._checks.has(pick))
+	var real_checkbox: CheckBox = tab._selection_dialog._checks[pick]
+	real_checkbox.button_pressed = true
+	assert(tab._selection_dialog._selected.has(pick) and tab._selection_dialog._book.has(pick),
+		"Preparing from the wizard popup also records the spell in the book")
+	assert(is_instance_valid(real_checkbox), "Selecting does not rebuild the list or lose its scroll position")
 	tab._selection_dialog._save()
 	tab._selection_dialog.hide()
 	assert(tab._prepared.size() == 1 and tab._spellbook.size() == 1)
@@ -65,6 +74,10 @@ func run() -> void:
 	assert(int(tab._view_record().resource_tracker_spent[id]) == 2)
 	await process_frame
 	await process_frame
+	for label: Node in tab._view.find_children("*", "Label", true, false):
+		if label.is_visible_in_tree() and not label.text.is_empty():
+			assert(label.size.x > 10, "Every caption and counter has a usable width")
+	assert(tab._view._rows[0].size.y < 650, "Slot headings must not wrap into a tall column of letters")
 	if DisplayServer.get_name() != "headless":
 		await RenderingServer.frame_post_draw
 		root.get_texture().get_image().save_png("user://spellcasting_columns_review.png")
@@ -90,6 +103,9 @@ func run() -> void:
 	root.push_input(wheel,true)
 	await process_frame
 	assert(caption._body.get_v_scroll_bar().value > before, "The hover caption responds to the actual wheel")
+	if DisplayServer.get_name() != "headless":
+		await RenderingServer.frame_post_draw
+		root.get_texture().get_image().save_png("user://spell_caption_review.png")
 	target.free()
 	scroll.free()
 	sink.free()

@@ -1,7 +1,7 @@
 #!/usr/bin/env python3
-"""Generate non-spell class mechanics from 5etools classTableGroups and hd.
+"""Generate class mechanics and spellcasting capacities from structured 5etools data.
 
-Usage: python scripts/generate_class_mechanics.py /path/to/5etools-src
+Usage: python scripts/generate_class_mechanics.py /path/to/5etools-src [--spellcasting-only]
 Retains numeric/typed columns without copying individual progressions or class
 to feature mappings into VTT. Classification is conservative: equipment/skill
 selection capacities are not consumable resources.

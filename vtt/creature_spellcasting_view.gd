@@ -39,7 +39,7 @@ func refresh() -> void:
 	if not unassigned.is_empty():
 		_heading(pair[0], "⚠ Disponibili da assegnare a una classe")
 		for spell: Dictionary in unassigned:
-			_spell_button(pair[0], Catalog.catalog_spell(String(spell.get("id", ""))), {}, {})
+			_spell_button(pair[0], _definition(spell), {}, {})
 	if members.is_empty() and unassigned.is_empty():
 		_label(pair[0], "Nessuna classe con incantesimi. Le concessioni dei privilegi sono qui sotto.")
 	_slots(pair[1], record)
@@ -82,6 +82,13 @@ func refresh() -> void:
 				seen[id] = true
 				_tracker(pair[1], record, Grants.tracker_for(record, grant))
 		for choice: Dictionary in group.choices:
+			var tracker_id: String = String(choice.get("tracker_id", ""))
+			if not tracker_id.is_empty() and not seen.has(tracker_id):
+				for tracker: Dictionary in Trackers.for_creature(record):
+					if String(tracker.get("id", "")) == tracker_id:
+						seen[tracker_id] = true
+						_tracker(pair[1], record, tracker)
+						break
 			var choose := Button.new()
 			choose.text = "⚠ Scegli %d incantesimo/i" % int(choice.get("count", 1))
 			choose.pressed.connect(_actions.choose_origin.bind(choice))
@@ -124,6 +131,7 @@ func _fit() -> void:
 func _label(parent: Node, text: String) -> Label:
 	var label := Label.new()
 	label.text = text
+	label.size_flags_horizontal = Control.SIZE_EXPAND_FILL
 	label.autowrap_mode = TextServer.AUTOWRAP_WORD_SMART
 	parent.add_child(label)
 	return label
@@ -163,6 +171,9 @@ func _class_section(parent: Node, record: Dictionary, member: Dictionary, prepar
 	status.size_flags_horizontal = Control.SIZE_EXPAND_FILL
 	if (int(member.limit) >= 0 and leveled != int(member.limit)) or cantrips != int(member.cantrips):
 		var warning := _label(header, "⚠")
+		warning.autowrap_mode = TextServer.AUTOWRAP_OFF
+		warning.size_flags_horizontal = Control.SIZE_SHRINK_BEGIN
+		warning.custom_minimum_size.x = 24
 		warning.tooltip_text = "Selezione incompleta o superiore agli incantesimi concessi dalla classe."
 		warning.mouse_filter = Control.MOUSE_FILTER_PASS
 	var choose := Button.new()
@@ -196,13 +207,21 @@ func _spell_button(parent: Node, spell: Dictionary, member: Dictionary, grant: D
 func _slots(parent: Node, record: Dictionary) -> void:
 	var headings := HBoxContainer.new()
 	parent.add_child(headings)
-	_label(headings, "Livello     Classi                  Patto")
+	headings.add_theme_constant_override("separation", 5)
+	for index: int in range(3):
+		var caption: Label = _label(headings, ["Liv.", "Classi", "Patto"][index])
+		caption.custom_minimum_size.x = 24 if index == 0 else 104
+		caption.size_flags_horizontal = Control.SIZE_SHRINK_BEGIN
+		caption.autowrap_mode = TextServer.AUTOWRAP_OFF
+		caption.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
 	for level: int in range(10):
 		var row := HBoxContainer.new()
 		row.add_theme_constant_override("separation", 5)
 		parent.add_child(row)
 		var title: Label = _label(row, "%d°" % level)
 		title.custom_minimum_size.x = 24
+		title.size_flags_horizontal = Control.SIZE_SHRINK_BEGIN
+		title.autowrap_mode = TextServer.AUTOWRAP_OFF
 		if level == 0:
 			_label(row, "Trucchetti · senza slot")
 			continue
@@ -215,25 +234,41 @@ func _slots(parent: Node, record: Dictionary) -> void:
 		if level == int(record.get("pact_slot_level", 1)):
 			_counter(row, maxi(0, pact_max - int(record.get("pact_slots_spent", 0))), pact_max, _actions.pact)
 		else:
-			_label(row, "0/0")
+			var empty: Label = _label(row, "0/0")
+			empty.custom_minimum_size.x = 104
+			empty.autowrap_mode = TextServer.AUTOWRAP_OFF
+			empty.size_flags_horizontal = Control.SIZE_SHRINK_BEGIN
+			empty.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
 	var restore := Button.new()
 	restore.text = "Ripristina slot"
 	restore.pressed.connect(_actions.restore)
 	parent.add_child(restore)
 
 func _counter(parent: Node, remaining: int, maximum: int, change: Callable) -> void:
-	var minus := Button.new()
-	minus.text = "−"
-	minus.tooltip_text = "Consuma un utilizzo"
-	minus.pressed.connect(change.bind(1))
-	parent.add_child(minus)
-	var count: Label = _label(parent, "%d/%d" % [remaining, maximum])
-	count.custom_minimum_size.x = 42
-	var plus := Button.new()
-	plus.text = "+"
-	plus.tooltip_text = "Recupera un utilizzo"
-	plus.pressed.connect(change.bind(-1))
-	parent.add_child(plus)
+	var counter := HBoxContainer.new()
+	counter.custom_minimum_size.x = 104
+	counter.add_theme_constant_override("separation", 3)
+	parent.add_child(counter)
+	_compact_button(counter, "−", change.bind(1))
+	var count: Label = _label(counter, "%d/%d" % [remaining, maximum])
+	count.custom_minimum_size.x = 38
+	count.autowrap_mode = TextServer.AUTOWRAP_OFF
+	count.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
+	_compact_button(counter, "+", change.bind(-1))
+
+func _compact_button(parent: Node, text: String, action: Callable) -> void:
+	var button := Button.new()
+	button.text = text
+	button.add_theme_font_size_override("font_size", 14)
+	for state: String in ["normal", "hover", "pressed", "disabled"]:
+		var style: StyleBox = button.get_theme_stylebox(state).duplicate()
+		style.content_margin_left = 4
+		style.content_margin_right = 4
+		button.add_theme_stylebox_override(state, style)
+	button.tooltip_text = "Consuma un utilizzo" if text == "−" else "Recupera un utilizzo"
+	button.pressed.connect(action)
+	parent.add_child(button)
+
 
 func _tracker(parent: Node, record: Dictionary, tracker: Dictionary) -> void:
 	if tracker.is_empty():
@@ -247,3 +282,8 @@ func _tracker(parent: Node, record: Dictionary, tracker: Dictionary) -> void:
 	parent.add_child(row)
 	_counter(row, maxi(0, maximum - spent), maximum, _actions.tracker.bind(id, maximum))
 	_label(parent, "Consumo: 1 utilizzo per lancio")
+
+
+func _definition(entry: Dictionary) -> Dictionary:
+	var definition: Dictionary = Catalog.catalog_spell(String(entry.get("id", "")))
+	return entry.duplicate(true) if definition.is_empty() else definition

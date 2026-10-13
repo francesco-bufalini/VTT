@@ -42,10 +42,8 @@ func run() -> void:
 	assert(tab._remaining_labels[1].text == "6 /"
 		and tab._slot_formula_values[1].value_label.text == "6",
 		"Origin bonuses must update both remaining and the separate maximum readout")
-	assert(tab._description.get_parent().get_parent() == tab
-		and tab._description.get_parent().get_index() > tab._prepare.get_parent().get_index()
-		and tab._description.scroll_active,
-		"Spell description must scroll beneath the compact action bar")
+	assert(tab._view.visible and root.has_node("ScrollableCaptions") and tab._description.scroll_active,
+		"The paired spell view uses scrollable hover captions; legacy description data remains compatible")
 	tab._set_search_visible(true)
 	tab._search.text = "Magic Missile"
 	tab._filter_spells()

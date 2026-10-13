@@ -668,6 +668,8 @@ func load_record(record: Dictionary) -> void:
 	_catalog = SpellCatalog.all_spells_for_rules(
 		String(_record.get("rules_version", "2014"))
 	)
+	_prepared = _normalise_selection_entries(_prepared)
+	_spellbook = _normalise_selection_entries(_spellbook)
 	_manual_origin_spells = _copy_spell_array(record.get("origin_spell_grants", []))
 	_rebuild_class_spells()
 	_refresh_cast_class_options()
@@ -1693,13 +1695,17 @@ func _view_edit_class(member: Dictionary) -> void:
 	var selected: Array[String] = ClassSelections.selected(_record, _prepared, member.id)
 	var book: Array[String] = []
 	for entry: Variant in _spellbook:
-		book.append(_entry_id(entry))
+		if ClassSelections.eligible(SpellCatalog.catalog_spell(_entry_id(entry)), member):
+			book.append(_entry_id(entry))
 	_selection_dialog.choose(options, {"title": "Scegli · " + String(member.name),
 		"selected": selected, "book": book, "book_mode": member.book, "limit": member.limit, "cantrips": member.cantrips,
 		"details": "Origine: " + String(member.name) + " [" + String(member.source) + "] · lista di classe fino al %d° livello" % int(member.max_level)},
 		func(result: Dictionary) -> void:
 			_prepared = ClassSelections.apply(_record, _prepared, member, result.selected)
 			if bool(member.book):
+				for entry: Variant in _spellbook:
+					if entry is Dictionary and not entry.has("casting_classes") and ClassSelections.eligible(SpellCatalog.catalog_spell(_entry_id(entry)), member):
+						entry["casting_classes"] = [member.id]
 				_spellbook = ClassSelections.apply(_record, _spellbook, member, result.book)
 			_publish()
 			_refresh_saved_spell_lists()
@@ -1712,3 +1718,15 @@ func _view_edit_origin(id: String) -> void:
 func _view_choose_origin(choice: Dictionary) -> void:
 	if _on_origin_editor.is_valid():
 		_on_origin_editor.call(String(choice.get("origin_id", "")), choice)
+
+
+func _normalise_selection_entries(entries: Array) -> Array:
+	var result: Array = []
+	for raw: Variant in entries:
+		if raw is String:
+			var spell: Dictionary = SpellCatalog.catalog_spell(String(raw))
+			result.append({"id": String(raw), "name": spell.get("name", String(raw)),
+				"level": spell.get("level", 0), "source": spell.get("source", "")})
+		else:
+			result.append(raw)
+	return result

@@ -55,6 +55,11 @@ func _process(delta: float) -> void:
 		candidate = candidate.get_parent() as Control
 	if candidate == _target and is_instance_valid(_target) and _target.is_visible_in_tree():
 		_leave = 0.0
+		if not _target.tooltip_text.is_empty():
+			_text = _target.tooltip_text
+			_target.tooltip_text = ""
+			if _panel.visible:
+				_body.text = _text
 		_elapsed += delta
 		if _elapsed >= 0.45 and not _panel.visible:
 			_show_caption()
