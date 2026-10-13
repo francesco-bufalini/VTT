@@ -4,7 +4,6 @@ extends RefCounted
 # to an average or add it to a permanent character modifier.
 const ActiveSpells = preload("res://vtt/creature_active_spells.gd")
 const Profs = preload("res://vtt/creature_proficiency_rules.gd")
-const OriginSpells = preload("res://vtt/origin_spell_grants.gd")
 
 const TARGETS := [
 	{"key": "ability_check", "name": "Tutte le prove di caratteristica"},
@@ -52,20 +51,24 @@ static func applicable(record: Dictionary, key: String) -> Array[Dictionary]:
 		var grant: Dictionary = row.duplicate(true)
 		grant["dice"] = dice
 		result.append(grant)
-	for spell: Dictionary in ActiveSpells.active_origins(record):
-		var sid: String = String(spell.get("id", ""))
-		if sid != "spell:" + OriginSpells.BARDIC:
+	for applied: Dictionary in ActiveSpells.active_origins(record):
+		var spell: Dictionary = applied.get("definition", {})
+		var spell_id: String = String(spell.get("id", ""))
+		var declared: Variant = spell.get("roll_bonus_targets", [])
+		if spell_id.is_empty() or not declared is Array:
 			continue
-		# A die is received from the *caster*, never recomputed from the
-		# recipient's own class levels or ability modifiers.
-		var context: Dictionary = record.get("active_spell_context", {}).get(OriginSpells.BARDIC, {})
-		var dice: String = String(context.get("bonus_dice", ""))
+		if not (key in declared or scope in declared or "any_d20" in declared):
+			continue
+		var context: Dictionary = record.get("active_spell_context", {}).get(spell_id, {})
+		var dice: String = String(context.get("bonus_dice", "")).to_lower()
 		if not valid_dice(dice):
 			continue
 		result.append({
-			"id": "inspiration:" + sid, "origin_id": sid,
-			"origin_name": "Bardic Inspiration · " + String(context.get("caster_name", "")),
-			"dice": dice, "target": "any_d20",
-			"consumes_spell": OriginSpells.BARDIC, "automatic": true
+			"id": "spell_roll:" + spell_id,
+			"origin_id": "spell:" + spell_id,
+			"origin_name": String(spell.get("name", spell_id)) + " · " + String(context.get("caster_name", "")),
+			"dice": dice, "target": scope,
+			"consumes_spell": spell_id if bool(spell.get("consume_effect_on_roll", false)) else "",
+			"automatic": true
 		})
 	return result
