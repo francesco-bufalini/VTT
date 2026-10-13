@@ -2294,8 +2294,11 @@ func _confirm_roll_with_dice(label: String, expression: String, choices: Array[D
 		if not spell_id.is_empty():
 			consumed[spell_id] = true
 	var roller: Node = board_root.get_node_or_null("DiceRollerChat")
-	if roller != null and roller.has_method("roll_expression_from_sheet"):
-		roller.call("roll_expression_from_sheet", label, expression + suffix, find_linked_token_for_creature(_selected_id))
+	if roller == null or not roller.has_method("roll_expression_from_sheet"):
+		_set_status("Il roller non è disponibile: nessun dado bonus consumato.")
+		dialog.queue_free()
+		return
+	roller.call("roll_expression_from_sheet", label, expression + suffix, find_linked_token_for_creature(_selected_id))
 	for spell_id: String in consumed.keys():
 		_remove_active_spell("spell:" + spell_id)
 	dialog.queue_free()
@@ -3372,8 +3375,10 @@ func _complete_origin_spell_cast(caster: Node3D, spell: Dictionary) -> void:
 			_set_status("Impossibile salvare il consumo del tracker.")
 			return
 		_update_external_record(record)
-		if String(record.get("id", "")) == _selected_id and _spellcasting_ui != null:
-			_spellcasting_ui.call("load_record", record)
+		if String(record.get("id", "")) == _selected_id:
+			_refresh_trackers(record)
+			if _spellcasting_ui != null:
+				_spellcasting_ui.call("load_record", record)
 		return
 
 
