@@ -805,6 +805,7 @@ static func restricted_choices(origin: Dictionary, kind: String) -> Array[String
 
 static func origins(record: Dictionary) -> Array[Dictionary]:
 	var result: Array[Dictionary] = []
+	var included: Dictionary = {}
 	var live: Dictionary = _active_identity_sources(record)
 	var saved: Dictionary = {}
 	var raw: Variant = record.get("proficiency_origins", [])
@@ -826,38 +827,31 @@ static func origins(record: Dictionary) -> Array[Dictionary]:
 			"group": String(source.get("group", "")),
 			"disabled": bool(previous.get("disabled", false)),
 			"automatic": true, "requirements": choice_requirements(source)})
+		included[sid] = true
 	# Homebrew or otherwise unindexed feats must also be selectable as origins.
 	for raw_feat: Variant in record.get("feats_catalog", []):
 		if not raw_feat is Dictionary:
 			continue
 		var feat: Dictionary = raw_feat
 		var sid: String = feat_source_id(feat)
-		if sid.is_empty():
+		if sid.is_empty() or included.has(sid):
 			continue
-		var present := false
-		for existing: Dictionary in result:
-			if String(existing.get("id", "")) == sid:
-				present = true
-				break
-		if not present:
-			var previous: Dictionary = saved.get(sid, {})
-			result.append({"id": sid, "name": "Talento · " + String(feat.get("name", "")),
-				"group": "feat", "disabled": bool(previous.get("disabled", false)),
-				"automatic": true, "requirements": []})
+		var previous: Dictionary = saved.get(sid, {})
+		result.append({"id": sid, "name": "Talento · " + String(feat.get("name", "")),
+			"group": "feat", "disabled": bool(previous.get("disabled", false)),
+			"automatic": true, "requirements": []})
+		included[sid] = true
 	for sid: String in saved.keys():
+		if included.has(sid):
+			continue
 		var item: Dictionary = saved[sid]
-		var found := false
-		for row: Dictionary in result:
-			if String(row.get("id", "")) == sid:
-				found = true
-				break
-		if not found:
-			var withdrawn: bool = bool(item.get("automatic", false)) and not live.has(sid) and String(item.get("group", "")) != "spell"
-			result.append({"id": sid,
-				"name": ("⚠ Origine non più disponibile · " if withdrawn else "") + String(item.get("name", "Origine")),
-				"group": String(item.get("group", "custom")),
-				"disabled": withdrawn or bool(item.get("disabled", false)),
-				"automatic": withdrawn, "applied": bool(item.get("applied", false)), "requirements": []})
+		var withdrawn: bool = bool(item.get("automatic", false)) and not live.has(sid) and String(item.get("group", "")) != "spell"
+		result.append({"id": sid,
+			"name": ("⚠ Origine non più disponibile · " if withdrawn else "") + String(item.get("name", "Origine")),
+			"group": String(item.get("group", "custom")),
+			"disabled": withdrawn or bool(item.get("disabled", false)),
+			"automatic": withdrawn, "applied": bool(item.get("applied", false)), "requirements": []})
+		included[sid] = true
 	var stored_choices: Variant = record.get("proficiency_choices", [])
 	if not stored_choices is Array:
 		stored_choices = []
@@ -865,25 +859,19 @@ static func origins(record: Dictionary) -> Array[Dictionary]:
 		if not row is Dictionary:
 			continue
 		var sid: String = String(row.get("origin_id", ""))
-		if sid.is_empty() or _is_replaced_identity(sid, live):
+		if sid.is_empty() or _is_replaced_identity(sid, live) or included.has(sid):
 			continue
-		var present := false
-		for item: Dictionary in result:
-			if String(item.get("id", "")) == sid:
-				present = true
+		var structured: bool = false
+		for prefix: String in ["class|", "race|", "subrace|", "background|", "feat|"]:
+			if sid.begins_with(prefix):
+				structured = true
 				break
-		if not present:
-			var structured: bool = false
-			for prefix: String in ["class|", "race|", "subrace|", "background|", "feat|"]:
-				if sid.begins_with(prefix):
-					structured = true
-					break
-			result.append({"id": sid,
-				"name": ("⚠ Origine non più disponibile · " if structured else "") + String(row.get("origin_name", sid)),
-				"group": "custom", "disabled": structured,
-				"automatic": structured, "requirements": []})
+		result.append({"id": sid,
+			"name": ("⚠ Origine non più disponibile · " if structured else "") + String(row.get("origin_name", sid)),
+			"group": "custom", "disabled": structured,
+			"automatic": structured, "requirements": []})
+		included[sid] = true
 	return result
-
 
 # Traits are the canonical live origin identities. No description text is
 # interpreted as a grant: the explicit 5etools "feats" field is authoritative.
