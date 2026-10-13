@@ -1046,7 +1046,11 @@ func _build_ui() -> void:
 	speeds_group.name = "PhysicsSpeeds"
 	speeds_group.add_theme_constant_override("separation", 3)
 	movement_flow.add_child(speeds_group)
-	var speed_grid := HFlowContainer.new()
+	# A real grid keeps all five speeds on one line when room permits;
+	# its column count is adjusted on resize for narrower sheets.
+	var speed_grid := GridContainer.new()
+	speed_grid.name = "PhysicsSpeedGrid"
+	speed_grid.columns = 5
 	speed_grid.add_theme_constant_override("h_separation", 10)
 	speed_grid.add_theme_constant_override("v_separation", 5)
 	speeds_group.add_child(speed_grid)
@@ -1102,12 +1106,12 @@ func _build_ui() -> void:
 	jumps_group.add_child(jumps)
 	_long_jump = Label.new()
 	_long_jump.autowrap_mode = TextServer.AUTOWRAP_WORD_SMART
-	_long_jump.custom_minimum_size.x = 260
+	_long_jump.custom_minimum_size.x = 228
 	_long_jump.add_theme_font_size_override("font_size", 12)
 	jumps.add_child(_long_jump)
 	_high_jump = Label.new()
 	_high_jump.autowrap_mode = TextServer.AUTOWRAP_WORD_SMART
-	_high_jump.custom_minimum_size.x = 260
+	_high_jump.custom_minimum_size.x = 228
 	_high_jump.add_theme_font_size_override("font_size", 12)
 	jumps.add_child(_high_jump)
 	# Explicit group widths keep nested HFlowContainers from collapsing into
@@ -1472,14 +1476,15 @@ func _build_ui() -> void:
 	_current_miniature_row.add_child(_current_miniature_name)
 	_current_miniature_row.hide()
 
-	var size_field := _physics_field(physics_fields, "Taglia", 124)
+	# Token geometry belongs with the miniature settings, not the species row.
+	var size_field := _physics_field(miniature_flow, "Taglia", 124)
 	_size_choice = OptionButton.new()
 	_size_choice.custom_minimum_size.x = 124
 	for size_name: String in ["Tiny", "Small", "Medium", "Large", "Huge", "Gargantuan"]:
 		_size_choice.add_item(size_name)
 	_size_choice.item_selected.connect(func(_i: int) -> void: _save())
 	size_field.add_child(_size_choice)
-	var facing_field := _physics_field(physics_fields, "Fronte della miniatura", 200)
+	var facing_field := _physics_field(miniature_flow, "Fronte della miniatura", 200)
 	_front = OptionButton.new()
 	_front.custom_minimum_size.x = 200
 	for direction: String in ["−Z · 0°", "+X · 90°", "+Z · 180°", "−X · 270°"]:
@@ -2533,9 +2538,17 @@ func _layout_physics_movement(physics: Control, speeds: Control, jumps: Control)
 	var available: float = physics.size.x
 	if available < 1.0:
 		return
-	var speeds_width: float = (590.0 if available >= 1200.0
-		else (350.0 if available >= 650.0 else maxf(110.0, available - 22.0)))
-	var jumps_width: float = 550.0 if available >= 650.0 else maxf(260.0, available - 22.0)
+	# Five columns on desktop; three on medium sheets; two on narrow.
+	# Use explicit columns instead of nesting two flow containers that can
+	# unexpectedly wrap speed cells even when the Physics panel is wide.
+	var columns: int = 5 if available >= 1120.0 else (3 if available >= 720.0 else 2)
+	var speed_grid: GridContainer = speeds.get_node_or_null("PhysicsSpeedGrid") as GridContainer
+	if speed_grid != null and speed_grid.columns != columns:
+		speed_grid.columns = columns
+	var speeds_width: float = float(columns * 110 + (columns - 1) * 10)
+	# Both jump captions fit alongside all five speeds on desktop. When the
+	# sheet is narrow, the two blocks wrap naturally to the next row.
+	var jumps_width: float = 476.0 if available >= 720.0 else maxf(228.0, available - 22.0)
 	if absf(speeds.custom_minimum_size.x - speeds_width) >= 1.0:
 		speeds.custom_minimum_size.x = speeds_width
 	if absf(jumps.custom_minimum_size.x - jumps_width) >= 1.0:

@@ -209,11 +209,17 @@ func run() -> void:
 						and fields.get_index() + 1 == miniatures.get_index()
 						and miniatures.get_index() + 1 == movement.get_index(),
 						"Physics groups stay in reading order: fields, miniatures, movement")
-					for widget: Control in [area._species, area._subrace_choice, area._creature_type_display, area._size_choice, area._front]:
+					for widget: Control in [area._species, area._subrace_choice, area._creature_type_display]:
 						var field: VBoxContainer = widget.get_parent() as VBoxContainer
 						assert(field != null and field.get_parent() == fields
 							and field.get_child(0) is Label and field.get_child(1) == widget,
-							"Each physical value stays attached to its caption when fields wrap")
+							"Species, subrace and type form the compact identity row")
+					var miniature_flow: HFlowContainer = miniatures.find_child("PhysicsMiniatureFlow", true, false) as HFlowContainer
+					for widget: Control in [area._size_choice, area._front]:
+						var miniature_field: VBoxContainer = widget.get_parent() as VBoxContainer
+						assert(miniature_field != null and miniature_field.get_parent() == miniature_flow
+							and miniature_field.get_child(0) is Label and miniature_field.get_child(1) == widget,
+							"Size and facing are grouped with miniature controls, not the species fields")
 					assert((area._subrace_choice.get_parent() as Control).visible
 						and not (area._challenge_rating.get_parent() as Control).visible,
 						"Characters show the whole subrace field and hide the monster CR field")
