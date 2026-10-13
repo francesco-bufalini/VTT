@@ -38,6 +38,7 @@ const DocumentInbox = preload("res://vtt/document_inbox.gd")
 const DocumentStore = preload("res://vtt/document_homebrew.gd")
 const CreatureLocale = preload("res://vtt/creature_gui_locale.gd")
 const CreaturePublicStatus = preload("res://vtt/creature_public_status.gd")
+const SheetController = preload("res://vtt/creature_sheet_controller.gd")
 
 var board_root: Node
 var ui_root: CanvasLayer
@@ -2208,9 +2209,7 @@ func _on_origin_spells_updated(grants: Array, configs: Dictionary) -> void:
 	var record: Dictionary = _current()
 	if record.is_empty():
 		return
-	record["origin_spell_grants"] = grants.duplicate(true)
-	record["origin_spell_configs"] = configs.duplicate(true)
-	ProficiencyRules.reconcile_origin_dependents(record)
+	SheetController.update_origin_spells(record, grants, configs)
 	if _archive.save(record) != OK:
 		_set_status("Impossibile salvare gli incantesimi da origini.")
 		return
@@ -2367,13 +2366,7 @@ func _confirm_roll_with_dice(label: String, base_result: int, key: String, choic
 
 
 func _recalculate_bonus_mirrors(record: Dictionary) -> void:
-	record["max_hp"] = maxi(0, BonusRules.value(record, "hp"))
-	record["armor_class"] = maxi(0, BonusRules.value(record, "ac"))
-	record["initiative_base"] = BonusRules.value(record, "ability_mod:dex")
-	record["initiative"] = BonusRules.value(record, "initiative")
-	record["proficiency_bonus"] = BonusRules.value(record, "proficiency")
-	record["speed"] = maxi(0, BonusRules.value(record, "speed"))
-	record["reach_feet"] = AttackData.active_range(record)
+	SheetController.recalculate_bonus_mirrors(record)
 
 
 func _refresh_formula_dependents(record: Dictionary) -> void:
@@ -2398,30 +2391,7 @@ func _on_trackers_updated(trackers: Array, origins: Array) -> void:
 	var record: Dictionary = _current()
 	if record.is_empty():
 		return
-	# The tracker editor shows only granting origins; retain unrelated
-	# origin switches from proficiency, bonus and feat editors.
-	var merged: Dictionary = {}
-	for source: Variant in record.get("proficiency_origins", []):
-		if source is Dictionary:
-			merged[String(source.get("id", ""))] = (source as Dictionary).duplicate(true)
-	for source: Variant in origins:
-		if source is Dictionary:
-			merged[String(source.get("id", ""))] = (source as Dictionary).duplicate(true)
-	record["proficiency_origins"] = merged.values()
-	record["resource_trackers"] = trackers.duplicate(true)
-	ProficiencyRules.reconcile_origin_dependents(record)
-	var spent: Dictionary = record.get("resource_tracker_spent", {}).duplicate(true)
-	var valid: Dictionary = {}
-	for tracker: Dictionary in _structured_trackers(record):
-		var tracker_id: String = String(tracker.get("id", ""))
-		valid[tracker_id] = true
-		var cap: int = maxi(0, BonusRules.add(record, "tracker:" + tracker_id, int(tracker.get("max", 0))))
-		if spent.has(tracker_id):
-			spent[tracker_id] = clampi(int(spent[tracker_id]), 0, cap)
-	for id: String in spent.keys():
-		if not valid.has(id):
-			spent.erase(id)
-	record["resource_tracker_spent"] = spent
+	SheetController.update_trackers(record, trackers, origins)
 	if _archive.save(record) != OK:
 		_set_status("Impossibile salvare tracker e origini.")
 		return
@@ -2438,16 +2408,7 @@ func _on_bonuses_updated(rows: Array, origins: Array, feats: Array = [], dice_ro
 	var record: Dictionary = _current()
 	if record.is_empty():
 		return
-	record["formula_bonuses"] = rows.duplicate(true)
-	record["dice_bonuses"] = dice_rows.duplicate(true)
-	record["proficiency_origins"] = origins.duplicate(true)
-	if not feats.is_empty():
-		# Bonus choice dialogs update the feat's structured selection, while
-		# ordinary numeric bonus edits leave all feat records untouched.
-		record["feats_catalog"] = feats.duplicate(true)
-	ProficiencyRules.reconcile_origin_dependents(record)
-	# Recalculate every dependent field from its base and active grants.
-	_recalculate_bonus_mirrors(record)
+	SheetController.update_bonuses(record, rows, origins, feats, dice_rows)
 	if _archive.save(record) != OK:
 		_set_status("Impossibile salvare i bonus.")
 		return
@@ -4866,20 +4827,15 @@ func _change_hit_points(delta: int) -> void:
 		return
 	var old_form: int = int(_second_form_hp.value)
 	var record: Dictionary = _current()
-	var hp: int = int(_hp.value)
-	var temp: int = int(_temp_hp.value)
-	var form_hp: int = old_form
-	if delta < 0:
-		var damage_result: Dictionary = Rules.apply_damage_layers(record, -delta)
-		temp = int(damage_result.get("temporary_hp", temp))
-		form_hp = int(damage_result.get("second_form_hp", form_hp))
-		hp = int(damage_result.get("current_hp", hp))
-	else:
-		hp = mini(maxi(0, BonusRules.value(record, "hp")), hp + delta)
+	record["current_hp"] = int(_hp.value)
+	record["temporary_hp"] = int(_temp_hp.value)
+	record["second_form_hp"] = old_form
+	SheetController.change_hit_points(record, delta)
+	var form_hp: int = int(record.get("second_form_hp", 0))
 	_loading = true
-	_temp_hp.value = temp
+	_temp_hp.value = int(record.get("temporary_hp", 0))
 	_second_form_hp.value = form_hp
-	_hp.value = hp
+	_hp.value = int(record.get("current_hp", 0))
 	_loading = false
 	_save()
 	if old_form > 0 and form_hp == 0:
@@ -5219,9 +5175,7 @@ func _change_tracker(id: String, delta: int, maximum: int) -> void:
 	var record: Dictionary = _current()
 	if record.is_empty():
 		return
-	var spent: Dictionary = record.get("resource_tracker_spent", {}).duplicate(true)
-	spent[id] = clampi(int(spent.get(id, 0)) + delta, 0, maximum)
-	record["resource_tracker_spent"] = spent
+	SheetController.change_tracker(record, id, delta, maximum)
 	var error: Error = _archive.save(record)
 	if error != OK:
 		_set_status("Tracker non salvato: " + error_string(error))
@@ -5981,12 +5935,8 @@ func apply_attack_damage_to_token(target: Node3D, damage: int) -> Dictionary:
 		var hp_max := maxi(0, int(owned.get("max_hp", 0)))
 		if hp_max <= 0 and int(owned.get("second_form_hp", 0)) <= 0:
 			return {"applied": false}
-		var hp_now := clampi(int(owned.get("current_hp", hp_max)), 0, hp_max)
 		var prior_form: int = maxi(0, int(owned.get("second_form_hp", 0)))
-		var resolved: Dictionary = Rules.apply_damage_layers(owned, damage)
-		owned["current_hp"] = int(resolved.get("current_hp", hp_now))
-		owned["temporary_hp"] = int(resolved.get("temporary_hp", 0))
-		owned["second_form_hp"] = int(resolved.get("second_form_hp", 0))
+		SheetController.change_hit_points(owned, -damage)
 		if _archive.save(owned) != OK:
 			return {"applied": false}
 		_replace_current_record(owned)
@@ -6328,14 +6278,7 @@ func _set_sheet_condition(enabled: bool, id: String) -> void:
 	var record := _current()
 	if record.is_empty():
 		return
-	var active: Array = record.get("conditions", []).duplicate()
-	if enabled and id not in active:
-		active.append(id)
-	elif not enabled:
-		active.erase(id)
-	if id == "concentrating" and not enabled:
-		record["concentrating_spell_id"] = ""
-	record["conditions"] = active
+	SheetController.set_condition(record, id, enabled)
 	if _archive.save(record) == OK:
 		_replace_current_record(record)
 		_sync_token_health(record)
