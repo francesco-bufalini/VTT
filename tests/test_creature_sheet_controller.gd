@@ -20,7 +20,8 @@ func run() -> void:
 		"second_form_max_hp": 8,
 		"max_hp": 30,
 		"max_hp_base": 30,
-		"resource_tracker_spent": {"rage": 2}
+		"resource_tracker_spent": {"rage": 2},
+		"proficiency_origins": [{"id": "custom:origin", "group": "custom", "name": "Test origin"}]
 	}
 	Controller.set_condition(sheet, "concentrating", false)
 	assert(not "concentrating" in sheet["conditions"])
@@ -45,13 +46,13 @@ func run() -> void:
 	assert(sheet["resource_tracker_spent"]["rage"] == 0)
 
 	# Origin spell changes must be copied rather than retaining UI arrays.
-	var grants: Array = [{"id": "test", "origin_id": "feature:test", "spell_id": "magic-missile"}]
-	var configs: Dictionary = {"feature:test": {"ability": "int"}}
+	var grants: Array = [{"id": "test", "origin_id": "custom:origin", "spell_id": "magic-missile"}]
+	var configs: Dictionary = {"custom:origin": {"ability": "int"}}
 	Controller.update_origin_spells(sheet, grants, configs)
 	grants.clear()
 	configs.clear()
 	assert(sheet["origin_spell_grants"].size() == 1)
-	assert(sheet["origin_spell_configs"].has("feature:test"))
+	assert(sheet["origin_spell_configs"].has("custom:origin"))
 
 	print("PASS: standalone creature controller conditions, HP, trackers, origin spells")
 	quit()
