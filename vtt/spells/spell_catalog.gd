@@ -63,7 +63,8 @@ const SPELLS: Dictionary = {
 		"range_feet": 60, "target": "One other creature",
 		"target_mode": "token_then_token", "persistent_link": true,
 		"duration": "10 minutes", "components": "—",
-		"source_class": "Bard",
+		"source_class": "Bard", "grant_feature": "Bardic Inspiration",
+		"grant_tracker": "Bardic Inspiration", "grant_level": 1,
 		"dice_progression": [
 			{"level": 1, "dice": "1d6"}, {"level": 5, "dice": "1d8"},
 			{"level": 10, "dice": "1d10"}, {"level": 15, "dice": "1d12"}
@@ -78,7 +79,8 @@ const SPELLS: Dictionary = {
 		"level": 0, "school": "Transmutation", "classes": [],
 		"casting_time": "Action", "range": "Self", "range_feet": 0,
 		"target": "Self", "target_mode": "transform_self",
-		"duration": "Until ended", "components": "—", "source_class": "Druid",
+		"duration": "Until ended", "components": "—", "source_class": "Druid", "grant_feature": "Wild Shape",
+		"grant_tracker": "Wild Shape", "grant_level": 2,
 		"description": "Assume an available beast form. Uses the standard VTT transformation chooser; form restrictions and duration remain subject to the chosen ruleset."
 	},
 	"acid_splash": {
