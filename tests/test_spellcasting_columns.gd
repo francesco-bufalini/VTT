@@ -144,6 +144,25 @@ func run() -> void:
 	if DisplayServer.get_name() != "headless":
 		await RenderingServer.frame_post_draw
 		root.get_texture().get_image().save_png("user://spell_caption_review.png")
+	caption._panel.hide()
+	caption._restore_target()
+	var item_list := ItemList.new()
+	item_list.position = Vector2(20,20)
+	item_list.size = Vector2(240,80)
+	item_list.add_item("Voce con descrizione")
+	item_list.set_item_tooltip(0, "Caption dell'elemento della lista")
+	root.add_child(item_list)
+	caption._target = item_list
+	caption._item_index = 0
+	caption._item_label = item_list.get_item_text(0)
+	caption._text = item_list.get_item_tooltip(0)
+	item_list.set_item_tooltip(0, "")
+	caption._show_caption()
+	await process_frame
+	assert(caption._body.text == "Caption dell'elemento della lista", "List item captions use the same scrollable presenter")
+	caption._restore_target()
+	assert(item_list.get_item_tooltip(0) == "Caption dell'elemento della lista")
+	item_list.free()
 	target.free()
 	scroll.free()
 	sink.free()

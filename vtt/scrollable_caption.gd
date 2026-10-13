@@ -4,6 +4,8 @@ extends CanvasLayer
 var _panel: PanelContainer
 var _body: RichTextLabel
 var _target: Control
+var _item_index := -1
+var _item_label := ""
 var _text := ""
 var _elapsed := 0.0
 var _leave := 0.0
@@ -46,18 +48,30 @@ func _ready() -> void:
 	_panel.add_child(_body)
 
 func _process(delta: float) -> void:
+	if get_viewport() is Window and not (get_viewport() as Window).visible:
+		_restore_target()
+		_panel.hide()
+		return
 	if _panel.visible and _panel.get_global_rect().has_point(get_viewport().get_mouse_position()):
 		_leave = 0.0
 		return
 	var hovered: Control = get_viewport().gui_get_hovered_control()
 	var candidate: Control = hovered
-	while candidate != null:
+	var item_index := -1
+	var item_caption := false
+	if hovered is ItemList:
+		item_index = hovered.get_item_at_position(hovered.get_local_mouse_position(), true)
+		if item_index >= 0:
+			item_caption = not hovered.get_item_tooltip(item_index).is_empty() or (hovered == _target and item_index == _item_index and hovered.get_item_text(item_index) == _item_label)
+	if not item_caption:
+		item_index = -1
+	while candidate != null and not item_caption:
 		if candidate == _target or not candidate.tooltip_text.is_empty():
 			break
 		candidate = candidate.get_parent() as Control
-	if candidate == _target and is_instance_valid(_target) and _target.is_visible_in_tree():
+	if candidate == _target and item_index == _item_index and is_instance_valid(_target) and _target.is_visible_in_tree():
 		_leave = 0.0
-		if not _target.tooltip_text.is_empty():
+		if _item_index < 0 and not _target.tooltip_text.is_empty():
 			_text = _target.tooltip_text
 			_target.tooltip_text = ""
 			if _panel.visible:
@@ -75,13 +89,25 @@ func _process(delta: float) -> void:
 	_elapsed = 0.0
 	_leave = 0.0
 	if is_instance_valid(_target):
-		_text = _target.tooltip_text
-		_target.tooltip_text = ""
+		if _target is ItemList and item_index >= 0:
+			_item_index = item_index
+			_item_label = _target.get_item_text(item_index)
+			_text = _target.get_item_tooltip(item_index)
+			_target.set_item_tooltip(item_index, "")
+		else:
+			_text = _target.tooltip_text
+			_target.tooltip_text = ""
 
 func _restore_target() -> void:
-	if is_instance_valid(_target) and _target.tooltip_text.is_empty():
-		_target.tooltip_text = _text
+	if is_instance_valid(_target):
+		if _target is ItemList and _item_index >= 0:
+			if _item_index < _target.item_count and _target.get_item_text(_item_index) == _item_label and _target.get_item_tooltip(_item_index).is_empty():
+				_target.set_item_tooltip(_item_index, _text)
+		elif _target.tooltip_text.is_empty():
+			_target.tooltip_text = _text
 	_target = null
+	_item_index = -1
+	_item_label = ""
 
 func _show_caption() -> void:
 	if not is_instance_valid(_target) or _text.is_empty():
