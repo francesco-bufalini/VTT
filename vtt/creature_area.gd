@@ -318,6 +318,18 @@ func _copy_token_spell_status(record: Dictionary, token: Node3D) -> void:
 			ActiveSpells.apply(record, spell_id)
 
 
+# Copy only the visual/placement fields supported by this token variant.
+func _copy_token_shape_metadata(record: Dictionary, token: Node3D) -> void:
+	if token.has_method("get_size_name"):
+		record["size_name"] = token.call("get_size_name")
+	if token.has_method("get_footprint_cells"):
+		record["footprint"] = token.call("get_footprint_cells")
+	if token.has_method("get_visual_front_quarter_turns"):
+		record["visual_front_quarter_turns"] = token.call("get_visual_front_quarter_turns")
+	if token.has_method("get_party_id"):
+		record["party_id"] = token.call("get_party_id")
+
+
 func sync_linked_token_editor(token: CharacterBody3D) -> void:
 	if token == null or not is_instance_valid(token):
 		return
@@ -335,14 +347,7 @@ func sync_linked_token_editor(token: CharacterBody3D) -> void:
 			var live_id := String(token.call("get_token_pack_id"))
 			if not live_id.is_empty():
 				record["current_miniature_id"] = live_id
-		if token.has_method("get_size_name"):
-			record["size_name"] = token.call("get_size_name")
-		if token.has_method("get_footprint_cells"):
-			record["footprint"] = token.call("get_footprint_cells")
-		if token.has_method("get_visual_front_quarter_turns"):
-			record["visual_front_quarter_turns"] = token.call("get_visual_front_quarter_turns")
-		if token.has_method("get_party_id"):
-			record["party_id"] = token.call("get_party_id")
+		_copy_token_shape_metadata(record, token)
 		if _archive.save(record) == OK:
 			_replace_current_record(record)
 			if _panel.visible and _selected_id == wanted_id:
@@ -2171,9 +2176,7 @@ func _select_details_editor(index: int) -> void:
 
 
 func _on_damage_defenses_updated(damage_overrides: Dictionary, condition_overrides: Dictionary, defense_entries: Array = [], origins: Array = []) -> void:
-	if _loading:
-		return
-	var record: Dictionary = _current()
+	var record: Dictionary = _editable_record()
 	if record.is_empty():
 		return
 	record["damage_defense_overrides"] = damage_overrides.duplicate(true)
@@ -2271,22 +2274,24 @@ func _refresh_formula_dependents(record: Dictionary) -> void:
 
 
 
+# Retain every origin when a filtered editor changes only its own sources.
+# Later entries replace earlier ones, preserving the editors' original merge order.
+func _merge_origin_updates(record: Dictionary, changes: Array) -> Array:
+	var merged: Dictionary = {}
+	for entries: Variant in [record.get("proficiency_origins", []), changes]:
+		for source: Variant in entries:
+			if source is Dictionary:
+				merged[String(source.get("id", ""))] = (source as Dictionary).duplicate(true)
+	return merged.values()
+
+
 func _on_trackers_updated(trackers: Array, origins: Array) -> void:
-	if _loading:
-		return
-	var record: Dictionary = _current()
+	var record: Dictionary = _editable_record()
 	if record.is_empty():
 		return
 	# The tracker editor shows only granting origins; retain unrelated
 	# origin switches from proficiency, bonus and feat editors.
-	var merged: Dictionary = {}
-	for source: Variant in record.get("proficiency_origins", []):
-		if source is Dictionary:
-			merged[String(source.get("id", ""))] = (source as Dictionary).duplicate(true)
-	for source: Variant in origins:
-		if source is Dictionary:
-			merged[String(source.get("id", ""))] = (source as Dictionary).duplicate(true)
-	record["proficiency_origins"] = merged.values()
+	record["proficiency_origins"] = _merge_origin_updates(record, origins)
 	record["resource_trackers"] = trackers.duplicate(true)
 	ProficiencyRules.reconcile_origin_dependents(record)
 	var spent: Dictionary = record.get("resource_tracker_spent", {}).duplicate(true)
@@ -2312,9 +2317,7 @@ func _on_trackers_updated(trackers: Array, origins: Array) -> void:
 
 
 func _on_bonuses_updated(rows: Array, origins: Array, feats: Array = []) -> void:
-	if _loading:
-		return
-	var record: Dictionary = _current()
+	var record: Dictionary = _editable_record()
 	if record.is_empty():
 		return
 	record["formula_bonuses"] = rows.duplicate(true)
@@ -2713,6 +2716,11 @@ func _current() -> Dictionary:
 		):
 			return item.duplicate(true)
 	return {}
+
+
+# Editor callbacks must not read or mutate the selected record while loading.
+func _editable_record() -> Dictionary:
+	return {} if _loading else _current()
 
 
 func _filter_owned_creatures(query: String) -> void:
@@ -3336,9 +3344,7 @@ func _update_external_record(record: Dictionary) -> void:
 
 
 func _on_spellcasting_updated(values: Dictionary) -> void:
-	if _loading:
-		return
-	var record: Dictionary = _current()
+	var record: Dictionary = _editable_record()
 	if record.is_empty():
 		return
 	var concentration_changed: bool = (
@@ -3624,9 +3630,7 @@ func _save_equipment_record(record: Dictionary) -> void:
 
 
 func _activate_attack(attack_id: String) -> void:
-	if _loading:
-		return
-	var record: Dictionary = _current()
+	var record: Dictionary = _editable_record()
 	if record.is_empty():
 		return
 	record["equipped_attack_id"] = attack_id
@@ -3986,9 +3990,7 @@ func _on_attack_two_handed_changed(enabled: bool, attack_id: String) -> void:
 
 
 func _save_attack_setting(attack_id: String, setting: String, value: Variant) -> void:
-	if _loading:
-		return
-	var record: Dictionary = _current()
+	var record: Dictionary = _editable_record()
 	if record.is_empty():
 		return
 	var updated: Dictionary = record.get("attack_overrides", {}).duplicate(true)
@@ -4129,9 +4131,7 @@ func receive_shared_document(document: Dictionary, sender_id: String) -> void:
 
 
 func _on_documents_updated(documents: Array) -> void:
-	if _loading:
-		return
-	var record: Dictionary = _current()
+	var record: Dictionary = _editable_record()
 	if record.is_empty():
 		return
 	record["documents"] = documents.duplicate(true)
@@ -4143,23 +4143,14 @@ func _on_documents_updated(documents: Array) -> void:
 
 
 func _on_feats_updated(feats: Array, origins: Array) -> void:
-	if _loading:
-		return
-	var record: Dictionary = _current()
+	var record: Dictionary = _editable_record()
 	if record.is_empty():
 		return
 	# Preserve the same proficiency/bonus/trait synchronization as the
 	# competence editor; feat changes modify all downstream grant chains.
 	# Feats displays a filtered origin list. Never overwrite unrelated
 	# proficiency/bonus origin switches when the feat editor saves.
-	var merged: Dictionary = {}
-	for source: Variant in record.get("proficiency_origins", []):
-		if source is Dictionary:
-			merged[String(source.get("id", ""))] = (source as Dictionary).duplicate(true)
-	for source: Variant in origins:
-		if source is Dictionary:
-			merged[String(source.get("id", ""))] = (source as Dictionary).duplicate(true)
-	_on_proficiencies_updated(record.get("proficiency_choices", []), feats, merged.values())
+	_on_proficiencies_updated(record.get("proficiency_choices", []), feats, _merge_origin_updates(record, origins))
 	# The competence list can contain grants from newly added feats.
 	_proficiencies_stale = true
 	if _proficiencies_ui != null and _proficiencies_ui.visible:
@@ -4168,9 +4159,7 @@ func _on_feats_updated(feats: Array, origins: Array) -> void:
 
 
 func _on_proficiencies_updated(rows: Array, feats: Array, origins: Array) -> void:
-	if _loading:
-		return
-	var record: Dictionary = _current()
+	var record: Dictionary = _editable_record()
 	if record.is_empty():
 		return
 	var typed_rows: Array[Dictionary] = []
@@ -4224,9 +4213,7 @@ func _on_proficiencies_updated(rows: Array, feats: Array, origins: Array) -> voi
 
 
 func _on_inventory_updated(inventory: Array) -> void:
-	if _loading:
-		return
-	var record: Dictionary = _current()
+	var record: Dictionary = _editable_record()
 	if record.is_empty():
 		return
 	record["inventory"] = inventory.duplicate(true)
@@ -4841,9 +4828,7 @@ func _set_current_miniature(miniature_id: String) -> void:
 
 
 func _on_form_hp_changed(value: float) -> void:
-	if _loading:
-		return
-	var record: Dictionary = _current()
+	var record: Dictionary = _editable_record()
 	if record.is_empty():
 		return
 	var previous: int = int(record.get("second_form_hp", 0))
@@ -5274,14 +5259,7 @@ func ensure_sheet_for_token(token: Node3D, locally_created: bool = false) -> voi
 		record["conditions"] = token.call("get_conditions")
 	if newly_created:
 		record["current_miniature_id"] = pack_id
-		if token.has_method("get_size_name"):
-			record["size_name"] = token.call("get_size_name")
-		if token.has_method("get_footprint_cells"):
-			record["footprint"] = token.call("get_footprint_cells")
-		if token.has_method("get_visual_front_quarter_turns"):
-			record["visual_front_quarter_turns"] = token.call("get_visual_front_quarter_turns")
-		if token.has_method("get_party_id"):
-			record["party_id"] = token.call("get_party_id")
+		_copy_token_shape_metadata(record, token)
 	record["default_miniature_id"] = pack_id
 	record["owner_id"] = local_owner
 	record["linked_token_sync_id"] = token_id
