@@ -16,6 +16,7 @@ const CATEGORIES := {
 	"race": "races",
 	"raceFeature": "species_traits",
 	"feat": "feats",
+	"charoption": "feats",
 	"background": "backgrounds",
 	"optionalfeature": "optional_features",
 	"condition": "conditions",
@@ -70,6 +71,10 @@ static func normalize(document: Dictionary, path: String) -> Dictionary:
 				continue
 			var source_namespace: String = _slug(source, 48)
 			var identifier := String(data.get("id", name)) if category == "documents" else name
+			if native_category == "charoption":
+				identifier = "charoption_" + identifier
+				data["feature_type"] = ", ".join(data.get("optionType", []))
+				data["charoption"] = true
 			var local_id: String = _slug(identifier, 64)
 			if source_namespace.is_empty() or local_id.is_empty():
 				diagnostics.append("Homebrew 5etools: ID non valido: " + name)
