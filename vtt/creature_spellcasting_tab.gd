@@ -1096,17 +1096,13 @@ func _refresh_casting_summary() -> void:
 
 func _section_casting_stats(ability: String) -> String:
 	var normalized: String = ability.to_lower().strip_edges()
-	if normalized not in CASTING_ABILITIES:
-		return "Ability: — · Modifier: — · DC: —" if _gui_language == "en" else "Caratteristica: — · Modificatore: — · CD: —"
-	var names := {"str": "FOR", "dex": "DES", "con": "COS",
-		"int": "INT", "wis": "SAG", "cha": "CAR"}
-	var label: String = normalized.to_upper() if _gui_language == "en" else String(names.get(normalized, normalized))
+	if normalized not in CASTING_ABILITIES or normalized.is_empty():
+		return "Modifier: — · DC: —" if _gui_language == "en" else "Modificatore: — · CD: —"
 	var proficiency: int = Bonuses.value(_record, "proficiency")
-	var modifier: int = Bonuses.value(_record, "ability_mod:" + normalized)
-	var roll_modifier: int = proficiency + modifier
-	var dc: int = 8 + roll_modifier + Bonuses.bonus(_record, "spell_dc")
-	var template: String = "Ability: %s · Modifier: %+d · DC: %d" if _gui_language == "en" else "Caratteristica: %s · Modificatore: %+d · CD: %d"
-	return template % [label, roll_modifier, dc]
+	var modifier: int = proficiency + Bonuses.value(_record, "ability_mod:" + normalized)
+	var dc: int = 8 + modifier + Bonuses.bonus(_record, "spell_dc")
+	return ("Modifier: %+d · DC: %d" if _gui_language == "en" else "Modificatore: %+d · CD: %d") % [modifier, dc]
+
 
 func _section_ability(section_id: String, suggested: Array[String] = []) -> String:
 	var persisted: Dictionary = _record.get("spellcasting_section_abilities", {})
