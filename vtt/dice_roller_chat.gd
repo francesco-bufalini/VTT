@@ -537,7 +537,14 @@ func roll_expression_from_sheet(
 	if total_dice <= 0 or total_dice > 100:
 		return -1
 
-	var roll_mode := _selected_roll_mode(total_dice)
+	# A d20 check with additional inspiration dice is still a single d20
+	# for advantage/disadvantage purposes; bonus dice are never rerolled.
+	var has_single_d20 := false
+	for term_value: Variant in terms:
+		if term_value is Dictionary and int(term_value.get("sides", 0)) == 20 and int(term_value.get("count", 0)) == 1:
+			has_single_d20 = true
+			break
+	var roll_mode := _selected_roll_mode(1 if has_single_d20 else total_dice)
 	var candidate_rolls: Array = []
 	for term_value: Variant in terms:
 		if not term_value is Dictionary:
@@ -552,7 +559,7 @@ func roll_expression_from_sheet(
 		var values: Array[int] = []
 		for _index: int in range(count):
 			var value := 0
-			if roll_mode != "normal":
+			if roll_mode != "normal" and sides == 20 and count == 1:
 				var first := rng.randi_range(1, sides)
 				var second := rng.randi_range(1, sides)
 				candidate_rolls.append([first, second])
