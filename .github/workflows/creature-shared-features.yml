@@ -56,10 +56,7 @@ jobs:
             $output = $lines | Out-String
             Write-Host $output
             Write-Host "Godot exit code: $code"
-            if ($code -ne 0 -or $output -notmatch "PASS" -or $output -match "SCRIPT ERROR:") { throw "Failed: $test" }
-          }
-            $output = (Get-Content $stdout -Raw -ErrorAction SilentlyContinue) + (Get-Content $stderr -Raw -ErrorAction SilentlyContinue)
-            Write-Host $output
-            if ($process.ExitCode -ne 0 -or $output -notmatch "PASS" -or $output -match "SCRIPT ERROR:") { throw "Failed: $test" }
-            Remove-Item $stdout, $stderr -ErrorAction SilentlyContinue
+            if ($code -ne 0 -or $output -notmatch "PASS" -or $output -match "SCRIPT ERROR:") {
+              throw "Failed: $test"
+            }
           }
