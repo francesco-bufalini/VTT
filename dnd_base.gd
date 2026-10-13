@@ -197,6 +197,7 @@ var _undo_restoring: bool = false
 
 
 func _ready() -> void:
+	preload("res://vtt/scrollable_caption.gd").install(self)
 	# Unica griglia tattica: la VolumetricGrid collision-aware.
 	set_grid_visible(grid_visible_on_start)
 	set_vision_cones_visible(vision_cones_visible_on_start)
