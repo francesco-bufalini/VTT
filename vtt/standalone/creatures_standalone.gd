@@ -17,20 +17,20 @@ func _ready() -> void:
 	dice_roller = DiceRoller.new()
 	dice_roller.name = "DiceRollerChat"
 	add_child(dice_roller)
-	dice_roller.setup(self, "standalone", Callable(), ui_root, false)
+	dice_roller.call("setup", self, "standalone", Callable(), ui_root, false)
 
 	compendium = Compendium.new()
 	compendium.name = "Compendio"
 	add_child(compendium)
-	compendium.setup(self, ui_root)
+	compendium.call("setup", self, ui_root)
 
 	creature_area = CreatureSheet.new()
 	creature_area.name = "CreatureArea"
 	add_child(creature_area)
-	creature_area.setup(self, ui_root, false)
+	creature_area.call("setup", self, ui_root, false)
 
 	_build_navigation()
-	creature_area.show_panel()
+	creature_area.call("show_panel")
 
 
 func _build_navigation() -> void:
@@ -43,21 +43,21 @@ func _build_navigation() -> void:
 
 	var creatures_button := Button.new()
 	creatures_button.text = "Creature"
-	creatures_button.pressed.connect(creature_area.show_panel)
+	creatures_button.pressed.connect(Callable(creature_area, "show_panel"))
 	bar.add_child(creatures_button)
 
 	var compendium_button := Button.new()
 	compendium_button.text = "Compendio"
-	compendium_button.pressed.connect(compendium.show_panel)
+	compendium_button.pressed.connect(Callable(compendium, "show_panel"))
 	bar.add_child(compendium_button)
 
 	var dice_button := Button.new()
 	dice_button.text = "Dadi"
-	dice_button.pressed.connect(dice_roller.toggle_panel)
+	dice_button.pressed.connect(Callable(dice_roller, "toggle_panel"))
 	bar.add_child(dice_button)
 
 
 func get_public_status_entries() -> Array[Dictionary]:
 	if creature_area == null:
 		return []
-	return creature_area.get_public_status_entries()
+	return creature_area.call("get_public_status_entries")
