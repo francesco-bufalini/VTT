@@ -24,17 +24,26 @@ func run() -> void:
 	var jumps := VBoxContainer.new()
 	physics.add_child(speeds)
 	physics.add_child(jumps)
+	var speed_grid := GridContainer.new()
+	speed_grid.name = "PhysicsSpeedGrid"
+	speed_grid.columns = 5
+	speeds.add_child(speed_grid)
+	for i: int in 5:
+		var speed_cell := Control.new()
+		speed_cell.custom_minimum_size.x = 110
+		speed_grid.add_child(speed_cell)
 	physics.size = Vector2(1400, 300)
 	area._layout_physics_movement(physics, speeds, jumps)
-	assert(speeds.custom_minimum_size.x == 590 and jumps.custom_minimum_size.x == 550,
-		"Wide Physics panels put all five speeds beside jumps")
+	assert(speed_grid.columns == 5 and speeds.custom_minimum_size.x == 590 and jumps.custom_minimum_size.x == 476,
+		"Wide Physics panels show five speeds and two jump captions horizontally")
 	physics.size = Vector2(1000, 300)
 	area._layout_physics_movement(physics, speeds, jumps)
-	assert(speeds.custom_minimum_size.x == 350 and jumps.custom_minimum_size.x == 550,
-		"Mid-width panels narrow the speeds block to share the row")
+	assert(speed_grid.columns == 3 and speeds.custom_minimum_size.x == 350 and jumps.custom_minimum_size.x == 476,
+		"Mid-width panels use three speed columns and retain two horizontal jumps")
 	physics.size = Vector2(480, 300)
 	area._layout_physics_movement(physics, speeds, jumps)
-	assert(speeds.custom_minimum_size.x <= 460 and jumps.custom_minimum_size.x <= 460,
-		"Narrow panels wrap both blocks without retaining desktop widths")
+	assert(speed_grid.columns == 2 and speeds.custom_minimum_size.x == 230
+		and jumps.custom_minimum_size.x <= 460,
+		"Narrow panels use two speed columns and allow jumps to wrap")
 	print("PASS compact Physics fields and responsive speeds/jumps")
 	quit()
