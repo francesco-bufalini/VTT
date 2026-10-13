@@ -60,6 +60,8 @@ func run() -> void:
 	var left: VBoxContainer = pair.get_child(0).get_child(0)
 	var right: VBoxContainer = pair.get_child(1).get_child(0)
 	var spell_list: ScrollContainer = left.find_children("*", "ScrollContainer", true, false)[0]
+	print("POWERS_SCROLL_DEBUG ", spell_list.vertical_scroll_mode, " / ", ScrollContainer.SCROLL_MODE_AUTO,
+		" count=", spell_list.get_child_count(), " child=", spell_list.get_child(0).get_class())
 	assert(spell_list.vertical_scroll_mode == ScrollContainer.SCROLL_MODE_AUTO
 		and spell_list.get_child(0) is VBoxContainer,
 		"Prepared spell list remains vertically scrollable after resizing")
