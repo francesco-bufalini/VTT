@@ -15,6 +15,8 @@ func class_ability(_class_name: String) -> String:
 	return "int"
 func default_ability() -> String:
 	return "int"
+func section_ability(_section: String, _suggested: Array[String]) -> String:
+	return "int"
 func run() -> void:
 	root.gui_embed_subwindows = true
 	root.content_scale_mode = Window.CONTENT_SCALE_MODE_CANVAS_ITEMS
@@ -41,8 +43,9 @@ func run() -> void:
 		"spell_slots_total":[0,4,3,3,2,0,0,0,0,0], "spell_slots_spent":[],
 		"pact_slots_total":0, "pact_slot_level":1}
 	var actions := {"record":current, "casting_stats":casting_stats,
-		"class_ability":class_ability, "default_ability":default_ability}
-	for action: String in ["manual","resource_settings","edit_class","cast_class","cast_origin","slot","pact","tracker","restore","edit_origin","choose_origin"]:
+		"class_ability":class_ability, "default_ability":default_ability,
+		"section_ability":section_ability}
+	for action: String in ["set_section_ability","slot_max_edit","slot_max_bonus","manual","resource_settings","edit_class","cast_class","cast_origin","slot","pact","tracker","restore","edit_origin","choose_origin"]:
 		actions[action] = ignore
 	view.setup(actions)
 	view.refresh()
