@@ -1045,7 +1045,7 @@ static func reconcile_origin_dependents(record: Dictionary) -> void:
 		feats = remaining
 	record["feats_catalog"] = feats
 	var live: Dictionary = _live_origin_ids(record)
-	for field: String in ["proficiency_choices", "formula_bonuses", "resource_trackers", "damage_defense_entries"]:
+	for field: String in ["proficiency_choices", "formula_bonuses", "resource_trackers", "damage_defense_entries", "origin_spell_grants", "dice_bonuses"]:
 		var current: Variant = record.get(field, [])
 		if not current is Array:
 			continue
@@ -1068,7 +1068,7 @@ static func reconcile_origin_dependents(record: Dictionary) -> void:
 		# An applied spell exists only while it grants at least one benefit.
 		# Otherwise an abandoned spell would remain listed as an active effect.
 		var used_origins: Dictionary = {}
-		for field: String in ["proficiency_choices", "formula_bonuses", "resource_trackers", "damage_defense_entries", "feats_catalog"]:
+		for field: String in ["proficiency_choices", "formula_bonuses", "resource_trackers", "damage_defense_entries", "feats_catalog", "origin_spell_grants", "dice_bonuses"]:
 			for raw: Variant in record.get(field, []):
 				if raw is Dictionary:
 					used_origins[String((raw as Dictionary).get("origin_id", ""))] = true
