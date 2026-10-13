@@ -202,6 +202,7 @@ func run() -> void:
 	item_list.set_item_tooltip(0, "Caption dell'elemento della lista")
 	root.add_child(item_list)
 	caption._target = item_list
+	caption._kind = "item"
 	caption._item_index = 0
 	caption._item_label = item_list.get_item_text(0)
 	caption._text = item_list.get_item_tooltip(0)
