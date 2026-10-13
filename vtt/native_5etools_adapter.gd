@@ -2,6 +2,8 @@ extends RefCounted
 
 # Converts an upstream 5etools homebrew document to normalized catalog
 # entries without modifying the document on disk. No creature state lives here.
+const CHAROPTION_TYPE_NAMES := {"SG": "Supernatural Gift", "DG": "Dark Gift",
+	"CS": "Character Secret", "RF:B": "Background Feature"}
 const CATEGORIES := {
 	"monster": "monsters",
 	"spell": "spells",
@@ -16,6 +18,7 @@ const CATEGORIES := {
 	"race": "races",
 	"raceFeature": "species_traits",
 	"feat": "feats",
+	"charoption": "feats",
 	"background": "backgrounds",
 	"optionalfeature": "optional_features",
 	"condition": "conditions",
@@ -70,6 +73,14 @@ static func normalize(document: Dictionary, path: String) -> Dictionary:
 				continue
 			var source_namespace: String = _slug(source, 48)
 			var identifier := String(data.get("id", name)) if category == "documents" else name
+			if native_category == "charoption":
+				identifier = "charoption_" + identifier
+				var option_types: PackedStringArray = []
+				for raw_type: Variant in data.get("optionType", []):
+					var type_code: String = String(raw_type)
+					option_types.append(String(CHAROPTION_TYPE_NAMES.get(type_code, type_code)))
+				data["feature_type"] = ", ".join(option_types)
+				data["charoption"] = true
 			var local_id: String = _slug(identifier, 64)
 			if source_namespace.is_empty() or local_id.is_empty():
 				diagnostics.append("Homebrew 5etools: ID non valido: " + name)

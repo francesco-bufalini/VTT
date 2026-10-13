@@ -149,9 +149,26 @@ static func _collect_features(record: Dictionary) -> Array[Dictionary]:
 				"conditionImmune": feat_entry.get("conditionImmune", []),
 				"entries": PlayerCatalog.info_text(feat_entry, PlayerCatalog.description_text("feats", feat_entry))
 			}, 1, "Talento · " + feat_name, "feat|" + feat_id, "", "", 3)
-			_append_named_entries(result, feat_entry.get("entries", []),
-				"Talento · " + feat_name, "feat|" + feat_id, feat_source, 3,
-				bool(owned.get("disabled", false)))
+			var sections: Variant = feat_entry.get("feature_sections", null)
+			if sections is Array:
+				# Character creation options supply nested named sections with
+				# explicit character-level gates in the offline normalized index.
+				for raw_section: Variant in sections:
+					if not raw_section is Dictionary:
+						continue
+					var section: Dictionary = raw_section
+					var threshold: int = maxi(1, int(section.get("min_level", 1)))
+					if threshold > int(record.get("level", 1)):
+						continue
+					var detail: Dictionary = section.duplicate(true)
+					detail["inactive"] = bool(owned.get("disabled", false))
+					detail["source"] = feat_source
+					_append(result, detail, threshold, "Talento · " + feat_name,
+						"feat|" + feat_id, "", "", 3)
+			else:
+				_append_named_entries(result, feat_entry.get("entries", []),
+					"Talento · " + feat_name, "feat|" + feat_id, feat_source, 3,
+					bool(owned.get("disabled", false)))
 
 	# Inventory entries remain visible as traits while owned. Equipment
 	# controls only their effective origins, not whether the item exists.
