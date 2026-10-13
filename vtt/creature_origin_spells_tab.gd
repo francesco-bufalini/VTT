@@ -32,6 +32,8 @@ var _add_dialog: AcceptDialog
 var _tracker_label: Label
 var _filter_label: Label
 var _bypass: CheckButton
+var _shared_picker: ConfirmationDialog
+var _choose_spell_button: Button
 
 
 func setup(on_change: Callable) -> void:
@@ -58,8 +60,18 @@ func setup(on_change: Callable) -> void:
 	right.add_child(form)
 	_origin_picker = OptionButton.new()
 	_origin_picker.size_flags_horizontal = Control.SIZE_EXPAND_FILL
-	_label("Origine da associare", form)
+	var origin_label: Label = _label("Origine da associare", form)
+	origin_label.hide()
 	form.add_child(_origin_picker)
+	_origin_picker.hide()
+	var details := Button.new()
+	details.text = "⚙ Origine e dettagli"
+	details.toggle_mode = true
+	details.toggled.connect(func(on: bool) -> void:
+		origin_label.visible = on
+		_origin_picker.visible = on
+	)
+	form.add_child(details)
 	_spell_search = LineEdit.new()
 	_spell_search.placeholder_text = "Cerca incantesimo..."
 	_spell_search.text_changed.connect(_refresh_spell_picker)
@@ -68,6 +80,14 @@ func setup(on_change: Callable) -> void:
 	_spell_picker = OptionButton.new()
 	_spell_picker.size_flags_horizontal = Control.SIZE_EXPAND_FILL
 	form.add_child(_spell_picker)
+	_spell_search.hide()
+	_spell_picker.hide()
+	_choose_spell_button = Button.new()
+	_choose_spell_button.text = "Scegli incantesimo…"
+	_choose_spell_button.pressed.connect(_open_shared_picker)
+	form.add_child(_choose_spell_button)
+	_shared_picker = preload("res://vtt/spell_selection_dialog.gd").new()
+	add_child(_shared_picker)
 	var settings := HBoxContainer.new()
 	form.add_child(settings)
 	var pay := VBoxContainer.new()
@@ -347,8 +367,7 @@ func _refresh_spell_picker(value: String) -> void:
 			continue
 		_shown.append(spell)
 		_spell_picker.add_item(String(spell.get("name", "")) + " [" + String(spell.get("source", "")) + "]")
-		if _shown.size() >= 300:
-			break
+
 
 	_update_payment_fields()
 
@@ -511,3 +530,37 @@ static func _choice_formula(choice: Dictionary) -> String:
 	for id: Variant in choice.get("spell_options", []):
 		options.append(String(Catalog.catalog_spell(String(id)).get("name", id)))
 	return " oppure ".join(options) if not options.is_empty() else "tutti gli incantesimi"
+
+
+func open_for_origin(origin_id: String, choice: Dictionary = {}) -> void:
+	_selected_origin = origin_id
+	if not choice.is_empty():
+		_choose(choice)
+	else:
+		_choice.clear()
+		_fill_origin_picker(_current_record())
+		for index: int in range(_origin_picker.item_count):
+			if String(_origin_picker.get_item_metadata(index)) == origin_id:
+				_origin_picker.select(index)
+		_spell_search.clear()
+		_refresh_spell_picker("")
+		_add_dialog.popup_centered(Vector2i(640, 480))
+	_open_shared_picker()
+
+func _open_shared_picker() -> void:
+	var options: Array[Dictionary] = _shown.duplicate()
+	_add_dialog.hide()
+	_shared_picker.choose(options, {"title": "Scegli incantesimo", "single": true,
+		"details": "Origine: " + (_origin_picker.get_item_text(_origin_picker.selected) if _origin_picker.selected >= 0 else "—")
+			+ "\nLista: " + _choice_formula(_choice)},
+		func(result: Dictionary) -> void:
+			if result.selected.is_empty():
+				return
+			for index: int in range(_shown.size()):
+				if String(_shown[index].get("id", "")) == String(result.selected[0]):
+					_spell_picker.select(index)
+					_choose_spell_button.text = String(_shown[index].get("name", "")) + " · Cambia"
+					break
+			_update_payment_fields()
+			_add_dialog.popup_centered(Vector2i(640, 480))
+	)

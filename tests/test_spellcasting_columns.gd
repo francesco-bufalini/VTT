@@ -1,0 +1,98 @@
+extends SceneTree
+const Tab = preload("res://vtt/creature_spellcasting_tab.gd")
+const Choices = preload("res://vtt/class_spell_selection.gd")
+const Catalog = preload("res://vtt/spells/spell_catalog.gd")
+const Grants = preload("res://vtt/origin_spell_grants.gd")
+class Sink extends Node:
+	var values: Dictionary = {}
+	func changed(update: Dictionary) -> void:
+		values = update.duplicate(true)
+	func cast(_spell: Dictionary, _level: int, _grant: Dictionary = {}) -> bool:
+		return true
+func _initialize() -> void:
+	call_deferred("run")
+func run() -> void:
+	root.gui_embed_subwindows = true
+	root.content_scale_mode = Window.CONTENT_SCALE_MODE_DISABLED
+	root.size = Vector2i(1280, 850)
+	var sink := Sink.new()
+	root.add_child(sink)
+	var scroll := ScrollContainer.new()
+	scroll.set_anchors_and_offsets_preset(Control.PRESET_FULL_RECT)
+	scroll.horizontal_scroll_mode = ScrollContainer.SCROLL_MODE_DISABLED
+	root.add_child(scroll)
+	var tab := Tab.new()
+	tab.size_flags_horizontal = Control.SIZE_EXPAND_FILL
+	scroll.add_child(tab)
+	tab.setup(Callable(sink,"changed"), Callable(), Callable(sink,"cast"))
+	var record: Dictionary = {"kind":"character", "rules_version":"2014", "abilities":{"int":16,"cha":16},
+		"classes":[{"name":"Wizard","source":"PHB","level":3}, {"name":"Bard","source":"PHB","level":3}, {"name":"Warlock","source":"PHB","level":2}]}
+	tab.load_record(record)
+	assert(tab._view._rows.size() >= 2)
+	assert(tab._view.find_children("Class_*", "VBoxContainer", true, false).size() == 3)
+	var wizard: Dictionary = Choices.classes(record)[0]
+	tab._view_edit_class(wizard)
+	assert(tab._selection_dialog.visible and not tab._selection_dialog._details.visible)
+	var pick := ""
+	for spell: Dictionary in tab._selection_dialog._catalog:
+		if int(spell.get("level",0)) == 1:
+			pick = String(spell.id)
+			break
+	assert(not pick.is_empty())
+	tab._selection_dialog._selected[pick] = true
+	tab._selection_dialog._book[pick] = true
+	tab._selection_dialog._save()
+	tab._selection_dialog.hide()
+	assert(tab._prepared.size() == 1 and tab._spellbook.size() == 1)
+	assert(wizard.id in tab._prepared[0].casting_classes)
+	assert(sink.values.prepared_spells.size() == 1)
+	assert(tab._view._rows[0].get_child_count() == 2)
+	tab._view_slot(1, 1)
+	assert(int(tab._spent[1]) == 1)
+	tab._view_pact(1)
+	assert(tab._pact_spent == 1)
+	var grant: Dictionary = {}
+	for entry: Dictionary in Grants.all_grants(tab._view_record()):
+		if String(entry.get("spell_id","")) == Grants.BARDIC:
+			grant = entry
+	assert(not grant.is_empty())
+	var id: String = String(grant.tracker_id)
+	tab._view_tracker(1, id, 3)
+	assert(int(sink.values.resource_tracker_spent[id]) == 1)
+	var external: Dictionary = tab._view_record()
+	external.resource_tracker_spent[id] = 2
+	tab.refresh_spell_state(external)
+	assert(int(tab._view_record().resource_tracker_spent[id]) == 2)
+	await process_frame
+	await process_frame
+	if DisplayServer.get_name() != "headless":
+		await RenderingServer.frame_post_draw
+		root.get_texture().get_image().save_png("user://spellcasting_columns_review.png")
+		print("REVIEW_IMAGE ",ProjectSettings.globalize_path("user://spellcasting_columns_review.png"))
+	var caption: Node = root.get_node("ScrollableCaptions")
+	var target := Button.new()
+	target.text = "Descrizione lunga"
+	target.tooltip_text = "Dettaglio dell'incantesimo.\n".repeat(80)
+	target.position = Vector2(10,10)
+	root.add_child(target)
+	caption._target = target
+	caption._text = target.tooltip_text
+	caption._show_caption()
+	await process_frame
+	assert(caption._panel.size.y <= 340)
+	assert(caption._body.get_v_scroll_bar().max_value > caption._body.get_v_scroll_bar().page)
+	var before: float = caption._body.get_v_scroll_bar().value
+	var wheel := InputEventMouseButton.new()
+	wheel.button_index = MOUSE_BUTTON_WHEEL_DOWN
+	wheel.pressed = true
+	wheel.position = caption._body.get_global_rect().get_center()
+	wheel.global_position = wheel.position
+	root.push_input(wheel,true)
+	await process_frame
+	assert(caption._body.get_v_scroll_bar().value > before, "The hover caption responds to the actual wheel")
+	target.free()
+	scroll.free()
+	sink.free()
+	await process_frame
+	print("PASS two-column spellcasting, multiclass selection, spellbook, resource sync and scrollable captions")
+	quit()

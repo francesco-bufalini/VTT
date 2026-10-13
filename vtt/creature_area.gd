@@ -519,6 +519,7 @@ func _unhandled_input(event: InputEvent) -> void:
 
 
 func _build_ui() -> void:
+	preload("res://vtt/scrollable_caption.gd").install(self)
 	_panel = PanelContainer.new()
 	_panel.name = "CreatureSheet"
 	_panel.set_anchors_and_offsets_preset(Control.PRESET_FULL_RECT)
@@ -788,7 +789,7 @@ func _build_ui() -> void:
 		Callable(self, "_set_status"),
 		Callable(self, "_on_spellcasting_cast_requested"),
 		Callable(self, "_on_formula_bonus_requested"),
-		Callable(self, "_open_origin_spell_editor")
+		Callable(self, "_edit_origin_spell_popup")
 	)
 	var inventory_tab := _add_sheet_tab(_tabs, "Inventario")
 	_inventory_ui = InventoryTab.new()
@@ -3569,7 +3570,7 @@ func _on_spellcasting_updated(values: Dictionary) -> void:
 		values.has("concentrating_spell_id") or values.has("conditions")
 	)
 	for key: String in [
-		"spells", "prepared_spells", "spellbook_spells",
+		"spells", "prepared_spells", "spellbook_spells", "resource_tracker_spent",
 		"spell_slots_total", "spell_slots_spent", "spell_slots_manual", "spell_slots_automatic",
 		"pact_slots_total", "pact_slots_spent", "pact_slot_level",
 		"spell_slots_visible", "pact_slots_visible",
@@ -3586,6 +3587,8 @@ func _on_spellcasting_updated(values: Dictionary) -> void:
 		_spellcasting_ui.call("refresh_spell_state", record)
 	if values.has("origin_spell_grants") or values.has("origin_spell_configs"):
 		_origin_spells_stale = true
+	if values.has("resource_tracker_spent"):
+		_refresh_trackers(record)
 	if concentration_changed:
 		_refresh_conditions(record)
 		_sync_token_health(record)
@@ -5235,6 +5238,8 @@ func _change_tracker(id: String, delta: int, maximum: int) -> void:
 		return
 	_replace_current_record(record)
 	_refresh_trackers(record)
+	if _spellcasting_ui != null:
+		_spellcasting_ui.call("refresh_spell_state", record)
 
 
 func _open_tracker_trait(origin: String, source_label: String = "") -> void:
@@ -6449,3 +6454,10 @@ func get_linked_map_status(record: Dictionary) -> Dictionary:
 		if String(token.get("id", "")) == token_id:
 			return token.duplicate(true)
 	return {}
+
+func _edit_origin_spell_popup(origin_id: String = "", choice: Dictionary = {}) -> void:
+	var record: Dictionary = _current()
+	if record.is_empty():
+		return
+	_origin_spells_ui.call("load_record", record)
+	_origin_spells_ui.call("open_for_origin", origin_id, choice)

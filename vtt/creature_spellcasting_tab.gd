@@ -1,4 +1,7 @@
 extends VBoxContainer
+const SpellView = preload("res://vtt/creature_spellcasting_view.gd")
+const ClassSelections = preload("res://vtt/class_spell_selection.gd")
+const SelectionDialog = preload("res://vtt/spell_selection_dialog.gd")
 
 # Persistent spell selections and expendable resources for any creature.
 # The existing 5etools-derived VTT catalog supplies spell descriptions;
@@ -20,6 +23,10 @@ const BOOK_VIEW_CLASS := 10
 const BOOK_VIEW_BOOK := 11
 const BOOK_EDIT := 12
 
+var _view: VBoxContainer
+var _selection_dialog: ConfirmationDialog
+var _view_selected_spell: Dictionary = {}
+var _view_selected_class: Dictionary = {}
 var _on_change: Callable
 var _on_status: Callable
 var _on_cast_spell: Callable
@@ -497,6 +504,7 @@ func setup(
 	_update_spell_controls()
 	_set_search_visible(false)
 	_build_cast_dialog()
+	_build_view()
 
 
 func _build_cast_dialog() -> void:
@@ -641,6 +649,8 @@ func _set_search_visible(show: bool) -> void:
 
 
 func load_record(record: Dictionary) -> void:
+	_view_selected_spell.clear()
+	_view_selected_class.clear()
 	_loading = true
 	_record = record.duplicate(true)
 	_refresh_casting_summary()
@@ -923,6 +933,7 @@ func refresh_spell_state(record: Dictionary) -> void:
 	# catalog or discarding the current search and spell selection.
 	_record = record.duplicate(true)
 	_refresh_casting_summary()
+	_refresh_view()
 
 
 func _on_spellcasting_ability_selected(index: int) -> void:
@@ -985,6 +996,8 @@ static func _ability_for_class(name: String) -> String:
 
 
 func _cast_ability_for_spell(spell: Dictionary) -> String:
+	if not _view_selected_class.is_empty():
+		return _ability_for_class(String(_view_selected_class.get("name", "")))
 	var spell_classes: Array = spell.get("classes", [])
 	if _casting_class_picker != null and _casting_class_picker.selected > 0:
 		var selected: String = String(_casting_class_picker.get_item_metadata(_casting_class_picker.selected))
@@ -1126,6 +1139,8 @@ func update_character_context(record: Dictionary) -> void:
 
 
 func _selected_spell() -> Dictionary:
+	if not _view_selected_spell.is_empty():
+		return _view_selected_spell
 	var available_selected: PackedInt32Array = _available.get_selected_items()
 	if not available_selected.is_empty() and available_selected[0] < _visible.size():
 		return _visible[available_selected[0]]
@@ -1213,6 +1228,7 @@ func _toggle_selected_prepared() -> void:
 
 
 func _refresh_saved_spell_lists() -> void:
+	_refresh_view()
 	# Rebuilding ItemList otherwise clears the chosen row and its description.
 	var known_id: String = _selected_list_id(_known_list, _displayed_known)
 	var prepared_id: String = _selected_list_id(_prepared_list, _prepared)
@@ -1427,6 +1443,7 @@ func _apply_resource_visibility() -> void:
 
 
 func _update_resource_labels() -> void:
+	_refresh_view()
 	if _pact_remain == null:
 		return
 	for lvl: int in range(1, 10):
@@ -1454,6 +1471,9 @@ func _update_resource_labels() -> void:
 
 
 func _publish() -> void:
+	_record["prepared_spells"] = _prepared.duplicate(true)
+	_record["spellbook_spells"] = _spellbook.duplicate(true)
+	_refresh_view()
 	if _loading or not _on_change.is_valid():
 		return
 	_on_change.call({
@@ -1461,6 +1481,7 @@ func _publish() -> void:
 		"prepared_spells": _prepared.duplicate(true),
 		"spellbook_spells": _spellbook.duplicate(true),
 		"origin_spell_grants": _manual_origin_spells.duplicate(true),
+		"resource_tracker_spent": _record.get("resource_tracker_spent", {}).duplicate(true),
 		"spell_slots_manual": _slot_manual,
 		"spell_slots_automatic": not _slot_manual,
 		"spell_slots_total": _totals.duplicate(true),
@@ -1483,6 +1504,7 @@ func _grant_record() -> Dictionary:
 
 
 func _refresh_granted_spell_boxes() -> void:
+	_refresh_view()
 	if _granted_spell_boxes == null:
 		return
 	for child: Node in _granted_spell_boxes.get_children():
@@ -1603,3 +1625,90 @@ func set_gui_language(language: String) -> void:
 	_gui_language = language
 	_refresh_casting_summary()
 	_update_spell_controls()
+
+
+func _build_view() -> void:
+	var legacy := VBoxContainer.new()
+	legacy.name = "LegacySpellControls"
+	add_child(legacy)
+	for child: Node in get_children():
+		if child == legacy or child is Window or child == _spell_summary:
+			continue
+		child.reparent(legacy)
+	legacy.hide()
+	var settings: Control = _spell_ability_choice.get_parent()
+	settings.reparent(self)
+	preload("res://vtt/origin_editor_ui.gd").popup_form(self, settings, "⚙ Impostazioni di lancio")
+	_view = SpellView.new()
+	_view.name = "SpellcastingColumns"
+	add_child(_view)
+	_view.setup({"record": Callable(self, "_view_record"), "cast_class": Callable(self, "_view_cast_class"),
+		"cast_origin": Callable(self, "_cast_granted_spell"), "slot": Callable(self, "_view_slot"),
+		"pact": Callable(self, "_view_pact"), "restore": Callable(self, "_restore_all"),
+		"tracker": Callable(self, "_view_tracker"), "edit_class": Callable(self, "_view_edit_class"),
+		"edit_origin": Callable(self, "_view_edit_origin"), "choose_origin": Callable(self, "_view_choose_origin")})
+	_selection_dialog = SelectionDialog.new()
+	add_child(_selection_dialog)
+	preload("res://vtt/scrollable_caption.gd").install(self)
+	_refresh_view()
+
+func _view_record() -> Dictionary:
+	var record: Dictionary = _record.duplicate(true)
+	record["prepared_spells"] = _prepared.duplicate(true)
+	record["spellbook_spells"] = _spellbook.duplicate(true)
+	record["spell_slots_total"] = _totals.duplicate()
+	record["spell_slots_spent"] = _spent.duplicate()
+	record["pact_slots_total"] = _pact_total
+	record["pact_slots_spent"] = _pact_spent
+	record["pact_slot_level"] = _pact_level
+	return record
+
+func _refresh_view() -> void:
+	if _view != null and is_instance_valid(_view):
+		_view.refresh()
+
+func _view_cast_class(spell: Dictionary, member: Dictionary) -> void:
+	_view_selected_spell = spell.duplicate(true)
+	_view_selected_class = member.duplicate(true)
+	_refresh_casting_summary()
+	_request_cast_spell()
+
+func _view_slot(delta: int, level: int) -> void:
+	_change_slot(level, delta)
+
+func _view_pact(delta: int) -> void:
+	_change_pact(delta)
+
+func _view_tracker(delta: int, id: String, maximum: int) -> void:
+	var spent: Dictionary = _record.get("resource_tracker_spent", {}).duplicate(true)
+	spent[id] = clampi(int(spent.get(id, 0)) + delta, 0, maximum)
+	_record["resource_tracker_spent"] = spent
+	_publish()
+
+func _view_edit_class(member: Dictionary) -> void:
+	var options: Array[Dictionary] = []
+	for spell: Dictionary in _catalog:
+		if ClassSelections.eligible(spell, member):
+			options.append(spell)
+	var selected: Array[String] = ClassSelections.selected(_record, _prepared, member.id)
+	var book: Array[String] = []
+	for entry: Variant in _spellbook:
+		book.append(_entry_id(entry))
+	_selection_dialog.choose(options, {"title": "Scegli · " + String(member.name),
+		"selected": selected, "book": book, "book_mode": member.book, "limit": member.limit, "cantrips": member.cantrips,
+		"details": "Origine: " + String(member.name) + " [" + String(member.source) + "] · lista di classe fino al %d° livello" % int(member.max_level)},
+		func(result: Dictionary) -> void:
+			_prepared = ClassSelections.apply(_record, _prepared, member, result.selected)
+			if bool(member.book):
+				_spellbook = ClassSelections.apply(_record, _spellbook, member, result.book)
+			_publish()
+			_refresh_saved_spell_lists()
+	)
+
+func _view_edit_origin(id: String) -> void:
+	if _on_origin_editor.is_valid():
+		_on_origin_editor.call(id, {})
+
+func _view_choose_origin(choice: Dictionary) -> void:
+	if _on_origin_editor.is_valid():
+		_on_origin_editor.call(String(choice.get("origin_id", "")), choice)

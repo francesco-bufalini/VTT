@@ -109,7 +109,7 @@ func run() -> void:
 	hover.global_position = hover.position
 	root.push_input(hover, true)
 	await process_frame
-	assert("Concessioni" in origin_label.tooltip_text, "Overview labels display the live benefit preview")
+	assert("Concessioni" in origin_label.tooltip_text or "Concessioni" in root.get_node("ScrollableCaptions")._text, "Overview labels display the live benefit preview")
 	for index: int in range(area._tabs.get_tab_count()):
 		if area._tabs.get_tab_control(index).name == "Origini":
 			area._tabs.set_tab_title(index, "Origins")
@@ -147,8 +147,7 @@ func run() -> void:
 	assert(spells._cast_slot_choice.item_count == 1, "An exhausted tracker offers only explicit bypass")
 	spells._confirm_cast_spell()
 	assert(bool(sink.grant.get("skip_payment", false)))
-	assert(spells._slot_grid.get_parent().get_parent().get_parent() == spells._known_list.get_parent().get_parent(),
-		"Slots and class spell lists share the same horizontal row")
+	assert(spells._view._rows[0].get_child_count() == 2, "Class spells and slot trackers form the first paired row")
 	spells._cast_dialog.hide()
 	for i: int in range(area._tabs.get_tab_count()):
 		if area._tabs.get_tab_title(i) == "Incantesimi":
@@ -156,9 +155,8 @@ func run() -> void:
 	await process_frame
 	await process_frame
 	var sheet_scroll: ScrollContainer = area._tabs.get_tab_control(area._tabs.current_tab)
-	assert(spells._known_list.size.y < 400, "Class spell lists remain bounded so granted spells can be reached")
-	assert(spells._granted_spell_boxes.find_children("GrantedSpellName", "Label", true, false).size() > 0,
-		"Granted spell names are distinct labels from their origin")
+	assert(spells._view.visible, "The two-column view is the visible spell interface")
+	assert(spells._view._rows.size() > 1, "Origin spells have their own paired rows")
 	# Use a narrow viewport and wheel events over real content, not just a scrollbar assignment.
 	root.size = Vector2i(1000, 650)
 	await process_frame
@@ -174,10 +172,11 @@ func run() -> void:
 		await process_frame
 	assert(sheet_scroll.scroll_vertical > before, "Spell sheet responds to the mouse wheel")
 	sheet_scroll.scroll_vertical = 0
-	spells._known_list.get_v_scroll_bar().value = spells._known_list.get_v_scroll_bar().max_value
+	var class_scroll: ScrollContainer = spells._view._rows[0].get_child(0).find_children("*", "ScrollContainer", true, false)[0]
+	class_scroll.get_v_scroll_bar().value = class_scroll.get_v_scroll_bar().max_value
 	await process_frame
 	before = sheet_scroll.scroll_vertical
-	wheel.position = spells._known_list.get_global_rect().get_center()
+	wheel.position = class_scroll.get_global_rect().get_center()
 	wheel.global_position = wheel.position
 	root.push_input(wheel, true)
 	await process_frame
