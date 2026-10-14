@@ -11,6 +11,7 @@ signal token_mount_failed(token_id: String, message: String)
 
 const CACHE_DIR := "user://token_cache"
 const CATALOG_CACHE_PATH := CACHE_DIR + "/token_catalog.json"
+const OFFLINE_CATALOG_PATH := "res://vtt/data/token_catalog_offline.json"
 
 # Public HTTP is always attempted first. This URL can later be replaced with
 # R2/B2/a public GitHub Release without changing the manager API.
@@ -38,6 +39,8 @@ var _validated_cache_sha: Dictionary = {}
 func _ready() -> void:
 	_ensure_cache_dir()
 	var had_cached_catalog := _load_cached_catalog()
+	if not had_cached_catalog and FileAccess.file_exists(OFFLINE_CATALOG_PATH):
+		had_cached_catalog = _accept_catalog_text(FileAccess.get_file_as_string(OFFLINE_CATALOG_PATH), false)
 	if had_cached_catalog:
 		print(
 			"TokenPackManager: cached catalog loaded (%d tokens)"
@@ -554,6 +557,9 @@ func _on_catalog_request_completed(
 			return
 		push_warning("TokenPackManager: HTTP catalog JSON is invalid.")
 
+	if OS.has_feature("mobile") and not _entries_by_id.is_empty():
+		print("TokenPackManager: keeping offline miniature catalog; remote refresh unavailable (HTTP %d)." % response_code)
+		return
 	print(
 		(
 			"TokenPackManager: HTTP catalog unavailable (result=%d code=%d), "

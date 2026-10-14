@@ -632,3 +632,11 @@ func _explain_touch(point: Vector2) -> void:
 	var message: String = captions.touch_hint_at(point)
 	if not message.strip_edges().is_empty():
 		_show_touch_help(message)
+
+func list_available_miniatures() -> Array[Dictionary]:
+	# Selection stores catalog identities; no 3D scene needs to be loaded on a phone.
+	var packs := get_node_or_null("/root/TokenPackManager")
+	var result: Array[Dictionary] = []
+	if packs != null:
+		result.assign(packs.get_entries())
+	return result
