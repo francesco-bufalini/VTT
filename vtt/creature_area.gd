@@ -1672,6 +1672,21 @@ func configure_touch_layout() -> void:
 		tab_scroll.horizontal_scroll_mode = ScrollContainer.SCROLL_MODE_DISABLED
 	var info := _tabs.get_tab_control(0).get_child(0).get_child(0)
 	touch.wrap_fields(info)
+	# A class is a labelled full-width field, not six independent flow items.
+	# Otherwise the base class selector becomes unreadable on a phone.
+	var original_classes := _class_name.get_parent() as HFlowContainer
+	var class_fields := touch.replace_box(original_classes, VBoxContainer.new()) as VBoxContainer
+	var class_captions: Array[Label] = [class_fields.get_child(0) as Label, _subclass_caption, _level_caption]
+	var class_inputs: Array[Control] = [_class_name, _subclass_name, _level]
+	for index: int in range(class_inputs.size()):
+		var field := VBoxContainer.new()
+		field.add_theme_constant_override("separation", 3)
+		field.size_flags_horizontal = Control.SIZE_EXPAND_FILL
+		class_fields.add_child(field)
+		class_captions[index].reparent(field)
+		class_inputs[index].reparent(field)
+		class_inputs[index].custom_minimum_size.x = 0
+		class_inputs[index].size_flags_horizontal = Control.SIZE_EXPAND_FILL
 	_statistics_columns = touch.replace_box(_statistics_columns, VBoxContainer.new()) as BoxContainer
 	for columns: Node in _panel.find_children("EditorColumns", "HBoxContainer", true, false):
 		var stacked := touch.replace_box(columns, VBoxContainer.new()) as VBoxContainer
@@ -1708,7 +1723,8 @@ func configure_touch_layout() -> void:
 	for column: Control in _statistics_columns.get_children():
 		column.custom_minimum_size.x = 0
 		column.size_flags_horizontal = Control.SIZE_EXPAND_FILL
-		touch.wrap_fields(column.get_child(0))
+	# Preserve the horizontal ability grid, hit-point actions and resource
+	# counters. Their internal groups already flow or wrap as units.
 	var traits_scroll := _traits_ui.get("_scroll") as ScrollContainer
 	if traits_scroll != null:
 		traits_scroll.follow_focus = false
@@ -1725,6 +1741,13 @@ func configure_touch_layout() -> void:
 	file_picker.file_selected.connect(_import_export_file)
 	import_button.pressed.connect(func() -> void: file_picker.popup_centered_clamped(Vector2i(680, 600), 0.9))
 	touch.style_control(import_button)
+	# Initial sheets may have been populated before mobile mode was enabled.
+	# Rebuild their dynamic multiclass/tracker rows with the touch layout too.
+	var initial_record := _current()
+	if not initial_record.is_empty():
+		_load_form(initial_record)
+		touch.style_tree(_multiclass_rows)
+		touch.style_tree(_tracker_rows)
 	show_touch_library(true)
 
 
@@ -3057,13 +3080,22 @@ func _add_multiclass_row(
 ) -> void:
 	if not _loading and _class_name.selected <= 0:
 		return
-	var row := HBoxContainer.new()
+	var row: BoxContainer = VBoxContainer.new() if _touch_layout else HBoxContainer.new()
 	_multiclass_rows.add_child(row)
+	if _touch_layout:
+		_add_label(row, "Classe")
 	var selector := _reference_option(row, Player5eTools.class_choices(_selected_rules_version()), false, false, "classes")
 	_select_reference(selector, class_value, source, reference_id)
 	selector.item_selected.connect(func(_i: int) -> void: _on_secondary_class_changed(row))
+	if _touch_layout:
+		_add_label(row, "Sottoclasse")
 	var subclass := _reference_option(row, _subclass_choices(_reference_entry(selector)), false, true, "subclasses")
 	subclass.item_selected.connect(func(_i: int) -> void: _save())
+	if _touch_layout:
+		row.add_theme_constant_override("separation", 4)
+		for choice: OptionButton in [selector, subclass]:
+			choice.custom_minimum_size.x = 0
+			choice.size_flags_horizontal = Control.SIZE_EXPAND_FILL
 	var level := SpinBox.new()
 	level.min_value = 1
 	level.max_value = 20
@@ -3075,10 +3107,15 @@ func _add_multiclass_row(
 		_refresh_xp_minimum()
 		_save()
 	)
-	row.add_child(level)
+	var action_row: Container = row
+	if _touch_layout:
+		action_row = HBoxContainer.new()
+		row.add_child(action_row)
+		_add_label(action_row, "Livello")
+	action_row.add_child(level)
 	var remove := Button.new()
 	remove.text = "×"
-	row.add_child(remove)
+	action_row.add_child(remove)
 	var definition := {"row": row, "selector": selector, "subclass": subclass, "level": level}
 	_multiclass_controls.append(definition)
 	remove.pressed.connect(
@@ -3091,7 +3128,7 @@ func _add_multiclass_row(
 	_save()
 
 
-func _on_secondary_class_changed(row: HBoxContainer) -> void:
+func _on_secondary_class_changed(row: BoxContainer) -> void:
 	for definition: Dictionary in _multiclass_controls:
 		if definition["row"] == row:
 			_refresh_subclass_option(definition["subclass"], _reference_entry(definition["selector"]))
@@ -3101,7 +3138,7 @@ func _on_secondary_class_changed(row: HBoxContainer) -> void:
 
 func _clear_multiclass() -> void:
 	for definition: Dictionary in _multiclass_controls:
-		var row: HBoxContainer = definition["row"]
+		var row: BoxContainer = definition["row"]
 		_multiclass_rows.remove_child(row)
 		row.queue_free()
 	_multiclass_controls.clear()
@@ -5538,9 +5575,12 @@ func _refresh_trackers(record: Dictionary) -> void:
 	var spent: Dictionary = spent_value as Dictionary if spent_value is Dictionary else {}
 	var origin_enabled: Dictionary = ProficiencyRules.origin_enabled_map(record)
 	for tracker: Dictionary in trackers:
-		var row := HFlowContainer.new()
-		row.add_theme_constant_override("h_separation", 5)
-		row.add_theme_constant_override("v_separation", 3)
+		var row: Container = VBoxContainer.new() if _touch_layout else HFlowContainer.new()
+		if _touch_layout:
+			row.add_theme_constant_override("separation", 4)
+		else:
+			row.add_theme_constant_override("h_separation", 5)
+			row.add_theme_constant_override("v_separation", 3)
 		_tracker_rows.add_child(row)
 		var source_button := Button.new()
 		var title: String = String(tracker.get("name", "Risorsa"))
@@ -5572,8 +5612,16 @@ func _refresh_trackers(record: Dictionary) -> void:
 		var used: int = clampi(int(spent.get(id, 0)), 0, maximum)
 		var counter_group := HBoxContainer.new()
 		counter_group.add_theme_constant_override("separation", 4)
-		# HFlowContainer may wrap the whole counter but never split its buttons.
-		row.add_child(counter_group)
+		# On mobile the tracker name gets its own readable row, while all
+		# actions stay together and wrap only between complete groups.
+		var action_parent: Container = row
+		if _touch_layout:
+			var actions := HFlowContainer.new()
+			actions.add_theme_constant_override("h_separation", 4)
+			actions.add_theme_constant_override("v_separation", 3)
+			row.add_child(actions)
+			action_parent = actions
+		action_parent.add_child(counter_group)
 		var consume := Button.new()
 		consume.text = "−"
 		consume.tooltip_text = "Consuma un utilizzo"
@@ -5616,7 +5664,7 @@ func _refresh_trackers(record: Dictionary) -> void:
 			roll.tooltip_text = "Tira d6: ricarica con %d–6" % threshold
 			roll.disabled = not available
 			roll.pressed.connect(_roll_tracker_recharge.bind(id, threshold, title, maximum))
-			row.add_child(roll)
+			action_parent.add_child(roll)
 		var reset := Button.new()
 		reset.text = "↺"
 		reset.tooltip_text = (
@@ -5625,7 +5673,7 @@ func _refresh_trackers(record: Dictionary) -> void:
 		)
 		reset.disabled = not available
 		reset.pressed.connect(_change_tracker.bind(id, -maximum, maximum))
-		row.add_child(reset)
+		action_parent.add_child(reset)
 
 
 func _roll_tracker_recharge(

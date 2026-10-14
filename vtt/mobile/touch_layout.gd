@@ -23,7 +23,7 @@ static func style_control(node: Node) -> void:
 	if node is SpinBox:
 		var number := node as SpinBox
 		number.custom_minimum_size.y = TARGET
-		number.custom_minimum_size.x = 64
+		number.custom_minimum_size.x = maxf(number.custom_minimum_size.x, 56.0)
 		number.get_line_edit().add_theme_font_size_override("font_size", 18)
 		number.get_line_edit().virtual_keyboard_type = LineEdit.KEYBOARD_TYPE_NUMBER
 	if node is Label:
@@ -84,6 +84,16 @@ static func scroll_body(panel: PanelContainer) -> ScrollContainer:
 	return scroll
 
 # Static field rows stack vertically; controls and their data connections survive.
+# Only genuine label + edit rows should stack; nested counter/action rows
+# must retain their horizontal grouping on narrow Android screens.
+static func _is_field_row(row: HBoxContainer) -> bool:
+	var has_caption := false
+	var has_field := false
+	for child: Node in row.get_children():
+		has_caption = has_caption or child is Label
+		has_field = has_field or child is LineEdit or child is OptionButton or child is TextEdit
+	return has_caption and has_field
+
 static func wrap_fields(root: Node) -> void:
 	if root.get_script() != null:
 		return
@@ -92,7 +102,9 @@ static func wrap_fields(root: Node) -> void:
 		root.size_flags_horizontal = Control.SIZE_EXPAND_FILL
 	for original: Node in root.get_children():
 		var child := original
-		if (original is HBoxContainer or original is HFlowContainer and original.name in ["PhysicsFields", "PhysicsMiniatureFlow"]) and original.get_script() == null:
+		var labeled_row := original is HBoxContainer and _is_field_row(original as HBoxContainer)
+		var physics_flow := original is HFlowContainer and original.name in ["PhysicsFields", "PhysicsMiniatureFlow"]
+		if (labeled_row or physics_flow) and original.get_script() == null:
 			var column := VBoxContainer.new()
 			column.add_theme_constant_override("separation", 5)
 			child = replace_box(original, column)
