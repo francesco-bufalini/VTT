@@ -26,7 +26,8 @@ func run() -> void:
 	assert(peers[0].id == "remote-owner-0123456789abcdef")
 	assert(peers[0].label == "Desktop di prova" and peers[0].device == "desktop")
 	assert(peers[0].port == 35001, "Replies must use the source port (Android emulator NAT)")
-	var targets: Array[String] = Presence.discovery_targets(["192.168.1.20", "192.168.1.20", "invalid"])
+	var sample_hosts: Array[String] = ["192.168.1.20", "192.168.1.20", "invalid"]
+	var targets: Array[String] = Presence.discovery_targets(sample_hosts)
 	assert(targets.has("255.255.255.255") and targets.count("192.168.1.20") == 1)
 	assert(not targets.has("invalid"))
 	assert(presence.call("get_online_desktop_ipv4s") == ["100.101.102.103"])
