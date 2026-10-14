@@ -1587,6 +1587,7 @@ func configure_touch_layout() -> void:
 	_touch_library.name = "TouchLibrary"
 	_touch_library.custom_minimum_size.x = 0
 	_touch_library.size_flags_vertical = Control.SIZE_EXPAND_FILL
+	_touch_library.size_flags_horizontal = Control.SIZE_EXPAND_FILL
 	_creature_list_scroll.size_flags_vertical = Control.SIZE_EXPAND_FILL
 	# Only the library needs an outer scroll. The editor must give its active tab
 	# a bounded viewport, especially Tratti with its own scrolling list.
@@ -1652,7 +1653,10 @@ func configure_touch_layout() -> void:
 	_tabs.tabs_visible = false
 	_tabs.custom_minimum_size.x = 0
 	_panel.custom_minimum_size.x = 0
-	_panel.add_theme_stylebox_override("panel", StyleBoxEmpty.new())
+	var compact_style: StyleBox = _panel.get_theme_stylebox("panel", "PanelContainer").duplicate()
+	for side: int in [SIDE_LEFT, SIDE_TOP, SIDE_RIGHT, SIDE_BOTTOM]:
+		compact_style.set_content_margin(side, 2)
+	_panel.add_theme_stylebox_override("panel", compact_style)
 	editor.add_child(_tabs)
 	for index: int in range(_tabs.get_tab_count()):
 		var tab_scroll := _tabs.get_tab_control(index) as ScrollContainer

@@ -26,6 +26,9 @@ func run() -> void:
  sheet._selected_id = record.id
  sheet._selected_kind = "character"
  sheet._load_form(record)
+ sheet.show_touch_library(true)
+ await settle()
+ assert(sheet._touch_library.size.x >= sheet._touch_library_view.size.x - 24, "Library must occupy the available width")
  sheet.show_touch_library(false)
  for width: int in [360, 390, 480]:
   root.size = Vector2i(width, 844)

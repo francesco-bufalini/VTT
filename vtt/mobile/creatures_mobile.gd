@@ -20,6 +20,7 @@ var _help_panel: PanelContainer
 var _help_text: RichTextLabel
 var _gesture_bars: Array[ScrollBar] = []
 var _previous_mouse_emulation := true
+var _previous_tooltip_delay := 0.5
 var _last_back_msec := -1000
 var _choice_panel: PanelContainer
 var _choice_list: VBoxContainer
@@ -45,6 +46,8 @@ func _ready() -> void:
 	get_tree().quit_on_go_back = false
 	get_tree().auto_accept_quit = false
 	get_viewport().gui_embed_subwindows = true
+	_previous_tooltip_delay = float(ProjectSettings.get_setting("gui/timers/tooltip_delay_sec", 0.5))
+	ProjectSettings.set_setting("gui/timers/tooltip_delay_sec", 86400.0)
 	_previous_mouse_emulation = Input.emulate_mouse_from_touch
 	Input.emulate_mouse_from_touch = false
 	if OS.has_feature("mobile"):
@@ -349,6 +352,7 @@ func _dispatch_touch_tap(at: Vector2) -> void:
 
 func _exit_tree() -> void:
 	Input.emulate_mouse_from_touch = _previous_mouse_emulation
+	ProjectSettings.set_setting("gui/timers/tooltip_delay_sec", _previous_tooltip_delay)
 	get_tree().root.remove_meta("vtt_touch_layout")
 
 func _build_session_panel() -> void:
