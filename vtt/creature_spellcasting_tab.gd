@@ -1721,6 +1721,11 @@ func _view_record() -> Dictionary:
 	record["pact_slot_level"] = _pact_level
 	return record
 
+func configure_touch_layout() -> void:
+	if _view != null:
+		_view.configure_touch_layout()
+
+
 func _refresh_view() -> void:
 	if _view != null and is_instance_valid(_view):
 		_view.refresh()

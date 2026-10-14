@@ -17,6 +17,7 @@ var _finger_position := Vector2.ZERO
 var _dragging := false
 var _gesture_bars: Array[ScrollBar] = []
 var _previous_mouse_emulation := true
+var _last_back_msec := -1000
 var _connection_status: Label
 var _map_summary: RichTextLabel
 var _archive_selector: OptionButton
@@ -26,8 +27,12 @@ var _page_title: Label
 var _connection_badge: Label
 var _active_page := -1
 
+func _enter_tree() -> void:
+	get_tree().quit_on_go_back = false
+
 func _ready() -> void:
 	_configure_ui_scale()
+	get_tree().quit_on_go_back = false
 	get_tree().auto_accept_quit = false
 	get_viewport().gui_embed_subwindows = true
 	_previous_mouse_emulation = Input.emulate_mouse_from_touch
@@ -185,7 +190,14 @@ func _style_added_control(reference: WeakRef) -> void:
 
 func _notification(what: int) -> void:
 	if what in [NOTIFICATION_WM_GO_BACK_REQUEST, NOTIFICATION_WM_CLOSE_REQUEST] and _active_page >= 0:
-		_go_back()
+		_request_go_back()
+
+func _request_go_back() -> void:
+	var now := Time.get_ticks_msec()
+	if now - _last_back_msec < 250:
+		return
+	_last_back_msec = now
+	_go_back()
 
 func _go_back() -> void:
 	# Close the current popup before changing the screen underneath it.
@@ -211,7 +223,7 @@ func _go_back() -> void:
 func _input(event: InputEvent) -> void:
 	if event is InputEventKey and event.pressed and event.keycode == KEY_BACK:
 		get_viewport().set_input_as_handled()
-		_go_back()
+		_request_go_back()
 	elif event is InputEventScreenTouch:
 		get_viewport().set_input_as_handled()
 		if event.pressed and _finger == -1:

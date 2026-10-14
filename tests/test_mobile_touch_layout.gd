@@ -26,6 +26,8 @@ func run() -> void:
 	var mobile := Mobile.instantiate()
 	root.add_child(mobile)
 	await settle()
+	if not check(not quit_on_go_back, "Android Back must never automatically quit"):
+		return
 	var sheet: Node = mobile.creature_area
 	if not check(mobile.map_data_controller.source_name() == "offline", "Mobile must start without a network connection"):
 		return
@@ -64,7 +66,7 @@ func run() -> void:
 		mobile._select_page(0)
 		sheet.show_touch_library(false)
 		for index: int in range(sheet._tabs.get_tab_count()):
-			sheet._touch_section.item_selected.emit(index)
+			sheet._touch_section_buttons[index].pressed.emit()
 			await settle()
 			if not check(sheet._tabs.current_tab == index, "Touch picker must select each real shared tab"):
 				return
@@ -124,6 +126,12 @@ func run() -> void:
 		return
 	mobile._go_back()
 	if not check(mobile._exit_dialog.visible, "Back at the root must ask before exiting"):
+		return
+	mobile._last_back_msec = -1000
+	mobile._request_go_back()
+	# A duplicate Android delivery must not reopen/close the warning twice.
+	mobile._request_go_back()
+	if not check(not mobile._exit_dialog.visible, "Duplicate Back delivery must be ignored"):
 		return
 	mobile._exit_dialog.hide()
 	mobile.queue_free()

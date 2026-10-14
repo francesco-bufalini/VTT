@@ -74,6 +74,7 @@ var _statistics_columns: BoxContainer
 var _touch_layout := false
 var _touch_library: Control
 var _touch_editor: Control
+var _touch_section_buttons: Array[Button] = []
 var _touch_section: OptionButton
 var _touch_library_button: Button
 var _skills_panel: VBoxContainer
@@ -1587,6 +1588,24 @@ func configure_touch_layout() -> void:
 	_touch_section.item_selected.connect(func(index: int) -> void: _tabs.current_tab = index)
 	_tabs.tab_changed.connect(func(index: int) -> void: _touch_section.select(index))
 	editor.add_child(_touch_section)
+	_touch_section.hide()
+	var sections := HFlowContainer.new()
+	sections.name = "TouchSheetSections"
+	sections.add_theme_constant_override("h_separation", 6)
+	sections.add_theme_constant_override("v_separation", 6)
+	editor.add_child(sections)
+	var group := ButtonGroup.new()
+	for index: int in range(_tabs.get_tab_count()):
+		var button := Button.new()
+		button.text = _tabs.get_tab_title(index)
+		button.toggle_mode = true
+		button.button_group = group
+		button.pressed.connect(_request_touch_section.bind(index))
+		sections.add_child(button)
+		_touch_section_buttons.append(button)
+	_tabs.tab_changed.connect(_sync_touch_section_buttons)
+	_sync_touch_section_buttons(_tabs.current_tab)
+	_spellcasting_ui.configure_touch_layout()
 	_tabs.tabs_visible = false
 	editor.add_child(_tabs)
 	for index: int in range(_tabs.get_tab_count()):
@@ -1627,6 +1646,21 @@ func configure_touch_layout() -> void:
 	touch.scroll_body(_panel)
 	touch.style_tree(_panel)
 	show_touch_library(true)
+
+
+func _request_touch_section(index: int) -> void:
+	# Complete the finger event before changing the layout/focus hierarchy.
+	_apply_touch_section.call_deferred(index)
+
+
+func _apply_touch_section(index: int) -> void:
+	if _tabs != null and index >= 0 and index < _tabs.get_tab_count():
+		_tabs.current_tab = index
+
+
+func _sync_touch_section_buttons(index: int) -> void:
+	for i: int in range(_touch_section_buttons.size()):
+		_touch_section_buttons[i].set_pressed_no_signal(i == index)
 
 
 func is_touch_library_visible() -> bool:

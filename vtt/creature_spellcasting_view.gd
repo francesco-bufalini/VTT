@@ -8,9 +8,10 @@ const Bonuses = preload("res://vtt/creature_bonus_rules.gd")
 const Proficiencies = preload("res://vtt/creature_proficiency_rules.gd")
 var _actions: Dictionary
 var _table: VBoxContainer
-var _rows: Array[HBoxContainer] = []
+var _rows: Array[BoxContainer] = []
 var _left_width := 430.0
 var _right_width := 310.0
+var _touch_layout := false
 
 func setup(actions: Dictionary) -> void:
 	_actions = actions
@@ -19,6 +20,10 @@ func setup(actions: Dictionary) -> void:
 	_table.add_theme_constant_override("separation", 12)
 	add_child(_table)
 	resized.connect(_fit)
+
+func configure_touch_layout() -> void:
+	_touch_layout = true
+	refresh()
 
 func refresh() -> void:
 	for child: Node in _table.get_children():
@@ -126,7 +131,7 @@ func refresh() -> void:
 	_balance_lists.call_deferred()
 
 func _pair() -> Array[VBoxContainer]:
-	var row := HBoxContainer.new()
+	var row: BoxContainer = VBoxContainer.new() if _touch_layout else HBoxContainer.new()
 	row.add_theme_constant_override("separation", 12)
 	_table.add_child(row)
 	_rows.append(row)
@@ -148,10 +153,17 @@ func _pair() -> Array[VBoxContainer]:
 	return result
 
 func _fit() -> void:
+	if _touch_layout:
+		for row: BoxContainer in _rows:
+			for panel: Control in row.get_children():
+				panel.size_flags_horizontal = Control.SIZE_EXPAND_FILL
+				if panel.custom_minimum_size.x != 0:
+					panel.custom_minimum_size.x = 0
+		return
 	if size.x > 0:
 		_left_width = clampf((size.x - 12.0) * 0.58, 270.0, 680.0)
 		_right_width = clampf(size.x - 12.0 - _left_width, 240.0, 420.0)
-	for row: HBoxContainer in _rows:
+	for row: BoxContainer in _rows:
 		row.get_child(0).custom_minimum_size.x = _left_width
 		row.get_child(1).custom_minimum_size.x = _right_width
 
@@ -403,7 +415,7 @@ func _definition(entry: Dictionary) -> Dictionary:
 func _balance_lists() -> void:
 	# Measure the actual themed rows, not a guessed fixed pixel height.
 	await get_tree().process_frame
-	for row: HBoxContainer in _rows:
+	for row: BoxContainer in _rows:
 		var left := row.get_child(0).get_child(0) as VBoxContainer
 		var right := row.get_child(1).get_child(0) as VBoxContainer
 		var lists: Array[ScrollContainer] = []
