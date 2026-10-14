@@ -22,6 +22,29 @@ monsters = {
     for edition, path in (("2014", args.bestiary_2014), ("2024", args.bestiary_2024))
 }
 
+SIZE_CODE_TO_NAME = {
+    "T": "Tiny", "S": "Small", "M": "Medium",
+    "L": "Large", "H": "Huge", "G": "Gargantuan",
+}
+SIZE_TO_FOOTPRINT = {
+    "Tiny": 0.5, "Small": 1.0, "Medium": 1.0,
+    "Large": 2.0, "Huge": 3.0, "Gargantuan": 4.0,
+}
+
+
+def unambiguous_size_name(raw):
+    values = raw if isinstance(raw, list) else [raw]
+    sizes = {
+        SIZE_CODE_TO_NAME.get(
+            value if isinstance(value, str)
+            else value.get("size") if isinstance(value, dict) else None
+        )
+        for value in values
+    }
+    # A variable/unknown size must not be silently reduced to one shape.
+    return next(iter(sizes)) if len(sizes) == 1 and None not in sizes else None
+
+
 def enrich_reference(selected, edition):
     value = dict(selected)
     m = monsters[edition].get((value["name"], value["source"]))
@@ -50,6 +73,10 @@ def enrich_reference(selected, edition):
     value["token_url"] = url
     if not url:
         raise ValueError(f"5etools creature has no token art: {edition} {selected!r}")
+    size_name = unambiguous_size_name(m.get("size"))
+    if size_name:
+        value["size_name"] = size_name
+        value["footprint"] = SIZE_TO_FOOTPRINT[size_name]
     return value
 
 entries = {}
