@@ -87,8 +87,17 @@ func run() -> void:
 		if not check(sheet._name.custom_minimum_size.y >= 48 and sheet._rules_edition.custom_minimum_size.y >= 48,
 			"Shared edit fields must be usable by touch"):
 			return
+		var trait_index := -1
+		for tab: int in range(sheet._tabs.get_tab_count()):
+			if sheet._tabs.get_tab_control(tab).name == "Tratti":
+				trait_index = tab
+				break
+		if not check(trait_index >= 0, "The shared Traits tab must still exist"):
+			return
+		sheet._tabs.current_tab = trait_index
+		await settle()
 		var traits: Node = sheet._traits_ui
-		if not check(not traits._touch_filters.visible and traits._scroll.size.y > 0,
+		if not check(not traits._touch_filters.visible and traits._scroll.size.y > 32,
 			"Traits should have a usable scroll area with filters collapsed"):
 			return
 		traits._touch_filter_toggle.pressed.emit()
